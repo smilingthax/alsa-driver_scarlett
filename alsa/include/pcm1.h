@@ -180,8 +180,9 @@ struct snd_stru_pcm1_subchn {
 	spinlock_t sleep_lock;
 	wait_queue_head_t sleep;
 	int sleep_flag;
-	/* -- proc interface -- */
-	snd_info_entry_t *proc_entry;
+	/* -- private_data */
+	void *private_data;
+	void (*private_free)(void *private_data);
 };
 
 struct snd_stru_pcm1_channel {

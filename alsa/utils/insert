@@ -237,6 +237,7 @@ case "$1" in
     ;;
   trident)
     basic
+    insert snd-mpu401-uart.o 
     insert snd-ac97-codec.o
     insert snd-trident_dx_nx.o
     insert snd-trid4dwave.o

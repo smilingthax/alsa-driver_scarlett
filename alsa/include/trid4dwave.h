@@ -91,6 +91,14 @@
 #define LEGACY_DMAR11               0x0b  // MOD 
 #define LEGACY_DMAR15               0x0f  // MMR 
 
+#define T4D_START_A		     0x80
+#define T4D_STOP_A		     0x84
+#define T4D_DLY_A		     0x88
+#define T4D_SIGN_CSO_A		     0x8c
+#define T4D_CSPF_A		     0x90
+#define T4D_CEBC_A		     0x94
+#define T4D_AINT_A		     0x98
+#define T4D_AINTEN_A		     0x9c
 #define T4D_LFO_GC_CIR               0xa0
 #define T4D_MUSICVOL_WAVEVOL         0xa8
 #define T4D_SBDELTA_DELTA_R          0xac
@@ -163,6 +171,15 @@ typedef struct tChannelControl
 
 typedef struct snd_stru_trident trident_t;
 
+typedef struct {
+	trident_t *trident;
+	int channel0;	/* hardware channel number */
+	int channel1;	/* hardware channel number */
+	snd_pcm_subchn_t *subchn;
+	snd_pcm1_subchn_t *subchn1;
+	int running;
+} snd_trident_pcm_t;
+
 struct snd_stru_trident {
 	snd_dma_t * dma1ptr;	/* DAC Channel */
 	snd_dma_t * dma2ptr;	/* ADC Channel */
@@ -170,9 +187,6 @@ struct snd_stru_trident {
 
 	int isNX;		/* NX chip present */
 
-        int enable_playback;
-        int enable_capture;
-        
         unsigned char  bDMAStart;
 
 	unsigned int port;
@@ -180,6 +194,12 @@ struct snd_stru_trident {
 
         LPCHANNELCONTROL ChRegs;
         int ChanDwordCount;
+        
+        unsigned int ChanMap[2];	/* allocation map for hardware channels */
+        
+        int ChanPCM;			/* max number of PCM channels */
+	int ChanPCMcnt;			/* actual number of PCM channels */
+	snd_trident_pcm_t * ChanDataPCM[64];
 
 	struct pci_dev *pci;
 	snd_card_t *card;
@@ -194,7 +214,8 @@ struct snd_stru_trident {
 trident_t *snd_trident_create(snd_card_t * card, struct pci_dev *pci,
 			      snd_dma_t * dma1ptr,
 			      snd_dma_t * dma2ptr,
-			      snd_irq_t * irqptr);
+			      snd_irq_t * irqptr,
+			      int pcm_channels);
 void snd_trident_free(trident_t * trident);
 void snd_trident_interrupt(trident_t * trident);
 
