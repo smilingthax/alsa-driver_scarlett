@@ -123,8 +123,10 @@
 #define SND_CARD_TYPE_ALLEGRO		0x00000040	/* ESS Allegro */
 #define SND_CARD_TYPE_MAESTRO3		0x00000041	/* ESS Maestro3 */
 #define SND_CARD_TYPE_AWACS		0x00000042	/* PMac AWACS */
+#define SND_CARD_TYPE_NM256AV		0x00000043	/* NM256AV */
+#define SND_CARD_TYPE_NM256ZX		0x00000044	/* NM256ZX */
 
-#define SND_CARD_TYPE_LAST		0x0000003d
+#define SND_CARD_TYPE_LAST		0x00000044
 
 typedef struct timeval snd_timestamp_t;
 
