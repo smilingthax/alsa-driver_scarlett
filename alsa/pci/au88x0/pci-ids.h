@@ -1,0 +1,18 @@
+#include <sound/driver.h>
+#include <linux/pci.h>
+
+#ifndef PCI_VENDOR_ID_AUREAL
+#define PCI_VENDOR_ID_AUREAL 0x12eb
+#endif
+#ifndef PCI_DEVICE_ID_AUREAL_VORTEX
+#define PCI_DEVICE_ID_AUREAL_VORTEX 0x0001
+#endif
+#ifndef PCI_DEVICE_ID_AUREAL_VORTEX2
+#define PCI_DEVICE_ID_AUREAL_VORTEX2 0x0002
+#endif
+#ifndef PCI_DEVICE_ID_AUREAL_ADVANTAGE
+#define PCI_DEVICE_ID_AUREAL_ADVANTAGE 0x0003
+#endif
+#ifndef PCI_DEVICE_ID_VIA_8365_1
+#define PCI_DEVICE_ID_VIA_8365_1 0x8305
+#endif
