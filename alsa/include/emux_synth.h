@@ -113,7 +113,7 @@ struct snd_emux {
 	int used;	/* use counter */
 	char *name;	/* name of the device (internal) */
 
-	snd_emux_memhdr_t memhdr;	/* memory chunk information */
+	snd_emux_memhdr_t *memhdr;	/* memory chunk information */
 
 #ifdef CONFIG_PROC_FS
 	snd_info_entry_t *proc;

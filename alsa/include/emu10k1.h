@@ -27,6 +27,7 @@
 #include "mixer.h"
 #include "rawmidi.h"
 #include "ac97_codec.h"
+#include "emux_mem.h"
 
 #ifndef PCI_VENDOR_ID_CREATIVE
 #define PCI_VENDOR_ID_CREATIVE		0x1102
@@ -606,6 +607,7 @@ struct snd_stru_emu10k1_pcm {
 	emu10k1_voice_t *voices[2];
 	emu10k1_voice_t *extra;
 	int running;
+	snd_emux_memblk_t *memblk;
 	unsigned int start_addr;
 	unsigned int capture_inte;	/* interrupt enable mask */
 	unsigned int capture_ba_reg;	/* buffer address register */
@@ -614,6 +616,10 @@ struct snd_stru_emu10k1_pcm {
 	unsigned int capture_cr_val;	/* control value */
 	unsigned int capture_bs_val;	/* buffer size value */
 };
+
+typedef struct snd_emu10k1_memblk_arg {
+	short first_page, last_page;
+} snd_emu10k1_memblk_arg_t;
 
 struct snd_stru_emu10k1 {
 	snd_dma_t * dma1ptr;	/* DAC1 */
@@ -629,9 +635,8 @@ struct snd_stru_emu10k1 {
 
 	void *silent_page;	/* silent page */
 	volatile unsigned int *ptb_pages; /* page table pages */
-	void *ptb_page_alloc;	/* PTB allocation entry */
-	void *reserved_page;	/* reserved page */
-	unsigned int reserved_page_addr;
+	snd_emux_memhdr_t *memhdr;	/* page allocation list */
+	snd_emux_memblk_t *reserved_page;	/* reserved page */
 
 	ac97_t *ac97;
 
@@ -705,10 +710,12 @@ unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
-int snd_emu10k1_ptb_alloc(emu10k1_t *emu, void *pages, unsigned long size, unsigned int *raddr);
-int snd_emu10k1_ptb_free(emu10k1_t *emu, void *obj, unsigned long *size);
-void *snd_emu10k1_synth_malloc(emu10k1_t *emu, unsigned long size, unsigned int *raddr);
-void snd_emu10k1_synth_free(emu10k1_t *emu, void *obj);
+snd_emux_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, void *pages, unsigned long size);
+int snd_emu10k1_free_pages(emu10k1_t *emu, snd_emux_memblk_t *blk);
+snd_emux_memblk_t *snd_emu10k1_synth_alloc(emu10k1_t *emu, unsigned int size);
+int snd_emu10k1_synth_free(emu10k1_t *emu, snd_emux_memblk_t *blk);
+int snd_emu10k1_synth_bzero(emu10k1_t *emu, snd_emux_memblk_t *blk, int offset, int size);
+int snd_emu10k1_synth_copy_from_user(emu10k1_t *emu, snd_emux_memblk_t *blk, int offset, const char *data, int size);
 
 /* voice allocation */
 int snd_emu10k1_voice_alloc(emu10k1_t *emu, emu10k1_voice_type_t type, int pair, emu10k1_voice_t **rvoice);
@@ -720,5 +727,16 @@ int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
 /* proc interface */
 int snd_emu10k1_proc_init(emu10k1_t * emu);
 int snd_emu10k1_proc_done(emu10k1_t * emu);
+
+/* Emu page size == 4096 */
+#if EMUPAGESIZE == PAGE_SIZE
+#define get_emupage(offset)	((offset) >> 12)
+#define emupage_offset(page)	((page) << 12)
+#define ptb_to_ptr(emu,pg)	(void*)phys_to_virt(((emu)->ptb_pages[pg] >> 1) & ~(EMUPAGESIZE - 1))
+#define set_ptb_phys(emu,page,ptr)	((emu)->ptb_pages[page] = (ptr << 1) | (page))
+#define set_ptb_virt(emu,page,ptr)	set_ptb_phys(emu, page, (unsigned int)virt_to_phys(ptr))
+#else
+#error page size must be >= 4096!!
+#endif
 
 #endif	/* __EMU10K1_H */

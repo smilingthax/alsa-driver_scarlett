@@ -60,6 +60,7 @@ typedef struct snd_emu8000 {
 
 	snd_emux_t *emu;
 
+	int mem_size;
 	unsigned short port1;	/* Port usually base+0 */
 	unsigned short port2;	/* Port usually at base+0x400 */
 	unsigned short port3;	/* Port usually at base+0x800 */
@@ -76,6 +77,7 @@ typedef struct snd_emu8000 {
 	int treble_level;
 
 	emu8000_mixer_t mixer; /* mixer elements */
+	snd_emux_memhdr_t *memhdr;
 
 } emu8000_t;
 
