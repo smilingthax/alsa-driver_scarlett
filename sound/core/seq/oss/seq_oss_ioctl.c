@@ -75,6 +75,7 @@ snd_seq_oss_ioctl(seq_oss_devinfo_t *dp, unsigned int cmd, unsigned long carg)
 {
 	int dev, val;
 	void __user *arg = (void __user *)carg;
+	int __user *p = arg;
 
 	switch (cmd) {
 	case SNDCTL_TMR_TIMEBASE:
@@ -110,7 +111,7 @@ snd_seq_oss_ioctl(seq_oss_devinfo_t *dp, unsigned int cmd, unsigned long carg)
 
 	case SNDCTL_SEQ_TESTMIDI:
 		debug_printk(("test midi\n"));
-		if (get_user(dev, (int *)arg))
+		if (get_user(dev, p))
 			return -EFAULT;
 		return snd_seq_oss_midi_open(dp, dev, dp->file_mode);
 
@@ -118,42 +119,42 @@ snd_seq_oss_ioctl(seq_oss_devinfo_t *dp, unsigned int cmd, unsigned long carg)
 		debug_printk(("get in count\n"));
 		if (dp->readq == NULL || ! is_read_mode(dp->file_mode))
 			return 0;
-		return put_user(dp->readq->qlen, (int *)arg) ? -EFAULT : 0;
+		return put_user(dp->readq->qlen, p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_GETOUTCOUNT:
 		debug_printk(("get out count\n"));
 		if (! is_write_mode(dp->file_mode) || dp->writeq == NULL)
 			return 0;
-		return put_user(snd_seq_oss_writeq_get_free_size(dp->writeq), (int *)arg) ? -EFAULT : 0;
+		return put_user(snd_seq_oss_writeq_get_free_size(dp->writeq), p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_GETTIME:
 		debug_printk(("get time\n"));
-		return put_user(snd_seq_oss_timer_cur_tick(dp->timer), (int *)arg) ? -EFAULT : 0;
+		return put_user(snd_seq_oss_timer_cur_tick(dp->timer), p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_RESETSAMPLES:
 		debug_printk(("reset samples\n"));
-		if (get_user(dev, (int *)arg))
+		if (get_user(dev, p))
 			return -EFAULT;
 		return snd_seq_oss_synth_ioctl(dp, dev, cmd, carg);
 
 	case SNDCTL_SEQ_NRSYNTHS:
 		debug_printk(("nr synths\n"));
-		return put_user(dp->max_synthdev, (int *)arg) ? -EFAULT : 0;
+		return put_user(dp->max_synthdev, p) ? -EFAULT : 0;
 
 	case SNDCTL_SEQ_NRMIDIS:
 		debug_printk(("nr midis\n"));
-		return put_user(dp->max_mididev, (int *)arg) ? -EFAULT : 0;
+		return put_user(dp->max_mididev, p) ? -EFAULT : 0;
 
 	case SNDCTL_SYNTH_MEMAVL:
 		debug_printk(("mem avail\n"));
-		if (get_user(dev, (int *)arg))
+		if (get_user(dev, p))
 			return -EFAULT;
 		val = snd_seq_oss_synth_ioctl(dp, dev, cmd, carg);
-		return put_user(val, (int *)arg) ? -EFAULT : 0;
+		return put_user(val, p) ? -EFAULT : 0;
 
 	case SNDCTL_FM_4OP_ENABLE:
 		debug_printk(("4op\n"));
-		if (get_user(dev, (int *)arg))
+		if (get_user(dev, p))
 			return -EFAULT;
 		snd_seq_oss_synth_ioctl(dp, dev, cmd, carg);
 		return 0;
@@ -175,7 +176,7 @@ snd_seq_oss_ioctl(seq_oss_devinfo_t *dp, unsigned int cmd, unsigned long carg)
 		debug_printk(("threshold\n"));
 		if (! is_write_mode(dp->file_mode))
 			return 0;
-		if (get_user(val, (int *)arg))
+		if (get_user(val, p))
 			return -EFAULT;
 		if (val < 1)
 			val = 1;
@@ -188,14 +189,14 @@ snd_seq_oss_ioctl(seq_oss_devinfo_t *dp, unsigned int cmd, unsigned long carg)
 		debug_printk(("pretime\n"));
 		if (dp->readq == NULL || !is_read_mode(dp->file_mode))
 			return 0;
-		if (get_user(val, (int *)arg))
+		if (get_user(val, p))
 			return -EFAULT;
 		if (val <= 0)
 			val = -1;
 		else
 			val = (HZ * val) / 10;
 		dp->readq->pre_event_timeout = val;
-		return put_user(val, (int *)arg) ? -EFAULT : 0;
+		return put_user(val, p) ? -EFAULT : 0;
 
 	default:
 		debug_printk(("others\n"));

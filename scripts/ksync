@@ -83,6 +83,7 @@ COMMENT_MAP = [
 	 	('/include/asound_fm.h' ,'Raw OPL FM'),
 		('/drivers/opl3'	,'OPL3'),
 		('/drivers/opl4'	,'OPL4'),
+		('/include/vx_core.h'	,'Digigram VX core'),
 		('/drivers/vx'		,'Digigram VX core'),
 		('/drivers'		,'Generic drivers'),
 		('/arm/Kconfig'		,'ARM'),
@@ -1024,6 +1025,7 @@ def cvsps_merge1(f,t=0):
 	diffs = fp.readlines()
 	fp.close()
 	files = []
+	signed = []
 	for line in diffs:
 		if line[0:3] == '+++':
 			xx1 = string.split(line, ' ')
@@ -1060,24 +1062,24 @@ def cvsps_merge1(f,t=0):
 		elif line[:8] == 'Members:':
 			ok = 2
 		elif ok == 1:
-			log.append(line)
+			if line[:14] == "Signed-off-by:":
+				signed.append(line)
+			else:
+				log.append(line)
 		elif ok == 2:
 			if line != '\n':
 				members.append(line[1:])
 	while log[len(log)-1] == '\n':
 		del log[len(log)-1]
 	lines = 'ALSA CVS update\n'
-	if author != '':
-		nlines = 'ALSA CVS update' + ' - ' + author + '\n'
-	else:
-		nlines = lines
+	nlines = lines
 	if date != '':
 		lines = lines + 'D:' + date + '\n'
 	changes = cvsps_merge_members(members)
 	for i in changes:
 		lines = lines + 'C:' + i + '\n'
-	if author != '':
-		lines = lines + 'A:' + author + '\n'
+	#if author != '':
+	#	lines = lines + 'A:' + author + '\n'
 	for i in changes:
 		nlines = nlines + i + '\n'
 	for i in members:
@@ -1085,6 +1087,18 @@ def cvsps_merge1(f,t=0):
 	for i in log:
 		lines = lines + 'L:' + i
 		nlines = nlines + i
+	signed_flag = 0
+	for i in signed:
+		if not signed_flag:
+			nlines = nlines + '\n'
+			signed_flag = 1
+		lines = lines + i
+		nlines = nlines + i
+	if not signed_flag:
+		nlines = nlines + '\n'
+		signed_flag = 1
+	lines = lines + 'Signed-off-by: %s\n' % author
+	nlines = nlines + 'Signed-off-by: %s\n' % author
 	if t:
 		print lines
 		return
