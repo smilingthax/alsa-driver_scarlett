@@ -33,14 +33,14 @@ obj-$(CONFIG_SND_HWDEP) += snd-hwdep.o
 subdir-$(CONFIG_SND_MIXER_OSS) += oss
 subdir-$(CONFIG_SND_PCM_OSS) += oss
 ifeq ($(filter $(subdir-y),oss),oss)
+  subdir-m += oss
   obj-y += oss/oss.o
 endif
 
 subdir-$(CONFIG_SND_SEQUENCER) += seq
 ifeq ($(CONFIG_SND_SEQUENCER),y)
-  ifeq ($(CONFIG_SND),y)
-     obj-y += seq/sq.o
-  endif
+  subdir-m += seq
+  obj-y += seq/sq.o
 endif
 
 obj-$(CONFIG_SND_SEQUENCER) += snd-timer.o
