@@ -1711,7 +1711,7 @@ int snd_pcm_hw_param_near(snd_pcm_t *pcm, snd_pcm_hw_params_t *params,
  * snd_pcm_hw_param_choose
  *
  * Choose one configuration from configuration space defined by PARAMS
- * The configuration choosen is that obtained fixing in this order:
+ * The configuration chosen is that obtained fixing in this order:
  * first access, first format, first subformat, min channels,
  * min rate, min period time, max buffer size, min tick time
  */
