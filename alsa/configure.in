@@ -706,7 +706,17 @@ case "$processor" in
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   mips*)
-    c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
+    if $CC -mtune=mips32 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+      c_opts="-mtune=mips32"
+    else
+      c_opts="-mcpu=r4600"
+    fi
+    if $CC -mips32 -mabi=32 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+      c_opts="$c_opts -mips32 -mabi=32"
+    else
+      c_opts="$_opts -mips2"
+    fi
+    c_opts="$c_opts -G 0 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
