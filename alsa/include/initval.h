@@ -35,49 +35,49 @@ static const char __module_generic_string_##name [] \
 #define MODULE_DEVICES(val) MODULE_GENERIC_STRING(info_devices, val)
 #define MODULE_PARM_SYNTAX(id, val) MODULE_GENERIC_STRING(info_parm_##id, val)
 
-#define SND_AUTO_PORT		0xffff
-#define SND_AUTO_IRQ		0xffff
-#define SND_AUTO_DMA		0xffff
-#define SND_AUTO_DMA_SIZE	(0x7fffffff)
+#define SNDRV_AUTO_PORT		0xffff
+#define SNDRV_AUTO_IRQ		0xffff
+#define SNDRV_AUTO_DMA		0xffff
+#define SNDRV_AUTO_DMA_SIZE	(0x7fffffff)
 
-#define SND_DEFAULT_IDX1	(-1)
-#define SND_DEFAULT_STR1	NULL
-#define SND_DEFAULT_ENABLE1	1
-#define SND_DEFAULT_PORT1	SND_AUTO_PORT
-#define SND_DEFAULT_IRQ1	SND_AUTO_IRQ
-#define SND_DEFAULT_DMA1	SND_AUTO_DMA
-#define SND_DEFAULT_DMA_SIZE1	SND_AUTO_DMA_SIZE
-#define SND_DEFAULT_PTR1	SND_DEFAULT_STR1
+#define SNDRV_DEFAULT_IDX1	(-1)
+#define SNDRV_DEFAULT_STR1	NULL
+#define SNDRV_DEFAULT_ENABLE1	1
+#define SNDRV_DEFAULT_PORT1	SNDRV_AUTO_PORT
+#define SNDRV_DEFAULT_IRQ1	SNDRV_AUTO_IRQ
+#define SNDRV_DEFAULT_DMA1	SNDRV_AUTO_DMA
+#define SNDRV_DEFAULT_DMA_SIZE1	SNDRV_AUTO_DMA_SIZE
+#define SNDRV_DEFAULT_PTR1	SNDRV_DEFAULT_STR1
 
-#define SND_DEFAULT_IDX		{ [0 ... (SND_CARDS-1)] = -1 }
-#define SND_DEFAULT_STR		{ [0 ... (SND_CARDS-1)] = NULL }
-#define SND_DEFAULT_ENABLE	{ 1, [1 ... (SND_CARDS-1)] = 0 }
-#define SND_DEFAULT_PORT	{ SND_AUTO_PORT, [1 ... (SND_CARDS-1)] = -1 }
-#define SND_DEFAULT_IRQ		{ [0 ... (SND_CARDS-1)] = SND_AUTO_IRQ }
-#define SND_DEFAULT_DMA		{ [0 ... (SND_CARDS-1)] = SND_AUTO_DMA }
-#define SND_DEFAULT_DMA_SIZE	{ [0 ... (SND_CARDS-1)] = SND_AUTO_DMA_SIZE }
-#define SND_DEFAULT_PTR		SND_DEFAULT_STR
+#define SNDRV_DEFAULT_IDX		{ [0 ... (SNDRV_CARDS-1)] = -1 }
+#define SNDRV_DEFAULT_STR		{ [0 ... (SNDRV_CARDS-1)] = NULL }
+#define SNDRV_DEFAULT_ENABLE	{ 1, [1 ... (SNDRV_CARDS-1)] = 0 }
+#define SNDRV_DEFAULT_PORT	{ SNDRV_AUTO_PORT, [1 ... (SNDRV_CARDS-1)] = -1 }
+#define SNDRV_DEFAULT_IRQ		{ [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_IRQ }
+#define SNDRV_DEFAULT_DMA		{ [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_DMA }
+#define SNDRV_DEFAULT_DMA_SIZE	{ [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_DMA_SIZE }
+#define SNDRV_DEFAULT_PTR		SNDRV_DEFAULT_STR
 
-#define SND_BOOLEAN_TRUE_DESC	"allows:{{0,Disabled},{1,Enabled}},default:1,dialog:check"
-#define SND_BOOLEAN_FALSE_DESC	"allows:{{0,Disabled},{1,Enabled}},default:0,dialog:check"
+#define SNDRV_BOOLEAN_TRUE_DESC	"allows:{{0,Disabled},{1,Enabled}},default:1,dialog:check"
+#define SNDRV_BOOLEAN_FALSE_DESC	"allows:{{0,Disabled},{1,Enabled}},default:0,dialog:check"
 
-#define SND_ENABLED		"enable:(snd_enable)"
+#define SNDRV_ENABLED		"enable:(snd_enable)"
 
-#define SND_INDEX_DESC		SND_ENABLED ",allows:{{0,7}},unique,skill:required,dialog:list"
-#define SND_ID_DESC		SND_ENABLED ",unique"
-#define SND_ENABLE_DESC		SND_BOOLEAN_FALSE_DESC
-#define SND_ISAPNP_DESC		SND_ENABLED "," SND_BOOLEAN_TRUE_DESC
-#define SND_DMA8_DESC		SND_ENABLED ",allows:{{0,1},{3}},dialog:list"
-#define SND_DMA16_DESC		SND_ENABLED ",allows:{{5,7}},dialog:list"
-#define SND_DMA_DESC		SND_ENABLED ",allows:{{0,1},{3},{5,7}},dialog:list"
-#define SND_IRQ_DESC		SND_ENABLED ",allows:{{5},{7},{9},{10,12},{14,15}},dialog:list"
-#define SND_DMA_SIZE_DESC	SND_ENABLED ",allows:{{4,128}},default:64,skill:advanced"
-#define SND_DMA8_SIZE_DESC	SND_ENABLED ",allows:{{4, 64}},default:64,skill:advanced"
-#define SND_DMA16_SIZE_DESC	SND_ENABLED ",allows:{{4,128}},default:64,skill:advanced"
-#define SND_PORT12_DESC		SND_ENABLED ",allows:{{0,0x3fff}},base:16"
-#define SND_PORT_DESC		SND_ENABLED ",allows:{{0,0xffff}},base:16"
+#define SNDRV_INDEX_DESC		SNDRV_ENABLED ",allows:{{0,7}},unique,skill:required,dialog:list"
+#define SNDRV_ID_DESC		SNDRV_ENABLED ",unique"
+#define SNDRV_ENABLE_DESC		SNDRV_BOOLEAN_FALSE_DESC
+#define SNDRV_ISAPNP_DESC		SNDRV_ENABLED "," SNDRV_BOOLEAN_TRUE_DESC
+#define SNDRV_DMA8_DESC		SNDRV_ENABLED ",allows:{{0,1},{3}},dialog:list"
+#define SNDRV_DMA16_DESC		SNDRV_ENABLED ",allows:{{5,7}},dialog:list"
+#define SNDRV_DMA_DESC		SNDRV_ENABLED ",allows:{{0,1},{3},{5,7}},dialog:list"
+#define SNDRV_IRQ_DESC		SNDRV_ENABLED ",allows:{{5},{7},{9},{10,12},{14,15}},dialog:list"
+#define SNDRV_DMA_SIZE_DESC	SNDRV_ENABLED ",allows:{{4,128}},default:64,skill:advanced"
+#define SNDRV_DMA8_SIZE_DESC	SNDRV_ENABLED ",allows:{{4, 64}},default:64,skill:advanced"
+#define SNDRV_DMA16_SIZE_DESC	SNDRV_ENABLED ",allows:{{4,128}},default:64,skill:advanced"
+#define SNDRV_PORT12_DESC		SNDRV_ENABLED ",allows:{{0,0x3fff}},base:16"
+#define SNDRV_PORT_DESC		SNDRV_ENABLED ",allows:{{0,0xffff}},base:16"
 
-#ifdef SND_LEGACY_AUTO_PROBE
+#ifdef SNDRV_LEGACY_AUTO_PROBE
 static int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsigned long port))
 {
 	int result = 0;	/* number of detected cards */
@@ -91,7 +91,7 @@ static int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsigned lon
 }
 #endif
 
-#ifdef SND_LEGACY_FIND_FREE_IOPORT
+#ifdef SNDRV_LEGACY_FIND_FREE_IOPORT
 static long snd_legacy_find_free_ioport(long *port_table, long size)
 {
 	while (*port_table != -1) {
@@ -103,7 +103,7 @@ static long snd_legacy_find_free_ioport(long *port_table, long size)
 }
 #endif
 
-#ifdef SND_LEGACY_FIND_FREE_IRQ
+#ifdef SNDRV_LEGACY_FIND_FREE_IRQ
 static void snd_legacy_empty_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
 {
 }
@@ -122,7 +122,7 @@ static int snd_legacy_find_free_irq(int *irq_table)
 }
 #endif
 
-#ifdef SND_LEGACY_FIND_FREE_DMA
+#ifdef SNDRV_LEGACY_FIND_FREE_DMA
 static int snd_legacy_find_free_dma(int *dma_table)
 {
 	while (*dma_table != -1) {
@@ -136,7 +136,7 @@ static int snd_legacy_find_free_dma(int *dma_table)
 }
 #endif
 
-#if defined(SND_GET_ID) && !defined(MODULE)
+#if defined(SNDRV_GET_ID) && !defined(MODULE)
 #include <linux/ctype.h>
 static int __init get_id(char **str, char **dst)
 {

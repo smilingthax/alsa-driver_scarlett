@@ -30,12 +30,12 @@
  *  Raw MIDI interface
  */
 
-#define SND_RAWMIDI_DEVICES	4
+#define SNDRV_RAWMIDI_DEVICES	4
 
-#define SND_RAWMIDI_LFLG_OUTPUT         (1<<0)
-#define SND_RAWMIDI_LFLG_INPUT          (1<<1)
-#define SND_RAWMIDI_LFLG_OPEN           (3<<0)
-#define SND_RAWMIDI_LFLG_APPEND         (1<<2)
+#define SNDRV_RAWMIDI_LFLG_OUTPUT         (1<<0)
+#define SNDRV_RAWMIDI_LFLG_INPUT          (1<<1)
+#define SNDRV_RAWMIDI_LFLG_OPEN           (3<<0)
+#define SNDRV_RAWMIDI_LFLG_APPEND         (1<<2)
 
 typedef struct _snd_rawmidi_runtime snd_rawmidi_runtime_t;
 typedef struct _snd_rawmidi_substream snd_rawmidi_substream_t;
@@ -107,7 +107,7 @@ struct _snd_rawmidi {
 	snd_card_t *card;
 
 	unsigned int device;		/* device number */
-	unsigned int info_flags;	/* SND_RAWMIDI_INFO_XXXX */
+	unsigned int info_flags;	/* SNDRV_RAWMIDI_INFO_XXXX */
 	char id[64];
 	char name[80];
 

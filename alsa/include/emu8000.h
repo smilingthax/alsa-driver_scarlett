@@ -91,7 +91,7 @@ typedef struct snd_emu8000 {
 } emu8000_t;
 
 /* sequencer device id */
-#define SND_SEQ_DEV_ID_EMU8000	"synth-emu8000"
+#define SNDRV_SEQ_DEV_ID_EMU8000	"synth-emu8000"
 
 
 /* exported functions */

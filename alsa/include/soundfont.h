@@ -59,7 +59,7 @@ typedef struct snd_soundfont {
 	/*struct snd_soundfont *prev;*/	/* Link to previous */
 	short  id;		/* file id */
 	short  type;		/* font type */
-	unsigned char name[SND_SFNT_PATCH_NAME_LEN];	/* identifier */
+	unsigned char name[SNDRV_SFNT_PATCH_NAME_LEN];	/* identifier */
 	snd_sf_zone_t *zones; /* Font information */
 	snd_sf_sample_t *samples; /* The sample headers */
 } snd_soundfont_t;

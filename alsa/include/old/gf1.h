@@ -4,35 +4,35 @@
 
 /* memory things */
 
-#define SND_MEM_BANK_SHIFT	18
-#define SND_MEM_BANK_SIZE	( 1L << SND_MEM_BANK_SHIFT )
-#define SND_MEMORY_BANKS	( ( 1024L * 1024L ) / SND_MEM_BANK_SIZE )
-#define SND_PNP_MEMORY_BANKS	SND_MEMORY_BANKS
-#define SND_VOICES		32
-#define SND_CHANNELS		16
-#define SND_DRUM_CHANNEL	9
+#define SNDRV_MEM_BANK_SHIFT	18
+#define SNDRV_MEM_BANK_SIZE	( 1L << SNDRV_MEM_BANK_SHIFT )
+#define SNDRV_MEMORY_BANKS	( ( 1024L * 1024L ) / SNDRV_MEM_BANK_SIZE )
+#define SNDRV_PNP_MEMORY_BANKS	SNDRV_MEMORY_BANKS
+#define SNDRV_VOICES		32
+#define SNDRV_CHANNELS		16
+#define SNDRV_DRUM_CHANNEL	9
 
 /* structures */
 
-struct SND_STRU_BANK_INFO {
+struct SNDRV_STRU_BANK_INFO {
   unsigned int address;
   unsigned int size;
 };
 
 #if 0	/* see to gus.h */
-#define SND_MEMORY_BLOCK_LOCKED	0x01
-#define SND_MEMORY_BLOCK_16BIT	0x02
+#define SNDRV_MEMORY_BLOCK_LOCKED	0x01
+#define SNDRV_MEMORY_BLOCK_16BIT	0x02
 #endif
 
-#define SND_MEMORY_OWNER_DRIVER	0x00
-#define SND_MEMORY_OWNER_WAVE	0x01	/* owner is wave */
-#define SND_MEMORY_OWNER_USER	0x02
+#define SNDRV_MEMORY_OWNER_DRIVER	0x00
+#define SNDRV_MEMORY_OWNER_WAVE	0x01	/* owner is wave */
+#define SNDRV_MEMORY_OWNER_USER	0x02
 
-#define SND_MEMORY_LOCK_DRIVER	0x00
-#define SND_MEMORY_LOCK_DAEMON	0x01
-#define SND_MEMORY_LOCK_USER	0x02
+#define SNDRV_MEMORY_LOCK_DRIVER	0x00
+#define SNDRV_MEMORY_LOCK_DAEMON	0x01
+#define SNDRV_MEMORY_LOCK_USER	0x02
 
-struct SND_STRU_MEM_BLOCK {
+struct SNDRV_STRU_MEM_BLOCK {
   unsigned short flags: 4,
                  owner: 4,
                  lock_group: 8;
@@ -41,22 +41,22 @@ struct SND_STRU_MEM_BLOCK {
   unsigned int ptr;
   unsigned int size;
   union {
-    struct SND_STRU_WAVE *wave;
+    struct SNDRV_STRU_WAVE *wave;
     char *name;
   } owner_data;
-  struct SND_STRU_MEM_BLOCK *prev;
-  struct SND_STRU_MEM_BLOCK *next;
+  struct SNDRV_STRU_MEM_BLOCK *prev;
+  struct SNDRV_STRU_MEM_BLOCK *next;
 };
 
-typedef struct SND_STRU_MEM_BLOCK snd_mem_block_t;
+typedef struct SNDRV_STRU_MEM_BLOCK snd_mem_block_t;
 
 #define MTST_NONE		0x0000
 #define MTST_ONE		0x0001
 
-#define SND_ALLOC_MODE_NORMAL	0x0000
-#define SND_ALLOC_MODE_TEST	0x0001	/* don't use samples pointer */
+#define SNDRV_ALLOC_MODE_NORMAL	0x0000
+#define SNDRV_ALLOC_MODE_TEST	0x0001	/* don't use samples pointer */
 
-struct SND_STRU_MEM_ALLOC {
+struct SNDRV_STRU_MEM_ALLOC {
   unsigned short mode;
 
   snd_mem_block_t *first;
@@ -72,13 +72,13 @@ struct SND_STRU_MEM_ALLOC {
   MUTEX_DEFINE( instruments )
 };
 
-typedef struct SND_STRU_MEM_ALLOC snd_mem_t;
+typedef struct SNDRV_STRU_MEM_ALLOC snd_mem_t;
 
-typedef struct SND_STRU_VOICE snd_voice_t;
-typedef struct SND_STRU_NOTE snd_note_t;
-typedef struct SND_STRU_CHANNEL snd_channel_t;
+typedef struct SNDRV_STRU_VOICE snd_voice_t;
+typedef struct SNDRV_STRU_NOTE snd_note_t;
+typedef struct SNDRV_STRU_CHANNEL snd_channel_t;
 
-struct SND_STRU_INSTRUMENT_VOICE_COMMANDS {
+struct SNDRV_STRU_INSTRUMENT_VOICE_COMMANDS {
   /* voice specific handlers */
   void (*voice_interrupt_wave)( snd_card_t *card, snd_voice_t *voice );
   void (*voice_interrupt_volume)( snd_card_t *card, snd_voice_t *voice );
@@ -98,7 +98,7 @@ struct SND_STRU_INSTRUMENT_VOICE_COMMANDS {
   void (*voice_private1)( snd_card_t *card, snd_voice_t *voice, unsigned char *data );
 };
 
-struct SND_STRU_INSTRUMENT_NOTE_COMMANDS {
+struct SNDRV_STRU_INSTRUMENT_NOTE_COMMANDS {
   /* note specific commands */
   void (*note_stop)( snd_card_t *card, snd_voice_t *voice, int wait );
   void (*note_wait)( snd_card_t *card, snd_voice_t *voice );
@@ -109,7 +109,7 @@ struct SND_STRU_INSTRUMENT_NOTE_COMMANDS {
   void (*note_tremolo)( snd_card_t *card, snd_voice_t *voice );
 };
 
-struct SND_STRU_INSTRUMENT_CHANNEL_COMMANDS {
+struct SNDRV_STRU_INSTRUMENT_CHANNEL_COMMANDS {
   /* channel specific commands */
   void (*chn_trigger_down)( snd_card_t *card, snd_channel_t *channel, snd_instrument_t *instrument, unsigned char note, unsigned char velocity, unsigned char priority );
   void (*chn_trigger_up)( snd_card_t *card, snd_note_t *note );
@@ -164,8 +164,8 @@ enum snd_iw_env_index {
   IW_VOLUME = 5,
 };
 
-struct SND_STRU_VOICE {
-  struct SND_STRU_INSTRUMENT_VOICE_COMMANDS *commands;
+struct SNDRV_STRU_VOICE {
+  struct SNDRV_STRU_INSTRUMENT_VOICE_COMMANDS *commands;
   unsigned short number;	/* number of this voice */
   unsigned int flags;		/* see to VFLG_XXXX constants */
   unsigned int age;		/* start time in ticks */
@@ -241,8 +241,8 @@ struct SND_STRU_VOICE {
       enum snd_iw_env_index penv_state;
       short venv_index;
       short penv_index;
-      struct SND_STRU_IW_ENV_RECORD *ver;
-      struct SND_STRU_IW_ENV_RECORD *per;
+      struct SNDRV_STRU_IW_ENV_RECORD *ver;
+      struct SNDRV_STRU_IW_ENV_RECORD *per;
       unsigned char venv_next, venv_rate;
       int penv_pitch;
       int penv_increment;
@@ -266,8 +266,8 @@ struct SND_STRU_VOICE {
 #define NFLG_RELEASING		0x00000002
 #define NFLG_SUSTAIN		0x00000004
 
-struct SND_STRU_NOTE {
-  struct SND_STRU_INSTRUMENT_NOTE_COMMANDS *commands;
+struct SNDRV_STRU_NOTE {
+  struct SNDRV_STRU_INSTRUMENT_NOTE_COMMANDS *commands;
   unsigned short number;
   unsigned int flags;
   snd_voice_t *voices;		/* first voice */
@@ -281,8 +281,8 @@ struct SND_STRU_NOTE {
 #define CFLG_LEGATO		0x00000001
 #define CFLG_SUSTAIN		0x00000002
 
-struct SND_STRU_CHANNEL {
-  struct SND_STRU_INSTRUMENT_CHANNEL_COMMANDS *commands;
+struct SNDRV_STRU_CHANNEL {
+  struct SNDRV_STRU_INSTRUMENT_CHANNEL_COMMANDS *commands;
   unsigned short number;	/* number of this channel */
   unsigned int flags;		/* see to CFLG_XXXX */
   snd_note_t *notes;		/* pointer to first note */
@@ -302,7 +302,7 @@ struct SND_STRU_CHANNEL {
   snd_channel_t *next;
 };
 
-struct SND_STRU_GF1_QUEUE {
+struct SNDRV_STRU_GF1_QUEUE {
   unsigned char *	ptr;
   unsigned int		size;
   volatile unsigned int	used;
@@ -312,7 +312,7 @@ struct SND_STRU_GF1_QUEUE {
   unsigned int		item_size;
 };
 
-struct SND_STRU_IW_LFO_PROGRAM {
+struct SNDRV_STRU_IW_LFO_PROGRAM {
   unsigned short freq_and_control;
   unsigned char depth_final;
   unsigned char depth_inc;
@@ -353,7 +353,7 @@ struct SND_STRU_IW_LFO_PROGRAM {
 #define GF1_HANDLER_PCM_DMA_READ	0x00800000
 #define GF1_HANDLER_ALL			(0xffff0000&~GF1_HANDLER_RANGE)
 
-struct SND_STRU_GF1 {
+struct SNDRV_STRU_GF1 {
 
   unsigned int enh_mode: 1,		/* enhanced mode (GFA1) */
                pcm_memory: 1,		/* reserve memory for PCM */ 
@@ -388,10 +388,10 @@ struct SND_STRU_GF1 {
   unsigned short mode;		/* see to GF1_MODE_XXXX */
   snd_mem_t mem_alloc;
 
-  struct SND_STRU_BANK_INFO banks_8 [ SND_MEMORY_BANKS ];
-  struct SND_STRU_BANK_INFO banks_16[ SND_MEMORY_BANKS ];
+  struct SNDRV_STRU_BANK_INFO banks_8 [ SNDRV_MEMORY_BANKS ];
+  struct SNDRV_STRU_BANK_INFO banks_16[ SNDRV_MEMORY_BANKS ];
 
-  struct SND_STRU_EFFECT *effects;
+  struct SNDRV_STRU_EFFECT *effects;
   unsigned char *lfos;
 
   /* interrupt handlers */
@@ -447,8 +447,8 @@ struct SND_STRU_GF1 {
   snd_note_t *syn_notes;
   snd_channel_t *syn_channels;
   
-  struct SND_STRU_GF1_QUEUE wqueue;
-  struct SND_STRU_GF1_QUEUE rqueue;
+  struct SNDRV_STRU_GF1_QUEUE wqueue;
+  struct SNDRV_STRU_GF1_QUEUE rqueue;
 
   unsigned int effect_timer;
 
@@ -474,7 +474,7 @@ struct SND_STRU_GF1 {
   unsigned short timer_old_count1;
   unsigned short timer_old_count2;
   snd_card_t *timer_master_card;
-  snd_card_t *timer_slave_cards[ SND_CARDS ];
+  snd_card_t *timer_slave_cards[ SNDRV_CARDS ];
   unsigned int timer_wait_ticks;
   unsigned int timer_base;
   unsigned int timer_tempo;
@@ -505,8 +505,8 @@ struct SND_STRU_GF1 {
 
   unsigned short pcm_pflags;			/* playback flags */
   unsigned short pcm_rflags;			/* record flags */
-  unsigned char pcm_volume[ SND_VOICES ];	/* volume level - 0-128 */
-  unsigned char pcm_pan[ SND_VOICES ];		/* pan - 0-128 */
+  unsigned char pcm_volume[ SNDRV_VOICES ];	/* volume level - 0-128 */
+  unsigned char pcm_pan[ SNDRV_VOICES ];		/* pan - 0-128 */
   unsigned short pcm_dma_voice;
   unsigned short pcm_head;			/* playback block head */
   unsigned short pcm_tail;			/* playback block tail */
@@ -643,8 +643,8 @@ struct SND_STRU_GF1 {
 
 /* LFO */
 
-#define SND_LFO_TREMOLO		0
-#define SND_LFO_VIBRATO		1
+#define SNDRV_LFO_TREMOLO		0
+#define SNDRV_LFO_VIBRATO		1
 
 /* misc */
 
@@ -738,9 +738,9 @@ extern void snd_reselect_active_voices( snd_card_t *card );
 
 extern void snd_engine_instrument_register(
 		unsigned short mode,
-		struct SND_STRU_INSTRUMENT_VOICE_COMMANDS *voice_cmds,
-		struct SND_STRU_INSTRUMENT_NOTE_COMMANDS *note_cmds,
-		struct SND_STRU_INSTRUMENT_CHANNEL_COMMANDS *channel_cmds );
+		struct SNDRV_STRU_INSTRUMENT_VOICE_COMMANDS *voice_cmds,
+		struct SNDRV_STRU_INSTRUMENT_NOTE_COMMANDS *note_cmds,
+		struct SNDRV_STRU_INSTRUMENT_CHANNEL_COMMANDS *channel_cmds );
 extern int snd_engine_instrument_register_ask( unsigned short mode );
 
 #ifdef ULTRACFG_DEBUG

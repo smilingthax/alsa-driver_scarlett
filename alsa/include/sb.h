@@ -69,7 +69,7 @@ struct _snd_sb {
 	struct pci_dev *pci;		/* ALS4000 */
 
 	unsigned int open;		/* see to SB_OPEN_XXXX for sb8 */
-					/* also SND_SB_CSP_MODE_XXX for sb16_csp */
+					/* also SNDRV_SB_CSP_MODE_XXX for sb16_csp */
 	unsigned int mode;		/* current mode of stream */
 	unsigned int force_mode16;	/* force 16-bit mode of streams */
 	unsigned int locked_rate;	/* sb16 duplex */

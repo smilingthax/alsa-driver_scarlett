@@ -240,10 +240,10 @@ typedef struct snd_opl3 opl3_t;
  */
 typedef struct snd_opl3_voice {
 	int  state;		/* status */
-#define SND_OPL3_ST_OFF		0	/* Not playing */
-#define SND_OPL3_ST_ON_2OP	1	/* 2op voice is allocated */
-#define SND_OPL3_ST_ON_4OP	2	/* 4op voice is allocated */
-#define SND_OPL3_ST_NOT_AVAIL	-1	/* voice is not available */
+#define SNDRV_OPL3_ST_OFF		0	/* Not playing */
+#define SNDRV_OPL3_ST_ON_2OP	1	/* 2op voice is allocated */
+#define SNDRV_OPL3_ST_ON_4OP	2	/* 4op voice is allocated */
+#define SNDRV_OPL3_ST_NOT_AVAIL	-1	/* voice is not available */
 
 	unsigned int time;	/* An allocation time */
 	unsigned char note;	/* Note currently assigned to this voice */
@@ -273,12 +273,12 @@ struct snd_opl3 {
 	spinlock_t reg_lock;
 	snd_card_t *card;		/* The card that this belongs to */
 	int used;			/* usage flag - exclusive */
-	unsigned char fm_mode;		/* OPL mode, see SND_DM_FM_MODE_XXX */
+	unsigned char fm_mode;		/* OPL mode, see SNDRV_DM_FM_MODE_XXX */
 	unsigned char rhythm;		/* percussion mode flag */
 	unsigned char max_voices;	/* max number of voices */
 #ifdef CONFIG_SND_SEQUENCER
-#define SND_OPL3_MODE_SYNTH 0		/* OSS - voices allocated by application */
-#define SND_OPL3_MODE_SEQ 1		/* ALSA - driver handles voice allocation */
+#define SNDRV_OPL3_MODE_SYNTH 0		/* OSS - voices allocated by application */
+#define SNDRV_OPL3_MODE_SEQ 1		/* ALSA - driver handles voice allocation */
 	int synth_mode;			/* synth mode */
 	int seq_client;
 

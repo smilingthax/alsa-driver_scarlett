@@ -31,7 +31,7 @@
 /* patch interface header: 16 bytes */
 typedef struct soundfont_patch_info_t {
 	unsigned short key;		/* use the key below */
-#define SND_OSS_SOUNDFONT_PATCH		_PATCHKEY(0x07)
+#define SNDRV_OSS_SOUNDFONT_PATCH		_PATCHKEY(0x07)
 
 	short device_no;		/* synthesizer number */
 	unsigned short sf_id;		/* file id (should be zero) */
@@ -39,16 +39,16 @@ typedef struct soundfont_patch_info_t {
 	int len;			/* data length (without this header) */
 
 	short type;			/* patch operation type */
-#define SND_SFNT_LOAD_INFO		0	/* awe_voice_rec */
-#define SND_SFNT_LOAD_DATA		1	/* awe_sample_info */
-#define SND_SFNT_OPEN_PATCH	2	/* awe_open_parm */
-#define SND_SFNT_CLOSE_PATCH	3	/* none */
+#define SNDRV_SFNT_LOAD_INFO		0	/* awe_voice_rec */
+#define SNDRV_SFNT_LOAD_DATA		1	/* awe_sample_info */
+#define SNDRV_SFNT_OPEN_PATCH	2	/* awe_open_parm */
+#define SNDRV_SFNT_CLOSE_PATCH	3	/* none */
 	/* 4 is obsolete */
-#define SND_SFNT_REPLACE_DATA	5	/* awe_sample_info (optarg=#channels)*/
-#define SND_SFNT_MAP_PRESET	6	/* awe_voice_map */
+#define SNDRV_SFNT_REPLACE_DATA	5	/* awe_sample_info (optarg=#channels)*/
+#define SNDRV_SFNT_MAP_PRESET	6	/* awe_voice_map */
 	/* 7 is not used */
-#define SND_SFNT_PROBE_DATA		8	/* optarg=sample */
-#define SND_SFNT_REMOVE_INFO		9	/* optarg=(bank<<8)|instr */
+#define SNDRV_SFNT_PROBE_DATA		8	/* optarg=sample */
+#define SNDRV_SFNT_REMOVE_INFO		9	/* optarg=(bank<<8)|instr */
 
 	short reserved;			/* word alignment data */
 
@@ -60,18 +60,18 @@ typedef struct soundfont_patch_info_t {
  * open patch
  */
 
-#define SND_SFNT_PATCH_NAME_LEN	32
+#define SNDRV_SFNT_PATCH_NAME_LEN	32
 
 typedef struct soundfont_open_parm_t {
 	unsigned short type;		/* sample type */
-#define SND_SFNT_PAT_TYPE_MISC	0
-#define SND_SFNT_PAT_TYPE_GUS	6
-#define SND_SFNT_PAT_TYPE_MAP	7
-#define SND_SFNT_PAT_LOCKED	0x100	/* lock the samples */
-#define SND_SFNT_PAT_SHARED	0x200	/* sample is shared */
+#define SNDRV_SFNT_PAT_TYPE_MISC	0
+#define SNDRV_SFNT_PAT_TYPE_GUS	6
+#define SNDRV_SFNT_PAT_TYPE_MAP	7
+#define SNDRV_SFNT_PAT_LOCKED	0x100	/* lock the samples */
+#define SNDRV_SFNT_PAT_SHARED	0x200	/* sample is shared */
 
 	short reserved;
-	char name[SND_SFNT_PATCH_NAME_LEN];
+	char name[SNDRV_SFNT_PATCH_NAME_LEN];
 } soundfont_open_parm_t;
 
 
@@ -113,11 +113,11 @@ typedef struct soundfont_voice_info_t {
 	int loopstart, loopend;		/* loop offset correction */
 	short rate_offset;		/* sample rate pitch offset */
 	unsigned short mode;		/* sample mode */
-#define SND_SFNT_MODE_ROMSOUND		0x8000
-#define SND_SFNT_MODE_STEREO		1
-#define SND_SFNT_MODE_LOOPING		2
-#define SND_SFNT_MODE_NORELEASE		4	/* obsolete */
-#define SND_SFNT_MODE_INIT_PARM		8
+#define SNDRV_SFNT_MODE_ROMSOUND		0x8000
+#define SNDRV_SFNT_MODE_STEREO		1
+#define SNDRV_SFNT_MODE_LOOPING		2
+#define SNDRV_SFNT_MODE_NORELEASE		4	/* obsolete */
+#define SNDRV_SFNT_MODE_INIT_PARM		8
 
 	short root;			/* midi root key */
 	short tune;			/* pitch tuning (in cents) */
@@ -140,9 +140,9 @@ typedef struct soundfont_voice_rec_hdr_t {
 	unsigned char instr;		/* midi preset number */
 	char nvoices;			/* number of voices */
 	char write_mode;		/* write mode; normally 0 */
-#define SND_SFNT_WR_APPEND		0	/* append anyway */
-#define SND_SFNT_WR_EXCLUSIVE		1	/* skip if already exists */
-#define SND_SFNT_WR_REPLACE		2	/* replace if already exists */
+#define SNDRV_SFNT_WR_APPEND		0	/* append anyway */
+#define SNDRV_SFNT_WR_EXCLUSIVE		1	/* skip if already exists */
+#define SNDRV_SFNT_WR_REPLACE		2	/* replace if already exists */
 } soundfont_voice_rec_hdr_t;
 
 
@@ -159,14 +159,14 @@ typedef struct soundfont_sample_info_t {
 	int size;			/* size (0 = ROM) */
 	short dummy;			/* not used */
 	unsigned short mode_flags;	/* mode flags */
-#define SND_SFNT_SAMPLE_8BITS		1	/* wave data is 8bits */
-#define SND_SFNT_SAMPLE_UNSIGNED	2	/* wave data is unsigned */
-#define SND_SFNT_SAMPLE_NO_BLANK	4	/* no blank loop is attached */
-#define SND_SFNT_SAMPLE_SINGLESHOT	8	/* single-shot w/o loop */
-#define SND_SFNT_SAMPLE_BIDIR_LOOP	16	/* bidirectional looping */
-#define SND_SFNT_SAMPLE_STEREO_LEFT	32	/* stereo left sound */
-#define SND_SFNT_SAMPLE_STEREO_RIGHT	64	/* stereo right sound */
-#define SND_SFNT_SAMPLE_REVERSE_LOOP	128	/* reverse looping */
+#define SNDRV_SFNT_SAMPLE_8BITS		1	/* wave data is 8bits */
+#define SNDRV_SFNT_SAMPLE_UNSIGNED	2	/* wave data is unsigned */
+#define SNDRV_SFNT_SAMPLE_NO_BLANK	4	/* no blank loop is attached */
+#define SNDRV_SFNT_SAMPLE_SINGLESHOT	8	/* single-shot w/o loop */
+#define SNDRV_SFNT_SAMPLE_BIDIR_LOOP	16	/* bidirectional looping */
+#define SNDRV_SFNT_SAMPLE_STEREO_LEFT	32	/* stereo left sound */
+#define SNDRV_SFNT_SAMPLE_STEREO_RIGHT	64	/* stereo right sound */
+#define SNDRV_SFNT_SAMPLE_REVERSE_LOOP	128	/* reverse looping */
 	unsigned int truesize;		/* used memory size (set by driver) */
 } soundfont_sample_info_t;
 

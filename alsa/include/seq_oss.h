@@ -27,6 +27,8 @@
 #include "asequencer.h"
 #endif
 
+#include "seq_kernel.h"
+
 /*
  * type definitions
  */
@@ -66,25 +68,25 @@ struct snd_seq_oss_callback_t {
 };
 
 /* flag: file_mode */
-#define SND_SEQ_OSS_FILE_ACMODE		3
-#define SND_SEQ_OSS_FILE_READ		1
-#define SND_SEQ_OSS_FILE_WRITE		2
-#define SND_SEQ_OSS_FILE_NONBLOCK	4
+#define SNDRV_SEQ_OSS_FILE_ACMODE		3
+#define SNDRV_SEQ_OSS_FILE_READ		1
+#define SNDRV_SEQ_OSS_FILE_WRITE		2
+#define SNDRV_SEQ_OSS_FILE_NONBLOCK	4
 
 /* flag: seq_mode */
-#define SND_SEQ_OSS_MODE_SYNTH		0
-#define SND_SEQ_OSS_MODE_MUSIC		1
+#define SNDRV_SEQ_OSS_MODE_SYNTH		0
+#define SNDRV_SEQ_OSS_MODE_MUSIC		1
 
 /* flag: event_passing */
-#define SND_SEQ_OSS_PROCESS_EVENTS	0	/* key == 255 is processed as velocity change */
-#define SND_SEQ_OSS_PASS_EVENTS		1	/* pass all events to callback */
-#define SND_SEQ_OSS_PROCESS_KEYPRESS	2	/* key >= 128 will be processed as key-pressure */
+#define SNDRV_SEQ_OSS_PROCESS_EVENTS	0	/* key == 255 is processed as velocity change */
+#define SNDRV_SEQ_OSS_PASS_EVENTS		1	/* pass all events to callback */
+#define SNDRV_SEQ_OSS_PROCESS_KEYPRESS	2	/* key >= 128 will be processed as key-pressure */
 
 /* default control rate: fixed */
-#define SND_SEQ_OSS_CTRLRATE		100
+#define SNDRV_SEQ_OSS_CTRLRATE		100
 
 /* default max queue length: configurable by module option */
-#define SND_SEQ_OSS_MAX_QLEN		1024
+#define SNDRV_SEQ_OSS_MAX_QLEN		1024
 
 
 /*
@@ -99,6 +101,6 @@ typedef struct snd_seq_oss_reg {
 } snd_seq_oss_reg_t;
 
 /* device id */
-#define SND_SEQ_DEV_ID_OSS		"seq-oss"
+#define SNDRV_SEQ_DEV_ID_OSS		"seq-oss"
 
 #endif

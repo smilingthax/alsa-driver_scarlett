@@ -45,8 +45,8 @@ typedef struct _snd_virmidi {
 	snd_rawmidi_substream_t *substream;
 } snd_virmidi_t;
 
-#define SND_VIRMIDI_SUBSCRIBE	(1<<0)
-#define SND_VIRMIDI_USE		(1<<1)
+#define SNDRV_VIRMIDI_SUBSCRIBE	(1<<0)
+#define SNDRV_VIRMIDI_USE		(1<<1)
 
 /*
  * device record:
@@ -56,11 +56,11 @@ typedef struct _snd_virmidi {
 struct _snd_virmidi_dev {
 	snd_card_t *card;		/* associated card */
 	snd_rawmidi_t *rmidi;		/* rawmidi device */
-	int seq_mode;			/* SND_VIRMIDI_XXX */
+	int seq_mode;			/* SNDRV_VIRMIDI_XXX */
 	int device;			/* sequencer device */
 	int client;			/* created/attached client */
 	int port;			/* created/attached port */
-	unsigned int flags;		/* SND_VIRMIDI_* */
+	unsigned int flags;		/* SNDRV_VIRMIDI_* */
 	rwlock_t filelist_lock;
 	struct list_head filelist;
 };
@@ -72,9 +72,9 @@ struct _snd_virmidi_dev {
  * DISPATCH = input/output events are routed to subscribers.
  *            sequencer port is created in virmidi.
  */
-#define SND_VIRMIDI_SEQ_NONE		0
-#define SND_VIRMIDI_SEQ_ATTACH		1
-#define SND_VIRMIDI_SEQ_DISPATCH	2
+#define SNDRV_VIRMIDI_SEQ_NONE		0
+#define SNDRV_VIRMIDI_SEQ_ATTACH		1
+#define SNDRV_VIRMIDI_SEQ_DISPATCH	2
 
 int snd_virmidi_new(snd_card_t *card, int device, snd_rawmidi_t **rrmidi);
 

@@ -62,10 +62,10 @@
 
 /* Trident chipsets have 1GB memory limit */
 #ifdef __alpha__
-#define TRIDENT_DMA_TYPE        SND_DMA_TYPE_PCI_16MB
+#define TRIDENT_DMA_TYPE        SNDRV_DMA_TYPE_PCI_16MB
 #define TRIDENT_GFP_FLAGS	GFP_DMA
 #else
-#define TRIDENT_DMA_TYPE        SND_DMA_TYPE_PCI
+#define TRIDENT_DMA_TYPE        SNDRV_DMA_TYPE_PCI
 #if defined(__i386__) && !defined(CONFIG_1GB)
 #define TRIDENT_GFP_FLAGS	GFP_DMA
 #else
@@ -73,19 +73,19 @@
 #endif
 #endif
 
-#define SND_SEQ_DEV_ID_TRIDENT			"synth-trident"
+#define SNDRV_SEQ_DEV_ID_TRIDENT			"synth-trident"
 
-#define SND_TRIDENT_VOICE_TYPE_PCM		0
-#define SND_TRIDENT_VOICE_TYPE_SYNTH		1
-#define SND_TRIDENT_VOICE_TYPE_MIDI		2
+#define SNDRV_TRIDENT_VOICE_TYPE_PCM		0
+#define SNDRV_TRIDENT_VOICE_TYPE_SYNTH		1
+#define SNDRV_TRIDENT_VOICE_TYPE_MIDI		2
 
-#define SND_TRIDENT_VFLG_RUNNING		(1<<0)
+#define SNDRV_TRIDENT_VFLG_RUNNING		(1<<0)
 
 /* TLB code constants */
-#define SND_TRIDENT_PAGE_SIZE			4096
-#define SND_TRIDENT_PAGE_SHIFT			12
-#define SND_TRIDENT_PAGE_MASK			((1<<SND_TRIDENT_PAGE_SHIFT)-1)
-#define SND_TRIDENT_MAX_PAGES			4096
+#define SNDRV_TRIDENT_PAGE_SIZE			4096
+#define SNDRV_TRIDENT_PAGE_SHIFT			12
+#define SNDRV_TRIDENT_PAGE_MASK			((1<<SNDRV_TRIDENT_PAGE_SHIFT)-1)
+#define SNDRV_TRIDENT_MAX_PAGES			4096
 
 /*
  * Direct registers
@@ -217,15 +217,15 @@ enum miscint_bits {
 #define T4D_DEFAULT_PCM_CVOL	127	/* 0 - 127 */
 
 typedef struct _snd_trident trident_t;
-typedef struct snd_trident_stru_voice snd_trident_voice_t;
+typedef struct _snd_trident_voice snd_trident_voice_t;
 typedef struct _snd_trident_pcm_mixer snd_trident_pcm_mixer_t;
 
 typedef struct {
 	void (*sample_start)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_position_t position);
 	void (*sample_stop)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_stop_mode_t mode);
 	void (*sample_freq)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_frequency_t freq);
-	void (*sample_volume)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_ev_volume *volume);
-	void (*sample_loop)(trident_t *card, snd_trident_voice_t *voice, snd_seq_ev_loop *loop);
+	void (*sample_volume)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_ev_volume_t *volume);
+	void (*sample_loop)(trident_t *card, snd_trident_voice_t *voice, snd_seq_ev_loop_t *loop);
 	void (*sample_pos)(trident_t *card, snd_trident_voice_t *voice, snd_seq_position_t position);
 	void (*sample_private1)(trident_t *card, snd_trident_voice_t *voice, unsigned char *data);
 } snd_trident_sample_ops_t;
@@ -254,7 +254,7 @@ typedef struct {
 	dma_addr_t silent_page_dmaaddr; /* not accessible PCI BUS physical address */
 } snd_trident_tlb_t;
 
-struct snd_trident_stru_voice {
+struct _snd_trident_voice {
 	unsigned int number;
 	int use: 1,
 	    pcm: 1,

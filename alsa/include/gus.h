@@ -37,154 +37,154 @@
 #include "ainstr_simple.h"
 #endif
 
-#define SND_SEQ_DEV_ID_GUS			"synth-gus"
+#define SNDRV_SEQ_DEV_ID_GUS			"synth-gus"
 
 /* IO ports */
 
-#define GUSP(gus, x)			((gus)->gf1.port + SND_g_u_s_##x)
+#define GUSP(gus, x)			((gus)->gf1.port + SNDRV_g_u_s_##x)
 
-#define SND_g_u_s_MIDICTRL		(0x320-0x220)
-#define SND_g_u_s_MIDISTAT		(0x320-0x220)
-#define SND_g_u_s_MIDIDATA		(0x321-0x220)
+#define SNDRV_g_u_s_MIDICTRL		(0x320-0x220)
+#define SNDRV_g_u_s_MIDISTAT		(0x320-0x220)
+#define SNDRV_g_u_s_MIDIDATA		(0x321-0x220)
 
-#define SND_g_u_s_GF1PAGE		(0x322-0x220)
-#define SND_g_u_s_GF1REGSEL		(0x323-0x220)
-#define SND_g_u_s_GF1DATALOW		(0x324-0x220)
-#define SND_g_u_s_GF1DATAHIGH		(0x325-0x220)
-#define SND_g_u_s_IRQSTAT		(0x226-0x220)
-#define SND_g_u_s_TIMERCNTRL		(0x228-0x220)
-#define SND_g_u_s_TIMERDATA		(0x229-0x220)
-#define SND_g_u_s_DRAM			(0x327-0x220)
-#define SND_g_u_s_MIXCNTRLREG		(0x220-0x220)
-#define SND_g_u_s_IRQDMACNTRLREG	(0x22b-0x220)
-#define SND_g_u_s_REGCNTRLS		(0x22f-0x220)
-#define SND_g_u_s_BOARDVERSION		(0x726-0x220)
-#define SND_g_u_s_MIXCNTRLPORT		(0x726-0x220)
-#define SND_g_u_s_IVER			(0x325-0x220)
-#define SND_g_u_s_MIXDATAPORT		(0x326-0x220)
-#define SND_g_u_s_MAXCNTRLPORT		(0x326-0x220)
+#define SNDRV_g_u_s_GF1PAGE		(0x322-0x220)
+#define SNDRV_g_u_s_GF1REGSEL		(0x323-0x220)
+#define SNDRV_g_u_s_GF1DATALOW		(0x324-0x220)
+#define SNDRV_g_u_s_GF1DATAHIGH		(0x325-0x220)
+#define SNDRV_g_u_s_IRQSTAT		(0x226-0x220)
+#define SNDRV_g_u_s_TIMERCNTRL		(0x228-0x220)
+#define SNDRV_g_u_s_TIMERDATA		(0x229-0x220)
+#define SNDRV_g_u_s_DRAM			(0x327-0x220)
+#define SNDRV_g_u_s_MIXCNTRLREG		(0x220-0x220)
+#define SNDRV_g_u_s_IRQDMACNTRLREG	(0x22b-0x220)
+#define SNDRV_g_u_s_REGCNTRLS		(0x22f-0x220)
+#define SNDRV_g_u_s_BOARDVERSION		(0x726-0x220)
+#define SNDRV_g_u_s_MIXCNTRLPORT		(0x726-0x220)
+#define SNDRV_g_u_s_IVER			(0x325-0x220)
+#define SNDRV_g_u_s_MIXDATAPORT		(0x326-0x220)
+#define SNDRV_g_u_s_MAXCNTRLPORT		(0x326-0x220)
 
 /* GF1 registers */
 
 /* global registers */
-#define SND_GF1_GB_ACTIVE_VOICES		0x0e
-#define SND_GF1_GB_VOICES_IRQ			0x0f
-#define SND_GF1_GB_GLOBAL_MODE			0x19
-#define SND_GF1_GW_LFO_BASE			0x1a
-#define SND_GF1_GB_VOICES_IRQ_READ		0x1f
-#define SND_GF1_GB_DRAM_DMA_CONTROL		0x41
-#define SND_GF1_GW_DRAM_DMA_LOW			0x42
-#define SND_GF1_GW_DRAM_IO_LOW			0x43
-#define SND_GF1_GB_DRAM_IO_HIGH			0x44
-#define SND_GF1_GB_SOUND_BLASTER_CONTROL	0x45
-#define SND_GF1_GB_ADLIB_TIMER_1		0x46
-#define SND_GF1_GB_ADLIB_TIMER_2		0x47
-#define SND_GF1_GB_RECORD_RATE			0x48
-#define SND_GF1_GB_REC_DMA_CONTROL		0x49
-#define SND_GF1_GB_JOYSTICK_DAC_LEVEL		0x4b
-#define SND_GF1_GB_RESET			0x4c
-#define SND_GF1_GB_DRAM_DMA_HIGH		0x50
-#define SND_GF1_GW_DRAM_IO16			0x51
-#define SND_GF1_GW_MEMORY_CONFIG		0x52
-#define SND_GF1_GB_MEMORY_CONTROL		0x53
-#define SND_GF1_GW_FIFO_RECORD_BASE_ADDR	0x54
-#define SND_GF1_GW_FIFO_PLAY_BASE_ADDR		0x55
-#define SND_GF1_GW_FIFO_SIZE			0x56
-#define SND_GF1_GW_INTERLEAVE			0x57
-#define SND_GF1_GB_COMPATIBILITY		0x59
-#define SND_GF1_GB_DECODE_CONTROL		0x5a
-#define SND_GF1_GB_VERSION_NUMBER		0x5b
-#define SND_GF1_GB_MPU401_CONTROL_A		0x5c
-#define SND_GF1_GB_MPU401_CONTROL_B		0x5d
-#define SND_GF1_GB_EMULATION_IRQ		0x60
+#define SNDRV_GF1_GB_ACTIVE_VOICES		0x0e
+#define SNDRV_GF1_GB_VOICES_IRQ			0x0f
+#define SNDRV_GF1_GB_GLOBAL_MODE			0x19
+#define SNDRV_GF1_GW_LFO_BASE			0x1a
+#define SNDRV_GF1_GB_VOICES_IRQ_READ		0x1f
+#define SNDRV_GF1_GB_DRAM_DMA_CONTROL		0x41
+#define SNDRV_GF1_GW_DRAM_DMA_LOW			0x42
+#define SNDRV_GF1_GW_DRAM_IO_LOW			0x43
+#define SNDRV_GF1_GB_DRAM_IO_HIGH			0x44
+#define SNDRV_GF1_GB_SOUND_BLASTER_CONTROL	0x45
+#define SNDRV_GF1_GB_ADLIB_TIMER_1		0x46
+#define SNDRV_GF1_GB_ADLIB_TIMER_2		0x47
+#define SNDRV_GF1_GB_RECORD_RATE			0x48
+#define SNDRV_GF1_GB_REC_DMA_CONTROL		0x49
+#define SNDRV_GF1_GB_JOYSTICK_DAC_LEVEL		0x4b
+#define SNDRV_GF1_GB_RESET			0x4c
+#define SNDRV_GF1_GB_DRAM_DMA_HIGH		0x50
+#define SNDRV_GF1_GW_DRAM_IO16			0x51
+#define SNDRV_GF1_GW_MEMORY_CONFIG		0x52
+#define SNDRV_GF1_GB_MEMORY_CONTROL		0x53
+#define SNDRV_GF1_GW_FIFO_RECORD_BASE_ADDR	0x54
+#define SNDRV_GF1_GW_FIFO_PLAY_BASE_ADDR		0x55
+#define SNDRV_GF1_GW_FIFO_SIZE			0x56
+#define SNDRV_GF1_GW_INTERLEAVE			0x57
+#define SNDRV_GF1_GB_COMPATIBILITY		0x59
+#define SNDRV_GF1_GB_DECODE_CONTROL		0x5a
+#define SNDRV_GF1_GB_VERSION_NUMBER		0x5b
+#define SNDRV_GF1_GB_MPU401_CONTROL_A		0x5c
+#define SNDRV_GF1_GB_MPU401_CONTROL_B		0x5d
+#define SNDRV_GF1_GB_EMULATION_IRQ		0x60
 /* voice specific registers */
-#define SND_GF1_VB_ADDRESS_CONTROL		0x00
-#define SND_GF1_VW_FREQUENCY			0x01
-#define SND_GF1_VW_START_HIGH			0x02
-#define SND_GF1_VW_START_LOW			0x03
-#define SND_GF1_VA_START			SND_GF1_VW_START_HIGH
-#define SND_GF1_VW_END_HIGH			0x04
-#define SND_GF1_VW_END_LOW			0x05
-#define SND_GF1_VA_END				SND_GF1_VW_END_HIGH
-#define SND_GF1_VB_VOLUME_RATE			0x06
-#define SND_GF1_VB_VOLUME_START			0x07
-#define SND_GF1_VB_VOLUME_END			0x08
-#define SND_GF1_VW_VOLUME			0x09
-#define SND_GF1_VW_CURRENT_HIGH			0x0a
-#define SND_GF1_VW_CURRENT_LOW			0x0b
-#define SND_GF1_VA_CURRENT			SND_GF1_VW_CURRENT_HIGH
-#define SND_GF1_VB_PAN				0x0c
-#define SND_GF1_VW_OFFSET_RIGHT			0x0c
-#define SND_GF1_VB_VOLUME_CONTROL		0x0d
-#define SND_GF1_VB_UPPER_ADDRESS		0x10
-#define SND_GF1_VW_EFFECT_HIGH			0x11
-#define SND_GF1_VW_EFFECT_LOW			0x12
-#define SND_GF1_VA_EFFECT			SND_GF1_VW_EFFECT_HIGH
-#define SND_GF1_VW_OFFSET_LEFT			0x13
-#define SND_GF1_VB_ACCUMULATOR			0x14
-#define SND_GF1_VB_MODE				0x15
-#define SND_GF1_VW_EFFECT_VOLUME		0x16
-#define SND_GF1_VB_FREQUENCY_LFO		0x17
-#define SND_GF1_VB_VOLUME_LFO			0x18
-#define SND_GF1_VW_OFFSET_RIGHT_FINAL		0x1b
-#define SND_GF1_VW_OFFSET_LEFT_FINAL		0x1c
-#define SND_GF1_VW_EFFECT_VOLUME_FINAL		0x1d
+#define SNDRV_GF1_VB_ADDRESS_CONTROL		0x00
+#define SNDRV_GF1_VW_FREQUENCY			0x01
+#define SNDRV_GF1_VW_START_HIGH			0x02
+#define SNDRV_GF1_VW_START_LOW			0x03
+#define SNDRV_GF1_VA_START			SNDRV_GF1_VW_START_HIGH
+#define SNDRV_GF1_VW_END_HIGH			0x04
+#define SNDRV_GF1_VW_END_LOW			0x05
+#define SNDRV_GF1_VA_END				SNDRV_GF1_VW_END_HIGH
+#define SNDRV_GF1_VB_VOLUME_RATE			0x06
+#define SNDRV_GF1_VB_VOLUME_START			0x07
+#define SNDRV_GF1_VB_VOLUME_END			0x08
+#define SNDRV_GF1_VW_VOLUME			0x09
+#define SNDRV_GF1_VW_CURRENT_HIGH			0x0a
+#define SNDRV_GF1_VW_CURRENT_LOW			0x0b
+#define SNDRV_GF1_VA_CURRENT			SNDRV_GF1_VW_CURRENT_HIGH
+#define SNDRV_GF1_VB_PAN				0x0c
+#define SNDRV_GF1_VW_OFFSET_RIGHT			0x0c
+#define SNDRV_GF1_VB_VOLUME_CONTROL		0x0d
+#define SNDRV_GF1_VB_UPPER_ADDRESS		0x10
+#define SNDRV_GF1_VW_EFFECT_HIGH			0x11
+#define SNDRV_GF1_VW_EFFECT_LOW			0x12
+#define SNDRV_GF1_VA_EFFECT			SNDRV_GF1_VW_EFFECT_HIGH
+#define SNDRV_GF1_VW_OFFSET_LEFT			0x13
+#define SNDRV_GF1_VB_ACCUMULATOR			0x14
+#define SNDRV_GF1_VB_MODE				0x15
+#define SNDRV_GF1_VW_EFFECT_VOLUME		0x16
+#define SNDRV_GF1_VB_FREQUENCY_LFO		0x17
+#define SNDRV_GF1_VB_VOLUME_LFO			0x18
+#define SNDRV_GF1_VW_OFFSET_RIGHT_FINAL		0x1b
+#define SNDRV_GF1_VW_OFFSET_LEFT_FINAL		0x1c
+#define SNDRV_GF1_VW_EFFECT_VOLUME_FINAL		0x1d
 
 /* ICS registers */
 
-#define SND_ICS_MIC_DEV		0
-#define SND_ICS_LINE_DEV	1
-#define SND_ICS_CD_DEV		2
-#define SND_ICS_GF1_DEV		3
-#define SND_ICS_NONE_DEV	4
-#define SND_ICS_MASTER_DEV	5
+#define SNDRV_ICS_MIC_DEV		0
+#define SNDRV_ICS_LINE_DEV	1
+#define SNDRV_ICS_CD_DEV		2
+#define SNDRV_ICS_GF1_DEV		3
+#define SNDRV_ICS_NONE_DEV	4
+#define SNDRV_ICS_MASTER_DEV	5
 
 /* LFO */
 
-#define SND_LFO_TREMOLO		0
-#define SND_LFO_VIBRATO		1
+#define SNDRV_LFO_TREMOLO		0
+#define SNDRV_LFO_VIBRATO		1
 
 /* misc */
 
-#define SND_GF1_DMA_UNSIGNED	0x80
-#define SND_GF1_DMA_16BIT	0x40
-#define SND_GF1_DMA_IRQ		0x20
-#define SND_GF1_DMA_WIDTH16	0x04
-#define SND_GF1_DMA_READ	0x02	/* read from GUS's DRAM */
-#define SND_GF1_DMA_ENABLE	0x01
+#define SNDRV_GF1_DMA_UNSIGNED	0x80
+#define SNDRV_GF1_DMA_16BIT	0x40
+#define SNDRV_GF1_DMA_IRQ		0x20
+#define SNDRV_GF1_DMA_WIDTH16	0x04
+#define SNDRV_GF1_DMA_READ	0x02	/* read from GUS's DRAM */
+#define SNDRV_GF1_DMA_ENABLE	0x01
 
 /* ramp ranges */
 
-#define SND_GF1_ATTEN(x)	(snd_gf1_atten_table[x])
-#define SND_GF1_MIN_VOLUME	1800
-#define SND_GF1_MAX_VOLUME	4095
-#define SND_GF1_MIN_OFFSET	(SND_GF1_MIN_VOLUME>>4)
-#define SND_GF1_MAX_OFFSET	255
-#define SND_GF1_MAX_TDEPTH	90
+#define SNDRV_GF1_ATTEN(x)	(snd_gf1_atten_table[x])
+#define SNDRV_GF1_MIN_VOLUME	1800
+#define SNDRV_GF1_MAX_VOLUME	4095
+#define SNDRV_GF1_MIN_OFFSET	(SNDRV_GF1_MIN_VOLUME>>4)
+#define SNDRV_GF1_MAX_OFFSET	255
+#define SNDRV_GF1_MAX_TDEPTH	90
 
 /* defines for memory manager */
 
-#define SND_GF1_MEM_BLOCK_16BIT		0x0001
+#define SNDRV_GF1_MEM_BLOCK_16BIT		0x0001
 
-#define SND_GF1_MEM_OWNER_DRIVER	0x0001
-#define SND_GF1_MEM_OWNER_WAVE_SIMPLE	0x0002
-#define SND_GF1_MEM_OWNER_WAVE_GF1	0x0003
-#define SND_GF1_MEM_OWNER_WAVE_IWFFFF	0x0004
+#define SNDRV_GF1_MEM_OWNER_DRIVER	0x0001
+#define SNDRV_GF1_MEM_OWNER_WAVE_SIMPLE	0x0002
+#define SNDRV_GF1_MEM_OWNER_WAVE_GF1	0x0003
+#define SNDRV_GF1_MEM_OWNER_WAVE_IWFFFF	0x0004
 
 /* constants for interrupt handlers */
 
-#define SND_GF1_HANDLER_MIDI_OUT	0x00010000
-#define SND_GF1_HANDLER_MIDI_IN		0x00020000
-#define SND_GF1_HANDLER_TIMER1		0x00040000
-#define SND_GF1_HANDLER_TIMER2		0x00080000
-#define SND_GF1_HANDLER_VOICE		0x00100000
-#define SND_GF1_HANDLER_DMA_WRITE	0x00200000
-#define SND_GF1_HANDLER_DMA_READ	0x00400000
-#define SND_GF1_HANDLER_ALL		(0xffff0000&~SND_GF1_HANDLER_VOICE)
+#define SNDRV_GF1_HANDLER_MIDI_OUT	0x00010000
+#define SNDRV_GF1_HANDLER_MIDI_IN		0x00020000
+#define SNDRV_GF1_HANDLER_TIMER1		0x00040000
+#define SNDRV_GF1_HANDLER_TIMER2		0x00080000
+#define SNDRV_GF1_HANDLER_VOICE		0x00100000
+#define SNDRV_GF1_HANDLER_DMA_WRITE	0x00200000
+#define SNDRV_GF1_HANDLER_DMA_READ	0x00400000
+#define SNDRV_GF1_HANDLER_ALL		(0xffff0000&~SNDRV_GF1_HANDLER_VOICE)
 
 /* constants for DMA flags */
 
-#define SND_GF1_DMA_TRIGGER		1
+#define SNDRV_GF1_DMA_TRIGGER		1
 
 /* --- */
 
@@ -199,8 +199,8 @@ typedef struct _snd_gf1_bank_info {
 } snd_gf1_bank_info_t;
 
 typedef struct _snd_gf1_mem_block {
-	unsigned short flags;	/* flags - SND_GF1_MEM_BLOCK_XXXX */
-	unsigned short owner;	/* owner - SND_GF1_MEM_OWNER_XXXX */
+	unsigned short flags;	/* flags - SNDRV_GF1_MEM_BLOCK_XXXX */
+	unsigned short owner;	/* owner - SNDRV_GF1_MEM_OWNER_XXXX */
 	unsigned int share;	/* share count */
 	unsigned int share_id[4]; /* share ID */
 	unsigned int ptr;
@@ -238,25 +238,25 @@ typedef struct {
 	int midi_has_voices: 1;
 } snd_gus_port_t;
 
-typedef struct snd_gus_stru_voice snd_gus_voice_t;
+typedef struct _snd_gus_voice snd_gus_voice_t;
 
 typedef struct {
 	void (*sample_start)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_position_t position);
 	void (*sample_stop)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_stop_mode_t mode);
 	void (*sample_freq)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_frequency_t freq);
-	void (*sample_volume)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_ev_volume *volume);
-	void (*sample_loop)(snd_gus_card_t *card, snd_gus_voice_t *voice, snd_seq_ev_loop *loop);
+	void (*sample_volume)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_ev_volume_t *volume);
+	void (*sample_loop)(snd_gus_card_t *card, snd_gus_voice_t *voice, snd_seq_ev_loop_t *loop);
 	void (*sample_pos)(snd_gus_card_t *card, snd_gus_voice_t *voice, snd_seq_position_t position);
 	void (*sample_private1)(snd_gus_card_t *card, snd_gus_voice_t *voice, unsigned char *data);
 } snd_gus_sample_ops_t;
 
-#define SND_GF1_VOICE_TYPE_PCM		0
-#define SND_GF1_VOICE_TYPE_SYNTH 	1
-#define SND_GF1_VOICE_TYPE_MIDI		2
+#define SNDRV_GF1_VOICE_TYPE_PCM		0
+#define SNDRV_GF1_VOICE_TYPE_SYNTH 	1
+#define SNDRV_GF1_VOICE_TYPE_MIDI		2
 
-#define SND_GF1_VFLG_RUNNING		(1<<0)
-#define SND_GF1_VFLG_EFFECT_TIMER1	(1<<1)
-#define SND_GF1_VFLG_PAN		(1<<2)
+#define SNDRV_GF1_VFLG_RUNNING		(1<<0)
+#define SNDRV_GF1_VFLG_EFFECT_TIMER1	(1<<1)
+#define SNDRV_GF1_VFLG_PAN		(1<<2)
 
 typedef enum {
 	VENV_BEFORE,
@@ -267,7 +267,7 @@ typedef enum {
 	VENV_VOLUME
 } snd_gus_volume_state_t;
 
-struct snd_gus_stru_voice {
+struct _snd_gus_voice {
 	int number;
 	int use: 1,
 	    pcm: 1,
@@ -294,7 +294,7 @@ struct snd_gus_stru_voice {
 
 	/* running status / registers */
 
-	snd_seq_ev_volume sample_volume;
+	snd_seq_ev_volume_t sample_volume;
 
 	unsigned short fc_register;
 	unsigned short fc_lfo;
@@ -359,7 +359,7 @@ struct _snd_gf1 {
 	unsigned int default_voice_address;
 
 	unsigned short playback_freq;	/* GF1 playback (mixing) frequency */
-	unsigned short mode;		/* see to SND_GF1_MODE_XXXX */
+	unsigned short mode;		/* see to SNDRV_GF1_MODE_XXXX */
 	unsigned char volume_ramp;
 	unsigned char smooth_pan;
 	unsigned char full_range_pan;

@@ -30,7 +30,7 @@
 #include "config.h"
 #endif
 
-#define SND_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
+#define SNDRV_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
 
 #ifndef CONFIG_SND_MAJOR	/* standard configuration */
 #define CONFIG_SND_MAJOR	116
@@ -70,13 +70,13 @@
 #include <linux/modversions.h>
 #include "sndversions.h"
 #endif
-#ifdef SND_NO_MODVERS
+#ifdef SNDRV_NO_MODVERS
 #undef MODVERSIONS
 #undef _set_ver
 #endif
 #endif /* ALSA_BUILD */
 
-#ifndef SND_MAIN_OBJECT_FILE
+#ifndef SNDRV_MAIN_OBJECT_FILE
 #define __NO_VERSION__
 #endif
 #include <linux/module.h>
@@ -149,9 +149,68 @@
 #endif
 #ifndef ALSA_BUILD
 #include <linux/asound.h>
+#include <linux/asoundef.h>
 #else
 #include "asound.h"
+#include "asoundef.h"
 #endif
+
+/* Name change */
+typedef struct timeval snd_timestamp_t;
+typedef struct interval interval_t;
+typedef enum sndrv_card_type snd_card_type;
+typedef sndrv_pcm_uframes_t snd_pcm_uframes_t;
+typedef sndrv_pcm_sframes_t snd_pcm_sframes_t;
+typedef struct sndrv_aes_iec958 snd_aes_iec958_t;
+typedef union sndrv_digital_audio snd_digital_audio_t;
+typedef enum sndrv_hwdep_type snd_hwdep_type_t;
+typedef struct sndrv_hwdep_info snd_hwdep_info_t;
+typedef enum sndrv_pcm_class snd_pcm_class_t;
+typedef enum sndrv_pcm_subclass snd_pcm_subclass_t;
+typedef enum sndrv_pcm_stream snd_pcm_stream_t;
+typedef enum sndrv_pcm_access snd_pcm_access_t;
+typedef enum sndrv_pcm_format snd_pcm_format_t;
+typedef enum sndrv_pcm_subformat snd_pcm_subformat_t;
+typedef enum sndrv_pcm_state snd_pcm_state_t;
+typedef union sndrv_pcm_sync_id snd_pcm_sync_id_t;
+typedef struct sndrv_pcm_info snd_pcm_info_t;
+typedef enum sndrv_pcm_hw_param snd_pcm_hw_param_t;
+typedef struct sndrv_pcm_hw_params snd_pcm_hw_params_t;
+typedef enum sndrv_pcm_start snd_pcm_start_t;
+typedef enum sndrv_pcm_xrun snd_pcm_xrun_t;
+typedef enum sndrv_pcm_tstamp snd_pcm_tstamp_t;
+typedef struct sndrv_pcm_sw_params snd_pcm_sw_params_t;
+typedef struct sndrv_pcm_hw_channel_info snd_pcm_hw_channel_info_t;
+typedef struct sndrv_pcm_status snd_pcm_status_t;
+typedef struct sndrv_pcm_mmap_status snd_pcm_mmap_status_t;
+typedef struct sndrv_pcm_mmap_control snd_pcm_mmap_control_t;
+typedef struct sndrv_xferi snd_xferi_t;
+typedef struct sndrv_xfern snd_xfern_t;
+typedef enum sndrv_mcmd snd_mcmd_t;
+typedef enum sndrv_mctl snd_mctl_t;
+typedef enum sndrv_rawmidi_stream snd_rawmidi_stream_t;
+typedef struct sndrv_rawmidi_info snd_rawmidi_info_t;
+typedef struct sndrv_rawmidi_params snd_rawmidi_params_t;
+typedef struct sndrv_rawmidi_status snd_rawmidi_status_t;
+typedef enum sndrv_timer_type snd_timer_type_t;
+typedef enum sndrv_timer_slave_type snd_timer_slave_type_t;
+typedef enum sndrv_timer_global snd_timer_global_t;
+typedef struct sndrv_timer_id snd_timer_id_t;
+typedef struct sndrv_timer_select snd_timer_select_t;
+typedef struct sndrv_timer_info snd_timer_info_t;
+typedef struct sndrv_timer_params snd_timer_params_t;
+typedef struct sndrv_timer_status snd_timer_status_t;
+typedef struct sndrv_timer_read snd_timer_read_t;
+typedef struct sndrv_ctl_hw_info snd_ctl_hw_info_t;
+typedef enum sndrv_control_type snd_control_type_t;
+typedef enum sndrv_control_iface snd_control_iface_t;
+typedef struct sndrv_control_id snd_control_id_t;
+typedef struct sndrv_control_list snd_control_list_t;
+typedef struct sndrv_control_info snd_control_info_t;
+typedef struct sndrv_control snd_control_t;
+typedef enum sndrv_ctl_event_type snd_ctl_event_type_t;
+typedef struct sndrv_ctl_event snd_ctl_event_t;
+typedef struct sndrv_xferv snd_xferv_t;
 
 #ifdef CONFIG_SND_DEBUG
 void *snd_wrapper_kmalloc(size_t, int);
@@ -199,29 +258,29 @@ static inline void dec_mod_count(struct module *module)
 
 /* device allocation stuff */
 
-#define SND_DEV_TYPE_RANGE_SIZE		0x1000
+#define SNDRV_DEV_TYPE_RANGE_SIZE		0x1000
 
 typedef enum {
-	SND_DEV_TOPLEVEL =		(0*SND_DEV_TYPE_RANGE_SIZE),
-	SND_DEV_LOWLEVEL_PRE,
-	SND_DEV_LOWLEVEL_NORMAL =	(1*SND_DEV_TYPE_RANGE_SIZE),
-	SND_DEV_PCM,
-	SND_DEV_RAWMIDI,
-	SND_DEV_TIMER,
-	SND_DEV_SEQUENCER,
-	SND_DEV_HWDEP,
-	SND_DEV_LOWLEVEL =		(2*SND_DEV_TYPE_RANGE_SIZE)
+	SNDRV_DEV_TOPLEVEL =		(0*SNDRV_DEV_TYPE_RANGE_SIZE),
+	SNDRV_DEV_LOWLEVEL_PRE,
+	SNDRV_DEV_LOWLEVEL_NORMAL =	(1*SNDRV_DEV_TYPE_RANGE_SIZE),
+	SNDRV_DEV_PCM,
+	SNDRV_DEV_RAWMIDI,
+	SNDRV_DEV_TIMER,
+	SNDRV_DEV_SEQUENCER,
+	SNDRV_DEV_HWDEP,
+	SNDRV_DEV_LOWLEVEL =		(2*SNDRV_DEV_TYPE_RANGE_SIZE)
 } snd_device_type_t;
 
 typedef enum {
-	SND_DEV_BUILD = 0,
-	SND_DEV_REGISTERED = 1
+	SNDRV_DEV_BUILD = 0,
+	SNDRV_DEV_REGISTERED = 1
 } snd_device_state_t;
 
 typedef enum {
-	SND_DEV_CMD_PRE = 0,
-	SND_DEV_CMD_NORMAL = 1,
-	SND_DEV_CMD_POST = 2
+	SNDRV_DEV_CMD_PRE = 0,
+	SNDRV_DEV_CMD_NORMAL = 1,
+	SNDRV_DEV_CMD_POST = 2
 } snd_device_cmd_t;
 
 typedef struct _snd_card snd_card_t;
@@ -379,7 +438,7 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count);
 /* init.c */
 
 extern int snd_cards_count;
-extern snd_card_t *snd_cards[SND_CARDS];
+extern snd_card_t *snd_cards[SNDRV_CARDS];
 extern rwlock_t snd_card_rwlock;
 #ifdef CONFIG_SND_OSSEMUL
 extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int free_flag);
@@ -515,6 +574,6 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_timestamp_zero(tstamp) do { (tstamp)->tv_sec = 0; (tstamp)->tv_usec = 0; } while (0)
 #define snd_timestamp_null(tstamp) ((tstamp)->tv_sec == 0 && (tstamp)->tv_usec ==0)
 
-#define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
+#define SNDRV_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 
 #endif				/* __DRIVER_H */

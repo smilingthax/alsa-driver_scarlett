@@ -26,11 +26,11 @@
 #ifndef __ASOUND_FM_H
 #define __ASOUND_FM_H
 
-#define SND_DM_FM_MODE_OPL2	0x00
-#define SND_DM_FM_MODE_OPL3	0x01
+#define SNDRV_DM_FM_MODE_OPL2	0x00
+#define SNDRV_DM_FM_MODE_OPL3	0x01
 
 typedef struct snd_dm_fm_info {
-	unsigned char fm_mode;		/* OPL mode, see SND_DM_FM_MODE_XXX */
+	unsigned char fm_mode;		/* OPL mode, see SNDRV_DM_FM_MODE_XXX */
 	unsigned char rhythm;		/* percussion mode flag */
 } snd_dm_fm_info_t;
 
@@ -96,23 +96,23 @@ typedef struct snd_dm_fm_params {
  *  FM mode ioctl settings
  */
 
-#define SND_DM_FM_IOCTL_INFO		_IOR('H', 0x20, snd_dm_fm_info_t)
-#define SND_DM_FM_IOCTL_RESET		_IO ('H', 0x21)
-#define SND_DM_FM_IOCTL_PLAY_NOTE	_IOW('H', 0x22, snd_dm_fm_note_t)
-#define SND_DM_FM_IOCTL_SET_VOICE	_IOW('H', 0x23, snd_dm_fm_voice_t)
-#define SND_DM_FM_IOCTL_SET_PARAMS	_IOW('H', 0x24, snd_dm_fm_params_t)
-#define SND_DM_FM_IOCTL_SET_MODE	_IOW('H', 0x25, int)
+#define SNDRV_DM_FM_IOCTL_INFO		_IOR('H', 0x20, snd_dm_fm_info_t)
+#define SNDRV_DM_FM_IOCTL_RESET		_IO ('H', 0x21)
+#define SNDRV_DM_FM_IOCTL_PLAY_NOTE	_IOW('H', 0x22, snd_dm_fm_note_t)
+#define SNDRV_DM_FM_IOCTL_SET_VOICE	_IOW('H', 0x23, snd_dm_fm_voice_t)
+#define SNDRV_DM_FM_IOCTL_SET_PARAMS	_IOW('H', 0x24, snd_dm_fm_params_t)
+#define SNDRV_DM_FM_IOCTL_SET_MODE	_IOW('H', 0x25, int)
 /* for OPL3 only */
-#define SND_DM_FM_IOCTL_SET_CONNECTION	_IOW('H', 0x26, int)
+#define SNDRV_DM_FM_IOCTL_SET_CONNECTION	_IOW('H', 0x26, int)
 
 #ifdef __SND_OSS_COMPAT__
 
-#define SND_DM_FM_OSS_IOCTL_RESET	0x20
-#define SND_DM_FM_OSS_IOCTL_PLAY_NOTE	0x21
-#define SND_DM_FM_OSS_IOCTL_SET_VOICE	0x22
-#define SND_DM_FM_OSS_IOCTL_SET_PARAMS	0x23
-#define SND_DM_FM_OSS_IOCTL_SET_MODE	0x24
-#define SND_DM_FM_OSS_IOCTL_SET_OPL	0x25
+#define SNDRV_DM_FM_OSS_IOCTL_RESET	0x20
+#define SNDRV_DM_FM_OSS_IOCTL_PLAY_NOTE	0x21
+#define SNDRV_DM_FM_OSS_IOCTL_SET_VOICE	0x22
+#define SNDRV_DM_FM_OSS_IOCTL_SET_PARAMS	0x23
+#define SNDRV_DM_FM_OSS_IOCTL_SET_MODE	0x24
+#define SNDRV_DM_FM_OSS_IOCTL_SET_OPL	0x25
 
 #endif
 

@@ -48,17 +48,17 @@ typedef struct _snd_seq_kinstr {
 	struct _snd_seq_kinstr *next;
 } snd_seq_kinstr_t;
 
-#define SND_SEQ_INSTR_HASH_SIZE		32
+#define SNDRV_SEQ_INSTR_HASH_SIZE		32
 
 /* Instrument flags */
-#define SND_SEQ_INSTR_FLG_DIRECT	(1<<0)	/* accept only direct events */
+#define SNDRV_SEQ_INSTR_FLG_DIRECT	(1<<0)	/* accept only direct events */
 
 /* List of all instruments */
 typedef struct {
-	snd_seq_kinstr_t *hash[SND_SEQ_INSTR_HASH_SIZE];
+	snd_seq_kinstr_t *hash[SNDRV_SEQ_INSTR_HASH_SIZE];
 	int count;			/* count of all instruments */
 	
-	snd_seq_kcluster_t *chash[SND_SEQ_INSTR_HASH_SIZE];
+	snd_seq_kcluster_t *chash[SNDRV_SEQ_INSTR_HASH_SIZE];
 	int ccount;			/* count of all clusters */
 
 	int owner;			/* current owner of the instrument list */
@@ -70,8 +70,8 @@ typedef struct {
 	unsigned long ops_flags;
 } snd_seq_kinstr_list_t;
 
-#define SND_SEQ_INSTR_NOTIFY_REMOVE	0
-#define SND_SEQ_INSTR_NOTIFY_CHANGE	1
+#define SNDRV_SEQ_INSTR_NOTIFY_REMOVE	0
+#define SNDRV_SEQ_INSTR_NOTIFY_CHANGE	1
 
 struct snd_seq_kinstr_ops {
 	void *private_data;

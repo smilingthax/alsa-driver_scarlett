@@ -94,9 +94,9 @@ typedef struct snd_seq_midi_op {
  * distinguished from controller values.
  */
 /* 0-127 controller values */
-#define SND_MCTL_PITCHBEND	0x80
-#define SND_MCTL_AFTERTOUCH	0x81
-#define SND_MCTL_CHAN_PRESSURE	0x82
+#define MIDI_CTL_PITCHBEND	0x80
+#define MIDI_CTL_AFTERTOUCH	0x81
+#define MIDI_CTL_CHAN_PRESSURE	0x82
 
 /*
  * These names exist to allow symbolic access to the controls array.
@@ -133,56 +133,56 @@ typedef struct snd_seq_midi_op {
 #define gm_effect_control1_lsb	control[44]
 #define gm_effect_control2_lsb	control[45]
 
-#define gm_sustain	 	control[SND_MCTL_SUSTAIN]
+#define gm_sustain	 	control[MIDI_CTL_SUSTAIN]
 #define gm_hold			gm_sustain
-#define gm_portamento		control[SND_MCTL_PORTAMENTO]
-#define gm_sustenuto		control[SND_MCTL_SUSTENUTO]
+#define gm_portamento		control[MIDI_CTL_PORTAMENTO]
+#define gm_sustenuto		control[MIDI_CTL_SUSTENUTO]
 
 /*
  * These macros give the complete value of the controls that consist
  * of coarse and fine pairs.  Of course the fine controls are seldom used
  * but there is no harm in being complete.
  */
-#define SND_GM_BANK_SELECT(cp)		(((cp)->control[0]<<7)|((cp)->control[32]))
-#define SND_GM_MODULATION_WHEEL(cp)	(((cp)->control[1]<<7)|((cp)->control[33]))
-#define SND_GM_BREATH(cp)		(((cp)->control[2]<<7)|((cp)->control[34]))
-#define SND_GM_FOOT_PEDAL(cp)		(((cp)->control[4]<<7)|((cp)->control[36]))
-#define SND_GM_PORTAMENTO_TIME(cp)	(((cp)->control[5]<<7)|((cp)->control[37]))
-#define SND_GM_DATA_ENTRY(cp)		(((cp)->control[6]<<7)|((cp)->control[38]))
-#define SND_GM_VOLUME(cp)		(((cp)->control[7]<<7)|((cp)->control[39]))
-#define SND_GM_BALANCE(cp)		(((cp)->control[8]<<7)|((cp)->control[40]))
-#define SND_GM_PAN(cp)			(((cp)->control[10]<<7)|((cp)->control[42]))
-#define SND_GM_EXPRESSION(cp)		(((cp)->control[11]<<7)|((cp)->control[43]))
+#define SNDRV_GM_BANK_SELECT(cp)		(((cp)->control[0]<<7)|((cp)->control[32]))
+#define SNDRV_GM_MODULATION_WHEEL(cp)	(((cp)->control[1]<<7)|((cp)->control[33]))
+#define SNDRV_GM_BREATH(cp)		(((cp)->control[2]<<7)|((cp)->control[34]))
+#define SNDRV_GM_FOOT_PEDAL(cp)		(((cp)->control[4]<<7)|((cp)->control[36]))
+#define SNDRV_GM_PORTAMENTO_TIME(cp)	(((cp)->control[5]<<7)|((cp)->control[37]))
+#define SNDRV_GM_DATA_ENTRY(cp)		(((cp)->control[6]<<7)|((cp)->control[38]))
+#define SNDRV_GM_VOLUME(cp)		(((cp)->control[7]<<7)|((cp)->control[39]))
+#define SNDRV_GM_BALANCE(cp)		(((cp)->control[8]<<7)|((cp)->control[40]))
+#define SNDRV_GM_PAN(cp)			(((cp)->control[10]<<7)|((cp)->control[42]))
+#define SNDRV_GM_EXPRESSION(cp)		(((cp)->control[11]<<7)|((cp)->control[43]))
 
 
 /* MIDI mode */
-#define SND_MIDI_MODE_NONE	0	/* Generic midi */
-#define SND_MIDI_MODE_GM	1
-#define SND_MIDI_MODE_GS	2
-#define SND_MIDI_MODE_XG	3
-#define SND_MIDI_MODE_MT32	4
+#define SNDRV_MIDI_MODE_NONE	0	/* Generic midi */
+#define SNDRV_MIDI_MODE_GM	1
+#define SNDRV_MIDI_MODE_GS	2
+#define SNDRV_MIDI_MODE_XG	3
+#define SNDRV_MIDI_MODE_MT32	4
 
 /* MIDI note state */
-#define SND_MIDI_NOTE_OFF		0x00
-#define SND_MIDI_NOTE_ON		0x01
-#define SND_MIDI_NOTE_RELEASED		0x02
-#define SND_MIDI_NOTE_SUSTENUTO		0x04
+#define SNDRV_MIDI_NOTE_OFF		0x00
+#define SNDRV_MIDI_NOTE_ON		0x01
+#define SNDRV_MIDI_NOTE_RELEASED		0x02
+#define SNDRV_MIDI_NOTE_SUSTENUTO		0x04
  
-#define SND_MIDI_PARAM_TYPE_REGISTERED		0
-#define SND_MIDI_PARAM_TYPE_NONREGISTERED	1
+#define SNDRV_MIDI_PARAM_TYPE_REGISTERED		0
+#define SNDRV_MIDI_PARAM_TYPE_NONREGISTERED	1
 
 /* SYSEX parse flag */
 enum {
-	SND_MIDI_SYSEX_NOT_PARSED = 0,
-	SND_MIDI_SYSEX_GM_ON,	
-	SND_MIDI_SYSEX_GS_ON,	
-	SND_MIDI_SYSEX_GS_RESET,	
-	SND_MIDI_SYSEX_GS_CHORUS_MODE,
-	SND_MIDI_SYSEX_GS_REVERB_MODE,
-	SND_MIDI_SYSEX_GS_MASTER_VOLUME,
-	SND_MIDI_SYSEX_GS_PROGRAM,
-	SND_MIDI_SYSEX_GS_DRUM_CHANNEL,
-	SND_MIDI_SYSEX_XG_ON,	
+	SNDRV_MIDI_SYSEX_NOT_PARSED = 0,
+	SNDRV_MIDI_SYSEX_GM_ON,	
+	SNDRV_MIDI_SYSEX_GS_ON,	
+	SNDRV_MIDI_SYSEX_GS_RESET,	
+	SNDRV_MIDI_SYSEX_GS_CHORUS_MODE,
+	SNDRV_MIDI_SYSEX_GS_REVERB_MODE,
+	SNDRV_MIDI_SYSEX_GS_MASTER_VOLUME,
+	SNDRV_MIDI_SYSEX_GS_PROGRAM,
+	SNDRV_MIDI_SYSEX_GS_DRUM_CHANNEL,
+	SNDRV_MIDI_SYSEX_XG_ON,	
 };
 
 /* Prototypes for midi_process.c */

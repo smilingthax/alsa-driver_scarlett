@@ -27,46 +27,107 @@
 #include "asequencer.h"
 #endif
 
+typedef sndrv_seq_tick_time_t snd_seq_tick_time_t;
+typedef sndrv_seq_position_t snd_seq_position_t;
+typedef sndrv_seq_frequency_t snd_seq_frequency_t;
+typedef sndrv_seq_instr_cluster_t snd_seq_instr_cluster_t;
+typedef enum sndrv_seq_client_type snd_seq_client_type_t;
+typedef enum sndrv_seq_stop_mode snd_seq_stop_mode_t;
+typedef struct sndrv_seq_port_info snd_seq_port_info_t;
+typedef struct sndrv_seq_port_subscribe snd_seq_port_subscribe_t;
+typedef struct sndrv_seq_event snd_seq_event_t;
+typedef struct sndrv_seq_addr snd_seq_addr_t;
+typedef struct sndrv_seq_ev_volume snd_seq_ev_volume_t;
+typedef struct sndrv_seq_ev_loop snd_seq_ev_loop_t;
+typedef struct sndrv_seq_remove_events snd_seq_remove_events_t;
+typedef struct sndrv_seq_query_subs snd_seq_query_subs_t;
+typedef struct sndrv_seq_real_time snd_seq_real_time_t;
+typedef struct sndrv_seq_system_info snd_seq_system_info_t;
+typedef struct sndrv_seq_client_info snd_seq_client_info_t;
+typedef struct sndrv_seq_queue_info snd_seq_queue_info_t;
+typedef struct sndrv_seq_queue_status snd_seq_queue_status_t;
+typedef struct sndrv_seq_queue_tempo snd_seq_queue_tempo_t;
+typedef struct sndrv_seq_queue_owner snd_seq_queue_owner_t;
+typedef struct sndrv_seq_queue_timer snd_seq_queue_timer_t;
+typedef struct sndrv_seq_queue_client snd_seq_queue_client_t;
+typedef struct sndrv_seq_client_pool snd_seq_client_pool_t;
+typedef struct sndrv_seq_instr snd_seq_instr_t;
+typedef struct sndrv_seq_instr_data snd_seq_instr_data_t;
+typedef struct sndrv_seq_instr_free snd_seq_instr_free_t;
+typedef struct sndrv_seq_instr_put snd_seq_instr_put_t;
+typedef struct sndrv_seq_instr_get snd_seq_instr_get_t;
+typedef union sndrv_seq_timestamp snd_seq_timestamp_t;
+
+#define snd_seq_event_bounce_ext_data	sndrv_seq_event_bounce_ext_data 
+#define snd_seq_ev_is_result_type	sndrv_seq_ev_is_result_type     
+#define snd_seq_ev_is_channel_type	sndrv_seq_ev_is_channel_type    
+#define snd_seq_ev_is_note_type		sndrv_seq_ev_is_note_type       
+#define snd_seq_ev_is_control_type	sndrv_seq_ev_is_control_type    
+#define snd_seq_ev_is_queue_type	sndrv_seq_ev_is_queue_type      
+#define snd_seq_ev_is_message_type	sndrv_seq_ev_is_message_type    
+#define snd_seq_ev_is_sample_type	sndrv_seq_ev_is_sample_type     
+#define snd_seq_ev_is_user_type		sndrv_seq_ev_is_user_type       
+#define snd_seq_ev_is_fixed_type	sndrv_seq_ev_is_fixed_type      
+#define snd_seq_ev_is_instr_type	sndrv_seq_ev_is_instr_type      
+#define snd_seq_ev_is_variable_type	sndrv_seq_ev_is_variable_type   
+#define snd_seq_ev_is_varipc_type	sndrv_seq_ev_is_varipc_type     
+#define snd_seq_ev_is_reserved		sndrv_seq_ev_is_reserved        
+#define snd_seq_ev_is_direct		sndrv_seq_ev_is_direct          
+#define snd_seq_ev_is_prior		sndrv_seq_ev_is_prior           
+#define snd_seq_ev_length_type		sndrv_seq_ev_length_type        
+#define snd_seq_ev_is_fixed		sndrv_seq_ev_is_fixed           
+#define snd_seq_ev_is_variable		sndrv_seq_ev_is_variable        
+#define snd_seq_ev_is_varusr		sndrv_seq_ev_is_varusr          
+#define snd_seq_ev_is_varipc		sndrv_seq_ev_is_varipc          
+#define snd_seq_ev_timestamp_type	sndrv_seq_ev_timestamp_type     
+#define snd_seq_ev_is_tick		sndrv_seq_ev_is_tick            
+#define snd_seq_ev_is_real		sndrv_seq_ev_is_real            
+#define snd_seq_ev_timemode_type	sndrv_seq_ev_timemode_type      
+#define snd_seq_ev_is_abstime		sndrv_seq_ev_is_abstime         
+#define snd_seq_ev_is_reltime		sndrv_seq_ev_is_reltime         
+#define snd_seq_queue_sync_port		sndrv_seq_queue_sync_port       
+#define snd_seq_queue_owner		sndrv_seq_queue_owner           
+
 /* maximum number of events dequeued per schedule interval */
-#define SND_SEQ_MAX_DEQUEUE		50
+#define SNDRV_SEQ_MAX_DEQUEUE		50
 
 /* maximum number of queues */
-#define SND_SEQ_MAX_QUEUES		8
+#define SNDRV_SEQ_MAX_QUEUES		8
 
 /* max number of concurrent clients */
-#define SND_SEQ_MAX_CLIENTS 		192
+#define SNDRV_SEQ_MAX_CLIENTS 		192
 
 /* max number of concurrent ports */
-#define SND_SEQ_MAX_PORTS 		254
+#define SNDRV_SEQ_MAX_PORTS 		254
 
 /* max number of events in memory pool */
-#define SND_SEQ_MAX_EVENTS		2000
+#define SNDRV_SEQ_MAX_EVENTS		2000
 
 /* default number of events in memory pool */
-#define SND_SEQ_DEFAULT_EVENTS		500
+#define SNDRV_SEQ_DEFAULT_EVENTS		500
 
 /* max number of events in memory pool for one client (outqueue) */
-#define SND_SEQ_MAX_CLIENT_EVENTS	2000
+#define SNDRV_SEQ_MAX_CLIENT_EVENTS	2000
 
 /* default number of events in memory pool for one client (outqueue) */
-#define SND_SEQ_DEFAULT_CLIENT_EVENTS	200
+#define SNDRV_SEQ_DEFAULT_CLIENT_EVENTS	200
 
 /* max delivery path length */
-#define SND_SEQ_MAX_HOPS		10
+#define SNDRV_SEQ_MAX_HOPS		10
 
 /* max size of event size */
-#define SND_SEQ_MAX_EVENT_LEN		0x3fffffff
+#define SNDRV_SEQ_MAX_EVENT_LEN		0x3fffffff
 
 /* typedefs */
-struct snd_seq_stru_user_client;
-struct snd_seq_stru_kernel_client;
-struct snd_seq_stru_client;
-struct snd_seq_stru_queue;
+struct _snd_seq_user_client;
+struct _snd_seq_kernel_client;
+struct _snd_seq_client;
+struct _snd_seq_queue;
 
-typedef struct snd_seq_stru_user_client user_client_t;
-typedef struct snd_seq_stru_kernel_client kernel_client_t;
-typedef struct snd_seq_stru_client client_t;
-typedef struct snd_seq_stru_queue queue_t;
+typedef struct _snd_seq_user_client user_client_t;
+typedef struct _snd_seq_kernel_client kernel_client_t;
+typedef struct _snd_seq_client client_t;
+typedef struct _snd_seq_queue queue_t;
 
 /* call-backs for kernel client */
 
@@ -104,9 +165,9 @@ extern int snd_seq_kernel_client_enqueue(int client, snd_seq_event_t *ev, int at
 extern int snd_seq_kernel_client_dispatch(int client, snd_seq_event_t *ev, int atomic, int hop);
 extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg);
 
-#define SND_SEQ_EXT_MASK	0xc0000000
-#define SND_SEQ_EXT_USRPTR	0x80000000
-#define SND_SEQ_EXT_CHAINED	0x40000000
+#define SNDRV_SEQ_EXT_MASK	0xc0000000
+#define SNDRV_SEQ_EXT_USRPTR	0x80000000
+#define SNDRV_SEQ_EXT_CHAINED	0x40000000
 
 typedef int (*snd_seq_dump_func_t)(void *ptr, void *buf, int count);
 int snd_seq_expand_var_event(const snd_seq_event_t *event, int count, char *buf, int in_kernel, int size_aligned);

@@ -24,43 +24,43 @@
  */
 
 /* CSP modes */
-#define SND_SB_CSP_MODE_NONE		0x00
-#define SND_SB_CSP_MODE_DSP_READ	0x01	/* Record from DSP */
-#define SND_SB_CSP_MODE_DSP_WRITE	0x02	/* Play to DSP */
-#define SND_SB_CSP_MODE_QSOUND		0x04	/* QSound */
+#define SNDRV_SB_CSP_MODE_NONE		0x00
+#define SNDRV_SB_CSP_MODE_DSP_READ	0x01	/* Record from DSP */
+#define SNDRV_SB_CSP_MODE_DSP_WRITE	0x02	/* Play to DSP */
+#define SNDRV_SB_CSP_MODE_QSOUND		0x04	/* QSound */
 
 /* CSP load flags */
-#define SND_SB_CSP_LOAD_FROMUSER	0x01
-#define SND_SB_CSP_LOAD_INITBLOCK	0x02
+#define SNDRV_SB_CSP_LOAD_FROMUSER	0x01
+#define SNDRV_SB_CSP_LOAD_INITBLOCK	0x02
 
 /* CSP sample width */
-#define SND_SB_CSP_SAMPLE_8BIT		0x01
-#define SND_SB_CSP_SAMPLE_16BIT		0x02
+#define SNDRV_SB_CSP_SAMPLE_8BIT		0x01
+#define SNDRV_SB_CSP_SAMPLE_16BIT		0x02
 
 /* CSP channels */
-#define SND_SB_CSP_MONO			0x01
-#define SND_SB_CSP_STEREO		0x02
+#define SNDRV_SB_CSP_MONO			0x01
+#define SNDRV_SB_CSP_STEREO		0x02
 
 /* CSP rates */
-#define SND_SB_CSP_RATE_8000		0x01
-#define SND_SB_CSP_RATE_11025		0x02
-#define SND_SB_CSP_RATE_22050		0x04
-#define SND_SB_CSP_RATE_44100		0x08
-#define SND_SB_CSP_RATE_ALL		0x0f
+#define SNDRV_SB_CSP_RATE_8000		0x01
+#define SNDRV_SB_CSP_RATE_11025		0x02
+#define SNDRV_SB_CSP_RATE_22050		0x04
+#define SNDRV_SB_CSP_RATE_44100		0x08
+#define SNDRV_SB_CSP_RATE_ALL		0x0f
 
 /* CSP running state */
-#define SND_SB_CSP_ST_IDLE		0x00
-#define SND_SB_CSP_ST_LOADED		0x01
-#define SND_SB_CSP_ST_RUNNING		0x02
-#define SND_SB_CSP_ST_PAUSED		0x04
-#define SND_SB_CSP_ST_AUTO		0x08
-#define SND_SB_CSP_ST_QSOUND		0x10
+#define SNDRV_SB_CSP_ST_IDLE		0x00
+#define SNDRV_SB_CSP_ST_LOADED		0x01
+#define SNDRV_SB_CSP_ST_RUNNING		0x02
+#define SNDRV_SB_CSP_ST_PAUSED		0x04
+#define SNDRV_SB_CSP_ST_AUTO		0x08
+#define SNDRV_SB_CSP_ST_QSOUND		0x10
 
 /* maximum QSound value (180 degrees right) */
-#define SND_SB_CSP_QSOUND_MAX_RIGHT	0x20
+#define SNDRV_SB_CSP_QSOUND_MAX_RIGHT	0x20
 
 /* maximum microcode RIFF file size */
-#define SND_SB_CSP_MAX_MICROCODE_FILE_SIZE	0x3000
+#define SNDRV_SB_CSP_MAX_MICROCODE_FILE_SIZE	0x3000
 
 /* microcode header */
 typedef struct snd_sb_csp_mc_header {
@@ -71,7 +71,7 @@ typedef struct snd_sb_csp_mc_header {
 /* microcode to be loaded */
 typedef struct snd_sb_csp_microcode {
 	snd_sb_csp_mc_header_t info;
-	unsigned char data[SND_SB_CSP_MAX_MICROCODE_FILE_SIZE];
+	unsigned char data[SNDRV_SB_CSP_MAX_MICROCODE_FILE_SIZE];
 } snd_sb_csp_microcode_t;
 
 /* start CSP with sample_width in mono/stereo */
@@ -97,19 +97,19 @@ typedef struct snd_sb_csp_info {
 
 /* HWDEP controls */
 /* get CSP information */
-#define SND_SB_CSP_IOCTL_INFO		_IOR('H', 0x10, snd_sb_csp_info_t)
+#define SNDRV_SB_CSP_IOCTL_INFO		_IOR('H', 0x10, snd_sb_csp_info_t)
 /* load microcode to CSP */
-#define SND_SB_CSP_IOCTL_LOAD_CODE	_IOW('H', 0x11, snd_sb_csp_microcode_t)
+#define SNDRV_SB_CSP_IOCTL_LOAD_CODE	_IOW('H', 0x11, snd_sb_csp_microcode_t)
 /* unload microcode from CSP */
-#define SND_SB_CSP_IOCTL_UNLOAD_CODE	_IO('H', 0x12)
+#define SNDRV_SB_CSP_IOCTL_UNLOAD_CODE	_IO('H', 0x12)
 /* start CSP */
-#define SND_SB_CSP_IOCTL_START		_IOW('H', 0x13, snd_sb_csp_start_t)
+#define SNDRV_SB_CSP_IOCTL_START		_IOW('H', 0x13, snd_sb_csp_start_t)
 /* stop CSP */
-#define SND_SB_CSP_IOCTL_STOP		_IO('H', 0x14)
+#define SNDRV_SB_CSP_IOCTL_STOP		_IO('H', 0x14)
 /* pause CSP and DMA transfer */
-#define SND_SB_CSP_IOCTL_PAUSE		_IO('H', 0x15)
+#define SNDRV_SB_CSP_IOCTL_PAUSE		_IO('H', 0x15)
 /* restart CSP and DMA transfer */
-#define SND_SB_CSP_IOCTL_RESTART	_IO('H', 0x16)
+#define SNDRV_SB_CSP_IOCTL_RESTART	_IO('H', 0x16)
 
 #ifdef __KERNEL__
 #include "sb.h"

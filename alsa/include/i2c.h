@@ -21,8 +21,8 @@
  *
  */
 
-#define SND_LOCK_I2C_BUS(bus) spin_lock_irqsave(&bus->lock, flags)
-#define SND_UNLOCK_I2C_BUS(bus) spin_unlock_irqrestore(&bus->lock, flags)
+#define SNDRV_LOCK_I2C_BUS(bus) spin_lock_irqsave(&bus->lock, flags)
+#define SNDRV_UNLOCK_I2C_BUS(bus) spin_unlock_irqrestore(&bus->lock, flags)
 
 typedef struct snd_i2c_bus snd_i2c_bus_t;
 

@@ -34,7 +34,7 @@
 /*
  * compile flags
  */
-#define SND_EMUX_USE_RAW_EFFECT
+#define SNDRV_EMUX_USE_RAW_EFFECT
 
 
 /*
@@ -75,16 +75,16 @@ typedef struct snd_emux_operators {
 /*
  * constant values
  */
-#define SND_EMUX_MAX_PORTS		32	/* max # of sequencer ports */
-#define SND_EMUX_MAX_VOICES		64	/* max # of voices */
-#define SND_EMUX_MAX_MULTI_VOICES	16	/* max # of playable voices
+#define SNDRV_EMUX_MAX_PORTS		32	/* max # of sequencer ports */
+#define SNDRV_EMUX_MAX_VOICES		64	/* max # of voices */
+#define SNDRV_EMUX_MAX_MULTI_VOICES	16	/* max # of playable voices
 						 * simultineously
 						 */
 
 /*
  * flags
  */
-#define SND_EMUX_ACCEPT_ROM		(1<<0)
+#define SNDRV_EMUX_ACCEPT_ROM		(1<<0)
 
 /*
  * emuX wavetable
@@ -112,7 +112,7 @@ struct snd_emux {
 	spinlock_t voice_lock;	/* Lock for voice access */
 	struct semaphore register_mutex;
 	int client;		/* For the sequencer client */
-	int ports[SND_EMUX_MAX_PORTS];	/* The ports for this device */
+	int ports[SNDRV_EMUX_MAX_PORTS];	/* The ports for this device */
 	int used;	/* use counter */
 	char *name;	/* name of the device (internal) */
 	snd_rawmidi_t **vmidi;
@@ -141,7 +141,7 @@ struct snd_emux_port {
 	int volume_atten;		/* emuX raw attenuation */
 	unsigned long drum_flags;	/* drum bitmaps */
 	int ctrls[EMUX_MD_END];		/* control parameters */
-#ifdef SND_EMUX_USE_RAW_EFFECT
+#ifdef SNDRV_EMUX_USE_RAW_EFFECT
 	snd_emux_effect_table_t *effect;
 #endif
 #ifdef CONFIG_SND_OSSEMUL
@@ -150,9 +150,9 @@ struct snd_emux_port {
 };
 
 /* port_mode */
-#define SND_EMUX_PORT_MODE_MIDI		0	/* normal MIDI port */
-#define SND_EMUX_PORT_MODE_OSS_SYNTH	1	/* OSS synth port */
-#define SND_EMUX_PORT_MODE_OSS_MIDI	2	/* OSS multi channel synth port */
+#define SNDRV_EMUX_PORT_MODE_MIDI		0	/* normal MIDI port */
+#define SNDRV_EMUX_PORT_MODE_OSS_SYNTH	1	/* OSS synth port */
+#define SNDRV_EMUX_PORT_MODE_OSS_MIDI	2	/* OSS multi channel synth port */
 
 /*
  * A structure to keep track of each hardware voice
@@ -161,12 +161,12 @@ struct snd_emux_voice {
 	int  ch;		/* Hardware channel number */
 
 	int  state;		/* status */
-#define SND_EMUX_ST_OFF		0x00	/* Not playing, and inactive */
-#define SND_EMUX_ST_ON		0x01	/* Note on */
-#define SND_EMUX_ST_RELEASED 	(0x02|SND_EMUX_ST_ON)	/* Note released */
-#define SND_EMUX_ST_SUSTAINED	(0x04|SND_EMUX_ST_ON)	/* Note sustained */
-#define SND_EMUX_ST_STANDBY	(0x08|SND_EMUX_ST_ON)	/* Waiting to be triggered */
-#define SND_EMUX_ST_LOCKED		0x10	/* Not accessible */
+#define SNDRV_EMUX_ST_OFF		0x00	/* Not playing, and inactive */
+#define SNDRV_EMUX_ST_ON		0x01	/* Note on */
+#define SNDRV_EMUX_ST_RELEASED 	(0x02|SNDRV_EMUX_ST_ON)	/* Note released */
+#define SNDRV_EMUX_ST_SUSTAINED	(0x04|SNDRV_EMUX_ST_ON)	/* Note sustained */
+#define SNDRV_EMUX_ST_STANDBY	(0x08|SNDRV_EMUX_ST_ON)	/* Waiting to be triggered */
+#define SNDRV_EMUX_ST_LOCKED		0x10	/* Not accessible */
 
 	unsigned int  time;	/* An allocation time */
 	unsigned char note;	/* Note currently assigned to this voice */
@@ -197,16 +197,16 @@ struct snd_emux_voice {
 /*
  * update flags (can be combined)
  */
-#define SND_EMUX_UPDATE_VOLUME		(1<<0)
-#define SND_EMUX_UPDATE_PITCH		(1<<1)
-#define SND_EMUX_UPDATE_PAN		(1<<2)
-#define SND_EMUX_UPDATE_FMMOD		(1<<3)
-#define SND_EMUX_UPDATE_TREMFREQ	(1<<4)
-#define SND_EMUX_UPDATE_FM2FRQ2		(1<<5)
-#define SND_EMUX_UPDATE_Q		(1<<6)
+#define SNDRV_EMUX_UPDATE_VOLUME		(1<<0)
+#define SNDRV_EMUX_UPDATE_PITCH		(1<<1)
+#define SNDRV_EMUX_UPDATE_PAN		(1<<2)
+#define SNDRV_EMUX_UPDATE_FMMOD		(1<<3)
+#define SNDRV_EMUX_UPDATE_TREMFREQ	(1<<4)
+#define SNDRV_EMUX_UPDATE_FM2FRQ2		(1<<5)
+#define SNDRV_EMUX_UPDATE_Q		(1<<6)
 
 
-#ifdef SND_EMUX_USE_RAW_EFFECT
+#ifdef SNDRV_EMUX_USE_RAW_EFFECT
 /*
  * effect table
  */
@@ -215,7 +215,7 @@ struct snd_emux_effect_table {
 	short val[EMUX_NUM_EFFECTS];
 	unsigned char flag[EMUX_NUM_EFFECTS];
 };
-#endif /* SND_EMUX_USE_RAW_EFFECT */
+#endif /* SNDRV_EMUX_USE_RAW_EFFECT */
 
 
 /*

@@ -35,9 +35,9 @@ struct snd_info_buffer {
 
 typedef struct snd_info_buffer snd_info_buffer_t;
 
-#define SND_INFO_CONTENT_TEXT		0
-#define SND_INFO_CONTENT_DATA		1
-#define SND_INFO_CONTENT_DEVICE		2
+#define SNDRV_INFO_CONTENT_TEXT		0
+#define SNDRV_INFO_CONTENT_DATA		1
+#define SNDRV_INFO_CONTENT_DEVICE		2
 
 struct snd_info_entry;
 
@@ -172,13 +172,13 @@ static inline void snd_remove_proc_entry(struct proc_dir_entry *parent,
 
 #ifdef CONFIG_SND_OSSEMUL
 
-#define SND_OSS_INFO_DEV_AUDIO	0
-#define SND_OSS_INFO_DEV_SYNTH	1
-#define SND_OSS_INFO_DEV_MIDI	2
-#define SND_OSS_INFO_DEV_TIMERS	4
-#define SND_OSS_INFO_DEV_MIXERS	5
+#define SNDRV_OSS_INFO_DEV_AUDIO	0
+#define SNDRV_OSS_INFO_DEV_SYNTH	1
+#define SNDRV_OSS_INFO_DEV_MIDI	2
+#define SNDRV_OSS_INFO_DEV_TIMERS	4
+#define SNDRV_OSS_INFO_DEV_MIXERS	5
 
-#define SND_OSS_INFO_DEV_COUNT	6
+#define SNDRV_OSS_INFO_DEV_COUNT	6
 
 extern int snd_oss_info_register(int dev, int num, char *string);
 #define snd_oss_info_unregister(dev, num) snd_oss_info_register(dev, num, NULL)

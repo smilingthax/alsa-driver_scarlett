@@ -31,8 +31,8 @@ typedef struct snd_seq_dev_ops snd_seq_dev_ops_t;
 #define ID_LEN	32
 
 /* status flag */
-#define SND_SEQ_DEVICE_FREE		0
-#define SND_SEQ_DEVICE_REGISTERED	1
+#define SNDRV_SEQ_DEVICE_FREE		0
+#define SNDRV_SEQ_DEVICE_REGISTERED	1
 
 struct snd_seq_device {
 	/* device info */
@@ -76,14 +76,14 @@ snd_seq_device_t *snd_seq_device_find(snd_card_t *card, int device, char *id);
 int snd_seq_device_register_driver(char *id, snd_seq_dev_ops_t *entry, int argsize);
 int snd_seq_device_unregister_driver(char *id);
 
-#define SND_SEQ_DEVICE_ARGPTR(dev) (void *)((char *)(dev) + sizeof(snd_seq_device_t))
+#define SNDRV_SEQ_DEVICE_ARGPTR(dev) (void *)((char *)(dev) + sizeof(snd_seq_device_t))
 
 
 /*
  * id strings for generic devices
  */
-#define SND_SEQ_DEV_ID_MIDISYNTH	"seq-midi"
-#define SND_SEQ_DEV_ID_OPL3		"synth-opl3"
+#define SNDRV_SEQ_DEV_ID_MIDISYNTH	"seq-midi"
+#define SNDRV_SEQ_DEV_ID_OPL3		"synth-opl3"
 
 
 #endif

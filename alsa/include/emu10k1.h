@@ -1040,16 +1040,16 @@ typedef struct {
 					/* NULL->clear memory */	
 } emu10k1_fx8010_tram_t;
 
-#define SND_EMU10K1_IOCTL_INFO		_IOR('H', 0x10, emu10k1_fx8010_info_t)
-#define SND_EMU10K1_IOCTL_CODE		_IOW('H', 0x11, emu10k1_fx8010_code_t)
-#define SND_EMU10K1_IOCTL_CODE_REMOVE	_IOW('H', 0x12, emu10k1_fx8010_code_remove_t)
-#define SND_EMU10K1_IOCTL_TRAM_SETUP	_IOW('H', 0x20, int)
-#define SND_EMU10K1_IOCTL_TRAM_POKE	_IOW('H', 0x21, emu10k1_fx8010_tram_t)
-#define SND_EMU10K1_IOCTL_TRAM_PEEK	_IOR('H', 0x22, emu10k1_fx8010_tram_t)
-#define SND_EMU10K1_IOCTL_STOP		_IO ('H', 0x30)
-#define SND_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x31)
-#define SND_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x32)
-#define SND_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x33, int)
-#define SND_EMU10K1_IOCTL_DBG_READ	_IOR('H', 0x34, int)
+#define SNDRV_EMU10K1_IOCTL_INFO		_IOR('H', 0x10, emu10k1_fx8010_info_t)
+#define SNDRV_EMU10K1_IOCTL_CODE		_IOW('H', 0x11, emu10k1_fx8010_code_t)
+#define SNDRV_EMU10K1_IOCTL_CODE_REMOVE	_IOW('H', 0x12, emu10k1_fx8010_code_remove_t)
+#define SNDRV_EMU10K1_IOCTL_TRAM_SETUP	_IOW('H', 0x20, int)
+#define SNDRV_EMU10K1_IOCTL_TRAM_POKE	_IOW('H', 0x21, emu10k1_fx8010_tram_t)
+#define SNDRV_EMU10K1_IOCTL_TRAM_PEEK	_IOR('H', 0x22, emu10k1_fx8010_tram_t)
+#define SNDRV_EMU10K1_IOCTL_STOP		_IO ('H', 0x30)
+#define SNDRV_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x31)
+#define SNDRV_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x32)
+#define SNDRV_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x33, int)
+#define SNDRV_EMU10K1_IOCTL_DBG_READ	_IOR('H', 0x34, int)
 
 #endif	/* __EMU10K1_H */

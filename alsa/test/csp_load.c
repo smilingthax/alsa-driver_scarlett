@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 		return ERR;
 	}
 	if ((argc == 2) && !(strcmp(argv[1], "-u"))) {
-		if (ioctl(fd, SND_SB_CSP_IOCTL_UNLOAD_CODE) != 0) {
+		if (ioctl(fd, SNDRV_SB_CSP_IOCTL_UNLOAD_CODE) != 0) {
 			printf("error unloading microcode\n");
 		} else {
 		        printf("microcode unloaded\n");
@@ -44,14 +44,14 @@ int main(int argc, char *argv[])
 	}
 	/* read file to data buffer */
 	if (fread(&microcode.data, sizeof(char),
-		  SND_SB_CSP_MAX_MICROCODE_FILE_SIZE, fp) == SND_SB_CSP_MAX_MICROCODE_FILE_SIZE) {
+		  SNDRV_SB_CSP_MAX_MICROCODE_FILE_SIZE, fp) == SNDRV_SB_CSP_MAX_MICROCODE_FILE_SIZE) {
 		printf("microcode file too long\n");
 		goto __close_file_exit;
 	}
 	/* load microcode to CSP */
 	strcpy(microcode.info.codec_name, "QSOUND");
 	microcode.info.func_req = atoi(argv[2]);
-	if (ioctl(fd, SND_SB_CSP_IOCTL_LOAD_CODE, &microcode) != 0) {
+	if (ioctl(fd, SNDRV_SB_CSP_IOCTL_LOAD_CODE, &microcode) != 0) {
 		printf("error loading microcode to CSP device\n");
 		goto __close_file_exit;
 	}

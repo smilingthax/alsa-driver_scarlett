@@ -40,9 +40,9 @@ typedef struct _snd_pcm_runtime snd_pcm_runtime_t;
  */
 
 typedef struct _snd_pcm_hardware {
-	unsigned int info;		/* SND_PCM_INFO_* */
-	unsigned int formats;		/* SND_PCM_FMTBIT_* */
-	unsigned int rates;		/* SND_PCM_RATE_* */
+	unsigned int info;		/* SNDRV_PCM_INFO_* */
+	unsigned int formats;		/* SNDRV_PCM_FMTBIT_* */
+	unsigned int rates;		/* SNDRV_PCM_RATE_* */
 	unsigned int rate_min;		/* min rate */
 	unsigned int rate_max;		/* max rate */
 	unsigned int channels_min;	/* min channels */
@@ -75,95 +75,95 @@ typedef struct _snd_pcm_ops {
  *
  */
 
-#define SND_PCM_DEVICES		8
+#define SNDRV_PCM_DEVICES		8
 
-#define SND_PCM_IOCTL1_FALSE	((void *)0)
-#define SND_PCM_IOCTL1_TRUE	((void *)1)
+#define SNDRV_PCM_IOCTL1_FALSE	((void *)0)
+#define SNDRV_PCM_IOCTL1_TRUE	((void *)1)
 
-#define SND_PCM_IOCTL1_RESET		0
-#define SND_PCM_IOCTL1_INFO		1
-#define SND_PCM_IOCTL1_CHANNEL_INFO	2
-#define SND_PCM_IOCTL1_GSTATE		3
+#define SNDRV_PCM_IOCTL1_RESET		0
+#define SNDRV_PCM_IOCTL1_INFO		1
+#define SNDRV_PCM_IOCTL1_CHANNEL_INFO	2
+#define SNDRV_PCM_IOCTL1_GSTATE		3
 
-#define SND_PCM_TRIGGER_STOP		0
-#define SND_PCM_TRIGGER_START		1
-#define SND_PCM_TRIGGER_PAUSE_PUSH	3
-#define SND_PCM_TRIGGER_PAUSE_RELEASE	4
+#define SNDRV_PCM_TRIGGER_STOP		0
+#define SNDRV_PCM_TRIGGER_START		1
+#define SNDRV_PCM_TRIGGER_PAUSE_PUSH	3
+#define SNDRV_PCM_TRIGGER_PAUSE_RELEASE	4
 
 /* If you change this don't forget to changed snd_pcm_rates table in pcm_lib.c */
-#define SND_PCM_RATE_5512		(1<<0)		/* 5512Hz */
-#define SND_PCM_RATE_8000		(1<<1)		/* 8000Hz */
-#define SND_PCM_RATE_11025		(1<<2)		/* 11025Hz */
-#define SND_PCM_RATE_16000		(1<<3)		/* 16000Hz */
-#define SND_PCM_RATE_22050		(1<<4)		/* 22050Hz */
-#define SND_PCM_RATE_32000		(1<<5)		/* 32000Hz */
-#define SND_PCM_RATE_44100		(1<<6)		/* 44100Hz */
-#define SND_PCM_RATE_48000		(1<<7)		/* 48000Hz */
-#define SND_PCM_RATE_64000		(1<<8)		/* 64000Hz */
-#define SND_PCM_RATE_88200		(1<<9)		/* 88200Hz */
-#define SND_PCM_RATE_96000		(1<<10)		/* 96000Hz */
-#define SND_PCM_RATE_176400		(1<<11)		/* 176400Hz */
-#define SND_PCM_RATE_192000		(1<<12)		/* 192000Hz */
+#define SNDRV_PCM_RATE_5512		(1<<0)		/* 5512Hz */
+#define SNDRV_PCM_RATE_8000		(1<<1)		/* 8000Hz */
+#define SNDRV_PCM_RATE_11025		(1<<2)		/* 11025Hz */
+#define SNDRV_PCM_RATE_16000		(1<<3)		/* 16000Hz */
+#define SNDRV_PCM_RATE_22050		(1<<4)		/* 22050Hz */
+#define SNDRV_PCM_RATE_32000		(1<<5)		/* 32000Hz */
+#define SNDRV_PCM_RATE_44100		(1<<6)		/* 44100Hz */
+#define SNDRV_PCM_RATE_48000		(1<<7)		/* 48000Hz */
+#define SNDRV_PCM_RATE_64000		(1<<8)		/* 64000Hz */
+#define SNDRV_PCM_RATE_88200		(1<<9)		/* 88200Hz */
+#define SNDRV_PCM_RATE_96000		(1<<10)		/* 96000Hz */
+#define SNDRV_PCM_RATE_176400		(1<<11)		/* 176400Hz */
+#define SNDRV_PCM_RATE_192000		(1<<12)		/* 192000Hz */
 
-#define SND_PCM_RATE_CONTINUOUS		(1<<30)		/* continuous range */
-#define SND_PCM_RATE_KNOT		(1<<31)		/* supports more non-continuos rates */
+#define SNDRV_PCM_RATE_CONTINUOUS		(1<<30)		/* continuous range */
+#define SNDRV_PCM_RATE_KNOT		(1<<31)		/* supports more non-continuos rates */
 
-#define SND_PCM_RATE_8000_44100		(SND_PCM_RATE_8000|SND_PCM_RATE_11025|\
-					 SND_PCM_RATE_16000|SND_PCM_RATE_22050|\
-					 SND_PCM_RATE_32000|SND_PCM_RATE_44100)
-#define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
-#define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_64000|\
-					 SND_PCM_RATE_88200|SND_PCM_RATE_96000)
-#define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
-					 SND_PCM_RATE_192000)
-#define SND_PCM_FMTBIT_S8		(1 << SND_PCM_FORMAT_S8)
-#define SND_PCM_FMTBIT_U8		(1 << SND_PCM_FORMAT_U8)
-#define SND_PCM_FMTBIT_S16_LE		(1 << SND_PCM_FORMAT_S16_LE)
-#define SND_PCM_FMTBIT_S16_BE		(1 << SND_PCM_FORMAT_S16_BE)
-#define SND_PCM_FMTBIT_U16_LE		(1 << SND_PCM_FORMAT_U16_LE)
-#define SND_PCM_FMTBIT_U16_BE		(1 << SND_PCM_FORMAT_U16_BE)
-#define SND_PCM_FMTBIT_S24_LE		(1 << SND_PCM_FORMAT_S24_LE)
-#define SND_PCM_FMTBIT_S24_BE		(1 << SND_PCM_FORMAT_S24_BE)
-#define SND_PCM_FMTBIT_U24_LE		(1 << SND_PCM_FORMAT_U24_LE)
-#define SND_PCM_FMTBIT_U24_BE		(1 << SND_PCM_FORMAT_U24_BE)
-#define SND_PCM_FMTBIT_S32_LE		(1 << SND_PCM_FORMAT_S32_LE)
-#define SND_PCM_FMTBIT_S32_BE		(1 << SND_PCM_FORMAT_S32_BE)
-#define SND_PCM_FMTBIT_U32_LE		(1 << SND_PCM_FORMAT_U32_LE)
-#define SND_PCM_FMTBIT_U32_BE		(1 << SND_PCM_FORMAT_U32_BE)
-#define SND_PCM_FMTBIT_FLOAT_LE		(1 << SND_PCM_FORMAT_FLOAT_LE)
-#define SND_PCM_FMTBIT_FLOAT_BE		(1 << SND_PCM_FORMAT_FLOAT_BE)
-#define SND_PCM_FMTBIT_FLOAT64_LE	(1 << SND_PCM_FORMAT_FLOAT64_LE)
-#define SND_PCM_FMTBIT_FLOAT64_BE	(1 << SND_PCM_FORMAT_FLOAT64_BE)
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME_LE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_LE)
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME_BE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_BE)
-#define SND_PCM_FMTBIT_MU_LAW		(1 << SND_PCM_FORMAT_MU_LAW)
-#define SND_PCM_FMTBIT_A_LAW		(1 << SND_PCM_FORMAT_A_LAW)
-#define SND_PCM_FMTBIT_IMA_ADPCM	(1 << SND_PCM_FORMAT_IMA_ADPCM)
-#define SND_PCM_FMTBIT_MPEG		(1 << SND_PCM_FORMAT_MPEG)
-#define SND_PCM_FMTBIT_GSM		(1 << SND_PCM_FORMAT_GSM)
-#define SND_PCM_FMTBIT_SPECIAL		(1 << SND_PCM_FORMAT_SPECIAL)
+#define SNDRV_PCM_RATE_8000_44100		(SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|\
+					 SNDRV_PCM_RATE_16000|SNDRV_PCM_RATE_22050|\
+					 SNDRV_PCM_RATE_32000|SNDRV_PCM_RATE_44100)
+#define SNDRV_PCM_RATE_8000_48000		(SNDRV_PCM_RATE_8000_44100|SNDRV_PCM_RATE_48000)
+#define SNDRV_PCM_RATE_8000_96000		(SNDRV_PCM_RATE_8000_48000|SNDRV_PCM_RATE_64000|\
+					 SNDRV_PCM_RATE_88200|SNDRV_PCM_RATE_96000)
+#define SNDRV_PCM_RATE_8000_192000	(SNDRV_PCM_RATE_8000_96000|SNDRV_PCM_RATE_176400|\
+					 SNDRV_PCM_RATE_192000)
+#define SNDRV_PCM_FMTBIT_S8		(1 << SNDRV_PCM_FORMAT_S8)
+#define SNDRV_PCM_FMTBIT_U8		(1 << SNDRV_PCM_FORMAT_U8)
+#define SNDRV_PCM_FMTBIT_S16_LE		(1 << SNDRV_PCM_FORMAT_S16_LE)
+#define SNDRV_PCM_FMTBIT_S16_BE		(1 << SNDRV_PCM_FORMAT_S16_BE)
+#define SNDRV_PCM_FMTBIT_U16_LE		(1 << SNDRV_PCM_FORMAT_U16_LE)
+#define SNDRV_PCM_FMTBIT_U16_BE		(1 << SNDRV_PCM_FORMAT_U16_BE)
+#define SNDRV_PCM_FMTBIT_S24_LE		(1 << SNDRV_PCM_FORMAT_S24_LE)
+#define SNDRV_PCM_FMTBIT_S24_BE		(1 << SNDRV_PCM_FORMAT_S24_BE)
+#define SNDRV_PCM_FMTBIT_U24_LE		(1 << SNDRV_PCM_FORMAT_U24_LE)
+#define SNDRV_PCM_FMTBIT_U24_BE		(1 << SNDRV_PCM_FORMAT_U24_BE)
+#define SNDRV_PCM_FMTBIT_S32_LE		(1 << SNDRV_PCM_FORMAT_S32_LE)
+#define SNDRV_PCM_FMTBIT_S32_BE		(1 << SNDRV_PCM_FORMAT_S32_BE)
+#define SNDRV_PCM_FMTBIT_U32_LE		(1 << SNDRV_PCM_FORMAT_U32_LE)
+#define SNDRV_PCM_FMTBIT_U32_BE		(1 << SNDRV_PCM_FORMAT_U32_BE)
+#define SNDRV_PCM_FMTBIT_FLOAT_LE		(1 << SNDRV_PCM_FORMAT_FLOAT_LE)
+#define SNDRV_PCM_FMTBIT_FLOAT_BE		(1 << SNDRV_PCM_FORMAT_FLOAT_BE)
+#define SNDRV_PCM_FMTBIT_FLOAT64_LE	(1 << SNDRV_PCM_FORMAT_FLOAT64_LE)
+#define SNDRV_PCM_FMTBIT_FLOAT64_BE	(1 << SNDRV_PCM_FORMAT_FLOAT64_BE)
+#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE (1 << SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE)
+#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_BE (1 << SNDRV_PCM_FORMAT_IEC958_SUBFRAME_BE)
+#define SNDRV_PCM_FMTBIT_MU_LAW		(1 << SNDRV_PCM_FORMAT_MU_LAW)
+#define SNDRV_PCM_FMTBIT_A_LAW		(1 << SNDRV_PCM_FORMAT_A_LAW)
+#define SNDRV_PCM_FMTBIT_IMA_ADPCM	(1 << SNDRV_PCM_FORMAT_IMA_ADPCM)
+#define SNDRV_PCM_FMTBIT_MPEG		(1 << SNDRV_PCM_FORMAT_MPEG)
+#define SNDRV_PCM_FMTBIT_GSM		(1 << SNDRV_PCM_FORMAT_GSM)
+#define SNDRV_PCM_FMTBIT_SPECIAL		(1 << SNDRV_PCM_FORMAT_SPECIAL)
 
-#ifdef SND_LITTLE_ENDIAN
-#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_LE
-#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_LE
-#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_LE
-#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_LE
-#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_LE
-#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_LE
-#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_LE
-#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_LE
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_LE
+#ifdef SNDRV_LITTLE_ENDIAN
+#define SNDRV_PCM_FMTBIT_S16		SNDRV_PCM_FMTBIT_S16_LE
+#define SNDRV_PCM_FMTBIT_U16		SNDRV_PCM_FMTBIT_U16_LE
+#define SNDRV_PCM_FMTBIT_S24		SNDRV_PCM_FMTBIT_S24_LE
+#define SNDRV_PCM_FMTBIT_U24		SNDRV_PCM_FMTBIT_U24_LE
+#define SNDRV_PCM_FMTBIT_S32		SNDRV_PCM_FMTBIT_S32_LE
+#define SNDRV_PCM_FMTBIT_U32		SNDRV_PCM_FMTBIT_U32_LE
+#define SNDRV_PCM_FMTBIT_FLOAT		SNDRV_PCM_FMTBIT_FLOAT_LE
+#define SNDRV_PCM_FMTBIT_FLOAT64		SNDRV_PCM_FMTBIT_FLOAT64_LE
+#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME	SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE
 #endif
-#ifdef SND_BIG_ENDIAN
-#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_BE
-#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_BE
-#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_BE
-#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_BE
-#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_BE
-#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_BE
-#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_BE
-#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_BE
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_BE
+#ifdef SNDRV_BIG_ENDIAN
+#define SNDRV_PCM_FMTBIT_S16		SNDRV_PCM_FMTBIT_S16_BE
+#define SNDRV_PCM_FMTBIT_U16		SNDRV_PCM_FMTBIT_U16_BE
+#define SNDRV_PCM_FMTBIT_S24		SNDRV_PCM_FMTBIT_S24_BE
+#define SNDRV_PCM_FMTBIT_U24		SNDRV_PCM_FMTBIT_U24_BE
+#define SNDRV_PCM_FMTBIT_S32		SNDRV_PCM_FMTBIT_S32_BE
+#define SNDRV_PCM_FMTBIT_U32		SNDRV_PCM_FMTBIT_U32_BE
+#define SNDRV_PCM_FMTBIT_FLOAT		SNDRV_PCM_FMTBIT_FLOAT_BE
+#define SNDRV_PCM_FMTBIT_FLOAT64		SNDRV_PCM_FMTBIT_FLOAT64_BE
+#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME	SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_BE
 #endif
 
 struct _snd_pcm_file {
@@ -185,10 +185,10 @@ struct _snd_pcm_hw_rule {
 };
 
 typedef struct _snd_pcm_hw_constraints {
-	unsigned int masks[SND_PCM_HW_PARAM_LAST_MASK - 
-			   SND_PCM_HW_PARAM_FIRST_MASK + 1];
-	interval_t intervals[SND_PCM_HW_PARAM_LAST_INTERVAL -
-			     SND_PCM_HW_PARAM_FIRST_INTERVAL + 1];
+	unsigned int masks[SNDRV_PCM_HW_PARAM_LAST_MASK - 
+			   SNDRV_PCM_HW_PARAM_FIRST_MASK + 1];
+	interval_t intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
+			     SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
 	unsigned int rules_num;
 	unsigned int rules_all;
 	snd_pcm_hw_rule_t *rules;
@@ -197,13 +197,13 @@ typedef struct _snd_pcm_hw_constraints {
 static inline unsigned int *constrs_mask(snd_pcm_hw_constraints_t *constrs,
 					snd_pcm_hw_param_t var)
 {
-	return &constrs->masks[var - SND_PCM_HW_PARAM_FIRST_MASK];
+	return &constrs->masks[var - SNDRV_PCM_HW_PARAM_FIRST_MASK];
 }
 
 static inline interval_t *constrs_interval(snd_pcm_hw_constraints_t *constrs,
 					  snd_pcm_hw_param_t var)
 {
-	return &constrs->intervals[var - SND_PCM_HW_PARAM_FIRST_INTERVAL];
+	return &constrs->intervals[var - SNDRV_PCM_HW_PARAM_FIRST_INTERVAL];
 }
 
 typedef struct {
@@ -243,7 +243,7 @@ struct _snd_pcm_runtime {
 
 	/* -- HW params -- */
 	snd_pcm_access_t access;	/* access mode */
-	snd_pcm_format_t format;	/* SND_PCM_FORMAT_* */
+	snd_pcm_format_t format;	/* SNDRV_PCM_FORMAT_* */
 	snd_pcm_subformat_t subformat;	/* subformat */
 	unsigned int rate;		/* rate in Hz */
 	unsigned int channels;		/* channels */
@@ -519,9 +519,9 @@ static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
 
 static inline int snd_pcm_running(snd_pcm_substream_t *substream)
 {
-	return (substream->runtime->status->state == SND_PCM_STATE_RUNNING ||
-		(substream->runtime->status->state == SND_PCM_STATE_DRAINING &&
-		 substream->stream == SND_PCM_STREAM_PLAYBACK));
+	return (substream->runtime->status->state == SNDRV_PCM_STATE_RUNNING ||
+		(substream->runtime->status->state == SNDRV_PCM_STATE_DRAINING &&
+		 substream->stream == SNDRV_PCM_STREAM_PLAYBACK));
 }
 
 static inline ssize_t bytes_to_samples(snd_pcm_runtime_t *runtime, ssize_t size)
@@ -601,14 +601,14 @@ static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream,
 
 static inline int hw_is_mask(int var)
 {
-	return var >= SND_PCM_HW_PARAM_FIRST_MASK &&
-		var <= SND_PCM_HW_PARAM_LAST_MASK;
+	return var >= SNDRV_PCM_HW_PARAM_FIRST_MASK &&
+		var <= SNDRV_PCM_HW_PARAM_LAST_MASK;
 }
 
 static inline int hw_is_interval(int var)
 {
-	return var >= SND_PCM_HW_PARAM_FIRST_INTERVAL &&
-		var <= SND_PCM_HW_PARAM_LAST_INTERVAL;
+	return var >= SNDRV_PCM_HW_PARAM_FIRST_INTERVAL &&
+		var <= SNDRV_PCM_HW_PARAM_LAST_INTERVAL;
 }
 
 typedef unsigned int mask_t;
@@ -617,13 +617,13 @@ typedef unsigned int mask_t;
 static inline mask_t *hw_param_mask(snd_pcm_hw_params_t *params,
 				     snd_pcm_hw_param_t var)
 {
-	return (mask_t*)&params->masks[var - SND_PCM_HW_PARAM_FIRST_MASK];
+	return (mask_t*)&params->masks[var - SNDRV_PCM_HW_PARAM_FIRST_MASK];
 }
 
 static inline interval_t *hw_param_interval(snd_pcm_hw_params_t *params,
 					     snd_pcm_hw_param_t var)
 {
-	return &params->intervals[var - SND_PCM_HW_PARAM_FIRST_INTERVAL];
+	return &params->intervals[var - SNDRV_PCM_HW_PARAM_FIRST_INTERVAL];
 }
 
 static inline const mask_t *hw_param_mask_c(const snd_pcm_hw_params_t *params,
@@ -638,16 +638,16 @@ static inline const interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *p
 	return (const interval_t *)hw_param_interval((snd_pcm_hw_params_t*) params, var);
 }
 
-#define params_access(p) (ffs(*hw_param_mask((p), SND_PCM_HW_PARAM_ACCESS)) - 1)
-#define params_format(p) (ffs(*hw_param_mask((p), SND_PCM_HW_PARAM_FORMAT)) - 1)
-#define params_subformat(p) (ffs(*hw_param_mask((p), SND_PCM_HW_PARAM_SUBFORMAT)) - 1)
-#define params_channels(p) hw_param_interval((p), SND_PCM_HW_PARAM_CHANNELS)->min
-#define params_rate(p) hw_param_interval((p), SND_PCM_HW_PARAM_RATE)->min
-#define params_period_size(p) hw_param_interval((p), SND_PCM_HW_PARAM_PERIOD_SIZE)->min
-#define params_periods(p) hw_param_interval((p), SND_PCM_HW_PARAM_PERIODS)->min
-#define params_buffer_size(p) hw_param_interval((p), SND_PCM_HW_PARAM_BUFFER_SIZE)->min
-#define params_buffer_bytes(p) hw_param_interval((p), SND_PCM_HW_PARAM_BUFFER_BYTES)->min
-#define params_tick_time(p) hw_param_interval((p), SND_PCM_HW_PARAM_TICK_TIME)->min
+#define params_access(p) (ffs(*hw_param_mask((p), SNDRV_PCM_HW_PARAM_ACCESS)) - 1)
+#define params_format(p) (ffs(*hw_param_mask((p), SNDRV_PCM_HW_PARAM_FORMAT)) - 1)
+#define params_subformat(p) (ffs(*hw_param_mask((p), SNDRV_PCM_HW_PARAM_SUBFORMAT)) - 1)
+#define params_channels(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_CHANNELS)->min
+#define params_rate(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_RATE)->min
+#define params_period_size(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_PERIOD_SIZE)->min
+#define params_periods(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_PERIODS)->min
+#define params_buffer_size(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_BUFFER_SIZE)->min
+#define params_buffer_bytes(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_BUFFER_BYTES)->min
+#define params_tick_time(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_TICK_TIME)->min
 
 
 extern int interval_refine(interval_t *i, const interval_t *v);
@@ -824,9 +824,9 @@ static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
  *  Misc
  */
 
-#define SND_PCM_DEFAULT_CON_SPDIF	(SND_PCM_AES0_CON_EMPHASIS_NONE|\
-					 (SND_PCM_AES1_CON_ORIGINAL<<8)|\
-					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
-					 (SND_PCM_AES3_CON_FS_48000<<24))
+#define SNDRV_PCM_DEFAULT_CON_SPDIF	(IEC958_AES0_CON_EMPHASIS_NONE|\
+					 (IEC958_AES1_CON_ORIGINAL<<8)|\
+					 (IEC958_AES1_CON_PCM_CODER<<8)|\
+					 (IEC958_AES3_CON_FS_48000<<24))
 
 #endif				/* __PCM_H */

@@ -25,23 +25,23 @@
 #define _snd_timer_chip(timer) ((timer)->private_data)
 #define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
 
-#define SND_TIMER_DEVICES	16
+#define SNDRV_TIMER_DEVICES	16
 
-#define SND_TIMER_DEV_FLG_PCM	0x10000000
+#define SNDRV_TIMER_DEV_FLG_PCM	0x10000000
 
-#define SND_TIMER_HW_AUTO	0x00000001	/* auto trigger is supported */
-#define SND_TIMER_HW_STOP	0x00000002	/* call stop before start */
-#define SND_TIMER_HW_SLAVE	0x00000004	/* only slave timer (variable resolution) */
-#define SND_TIMER_HW_FIRST	0x00000008	/* first tick can be incomplete */
+#define SNDRV_TIMER_HW_AUTO	0x00000001	/* auto trigger is supported */
+#define SNDRV_TIMER_HW_STOP	0x00000002	/* call stop before start */
+#define SNDRV_TIMER_HW_SLAVE	0x00000004	/* only slave timer (variable resolution) */
+#define SNDRV_TIMER_HW_FIRST	0x00000008	/* first tick can be incomplete */
 
-#define SND_TIMER_IFLG_SLAVE	0x00000001
-#define SND_TIMER_IFLG_RUNNING	0x00000002
-#define SND_TIMER_IFLG_START	0x00000004
-#define SND_TIMER_IFLG_AUTO	0x00000008	/* auto restart */
+#define SNDRV_TIMER_IFLG_SLAVE	0x00000001
+#define SNDRV_TIMER_IFLG_RUNNING	0x00000002
+#define SNDRV_TIMER_IFLG_START	0x00000004
+#define SNDRV_TIMER_IFLG_AUTO	0x00000008	/* auto restart */
 
-#define SND_TIMER_FLG_SYSTEM	0x00000001	/* system timer */
-#define SND_TIMER_FLG_CHANGE	0x00000002
-#define SND_TIMER_FLG_RESCHED	0x00000004	/* need reschedule */
+#define SNDRV_TIMER_FLG_SYSTEM	0x00000001	/* system timer */
+#define SNDRV_TIMER_FLG_CHANGE	0x00000002
+#define SNDRV_TIMER_FLG_RESCHED	0x00000004	/* need reschedule */
 
 typedef void (*snd_timer_callback_t) (snd_timer_instance_t * timeri, unsigned long ticks, unsigned long resolution, void *data);
 
