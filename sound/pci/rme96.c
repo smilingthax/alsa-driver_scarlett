@@ -311,6 +311,9 @@ static int
 snd_rme96_create_switches(snd_card_t *card,
 			  rme96_t *rme96);
 
+static int
+snd_rme96_getinputtype(rme96_t *rme96);
+
 static inline unsigned int
 snd_rme96_playback_ptr(rme96_t *rme96)
 {
@@ -679,6 +682,7 @@ snd_rme96_playback_getrate(rme96_t *rme96)
 	int rate, dummy;
 
 	if (!(rme96->wcreg & RME96_WCR_MASTER) &&
+            snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG &&
 	    (rate = snd_rme96_capture_getrate(rme96, &dummy)) > 0)
 	{
 	        /* slave clock */
@@ -992,6 +996,7 @@ snd_rme96_playback_hw_params(snd_pcm_substream_t *substream,
 		return err;
 	spin_lock_irqsave(&rme96->lock, flags);
 	if (!(rme96->wcreg & RME96_WCR_MASTER) &&
+            snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG &&
 	    (rate = snd_rme96_capture_getrate(rme96, &dummy)) > 0)
 	{
                 /* slave clock */
@@ -1059,15 +1064,6 @@ snd_rme96_capture_hw_params(snd_pcm_substream_t *substream,
 			spin_unlock_irqrestore(&rme96->lock, flags);
 			return err;
 		}
-	}
-	snd_rme96_setframelog(rme96, params_channels(params), 0);
-	if (rme96->playback_periodsize != 0) {
-		if (params_period_size(params) << rme96->capture_frlog !=
-		    rme96->playback_periodsize)
-		{
-			spin_unlock_irqrestore(&rme96->lock, flags);
-			return -EBUSY;
-		}
 	} else if ((rate = snd_rme96_capture_getrate(rme96, &isadat)) > 0) {
                 if (params_rate(params) != rate) {
 			spin_unlock_irqrestore(&rme96->lock, flags);
@@ -1080,6 +1076,15 @@ snd_rme96_capture_hw_params(snd_pcm_substream_t *substream,
 			return -EIO;
                 }
         }
+	snd_rme96_setframelog(rme96, params_channels(params), 0);
+	if (rme96->playback_periodsize != 0) {
+		if (params_period_size(params) << rme96->capture_frlog !=
+		    rme96->playback_periodsize)
+		{
+			spin_unlock_irqrestore(&rme96->lock, flags);
+			return -EBUSY;
+		}
+	}
 	rme96->capture_periodsize =
 		params_period_size(params) << rme96->capture_frlog;
 	snd_rme96_set_period_properties(rme96, rme96->capture_periodsize);
@@ -1209,6 +1214,7 @@ snd_rme96_playback_spdif_open(snd_pcm_substream_t *substream)
 
 	runtime->hw = snd_rme96_playback_spdif_info;
 	if (!(rme96->wcreg & RME96_WCR_MASTER) &&
+            snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG &&
 	    (rate = snd_rme96_capture_getrate(rme96, &dummy)) > 0)
 	{
                 /* slave clock */
@@ -1237,7 +1243,9 @@ snd_rme96_capture_spdif_open(snd_pcm_substream_t *substream)
 	snd_pcm_set_sync(substream);
 
 	runtime->hw = snd_rme96_capture_spdif_info;
-        if ((rate = snd_rme96_capture_getrate(rme96, &isadat)) > 0) {
+        if (snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG &&
+            (rate = snd_rme96_capture_getrate(rme96, &isadat)) > 0)
+        {
                 if (isadat) {
                         return -EIO;
                 }
@@ -1285,6 +1293,7 @@ snd_rme96_playback_adat_open(snd_pcm_substream_t *substream)
 	
 	runtime->hw = snd_rme96_playback_adat_info;
 	if (!(rme96->wcreg & RME96_WCR_MASTER) &&
+            snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG &&
 	    (rate = snd_rme96_capture_getrate(rme96, &dummy)) > 0)
 	{
                 /* slave clock */
@@ -1308,6 +1317,11 @@ snd_rme96_capture_adat_open(snd_pcm_substream_t *substream)
 	snd_pcm_set_sync(substream);
 
 	runtime->hw = snd_rme96_capture_adat_info;
+        if (snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG) {
+                /* makes no sense to use analog input. Note that analog
+                   expension cards AEB4/8-I are RME96_INPUT_INTERNAL */
+                return -EIO;
+        }
         if ((rate = snd_rme96_capture_getrate(rme96, &isadat)) > 0) {
                 if (!isadat) {
                         return -EIO;
@@ -1850,6 +1864,10 @@ snd_rme96_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 		snd_iprintf(buffer, "  clock mode: word clock\n");
 	} else if (rme96->wcreg & RME96_WCR_MASTER) {
 		snd_iprintf(buffer, "  clock mode: master\n");
+	} else if (snd_rme96_getinputtype(rme96) == RME96_INPUT_ANALOG) {
+		snd_iprintf(buffer, "  clock mode: slave (master anyway due to analog input setting)\n");
+	} else if (snd_rme96_capture_getrate(rme96, &n) < 0) {
+		snd_iprintf(buffer, "  clock mode: slave (master anyway due to no valid signal)\n");
 	} else {
 		snd_iprintf(buffer, "  clock mode: slave\n");
 	}
