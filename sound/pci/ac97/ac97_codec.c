@@ -1775,9 +1775,12 @@ static void snd_ac97_proc_regs_read(snd_info_entry_t *entry,
 static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97)
 {
 	snd_info_entry_t *entry;
-	char name[12];
+	char name[32];
 
-	sprintf(name, "ac97#%d", ac97->addr);
+	if (ac97->num)
+		sprintf(name, "ac97#%d-%d", ac97->addr, ac97->num);
+	else
+		sprintf(name, "ac97#%d", ac97->addr);
 	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = ac97;
@@ -1790,7 +1793,10 @@ static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97)
 		}
 	}
 	ac97->proc_entry = entry;
-	sprintf(name, "ac97#%dregs", ac97->addr);
+	if (ac97->num)
+		sprintf(name, "ac97#%d-%dregs", ac97->addr, ac97->num);
+	else
+		sprintf(name, "ac97#%dregs", ac97->addr);
 	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_TEXT;
 		entry->private_data = ac97;
