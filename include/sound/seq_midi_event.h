@@ -33,15 +33,12 @@ struct snd_midi_event_t {
 	int qlen;		/* queue length */
 	int read;		/* chars read */
 	int type;		/* current event type */
-	unsigned char lastcmd;
-	unsigned char nostat;
-	unsigned char xreg_hit;
-	int bufsize;
+	unsigned char lastcmd;	/* last command (for MIDI state handling) */
+	unsigned char nostat;	/* no state flag */
+	int bufsize;		/* allocated buffer size */
 	unsigned char *buf;	/* input buffer */
 	spinlock_t lock;
 };
-
-#define SND_MIDI_EVENT_NOSTATUS		(1<<0)	/* don't encode MIDI status */
 
 int snd_midi_event_new(int bufsize, snd_midi_event_t **rdev);
 int snd_midi_event_resize_buffer(snd_midi_event_t *dev, int bufsize);
