@@ -14,11 +14,10 @@ if [ -d ../alsa-lib ]; then
   ln -fv ../../alsa-lib/src/pcm/pcm_plugin_build.c pcm_oss_plugin.c
   cd plugin
   pwd
-  ln -fv ../../../alsa-lib/src/pcm/plugin/interleave.c interleave.c
-  ln -fv ../../../alsa-lib/src/pcm/plugin/linear.c linear.c
-  ln -fv ../../../alsa-lib/src/pcm/plugin/mulaw.c mulaw.c
-  ln -fv ../../../alsa-lib/src/pcm/plugin/rate.c rate.c
-  ln -fv ../../../alsa-lib/src/pcm/plugin/route.c route.c
+  for f in linear.c mulaw.c rate.c route.c plugin_ops.h
+  do
+    ln -fv ../../../alsa-lib/src/pcm/plugin/$f $f
+  done
   cd ../..
 fi
 aclocal $ACLOCAL_FLAGS
