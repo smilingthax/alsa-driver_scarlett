@@ -1977,6 +1977,9 @@ static int snd_pcm_playback_delay(snd_pcm_substream_t *substream, snd_pcm_sframe
 			err = SNDRV_PCM_STATE_RUNNING ? -EPIPE : -EBADFD;
 		}
 		break;
+	case SNDRV_PCM_STATE_XRUN:
+		err = -EPIPE;
+		break;
 	case SNDRV_PCM_STATE_SUSPENDED:
 		if (runtime->status->suspended_state == SNDRV_PCM_STATE_RUNNING) {
 			n = snd_pcm_playback_hw_avail(runtime);
