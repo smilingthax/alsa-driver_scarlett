@@ -16,7 +16,6 @@ M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster x
 M add detailed failure to params ioctl (see es18xx)
 M add needed callbacks for params_info (see es18xx)
 M change real rate params to use snd_pcm_clock_* (where useful) and to set rate_{master,divisor} (see es18xx)
-M fix trident driver (PCM?)
 M fix es1968 driver to compute real rate at params time
 M add new MPU401 uart driver (Jaroslav)
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
