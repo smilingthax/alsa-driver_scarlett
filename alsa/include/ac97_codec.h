@@ -71,6 +71,7 @@ struct snd_stru_ac97 {
 	void *private_data;
 	void (*private_free) (ac97_t * ac97);
 	/* --- */
+	int rev_is_not_rev;
 	unsigned int id;	/* identification of codec */
 	char name[64];		/* CODEC name */
 	unsigned short caps;	/* capabilities (register 0) */

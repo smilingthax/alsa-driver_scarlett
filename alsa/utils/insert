@@ -183,6 +183,13 @@ case "$1" in
     insert snd-audiopci.o
     restore es1370.conf
     ;;
+  trident)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-trident_dx_nx.o
+    insert snd-trid4dwave.o
+    restore trid4dwave.conf
+    ;;
   cs4232)
     basic; isapnp
     insert snd-mpu401-uart.o 
