@@ -180,19 +180,19 @@ void output_configin(void)
 	printf("\
 # ALSA soundcard-configuration\n\
 \n\
-if [ \"x$CONFIG_SND_SEQUENCER\" == \"x\" ]; then\n\
+if [ \"x$CONFIG_SND_SEQUENCER\" = \"x\" ]; then\n\
   CONFIG_SND_SEQUENCER=\"n\"\n\
 fi\n\
-if [ \"x$CONFIG_SND_OSSEMUL\" == \"x\" ]; then\n\
+if [ \"x$CONFIG_SND_OSSEMUL\" = \"x\" ]; then\n\
   CONFIG_SND_OSSEMUL=\"n\"\n\
 fi\n\
-if [ \"x$CONFIG_SND_MIXER_OSS\" == \"x\" ]; then\n\
+if [ \"x$CONFIG_SND_MIXER_OSS\" = \"x\" ]; then\n\
   CONFIG_SND_MIXER_OSS=\"n\"\n\
 fi\n\
-if [ \"x$CONFIG_SND_PCM_OSS\" == \"x\" ]; then\n\
+if [ \"x$CONFIG_SND_PCM_OSS\" = \"x\" ]; then\n\
   CONFIG_SND_PCM_OSS=\"n\"\n\
 fi\n\
-if [ \"x$CONFIG_SND_SEQUENCER_OSS\" == \"x\" ]; then\n\
+if [ \"x$CONFIG_SND_SEQUENCER_OSS\" = \"x\" ]; then\n\
   CONFIG_SND_SEQUENCER_OSS=\"n\"\n\
 fi\n\
 if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
