@@ -9,7 +9,6 @@ list-multi   := snd-ioctl32.o
 
 snd-ioctl32-objs := ioctl32.o pcm32.o rawmidi32.o timer32.o hwdep32.o
 
-# Toplevel Module Dependency
 obj-$(CONFIG_SND_BIT32_EMUL) += snd-ioctl32.o
 
 include $(TOPDIR)/Rules.make
