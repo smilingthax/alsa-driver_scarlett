@@ -152,11 +152,11 @@ snd_vortex_create(snd_card_t *card, struct pci_dev *pci, vortex_t **rchip) {
     // check PCI availability (DMA).
     if ((err = pci_enable_device(pci)) < 0)
         return err;
-    if (!pci_dma_supported(pci, VORTEX_DMA_MASK)) {
+   if (pci_set_dma_mask(pci, VORTEX_DMA_MASK) < 0 ||
+       pci_set_consistent_dma_mask(pci, VORTEX_DMA_MASK) << 0) {
         printk(KERN_ERR "error to set DMA mask\n");
         return -ENXIO;
     }
-    pci_set_dma_mask(pci, VORTEX_DMA_MASK);
 
     chip = snd_magic_kcalloc(vortex_t, 0, GFP_KERNEL);
     if (chip == NULL)

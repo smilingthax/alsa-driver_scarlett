@@ -1,5 +1,5 @@
---- memalloc.c	2003-11-20 12:44:06.000000000 +0100
-+++ memalloc.c	2003-11-20 12:52:50.000000000 +0100
+--- ../../alsa-kernel/core/memalloc.c	2004-01-19 12:52:21.856491159 +0100
++++ memalloc.c	2004-01-19 13:00:09.973519397 +0100
 @@ -1,3 +1,4 @@
 +#include "memalloc.inc"
  /*
@@ -13,35 +13,41 @@
  #ifdef CONFIG_PCI
  #if defined(__i386__) || defined(__ppc__) || defined(__x86_64__)
  #define HACK_PCI_ALLOC_CONSISTENT
-@@ -94,16 +96,25 @@
+@@ -94,19 +96,31 @@
  				    dma_addr_t *dma_handle)
  {
  	void *ret;
--	u64 dma_mask;
-+	u64 dma_mask = 0xffffffff, dma_mask1;
+-	u64 dma_mask, cdma_mask;
++	u64 dma_mask;
++#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
++	u64 cdma_mask;
++#endif
  	unsigned long mask;
  
  	if (hwdev == NULL)
  		return pci_alloc_consistent(hwdev, size, dma_handle);
+ 	dma_mask = hwdev->dma_mask;
 +#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
- 	dma_mask = hwdev->consistent_dma_mask;
--	mask = (unsigned long)dma_mask;
+ 	cdma_mask = hwdev->consistent_dma_mask;
+-	mask = (unsigned long)dma_mask && (unsigned long)cdma_mask;
 +#endif
-+	dma_mask1 = hwdev->dma_mask;
-+	mask = (unsigned long)(dma_mask & dma_mask1);
++	mask = (unsigned long)dma_mask;
++#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
++	mask &= (unsigned long)cdma_mask;
++#endif
+ 	hwdev->dma_mask = 0xffffffff; /* do without masking */
 +#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
  	hwdev->consistent_dma_mask = 0xffffffff; /* do without masking */
 +#endif
-+	hwdev->dma_mask = 0xffffffff; /* do without masking */
  	ret = pci_alloc_consistent(hwdev, size, dma_handle);
+ 	hwdev->dma_mask = dma_mask; /* restore */
 +#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
- 	hwdev->consistent_dma_mask = dma_mask; /* restore */
+ 	hwdev->consistent_dma_mask = cdma_mask; /* restore */
 +#endif
-+	hwdev->dma_mask = dma_mask1; /* restore */
  	if (ret) {
  		/* obtained address is out of range? */
  		if (((unsigned long)*dma_handle + size - 1) & ~mask) {
-@@ -125,6 +136,7 @@
+@@ -128,6 +142,7 @@
  
  #endif /* arch */
  #endif /* CONFIG_PCI */
@@ -49,7 +55,7 @@
  
  
  /*
-@@ -617,7 +629,7 @@
+@@ -623,7 +638,7 @@
  }
  
  
@@ -58,19 +64,16 @@
  /*
   * on ix86, we allocate a page with GFP_KERNEL to assure the
   * allocation.  the code is almost same with kernel/i386/pci-dma.c but
-@@ -642,7 +654,11 @@
+@@ -648,7 +663,7 @@
  	dma_addr_t addr;
  	unsigned long mask;
  
-+#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
- 	mask = pci ? (unsigned long)pci->consistent_dma_mask : 0x00ffffffUL;
-+#else
+-	mask = pci ? (unsigned long)pci->consistent_dma_mask : 0x00ffffffUL;
 +	mask = pci ? (unsigned long)pci->dma_mask : 0x00ffffffUL;
-+#endif
  	ptr = (void *)__get_free_page(GFP_KERNEL);
  	if (ptr) {
  		addr = virt_to_phys(ptr);
-@@ -997,3 +1013,5 @@
+@@ -1012,3 +1027,5 @@
  EXPORT_SYMBOL(snd_malloc_sbus_pages_fallback);
  EXPORT_SYMBOL(snd_free_sbus_pages);
  #endif

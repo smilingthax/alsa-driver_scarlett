@@ -80,7 +80,7 @@ void snd_compat_request_module(const char *name, ...);
 #include <linux/pm.h>
 #include <asm/page.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)
-#define pci_set_dma_mask(pci, mask) pci->dma_mask = mask
+#define pci_set_dma_mask(pci, mask) (pci->dma_mask = mask, 0)
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 7)
 #define PCI_OLD_SUSPEND
@@ -417,7 +417,7 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #endif
 
 #ifndef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
-#define pci_set_consistent_dma_mask(p,x) pci_set_dma_mask(p,x)
+#define pci_set_consistent_dma_mask(p,x) 0 /* success */
 #endif
 
 #include "amagic.h"
