@@ -61,6 +61,7 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 
 #define snd_info_private_data_t_magic		0xa15a0201
 #define snd_kctl_t_magic			0xa15a0301
+#define snd_kcontrol_t_magic			0xa15a0302
 #define snd_rawmidi_t_magic			0xa15a0401
 #define snd_virmidi_t_magic			0xa15a0402
 #define snd_virmidi_dev_t_magic			0xa15a0403
