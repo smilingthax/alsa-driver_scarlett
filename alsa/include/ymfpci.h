@@ -330,6 +330,10 @@ struct _snd_ymfpci {
 	wait_queue_head_t interrupt_sleep;
 	atomic_t interrupt_sleep_count;
 	snd_info_entry_t *proc_entry;
+
+#ifdef CONFIG_PM
+	u32 *saved_regs;
+#endif
 };
 
 int snd_ymfpci_create(snd_card_t * card,
@@ -345,5 +349,10 @@ int snd_ymfpci_mixer(ymfpci_t *chip);
 
 int snd_ymfpci_voice_alloc(ymfpci_t *chip, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);
 int snd_ymfpci_voice_free(ymfpci_t *chip, ymfpci_voice_t *pvoice);
+
+#ifdef CONFIG_PM
+void snd_ymfpci_suspend(ymfpci_t *chip);
+void snd_ymfpci_resume(ymfpci_t *chip);
+#endif
 
 #endif				/* __YMFPCI_H */
