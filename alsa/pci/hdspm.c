@@ -3540,12 +3540,12 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	hdspm->irq = -1;
 	hdspm->irq_count = 0;
 
-	hdspm->midi[0].rmidi = 0;
-	hdspm->midi[1].rmidi = 0;
-	hdspm->midi[0].input = 0;
-	hdspm->midi[1].input = 0;
-	hdspm->midi[0].output = 0;
-	hdspm->midi[1].output = 0;
+	hdspm->midi[0].rmidi = NULL;
+	hdspm->midi[1].rmidi = NULL;
+	hdspm->midi[0].input = NULL;
+	hdspm->midi[1].input = NULL;
+	hdspm->midi[0].output = NULL;
+	hdspm->midi[1].output = NULL;
 	spin_lock_init(&hdspm->midi[0].lock);
 	spin_lock_init(&hdspm->midi[1].lock);
 	hdspm->iobase = NULL;
