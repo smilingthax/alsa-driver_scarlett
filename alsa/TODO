@@ -2,8 +2,6 @@
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 M reimplement sync go (also sync stop?) for multiple card support (perhaps it's better to add a support for generic sync request?)
 M add fields to params struct needed for change on running ("when")
-M add fields to params struct for informative failure ("where" and "why")
-M add to stream_info format request
 M loopback implementation (To think)
 M reimplement mixer/control API (To think)
 M make xrun detection optional (Abramo)
@@ -17,6 +15,7 @@ L extend the use of __init and __exit to all initialization code wherever it is
 H port pdplus to new frame oriented midlevel (and fix broken interrupt handler)
 M rewrite mixer lowlevel implementation
 M fix trident driver
+L add detailed failure to params ioctl
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
