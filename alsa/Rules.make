@@ -15,11 +15,20 @@ export-objs :=
 	@$(SND_TOPDIR)/utils/patch-alsa $@
 
 # apply patches beforehand
+.PHONY: prepare
 prepare: $(clean-files)
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
 	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
 	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare; fi; \
 	done
+
+.PHONY: clean1
+clean1:
+	rm -f *.[oas] *.ko .*.cmd .*.d .*.tmp *.mod.c *.isapnp $(clean-files)
+
+.PHONY: mrproper
+mrproper: $(patsubst %,_sfmrproper_%,$(ALL_SUB_DIRS)) clean1
+	rm -f *~ out.txt *.orig *.rej .#* .gdb_history
 
 ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))
 ALL_MOBJS := $(filter-out %/, $(ALL_MOBJS))
@@ -34,6 +43,7 @@ endif
 	done
 
 # apply patches beforehand
+.PHONY: cleanup
 cleanup:
 	rm -f *.[oas] *.ko .*.cmd .*.d .*.tmp *.mod.c $(clean-files)
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
