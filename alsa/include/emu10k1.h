@@ -732,6 +732,10 @@ typedef struct {
 } snd_emu10k1_fx8010_ctl_t;
 
 typedef struct {
+	unsigned short fxbus_mask;	/* used FX buses (bitmask) */
+	unsigned short extin_mask;	/* used external inputs (bitmask) */
+	unsigned short extout_mask;	/* used external outputs (bitmask) */
+	unsigned short pad1;
 	unsigned int itram_size;	/* internal TRAM size in samples */
 	unsigned int etram_size;	/* external TRAM size in samples */
 	void *etram_pages;		/* allocated pages for external TRAM */
@@ -756,6 +760,7 @@ struct _snd_emu10k1 {
 	unsigned int revision;			/* chip revision */
 	unsigned int serial;			/* serial number */
 	unsigned short model;			/* subsystem id */
+	unsigned int card_type;			/* EMU10K1_CARD_* */
 	unsigned int ecard_ctrl;		/* ecard control bits */
 	void *silent_page;			/* silent page */
 	dma_addr_t silent_page_dmaaddr;
@@ -826,6 +831,8 @@ struct _snd_emu10k1 {
 
 int snd_emu10k1_create(snd_card_t * card,
 		       struct pci_dev *pci,
+		       unsigned short extin_mask,
+		       unsigned short extout_mask,
 		       emu10k1_t ** remu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
@@ -887,8 +894,8 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
  * ---- FX8010 ----
  */
 
-#define EMU10K1_CARD_CREATIVE		0
-#define EMU10K1_CARD_EMUAPS		1
+#define EMU10K1_CARD_CREATIVE			0x00000000
+#define EMU10K1_CARD_EMUAPS			0x00000001
 
 /* instruction set */
 #define iMAC0	 0x00	/* R = A + (X * Y >> 31)   ; saturation */
@@ -1014,6 +1021,9 @@ typedef struct {
 	unsigned int card;			/* card type */
 	unsigned int internal_tram_size;	/* in samples */
 	unsigned int external_tram_size;	/* in samples */
+	char fxbus_names[16][32];		/* names of FXBUSes */
+	char extin_names[16][32];		/* names of external inputs */
+	char extout_names[16][32];		/* names of external outputs */
 	unsigned int gpr_controls;		/* count of GPR controls */
 } emu10k1_fx8010_info_t;
 

@@ -573,8 +573,25 @@ Module parameters
     Module for EMU10K1 based PCI soundcards.
 			* Sound Blaster Live!
 			* Sound Blaster PCI 512
+			* Emu APS (partially supported)
+
+    snd_extin   - bitmap of available external inputs for FX8010 (see bellow)
+    snd_extout  - bitmap of available external outputs for FX8010 (see bellow)
+    snd_seq_ports - allocated sequencer ports (4 by default)
+    snd_max_synth_voices - limit of voices used for wavetable (64 by default)
 
     Module supports up to 8 cards and autoprobe.
+
+    Input & Output configurations 			[snd_extin/snd_extout]
+	* Creative Card wo/Digital out			[0x0003/0x1f03]
+	* Creative Card w/Digital out			[0x0003/0x1f0f]
+	* Creative Card w/Digital CD in			[0x000f/0x1f0f]
+	* Creative Card wo/Digital out + LiveDrive	[0x3fc3/0x1fc3]
+	* Creative Card w/Digital out + LiveDrive	[0x3fc3/0x1fcf]
+	* Creative Card w/Digital CD in + LiveDrive	[0x3fcf/0x1fcf]
+	* Creative Card wo/Digital out + Digital I/O 2  [0x0fc3/0x1f0f]
+	* Creative Card w/Digital out + Digital I/O 2	[0x0fc3/0x1f0f]
+	* Creative Card w/Digital CD in + Digital I/O 2	[0x0fcf/0x1f0f]
     
   Module snd-card-ice1712.o
   -------------------------
