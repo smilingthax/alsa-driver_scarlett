@@ -21,8 +21,10 @@
 #ifndef __SND_SEQ_H
 #define __SND_SEQ_H
 
+#ifndef __KERNEL__
 #include <sys/time.h>
 #include <linux/ioctl.h>
+#endif
 
 /* version of the sequencer */
 #define SND_SEQ_VERSION SND_PROTOCOL_VERSION (0, 0, 1)
