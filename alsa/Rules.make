@@ -27,11 +27,19 @@ ALL_MOBJS := $(filter-out %/, $(ALL_MOBJS))
 modules_install:
 ifneq "$(strip $(ALL_MOBJS))" ""
 	mkdir -p $(DESTDIR)$(moddir)/$(MODCURDIR)
-	cp $(ALL_MOBJS:.o=.ko) $(DESTDIR)$(moddir)/$(MODCURDIR)
+	cp $(sort $(ALL_MOBJS:.o=.ko)) $(DESTDIR)$(moddir)/$(MODCURDIR)
 endif
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
 	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
 	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install; fi; \
+	done
+
+# apply patches beforehand
+cleanup:
+	rm -f *.[oas] *.ko .*.cmd .*.d .*.tmp *.mod.c $(clean-files)
+	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
+	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d cleanup; fi; \
 	done
 
 else
