@@ -5,7 +5,7 @@
  *
  * PCM part
  *
- * Copyright (c) 2002 by Takashi Iwai <tiwai@suse.de>
+ * Copyright (c) 2002,2003 by Takashi Iwai <tiwai@suse.de>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,11 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *
+ *
+ * TODO
+ *  - linked trigger for full-duplex mode.
+ *  - scheduled action on the stream.
  */
 
 #include <sound/driver.h>
@@ -45,44 +50,50 @@ static struct page *snd_pcm_get_vmalloc_page(snd_pcm_substream_t *subs, unsigned
 	return vmalloc_to_page(pageptr);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 18)
+#define vmalloc_32(x) vmalloc_nocheck(x)
+#endif
+
 /*
  * hw_params callback
+ * allocate a buffer via vmalloc_32().
  * NOTE: this may be called not only once per pcm open!
  */
 static int snd_pcm_alloc_vmalloc_buffer(snd_pcm_substream_t *subs, size_t size)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	if (runtime->dma_area) {
+		/* already allocated */
 		if (runtime->dma_bytes >= size)
 			return 0; /* already enough large */
-		vfree_nocheck(runtime->dma_area);
+		vfree_nocheck(runtime->dma_area); /* bypass the memory wrapper */
 	}
-	runtime->dma_area = vmalloc_nocheck(size);
+	runtime->dma_area = vmalloc_32(size);
 	if (! runtime->dma_area)
 		return -ENOMEM;
 	runtime->dma_bytes = size;
-	return 0;
+	return 1; /* changed */
 }
 
 /*
  * hw_free callback
+ * free the buffer.
  * NOTE: this may be called not only once per pcm open!
  */
 static int snd_pcm_free_vmalloc_buffer(snd_pcm_substream_t *subs)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	if (runtime->dma_area) {
-		vfree_nocheck(runtime->dma_area);
+		vfree_nocheck(runtime->dma_area); /* bypass the memory wrapper */
 		runtime->dma_area = NULL;
 	}
 	return 0;
 }
 
 
-#if 0 /* NOT USED */
 /*
  * vx_flush_read - read rest of bytes via normal transfer mode
- * @count: frames to read
+ * @count: bytes to read
  *
  * the data size must be aligned to 3 bytes, though.
  * NB: call with a certain lock!
@@ -93,7 +104,6 @@ static void vx_flush_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
 	unsigned char *buf = (unsigned char *)(runtime->dma_area + offset);
 
-	snd_assert(count % 3 == 0, return);
 	pipe->hw_ptr += bytes_to_frames(runtime, count);
 	if (pipe->hw_ptr >= runtime->buffer_size)
 		pipe->hw_ptr -= runtime->buffer_size;
@@ -116,7 +126,6 @@ static void vx_flush_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 		count -= 3;
 	}
 }
-#endif /* NOT USED */
 
 /*
  * vx_set_pcx_time - convert from the PC time to the RMH status time.
@@ -224,6 +233,9 @@ static int vx_set_format(vx_core_t *chip, vx_pipe_t *pipe,
 	return vx_set_stream_format(chip, pipe, header);
 }
 
+/*
+ * set / query the IBL size
+ */
 static int vx_set_ibl(vx_core_t *chip, struct vx_ibl_info *info)
 {
 	int err;
@@ -274,6 +286,10 @@ static int vx_get_pipe_state(vx_core_t *chip, vx_pipe_t *pipe, int *state)
  *
  * return the available size on h-buffer in bytes,
  * or a negative error code.
+ *
+ * NOTE: calling this function always switches to the stream mode.
+ *       you'll need to disconnect the host to get back to the
+ *       normal mode.
  */
 static int vx_query_hbuffer_size(vx_core_t *chip, vx_pipe_t *pipe)
 {
@@ -317,7 +333,7 @@ static int vx_pipe_can_start(vx_core_t *chip, vx_pipe_t *pipe)
 }
 
 /*
- * vx_vonf_pipe - tell the pipe to stand by and wait for IRQA.
+ * vx_conf_pipe - tell the pipe to stand by and wait for IRQA.
  * @pipe: the pipe to be configured
  */
 static int vx_conf_pipe(vx_core_t *chip, vx_pipe_t *pipe)
@@ -565,7 +581,7 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 
 	audio = subs->pcm->device * 2;
 	snd_assert(audio < chip->audio_outs, return -EINVAL);
-	err = vx_alloc_pipe(chip, 0, audio, 2, &pipe); /* stereo capture */
+	err = vx_alloc_pipe(chip, 0, audio, 2, &pipe); /* stereo playback */
 	if (err < 0)
 		return err;
 	pipe->substream = subs;
@@ -1011,7 +1027,7 @@ void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t
 	size = (size / pipe->align) * pipe->align;
 	if (! size)
 		goto _finish;
-#if 0
+#if 1 /* read the last aligned frames by vx_flush_read */
 	if (size > pipe->align)
 		vx_pseudo_dma_read(chip, runtime, pipe, size - pipe->align);
  _finish:
@@ -1062,6 +1078,7 @@ static snd_pcm_ops_t vx_pcm_capture_ops = {
 static int vx_init_audio_io(vx_core_t *chip)
 {
 	struct vx_rmh rmh;
+	int preferred;
 
 	vx_init_rmh(&rmh, CMD_SUPPORTED);
 	if (vx_send_msg(chip, &rmh) < 0) {
@@ -1082,9 +1099,14 @@ static int vx_init_audio_io(vx_core_t *chip)
 	memset(chip->playback_pipes, 0, sizeof(vx_pipe_t *) * chip->audio_outs);
 	memset(chip->capture_pipes, 0, sizeof(vx_pipe_t *) * chip->audio_ins);
 
+	preferred = chip->ibl.size;
+	chip->ibl.size = 0;
 	vx_set_ibl(chip, &chip->ibl); /* query the info */
-	chip->ibl.size = chip->ibl.min_size;
-	vx_set_ibl(chip, &chip->ibl); /* set to the minimum */
+	if (preferred > 0)
+		chip->ibl.size = ((preferred + chip->ibl.granularity - 1) / chip->ibl.granularity) * chip->ibl.granularity;
+	else
+		chip->ibl.size = chip->ibl.min_size; /* set to the minimum */
+	vx_set_ibl(chip, &chip->ibl);
 
 	return 0;
 }
