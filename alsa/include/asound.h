@@ -724,11 +724,10 @@ typedef struct snd_pcm_params {
 	size_t xfer_min;		/* xfer min size */
 	size_t xfer_align;		/* xfer size need to be a multiple */
 	int xrun_mode;			/* xrun detection mode */
-	size_t xrun_max;		/* maximum size of xrun before stop */
 	int mmap_shape;			/* mmap buffer shape */
 	size_t buffer_size;		/* requested buffer size in frames */
-	size_t frag_size;		/* requested size of fragment in frames */
-	size_t boundary;		/* position in frames wrap point */
+	size_t frag_size;		/* requested fragment size in frames */
+	size_t boundary;		/* pointers wrap point */
 	unsigned int time: 1;		/* timestamp switch */
 	int when;			/* Params apply time/condition */
 	snd_timestamp_t tstamp;		/* Timestamp */
@@ -783,7 +782,6 @@ typedef struct snd_pcm_setup {
 	size_t xfer_min;		/* xfer min size */
 	size_t xfer_align;		/* xfer size need to be a multiple */
 	int xrun_mode;			/* xrun detection mode */
-	size_t xrun_max;		/* max size of underrun/overrun before unconditional stop */
 	int mmap_shape;			/* mmap buffer shape */
 	size_t buffer_size;		/* current buffer size in frames */
 	size_t frag_size;		/* current fragment size in frames */

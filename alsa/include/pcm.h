@@ -149,7 +149,6 @@ struct snd_stru_pcm_runtime {
 	snd_pcm_digital_t digital;	/* digital format information */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	size_t avail_min;		/* min available frames for wakeup */
-	unsigned int xrun_max;
 	size_t bits_per_frame;
 	size_t bits_per_sample;
 	size_t byte_align;
@@ -416,12 +415,12 @@ extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
 extern void snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
+extern int snd_pcm_playback_xrun_asap(snd_pcm_substream_t *substream);
+extern int snd_pcm_capture_xrun_asap(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_ready(snd_pcm_substream_t *substream);
 extern long snd_pcm_playback_ready_jiffies(snd_pcm_substream_t *substream);
 extern long snd_pcm_capture_ready_jiffies(snd_pcm_substream_t *substream);
-extern long snd_pcm_playback_xrun_jiffies(snd_pcm_substream_t *substream);
-extern long snd_pcm_capture_xrun_jiffies(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_data(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_empty(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_empty(snd_pcm_substream_t *substream);
