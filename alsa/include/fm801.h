@@ -139,7 +139,7 @@ int snd_fm801_create(snd_card_t * card,
 		     snd_dma_t * dma2ptr,
 		     snd_irq_t * irqptr,
 		     fm801_t ** rcodec);
-void snd_fm801_free(fm801_t * codec);
+int snd_fm801_free(fm801_t * codec);
 void snd_fm801_interrupt(fm801_t * codec, unsigned short status);
 
 int snd_fm801_pcm(fm801_t * codec, int device, snd_pcm_t ** rpcm);

@@ -242,7 +242,7 @@ int snd_sonicvibes_create(snd_card_t * card,
 			  snd_irq_t * irqptr,
 			  int reverb, int mge,
 			  sonicvibes_t ** rsonic);
-void snd_sonicvibes_free(sonicvibes_t * sonic);
+int snd_sonicvibes_free(sonicvibes_t * sonic);
 void snd_sonicvibes_interrupt(sonicvibes_t * sonic);
 
 int snd_sonicvibes_pcm(sonicvibes_t * sonic, int device, snd_pcm_t ** rpcm);

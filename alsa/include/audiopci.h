@@ -319,7 +319,7 @@ int snd_ensoniq_1370_create(snd_card_t * card,
 			    snd_dma_t * dma3ptr,
 			    snd_irq_t * irqptr,
 			    ensoniq_t ** rensoniq);
-void snd_ensoniq_1370_free(ensoniq_t * ensoniq);
+int snd_ensoniq_1370_free(ensoniq_t * ensoniq);
 void snd_ensoniq_1370_interrupt(ensoniq_t * ensoniq);
 
 int snd_ensoniq_1370_pcm(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm);
@@ -334,7 +334,7 @@ int snd_ensoniq_1371_create(snd_card_t * card,
 			    snd_dma_t * dma3ptr,
 			    snd_irq_t * irqptr,
 			    ensoniq_t ** rensoniq);
-void snd_ensoniq_1371_free(ensoniq_t * ensoniq);
+int snd_ensoniq_1371_free(ensoniq_t * ensoniq);
 void snd_ensoniq_1371_interrupt(ensoniq_t * ensoniq);
 
 int snd_ensoniq_1371_pcm(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm);

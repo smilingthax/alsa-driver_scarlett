@@ -117,7 +117,7 @@ int snd_solo_create(snd_card_t * card,
 		    snd_irq_t * irqptr,
 		    int reverb, int mge,
 		    es1938_t ** rsolo);
-void snd_solo_free(es1938_t * solo);
+int snd_solo_free(es1938_t * solo);
 void snd_solo_interrupt(es1938_t * solo);
 
 int snd_solo_new_pcm(es1938_t * solo, int device, snd_pcm_t ** rpcm);
