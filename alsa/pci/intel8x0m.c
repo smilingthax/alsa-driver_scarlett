@@ -255,7 +255,7 @@ struct _snd_intel8x0m {
 	int in_ac97_init: 1;
 
 	ac97_bus_t *ac97_bus;
-	ac97_t *ac97[3];
+	ac97_t *ac97;
 
 	spinlock_t reg_lock;
 	spinlock_t ac97_lock;
@@ -882,7 +882,7 @@ static void snd_intel8x0_mixer_free_ac97_bus(ac97_bus_t *bus)
 static void snd_intel8x0_mixer_free_ac97(ac97_t *ac97)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
-	chip->ac97[ac97->num] = NULL;
+	chip->ac97 = NULL;
 }
 
 
@@ -891,7 +891,6 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	ac97_bus_t bus, *pbus;
 	ac97_t ac97, *x97;
 	int err;
-	unsigned int i, codecs;
 	unsigned int glob_sta = 0;
 
 	chip->in_ac97_init = 1;
@@ -910,27 +909,25 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	glob_sta = igetdword(chip, ICHREG(GLOB_STA));
 	bus.write = snd_intel8x0_codec_write;
 	bus.read = snd_intel8x0_codec_read;
-	codecs = glob_sta & ICH_SCR ? 2 : 1;
 	bus.vra = 1;
 
 	if ((err = snd_ac97_bus(chip->card, &bus, &pbus)) < 0)
 		goto __err;
 	chip->ac97_bus = pbus;
 	ac97.pci = chip->pci;
-	for (i = 0; i < codecs; i++) {
-		ac97.num = i;
-		if ((err = snd_ac97_mixer(pbus, &ac97, &x97)) < 0) {
-			snd_printk(KERN_ERR "Unable to initialize codec #%d\n", i);
-			if (i == 0)
-				goto __err;
-			continue;
-		}
-		chip->ac97[i] = x97;
-		if(ac97_is_modem(x97) && !chip->ichd[ICHD_MDMIN].ac97 ) {
-			chip->ichd[ICHD_MDMIN].ac97 = x97;
-			chip->ichd[ICHD_MDMOUT].ac97 = x97;
-		}
+	ac97.num = glob_sta & ICH_SCR ? 1 : 0;
+	if ((err = snd_ac97_mixer(pbus, &ac97, &x97)) < 0) {
+		snd_printk(KERN_ERR "Unable to initialize codec #%d\n", ac97.num);
+		if (ac97.num == 0)
+			goto __err;
+		return err;
 	}
+	chip->ac97 = x97;
+	if(ac97_is_modem(x97) && !chip->ichd[ICHD_MDMIN].ac97 ) {
+		chip->ichd[ICHD_MDMIN].ac97 = x97;
+		chip->ichd[ICHD_MDMOUT].ac97 = x97;
+	}
+
 	chip->in_ac97_init = 0;
 	return 0;
 
@@ -1008,11 +1005,9 @@ static int snd_intel8x0m_ich_chip_init(intel8x0_t *chip, int probing)
 
 	} else {
 		/* resume phase */
-		int i;
 		status = 0;
-		for (i = 0; i < 3; i++)
-			if (chip->ac97[i])
-				status |= get_ich_codec_bit(chip, i);
+		if (chip->ac97)
+			status |= get_ich_codec_bit(chip, chip->ac97->num);
 		/* wait until all the probed codecs are ready */
 		end_time = jiffies + HZ;
 		do {
@@ -1104,7 +1099,6 @@ static void intel8x0_suspend(intel8x0_t *chip)
 static void intel8x0_resume(intel8x0_t *chip)
 {
 	snd_card_t *card = chip->card;
-	int i;
 
 	if (! chip->in_suspend ||
 	    card->power_state == SNDRV_CTL_POWER_D0)
@@ -1113,9 +1107,8 @@ static void intel8x0_resume(intel8x0_t *chip)
 	pci_enable_device(chip->pci);
 	pci_set_master(chip->pci);
 	snd_intel8x0_chip_init(chip, 0);
-	for (i = 0; i < 3; i++)
-		if (chip->ac97[i])
-			snd_ac97_resume(chip->ac97[i]);
+	if (chip->ac97)
+		snd_ac97_resume(chip->ac97);
 
 	chip->in_suspend = 0;
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
