@@ -34,7 +34,7 @@ typedef struct snd_stru_mixer_file snd_kmixer_file_t;
 
 typedef int (snd_kmixer_element_info_t)(void *private_data, snd_kmixer_file_t * file, snd_mixer_element_info_t * info);
 typedef int (snd_kmixer_element_control_t)(void *private_data, snd_kmixer_file_t * file, int cmd, void * data, int size);
-typedef int (snd_kmixer_free_t)(void *private_data);
+typedef void (snd_kmixer_free_t)(void *private_data);
 
 typedef struct snd_stru_mixer_element_new {
 	char *name;			/* element name */
