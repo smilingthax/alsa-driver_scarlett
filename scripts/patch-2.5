@@ -14,19 +14,18 @@ diff -ruN linux-2.5.2-pre1/MAINTAINERS linux/MAINTAINERS
  SOUND
  P:	Alan Cox
  M:	alan@redhat.com
-diff -ruN linux-2.5.2-pre1/Makefile linux/Makefile
---- linux-2.5.2-pre1/Makefile	Sun Dec 23 16:47:36 2001
-+++ linux/Makefile	Sun Dec 23 18:20:06 2001
+--- linux-2.5.3pre6/Makefile.orig	Wed Jan 30 18:46:08 2002
++++ linux-2.5.3pre6/Makefile	Wed Jan 30 18:57:26 2002
 @@ -122,7 +122,7 @@
  NETWORKS	=net/network.o
  
  LIBS		=$(TOPDIR)/lib/lib.a
--SUBDIRS		=kernel drivers mm fs net ipc lib
-+SUBDIRS		=kernel drivers mm fs net ipc sound lib
+-SUBDIRS		=kernel lib drivers mm fs net ipc
++SUBDIRS		=kernel lib drivers mm fs net ipc sound
  
  DRIVERS-n :=
  DRIVERS-y :=
-@@ -156,7 +156,7 @@
+@@ -157,7 +157,7 @@
  DRIVERS-y += drivers/cdrom/driver.o
  endif
  
@@ -35,7 +34,7 @@ diff -ruN linux-2.5.2-pre1/Makefile linux/Makefile
  DRIVERS-$(CONFIG_PCI) += drivers/pci/driver.o
  DRIVERS-$(CONFIG_MTD) += drivers/mtd/mtdlink.o
  DRIVERS-$(CONFIG_PCMCIA) += drivers/pcmcia/pcmcia.o
-@@ -198,7 +198,7 @@
+@@ -199,7 +199,7 @@
  	drivers/char/drm/*-mod.c \
  	drivers/pci/devlist.h drivers/pci/classlist.h drivers/pci/gen-devlist \
  	drivers/zorro/devlist.h drivers/zorro/gen-devlist \
@@ -44,7 +43,7 @@ diff -ruN linux-2.5.2-pre1/Makefile linux/Makefile
  	drivers/atm/fore200e_mkfirm drivers/atm/{pca,sba}*{.bin,.bin1,.bin2} \
  	drivers/scsi/aic7xxx/aicasm/aicasm_gram.c \
  	drivers/scsi/aic7xxx/aicasm/aicasm_scan.c \
-@@ -219,11 +219,11 @@
+@@ -220,11 +220,11 @@
  	drivers/net/hamradio/soundmodem/sm_tbl_{hapn4800,psk4800}.h \
  	drivers/net/hamradio/soundmodem/sm_tbl_{afsk2400_7,afsk2400_8}.h \
  	drivers/net/hamradio/soundmodem/gentbl \
@@ -61,7 +60,7 @@ diff -ruN linux-2.5.2-pre1/Makefile linux/Makefile
  	drivers/atm/fore200e_*_fw.c drivers/atm/.fore200e_*.fw \
  	.version .config* config.in config.old \
  	scripts/tkparse scripts/kconfig.tk scripts/kconfig.tmp \
-@@ -338,7 +338,7 @@
+@@ -339,7 +339,7 @@
  init/do_mounts.o: init/do_mounts.c include/config/MARKER
  	$(CC) $(CFLAGS) $(CFLAGS_KERNEL) $(PROFILING) -c -o $*.o $<
  
@@ -254,15 +253,14 @@ diff -ruN linux-2.5.2-pre1/arch/sparc64/config.in linux/arch/sparc64/config.in
  fi
  endmenu
  
-diff -ruN linux-2.5.2-pre1/drivers/Makefile linux/drivers/Makefile
---- linux-2.5.2-pre1/drivers/Makefile	Sun Nov 11 19:09:32 2001
-+++ linux/drivers/Makefile	Sun Dec 23 18:20:06 2001
+--- linux-2.5.3pre6/drivers/Makefile.orig	Wed Jan 30 18:46:09 2002
++++ linux-2.5.3pre6/drivers/Makefile	Wed Jan 30 18:55:19 2002
 @@ -10,7 +10,7 @@
  		message/i2o message/fusion scsi md ieee1394 pnp isdn atm \
  		fc4 net/hamradio i2c acpi bluetooth
  
--subdir-y :=	parport char block net sound misc media cdrom hotplug
-+subdir-y :=	parport char block net misc media cdrom hotplug
+-subdir-y :=	base parport char block net sound misc media cdrom hotplug
++subdir-y :=	base parport char block net misc media cdrom hotplug
  subdir-m :=	$(subdir-y)
  
  
