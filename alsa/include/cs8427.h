@@ -24,6 +24,8 @@
 
 #include <sound/i2c.h>
 
+#define CS8427_BASE_ADDR	0x10	/* base I2C address */
+
 #define CS8427_REG_AUTOINC	0x80	/* flag - autoincrement */
 #define CS8427_REG_CONTROL1	0x01
 #define CS8427_REG_CONTROL2	0x02
@@ -188,5 +190,6 @@ int snd_cs8427_detect(snd_i2c_bus_t *bus, unsigned char addr);
 int snd_cs8427_create(snd_i2c_bus_t *bus, unsigned char addr, snd_i2c_device_t **r_cs8427);
 int snd_cs8427_iec958_build(snd_i2c_device_t *cs8427, snd_pcm_substream_t *playback_substream, snd_pcm_substream_t *capture_substream);
 int snd_cs8427_iec958_active(snd_i2c_device_t *cs8427, int active);
+int snd_cs8427_iec958_pcm(snd_i2c_device_t *cs8427, unsigned int rate);
 
 #endif /* __SND_CS8427_H */

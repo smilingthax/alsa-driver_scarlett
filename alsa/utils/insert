@@ -342,7 +342,9 @@ case "$1" in
     basic
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o 
-    insert snd-card-ice1712.o
+    insert snd-i2c.o
+    insert snd-cs8427.o
+    insert snd-card-ice1712.o snd_enable=1,1
     restore ice1712.conf
     ;;
   i8x0|ich)
