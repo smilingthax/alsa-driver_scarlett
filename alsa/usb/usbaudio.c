@@ -237,7 +237,6 @@ static int prepare_capture_urb(snd_usb_substream_t *subs,
 	int i, offs;
 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
 
-	ctx->transfer = subs->curpacksize * urb->number_of_packets;
 	urb->number_of_packets = ctx->packets;
 	urb->transfer_buffer = ctx->buf;
 	urb->transfer_buffer_length = subs->curpacksize * urb->number_of_packets;
@@ -248,6 +247,7 @@ static int prepare_capture_urb(snd_usb_substream_t *subs,
 		offs += subs->curpacksize;
 	}
 	urb->interval = 1;
+	ctx->transfer = subs->curpacksize * urb->number_of_packets;
 	return 0;
 }
 
@@ -283,13 +283,13 @@ static int retire_capture_urb(snd_usb_substream_t *subs,
 		subs->transfer_done += len;
 		spin_unlock_irqrestore(&subs->lock, flags);
 		/* copy a data chunk */
-		if (oldptr + len >= runtime->buffer_size) {
+		if (oldptr + len > runtime->buffer_size) {
 			int cnt = runtime->buffer_size - oldptr;
 			int blen = cnt * stride;
 			memcpy(runtime->dma_area + oldptr * stride, cp, blen);
 			memcpy(runtime->dma_area, cp + blen, len * stride - blen);
 		} else {
-			memcpy(runtime->dma_area + subs->hwptr_done * stride, cp, len * stride);
+			memcpy(runtime->dma_area + oldptr * stride, cp, len * stride);
 		}
 		/* update the pointer, call callback if necessary */
 		spin_lock_irqsave(&subs->lock, flags);
@@ -1599,7 +1599,9 @@ static void proc_dump_substream_status(snd_usb_substream_t *subs, snd_info_buffe
 		snd_iprintf(buffer, "    Packets = %d\n", subs->npacks);
 		snd_iprintf(buffer, "    URBs = %d\n", subs->nurbs);
 		snd_iprintf(buffer, "    Packet Size = %d\n", subs->curpacksize);
-		snd_iprintf(buffer, "    Nominal freq = %d.%14d", subs->freqn >> 14, subs->freqn % ((1 << 14) - 1));
+		snd_iprintf(buffer, "    Nominal freq = %d.%03d Hz\n",
+			    subs->freqn >> 14,
+			    ((subs->freqn & ((1 << 14) - 1)) * 1000) / ((1 << 14) - 1));
 	} else {
 		snd_iprintf(buffer, "  Status: Stop\n");
 	}
