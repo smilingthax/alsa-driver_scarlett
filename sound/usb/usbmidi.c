@@ -451,8 +451,10 @@ static void snd_usbmidi_output_trigger(snd_rawmidi_substream_t* substream, int u
 	usbmidi_out_port_t* port = (usbmidi_out_port_t*)substream->runtime->private_data;
 
 	port->active = up;
-	if (up)
-		tasklet_hi_schedule(&port->ep->tasklet);
+	if (up) {
+		if (! port->ep->umidi->chip->shutdown) /* to be sure... */
+			tasklet_hi_schedule(&port->ep->tasklet);
+	}
 }
 
 static int snd_usbmidi_input_open(snd_rawmidi_substream_t* substream)
@@ -489,7 +491,8 @@ static void snd_usbmidi_in_endpoint_delete(snd_usb_midi_in_endpoint_t* ep)
 {
 	if (ep->urb) {
 		if (ep->urb->transfer_buffer) {
-			usb_unlink_urb(ep->urb);
+			if (! ep->umidi->chip->shutdown) /* to be sure */
+				usb_unlink_urb(ep->urb);
 			kfree(ep->urb->transfer_buffer);
 		}
 		usb_free_urb(ep->urb);
@@ -617,7 +620,8 @@ static void snd_usbmidi_out_endpoint_delete(snd_usb_midi_out_endpoint_t* ep)
 		tasklet_kill(&ep->tasklet);
 	if (ep->urb) {
 		if (ep->urb->transfer_buffer) {
-			usb_unlink_urb(ep->urb);
+			if (! ep->umidi->chip->shutdown) /* to be sure */
+				usb_unlink_urb(ep->urb);
 			kfree(ep->urb->transfer_buffer);
 		}
 		usb_free_urb(ep->urb);
