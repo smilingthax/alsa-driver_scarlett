@@ -31,7 +31,7 @@
  * Enhanced port direct registers
  */
 
-#define SV_REG( sonic, x ) ( (sonic) -> enh_port + SV_REG_##x )
+#define SV_REG(sonic, x) ((sonic)->enh_port + SV_REG_##x)
 
 #define SV_REG_CONTROL	0x00	/* R/W: CODEC/Mixer control register */
 #define   SV_ENHANCED	  0x01	/* audio mode select - enhanced mode */
@@ -205,6 +205,8 @@ struct snd_stru_sonicvibes {
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_out;
 
+	snd_kmixer_element_t *me_accu;
+	snd_kmixer_element_t *me_dig_accu;
 	snd_kmixer_element_t *me_mux;
 	snd_kmixer_element_t *me_vol_igain;
 	snd_kmixer_element_t *me_vol_aux1;
@@ -213,6 +215,7 @@ struct snd_stru_sonicvibes {
 	snd_kmixer_element_t *me_sw_cd;
 	snd_kmixer_element_t *me_vol_line;
 	snd_kmixer_element_t *me_sw_line;
+	snd_kmixer_element_t *me_vol_mic_boost;
 	snd_kmixer_element_t *me_vol_mic;
 	snd_kmixer_element_t *me_sw_mic;
 	snd_kmixer_element_t *me_vol_synth;
@@ -225,6 +228,10 @@ struct snd_stru_sonicvibes {
 	snd_kmixer_element_t *me_sw_pcm;
 	snd_kmixer_element_t *me_vol_loop;
 	snd_kmixer_element_t *me_sw_loop;
+	snd_kmixer_element_t *me_dac;
+	snd_kmixer_element_t *me_adc;
+	snd_kmixer_element_t *me_playback;
+	snd_kmixer_element_t *me_capture;
 };
 
 sonicvibes_t *snd_sonicvibes_create(snd_card_t * card,
