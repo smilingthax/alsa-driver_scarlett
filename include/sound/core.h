@@ -34,6 +34,11 @@ typedef struct sndrv_xferi snd_xferi_t;
 typedef struct sndrv_xfern snd_xfern_t;
 typedef struct sndrv_xferv snd_xferv_t;
 
+/* forward declarations */
+#ifdef CONFIG_PCI
+struct pci_dev;
+#endif
+
 /* device allocation stuff */
 
 #define SNDRV_DEV_TYPE_RANGE_SIZE		0x1000
@@ -309,11 +314,11 @@ void snd_printd(const char *format, ...);
 /* --- */
 
 #ifdef CONFIG_SND_VERBOSE_PRINTK
-#define snd_printk(format, args...) \
-	snd_verbose_printk(__FILE__, __LINE__, format, ##args)
+#define snd_printk(args...) \
+	snd_verbose_printk(__FILE__, __LINE__, ##args)
 #else
-#define snd_printk(format, args...) \
-	printk(format, ##args)
+#define snd_printk(args...) \
+	printk(##args)
 #endif
 
 #ifdef CONFIG_SND_DEBUG
@@ -321,8 +326,8 @@ void snd_printd(const char *format, ...);
 #define __ASTRING__(x) #x
 
 #ifdef CONFIG_SND_VERBOSE_PRINTK
-#define snd_printd(format, args...) \
-	snd_verbose_printd(__FILE__, __LINE__, format, ##args)
+#define snd_printd(args...) \
+	snd_verbose_printd(__FILE__, __LINE__, ##args)
 #endif
 #define snd_assert(expr, args...) do {\
 	if (!(expr)) {\
@@ -339,16 +344,16 @@ void snd_printd(const char *format, ...);
 
 #else /* !CONFIG_SND_DEBUG */
 
-#define snd_printd(format, args...)	/* nothing */
-#define snd_assert(expr, args...)	/* nothing */
+#define snd_printd(args...)	/* nothing */
+#define snd_assert(args...)	/* nothing */
 #define snd_runtime_check(expr, args...) do { if (!(expr)) { args; } } while (0)
 
 #endif /* CONFIG_SND_DEBUG */
 
 #ifdef CONFIG_SND_DEBUG_DETECT
-#define snd_printdd(format, args...) snd_printk(format, ##args)
+#define snd_printdd(args...) snd_printk(format, ##args)
 #else
-#define snd_printdd(format, args...) /* nothing */
+#define snd_printdd(args...) /* nothing */
 #endif
 
 #define snd_BUG() snd_assert(0, )
