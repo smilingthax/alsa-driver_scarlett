@@ -23,6 +23,7 @@
 #include <asm/io.h>
 #include <linux/init.h>
 #include <linux/pm.h>
+#include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/cs4231.h>
 #include <sound/mpu401.h>

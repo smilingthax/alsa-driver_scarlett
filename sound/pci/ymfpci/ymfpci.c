@@ -20,8 +20,8 @@
  */
 
 #include <sound/driver.h>
-#include <linux/reboot.h>
 #include <linux/init.h>
+#include <linux/time.h>
 #include <sound/core.h>
 #include <sound/ymfpci.h>
 #include <sound/mpu401.h>

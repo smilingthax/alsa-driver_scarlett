@@ -24,6 +24,8 @@
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/init.h>
+#include <linux/slab.h>
+#include <linux/time.h>
 #include <sound/core.h>
 #include <sound/info.h>
 

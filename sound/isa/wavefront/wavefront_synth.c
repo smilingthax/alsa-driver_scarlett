@@ -25,6 +25,9 @@
 #include <asm/io.h>
 #include <linux/interrupt.h>
 #include <linux/init.h>
+#include <linux/delay.h>
+#include <linux/time.h>
+#include <linux/wait.h>
 #include <sound/core.h>
 #include <sound/snd_wavefront.h>
 #include <sound/initval.h>
@@ -905,7 +908,7 @@ wavefront_freemem (snd_wavefront_t *dev)
 static int
 wavefront_send_sample (snd_wavefront_t *dev, 
 		       wavefront_patch_info *header,
-		       UINT16 *dataptr,
+		       u16 *dataptr,
 		       int data_is_unsigned)
 
 {
@@ -918,9 +921,9 @@ wavefront_send_sample (snd_wavefront_t *dev,
 	   divided by 2.
         */
 
-	UINT16 sample_short;
-	UINT32 length;
-	UINT16 *data_end = 0;
+	u16 sample_short;
+	u32 length;
+	u16 *data_end = 0;
 	unsigned int i;
 	const int max_blksize = 4096/2;
 	unsigned int written;
@@ -1070,13 +1073,13 @@ wavefront_send_sample (snd_wavefront_t *dev,
 	   but the offset only uses 24 bits.
 	*/
 
-	shptr = munge_int32 (*((UINT32 *) &header->hdr.s.sampleStartOffset),
+	shptr = munge_int32 (*((u32 *) &header->hdr.s.sampleStartOffset),
 			     shptr, 4);
-	shptr = munge_int32 (*((UINT32 *) &header->hdr.s.loopStartOffset),
+	shptr = munge_int32 (*((u32 *) &header->hdr.s.loopStartOffset),
 			     shptr, 4);
-	shptr = munge_int32 (*((UINT32 *) &header->hdr.s.loopEndOffset),
+	shptr = munge_int32 (*((u32 *) &header->hdr.s.loopEndOffset),
 			     shptr, 4);
-	shptr = munge_int32 (*((UINT32 *) &header->hdr.s.sampleEndOffset),
+	shptr = munge_int32 (*((u32 *) &header->hdr.s.sampleEndOffset),
 			     shptr, 4);
 	
 	/* This one is truly wierd. What kind of wierdo decided that in
@@ -1482,11 +1485,11 @@ WaveFront: hardware-dependent interface
 ***********************************************************************/
 
 static void
-process_sample_hdr (UCHAR8 *buf)
+process_sample_hdr (u8 *buf)
 
 {
 	wavefront_sample s;
-	UCHAR8 *ptr;
+	u8 *ptr;
 
 	ptr = buf;
 
@@ -1497,11 +1500,11 @@ process_sample_hdr (UCHAR8 *buf)
 	   something very similar in the reverse direction.
 	*/
 
-	*((UINT32 *) &s.sampleStartOffset) = demunge_int32 (ptr, 4); ptr += 4;
-	*((UINT32 *) &s.loopStartOffset) = demunge_int32 (ptr, 4); ptr += 4;
-	*((UINT32 *) &s.loopEndOffset) = demunge_int32 (ptr, 4); ptr += 4;
-	*((UINT32 *) &s.sampleEndOffset) = demunge_int32 (ptr, 4); ptr += 4;
-	*((UINT32 *) &s.FrequencyBias) = demunge_int32 (ptr, 3); ptr += 3;
+	*((u32 *) &s.sampleStartOffset) = demunge_int32 (ptr, 4); ptr += 4;
+	*((u32 *) &s.loopStartOffset) = demunge_int32 (ptr, 4); ptr += 4;
+	*((u32 *) &s.loopEndOffset) = demunge_int32 (ptr, 4); ptr += 4;
+	*((u32 *) &s.sampleEndOffset) = demunge_int32 (ptr, 4); ptr += 4;
+	*((u32 *) &s.FrequencyBias) = demunge_int32 (ptr, 3); ptr += 3;
 
 	s.SampleResolution = *ptr & 0x3;
 	s.Loop = *ptr & 0x8;
@@ -1568,7 +1571,7 @@ wavefront_synth_control (snd_wavefront_card_t *acard,
 		return 0;
 
 	case WFC_UPLOAD_PATCH:
-		munge_int32 (*((UINT32 *) wc->wbuf), patchnumbuf, 2);
+		munge_int32 (*((u32 *) wc->wbuf), patchnumbuf, 2);
 		memcpy (wc->wbuf, patchnumbuf, 2);
 		break;
 
