@@ -30,6 +30,8 @@
 #define SND_LITTLE_ENDIAN
 #elif __BYTE_ORDER == __BIG_ENDIAN
 #define SND_BIG_ENDIAN
+#else
+#error "Unsupported endian..."
 #endif
 #endif
 #ifndef __KERNEL__
