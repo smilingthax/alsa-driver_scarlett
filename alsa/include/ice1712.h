@@ -267,11 +267,14 @@ struct snd_stru_ice1712 {
 	snd_rawmidi_t *rmidi[2];
 
 	spinlock_t reg_lock;
+	struct semaphore gpio_mutex;
 	snd_info_entry_t *proc_entry;
 
 	ice1712_eeprom_t eeprom;
 
 	unsigned int pro_volumes[20];
+	unsigned char ak4524_adc_volume[4];
+	unsigned char ak4524_dac_volume[4];
 	snd_kmixer_element_t *me_pro_pbk;
 	snd_kmixer_element_t *me_pro_cap;
 
