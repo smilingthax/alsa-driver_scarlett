@@ -40,7 +40,7 @@ struct snd_stru_pcm_channel {
 struct snd_stru_pcm {
 	snd_card_t *card;
 	unsigned int device;	/* device number */
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 	int ossreg;
 #endif
 	unsigned int info_flags;

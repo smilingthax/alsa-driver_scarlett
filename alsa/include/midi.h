@@ -110,7 +110,7 @@ struct snd_stru_rawmidi {
 	char id[32];
 	char name[80];
 
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 	int ossreg;
 #endif
 
@@ -138,7 +138,7 @@ extern snd_rawmidi_t *snd_rawmidi_new_device(snd_card_t * card, char *id);
 extern int snd_rawmidi_free(snd_rawmidi_t * rmidi);
 extern int __snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device);
 extern int __snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
-#ifdef SNDCFG_SEQUENCER
+#ifdef CONFIG_SND_SEQUENCER
 #include "seq_midi.h"
 static inline int snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device)
 {

@@ -20,5 +20,4 @@ mmap_test: mmap_test.c
 	$(CC) $(CFLAGS) -DVERBOSE -o mmap_test mmap_test.c
 
 clean:
-	$(MAKE) -C seq clean
 	rm -f *.o $(TARGETS) *~

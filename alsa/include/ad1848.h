@@ -184,7 +184,7 @@ int snd_ad1848_mixer_stereo_switch(int w_flag, unsigned int *bitmap, ad1848_t *c
 int snd_ad1848_mixer_mono_switch(int w_flag, unsigned int *bitmap, ad1848_t *codec,
 					int bit, int invert, unsigned char reg);
 
-#ifdef SNDCFG_DEBUG
+#ifdef CONFIG_SND_DEBUG
 void snd_ad1848_debug(ad1848_t * codec);
 #endif
 

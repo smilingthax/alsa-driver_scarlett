@@ -22,7 +22,7 @@
  *
  */
 
-/* buffer for informations */
+/* buffer for information */
 
 struct snd_info_buffer {
 	char *buffer;		/* pointer to begin of buffer */
@@ -101,10 +101,19 @@ struct snd_info_entry {
 	snd_mutex_define(access);
 };
 
+extern int snd_info_check_reserved_words(const char *str);
+
+#ifdef CONFIG_SND_OSSEMUL
+extern int snd_info_minor_register(void);
+extern int snd_info_minor_unregister(void);
+#endif
+
+
+#ifdef CONFIG_PROC_FS
+
 extern int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...);
 extern int snd_info_init(void);
 extern int snd_info_done(void);
-extern int snd_info_check_reserved_words(const char *str);
 
 extern int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len);
 extern char *snd_info_get_str(char *dest, char *src, int len);
@@ -121,16 +130,37 @@ extern int snd_info_card_register(snd_card_t * card);
 extern int snd_info_card_unregister(snd_card_t * card);
 extern int snd_info_register(snd_info_entry_t * entry);
 extern int snd_info_unregister(snd_info_entry_t * entry);
-#ifdef SNDCFG_OSSEMUL
-extern int snd_info_minor_register(void);
-extern int snd_info_minor_unregister(void);
+
+#else
+
+static inline int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...) { return 0; }
+static inline int snd_info_init(void) { return 0; }
+static inline int snd_info_done(void) { return 0; }
+
+static inline int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len) { return 0; }
+static inline char *snd_info_get_str(char *dest, char *src, int len) { return NULL; }
+static inline snd_info_entry_t *snd_info_create_entry(snd_card_t * card, const char *name) { return NULL; }
+static inline void snd_info_free_entry(snd_info_entry_t * entry) { ; }
+static inline snd_info_entry_t *snd_info_create_device(const char *name,
+						       unsigned int number,
+						       unsigned int mode) { return NULL; }
+static inline void snd_info_free_device(snd_info_entry_t * entry) { ; }
+static inline int snd_info_store_text(snd_info_entry_t * entry) { return 0; }
+static inline int snd_info_restore_text(snd_info_entry_t * entry) { return 0; }
+
+static inline int snd_info_card_register(snd_card_t * card) { return 0; }
+static inline int snd_info_card_unregister(snd_card_t * card) { return 0; }
+static inline int snd_info_register(snd_info_entry_t * entry) { return 0; }
+static inline int snd_info_unregister(snd_info_entry_t * entry) { return 0; }
+
+
 #endif
 
 /*
  * OSS info part
  */
 
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 
 #define SND_OSS_INFO_DEV_AUDIO	0
 #define SND_OSS_INFO_DEV_SYNTH	1
@@ -147,6 +177,6 @@ static inline int snd_oss_info_register(int dev, int num, char *string) { return
 #endif
 #define snd_oss_info_unregister(dev, num) snd_oss_info_register(dev, num, NULL)
 
-#endif				/* SNDCFG_OSSEMUL */
+#endif				/* CONFIG_SND_OSSEMUL */
 
 #endif				/* __INFO_H */

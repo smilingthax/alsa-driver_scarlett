@@ -14,6 +14,8 @@
 * added driver for Trident 4DWave DX/NX chips
 * added EMU-8000 driver
 * added OSS sequencer emulation client
+* added driver for FM801
+* added driver for Cirrus Logic CS461x (CS4280)
 
 0.1.4 -> 0.2.0
 

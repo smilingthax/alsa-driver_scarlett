@@ -24,30 +24,20 @@ AC_HEADER_TIME
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 
-dnl Major number
-AC_MSG_CHECKING(for default major number for the alsa driver)
-AC_ARG_WITH(major,
-  [  --with-major=number     give the default major number for the alsa driver],
-  majornumber="$withval", majornumber="116")
-AC_DEFINE_UNQUOTED(SNDCFG_MAJOR, $majornumber)
-SNDCFG_MAJOR="$majornumber"
-AC_SUBST(SNDCFG_MAJOR)
-AC_MSG_RESULT($majornumber)
-
 dnl Check for directory with kernel source...
 AC_MSG_CHECKING(for directory with kernel source)
 AC_ARG_WITH(kernel,
   [  --with-kernel=dir       give the directory with kernel sources]
   [                        [/usr/src/linux]],
   kerneldir="$withval", kerneldir="/usr/src/linux")
-AC_DEFINE_UNQUOTED(SNDCFG_KERNELDIR, "$kerneldir")
-SNDCFG_KERNELDIR="$kerneldir"
-AC_SUBST(SNDCFG_KERNELDIR)
+AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$kerneldir")
+CONFIG_SND_KERNELDIR="$kerneldir"
+AC_SUBST(CONFIG_SND_KERNELDIR)
 AC_MSG_RESULT($kerneldir)
 
 dnl Check for kernel version...
 AC_MSG_CHECKING(for kernel version)
-kaversion=`grep UTS_RELEASE $SNDCFG_KERNELDIR/include/linux/version.h 2>/dev/null | cut -d\" -f2`
+kaversion=`grep UTS_RELEASE $CONFIG_SND_KERNELDIR/include/linux/version.h 2>/dev/null | cut -d\" -f2`
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
 ksublevel=`echo $kaversion | cut -d . -f 3 | cut -d - -f 1`
@@ -65,7 +55,7 @@ kversion=`expr $kversion + 0`
 kpatchlevel=`expr $kpatchlevel + 0`
 ksublevel=`expr $ksublevel + 0`
 if test -z "$kversion" || test -z "$kpatchlevel" || test -z "$ksublevel"; then
-  echo "failed (probably missing $SNDCFG_KERNELDIR/include/linux/version.h)"
+  echo "failed (probably missing $CONFIG_SND_KERNELDIR/include/linux/version.h)"
   exit 1
 fi
 kaversion="$kversion.$kpatchlevel.$ksublevel$kextraversion"
@@ -89,7 +79,7 @@ dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
 modversion="0"
 AC_TRY_RUN([
-#include "$SNDCFG_KERNELDIR/include/linux/autoconf.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
 #ifndef CONFIG_MODVERSIONS
   exit(1);
@@ -102,8 +92,8 @@ int main( void ) {
   AC_MSG_RESULT("no");mversion="0",
   AC_MSG_RESULT("uknown");mversion="0"
 )
-SNDCFG_MVERSION=$mversion
-AC_SUBST(SNDCFG_MVERSION)
+CONFIG_SND_MVERSION=$mversion
+AC_SUBST(CONFIG_SND_MVERSION)
 GENKSYMS="/sbin/genksyms"
 if test "$newkernel" = "1"; then
   GENKSYMS="$GENKSYMS -k $kversion.$kpatchlevel.$ksublevel"
@@ -111,10 +101,10 @@ fi
 
 dnl Check for PCI support...
 AC_MSG_CHECKING(for PCI support in kernel)
-SNDCFG_PCI=`grep -E "^#define[ |\t]+CONFIG_PCI[ |\t]+1" $SNDCFG_KERNELDIR/include/linux/autoconf.h | wc -l`
-SNDCFG_PCI=`expr $SNDCFG_PCI + 0`
-AC_SUBST(SNDCFG_PCI)
-if test $SNDCFG_PCI -eq 1; then
+CONFIG_SND_PCI=`grep -E "^#define[ |\t]+CONFIG_PCI[ |\t]+1" $CONFIG_SND_KERNELDIR/include/linux/autoconf.h | wc -l`
+CONFIG_SND_PCI=`expr $CONFIG_SND_PCI + 0`
+AC_SUBST(CONFIG_SND_PCI)
+if test $CONFIG_SND_PCI -eq 1; then
   AC_MSG_RESULT("yes")
 else
   AC_MSG_RESULT("no")
@@ -122,12 +112,12 @@ fi
 
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
-SNDCFG_HAL2=0
-if test -r $SNDCFG_KERNELDIR/include/asm/sgihpc.h; then
-  SNDCFG_HAL2=1
+CONFIG_SND_SGI=0
+if test -r $CONFIG_SND_KERNELDIR/include/asm/sgihpc.h; then
+  CONFIG_SND_SGI=1
 fi
-AC_SUBST(SNDCFG_HAL2)
-if test $SNDCFG_HAL2 -eq 1; then
+AC_SUBST(CONFIG_SND_SGI)
+if test $CONFIG_SND_SGI -eq 1; then
   AC_MSG_RESULT("yes")
 else
   AC_MSG_RESULT("no")
@@ -158,25 +148,25 @@ AC_ARG_WITH(debug,
 case "$debug" in
   basic)
     AC_MSG_RESULT(basic)
-    AC_DEFINE(SNDCFG_DEBUG)
+    AC_DEFINE(CONFIG_SND_DEBUG)
     ;;
   memory)
     AC_MSG_RESULT(memory)
-    AC_DEFINE(SNDCFG_DEBUG)
-    AC_DEFINE(SNDCFG_DEBUG_MEMORY)
+    AC_DEFINE(CONFIG_SND_DEBUG)
+    AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
     ;;
   full)
     AC_MSG_RESULT(full)
-    AC_DEFINE(SNDCFG_DEBUG)
-    AC_DEFINE(SNDCFG_DEBUG_MEMORY)
-    AC_DEFINE(SNDCFG_DEBUG_FULL)
+    AC_DEFINE(CONFIG_SND_DEBUG)
+    AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
+    AC_DEFINE(CONFIG_SND_DEBUG_FULL)
     ;;    
   detect)
     AC_MSG_RESULT(detect)
-    AC_DEFINE(SNDCFG_DEBUG)
-    AC_DEFINE(SNDCFG_DEBUG_MEMORY)
-    AC_DEFINE(SNDCFG_DEBUG_FULL)
-    AC_DEFINE(SNDCFG_DEBUG_DETECT)
+    AC_DEFINE(CONFIG_SND_DEBUG)
+    AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
+    AC_DEFINE(CONFIG_SND_DEBUG_FULL)
+    AC_DEFINE(CONFIG_SND_DEBUG_DETECT)
     ;;
   *)
     AC_MSG_RESULT(none)
@@ -254,10 +244,10 @@ AC_ARG_WITH(smp,
 msmp=""
 if test "$smp" = "auto"; then
   if test $kversion -ge 2 && test $kpatchlevel -ge 2; then
-    msmp=`grep -E "^#define[ |\t]+CONFIG_SMP[ |\t]+1" $SNDCFG_KERNELDIR/include/linux/autoconf.h | wc -l`
+    msmp=`grep -E "^#define[ |\t]+CONFIG_SMP[ |\t]+1" $CONFIG_SND_KERNELDIR/include/linux/autoconf.h | wc -l`
     msmp=`expr $msmp + 0`
   else
-    CPUNUM=`grep -E "^SMP.+=.+1" $SNDCFG_KERNELDIR/Makefile`
+    CPUNUM=`grep -E "^SMP.+=.+1" $CONFIG_SND_KERNELDIR/Makefile`
     if test "$CPUNUM""x" = "x"; then
       CPUNUM=`cat /proc/cpuinfo | grep ^processor | wc -l`
       CPUNUM=`expr $CPUNUM + 0`
@@ -285,34 +275,34 @@ AC_SUBST(msmp)
 
 dnl Check for ISA PnP driver in kernel...
 AC_MSG_CHECKING(for ISA PnP driver in kernel)
-SNDCFG_ISAPNP_KERNEL="0"
-if test -r $SNDCFG_KERNELDIR/include/linux/isapnp.h; then
+CONFIG_ISAPNP_KERNEL="0"
+if test -r $CONFIG_SND_KERNELDIR/include/linux/isapnp.h; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(SNDCFG_ISAPNP_KERNEL)
-  SNDCFG_ISAPNP_KERNEL="1"
+  AC_DEFINE(CONFIG_ISAPNP_KERNEL)
+  CONFIG_ISAPNP_KERNEL="1"
 else
   AC_MSG_RESULT(no)  
 fi
-AC_SUBST(SNDCFG_ISAPNP_KERNEL)
+AC_SUBST(CONFIG_ISAPNP_KERNEL)
 
 dnl Check for ISA PnP support...
 AC_MSG_CHECKING(for ISA PnP support)
 AC_ARG_WITH(isapnp,
   [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
   pnp="$withval", pnp="auto")
-SNDCFG_ISAPNP="0"
+CONFIG_ISAPNP="0"
 if test "$pnp" = "auto"; then
   if test -f /proc/isapnp; then
-    SNDCFG_ISAPNP="1"
+    CONFIG_ISAPNP="1"
   fi
 else
   if test "$pnp" = "yes"; then
-    SNDCFG_ISAPNP="1"
+    CONFIG_ISAPNP="1"
   fi
 fi
-AC_SUBST(SNDCFG_ISAPNP)
-if test "$SNDCFG_ISAPNP" = "1"; then
-  AC_DEFINE(SNDCFG_ISAPNP)
+AC_SUBST(CONFIG_ISAPNP)
+if test "$CONFIG_ISAPNP" = "1"; then
+  AC_DEFINE(CONFIG_ISAPNP)
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
@@ -320,23 +310,23 @@ fi
 
 dnl Check for version...
 AC_MSG_CHECKING(for driver version)
-SND_VERSION=`cat $srcdir/version`
-AC_DEFINE_UNQUOTED(SND_VERSION, "$SND_VERSION")
-AC_SUBST(SND_VERSION)
-AC_MSG_RESULT($SND_VERSION)
+CONFIG_SND_VERSION=`cat $srcdir/version`
+AC_DEFINE_UNQUOTED(CONFIG_SND_VERSION, "$CONFIG_SND_VERSION")
+AC_SUBST(CONFIG_SND_VERSION)
+AC_MSG_RESULT($CONFIG_SND_VERSION)
 
 dnl Check for sequencer support...
 AC_MSG_CHECKING(for sequencer support)
 AC_ARG_WITH(sequencer,
   [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
   sequencer="$withval", sequencer="no")
-SNDCFG_SEQUENCER="0"
+CONFIG_SND_SEQUENCER="0"
 if test "$sequencer" = "yes"; then
-  SNDCFG_SEQUENCER="1"
+  CONFIG_SND_SEQUENCER="1"
 fi
-AC_SUBST(SNDCFG_SEQUENCER)
-if test "$SNDCFG_SEQUENCER" = "1"; then
-  AC_DEFINE(SNDCFG_SEQUENCER)
+AC_SUBST(CONFIG_SND_SEQUENCER)
+if test "$CONFIG_SND_SEQUENCER" = "1"; then
+  AC_DEFINE(CONFIG_SND_SEQUENCER)
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
@@ -347,13 +337,13 @@ AC_MSG_CHECKING(for OSS/Lite emulation)
 AC_ARG_WITH(oss,
   [  --with-oss=no,yes       driver will (not) be compiled with OSS/Lite emulation],
   ossemul="$withval", ossemul="yes")
-SNDCFG_OSSEMUL="0"
+CONFIG_SND_OSSEMUL="0"
 if test "$ossemul" = "yes"; then
-  SNDCFG_OSSEMUL="1"
+  CONFIG_SND_OSSEMUL="1"
 fi
-AC_SUBST(SNDCFG_OSSEMUL)
-if test "$SNDCFG_OSSEMUL" = "1"; then
-  AC_DEFINE(SNDCFG_OSSEMUL)
+AC_SUBST(CONFIG_SND_OSSEMUL)
+if test "$CONFIG_SND_OSSEMUL" = "1"; then
+  AC_DEFINE(CONFIG_SND_OSSEMUL)
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)

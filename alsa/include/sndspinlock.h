@@ -22,7 +22,7 @@
  */
 
 #if 0
-#ifdef SNDCFG_DEBUG
+#ifdef CONFIG_SND_DEBUG
 #define SND_DEBUG_SPIN
 #endif
 #endif

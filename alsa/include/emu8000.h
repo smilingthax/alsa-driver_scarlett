@@ -102,7 +102,7 @@ typedef struct snd_emu8000 {
 	snd_mutex_define(register);
 	snd_mutex_define(patch);
 
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 	int oss_synth;
 #endif
 

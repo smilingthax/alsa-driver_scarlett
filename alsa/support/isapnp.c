@@ -71,7 +71,9 @@
 #define copy_to_user memcpy_tofs
 #endif 
 
+#ifdef CONFIG_PROC_FS
 #include "isapnp_proc.c"
+#endif
 
 #if 0
 #define ISAPNP_REGION_OK
@@ -1958,7 +1960,9 @@ static void isapnp_free_all_resources(void)
 		isapnp_free_logdev(dev->logdev);
 		kfree(dev);
 	}
+#ifdef CONFIG_PROC_FS
 	isapnp_proc_done();
+#endif
 #endif
 }
 
@@ -2195,7 +2199,9 @@ __initfunc(int isapnp_init(void))
 	if (!isapnp_skip_pci_scan)
 		isapnp_pci_init();
 #endif
+#ifdef CONFIG_PROC_FS
 	isapnp_proc_init();
+#endif
 #ifndef LINUX_2_1
 	if (register_symtab(&isapnp_syms))
 		printk("isapnp: cannot register symtab!!!\n");

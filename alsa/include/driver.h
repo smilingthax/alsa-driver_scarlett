@@ -26,12 +26,12 @@
 
 #define SND_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
 
-#ifndef SNDCFG_MAJOR		/* standard configuration */
-#define SNDCFG_MAJOR		116
+#ifndef CONFIG_SND_MAJOR	/* standard configuration */
+#define CONFIG_SND_MAJOR	116
 #endif
 
-#if !defined( SNDCFG_DEBUG )
-#undef SNDCFG_DEBUG_MEMORY
+#if !defined(CONFIG_SND_DEBUG)
+#undef CONFIG_SND_DEBUG_MEMORY
 #endif
 
 /*
@@ -111,10 +111,8 @@
 #include <linux/pci.h>
 #endif
 
-#ifdef SNDCFG_ISAPNP
-#undef CONFIG_ISAPNP
-#define CONFIG_ISAPNP
-#ifdef SNDCFG_ISAPNP_KERNEL
+#ifdef CONFIG_ISAPNP
+#ifdef CONFIG_ISAPNP_KERNEL
 #include <linux/isapnp.h>
 #else
 #include "isapnp.h"
@@ -327,7 +325,7 @@ extern int snd_device_uid;
 extern int snd_register_device(int type, snd_card_t * card, int dev, snd_minor_t * reg, const char *name);
 extern int snd_unregister_device(int type, snd_card_t * card, int dev);
 
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 extern int snd_register_oss_device(int type, snd_card_t * card, int dev, snd_minor_t * reg, const char *name);
 extern int snd_unregister_oss_device(int type, snd_card_t * card, int dev);
 #endif
@@ -340,7 +338,7 @@ extern int snd_ioctl_out(long *addr, int value);
 
 /* sound_oss.c */
 
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 
 int snd_minor_info_oss_init(void);
 int snd_minor_info_oss_done(void);
@@ -368,7 +366,7 @@ extern void snd_dma_soft_release(snd_card_t * card, snd_dma_t * dma);
 extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
 extern int snd_memory_info_init(void);
 extern int snd_memory_info_done(void);
-#ifdef SNDCFG_DEBUG_MEMORY
+#ifdef CONFIG_SND_DEBUG_MEMORY
 extern void snd_memory_debug1(void);
 #endif
 
@@ -422,13 +420,13 @@ extern int snd_task_name(struct task_struct *task, char *name, int size);
 /* --- */
 
 #define snd_printk( args... ) printk( "snd: " ##args )
-#ifdef SNDCFG_DEBUG
+#ifdef CONFIG_SND_DEBUG
 #define snd_printd( args... ) snd_printk( ##args )
 #else
 #define snd_printd( args... )	/* nothing */
 #endif
 
-#ifdef SNDCFG_DEBUG_DETECT
+#ifdef CONFIG_SND_DEBUG_DETECT
 #define snd_printdd( args... ) snd_printk( ##args )
 #else
 #define snd_printdd( args... )	/* nothing */

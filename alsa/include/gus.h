@@ -287,7 +287,7 @@ struct snd_stru_gf1 {
 		unsigned short rvoices;		/* requested voices */
 		unsigned short voices;		/* total voices for this range */
 		unsigned short min, max;	/* minimal & maximal voice */
-#ifdef SNDCFG_INTERRUPTS_PROFILE
+#ifdef CONFIG_SND_INTERRUPTS_PROFILE
 		unsigned int interrupt_stat_wave;
 		unsigned int interrupt_stat_volume;
 #endif
@@ -569,7 +569,7 @@ snd_kmixer_t *snd_gf1_new_mixer(snd_gus_card_t * gus);
 snd_pcm_t *snd_gf1_pcm_new_device(snd_gus_card_t * gus, snd_kmixer_t * mixer,
 				  snd_kmixer_element_t * parent, int pcm_dev);
 
-#ifdef SNDCFG_DEBUG
+#ifdef CONFIG_SND_DEBUG
 extern void snd_gf1_print_voice_registers(snd_gus_card_t * gus);
 extern void snd_gf1_print_global_registers(snd_gus_card_t * gus);
 extern void snd_gf1_print_setup_registers(snd_gus_card_t * gus);
@@ -590,7 +590,7 @@ int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
 void snd_gus_init_control(snd_gus_card_t * gus);
-#ifdef SNDCFG_SEQUENCER
+#ifdef CONFIG_SND_SEQUENCER
 int snd_gus_attach_synthesizer(snd_gus_card_t * gus);
 int snd_gus_detach_synthesizer(snd_gus_card_t * gus);
 #endif
@@ -613,7 +613,7 @@ extern int snd_engine_instrument_register_ask(unsigned short mode);
 #endif
 
 /* gus_intr.c */
-#ifdef SNDCFG_SEQUENCER
+#ifdef CONFIG_SND_SEQUENCER
 int snd_gus_iwffff_put_sample(void *private_data, iwffff_wave_t *wave,
 			      char *data, long len, int atomic);
 int snd_gus_iwffff_get_sample(void *private_data, iwffff_wave_t *wave,
@@ -623,7 +623,7 @@ int snd_gus_iwffff_remove_sample(void *private_data, iwffff_wave_t *wave,
 #endif
 
 /* gus_dram.c */
-#ifdef SNDCFG_SEQUENCER
+#ifdef CONFIG_SND_SEQUENCER
 int snd_gus_dram_write(snd_gus_card_t *gus, char *ptr,
 		       unsigned int addr, unsigned int size);
 int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,

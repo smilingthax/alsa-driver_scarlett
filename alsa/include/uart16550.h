@@ -37,7 +37,7 @@ extern int snd_uart16550_set_param (snd_rawmidi_t* rmidi,
 
 extern int snd_uart16550_detect (unsigned short io_base);
 
-#ifdef SNDCFG_SEQUENCER
+#ifdef CONFIG_SND_SEQUENCER
 extern int snd_seq_uart16550_register_port(snd_card_t * card, snd_rawmidi_t * rmidi, int device);
 extern int snd_seq_uart16550_unregister_port(snd_card_t * card, snd_rawmidi_t * rmidi);
 #endif

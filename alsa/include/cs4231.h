@@ -319,7 +319,7 @@ int snd_cs4231_mixer_igain_volume(int w_flag, int *voices, cs4231_t *codec);
 int snd_cs4231_mixer_dac_volume(int w_flag, int *voices, cs4231_t *codec);
 int snd_cs4231_mixer_dac_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
 
-#ifdef SNDCFG_DEBUG
+#ifdef CONFIG_SND_DEBUG
 void snd_cs4231_debug(cs4231_t * codec);
 #endif
 

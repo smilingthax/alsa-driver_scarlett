@@ -111,7 +111,7 @@ struct snd_stru_mixer {
 	snd_kmixer_group_t *groups;	/* first group */
 	snd_kswitch_list_t switches;
 	snd_kmixer_file_t *ffile;	/* first file */
-#ifdef SNDCFG_OSSEMUL
+#ifdef CONFIG_SND_OSSEMUL
 	int oss_change_count;
 	int ossreg;
 #endif
