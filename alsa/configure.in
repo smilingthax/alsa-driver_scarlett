@@ -121,7 +121,7 @@ if test -f $CONFIG_SND_KERNELDIR/include/linux/pm.h; then
 else
   AC_MSG_RESULT("no")
   if test ! -f include/linux/pm.h; then
-    echo "Creating a dummy pm.h..."
+    echo "Creating a dummy <linux/pm.h>..."
     mkdir -p include/linux
     touch include/linux/pm.h
   fi
