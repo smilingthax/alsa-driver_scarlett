@@ -128,7 +128,7 @@ struct snd_stru_pcm_runtime {
 	size_t byte_io_interrupt;	/* Position at interrupt time*/
 	size_t frag_io_mod;		/* Fragment under I/O */
 	size_t bytes_per_second;
-	size_t bytes_per_sample;
+	size_t bytes_per_frame;
 	size_t bytes_avail_max;
 
 	size_t byte_boundary;

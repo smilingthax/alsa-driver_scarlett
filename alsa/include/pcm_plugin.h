@@ -118,10 +118,10 @@ struct snd_stru_pcm_plugin {
 	snd_pcm_format_t dst_format;	/* destination format */
 	int src_width;			/* sample width in bits */
 	int dst_width;			/* sample width in bits */
-	ssize_t (*src_samples)(snd_pcm_plugin_t *plugin, size_t dst_samples);
-	ssize_t (*dst_samples)(snd_pcm_plugin_t *plugin, size_t src_samples);
+	ssize_t (*src_frames)(snd_pcm_plugin_t *plugin, size_t dst_frames);
+	ssize_t (*dst_frames)(snd_pcm_plugin_t *plugin, size_t src_frames);
 	ssize_t (*client_voices)(snd_pcm_plugin_t *plugin,
-				 size_t samples,
+				 size_t frames,
 				 snd_pcm_plugin_voice_t **voices);
 	int (*src_voices_mask)(snd_pcm_plugin_t *plugin,
 			       bitset_t *dst_vmask,
@@ -132,7 +132,7 @@ struct snd_stru_pcm_plugin {
 	ssize_t (*transfer)(snd_pcm_plugin_t *plugin,
 			    const snd_pcm_plugin_voice_t *src_voices,
 			    snd_pcm_plugin_voice_t *dst_voices,
-			    size_t samples);
+			    size_t frames);
 	int (*action)(snd_pcm_plugin_t *plugin,
 		      snd_pcm_plugin_action_t action,
 		      unsigned long data);
@@ -163,12 +163,12 @@ int snd_pcm_plugin_build(snd_pcm_plugin_handle_t *handle,
                          snd_pcm_plugin_t **ret);
 int snd_pcm_plugin_free(snd_pcm_plugin_t *plugin);
 int snd_pcm_plugin_clear(snd_pcm_plugin_t **first);
-ssize_t snd_pcm_plugin_src_samples_to_size(snd_pcm_plugin_t *plugin, size_t samples);
-ssize_t snd_pcm_plugin_dst_samples_to_size(snd_pcm_plugin_t *plugin, size_t samples);
-ssize_t snd_pcm_plugin_src_size_to_samples(snd_pcm_plugin_t *plugin, size_t size);
-ssize_t snd_pcm_plugin_dst_size_to_samples(snd_pcm_plugin_t *plugin, size_t size);
-ssize_t snd_pcm_plug_client_samples(snd_pcm_plugin_handle_t *handle, int channel, size_t drv_samples);
-ssize_t snd_pcm_plug_slave_samples(snd_pcm_plugin_handle_t *handle, int channel, size_t clt_samples);
+ssize_t snd_pcm_plugin_src_frames_to_size(snd_pcm_plugin_t *plugin, size_t frames);
+ssize_t snd_pcm_plugin_dst_frames_to_size(snd_pcm_plugin_t *plugin, size_t frames);
+ssize_t snd_pcm_plugin_src_size_to_frames(snd_pcm_plugin_t *plugin, size_t size);
+ssize_t snd_pcm_plugin_dst_size_to_frames(snd_pcm_plugin_t *plugin, size_t size);
+ssize_t snd_pcm_plug_client_frames(snd_pcm_plugin_handle_t *handle, int channel, size_t drv_frames);
+ssize_t snd_pcm_plug_slave_frames(snd_pcm_plugin_handle_t *handle, int channel, size_t clt_frames);
 ssize_t snd_pcm_plug_client_size(snd_pcm_plugin_handle_t *handle, int channel, size_t drv_size);
 ssize_t snd_pcm_plug_slave_size(snd_pcm_plugin_handle_t *handle, int channel, size_t clt_size);
 
@@ -232,19 +232,19 @@ ssize_t snd_pcm_plug_client_voices_buf(snd_pcm_plugin_handle_t *handle, int chan
 				   snd_pcm_plugin_voice_t **voices);
 
 int snd_pcm_plugin_client_voices(snd_pcm_plugin_t *plugin,
-                                 size_t samples,
+                                 size_t frames,
                                  snd_pcm_plugin_voice_t **voices);
 
 int snd_pcm_area_silence(const snd_pcm_voice_area_t *dst_voice, size_t dst_offset,
 			 size_t samples, int format);
 int snd_pcm_areas_silence(const snd_pcm_voice_area_t *dst_voices, size_t dst_offset,
-			  size_t vcount, size_t samples, int format);
+			  size_t vcount, size_t frames, int format);
 int snd_pcm_area_copy(const snd_pcm_voice_area_t *src_voice, size_t src_offset,
 		      const snd_pcm_voice_area_t *dst_voice, size_t dst_offset,
 		      size_t samples, int format);
 int snd_pcm_areas_copy(const snd_pcm_voice_area_t *src_voices, size_t src_offset,
 		       const snd_pcm_voice_area_t *dst_voices, size_t dst_offset,
-		       size_t vcount, size_t samples, int format);
+		       size_t vcount, size_t frames, int format);
 
 void *snd_pcm_plug_buf_alloc(snd_pcm_plugin_handle_t *pcm, int channel, size_t size);
 void snd_pcm_plug_buf_unlock(snd_pcm_plugin_handle_t *pcm, int channel, void *ptr);
