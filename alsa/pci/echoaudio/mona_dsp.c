@@ -66,6 +66,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 
 	chip->digital_mode = DIGITAL_MODE_SPDIF_RCA;
 	chip->professional_spdif = FALSE;
+	chip->digital_in_automute = TRUE;
 
 	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)

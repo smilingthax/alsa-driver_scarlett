@@ -57,6 +57,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 					ECHO_CLOCK_BIT_ESYNC | ECHO_CLOCK_BIT_ESYNC96 |
 					ECHO_CLOCK_BIT_ADAT;
 	chip->professional_spdif = FALSE;
+	chip->digital_in_automute = TRUE;
 	chip->digital_mode = DIGITAL_MODE_SPDIF_RCA;
 
 	/* Gina24 comes in both '301 and '361 flavors */
