@@ -179,7 +179,6 @@ struct snd_stru_pcm1_subchn {
 	spinlock_t lock;
 	spinlock_t sleep_lock;
 	wait_queue_head_t sleep;
-	int sleep_flag;
 	/* -- private_data */
 	void *private_data;
 	void (*private_free)(void *private_data);

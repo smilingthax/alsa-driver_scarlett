@@ -952,7 +952,7 @@ typedef struct snd_pcm_playback_info {
 	unsigned int max_fragment_size;	/* max fragment size in bytes */
 	unsigned int fragment_align;	/* align fragment value */
 	unsigned int hw_formats;	/* formats supported by hardware */
-	unsigned int switches;		/* count of switches */
+	unsigned int subdevice;		/* subdevice number */
 	unsigned char reserved[56];	/* reserved for future... */
 } snd_pcm_playback_info_t;
 
@@ -968,7 +968,7 @@ typedef struct snd_pcm_capture_info {
 	unsigned int max_fragment_size;	/* max fragment size in bytes */
 	unsigned int fragment_align;	/* align fragment value */
 	unsigned int hw_formats;	/* formats supported by hardware */
-	unsigned int switches;		/* count of switches */
+	unsigned int subdevice;		/* subdevice number */
 	unsigned char reserved[56];	/* reserved for future... */
 } snd_pcm_capture_info_t;
 
