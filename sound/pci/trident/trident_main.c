@@ -3180,7 +3180,7 @@ int snd_trident_create(snd_card_t * card,
 		trident->ac97_ctrl = 0x0000004a;
 		outl(trident->ac97_ctrl, TRID_REG(trident, DX_ACR2_AC97_COM_STAT));
 		/* wait, until the codec is ready */
-		end_time = jiffies + (HZ * 3) / 4;
+		end_time = (jiffies + (HZ * 3) / 4) + 1;
 		do {
 			if ((inl(TRID_REG(trident, DX_ACR2_AC97_COM_STAT)) & 0x0010) != 0)
 				goto __dx_ok;
@@ -3198,7 +3198,7 @@ int snd_trident_create(snd_card_t * card,
 		udelay(100);
 		outl(0x00000000, TRID_REG(trident, NX_ACR0_AC97_COM_STAT));
 		/* wait, until the codec is ready */
-		end_time = jiffies + (HZ * 3) / 4;
+		end_time = (jiffies + (HZ * 3) / 4) + 1;
 		do {
 			if ((inl(TRID_REG(trident, NX_ACR0_AC97_COM_STAT)) & 0x0008) != 0)
 				goto __nx_ok;
@@ -3231,7 +3231,7 @@ int snd_trident_create(snd_card_t * card,
 		outl(i, TRID_REG(trident, SI_SERIAL_INTF_CTRL));
 		udelay(2000);
 		/* wait, until the codec is ready */
-		end_time = jiffies + (HZ * 3) / 4;
+		end_time = (jiffies + (HZ * 3) / 4) + 1;
 		do {
 			if ((inl(TRID_REG(trident, SI_SERIAL_INTF_CTRL)) & SI_AC97_PRIMARY_READY) != 0)
 				goto __si7018_ok;

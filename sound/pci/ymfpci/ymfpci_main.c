@@ -88,7 +88,7 @@ static int snd_ymfpci_codec_ready(ymfpci_t *chip, int secondary, int sched)
 	signed long end_time;
 	u32 reg = secondary ? YDSXGR_SECSTATUSADR : YDSXGR_PRISTATUSADR;
 	
-	end_time = jiffies + 3 * (HZ / 4);
+	end_time = (jiffies + ((3 * HZ) / 4)) + 1;
 	do {
 		if ((snd_ymfpci_readw(chip, reg) & 0x8000) == 0)
 			return 0;

@@ -1346,7 +1346,7 @@ static int __init snd_cs4281_create(snd_card_t * card,
 	/*
 	 * Wait for the DLL ready signal from the clock logic.
 	 */
-	end_time = jiffies + (HZ >> 2);
+	end_time = (jiffies + HZ / 4) + 1;
 	do {
 		/*
 		 *  Read the AC97 status register to see if we've seen a CODEC
@@ -1374,7 +1374,7 @@ static int __init snd_cs4281_create(snd_card_t * card,
 	/*
 	 * Wait for the codec ready signal from the AC97 codec.
 	 */
-	end_time = jiffies + 3 * (HZ >> 2);
+	end_time = (jiffies + (3 * HZ) / 4) + 1;
 	do {
 		/*
 		 *  Read the AC97 status register to see if we've seen a CODEC
@@ -1404,7 +1404,7 @@ static int __init snd_cs4281_create(snd_card_t * card,
 	 *  the codec is pumping ADC data across the AC-link.
 	 */
 
-	end_time = jiffies + 5 * (HZ >> 2);
+	end_time = (jiffies + (5 * HZ) / 4) + 1;
 	do {
 		/*
 		 *  Read the input slot valid register and see if input slots 3

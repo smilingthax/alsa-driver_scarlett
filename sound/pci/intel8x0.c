@@ -965,7 +965,7 @@ static int snd_intel8x0_chip_init(intel8x0_t *chip)
 	/* finish cold or do warm reset */
 	cnt |= (cnt & ICH_AC97COLD) == 0 ? ICH_AC97COLD : ICH_AC97WARM;
 	outl(cnt, ICHREG(chip, GLOB_CNT));
-	end_time = jiffies + (HZ >> 2);
+	end_time = (jiffies + (HZ / 4)) + 1;
 	do {
 		if ((inl(ICHREG(chip, GLOB_CNT)) & ICH_AC97WARM) == 0)
 			goto __ok;
