@@ -876,6 +876,8 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 		return rate_changed;
 	if (rate_changed) {
 		snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
+		snd_ac97_set_rate(chip->ac97, AC97_PCM_SURR_DAC_RATE, runtime->rate);
+		snd_ac97_set_rate(chip->ac97, AC97_PCM_LFE_DAC_RATE, runtime->rate);
 		snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
 	}
 	if (chip->chip_type == TYPE_VIA8233A)
@@ -1000,6 +1002,19 @@ static int snd_via82xx_pcm_open(via82xx_t *chip, viadev_t *viadev, snd_pcm_subst
 	int err;
 	unsigned long flags;
 	struct via_rate_lock *ratep;
+	struct ratetbl {
+		int rate;
+		unsigned int bit;
+	} ratebits[] = {
+		{8000, SNDRV_PCM_RATE_8000},
+		{11025, SNDRV_PCM_RATE_11025},
+		{16000, SNDRV_PCM_RATE_16000},
+		{22050, SNDRV_PCM_RATE_22050},
+		{32000, SNDRV_PCM_RATE_32000},
+		{44100, SNDRV_PCM_RATE_44100},
+		{48000, SNDRV_PCM_RATE_48000},
+	};
+	int i;
 
 	runtime->hw = snd_via82xx_hw;
 	
@@ -1010,11 +1025,27 @@ static int snd_via82xx_pcm_open(via82xx_t *chip, viadev_t *viadev, snd_pcm_subst
 	if (! ratep->rate) {
 		int idx = viadev->direction ? AC97_RATES_ADC : AC97_RATES_FRONT_DAC;
 		runtime->hw.rates = chip->ac97->rates[idx];
-		if (runtime->hw.rates & SNDRV_PCM_RATE_8000)
-			runtime->hw.rate_min = 8000;
+		for (i = 0; i < (int)ARRAY_SIZE(ratebits); i++) {
+			if (runtime->hw.rates & ratebits[i].bit) {
+				runtime->hw.rate_min = ratebits[i].rate;
+				break;
+			}
+		}
+		for (i = ARRAY_SIZE(ratebits) - 1; i >= 0; i--) {
+			if (runtime->hw.rates & ratebits[i].bit) {
+				runtime->hw.rate_max = ratebits[i].rate;
+				break;
+			}
+		}
 	} else {
 		/* a fixed rate */
 		runtime->hw.rates = SNDRV_PCM_RATE_KNOT;
+		for (i = 0; i < (int)ARRAY_SIZE(ratebits); i++) {
+			if (ratep->rate == ratebits[i].rate) {
+				runtime->hw.rates = ratebits[i].bit;
+				break;
+			}
+		}
 		runtime->hw.rate_max = runtime->hw.rate_min = ratep->rate;
 	}
 	spin_unlock_irqrestore(&ratep->lock, flags);
@@ -1038,8 +1069,16 @@ static int snd_via82xx_playback_open(snd_pcm_substream_t * substream)
 {
 	via82xx_t *chip = snd_pcm_substream_chip(substream);
 	viadev_t *viadev = &chip->devs[chip->playback_devno + substream->number];
+	int err;
 
-	return snd_via82xx_pcm_open(chip, viadev, substream);
+	if ((err = snd_via82xx_pcm_open(chip, viadev, substream)) < 0)
+		return err;
+#if 0 // test
+	substream->runtime->hw.rates = SNDRV_PCM_RATE_48000;
+	substream->runtime->hw.rate_min = 48000;
+	substream->runtime->hw.rate_max = 48000;
+#endif
+	return 0;
 }
 
 /*
@@ -1639,6 +1678,28 @@ static int snd_via686_init_misc(via82xx_t *chip, int dev)
 
 
 /*
+ * proc interface
+ */
+static void snd_via82xx_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+{
+	via82xx_t *chip = snd_magic_cast(via82xx_t, entry->private_data, return);
+	int i;
+	
+	snd_iprintf(buffer, "%s\n\n", chip->card->longname);
+	for (i = 0; i < 0xa0; i += 4) {
+		snd_iprintf(buffer, "%02x: %08x", i, inl(chip->port + i));
+	}
+}
+
+static void __devinit snd_via82xx_proc_init(via82xx_t *chip)
+{
+	snd_info_entry_t *entry;
+
+	if (! snd_card_proc_new(chip->card, "via82xx", &entry))
+		snd_info_set_text_ops(entry, chip, snd_via82xx_proc_read);
+}
+
+/*
  *
  */
 
@@ -1734,6 +1795,19 @@ static int __devinit snd_via82xx_chip_init(via82xx_t *chip)
 		pci_write_config_byte(chip->pci, VIA_FM_NMI_CTRL, 0);
 		/* disable all GPI interrupts */
 		outl(0, VIAREG(chip, GPI_INTR));
+	}
+
+	if (chip->chip_type != TYPE_VIA686) {
+		/* Workaround for Award BIOS bug:
+		 * DXS channels don't work properly with VRA if MC97 is disabled.
+		 */
+		struct pci_dev *pci;
+		pci = pci_find_device(0x1106, 0x3068, NULL); /* MC97 */
+		if (pci) {
+			unsigned char data;
+			pci_read_config_byte(pci, 0x44, &data);
+			pci_write_config_byte(pci, 0x44, data | 0x40);
+		}
 	}
 
 	return 0;
@@ -1934,6 +2008,8 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 
 	sprintf(card->longname, "%s at 0x%lx, irq %d",
 		card->shortname, chip->port, chip->irq);
+
+	snd_via82xx_proc_init(chip);
 
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
