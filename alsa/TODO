@@ -1,13 +1,15 @@
+
+These notes are only for my purposes and can be out-of-date..
+
+					Jaroslav Kysela
+
+
 Stage 2 (before final 0.2.0):
 
 * timer interface (done)
-* prototype of sequencer (first pre-alpha exist)
+* prototype of sequencer (first pre-alpha exist, done)
   - only external MIDI support
-* add persist support for switches
-* add better persist support mixer channels and remove staying proc mixer write
-  inteface
-* add CTL switch Game Speed Compensation (GUS, SonicVibes)
-* add CTL switch Joystick Enable (GUS, AudioPCI)
+* add CTL switch Joystick Enable (GUS)
 * update documentation
 
 Stage 3:
@@ -23,6 +25,7 @@ Stage 4:
 General:
 
 * check why S3 SonicVibes sometimes stops
+* ES1371 code have some trouble
 * add PCM switch for ADC overrange setup - CS4231
 
 * extend documentation for programmers (driver side)
