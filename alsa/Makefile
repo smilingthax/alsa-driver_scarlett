@@ -14,8 +14,16 @@ dummy:
 	@echo
 endif
 
-SUBDIRS  = support kernel lowlevel cards
-CSUBDIRS = include test utils
+SUBDIRS  =
+CSUBDIRS =
+
+ifeq (0,$(CONFIG_ISAPNP_KERNEL))
+SUBDIRS  += support
+endif
+
+SUBDIRS  += kernel lowlevel cards
+CSUBDIRS += include test utils
+
 
 all: compile
 
