@@ -112,7 +112,6 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97);
 
 void snd_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short value);
 unsigned short snd_ac97_read(ac97_t *ac97, unsigned short reg);
-unsigned short snd_ac97_read_lock(ac97_t *ac97, unsigned short reg);
 void snd_ac97_write_cache(ac97_t *ac97, unsigned short reg, unsigned short value);
 int snd_ac97_update(ac97_t *ac97, unsigned short reg, unsigned short value);
 int snd_ac97_update_bits(ac97_t *ac97, unsigned short reg, unsigned short mask, unsigned short value);
