@@ -925,12 +925,13 @@ Proc interfaces (/proc/asound)
    <fragments> - number of fragments or zero if auto
    <fragment_size> - size of fragment in bytes or zero if auto
    <options> - optional parameters
-	  - disable - the application tries to open a pcm device for
+	  - disable   the application tries to open a pcm device for
 		      this channel but does not want to use it.
 		      (Cause a bug or mmap needs)
 		      It's good for Quake etc...
-	  - block   - force block mode (rvplayer)
-	  - non-block - force non-block mode
+	  - direct    don't use plugins
+	  - block     force block mode (rvplayer)
+	  - non-block force non-block mode
 
   Example: echo "Playback x11amp 128 16384" > /proc/asound/0/pcmD0o
            echo "Capture squake 0 0 disable" > /proc/asound/0/pcmD0o

@@ -105,6 +105,7 @@ typedef struct snd_stru_pcm_oss_setup snd_pcm_oss_setup_t;
 struct snd_stru_pcm_oss_setup {
 	char *task_name;
 	unsigned int disable:1,
+		     direct:1,
 		     block:1,
 		     nonblock:1;
 	unsigned int fragments;
