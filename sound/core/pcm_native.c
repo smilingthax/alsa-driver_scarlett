@@ -610,6 +610,11 @@ struct action_ops {
 	void (*post_action)(snd_pcm_substream_t *substream, int state);
 };
 
+/*
+ *  this functions is core for handling of linked stream
+ *  Note: the stream state might be changed also on failure
+ *  Note2: call with calling stream lock + link lock (if applicable)
+ */
 static int snd_pcm_action_main(struct action_ops *ops,
 			       snd_pcm_substream_t *substream,
 			       int state,
@@ -657,6 +662,9 @@ static int snd_pcm_action_main(struct action_ops *ops,
 	return res;
 }
 
+/*
+ *  Note: call with stream lock
+ */
 static int snd_pcm_action(struct action_ops *ops,
 			  snd_pcm_substream_t *substream,
 			  int state,
@@ -677,6 +685,9 @@ static int snd_pcm_action(struct action_ops *ops,
 	return res;
 }
 
+/*
+ *  Note: don't use any locks before
+ */
 static int snd_pcm_action_lock_irq(struct action_ops *ops,
 				   snd_pcm_substream_t *substream,
 				   int state,
