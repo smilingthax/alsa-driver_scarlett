@@ -174,51 +174,40 @@ CHECK_KERNEL_HEADER(linux/spinlock.h)
 CHECK_KERNEL_HEADER(linux/irq.h)
 CHECK_KERNEL_HEADER(linux/threads.h)
 
-dnl Check for modversions...
-AC_MSG_CHECKING(for kernel module symbol versions)
-modversion=n
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_TRY_RUN([
+dnl Check kernel configurations
+
+AC_DEFUN(CHECK_KERNEL_CONFIG, [
+  boolvar=$1
+  AC_MSG_CHECKING(for $2)
+  ac_save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+  boolchk="n"
+  AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
-#ifndef CONFIG_MODVERSIONS
+#ifndef $boolvar
   exit(1);
 #else
   exit(0);
 #endif
 }
 ],
-  AC_MSG_RESULT("yes");mversion=y,
-  AC_MSG_RESULT("no");mversion=n,
-  AC_MSG_RESULT("unknown");mversion=n
-)
-CFLAGS="$ac_save_CFLAGS"
-CONFIG_SND_MVERSION=$mversion
+    AC_MSG_RESULT("yes");boolchk="y",
+    AC_MSG_RESULT("no");boolchk="n",
+    AC_MSG_RESULT("unknown");boolchk="n"
+  )
+  CFLAGS="$ac_save_CFLAGS"
+  eval $boolvar="$boolchk"
+])
+
+dnl Check for modversions...
+CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
+CONFIG_SND_MVERSION=$CONFIG_MODVERSIONS
 AC_SUBST(CONFIG_SND_MVERSION)
 GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
 dnl Check for PCI support...
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_MSG_CHECKING(for PCI support in kernel)
-pcisup="n"
-AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-int main( void ) {
-#ifndef CONFIG_PCI
-  exit(1);
-#else
-  exit(0);
-#endif
-}
-],
-  AC_MSG_RESULT("yes");pcisup="y",
-  AC_MSG_RESULT("no");pcisup="n",
-  AC_MSG_RESULT("unknown");pcisup="n"
-)
-CFLAGS="$ac_save_CFLAGS"
-CONFIG_PCI="$pcisup"
+CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
 AC_SUBST(CONFIG_PCI)
 
 dnl Check for SGI/MIPS (HAL2) support...
@@ -313,26 +302,7 @@ AC_SUBST(moddir)
 
 dnl Check for PCI support (for 2.4 kernel)...
 if test $kpatchlevel -ge 3; then
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_MSG_CHECKING(for ISA support in kernel)
-isasup="n"
-AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-int main( void ) {
-#ifndef CONFIG_ISA
-  exit(1);
-#else
-  exit(0);
-#endif
-}
-],
-  AC_MSG_RESULT("yes");isasup="y",
-  AC_MSG_RESULT("no");isasup="n",
-  AC_MSG_RESULT("unknown");isasup="n"
-)
-CFLAGS="$ac_save_CFLAGS"
-CONFIG_ISA="$isasup"
+CHECK_KERNEL_CONFIG(CONFIG_ISA, [ISA support in kernel])
 else
 CONFIG_ISA=probe
 fi
@@ -601,28 +571,13 @@ test "$CONFIG_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)
 test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 
 dnl Check for SMP...
-AC_MSG_CHECKING(for SMP)
-msmp=""
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-int main(void) {
-#ifndef CONFIG_SMP
-	exit(1);
-#else
-	exit(0);
-#endif
-}
-],
-  AC_MSG_RESULT("yes");msmp="1",
-  AC_MSG_RESULT("no");msmp="",
-  AC_MSG_RESULT("unknown");msmp=""
-)
-CFLAGS="$ac_save_CFLAGS"
-if test "$msmp" = "1"; then
+CHECK_KERNEL_CONFIG(CONFIG_SMP, [SMP])
+if test "$CONFIG_SMP" = "y"; then
   GENKSYMS="$GENKSYMS -p smp_"
   c_opts="$c_opts -D__SMP__ -DCONFIG_SMP"
+  msmp=1
+else
+  msmp=""
 fi
 AC_SUBST(msmp)
 
@@ -841,50 +796,24 @@ CONFIG_RTC=$CONFIG_SND_RTCTIMER
 AC_SUBST(CONFIG_RTC)
 
 dnl Check for USB
-AC_MSG_CHECKING(for USB)
-usbsup=n
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-int main(void) {
-#if !defined(CONFIG_USB) && !defined(CONFIG_USB_MODULE)
-	exit(1);
-#else
-	exit(0);
-#endif
-}
-],
-  AC_MSG_RESULT("yes");usbsup="y",
-  AC_MSG_RESULT("no");usbsup="n",
-  AC_MSG_RESULT("unknown");usbsup="n"
-)
-CFLAGS="$ac_save_CFLAGS"
-CONFIG_USB="$usbsup"
+CHECK_KERNEL_CONFIG(CONFIG_USB, [USB support])
+if test "$CONFIG_USB" != "y"; then
+  CHECK_KERNEL_CONFIG(CONFIG_USB_MODULE, [USB module support])
+  CONFIG_USB=$CONFIG_USB_MODULE
+fi
 AC_SUBST(CONFIG_USB)
 
 dnl Check for PCMCIA
-AC_MSG_CHECKING(for PCMCIA)
-pcmciasup=n
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-int main(void) {
-#if !defined(CONFIG_PCMCIA) && !defined(CONFIG_PCMCIA_MODULE)
-	exit(1);
-#else
-	exit(0);
-#endif
-}
-],
-  AC_MSG_RESULT("yes");pcmciasup="y",
-  AC_MSG_RESULT("no");pcmciasup="n",
-  AC_MSG_RESULT("unknown");pcmciasup="n"
-)
-CFLAGS="$ac_save_CFLAGS"
-CONFIG_PCMCIA="$pcmciasup"
+CHECK_KERNEL_CONFIG(CONFIG_PCMCIA, [PCMCIA support])
+if test "$CONFIG_PCMCIA" != "y"; then
+  CHECK_KERNEL_CONFIG(CONFIG_PCMCIA_MODULE, [PCMCIA module support])
+  CONFIG_PCMCIA=$CONFIG_PCMCIA_MODULE
+fi
 AC_SUBST(CONFIG_PCMCIA)
+
+dnl Check for PC98 architecture support...
+CHECK_KERNEL_CONFIG(CONFIG_PC9800, [PC9800 support in kernel])
+AC_SUBST(CONFIG_PC9800)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_INIT
