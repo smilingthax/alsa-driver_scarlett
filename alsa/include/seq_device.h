@@ -46,6 +46,7 @@ struct snd_seq_dev_ops {
 /*
  * prototypes
  */
+void snd_seq_device_load_drivers(void);
 int snd_seq_device_register(snd_card_t *card, int device, char *name, char *id, void *arg, int size, snd_seq_device_t **result);
 snd_seq_device_t *snd_seq_device_find(snd_card_t *card, int device, char *id);
 int snd_seq_device_unregister(snd_seq_device_t *dev);

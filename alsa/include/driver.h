@@ -286,6 +286,8 @@ extern int snd_device_mode;
 extern int snd_device_gid;
 extern int snd_device_uid;
 
+extern void snd_request_card(int card);
+
 extern int snd_register_device(int type, snd_card_t * card, int dev, snd_minor_t * reg, const char *name);
 extern int snd_unregister_device(int type, snd_card_t * card, int dev);
 

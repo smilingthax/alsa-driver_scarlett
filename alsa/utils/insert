@@ -4,6 +4,7 @@ INSMOD="/sbin/insmod"
 MODDIR="../modules"
 MAP="../snd.map"
 OLDMAP="../snd.map.old"
+CARDS_LIMIT=1
 
 function banner() {
    echo > /dev/null
@@ -20,7 +21,7 @@ function isapnp() {
 
 function basic() {
   banner "snd"
-  if ! $INSMOD -m $MODDIR/snd.o >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd.o snd_cards_limit=$CARDS_LIMIT >> $MAP; then exit 1; fi
   banner "snd-mixer"
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-mixer-oss.o ]; then
@@ -46,12 +47,12 @@ function basic() {
     if ! $INSMOD -m $MODDIR/snd-hwdep.o >> $MAP; then exit 1; fi
   fi
   if [ -r $MODDIR/snd-seq.o ]; then
-    banner "snd-seq"
-    if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
     if [ -r $MODDIR/snd-seq-device.o ]; then
       banner "snd-seq-device"
       if ! $INSMOD -m $MODDIR/snd-seq-device.o >> $MAP; then exit 1; fi
     fi
+    banner "snd-seq"
+    if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
     if [ -r $MODDIR/snd-seq-midi.o ]; then
       banner "snd-seq-midi"
       if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
@@ -76,10 +77,10 @@ function basic() {
       banner "snd-ainstr-iw"
       if ! $INSMOD -m $MODDIR/snd-ainstr-iw.o >> $MAP; then exit 1; fi
     fi
-#    if [ -r $MODDIR/snd-seq-oss.o ]; then
-#      banner "snd-seq-oss"
-#      if ! $INSMOD -m $MODDIR/snd-seq-oss.o >> $MAP; then exit 1; fi
-#    fi
+    if [ -r $MODDIR/snd-seq-oss.o ]; then
+      banner "snd-seq-oss"
+      if ! $INSMOD -m $MODDIR/snd-seq-oss.o >> $MAP; then exit 1; fi
+    fi
   fi
 }
 

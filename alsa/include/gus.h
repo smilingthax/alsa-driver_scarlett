@@ -151,7 +151,6 @@
 /* ramp ranges */
 
 #define SND_GF1_ATTEN(x)	(snd_gf1_atten_table[x])
-#define SND_GF1_VOLUME(x)	(((snd_gf1_atten_table[(SND_GF1_ATTEN_TABLE_SIZE-1)-(x)])<<1) & 0x0fff)
 #define SND_GF1_MIN_VOLUME	1800
 #define SND_GF1_MAX_VOLUME	4095
 #define SND_GF1_MIN_OFFSET	(SND_GF1_MIN_VOLUME>>4)

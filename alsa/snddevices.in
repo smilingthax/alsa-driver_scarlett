@@ -140,3 +140,4 @@ fi
 echo "ALSA loader devices"
 rm -f /dev/aload*
 create_devices  /dev/aload		0
+create_device1  /dev/aloadSEQ		1
