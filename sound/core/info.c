@@ -121,27 +121,7 @@ snd_info_entry_t *snd_seq_root = NULL;
 snd_info_entry_t *snd_oss_root = NULL;
 #endif
 
-#ifdef LINUX_2_2
-static void snd_info_fill_inode(struct inode *inode, int fill)
-{
-	if (fill)
-		MOD_INC_USE_COUNT;
-	else
-		MOD_DEC_USE_COUNT;
-}
-
-static inline void snd_info_entry_prepare(struct proc_dir_entry *de)
-{
-	de->fill_inode = snd_info_fill_inode;
-}
-
-void snd_remove_proc_entry(struct proc_dir_entry *parent,
-			   struct proc_dir_entry *de)
-{
-	if (parent && de)
-		proc_unregister(parent, de->low_ino);
-}
-#else
+#ifndef LINUX_2_2
 static inline void snd_info_entry_prepare(struct proc_dir_entry *de)
 {
 	de->owner = THIS_MODULE;
@@ -535,59 +515,6 @@ static struct inode_operations snd_info_entry_inode_operations =
 };
 #endif	/* LINUX_2_2 */
 
-static int snd_info_card_readlink(struct dentry *dentry,
-				  char *buffer, int buflen)
-{
-        char *s = PDE(dentry->d_inode)->data;
-#ifndef LINUX_2_2
-	return vfs_readlink(dentry, buffer, buflen, s);
-#else
-	int len;
-	
-	if (s == NULL)
-		return -EIO;
-	len = strlen(s);
-	if (len > buflen)
-		len = buflen;
-	if (copy_to_user(buffer, s, len))
-		return -EFAULT;
-	return len;
-#endif
-}
-
-#ifndef LINUX_2_2
-static int snd_info_card_followlink(struct dentry *dentry,
-				    struct nameidata *nd)
-{
-        char *s = PDE(dentry->d_inode)->data;
-        return vfs_follow_link(nd, s);
-}
-#else
-static struct dentry *snd_info_card_followlink(struct dentry *dentry,
-					       struct dentry *base,
-					       unsigned int follow)
-{
-	char *s = PDE(dentry->d_inode)->data;
-	return lookup_dentry(s, base, follow);
-}
-#endif
-
-#ifdef LINUX_2_2
-static struct file_operations snd_info_card_link_operations =
-{
-	NULL
-};
-#endif
-
-struct inode_operations snd_info_card_link_inode_operations =
-{
-#ifdef LINUX_2_2
-	.default_file_ops =	&snd_info_card_link_operations,
-#endif
-	.readlink =		snd_info_card_readlink,
-	.follow_link =		snd_info_card_followlink,
-};
-
 /**
  * snd_create_proc_entry - create a procfs entry
  * @name: the name of the proc file
@@ -644,13 +571,9 @@ int __init snd_info_init(void)
 	}
 #endif
 	snd_info_version_init();
-#ifdef CONFIG_SND_DEBUG_MEMORY
 	snd_memory_info_init();
-#endif
 	snd_minor_info_init();
-#ifdef CONFIG_SND_OSSEMUL
 	snd_minor_info_oss_init();
-#endif
 	snd_card_info_init();
 	return 0;
 }
@@ -658,13 +581,9 @@ int __init snd_info_init(void)
 int __exit snd_info_done(void)
 {
 	snd_card_info_done();
-#ifdef CONFIG_SND_OSSEMUL
 	snd_minor_info_oss_done();
-#endif
 	snd_minor_info_done();
-#ifdef CONFIG_SND_DEBUG_MEMORY
 	snd_memory_info_done();
-#endif
 	snd_info_version_done();
 	if (snd_proc_root) {
 #if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
@@ -714,7 +633,6 @@ int snd_info_card_create(snd_card_t * card)
  */
 int snd_info_card_register(snd_card_t * card)
 {
-	char *s;
 	struct proc_dir_entry *p;
 
 	snd_assert(card != NULL, return -ENXIO);
@@ -722,19 +640,9 @@ int snd_info_card_register(snd_card_t * card)
 	if (!strcmp(card->id, card->proc_root->name))
 		return 0;
 
-	s = snd_kmalloc_strdup(card->proc_root->name, GFP_KERNEL);
-	if (s == NULL)
-		return -ENOMEM;
-	p = snd_create_proc_entry(card->id, S_IFLNK | S_IRUGO | S_IWUGO | S_IXUGO, snd_proc_root);
+	p = proc_symlink(card->id, snd_proc_root, card->proc_root->name);
 	if (p == NULL)
 		return -ENOMEM;
-	p->data = s;
-#ifndef LINUX_2_2
-	p->owner = card->module;
-	p->proc_iops = &snd_info_card_link_inode_operations;
-#else
-	p->ops = &snd_info_card_link_inode_operations;
-#endif
 	card->proc_root_link = p;
 	return 0;
 }
@@ -745,13 +653,8 @@ int snd_info_card_register(snd_card_t * card)
  */
 int snd_info_card_free(snd_card_t * card)
 {
-	void *data;
-
 	snd_assert(card != NULL, return -ENXIO);
 	if (card->proc_root_link) {
-		data = card->proc_root_link->data;
-		card->proc_root_link->data = NULL;
-		kfree(data);
 		snd_remove_proc_entry(snd_proc_root, card->proc_root_link);
 		card->proc_root_link = NULL;
 	}
