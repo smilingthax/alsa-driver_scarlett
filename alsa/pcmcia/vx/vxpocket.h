@@ -184,7 +184,6 @@ void snd_vxpocket_detach_all(struct snd_vxp_entry *hw);
 vxpocket_t *snd_vxpocket_create_chip(struct snd_vxp_entry *hw);
 void snd_vxpocket_free_chip(vxpocket_t *chip);
 int snd_vxpocket_assign_resources(vxpocket_t *chip, int port, int irq);
-int snd_vxpocket_card_busy(vxpocket_t *chip);
 
 /*
  * mixer

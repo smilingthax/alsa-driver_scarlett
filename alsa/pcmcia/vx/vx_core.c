@@ -23,12 +23,12 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
-#include <asm/io.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/asoundef.h>
 #include <sound/info.h>
 #include "vxpocket.h"
+#include <asm/io.h>
 
 MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
 MODULE_DESCRIPTION("Common routines for VXPocket drivers");
@@ -854,6 +854,7 @@ vxpocket_t *snd_vxpocket_create_chip(struct snd_vxp_entry *hw)
 		snd_magic_kfree(chip);
 		return NULL;
 	}
+	chip->card->private_data = chip;
 	strcpy(chip->card->driver, hw->name);
 	hw->card_list[i] = chip;
 
@@ -866,13 +867,10 @@ vxpocket_t *snd_vxpocket_create_chip(struct snd_vxp_entry *hw)
 void snd_vxpocket_free_chip(vxpocket_t *chip)
 {
 	snd_assert(chip, return);
-	if (chip->card) {
-		chip->initialized = 0;
-		vxpocket_proc_done(chip);
-		snd_card_free(chip->card);
-		chip->hw->card_list[chip->index] = NULL;
-		chip->card = NULL;
-	}
+	chip->initialized = 0;
+	vxpocket_proc_done(chip);
+	chip->hw->card_list[chip->index] = NULL;
+	chip->card = NULL;
 }
 
 /**
@@ -923,26 +921,7 @@ int snd_vxpocket_assign_resources(vxpocket_t *chip, int port, int irq)
 	return 0;
 }
 
-/*
- * check whether the card is still busy
- * returns 1 if busy, or 0 if not used.
- */
-int snd_vxpocket_card_busy(vxpocket_t *chip)
-{
-	if (chip->pcm_running) {
-		snd_printd(KERN_DEBUG "pcm still running\n");
-		return 1;
-	}
-	if (chip->card && chip->card->module &&
-	    GET_USE_COUNT(chip->card->module)) {
-		snd_printd(KERN_DEBUG "module count not zero\n");
-		return 1;
-	}
-	return 0;
-}
-
 EXPORT_SYMBOL(snd_vxpocket_create_chip);
 EXPORT_SYMBOL(snd_vxpocket_free_chip);
 EXPORT_SYMBOL(snd_vxpocket_assign_resources);
-EXPORT_SYMBOL(snd_vxpocket_card_busy);
 EXPORT_SYMBOL(snd_vx_irq_handler);

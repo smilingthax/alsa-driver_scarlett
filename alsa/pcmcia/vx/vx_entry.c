@@ -33,6 +33,7 @@
 static void vxpocket_config(dev_link_t *link);
 static void vxpocket_release(u_long arg);
 static int vxpocket_event(event_t event, int priority, event_callback_args_t *args);
+static void vx_card_free_callback(snd_card_t *card);
 
 
 /*
@@ -75,6 +76,7 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 	chip = snd_vxpocket_create_chip(hw);
 	if (! chip)
 		return NULL;
+	chip->card->private_free = vx_card_free_callback;
 
 	link = &chip->link;
 	link->priv = chip;
@@ -128,6 +130,19 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 	return link;
 }
 
+
+/*
+ */
+static void vx_card_free_callback(snd_card_t *card)
+{
+	vxpocket_t *chip = snd_magic_cast(vxpocket_t, card->private_data, return);
+
+	if (chip->link.state & DEV_CONFIG)
+		vxpocket_release((u_long) &chip->link);
+	snd_vxpocket_free_chip(chip);
+	snd_magic_kfree(chip);
+}
+
 /*
  * snd_vxpocket_detach - detach callback for cs
  * @hw: the hardware information
@@ -145,13 +160,6 @@ void snd_vxpocket_detach(struct snd_vxp_entry *hw, dev_link_t *link)
 		return;
 
 	del_timer(&link->release);
-	if (link->state & DEV_CONFIG) {
-		vxpocket_release((u_long) link);
-		if (link->state & DEV_STALE_CONFIG) {
-			link->state |= DEV_STALE_LINK;
-			return;
-		}
-	}
 
 	/* Break the link with Card Services */
 	if (link->handle)
@@ -160,8 +168,9 @@ void snd_vxpocket_detach(struct snd_vxp_entry *hw, dev_link_t *link)
 	/* Remove the interface data from the linked list */
 	*linkp = link->next;
 
-	snd_vxpocket_free_chip(chip);
-	snd_magic_kfree(chip);
+	chip->is_stale = 1;
+	snd_card_disconnect(chip->card);
+	snd_card_free_in_thread(chip->card);
 }
 
 /*
@@ -230,13 +239,6 @@ failed:
 static void vxpocket_release(u_long arg)
 {
 	dev_link_t *link = (dev_link_t *)arg;
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, link->priv,);
-
-	if (chip && snd_vxpocket_card_busy(chip)) {
-		chip->is_stale = 1;
-		link->state |= DEV_STALE_CONFIG;
-		return;
-	}
 
 	CardServices(ReleaseConfiguration, link->handle);
 	CardServices(ReleaseIO, link->handle, &link->io);
@@ -258,9 +260,12 @@ static int vxpocket_event(event_t event, int priority, event_callback_args_t *ar
 	case CS_EVENT_CARD_REMOVAL:
 		link->state &= ~DEV_PRESENT;
 		if (link->state & DEV_CONFIG) {
-			if (chip)
-				snd_vxpocket_free_chip(chip);
 			mod_timer(&link->release, jiffies + HZ/20);
+			if (chip) {
+				chip->is_stale = 1;
+				snd_card_disconnect(chip->card);
+				snd_card_free_in_thread(chip->card);
+			}
 		}
 		break;
 	case CS_EVENT_CARD_INSERTION:
