@@ -1,0 +1,38 @@
+--- memalloc.c	2003-05-30 16:09:27.000000000 +0200
++++ memalloc.c.old	2003-05-31 13:05:06.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "memalloc.inc"
+ /*
+  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *                   Takashi Iwai <tiwai@suse.de>
+@@ -80,6 +81,7 @@
+ #define snd_assert(expr, args...) /**/
+ #endif
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+ #ifdef CONFIG_PCI
+ #if defined(__i386__) || defined(__ppc__) || defined(__x86_64__)
+ #define HACK_PCI_ALLOC_CONSISTENT
+@@ -132,6 +134,7 @@
+ 
+ #endif /* arch */
+ #endif /* CONFIG_PCI */
++#endif /* LINUX >= 2.4.0 */
+ 
+ 
+ /*
+@@ -623,7 +626,7 @@
+ }
+ 
+ 
+-#if defined(__i386__)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) && defined(__i386__)
+ /*
+  * on ix86, we allocate a page with GFP_KERNEL to assure the
+  * allocation.  the code is almost same with kernel/i386/pci-dma.c but
+@@ -935,3 +938,5 @@
+ EXPORT_SYMBOL(snd_malloc_sbus_pages_fallback);
+ EXPORT_SYMBOL(snd_free_sbus_pages);
+ #endif
++
++#include "memalloc.inc1"

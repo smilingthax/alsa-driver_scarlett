@@ -26,3 +26,4 @@ init.c: init.patch $(TOPDIR)/alsa-kernel/core/init.c
 rawmidi.c: rawmidi.patch $(TOPDIR)/alsa-kernel/core/rawmidi.c
 sound.c: sound.patch $(TOPDIR)/alsa-kernel/core/sound.c
 timer.c: timer.patch $(TOPDIR)/alsa-kernel/core/timer.c
+memalloc.c: memalloc.patch memalloc.inc memalloc.inc1 $(TOPDIR)/alsa-kernel/core/memalloc.c
