@@ -60,6 +60,7 @@ struct depStruct {
 	char **macronames;
 	int hitflag;
 	int printflag;
+	char *printed;
 };
 
 typedef struct makefileMacroStruct {
@@ -445,6 +446,10 @@ static makefileMacro *find_makefileMacro(char *macroname)
 {
 	makefileMacro *macro = makefileMacros;
 
+	if (!macroname)
+		return NULL;
+	if (macroname[0] == '-')
+		return NULL;
 	while (macro) {
 		// fprintf(stderr, "macroname = '%s', name = '%s'\n", macroname, macro->name);
 		if (!strcmp(macroname, macro->name))
@@ -467,16 +472,26 @@ static void resolve_dep(dep * parent)
 }
 
 // add a new macro to subdep
-static void add_macro_to_subdep(subdep *subdep, const char *macroname)
+static void add_macro_to_subdep(subdep *subdep, const char *macroname, int add)
 {
 	char *str;
 	int i;
 
 	for (i = 0; i < subdep->nummacros; i++)
-		if (!strcmp(subdep->macronames[i], macroname))
+		if (!strcmp(subdep->macronames[i], macroname) ||
+		    (subdep->macronames[i][0] == '-' &&
+		     !strcmp(subdep->macronames[i] + 1, macroname)))
 			return;
 	subdep->macronames = realloc(subdep->macronames, sizeof(char *) * (subdep->nummacros + 1));
-	str = strdup(macroname);
+	if (add) {
+		str = strdup(macroname);
+	} else {
+		str = malloc(strlen(macroname)+2);
+		if (str) {
+			str[0] = '-';
+			strcpy(str+1, macroname);
+		}
+	}
 	if (subdep->macronames == NULL || str == NULL) {
 		fprintf(stderr, "No enough memory\n");
 		exit(EXIT_FAILURE);
@@ -490,7 +505,7 @@ static int make_list_of_deps_for_dep1(dep * parent, dep * dependency, subdep **l
 	int i, j;
 	int add;
 	dep *dep;
-	subdep *new_dep;
+	subdep *new_dep, *old_dep;
 
 	if (dependency->hitflag) {
 		fprintf(stderr, "endless dependency for %s parent %s\n", dependency->name, parent ? parent->name : "(none)");
@@ -501,11 +516,13 @@ static int make_list_of_deps_for_dep1(dep * parent, dep * dependency, subdep **l
 		dep = dependency->deps[i];
 		if (dep) {
 			add = 1;
-			for (j = 0; j < num; j++)
-				if (!strcmp((*list)[j].dep->name, dep->name)) {
+			for (j = 0; j < num; j++) {
+				old_dep = &(*list)[j];
+				if (!strcmp(old_dep->dep->name, dep->name)) {
 					add = 0;
 					break;
 				}
+			}
 			if (add) {
 				*list = realloc(*list, sizeof(subdep) * (num + 1));
 				if (*list == NULL) {
@@ -517,10 +534,15 @@ static int make_list_of_deps_for_dep1(dep * parent, dep * dependency, subdep **l
 				new_dep->nummacros = 0;
 				new_dep->macronames = NULL;
 				for (j = 0; j < dependency->nummacros; j++)
-					add_macro_to_subdep(new_dep, dependency->macronames[j]);
+					add_macro_to_subdep(new_dep, dependency->macronames[j], 1);
 				for (j = 0; j < dep->nummacros; j++)
-					add_macro_to_subdep(new_dep, dep->macronames[j]);
+					add_macro_to_subdep(new_dep, dep->macronames[j], 1);
 				num = make_list_of_deps_for_dep1(dependency, dep, list, num);
+			} else {
+				for (j = 0; j < dependency->nummacros; j++)
+					add_macro_to_subdep(old_dep, dependency->macronames[j], 0);
+				for (j = 0; j < dep->nummacros; j++)
+					add_macro_to_subdep(old_dep, dep->macronames[j], 0);
 			}
 		}
 	}
@@ -534,6 +556,10 @@ static void clear_printflags(void)
 
 	while (temp_dep) {
 		temp_dep->printflag = 0;
+		if (temp_dep->printed) {
+			free(temp_dep->printed);
+			temp_dep->printed = NULL;
+		}
 		temp_dep = temp_dep->link;
 	}
 }
@@ -615,8 +641,11 @@ static void print_indent(int indent)
 // Check ignore_in
 static int check_ignore_in(makefileMacro *macro, const char *dir)
 {
-	char *str = macro->ignore_in;
+	char *str;
 	
+	if (macro == NULL)
+		return 1;
+	str = macro->ignore_in;	
 	while (str) {
 		if (strlen(str) < strlen(dir))
 			return 0;
@@ -629,6 +658,37 @@ static int check_ignore_in(makefileMacro *macro, const char *dir)
 	}
 	return 0;
 }
+
+// Add to printed
+static void add_printed(dep *tempdep, const char *name)
+{
+	if (!tempdep->printed) {
+		tempdep->printed = strdup(name);
+	} else {
+		tempdep->printed = realloc(tempdep->printed, strlen(tempdep->printed) + strlen(name) + 2);
+		strcat(tempdep->printed, " ");
+		strcat(tempdep->printed, name);
+	}
+}
+
+// Is printed?
+static int is_printed(dep *tempdep, const char *name)
+{
+	char *str = tempdep->printed;
+	
+	if (str == NULL)
+		return 0;
+	while (*str) {
+		if (!strncmp(str, name, strlen(name)) &&
+		    (str[strlen(name)] == ' ' || str[strlen(name)] == '\0'))
+		    	return 1;
+		while (*str && *str != ' ')
+			str++;
+		if (*str == ' ')
+			str++;
+	}
+	return 0;
+}	
 
 // Output in Makefile.in format
 static void output_makefile1(const char *dir, int all)
@@ -691,6 +751,8 @@ static void output_makefile1(const char *dir, int all)
 				if (macro != NULL)
 					goto __out1;
 			}
+			if (is_printed(tempdep, ldep->dep->name))
+				goto __out1;
 			if (first) {
 				text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 				printf("obj-$(%s) +=", text);
@@ -700,6 +762,7 @@ static void output_makefile1(const char *dir, int all)
 				if (indir)
 					printf(" %s.o", tempdep->name);
 			}
+			add_printed(tempdep, ldep->dep->name);
 			printf(" %s.o", ldep->dep->name);
 		      __out1:
 		}
@@ -710,6 +773,7 @@ static void output_makefile1(const char *dir, int all)
 			text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 			printf("obj-$(%s) += %s.o\n", text, tempdep->name);
 			free(text);
+			tempdep->printflag = 1;
 		}
 	      __out1_1:
 	}
@@ -761,6 +825,8 @@ static void output_makefile1(const char *dir, int all)
 					goto __out2;
 				}
 			      __ok2:
+			      	if (is_printed(tempdep, ldep->dep->name))
+			      		goto __out2;
 				if (first) {
 					if (mfirst) {
 						for (vidx = 0; vidx < nummacros; vidx++) {
@@ -784,6 +850,7 @@ static void output_makefile1(const char *dir, int all)
 					if (!tempdep->printflag && indir)
 						printf(" %s.o", tempdep->name);
 				}
+				add_printed(tempdep, ldep->dep->name);
 				printf(" %s.o", ldep->dep->name);
 			      __out2:
 			}

@@ -55,6 +55,7 @@ endif
 # Toplevel Module Dependency
 obj-$(CONFIG_SND_DUMMY) += snd-pcm.o snd-timer.o snd.o
 obj-$(CONFIG_SND_VIRMIDI) += snd-rawmidi.o snd.o snd-timer.o
+obj-$(CONFIG_SND_SERIAL_U16550) += snd-rawmidi.o snd.o snd-timer.o
 obj-$(CONFIG_SND_MTPAV) += snd-rawmidi.o snd.o snd-timer.o
 obj-$(CONFIG_SND_MPU401) += snd-rawmidi.o snd.o snd-timer.o
 obj-$(CONFIG_SND_ALS100) += snd-pcm.o snd-timer.o snd.o snd-rawmidi.o snd-hwdep.o
