@@ -779,11 +779,11 @@ static irqreturn_t snd_ymfpci_interrupt(int irq, void *dev_id, struct pt_regs *r
 		}
 	}
 
-	status = snd_ymfpci_readl(chip, YDSXGR_INTFLAG);
+	status = snd_ymfpci_readw(chip, YDSXGR_INTFLAG);
 	if (status & 1) {
 		/* timer handler */
-		snd_ymfpci_writel(chip, YDSXGR_INTFLAG, ~0);
 	}
+	snd_ymfpci_writew(chip, YDSXGR_INTFLAG, status);
 
 	if (chip->rawmidi)
 		snd_mpu401_uart_interrupt(irq, chip->rawmidi->private_data, regs);
