@@ -49,7 +49,7 @@ static struct page *snd_pcm_get_vmalloc_page(snd_pcm_substream_t *subs, unsigned
  * hw_params callback
  * NOTE: this may be called not only once per pcm open!
  */
-static int snd_pcm_alloc_vmalloc_buffer(snd_pcm_substream_t *subs, int size)
+static int snd_pcm_alloc_vmalloc_buffer(snd_pcm_substream_t *subs, size_t size)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	if (runtime->dma_area) {
@@ -557,7 +557,8 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
-	int audio, err;
+	unsigned int audio;
+	int err;
 
 	if (chip->is_stale)
 		return -EBUSY;
@@ -690,7 +691,7 @@ static int vx_update_pipe_position(vx_core_t *chip, snd_pcm_runtime_t *runtime, 
 	update = (int)(count - pipe->cur_count);
 	pipe->cur_count = count;
 	pipe->position += update;
-	if (pipe->position >= runtime->buffer_size)
+	if (pipe->position >= (int)runtime->buffer_size)
 		pipe->position %= runtime->buffer_size;
 	pipe->transferred += update;
 	return 0;
@@ -723,7 +724,7 @@ void vx_pcm_playback_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_
 	if (pipe->running && ! chip->is_stale) {
 		if ((err = vx_update_pipe_position(chip, runtime, pipe)) < 0)
 			return;
-		if (pipe->transferred >= runtime->period_size) {
+		if (pipe->transferred >= (int)runtime->period_size) {
 			pipe->transferred %= runtime->period_size;
 			snd_pcm_period_elapsed(subs);
 		}
@@ -941,7 +942,8 @@ static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
-	int audio, err;
+	unsigned int audio;
+	int err;
 
 	if (chip->is_stale)
 		return -EBUSY;
@@ -1018,7 +1020,7 @@ void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t
 	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
 #endif
 	pipe->transferred += bytes_to_frames(runtime, size);
-	if (pipe->transferred >= runtime->period_size) {
+	if (pipe->transferred >= (int)runtime->period_size) {
 		pipe->transferred %= runtime->period_size;
 		snd_pcm_period_elapsed(subs);
 	}
@@ -1107,13 +1109,14 @@ static void snd_vxpocket_pcm_free(snd_pcm_t *pcm)
 int snd_vx_pcm_new(vx_core_t *chip)
 {
 	snd_pcm_t *pcm;
-	int i, err;
+	unsigned int i;
+	int err;
 
 	if ((err = vx_init_audio_io(chip)) < 0)
 		return err;
 
 	for (i = 0; i < chip->hw->num_codecs; i++) {
-		int outs, ins;
+		unsigned int outs, ins;
 		outs = chip->audio_outs > i * 2 ? 1 : 0;
 		ins = chip->audio_ins > i * 2 ? 1 : 0;
 		if (! outs && ! ins)

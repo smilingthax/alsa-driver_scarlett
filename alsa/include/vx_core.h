@@ -122,9 +122,9 @@ struct snd_vx_hardware {
 	struct snd_vx_image dsp;
 
 	/* hardware specs */
-	int num_codecs;
-	int num_ins;
-	int num_outs;
+	unsigned int num_codecs;
+	unsigned int num_ins;
+	unsigned int num_outs;
 };
 
 struct snd_vx_core {
@@ -154,18 +154,18 @@ struct snd_vx_core {
 	struct vx_rmh irq_rmh;	/* RMH used in interrupts */
 
 	unsigned int audio_info; /* see VX_AUDIO_INFO */
-	int audio_ins;
-	int audio_outs;
+	unsigned int audio_ins;
+	unsigned int audio_outs;
 	struct vx_pipe **playback_pipes;
 	struct vx_pipe **capture_pipes;
 
 	/* clock and audio sources */
-	int audio_source;	/* current audio input source */
-	int audio_source_target;
-	int clock_source;	/* current clock source (INTERNAL_QUARTZ or UER_SYNC) */
-	int freq;		/* current frequency */
-	int freq_detected;	/* detected frequency from digital in */
-	int uer_detected;	/* VX_UER_MODE_XXX */
+	unsigned int audio_source;	/* current audio input source */
+	unsigned int audio_source_target;
+	unsigned int clock_source;	/* current clock source (INTERNAL_QUARTZ or UER_SYNC) */
+	unsigned int freq;		/* current frequency */
+	unsigned int freq_detected;	/* detected frequency from digital in */
+	unsigned int uer_detected;	/* VX_UER_MODE_XXX */
 	unsigned int uer_bits;	/* IEC958 status bits */
 	struct vx_ibl_info ibl;	/* IBL information */
 
@@ -315,8 +315,8 @@ int vx_sync_audio_source(vx_core_t *chip);
  * IEC958 & clock stuff
  */
 void vx_set_iec958_status(vx_core_t *chip, unsigned int bits);
-int vx_set_clock(vx_core_t *chip, int freq);
-void vx_set_internal_clock(vx_core_t *chip, int freq);
+int vx_set_clock(vx_core_t *chip, unsigned int freq);
+void vx_set_internal_clock(vx_core_t *chip, unsigned int freq);
 int vx_change_frequency(vx_core_t *chip);
 
 
@@ -327,12 +327,12 @@ int vx_change_frequency(vx_core_t *chip);
 /* hardware type */
 enum {
 	/* VX222 PCI */
-	VX_TYPE_BOARD,
-	VX_TYPE_V2,
-	VX_TYPE_MIC,
+	VX_TYPE_BOARD,		/* old VX222 PCI */
+	VX_TYPE_V2,		/* VX222 V2 PCI */
+	VX_TYPE_MIC,		/* VX222 Mic PCI */
 	/* VX-pocket */
-	VX_TYPE_VXPOCKET,
-	VX_TYPE_VXP440
+	VX_TYPE_VXPOCKET,	/* VXpocket V2 */
+	VX_TYPE_VXP440		/* VXpocket 440 */
 };
 
 /* audio input source */
@@ -467,7 +467,7 @@ enum {
 #define VX_AUDIO_INFO_LINEAR_24	(1<<9)
 
 /* DSP Interrupt Request values */
-#define VXP_IRQ_OFFSET		0x40 /* add 0x40 offset for vxpocket */
+#define VXP_IRQ_OFFSET		0x40 /* add 0x40 offset for vxpocket and vx222/v2 */
 /* call with vx_send_irq_dsp() */
 #define IRQ_MESS_WRITE_END          0x30
 #define IRQ_MESS_WRITE_NEXT         0x32
