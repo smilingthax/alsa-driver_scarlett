@@ -90,6 +90,7 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 
 #define __init
+#define __initdata
 #define __exit
 #define __exitdata
 #define __devinit
