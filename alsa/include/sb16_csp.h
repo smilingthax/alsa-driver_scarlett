@@ -115,10 +115,24 @@ typedef struct snd_sb_csp_info {
 #include "sb.h"
 #include "hwdep.h"
 
+typedef struct snd_sb_csp snd_sb_csp_t;
+
+/*
+ * CSP operators
+ */
+typedef struct {
+	int (*csp_use) (snd_sb_csp_t * p);
+	int (*csp_unuse) (snd_sb_csp_t * p);
+	int (*csp_autoload) (snd_sb_csp_t * p, int pcm_sfmt, int play_rec_mode);
+	int (*csp_start) (snd_sb_csp_t * p, int sample_width, int channels);
+	int (*csp_stop) (snd_sb_csp_t * p);
+	int (*csp_qsound_transfer) (snd_sb_csp_t * p);
+} snd_sb_csp_ops_t;
+
 /*
  * CSP private data
  */
-typedef struct snd_sb_csp {
+struct snd_sb_csp {
 	sb_t *chip;		/* SB16 DSP */
 	int used;		/* usage flag - exclusive */
 	char codec_name[16];	/* name of codec */
@@ -133,6 +147,8 @@ typedef struct snd_sb_csp {
 	int version;		/* CSP version (0x10 - 0x1f) */
 	int running;		/* running state */
 
+	snd_sb_csp_ops_t ops;	/* operators */
+
 	spinlock_t q_lock;	/* locking */
 	int q_enabled;		/* enabled flag */
 	int qpos_left;		/* left position */
@@ -144,21 +160,8 @@ typedef struct snd_sb_csp {
 
 	struct semaphore access_mutex;	/* locking */
 	snd_info_entry_t *proc;	/* proc interface */
-} snd_sb_csp_t;
+};
 
-/*
- * CSP call-backs
- */
-typedef struct {
-	int (*csp_use) (snd_sb_csp_t * p);
-	int (*csp_unuse) (snd_sb_csp_t * p);
-	int (*csp_autoload) (snd_sb_csp_t * p, int pcm_sfmt, int play_rec_mode);
-	int (*csp_start) (snd_sb_csp_t * p, int sample_width, int channels);
-	int (*csp_stop) (snd_sb_csp_t * p);
-	int (*csp_qsound_transfer) (snd_sb_csp_t * p);
-} snd_sb_csp_callback_t;
-
-void snd_sb_csp_register_callbacks(snd_sb_csp_callback_t ** callbacks_ptr);
 int snd_sb_csp_new(sb_t *chip, int device, snd_hwdep_t ** rhwdep);
 #endif
 

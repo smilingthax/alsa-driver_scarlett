@@ -88,8 +88,7 @@ struct _snd_sb {
 	char name[32];
 
 #ifdef CONFIG_SND_SB16_CSP
-	void *csp_callbacks;
-	void *csp_private_data;
+	void *csp;
 #endif
 
 	snd_card_t *card;
