@@ -840,7 +840,7 @@ typedef struct {
 #define SND_SEQ_INSTR_ID_SOUNDFONT	"SoundFont"
 #define SND_SEQ_INSTR_ID_GUS_PATCH	"GUS Patch"
 #define SND_SEQ_INSTR_ID_INTERWAVE	"InterWave FFFF"
-#define SND_SEQ_INSTR_ID_OPL3		"OPL2/3 FM"
+#define SND_SEQ_INSTR_ID_OPL2_3		"OPL2/3 FM"
 #define SND_SEQ_INSTR_ID_OPL4		"OPL4"
 
 /* instrument types */
@@ -850,9 +850,8 @@ typedef struct {
 #define SND_SEQ_INSTR_TYPE1_SOUNDFONT	(1<<1)	/* EMU SoundFont */
 #define SND_SEQ_INSTR_TYPE1_GUS_PATCH	(1<<2)	/* Gravis UltraSound Patch */
 #define SND_SEQ_INSTR_TYPE1_INTERWAVE	(1<<3)	/* InterWave FFFF */
-#define SND_SEQ_INSTR_TYPE2_OPL2	(1<<0)	/* Yamaha OPL2 */
-#define SND_SEQ_INSTR_TYPE2_OPL3	(1<<1)	/* Yamaha OPL3 */
-#define SND_SEQ_INSTR_TYPE2_OPL4	(1<<2)	/* Yamaha OPL4 */
+#define SND_SEQ_INSTR_TYPE2_OPL2_3	(1<<0)	/* Yamaha OPL2/3 FM */
+#define SND_SEQ_INSTR_TYPE2_OPL4	(1<<1)	/* Yamaha OPL4 */
 
 /* put commands */
 #define SND_SEQ_INSTR_PUT_CMD_CREATE	0

@@ -51,8 +51,12 @@ typedef struct fm_operator {
  *  Instrument
  */
 
+#define FM_PATCH_OPL2	0x01		/* OPL2 2 operators FM instrument */
+#define FM_PATCH_OPL3	0x02		/* OPL3 4 operators FM instrument */
+
 typedef struct {
 	unsigned int share_id[4];	/* share id - zero = no sharing */
+	unsigned char type;		/* instrument type */
 
 	fm_operator_t op[4];
 	unsigned char feedback_connection[2];
@@ -100,6 +104,7 @@ typedef struct fm_xinstrument {
 	__u32 stype;			/* structure type */
 
 	__u32 share_id[4];		/* share id - zero = no sharing */
+	__u8 type;			/* instrument type */
 
 	fm_xoperator_t op[4];		/* fm operators */
 	__u8 feedback_connection[2];
