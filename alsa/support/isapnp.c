@@ -285,7 +285,7 @@ static void __init isapnp_peek(unsigned char *data, int bytes)
 			d = isapnp_read_byte(0x05);
 			if (d & 1)
 				break;
-			udelay(10);
+			udelay(100);
 		}
 		if (!(d & 1)) {
 			*data++ = 0xff;
