@@ -35,11 +35,7 @@
 #endif
 #endif
 #ifndef __KERNEL__
-#include <sys/time.h>
-#include <netinet/in.h>
 #include <asm/page.h>
-#else
-#include <linux/in.h>
 #endif
 
 /*
@@ -127,6 +123,8 @@
 #define SND_CARD_TYPE_YMFPCI		0x0000003a	/* YMF724/740/744/754 */
 
 #define SND_CARD_TYPE_LAST		0x0000003a
+
+typedef long long snd_timestamp_t;
 
 /*
  *  Universal switch interface
@@ -630,7 +628,7 @@ struct snd_mixer_element_switch1 {
  */
 
 struct snd_mixer_element_switch2 {
-	unsigned int sw:1;		/* RW */
+	unsigned int sw: 1;		/* RW */
 };
 
 /*
@@ -808,7 +806,7 @@ struct snd_mixer_element_tone_control1_info {
 
 struct snd_mixer_element_tone_control1 {
 	unsigned int tc;		/* WR: bitmap of SND_MIXER_TC_* */
-	unsigned int sw:1;		/* WR: on/off switch */
+	unsigned int sw: 1;		/* WR: on/off switch */
 	int bass;			/* WR: Bass control */
 	int treble;			/* WR: Treble control */
 };
@@ -877,8 +875,8 @@ struct snd_mixer_element_3d_effect1_info {
 
 struct snd_mixer_element_3d_effect1 {
 	unsigned int effect;		/* RW: bitmap of SND_MIXER_EFF1_* */
-	unsigned int sw:1,		/* RW: on/off switch */
-		     mono_sw:1;		/* RW: on/off switch */
+	unsigned int sw: 1,		/* RW: on/off switch */
+		     mono_sw: 1;	/* RW: on/off switch */
 	int wide;			/* RW: 3D wide */
 	int volume;			/* RW: 3D volume */
 	int center;			/* RW: 3D center */
@@ -1356,7 +1354,7 @@ typedef union snd_pcm_sync {
 
 typedef struct snd_pcm_digital {
 	int type;			/* digital API type */
-	int valid: 1;			/* set if the digital setup is valid */
+	unsigned int valid: 1;		/* set if the digital setup is valid */
 	union {
 		struct {
 			unsigned char status[24];	/* AES/IEC958 channel status bits */
@@ -1400,7 +1398,7 @@ typedef struct snd_pcm_channel_info {
 } snd_pcm_channel_info_t;
 
 typedef struct snd_pcm_format {
-	int interleave: 1;		/* data are interleaved */
+	unsigned int interleave: 1;	/* data are interleaved */
 	int format;			/* SND_PCM_SFMT_XXXX */
 	unsigned int rate;		/* rate in Hz */
 	unsigned int channels;		/* channels */
@@ -1428,13 +1426,13 @@ typedef struct snd_pcm_format {
 
 typedef struct snd_pcm_params {
 	int when;			/* Params apply time/condition */
+	snd_timestamp_t tstamp;		/* Timestamp */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* playback format */
 	snd_pcm_digital_t digital;	/* digital setup */
 	int start_mode;			/* start mode - SND_PCM_START_XXXX */
 	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
-	int time: 1,			/* timestamp (gettimeofday) switch */
-	    ust_time: 1;		/* UST time switch */
+	unsigned int time: 1;		/* timestamp switch */
 	snd_pcm_sync_t sync;		/* sync group */
 	size_t buffer_size;		/* requested buffer size in frames */
 	size_t frag_size;		/* requested size of fragment in frames */
@@ -1474,6 +1472,8 @@ typedef struct {
 } snd_pcm_params_info_t;
 
 typedef struct snd_pcm_channel_params {
+	int when;			/* Params apply time/condition */
+	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned int channel;
 	snd_pcm_digital_t digital;	/* digital setup */
 	unsigned int fail_mask;		/* failure locations */
@@ -1487,8 +1487,7 @@ typedef struct snd_pcm_setup {
 	snd_pcm_digital_t digital;	/* digital setup */
 	int start_mode;			/* start mode - SND_PCM_START_XXXX */
 	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
-	int time: 1,			/* timestamp (gettimeofday) switch */
-	    ust_time: 1;		/* UST time switch */
+	unsigned int time: 1;		/* timestamp switch */
 	snd_pcm_sync_t sync;		/* sync group */
 	size_t buffer_size;		/* current buffer size in frames */
 	size_t frag_size;		/* current fragment size in frames */
@@ -1521,8 +1520,8 @@ typedef struct snd_pcm_channel_setup {
 
 typedef struct snd_pcm_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
-	struct timeval stime;	/* time when playback/capture was started */
-	long long ust_stime;	/* UST time when playback/capture was started */
+	snd_timestamp_t stime;	/* time when playback/capture was started */
+	snd_timestamp_t tstamp;	/* Timestamp */
 	size_t frame_io;	/* current I/O position in frames */
 	size_t frame_data;	/* current data position */
 	size_t frames_avail;	/* number of frames available for application */
@@ -1535,7 +1534,9 @@ typedef struct snd_pcm_status {
 typedef struct {
 	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
 	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
-	char pad[PAGE_SIZE - sizeof(size_t) - sizeof(int)];		
+	snd_timestamp_t tstamp;	/* Timestamp */
+	char pad[PAGE_SIZE - (sizeof(size_t) + sizeof(int) +
+			      sizeof(snd_timestamp_t))];		
 } snd_pcm_mmap_status_t;
 
 typedef struct {
@@ -1544,11 +1545,13 @@ typedef struct {
 } snd_pcm_mmap_control_t;
 
 typedef struct {
+	snd_timestamp_t tstamp;	/* Timestamp */
 	char *buf;
 	size_t count;
 } snd_xfer_t;
 
 typedef struct {
+	snd_timestamp_t tstamp;	/* Timestamp */
 	const struct iovec *vector;
 	unsigned long count;
 } snd_xferv_t;
@@ -1794,6 +1797,8 @@ typedef struct snd_rawmidi_info {
 } snd_rawmidi_info_t;
 
 typedef struct snd_rawmidi_params {
+	int when;		/* Params apply time/condition */
+	snd_timestamp_t tstamp;	/* Timestamp */
 	int stream;		/* Requested stream */
 	size_t size;		/* I/O requested queue size in bytes */
 	size_t min;		/* I minimum count of bytes in queue for wakeup */
@@ -1815,6 +1820,7 @@ typedef struct snd_rawmidi_setup {
 
 typedef struct snd_rawmidi_status {
 	int stream;		/* Requested stream */
+	snd_timestamp_t tstamp;	/* Timestamp */
 	size_t count;		/* I/O number of bytes readable/writeable without blocking */
 	size_t queue;		/* O number of bytes in queue */
 	size_t pad;		/* O not used yet */
@@ -1885,7 +1891,7 @@ typedef struct snd_timer_general_info {
 } snd_timer_general_info_t;
 
 typedef struct snd_timer_select {
-	int slave: 1;			/* timer is slave */
+	unsigned int slave: 1;		/* timer is slave */
 	union {
 		int number;		/* timer number */
 		struct {
@@ -1906,6 +1912,8 @@ typedef struct snd_timer_info {
 } snd_timer_info_t;
 
 typedef struct snd_timer_params {
+	int when;			/* Params apply time/condition */
+	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
 	unsigned long ticks;		/* requested resolution in ticks */
 	int queue_size;			/* total size of queue (32-1024) */
@@ -1922,6 +1930,7 @@ typedef struct snd_timer_setup {
 } snd_timer_setup_t;
 
 typedef struct snd_timer_status {
+	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned long resolution;	/* current resolution */
 	unsigned long lost;		/* counter of master tick lost */
 	unsigned long overrun;		/* count of read queue overruns */

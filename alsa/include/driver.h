@@ -501,6 +501,19 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_kmalloc_check(size, flags) snd_alloc_check(snd_kmalloc, (size, flags))
 #define snd_kcalloc_check(size, flags) snd_alloc_check(snd_kcalloc, (size, flags))
 
+#ifdef CONFIG_X86_TSC
+#include <asm/msr.h>
+static inline long long snd_timestamp_now(void)
+{
+	long long tsc;
+	rdtscll(tsc);
+	return tsc;
+}
+#else
+/* FIXME */
+#define snd_timestamp_now() 0
+#endif
+
 #define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 
 #endif				/* __DRIVER_H */

@@ -7,7 +7,6 @@ M make xrun detection optional (Abramo)
 L implement silence fill for xrun smoothing (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
-L timestamp for mmap'ed byte_io and status (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
@@ -21,4 +20,4 @@ L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
 L get rid of snd_pcm_lib_fragment_bytes and snd_pcm_lib_buffer_bytes
 L optimize lowlevel drivers for frame unit use
-L change the word "frame" used for some module parameters to something less misleading
+L change word "frame" used for module parameters to something not misleading

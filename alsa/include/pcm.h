@@ -71,11 +71,6 @@ typedef struct snd_stru_pcm_hardware {
 
 #define SND_PCM_DEFAULT_RATE	8000
 
-#define SND_PCM_FLG_DMA_OK	(1<<0)
-#define SND_PCM_FLG_TIMER	(1<<1)
-#define SND_PCM_FLG_TIME	(1<<2)
-#define SND_PCM_FLG_MMAP	(1<<3)
-
 #define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
 #define SND_PCM_IOCTL1_TRUE	((unsigned long *)1)
 
@@ -110,8 +105,10 @@ struct snd_stru_pcm_file {
 
 struct snd_stru_pcm_runtime {
 	int mode;			/* stream mode */
-	unsigned int flags;		/* run-time flags - SND_PCM_FLG_* */
-	struct timeval stime;		/* time value */
+	unsigned int dma_ok: 1,		/* DMA is set up */
+		time: 1,		/* Status has timestamp */
+		mmap: 1;		/* mmap requested */
+	snd_timestamp_t stime;		/* time value */
 	int start_mode;
 	int xrun_mode;
 
@@ -126,6 +123,8 @@ struct snd_stru_pcm_runtime {
 	size_t _sframe_io;
 	volatile size_t *frame_data;
 	size_t _sframe_data;
+	snd_timestamp_t *tstamp;
+	snd_timestamp_t _ststamp;
 	size_t frame_io_base;		/* Position at buffer restart */
 	size_t frame_io_interrupt;	/* Position at interrupt time*/
 	int interrupt_pending;
