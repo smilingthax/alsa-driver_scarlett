@@ -3,23 +3,14 @@
  */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18) || defined(__powerpc__)
+#ifndef CONFIG_HAVE_DMA_ADDR_T
 typedef unsigned long dma_addr_t;
 #endif
 
 /*
  */
 
-#ifndef CONFIG_ISA
-/* for i386, alpha, ppc */
-#define CONFIG_ISA
-/* other architectures might not support ISA but they are not
- * supported yet on 2.2 and by ALSA anyway..
- */
-#endif /* CONFIG_ISA */
-
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18)
+#ifndef CONFIG_HAVE_MUTEX_MACROS
 #define init_MUTEX(x) *(x) = MUTEX
 #define DECLARE_MUTEX(x) struct semaphore x = MUTEX
 typedef struct wait_queue wait_queue_t;
@@ -36,7 +27,7 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 	__list_add(new, head->prev, head);
 }
 
-#endif /* <2.2.18 */
+#endif /* !CONFIG_HAVE_MUTEX_MACROS */
 
 
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])

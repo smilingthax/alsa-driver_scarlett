@@ -290,14 +290,14 @@ case "$processor" in
     c_opts="-march=i686"
     ;;
   k6)
-    if $(CC) -march=k6  -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    if $CC -march=k6  -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=k6"
     else
       c_opts="-march=i586"
     fi
     ;;
   k7)
-    if $(CC) -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    if $CC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=athlon"
     else
       c_opts="-march=i686 -malign-functions=4"
@@ -339,7 +339,7 @@ esac
 case "$processor" in
   i?86*|k?|crusoe)
     # ia32
-    if $(CC) -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    if $CC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
     fi
     ;;
@@ -348,29 +348,8 @@ esac
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(CONFIG_SND_PPC)
-
-dnl Check for ISA support...
-if test $kpatchlevel -ge 4 ; then
-  dnl 2.4 kernel
-  AC_MSG_CHECKING(for ISA support in kernel)
-  isasup="0"
-  AC_TRY_RUN([
-  #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-  int main( void ) {
-  #ifndef CONFIG_ISA
-    exit(1);
-  #else
-    exit(0);
-  #endif
-  }
-  ],
-    AC_MSG_RESULT("yes");isasup="1",
-    AC_MSG_RESULT("no");isasup="0",
-    AC_MSG_RESULT("unknown");isasup="0"
-  )
-  CONFIG_SND_ISA=$isasup
-fi
 AC_SUBST(CONFIG_SND_ISA)
+AC_DEFINE(CONFIG_SND_ISA)
 
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)
@@ -430,6 +409,9 @@ else
   AC_MSG_RESULT(no)
 fi
 
+dnl check only on 2.2 kernel..
+if test $kpatchlevel -le 2; then
+
 dnl Check for old kill_fasync...
 AC_MSG_CHECKING(for old kill_fasync)
 oldkfasync="0"
@@ -456,6 +438,56 @@ AC_SUBST(CONFIG_OLD_KILL_FASYNC)
 if test "$CONFIG_OLD_KILL_FASYNC" = "1"; then
   AC_DEFINE(CONFIG_OLD_KILL_FASYNC)
 fi
+
+dnl Check for dma_addr_t
+AC_MSG_CHECKING(for dma_addr_t)
+dma_addr_t="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <asm/types.h>
+],[
+ dma_addr_t addr;
+],
+    AC_MSG_RESULT("yes");dma_addr_t="1",
+    AC_MSG_RESULT("no");dma_addr_t="0",
+    AC_MSG_RESULT("unknown");dma_addr_t="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_DMA_ADDR_T=$dma_addr_t
+AC_SUBST(CONFIG_HAVE_DMA_ADDR_T)
+if test "$CONFIG_HAVE_DMA_ADDR_T" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_DMA_ADDR_T)
+fi
+
+dnl Check for dma_addr_t
+AC_MSG_CHECKING(for MUTEX macros)
+have_mutex_macros="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <asm/semaphore.h>
+],[
+#ifndef init_MUTEX
+#error not defined
+#endif
+exit(0);
+],
+    AC_MSG_RESULT("yes");have_mutex_macros="1",
+    AC_MSG_RESULT("no");have_mutex_macros="0",
+    AC_MSG_RESULT("unknown");have_mutex_macros="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_MUTEX_MACROS=$have_mutex_macros
+AC_SUBST(CONFIG_HAVE_MUTEX_MACROS)
+if test "$CONFIG_HAVE_MUTEX_MACROS" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_MUTEX_MACROS)
+fi
+
+fi
+dnl 2.2 kernel
 
 dnl Check for version...
 AC_MSG_CHECKING(for driver version)
