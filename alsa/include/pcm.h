@@ -120,6 +120,7 @@ typedef struct snd_stru_pcm_runtime {
 	unsigned int interrupts;
 	unsigned int position;
 	unsigned int buf_position;
+	unsigned int last_position;
 	unsigned int fill_position;
 	int underrun;
 	int overrun;
