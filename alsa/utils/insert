@@ -5,10 +5,13 @@ MODDIR="../modules"
 MAP="../snd.map"
 OLDMAP="../snd.map.old"
 
-function basic() {
+function isapnp() {
   if [ -r $MODDIR/isapnp.o ]; then
     if ! $INSMOD -m $MODDIR/isapnp.o > $MAP; then exit 1; fi
   fi
+}
+
+function basic() {
   if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
@@ -17,7 +20,7 @@ function basic() {
   if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
-  if [ -r $MODDIF/snd-seq.o ]; then
+  if [ -r $MODDIR/snd-seq.o ]; then
     if ! $INSMOD -m $MODDIR/snd-seq.o >> $MAP; then exit 1; fi
     if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
   fi
@@ -44,7 +47,7 @@ mv -f $MAP $OLDMAP
 
 case "$1" in
   interwave-stb|stb)
-    basic
+    basic; isapnp
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-i2c.o
@@ -53,7 +56,7 @@ case "$1" in
     restore interwave-stb.conf
     ;;
   interwave|iw)
-    basic
+    basic; isapnp
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-interwave.o snd_dma1=5 snd_dma2=6 snd_midi=1
@@ -68,7 +71,7 @@ case "$1" in
     restore es1688.conf
     ;;
   es1869)
-    basic
+    basic; isapnp
     insert snd-es1869.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
@@ -76,7 +79,7 @@ case "$1" in
     restore es1869.conf
     ;;
   sb16)
-    basic
+    basic; isapnp
     insert snd-sb-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
@@ -84,7 +87,7 @@ case "$1" in
     restore sb16.conf
     ;;
   sbawe)
-    basic
+    basic; isapnp
     insert snd-sb-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
@@ -122,7 +125,7 @@ case "$1" in
     restore gusextreme.conf
     ;;
   opl3sa)
-    basic
+    basic; isapnp
     insert snd-cs4231.o
     insert snd-mpu401-uart.o
     insert snd-opl3.o
@@ -138,7 +141,7 @@ case "$1" in
     restore mozart.conf
     ;;
   p1)
-    basic
+    basic; isapnp
     insert snd-sb-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5 snd_mpu_port=0x330
@@ -172,7 +175,7 @@ case "$1" in
     restore es1370.conf
     ;;
   cs4232)
-    basic
+    basic; isapnp
     insert snd-mpu401-uart.o 
     insert snd-cs4231.o
     insert snd-opl3.o
@@ -183,7 +186,7 @@ case "$1" in
     restore cs4232.conf
     ;;
   cs4236)
-    basic
+    basic; isapnp
     insert snd-mpu401-uart.o 
     insert snd-cs4231.o
     insert snd-cs4236.o
@@ -192,7 +195,6 @@ case "$1" in
 #		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
 #		snd_dma1=1 snd_dma2=0 \
 #		snd_irq=5 snd_mpu_irq=7
-    insert isapnp.o
     insert snd-card-cs4236.o
     restore cs4236.conf
     ;;
