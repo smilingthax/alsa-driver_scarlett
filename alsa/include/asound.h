@@ -580,8 +580,8 @@ enum sndrv_timer_slave_class {
 #define SNDRV_TIMER_GLOBAL_RTC		1
 
 struct sndrv_timer_id {
-	enum sndrv_timer_class class;	
-	enum sndrv_timer_slave_class sclass;
+	enum sndrv_timer_class dev_class;	
+	enum sndrv_timer_slave_class dev_sclass;
 	int card;
 	int device;
 	int subdevice;
