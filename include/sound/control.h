@@ -66,13 +66,13 @@ struct _snd_kcontrol {
 	struct list_head list;		/* list of controls */
 	snd_ctl_elem_id_t id;
 	unsigned int count;		/* count of same elements */
-	snd_kcontrol_volatile_t *vd;	/* volatile data */
 	snd_kcontrol_info_t *info;
 	snd_kcontrol_get_t *get;
 	snd_kcontrol_put_t *put;
 	unsigned long private_value;
 	void *private_data;
 	void (*private_free)(snd_kcontrol_t *kcontrol);
+	snd_kcontrol_volatile_t vd[0];	/* volatile data */
 };
 
 #define snd_kcontrol(n) list_entry(n, snd_kcontrol_t, list)

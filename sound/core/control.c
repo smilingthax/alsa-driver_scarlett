@@ -189,12 +189,11 @@ snd_kcontrol_t *snd_ctl_new(snd_kcontrol_t * control, unsigned int access)
 	snd_runtime_check(control != NULL, return NULL);
 	snd_runtime_check(control->count > 0, return NULL);
 	kctl = (snd_kcontrol_t *)snd_magic_kcalloc(snd_kcontrol_t,
-						   sizeof(snd_kcontrol_volatile_t) * control->count,
+						   sizeof(snd_kcontrol_volatile_t) * (control->count - 1),
 						   GFP_KERNEL);
 	if (kctl == NULL)
 		return NULL;
 	*kctl = *control;
-	kctl->vd = (snd_kcontrol_volatile_t *)(kctl + 1);
 	for (idx = 0; idx < kctl->count; idx++)
 		kctl->vd[idx].access = access;
 	return kctl;
