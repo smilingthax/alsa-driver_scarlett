@@ -12,3 +12,5 @@ obj-$(CONFIG_SND_SERIALMIDI) += snd-serialmidi.o
 
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/drivers/Makefile
+
+include $(TOPDIR)/Rules.make

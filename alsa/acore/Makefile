@@ -12,3 +12,5 @@ obj-$(CONFIG_SND_VXP440) += snd-pcm.o snd-timer.o snd.o
 
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/core/Makefile
+
+include $(TOPDIR)/Rules.make

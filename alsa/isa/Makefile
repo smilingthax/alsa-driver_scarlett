@@ -24,3 +24,5 @@ extra-obj-$(CONFIG_SND_SSCAPE) += snd-sscape.o
 
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/isa/Makefile
+
+include $(TOPDIR)/Rules.make

@@ -1,0 +1,6 @@
+config SND_PC98_CS4232
+	tristate "NEC PC9800 CS4232 driver"
+	depends on SND && PC9800
+	help
+	  Say 'Y' or 'M' to include support for NEC PC9800 on-board soundchip
+          based on CS4232.
