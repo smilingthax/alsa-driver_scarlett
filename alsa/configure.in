@@ -174,17 +174,17 @@ dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
 AC_ARG_WITH(processor,
   [  --with-processor=cpu    give the processor type]
-  [                        (i386,i486,i586,i686,alpha,ppc,auto)],
+  [                        (i386,i486,i586,i686,alpha,ppc,mips,auto)],
   processor="$withval", processor="auto")
 if test "$processor" = "auto"; then
-  CPUID=`cat /proc/cpuinfo | grep cpu | grep -v "cpu family" | grep -v cpuid | grep -v "cpu MHz" | cut -d : -f 2 | colrm 1 1 | head -n 1`
+  CPUID=`cat /proc/cpuinfo | grep cpu | grep -v "cpu family" | grep -v cpuid | grep -v "cpu MHz" | grep -v "cpu model" | cut -d : -f 2 | colrm 1 1 | head -n 1`
   if test "$CPUID""x" = "x"; then
     CPUID=`cat /proc/cpuinfo | grep "cpu family" | cut -d : -f 2 | colrm 1 1 | head -n 1`
     if test "$CPUID" != "alpha" && test "$CPUID" != "Alpha"; then
       CPUID="i""$CPUID""86"
     fi
   else
-    if test "$CPUID" != "alpha" && test "$CPUID" != "Alpha"; then
+    if test "$CPUID" != "alpha" && test "$CPUID" != "Alpha" && test "$CPUID" != "MIPS" ; then
       CPUID="i""$CPUID"
     fi
   fi
@@ -218,6 +218,11 @@ case "$processor" in
     ;;
   ppc)
     AC_MSG_RESULT(ppc)
+    ;;
+  mips|MIPS)
+    c_opts="-mcpu=r4600 -mips2 -fno-pic -mno-abicalls -mlong-calls"
+    AC_MSG_RESULT(mips)
+    processor="mips"
     ;;
   *)
     AC_MSG_RESULT(unknown)
