@@ -395,7 +395,6 @@ AC_MSG_CHECKING(for driver version)
 AC_DEFINE_UNQUOTED(CONFIG_SND_VERSION, "$CONFIG_SND_VERSION")
 AC_SUBST(CONFIG_SND_VERSION)
 AC_MSG_RESULT($CONFIG_SND_VERSION)
-echo "$CONFIG_SND_VERSION" > $srcdir/version
 
 dnl Check for sequencer support...
 AC_MSG_CHECKING(for sequencer support)
@@ -476,7 +475,7 @@ AC_SUBST(m_opts)
 AC_SUBST(GENKSYMS)
 
 dnl Output files...
-AC_OUTPUT(Makefile.conf snddevices utils/alsa-driver.spec cards.config)
+AC_OUTPUT(version Makefile.conf snddevices utils/alsa-driver.spec cards.config)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
