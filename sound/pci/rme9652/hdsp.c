@@ -3211,15 +3211,16 @@ static int snd_hdsp_reset(snd_pcm_substream_t *substream)
 	else
 		runtime->status->hw_ptr = 0;
 	if (other) {
-		snd_pcm_substream_t *s = substream;
+		struct list_head *pos;
+		snd_pcm_substream_t *s;
 		snd_pcm_runtime_t *oruntime = other->runtime;
-		do {
-			s = s->link_next;
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == other) {
 				oruntime->status->hw_ptr = runtime->status->hw_ptr;
 				break;
 			}
-		} while (s != substream);
+		}
 	}
 	return 0;
 }
@@ -3382,9 +3383,10 @@ static int snd_hdsp_trigger(snd_pcm_substream_t *substream, int cmd)
 		other = hdsp->playback_substream;
 
 	if (other) {
-		snd_pcm_substream_t *s = substream;
-		do {
-			s = s->link_next;
+		struct list_head *pos;
+		snd_pcm_substream_t *s;
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == other) {
 				snd_pcm_trigger_done(s, substream);
 				if (cmd == SNDRV_PCM_TRIGGER_START)
@@ -3393,7 +3395,7 @@ static int snd_hdsp_trigger(snd_pcm_substream_t *substream, int cmd)
 					running &= ~(1 << s->stream);
 				goto _ok;
 			}
-		} while (s != substream);
+		}
 		if (cmd == SNDRV_PCM_TRIGGER_START) {
 			if (!(running & (1 << SNDRV_PCM_STREAM_PLAYBACK)) &&
 			    substream->stream == SNDRV_PCM_STREAM_CAPTURE)

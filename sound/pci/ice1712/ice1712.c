@@ -965,9 +965,11 @@ static int snd_ice1712_pro_trigger(snd_pcm_substream_t *substream,
 	{
 		unsigned int what = 0;
 		unsigned int old;
-		snd_pcm_substream_t *s = substream;
+		struct list_head *pos;
+		snd_pcm_substream_t *s;
 
-		do {
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == ice->playback_pro_substream) {
 				what |= ICE1712_PLAYBACK_START;
 				snd_pcm_trigger_done(s, substream);
@@ -975,8 +977,7 @@ static int snd_ice1712_pro_trigger(snd_pcm_substream_t *substream,
 				what |= ICE1712_CAPTURE_START_SHADOW;
 				snd_pcm_trigger_done(s, substream);
 			}
-			s = s->link_next;
-		} while (s != substream);
+		}
 		spin_lock(&ice->reg_lock);
 		old = inl(ICEMT(ice, PLAYBACK_CONTROL));
 		if (cmd == SNDRV_PCM_TRIGGER_START)

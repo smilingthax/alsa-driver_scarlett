@@ -1502,6 +1502,7 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 				    
 {
 	trident_t *trident = snd_pcm_substream_chip(substream);
+	struct list_head *pos;
 	snd_pcm_substream_t *s;
 	unsigned int what, whati, capture_flag, spdif_flag;
 	snd_trident_voice_t *voice, *evoice;
@@ -1522,10 +1523,10 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 		return -EINVAL;
 	}
 	what = whati = capture_flag = spdif_flag = 0;
-	s = substream;
 	spin_lock(&trident->reg_lock);
 	val = inl(TRID_REG(trident, T4D_STIMER)) & 0x00ffffff;
-	do {
+	snd_pcm_for_each_streams(pos, substream) {
+		s = snd_pcm_for_each_streams_entry(pos);
 		if ((trident_t *) _snd_pcm_chip(s->pcm) == trident) {
 			voice = (snd_trident_voice_t *) s->runtime->private_data;
 			evoice = voice->extra;
@@ -1550,8 +1551,7 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 			if (voice->spdif)
 				spdif_flag = 1;
 		}
-		s = s->link_next;
-	} while (s != substream);
+	}
 	if (spdif_flag) {
 		if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
 			outl(trident->spdif_pcm_bits, TRID_REG(trident, NX_SPCSTATUS));

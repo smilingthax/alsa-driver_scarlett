@@ -284,14 +284,15 @@ static int snd_vt1724_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 	ice1712_t *ice = snd_pcm_substream_chip(substream);
 	unsigned int what;
 	unsigned int old;
+	struct list_head *pos;
 	snd_pcm_substream_t *s;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		what = 0;
-		s = substream;
-		do {
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == ice->playback_pro_substream)
 				what |= VT1724_PDMA0_PAUSE;
 			else if (s == ice->capture_pro_substream)
@@ -300,8 +301,7 @@ static int snd_vt1724_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 				what |= VT1724_PDMA4_PAUSE;
 			else if (s == ice->capture_con_substream)
 				what |= VT1724_RDMA1_PAUSE;
-			s = s->link_next;
-		} while (s != substream);
+		}
 		spin_lock(&ice->reg_lock);
 		old = inl(ICEMT1724(ice, DMA_PAUSE));
 		if (cmd == SNDRV_PCM_TRIGGER_PAUSE_PUSH)
@@ -316,7 +316,8 @@ static int snd_vt1724_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_STOP:
 		what = 0;
 		s = substream;
-		do {
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == ice->playback_pro_substream) {
 				what |= VT1724_PDMA0_START;
 				snd_pcm_trigger_done(s, substream);
@@ -330,8 +331,7 @@ static int snd_vt1724_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 				what |= VT1724_RDMA1_START;
 				snd_pcm_trigger_done(s, substream);
 			}
-			s = s->link_next;
-		} while (s != substream);
+		}
 		spin_lock(&ice->reg_lock);
 		old = inl(ICEMT1724(ice, DMA_CONTROL));
 		if (cmd == SNDRV_PCM_TRIGGER_START)
