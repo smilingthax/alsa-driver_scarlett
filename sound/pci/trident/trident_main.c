@@ -2967,6 +2967,14 @@ static int __devinit snd_trident_mixer(trident_t * trident, int pcm_spdif_device
 		err = snd_ac97_mixer(trident->card, &_ac97, &trident->ac97_sec);
 		if (err < 0)
 			snd_printk("SI7018: the secondary codec - invalid access\n");
+#if 0	// only for my testing purpose --jk
+		{
+			ac97_t *mc97;
+			err = snd_ac97_modem(trident->card, &_ac97, &mc97);
+			if (err < 0)
+				snd_printk("snd_ac97_modem returned error %i\n", err);
+		}
+#endif
 	}
 	
 	trident->ac97_detect = 0;
