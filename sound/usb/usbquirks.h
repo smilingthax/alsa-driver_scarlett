@@ -26,6 +26,11 @@
  * In a perfect world, this file would be empty.
  */
 
+/*
+ * Use this for devices where other interfaces are standard compliant,
+ * to prevent the quirk being applied to those interfaces. (To work with
+ * hotplugging, bDeviceClass must be set to USB_CLASS_PER_INTERFACE.)
+ */
 #define USB_DEVICE_VENDOR_SPEC(vend, prod) \
 	.match_flags = USB_DEVICE_ID_MATCH_VENDOR | \
 		       USB_DEVICE_ID_MATCH_PRODUCT | \
@@ -226,16 +231,10 @@
 },
 
 /*
- * Once upon a time people thought, "Wouldn't it be nice if there was a
- * standard for USB MIDI devices, so that device drivers would not be forced
- * to know about the quirks of specific devices?"  So Roland went ahead and
- * wrote the USB Device Class Definition for MIDI Devices, and the USB-IF
- * endorsed it, and now everybody designing USB MIDI devices does so in
- * agreement with this standard (or at least tries to).
+ * Roland/RolandED/Edirol devices
  *
- * And if you prefer a happy end, you can imagine that Roland devices set a
- * good example. Instead of being completely fucked up due to the lack of
- * class-specific descriptors.
+ * The USB MIDI Specification has been written by Roland,
+ * but a 100% conforming Roland device has yet to be found.
  */
 {
 	USB_DEVICE(0x0582, 0x0000),
@@ -507,15 +506,33 @@
 	}
 },
 {
-	USB_DEVICE_VENDOR_SPEC(0x0582, 0x0025),
+	/*
+	 * This quirk is for the "Advanced Driver" mode. If off, the UA-20
+	 * has ID 0x0026 and is standard compliant, but has only 16-bit PCM
+	 * and no MIDI.
+	 */
+	USB_DEVICE(0x0582, 0x0025),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "EDIROL",
 		.product_name = "UA-20",
-		.ifnum = 3,
-		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-		.data = & (const snd_usb_midi_endpoint_info_t) {
-			.out_cables = 0x0001,
-			.in_cables  = 0x0001
+		.ifnum = QUIRK_ANY_INTERFACE,
+		.type = QUIRK_COMPOSITE,
+		.data = & (const snd_usb_audio_quirk_t[]) {
+			{
+				.ifnum = 1,
+				.type = QUIRK_STANDARD_INTERFACE
+			},
+			{
+				.ifnum = 2,
+				.type = QUIRK_STANDARD_INTERFACE
+			},
+			{
+				.ifnum = 3,
+				.type = QUIRK_STANDARD_INTERFACE
+			},
+			{
+				.ifnum = -1
+			}
 		}
 	}
 },
