@@ -51,214 +51,509 @@
 
 #define IP_TO_CP(ip) ((ip == 0) ? 0 : (((0x00001000uL | (ip & 0x00000FFFL)) << (((ip >> 12) & 0x000FL) + 4)) & 0xFFFF0000uL))
 
-/**** Bit Patterns ****/
-#define ENV_ON          0x80            /* envelope on */
-#define ENV_OFF         0x00            /* envelope off */
-#define STEREO          0x00008000L     /* stereo on even channel */
-#define LOCKED          0x00008000L     /* locked on odd channel */
-#define BYTESIZE        0x01000000L     /* byte sound memory */
-#define ROM0            0x00000000L     /* interpolation ROM 0 */
-#define ROM1            0x02000000L     /* interpolation ROM 1 */
-#define ROM2            0x04000000L     /* interpolation ROM 2 */
-#define ROM3            0x06000000L     /* interpolation ROM 3 */
-#define ROM4            0x08000000L     /* interpolation ROM 4 */
-#define ROM5            0x0A000000L     /* interpolation ROM 5 */
-#define ROM6            0x0C000000L     /* interpolation ROM 6 */
-#define ROM7            0x0E000000L     /* interpolation ROM 7 */
+/************************************************************************************************/
+/* PCI function 0 registers, address = <val> + PCIBASE0	       					*/
+/************************************************************************************************/
 
-/**** Interrupt enable ****/
-#define ENB_PCI         0x00000800L     /* PCI error */
-#define ENB_VINC        0x00000400L     /* volume inc */
-#define ENB_VDEC        0x00000200L     /* volume dec */
-#define ENB_MUTE        0x00000100L     /* volume mute */
-#define ENB_ADC         0x00000040L     /* ADC recording */
-#define ENB_TIMER       0x00000004L     /* timer */
-#define ENB_TX          0x00000002L     /* TX fifo empty */
-#define ENB_RX          0x00000001L     /* RX fifo data */
-#define ENB_MIC         0x00000080L     /* MIC recording */
-#define ENB_EFX         0x00000020L     /* Efx recording */
-#define ENB_GPSCS       0x00000010L     /* SPDIF channel status */
-#define ENB_CDCS        0x00000008L     /* CD in channel status */
-#define ENB_SRC         0x00002000L     /* sample rate tracker */
-#define ENB_DSP         0x00001000L     /* DSP interrupt */
+#define PTR			0x00     	/* Indexed register set pointer register	*/
+#define PTR_CHANNELNUM_MASK	0x0000003f	/* For each per-channel register, indicates the	*/
+						/* channel number of the specific register to be*/
+						/* accessed.  For non per-channel registers, the*/
+						/* value should be set to zero.			*/
+#define PTR_ADDRESS_MASK	0x07ff0000	/* Register index				*/
 
-/**** Interrupt status ****/
-#define INT_PCI         0x00200000L     /* PCI error */
-#define INT_VINC        0x00100000L     /* volume inc */
-#define INT_VDEC        0x00080000L     /* volume dec */
-#define INT_MUTE        0x00040000L     /* volume mute */
-#define INT_FULL        0x00008000L     /* ADC buffer full */
-#define INT_HALF        0x00004000L     /* ADC half full */
-#define INT_TIMER       0x00000200L     /* timer */
-#define INT_TX          0x00000100L     /* TX fifo empty */
-#define INT_RX          0x00000080L     /* RX fifo data */
-#define INT_LOOP        0x00000040L     /* channel loop */
-#define INT_CIN         0x0000003FL     /* channel interrupt loop number*/
-#define INT_MODEM       0x00400000L     /* host modem */
-#define INT_MICFULL     0x00020000L     /* MIC buffer full */
-#define INT_MICHALF     0x00010000L     /* MIC half full */
-#define INT_EFXFULL     0x00002000L     /* Efx buffer full */
-#define INT_EFXHALF     0x00001000L     /* Efx half full */
-#define INT_GSPCS       0x00000800L     /* SPDIF status changed */
-#define INT_CDCS        0x00000400L     /* CD in status changed */
-#define INT_DSP         0x00800000L     /* DSP interrupt */
+#define DATA			0x04		/* Indexed register set data register		*/
 
-/**** Recording controls ****/
-#define ADCLE           0x00000008L     /* record left channel */
-#define ADCRE           0x00000010L     /* record right channel */
-#define ADC48K          0x00000000L     /* record at 48kHz */
-#define ADC44K          0x00000001L     /* record at 44.1kHz */
-#define ADC32K          0x00000002L     /* record at 32kHz */
-#define ADC24K          0x00000003L     /* record at 24kHz */
-#define ADC22K          0x00000004L     /* record at 22.05kHz */
-#define ADC16K          0x00000005L     /* record at 16kHz */
-#define ADC11K          0x00000006L     /* record at 11.025kHz */
-#define ADC8K           0x00000007L     /* record at 8kHz */
+#define IPR			0x08		/* Global interrupt pending register   		*/
+#define IPR_SAMPLERATETRACKER	0x01000000	/* Sample rate tracker lock status change	*/
+#define IPR_FXDSP		0x00800000	/* Enable FX DSP interrupts			*/
+#define IPR_FORCEINT		0x00400000	/* Force Sound Blaster interrupt		*/
+#define IPR_PCIERROR		0x00200000	/* PCI bus error				*/
+#define IPR_VOLINCR		0x00100000	/* Volume increment button pressed		*/
+#define IPR_VOLDECR		0x00080000	/* Volume decrement button pressed		*/
+#define IPR_MUTE		0x00040000	/* Mute button pressed				*/
+#define IPR_MICBUFFULL		0x00020000	/* Microphone buffer full			*/
+#define IPR_MICBUFHALFFULL	0x00010000	/* Microphone buffer half full			*/
+#define IPR_ADCBUFFULL		0x00008000	/* ADC buffer full				*/
+#define IPR_ADCBUFHALFFULL	0x00004000	/* ADC buffer half full				*/
+#define IPR_EFXBUFFULL		0x00002000	/* Effects buffer full				*/
+#define IPR_EFXBUFHALFFULL	0x00001000	/* Effects buffer half full	       		*/
+#define IPR_GPSPDIFSTATUSCHANGE	0x00000800	/* GPSPDIF channel status change		*/
+#define IPR_CDROMSTATUSCHANGE	0x00000400	/* CD-ROM channel status change			*/
+#define IPR_INTERVALTIMER	0x00000200	/* Interval timer terminal count		*/
+#define IPR_MIDITRANSBUFEMPTY	0x00000100	/* MIDI UART transmit buffer empty		*/
+#define IPR_MIDIRECVBUFEMPTY	0x00000080	/* MIDI UART receive buffer empty		*/
+#define IPR_CHANNELLOOP		0x00000040	/* One or more channel loop interrupts pending	*/
+#define IPR_CHANNELNUMBERMASK	0x0000003f	/* When IPR_CHANNELLOOP is set, indicates the	*/
+						/* Highest set channel in [finish]		*/
 
-/**** SPDIF output controls ****/
-#define SPDIF_DEFAULT   0x00108500L     /* default */
-#define SPDIF_CP        0x00000004L     /* copy permitted */
-#define SPDIF_AES       0x00000001L     /* professional AES3-1992 */
-#define SPDIF_44K       0x00000000L     /* 44.1kHz */
-#define SPDIF_48K       0x02000000L     /* 48kHz */
-#define SPDIF_32K       0x03000000L     /* 32kHz */
-#define SPDIF_CNL       0x00100000L     /* left of 2 */
-#define SPDIF_SRC       0x00000000L     /* unspecified */
-#define SPDIF_CAT       0x00000500L     /* music synthesizer */
-#define SPDIF_ORG       0x00008000L     /* original */
+#define INTE			0x0c		/* Interrupt enable register 			*/
+#define INTE_VIRTUALSB_MASK	0xc0000000	/* Virtual Soundblaster I/O port capture	*/
+#define INTE_VIRTUALSB_220	0x00000000	/* Capture at I/O base address 0x220-0x22f     	*/
+#define INTE_VIRTUALSB_240	0x40000000	/* Capture at I/O base address 0x240		*/
+#define INTE_VIRTUALSB_260	0x80000000	/* Capture at I/O base address 0x260		*/
+#define INTE_VIRTUALSB_280	0xc0000000	/* Capture at I/O base address 0x280		*/
+#define INTE_VIRTUALMPU_MASK	0x30000000	/* Virtual MPU I/O port capture			*/
+#define INTE_VIRTUALMPU_300	0x00000000	/* Capture at I/O base address 0x300-0x301     	*/
+#define INTE_VIRTUALMPU_310	0x10000000	/* Capture at I/O base address 0x310		*/
+#define INTE_VIRTUALMPU_320	0x20000000	/* Capture at I/O base address 0x320		*/
+#define INTE_VIRTUALMPU_330	0x30000000	/* Capture at I/O base address 0x330		*/
+#define INTE_MASTERDMAENABLE	0x08000000	/* Master DMA emulation at 0x000-0x00f     	*/
+#define INTE_SLAVEDMAENABLE	0x04000000	/* Slave DMA emulation at 0x0c0-0x0df      	*/
+#define INTE_MASTERPICENABLE	0x02000000	/* Master PIC emulation at 0x020-0x021     	*/
+#define INTE_SLAVEPICENABLE	0x01000000	/* Slave PIC emulation at 0x0a0-0x0a1      	*/
+#define INTE_VSBENABLE		0x00800000	/* Enable virtual Soundblaster			*/
+#define INTE_ADLIBENABLE	0x00400000	/* Enable AdLib emulation at 0x388-0x38b	*/
+#define INTE_MPUENABLE		0x00200000	/* Enable virtual MPU				*/
+#define INTE_FORCEINT		0x00100000	/* Continuously assert INTAN			*/
 
-/**** Per Chanel G Registers ****/
-#define CPF             0x00000000      /* Current Pitch and Fraction */
-#define CPF_CP          0x1F001000
-#define CPF_S           0x0F000F00
-#define CPF_F           0x0D000000
-#define PTRX            0x00010000      /* Pitch Target, Reverb send, auX data */
-#define PTRX_PT         0x1F011000
-#define PTRX_R          0x0F010800
-#define PTRX_X          0x07010000
-#define CVCF            0x00020000      /* Current Volume, Filter Cutoff */
-#define CVCF_CV         0x1F021000
-#define CVCF_CF         0x0F020000
-#define VTFT            0x00030000      /* Volume Target, Filter cutoff Target */
-#define VTFT_VT         0x1F031000
-#define VTFT_FT         0x0F030000
-#define Z1              0x00050000      /* delay memory */
-#define Z2              0x00040000      /* delay memory */
-#define PSST            0x00060000      /* Pan Send, STart address */
-#define PSST_PS         0x1F061800
-#define PSST_ST         0x17060000
-#define CSL             0x00070000      /* Chorus Send, Loop address */
-#define CSL_CS          0x1F071800
-#define CSL_L           0x17070000
-#define CCCA            0x00080000      /* Coef, Cntl, Current address */
-#define CCCA_COEF       0x1F081C00
-#define CCCA_ROM        0x1B081900
-#define CCCA_BYTE       0x18081800
-#define CCCA_CA         0x17080000
+#define INTE_MRHANDENABLE	0x00080000	/* Enable the "Mr. Hand" logic			*/
+// Not implemented or relevant under Linux.  It will cause odd behaviour 
+// and may cause seg faults if implemented
 
-/**** Per Chanel Envelope Registers ****/
-#define ENVVOL          0x00100040      /* ENVelope VOLume Value */
-#define ATKHLDV         0x00110040      /* volume envelope ATtack and HoLD Value */
-#define ATKHLDV_HLD     0x0E110840
-#define ATKHLDV_ATK     0x06110040
-#define DCYSUSV         0x00120040      /* volume envelope DeCaY and SUStain Value */
-#define DCYSUSV_SUS     0x0E120840
-#define DCYSUSV_DCY     0x06120040
-#define LFOVAL1         0x00130040      /* LFO #1 VALue */
-#define ENVVAL          0x00140040      /* pitch/filter ENVelope VALue */
-#define ATKHLD          0x00150040      /* pitch/filter envelope ATacK and Hold */
-#define ATKHLD_HLD      0x0E150840
-#define ATKHLD_ATK      0x06150040
-#define DCYSUS          0x00160040      /* pitch/filter envelope Decay and Sustain */
-#define DCYSUS_SUS      0x0E160840
-#define DCYSUS_DCY      0x06160040
-#define LFOVAL2         0x00170040      /* LFO #2 VALue */
+#define INTE_SAMPLERATETRACKER	0x00002000	/* Enable sample rate tracker interrupts MUST BE ENABLED */
+#define INTE_FXDSPENABLE	0x00001000	/* Enable FX DSP interrupts			*/
+#define INTE_PCIERRORENABLE 	0x00000800	/* Enable PCI bus error interrupts		*/
+#define INTE_VOLINCRENABLE	0x00000400	/* Enable volume increment button interrupts	*/
+#define INTE_VOLDECRENABLE	0x00000200	/* Enable volume decrement button interrupts	*/
+#define INTE_MUTEENABLE		0x00000100	/* Enable mute button interrupts		*/
+#define INTE_MICBUFENABLE	0x00000080	/* Enable microphone buffer interrupts		*/
+#define INTE_ADCBUFENABLE	0x00000040	/* Enable ADC buffer interrupts			*/
+#define INTE_EFXBUFENABLE	0x00000020	/* Enable Effects buffer interrupts    		*/
+#define INTE_GPSPDIFENABLE	0x00000010	/* Enable GPSPDIF status interrupts		*/
+#define INTE_CDSPDIFENABLE	0x00000008	/* Enable CDSPDIF status interrupts		*/
+#define INTE_INTERVALTIMERENB 	0x00000004	/* Enable interval timer interrupts		*/
+#define INTE_MIDITXENABLE 	0x00000002	/* Enable MIDI transmit-buffer-empty interrupts	*/
+#define INTE_MIDIRXENABLE 	0x00000001	/* Enable MIDI receive-buffer-empty interrupts	*/
 
-#define IP              0x00180040      /* Initial Pitch */
-#define IFATN           0x00190040      /* Initial Filter cutoff And ATteNuation */
-#define IFATN_IF        0x0F190840
-#define IFATN_ATN       0x07190040
-#define PEFE            0x001A0040      /* Pitch Envelope and Filter Enveolpe amount */
-#define PEFE_PE         0x0F1A0840
-#define PEFE_FE         0x071A0040
-#define FMMOD           0x001B0040      /* FM from LFO#1 and filter MOD amount */
-#define FMMOD_FM        0x0F1B0840
-#define FMMOD_MOD       0x071B0040
-#define TREMFRQ         0x001C0040      /* TREMelo amount and lfo#1 FReQuency */
-#define TREMFRQ_TREM    0x0F1C0840
-#define TREMFRQ_FRQ     0x071C0040
-#define FM2FRQ2         0x001D0040      /* FM from lfo#2 amount and lfo#2 FReQuency */
-#define FM2FRQ2_FM2     0x0F1D0840
-#define FM2FRQ2_FRQ2    0x071D0040
-#define TEMPENV         0x001E0040      /* Tempory Envelope Register */
+#define WC			0x10		/* Wall Clock register	       			*/
+#define WC_SAMPLECOUNTER_MASK	0x03FFFFC0	/* Sample periods elapsed since reset		*/
+#define WC_SAMPLECOUNTER	0x14060010
+#define WC_CURRENTCHANNEL	0x0000003F	/* Channel [0..63] currently being serviced	*/
 
-/**** 8010 registers ****/
-#define PTB             0x00400000L     /* Page Table Base register */
+#define HCFG			0x14		/* Hardware config register			*/
+#define HCFG_LEGACYFUNC_MASK   	0xe0000000	/* Legacy function number - DO NOT USE 		*/
+#define HCFG_LEGACYFUNC_MPU	0x00000000	/* Legacy MPU - DO NOT USE under Linux		*/
+#define HCFG_LEGACYFUNC_SB	0x40000000	/* Legacy SB - DO NOT USE under Linux		*/
+#define HCFG_LEGACYFUNC_AD	0x60000000	/* Legacy AD - DO NOT USE under Linux		*/
+#define HCFG_LEGACYFUNC_MPIC	0x80000000	/* Legacy MPIC - DO NOT USE under Linux		*/
+#define HCFG_LEGACYFUNC_MDMA	0x90000000	/* Legacy MDMA - DO NOT USE under Linux		*/
+#define HCFG_LEGACYFUNC_SPCI	0xa0000000	/* Legacy SPCI - DO NOT USE under Linux		*/
+#define HCFG_LEGACYFUNC_SDMA	0xe0000000	/* Legacy SDMA - DO NOT USE under Linux		*/
+#define HCFG_IOCAPTUREADDR	0x1f000000	/* The 4 LSBs of the captured I/O address	*/
+#define HCFG_LEGACYWRITE	0x00800000	/* 1 = write, 0 = read - DO NOT USE under Linux	*/
+#define HCFG_LEGACYWORD		0x00400000	/* 1 = word, 0 = byte - DO NOT USE under Linux	*/
+#define HCFG_LEGACYINT		0x00200000	/* 1 = legacy event captured. Write 1 to clear. DO NOT USE under Linux */
+#define HCFG_CODECFORMAT_MASK	0x000e0000	/* CODEC format					*/
+#define HCFG_CODECFORMAT_AC97	0x00000000	/* AC97 CODEC format -- Primary Output		*/
+#define HCFG_CODECFORMAT_I2S	0x00020000	/* I2S CODEC format -- Secondary (Rear) Output	*/
+#define HCFG_GPINPUT0		0x00004000	/* External pin112				*/
+#define HCFG_GPINPUT1		0x00002000	/* External pin110				*/
+#define HCFG_GPOUTPUTMASK	0x00001c00	/* External pins which may be controlled	*/
+#define HCFG_JOYENABLE		0x00000200	/* Joystick enable				*/
+#define HCFG_PHASETRACKENABLE	0x00000100	/* Phase tracking enable			*/
+#define HCFG_AC3ENABLE_MASK    	0x0x0000e0	/* AC3 async input control - Not implemented	*/
+#define HCFG_AC3ENABLE_ZVIDEO	0x00000020	/* Channels 0 and 1 replace ZVIDEO		*/
+#define HCFG_AC3ENABLE_CDSPDIF	0x00000040	/* Channels 0 and 1 replace CDSPDIF		*/
+#define HCFG_AC3ENABLE_ZVIDEO	0x00000020	/* Channels 0 and 1 replace GPSPDIF		*/
+#define HCFG_AUTOMUTE		0x00000010	/* When set, the async sample rate convertors	*/
+						/* will automatically mute their output when	*/
+						/* they are not rate-locked to the external	*/
+						/* audio source					*/
+#define HCFG_LOCKSOUNDCACHE    	0x00000008	/* 1 = Cancel bustmaster accesses to soundcache - Do not adjust this */
+#define HCFG_LOCKTANKCACHE     	0x00000004	/* 1 = Cancel bustmaster accesses to tankcache - Do not adjust this */
+#define HCFG_MUTEBUTTONENABLE	0x00000002	/* 1 = Enable master mute button		*/
+#define HCFG_AUDIOENABLE	0x00000001	/* 0 = CODECs transmit zero-valued samples	*/
 
-/**** Registers not using PTR */
-#define WC              0x00000010L     /* Wall Clock */
-#define HCFG            0x00000014L     /* Hardware ConFig register */
-#define IPR             0x00000008L     /* Interrupt Pending Register */
-#define INTE            0x0000000CL     /* INTerrupt Enable register */
-#define TIMR            0x0000001AL     /* TIMeR terminal count */
-#define MUDATA          0x00000018L     /* MpU401 DATA */
-#define MUSTAT          0x00000019L     /* MpU401 STATus */
-#define AC97D           0x0000001CL     /* AC97 Data */
-#define AC97A           0x0000001EL     /* AC97 Address */
+#define MUDATA			0x18		/* MPU401 data register        			*/
 
-/**** Per Channel Cache Registers ****/
-#define MAPA            0x000C0000L     /* cache MAP A */
-#define MAPB            0x000D0000L     /* cache MAP B */
-#define CDATA           0x00200000L     /* Cache DATA */
-#define CCTRL           0x00090000L     /* Cache ConTRoL */
-#define CLOOP           0x000A0040L     /* Cache LOOP */
+#define MUCMD			0x19		/* MPU401 command register 			*/
+#define MUCMD_RESET		0xff		/* RESET command				*/
+#define MUCMD_ENTERUARTMODE	0x3f		/* Enter_UART_mode command			*/
 
-/**** SPDIF Output Status ****/
-#define SPCS0           0x00540000L     /* SPdif output Channel Status 0 */
-#define SPCS1           0x00550000L     /* SPdif output Channel Status 1 */
-#define SPCS2           0x00560000L     /* SPdif output Channel Status 2 */
-#define SPBYPASS        0x005E0000L     /* SPdif BYPASS mode */
+#define MUSTAT			MUCMD		/* MPU401 status register 			*/
+#define MUSTAT_IRDYN		0x80		/* 0 = MIDI data or command ACK			*/
+#define MUSTAT_ORDYN		0x40		/* 0 = MUDATA can accept a command or data	*/
 
-/**** Voice Channel Registers ****/
-#define CLIE            0x00580000L     /* Channel Loop Interrupt Enable */
-#define CLIEL           0x00580000L     /* Channel Loop Interrupt Enable Low */
-#define CLIEH           0x00590000L     /* Channel Loop Interrupt Enable High */
-#define CLIP            0x005A0000L     /* Channel Loop Interrupt Pending */
-#define CLIPL           0x005A0000L     /* Channel Loop Interrupt Pending Low */
-#define CLIPH           0x005B0000L     /* Channel Loop Interrupt Pending High */
-#define SOLEL           0x005C0000L     /* Stop On Loop Enable Low */
-#define SOLEH           0x005D0000L     /* Stop On Loop Enable High */
+#define TIMR			0x1a		/* Timer terminal count register 		*/
+#define TIMR_RATE_MASK		0x000003ff	/* Timer interrupt rate in sample periods	*/
+#define TIMR_RATE		0x0a00001a
 
-/**** SRC and Channel Status Registers ****/
-#define CDCS            0x00500000L     /* CD-ROM digital Channel Status */
-#define CDSRCS          0x00600000L     /* CD-ROM Sample Rate Converter Status */
-#define GPSCS           0x00510000L     /* General Purpose Spdif Channel Status */
-#define GPSRCS          0x00610000L     /* Generap Purpose Spdif sample Rate Converter Status */
-#define ZVSRCS          0x00620000L     /* ZVideo Sample Rate Converter Status */
+#define AC97DATA       		0x1c		/* AC97 indexed register set data register 	*/
 
-/**** ADC Registers ****/
-#define ADCCR           0x00420080L     /* ADC Control Registers */
-#define ADCBA           0x00460000L     /* ADC Buffer Address */
-#define ADCBS           0x004A0080L     /* ADC Buffer Size */
-#define ADCIDX          0x00640000L     /* ADC recording buffer InDeX */
+#define AC97ADDRESS    		0x1e		/* AC97 indexed register set address register 	*/
+#define AC97ADDRESS_READY	0x80		/* Read-only bit, reflects CODEC READY signal	*/
+#define AC97ADDRESS_ADDRESS	0x7f		/* Address of indexed AC97 register		*/
 
-/**** MIC Recording Registers ****/
-#define MICBA           0x00450000L     /* MICrophone Buffer Address */
-#define MICBS           0x00490080L     /* MICrophone Buffer Size */
-#define MICIDX          0x00630000L     /* MICrophone recording buffer InDeX */
+/************************************************************************************************/
+/* PCI function 1 registers, address = <val> + PCIBASE1	       					*/
+/************************************************************************************************/
 
-/**** FX Recording Registers ****/
-#define FXBA            0x00470000L     /* FX Buffer Address */
-#define FXBS            0x004B0080L     /* FX Buffer Size */
-#define FXIDX           0x00650000L     /* FX recording buffer InDeX */
+#define JOYSTICK1      		0x00		/* Analog joystick port register		*/
+#define JOYSTICK2      		0x01		/* Analog joystick port register		*/
+#define JOYSTICK3      		0x02		/* Analog joystick port register		*/
+#define JOYSTICK4      		0x03		/* Analog joystick port register		*/
+#define JOYSTICK5      		0x04		/* Analog joystick port register		*/
+#define JOYSTICK6      		0x05		/* Analog joystick port register		*/
+#define JOYSTICK7      		0x06		/* Analog joystick port register		*/
+#define JOYSTICK8      		0x07		/* Analog joystick port register		*/
+#define JOYSTICK_BUTTONS	0x0f		/* Joystick button data				*/
+#define JOYSTICK_COMPARATOR	0xf0		/* Joystick comparator data			*/
+
+/********************************************************************************************************/
+/* Emu10k1 pointer-offset register set, accessed through the PTR and DATA registers		       	*/
+/********************************************************************************************************/
+
+#define CPF			0x00		/* Current pitch and fraction register 			*/
+#define CPF_CURRENTPITCH_MASK  	0xffff0000	/* Current pitch (0x4000 == unity pitch shift) 		*/
+#define CPF_CURRENTPITCH	0x10100000
+#define CPF_STEREO_MASK		0x00008000	/* 1 = Even channel interleave, odd channel locked	*/
+#define CPF_STOP_MASK  		0x00004000	/* 1 = Current pitch forced to 0			*/
+#define CPF_FRACADDRESS_MASK	0x00003fff	/* Linear fractional address of the current channel	*/
+
+#define PTRX			0x01		/* Pitch target and send A/B amounts register		*/
+#define PTRX_PITCHTARGET_MASK	0xffff0000	/* Pitch target of specified channel			*/
+#define PTRX_PITCHTARGET	0x10100001
+#define PTRX_FXSENDAMOUNT_A_MASK 0x0000ff00	/* Linear level of channel output sent to FX send bus A	*/
+#define PTRX_FXSENDAMOUNT_A	0x08080001
+#define PTRX_FXSENDAMOUNT_B_MASK 0x000000ff	/* Linear level of channel output sent to FX send bus B	*/
+#define PTRX_FXSENDAMOUNT_B	0x08000001
+
+#define CVCF			0x02		/* Current volume and filter cutoff register		*/
+#define CVCF_CURRENTVOL_MASK	0xffff0000	/* Current linear volume of specified channel		*/
+#define CVCF_CURRENTVOL		0x10100002
+#define CVCF_CURRENTFILTER_MASK	0x0000ffff	/* Current filter cutoff frequency of specified channel	*/
+#define CVCF_CURRENTFILTER	0x10000002
+
+#define VTFT			0x03		/* Volume target and filter cutoff target register 	*/
+#define VTFT_VOLUMETARGET_MASK 	0xffff0000	/* Volume target of specified channel			*/
+#define VTFT_FILTERTARGET_MASK 	0x0000ffff	/* Filter cutoff target of specified channel		*/
+
+#define Z1			0x05		/* Filter delay memory 1 register			*/
+
+#define Z2			0x04		/* Filter delay memory 2 register		       	*/
+
+#define PSST			0x06		/* Send C amount and loop start address register	*/
+#define PSST_FXSENDAMOUNT_C_MASK    	0xff000000	/* Linear level of channel output sent to FX send bus C	*/
+
+#define PSST_FXSENDAMOUNT_C	0x08180006
+
+#define PSST_LOOPSTARTADDR_MASK	0x00ffffff	/* Loop start address of the specified channel		*/
+#define PSST_LOOPSTARTADDR	0x18000006
+
+#define DSL			0x07		/* Send D amount and loop start address register	*/
+#define DSL_FXSENDAMOUNT_D_MASK	0xff000000	/* Linear level of channel output sent to FX send bus D	*/
+
+#define DSL_FXSENDAMOUNT_D	0x08180007
+
+#define DSL_LOOPENDADDR_MASK	0x00ffffff	/* Loop end address of the specified channel		*/
+#define DSL_LOOPENDADDR		0x18000007
+
+#define CCCA			0x08		/* Filter Q, interp. ROM, byte size, cur. addr register */
+#define CCCA_RESONANCE		0xf0000000	/* Lowpass filter resonance height			*/
+#define CCCA_INTERPROMMASK     	0x0e000000	/* Selects passband of interpolation ROM		*/
+#define CCCA_INTERPROM_0	0x00000000	/* Select interpolation ROM 0                           */
+#define CCCA_INTERPROM_1	0x02000000	/* Select interpolation ROM 1				*/
+#define CCCA_INTERPROM_2	0x04000000	/* Select interpolation ROM 2				*/
+#define CCCA_INTERPROM_3	0x06000000	/* Select interpolation ROM 3				*/
+#define CCCA_INTERPROM_4	0x08000000	/* Select interpolation ROM 4				*/
+#define CCCA_INTERPROM_5	0x0a000000	/* Select interpolation ROM 5				*/
+#define CCCA_INTERPROM_6	0x0c000000	/* Select interpolation ROM 6				*/
+#define CCCA_INTERPROM_7	0x0e000000	/* Select interpolation ROM 7				*/
+#define CCCA_8BITSELECT		0x01000000	/* 1 = Sound memory for this channel uses 8-bit samples	*/
+#define CCCA_CURRADDR_MASK     	0x00ffffff	/* Current address of the selected channel		*/
+#define CCCA_CURRADDR		0x18000008
+
+#define CCR			0x09		/* Cache control register				*/
+#define CCR_CACHEINVALIDSIZE	0xfe000000	/* Number of invalid samples in the cache		*/
+#define CCR_CACHELOOPFLAG      	0x01000000	/* 1 = Cache has a loop service pending			*/
+#define CCR_INTERLEAVEDSAMPLES	0x00800000	/* 1 = A cache service will fetch interleaved samples	*/
+#define CCR_WORDSIZEDSAMPLES	0x00400000	/* 1 = A cache service will fetch word sized samples	*/
+#define CCR_READADDRESS_MASK	0x003f0000	/* Location of cache just beyond current cache service	*/
+#define CCR_LOOPINVALSIZE	0x0000fe00	/* Number of invalid samples in cache prior to loop	*/
+#define CCR_LOOPFLAG		0x00000100	/* Set for a single sample period when a loop occurs	*/
+#define CCR_CACHELOOPADDRHI	0x000000ff	/* DSL_LOOPSTARTADDR's hi byte if CCR_CACHELOOPFLAG = 1 */
+
+/* NOTE: This register is normally not used */
+#define CLP			0x0a		/* Cache loop register (valid if CCR_CACHELOOPFLAG = 1) */
+#define CLP_CACHELOOPADDR	0x0000ffff	/* Cache loop address (copy of DSL_LOOPSTARTADDR)	*/
+
+#define FXRT			0x0b		/* Effects send routing register		       	*/
+#define FXRT_CHANNELA		0x000f0000	/* Effects send bus number for channel's effects send A	*/
+#define FXRT_CHANNELB		0x00f00000	/* Effects send bus number for channel's effects send B	*/
+#define FXRT_CHANNELC		0x0f000000	/* Effects send bus number for channel's effects send C	*/
+#define FXRT_CHANNELD		0xf0000000	/* Effects send bus number for channel's effects send D	*/
+
+#define MAPA			0x0c		/* Cache map A						*/
+#define MAP_PTE_MASK		0xffffe000	/* The 19 MSBs of the PTE indexed by PTI       		*/
+#define MAP_PTI_MASK		0x00001fff	/* The 13 bit index to one of the PTE dwords		*/
+
+#define MAPB			0x0d		/* Cache map B						*/
+
+#define ENVVOL			0x10		/* Volume envelope register 				*/
+#define ENVVOL_MASK		0x0000ffff	/* 16-bit value						*/
+
+#define ATKHLDV 		0x11		/* Volume envelope hold and attack register    		*/
+#define ATKHLDV_PHASE0		0x00008000	/* 0 = Begin attack phase				*/
+#define ATKHLDV_HOLDTIME_MASK	0x00007f00	/* Envelope hold time (127-n == n*88.2msec)		*/
+#define ATKHLDV_ATTACKTIME_MASK	0x0000007f	/* Envelope attack time, log encoded			*/
+						/* 0 = infinite, 1 = 10.9msec, ... 0x7f = 5.5msec	*/
+
+#define DCYSUSV 		0x12		/* Volume envelope sustain and decay register		*/
+#define DCYSUSV_PHASE1_MASK	0x00008000	/* 0 = Begin attack phase, 1 = begin release phase	*/
+#define DCYSUSV_SUSTAINLEVEL_MASK 0x00007f00	/* 127 = full, 0 = off, 0.75dB increments		*/
+#define DCYSUSV_CHANNELENABLE_MASK 0x00000080	/* 1 = Inhibit envelope engine from writing to registers*/
+#define DCYSUSV_DECAYTIME_MASK	0x0000007f	/* Envelope decay time, log encoded			*/
+						/* 0 = 43.7msec, 1 = 21.8msec, 0x7f = 22msec		*/
+
+#define LFOVAL1 		0x13		/* Modulation LFO value					*/
+#define LFOVAL_MASK		0x0000ffff	/* 16-bit value						*/
+
+#define ENVVAL			0x14		/* Modulation envelope register				*/
+#define ENVVAL_MASK		0x0000ffff	/* 16-bit value						*/
+
+#define ATKHLDM			0x15		/* Modulation envelope hold and attack register	       	*/
+#define ATKHLDM_PHASE0		0x00008000	/* 0 = Begin attack phase				*/
+#define ATKHLDM_HOLDTIME	0x00007f00	/* Envelope hold time (127-n == n*42msec)		*/
+#define ATKHLDM_ATTACKTIME	0x0000007f	/* Envelope attack time, log encoded			*/
+						/* 0 = infinite, 1 = 11msec, ... 0x7f = 5.5msec		*/
+
+#define DCYSUSM			0x16		/* Modulation envelope decay and sustain register	*/
+#define DCYSUSM_PHASE1_MASK	0x00008000	/* 0 = Begin attack phase, 1 = begin release phase	*/
+#define DCYSUSM_SUSTAINLEVEL_MASK 0x00007f00	/* 127 = full, 0 = off, 0.75dB increments		*/
+#define DCYSUSM_DECAYTIME_MASK	0x0000007f	/* Envelope decay time, log encoded			*/
+						/* 0 = 43.7msec, 1 = 21.8msec, 0x7f = 22msec		*/
+
+#define LFOVAL2 		0x17		/* Vibrato LFO register					*/
+#define LFOVAL2_MASK		0x0000ffff	/* 16-bit value						*/
+
+#define IP			0x18		/* Initial pitch register				*/
+#define IP_MASK			0x0000ffff	/* Exponential initial pitch shift (16-bit value)	*/
+						/* 4 bits of octave, 12 bits of fractional octave	*/
+#define IP_UNITY		0x0000e000	/* Unity pitch shift					*/
+
+#define IFATN			0x19		/* Initial filter cutoff and attenuation register	*/
+#define IFATN_FILTERCUTOFF_MASK	0x0000ff00	/* Initial filter cutoff frequency in exponential units	*/
+						/* 6 most significant bits are semitones		*/
+						/* 2 least significant bits are fractions		*/
+#define IFATN_FILTERCUTOFF	0x08080019
+#define IFATN_ATTENUATION_MASK	0x000000ff	/* Initial attenuation in 0.375dB steps			*/
+#define IFATN_ATTENUATION	0x08000019
 
 
-/**** Tank Memory Registers ****/
-#define TMBA            0x00410000L     /* Tank Memory Base Address */
-#define TMBS            0x00440080L     /* Tank Memory Buffer Size */
-#define TMDR            0x00000200L     /* Tank Memory Data Register */
-#define TMAR            0x00000300L     /* Tank Memory Address Register */
+#define PEFE			0x1a		/* Pitch envelope and filter envelope amount register	*/
+#define PEFE_PITCHAMOUNT_MASK	0x0000ff00	/* Pitch envlope amount					*/
+						/* Signed 2's complement, +/- one octave peak extremes 	*/
+#define PEFE_PITCHAMOUNT	0x0808001a
+#define PEFE_FILTERAMOUNT_MASK	0x000000ff	/* Filter envlope amount				*/
+						/* Signed 2's complement, +/- six octaves peak extremes */
+#define PEFE_FILTERAMOUNT       0x0800001a 
+#define FMMOD			0x1b		/* Vibrato/filter modulation from LFO register		*/
+#define FMMOD_MODVIBRATO	0x0000ff00	/* Vibrato LFO modulation depth	       			*/
+						/* Signed 2's complement, +/- one octave extremes     	*/
+#define FMMOD_MOFILTER		0x000000ff	/* Filter LFO modulation depth				*/
+						/* Signed 2's complement, +/- three octave extremes     */
 
+
+#define TREMFRQ 		0x1c		/* Tremolo amount and modulation LFO frequency register	*/
+#define TREMFRQ_DEPTH		0x0000ff00	/* Tremolo depth					*/
+						/* Signed 2's complement, with +/- 12dB extremes	*/
+
+#define FM2FRQ2 		0x1d		/* Vibrato amount and vibrato LFO frequency register	*/
+#define FM2FRQ2_DEPTH		0x0000ff00	/* Vibrato LFO vibrato depth   				*/
+						/* Signed 2's complement, +/- one octave extremes	*/
+#define FM2FRQ2_FREQUENCY	0x000000ff	/* Vibrato LFO frequency				*/
+						/* 0.039Hz steps, maximum of 9.85 Hz.			*/
+
+#define TEMPENV 		0x1e		/* Tempory envelope register				*/
+#define TEMPENV_MASK		0x0000ffff	/* 16-bit value						*/
+
+#define CD0			0x20		/* Reserved Bit - Do not program			*/
+#define CD1			0x21		/* Reserved Bit - Do not program			*/
+#define CD2			0x22		/* Reserved Bit - Do not program			*/
+#define CD3			0x23		/* Reserved Bit - Do not program			*/
+#define CD4			0x24		/* Reserved Bit - Do not program			*/
+#define CD5			0x25		/* Reserved Bit - Do not program			*/
+#define CD6			0x26		/* Reserved Bit - Do not program			*/
+#define CD7			0x27		/* Reserved Bit - Do not program			*/
+#define CD8			0x28		/* Reserved Bit - Do not program			*/
+#define CD9			0x29		/* Reserved Bit - Do not program			*/
+#define CDA			0x2a		/* Reserved Bit - Do not program			*/
+#define CDB			0x2b		/* Reserved Bit - Do not program			*/
+#define CDC			0x2c		/* Reserved Bit - Do not program			*/
+#define CDD			0x2d		/* Reserved Bit - Do not program			*/
+#define CDE			0x2e		/* Reserved Bit - Do not program			*/
+#define CDF			0x2f		/* Reserved Bit - Do not program			*/
+
+#define PTB			0x40		/* Page table base register    				*/
+#define PTB_MASK		0xfffff000	/* Physical address of the page table in host memory	*/
+
+#define TCB			0x41		/* Tank cache base register    				*/
+#define TCB_MASK		0xfffff000	/* Physical address of the bottom of the tank cache	*/
+
+#define ADCCR			0x42		/* ADC sample rate/stereo control register 		*/
+#define ADCCR_RCHANENABLE	0x00000010	/* Right channel enable					*/
+#define ADCCR_LCHANENABLE	0x00000008	/* Left channel enable					*/
+#define ADCCR_SAMPLERATE_MASK	0x00000007	/* Sample rate convertor output rate			*/
+#define ADCCR_SAMPLERATE_48	0x00000000	/* 48kHz sample rate					*/
+#define ADCCR_SAMPLERATE_44	0x00000001	/* 44.1kHz sample rate					*/
+#define ADCCR_SAMPLERATE_32	0x00000002	/* 32kHz sample rate					*/
+#define ADCCR_SAMPLERATE_24	0x00000003	/* 24kHz sample rate					*/
+#define ADCCR_SAMPLERATE_22	0x00000004	/* 22.05kHz sample rate					*/
+#define ADCCR_SAMPLERATE_16	0x00000005	/* 16kHz sample rate					*/
+#define ADCCR_SAMPLERATE_11	0x00000006	/* 11.025kHz sample rate				*/
+#define ADCCR_SAMPLERATE_8	0x00000007	/* 8kHz sample rate					*/
+
+#define FXWC			0x43		/* FX output write channels register			*/
+
+#define TCBS			0x44		/* Tank cache buffer size register			*/
+#define TCBS_MASK		0x00000007	/* Tank cache buffer size field				*/
+#define TCBS_BUFFSIZE_16K	0x00000000
+#define TCBS_BUFFSIZE_32K	0x00000001
+#define TCBS_BUFFSIZE_64K	0x00000002
+#define TCBS_BUFFSIZE_128K	0x00000003
+#define TCBS_BUFFSIZE_256K	0x00000004
+#define TCBS_BUFFSIZE_512K	0x00000005
+#define TCBS_BUFFSIZE_1024K	0x00000006
+#define TCBS_BUFFSIZE_2048K	0x00000007
+
+#define MICBA			0x45		/* AC97 microphone buffer address register     		*/
+#define MICBA_MASK		0xfffff000	/* 20 bit base address					*/
+
+#define ADCBA			0x46		/* ADC buffer address register				*/
+#define ADCBA_MASK		0xfffff000	/* 20 bit base address					*/
+
+#define FXBA            	0x47		/* FX Buffer Address */
+
+#define MICBS			0x49		/* Microphone buffer size register     			*/
+
+#define ADCBS			0x4a		/* ADC buffer size register				*/
+
+/* The following mask values define the size of the ADC buffers in bytes */
+#define ADCBS_BUFSIZE_NONE	0x00000000     
+#define ADCBS_BUFSIZE_384	0x00000001	
+#define ADCBS_BUFSIZE_448	0x00000002    
+#define ADCBS_BUFSIZE_512	0x00000003     
+#define ADCBS_BUFSIZE_640	0x00000004	
+#define ADCBS_BUFSIZE_768	0x00000005     
+#define ADCBS_BUFSIZE_896	0x00000006    
+#define ADCBS_BUFSIZE_1024	0x00000007     
+#define ADCBS_BUFSIZE_1280	0x00000008    
+#define ADCBS_BUFSIZE_1536	0x00000009     
+#define ADCBS_BUFSIZE_1792	0x0000000a    
+#define ADCBS_BUFSIZE_2048	0x0000000b	
+#define ADCBS_BUFSIZE_2560	0x0000000c     
+#define ADCBS_BUFSIZE_3072	0x0000000d    
+#define ADCBS_BUFSIZE_3584	0x0000000e   
+#define ADCBS_BUFSIZE_4096	0x0000000f   
+#define ADCBS_BUFSIZE_5120	0x00000010   
+#define ADCBS_BUFSIZE_6144	0x00000011    
+#define ADCBS_BUFSIZE_7168	0x00000012    
+#define ADCBS_BUFSIZE_8192	0x00000013    
+#define ADCBS_BUFSIZE_10240	0x00000014    
+#define ADCBS_BUFSIZE_12288	0x00000015    
+#define ADCBS_BUFSIZE_14366	0x00000016    
+#define ADCBS_BUFSIZE_16384	0x00000017     
+#define ADCBS_BUFSIZE_20480	0x00000018   
+#define ADCBS_BUFSIZE_24576	0x00000019     
+#define ADCBS_BUFSIZE_28672	0x0000001a     
+#define ADCBS_BUFSIZE_32768	0x0000001b    
+#define ADCBS_BUFSIZE_40960	0x0000001c    
+#define ADCBS_BUFSIZE_49152	0x0000001d     
+#define ADCBS_BUFSIZE_57344	0x0000001e     
+#define ADCBS_BUFSIZE_65536	0x0000001f
+
+#define FXBS			0x4b		/* FX buffer size register			*/
+
+#define CDCS			0x50		/* CD-ROM digital channel status register	*/
+
+#define GPSCS			0x51		/* General Purpose SPDIF channel status register*/
+
+#define DBG			0x52		/* DO NOT PROGRAM THIS REGISTER!!! MAY DESTROY CHIP */
+
+#define REG53			0x53		/* DO NOT PROGRAM THIS REGISTER!!! MAY DESTROY CHIP */
+
+#define SPCS0			0x54		/* SPDIF output Channel Status 0 register      	*/
+
+#define SPCS1			0x55		/* SPDIF output Channel Status 1 register      	*/
+
+#define SPCS2			0x56		/* SPDIF output Channel Status 2 register      	*/
+
+#define SPCS_CLKACCYMASK 	0x30000000	/* Clock accuracy				*/
+#define SPCS_CLKACCY_1000PPM	0x00000000	/* 1000 parts per million			*/
+#define SPCS_CLKACCY_50PPM	0x10000000	/* 50 parts per million				*/
+#define SPCS_CLKACCY_VARIABLE	0x20000000	/* Variable accuracy				*/
+#define SPCS_SAMPLERATEMASK	0x0f000000	/* Sample rate					*/
+#define SPCS_SAMPLERATE_44	0x00000000	/* 44.1kHz sample rate				*/
+#define SPCS_SAMPLERATE_48	0x04000000	/* 48kHz sample rate				*/
+#define SPCS_SAMPLERATE_32	0x0c000000	/* 32kHz sample rate				*/
+#define SPCS_CHANNELNUMMASK	0x00f00000	/* Channel number				*/
+#define SPCS_CHANNELNUM_UNSPEC	0x00000000	/* Unspecified channel number			*/
+#define SPCS_CHANNELNUM_LEFT	0x00100000	/* Left channel					*/
+#define SPCS_CHANNELNUM_RIGHT	0x00200000	/* Right channel       				*/
+#define SPCS_SOURCENUMMASK	0x000f0000	/* Source number				*/
+#define SPCS_SOURCENUM_UNSPEC	0x00000000	/* Unspecified source number			*/
+#define SPCS_GENERATIONSTATUS	0x00008000	/* Originality flag (see IEC-958 spec) 		*/
+#define SPCS_CATEGORYCODEMASK	0x00007f00	/* Category code (see IEC-958 spec)    		*/
+#define SPCS_MODEMASK		0x000000c0	/* Mode (see IEC-958 spec)			*/
+#define SPCS_EMPHASISMASK	0x00000038	/* Emphasis					*/
+#define SPCS_EMPHASIS_NONE	0x00000000	/* No emphasis					*/
+#define SPCS_EMPHASIS_50_15	0x00000008	/* 50/15 usec 2 channel				*/
+#define SPCS_COPYRIGHT		0x00000004	/* Copyright asserted flag -- do not modify	*/
+#define SPCS_NOTAUDIODATA	0x00000002	/* 0 = Digital audio, 1 = not audio		*/
+#define SPCS_PROFESSIONAL	0x00000001	/* 0 = Consumer (IEC-958), 1 = pro (AES3-1992)	*/
+
+/* The 32-bit CLIx registers all have one bit per channel control/status       			*/
+#define CLIEL			0x58		/* Channel loop interrupt enable low register	*/
+
+#define CLIEH			0x59		/* Channel loop interrupt enable high register	*/
+
+#define CLIPL			0x5a		/* Channel loop interrupt pending low register	*/
+
+#define CLIPH			0x5b		/* Channel loop interrupt pending high register	*/
+
+#define SOLEL			0x5c		/* Stop on loop enable low register		*/
+
+#define SOLEH			0x5d		/* Stop on loop enable high register		*/
+
+#define SPBYPASS		0x5e		/* SPDIF BYPASS mode register			*/
+
+#define CDSRCS			0x60		/* CD-ROM Sample Rate Converter status register	*/
+
+#define GPSRCS			0x61		/* General Purpose SPDIF sample rate cvt status */
+
+#define ZVSRCS			0x62		/* ZVideo sample rate converter status 		*/
+						/* NOTE: This one has no SPDIFLOCKED field	*/
+						/* Assumes sample lock				*/
+
+/* These three bitfields apply to CDSRCS, GPSRCS, and (except as noted) ZVSRCS.			*/
+#define SRCS_SPDIFLOCKED     	0x02000000	/* SPDIF stream locked				*/
+#define SRCS_RATELOCKED		0x01000000	/* Sample rate locked				*/
+#define SRCS_ESTSAMPLERATE	0x0007ffff	/* Do not modify this field.			*/
+
+#define ADCIDX			0x63		/* ADC recording buffer index register		*/
+#define ADCIDX_MASK		0x0000ffff	/* 16 bit index field				*/
+
+#define MICIDX			0x64		/* Microphone recording buffer index register	*/
+#define MICIDX_MASK		0x0000ffff	/* 16-bit value					*/
+
+#define FXIDX			0x65		/* FX recording buffer index register		*/
+
+#define FXGPREGBASE		0x100		/* FX general purpose registers base       	*/
+
+#define TANKMEMDATAREGBASE	0x200		/* Tank memory data registers base     		*/
+
+#define TANKMEMADDRREGBASE	0x300		/* Tank memory address registers base		*/
+
+#define MICROCODEBASE		0x400		/* Microcode data base address			*/
+
+/* MISC */
+
+#define ENABLE                  0xffffffff
+#define DISABLE                 0x00000000
+
+#define ENV_ON                  0x80
+#define ENV_OFF                 0x00
 
 /* ------------------- STRUCTURES -------------------- */
 
@@ -359,10 +654,9 @@ int snd_emu10k1_mixer(emu10k1_t * emu, int device, snd_pcm_t * pcm, snd_kmixer_t
 void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
 
 /* I/O functions */
-unsigned int snd_emu10k1_synth_read(emu10k1_t * emu, unsigned int reg);
-void snd_emu10k1_synth_write(emu10k1_t *emu, unsigned int reg, unsigned int ddata);
-unsigned int snd_emu10k1_efx_read(emu10k1_t *emu, unsigned int reg);
-void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int reg, unsigned int ddata);
+unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned int chn);
+void snd_emu10k1_ptr_write(emu10k1_t *emu, unsigned int reg, unsigned int chn, unsigned int data);
+static inline void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data) { snd_emu10k1_ptr_write(emu, MICROCODEBASE + pc, 0, data); }
 void snd_emu10k1_intr_enable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_intr_disable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_voice_intr_enable(emu10k1_t *emu, unsigned int voicenum);
