@@ -1,9 +1,9 @@
 0.1.4 -> 0.2.0
 
-* added sequencer snapshot 25 August 1998
+* added prototype of sequencer
 * added timer interface
 * added kernel-side rawmidi interface
-* deadlock / oops fixes in rawmidi code
+  - fixed deadlock / oops in rawmidi code
 * fixes in SB-16 mixer code
   - added snd_mic_agc option for snd-sb16 module to allow control of Mic AGC
 * enhanced OSS's /dev/sndstat information interface
