@@ -1,5 +1,4 @@
 - midlevel:
-H define semantics for hw pointer (min, avg or max)
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 M reimplement sync go (also sync stop?) for multiple card support (perhaps it's better to add a support for generic sync request?)
 M add fields to params struct needed for change on running ("when")
@@ -15,6 +14,7 @@ L timestamp for mmap'ed byte_io and status (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
+H fix rme9652 hw pointer
 H port pdplus to new frame oriented midlevel (and fix broken interrupt handler)
 M rewrite mixer lowlevel implementation
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
