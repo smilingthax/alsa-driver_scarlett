@@ -37,4 +37,8 @@ typedef unsigned long dma_addr_t;
 	for(dev = pci_devices; dev; dev = dev->next)
 #endif
 
+#ifndef MODULE_LICENSE
+#define MODULE_LICENSE(x)
+#endif
+
 #include "../../alsa-kernel/pci/rme9652/rme9652_mem.c"
