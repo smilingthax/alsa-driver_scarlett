@@ -100,7 +100,7 @@ SC: ExpertMedia Sound 16  MED-1600  (82C928 based - AD1848)
 SC: Mozart  S601206-G               (OTI601 based - CS4231)
 SC: Sound Player S-928              (82C928 based - AD1848)
 IF: MIXER,PCM,OPL,MIDI
-MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
+MA: Massimo Piccioni <dafastidio@libero.it>
 
 ID: Trident 4DWave DX/NX
 SC: Best Union  Miss Melody 4DWave PCI
@@ -138,11 +138,11 @@ MA: George Talusan <gstalusan@uwaterloo.ca>
 
 ID: Avance Logic ALS100/ALS120
 IF: MIXER,PCM,MIDI
-MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
+MA: Massimo Piccioni <dafastidio@libero.it>
 
 ID: Diamond Technologies DT-0197H
 IF: MIXER,PCM,MIDI
-MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
+MA: Massimo Piccioni <dafastidio@libero.it>
 
 ID: Aztech Sound Galaxy
 IF: MIXER,PCM,MIDI

@@ -4,7 +4,7 @@
 
 /*
     opti93x.h - definitions for OPTi 82c93x chips.
-    Copyright (C) 1999 by Massimo Piccioni <dafastidio@libero.it>
+    Copyright (C) 1999-2000 by Massimo Piccioni <dafastidio@libero.it>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -178,10 +178,11 @@ struct snd_stru_opti93x {
 extern void snd_opti93x_interrupt(snd_pcm_t *pcm, unsigned char status);
 
 extern int snd_opti93x_new_pcm(snd_card_t *card, int device, opti9xx_t *chip,
-		snd_dma_t *dma1ptr, snd_dma_t *dma2ptr, snd_pcm_t **rpcm);
+			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
+			       snd_pcm_t **rpcm);
 
 extern int snd_opti93x_new_mixer(snd_pcm_t *pcm, int device,
-							snd_kmixer_t **rmixer);
+				 snd_kmixer_t **rmixer);
 
 #endif	/* __OPTi93X_H */
 

@@ -637,6 +637,23 @@ Module parameters
     is not used with all Envy24 based cards (for example in the MidiMan Delta
     serie).
 
+  Module snd-card-ad1816a.o
+  -------------------------
+
+    Module for soundcards based on Analog Devices AD1816A/AD1815 chips.
+
+    snd_port	  - port # for AD1816A chip (PnP setup)
+    snd_mpu_port  - port # for MPU-401 UART (PnP setup)
+    snd_fm_port   - port # for OPL3 (PnP setup)
+    snd_irq	  - IRQ # for AD1816A chip (PnP setup)
+    snd_mpu_irq   - IRQ # for MPU-401 UART (PnP setup)
+    snd_dma1	  - first DMA # for AD1816A chip (PnP setup)
+    snd_dma1_size - max first DMA size in kB (4-128kB)
+    snd_dma2	  - second DMA # for AD1816A chip (PnP setup)
+    snd_dma2_size - max second DMA size in kB (4-128kB)
+    
+    Module supports up to 8 cards, autoprobe and PnP.
+    
 
 modprobe/kmod support
 =====================
