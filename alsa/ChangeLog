@@ -2,6 +2,7 @@
 
 * added full ISA Plug & Play support
 * recoded sequencer prototype
+* recoded system resources (ports, irqs, dmas) allocation
 
 0.1.4 -> 0.2.0
 
