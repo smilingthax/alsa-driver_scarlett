@@ -2906,16 +2906,36 @@ static int remove_ctl(ac97_t *ac97, const char *name)
 	return snd_ctl_remove_id(ac97->card, &id);
 }
 
+static snd_kcontrol_t *ctl_find(ac97_t *ac97, const char *name)
+{
+	snd_ctl_elem_id_t sid;
+	memset(&sid, 0, sizeof(sid));
+	strcpy(sid.name, name);
+	sid.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+	return snd_ctl_find_id(ac97->card, &sid);
+}
+
 static int rename_ctl(ac97_t *ac97, const char *src, const char *dst)
 {
-	snd_ctl_elem_id_t sid, did;
-	memset(&sid, 0, sizeof(sid));
-	strcpy(sid.name, src);
-	sid.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-	memset(&did, 0, sizeof(did));
-	strcpy(did.name, dst);
-	did.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-	return snd_ctl_rename_id(ac97->card, &sid, &did);
+	snd_kcontrol_t *kctl = ctl_find(ac97, src);
+	if (kctl) {
+		strcpy(kctl->id.name, dst);
+		return 0;
+	}
+	return -ENOENT;
+}
+
+static int swap_ctl(ac97_t *ac97, const char *s1, const char *s2)
+{
+	snd_kcontrol_t *kctl1, *kctl2;
+	kctl1 = ctl_find(ac97, s1);
+	kctl2 = ctl_find(ac97, s2);
+	if (kctl1 && kctl2) {
+		strcpy(kctl1->id.name, s2);
+		strcpy(kctl2->id.name, s1);
+		return 0;
+	}
+	return -ENOENT;
 }
 
 static int swap_headphone(ac97_t *ac97, int remove_master)
@@ -2930,6 +2950,14 @@ static int swap_headphone(ac97_t *ac97, int remove_master)
 	}
 	rename_ctl(ac97, "Headphone Playback Switch", "Master Playback Switch");
 	rename_ctl(ac97, "Headphone Playback Volume", "Master Playback Volume");
+	return 0;
+}
+
+static int swap_surround(ac97_t *ac97)
+{
+	/* FIXME: error checks.. */
+	swap_ctl(ac97, "Master Playback Switch", "Surround Playback Switch");
+	swap_ctl(ac97, "Master Playback Volume", "Surround Playback Volume");
 	return 0;
 }
 
@@ -2958,6 +2986,8 @@ int snd_ac97_tune_hardware(ac97_t *ac97, struct ac97_quirk *quirk)
 				return swap_headphone(ac97, 1);
 			case AC97_TUNE_SWAP_HP:
 				return swap_headphone(ac97, 0);
+			case AC97_TUNE_SWAP_SURROUND:
+				return swap_surround(ac97);
 			}
 			snd_printk(KERN_ERR "invalid quirk type %d for %s\n", quirk->type, quirk->name);
 			return -EINVAL;
