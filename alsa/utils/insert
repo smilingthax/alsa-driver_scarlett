@@ -341,7 +341,8 @@ case "$1" in
   via686a|via)
     basic
     insert snd-ac97-codec.o
-    insert snd-card-via686a.o
+    insert snd-mpu401-uart.o
+    insert snd-card-via686a.o snd_mpu_port=0x330
     restore via686a.conf
     ;;
   dummy)
