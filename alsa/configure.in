@@ -390,6 +390,27 @@ else
   AC_MSG_RESULT(no)
 fi
 
+dnl Check for old kill_fasync...
+AC_MSG_CHECKING(for old kill_fasync)
+oldkfasync="0"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
+],[
+ struct fasync_struct *fa;
+ int sig;
+ kill_fasync(fa, sig);
+],
+    AC_MSG_RESULT("yes");oldkfasync="1",
+    AC_MSG_RESULT("no");oldkfasync="0",
+    AC_MSG_RESULT("unknown");oldkfasync="0"
+)
+CONFIG_OLD_KILL_FASYNC=$oldkfasync
+AC_SUBST(CONFIG_OLD_KILL_FASYNC)
+if test "$CONFIG_OLD_KILL_FASYNC" = "1"; then
+  AC_DEFINE(CONFIG_OLD_KILL_FASYNC)
+fi
+
 dnl Check for version...
 AC_MSG_CHECKING(for driver version)
 AC_DEFINE_UNQUOTED(CONFIG_SND_VERSION, "$CONFIG_SND_VERSION")

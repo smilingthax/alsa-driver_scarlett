@@ -68,11 +68,11 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define local_irq_restore(flags) \
 	do { __restore_flags(flags); } while (0)
 
-/* RedHat 6.2 uses modified kill_fasync */
-#if defined(__powerpc__) || defined(__rh_config_h__) || (defined(__rh_kernel_autoconf_h__) && LINUX_VERSION_CODE > KERNEL_VERSION(2, 2, 12))
-#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig, band)
-#else
+/* Some distributions use modified kill_fasync */
+#ifdef CONFIG_OLD_KILL_FASYNC
 #define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
+#else
+#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig, band)
 #endif
 
 #define tasklet_hi_schedule(t)	queue_task((t), &tq_immediate); \
