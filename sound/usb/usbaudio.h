@@ -139,6 +139,7 @@ struct snd_usb_audio {
 	struct list_head pcm_list;	/* list of pcm streams */
 	int pcm_devs;
 
+	struct list_head midi_list;	/* list of midi interfaces */
 	int next_midi_device;
 };  
 
@@ -192,6 +193,7 @@ void *snd_usb_find_csint_desc(void *descstart, int desclen, void *after, u8 dsub
 int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif, unsigned char *buffer, int buflen);
 
 int snd_usb_create_midi_interface(snd_usb_audio_t *chip, struct usb_interface *iface, const snd_usb_audio_quirk_t *quirk);
+void snd_usbmidi_disconnect(struct list_head *p);
 
 /*
  * retrieve usb_interface descriptor from the host interface

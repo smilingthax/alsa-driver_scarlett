@@ -2053,6 +2053,7 @@ static int snd_usb_audio_create(snd_card_t *card, struct usb_device *dev,
 	chip->dev = dev;
 	chip->card = card;
 	INIT_LIST_HEAD(&chip->pcm_list);
+	INIT_LIST_HEAD(&chip->midi_list);
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
 		snd_usb_audio_free(chip);
@@ -2103,6 +2104,13 @@ static int snd_usb_audio_create(snd_card_t *card, struct usb_device *dev,
 	    && quirk && quirk->product_name) {
 		strncpy(card->longname + len, quirk->product_name, sizeof(card->longname) - len - 1);
 		card->longname[sizeof(card->longname) - 1] = '\0';
+	}
+	/* add device path to longname */
+	len = strlen(card->longname);
+	if (sizeof(card->longname) - len > 10) {
+		strcpy(card->longname + len, " at ");
+		len += 4;
+		usb_make_path(dev, card->longname + len, sizeof(card->longname) - len);
 	}
 
 	*rchip = chip;
@@ -2294,6 +2302,10 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 					continue;
 				release_substream_urbs(subs);
 			}
+		}
+		/* release the midi resources */
+		list_for_each(p, &chip->midi_list) {
+			snd_usbmidi_disconnect(p);
 		}
 		up(&register_mutex);
 		snd_card_free_in_thread(card);
