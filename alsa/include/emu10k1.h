@@ -175,7 +175,7 @@
 #define HCFG_PHASETRACKENABLE	0x00000100	/* Phase tracking enable			*/
 						/* 1 = Force all 3 async digital inputs to use	*/
 						/* the same async sample rate tracker (ZVIDEO)	*/
-#define HCFG_AC3ENABLE_MASK	0x0x0000e0	/* AC3 async input control - Not implemented	*/
+#define HCFG_AC3ENABLE_MASK	0x000000e0	/* AC3 async input control - Not implemented	*/
 #define HCFG_AC3ENABLE_ZVIDEO	0x00000080	/* Channels 0 and 1 replace ZVIDEO		*/
 #define HCFG_AC3ENABLE_CDSPDIF	0x00000040	/* Channels 0 and 1 replace CDSPDIF		*/
 #define HCFG_AC3ENABLE_GPSPDIF  0x00000020      /* Channels 0 and 1 replace GPSPDIF             */
@@ -720,32 +720,43 @@ typedef struct snd_emu10k1_memblk_arg {
 #define EMU10K1_MAX_TRAM_BLOCKS_PER_CODE	16
 
 typedef struct {
-	struct list_head list;
-	unsigned char name[64];
-	unsigned int code_start;	/* first instruction */
-	unsigned int code_size;		/* in instructions */
-	int kcontrols_size;		/* size of allocated kcontrols */
-	int kcontrols_count;		/* count of used kcontrols */
-	snd_kcontrol_t *kcontrols;	/* kcontrols array */
+	struct list_head list;		/* list link container */
+	unsigned int vcount;
+	unsigned int count;		/* count of GPR (1..16) */
+	unsigned char gpr[32];		/* GPR number(s) */
+	unsigned int value[32];
+	unsigned int min;		/* minimum range */
+	unsigned int max;		/* maximum range */
+	unsigned int translation;	/* translation type (EMU10K1_GRP_TRANSLATION*) */
+	snd_kcontrol_t *kcontrol;
+} snd_emu10k1_fx8010_ctl_t;
+
+typedef struct {
+	unsigned int itram_size;	/* internal TRAM size in samples */
+	unsigned int etram_size;	/* external TRAM size in samples */
+	void *etram_pages;		/* allocated pages for external TRAM */
+	dma_addr_t etram_pages_dmaaddr;
+	unsigned int dbg;		/* FX debugger register */
+	unsigned char name[128];
+	int gpr_size;			/* size of allocated GPR controls */
+	int gpr_count;			/* count of used kcontrols */
+	struct list_head gpr_ctl;	/* GPR controls */
+	struct semaphore lock;
 } snd_emu10k1_fx8010_t;
+
+#define emu10k1_gpr_ctl(n) list_entry(n, snd_emu10k1_fx8010_ctl_t, list)
 
 struct _snd_emu10k1 {
 	int irq;
 
-	unsigned long port;	/* I/O port number */
+	unsigned long port;			/* I/O port number */
 	struct resource *res_port;
-	int APS: 1,		/* APS flag */
-	    tos_link: 1;	/* tos link detected */
-	unsigned int revision;	/* chip revision */
-	unsigned int serial;	/* serial number */
-	unsigned short model;	/* subsystem id */
-	unsigned int ecard_ctrl; /* ecard control bits */
-	unsigned int itram_size; /* internal TRAM size in samples */
-	unsigned int etram_size; /* external TRAM size in samples */
-	void *etram_pages;	/* allocated pages for external TRAM */
-	dma_addr_t etram_pages_dmaaddr;
-	unsigned int dbg;	/* FX debugger register */
-
+	int APS: 1,				/* APS flag */
+	    tos_link: 1;			/* tos link detected */
+	unsigned int revision;			/* chip revision */
+	unsigned int serial;			/* serial number */
+	unsigned short model;			/* subsystem id */
+	unsigned int ecard_ctrl;		/* ecard control bits */
 	void *silent_page;			/* silent page */
 	dma_addr_t silent_page_dmaaddr;
 	volatile unsigned int *ptb_pages;	/* page table pages */
@@ -754,8 +765,7 @@ struct _snd_emu10k1 {
 	snd_util_memhdr_t *memhdr;		/* page allocation list */
 	snd_util_memblk_t *reserved_page;	/* reserved page */
 
-	struct list_head fx8010; /* FX8010 allocation table */
-	struct semaphore fx8010_lock;
+	snd_emu10k1_fx8010_t fx8010;		/* FX8010 info */
 	
 	ac97_t *ac97;
 
@@ -765,10 +775,10 @@ struct _snd_emu10k1 {
 	snd_pcm_t *pcm_mic;
 	snd_pcm_t *pcm_efx;
 
-	unsigned char dig_vol[6][9][2];	  /* output, input, left/right */
-	unsigned char stereo_vol[2][2];	  /* source (pcm,midi), left/right */
-	unsigned char tone_control[2][2]; /* bass/treble, left/right */
-	unsigned int tone_control_active; /* bitmap of active tone controls */
+	unsigned char dig_vol[6][9][2];	  	/* output, input, left/right */
+	unsigned char stereo_vol[2][2];	 	 /* source (pcm,midi), left/right */
+	unsigned char tone_control[2][2];	 /* bass/treble, left/right */
+	unsigned int tone_control_active;	 /* bitmap of active tone controls */
 	snd_kcontrol_t *tone_bass, *tone_treble;
 
 	spinlock_t synth_lock;
@@ -936,6 +946,13 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define C_5a7ef9db	0x54
 #define C_00100000	0x55	/* ?? */
 
+/* cc_reg constants */
+#define CC_REG_NORMALIZED C_00000001
+#define CC_REG_BORROW	C_00000002
+#define CC_REG_MINUS	C_00000004
+#define CC_REG_ZERO	C_00000008
+#define CC_REG_SATURATE	C_00000010
+
 /* FX buses */
 #define FXBUS_PCM_LEFT		0x00
 #define FXBUS_PCM_RIGHT		0x01
@@ -997,48 +1014,52 @@ typedef struct {
 	unsigned int card;			/* card type */
 	unsigned int internal_tram_size;	/* in samples */
 	unsigned int external_tram_size;	/* in samples */
+	unsigned int gpr_controls;		/* count of GPR controls */
 } emu10k1_fx8010_info_t;
 
 #define EMU10K1_GPR_TRANSLATION_NONE		0
 #define EMU10K1_GPR_TRANSLATION_TABLE100	1
+#define EMU10K1_GRP_TRANSLATION_BASS		2
+#define EMU10K1_GRP_TRANSLATION_TREBLE		3
 
 typedef struct {
-	unsigned int count;		/* count of GPR */
-	unsigned char gpr[16];		/* GPR number(s) */
 	snd_ctl_elem_id_t id;		/* full control ID definition */
+	unsigned int vcount;		/* visible count */
+	unsigned int count;		/* count of GPR (1..16) */
+	unsigned char gpr[32];		/* GPR number(s) */
+	unsigned int value[32];		/* initial values */
 	unsigned int min;		/* minimum range */
 	unsigned int max;		/* maximum range */
-	unsigned int translation;	/* translation type */
+	unsigned int translation;	/* translation type (EMU10K1_GRP_TRANSLATION*) */
 } emu10k1_fx8010_control_gpr_t;
 
 typedef struct {
-	char name[64];
+	char name[128];
 	unsigned int gpr_valid[0x100/32]; /* bitmask of valid initializers */
-	unsigned int gpr_map[0x100];	/* initializers */
-	unsigned int gpr_control_count;	/* count of exported GPR controls */
-	emu10k1_fx8010_control_gpr_t *gpr_controls; /* GPR controls */
-	unsigned int tram_valid[0xa0/32];
-	unsigned int tram_data_map[0xa0];
-	unsigned int tram_addr_map[0xa0];
-	unsigned int code_start;	/* start address (in instructions) */
-	unsigned int code_size;		/* size (in instructions) */
-	unsigned int code[512][2];	/* one instruction - 64 bits */
+	unsigned int gpr_map[0x100];	  /* initializers */
+	unsigned int gpr_add_control_count; /* count of GPR controls to add/replace */
+	emu10k1_fx8010_control_gpr_t *gpr_add_controls; /* GPR controls to add/replace */
+	unsigned int gpr_del_control_count; /* count of GPR controls to remove */
+	snd_ctl_elem_id_t *gpr_del_controls; /* IDs of GPR controls to remove */
+	unsigned int tram_valid[0xa0/32]; /* bitmask of valid initializers */
+	unsigned int tram_data_map[0xa0]; /* data initializers */
+	unsigned int tram_addr_map[0xa0]; /* map initializers */
+	unsigned int code_valid[512/32];  /* bitmask of valid instructions */
+	unsigned int code[512][2];	  /* one instruction - 64 bits */
 } emu10k1_fx8010_code_t;
 
-typedef struct {
-	char name[64];
-} emu10k1_fx8010_code_remove_t;
+
 
 typedef struct {
 	unsigned int address;		/* 31.bit == 1 -> external TRAM */
 	unsigned int size;		/* size in samples (4 bytes) */
 	unsigned int *samples;		/* pointer to samples (20-bit) */
-					/* NULL->clear memory */	
+					/* NULL->clear memory */
 } emu10k1_fx8010_tram_t;
 
 #define SNDRV_EMU10K1_IOCTL_INFO	_IOR('H', 0x10, emu10k1_fx8010_info_t)
-#define SNDRV_EMU10K1_IOCTL_CODE	_IOW('H', 0x11, emu10k1_fx8010_code_t)
-#define SNDRV_EMU10K1_IOCTL_CODE_REMOVE	_IOW('H', 0x12, emu10k1_fx8010_code_remove_t)
+#define SNDRV_EMU10K1_IOCTL_CODE_POKE	_IOW('H', 0x11, emu10k1_fx8010_code_t)
+#define SNDRV_EMU10K1_IOCTL_CODE_PEEK	_IOW('H', 0x12, emu10k1_fx8010_code_t)
 #define SNDRV_EMU10K1_IOCTL_TRAM_SETUP	_IOW('H', 0x20, int)
 #define SNDRV_EMU10K1_IOCTL_TRAM_POKE	_IOW('H', 0x21, emu10k1_fx8010_tram_t)
 #define SNDRV_EMU10K1_IOCTL_TRAM_PEEK	_IOR('H', 0x22, emu10k1_fx8010_tram_t)
