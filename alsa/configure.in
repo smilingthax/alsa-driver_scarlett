@@ -278,7 +278,7 @@ case "$processor" in
         c_opts="$c_opts -mcpu=ev5"
         ;;
       alpha_ev6)
-        c_opts="$c_opts -mcpu=ev6"
+        c_opts="$c_opts -mcpu=ev6 -Wa,-mev6"
         ;;
     esac
     processor="alpha"
