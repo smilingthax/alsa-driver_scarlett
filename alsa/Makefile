@@ -6,6 +6,10 @@
 TOPDIR   = .
 ALSAKERNELDIR = ../alsa-kernel
 
+# for module installation
+TREETOPDIR := $(shell /bin/pwd)
+export TREETOPDIR
+
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
 else
@@ -52,30 +56,25 @@ CSUBDIRS += include test utils
 .PHONY: all
 all: compile
 
-alsa-kernel:
+alsa-kernel/Config.in:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 
-$(CONFIG_SND_KERNELDIR)/include/linux/pm.h:
-	touch $@
-
-include/sound: alsa-kernel $(CONFIG_SND_KERNELDIR)/include/linux/pm.h
-	if [ ! -d include/sound ] && [ ! -L include/sound ]; then \
+include/sound/version.h: include/version.h
+	if [ ! -d include/sound -a ! -L include/sound ]; then \
 	  ln -sf ../alsa-kernel/include include/sound ; \
 	fi
-
-include/sound/version.h: include/sound include/version.h
 	cp -auv include/version.h include/sound/version.h
 
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h
 	gcc -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
 
-toplevel.config.in: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+toplevel.config.in: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --makeconf > toplevel.config.in
 
-acinclude.m4: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+acinclude.m4: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --acinclude > acinclude.m4
 
-include/config1.h.in: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+include/config1.h.in: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
@@ -125,7 +124,7 @@ install-headers:
 	fi
 
 .PHONY: install-modules
-install-modules:
+install-modules: compile
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
