@@ -70,7 +70,7 @@ devfs_handle_t snd_compat_devfs_mk_dir(const char *dir)
 
 #endif /* CONFIG_DEVFS_FS */
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
 #include <linux/vmalloc.h>
 
 void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
