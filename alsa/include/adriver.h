@@ -755,6 +755,7 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 	gameport_unregister_port(gp);
 	kfree(gp);
 }
+#undef gameport_unregister_port
 #define gameport_unregister_port(gp)	snd_gameport_unregister_port(gp)
 #define gameport_set_port_data(gp,r) (((struct snd_gameport *)(gp))->port_data = (r))
 #define gameport_get_port_data(gp) ((struct snd_gameport *)(gp))->port_data
