@@ -256,7 +256,7 @@ struct snd_stru_pcm {
 struct snd_stru_pcm_notify {
 	int (*n_register) (unsigned short minor, snd_pcm_t * pcm);
 	int (*n_unregister) (unsigned short minor, snd_pcm_t * pcm);
-	struct snd_stru_pcm_notify *next;
+	struct list_head list;
 };
 
 typedef struct {
