@@ -37,7 +37,7 @@ extern int _snd_pcm_hw_param_set(snd_pcm_hw_params_t *params,
 
 /* To share the same code we have  alsa-lib */
 #define INLINE static inline
-#define assert(a)
+#define assert(a) (void)(a)
 
 #define SNDRV_MASK_BITS	64	/* we use so far 64bits only */
 #define SNDRV_MASK_SIZE	(SNDRV_MASK_BITS / 32)
