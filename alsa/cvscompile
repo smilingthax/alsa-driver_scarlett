@@ -9,6 +9,7 @@ fi
 echo "Building hard symlinks with alsa-lib sources..."
 cd kernel
 pwd
+ln -fv ../../alsa-lib/src/pcm/pcm_misc.c pcm_misc.c
 ln -fv ../../alsa-lib/src/pcm/pcm_plugin_build.c pcm_oss_plugin.c
 cd plugin
 pwd
