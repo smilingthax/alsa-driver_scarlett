@@ -40,6 +40,7 @@ struct snd_stru_hwdep {
 	char name[80];
 	int type;
 	snd_hwdep_ops_t ops;
+	wait_queue_head_t open_wait;
 	void *private_data;
 	void (*private_free) (void *private_data);
 };

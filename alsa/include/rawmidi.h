@@ -109,6 +109,7 @@ struct snd_stru_rawmidi {
 	wait_queue_head_t input_sleep;
 	wait_queue_head_t output_sleep;
 	struct semaphore open_mutex;
+	wait_queue_head_t open_wait;
 
 	snd_info_entry_t *dev;
 	snd_info_entry_t *proc_entry;

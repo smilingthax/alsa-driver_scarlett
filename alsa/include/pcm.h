@@ -234,6 +234,7 @@ struct snd_stru_pcm {
 	snd_minor_t *reg;
 	snd_info_entry_t *dev;
 	struct semaphore open_mutex;
+	wait_queue_head_t open_wait;
 	int open_prefer_subchn;
 	void *private_data;
 	void (*private_free) (void *private_data);
