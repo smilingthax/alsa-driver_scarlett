@@ -14,13 +14,12 @@ fi
 if [ -r /usr/local/share/aclocal/alsa-lib.m4 ]; then
   rm -f /usr/local/share/aclocal/alsa-lib.m4
 fi
-if [ -d ../alsa-lib ]; then
-  echo "Building hard symlinks with alsa-lib sources..."
-  cd kernel
-  pwd
-  ln -fv ../../alsa-lib/src/pcm/pcm_misc.c .
-  cd ..
-fi
+#if [ -d ../alsa-lib ]; then
+#  echo "Building hard symlinks with alsa-lib sources..."
+#  cd kernel
+#  pwd
+#  cd ..
+#fi
 make -C utils update-deps
 aclocal $ACLOCAL_FLAGS
 autoconf
