@@ -59,7 +59,6 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 static int ac97_clock[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 48000};
-static int ac97_quirk[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = AC97_TUNE_DEFAULT};
 static int boot_devs;
 
 module_param_array(index, int, boot_devs, 0444);
@@ -70,8 +69,6 @@ module_param_array(enable, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable, "Enable modem part of VIA 82xx bridge.");
 module_param_array(ac97_clock, int, boot_devs, 0444);
 MODULE_PARM_DESC(ac97_clock, "AC'97 codec clock (default 48000Hz).");
-module_param_array(ac97_quirk, int, boot_devs, 0444);
-MODULE_PARM_DESC(ac97_quirk, "AC'97 workaround for strange hardware.");
 
 
 /*
@@ -892,7 +889,7 @@ static void snd_via82xx_mixer_free_ac97(ac97_t *ac97)
 }
 
 
-static int __devinit snd_via82xx_mixer_new(via82xx_t *chip, int ac97_quirk)
+static int __devinit snd_via82xx_mixer_new(via82xx_t *chip)
 {
 	ac97_template_t ac97;
 	int err;
@@ -1206,7 +1203,7 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 		
 	if ((err = snd_via82xx_create(card, pci, chip_type, revision, ac97_clock[dev], &chip)) < 0)
 		goto __error;
-	if ((err = snd_via82xx_mixer_new(chip, ac97_quirk[dev])) < 0)
+	if ((err = snd_via82xx_mixer_new(chip)) < 0)
 		goto __error;
 
 	if ((err = snd_via686_pcm_new(chip)) < 0 )
