@@ -1,9 +1,0 @@
-The driver can be compiled only under 2.2.X kernels or 2.3.X kernels.
-
-Last checked 2.2.X kernel: 2.2.10
-Last checked 2.3.X kernel: 2.3.5
-
-The driver has been tested on platforms:
-
-Linux-x86
-Linux-alpha
