@@ -253,6 +253,8 @@ static struct isapnp_card_id snd_sb16_pnpids[] __devinitdata = {
 	/* Sound Blaster AWE 64 PnP */
 	ISAPNP_SBAWE('C','T','L',0x00c7,0x0045,0x0022),
 	/* Sound Blaster AWE 64 PnP */
+	ISAPNP_SBAWE('C','T','L',0x00e3,0x0045,0x0022),
+	/* Sound Blaster AWE 64 PnP */
 	ISAPNP_SBAWE('C','T','L',0x00e4,0x0045,0x0022),
 	/* Sound Blaster AWE 64 PnP */
 	ISAPNP_SBAWE('C','T','L',0x00e9,0x0045,0x0022),
