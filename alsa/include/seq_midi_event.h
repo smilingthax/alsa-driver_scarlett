@@ -36,7 +36,6 @@ typedef struct snd_midi_event_t snd_midi_event_t;
 struct snd_midi_event_t {
 	int qlen;	/* queue length */
 	int read;	/* chars read */
-	int status;	/* running status */
 	int type;	/* current event type */
 	unsigned char lastcmd;
 	int bufsize;

@@ -93,6 +93,7 @@ typedef struct {
 	snd_seq_kernel_port_unuse_t *unuse;
 	snd_seq_kernel_port_input_t *event_input;
 	snd_seq_kernel_port_private_free_t *private_free;
+	unsigned int callback_all;	/* call subscribe callbacks at each connection/disconnection */
 	/*...*/
 } snd_seq_port_callback_t;
 
@@ -103,10 +104,13 @@ extern int snd_seq_kernel_client_enqueue(int client, snd_seq_event_t *ev, int at
 extern int snd_seq_kernel_client_dispatch(int client, snd_seq_event_t *ev, int atomic, int hop);
 extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg);
 
-/* allocation and releasing of external data (sysex etc.) */
-extern void *snd_seq_ext_malloc(unsigned long size, int atomic);
-extern void snd_seq_ext_free(void *obj, unsigned long size);
-extern void snd_seq_ext_ref(void *obj);
+#define SND_SEQ_EXT_MASK	0xc0000000
+#define SND_SEQ_EXT_USRPTR	0x80000000
+#define SND_SEQ_EXT_CHAINED	0x40000000
+
+typedef int (*snd_seq_dump_func_t)(void *ptr, void *buf, int count);
+int snd_seq_expand_var_event(const snd_seq_event_t *event, int count, char *buf, int in_kernel, int size_aligned);
+int snd_seq_dump_var_event(const snd_seq_event_t *event, snd_seq_dump_func_t func, void *private_data);
 
 /* port callback routines */
 void snd_port_init_callback(snd_seq_port_callback_t *p);
