@@ -399,8 +399,8 @@ typedef struct {
 
 typedef struct snd_mixer_info {
 	unsigned int type;	/* type of soundcard - SND_CARD_TYPE_XXXX */
-	unsigned int attrib;	/* some attributes about this device (SND_MIXER_ATTR_*) */
-	unsigned char id[64];	/* ID of this mixer (user selectable) */
+	unsigned int attrib;	/* attributes, not used */
+	unsigned char id[64];	/* ID of this mixer */
 	unsigned char name[80];	/* name of this device */
 	int elements;		/* count of elements */
 	int groups;		/* count of element groups */
