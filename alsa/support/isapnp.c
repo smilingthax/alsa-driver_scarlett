@@ -1639,7 +1639,7 @@ static int isapnp_check_interrupt(struct isapnp_cfgtmp *cfg, int irq, int idx)
 	for (dev = isapnp_devices; dev; dev = dev->next) {
 		if (dev->active) {
 			if ((dev->irq_resource[0].flags && dev->irq_resource[0].start == irq) ||
-			    (dev->irq_resource[0].flags && dev->irq_resource[1].start == irq))
+			    (dev->irq_resource[1].flags && dev->irq_resource[1].start == irq))
 				return 1;
 		}
 	}
