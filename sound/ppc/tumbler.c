@@ -28,8 +28,6 @@
 #include <asm/irq.h>
 #ifdef CONFIG_PPC_HAS_FEATURE_CALLS
 #include <asm/pmac_feature.h>
-#else
-#include <asm/feature.h>
 #endif
 #include "pmac.h"
 #include "tumbler_volume.h"
@@ -59,7 +57,11 @@ enum {
 };
 
 typedef struct pmac_gpio {
+#ifdef CONFIG_PPC_HAS_FEATURE_CALLS
 	unsigned int addr;
+#else
+	void *addr;
+#endif
 	int active_state;
 } pmac_gpio_t;
 
@@ -90,22 +92,42 @@ static int tumbler_init_client(pmac_t *chip, pmac_keywest_t *i2c)
 					   (1<<6)+(2<<4)+(2<<2)+0);
 }
 
-static inline void
-write_audio_gpio(pmac_gpio_t *gp, int active)
+
+/*
+ * gpio access
+ */
+#ifdef CONFIG_PPC_HAS_FEATURE_CALLS
+#define do_gpio_write(gp, val) \
+	pmac_call_feature(PMAC_FTR_WRITE_GPIO, NULL, (gp)->addr, val)
+#define do_gpio_read(gp) \
+	pmac_call_feature(PMAC_FTR_READ_GPIO, NULL, (gp)->addr, 0)
+#define tumbler_gpio_free(gp) /* NOP */
+#else
+#define do_gpio_write(gp, val)	writeb(val, (gp)->addr)
+#define do_gpio_read(gp)	readb((gp)->addr)
+static inline void tumbler_gpio_free(pmac_gpio_t *gp)
+{
+	if (gp->addr) {
+		iounmap(gp->addr);
+		gp->addr = 0;
+	}
+}
+#endif /* CONFIG_PPC_HAS_FEATURE_CALLS */
+
+static void write_audio_gpio(pmac_gpio_t *gp, int active)
 {
 	if (! gp->addr)
 		return;
 	active = active ? gp->active_state : !gp->active_state;
-	pmac_call_feature(PMAC_FTR_WRITE_GPIO, NULL, gp->addr, active ? 0x05 : 0x04);
+	do_gpio_write(gp, active ? 0x05 : 0x04);
 }
 
-static inline int
-read_audio_gpio(pmac_gpio_t *gp)
+static int read_audio_gpio(pmac_gpio_t *gp)
 {
 	int ret;
 	if (! gp->addr)
 		return 0;
-	ret = ((pmac_call_feature(PMAC_FTR_READ_GPIO, NULL, gp->addr, 0) & 0x02) !=0);
+	ret = ((do_gpio_read(gp) & 0x02) !=0);
 	return ret == gp->active_state;
 }
 
@@ -166,9 +188,8 @@ static int tumbler_info_master_volume(snd_kcontrol_t *kcontrol, snd_ctl_elem_inf
 static int tumbler_get_master_volume(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	pmac_t *chip = snd_kcontrol_chip(kcontrol);
-	pmac_tumbler_t *mix;
-	if (! (mix = chip->mixer_data))
-		return -ENODEV;
+	pmac_tumbler_t *mix = chip->mixer_data;
+	snd_assert(mix, return -ENODEV);
 	ucontrol->value.integer.value[0] = mix->master_vol[0];
 	ucontrol->value.integer.value[1] = mix->master_vol[1];
 	return 0;
@@ -177,11 +198,10 @@ static int tumbler_get_master_volume(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 static int tumbler_put_master_volume(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	pmac_t *chip = snd_kcontrol_chip(kcontrol);
-	pmac_tumbler_t *mix;
+	pmac_tumbler_t *mix = chip->mixer_data;
 	int change;
 
-	if (! (mix = chip->mixer_data))
-		return -ENODEV;
+	snd_assert(mix, return -ENODEV);
 	change = mix->master_vol[0] != ucontrol->value.integer.value[0] ||
 		mix->master_vol[1] != ucontrol->value.integer.value[1];
 	if (change) {
@@ -196,9 +216,8 @@ static int tumbler_put_master_volume(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 static int tumbler_get_master_switch(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	pmac_t *chip = snd_kcontrol_chip(kcontrol);
-	pmac_tumbler_t *mix;
-	if (! (mix = chip->mixer_data))
-		return -ENODEV;
+	pmac_tumbler_t *mix = chip->mixer_data;
+	snd_assert(mix, return -ENODEV);
 	ucontrol->value.integer.value[0] = mix->master_switch[0];
 	ucontrol->value.integer.value[1] = mix->master_switch[1];
 	return 0;
@@ -207,11 +226,10 @@ static int tumbler_get_master_switch(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 static int tumbler_put_master_switch(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	pmac_t *chip = snd_kcontrol_chip(kcontrol);
-	pmac_tumbler_t *mix;
+	pmac_tumbler_t *mix = chip->mixer_data;
 	int change;
 
-	if (! (mix = chip->mixer_data))
-		return -ENODEV;
+	snd_assert(mix, return -ENODEV);
 	change = mix->master_switch[0] != ucontrol->value.integer.value[0] ||
 		mix->master_switch[1] != ucontrol->value.integer.value[1];
 	if (change) {
@@ -460,7 +478,7 @@ static int tumbler_put_mute_switch(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	gp = (kcontrol->private_value == TUMBLER_MUTE_HP) ? &mix->hp_mute : &mix->amp_mute;
 	val = ! read_audio_gpio(gp);
 	if (val != ucontrol->value.integer.value[0]) {
-		write_audio_gpio(gp, ucontrol->value.integer.value[0]);
+		write_audio_gpio(gp, ! ucontrol->value.integer.value[0]);
 		return 1;
 	}
 	return 0;
@@ -543,6 +561,7 @@ static void tumbler_update_automute(pmac_t *chip, int do_notify)
 {
 	if (chip->auto_mute) {
 		pmac_tumbler_t *mix = chip->mixer_data;
+		snd_assert(mix, return);
 		if (tumbler_detect_headphone(chip)) {
 			/* mute speaker */
 			check_mute(chip, &mix->amp_mute, 1, do_notify, chip->speaker_sw_ctl);
@@ -617,12 +636,17 @@ static unsigned long tumbler_find_device(const char *device, pmac_gpio_t *gp, in
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_PPC_HAS_FEATURE_CALLS
 	gp->addr = (*base) & 0x0000ffff;
+#else
+	gp->addr = (void*)ioremap((unsigned long)(*base), 1);
+#endif
 	base = (u32 *)get_property(node, "audio-gpio-active-state", NULL);
 	if (base)
 		gp->active_state = *base;
 	else
 		gp->active_state = 1;
+
 
 	return (node->n_intrs > 0) ? node->intrs[0].line : 0;
 }
@@ -643,6 +667,7 @@ static void tumbler_reset_audio(pmac_t *chip)
 static void tumbler_resume(pmac_t *chip)
 {
 	pmac_tumbler_t *mix = chip->mixer_data;
+	snd_assert(mix, return);
 	tumbler_reset_audio(chip);
 	snd_pmac_keywest_write_byte(&mix->i2c, TAS_REG_MCS,
 				    (1<<6)+(2<<4)+(2<<2)+0);
@@ -662,7 +687,6 @@ static int __init tumbler_init(pmac_t *chip)
 {
 	int irq, err;
 	pmac_tumbler_t *mix = chip->mixer_data;
-
 	snd_assert(mix, return -EINVAL);
 
 	tumbler_find_device("audio-hw-reset", &mix->audio_reset, 0);
@@ -675,11 +699,15 @@ static int __init tumbler_init(pmac_t *chip)
 	tumbler_reset_audio(chip);
 
 	/* activate headphone status interrupts */
-	/* writeb(readb(mix->headphone_detect) | (1<<7), mix->headphone_status); */
-
-	if ((err = request_irq(irq, headphone_intr, 0,
-			       "Tumbler Headphone Detection", chip)) < 0)
-		return err;
+  	if (irq >= 0) {
+		if ((err = request_irq(irq, headphone_intr, 0,
+				       "Tumbler Headphone Detection", chip)) < 0)
+			return err;
+		/* activate headphone status interrupts */
+		/* writeb(readb(mix->headphone_detect) | (1<<7), mix->headphone_status); */
+		pmac_call_feature(PMAC_FTR_WRITE_GPIO, NULL, mix->hp_detect.addr,
+				  pmac_call_feature(PMAC_FTR_READ_GPIO, NULL, mix->hp_detect.addr, 0) | 0x80);
+	}
 	mix->headphone_irq = irq;
   
 	return 0;
@@ -693,6 +721,10 @@ static void tumbler_cleanup(pmac_t *chip)
 
 	if (mix->headphone_irq >= 0)
 		free_irq(mix->headphone_irq, chip);
+	tumbler_gpio_free(&mix->audio_reset);
+	tumbler_gpio_free(&mix->amp_mute);
+	tumbler_gpio_free(&mix->hp_mute);
+	tumbler_gpio_free(&mix->hp_detect);
 	snd_pmac_keywest_cleanup(&mix->i2c);
 	kfree(mix);
 	chip->mixer_data = NULL;
@@ -734,16 +766,14 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 	chip->speaker_sw_ctl = snd_ctl_new1(&tumbler_speaker_sw, chip);
 	if ((err = snd_ctl_add(chip->card, chip->speaker_sw_ctl)) < 0)
 		return err;
-#ifdef PMAC_SUPPORT_AUTOMUTE
-	if ((err = snd_pmac_add_automute(chip)) < 0)
-		return err;
-#endif
 
 #ifdef CONFIG_PMAC_PBOOK
 	chip->resume = tumbler_resume;
 #endif
 
 #ifdef PMAC_SUPPORT_AUTOMUTE
+	if ((err = snd_pmac_add_automute(chip)) < 0)
+		return err;
 	chip->detect_headphone = tumbler_detect_headphone;
 	chip->update_automute = tumbler_update_automute;
 	tumbler_update_automute(chip, 0); /* update the status only */

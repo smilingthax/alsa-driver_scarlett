@@ -49,7 +49,7 @@
 #define PMAC_MAX_FRAGS		32
 
 
-/* #define PMAC_SUPPORT_AUTOMUTE */
+#define PMAC_SUPPORT_AUTOMUTE
 
 /*
  * typedefs
@@ -139,6 +139,8 @@ struct snd_pmac {
 	unsigned int auto_mute : 1;
 	unsigned int initialized : 1;
 	unsigned int feature_is_set : 1;
+
+	unsigned int of_requested;
 
 	int num_freqs;
 	int *freq_table;
