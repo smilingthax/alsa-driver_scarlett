@@ -1598,7 +1598,7 @@ module_exit(alsa_card_azf3328_exit)
 
 #ifndef MODULE
 
-/* format is: snd-azf3328=snd_enable,snd_index,snd_id */
+/* format is: snd-azf3328=enable,index,id */
 
 static int __init alsa_card_azf3328_setup(char *str)
 {
