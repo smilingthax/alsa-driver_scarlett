@@ -627,6 +627,11 @@ enum sndrv_timer_event {
 	SNDRV_TIMER_EVENT_STOP,			/* val = 0 */
 	SNDRV_TIMER_EVENT_CONTINUE,		/* val = resolution in ns */
 	SNDRV_TIMER_EVENT_PAUSE,		/* val = 0 */
+	/* master timer events for slave timer instances */
+	SNDRV_TIMER_EVENT_MSTART = SNDRV_TIMER_EVENT_START + 100,
+	SNDRV_TIMER_EVENT_MSTOP = SNDRV_TIMER_EVENT_START + 101,
+	SNDRV_TIMER_EVENT_MCONTINUE = SNDRV_TIMER_EVENT_START + 102,
+	SNDRV_TIMER_EVENT_MPAUSE = SNDRV_TIMER_EVENT_START + 103,
 };
 
 struct sndrv_timer_tread {

@@ -30,6 +30,7 @@
 #include <sound/info.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
+#include <sound/timer.h>
 #include <sound/minors.h>
 
 /*
@@ -585,7 +586,7 @@ static int snd_pcm_channel_info(snd_pcm_substream_t * substream, snd_pcm_channel
 	return 0;
 }
 
-static void snd_pcm_trigger_time(snd_pcm_substream_t *substream)
+static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (runtime->trigger_master == NULL)
@@ -593,7 +594,7 @@ static void snd_pcm_trigger_time(snd_pcm_substream_t *substream)
 	if (runtime->trigger_master == substream) {
 		snd_timestamp_now(&runtime->trigger_tstamp, runtime->tstamp_timespec);
 	} else {
-		snd_pcm_trigger_time(runtime->trigger_master);
+		snd_pcm_trigger_tstamp(runtime->trigger_master);
 		runtime->trigger_tstamp = runtime->trigger_master->runtime->trigger_tstamp;
 	}
 	runtime->trigger_master = NULL;
@@ -668,13 +669,15 @@ static inline int snd_pcm_do_start(snd_pcm_substream_t *substream, int state)
 static inline void snd_pcm_post_start(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_pcm_trigger_time(substream);
+	snd_pcm_trigger_tstamp(substream);
 	runtime->status->state = SNDRV_PCM_STATE_RUNNING;
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
 	    runtime->silence_size > 0)
 		snd_pcm_playback_silence(substream, ULONG_MAX);
 	if (runtime->sleep_min)
 		snd_pcm_tick_prepare(substream);
+	if (substream->timer)
+		snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MSTART, &runtime->trigger_tstamp);
 }
 
 /**
@@ -703,7 +706,9 @@ static inline int snd_pcm_do_stop(snd_pcm_substream_t *substream, int state)
 static inline void snd_pcm_post_stop(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_pcm_trigger_time(substream);
+	snd_pcm_trigger_tstamp(substream);
+	if (substream->timer)
+		snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MSTOP, &runtime->trigger_tstamp);
 	runtime->status->state = state;
 	snd_pcm_tick_set(substream, 0);
 	wake_up(&runtime->sleep);
@@ -741,15 +746,19 @@ static inline int snd_pcm_do_pause(snd_pcm_substream_t *substream, int push)
 static inline void snd_pcm_post_pause(snd_pcm_substream_t *substream, int push)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_pcm_trigger_time(substream);
+	snd_pcm_trigger_tstamp(substream);
 	if (push) {
 		runtime->status->state = SNDRV_PCM_STATE_PAUSED;
+		if (substream->timer)
+			snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MPAUSE, &runtime->trigger_tstamp);
 		snd_pcm_tick_set(substream, 0);
 		wake_up(&runtime->sleep);
 	} else {
 		runtime->status->state = SNDRV_PCM_STATE_RUNNING;
 		if (runtime->sleep_min)
 			snd_pcm_tick_prepare(substream);
+		if (substream->timer)
+			snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MCONTINUE, &runtime->trigger_tstamp);
 	}
 }
 
@@ -782,7 +791,9 @@ static inline int snd_pcm_do_suspend(snd_pcm_substream_t *substream, int state)
 static inline void snd_pcm_post_suspend(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_pcm_trigger_time(substream);
+	snd_pcm_trigger_tstamp(substream);
+	if (substream->timer)
+		snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MPAUSE, &runtime->trigger_tstamp);
 	runtime->status->state = SNDRV_PCM_STATE_SUSPENDED;
 	snd_pcm_tick_set(substream, 0);
 	wake_up(&runtime->sleep);
@@ -847,7 +858,9 @@ static inline int snd_pcm_do_resume(snd_pcm_substream_t *substream, int state)
 static inline void snd_pcm_post_resume(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_pcm_trigger_time(substream);
+	snd_pcm_trigger_tstamp(substream);
+	if (substream->timer)
+		snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MCONTINUE, &runtime->trigger_tstamp);
 	runtime->status->state = runtime->status->suspended_state;
 	if (runtime->sleep_min)
 		snd_pcm_tick_prepare(substream);

@@ -3,7 +3,8 @@
 
 /*
  *  Timer abstract layer
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>,
+ *		     Abramo Bagnara <abramo@alsa-project.org>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -60,7 +61,8 @@ typedef struct sndrv_timer_tread snd_timer_tread_t;
 #define SNDRV_TIMER_FLG_RESCHED	0x00000002	/* need reschedule */
 
 typedef void (*snd_timer_callback_t) (snd_timer_instance_t * timeri, unsigned long ticks, unsigned long resolution);
-typedef void (*snd_timer_ccallback_t) (snd_timer_instance_t * timeri, enum sndrv_timer_event event, unsigned long resolution);
+typedef void (*snd_timer_ccallback_t) (snd_timer_instance_t * timeri, enum sndrv_timer_event event,
+				       struct timespec * tstamp, unsigned long resolution);
 
 struct _snd_timer_hardware {
 	/* -- must be filled with low-level driver */
@@ -126,6 +128,7 @@ struct _snd_timer_instance {
  */
 
 extern int snd_timer_new(snd_card_t *card, char *id, snd_timer_id_t *tid, snd_timer_t ** rtimer);
+extern void snd_timer_notify(snd_timer_t *timer, enum sndrv_timer_event event, struct timespec *tstamp);
 extern int snd_timer_global_new(char *id, int device, snd_timer_t **rtimer);
 extern int snd_timer_global_free(snd_timer_t *timer);
 extern int snd_timer_global_register(snd_timer_t *timer);
