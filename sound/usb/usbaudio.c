@@ -870,7 +870,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 		u->urb->transfer_flags = URB_ISO_ASAP | UNLINK_FLAGS;
 		u->urb->number_of_packets = u->packets;
 		u->urb->context = u;
-		u->urb->complete = snd_complete_urb;
+		u->urb->complete = (usb_complete_t)snd_complete_urb;
 	}
 
 	if (subs->syncpipe) {
@@ -892,7 +892,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 			u->urb->transfer_flags = URB_ISO_ASAP | UNLINK_FLAGS;
 			u->urb->number_of_packets = u->packets;
 			u->urb->context = u;
-			u->urb->complete = snd_complete_sync_urb;
+			u->urb->complete = (usb_complete_t)snd_complete_sync_urb;
 		}
 	}
 	return 0;
