@@ -279,10 +279,12 @@ typedef struct {
 	
 	int flags;			/* running, sync status etc. */
 	
-	/* security: 
-		owner (client id) of this queue (who can start/stop timer etc.) 
-		if set the port is locked for other clients 
+	/* security settings, only owner of this queue can start/stop timer 
+	   etc. if the queue is locked for other clients 
 	*/
+	int			owner;		/* client id for owner of the queue */
+	int			locked:1;	/* timing queue locked for other queues */
+
 	
 	/* sync source */
 	/* sync dest */
