@@ -143,5 +143,8 @@ void snd_ac97_write_cache(ac97_t *ac97, unsigned short reg, unsigned short value
 int snd_ac97_update(ac97_t *ac97, unsigned short reg, unsigned short value);
 int snd_ac97_update_bits(ac97_t *ac97, unsigned short reg, unsigned short mask, unsigned short value);
 int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate);
+#ifdef CONFIG_PM
+void snd_ac97_resume(ac97_t *ac97);
+#endif
 
 #endif				/* __AC97_CODEC_H */
