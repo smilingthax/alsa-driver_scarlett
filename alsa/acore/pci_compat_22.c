@@ -388,12 +388,14 @@ void *snd_pci_compat_alloc_consistent(struct pci_dev *dev,
 				      dma_addr_t *dmaaddr)
 {
 	unsigned long dma_mask;
+	void *res;
+
 #ifdef CONFIG_PCI
 	dma_mask = snd_pci_compat_get_dma_mask(dev);
 #else
 	dma_mask = 0xffffff; /* ISA - 16MB */
 #endif
-	void *res = snd_pci_compat_alloc_consistent1(dma_mask, size, 0);
+	res = snd_pci_compat_alloc_consistent1(dma_mask, size, 0);
 	if (res != NULL)
 		*dmaaddr = (dma_addr_t)virt_to_bus(res);
 	return res;
