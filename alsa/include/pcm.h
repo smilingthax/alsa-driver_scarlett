@@ -34,7 +34,7 @@ struct snd_stru_pcm_channel {
 	/* -- /proc interface -- */
 	void *proc_entry;
 	void *proc_private;
-	snd_mutex_define(proc);
+	struct semaphore proc;
 };
 
 struct snd_stru_pcm {

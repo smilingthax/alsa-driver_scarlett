@@ -239,8 +239,8 @@ struct snd_stru_cs4231 {
 	int calibrate_mute;
 
 	spinlock_t reg_lock;
-	snd_mutex_define(mce);
-	snd_mutex_define(open);
+	struct semaphore mce_mutex;
+	struct semaphore open_mutex;
 	snd_sleep_define(mce);
 	snd_sleep_define(iec958);
 

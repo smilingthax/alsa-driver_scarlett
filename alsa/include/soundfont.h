@@ -97,7 +97,7 @@ typedef struct snd_sf_list {
 	int sample_locked;	/* locked time for sample */
 	snd_sf_callback_t callback;	/* callback functions */
 	char sf_locked;		/* font lock flag */
-	snd_mutex_define(presets);
+	struct semaphore presets_mutex;
 	spinlock_t lock;
 } snd_sf_list_t;
 

@@ -58,7 +58,7 @@ typedef struct {
 
 	spinlock_t lock;
 	spinlock_t ops_lock;
-	snd_mutex_define(ops);
+	struct semaphore ops_mutex;
 	unsigned long ops_flags;
 } snd_seq_kinstr_list_t;
 

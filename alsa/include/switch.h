@@ -37,7 +37,7 @@ struct snd_stru_switch {
 struct snd_stru_switch_list {
 	int count;
 	snd_kswitch_t **switches;
-	snd_mutex_define(lock);
+	struct semaphore lock;
 };
 
 extern void snd_switch_prepare(snd_kswitch_list_t * list);

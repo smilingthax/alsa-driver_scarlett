@@ -93,7 +93,7 @@ struct snd_info_entry {
 	snd_card_t *card;
 	struct proc_dir_entry *p;
 	struct snd_info_entry *next;
-	snd_mutex_define(access);
+	struct semaphore access;
 };
 
 extern int snd_info_check_reserved_words(const char *str);

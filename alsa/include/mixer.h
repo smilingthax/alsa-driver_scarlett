@@ -104,7 +104,7 @@ struct snd_stru_mixer {
 	unsigned char name[80];
 	unsigned int attrib;
 
-	snd_mutex_define(lock);
+	struct semaphore lock;
 	int elements_count;		/* channels count */
 	snd_kmixer_element_t *elements;	/* first element */
 	int groups_count;		/* groups count */

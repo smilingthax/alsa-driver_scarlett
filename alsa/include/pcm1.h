@@ -189,7 +189,7 @@ struct snd_stru_pcm1_channel {
 	/* -- OSS things -- */
 	struct snd_stru_pcm1_oss_setup *setup_list;	/* setup list */
 	struct snd_stru_pcm1_oss_setup *setup;		/* active setup */
-	snd_mutex_define(setup_mutex);
+	struct semaphore setup_mutex;
 	/* misc */
 	spinlock_t lock;
 	spinlock_t sleep_lock;
@@ -205,7 +205,7 @@ struct snd_stru_pcm1 {
 	struct snd_stru_pcm1_channel record;
 	snd_info_entry_t *proc_entry;
 	snd_info_entry_t *proc_oss_entry;
-	snd_mutex_define(open);
+	struct semaphore open_mutex;
 	void *private_data;
 	void (*private_free) (void *private_data);
 };

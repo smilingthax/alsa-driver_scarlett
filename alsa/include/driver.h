@@ -118,6 +118,11 @@ static inline void snd_leave_user(mm_segment_t fs)
 	set_fs(fs);
 }
 
+#ifndef LINUX_2_3
+#define init_MUTEX(x) *(x) = MUTEX
+#define DECLARE_MUTEX(x) struct semaphore x = MUTEX
+#endif
+
 /*
  *  ==========================================================================
  */
@@ -151,8 +156,8 @@ typedef struct snd_stru_dma {
 	char *owner;			/* owner of this DMA channel */
 	char *soft_owner;		/* owner of soft DMA channel */
 	struct vm_area_struct *vma;	/* virtual memory area */
-	snd_mutex_define(lock);		/* mutex for locking */
-	snd_mutex_define(mutex);	/* snd_dma_malloc/free */
+	struct semaphore lock;		/* mutex for locking */
+	struct semaphore mutex;		/* snd_dma_malloc/free */
 	struct snd_stru_dma *next;
 } snd_dma_t;
 
@@ -212,7 +217,7 @@ struct snd_stru_card {
 	void (*use_inc) (snd_card_t * card);	/* increment use count */
 	void (*use_dec) (snd_card_t * card);	/* decrement use count */
 
-	snd_mutex_define(control);		/* control card mutex */
+	struct semaphore control;		/* control card mutex */
 
 	void *private_data;			/* private data for soundcard */
 	void (*private_free) (void *private);	/* callback for freeing of private data */

@@ -99,8 +99,8 @@ typedef struct snd_emu8000 {
 	spinlock_t voice_lock;	/* Lock for voice access */
 	spinlock_t reg_lock;	/* Lock for chip register access */
 	snd_sleep_define(wait);	/* Lock for waits */
-	snd_mutex_define(register);
-	snd_mutex_define(patch);
+	struct semaphore register_mutex;
+	struct semaphore patch_mutex;
 
 #ifdef CONFIG_SND_OSSEMUL
 	int oss_synth;

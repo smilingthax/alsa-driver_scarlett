@@ -105,27 +105,4 @@
 
 #endif /* LINUX_2_2 */
 
-/* mutex */
-
-#define snd_mutex_define(ident) \
-  struct semaphore mutex_##ident;
-#ifdef LINUX_2_3
-#define snd_mutex_prepare(object, ident) \
-  init_MUTEX(&(object)->mutex_##ident);
-#else
-#define snd_mutex_prepare(object, ident) \
-  (object)->mutex_##ident = MUTEX;
-#endif
-#define snd_mutex_down(object, ident) down(&(object)->mutex_##ident)
-#define snd_mutex_up(object, ident) up(&(object)->mutex_##ident)
-#ifdef LINUX_2_3
-#define snd_mutex_define_static(ident) \
-  static DECLARE_MUTEX(local_mutex_##ident);
-#else
-#define snd_mutex_define_static(ident) \
-  static struct semaphore local_mutex_##ident = MUTEX;
-#endif
-#define snd_mutex_down_static(ident) down(&local_mutex_##ident)
-#define snd_mutex_up_static(ident) up(&local_mutex_##ident)
-
 #endif				/* __SCHEDULE_H */

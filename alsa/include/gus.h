@@ -223,7 +223,7 @@ typedef struct snd_stru_gf1_mem {
 	snd_gf1_mem_block_t *first;
 	snd_gf1_mem_block_t *last;
 	snd_info_entry_t *info_entry;
-	snd_mutex_define(memory);
+	struct semaphore memory_mutex;
 } snd_gf1_mem_t;
 
 typedef struct snd_gf1_dma_block {
@@ -389,8 +389,8 @@ struct snd_stru_gus_card {
 	spinlock_t pcm_volume_level_lock;
 	spinlock_t uart_cmd_lock;
 	spinlock_t neutral_lock;
-	snd_mutex_define(dma);
-	snd_mutex_define(register);
+	struct semaphore dma_mutex;
+	struct semaphore register_mutex;
 	snd_sleep_define(neutral);
 	snd_sleep_define(clear);
 };

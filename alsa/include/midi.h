@@ -126,7 +126,7 @@ struct snd_stru_rawmidi {
 	spinlock_t output_sleep_lock;
 	snd_sleep_define(input);
 	snd_sleep_define(output);
-	snd_mutex_define(open);
+	struct semaphore open_mutex;
 
 	snd_info_entry_t *dev;
 	snd_info_entry_t *proc_entry;
