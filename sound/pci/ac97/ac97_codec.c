@@ -2240,7 +2240,7 @@ int snd_ac97_modem(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 			return err;
 		}
 	}
-	if (snd_ac97_modem_build(card, ac97) < 0) {
+	if (ac97_is_modem(ac97) && snd_ac97_modem_build(card, ac97) < 0) {
 		snd_ac97_free(ac97);
 		return -ENOMEM;
 	}
