@@ -1,12 +1,16 @@
 Stage 2 (before final 0.2.0):
 
 * timer interface (done)
-* sequencer (first pre-alpha exist)
+* prototype of sequencer (first pre-alpha exist)
   - only external MIDI support
+* write utility for store/restore driver setup (mixer and switches) and
+  utility for switches control
+* add CTL switch Game Speed Compensation (GUS, SonicVibes)
+* add CTL switch Joystick Enable (GUS, AudioPCI)
 
 Stage 3:
 
-* sequencer
+* complete sequencer
   - add internal synthesizer interface (envelopes exist)
 
 Stage 4:
@@ -16,11 +20,8 @@ Stage 4:
 
 General:
 
-* check why S3 SonicVibes volume levels are non-linear
 * check why S3 SonicVibes sometimes stops
 * add PCM switch for ADC overrange setup - CS4231
-* add CTL switch Game Speed Compensation (GUS, SonicVibes)
-* add CTL switch Joystick Enable (GUS, AudioPCI)
 
 * extend documentation for programmers (driver side)
 * extend documentation for users
