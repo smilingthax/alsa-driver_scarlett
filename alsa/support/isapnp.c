@@ -27,12 +27,10 @@
 #include <linux/config.h>
 #include <linux/version.h>
 
-#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
-
-#if LinuxVersionCode(2, 2, 0) > LINUX_VERSION_CODE
-#error "This driver is designed only for Linux 2.2.0 and highter."
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 0)
+#error "This driver is designed only for Linux 2.2.0 and higher."
 #endif
-#if LinuxVersionCode(2, 3, 11) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 11)
 #define NEW_RESOURCE
 #endif
 
@@ -141,7 +139,7 @@ struct isapnp_card *isapnp_cards = NULL;	/* ISA PnP cards */
 struct isapnp_dev *isapnp_devices = NULL;	/* ISA PnP devices */
 static struct isapnp_dev *isapnp_last_device = NULL;
 static unsigned char isapnp_checksum_value;
-#if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 1) 
 static DECLARE_MUTEX(isapnp_cfg_mutex);
 #else
 static struct semaphore isapnp_cfg_mutex = MUTEX;
@@ -309,6 +307,12 @@ static int __init isapnp_next_rdp(void)
 			return 0;
 		}
 		rdp += RDP_STEP;
+		/*
+		 *      We cannot use NE2000 probe spaces for ISAPnP or we
+		 *      will lock up machines.
+		 */
+		if (rdp >= 0x280 && rdp <= 0x380)
+			continue;
 	}
 	return -1;
 }
@@ -1235,6 +1239,50 @@ struct isapnp_dev *isapnp_find_dev(struct isapnp_card *card,
 	return NULL;
 }
 
+static const struct isapnp_card_id *
+isapnp_match_card(const struct isapnp_card_id *ids, struct isapnp_card *card)
+{
+	int idx;
+
+	while (ids->vendor || ids->device) {
+		if ((ids->vendor == ISAPNP_ANY_ID || ids->vendor == card->vendor) &&
+		    (ids->device == ISAPNP_ANY_ID || ids->device == card->device)) {
+			for (idx = 0; idx < ISAPNP_CARD_DEVS; idx++) {
+				if (ids->devs[idx].vendor == 0 &&
+				    ids->devs[idx].function == 0)
+					return ids;
+				if (isapnp_find_dev(card,
+						    ids->devs[idx].vendor,
+						    ids->devs[idx].function,
+						    NULL) == NULL)
+					goto __next;
+			}
+			return ids;
+		}
+	      __next:
+		ids++;
+	}
+	return NULL;
+}
+
+int isapnp_probe_cards(const struct isapnp_card_id *ids,
+		       int (*probe)(struct isapnp_card *_card,
+				    const struct isapnp_card_id *_id))
+{
+	struct isapnp_card *card;
+	const struct isapnp_card_id *id;
+	int count = 0;
+
+        if (ids == NULL || probe == NULL)
+                return -EINVAL;
+	for (card = isapnp_cards; card; card = card->next) {
+                id = isapnp_match_card(ids, card);
+                if (id != NULL && probe(card, id) >= 0)
+                        count++;
+        }
+        return count;
+}
+
 static unsigned int isapnp_dma_resource_flags(struct isapnp_dma *dma)
 {
 	return dma->flags | IORESOURCE_DMA | IORESOURCE_AUTO;
@@ -2115,6 +2163,8 @@ __initfunc(static void isapnp_pci_init(void))
 
 #endif /* CONFIG_PCI */
 
+EXPORT_SYMBOL(isapnp_cards);
+EXPORT_SYMBOL(isapnp_devices);
 EXPORT_SYMBOL(isapnp_present);
 EXPORT_SYMBOL(isapnp_cfg_begin);
 EXPORT_SYMBOL(isapnp_cfg_end);
@@ -2130,6 +2180,7 @@ EXPORT_SYMBOL(isapnp_activate);
 EXPORT_SYMBOL(isapnp_deactivate);
 EXPORT_SYMBOL(isapnp_find_card);
 EXPORT_SYMBOL(isapnp_find_dev);
+EXPORT_SYMBOL(isapnp_probe_cards);
 EXPORT_SYMBOL(isapnp_resource_change);
 
 __initfunc(int isapnp_init(void))

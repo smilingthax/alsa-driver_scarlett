@@ -28,10 +28,9 @@
 
 #include <linux/config.h>
 #include <linux/module.h>
+#include <linux/version.h>
 
-#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
-
-#if LinuxVersionCode(2, 3, 29) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 29)
 #define NEW_PROC
 #endif
 

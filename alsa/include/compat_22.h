@@ -44,12 +44,12 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 
 #define PCI_ANY_ID (~0)
 
-#define PCI_GET_DRIVER_DATA pci_compat_get_driver_data
-#define PCI_SET_DRIVER_DATA pci_compat_set_driver_data
+#define PCI_GET_DRIVER_DATA snd_pci_compat_get_driver_data
+#define PCI_SET_DRIVER_DATA snd_pci_compat_set_driver_data
 
-#define pci_enable_device pci_compat_enable_device
-#define pci_register_driver pci_compat_register_driver
-#define pci_unregister_driver pci_compat_unregister_driver
+#define pci_enable_device snd_pci_compat_enable_device
+#define pci_register_driver snd_pci_compat_register_driver
+#define pci_unregister_driver snd_pci_compat_unregister_driver
 
 #define pci_dev_g(n) list_entry(n, struct pci_dev, global_list)
 #define pci_dev_b(n) list_entry(n, struct pci_dev, bus_list)

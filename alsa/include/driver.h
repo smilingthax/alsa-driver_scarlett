@@ -47,20 +47,20 @@
 #include <linux/config.h>
 #include <linux/version.h>
 
-#if KERNEL_VERSION(2, 2, 3) > LINUX_VERSION_CODE
-#error "This driver requires Linux 2.2.3 and highter."
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 3)
+#error "This driver requires Linux 2.2.3 and higher."
 #endif
-#if KERNEL_VERSION(2, 2, 0) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 0)
 #define LINUX_2_2
 #endif
-#if KERNEL_VERSION(2, 3, 1) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 1)
 #define LINUX_2_3
 #endif
-#if KERNEL_VERSION(2, 3, 11) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 11)
 #define NEW_RESOURCE
 #endif
-#if defined(LINUX_2_3) && KERNEL_VERSION(2, 3, 48) > LINUX_VERSION_CODE
-#error "This driver requires Linux 2.3.48 and highter."
+#if defined(LINUX_2_3) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 48)
+#error "This driver requires Linux 2.3.48 and higher."
 #endif
 
 #ifdef ALSA_BUILD
@@ -115,7 +115,7 @@
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
-#if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (KERNEL_VERSION(2, 3, 30) <= LINUX_VERSION_CODE && !defined(ALSA_BUILD))
+#if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 30) && !defined(ALSA_BUILD))
 #include <linux/isapnp.h>
 #define isapnp_dev pci_dev
 #define isapnp_card pci_bus
@@ -164,21 +164,6 @@ static inline void snd_leave_user(mm_segment_t fs)
 #define SND_DMA_TYPE_PCI	1	/* PCI DMA (anywhere in kernel memory) */
 #define SND_DMA_TYPE_PCI_16MB	2	/* PCI DMA (must be in low 16MB memory) */
 #define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
-
-#define SND_INDEX_DESC "allows:{{0,7}},unique,skill:required,dialog:list"
-#define SND_ID_DESC "unique"
-#define SND_DMA8_DESC "allows:{{0,1},{3}},dialog:list"
-#define SND_DMA16_DESC "allows:{{5,7}},dialog:list"
-#define SND_DMA_DESC "allows:{{0,1},{3},{5,7}},dialog:list"
-#define SND_IRQ_DESC "allows:{{5},{7},{9},{10,12},{14,15}},dialog:list"
-#define SND_DMA_SIZE_DESC "allows:{{4, 128}},default:64,skill:advanced"
-#define SND_DMA8_SIZE_DESC "allows:{{4, 64}},default:64,skill:advanced"
-#define SND_DMA16_SIZE_DESC "allows:{{4, 128}},default:64,skill:advanced"
-#define SND_ISAPNP_DESC "allows:{{0,Disabled},{1,Enabled}},default:1,dialog:check"
-#define SND_ENABLE_DESC "allows:{{0,Disabled},{1,Enabled}},default:0,dialog:check"
-#define SND_DISABLE_DESC "allows:{{0,Disabled},{1,Enabled}},default:1,dialog:check"
-#define SND_PORT12_DESC "allows:{{0,0x3fff}},base:16"
-#define SND_PORT_DESC "allows:{{0,0xffff}},base:16"
 
 typedef struct snd_stru_dma_area snd_dma_area_t;
 typedef struct snd_stru_dma snd_dma_t;
@@ -318,9 +303,7 @@ struct snd_stru_card {
 	struct semaphore control;		/* control card mutex */
 
 	void *private_data;			/* private data for soundcard */
-	void (*private_free) (void *private);	/* callback for freeing of private data */
-
-	void *static_data;			/* private static data for soundcard */
+	void (*private_free) (void *private_data); /* callback for freeing of private data */
 
 	snd_device_t *devices;			/* devices */
 
@@ -441,8 +424,9 @@ extern snd_card_t *snd_cards[SND_CARDS];
 extern void snd_driver_init(void);
 
 extern snd_card_t *snd_card_new(int idx, char *id,
-			void (*use_inc) (snd_card_t * card),
-			void (*use_dec) (snd_card_t * card));
+				void (*use_inc) (snd_card_t * card),
+				void (*use_dec) (snd_card_t * card),
+				int extra_size);
 extern int snd_card_free(snd_card_t * card);
 extern int snd_card_register(snd_card_t * card);
 extern int snd_card_unregister(snd_card_t * card);

@@ -22,12 +22,10 @@
 #include <linux/config.h>
 #include <linux/version.h>
 
-#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
-
-#if LinuxVersionCode(2, 2, 0) > LINUX_VERSION_CODE
-#error "This driver is designed only for Linux 2.2.0 and highter."
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 0)
+#error "This driver is designed only for Linux 2.2.0 and higher."
 #endif
-#if LinuxVersionCode(2, 3, 11) <= LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 11)
 #define NEW_RESOURCE
 #endif
 

@@ -127,17 +127,13 @@ struct isapnp_fixup {
 #include <linux/version.h>
 #endif
 
-#ifndef LinuxVersionCode
-#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
-#endif
-
 #include <linux/pci.h>
 
-#if LinuxVersionCode(2, 3, 14) == LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE == KERNEL_VERSION(2, 3, 14)
 #error "Please, upgrade to 2.3.15 kernel."
 #endif
 
-#if LinuxVersionCode(2, 3, 15) > LINUX_VERSION_CODE
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 15)
 
 struct resource {
 	const char *name;
@@ -277,6 +273,24 @@ struct isapnp_card {
 	unsigned char	pad1;
 };
 
+#define ISAPNP_ANY_ID           0xffff
+#define ISAPNP_CARD_DEVS        8
+
+#define ISAPNP_CARD_ID(_va, _vb, _vc, _device) \
+                vendor: ISAPNP_VENDOR(_va, _vb, _vc), device: ISAPNP_DEVICE(_device)
+#define ISAPNP_CARD_END \
+                vendor: 0, device: 0
+#define ISAPNP_DEVICE_ID(_va, _vb, _vc, _function) \
+                { vendor: ISAPNP_VENDOR(_va, _vb, _vc), function: ISAPNP_FUNCTION(_function) }
+
+struct isapnp_card_id {
+	unsigned short vendor, device;
+	struct {
+		unsigned short vendor, function;
+	} devs[ISAPNP_CARD_DEVS];       /* logical devices */
+	unsigned long driver_data;      /* data private to the driver */
+};
+
 #else
 
 #define isapnp_dev pci_dev
@@ -310,6 +324,9 @@ struct isapnp_dev *isapnp_find_dev(struct isapnp_card *card,
 				   unsigned short vendor,
 				   unsigned short function,
 				   struct isapnp_dev *from);
+int isapnp_probe_cards(const struct isapnp_card_id *ids,
+		       int (*probe)(struct isapnp_card *card,
+				const struct isapnp_card_id *id));
 /* misc */
 void isapnp_resource_change(struct resource *resource,
 			    unsigned long start,
@@ -341,6 +358,10 @@ extern struct isapnp_dev *isapnp_find_dev(struct isapnp_card *card,
 					  unsigned short vendor,
 					  unsigned short function,
 					  struct isapnp_dev *from) { return NULL; }
+int isapnp_probe_cards(const struct isapnp_card_id *ids,
+		       int (*probe)(struct isapnp_card *card,
+				const struct isapnp_card_id *id)) { return 0; }
+/* misc */
 extern void isapnp_resource_change(struct resource *resource,
 				   unsigned long start,
 				   unsigned long size) { ; }

@@ -71,7 +71,7 @@ typedef struct iwffff_wave {
 	unsigned int sample_ratio;	/* sample ratio (44100 * 1024 / rate) */
 	unsigned char attenuation;	/* 0 - 127 (no corresponding midi controller) */
 	unsigned char low_note;		/* lower frequency range for this waveform */
-	unsigned char high_note;	/* highter frequency range for this waveform */
+	unsigned char high_note;	/* higher frequency range for this waveform */
 	unsigned char pad;
   
 	struct iwffff_wave *next;
@@ -231,7 +231,7 @@ typedef struct iwffff_xwave {
 	__u32 sample_ratio;		/* sample ratio (44100 * 1024 / rate) */
 	__u8 attenuation;		/* 0 - 127 (no corresponding midi controller) */
 	__u8 low_note;			/* lower frequency range for this waveform */
-	__u8 high_note;			/* highter frequency range for this waveform */
+	__u8 high_note;			/* higher frequency range for this waveform */
 	__u8 pad;
 } iwffff_xwave_t;
 

@@ -420,7 +420,7 @@ struct ULTRA_INSTRUMENT_WAVE_INTERWAVE {
   unsigned int sample_ratio;		/* sample ratio (44100 * 1024 / rate) */
   unsigned char attenuation;		/* 0 - 127 (no corresponding midi controller) */
   unsigned char low_note;		/* lower frequency range for this waveform */
-  unsigned char high_note;		/* highter frequency range for this waveform */
+  unsigned char high_note;		/* higher frequency range for this waveform */
 };
 
 #define ULTRA_IW_LFO_SHAPE_TRIANGLE	0

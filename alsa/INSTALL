@@ -888,7 +888,7 @@ Proc interfaces (/proc/asound)
   String "Capture erase" - erase all additional informations about OSS applications
   String "Capture <app_name> <fragments> <fragment_size> [<options>]"
 
-   <app_name> - name of application with (highter priority) or without path
+   <app_name> - name of application with (higher priority) or without path
    <fragments> - number of fragments or zero if auto
    <fragment_size> - size of fragment in bytes or zero if auto
    <options> - optional parameters
