@@ -1,0 +1,13 @@
+--- Makefile.old	Tue Dec 28 19:53:48 1999
++++ Makefile	Tue Dec 28 19:54:12 1999
+@@ -239,6 +239,10 @@
+ DRIVERS := $(DRIVERS) drivers/i2c/i2c.a
+ endif
+ 
++ifeq ($(CONFIG_SND),y)
++DRIVERS := $(DRIVERS) drivers/sound/alsa/snd.a
++endif
++
+ include arch/$(ARCH)/Makefile
+ 
+ .S.s:

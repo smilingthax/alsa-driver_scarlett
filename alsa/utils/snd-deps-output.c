@@ -178,10 +178,17 @@ void output_configin(void)
 # ALSA soundcard-configuration\n\
 \n\
 if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
-  bool 'Sequencer support' CONFIG_SND_SEQUENCER\n\
+  dep_tristate 'Sequencer support' CONFIG_SND_SEQUENCER $CONFIG_SND\n\
   bool 'OSS API emulation' CONFIG_SND_OSSEMUL\n\
+  if [ \"$CONFIG_SND_OSSEMUL\" = \"y\" ]; then\n\
+    dep_tristate 'OSS Mixer API' CONFIG_SND_MIXER_OSS $CONFIG_SND\n\
+    dep_tristate 'OSS PCM API' CONFIG_SND_PCM_OSS $CONFIG_SND\n\
+    if [ \"$CONFIG_SND_SEQUENCER\" != \"n\" ]; then\n\
+      dep_tristate 'OSS Sequencer API' CONFIG_SND_SEQUENCER_OSS $CONFIG_SND_SEQUENCER\n\
+    fi\n\
+  fi\n\
   bool 'Debug' CONFIG_SND_DEBUG\n\
-  if [ \"$CONFIG_SND_DEBUG\" = \"y\" ]; then \n\
+  if [ \"$CONFIG_SND_DEBUG\" = \"y\" ]; then\n\
     bool 'Debug memory' CONFIG_SND_DEBUG_MEMORY\n\
     bool 'Debug full' CONFIG_SND_DEBUG_FULL\n\
     bool 'Debug detection' CONFIG_SND_DEBUG_DETECT\n\

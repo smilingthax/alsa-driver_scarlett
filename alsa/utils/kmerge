@@ -36,12 +36,29 @@ if [ ! -r $KDIR/drivers/sound/sound_core.c ]; then
 fi
 
 pushd $PWD > /dev/null
+cd $KDIR
+if grep CONFIG_SND Makefile > /dev/null; then
+  echo "Makefile already modified"
+else
+  cp -av Makefile Makefile.old
+  cat $ADIR/utils/patches/patch.Makefile.top.2.3.34 | patch -p0
+  echo "Makefile patched"
+fi
 cd $KDIR/drivers/sound
 if grep alsa Makefile > /dev/null; then
   echo "drivers/sound/Makefile already modified"
 else
+  cp -av Makefile Makefile.old
   cat $ADIR/utils/patches/patch.Makefile.2.2.10 | patch -p0
   echo "drivers/sound/Makefile patched"
+fi
+cd $KDIR/drivers/char
+if grep alsa_init mem.c > /dev/null; then
+  echo "drivers/char/mem.c already modified"
+else
+  cp -av mem.c mem.c.old
+  cat $ADIR/utils/patches/patch.mem.c.2.3.34 | patch -p0
+  echo "drivers/char/mem.c patched"
 fi
 if grep "Advanced Linux Sound Architecture" Config.in > /dev/null; then
   echo "drivers/sound/Config.in already modified"
@@ -83,6 +100,7 @@ copy_dir lowlevel/hal2
 copy_dir lowlevel/i2c
 copy_dir lowlevel/gus
 copy_dir lowlevel/sb
+copy_dir lowlevel/emu10k1
 copy_dir cards
 copy_dir cards/hal2
 popd > /dev/null
