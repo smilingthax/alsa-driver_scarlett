@@ -1123,18 +1123,18 @@ static void snd_pcm_change_state(snd_pcm_substream_t *substream, int state)
 			if (s != substream)
 				spin_lock(&substream->local_link.lock);
 		}
-	}
-	list_for_each(pos, &substream->link->substreams) {
-		s = list_entry(pos, snd_pcm_substream_t, link_list);
-		s->runtime->status->state = state;
-	}
-	if (snd_pcm_stream_linked(substream)) {
+		list_for_each(pos, &substream->link->substreams) {
+			s = list_entry(pos, snd_pcm_substream_t, link_list);
+			s->runtime->status->state = state;
+		}
 		list_for_each(pos, &substream->link->substreams) {
 			s = list_entry(pos, snd_pcm_substream_t, link_list);
 			if (s != substream)
 				spin_unlock(&substream->local_link.lock);
 		}
 		spin_unlock(&substream->link->lock);
+	} else {
+		substream->runtime->status->state = state;
 	}
 }
 
