@@ -272,7 +272,7 @@ typedef struct {
 	/* external stored data */
 typedef struct {
 	size_t len;		/* length of data */
-	void *ptr;		/* pointer to data */
+	void *ptr;		/* pointer to data (note: maybe 64-bit) */
 } snd_seq_ev_ext;
 
 	/* external stored data - IPC shared memory */
@@ -282,7 +282,7 @@ typedef struct {
 } snd_seq_ev_ipcshm;
 
 /* Instrument cluster type */
-typedef unsigned long snd_seq_instr_cluster_t;
+typedef unsigned int snd_seq_instr_cluster_t;
 
 /* Instrument type */
 typedef struct {
@@ -350,7 +350,7 @@ typedef struct {
 
 /* INSTR_BEGIN event */
 typedef struct {
-	long timeout;		/* zero = forever, otherwise timeout in ms */
+	int timeout;		/* zero = forever, otherwise timeout in ms */
 } snd_seq_ev_instr_begin_t;
 
 typedef struct {
@@ -360,8 +360,8 @@ typedef struct {
 
 
 typedef struct {
-	long int tv_sec;	/* seconds */
-	long int tv_nsec;	/* nanoseconds */
+	unsigned int tv_sec;		/* seconds */
+	unsigned int tv_nsec;	/* nanoseconds */
 } snd_seq_real_time_t;
 
 typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
@@ -647,9 +647,12 @@ typedef struct {
 	 */
 	int owner;			/* client id for owner of the queue */
 	int locked:1;			/* timing queue locked for other queues */
-
 	char name[64];			/* name of this queue */
-	char reserved[64];		/* for future use */
+
+	unsigned int flags;		/* flags */
+
+	char reserved[60];		/* for future use */
+
 } snd_seq_queue_info_t;
 
 typedef snd_seq_queue_info_t snd_seq_queue_owner_t; /* alias */
@@ -657,7 +660,7 @@ typedef snd_seq_queue_info_t snd_seq_queue_owner_t; /* alias */
 
 /* queue flags */
 #ifdef use_seqsync
-#define SND_SEQ_QUEUE_FLG_SYNC_LOST	(1<<0)	/* synchronization was lost */
+#define SND_SEQ_QUEUE_FLG_SYNC_LOST    (1<<0)  /* synchronization was lost */
 #endif
 
 /* queue info/status */
@@ -701,38 +704,9 @@ typedef struct {
 	int number;			/* timer number/identification */
 	int resolution;			/* timer resolution in Hz */
 
-#ifdef use_seqsync
-	/* MIDI timer parameters */
-	int midi_client;		/* sequencer client */
-	int midi_port;			/* sequencer port */
-
-	/* tick & real-time queue synchronization */
-	long int sync_tick_resolution;	/* resolution per 10ms midi tick (TICK event) (ticks * 1000000) */
-	long int sync_real_resolution;	/* resolution per midi tick (CLOCK event) or zero (nanoseconds) */
-#endif
 	char reserved[64];		/* for the future use */
 } snd_seq_queue_timer_t;
 
-
-#ifdef use_seqsync
-/* synchronization types */
-#define SND_SEQ_SYNC_NONE		0	/* none synchronization */
-#define SND_SEQ_SYNC_MTC		1	/* Midi Time Code synchronization */
-
-typedef struct {
-	int queue;			/* sequencer queue */
-
-	/* synchronization */
-	int sync_client;		/* sequencer client */
-	int sync_port;			/* sequencer port */
-	int sync_type;			/* synchronization type */
-
-	snd_seq_tick_time_t sync_tick;	/* last synchronization tick */
-	snd_seq_real_time_t sync_time;	/* last synchronization time */
-
-	char reserved[64];		/* for the future use */
-} snd_seq_queue_sync_t;
-#endif
 
 typedef struct {
 	int queue;			/* sequencer queue */
@@ -750,6 +724,7 @@ typedef struct {
 	unsigned int exclusive: 1,	/* exclusive mode */
 	    realtime: 1,		/* realtime timestamp */
 	    convert_time: 1;		/* convert timestamp */
+	unsigned int sync: 1;		/* sync */
 	int midi_channels;		/* midi channels setup, zero = do not care */
 	int midi_voices;		/* midi voices setup, zero = do not care */
 	int synth_voices;		/* synth voices setup, zero = do not care */
@@ -826,15 +801,18 @@ typedef struct {
 #define SND_SEQ_INSTR_FREE_CMD_CLUSTER	2
 #define SND_SEQ_INSTR_FREE_CMD_SINGLE	3
 
+/* size of ROM/RAM */
+typedef unsigned int snd_seq_instr_size_t;
+
 /* INSTR_INFO */
 
 typedef struct {
 	int result;			/* operation result */
 	unsigned int formats[8];	/* bitmap of supported formats */
 	int ram_count;			/* count of RAM banks */
-	long ram_sizes[16];		/* size of RAM banks */
+	snd_seq_instr_size_t ram_sizes[16];	/* size of RAM banks */
 	int rom_count;			/* count of ROM banks */
-	long rom_sizes[8];		/* size of ROM banks */
+	snd_seq_instr_size_t rom_sizes[8];	/* size of ROM banks */
 	char reserved[128];
 }  snd_seq_instr_info_t;
 
@@ -842,7 +820,7 @@ typedef struct {
 
 typedef struct {
 	int result;			/* operation result */
-	long free_ram[16];		/* free RAM in banks */
+	snd_seq_instr_size_t free_ram[16];	/* free RAM in banks */
 	int instrument_count;		/* count of downloaded instruments */
 	char reserved[128];
 } snd_seq_instr_status_t;
@@ -851,13 +829,13 @@ typedef struct {
 
 typedef struct {
 	char format[16];		/* format identifier - SND_SEQ_INSTR_ID_* */	
-	long len;			/* max data length (without this structure) */
+	unsigned int len;		/* max data length (without this structure) */
 } snd_seq_instr_format_info_t;
 
 typedef struct {
 	int result;			/* operation result */
 	char format[16];		/* format identifier */
-	long len;			/* filled data length (without this structure) */
+	unsigned int len;		/* filled data length (without this structure) */
 } snd_seq_instr_format_info_result_t;
 
 /* instrument data */
@@ -875,9 +853,9 @@ typedef struct {
 
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
-	int cmd;			/* put command */
+	unsigned int cmd;		/* put command */
 	char reserved[16];		/* for the future */
-	long len;			/* real instrument data length (without header) */
+	unsigned int len;		/* real instrument data length (without header) */
 	snd_seq_instr_data_t data;	/* instrument data */
 } snd_seq_instr_put_t;
 
@@ -886,16 +864,16 @@ typedef struct {
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
 	unsigned int flags;		/* query flags */
-	int cmd;			/* query command */
+	unsigned int cmd;		/* query command */
 	char reserved[16];		/* reserved for the future use */
-	long len;			/* real instrument data length (without header) */
+	unsigned int len;		/* real instrument data length (without header) */
 } snd_seq_instr_get_t;
 
 typedef struct {
 	int result;			/* operation result */
 	snd_seq_instr_t id;		/* requested instrument identifier */
 	char reserved[16];		/* reserved for the future use */
-	long len;			/* real instrument data length (without header) */
+	unsigned int len;		/* real instrument data length (without header) */
 	snd_seq_instr_data_t data;	/* instrument data */
 } snd_seq_instr_get_result_t;
 
@@ -960,12 +938,10 @@ typedef struct {
 #define SND_SEQ_IOCTL_SET_QUEUE_OWNER	_IOW ('S', 0x44, snd_seq_queue_owner_t)
 #define SND_SEQ_IOCTL_GET_QUEUE_TIMER   _IOWR('S', 0x45, snd_seq_queue_timer_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_TIMER	_IOW ('S', 0x46, snd_seq_queue_timer_t)
-
-#ifdef use_seqsync
-#define SND_SEQ_IOCTL_GET_QUEUE_SYNC	_IOWR('S', 0x47, snd_seq_queue_sync_t)
-#define SND_SEQ_IOCTL_SET_QUEUE_SYNC	_IOW ('S', 0x48, snd_seq_queue_sync_t)
-#endif
-
+/* XXX
+#define SND_SEQ_IOCTL_GET_QUEUE_SYNC	_IOWR('S', 0x53, snd_seq_queue_sync_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_SYNC	_IOW ('S', 0x54, snd_seq_queue_sync_t)
+*/
 #define SND_SEQ_IOCTL_GET_QUEUE_CLIENT	_IOWR('S', 0x49, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
