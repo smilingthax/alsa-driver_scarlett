@@ -721,7 +721,8 @@ typedef struct _snd_pcm_dig_params {
 #define SND_PCM_HW_PARAM_RATE		4
 #define SND_PCM_HW_PARAM_FRAGMENT_SIZE	5
 #define SND_PCM_HW_PARAM_FRAGMENTS	6
-#define SND_PCM_HW_PARAM_LAST		6
+#define SND_PCM_HW_PARAM_BUFFER_SIZE	7
+#define SND_PCM_HW_PARAM_LAST		7
 
 #define SND_PCM_HW_PARBIT_ACCESS	(1<<SND_PCM_HW_PARAM_ACCESS)
 #define SND_PCM_HW_PARBIT_FORMAT	(1<<SND_PCM_HW_PARAM_FORMAT)
@@ -730,6 +731,7 @@ typedef struct _snd_pcm_dig_params {
 #define SND_PCM_HW_PARBIT_RATE		(1<<SND_PCM_HW_PARAM_RATE)
 #define SND_PCM_HW_PARBIT_FRAGMENT_SIZE (1<<SND_PCM_HW_PARAM_FRAGMENT_SIZE)
 #define SND_PCM_HW_PARBIT_FRAGMENTS	(1<<SND_PCM_HW_PARAM_FRAGMENTS)
+#define SND_PCM_HW_PARBIT_BUFFER_SIZE	(1<<SND_PCM_HW_PARAM_BUFFER_SIZE)
 
 typedef struct _snd_pcm_hw_info {
 	unsigned int access_mask;	/* RW: access mask */
@@ -743,6 +745,8 @@ typedef struct _snd_pcm_hw_info {
 	size_t fragment_size_max;	/* RW: max fragment size */
 	unsigned int fragments_min;	/* RW: min fragments */
 	unsigned int fragments_max;	/* RW: max fragments */
+	size_t buffer_size_min;		/* RW: min buffer size */
+	size_t buffer_size_max;		/* RW: max buffer size */
 	/* The following fields are filled only when applicable to 
 	   all params combinations */
 	unsigned int info;		/* R: Info for returned setup */

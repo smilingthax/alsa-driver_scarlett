@@ -367,10 +367,11 @@ extern int snd_pcm_hw_info_rate_list(snd_pcm_hw_info_t *info, unsigned int count
 extern int snd_pcm_hw_info_fragment_size_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
 extern int snd_pcm_hw_info_fragments_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
 extern int snd_pcm_hw_info_rate_clocks(snd_pcm_hw_info_t *info, unsigned int clocks_count, snd_pcm_clock_t *clocks);
-extern int snd_pcm_hw_info_max_buffer_bytes(snd_pcm_hw_info_t *info, 
+extern int snd_pcm_hw_info_buffer_bytes_max(snd_pcm_hw_info_t *info, 
 					    size_t max_buffer_bytes);
-extern int snd_pcm_hw_info_max_buffer_size(snd_pcm_hw_info_t *info, 
+extern int snd_pcm_hw_info_buffer_size_max(snd_pcm_hw_info_t *info,
 					   size_t max_buffer_size);
+extern int snd_pcm_hw_info_buffer_size(snd_pcm_hw_info_t *info);
 
 extern int snd_pcm_format_signed(int format);
 extern int snd_pcm_format_unsigned(int format);
