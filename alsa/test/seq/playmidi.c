@@ -55,7 +55,7 @@ extern void alsa_stop_timer(void);
 
 static inline double tick2time_dbl(int tick)
 {
-	return local_secs + ((double) (tick - local_ticks) * (double) local_tempo * 1.0E-6 / (double) ppq);
+	return local_secs + ((double) (tick - local_ticks) * (double) local_tempo * 1.0E-9 / (double) ppq);
 }
 
 #ifdef USE_REALTIME
@@ -65,10 +65,10 @@ static void tick2time(snd_seq_real_time_t * tm, int tick)
 
 	//double secs = ((double) tick * (double) local_tempo * 1.0E-6 / (double) ppq);
 
-	tm->sec = secs;
-	tm->nsec = (secs - tm->sec) * 1.0E9;
+	tm->tv_sec = secs;
+	tm->tv_nsec = (secs - tm->tv_sec) * 1.0E9;
 
-	//printf("secs = %lf  = %d.%03d\n", secs, tm->sec, tm->nsec);
+	//printf("secs = %lf  = %d.%09d\n", secs, tm->tv_sec, tm->tv_nsec);
 }
 
 #endif
@@ -488,8 +488,8 @@ void alsa_start_timer(void)
 	ev.dest.channel = 0;	/* don't care */
 
 	ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_REL;
-	ev.time.real.sec = 0;
-	ev.time.real.nsec = 0;
+	ev.time.real.tv_sec = 0;
+	ev.time.real.tv_nsec = 0;
 
 	ev.type = SND_SEQ_EVENT_START;
 
@@ -585,8 +585,8 @@ int main(int argc, char *argv[])
 		ev.dest.channel = 0;	/* don't care */
 
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_REL;
-		ev.time.real.sec = 0;
-		ev.time.real.nsec = 0;
+		ev.time.real.tv_sec = 0;
+		ev.time.real.tv_nsec = 0;
 
 		ev.type = SND_SEQ_EVENT_STOP;
 

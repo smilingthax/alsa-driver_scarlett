@@ -46,8 +46,8 @@ static int event_input(snd_seq_event_t * ev, void *private_data)
 	ev->dest.client += 1;
 	/*... after 2 seconds */
 	ev->flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_REL;
-	ev->time.real.sec = 2;
-	ev->time.real.nsec = 0;
+	ev->time.real.tv_sec = 2;
+	ev->time.real.tv_nsec = 0;
 
 	snd_seq_kernel_client_enqueue(client, ev);
 

@@ -97,7 +97,8 @@ void main(void)
 
 		mvprintw(5, 5, "Queue  : %d   ", queue_info.queue);
 		mvprintw(6, 5, "State  : %s", queue_info.running ? "Running" : "Stopped");
-		mvprintw(7, 5, "Time   : %d.%09d s          ", queue_info.time.sec, queue_info.time.nsec);
+		mvprintw(7, 5, "Time   : %d.%09d s          ", 
+			queue_info.time.tv_sec, queue_info.time.tv_nsec);
 		mvprintw(8, 5, "Tick   : %d        ", queue_info.tick);
 
 		mvprintw(10, 5, "PPQ    : %d ticks/beat        ", queue_info.ppq);

@@ -59,8 +59,8 @@ static void snd_seq_midi_setheader(snd_seq_event_t * ev, int port, int channel)
 	ev->dest.channel = channel;
 
 	ev->flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_REL;
-	ev->time.real.sec = 0;
-	ev->time.real.nsec = 0;
+	ev->time.real.tv_sec = 0;
+	ev->time.real.tv_nsec = 0;
 
 #ifdef TEST
 	ev->dest.queue = 0;
@@ -403,8 +403,8 @@ static int event_process_midi(snd_seq_event_t * ev, void *private_data)
 					ev->time.tick = ev->data.note.duration;
 					break;
 				case SND_SEQ_TIME_STAMP_REAL:
-					ev->time.real.sec = ev->data.note.duration / 1000;	/* unit for duration is ms */
-					ev->time.real.nsec = 1E6 * (ev->data.note.duration % 1000);
+					ev->time.real.tv_sec = ev->data.note.duration / 1000;	/* unit for duration is ms */
+					ev->time.real.tv_nsec = 1E6 * (ev->data.note.duration % 1000);
 					break;
 			}
 			ev->flags = (ev->flags & ~SND_SEQ_TIME_MODE_MASK) | SND_SEQ_TIME_MODE_REL;

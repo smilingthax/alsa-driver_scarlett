@@ -84,13 +84,13 @@ void main(void)
 
 #if 0
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_ABS;
-		ev.time.real.sec = 4;
-		ev.time.real.nsec = 1;
+		ev.time.real.tv_sec = 4;
+		ev.time.real.tv_nsec = 1;
 #endif
 
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_REL;
-		ev.time.real.sec = 0;
-		ev.time.real.nsec = 0;
+		ev.time.real.tv_sec = 0;
+		ev.time.real.tv_nsec = 0;
 		ev.type = SND_SEQ_EVENT_START;
 
 		written = write(f, &ev, sizeof(ev));
@@ -98,8 +98,8 @@ void main(void)
 
 
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_ABS;
-		ev.time.real.sec = 2;
-		ev.time.real.nsec = 0;
+		ev.time.real.tv_sec = 2;
+		ev.time.real.tv_nsec = 0;
 
 		ev.type = SND_SEQ_EVENT_NOTEON;
 		ev.data.note.note = 60;
@@ -110,8 +110,8 @@ void main(void)
 
 
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_ABS;
-		ev.time.real.sec = 6;
-		ev.time.real.nsec = 0;
+		ev.time.real.tv_sec = 6;
+		ev.time.real.tv_nsec = 0;
 
 		ev.type = SND_SEQ_EVENT_NOTEOFF;
 		ev.data.note.note = 60;
@@ -123,8 +123,8 @@ void main(void)
 
 
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_ABS;
-		ev.time.real.sec = 10;
-		ev.time.real.nsec = 0;
+		ev.time.real.tv_sec = 10;
+		ev.time.real.tv_nsec = 0;
 		ev.type = SND_SEQ_EVENT_STOP;
 		
 		written = write(f, &ev, sizeof(ev));
@@ -133,8 +133,8 @@ void main(void)
 		
 
 		ev.flags = SND_SEQ_TIME_STAMP_REAL | SND_SEQ_TIME_MODE_ABS;
-		ev.time.real.sec = 1;
-		ev.time.real.nsec = 0;
+		ev.time.real.tv_sec = 1;
+		ev.time.real.tv_nsec = 0;
 		ev.type = SND_SEQ_EVENT_CLOCK;
 		
 		written = write(f, &ev, sizeof(ev));

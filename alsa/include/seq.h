@@ -21,6 +21,7 @@
 #ifndef __SND_SEQ_H
 #define __SND_SEQ_H
 
+#include <sys/time.h>
 #include <linux/ioctl.h>
 
 /* version of the sequencer */
@@ -159,8 +160,8 @@ typedef struct {
 
 
 typedef struct {
-	int	sec;		/* seconds */
-	int	nsec;		/* nanoseconds */
+	time_t	tv_sec;		/* seconds */
+	long	tv_nsec;	/* nanoseconds */
 } snd_seq_real_time_t;
 
 typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */

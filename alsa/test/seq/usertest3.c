@@ -42,8 +42,8 @@ int decode_event(snd_seq_event_t * ev)
 			break;
 		case SND_SEQ_TIME_STAMP_REAL:
 			printf("Time   = %d.%09d\n",
-			       ev->time.real.sec,
-			       ev->time.real.nsec);
+			       (int)ev->time.real.tv_sec,
+			       (int)ev->time.real.tv_nsec);
 			break;
 	}
 	printf("Source = %d.%d.%d.%d\n",
