@@ -93,6 +93,7 @@
 #define SND_SEQ_EVENT_SAMPLE_VOLUME	85	/* volume and balance */
 #define SND_SEQ_EVENT_SAMPLE_LOOP	86	/* sample loop */
 #define SND_SEQ_EVENT_SAMPLE_POSITION	87	/* sample position */
+#define SND_SEQ_EVENT_SAMPLE_PRIVATE1	88	/* private (hardware dependent) event */
 
 	/* instrument layer */
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
@@ -203,6 +204,7 @@ typedef struct {
 
 	/* sample number */
 typedef struct {
+	unsigned int std;
 	unsigned short bank;
 	unsigned short prg;
 } snd_seq_ev_sample;
@@ -210,7 +212,6 @@ typedef struct {
 	/* sample cluster */
 typedef struct {
 	snd_seq_instr_cluster_t cluster;
-	int private_sample: 1;
 } snd_seq_ev_cluster;
 
 	/* sample position */
@@ -219,7 +220,8 @@ typedef unsigned int snd_seq_position_t; /* playback position (in samples) * 16 
 	/* sample stop mode */
 typedef enum {
 	SAMPLE_STOP_IMMEDIATELY = 0,	/* terminate playing immediately */
-	SAMPLE_STOP_LOOP = 1		/* terminate loop and finish wave */
+	SAMPLE_STOP_VENVELOPE = 1,	/* finish volume envelope */
+	SAMPLE_STOP_LOOP = 2		/* terminate loop and finish wave */
 } snd_seq_stop_mode_t;
 
 	/* sample frequency */
@@ -227,15 +229,15 @@ typedef int snd_seq_frequency_t; /* playback frequency in HZ * 16 */
 
 	/* sample volume control; if any value is set to -1 == do not change */
 typedef struct {
-	signed short volume;	/* range: 0-16384 */
-	signed short lr;	/* left-right balance; range: 0-16384 */
-	signed short fr;	/* front-rear balance; range: 0-16384 */
-	signed short du;	/* down-up balance; range: 0-16384 */
+	signed short volume;	/* range: 0-16383 */
+	signed short lr;	/* left-right balance; range: 0-16383 */
+	signed short fr;	/* front-rear balance; range: 0-16383 */
+	signed short du;	/* down-up balance; range: 0-16383 */
 } snd_seq_ev_volume;
 
 	/* simple loop redefinition */
 typedef struct {
-	unsigned int begin;	/* loop begin (in samples) * 16 */
+	unsigned int start;	/* loop start (in samples) * 16 */
 	unsigned int end;	/* loop end (in samples) * 16 */
 } snd_seq_ev_loop;
 

@@ -42,6 +42,7 @@ typedef struct snd_stru_seq_kinstr {
 	char name[32];
 	int type;			/* instrument type */
 	int use;			/* use count */
+	int busy;			/* not useable */
 	int add_len;			/* additional length */
 	snd_seq_kinstr_ops_t *ops;	/* operations */
 	struct snd_stru_seq_kinstr *next;
@@ -69,6 +70,8 @@ typedef struct {
 	unsigned long ops_flags;
 } snd_seq_kinstr_list_t;
 
+#define SND_SEQ_INSTR_NOTIFY_REMOVE	0
+#define SND_SEQ_INSTR_NOTIFY_CHANGE	1
 
 struct snd_seq_kinstr_ops {
 	void *private_data;
@@ -80,6 +83,7 @@ struct snd_seq_kinstr_ops {
 		   char *instr_data, long len, int atomic, int cmd);
 	int (*get_size)(void *private_data, snd_seq_kinstr_t *kinstr, long *size);
 	int (*remove)(void *private_data, snd_seq_kinstr_t *kinstr, int atomic);
+	void (*notify)(void *private_data, snd_seq_kinstr_t *kinstr, int what);
 	struct snd_seq_kinstr_ops *next;
 };
 
@@ -95,6 +99,8 @@ snd_seq_kinstr_t *snd_seq_instr_find(snd_seq_kinstr_list_t *list,
 				     snd_seq_instr_t *instr,
 				     int exact,
 				     int follow_alias);
+void snd_seq_instr_free_use(snd_seq_kinstr_list_t *list,
+			    snd_seq_kinstr_t *instr);
 int snd_seq_instr_event(snd_seq_kinstr_ops_t *ops,
 			snd_seq_kinstr_list_t *list,
 			snd_seq_event_t *ev,

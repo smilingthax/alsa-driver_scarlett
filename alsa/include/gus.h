@@ -148,7 +148,7 @@
 /* ramp ranges */
 
 #define SND_GF1_ATTEN(x)	(snd_gf1_atten_table[x])
-#define SND_GF1_VOLUME(x)	(snd_gf1_atten_table[x] << 1)
+#define SND_GF1_VOLUME(x)	(((snd_gf1_atten_table[(SND_GF1_ATTEN_TABLE_SIZE-1)-(x)])<<1) & 0x0fff)
 #define SND_GF1_MIN_VOLUME	1800
 #define SND_GF1_MAX_VOLUME	4095
 #define SND_GF1_MIN_OFFSET	(SND_GF1_MIN_VOLUME>>4)
@@ -235,18 +235,50 @@ typedef struct {
 	snd_gus_card_t * gus;
 	int mode;		/* operation mode */
 	int client;		/* sequencer client number */
+	int port;		/* sequencer port number */
+	int midi_has_voices: 1;
 } snd_gus_port_t;
+
+typedef struct snd_gus_stru_voice snd_gus_voice_t;
+
+typedef struct {
+	void (*sample_start)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_position_t position);
+	void (*sample_stop)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_stop_mode_t mode);
+	void (*sample_freq)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_frequency_t freq);
+	void (*sample_volume)(snd_gus_card_t *gus, snd_gus_voice_t *voice, snd_seq_ev_volume *volume);
+	void (*sample_loop)(snd_gus_card_t *card, snd_gus_voice_t *voice, snd_seq_ev_loop *loop);
+	void (*sample_pos)(snd_gus_card_t *card, snd_gus_voice_t *voice, snd_seq_position_t position);
+	void (*sample_private1)(snd_gus_card_t *card, snd_gus_voice_t *voice, unsigned char *data);
+} snd_gus_sample_ops_t;
 
 #define SND_GF1_VOICE_TYPE_PCM		0
 #define SND_GF1_VOICE_TYPE_SYNTH 	1
 #define SND_GF1_VOICE_TYPE_MIDI		2
 
-typedef struct snd_gus_stru_voice snd_gus_voice_t;
+#define SND_GF1_VFLG_RUNNING		(1<<0)
+#define SND_GF1_VFLG_EFFECT_TIMER1	(1<<1)
+#define SND_GF1_VFLG_PAN		(1<<2)
+
+typedef enum {
+	VENV_BEFORE,
+	VENV_ATTACK,
+	VENV_SUSTAIN,
+	VENV_RELEASE,
+	VENV_DONE,
+	VENV_VOLUME
+} snd_gus_volume_state_t;
 
 struct snd_gus_stru_voice {
 	int number;
 	int use: 1,
-	    pcm: 1;
+	    pcm: 1,
+	    synth:1,
+	    midi: 1;
+	unsigned int flags;
+	unsigned char client;
+	unsigned char port;
+	unsigned char index;
+	unsigned char pad;
 	
 #ifdef CONFIG_SND_INTERRUPTS_PROFILE
 	unsigned int interrupt_stat_wave;
@@ -254,7 +286,33 @@ struct snd_gus_stru_voice {
 #endif
 	void (*handler_wave) (snd_gus_card_t * gus, snd_gus_voice_t * voice);
 	void (*handler_volume) (snd_gus_card_t * gus, snd_gus_voice_t * voice);
+	void (*handler_effect) (snd_gus_card_t * gus, snd_gus_voice_t * voice);
 	void (*volume_change) (snd_gus_card_t * gus);
+
+	snd_gus_sample_ops_t *sample_ops;
+
+	snd_seq_instr_t instr;
+
+	/* running status / registers */
+
+	snd_seq_ev_volume sample_volume;
+
+	unsigned short fc_register;
+	unsigned short fc_lfo;
+	unsigned short gf1_volume;
+	unsigned char control;
+	unsigned char mode;
+	unsigned char gf1_pan;
+	unsigned char effect_accumulator;
+	unsigned char volume_control;
+	unsigned char venv_value_next;
+	snd_gus_volume_state_t venv_state;
+	snd_gus_volume_state_t venv_state_prev;
+	unsigned short vlo;
+	unsigned short vro;
+	unsigned short gf1_effect_volume;
+	
+	/* --- */
 
 	void *private_data;
 	void (*private_free)(void *private_data);
@@ -301,6 +359,10 @@ struct snd_stru_gf1 {
 
 	unsigned short playback_freq;	/* GF1 playback (mixing) frequency */
 	unsigned short mode;		/* see to SND_GF1_MODE_XXXX */
+	unsigned char volume_ramp;
+	unsigned char smooth_pan;
+	unsigned char full_range_pan;
+	unsigned char pad0;
 
 	unsigned char *lfos;
 
@@ -393,6 +455,7 @@ struct snd_stru_gus_card {
 	spinlock_t reg_lock;
 	spinlock_t voice_alloc;
 	spinlock_t active_voice_lock;
+	spinlock_t event_lock;
 	spinlock_t playback_lock;
 	spinlock_t dma_lock;
 	spinlock_t pcm_volume_level_lock;
@@ -560,7 +623,7 @@ void snd_gf1_smart_stop_voice(snd_gus_card_t * gus, unsigned short voice);
 void snd_gf1_stop_voice(snd_gus_card_t * gus, unsigned short voice);
 void snd_gf1_clear_voices(snd_gus_card_t * gus, unsigned short v_min, unsigned short v_max);
 void snd_gf1_stop_voices(snd_gus_card_t * gus, unsigned short v_min, unsigned short v_max);
-snd_gus_voice_t *snd_gf1_alloc_voice(snd_gus_card_t * gus, int type);
+snd_gus_voice_t *snd_gf1_alloc_voice(snd_gus_card_t * gus, int type, int client, int port);
 void snd_gf1_free_voice(snd_gus_card_t * gus, snd_gus_voice_t *voice);
 int snd_gf1_start(snd_gus_card_t * gus);
 int snd_gf1_stop(snd_gus_card_t * gus);
@@ -600,10 +663,6 @@ int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
 void snd_gus_init_control(snd_gus_card_t * gus);
-#ifdef CONFIG_SND_SEQUENCER
-int snd_gus_attach_synthesizer(snd_gus_card_t * gus);
-int snd_gus_detach_synthesizer(snd_gus_card_t * gus);
-#endif
 int snd_gus_check_version(snd_gus_card_t * gus);
 
 /* gus_irq.c */
@@ -622,8 +681,25 @@ extern void snd_engine_instrument_register(unsigned short mode,
 extern int snd_engine_instrument_register_ask(unsigned short mode);
 #endif
 
-/* gus_intr.c */
+/* gus_dram.c */
+int snd_gus_dram_write(snd_gus_card_t *gus, char *ptr,
+		       unsigned int addr, unsigned int size);
+int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,
+		      unsigned int addr, unsigned int size, int rom);
+
 #ifdef CONFIG_SND_SEQUENCER
+
+/* gus_synth.c */
+int snd_gus_attach_synthesizer(snd_gus_card_t * gus);
+int snd_gus_detach_synthesizer(snd_gus_card_t * gus);
+
+/* gus_sample.c */
+void snd_gus_sample_event(snd_seq_event_t *ev, snd_gus_port_t *p);
+
+/* gus_simple.c */
+void snd_gf1_simple_init(snd_gus_voice_t *voice);
+
+/* gus_instr.c */
 int snd_gus_iwffff_put_sample(void *private_data, iwffff_wave_t *wave,
 			      char *data, long len, int atomic);
 int snd_gus_iwffff_get_sample(void *private_data, iwffff_wave_t *wave,
@@ -642,12 +718,7 @@ int snd_gus_simple_get_sample(void *private_data, simple_instrument_t *instr,
 			      char *data, long len, int atomic);
 int snd_gus_simple_remove_sample(void *private_data, simple_instrument_t *instr,
 				 int atomic);
-#endif
 
-/* gus_dram.c */
-int snd_gus_dram_write(snd_gus_card_t *gus, char *ptr,
-		       unsigned int addr, unsigned int size);
-int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,
-		      unsigned int addr, unsigned int size, int rom);
+#endif				/* CONFIG_SND_SEQUENCER */
 
 #endif				/* __GUS_H */

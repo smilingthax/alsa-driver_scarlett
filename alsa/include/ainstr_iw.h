@@ -47,6 +47,7 @@
 #define IWFFFF_WAVE_ULAW		0x0020  /* uLaw compressed wave */
 #define IWFFFF_WAVE_RAM			0x0040  /* wave is _preloaded_ in RAM (it is used for ROM simulation) */
 #define IWFFFF_WAVE_ROM			0x0080  /* wave is in ROM */
+#define IWFFFF_WAVE_STEREO		0x0100	/* wave is stereo */
 
 /*
  *  Wavetable definitions
@@ -62,10 +63,10 @@ typedef struct iwffff_wave {
 		unsigned char *ptr;	/* pointer to waveform in system memory */
 	} address;
 
-	unsigned int size;		/* size of waveform in bytes */
-	unsigned int start;		/* start offset in bytes * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_start;	/* bits loop start offset in bytes * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_end;		/* loop start offset in bytes * 16 (lowest 4 bits - fraction) */
+	unsigned int size;		/* size of waveform in samples */
+	unsigned int start;		/* start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_start;	/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_end;		/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
 	unsigned short loop_repeat;	/* loop repeat - 0 = forever */
 	unsigned int sample_ratio;	/* sample ratio (44100 * 1024 / rate) */
 	unsigned char attenuation;	/* 0 - 127 (no corresponding midi controller) */
@@ -222,10 +223,10 @@ typedef struct iwffff_xwave {
 	__u32 format;			/* wave format */
 	__u32 offset;			/* offset to ROM (address) */
 
-	__u32 size;			/* size of waveform in bytes */
-	__u32 start;			/* start offset in bytes * 16 (lowest 4 bits - fraction) */
-	__u32 loop_start;		/* bits loop start offset in bytes * 16 (lowest 4 bits - fraction) */
-	__u32 loop_end;			/* loop start offset in bytes * 16 (lowest 4 bits - fraction) */
+	__u32 size;			/* size of waveform in samples */
+	__u32 start;			/* start offset in samples * 16 (lowest 4 bits - fraction) */
+	__u32 loop_start;		/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	__u32 loop_end;			/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
 	__u16 loop_repeat;		/* loop repeat - 0 = forever */
 	__u32 sample_ratio;		/* sample ratio (44100 * 1024 / rate) */
 	__u8 attenuation;		/* 0 - 127 (no corresponding midi controller) */
@@ -332,6 +333,8 @@ typedef struct {
 
 #include <seq_instr.h>
 
+extern char *snd_seq_iwffff_id;
+
 typedef struct {
 	void *private_data;
 	int (*put_sample)(void *private_data, iwffff_wave_t *wave,
@@ -340,6 +343,7 @@ typedef struct {
 			  char *data, long len, int atomic);
 	int (*remove_sample)(void *private_data, iwffff_wave_t *wave,
 			     int atomic);
+	void (*notify)(void *private_data, snd_seq_kinstr_t *instr, int what);
 	snd_seq_kinstr_ops_t kops;
 } snd_iwffff_ops_t;
 

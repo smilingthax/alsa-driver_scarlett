@@ -44,6 +44,8 @@
 #define SIMPLE_WAVE_BACKWARD		0x0004  /* backward mode (maybe used for reverb or ping-ping loop) */
 #define SIMPLE_WAVE_LOOP		0x0008  /* loop mode */
 #define SIMPLE_WAVE_BIDIR		0x0010  /* bidirectional mode */
+#define SIMPLE_WAVE_STEREO		0x0100	/* stereo wave */
+#define SIMPLE_WAVE_ULAW		0x0200	/* uLaw compression mode */
 
 /*
  *  Instrument
@@ -64,10 +66,10 @@ typedef struct {
 		unsigned char *ptr;	/* pointer to waveform in system memory */
 	} address;
 
-	unsigned int size;		/* size of waveform in bytes */
-	unsigned int start;		/* start offset in bytes * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_start;	/* bits loop start offset in bytes * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_end;		/* loop start offset in bytes * 16 (lowest 4 bits - fraction) */
+	unsigned int size;		/* size of waveform in samples */
+	unsigned int start;		/* start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_start;	/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_end;		/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
 	unsigned short loop_repeat;	/* loop repeat - 0 = forever */
 
 	unsigned char effect1;		/* effect 1 */
@@ -100,10 +102,10 @@ typedef struct simple_xinstrument {
 	__u32 share_id[4];		/* share id - zero = no sharing */
 	__u32 format;			/* wave format */
 
-	__u32 size;			/* size of waveform in bytes */
-	__u32 start;			/* start offset in bytes * 16 (lowest 4 bits - fraction) */
-	__u32 loop_start;		/* bits loop start offset in bytes * 16 (lowest 4 bits - fraction) */
-	__u32 loop_end;			/* loop start offset in bytes * 16 (lowest 4 bits - fraction) */
+	__u32 size;			/* size of waveform in samples */
+	__u32 start;			/* start offset in samples * 16 (lowest 4 bits - fraction) */
+	__u32 loop_start;		/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	__u32 loop_end;			/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
 	__u16 loop_repeat;		/* loop repeat - 0 = forever */
 	
 	__u8 effect1;			/* effect 1 */
@@ -116,6 +118,8 @@ typedef struct simple_xinstrument {
 
 #include <seq_instr.h>
 
+extern char *snd_seq_simple_id;
+
 typedef struct {
 	void *private_data;
 	int (*put_sample)(void *private_data, simple_instrument_t *instr,
@@ -124,6 +128,7 @@ typedef struct {
 			  char *data, long len, int atomic);
 	int (*remove_sample)(void *private_data, simple_instrument_t *instr,
 			     int atomic);
+	void (*notify)(void *private_data, snd_seq_kinstr_t *instr, int what);
 	snd_seq_kinstr_ops_t kops;
 } snd_simple_ops_t;
 

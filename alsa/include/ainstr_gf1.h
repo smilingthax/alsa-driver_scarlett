@@ -44,6 +44,8 @@
 #define GF1_WAVE_BACKWARD		0x0004  /* backward mode (maybe used for reverb or ping-ping loop) */
 #define GF1_WAVE_LOOP			0x0008  /* loop mode */
 #define GF1_WAVE_BIDIR			0x0010  /* bidirectional mode */
+#define GF1_WAVE_STEREO			0x0100	/* stereo mode */
+#define GF1_WAVE_ULAW			0x0200	/* uLaw compression mode */
 
 /*
  *  Wavetable definitions
@@ -59,10 +61,10 @@ typedef struct gf1_wave {
 		unsigned char *ptr;	/* pointer to waveform in system memory */
 	} address;
 
-	unsigned int size;		/* size of waveform in bytes */
-	unsigned int start;		/* start offset in bytes * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_start;	/* bits loop start offset in bytes * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_end;		/* loop start offset in bytes * 16 (lowest 4 bits - fraction) */
+	unsigned int size;		/* size of waveform in samples */
+	unsigned int start;		/* start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_start;	/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_end;		/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
 	unsigned short loop_repeat;	/* loop repeat - 0 = forever */
 
 	unsigned char flags;		/* GF1 patch flags */
@@ -138,10 +140,10 @@ typedef struct gf1_xwave {
 	__u32 share_id[4];		/* share id - zero = no sharing */
 	__u32 format;			/* wave format */
 
-	__u32 size;			/* size of waveform in bytes */
-	__u32 start;			/* start offset in bytes * 16 (lowest 4 bits - fraction) */
-	__u32 loop_start;		/* bits loop start offset in bytes * 16 (lowest 4 bits - fraction) */
-	__u32 loop_end;			/* loop start offset in bytes * 16 (lowest 4 bits - fraction) */
+	__u32 size;			/* size of waveform in samples */
+	__u32 start;			/* start offset in samples * 16 (lowest 4 bits - fraction) */
+	__u32 loop_start;		/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	__u32 loop_end;			/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
 	__u16 loop_repeat;		/* loop repeat - 0 = forever */
 
 	__u8 flags;			/* GF1 patch flags */
@@ -184,6 +186,8 @@ typedef struct gf1_xinstrument {
 
 #include <seq_instr.h>
 
+extern char *snd_seq_gf1_id;
+
 typedef struct {
 	void *private_data;
 	int (*put_sample)(void *private_data, gf1_wave_t *wave,
@@ -192,6 +196,7 @@ typedef struct {
 			  char *data, long len, int atomic);
 	int (*remove_sample)(void *private_data, gf1_wave_t *wave,
 			     int atomic);
+	void (*notify)(void *private_data, snd_seq_kinstr_t *instr, int what);
 	snd_seq_kinstr_ops_t kops;
 } snd_gf1_ops_t;
 
