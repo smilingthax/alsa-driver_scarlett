@@ -1292,7 +1292,7 @@ typedef struct snd_pcm_channel_info {
 	unsigned int rates;		/* hardware rates */
 	int min_rate;			/* min rate (in Hz) */
 	int max_rate;			/* max rate (in Hz) */
-	int min_voices;			/* min voices (probably always 1) */
+	int min_voices;			/* min voices */
 	int max_voices;			/* max voices */
 	int buffer_size;		/* max buffer size in bytes */
 	int min_fragment_size;		/* min fragment size in bytes */
