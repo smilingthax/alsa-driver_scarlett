@@ -264,9 +264,28 @@
 
 typedef struct snd_stru_emu10k1 emu10k1_t;
 typedef struct snd_stru_emu10k1_voice emu10k1_voice_t;
+typedef struct snd_stru_emu10k1_pcm emu10k1_pcm_t;
+
+typedef enum {
+	EMU10K1_PCM,
+	EMU10K1_SYNTH,
+	EMU10K1_MIDI
+} emu10k1_voice_type_t;
 
 struct snd_stru_emu10k1_voice {
+	emu10k1_t *emu;
+	int number;
+	int use: 1,
+	    pcm: 1,
+	    synth: 1,
+	    midi: 1;
 	void (*interrupt)(emu10k1_t *emu, emu10k1_voice_t *pvoice);
+};
+
+struct snd_stru_emu10k1_pcm {
+	emu10k1_t *emu;
+	snd_pcm_subchn_t *subchn;
+	emu10k1_voice_t *voices[2];
 };
 
 struct snd_stru_emu10k1 {
@@ -350,6 +369,10 @@ int snd_emu10k1_ptb_alloc(emu10k1_t *emu, void *pages, unsigned long size);
 int snd_emu10k1_ptb_free(emu10k1_t *emu, void *obj, unsigned long *size);
 void *snd_emu10k1_synth_malloc(emu10k1_t *emu, unsigned long size);
 void snd_emu10k1_synth_free(emu10k1_t *emu, void *obj);
+
+/* voice allocation */
+int snd_emu10k1_voice_alloc(emu10k1_t *emu, emu10k1_voice_type_t type, int pair, emu10k1_voice_t **rvoice);
+int snd_emu10k1_voice_free(emu10k1_t *emu, emu10k1_voice_t *pvoice);
 
 /* MIDI uart */
 int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);

@@ -225,18 +225,18 @@ typedef struct snd_stru_vma {
 } snd_vma_t;
 
 typedef enum {
-	MIXER = 0,
-	PCM,
-	RAWMIDI,
-	TIMER,
-	SEQUENCER,
-	HWDEP,
-	LOWLEVEL
+	SND_DEV_MIXER = 0,
+	SND_DEV_PCM,
+	SND_DEV_RAWMIDI,
+	SND_DEV_TIMER,
+	SND_DEV_SEQUENCER,
+	SND_DEV_HWDEP,
+	SND_DEV_LOWLEVEL
 } snd_device_type_t;
 
 typedef enum {
-	BUILD = 0,
-	REGISTERED = 1
+	SND_DEV_BUILD = 0,
+	SND_DEV_REGISTERED = 1
 } snd_device_state_t;
 
 typedef struct snd_stru_card snd_card_t;
