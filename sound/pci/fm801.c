@@ -834,7 +834,7 @@ static void snd_fm801_mixer_free_ac97(ac97_t *ac97)
 	}
 }
 
-static int __init snd_fm801_mixer(fm801_t *chip)
+static int __devinit snd_fm801_mixer(fm801_t *chip)
 {
 	ac97_t ac97;
 	int err, i;
