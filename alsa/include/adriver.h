@@ -187,8 +187,8 @@ int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #define writeq(v, a) do { __writeq((v),(a)); mb(); } while(0)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 28)
 #include <linux/interrupt.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 28)
 static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq(); }
 #undef synchronize_irq
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
@@ -383,6 +383,10 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 }
 #undef vmap
 #define vmap snd_compat_vmap
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) /* correct version? */
+#define EXPORT_NO_SYMBOLS
 #endif
 
 #include "amagic.h"
