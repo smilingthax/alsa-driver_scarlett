@@ -125,6 +125,7 @@ typedef struct _snd_pcm_oss_runtime {
 	unsigned int maxfrags;
 	unsigned int subdivision;		/* requested subdivision */
 	size_t fragment_size;			/* requested fragment size */
+	unsigned int fragments;
 	size_t buffer_size;			/* requested fragment size */
 	size_t bytes;				/* total # bytes processed */
 	size_t mmap_buffer_size;
