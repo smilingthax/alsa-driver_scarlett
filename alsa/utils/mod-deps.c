@@ -1026,7 +1026,7 @@ static void output_acinclude(void)
 	}
 	printf("  if test -z \"$probed\"; then\n"
 	       "    AC_MSG_ERROR(Unknown option $card)\n"
-	       "  elif test \"$probed\" = \"0\"; then\n"
+	       "  elif test \"$probed\" = \"0\" -a \"$card\" != \"all\"; then\n"
 	       "    AC_MSG_ERROR(Unsupported option $card)\n"
 	       "  fi\n"
 	       "done\n\n");
