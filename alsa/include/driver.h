@@ -110,6 +110,7 @@
 #endif
 
 #ifdef SNDCFG_ISAPNP
+#define CONFIG_ISAPNP
 #include "isapnp.h"
 #endif
 
