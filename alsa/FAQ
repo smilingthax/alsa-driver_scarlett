@@ -35,4 +35,4 @@ A: Yes, you may change the default settings (which is auto) over the /proc
 
 Q: Noises in X-win?
 A: Try comment out line in your XF86Config file:
-   #Option "pci_retry"    # faster, but problematic for ISA DMA
+   #Option "pci_retry"    # faster, but problematic for ISA/PCI soundcards
