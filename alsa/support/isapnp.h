@@ -116,6 +116,13 @@ struct isapnp_resources {
 	struct isapnp_resources *next;	/* next resource */
 };
 
+struct isapnp_fixup {
+	unsigned short vendor;		/* matching vendor */
+	unsigned short device;		/* matching device */
+	void (*quirk_function)(struct isapnp_dev *dev);	/* fixup function */
+};
+                        
+
 #ifndef LINUX_VERSION_CODE
 #include <linux/version.h>
 #endif

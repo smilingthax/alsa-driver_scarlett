@@ -15,7 +15,7 @@ EXPORTS+= isapnp.o
 endif
 endif
 
-ISAPNP  = isapnp.o
+ISAPNP  = isapnp.o isapnp_proc.o isapnp_quirks.o
 
 include $(TOPDIR)/Rules.make
 

@@ -66,10 +66,6 @@
 #include "isapnp.h"
 #endif
 
-#ifdef CONFIG_PROC_FS
-#include "isapnp_proc.c"
-#endif
-
 #if 0
 #define ISAPNP_REGION_OK
 #endif
@@ -112,6 +108,10 @@ MODULE_PARM(isapnp_reserve_io, "1-16i");
 MODULE_PARM_DESC(isapnp_reserve_io, "ISA Plug & Play - reserve I/O region(s) - port,size");
 MODULE_PARM(isapnp_reserve_mem, "1-16i");
 MODULE_PARM_DESC(isapnp_reserve_mem, "ISA Plug & Play - reserve memory region(s) - address,size");
+
+int isapnp_proc_init(void);
+int isapnp_proc_done(void);
+void isapnp_fixup_device(struct isapnp_dev *dev);
 
 #define _PIDXR		0x279
 #define _PNPWRP		0xa79
@@ -216,7 +216,7 @@ void isapnp_write_dword(unsigned char idx, unsigned int val)
 	isapnp_write_byte(idx+3, val);
 }
 
-static void *isapnp_alloc(long size)
+void *isapnp_alloc(long size)
 {
 	void *result;
 
@@ -994,6 +994,7 @@ static int __init isapnp_build_device_list(void)
 	int csn;
 	unsigned char header[9], checksum;
 	struct isapnp_card *card, *prev = NULL;
+	struct isapnp_dev *dev;
 
 	isapnp_wait();
 	isapnp_key();
@@ -1026,6 +1027,8 @@ static int __init isapnp_build_device_list(void)
 			prev->next = card;
 		prev = card;
 	}
+	for (dev = isapnp_devices; dev != NULL; dev = dev->next)
+		isapnp_fixup_device(dev);
 	return 0;
 }
 

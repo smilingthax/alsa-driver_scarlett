@@ -19,7 +19,39 @@
  *
  */
 
-static void *isapnp_alloc(long size);
+#ifdef ALSA_BUILD
+#define MODULE
+#define CONFIG_ISAPNP
+#endif
+
+#define __NO_VERSION__
+
+#include <linux/config.h>
+#include <linux/module.h>
+
+#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
+
+#if LinuxVersionCode(2, 3, 29) <= LINUX_VERSION_CODE
+#define NEW_PROC
+#endif
+
+#ifdef ALSA_BUILD
+#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
+#define MODVERSIONS
+#include <linux/modversions.h>
+#include "include/sndversions.h"
+#endif
+#endif
+
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/proc_fs.h>
+#include <linux/poll.h>
+#include <linux/vmalloc.h>
+#include <asm/uaccess.h>
+#include "isapnp.h"
+
+void *isapnp_alloc(long size);
 struct isapnp_card *isapnp_cards;
 struct isapnp_dev *isapnp_devices;
 
@@ -35,7 +67,10 @@ struct isapnp_info_buffer {
 typedef struct isapnp_info_buffer isapnp_info_buffer_t;
 
 static struct proc_dir_entry *isapnp_proc_entry = NULL;
+static struct proc_dir_entry *isapnp_proc_bus_dir = NULL;
+static struct proc_dir_entry *isapnp_proc_devices_entry = NULL;
 
+static void isapnp_proc_read_devices(isapnp_info_buffer_t *buffer);
 static void isapnp_info_read(isapnp_info_buffer_t *buffer);
 static void isapnp_info_write(isapnp_info_buffer_t *buffer);
 
@@ -58,6 +93,18 @@ int isapnp_printf(isapnp_info_buffer_t * buffer, char *fmt,...)
 	buffer->curr += res;
 	buffer->size += res;
 	return res;
+}
+
+static void isapnp_devid(char *str, unsigned short vendor, unsigned short device)
+{
+	sprintf(str, "%c%c%c%x%x%x%x",
+			'A' + ((vendor >> 2) & 0x3f) - 1,
+			'A' + (((vendor & 3) << 3) | ((vendor >> 13) & 7)) - 1,
+			'A' + ((vendor >> 8) & 0x1f) - 1,
+			(device >> 4) & 0x0f,
+			device & 0x0f,
+			(device >> 12) & 0x0f,
+			(device >> 8) & 0x0f);
 }
 
 static loff_t isapnp_info_entry_lseek(struct file *file, loff_t offset, int orig)
@@ -132,6 +179,7 @@ static ssize_t isapnp_info_entry_write(struct file *file, const char *buffer,
 
 static int isapnp_info_entry_open(struct inode *inode, struct file *file)
 {
+	struct proc_dir_entry *dp = inode->u.generic_ip;
 	isapnp_info_buffer_t *buffer;
 	int mode;
 
@@ -151,8 +199,13 @@ static int isapnp_info_entry_open(struct inode *inode, struct file *file)
 	buffer->curr = buffer->buffer;
 	file->private_data = buffer;
 	MOD_INC_USE_COUNT;
-	if (mode == O_RDONLY)
-		isapnp_info_read(buffer);
+	if (mode == O_RDONLY) {
+		if (!strcmp(dp->name, "isapnp")) {
+			isapnp_info_read(buffer);
+		} else {
+			isapnp_proc_read_devices(buffer);
+		}
+	}
 	return 0;
 }
 
@@ -230,9 +283,164 @@ static struct inode_operations isapnp_info_entry_inode_operations =
 	NULL			/* permission */
 };
 
-__initfunc(static int isapnp_proc_init(void))
+static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
+{
+	loff_t new;
+	
+	switch (whence) {
+	case 0:
+		new = off;
+		break;
+	case 1:
+		new = file->f_pos + off;
+		break;
+	case 2:
+		new = 256 + off;
+		break;
+	default:
+		return -EINVAL;
+	}
+	if (new < 0 || new > 256)
+		return -EINVAL;
+	return (file->f_pos = new);
+}
+
+static ssize_t isapnp_proc_bus_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
+{
+	struct inode *ino = file->f_dentry->d_inode;
+	struct proc_dir_entry *dp = ino->u.generic_ip;
+	struct isapnp_dev *dev = dp->data;
+	int pos = *ppos;
+	int cnt, size = 256;
+
+	if (pos >= size)
+		return 0;
+	if (nbytes >= size)
+		nbytes = size;
+	if (pos + nbytes > size)
+		nbytes = size - pos;
+	cnt = nbytes;
+
+	if (!access_ok(VERIFY_WRITE, buf, cnt))
+		return -EINVAL;
+		
+	isapnp_cfg_begin(dev->bus->number, dev->devfn);
+	for ( ; pos < 256 && cnt > 0; pos++, buf++, cnt--) {
+		unsigned char val;
+		val = isapnp_read_byte(pos);
+		__put_user(val, buf);
+	}
+	isapnp_cfg_end();
+	
+	*ppos = pos;
+	return nbytes;
+}
+
+static struct file_operations isapnp_proc_bus_file_operations =
+{
+	isapnp_proc_bus_lseek,		/* lseek */
+	isapnp_proc_bus_read,		/* read */
+	NULL,				/* write */
+	NULL,				/* readdir */
+	NULL,				/* poll */
+	NULL,				/* ioctl - default */
+	NULL,				/* mmap */
+	NULL,				/* open */
+	NULL,				/* flush */
+	NULL,				/* release */
+	NULL,				/* can't fsync */
+	NULL,				/* fasync */
+	NULL,				/* lock */
+};
+
+static struct inode_operations isapnp_proc_bus_inode_operations =
+{
+	&isapnp_proc_bus_file_operations,
+};
+
+static int isapnp_proc_attach_device(struct isapnp_dev *dev)
+{
+	struct isapnp_card *bus = dev->bus;
+	struct proc_dir_entry *de, *e;
+	char name[16];
+
+	if (!(de = bus->procdir)) {
+		sprintf(name, "%02x", bus->number);
+		de = bus->procdir = create_proc_entry(name, S_IFDIR | S_IRUGO | S_IXUGO, isapnp_proc_bus_dir);
+		if (!de)
+			return -ENOMEM;
+	}
+	sprintf(name, "%02x", dev->devfn);
+	e = dev->procent = create_proc_entry(name, S_IFREG | S_IRUGO, de);
+	if (!e)
+		return -ENOMEM;
+	e->ops = &isapnp_proc_bus_inode_operations;
+	e->data = dev;
+	e->size = 256;
+	return 0;
+}
+
+#ifdef MODULE
+static int isapnp_proc_detach_device(struct isapnp_dev *dev)
+{
+	struct isapnp_card *bus = dev->bus;
+	struct proc_dir_entry *de;
+	char name[16];
+
+	if (!(de = bus->procdir))
+		return -EINVAL;
+	sprintf(name, "%02x", dev->devfn);
+	remove_proc_entry(name, de);
+	return 0;
+}
+
+static int isapnp_proc_detach_bus(struct isapnp_card *bus)
+{
+	struct proc_dir_entry *de;
+	char name[16];
+
+	if (!(de = bus->procdir))
+		return -EINVAL;
+	sprintf(name, "%02x", bus->number);
+	remove_proc_entry(name, isapnp_proc_bus_dir);
+	return 0;
+}
+#endif
+
+static void isapnp_proc_read_devices(isapnp_info_buffer_t *buffer)
+{
+	struct isapnp_dev *dev;
+	int i;
+
+	for (dev = isapnp_devices; dev != NULL; dev = dev->next) {
+		char bus_id[8], device_id[8];
+	
+		isapnp_devid(bus_id, dev->bus->vendor, dev->bus->device);
+		isapnp_devid(device_id, dev->vendor, dev->device);
+		isapnp_printf(buffer, "%02x%02x\t%s%s\t",
+			      dev->bus->number,
+			      dev->devfn,
+			      bus_id,
+			      device_id);
+		isapnp_cfg_begin(dev->bus->number, dev->devfn);
+		isapnp_printf(buffer, "%02x", isapnp_read_byte(ISAPNP_CFG_ACTIVATE));
+		for (i = 0; i < 8; i++)
+			isapnp_printf(buffer, "%04x", isapnp_read_word(ISAPNP_CFG_PORT + (i << 1)));
+		for (i = 0; i < 2; i++)
+			isapnp_printf(buffer, "%04x", isapnp_read_word(ISAPNP_CFG_IRQ + (i << 1)));
+		for (i = 0; i < 2; i++)
+			isapnp_printf(buffer, "%04x", isapnp_read_word(ISAPNP_CFG_DMA + i));
+		for (i = 0; i < 4; i++)
+			isapnp_printf(buffer, "%08x", isapnp_read_dword(ISAPNP_CFG_MEM + (i << 3)));
+		isapnp_cfg_end();
+		isapnp_printf(buffer, "\n");
+	}
+}
+
+int isapnp_proc_init(void)
 {
 	struct proc_dir_entry *p;
+	struct isapnp_dev *dev;
 
 	isapnp_proc_entry = NULL;
 	p = create_proc_entry("isapnp", S_IFREG | S_IRUGO | S_IWUSR, &proc_root);
@@ -240,14 +448,34 @@ __initfunc(static int isapnp_proc_init(void))
 		return -ENOMEM;
 	p->ops = &isapnp_info_entry_inode_operations;
 	isapnp_proc_entry = p;
+	isapnp_proc_bus_dir = create_proc_entry("isapnp", S_IFDIR | S_IRUGO | S_IXUGO, proc_bus);
+	isapnp_proc_devices_entry = create_proc_entry("devices", 0, isapnp_proc_bus_dir);
+	if (isapnp_proc_devices_entry)
+		isapnp_proc_devices_entry->ops = &isapnp_info_entry_inode_operations;
+	for (dev = isapnp_devices; dev != NULL; dev = dev->next) {
+		isapnp_proc_attach_device(dev);
+	}
 	return 0;
 }
 
 #ifdef MODULE
-static int isapnp_proc_done(void)
+int isapnp_proc_done(void)
 {
+	struct isapnp_dev *dev;
+	struct isapnp_card *card;
+
+	for (dev = isapnp_devices; dev != NULL; dev = dev->next) {
+		isapnp_proc_detach_device(dev);
+	}
+	for (card = isapnp_cards; card != NULL; card = card->next) {
+		isapnp_proc_detach_bus(card);
+	}
+	if (isapnp_proc_devices_entry)
+		remove_proc_entry("devices", isapnp_proc_devices_entry);
+	if (isapnp_proc_bus_dir)
+		remove_proc_entry("isapnp", proc_bus);
 	if (isapnp_proc_entry)
-		proc_unregister(&proc_root, isapnp_proc_entry->low_ino);
+		remove_proc_entry("isapnp", &proc_root);
 	return 0;
 }
 #endif /* MODULE */
@@ -260,14 +488,7 @@ static void isapnp_print_devid(isapnp_info_buffer_t *buffer, unsigned short vend
 {
 	char tmp[8];
 	
-	sprintf(tmp, "%c%c%c%x%x%x%x",
-			'A' + ((vendor >> 2) & 0x3f) - 1,
-			'A' + (((vendor & 3) << 3) | ((vendor >> 13) & 7)) - 1,
-			'A' + ((vendor >> 8) & 0x1f) - 1,
-			(device >> 4) & 0x0f,
-			device & 0x0f,
-			(device >> 12) & 0x0f,
-			(device >> 8) & 0x0f);
+	isapnp_devid(tmp, vendor, device);
 	isapnp_printf(buffer, tmp);
 }
 
