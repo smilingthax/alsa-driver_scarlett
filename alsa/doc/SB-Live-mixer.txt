@@ -183,7 +183,7 @@ of the AC97 codec.
 
 name='IEC958 Optical Capture Volume',index=0
 
-qThis control is used to attenuate samples from left and right IEC958 optical
+This control is used to attenuate samples from left and right IEC958 optical
 digital inputs. The result samples are forwarded to the ADC capture FIFO
 (thus to the standard capture PCM device).
 
