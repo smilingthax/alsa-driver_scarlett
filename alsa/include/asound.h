@@ -258,7 +258,7 @@ typedef enum _snd_hwdep_type {
 
 typedef struct _snd_hwdep_info {
 	int device;		/* WR: device number */
-	snd_hwdep_type_t type;	/* type of card - look to SND_CARD_TYPE_XXXX */
+	snd_card_type_t type;	/* type of card - look to SND_CARD_TYPE_XXXX */
 	unsigned char id[64];	/* ID of this hardware dependent device (user selectable) */
 	unsigned char name[80];	/* name of this hardware dependent device */
 	snd_hwdep_type_t hw_type;	/* hardware depedent device type */
