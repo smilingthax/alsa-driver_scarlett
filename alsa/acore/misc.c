@@ -237,3 +237,21 @@ int snd_compat_schedule_work(struct work_struct *works)
 }
 
 #endif
+
+#ifndef CONFIG_HAVE_KCALLOC
+#ifdef CONFIG_SND_DEBUG_MEMORY
+/* Don't put this to wrappers.c.  We need to call the kmalloc wrapper here. */
+void *snd_compat_kcalloc(size_t n, size_t size, int flags)
+{
+	void *ret = NULL;
+
+	if (n != 0 && size > INT_MAX / n)
+		return ret;
+
+	ret = kmalloc(n * size, flags);
+	if (ret)
+		memset(ret, 0, n * size);
+	return ret;
+}
+#endif
+#endif

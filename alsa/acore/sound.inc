@@ -31,3 +31,8 @@ EXPORT_SYMBOL(snd_compat_devfs_remove);
 EXPORT_SYMBOL(snd_compat_devfs_mk_dir);
 EXPORT_SYMBOL(snd_compat_devfs_mk_cdev);
 #endif
+#ifndef CONFIG_HAVE_KCALLOC
+#ifndef CONFIG_SND_DEBUG_MEMORY
+EXPORT_SYMBOL(snd_compat_kcalloc);
+#endif
+#endif
