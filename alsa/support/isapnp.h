@@ -33,13 +33,13 @@
  *
  */
 
-#define ISAPNP_VENDOR(a,b,c)	((((a)-'A'+1)&0x3f)<<2)|\
+#define ISAPNP_VENDOR(a,b,c)	(((((a)-'A'+1)&0x3f)<<2)|\
 				((((b)-'A'+1)&0x18)>>3)|((((b)-'A'+1)&7)<<13)|\
-				((((c)-'A'+1)&0x1f)<<8)
-#define ISAPNP_DEVICE(x)	(((x)&0xf000)>>8)|\
+				((((c)-'A'+1)&0x1f)<<8))
+#define ISAPNP_DEVICE(x)	((((x)&0xf000)>>8)|\
 				(((x)&0x0f00)>>8)|\
 				(((x)&0x00f0)<<8)|\
-				(((x)&0x000f)<<8)
+				(((x)&0x000f)<<8))
 #define ISAPNP_FUNCTION(x)	ISAPNP_DEVICE(x)
 
 /*
