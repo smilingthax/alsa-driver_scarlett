@@ -16,6 +16,7 @@ ifeq (y,$(CONFIG_VIDEO_DEV))
 obj-$(CONFIG_SND_FM801) += snd-tea575x-tuner.o
 ifeq (m,$(CONFIG_SND_FM801))
 export-objs += tea575x-tuner.o
+clean-files += tea575x-tuner.c
 endif
 endif
 
