@@ -257,7 +257,6 @@ typedef struct snd_rme96 {
 	snd_pcm_t          *spdif_pcm;
 	snd_pcm_t          *adat_pcm; 
 	struct pci_dev     *pci;
-	snd_info_entry_t   *proc_entry;
 	snd_kcontrol_t	   *spdif_ctl;
 } rme96_t;
 
@@ -307,9 +306,6 @@ snd_rme96_capture_pointer(snd_pcm_substream_t *substream);
 
 static void __devinit 
 snd_rme96_proc_init(rme96_t *rme96);
-
-static void
-snd_rme96_proc_done(rme96_t *rme96);
 
 static int
 snd_rme96_create_switches(snd_card_t *card,
@@ -1628,7 +1624,6 @@ snd_rme96_free(void *private_data)
 		snd_rme96_capture_stop(rme96);
 		rme96->areg &= ~RME96_AR_DAC_EN;
 		writel(rme96->areg, rme96->iobase + RME96_IO_ADDITIONAL_REG);
-		snd_rme96_proc_done(rme96);
 		free_irq(rme96->irq, (void *)rme96);
 		rme96->irq = -1;
 	}
@@ -1913,27 +1908,8 @@ snd_rme96_proc_init(rme96_t *rme96)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(rme96->card, "rme96", rme96->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = rme96;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 256;
-		entry->c.text.read = snd_rme96_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	rme96->proc_entry = entry;
-}
-
-static void
-snd_rme96_proc_done(rme96_t * rme96)
-{
-	if (rme96->proc_entry) {
-		snd_info_unregister(rme96->proc_entry);
-		rme96->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(rme96->card, "rme96", &entry))
+		snd_info_set_text_ops(entry, rme96, snd_rme96_proc_read);
 }
 
 /*

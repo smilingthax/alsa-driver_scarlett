@@ -2883,19 +2883,13 @@ static int __devinit snd_cs46xx_proc_init(snd_card_t * card, cs46xx_t *chip)
 	
 	for (idx = 0; idx < 5; idx++) {
 		snd_cs46xx_region_t *region = &chip->region.idx[idx];
-		entry = snd_info_create_card_entry(card, region->name, card->proc_root);
-		if (entry) {
+		if (! snd_card_proc_new(card, region->name, &entry)) {
 			entry->content = SNDRV_INFO_CONTENT_DATA;
 			entry->private_data = chip;
 			entry->c.ops = &snd_cs46xx_proc_io_ops;
 			entry->size = region->size;
 			entry->mode = S_IFREG | S_IRUSR;
-			if (snd_info_register(entry) < 0) {
-				snd_info_unregister(entry);
-				entry = NULL;
-			}
 		}
-		region->proc_entry = entry;
 	}
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 	cs46xx_dsp_proc_init(card, chip);
@@ -2905,15 +2899,6 @@ static int __devinit snd_cs46xx_proc_init(snd_card_t * card, cs46xx_t *chip)
 
 static int snd_cs46xx_proc_done(cs46xx_t *chip)
 {
-	int idx;
-
-	for (idx = 0; idx < 5; idx++) {
-		snd_cs46xx_region_t *region = &chip->region.idx[idx];
-		if (region->proc_entry) {
-			snd_info_unregister((snd_info_entry_t *) region->proc_entry);
-			region->proc_entry = NULL;
-		}
-	}
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 	cs46xx_dsp_proc_done(chip);
 #endif

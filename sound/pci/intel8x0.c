@@ -322,7 +322,6 @@ typedef struct {
 	unsigned char piv_saved;
 	unsigned short picb_saved;
 #endif
-	snd_info_entry_t *proc_entry;
 } ichdev_t;
 
 typedef struct _snd_intel8x0 intel8x0_t;
@@ -368,7 +367,6 @@ struct _snd_intel8x0 {
 
 	spinlock_t reg_lock;
 	spinlock_t ac97_lock;
-	snd_info_entry_t *proc_entry;
 	
 	u32 bdbars_count;
 	u32 *bdbars;
@@ -1854,8 +1852,6 @@ static int snd_intel8x0_chip_init(intel8x0_t *chip)
 	return 0;
 }
 
-static void snd_intel8x0_proc_done(intel8x0_t * chip);
-
 static int snd_intel8x0_free(intel8x0_t *chip)
 {
 	int i;
@@ -1871,7 +1867,6 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 	/* --- */
 	synchronize_irq(chip->irq);
       __hw_end:
-	snd_intel8x0_proc_done(chip);
 	if (chip->bdbars)
 		snd_free_pci_pages(chip->pci, chip->bdbars_count * sizeof(u32) * ICH_MAX_FRAGS * 2, chip->bdbars, chip->bdbars_addr);
 	if (chip->remap_addr)
@@ -2096,26 +2091,8 @@ static void __devinit snd_intel8x0_proc_init(intel8x0_t * chip)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(chip->card, "intel8x0", chip->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = chip;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 2048;
-		entry->c.text.read = snd_intel8x0_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	chip->proc_entry = entry;
-}
-
-static void snd_intel8x0_proc_done(intel8x0_t * chip)
-{
-	if (chip->proc_entry) {
-		snd_info_unregister(chip->proc_entry);
-		chip->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(chip->card, "intel8x0", &entry))
+		snd_info_set_text_ops(entry, chip, snd_intel8x0_proc_read);
 }
 
 static int snd_intel8x0_dev_free(snd_device_t *device)

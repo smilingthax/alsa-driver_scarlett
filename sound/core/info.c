@@ -808,12 +808,12 @@ char *snd_info_get_str(char *dest, char *src, int len)
 static snd_info_entry_t *snd_info_create_entry(const char *name)
 {
 	snd_info_entry_t *entry;
-	entry = (snd_info_entry_t *) snd_kcalloc(sizeof(snd_info_entry_t), GFP_KERNEL);
+	entry = snd_magic_kcalloc(snd_info_entry_t, 0, GFP_KERNEL);
 	if (entry == NULL)
 		return NULL;
 	entry->name = snd_kmalloc_strdup(name, GFP_KERNEL);
 	if (entry->name == NULL) {
-		kfree(entry);
+		snd_magic_kfree(entry);
 		return NULL;
 	}
 	entry->mode = S_IFREG | S_IRUGO;
@@ -847,6 +847,49 @@ snd_info_entry_t *snd_info_create_card_entry(snd_card_t * card,
 	return entry;
 }
 
+static int snd_info_dev_free_entry(snd_device_t *device)
+{
+	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
+	snd_info_free_entry(entry);
+	return 0;
+}
+
+static int snd_info_dev_register_entry(snd_device_t *device)
+{
+	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
+	return snd_info_register(entry);
+}
+
+static int snd_info_dev_unregister_entry(snd_device_t *device)
+{
+	snd_info_entry_t *entry = snd_magic_cast(snd_info_entry_t, device->device_data, return -ENXIO);
+	return snd_info_unregister(entry);
+}
+
+int snd_card_proc_new(snd_card_t *card, const char *name,
+		      snd_info_entry_t **entryp)
+{
+	static snd_device_ops_t ops = {
+		.dev_free = snd_info_dev_free_entry,
+		.dev_register =	snd_info_dev_register_entry,
+		// .dev_disconnect = snd_info_dev_disconnect_entry,
+		.dev_unregister = snd_info_dev_unregister_entry
+	};
+	snd_info_entry_t *entry;
+	int err;
+
+	entry = snd_info_create_card_entry(card, name, card->proc_root);
+	if (! entry)
+		return -ENOMEM;
+	if ((err = snd_device_new(card, SNDRV_DEV_INFO, entry, &ops)) < 0) {
+		snd_info_free_entry(entry);
+		return err;
+	}
+	if (entryp)
+		*entryp = entry;
+	return 0;
+}
+
 void snd_info_free_entry(snd_info_entry_t * entry)
 {
 	if (entry == NULL)
@@ -855,7 +898,7 @@ void snd_info_free_entry(snd_info_entry_t * entry)
 		kfree((char *)entry->name);
 	if (entry->private_free)
 		entry->private_free(entry);
-	kfree(entry);
+	snd_magic_kfree(entry);
 }
 
 #ifdef LINUX_2_2
@@ -894,9 +937,6 @@ static inline void snd_info_device_entry_prepare(struct proc_dir_entry *de, snd_
 
 snd_info_entry_t *snd_info_create_device(const char *name, unsigned int number, unsigned int mode)
 {
-#ifdef CONFIG_DEVFS_FS
-	char dname[32];
-#endif
 	unsigned short _major = number >> 16;
 	unsigned short minor = (unsigned short) number;
 	snd_info_entry_t *entry;
@@ -933,6 +973,7 @@ snd_info_entry_t *snd_info_create_device(const char *name, unsigned int number, 
 	up(&info_mutex);
 #ifdef CONFIG_DEVFS_FS
 	if (strncmp(name, "controlC", 8)) {	/* created in sound.c */
+		char dname[32];
 		sprintf(dname, "snd/%s", name);
 		devfs_register(NULL, dname, DEVFS_FL_DEFAULT,
 				major, minor, mode,

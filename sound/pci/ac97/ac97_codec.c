@@ -51,7 +51,6 @@ MODULE_PARM_SYNTAX(enable_loopback, SNDRV_BOOLEAN_FALSE_DESC);
  */
 
 static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97);
-static void snd_ac97_proc_done(ac97_t * ac97);
 
 typedef struct {
 	unsigned int id;
@@ -1107,7 +1106,6 @@ static const snd_kcontrol_new_t snd_ac97_ymf753_controls_spdif[3] = {
 static int snd_ac97_free(ac97_t *ac97)
 {
 	if (ac97) {
-		snd_ac97_proc_done(ac97);
 		if (ac97->private_free)
 			ac97->private_free(ac97);
 		snd_magic_kfree(ac97);
@@ -2098,46 +2096,14 @@ static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97)
 		sprintf(name, "ac97#%d-%d", ac97->addr, ac97->num);
 	else
 		sprintf(name, "ac97#%d", ac97->addr);
-	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = ac97;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 512;
-		entry->c.text.read = snd_ac97_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	ac97->proc_entry = entry;
+	if (! snd_card_proc_new(card, name, &entry))
+		snd_info_set_text_ops(entry, ac97, snd_ac97_proc_read);
 	if (ac97->num)
 		sprintf(name, "ac97#%d-%dregs", ac97->addr, ac97->num);
 	else
 		sprintf(name, "ac97#%dregs", ac97->addr);
-	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = ac97;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 1024;
-		entry->c.text.read = snd_ac97_proc_regs_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	ac97->proc_regs_entry = entry;
-}
-
-static void snd_ac97_proc_done(ac97_t * ac97)
-{
-	if (ac97->proc_regs_entry) {
-		snd_info_unregister(ac97->proc_regs_entry);
-		ac97->proc_regs_entry = NULL;
-	}
-	if (ac97->proc_entry) {
-		snd_info_unregister(ac97->proc_entry);
-		ac97->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(card, name, &entry))
+		snd_info_set_text_ops(entry, ac97, snd_ac97_proc_regs_read);
 }
 
 /*

@@ -452,7 +452,6 @@ struct _snd_trident {
 	snd_trident_pcm_mixer_t pcm_mixer[32];
 
 	spinlock_t reg_lock;
-	snd_info_entry_t *proc_entry;
 
 	struct snd_trident_gameport *gameport;
 };

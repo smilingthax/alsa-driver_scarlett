@@ -237,8 +237,6 @@ struct _snd_ac97 {
 	unsigned short (*read) (ac97_t *ac97, unsigned short reg);
 	void (*wait) (ac97_t *ac97);
 	void (*init) (ac97_t *ac97);
-	snd_info_entry_t *proc_entry;
-	snd_info_entry_t *proc_regs_entry;
 	void *private_data;
 	void (*private_free) (ac97_t *ac97);
 	/* --- */

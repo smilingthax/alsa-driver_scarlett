@@ -1693,26 +1693,8 @@ static void __devinit snd_ice1712_proc_init(ice1712_t * ice)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(ice->card, "ice1712", ice->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = ice;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 2048;
-		entry->c.text.read = snd_ice1712_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	ice->proc_entry = entry;
-}
-
-static void snd_ice1712_proc_done(ice1712_t * ice)
-{
-	if (ice->proc_entry) {
-		snd_info_unregister(ice->proc_entry);
-		ice->proc_entry = NULL;
-	}
+	if (! snd_card_proc_new(ice->card, "ice1712", &entry))
+		snd_info_set_text_ops(entry, ice, snd_ice1712_proc_read);
 }
 
 /*
@@ -2688,7 +2670,6 @@ static int snd_ice1712_free(ice1712_t *ice)
 	outb(0xff, ICEREG(ice, IRQMASK));
 	/* --- */
       __hw_end:
-	snd_ice1712_proc_done(ice);
 	if (ice->irq >= 0) {
 		synchronize_irq(ice->irq);
 		free_irq(ice->irq, (void *) ice);

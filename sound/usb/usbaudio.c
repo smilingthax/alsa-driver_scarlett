@@ -184,7 +184,6 @@ struct snd_usb_stream {
 	int pcm_index;
 	snd_usb_substream_t substream[2];
 	struct list_head list;
-	snd_info_entry_t *proc_entry;
 };
 
 #define chip_t snd_usb_stream_t
@@ -1456,18 +1455,8 @@ static void proc_pcm_format_add(snd_usb_stream_t *stream)
 	snd_card_t *card = stream->chip->card;
 
 	sprintf(name, "stream%d", stream->pcm_index);
-	if ((entry = snd_info_create_card_entry(card, name, card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = stream;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 4096;
-		entry->c.text.read = proc_pcm_format_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	stream->proc_entry = entry;
+	if (! snd_card_proc_new(card, name, &entry))
+		snd_info_set_text_ops(entry, stream, proc_pcm_format_read);
 }
 
 
@@ -1522,10 +1511,6 @@ static void free_substream(snd_usb_substream_t *subs)
  */
 static void snd_usb_audio_stream_free(snd_usb_stream_t *stream)
 {
-	if (stream->proc_entry) {
-		snd_info_unregister(stream->proc_entry);
-		stream->proc_entry = NULL;
-	}
 	free_substream(&stream->substream[0]);
 	free_substream(&stream->substream[1]);
 	list_del(&stream->list);

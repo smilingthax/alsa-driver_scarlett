@@ -499,13 +499,9 @@ struct snd_cs4281 {
 	unsigned int spurious_dhtc_irq;
 	unsigned int spurious_dtc_irq;
 
-	void *proc_entry_BA0;
-	void *proc_entry_BA1;
-
 	spinlock_t reg_lock;
 	unsigned int midcr;
 	unsigned int uartm;
-	snd_info_entry_t *proc_entry;
 
 	struct snd_cs4281_gameport *gameport;
 
@@ -1251,55 +1247,19 @@ static void __devinit snd_cs4281_proc_init(cs4281_t * chip)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(chip->card, "cs4281", chip->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = chip;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 256;
-		entry->c.text.read = snd_cs4281_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	chip->proc_entry = entry;
-	if ((entry = snd_info_create_card_entry(chip->card, "cs4281_BA0", chip->card->proc_root)) != NULL) {
+	if (! snd_card_proc_new(chip->card, "cs4281", &entry))
+		snd_info_set_text_ops(entry, chip, snd_cs4281_proc_read);
+	if (! snd_card_proc_new(chip->card, "cs4281_BA0", &entry)) {
 		entry->content = SNDRV_INFO_CONTENT_DATA;
 		entry->private_data = chip;
 		entry->c.ops = &snd_cs4281_proc_ops_BA0;
 		entry->size = CS4281_BA0_SIZE;
-		if (snd_info_register(entry) < 0) {
-			snd_info_unregister(entry);
-			entry = NULL;
-		}
 	}
-	chip->proc_entry_BA0 = entry;
-	if ((entry = snd_info_create_card_entry(chip->card, "cs4281_BA1", chip->card->proc_root)) != NULL) {
+	if (! snd_card_proc_new(chip->card, "cs4281_BA1", &entry)) {
 		entry->content = SNDRV_INFO_CONTENT_DATA;
 		entry->private_data = chip;
 		entry->c.ops = &snd_cs4281_proc_ops_BA1;
 		entry->size = CS4281_BA1_SIZE;
-		if (snd_info_register(entry) < 0) {
-			snd_info_unregister(entry);
-			entry = NULL;
-		}
-	}
-	chip->proc_entry_BA1 = entry;
-}
-
-static void snd_cs4281_proc_done(cs4281_t * chip)
-{
-	if (chip->proc_entry_BA1) {
-		snd_info_unregister(chip->proc_entry_BA1);
-		chip->proc_entry_BA1 = NULL;
-	}
-	if (chip->proc_entry_BA0) {
-		snd_info_unregister(chip->proc_entry_BA0);
-		chip->proc_entry_BA0 = NULL;
-	}
-	if (chip->proc_entry) {
-		snd_info_unregister(chip->proc_entry);
-		chip->proc_entry = NULL;
 	}
 }
 
@@ -1414,7 +1374,6 @@ static int snd_cs4281_free(cs4281_t *chip)
 		kfree(chip->gameport);
 	}
 #endif
-	snd_cs4281_proc_done(chip);
 	if (chip->irq >= 0)
 		synchronize_irq(chip->irq);
 
