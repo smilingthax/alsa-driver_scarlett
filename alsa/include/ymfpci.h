@@ -235,6 +235,7 @@ struct snd_stru_ymfpci_voice {
 	    synth: 1,
 	    midi: 1;
 	snd_ymfpci_playback_bank_t *bank;
+	dma_addr_t bank_addr;
 	void (*interrupt)(ymfpci_t *chip, ymfpci_voice_t *voice);
 	ymfpci_pcm_t *ypcm;
 };
@@ -279,6 +280,8 @@ struct snd_stru_ymfpci {
 	unsigned short old_legacy_ctrl;
 
 	void *work_ptr;
+	dma_addr_t work_ptr_addr;
+	unsigned long work_ptr_size;
 
 	unsigned int bank_size_playback;
 	unsigned int bank_size_capture;
@@ -289,8 +292,13 @@ struct snd_stru_ymfpci {
 	void *bank_base_capture;
 	void *bank_base_effect;
 	void *work_base;
+	dma_addr_t bank_base_playback_addr;
+	dma_addr_t bank_base_capture_addr;
+	dma_addr_t bank_base_effect_addr;
+	dma_addr_t work_base_addr;
 
 	u32 *ctrl_playback;
+	dma_addr_t ctrl_playback_addr;
 	snd_ymfpci_playback_bank_t *bank_playback[YDSXG_PLAYBACK_VOICES][2];
 	snd_ymfpci_capture_bank_t *bank_capture[YDSXG_CAPTURE_VOICES][2];
 	snd_ymfpci_effect_bank_t *bank_effect[YDSXG_EFFECT_VOICES][2];
