@@ -29,11 +29,12 @@
 #define SND_MIXER_CMD_SIZE	4
 
 typedef struct snd_stru_mixer_element snd_kmixer_element_t;
-typedef struct snd_stru_mixer_channel snd_kmixer_channel_t;
+typedef struct snd_stru_mixer_group snd_kmixer_group_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
 
 typedef int (snd_kmixer_element_info_t)(void *private_data, snd_kmixer_file_t * file, snd_mixer_element_info_t * info);
 typedef int (snd_kmixer_element_control_t)(void *private_data, snd_kmixer_file_t * file, int cmd, void * data, int size);
+typedef int (snd_kmixer_group_control_t)(void *private_data, snd_kmixer_file_t * file, int w_flag, snd_mixer_group_t * ugroup);
 typedef void (snd_kmixer_free_t)(void *private_data);
 
 typedef struct snd_stru_mixer_element_new {
@@ -52,20 +53,6 @@ typedef struct snd_stru_mixer_element_route {
 	snd_kmixer_element_t **routes;
 } snd_kmixer_element_route_t;
 
-struct snd_stru_mixer_channel {
-	char *name;			/* channel name */
-	int oss_dev;			/* OSS device */
-	int (*control)(void *private_data,
-		       snd_kmixer_channel_t *kchannel,
-		       int w_flag, snd_mixer_channel_t *uchannel);
-	void *private_data;
-	snd_kmixer_free_t *private_free;
-	int element_size;
-	int element_count;
-	snd_kmixer_element_t **elements;
-	snd_kmixer_channel_t *next;
-};
-
 struct snd_stru_mixer_element {
 	char *name;			/* element name */
 	int index;			/* extension to the element name */
@@ -76,9 +63,9 @@ struct snd_stru_mixer_element {
 	snd_kmixer_free_t *private_free;
 	snd_kmixer_element_route_t routes_next;
 	snd_kmixer_element_route_t routes_prev;
-	int channel_size;
-	int channel_count;
-	snd_kmixer_channel_t **channels;
+	int groups_size;
+	int groups_count;
+	snd_kmixer_group_t **groups;
 	snd_kmixer_element_t *next;
 };
 
@@ -87,14 +74,18 @@ typedef struct snd_stru_mixer_group_new {
 	int index;			/* extension to the group name */
 } snd_kmixer_group_new_t;
 
-typedef struct snd_stru_mixer_group {
+struct snd_stru_mixer_group {
 	char *name;			/* group name */
 	int index;			/* extension to the group name */
+	int oss_dev;			/* OSS device */
 	int elements_size;
 	int elements_count;
 	snd_kmixer_element_t **elements;
+	snd_kmixer_group_control_t *control;
+	void *private_data;
+	snd_kmixer_free_t *private_free;
 	struct snd_stru_mixer_group *next;
-} snd_kmixer_group_t;
+};
 
 typedef struct snd_stru_mixer_read {
 	snd_mixer_read_t data;
@@ -109,6 +100,7 @@ struct snd_stru_mixer_file {
 	    rebuild: 1;			/* rebuild the mixer structure */
 	snd_kmixer_read_t *first_item;
 	snd_kmixer_read_t *last_item;
+	snd_kmixer_group_t *ignore_group;
 	struct snd_stru_mixer_file *next;
 };
 
@@ -188,6 +180,9 @@ extern snd_kmixer_group_t *snd_mixer_group_new(snd_kmixer_t * mixer,
 					snd_kmixer_group_new_t * ngroup);
 extern int snd_mixer_group_change(snd_kmixer_t * mixer,
 				  snd_kmixer_group_t * group);
+extern int snd_mixer_group_value_change(snd_kmixer_file_t * mfile,
+					snd_kmixer_group_t * group,
+					int atomic);
 extern int snd_mixer_group_element_add(snd_kmixer_t * mixer,
 					snd_kmixer_group_t * group,
 					snd_kmixer_element_t * element);
@@ -226,6 +221,13 @@ static inline int snd_mixer_get_bit(unsigned int *bitmap, int bit)
 extern snd_kmixer_group_t *snd_mixer_lib_group(snd_kmixer_t *mixer,
 					       char *name,
 					       int index);
+
+extern snd_kmixer_group_t *snd_mixer_lib_group_ctrl(snd_kmixer_t *mixer,
+						    char *name,
+						    int index,
+						    int oss_dev,
+						    snd_kmixer_group_control_t *control,
+						    void *private_data);
 
 struct snd_stru_mixer_lib_io {
 	unsigned int attrib;

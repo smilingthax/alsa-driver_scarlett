@@ -252,6 +252,8 @@ struct snd_stru_cs4231 {
 	snd_kmixer_element_t *me_mux_aux1;
 	snd_kmixer_element_t *me_mux_mix;
 
+	snd_kmixer_element_t *me_vol_mic;
+
 	unsigned int (*set_playback_rate) (cs4231_t * codec, unsigned int rate);
 	unsigned int (*set_capture_rate) (cs4231_t * codec, unsigned int rate);
 	void (*set_playback_format) (cs4231_t * codec, unsigned char pdfr);
