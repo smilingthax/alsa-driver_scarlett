@@ -878,7 +878,7 @@ static int snd_pcm_resume(snd_pcm_substream_t *substream)
 			res = -EAGAIN;
 			goto _power_unlock;
 		}
-		snd_power_wait(card);
+		snd_power_wait(card, SNDRV_CTL_POWER_D0);
 	}
 
 	_SND_PCM_ACTION(resume, substream, 0, res, 1);
@@ -920,7 +920,7 @@ static int snd_pcm_xrun(snd_pcm_substream_t *substream)
 				goto _end;
 			}
 			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
+			snd_power_wait(card, SNDRV_CTL_POWER_D0);
 			spin_lock_irq(&runtime->lock);
 		}
 		goto _xrun_recovery;
@@ -1023,7 +1023,7 @@ int snd_pcm_prepare(snd_pcm_substream_t *substream)
 			res = -EAGAIN;
 			goto _power_unlock;
 		}
-		snd_power_wait(card);
+		snd_power_wait(card, SNDRV_CTL_POWER_D0);
 	}
 
 	spin_lock_irq(&substream->runtime->lock);
@@ -1094,7 +1094,7 @@ static int snd_pcm_playback_drain(snd_pcm_substream_t * substream)
 				goto _end;
 			}
 			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
+			snd_power_wait(card, SNDRV_CTL_POWER_D0);
 			spin_lock_irq(&runtime->lock);
 		}
 		goto _xrun_recovery;
@@ -1217,7 +1217,7 @@ static int snd_pcm_playback_drop(snd_pcm_substream_t *substream)
 				goto _end;
 			}
 			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
+			snd_power_wait(card, SNDRV_CTL_POWER_D0);
 			spin_lock_irq(&runtime->lock);
 		}
 		goto _xrun_recovery;
@@ -1272,7 +1272,7 @@ static int snd_pcm_capture_drain(snd_pcm_substream_t * substream)
 				goto _end;
 			}
 			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
+			snd_power_wait(card, SNDRV_CTL_POWER_D0);
 			spin_lock_irq(&runtime->lock);
 		}
 		goto _xrun_recovery;
@@ -1311,7 +1311,7 @@ static int snd_pcm_capture_drop(snd_pcm_substream_t * substream)
 				goto _end;
 			}
 			spin_unlock_irq(&runtime->lock);
-			snd_power_wait(card);
+			snd_power_wait(card, SNDRV_CTL_POWER_D0);
 			spin_lock_irq(&runtime->lock);
 		}
 		/* Fall through */
