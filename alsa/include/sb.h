@@ -223,11 +223,11 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP_ESS_GET_VERSION	0xe7
 #define SB_DSP_ESS_EXTENDED	0xc6
 
-#define SB_DSP_CAPTURE_SOURCE    0x0c
-#define SB_DSP_MIXS_MIC0        0x00	/* same as MIC */
-#define SB_DSP_MIXS_MIC         0x01
-#define SB_DSP_MIXS_CD          0x03
-#define SB_DSP_MIXS_LINE        0x07
+#define SB_DSP_CAPTURE_SOURCE	0x0c
+#define SB_DSP_MIXS_MIC0	0x00	/* same as MIC */
+#define SB_DSP_MIXS_MIC		0x01
+#define SB_DSP_MIXS_CD		0x03
+#define SB_DSP_MIXS_LINE	0x07
 
 /* registers for SB PRO mixer */
 #define SB_DSP_MASTER_DEV	0x22
@@ -252,10 +252,11 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP4_OGAIN_DEV	0x41
 #define SB_DSP4_MIC_AGC		0x43
 
-/* additional register for SB 16 ASP mixer */
-#define SB_DSP4_CSP		0x81
+/* additional registers for SB 16 mixer */
+#define SB_DSP4_IRQSETUP	0x80
+#define SB_DSP4_DMASETUP	0x81
+#define SB_DSP4_IRQSTATUS	0x82
 
-/* additional registers for SB AWE32/64 mixer */
 #define SB_DSP4_3DSE		0x90
 
 /*
