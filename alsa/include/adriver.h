@@ -212,12 +212,16 @@ typedef void irqreturn_t;
 #undef devfs_remove
 void snd_compat_devfs_remove(const char *fmt, ...);
 #define devfs_remove snd_compat_devfs_remove
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
 #undef devfs_mk_dir
-devfs_handle_t snd_compat_devfs_mk_dir(const char *dir);
+int snd_compat_devfs_mk_dir(const char *dir, ...);
 #define devfs_mk_dir snd_compat_devfs_mk_dir
+#undef devfs_mk_cdev
+int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...);
+#define devfs_mk_cdev snd_compat_devfs_mk_cdev
 #endif
-#endif
+extern int devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
 					      unsigned int major, unsigned int minor,
@@ -242,7 +246,9 @@ static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *na
 static inline void devfs_remove(const char *fmt, ...) { }
 #endif
 #undef devfs_mk_dir
-#define devfs_mk_dir(dir) do { (void)(dir); } while (0)
+#define devfs_mk_dir(dir, args...) do { (void)(dir); } while (0)
+#undef devfs_mk_cdev
+#define devfs_mk_cdev(dev, mode, fmt, args...) do { (void)(dev); } while (0)
 #endif /* CONFIG_DEVFS_FS */
 
 /* workarounds for USB API */

@@ -59,13 +59,37 @@ void snd_compat_devfs_remove(const char *fmt, ...)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
 
-devfs_handle_t snd_compat_devfs_mk_dir(const char *dir)
+int snd_compat_devfs_mk_dir(const char *dir, ...)
 {
+	char buf[64];
+	va_list args;
+	int n;
+
+	va_start(args, fmt);
+	n = vsnprintf(buf, 64, fmt, args);
+	if (n < 64 && buf[0]) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
-	return devfs_mk_dir(NULL, dir, strlen(dir), NULL);
+		return devfs_mk_dir(NULL, buf, strlen(dir), NULL) ? -EIO : 0;
 #else
-	return devfs_mk_dir(NULL, dir, NULL);
+		return devfs_mk_dir(NULL, buf, NULL) ? -EIO : 0;
 #endif
+	}
+}
+
+extern struct file_operations snd_fops;
+int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
+{
+	char buf[64];
+	va_list args;
+	int n;
+
+	va_start(args, fmt);
+	n = vsnprintf(buf, 64, fmt, args);
+	if (n < 64 && buf[0]) {
+		devfs_register(NULL, buf, DEVFS_FL_DEFAULT,
+			       major(dev), minor(dev), mode,
+			       &snd_fops, NULL);
+	}
 }
 
 #endif /* 2.5.67 */
