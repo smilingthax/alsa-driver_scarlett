@@ -108,7 +108,8 @@ SC: Addonics  SV 750
 SC: CHIC  True Sound 4Dwave
 SC: Shark  Predator4D-PCI
 SC: Jaton  SonicWave 4D
-IF: MIXER,PCM
+SC: Hoontech SoundTrack Digital 4DWave NX
+IF: MIXER,PCM,MIDI
 MA: audio@tridentmicro.com
 
 ID: ForteMedia FM801
