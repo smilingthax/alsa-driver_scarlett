@@ -334,11 +334,6 @@ int snd_unregister_oss_device(int type, snd_card_t *card, int dev);
 int snd_minor_info_init(void);
 int snd_minor_info_done(void);
 
-typedef struct {
-	const struct iovec *vector;
-	unsigned long count;
-} snd_xferv_t;
-
 /* sound_oss.c */
 
 #ifdef CONFIG_SND_OSSEMUL

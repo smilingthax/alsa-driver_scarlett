@@ -31,7 +31,7 @@
 typedef struct _snd_pcm_file snd_pcm_file_t;
 typedef struct _snd_pcm_runtime snd_pcm_runtime_t;
 typedef struct _snd_pcm_substream snd_pcm_substream_t;
-typedef struct _snd_pcm_stream snd_pcm_stream_t;
+typedef struct _snd_pcm_str snd_pcm_str_t;
 
 #ifdef CONFIG_SND_OSSEMUL
 #include "pcm_oss.h"
@@ -319,7 +319,7 @@ struct _snd_pcm_runtime {
 
 struct _snd_pcm_substream {
 	snd_pcm_t *pcm;
-	snd_pcm_stream_t *pstr;
+	snd_pcm_str_t *pstr;
 	int number;
 	char name[32];			/* substream name */
 	int stream;			/* stream (direction) */
@@ -349,7 +349,7 @@ struct _snd_pcm_substream {
 #endif
 
 
-struct _snd_pcm_stream {
+struct _snd_pcm_str {
 	int stream;				/* stream (direction) */
 	snd_pcm_t *pcm;
 	/* -- substreams -- */
@@ -373,7 +373,7 @@ struct _snd_pcm {
 	unsigned short device_subclass;
 	char id[64];
 	char name[80];
-	snd_pcm_stream_t streams[2];
+	snd_pcm_str_t streams[2];
 	struct semaphore open_mutex;
 	wait_queue_head_t open_wait;
 	void *private_data;

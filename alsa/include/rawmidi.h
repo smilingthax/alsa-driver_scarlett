@@ -39,7 +39,7 @@
 
 typedef struct _snd_rawmidi_runtime snd_rawmidi_runtime_t;
 typedef struct _snd_rawmidi_substream snd_rawmidi_substream_t;
-typedef struct _snd_rawmidi_stream snd_rawmidi_stream_t;
+typedef struct _snd_rawmidi_str snd_rawmidi_str_t;
 
 typedef struct _snd_rawmidi_ops {
 	int (*open) (snd_rawmidi_substream_t * substream);
@@ -84,7 +84,7 @@ struct _snd_rawmidi_substream {
 	int use_count;			/* use counter (for output) */
 	size_t bytes;
 	snd_rawmidi_t *rmidi;
-	snd_rawmidi_stream_t *pstr;
+	snd_rawmidi_str_t *pstr;
 	char name[32];
 	snd_rawmidi_runtime_t *runtime;
 	/* hardware layer */
@@ -97,7 +97,7 @@ typedef struct _snd_rawmidi_file {
 	snd_rawmidi_substream_t *output;
 } snd_rawmidi_file_t;
 
-struct _snd_rawmidi_stream {
+struct _snd_rawmidi_str {
 	unsigned int substream_count;
 	unsigned int substream_opened;
 	struct list_head substreams;
@@ -117,7 +117,7 @@ struct _snd_rawmidi {
 
 	snd_rawmidi_global_ops_t *ops;
 
-	snd_rawmidi_stream_t streams[2];
+	snd_rawmidi_str_t streams[2];
 
 	void *private_data;
 	void (*private_free) (snd_rawmidi_t *rmidi);
