@@ -304,14 +304,18 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_INPUT		0
 /* output */
 #define SND_MIXER_ETYPE_OUTPUT		1
-/* capture endpoint */
-#define SND_MIXER_ETYPE_CAPTURE		2
-/* playback startpoint */
-#define SND_MIXER_ETYPE_PLAYBACK	3
+/* capture channel endpoint */
+#define SND_MIXER_ETYPE_CAPTURE1	2
+/* capture subchannel endpoint */
+#define SND_MIXER_ETYPE_CAPTURE2	3
+/* playback channel startpoint */
+#define SND_MIXER_ETYPE_PLAYBACK1	4
+/* playback subchannel startpoint */
+#define SND_MIXER_ETYPE_PLAYBACK2	5
 /* ADC */
-#define SND_MIXER_ETYPE_ADC		4
+#define SND_MIXER_ETYPE_ADC		6
 /* DAC */
-#define SND_MIXER_ETYPE_DAC		5
+#define SND_MIXER_ETYPE_DAC		7
 /* simple on/off switch */
 #define SND_MIXER_ETYPE_SWITCH1		100
 /* simple on/off switch for each voices */
@@ -498,11 +502,16 @@ struct snd_mixer_element_io_info {
  *    The element controls a playback or capture endpoint.
  */
 
-struct snd_mixer_element_pcm_info {
+struct snd_mixer_element_pcm1_info {
 	int devices_size;		/* size in device descriptors */
 	int devices;			/* count of filled device descriptors */
 	int devices_over;		/* missing device descriptors */
 	int *pdevices;			/* PCM devices - array */
+};
+
+struct snd_mixer_element_pcm2_info {
+	int device;
+	int subdevice;
 };
 
 /*
@@ -842,7 +851,8 @@ typedef struct snd_mixer_element_info {
 	snd_mixer_eid_t eid;
 	union {
 		struct snd_mixer_element_io_info io;
-		struct snd_mixer_element_pcm_info pcm;
+		struct snd_mixer_element_pcm1_info pcm1;
+		struct snd_mixer_element_pcm2_info pcm2;
 		struct snd_mixer_element_converter_info converter;
 		struct snd_mixer_element_switch3_info switch3;
 		struct snd_mixer_element_volume1_info volume1;
