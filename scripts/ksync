@@ -1,0 +1,400 @@
+#! /usr/bin/python
+#  -*- Python -*-
+
+"""Kernel synchronization utility
+
+This script allows synchronization between ALSA CVS repository and 
+standard kernel sources stored in local BK repository.
+
+This tool is intended mainly for internal use of Jaroslav Kysela.
+
+Usage:
+	%(PROGRAM)s [options] command
+
+Where options is:
+
+	-h
+	--help
+		Print this help
+
+	-C <path>
+	--cvsroot=<path>
+		Set root of ALSA CVS repository
+
+	-B <path>
+	--bkroot=<path>
+		Set root of Linux kernel BitKeeper repository
+
+Where command is:
+
+	diffall
+		Diff between ALSA and Linux kernel repositories
+	diffall -r
+		Reverse diff between ALSA and Linux kernel repositories
+
+"""
+
+import os
+import sys
+import string
+import time
+import dircache
+import getopt
+
+# define for documentation
+PROGRAM = sys.argv[0]
+
+# define working directories
+CVSROOT = '~/alsa'
+BKROOT = '~/linux/work'
+
+# exclude some files or directories
+ALSA_EXCLUDE = ['/include/version.h']
+ALSA_EXCLUDE_DIR = ['/scripts', '/oss']
+KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
+		  '/MAINTAINERS','/Makefile',
+		  '/README','/REPORTING-BUGS',
+		  '/Rules.make','/include/sound/version.h']
+KERNEL_EXCLUDE_DIR = ['/BitKeeper',
+		      '/Documentation',
+		      '/arch', '/drivers', '/fs',
+		      '/include', '/init', '/ipc',
+		      '/kernel', '/lib', '/mm',
+		      '/net', '/scripts',
+		      '/sound/oss']
+# force to process
+ALSA_FORCE = ['/oss/Makefile']
+ALSA_FORCE_DIR = ['/']
+KERNEL_FORCE = ['/sound/oss/Makefile']
+KERNEL_FORCE_DIR = ['/include/sound']
+
+# Directory mapping
+ALSA_MAP = {'/':'/sound',
+	    '/include':'/include/sound'}
+KERNEL_MAP = {}		# Initialized from ALSA_MAP
+
+# Global variables
+LAST_CVS_TIME = 0
+
+def usage(code, msg=''):
+	print __doc__ % globals()
+	if msg:
+		print msg
+	sys.exit(code)
+
+def get_cvs_root():
+	return os.path.expanduser(CVSROOT + '/alsa-kernel')
+
+def get_bk_root():
+	return os.path.expanduser(BKROOT)
+
+def print_file(fp, lines):
+	for line in lines:
+		fp.write(line)
+
+def modify_version_file():
+	filename = get_cvs_root() + '/include/version.h'
+	fp = open(filename)
+	lines = fp.readlines()
+	fp.close()
+	fp = open(filename + '.new', 'w')
+	for line in lines:
+		str = '#define CONFIG_SND_DATE'
+		if line[0:len(str)] == str:
+			t = time.gmtime(LAST_CVS_TIME)
+			ts = time.strftime('%a %b %d %H:%M:%S %Y', t)
+			str = str + ' " (%s UTC)"\n' % ts
+			fp.write(str)
+		else:
+			fp.write(line)
+	fp.close()
+	os.rename(filename + '.new', filename)
+
+def update_cvs_file(file):
+	path, file = os.path.split(file)
+	os.chdir(get_cvs_root() + '/' + path)
+	cmd = 'cvs update %s' % file
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	print_file(sys.stderr, lines)
+
+def update_bk_file(file):
+	path, file = os.path.split(file)
+	os.chdir(path)
+	cmd = 'bk get %s' % file
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	print_file(sys.stderr, lines)
+
+def change_diff_line(line, file):
+	if line[:4] == '--- ':
+		file = file + '.old'
+	if line[:4] == '--- ' or line[:4] == '+++ ':
+		idx = string.find(line[4:], '\t')
+		nline = line[:4] + file + line[4+idx:]
+		return nline
+	return line
+
+def change_diff_lines(lines, file):
+	if len(lines) > 1:
+		lines[0] = change_diff_line(lines[0], file)
+		lines[1] = change_diff_line(lines[1], file)
+	return lines
+
+def update_last_cvs_time(stime):
+	global LAST_CVS_TIME
+	# mktime returns local time, and we need to convert
+	# the result to GMT (UTC) time, so substract the difference
+	# in seconds between local time and GMT (time.timezone)	
+	gm_time = time.mktime(time.strptime(stime)) - time.timezone
+	if (LAST_CVS_TIME < gm_time):
+		LAST_CVS_TIME = gm_time
+
+def get_cvs_files(base, dir):
+	dlist = []
+	flist = []
+
+	# Read all entries
+	fp = open(base + dir + 'CVS/Entries')
+	entries = fp.readlines()
+	fp.close()
+
+	# Process files entries
+	for e in entries:
+		try:
+			flags, name, rev, time, unk1, unk2 = string.split(e, '/')
+			if string.count(flags, 'D') <= 0:
+				update_last_cvs_time(time)
+				flist.append(dir + name);
+		except ValueError, msg:
+			pass
+
+	# Process directory entries
+	for e in entries:
+		try:
+			flags, name, rev, time, unk1, unk2 = string.split(e, '/')
+			if string.count(flags, 'D') > 0 and not ALSA_EXCLUDE_DIR.count(dir + name):
+				dlist1, flist1 = get_cvs_files(base, dir + name + '/');
+				dlist.append(dir + name);
+				dlist = dlist + dlist1
+				flist = flist + flist1
+		except ValueError, msg:
+			pass
+
+	return dlist, flist
+
+def get_bk_files(base, dir):
+	dlist = []
+	flist = []
+
+	# merge files
+	sccs_dir = base + dir + 'SCCS/'
+	l = dircache.listdir(sccs_dir)
+	for f in l:
+		if f == 's.ChangeSet':
+			dummy = 1
+		elif f[0:2] == 's.':
+			if not os.path.isdir(sccs_dir + f):
+				flist.append(dir + f[2:])
+	del l
+
+	# merge directories
+	l = dircache.listdir(base + dir)
+	for f in l:
+		if f == 'SCCS':
+			dummy = 1	# Nothing
+		elif os.path.isdir(base + dir + f):
+			if os.path.isdir(base + dir + f + '/SCCS/') and not KERNEL_EXCLUDE_DIR.count(dir + f):
+				dlist1, flist1 = get_bk_files(base, dir + f + '/')
+				dlist.append(dir + f)
+				dlist = dlist + dlist1
+				flist = flist + flist1
+			else:
+				if not KERNEL_EXCLUDE_DIR.count(dir + f):
+					print 'Ignoring BK directory %s' % base + dir + f
+	del l
+
+	return dlist, flist
+
+def remap_engine(dir, dict):
+	comp = string.split(dir, '/')
+	add = ''
+	while len(comp) > 0:
+		tmp = string.join(comp, '/');
+		if tmp == '':
+			tmp = '/'
+		if dict.has_key(tmp):
+			if add != '' and dict[tmp] != '/':
+				add = '/' + add
+			return dict[tmp] + add;
+		if add == '':
+			add = comp.pop();
+		else:
+			add = comp.pop() + '/' + add;
+	return dir
+
+def remap_alsa(dir):
+	return remap_engine(dir, ALSA_MAP);
+
+def remap_kernel(dir):
+	return remap_engine(dir, KERNEL_MAP);
+
+def remap_alsa_file(file):
+	comp = string.split(file, '/')
+	path = string.join(comp[:len(comp)-1],'/')
+	if path == '':
+		path = '/'
+	path = remap_alsa(path)
+	if path[-1] != '/':
+		path = path + '/'
+	return path + comp[-1]
+
+def remap_kernel_file(file):
+	comp = string.split(file, '/')
+	path = string.join(comp[:len(comp)-1],'/')
+	if path == '':
+		path = '/'
+	path = remap_kernel(path)
+	if path[-1] != '/':
+		path = path + '/'
+	return path + comp[-1]
+
+def do_alsa_kernel_diff(alsa, kernel):
+	afile = get_cvs_root() + alsa;
+	kfile = get_bk_root() + kernel;
+	if not os.path.exists(afile):
+		update_cvs_file(afile)
+	if not os.path.exists(kfile):
+		update_bk_file(kfile)
+	cmd = 'diff -uN %s %s' % (kfile, afile)
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	lines = change_diff_lines(lines, "linux" + kernel)
+	print_file(sys.stdout, lines)
+
+def do_kernel_alsa_diff(kernel, alsa):
+	afile = get_cvs_root() + alsa;
+	kfile = get_bk_root() + kernel;
+	if not os.path.exists(afile):
+		update_cvs_file(afile)
+	if not os.path.exists(kfile):
+		update_bk_file(kfile)
+	cmd = 'diff -uN %s %s' % (afile, kfile)
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	lines = change_diff_lines(lines, alsa)
+	print_file(sys.stdout, lines)
+
+def diffall(reverse):
+	cdirs, cfiles = get_cvs_files(get_cvs_root(), '/')
+	bdirs, bfiles = get_bk_files(get_bk_root(), '/')
+	for d in ALSA_FORCE_DIR:
+		if len(d) == 0:
+			continue
+		if cdirs.count(d) == 0:
+			cdirs.append(d)
+			if d[-1] != '/':
+				d = d + '/'
+			if d != '/':
+				cdirs1, cfiles1 = get_cvs_files(get_cvs_root(), d)
+				cdirs = cdirs + cdirs1
+				cfiles = cfiles + cfiles1
+	for d in KERNEL_FORCE_DIR:
+		if len(d) == 0:
+			continue
+		if bdirs.count(d) == 0:
+			bdirs.append(d)
+			if d[-1] != '/':
+				d = d + '/'
+			if d != '/':
+				bdirs1, bfiles1 = get_bk_files(get_bk_root(), d)
+				bdirs = bdirs + bdirs1
+				bfiles = bfiles + bfiles1
+	cfiles = cfiles + ALSA_FORCE
+	bfiles = bfiles + KERNEL_FORCE
+	for f in ALSA_EXCLUDE:
+		cfiles.remove(f)
+	for f in KERNEL_EXCLUDE:
+		bfiles.remove(f)
+	for d in cdirs:
+		dm = d
+		d = remap_alsa(dm)
+		if not bdirs.count(d):
+			print 'Directory %s (%s) is missing from Kernel tree' % (dm, d)
+	for d in bdirs:
+		dm = d
+		d = remap_kernel(dm)
+		if not cdirs.count(d):
+			print 'Directory %s (%s) is missing from ALSA tree' % (dm, d)
+	for f in cfiles:
+		df = f
+		f = remap_alsa_file(df)
+		if not reverse:
+			do_alsa_kernel_diff(df, f)
+		else:
+			do_kernel_alsa_diff(f, df)
+		if bfiles.count(f):
+			bfiles.remove(f)
+#		if not bfiles.count(f):
+#			print 'File %s (%s) is missing from Kernel tree' % (df, f)
+	for f in bfiles:
+		df = f
+		f = remap_kernel_file(df)
+		if not reverse:
+			do_alsa_kernel_diff(f, df)
+		else:
+			do_kernel_alsa_diff(df, f)
+		if cfiles.count(f):
+			cfiles.remove(f)
+#		if not cfiles.count(f):
+#			print 'File %s (%s) is missing from ALSA tree' % (df, f)
+	update_cvs_file('include/version.h')
+	modify_version_file()
+	if not reverse:
+		do_alsa_kernel_diff('/include/version.h', '/include/sound/version.h')
+	else:
+		do_kernel_alsa_diff('/include/sound/version.h', '/include/version.h')
+	os.remove(get_cvs_root() + '/include/version.h')
+	update_cvs_file('include/version.h')
+
+def main():
+	try:
+		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:',
+					   ['cvsroot=', 'bkroot=', 'help']);
+	except getopt.error, msg:
+		usage(1, msg)
+
+	# parse the options
+	for opt, arg in opts:
+		if opt in ('-h', '--help'):
+			usage(0)
+		elif opt == '--cvsroot':
+			CVSROOT = arg
+		elif opt == '--bkroot':
+			BKROOT = arg
+
+	for k in ALSA_MAP.keys():
+		KERNEL_MAP[ALSA_MAP[k]] = k
+
+	if not args:
+		print 'Command not specified'
+		sys.exit(1)
+	if args[0] == 'diffall':
+		reverse=0
+		if len(args) > 1:
+			if args[1] == '-r':
+				reverse=1
+			else:
+				print 'Ignoring extra arguments %s' % args[1:]
+		diffall(reverse)
+	else:
+		print 'Unknown command %s' % args[0]
+		sys.exit(1)
+
+if __name__ == '__main__':
+	main()
+	sys.exit(0)
