@@ -1206,7 +1206,7 @@ static void snd_ice1712_set_pro_rate(ice1712_t *ice, snd_pcm_substream_t *substr
 	outb(val, ICEMT(ice, RATE));
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
+	case ICE1712_SUBDEVICE_DELTA1010LT:	// check it --jk
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 	case ICE1712_SUBDEVICE_DELTA44:
@@ -1788,7 +1788,6 @@ static int snd_ice1712_playback_pro_ioctl(snd_pcm_substream_t * substream,
 		snd_pcm_dig_info_t *info = arg;
 		switch (ice->eeprom.subvendor) {
 		case ICE1712_SUBDEVICE_DELTA1010:
-		case ICE1712_SUBDEVICE_DELTA1010LT:
 		case ICE1712_SUBDEVICE_DELTADIO2496:
 		case ICE1712_SUBDEVICE_DELTA66:
 			return snd_ice1712_dig_cs8403_info(substream, info);
@@ -1799,7 +1798,6 @@ static int snd_ice1712_playback_pro_ioctl(snd_pcm_substream_t * substream,
 		snd_pcm_dig_params_t *params = arg;
 		switch (ice->eeprom.subvendor) {
 		case ICE1712_SUBDEVICE_DELTA1010:
-		case ICE1712_SUBDEVICE_DELTA1010LT:
 		case ICE1712_SUBDEVICE_DELTADIO2496:
 		case ICE1712_SUBDEVICE_DELTA66:
 			return snd_ice1712_dig_cs8403_params(substream, params);
@@ -1884,7 +1882,6 @@ static int snd_ice1712_playback_pro_prepare(snd_pcm_substream_t * substream)
 	outw((snd_pcm_lib_period_bytes(substream) >> 2) - 1, ICEMT(ice, PLAYBACK_COUNT));
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		/* setup S/PDIF */
@@ -2546,7 +2543,6 @@ static int snd_ice1712_spdif_default_get(snd_kcontrol_t * kcontrol,
 	
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		snd_cs8403_decode_spdif_bits(&ucontrol->value.iec958, ice->cs8403_spdif_bits);
@@ -2569,7 +2565,6 @@ static int snd_ice1712_spdif_default_put(snd_kcontrol_t * kcontrol,
 
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		val = snd_cs8403_encode_spdif_bits(&ucontrol->value.iec958);
@@ -2625,7 +2620,6 @@ static int snd_ice1712_spdif_maskc_get(snd_kcontrol_t * kcontrol,
 
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 	case ICE1712_SUBDEVICE_EWS88MT:
@@ -2657,7 +2651,6 @@ static int snd_ice1712_spdif_maskp_get(snd_kcontrol_t * kcontrol,
 
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 	case ICE1712_SUBDEVICE_EWS88MT:
@@ -2712,7 +2705,6 @@ static int snd_ice1712_spdif_stream_get(snd_kcontrol_t * kcontrol,
 
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		snd_cs8403_decode_spdif_bits(&ucontrol->value.iec958, ice->cs8403_spdif_stream_bits);
@@ -2735,7 +2727,6 @@ static int snd_ice1712_spdif_stream_put(snd_kcontrol_t * kcontrol,
 
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		val = snd_cs8403_encode_spdif_bits(&ucontrol->value.iec958);
@@ -3780,7 +3771,6 @@ static int __devinit snd_ice1712_chip_init(ice1712_t *ice)
 		has_i2c = 1;
 		/* follow thru */
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_STDSP24:
 		ice->num_adcs = ice->num_dacs = ice->num_total_dacs = 8;
 		break;
@@ -3858,7 +3848,6 @@ static int __devinit snd_ice1712_chip_init(ice1712_t *ice)
 	}
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		/* Set spdif defaults */
@@ -3913,7 +3902,6 @@ static int __init snd_ice1712_build_controls(ice1712_t *ice)
 		return err;
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 		err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_delta1010_wordclock_select, ice));
 		if (err < 0)
 			return err;
@@ -3929,7 +3917,6 @@ static int __init snd_ice1712_build_controls(ice1712_t *ice)
 	}
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 	case ICE1712_SUBDEVICE_AUDIOPHILE:
@@ -3958,7 +3945,6 @@ static int __init snd_ice1712_build_controls(ice1712_t *ice)
 	}
 	switch (ice->eeprom.subvendor) {
 	case ICE1712_SUBDEVICE_DELTA1010:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
 		err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_delta_spdif_in_status, ice));
