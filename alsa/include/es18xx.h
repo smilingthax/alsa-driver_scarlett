@@ -52,6 +52,11 @@ struct snd_stru_es18xx {
 	snd_pcm_substream_t *capture_a_substream;
 	snd_pcm_substream_t *playback_b_substream;
 
+	snd_kcontrol_t *hw_volume;
+	snd_kcontrol_t *hw_mute;
+	snd_kcontrol_t *master_volume;
+	snd_kcontrol_t *master_mute;
+
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;
 	spinlock_t ctrl_lock;
