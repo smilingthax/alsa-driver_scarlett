@@ -272,8 +272,8 @@ void *snd_malloc_pages(unsigned long size, unsigned int dma_flags)
 	snd_assert(dma_flags != 0, return NULL);
 	for (pg = 0; PAGE_SIZE * (1 << pg) < size; pg++);
 	if ((res = (void *) __get_free_pages(dma_flags, pg)) != NULL) {
-		mem_map_t *page = virt_to_page(res);
-		mem_map_t *last_page = page + (1 << pg);
+		struct page *page = virt_to_page(res);
+		struct page *last_page = page + (1 << pg);
 		while (page < last_page)
 			SetPageReserved(page++);
 #ifdef CONFIG_SND_DEBUG_MEMORY
@@ -302,7 +302,7 @@ void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsi
 void snd_free_pages(void *ptr, unsigned long size)
 {
 	int pg;
-	mem_map_t *page, *last_page;
+	struct page *page, *last_page;
 
 	if (ptr == NULL)
 		return;
@@ -353,8 +353,8 @@ void *snd_malloc_pci_pages(struct pci_dev *pci,
 	for (pg = 0; PAGE_SIZE * (1 << pg) < size; pg++);
 	res = pci_alloc_consistent(pci, PAGE_SIZE * (1 << pg), dma_addr);
 	if (res != NULL) {
-		mem_map_t *page = virt_to_page(res);
-		mem_map_t *last_page = page + (1 << pg);
+		struct page *page = virt_to_page(res);
+		struct page *last_page = page + (1 << pg);
 		while (page < last_page)
 			SetPageReserved(page++);
 #ifdef CONFIG_SND_DEBUG_MEMORY
@@ -388,7 +388,7 @@ void snd_free_pci_pages(struct pci_dev *pci,
 			dma_addr_t dma_addr)
 {
 	int pg;
-	mem_map_t *page, *last_page;
+	struct page *page, *last_page;
 
 	if (ptr == NULL)
 		return;
