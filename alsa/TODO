@@ -13,6 +13,7 @@ L check multithread safeness wrt at least read/write
 L async notification support (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 L clean endianness stuff
+L partial PCM mmap support (rme9652)
 
 - lowlevel:
 M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster xrun recovery
