@@ -335,10 +335,14 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 	return 0;
 
       __error:
-	if (input != NULL)
+	if (input != NULL) {
+		snd_rawmidi_done_buffer(input);
 		kfree(input);
-	if (output != NULL)
+	}
+	if (output != NULL) {
+		snd_rawmidi_done_buffer(output);
 		kfree(output);
+	}
 	dec_mod_count(rmidi->card->module);
 	up(&rmidi->open_mutex);
       __error1:
