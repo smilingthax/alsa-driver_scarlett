@@ -74,7 +74,6 @@ struct snd_info_entry_device {
 };
 
 struct snd_info_entry {
-	struct list_head list;		/* list of all entries */
 	const char *name;
 	mode_t mode;
 	long size;
@@ -92,8 +91,6 @@ struct snd_info_entry {
 	struct proc_dir_entry *p;
 	struct semaphore access;
 };
-
-#define snd_info_entry_list(n) list_entry(n, snd_info_entry_t, list)
 
 extern int snd_info_check_reserved_words(const char *str);
 
