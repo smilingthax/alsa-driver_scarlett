@@ -102,8 +102,8 @@ Module parameters
   Global parameters for top soundcard modules
   -------------------------------------------
 
-    snd_index	- 1-8 - index for soundcard
-                - if not set, first free index is assigned
+    snd_index	- 0-7 - index (slot #) for soundcard
+                - if not set or -1, first free index (slot #) is assigned
     snd_id	- user identification for card (up to 15 chars)
 		- default expression is 'card<snd_index>' (for example card1)
 		- value is used for /proc/asound filesystem
@@ -667,7 +667,7 @@ options isapnp isapnp_reserve_irq=9,10,11,12,13
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=1
 alias snd-card-0 snd-card-interwave
-options snd-card-interwave snd_index=1 snd_id="GusPnP"
+options snd-card-interwave snd_index=0 snd_id="GusPnP"
 
 # OSS/Free setup
 alias char-major-14 soundcore
@@ -693,9 +693,9 @@ alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=2
 alias snd-card-0 snd-card-gusclassic
 alias snd-card-1 snd-card-sb16
-options snd-card-gusclassic snd_index=1 snd_id="Gus" \
+options snd-card-gusclassic snd_index=0 snd_id="Gus" \
         snd_port=0x220 snd_irq=5 snd_dma1=6 snd_dma2=7
-options snd-card-sb16 snd_index=2 snd_id="SB16"
+options snd-card-sb16 snd_index=1 snd_id="SB16"
 
 # OSS/Free setup
 alias char-major-14 soundcore
@@ -722,7 +722,7 @@ alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=2
 alias snd-card-0 snd-card-gusclassic
 alias snd-card-1 snd-card-gusclassic
-options snd-card-gusclassic snd_index=1,2 snd_id="Gus1","Gus2" \
+options snd-card-gusclassic snd_index=0,1 snd_id="Gus1","Gus2" \
         snd_port=0x220,0x240 snd_irq=5,7 snd_dma1=1,5 snd_dma2=3,6
 
 # OSS/Free setup
