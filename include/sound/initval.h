@@ -138,27 +138,24 @@ static int snd_legacy_find_free_dma(int *dma_table)
 #include <linux/init.h>
 static int __init get_id(char **str, char **dst)
 {
-	char *s, *d;
+	char *s;
 
 	if (!(*str) || !(**str))
 		return 0;
 	for (s = *str; isalpha(*s) || isdigit(*s) || *s == '_'; s++);
 	if (s != *str) {
-		*dst = (char *)kmalloc((s - *str) + 1, GFP_KERNEL);
-		s = *str; d = *dst;
-		while (isalpha(*s) || isdigit(*s) || *s == '_') {
-			if (d != NULL)
-				*d++ = *s;
-			s++;
+		int len = s - *str;
+		char *d = (char *)alloc_bootmem(len + 1);
+		if (d != NULL) {
+			memcpy(*dst = d, *str, len);
+			d[len] = '\0';
 		}
-		if (d != NULL)
-			*d = '\0';
 	}
-	*str = s;
 	if (*s == ',') {
-		(*str)++;
+		*str = s + 1;
 		return 2;
 	}
+	*str = s;
 	return 1;
 }
 #endif
