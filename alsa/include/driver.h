@@ -234,7 +234,7 @@ typedef struct snd_stru_vma {
 typedef struct snd_info_entry snd_info_entry_t;
 typedef struct snd_stru_pcm snd_pcm_t;
 typedef struct snd_stru_mixer snd_kmixer_t;
-typedef struct snd_stru_rawmidi snd_rawmidi_t;
+typedef struct _snd_rawmidi snd_rawmidi_t;
 typedef struct snd_stru_kctl snd_kctl_t;
 typedef struct snd_stru_kcontrol snd_kcontrol_t;
 typedef struct snd_stru_timer snd_timer_t;

@@ -32,31 +32,25 @@
 
 #define SND_RAWMIDI_DEVICES	4
 
-#define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
-#define SND_RAWMIDI_FLG_DRAIN	0x00000002	/* drain */
-#define SND_RAWMIDI_FLG_ACTSENS 0x00000004	/* active sensing */
-#define SND_RAWMIDI_FLG_OSS	0x80000000	/* OSS compatible mode */
+#define SND_RAWMIDI_LFLG_OUTPUT         (1<<0)
+#define SND_RAWMIDI_LFLG_INPUT          (1<<1)
+#define SND_RAWMIDI_LFLG_OPEN           (3<<0)
+#define SND_RAWMIDI_LFLG_APPEND         (1<<2)
 
-#define SND_RAWMIDI_LFLG_OUTPUT	0x00000001	/* open for output */
-#define SND_RAWMIDI_LFLG_INPUT	0x00000002	/* open for input */
-#define SND_RAWMIDI_LFLG_OPEN	0x00000003	/* open */
-#define SND_RAWMIDI_LFLG_APPEND	0x00000004	/* append flag for output */
+typedef struct _snd_rawmidi_runtime snd_rawmidi_runtime_t;
+typedef struct _snd_rawmidi_substream snd_rawmidi_substream_t;
+typedef struct _snd_rawmidi_stream snd_rawmidi_stream_t;
 
-typedef struct snd_stru_rawmidi_stream snd_rawmidi_stream_t;
-typedef struct snd_stru_rawmidi_stream_hw snd_rawmidi_stream_hw_t;
+typedef struct _snd_rawmidi_ops {
+	int (*open) (snd_rawmidi_substream_t * substream);
+	int (*close) (snd_rawmidi_substream_t * substream);
+	void (*trigger) (snd_rawmidi_substream_t * substream, int up);
+} snd_rawmidi_ops_t;
 
-struct snd_stru_rawmidi_stream_hw {
-	void *private_data;
-	void (*private_free) (snd_rawmidi_stream_hw_t *hw);
-	int (*open) (snd_rawmidi_t * rmidi);
-	int (*close) (snd_rawmidi_t * rmidi);
-	void (*trigger) (snd_rawmidi_t * rmidi, int up);
-	void (*abort) (snd_rawmidi_t * rmidi);
-};
-
-struct snd_stru_rawmidi_stream {
-	unsigned int flags;	/* SND_RAWMIDI_FLG_XXXX */
-	int use_count;		/* use counter (for output) */
+struct _snd_rawmidi_runtime {
+	unsigned int trigger: 1, /* transfer is running */
+		     drain: 1,	/* drain stage */
+		     oss: 1;	/* OSS compatible mode */
 	/* midi stream buffer */
 	unsigned char *buffer;	/* buffer for MIDI data */
 	unsigned int size;	/* size of buffer */
@@ -68,22 +62,48 @@ struct snd_stru_rawmidi_stream {
 	unsigned int used_min;	/* min used buffer for wakeup */
 	unsigned int xruns;	/* over/underruns counter */
 	/* misc */
-	unsigned int bytes;
 	spinlock_t lock;
 	wait_queue_head_t sleep;
 	/* event handler (room [output] or new bytes [input]) */
-	void (*event)(snd_rawmidi_t *rmidi);
+	void (*event)(snd_rawmidi_substream_t *substream);
+	/* private data */
 	void *private_data;
-	void (*private_free)(snd_rawmidi_stream_t *stream);
-	/* hardware layer */
-	snd_rawmidi_stream_hw_t hw;
+	void (*private_free)(snd_rawmidi_substream_t *substream);
 };
 
-struct snd_stru_rawmidi {
+struct _snd_rawmidi_substream {
+	struct list_head list;		/* list of all substream for given stream */
+	int stream;			/* direction */
+	int number;			/* substream number */
+	unsigned int opened: 1,		/* open flag */
+		     append: 1,		/* append flag (merge more streams) */
+		     active_sensing: 1; /* send active sensing when close */
+	int use_count;			/* use counter (for output) */
+	unsigned int bytes;
+	snd_rawmidi_t *rmidi;
+	snd_rawmidi_stream_t *pstr;
+	char name[32];
+	snd_rawmidi_runtime_t *runtime;
+	/* hardware layer */
+	snd_rawmidi_ops_t *ops;
+};
+
+typedef struct _snd_rawmidi_file {
+	snd_rawmidi_t *rmidi;
+	snd_rawmidi_substream_t *input;
+	snd_rawmidi_substream_t *output;
+} snd_rawmidi_file_t;
+
+struct _snd_rawmidi_stream {
+	unsigned int substream_count;
+	unsigned int substream_opened;
+	struct list_head substreams;
+};
+
+struct _snd_rawmidi {
 	snd_card_t *card;
 
 	unsigned int device;		/* device number */
-	unsigned int flags;		/* SND_RAWMIDI_LFLG_XXXX */
 	unsigned int info_flags;	/* SND_RAWMIDI_INFO_XXXX */
 	char id[64];
 	char name[80];
@@ -110,34 +130,37 @@ struct snd_stru_rawmidi {
 
 /* main rawmidi functions */
 
-extern int snd_rawmidi_new(snd_card_t * card, char *id, int device, snd_rawmidi_t ** rmidi);
+int snd_rawmidi_new(snd_card_t * card, char *id, int device,
+		    int output_count, int input_count,
+		    snd_rawmidi_t ** rmidi);
+void snd_rawmidi_set_ops(snd_rawmidi_t * rmidi, int stream, snd_rawmidi_ops_t * ops);
 
 /* control functions */
 
-extern int snd_rawmidi_control_ioctl(snd_card_t * card,
-				     snd_kctl_t * control,
-				     unsigned int cmd,
-				     unsigned long arg);
+int snd_rawmidi_control_ioctl(snd_card_t * card,
+			      snd_kctl_t * control,
+			      unsigned int cmd,
+			      unsigned long arg);
 
 /* callbacks */
 
-void snd_rawmidi_receive_reset(snd_rawmidi_t * rmidi);
-int snd_rawmidi_receive(snd_rawmidi_t * rmidi, unsigned char *buffer, int count);
-void snd_rawmidi_transmit_reset(snd_rawmidi_t * rmidi);
-int snd_rawmidi_transmit_empty(snd_rawmidi_t * rmidi);
-int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, unsigned char *buffer, int count);
+void snd_rawmidi_receive_reset(snd_rawmidi_substream_t * substream);
+int snd_rawmidi_receive(snd_rawmidi_substream_t * substream, unsigned char *buffer, int count);
+void snd_rawmidi_transmit_reset(snd_rawmidi_substream_t * substream);
+int snd_rawmidi_transmit_empty(snd_rawmidi_substream_t * substream);
+int snd_rawmidi_transmit(snd_rawmidi_substream_t * substream, unsigned char *buffer, int count);
 
 /* main midi functions */
 
 int snd_rawmidi_kernel_info(int cardnum, int device, int subdevice, snd_rawmidi_info_t *info);
-int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice, int mode, snd_rawmidi_t ** out);
-int snd_rawmidi_kernel_release(snd_rawmidi_t * rmidi, int mode);
-int snd_rawmidi_output_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
-int snd_rawmidi_input_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
-int snd_rawmidi_drop_output(snd_rawmidi_t * rmidi);
-int snd_rawmidi_drain_output(snd_rawmidi_t * rmidi);
-int snd_rawmidi_drain_input(snd_rawmidi_t * rmidi);
-long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, unsigned char *buf, long count);
-long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const unsigned char *buf, long count);
+int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice, int mode, snd_rawmidi_file_t * rfile);
+int snd_rawmidi_kernel_release(snd_rawmidi_file_t * rfile);
+int snd_rawmidi_output_params(snd_rawmidi_substream_t * substream, snd_rawmidi_params_t * params);
+int snd_rawmidi_input_params(snd_rawmidi_substream_t * substream, snd_rawmidi_params_t * params);
+int snd_rawmidi_drop_output(snd_rawmidi_substream_t * substream);
+int snd_rawmidi_drain_output(snd_rawmidi_substream_t * substream);
+int snd_rawmidi_drain_input(snd_rawmidi_substream_t * substream);
+long snd_rawmidi_kernel_read(snd_rawmidi_substream_t * substream, unsigned char *buf, long count);
+long snd_rawmidi_kernel_write(snd_rawmidi_substream_t * substream, const unsigned char *buf, long count);
 
 #endif				/* __MIDI_H */

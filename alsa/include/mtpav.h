@@ -54,17 +54,12 @@
 #define MTPAV_MODE_INPUT_TRIGGERED	0x04
 #define MTPAV_MODE_OUTPUT_TRIGGERED	0x08
 
-#if 0
-#define NUMPORTS 9		// TOALL and 1..8
-#else
-/* FIXME: we have currently only 8 minor numbers */
-#define NUMPORTS 8		// TOALL and 1..7
-#endif
-			// possible hardware ports (selected by 0xf5 port message)
-			//      0x01 .. 0x08    this MTP's ports 1..8
-			//      0x09 .. 0x10    networked MTP's ports (9..16)
-			//      0x11            networked MTP's computer port
-			//      0x63            to ADAT
+// possible hardware ports (selected by 0xf5 port message)
+//      0x01 .. 0x08    this MTP's ports 1..8
+//      0x09 .. 0x10    networked MTP's ports (9..16)
+//      0x11            networked MTP's computer port
+//      0x63            to ADAT
+#define NUMPORTS (0x12-1)	// all ports (ADAT is remmaped)
 
 ///////////////////////////////////////////////////////////////////
 //      types

@@ -27,7 +27,8 @@ struct snd_stru_wavefront_midi {
         snd_wavefront_mpu_id     output_mpu;  /* most-recently-used */
         snd_wavefront_mpu_id     input_mpu;   /* most-recently-used */
         unsigned int             mode[2];     /* MPU401_MODE_XXX */
-	snd_rawmidi_t		 *rmidi[2];
+	snd_rawmidi_substream_t	 *substream_output[2];
+	snd_rawmidi_substream_t	 *substream_input[2];
 	struct timer_list	 timer;
         spinlock_t               open;
         spinlock_t               virtual;     /* protects isvirtual */
@@ -38,8 +39,8 @@ struct snd_stru_wavefront_midi {
 #define	MPU_ACK		0xFE
 #define	UART_MODE_ON	0x3F
 
-extern snd_rawmidi_stream_hw_t snd_wavefront_midi_output;
-extern snd_rawmidi_stream_hw_t snd_wavefront_midi_input;
+extern snd_rawmidi_ops_t snd_wavefront_midi_output;
+extern snd_rawmidi_ops_t snd_wavefront_midi_input;
 
 extern void   snd_wavefront_midi_enable_virtual (snd_wavefront_card_t *);
 extern void   snd_wavefront_midi_disable_virtual (snd_wavefront_card_t *);

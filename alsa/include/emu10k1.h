@@ -766,7 +766,6 @@ struct snd_stru_emu10k1 {
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm_mic;
 	snd_pcm_t *pcm_efx;
-	snd_rawmidi_t *rmidi;
 
 	unsigned char dig_vol[6][9][2];	  /* output, input, left/right */
 	unsigned char stereo_vol[2][2];	  /* source (pcm,midi), left/right */
@@ -799,6 +798,9 @@ struct snd_stru_emu10k1 {
 	snd_pcm_substream_t *pcm_capture_mic_substream;
 	snd_pcm_substream_t *pcm_capture_efx_substream;
 
+	snd_rawmidi_t *rmidi;
+	snd_rawmidi_substream_t *midi_substream_input;
+	snd_rawmidi_substream_t *midi_substream_output;
 	unsigned int midi_mode;
 	spinlock_t midi_input_lock;
 	spinlock_t midi_output_lock;

@@ -79,8 +79,9 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define snd_kctl_t_magic			0xa15a0301
 #define snd_kcontrol_t_magic			0xa15a0302
 #define snd_rawmidi_t_magic			0xa15a0401
-#define snd_virmidi_t_magic			0xa15a0402
-#define snd_virmidi_dev_t_magic			0xa15a0403
+#define snd_rawmidi_file_t_magic		0xa15a0402
+#define snd_virmidi_t_magic			0xa15a0403
+#define snd_virmidi_dev_t_magic			0xa15a0404
 #define snd_timer_t_magic			0xa15a0501
 #define snd_timer_user_t_magic			0xa15a0502
 #define snd_hwdep_t_magic			0xa15a0601

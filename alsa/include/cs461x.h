@@ -1681,6 +1681,8 @@ struct snd_stru_cs461x {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_rawmidi_t *rmidi;
+	snd_rawmidi_substream_t *midi_input;
+	snd_rawmidi_substream_t *midi_output;
 
 	spinlock_t reg_lock;
 	unsigned int midcr;

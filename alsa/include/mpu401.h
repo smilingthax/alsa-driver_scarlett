@@ -73,6 +73,9 @@ struct snd_stru_mpu401 {
 	void (*close_output) (mpu401_t * mpu);
 	void *private_data;
 
+	snd_rawmidi_substream_t *substream_input;
+	snd_rawmidi_substream_t *substream_output;
+
 	spinlock_t open_lock;
 	spinlock_t input_lock;
 	spinlock_t output_lock;

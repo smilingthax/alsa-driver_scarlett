@@ -247,9 +247,9 @@ typedef struct snd_control {
 #define SND_CTL_IOCTL_CONTROL_LOCK	_IOW ('U', 0x14, snd_control_id_t)
 #define SND_CTL_IOCTL_CONTROL_UNLOCK	_IOW ('U', 0x15, snd_control_id_t)
 #define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x20, snd_hwdep_info_t)
-#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x30, snd_pcm_info_t)
+#define SND_CTL_IOCTL_PCM_INFO		_IOWR('U', 0x30, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x31, int)
-#define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x40, snd_rawmidi_info_t)
+#define SND_CTL_IOCTL_RAWMIDI_INFO	_IOWR('U', 0x40, snd_rawmidi_info_t)
 #define SND_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE _IOW('U', 0x41, int)
 
 /*
@@ -997,13 +997,14 @@ typedef struct {
 #define SND_RAWMIDI_INFO_INPUT		0x00000002
 #define SND_RAWMIDI_INFO_DUPLEX		0x00000004
 
-typedef struct snd_rawmidi_info {
+typedef struct _snd_rawmidi_info {
 	int device;			/* WR: device number */
-	int subdevice;			/* WR: subdevice number */
+	int subdevice;			/* RO/WR (control): subdevice number */
 	unsigned int type;		/* soundcard type */
 	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
 	unsigned char name[80];		/* name of this raw midi device */
+	unsigned char subname[32];	/* name of active or selected subdevice */
 	unsigned int output_subdevices_count;
 	unsigned int output_subdevices_avail;
 	unsigned int input_subdevices_count;
@@ -1011,33 +1012,31 @@ typedef struct snd_rawmidi_info {
 	unsigned char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
 
-typedef struct snd_rawmidi_params {
-	int when;		/* Params apply time/condition */
-	snd_timestamp_t tstamp;	/* Timestamp */
+#define SND_RAWMIDI_PARAM_STREAM	0
+#define SND_RAWMIDI_PARAM_SIZE		1
+#define SND_RAWMIDI_PARAM_MIN		2
+#define SND_RAWMIDI_PARAM_MAX		3
+#define SND_RAWMIDI_PARAM_ROOM		4
+
+#define SND_RAWMIDI_PARBIT_STREAM	(1<<SND_RAWMIDI_PARAM_STREAM)
+#define SND_RAWMIDI_PARBIT_SIZE		(1<<SND_RAWMIDI_PARAM_SIZE)
+#define SND_RAWMIDI_PARBIT_MIN		(1<<SND_RAWMIDI_PARAM_MIN)
+#define SND_RAWMIDI_PARBIT_MAX		(1<<SND_RAWMIDI_PARAM_MAX)
+#define SND_RAWMIDI_PARBIT_ROOM		(1<<SND_RAWMIDI_PARAM_ROOM)
+
+typedef struct _snd_rawmidi_params {
 	int stream;		/* Requested stream */
 	size_t size;		/* I/O requested queue size in bytes */
 	size_t min;		/* I minimum count of bytes in queue for wakeup */
 	size_t max;		/* O maximum count of bytes in queue for wakeup */
 	size_t room;		/* O minumum number of bytes writeable for wakeup */
 	unsigned int fail_mask;	/* failure locations */
-	int fail_reason;	/* failure reason */
 	int no_active_sensing: 1; /* O do not send active sensing byte in close() */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
-typedef struct snd_rawmidi_setup {
+typedef struct _snd_rawmidi_status {
 	int stream;		/* Requested stream */
-	size_t size;		/* I/O real queue queue size in bytes */
-	size_t min;		/* I minimum count of bytes in queue for wakeup */
-	size_t max;		/* O maximum count of bytes in queue for wakeup */
-	size_t room;		/* O minumum number of bytes writeable for wakeup */
-	int no_active_sensing: 1;	/* O do not send active sensing byte in close() */
-	unsigned char reserved[16];	/* reserved for future use */
-} snd_rawmidi_setup_t;
-
-typedef struct snd_rawmidi_status {
-	int stream;		/* Requested stream */
-	snd_timestamp_t tstamp;	/* Timestamp */
 	size_t count;		/* I/O number of bytes readable/writeable without blocking */
 	size_t queue;		/* O number of bytes in queue */
 	size_t pad;		/* O not used yet */
@@ -1048,11 +1047,10 @@ typedef struct snd_rawmidi_status {
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ('W', 0x01, snd_rawmidi_info_t)
-#define SND_RAWMIDI_IOCTL_STREAM_PARAMS _IOW ('W', 0x10, snd_rawmidi_params_t)
-#define SND_RAWMIDI_IOCTL_STREAM_SETUP	_IOWR('W', 0x11, snd_rawmidi_setup_t)
-#define SND_RAWMIDI_IOCTL_STREAM_STATUS _IOWR('W', 0x20, snd_rawmidi_status_t)
-#define SND_RAWMIDI_IOCTL_STREAM_DROP	_IOW ('W', 0x30, int)
-#define SND_RAWMIDI_IOCTL_STREAM_DRAIN	_IOW ('W', 0x31, int)
+#define SND_RAWMIDI_IOCTL_PARAMS	_IOWR('W', 0x10, snd_rawmidi_params_t)
+#define SND_RAWMIDI_IOCTL_STATUS	_IOWR('W', 0x20, snd_rawmidi_status_t)
+#define SND_RAWMIDI_IOCTL_DROP		_IOW ('W', 0x30, int)
+#define SND_RAWMIDI_IOCTL_DRAIN		_IOW ('W', 0x31, int)
 
 /*
  *  Timer section - /dev/snd/timer

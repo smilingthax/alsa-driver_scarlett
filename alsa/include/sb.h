@@ -93,6 +93,8 @@ struct snd_stru_sb {
 	snd_pcm_substream_t *capture_substream;
 
 	snd_rawmidi_t *rmidi;
+	snd_rawmidi_substream_t *midi_substream_input;
+	snd_rawmidi_substream_t *midi_substream_output;
 
 	spinlock_t reg_lock;
 	spinlock_t open_lock;
