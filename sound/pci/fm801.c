@@ -470,8 +470,11 @@ static void snd_fm801_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	unsigned int tmp;
 
 	status = inw(FM801_REG(chip, IRQ_STATUS));
-	if ((status & (FM801_IRQ_PLAYBACK|FM801_IRQ_CAPTURE|FM801_IRQ_MPU|FM801_IRQ_VOLUME)) == 0)
+	status &= FM801_IRQ_PLAYBACK|FM801_IRQ_CAPTURE|FM801_IRQ_MPU|FM801_IRQ_VOLUME;
+	if (! status)
 		return;
+	/* ack first */
+	outw(status, FM801_REG(chip, IRQ_STATUS));
 	if (chip->pcm && (status & FM801_IRQ_PLAYBACK) && chip->playback_substream) {
 		spin_lock(&chip->reg_lock);
 		chip->ply_buf++;
@@ -483,7 +486,6 @@ static void snd_fm801_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				(chip->ply_buf & 1) ?
 					FM801_REG(chip, PLY_BUF1) :
 					FM801_REG(chip, PLY_BUF2));
-		outw(FM801_IRQ_PLAYBACK, FM801_REG(chip, IRQ_STATUS));
 		spin_unlock(&chip->reg_lock);
 		snd_pcm_period_elapsed(chip->playback_substream);
 	}
@@ -498,18 +500,13 @@ static void snd_fm801_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				(chip->cap_buf & 1) ?
 					FM801_REG(chip, CAP_BUF1) :
 					FM801_REG(chip, CAP_BUF2));
-		outw(FM801_IRQ_CAPTURE, FM801_REG(chip, IRQ_STATUS));
 		spin_unlock(&chip->reg_lock);
 		snd_pcm_period_elapsed(chip->capture_substream);
 	}
-	if ((status & FM801_IRQ_MPU) && chip->rmidi != NULL) {
+	if (chip->rmidi && (status & FM801_IRQ_MPU))
 		snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
-		outw(FM801_IRQ_MPU, FM801_REG(chip, IRQ_STATUS));
-	}
-	if (status & FM801_IRQ_VOLUME) {
-		/* TODO */
-		outw(FM801_IRQ_VOLUME, FM801_REG(chip, IRQ_STATUS));
-	}
+	if (status & FM801_IRQ_VOLUME)
+		;/* TODO */
 }
 
 static snd_pcm_hardware_t snd_fm801_playback =
