@@ -348,6 +348,7 @@ case "$1" in
   i8x0|ich)
     basic
     insert snd-ac97-codec.o
+    insert snd-mpu401-uart.o 
     insert snd-intel8x0.o snd_ac97_clock=48000
     restore intel8x0.conf
     ;;
