@@ -1,9 +1,6 @@
 - midlevel:
-H get rid of runtime->_s* stuff and of mmap notify (Jaroslav)
 H change defaults for Wave volume and DAC/ADC volume
 H Implement correctly ready_mode
-H fix BOGUS use of sleep_on!!! (Jaroslav)
-H move the hardware resource management from sound module to top level code (Jaroslav)
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
 L lock, grant and revoke ioctls (not available to application I propose)
@@ -22,7 +19,6 @@ M change real rate params to use snd_pcm_clock_* (where useful) and to set rate_
 M fix es1968 driver to compute real rate at params time
 M add new MPU401 uart driver (Jaroslav)
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
-L Trident 2 frags problem (Jaroslav)
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
 L get rid of snd_pcm_lib_fragment_bytes and snd_pcm_lib_buffer_bytes
