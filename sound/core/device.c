@@ -116,14 +116,14 @@ int snd_device_register_all(snd_card_t *card)
 int snd_device_free_all(snd_card_t *card, snd_device_cmd_t cmd)
 {
 	snd_device_t *dev;
-	struct list_head *list, *next;
+	struct list_head *list;
 	int err, range_low, range_high;
 
 	snd_assert(card != NULL, return -ENXIO);
 	range_low = cmd * SNDRV_DEV_TYPE_RANGE_SIZE;
 	range_high = range_low + SNDRV_DEV_TYPE_RANGE_SIZE - 1;
       __again:
-	list_for_each_safe(list, next, &card->devices) {
+	list_for_each(list, &card->devices) {
 		dev = snd_device(list);		
 		if (dev->type >= range_low && dev->type <= range_high) {
 			if ((err = snd_device_free(card, dev->device_data)) < 0)
