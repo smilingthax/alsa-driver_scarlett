@@ -33,6 +33,9 @@ typedef unsigned long dma_addr_t;
 #ifndef module_exit
 #define module_exit(x)      void cleanup_module(void) { x(); }
 #endif        
+#ifndef THIS_MODULE
+#define THIS_MODULE	(&__this_module)
+#endif
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
 #define pci_for_each_dev(dev) \
 	for(dev = pci_devices; dev; dev = dev->next)
