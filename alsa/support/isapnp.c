@@ -1789,8 +1789,8 @@ static int isapnp_valid_mem(struct isapnp_cfgtmp *cfg, int idx)
       	mem = cfg->mem[idx];
       	if (!mem)
       		return -EINVAL;
-      	value1 = &cfg->result.resource[idx].start;
-      	value2 = &cfg->result.resource[idx].end;
+      	value1 = &cfg->result.resource[idx + 8].start;
+      	value2 = &cfg->result.resource[idx + 8].end;
 	if (cfg->result.resource[idx + 8].flags & IORESOURCE_AUTO) {
 		cfg->result.resource[idx + 8].flags &= ~IORESOURCE_AUTO;
 		*value1 = mem->min;
@@ -1801,7 +1801,7 @@ static int isapnp_valid_mem(struct isapnp_cfgtmp *cfg, int idx)
 	do {
 		*value1 += mem->align;
 		*value2 = *value1 + mem->size - 1;
-		if (*value1 >= 8 || !mem->align) {
+		if (*value1 >= mem->max || !mem->align) {
 			if (mem->res && mem->res->alt) {
 				if ((err = isapnp_alternative_switch(cfg, mem->res, mem->res->alt))<0)
 					return err;
