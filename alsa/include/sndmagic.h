@@ -67,6 +67,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 
 #define snd_magic_kfree _snd_magic_kfree
 
+#define snd_device_t_magic			0xa15a00ff
 #define snd_pcm_t_magic				0xa15a0101
 #define snd_pcm_file_t_magic			0xa15a0102
 #define snd_pcm_substream_t_magic		0xa15a0103

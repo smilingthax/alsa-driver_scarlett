@@ -246,8 +246,9 @@ typedef struct snd_stru_vma {
 #define SND_DEV_TYPE_RANGE_SIZE	0x1000
 
 typedef enum {
-	SND_DEV_LOWLEVEL_PRE = 0,
-	SND_DEV_LOWLEVEL_NORMAL = SND_DEV_TYPE_RANGE_SIZE,
+	SND_DEV_TOPLEVEL = (0*SND_DEV_TYPE_RANGE_SIZE),
+	SND_DEV_LOWLEVEL_PRE,
+	SND_DEV_LOWLEVEL_NORMAL = (1*SND_DEV_TYPE_RANGE_SIZE),
 	SND_DEV_PCM,
 	SND_DEV_RAWMIDI,
 	SND_DEV_TIMER,
@@ -286,11 +287,7 @@ struct snd_stru_device {
 	snd_device_state_t state;	/* state of the device */
 	snd_device_type_t type;		/* device type */
 	void *device_data;		/* device structure */
-	int number;			/* device number */
-	void *arg;			/* optional argument (dynamically allocated) */
-	int size;			/* size of an optional argument */
 	snd_device_ops_t *ops;		/* operations */
-	snd_device_t *parent;		/* must be freed at first */
 };
 
 #define snd_device(n) list_entry(n, snd_device_t, list)
@@ -494,8 +491,7 @@ int snd_unregister_interrupts(snd_card_t *card);
 /* device.c */
 
 int snd_device_new(snd_card_t *card, snd_device_type_t type,
-		   void *device_data, int number, snd_device_ops_t *ops,
-		   snd_device_t **rdev);
+		   void *device_data, snd_device_ops_t *ops);
 int snd_device_free(snd_card_t *card, void *device_data);
 int snd_device_register(snd_card_t *card, void *device_data);
 int snd_device_unregister(snd_card_t *card, void *device_data);
