@@ -109,7 +109,7 @@ static int snd_pcm_plugin_alloc(snd_pcm_plugin_t *plugin, snd_pcm_uframes_t fram
 		snd_assert((size % format->channels) == 0,);
 		size /= format->channels;
 		for (channel = 0; channel < format->channels; channel++, c++) {
-			c->frames = frames / format->channels;
+			c->frames = frames;
 			c->enabled = 1;
 			c->wanted = 0;
 			c->area.addr = plugin->buf + (channel * size);
