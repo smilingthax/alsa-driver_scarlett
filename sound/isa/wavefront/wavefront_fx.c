@@ -16,7 +16,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifdef ALSA_BUILD
+#if 0
 #define SNDRV_MAIN_OBJECT_FILE
 #endif
 #include <sound/driver.h>
@@ -1020,7 +1020,7 @@ unsigned char coefficients3[] = {
 0x0f, 0xd7, 0x0f, 0xd7, 0x0f, 0xff, 0x0f, 0xff
 };
 
-#ifdef ALSA_BUILD
+#if 0
 EXPORT_SYMBOL(snd_wavefront_fx_start);
 EXPORT_SYMBOL(snd_wavefront_fx_detect);
 EXPORT_SYMBOL(snd_wavefront_fx_ioctl);

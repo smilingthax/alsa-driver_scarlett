@@ -16,8 +16,8 @@ snd-sb16-dsp-objs := sb16_main.o
 snd-sb16-csp-objs := sb16_csp.o
 snd-sb8-objs := sb8.o
 snd-sb16-objs := sb16.o
-snd-sbawe-objs := sbawe.o
-snd-emu8000-synth-objs := emu8000.o emu8000_synth.o emu8000_callback.o emu8000_patch.o
+snd-sbawe-objs := sbawe.o emu8000.o
+snd-emu8000-synth-objs := emu8000_synth.o emu8000_callback.o emu8000_patch.o
 snd-es968-objs := es968.o
 
 # Toplevel Module Dependency

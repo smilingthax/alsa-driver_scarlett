@@ -30,7 +30,7 @@
  *
  */
 
-#ifdef ALSA_BUILD
+#if 0
 #define SNDRV_MAIN_OBJECT_FILE
 #endif
 #include <sound/driver.h>
@@ -38,7 +38,7 @@
 #include <sound/info.h>
 #include <sound/cs46xx.h>
 
-#ifdef ALSA_BUILD
+#if 0
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Routines for control of Cirrus Logic CS461x chips");
 MODULE_LICENSE("GPL");
@@ -2301,7 +2301,7 @@ int snd_cs46xx_create(snd_card_t * card,
 	return 0;
 }
 
-#ifdef ALSA_BUILD
+#if 0
 
 EXPORT_SYMBOL(snd_cs46xx_create);
 EXPORT_SYMBOL(snd_cs46xx_interrupt);

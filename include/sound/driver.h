@@ -166,6 +166,10 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 #define __ISAPNP__
 #endif
 
+#if !defined(CONFIG_ISA) && defined(CONFIG_SND_ISA)
+#define CONFIG_ISA
+#endif
+
 #ifndef MODULE_LICENSE
 #define MODULE_LICENSE(license)
 #endif

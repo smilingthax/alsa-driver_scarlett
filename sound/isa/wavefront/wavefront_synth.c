@@ -20,7 +20,7 @@
  *
  */
 
-#ifdef ALSA_BUILD
+#if 0
 #define SNDRV_MAIN_OBJECT_FILE
 #endif
 #include <sound/driver.h>
@@ -79,10 +79,12 @@ int ramcheck_time = 20;    /* time in seconds to wait while ROM code
 int osrun_time = 10;       /* time in seconds we wait for the OS to
 			      start running.
 			   */
+#if 0
 MODULE_AUTHOR("Paul Barton-Davis <pbd@op.net>");
 MODULE_DESCRIPTION("ALSA driver for Turtle Beach WaveFront ICS2215 Synth");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
+#endif
 MODULE_PARM(wf_raw,"i");
 MODULE_PARM_DESC(wf_raw, "if non-zero, assume that we need to boot the OS");
 MODULE_PARM(fx_raw,"i");
@@ -2289,7 +2291,7 @@ snd_wavefront_detect (snd_wavefront_card_t *card)
 	return 0;
 }
 
-#ifdef ALSA_BUILD
+#if 0
 EXPORT_SYMBOL(snd_wavefront_synth_ioctl);
 EXPORT_SYMBOL(snd_wavefront_synth_open);
 EXPORT_SYMBOL(snd_wavefront_synth_release);

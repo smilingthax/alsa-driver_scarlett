@@ -25,7 +25,7 @@
  *
  */
 
-#ifdef ALSA_BUILD
+#if 0
 #define SNDRV_MAIN_OBJECT_FILE
 #endif
 #include <sound/driver.h>
@@ -3616,7 +3616,19 @@ static int snd_trident_set_power_state(snd_card_t *card, unsigned int power_stat
 
 #endif /* CONFIG_PM */
 
-#ifdef ALSA_BUILD
+EXPORT_SYMBOL(snd_trident_alloc_voice);
+EXPORT_SYMBOL(snd_trident_free_voice);
+EXPORT_SYMBOL(snd_trident_start_voice);
+EXPORT_SYMBOL(snd_trident_stop_voice);
+EXPORT_SYMBOL(snd_trident_write_voice_regs);
+EXPORT_SYMBOL(snd_trident_clear_voices);
+/* trident_memory.c symbols */
+EXPORT_SYMBOL(snd_trident_synth_alloc);
+EXPORT_SYMBOL(snd_trident_synth_free);
+EXPORT_SYMBOL(snd_trident_synth_bzero);
+EXPORT_SYMBOL(snd_trident_synth_copy_from_user);
+
+#if 0
 
 EXPORT_SYMBOL(snd_trident_create);
 EXPORT_SYMBOL(snd_trident_interrupt);
@@ -3626,21 +3638,10 @@ EXPORT_SYMBOL(snd_trident_spdif_pcm);
 EXPORT_SYMBOL(snd_trident_mixer);
 EXPORT_SYMBOL(snd_trident_attach_synthesizer);
 EXPORT_SYMBOL(snd_trident_detach_synthesizer);
-EXPORT_SYMBOL(snd_trident_alloc_voice);
-EXPORT_SYMBOL(snd_trident_free_voice);
-EXPORT_SYMBOL(snd_trident_start_voice);
-EXPORT_SYMBOL(snd_trident_stop_voice);
-EXPORT_SYMBOL(snd_trident_write_voice_regs);
-EXPORT_SYMBOL(snd_trident_clear_voices);
 #ifdef CONFIG_PM
 EXPORT_SYMBOL(snd_trident_suspend);
 EXPORT_SYMBOL(snd_trident_resume);
 #endif
-/* trident_memory.c symbols */
-EXPORT_SYMBOL(snd_trident_synth_alloc);
-EXPORT_SYMBOL(snd_trident_synth_free);
-EXPORT_SYMBOL(snd_trident_synth_bzero);
-EXPORT_SYMBOL(snd_trident_synth_copy_from_user);
 
 MODULE_LICENSE("GPL");
 

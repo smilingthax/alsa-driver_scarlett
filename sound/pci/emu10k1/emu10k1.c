@@ -25,15 +25,13 @@
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 
-EXPORT_NO_SYMBOLS;
-
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("EMU10K1");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{Creative Labs,SB Live!/PCI512/E-mu APS}}");
 
-#if defined(CONFIG_SND_SEQUENCER) && defined(CONFIG_SND_SYNTH_EMU10K1)
+#ifdef CONFIG_SND_SEQUENCER
 #define ENABLE_SYNTH
 #include <sound/emu10k1_synth.h>
 #endif

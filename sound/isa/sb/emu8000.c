@@ -20,16 +20,18 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
+//#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/emu8000.h>
 #include <sound/emu8000_reg.h>
 #include <sound/control.h>
 #include <sound/initval.h>
 
+#if 0
 MODULE_AUTHOR("Takashi Iwai, Steve Ratcliffe");
 MODULE_DESCRIPTION("Routines for control of EMU8000 chip");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
+#endif
 
 /*
  * emu8000 register controls
@@ -1156,6 +1158,7 @@ EXPORT_SYMBOL(snd_emu8000_update_chorus_mode);
 EXPORT_SYMBOL(snd_emu8000_update_reverb_mode);
 EXPORT_SYMBOL(snd_emu8000_update_equalizer);
 
+#if 0
 /*
  *  INIT part
  */
@@ -1171,3 +1174,4 @@ static void __exit alsa_emu8000_exit(void)
 
 module_init(alsa_emu8000_init)
 module_exit(alsa_emu8000_exit)
+#endif

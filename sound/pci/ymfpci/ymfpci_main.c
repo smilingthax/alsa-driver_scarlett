@@ -24,7 +24,7 @@
  *
  */
 
-#ifdef ALSA_BUILD
+#if 0
 #define SNDRV_MAIN_OBJECT_FILE
 #endif
 #include <sound/driver.h>
@@ -32,7 +32,7 @@
 #include <sound/info.h>
 #include <sound/ymfpci.h>
 
-#ifdef ALSA_BUILD
+#if 0
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Routines for control of YMF724/740/744/754 chips");
 MODULE_LICENSE("GPL");
@@ -1962,7 +1962,7 @@ int snd_ymfpci_create(snd_card_t * card,
 	return 0;
 }
 
-#ifdef ALSA_BUILD
+#if 0
 
 EXPORT_SYMBOL(snd_ymfpci_create);
 EXPORT_SYMBOL(snd_ymfpci_interrupt);

@@ -25,13 +25,13 @@
  *
  */
 
-#ifdef ALSA_BUILD
+#if 0
 #define SNDRV_MAIN_OBJECT_FILE
 #endif
 #include <sound/driver.h>
 #include <sound/emu10k1.h>
 
-#ifdef ALSA_BUILD
+#if 0
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>, Creative Labs, Inc.");
 MODULE_DESCRIPTION("Routines for control of EMU10K1 chips");
 MODULE_LICENSE("GPL");
@@ -621,7 +621,20 @@ int snd_emu10k1_create(snd_card_t * card,
 	return 0;
 }
 
-#ifdef ALSA_BUILD
+/* memory.c */
+EXPORT_SYMBOL(snd_emu10k1_synth_alloc);
+EXPORT_SYMBOL(snd_emu10k1_synth_free);
+EXPORT_SYMBOL(snd_emu10k1_synth_bzero);
+EXPORT_SYMBOL(snd_emu10k1_synth_copy_from_user);
+EXPORT_SYMBOL(snd_emu10k1_memblk_map);
+/* voice.c */
+EXPORT_SYMBOL(snd_emu10k1_voice_alloc);
+EXPORT_SYMBOL(snd_emu10k1_voice_free);
+/* io.c */
+EXPORT_SYMBOL(snd_emu10k1_ptr_read);
+EXPORT_SYMBOL(snd_emu10k1_ptr_write);
+
+#if 0
 
 /*
  *  INIT part
@@ -644,23 +657,11 @@ EXPORT_SYMBOL(snd_emu10k1_mixer);
 /* emufx.c */
 EXPORT_SYMBOL(snd_emu10k1_fx8010_new);
 EXPORT_SYMBOL(snd_emu10k1_fx8010_pcm);
-/* memory.c */
-EXPORT_SYMBOL(snd_emu10k1_synth_alloc);
-EXPORT_SYMBOL(snd_emu10k1_synth_free);
-EXPORT_SYMBOL(snd_emu10k1_synth_bzero);
-EXPORT_SYMBOL(snd_emu10k1_synth_copy_from_user);
-EXPORT_SYMBOL(snd_emu10k1_memblk_map);
-/* voice.c */
-EXPORT_SYMBOL(snd_emu10k1_voice_alloc);
-EXPORT_SYMBOL(snd_emu10k1_voice_free);
 /* emumpu401.c */
 EXPORT_SYMBOL(snd_emu10k1_midi);
 /* emupcm.c */
 EXPORT_SYMBOL(snd_emu10k1_pcm);
 EXPORT_SYMBOL(snd_emu10k1_pcm_mic);
 EXPORT_SYMBOL(snd_emu10k1_pcm_efx);
-/* io.c */
-EXPORT_SYMBOL(snd_emu10k1_ptr_read);
-EXPORT_SYMBOL(snd_emu10k1_ptr_write);
 
 #endif /* ALSA_BUILD */

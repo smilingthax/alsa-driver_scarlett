@@ -7,6 +7,8 @@ O_TARGET     := _trident.o
 
 list-multi   := snd-trident.o snd-trident-synth.o
 
+export-objs  := trident_main.o
+
 snd-trident-objs := trident.o trident_main.o trident_memory.o
 snd-trident-synth-objs := trident_synth.o
 
