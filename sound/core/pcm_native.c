@@ -462,7 +462,7 @@ static int snd_pcm_sw_params(snd_pcm_substream_t * substream, snd_pcm_sw_params_
 	    params->xfer_align % runtime->min_align != 0)
 		return -EINVAL;
 	if (params->silence_size >= runtime->boundary) {
-		if (params->threshold != 0)
+		if (params->silence_threshold != 0)
 			return -EINVAL;
 	} else {
 		if (params->silence_size > params->silence_threshold)
