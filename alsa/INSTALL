@@ -735,6 +735,7 @@ Module parameters
 
     snd_mpu_port          - 0x300,0x330,0x332,0x334, -1 (disable) by default
     snd_fm_port           - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
+    snd_rear_switch       - enable shared rear/line-in switch (bool)
 
     Module supports autoprobe and multiple chips (max 8).
     
