@@ -62,17 +62,17 @@ typedef struct pcsp_struct {
 	snd_pcm_substream_t *playback_substream;
 	volatile int last_clocks;
 	volatile int index;
-	unsigned volume;	/* volume for pc-speaker */
-	unsigned gain;		/* output gain */
+	unsigned int volume;	/* volume for pc-speaker */
+	unsigned int gain;		/* output gain */
 	volatile int timer_active;
 	volatile int timer_latch;
 	volatile int clockticks;
 	volatile int reset_timer;
-	volatile unsigned cur_buf;	/* fragment currently playing */
+	volatile unsigned int cur_buf;	/* fragment currently playing */
 	unsigned char e;
-	unsigned char max_treble;
-	unsigned char treble;
-	unsigned char bass;
+	int max_treble;
+	int treble;
+	int bass;
 	unsigned char vl_tab[256];
 } pcsp_t;
 
