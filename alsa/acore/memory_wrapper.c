@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "adriver.h"
+#include <linux/mm.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
 #include <sound/memalloc.h>

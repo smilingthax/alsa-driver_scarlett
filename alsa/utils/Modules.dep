@@ -11,3 +11,5 @@
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
 
+%dir linux/sound/pcmcia/pdaudiocf
+|snd-pdaudiocf snd-pcm

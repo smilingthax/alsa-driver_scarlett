@@ -2,6 +2,7 @@
 #include "../alsa-kernel/core/misc.c"
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
+#include <linux/slab.h>
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
