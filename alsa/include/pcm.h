@@ -304,8 +304,6 @@ struct _snd_pcm_runtime {
 
 	/* -- timer -- */
 	unsigned int timer_resolution;	/* timer resolution */
-	int timer_running;		/* time is running */
-	spinlock_t timer_lock;
 
 	/* -- DMA -- */           
 	unsigned char *dma_area;	/* DMA area */
@@ -337,6 +335,8 @@ struct _snd_pcm_substream {
 	snd_pcm_runtime_t *runtime;
         /* -- timer section -- */
 	snd_timer_t *timer;		/* timer */
+	int timer_running;		/* time is running */
+	spinlock_t timer_lock;
 	/* -- next substream -- */
 	snd_pcm_substream_t *next;
 	/* -- linked substreams -- */
