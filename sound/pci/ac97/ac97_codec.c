@@ -324,7 +324,7 @@ static void snd_ac97_write_cache_test(ac97_t *ac97, unsigned short reg, unsigned
  * Compares the value with the register cache and updates the value
  * only when the value is changed.
  *
- * Retruns 1 if the value is changed, 0 if no change, or a negative
+ * Returns 1 if the value is changed, 0 if no change, or a negative
  * code on failure.
  */
 int snd_ac97_update(ac97_t *ac97, unsigned short reg, unsigned short value)
@@ -351,7 +351,7 @@ int snd_ac97_update(ac97_t *ac97, unsigned short reg, unsigned short value)
  * @mask: the bit-mask to change
  * @value: the value to set
  *
- * Updates the masked-bits on the given register onle when the value
+ * Updates the masked-bits on the given register only when the value
  * is changed.
  *
  * Returns 1 if the bits are changed, 0 if no change, or a negative
@@ -1031,8 +1031,8 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("Exchange Center/LFE", AC97_ALC650_MULTICH, 3, 1, 0),
 	/* 4: Analog Input To Surround */
 	/* 5: Analog Input To Center/LFE */
-	/* 6: Indepedent Master Volume Right */
-	/* 7: Indepedent Master Volume Left */
+	/* 6: Independent Master Volume Right */
+	/* 7: Independent Master Volume Left */
 	/* 8: reserved */
 	AC97_SINGLE("Line-In As Surround", AC97_ALC650_MULTICH, 9, 1, 0),
 	AC97_SINGLE("Mic As Center/LFE", AC97_ALC650_MULTICH, 10, 1, 0),
@@ -1139,7 +1139,7 @@ static int snd_ac97_ymf753_spdif_source_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 }
 
 /* The AC'97 spec states that the S/PDIF signal is to be output at pin 48.
-   The YMF753 will ouput the S/PDIF signal to pin 43, 47 (EAPD), or 48.
+   The YMF753 will output the S/PDIF signal to pin 43, 47 (EAPD), or 48.
    By default, no output pin is selected, and the S/PDIF signal is not output.
    There is also a bit to mute S/PDIF output in a vendor-specific register. */
 static int snd_ac97_ymf753_spdif_output_pin_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
@@ -1266,7 +1266,7 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 		if (!(val & mask))
 			return 0;	/* nothing here */
 	}
-	return 1;		/* success, useable */
+	return 1;		/* success, usable */
 }
 
 static int snd_ac97_try_bit(ac97_t * ac97, int reg, int bit)
@@ -1849,7 +1849,7 @@ static int ac97_reset_wait(ac97_t *ac97, int timeout, int with_modem)
  * The template must include the valid callbacks (at least read and
  * write), the codec number (num) and address (addr), and the private
  * data (private_data).  The other callbacks, wait and reset, are not
- * mandantory.
+ * mandatory.
  * 
  * The clock is set to 48000.  If another clock is needed, reset
  * ac97->clock manually afterwards.
@@ -1857,7 +1857,7 @@ static int ac97_reset_wait(ac97_t *ac97, int timeout, int with_modem)
  * The ac97 instance is registered as a low-level device, so you don't
  * have to release it manually.
  *
- * Returns zero if sucessful, or a negative error code on failure.
+ * Returns zero if successful, or a negative error code on failure.
  */
 
 int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
