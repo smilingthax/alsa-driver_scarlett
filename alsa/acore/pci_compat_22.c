@@ -2,6 +2,8 @@
  * PCI-compatible layer for 2.2 kernels
  */
 
+#ifdef CONFIG_PCI
+
 static LIST_HEAD(pci_drivers);
 
 struct pci_driver_mapping {
@@ -296,46 +298,6 @@ int snd_pci_compat_find_capability(struct pci_dev *dev, int cap)
 	return 0;
 }
 
-static void *snd_pci_compat_alloc_consistent1(unsigned long dma_mask,
-					      unsigned long size,
-					      int hop)
-{
-	void *res;
-
-	if (++hop > 10)
-		return NULL;
-	res = snd_malloc_pages(size, GFP_KERNEL | (dma_mask <= 0x00ffffff ? GFP_DMA : 0));
-	if (res == NULL)
-		return NULL;
-	if ((virt_to_bus(res) & ~dma_mask) ||
-	    ((virt_to_bus(res) + size - 1) & ~dma_mask)) {
-		void *res1 = snd_pci_compat_alloc_consistent1(dma_mask, size, hop);
-		snd_free_pages(res, size);
-		return res1;
-	}
-	return res;
-}
-
-void *snd_pci_compat_alloc_consistent(struct pci_dev *dev,
-				      long size,
-				      dma_addr_t *dmaaddr)
-{
-	unsigned long dma_mask = snd_pci_compat_get_dma_mask(dev);
-	void *res = snd_pci_compat_alloc_consistent1(dma_mask, size, 0);
-	if (res != NULL)
-		*dmaaddr = (dma_addr_t)virt_to_bus(res);
-	return res;
-}
-
-void snd_pci_compat_free_consistent(struct pci_dev *dev, long size, void *ptr, dma_addr_t dmaaddr)
-{
-	if (bus_to_virt(dmaaddr) != ptr) {
-		printk(KERN_ERR "invalid address given %p != %lx to snd_pci_compat_free_consistent\n", ptr, (unsigned long)dmaaddr);
-		return;
-	}
-	snd_free_pages(ptr, size);
-}
-
 int snd_pci_compat_dma_supported(struct pci_dev *dev, dma_addr_t mask)
 {
 	return 1;
@@ -396,3 +358,53 @@ void snd_pci_compat_release_regions(struct pci_dev *pdev)
 	for (i = 0; i < 6; i++)
 		snd_pci_compat_release_region(pdev, i);
 }
+
+#endif /* CONFIG_PCI */
+
+/* these functions are outside of CONFIG_PCI */
+
+static void *snd_pci_compat_alloc_consistent1(unsigned long dma_mask,
+					      unsigned long size,
+					      int hop)
+{
+	void *res;
+
+	if (++hop > 10)
+		return NULL;
+	res = snd_malloc_pages(size, GFP_KERNEL | (dma_mask <= 0x00ffffff ? GFP_DMA : 0));
+	if (res == NULL)
+		return NULL;
+	if ((virt_to_bus(res) & ~dma_mask) ||
+	    ((virt_to_bus(res) + size - 1) & ~dma_mask)) {
+		void *res1 = snd_pci_compat_alloc_consistent1(dma_mask, size, hop);
+		snd_free_pages(res, size);
+		return res1;
+	}
+	return res;
+}
+
+void *snd_pci_compat_alloc_consistent(struct pci_dev *dev,
+				      long size,
+				      dma_addr_t *dmaaddr)
+{
+	unsigned long dma_mask;
+#ifdef CONFIG_PCI
+	dma_mask = snd_pci_compat_get_dma_mask(dev);
+#else
+	dma_mask = 0xffffff; /* ISA - 16MB */
+#endif
+	void *res = snd_pci_compat_alloc_consistent1(dma_mask, size, 0);
+	if (res != NULL)
+		*dmaaddr = (dma_addr_t)virt_to_bus(res);
+	return res;
+}
+
+void snd_pci_compat_free_consistent(struct pci_dev *dev, long size, void *ptr, dma_addr_t dmaaddr)
+{
+	if (bus_to_virt(dmaaddr) != ptr) {
+		printk(KERN_ERR "invalid address given %p != %lx to snd_pci_compat_free_consistent\n", ptr, (unsigned long)dmaaddr);
+		return;
+	}
+	snd_free_pages(ptr, size);
+}
+

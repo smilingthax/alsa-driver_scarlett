@@ -40,6 +40,7 @@
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/initval.h>
+#include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
@@ -47,6 +48,7 @@
 #include <linux/types.h>
 #include <linux/delay.h>
 #include <asm/irq.h>
+#include <asm/io.h>
 #include "msnd.h"
 
 #define LOGNAME			"msnd"

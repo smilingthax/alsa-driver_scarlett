@@ -57,14 +57,14 @@ void snd_compat_request_module(const char *name, ...);
 #define request_module(name, args...) snd_compat_request_module(name, ##args)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #include <linux/compiler.h>
 #ifndef __user
 #define __user
 #endif
 
-#ifdef CONFIG_PCI
+/* for compat layer */
 #include <linux/pci.h>
-#endif
 
 #ifdef LINUX_2_2
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
@@ -175,6 +175,8 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define MODULE_LICENSE(license)
 #endif
 
+#endif /* < 2.6.0 */
+
 #ifndef CONFIG_HAVE_STRLCPY
 size_t snd_compat_strlcpy(char *dest, const char *src, size_t size);
 #define strlcpy(dest, src, size) snd_compat_strlcpy(dest, src, size)
@@ -207,8 +209,9 @@ int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #define writeq(v, a) do { __writeq((v),(a)); mb(); } while(0)
 #endif
 
-#include <linux/interrupt.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 28)
+#include <linux/interrupt.h>
 static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq(); }
 #undef synchronize_irq
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
@@ -219,6 +222,7 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #define IRQ_RETVAL(x)	/*void*/
 typedef void irqreturn_t;
 #endif
+#endif /* < 2.6.0 */
 
 #ifndef min
 /*
@@ -241,6 +245,7 @@ typedef void irqreturn_t;
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #include <linux/devfs_fs_kernel.h>
 #ifdef CONFIG_DEVFS_FS
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
@@ -252,7 +257,7 @@ typedef void irqreturn_t;
 #undef devfs_remove
 void snd_compat_devfs_remove(const char *fmt, ...);
 #define devfs_remove snd_compat_devfs_remove
-#endif
+#endif /* < 2.5.29 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
 #undef devfs_mk_dir
 int snd_compat_devfs_mk_dir(const char *dir, ...);
@@ -260,7 +265,7 @@ int snd_compat_devfs_mk_dir(const char *dir, ...);
 #undef devfs_mk_cdev
 int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...);
 #define devfs_mk_cdev snd_compat_devfs_mk_cdev
-#endif
+#endif /* < 2.5.67 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
 					      unsigned int major, unsigned int minor,
@@ -289,6 +294,7 @@ static inline void devfs_remove(const char *fmt, ...) { }
 #undef devfs_mk_cdev
 #define devfs_mk_cdev(dev, mode, fmt, args...) do { (void)(dev); } while (0)
 #endif /* CONFIG_DEVFS_FS */
+#endif /* < 2.6.0 */
 
 /* workarounds for USB API */
 #if defined(SND_NEED_USB_WRAPPER) && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
@@ -353,6 +359,7 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 /* workqueue-alike; 2.5.45 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #include <linux/workqueue.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45) && !defined(__WORK_INITIALIZER)
 struct work_struct {
@@ -372,7 +379,8 @@ struct work_struct {
 	struct work_struct n = __WORK_INITIALIZER(n, f, d)
 int snd_compat_schedule_work(struct work_struct *work);
 #define schedule_work(w) snd_compat_schedule_work(w)
-#endif /* 2.5.45 */
+#endif /* < 2.5.45 */
+#endif /* < 2.6.0 */
 
 /* 2.5 new modules */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
@@ -438,12 +446,10 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-struct device {
-	struct {
-		struct pci_dev *pci;
-	} d;
-	u64 *dma_mask;
-};
+#define snd_dma_pci_data(pci)	((struct device *)(pci))
+#define snd_dma_isa_data()	NULL
+#define snd_dma_sbus_data(sbus)	((struct device *)(sbus))
+#define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

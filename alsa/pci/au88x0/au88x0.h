@@ -14,14 +14,15 @@
 
 #ifdef __KERNEL__
 #include <sound/driver.h>
+#include <linux/init.h>
+#include <linux/pci.h>
+#include <asm/io.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/rawmidi.h>
 #include <sound/mpu401.h>
 #include <sound/hwdep.h>
 #include <sound/ac97_codec.h>
-#include <asm/io.h>
-#include <linux/init.h>
 #include "au88x0_eq.h"
 
 /*
