@@ -534,7 +534,7 @@ int snd_sb8dsp_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm)
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_sb8_playback_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_sb8_capture_ops);
 
-	snd_pcm_lib_preallocate_isa_pages_for_all(pcm, 64*1024, 64*1024, GFP_KERNEL|GFP_DMA);
+	snd_pcm_lib_preallocate_isa_pages_for_all(pcm, 64*1024, 64*1024);
 
 	if (rpcm)
 		*rpcm = pcm;

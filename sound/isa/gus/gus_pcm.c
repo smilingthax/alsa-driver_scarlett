@@ -862,7 +862,7 @@ int snd_gf1_pcm_new(snd_gus_card_t * gus, int pcm_dev, int control_index, snd_pc
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_gf1_pcm_playback_ops);
 
 	for (substream = pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream; substream; substream = substream->next)
-		snd_pcm_lib_preallocate_isa_pages(substream, 64*1024, gus->gf1.dma1 > 3 ? 128*1024 : 64*1024, GFP_KERNEL|GFP_DMA);
+		snd_pcm_lib_preallocate_isa_pages(substream, 64*1024, gus->gf1.dma1 > 3 ? 128*1024 : 64*1024);
 	
 	pcm->info_flags = 0;
 	pcm->dev_subclass = SNDRV_PCM_SUBCLASS_GENERIC_MIX;
@@ -870,7 +870,7 @@ int snd_gf1_pcm_new(snd_gus_card_t * gus, int pcm_dev, int control_index, snd_pc
 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_gf1_pcm_capture_ops);
 		if (gus->gf1.dma2 == gus->gf1.dma1)
 			pcm->info_flags |= SNDRV_PCM_INFO_HALF_DUPLEX;
-		snd_pcm_lib_preallocate_isa_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream, 64*1024, gus->gf1.dma2 > 3 ? 128*1024 : 64*1024, GFP_KERNEL|GFP_DMA);
+		snd_pcm_lib_preallocate_isa_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream, 64*1024, gus->gf1.dma2 > 3 ? 128*1024 : 64*1024);
 	}
 	strcpy(pcm->name, pcm->id);
 	if (gus->interwave) {

@@ -243,8 +243,8 @@ void *snd_malloc_pages(unsigned long size, unsigned int dma_flags);
 void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsigned long *res_size);
 void snd_free_pages(void *ptr, unsigned long size);
 #ifdef CONFIG_ISA
-void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr, unsigned int dma_flags);
-void *snd_malloc_isa_pages_fallback(unsigned long size, dma_addr_t *dma_addr, unsigned int dma_flags, unsigned long *res_size);
+void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr);
+void *snd_malloc_isa_pages_fallback(unsigned long size, dma_addr_t *dma_addr, unsigned long *res_size);
 #define snd_free_isa_pages(size, ptr, dma_addr) snd_free_pages(ptr, size)
 #endif
 #ifdef CONFIG_PCI
