@@ -193,12 +193,12 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #undef synchronize_irq
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
 #endif /* LINUX_VERSION_CODE < 2.5.28 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 68)
+#ifndef IRQ_NONE
 #define IRQ_NONE	/*void*/
 #define IRQ_HANDLED	/*void*/
 #define IRQ_RETVAL(x)	/*void*/
 typedef void irqreturn_t;
-#endif /* LINUX_VERSION_CODE < 2.5.68 */
+#endif
 
 #ifndef min
 /*
