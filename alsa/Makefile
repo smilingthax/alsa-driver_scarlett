@@ -125,7 +125,7 @@ install: install-modules install-headers install-scripts check-snd-prefix
 	@if [ -L /dev/snd ]; then \
 		echo "The ALSA devices were removed from /proc/asound/dev directory." ; \
 		echo "Creating static device entries in /dev/snd." ; \
-		$(TOPDIR)/snddevices ; \
+		$(SND_TOPDIR)/snddevices ; \
 	fi
 	cat WARNING
 
@@ -173,7 +173,7 @@ install-scripts:
 .PHONY: check-snd-prefix
 check-snd-prefix:
 	@ if [ x"$(DESTDIR)" = x ]; then \
-	  if modprobe -c | grep -s -q snd_; then \
+	  if /sbin/modprobe -c | grep -s -q snd_; then \
 	    echo;\
 	    echo "             ===== WARNING =====";\
 	    echo;\
