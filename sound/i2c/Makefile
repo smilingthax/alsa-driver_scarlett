@@ -13,7 +13,9 @@ snd-i2c-objs := i2c.o
 snd-cs8427-objs := cs8427.o
 snd-tea6330t-objs := tea6330t.o
 
-subdir-$(CONFIG_L3) += l3
+ifeq ($(subst m,y,$(CONFIG_L3)),y)
+  subdir-$(CONFIG_L3) += l3
+endif
 ifeq ($(filter $(subdir-y),l3),l3)
   subdir-m := l3
   obj-y += l3/l3.o
