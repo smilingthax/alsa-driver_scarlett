@@ -250,9 +250,11 @@ typedef struct {
 #define SND_SEQ_PORT_TYPE_MIDI_GM	(1<<2)	/* General MIDI compatible device */
 #define SND_SEQ_PORT_TYPE_MIDI_GS	(1<<3)	/* GS compatible device */
 #define SND_SEQ_PORT_TYPE_MIDI_XG	(1<<4)	/* XG compatible device */
+
 /* other standards...*/
 #define SND_SEQ_PORT_TYPE_SYNTH		(1<<10)	/* Synth device */
 #define SND_SEQ_PORT_TYPE_SAMPLE	(1<<11)	/* Sampling device (support sample download) */
+#define SND_SEQ_PORT_TYPE_SOUNDFONT	(1<<12)	/* SoundFont compatible device */
 /*...*/
 #define SND_SEQ_PORT_TYPE_APPLICATION	(1<<20)	/* application (sequencer/editor) */
 
