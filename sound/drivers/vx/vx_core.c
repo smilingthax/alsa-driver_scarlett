@@ -44,8 +44,7 @@ MODULE_LICENSE("GPL");
  */
 void snd_vx_delay(vx_core_t *chip, int xmsec)
 {
-	if (! (chip->chip_status & VX_STAT_IN_SUSPEND) && ! in_interrupt() &&
-	    xmsec >= 1000 / HZ) {
+	if (! in_interrupt() && xmsec >= 1000 / HZ) {
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout((xmsec * HZ + 999) / 1000);
 	} else {

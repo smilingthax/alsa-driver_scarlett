@@ -84,7 +84,7 @@ static inline void snd_ymfpci_writel(ymfpci_t *chip, u32 offset, u32 val)
 	writel(val, chip->reg_area_virt + offset);
 }
 
-static int snd_ymfpci_codec_ready(ymfpci_t *chip, int secondary, int sched)
+static int snd_ymfpci_codec_ready(ymfpci_t *chip, int secondary)
 {
 	signed long end_time;
 	u32 reg = secondary ? YDSXGR_SECSTATUSADR : YDSXGR_PRISTATUSADR;
@@ -93,10 +93,8 @@ static int snd_ymfpci_codec_ready(ymfpci_t *chip, int secondary, int sched)
 	do {
 		if ((snd_ymfpci_readw(chip, reg) & 0x8000) == 0)
 			return 0;
-		if (sched) {
-			set_current_state(TASK_UNINTERRUPTIBLE);
-			schedule_timeout(1);
-		}
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(1);
 	} while (end_time - (signed long)jiffies >= 0);
 	snd_printk("codec_ready: codec %i is not ready [0x%x]\n", secondary, snd_ymfpci_readw(chip, reg));
 	return -EBUSY;
@@ -107,7 +105,7 @@ static void snd_ymfpci_codec_write(ac97_t *ac97, u16 reg, u16 val)
 	ymfpci_t *chip = snd_magic_cast(ymfpci_t, ac97->private_data, return);
 	u32 cmd;
 	
-	snd_ymfpci_codec_ready(chip, 0, 0);
+	snd_ymfpci_codec_ready(chip, 0);
 	cmd = ((YDSXG_AC97WRITECMD | reg) << 16) | val;
 	snd_ymfpci_writel(chip, YDSXGR_AC97CMDDATA, cmd);
 }
@@ -116,10 +114,10 @@ static u16 snd_ymfpci_codec_read(ac97_t *ac97, u16 reg)
 {
 	ymfpci_t *chip = snd_magic_cast(ymfpci_t, ac97->private_data, return -ENXIO);
 
-	if (snd_ymfpci_codec_ready(chip, 0, 0))
+	if (snd_ymfpci_codec_ready(chip, 0))
 		return ~0;
 	snd_ymfpci_writew(chip, YDSXGR_AC97CMDADR, YDSXG_AC97READCMD | reg);
-	if (snd_ymfpci_codec_ready(chip, 0, 0))
+	if (snd_ymfpci_codec_ready(chip, 0))
 		return ~0;
 	if (chip->device_id == PCI_DEVICE_ID_YAMAHA_744 && chip->rev < 2) {
 		int i;
@@ -2209,7 +2207,7 @@ void snd_ymfpci_resume(ymfpci_t *chip)
 	pci_enable_device(chip->pci);
 	pci_set_master(chip->pci);
 	snd_ymfpci_aclink_reset(chip->pci);
-	snd_ymfpci_codec_ready(chip, 0, 0);
+	snd_ymfpci_codec_ready(chip, 0);
 	snd_ymfpci_download_image(chip);
 	udelay(100);
 
@@ -2299,7 +2297,7 @@ int __devinit snd_ymfpci_create(snd_card_t * card,
 	chip->irq = pci->irq;
 
 	snd_ymfpci_aclink_reset(pci);
-	if (snd_ymfpci_codec_ready(chip, 0, 1) < 0) {
+	if (snd_ymfpci_codec_ready(chip, 0) < 0) {
 		snd_ymfpci_free(chip);
 		return -EIO;
 	}

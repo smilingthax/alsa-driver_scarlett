@@ -182,7 +182,6 @@ static void __devexit snd_trident_remove(struct pci_dev *pci)
 }
 
 #ifdef CONFIG_PM
-#ifndef PCI_OLD_SUSPEND
 static int snd_card_trident_suspend(struct pci_dev *pci, u32 state)
 {
 	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return -ENXIO);
@@ -195,18 +194,6 @@ static int snd_card_trident_resume(struct pci_dev *pci)
 	snd_trident_resume(chip);
 	return 0;
 }
-#else
-static void snd_card_trident_suspend(struct pci_dev *pci)
-{
-	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return);
-	snd_trident_suspend(chip);
-}
-static void snd_card_trident_resume(struct pci_dev *pci)
-{
-	trident_t *chip = snd_magic_cast(trident_t, pci_get_drvdata(pci), return);
-	snd_trident_resume(chip);
-}
-#endif
 #endif
 
 static struct pci_driver driver = {

@@ -251,7 +251,6 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 }
 
 #ifdef CONFIG_PM
-#ifndef PCI_OLD_SUSPEND
 static int snd_card_ymfpci_suspend(struct pci_dev *pci, u32 state)
 {
 	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return -ENXIO);
@@ -264,18 +263,6 @@ static int snd_card_ymfpci_resume(struct pci_dev *pci)
 	snd_ymfpci_resume(chip);
 	return 0;
 }
-#else
-static void snd_card_ymfpci_suspend(struct pci_dev *pci)
-{
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return);
-	snd_ymfpci_suspend(chip);
-}
-static void snd_card_ymfpci_resume(struct pci_dev *pci)
-{
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return);
-	snd_ymfpci_resume(chip);
-}
-#endif
 #endif
 
 static void __devexit snd_card_ymfpci_remove(struct pci_dev *pci)
