@@ -46,6 +46,13 @@ MODULE_CLASSES("{sound}");
 MODULE_LICENSE("GPL");
 MODULE_DEVICES("{{Aureal Semiconductor Inc., Aureal Vortex Sound Processor}}");
 
+#ifndef PCI_VENDOR_ID_VIA 
+#define PCI_VENDOR_ID_VIA 0x1106
+#endif
+#ifndef PCI_DEVICE_ID_VIA_8365_1
+#define PCI_DEVICE_ID_VIA_8365_1 0x8305
+#endif
+
 #ifndef MODULE
 /* format is: snd-mychip=enable,index,id */
 static int __init alsa_card_vortex_setup(char *str) {
