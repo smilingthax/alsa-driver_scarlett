@@ -116,7 +116,7 @@ static void resample_expand(snd_pcm_plugin_t *plugin,
 			S1 = S2;
 			S2 = sample;
 			src += src_step;
-			src_frames--;
+			src_frames1--;
 		}
 		while (dst_frames1-- > 0) {
 			if (pos & ~MASK) {
