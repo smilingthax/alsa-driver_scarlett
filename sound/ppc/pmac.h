@@ -204,18 +204,17 @@ int snd_pmac_tumbler_init(pmac_t *chip);
 
 /* i2c functions */
 typedef struct snd_pmac_keywest {
-	unsigned long base;
 	int addr;
-	int steps;
+	struct i2c_client *client;
+	int id;
+	int (*init_client)(struct snd_pmac_keywest *i2c);
+	char *name;
 } pmac_keywest_t;
 
-int snd_pmac_keywest_find(pmac_t *chip, pmac_keywest_t *i2c, int addr, int (*init_client)(pmac_t *, pmac_keywest_t *));
+int snd_pmac_keywest_init(pmac_keywest_t *i2c);
 void snd_pmac_keywest_cleanup(pmac_keywest_t *i2c);
-int snd_pmac_keywest_write(pmac_keywest_t *i2c, unsigned char cmd, int len, unsigned char *data);
-inline static int snd_pmac_keywest_write_byte(pmac_keywest_t *i2c, unsigned char cmd, unsigned char data)
-{
-	return snd_pmac_keywest_write(i2c, cmd, 1, &data);
-}
+#define snd_pmac_keywest_write(i2c,cmd,len,data) i2c_smbus_write_block_data((i2c)->client, cmd, len, data)
+#define snd_pmac_keywest_write_byte(i2c,cmd,data) i2c_smbus_write_byte_data((i2c)->client, cmd, data)
 
 /* misc */
 int snd_pmac_boolean_stereo_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo);

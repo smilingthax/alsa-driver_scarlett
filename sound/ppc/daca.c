@@ -22,6 +22,8 @@
 #define __NO_VERSION__
 #include <sound/driver.h>
 #include <linux/init.h>
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 #include <sound/core.h>
 #include "pmac.h"
 
@@ -50,7 +52,7 @@ typedef struct pmac_daca_t {
 /*
  * initialize / detect DACA
  */
-static int daca_init_client(pmac_t *chip, pmac_keywest_t *i2c)
+static int daca_init_client(pmac_keywest_t *i2c)
 {
 	unsigned short wdata = 0x00;
 	/* SR: no swap, 1bit delay, 32-48kHz */
@@ -68,7 +70,7 @@ static int daca_set_volume(pmac_daca_t *mix)
 {
 	unsigned char data[2];
   
-	if (! mix->i2c.base)
+	if (! mix->i2c.client)
 		return -ENODEV;
   
 	if (mix->right_vol > DACA_VOL_MAX)
@@ -253,7 +255,10 @@ int __init snd_pmac_daca_init(pmac_t *chip)
 	chip->mixer_free = daca_cleanup;
 	mix->amp_on = 1; /* default on */
 
-	if ((err = snd_pmac_keywest_find(chip, &mix->i2c, DACA_I2C_ADDR, daca_init_client)) < 0)
+	mix->i2c.addr = DACA_I2C_ADDR;
+	mix->i2c.init_client = daca_init_client;
+	mix->i2c.name = "DACA";
+	if ((err = snd_pmac_keywest_init(&mix->i2c)) < 0)
 		return err;
 
 	/*

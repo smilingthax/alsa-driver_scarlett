@@ -23,6 +23,8 @@
 #include <sound/driver.h>
 #include <linux/init.h>
 #include <linux/delay.h>
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
 #include <sound/core.h>
 #include <asm/io.h>
 #include <asm/irq.h>
@@ -83,13 +85,13 @@ typedef struct pmac_tumber_t {
 #define number_of(ary) (sizeof(ary) / sizeof(ary[0]))
 
 /*
- * initialize / detect tumbler
  */
-static int tumbler_init_client(pmac_t *chip, pmac_keywest_t *i2c)
+
+static int tumbler_init_client(pmac_keywest_t *i2c)
 {
-	/* normal operation, SCLK=64fps, i2s output, i2s input, 16bit width */
-	return snd_pmac_keywest_write_byte(i2c, TAS_REG_MCS,
-					   (1<<6)+(2<<4)+(2<<2)+0);
+       /* normal operation, SCLK=64fps, i2s output, i2s input, 16bit width */
+       return snd_pmac_keywest_write_byte(i2c, TAS_REG_MCS,
+                                          (1<<6)+(2<<4)+(2<<2)+0);
 }
 
 
@@ -139,7 +141,7 @@ static int tumbler_set_master_volume(pmac_tumbler_t *mix)
 	unsigned char block[6];
 	unsigned int left_vol, right_vol;
   
-	if (! mix->i2c.base)
+	if (! mix->i2c.client)
 		return -ENODEV;
   
 	if (! mix->master_switch[0])
@@ -248,7 +250,7 @@ static int tumbler_set_drc(pmac_tumbler_t *mix)
 {
 	unsigned char val[2];
 
-	if (! mix->i2c.base)
+	if (! mix->i2c.client)
 		return -ENODEV;
   
 	if (mix->drc_enable) {
@@ -351,7 +353,7 @@ static int tumbler_set_mono_volume(pmac_tumbler_t *mix, struct tumbler_mono_vol 
 	unsigned int vol;
 	int i;
   
-	if (! mix->i2c.base)
+	if (! mix->i2c.client)
 		return -ENODEV;
   
 	vol = mix->mono_vol[info->index];
@@ -547,7 +549,7 @@ static int tumbler_detect_headphone(pmac_t *chip)
 
 static void check_mute(pmac_t *chip, pmac_gpio_t *gp, int val, int do_notify, snd_kcontrol_t *sw)
 {
-	pmac_tumbler_t *mix = chip->mixer_data;
+	//pmac_tumbler_t *mix = chip->mixer_data;
 	if (val != read_audio_gpio(gp)) {
 		write_audio_gpio(gp, val);
 		if (do_notify)
@@ -670,8 +672,8 @@ static void tumbler_resume(pmac_t *chip)
 	pmac_tumbler_t *mix = chip->mixer_data;
 	snd_assert(mix, return);
 	tumbler_reset_audio(chip);
-	snd_pmac_keywest_write_byte(&mix->i2c, TAS_REG_MCS,
-				    (1<<6)+(2<<4)+(2<<2)+0);
+	if (mix->i2c.client)
+		tumbler_init_client(&mix->i2c);
 	tumbler_set_mono_volume(mix, &tumbler_pcm_vol_info);
 	tumbler_set_mono_volume(mix, &tumbler_bass_vol_info);
 	tumbler_set_mono_volume(mix, &tumbler_treble_vol_info);
@@ -736,6 +738,8 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 {
 	int i, err;
 	pmac_tumbler_t *mix;
+	u32 *paddr;
+	struct device_node *tas_node;
 
 	mix = kmalloc(sizeof(*mix), GFP_KERNEL);
 	if (! mix)
@@ -749,7 +753,20 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 	if ((err = tumbler_init(chip)) < 0)
 		return err;
 
-	if ((err = snd_pmac_keywest_find(chip, &mix->i2c, TAS_I2C_ADDR, tumbler_init_client)) < 0)
+	/* set up TAS */
+	tas_node = find_devices("deq");
+	if (tas_node == NULL)
+		return -ENODEV;
+
+	paddr = (u32 *)get_property(tas_node, "i2c-address", NULL);
+	if (paddr)
+		mix->i2c.addr = (*paddr) >> 1;
+	else
+		mix->i2c.addr = TAS_I2C_ADDR;
+
+	mix->i2c.init_client = tumbler_init_client;
+	mix->i2c.name = "TAS3001c";
+	if ((err = snd_pmac_keywest_init(&mix->i2c)) < 0)
 		return err;
 
 	/*
