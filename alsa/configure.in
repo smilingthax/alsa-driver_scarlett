@@ -195,6 +195,8 @@ my_compiler=`$CROSS_COMPILE$CC --version | head -n 1`
 dnl
 dnl Test section, uncomment any of these double lines to verify the bellow code:
 dnl
+dnl kernel_compiler="gcc-Version 3.3"
+dnl my_compiler="gcc (GCC) 3.3"
 dnl 
 dnl kernel_compiler="gcc 3.2"
 dnl my_compiler="gcc (GCC) 3.2"
@@ -210,11 +212,16 @@ dnl my_compiler="2.95.3"
 dnl
 kernel_compiler_type=`echo $kernel_compiler | cut -d ' ' -f 1`
 kernel_compiler_version=`echo $kernel_compiler | cut -d ' ' -f 2`
+case "$kernel_compiler_type" in
+gcc-*)
+  kernel_compiler_type="gcc"
+  ;;
+esac
 case "$kernel_compiler_version" in
 egcs-*)
   kernel_compiler_type="egcs"
   kernel_compiler_version=`echo "$kernel_compiler_version" | cut -b 6-`
- ;;
+  ;;
 esac
 case "$my_compiler" in
 gcc-*)
@@ -325,6 +332,7 @@ int main( void ) {
 ])
 
 dnl Check kernel headers for 2.2
+CHECK_KERNEL_HEADER(linux/compiler.h)
 CHECK_KERNEL_HEADER(linux/pm.h)
 CHECK_KERNEL_HEADER(linux/spinlock.h)
 CHECK_KERNEL_HEADER(linux/irq.h)
