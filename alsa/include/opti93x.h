@@ -21,6 +21,7 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "control.h"
 #include "pcm.h"
 #define OPTi93X
 #include "opti9xx.h"
@@ -121,48 +122,6 @@ struct snd_stru_opti93x {
 	unsigned int p_dma_size;
 	unsigned int c_dma_size;
 
-	snd_kmixer_t *mixer;
-
-	snd_kmixer_element_t *me_mux;
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_dig_accu;
-
-	snd_kmixer_element_t *me_mux_cd;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_mix;
-
-	snd_kmixer_element_t *me_in_aux;
-	snd_kmixer_element_t *me_in_cd;
-	snd_kmixer_element_t *me_in_fm;
-	snd_kmixer_element_t *me_in_line;
-	snd_kmixer_element_t *me_in_mic;
-
-	snd_kmixer_element_t *me_out_master;
-
-	snd_kmixer_element_t *me_sw_aux;
-	snd_kmixer_element_t *me_sw_cd;
-	snd_kmixer_element_t *me_sw_dac;
-	snd_kmixer_element_t *me_sw_fm;
-	snd_kmixer_element_t *me_sw_line;
-	snd_kmixer_element_t *me_sw_mgain;
-	snd_kmixer_element_t *me_sw_mic;
-	snd_kmixer_element_t *me_sw_out;
-
-	snd_kmixer_element_t *me_vol_aux;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_vol_dac;
-	snd_kmixer_element_t *me_vol_fm;
-	snd_kmixer_element_t *me_vol_igain;
-	snd_kmixer_element_t *me_vol_line;		
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_vol_out;
-
-	snd_kmixer_element_t *me_adc;
-	snd_kmixer_element_t *me_dac;
-	snd_kmixer_element_t *me_capture;
-	snd_kmixer_element_t *me_playback;
-
 	unsigned int (*set_rate) (opti93x_t *codec, unsigned int rate);
 	void (*set_playback_format) (opti93x_t *codec, unsigned char format);
 	void (*set_capture_format) (opti93x_t *codec, unsigned char format);
@@ -180,8 +139,7 @@ extern int snd_opti93x_new_pcm(snd_card_t *card, int device, opti9xx_t *chip,
 			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
 			       snd_pcm_t **rpcm);
 
-extern int snd_opti93x_new_mixer(snd_pcm_t *pcm, int device,
-				 snd_kmixer_t **rmixer);
+extern int snd_opti93x_new_mixer(snd_pcm_t *pcm);
 
 #endif	/* __OPTi93X_H */
 

@@ -22,6 +22,7 @@
  *
  */
 
+#include "control.h"
 #include "pcm.h"
 
 #define ES1688_HW_AUTO		0x0000
@@ -49,29 +50,9 @@ struct snd_stru_es1688 {
 	snd_pcm_t *pcm;
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
-	snd_kmixer_t *mixer;
 
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;
-
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_cd;
-	snd_kmixer_element_t *me_mux_mix;
-
-	snd_kmixer_element_t *me_mux;
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_vol_igain;
-	snd_kmixer_element_t *me_capture;
-	snd_kmixer_element_t *me_playback;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_vol_line;
-	snd_kmixer_element_t *me_vol_pcm;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_vol_fm;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_vol_aux;
-	snd_kmixer_element_t *me_vol_speaker;
 };
 
 typedef struct snd_stru_es1688 es1688_t;
@@ -142,6 +123,6 @@ int snd_es1688_new_pcm(snd_card_t * card, int device,
 		       unsigned short hardware,
 		       snd_pcm_t ** rpcm);
 int snd_es1688_init(snd_pcm_t * pcm, int enable);
-int snd_es1688_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t ** rmixer);
+int snd_es1688_new_mixer(snd_pcm_t * pcm);
 
 #endif				/* __ES1688_H */
