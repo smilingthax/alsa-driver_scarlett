@@ -860,6 +860,7 @@ typedef struct snd_mixer_channel {
 	int front_center;		/* front center */
 	int rear_left;			/* left rear */
 	int rear_right;			/* right rear */
+	int woofer;			/* woofer */
 	char reserved[64];		/* for the future use */
 } snd_mixer_channel_t;
 
