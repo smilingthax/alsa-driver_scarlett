@@ -288,6 +288,7 @@ AC_SUBST(moddir)
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
+CONFIG_L3=n
 CONFIG_SND_ARM=n
 CONFIG_SND_PPC=n
 CONFIG_SND_ISA=y
@@ -501,6 +502,7 @@ case "$processor" in
   sa1100)
    c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
    CONFIG_SND_ARM=y
+   CONFIG_L3=y
    ;;
   *)
     processor="unknown"
@@ -520,6 +522,7 @@ esac
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(LD)
+AC_SUBST(CONFIG_L3)
 AC_SUBST(CONFIG_SND_ARM)
 AC_SUBST(CONFIG_SND_PPC)
 AC_SUBST(CONFIG_SND_ISA)
