@@ -2097,6 +2097,7 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(snd_pcm_substream_t *substream,
 		   (size >= runtime->xfer_align && avail < runtime->xfer_align))) {
 			wait_queue_t wait;
 			enum { READY, SIGNALED, ERROR, SUSPENDED, EXPIRED } state;
+			long tout;
 
 			if (nonblock) {
 				err = -EAGAIN;
@@ -2112,15 +2113,15 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(snd_pcm_substream_t *substream,
 					break;
 				}
 				snd_pcm_stream_unlock_irq(substream);
-				if (schedule_timeout(10 * HZ) == 0) {
-					snd_pcm_stream_lock_irq(substream);
+				tout = schedule_timeout(10 * HZ);
+				snd_pcm_stream_lock_irq(substream);
+				if (tout == 0) {
 					if (runtime->status->state != SNDRV_PCM_STATE_PREPARED &&
 					    runtime->status->state != SNDRV_PCM_STATE_PAUSED) {
 						state = runtime->status->state == SNDRV_PCM_STATE_SUSPENDED ? SUSPENDED : EXPIRED;
 						break;
 					}
 				}
-				snd_pcm_stream_lock_irq(substream);
 				switch (runtime->status->state) {
 				case SNDRV_PCM_STATE_XRUN:
 				case SNDRV_PCM_STATE_DRAINING:
@@ -2391,6 +2392,7 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(snd_pcm_substream_t *substream, void 
 			   (size >= runtime->xfer_align && avail < runtime->xfer_align)) {
 			wait_queue_t wait;
 			enum { READY, SIGNALED, ERROR, SUSPENDED, EXPIRED } state;
+			long tout;
 
 			if (nonblock) {
 				err = -EAGAIN;
@@ -2406,15 +2408,15 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(snd_pcm_substream_t *substream, void 
 					break;
 				}
 				snd_pcm_stream_unlock_irq(substream);
-				if (schedule_timeout(10 * HZ) == 0) {
-					snd_pcm_stream_lock_irq(substream);
+				tout = schedule_timeout(10 * HZ);
+				snd_pcm_stream_lock_irq(substream);
+				if (tout == 0) {
 					if (runtime->status->state != SNDRV_PCM_STATE_PREPARED &&
 					    runtime->status->state != SNDRV_PCM_STATE_PAUSED) {
 						state = runtime->status->state == SNDRV_PCM_STATE_SUSPENDED ? SUSPENDED : EXPIRED;
 						break;
 					}
 				}
-				snd_pcm_stream_lock_irq(substream);
 				switch (runtime->status->state) {
 				case SNDRV_PCM_STATE_XRUN:
 					state = ERROR;
