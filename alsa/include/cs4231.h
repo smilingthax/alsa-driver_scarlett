@@ -248,7 +248,6 @@ typedef struct snd_stru_cs4231 cs4231_t;
 struct snd_stru_cs4231 {
 	unsigned short port;		/* base i/o port */
 	unsigned short cport;		/* control base i/o port (CS4236) */
-	unsigned short jport;		/* joystick port */
 	unsigned short irq;		/* IRQ line */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma1;		/* playback DMA */
@@ -305,7 +304,6 @@ snd_kmixer_t *snd_cs4231_new_mixer(snd_pcm_t * pcm);
 extern snd_pcm_t *snd_cs4236_new_device(snd_card_t * card,
 					unsigned short port,
 					unsigned short cport,
-					unsigned short jport,
 					snd_irq_t * irqptr,
 					snd_dma_t * dmaptr1,
 					snd_dma_t * dmaptr2,
