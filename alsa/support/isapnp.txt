@@ -1,7 +1,7 @@
 ISA Plug & Play support by Jaroslav Kysela <perex@jcu.cz>
 =========================================================
 
-Please, note that device and logical device are two different things.
+Please, notice that device and logical device are two different things.
 The device is whole ISA PnP card and the logical device is part of ISA PnP
 card.
 
@@ -17,7 +17,7 @@ Write commands:
 ---------------
 
 With write interface you can simply activate or modify configuration for
-ISA Plug & Play devices. This is mainly useable for drivers which don't
+ISA Plug & Play devices. It is mainly useable for drivers which don't
 use ISA Plug & Play kernel support yet.
 
 device <idx> <vendor>	- select PnP device by vendor identification
@@ -32,9 +32,9 @@ dma <idx> <value>	- set DMA 0-1 to value
 memory <idx> <value>	- set memory 0-3 to value
 poke <reg> <value>	- poke configuration byte to selected register
 pokew <reg> <value>	- poke configuration word to selected register
-poked <reg> <value>	- poke configuraiton dword to selected register
+poked <reg> <value>	- poke configuration dword to selected register
 
-Explain:
+Explaination:
 	- variable <idx> begins with zero
 	- variable <CSN> begins with one
 	- <vendor> is in form 'PNP0000'
@@ -87,7 +87,7 @@ which works similar as ISAPNP_DEVICE(x) macro.
 ISA PnP configuration
 =====================
 
-There is two ways how can be ISA PnP interface used.
+There are two ways how can be ISA PnP interface used.
 
 First way is lowlevel
 ---------------------
