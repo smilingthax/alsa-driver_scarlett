@@ -132,7 +132,7 @@ static int snd_ctl_release(struct inode *inode, struct file *file)
 			control->owner = NULL;
 	}
 	write_unlock(&card->control_owner_lock);
-	write_lock_irqrestore(&card->control_rwlock, flags);
+	write_unlock_irqrestore(&card->control_rwlock, flags);
 	snd_ctl_empty_read_queue(ctl);
 	snd_magic_kfree(ctl);
 	dec_mod_count(card->module);
