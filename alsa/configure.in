@@ -887,7 +887,7 @@ int main(void) {
 	machine=`cat machine.id`;AC_MSG_RESULT($machine))
 	CFLAGS="$ac_save_CFLAGS"
 	rm -f machine.id
-	KERNEL_INC="$KERNEL_INC -I\$(CONFIG_SND_KERNELDIR)/include/asm-i386/mach-$machine"
+	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/include/asm-i386/mach-$machine"
     fi
     ;;
 esac
