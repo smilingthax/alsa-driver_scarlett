@@ -1,6 +1,12 @@
 #!/bin/bash
 
-aclocal
+aclocal $ACLOCAL_FLAGS
 autoconf
-./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes
+if [ $# -eq 0 ]; then
+  echo "./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes"
+  ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes
+else
+  echo "./configure $@"
+  ./configure $@
+fi
 make
