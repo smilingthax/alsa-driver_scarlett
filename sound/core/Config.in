@@ -17,6 +17,5 @@ bool '  Verbose printk' CONFIG_SND_VERBOSE_PRINTK
 bool '  Debug' CONFIG_SND_DEBUG
 if [ "$CONFIG_SND_DEBUG" = "y" ]; then
   bool '    Debug memory' CONFIG_SND_DEBUG_MEMORY
-  bool '    Debug full' CONFIG_SND_DEBUG_FULL
   bool '    Debug detection' CONFIG_SND_DEBUG_DETECT
 fi
