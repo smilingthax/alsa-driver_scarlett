@@ -388,6 +388,18 @@ int snd_cs4231_mixer_igain_volume(void *private_data, int w_flag, int *voices);
 int snd_cs4231_mixer_dac_volume(void *private_data, int w_flag, int *voices);
 int snd_cs4231_mixer_dac_switch(void *private_data, int w_flag, unsigned int *bitmap);
 
+/* For Interwave ... */
+int snd_cs4231_mixer_group_ctrl1(cs4231_t *codec,
+				        snd_kmixer_file_t * file,
+				        int w_flag,
+				        snd_mixer_group_t * ugroup,
+				        snd_mixer_volume1_control_t *volume1,
+				        snd_kmixer_element_t *volume1_element,
+				        int max,
+				        snd_mixer_sw1_control_t *sw1,
+				        snd_kmixer_element_t *sw1_element,
+				        snd_kmixer_element_t *mux_in);
+
 #ifdef CONFIG_SND_DEBUG
 void snd_cs4231_debug(cs4231_t * codec);
 #endif

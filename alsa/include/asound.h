@@ -257,7 +257,8 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_OUT_DSP		"DSP Output"
 
 /* groups */				/* max 24 chars */
-#define SND_MIXER_GRP_TONE_CONTROL	"Tone Control"
+#define SND_MIXER_GRP_BASS		"Bass"
+#define SND_MIXER_GRP_TREBLE		"Treble"
 #define SND_MIXER_GRP_EQUALIZER		"Equalizer"
 #define SND_MIXER_GRP_FADER		"Fader"
 #define SND_MIXER_GRP_EFFECT		"Effect"
@@ -269,6 +270,7 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_GRP_DIGITAL_LOOPBACK	"Digital Loopback"
 
 /* others */
+#define SND_MIXER_ELEMENT_TONE_CONTROL	"Tone Control"
 #define SND_MIXER_ELEMENT_INPUT_MUX	"Input MUX"
 #define SND_MIXER_ELEMENT_DIGITAL_ACCU	"Digital Accumulator"
 #define SND_MIXER_ELEMENT_OUTPUT_ACCU	"Output Accumulator"

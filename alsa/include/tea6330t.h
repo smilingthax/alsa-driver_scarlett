@@ -32,6 +32,10 @@ typedef struct {
 	unsigned char regs[8];
 	unsigned char mleft, mright;
 	unsigned char bass, treble;
+	unsigned char max_bass, max_treble;
+	snd_kmixer_element_t *me_vol_master;
+	snd_kmixer_element_t *me_sw_master;
+	snd_kmixer_element_t *me_tone;
 	spinlock_t reg_lock;
 } tea6330t_t;
 
