@@ -68,7 +68,7 @@ static inline void pdacf_transfer_mono32(u32 *dst, u32 xor, unsigned int size, u
 		val1 = inw(rdp_port);
 		val2 = inw(rdp_port);
 		inw(rdp_port);
-		*dst++ = (((val2 & 0xff) << 8) | ((u32)val1 << 16)) ^ xor;
+		*dst++ = ((((u32)val2 & 0xff) << 24) | ((u32)val1 << 8)) ^ xor;
 	}
 }
 
@@ -109,7 +109,7 @@ static inline void pdacf_transfer_mono32sw(u32 *dst, u32 xor, unsigned int size,
 		val1 = inw(rdp_port);
 		val2 = inw(rdp_port);
 		inw(rdp_port);
-		*dst++ = swab32((((val2 & 0xff) << 8) | (val1 << 16)) ^ xor);
+		*dst++ = swab32((((val2 & 0xff) << 24) | ((u32)val1 << 8)) ^ xor);
 	}
 }
 
