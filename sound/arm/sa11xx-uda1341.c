@@ -15,7 +15,7 @@
  * 2002-04-04   Tomas Kasparek  better rates handling (allow non-standard rates)
  */
 
-/* $Id: sa11xx-uda1341.c,v 1.1 2002/04/17 07:48:52 perex Exp $ */
+/* $Id: sa11xx-uda1341.c,v 1.2 2002/04/18 05:59:41 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -117,6 +117,14 @@ static snd_pcm_hw_constraint_list_t hw_constraints_rates = {
  */
 #define GPIO_H3600_CLK_SET0		GPIO_GPIO (12)
 #define GPIO_H3600_CLK_SET1		GPIO_GPIO (13)
+
+#ifdef CONFIG_SA1100_H3XXX
+#define	clr_sa11xx_uda1341_egpio(x)	clr_h3600_egpio(x)
+#define set_sa11xx_uda1341_egpio(x)	set_h3600_egpio(x)
+#else
+#error This driver could serve H3x00 handhelds only!
+#endif
+
 static void sa11xx_uda1341_set_audio_clock(long val)
 {
 	switch (val) {
