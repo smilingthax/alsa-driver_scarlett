@@ -17,8 +17,10 @@ all: $(TARGETS)
 snd-deps: snd-deps-find.o snd-deps-output.o
 	$(CC) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
 
-update-deps: snd-deps
-	./update-deps
+update-deps: snd-deps ../modules.config
+	./snd-deps --acinclude > ../acinclude.m4
+	./snd-deps --makefile > ../cards.config.in
+	./snd-deps --cinclude > ../include/config1.h.in
 
 clean:
 	rm -f core .depend *.o *.orig *~

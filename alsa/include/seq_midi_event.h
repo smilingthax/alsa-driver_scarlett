@@ -40,6 +40,7 @@ struct snd_midi_event_t {
 	int type;	/* current event type */
 	unsigned char lastcmd;
 	unsigned char buf[MAX_MIDI_EVENT_BUF];	/* input buffer */
+	spinlock_t lock;
 };
 
 int snd_midi_event_new(snd_midi_event_t **rdev);

@@ -109,9 +109,12 @@ AC_DEFUN(ALSA_CARDS_SELECT, [\n\
 dnl Check for which cards to compile driver for...\n\
 AC_MSG_CHECKING(for which soundcards to compile driver for)\n\
 AC_ARG_WITH(cards,\n\
-  [  --with-cards=<list>     compile driver for cards in <list>. ]\n\
-  [                        cards may be separated with commas. ]\n\
-  [                        \"all\" compiles all drivers ],\n\
+  [  --with-cards=<list>     compile driver for cards in <list>; ]\n\
+  [                        cards may be separated with commas; ]\n\
+  [                        'all' compiles all drivers; ]\n\
+  [                        Possible cards are: ]\n");
+	output_card_list(Cards, 24, 50);
+	printf(" ],\n\
   cards=\"$withval\", cards=\"all\")\n\
 if test \"$cards\" = \"all\"; then\n\
   ALSA_CARDS_ALL\n\
@@ -265,7 +268,7 @@ void output_card(dep *firstdep, char *card_format, char *dep_format)
 	
 	while(temp_dep)
 	{
-		card_name=remove_word("snd_", temp_dep->name);
+		card_name=get_card_name(temp_dep->name);
 		card_config=convert_to_config_uppercase(temp_dep->name);
 		printf(card_format, card_name, card_config, card_config);
 		num=make_list_of_deps_for_dep(temp_dep, list, 0);
@@ -284,6 +287,36 @@ void output_card(dep *firstdep, char *card_format, char *dep_format)
 }
 
 // Print out ALL deps for firstdep (Cards, Deps)
+void output_card_list(dep *firstdep, int space, int size)
+{
+	dep *temp_dep=firstdep;
+	char *card_name;
+	int tmp_size = 0, idx;
+
+	printf("  [");
+	for (idx = 0; idx < space; idx++)
+		printf(" ");
+	while(temp_dep)
+	{
+		card_name=get_card_name(temp_dep->name);
+		if (temp_dep != firstdep) {
+			printf(", ");
+			tmp_size += 2;
+		}
+		if (tmp_size + strlen(card_name) + 2 > size) {
+			printf("]\n  [");
+			for (idx = 0; idx < space; idx++)
+				printf(" ");
+			tmp_size = 0;
+		}
+		printf(card_name);
+		tmp_size += strlen(card_name);
+		temp_dep=temp_dep->link;
+	}
+	return;
+}
+
+// Print out ALL deps for firstdep (Cards, Deps)
 void output1_card(dep *firstdep)
 {
 	depname list[200];
@@ -295,7 +328,7 @@ void output1_card(dep *firstdep)
 	
 	while(temp_dep)
 	{
-		card_name=remove_word("snd_", temp_dep->name);
+		card_name=get_card_name(temp_dep->name);
 		card_config=convert_to_config_uppercase(temp_dep->name);
 		printf("\
 dep_tristate '%s' %s $CONFIG_SND\n\
@@ -374,4 +407,14 @@ char *remove_word(const char *remove, const char *line)
 	holder[i-strlen(remove)]='\0';
 	
 	return holder;
+}
+
+// example: card-sb16 -> sb16
+char *get_card_name(const char *line)
+{
+	if (strncmp(line, "snd-card-", 9)) {
+		fprintf(stderr, "Invalid card name '%s'\n", line);
+		exit(EXIT_FAILURE);
+	}
+	return remove_word("snd-card-", line);
 }
