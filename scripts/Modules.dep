@@ -194,6 +194,9 @@ snd-emu10k1-synth @if_sequencer snd-emux-synth snd-hwdep
 %dir linux/sound/pci/korg1212
 |snd-korg1212 snd-pcm
 
+%dir linux/sound/pci/mixart
+|snd-mixart snd-pcm snd-hwdep
+
 %dir linux/sound/pci/nm256
 |snd-nm256 snd-pcm snd-ac97-codec
 
