@@ -139,8 +139,8 @@ typedef struct snd_sb_csp {
 	int qpos_right;		/* right position */
 	int qpos_changed;	/* position changed flag */
 
-	snd_kcontrol_t *control_mute;
-	snd_kcontrol_t *control_volume;
+	snd_kcontrol_t *qsound_switch;
+	snd_kcontrol_t *qsound_space;
 
 	struct semaphore access_mutex;	/* locking */
 	snd_info_entry_t *proc;	/* proc interface */
