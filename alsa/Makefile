@@ -11,7 +11,7 @@ else
 dummy:
 	make -C utils update-deps
 	@echo
-	@echo "Please, run configure script as first..."
+	@echo "Please, run the configure script as first..."
 	@echo
 endif
 
