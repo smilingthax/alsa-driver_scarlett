@@ -50,6 +50,7 @@ extern int    snd_wavefront_midi_start (snd_wavefront_card_t *);
 struct _snd_wavefront {
 	unsigned long    irq;   /* "you were one, one of the few ..." */
 	unsigned long    base;  /* low i/o port address */
+	struct resource	 *res_base; /* i/o port resource allocation */
 
 #define mpu_data_port    base 
 #define mpu_command_port base + 1 /* write semantics */
