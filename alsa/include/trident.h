@@ -196,6 +196,9 @@ enum miscint_bits {
 #define SI_AC97_READ		    0x44
 #define SI_SERIAL_INTF_CTRL	    0x48
 #define SI_AC97_GPIO		    0x4c
+#define SI_ASR0			    0x50
+#define SI_SPDIF_CS		    0x70
+#define SI_GPIO			    0x7c
 
 enum trident_nx_ac97_bits {
 	/* ACR1-3 */
