@@ -49,8 +49,9 @@
 #define   ES_1371_JOY_ASEL(o)	(((o)&0x03)<<24) /* joystick port mapping */
 #define   ES_1371_JOY_ASELM	(0x03<<24)	 /* mask for above */
 #define   ES_1371_GPIO_IN(i)	(((i)>>20)&0x0f) /* GPIO in [3:0] pins - R/O */
-#define   ES_1370_PCLKDIV(o)	(((o)&0x1fff)<<16) /* clock divide ratio for DAC2 */
+#define   ES_1370_PCLKDIVO(o)	(((o)&0x1fff)<<16) /* clock divide ratio for DAC2 */
 #define   ES_1370_PCLKDIVM	((0x1fff)<<16)   /* mask for above */
+#define   ES_1370_PCLKDIVI(i)	(((i)>>16)&0x1fff) /* clock divide ratio for DAC2 */
 #define   ES_1371_GPIO_OUT(o)	(((o)&0x0f)<<16) /* GPIO out [3:0] pins - W/R */
 #define   ES_1371_GPIO_OUTM     (0x0f<<16)       /* mask for above */
 #define   ES_MSFMTSEL		(1<<15)	  /* MPEG serial data format; 0 = SONY, 1 = I2S */
@@ -99,8 +100,9 @@
 #define   ES_RXRDY		(1<<0)	  /* receiver ready */
 #define ES_REG_UART_CONTROL 0x09 /* W/O: UART control register */
 #define   ES_RXINTEN		(1<<7)	  /* RX interrupt enable */
-#define   ES_TXINTEN(o)		(((o)&0x03)<<5)  /* TX interrupt enable */
+#define   ES_TXINTENO(o)	(((o)&0x03)<<5)  /* TX interrupt enable */
 #define   ES_TXINTENM		(0x03<<5)        /* mask for above */
+#define   ES_TXINTENI(i)	(((i)>>5)&0x03)
 #define   ES_CNTRL(o)		(((o)&0x03)<<0)  /* control */
 #define   ES_CNTRLM		(0x03<<0)	 /* mask for above */
 #define ES_REG_UART_RES	0x0a	/* R/W: UART reserver register */
@@ -163,7 +165,7 @@
 #define   ES_P2_END_INCO(o)	(((o)&0x07)<<19) /* binary offset value to increment / loop end */
 #define   ES_P2_END_INCM	(0x07<<19)       /* mask for above */
 #define   ES_P2_END_INCI(i)	(((i)>>16)&0x07) /* binary offset value to increment / loop end */
-#define   ES_P2_ST_INCO(o)	(((o)&0x07)	 /* binary offset value to increment / start */
+#define   ES_P2_ST_INCO(o)	(((o)&0x07)<<16) /* binary offset value to increment / start */
 #define   ES_P2_ST_INCM		(0x07<<16)	 /* mask for above */
 #define   ES_P2_ST_INCI(i)	(((i)<<16)&0x07) /* binary offset value to increment / start */
 #define   ES_R1_LOOP_SEL	(1<<15)	  /* ADC; 0 - loop mode; 1 = stop mode */
@@ -178,10 +180,13 @@
 #define   ES_P2_DAC_SEN		(1<<6)	  /* when stop mode: 0 - DAC2 play back zeros; 1 = DAC2 play back last sample */
 #define   ES_R1_MODEO(o)	(((o)&0x03)<<4)  /* ADC mode; 0 = 8-bit mono; 1 = 8-bit stereo; 2 = 16-bit mono; 3 = 16-bit stereo */
 #define   ES_R1_MODEM		(0x03<<4)	 /* mask for above */
+#define   ES_R1_MODEI(i)	(((i)>>4)&0x03)
 #define   ES_P2_MODEO(o)	(((o)&0x03)<<2)  /* DAC2 mode; -- '' -- */
 #define   ES_P2_MODEM		(0x03<<2)	 /* mask for above */
+#define   ES_P2_MODEI(i)	(((i)>>4)&0x03)
 #define   ES_P1_MODEO(o)	(((o)&0x03)<<0)  /* DAC1 mode; -- '' -- */
 #define   ES_P1_MODEM		(0x03<<0)	 /* mask for above */
+#define   ES_P1_MODEI(i)	(((i)>>4)&0x03)
 
 #define ES_REG_DAC1_COUNT 0x24	/* R/W: DAC1 sample count register */
 #define ES_REG_DAC2_COUNT 0x28	/* R/W: DAC2 sample count register */
@@ -265,6 +270,9 @@
 #define ES_MODE_PLAY2	0x0002
 #define ES_MODE_RECORD	0x0004
 
+#define ES_MODE_OUTPUT	0x0001	/* for MIDI */
+#define ES_MODE_INPUT	0x0002	/* for MIDI */
+
 /*
  *
  */
@@ -281,12 +289,15 @@ struct snd_stru_ensoniq {
 
   unsigned int port;
   unsigned int mode;
+  unsigned int uartm;	/* UART mode */
   
   unsigned int ctrl;	/* control register */
   unsigned int sctrl;	/* serial control register */
+  unsigned int uartc;	/* uart control register */
 
   union {
     struct {
+      int pclkdiv_lock;
       unsigned char ak4531[0x10];
       unsigned char out_sw1;
       unsigned char out_sw2;
