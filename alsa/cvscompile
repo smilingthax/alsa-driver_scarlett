@@ -23,8 +23,14 @@ fi
 aclocal $ACLOCAL_FLAGS
 autoconf
 if [ $# -eq 0 ]; then
-  echo "./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes"
-  ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes || exit 1
+  if [ -r /etc/asound/driver_args ]; then
+    args="`cat /etc/asound/driver_args`"
+    echo "./configure $args"
+    ./configure $args || exit 1
+  else
+    echo "./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes"
+    ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes || exit 1
+  fi
 else
   echo "./configure $@"
   ./configure $@ || exit 1
