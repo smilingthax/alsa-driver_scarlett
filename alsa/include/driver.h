@@ -500,13 +500,13 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_assert(expr, args...) do {\
 	if (!(expr)) {\
 		snd_printk("BUG? (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
-		##args;\
+		args;\
 	}\
 } while (0)
 #define snd_runtime_check(expr, args...) do {\
 	if (!(expr)) {\
 		snd_printk("ERROR (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
-		##args;\
+		args;\
 	}\
 } while (0)
 
@@ -514,7 +514,7 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 #define snd_printd(format, args...)	/* nothing */
 #define snd_assert(expr, args...)	/* nothing */
-#define snd_runtime_check(expr, args...) do { if (!(expr)) { ##args; } } while (0)
+#define snd_runtime_check(expr, args...) do { if (!(expr)) { args; } } while (0)
 
 #endif /* CONFIG_SND_DEBUG */
 

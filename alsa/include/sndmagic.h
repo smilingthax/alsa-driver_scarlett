@@ -48,7 +48,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 	unsigned long __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
 		snd_printk("bad MAGIC (0x%lx)\n", __magic);\
-		##action;\
+		action;\
 	}\
 	__ptr;\
 })
