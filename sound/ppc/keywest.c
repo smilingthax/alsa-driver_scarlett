@@ -51,7 +51,6 @@ struct i2c_driver keywest_driver = {
 
 #ifndef i2c_device_name
 #define i2c_device_name(x)	((x)->dev.name)
-#define i2c_set_device_data(x,p)	((x)->dev.data = (p))
 #endif
 
 static int keywest_attach_adapter(struct i2c_adapter *adapter)
@@ -69,8 +68,9 @@ static int keywest_attach_adapter(struct i2c_adapter *adapter)
 	if (! new_client)
 		return -ENOMEM;
 
+	memset(new_client, 0, sizeof(*new_client));
 	new_client->addr = keywest_ctx->addr;
-	i2c_set_device_data(new_client, keywest_ctx);
+	i2c_set_clientdata(new_client, keywest_ctx);
 	new_client->adapter = adapter;
 	new_client->driver = &keywest_driver;
 	new_client->flags = 0;
