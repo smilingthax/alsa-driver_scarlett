@@ -303,6 +303,9 @@ typedef struct snd_stru_minor snd_minor_t;
 /* sound.c */
 
 extern int snd_ecards_limit;
+extern int snd_device_mode;
+extern int snd_device_gid;
+extern int snd_device_uid;
 
 extern int snd_register_minor( unsigned short minor, snd_minor_t *reg );
 extern int snd_unregister_minor( unsigned short minor );

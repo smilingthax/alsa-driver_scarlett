@@ -38,17 +38,6 @@ Module parameters
   more cards and you have more than one card of same type, simply specify more
   values for parameter delimited with commas.
   
-  Global parameters
-  -----------------
-
-    snd_index	- 1-8 - index for soundcard
-                - if not set, first free index is assigned
-    snd_id	- user identification for card (up to 15 chars)
-		- default expression is 'card<snd_index>' (for example card1)
-		- value is used for /proc/asound filesystem
-		- this value can be used with application for identification
-		  of card if user doesn't want identify card with index number
-
   Module snd.o
   ------------
 
@@ -58,6 +47,27 @@ Module parameters
 		- specifies card limit # (1-8)
 		- good for kerneld/kmod support if you don't want search
 		  for soundcards which aren't installed in your system
+    snd_device_mode
+		- specifies permission mask for dynamic sound device filesystem
+		- default value = 0666
+		- for example 'snd_device_mode=0660'
+    snd_device_gid
+		- specifies GID number for dynamic sound device filesystem
+		- default value = 0 (root)
+    snd_device_uid
+		- specifies UID number for dynamic sound device filesystem
+		- default value = 0 (root)
+
+  Global parameters for top soundcard modules
+  -------------------------------------------
+
+    snd_index	- 1-8 - index for soundcard
+                - if not set, first free index is assigned
+    snd_id	- user identification for card (up to 15 chars)
+		- default expression is 'card<snd_index>' (for example card1)
+		- value is used for /proc/asound filesystem
+		- this value can be used with application for identification
+		  of card if user doesn't want identify card with index number
 
   Module snd-audiodrive1688.o
   ---------------------------
@@ -345,6 +355,22 @@ options snd snd_major=14 snd_cards_limit=2
 options snd-gusclassic snd_index=1,2 snd_port=0x220,0x260 snd_irq=5,11 snd_dma1=5,6 snd_dma2=7,3
 
 -----
+
+ALSA PCM devices to OSS devices mapping
+=======================================
+
+/dev/snd/pcm00  -> /dev/audio0 (/dev/audio) -> minor 4
+/dev/snd/pcm00  -> /dev/dsp0 (/dev/dsp)     -> minor 3
+/dev/snd/pcm01  -> /dev/adsp0 (/dev/adsp)   -> minor 12
+/dev/snd/pcm10  -> /dev/audio1              -> minor 4+16 = 20
+/dev/snd/pcm10  -> /dev/dsp1                -> minor 3+16 = 19
+/dev/snd/pcm11  -> /dev/adsp1               -> minor 12+16 = 28
+/dev/snd/pcm20  -> /dev/audio2              -> minor 4+32 = 36
+/dev/snd/pcm20  -> /dev/dsp2                -> minor 3+32 = 39
+/dev/snd/pcm21  -> /dev/adsp2               -> minor 12+32 = 44
+
+First number from /dev/snd/pcmXY means soundcard number and second means
+device number.
 
 Proc interfaces (/proc/asound)
 ==============================
