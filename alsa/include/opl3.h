@@ -286,11 +286,13 @@ struct snd_opl3 {
 /* opl3.c */
 void snd_opl3_command(opl3_t * opl3, unsigned short cmd, unsigned char val);
 void snd_opl3_interrupt(snd_hwdep_t * hw);
-int snd_opl3_new(snd_card_t * card, int device,
-		 unsigned long l_port, unsigned long r_port,
-		 unsigned short hardware,
-		 int timer_dev, int seq_dev,
-		 snd_hwdep_t ** rawmidi);
+int snd_opl3_create(snd_card_t * card,
+		    unsigned long l_port, unsigned long r_port,
+		    unsigned short hardware,
+		    opl3_t ** opl3);
+int snd_opl3_timer_new(opl3_t * opl3, int timer1_dev, int timer2_dev);
+int snd_opl3_hwdep_new(opl3_t * opl3, int device, int seq_device,
+		       snd_hwdep_t ** rhwdep);
 
 /* opl3_synth */
 int snd_opl3_open(snd_hwdep_t * hw, struct file *file);
