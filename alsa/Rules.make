@@ -92,7 +92,7 @@ ifdef USE_STANDARD_AS_RULE
 endif
 
 %.isapnp: %.c
-	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | $(TOPDIR)/utils/convert_isapnp_ids > $@
+	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | $(TOPDIR)/utils/convert_isapnp_ids > $@
 
 #
 #
@@ -301,7 +301,7 @@ endif # CONFIG_MODULES
 
 .PHONY: clean
 clean: $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS))
-	rm -f *.o *~
+	rm -f *.o *~ *.isapnp
 
 ifneq "$(strip $(ALL_SUB_DIRS))" ""
 $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)):
