@@ -15,7 +15,7 @@
  * 2002-04-04   Tomas Kasparek  better rates handling (allow non-standard rates)
  */
 
-/* $Id: sa11xx-uda1341.c,v 1.5 2002/10/21 18:28:19 perex Exp $ */
+/* $Id: sa11xx-uda1341.c,v 1.6 2002/12/04 18:52:05 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -555,11 +555,11 @@ static snd_pcm_hardware_t snd_sa11xx_uda1341_capture =
 				   SNDRV_PCM_RATE_KNOT),
 	.rate_min		= 8000,
 	.rate_max		= 48000,
-	.channels_min:		= 2,
-	.channels_max:		= 2,
-	.buffer_bytes_max:	= 16380,
-	.period_bytes_min:	= 64,
-	.period_bytes_max:	= 8190, /* <= MAX_DMA_SIZE from ams/arch-sa1100/dma.h */
+	.channels_min		= 2,
+	.channels_max		= 2,
+	.buffer_bytes_max	= 16380,
+	.period_bytes_min	= 64,
+	.period_bytes_max	= 8190, /* <= MAX_DMA_SIZE from ams/arch-sa1100/dma.h */
 	.periods_min		= 2,
 	.periods_max		= 255,
 	.fifo_size		= 0,
