@@ -939,11 +939,26 @@ static void output_acinclude(void)
 
 	printf("AC_DEFUN(ALSA_TOPLEVEL_ALL, [\n");
 	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		int put_if = 1;
 		if (tempdep->type != TYPE_TOPLEVEL)
 			continue;
+		if (strstr(tempdep->dir, "/isa"))
+			printf("\tif test \"$CONFIG_ISA\" = \"y\"; then\n");
+		else if (strstr(tempdep->dir, "/pci"))
+			printf("\tif test \"$CONFIG_PCI\" = \"y\"; then\n");
+		else if (strstr(tempdep->dir, "/usb"))
+			printf("\tif test \"$CONFIG_USB\" = \"y\"; then\n");
+		else if (strstr(tempdep->dir, "/ppc"))
+			printf("\tif test \"$CONFIG_PPC\" = \"y\"; then\n");
+		else if (strstr(tempdep->dir, "/arm"))
+			printf("\tif test \"$CONFIG_ARM\" = \"y\"; then\n");
+		else
+			put_if = 0;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("\t%s=\"m\"\n", text);
 		printf("\tAC_DEFINE(%s_MODULE)\n", text);
+		if (put_if)
+			printf("\tfi\n");
 		free(text);
 	}
 	printf("])\n\n");
