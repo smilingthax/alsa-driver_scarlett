@@ -65,7 +65,6 @@ install: compile
 	/sbin/depmod -a $(kaversion)
 	install -m 755 -d $(prefix)/include/linux
 	install -m 644 include/asound.h $(prefix)/include/linux
-	install -m 644 include/asoundid.h $(prefix)/include/linux
 	install -m 644 include/asequencer.h $(prefix)/include/linux
 	install -m 644 include/ainstr_simple.h $(prefix)/include/linux
 	install -m 644 include/ainstr_gf1.h $(prefix)/include/linux

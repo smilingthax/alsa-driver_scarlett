@@ -127,10 +127,8 @@
 
 #ifndef ALSA_BUILD
 #include <linux/asound.h>
-#include <linux/asoundid.h>
 #else
 #include "asound.h"
-#include "asoundid.h"
 #endif
 
 #include "sndmagic.h"

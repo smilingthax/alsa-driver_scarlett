@@ -85,7 +85,6 @@ include_file ainstr_simple.h
 include_file ainstr_gf1.h
 include_file ainstr_iw.h
 include_file asound.h
-include_file asoundid.h
 include_file asequencer.h
 copy_dir kernel
 copy_dir kernel/plugin
