@@ -7,29 +7,24 @@
 #define NRURBS	        2	/* */
 #define NRPACKS		1	/* usb-frames/ms per urb */
 
-#ifndef LINUX_2_2
-typedef struct urb urb_t;
-typedef struct urb* purb_t;
-#endif
-
 #define URBS_AsyncSeq 10
 #define URB_DataLen_AsyncSeq 32
 typedef struct {
-	urb_t*	urb[URBS_AsyncSeq];
+	struct urb*	urb[URBS_AsyncSeq];
 	char*   buffer;
 } snd_usX2Y_AsyncSeq_t;
 
 typedef struct {
 	int	submitted;
 	int	len;
-	urb_t*	urb[0];
+	struct urb*	urb[0];
 } snd_usX2Y_urbSeq_t;
 
 
 typedef struct {
 	snd_usb_audio_t 	chip;
 	int			stride;
-	purb_t			In04urb;
+	struct urb*		In04urb;
 	void*			In04Buf;
 	char			In04Last[24];
 	unsigned		In04IntCalls;
@@ -41,7 +36,7 @@ typedef struct {
 	unsigned int		rate,
 				format;
 	int			refframes;
-	purb_t			play_urb_waiting[2];
+	struct urb*		play_urb_waiting[2];
 	int			pipe0Aframes[NRURBS][NRPACKS];
 	snd_hwdep_t*		hwdep;
 	int			chip_status;
@@ -56,11 +51,11 @@ typedef struct {
 int snd_usX2Y_audio_create(snd_card_t* card);
 
 #ifndef OLD_USB
-void snd_usX2Y_Out04Int(urb_t* urb, struct pt_regs *regs);
-void snd_usX2Y_In04Int(urb_t* urb, struct pt_regs *regs);
+void snd_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs);
+void snd_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs);
 #else
-void snd_usX2Y_Out04Int(urb_t* urb);
-void snd_usX2Y_In04Int(urb_t* urb);
+void snd_usX2Y_Out04Int(struct urb* urb);
+void snd_usX2Y_In04Int(struct urb* urb);
 #endif
 
 #ifndef CONFIG_SND_DEBUG
