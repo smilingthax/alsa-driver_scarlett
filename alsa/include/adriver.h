@@ -127,7 +127,7 @@ void snd_compat_request_module(const char *name, ...);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3) && !defined(need_resched)
 #define need_resched() (current->need_resched)
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 4) && !defined(WE_ARE_WOLK)
+#ifndef CONFIG_HAVE_PDE
 #include <linux/fs.h>
 static inline struct proc_dir_entry *PDE(const struct inode *inode)
 {

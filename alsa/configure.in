@@ -1018,6 +1018,29 @@ if test "$CONFIG_HAVE_OLD_REQUEST_MODULE" = "1"; then
   AC_DEFINE(CONFIG_HAVE_OLD_REQUEST_MODULE)
 fi
 
+dnl Check for PDE...
+AC_MSG_CHECKING(for PDE)
+pde_defined="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
+],[
+	PDE(NULL);
+],
+    AC_MSG_RESULT("no");pde_defined="0",
+    AC_MSG_RESULT("yes");pde_defined="1",
+    AC_MSG_RESULT("unknown");pde_defined="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_PDE=$pde_defined
+dnl AC_SUBST(CONFIG_HAVE_PDE)
+if test "$CONFIG_HAVE_PDE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PDE)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
