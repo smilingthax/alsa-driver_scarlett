@@ -47,7 +47,6 @@ static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 static long snd_fm_port[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = -1};
 static long snd_mpu_port[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = -1};
-static int snd_mpu_irq[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = -1 };
 static long snd_joystick_port[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = -1 };
 
 MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
@@ -62,9 +61,6 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_mpu_port, "1-" __MODULE_STRING(SNDRV_CARDS) "l");
 MODULE_PARM_DESC(snd_mpu_port, "MPU-401 Port.");
 MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED);
-MODULE_PARM(snd_mpu_irq, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_mpu_irq, "MPU-401 IRQ number.");
-MODULE_PARM_SYNTAX(snd_mpu_irq, SNDRV_ENABLED ",allows:{{5},{7},{9},{10},{11}},dialog:list");
 MODULE_PARM(snd_fm_port, "1-" __MODULE_STRING(SNDRV_CARDS) "l");
 MODULE_PARM_DESC(snd_fm_port, "FM OPL-3 Port.");
 MODULE_PARM_SYNTAX(snd_fm_port, SNDRV_ENABLED);
@@ -189,16 +185,11 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 			snd_joystick_port[dev] = -1;
 		}
 	}
-	pci_read_config_word(pci, PCIR_DSXG_LEGACY, &old_legacy_ctrl);
-	switch (snd_mpu_irq[dev]) {
-	case 5:	break;
-	case 7:	legacy_ctrl |= 1 << 11; break;
-	case 9: legacy_ctrl |= 2 << 11; break;
-	case 10: legacy_ctrl |= 3 << 11; break;
-	case 11: legacy_ctrl |= 4 << 11; break;
-	default: snd_mpu_irq[dev] = -1; break;
+	if (snd_mpu_port[dev] > 0) {
+		legacy_ctrl |= 0x10; /* MPU401 irq enable */
+		legacy_ctrl2 |= 1 << 15; /* IMOD */
 	}
-	legacy_ctrl |= (snd_mpu_irq[dev] > 0 ? 0x10 : 0);	/* MPU401 IRQ enable */
+	pci_read_config_word(pci, PCIR_DSXG_LEGACY, &old_legacy_ctrl);
 	snd_printdd("legacy_ctrl = 0x%x\n", legacy_ctrl);
 	pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 	snd_printdd("legacy_ctrl2 = 0x%x\n", legacy_ctrl2);
@@ -232,7 +223,7 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 	if (snd_mpu_port[dev] > 0) {
 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_YMFPCI,
 					       snd_mpu_port[dev], 0,
-					       snd_mpu_irq[dev] > 0 ? snd_mpu_irq[dev] : -1, SA_INTERRUPT, NULL)) < 0) {
+					       pci->irq, 0, &chip->rawmidi)) < 0) {
 			snd_card_free(card);
 			return err;
 		}
@@ -337,7 +328,7 @@ module_exit(alsa_card_ymfpci_exit)
 #ifndef MODULE
 
 /* format is: snd-ymfpci=snd_enable,snd_index,snd_id,
-			 snd_fm_port,snd_mpu_port,snd_mpu_irq */
+			 snd_fm_port,snd_mpu_port */
 
 static int __init alsa_card_ymfpci_setup(char *str)
 {
@@ -349,8 +340,7 @@ static int __init alsa_card_ymfpci_setup(char *str)
 	       get_option(&str,&snd_index[nr_dev]) == 2 &&
 	       get_id(&str,&snd_id[nr_dev]) == 2 &&
 	       get_option(&str,(int *)&snd_fm_port[nr_dev]) == 2 &&
-	       get_option(&str,(int *)&snd_mpu_port[nr_dev]) == 2 &&
-	       get_option(&str,&snd_mpu_irq[nr_dev]) == 2);
+	       get_option(&str,(int *)&snd_mpu_port[nr_dev]) == 2);
 	nr_dev++;
 	return 1;
 }

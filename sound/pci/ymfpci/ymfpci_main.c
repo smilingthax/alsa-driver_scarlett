@@ -34,6 +34,7 @@
 #include <sound/info.h>
 #include <sound/ymfpci.h>
 #include <sound/asoundef.h>
+#include <sound/mpu401.h>
 
 #define chip_t ymfpci_t
 
@@ -782,6 +783,9 @@ static void snd_ymfpci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		/* timer handler */
 		snd_ymfpci_writel(chip, YDSXGR_INTFLAG, ~0);
 	}
+
+	if (chip->rawmidi)
+		snd_mpu401_uart_interrupt(irq, chip->rawmidi->private_data, regs);
 }
 
 static snd_pcm_hardware_t snd_ymfpci_playback =
