@@ -29,8 +29,8 @@
  * Also, multiple access is allowed to a single rawmidi device.
  *
  * Typical usage is like following:
- * - Load snd-card-virmidi module.
- *	# modprobe snd-card-virmidi snd_index=2
+ * - Load snd-virmidi module.
+ *	# modprobe snd-virmidi snd_index=2
  *   Then, sequencer clients 72:0 to 75:0 will be created, which are
  *   mapped from /dev/snd/midiC1D0 to /dev/snd/midiC1D3, respectively.
  *
