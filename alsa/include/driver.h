@@ -132,6 +132,15 @@
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 #endif
 #define snd_kill_fasync(fp, sig, band) kill_fasync(fp, sig, band)
+#if defined(__i386__) || defined(__ppc__)
+/*
+ * Here a dirty hack for 2.4 kernels.. See kernel/memory.c.
+ */
+#define HACK_PCI_ALLOC_CONSISTENT
+void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
+				    dma_addr_t *dma_handle);
+#define pci_alloc_consistent snd_pci_hack_alloc_consistent
+#endif /* i386 or ppc */
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
@@ -241,6 +250,13 @@ static inline void dec_mod_count(struct module *module)
 #define writel(v, a) do {__writel((v),(a)); mb(); } while(0)
 #undef writeq
 #define writeq(v, a) do {__writeq((v),(a)); mb(); } while(0)
+#endif
+
+/* do we have virt_to_bus? */
+#if defined(CONFIG_SPARC64)
+#undef HAVE_VIRT_TO_BUS
+#else
+#define HAVE_VIRT_TO_BUS  1
 #endif
 
 /*
