@@ -1007,6 +1007,21 @@ static void snd_ac97_change_volume_params2(ac97_t * ac97, int reg, int shift, un
 	snd_ac97_write_cache(ac97, reg, 0x8080);
 }
 
+static void snd_ac97_change_volume_params3(ac97_t * ac97, int reg, unsigned char *max)
+{
+	unsigned short val, val1;
+
+	*max = 31;
+	val = 0x8000 | 0x0010;
+	snd_ac97_write(ac97, reg, val);
+	val1 = snd_ac97_read(ac97, reg);
+	if (val != val1) {
+		*max = 15;
+	}
+	/* reset volume to zero */
+	snd_ac97_write_cache(ac97, reg, 0x8000);
+}
+
 static inline int printable(unsigned int x)
 {
 	x &= 0xff;
@@ -1034,7 +1049,7 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 	unsigned char max;
 
 	/* build master controls */
-	/* AD claims to remove this control from AD1887, although spec v2.2 don't allow this */
+	/* AD claims to remove this control from AD1887, although spec v2.2 does not allow this */
 	if (snd_ac97_try_volume_mix(ac97, AC97_MASTER)) {
 		if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_master[0], ac97))) < 0)
 			return err;
@@ -1127,17 +1142,27 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 	
 	/* build Phone controls */
 	if (snd_ac97_try_volume_mix(ac97, AC97_PHONE)) {
-		for (idx = 0; idx < 2; idx++)
-			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_phone[idx], ac97))) < 0)
-				return err;
-		snd_ac97_write_cache(ac97, AC97_PHONE, 0x801f);
+		if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_phone[0], ac97))) < 0)
+			return err;
+		if ((err = snd_ctl_add(card, kctl = snd_ac97_cnew(&snd_ac97_controls_phone[1], ac97))) < 0)
+			return err;
+		snd_ac97_change_volume_params3(ac97, AC97_PHONE, &max);
+		kctl->private_value &= ~(0xff << 16);
+		kctl->private_value |= (int)max << 16;
+		snd_ac97_write_cache(ac97, AC97_PHONE, 0x8000 | max);
 	}
 	
 	/* build MIC controls */
-	for (idx = 0; idx < 3; idx++)
-		if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_mic[idx], ac97))) < 0)
+	snd_ac97_change_volume_params3(ac97, AC97_MIC, &max);
+	for (idx = 0; idx < 3; idx++) {
+		if ((err = snd_ctl_add(card, kctl = snd_ac97_cnew(&snd_ac97_controls_mic[idx], ac97))) < 0)
 			return err;
-	snd_ac97_write_cache(ac97, AC97_MIC, 0x801f);
+		if (idx == 1) {		// volume
+			kctl->private_value &= ~(0xff << 16);
+			kctl->private_value |= (int)max << 16;
+		}
+	}
+	snd_ac97_write_cache(ac97, AC97_MIC, 0x8000 | max);
 
 	/* build Line controls */
 	for (idx = 0; idx < 2; idx++)
