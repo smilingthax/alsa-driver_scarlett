@@ -624,7 +624,7 @@ static void snd_via686a_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_via686a_pcm(via686a_t *chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_via686a_pcm(via686a_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -756,7 +756,7 @@ static void snd_via686a_pcm_fm_free(void *private_data)
 	snd_pcm_lib_preallocate_pci_free_for_all(ensoniq->pci, pcm);
 }
 
-int snd_via686a_pcm_fm(via686a_t *chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_via686a_pcm_fm(via686a_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -805,7 +805,7 @@ static void snd_via686a_mixer_free_ac97(ac97_t *ac97)
 	chip->ac97 = NULL;
 }
 
-int snd_via686a_mixer(via686a_t *chip)
+static int __devinit snd_via686a_mixer(via686a_t *chip)
 {
 	ac97_t ac97;
 	int err;
@@ -826,7 +826,7 @@ int snd_via686a_mixer(via686a_t *chip)
  *
  */
 
-static int snd_via686a_chip_init(via686a_t *chip)
+static int __devinit snd_via686a_chip_init(via686a_t *chip)
 {
 	ac97_t ac97;
 	unsigned int val;
@@ -961,7 +961,7 @@ static int snd_via686a_dev_free(snd_device_t *device)
 	return snd_via686a_free(chip);
 }
 
-static int __init snd_via686a_create(snd_card_t * card,
+static int __devinit snd_via686a_create(snd_card_t * card,
 				     struct pci_dev *pci,
 				     unsigned int ac97_clock,
 				     unsigned char old_legacy,

@@ -724,7 +724,7 @@ static void snd_intel8x0_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_intel8x0_pcm(intel8x0_t *chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_intel8x0_pcm(intel8x0_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -865,7 +865,7 @@ static void snd_intel8x0_pcm_mic_free(snd_pcm_t *pcm)
 	chip->pcm_mic = NULL;
 }
 
-static int __init snd_intel8x0_pcm_mic(intel8x0_t *chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_intel8x0_pcm_mic(intel8x0_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -913,7 +913,7 @@ static void snd_intel8x0_mixer_free_ac97(ac97_t *ac97)
 	}
 }
 
-static int __init snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
+static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 {
 	ac97_t ac97;
 	int err;
@@ -1154,7 +1154,7 @@ static int snd_intel8x0_set_power_state(snd_card_t *card, unsigned int power_sta
 
 #define INTEL8X0_TESTBUF_SIZE	32768	/* enough large for one shot */
 
-static void __init intel8x0_measure_ac97_clock(intel8x0_t *chip)
+static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 {
 	snd_pcm_substream_t *subs;
 	unsigned long port;
@@ -1224,7 +1224,7 @@ static int snd_intel8x0_dev_free(snd_device_t *device)
 	return snd_intel8x0_free(chip);
 }
 
-static int __init snd_intel8x0_create(snd_card_t * card,
+static int __devinit snd_intel8x0_create(snd_card_t * card,
 				      struct pci_dev *pci,
 				      unsigned long device_type,
 				      intel8x0_t ** r_intel8x0)
@@ -1327,7 +1327,7 @@ static int __init snd_intel8x0_create(snd_card_t * card,
 static struct shortname_table {
 	unsigned int id;
 	const char *s;
-} shortnames[] = {
+} shortnames[] __devinitdata = {
 	{ PCI_DEVICE_ID_INTEL_82801, "Intel ICH 82801AA" },
 	{ PCI_DEVICE_ID_INTEL_82901, "Intel ICH 82901AB" },
 	{ PCI_DEVICE_ID_INTEL_440MX, "Intel 440MX" },

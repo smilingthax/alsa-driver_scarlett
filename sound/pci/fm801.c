@@ -625,7 +625,7 @@ static void snd_fm801_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_fm801_pcm(fm801_t *chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_fm801_pcm(fm801_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -796,7 +796,7 @@ static int snd_fm801_put_mux(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * u
 
 #define FM801_CONTROLS (sizeof(snd_fm801_controls)/sizeof(snd_kcontrol_new_t))
 
-static snd_kcontrol_new_t snd_fm801_controls[] = {
+static snd_kcontrol_new_t snd_fm801_controls[] __devinitdata = {
 FM801_DOUBLE("Wave Playback Volume", FM801_PCM_VOL, 0, 8, 31, 1),
 FM801_SINGLE("Wave Playback Switch", FM801_PCM_VOL, 15, 1, 1),
 FM801_DOUBLE("I2S Playback Volume", FM801_I2S_VOL, 0, 8, 31, 1),
@@ -814,7 +814,7 @@ FM801_SINGLE("FM Playback Switch", FM801_FM_VOL, 15, 1, 1),
 
 #define FM801_CONTROLS_MULTI (sizeof(snd_fm801_controls_multi)/sizeof(snd_kcontrol_new_t))
 
-static snd_kcontrol_new_t snd_fm801_controls_multi[] = {
+static snd_kcontrol_new_t snd_fm801_controls_multi[] __devinitdata = {
 FM801_SINGLE("AC97 2ch->4ch Copy Switch", FM801_CODEC_CTRL, 7, 1, 0),
 FM801_SINGLE("AC97 18-bit Switch", FM801_CODEC_CTRL, 10, 1, 0),
 FM801_SINGLE("IEC958 Capture Switch", FM801_I2S_MODE, 8, 1, 0),
@@ -891,7 +891,7 @@ static int snd_fm801_dev_free(snd_device_t *device)
 	return snd_fm801_free(chip);
 }
 
-static int __init snd_fm801_create(snd_card_t * card,
+static int __devinit snd_fm801_create(snd_card_t * card,
 				   struct pci_dev * pci,
 				   fm801_t ** rchip)
 {

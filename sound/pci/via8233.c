@@ -588,7 +588,7 @@ static void snd_via8233_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_via8233_pcm(via8233_t *chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_via8233_pcm(via8233_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -635,7 +635,7 @@ static void snd_via8233_mixer_free_ac97(ac97_t *ac97)
 	chip->ac97 = NULL;
 }
 
-int snd_via8233_mixer(via8233_t *chip)
+static int __devinit snd_via8233_mixer(via8233_t *chip)
 {
 	ac97_t ac97;
 	int err;
@@ -656,7 +656,7 @@ int snd_via8233_mixer(via8233_t *chip)
  *
  */
 
-static int snd_via8233_chip_init(via8233_t *chip)
+static int __devinit snd_via8233_chip_init(via8233_t *chip)
 {
 	ac97_t ac97;
 	unsigned char stat;
@@ -725,7 +725,7 @@ static int snd_via8233_dev_free(snd_device_t *device)
 	return snd_via8233_free(chip);
 }
 
-static int __init snd_via8233_create(snd_card_t * card,
+static int __devinit snd_via8233_create(snd_card_t * card,
 				     struct pci_dev *pci,
 				     unsigned int ac97_clock,
 				     via8233_t ** r_via)

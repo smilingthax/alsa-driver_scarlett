@@ -1001,7 +1001,7 @@ static void snd_cs4281_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_cs4281_pcm(cs4281_t * chip, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_cs4281_pcm(cs4281_t * chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1038,7 +1038,7 @@ static void snd_cs4281_mixer_free_ac97(ac97_t *ac97)
 	chip->ac97 = NULL;
 }
 
-static int snd_cs4281_mixer(cs4281_t * chip)
+static int __devinit snd_cs4281_mixer(cs4281_t * chip)
 {
 	snd_card_t *card = chip->card;
 	ac97_t ac97;
@@ -1134,7 +1134,7 @@ static struct snd_info_entry_ops snd_cs4281_proc_ops_BA1 = {
 	read: snd_cs4281_BA1_read,
 };
 
-static void __init snd_cs4281_proc_init(cs4281_t * chip)
+static void __devinit snd_cs4281_proc_init(cs4281_t * chip)
 {
 	snd_info_entry_t *entry;
 
@@ -1235,7 +1235,7 @@ static int snd_cs4281_dev_free(snd_device_t *device)
 	return snd_cs4281_free(chip);
 }
 
-static int __init snd_cs4281_create(snd_card_t * card,
+static int __devinit snd_cs4281_create(snd_card_t * card,
 				    struct pci_dev *pci,
 				    cs4281_t ** rchip)
 {
@@ -1636,7 +1636,7 @@ static snd_rawmidi_ops_t snd_cs4281_midi_input =
 	trigger:        snd_cs4281_midi_input_trigger,
 };
 
-static int __init snd_cs4281_midi(cs4281_t * chip, int device, snd_rawmidi_t **rrawmidi)
+static int __devinit snd_cs4281_midi(cs4281_t * chip, int device, snd_rawmidi_t **rrawmidi)
 {
 	snd_rawmidi_t *rmidi;
 	int err;
@@ -1792,7 +1792,7 @@ static int snd_cs4281_gameport_open(struct gameport *gameport, int mode)
 	return 0;
 }
 
-static void __init snd_cs4281_gameport(cs4281_t *chip)
+static void __devinit snd_cs4281_gameport(cs4281_t *chip)
 {
 	cs4281_gameport_t *gp;
 	gp = kmalloc(sizeof(*gp), GFP_KERNEL);
@@ -1827,15 +1827,12 @@ static int __devinit snd_cs4281_probe(struct pci_dev *pci,
 	opl3_t *opl3;
 	int err;
 
-	for ( ; dev < SNDRV_CARDS; dev++) {
-		if (!snd_enable[dev]) {
-			dev++;
-			return -ENOENT;
-		}
-		break;
+        if (dev >= SNDRV_CARDS)
+                return -ENODEV;
+	if (!snd_enable[dev]) {
+		dev++;
+		return -ENOENT;
 	}
-	if (dev >= SNDRV_CARDS)
-		return -ENODEV;
 
 	card = snd_card_new(snd_index[dev], snd_id[dev], THIS_MODULE, 0);
 	if (card == NULL)

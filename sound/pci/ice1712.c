@@ -686,7 +686,7 @@ static int snd_ice1712_digmix_route_ac97_put(snd_kcontrol_t *kcontrol, snd_ctl_e
 	return val != nval;
 }
 
-static snd_kcontrol_new_t snd_ice1712_mixer_digmix_route_ac97 = {
+static snd_kcontrol_new_t snd_ice1712_mixer_digmix_route_ac97 __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Digital Mixer To AC97",
 	info: snd_ice1712_digmix_route_ac97_info,
@@ -1655,14 +1655,14 @@ static snd_pcm_ops_t snd_ice1712_capture_ops = {
 	pointer:	snd_ice1712_capture_pointer,
 };
 
-static void __exit snd_ice1712_pcm_free(snd_pcm_t *pcm)
+static void snd_ice1712_pcm_free(snd_pcm_t *pcm)
 {
 	ice1712_t *ice = snd_magic_cast(ice1712_t, pcm->private_data, return);
 	ice->pcm = NULL;
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_ice1712_pcm(ice1712_t * ice, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_ice1712_pcm(ice1712_t * ice, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1692,14 +1692,14 @@ static int __init snd_ice1712_pcm(ice1712_t * ice, int device, snd_pcm_t ** rpcm
 	return 0;
 }
 
-static void __exit snd_ice1712_pcm_free_ds(snd_pcm_t *pcm)
+static void snd_ice1712_pcm_free_ds(snd_pcm_t *pcm)
 {
 	ice1712_t *ice = snd_magic_cast(ice1712_t, pcm->private_data, return);
 	ice->pcm_ds = NULL;
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_ice1712_pcm_ds(ice1712_t * ice, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_ice1712_pcm_ds(ice1712_t * ice, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -2024,7 +2024,7 @@ static int snd_ice1712_capture_pro_close(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static void __exit snd_ice1712_pcm_profi_free(snd_pcm_t *pcm)
+static void snd_ice1712_pcm_profi_free(snd_pcm_t *pcm)
 {
 	ice1712_t *ice = snd_magic_cast(ice1712_t, pcm->private_data, return);
 	ice->pcm_pro = NULL;
@@ -2053,7 +2053,7 @@ static snd_pcm_ops_t snd_ice1712_capture_pro_ops = {
 	pointer:	snd_ice1712_capture_pro_pointer,
 };
 
-static int __init snd_ice1712_pcm_profi(ice1712_t * ice, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_ice1712_pcm_profi(ice1712_t * ice, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -2352,7 +2352,7 @@ static int __init snd_ice1712_build_pro_mixer(ice1712_t *ice)
 	return 0;
 }
 
-static void /*__init*/ snd_ice1712_ac97_init(ac97_t *ac97)
+static void snd_ice1712_ac97_init(ac97_t *ac97)
 {
 	// ice1712_t *ice = snd_magic_cast(ice1712_t, ac97->private_data, return);
 
@@ -2360,13 +2360,13 @@ static void /*__init*/ snd_ice1712_ac97_init(ac97_t *ac97)
         snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, 0xe800, 0xe800);
 }
 
-static void __exit snd_ice1712_mixer_free_ac97(ac97_t *ac97)
+static void snd_ice1712_mixer_free_ac97(ac97_t *ac97)
 {
 	ice1712_t *ice = snd_magic_cast(ice1712_t, ac97->private_data, return);
 	ice->ac97 = NULL;
 }
 
-static int __init snd_ice1712_ac97_mixer(ice1712_t * ice)
+static int __devinit snd_ice1712_ac97_mixer(ice1712_t * ice)
 {
 	int err;
 
@@ -2436,7 +2436,7 @@ static void snd_ice1712_proc_read(snd_info_entry_t *entry,
 		snd_iprintf(buffer, "  Extra #%02i        : 0x%x\n", idx, ice->eeprom.extra[idx - 0x1c]);
 }
 
-static void __init snd_ice1712_proc_init(ice1712_t * ice)
+static void __devinit snd_ice1712_proc_init(ice1712_t * ice)
 {
 	snd_info_entry_t *entry;
 
@@ -2454,7 +2454,7 @@ static void __init snd_ice1712_proc_init(ice1712_t * ice)
 	ice->proc_entry = entry;
 }
 
-static void __exit snd_ice1712_proc_done(ice1712_t * ice)
+static void snd_ice1712_proc_done(ice1712_t * ice)
 {
 	if (ice->proc_entry) {
 		snd_info_unregister(ice->proc_entry);
@@ -2481,7 +2481,7 @@ static int snd_ice1712_eeprom_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_ice1712_eeprom = {
+static snd_kcontrol_new_t snd_ice1712_eeprom __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_CARD,
 	name: "ICE1712 EEPROM",
 	access: SNDRV_CTL_ELEM_ACCESS_READ,
@@ -2559,7 +2559,7 @@ static int snd_ice1712_spdif_default_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_spdif_default =
+static snd_kcontrol_new_t snd_ice1712_spdif_default __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
 	name:           SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
@@ -2635,7 +2635,7 @@ static int snd_ice1712_spdif_maskp_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_ice1712_spdif_maskc =
+static snd_kcontrol_new_t snd_ice1712_spdif_maskc __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READ,
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
@@ -2644,7 +2644,7 @@ static snd_kcontrol_new_t snd_ice1712_spdif_maskc =
 	get:		snd_ice1712_spdif_maskc_get,
 };
 
-static snd_kcontrol_new_t snd_ice1712_spdif_maskp =
+static snd_kcontrol_new_t snd_ice1712_spdif_maskp __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READ,
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
@@ -2721,7 +2721,7 @@ static int snd_ice1712_spdif_stream_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_spdif_stream =
+static snd_kcontrol_new_t snd_ice1712_spdif_stream __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READWRITE | SNDRV_CTL_ELEM_ACCESS_INACTIVE,
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
@@ -2777,13 +2777,13 @@ static int snd_ice1712_gpio_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t 
 	return val != nval;
 }
 
-static snd_kcontrol_new_t snd_ice1712_delta1010_wordclock_select =
+static snd_kcontrol_new_t snd_ice1712_delta1010_wordclock_select __devinitdata =
 ICE1712_GPIO(SNDRV_CTL_ELEM_IFACE_PCM, "Word Clock Sync", 0, ICE1712_DELTA_WORD_CLOCK_SELECT, 1, 0);
-static snd_kcontrol_new_t snd_ice1712_delta1010_wordclock_status =
+static snd_kcontrol_new_t snd_ice1712_delta1010_wordclock_status __devinitdata =
 ICE1712_GPIO(SNDRV_CTL_ELEM_IFACE_PCM, "Word Clock Status", 0, ICE1712_DELTA_WORD_CLOCK_STATUS, 1, SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE);
-static snd_kcontrol_new_t snd_ice1712_deltadio2496_spdif_in_select =
+static snd_kcontrol_new_t snd_ice1712_deltadio2496_spdif_in_select __devinitdata =
 ICE1712_GPIO(SNDRV_CTL_ELEM_IFACE_PCM, "IEC958 Input Optical", 0, ICE1712_DELTA_SPDIF_INPUT_SELECT, 0, 0);
-static snd_kcontrol_new_t snd_ice1712_delta_spdif_in_status =
+static snd_kcontrol_new_t snd_ice1712_delta_spdif_in_status __devinitdata =
 ICE1712_GPIO(SNDRV_CTL_ELEM_IFACE_PCM, "Delta IEC958 Input Status", 0, ICE1712_DELTA_SPDIF_IN_STAT, 1, SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE);
 
 static int snd_ice1712_pro_spdif_master_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
@@ -2827,7 +2827,7 @@ static int snd_ice1712_pro_spdif_master_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_pro_spdif_master = {
+static snd_kcontrol_new_t snd_ice1712_pro_spdif_master __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Multi Track IEC958 Master",
 	info: snd_ice1712_pro_spdif_master_info,
@@ -2978,7 +2978,7 @@ static int snd_ice1712_pro_route_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_el
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_mixer_pro_analog_route = {
+static snd_kcontrol_new_t snd_ice1712_mixer_pro_analog_route __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "H/W Playback Route",
 	info: snd_ice1712_pro_route_info,
@@ -2986,7 +2986,7 @@ static snd_kcontrol_new_t snd_ice1712_mixer_pro_analog_route = {
 	put: snd_ice1712_pro_route_analog_put,
 };
 
-static snd_kcontrol_new_t snd_ice1712_mixer_pro_spdif_route = {
+static snd_kcontrol_new_t snd_ice1712_mixer_pro_spdif_route __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "IEC958 Playback Route",
 	info: snd_ice1712_pro_route_info,
@@ -3028,7 +3028,7 @@ static int snd_ice1712_pro_volume_rate_put(snd_kcontrol_t * kcontrol, snd_ctl_el
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_mixer_pro_volume_rate = {
+static snd_kcontrol_new_t snd_ice1712_mixer_pro_volume_rate __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Multi Track Volume Rate",
 	info: snd_ice1712_pro_volume_rate_info,
@@ -3060,7 +3060,7 @@ static int snd_ice1712_pro_peak_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_valu
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_ice1712_mixer_pro_peak = {
+static snd_kcontrol_new_t snd_ice1712_mixer_pro_peak __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Multi Track Peak",
 	access: SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
@@ -3116,7 +3116,7 @@ static int snd_ice1712_ewx_io_sense_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_
 	return val != nval;
 }
 
-static snd_kcontrol_new_t snd_ice1712_ewx_input_sense = {
+static snd_kcontrol_new_t snd_ice1712_ewx_input_sense __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Input Sensitivity Switch",
 	info: snd_ice1712_ewx_io_sense_info,
@@ -3125,7 +3125,7 @@ static snd_kcontrol_new_t snd_ice1712_ewx_input_sense = {
 	private_value: ICE1712_EWX2496_AIN_SEL,
 };
 
-static snd_kcontrol_new_t snd_ice1712_ewx_output_sense = {
+static snd_kcontrol_new_t snd_ice1712_ewx_output_sense __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Output Sensitivity Switch",
 	info: snd_ice1712_ewx_io_sense_info,
@@ -3214,7 +3214,7 @@ static int snd_ice1712_ews88mt_input_sense_put(snd_kcontrol_t *kcontrol, snd_ctl
 	return ndata != data;
 }
 
-static snd_kcontrol_new_t snd_ice1712_ews88mt_input_sense = {
+static snd_kcontrol_new_t snd_ice1712_ews88mt_input_sense __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Input Sensitivity Switch",
 	info: snd_ice1712_ewx_io_sense_info,
@@ -3222,7 +3222,7 @@ static snd_kcontrol_new_t snd_ice1712_ews88mt_input_sense = {
 	put: snd_ice1712_ews88mt_input_sense_put,
 };
 
-static snd_kcontrol_new_t snd_ice1712_ews88mt_output_sense = {
+static snd_kcontrol_new_t snd_ice1712_ews88mt_output_sense __devinitdata = {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "Output Sensitivity Switch",
 	info: snd_ice1712_ewx_io_sense_info,
@@ -3304,15 +3304,15 @@ static int snd_ice1712_ews88d_control_put(snd_kcontrol_t * kcontrol, snd_ctl_ele
   private_value: xshift | (xinvert << 8),\
 }
 
-static snd_kcontrol_new_t snd_ice1712_ews88d_spdif_in_opt =
+static snd_kcontrol_new_t snd_ice1712_ews88d_spdif_in_opt __devinitdata =
 EWS88D_CONTROL(SNDRV_CTL_ELEM_IFACE_MIXER, "IEC958 Input Optical", 0, 0, 1, 0); /* inverted */
-static snd_kcontrol_new_t snd_ice1712_ews88d_opt_out_adat =
+static snd_kcontrol_new_t snd_ice1712_ews88d_opt_out_adat __devinitdata =
 EWS88D_CONTROL(SNDRV_CTL_ELEM_IFACE_MIXER, "ADAT Output Optical", 0, 1, 0, 0);
-static snd_kcontrol_new_t snd_ice1712_ews88d_master_adat =
+static snd_kcontrol_new_t snd_ice1712_ews88d_master_adat __devinitdata =
 EWS88D_CONTROL(SNDRV_CTL_ELEM_IFACE_MIXER, "ADAT External Master Clock", 0, 2, 0, 0);
-static snd_kcontrol_new_t snd_ice1712_ews88d_adat_enable =
+static snd_kcontrol_new_t snd_ice1712_ews88d_adat_enable __devinitdata =
 EWS88D_CONTROL(SNDRV_CTL_ELEM_IFACE_MIXER, "Enable ADAT", 0, 3, 0, 0);
-static snd_kcontrol_new_t snd_ice1712_ews88d_adat_through =
+static snd_kcontrol_new_t snd_ice1712_ews88d_adat_through __devinitdata =
 EWS88D_CONTROL(SNDRV_CTL_ELEM_IFACE_MIXER, "ADAT Through", 0, 4, 1, 0);
 
 
@@ -3320,7 +3320,7 @@ EWS88D_CONTROL(SNDRV_CTL_ELEM_IFACE_MIXER, "ADAT Through", 0, 4, 1, 0);
  *
  */
 
-static unsigned char __init snd_ice1712_read_i2c(ice1712_t *ice,
+static unsigned char __devinit snd_ice1712_read_i2c(ice1712_t *ice,
 						 unsigned char dev,
 						 unsigned char addr)
 {
@@ -3332,7 +3332,7 @@ static unsigned char __init snd_ice1712_read_i2c(ice1712_t *ice,
 	return inb(ICEREG(ice, I2C_DATA));
 }
 
-static int __init snd_ice1712_read_eeprom(ice1712_t *ice)
+static int __devinit snd_ice1712_read_eeprom(ice1712_t *ice)
 {
 	int dev = 0xa0;		/* EEPROM device address */
 	unsigned int idx;
@@ -3378,7 +3378,7 @@ static int __init snd_ice1712_read_eeprom(ice1712_t *ice)
 	return 0;
 }
 
-static void __init snd_ice1712_ak4524_init(ice1712_t *ice)
+static void __devinit snd_ice1712_ak4524_init(ice1712_t *ice)
 {
 	static unsigned char inits[] = {
 		0x00, 0x07, /* 0: all power up */
@@ -3415,7 +3415,7 @@ static void __init snd_ice1712_ak4524_init(ice1712_t *ice)
 	}
 }
 
-static void __init snd_ice1712_stdsp24_gpio_write(ice1712_t *ice, unsigned char byte)
+static void __devinit snd_ice1712_stdsp24_gpio_write(ice1712_t *ice, unsigned char byte)
 {
 	byte |= ICE1712_STDSP24_CLOCK_BIT;
 	udelay(100);
@@ -3428,7 +3428,7 @@ static void __init snd_ice1712_stdsp24_gpio_write(ice1712_t *ice, unsigned char 
 	snd_ice1712_write(ice, ICE1712_IREG_GPIO_DATA, byte);
 }
 
-static void __init snd_ice1712_stdsp24_darear(ice1712_t *ice, int activate)
+static void __devinit snd_ice1712_stdsp24_darear(ice1712_t *ice, int activate)
 {
 	down(&ice->gpio_mutex);
 	ICE1712_STDSP24_0_DAREAR(ice->hoontech_boxbits, activate);
@@ -3436,7 +3436,7 @@ static void __init snd_ice1712_stdsp24_darear(ice1712_t *ice, int activate)
 	up(&ice->gpio_mutex);
 }
 
-static void __init snd_ice1712_stdsp24_mute(ice1712_t *ice, int activate)
+static void __devinit snd_ice1712_stdsp24_mute(ice1712_t *ice, int activate)
 {
 	down(&ice->gpio_mutex);
 	ICE1712_STDSP24_3_MUTE(ice->hoontech_boxbits, activate);
@@ -3444,7 +3444,7 @@ static void __init snd_ice1712_stdsp24_mute(ice1712_t *ice, int activate)
 	up(&ice->gpio_mutex);
 }
 
-static void __init snd_ice1712_stdsp24_insel(ice1712_t *ice, int activate)
+static void __devinit snd_ice1712_stdsp24_insel(ice1712_t *ice, int activate)
 {
 	down(&ice->gpio_mutex);
 	ICE1712_STDSP24_3_INSEL(ice->hoontech_boxbits, activate);
@@ -3452,7 +3452,7 @@ static void __init snd_ice1712_stdsp24_insel(ice1712_t *ice, int activate)
 	up(&ice->gpio_mutex);
 }
 
-static void __init snd_ice1712_stdsp24_box_channel(ice1712_t *ice, int box, int chn, int activate)
+static void __devinit snd_ice1712_stdsp24_box_channel(ice1712_t *ice, int box, int chn, int activate)
 {
 	down(&ice->gpio_mutex);
 
@@ -3499,7 +3499,7 @@ static void __init snd_ice1712_stdsp24_box_channel(ice1712_t *ice, int box, int 
 	up(&ice->gpio_mutex);
 }
 
-static void __init snd_ice1712_stdsp24_box_midi(ice1712_t *ice, int box, int master, int slave)
+static void __devinit snd_ice1712_stdsp24_box_midi(ice1712_t *ice, int box, int master, int slave)
 {
 	down(&ice->gpio_mutex);
 
@@ -3530,7 +3530,7 @@ static void __init snd_ice1712_stdsp24_box_midi(ice1712_t *ice, int box, int mas
 	up(&ice->gpio_mutex);
 }
 
-static void __init snd_ice1712_stdsp24_init(ice1712_t *ice)
+static void __devinit snd_ice1712_stdsp24_init(ice1712_t *ice)
 {
 	int box, chn;
 
@@ -3588,7 +3588,7 @@ static void __init snd_ice1712_stdsp24_init(ice1712_t *ice)
 	}
 }
 
-static int __init snd_ice1712_chip_init(ice1712_t *ice)
+static int __devinit snd_ice1712_chip_init(ice1712_t *ice)
 {
 	int err, has_i2c = 0;
 
@@ -3914,7 +3914,7 @@ static int __init snd_ice1712_build_controls(ice1712_t *ice)
 	return 0;
 }
 
-static int __exit snd_ice1712_free(ice1712_t *ice)
+static int snd_ice1712_free(ice1712_t *ice)
 {
 	if (ice->res_port == NULL)
 		goto __hw_end;
@@ -3939,13 +3939,13 @@ static int __exit snd_ice1712_free(ice1712_t *ice)
 	return 0;
 }
 
-static int __exit snd_ice1712_dev_free(snd_device_t *device)
+static int snd_ice1712_dev_free(snd_device_t *device)
 {
 	ice1712_t *ice = snd_magic_cast(ice1712_t, device->device_data, return -ENXIO);
 	return snd_ice1712_free(ice);
 }
 
-static int __init snd_ice1712_create(snd_card_t * card,
+static int __devinit snd_ice1712_create(snd_card_t * card,
 				     struct pci_dev *pci,
 				     int omni,
 				     ice1712_t ** r_ice1712)

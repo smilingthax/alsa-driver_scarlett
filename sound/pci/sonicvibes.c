@@ -867,7 +867,7 @@ static void snd_sonicvibes_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_sonicvibes_pcm(sonicvibes_t * sonic, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_sonicvibes_pcm(sonicvibes_t * sonic, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1084,7 +1084,7 @@ static int snd_sonicvibes_put_double(snd_kcontrol_t * kcontrol, snd_ctl_elem_val
 
 #define SONICVIBES_CONTROLS (sizeof(snd_sonicvibes_controls)/sizeof(snd_kcontrol_new_t))
 
-static snd_kcontrol_new_t snd_sonicvibes_controls[] = {
+static snd_kcontrol_new_t snd_sonicvibes_controls[] __devinitdata = {
 SONICVIBES_DOUBLE("Capture Volume", 0, SV_IREG_LEFT_ADC, SV_IREG_RIGHT_ADC, 0, 0, 15, 0),
 SONICVIBES_DOUBLE("Aux Playback Switch", 0, SV_IREG_LEFT_AUX1, SV_IREG_RIGHT_AUX1, 7, 7, 1, 1),
 SONICVIBES_DOUBLE("Aux Playback Volume", 0, SV_IREG_LEFT_AUX1, SV_IREG_RIGHT_AUX1, 0, 0, 31, 1),
@@ -1115,7 +1115,7 @@ static void snd_sonicvibes_master_free(snd_kcontrol_t *kcontrol)
 	sonic->master_volume = NULL;
 }
 
-static int __init snd_sonicvibes_mixer(sonicvibes_t * sonic)
+static int __devinit snd_sonicvibes_mixer(sonicvibes_t * sonic)
 {
 	snd_card_t *card;
 	snd_kcontrol_t *kctl;
@@ -1170,7 +1170,7 @@ static void snd_sonicvibes_proc_read(snd_info_entry_t *entry,
 	snd_iprintf(buffer, "MIDI to ext. Tx  : %s\n", tmp & 0x04 ? "on" : "off");
 }
 
-static void __init snd_sonicvibes_proc_init(sonicvibes_t * sonic)
+static void __devinit snd_sonicvibes_proc_init(sonicvibes_t * sonic)
 {
 	snd_info_entry_t *entry;
 
@@ -1200,7 +1200,7 @@ static void snd_sonicvibes_proc_done(sonicvibes_t * sonic)
 
  */
 
-static snd_kcontrol_new_t snd_sonicvibes_game_control =
+static snd_kcontrol_new_t snd_sonicvibes_game_control __devinitdata =
 SONICVIBES_SINGLE("Joystick Speed", 0, SV_IREG_GAME_PORT, 1, 15, 0);
 
 static int snd_sonicvibes_free(sonicvibes_t *sonic)
@@ -1236,7 +1236,7 @@ static int snd_sonicvibes_dev_free(snd_device_t *device)
 	return snd_sonicvibes_free(sonic);
 }
 
-static int __init snd_sonicvibes_create(snd_card_t * card,
+static int __devinit snd_sonicvibes_create(snd_card_t * card,
 					struct pci_dev *pci,
 					int reverb,
 					int mge,
@@ -1399,7 +1399,7 @@ static int __init snd_sonicvibes_create(snd_card_t * card,
 
 #define SONICVIBES_MIDI_CONTROLS (sizeof(snd_sonicvibes_midi_controls)/sizeof(snd_kcontrol_new_t))
 
-static snd_kcontrol_new_t snd_sonicvibes_midi_controls[] = {
+static snd_kcontrol_new_t snd_sonicvibes_midi_controls[] __devinitdata = {
 SONICVIBES_SINGLE("SonicVibes Wave Source RAM", 0, SV_IREG_WAVE_SOURCE, 0, 1, 0),
 SONICVIBES_SINGLE("SonicVibes Wave Source RAM+ROM", 0, SV_IREG_WAVE_SOURCE, 1, 1, 0),
 SONICVIBES_SINGLE("SonicVibes Onboard Synth", 0, SV_IREG_MPU401, 0, 1, 0),
@@ -1420,7 +1420,7 @@ static void snd_sonicvibes_midi_input_close(mpu401_t * mpu)
 	outb(sonic->irqmask |= SV_MIDI_MASK, SV_REG(sonic, IRQMASK));
 }
 
-static int snd_sonicvibes_midi(sonicvibes_t * sonic, snd_rawmidi_t * rmidi)
+static int __devinit snd_sonicvibes_midi(sonicvibes_t * sonic, snd_rawmidi_t * rmidi)
 {
 	mpu401_t * mpu = snd_magic_cast(mpu401_t, rmidi->private_data, return -ENXIO);
 	snd_card_t *card = sonic->card;
