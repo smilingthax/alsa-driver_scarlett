@@ -30,7 +30,7 @@
 
 /* patch interface header: 16 bytes */
 typedef struct soundfont_patch_info_t {
-	short key;			/* use the key below */
+	unsigned short key;		/* use the key below */
 #define SND_OSS_SOUNDFONT_PATCH		SND_OSS_PATCHKEY(0x07)
 
 	short device_no;		/* synthesizer number */
@@ -121,10 +121,10 @@ typedef struct soundfont_voice_info_t {
 
 	short root;			/* midi root key */
 	short tune;			/* pitch tuning (in cents) */
-	char low, high;			/* key note range */
-	char vellow, velhigh;		/* velocity range */
-	char fixkey, fixvel;		/* fixed key, velocity */
-	char pan, fixpan;		/* panning, fixed panning */
+	unsigned char low, high;	/* key note range */
+	unsigned char vellow, velhigh;	/* velocity range */
+	signed char fixkey, fixvel;	/* fixed key, velocity */
+	signed char pan, fixpan;	/* panning, fixed panning */
 	short exclusiveClass;		/* exclusive class (0 = none) */
 	unsigned char amplitude;	/* sample volume (127 max) */
 	unsigned char attenuation;	/* attenuation (0.375dB) */

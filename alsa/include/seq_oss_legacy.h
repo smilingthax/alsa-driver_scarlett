@@ -75,8 +75,11 @@ typedef struct oss_seq_event_t {
 /*
  * patch key
  */
+#ifdef SND_LITTLE_ENDIAN
 #define SND_OSS_PATCHKEY(id) ((id<<8)|0xfd)
-
+#else
+#define SND_OSS_PATCHKEY(id) (0xfd00|id)
+#endif
 
 /*
  * GUS patch format
@@ -159,7 +162,7 @@ struct oss_patch_info_t {
 typedef struct oss_sysex_info_t oss_sysex_info_t;
 
 struct oss_sysex_info_t {
-	short key;		/* Use SYSEX_PATCH or MAUI_PATCH here */
+	unsigned short key;	/* Use SYSEX_PATCH or MAUI_PATCH here */
 #define SND_OSS_SYSEX_PATCH	SND_OSS_PATCHKEY(0x05)
 #define SND_OSS_MAUI_PATCH	SND_OSS_PATCHKEY(0x06)
 	short device_no;	/* Synthesizer number */
