@@ -202,7 +202,7 @@ if test -z "$my_compiler_version" -o "$my_compiler_type" = "$my_compiler_version
   my_compiler="gcc $my_compiler"
 fi
 AC_MSG_RESULT(Kernel compiler: $kernel_compiler Used compiler: $my_compiler);
-if test -z "$kernel_compier"; then
+if test -z "$kernel_compiler"; then
   echo
   echo "*** NO PREDEFINED KERNEL COMPILER IS DETECTED"
   echo "*** Assuming the same compiler is used with the current system compiler."
