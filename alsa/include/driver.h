@@ -243,20 +243,29 @@ typedef struct snd_stru_vma {
 
 #define snd_vma(n) list_entry(n, snd_vma_t, list)
 
+#define SND_DEV_TYPE_RANGE_SIZE	0x1000
+
 typedef enum {
-	SND_DEV_PCM = 0,
+	SND_DEV_LOWLEVEL_PRE = 0,
+	SND_DEV_LOWLEVEL_NORMAL = SND_DEV_TYPE_RANGE_SIZE,
+	SND_DEV_PCM,
 	SND_DEV_RAWMIDI,
 	SND_DEV_TIMER,
 	SND_DEV_SEQUENCER,
 	SND_DEV_HWDEP,
-	SND_DEV_LOWLEVEL,
-	SND_DEV_OSS_MIXER,
+	SND_DEV_LOWLEVEL = (2*SND_DEV_TYPE_RANGE_SIZE)
 } snd_device_type_t;
 
 typedef enum {
 	SND_DEV_BUILD = 0,
 	SND_DEV_REGISTERED = 1
 } snd_device_state_t;
+
+typedef enum {
+	SND_DEV_CMD_PRE = 0,
+	SND_DEV_CMD_NORMAL = 1,
+	SND_DEV_CMD_POST = 2
+} snd_device_cmd_t;
 
 typedef struct snd_stru_card snd_card_t;
 typedef struct snd_stru_device snd_device_t;
@@ -276,7 +285,7 @@ struct snd_stru_device {
 	snd_card_t *card;		/* card which holds this device */
 	snd_device_state_t state;	/* state of the device */
 	snd_device_type_t type;		/* device type */
-	void *private_data;			/* device structure */
+	void *device_data;		/* device structure */
 	int number;			/* device number */
 	void *arg;			/* optional argument (dynamically allocated) */
 	int size;			/* size of an optional argument */
@@ -480,13 +489,13 @@ int snd_unregister_interrupts(snd_card_t *card);
 /* device.c */
 
 int snd_device_new(snd_card_t *card, snd_device_type_t type,
-		   void *private_data, int number, snd_device_ops_t *ops,
+		   void *device_data, int number, snd_device_ops_t *ops,
 		   snd_device_t **rdev);
-int snd_device_free(snd_card_t *card, void *private_data);
-int snd_device_register(snd_card_t *card, void *private_data);
-int snd_device_unregister(snd_card_t *card, void *private_data);
+int snd_device_free(snd_card_t *card, void *device_data);
+int snd_device_register(snd_card_t *card, void *device_data);
+int snd_device_unregister(snd_card_t *card, void *device_data);
 int snd_device_register_all(snd_card_t *card);
-int snd_device_free_all(snd_card_t *card);
+int snd_device_free_all(snd_card_t *card, snd_device_cmd_t cmd);
 
 /* isadma.c */
 
