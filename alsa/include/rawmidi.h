@@ -154,7 +154,7 @@ int snd_rawmidi_receive(snd_rawmidi_substream_t * substream, unsigned char *buff
 void snd_rawmidi_transmit_reset(snd_rawmidi_substream_t * substream);
 int snd_rawmidi_transmit_empty(snd_rawmidi_substream_t * substream);
 int snd_rawmidi_transmit_peek(snd_rawmidi_substream_t * substream, unsigned char *buffer, int count);
-void snd_rawmidi_transmit_ack(snd_rawmidi_substream_t * substream, int count);
+int snd_rawmidi_transmit_ack(snd_rawmidi_substream_t * substream, int count);
 int snd_rawmidi_transmit(snd_rawmidi_substream_t * substream, unsigned char *buffer, int count);
 
 /* main midi functions */
