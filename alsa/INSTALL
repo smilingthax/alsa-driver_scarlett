@@ -463,7 +463,13 @@ Module parameters
     Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4622/
 				       CS4624/CS4630/CS4280.
 
+    snd_external_amp     - Force to enable external amplifer.
+    snd_thinkpad         - Force to enable Thinkpad's CLKRUN control.
+
     Module supports up to 8 cards and autoprobe.
+    Usually external amp and CLKRUN controls are detected automatically
+    from PCI sub vendor/device ids.  If they don't work, give the options
+    above explicitly.
     
   Module snd-card-serial.o
   -------------------------
@@ -478,6 +484,8 @@ Module parameters
 		  115200 = default
     snd_outs	- number of MIDI ports in a serial port (1-4)
 		  1 = default
+    snd_adaptor - Type of adaptor.
+                  0 = Soundcanvas, 1 = MS-124T, 2 = MS-124W S/A, 3 = MS-124W M/B
     
     Module supports up to 8 cards. This module does not support autoprobe
     thus the main port must be specified!!! Other options are optional.
@@ -579,6 +587,8 @@ Module parameters
     snd_extout  - bitmap of available external outputs for FX8010 (see bellow)
     snd_seq_ports - allocated sequencer ports (4 by default)
     snd_max_synth_voices - limit of voices used for wavetable (64 by default)
+    snd_max_buffer_size  - specifies the maximum size of wavetable/pcm buffers
+                           given in MB unit.  Default value is 128.
 
     Module supports up to 8 cards and autoprobe.
 
@@ -601,6 +611,9 @@ Module parameters
 			* MidiMan M Audio Delta DiO 2496
 			* MidiMan M Audio Delta 66
 			* MidiMan M Audio Delta 44
+                        * TerraTec EWS 88MT
+                        * TerraTec EWS 88D
+                        * TerraTec EWX 24/96
 
     Module supports up to 8 cards and autoprobe. Note: The consumer part
     is not used with all Envy24 based cards (for example in the MidiMan Delta
