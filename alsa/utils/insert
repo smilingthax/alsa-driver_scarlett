@@ -139,7 +139,7 @@ case "$1" in
     insert snd-es18xx.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-card-es18xx.o
+    insert snd-card-es18xx.o snd_irq=7 snd_dma1=0 snd_dma2=1
     restore es18xx.conf
     ;;
   sb16)
@@ -167,7 +167,7 @@ case "$1" in
     if [ -r $MODDIR/snd-emu8000.o ]; then
       insert snd-emu8000.o
     fi
-    insert snd-card-sbawe.o snd_irq=10 snd_dma8=1 snd_dma16=5
+    insert snd-card-sbawe.o snd_irq=7 snd_dma8=1 snd_dma16=5
     restore sbawe.conf
     ;;
   emu10k1|live)
