@@ -146,7 +146,7 @@
 #define SV_ADCMULT		512
 
 #define SV_MODE_PLAY		1
-#define SV_MODE_RECORD		2
+#define SV_MODE_CAPTURE		2
 
 /*
 
@@ -181,6 +181,10 @@ struct snd_stru_sonicvibes {
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *capture_subchn1;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_synth_t *synth;	/* S3FM */

@@ -142,6 +142,10 @@ struct snd_stru_solo {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm2;  
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *playback2_subchn;
+	snd_pcm1_subchn_t *playback2_subchn1;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_synth_t *synth;	/* S3FM */

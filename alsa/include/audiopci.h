@@ -45,7 +45,7 @@
 #define ES_REG( ensoniq, x ) ( (ensoniq) -> port + ES_REG_##x )
 
 #define ES_REG_CONTROL	0x00	/* R/W: Interrupt/Chip select control register */
-#define   ES_1370_ADC_STOP	(1<<31)		/* disable record buffer transfers */
+#define   ES_1370_ADC_STOP	(1<<31)		/* disable capture buffer transfers */
 #define   ES_1370_XCTL1 	(1<<30)		/* general purpose output bit */
 #define   ES_1371_JOY_ASEL(o)	(((o)&0x03)<<24)	/* joystick port mapping */
 #define   ES_1371_JOY_ASELM	(0x03<<24)	/* mask for above */
@@ -61,19 +61,19 @@
 #define   ES_1371_SYNC_RES	(1<<14)		/* Warm AC97 reset */
 #define   ES_1370_WTSRSEL(o)	(((o)&0x03)<<12)	/* fixed frequency clock for DAC1 */
 #define   ES_1370_WTSRSELM	(0x03<<12)	/* mask for above */
-#define   ES_1371_ADC_STOP	(1<<13)		/* disable CCB transfer record information */
+#define   ES_1371_ADC_STOP	(1<<13)		/* disable CCB transfer capture information */
 #define   ES_1371_PWR_INTRM	(1<<12)		/* power level change interrupts enable */
 #define   ES_1370_DAC_SYNC	(1<<11)		/* DAC's are synchronous */
-#define   ES_1371_M_CB		(1<<11)		/* record clock source; 0 = ADC; 1 = I2S */
+#define   ES_1371_M_CB		(1<<11)		/* capture clock source; 0 = ADC; 1 = I2S */
 #define   ES_CCB_INTRM		(1<<10)		/* CCB voice interrupts enable */
-#define   ES_1370_M_CB		(1<<9)	/* record clock source; 0 = ADC; 1 = MPEG */
+#define   ES_1370_M_CB		(1<<9)	/* capture clock source; 0 = ADC; 1 = MPEG */
 #define   ES_1370_XCTL0		(1<<8)	/* generap purpose output bit */
 #define   ES_1371_PDLEV(o)	(((o)&0x03)<<8)		/* current power down level */
 #define   ES_1371_PDLEVM	(0x03<<8)	/* mask for above */
 #define   ES_BREQ		(1<<7)	/* memory bus request enable */
 #define   ES_DAC1_EN		(1<<6)	/* DAC1 playback channel enable */
 #define   ES_DAC2_EN		(1<<5)	/* DAC2 playback channel enable */
-#define   ES_ADC_EN		(1<<4)	/* ADC record channel enable */
+#define   ES_ADC_EN		(1<<4)	/* ADC capture channel enable */
 #define   ES_UART_EN		(1<<3)	/* UART enable */
 #define   ES_JYSTK_EN		(1<<2)	/* Joystick module enable */
 #define   ES_1370_CDC_EN	(1<<1)	/* Codec interface enable */
@@ -133,7 +133,7 @@
 #define   ES_1371_SRC_DISABLE      (1<<22)	/* sample rate converter disable */
 #define   ES_1371_DIS_P1	   (1<<21)	/* playback channel 1 accumulator update disable */
 #define   ES_1371_DIS_P2	   (1<<20)	/* playback channel 1 accumulator update disable */
-#define   ES_1371_DIS_R1	   (1<<19)	/* record channel accumulator update disable */
+#define   ES_1371_DIS_R1	   (1<<19)	/* capture channel accumulator update disable */
 #define   ES_1371_SRC_RAM_DATAO(o) (((o)&0xffff)<<0)	/* current value of the sample rate converter */
 #define   ES_1371_SRC_RAM_DATAM	   (0xffff<<0)	/* mask for above */
 #define   ES_1371_SRC_RAM_DATAI(i) (((i)>>0)&0xffff)	/* current value of the sample rate converter */
@@ -254,7 +254,7 @@
 
 #define ES_MODE_PLAY1	0x0001
 #define ES_MODE_PLAY2	0x0002
-#define ES_MODE_RECORD	0x0004
+#define ES_MODE_CAPTURE	0x0004
 
 #define ES_MODE_OUTPUT	0x0001	/* for MIDI */
 #define ES_MODE_INPUT	0x0002	/* for MIDI */
@@ -293,6 +293,12 @@ struct snd_stru_ensoniq {
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* DAC1/ADC PCM */
 	snd_pcm_t *pcm2;	/* DAC2 PCM */
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *playback2_subchn;
+	snd_pcm1_subchn_t *playback2_subchn1;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *capture_subchn1;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 

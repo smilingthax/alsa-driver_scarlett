@@ -84,7 +84,6 @@
 
 typedef struct snd_stru_pcm1_subchn snd_pcm1_subchn_t;
 typedef struct snd_stru_pcm1_channel snd_pcm1_channel_t;
-typedef struct snd_stru_pcm1 snd_pcm1_t;
 
 struct snd_stru_pcm1_oss_setup {
 	char *task_name;
