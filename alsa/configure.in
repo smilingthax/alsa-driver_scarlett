@@ -846,8 +846,8 @@ fi
 AC_SUBST(CONFIG_PCMCIA)
 
 dnl Check for PC98 architecture support...
-CHECK_KERNEL_CONFIG(CONFIG_PC9800, [PC9800 support in kernel])
-AC_SUBST(CONFIG_PC9800)
+CHECK_KERNEL_CONFIG(CONFIG_X86_PC9800, [PC9800 support in kernel])
+AC_SUBST(CONFIG_X86_PC9800)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_INIT
