@@ -57,12 +57,17 @@ void snd_compat_request_module(const char *name, ...);
 #define request_module(name, args...) snd_compat_request_module(name, ##args)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,9)
 #include <linux/compiler.h>
+#ifndef __iomem
+#define __iomem
+#endif
 #ifndef __user
 #define __user
 #endif
+#endif /* < 2.6.9 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 /* for compat layer */
 #include <linux/pci.h>
 
