@@ -76,11 +76,12 @@ install: install-modules install-headers install-scripts
 
 install-headers:
 	if [ -L $(DESTDIR)$(prefix)/include/sound ]; then \
-		ln -sf $(SRCDIR)/include $(DESTDIR)$(prefix)/include/sound; \
+		rm -f $(DESTDIR)$(prefix)/include/sound; \
+		ln -sf $(SRCDIR)/include/sound $(DESTDIR)$(prefix)/include/sound; \
 	else \
 		rm -rf $(DESTDIR)$(prefix)/include/sound; \
 		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
-		for f in include/*.h; do \
+		for f in include/sound/*.h; do \
 			install -m 644 -g root -o root $$f $(DESTDIR)$(prefix)/include/sound; \
 		done \
 	fi
