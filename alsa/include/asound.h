@@ -74,7 +74,7 @@ struct sndrv_aes_iec958 {
 #define SNDRV_HWDEP_VERSION		SNDRV_PROTOCOL_VERSION(1, 0, 0)
 
 enum sndrv_hwdep_iface {
-	SNDRV_HWDEP_IFACE_OPL2,
+	SNDRV_HWDEP_IFACE_OPL2 = 0,
 	SNDRV_HWDEP_IFACE_OPL3,
 	SNDRV_HWDEP_IFACE_OPL4,
 	SNDRV_HWDEP_IFACE_SB16CSP,	/* Creative Signal Processor */
@@ -112,7 +112,7 @@ typedef unsigned long sndrv_pcm_uframes_t;
 typedef long sndrv_pcm_sframes_t;
 
 enum sndrv_pcm_class {
-	SNDRV_PCM_CLASS_GENERIC,	/* standard mono or stereo device */
+	SNDRV_PCM_CLASS_GENERIC = 0,	/* standard mono or stereo device */
 	SNDRV_PCM_CLASS_MULTI,		/* multichannel device */
 	SNDRV_PCM_CLASS_MODEM,		/* software modem class */
 	SNDRV_PCM_CLASS_DIGITIZER,	/* digitizer class */
@@ -121,20 +121,20 @@ enum sndrv_pcm_class {
 };
 
 enum sndrv_pcm_subclass {
-	SNDRV_PCM_SUBCLASS_GENERIC_MIX,	/* mono or stereo subdevices are mixed together */
+	SNDRV_PCM_SUBCLASS_GENERIC_MIX = 0, /* mono or stereo subdevices are mixed together */
 	SNDRV_PCM_SUBCLASS_MULTI_MIX,	/* multichannel subdevices are mixed together */
 	/* Don't forget to change the following: */
 	SNDRV_PCM_SUBCLASS_LAST = SNDRV_PCM_SUBCLASS_MULTI_MIX,
 };
 
 enum sndrv_pcm_stream {
-	SNDRV_PCM_STREAM_PLAYBACK,
+	SNDRV_PCM_STREAM_PLAYBACK = 0,
 	SNDRV_PCM_STREAM_CAPTURE,
 	SNDRV_PCM_STREAM_LAST = SNDRV_PCM_STREAM_CAPTURE,
 };
 
 enum sndrv_pcm_access {
-	SNDRV_PCM_ACCESS_MMAP_INTERLEAVED,	/* interleaved mmap */
+	SNDRV_PCM_ACCESS_MMAP_INTERLEAVED = 0,	/* interleaved mmap */
 	SNDRV_PCM_ACCESS_MMAP_NONINTERLEAVED, 	/* noninterleaved mmap */
 	SNDRV_PCM_ACCESS_MMAP_COMPLEX,		/* complex mmap */
 	SNDRV_PCM_ACCESS_RW_INTERLEAVED,	/* readi/writei */
@@ -143,7 +143,7 @@ enum sndrv_pcm_access {
 };
 
 enum sndrv_pcm_format {
-	SNDRV_PCM_FORMAT_S8,
+	SNDRV_PCM_FORMAT_S8 = 0,
 	SNDRV_PCM_FORMAT_U8,
 	SNDRV_PCM_FORMAT_S16_LE,
 	SNDRV_PCM_FORMAT_S16_BE,
@@ -196,7 +196,7 @@ enum sndrv_pcm_format {
 };
 
 enum sndrv_pcm_subformat {
-	SNDRV_PCM_SUBFORMAT_STD,
+	SNDRV_PCM_SUBFORMAT_STD = 0,
 	SNDRV_PCM_SUBFORMAT_LAST = SNDRV_PCM_SUBFORMAT_STD,
 };
 
@@ -215,7 +215,7 @@ enum sndrv_pcm_subformat {
 #define SNDRV_PCM_INFO_SYNC_START	0x00400000	/* pcm support some kind of sync go */
 
 enum sndrv_pcm_state {
-	SNDRV_PCM_STATE_OPEN,		/* stream is open */
+	SNDRV_PCM_STATE_OPEN = 0,	/* stream is open */
 	SNDRV_PCM_STATE_SETUP,		/* stream has a setup */
 	SNDRV_PCM_STATE_PREPARED,	/* stream is ready to start */
 	SNDRV_PCM_STATE_RUNNING,	/* stream is running */
@@ -254,13 +254,13 @@ struct sndrv_pcm_info {
 };
 
 enum sndrv_pcm_hw_param {
-	SNDRV_PCM_HW_PARAM_ACCESS,	/* Access type */
+	SNDRV_PCM_HW_PARAM_ACCESS = 0,	/* Access type */
 	SNDRV_PCM_HW_PARAM_FIRST_MASK = SNDRV_PCM_HW_PARAM_ACCESS,
 	SNDRV_PCM_HW_PARAM_FORMAT,	/* Format */
 	SNDRV_PCM_HW_PARAM_SUBFORMAT,	/* Subformat */
 	SNDRV_PCM_HW_PARAM_LAST_MASK = SNDRV_PCM_HW_PARAM_SUBFORMAT,
 
-	SNDRV_PCM_HW_PARAM_SAMPLE_BITS,	/* Bits per sample */
+	SNDRV_PCM_HW_PARAM_SAMPLE_BITS, /* Bits per sample */
 	SNDRV_PCM_HW_PARAM_FIRST_INTERVAL = SNDRV_PCM_HW_PARAM_SAMPLE_BITS,
 	SNDRV_PCM_HW_PARAM_FRAME_BITS,	/* Bits per frame */
 	SNDRV_PCM_HW_PARAM_CHANNELS,	/* Channels */
@@ -293,7 +293,7 @@ struct sndrv_pcm_hw_params {
 	unsigned int masks[SNDRV_PCM_HW_PARAM_LAST_MASK - 
 			   SNDRV_PCM_HW_PARAM_FIRST_MASK + 1];
 	struct sndrv_interval intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
-				       SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
+				        SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
 	unsigned int rmask;
 	unsigned int cmask;
 	unsigned int info;		/* R: Info flags for returned setup */
@@ -305,7 +305,7 @@ struct sndrv_pcm_hw_params {
 };
 
 enum sndrv_pcm_tstamp {
-	SNDRV_PCM_TSTAMP_NONE,
+	SNDRV_PCM_TSTAMP_NONE = 0,
 	SNDRV_PCM_TSTAMP_MMAP,
 	SNDRV_PCM_TSTAMP_LAST = SNDRV_PCM_TSTAMP_MMAP,
 };
@@ -409,7 +409,7 @@ enum {
 #define SNDRV_RAWMIDI_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 0)
 
 enum sndrv_rawmidi_stream {
-	SNDRV_RAWMIDI_STREAM_OUTPUT,
+	SNDRV_RAWMIDI_STREAM_OUTPUT = 0,
 	SNDRV_RAWMIDI_STREAM_INPUT,
 	SNDRV_RAWMIDI_STREAM_LAST = SNDRV_RAWMIDI_STREAM_INPUT,
 };
@@ -474,7 +474,7 @@ enum sndrv_timer_class {
 
 /* slave timer classes */
 enum sndrv_timer_slave_class {
-	SNDRV_TIMER_SCLASS_NONE,
+	SNDRV_TIMER_SCLASS_NONE = 0,
 	SNDRV_TIMER_SCLASS_APPLICATION,
 	SNDRV_TIMER_SCLASS_SEQUENCER,		/* alias */
 	SNDRV_TIMER_SCLASS_OSS_SEQUENCER,	/* alias */
@@ -568,7 +568,7 @@ struct sndrv_ctl_card_info {
 };
 
 enum sndrv_ctl_elem_type {
-	SNDRV_CTL_ELEM_TYPE_NONE,		/* invalid */
+	SNDRV_CTL_ELEM_TYPE_NONE = 0,		/* invalid */
 	SNDRV_CTL_ELEM_TYPE_BOOLEAN,		/* boolean type */
 	SNDRV_CTL_ELEM_TYPE_INTEGER,		/* integer type */
 	SNDRV_CTL_ELEM_TYPE_ENUMERATED,		/* enumerated type */
@@ -578,7 +578,7 @@ enum sndrv_ctl_elem_type {
 };
 
 enum sndrv_ctl_elem_iface {
-	SNDRV_CTL_ELEM_IFACE_CARD,		/* global control */
+	SNDRV_CTL_ELEM_IFACE_CARD = 0,		/* global control */
 	SNDRV_CTL_ELEM_IFACE_HWDEP,		/* hardware dependent device */
 	SNDRV_CTL_ELEM_IFACE_MIXER,		/* virtual mixer device */
 	SNDRV_CTL_ELEM_IFACE_PCM,		/* PCM device */
@@ -683,7 +683,7 @@ enum {
  */
 
 enum sndrv_ctl_event_type {
-	SNDRV_CTL_EVENT_ELEM,
+	SNDRV_CTL_EVENT_ELEM = 0,
 	SNDRV_CTL_EVENT_LAST = SNDRV_CTL_EVENT_ELEM,
 };
 
