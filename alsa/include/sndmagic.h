@@ -106,8 +106,8 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define opl3_t_magic				0xa15a2601
 
 #else
-#define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags, type##_magic)
-#define snd_magic_kmalloc(type, extra, flags) (type *) snd_kmalloc(sizeof(type) + extra, flags, type##_magic)
+#define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)
+#define snd_magic_kmalloc(type, extra, flags) (type *) snd_kmalloc(sizeof(type) + extra, flags)
 #define snd_magic_cast(type, ptr, retval) (type *) ptr
 #define snd_magic_kfree snd_kfree
 #endif
