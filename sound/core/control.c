@@ -772,9 +772,9 @@ static int snd_ctl_ioctl(struct inode *inode, struct file *file,
 			return -EPERM;
 #ifdef CONFIG_PM
 		if (card->set_power_state) {
-		    snd_power_lock(card);
-		    err = card->set_power_state(card, err);
-		    snd_power_unlock(card);
+			snd_power_lock(card);
+			err = card->set_power_state(card, err);
+			snd_power_unlock(card);
 		} else
 #endif
 			err = -ENOPROTOOPT;
