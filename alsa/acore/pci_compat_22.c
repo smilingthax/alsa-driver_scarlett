@@ -2,13 +2,6 @@
  * PCI-compatible layer for 2.2 kernels
  */
 
-#include <linux/config.h>
-#include <linux/version.h>
-#include <linux/pci.h>
-
-#include "adriver.h"
-#include <sound/memalloc.h>
-
 static LIST_HEAD(pci_drivers);
 
 struct pci_driver_mapping {

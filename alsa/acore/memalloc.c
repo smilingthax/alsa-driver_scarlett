@@ -1,4 +1,3 @@
-#include "config.h"
 #include <linux/config.h>
 #include <linux/version.h>
 
@@ -7,6 +6,9 @@
 #include <linux/modversions.h>
 #include "sndversions.h"
 #endif
+
+#include "config.h"
+#include "adriver.h"
 
 #include "../alsa-kernel/core/memalloc.c"
 
