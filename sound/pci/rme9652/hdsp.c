@@ -72,7 +72,7 @@ MODULE_AUTHOR("Paul Davis <pbd@op.net>");
 MODULE_DESCRIPTION("RME Hammerfall DSP");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{RME,Hammerfall-DSP},");
+MODULE_DEVICES("{{RME,Hammerfall-DSP}}");
 
 typedef enum {
 	Digiface,
