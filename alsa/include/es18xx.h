@@ -1,5 +1,5 @@
-#ifndef __ES18xx_H
-#define __ES18xx_H
+#ifndef __ES18XX_H
+#define __ES18XX_H
 
 /*
  *  Header file for ES18xx
@@ -97,21 +97,5 @@ struct snd_stru_es18xx {
 #define ES18XX_CONTROL	0x0800	/* Has control ports */
 
 typedef struct snd_stru_es18xx es18xx_t;
-
-
-extern void snd_es18xx_mixer_write(es18xx_t * codec, unsigned char reg, unsigned char data);
-extern int snd_es18xx_mixer_read(es18xx_t * codec, unsigned char reg);
-extern void snd_es18xx_interrupt(es18xx_t * codec, unsigned char status);
-extern int snd_es18xx_new_device(snd_card_t * card,
-				 unsigned long port,
-				 unsigned long mpu_port,
-				 unsigned long fm_port,
-				 snd_irq_t * irqnum,
-				 snd_dma_t * dma1num,
-				 snd_dma_t * dma2num,
-				 es18xx_t ** codec);
-extern int snd_es18xx_init(es18xx_t * codec, int enable);
-extern int snd_es18xx_pcm(es18xx_t * codec, int device, snd_pcm_t ** rpcm);
-extern int snd_es18xx_mixer(es18xx_t * codec, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
 
 #endif				/* __ES18xx_H */

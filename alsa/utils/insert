@@ -134,7 +134,6 @@ case "$1" in
     ;;
   es18xx)
     basic; isapnp
-    insert snd-es18xx.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
     insert snd-card-es18xx.o snd_irq=7 snd_dma1=0 snd_dma2=1
