@@ -73,6 +73,7 @@ struct vx_pipe {
 
 	int hbuf_size;		/* H-buffer size in bytes */
 	int buffer_bytes;	/* the ALSA pcm buffer size in bytes */
+	int appl_ptr;		/* the current applicatin pointer in frames */
 	int hw_ptr;		/* the current hardware pointer in frames */
 	int position;		/* the current position in frames (playback only) */
 	int transferred;	/* the transferred size (per period) in frames */
@@ -323,9 +324,7 @@ inline static void vx_pseudo_dma_read(vx_core_t *chip, snd_pcm_runtime_t *runtim
  * pcm stuff
  */
 int snd_vx_pcm_new(vx_core_t *chip);
-void vx_pcm_playback_update_buffer(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe);
-void vx_pcm_playback_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe);
-void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe);
+void vx_pcm_update_intr(vx_core_t *chip, unsigned int events);
 
 /*
  * mixer stuff

@@ -511,8 +511,7 @@ static int vx_test_irq_src(vx_core_t *chip, unsigned int *ret)
 static void vx_interrupt(unsigned long private_data)
 {
 	vx_core_t *chip = snd_magic_cast(vx_core_t, (void*)private_data, return);
-	unsigned int i, events;
-	vx_pipe_t *pipe;
+	unsigned int events;
 		
 	if (chip->chip_status & VX_STAT_IS_STALE)
 		return;
@@ -541,19 +540,8 @@ static void vx_interrupt(unsigned long private_data)
 	if (events & FREQUENCY_CHANGE_EVENT_PENDING)
 		vx_change_frequency(chip);
 
-	/* update the pcm pointers as frequently as possible */
-	for (i = 0; i < chip->audio_outs; i++) {
-		pipe = chip->playback_pipes[i];
-		if (pipe && pipe->substream) {
-			vx_pcm_playback_update_buffer(chip, pipe->substream, pipe);
-			vx_pcm_playback_update(chip, pipe->substream, pipe);
-		}
-	}
-	for (i = 0; i < chip->audio_ins; i++) {
-		pipe = chip->capture_pipes[i];
-		if (pipe && pipe->substream)
-			vx_pcm_capture_update(chip, pipe->substream, pipe);
-	}
+	/* update the pcm streams */
+	vx_pcm_update_intr(chip, events);
 }
 
 
