@@ -1,0 +1,14 @@
+- midlevel:
+H fix BOGUS use of sleep_on!!! (none must remain)
+M implement stream silence fill (Abramo)
+M add user/kernel lock for mmap'ed control (To think)
+M loopback implementation (To think)
+L check multithread safeness wrt at least read/write
+L async notification support (To think)
+L isapnp garbled (need rmmod and insmod)
+L timestamp for mmap'ed pos_io and status (To think)
+
+- lowlevel:
+L rewrite ICE1712 mixer (Abramo)
+L fix CMI8330 mixer
+L rewrite CMI8330 PCM part
