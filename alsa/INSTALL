@@ -276,7 +276,7 @@ Module parameters
     snd_dma16	- 16-bit DMA # for SB DSP 4.x chip (5,6,7)
     snd_dma16_size - max 16-bit DMA size in kB (4-128kB)
     snd_mic_agc	- Mic Auto-Gain-Control - 0 = disable, 1 = enable (default)
-    snd_csp	- CSP chip support - 0 = disable (default), 1 = enable
+    snd_csp	- ASP/CSP chip support - 0 = disable (default), 1 = enable
     snd_isapnp	- ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards, autoprobe and ISA PnP.
@@ -653,6 +653,18 @@ Module parameters
     snd_dma2_size - max second DMA size in kB (4-128kB)
     
     Module supports up to 8 cards, autoprobe and PnP.
+    
+  Module snd-card-intel8x0.o
+  --------------------------
+
+    Module for AC'97 motherboards from Intel.
+			* Intel i810/810E, i820, i830, i840, MX440
+
+    snd_pbk_frame_size  - max playback frame size in kB (4-128kB)
+    snd_cap_frame_size  - max capture frame size in kB (4-128kB)
+    snd_mic_frame_size  - max microphone frame size in kB (4-128kB)
+
+    Module supports autoprobe and multiple bus-master chips (max 8).
     
 
 modprobe/kmod support
