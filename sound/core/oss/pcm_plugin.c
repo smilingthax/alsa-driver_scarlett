@@ -96,6 +96,7 @@ static int snd_pcm_plugin_alloc(snd_pcm_plugin_t *plugin, snd_pcm_uframes_t fram
 	c = plugin->buf_channels;
 	if (plugin->access == SNDRV_PCM_ACCESS_RW_INTERLEAVED) {
 		for (channel = 0; channel < format->channels; channel++, c++) {
+			c->frames = frames / format->channels;
 			c->enabled = 1;
 			c->wanted = 0;
 			c->area.addr = plugin->buf;
@@ -106,6 +107,7 @@ static int snd_pcm_plugin_alloc(snd_pcm_plugin_t *plugin, snd_pcm_uframes_t fram
 		snd_assert((size % format->channels) == 0,);
 		size /= format->channels;
 		for (channel = 0; channel < format->channels; channel++, c++) {
+			c->frames = frames / format->channels;
 			c->enabled = 1;
 			c->wanted = 0;
 			c->area.addr = plugin->buf + (channel * size);
