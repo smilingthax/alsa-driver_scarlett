@@ -51,7 +51,9 @@ MODULE_DEVICES("{{Intel,82801AA},"
 		"{Intel,ICH3},"
 		"{Intel,MX440},"
 		"{SiS,SI7012},"
-		"{NVidia,NForce Audio}}");
+		"{NVidia,NForce Audio},"
+		"{AMD,AMD768},"
+		"{AMD,AMD8111}}");
 
 #define SUPPORT_JOYSTICK 1
 #define SUPPORT_MIDI 1
@@ -286,6 +288,7 @@ static struct pci_device_id snd_intel8x0_ids[] __devinitdata = {
 	{ 0x1039, 0x7012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_SIS },	/* SI7012 */
 	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* NFORCE */
 	{ 0x1022, 0x764d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD8111 */
+	{ 0x1022, 0x7445, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD768 */
 	{ 0, }
 };
 
@@ -1392,7 +1395,8 @@ static struct shortname_table {
 	{ PCI_DEVICE_ID_INTEL_ICH3, "Intel ICH3" },
 	{ PCI_DEVICE_ID_SI_7012, "SiS SI7012" },
 	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce" },
-	{ 0x764d, "AMD-8111" },
+	{ 0x764d, "AMD AMD8111" },
+	{ 0x7445, "AMD AMD768" },
 	{ 0, 0 },
 };
 
