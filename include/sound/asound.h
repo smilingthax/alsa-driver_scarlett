@@ -25,7 +25,11 @@
 
 #if defined(LINUX) || defined(__LINUX__) || defined(__linux__)
 #include <linux/ioctl.h>
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
 #include <endian.h>
+#endif
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SNDRV_LITTLE_ENDIAN
 #elif __BYTE_ORDER == __BIG_ENDIAN
