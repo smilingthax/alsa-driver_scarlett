@@ -1650,7 +1650,8 @@ static int snd_pcm_oss_ioctl(struct inode *inode, struct file *file,
 	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
 	if (cmd == OSS_GETVERSION)
 		return put_user(SNDRV_OSS_VERSION, (int *)arg) ? -EFAULT : 0;
-	if (((cmd >> 8) & 0xff) == 'M')	{	/* mixer ioctl - for OSS (grrr) compatibility */
+#if defined(CONFIG_SND_MIXER_OSS) || (defined(MODULE) && defined(CONFIG_SND_MIXER_OSS_MODULE))
+	if (((cmd >> 8) & 0xff) == 'M')	{	/* mixer ioctl - for OSS compatibility */
 		snd_pcm_substream_t *substream;
 		int idx;
 		for (idx = 0; idx < 2; ++idx) {
@@ -1661,6 +1662,7 @@ static int snd_pcm_oss_ioctl(struct inode *inode, struct file *file,
 		snd_assert(substream != NULL, return -ENXIO);
 		return snd_mixer_oss_ioctl_card(substream->pcm->card, cmd, arg);
 	}
+#endif
 	if (((cmd >> 8) & 0xff) != 'P')
 		return -EINVAL;
 	switch (cmd) {
