@@ -66,6 +66,9 @@
 #define SND_MIXER_PRI_PARENT		0xffffffff
 #define SND_MIXER_PRI_HIDDEN		0xffffffff
 
+#define SND_MIX_RECORD_VOLUME	0x40000000
+#define SND_MIX_VOLUME(x)	((x)&0x0fffffff)
+
 #define SND_MIX_MUTE_LEFT	1
 #define SND_MIX_MUTE_RIGHT	2
 #define SND_MIX_MUTE		(SND_MIX_MUTE_LEFT|SND_MIX_MUTE_RIGHT)
@@ -118,6 +121,15 @@ struct snd_stru_mixer_channel_hw {
 			   unsigned int route);
 };
 
+struct snd_stru_mixer_volume {
+	unsigned char aleft;	/* application - 0 to 100 */
+	unsigned char aright;	/* application - 0 to 100 */
+	int uleft;		/* user - 0 to max */
+	int uright;		/* user - 0 to max */
+	int left;		/* real - 0 to max */
+	int right;		/* real - 0 to max */
+};
+
 struct snd_stru_mixer_channel {
 	unsigned short channel;	/* channel index */
 	unsigned char record;	/* recording source */
@@ -129,15 +141,13 @@ struct snd_stru_mixer_channel {
 	unsigned char mute;	/* real mute flags */
 	unsigned char pad;	/* reserved */
 
-	unsigned char aleft;	/* application - 0 to 100 */
-	unsigned char aright;	/* application - 0 to 100 */
-	int uleft;		/* user - 0 to max */
-	int uright;		/* user - 0 to max */
-	int left;		/* real - 0 to max */
-	int right;		/* real - 0 to max */
+	/* output volumes */
+	struct snd_stru_mixer_volume output;
+	/* input volumes (for record) */
+	struct snd_stru_mixer_volume input;
 
 	unsigned int private_value;
-	void *private_data;	/* not freed by mixer.c */
+	void *private_data;	/* not freed by kernel/mixer.c */
 
 	struct snd_stru_mixer_channel_hw hw;	/* readonly variables */
 };
@@ -196,7 +206,8 @@ struct snd_stru_mixer {
 
 extern void snd_mixer_set_kernel_mute(snd_kmixer_t * mixer,
 				      unsigned int priority,
-				      unsigned short mute);
+				      unsigned short mute,
+				      int recordvolume);
 
 extern snd_kmixer_t *snd_mixer_new(snd_card_t * card, char *id);
 extern int snd_mixer_free(snd_kmixer_t * mixer);

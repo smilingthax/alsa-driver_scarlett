@@ -179,7 +179,7 @@ struct snd_ctl_switch {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 1, 0 )
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 1, 1 )
 
 					/* max 12 chars (with '\0') */
 #define SND_MIXER_ID_MASTER		"Master"
@@ -255,6 +255,7 @@ struct snd_ctl_switch {
 #define SND_MIXER_CINFO_CAP_SWITCH_OUT	0x00001000	/* output route is only switch */
 #define SND_MIXER_CINFO_CAP_SWITCH_IN	0x00002000	/* input route is only switch */
 #define SND_MIXER_CINFO_CAP_RECORDBYMUTE 0x00004000	/* we can record data even if output path is muted (to avoid loopback) */
+#define SND_MIXER_CINFO_CAP_RECORDVOLUME 0x00008000	/* separate record volume setup is available */
 
 #define SND_MIXER_FLG_RECORD_LEFT	0x00000001	/* channel record source - left input */
 #define SND_MIXER_FLG_RECORD_RIGHT	0x00000002	/* channel record source - right input */
@@ -331,6 +332,8 @@ struct snd_mixer_switch {
 #define SND_MIXER_IOCTL_SWITCHES	_IOR ( 'R', 0x05, int )
 #define SND_MIXER_IOCTL_SWITCH_READ	_IOR ( 'R', 0x06, struct snd_mixer_switch )
 #define SND_MIXER_IOCTL_SWITCH_WRITE	_IOWR( 'R', 0x06, struct snd_mixer_switch )
+#define SND_MIXER_IOCTL_CHANNEL_RREAD	_IOR ( 'R', 0x07, struct snd_mixer_channel )
+#define SND_MIXER_IOCTL_CHANNEL_RWRITE	_IOWR( 'R', 0x07, struct snd_mixer_channel )
 
 /*
  *  Obsolete interface compatible with Open Sound System API
