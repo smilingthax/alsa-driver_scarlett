@@ -731,6 +731,38 @@ typedef struct {
 	snd_kcontrol_t *kcontrol;
 } snd_emu10k1_fx8010_ctl_t;
 
+typedef void (snd_fx8010_irq_handler_t)(emu10k1_t *emu, void *private_data);
+
+typedef struct _snd_emu10k1_fx8010_irq {
+	struct _snd_emu10k1_fx8010_irq *next;
+	snd_fx8010_irq_handler_t *handler;
+	unsigned char gpr_running;
+	void *private_data;
+} snd_emu10k1_fx8010_irq_t;
+
+typedef struct {
+	unsigned int valid: 1,
+		     opened: 1,
+		     active: 1;
+	unsigned int channels;		/* 16-bit channels count */
+	unsigned int tram_start;	/* initial ring buffer position in TRAM (in samples) */
+	unsigned int buffer_size;	/* count of buffered samples */
+	unsigned char gpr_size;		/* GPR containing size of ring buffer in samples (host) */
+	unsigned char gpr_ptr;		/* GPR containing current pointer in the ring buffer (host = reset, FX8010) */
+	unsigned char gpr_count;	/* GPR containing count of samples between two interrupts (host) */
+	unsigned char gpr_tmpcount;	/* GPR containing current count of samples to interrupt (host = set, FX8010) */
+	unsigned char gpr_trigger;	/* GPR containing trigger (activate) information (host) */
+	unsigned char gpr_running;	/* GPR containing info if PCM is running (FX8010) */
+	unsigned char etram[32];	/* external TRAM address & data */
+	unsigned int sw_data, hw_data;
+	unsigned int sw_io, hw_io;
+	unsigned int sw_ready, hw_ready;
+	unsigned int appl_ptr;
+	unsigned int tram_pos;
+	unsigned int tram_shift;
+	snd_emu10k1_fx8010_irq_t *irq;
+} snd_emu10k1_fx8010_pcm_t;
+
 typedef struct {
 	unsigned short fxbus_mask;	/* used FX buses (bitmask) */
 	unsigned short extin_mask;	/* used external inputs (bitmask) */
@@ -746,6 +778,8 @@ typedef struct {
 	int gpr_count;			/* count of used kcontrols */
 	struct list_head gpr_ctl;	/* GPR controls */
 	struct semaphore lock;
+	snd_emu10k1_fx8010_pcm_t pcm[8];
+	snd_emu10k1_fx8010_irq_t *irq_handlers;
 } snd_emu10k1_fx8010_t;
 
 #define emu10k1_gpr_ctl(n) list_entry(n, snd_emu10k1_fx8010_ctl_t, list)
@@ -779,6 +813,7 @@ struct _snd_emu10k1 {
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm_mic;
 	snd_pcm_t *pcm_efx;
+	snd_pcm_t *pcm_fx8010;
 
 	unsigned char dig_vol[6][9][2];	  	/* output, input, left/right */
 	unsigned char stereo_vol[2][2];	 	 /* source (pcm,midi), left/right */
@@ -838,6 +873,7 @@ int snd_emu10k1_create(snd_card_t * card,
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
+int snd_emu10k1_fx8010_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu);
 int snd_emu10k1_fx8010_new(emu10k1_t *emu, int device, snd_hwdep_t ** rhwdep);
 
@@ -847,8 +883,7 @@ void snd_emu10k1_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 void snd_emu10k1_voice_init(emu10k1_t * emu, int voice);
 int snd_emu10k1_init_efx(emu10k1_t *emu);
 void snd_emu10k1_free_efx(emu10k1_t *emu);
-int snd_emu10k1_fx8010_tone_control_activate(emu10k1_t *emu, int output);
-int snd_emu10k1_fx8010_tone_control_deactivate(emu10k1_t *emu, int output);
+int snd_emu10k1_fx8010_tram_setup(emu10k1_t *emu, u32 size);
 
 /* I/O functions */
 unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned int chn);
@@ -897,6 +932,8 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define EMU10K1_CARD_CREATIVE			0x00000000
 #define EMU10K1_CARD_EMUAPS			0x00000001
 
+#define EMU10K1_FX8010_PCM_COUNT		8
+
 /* instruction set */
 #define iMAC0	 0x00	/* R = A + (X * Y >> 31)   ; saturation */
 #define iMAC1	 0x01	/* R = A + (-X * Y >> 31)  ; saturation */
@@ -919,17 +956,6 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define FXBUS(x)	(0x00 + (x))	/* x = 0x00 - 0x0f */
 #define EXTIN(x)	(0x10 + (x))	/* x = 0x00 - 0x0f */
 #define EXTOUT(x)	(0x20 + (x))	/* x = 0x00 - 0x0f */
-#define GPR_ACCU	0x56
-#define GPR_COND	0x57
-#define GPR_NOISE0	0x58
-#define GPR_NOISE1	0x59
-#define GPR(x)		(0x100 + (x))	/* free GPRs: x = 0x00 - 0xff */
-#define ITRAM_DATA(x)	(0x200 + (x))	/* x = 0x00 - 0x7f */
-#define ETRAM_DATA(x)	(0x280 + (x))	/* x = 0x00 - 0x1f */
-#define ITRAM_ADDR(x)	(0x300 + (x))	/* x = 0x00 - 0x7f */
-#define ETRAM_ADDR(x)	(0x380 + (x))	/* x = 0x00 - 0x1f */
-
-/* constants */
 #define C_00000000	0x40
 #define C_00000001	0x41
 #define C_00000002	0x42
@@ -951,7 +977,18 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define C_c0000000	0x52
 #define C_4f1bbcdc	0x53
 #define C_5a7ef9db	0x54
-#define C_00100000	0x55	/* ?? */
+#define C_00100000	0x55		/* ?? */
+#define GPR_ACCU	0x56		/* ACCUM, accumulator */
+#define GPR_COND	0x57		/* CCR, condition register */
+#define GPR_NOISE0	0x58		/* noise source */
+#define GPR_NOISE1	0x59		/* noise source */
+#define GPR_IRQ		0x5a		/* IRQ register */
+#define GPR_DBAC	0x5b		/* TRAM Delay Base Address Counter */
+#define GPR(x)		(0x100 + (x))	/* free GPRs: x = 0x00 - 0xff */
+#define ITRAM_DATA(x)	(0x200 + (x))	/* x = 0x00 - 0x7f */
+#define ETRAM_DATA(x)	(0x280 + (x))	/* x = 0x00 - 0x1f */
+#define ITRAM_ADDR(x)	(0x300 + (x))	/* x = 0x00 - 0x7f */
+#define ETRAM_ADDR(x)	(0x380 + (x))	/* x = 0x00 - 0x1f */
 
 /* cc_reg constants */
 #define CC_REG_NORMALIZED C_00000001
@@ -959,6 +996,7 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define CC_REG_MINUS	C_00000004
 #define CC_REG_ZERO	C_00000008
 #define CC_REG_SATURATE	C_00000010
+#define CC_REG_NONZERO	C_00000100
 
 /* FX buses */
 #define FXBUS_PCM_LEFT		0x00
@@ -969,8 +1007,6 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define FXBUS_MIDI_RIGHT	0x05
 #define FXBUS_PCM_CENTER	0x06
 #define FXBUS_PCM_LFE		0x07
-#define FXBUS_PCM_RAW_SPDIF_L	0x08
-#define FXBUS_PCM_RAW_SPDIF_R	0x09
 #define FXBUS_MIDI_REVERB	0x0c
 #define FXBUS_MIDI_CHORUS	0x0d
 
@@ -1063,8 +1099,6 @@ typedef struct {
 	unsigned int code[512][2];	  /* one instruction - 64 bits */
 } emu10k1_fx8010_code_t;
 
-
-
 typedef struct {
 	unsigned int address;		/* 31.bit == 1 -> external TRAM */
 	unsigned int size;		/* size in samples (4 bytes) */
@@ -1072,16 +1106,35 @@ typedef struct {
 					/* NULL->clear memory */
 } emu10k1_fx8010_tram_t;
 
-#define SNDRV_EMU10K1_IOCTL_INFO	_IOR('H', 0x10, emu10k1_fx8010_info_t)
-#define SNDRV_EMU10K1_IOCTL_CODE_POKE	_IOW('H', 0x11, emu10k1_fx8010_code_t)
-#define SNDRV_EMU10K1_IOCTL_CODE_PEEK	_IOW('H', 0x12, emu10k1_fx8010_code_t)
-#define SNDRV_EMU10K1_IOCTL_TRAM_SETUP	_IOW('H', 0x20, int)
-#define SNDRV_EMU10K1_IOCTL_TRAM_POKE	_IOW('H', 0x21, emu10k1_fx8010_tram_t)
-#define SNDRV_EMU10K1_IOCTL_TRAM_PEEK	_IOR('H', 0x22, emu10k1_fx8010_tram_t)
-#define SNDRV_EMU10K1_IOCTL_STOP	_IO ('H', 0x30)
-#define SNDRV_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x31)
-#define SNDRV_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x32)
-#define SNDRV_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x33, int)
-#define SNDRV_EMU10K1_IOCTL_DBG_READ	_IOR('H', 0x34, int)
+typedef struct {
+	unsigned int substream;		/* substream number */
+	unsigned int res1;		/* reserved */
+	unsigned int channels;		/* 16-bit channels count, zero = remove this substream */
+	unsigned int tram_start;	/* ring buffer position in TRAM (in samples) */
+	unsigned int buffer_size;	/* count of buffered samples */
+	unsigned char gpr_size;		/* GPR containing size of ringbuffer in samples (host) */
+	unsigned char gpr_ptr;		/* GPR containing current pointer in the ring buffer (host = reset, FX8010) */
+	unsigned char gpr_count;	/* GPR containing count of samples between two interrupts (host) */
+	unsigned char gpr_tmpcount;	/* GPR containing current count of samples to interrupt (host = set, FX8010) */
+	unsigned char gpr_trigger;	/* GPR containing trigger (activate) information (host) */
+	unsigned char gpr_running;	/* GPR containing info if PCM is running (FX8010) */
+	unsigned char pad;		/* reserved */
+	unsigned char etram[32];	/* external TRAM address & data (one per channel) */
+	unsigned int res2;		/* reserved */
+} emu10k1_fx8010_pcm_t;
+
+#define SNDRV_EMU10K1_IOCTL_INFO	_IOR ('H', 0x10, emu10k1_fx8010_info_t)
+#define SNDRV_EMU10K1_IOCTL_CODE_POKE	_IOW ('H', 0x11, emu10k1_fx8010_code_t)
+#define SNDRV_EMU10K1_IOCTL_CODE_PEEK	_IOW ('H', 0x12, emu10k1_fx8010_code_t)
+#define SNDRV_EMU10K1_IOCTL_TRAM_SETUP	_IOW ('H', 0x20, int)
+#define SNDRV_EMU10K1_IOCTL_TRAM_POKE	_IOW ('H', 0x21, emu10k1_fx8010_tram_t)
+#define SNDRV_EMU10K1_IOCTL_TRAM_PEEK	_IOR ('H', 0x22, emu10k1_fx8010_tram_t)
+#define SNDRV_EMU10K1_IOCTL_PCM_POKE	_IOW ('H', 0x30, emu10k1_fx8010_pcm_t)
+#define SNDRV_EMU10K1_IOCTL_PCM_PEEK	_IOWR('H', 0x31, emu10k1_fx8010_pcm_t)
+#define SNDRV_EMU10K1_IOCTL_STOP	_IO  ('H', 0x80)
+#define SNDRV_EMU10K1_IOCTL_CONTINUE	_IO  ('H', 0x81)
+#define SNDRV_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x82)
+#define SNDRV_EMU10K1_IOCTL_SINGLE_STEP	_IOW ('H', 0x83, int)
+#define SNDRV_EMU10K1_IOCTL_DBG_READ	_IOR ('H', 0x84, int)
 
 #endif	/* __EMU10K1_H */
