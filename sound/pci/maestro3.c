@@ -2554,6 +2554,7 @@ snd_m3_create(snd_card_t *card, struct pci_dev *pci,
 		snd_printk("unable to grab IRQ %d\n", pci->irq);
 		return -ENOMEM;
 	}
+	chip->irq = pci->irq;
 
 #ifdef CONFIG_PM
 	chip->suspend_mem = vmalloc(sizeof(u16) * (REV_B_CODE_MEMORY_LENGTH + REV_B_DATA_MEMORY_LENGTH));
