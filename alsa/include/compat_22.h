@@ -50,6 +50,7 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define PCI_SET_DRIVER_DATA snd_pci_compat_set_driver_data
 
 #define pci_enable_device snd_pci_compat_enable_device
+#define pci_module_init snd_pci_compat_register_driver
 #define pci_register_driver snd_pci_compat_register_driver
 #define pci_unregister_driver snd_pci_compat_unregister_driver
 
