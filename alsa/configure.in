@@ -1311,12 +1311,12 @@ AC_TRY_COMPILE([
   func = remap_page_range;
   remap_page_range(NULL, 0, 0, 0, p);
 ],
-    AC_MSG_RESULT("yes");new_remap="0",
-    AC_MSG_RESULT("no");new_remap="1",
-    AC_MSG_RESULT("unknown");new_remap="1"
+    AC_MSG_RESULT("yes");new_remap="1",
+    AC_MSG_RESULT("no");new_remap="0",
+    AC_MSG_RESULT("unknown");new_remap="0"
 )
 CFLAGS=$ac_save_CFLAGS
-if test "new_remap" = "0"; then
+if test "$new_remap" != "1"; then
   AC_DEFINE(CONFIG_OLD_REMAP_PAGE_RANGE)
 fi
 
