@@ -999,7 +999,7 @@ static snd_pcm_uframes_t snd_cs4231_playback_pointer(snd_pcm_substream_t * subst
 
 	if (!(chip->image[CS4231_IFACE_CTRL] & CS4231_PLAYBACK_ENABLE))
 		return 0;
-	ptr = chip->p_dma_size - snd_dma_residue(chip->dma1);
+	ptr = snd_dma_pointer(chip->dma1, chip->p_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
@@ -1010,7 +1010,7 @@ static snd_pcm_uframes_t snd_cs4231_capture_pointer(snd_pcm_substream_t * substr
 	
 	if (!(chip->image[CS4231_IFACE_CTRL] & CS4231_RECORD_ENABLE))
 		return 0;
-	ptr = chip->c_dma_size - snd_dma_residue(chip->dma2);
+	ptr = snd_dma_pointer(chip->dma2, chip->c_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 #endif /* LEGACY_SUPPORT */

@@ -451,7 +451,7 @@ static snd_pcm_uframes_t snd_sb16_playback_pointer(snd_pcm_substream_t * substre
 	size_t ptr;
 
 	dma = (chip->mode & SB_MODE_PLAYBACK_8) ? chip->dma8 : chip->dma16;
-	ptr = chip->p_dma_size - snd_dma_residue(dma);
+	ptr = snd_dma_pointer(dma, chip->p_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
@@ -462,7 +462,7 @@ static snd_pcm_uframes_t snd_sb16_capture_pointer(snd_pcm_substream_t * substrea
 	size_t ptr;
 
 	dma = (chip->mode & SB_MODE_CAPTURE_8) ? chip->dma8 : chip->dma16;
-	ptr = chip->c_dma_size - snd_dma_residue(dma);
+	ptr = snd_dma_pointer(dma, chip->c_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 

@@ -600,7 +600,7 @@ static int snd_gf1_pcm_capture_trigger(snd_pcm_substream_t * substream,
 static snd_pcm_uframes_t snd_gf1_pcm_capture_pointer(snd_pcm_substream_t * substream)
 {
 	snd_gus_card_t *gus = snd_pcm_substream_chip(substream);
-	int pos = gus->c_period_size - snd_dma_residue(gus->gf1.dma2);
+	int pos = snd_dma_pointer(gus->gf1.dma2, gus->c_period_size);
 	pos = bytes_to_frames(substream->runtime, (gus->c_pos + pos) % gus->c_dma_size);
 	return pos;
 }

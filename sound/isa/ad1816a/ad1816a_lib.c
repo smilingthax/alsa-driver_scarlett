@@ -296,7 +296,7 @@ static snd_pcm_uframes_t snd_ad1816a_playback_pointer(snd_pcm_substream_t *subst
 	size_t ptr;
 	if (!(chip->mode & AD1816A_MODE_PLAYBACK))
 		return 0;
-	ptr = chip->p_dma_size - snd_dma_residue(chip->dma1);
+	ptr = snd_dma_pointer(chip->dma1, chip->p_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
@@ -306,7 +306,7 @@ static snd_pcm_uframes_t snd_ad1816a_capture_pointer(snd_pcm_substream_t *substr
 	size_t ptr;
 	if (!(chip->mode & AD1816A_MODE_CAPTURE))
 		return 0;
-	ptr = chip->c_dma_size - snd_dma_residue(chip->dma2);
+	ptr = snd_dma_pointer(chip->dma2, chip->c_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 

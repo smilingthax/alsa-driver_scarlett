@@ -1100,7 +1100,7 @@ static snd_pcm_uframes_t snd_opti93x_playback_pointer(snd_pcm_substream_t *subst
 	if (!(chip->image[OPTi93X_IFACE_CONF] & OPTi93X_PLAYBACK_ENABLE))
 		return 0;
 
-	ptr = chip->p_dma_size - snd_dma_residue(chip->dma1);
+	ptr = snd_dma_pointer(chip->dma1, chip->p_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
@@ -1112,7 +1112,7 @@ static snd_pcm_uframes_t snd_opti93x_capture_pointer(snd_pcm_substream_t *substr
 	if (!(chip->image[OPTi93X_IFACE_CONF] & OPTi93X_CAPTURE_ENABLE))
 		return 0;
 
-	ptr = chip->c_dma_size - snd_dma_residue(chip->dma2);
+	ptr = snd_dma_pointer(chip->dma2, chip->c_dma_size);
 	return bytes_to_frames(substream->runtime, ptr);
 }
 

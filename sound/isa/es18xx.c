@@ -801,12 +801,12 @@ static snd_pcm_uframes_t snd_es18xx_playback_pointer(snd_pcm_substream_t * subst
 	if (substream->number == 0 && (chip->caps & ES18XX_PCM2)) {
 		if (!(chip->active & DAC2))
 			return 0;
-		pos = chip->dma2_size - snd_dma_residue(chip->dma2);
+		pos = snd_dma_pointer(chip->dma2, chip->dma2_size);
 		return pos >> chip->dma2_shift;
 	} else {
 		if (!(chip->active & DAC1))
 			return 0;
-		pos = chip->dma1_size - snd_dma_residue(chip->dma1);
+		pos = snd_dma_pointer(chip->dma1, chip->dma1_size);
 		return pos >> chip->dma1_shift;
 	}
 }
@@ -818,7 +818,7 @@ static snd_pcm_uframes_t snd_es18xx_capture_pointer(snd_pcm_substream_t * substr
 
         if (!(chip->active & ADC1))
                 return 0;
-	pos = chip->dma1_size - snd_dma_residue(chip->dma1);
+	pos = snd_dma_pointer(chip->dma1, chip->dma1_size);
 	return pos >> chip->dma1_shift;
 }
 
