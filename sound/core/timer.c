@@ -1024,8 +1024,8 @@ static int snd_timer_register_system(void)
 	}
 	init_timer(&priv->tlist);
 	priv->tlist.function = snd_timer_s_function;
-	priv->tlist.data = (unsigned long) priv;
-	timer->private_data = timer;
+	priv->tlist.data = (unsigned long) timer;
+	timer->private_data = priv;
 	timer->private_free = snd_timer_free_system;
 	return snd_timer_global_register(timer);
 }
