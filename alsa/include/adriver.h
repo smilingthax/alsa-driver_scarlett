@@ -135,23 +135,10 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define MODULE_LICENSE(license)
 #endif
 
-#if 0
-static inline mm_segment_t snd_enter_user(void)
-{
-	mm_segment_t fs = get_fs();
-	set_fs(get_ds());
-	return fs;
-}
-static inline void snd_leave_user(mm_segment_t fs)
-{
-	set_fs(fs);
-}
-
-static inline void dec_mod_count(struct module *module)
-{
-	if (module)
-		__MOD_DEC_USE_COUNT(module);
-}
+/* no vsnprintf yet? */
+/* FIXME: the version number is not sure.. at least it exists already on 2.4.10 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
+#define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
 #endif
 
 #if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)
