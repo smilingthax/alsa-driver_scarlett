@@ -39,7 +39,7 @@ AC_MSG_RESULT($SRCDIR)
 dnl Check for cross compile...
 AC_MSG_CHECKING(cross compile)
 AC_ARG_WITH(cross,
-  [  --with-cross=dir        give the cross-compile prefix]],
+  [  --with-cross=dir        give the cross-compile prefix],
   crossprefix="$withval",
   crossprefix="")
 CROSS_COMPILE="$crossprefix"
@@ -178,6 +178,7 @@ CHECK_KERNEL_HEADER(linux/gameport.h)
 CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
+CHECK_KERNEL_HEADER(asm/hw_irq.h)
 
 dnl Check kernel configurations
 
