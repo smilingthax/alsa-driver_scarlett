@@ -211,7 +211,6 @@ struct _snd_minor {
 	int number;			/* minor number */
 	int device;			/* device number */
 	const char *comment;		/* for /proc/asound/devices */
-	snd_info_entry_t *dev;		/* for /proc/asound/dev */
 	struct file_operations *f_ops;	/* file operations */
 };
 
