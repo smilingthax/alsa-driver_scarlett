@@ -1,5 +1,5 @@
 /*
- * Driver for Digigram VXpocket soundcards
+ * Driver for Digigram VX soundcards
  *
  * Definitions of DSP commands
  *

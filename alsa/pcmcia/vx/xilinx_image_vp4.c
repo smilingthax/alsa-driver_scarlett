@@ -20,6 +20,52 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 
+#if 0
+/*
+ * this file was converted from the xilinx bit-stream file
+ * x1_1_vp4.rbt.
+ */
+
+#include <stdio.h>
+
+int main()
+{
+	static char buf[256];
+	int data, c, idx;
+	char *p;
+
+	c = 0;
+	data = 0;
+	idx = 0;
+	while (fgets(buf, sizeof(buf), stdin)) {
+		if (buf[0] != '0' && buf[1] != '1') {
+			fprintf(stderr, "skipping %s", buf);
+			continue;
+		}
+		for (p = buf; *p == '0' || *p == '1'; p++) {
+			data |= (*p - '0') << c;
+			c++;
+			if (c >= 8) {
+				printf("0x%02x,", data);
+				if (idx % 16 == 15)
+					printf("\n");
+				data = 0;
+				c = 0;
+				idx++;
+			}
+		}
+	}
+	if (c) {
+		printf("0x%02x,", data);
+		idx++;
+	}
+	if (idx % 16)
+		printf("\n");
+	fprintf(stderr, "counts = %d\n", idx);
+	return 0;
+}
+#endif
+
 static unsigned char xilinx_image_vxp440[22395] = {
 0xff,0x04,0xd4,0xbd,0xf8,0xda,0xbf,0xfe,0x7a,0x7f,0xd7,0x9f,0x7e,0xfd,0x7d,0xa7,
 0xdf,0x7f,0xdd,0xdd,0xdd,0xd6,0xda,0xed,0xa7,0x5f,0xd7,0xfd,0xed,0xad,0xdf,0x77,

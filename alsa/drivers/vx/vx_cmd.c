@@ -1,5 +1,8 @@
+/* to be in alsa-driver-specfici code */
+#define __NO_VERSION__
+
 /*
- * Driver for Digigram VXpocket soundcards
+ * Driver for Digigram VX soundcards
  *
  * DSP commands
  *
@@ -22,7 +25,8 @@
 
 #include <sound/driver.h>
 #include <sound/core.h>
-#include "vxpocket.h"
+#include <sound/pcm.h>
+#include "vx_core.h"
 #include "vx_cmd.h"
 
 /*

@@ -1,5 +1,13 @@
+/* to be in alsa-driver-specfici code */
+#include <linux/config.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+static struct page *vmalloc_to_page(void *pageptr);
+#endif
+#define __NO_VERSION__
+
 /*
- * Driver for Digigram VXpocket soundcards
+ * Driver for Digigram VX soundcards
  *
  * PCM part
  *
@@ -27,10 +35,10 @@
 #include <sound/core.h>
 #include <sound/asoundef.h>
 #include <sound/pcm.h>
-#include "vxpocket.h"
+#include "vx_core.h"
 #include "vx_cmd.h"
 
-#define chip_t	vxpocket_t
+#define chip_t	vx_core_t
 
 
 /*
@@ -40,22 +48,8 @@
 /* get the physical page pointer on the given offset */
 static struct page *snd_pcm_get_vmalloc_page(snd_pcm_substream_t *subs, unsigned long offset)
 {
-	pgd_t *pgd;
-	pmd_t *pmd;
-	pte_t *pte;
-	unsigned long lpage;
 	void *pageptr = subs->runtime->dma_area + offset;
-	struct page *page = NOPAGE_SIGBUS;
-
-	lpage = VMALLOC_VMADDR(pageptr);
-	spin_lock(&init_mm.page_table_lock);
-	pgd = pgd_offset(&init_mm, lpage);
-	pmd = pmd_offset(pgd, lpage);
-	pte = pte_offset(pmd, lpage);
-	page = pte_page(*pte);
-	spin_unlock(&init_mm.page_table_lock);
-    
-	return page;
+	return vmalloc_to_page(pageptr);
 }
 
 /*
@@ -93,131 +87,13 @@ static int snd_pcm_free_vmalloc_buffer(snd_pcm_substream_t *subs)
 
 
 /*
- * vx_setup_pseudo_dma - set up the pseudo dma read/write mode.
- * @do_write: 0 = read, 1 = set up for DMA write
- */
-static void vx_setup_pseudo_dma(vxpocket_t *chip, int do_write)
-{
-	/* Interrupt mode and HREQ pin enabled for host transmit / receive data transfers */
-	vx_outb(chip, ICR, do_write ? ICR_TREQ : ICR_RREQ);
-	/* Reset the pseudo-dma register */
-	vx_inb(chip, ISR);
-	vx_outb(chip, ISR, 0);
-
-	/* Select DMA in read/write transfer mode and in 16-bit accesses */
-	chip->regDIALOG |= VXP_DLG_DMA16_SEL_MASK;
-	chip->regDIALOG |= do_write ? VXP_DLG_DMAWRITE_SEL_MASK : VXP_DLG_DMAREAD_SEL_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-
-}
-
-/*
- * vx_release_pseudo_dma - disable the pseudo-DMA mode
- */
-static void vx_release_pseudo_dma(vxpocket_t *chip)
-{
-	/* Disable DMA and 16-bit accesses */
-	chip->regDIALOG &= ~(VXP_DLG_DMAWRITE_SEL_MASK|
-			     VXP_DLG_DMAREAD_SEL_MASK|
-			     VXP_DLG_DMA16_SEL_MASK);
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-	/* HREQ pin disabled. */
-	vx_outb(chip, ICR, 0);
-}
-
-/*
- * vx_pseudo_dma_write - write bulk data on pseudo-DMA mode
- * @count: data length to transfer in bytes
- *
- * data size must be aligned to 6 bytes to ensure the 24bit alignment on DSP.
- * NB: call with a certain lock!
- */
-static void vx_pseudo_dma_write(vxpocket_t *chip, snd_pcm_runtime_t *runtime,
-				vx_pipe_t *pipe, int count)
-{
-	long port = chip->port + VXP_DMA;
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
-	unsigned short *addr = (unsigned short *)(runtime->dma_area + offset);
-
-	vx_setup_pseudo_dma(chip, 1);
-	if (offset + count > pipe->buffer_bytes) {
-		int length = pipe->buffer_bytes - offset;
-		count -= length;
-		length >>= 1; /* in 16bit words */
-		/* Transfer using pseudo-dma. */
-		while (length-- > 0) {
-			outw(cpu_to_le16(*addr), port);
-			addr++;
-		}
-		addr = (unsigned short *)runtime->dma_area;
-		pipe->hw_ptr = 0;
-	}
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
-	count >>= 1; /* in 16bit words */
-	/* Transfer using pseudo-dma. */
-	while (count-- > 0) {
-		outw(cpu_to_le16(*addr), port);
-		addr++;
-	}
-	vx_release_pseudo_dma(chip);
-}
-
-
-#define DMA_READ_MIN_BYTES  6           // Hardware constant
-
-/*
- * vx_pseudo_dma_read - read bulk data on pseudo DMA mode
- * @offset: buffer offset in bytes
- * @count: data length to transfer in bytes
- *
- * the read length must be aligned to 6 bytes, as well as write.
- * NB: call with a certain lock!
- */
-static void vx_pseudo_dma_read(vxpocket_t *chip, snd_pcm_runtime_t *runtime,
-			       vx_pipe_t *pipe, int count)
-{
-	long port = chip->port + VXP_DMA;
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
-	unsigned short *addr = (unsigned short *)(runtime->dma_area + offset);
-
-	snd_assert(count % 6 == 0, return);
-	vx_setup_pseudo_dma(chip, 0);
-	if (offset + count > pipe->buffer_bytes) {
-		int length = pipe->buffer_bytes - offset;
-		count -= length;
-		length >>= 1; /* in 16bit words */
-		/* Transfer using pseudo-dma. */
-		while (length-- > 0)
-			*addr++ = le16_to_cpu(inw(port));
-		addr = (unsigned short *)runtime->dma_area;
-		pipe->hw_ptr = 0;
-	}
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
-	count >>= 1; /* in 16bit words */
-	/* Transfer using pseudo-dma. */
-	while (count-- > 1)
-		*addr++ = le16_to_cpu(inw(port));
-	/* Disable DMA */
-	chip->regDIALOG &= ~VXP_DLG_DMAREAD_SEL_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-	/* Read the last word (16 bits) */
-	*addr = le16_to_cpu(inw(port));
-	/* Disable 16-bit accesses */
-	chip->regDIALOG &= ~VXP_DLG_DMA16_SEL_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-	/* HREQ pin disabled. */
-	vx_outb(chip, ICR, 0);
-}
-
-/*
  * vx_flush_read - read rest of bytes via normal transfer mode
- * @buf: the read buffer
- * @length: the buffer size in bytes
+ * @count: frames to read
  *
  * the data size must be aligned to 3 bytes, though.
  * NB: call with a certain lock!
  */
-static void vx_flush_read(vxpocket_t *chip, snd_pcm_runtime_t *runtime,
+static void vx_flush_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 			  vx_pipe_t *pipe, int count)
 {
 	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
@@ -252,7 +128,7 @@ static void vx_flush_read(vxpocket_t *chip, snd_pcm_runtime_t *runtime,
  * @pc_time: the pointer for the PC-time to set
  * @dsp_time: the pointer for RMH status time array
  */
-static void vx_set_pcx_time(vxpocket_t *chip, pcx_time_t *pc_time, unsigned int *dsp_time)
+static void vx_set_pcx_time(vx_core_t *chip, pcx_time_t *pc_time, unsigned int *dsp_time)
 {
 	dsp_time[0] = (unsigned int)((*pc_time) >> 24) & PCX_TIME_HI_MASK;
 	dsp_time[1] = (unsigned int)(*pc_time) &  MASK_DSP_WORD;
@@ -268,10 +144,8 @@ static void vx_set_pcx_time(vxpocket_t *chip, pcx_time_t *pc_time, unsigned int 
  *
  * returns the increase of the command length.
  */
-static int vx_set_differed_time(vxpocket_t *chip, struct vx_rmh *rmh, vx_pipe_t *pipe)
+static int vx_set_differed_time(vx_core_t *chip, struct vx_rmh *rmh, vx_pipe_t *pipe)
 {
-	
-
 	/* Update The length added to the RMH command by the timestamp */
 	if (! (pipe->differed_type & DC_DIFFERED_DELAY))
 		return 0;
@@ -283,7 +157,7 @@ static int vx_set_differed_time(vxpocket_t *chip, struct vx_rmh *rmh, vx_pipe_t 
 	vx_set_pcx_time(chip, &pipe->pcx_time, &rmh->Cmd[1]);
 
 	/* Add the flags to a notified differed command */
-	if (pipe->differed_type & DC_NOTIFY_DELAY )
+	if (pipe->differed_type & DC_NOTIFY_DELAY)
 		rmh->Cmd[1] |= NOTIFY_MASK_TIME_HIGH ;
 
 	/* Add the flags to a multiple differed command */
@@ -303,7 +177,7 @@ static int vx_set_differed_time(vxpocket_t *chip, struct vx_rmh *rmh, vx_pipe_t 
  * @pipe: the affected pipe
  * @data: format bitmask
  */
-static int vx_set_stream_format(vxpocket_t *chip, vx_pipe_t *pipe, unsigned int data)
+static int vx_set_stream_format(vx_core_t *chip, vx_pipe_t *pipe, unsigned int data)
 {
 	struct vx_rmh rmh;
 
@@ -329,7 +203,7 @@ static int vx_set_stream_format(vxpocket_t *chip, vx_pipe_t *pipe, unsigned int 
  *
  * returns 0 if successful, or a negative error code.
  */
-static int vx_set_format(vxpocket_t *chip, vx_pipe_t *pipe,
+static int vx_set_format(vx_core_t *chip, vx_pipe_t *pipe,
 			 snd_pcm_runtime_t *runtime)
 {
 	unsigned int header = HEADER_FMT_BASE;
@@ -344,9 +218,9 @@ static int vx_set_format(vxpocket_t *chip, vx_pipe_t *pipe,
 		header |= HEADER_FMT_UPTO11;
 
 	switch (snd_pcm_format_physical_width(runtime->format)) {
-        case 8: break;
-        case 16: header |= HEADER_FMT_16BITS; break;
-        case 24: header |= HEADER_FMT_24BITS; break;
+	// case 8: break;
+	case 16: header |= HEADER_FMT_16BITS; break;
+	case 24: header |= HEADER_FMT_24BITS; break;
 	default : 
 		snd_BUG();
 		return -EINVAL;
@@ -355,7 +229,7 @@ static int vx_set_format(vxpocket_t *chip, vx_pipe_t *pipe,
 	return vx_set_stream_format(chip, pipe, header);
 }
 
-static int vx_set_ibl(vxpocket_t *chip, struct vx_ibl_info *info)
+static int vx_set_ibl(vx_core_t *chip, struct vx_ibl_info *info)
 {
 	int err;
 	struct vx_rmh rmh;
@@ -369,7 +243,7 @@ static int vx_set_ibl(vxpocket_t *chip, struct vx_ibl_info *info)
 	info->max_size = rmh.Stat[1];
 	info->min_size = rmh.Stat[2];
 	info->granularity = rmh.Stat[3];
-	snd_printd(KERN_DEBUG "vx_set_ibl: size = %d, max = %d, min = %d, gran = %d\n",
+	snd_printdd(KERN_DEBUG "vx_set_ibl: size = %d, max = %d, min = %d, gran = %d\n",
 		   info->size, info->max_size, info->min_size, info->granularity);
 	return 0;
 }
@@ -385,7 +259,7 @@ static int vx_set_ibl(vxpocket_t *chip, struct vx_ibl_info *info)
  *
  * called from trigger callback only
  */
-static int vx_get_pipe_state(vxpocket_t *chip, vx_pipe_t *pipe, int *state)
+static int vx_get_pipe_state(vx_core_t *chip, vx_pipe_t *pipe, int *state)
 {
 	int err;
 	struct vx_rmh rmh;
@@ -406,7 +280,7 @@ static int vx_get_pipe_state(vxpocket_t *chip, vx_pipe_t *pipe, int *state)
  * return the available size on h-buffer in bytes,
  * or a negative error code.
  */
-static int vx_query_hbuffer_size(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_query_hbuffer_size(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	int result;
 	struct vx_rmh rmh;
@@ -430,7 +304,7 @@ static int vx_query_hbuffer_size(vxpocket_t *chip, vx_pipe_t *pipe)
  *
  * called from trigger callback only
  */
-static int vx_pipe_can_start(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_pipe_can_start(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	int err;
 	struct vx_rmh rmh;
@@ -451,7 +325,7 @@ static int vx_pipe_can_start(vxpocket_t *chip, vx_pipe_t *pipe)
  * vx_vonf_pipe - tell the pipe to stand by and wait for IRQA.
  * @pipe: the pipe to be configured
  */
-static int vx_conf_pipe(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_conf_pipe(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	struct vx_rmh rmh;
 
@@ -465,7 +339,7 @@ static int vx_conf_pipe(vxpocket_t *chip, vx_pipe_t *pipe)
 /*
  * vx_send_irqa - trigger IRQA
  */
-static int vx_send_irqa(vxpocket_t *chip)
+static int vx_send_irqa(vx_core_t *chip)
 {
 	struct vx_rmh rmh;
 
@@ -485,7 +359,7 @@ static int vx_send_irqa(vxpocket_t *chip)
  * called from trigger callback only
  *
  */
-static int vx_toggle_pipe(vxpocket_t *chip, vx_pipe_t *pipe, int state)
+static int vx_toggle_pipe(vx_core_t *chip, vx_pipe_t *pipe, int state)
 {
 	int err, i, cur_state, delay;
 
@@ -510,7 +384,7 @@ static int vx_toggle_pipe(vxpocket_t *chip, vx_pipe_t *pipe, int state)
 			 */
 			if ((i % 4 ) == 0)
 				delay <<= 1;
-			vx_delay(chip, delay);
+			snd_vx_delay(chip, delay);
 		}
 	}
     
@@ -532,7 +406,7 @@ static int vx_toggle_pipe(vxpocket_t *chip, vx_pipe_t *pipe, int state)
 		err = -EIO;
 		if ((i % 4 ) == 0)
 			delay <<= 1;
-		vx_delay(chip, delay);
+		snd_vx_delay(chip, delay);
 	}
 	return err < 0 ? -EIO : 0;
 }
@@ -544,7 +418,7 @@ static int vx_toggle_pipe(vxpocket_t *chip, vx_pipe_t *pipe, int state)
  *
  * called from trigger callback only
  */
-static int vx_stop_pipe(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_stop_pipe(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	struct vx_rmh rmh;
 	vx_init_rmh(&rmh, CMD_STOP_PIPE);
@@ -562,7 +436,7 @@ static int vx_stop_pipe(vxpocket_t *chip, vx_pipe_t *pipe)
  *
  * return 0 on success, or a negative error code.
  */
-static int vx_alloc_pipe(vxpocket_t *chip, int capture,
+static int vx_alloc_pipe(vx_core_t *chip, int capture,
 			 int audioid, int num_audio,
 			 vx_pipe_t **pipep)
 {
@@ -612,7 +486,7 @@ static int vx_alloc_pipe(vxpocket_t *chip, int capture,
  * vx_free_pipe - release a pipe
  * @pipe: pipe to be released
  */
-static int vx_free_pipe(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_free_pipe(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	struct vx_rmh rmh;
 
@@ -630,7 +504,7 @@ static int vx_free_pipe(vxpocket_t *chip, vx_pipe_t *pipe)
  *
  * called from trigger callback only
  */
-static int vx_start_stream(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_start_stream(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	struct vx_rmh rmh;
 
@@ -646,7 +520,7 @@ static int vx_start_stream(vxpocket_t *chip, vx_pipe_t *pipe)
  *
  * called from trigger callback only
  */
-static int vx_stop_stream(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_stop_stream(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	struct vx_rmh rmh;
 
@@ -673,7 +547,7 @@ static snd_pcm_hardware_t vx_pcm_playback_hw = {
 	.period_bytes_min =	126,
 	.period_bytes_max =	(128*1024),
 	.periods_min =		2,
-	.periods_max =		VXP_MAX_PERIODS,
+	.periods_max =		VX_MAX_PERIODS,
 	.fifo_size =		126,
 };
 
@@ -686,7 +560,7 @@ static void vx_pcm_delayed_start(unsigned long arg);
 static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
-	vxpocket_t *chip = snd_pcm_substream_chip(subs);
+	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
 	int audio, err;
 
@@ -714,7 +588,7 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
  */
 static int vx_pcm_playback_close(snd_pcm_substream_t *subs)
 {
-	vxpocket_t *chip = snd_pcm_substream_chip(subs);
+	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
 
 	if (! subs->runtime->private_data)
@@ -732,7 +606,7 @@ static int vx_pcm_playback_close(snd_pcm_substream_t *subs)
  *
  * NB: call with a certain lock.
  */
-static int vx_notify_end_of_buffer(vxpocket_t *chip, vx_pipe_t *pipe)
+static int vx_notify_end_of_buffer(vx_core_t *chip, vx_pipe_t *pipe)
 {
 	int err;
 	struct vx_rmh rmh;  /* use a temporary rmh here */
@@ -759,7 +633,7 @@ static int vx_notify_end_of_buffer(vxpocket_t *chip, vx_pipe_t *pipe)
  *
  * return 0 if ok.
  */
-static int vx_update_playback_buffer(vxpocket_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe)
+static int vx_update_playback_buffer(vx_core_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe)
 {
 	int size, space, err = 0;
 
@@ -805,7 +679,7 @@ static int vx_update_playback_buffer(vxpocket_t *chip, snd_pcm_runtime_t *runtim
  * so that the caller can check the total transferred size later
  * (to call snd_pcm_period_elapsed).
  */
-static int vx_update_pipe_position(vxpocket_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe)
+static int vx_update_pipe_position(vx_core_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe)
 {
 	struct vx_rmh rmh;
 	int err, update;
@@ -831,7 +705,7 @@ static int vx_update_pipe_position(vxpocket_t *chip, snd_pcm_runtime_t *runtime,
  * transfer the pending playback buffer data to DSP
  * called from interrupt handler
  */
-void vx_pcm_playback_update_buffer(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
+void vx_pcm_playback_update_buffer(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
 {
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
@@ -846,7 +720,7 @@ void vx_pcm_playback_update_buffer(vxpocket_t *chip, snd_pcm_substream_t *subs, 
  * update the playback position and call snd_pcm_period_elapsed() if necessary
  * called from interrupt handler
  */
-void vx_pcm_playback_update(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
+void vx_pcm_playback_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
 {
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
@@ -869,7 +743,7 @@ void vx_pcm_playback_update(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe
 static void vx_pcm_delayed_start(unsigned long arg)
 {
 	snd_pcm_substream_t *subs = (snd_pcm_substream_t *)arg;
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, subs->pcm->private_data, return);
+	vx_core_t *chip = snd_magic_cast(vx_core_t, subs->pcm->private_data, return);
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return);
 	int err;
 
@@ -888,7 +762,7 @@ static void vx_pcm_delayed_start(unsigned long arg)
  */
 static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 {
-	vxpocket_t *chip = snd_pcm_substream_chip(subs);
+	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return -EINVAL);
 	int err;
 
@@ -903,7 +777,7 @@ static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 		 * we trigger the pipe using tasklet, so that the interrupts are
 		 * issued surely after the trigger is completed.
 		 */ 
-		tasklet_schedule(&pipe->start_tq);
+		tasklet_hi_schedule(&pipe->start_tq);
 		chip->pcm_running++;
 		pipe->running = 1;
 		break;
@@ -962,7 +836,7 @@ static int vx_pcm_hw_free(snd_pcm_substream_t *subs)
  */
 static int vx_pcm_prepare(snd_pcm_substream_t *subs)
 {
-	vxpocket_t *chip = snd_pcm_substream_chip(subs);
+	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, runtime->private_data, return -EINVAL);
 	int err, data_mode;
@@ -999,16 +873,15 @@ static int vx_pcm_prepare(snd_pcm_substream_t *subs)
 	if ((err = vx_set_format(chip, pipe, runtime)) < 0)
 		return err;
 
-	switch (snd_pcm_format_physical_width(runtime->format)) {
-	case 16:
-		pipe->align = runtime->channels * 6;
-		break;
-	case 24:
-		pipe->align = runtime->channels * 3;
-		break;
-	default:
-		snd_BUG();
-		return -EINVAL;
+	if (chip->type >= VX_TYPE_VXPOCKET) {
+		/* minimal DMA alignment = 6 */
+		if (snd_pcm_format_physical_width(runtime->format) == 16)
+			pipe->align = runtime->channels * 6;
+		else
+			pipe->align = 6;
+	} else {
+		/* minimal DMA alignment = 12 */
+		pipe->align = 12;
 	}
 
 	pipe->buffer_bytes = frames_to_bytes(runtime, runtime->buffer_size);
@@ -1060,7 +933,7 @@ static snd_pcm_hardware_t vx_pcm_capture_hw = {
 	.period_bytes_min =	126,
 	.period_bytes_max =	(128*1024),
 	.periods_min =		2,
-	.periods_max =		VXP_MAX_PERIODS,
+	.periods_max =		VX_MAX_PERIODS,
 	.fifo_size =		126,
 };
 
@@ -1071,7 +944,7 @@ static snd_pcm_hardware_t vx_pcm_capture_hw = {
 static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
-	vxpocket_t *chip = snd_pcm_substream_chip(subs);
+	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
 	int audio, err;
 
@@ -1099,7 +972,7 @@ static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
  */
 static int vx_pcm_capture_close(snd_pcm_substream_t *subs)
 {
-	vxpocket_t *chip = snd_pcm_substream_chip(subs);
+	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
 
 	if (! subs->runtime->private_data)
@@ -1114,7 +987,7 @@ static int vx_pcm_capture_close(snd_pcm_substream_t *subs)
 /*
  * vx_pcm_capture_update - update the capture buffer
  */
-void vx_pcm_capture_update(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
+void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
 {
 	int size, space;
 	snd_pcm_runtime_t *runtime = subs->runtime;
@@ -1137,12 +1010,18 @@ void vx_pcm_capture_update(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe_
 	size = (size / pipe->align) * pipe->align;
 	if (! size)
 		goto _finish;
-	if (size > DMA_READ_MIN_BYTES)
-		vx_pseudo_dma_read(chip, runtime, pipe, size - DMA_READ_MIN_BYTES);
+#if 0
+	if (size > pipe->align)
+		vx_pseudo_dma_read(chip, runtime, pipe, size - pipe->align);
  _finish:
 	/* disconnect the host, SIZE_HBUF command always switches to the stream mode */
 	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
-	vx_flush_read(chip, runtime, pipe, DMA_READ_MIN_BYTES);
+	vx_flush_read(chip, runtime, pipe, pipe->align);
+#else
+	vx_pseudo_dma_read(chip, runtime, pipe, size);
+ _finish:
+	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
+#endif
 	pipe->transferred += bytes_to_frames(runtime, size);
 	if (pipe->transferred >= runtime->period_size) {
 		pipe->transferred %= runtime->period_size;
@@ -1179,7 +1058,7 @@ static snd_pcm_ops_t vx_pcm_capture_ops = {
 /*
  * vx_init_audio_io - check the availabe audio i/o and allocate pipe arrays
  */
-static int vx_init_audio_io(vxpocket_t *chip)
+static int vx_init_audio_io(vx_core_t *chip)
 {
 	struct vx_rmh rmh;
 
@@ -1215,7 +1094,7 @@ static int vx_init_audio_io(vxpocket_t *chip)
  */
 static void snd_vxpocket_pcm_free(snd_pcm_t *pcm)
 {
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, pcm->private_data, return);
+	vx_core_t *chip = snd_magic_cast(vx_core_t, pcm->private_data, return);
 	chip->pcm[pcm->device] = NULL;
 	if (chip->playback_pipes) {
 		kfree(chip->playback_pipes);
@@ -1228,9 +1107,9 @@ static void snd_vxpocket_pcm_free(snd_pcm_t *pcm)
 }
 
 /*
- * snd_vxpocket_pcm_new - create and initialize a pcm
+ * snd_vx_pcm_new - create and initialize a pcm
  */
-int snd_vxpocket_pcm_new(vxpocket_t *chip)
+int snd_vx_pcm_new(vx_core_t *chip)
 {
 	snd_pcm_t *pcm;
 	int i, err;
@@ -1262,3 +1141,30 @@ int snd_vxpocket_pcm_new(vxpocket_t *chip)
 
 	return 0;
 }
+
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+
+static struct page *vmalloc_to_page(void *pageptr)
+{
+	pgd_t *pgd;
+	pmd_t *pmd;
+	pte_t *pte;
+	unsigned long lpage;
+	struct page *page = (struct page *)NOPAGE_SIGBUS;
+
+	lpage = VMALLOC_VMADDR(pageptr);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,2,18)
+	spin_lock(&init_mm.page_table_lock);
+#endif
+	pgd = pgd_offset(&init_mm, lpage);
+	pmd = pmd_offset(pgd, lpage);
+	pte = pte_offset(pmd, lpage);
+	page = (struct page *)pte_page(*pte);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,2,18)
+	spin_unlock(&init_mm.page_table_lock);
+#endif
+
+	return page;
+}    
+#endif

@@ -1,5 +1,10 @@
+/* to be in alsa-driver-specfici code */
+#define __NO_VERSION__
+
 /*
- * Driver for Digigram VXpocket soundcards
+ * Driver for Digigram VX soundcards
+ *
+ * Common mixer part
  *
  * Copyright (c) 2002 by Takashi Iwai <tiwai@suse.de>
  *
@@ -21,39 +26,26 @@
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/control.h>
-#include "vxpocket.h"
+#include "vx_core.h"
 #include "vx_cmd.h"
 
-#define chip_t vxpocket_t
+#define chip_t vx_core_t
 
 
 /*
  * write a codec data (24bit)
  */
-static void vx_write_codec_reg(vxpocket_t *chip, int codec, unsigned int data)
+static void vx_write_codec_reg(vx_core_t *chip, int codec, unsigned int data)
 {
-	int i;
 	unsigned long flags;
 
 	if (chip->is_stale)
 		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
-	/* Activate access to the corresponding codec register */
-	if (! codec)
-		vx_inb(chip, LOFREQ);
-	else
-		vx_inb(chip, CODEC2);
-		
-	/* We have to send 24 bits (3 x 8 bits). Start with most signif. Bit */
-	for (i = 0; i < 24; i++, data <<= 1)
-		vx_outb(chip, DATA, ((data & 0x800000) ? VXP_DATA_CODEC_MASK : 0));
-	
-	/* Terminate access to codec registers */
-	vx_inb(chip, HIFREQ);
+	chip->ops->write_codec(chip, codec, data);
 	spin_unlock_irqrestore(&chip->lock, flags);
 }
-
 
 /*
  * Data type used to access the Codec
@@ -96,7 +88,7 @@ typedef union {
  * @reg: register index
  * @val: data value
  */
-static void vx_set_codec_reg(vxpocket_t *chip, int codec, int reg, int val)
+static void vx_set_codec_reg(vx_core_t *chip, int codec, int reg, int val)
 {
 	vx_codec_data_t data;
 	/* DAC control register */
@@ -112,79 +104,16 @@ static void vx_set_codec_reg(vxpocket_t *chip, int codec, int reg, int val)
 
 /*
  * vx_set_analog_output_level - set the output attenuation level
- * @codec: the output codec, 0 or 1.  (on vxpocket, 0 only.)
+ * @codec: the output codec, 0 or 1.  (1 for VXP440 only)
  * @left: left attenuation level, 0 = 0 dB, 0xe3 = -113.5 dB
  * @right: right attenuation level
  */
-static void vx_set_analog_output_level(vxpocket_t *chip, int codec, int left, int right)
+static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int right)
 {
 	vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_LEFT_REGISTER, left);
 	vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
 }
 
-
-/*
- * vx_set_mic_boost - set mic boost level (on vxp440 only)
- * @boost: 0 = 20dB, 1 = +38dB
- */
-static void vx_set_mic_boost(vxpocket_t *chip, int boost)
-{
-	unsigned long flags;
-
-	if (chip->is_stale)
-		return;
-
-	spin_lock_irqsave(&chip->lock, flags);
-	if (chip->regCDSP & P24_CDSP_MICS_SEL_MASK) {
-		if (boost) {
-			/* boost: 38 dB */
-			chip->regCDSP &= ~P24_CDSP_MIC20_SEL_MASK;
-			chip->regCDSP |=  P24_CDSP_MIC38_SEL_MASK;
-		} else {
-			/* minimum value: 20 dB */
-			chip->regCDSP |=  P24_CDSP_MIC20_SEL_MASK;
-			chip->regCDSP &= ~P24_CDSP_MIC38_SEL_MASK;
-                }
-		vx_outb(chip, CDSP, chip->regCDSP);
-	}
-	spin_unlock_irqrestore(&chip->lock, flags);
-}
-
-#define MIC_LEVEL_MIN	0
-#define MIC_LEVEL_MAX	8
-/*
- * remap the linear value (0-8) to the actual value (0-15)
- */
-static int vx_compute_mic_level(int level)
-{
-	switch (level) {
-	case 5: level = 6 ; break;
-	case 6: level = 8 ; break;
-	case 7: level = 11; break;
-	case 8: level = 15; break;
-	default: break ;
-	}
-	return level;
-}
-
-/*
- * vx_set_mic_level - set mic level (on vxpocket only)
- * @level: the mic level = 0 - 8 (max)
- */
-static void vx_set_mic_level(vxpocket_t *chip, int level)
-{
-	unsigned long flags;
-
-	if (chip->is_stale)
-		return;
-
-	spin_lock_irqsave(&chip->lock, flags);
-	if (chip->regCDSP & VXP_CDSP_MIC_SEL_MASK) {
-		level = vx_compute_mic_level(level);
-		vx_outb(chip, MICRO, level);
-	}
-	spin_unlock_irqrestore(&chip->lock, flags);
-}
 
 /*
  * vx_toggle_dac_mute -  mute/unmute DAC
@@ -194,7 +123,7 @@ static void vx_set_mic_level(vxpocket_t *chip, int level)
 #define DAC_ATTEN_MIN	0x08
 #define DAC_ATTEN_MAX	0x38
 
-void vx_toggle_dac_mute(vxpocket_t *chip, int mute)
+void vx_toggle_dac_mute(vx_core_t *chip, int mute)
 {
 	int i;
 	for (i = 0; i < chip->hw->num_codecs; i++)
@@ -205,16 +134,12 @@ void vx_toggle_dac_mute(vxpocket_t *chip, int mute)
 /*
  * vx_reset_codec - reset and initialize the codecs
  */
-void vx_reset_codec(vxpocket_t *chip)
+void vx_reset_codec(vx_core_t *chip)
 {
 	int i;
+	int port = chip->type >= VX_TYPE_VXPOCKET ? 0x75 : 0x65;
 
-	/* Set the reset CODEC bit to 1. */
-	vx_outb(chip, CDSP, chip->regCDSP | VXP_CDSP_CODEC_RESET_MASK);
-	vx_delay(chip, 10);
-	/* Set the reset CODEC bit to 0. */
-	vx_outb(chip, CDSP, chip->regCDSP & ~VXP_CDSP_CODEC_RESET_MASK);
-	vx_delay(chip, 1);
+	chip->ops->reset_codec(chip);
 
 	for (i = 0; i < chip->hw->num_codecs; i++) {
 		/* DAC control register (change level when zero crossing + mute) */
@@ -222,7 +147,7 @@ void vx_reset_codec(vxpocket_t *chip)
 		/* ADC control register */
 		vx_set_codec_reg(chip, i, XX_CODEC_ADC_CONTROL_REGISTER, 0x00);
 		/* Port mode register */
-		vx_set_codec_reg(chip, i, XX_CODEC_PORT_MODE_REGISTER, 0x75); /* for VX22: 0x65 */
+		vx_set_codec_reg(chip, i, XX_CODEC_PORT_MODE_REGISTER, port);
 		/* Clock control register */
 		vx_set_codec_reg(chip, i, XX_CODEC_CLOCK_CONTROL_REGISTER, 0x00);
 	}
@@ -235,20 +160,13 @@ void vx_reset_codec(vxpocket_t *chip)
 					   ANALOG_OUT_ATTEN_MAX,
 					   ANALOG_OUT_ATTEN_MAX);
 	}
-
-	/* mute input levels */
-	chip->mic_level = 0;
-	if (chip->hw->type == VXP_TYPE_VXP440)
-		vx_set_mic_boost(chip, 0);
-	else
-		vx_set_mic_level(chip, 0);
 }
 
 /*
  * change the audio input source
- * @src: the target source (VXP_AUDIO_SRC_XXX)
+ * @src: the target source (VX_AUDIO_SRC_XXX)
  */
-static void vx_change_audio_source(vxpocket_t *chip, int src)
+static void vx_change_audio_source(vx_core_t *chip, int src)
 {
 	unsigned long flags;
 
@@ -256,37 +174,7 @@ static void vx_change_audio_source(vxpocket_t *chip, int src)
 		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
-	switch (src) {
-	case VXP_AUDIO_SRC_DIGITAL:
-		chip->regCDSP |= VXP_CDSP_DATAIN_SEL_MASK;
-		vx_outb(chip, CDSP, chip->regCDSP);
-		break;
-	case VXP_AUDIO_SRC_LINE:
-		chip->regCDSP &= ~VXP_CDSP_DATAIN_SEL_MASK;
-		if (chip->hw->type == VXP_TYPE_VXP440)
-			chip->regCDSP &= ~P24_CDSP_MICS_SEL_MASK;
-		else
-			chip->regCDSP &= ~VXP_CDSP_MIC_SEL_MASK;
-		vx_outb(chip, CDSP, chip->regCDSP);
-		break;
-	case VXP_AUDIO_SRC_MIC:
-		chip->regCDSP &= ~VXP_CDSP_DATAIN_SEL_MASK;
-		/* reset mic levels */
-		if (chip->hw->type == VXP_TYPE_VXP440) {
-			chip->regCDSP &= ~P24_CDSP_MICS_SEL_MASK;
-			if (chip->mic_level)
-				chip->regCDSP |=  P24_CDSP_MIC38_SEL_MASK;
-			else
-				chip->regCDSP |= P24_CDSP_MIC20_SEL_MASK;
-			vx_outb(chip, CDSP, chip->regCDSP);
-		} else {
-			chip->regCDSP |= VXP_CDSP_MIC_SEL_MASK;
-			vx_outb(chip, CDSP, chip->regCDSP);
-			vx_outb(chip, MICRO, vx_compute_mic_level(chip->mic_level));
-			spin_lock_irqsave(&chip->lock, flags);
-		}
-		break;
-	}
+	chip->ops->change_audio_source(chip, src);
 	spin_unlock_irqrestore(&chip->lock, flags);
 }
 
@@ -295,7 +183,7 @@ static void vx_change_audio_source(vxpocket_t *chip, int src)
  * change the audio source if necessary and possible
  * returns 1 if the source is actually changed.
  */
-int vx_sync_audio_source(vxpocket_t *chip)
+int vx_sync_audio_source(vx_core_t *chip)
 {
 	if (chip->audio_source_target == chip->audio_source ||
 	    chip->pcm_running)
@@ -320,7 +208,7 @@ struct vx_audio_level {
 	short monitor_level;
 };
 
-static int vx_adjust_audio_level(vxpocket_t *chip, int audio, int capture,
+static int vx_adjust_audio_level(vx_core_t *chip, int audio, int capture,
 				 struct vx_audio_level *info)
 {
 	struct vx_rmh rmh;
@@ -357,7 +245,7 @@ static int vx_adjust_audio_level(vxpocket_t *chip, int audio, int capture,
 
     
 #if 0 // not used
-static int vx_read_audio_level(vxpocket_t *chip, int audio, int capture,
+static int vx_read_audio_level(vx_core_t *chip, int audio, int capture,
 			       struct vx_audio_level *info)
 {
 	int err;
@@ -383,7 +271,7 @@ static int vx_read_audio_level(vxpocket_t *chip, int audio, int capture,
 /*
  * set the monitoring level and mute state of the given audio
  */
-static int vx_set_monitor_level(vxpocket_t *chip, int audio, int level, int active)
+static int vx_set_monitor_level(vx_core_t *chip, int audio, int level, int active)
 {
 	struct vx_audio_level info;
 
@@ -401,7 +289,7 @@ static int vx_set_monitor_level(vxpocket_t *chip, int audio, int level, int acti
 /*
  * set the mute status of the given audio
  */
-static int vx_set_audio_switch(vxpocket_t *chip, int audio, int active)
+static int vx_set_audio_switch(vx_core_t *chip, int audio, int active)
 {
 	struct vx_audio_level info;
 
@@ -415,7 +303,7 @@ static int vx_set_audio_switch(vxpocket_t *chip, int audio, int active)
 /*
  * set the mute status of the given audio
  */
-static int vx_set_audio_gain(vxpocket_t *chip, int audio, int capture, int level)
+static int vx_set_audio_gain(vx_core_t *chip, int audio, int capture, int level)
 {
 	struct vx_audio_level info;
 
@@ -429,7 +317,7 @@ static int vx_set_audio_gain(vxpocket_t *chip, int audio, int capture, int level
 /*
  * reset all audio levels
  */
-void vx_reset_audio_levels(vxpocket_t *chip)
+static void vx_reset_audio_levels(vx_core_t *chip)
 {
 	int i, c;
 	struct vx_audio_level info;
@@ -475,7 +363,7 @@ struct vx_vu_meter {
  * @capture: 0 = playback, 1 = capture operation
  * @info: the array of vx_vu_meter records (size = 2).
  */
-static int vx_get_audio_vu_meter(vxpocket_t *chip, int audio, int capture, struct vx_vu_meter *info)
+static int vx_get_audio_vu_meter(vx_core_t *chip, int audio, int capture, struct vx_vu_meter *info)
 {
 	struct vx_rmh rmh;
 	int i, err;
@@ -524,7 +412,7 @@ static int vx_output_level_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *u
 
 static int vx_output_level_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int codec = kcontrol->id.index;
 	ucontrol->value.integer.value[0] = ANALOG_OUT_ATTEN_MAX - chip->output_level[codec][0];
 	ucontrol->value.integer.value[1] = ANALOG_OUT_ATTEN_MAX - chip->output_level[codec][1];
@@ -533,7 +421,7 @@ static int vx_output_level_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 
 static int vx_output_level_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int val[2];
 	int codec = kcontrol->id.index;
 	val[0] = ANALOG_OUT_ATTEN_MAX - ucontrol->value.integer.value[0];
@@ -557,108 +445,46 @@ static snd_kcontrol_new_t vx_control_output_level = {
 };
 
 /*
- * mic level control (for VXPocket)
- */
-static int vx_mic_level_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = 1;
-	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = MIC_LEVEL_MAX;
-	return 0;
-}
-
-static int vx_mic_level_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
-	ucontrol->value.integer.value[0] = chip->mic_level;
-	return 0;
-}
-
-static int vx_mic_level_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
-	if (chip->mic_level != ucontrol->value.integer.value[0]) {
-		vx_set_mic_level(chip, ucontrol->value.integer.value[0]);
-		chip->mic_level = ucontrol->value.integer.value[0];
-		return 1;
-	}
-	return 0;
-}
-
-static snd_kcontrol_new_t vx_control_mic_level = {
-	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name =		"Mic Capture Volume",
-	.info =		vx_mic_level_info,
-	.get =		vx_mic_level_get,
-	.put =		vx_mic_level_put,
-};
-
-/*
- * mic boost level control (for VXP440)
- */
-static int vx_mic_boost_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
-{
-	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-	uinfo->count = 1;
-	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 1;
-	return 0;
-}
-
-static int vx_mic_boost_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
-	ucontrol->value.integer.value[0] = chip->mic_level;
-	return 0;
-}
-
-static int vx_mic_boost_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
-	if (chip->mic_level != ucontrol->value.integer.value[0]) {
-		vx_set_mic_boost(chip, ucontrol->value.integer.value[0]);
-		chip->mic_level = ucontrol->value.integer.value[0];
-		return 1;
-	}
-	return 0;
-}
-
-static snd_kcontrol_new_t vx_control_mic_boost = {
-	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
-	.name =		"Mic Boost",
-	.info =		vx_mic_boost_info,
-	.get =		vx_mic_boost_get,
-	.put =		vx_mic_boost_put,
-};
-
-/*
  * audio source select
  */
 static int vx_audio_src_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 {
-	static char *texts[3] = {
-		"Line", "Mic", "Digital"
+	static char *texts_mic[3] = {
+		"Digital", "Line", "Mic"
 	};
+	static char *texts_vx2[2] = {
+		"Digital", "Analog"
+	};
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
+
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
-	uinfo->value.enumerated.items = 3;
-	if (uinfo->value.enumerated.item > 2)
-		uinfo->value.enumerated.item = 2;
-	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	if (chip->type >= VX_TYPE_VXPOCKET) {
+		uinfo->value.enumerated.items = 3;
+		if (uinfo->value.enumerated.item > 2)
+			uinfo->value.enumerated.item = 2;
+		strcpy(uinfo->value.enumerated.name,
+		       texts_mic[uinfo->value.enumerated.item]);
+	} else {
+		uinfo->value.enumerated.items = 2;
+		if (uinfo->value.enumerated.item > 1)
+			uinfo->value.enumerated.item = 1;
+		strcpy(uinfo->value.enumerated.name,
+		       texts_vx2[uinfo->value.enumerated.item]);
+	}
 	return 0;
 }
 
 static int vx_audio_src_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.enumerated.item[0] = chip->audio_source_target;
 	return 0;
 }
 
 static int vx_audio_src_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	if (chip->audio_source_target != ucontrol->value.enumerated.item[0]) {
 		chip->audio_source_target = ucontrol->value.enumerated.item[0];
 		vx_sync_audio_source(chip);
@@ -689,7 +515,7 @@ static int vx_audio_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uin
 
 static int vx_audio_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 	int capture = (kcontrol->private_value >> 8) & 1;
 
@@ -700,7 +526,7 @@ static int vx_audio_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 
 static int vx_audio_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 	int capture = (kcontrol->private_value >> 8) & 1;
 
@@ -715,7 +541,7 @@ static int vx_audio_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 
 static int vx_audio_monitor_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
 	ucontrol->value.integer.value[0] = chip->audio_monitor[audio];
@@ -725,7 +551,7 @@ static int vx_audio_monitor_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *
 
 static int vx_audio_monitor_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
 	if (ucontrol->value.integer.value[0] != chip->audio_monitor[audio] ||
@@ -750,7 +576,7 @@ static int vx_audio_sw_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo
 
 static int vx_audio_sw_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
 	ucontrol->value.integer.value[0] = chip->audio_active[audio];
@@ -760,7 +586,7 @@ static int vx_audio_sw_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 
 static int vx_audio_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
 	if (ucontrol->value.integer.value[0] != chip->audio_active[audio] ||
@@ -774,7 +600,7 @@ static int vx_audio_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 
 static int vx_monitor_sw_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
 	ucontrol->value.integer.value[0] = chip->audio_monitor_active[audio];
@@ -784,7 +610,7 @@ static int vx_monitor_sw_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 
 static int vx_monitor_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
 	if (ucontrol->value.integer.value[0] != chip->audio_monitor_active[audio] ||
@@ -840,7 +666,7 @@ static int vx_iec958_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 
 static int vx_iec958_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 
 	ucontrol->value.iec958.status[0] = (chip->uer_bits >> 0) & 0xff;
 	ucontrol->value.iec958.status[1] = (chip->uer_bits >> 8) & 0xff;
@@ -860,7 +686,7 @@ static int vx_iec958_mask_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t *u
 
 static int vx_iec958_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	unsigned int val;
 
 	val = (ucontrol->value.iec958.status[0] << 0) |
@@ -910,7 +736,7 @@ static int vx_vu_meter_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo
 
 static int vx_vu_meter_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	struct vx_vu_meter meter[2];
 	int audio = kcontrol->private_value & 0xff;
 	int capture = (kcontrol->private_value >> 8) & 1;
@@ -923,7 +749,7 @@ static int vx_vu_meter_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 
 static int vx_peak_meter_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	struct vx_vu_meter meter[2];
 	int audio = kcontrol->private_value & 0xff;
 	int capture = (kcontrol->private_value >> 8) & 1;
@@ -945,7 +771,7 @@ static int vx_saturation_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uin
 
 static int vx_saturation_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	vxpocket_t *chip = snd_kcontrol_chip(kcontrol);
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	struct vx_vu_meter meter[2];
 	int audio = kcontrol->private_value & 0xff;
 
@@ -985,14 +811,14 @@ static snd_kcontrol_new_t vx_control_saturation = {
  *
  */
 
-int snd_vxpocket_mixer_new(vxpocket_t *chip)
+int snd_vx_mixer_new(vx_core_t *chip)
 {
 	int i, c, err;
 	snd_kcontrol_new_t temp;
 	snd_card_t *card = chip->card;
 	char name[32];
 
-	strcpy(card->mixername, "VXPocket");
+	strcpy(card->mixername, card->driver);
 
 	/* output level controls */
 	for (i = 0; i < chip->hw->num_outs; i++) {
@@ -1002,17 +828,6 @@ int snd_vxpocket_mixer_new(vxpocket_t *chip)
 			return err;
 	}
 
-	/* mic level */
-	switch (chip->hw->type) {
-	case VXP_TYPE_VXPOCKET:
-		if ((err = snd_ctl_add(card, snd_ctl_new1(&vx_control_mic_level, chip))) < 0)
-			return err;
-		break;
-	case VXP_TYPE_VXP440:
-		if ((err = snd_ctl_add(card, snd_ctl_new1(&vx_control_mic_boost, chip))) < 0)
-			return err;
-		break;
-	}
 	/* PCM volumes, switches, monitoring */
 	for (i = 0; i < chip->hw->num_outs; i++) {
 		int val = i * 2;
@@ -1083,5 +898,6 @@ int snd_vxpocket_mixer_new(vxpocket_t *chip)
 				return err;
 		}
 	}
+	vx_reset_audio_levels(chip);
 	return 0;
 }

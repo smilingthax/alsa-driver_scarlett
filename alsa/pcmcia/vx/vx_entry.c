@@ -1,3 +1,6 @@
+/* to be in alsa-driver-specific code */
+#define __NO_VERSION__
+
 /*
  * Driver for Digigram VXpocket soundcards
  *
@@ -31,25 +34,8 @@
  * prototypes
  */
 static void vxpocket_config(dev_link_t *link);
-static void vxpocket_release(u_long arg);
 static int vxpocket_event(event_t event, int priority, event_callback_args_t *args);
-static void vx_card_free_callback(snd_card_t *card);
 
-
-/*
- * flush the stale links.
- * the last instances might be left unreleased, so we release now before
- * creating a new one.
- */
-static void flush_stale_links(struct snd_vxp_entry *hw)
-{
-	dev_link_t *link, *next;
-	for (link = hw->dev_list; link; link = next) {
-		next = link->next;
-		if (link->state & DEV_STALE_LINK)
-			snd_vxpocket_detach(hw ,link);
-	}
-}
 
 /*
  * print the error message related with cs
@@ -58,6 +44,50 @@ static void cs_error(client_handle_t handle, int func, int ret)
 {
 	error_info_t err = { func, ret };
 	CardServices(ReportError, handle, &err);
+}
+
+static void vxpocket_release(u_long arg)
+{
+	dev_link_t *link = (dev_link_t *)arg;
+	
+	if (link->state & DEV_CONFIG) {
+		/* release cs resources */
+		CardServices(ReleaseConfiguration, link->handle);
+		CardServices(ReleaseIO, link->handle, &link->io);
+		CardServices(ReleaseIRQ, link->handle, &link->irq);
+		link->state &= ~DEV_CONFIG;
+	}
+}
+
+/*
+ * destructor
+ */
+static int snd_vxpocket_free(vx_core_t *chip)
+{
+	struct snd_vxpocket *vxp = (struct snd_vxpocket *)chip;
+	struct snd_vxp_entry *hw;
+	dev_link_t *link = &vxp->link;
+
+	vxpocket_release((u_long)link);
+
+	/* Break the link with Card Services */
+	if (link->handle)
+		CardServices(DeregisterClient, link->handle);
+
+	chip->initialized = 0;
+	hw = vxp->hw_entry;
+	if (hw)
+		hw->card_list[vxp->index] = NULL;
+	chip->card = NULL;
+
+	snd_magic_kfree(chip);
+	return 0;
+}
+
+static int snd_vxpocket_dev_free(snd_device_t *device)
+{
+	vx_core_t *chip = snd_magic_cast(vx_core_t, device->device_data, return -ENXIO);
+	return snd_vxpocket_free(chip);
 }
 
 /*
@@ -69,20 +99,51 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 	client_reg_t client_reg;	/* Register with cardmgr */
 	dev_link_t *link;		/* Info for cardmgr */
 	int i, ret;
-	vxpocket_t *chip;
+	vx_core_t *chip;
+	struct snd_vxpocket *vxp;
+	snd_card_t *card;
+	static snd_device_ops_t ops = {
+		.dev_free =	snd_vxpocket_dev_free,
+	};
 
-	flush_stale_links(hw);
+	snd_printdd(KERN_DEBUG "vxpocket_attach called\n");
+	/* find an empty slot from the card list */
+	for (i = 0; i < SNDRV_CARDS; i++) {
+		if (! hw->card_list[i])
+			break;
+	}
+	if (i >= SNDRV_CARDS) {
+		snd_printk(KERN_ERR "vxpocket: too many cards found\n");
+		return NULL;
+	}
+	if (! hw->enable_table[i])
+		return NULL; /* disabled explicitly */
 
-	chip = snd_vxpocket_create_chip(hw);
+	/* ok, create a card instance */
+	card = snd_card_new(hw->index_table[i], hw->id_table[i], THIS_MODULE, 0);
+	if (card == NULL) {
+		snd_printk(KERN_ERR "vxpocket: cannot create a card instance\n");
+		return NULL;
+	}
+
+	chip = snd_vx_create(card, hw->hardware, hw->ops,
+			     sizeof(struct snd_vxpocket) - sizeof(vx_core_t));
 	if (! chip)
 		return NULL;
-	chip->card->private_free = vx_card_free_callback;
 
-	link = &chip->link;
+	if (snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops) < 0) {
+		snd_magic_kfree(chip);
+		snd_card_free(card);
+		return NULL;
+	}
+
+	vxp = (struct snd_vxpocket *)chip;
+	vxp->index = i;
+	vxp->hw_entry = hw;
+	hw->card_list[i] = chip;
+
+	link = &vxp->link;
 	link->priv = chip;
-
-	link->release.function = &vxpocket_release;
-	link->release.data = (u_long)link;
 
 	link->io.Attributes1 = IO_DATA_PATH_WIDTH_AUTO;
 	link->io.NumPorts1 = 16;
@@ -99,6 +160,9 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 	link->irq.Handler = &snd_vx_irq_handler;
 	link->irq.Instance = chip;
 
+	link->release.function = &vxpocket_release;
+	link->release.data = (u_long)link;
+
 	link->conf.Attributes = CONF_ENABLE_IRQ;
 	link->conf.Vcc = 50;
 	link->conf.IntType = INT_MEMORY_AND_IO;
@@ -113,9 +177,12 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 	client_reg.dev_info = hw->dev_info;
 	client_reg.Attributes = INFO_IO_CLIENT | INFO_CARD_SHARE;
 	client_reg.EventMask = 
-		CS_EVENT_CARD_INSERTION | CS_EVENT_CARD_REMOVAL |
-		CS_EVENT_RESET_PHYSICAL | CS_EVENT_CARD_RESET |
-		CS_EVENT_PM_SUSPEND | CS_EVENT_PM_RESUME;
+		CS_EVENT_CARD_INSERTION | CS_EVENT_CARD_REMOVAL
+#ifdef CONFIG_PM
+		| CS_EVENT_RESET_PHYSICAL | CS_EVENT_CARD_RESET
+		| CS_EVENT_PM_SUSPEND | CS_EVENT_PM_RESUME
+#endif
+		;
 	client_reg.event_handler = &vxpocket_event;
 	client_reg.Version = 0x0210;
 	client_reg.event_callback_args.client_data = link;
@@ -131,17 +198,50 @@ dev_link_t *snd_vxpocket_attach(struct snd_vxp_entry *hw)
 }
 
 
-/*
+/**
+ * snd_vxpocket_assign_resources - initialize the hardware and card instance.
+ * @port: i/o port for the card
+ * @irq: irq number for the card
+ *
+ * this function assigns the specified port and irq, boot the card,
+ * create pcm and control instances, and initialize the rest hardware.
+ *
+ * returns 0 if successful, or a negative error code.
  */
-static void vx_card_free_callback(snd_card_t *card)
+static int snd_vxpocket_assign_resources(vx_core_t *chip, int port, int irq)
 {
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, card->private_data, return);
+	int err;
+	snd_card_t *card = chip->card;
+	struct snd_vxpocket *vxp = (struct snd_vxpocket *)chip;
 
-	if (chip->link.state & DEV_CONFIG)
-		vxpocket_release((u_long) &chip->link);
-	snd_vxpocket_free_chip(chip);
-	snd_magic_kfree(chip);
+	snd_printdd(KERN_DEBUG "vxpocket assign resources: port = 0x%x, irq = %d\n", port, irq);
+	vxp->port = port;
+
+	sprintf(card->shortname, "Digigram %s", card->driver);
+	sprintf(card->longname, "%s at 0x%x, irq %i",
+		card->shortname, port, irq);
+
+	if ((err = snd_vx_init(chip)) < 0)
+		return err;
+
+	chip->irq = irq;
+
+	if ((err = snd_vx_pcm_new(chip)) < 0)
+		return err;
+
+	if ((err = snd_vx_mixer_new(chip)) < 0)
+		return err;
+	if ((err = vxp_add_mic_controls(chip)) < 0)
+		return err;
+
+	chip->initialized = 1;
+
+	if ((err = snd_card_register(chip->card)) < 0)
+		return err;
+
+	return 0;
 }
+
 
 /*
  * snd_vxpocket_detach - detach callback for cs
@@ -149,26 +249,22 @@ static void vx_card_free_callback(snd_card_t *card)
  */
 void snd_vxpocket_detach(struct snd_vxp_entry *hw, dev_link_t *link)
 {
-	dev_link_t **linkp;
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, link->priv, return);
-
-	/* Locate device structure */
-	for (linkp = &hw->dev_list; *linkp; linkp = &(*linkp)->next)
-		if (*linkp == link)
-			break;
-	if (*linkp == NULL)
-		return;
+	vx_core_t *chip = snd_magic_cast(vx_core_t, link->priv, return);
 
 	del_timer(&link->release);
 
-	/* Break the link with Card Services */
-	if (link->handle)
-		CardServices(DeregisterClient, link->handle);
-    
+	snd_printdd(KERN_DEBUG "vxpocket_detach called\n");
 	/* Remove the interface data from the linked list */
-	*linkp = link->next;
-
-	chip->is_stale = 1;
+	if (hw) {
+		dev_link_t **linkp;
+		/* Locate device structure */
+		for (linkp = &hw->dev_list; *linkp; linkp = &(*linkp)->next)
+			if (*linkp == link)
+				break;
+		if (*linkp)
+			*linkp = link->next;
+	}
+	chip->is_stale = 1; /* to be sure */
 	snd_card_disconnect(chip->card);
 	snd_card_free_in_thread(chip->card);
 }
@@ -182,7 +278,6 @@ void snd_vxpocket_detach_all(struct snd_vxp_entry *hw)
 		snd_vxpocket_detach(hw, hw->dev_list);
 }
 
-
 /*
  * configuration callback
  */
@@ -193,12 +288,14 @@ while ((last_ret=CardServices(last_fn=(fn), args))!=0) goto cs_failed
 static void vxpocket_config(dev_link_t *link)
 {
 	client_handle_t handle = link->handle;
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, link->priv, return);
+	vx_core_t *chip = snd_magic_cast(vx_core_t, link->priv, return);
+	struct snd_vxpocket *vxp = (struct snd_vxpocket *)chip;
 	tuple_t tuple;
 	cisparse_t parse;
 	u_short buf[32];
 	int last_fn, last_ret;
 
+	snd_printdd(KERN_DEBUG "vxpocket_config called\n");
 	tuple.DesiredTuple = CISTPL_CFTABLE_ENTRY;
 	tuple.Attributes = 0;
 	tuple.TupleData = (cisdata_t *)buf;
@@ -222,29 +319,16 @@ static void vxpocket_config(dev_link_t *link)
 	if (snd_vxpocket_assign_resources(chip, link->io.BasePort1, link->irq.AssignedIRQ) < 0)
 		goto failed;
 
-	link->dev = &chip->node;
+	link->dev = &vxp->node;
 	link->state &= ~DEV_CONFIG_PENDING;
 	return;
 
 cs_failed:
 	cs_error(link->handle, last_fn, last_ret);
 failed:
-	vxpocket_release((u_long)link);
-}
-
-
-/*
- * release callback
- */
-static void vxpocket_release(u_long arg)
-{
-	dev_link_t *link = (dev_link_t *)arg;
-
 	CardServices(ReleaseConfiguration, link->handle);
 	CardServices(ReleaseIO, link->handle, &link->io);
 	CardServices(ReleaseIRQ, link->handle, &link->irq);
-
-	link->state &= ~DEV_CONFIG;
 }
 
 
@@ -254,44 +338,67 @@ static void vxpocket_release(u_long arg)
 static int vxpocket_event(event_t event, int priority, event_callback_args_t *args)
 {
 	dev_link_t *link = args->client_data;
-	vxpocket_t *chip = link->priv;
+	vx_core_t *chip = link->priv;
 
 	switch (event) {
 	case CS_EVENT_CARD_REMOVAL:
+		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
 		link->state &= ~DEV_PRESENT;
 		if (link->state & DEV_CONFIG) {
 			mod_timer(&link->release, jiffies + HZ/20);
-			if (chip) {
-				chip->is_stale = 1;
-				snd_card_disconnect(chip->card);
-				snd_card_free_in_thread(chip->card);
-			}
+			chip->is_stale = 1;
 		}
 		break;
 	case CS_EVENT_CARD_INSERTION:
+		snd_printdd(KERN_DEBUG "CARD_INSERTION..\n");
 		link->state |= DEV_PRESENT;
 		vxpocket_config(link);
 		break;
+#ifdef CONFIG_PM
 	case CS_EVENT_PM_SUSPEND:
+		snd_printdd(KERN_DEBUG "SUSPEND\n");
 		link->state |= DEV_SUSPEND;
-		if (chip)
-			chip->in_suspend = 1;
+		if (chip) {
+			snd_printdd(KERN_DEBUG "snd_vx_suspend calling\n");
+			snd_vx_suspend(chip);
+		}
 		/* Fall through... */
 	case CS_EVENT_RESET_PHYSICAL:
+		snd_printdd(KERN_DEBUG "RESET_PHYSICAL\n");
 		if (link->state & DEV_CONFIG)
 			CardServices(ReleaseConfiguration, link->handle);
 		break;
 	case CS_EVENT_PM_RESUME:
+		snd_printdd(KERN_DEBUG "RESUME\n");
 		link->state &= ~DEV_SUSPEND;
 		/* Fall through... */
 	case CS_EVENT_CARD_RESET:
-		if (DEV_OK(link))
+		snd_printdd(KERN_DEBUG "CARD_RESET\n");
+		if (DEV_OK(link)) {
+			//struct snd_vxpocket *vxp = (struct snd_vxpocket *)chip;
+			snd_printdd(KERN_DEBUG "requestconfig...\n");
 			CardServices(RequestConfiguration, link->handle, &link->conf);
-		if (chip) {
-			/* FIXME: call resume... */
-			chip->in_suspend = 0;
+			if (chip) {
+				snd_printdd(KERN_DEBUG "calling snd_vx_resume\n");
+				snd_vx_resume(chip);
+			}
 		}
+		snd_printdd(KERN_DEBUG "resume done!\n");
 		break;
+#endif
 	}
 	return 0;
 }
+
+/* we link this module statically with the card modules
+ * due to the pcmcia symbol problems...
+ */
+#if 0
+/*
+ * exported stuffs
+ */
+EXPORT_SYMBOL(snd_vxpocket_ops);
+EXPORT_SYMBOL(snd_vxpocket_attach);
+EXPORT_SYMBOL(snd_vxpocket_detach);
+EXPORT_SYMBOL(snd_vxpocket_detach_all);
+#endif
