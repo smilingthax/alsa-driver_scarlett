@@ -22,7 +22,12 @@
  *
  */
 
+#define SND_MPU401_POLL			/* polled Tx mode */
+
 #include "midi.h"
+#ifndef SND_MPU401_POLL
+#include "sthread.h"
+#endif
 
 #define MPU401_HW_MPU401		1	/* native MPU401 */
 #define MPU401_HW_SB			2	/* SoundBlaster MPU-401 UART */
@@ -35,6 +40,7 @@
 #define MPU401_MODE_INPUT		1
 #define MPU401_MODE_OUTPUT		2
 #define MPU401_MODE_INPUT_TRIGGER	4
+#define MPU401_MODE_OUTPUT_TRIGGER	8
 
 typedef struct snd_stru_mpu401 mpu401_t;
 
@@ -54,6 +60,9 @@ struct snd_stru_mpu401 {
 	snd_spin_define(open);
 	snd_spin_define(input);
 	snd_spin_define(output);
+#ifndef SND_MPU401_POLL
+	snd_thread_t *sthread;
+#endif
 };
 
 /* I/O ports */
