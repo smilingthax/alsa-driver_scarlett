@@ -1173,16 +1173,25 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define A_EXTIN_SPDIF_CD_R	0x03	/* digital CD left */
 
 /* Audigiy Outputs */
-#define A_EXTOUT_HEADPHONE_L	0x04	/* headphone audigy drive */
-#define A_EXTOUT_HEADPHONE_R	0x05
-#define A_EXTOUT_FRONT_L	0x08	/* front left */
-#define A_EXTOUT_FRONT_R	0x09	/* front right */
-#define A_EXTOUT_CENTER		0x0a	/* center */
-#define A_EXTOUT_LFE		0x0b	/* LFE */
-#define A_EXTOUT_REAR_L		0x0e	/* rear left */
-#define A_EXTOUT_REAR_R		0x0f	/* rear right */
+#define A_EXTOUT_FRONT_L	0x00	/* digital front left */
+#define A_EXTOUT_FRONT_R	0x01	/*               right */
+#define A_EXTOUT_CENTER		0x02	/* digital front center */
+#define A_EXTOUT_LFE		0x03	/* digital front lfe */
+#define A_EXTOUT_HEADPHONE_L	0x04	/* headphone audigy drive left */
+#define A_EXTOUT_HEADPHONE_R	0x05	/*                        right */
+#define A_EXTOUT_REAR_L		0x06	/* digital rear left */
+#define A_EXTOUT_REAR_R		0x07	/*              right */
+#define A_EXTOUT_AFRONT_L	0x08	/* analog front left */
+#define A_EXTOUT_AFRONT_R	0x09	/*              right */
+#define A_EXTOUT_ACENTER	0x0a	/* analog center */
+#define A_EXTOUT_ALFE		0x0b	/* analog LFE */
+/* 0x0c ?? */
+/* 0x0d ?? */
+#define A_EXTOUT_AREAR_L	0x0e	/* analog rear left */
+#define A_EXTOUT_AREAR_R	0x0f	/*             right */
+/* 0x10-0x15 ?? */
 #define A_EXTOUT_ADC_CAP_L	0x16	/* ADC capture buffer left */
-#define A_EXTOUT_ADC_CAP_R	0x17	/* ADC capture buffer right */
+#define A_EXTOUT_ADC_CAP_R	0x17	/*                    right */
 
 /* definitions for debug register */
 #define EMU10K1_DBG_ZC			0x80000000	/* zero tram counter */
