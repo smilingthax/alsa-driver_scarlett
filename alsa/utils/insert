@@ -6,6 +6,7 @@ MAP="../snd.map"
 OLDMAP="../snd.map.old"
 
 function basic() {
+  if ! $INSMOD -m $MODDIR/isapnp.o > $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
@@ -44,7 +45,7 @@ case "$1" in
     insert snd-gus.o
     insert snd-i2c.o
     insert snd-tea6330t.o
-    insert snd-interwave-stb.o snd_dma1=5 snd_dma2=6 snd_midi=1
+    insert snd-interwave-stb.o snd_irq=5 snd_dma1=5 snd_dma2=6 snd_midi=1
     restore interwave-stb.conf
     ;;
   interwave|iw)
