@@ -60,6 +60,7 @@ static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP; /* all enabled */
 static int snd_external_amp[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};
+static int snd_amp_gpio[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = -1};
 
 MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_index, "Index value for " CARD_NAME " soundcard.");
@@ -73,6 +74,9 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_external_amp, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_external_amp, "Enable external amp for " CARD_NAME " soundcard.");
 MODULE_PARM_SYNTAX(snd_external_amp, SNDRV_ENABLED "," SNDRV_BOOLEAN_TRUE_DESC);
+MODULE_PARM(snd_amp_gpio, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(snd_amp_gpio, "GPIO pin number for external amp. (default = -1)");
+MODULE_PARM_SYNTAX(snd_amp_gpio, SNDRV_ENABLED);
 
 #define MAX_PLAYBACKS	2
 #define MAX_CAPTURES	1
@@ -314,6 +318,9 @@ MODULE_PARM_SYNTAX(snd_external_amp, SNDRV_ENABLED "," SNDRV_BOOLEAN_TRUE_DESC);
 #define GPI_DOCKING_STATUS      0x0100
 #define GPI_HEADPHONE_SENSE     0x0200
 #define GPO_EXT_AMP_SHUTDOWN    0x1000
+
+#define GPO_EXT_AMP_M3		1	/* default m3 amp */
+#define GPO_EXT_AMP_ALLEGRO	8	/* default allegro amp */
 
 /* M3 */
 #define GPO_M3_EXT_AMP_SHUTDN   0x0002
@@ -835,6 +842,7 @@ struct snd_m3 {
 
 	int global_dsp_speed;
 	int external_amp;
+	int amp_gpio;
 
 	/* pcm streams */
 	int num_substreams;
@@ -2199,25 +2207,16 @@ static void
 snd_m3_amp_enable(m3_t *chip, int enable)
 {
 	int io = chip->iobase;
-	u16 gpo, polarity_port, polarity;
+	u16 gpo, polarity;
 
 	if (! chip->external_amp)
 		return;
 
-	if (chip->allegro_flag) {
-		polarity_port = 0x1800;
-	} else {
-		/* presumably this is for all 'maestro3's.. */
-		polarity_port = 0x1100;
-	}
+	polarity = enable ? 0 : 1;
+	polarity = polarity << chip->amp_gpio;
+	gpo = 1 << chip->amp_gpio;
 
-	gpo = (polarity_port >> 8) & 0x0F;
-	polarity = polarity_port >> 12;
-	if (enable)
-		polarity = !polarity;
-	polarity = polarity << gpo;
-	gpo = 1 << gpo;
-
+	printk("gpo = 0x%x, polarity = 0x%x\n", gpo, polarity);
 	outw(~gpo, io + GPIO_MASK);
 
 	outw(inw(io + GPIO_DIRECTION) | gpo,
@@ -2456,6 +2455,7 @@ static int snd_m3_dev_free(snd_device_t *device)
 static int __init
 snd_m3_create(snd_card_t *card, struct pci_dev *pci,
 	      int enable_amp,
+	      int amp_gpio,
 	      m3_t **chip_ret)
 {
 	m3_t *chip;
@@ -2494,6 +2494,12 @@ snd_m3_create(snd_card_t *card, struct pci_dev *pci,
 	chip->pci = pci;
 	chip->irq = -1;
 	chip->external_amp = enable_amp;
+	if (amp_gpio >= 0 && amp_gpio <= 0x0f)
+		chip->amp_gpio = amp_gpio;
+	else if (chip->allegro_flag)
+		chip->amp_gpio = GPO_EXT_AMP_ALLEGRO;
+	else
+		chip->amp_gpio = GPO_EXT_AMP_M3; /* presumably this is for all 'maestro3's.. */
 	chip->num_substreams = NR_DSPS;
 	chip->substreams = kmalloc(sizeof(m3_dma_t) * chip->num_substreams, GFP_KERNEL);
 	if (chip->substreams == NULL) {
@@ -2618,6 +2624,7 @@ snd_m3_probe(struct pci_dev *pci, const struct pci_device_id *id)
 
 	if ((err = snd_m3_create(card, pci,
 				 snd_external_amp[dev],
+				 snd_amp_gpio[dev],
 				 &chip)) < 0) {
 		snd_card_free(card);
 		return err;
