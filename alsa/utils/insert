@@ -1,6 +1,7 @@
 #!/bin/bash
 
 INSMOD="/sbin/insmod"
+MODPROBE="/sbin/modprobe"
 MODDIR="../modules"
 MAP="../snd.map"
 OLDMAP="../snd.map.old"
@@ -20,6 +21,7 @@ function isapnp() {
 }
 
 function basic() {
+  $MODPROBE -q soundcore 2> /dev/null
   banner "snd"
   if ! $INSMOD -m $MODDIR/snd.o snd_cards_limit=$CARDS_LIMIT >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-mixer-oss.o ]; then
@@ -103,7 +105,9 @@ if [ -z "$1" ]; then
   exit
 fi
 
-mv -f $MAP $OLDMAP
+if [ -w $MAP ]; then
+  mv -f $MAP $OLDMAP
+fi
 
 ./remove
 
