@@ -214,6 +214,7 @@ inline static int usb_submit_urb_wrapper(struct urb *urb, int flags)
 #undef usb_submit_urb
 #define usb_alloc_urb(n,flags) usb_alloc_urb_wrapper(n,flags)
 #define usb_submit_urb(p,flags) usb_submit_urb_wrapper(p,flags)
+#define OLD_USB
 #endif /* LINUX_VERSION_CODE < 2.5.0 */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
