@@ -337,7 +337,6 @@ static int snd_fm801_playback_trigger(snd_pcm_substream_t * substream,
 		return -EINVAL;
 	}
 	outw(chip->ply_ctrl, FM801_REG(chip, PLY_CTRL));
-	snd_printk(KERN_DEBUG "prepare: PLY_CTRL=0x%x\n", chip->ply_ctrl);
 	spin_unlock(&chip->reg_lock);
 	return 0;
 }
