@@ -15,14 +15,15 @@ The ALSA driver programs this portion of chip by default code
 1) IEC958 (S/PDIF) raw PCM
 --------------------------
 
-This PCM device (it's the 4th PCM device (index 3!) and first 
-subdevice (index 0) for a given card) allows to forward 48kHz, stereo, 16-bit
+This PCM device (it's the 4th PCM device (index 3!) and first subdevice
+(index 0) for a given card) allows to forward 48kHz, stereo, 16-bit
 little endian streams without any modifications to the digital output
 (coaxial or optical). The universal interface allows the creation of up
-to 8 raw PCM devices operating at 48kHz, 16-bit little endian. 
-It would be easy to add support for multichannel devices to the current code,
+to 8 raw PCM devices operating at 48kHz, 16-bit little endian. It would
+be easy to add support for multichannel devices to the current code,
 but the conversion routines exist only for stereo (2-channel streams)
 at the time. 
+
 Look to tram_poke routines in lowlevel/emu10k1/emufx.c for more details.
 
 
@@ -34,11 +35,7 @@ functionality. Only the default build-in code in the ALSA driver is described
 here. Note that the controls work as attenuators: the maximum value is the 
 neutral position leaving the signal unchanged. Note that if the  same destination 
 is mentioned in multiple controls, the signal is accumulated and can be wrapped 
-to the maximal possible value.
-
-	"wrapped" is not clear to me. does it mean i can set all sources to
-	an accumulator to maximum without having to worry about overloading
-	the accu ?
+(set to maximal or minimal value without checking of overflow).
 
 
 Explanation of used abbreviations:
