@@ -208,13 +208,11 @@ DEFINE_VIA_REGSET(FM, 0x20);
 #define   VIA8233_REG_SGD_STAT_EOL	(1<<1)
 #define   VIA8233_REG_SGD_STAT_STOP	(1<<2)
 #define   VIA8233_REG_SGD_STAT_ACTIVE	(1<<3)
-#define   VIA8233_REG_SGD_SDX0_SHIFT	0
-#define   VIA8233_REG_SGD_SDX1_SHIFT	4
-#define   VIA8233_REG_SGD_SDX2_SHIFT	8
-#define   VIA8233_REG_SGD_SDX3_SHIFT	12
-#define   VIA8233_REG_SGD_MCHAN_SHIFT	16
-#define   VIA8233_REG_SGD_REC0_SHIFT	24
-#define   VIA8233_REG_SGD_REC1_SHIFT	28
+#define VIA8233_INTR_MASK(chan) ((VIA8233_REG_SGD_STAT_FLAG|VIA8233_REG_SGD_STAT_EOL) << ((chan) * 4))
+#define   VIA8233_REG_SGD_CHAN_SDX	0
+#define   VIA8233_REG_SGD_CHAN_MULTI	4
+#define   VIA8233_REG_SGD_CHAN_REC	6
+#define   VIA8233_REG_SGD_CHAN_REC1	7
 
 #define VIA_REG_GPI_STATUS		0x88
 #define VIA_REG_GPI_INTR		0x8c
@@ -230,7 +228,7 @@ DEFINE_VIA_REGSET(CAPTURE_8233, 0x60);
 #define   VIA_REG_MULTPLAY_FMT_8BIT	0x00
 #define   VIA_REG_MULTPLAY_FMT_16BIT	0x80
 #define   VIA_REG_MULTPLAY_FMT_CH_MASK	0x70	/* # channels << 4 (valid = 1,2,4,6) */
-#define VIA_REG_OFS_CAPTURE_FIFO	0x62	/* byte - bit 6 = fifo  enable */
+#define VIA_REG_OFS_CAPTURE_FIFO	0x02	/* byte - bit 6 = fifo  enable */
 #define   VIA_REG_CAPTURE_FIFO_ENABLE	0x40
 
 #define VIA_REG_CAPTURE_CHANNEL		0x63	/* byte - input select */
@@ -582,6 +580,10 @@ static void snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	unsigned int i;
 
 	spin_lock(&chip->reg_lock);
+	/* FIXME: does it work on via823x? */
+	if (chip->chip_type != TYPE_VIA686)
+		goto _skip_sgd;
+
 	status = inl(VIAREG(chip, SGD_SHADOW));
 	if (! (status & chip->intr_mask)) {
 		spin_unlock(&chip->reg_lock);
@@ -590,20 +592,21 @@ static void snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
 		return;
 	}
+ _skip_sgd:
 
 	/* check status for each stream */
 	for (i = 0; i < chip->num_devs; i++) {
 		viadev_t *viadev = &chip->devs[i];
-		unsigned char status = inb(VIADEV_REG(viadev, OFFSET_STATUS));
-		status &= (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG);
-		if (! status)
+		unsigned char c_status = inb(VIADEV_REG(viadev, OFFSET_STATUS));
+		c_status &= (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG|VIA_REG_STAT_STOPPED);
+		if (! c_status)
 			continue;
 		if (viadev->substream && viadev->running) {
 			spin_unlock(&chip->reg_lock);
 			snd_pcm_period_elapsed(viadev->substream);
 			spin_lock(&chip->reg_lock);
 		}
-		outb(status, VIADEV_REG(viadev, OFFSET_STATUS)); /* ack */
+		outb(c_status, VIADEV_REG(viadev, OFFSET_STATUS)); /* ack */
 	}
 	spin_unlock(&chip->reg_lock);
 }
@@ -872,7 +875,10 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 		snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
 		snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
 	}
-	rbits = (0xfffff / 48000) * runtime->rate + ((0xfffff % 48000) * runtime->rate) / 48000;
+	if (chip->chip_type == TYPE_VIA8233A)
+		rbits = 0;
+	else
+		rbits = (0xfffff / 48000) * runtime->rate + ((0xfffff % 48000) * runtime->rate) / 48000;
 	snd_assert((rbits & ~0xfffff) == 0, return -EINVAL);
 	snd_via82xx_channel_reset(chip, viadev);
 	snd_via82xx_set_table_ptr(chip, viadev);
@@ -911,16 +917,20 @@ static int snd_via8233_multi_prepare(snd_pcm_substream_t *substream)
 	fmt = (runtime->format == SNDRV_PCM_FORMAT_S16_LE) ? VIA_REG_MULTPLAY_FMT_16BIT : VIA_REG_MULTPLAY_FMT_8BIT;
 	fmt |= runtime->channels << 4;
 	outb(fmt, VIADEV_REG(viadev, OFS_MULTPLAY_FORMAT));
-	/* set sample number to slot 3, 4, 7, 8, 6, 9 (for VIA8233/C,8235) */
-	/* corresponding to FL, FR, RL, RR, C, LFE ?? */
-	switch (runtime->channels) {
-	case 1: slots = (1<<0) | (1<<4); break;
-	case 2: slots = (1<<0) | (2<<4); break;
-	case 3: slots = (1<<0) | (2<<4) | (5<<8); break;
-	case 4: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12); break;
-	case 5: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12) | (5<<16); break;
-	case 6: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12) | (5<<16) | (6<<20); break;
-	default: slots = 0; break;
+	if (chip->chip_type == TYPE_VIA8233A)
+		slots = 0;
+	else {
+		/* set sample number to slot 3, 4, 7, 8, 6, 9 (for VIA8233/C,8235) */
+		/* corresponding to FL, FR, RL, RR, C, LFE ?? */
+		switch (runtime->channels) {
+		case 1: slots = (1<<0) | (1<<4); break;
+		case 2: slots = (1<<0) | (2<<4); break;
+		case 3: slots = (1<<0) | (2<<4) | (5<<8); break;
+		case 4: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12); break;
+		case 5: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12) | (5<<16); break;
+		case 6: slots = (1<<0) | (2<<4) | (3<<8) | (4<<12) | (5<<16) | (6<<20); break;
+		default: slots = 0; break;
+		}
 	}
 	/* STOP index is never reached */
 	outl(0xff000000 | slots, VIADEV_REG(viadev, OFFSET_STOP_IDX));
@@ -1533,9 +1543,11 @@ static int snd_via8233_init_misc(via82xx_t *chip, int dev)
 	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs3_spdif_control, chip));
 	if (err < 0)
 		return err;
-	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs_volume_control, chip));
-	if (err < 0)
-		return err;
+	if (chip->chip_type != TYPE_VIA8233A) {
+		err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs_volume_control, chip));
+		if (err < 0)
+			return err;
+	}
 
 	/* select spdif data slot 10/11 */
 	pci_read_config_byte(chip->pci, VIA8233_SPDIF_CTRL, &val);
