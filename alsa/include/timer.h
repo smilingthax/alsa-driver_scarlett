@@ -59,7 +59,7 @@ struct _snd_timer_hardware {
 };
 
 struct _snd_timer {
-	snd_timer_type_t tmr_type;
+	snd_timer_class_t tmr_class;
 	snd_card_t *card;
 	int tmr_device;
 	int tmr_subdevice;
@@ -88,7 +88,7 @@ struct _snd_timer_instance {
 	unsigned long ticks;
 	unsigned long cticks;
 	unsigned long lost;		/* lost ticks */
-	snd_timer_slave_type_t slave_type;
+	snd_timer_slave_class_t slave_class;
 	unsigned int slave_id;
 	snd_timer_instance_t *next;
 	snd_timer_instance_t *inext;

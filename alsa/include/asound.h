@@ -157,17 +157,17 @@ struct sndrv_aes_iec958 {
 
 #define SNDRV_HWDEP_VERSION		SNDRV_PROTOCOL_VERSION(1, 0, 0)
 
-enum sndrv_hwdep_type {
-	SNDRV_HWDEP_TYPE_OPL2,
-	SNDRV_HWDEP_TYPE_OPL3,
-	SNDRV_HWDEP_TYPE_OPL4,
-	SNDRV_HWDEP_TYPE_SB16CSP,	/* Creative Signal Processor */
-	SNDRV_HWDEP_TYPE_EMU10K1,	/* FX8010 processor in EMU10K1 chip */
-	SNDRV_HWDEP_TYPE_YSS225,	/* Yamaha FX processor */
-	SNDRV_HWDEP_TYPE_ICS2115,	/* Wavetable synth */
+enum sndrv_hwdep_iface {
+	SNDRV_HWDEP_IFACE_OPL2,
+	SNDRV_HWDEP_IFACE_OPL3,
+	SNDRV_HWDEP_IFACE_OPL4,
+	SNDRV_HWDEP_IFACE_SB16CSP,	/* Creative Signal Processor */
+	SNDRV_HWDEP_IFACE_EMU10K1,	/* FX8010 processor in EMU10K1 chip */
+	SNDRV_HWDEP_IFACE_YSS225,	/* Yamaha FX processor */
+	SNDRV_HWDEP_IFACE_ICS2115,	/* Wavetable synth */
 
 	/* Don't forget to change the following: */
-	SNDRV_HWDEP_TYPE_LAST = SNDRV_HWDEP_TYPE_ICS2115,
+	SNDRV_HWDEP_IFACE_LAST = SNDRV_HWDEP_IFACE_ICS2115,
 };
 
 struct sndrv_hwdep_info {
@@ -175,7 +175,7 @@ struct sndrv_hwdep_info {
 	int card;			/* R: card number */
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* hwdep name */
-	enum sndrv_hwdep_type type;	/* hwdep device type */
+	enum sndrv_hwdep_iface iface;	/* hwdep interface */
 	unsigned char reserved[64];	/* reserved for future */
 };
 
@@ -557,22 +557,22 @@ enum {
 
 #define SNDRV_TIMER_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 0)
 
-enum sndrv_timer_type {
-	SNDRV_TIMER_TYPE_NONE = -1,
-	SNDRV_TIMER_TYPE_SLAVE = 0,
-	SNDRV_TIMER_TYPE_GLOBAL,
-	SNDRV_TIMER_TYPE_CARD,
-	SNDRV_TIMER_TYPE_PCM,
-	SNDRV_TIMER_TYPE_LAST = SNDRV_TIMER_TYPE_PCM,
+enum sndrv_timer_class {
+	SNDRV_TIMER_CLASS_NONE = -1,
+	SNDRV_TIMER_CLASS_SLAVE = 0,
+	SNDRV_TIMER_CLASS_GLOBAL,
+	SNDRV_TIMER_CLASS_CARD,
+	SNDRV_TIMER_CLASS_PCM,
+	SNDRV_TIMER_CLASS_LAST = SNDRV_TIMER_CLASS_PCM,
 };
 
-/* slave timer types */
-enum sndrv_timer_slave_type {
-	SNDRV_TIMER_STYPE_NONE,
-	SNDRV_TIMER_STYPE_APPLICATION,
-	SNDRV_TIMER_STYPE_SEQUENCER,		/* alias */
-	SNDRV_TIMER_STYPE_OSS_SEQUENCER,	/* alias */
-	SNDRV_TIMER_STYPE_LAST = SNDRV_TIMER_STYPE_OSS_SEQUENCER,
+/* slave timer classes */
+enum sndrv_timer_slave_class {
+	SNDRV_TIMER_SCLASS_NONE,
+	SNDRV_TIMER_SCLASS_APPLICATION,
+	SNDRV_TIMER_SCLASS_SEQUENCER,		/* alias */
+	SNDRV_TIMER_SCLASS_OSS_SEQUENCER,	/* alias */
+	SNDRV_TIMER_SCLASS_LAST = SNDRV_TIMER_SCLASS_OSS_SEQUENCER,
 };
 
 /* global timers (device member) */
@@ -580,8 +580,8 @@ enum sndrv_timer_slave_type {
 #define SNDRV_TIMER_GLOBAL_RTC		1
 
 struct sndrv_timer_id {
-	enum sndrv_timer_type type;	
-	enum sndrv_timer_slave_type stype;
+	enum sndrv_timer_class class;	
+	enum sndrv_timer_slave_class sclass;
 	int card;
 	int device;
 	int subdevice;

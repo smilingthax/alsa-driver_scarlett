@@ -38,7 +38,7 @@ struct _snd_hwdep {
 	int device;
 	char id[32];
 	char name[80];
-	int type;
+	int iface;
 
 #ifdef CONFIG_SND_OSSEMUL
 	char oss_dev[32];
