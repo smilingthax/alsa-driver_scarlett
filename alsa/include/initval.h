@@ -136,20 +136,6 @@ static int snd_legacy_find_free_dma(int *dma_table)
 }
 #endif
 
-static inline unsigned long snd_dma_size(int size_kB, int min_kB, int max_kB)
-{
-	if (size_kB < min_kB)
-		size_kB = min_kB;
-	if (size_kB > max_kB)
-		size_kB = max_kB;
-	return (unsigned long)size_kB * 1024;
-}
-
-static inline int snd_legacy_dma_size(int dma, unsigned long size_kB)
-{
-	return snd_dma_size(size_kB, PAGE_SIZE / 1024, dma < 4 ? 64 : 128);
-}
-
 #if defined(SND_GET_ID) && !defined(MODULE)
 #include <linux/ctype.h>
 static int __init get_id(char **str, char **dst)

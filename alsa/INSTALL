@@ -128,7 +128,6 @@ Module parameters
     snd_irq	- IRQ # for ES-1688 chip (5,7,9,10)
     snd_mpu_irq	- IRQ # for MPU-401 port (5,7,9,10)
     snd_dma8	- DMA # for ES-1688 chip (0,1,3)
-    snd_dma8_size - max DMA size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe (without MPU-401 port).
 
@@ -142,9 +141,7 @@ Module parameters
     snd_fm_port - port # for FM (optional, not used)
     snd_irq	- IRQ # for ES-18xx chip (5,7,9,10)
     snd_dma1	- first DMA # for ES-18xx chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- first DMA # for ES-18xx chip (0,1,3)
-    snd_dma2_size - max second DMA size in kB (4-64kB)
     snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
 
     Module supports up to 8 cards ISA PnP and autoprobe (without MPU-401 port
@@ -158,9 +155,7 @@ Module parameters
     snd_port	- port # for GF1 chip (0x220,0x230,0x240,0x250,0x260)
     snd_irq	- IRQ # for GF1 chip (3,5,9,11,12,15)
     snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
-    snd_dma1_size - max DMA1 size in kB (4-128kB)
     snd_dma2	- DMA # for GF1 chip (1,3,5,6,7,-1=disable)
-    snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_voices  - GF1 voices limit (14-32)
     snd_pcm_voices - reserved PCM voices
@@ -179,9 +174,7 @@ Module parameters
     snd_gf1_irq	- IRQ # for GF1 chip (3,5,9,11,12,15)
     snd_mpu_irq	- IRQ # for MPU-401 port (5,7,9,10)
     snd_dma8	- DMA # for ES-1688 chip (0,1,3)
-    snd_dma8_size - max DMA8 size in kB (4-64kB)
     snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
-    snd_dma1_size - max DMA1 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_voices  - GF1 voices limit (14-32)
     snd_pcm_voices - reserved PCM voices
@@ -196,9 +189,7 @@ Module parameters
     snd_port	- port # for GF1 chip (0x220,0x230,0x240,0x250,0x260)
     snd_irq	- IRQ # for GF1 chip (3,5,9,11,12,15)
     snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
-    snd_dma1_size - max DMA1 size in kB (4-128kB)
     snd_dma2	- DMA # for GF1 chip (1,3,5,6,7,-1=disable)
-    snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_voices  - GF1 voices limit (14-32)
     snd_pcm_voices - reserved PCM voices
@@ -214,9 +205,7 @@ Module parameters
     snd_port	- port # for InterWave chip (0x210,0x220,0x230,0x240,0x250,0x260)
     snd_irq	- IRQ # for InterWave chip (3,5,9,11,12,15)
     snd_dma1	- DMA # for InterWave chip (0,1,3,5,6,7)
-    snd_dma1_size - max DMA1 size in kB (4-128kB)
     snd_dma2	- DMA # for InterWave chip (0,1,3,5,6,7,-1=disable)
-    snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_midi    - 1 = MIDI UART enable, 0 = MIDI UART disable (default)
     snd_pcm_voices - reserved PCM voices for the synthesizer (default 2)
@@ -236,9 +225,7 @@ Module parameters
     snd_port_tc - tone control (i2c bus) port # for TEA6330T chip (0x350,0x360,0x370,0x380)
     snd_irq	- IRQ # for InterWave chip (3,5,9,11,12,15)
     snd_dma1	- DMA # for InterWave chip (0,1,3,5,6,7)
-    snd_dma1_size - max DMA1 size in kB (4-128kB)
     snd_dma2	- DMA # for InterWave chip (0,1,3,5,6,7,-1=disable)
-    snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_midi    - 1 = MIDI UART enable, 0 = MIDI UART disable (default)
     snd_pcm_voices - reserved PCM voices for the synthesizer (default 2)
@@ -257,7 +244,6 @@ Module parameters
     snd_port	- port # for SB DSP chip (0x220,0x240,0x260)
     snd_irq	- IRQ # for SB DSP chip (5,7,9,10)
     snd_dma8	- DMA # for SB DSP chip (1,3)
-    snd_dma8_size - max DMA size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -273,9 +259,7 @@ Module parameters
     snd_awe_port - port # for EMU8000 synthesizer (snd-sbawe module only)
     snd_irq	- IRQ # for SB DSP 4.x chip (5,7,9,10)
     snd_dma8	- 8-bit DMA # for SB DSP 4.x chip (0,1,3)
-    snd_dma8_size - max 8-bit DMA size in kB (4-64kB)
     snd_dma16	- 16-bit DMA # for SB DSP 4.x chip (5,6,7)
-    snd_dma16_size - max 16-bit DMA size in kB (4-128kB)
     snd_mic_agc	- Mic Auto-Gain-Control - 0 = disable, 1 = enable (default)
     snd_csp	- ASP/CSP chip support - 0 = disable (default), 1 = enable
     snd_isapnp	- ISA PnP detection - 0 = disable, 1 = enable (default)
@@ -302,9 +286,7 @@ Module parameters
     snd_fm_port - FM port # for OPL3-SA chip (0x388), -1 = disable
     snd_irq	- IRQ # for OPL3-SA chip (5,7,9,10)
     snd_dma1	- first DMA # for Yamaha OPL3-SA chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- second DMA # for Yamaha OPL3-SA chip (0,1,3), -1 = disable
-    snd_dma2_size - max second DMA size in kB (4-64kB)
     snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards and ISA PnP. This module does not support
@@ -318,7 +300,6 @@ Module parameters
     snd_port	- port # for WSS chip (0x530,0xe80,0xf40,0x604)
     snd_irq	- IRQ # for WSS chip (7,9,10,11)
     snd_dma1	- DMA # for WSS chip (0,1,3)
-    snd_dma1_size - max DMA size in kB (4-64kB)
     
     Module supports only one card and autoprobe.
 
@@ -333,7 +314,6 @@ Module parameters
     snd_irq       - IRQ # for WSS chip (5,7,9,10,11)
     snd_mpu_irq   - IRQ # for MPU-401 UART (5,7,9,10)
     snd_dma1      - first DMA # for WSS chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
 
     This module supports only one card, autoprobe and PnP.
 
@@ -348,9 +328,7 @@ Module parameters
     snd_irq       - IRQ # for WSS chip (5,7,9,10,11)
     snd_mpu_irq   - IRQ # for MPU-401 UART (5,7,9,10)
     snd_dma1      - first DMA # for WSS chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2      - second DMA # for WSS chip (0,1,3)
-    snd_dma2_size - max second DMA size in kB (4-64kB)
 
     This module supports only one card, autoprobe and PnP.
 
@@ -365,9 +343,7 @@ Module parameters
     snd_irq       - IRQ # for WSS chip (5,7,9,10,11)
     snd_mpu_irq   - IRQ # for MPU-401 UART (5,7,9,10)
     snd_dma1      - first DMA # for WSS chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2      - second DMA # for WSS chip (0,1,3)
-    snd_dma2_size - max second DMA size in kB (4-64kB)
 
     This module supports only one card, autoprobe and PnP.
 
@@ -377,8 +353,6 @@ Module parameters
     Module for S3 SonicVibes PCI soundcards.
 			* PINE Schubert 32 PCI
 
-    snd_dmaa_size - max DDMA-A (playback) size in kB (4-128kB)
-    snd_dmac_size - max DDMA-C (record) size in kB (4-128kB)
     snd_reverb    - Reverb Enable - 1 = enable, 0 = disable (default)
                   - SoundCard must have onboard SRAM for this.
     snd_mge       - Mic Gain Enable - 1 = enable, 0 = disable (default)
@@ -392,10 +366,6 @@ Module parameters
 			* SoundBlaster PCI 64
 			* SoundBlaster PCI 128
 
-    snd_playback1_bufsize - max playback1 buffer size in kB (4-128kB)
-    snd_playback2_bufsize - max playback2 buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
-
     Module supports up to 8 cards and autoprobe.
     
   Module snd-card-ens1371.o
@@ -405,10 +375,6 @@ Module parameters
 			* SoundBlaster PCI 64
 			* SoundBlaster PCI 128
 			* SoundBlaster Vibra PCI
-
-    snd_playback1_bufsize - max playback1 buffer size in kB (4-128kB)
-    snd_playback2_bufsize - max playback2 buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -420,7 +386,6 @@ Module parameters
     snd_port	- port # for AD1848 chip
     snd_irq	- IRQ # for AD1848  chip
     snd_dma1	- DMA # for AD1848 chip (0,1,3)
-    snd_dma1_size - max DMA size in kB (4-64kB)
     
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
@@ -437,9 +402,7 @@ Module parameters
     snd_irq	- IRQ # for AZT2320 (WSS) chip (PnP setup)
     snd_mpu_irq - IRQ # for MPU-401 UART (PnP setup)
     snd_dma1	- 1st DMA # for AZT2320 (WSS) chip (PnP setup)
-    snd_dma1_size - max 1st DMA size in kB (4-64kB)
     snd_dma2	- 2nd DMA # for AZT2320 (WSS) chip (PnP setup)
-    snd_dma2_size - max 2nd DMA size in kB (4-64kB)
     
     Module supports up to 8 cards, PnP and autoprobe.
     
@@ -453,9 +416,7 @@ Module parameters
     snd_irq	- IRQ # for CS4231 chip
     snd_mpu_irq - IRQ # for MPU-401 UART
     snd_dma1	- first DMA # for CS4231 chip
-    snd_dma1_size - max first tDMA size in kB (4-128kB)
     snd_dma2	- second DMA # for CS4231 chip
-    snd_dma2_size - max second DMA size in kB (4-128kB)
     
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
@@ -472,9 +433,7 @@ Module parameters
     snd_irq	- IRQ # for CS4232 chip (5,7,9,11,12,15)
     snd_mpu_irq - IRQ # for MPU-401 UART (9,11,12,15)
     snd_dma1	- first DMA # for CS4232 chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
-    snd_dma2_size - max second DMA size in kB (4-64kB)
     snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards. This module does not support autoprobe
@@ -493,9 +452,7 @@ Module parameters
     snd_irq	- IRQ # for CS4232 chip (5,7,9,11,12,15)
     snd_mpu_irq - IRQ # for MPU-401 UART (9,11,12,15)
     snd_dma1	- first DMA # for CS4232 chip (0,1,3)
-    snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
-    snd_dma2_size - max second DMA size in kB (4-64kB)
     snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards. This module does not support autoprobe
@@ -507,9 +464,6 @@ Module parameters
 
     Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4622/
 				       CS4624/CS4630/CS4280.
-
-    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -543,8 +497,6 @@ Module parameters
 			* Shark  Predator4D-PCI
 			* Jaton  SonicWave 4D
 
-    snd_playback_bufsize  - max playback buffer size in kB (4-64kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-64kB)
     snd_pcm_channels	  - max channels (voices) reserved for PCM
     snd_wavetable_size	  - max wavetable size in kB (4-?kb)
 
@@ -554,9 +506,6 @@ Module parameters
   -----------------------
 
     Module for ForteMedia FM801 based PCI soundcards.
-
-    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -568,7 +517,6 @@ Module parameters
     snd_port	- port # for ES968 (SB8) chip (PnP setup)
     snd_irq	- IRQ # for ES968 (SB8) chip (PnP setup)
     snd_dma1	- DMA # for ES968 (SB8) chip (PnP setup)
-    snd_dma1_size - max DMA size in kB (4-64kB)
     
     Module supports up to 8 cards, PnP and autoprobe.
     
@@ -580,9 +528,7 @@ Module parameters
     snd_port	- port # for ALS100 (SB16) chip (PnP setup)
     snd_irq	- IRQ # for ALS100 (SB16) chip (PnP setup)
     snd_dma8	- 8-bit DMA # for ALS100 (SB16) chip (PnP setup)
-    snd_dma8_size - max 8-bit DMA size in kB (4-64kB)
     snd_dma16	- 16-bit DMA # for ALS100 (SB16) chip (PnP setup)
-    snd_dma16_size - max 16-bit DMA size in kB (4-128kB)
     snd_mpu_port - port # for MPU-401 UART (PnP setup)
     snd_mpu_irq	- IRQ # for MPU-401 (PnP setup)
     snd_fm_port - port # for OPL3 FM (PnP setup)
@@ -601,8 +547,6 @@ Module parameters
 
     Module for soundcards based on ESS Maestro-1/2/2E (ES1968/ES1978) chips.
 
-    snd_playback_bufsize - max playback buffer size in kB (4-64kB)
-    snd_capture_bufsize  - max capture buffer size in kB (4-64kB)
     snd_gesbuf		 - total buffer size in kB (1-4096kB)
     snd_midi_enable	 - enable MIDI support (0 = off, 1 = on)
     snd_pcm_channels_p	 - playback channels (1-8, default=2)
@@ -618,13 +562,10 @@ Module parameters
     snd_wssport	- port # for CMI8330 chip (WSS)
     snd_wssirq	- IRQ # for CMI8330 chip (WSS)
     snd_wssdma	- first DMA # for CMI8330 chip (WSS)
-    snd_wssdma_size  - max first DMA size in kB (4-128kB) (ESS)
     snd_sbport  - port # for CMI8330 chip (SB16)
     snd_sbirq   - IRQ # for CMI8330 chip (SB16)
     snd_sbdma8  - 8bit DMA # for CMI8330 chip (SB16)
-    snd_sbdma8_size  - max 8bit DMA size in kB (SB16)
     snd_sbdma16 - 16bit DMA # for CMI8330 chip (SB16)
-    snd_sbdma16_size - max 16bit DMA size in kB (SB16)
 
     Module supports up to 8 cards and autoprobe.
 
@@ -634,9 +575,6 @@ Module parameters
     Module for EMU10K1 based PCI soundcards.
 			* Sound Blaster Live!
 			* Sound Blaster PCI 512
-
-    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -648,11 +586,6 @@ Module parameters
 			* MidiMan M Audio Delta DiO 2496
 			* MidiMan M Audio Delta 66
 			* MidiMan M Audio Delta 44
-
-    snd_con_playback_bufsize - max consumer playback buffer size in kB (4-128kB)
-    snd_pro_playback_bufsize - max professional playback buffer size in kB (4-128kB)
-    snd_con_capture_bufsize  - max consumer capture buffer size in kB (4-256kB)
-    snd_pro_capture_bufsize  - max professional capture buffer size in kB (4-256kB)
 
     Module supports up to 8 cards and autoprobe. Note: The consumer part
     is not used with all Envy24 based cards (for example in the MidiMan Delta
@@ -669,9 +602,7 @@ Module parameters
     snd_irq	  - IRQ # for AD1816A chip (PnP setup)
     snd_mpu_irq   - IRQ # for MPU-401 UART (PnP setup)
     snd_dma1	  - first DMA # for AD1816A chip (PnP setup)
-    snd_dma1_size - max first DMA size in kB (4-128kB)
     snd_dma2	  - second DMA # for AD1816A chip (PnP setup)
-    snd_dma2_size - max second DMA size in kB (4-128kB)
     
     Module supports up to 8 cards, autoprobe and PnP.
     
@@ -682,9 +613,6 @@ Module parameters
 			* Intel i810/810E, i820, i830, i840, MX440
 
     snd_ac97_clock	  - AC'97 codec clock base (default 48000Hz)
-    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
-    snd_mic_bufsize       - max microphone buffer size in kB (4-128kB)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     
@@ -696,8 +624,15 @@ Module parameters
     snd_mpu_port         - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
     snd_joystick	 - 1 = enable, otherwise obtain BIOS setup
     snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
-    snd_playback_bufsize - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize  - max capture buffer size in kB (4-128kB)
+
+    Module supports autoprobe and multiple bus-master chips (max 8).
+    
+  Module snd-card-via8233.o
+  -------------------------
+
+    Module for AC'97 motherboards based on VIA 8233 (south) bridge.
+
+    snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     
@@ -706,8 +641,6 @@ Module parameters
 
     Module for C-Media CMI8338 and 8738 PCI soundcards.
 
-    snd_playback_bufsize - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize  - max capture buffer size in kB (4-128kB)
     snd_enable_midi 	 - 1 = enable, 0 = disable (default)
     snd_enable_fm	 - 1 = enable, 0 = disable (default)
     snd_mpu_port         - 0x300 (default),0x310,0x320,0x330
@@ -720,9 +653,6 @@ Module parameters
 
     Module for Yamaha PCI chips (YMF72x, YMF74x & YMF75x).
 
-    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
-    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
-    snd_ac97_bufsize      - max AC'97 capture buffer size in kB (4-128kB)
     snd_mpu_port          - 0x300,0x330,0x332,0x334, -1 (disable) by default
     snd_mpu_irq           - 5,7,9,10,11, -1 (disable) by default
     snd_fm_port           - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
