@@ -1,6 +1,6 @@
 /*
  *  Advanced Linux Sound Architecture - ALSA - Driver
- *  Copyright (c) 1994-2000 by Jaroslav Kysela <perex@suse.cz>,
+ *  Copyright (c) 1994-2003 by Jaroslav Kysela <perex@suse.cz>,
  *                             Abramo Bagnara <abramo@alsa-project.org>
  *
  *
@@ -664,6 +664,7 @@ enum sndrv_ctl_elem_iface {
 #define SNDRV_CTL_ELEM_ACCESS_WRITE		(1<<1)
 #define SNDRV_CTL_ELEM_ACCESS_READWRITE		(SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE)
 #define SNDRV_CTL_ELEM_ACCESS_VOLATILE		(1<<2)	/* control value may be changed without a notification */
+#define SNDRV_CTL_ELEM_ACCESS_TIMESTAMP		(1<<2)	/* when was control changed */
 #define SNDRV_CTL_ELEM_ACCESS_INACTIVE		(1<<8)	/* control does actually nothing, but may be updated */
 #define SNDRV_CTL_ELEM_ACCESS_LOCK		(1<<9)	/* write lock */
 #define SNDRV_CTL_ELEM_ACCESS_OWNER		(1<<10)	/* write lock owner */
@@ -744,7 +745,8 @@ struct sndrv_ctl_elem_value {
 		} bytes;
 		struct sndrv_aes_iec958 iec958;
         } value;                /* RO */
-        unsigned char reserved[128];
+	struct timespec timestamp;
+        unsigned char reserved[128-sizeof(struct timespec)];
 };
 
 enum {
