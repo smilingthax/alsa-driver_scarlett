@@ -475,6 +475,20 @@
 		}
 	}
 },
+{
+	USB_DEVICE(0x0582, 0x0033),
+	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
+		.vendor_name = "EDIROL",
+		.product_name = "PCR",
+		.ifnum = 0,
+		.type = QUIRK_MIDI_FIXED_ENDPOINT,
+		.data = & (const snd_usb_midi_endpoint_info_t) {
+			.epnum = -1,
+			.out_cables = 0x0003,
+			.in_cables  = 0x0007
+		}
+	}
+},
 
 /* Midiman/M-Audio devices */
 {
