@@ -83,6 +83,9 @@
 #define SND_SW_TYPE_USER_READ_ONLY	0xfffffffe /* user type - read only */
 #define SND_SW_TYPE_USER		0xffffffff /* user type */
 
+#define SND_SW_SUBTYPE_NONE		0	/* ignored */
+#define SND_SW_SUBTYPE_HEXA		1	/* hexadecimal value */
+
 typedef struct snd_switch_list_item {
 	unsigned char name[32];
 } snd_switch_list_item_t;
@@ -107,7 +110,8 @@ typedef struct snd_switch {
 		int item_number;		/* active list item number */
 		char item[32];			/* list item, low=high -> item number */
 	} value;
-	unsigned char reserved[32];
+	unsigned int subtype;	/* look to SND_SW_SUBTYPE_* */
+	unsigned char reserved[28];
 } snd_switch_t;
  
 /****************************************************************************
