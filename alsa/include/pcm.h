@@ -55,7 +55,6 @@ typedef struct snd_stru_pcm_hardware {
 	size_t max_fragments;	/* max # of fragments */
 	size_t fragment_align;	/* fragment align value */
 	size_t fifo_size;		/* fifo size in bytes */
-	size_t transfer_block_size; /* bus transfer block size in bytes */
 	/* -- functions -- */
 	int (*ioctl)(snd_pcm_substream_t * substream,
 		     unsigned int cmd, void *arg);
