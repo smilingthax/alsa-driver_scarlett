@@ -3,9 +3,13 @@
 # Copyright (c) 2001 by Jaroslav Kysela <perex@suse.cz>
 #
 
-subdir-$(CONFIG_L3) := l3
 ifeq ($(CONFIG_L3),y)
-  subdir-m += $(subdir-y)
+  subdir-y := l3
+  subdir-m := l3
+else
+  ifeq ($(CONFIG_L3),m)
+    subdir-m := l3
+  endif
 endif
 
 O_TARGET     := _i2c.o
