@@ -2138,7 +2138,7 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(snd_pcm_substream_t *substream, void 
 		snd_pcm_uframes_t frames, appl_ptr, appl_ofs;
 		snd_pcm_uframes_t avail;
 		snd_pcm_uframes_t cont;
-		if (runtime->sleep_min == 0 && (runtime->status->state == SNDRV_PCM_STATE_RUNNING || runtime->status->state == SNDRV_PCM_STATE_DRAINING))
+		if (runtime->sleep_min == 0 && runtime->status->state == SNDRV_PCM_STATE_RUNNING)
 			snd_pcm_update_hw_ptr(substream);
 		avail = snd_pcm_capture_avail(runtime);
 		if (runtime->status->state == SNDRV_PCM_STATE_DRAINING) {
