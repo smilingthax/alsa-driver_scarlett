@@ -111,7 +111,7 @@ case "$1" in
     insert snd-synth-gus.o
     insert snd-i2c.o
     insert snd-tea6330t.o
-    insert snd-interwave-stb.o snd_port=0x240 snd_irq=5 snd_dma1=5 snd_dma2=6 snd_midi=1 snd_pcm_voices=8
+    insert snd-card-interwave-stb.o snd_port=0x240 snd_irq=5 snd_dma1=5 snd_dma2=6 snd_midi=1 snd_pcm_voices=8
     restore interwave-stb.conf
     ;;
   interwave|iw)
@@ -119,7 +119,7 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-interwave.o snd_dma1=5 snd_dma2=6 snd_midi=1
+    insert snd-card-interwave.o snd_dma1=5 snd_dma2=6 snd_midi=1
     restore interwave.conf
     ;;
   es1688)
@@ -127,7 +127,7 @@ case "$1" in
     insert snd-es1688.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-audiodrive1688.o snd_mpu_port=0x330
+    insert snd-card-es1688.o snd_mpu_port=0x330
     restore es1688.conf
     ;;
   es18xx)
@@ -135,7 +135,7 @@ case "$1" in
     insert snd-es18xx.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-audiodrive18xx.o
+    insert snd-card-es18xx.o
     restore es18xx.conf
     ;;
   sb16)
@@ -143,14 +143,14 @@ case "$1" in
     insert snd-sb16-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5
+    insert snd-card-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5
     restore sb16.conf
     ;;
   sb)
     basic; isapnp
     insert snd-sb8-dsp.o
     insert snd-opl3.o
-    insert snd-sb8.o snd_port=0x220 snd_irq=5 snd_dma8=3
+    insert snd-card-sb8.o snd_port=0x220 snd_irq=5 snd_dma8=3
     restore sb.conf
     ;;
   sbawe)
@@ -161,14 +161,14 @@ case "$1" in
     if [ -r $MODDIR/snd-emu8000.o ]; then
       insert snd-emu8000.o
     fi
-    insert snd-sbawe.o snd_irq=10 snd_dma8=1 snd_dma16=5
+    insert snd-card-sbawe.o snd_irq=10 snd_dma8=1 snd_dma16=5
     restore sbawe.conf
     ;;
   sb8)
     basic
     insert snd-sb8-dsp.o
     insert snd-opl3.o
-    insert snd-sb8.o snd_irq=5 snd_dma8=1
+    insert snd-card-sb8.o snd_irq=5 snd_dma8=1
     restore sb8.conf
     ;;
   gusm*|max)
@@ -176,14 +176,14 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-gusmax.o snd_irq=7 snd_pcm_voices=8
+    insert snd-card-gusmax.o snd_irq=7 snd_pcm_voices=8
     restore gusmax.conf
     ;;
   gusc*|clas*)
     basic
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-gusclassic.o snd_irq=5 snd_dma1=6 snd_dma2=7
+    insert snd-card-gusclassic.o snd_irq=5 snd_dma1=6 snd_dma2=7
     restore gusclassic.conf
     ;;
   guse*|ext*)
@@ -193,32 +193,32 @@ case "$1" in
     insert snd-opl3.o
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-gusextreme.o snd_irq1=7 snd_mpu_port=0x300
+    insert snd-card-gusextreme.o snd_irq1=7 snd_mpu_port=0x300
     restore gusextreme.conf
     ;;
-  opl3sa)
+  opl3sa2)
     basic; isapnp
     insert snd-cs4231.o
     insert snd-mpu401-uart.o
     insert snd-opl3.o
-    insert snd-opl3sa.o snd_port=0x100 snd_wss_port=0xe80 \
+    insert snd-card-opl3sa2.o snd_port=0x100 snd_wss_port=0xe80 \
                         snd_fm_port=0x388 snd_midi_port=0x300 \
                         snd_irq=5 snd_dma1=0 snd_dma2=1
-    restore opl3sa.conf
+    restore opl3sa2.conf
     ;;
   mozart)
     basic
     insert snd-ad1848.o
-    insert snd-mozart.o
+    insert snd-card-mozart.o
     restore mozart.conf
     ;;
   p1)
     basic; isapnp
     insert snd-sb16-dsp.o
     insert snd-mpu401-uart.o 
-    insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5 snd_mpu_port=0x330
+    insert snd-card-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5 snd_mpu_port=0x330
     insert snd-gus.o
-    insert snd-gusclassic.o snd_dma2=-1
+    insert snd-card-gusclassic.o snd_dma2=-1
     restore p1.conf
     ;;
   p2)
@@ -227,8 +227,8 @@ case "$1" in
     insert snd-es1688.o
     insert snd-mpu401-uart.o 
     insert snd-gus.o
-    insert snd-gusmax.o
-    insert snd-gusextreme.o snd_irq1=11 snd_mpu_port=0x300
+    insert snd-card-gusmax.o
+    insert snd-card-gusextreme.o snd_irq1=11 snd_mpu_port=0x300
     restore p2.conf
     ;;
   s3)
@@ -236,29 +236,29 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-s3-86c617.o
     insert snd-opl3.o
-    insert snd-sonicvibes.o snd_reverb=1
+    insert snd-card-sonicvibes.o snd_reverb=1
     restore sonicvibes.conf
     ;;
   ens1370)
     basic
     insert snd-ak4531-codec.o
     insert snd-ens1370.o
-    insert snd-audiopci1370.o
-    restore es1370.conf
+    insert snd-card-ens1370.o
+    restore ens1370.conf
     ;;
   ens1371)
     basic
     insert snd-ac97-codec.o
     insert snd-ens1371.o
-    insert snd-audiopci1371.o
-    restore es1371.conf
+    insert snd-card-ens1371.o
+    restore ens1371.conf
     ;;
   trident)
     basic
     insert snd-mpu401-uart.o 
     insert snd-ac97-codec.o
     insert snd-trident_dx_nx.o
-    insert snd-trid4dwave.o
+    insert snd-card-trid4dwave.o
     restore trid4dwave.conf
     ;;
   cs461x)
@@ -277,10 +277,10 @@ case "$1" in
     insert snd-card-fm801.o
     restore fm801.conf
     ;;
-  solo1)
+  es1938|solo1)
     basic
     insert snd-es1938.o
-    insert snd-esssolo1.o
+    insert snd-card-es1938.o
     restore solo1.conf
     ;;
   cs4232)

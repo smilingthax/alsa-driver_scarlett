@@ -113,8 +113,8 @@ Module parameters
     or input, but you may use this module for any application which
     requires a soundcard (like RealPlayer).
 
-  Module snd-audiodrive1688.o
-  ---------------------------
+  Module snd-card-es1688.o
+  ------------------------
 
     Module for ESS AudioDrive ES-1688 and ES-688 soundcards.
 
@@ -127,8 +127,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe (without MPU-401 port).
 
-  Module snd-audiodrive18xx.o
-  ---------------------------
+  Module snd-card-es18xx.o
+  ------------------------
 
     Module for ESS AudioDrive ES-18xx soundcards.
 
@@ -145,8 +145,8 @@ Module parameters
     Module supports up to 8 cards ISA PnP and autoprobe (without MPU-401 port
     if native ISA PnP routines are not used).
 
-  Module snd-gusclassic.o
-  -----------------------
+  Module snd-card-gusclassic.o
+  ----------------------------
 
     Module for Gravis UltraSound Classic soundcard.
 
@@ -162,8 +162,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-gusextreme.o
-  -----------------------
+  Module snd-card-gusextreme.o
+  ----------------------------
 
     Module for Gravis UltraSound Extreme soundcard.
 
@@ -183,8 +183,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe (without MPU-401 port).
 
-  Module snd-gusmax.o
-  -------------------
+  Module snd-card-gusmax.o
+  ------------------------
 
     Module for Gravis UltraSound MAX soundcard.
 
@@ -200,8 +200,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-interwave.o
-  ----------------------
+  Module snd-card-interwave.o
+  ---------------------------
 
     Module for Gravis UltraSound PnP, Dynasonic 3-D/Pro, STB Sound Rage 32
     and other soundcards based on AMD InterWave (tm) chip.
@@ -220,8 +220,8 @@ Module parameters
 
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
-  Module snd-interwave-stb.o
-  --------------------------
+  Module snd-card-interwave-stb.o
+  -------------------------------
 
     Module for UltraSound 32-Pro (soundcard from STB used by Compaq)
     and other soundcards based on AMD InterWave (tm) chip with TEA6330T
@@ -242,8 +242,8 @@ Module parameters
 
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
-  Module snd-sb8.o
-  ----------------
+  Module snd-card-sb8.o
+  ---------------------
 
     Module for 8-bit SoundBlaster cards: SoundBlaster 1.0,
 					 SoundBlaster 2.0,
@@ -256,8 +256,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-sb16.o/snd-sbawe.o
-  -----------------------------
+  Module snd-card-sb16.o/snd-card-sbawe.o
+  ---------------------------------------
 
     Module for 16-bit SoundBlaster cards: SoundBlaster 16 (PnP),
 					  SoundBlaster AWE 32 (PnP),
@@ -283,8 +283,8 @@ Module parameters
           Otherwise - this soundcard is not supported yet, so do not
           send us any e-mails with "my soundcard is not working"...
     
-  Module snd-opl3sa.o
-  -------------------
+  Module snd-card-opl3sa2.o
+  -------------------------
 
     Module for Yamaha OPL3-SA2/SA3 soundcards.
 
@@ -302,8 +302,8 @@ Module parameters
     Module supports up to 8 cards and ISA PnP. This module does not support
     autoprobe (if ISA PnP is not used) thus all ports must be specified!!!
     
-  Module snd-mozart.o
-  -------------------
+  Module snd-card-mozart.o
+  ------------------------
 
     Module for OAK Mozart cards.
 
@@ -314,8 +314,8 @@ Module parameters
     
     Module supports only one card and autoprobe.
 
-  Module snd-opti9xx.o
-  --------------------
+  Module snd-card-opti9xx.o
+  -------------------------
 
     Module for soundcards based on OPTi 82C9xx chips.
     
@@ -337,8 +337,8 @@ Module parameters
 
     Module supports only one card, autoprobe and PnP.
 
-  Module snd-sonicvibes.o
-  -----------------------
+  Module snd-card-sonicvibes.o
+  ----------------------------
 
     Module for S3 SonicVibes PCI soundcards.
 			* PINE Schubert 32 PCI
@@ -351,7 +351,7 @@ Module parameters
     
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-audiopci1370.o
+  Module snd-card-ens1370.o
   -------------------------
 
     Module for Ensoniq AudioPCI ES1370 PCI soundcards.
@@ -364,7 +364,7 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-audiopci1371.o
+  Module snd-card-ens1371.o
   -------------------------
 
     Module for Ensoniq AudioPCI ES1371 PCI soundcards.
@@ -474,8 +474,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-trid4dwave.o
-  -----------------------
+  Module snd-card-trid4dwave.o
+  ----------------------------
 
     Module for Trident 4DWave DX/NX soundcards.
 			* Best Union  Miss Melody 4DWave PCI
@@ -534,13 +534,13 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and PnP.
 
-  Module snd-esssolo1.o
-  ---------------------
+  Module snd-card-es1938.o
+  ------------------------
 
     Module for soundcards based on ESS Solo-1 (ES1938,ES1946) chips.
 
   Module snd-card-cmi8330.o
-  ------------------------
+  -------------------------
 
     Module for soundcards based on C-Media CMI8330 chips.
 
@@ -612,7 +612,7 @@ alias sound-service-1-12 snd-pcm1-oss
 
 ----- /etc/conf.modules
 
-Complete example for Gravis UltraSound PnP soundcard:
+A complete example for Gravis UltraSound PnP soundcard:
 
 ----- /etc/conf.modules
 
@@ -622,8 +622,8 @@ options isapnp isapnp_reserve_irq=9,10,11,12,13
 # ALSA native device support
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=1
-alias snd-card-0 snd-interwave
-options snd-interwave snd_index=1 snd_id="GusPnP"
+alias snd-card-0 snd-card-interwave
+options snd-card-interwave snd_index=1 snd_id="GusPnP"
 
 # OSS/Lite setup
 alias char-major-14 soundcore
@@ -635,7 +635,7 @@ alias sound-service-0-12 snd-pcm1-oss
 
 -----
 
-Complete example if you want use more soundcards in one machine
+A complete example if you want use more soundcards in one machine
 (bellow configuration is for Sound Blaster 16 and Gravis UltraSound Classic):
 
 ----- /etc/conf.modules
@@ -646,11 +646,11 @@ options isapnp isapnp_reserve_irq=9,10,11,12,13
 # ALSA native device support
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=2
-alias snd-card-0 snd-gusclassic
-alias snd-card-1 snd-sb16
-options snd-gusclassic snd_index=1 snd_id="Gus" \
+alias snd-card-0 snd-card-gusclassic
+alias snd-card-1 snd-card-sb16
+options snd-card-gusclassic snd_index=1 snd_id="Gus" \
         snd_port=0x220 snd_irq=5 snd_dma1=6 snd_dma2=7
-options snd-sb16 snd_index=2 snd_id="SB16"
+options snd-card-sb16 snd_index=2 snd_id="SB16"
 
 # OSS/Lite setup
 alias char-major-14 soundcore
@@ -666,7 +666,7 @@ alias sound-service-1-12 snd-pcm1-oss
 
 -----
 
-Complete example if two Gravis UltraSound Classic soundcards are installed
+A complete example, two Gravis UltraSound Classic soundcards are installed
 in the system:
 
 ----- /etc/conf.modules
@@ -674,9 +674,9 @@ in the system:
 # ALSA native device support
 alias char-major-116 snd
 options snd snd_major=116 snd_cards_limit=2
-alias snd-card-0 snd-gusclassic
-alias snd-card-1 snd-gusclassic
-options snd-gusclassic snd_index=1,2 snd_id="Gus1","Gus2" \
+alias snd-card-0 snd-card-gusclassic
+alias snd-card-1 snd-card-gusclassic
+options snd-card-gusclassic snd_index=1,2 snd_id="Gus1","Gus2" \
         snd_port=0x220,0x240 snd_irq=5,7 snd_dma1=1,5 snd_dma2=3,6
 
 # OSS/Lite setup
