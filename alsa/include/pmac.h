@@ -196,4 +196,8 @@ int snd_pmac_register_sleep_notifier(pmac_t *chip);
 int snd_pmac_unregister_sleep_notifier(pmac_t *chip);
 #endif
 
+/* initialize mixer */
+int snd_pmac_awacs_init(pmac_t *chip);
+int snd_pmac_burgundy_init(pmac_t *chip);
+
 #endif /* __PMAC_H */
