@@ -202,12 +202,20 @@ snd_trident_alloc_pages(trident_t *trident, snd_pcm_substream_t *substream)
 		up(&hdr->block_mutex);
 		return NULL;
 	}
+	if (lastpg(blk) - firstpg(blk) >= sgbuf->pages) {
+		snd_printk(KERN_ERR "page calculation doesn't match: allocated pages = %d, trident = %d/%d\n", sgbuf->pages, firstpg(blk), lastpg(blk));
+		__snd_util_mem_free(hdr, blk);
+		up(&hdr->block_mutex);
+		return NULL;
+	}
+			   
 	/* set TLB entries */
 	idx = 0;
 	for (page = firstpg(blk); page <= lastpg(blk); page++, idx++) {
 		dma_addr_t addr = sgbuf->table[idx].addr;
 		unsigned long ptr = (unsigned long)sgbuf->table[idx].buf;
 		if (! is_valid_page(addr)) {
+			__snd_util_mem_free(hdr, blk);
 			up(&hdr->block_mutex);
 			return NULL;
 		}
