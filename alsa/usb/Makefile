@@ -13,8 +13,6 @@ TOPDIR = $(MAINSRCDIR)
 #
 #
 
-O_TARGET     := _usb.o
-
 snd-usb-audio-objs := usbaudio.o usbmixer.o
 snd-usb-midi-objs := usbmidi.o
 
