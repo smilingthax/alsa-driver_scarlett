@@ -179,40 +179,38 @@ static snd_kcontrol_new_t pcxhr_control_output_switch = {
 #define PCXHR_DIGITAL_ZERO_LEVEL	0x1b7	/*  0 dB */
 
 
-#define VALID_STREAM_MUTE_1_MASK	0x000010
-#define VALID_STREAM_MUTE_2_MASK	0x000008
-#define STREAM_MUTE_1_MASK		0x000004
-#define STREAM_MUTE_2_MASK		0x000002
 #define MORE_THAN_ONE_STREAM_LEVEL	0x000001
 #define VALID_STREAM_PAN_LEVEL_MASK	0x800000
 #define VALID_STREAM_LEVEL_MASK		0x400000
 #define VALID_STREAM_LEVEL_1_MASK	0x200000
 #define VALID_STREAM_LEVEL_2_MASK	0x100000
 
-int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx, int put_switch_only)
+int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx)
 {
 	int err;
 	pcxhr_rmh_t rmh;
 	pcxhr_pipe_t *pipe = &chip->playback_pipe;
+	int left, right;
 
 	/* do only when pipe exists ! */
 	if(pipe->status == PCXHR_PIPE_UNDEFINED)
 		return 0;
 
+	if(chip->digital_playback_active[idx][0])	left = chip->digital_playback_volume[idx][0];
+	else						left = PCXHR_DIGITAL_LEVEL_MIN;
+	if(chip->digital_playback_active[idx][1])	right = chip->digital_playback_volume[idx][1];
+	else						right = PCXHR_DIGITAL_LEVEL_MIN;
+
 	pcxhr_init_rmh(&rmh, CMD_STREAM_OUT_LEVEL_ADJUST);
-	pcxhr_set_pipe_cmd_params(&rmh, 0, 1 << pipe->first_audio, 0, 1 << idx);	/* add pipe mask and stream mask */
-	/* mute/unmute left/right channel */
-	rmh.cmd[0] |= (VALID_STREAM_MUTE_1_MASK | VALID_STREAM_MUTE_2_MASK);
-	if(chip->digital_playback_active[idx][0] == 0)	rmh.cmd[0] |= STREAM_MUTE_1_MASK;
-	if(chip->digital_playback_active[idx][1] == 0)	rmh.cmd[0] |= STREAM_MUTE_2_MASK;
-	if( ! put_switch_only ) {
-		/* volume left/right channel */
-		rmh.cmd[0] |= MORE_THAN_ONE_STREAM_LEVEL;
-		rmh.cmd[2]  = VALID_STREAM_LEVEL_MASK | VALID_STREAM_LEVEL_1_MASK | VALID_STREAM_LEVEL_2_MASK;
-		rmh.cmd[2] |= chip->digital_playback_volume[idx][0] << 10;
-		rmh.cmd[2] |= chip->digital_playback_volume[idx][1];
-		rmh.cmd_len = 3;
-	}
+	pcxhr_set_pipe_cmd_params(&rmh, 0, pipe->first_audio, 0, 1<<idx);	/* add pipe and stream mask */
+	/* volume left->left / right->right panoramic level */
+	rmh.cmd[0] |= MORE_THAN_ONE_STREAM_LEVEL;
+	rmh.cmd[2]  = VALID_STREAM_PAN_LEVEL_MASK | VALID_STREAM_LEVEL_1_MASK;
+	rmh.cmd[2] |= (left << 10);
+	rmh.cmd[3]  = VALID_STREAM_PAN_LEVEL_MASK | VALID_STREAM_LEVEL_2_MASK;
+	rmh.cmd[3] |= right;
+	rmh.cmd_len = 4;
+
 	err = pcxhr_send_msg(chip->mgr, &rmh);
 	if(err<0) {
 		snd_printk(KERN_DEBUG "error update_playback_stream_level card(%d) err(%x)\n", chip->chip_idx, err);
@@ -223,12 +221,10 @@ int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx, int put_switch_on
 
 #define AUDIO_IO_HAS_MUTE_LEVEL		0x400000
 #define AUDIO_IO_HAS_MUTE_MONITOR_1	0x200000
-#define AUDIO_IO_HAS_MUTE_MONITOR_2	0x100000
 #define VALID_AUDIO_IO_DIGITAL_LEVEL	0x000001
 #define VALID_AUDIO_IO_MONITOR_LEVEL	0x000002
 #define VALID_AUDIO_IO_MUTE_LEVEL	0x000004
 #define VALID_AUDIO_IO_MUTE_MONITOR_1	0x000008
-#define VALID_AUDIO_IO_MUTE_MONITOR_2	0x000010
 
 int pcxhr_update_audio_pipe_level(pcxhr_t* chip, int capture, int channel)
 {
@@ -236,11 +232,12 @@ int pcxhr_update_audio_pipe_level(pcxhr_t* chip, int capture, int channel)
 	pcxhr_rmh_t rmh;
 	pcxhr_pipe_t *pipe;
 
-	if(capture)	pipe = &chip->capture_pipe;
+	if(capture)	pipe = &chip->capture_pipe[0];
 	else		pipe = &chip->playback_pipe;
 	/* only when pipe exists ! */
 	if(pipe->status == PCXHR_PIPE_UNDEFINED)
 		return 0;
+
 	pcxhr_init_rmh(&rmh, CMD_AUDIO_LEVEL_ADJUST);
 	pcxhr_set_pipe_cmd_params(&rmh, capture, 0, 0, 1 << (channel + pipe->first_audio));	/* add channel mask */
 	/* TODO : if mask (3 << pipe->first_audio) is used, left and right channel will be programmed to the same params */
@@ -315,10 +312,10 @@ static int pcxhr_pcm_vol_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 		if(stored_volume[i] != ucontrol->value.integer.value[i]) {
 			stored_volume[i] = ucontrol->value.integer.value[i];
 			changed = 1;
-			if(is_capture)	pcxhr_update_audio_pipe_level(chip, 1, i);		/* update capture volume */
+			if(is_capture)	pcxhr_update_audio_pipe_level(chip, 1, i);	/* update capture volume */
 		}
 	}
-	if((!is_capture) && changed)	pcxhr_update_playback_stream_level(chip, idx, 0);	/* update playback volume */
+	if((!is_capture) && changed)	pcxhr_update_playback_stream_level(chip, idx);	/* update playback volume */
 	up(&chip->mgr->mixer_mutex);
 	return changed;
 }
@@ -361,7 +358,7 @@ static int pcxhr_pcm_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucon
 			changed = 1;
 		}
 	}
-	if(changed)	pcxhr_update_playback_stream_level(chip, idx, 1);
+	if(changed)	pcxhr_update_playback_stream_level(chip, idx);
 	up(&chip->mgr->mixer_mutex);
 	return changed;
 }
@@ -442,20 +439,9 @@ static int pcxhr_monitor_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *
 			changed |= (1<<i); /* mask 0x01 and 0x02 */
 		}
 	}
-	if(changed) {
-		/* allocate or release resources for monitoring */
-		int allocate = chip->monitoring_active[0] || chip->monitoring_active[1];
-		if(allocate) {
-			pcxhr_add_ref_pipe( chip, 0, 1);	/* allocate the playback pipe for monitoring */
-			pcxhr_add_ref_pipe( chip, 1, 1);	/* allocate the capture pipe for monitoring */
-		}
-		if(changed & 0x01)	pcxhr_update_audio_pipe_level(chip, 0, 0);	/* update left monitoring volume and mute */
-		if(changed & 0x02)	pcxhr_update_audio_pipe_level(chip, 0, 1);	/* update right monitoring volume and mute */
-		if(!allocate) {
-			pcxhr_kill_ref_pipe( chip->mgr, &chip->capture_pipe, 1);	/* release the capture pipe for monitoring */
-			pcxhr_kill_ref_pipe( chip->mgr, &chip->playback_pipe, 1);	/* release the playback pipe for monitoring */
-		}
-	}
+	if(changed & 0x01)	pcxhr_update_audio_pipe_level(chip, 0, 0);	/* update left monitoring volume and mute */
+	if(changed & 0x02)	pcxhr_update_audio_pipe_level(chip, 0, 1);	/* update right monitoring volume and mute */
+
 	up(&chip->mgr->mixer_mutex);
 	return (changed != 0);
 }
@@ -472,9 +458,8 @@ static snd_kcontrol_new_t pcxhr_control_monitor_sw = {
 static void pcxhr_reset_audio_levels(pcxhr_t *chip)
 {
 	int i;
-  /* test, remove later */
-	if(chip->chip_idx != 0) return;
-
+/* only for test purpose, remove later */
+#ifdef CONFIG_SND_DEBUG
 	for(i=0; i<2; i++) {
 		int j;
 		chip->analog_capture_volume[i]  = PCXHR_ANALOG_CAPTURE_ZERO_LEVEL;
@@ -488,14 +473,29 @@ static void pcxhr_reset_audio_levels(pcxhr_t *chip)
 		chip->monitoring_active[i] = 0;
 		chip->monitoring_volume[i] = PCXHR_DIGITAL_ZERO_LEVEL;
 	}
-  /* test end */
-
+#endif
+/* test end */
 	for(i=0; i<2; i++) {
-		/* analog volumes can be set even if there is no pipe */
-		pcxhr_update_analog_audio_level(chip, 0, i);
-		/* analog levels for capture */
-		pcxhr_update_analog_audio_level(chip, 1, i);
+/* only for test purpose, remove later */
+#ifdef CONFIG_SND_DEBUG
+		/* analog volumes for playback (already is LEVEL_MIN after boot) */
+		if(chip->nb_streams_play)	pcxhr_update_analog_audio_level(chip, 0, i);
+		/* analog levels for capture (already is LEVEL_MIN after boot) */
+		if(chip->nb_streams_capt)	pcxhr_update_analog_audio_level(chip, 1, i);
+#endif
+/* test end */
+		/* digital capture level (default is 0dB unmuted after capture pipe allocation) */
+		if(chip->nb_streams_capt)	pcxhr_update_audio_pipe_level(chip, 1, i);
+		/* digital monitoring level (default is 0dB after playback pipe allocation, but muted!) */
+		/* pcxhr_update_audio_pipe_level(chip, 0, i); */ /* no need to update */
 	}
+	if(chip->nb_streams_play) {
+		for(i=0; i<PCXHR_PLAYBACK_STREAMS; i++) {
+			/* digital playback stream levels (default is 0dB unmuted after pipe allocation) */
+			pcxhr_update_playback_stream_level(chip, i);
+		}
+	}
+
 	return;
 }
 
@@ -511,47 +511,53 @@ int pcxhr_create_mixer(pcxhr_mgr_t *mgr)
 		snd_kcontrol_new_t temp;
 		chip = mgr->chip[i];
 
-		/* analog output level control */
-		temp = pcxhr_control_analog_level;
-		temp.name = "Master Playback Volume";
-		temp.private_value = 0; /* playback */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
-			return err;
-		/* output mute controls */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_output_switch, chip))) < 0)
-			return err;
+		if(chip->nb_streams_play) {
+			/* analog output level control */
+			temp = pcxhr_control_analog_level;
+			temp.name = "Master Playback Volume";
+			temp.private_value = 0; /* playback */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
+				return err;
+			/* output mute controls */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_output_switch, chip))) < 0)
+				return err;
 
-		/* analog input level control only on first two chips !*/
-		temp = pcxhr_control_analog_level;
-		temp.name = "Master Capture Volume";
-		temp.private_value = 1; /* capture */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
-			return err;
+			temp = snd_pcxhr_pcm_vol;
+			temp.name = "PCM Playback Volume";
+			temp.count = PCXHR_PLAYBACK_STREAMS;
+			temp.private_value = 0; /* playback */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
+				return err;
 
-		temp = snd_pcxhr_pcm_vol;
-		temp.name = "PCM Playback Volume";
-		temp.count = PCXHR_PLAYBACK_STREAMS;
-		temp.private_value = 0; /* playback */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
-			return err;
+			temp = pcxhr_control_pcm_switch;
+			temp.name = "PCM Playback Switch";
+			temp.private_value = 0; /* playback */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
+				return err;
+		}
+		if(chip->nb_streams_capt) {
+			/* analog input level control only on first two chips !*/
+			temp = pcxhr_control_analog_level;
+			temp.name = "Master Capture Volume";
+			temp.private_value = 1; /* capture */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
+				return err;
 
-		temp.name = "PCM Capture Volume";
-		temp.count = 1;
-		temp.private_value = 1; /* capture */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
-			return err;
-
-		temp = pcxhr_control_pcm_switch;
-		temp.name = "PCM Playback Switch";
-		temp.private_value = 0; /* playback */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
-			return err;
-
-		/* monitoring */
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_monitor_vol, chip))) < 0)
-			return err;
-		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_monitor_sw, chip))) < 0)
-			return err;
+			temp = snd_pcxhr_pcm_vol;
+			temp.name = "PCM Capture Volume";
+			temp.count = 1;
+			temp.private_value = 1; /* capture */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
+				return err;
+		}
+		/* monitoring only if playback and capture device available */
+		if((chip->nb_streams_capt>0) && (chip->nb_streams_play>0)) {
+			/* monitoring */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_monitor_vol, chip))) < 0)
+				return err;
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_monitor_sw, chip))) < 0)
+				return err;
+		}
 
 		/* init all mixer data and program the master volumes/switches */
 		pcxhr_reset_audio_levels(chip);
