@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  * Driver for Tascam US-X2Y USB soundcards
  *
@@ -19,14 +20,13 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
+#define SND_NEED_USB_WRAPPER
 #include <sound/driver.h>
 #include <sound/core.h>
 #include "usx2y.h"
 #include <sound/memalloc.h>
 #include "usbus428.h"
 #include "usX2Yhwdep.h"
-
-extern void snd_us428_In04Int(urb_t* urb);
 
 
 static void us428ctls_vm_open(struct vm_area_struct *area)
@@ -37,7 +37,11 @@ static void us428ctls_vm_close(struct vm_area_struct *area)
 {
 }
 
+#ifndef LINUX_2_2
 static struct page * us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
+#else
+static unsigned long us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
+#endif
 {
 	unsigned long offset;
 	struct page * page;
@@ -50,14 +54,26 @@ static struct page * us428ctls_vm_nopage(struct vm_area_struct *area, unsigned l
 		   address,
 		   no_share);
 	
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
 	offset = area->vm_pgoff << PAGE_SHIFT;
+#else
+	offset = area->vm_offset;
+#endif
 	offset += address - area->vm_start;
 	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
 	vaddr = (char*)((us428dev_t*)area->vm_private_data)->us428ctls_sharedmem + offset;
 	page = virt_to_page(vaddr);
 	get_page(page);
-	snd_printd( "vaddr=%X made us428ctls_vm_nopage() return %X; offset=%X\n", (unsigned)vaddr, (unsigned)page, offset);
+	snd_printd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%X\n", vaddr, page, offset);
+#ifndef LINUX_2_2
 	return page;
+#else
+	/* why 2.2's kcomp.h redefines this? */
+#ifdef page_address
+#undef page_address
+#endif
+	return page_address(page);
+#endif
 }
 
 static struct vm_operations_struct us428ctls_vm_ops = {
@@ -89,8 +105,14 @@ static int us428ctls_mmap(snd_hwdep_t * hw, struct file *filp, struct vm_area_st
 		memset(us428->us428ctls_sharedmem, -1, sizeof(us428ctls_sharedmem_t));
 	}
 	area->vm_ops = &us428ctls_vm_ops;
+#ifdef VM_RESERVED
 	area->vm_flags |= VM_RESERVED;
+#endif
+#ifndef LINUX_2_2
 	area->vm_private_data = hw->private_data;
+#else
+	area->vm_private_data = (long)hw->private_data;
+#endif
 	return 0;
 }
 
@@ -156,7 +178,7 @@ static int snd_us428_AsyncSeq04_init(us428dev_t* us428)
 		err = -ENOMEM;
 	}else
 		for (i = 0; i < URBS_AsyncSeq; ++i){
-			if (NULL == (us428->AS04.urb[i] = usb_alloc_urb(0))){
+			if (NULL == (us428->AS04.urb[i] = usb_alloc_urb(0, GFP_KERNEL))){
 				err = -ENOMEM;
 				break;
 			}
@@ -183,11 +205,15 @@ static int snd_us428_create_usbmidi(snd_card_t* card )
        		.type = QUIRK_MIDI_FIXED_ENDPOINT,
 		.data = &quirk_data
 	};
+	struct usb_interface *iface;
 
 	snd_printd("snd_us428_create_usbmidi \n");
 
-	return snd_usb_create_midi_interface(&us428(card)->chip, us428(card)->chip.dev->actconfig->interface , &quirk);
+	iface = get_iface(us428(card)->chip.dev->actconfig, 0);
+
+	return snd_usb_create_midi_interface(&us428(card)->chip, iface, &quirk);
 }
+
 static int snd_us428_create_alsa_devices(snd_card_t* card)
 {
 	int err;
@@ -209,7 +235,7 @@ static int snd_us428_create_alsa_devices(snd_card_t* card)
 static int snd_us428_In04_init(us428dev_t* us428)
 {
 	int	err = 0;
-	if (! (us428->In04urb = usb_alloc_urb(0)))
+	if (! (us428->In04urb = usb_alloc_urb(0, GFP_KERNEL)))
 		return -ENOMEM;
 
 	if (! (us428->In04Buf = kmalloc(21, GFP_KERNEL))){
@@ -218,12 +244,14 @@ static int snd_us428_In04_init(us428dev_t* us428)
 	}
 	 
 	init_waitqueue_head(&us428->In04WaitQueue);
-	usb_fill_int_urb(	us428->In04urb, us428->chip.dev, usb_rcvintpipe(us428->chip.dev, 0x4),
-				us428->In04Buf, 21,
-				snd_us428_In04Int, us428,
-				10);
+	usb_fill_int_urb(us428->In04urb, us428->chip.dev, usb_rcvintpipe(us428->chip.dev, 0x4),
+			 us428->In04Buf, 21,
+			 snd_us428_In04Int, us428,
+			 10);
+#ifdef OLD_USB
 	us428->In04urb->transfer_flags = USB_QUEUE_BULK;
-	err = usb_submit_urb(us428->In04urb);
+#endif
+	err = usb_submit_urb(us428->In04urb, GFP_KERNEL);
 	return err;
 }
 

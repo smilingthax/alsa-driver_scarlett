@@ -161,8 +161,3 @@ void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver,
 }
 
 #endif /* LINUX_VERSION < 2.3.0 */
-
-/*
- * symbols
- */
-EXPORT_NO_SYMBOLS;

@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  *   US-428 AUDIO
 
@@ -35,6 +36,14 @@
 #define SND_NEED_USB_WRAPPER
 #include <sound/driver.h>
 #include <linux/usb.h>
+
+/* wrappers */
+#ifdef OLD_USB
+#define snd_usb_complete_callback(x) __old_ ## x
+static void __old_snd_us428_urb_play_complete(struct urb *urb);
+static void __old_snd_us428_urb_capt_complete(struct urb *urb);
+#endif
+
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/pcm.h>
@@ -148,89 +157,87 @@ static int snd_us428_urb_capt_retire(snd_us428_substream_t *subs,
 	int 		i, len, lens = 0, hwptr_done = subs->hwptr_done;
 	us428dev_t*	us428 = subs->stream->us428;
 
-	do{
-		for (i = 0; i < NRPACKS; i++){
-			cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
-			if (urb->iso_frame_desc[i].status){ /* active? hmm, skip this */
-				snd_printd("activ frame status %i\n", urb->iso_frame_desc[i].status);
-				return urb->iso_frame_desc[i].status;
-			}
-			len = urb->iso_frame_desc[i].actual_length / us428->stride;
-			//printk("%03i ",  urb->iso_frame_desc[i].actual_length);
-			{
-				unsigned long x = subs->freqm;
-				x *= (1 << 11) - 1;
-				x += (len << 14) + subs->remainder;
-				subs->remainder = x % (1 << 11);
-				x /= (1 << 11);
-				subs->freqm = x ;
-			}
-
-			if (! len){
-				snd_printk("0 == len ERROR!\n");
-				continue;
-			}
-
-			/* update the current pointer */
-			if (urb->pipe == subs->datapipe[0]){
-				int j = subs->start_frame == urb->start_frame ? 1 : 0;//FIXME ???
-
-				us428->pipe0Aframes[j][i] = len;
-				if (j){
-					us428->play_urb_waiting[1] = us428->play_urb_waiting[0];
-					us428->play_urb_waiting[0] = NULL;
-					snd_printd("%i\n", i);
-				}
-				subs->retired_frame[0] = urb->start_frame;
-			}else{
-				subs->retired_frame[1] = urb->start_frame;
-				if (runtime->channels != 4)
-					break;
-			}
-
-			if (! subs->running)
-				continue;
-		
-			/* copy a data chunk */
-			if ((hwptr_done + len) > runtime->buffer_size) {
-				int cnt = runtime->buffer_size - hwptr_done;
-				if (runtime->channels != 4){
-					int blen = cnt * us428->stride;
-					memcpy(runtime->dma_area + hwptr_done * us428->stride, cp, blen);
-					memcpy(runtime->dma_area, cp + blen, len * us428->stride - blen);
-				}else{
-					int* p_dma_area = (int*)runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : 1);
-					framecpy_4c(p_dma_area + hwptr_done * 2, (int*)cp, cnt);
-					framecpy_4c(p_dma_area, (int*)cp + cnt, len - cnt);
-				}
-			} else {
-				if (runtime->channels != 4){
-					memcpy(runtime->dma_area + hwptr_done * us428->stride, cp, len * us428->stride);
-				}else{
-					int* p_dma_area = (int*)runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : 1);
-					framecpy_4c(p_dma_area + hwptr_done * 2, (int*)cp, len);
-				}
-			}
-			lens += len;
-			if ((hwptr_done += len) >= runtime->buffer_size)
-				hwptr_done -= runtime->buffer_size;
+	for (i = 0; i < NRPACKS; i++){
+		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
+		if (urb->iso_frame_desc[i].status){ /* active? hmm, skip this */
+			snd_printd("activ frame status %i\n", urb->iso_frame_desc[i].status);
+			return urb->iso_frame_desc[i].status;
 		}
-		if ((runtime->channels == 4 
-		     && subs->retired_frame[0] != subs->retired_frame[1])
-		    || ! subs->running)
-			break;
+		len = urb->iso_frame_desc[i].actual_length / us428->stride;
+		//printk("%03i ",  urb->iso_frame_desc[i].actual_length);
+		{
+			unsigned long x = subs->freqm;
+			x *= (1 << 11) - 1;
+			x += (len << 14) + subs->remainder;
+			subs->remainder = x % (1 << 11);
+			x /= (1 << 11);
+			subs->freqm = x ;
+		}
 
-		spin_lock_irqsave(&subs->lock, flags);
-		subs->hwptr_done = hwptr_done;
-		subs->transfer_done += lens;
-		/* update the pointer, call callback if necessary */
-		if (subs->transfer_done >= runtime->period_size) {
-			subs->transfer_done -= runtime->period_size;
-			spin_unlock_irqrestore(&subs->lock, flags);
-			snd_pcm_period_elapsed(subs->pcm_substream);
-		} else
-			spin_unlock_irqrestore(&subs->lock, flags);
-	} while (0);
+		if (! len){
+			snd_printk("0 == len ERROR!\n");
+			continue;
+		}
+
+		/* update the current pointer */
+		if (urb->pipe == subs->datapipe[0]){
+			int j = subs->start_frame == urb->start_frame ? 1 : 0;//FIXME ???
+
+			us428->pipe0Aframes[j][i] = len;
+			if (j){
+				us428->play_urb_waiting[1] = us428->play_urb_waiting[0];
+				us428->play_urb_waiting[0] = NULL;
+				snd_printd("%i\n", i);
+			}
+			subs->retired_frame[0] = urb->start_frame;
+		}else{
+			subs->retired_frame[1] = urb->start_frame;
+			if (runtime->channels != 4)
+				break;
+		}
+
+		if (! subs->running)
+			continue;
+		
+		/* copy a data chunk */
+		if ((hwptr_done + len) > runtime->buffer_size) {
+			int cnt = runtime->buffer_size - hwptr_done;
+			if (runtime->channels != 4){
+				int blen = cnt * us428->stride;
+				memcpy(runtime->dma_area + hwptr_done * us428->stride, cp, blen);
+				memcpy(runtime->dma_area, cp + blen, len * us428->stride - blen);
+			}else{
+				int* p_dma_area = (int*)runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : 1);
+				framecpy_4c(p_dma_area + hwptr_done * 2, (int*)cp, cnt);
+				framecpy_4c(p_dma_area, (int*)cp + cnt, len - cnt);
+			}
+		} else {
+			if (runtime->channels != 4){
+				memcpy(runtime->dma_area + hwptr_done * us428->stride, cp, len * us428->stride);
+			}else{
+				int* p_dma_area = (int*)runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : 1);
+				framecpy_4c(p_dma_area + hwptr_done * 2, (int*)cp, len);
+			}
+		}
+		lens += len;
+		if ((hwptr_done += len) >= runtime->buffer_size)
+			hwptr_done -= runtime->buffer_size;
+	}
+	if ((runtime->channels == 4 
+	     && subs->retired_frame[0] != subs->retired_frame[1])
+	    || ! subs->running)
+		return 0;
+
+	spin_lock_irqsave(&subs->lock, flags);
+	subs->hwptr_done = hwptr_done;
+	subs->transfer_done += lens;
+	/* update the pointer, call callback if necessary */
+	if (subs->transfer_done >= runtime->period_size) {
+		subs->transfer_done -= runtime->period_size;
+		spin_unlock_irqrestore(&subs->lock, flags);
+		snd_pcm_period_elapsed(subs->pcm_substream);
+	} else
+		spin_unlock_irqrestore(&subs->lock, flags);
 
 	return 0;
 }
@@ -366,7 +373,7 @@ static void _snd_us428_urb_play_complete(purb_t urb)
 	}
 }
 
-static void snd_us428_urb_play_complete(purb_t urb)
+static void snd_us428_urb_play_complete(purb_t urb, struct pt_regs *regs)
 {
 	snd_us428_substream_t *subs = (snd_us428_substream_t*)urb->context;
 	if (! subs->stream->us428->pipe0Aframes[0][0]){
@@ -380,7 +387,7 @@ static void snd_us428_urb_play_complete(purb_t urb)
 /*
  * complete callback from data urb
  */
-static void snd_us428_urb_capt_complete(purb_t urb)
+static void snd_us428_urb_capt_complete(purb_t urb, struct pt_regs *regs)
 {
 	snd_us428_substream_t *captsubs = (snd_us428_substream_t*)urb->context;
 	snd_pcm_substream_t *pcm_captsubs = captsubs->pcm_substream;
@@ -459,8 +466,8 @@ static int snd_us428_urbs_deactivate(snd_us428_substream_t *subs)
 
 	for (ep = 0; ep < subs->endpoints; ep++)
 		for (i = 0; i < NRURBS; i++) {
-			if (	subs->dataurb[ep][i]
-				&&	USB_ST_URB_PENDING == subs->dataurb[ep][i]->status){
+			if (subs->dataurb[ep][i] &&
+			    subs->dataurb[ep][i]->status == -EINPROGRESS){
 				alive++;
 			}
 		}
@@ -476,7 +483,7 @@ static int snd_us428_urb_start(snd_us428_substream_t *subs)
 		subs->retired_frame[ep] = -1;
 		for (i = 0; i < NRURBS; i++) {
 			if (0 == ep)
-				subs->dataurb[0][i]->transfer_flags = USB_ISO_ASAP;
+				subs->dataurb[0][i]->transfer_flags = URB_ISO_ASAP;
 			else{
 				subs->dataurb[ep][i]->transfer_flags = 0;
 				subs->dataurb[ep][i]->start_frame = subs->dataurb[0][i]->start_frame;
@@ -751,10 +758,12 @@ static int snd_us428_substream_prepare(snd_us428_substream_t *subs, snd_pcm_runt
 			}
 			(*purb)->dev = subs->stream->us428->chip.dev;
 			(*purb)->pipe = subs->datapipe[ep];
-			(*purb)->transfer_flags = USB_ISO_ASAP | USB_ASYNC_UNLINK;
+			(*purb)->transfer_flags = URB_ISO_ASAP | URB_ASYNC_UNLINK;
 			(*purb)->number_of_packets = NRPACKS;
 			(*purb)->context = subs;
-			(*purb)->complete = is_playback ? snd_us428_urb_play_complete : snd_us428_urb_capt_complete ;
+			(*purb)->complete = is_playback ?
+				snd_usb_complete_callback(snd_us428_urb_play_complete) :
+				snd_usb_complete_callback(snd_us428_urb_capt_complete);
 		}
 
 	return 0;
@@ -783,7 +792,11 @@ static int snd_us428_set_format(snd_us428_substream_t *subs, snd_pcm_runtime_t *
 	return 0;
 }
 
+#ifndef OLD_USB
+static void snd_us428_04Int(urb_t* urb, struct pt_regs *regs)
+#else
 static void snd_us428_04Int(urb_t* urb)
+#endif
 {
 	us428dev_t*	us428 = urb->context;
 	
@@ -908,9 +921,11 @@ static int us428_rate_set(snd_us428_stream_t *us428_stream, int rate)
 				}
 				((char*)(usbdata + i))[0] = ra[i].c1;
 				((char*)(usbdata + i))[1] = ra[i].c2;
-				usb_fill_bulk_urb(	us->urb[i], us428_stream->us428->chip.dev, usb_sndbulkpipe(us428_stream->us428->chip.dev, 4),
-							usbdata + i, 2, snd_us428_04Int, us428_stream->us428);
+				usb_fill_bulk_urb(us->urb[i], us428_stream->us428->chip.dev, usb_sndbulkpipe(us428_stream->us428->chip.dev, 4),
+						  usbdata + i, 2, snd_us428_04Int, us428_stream->us428);
+#ifdef OLD_USB
 				us->urb[i]->transfer_flags = USB_QUEUE_BULK;
+#endif
 			}
 			if (err)
 				break;
@@ -1130,11 +1145,9 @@ static snd_pcm_ops_t snd_usb_capture_ops =
 static void snd_us428_substream_init(snd_us428_stream_t *stream, enum sndrv_pcm_stream  dir)
 {
 	struct usb_device *dev;
-	struct usb_config_descriptor *config;
 	snd_us428_substream_t *subs = stream->substream + dir;
 
 	dev = stream->us428->chip.dev;
-	config = dev->actconfig;
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == dir){
 		subs->endpoint[0] = 0x0A;
@@ -1262,7 +1275,17 @@ int snd_us428_audio_create(snd_card_t* card)
 }
 
 
+/*
+ * compatible layers
+ */
+#ifdef OLD_USB
+static void __old_snd_us428_urb_play_complete(struct urb *urb)
+{
+	snd_us428_urb_play_complete(urb, NULL);
+}
 
-
-
-
+static void __old_snd_us428_urb_capt_complete(struct urb *urb)
+{
+	snd_us428_urb_capt_complete(urb, NULL);
+}
+#endif
