@@ -123,6 +123,7 @@ extern void isapnp_proc_done(void);
 struct isapnp_dev *isapnp_devices = NULL;	/* device list */
 static unsigned char isapnp_checksum_value;
 static struct semaphore isapnp_cfg_mutex = MUTEX;
+static int isapnp_detected = 0;
 
 /* delay ten microseconds */
 
@@ -2124,19 +2125,19 @@ __initfunc(int isapnp_init(void))
 		}
 		request_region(isapnp_rdp, 1, "ISA PnP read");
 	}
+	isapnp_detected = 1;
 #ifdef ISAPNP_REGION_OK
 	request_region(_PIDXR, 1, "ISA PnP index");
 #endif
 	request_region(_PNPWRP, 1, "ISA PnP write");
 	if (isapnp_rdp < 0x203 || isapnp_rdp > 0x3ff) {
 		devices = isapnp_isolate();
-		if (devices < 0) {
+		if (devices < 0 || 
+		    (isapnp_rdp < 0x203 || isapnp_rdp > 0x3ff)) {
 			isapnp_free_all_resources();
-			return -ENOENT;
-		}
-		if (isapnp_rdp < 0x203 || isapnp_rdp > 0x3ff) {
-			isapnp_free_all_resources();
-			return -ENOENT;
+			isapnp_detected = 0;
+			printk("isapnp: No Plug & Play device found\n");
+			return 0;
 		}
 		request_region(isapnp_rdp, 1, "ISA PnP read");
 	}
@@ -2183,7 +2184,8 @@ int init_module(void)
 
 void cleanup_module(void)
 {
-	isapnp_free_all_resources();
+	if (isapnp_detected)
+		isapnp_free_all_resources();
 }
 
 #endif
