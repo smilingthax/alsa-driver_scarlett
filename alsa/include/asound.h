@@ -1398,7 +1398,6 @@ typedef struct snd_pcm_info {
 	size_t fifo_size;		/* stream FIFO size in bytes */
 	size_t transfer_block_size;	/* bus transfer block size in bytes */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
-	size_t mmap_size;		/* mmap data size */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	char reserved[64];		/* reserved for future... */
@@ -1467,6 +1466,7 @@ typedef struct snd_pcm_setup {
 	size_t frames_fill_max;		/* maximum silence fill in frames */
 	size_t frame_boundary;		/* position in frames wrap point */
 	size_t frags;			/* allocated fragments */
+	size_t mmap_size;		/* mmap data size */
 	unsigned int msbits_per_sample;	/* used most significant bits per sample */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_setup_t;
