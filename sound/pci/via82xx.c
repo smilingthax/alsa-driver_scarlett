@@ -181,7 +181,33 @@ DEFINE_VIA_REGSET(FM, 0x20);
 #define   VIA_REG_AC97_CMD_MASK		0x7e
 #define   VIA_REG_AC97_DATA_SHIFT	0
 #define   VIA_REG_AC97_DATA_MASK	0xffff
+
 #define VIA_REG_SGD_SHADOW		0x84	/* dword */
+/* via686 */
+#define   VIA_REG_SGD_STAT_PB_FLAG	(1<<0)
+#define   VIA_REG_SGD_STAT_CP_FLAG	(1<<1)
+#define   VIA_REG_SGD_STAT_FM_FLAG	(1<<2)
+#define   VIA_REG_SGD_STAT_PB_EOL	(1<<4)
+#define   VIA_REG_SGD_STAT_CP_EOL	(1<<5)
+#define   VIA_REG_SGD_STAT_FM_EOL	(1<<6)
+#define   VIA_REG_SGD_STAT_PB_STOP	(1<<8)
+#define   VIA_REG_SGD_STAT_CP_STOP	(1<<9)
+#define   VIA_REG_SGD_STAT_FM_STOP	(1<<10)
+#define   VIA_REG_SGD_STAT_PB_ACTIVE	(1<<12)
+#define   VIA_REG_SGD_STAT_CP_ACTIVE	(1<<13)
+#define   VIA_REG_SGD_STAT_FM_ACTIVE	(1<<14)
+/* via8233 */
+#define   VIA8233_REG_SGD_STAT_FLAG	(1<<0)
+#define   VIA8233_REG_SGD_STAT_EOL	(1<<1)
+#define   VIA8233_REG_SGD_STAT_STOP	(1<<2)
+#define   VIA8233_REG_SGD_STAT_ACTIVE	(1<<3)
+#define   VIA8233_REG_SGD_SDX0_SHIFT	0
+#define   VIA8233_REG_SGD_SDX1_SHIFT	4
+#define   VIA8233_REG_SGD_SDX2_SHIFT	8
+#define   VIA8233_REG_SGD_SDX3_SHIFT	12
+#define   VIA8233_REG_SGD_MCHAN_SHIFT	16
+#define   VIA8233_REG_SGD_REC0_SHIFT	24
+#define   VIA8233_REG_SGD_REC1_SHIFT	28
 
 /* multi-channel and capture registers for via8233 */
 DEFINE_VIA_REGSET(MULTPLAY, 0x40);
@@ -349,6 +375,8 @@ struct _snd_via82xx {
 	unsigned char old_legacy;
 	unsigned char old_legacy_cfg;
 
+	unsigned int intr_mask; /* SGD_SHADOW mask to check interrupts */
+
 	struct pci_dev *pci;
 	snd_card_t *card;
 
@@ -502,22 +530,19 @@ static void snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	unsigned int i;
 
 	spin_lock(&chip->reg_lock);
-	if (chip->chip_type == TYPE_VIA686) {
-		/* check mpu401 interrupt */
-		status = inl(VIAREG(chip, SGD_SHADOW));
-		if ((status & 0x00000077) == 0) {
-			spin_unlock(&chip->reg_lock);
-			if (chip->rmidi != NULL)
-				snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
-			return;
-		}
+	status = inl(VIAREG(chip, SGD_SHADOW));
+	if (! (status & chip->intr_mask)) {
+		spin_unlock(&chip->reg_lock);
+		if (chip->rmidi)
+			/* check mpu401 interrupt */
+			snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
+		return;
 	}
+
 	/* check status for each stream */
 	for (i = 0; i < chip->num_devs; i++) {
 		viadev_t *viadev = &chip->devs[i];
 		unsigned char status = inb(VIADEV_REG(viadev, OFFSET_STATUS));
-		if (! (status & VIA_REG_STAT_ACTIVE))
-			continue;
 		status &= (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG);
 		if (! status)
 			continue;
@@ -1099,6 +1124,7 @@ static int __devinit snd_via8233_pcm_new(via82xx_t *chip)
 	chip->multi_devno = 4;		/* x 1 */
 	chip->capture_devno = 5;	/* x 2 */
 	chip->num_devs = 7;
+	chip->intr_mask = 0x33033333; /* FLAG|EOL for rec0-1, mc, sdx0-3 */
 
 	/* PCM #0:  4 DSX playbacks and 1 capture */
 	err = snd_pcm_new(chip->card, chip->card->shortname, 0, 4, 1, &pcm);
@@ -1148,6 +1174,7 @@ static int __devinit snd_via8233a_pcm_new(via82xx_t *chip)
 	chip->playback_devno = 1;
 	chip->capture_devno = 2;
 	chip->num_devs = 3;
+	chip->intr_mask = 0x03033000; /* FLAG|EOL for rec0, mc, sdx3 */
 
 	/* PCM #0:  multi-channel playback and capture */
 	err = snd_pcm_new(chip->card, chip->card->shortname, 0, 1, 1, &pcm);
@@ -1192,6 +1219,7 @@ static int __devinit snd_via686_pcm_new(via82xx_t *chip)
 	chip->playback_devno = 0;
 	chip->capture_devno = 1;
 	chip->num_devs = 2;
+	chip->intr_mask = 0x77; /* FLAG | EOL for PB, CP, FM */
 
 	err = snd_pcm_new(chip->card, chip->card->shortname, 0, 1, 1, &pcm);
 	if (err < 0)
