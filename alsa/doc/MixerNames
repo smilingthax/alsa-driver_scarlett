@@ -61,3 +61,8 @@ Exceptions:
   3D Control - Space
   3D Control - Level
   Mic Boost [(?dB)]
+
+PCM interface:
+
+  Sample Clock Source	{ "Word", "Internal", "AutoSync" }
+  Clock Sync Status	{ "Lock", "Sync", "No Lock" }
