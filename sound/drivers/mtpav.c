@@ -421,25 +421,19 @@ static void snd_mtpav_output_timer(unsigned long data)
 	spin_unlock(&chip->spinlock);
 }
 
+/* spinlock held! */
 static void snd_mtpav_add_output_timer(mtpav_t *chip)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&chip->spinlock, flags);
 	chip->timer.function = snd_mtpav_output_timer;
 	chip->timer.data = (unsigned long) mtp_card;
 	chip->timer.expires = 1 + jiffies;
 	add_timer(&chip->timer);
-	spin_unlock_irqrestore(&chip->spinlock, flags);
 }
 
+/* spinlock held! */
 static void snd_mtpav_remove_output_timer(mtpav_t *chip)
 {
-	unsigned long flags;
-
-	spin_lock_irqsave(&chip->spinlock, flags);
 	del_timer(&chip->timer);
-	spin_unlock_irqrestore(&chip->spinlock, flags);
 }
 
 /*
@@ -510,8 +504,11 @@ static void snd_mtpav_inmidi_process(mtpav_t *mcrd, u8 inbyte)
 		return;
 
 	port = &mcrd->ports[mcrd->inmidiport];
-	if (port->mode & MTPAV_MODE_INPUT_TRIGGERED)
+	if (port->mode & MTPAV_MODE_INPUT_TRIGGERED) {
+		spin_unlock(&mcrd->spinlock);
 		snd_rawmidi_receive(port->input, &inbyte, 1);
+		spin_lock(&mcrd->spinlock);
+	}
 }
 
 static void snd_mtpav_inmidi_h(mtpav_t * mcrd, u8 inbyte)
