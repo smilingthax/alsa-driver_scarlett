@@ -1,3 +1,8 @@
+0.2.0 -> 0.3.0
+
+* added full ISA Plug & Play support
+* recoded sequencer prototype
+
 0.1.4 -> 0.2.0
 
 * added prototype of sequencer
