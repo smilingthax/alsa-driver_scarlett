@@ -273,6 +273,7 @@ $(MODINCL)/$(MODPREFIX)%.ver: %.c
 		| $(GENKSYMS) $(genksyms_smp_prefix) > $@.tmp; \
 		if [ -r $@ ] && cmp -s $@ $@.tmp; then echo $@ is unchanged; rm -f $@.tmp; \
 		else echo mv $@.tmp $@; mv -f $@.tmp $@; fi; \
+		elif [ ! -r $@ ]; then touch $@; \
 		fi; \
 	fi; touch $(MODINCL)/$(MODPREFIX)$*.stamp
 
