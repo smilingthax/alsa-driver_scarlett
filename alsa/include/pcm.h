@@ -333,6 +333,9 @@ static inline ssize_t snd_pcm_playback_bytes_used(snd_pcm_runtime_t *runtime)
 	return bytes_used;
 }
 
+/*
+ *  result is: 0 ... (frag_boundary - 1)
+ */
 static inline size_t snd_pcm_capture_bytes_used(snd_pcm_runtime_t *runtime)
 {
 	size_t byte_boundary = runtime->byte_boundary;
