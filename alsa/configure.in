@@ -1306,8 +1306,10 @@ AC_TRY_COMPILE([
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
 ],[
-  void * (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
+  int (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
+  pgprot_t p;
   func = remap_page_range;
+  remap_page_range(NULL, 0, 0, 0, p);
 ],
     AC_MSG_RESULT("yes");new_remap="0",
     AC_MSG_RESULT("no");new_remap="1",
