@@ -27,6 +27,8 @@ static inline struct proc_dir_entry *create_proc_read_entry(const char *name,
 }
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+
 static LIST_HEAD(snd_pci_devices);
 
 struct snd_pci_device {
@@ -73,3 +75,7 @@ static const char *snd_kdevice_busid(struct device *dev)
 		return dev->d.pci->slot_name;
 	return "???";
 }
+
+#else
+#define snd_kdevice_free_all()
+#endif
