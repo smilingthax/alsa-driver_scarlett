@@ -737,6 +737,7 @@ extern int snd_pcm_playback_data(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_empty(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_empty(snd_pcm_substream_t *substream);
 extern void snd_pcm_tick_prepare(snd_pcm_substream_t *substream);
+extern void snd_pcm_tick_set(snd_pcm_substream_t *substream, unsigned long ticks);
 extern void snd_pcm_tick_elapsed(snd_pcm_substream_t *substream);
 extern void snd_pcm_period_elapsed(snd_pcm_substream_t *substream);
 extern snd_pcm_sframes_t snd_pcm_lib_write(snd_pcm_substream_t *substream,
