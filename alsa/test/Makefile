@@ -1,11 +1,11 @@
 CC     	= gcc
 CFLAGS	= -O2 -Wall -pipe
-TARGETS = mixer pcm mmap_test osspcm osspcm1
+TARGETS = csp_load pcm mmap_test osspcm osspcm1
 
 all: $(TARGETS)
 
-mixer: mixer.c
-	$(CC) $(CFLAGS) -o mixer mixer.c
+csp_load: csp_load.c
+	$(CC) $(CFLAGS) -o csp_load csp_load.c
 
 pcm: pcm.c
 	$(CC) $(CFLAGS) -o pcm pcm.c

@@ -104,6 +104,7 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_tone;
 
 	snd_kmixer_element_t *me_out_master;
+	snd_kmixer_element_t *me_sw1_3d_enh;
 	snd_kmixer_element_t *me_vol_master;
 	
 	spinlock_t lock;
