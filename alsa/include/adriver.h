@@ -310,6 +310,11 @@ static inline void module_put(struct module *module)
 #endif
 #endif /* 2.5.0 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#define vmap(array,pages) remap_page_array(array,pages,0)
+#define vunmap(ptr) vfree_nocheck(ptr)
+#endif /* 2.5.0 */
+
 
 #include "amagic.h"
 
