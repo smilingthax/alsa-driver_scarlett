@@ -1631,15 +1631,15 @@ struct snd_stru_cs461x {
 
 	unsigned long ba0_addr;
 	unsigned long ba1_addr;
-	unsigned int *ba0;
+	unsigned long ba0;
 	union {
 		struct {
-			unsigned int *data0;
-			unsigned int *data1;
-			unsigned int *pmem;
-			unsigned int *reg;
+			unsigned long data0;
+			unsigned long data1;
+			unsigned long pmem;
+			unsigned long reg;
 		} name;
-		unsigned int *idx[4];
+		unsigned long idx[4];
 	} ba1;
 	unsigned int pctl;
 	unsigned int cctl;
