@@ -1104,7 +1104,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_FMT_IEC958_SUBFRAME	SND_PCM_FMT_IEC958_SUBFRAME_BE
 #endif
 
-#define SND_PCM_RATE_PLL		(1<<0)		/* programmable PLL */
+#define SND_PCM_RATE_CONTINUOUS		(1<<0)		/* continuous range */
 #define SND_PCM_RATE_KNOT		(1<<1)		/* supports more non-continuos rates */
 #define SND_PCM_RATE_8000		(1<<2)		/* 8000Hz */
 #define SND_PCM_RATE_11025		(1<<3)		/* 11025Hz */
