@@ -58,6 +58,8 @@
 #include <linux/isapnp.h>
 #include <linux/pnp.h>
 #else
+#undef CONFIG_ISAPNP
+#define CONFIG_ISAPNP
 #include <linux/isapnp.h>
 #undef CONFIG_PNP
 #define CONFIG_PNP
