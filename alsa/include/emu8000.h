@@ -91,6 +91,7 @@ typedef struct emu8000_arg {
 	snd_kmixer_t *mixer;	/* mixer interface to attach */
 	int mixer_index;	/* mixer extension index */
 	snd_kmixer_element_t *mixer_dest; /* output target */
+	int seq_ports;		/* number of sequencer ports to be created */
 } emu8000_arg_t;
 
 #endif

@@ -29,6 +29,7 @@
 #include "seq_oss.h"
 #endif
 #include "emux_legacy.h"
+#include "seq_virmidi.h"
 
 /*
  * compile flags
@@ -100,6 +101,8 @@ struct snd_emux {
 	snd_emux_operators_t ops;	/* operators */
 	void *hw;		/* hardware */
 	unsigned long flags;	/* other conditions */
+	int midi_ports;		/* number of virtual midi devices */
+	int midi_devidx;	/* device offset of virtual midi */
 
 	/* private */
 	int num_voices;		/* current number of voices */
@@ -112,6 +115,7 @@ struct snd_emux {
 	int ports[SND_EMUX_MAX_PORTS];	/* The ports for this device */
 	int used;	/* use counter */
 	char *name;	/* name of the device (internal) */
+	snd_virmidi_dev_t **vmidi;
 
 	snd_emux_memhdr_t *memhdr;	/* memory chunk information */
 
