@@ -161,25 +161,25 @@ typedef struct snd_switch_list_item {
 } snd_switch_list_item_t;
 
 typedef struct snd_switch_list {
-	int iface;			/* switch interface number */
-	int device;			/* device number */
-	int channel;			/* channel number */
-	int switches_size;		/* size of switches in array */
-	int switches;			/* filled switches in array */
-	int switches_over;		/* missing switches in array */
-	snd_switch_list_item_t *pswitches; /* pointer to list item array */
+	int iface;			/* WR: switch interface number */
+	int device;			/* WR: device number */
+	int channel;			/* WR: channel number */
+	int switches_size;		/* WR: size of switches in array */
+	int switches;			/* RO: filled switches in array */
+	int switches_over;		/* RO: missing switches in array */
+	snd_switch_list_item_t *pswitches; /* WR: pointer to list item array */
 	char reserved[12];
 } snd_switch_list_t;
 
 typedef struct snd_switch {
-	int iface;		/* interface number */
-	int device;		/* device number */
-	int channel;		/* channel number */
-	unsigned char name[32];	/* unique identification of switch (from driver) */
-	unsigned int type;	/* look to SND_SW_TYPE_* */
-	unsigned int subtype;	/* look to SND_SW_SUBTYPE_* */
-	unsigned int low;	/* low range value */
-	unsigned int high;	/* high range value */
+	int iface;		/* WR: interface number */
+	int device;		/* WR: device number */
+	int channel;		/* WR: channel number */
+	unsigned char name[32];	/* WR: unique identification of switch (from driver) */
+	unsigned int type;	/* RW: look to SND_SW_TYPE_* */
+	unsigned int subtype;	/* RW: look to SND_SW_SUBTYPE_* */
+	unsigned int low;	/* RO: low range value */
+	unsigned int high;	/* RO: high range value */
 	union {
 		unsigned int enable: 1;		/* 0 = off, 1 = on */
 		unsigned char data8[32];	/* 8-bit data */
@@ -187,7 +187,7 @@ typedef struct snd_switch {
 		unsigned int data32[8];		/* 32-bit data */
 		unsigned int item_number;	/* active list item number */
 		char item[32];			/* list item, low -> item number */
-	} value;
+	} value;		/* RO */
 	unsigned char reserved[32];
 } snd_switch_t;
  
@@ -480,10 +480,10 @@ typedef struct snd_mixer_info {
  */
 
 typedef struct snd_mixer_elements {
-	int elements_size;	/* size in element identifiers */
-	int elements;		/* count of filled element identifiers */
-	int elements_over;	/* missing element identifiers */
-	snd_mixer_eid_t *pelements; /* array */
+	int elements_size;	/* WR: size in element identifiers */
+	int elements;		/* WR: count of filled element identifiers */
+	int elements_over;	/* RO: missing element identifiers */
+	snd_mixer_eid_t *pelements; /* WR: array */
 } snd_mixer_elements_t;
 
 /*
@@ -491,19 +491,19 @@ typedef struct snd_mixer_elements {
  */
 
 typedef struct snd_mixer_route {
-	snd_mixer_eid_t src_eid; /* source element identification */
-	snd_mixer_eid_t dst_eid; /* destination element identification */
-	int src_voices;		/* source voices */
-	int dst_voices;		/* destination voices */
-	unsigned int *voice_wires; /* source * destination bitmap matrix */
+	snd_mixer_eid_t src_eid; /* WR: source element identification */
+	snd_mixer_eid_t dst_eid; /* WR: destination element identification */
+	int src_voices;		/* RO: source voices */
+	int dst_voices;		/* RO: destination voices */
+	unsigned int *voice_wires; /* WR: source * destination bitmap matrix */
 } snd_mixer_route_t;
 
 typedef struct snd_mixer_routes {
-	snd_mixer_eid_t eid;
-	int routes_size;	/* size in element identifiers */
-	int routes;		/* count of filled element identifiers */
-	int routes_over;	/* missing element identifiers */
-	snd_mixer_eid_t *proutes; /* array */
+	snd_mixer_eid_t eid;	/* WR: element identifier */
+	int routes_size;	/* WR: size in element identifiers */
+	int routes;		/* RO: count of filled element identifiers */
+	int routes_over;	/* RO: missing element identifiers */
+	snd_mixer_eid_t *proutes; /* WR: array */
 } snd_mixer_routes_t;
 
 /*
@@ -511,10 +511,10 @@ typedef struct snd_mixer_routes {
  */
 
 typedef struct snd_mixer_groups {
-	int groups_size;	/* size in group identifiers */
-	int groups;		/* count of filled group identifiers */
-	int groups_over;	/* missing group identifiers */
-	snd_mixer_gid_t *pgroups; /* array */
+	int groups_size;	/* WR: size in group identifiers */
+	int groups;		/* RO: count of filled group identifiers */
+	int groups_over;	/* RO: missing group identifiers */
+	snd_mixer_gid_t *pgroups; /* WR: array */
 } snd_mixer_groups_t;
 
 typedef enum {
@@ -546,18 +546,18 @@ typedef enum {
 #define SND_MIXER_GRPCAP_EXCL_CAPTURE	(1<<6)
 
 typedef struct snd_mixer_group {
-	snd_mixer_gid_t gid;
-	int elements_size;		/* size in element identifiers */
-	int elements;			/* count of filled element identifiers */
-	int elements_over;		/* missing element identifiers */
-	snd_mixer_eid_t *pelements;	/* array */
-	unsigned int caps;		/* capabilities */
-	unsigned int channels;		/* bitmap of active channels */	
-	unsigned int mute;		/* bitmap of muted channels */
-	unsigned int capture;		/* bitmap of capture channels */
-	int capture_group;		/* capture group (for exclusive capture source) */
-	int min;			/* minimum value */
-	int max;			/* maximum value */
+	snd_mixer_gid_t gid;		/* WR: group identification */
+	int elements_size;		/* WR: size in element identifiers */
+	int elements;			/* RO: count of filled element identifiers */
+	int elements_over;		/* RO: missing element identifiers */
+	snd_mixer_eid_t *pelements;	/* WR: array */
+	unsigned int caps;		/* RO: capabilities */
+	unsigned int channels;		/* RO: bitmap of active channels */	
+	unsigned int mute;		/* RW: bitmap of muted channels */
+	unsigned int capture;		/* RW: bitmap of capture channels */
+	int capture_group;		/* RO: capture group (for exclusive capture source) */
+	int min;			/* RO: minimum value */
+	int max;			/* RO: maximum value */
 	union {
 		struct {
 			int front_left;		/* front left value */
@@ -568,7 +568,7 @@ typedef struct snd_mixer_group {
 			int woofer;		/* woofer */
 		} names;
 		int values[32];
-	} volume;
+	} volume;			/* RW */
 } snd_mixer_group_t;
 
 /*
@@ -580,11 +580,11 @@ typedef struct snd_mixer_group {
 #define SND_MIXER_EIO_DIGITAL		(0<<1)
 
 struct snd_mixer_element_io_info {
-	unsigned int attrib;		/* SND_MIXER_EIO_* */
-	int voices_size;		/* size in voice descriptors */
-	int voices;			/* count of filled voice descriptors */
-	int voices_over;		/* missing voice descriptors */
-	snd_mixer_voice_t *pvoices;	/* array */
+	unsigned int attrib;		/* RO: SND_MIXER_EIO_* */
+	int voices_size;		/* WR: size in voice descriptors */
+	int voices;			/* RO: count of filled voice descriptors */
+	int voices_over;		/* RO: missing voice descriptors */
+	snd_mixer_voice_t *pvoices;	/* WR: array */
 };
 
 /*
@@ -594,21 +594,21 @@ struct snd_mixer_element_io_info {
  */
 
 struct snd_mixer_element_pcm1_info {
-	int devices_size;		/* size in device descriptors */
-	int devices;			/* count of filled device descriptors */
-	int devices_over;		/* missing device descriptors */
-	int *pdevices;			/* PCM devices - array */
+	int devices_size;		/* WR: size in device descriptors */
+	int devices;			/* RO: count of filled device descriptors */
+	int devices_over;		/* RO: missing device descriptors */
+	int *pdevices;			/* WR: PCM devices - array */
 };
 
 struct snd_mixer_element_pcm2_info {
-	int device;			/* device index */
-	int subdevice;			/* subdevice index */
+	int device;			/* RO: device index */
+	int subdevice;			/* RO: subdevice index */
 };
 
 struct snd_mixer_element_pcm3_info {
-	int device;			/* device index */
-	int subdevice;			/* subdevice index */
-	int voice;			/* voice index */
+	int device;			/* RO: device index */
+	int subdevice;			/* RO: subdevice index */
+	int voice;			/* RO: voice index */
 };
 
 /*
@@ -618,7 +618,7 @@ struct snd_mixer_element_pcm3_info {
  */
 
 struct snd_mixer_element_converter_info {
-	unsigned int resolution;	/* resolution in bits (usually 16) */
+	unsigned int resolution;	/* RO: resolution in bits (usually 16) */
 };
 
 /*
@@ -628,10 +628,10 @@ struct snd_mixer_element_converter_info {
  */
 
 struct snd_mixer_element_switch1 {
-	int sw_size;			/* size of bitmap (in bits) */
-	int sw;				/* count of filled bits */
-	int sw_over;			/* missing bits */
-	unsigned int *psw;		/* bitmap!!! */
+	int sw_size;			/* WR: size of bitmap (in bits) */
+	int sw;				/* RO: count of filled bits */
+	int sw_over;			/* RO: missing bits */
+	unsigned int *psw;		/* WR: bitmap!!! */
 };
 
 /*
@@ -641,7 +641,7 @@ struct snd_mixer_element_switch1 {
  */
 
 struct snd_mixer_element_switch2 {
-	unsigned int sw:1;
+	unsigned int sw:1;		/* RW */
 };
 
 /*
@@ -656,15 +656,15 @@ struct snd_mixer_element_switch2 {
 #define SND_MIXER_SWITCH3_ALWAYS_ONE_DESTINATION	3
 
 struct snd_mixer_element_switch3_info {
-	unsigned int type;		/* SND_MIXER_SWITCH3_* */
+	unsigned int type;		/* RO: SND_MIXER_SWITCH3_* */
 };
 
 struct snd_mixer_element_switch3 {
 	/* two dimensional matrix of voice route switch */
-	int rsw_size;			/* size in voice route descriptors (must be input_voices * output_voices bits !!!) */
-	int rsw;			/* count of filled voice route descriptors */
-	int rsw_over;			/* missing voice descriptors */
-	unsigned int *prsw;		/* array */
+	int rsw_size;			/* WR: size in voice route descriptors (must be input_voices * output_voices bits !!!) */
+	int rsw;			/* RO: count of filled voice route descriptors */
+	int rsw_over;			/* RO: missing voice descriptors */
+	unsigned int *prsw;		/* WR: array */
 };
 
 /*
@@ -674,22 +674,22 @@ struct snd_mixer_element_switch3 {
  */
 
 struct snd_mixer_element_volume1_range {
-	int min, max;		/* linear volume */
-	int min_dB, max_dB;	/* negative - attenuation, positive - amplification */
+	int min, max;		/* RO: linear volume */
+	int min_dB, max_dB;	/* RO: negative - attenuation, positive - amplification */
 };
 
 struct snd_mixer_element_volume1_info {
-	int range_size;		/* size of range descriptors */
-	int range;		/* count of filled range descriptors */
-	int range_over;		/* missing range descriptors */
-	struct snd_mixer_element_volume1_range *prange;	/* array */
+	int range_size;		/* WR: size of range descriptors */
+	int range;		/* RO: count of filled range descriptors */
+	int range_over;		/* RO: missing range descriptors */
+	struct snd_mixer_element_volume1_range *prange;	/* WR: array */
 };
 
 struct snd_mixer_element_volume1 {
-	int voices_size;	/* size of voice descriptors */	
-	int voices;		/* count of filled voice descriptors */
-	int voices_over;	/* missing voice descriptors */
-	int *pvoices;		/* array of volumes */
+	int voices_size;	/* WR: size of voice descriptors */	
+	int voices;		/* RO: count of filled voice descriptors */
+	int voices_over;	/* RO: missing voice descriptors */
+	int *pvoices;		/* WR: array of volumes */
 };
 
 /*
@@ -699,31 +699,31 @@ struct snd_mixer_element_volume1 {
  */
 
 struct snd_mixer_element_volume2_range {
-	int min, max;		/* linear volume */
-	int min_dB, max_dB;	/* negative - attenuation, positive - amplification */
+	int min, max;		/* RO: linear volume */
+	int min_dB, max_dB;	/* RO: negative - attenuation, positive - amplification */
 };
 
 struct snd_mixer_element_volume2_info {
 	/* source voices */
-	int svoices_size;
-	int svoices;
-	int svoices_over;
-	snd_mixer_voice_t *psvoices;
+	int svoices_size;	/* WR: size of source voices */
+	int svoices;		/* RO: count of filled voice descriptors */
+	int svoices_over;	/* RO: missing voice descriptors */
+	snd_mixer_voice_t *psvoices; /* WR: array of voices */
 	/* destination ranges */
-	int range_size;		/* size of range descriptors */
-	int range;		/* count of filled range descriptors */
-	int range_over;		/* missing range descriptors */
-	struct snd_mixer_element_volume2_range *prange;	/* array */
+	int range_size;		/* WR: size of range descriptors */
+	int range;		/* RO: count of filled range descriptors */
+	int range_over;		/* RO: missing range descriptors */
+	struct snd_mixer_element_volume2_range *prange;	/* WR: array */
 };
 
 /* avoices means the array of voices which describes volume offsets for */
 /* each outputs, the size of this array is info->svoices * info->range */
 
 struct snd_mixer_element_volume2 {
-	int avoices_size;	/* size of voice descriptors */	
-	int avoices;		/* count of filled voice descriptors */
-	int avoices_over;	/* missing voice descriptors */
-	int *pavoices;		/* array of volumes */
+	int avoices_size;	/* WR: size of voice descriptors */	
+	int avoices;		/* RO: count of filled voice descriptors */
+	int avoices_over;	/* RO: missing voice descriptors */
+	int *pavoices;		/* WR: array of volumes */
 };
 
 /*
@@ -731,7 +731,7 @@ struct snd_mixer_element_volume2 {
  */
 
 struct snd_mixer_element_accu1_info {
-	int attenuation;		/* in dB */
+	int attenuation;	/* RO: in dB */
 };
 
 /*
@@ -739,7 +739,7 @@ struct snd_mixer_element_accu1_info {
  */
 
 struct snd_mixer_element_accu2_info {
-	int attenuation;		/* in dB */
+	int attenuation;	/* RO: in dB */
 };
 
 /* 
@@ -747,22 +747,22 @@ struct snd_mixer_element_accu2_info {
  */
 
 struct snd_mixer_element_accu3_range {
-	int min, max;		/* linear volume */
-	int min_dB, max_dB;	/* negative - attenuation, positive - amplification */
+	int min, max;		/* RO: linear volume */
+	int min_dB, max_dB;	/* RO: negative - attenuation, positive - amplification */
 };
 
 struct snd_mixer_element_accu3_info {
-	int range_size;		/* size of range descriptors */
-	int range;		/* count of filled range descriptors */
-	int range_over;		/* missing range descriptors */
-	struct snd_mixer_element_accu3_range *prange;	/* array */
+	int range_size;		/* WR: size of range descriptors */
+	int range;		/* RO: count of filled range descriptors */
+	int range_over;		/* RO: missing range descriptors */
+	struct snd_mixer_element_accu3_range *prange;	/* WR: array */
 };
 
 struct snd_mixer_element_accu3 {
-	int voices_size;	/* size of voice descriptors */	
-	int voices;		/* count of filled voice descriptors */
-	int voices_over;	/* missing voice descriptors */
-	int *pvoices;		/* array of volumes */
+	int voices_size;	/* WR: size of voice descriptors */	
+	int voices;		/* RO: count of filled voice descriptors */
+	int voices_over;	/* RO: missing voice descriptors */
+	int *pvoices;		/* WR: array of volumes */
 };
 
 /*
@@ -775,14 +775,14 @@ struct snd_mixer_element_accu3 {
 #define SND_MIXER_MUX1_NONE		(1<<0)
 
 struct snd_mixer_element_mux1_info {
-	unsigned int attrib;		/* SND_MIXER_MUX1_ */
+	unsigned int attrib;	/* RO: SND_MIXER_MUX1_ */
 };
 
 struct snd_mixer_element_mux1 {
-	int sel_size;
-	int sel;
-	int sel_over;
-	snd_mixer_eid_t *psel;		/* selected source on element output */
+	int sel_size;		/* WR: size of mixer elements */
+	int sel;		/* RO: count of mixer elements */
+	int sel_over;		/* RO: missing voice elements */
+	snd_mixer_eid_t *psel;	/* WR: selected source on element output */
 };
 
 /*
@@ -794,11 +794,11 @@ struct snd_mixer_element_mux1 {
 #define SND_MIXER_MUX2_NONE		(1<<0)
 
 struct snd_mixer_element_mux2_info {
-	unsigned int attrib;		/* SND_MIXER_MUX1_ */
+	unsigned int attrib;	/* RO: SND_MIXER_MUX1_ */
 };
 
 struct snd_mixer_element_mux2 {
-	snd_mixer_eid_t sel;		/* selected input source on element output */
+	snd_mixer_eid_t sel;	/* RO: selected input source on element output */
 };
 
 /*
@@ -810,18 +810,18 @@ struct snd_mixer_element_mux2 {
 #define SND_MIXER_TC1_TREBLE		(1<<2)
 
 struct snd_mixer_element_tone_control1_info {
-	unsigned int tc;		/* bitmap of SND_MIXER_TC_* */
-	int min_bass, max_bass;		/* Bass */
-	int min_bass_dB, max_bass_dB;	/* in decibels * 100 */
-	int min_treble, max_treble;	/* Treble */
-	int min_treble_dB, max_treble_dB; /* in decibels * 100 */
+	unsigned int tc;		/* RO: bitmap of SND_MIXER_TC_* */
+	int min_bass, max_bass;		/* RO: Bass */
+	int min_bass_dB, max_bass_dB;	/* RO: in decibels * 100 */
+	int min_treble, max_treble;	/* RO: Treble */
+	int min_treble_dB, max_treble_dB; /* RO: in decibels * 100 */
 };
 
 struct snd_mixer_element_tone_control1 {
-	unsigned int tc;		/* bitmap of SND_MIXER_TC_* */
-	unsigned int sw:1;		/* on/off switch */
-	int bass;			/* Bass control */
-	int treble;			/* Treble control */
+	unsigned int tc;		/* WR: bitmap of SND_MIXER_TC_* */
+	unsigned int sw:1;		/* WR: on/off switch */
+	int bass;			/* WR: Bass control */
+	int treble;			/* WR: Treble control */
 };
 
 /*
@@ -833,23 +833,23 @@ struct snd_mixer_element_tone_control1 {
 #define SND_MIXER_PAN_BOTTOM_UP         2
 
 struct snd_mixer_element_pan_control1_range {
-	int pan_type;			/* SND_MIXER_PAN_XXXX */
-	int min, max;
-	int min_dB, max_dB;
+	int pan_type;		/* RO: SND_MIXER_PAN_XXXX */
+	int min, max;		/* RO: min & max range */
+	int min_dB, max_dB;	/* RO: min dB & max dB range */
 };
 
 struct snd_mixer_element_pan_control1_info {
-	int range_size;		/* size of range descriptors */
-	int range;		/* count of filled range descriptors */
-	int range_over;		/* missing range descriptors */
-	struct snd_mixer_element_pan_control1_range *prange;
+	int range_size;		/* WR: size of range descriptors */
+	int range;		/* RO: count of filled range descriptors */
+	int range_over;		/* RO: missing range descriptors */
+	struct snd_mixer_element_pan_control1_range *prange; /* WR: array */
 };
 
 struct snd_mixer_element_pan_control1 {
-	int pan_size;		/* size of pan descriptors */
-	int pan;		/* count of filled pan descriptors */
-	int pan_over;		/* missing pan descriptors */
-	int *ppan;		/* array of pan values */
+	int pan_size;		/* WR: size of pan descriptors */
+	int pan;		/* RO: count of filled pan descriptors */
+	int pan_over;		/* RO: missing pan descriptors */
+	int *ppan;		/* WR: array of pan values */
 };
 
 /*
@@ -875,29 +875,29 @@ struct snd_mixer_element_pan_control1 {
 #define SND_MIXER_EFF1_DEPTH_REAR	(1<<9)
 
 struct snd_mixer_element_3d_effect1_info {
-	unsigned int effect;		/* bitmap of SND_MIXER_EFF1_* */
-	int min_wide, max_wide;		/* 3D wide */
-	int min_volume, max_volume;	/* 3D volume */
-	int min_center, max_center;	/* 3D center */
-	int min_space, max_space;	/* 3D space */
-	int min_depth, max_depth;	/* 3D depth */
-	int min_delay, max_delay;	/* 3D delay */
-	int min_feedback, max_feedback;	/* 3D feedback */
-	int min_depth_rear, max_depth_rear;	/* 3D depth rear */
+	unsigned int effect;		/* RO: bitmap of SND_MIXER_EFF1_* */
+	int min_wide, max_wide;		/* RO: 3D wide */
+	int min_volume, max_volume;	/* RO: 3D volume */
+	int min_center, max_center;	/* RO: 3D center */
+	int min_space, max_space;	/* RO: 3D space */
+	int min_depth, max_depth;	/* RO: 3D depth */
+	int min_delay, max_delay;	/* RO: 3D delay */
+	int min_feedback, max_feedback;	/* RO: 3D feedback */
+	int min_depth_rear, max_depth_rear;	/* RO: 3D depth rear */
 };
 
 struct snd_mixer_element_3d_effect1 {
-	unsigned int effect;		/* bitmap of SND_MIXER_EFF1_* */
-	unsigned int sw:1,		/* on/off switch */
-		     mono_sw:1;		/* on/off switch */
-	int wide;			/* 3D wide */
-	int volume;			/* 3D volume */
-	int center;			/* 3D center */
-	int space;			/* 3D space */
-	int depth;			/* 3D depth */
-	int delay;			/* 3D delay */
-	int feedback;			/* 3D feedback */
-	int depth_rear;			/* 3D depth rear */
+	unsigned int effect;		/* RW: bitmap of SND_MIXER_EFF1_* */
+	unsigned int sw:1,		/* RW: on/off switch */
+		     mono_sw:1;		/* RW: on/off switch */
+	int wide;			/* RW: 3D wide */
+	int volume;			/* RW: 3D volume */
+	int center;			/* RW: 3D center */
+	int space;			/* RW: 3D space */
+	int depth;			/* RW: 3D depth */
+	int delay;			/* RW: 3D delay */
+	int feedback;			/* RW: 3D feedback */
+	int depth_rear;			/* RW: 3D depth rear */
 };
 
 /*
@@ -909,29 +909,29 @@ struct snd_mixer_element_pre_effect1_info_item {
 };
 
 struct snd_mixer_element_pre_effect1_info_parameter {
-	char name[32];
-	int min, max;			/* minimum and maximum value */
+	char name[32];			/* RO: parameter name */
+	int min, max;			/* RO: minimum and maximum value */
 };
 
 struct snd_mixer_element_pre_effect1_info {
 	/* predefined programs */
-	int items_size;
-	int items;
-	int items_over;
-	struct snd_mixer_element_pre_effect1_info_item *pitems;
+	int items_size;			/* WR: size of programs */
+	int items;			/* RO: count of filled programs */
+	int items_over;			/* RO: missing programs */
+	struct snd_mixer_element_pre_effect1_info_item *pitems; /* WR: array */
 	/* user parameters */
-	int parameters_size;
-	int parameters;
-	int parameters_over;
-	struct snd_mixer_element_pre_effect1_info_parameter *pparameters;
+	int parameters_size;		/* WR: size of parameters */
+	int parameters;			/* RO: count of filled parameters */
+	int parameters_over;		/* RO: missing parameters */
+	struct snd_mixer_element_pre_effect1_info_parameter *pparameters; /* WR: array */
 };
 
 struct snd_mixer_element_pre_effect1 {
-	int item;			/* chose item index or -1 = user parameters */
-	int parameters_size;
-	int parameters;
-	int parameters_over;
-	int *pparameters;
+	int item;			/* WR: chose item index or -1 = user parameters */
+	int parameters_size;		/* WR: size of parameters */
+	int parameters;			/* RO: count of filled parameters */
+	int parameters_over;		/* RO: missing parameters */
+	int *pparameters;		/* WR: array */
 };
 
 /*
@@ -939,9 +939,9 @@ struct snd_mixer_element_pre_effect1 {
  */
 
 typedef struct snd_mixer_element_info {
-	snd_mixer_eid_t eid;
-	int input_voices;
-	int output_voices;
+	snd_mixer_eid_t eid;		/* WR: element identification */
+	int input_voices;		/* RO: input voices to element */
+	int output_voices;		/* RO: output voices from element */
 	union {
 		struct snd_mixer_element_io_info io;
 		struct snd_mixer_element_pcm1_info pcm1;
