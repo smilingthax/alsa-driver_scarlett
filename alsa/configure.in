@@ -843,7 +843,7 @@ int main(void) {
 CFLAGS="$ac_save_CFLAGS"
 rm -f processor.id
 c_opts=""
-LD=ld
+KLD=ld
 ARCH=
 case "$processor" in
   i386*)
@@ -991,9 +991,9 @@ EOF
     IS_EGCS=n
     NEW_GAS=n
     test $KCC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && IS_EGCS=y
-    test $CROSS_COMPILE$LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    test $CROSS_COMPILE$KLD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
     if test $NEW_GAS = y; then
-      LD="$LD -m elf32_sparc"
+      KLD="$KLD -m elf32_sparc"
     fi
     if test $IS_EGCS = y; then
       c_opts="-mno-fpu -fcall-used-g5 -fcall-used-g7"
@@ -1006,17 +1006,17 @@ EOF
   sparc64)
     ARCH=sparc64
     CONFIG_SPARC64=y
-    # test $KCC -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || KCC=sparc64-linux-gcc
+    $KCC -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || KCC=sparc64-linux-gcc
     NEW_GCC=n
     NEW_GAS=n
     CC_UNDECL=""
     $KCC -m64 -mcmodel=medlow -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && NEW_GCC=y
-    $CROSS_COMPILE$LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    $CROSS_COMPILE$KLD -V 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
     $KCC -c -x assembler /dev/null -Wa,--help | grep undeclared-regs > /dev/null || CC_UNDECL="-Wa,--undeclared-regs"
     if test $NEW_GAS != y; then
-      LD=sparc64-linux-ld
+      KLD=sparc64-linux-ld
     else
-      LD="$KLD -m elf64_sparc"
+      KLD="$KLD -m elf64_sparc"
     fi
     if test $NEW_GCC=y; then
       c_opts="-m64 -mno-fpu -mcpu=ultrasparc -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare $CC_UNDECL"
@@ -1029,7 +1029,7 @@ EOF
     ;;
   x86_64)
     ARCH=x86_64
-    LD="ld -m elf_x86_64 -e stext"
+    KLD="ld -m elf_x86_64 -e stext"
     c_opts="-mno-red-zone -mcmodel=kernel -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
@@ -1131,7 +1131,7 @@ fi
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(ARCH)
-AC_SUBST(LD)
+AC_SUBST(KLD)
 AC_SUBST(CONFIG_X86)
 AC_SUBST(CONFIG_ALPHA)
 AC_SUBST(CONFIG_L3)
@@ -1841,24 +1841,17 @@ ac_save_CFLAGS="$CFLAGS"
 ac_save_CC=$CC
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 CC=$KCC
-AC_TRY_RUN([
-#include <linux/autoconf.h>
-#if defined(__alpha__) || (!defined(CONFIG_RTC) && !defined(CONFIG_RTC_MODULE))
-int main(void) { exit(1); }
-#else
+AC_TRY_COMPILE([
 #define __KERNEL__
-#include <linux/version.h>
 #include <linux/config.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 12)	/* FIXME: which 2.2.x kernel? */
+#include <linux/version.h>
 #include <linux/rtc.h>
-#else
 #include <linux/mc146818rtc.h>
-#endif
-int main(void)
-{
+],[
+#ifdef RTC_IRQ
   rtc_task_t *cb = 0;
-  exit(0);
-}
+#else
+#error
 #endif
 ],
   AC_MSG_RESULT("yes");rtcsup="m",
