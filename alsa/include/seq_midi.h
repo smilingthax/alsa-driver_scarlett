@@ -20,9 +20,10 @@
 #ifndef __SND_SEQ_MIDISYNTH_H
 #define __SND_SEQ_MIDISYNTH_H
 
+#ifdef SNDCFG_SEQUENCER
 /* register/unregister midisynth port */
-extern int snd_seq_midisynth_register_port(int cardnum, int device, char *portname);
-extern int snd_seq_midisynth_unregister_port(int cardnum, int device);
-
-                        
+extern int snd_seq_midisynth_register_port(snd_card_t *card, int device, char *portname);
+extern int snd_seq_midisynth_unregister_port(snd_card_t *card, int device);
 #endif
+                        
+#endif /* __SND_SEQ_MIDISYNTH_H */

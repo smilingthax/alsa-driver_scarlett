@@ -147,8 +147,28 @@ struct snd_stru_rawmidi {
 
 extern snd_rawmidi_t *snd_rawmidi_new_device(snd_card_t * card, char *id);
 extern int snd_rawmidi_free(snd_rawmidi_t * rmidi);
-extern int snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device);
-extern int snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
+extern int __snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device);
+extern int __snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
+#ifdef SNDCFG_SEQUENCER
+#include "seq_midi.h"
+static inline int snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device)
+{
+	int err;
+
+	if ((err = __snd_rawmidi_register(rmidi, rawmidi_device))<0)
+		return err;
+	snd_seq_midisynth_register_port(rmidi->card, rmidi->device, NULL);
+	return err;
+}
+static inline int snd_rawmidi_unregister(snd_rawmidi_t * rmidi)
+{
+	snd_seq_midisynth_unregister_port(rmidi->card, rmidi->device);
+	return __snd_rawmidi_unregister(rmidi);
+}
+#else
+#define snd_rawmidi_register __snd_rawmidi_register
+#define snd_rawmidi_unregister __snd_rawmidi_unregister
+#endif
 extern snd_rawmidi_kswitch_t *snd_rawmidi_new_switch(snd_rawmidi_t * rmidi,
 				snd_rawmidi_direction_t * dir,
 				snd_rawmidi_kswitch_t * ksw);
@@ -162,6 +182,7 @@ extern int snd_rawmidi_control_ioctl(snd_card_t * card,
 
 /* main midi functions */
 
+extern int snd_midi_info(int cardnum, int device, snd_rawmidi_info_t *info);
 extern int snd_midi_open(int cardnum, int device, int mode, snd_rawmidi_t ** out);
 extern int snd_midi_close(int cardnum, int device, int mode);
 extern int snd_midi_drain_output(snd_rawmidi_t * rmidi);

@@ -37,8 +37,9 @@ typedef struct snd_info_buffer snd_info_buffer_t;
 
 #define SND_INFO_ENTRY_TEXT	0
 #define SND_INFO_ENTRY_DATA	1
-#define  SND_INFO_ENTRY_SDEVICE 1
+#define SND_INFO_ENTRY_SDEVICE  1	/* subtype */
 #define SND_INFO_ENTRY_DEVICE	2
+#define SND_INFO_ENTRY_SEQUENCER 10	/* subtype */
 
 struct snd_info_entry;
 
