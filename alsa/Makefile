@@ -239,8 +239,8 @@ mrproper: clean1
 .PHONY: cvsclean
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
-	include/config1.h.in toplevel.config toplevel.config.in \
-	alsa-kernel sound scripts include/sound
+	  include/config1.h.in toplevel.config toplevel.config.in \
+	  alsa-kernel sound scripts include/sound
 	rm -rf include/linux
 
 .PHONY: pack
