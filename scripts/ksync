@@ -70,6 +70,7 @@ KERNEL_FORCE_DIR = ['/include/sound']
 
 # Directory mapping
 ALSA_MAP = {'/':'/sound',
+	    '/Documentation':'/Documentation/sound/alsa',
 	    '/include':'/include/sound'}
 KERNEL_MAP = {}		# Initialized from ALSA_MAP
 
@@ -262,18 +263,24 @@ def remap_kernel_file(file):
 	return path + comp[-1]
 
 def do_alsa_kernel_diff(alsa, kernel):
+	nflag = 0
 	afile = get_cvs_root() + alsa;
 	kfile = get_bk_root() + kernel;
 	if not os.path.exists(afile):
 		update_cvs_file(afile)
 	if not os.path.exists(kfile):
 		update_bk_file(kfile)
+		if not os.path.exists(kfile):
+			nflag = 1
+			os.system('touch %s' % kfile)
 	cmd = 'diff -uN %s %s' % (kfile, afile)
 	fp = os.popen(cmd)
 	lines = fp.readlines()
 	fp.close()
 	lines = change_diff_lines(lines, "linux" + kernel)
 	print_file(sys.stdout, lines)
+	if nflag:
+		os.remove(kfile)
 
 def do_kernel_alsa_diff(kernel, alsa):
 	afile = get_cvs_root() + alsa;
@@ -339,7 +346,7 @@ def diffall(reverse):
 			do_kernel_alsa_diff(f, df)
 		if bfiles.count(f):
 			bfiles.remove(f)
-#		if not bfiles.count(f):
+#		else:
 #			print 'File %s (%s) is missing from Kernel tree' % (df, f)
 	for f in bfiles:
 		df = f
@@ -350,8 +357,8 @@ def diffall(reverse):
 			do_kernel_alsa_diff(df, f)
 		if cfiles.count(f):
 			cfiles.remove(f)
-#		if not cfiles.count(f):
-#			print 'File %s (%s) is missing from ALSA tree' % (df, f)
+		else:
+			print 'File %s (%s) is missing from ALSA tree' % (df, f)
 	update_cvs_file('include/version.h')
 	modify_version_file()
 	if not reverse:
