@@ -439,10 +439,6 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 	serialmidi_t *serial;
 	int err;
 
-	if (outs < 1)
-		outs = 1;
-	if (outs > 16)
-		outs = 16;
 	switch (adaptor) {
 	case SERIAL_ADAPTOR_SOUNDCANVAS:
 		break;
@@ -452,11 +448,16 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 		break;
 	case SERIAL_ADAPTOR_MS124W_MB:
 		outs = 16;
+		break;
 	default:
 		snd_printk(KERN_ERR "Adaptor type is out of range 0-%d (%d)\n",
 				SERIAL_ADAPTOR_MAX, adaptor);
 		return -ENODEV;
 	}
+	if (outs < 1)
+		outs = 1;
+	if (outs > 16)
+		outs = 16;
 
 	if ((serial = snd_magic_kcalloc(serialmidi_t, 0, GFP_KERNEL)) == NULL)
 		return -ENOMEM;
