@@ -34,10 +34,10 @@ struct snd_stru_es1688 {
 	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
 	unsigned short irq;		/* IRQ number of ESS chip */
 	unsigned short mpu_irq;		/* MPU IRQ */
-	unsigned short irqnum;		/* IRQ number (index) */
-	unsigned short mpu_irqnum;	/* MPU IRQ number (index) */
+	snd_irq_t * irqptr;		/* IRQ pointer */
+	snd_irq_t * mpu_irqptr;		/* MPU IRQ pointer */
 	unsigned short dma8;		/* 8-bit DMA */
-	unsigned short dma8num;		/* 8-bit DMA index */
+	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
 	unsigned short version;		/* version of ESS chip */
 	unsigned short hardware;	/* see to ES1688_HW_XXXX */
 
@@ -112,9 +112,9 @@ extern void snd_es1688_interrupt(snd_pcm_t * pcm);
 extern snd_pcm_t *snd_es1688_new_device(snd_card_t * card,
 					unsigned short port,
 					unsigned short mpu_port,
-					unsigned short irqnum,
-					unsigned short mpu_irqnum,
-					unsigned short dma8num,
+					snd_irq_t * irqptr,
+					snd_irq_t * mpu_irqptr,
+					snd_dma_t * dma8ptr,
 					unsigned short hardware);
 extern int snd_es1688_init(snd_pcm_t * pcm, int enable);
 extern snd_kmixer_t *snd_es1688_new_mixer(snd_pcm_t * pcm);

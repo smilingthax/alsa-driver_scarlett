@@ -108,9 +108,9 @@
 typedef struct snd_stru_solo esssolo_t;
 
 struct snd_stru_solo {
-	int dma1num;
-	int dma2num;
-	int irqnum;
+	snd_dma_t * dma1ptr;
+	snd_dma_t * dma2ptr;
+	snd_irq_t * irqptr;
 
 	unsigned int io_port;
 	unsigned int sb_port;
@@ -147,7 +147,11 @@ struct snd_stru_solo {
 	snd_info_entry_t *proc_entry;
 };
 
-esssolo_t *snd_solo_create(snd_card_t * card, struct snd_pci_dev *pci, int dma1num, int dma2num, int irqnum, int reverb, int mge);
+esssolo_t *snd_solo_create(snd_card_t * card, struct snd_pci_dev *pci,
+			   snd_dma_t * dma1ptr,
+			   snd_dma_t * dma2ptr,
+			   snd_irq_t * irqptr,
+			   int reverb, int mge);
 void snd_solo_free(esssolo_t * solo);
 void snd_solo_interrupt(esssolo_t * solo);
 

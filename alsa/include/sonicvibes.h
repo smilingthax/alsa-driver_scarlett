@@ -156,9 +156,9 @@
 typedef struct snd_stru_sonicvibes sonicvibes_t;
 
 struct snd_stru_sonicvibes {
-	int dma1num;
-	int dma2num;
-	int irqnum;
+	snd_dma_t * dma1ptr;
+	snd_dma_t * dma2ptr;
+	snd_irq_t * irqptr;
 
 	unsigned int sb_port;
 	unsigned int enh_port;
@@ -197,7 +197,9 @@ struct snd_stru_sonicvibes {
 
 sonicvibes_t *snd_sonicvibes_create(snd_card_t * card,
 				    struct snd_pci_dev *pci,
-				    int dma1num, int dma2num, int irqnum,
+				    snd_dma_t * dma1ptr,
+				    snd_dma_t * dma2ptr,
+				    snd_irq_t * irqptr,
 				    int reverb, int mge);
 void snd_sonicvibes_free(sonicvibes_t * sonic);
 void snd_sonicvibes_interrupt(sonicvibes_t * sonic);

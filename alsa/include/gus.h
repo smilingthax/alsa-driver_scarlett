@@ -244,12 +244,9 @@ struct snd_stru_gf1 {
 	 sw_lfo:1;			/* use software LFO */
 
 	unsigned short port;		/* port of GF1 chip */
-	unsigned short irq;		/* IRQ number of GF1 chip */
-	unsigned short irqnum;		/* IRQ index */
-	unsigned short dma1;		/* DMA1 number */
-	unsigned short dma1num;		/* DMA1 index */
-	unsigned short dma2;		/* DMA2 number */
-	unsigned short dma2num;		/* DMA2 number */
+	snd_irq_t * irqptr;		/* IRQ pointer */
+	snd_dma_t * dma1ptr;		/* DMA1 pointer */
+	snd_dma_t * dma2ptr;		/* DMA2 pointer */
 	unsigned int memory;		/* GUS's DRAM size in bytes */
 	unsigned int rom_memory;	/* GUS's ROM size in bytes */
 	unsigned int rom_present;	/* bitmask */
@@ -558,9 +555,9 @@ extern void snd_gf1_peek_print_block(snd_gus_card_t * gus, unsigned int addr, in
 
 snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 				 unsigned short port,
-				 unsigned short irqnum,
-				 unsigned short dma1num,
-				 unsigned short dma2num);
+				 snd_irq_t * irqnum,
+				 snd_dma_t * dma1num,
+				 snd_dma_t * dma2num);
 int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);

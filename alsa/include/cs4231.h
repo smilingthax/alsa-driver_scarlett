@@ -250,11 +250,11 @@ struct snd_stru_cs4231 {
 	unsigned short cport;		/* control base i/o port (CS4236) */
 	unsigned short jport;		/* joystick port */
 	unsigned short irq;		/* IRQ line */
-	unsigned short irqnum;		/* IRQ number */
+	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma1;		/* playback DMA */
 	unsigned short dma2;		/* record DMA */
-	unsigned short dmanum1;		/* DMA number - playback */
-	unsigned short dmanum2;		/* DMA number - record */
+	snd_dma_t * dmaptr1;		/* DMA pointer - playback */
+	snd_dma_t * dmaptr2;		/* DMA pointer - record */
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to CS4231_MODE_XXXX */
 	unsigned short hardware;	/* see to CS4231_HW_XXXX */
@@ -295,9 +295,9 @@ void snd_cs4231_interrupt(snd_pcm_t * pcm, unsigned char status);
 
 extern snd_pcm_t *snd_cs4231_new_device(snd_card_t * card,
 					unsigned short port,
-					unsigned short irqnum,
-					unsigned short dmanum1,
-					unsigned short dmanum2,
+					snd_irq_t * irqptr,
+					snd_dma_t * dmaptr1,
+					snd_dma_t * dmaptr2,
 					unsigned short hardware);
 
 snd_kmixer_t *snd_cs4231_new_mixer(snd_pcm_t * pcm);
@@ -306,9 +306,9 @@ extern snd_pcm_t *snd_cs4236_new_device(snd_card_t * card,
 					unsigned short port,
 					unsigned short cport,
 					unsigned short jport,
-					unsigned short irqnum,
-					unsigned short dmanum1,
-					unsigned short dmanum2,
+					snd_irq_t * irqptr,
+					snd_dma_t * dmaptr1,
+					snd_dma_t * dmaptr2,
 					unsigned short hardware);
 
 snd_kmixer_t *snd_cs4236_new_mixer(snd_pcm_t * pcm);

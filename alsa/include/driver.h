@@ -173,14 +173,6 @@ static inline void snd_leave_user(mm_segment_t fs)
 #define SND_AUTO_IRQ		16
 #define SND_AUTO_DMA		8
 #define SND_AUTO_DMA_SIZE	(0x7fffffff)
-#define SND_IRQ_DISABLE		0xffff
-#define SND_DMA_DISABLE		0xffff
-
-/* Hardware resources allocation */
-
-#define SND_DMAS		4	/* max DMA # for soundcard */
-#define SND_IRQS		4	/* max IRQ # for soundcard */
-#define SND_PORTS		8	/* max PORT regions for soundcard */
 
 /* DMA */
 
@@ -189,39 +181,42 @@ static inline void snd_leave_user(mm_segment_t fs)
 #define SND_DMA_TYPE_PCI_16MB	2	/* PCI DMA (must be in low 16MB memory) */
 #define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
 
-struct snd_stru_dma {
-	int type;		/* dma type - see SND_DMA_TYPE_XXXX */
+typedef struct snd_stru_dma {
+	int type;			/* dma type - see SND_DMA_TYPE_XXXX */
 	volatile unsigned short
-	 mmaped:1,		/* mmaped area to user space */
-	 mmap_free:1;		/* free mmaped buffer */
-	int dma;		/* DMA number */
-	char *name;		/* pointer to name */
-	unsigned char *buf;	/* pointer to DMA buffer */
-	long size;		/* real size of DMA buffer */
-	long rsize;		/* requested size of DMA buffer */
-	char *owner;		/* owner of this DMA channel */
-	char *soft_owner;	/* owner of soft DMA channel */
+	 mmaped:1,			/* mmaped area to user space */
+	 mmap_free:1;			/* free mmaped buffer */
+	int dma;			/* DMA number */
+	char *name;			/* pointer to name */
+	unsigned char *buf;		/* pointer to DMA buffer */
+	long size;			/* real size of DMA buffer */
+	long rsize;			/* requested size of DMA buffer */
+	char *owner;			/* owner of this DMA channel */
+	char *soft_owner;		/* owner of soft DMA channel */
 	struct vm_area_struct *vma;	/* virtual memory area */
 	snd_mutex_define(lock);		/* mutex for locking */
 	snd_mutex_define(mutex);	/* snd_dma_malloc/free */
-};
+	struct snd_stru_dma *next;
+} snd_dma_t;
 
 #define SND_IRQ_TYPE_ISA	0	/* ISA IRQ */
 #define SND_IRQ_TYPE_PCI	1	/* PCI IRQ (shareable) */
 #define SND_IRQ_TYPE_EISA	SND_IRQ_TYPE_PCI
 
-struct snd_stru_irq {
+typedef struct snd_stru_irq {
 	int type;		/* see to SND_IRQ_TYPE_XXXX */
 	unsigned short irq;
 	char *name;
 	void *dev_id;
-};
+	struct snd_stru_irq *next;
+} snd_irq_t;
 
-struct snd_stru_port {
+typedef struct snd_stru_port {
 	unsigned short port;
 	unsigned short size;
 	char *name;
-};
+	struct snd_stru_port *next;
+} snd_port_t;
 
 typedef void (snd_irq_handler_t) (int irq, void *dev_id, struct pt_regs * regs);
 
@@ -238,36 +233,31 @@ typedef struct snd_stru_timer snd_timer_t;
 typedef struct snd_stru_synth snd_synth_t;
 
 struct snd_stru_card {
-	int number;		/* number of soundcard (index to snd_cards) */
+	int number;				/* number of soundcard (index to snd_cards) */
 
-	unsigned int type;	/* type (number ID) of soundcard */
+	unsigned int type;			/* type (number ID) of soundcard */
 
-	char id[16];		/* id string of this card */
-	char abbreviation[16];	/* abbreviation of soundcard name */
-	char shortname[32];	/* short name of this soundcard */
-	char longname[80];	/* name of this soundcard */
+	char id[16];				/* id string of this card */
+	char abbreviation[16];			/* abbreviation of soundcard name */
+	char shortname[32];			/* short name of this soundcard */
+	char longname[80];			/* name of this soundcard */
 
-	struct snd_stru_dma *dmas[SND_DMAS];
-	volatile unsigned int dmas_map;		/* bitmask for allocated DMA channels */
-
-	struct snd_stru_irq *irqs[SND_IRQS];
-	volatile unsigned int irqs_map;		/* bitmask for allocated IRQ channels */
-
-	struct snd_stru_port *ports[SND_PORTS];
-	volatile unsigned int ports_map;	/* bitmask for allocated port numbers */
+	snd_dma_t *dmas;			/* pointer to first DMA */
+	snd_irq_t *irqs;			/* pointer to first IRQ */
+	snd_port_t *ports;			/* pointer to first I/O port */
 
 	void (*use_inc) (snd_card_t * card);	/* increment use count */
 	void (*use_dec) (snd_card_t * card);	/* decrement use count */
 
-	 snd_mutex_define(control);	/* control card mutex */
+	snd_mutex_define(control);		/* control card mutex */
 
-	void *private_data;	/* private data for soundcard */
+	void *private_data;			/* private data for soundcard */
 	void (*private_free) (void *private);	/* callback for freeing of private data */
 
-	void *static_data;	/* private static data for soundcard */
+	void *static_data;			/* private static data for soundcard */
 
-	int switches_count;		/* switches count */
-	snd_ctl_kswitch_t **switches;	/* switches */
+	int switches_count;			/* switches count */
+	snd_ctl_kswitch_t **switches;		/* switches */
 
 	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
 	struct proc_dir_entry *proc_dir_link;	/* number link to real id */
@@ -339,10 +329,10 @@ extern char *snd_malloc_strdup(char *string);
 extern void snd_free_str(char *string);
 extern char *snd_malloc_pages(unsigned long size, int *pg, int dma);
 extern void snd_free_pages(char *ptr, unsigned long size);
-extern int snd_dma_malloc(snd_card_t * card, int dmanum, char *owner, int soft);
-extern void snd_dma_free(snd_card_t * card, int dmanum, int soft);
-extern int snd_dma_soft_grab(snd_card_t * card, int dmanum);
-extern void snd_dma_soft_release(snd_card_t * card, int dmanum);
+extern int snd_dma_malloc(snd_card_t * card, snd_dma_t * dma, char *owner, int soft);
+extern void snd_dma_free(snd_card_t * card, snd_dma_t * dma, int soft);
+extern int snd_dma_soft_grab(snd_card_t * card, snd_dma_t * dma);
+extern void snd_dma_soft_release(snd_card_t * card, snd_dma_t * dma);
 extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
 extern int snd_memory_info_init(void);
 extern int snd_memory_info_done(void);
@@ -367,26 +357,21 @@ extern int snd_card_info_done(void);
 extern void snd_delay(int loops);
 
 extern int snd_check_ioport(snd_card_t * card, int port, int size);
-extern int snd_register_ioport(snd_card_t * card, int port, int size, char *name);
+extern int snd_register_ioport(snd_card_t * card, int port, int size, char *name,
+                               snd_port_t ** rport);
+extern int snd_unregister_ioport(snd_card_t * card, snd_port_t * port);
 extern int snd_unregister_ioports(snd_card_t * card);
 
 extern int snd_register_dma_channel(snd_card_t * card, char *name, int number,
-				    int type, int rsize, int *possible_numbers);
+				    int type, int rsize, int *possible_numbers,
+				    snd_dma_t ** rdma);
 extern int snd_unregister_dma_channels(snd_card_t * card);
 
 extern int snd_register_interrupt(snd_card_t * card, char *name, int number,
 				  int type, snd_irq_handler_t * handler,
-				  void *dev_id, int *possible_numbers);
+				  void *dev_id, int *possible_numbers,
+				  snd_irq_t ** rirq);
 extern int snd_unregister_interrupts(snd_card_t * card);
-
-static inline void snd_enable_irq(snd_card_t * card, int irqnum)
-{
-	enable_irq(card->irqs[irqnum]->irq);
-}
-static inline void snd_disable_irq(snd_card_t * card, int irqnum)
-{
-	disable_irq(card->irqs[irqnum]->irq);
-}
 
 /* isadma.c */
 

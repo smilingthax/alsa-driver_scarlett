@@ -34,11 +34,11 @@ struct snd_stru_es1869 {
 	unsigned short fm_port;		/* FM port */
 	unsigned short ctrl_port;	/* Control port of ESS chip */
 	unsigned short irq;		/* IRQ number of ESS chip */
-	unsigned short irqnum;		/* IRQ number (index) */
+	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma1;		/* DMA 1 */
-	unsigned short dma1num;		/* DMA 1 index */
+	snd_dma_t * dma1ptr;		/* DMA 1 pointer */
 	unsigned short dma2;		/* DMA 2 */
-	unsigned short dma2num;		/* DMA 2 index */
+	snd_dma_t * dma2ptr;		/* DMA 2 pointer */
 	unsigned short version;		/* version of ESS chip */
 	unsigned short audio2_vol;	/* volume level of audio2 */
 
@@ -66,9 +66,9 @@ extern es1869_t *snd_es1869_new_device(snd_card_t * card,
 				       unsigned short port,
 				       unsigned short mpu_port,
 				       unsigned short fm_port,
-				       unsigned short irqnum,
-				       unsigned short dma8num,
-				       unsigned short hardware);
+				       snd_irq_t * irqnum,
+				       snd_dma_t * dma1num,
+				       snd_dma_t * dma2num);
 extern int snd_es1869_init(es1869_t * codec, int enable);
 extern snd_pcm_t *snd_es1869_pcm(es1869_t * codec);
 extern snd_pcm_t *snd_es1869_pcm2(es1869_t * codec);

@@ -69,11 +69,11 @@ struct snd_stru_sbdsp {
 	unsigned short port;		/* base port of DSP chip */
 	unsigned short mpu_port;	/* MPU port for SB DSP 4.0+ */
 	unsigned short irq;		/* IRQ number of DSP chip */
-	unsigned short irqnum;		/* IRQ number (index) */
+	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma8;		/* 8-bit DMA */
-	unsigned short dma8num;		/* 8-bit DMA index */
+	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
 	unsigned short dma16;		/* 16-bit DMA */
-	unsigned short dma16num;	/* 16-bit DMA index */
+	snd_dma_t * dma16ptr;		/* 16-bit DMA pointer */
 	unsigned short version;		/* version of DSP chip */
 	unsigned short hardware;	/* see to SB_HW_XXXX */
 
@@ -212,9 +212,9 @@ extern void snd_sbdsp_sb16_interrupt(snd_pcm_t * pcm, unsigned short status);
 
 extern snd_pcm_t *snd_sbdsp_new_device(snd_card_t * card,
 				       unsigned short port,
-				       unsigned short irqnum,
-				       unsigned short dma8num,
-				       unsigned short dma16num,
+				       snd_irq_t * irqptr,
+				       snd_dma_t * dma8ptr,
+				       snd_dma_t * dma16ptr,
 				       unsigned short hardware);
 extern int snd_sbdsp_probe(snd_pcm_t * pcm);
 extern int snd_sbdsp_sb16_configure(snd_pcm_t * pcm);

@@ -266,10 +266,10 @@
 typedef struct snd_stru_ensoniq ensoniq_t;
 
 struct snd_stru_ensoniq {
-	int dma1num;		/* DAC1 */
-	int dma2num;		/* ADC */
-	int dma3num;		/* DAC2 */
-	int irqnum;
+	snd_dma_t * dma1ptr;	/* DAC1 */
+	snd_dma_t * dma2ptr;	/* ADC */
+	snd_dma_t * dma3ptr;	/* DAC2 */
+	snd_irq_t * irqptr;
 
 	int es1371;		/* ES1371 chip present */
 
@@ -304,8 +304,10 @@ struct snd_stru_ensoniq {
 };
 
 ensoniq_t *snd_ensoniq_create(snd_card_t * card, struct snd_pci_dev *pci,
-			      int dma1num, int dma2num, int dma3num,
-			      int irqnum);
+			      snd_dma_t * dma1ptr,
+			      snd_dma_t * dma2ptr,
+			      snd_dma_t * dma3ptr,
+			      snd_irq_t * irqptr);
 void snd_ensoniq_free(ensoniq_t * ensoniq);
 void snd_ensoniq_interrupt(ensoniq_t * ensoniq);
 

@@ -149,9 +149,9 @@ struct snd_stru_ad1848_freq {
 struct snd_stru_ad1848 {
 	unsigned short port;		/* i/o port */
 	unsigned short irq;		/* IRQ line */
-	unsigned short irqnum;		/* IRQ number */
+	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma;		/* data DMA */
-	unsigned short dmanum;		/* data DMA number */
+	snd_dma_t * dmaptr;		/* data DMA pointer */
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to AD1848_MODE_XXXX */
 	unsigned short hardware;	/* see to AD1848_HW_XXXX */
@@ -177,8 +177,8 @@ void snd_ad1848_interrupt(snd_pcm_t * pcm, unsigned char status);
 
 extern snd_pcm_t *snd_ad1848_new_device(snd_card_t * card,
 					unsigned short port,
-					unsigned short irqnum,
-					unsigned short dmanum,
+					snd_irq_t * irqptr,
+					snd_dma_t * dmaptr,
 					unsigned short hardware);
 
 snd_kmixer_t *snd_ad1848_new_mixer(snd_pcm_t * pcm);

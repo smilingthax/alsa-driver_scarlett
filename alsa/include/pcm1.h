@@ -154,12 +154,12 @@ struct snd_stru_pcm1_channel {
 	volatile unsigned int total_xruns;	/* under/overruns */
 	/* -- physical/flags -- */
 	unsigned int flags;
-	unsigned int used_size;	/* used size of audio buffer (logical size) */
-	unsigned int mmap_size;	/* for OSS */
+	unsigned int used_size;		/* used size of audio buffer (logical size) */
+	unsigned int mmap_size;		/* for OSS */
 	unsigned char neutral_byte;
-	unsigned int size;	/* real size of audio buffer */
-	unsigned char *buffer;	/* pointer to audio buffer */
-	int dmanum;		/* dma number */
+	unsigned int size;		/* real size of audio buffer */
+	unsigned char *buffer;		/* pointer to audio buffer */
+	snd_dma_t *dmaptr;		/* dma pointer */
 	/* -- ack callback -- */
 	void (*ack) (snd_pcm1_t * pcm);	/* acknowledge interrupt to abstract layer */
 	/* -- logical blocks -- */
@@ -234,8 +234,8 @@ extern void snd_pcm1_fill_with_neutral(snd_pcm1_t * pcm,
 				       snd_pcm1_channel_t * pchn);
 
 extern int snd_pcm1_dma_alloc(snd_pcm1_t * pcm, int direction,
-			      int dmanum, char *ident);
-extern int snd_pcm1_dma_free(snd_pcm1_t * pcm, int direction, int dmanum);
+			      snd_dma_t * dma, char *ident);
+extern int snd_pcm1_dma_free(snd_pcm1_t * pcm, int direction, snd_dma_t * dma);
 
 extern void snd_pcm1_proc_format(snd_pcm_channel_t * pchn,
 			         snd_pcm1_channel_t * pchn1);
