@@ -450,10 +450,22 @@ struct device {
 
 struct device *snd_kdevice_pci(struct pci_dev *pci);
 
-void *dma_alloc_coherent(struct device *dev, size_t size,
-			 dma_addr_t *dma_handle, int flag);
-void dma_free_coherent(struct device *dev, size_t size,
-                       void *vaddr, dma_addr_t dma_handle);
+static inline struct pci_dev *to_pci_dev(struct device *dev)
+{
+	return dev->d.pci;
+}
+
+static inline void *dma_alloc_coherent(struct device *dev, size_t size,
+				       dma_addr_t *dma_handle, int flag)
+{
+	return pci_alloc_consistent(to_pci_dev(dev), size, dma_handle);
+}
+
+static inline void dma_free_coherent(struct device *dev, size_t size,
+				     void *vaddr, dma_addr_t dma_handle)
+{
+	pci_free_consistent(to_pci_dev(dev), size, vaddr, dma_handle);
+}
 
 #else
 
