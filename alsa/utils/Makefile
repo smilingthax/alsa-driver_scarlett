@@ -15,7 +15,7 @@ endif
 TARGETS = dummy
 
 .c.o:
-	$(CC) $(INCLUDE) -c -o $*.o $<
+	$(CC) $(INCLUDE) -Wall -g -c -o $*.o $<
 
 all: $(TARGETS)
 
