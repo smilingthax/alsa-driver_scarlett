@@ -186,28 +186,3 @@ void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long fla
 }
 
 #endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && (defined(CONFIG_PCMCIA) || defined(CONFIG_PCMCIA_MODULE))
-
-#include "compat_cs.h"
-#include <pcmcia/version.h>
-
-int snd_compat_pcmcia_register_driver(struct pcmcia_driver *driver)
-{
-	servinfo_t serv;
-
-	CardServices(GetCardServicesInfo, &serv);
-	if (serv.Revision != CS_RELEASE_CODE) {
-		printk(KERN_WARNING "%s: Card Services release does not match (%x != %x)!\n", driver->drv.name, serv.Revision, CS_RELEASE_CODE);
-		return -EIO;
-	}
-	register_pccard_driver((dev_info_t *)&driver->drv.name, driver->attach, driver->detach);
-	return 0;
-}
-
-void snd_compat_pcmcia_unregister_driver(struct pcmcia_driver *driver)
-{
-	unregister_pccard_driver((dev_info_t *)&driver->drv.name);
-}
-
-#endif
