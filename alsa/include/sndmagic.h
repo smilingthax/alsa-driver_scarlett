@@ -24,19 +24,19 @@
 
 
 #ifdef CONFIG_SND_DEBUG
-void *_snd_magic_kcalloc(size_t size, int flags, unsigned int magic);
-void *_snd_magic_kmalloc(size_t size, int flags, unsigned int magic);
+void *_snd_magic_kcalloc(size_t size, int flags, unsigned long magic);
+void *_snd_magic_kmalloc(size_t size, int flags, unsigned long magic);
 void _snd_magic_kfree(void *ptr);
 
 #define snd_magic_kcalloc(type, extra, flags) (type *) _snd_magic_kcalloc(sizeof(type) + extra, flags, type##_magic)
 #define snd_magic_kmalloc(type, extra, flags) (type *) _snd_magic_kmalloc(sizeof(type) + extra, flags, type##_magic)
 
-static inline unsigned int _snd_magic_value(void *obj)
+static inline unsigned long _snd_magic_value(void *obj)
 {
-	return obj == NULL ? -1 : *(((int *)obj) - 1);
+	return obj == NULL ? -1 : *(((unsigned long *)obj) - 1);
 }
 
-static inline int _snd_magic_bad(void *obj, unsigned int magic)
+static inline int _snd_magic_bad(void *obj, unsigned long magic)
 {
 	return _snd_magic_value(obj) != magic;
 }
@@ -44,9 +44,9 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 #ifdef NEW_MACRO_VARARGS
 #define snd_magic_cast(type, ptr, ...) (type *) ({\
 	void *__ptr = ptr;\
-	unsigned int __magic = _snd_magic_value(__ptr);\
+	unsigned long __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
-		snd_printk("bad MAGIC (0x%x)\n", __magic);\
+		snd_printk("bad MAGIC (0x%lx)\n", __magic);\
 		__VA_ARGS__;\
 	}\
 	__ptr;\
@@ -54,9 +54,9 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 #else
 #define snd_magic_cast(type, ptr, action...) (type *) ({\
 	void *__ptr = ptr;\
-	unsigned int __magic = _snd_magic_value(__ptr);\
+	unsigned long __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
-		snd_printk("bad MAGIC (0x%x)\n", __magic);\
+		snd_printk("bad MAGIC (0x%lx)\n", __magic);\
 		##action;\
 	}\
 	__ptr;\

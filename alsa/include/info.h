@@ -50,7 +50,7 @@ struct snd_info_entry_text {
 	void (*write) (snd_info_buffer_t * buffer, void *private_data);
 };
 
-struct snd_info_entry_data {
+struct snd_info_entry_ops {
 	int (*open) (void *private_data, snd_info_entry_t * entry,
 		     unsigned short mode, void **file_private_data);
 	int (*release) (void *private_data, snd_info_entry_t * entry,
@@ -84,7 +84,7 @@ struct snd_info_entry {
 	unsigned short subtype;
 	union {
 		struct snd_info_entry_text text;
-		struct snd_info_entry_data data;
+		struct snd_info_entry_ops *ops;
 		struct snd_info_entry_device device;
 	} t;
 	void *private_data;
