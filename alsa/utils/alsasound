@@ -34,7 +34,7 @@ function start() {
   # insert all sound modules
   #
   cat /etc/conf.modules | \
-    grep -E "^alias.+snd-card-.*[[:digit:]]" | \
+    grep -E "^alias( |\t)+snd-card-[[:digit:]]" | \
     awk '{print $3}' | \
     while read line; do \
       echo -n "Starting sound driver: $line "; \
