@@ -133,6 +133,15 @@ int snd_pcm_plugin_hwparams(snd_pcm_channel_params_t *params,
 
 int snd_pcm_oss_plugin_append(snd_pcm_runtime_t *runtime, snd_pcm_plugin_t *plugin);
 
+#define ROUTE_PLUGIN_RESOLUTION 16
+
+int getput_index(int format);
+int copy_index(int src_format, int dst_format);
+
+void zero_voice(snd_pcm_plugin_t *plugin,
+		const snd_pcm_plugin_voice_t *dst_voice,
+		size_t samples);
+
 #ifdef PLUGIN_DEBUG
 #define pdprintf( args... ) printk( "plugin: " ##args)
 #else
