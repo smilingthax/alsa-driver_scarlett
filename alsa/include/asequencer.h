@@ -81,7 +81,7 @@
 #define SND_SEQ_EVENT_PORT_EXIT		64	/* port was deleted from system */
 #define SND_SEQ_EVENT_PORT_CHANGE	65	/* port status/info has changed */
 
-#define SND_SEQ_EVENT_PRIVATE		70	/* private event */
+#define SND_SEQ_EVENT_OSS		70	/* OSS raw event */
 #define SND_SEQ_EVENT_NORMAL_CONTROLS	80
 
 	/* synthesizer events */	
@@ -210,7 +210,7 @@ typedef struct {
 	/* sample cluster */
 typedef struct {
 	snd_seq_instr_cluster_t cluster;
-	int private: 1;
+	int private_sample: 1;
 } snd_seq_ev_cluster;
 
 	/* sample position */
