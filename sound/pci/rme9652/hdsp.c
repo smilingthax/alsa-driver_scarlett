@@ -421,7 +421,7 @@ static inline void hdsp_write_bigendian(hdsp_t *hdsp, int reg, int val)
 
 static inline unsigned int hdsp_read(hdsp_t *hdsp, int reg)
 {
-	return cpu_to_le32 (readl (hdsp->iobase + reg));
+	return le32_to_cpu (readl (hdsp->iobase + reg));
 }
 
 static inline unsigned long long hdsp_read64 (hdsp_t *hdsp, int reg)
@@ -430,7 +430,7 @@ static inline unsigned long long hdsp_read64 (hdsp_t *hdsp, int reg)
 	val = hdsp_read(hdsp, reg);
 	val = (val<<32)|hdsp_read(hdsp, reg + 4);
 
-	return cpu_to_le64(val);
+	return le64_to_cpu(val);
 }
 
 static inline int hdsp_check_for_iobox (hdsp_t *hdsp)
