@@ -240,7 +240,7 @@ static int vxp_load_xilinx_binary(vx_core_t *_chip, const snd_hwdep_dsp_image_t 
 /*
  * vxp_load_dsp - load_dsp callback
  */
-static int vxp_load_dsp(vx_core_t *vx, snd_hwdep_dsp_image_t *dsp)
+static int vxp_load_dsp(vx_core_t *vx, const snd_hwdep_dsp_image_t *dsp)
 {
 	int err;
 
