@@ -76,6 +76,10 @@ static struct tasklet_struct rtc_tq;
 static int
 rtctimer_open(snd_timer_t *t)
 {
+	err = rtc_register(&rtc_task);
+	if (err < 0)
+		return err;
+	t->private_data = &rtc_task;
 	MOD_INC_USE_COUNT;
 	return 0;
 }
@@ -83,6 +87,11 @@ rtctimer_open(snd_timer_t *t)
 static int
 rtctimer_close(snd_timer_t *t)
 {
+	rtc_task_t *rtc = t->private_data;
+	if (rtc) {
+		rtc_unregister(rtc);
+		t->private_data = NULL;
+	}
 	MOD_DEC_USE_COUNT;
 	return 0;
 }
@@ -138,13 +147,6 @@ static void rtctimer_interrupt2(unsigned long private_data)
 }
 #endif /* USE_TASKLET */
 
-static void rtctimer_private_free(snd_timer_t *timer)
-{
-	rtc_task_t *rtc = timer->private_data;
-	if (rtc)
-		rtc_unregister(rtc);
-}
-
 
 /*
  *  ENTRY functions
@@ -178,23 +180,16 @@ static int __init rtctimer_init(void)
 	timer->hw = rtc_hw;
 	timer->hw.resolution = NANO_SEC / rtctimer_freq;
 
-	/* register RTC callback */
+	/* set up RTC callback */
 	rtc_task.func = rtctimer_interrupt;
 	rtc_task.private_data = timer;
-	err = rtc_register(&rtc_task);
-	if (err < 0) {
-		snd_timer_global_free(timer);
-		return err;
-	}
-	timer->private_data = &rtc_task;
-	timer->private_free = rtctimer_private_free;
 
 	err = snd_timer_global_register(timer);
 	if (err < 0) {
 		snd_timer_global_free(timer);
 		return err;
 	}
-	rtctimer = timer;
+	rtctimer = timer; /* remember this */
 
 	return 0;
 }
