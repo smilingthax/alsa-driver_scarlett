@@ -51,8 +51,12 @@
  *
  */
 
+#include "driver.h"
 #include "hwdep.h"
 #include "timer.h"
+#include "seq_midi_emul.h"
+#include "seq_device.h"
+#include "ainstr_fm.h"
 
 /*
  *    Register numbers for the global registers
@@ -226,6 +230,22 @@
 
 typedef struct snd_opl3 opl3_t;
 
+/*
+ * A structure to keep track of each hardware voice
+ */
+typedef struct snd_opl3_voice {
+	int  state;		/* status */
+#define SND_OPL3_ST_OFF		0	/* Not playing */
+#define SND_OPL3_ST_ON_2OP	1	/* 2op voice is allocated */
+#define SND_OPL3_ST_ON_4OP	2	/* 4op voice is allocated */
+#define SND_OPL3_ST_NOT_AVAIL	-1	/* voice is not available */
+
+	unsigned int time;	/* An allocation time */
+	unsigned char note;	/* Note currently assigned to this voice */
+
+	snd_midi_channel_t *chan;	/* Midi channel for this note */
+} snd_opl3_voice_t;
+
 struct snd_opl3 {
 	unsigned long l_port;
 	unsigned long r_port;
@@ -242,7 +262,7 @@ struct snd_opl3 {
 	unsigned char fm_mode;		/* OPL mode, see SND_DM_FM_MODE_XXX */
 	unsigned char rhythm;		/* percussion mode flag */
 	unsigned char max_voices;	/* max number of voices */
-#if 0
+#ifdef CONFIG_SND_SEQUENCER
 	snd_seq_device_t *seq_dev;	/* sequencer device, WIP */
 	int seq_client;
 
@@ -251,7 +271,13 @@ struct snd_opl3 {
 	snd_seq_kinstr_ops_t fm_ops;
 	snd_seq_kinstr_list_t *ilist;
 
-	snd_opl3_voice_t voice[MAX_OPL3_VOICES];
+	snd_opl3_voice_t voices[MAX_OPL3_VOICES]; /* Voices (OPL3 'channel') */
+	int use_time;			/* allocation counter */
+
+	unsigned short connection_reg;	/* connection reg shadow */
+	unsigned char drum_reg;		/* percussion reg shadow */
+
+	spinlock_t voice_lock;		/* Lock for voice access */
 #endif
 	struct semaphore access_mutex;	/* locking */
 };
