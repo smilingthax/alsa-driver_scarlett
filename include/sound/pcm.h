@@ -815,7 +815,7 @@ int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
 int snd_pcm_playback_xrun_asap(snd_pcm_substream_t *substream);
 int snd_pcm_capture_xrun_asap(snd_pcm_substream_t *substream);
-void snd_pcm_playback_silence(snd_pcm_substream_t *substream);
+void snd_pcm_playback_silence(snd_pcm_substream_t *substream, snd_pcm_uframes_t new_hw_ptr);
 int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
 int snd_pcm_capture_ready(snd_pcm_substream_t *substream);
 long snd_pcm_playback_ready_jiffies(snd_pcm_substream_t *substream);
