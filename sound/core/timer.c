@@ -1382,11 +1382,7 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 			}
 		}
 	}
-	if (t->hw.flags & SNDRV_TIMER_HW_SLAVE) {
-		tu->ticks = 1;
-	} else {
-		tu->ticks = params.ticks;
-	}
+	tu->ticks = params.ticks;
 	err = 0;
  _end:
 	if (copy_to_user(_params, &params, sizeof(params)))
