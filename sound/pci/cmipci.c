@@ -47,8 +47,8 @@ MODULE_DEVICES("{{C-Media,CMI8738},"
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable switches */
-static int snd_enable_midi[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 0};
-static int snd_enable_fm[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = 0};
+static int snd_enable_midi[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS-1)] = 0};
+static int snd_enable_fm[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS-1)] = 0};
 static long snd_mpu_port[SNDRV_CARDS] = {0x330, [1 ... (SNDRV_CARDS-1)]=-1};
 static long snd_fm_port[SNDRV_CARDS] = {0x388, [1 ... (SNDRV_CARDS-1)]=-1};
 
@@ -2550,8 +2550,9 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	if (enable_midi) {
 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
 					       iomidi, 0,
-					       cm->irq, 0, &cm->rmidi)) < 0)
-			goto __error;
+					       cm->irq, 0, &cm->rmidi)) < 0) {
+			snd_printk("cmipci: no UART401 device at 0x%lx\n", iomidi);
+		}
 	}
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, cm, &ops)) < 0) {
