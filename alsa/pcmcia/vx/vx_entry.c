@@ -233,6 +233,7 @@ static void vxpocket_release(u_long arg)
 	vxpocket_t *chip = snd_magic_cast(vxpocket_t, link->priv,);
 
 	if (chip && snd_vxpocket_card_busy(chip)) {
+		chip->is_stale = 1;
 		link->state |= DEV_STALE_CONFIG;
 		return;
 	}

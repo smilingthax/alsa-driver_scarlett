@@ -329,6 +329,9 @@ int vx_send_msg_nolock(vxpocket_t *chip, struct vx_rmh *rmh)
 {
 	int i, err;
 	
+	if (chip->is_stale)
+		return -EBUSY;
+
 	if ((err = vx_reset_chk(chip)) < 0) {
 		snd_printd(KERN_DEBUG "vx_send_msg: vx_reset_chk error\n");
 		return err;
@@ -452,6 +455,9 @@ int vx_send_msg(vxpocket_t *chip, struct vx_rmh *rmh)
 int vx_send_rih_nolock(vxpocket_t *chip, int cmd)
 {
 	int err;
+
+	if (chip->is_stale)
+		return -EBUSY;
 
 #if 0
 	printk(KERN_DEBUG "send_rih: cmd = 0x%x\n", cmd);

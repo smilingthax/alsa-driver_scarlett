@@ -35,6 +35,9 @@ static void vx_write_codec_reg(vxpocket_t *chip, int codec, unsigned int data)
 	int i;
 	unsigned long flags;
 
+	if (chip->is_stale)
+		return;
+
 	spin_lock_irqsave(&chip->lock, flags);
 	/* Activate access to the corresponding codec register */
 	if (! codec)
@@ -128,6 +131,9 @@ static void vx_set_mic_boost(vxpocket_t *chip, int boost)
 {
 	unsigned long flags;
 
+	if (chip->is_stale)
+		return;
+
 	spin_lock_irqsave(&chip->lock, flags);
 	if (chip->regCDSP & P24_CDSP_MICS_SEL_MASK) {
 		if (boost) {
@@ -168,6 +174,9 @@ static int vx_compute_mic_level(int level)
 static void vx_set_mic_level(vxpocket_t *chip, int level)
 {
 	unsigned long flags;
+
+	if (chip->is_stale)
+		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
 	if (chip->regCDSP & VXP_CDSP_MIC_SEL_MASK) {
@@ -244,6 +253,9 @@ static void vx_change_audio_source(vxpocket_t *chip, int src)
 {
 	unsigned long flags;
 
+	if (chip->is_stale)
+		return;
+
 	spin_lock_irqsave(&chip->lock, flags);
 	switch (src) {
 	case VXP_AUDIO_SRC_DIGITAL:
@@ -313,6 +325,9 @@ static int vx_adjust_audio_level(vxpocket_t *chip, int audio, int capture,
 				 struct vx_audio_level *info)
 {
 	struct vx_rmh rmh;
+
+	if (chip->is_stale)
+		return -EBUSY;
 
         vx_init_rmh(&rmh, CMD_AUDIO_LEVEL_ADJUST);
 	if (capture)
@@ -465,6 +480,9 @@ static int vx_get_audio_vu_meter(vxpocket_t *chip, int audio, int capture, struc
 {
 	struct vx_rmh rmh;
 	int i, err;
+
+	if (chip->is_stale)
+		return -EBUSY;
 
 	vx_init_rmh(&rmh, CMD_AUDIO_VU_PIC_METER);
 	rmh.LgStat += 2 * VU_METER_CHANNELS;

@@ -690,6 +690,9 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 	vx_pipe_t *pipe;
 	int audio, err;
 
+	if (chip->is_stale)
+		return -EBUSY;
+
 	audio = subs->pcm->device * 2;
 	snd_assert(audio < chip->audio_outs, return -EINVAL);
 	err = vx_alloc_pipe(chip, 0, audio, 2, &pipe); /* stereo capture */
@@ -833,7 +836,7 @@ void vx_pcm_playback_update_buffer(vxpocket_t *chip, snd_pcm_substream_t *subs, 
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (! pipe->prepared)
+	if (! pipe->prepared || chip->is_stale)
 		return;
 	if ((err = vx_update_playback_buffer(chip, runtime, pipe)) < 0)
 		return;
@@ -848,7 +851,7 @@ void vx_pcm_playback_update(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (pipe->running) {
+	if (pipe->running && ! chip->is_stale) {
 		if ((err = vx_update_pipe_position(chip, runtime, pipe)) < 0)
 			return;
 		if (pipe->transferred >= runtime->period_size) {
@@ -888,6 +891,9 @@ static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 	vxpocket_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return -EINVAL);
 	int err;
+
+	if (chip->is_stale)
+		return -EBUSY;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -961,6 +967,9 @@ static int vx_pcm_prepare(snd_pcm_substream_t *subs)
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, runtime->private_data, return -EINVAL);
 	int err, data_mode;
 	// int max_size, nchunks;
+
+	if (chip->is_stale)
+		return -EBUSY;
 
 	data_mode = (chip->uer_bits & IEC958_AES0_NONAUDIO) != 0;
 	if (data_mode != pipe->data_mode && ! pipe->is_capture) {
@@ -1066,6 +1075,9 @@ static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
 	vx_pipe_t *pipe;
 	int audio, err;
 
+	if (chip->is_stale)
+		return -EBUSY;
+
 	audio = subs->pcm->device * 2;
 	snd_assert(audio < chip->audio_ins, return -EINVAL);
 	err = vx_alloc_pipe(chip, 1, audio, 2, &pipe);
@@ -1107,7 +1119,7 @@ void vx_pcm_capture_update(vxpocket_t *chip, snd_pcm_substream_t *subs, vx_pipe_
 	int size, space;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (! pipe->prepared)
+	if (! pipe->prepared || chip->is_stale)
 		return;
 
 	size = runtime->buffer_size - snd_pcm_capture_avail(runtime);
