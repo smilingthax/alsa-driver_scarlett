@@ -1318,7 +1318,7 @@ snd_rme96_capture_adat_open(snd_pcm_substream_t *substream)
 	snd_pcm_set_sync(substream);
 
 	runtime->hw = snd_rme96_capture_adat_info;
-        if (snd_rme96_getinputtype(rme96) != RME96_INPUT_ANALOG) {
+        if (snd_rme96_getinputtype(rme96) == RME96_INPUT_ANALOG) {
                 /* makes no sense to use analog input. Note that analog
                    expension cards AEB4/8-I are RME96_INPUT_INTERNAL */
                 return -EIO;
