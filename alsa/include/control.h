@@ -35,6 +35,7 @@ struct snd_stru_control {
 	int pcm_channel;
 	int pcm_subdevice;
 	int rawmidi_device;
+	int rawmidi_channel;
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
