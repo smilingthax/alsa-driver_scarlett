@@ -59,7 +59,7 @@ extern void del_card(card *tempcard);
 extern void del_dep(card *tempcard, dep *tempdep);
 extern char *get_one_word(char *line, char *buf);
 extern void make_acinclude(void);
-extern void make_cards_conf_in(void);
+extern void make_cards_conf_in(int make);
 extern void add_cards(void);
 extern char *convert_config(char *config);
 extern int main(int argc, char *argv[]);
@@ -271,12 +271,14 @@ void make_acinclude(void)
 	while(tempcard)
 	{
 		printf("\t%s=\"1\"\n", tempcard->define);
+		printf("\tAC_DEFINE(%s)\n", tempcard->define);
 		tempcard=tempcard->downlink;
 	}
 	tempcard=Cards;
 	while(tempdep)
 	{
 		printf("\t%s=\"1\"\n", tempdep->name);
+		printf("\tAC_DEFINE(%s)\n", tempdep->name);
 		tempdep=tempdep->downlink;
 	}
 	tempdep=PublicDeps;
@@ -299,12 +301,14 @@ void make_acinclude(void)
 	
 	while(tempcard)
 	{
-		printf("\t%s)\n\t\t%s=\"1\"\n",tempcard->name, tempcard->define);
+		printf("\t%s)\n\t\t%s=\"1\"\n", tempcard->name, tempcard->define);
+		printf("\t\tAC_DEFINE(%s)\n", tempcard->define);
 		
 		tempdep=tempcard->dependencies;
 		while(tempdep)
 		{
 			printf("\t\t%s=\"1\"\n",tempdep->name);
+			printf("\t\tAC_DEFINE(%s)\n", tempdep->name);
 			tempdep=tempdep->downlink;
 		}
 		tempcard=tempcard->downlink;
@@ -334,26 +338,35 @@ void make_acinclude(void)
 	return;
 }
 
-void make_cards_conf_in(void)
+void make_cards_conf_in(int make)
 {
 	dep *tempdep;
 	card *tempcard;
+	char *comm1 = make ? "#" : "/*", *comm2 = make ? "" : " */";
 
 	tempdep=PublicDeps;
 	tempcard=Cards;
 
-	printf("#\n# Soundcard-Configuration for ALSA driver\n");
-	printf("# Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>\n#\n\n");
+	printf("\n%s Soundcard-Configuration for ALSA driver%s\n", comm1, comm2);
+	printf("%s Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>%s\n\n\n", comm1, comm2);
 	
 	while(tempcard)
 	{
-		printf("%s=@%s@\n", tempcard->define, tempcard->define);
+		if (make) {
+			printf("%s=@%s@\n", tempcard->define, tempcard->define);
+		} else {
+			printf("#undef %s\n", tempcard->define); 
+		}
 		tempcard=tempcard->downlink;
 	}
 
 	while(tempdep)
 	{
-		printf("%s=@%s@\n", tempdep->name, tempdep->name);
+		if (make) {
+			printf("%s=@%s@\n", tempdep->name, tempdep->name);
+		} else {
+			printf("#undef %s\n", tempdep->name);
+		}
 		tempdep=tempdep->downlink;
 	}
 }
@@ -429,7 +442,9 @@ char *convert_config(char *config)
 
 void usage(char *programname)
 {
-	fprintf(stderr, "Usage: %s --acinclude\n       %s --cards-conf\n", programname, programname);
+	fprintf(stderr, "Usage: %s --acinclude\n", programname);
+	fprintf(stderr, "       %s --cards-conf\n", programname);
+	fprintf(stderr, "       %s --include\n", programname);
 	exit(1);
 }
 
@@ -441,7 +456,9 @@ int main(int argc, char *argv[])
 	if(strcmp(argv[1], "--acinclude")==0)
 		make_acinclude();
 	else if(strcmp(argv[1], "--cards-conf")==0)
-		make_cards_conf_in();
+		make_cards_conf_in(1);
+	else if(strcmp(argv[1], "--include")==0)
+		make_cards_conf_in(0);
 	else
 		usage(argv[0]);
 	del_cards();

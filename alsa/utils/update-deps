@@ -4,6 +4,7 @@ if [ -x ./snd-deps ]
 then
 	./snd-deps --acinclude > ../acinclude.m4
 	./snd-deps --cards-conf > ../cards.config.in
+	./snd-deps --include > ../include/config1.h.in
 else
 	echo "Cannot execute ./snd-deps"
 fi
