@@ -101,7 +101,7 @@ enum sndrv_card_type {
 	SNDRV_CARD_TYPE_VIRMIDI,	/* Virtual MIDI */
 	SNDRV_CARD_TYPE_EMU10K1,	/* EMU10K1 */
 	SNDRV_CARD_TYPE_HAMMERFALL,	/* RME Digi9652	 */
-	SNDRV_CARD_TYPE_HAMMERFALL_LIGHT,	/* RME Digi9652, but no expansion card */
+	SNDRV_CARD_TYPE_HAMMERFALL_LIGHT, /* RME Digi9652, but no expansion card */
 	SNDRV_CARD_TYPE_ICE1712,	/* ICE1712 */
 	SNDRV_CARD_TYPE_CMI8338,	/* C-Media CMI8338 */
 	SNDRV_CARD_TYPE_CMI8738,	/* C-Media CMI8738 */
@@ -294,13 +294,13 @@ enum sndrv_pcm_subformat {
 #define SNDRV_PCM_INFO_SYNC_START	0x00400000	/* pcm support some kind of sync go */
 
 enum sndrv_pcm_state {
-	SNDRV_PCM_STATE_OPEN,	/* stream is open */
-	SNDRV_PCM_STATE_SETUP,	/* stream has a setup */
+	SNDRV_PCM_STATE_OPEN,		/* stream is open */
+	SNDRV_PCM_STATE_SETUP,		/* stream has a setup */
 	SNDRV_PCM_STATE_PREPARED,	/* stream is ready to start */
 	SNDRV_PCM_STATE_RUNNING,	/* stream is running */
-	SNDRV_PCM_STATE_XRUN,	/* stream reached an xrun */
+	SNDRV_PCM_STATE_XRUN,		/* stream reached an xrun */
 	SNDRV_PCM_STATE_DRAINING,	/* stream is draining */
-	SNDRV_PCM_STATE_PAUSED,	/* stream is paused */
+	SNDRV_PCM_STATE_PAUSED,		/* stream is paused */
 	SNDRV_PCM_STATE_LAST = SNDRV_PCM_STATE_PAUSED,
 };
 
@@ -324,7 +324,7 @@ struct sndrv_pcm_info {
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* name of this device */
 	unsigned char subname[32];	/* subdevice name */
-	enum sndrv_pcm_class device_class;	/* SNDRV_PCM_CLASS_* */
+	enum sndrv_pcm_class device_class; /* SNDRV_PCM_CLASS_* */
 	enum sndrv_pcm_subclass device_subclass; /* SNDRV_PCM_SUBCLASS_* */
 	unsigned int subdevices_count;
 	unsigned int subdevices_avail;
@@ -491,9 +491,6 @@ enum {
  *                            MIDI v1.0 interface                            *
  *                                                                           *
  *****************************************************************************/
-
-#define SNDRV_MIDI_CHANNELS		16
-#define SNDRV_MIDI_GM_DRUM_CHANNEL	(10-1)
 
 /*
  *  Raw MIDI section - /dev/snd/midi??
