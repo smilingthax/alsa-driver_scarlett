@@ -1320,7 +1320,6 @@ typedef struct snd_pcm_channel_info {
 	int subdevice;			/* subdevice number */
 	char subname[32];		/* subdevice name */
 	int channel;			/* channel number */
-	int mode;			/* transfer mode */
 	snd_pcm_sync_t sync;		/* hardware synchronization ID */
 	unsigned int flags;		/* see to SND_PCM_CHNINFO_XXXX */
 	unsigned int formats;		/* supported formats */
@@ -1432,7 +1431,6 @@ typedef struct snd_pcm_voice_setup {
 
 typedef struct snd_pcm_channel_status {
 	int channel;			/* channel information */
-	int mode;			/* transfer mode */
 	int status;			/* channel status - SND_PCM_STATUS_XXXX */
 	unsigned int scount;		/* number of bytes processed from playback/capture start */
 	struct timeval stime;		/* time when playback/capture was started */

@@ -71,10 +71,9 @@ typedef struct snd_stru_pcm_hardware {
 
 #define SND_PCM_FLG_DMA_OK	(1<<0)
 #define SND_PCM_FLG_TIMER	(1<<1)
-#define SND_PCM_FLG_TIMESTAMP	(1<<2)
+#define SND_PCM_FLG_TIME	(1<<2)
 #define SND_PCM_FLG_MMAP	(1<<3)
 #define SND_PCM_FLG_OSS_MMAP	(1<<4)
-#define SND_PCM_FLG_TIME	(1<<5)
 
 #define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
 #define SND_PCM_IOCTL1_TRUE	((unsigned long *)1)
