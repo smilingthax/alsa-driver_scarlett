@@ -59,6 +59,15 @@ function start() {
       echo -e "$rc_done"; \
     done
   #
+  # insert sequencer modules
+  #
+  if [ -r /proc/asound/seq/drivers ]; then
+    t=`cut -d , -f 1 /proc/asound/seq/drivers`
+    if [ "x$t" != "x" ]; then
+      /sbin/modprobe $t
+    fi
+  fi
+  #
   # restore driver settings
   #
   if [ -d /proc/asound ]; then
