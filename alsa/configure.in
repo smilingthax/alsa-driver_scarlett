@@ -40,14 +40,36 @@ AC_MSG_CHECKING(for kernel version)
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
+#include <ctype.h>
 #include "$CONFIG_SND_KERNELDIR/include/linux/version.h"
 int main()
 {
  FILE *f;
+ char kversion[128];
+ char kpatchlevel[128];
+ char ksublevel[128];
+ char kextra[128];
+ char *ptr, *dptr;
 #ifdef UTS_RELEASE
  f=fopen("./conftestdata","w");
  if (f) {
-   fprintf(f,"%s\n",UTS_RELEASE);
+   for (ptr = UTS_RELEASE, dptr = kversion; *ptr != '\0' && isdigit(*ptr); ptr++, dptr++)
+     *dptr = *ptr;
+   *dptr = '\0';
+   if (*ptr == '.')
+     ptr++;
+   for (dptr = kpatchlevel; *ptr != '\0' && isdigit(*ptr); ptr++, dptr++)
+     *dptr = *ptr;
+   *dptr = '\0';
+   if (*ptr == '.')
+     ptr++;
+   for (dptr = ksublevel; *ptr != '\0' && isdigit(*ptr); ptr++, dptr++)
+     *dptr = *ptr;
+   *dptr = '\0';
+   for (dptr = kextra; *ptr != '\0'; ptr++, dptr++)
+     *dptr = *ptr;
+   *dptr = '\0';   
+   fprintf(f,"%s:%s:%s:%s\n",kversion,kpatchlevel,ksublevel,kextra);
    fclose(f);
    }
  exit(0);
@@ -57,13 +79,10 @@ int main()
 }],kaversion=`cat conftestdata`,
 kaversion="",
 kaversion="")])
-kversion=`echo $kaversion | cut -d . -f 1`
-kpatchlevel=`echo $kaversion | cut -d . -f 2`
-ksublevel=`echo $kaversion | sed -e 's/^[[[:digit:]]]*\.[[[:digit:]]]*\.//' -e 's/\([[[:digit:]]][[[:digit:]]]*\).*/\1/'`
-kextraversion=`echo $kaversion | sed -e 's/^[[[:digit:]]]*\.[[[:digit:]]]*\.[[[:digit:]]]*//'`
-if test "$kextraversion" = "$ksublevel"; then
-  kextraversion=""
-fi
+kversion=`echo $kaversion | cut -d : -f 1`
+kpatchlevel=`echo $kaversion | cut -d : -f 2`
+ksublevel=`echo $kaversion | cut -d : -f 3`
+kextraversion=`echo $kaversion | cut -d : -f 4`
 kversion=`expr $kversion + 0`
 kpatchlevel=`expr $kpatchlevel + 0`
 ksublevel=`expr $ksublevel + 0`
