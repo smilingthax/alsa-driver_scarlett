@@ -588,7 +588,11 @@ CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C, [I2C driver in kernel])
 AC_SUBST(CONFIG_I2C)
 
 dnl Check for input subsystem...
+if test $kpatchlevel -le 2; then
+CONFIG_INPUT="y"
+else
 CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
+fi
 AC_SUBST(CONFIG_INPUT)
 
 dnl Check for SGI/MIPS (HAL2) support...
