@@ -53,12 +53,17 @@
 
 #define SB_MPU_INPUT		1
 
+typedef struct snd_stru_sbmixer sbmixer_t;
+
 struct snd_stru_sbmixer {
   unsigned short port;
+  unsigned char record_source;
+  unsigned char left_input_mask;
+  unsigned char right_input_mask;
+  unsigned char mono;		/* for update inputs */
+  void (*update_inputs)( sbmixer_t * );
   snd_spin_define( mixer );
 };
-
-typedef struct snd_stru_sbmixer sbmixer_t;
 
 struct snd_stru_sbdsp {
   unsigned short port;		/* base port of DSP chip */
