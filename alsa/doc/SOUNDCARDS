@@ -162,3 +162,15 @@ MA: Jaroslav Kysela <perex@suse.cz>
 ID: RME Digi9652 (Hammerfall, Hammerfall light)
 IF: PCM
 MA: Paul Barton-Davis <pbd@op.net>
+
+ID: Intel i810/i820/i830/i840/MX440
+IF: MIXER,PCM
+MA: Jaroslav Kysela <perex@suse.cz>
+
+ID: ESS Maestro 1/2/2E
+IF: MIXER,PCM
+MA: Matze Braun <MatzeBraun@gmx.de>
+
+ID: VIA 82C686A (South Bridge)
+IF: MIXER,PCM,MIDI
+MA: Jaroslav Kysela <perex@suse.cz>
