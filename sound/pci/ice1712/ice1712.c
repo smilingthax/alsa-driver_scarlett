@@ -1053,8 +1053,6 @@ static void snd_ice1712_set_pro_rate(ice1712_t *ice, unsigned int rate, int forc
 		if (ice->akm[i].ops.set_rate_val)
 			ice->akm[i].ops.set_rate_val(&ice->akm[i], rate);
 	}
-	if (ice->cs8427)
-		snd_cs8427_reset(ice->cs8427);
 }
 
 static int snd_ice1712_playback_pro_prepare(snd_pcm_substream_t * substream)
