@@ -1,7 +1,7 @@
 /*
  *  Main header file for the ALSA sequencer
  *  Copyright (c) 1998-1999 by Frank van de Pol <frank@vande-pol.demon.nl>
- *            (c) 1998/1999 by Jaroslav Kysela <perex@suse.cz>
+ *            (c) 1998-1999 by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -147,23 +147,25 @@
  * variable length data can be passed directly to the driver
  */
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
-#define SND_SEQ_EVENT_INSTR_END		102	/* end of instrument management */
-#define SND_SEQ_EVENT_INSTR_PUT		103	/* put instrument to port */
-#define SND_SEQ_EVENT_INSTR_GET		104	/* get instrument from port */
-#define SND_SEQ_EVENT_INSTR_GET_RESULT	105	/* result */
-#define SND_SEQ_EVENT_INSTR_FREE	106	/* free instrument(s) */
-#define SND_SEQ_EVENT_INSTR_LIST	107	/* instrument list */
-#define SND_SEQ_EVENT_INSTR_LIST_RESULT 108	/* result */
-#define SND_SEQ_EVENT_INSTR_RESET	109	/* reset instrument memory */
-#define SND_SEQ_EVENT_INSTR_INFO	110	/* instrument interface info */
-#define SND_SEQ_EVENT_INSTR_INFO_RESULT 111	/* result */
-#define SND_SEQ_EVENT_INSTR_STATUS	112	/* instrument interface status */
-#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 113	/* result */
-#define SND_SEQ_EVENT_INSTR_CLUSTER	114	/* cluster parameters */
-#define SND_SEQ_EVENT_INSTR_CLUSTER_GET	115	/* get cluster parameters */
-#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 116	/* result */
-#define SND_SEQ_EVENT_INSTR_CHANGE	117	/* instrument change */
-/* 118-129: reserved */
+#define SND_SEQ_EVENT_INSTR_END		101	/* end of instrument management */
+#define SND_SEQ_EVENT_INSTR_INFO	102	/* instrument interface info */
+#define SND_SEQ_EVENT_INSTR_INFO_RESULT 103	/* result */
+#define SND_SEQ_EVENT_INSTR_FINFO	104	/* get format info */
+#define SND_SEQ_EVENT_INSTR_FINFO_RESULT 105	/* get format info */
+#define SND_SEQ_EVENT_INSTR_RESET	106	/* reset instrument memory */
+#define SND_SEQ_EVENT_INSTR_STATUS	107	/* instrument interface status */
+#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 108	/* result */
+#define SND_SEQ_EVENT_INSTR_PUT		109	/* put instrument to port */
+#define SND_SEQ_EVENT_INSTR_GET		110	/* get instrument from port */
+#define SND_SEQ_EVENT_INSTR_GET_RESULT	111	/* result */
+#define SND_SEQ_EVENT_INSTR_FREE	112	/* free instrument(s) */
+#define SND_SEQ_EVENT_INSTR_LIST	113	/* instrument list */
+#define SND_SEQ_EVENT_INSTR_LIST_RESULT 114	/* result */
+#define SND_SEQ_EVENT_INSTR_CLUSTER	115	/* cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_GET	116	/* get cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 117	/* result */
+#define SND_SEQ_EVENT_INSTR_CHANGE	118	/* instrument change */
+/* 119-129: reserved */
 
 /* 130-139: variable length events
  * event data type = snd_seq_ev_ext
@@ -343,7 +345,7 @@ typedef struct {
 
 /* INSTR_BEGIN event */
 typedef struct {
-	long timeout;	/* zero = forever, otherwise timeout in ms */
+	long timeout;		/* zero = forever, otherwise timeout in ms */
 } snd_seq_ev_instr_begin_t;
 
 typedef struct {
@@ -366,10 +368,10 @@ typedef union {
 
 	/* queue timer control */
 typedef struct {
-	unsigned char queue;	/* affected queue */
-	unsigned char unused1, unused2, unused3;	/* pad */
+	unsigned char queue;			/* affected queue */
+	unsigned char unused1, unused2, unused3; /* pad */
 	union {
-		signed int value;	/* affected value (e.g. tempo) */
+		signed int value;		/* affected value (e.g. tempo) */
 		snd_seq_timestamp_t time;
 	} param;
 } snd_seq_ev_queue_control_t;
@@ -384,10 +386,10 @@ typedef struct snd_seq_event_t {
 	snd_seq_timestamp_t time;	/* schedule time */
 
 
-	snd_seq_addr_t source;	/* source address */
-	snd_seq_addr_t dest;	/* destination address */
+	snd_seq_addr_t source;		/* source address */
+	snd_seq_addr_t dest;		/* destination address */
 
-	union {			/* event data... */
+	union {				/* event data... */
 		snd_seq_ev_note note;
 		snd_seq_ev_ctrl control;
 		snd_seq_ev_raw8 raw8;
@@ -417,6 +419,12 @@ typedef struct snd_seq_event_t {
 #define snd_seq_ev_is_control_type(ev)	((ev)->type >= 10 && (ev)->type < 20)
 /* queue control events: 30-39 */
 #define snd_seq_ev_is_queue_type(ev)	((ev)->type >= 30 && (ev)->type < 40)
+/* system status messages */
+#define snd_seq_ev_is_message_type(ev)	((ev)->type >= 60 && (ev)->type < 69)
+/* sample messages */
+#define snd_seq_ev_is_sample_type(ev)	((ev)->type >= 70 && (ev)->type < 79)
+/* user-defined messages */
+#define snd_seq_ev_is_user_type(ev)	((ev)->type >= 90 && (ev)->type < 99)
 /* fixed length events: 0-99 */
 #define snd_seq_ev_is_fixed_type(ev)	((ev)->type < 100)
 /* instrument layer events: 100-129 */
@@ -717,9 +725,9 @@ typedef struct {
 typedef struct {
 	int client;
 	int port;
-	int type;	/* READ or WRITE */
-	int index;	/* 0..N-1 */
-	int num_subs;	/* R/O: number of subscriptions on this port */
+	int type;		/* READ or WRITE */
+	int index;		/* 0..N-1 */
+	int num_subs;		/* R/O: number of subscriptions on this port */
 	snd_seq_addr_t addr;	/* R/O: result */
 	unsigned char queue;	/* R/O: result */
 	int exclusive: 1;	/* R/O: result */
@@ -780,6 +788,40 @@ typedef struct {
 #define SND_SEQ_INSTR_FREE_CMD_CLUSTER	2
 #define SND_SEQ_INSTR_FREE_CMD_SINGLE	3
 
+/* INSTR_INFO */
+
+typedef struct {
+	int result;			/* operation result */
+	unsigned int formats[8];	/* bitmap of supported formats */
+	int ram_count;			/* count of RAM banks */
+	long ram_sizes[16];		/* size of RAM banks */
+	int rom_count;			/* count of ROM banks */
+	long rom_sizes[8];		/* size of ROM banks */
+	char reserved[128];
+}  snd_seq_instr_info_t;
+
+/* INSTR_STATUS */
+
+typedef struct {
+	int result;			/* operation result */
+	long free_ram[16];		/* free RAM in banks */
+	int instrument_count;		/* count of downloaded instruments */
+	char reserved[128];
+} snd_seq_instr_status_t;
+
+/* INSTR_FORMAT_INFO */
+
+typedef struct {
+	char format[16];		/* format identifier - SND_SEQ_INSTR_ID_* */	
+	long len;			/* max data length (without this structure) */
+} snd_seq_instr_format_info_t;
+
+typedef struct {
+	int result;			/* operation result */
+	char format[16];		/* format identifier */
+	long len;			/* filled data length (without this structure) */
+} snd_seq_instr_format_info_result_t;
+
 /* instrument data */
 typedef struct {
 	char name[32];			/* instrument name */
@@ -830,27 +872,6 @@ typedef struct {
 		char data8[16];
 	} data;
 } snd_seq_instr_free_t;
-
-/* INSTR_INFO */
-
-typedef struct {
-	int result;			/* operation result */
-	unsigned int formats[8];	/* bitmap of supported formats */
-	int ram_count;			/* count of RAM banks */
-	long ram_sizes[16];		/* size of RAM banks */
-	int rom_count;			/* count of ROM banks */
-	long rom_sizes[8];		/* size of ROM banks */
-	char reserved[128];
-}  snd_seq_instr_info_t;
-
-/* INSTR_STATUS */
-
-typedef struct {
-	int result;			/* operation result */
-	long free_ram[16];		/* free RAM in banks */
-	int instrument_count;		/* count of downloaded instruments */
-	char reserved[128];
-} snd_seq_instr_status_t;
 
 /* INSTR_CLUSTER_SET */
 

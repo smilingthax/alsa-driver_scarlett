@@ -194,6 +194,8 @@ typedef struct gf1_info {
 	unsigned char flags;		/* supported wave flags */
 	unsigned char pad[3];
 	unsigned int features;		/* supported features */
+	unsigned int max8_len;		/* maximum 8-bit wave length */
+	unsigned int max16_len;		/* maximum 16-bit wave length */
 } gf1_info_t;
 
 #ifdef __KERNEL__

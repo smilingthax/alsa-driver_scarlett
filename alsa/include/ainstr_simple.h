@@ -63,6 +63,8 @@
 typedef struct simple_instrument_info {
 	unsigned int format;		/* supported format bits */
 	unsigned int effects;		/* supported effects (1 << SIMPLE_EFFECT_*) */
+	unsigned int max8_len;		/* maximum 8-bit wave length */
+	unsigned int max16_len;		/* maximum 16-bit wave length */
 } simple_instrument_info_t;
 
 /*

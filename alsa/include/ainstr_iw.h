@@ -342,6 +342,8 @@ typedef struct iwffff_info {
 	unsigned int format;		/* supported format bits */
 	unsigned int effects;		/* supported effects (1 << IWFFFF_EFFECT*) */
 	unsigned int lfos;		/* LFO effects */
+	unsigned int max8_len;		/* maximum 8-bit wave length */
+	unsigned int max16_len;		/* maximum 16-bit wave length */
 } iwffff_info_t;
 
 #ifdef __KERNEL__
