@@ -55,7 +55,7 @@ int snd_info_check_reserved_words(const char *str)
 		"memdebug",
 		"detect",
 		"devices",
-		"oss-devices",
+		"oss",
 		"cards",
 		"timers",
 		"synth",
@@ -124,6 +124,9 @@ int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...)
 struct proc_dir_entry *snd_proc_root = NULL;
 struct proc_dir_entry *snd_proc_dev = NULL;
 snd_info_entry_t *snd_seq_root = NULL;
+#ifdef CONFIG_SND_OSSEMUL
+snd_info_entry_t *snd_oss_root = NULL;
+#endif
 
 #ifdef LINUX_2_2
 static void snd_info_fill_inode(struct inode *inode, int fill)
@@ -628,6 +631,19 @@ int __init snd_info_init(void)
 	if (p == NULL)
 		return -ENOMEM;
 	snd_proc_dev = p;
+#ifdef CONFIG_SND_OSSEMUL
+	{
+		snd_info_entry_t *entry;
+		if ((entry = snd_info_create_module_entry(THIS_MODULE, "oss", NULL)) == NULL)
+			return -ENOMEM;
+		entry->mode = S_IFDIR | S_IRUGO | S_IXUGO;
+		if (snd_info_register(entry) < 0) {
+			snd_info_free_entry(entry);
+			return -ENOMEM;
+		}
+		snd_oss_root = entry;
+	}
+#endif
 #if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	{
 		snd_info_entry_t *entry;
@@ -668,6 +684,10 @@ int __exit snd_info_done(void)
 #if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 		if (snd_seq_root)
 			snd_info_unregister(snd_seq_root);
+#endif
+#ifdef CONFIG_SND_OSSEMUL
+		if (snd_oss_root)
+			snd_info_unregister(snd_oss_root);
 #endif
 		snd_remove_proc_entry(snd_proc_root, snd_proc_dev);
 		snd_remove_proc_entry(&proc_root, snd_proc_root);
