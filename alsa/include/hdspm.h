@@ -58,8 +58,12 @@ struct _snd_hdspm_peak_rms {
 	unsigned int xxx_rms_h[64];	/* not used */
 };
 
+struct sndrv_hdspm_peak_rms_ioctl {
+	hdspm_peak_rms_t *peak;
+};
 
-#define SNDRV_HDSPM_IOCTL_GET_PEAK_RMS _IOR('H', 0x40, hdspm_peak_rms_t)
+/* use indirect access due to the limit of ioctl bit size */
+#define SNDRV_HDSPM_IOCTL_GET_PEAK_RMS _IOR('H', 0x40, struct sndrv_hdspm_peak_rms_ioctl)
 
 /* ------------ CONFIG block IOCTL ---------------------- */
 
@@ -121,6 +125,7 @@ struct sndrv_hdspm_mixer_ioctl {
 	hdspm_mixer_t *mixer;
 };
 
+/* use indirect access due to the limit of ioctl bit size */
 #define SNDRV_HDSPM_IOCTL_GET_MIXER _IOR('H', 0x44, struct sndrv_hdspm_mixer_ioctl)
 
 #endif				/* __SOUND_HDSPM_H */

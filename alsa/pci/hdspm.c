@@ -3278,17 +3278,16 @@ static int snd_hdspm_hwdep_ioctl(snd_hwdep_t * hw, struct file *file,
 	hdspm_version_t hdspm_version;
 	int err;
 	unsigned long flags;
-	hdspm_peak_rms_t __user *peak_rms;
+	struct sndrv_hdspm_peak_rms_ioctl rms;
 
 	switch (cmd) {
 
 		
 	case SNDRV_HDSPM_IOCTL_GET_PEAK_RMS:
-	
-		peak_rms = (hdspm_peak_rms_t __user *)arg;
-
+		if (copy_from_user(&rms, (void __user *)arg, sizeof(rms)))
+			return -EFAULT;
 		/* maybe there is a chance to memorymap in future so dont touch just copy */
-		if(copy_to_user_fromio((void __user *)peak_rms,
+		if(copy_to_user_fromio((void __user *)rms.peak,
 				       hdspm->iobase+HDSPM_MADI_peakrmsbase,
 				       sizeof(hdspm_peak_rms_t)) != 0 )
 			return -EFAULT;
