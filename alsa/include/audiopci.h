@@ -120,15 +120,15 @@
 #define   ES_1371_CODEC_RDY	   (1<<31)	 /* codec ready */
 #define   ES_1371_CODEC_WIP	   (1<<30)	 /* codec register access in progress */
 #define   ES_1371_CODEC_PIRD	   (1<<23)	 /* codec read/write select register */
-#define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x3f)<<16)|(((d)&0xffff)<<0))
-#define   ES_1371_CODEC_READS(a)   ((((a)&0x3f)<<16)|ES_1371_CODEC_PIRD)
+#define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x7f)<<16)|(((d)&0xffff)<<0))
+#define   ES_1371_CODEC_READS(a)   ((((a)&0x7f)<<16)|ES_1371_CODEC_PIRD)
 #define   ES_1371_CODEC_READ(i)    (((i)>>0)&0xffff)
 
 #define ES_REG_1371_SMPRATE 0x10 /* W/R: Codec rate converter interface register */
 #define   ES_1371_SRC_RAM_ADDRO(o) (((o)&0x7f)<<25) /* address of the sample rate converter */
 #define   ES_1371_SRC_RAM_ADDRM	   (0x7f<<25)	    /* mask for above */
 #define   ES_1371_SRC_RAM_ADDRI(i) (((i)>>25)&0x7f) /* address of the sample rate converter */
-#define   ES_1371_SRC_RAM_WE	   (1<<22)	/* R/W: read/write control for sample rate converter */
+#define   ES_1371_SRC_RAM_WE	   (1<<24)	/* R/W: read/write control for sample rate converter */
 #define   ES_1371_SRC_RAM_BUSY     (1<<23)	/* R/O: sample rate memory is busy */
 #define   ES_1371_SRC_DISABLE      (1<<22)	/* sample rate converter disable */
 #define   ES_1371_DIS_P1	   (1<<21)	/* playback channel 1 accumulator update disable */
