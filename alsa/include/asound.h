@@ -806,7 +806,8 @@ typedef struct snd_pcm_channel_area {
 typedef struct snd_pcm_channel_setup {
 	unsigned int channel;
 	snd_pcm_digital_t digital;	/* digital setup */
-	snd_pcm_channel_area_t area;
+	snd_pcm_channel_area_t running_area;
+	snd_pcm_channel_area_t stopped_area;
 	char reserved[64];
 } snd_pcm_channel_setup_t;
 
