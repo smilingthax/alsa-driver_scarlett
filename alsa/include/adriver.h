@@ -269,6 +269,27 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
+/* workqueue-alike; 2.5.45 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45)
+struct work_struct {
+	void (*func)(void *);
+	void *data;
+};
+#define INIT_WORK(_work, _func, _data)			\
+	do {						\
+		(_work)->func = _func;			\
+		(_work)->data = _data;			\
+	} while (0)
+#define __WORK_INITIALIZER(n, f, d) {			\
+	.func = (f),					\
+	.data = (d),					\
+	}
+#define DECLARE_WORK(n, f, d)				\
+	struct work_struct n = __WORK_INITIALIZER(n, f, d)
+int snd_compat_schedule_work(struct work_struct *work);
+#define schedule_work(w) snd_compat_schedule_work(w)
+#endif /* 2.5.45 */
+
 #include "amagic.h"
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
