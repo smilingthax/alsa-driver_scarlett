@@ -23,6 +23,7 @@
 
 #include "pcm.h"
 #include "mixer.h"
+#include "timer.h"
 
 #define AD1816A_REG(r)			(codec->port + r)
 
@@ -82,6 +83,7 @@
 #define AD1816A_DSP_MAILBOX_0		0x2a
 #define AD1816A_DSP_MAILBOX_1		0x2b
 #define AD1816A_POWERDOWN_CTRL		0x2c
+#define AD1816A_TIMER_CTRL		0x2c
 #define AD1816A_VERSION_ID		0x2d
 #define AD1816A_RESERVED_46		0x2e
 
@@ -89,6 +91,7 @@
 
 #define AD1816A_PLAYBACK_IRQ_PENDING	0x80
 #define AD1816A_CAPTURE_IRQ_PENDING	0x40
+#define AD1816A_TIMER_IRQ_PENDING	0x20
 
 #define AD1816A_PLAYBACK_ENABLE		0x01
 #define AD1816A_PLAYBACK_PIO		0x02
@@ -105,6 +108,8 @@
 
 #define AD1816A_PLAYBACK_IRQ_ENABLE	0x8000
 #define AD1816A_CAPTURE_IRQ_ENABLE	0x4000
+#define AD1816A_TIMER_IRQ_ENABLE	0x2000
+#define AD1816A_TIMER_ENABLE		0x0080
 
 #define AD1816A_SRC_CD			0x02
 #define AD1816A_SRC_LINE		0x00
@@ -141,6 +146,8 @@ struct snd_stru_ad1816a {
 	snd_pcm_subchn_t *capture_subchn;
 	unsigned int p_dma_size;
 	unsigned int c_dma_size;
+
+	snd_timer_t *timer;
 
 	snd_kmixer_t *mixer;
 
@@ -201,7 +208,10 @@ struct snd_stru_ad1816a {
 
 #define AD1816A_MODE_PLAYBACK	0x01
 #define AD1816A_MODE_CAPTURE	0x02
-#define AD1816A_MODE_OPEN	(AD1816A_MODE_PLAYBACK | AD1816A_MODE_CAPTURE)
+#define AD1816A_MODE_TIMER	0x04
+#define AD1816A_MODE_OPEN	(AD1816A_MODE_PLAYBACK |	\
+				AD1816A_MODE_CAPTURE |		\
+				AD1816A_MODE_TIMER)
 
 
 extern void snd_ad1816a_interrupt(snd_pcm_t *pcm, unsigned char status);
@@ -209,7 +219,7 @@ extern void snd_ad1816a_interrupt(snd_pcm_t *pcm, unsigned char status);
 extern int snd_ad1816a_new_pcm(snd_card_t *card, int device,
 			       unsigned short port, snd_irq_t *irqptr,
 			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
-			       snd_pcm_t **rpcm);
+			       int timer_dev, snd_pcm_t **rpcm);
 
 extern int snd_ad1816a_new_mixer(snd_pcm_t *pcm, int device,
 				 snd_kmixer_t **rmixer);
