@@ -728,6 +728,7 @@ Module parameters
     snd_mpu_port          - 0x300,0x330,0x332,0x334, -1 (disable) by default
     snd_mpu_irq           - 5,7,9,10,11, -1 (disable) by default
     snd_fm_port           - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
+    snd_joystick_port     - 0x201,0x202,0x204,0x205, -1 (disable) by default
 
     Module supports autoprobe and multiple chips (max 8).
     
