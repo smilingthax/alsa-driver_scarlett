@@ -22,6 +22,19 @@
  *
  */
 
+extern int snd_pcm_hw_param_mask(snd_pcm_substream_t *pcm, snd_pcm_hw_params_t *params,
+				 snd_pcm_hw_param_t var, const mask_t *val);
+extern unsigned int snd_pcm_hw_param_value_min(const snd_pcm_hw_params_t *params,
+					       snd_pcm_hw_param_t var, int *dir);
+extern unsigned int snd_pcm_hw_param_value_max(const snd_pcm_hw_params_t *params,
+					       snd_pcm_hw_param_t var, int *dir);
+extern int _snd_pcm_hw_param_min(snd_pcm_hw_params_t *params,
+				 snd_pcm_hw_param_t var, unsigned int val, int dir);
+extern int _snd_pcm_hw_param_setinteger(snd_pcm_hw_params_t *params,
+					snd_pcm_hw_param_t var);
+extern int _snd_pcm_hw_param_set(snd_pcm_hw_params_t *params,
+				 snd_pcm_hw_param_t var, unsigned int val, int dir);
+
 /* To share the same code we have  alsa-lib */
 #define mask_bits(mask) (*(mask))
 #define INLINE static inline
@@ -62,7 +75,7 @@ INLINE void mask_none(mask_t *mask)
 	mask_bits(mask) = 0;
 }
 
-INLINE void mask_all(mask_t *mask)
+INLINE void mask_any(mask_t *mask)
 {
 	mask_bits(mask) = ~0U;
 }
@@ -219,7 +232,7 @@ INLINE int mask_value(const mask_t *mask)
 	return mask_min(mask);
 }
 
-INLINE void interval_all(interval_t *i)
+INLINE void interval_any(interval_t *i)
 {
 	i->min = 0;
 	i->openmin = 0;
@@ -227,6 +240,11 @@ INLINE void interval_all(interval_t *i)
 	i->openmax = 0;
 	i->integer = 0;
 	i->empty = 0;
+}
+
+INLINE void interval_none(interval_t *i)
+{
+	i->empty = 1;
 }
 
 INLINE int interval_checkempty(const interval_t *i)

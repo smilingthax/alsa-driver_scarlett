@@ -179,7 +179,7 @@ typedef int (*snd_pcm_hw_rule_func_t)(snd_pcm_hw_params_t *params,
 struct _snd_pcm_hw_rule {
 	unsigned int cond;
 	snd_pcm_hw_rule_func_t func;
-	snd_pcm_hw_param_t var;
+	int var;
 	int deps[4];
 	void *private;
 };
@@ -635,12 +635,12 @@ static inline const interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *p
 
 
 extern int interval_refine(interval_t *i, const interval_t *v);
-extern int interval_mul(interval_t *a, const interval_t *b, const interval_t *c);
-extern int interval_div(interval_t *a, const interval_t *b, const interval_t *c);
-extern int interval_muldivk(interval_t *a, unsigned int k,
-			    const interval_t *b, const interval_t *c);
-extern int interval_mulkdiv(interval_t *a, unsigned int k,
-			    const interval_t *b, const interval_t *c);
+extern void interval_mul(const interval_t *a, const interval_t *b, interval_t *c);
+extern void interval_div(const interval_t *a, const interval_t *b, interval_t *c);
+extern void interval_muldivk(const interval_t *a, const interval_t *b, 
+			     unsigned int k, interval_t *c);
+extern void interval_mulkdiv(const interval_t *a, unsigned int k,
+			     const interval_t *b, interval_t *c);
 extern int interval_list(interval_t *i, 
 			 unsigned int count, unsigned int *list, unsigned int mask);
 extern int interval_step(interval_t *i, unsigned int min, unsigned int step);
@@ -651,15 +651,28 @@ extern int interval_ratden(interval_t *i,
 			   unsigned int rats_count, ratden_t *rats,
 			   unsigned int *nump, unsigned int *denp);
 
-extern int snd_pcm_hw_params_any(snd_pcm_substream_t *substream,
-				 snd_pcm_hw_params_t *params);
+extern void _snd_pcm_hw_params_any(snd_pcm_hw_params_t *params);
+extern int snd_pcm_hw_param_min(snd_pcm_substream_t *substream, 
+				snd_pcm_hw_params_t *params,
+				snd_pcm_hw_param_t var,
+				unsigned int val, int *dir);
+extern int snd_pcm_hw_param_max(snd_pcm_substream_t *substream, 
+				snd_pcm_hw_params_t *params,
+				snd_pcm_hw_param_t var,
+				unsigned int val, int *dir);
+extern int snd_pcm_hw_param_setinteger(snd_pcm_substream_t *substream, 
+				       snd_pcm_hw_params_t *params,
+				       snd_pcm_hw_param_t var);
 extern int snd_pcm_hw_param_first(snd_pcm_substream_t *substream, 
-				   snd_pcm_hw_params_t *params, snd_pcm_hw_param_t var);
+				  snd_pcm_hw_params_t *params,
+				  snd_pcm_hw_param_t var, int *dir);
 extern int snd_pcm_hw_param_last(snd_pcm_substream_t *substream, 
-				  snd_pcm_hw_params_t *params, snd_pcm_hw_param_t var);
+				  snd_pcm_hw_params_t *params,
+				 snd_pcm_hw_param_t var, int *dir);
 extern int snd_pcm_hw_param_near(snd_pcm_substream_t *substream, 
 				  snd_pcm_hw_params_t *params,
-				  snd_pcm_hw_param_t var, unsigned int val);
+				  snd_pcm_hw_param_t var, 
+				 unsigned int val, int *dir);
 extern int snd_pcm_hw_params_choose(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
 
 extern int snd_pcm_hw_refine(snd_pcm_substream_t *substream,

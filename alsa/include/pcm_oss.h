@@ -48,11 +48,11 @@ typedef struct _snd_pcm_oss_runtime {
 	unsigned int fragshift;
 	unsigned int maxfrags;
 	unsigned int subdivision;		/* requested subdivision */
-	snd_pcm_uframes_t period_size;			/* requested period size */
+	size_t period_bytes;			/* requested period size */
 	unsigned int periods;
-	snd_pcm_uframes_t buffer_size;			/* requested period size */
+	size_t buffer_bytes;			/* requested period size */
 	size_t bytes;				/* total # bytes processed */
-	size_t mmap_size;
+	size_t mmap_bytes;
 	char *buffer;				/* vmallocated period */
 	size_t buffer_used;			/* used length from buffer */
 	snd_pcm_plugin_t *plugin_first;
