@@ -570,22 +570,22 @@ static int snd_pcm_oss_make_ready(snd_pcm_substream_t *substream)
 	return 0;
 }
 
-static int snd_pcm_oss_capture_position_fixup(snd_pcm_substream_t *substream, snd_pcm_status_t *status)
+static int snd_pcm_oss_capture_position_fixup(snd_pcm_substream_t *substream, snd_pcm_sframes_t *delay)
 {
 	snd_pcm_runtime_t *runtime;
 	snd_pcm_uframes_t frames;
 	int err = 0;
 
 	while (1) {
-		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, status);
+		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DELAY, delay);
 		if (err < 0)
 			break;
 		runtime = substream->runtime;
-		if (status->avail <= runtime->buffer_size)
+		if (*delay <= runtime->buffer_size)
 			break;
 		/* in case of overrun, skip whole periods like OSS/Linux driver does */
-		/* until avail <= buffer_size */
-		frames = (status->avail - runtime->buffer_size) + runtime->period_size - 1;
+		/* until avail(delay) <= buffer_size */
+		frames = (*delay - runtime->buffer_size) + runtime->period_size - 1;
 		frames /= runtime->period_size;
 		frames *= runtime->period_size;
 		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_FORWARD, &frames);
@@ -633,7 +633,7 @@ snd_pcm_sframes_t snd_pcm_oss_write3(snd_pcm_substream_t *substream, const char 
 snd_pcm_sframes_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, snd_pcm_uframes_t frames, int in_kernel)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_pcm_status_t status;
+	snd_pcm_sframes_t delay;
 	int ret;
 	while (1) {
 		if (runtime->status->state == SNDRV_PCM_STATE_XRUN ||
@@ -652,7 +652,7 @@ snd_pcm_sframes_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, s
 			if (ret < 0)
 				break;
 		}
-		ret = snd_pcm_oss_capture_position_fixup(substream, &status);
+		ret = snd_pcm_oss_capture_position_fixup(substream, &delay);
 		if (ret < 0)
 			break;
 		if (in_kernel) {
@@ -1364,7 +1364,7 @@ static int snd_pcm_oss_get_ptr(snd_pcm_oss_file_t *pcm_oss_file, int stream, str
 {	
 	snd_pcm_substream_t *substream;
 	snd_pcm_runtime_t *runtime;
-	snd_pcm_status_t status;
+	snd_pcm_sframes_t delay;
 	struct count_info info;
 	int err;
 
@@ -1382,18 +1382,17 @@ static int snd_pcm_oss_get_ptr(snd_pcm_oss_file_t *pcm_oss_file, int stream, str
 			return -EFAULT;
 		return 0;
 	}
-	memset(&status, 0, sizeof(status));
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, &status);
+		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DELAY, &delay);
 	} else {
-		err = snd_pcm_oss_capture_position_fixup(substream, &status);
+		err = snd_pcm_oss_capture_position_fixup(substream, &delay);
 	}
 	if (err < 0)
 		return err;
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		info.bytes = runtime->oss.bytes - snd_pcm_oss_bytes(substream, runtime->buffer_size - status.avail);
+		info.bytes = runtime->oss.bytes - snd_pcm_oss_bytes(substream, delay);
 	} else {
-		info.bytes = runtime->oss.bytes + snd_pcm_oss_bytes(substream, status.avail);
+		info.bytes = runtime->oss.bytes + snd_pcm_oss_bytes(substream, delay);
 	}
 	info.ptr = snd_pcm_oss_bytes(substream, runtime->status->hw_ptr % runtime->buffer_size);
 	if (atomic_read(&runtime->mmap_count)) {
@@ -1406,10 +1405,7 @@ static int snd_pcm_oss_get_ptr(snd_pcm_oss_file_t *pcm_oss_file, int stream, str
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 			snd_pcm_oss_simulate_fill(substream);
 	} else {
-		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-			info.blocks = (runtime->buffer_size - status.avail) / runtime->period_size;
-		else
-			info.blocks = status.avail / runtime->period_size;
+		info.blocks = delay / runtime->period_size;
 	}
 	if (copy_to_user(_info, &info, sizeof(info)))
 		return -EFAULT;
@@ -1420,7 +1416,7 @@ static int snd_pcm_oss_get_space(snd_pcm_oss_file_t *pcm_oss_file, int stream, s
 {
 	snd_pcm_substream_t *substream;
 	snd_pcm_runtime_t *runtime;
-	snd_pcm_status_t status;
+	snd_pcm_sframes_t avail;
 	struct audio_buf_info info;
 	int err;
 
@@ -1437,7 +1433,6 @@ static int snd_pcm_oss_get_space(snd_pcm_oss_file_t *pcm_oss_file, int stream, s
 
 	info.fragsize = runtime->oss.period_bytes;
 	info.fragstotal = runtime->periods;
-	memset(&status, 0, sizeof(status));
 	if (runtime->oss.prepare) {
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			info.bytes = runtime->oss.period_bytes * runtime->periods;
@@ -1448,23 +1443,17 @@ static int snd_pcm_oss_get_space(snd_pcm_oss_file_t *pcm_oss_file, int stream, s
 		}
 	} else {
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
-			err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, &status);
+			err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DELAY, &avail);
+			avail = runtime->buffer_size - avail;
 		} else {
-			err = snd_pcm_oss_capture_position_fixup(substream, &status);
+			err = snd_pcm_oss_capture_position_fixup(substream, &avail);
 		}
 		if (err < 0)
 			return err;
-		info.bytes = snd_pcm_oss_bytes(substream, status.avail);
-		info.fragments = status.avail / runtime->period_size;
+		info.bytes = snd_pcm_oss_bytes(substream, avail);
+		info.fragments = avail / runtime->period_size;
 	}
 
-#if 0
-	/* very experimental stuff to get Quake2 working */
-	runtime->oss.period = (info.periods - 1) << 16;
-	for (tmp = info.fragsize; tmp > 1; tmp >>= 1)
-		runtime->oss.period++;
-	runtime->oss.subdivision = 1;	/* disable SUBDIVIDE */
-#endif
 #ifdef OSS_DEBUG
 	printk("pcm_oss: space: bytes = %i, fragments = %i, fragstotal = %i, fragsize = %i\n", info.bytes, info.fragments, info.fragstotal, info.fragsize);
 #endif
