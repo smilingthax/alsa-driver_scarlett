@@ -37,7 +37,27 @@ AC_MSG_RESULT($kerneldir)
 
 dnl Check for kernel version...
 AC_MSG_CHECKING(for kernel version)
-kaversion=`grep UTS_RELEASE $CONFIG_SND_KERNELDIR/include/linux/version.h 2>/dev/null | cut -d\" -f2`
+AC_CACHE_VAL(kaversion,
+[AC_TRY_RUN([
+#include <stdio.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/version.h"
+int main()
+{
+ FILE *f;
+#ifdef UTS_RELEASE
+ f=fopen("./conftestdata","w");
+ if (f) {
+   fprintf(f,"%s\n",UTS_RELEASE);
+   fclose(f);
+   }
+ exit(0);
+#else
+ exit(1);
+#endif
+}],kaversion=`cat conftestdata`,
+kaversion="",
+kaversion="")])
+AC_MSG_RESULT($kaversion)
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
 ksublevel=`echo $kaversion | cut -d . -f 3 | cut -d - -f 1`
@@ -105,8 +125,22 @@ fi
 
 dnl Check for PCI support...
 AC_MSG_CHECKING(for PCI support in kernel)
-CONFIG_SND_PCI=`grep -E "^#define[ |\t]+CONFIG_PCI[ |\t]+1" $CONFIG_SND_KERNELDIR/include/linux/autoconf.h | wc -l`
-CONFIG_SND_PCI=`expr $CONFIG_SND_PCI + 0`
+pcisup="0"
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main( void ) {
+#ifndef CONFIG_PCI
+  exit(1);
+#else
+  exit(0);
+#endif
+}
+],
+  AC_MSG_RESULT("yes");pcisup="1",
+  AC_MSG_RESULT("no");pcisup="0",
+  AC_MSG_RESULT("uknown");pcisup="0"
+)
+CONFIG_SND_PCI=$pcisup
 AC_SUBST(CONFIG_SND_PCI)
 if test $CONFIG_SND_PCI -eq 1; then
   AC_MSG_RESULT("yes")
