@@ -30,6 +30,9 @@
 /* version of the sequencer */
 #define SND_SEQ_VERSION SND_PROTOCOL_VERSION (1, 0, 0)
 
+/* support synchronization feature */
+#define SND_SEQ_SYNC_SUPPORT	1
+
 /*
  * sequencer event record
  */
@@ -88,7 +91,8 @@ typedef struct snd_seq_event snd_seq_event_t;
 #define SND_SEQ_EVENT_TEMPO		35	/* (SMF) Tempo event */
 #define SND_SEQ_EVENT_CLOCK		36	/* midi Real Time Clock message */
 #define SND_SEQ_EVENT_TICK		37	/* midi Real Time Tick message */
-/* 38-39: reserved */
+#define SND_SEQ_EVENT_SYNC		38	/* sync signal */
+#define SND_SEQ_EVENT_SYNC_POS		39
 
 /* 40-49: others
  * event data type = none
@@ -374,10 +378,15 @@ typedef union {
 	/* queue timer control */
 typedef struct {
 	unsigned char queue;			/* affected queue */
-	unsigned char unused1, unused2, unused3; /* pad */
+	unsigned char sync_format;		/* opt: sync format */
+	unsigned char sync_time_format;		/* opt: time format */
+	unsigned char pad[1];			/* reserved */
 	union {
 		signed int value;		/* affected value (e.g. tempo) */
-		snd_seq_timestamp_t time;
+		snd_seq_timestamp_t time;	/* time */
+		unsigned int position;		/* sync position */
+		unsigned int d32[2];
+		unsigned char d8[8];
 	} param;
 } snd_seq_ev_queue_control_t;
 
@@ -487,6 +496,8 @@ typedef struct snd_seq_event_bounce {
 #define snd_seq_ev_is_abstime(ev)	(snd_seq_ev_timemode_type(ev) == SND_SEQ_TIME_MODE_ABS)
 #define snd_seq_ev_is_reltime(ev)	(snd_seq_ev_timemode_type(ev) == SND_SEQ_TIME_MODE_REL)
 
+/* queue sync port */
+#define snd_seq_queue_sync_port(q)	((q) + 16)
 
 	/* system information */
 typedef struct {
@@ -637,6 +648,9 @@ typedef struct {
 } snd_seq_port_info_t;
 
 
+/* queue flags */
+#define SND_SEQ_QUEUE_FLG_SYNC	(1<<0)	/* sync enabled */
+
 /* queue information */
 typedef struct {
 	int queue;			/* queue id */
@@ -658,10 +672,68 @@ typedef struct {
 typedef snd_seq_queue_info_t snd_seq_queue_owner_t; /* alias */
 
 
-/* queue flags */
-#ifdef use_seqsync
-#define SND_SEQ_QUEUE_FLG_SYNC_LOST    (1<<0)  /* synchronization was lost */
-#endif
+/*
+ * time frame
+ */
+typedef struct {
+	unsigned char hour;
+	unsigned char min;
+	unsigned char sec;
+	unsigned char frame;
+	unsigned char subframe;
+} snd_seq_time_frame_t;
+
+/* queue status flag */
+#define SND_SEQ_QUEUE_FLG_SYNC_LOST	1
+
+/* synchronization types */
+/* mode */
+#define SND_SEQ_SYNC_TICK		0x80
+#define SND_SEQ_SYNC_TIME		0x40
+#define SND_SEQ_SYNC_MODE		0xc0		/* mask */
+/* private format */
+#define SND_SEQ_SYNC_FMT_PRIVATE_CLOCK	(SND_SEQ_SYNC_TICK|0)
+#define SND_SEQ_SYNC_FMT_PRIVATE_TIME	(SND_SEQ_SYNC_TIME|0)
+/* pre-defined format */
+#define SND_SEQ_SYNC_FMT_MIDI_CLOCK	(SND_SEQ_SYNC_TICK|1)
+#define SND_SEQ_SYNC_FMT_MTC		(SND_SEQ_SYNC_TIME|1)
+#define SND_SEQ_SYNC_FMT_DTL		(SND_SEQ_SYNC_TIME|2)
+#define SND_SEQ_SYNC_FMT_SMPTE		(SND_SEQ_SYNC_TIME|3)
+#define SND_SEQ_SYNC_FMT_MIDI_TICK	(SND_SEQ_SYNC_TIME|4)
+/* time format */
+#define SND_SEQ_SYNC_FPS_24		0
+#define SND_SEQ_SYNC_FPS_25		1
+#define SND_SEQ_SYNC_FPS_30_DP		2
+#define SND_SEQ_SYNC_FPS_30_NDP		3
+
+/* MIDI clock sync */
+typedef struct {
+	unsigned int ppq;		/* ticks per quarter-note */
+	unsigned int ticks;		/* ticks per clock */
+	/* slave stuffs */
+	int max_tick_diff, max_tick_diff2;
+	int x0, x1;
+} snd_seq_queue_tick_sync_t;
+
+/* SMPTE/MTC (real-time) sync */
+typedef struct {
+	unsigned int resolution;	/* frame resolution in nsec */
+	unsigned int subframes;		/* # of subframes */
+	/* slave stuffs */
+	int max_time_diff, phase_correct_time;
+	int x0, x1;
+} snd_seq_queue_time_sync_t;
+
+typedef struct {
+	unsigned char format;		/* sync format */
+	unsigned char time_format;	/* SMPTE time format */
+	unsigned char info[6];		/* format dependent info */
+	union {
+		snd_seq_queue_tick_sync_t tick;
+		snd_seq_queue_time_sync_t time;
+	} param;
+} snd_seq_queue_sync_t;
+
 
 /* queue info/status */
 typedef struct {
@@ -728,7 +800,10 @@ typedef struct {
 	int midi_channels;		/* midi channels setup, zero = do not care */
 	int midi_voices;		/* midi voices setup, zero = do not care */
 	int synth_voices;		/* synth voices setup, zero = do not care */
-	char reserved[32];		/* for future use */
+	union {
+		char reserved[32];
+		snd_seq_queue_sync_t sync_info;
+	} opt;
 } snd_seq_port_subscribe_t;
 
 /* type of query subscription */
