@@ -1281,7 +1281,7 @@ AC_TRY_COMPILE([
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #include "$CONFIG_SND_KERNELDIR/include/linux/videodev.h"
 ],[
-  void (*func)(struct video_device *);
+  void *(*func)(struct video_device *);
   func = video_get_drvdata;
 ],
     AC_MSG_RESULT("yes");video_get_drvdata="1",
