@@ -45,6 +45,7 @@ typedef struct _snd_rawmidi_ops {
 	int (*open) (snd_rawmidi_substream_t * substream);
 	int (*close) (snd_rawmidi_substream_t * substream);
 	void (*trigger) (snd_rawmidi_substream_t * substream, int up);
+	void (*drain) (snd_rawmidi_substream_t * substream);
 } snd_rawmidi_ops_t;
 
 typedef struct _snd_rawmidi_global_ops {
