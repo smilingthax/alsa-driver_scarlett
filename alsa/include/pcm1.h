@@ -121,7 +121,7 @@ struct snd_stru_pcm1_hardware {
   void (*trigger)( snd_pcm1_t *pcm, int up );
   unsigned int (*pointer)( snd_pcm1_t *pcm, unsigned int used_size );
   void (*dma)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned int offset, unsigned char *user, unsigned int count );
-  void (*dma_move)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned int dest_offset, unsigned int src_offset, unsigned int count );
+  void (*dma_move)( snd_pcm1_t *pcm, unsigned char *dbuffer, unsigned int dest_offset, unsigned char *sbuffer, unsigned int src_offset, unsigned int count );
   void (*dma_neutral)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned offset, unsigned int count, unsigned char neutral_byte );
 };
 
@@ -214,8 +214,8 @@ extern void snd_pcm1_record_dma_ulaw_loud( snd_pcm1_t *pcm,
 		 	                   unsigned char *buffer, unsigned int offset,
 		 	                   unsigned char *user, unsigned int count );
 extern void snd_pcm1_dma_move( snd_pcm1_t *pcm,
-                               unsigned char *buffer,
-                               unsigned int dest_offset, unsigned int src_offset,
+                               unsigned char *dbuffer, unsigned int dest_offset,
+                               unsigned char *sbuffer, unsigned int src_offset,
                                unsigned int count );
 
 extern void snd_pcm1_clear_channel( snd_pcm1_channel_t *pchn );
