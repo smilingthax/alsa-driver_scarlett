@@ -372,6 +372,8 @@ void *snd_malloc_pci_pages(struct pci_dev *pci, unsigned long size, dma_addr_t *
 void *snd_malloc_pci_pages_fallback(struct pci_dev *pci, unsigned long size, dma_addr_t *dmaaddr, unsigned long *res_size);
 void snd_free_pci_pages(struct pci_dev *pci, unsigned long size, void *ptr, dma_addr_t dmaaddr);
 #endif
+int copy_to_user_fromio(void *dst, unsigned long src, size_t count);
+int copy_from_user_toio(unsigned long dst, const void *src, size_t count);
 
 /* init.c */
 
