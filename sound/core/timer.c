@@ -97,6 +97,7 @@ static snd_timer_instance_t *snd_timer_instance_new(char *owner, snd_timer_t *ti
 	}
 	INIT_LIST_HEAD(&timeri->open_list);
 	INIT_LIST_HEAD(&timeri->active_list);
+	INIT_LIST_HEAD(&timeri->ack_list);
 	INIT_LIST_HEAD(&timeri->slave_list_head);
 	INIT_LIST_HEAD(&timeri->slave_active_head);
 	timeri->in_use = (atomic_t)ATOMIC_INIT(0);
@@ -341,6 +342,7 @@ static int snd_timer_start1(snd_timer_t *timer, snd_timer_instance_t *timeri, un
 {
 	list_del(&timeri->active_list);
 	list_add_tail(&timeri->active_list, &timer->active_list_head);
+	timeri->flags &= ~SNDRV_TIMER_IFLG_STOP;
 	if (timer->running) {
 		timer->flags |= SNDRV_TIMER_FLG_RESCHED;
 		timeri->flags |= SNDRV_TIMER_IFLG_START;
@@ -381,6 +383,7 @@ int snd_timer_start(snd_timer_instance_t * timeri, unsigned int ticks)
 		return -EINVAL;
 	spin_lock_irqsave(&timer->lock, flags);
 	timeri->ticks = timeri->cticks = ticks;
+	timeri->pticks = 0;
 	result = snd_timer_start1(timer, timeri, ticks);
 	spin_unlock_irqrestore(&timer->lock, flags);
 	return result;
@@ -412,6 +415,7 @@ int snd_timer_stop(snd_timer_instance_t * timeri)
 	if (! timer)
 		return -EINVAL;
 	spin_lock_irqsave(&timer->lock, flags);
+	timeri->flags |= SNDRV_TIMER_IFLG_STOP;
 	while (atomic_read(&timeri->in_use)) {
 		spin_unlock_irqrestore(&timer->lock, flags);
 		udelay(10);
@@ -492,6 +496,7 @@ int snd_timer_continue(snd_timer_instance_t * timeri)
 	spin_lock_irqsave(&timer->lock, flags);
 	if (!timeri->cticks)
 		timeri->cticks = 1;
+	timeri->pticks = 0;
 	result = snd_timer_start1(timer, timeri, timer->sticks);
 	spin_unlock_irqrestore(&timer->lock, flags);
 	return result;
@@ -542,37 +547,47 @@ static void snd_timer_reschedule(snd_timer_t * timer, unsigned long ticks_left)
 void snd_timer_interrupt(snd_timer_t * timer, unsigned long ticks_left)
 {
 	snd_timer_instance_t *ti, *ts;
-	unsigned long resolution;
-	LIST_HEAD(done_list_head);
+	unsigned long resolution, ticks;
 	struct list_head *p, *q, *n;
 
 	if (timer == NULL)
 		return;
+
 	spin_lock(&timer->lock);
+
+	/* remember the current resolution */
+	if (timer->hw.c_resolution)
+		resolution = timer->hw.c_resolution(timer);
+	else
+		resolution = timer->hw.resolution;
+
 	/* loop for all active instances
 	 * here we cannot use list_for_each because the active_list of a processed
 	 * instance is relinked to done_list_head before callback is called.
 	 */
 	list_for_each_safe(p, n, &timer->active_list_head) {
 		ti = (snd_timer_instance_t *)list_entry(p, snd_timer_instance_t, active_list);
-		if (ti->flags & SNDRV_TIMER_IFLG_RUNNING) {
-			if (ti->cticks < ticks_left)
-				ti->cticks = 0;
-			else
-				ti->cticks -= ticks_left;
-			if (!ti->cticks) { /* expired */
-				if (ti->flags & SNDRV_TIMER_IFLG_AUTO) {
-					ti->cticks = ti->ticks;
-				} else {
-					ti->flags &= ~SNDRV_TIMER_IFLG_RUNNING;
-					timer->running--;
-				}
-				/* relink to done_list */
+		if (!(ti->flags & SNDRV_TIMER_IFLG_RUNNING))
+			continue;
+		if (ti->flags & SNDRV_TIMER_IFLG_STOP)
+			continue;
+		ti->pticks += ticks_left;
+		if (ti->cticks < ticks_left)
+			ti->cticks = 0;
+		else
+			ti->cticks -= ticks_left;
+		if (ti->cticks) /* not expired */
+			continue;
+		if (ti->flags & SNDRV_TIMER_IFLG_AUTO) {
+			ti->cticks = ti->ticks;
+		} else {
+			ti->flags &= ~SNDRV_TIMER_IFLG_RUNNING;
+			if (--timer->running)
 				list_del(p);
-				list_add_tail(p, &done_list_head);
-				atomic_inc(&ti->in_use);
-			}
 		}
+		atomic_inc(&ti->in_use);
+		if (list_empty(&ti->ack_list))
+			list_add_tail(&ti->ack_list, &timer->ack_list_head);
 	}
 	if (timer->flags & SNDRV_TIMER_FLG_RESCHED)
 		snd_timer_reschedule(timer, ticks_left);
@@ -591,30 +606,30 @@ void snd_timer_interrupt(snd_timer_t * timer, unsigned long ticks_left)
 		timer->hw.stop(timer);
 	}
 
-	/* remember the current resolution */
-	if (timer->hw.c_resolution)
-		resolution = timer->hw.c_resolution(timer);
-	else
-		resolution = timer->hw.resolution;
-
 	/* now process all callbacks */
-	list_for_each_safe(p, n, &done_list_head) {
-		ti = (snd_timer_instance_t *)list_entry(p, snd_timer_instance_t, active_list);
-		/* append to active_list */
-		list_del(p);
-		if (ti->flags & SNDRV_TIMER_IFLG_RUNNING)
-			list_add_tail(p, &timer->active_list_head);
+	while (!list_empty(&timer->ack_list_head)) {
+		p = timer->ack_list_head.next;		/* get first item */
+		ti = (snd_timer_instance_t *)list_entry(p, snd_timer_instance_t, ack_list);
+
+		/* remove from ack_list and make empty */
+		list_del_init(p);
+		
+		ticks = ti->pticks;
+		ti->pticks = 0;
 		spin_unlock(&timer->lock);
+
 		if (ti->callback)
-			ti->callback(ti, resolution, ti->ticks, ti->callback_data);
+			ti->callback(ti, resolution, ticks);
+
 		spin_lock(&slave_active_lock);
 		/* call callbacks of slaves */
 		list_for_each(q, &ti->slave_active_head) {
 			ts = (snd_timer_instance_t *)list_entry(q, snd_timer_instance_t, active_list);
 			if (ts->callback)
-				ts->callback(ts, resolution, ti->ticks, ts->callback_data);
+				ts->callback(ts, resolution, ticks);
 		}
 		spin_unlock(&slave_active_lock);
+
 		spin_lock(&timer->lock);
 		atomic_dec(&ti->in_use);
 	}
@@ -651,6 +666,7 @@ int snd_timer_new(snd_card_t *card, char *id, snd_timer_id_t *tid, snd_timer_t *
 	INIT_LIST_HEAD(&timer->device_list);
 	INIT_LIST_HEAD(&timer->open_list_head);
 	INIT_LIST_HEAD(&timer->active_list_head);
+	INIT_LIST_HEAD(&timer->ack_list_head);
 	spin_lock_init(&timer->lock);
 	if (card != NULL) {
 		if ((err = snd_device_new(card, SNDRV_DEV_TIMER, timer, &ops)) < 0) {
@@ -904,25 +920,26 @@ static void snd_timer_proc_read(snd_info_entry_t *entry,
 
 static void snd_timer_user_interrupt(snd_timer_instance_t *timeri,
 				     unsigned long resolution,
-				     unsigned long ticks,
-				     void *data)
+				     unsigned long ticks)
 {
-	unsigned long flags;
-	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, data, return);
+	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
 	snd_timer_read_t *r;
+	int _wake = 0;
 	
+	spin_lock(&tu->qlock);
 	if (tu->qused >= tu->queue_size) {
 		tu->overrun++;
 	} else {
-		spin_lock_irqsave(&tu->qlock, flags);
 		r = &tu->queue[tu->qtail++];
 		tu->qtail %= tu->queue_size;
 		r->resolution = resolution;
 		r->ticks = ticks;
 		tu->qused++;
-		spin_unlock_irqrestore(&tu->qlock, flags);
-		wake_up(&tu->qchange_sleep);
+		_wake++;
 	}
+	spin_unlock(&tu->qlock);
+	if (_wake)
+		wake_up(&tu->qchange_sleep);
 }
 
 static int snd_timer_user_open(struct inode *inode, struct file *file)
@@ -1254,8 +1271,8 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 	int  err = 0;
 	
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
+	spin_lock_irq(&tu->qlock);
 	while (count - result >= sizeof(snd_timer_read_t)) {
-		spin_lock_irq(&tu->qlock);
 		while (!tu->qused) {
 			wait_queue_t wait;
 
@@ -1291,11 +1308,12 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 		}
 
 		tu->qhead %= tu->queue_size;
-		spin_lock_irq(&tu->qlock);
-		tu->qused--;
-		spin_unlock_irq(&tu->qlock);
+
 		result += sizeof(snd_timer_read_t);
 		buffer += sizeof(snd_timer_read_t);
+
+		spin_lock_irq(&tu->qlock);
+		tu->qused--;
 	}
 	return result > 0 ? result : err;
 }

@@ -133,10 +133,10 @@ void snd_seq_timer_reset(seq_timer_t * tmr)
 /* called by timer interrupt routine. the period time since previous invocation is passed */
 static void snd_seq_timer_interrupt(snd_timer_instance_t *timeri,
 				    unsigned long resolution,
-				    unsigned long ticks, void *data)
+				    unsigned long ticks)
 {
 	unsigned long flags;
-	queue_t *q = (queue_t *)data;
+	queue_t *q = (queue_t *)timeri->callback_data;
 	seq_timer_t *tmr;
 
 	if (q == NULL)
