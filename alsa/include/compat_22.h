@@ -64,6 +64,7 @@ static __inline__ void list_del_init(struct list_head *entry)
 /* rw_semaphore - replaced with mutex */
 #define rw_semaphore semaphore
 #define init_rwsem(x) init_MUTEX(x)
+#define DECLARE_RWSEM(x) DECLARE_MUTEX(x)
 #define down_read(x) down(x)
 #define down_write(x) down(x)
 #define up_read(x) up(x)
