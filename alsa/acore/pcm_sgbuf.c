@@ -1,6 +1,6 @@
 #define __NO_VERSION__
 #include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
 #include "../alsa-kernel/core/pcm_sgbuf.c"
 #else
 
@@ -35,6 +35,7 @@ void snd_pcm_sgbuf_delete(struct snd_sg_buf *sgbuf)
 	snd_magic_kfree(sgbuf);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
 static void *get_vmalloc_addr(void *pageptr)
 {
 	pgd_t *pgd;
@@ -48,13 +49,67 @@ static void *get_vmalloc_addr(void *pageptr)
 	pte = pte_offset(pmd, lpage);
 	return (void *)pte_page(*pte);
 }    
+#endif
+
+static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned int pages)
+{
+	unsigned int i;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+	unsigned long rmask;
+	if (sgbuf->pci)
+		rmask = ~((unsigned long)sgbuf->pci->dma_mask);
+	else
+		rmask = ~0xffffffUL;
+#endif
+
+	for (i = 0; i < pages; i++) {
+		struct page *page;
+		void *ptr;
+		dma_addr_t addr;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+		page = vmalloc_to_page(vmaddr + (i << PAGE_SHIFT));
+		ptr = page_address(page);
+		addr = virt_to_bus(ptr);
+		if (addr & rmask)
+			return -EINVAL;
+#else
+		ptr = get_vmalloc_addr(vmaddr + (i << PAGE_SHIFT));
+		addr = virt_to_bus(ptr);
+		page = virt_to_page(ptr);
+#endif
+		sgbuf->table[i].buf = ptr;
+		sgbuf->table[i].addr = addr;
+		sgbuf->page_table[i] = page;
+		SetPageReserved(page);
+		sgbuf->pages++;
+	}
+	return 0;
+}
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 18)
+#define vmalloc_32(x) vmalloc(x)
+#endif
+
+static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
+{
+	int i;
+
+	for (i = 0; i < sgbuf->pages; i++)
+		if (sgbuf->page_table[i]) {
+			ClearPageReserved(sgbuf->page_table[i]);
+			sgbuf->page_table[i] = NULL;
+		}
+	sgbuf->pages = 0;
+	vfree_nocheck(vmaddr);
+}
 
 void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 {
-	unsigned int i, pages;
+	unsigned int pages;
 	void *vmaddr = NULL;
 
 	pages = snd_pcm_sgbuf_pages(size);
+	sgbuf->pages = 0;
 	sgbuf->tblsize = sgbuf_align_table(pages);
 	sgbuf->table = snd_kcalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
 	if (! sgbuf->table)
@@ -64,17 +119,19 @@ void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 		goto _failed;
 
 	sgbuf->size = size;
-	vmaddr = vmalloc_nocheck(pages << PAGE_SHIFT);
+	vmaddr = vmalloc_32(pages << PAGE_SHIFT);
 	if (! vmaddr)
 		goto _failed;
 
-	sgbuf->pages = pages;
-	for (i = 0; i < pages; i++) {
-		void *ptr = get_vmalloc_addr(vmaddr + (i << PAGE_SHIFT));
-		sgbuf->table[i].buf = ptr;
-		sgbuf->table[i].addr = virt_to_bus(ptr);
-		sgbuf->page_table[i] = virt_to_page(ptr);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+	if (store_page_tables(sgbuf, vmaddr, pages) < 0) {
+		release_vm_buffer(sgbuf, vmaddr);
+		vmaddr = vmalloc_dma(pages << PAGE_SHIFT);
+		if (! vmaddr)
+			goto _failed;
+		store_page_tables(sgbuf, vmaddr, pages);
 	}
+#endif
 
 	return vmaddr;
 
@@ -86,8 +143,7 @@ void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 int snd_pcm_sgbuf_free_pages(struct snd_sg_buf *sgbuf, void *vmaddr)
 {
 	if (vmaddr)
-		vfree_nocheck(vmaddr);
-
+		release_vm_buffer(sgbuf, vmaddr);
 	if (sgbuf->table)
 		kfree(sgbuf->table);
 	sgbuf->table = NULL;
@@ -95,7 +151,6 @@ int snd_pcm_sgbuf_free_pages(struct snd_sg_buf *sgbuf, void *vmaddr)
 		kfree(sgbuf->page_table);
 	sgbuf->page_table = NULL;
 	sgbuf->tblsize = 0;
-	sgbuf->pages = 0;
 	sgbuf->size = 0;
 	
 	return 0;
