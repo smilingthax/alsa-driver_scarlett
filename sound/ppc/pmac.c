@@ -946,8 +946,8 @@ snd_pmac_ctrl_intr(int irq, void *devid, struct pt_regs *regs)
 	printk("pmac: control interrupt.. 0x%x\n", ctrl);
 	if (ctrl & MASK_PORTCHG) {
 		/* do something when headphone is plugged/unplugged? */
-		if (chip->port_change)
-			chip->port_change(chip);
+		if (chip->update_automute)
+			chip->update_automute(chip, 1);
 	}
 	if (ctrl & MASK_CNTLERR) {
 		int err = (in_le32(&chip->awacs->codec_stat) & MASK_ERRCODE) >> 16;
@@ -1158,9 +1158,90 @@ static int __init snd_pmac_detect(pmac_t *chip)
 		/* assume only 44.1khz */
 		chip->freqs_ok = 1;
 	}
+
 	return 0;
 }
 
+/*
+ * exported - boolean info callbacks for ease of programming
+ */
+int snd_pmac_boolean_stereo_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 2;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+int snd_pmac_boolean_mono_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+#ifdef PMAC_SUPPORT_AUTOMUTE
+/*
+ * auto-mute
+ */
+static int pmac_auto_mute_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pmac_t *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = chip->auto_mute;
+	return 0;
+}
+
+static int pmac_auto_mute_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pmac_t *chip = snd_kcontrol_chip(kcontrol);
+	if (ucontrol->value.integer.value[0] != chip->auto_mute) {
+		chip->auto_mute = ucontrol->value.integer.value[0];
+		if (chip->update_automute)
+			chip->update_automute(chip, 1);
+		return 1;
+	}
+	return 0;
+}
+
+static int pmac_hp_detect_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pmac_t *chip = snd_kcontrol_chip(kcontrol);
+	if (chip->detect_headphone)
+		ucontrol->value.integer.value[0] = chip->detect_headphone(chip);
+	else
+		ucontrol->value.integer.value[0] = 0;
+	return 0;
+}
+
+static snd_kcontrol_new_t auto_mute_controls[] __initdata = {
+	{ iface: SNDRV_CTL_ELEM_IFACE_MIXER,
+	  name: "Auto Mute Switch",
+	  info: snd_pmac_boolean_mono_info,
+	  get: pmac_auto_mute_get,
+	  put: pmac_auto_mute_put,
+	},
+	{ iface: SNDRV_CTL_ELEM_IFACE_MIXER,
+	  access: SNDRV_CTL_ELEM_ACCESS_READ,
+	  info: snd_pmac_boolean_mono_info,
+	  get: pmac_hp_detect_get,
+	},
+};
+
+int __init snd_pmac_add_automute(pmac_t *chip)
+{
+	int i, err;
+	chip->auto_mute = 1;
+	for (i = 0; i < 2; i++) {
+		err = snd_ctl_add(chip->card, snd_ctl_new1(&auto_mute_controls[i], chip));
+		if (err < 0)
+			return err;
+	}
+	return 0;
+}
+#endif /* PMAC_SUPPORT_AUTOMUTE */
 
 /*
  * create and detect a pmac chip record
