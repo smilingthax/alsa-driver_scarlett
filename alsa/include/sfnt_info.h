@@ -31,7 +31,7 @@
 /* patch interface header: 16 bytes */
 typedef struct soundfont_patch_info_t {
 	unsigned short key;		/* use the key below */
-#define SND_OSS_SOUNDFONT_PATCH		SND_OSS_PATCHKEY(0x07)
+#define SND_OSS_SOUNDFONT_PATCH		_PATCHKEY(0x07)
 
 	short device_no;		/* synthesizer number */
 	unsigned short sf_id;		/* file id (should be zero) */
