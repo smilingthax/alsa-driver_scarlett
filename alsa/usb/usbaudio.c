@@ -146,7 +146,8 @@ struct snd_usb_substream {
 	int hwptr;			/* free frame position in the buffer (only for playback) */
 	int hwptr_done;			/* processed frame position in the buffer */
 	int transfer_done;		/* processed frames since last period update */
-	unsigned long transmask;	/* bitmask of active urbs */
+	unsigned long active_mask;	/* bitmask of active urbs */
+	unsigned long unlink_mask;	/* bitmask of unlinked urbs */
 
 	int npacks;			/* # total packets */
 	int nurbs;			/* # urbs */
@@ -499,11 +500,11 @@ static void snd_complete_urb(struct urb *urb)
 	int err;
 
 	if (subs->ops.retire(subs, substream->runtime, urb)) {
-		clear_bit(ctx->index, &subs->transmask);
+		clear_bit(ctx->index, &subs->active_mask);
 		return;
 	}
 
-	clear_bit(ctx->index, &subs->transmask);
+	clear_bit(ctx->index, &subs->active_mask);
 
 	if (subs->running) {
 		if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
@@ -512,7 +513,7 @@ static void snd_complete_urb(struct urb *urb)
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 			return;
 		} else
-			set_bit(ctx->index, &subs->transmask);
+			set_bit(ctx->index, &subs->active_mask);
 	}
 }
 
@@ -528,11 +529,11 @@ static void snd_complete_sync_urb(struct urb *urb)
 	int err;
 
 	if (subs->ops.retire_sync(subs, substream->runtime, urb)) {
-		clear_bit(ctx->index + 16, &subs->transmask);
+		clear_bit(ctx->index + 16, &subs->active_mask);
 		return;
 	}
 
-	clear_bit(ctx->index + 16, &subs->transmask); /* use bits from 16 */
+	clear_bit(ctx->index + 16, &subs->active_mask); /* use bits from 16 */
 
 	if (subs->running) {
 		if ((err = subs->ops.prepare_sync(subs, substream->runtime, urb))  < 0 ||
@@ -541,7 +542,7 @@ static void snd_complete_sync_urb(struct urb *urb)
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 			return;
 		} else
-			set_bit(ctx->index + 16, &subs->transmask);
+			set_bit(ctx->index + 16, &subs->active_mask);
 	}
 }
 
@@ -557,14 +558,16 @@ static int deactivate_urbs(snd_usb_substream_t *subs)
 
 	alive = 0;
 	for (i = 0; i < subs->nurbs; i++) {
-		if (test_bit(i, &subs->transmask)) {
+		if (test_bit(i, &subs->active_mask) && !test_bit(i, &subs->unlink_mask)) {
+			set_bit(i, &subs->unlink_mask);
 			usb_unlink_urb(subs->dataurb[i].urb);
 			alive++;
 		}
 	}
 	if (subs->syncpipe) {
 		for (i = 0; i < SYNC_URBS; i++) {
-			if (test_bit(i + 16, &subs->transmask)) {
+			if (test_bit(i+16, &subs->active_mask) && !test_bit(i+16, &subs->unlink_mask)) {
+				set_bit(i + 16, &subs->unlink_mask);
 				usb_unlink_urb(subs->syncurb[i].urb);
 				alive++;
 			}
@@ -604,7 +607,7 @@ static int start_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 			snd_printk(KERN_ERR "cannot submit datapipe for urb %d, err = %d\n", i, err);
 			goto __error;
 		}
-		set_bit(subs->dataurb[i].index, &subs->transmask);
+		set_bit(subs->dataurb[i].index, &subs->active_mask);
 	}
 	if (subs->syncpipe) {
 		for (i = 0; i < SYNC_URBS; i++) {
@@ -612,7 +615,7 @@ static int start_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 				snd_printk(KERN_ERR "cannot submit syncpipe for urb %d, err = %d\n", i, err);
 				goto __error;
 			}
-			set_bit(subs->syncurb[i].index + 16, &subs->transmask);
+			set_bit(subs->syncurb[i].index + 16, &subs->active_mask);
 		}
 	}
 	return 0;
@@ -634,13 +637,15 @@ static int wait_clear_urbs(snd_usb_substream_t *subs)
 
 	do {
 		alive = 0;
-		for (i = 0; i < subs->nurbs; i++)
-			if (test_bit(i, &subs->transmask))
+		for (i = 0; i < subs->nurbs; i++) {
+			if (test_bit(i, &subs->active_mask))
 				alive++;
+		}
 		if (subs->syncpipe) {
-			for (i = 0; i < SYNC_URBS; i++)
-				if (test_bit(i + 16, &subs->transmask))
+			for (i = 0; i < SYNC_URBS; i++) {
+				if (test_bit(i + 16, &subs->active_mask))
 					alive++;
+			}
 		}
 		if (! alive)
 			break;
@@ -740,7 +745,8 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 	subs->hwptr = 0;
 	subs->hwptr_done = 0;
 	subs->transfer_done = 0;
-	subs->transmask = 0;
+	subs->active_mask = 0;
+	subs->unlink_mask = 0;
 
 	/* calculate the max. size of packet */
 	maxsize = ((subs->freqmax + 0x3fff) * (runtime->frame_bits >> 3)) >> 14;
