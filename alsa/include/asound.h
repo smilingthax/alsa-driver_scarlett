@@ -1287,7 +1287,9 @@ typedef struct {
 	int frags;			/* RO: fragments */
 	int frag_size;			/* RO: fragment size */
 	int voices;			/* RO: number of voices, -1 = interleaved */
-	int res[3];			/* reserved */
+	volatile unsigned int block;	/* RO: block number */
+	volatile unsigned int expblock; /* RW: expected block number for wakeup */
+	int res[9];			/* reserved */
 } snd_pcm_mmap_io_status_t;
 
 typedef struct {
@@ -1296,8 +1298,7 @@ typedef struct {
 	int voice;			/* RO: voice number, -1 = interleaved */
 	volatile char data;		/* RW: non-zero - contains valid data */
 	volatile char io;		/* RO: non-zero - I/O operation (don't change data) */
-	char res1;			/* reserved */
-	char res2;			/* reserved */
+	char res[2];			/* reserved */
 } snd_pcm_mmap_fragment_t;
 
 typedef struct {
