@@ -77,6 +77,7 @@ typedef int (*snd_kctl_ioctl_t) (snd_card_t * card,
 int snd_ctl_busy(snd_kctl_t * ctl);
 void snd_ctl_notify_structure_change(snd_card_t * card, snd_ctl_event_type_t etype, snd_control_id_t * id);
 void snd_ctl_notify_value_change(snd_kctl_t * ctl, snd_kcontrol_t * control);
+void snd_ctl_notify_value_change_forall(snd_card_t * card, snd_kcontrol_t * control);
 
 snd_kcontrol_t *snd_ctl_new(snd_kcontrol_t * kcontrol);
 snd_kcontrol_t *snd_ctl_new1(snd_kcontrol_new_t * kcontrolnew, void * private_data);
