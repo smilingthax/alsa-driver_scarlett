@@ -288,6 +288,8 @@ struct snd_stru_emu10k1_pcm {
 	emu10k1_t *emu;
 	snd_pcm_subchn_t *subchn;
 	emu10k1_voice_t *voices[2];
+	emu10k1_voice_t *extra;
+	int running;
 	unsigned int start_addr;
 };
 
@@ -306,6 +308,8 @@ struct snd_stru_emu10k1 {
 	void *silent_page;	/* silent page */
 	volatile unsigned int *ptb_pages; /* page table pages */
 	void *ptb_page_alloc;	/* PTB allocation entry */
+	void *reserved_page;	/* reserved page */
+	unsigned int reserved_page_addr;
 
 	ac97_t *ac97;
 
@@ -370,9 +374,9 @@ unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
-int snd_emu10k1_ptb_alloc(emu10k1_t *emu, void *pages, unsigned long size);
+int snd_emu10k1_ptb_alloc(emu10k1_t *emu, void *pages, unsigned long size, unsigned int *raddr);
 int snd_emu10k1_ptb_free(emu10k1_t *emu, void *obj, unsigned long *size);
-void *snd_emu10k1_synth_malloc(emu10k1_t *emu, unsigned long size);
+void *snd_emu10k1_synth_malloc(emu10k1_t *emu, unsigned long size, unsigned int *raddr);
 void snd_emu10k1_synth_free(emu10k1_t *emu, void *obj);
 
 /* voice allocation */
