@@ -29,6 +29,7 @@ typedef struct snd_stru_ctl_read {
 
 struct snd_stru_control {
 	snd_card_t *card;
+	unsigned int hwdep_device;
 	unsigned int mixer_device;
 	unsigned int pcm_device;
 	unsigned int rawmidi_device;

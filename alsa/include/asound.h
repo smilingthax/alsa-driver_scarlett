@@ -139,6 +139,8 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_SWITCH_LIST	_IOWR('U', 0x02, snd_switch_list_t)
 #define SND_CTL_IOCTL_SWITCH_READ	_IOWR('U', 0x03, snd_switch_t)
 #define SND_CTL_IOCTL_SWITCH_WRITE	_IOWR('U', 0x04, snd_switch_t)
+#define SND_CTL_IOCTL_HWDEP_DEVICE	_IOWR('U', 0x08, int)
+#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x09, snd_hwdep_info_t)
 #define SND_CTL_IOCTL_MIXER_DEVICE	_IOWR('U', 0x10, int)
 #define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x10, snd_mixer_info_t)
 #define SND_CTL_IOCTL_MIXER_SWITCH_LIST	_IOWR('U', 0x11, snd_switch_list_t)
