@@ -99,7 +99,7 @@ include/sndversions.h:
 .PHONY: compile
 compile: include/sound/version.h include/sndversions.h
 ifdef NEW_KBUILD
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/$$d modules; then exit 1; fi; done
+	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/kbuild modules
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 endif
@@ -194,6 +194,7 @@ clean1:
 clean: clean1
 ifdef NEW_KBUILD
 	find . \( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' -o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \) -type f -print | xargs rm -f
+	rm -rf kbuild/.tmp_versions
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/$$d clean; then exit 1; fi; done
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
