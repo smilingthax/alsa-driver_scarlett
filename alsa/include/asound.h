@@ -815,11 +815,9 @@ typedef struct snd_pcm_status {
 	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
 	snd_timestamp_t tstamp;	/* Timestamp */
 	ssize_t delay;		/* current delay in frames */
+	size_t avail;		/* number of frames available */
 	size_t avail_max;	/* max frames available on hw since last status */
 	size_t overrange;	/* count of ADC (capture) overrange detections from last status */
-	size_t appl_ptr;	/* current application side ptr in frames */
-	size_t hw_ptr;		/* current hardware side ptr in frames */
-	size_t avail;		/* number of frames available */
 	char reserved[64];	/* must be filled with zero */
 } snd_pcm_status_t;
 
