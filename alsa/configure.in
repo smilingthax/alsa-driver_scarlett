@@ -610,6 +610,8 @@ CHECK_KERNEL_HEADER(linux/pmu.h, [#include <asm/pmu.h>
 CHECK_KERNEL_HEADER(linux/moduleparam.h)
 CHECK_KERNEL_HEADER(linux/syscalls.h, [#include \"syscalls_26.h\"
 ])
+CHECK_KERNEL_HEADER(linux/firmware.h, [#include \"firmware_compat.h\"
+])
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
