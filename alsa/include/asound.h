@@ -317,9 +317,9 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_CAPTURE3	8
 /* playback subchannel/voice endpoint */
 #define SND_MIXER_ETYPE_PLAYBACK3	9
-/* simple on/off switch */
+/* simple on/off switch (voices separated) */
 #define SND_MIXER_ETYPE_SWITCH1		100
-/* simple on/off switch for each voices */
+/* simple on/off switch (all voices together) */
 #define SND_MIXER_ETYPE_SWITCH2		101
 /* simple voice route switch */
 #define SND_MIXER_ETYPE_SWITCH3		102
@@ -333,9 +333,9 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_ACCU2		301
 /* simple accumulator with programmable attenuation */
 #define SND_MIXER_ETYPE_ACCU3		302
-/* simple MUX */
+/* simple MUX (voices separated) */
 #define SND_MIXER_ETYPE_MUX1		400
-/* simple MUX for each voices */
+/* simple MUX (all voices together) */
 #define SND_MIXER_ETYPE_MUX2		401
 /* simple tone control */
 #define SND_MIXER_ETYPE_TONE_CONTROL1	500
