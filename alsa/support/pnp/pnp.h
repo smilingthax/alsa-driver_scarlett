@@ -198,6 +198,7 @@ void pnp_init_resource_table(struct pnp_resource_table *table);
 int pnp_manual_config_dev(struct pnp_dev *dev, struct pnp_resource_table *res, int mode);
 int pnp_activate_dev(struct pnp_dev *dev);
 static inline int pnp_is_active(struct pnp_dev *dev) { return dev->p.active; }
+int pnp_disable_dev(struct pnp_dev *dev);
 
 #else
 
@@ -211,6 +212,7 @@ static inline void pnp_init_resource_table(struct pnp_resource_table *table) { ;
 static inline int pnp_manual_config_dev(struct pnp_dev *dev, struct pnp_resource_table *res, int mode) { return -ENODEV; }
 static inline int pnp_activate_dev(struct pnp_dev *dev) { return -ENODEV; }
 static inline int pnp_is_active(struct pnp_dev * dev) { return -ENODEV; }
+static inline int pnp_disable_dev(struct pnp_dev *dev) { return -ENODEV; }
 
 #endif
 
