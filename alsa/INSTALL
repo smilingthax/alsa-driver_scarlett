@@ -30,7 +30,7 @@ Quick install
 4) Run the './snddevices' script to create new sound devices in /dev directory.
    Skip this step, if you have a kernel with the DEVFS support.
 5) Edit your /etc/modules.conf (see the kmod support section below).
-6) Run 'modprobe snd-card' where the card is the name of your card.
+6) Run 'modprobe snd-card-xxxx' where xxxx is the name of your card.
    Note: If you have a ISA PnP soundcard you need to first run the isapnp
          program from isapnptools package to initialize your
          soundcard. You can also use the native ISA PnP support by
