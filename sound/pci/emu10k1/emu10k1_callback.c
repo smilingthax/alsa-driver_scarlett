@@ -81,7 +81,9 @@ snd_emu10k1_ops_setup(snd_emux_t *emu)
 
 
 /*
- * get more voice
+ * get more voice for pcm
+ *
+ * terminate most inactive voice and give it as a pcm voice.
  */
 int
 snd_emu10k1_synth_get_voice(emu10k1_t *hw)
@@ -207,6 +209,7 @@ update_voice(snd_emux_voice_t *vp, int update)
 /*
  * look up voice table - get the best voice in order of preference
  */
+/* spinlock held! */
 static void
 lookup_voices(snd_emux_t *emu, emu10k1_t *hw, best_voice_t *best, int active_only)
 {
@@ -235,7 +238,8 @@ lookup_voices(snd_emux_t *emu, emu10k1_t *hw, best_voice_t *best, int active_onl
 			}
 			bp = best + V_OFF;
 		}
-		else if (state == SNDRV_EMUX_ST_RELEASED) {
+		else if (state == SNDRV_EMUX_ST_RELEASED ||
+			 state == SNDRV_EMUX_ST_PENDING) {
 			bp = best + V_RELEASED;
 #if 0
 			val = snd_emu10k1_ptr_read(hw, CVCF_CURRENTVOL, vp->ch);
@@ -267,6 +271,8 @@ lookup_voices(snd_emux_t *emu, emu10k1_t *hw, best_voice_t *best, int active_onl
 
 /*
  * get an empty voice
+ *
+ * emu->voice_lock is already held.
  */
 static snd_emux_voice_t *
 get_voice(snd_emux_t *emu, snd_emux_port_t *port)

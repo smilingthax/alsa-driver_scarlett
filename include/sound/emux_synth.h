@@ -117,6 +117,8 @@ struct snd_emux {
 	int used;	/* use counter */
 	char *name;	/* name of the device (internal) */
 	snd_rawmidi_t **vmidi;
+	struct timer_list tlist;	/* for pending note-offs */
+	int timer_active;
 
 	snd_util_memhdr_t *memhdr;	/* memory chunk information */
 
@@ -167,7 +169,8 @@ struct snd_emux_voice {
 #define SNDRV_EMUX_ST_RELEASED 	(0x02|SNDRV_EMUX_ST_ON)	/* Note released */
 #define SNDRV_EMUX_ST_SUSTAINED	(0x04|SNDRV_EMUX_ST_ON)	/* Note sustained */
 #define SNDRV_EMUX_ST_STANDBY	(0x08|SNDRV_EMUX_ST_ON)	/* Waiting to be triggered */
-#define SNDRV_EMUX_ST_LOCKED		0x10	/* Not accessible */
+#define SNDRV_EMUX_ST_PENDING 	(0x10|SNDRV_EMUX_ST_ON)	/* Note will be released */
+#define SNDRV_EMUX_ST_LOCKED		0x100	/* Not accessible */
 
 	unsigned int  time;	/* An allocation time */
 	unsigned char note;	/* Note currently assigned to this voice */
@@ -180,6 +183,7 @@ struct snd_emux_voice {
 	snd_emux_port_t *port;	/* associated port */
 	snd_emux_t *emu;	/* assigned root info */
 	void *hw;		/* hardware pointer (emu8000_t or emu10k1_t) */
+	unsigned long ontime;	/* jiffies at note triggered */
 	
 	/* Emu8k/Emu10k1 registers */
 	soundfont_voice_info_t reg;
