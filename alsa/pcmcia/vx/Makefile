@@ -1,7 +1,5 @@
-TOPDIR = ../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 EXTRA_CLEAN = vx_entry.c
 
@@ -11,9 +9,8 @@ EXTRA_CLEAN = vx_entry.c
 
 export-objs = vx_entry.o
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pcmcia/vx/Makefile
+include $(SND_TOPDIR)/alsa-kernel/pcmcia/vx/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make
 
-vx_entry.c: vx_entry.patch vx_entry.inc vx_entry.inc1 $(TOPDIR)/alsa-kernel/pcmcia/vx/vx_entry.c
+vx_entry.c: vx_entry.patch vx_entry.inc vx_entry.inc1 $(SND_TOPDIR)/alsa-kernel/pcmcia/vx/vx_entry.c

@@ -1,13 +1,10 @@
-TOPDIR = ../..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+clean-files := nm256.c
 
-EXTRA_CLEAN = nm256.c
+include $(SND_TOPDIR)/alsa-kernel/pci/nm256/Makefile
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pci/nm256/Makefile
+include $(SND_TOPDIR)/Rules.make
 
-include $(TOPDIR)/Rules.make
-
-nm256.c: nm256.patch $(TOPDIR)/alsa-kernel/pci/nm256/nm256.c
+nm256.c: nm256.patch $(SND_TOPDIR)/alsa-kernel/pci/nm256/nm256.c

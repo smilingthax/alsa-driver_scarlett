@@ -1,11 +1,8 @@
-TOPDIR = ../../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 export-objs  := ainstr_fm.o ainstr_simple.o ainstr_gf1.o ainstr_iw.o
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/core/seq/instr/Makefile
+include $(SND_TOPDIR)/alsa-kernel/core/seq/instr/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

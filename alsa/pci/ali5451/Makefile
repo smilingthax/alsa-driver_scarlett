@@ -1,14 +1,11 @@
-TOPDIR = ../..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+clean-files := ali5451.c
 
-EXTRA_CLEAN = ali5451.c
+include $(SND_TOPDIR)/alsa-kernel/pci/ali5451/Makefile
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pci/ali5451/Makefile
+include $(SND_TOPDIR)/Rules.make
 
-include $(TOPDIR)/Rules.make
-
-ali5451.c: ali5451.patch $(TOPDIR)/alsa-kernel/pci/ali5451/ali5451.c
+ali5451.c: ali5451.patch $(SND_TOPDIR)/alsa-kernel/pci/ali5451/ali5451.c
 

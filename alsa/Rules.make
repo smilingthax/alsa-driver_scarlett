@@ -6,6 +6,37 @@
 
 MODCURDIR = $(subst $(MAINSRCDIR)/,,$(shell /bin/pwd))
 
+ifdef NEW_KBUILD
+
+# clean obsolete definitions
+export-objs :=
+
+%.c: %.patch
+	@$(SND_TOPDIR)/utils/patch-alsa $@
+
+# apply patches beforehand
+prepare: $(clean-files)
+	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
+	          $(patsubst %/,%,$(filter %/, $(obj-m))); do \
+	 $(MAKE) -C $$d prepare; \
+	done
+
+ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))
+ALL_MOBJS := $(filter-out %/, $(ALL_MOBJS))
+modules_install:
+ifneq "$(strip $(ALL_MOBJS))" ""
+	mkdir -p $(DESTDIR)$(moddir)/$(MODCURDIR)
+	cp $(ALL_MOBJS:.o=.ko) $(DESTDIR)$(moddir)/$(MODCURDIR)
+endif
+	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
+	          $(patsubst %/,%,$(filter %/, $(obj-m))); do \
+	 $(MAKE) -C $$d modules_install; \
+	done
+
+else
+
+TOPDIR = $(SND_TOPDIR)
+
 comma = ,
 
 #
@@ -312,7 +343,7 @@ endif # CONFIG_MODULES
 
 .PHONY: clean1
 clean1:
-	rm -f .depend *.o *.isapnp $(EXTRA_CLEAN)
+	rm -f .depend *.o *.isapnp $(clean-files)
 
 .PHONY: clean
 clean: $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)) clean1
@@ -341,3 +372,5 @@ endif
 ifneq ($(wildcard $(TOPDIR)/.hdepend),)
 include $(TOPDIR)/.hdepend
 endif
+
+endif	# NEW_BUILD

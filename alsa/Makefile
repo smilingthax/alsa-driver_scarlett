@@ -3,7 +3,6 @@
 # Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
-TOPDIR   = .
 ALSAKERNELDIR = ../alsa-kernel
 
 ifndef IGROUP
@@ -24,6 +23,9 @@ dummy1:
 	@echo
 endif
 
+SND_TOPDIR   = $(MAINSRCDIR)
+export SND_TOPDIR
+
 ifeq (,$(wildcard acinclude.m4))
 .PHONY: dummy2
 dummy2:
@@ -33,8 +35,12 @@ dummy2:
 	@echo
 endif
 
-SUBDIRS  = support acore i2c drivers isa synth
+SUBDIRS  = acore i2c drivers isa synth
 CSUBDIRS =
+
+ifndef NEW_KBUILD
+SUBDIRS += support
+endif
 
 ifeq (y,$(CONFIG_PCI))
 SUBDIRS  += pci
@@ -92,14 +98,22 @@ include/sndversions.h:
 
 .PHONY: compile
 compile: include/sound/version.h include/sndversions.h
+ifdef NEW_KBUILD
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/$$d modules; then exit 1; fi; done
+else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
+endif
 	@echo
 	@echo "ALSA modules were successfully compiled."
 	@echo
 
 .PHONY: dep
 dep: include/sound/version.h
+ifdef NEW_KBUILD
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d prepare; then exit 1; fi; done
+else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d fastdep; then exit 1; fi; done
+endif
 
 .PHONY: map
 map:
@@ -137,7 +151,7 @@ install-modules:
 ifeq ($(moddir_tree),y)
 	rm -rf $(DESTDIR)$(moddir)
 else
-	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
+	rm -f $(DESTDIR)$(moddir)/snd*.*o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 endif
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
@@ -178,7 +192,12 @@ clean1:
 
 .PHONY: clean
 clean: clean1
+ifdef NEW_KBUILD
+	find . \( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' -o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \) -type f -print | xargs rm -f
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/$$d clean; then exit 1; fi; done
+else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
+endif
 	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 
 .PHONY: mrproper

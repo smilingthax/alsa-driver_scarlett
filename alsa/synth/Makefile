@@ -1,11 +1,8 @@
-TOPDIR = ..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 export-objs  := util_mem.o
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/synth/Makefile
+include $(SND_TOPDIR)/alsa-kernel/synth/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

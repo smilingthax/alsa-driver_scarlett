@@ -1,13 +1,10 @@
-TOPDIR = ../..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+clean-files := ymfpci.c
 
-EXTRA_CLEAN = ymfpci.c
+include $(SND_TOPDIR)/alsa-kernel/pci/ymfpci/Makefile
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pci/ymfpci/Makefile
+include $(SND_TOPDIR)/Rules.make
 
-include $(TOPDIR)/Rules.make
-
-ymfpci.c: ymfpci.patch $(TOPDIR)/alsa-kernel/pci/ymfpci/ymfpci.c
+ymfpci.c: ymfpci.patch $(SND_TOPDIR)/alsa-kernel/pci/ymfpci/ymfpci.c

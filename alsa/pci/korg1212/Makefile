@@ -1,9 +1,6 @@
-TOPDIR = ../..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/alsa-kernel/pci/korg1212/Makefile
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pci/korg1212/Makefile
-
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

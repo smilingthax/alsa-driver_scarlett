@@ -1,28 +1,24 @@
-TOPDIR = ..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 #
 # ALSA extra code
 #
 
-EXTRA_CLEAN = cs4281.c es1968.c intel8x0.c maestro3.c
+clean-files := cs4281.c es1968.c intel8x0.c maestro3.c
 
-extra-subdir-y	:= pdplus mixart au88x0
-extra-subdir-m	:= $(extra-subdir-y)
+obj-$(CONFIG_SND) += pdplus/ mixart/ au88x0/
 
 #
 #
 #
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pci/Makefile
+include $(SND_TOPDIR)/alsa-kernel/pci/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make
 
-cs4281.c: cs4281.patch $(TOPDIR)/alsa-kernel/pci/cs4281.c
-es1968.c: es1968.patch $(TOPDIR)/alsa-kernel/pci/es1968.c
-intel8x0.c: intel8x0.patch $(TOPDIR)/alsa-kernel/pci/intel8x0.c
-maestro3.c: maestro3.patch $(TOPDIR)/alsa-kernel/pci/maestro3.c
+cs4281.c: cs4281.patch $(SND_TOPDIR)/alsa-kernel/pci/cs4281.c
+es1968.c: es1968.patch $(SND_TOPDIR)/alsa-kernel/pci/es1968.c
+intel8x0.c: intel8x0.patch $(SND_TOPDIR)/alsa-kernel/pci/intel8x0.c
+maestro3.c: maestro3.patch $(SND_TOPDIR)/alsa-kernel/pci/maestro3.c
 

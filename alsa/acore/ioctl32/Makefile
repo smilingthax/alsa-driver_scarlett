@@ -1,9 +1,7 @@
-TOPDIR = ../..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/alsa-kernel/core/ioctl32/Makefile
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/core/ioctl32/Makefile
+include $(SND_TOPDIR)/Rules.make
 
-include $(TOPDIR)/Rules.make

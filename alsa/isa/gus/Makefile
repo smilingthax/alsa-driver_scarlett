@@ -1,13 +1,10 @@
-TOPDIR = ../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 export-objs  := gus_main.o gus_volume.o
 
 isapnp-files := interwave.isapnp interwave-stb.isapnp
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/isa/gus/Makefile
+include $(SND_TOPDIR)/alsa-kernel/isa/gus/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

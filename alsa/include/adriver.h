@@ -36,7 +36,7 @@
 #define LINUX_2_2
 #endif
 
-#ifdef ALSA_BUILD
+#if defined(ALSA_BUILD) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #define MODVERSIONS
 #include <linux/modversions.h>
@@ -46,7 +46,7 @@
 #undef MODVERSIONS
 #undef _set_ver
 #endif
-#endif /* ALSA_BUILD */
+#endif /* ALSA_BUILD && KERNEL < 2.6.0 */
 
 #include <linux/module.h>
 

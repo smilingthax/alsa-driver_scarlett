@@ -3,7 +3,13 @@
 # Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
+NEW_KBUILD       = @NEW_KBUILD@
+
+mainsrcdir	= @srcdir@
+MAINSRCDIR	= @SRCDIR@
+
 CROSS_COMPILE   ?= @CROSS_COMPILE@
+ifndef NEW_KBUILD
 AS		= $(CROSS_COMPILE)@AS@
 LD		= $(CROSS_COMPILE)@LD@
 CC		= $(CROSS_COMPILE)@CC@
@@ -12,9 +18,8 @@ AR		= $(CROSS_COMPILE)@AR@
 MODFLAGS	= -DMODULE=1
 CFLAGS_KERNEL	=
 GENKSYMS	= @GENKSYMS@
+endif
 
-mainsrcdir	= @srcdir@
-MAINSRCDIR	= @SRCDIR@
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 sysconfdir	= @sysconfdir@
@@ -71,6 +76,7 @@ CONFIG_RTC		= @CONFIG_RTC@
 CONFIG_USB		= @CONFIG_USB@
 CONFIG_SND_BIT32_EMUL	= @CONFIG_SND_BIT32_EMUL@
 
+ifndef NEW_KBUILD
 INCLUDE		= -I$(TOPDIR)/include @EXTRA_INCLUDES@ -I$(CONFIG_SND_KERNELDIR)/include
 CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes \
 	-fomit-frame-pointer -Wno-trigraphs -O2 -fno-strict-aliasing -fno-common \
@@ -78,3 +84,9 @@ CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes \
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
+else
+EXTRA_CFLAGS += -I$(MAINSRCDIR)/include -Iinclude -DALSA_BUILD
+CPPFLAGS := $(subst -Iinclude,,$(CPPFLAGS))
+CFLAGS := $(subst -Iinclude,,$(CFLAGS))
+endif
+

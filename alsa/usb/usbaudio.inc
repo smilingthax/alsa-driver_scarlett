@@ -1,6 +1,11 @@
+#include <linux/config.h>
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #define SND_NEED_USB_WRAPPER
 #include <sound/driver.h>
 #include <linux/usb.h>
+#endif
 
 #ifdef OLD_USB
 #define snd_usb_complete_callback(x) __old_ ## x

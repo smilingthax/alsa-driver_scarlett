@@ -16,7 +16,7 @@ snd-pnp-objs := pnp.o
 
 # Toplevel Module Dependency
 ifndef CONFIG_PNP_KERNEL
-ifeq (y,$(CONFIG_ISAPNP))
+ifeq (y,$(CONFIG_PNP))
 obj-m += snd-pnp.o
 endif
 endif

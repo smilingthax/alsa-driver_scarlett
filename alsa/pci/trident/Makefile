@@ -1,15 +1,12 @@
-TOPDIR = ../..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
-
-EXTRA_CLEAN = trident.c
+clean-files := trident.c
 
 export-objs  := trident_main.o
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/pci/trident/Makefile
+include $(SND_TOPDIR)/alsa-kernel/pci/trident/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make
 
-trident.c: trident.patch $(TOPDIR)/alsa-kernel/pci/trident/trident.c
+trident.c: trident.patch $(SND_TOPDIR)/alsa-kernel/pci/trident/trident.c

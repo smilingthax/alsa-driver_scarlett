@@ -1,19 +1,16 @@
-TOPDIR = ..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 #
 # ALSA extra code
 #
 ifeq (y,$(CONFIG_X86))
-extra-subdir-y	:= msnd
+obj-y	+= msnd/
 else
 ifeq (y,$(CONFIG_ALPHA))
-extra-subdir-y	:= msnd
+obj-y	+= msnd/
 endif
 endif
-extra-subdir-m	:= $(extra-subdir-y)
 
 isapnp-files := als100.isapnp azt2320.isapnp dt019x.isapnp opl3sa2.isapnp \
 		cmi8330.isapnp es18xx.isapnp sscape.isapnp
@@ -22,7 +19,6 @@ isapnp-files := als100.isapnp azt2320.isapnp dt019x.isapnp opl3sa2.isapnp \
 #
 #
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/isa/Makefile
+include $(SND_TOPDIR)/alsa-kernel/isa/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

@@ -1,11 +1,9 @@
-TOPDIR = ../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 isapnp-files = wavefront.isapnp
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/isa/wavefront/Makefile
+SND_TOPDIR = $(MAINSRCDIR)
+include $(SND_TOPDIR)/alsa-kernel/isa/wavefront/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make
