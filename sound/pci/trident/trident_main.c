@@ -2980,7 +2980,7 @@ static void snd_trident_proc_read(snd_info_entry_t *entry,
 			snd_iprintf(buffer, "Memory Free    : %d\n", snd_util_mem_avail(trident->tlb.memhdr));
 		}
 	}
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	snd_iprintf(buffer,"\nWavetable Synth\n");
 	snd_iprintf(buffer, "Memory Maximum : %d\n", trident->synth.max_size);
 	snd_iprintf(buffer, "Memory Used    : %d\n", trident->synth.current_size);
@@ -3442,7 +3442,7 @@ static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
   ---------------------------------------------------------------------------*/
 int snd_trident_attach_synthesizer(trident_t *trident)
 {	
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	if (snd_seq_device_new(trident->card, 1, SNDRV_SEQ_DEV_ID_TRIDENT,
 			       sizeof(trident_t*), &trident->seq_dev) >= 0) {
 		strcpy(trident->seq_dev->name, "4DWave");
@@ -3454,7 +3454,7 @@ int snd_trident_attach_synthesizer(trident_t *trident)
 
 int snd_trident_detach_synthesizer(trident_t *trident)
 {
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	if (trident->seq_dev) {
 		snd_device_free(trident->card, trident->seq_dev);
 		trident->seq_dev = NULL;

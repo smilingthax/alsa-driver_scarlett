@@ -696,7 +696,7 @@ int snd_gus_dram_write(snd_gus_card_t *gus, char *ptr,
 int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,
 		      unsigned int addr, unsigned int size, int rom);
 
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 
 /* gus_sample.c */
 void snd_gus_sample_event(snd_seq_event_t *ev, snd_gus_port_t *p);

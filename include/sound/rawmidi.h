@@ -24,7 +24,7 @@
 
 #include <sound/asound.h>
 
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 #include "seq_device.h"
 #endif
 
@@ -136,7 +136,7 @@ struct _snd_rawmidi {
 	snd_info_entry_t *dev;
 	snd_info_entry_t *proc_entry;
 
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	snd_seq_device_t *seq_dev;
 #endif
 };

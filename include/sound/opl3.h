@@ -277,7 +277,7 @@ struct snd_opl3 {
 	unsigned char fm_mode;		/* OPL mode, see SNDRV_DM_FM_MODE_XXX */
 	unsigned char rhythm;		/* percussion mode flag */
 	unsigned char max_voices;	/* max number of voices */
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 #define SNDRV_OPL3_MODE_SYNTH 0		/* OSS - voices allocated by application */
 #define SNDRV_OPL3_MODE_SEQ 1		/* ALSA - driver handles voice allocation */
 	int synth_mode;			/* synth mode */
