@@ -14,9 +14,9 @@ L timestamp for mmap'ed byte_io and status (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
-H fix rme9652 hw pointer
 H port pdplus to new frame oriented midlevel (and fix broken interrupt handler)
 M rewrite mixer lowlevel implementation
+M fix trident driver
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
