@@ -51,9 +51,15 @@ install: compile
 	install -m 644 include/ainstr_simple.h $(prefix)/include/linux
 	install -m 644 include/ainstr_gf1.h $(prefix)/include/linux
 	install -m 644 include/ainstr_iw.h $(prefix)/include/linux
-	if [ -x /etc/rc.d/init.d/alsasound ]; then \
-	  install -m 755 utils/alsasound /etc/rc.d/init.d/alsasound; \
-	fi
+	if [ -d /etc/rc.d/init.d ]; then \
+	  if [ -x /etc/rc.d/init.d/alsasound ]; then \
+	    install -m 755 utils/alsasound /etc/rc.d/init.d/alsasound; \
+	  fi \
+        else \
+          if [ -x /etc/init.d ]; then \
+	    install -m 755 utils/alsasound /etc/init.d/alsasound; \
+          fi \
+        fi
 	cat WARNING
 
 clean:

@@ -5,11 +5,18 @@ OSSMAJOR=14
 MAX_CARDS=4
 PERM=666
 STATIC=0
+OWNER=root.root
+
+if [ "`grep -w -E "^audio" /etc/group`x" != x ]; then
+  PERM=660
+  OWNER=root.audio
+fi
 
 function create_odevice () {
   rm -f $1
   echo -n "Creating $1..."
   mknod -m $PERM $1 c $OSSMAJOR $2
+  chown $OWNER $1
   echo " done"
 }
 
@@ -21,6 +28,7 @@ function create_odevices () {
   while [ $tmp1 -lt $MAX_CARDS ]; do
     minor=$[ $2 + $tmp ]
     mknod -m $PERM $1$tmp1 c $OSSMAJOR $minor
+    chown $OWNER $1$tmp1
     tmp=$[ $tmp + 16 ]
     tmp1=$[ $tmp1 + 1 ]
   done
@@ -32,6 +40,7 @@ function create_device1 () {
   minor=$2
   echo -n "Creating $1..."
   mknod -m $PERM $1 c $MAJOR $minor
+  chown $OWNER $1
   echo " done"
 }
 
@@ -43,6 +52,7 @@ function create_devices () {
     minor=$[ $tmp * 32 ]
     minor=$[ $2 + $minor ]
     mknod -m $PERM "${1}C${tmp}" c $MAJOR $minor
+    chown $OWNER "${1}C${tmp}"
     tmp=$[ $tmp + 1 ]
   done
   echo " done"
@@ -58,6 +68,7 @@ function create_devices2 () {
       minor=$[ $tmp * 32 ]
       minor=$[ $2 + $minor + $tmp1 ]
       mknod -m $PERM "${1}C${tmp}D${tmp1}" c $MAJOR $minor
+      chown $OWNER "${1}C${tmp}D${tmp1}"
       tmp1=$[ $tmp1 + 1 ]
     done
     tmp=$[ $tmp + 1 ]
