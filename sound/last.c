@@ -21,6 +21,7 @@
 
 #define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 
 static int __init alsa_sound_last_init(void)
