@@ -263,13 +263,18 @@
 /* ------------------- STRUCTURES -------------------- */
 
 typedef struct snd_stru_emu10k1 emu10k1_t;
+typedef struct snd_stru_emu10k1_voice emu10k1_voice_t;
+
+struct snd_stru_emu10k1_voice {
+	void (*interrupt)(emu10k1_t *emu, emu10k1_voice_t *pvoice);
+};
 
 struct snd_stru_emu10k1 {
 	snd_dma_t * dma1ptr;	/* DAC1 */
 	snd_dma_t * dma2ptr;	/* ADC */
 	snd_irq_t * irqptr;
 
-	unsigned short port;	/* I/O port number */
+	unsigned int port;	/* I/O port number */
 	int APS: 1,		/* APS flag */
 	    tos_link: 1;	/* tos link detected */
 	unsigned int revision;	/* chip revision */
@@ -277,7 +282,8 @@ struct snd_stru_emu10k1 {
 	unsigned int ecard_ctrl; /* ecard control bits */
 
 	void *silent_page;	/* silent page */
-	void *ptb_pages;	/* PTB pages */
+	volatile unsigned int *ptb_pages; /* page table pages */
+	void *ptb_page_alloc;	/* PTB allocation entry */
 
 	ac97_t *ac97;
 
@@ -289,6 +295,23 @@ struct snd_stru_emu10k1 {
 
 	spinlock_t reg_lock;
 	spinlock_t emu_lock;
+	struct semaphore ptb_lock;
+
+	emu10k1_voice_t voices[64];
+
+	void (*hwvol_interrupt)(emu10k1_t *emu, unsigned int status);
+	void (*capture_interrupt)(emu10k1_t *emu, unsigned int status);
+	void (*capture_mic_interrupt)(emu10k1_t *emu, unsigned int status);
+	void (*mpu401_interrupt)(emu10k1_t *emu, unsigned int status);
+	void (*timer_interrupt)(emu10k1_t *emu);
+	void (*spdif_interrupt)(emu10k1_t *emu, unsigned int status);
+	void (*dsp_interrupt)(emu10k1_t *emu);
+
+	unsigned int midi_mode;
+	spinlock_t midi_input_lock;
+	spinlock_t midi_output_lock;
+	spinlock_t midi_open_lock;
+
 	snd_info_entry_t *proc_entry;
 };
 
@@ -303,7 +326,8 @@ int snd_emu10k1_free(emu10k1_t * emu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
-int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
+
+void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
 
 /* I/O functions */
 unsigned int snd_emu10k1_synth_read(emu10k1_t * emu, unsigned int reg);
@@ -313,11 +337,21 @@ void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int reg, unsigned int ddata)
 void snd_emu10k1_intr_enable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_intr_disable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_voice_intr_enable(emu10k1_t *emu, unsigned int voicenum);
+void snd_emu10k1_voice_intr_disable(emu10k1_t *emu, unsigned int voicenum);
+void snd_emu10k1_voice_intr_ack(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_voice_set_loop_stop(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_voice_clear_loop_stop(emu10k1_t *emu, unsigned int voicenum);
-void snd_emu10k1_voice_intr_disable(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_wait(emu10k1_t *emu, unsigned int wait);
 unsigned short snd_emu10k1_ac97_read(void *private_data, unsigned short reg);
 void snd_emu10k1_ac97_write(void *private_data, unsigned short reg, unsigned short data);
+
+/* memory allocation */
+int snd_emu10k1_ptb_alloc(emu10k1_t *emu, void *pages, unsigned long size);
+int snd_emu10k1_ptb_free(emu10k1_t *emu, void *obj, unsigned long *size);
+void *snd_emu10k1_synth_malloc(emu10k1_t *emu, unsigned long size);
+void snd_emu10k1_synth_free(emu10k1_t *emu, void *obj);
+
+/* MIDI uart */
+int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
 
 #endif	/* __EMU10K1_H */
