@@ -57,11 +57,8 @@
 #include <linux/isapnp.h>
 #include <linux/pnp.h>
 #else
-#ifndef CONFIG_ISAPNP_KERNEL
 #include <linux/isapnp.h>
-#else
-#include "../isapnp/isapnp.h"
-#endif
+#define CONFIG_PNP
 #include "pnp.h"
 #endif
 
