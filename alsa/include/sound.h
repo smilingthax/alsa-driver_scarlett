@@ -99,6 +99,10 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
 #define SND_CTL_SW_TYPE_DWORD		3	/* 0 to 4294967296 (low to high) */
 #define SND_CTL_SW_TYPE_USER		(~0)	/* user type */
 
+#define SND_CTL_SW_JOYSTICK		"Joystick"
+#define SND_CTL_SW_JOYSTICK_ADDRESS	"Joystick Address"
+#define SND_CTL_SW_JOYSTICK_SPEED	"Joystick Speed Compensation"
+
 struct snd_ctl_hw_info {
   unsigned int type;		/* type of card - look to SND_CARD_TYPE_XXXX */
   unsigned int gcaps;		/* look to SND_CTL_GCAPS_XXXX */
