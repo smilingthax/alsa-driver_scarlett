@@ -208,6 +208,7 @@ int snd_pcm_plug_format(snd_pcm_plug_t *substream,
 
 int snd_pcm_plug_slave_params(snd_pcm_params_t *params,
 			      snd_pcm_info_t *slave_info,
+			      snd_pcm_params_info_t *slave_params_info,
 			      snd_pcm_params_t *slave_params);
 
 int snd_pcm_plugin_append(snd_pcm_plugin_t *plugin);

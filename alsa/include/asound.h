@@ -1383,20 +1383,6 @@ typedef struct snd_pcm_info {
 	int subdevices_avail;
 	snd_pcm_sync_t sync;		/* hardware synchronization ID */
 	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
-	unsigned int formats;		/* supported formats */
-	unsigned int rates;		/* hardware rates */
-	unsigned int min_rate;		/* min rate (in Hz) */
-	unsigned int max_rate;		/* max rate (in Hz) */
-	unsigned int min_channels;	/* min channels */
-	unsigned int max_channels;	/* max channels */
-	size_t buffer_size;		/* max buffer size in bytes */
-	size_t min_fragment_size;	/* min fragment size in bytes */
-	size_t max_fragment_size;	/* max fragment size in bytes */
-	size_t min_fragments;		/* min # of fragments */
-	size_t max_fragments;		/* max # of fragments */
-	size_t fragment_align;		/* align fragment value */
-	size_t fifo_size;		/* stream FIFO size in bytes */
-	size_t transfer_block_size;	/* bus transfer block size in bytes */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
@@ -1422,6 +1408,21 @@ typedef struct snd_pcm_format {
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
 
+#define SND_PCM_PARAMS_MODE		(1<<1)
+#define SND_PCM_PARAMS_INTERLEAVE	(1<<2)
+#define SND_PCM_PARAMS_FORMAT		(1<<3)
+#define SND_PCM_PARAMS_RATE		(1<<4)
+#define SND_PCM_PARAMS_CHANNELS		(1<<5)
+#define SND_PCM_PARAMS_START_MODE	(1<<6)
+#define SND_PCM_PARAMS_XRUN_MODE	(1<<7)
+#define SND_PCM_PARAMS_BUFFER_SIZE	(1<<8)
+#define SND_PCM_PARAMS_FRAGMENT_SIZE	(1<<9)
+
+#define SND_PCM_PARAMS_FAIL_NONE		0
+#define SND_PCM_PARAMS_FAIL_INVAL		1
+#define SND_PCM_PARAMS_FAIL_INT_INCOMPAT	2
+#define SND_PCM_PARAMS_FAIL_EXT_INCOMPAT	3
+
 typedef struct snd_pcm_params {
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* playback format */
@@ -1439,12 +1440,40 @@ typedef struct snd_pcm_params {
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
 	size_t frames_fill_max;		/* maximum silence fill in frames */
 	size_t frame_boundary;		/* position in frames wrap point */
+	unsigned int fail_mask;		/* failure locations */
+	int fail_reason;		/* failure reason */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_params_t;
+
+typedef struct {
+	unsigned int req_mask;		/* Requests mask */
+	snd_pcm_params_t req;		/* Requested params (only some fields 
+					   are currently relevant) */
+	unsigned int formats;		/* supported formats */
+	unsigned int rates;		/* hardware rates */
+	unsigned int min_rate;		/* min rate (in Hz) */
+	unsigned int max_rate;		/* max rate (in Hz) */
+	unsigned int min_channels;	/* min channels */
+	unsigned int max_channels;	/* max channels */
+	size_t buffer_size;		/* max buffer size */
+	size_t min_fragment_size;	/* min fragment size */
+	size_t max_fragment_size;	/* max fragment size */
+	size_t min_fragments;		/* min # of fragments */
+	size_t max_fragments;		/* max # of fragments */
+	size_t fragment_align;		/* align fragment value */
+	/* NB: If a param is requested, the relating min and max fields are
+	   loaded with the nearest valid value <= and >= the requested one.
+	   NB: size fields are filled only if frame size is known
+	*/
+  
+	char reserved[64];
+} snd_pcm_params_info_t;
 
 typedef struct snd_pcm_channel_params {
 	unsigned int channel;
 	snd_pcm_digital_t digital;	/* digital setup */
+	unsigned int fail_mask;		/* failure locations */
+	int fail_reason;		/* failure reason */
 	char reserved[64];
 } snd_pcm_channel_params_t;
 
@@ -1466,7 +1495,9 @@ typedef struct snd_pcm_setup {
 	size_t frames_fill_max;		/* maximum silence fill in frames */
 	size_t frame_boundary;		/* position in frames wrap point */
 	size_t frags;			/* allocated fragments */
-	size_t mmap_size;		/* mmap data size */
+	size_t fifo_size;		/* stream FIFO size */
+	size_t transfer_block_size;	/* bus transfer block size */
+	size_t mmap_bytes;		/* mmap data size in bytes*/
 	unsigned int msbits_per_sample;	/* used most significant bits per sample */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_setup_t;
@@ -1521,6 +1552,7 @@ typedef struct {
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x02, snd_pcm_info_t)
 #define SND_PCM_IOCTL_PARAMS		_IOW ('A', 0x10, snd_pcm_params_t)
+#define SND_PCM_IOCTL_PARAMS_INFO	_IOW ('A', 0x11, snd_pcm_params_info_t)
 #define SND_PCM_IOCTL_SETUP		_IOR ('A', 0x20, snd_pcm_setup_t)
 #define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x21, snd_pcm_status_t)
 #define SND_PCM_IOCTL_FRAME_IO		_IO  ('A', 0x22)
@@ -1763,6 +1795,8 @@ typedef struct snd_rawmidi_params {
 	size_t min;		/* I minimum count of bytes in queue for wakeup */
 	size_t max;		/* O maximum count of bytes in queue for wakeup */
 	size_t room;		/* O minumum number of bytes writeable for wakeup */
+	unsigned int fail_mask;	/* failure locations */
+	int fail_reason;	/* failure reason */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
@@ -1871,6 +1905,8 @@ typedef struct snd_timer_params {
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
 	unsigned long ticks;		/* requested resolution in ticks */
 	int queue_size;			/* total size of queue (32-1024) */
+	unsigned int fail_mask;		/* failure locations */
+	int fail_reason;		/* failure reason */
 	char reserved[64];
 } snd_timer_params_t;
 
