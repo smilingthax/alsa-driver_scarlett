@@ -54,6 +54,7 @@ struct snd_seq_oss_arg_t {
  * synthesizer operation callbacks
  */
 struct snd_seq_oss_callback_t {
+	struct module *owner;
 	int (*open)(snd_seq_oss_arg_t *p, void *closure);
 	int (*close)(snd_seq_oss_arg_t *p);
 	int (*ioctl)(snd_seq_oss_arg_t *p, unsigned int cmd, unsigned long arg);
