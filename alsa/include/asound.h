@@ -230,7 +230,7 @@ typedef struct _snd_aes_iec958 {
 
 typedef union _snd_digital_audio {
 	snd_aes_iec958_t aes;
-	char reserved[256];
+	unsigned char reserved[256];
 } snd_digital_audio_t;
 
 /****************************************************************************
@@ -242,14 +242,14 @@ typedef union _snd_digital_audio {
 #define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
 
 typedef struct _snd_ctl_hw_info {
-	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
-	char id[16];		/* ID of card (user selectable) */
-	char abbreviation[16];	/* Abbreviation for soundcard */
-	char name[32];		/* Short name of soundcard */
-	char longname[80];	/* name + info text about soundcard */
-	char mixerid[16];	/* ID of mixer */
-	char mixername[80];	/* mixer identification */
-	char reserved[128];	/* reserved for future */
+	unsigned int type;		/* type of card - SND_CARD_TYPE_* */
+	unsigned char id[16];		/* ID of card (user selectable) */
+	unsigned char abbreviation[16];	/* Abbreviation for soundcard */
+	unsigned char name[32];		/* Short name of soundcard */
+	unsigned char longname[80];	/* name + info text about soundcard */
+	unsigned char mixerid[16];	/* ID of mixer */
+	unsigned char mixername[80];	/* mixer identification */
+	unsigned char reserved[128];	/* reserved for future */
 } snd_ctl_hw_info_t;
 
 typedef enum _snd_control_type {
@@ -294,7 +294,7 @@ typedef struct _snd_control_list {
 	unsigned int controls_count;	/* R: count of available (set) IDs */
 	unsigned int controls;		/* R: count of all available controls */
 	snd_control_id_t *pids;		/* W: IDs */
-        char reserved[50];
+	unsigned char reserved[50];
 } snd_control_list_t;
 
 typedef struct _snd_control_info {
@@ -313,9 +313,9 @@ typedef struct _snd_control_info {
 			unsigned int item;	/* W: item number */
 			char name[64];		/* R: value name */
 		} enumerated;
-		char reserved[128];
+		unsigned char reserved[128];
 	} value;
-	char reserved[64];
+	unsigned char reserved[64];
 } snd_control_info_t;
 
 typedef struct _snd_control_t {
@@ -336,7 +336,7 @@ typedef struct _snd_control_t {
 		} bytes;
 		snd_digital_audio_t diga;
         } value;                /* RO */
-        char reserved[128];
+	unsigned char reserved[128];
 } snd_control_t;
 
 #define SND_CTL_IOCTL_PVERSION		_IOR ('U', 0x00, int)
@@ -400,7 +400,7 @@ typedef struct _snd_hwdep_info {
 	unsigned char id[64];	/* ID of this hardware dependent device (user selectable) */
 	unsigned char name[80];	/* name of this hardware dependent device */
 	unsigned int hw_type;	/* hardware depedent device type */
-	char reserved[64];	/* reserved for future */
+	unsigned char reserved[64]; /* reserved for future */
 } snd_hwdep_info_t;
 
 #define SND_HWDEP_IOCTL_PVERSION	_IOR ('H', 0x00, int)
@@ -516,9 +516,9 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_MMAP_OFFSET_CONTROL	0x81000000
 
 typedef union _snd_pcm_sync_id {
-	char id[16];
-	short id16[8];
-	int id32[4];
+	unsigned char id[16];
+	unsigned short id16[8];
+	unsigned int id32[4];
 } snd_pcm_sync_id_t;
 
 typedef struct _snd_pcm_info {
@@ -531,10 +531,10 @@ typedef struct _snd_pcm_info {
 	unsigned char subname[32];	/* subdevice name */
 	unsigned short device_class;	/* SND_PCM_CLASS_* */
 	unsigned short device_subclass;	/* SND_PCM_SCLASS_* */
-	unsigned int subdevices_count;
-	unsigned int subdevices_avail;
+	int subdevices_count;		/* count of all subdevices */
+	int subdevices_avail;		/* count of free subdevices */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
-	char reserved[64];		/* reserved for future... */
+	unsigned char reserved[64];	/* reserved for future... */
 } snd_pcm_info_t;
 
 #define SND_PCM_HW_PARAM_FIRST_MASK		0
@@ -581,7 +581,7 @@ typedef struct _snd_pcm_hw_params {
 	unsigned int rate_num;		/* R: rate numerator */
 	unsigned int rate_den;		/* R: rate denominator */
 	size_t fifo_size;		/* R: chip FIFO size in frames */
-	char reserved[64];
+	unsigned char reserved[64];
 } snd_pcm_hw_params_t;
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
@@ -616,7 +616,7 @@ typedef struct _snd_pcm_sw_params {
 	size_t silence_threshold;	/* min distance to noise for silence filling */
 	size_t silence_size;		/* silence block size */
 	size_t boundary;		/* pointers wrap point */
-	char reserved[64];
+	unsigned char reserved[64];
 } snd_pcm_sw_params_t;
 
 typedef struct _snd_pcm_hw_channel_info {
@@ -634,7 +634,7 @@ typedef struct _snd_pcm_status {
 	size_t avail;		/* number of frames available */
 	size_t avail_max;	/* max frames available on hw since last status */
 	size_t overrange;	/* count of ADC (capture) overrange detections from last status */
-	char reserved[64];	/* must be filled with zero */
+	unsigned char reserved[64]; /* must be filled with zero */
 } snd_pcm_status_t;
 
 typedef struct _snd_pcm_mmap_status {
@@ -816,11 +816,11 @@ typedef struct _snd_rawmidi_info {
 	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
 	unsigned char name[80];		/* name of this raw midi device */
 	unsigned char subname[32];	/* name of active or selected subdevice */
-	unsigned int output_subdevices_count;
-	unsigned int output_subdevices_avail;
-	unsigned int input_subdevices_count;
-	unsigned int input_subdevices_avail;
-	char reserved[64];	/* reserved for future use */
+	int output_subdevices_count;
+	int output_subdevices_avail;
+	int input_subdevices_count;
+	int input_subdevices_avail;
+	unsigned char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
 
 #define SND_RAWMIDI_PARBIT_STREAM	(1<<0)
@@ -833,15 +833,15 @@ typedef struct _snd_rawmidi_params {
 	size_t avail_min;	/* minimum avail bytes for wakeup */
 	unsigned int fail_mask;	/* failure locations */
 	unsigned int no_active_sensing: 1; /* do not send active sensing byte in close() */
-	char reserved[16];	/* reserved for future use */
+	unsigned char reserved[16]; /* reserved for future use */
 } snd_rawmidi_params_t;
 
 typedef struct _snd_rawmidi_status {
 	int stream;		/* Requested stream */
 	snd_timestamp_t tstamp;	/* Timestamp */
 	size_t avail;		/* available bytes */
-	size_t xruns;		/* I count of overruns since last status (in bytes) */
-	char reserved[16];	/* reserved for future use */
+	size_t xruns;		/* count of overruns since last status (in bytes) */
+	unsigned char reserved[16]; /* reserved for future use */
 } snd_rawmidi_status_t;
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
@@ -889,18 +889,18 @@ typedef struct _snd_timer_id {
 
 typedef struct _snd_timer_select {
 	snd_timer_id_t id;		/* bind to timer ID */
-	char reserved[32];
+	unsigned char reserved[32];
 } snd_timer_select_t;
 
 #define SND_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
 
 typedef struct _snd_timer_info {
 	unsigned int flags;		/* timer flags - SND_TIMER_FLG_* */
-	char id[64];			/* timer identificator */
-	char name[80];			/* timer name */
+	unsigned char id[64];		/* timer identificator */
+	unsigned char name[80];		/* timer name */
 	unsigned long ticks;		/* maximum ticks */
 	unsigned long resolution;	/* average resolution */
-	char reserved[64];
+	unsigned char reserved[64];
 } snd_timer_info_t;
 
 #define SND_TIMER_PARBIT_FLAGS		(1<<0)
@@ -911,19 +911,19 @@ typedef struct _snd_timer_info {
 
 typedef struct _snd_timer_params {
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
-	unsigned long ticks;		/* requested resolution in ticks */
-	int queue_size;			/* total size of queue (32-1024) */
+	size_t ticks;			/* requested resolution in ticks */
+	size_t queue_size;		/* total size of queue (32-1024) */
 	unsigned int fail_mask;		/* failure locations */
-	char reserved[64];
+	unsigned char reserved[64];
 } snd_timer_params_t;
 
 typedef struct _snd_timer_status {
 	snd_timestamp_t tstamp;		/* Timestamp */
-	unsigned long resolution;	/* current resolution */
-	unsigned long lost;		/* counter of master tick lost */
-	unsigned long overrun;		/* count of read queue overruns */
-	int queue;			/* used queue size */
-	char reserved[64];
+	size_t resolution;		/* current resolution */
+	size_t lost;			/* counter of master tick lost */
+	size_t overrun;			/* count of read queue overruns */
+	size_t queue;			/* used queue size */
+	unsigned char reserved[64];
 } snd_timer_status_t;
 
 #define SND_TIMER_IOCTL_PVERSION	_IOR ('T', 0x00, int)
@@ -937,8 +937,8 @@ typedef struct _snd_timer_status {
 #define SND_TIMER_IOCTL_CONTINUE	_IO  ('T', 0x22)
 
 typedef struct _snd_timer_read {
-	unsigned long resolution;
-	unsigned long ticks;
+	size_t resolution;
+	size_t ticks;
 } snd_timer_read_t;
 
 /*
