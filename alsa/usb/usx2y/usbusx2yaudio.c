@@ -39,9 +39,9 @@
 
 /* wrappers */
 #ifdef OLD_USB
-#define snd_usb_complete_callback(x) __old_ ## x
-static void __old_snd_usX2Y_urb_play_complete(struct urb *urb);
-static void __old_snd_usX2Y_urb_capt_complete(struct urb *urb);
+#define snd_usb_complete_callback(x) x ## __old_ 
+static void i_usX2Y_urb_play_complete__old_(struct urb *urb);
+static void i_usX2Y_urb_capt_complete__old_(struct urb *urb);
 #endif
 
 #include <sound/core.h>
@@ -94,16 +94,16 @@ struct snd_usX2Y_stream {
 
 #define chip_t snd_usX2Y_stream_t
 
-static int snd_usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime);
-static int snd_usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime);
-static void snd_usX2Y_urbs_release(snd_usX2Y_substream_t *subs);
+static int usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime);
+static int usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime);
+static void usX2Y_urbs_release(snd_usX2Y_substream_t *subs);
 
 
 /*
  * convert a sampling rate into USB format (fs/1000 in Q10.14)
  * this will overflow at approx 2MSPS
  */
-inline static unsigned get_usb_rate(unsigned int rate)
+inline static unsigned usX2Y_get_usb_rate(unsigned int rate)
 {
 	return ((rate << 11) + 62) / 125;
 }
@@ -117,7 +117,7 @@ inline static unsigned get_usb_rate(unsigned int rate)
  * write onto the pcm buffer directly...  the data is thus copied
  * later at complete callback to the global buffer.
  */
-static int snd_usX2Y_urb_capt_prepare(snd_usX2Y_substream_t *subs,
+static int usX2Y_urb_capt_prepare(snd_usX2Y_substream_t *subs,
 			       snd_pcm_runtime_t *runtime,
 			       struct urb *urb)
 {
@@ -138,7 +138,7 @@ static int snd_usX2Y_urb_capt_prepare(snd_usX2Y_substream_t *subs,
  * copy the data from each desctiptor to the pcm buffer, and
  * update the current position.
  */
-static void framecpy_4c_16(unsigned char *p_dma_area, unsigned char *cp, int cnt)
+static void usX2Y_framecpy_4c_16(unsigned char *p_dma_area, unsigned char *cp, int cnt)
 {
 	do{
 		*(int *)p_dma_area = *(int *)cp;
@@ -147,7 +147,7 @@ static void framecpy_4c_16(unsigned char *p_dma_area, unsigned char *cp, int cnt
 	} while (--cnt);
 }
 
-static void framecpy_4c_24(unsigned char *p_dma_area, unsigned char *cp, int cnt)
+static void usX2Y_framecpy_4c_24(unsigned char *p_dma_area, unsigned char *cp, int cnt)
 {
 	do{
 		memcpy(p_dma_area, cp, 6);
@@ -156,7 +156,7 @@ static void framecpy_4c_24(unsigned char *p_dma_area, unsigned char *cp, int cnt
 	} while (--cnt);
 }
 
-static int snd_usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
+static int usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
 			      snd_pcm_runtime_t *runtime,
 			      struct urb *urb)
 {
@@ -167,7 +167,7 @@ static int snd_usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
 	void (*fourc_cpy)(unsigned char* p_dma_area, unsigned char* cp, int cnt) = 0;
 
 	if (runtime->channels == 4)
-		fourc_cpy = usX2Y->stride == 4 ? framecpy_4c_16 : framecpy_4c_24;
+		fourc_cpy = usX2Y->stride == 4 ? usX2Y_framecpy_4c_16 : usX2Y_framecpy_4c_24;
 
 	for (i = 0; i < NRPACKS; i++) {
 		cp = (unsigned char*)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
@@ -257,7 +257,7 @@ static int snd_usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
  * it directly from the buffer.  thus the data is once copied to
  * a temporary buffer and urb points to that.
  */
-static int snd_usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
+static int usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
 				snd_pcm_runtime_t *runtime,
 				struct urb *urb)
 {
@@ -311,7 +311,7 @@ static int snd_usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
  *
  * update the current position and call callback if a period is processed.
  */
-inline static int snd_usX2Y_urb_play_retire(snd_usX2Y_substream_t *subs,
+inline static int usX2Y_urb_play_retire(snd_usX2Y_substream_t *subs,
 			       snd_pcm_runtime_t *runtime,
 			       struct urb *urb)
 {
@@ -339,7 +339,7 @@ inline static int snd_usX2Y_urb_play_retire(snd_usX2Y_substream_t *subs,
 	return 0;
 }
 
-inline static int snd_usX2Y_urb_submit(snd_usX2Y_substream_t *subs, struct urb *urb)
+inline static int usX2Y_urb_submit(snd_usX2Y_substream_t *subs, struct urb *urb)
 {
 	int err;
 	urb->start_frame = (urb->start_frame + NRURBS*NRPACKS) & (1024 - 1);
@@ -353,7 +353,7 @@ inline static int snd_usX2Y_urb_submit(snd_usX2Y_substream_t *subs, struct urb *
 /*
  * complete callback from data urb
  */
-static void _snd_usX2Y_urb_play_complete(struct urb* urb)
+static void usX2Y_urb_play_complete_(struct urb* urb)
 {
 	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t*)urb->context;
 	snd_pcm_substream_t *substream = subs->pcm_substream;
@@ -364,12 +364,12 @@ static void _snd_usX2Y_urb_play_complete(struct urb* urb)
 		urb->status = 0;
 		return;
 	}
-	if (subs->running && snd_usX2Y_urb_play_retire(subs, substream->runtime, urb))
+	if (subs->running && usX2Y_urb_play_retire(subs, substream->runtime, urb))
 		return;
 	if (! subs->running) /* can be stopped during retire callback */
 		return;
-	if (	(err = snd_usX2Y_urb_play_prepare(subs, substream->runtime, urb)) < 0
-	    ||	(err = snd_usX2Y_urb_submit(subs, urb)) < 0
+	if (	(err = usX2Y_urb_play_prepare(subs, substream->runtime, urb)) < 0
+	    ||	(err = usX2Y_urb_submit(subs, urb)) < 0
 		) {
 		snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
@@ -377,7 +377,7 @@ static void _snd_usX2Y_urb_play_complete(struct urb* urb)
 	}
 }
 
-static void snd_usX2Y_urb_play_complete(struct urb* urb, struct pt_regs *regs)
+static void i_usX2Y_urb_play_complete(struct urb* urb, struct pt_regs *regs)
 {
 	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t*)urb->context;
 	if (! subs->stream->usX2Y->pipe0Aframes[0][0]) {
@@ -386,12 +386,12 @@ static void snd_usX2Y_urb_play_complete(struct urb* urb, struct pt_regs *regs)
 		subs->stream->usX2Y->play_urb_waiting[0] = urb;
 		return;
 	}
-	_snd_usX2Y_urb_play_complete(urb);
+	usX2Y_urb_play_complete_(urb);
 }
 /*
  * complete callback from data urb
  */
-static void snd_usX2Y_urb_capt_complete(struct urb* urb, struct pt_regs *regs)
+static void i_usX2Y_urb_capt_complete(struct urb* urb, struct pt_regs *regs)
 {
 	snd_usX2Y_substream_t *captsubs = (snd_usX2Y_substream_t*)urb->context;
 	snd_pcm_substream_t *pcm_captsubs = captsubs->pcm_substream;
@@ -415,12 +415,12 @@ static void snd_usX2Y_urb_capt_complete(struct urb* urb, struct pt_regs *regs)
 		snd_printd("NULL == runtime\n");
 		return;
 	}
-	if (captsubs->bussing && snd_usX2Y_urb_capt_retire(captsubs, runtime, urb))
+	if (captsubs->bussing && usX2Y_urb_capt_retire(captsubs, runtime, urb))
 		return;
  	if (! captsubs->bussing) /* can be stopped during retire callback */
 		return;
-	if ((err = snd_usX2Y_urb_capt_prepare(captsubs, runtime, urb)) < 0 ||
-	    (err = snd_usX2Y_urb_submit(captsubs, urb)) < 0) {
+	if ((err = usX2Y_urb_capt_prepare(captsubs, runtime, urb)) < 0 ||
+	    (err = usX2Y_urb_submit(captsubs, urb)) < 0) {
 		snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
 		if (pcm_captsubs)
 			snd_pcm_stop(pcm_captsubs, SNDRV_PCM_STATE_XRUN);
@@ -428,7 +428,7 @@ static void snd_usX2Y_urb_capt_complete(struct urb* urb, struct pt_regs *regs)
 	}
 	if (urb->pipe == captsubs->datapipe[0] && 
 	    captsubs->stream->usX2Y->play_urb_waiting[0]) {
-		_snd_usX2Y_urb_play_complete(captsubs->stream->usX2Y->play_urb_waiting[0]);
+		usX2Y_urb_play_complete_(captsubs->stream->usX2Y->play_urb_waiting[0]);
 		captsubs->stream->usX2Y->play_urb_waiting[0] = captsubs->stream->usX2Y->play_urb_waiting[1];
 		captsubs->stream->usX2Y->play_urb_waiting[1] = NULL;
 	}
@@ -437,7 +437,7 @@ static void snd_usX2Y_urb_capt_complete(struct urb* urb, struct pt_regs *regs)
  * unlink active urbs.
  * return the number of active urbs.
  */
-static int snd_usX2Y_urbs_deactivate(snd_usX2Y_substream_t *subs)
+static int usX2Y_urbs_deactivate(snd_usX2Y_substream_t *subs)
 {
 	int i, alive, ep;
 
@@ -469,7 +469,7 @@ static int snd_usX2Y_urbs_deactivate(snd_usX2Y_substream_t *subs)
 	return alive;
 }
 
-static int snd_usX2Y_urb_start(snd_usX2Y_substream_t *subs)
+static int usX2Y_urb_start(snd_usX2Y_substream_t *subs)
 {
 	int i, err, ep;
 
@@ -501,7 +501,7 @@ static int snd_usX2Y_urb_start(snd_usX2Y_substream_t *subs)
 /*
  * set up and start data/sync urbs
  */
-static int snd_usX2Y_urb_capt_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
+static int usX2Y_urb_capt_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
 {
 	int i;
 
@@ -511,7 +511,7 @@ static int snd_usX2Y_urb_capt_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime
 		for (ep = 0; ep < subs->endpoints; ep++)
 			for (i = 0; i < NRURBS; i++) {
 				snd_assert(subs->dataurb[ep][i], return -EINVAL);
-				if (snd_usX2Y_urb_capt_prepare(subs, runtime, subs->dataurb[ep][i]) < 0) {
+				if (usX2Y_urb_capt_prepare(subs, runtime, subs->dataurb[ep][i]) < 0) {
 					snd_printk(KERN_ERR "cannot prepare datapipe for urb %d\n", i);
 					goto __error;
 				}
@@ -522,20 +522,20 @@ static int snd_usX2Y_urb_capt_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime
 	subs->running = 1;
 
 	if (! subs->bussing) {
-		if (snd_usX2Y_urb_start(subs))
+		if (usX2Y_urb_start(subs))
 			goto __error;
 	}
 	return 0;
 
  __error:
 	// snd_pcm_stop(subs->pcm_substream, SNDRV_PCM_STATE_XRUN);
-	snd_usX2Y_urbs_deactivate(subs);
+	usX2Y_urbs_deactivate(subs);
 	return -EPIPE;
 }
 /*
  * set up and start data/sync urbs
  */
-static int snd_usX2Y_urb_play_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
+static int usX2Y_urb_play_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
 {
 	int i;
 	usX2Ydev_t* usX2Y = subs->stream->usX2Y;
@@ -548,7 +548,7 @@ static int snd_usX2Y_urb_play_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime
 #if NRPACKS > 1
 		usX2Y->pipe0Aframes[0][1] = usX2Y->refframes;
 #endif
-		if (snd_usX2Y_urb_play_prepare(subs, runtime, subs->dataurb[0][i]) < 0) {
+		if (usX2Y_urb_play_prepare(subs, runtime, subs->dataurb[0][i]) < 0) {
 			snd_printk(KERN_ERR "cannot prepare datapipe for urb %d\n", i);
 			goto __error;
 		}
@@ -561,38 +561,38 @@ static int snd_usX2Y_urb_play_start(snd_usX2Y_substream_t *subs, snd_pcm_runtime
 		if (! capsubs->bussing) {
 			int ep;
 			snd_printd("starting capture pipes for playpipe\n");
-			snd_usX2Y_set_format(capsubs, runtime);
-			snd_usX2Y_substream_prepare(capsubs, runtime);
+			usX2Y_set_format(capsubs, runtime);
+			usX2Y_substream_prepare(capsubs, runtime);
 			for (ep = 0; ep < capsubs->endpoints; ep++)
 				for (i = 0; i < NRURBS; i++) {
 					snd_assert(capsubs->dataurb[ep][i], return -EINVAL);
-					if (snd_usX2Y_urb_capt_prepare(capsubs, runtime, capsubs->dataurb[ep][i]) < 0) {
+					if (usX2Y_urb_capt_prepare(capsubs, runtime, capsubs->dataurb[ep][i]) < 0) {
 						snd_printk(KERN_ERR "cannot prepare datapipe for urb %d\n", i);
 						goto __error;
 					}
 				}
 			capsubs->remainder = 0;
-			if (snd_usX2Y_urb_start(capsubs))
+			if (usX2Y_urb_start(capsubs))
 				goto __error;
 		}
 	}
 
 	subs->running = 1;
 
-	if (snd_usX2Y_urb_start(subs))
+	if (usX2Y_urb_start(subs))
 		goto __error;
 
 	return 0;
 
  __error:
 	// snd_pcm_stop(subs->pcm_substream, SNDRV_PCM_STATE_XRUN);
-	snd_usX2Y_urbs_deactivate(subs);
+	usX2Y_urbs_deactivate(subs);
 	return -EPIPE;
 }
 /* 
  *  wait until all urbs are processed.
  */
-static int snd_usX2Y_urbs_wait_clear(snd_usX2Y_substream_t *subs)
+static int usX2Y_urbs_wait_clear(snd_usX2Y_substream_t *subs)
 {
 	int timeout = HZ;
 	int i, alive, ep;
@@ -617,7 +617,7 @@ static int snd_usX2Y_urbs_wait_clear(snd_usX2Y_substream_t *subs)
 /*
  * return the current pcm pointer.  just return the hwptr_done value.
  */
-static snd_pcm_uframes_t snd_usb_pcm_pointer(snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t snd_usX2Y_pcm_pointer(snd_pcm_substream_t *substream)
 {
 	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t *)substream->runtime->private_data;
 	return subs->hwptr_done;
@@ -633,11 +633,11 @@ static int snd_usX2Y_pcm_capt_trigger(snd_pcm_substream_t *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		snd_printd("snd_usX2Y_pcm_capt_trigger(START)\n");
-		err = snd_usX2Y_urb_capt_start(subs, substream->runtime);
+		err = usX2Y_urb_capt_start(subs, substream->runtime);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		snd_printd("snd_usX2Y_pcm_capt_trigger(STOP)\n");
-		err = snd_usX2Y_urbs_deactivate(subs);
+		err = usX2Y_urbs_deactivate(subs);
 		break;
 	default:
 		err = -EINVAL;
@@ -656,11 +656,11 @@ static int snd_usX2Y_pcm_play_trigger(snd_pcm_substream_t *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		snd_printd("snd_usX2Y_pcm_play_trigger(START)\n");
-		err = snd_usX2Y_urb_play_start(subs, substream->runtime);
+		err = usX2Y_urb_play_start(subs, substream->runtime);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		snd_printd("snd_usX2Y_pcm_play_trigger(STOP)\n");
-		err = snd_usX2Y_urbs_deactivate(subs);
+		err = usX2Y_urbs_deactivate(subs);
 		break;
 	default:
 		err = -EINVAL;
@@ -671,7 +671,7 @@ static int snd_usX2Y_pcm_play_trigger(snd_pcm_substream_t *substream, int cmd)
 /*
  * release a urb data
  */
-static void release_urb_ctx(struct urb** urb, int free_tb)
+static void usX2Y_release_urb_ctx(struct urb** urb, int free_tb)
 {
 	if (*urb) {
 		if (free_tb)
@@ -683,18 +683,18 @@ static void release_urb_ctx(struct urb** urb, int free_tb)
 /*
  * release a substream
  */
-static void snd_usX2Y_urbs_release(snd_usX2Y_substream_t *subs)
+static void usX2Y_urbs_release(snd_usX2Y_substream_t *subs)
 {
 	int i, ep;
 	snd_printd("snd_usX2Y_urbs_release()\n");
 	/* stop urbs (to be sure) */
-	if (snd_usX2Y_urbs_deactivate(subs) > 0)
+	if (usX2Y_urbs_deactivate(subs) > 0)
 		snd_printd("waitclear\n");
-	snd_usX2Y_urbs_wait_clear(subs);
+	usX2Y_urbs_wait_clear(subs);
 	
 	for (ep = 0; ep < subs->endpoints; ep++)
 		for (i = 0; i < NRURBS; i++)
-			release_urb_ctx(subs->dataurb[ep] + i, subs == (subs->stream->substream + SNDRV_PCM_STREAM_CAPTURE));
+			usX2Y_release_urb_ctx(subs->dataurb[ep] + i, subs == (subs->stream->substream + SNDRV_PCM_STREAM_CAPTURE));
 
 	if (subs->tmpbuf) {
 		kfree(subs->tmpbuf);
@@ -704,13 +704,13 @@ static void snd_usX2Y_urbs_release(snd_usX2Y_substream_t *subs)
 /*
  * initialize a substream for plaback/capture
  */
-static int snd_usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
+static int usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
 {
 	int i, ep;
 	int is_playback = subs == (subs->stream->substream + SNDRV_PCM_STREAM_PLAYBACK);
 
 	/* calculate the frequency in 10.14 format */
-	subs->freqn = subs->freqm = get_usb_rate(runtime->rate);
+	subs->freqn = subs->freqm = usX2Y_get_usb_rate(runtime->rate);
 
 	/* reset the pointer */
 	subs->hwptr = 0;
@@ -737,14 +737,14 @@ static int snd_usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runt
 				continue;
 			*purb = usb_alloc_urb(NRPACKS, GFP_KERNEL);
 			if (! *purb) {
-				snd_usX2Y_urbs_release(subs);
+				usX2Y_urbs_release(subs);
 				return -ENOMEM;
 			}
 			if (!is_playback && !(*purb)->transfer_buffer) {
 				/* allocate a capture buffer per urb */
 				(*purb)->transfer_buffer = kmalloc(subs->maxpacksize*NRPACKS, GFP_KERNEL);
 				if (!(*purb)->transfer_buffer) {
-					snd_usX2Y_urbs_release(subs);
+					usX2Y_urbs_release(subs);
 					return -ENOMEM;
 				}
 			}
@@ -754,8 +754,8 @@ static int snd_usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runt
 			(*purb)->context = subs;
 			(*purb)->interval = 1;
 			(*purb)->complete = is_playback ?
-				snd_usb_complete_callback(snd_usX2Y_urb_play_complete) :
-				snd_usb_complete_callback(snd_usX2Y_urb_capt_complete);
+				snd_usb_complete_callback(i_usX2Y_urb_play_complete) :
+				snd_usb_complete_callback(i_usX2Y_urb_capt_complete);
 		}
 
 	return 0;
@@ -764,7 +764,7 @@ static int snd_usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runt
 /*
  * find a matching format and set up the interface
  */
-static int snd_usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
+static int usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime)
 {
 	struct usb_device *dev = subs->stream->usX2Y->chip.dev;
 	snd_printd("about to set format: format = %s, rate = %d, channels = %d\n",
@@ -782,9 +782,9 @@ static int snd_usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *
 }
 
 #ifndef OLD_USB
-static void snd_usX2Y_04Int(struct urb* urb, struct pt_regs *regs)
+static void i_usX2Y_04Int(struct urb* urb, struct pt_regs *regs)
 #else
-static void snd_usX2Y_04Int(struct urb* urb)
+static void i_usX2Y_04Int(struct urb* urb)
 #endif
 {
 	usX2Ydev_t*	usX2Y = urb->context;
@@ -911,7 +911,7 @@ static int usX2Y_rate_set(snd_usX2Y_stream_t *usX2Y_stream, int rate)
 				((char*)(usbdata + i))[0] = ra[i].c1;
 				((char*)(usbdata + i))[1] = ra[i].c2;
 				usb_fill_bulk_urb(us->urb[i], usX2Y_stream->usX2Y->chip.dev, usb_sndbulkpipe(usX2Y_stream->usX2Y->chip.dev, 4),
-						  usbdata + i, 2, snd_usX2Y_04Int, usX2Y_stream->usX2Y);
+						  usbdata + i, 2, i_usX2Y_04Int, usX2Y_stream->usX2Y);
 #ifdef OLD_USB
 				us->urb[i]->transfer_flags = USB_QUEUE_BULK;
 #endif
@@ -958,13 +958,39 @@ static int usX2Y_rate_set(snd_usX2Y_stream_t *usX2Y_stream, int rate)
 	return err;
 }
 
-static int snd_usX2Y_hw_params(	snd_pcm_substream_t*	substream,
-				snd_pcm_hw_params_t*	hw_params)
+static int snd_usX2Y_hw_params(snd_pcm_substream_t *substream,
+			       snd_pcm_hw_params_t *hw_params)
 {
 	int			err = 0;
-	unsigned int		rate = params_rate(hw_params),
-				format = params_format(hw_params);
+	unsigned int		rate = params_rate(hw_params);
+	snd_pcm_format_t	format = params_format(hw_params);
  	snd_usX2Y_stream_t	*usX2Y_stream = snd_pcm_substream_chip(substream);
+
+	{	// all pcm substreams off one usX2Y have to operate at the same rate & format
+		snd_card_t *card = substream->pstr->pcm->card;
+		struct list_head *list;
+		list_for_each(list, &card->devices) {
+			snd_device_t *dev;
+			snd_pcm_t *pcm;
+			int s;
+			dev = snd_device(list);
+			if (dev->type != SNDRV_DEV_PCM)
+				continue;
+			pcm = dev->device_data;
+			for (s = 0; s < 2; ++s) {
+				snd_pcm_substream_t *test_substream;
+				test_substream = pcm->streams[s].substream;
+				if (test_substream && test_substream != substream  &&
+				    test_substream->runtime &&
+				    ((test_substream->runtime->format &&
+				      test_substream->runtime->format != format) ||
+				     (test_substream->runtime->rate &&
+				      test_substream->runtime->rate != rate)))
+					return -EINVAL;
+			}
+		}
+	}
+
 	if (usX2Y_stream->usX2Y->format != format) {
 		int alternate, unlink_err;
 		if (format == SNDRV_PCM_FORMAT_S24_3LE) {
@@ -997,7 +1023,7 @@ static int snd_usX2Y_hw_params(	snd_pcm_substream_t*	substream,
 /*
  * free the buffer
  */
-static int snd_usb_hw_free(snd_pcm_substream_t *substream)
+static int snd_usX2Y_hw_free(snd_pcm_substream_t *substream)
 {
 	return snd_pcm_lib_free_pages(substream);
 }
@@ -1014,11 +1040,11 @@ static int snd_usX2Y_pcm_prepare(snd_pcm_substream_t *substream)
 	snd_printd("snd_usX2Y_pcm_prepare()\n");
 
 	if (! subs->bussing)	
-		snd_usX2Y_urbs_release(subs);
-	if ((err = snd_usX2Y_set_format(subs, runtime)) < 0)
+		usX2Y_urbs_release(subs);
+	if ((err = usX2Y_set_format(subs, runtime)) < 0)
 		return err;
 
-	return snd_usX2Y_substream_prepare(subs, runtime);
+	return usX2Y_substream_prepare(subs, runtime);
 }
 
 static snd_pcm_hardware_t snd_usX2Y_2c =
@@ -1059,7 +1085,7 @@ static snd_pcm_hardware_t snd_usX2Y_4c =
 };
 
 
-static int snd_usb_pcm_open(snd_pcm_substream_t *substream, int direction,
+static int usX2Y_pcm_open(snd_pcm_substream_t *substream, int direction,
 			    snd_pcm_hardware_t *hw)
 {
 	snd_usX2Y_stream_t	*as = snd_pcm_substream_chip(substream);
@@ -1074,36 +1100,36 @@ static int snd_usb_pcm_open(snd_pcm_substream_t *substream, int direction,
 }
 
 
-static int snd_usb_playback_open(snd_pcm_substream_t *substream)
+static int snd_usX2Y_playback_open(snd_pcm_substream_t *substream)
 {
 	snd_printd("snd_usb_playback_open()\n");
-	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_PLAYBACK, &snd_usX2Y_2c);
+	return usX2Y_pcm_open(substream, SNDRV_PCM_STREAM_PLAYBACK, &snd_usX2Y_2c);
 }
 
-static int snd_usb_playback_close(snd_pcm_substream_t *substream)
+static int snd_usX2Y_playback_close(snd_pcm_substream_t *substream)
 {
 	snd_usX2Y_stream_t	*as = snd_pcm_substream_chip(substream);
 	snd_usX2Y_substream_t	*captsubs = as->substream + SNDRV_PCM_STREAM_CAPTURE,
 				*playsubs = as->substream + SNDRV_PCM_STREAM_PLAYBACK;
 	down(&as->usX2Y->open_mutex);
-	snd_usX2Y_urbs_release(playsubs);
+	usX2Y_urbs_release(playsubs);
 	playsubs->pcm_substream = NULL;
 	if (captsubs->pcm_substream == NULL) {
-		snd_usX2Y_urbs_release(captsubs);
+		usX2Y_urbs_release(captsubs);
 		snd_assert(captsubs->pcm_substream == NULL);
 	}
 	up(&as->usX2Y->open_mutex);
 	return 0;
 }
 
-static int snd_usb_capture_open(snd_pcm_substream_t *substream)
+static int snd_usX2Y_capture_open(snd_pcm_substream_t *substream)
 {
 	snd_usX2Y_stream_t *as = snd_pcm_substream_chip(substream);
 	snd_pcm_hardware_t *hardware = as->usX2Y->chip.dev->descriptor.idProduct == USB_ID_US428 ? &snd_usX2Y_4c : &snd_usX2Y_2c;
-	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_CAPTURE, hardware);
+	return usX2Y_pcm_open(substream, SNDRV_PCM_STREAM_CAPTURE, hardware);
 }
 
-static int snd_usb_capture_close(snd_pcm_substream_t *substream)
+static int snd_usX2Y_capture_close(snd_pcm_substream_t *substream)
 {
 	int err = 0;
 	snd_usX2Y_stream_t *as = snd_pcm_substream_chip(substream);
@@ -1112,7 +1138,7 @@ static int snd_usb_capture_close(snd_pcm_substream_t *substream)
 	down(&as->usX2Y->open_mutex);
 
 	if (! subs->bussing)
-		snd_usX2Y_urbs_release(subs);
+		usX2Y_urbs_release(subs);
 	subs->pcm_substream = NULL;
 
 	up(&as->usX2Y->open_mutex);
@@ -1120,28 +1146,28 @@ static int snd_usb_capture_close(snd_pcm_substream_t *substream)
 }
 
 
-static snd_pcm_ops_t snd_usb_playback_ops = 
+static snd_pcm_ops_t snd_usX2Y_playback_ops = 
 {
-	.open =		snd_usb_playback_open,
-	.close =	snd_usb_playback_close,
+	.open =		snd_usX2Y_playback_open,
+	.close =	snd_usX2Y_playback_close,
 	.ioctl =	snd_pcm_lib_ioctl,
 	.hw_params =	snd_usX2Y_hw_params,
-	.hw_free =	snd_usb_hw_free,
+	.hw_free =	snd_usX2Y_hw_free,
 	.prepare =	snd_usX2Y_pcm_prepare,
 	.trigger =	snd_usX2Y_pcm_play_trigger,
-	.pointer =	snd_usb_pcm_pointer,
+	.pointer =	snd_usX2Y_pcm_pointer,
 };
 
-static snd_pcm_ops_t snd_usb_capture_ops = 
+static snd_pcm_ops_t snd_usX2Y_capture_ops = 
 {
-	.open =		snd_usb_capture_open,
-	.close =	snd_usb_capture_close,
+	.open =		snd_usX2Y_capture_open,
+	.close =	snd_usX2Y_capture_close,
 	.ioctl =	snd_pcm_lib_ioctl,
 	.hw_params =	snd_usX2Y_hw_params,
-	.hw_free =	snd_usb_hw_free,
+	.hw_free =	snd_usX2Y_hw_free,
 	.prepare =	snd_usX2Y_pcm_prepare,
 	.trigger =	snd_usX2Y_pcm_capt_trigger,
-	.pointer =	snd_usb_pcm_pointer,
+	.pointer =	snd_usX2Y_pcm_pointer,
 };
 
 
@@ -1149,7 +1175,7 @@ static snd_pcm_ops_t snd_usb_capture_ops =
 /*
  * intialize the substream instance.
  */
-static snd_usX2Y_substream_t *snd_usX2Y_substream_init(snd_usX2Y_stream_t *stream, enum sndrv_pcm_stream  dir)
+static snd_usX2Y_substream_t *usX2Y_substream_init(snd_usX2Y_stream_t *stream, enum sndrv_pcm_stream  dir)
 {
 	struct usb_device *dev;
 	snd_usX2Y_substream_t *subs = stream->substream + dir;
@@ -1173,7 +1199,7 @@ static snd_usX2Y_substream_t *snd_usX2Y_substream_init(snd_usX2Y_stream_t *strea
 /*
  * free a substream
  */
-static void snd_usX2Y_substream_free(snd_usX2Y_substream_t *subs)
+static void usX2Y_substream_free(snd_usX2Y_substream_t *subs)
 {
 }
 
@@ -1182,10 +1208,10 @@ static void snd_usX2Y_substream_free(snd_usX2Y_substream_t *subs)
 /*
  * free a usb stream instance
  */
-static void snd_usX2Y_audio_stream_free(snd_usX2Y_stream_t *stream)
+static void usX2Y_audio_stream_free(snd_usX2Y_stream_t *stream)
 {
-	snd_usX2Y_substream_free(&stream->substream[0]);
-	snd_usX2Y_substream_free(&stream->substream[1]);
+	usX2Y_substream_free(&stream->substream[0]);
+	usX2Y_substream_free(&stream->substream[1]);
 	snd_magic_kfree(stream);
 }
 
@@ -1195,11 +1221,11 @@ static void snd_usX2Y_audio_pcm_free(snd_pcm_t *pcm)
 	if (stream) {
 		stream->pcm = NULL;
 		snd_pcm_lib_preallocate_free_for_all(pcm);
-		snd_usX2Y_audio_stream_free(stream);
+		usX2Y_audio_stream_free(stream);
 	}
 }
 
-static int snd_usX2Y_audio_stream_new(snd_card_t* card)
+static int usX2Y_audio_stream_new(snd_card_t* card)
 {
 	snd_usX2Y_stream_t *usX2Y_stream;
 	snd_usX2Y_substream_t *usX2Y_capt_substream;
@@ -1214,21 +1240,21 @@ static int snd_usX2Y_audio_stream_new(snd_card_t* card)
 	memset(usX2Y_stream, 0, sizeof(*usX2Y_stream));
 	usX2Y_stream->usX2Y = usX2Y(card);
 
-	snd_usX2Y_substream_init(usX2Y_stream, SNDRV_PCM_STREAM_PLAYBACK);
-	usX2Y_capt_substream = snd_usX2Y_substream_init(usX2Y_stream, SNDRV_PCM_STREAM_CAPTURE);
+	usX2Y_substream_init(usX2Y_stream, SNDRV_PCM_STREAM_PLAYBACK);
+	usX2Y_capt_substream = usX2Y_substream_init(usX2Y_stream, SNDRV_PCM_STREAM_CAPTURE);
 
 	err = snd_pcm_new(card, NAME_ALLCAPS" Audio", usX2Y(card)->chip.pcm_devs,
 			  1,
 			  1,
 			  &pcm);
 	if (err < 0) {
-		snd_usX2Y_audio_stream_free(usX2Y_stream);
+		usX2Y_audio_stream_free(usX2Y_stream);
 		return err;
 	}
 
 	usX2Y_stream->pcm = pcm;
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_usb_playback_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_usb_capture_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_usX2Y_playback_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_usX2Y_capture_ops);
 
 	pcm->private_data = usX2Y_stream;
 	pcm->private_free = snd_usX2Y_audio_pcm_free;
@@ -1247,7 +1273,7 @@ static int snd_usX2Y_audio_stream_new(snd_card_t* card)
 						     usX2Y_capt_substream->endpoints * 128*1024)) ||
 	    (usX2Y(card)->chip.dev->descriptor.idProduct != USB_ID_US122 &&
 	     0 > (err = usX2Y_rate_set(usX2Y_stream, 44100)))) {	// Lets us428 recognize output-volume settings, disturbs us122.
-		snd_usX2Y_audio_stream_free(usX2Y_stream);
+		usX2Y_audio_stream_free(usX2Y_stream);
 		return err;
 	}
 	usX2Y(card)->chip.pcm_devs++;
@@ -1270,7 +1296,7 @@ static int snd_usX2Y_audio_dev_free(snd_device_t *device)
 /*
  * create a chip instance and set its names.
  */
-int snd_usX2Y_audio_create(snd_card_t* card)
+int usX2Y_audio_create(snd_card_t* card)
 {
 	int err = 0;
 	static snd_device_ops_t ops = {
@@ -1284,7 +1310,7 @@ int snd_usX2Y_audio_create(snd_card_t* card)
 		return err;
 	}
 
-	err = snd_usX2Y_audio_stream_new(card);
+	err = usX2Y_audio_stream_new(card);
 
 	return err;
 }
@@ -1294,13 +1320,13 @@ int snd_usX2Y_audio_create(snd_card_t* card)
  * compatible layers
  */
 #ifdef OLD_USB
-static void __old_snd_usX2Y_urb_play_complete(struct urb *urb)
+static void i_usX2Y_urb_play_complete__old_(struct urb *urb)
 {
-	snd_usX2Y_urb_play_complete(urb, NULL);
+	i_usX2Y_urb_play_complete(urb, NULL);
 }
 
-static void __old_snd_usX2Y_urb_capt_complete(struct urb *urb)
+static void i_usX2Y_urb_capt_complete__old_(struct urb *urb)
 {
-	snd_usX2Y_urb_capt_complete(urb, NULL);
+	i_usX2Y_urb_capt_complete(urb, NULL);
 }
 #endif
