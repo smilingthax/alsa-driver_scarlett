@@ -808,7 +808,7 @@ int snd_pcm_suspend_all(snd_pcm_t *pcm)
 			if (substream->runtime == NULL)
 				continue;
 			snd_pcm_stream_lock(substream);
-			if (runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
+			if (substream->runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
 				snd_pcm_stream_unlock(substream);
 				continue;
 			}

@@ -320,7 +320,7 @@ static void snd_pcm_substream_proc_hw_params_read(snd_info_entry_t *entry, snd_i
 	snd_pcm_stream_lock_irq(substream);
 	if (runtime->status->state == SNDRV_PCM_STATE_OPEN) {
 		snd_iprintf(buffer, "no setup\n");
-		spin_unlock_irq(&runtime->lock);
+		snd_pcm_stream_unlock_irq(substream);
 		return;
 	}
 	snd_iprintf(buffer, "access: %s\n", snd_pcm_access_name(runtime->access));
