@@ -1,0 +1,34 @@
+--- cs46xx.c	2003-06-10 15:29:36.000000000 +0200
++++ cs46xx.c.old	2003-06-10 15:29:26.000000000 +0200
+@@ -163,6 +163,7 @@
+ }
+ 
+ #ifdef CONFIG_PM
++#ifndef PCI_OLD_SUSPEND
+ static int snd_card_cs46xx_suspend(struct pci_dev *pci, u32 state)
+ {
+ 	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pci_get_drvdata(pci), return -ENXIO);
+@@ -175,6 +176,18 @@
+ 	snd_cs46xx_resume(chip);
+ 	return 0;
+ }
++#else
++static void snd_card_cs46xx_suspend(struct pci_dev *pci)
++{
++	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pci_get_drvdata(pci), return);
++	snd_cs46xx_suspend(chip);
++}
++static void snd_card_cs46xx_resume(struct pci_dev *pci)
++{
++	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pci_get_drvdata(pci), return);
++	snd_cs46xx_resume(chip);
++}
++#endif
+ #endif
+ 
+ static void __devexit snd_card_cs46xx_remove(struct pci_dev *pci)
+@@ -237,3 +250,4 @@
+ __setup("snd-cs46xx=", alsa_card_cs46xx_setup);
+ 
+ #endif /* ifndef MODULE */
++EXPORT_NO_SYMBOLS;
