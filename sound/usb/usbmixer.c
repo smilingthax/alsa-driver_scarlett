@@ -159,7 +159,7 @@ static int check_mapped_name(mixer_build_t *state, int unitid, int control, char
 		if (p->id == unitid &&
 		    (! control || ! p->control || control == p->control)) {
 			buflen--;
-			strncpy(buf, p->name, buflen - 1);
+			strncpy(buf, p->name, buflen);
 			buf[buflen] = 0;
 			return strlen(buf);
 		}
@@ -357,7 +357,7 @@ static int add_control_to_empty(snd_card_t *card, snd_kcontrol_t *kctl)
 	while (snd_ctl_find_id(card, &kctl->id))
 		kctl->id.index++;
 	if ((err = snd_ctl_add(card, kctl)) < 0) {
-		snd_printk(KERN_ERR "cannot add control\n");
+		snd_printd(KERN_ERR "cannot add control (err = %d)\n", err);
 		snd_ctl_free_one(kctl);
 	}
 	return err;
@@ -577,7 +577,7 @@ static int mixer_ctl_feature_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t 
 			}
 			if (get_ctl_value(cval, GET_MAX, (cval->control << 8) | minchn, &cval->max) < 0 ||
 			    get_ctl_value(cval, GET_MIN, (cval->control << 8) | minchn, &cval->min) < 0) {
-				snd_printk(KERN_ERR "%d:%d: cannot get min/max values for control %d\n", cval->id, cval->ctrlif, cval->control);
+				snd_printd(KERN_ERR "%d:%d: cannot get min/max values for control %d (id %d)\n", cval->id, cval->ctrlif, cval->control, cval->id);
 				return -EINVAL;
 			}
 			cval->initialized = 1;
@@ -600,7 +600,7 @@ static int mixer_ctl_feature_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t 
 			if (cval->cmask & (1 << c)) {
 				err = get_cur_mix_value(cval, c + 1, &val);
 				if (err < 0) {
-					printk("cannot get current value for control %d ch %d: err = %d\n", cval->control, c + 1, err);
+					snd_printd(KERN_ERR "cannot get current value for control %d ch %d: err = %d\n", cval->control, c + 1, err);
 					return err;
 				}
 				val = get_relative_value(cval, val);
@@ -612,7 +612,7 @@ static int mixer_ctl_feature_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t 
 		/* master channel */
 		err = get_cur_mix_value(cval, 0, &val);
 		if (err < 0) {
-			printk("cannot get current value for control %d master ch: err = %d\n", cval->control, err);
+			snd_printd(KERN_ERR "cannot get current value for control %d master ch: err = %d\n", cval->control, err);
 			return err;
 		}
 		val = get_relative_value(cval, val);
@@ -691,7 +691,7 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 
 	cval = snd_magic_kcalloc(usb_mixer_elem_info_t, 0, GFP_KERNEL);
 	if (! cval) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol");
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		return;
 	}
 	cval->chip = state->chip;
@@ -721,14 +721,14 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 	} else {
 		if (get_ctl_value(cval, GET_MAX, (cval->control << 8) | minchn, &cval->max) < 0 ||
 		    get_ctl_value(cval, GET_MIN, (cval->control << 8) | minchn, &cval->min) < 0)
-			snd_printk(KERN_ERR "%d:%d: cannot get min/max values for control %d\n", cval->id, cval->ctrlif, control);
+			snd_printd(KERN_ERR "%d:%d: cannot get min/max values for control %d (id %d)\n", cval->id, cval->ctrlif, control, unitid);
 		else
 			cval->initialized = 1;
 	}
 
 	kctl = snd_ctl_new1(&usb_feature_unit_ctl, cval);
 	if (! kctl) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol");
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		snd_magic_kfree(cval);
 		return;
 	}
@@ -886,13 +886,13 @@ static void build_mixer_unit_ctl(mixer_build_t *state, unsigned char *desc,
 	/* get min/max values */
 	if (get_ctl_value(cval, GET_MAX, (cval->control << 8) | minchn, &cval->max) < 0 ||
 	    get_ctl_value(cval, GET_MIN, (cval->control << 8) | minchn, &cval->min) < 0)
-		snd_printk(KERN_ERR "cannot get min/max values for mixer\n");
+		snd_printd(KERN_ERR "cannot get min/max values for mixer (id %d)\n", unitid);
 	else
 		cval->initialized = 1;
 
 	kctl = snd_ctl_new1(&usb_feature_unit_ctl, cval);
 	if (! kctl) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol");
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		snd_magic_kfree(cval);
 		return;
 	}
@@ -1063,7 +1063,7 @@ static int build_audio_procunit(mixer_build_t *state, int unitid, unsigned char 
 	};
 
 	if (dsc[0] < 13 || dsc[0] < 13 + num_ins || dsc[0] < num_ins + dsc[11 + num_ins]) {
-		snd_printk(KERN_ERR "invalid %s descriptor %d\n", name, unitid);
+		snd_printk(KERN_ERR "invalid %s descriptor (id %d)\n", name, unitid);
 		return -EINVAL;
 	}
 
@@ -1088,7 +1088,7 @@ static int build_audio_procunit(mixer_build_t *state, int unitid, unsigned char 
 			continue;
 		cval = snd_magic_kcalloc(usb_mixer_elem_info_t, 0, GFP_KERNEL);
 		if (! cval) {
-			snd_printk(KERN_ERR "cannot malloc kcontrol");
+			snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 			return -ENOMEM;
 		}
 		cval->chip = state->chip;
@@ -1101,15 +1101,15 @@ static int build_audio_procunit(mixer_build_t *state, int unitid, unsigned char 
 		/* get min/max values */
 		if (get_ctl_value(cval, GET_MAX, cval->control, &cval->max) < 0 ||
 		    get_ctl_value(cval, GET_MIN, cval->control, &cval->min) < 0)
-			snd_printk(KERN_ERR "cannot get min/max values for proc/ext unit\n");
+			snd_printd(KERN_ERR "cannot get min/max values for proc/ext control=%d, id=%d\n", cval->control, unitid);
 		else if (cval->max <= cval->min)
-			snd_printk(KERN_ERR "invalid min/max values (%d/%d) for proc/ext unit %d\n", cval->min, cval->max, unitid);
+			snd_printd(KERN_ERR "invalid min/max values (%d/%d) for proc/ext unit control=%d, id=%d\n", cval->min, cval->max, cval->control, unitid);
 		else
 			cval->initialized = 1;
 
 		kctl = snd_ctl_new1(&mixer_procunit_ctl, cval);
 		if (! kctl) {
-			snd_printk(KERN_ERR "cannot malloc kcontrol");
+			snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 			snd_magic_kfree(cval);
 			return -ENOMEM;
 		}
@@ -1263,7 +1263,7 @@ static int parse_audio_selector_unit(mixer_build_t *state, int unitid, unsigned 
 
 	cval = snd_magic_kcalloc(usb_mixer_elem_info_t, 0, GFP_KERNEL);
 	if (! cval) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol");
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		return -ENOMEM;
 	}
 	cval->chip = state->chip;
@@ -1302,7 +1302,7 @@ static int parse_audio_selector_unit(mixer_build_t *state, int unitid, unsigned 
 
 	kctl = snd_ctl_new1(&mixer_selectunit_ctl, cval);
 	if (! kctl) {
-		snd_printk(KERN_ERR "cannot malloc kcontrol");
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		snd_magic_kfree(cval);
 		return -ENOMEM;
 	}
