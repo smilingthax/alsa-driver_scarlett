@@ -390,7 +390,10 @@ static int __init isapnp_isolate(void)
 			udelay(250);
 			iteration++;
 			isapnp_wake(0x00);
+			isapnp_set_rdp();
+			udelay(1000);
 			write_address(0x01);
+			udelay(1000);
 			goto __next;
 		}
 		if (iteration == 1) {
