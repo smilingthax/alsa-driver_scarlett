@@ -99,6 +99,7 @@ struct snd_stru_pcm {
 	snd_info_entry_t *proc_oss_entry;
 #endif
 	struct semaphore open_mutex;
+	int open_prefer_subchn;
 	void *private_data;
 	void (*private_free) (void *private_data);
 };

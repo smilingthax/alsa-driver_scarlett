@@ -29,10 +29,11 @@ typedef struct snd_stru_ctl_read {
 
 struct snd_stru_control {
 	snd_card_t *card;
-	unsigned int hwdep_device;
-	unsigned int mixer_device;
-	unsigned int pcm_device;
-	unsigned int rawmidi_device;
+	int hwdep_device;
+	int mixer_device;
+	int pcm_device;
+	int pcm_subdevice;
+	int rawmidi_device;
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */

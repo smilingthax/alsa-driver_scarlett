@@ -113,7 +113,7 @@ typedef struct snd_switch {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
+#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 1)
 
 #define SND_CTL_SW_JOYSTICK		"Joystick"
 #define SND_CTL_SW_JOYSTICK_ADDRESS	"Joystick Address"
@@ -147,15 +147,17 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_MIXER_SWITCH_READ	_IOWR('U', 0x12, snd_switch_t)
 #define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x13, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOWR('U', 0x20, int)
-#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x21, snd_pcm_info_t)
-#define SND_CTL_IOCTL_PCM_PLAYBACK_INFO	_IOR ('U', 0x22, snd_pcm_playback_info_t)
-#define SND_CTL_IOCTL_PCM_CAPTURE_INFO	_IOR ('U', 0x23, snd_pcm_capture_info_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_LIST	_IOWR('U', 0x24, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_READ  _IOWR('U', 0x25, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_WRITE _IOWR('U', 0x26, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_RSWITCH_LIST	_IOWR('U', 0x27, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_RSWITCH_READ  _IOWR('U', 0x28, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_RSWITCH_WRITE _IOWR('U', 0x29, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOWR('U', 0x21, int)
+#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x22, snd_pcm_info_t)
+#define SND_CTL_IOCTL_PCM_PLAYBACK_INFO	_IOR ('U', 0x23, snd_pcm_playback_info_t)
+#define SND_CTL_IOCTL_PCM_CAPTURE_INFO	_IOR ('U', 0x24, snd_pcm_capture_info_t)
+#define SND_CTL_IOCTL_PCM_PSWITCH_LIST	_IOWR('U', 0x25, snd_switch_list_t)
+#define SND_CTL_IOCTL_PCM_PSWITCH_READ  _IOWR('U', 0x26, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_PSWITCH_WRITE _IOWR('U', 0x27, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_CSWITCH_LIST	_IOWR('U', 0x28, snd_switch_list_t)
+#define SND_CTL_IOCTL_PCM_CSWITCH_READ  _IOWR('U', 0x29, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_CSWITCH_WRITE _IOWR('U', 0x2a, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOWR('U', 0x2b, int)
 #define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOWR('U', 0x30, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x31, snd_rawmidi_info_t)
 #define SND_CTL_IOCTL_RAWMIDI_OUTPUT_INFO _IOR('U', 0x32, snd_rawmidi_output_info_t)
@@ -1013,10 +1015,10 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_PINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
 #define SND_PCM_PINFO_16BITONLY		0x00000004	/* hardware supports only 16-bit samples, but driver does conversions from 8-bit to 16-bit */
 
-#define SND_PCM_RINFO_BATCH		0x00000001	/* double buffering */
-#define SND_PCM_RINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
-#define SND_PCM_RINFO_16BITONLY		0x00000004	/* hardware supports only 16-bit samples, but driver does conversions from 8-bit to 16-bit */
-#define SND_PCM_RINFO_OVERRANGE		0x00010000	/* hardware supports ADC overrange detection */
+#define SND_PCM_CINFO_BATCH		0x00000001	/* double buffering */
+#define SND_PCM_CINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
+#define SND_PCM_CINFO_16BITONLY		0x00000004	/* hardware supports only 16-bit samples, but driver does conversions from 8-bit to 16-bit */
+#define SND_PCM_CINFO_OVERRANGE		0x00010000	/* hardware supports ADC overrange detection */
 
 /*
  * Things to know:
