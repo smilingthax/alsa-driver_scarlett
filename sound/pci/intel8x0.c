@@ -1256,15 +1256,17 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	else
 		t += stop_time.tv_usec - start_time.tv_usec;
 	if (t == 0) {
-		snd_printk("?? calculation error..\n");
+		snd_printk(KERN_ERR "?? calculation error..\n");
 		return;
 	}
 	pos = (pos / 4) * 1000;
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
 	if ((pos > 40000 && pos < 47500) ||
-	    (pos > 48500 && pos < 50000)) {
+	    (pos > 48500 && pos < 60000)) {
 		chip->ac97->clock = (chip->ac97->clock * 48000) / pos;
-		printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
+		snd_printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
+	} else {
+		snd_printk(KERN_INFO "intel8x0: measured clock %d rejected\n", pos);
 	}
 }
 
