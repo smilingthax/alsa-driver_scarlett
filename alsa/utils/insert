@@ -149,6 +149,33 @@ case "$1" in
       cat /etc/asound/es1370 > /proc/asound/0/mixer0
     fi
     ;;
+  cs4232)
+    basic
+    insert snd-mpu401-uart.o 
+    insert snd-cs4231.o
+    insert snd-opl3.o
+    insert snd-card-cs4232.o snd_port=0x534 \
+		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
+		snd_dma1=1 snd_dma2=0 \
+		snd_irq=5 snd_mpu_irq=9
+    if [ -r /etc/asound/cs4232 ]; then
+      cat /etc/asound/cs4232 > /proc/asound/0/mixer0
+    fi
+    ;;
+  cs4236)
+    basic
+    insert snd-mpu401-uart.o 
+    insert snd-cs4231.o
+    insert snd-cs4236.o
+    insert snd-opl3.o
+    insert snd-card-cs4236.o snd_port=0x534 snd_cport=0x120 \
+		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
+		snd_dma1=1 snd_dma2=0 \
+		snd_irq=5 snd_mpu_irq=9
+    if [ -r /etc/asound/cs4236 ]; then
+      cat /etc/asound/cs4236 > /proc/asound/0/mixer0
+    fi
+    ;;
   detect)
     if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
     if ! $INSMOD -m $MODDIR/snd-detect.o >> $MAP; then exit 1; fi
