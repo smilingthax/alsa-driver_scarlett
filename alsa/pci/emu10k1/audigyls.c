@@ -247,8 +247,6 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 #define PCM_CENTER_LFE_CHANNEL 2
 #define PCM_UNKNOWN_CHANNEL 3
 
-#define chip_t audigyls_t
-
 typedef struct snd_audigyls_voice audigyls_voice_t;
 typedef struct snd_audigyls_channel audigyls_channel_t;
 typedef struct snd_audigyls audigyls_t;
@@ -444,10 +442,10 @@ static int snd_audigyls_voice_free(audigyls_t *emu, audigyls_voice_t *pvoice)
 
 static void snd_audigyls_pcm_free_substream(snd_pcm_runtime_t *runtime)
 {
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return);
+	audigyls_pcm_t *epcm = runtime->private_data;
   
 	if (epcm) {
-		snd_magic_kfree(epcm);
+		kfree(epcm);
 	}
 }
 
@@ -483,7 +481,7 @@ static int snd_audigyls_pcm_open_playback_channel(snd_pcm_substream_t *substream
 	audigyls_pcm_t *epcm;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 
-	epcm = snd_magic_kcalloc(audigyls_pcm_t, 0, GFP_KERNEL);
+	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
 
 	if (epcm == NULL)
 		return -ENOMEM;
@@ -511,7 +509,7 @@ static int snd_audigyls_pcm_close_playback(snd_pcm_substream_t *substream)
 {
 	audigyls_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-        audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+        audigyls_pcm_t *epcm = runtime->private_data;
         chip->channels[epcm->channel_id].use=0;
 /* FIXME: maybe zero others */
 	return 0;
@@ -545,7 +543,7 @@ static int snd_audigyls_pcm_open_capture_channel(snd_pcm_substream_t *substream,
 	audigyls_pcm_t *epcm;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 
-	epcm = snd_magic_kcalloc(audigyls_pcm_t, 0, GFP_KERNEL);
+	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
 	if (epcm == NULL) {
                 snd_printk("open_capture_channel: failed epcm alloc\n");
 		return -ENOMEM;
@@ -574,7 +572,7 @@ static int snd_audigyls_pcm_close_capture(snd_pcm_substream_t *substream)
 {
 	audigyls_t *chip = snd_pcm_substream_chip(substream);
 	//snd_pcm_runtime_t *runtime = substream->runtime;
-        //audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return);
+        //audigyls_pcm_t *epcm = runtime->private_data;
         chip->capture_channel.use=0;
 /* FIXME: maybe zero others */
 	return 0;
@@ -591,7 +589,7 @@ static int snd_audigyls_pcm_hw_params_playback(snd_pcm_substream_t *substream,
 {
 	int err;
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 
 	if (! epcm->voice) {
 		if ((err = snd_audigyls_voice_alloc(epcm->emu, &epcm->voice)) < 0)
@@ -612,7 +610,7 @@ static int snd_audigyls_pcm_hw_free_playback(snd_pcm_substream_t *substream)
 
 	if (runtime->private_data == NULL)
 		return 0;
-	epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	epcm = runtime->private_data;
 
 	if (epcm->voice) {
 		snd_audigyls_voice_free(epcm->emu, epcm->voice);
@@ -646,7 +644,7 @@ static int snd_audigyls_pcm_prepare_playback(snd_pcm_substream_t *substream)
 {
 	audigyls_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 	int voice = epcm->voice->number;
         voice=epcm->channel_id;
 	
@@ -681,7 +679,7 @@ static int snd_audigyls_pcm_prepare_capture(snd_pcm_substream_t *substream)
 {
 	audigyls_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 	int voice = epcm->voice->number;
         voice=epcm->channel_id;
         //printk("prepare:voice_number=%d, rate=%d, format=0x%x, channels=%d, buffer_size=%ld, period_size=%ld, frames_to_bytes=%d\n",voice, runtime->rate, runtime->format, runtime->channels, runtime->buffer_size, runtime->period_size,  frames_to_bytes(runtime, 1));
@@ -701,7 +699,7 @@ static int snd_audigyls_pcm_trigger_playback(snd_pcm_substream_t *substream,
 {
 	audigyls_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 	int channel = epcm->voice->number;
 	int result = 0;
         channel=epcm->channel_id;
@@ -729,7 +727,7 @@ static int snd_audigyls_pcm_trigger_capture(snd_pcm_substream_t *substream,
 {
 	audigyls_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 	int channel = epcm->voice->number;
 	int result = 0;
         channel=epcm->channel_id;
@@ -757,7 +755,7 @@ snd_audigyls_pcm_pointer_playback(snd_pcm_substream_t *substream)
 {
 	audigyls_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 	snd_pcm_uframes_t ptr, ptr1, ptr2 = 0;
 	int channel = epcm->voice->number;
         channel=epcm->channel_id;
@@ -781,7 +779,7 @@ snd_audigyls_pcm_pointer_capture(snd_pcm_substream_t *substream)
 {
 	audigyls_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	audigyls_pcm_t *epcm = snd_magic_cast(audigyls_pcm_t, runtime->private_data, return -ENXIO);
+	audigyls_pcm_t *epcm = runtime->private_data;
 	snd_pcm_uframes_t ptr, ptr1, ptr2 = 0;
 	int channel = epcm->voice->number;
         channel=epcm->channel_id;
@@ -859,7 +857,7 @@ static snd_pcm_ops_t snd_audigyls_playback_rear_ops = {
 static unsigned short snd_audigyls_ac97_read(ac97_t *ac97,
 					     unsigned short reg)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, ac97->private_data, return -ENXIO);
+	audigyls_t *emu = ac97->private_data;
 	unsigned long flags;
 	unsigned short val;
   
@@ -873,7 +871,7 @@ static unsigned short snd_audigyls_ac97_read(ac97_t *ac97,
 static void snd_audigyls_ac97_write(ac97_t *ac97,
 				    unsigned short reg, unsigned short val)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, ac97->private_data, return);
+	audigyls_t *emu = ac97->private_data;
 	unsigned long flags;
   
 	spin_lock_irqsave(&emu->emu_lock, flags);
@@ -927,14 +925,13 @@ static int snd_audigyls_free(audigyls_t *chip)
 	// release the irq
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
-	snd_magic_kfree(chip);
+	kfree(chip);
 	return 0;
 }
 
 static int snd_audigyls_dev_free(snd_device_t *device)
 {
-	audigyls_t *chip = snd_magic_cast(audigyls_t,
-					  device->device_data, return -ENXIO);
+	audigyls_t *chip = device->device_data;
 	return snd_audigyls_free(chip);
 }
 
@@ -943,7 +940,7 @@ static irqreturn_t snd_audigyls_interrupt(int irq, void *dev_id,
 {
 	unsigned int status;
 
-	audigyls_t *chip = snd_magic_cast(audigyls_t, dev_id, return IRQ_NONE);
+	audigyls_t *chip = dev_id;
 	int i;
 	int mask;
         unsigned int stat76;
@@ -996,7 +993,7 @@ static irqreturn_t snd_audigyls_interrupt(int irq, void *dev_id,
 
 static void snd_audigyls_pcm_free(snd_pcm_t *pcm)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, pcm->private_data, return);
+	audigyls_t *emu = pcm->private_data;
 	emu->pcm = NULL;
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
@@ -1085,7 +1082,7 @@ static int __devinit snd_audigyls_create(snd_card_t *card,
 		return -ENXIO;
 	}
   
-	chip = snd_magic_kcalloc(audigyls_t, 0, GFP_KERNEL);
+	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
 	if (chip == NULL)
 		return -ENOMEM;
   
@@ -1233,7 +1230,7 @@ static int __devinit snd_audigyls_create(snd_card_t *card,
 static void snd_audigyls_proc_reg_read32(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, entry->private_data, return);
+	audigyls_t *emu = entry->private_data;
 	unsigned long value;
 	unsigned long flags;
 	int i;
@@ -1249,7 +1246,7 @@ static void snd_audigyls_proc_reg_read32(snd_info_entry_t *entry,
 static void snd_audigyls_proc_reg_read16(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, entry->private_data, return);
+	audigyls_t *emu = entry->private_data;
         unsigned int value;
 	unsigned long flags;
 	int i;
@@ -1265,7 +1262,7 @@ static void snd_audigyls_proc_reg_read16(snd_info_entry_t *entry,
 static void snd_audigyls_proc_reg_read8(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, entry->private_data, return);
+	audigyls_t *emu = entry->private_data;
 	unsigned int value;
 	unsigned long flags;
 	int i;
@@ -1281,7 +1278,7 @@ static void snd_audigyls_proc_reg_read8(snd_info_entry_t *entry,
 static void snd_audigyls_proc_reg_read1(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, entry->private_data, return);
+	audigyls_t *emu = entry->private_data;
 	unsigned long value;
 	int i,j;
 
@@ -1299,7 +1296,7 @@ static void snd_audigyls_proc_reg_read1(snd_info_entry_t *entry,
 static void snd_audigyls_proc_reg_read2(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, entry->private_data, return);
+	audigyls_t *emu = entry->private_data;
 	unsigned long value;
 	int i,j;
 
@@ -1317,7 +1314,7 @@ static void snd_audigyls_proc_reg_read2(snd_info_entry_t *entry,
 static void snd_audigyls_proc_reg_write(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	audigyls_t *emu = snd_magic_cast(audigyls_t, entry->private_data, return);
+	audigyls_t *emu = entry->private_data;
         char line[64];
         unsigned int reg, channel_id , val;
         while (!snd_info_get_line(buffer, line, sizeof(line))) {

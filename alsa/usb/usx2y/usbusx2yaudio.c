@@ -92,8 +92,6 @@ struct snd_usX2Y_stream {
 	snd_usX2Y_substream_t	substream[2];
 };
 
-#define chip_t snd_usX2Y_stream_t
-
 static int usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime);
 static int usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *runtime);
 static void usX2Y_urbs_release(snd_usX2Y_substream_t *subs);
@@ -1219,7 +1217,7 @@ static void usX2Y_audio_stream_free(snd_usX2Y_stream_t *stream)
 {
 	usX2Y_substream_free(&stream->substream[0]);
 	usX2Y_substream_free(&stream->substream[1]);
-	snd_magic_kfree(stream);
+	kfree(stream);
 }
 
 static void snd_usX2Y_audio_pcm_free(snd_pcm_t *pcm)
@@ -1239,7 +1237,7 @@ static int usX2Y_audio_stream_new(snd_card_t* card)
 	snd_pcm_t *pcm;
 	int err;
 
-	usX2Y_stream = snd_magic_kmalloc(snd_usX2Y_stream_t, 0, GFP_KERNEL);
+	usX2Y_stream = kmalloc(sizeof(snd_usX2Y_stream_t), GFP_KERNEL);
 	if (usX2Y_stream == NULL) {
 		snd_printk(KERN_ERR "cannot malloc\n");
 		return -ENOMEM;

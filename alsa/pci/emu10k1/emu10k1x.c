@@ -177,8 +177,6 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
  * playback.
  */
 
-#define chip_t emu10k1x_t
-
 typedef struct snd_emu10k1x_voice emu10k1x_voice_t;
 typedef struct snd_emu10k1x emu10k1x_t;
 typedef struct snd_emu10k1x_pcm emu10k1x_pcm_t;
@@ -359,10 +357,10 @@ static int snd_emu10k1x_voice_free(emu10k1x_t *emu, emu10k1x_voice_t *pvoice)
 
 static void snd_emu10k1x_pcm_free_substream(snd_pcm_runtime_t *runtime)
 {
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
   
 	if (epcm)
-		snd_magic_kfree(epcm);
+		kfree(epcm);
 }
 
 static void snd_emu10k1x_pcm_interrupt(emu10k1x_t *emu, emu10k1x_voice_t *voice)
@@ -389,7 +387,7 @@ static int snd_emu10k1x_playback_open(snd_pcm_substream_t *substream)
 	emu10k1x_pcm_t *epcm;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 
-	epcm = snd_magic_kcalloc(emu10k1x_pcm_t, 0, GFP_KERNEL);
+	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
 	if (epcm == NULL)
 		return -ENOMEM;
 	epcm->emu = chip;
@@ -415,7 +413,7 @@ static int snd_emu10k1x_pcm_hw_params(snd_pcm_substream_t *substream,
 {
 	int err;
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 
 	if (! epcm->voice) {
 		if ((err = snd_emu10k1x_voice_alloc(epcm->emu, &epcm->voice, substream->pcm->device)) < 0)
@@ -438,7 +436,7 @@ static int snd_emu10k1x_pcm_hw_free(snd_pcm_substream_t *substream)
 
 	if (runtime->private_data == NULL)
 		return 0;
-	epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	epcm = runtime->private_data;
 
 	if (epcm->voice) {
 		snd_emu10k1x_voice_free(epcm->emu, epcm->voice);
@@ -453,7 +451,7 @@ static int snd_emu10k1x_pcm_prepare(snd_pcm_substream_t *substream)
 {
 	emu10k1x_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 	int voice = epcm->voice->number;
 
 	snd_emu10k1x_ptr_write(emu, 0x00, voice, 0);
@@ -479,7 +477,7 @@ static int snd_emu10k1x_pcm_trigger(snd_pcm_substream_t *substream,
 {
 	emu10k1x_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 	int channel = epcm->voice->number;
 	int result = 0;
 
@@ -507,7 +505,7 @@ snd_emu10k1x_pcm_pointer(snd_pcm_substream_t *substream)
 {
 	emu10k1x_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 	unsigned int ptr = 0;
 	int channel = epcm->voice->number;
 
@@ -543,7 +541,7 @@ static int snd_emu10k1x_pcm_open_capture(snd_pcm_substream_t *substream)
 	emu10k1x_pcm_t *epcm;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 
-	epcm = snd_magic_kcalloc(emu10k1x_pcm_t, 0, GFP_KERNEL);
+	epcm = kcalloc(1, sizeof(*epcm), GFP_KERNEL);
 	if (epcm == NULL) {
 		return -ENOMEM;
         }
@@ -569,7 +567,7 @@ static int snd_emu10k1x_pcm_hw_params_capture(snd_pcm_substream_t *substream,
 				      snd_pcm_hw_params_t * hw_params)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 
 	if (! epcm->voice) {
 		if (epcm->emu->capture_voice.use)
@@ -593,7 +591,7 @@ static int snd_emu10k1x_pcm_hw_free_capture(snd_pcm_substream_t *substream)
 
 	if (runtime->private_data == NULL)
 		return 0;
-	epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	epcm = runtime->private_data;
 
 	if (epcm->voice) {
 		epcm->voice->use = 0;
@@ -624,7 +622,7 @@ static int snd_emu10k1x_pcm_trigger_capture(snd_pcm_substream_t *substream,
 {
 	emu10k1x_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 	int result = 0;
 
 	switch (cmd) {
@@ -649,7 +647,7 @@ snd_emu10k1x_pcm_pointer_capture(snd_pcm_substream_t *substream)
 {
 	emu10k1x_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	emu10k1x_pcm_t *epcm = snd_magic_cast(emu10k1x_pcm_t, runtime->private_data, return -ENXIO);
+	emu10k1x_pcm_t *epcm = runtime->private_data;
 	snd_pcm_uframes_t ptr;
 
 	if (!epcm->running)
@@ -676,7 +674,7 @@ static snd_pcm_ops_t snd_emu10k1x_capture_ops = {
 static unsigned short snd_emu10k1x_ac97_read(ac97_t *ac97,
 					     unsigned short reg)
 {
-	emu10k1x_t *emu = snd_magic_cast(emu10k1x_t, ac97->private_data, return -ENXIO);
+	emu10k1x_t *emu = ac97->private_data;
 	unsigned long flags;
 	unsigned short val;
   
@@ -690,7 +688,7 @@ static unsigned short snd_emu10k1x_ac97_read(ac97_t *ac97,
 static void snd_emu10k1x_ac97_write(ac97_t *ac97,
 				    unsigned short reg, unsigned short val)
 {
-	emu10k1x_t *emu = snd_magic_cast(emu10k1x_t, ac97->private_data, return);
+	emu10k1x_t *emu = ac97->private_data;
 	unsigned long flags;
   
 	spin_lock_irqsave(&emu->emu_lock, flags);
@@ -732,14 +730,13 @@ static int snd_emu10k1x_free(emu10k1x_t *chip)
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	// release the data
-	snd_magic_kfree(chip);
+	kfree(chip);
 	return 0;
 }
 
 static int snd_emu10k1x_dev_free(snd_device_t *device)
 {
-	emu10k1x_t *chip = snd_magic_cast(emu10k1x_t,
-					  device->device_data, return -ENXIO);
+	emu10k1x_t *chip = device->device_data;
 	return snd_emu10k1x_free(chip);
 }
 
@@ -748,7 +745,7 @@ static irqreturn_t snd_emu10k1x_interrupt(int irq, void *dev_id,
 {
 	unsigned int status;
 
-	emu10k1x_t *chip = snd_magic_cast(emu10k1x_t, dev_id, return IRQ_NONE);
+	emu10k1x_t *chip = dev_id;
 	int i;
 	int mask;
 
@@ -792,7 +789,7 @@ static irqreturn_t snd_emu10k1x_interrupt(int irq, void *dev_id,
 
 static void snd_emu10k1x_pcm_free(snd_pcm_t *pcm)
 {
-	emu10k1x_t *emu = snd_magic_cast(emu10k1x_t, pcm->private_data, return);
+	emu10k1x_t *emu = pcm->private_data;
 	emu->pcm = NULL;
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
@@ -885,7 +882,7 @@ static int __devinit snd_emu10k1x_create(snd_card_t *card,
 		return -ENXIO;
 	}
   
-	chip = snd_magic_kcalloc(emu10k1x_t, 0, GFP_KERNEL);
+	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
 	if (chip == NULL)
 		return -ENOMEM;
   
@@ -993,7 +990,7 @@ static int __devinit snd_emu10k1x_create(snd_card_t *card,
 static void snd_emu10k1x_proc_reg_read(snd_info_entry_t *entry, 
 				       snd_info_buffer_t * buffer)
 {
-	emu10k1x_t *emu = snd_magic_cast(emu10k1x_t, entry->private_data, return);
+	emu10k1x_t *emu = entry->private_data;
 	unsigned long value,value1,value2;
 	unsigned long flags;
 	int i;
@@ -1021,8 +1018,7 @@ static void snd_emu10k1x_proc_reg_read(snd_info_entry_t *entry,
 static void snd_emu10k1x_proc_reg_write(snd_info_entry_t *entry, 
 					snd_info_buffer_t *buffer)
 {
-	emu10k1x_t *emu = snd_magic_cast(emu10k1x_t, entry->private_data, 
-					 return);
+	emu10k1x_t *emu = entry->private_data;
         char line[64];
         unsigned int reg, channel_id , val;
         while (!snd_info_get_line(buffer, line, sizeof(line))) {

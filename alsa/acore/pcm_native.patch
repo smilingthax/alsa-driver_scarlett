@@ -1,21 +1,21 @@
---- ../alsa-kernel/core/pcm_native.c	2004-06-21 12:42:06.337180654 +0200
-+++ pcm_native.c	2004-06-21 12:42:51.632888326 +0200
+--- ../alsa-kernel/core/pcm_native.c	2004-06-29 12:55:17.472672858 +0200
++++ pcm_native.c	2004-06-29 15:46:07.957852717 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
   *  Digital Audio (PCM) abstract layer
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -2696,6 +2697,9 @@
+@@ -2728,6 +2729,9 @@
  	snd_pcm_runtime_t *runtime;
  	snd_pcm_sframes_t result;
  
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 +	up(&file->f_dentry->d_inode->i_sem);
 +#endif
- 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
+ 	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2713,9 +2717,13 @@
+@@ -2745,9 +2749,13 @@
  	if (result > 0)
  		result = frames_to_bytes(runtime, result);
   end:
@@ -29,17 +29,17 @@
  static ssize_t snd_pcm_readv(struct file *file, const struct iovec *_vector,
  			     unsigned long count, loff_t * offset)
  
-@@ -2762,6 +2770,9 @@
- 	void **bufs;
+@@ -2794,6 +2802,9 @@
+ 	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 +	up(&file->f_dentry->d_inode->i_sem);
 +#endif
- 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
+ 	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2786,8 +2797,12 @@
+@@ -2818,8 +2829,12 @@
  		result = frames_to_bytes(runtime, result);
  	kfree(bufs);
   end:
@@ -52,7 +52,7 @@
  
  unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
  {
-@@ -2869,7 +2884,24 @@
+@@ -2901,7 +2916,24 @@
  	return mask;
  }
  
@@ -77,7 +77,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2881,9 +2913,15 @@
+@@ -2913,9 +2945,15 @@
  	page = virt_to_page(runtime->status);
  	if (!PageReserved(page))
  		get_page(page);
@@ -93,7 +93,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_status =
-@@ -2904,12 +2942,24 @@
+@@ -2936,12 +2974,24 @@
  	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_status_t)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_status;
@@ -118,7 +118,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2921,9 +2971,15 @@
+@@ -2953,9 +3003,15 @@
  	page = virt_to_page(runtime->control);
  	if (!PageReserved(page))
  		get_page(page);
@@ -134,7 +134,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_control =
-@@ -2944,8 +3000,14 @@
+@@ -2976,8 +3032,14 @@
  	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_control_t)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_control;
@@ -149,7 +149,7 @@
  	return 0;
  }
  
-@@ -2961,7 +3023,13 @@
+@@ -2993,7 +3055,13 @@
  	atomic_dec(&substream->runtime->mmap_count);
  }
  
@@ -163,7 +163,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2973,7 +3041,11 @@
+@@ -3005,7 +3073,11 @@
  	if (substream == NULL)
  		return NOPAGE_OOM;
  	runtime = substream->runtime;
@@ -175,7 +175,7 @@
  	offset += address - area->vm_start;
  	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
-@@ -2989,9 +3061,15 @@
+@@ -3021,9 +3093,15 @@
  	}
  	if (!PageReserved(page))
  		get_page(page);
@@ -191,7 +191,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_data =
-@@ -2999,6 +3077,9 @@
+@@ -3031,6 +3109,9 @@
  	.open =		snd_pcm_mmap_data_open,
  	.close =	snd_pcm_mmap_data_close,
  	.nopage =	snd_pcm_mmap_data_nopage,
@@ -201,7 +201,7 @@
  };
  
  static struct vm_operations_struct snd_pcm_vm_ops_data_mmio =
-@@ -3032,7 +3113,11 @@
+@@ -3064,7 +3145,11 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -213,7 +213,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3040,14 +3125,28 @@
+@@ -3072,14 +3157,28 @@
  		return -EINVAL;
  
  	area->vm_ops = &snd_pcm_vm_ops_data;
@@ -242,7 +242,7 @@
  			return -EAGAIN;
  	}
  	atomic_inc(&runtime->mmap_count);
-@@ -3064,7 +3163,11 @@
+@@ -3096,7 +3195,11 @@
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, return -ENXIO);
  
@@ -254,7 +254,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		return snd_pcm_mmap_status(substream, file, area);
-@@ -3209,9 +3312,13 @@
+@@ -3241,9 +3344,13 @@
   */
  
  static struct file_operations snd_pcm_f_ops_playback = {
@@ -268,7 +268,7 @@
  	.open =		snd_pcm_open,
  	.release =	snd_pcm_release,
  	.poll =		snd_pcm_playback_poll,
-@@ -3221,9 +3328,13 @@
+@@ -3253,9 +3360,13 @@
  };
  
  static struct file_operations snd_pcm_f_ops_capture = {

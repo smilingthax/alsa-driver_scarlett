@@ -297,7 +297,7 @@ static int close_tty(serialmidi_t *serial, unsigned int mode)
 
 static void ldisc_receive_buf(struct tty_struct *tty, const unsigned char *cp, char *fp, int count)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, tty->disc_data, return);
+	serialmidi_t *serial = tty->disc_data;
 
 	if (serial == NULL)
 		return;
@@ -345,14 +345,14 @@ static void tx_loop(serialmidi_t *serial)
 
 static void ldisc_write_wakeup(struct tty_struct *tty)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, tty->disc_data, return);
+	serialmidi_t *serial = tty->disc_data;
 
 	tx_loop(serial);
 }
 
 static void snd_serialmidi_output_trigger(snd_rawmidi_substream_t * substream, int up)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, substream->rmidi->private_data, return);
+	serialmidi_t *serial = substream->rmidi->private_data;
 	
 	if (up) {
 		set_bit(SERIAL_MODE_BIT_OUTPUT_TRIGGERED, &serial->mode);
@@ -366,7 +366,7 @@ static void snd_serialmidi_output_trigger(snd_rawmidi_substream_t * substream, i
 
 static void snd_serialmidi_input_trigger(snd_rawmidi_substream_t * substream, int up)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, substream->rmidi->private_data, return);
+	serialmidi_t *serial = substream->rmidi->private_data;
 
 	if (up) {
 		set_bit(SERIAL_MODE_BIT_INPUT_TRIGGERED, &serial->mode);
@@ -377,7 +377,7 @@ static void snd_serialmidi_input_trigger(snd_rawmidi_substream_t * substream, in
 
 static int snd_serialmidi_output_open(snd_rawmidi_substream_t * substream)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, substream->rmidi->private_data, return -ENXIO);
+	serialmidi_t *serial = substream->rmidi->private_data;
 	int err;
 
 	if ((err = open_tty(serial, SERIAL_MODE_BIT_OUTPUT)) < 0)
@@ -388,7 +388,7 @@ static int snd_serialmidi_output_open(snd_rawmidi_substream_t * substream)
 
 static int snd_serialmidi_output_close(snd_rawmidi_substream_t * substream)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, substream->rmidi->private_data, return -ENXIO);
+	serialmidi_t *serial = substream->rmidi->private_data;
 
 	serial->substream_output = NULL;
 	return close_tty(serial, SERIAL_MODE_BIT_OUTPUT);
@@ -396,7 +396,7 @@ static int snd_serialmidi_output_close(snd_rawmidi_substream_t * substream)
 
 static int snd_serialmidi_input_open(snd_rawmidi_substream_t * substream)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, substream->rmidi->private_data, return -ENXIO);
+	serialmidi_t *serial = substream->rmidi->private_data;
 	int err;
 
 	if ((err = open_tty(serial, SERIAL_MODE_BIT_INPUT)) < 0)
@@ -407,7 +407,7 @@ static int snd_serialmidi_input_open(snd_rawmidi_substream_t * substream)
 
 static int snd_serialmidi_input_close(snd_rawmidi_substream_t * substream)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, substream->rmidi->private_data, return -ENXIO);
+	serialmidi_t *serial = substream->rmidi->private_data;
 
 	serial->substream_input = NULL;
 	return close_tty(serial, SERIAL_MODE_BIT_INPUT);
@@ -431,13 +431,13 @@ static int snd_serialmidi_free(serialmidi_t *serial)
 {
 	if (serial->sdev);
 		kfree(serial->sdev);
-	snd_magic_kfree(serial);
+	kfree(serial);
 	return 0;
 }
 
 static int snd_serialmidi_dev_free(snd_device_t *device)
 {
-	serialmidi_t *serial = snd_magic_cast(serialmidi_t, device->device_data, return -ENXIO);
+	serialmidi_t *serial = device->device_data;
 	return snd_serialmidi_free(serial);
 }
 
@@ -490,7 +490,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 	if (outs > 16)
 		outs = 16;
 
-	if ((serial = snd_magic_kcalloc(serialmidi_t, 0, GFP_KERNEL)) == NULL)
+	if ((serial = kcalloc(1, sizeof(*serial), GFP_KERNEL)) == NULL)
 		return -ENOMEM;
 
 	init_MUTEX(&serial->open_lock);

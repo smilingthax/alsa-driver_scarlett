@@ -66,6 +66,7 @@
 #include <linux/init.h>
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
+#include <linux/ioport.h>
 #include <asm/irq.h>
 #include <asm/io.h>
 
@@ -414,7 +415,7 @@ static __inline__ void snd_msnd_eval_dsp_msg(register WORD wMessage)
 {
 	switch (HIBYTE(wMessage)) {
 	case HIMT_PLAY_DONE: {
-        	snd_msndpinnacle_pcm_t *dpcm = Dpcm;//snd_magic_cast( snd_msndpinnacle_pcm_t, (void*)data, return);
+        	snd_msndpinnacle_pcm_t *dpcm = Dpcm;//(void*)data;
 		//snd_printd( "snd_msnd_eval_dsp_msg( %i)\n", wMessage);
 		#ifdef CONFIG_SND_DEBUG0	
 		if(banksPlayed < 3)
@@ -879,8 +880,8 @@ static void snd_msnd_pcm_timer_function(unsigned long data)
 
 static void snd_msnd_runtime_free( snd_pcm_runtime_t *runtime)
 {
-	snd_msndpinnacle_pcm_t* dpcm = snd_magic_cast( snd_msndpinnacle_pcm_t, runtime->private_data, return);
-	snd_magic_kfree( dpcm);
+	snd_msndpinnacle_pcm_t* dpcm = runtime->private_data;
+	kfree( dpcm);
 }
 
 #ifdef SND_MSNDPI_GENSIN
@@ -930,7 +931,7 @@ static int snd_msnd_playback_open( snd_pcm_substream_t *substream)
 
 	//snd_printd( "snd_msnd_playback_open()\n");
 
-	Dpcm = dpcm = snd_magic_kcalloc( snd_msndpinnacle_pcm_t, 0, GFP_KERNEL);
+	Dpcm = dpcm = kcalloc(1, sizeof(*dpcm), GFP_KERNEL);
 	if( dpcm == NULL)
 		return -ENOMEM;
 
@@ -1017,7 +1018,7 @@ static int snd_msnd_playback_hw_params( snd_pcm_substream_t * substream, snd_pcm
 static int snd_msnd_playback_prepare( snd_pcm_substream_t * substream)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_msndpinnacle_pcm_t*	dpcm = snd_magic_cast( snd_msndpinnacle_pcm_t, runtime->private_data, return -ENXIO);
+	snd_msndpinnacle_pcm_t*	dpcm = runtime->private_data;
 	//snd_printd( "snd_msnd_playback_prepare()\n");
 
 	dpcm->pcm_size = snd_pcm_lib_buffer_bytes( substream);
@@ -1064,7 +1065,7 @@ static snd_pcm_uframes_t snd_msnd_playback_pointer( snd_pcm_substream_t * substr
 {
 	snd_pcm_runtime_t*	runtime =	substream->runtime;
 	//snd_printd( "snd_msnd_playback_pointer()\n");
-	//snd_msndpinnacle_pcm_t*	dpcm =		snd_magic_cast( snd_msndpinnacle_pcm_t, runtime->private_data, return -ENXIO);
+	//snd_msndpinnacle_pcm_t*	dpcm =		runtime->private_data;
 
 	/*	with the following mess i tried to generate a more precise pointer position
 	 *	it generated errors with the alsa framework i could not resolve.....
@@ -1134,7 +1135,7 @@ static int snd_msnd_capture_open(snd_pcm_substream_t * substream)
 	snd_msndpinnacle_pcm_t*	dpcm;
 	//snd_printd( "snd_msnd_capture_open()\n");
 
-	dpcm = snd_magic_kcalloc( snd_msndpinnacle_pcm_t, 0, GFP_KERNEL);
+	dpcm = kcalloc(1, sizeof(*dpcm), GFP_KERNEL);
 	if( dpcm == NULL)
 		return -ENOMEM;
 
@@ -1166,7 +1167,7 @@ static int snd_msnd_capture_close( snd_pcm_substream_t * substream)
 static int snd_msnd_capture_prepare( snd_pcm_substream_t * substream)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_msndpinnacle_pcm_t*	dpcm = snd_magic_cast( snd_msndpinnacle_pcm_t, runtime->private_data, return -ENXIO);
+	snd_msndpinnacle_pcm_t*	dpcm = runtime->private_data;
 	//snd_printd( "snd_msnd_capture_prepare()\n");
 
 	dpcm->pcm_size = snd_pcm_lib_buffer_bytes( substream);
@@ -1201,7 +1202,7 @@ static int snd_msnd_capture_trigger( snd_pcm_substream_t * substream, int cmd)
 static snd_pcm_uframes_t snd_msnd_capture_pointer( snd_pcm_substream_t * substream)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-//	snd_card_dummy_pcm_t *dpcm = snd_magic_cast(snd_card_dummy_pcm_t, runtime->private_data, return -ENXIO);
+//	snd_card_dummy_pcm_t *dpcm = runtime->private_data;
 
 	return bytes_to_frames( runtime, dev.captureDMAPos);
 }
