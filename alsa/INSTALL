@@ -689,7 +689,6 @@ Module parameters
     Module for AC'97 motherboards based on VIA 82C686A/686B (south) bridge.
 
     snd_mpu_port         - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
-    snd_joystick	 - 1 = enable, otherwise obtain BIOS setup
     snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
@@ -726,7 +725,6 @@ Module parameters
     snd_mpu_port          - 0x300,0x330,0x332,0x334, -1 (disable) by default
     snd_mpu_irq           - 5,7,9,10,11, -1 (disable) by default
     snd_fm_port           - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
-    snd_joystick_port     - 0x201,0x202,0x204,0x205, -1 (disable) by default
 
     Module supports autoprobe and multiple chips (max 8).
     
