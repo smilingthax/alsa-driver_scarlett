@@ -150,6 +150,10 @@ typedef struct _snd_ad1848 ad1848_t;
 /* exported functions */
 
 void snd_ad1848_out(ad1848_t *chip, unsigned char reg, unsigned char value);
+void snd_ad1848_dout(ad1848_t *chip, unsigned char reg, unsigned char value);
+unsigned char snd_ad1848_in(ad1848_t *chip, unsigned char reg);
+void snd_ad1848_mce_up(ad1848_t *chip);
+void snd_ad1848_mce_down(ad1848_t *chip);
 
 int snd_ad1848_create(snd_card_t * card,
 		      unsigned long port,
