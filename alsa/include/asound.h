@@ -1023,7 +1023,7 @@ struct snd_oss_mixer_info_obsolete {
  *                                                                           *
  *****************************************************************************/
 
-#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(1, 1, 0)
+#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
 
 #define SND_PCM_CLASS_GENERIC		0x0000	/* standard mono or stereo device */
 #define SND_PCM_SCLASS_GENERIC_MIX	0x0001	/* mono or stereo subdevices are mixed together */
@@ -1395,10 +1395,18 @@ typedef struct snd_pcm_channel_setup {
 	int channel;			/* channel information */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* real used format */
+	int msbits_per_sample;		/* used most significant bits per sample */
 	snd_pcm_digital_t digital;	/* digital setup */
+	int start_mode;			/* start mode - SND_PCM_START_XXXX */
+	int stop_mode;			/* stop mode - SND_PCM_STOP_XXXX */
+	int time: 1,			/* timestamp (gettimeofday) switch */
+	    ust_time: 1;		/* UST time switch */
+	snd_pcm_sync_t sync;		/* sync group */
 	union {
 		struct {
 			int queue_size;	/* real queue size in bytes */
+			int fill;	/* fill mode - SND_PCM_FILL_XXXX */
+			int max_fill;	/* maximum silence fill in bytes */
 		} stream;
 		struct {
 			int frag_size;	/* current fragment size in bytes */
@@ -1408,9 +1416,7 @@ typedef struct snd_pcm_channel_setup {
 			int frags_max;  /* playback: maximum number of fragments in queue for wakeup */
 		} block;
 	} buf;
-	short msbits_per_sample;	/* used most significant bits per sample */
-	short pad1;			/* reserved - must be filled with zero */
-	char reserved[60];		/* must be filled with zero */
+	char reserved[64];		/* must be filled with zero */
 } snd_pcm_channel_setup_t;
 
 typedef struct snd_pcm_voice_setup {
@@ -1701,7 +1707,7 @@ struct snd_pcm_buffer_description {
  *  Raw MIDI section - /dev/snd/midi??
  */
 
-#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
 #define SND_RAWMIDI_CHANNEL_OUTPUT	0
 #define SND_RAWMIDI_CHANNEL_INPUT	1
@@ -1730,6 +1736,9 @@ typedef struct snd_rawmidi_params {
 typedef struct snd_rawmidi_status {
 	int channel;		/* Requested channel */
 	int size;		/* I/O real queue size */
+	int min;		/* I minimum number of bytes fragments for wakeup */
+	int max;		/* O maximum number of bytes in queue for wakeup */
+	int room;		/* minumum number of bytes writeable for wakeup */
 	int count;		/* I/O number of bytes readable/writeable without blocking */
 	int queue;		/* O number of bytes in queue */
 	int pad;		/* O not used yet */
@@ -1749,7 +1758,7 @@ typedef struct snd_rawmidi_status {
  *  Timer section - /dev/snd/timer
  */
 
-#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
 #define SND_TIMER_TYPE_GLOBAL		(0<<28)
 #define SND_TIMER_TYPE_SOUNDCARD	(1<<28)
@@ -1830,6 +1839,8 @@ typedef struct snd_timer_status {
 	unsigned long resolution;	/* current resolution */
 	unsigned long lost;		/* counter of master tick lost */
 	unsigned long overrun;		/* count of read queue overruns */
+	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
+	unsigned long ticks;		/* requested resolution in ticks */
 	int queue_size;			/* total queue size */
 	int queue;			/* used queue size */
 	char reserved[64];
