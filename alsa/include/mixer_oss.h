@@ -24,17 +24,17 @@
 
 #ifdef CONFIG_SND_OSSEMUL
 
-typedef struct snd_stru_oss_mixer_channel snd_mixer_oss_channel_t;
+typedef struct snd_stru_oss_mixer_slot snd_mixer_oss_slot_t;
 typedef struct snd_stru_oss_file snd_mixer_oss_file_t;
 
-typedef int (*snd_mixer_oss_get_volume_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_channel_t *chn, int *left, int *right);
-typedef int (*snd_mixer_oss_put_volume_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_channel_t *chn, int left, int right);
-typedef int (*snd_mixer_oss_get_recsrc_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_channel_t *chn, int *active);
-typedef int (*snd_mixer_oss_put_recsrc_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_channel_t *chn, int active);
+typedef int (*snd_mixer_oss_get_volume_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_slot_t *chn, int *left, int *right);
+typedef int (*snd_mixer_oss_put_volume_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_slot_t *chn, int left, int right);
+typedef int (*snd_mixer_oss_get_recsrc_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_slot_t *chn, int *active);
+typedef int (*snd_mixer_oss_put_recsrc_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_slot_t *chn, int active);
 typedef int (*snd_mixer_oss_get_recsrce_t)(snd_mixer_oss_file_t *fmixer, int *active_index);
 typedef int (*snd_mixer_oss_put_recsrce_t)(snd_mixer_oss_file_t *fmixer, int active_index);
 
-struct snd_stru_oss_mixer_channel {
+struct snd_stru_oss_mixer_slot {
 	int number;
 	int stereo: 1;
 	snd_mixer_oss_get_volume_t get_volume;
@@ -43,14 +43,14 @@ struct snd_stru_oss_mixer_channel {
 	snd_mixer_oss_put_recsrc_t put_recsrc;
 	unsigned long private_value;
 	void *private_data;
-	void (*private_free)(snd_mixer_oss_channel_t *channel);
+	void (*private_free)(snd_mixer_oss_slot_t *slot);
 };
 
 struct snd_stru_oss_mixer {
 	snd_card_t *card;
 	char id[16];
 	char name[32];
-	snd_mixer_oss_channel_t channels[32];	/* OSS mixer channels */
+	snd_mixer_oss_slot_t slots[32];		/* OSS mixer slots */
 	unsigned int mask_recsrc;		/* exclusive recsrc mask */
 	snd_mixer_oss_get_recsrce_t get_recsrc;
 	snd_mixer_oss_put_recsrce_t put_recsrc;
