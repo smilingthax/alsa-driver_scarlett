@@ -64,6 +64,7 @@ typedef struct _snd_pcm_ops {
 	int (*ioctl)(snd_pcm_substream_t * substream,
 		     unsigned int cmd, void *arg);
 	int (*hw_params)(snd_pcm_substream_t * substream, snd_pcm_hw_params_t * params);
+	int (*hw_free)(snd_pcm_substream_t *substream);
 	int (*prepare)(snd_pcm_substream_t * substream);
 	int (*trigger)(snd_pcm_substream_t * substream, int cmd);
 	snd_pcm_uframes_t (*pointer)(snd_pcm_substream_t * substream);
