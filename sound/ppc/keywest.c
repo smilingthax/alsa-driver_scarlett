@@ -56,7 +56,7 @@ static int keywest_attach_adapter(struct i2c_adapter *adapter)
 		return -EINVAL;
 
 	if (strncmp(adapter->name, "mac-io", 6))
-		return 0;
+		return 0; /* ignored */
 
 	new_client = kmalloc(sizeof(struct i2c_client), GFP_KERNEL);
 	if (! new_client)
@@ -119,10 +119,11 @@ int __init snd_pmac_keywest_init(pmac_keywest_t *i2c)
 	if (keywest_ctx)
 		return -EBUSY;
 
+	keywest_ctx = i2c;
+
 	if ((err = i2c_add_driver(&keywest_driver))) {
 		snd_printk(KERN_ERR "cannot register keywest i2c driver\n");
 		return err;
 	}
-	keywest_ctx = i2c;
 	return 0;
 }
