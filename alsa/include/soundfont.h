@@ -23,7 +23,7 @@
 #define __SOUNDFONT_H
 
 #include "sfnt_info.h"
-#include "emux_mem.h"
+#include "util_mem.h"
 
 #define SF_MAX_INSTRUMENTS	128	/* maximum instrument number */
 #define SF_MAX_PRESETS  256	/* drums are mapped from 128 to 256 */
@@ -47,7 +47,7 @@ typedef struct snd_sf_zone {
 typedef struct snd_sf_sample {
 	soundfont_sample_info_t v;
 	int counter;
-	snd_emux_memblk_t *block;	/* allocated data block */
+	snd_util_memblk_t *block;	/* allocated data block */
 	struct snd_sf_sample *next;
 } snd_sf_sample_t;
 
@@ -68,9 +68,9 @@ typedef struct snd_soundfont {
  * Type of the sample access callback
  */
 typedef int (*snd_sf_sample_new_t)(void *private_data, snd_sf_sample_t *sp,
-				   snd_emux_memhdr_t *hdr, const void *buf, long count);
+				   snd_util_memhdr_t *hdr, const void *buf, long count);
 typedef int (*snd_sf_sample_free_t)(void *private_data, snd_sf_sample_t *sp,
-				    snd_emux_memhdr_t *hdr);
+				    snd_util_memhdr_t *hdr);
 typedef void (*snd_sf_sample_reset_t)(void *private);
 
 typedef struct snd_sf_callback {
@@ -98,7 +98,7 @@ typedef struct snd_sf_list {
 	char sf_locked;		/* font lock flag */
 	struct semaphore presets_mutex;
 	spinlock_t lock;
-	snd_emux_memhdr_t *memhdr;
+	snd_util_memhdr_t *memhdr;
 } snd_sf_list_t;
 
 /* Prototypes for soundfont.c */
@@ -107,7 +107,7 @@ int snd_soundfont_load_guspatch(snd_sf_list_t *sflist, const char *data,
 				long count, int client);
 int snd_soundfont_close_check(snd_sf_list_t *sflist, int client);
 
-snd_sf_list_t *snd_sf_new(snd_sf_callback_t *callback, snd_emux_memhdr_t *hdr);
+snd_sf_list_t *snd_sf_new(snd_sf_callback_t *callback, snd_util_memhdr_t *hdr);
 void snd_sf_free(snd_sf_list_t *sflist);
 
 int snd_soundfont_remove_samples(snd_sf_list_t *sflist);

@@ -168,7 +168,7 @@ case "$1" in
   emu10k1|live)
     basic
     insert snd-ac97-codec.o
-    insert snd-emux-mem.o
+    insert snd-util-mem.o
     insert snd-emu10k1.o
     insert snd-card-emu10k1.o
     restore emu10k1.conf
@@ -266,6 +266,7 @@ case "$1" in
     basic
     insert snd-mpu401-uart.o 
     insert snd-ac97-codec.o
+    insert snd-util-mem.o
     insert snd-trident.o
     insert snd-card-trident.o
     insert snd-synth-trident.o

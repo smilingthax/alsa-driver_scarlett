@@ -486,67 +486,80 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 /* --- */
 
 #ifdef NEW_MACRO_VARARGS
-#define snd_printk(...) printk( "snd: " __VA_ARGS__ )
-#define snd_fprintk(...) printk( "snd: " __FILE__ ": " __VA_ARGS__ )
-#else
-#define snd_printk(args...) printk( "snd: " ##args )
-#define snd_fprintk(args...) printk( "snd: " __FILE__ ": " ##args )
-#endif
+
+/*
+ *  VARARGS section
+ */
+
+#define snd_printk(...) printk("snd: " __VA_ARGS__)
+#define snd_fprintk(...) printk("snd: " __FILE__ ": " __VA_ARGS__)
 
 #ifdef CONFIG_SND_DEBUG
-#ifdef NEW_MACRO_VARARGS
-#define snd_printd(...) snd_printk(__VA_ARGS__)
-#else
-#define snd_printd(args...) snd_printk(##args)
-#endif
 
-#ifdef NEW_MACRO_VARARGS
+#define snd_printd(...) snd_printk(__VA_ARGS__)
 #define snd_debug_check(expr, ...) do {\
 	if (expr) {\
 		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
 		__VA_ARGS__;\
 	}\
 } while (0)
+#define snd_error_check(expr, ...) do {\
+	if (expr) {\
+		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		__VA_ARGS__;\
+	}\
+} while (0)
+
+#else /* !CONFIG_SND_DEBUG */
+
+#define snd_printd(...)	/* nothing */
+#define snd_debug_check(expr, ...)	/* nothing */
+#define snd_error_check(expr, ...) do { if (expr) {__VA_ARGS__;} } while (0)
+
+#endif /* CONFIG_SND_DEBUG */
+
+#ifdef CONFIG_SND_DEBUG_DETECT
+#define snd_printdd(...) snd_printk(__VA_ARGS__)
 #else
+#define snd_printdd(...) /* nothing */
+#endif
+
+#else /* !NEW_MACRO_VARARGS */
+
+/*
+ *  Old args section...
+ */
+
+#define snd_printk(args...) printk("snd: " ##args)
+#define snd_fprintk(args...) printk("snd: " __FILE__ ": " ##args)
+
+#ifdef CONFIG_SND_DEBUG
+
+#define snd_printd(args...) snd_printk(##args)
 #define snd_debug_check(expr, args...) do {\
 	if (expr) {\
 		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
 		##args;\
 	}\
 } while (0)
-#endif
-
-#define snd_error_check(expr, action) do {\
+#define snd_error_check(expr, args...) do {\
 	if (expr) {\
 		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
-		action;\
+		##args;\
 	}\
 } while (0)
-#else
-#define snd_printd(...)	/* nothing */
-#define snd_debug_check(expr, ...)	/* nothing */
-#define snd_error_check(expr, action) do {\
-	if (expr) {\
-		action;\
-	}\
-} while (0)
-#endif
+
+#else /* !CONFIG_SND_DEBUG */
+
+#define snd_printd(args...) /* nothing */
+#define snd_debug_check(expr, args...)	/* nothing */
+#define snd_error_check(expr, args...) do { if (expr) {##args;} } while (0)
+
+#endif /* CONFIG_SND_DEBUG */
+
+#endif /* NEW_MACRO_VARARGS */
 
 #define snd_BUG() snd_debug_check(0, )
-
-#ifdef CONFIG_SND_DEBUG_DETECT
-#ifdef NEW_MACRO_VARARGS
-#define snd_printdd(...) snd_printk(__VA_ARGS__)
-#else
-#define snd_printdd(args...) snd_printk(##args)
-#endif
-#else
-#ifdef NEW_MACRO_VARARGS
-#define snd_printdd(...)	/* nothing */
-#else
-#define snd_printdd(args...)	/* nothing */
-#endif
-#endif
 
 #define snd_alloc_check(function, args)  ({\
 	void *__ptr;\

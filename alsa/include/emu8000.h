@@ -65,7 +65,7 @@ typedef struct snd_emu8000 {
 	int bass_level;
 	int treble_level;
 
-	snd_emux_memhdr_t *memhdr;
+	snd_util_memhdr_t *memhdr;
 
 	spinlock_t control_lock;
 	snd_kcontrol_t * control_bass;

@@ -26,7 +26,7 @@
 #include "pcm.h"
 #include "rawmidi.h"
 #include "ac97_codec.h"
-#include "emux_mem.h"
+#include "util_mem.h"
 
 #ifndef PCI_VENDOR_ID_CREATIVE
 #define PCI_VENDOR_ID_CREATIVE		0x1102
@@ -606,7 +606,7 @@ struct snd_stru_emu10k1_pcm {
 	emu10k1_voice_t *voices[2];
 	emu10k1_voice_t *extra;
 	int running;
-	snd_emux_memblk_t *memblk;
+	snd_util_memblk_t *memblk;
 	unsigned int start_addr;
 	unsigned int capture_inte;	/* interrupt enable mask */
 	unsigned int capture_ba_reg;	/* buffer address register */
@@ -636,8 +636,8 @@ struct snd_stru_emu10k1 {
 
 	void *silent_page;	/* silent page */
 	volatile unsigned int *ptb_pages; /* page table pages */
-	snd_emux_memhdr_t *memhdr;	/* page allocation list */
-	snd_emux_memblk_t *reserved_page;	/* reserved page */
+	snd_util_memhdr_t *memhdr;	/* page allocation list */
+	snd_util_memblk_t *reserved_page;	/* reserved page */
 
 	ac97_t *ac97;
 
@@ -717,12 +717,12 @@ unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
-snd_emux_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, void *pages, unsigned long size);
-int snd_emu10k1_free_pages(emu10k1_t *emu, snd_emux_memblk_t *blk);
-snd_emux_memblk_t *snd_emu10k1_synth_alloc(emu10k1_t *emu, unsigned int size);
-int snd_emu10k1_synth_free(emu10k1_t *emu, snd_emux_memblk_t *blk);
-int snd_emu10k1_synth_bzero(emu10k1_t *emu, snd_emux_memblk_t *blk, int offset, int size);
-int snd_emu10k1_synth_copy_from_user(emu10k1_t *emu, snd_emux_memblk_t *blk, int offset, const char *data, int size);
+snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, void *pages, unsigned long size);
+int snd_emu10k1_free_pages(emu10k1_t *emu, snd_util_memblk_t *blk);
+snd_util_memblk_t *snd_emu10k1_synth_alloc(emu10k1_t *emu, unsigned int size);
+int snd_emu10k1_synth_free(emu10k1_t *emu, snd_util_memblk_t *blk);
+int snd_emu10k1_synth_bzero(emu10k1_t *emu, snd_util_memblk_t *blk, int offset, int size);
+int snd_emu10k1_synth_copy_from_user(emu10k1_t *emu, snd_util_memblk_t *blk, int offset, const char *data, int size);
 
 /* voice allocation */
 int snd_emu10k1_voice_alloc(emu10k1_t *emu, emu10k1_voice_type_t type, int pair, emu10k1_voice_t **rvoice);

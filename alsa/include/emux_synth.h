@@ -61,8 +61,8 @@ typedef struct snd_emux_operators {
 	/* the first parameters are snd_emux_t */
 	void (*use_inc)(void *emu);
 	void (*use_dec)(void *emu);
-	int (*sample_new)(void *emu, snd_sf_sample_t *sp, snd_emux_memhdr_t *hdr, const void *data, long count);
-	int (*sample_free)(void *emu, snd_sf_sample_t *sp, snd_emux_memhdr_t *hdr);
+	int (*sample_new)(void *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr, const void *data, long count);
+	int (*sample_free)(void *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr);
 	void (*sample_reset)(void *emu);
 	int (*load_fx)(void *emu, int type, int arg, const void *data, long count);
 	void (*sysex)(void *emu, char *buf, int len, int parsed, snd_midi_channel_set_t *chset);
@@ -117,7 +117,7 @@ struct snd_emux {
 	char *name;	/* name of the device (internal) */
 	snd_virmidi_dev_t **vmidi;
 
-	snd_emux_memhdr_t *memhdr;	/* memory chunk information */
+	snd_util_memhdr_t *memhdr;	/* memory chunk information */
 
 #ifdef CONFIG_PROC_FS
 	snd_info_entry_t *proc;

@@ -28,6 +28,7 @@
 #include "ac97_codec.h"
 #include "seq_midi_emul.h"
 #include "seq_device.h"
+#include "util_mem.h"
 #ifndef ALSA_BUILD
 //#include <linux/ainstr_iw.h>
 //#include <linux/ainstr_gf1.h>
@@ -79,6 +80,11 @@
 #define SND_TRIDENT_VOICE_TYPE_MIDI		2
 
 #define SND_TRIDENT_VFLG_RUNNING		(1<<0)
+
+/* TLB code constants */
+#define SND_TRIDENT_PAGE_SIZE			4096
+#define SND_TRIDENT_PAGE_SHIFT			12
+#define SND_TRIDENT_MAX_PAGES			4096
 
 /*
  * Direct registers
@@ -188,6 +194,9 @@ enum miscint_bits {
 #define NX_SPESO                    0x2c
 #define NX_SPCSTATUS                0x64
 
+// NX Specific Registers
+#define NX_TLBC                     0x6c
+
 // Channel Registers
 
 #define CH_DX_CSO_ALPHA_FMS         0xe0
@@ -200,6 +209,8 @@ enum miscint_bits {
 
 #define CH_LBA                      0xe4
 #define CH_GVSEL_PAN_VOL_CTRL_EC    0xf0
+#define CH_EBUF1                    0xf4
+#define CH_EBUF2                    0xf8
 
 // AC-97 Registers
 
@@ -265,6 +276,17 @@ typedef struct {
 	int midi_has_voices: 1;
 } snd_trident_port_t;
 
+typedef struct snd_trident_memblk_arg {
+	short first_page, last_page;
+} snd_trident_memblk_arg_t;
+
+typedef struct {
+	unsigned int * entries;		/* 16k-aligned TLB table */
+	void * buffer;			/* pointer for table calloc */
+	snd_util_memhdr_t * memhdr;	/* page allocation list */
+	void * silent_page;		/* silent page */
+} snd_trident_tlb_t;
+
 struct snd_trident_stru_voice {
 	unsigned int number;
 	int use: 1,
@@ -307,6 +329,7 @@ struct snd_trident_stru_voice {
 	int csoint;             /* CSO value for next expected interrupt */
 
 	int foldback_chan;	/* foldback subdevice number */
+	snd_util_memblk_t *memblk;	/* memory block if TLB enabled */
 
 	/* --- */
 
@@ -356,6 +379,8 @@ struct snd_stru_trident {
 
         LPCHANNELCONTROL ChRegs;
         int ChanDwordCount;
+
+        snd_trident_tlb_t tlb;	/* TLB entries for NX cards */
 
 	unsigned char spdif_ctrl;
 	unsigned char spdif_pcm_ctrl;
@@ -420,5 +445,14 @@ void snd_trident_stop_voice(trident_t * trident, unsigned int HwChannel);
 void snd_trident_enable_voice_irq(trident_t * trident, unsigned int HwChannel);
 void snd_trident_disable_voice_irq(trident_t * trident, unsigned int HwChannel);
 void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigned short v_max);
+
+
+/* TLB memory allocation */
+snd_util_memblk_t *snd_trident_alloc_pages(trident_t *trident, void *pages, unsigned long size);
+int snd_trident_free_pages(trident_t *trident, snd_util_memblk_t *blk);
+snd_util_memblk_t *snd_trident_synth_alloc(trident_t *trident, unsigned int size);
+int snd_trident_synth_free(trident_t *trident, snd_util_memblk_t *blk);
+int snd_trident_synth_bzero(trident_t *trident, snd_util_memblk_t *blk, int offset, int size);
+int snd_trident_synth_copy_from_user(trident_t *trident, snd_util_memblk_t *blk, int offset, const char *data, int size);
 
 #endif				/* __TRID4DWAVE_H */

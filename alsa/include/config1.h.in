@@ -3,7 +3,6 @@
 /* Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no> */
 
 #undef CONFIG_SND
-#undef CONFIG_SND_MIXER
 #undef CONFIG_SND_RAWMIDI
 #undef CONFIG_SND_TIMER
 #undef CONFIG_SND_HWDEP
