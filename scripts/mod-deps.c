@@ -726,7 +726,7 @@ static void output_makefile1(const char *dir, int all)
 // Output in Makefile.in format
 static void output_makefile(const char *dir, int all)
 {
-	printf("# Module Dependency\n");
+	printf("# Toplevel Module Dependency\n");
 	clear_printflags();
 	output_makefile1(dir, all);
 }
