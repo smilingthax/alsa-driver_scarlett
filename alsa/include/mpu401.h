@@ -40,14 +40,19 @@
 #define MPU401_HW_YMFPCI		14	/* YMF DS-XG PCI */
 #define MPU401_HW_CMIPCI		15	/* CMIPCI MPU-401 UART */
 
-#define MPU401_MODE_INPUT		(1<<0)
-#define MPU401_MODE_OUTPUT		(1<<1)
-#define MPU401_MODE_INPUT_TRIGGER	(1<<2)
-#define MPU401_MODE_OUTPUT_TRIGGER	(1<<3)
-#define MPU401_MODE_INPUT_TIMER		(1<<4)
-#define MPU401_MODE_OUTPUT_TIMER	(1<<5)
-#define MPU401_MODE_TIMER		((1<<4)|(1<<5))
-#define MPU401_MODE_RX_LOOP		(1<<6)
+#define MPU401_MODE_BIT_INPUT		0
+#define MPU401_MODE_BIT_OUTPUT		1
+#define MPU401_MODE_BIT_INPUT_TRIGGER	2
+#define MPU401_MODE_BIT_OUTPUT_TRIGGER	3
+#define MPU401_MODE_BIT_RX_LOOP		4
+
+#define MPU401_MODE_INPUT		(1<<MPU401_MODE_BIT_INPUT)
+#define MPU401_MODE_OUTPUT		(1<<MPU401_MODE_BIT_OUTPUT)
+#define MPU401_MODE_INPUT_TRIGGER	(1<<MPU401_MODE_BIT_INPUT_TRIGGER)
+#define MPU401_MODE_OUTPUT_TRIGGER	(1<<MPU401_MODE_BIT_OUTPUT_TRIGGER)
+
+#define MPU401_MODE_INPUT_TIMER		(1<<0)
+#define MPU401_MODE_OUTPUT_TIMER	(1<<1)
 
 typedef struct snd_stru_mpu401 mpu401_t;
 
@@ -60,6 +65,7 @@ struct snd_stru_mpu401 {
 	int irq_flags;
 
 	unsigned int mode;		/* MPU401_MODE_XXXX */
+	int timer_invoked;
 
 	void (*open_input) (mpu401_t * mpu);
 	void (*close_input) (mpu401_t * mpu);
