@@ -115,7 +115,7 @@ static void pxa2xx_ac97_reset(ac97_t *ac97)
 	udelay(50);
 #else
 	GCR = GCR_COLD_RST;
-	GCR |= GCR_PRIRDY_IEN|GCR_SECRDY_IEN;*/
+	GCR |= GCR_PRIRDY_IEN|GCR_SECRDY_IEN;
 	wait_event_timeout(gsr_wq, gsr_bits & (GSR_PCR | GSR_SCR), 1);
 #endif
 
