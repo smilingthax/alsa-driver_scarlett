@@ -188,7 +188,6 @@ struct _snd_via686a {
 	unsigned int ac97_secondary;	/* secondary AC'97 codec is present */
 
 	spinlock_t reg_lock;
-	spinlock_t ac97_lock;
 	snd_info_entry_t *proc_entry;
 
 	void *tables;
@@ -267,10 +266,10 @@ static void snd_via686a_codec_write(ac97_t *ac97,
 	xval <<= VIA_REG_AC97_CODEC_ID_SHIFT;
 	xval |= reg << VIA_REG_AC97_CMD_SHIFT;
 	xval |= val << VIA_REG_AC97_DATA_SHIFT;
-	spin_lock(&chip->ac97_lock);
+	spin_lock(&chip->reg_lock);
 	snd_via686a_codec_xwrite(chip, xval);
 	snd_via686a_codec_ready(chip, ac97->num);
-	spin_unlock(&chip->ac97_lock);
+	spin_unlock(&chip->reg_lock);
 }
 
 static unsigned short snd_via686a_codec_read(ac97_t *ac97, unsigned short reg)
@@ -284,10 +283,10 @@ static unsigned short snd_via686a_codec_read(ac97_t *ac97, unsigned short reg)
 	xval = (!ac97->num ? VIA_REG_AC97_PRIMARY_VALID : VIA_REG_AC97_SECONDARY_VALID);
 	xval |= VIA_REG_AC97_READ;
 	xval |= reg << VIA_REG_AC97_CMD_SHIFT;
-	spin_lock(&chip->ac97_lock);
+	spin_lock(&chip->reg_lock);
       	while (1) {
       		if (again++ > 3) {
-		        spin_unlock(&chip->ac97_lock);
+		        spin_unlock(&chip->reg_lock);
 		      	return 0xffff;
 		}
 		snd_via686a_codec_xwrite(chip, xval);
@@ -299,7 +298,7 @@ static unsigned short snd_via686a_codec_read(ac97_t *ac97, unsigned short reg)
 			break;
 		}
 	}
-	spin_unlock(&chip->ac97_lock);
+	spin_unlock(&chip->reg_lock);
 	return val & 0xffff;
 }
 
@@ -1041,7 +1040,6 @@ static int __devinit snd_via686a_create(snd_card_t * card,
 	chip->old_legacy_cfg = old_legacy_cfg;
 
 	spin_lock_init(&chip->reg_lock);
-	spin_lock_init(&chip->ac97_lock);
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;
