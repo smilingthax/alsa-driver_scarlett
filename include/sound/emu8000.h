@@ -36,6 +36,8 @@
 #define EMU8000_RAM_READ   0
 #define EMU8000_RAM_WRITE  1
 #define EMU8000_RAM_CLOSE  2
+#define EMU8000_RAM_MODE_MASK	0x03
+#define EMU8000_RAM_RIGHT	0x10	/* use 'right' DMA channel */
 
 enum {
 	EMU8000_CONTROL_BASS = 0,
