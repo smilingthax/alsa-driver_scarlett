@@ -99,13 +99,6 @@ static int snd_us428_card_used[SNDRV_CARDS];
 static void snd_us428_usb_disconnect(struct usb_device* usb_device, void* ptr);
 static void snd_us428_card_private_free(snd_card_t *card);
 
-struct us428_control{
-	unsigned short TransferBuLe;
-	unsigned char  TransferBuffer[16];
-	unsigned char  Request;
-	unsigned short Value;
-};
-
 #ifdef CONFIG_SND_DEBUG
 /* 
  * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
