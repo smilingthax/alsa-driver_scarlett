@@ -84,6 +84,7 @@
 /* TLB code constants */
 #define SND_TRIDENT_PAGE_SIZE			4096
 #define SND_TRIDENT_PAGE_SHIFT			12
+#define SND_TRIDENT_PAGE_MASK			((1<<SND_TRIDENT_PAGE_SHIFT)-1)
 #define SND_TRIDENT_MAX_PAGES			4096
 
 /*
@@ -244,6 +245,8 @@ typedef struct snd_trident_memblk_arg {
 
 typedef struct {
 	unsigned int * entries;		/* 16k-aligned TLB table */
+	dma_addr_t entries_dmaaddr;	/* 16k-aligned PCI address to TLB table */
+	unsigned long * shadow_entries;	/* shadow entries with virtual addresses */
 	void * buffer;			/* pointer for table calloc */
 	dma_addr_t buffer_dmaaddr;	/* not accessible PCI BUS physical address */
 	snd_util_memhdr_t * memhdr;	/* page allocation list */
@@ -406,7 +409,7 @@ void snd_trident_write_voice_regs(trident_t * trident, snd_trident_voice_t *voic
 void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigned short v_max);
 
 /* TLB memory allocation */
-snd_util_memblk_t *snd_trident_alloc_pages(trident_t *trident, void *pages, unsigned long size);
+snd_util_memblk_t *snd_trident_alloc_pages(trident_t *trident, void *pages, dma_addr_t addr, unsigned long size);
 int snd_trident_free_pages(trident_t *trident, snd_util_memblk_t *blk);
 snd_util_memblk_t *snd_trident_synth_alloc(trident_t *trident, unsigned int size);
 int snd_trident_synth_free(trident_t *trident, snd_util_memblk_t *blk);
