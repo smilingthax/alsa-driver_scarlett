@@ -264,7 +264,7 @@ typedef struct {
 
 typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
 
-	/* timer broadcast */
+	/* timer control */
 typedef struct {
 	snd_seq_addr_t addr;	/* affected queue and caller client/port */
 	signed int value;	/* affected value (e.g. tempo) */
