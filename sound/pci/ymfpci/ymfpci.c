@@ -127,7 +127,7 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 		if (snd_mpu_port[dev] >= 0) {
 			legacy_ctrl |= 8;
 			pci_write_config_word(pci, PCIR_DSXG_MPU401BASE, snd_mpu_port[dev]);
-			snd_printd("MPU401 supported on 0x%lx\n", snd_mpu_port[dev]);
+			//snd_printd("MPU401 supported on 0x%lx\n", snd_mpu_port[dev]);
 		}
 	} else {
 		switch (snd_fm_port[dev]) {
@@ -151,7 +151,7 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 		default: snd_mpu_port[dev] = -1; break;
 		}
 		if (snd_mpu_port[dev] > 0 && check_region(snd_mpu_port[dev], 2) == 0) {
-			snd_printd("MPU401 supported on 0x%lx\n", snd_mpu_port[dev]);
+			//snd_printd("MPU401 supported on 0x%lx\n", snd_mpu_port[dev]);
 			legacy_ctrl |= 8;
 		} else {
 			legacy_ctrl2 &= ~(3 << 4);
