@@ -467,7 +467,7 @@ Module parameters
   Module snd-card-cs461x.o
   ------------------------
 
-    Module for PCI soundcards based on CS4610/CS4612/CS4615/CS4680.
+    Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4280.
 
     snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
     snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
