@@ -211,7 +211,7 @@ dnl kernel_compiler="gcc 2.95.3 20010315 (release)"
 dnl my_compiler="2.95.3"
 dnl
 
-AC_DEFUN(CHECK_COMPILER, [
+AC_DEFUN([CHECK_COMPILER], [
   typevar=$2
   versionvar=$3
   ac_compiler_type=""
@@ -291,7 +291,7 @@ fi
 fi
 dnl compiler version check
 
-AC_DEFUN(CHECK_KERNEL_HEADER, [
+AC_DEFUN([CHECK_KERNEL_HEADER], [
   AC_MSG_CHECKING(for kernel $1)
   if test -f "$CONFIG_SND_KERNELDIR/include/$1"; then
     AC_MSG_RESULT("yes")
@@ -317,7 +317,7 @@ AC_DEFUN(CHECK_KERNEL_HEADER, [
   fi
 ])
 
-AC_DEFUN(MODIFY_KERNEL_HEADER, [
+AC_DEFUN([MODIFY_KERNEL_HEADER], [
   AC_MSG_CHECKING(to modify of kernel $1)
   if grep $2 "$CONFIG_SND_KERNELDIR/include/$1" > /dev/null 2>&1; then
     AC_MSG_RESULT("no")
@@ -337,7 +337,7 @@ AC_DEFUN(MODIFY_KERNEL_HEADER, [
 ])
 
 dnl Check kernel configurations
-AC_DEFUN(CHECK_KERNEL_CONFIG, [
+AC_DEFUN([CHECK_KERNEL_CONFIG], [
   boolvar=$1
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
