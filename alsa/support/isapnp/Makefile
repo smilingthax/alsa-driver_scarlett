@@ -15,10 +15,6 @@ export-objs     += isapnp.o
 snd-isapnp-objs := isapnp.o isapnp_proc.o isapnp_quirks.o
 
 # Toplevel Module Dependency
-ifndef CONFIG_ISAPNP_KERNEL
-ifeq (y,$(CONFIG_ISAPNP))
-obj-m += snd-isapnp.o
-endif
-endif
+obj-m := snd-isapnp.o
 
 include $(TOPDIR)/Rules.make

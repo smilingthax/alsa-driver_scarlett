@@ -15,10 +15,6 @@ export-objs  += pnp.o
 snd-pnp-objs := pnp.o
 
 # Toplevel Module Dependency
-ifndef CONFIG_PNP_KERNEL
-ifeq (y,$(CONFIG_PNP))
-obj-m += snd-pnp.o
-endif
-endif
+obj-m := snd-pnp.o
 
 include $(TOPDIR)/Rules.make
