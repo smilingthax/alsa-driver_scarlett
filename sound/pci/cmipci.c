@@ -2678,7 +2678,7 @@ static int __devinit snd_cmipci_probe(struct pci_dev *pci,
 		cm->iobase,
 		cm->irq);
 
-	snd_printd("%s is detected\n", card->longname);
+	//snd_printd("%s is detected\n", card->longname);
 
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
