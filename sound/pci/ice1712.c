@@ -2426,7 +2426,6 @@ static int __devinit snd_ice1712_ac97_mixer(ice1712_t * ice)
 		memset(&ac97, 0, sizeof(ac97));
 		ac97.write = snd_ice1712_pro_ac97_write;
 		ac97.read = snd_ice1712_pro_ac97_read;
-		ac97.init = snd_ice1712_ac97_init;
 		ac97.private_data = ice;
 		ac97.private_free = snd_ice1712_mixer_free_ac97;
 		if ((err = snd_ac97_mixer(ice->card, &ac97, &ice->ac97)) < 0) {
