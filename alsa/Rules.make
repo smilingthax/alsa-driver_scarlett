@@ -28,6 +28,8 @@ obj-y		+= $(extra-obj-y)
 obj-m		+= $(extra-obj-m)
 obj-n		+= $(extra-obj-n)
 
+list-multi	+= $(extra-list-multi)
+
 #
 #
 #
