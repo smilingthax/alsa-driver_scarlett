@@ -35,7 +35,7 @@
 
 #define SB_MODE8_HALT		0
 #define SB_MODE8_PLAYBACK	1
-#define SB_MODE8_RECORD		2
+#define SB_MODE8_CAPTURE		2
 
 #define SB_OPEN_PCM		1
 #define SB_OPEN_MIDI_INPUT	2
@@ -43,9 +43,9 @@
 #define SB_OPEN_MIDI_TRIGGER	8
 
 #define SB_MODE16_PLAYBACK	1
-#define SB_MODE16_RECORD	2
+#define SB_MODE16_CAPTURE	2
 #define SB_MODE16_PLAYBACK16	4
-#define SB_MODE16_RECORD16	8
+#define SB_MODE16_CAPTURE16	8
 #define SB_MODE16_RATE_LOCK_P	16
 #define SB_MODE16_RATE_LOCK_R	32
 #define SB_MODE16_RATE_LOCK	(SB_MODE16_RATE_LOCK_P|SB_MODE16_RATE_LOCK_R)
@@ -90,6 +90,10 @@ struct snd_stru_sbdsp {
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *capture_subchn1;
 
 	spinlock_t reg_lock;
 	spinlock_t open8_lock;
@@ -165,7 +169,7 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP_ESS_GET_VERSION	0xe7
 #define SB_DSP_ESS_EXTENDED	0xc6
 
-#define SB_DSP_RECORD_SOURCE    0x0c
+#define SB_DSP_CAPTURE_SOURCE    0x0c
 #define SB_DSP_MIXS_MIC0        0x00	/* same as MIC */
 #define SB_DSP_MIXS_MIC         0x01
 #define SB_DSP_MIXS_CD          0x03
