@@ -1,6 +1,6 @@
 0.1.4 -> 0.2.0
 
-* added sequencer snapshot 15 July 1998
+* added sequencer snapshot 25 August 1998
 * added timer interface
 * added kernel-side rawmidi interface
 * deadlock / oops fixes in rawmidi code
