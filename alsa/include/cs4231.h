@@ -152,7 +152,8 @@
 
 /* definitions for Extended Registers - CS4236+ */
 
-#define CS4236_REG(reg)		(((reg << 2) & 0x10) | ((reg >> 4) & 0x0f))
+#define CS4236_REG(i23val)	(((i23val << 2) & 0x10) | ((i23val >> 4) & 0x0f))
+#define CS4236_I23VAL(reg)	((((reg)&0xf) << 4) | (((reg)&0x10) >> 2) | 0x8)
 
 #define CS4236_LEFT_LINE	0x08	/* left LINE alternate volume */
 #define CS4236_RIGHT_LINE	0x18	/* right LINE alternate volume */
@@ -235,8 +236,9 @@ struct snd_stru_cs4231 {
 	snd_kmixer_t *mixer;
 	snd_timer_t *timer;
 
-	unsigned char image[32];	/* image */
-	unsigned char eimage[32];	/* extended image */
+	unsigned char image[32];	/* registers image */
+	unsigned char eimage[32];	/* extended registers image */
+	unsigned char cimage[16];	/* control registers image */
 	int mce_bit;
 	int calibrate_mute;
 	int sw_3d_bit;
@@ -317,10 +319,14 @@ struct snd_stru_cs4231 {
 	snd_kmixer_element_t *me_sw_dac2_in;
 	snd_kmixer_element_t *me_sw_dac2_out;	
 
+	struct pm_dev *pm_dev;
+
 	unsigned int (*set_playback_rate) (cs4231_t * codec, unsigned int rate);
 	unsigned int (*set_capture_rate) (cs4231_t * codec, unsigned int rate);
 	void (*set_playback_format) (cs4231_t * codec, unsigned char pdfr);
 	void (*set_capture_format) (cs4231_t * codec, unsigned char cdfr);
+	void (*suspend) (cs4231_t * codec);
+	void (*resume) (cs4231_t * codec);
 };
 
 /* exported functions */

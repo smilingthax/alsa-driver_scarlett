@@ -109,6 +109,7 @@
 #endif
 #ifdef LINUX_2_3
 #include <linux/init.h>
+#include <linux/pm.h>
 #define PCI_GET_DRIVER_DATA(pci) pci->driver_data
 #define PCI_SET_DRIVER_DATA(pci, data) pci->driver_data = data
 #endif
