@@ -14,6 +14,7 @@ L clean endianness stuff
 
 - lowlevel:
 H fix dynamic constraints for sb8, sb16, es18xx, rme9652
+M create a driver for Compaq iPAQ handheld PC (Philips UDA1341TS)
 M create an USB audio driver
 M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster xrun recovery
 L EMU10K1 - direct S/PDIF output using FX8010
