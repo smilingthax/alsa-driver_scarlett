@@ -363,6 +363,8 @@ static void snd_timer_notify1(snd_timer_instance_t *ti, enum sndrv_timer_event e
 	timer = ti->timer;
 	if (timer == NULL)
 		return;
+	if (timer->hw.flags & SNDRV_TIMER_HW_SLAVE)
+		return;
 	spin_lock_irqsave(&timer->lock, flags);
 	list_for_each(n, &ti->slave_active_head) {
 		ts = (snd_timer_instance_t *)list_entry(n, snd_timer_instance_t, active_list);
