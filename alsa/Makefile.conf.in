@@ -10,7 +10,6 @@ moddir=@moddir@
 c_opts=@c_opts@
 processor=@processor@
 msmp=@msmp@
-newkernel=@newkernel@
 CONFIG_SND_VERSION=@CONFIG_SND_VERSION@
 kaversion=@kaversion@
 kversion=@kversion@

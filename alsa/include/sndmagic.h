@@ -110,6 +110,10 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define ice1712_t_magic				0xa15a2801
 #define ad1816a_t_magic				0xa15a2901
 #define intel8x0_t_magic			0xa15a2a01
+#define es1968_t_magic				0xa15a2b01
+#define esschanp_t_magic			0xa15a2b02
+#define esschanc_t_magic			0xa15a2b03
+#define esmdma_t_magic				0xa15a2b04
 
 #else
 #define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)
