@@ -263,8 +263,8 @@ typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
 typedef struct snd_seq_event_t {
 	snd_seq_event_type type;	/* event type */
 	unsigned char flags;		/* event flags */
-	char unused1,
-	     unused2;
+	char tag;
+	char unused2;
 	
 	/* schedule time */
 	union {
@@ -358,6 +358,37 @@ typedef struct {
 	int reset_input;		/* purge read pool */ 
 	snd_seq_addr_t input_match;	/* matching client/port */
 } snd_seq_reset_pool_t;
+
+/* Remove events by specified criteria */
+typedef struct snd_seq_remove_events {
+	int tick:1; 		/* True when time is in ticks */
+	int input:1; 		/* Flush input queues */
+	int output:1; 		/* Flush output queues */
+
+	int  remove_mode;	/* Flags that determine what gets removed */
+
+	union {
+		snd_seq_tick_time_t tick;
+		snd_seq_real_time_t real;
+	} time;
+
+	snd_seq_addr_t dest;	/* Address for REMOVE_DEST */
+
+	int  type;	/* For REMOVE_EVENT_TYPE */
+	char  tag;	/* Tag for REMOVE_TAG */
+
+	int  reserved[10];	/* To allow for future binary compatibility */
+
+} snd_seq_remove_events_t;
+
+/* Flush mode flags */
+#define SND_SEQ_REMOVE_DEST	(1<<0)	/* Restrict by destination q:client:port */
+#define SND_SEQ_REMOVE_DEST_CHANNEL	(1<<1)	/* Restrict by channel */
+#define SND_SEQ_REMOVE_TIME_BEFORE	(1<<2)	/* Restrict to before time */
+#define SND_SEQ_REMOVE_TIME_AFTER	(1<<3)	/* Restrict to time or after */
+#define SND_SEQ_REMOVE_EVENT_TYPE	(1<<4)	/* Restrict to event type */
+#define SND_SEQ_REMOVE_IGNORE_OFF 	(1<<5)	/* Do not flush off events */
+#define SND_SEQ_REMOVE_TAG_MATCH 	(1<<6)	/* Restrict to events with given tag */
 
 	/* known port numbers */
 #define SND_SEQ_PORT_SYSTEM_TIMER	0
@@ -693,5 +724,6 @@ typedef struct {
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_RESET_POOL	_IOW ('S', 0x4d, snd_seq_reset_pool_t)
+#define SND_SEQ_IOCTL_REMOVE_EVENTS	_IOW ('S', 0x4e, snd_seq_remove_events_t)
 
 #endif /* __SND_ASEQUENCER_H */
