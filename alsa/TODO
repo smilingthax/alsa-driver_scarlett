@@ -6,7 +6,6 @@ M add user/kernel lock for mmap'ed control (To think)
 M loopback implementation (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
-L isapnp garbled (need rmmod and insmod)
 L timestamp for mmap'ed pos_io and status (To think)
 
 - lowlevel:
