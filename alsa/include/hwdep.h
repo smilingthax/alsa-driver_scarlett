@@ -39,6 +39,13 @@ struct snd_stru_hwdep {
 	char id[32];
 	char name[80];
 	int type;
+
+#ifdef CONFIG_SND_OSSEMUL
+	char oss_dev[32];
+	int oss_type;
+	int ossreg;
+#endif
+
 	snd_hwdep_ops_t ops;
 	wait_queue_head_t open_wait;
 	void *private_data;
