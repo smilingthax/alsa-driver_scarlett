@@ -103,6 +103,7 @@ snd-cs4231-lib snd-pcm snd-timer
 snd-cs4236-lib snd-cs4231-lib
 |snd-cs4232 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-cs4236 snd-cs4236-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-pc98-cs4232 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/es1688
 snd-es1688-lib snd-pcm
