@@ -1313,6 +1313,40 @@ if test "$CONFIG_HAVE_SNPRINTF" = "1"; then
   AC_DEFINE(CONFIG_HAVE_SNPRINTF)
 fi
 
+dnl Check for vsnprintf...
+AC_MSG_CHECKING(for vsnprintf)
+vsnprintf="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/kernel.h>
+void f(const char *fmt, ...)
+{
+  char buf[128];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+}
+],[
+  f("abcd");
+],
+    AC_MSG_RESULT("yes");vsnprintf="1",
+    AC_MSG_RESULT("no");vsnprintf="0",
+    AC_MSG_RESULT("unknown");vsnprintf="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_VSNPRINTF=$vsnprintf
+dnl AC_SUBST(CONFIG_HAVE_VSNPRINTF)
+if test "$CONFIG_HAVE_VSNPRINTF" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VSNPRINTF)
+fi
+
 dnl Check for scnprintf...
 AC_MSG_CHECKING(for scnprintf)
 scnprintf="0"
