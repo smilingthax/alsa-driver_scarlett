@@ -337,6 +337,8 @@ typedef struct {
 	unsigned int filter;		/* filter flags */
 	unsigned char multicast_filter[8]; /* multicast filter bitmap */
 	unsigned char event_filter[32];	/* event filter bitmap */
+	char group[32];			/* group name */
+	int num_ports;			/* RO: number of ports */
 	char reserved[64];		/* for future use */
 } snd_seq_client_info_t;
 
@@ -401,18 +403,26 @@ typedef struct snd_seq_remove_events {
 #define SND_SEQ_PORT_SYSTEM_ANNOUNCE	1
 
 	/* port capabilities (32 bits) */
-#define SND_SEQ_PORT_CAP_IN		(1<<0)	/* MIDI-in (read) */
-#define SND_SEQ_PORT_CAP_OUT		(1<<1)	/* MIDI-out (write) */
+#define SND_SEQ_PORT_CAP_READ		(1<<0)	/* readable from this port */
+#define SND_SEQ_PORT_CAP_WRITE		(1<<1)	/* writable to this port */
 
-#define SND_SEQ_PORT_CAP_SYNC_IN	(1<<2)
-#define SND_SEQ_PORT_CAP_SYNC_OUT	(1<<3)
+#define SND_SEQ_PORT_CAP_SYNC_READ	(1<<2)
+#define SND_SEQ_PORT_CAP_SYNC_WRITE	(1<<3)
 
 #define SND_SEQ_PORT_CAP_DUPLEX		(1<<4)
 
-#define SND_SEQ_PORT_CAP_SUBS_OUT	(1<<5)	/* allow read subscription */
-#define SND_SEQ_PORT_CAP_SUBS_IN	(1<<6)	/* allow write subscription */
-#define SND_SEQ_PORT_CAP_SUBSCRIPTION	(3<<5)	/* both in/out */
-#define SND_SEQ_PORT_CAP_NO_EXPORT_ROUTE	(1<<7)	/* routing not allowed */
+#define SND_SEQ_PORT_CAP_SUBS_READ	(1<<5)	/* allow read subscription */
+#define SND_SEQ_PORT_CAP_SUBS_WRITE	(1<<6)	/* allow write subscription */
+#define SND_SEQ_PORT_CAP_NO_EXPORT	(1<<7)	/* routing not allowed */
+
+	/* compatibility aliases */
+#define SND_SEQ_PORT_CAP_IN		SND_SEQ_PORT_CAP_READ
+#define SND_SEQ_PORT_CAP_OUT		SND_SEQ_PORT_CAP_WRITE
+#define SND_SEQ_PORT_CAP_SYNC_IN	SND_SEQ_PORT_CAP_SYNC_READ
+#define SND_SEQ_PORT_CAP_SYNC_OUT	SND_SEQ_PORT_CAP_SYNC_WRITE
+#define SND_SEQ_PORT_CAP_SUBS_IN	SND_SEQ_PORT_CAP_SUBS_READ
+#define SND_SEQ_PORT_CAP_SUBS_OUT	SND_SEQ_PORT_CAP_SUBS_WRITE
+#define SND_SEQ_PORT_CAP_SUBSCRIPTION	(SND_SEQ_PORT_CAP_SUBS_IN|SND_SEQ_PORT_CAP_SUBS_OUT)
 
 	/* port type */
 #define SND_SEQ_PORT_TYPE_SPECIFIC	(1<<0)	/* hardware specific */
@@ -429,12 +439,19 @@ typedef struct snd_seq_remove_events {
 /*...*/
 #define SND_SEQ_PORT_TYPE_APPLICATION	(1<<20)	/* application (sequencer/editor) */
 
+/* standard group names */
+#define SND_SEQ_GROUP_SYSTEM		"system"
+#define SND_SEQ_GROUP_DEVICE		"device"
+#define SND_SEQ_GROUP_APPLICATION	"application"
+
 typedef struct {
 	int client;			/* client number */
 	int port;			/* port number */
 	char name[64];			/* port name */
+	char group[32];			/* group name (copied from client) */
 
 	unsigned int capability;	/* port capability bits */
+	unsigned int cap_group;		/* permission to group */
 	unsigned int type;		/* port type bits */
 	int midi_channels;		/* channels per MIDI port */
 	int midi_voices;		/* voices per MIDI port */

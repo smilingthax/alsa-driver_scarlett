@@ -36,6 +36,9 @@
 /* max number of concurrent clients */
 #define SND_SEQ_MAX_CLIENTS 		192
 
+/* max number of concurrent ports */
+#define SND_SEQ_MAX_PORTS 		254
+
 /* max number of events in memory pool */
 #define SND_SEQ_MAX_EVENTS		2000
 
