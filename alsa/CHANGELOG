@@ -14,7 +14,6 @@
 * mixer improved
   - added mono mute flag
   - better support for exclusive record source
-  - added switches interface
 * changes in header files (added deep checking)
 * added support for Yamaha OPL3-SA2/SA3 soundcards
 * added empty envelopes for synthesizers
@@ -31,6 +30,7 @@
 * improved /proc interface
   - added /proc/sound/dev directory interface for sound devices
   - added /proc/sound/#card#/pcm#o interface
+* added switches interfaces (control, mixer, pcm, rawmidi)
 
 0.1.3 -> 0.1.4
 
