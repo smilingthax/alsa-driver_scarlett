@@ -27,6 +27,16 @@
 #include "mixer.h"
 #include "midi.h"
 
+#ifndef PCI_VENDOR_ID_ENSONIQ
+#define PCI_VENDOR_ID_ENSONIQ           0x1274
+#endif
+#ifndef PCI_DEVICE_ID_ENSONIQ_ES1370
+#define PCI_DEVICE_ID_ENSONIQ_ES1370    0x5000
+#endif
+#ifndef PCI_DEVICE_ID_ENSONIQ_ES1371
+#define PCI_DEVICE_ID_ENSONIQ_ES1371    0x1371
+#endif
+
 /*
  * Direct registers
  */
@@ -103,15 +113,18 @@
 #define ES_REG_1370_CODEC 0x10	/* W/O: Codec write register address */
 #define   ES_1370_CODEC_WRITE(a,d) ((((a)&0xff)<<8)|(((d)&0xff)<<0))
 #define ES_REG_1371_CODEC 0x14	/* W/R: Codec Read/Write register address */
-#define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x3f)<<16)|(((d&0xffff)<<0))
 #define   ES_1371_CODEC_RDY	   (1<<31)	 /* codec ready */
 #define   ES_1371_CODEC_WIP	   (1<<30)	 /* codec register access in progress */
+#define   ES_1371_CODEC_PIRD	   (1<<23)	 /* codec read/write select register */
+#define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x3f)<<16)|(((d)&0xffff)<<0))
+#define   ES_1371_CODEC_READS(a)   ((((a)&0x3f)<<16)|ES_1371_CODEC_PIRD)
 #define   ES_1371_CODEC_READ(i)    (((i)>>0)&0xffff)
 
 #define ES_REG_1371_SMPRATE 0x10 /* W/R: Codec rate converter interface register */
 #define   ES_1371_SRC_RAM_ADDRO(o) (((o)&0x7f)<<25) /* address of the sample rate converter */
 #define   ES_1371_SRC_RAM_ADDRM	   (0x7f<<25)	    /* mask for above */
 #define   ES_1371_SRC_RAM_ADDRI(i) (((i)>>25)&0x7f) /* address of the sample rate converter */
+#define   ES_1371_SRC_RAM_WE	   (1<<22)	/* R/W: read/write control for sample rate converter */
 #define   ES_1371_SRC_RAM_BUSY     (1<<23)	/* R/O: sample rate memory is busy */
 #define   ES_1371_SRC_DISABLE      (1<<22)	/* sample rate converter disable */
 #define   ES_1371_DIS_P1	   (1<<21)	/* playback channel 1 accumulator update disable */
@@ -207,6 +220,52 @@
 #define ES_PAGE_UART1	0x0f
 
 /*
+ *  Some contants
+ */
+ 
+#define ES_1370_SRTODIV(x) (((1411200+(x)/2)/(x))-2)
+#define ES_1370_DIVTOSR(x) (1411200/((x)+2))
+
+/*
+ *  ASAHI KASEI / AK4531 codec registers (ES1370)
+ */
+
+#define AK4531_LMASTER	0x00	/* master volume left */
+#define AK4531_RMASTER	0x01	/* master volume right */
+#define AK4531_LVOICE	0x02	/* voice volume left */
+#define AK4531_RVOICE	0x03	/* voice volume right */
+#define AK4531_LFM	0x04	/* FM volume left */
+#define AK4531_RFM	0x05	/* FM volume right */
+#define AK4531_LCD	0x06	/* CD volume left */
+#define AK4531_RCD	0x07	/* CD volume right */
+#define AK4531_LLINE	0x08	/* LINE volume left */
+#define AK4531_RLINE	0x09	/* LINE volume right */
+#define AK4531_LAUXA	0x0a	/* AUXA volume left */
+#define AK4531_RAUXA	0x0b	/* AUXA volume right */
+#define AK4531_MONO1	0x0c	/* MONO1 volume left */
+#define AK4531_MONO2	0x0d	/* MONO1 volume right */
+#define AK4531_MIC	0x0e	/* MIC volume */
+#define AK4531_MONO_OUT	0x0f	/* Mono-out volume */
+#define AK4531_OUT_SW1	0x10	/* Output mixer switch 1 */
+#define AK4531_OUT_SW2	0x11	/* Output mixer switch 2 */
+#define AK4531_LIN_SW1	0x12	/* Input left mixer switch 1 */
+#define AK4531_RIN_SW1	0x13	/* Input right mixer switch 1 */
+#define AK4531_LIN_SW2	0x14	/* Input left mixer switch 2 */
+#define AK4531_RIN_SW2	0x15	/* Input right mixer switch 2 */
+#define AK4531_RESET	0x16	/* Reset & power down */
+#define AK4531_CLOCK	0x17	/* Clock select */
+#define AK4531_AD_IN	0x18	/* AD input select */
+#define AK4531_MIC_GAIN	0x19	/* MIC amplified gain */
+
+/*
+ *  Open modes
+ */
+
+#define ES_MODE_PLAY1	0x0001
+#define ES_MODE_PLAY2	0x0002
+#define ES_MODE_RECORD	0x0004
+
+/*
  *
  */
 
@@ -218,9 +277,26 @@ struct snd_stru_ensoniq {
   int dma3num;		/* DAC2 */
   int irqnum;
 
-  unsigned int port;
+  int es1371;		/* ES1371 chip present */
 
+  unsigned int port;
   unsigned int mode;
+  
+  unsigned int ctrl;	/* control register */
+  unsigned int sctrl;	/* serial control register */
+
+  union {
+    struct {
+      unsigned char ak4531[0x10];
+      unsigned char out_sw1;
+      unsigned char out_sw2;
+      unsigned char lin_sw1;
+      unsigned char rin_sw1;
+      unsigned char lin_sw2;
+      unsigned char rin_sw2;
+      unsigned short micgain;
+    } es1370;
+  } u;
 
   struct snd_pci_dev *pci;
   snd_card_t *card;
