@@ -523,6 +523,11 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count)
  * so in the following, GFP_DMA is used only when the first allocation
  * doesn't match the requested region.
  */
+#ifdef __i386__
+#define get_phys_addr(x) virt_to_phys(x)
+#else /* ppc */
+#define get_phys_addr(x) virt_to_bus(x)
+#endif
 void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 				    dma_addr_t *dma_handle)
 {
@@ -533,14 +538,14 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 		gfp |= GFP_DMA;
 	ret = (void *)__get_free_pages(gfp, get_order(size));
 	if (ret) {
-		if (hwdev && ((virt_to_phys(ret) + size - 1) & ~hwdev->dma_mask)) {
+		if (hwdev && ((get_phys_addr(ret) + size - 1) & ~hwdev->dma_mask)) {
 			free_pages((unsigned long)ret, get_order(size));
 			ret = (void *)__get_free_pages(gfp | GFP_DMA, get_order(size));
 		}
 	}
 	if (ret) {
 		memset(ret, 0, size);
-		*dma_handle = virt_to_phys(ret);
+		*dma_handle = get_phys_addr(ret);
 	}
 	return ret;
 }
