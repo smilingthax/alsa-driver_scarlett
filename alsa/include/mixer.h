@@ -84,9 +84,7 @@ typedef struct snd_stru_mixer_read {
 
 struct snd_stru_mixer_file {
 	snd_kmixer_t *mixer;
-	spinlock_t change_lock;
 	wait_queue_head_t change_sleep;
-	int change_sleep_flag;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the mixer structure */

@@ -32,9 +32,7 @@ struct snd_stru_control {
 	unsigned int mixer_device;
 	unsigned int pcm_device;
 	unsigned int rawmidi_device;
-	spinlock_t change_lock;
 	wait_queue_head_t change_sleep;
-	int change_sleep_flag;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the structure */

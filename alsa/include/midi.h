@@ -33,10 +33,8 @@
 #define SND_RAWMIDI_MODE_STREAM	0x00000000	/* stream mode */
 #define SND_RAWMIDI_MODE_SEQ	0x00000001	/* sequencer mode */
 
-#define SND_RAWMIDI_FLG_SLEEP	0x00000001	/* process is sleeping */
-#define SND_RAWMIDI_FLG_FLUSH	0x00000002	/* flush in progress */
-#define SND_RAWMIDI_FLG_TRIGGER	0x00000004	/* trigger in progress */
-#define SND_RAWMIDI_FLG_TIMER	0x00000008	/* polling timer armed */
+#define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
+#define SND_RAWMIDI_FLG_TIMER	0x00000002	/* polling timer armed */
 #define SND_RAWMIDI_FLG_OSS	0x80000000	/* OSS compatible mode */
 
 #define SND_RAWMIDI_LFLG_OUTPUT	0x00000001	/* open for output */
@@ -121,9 +119,7 @@ struct snd_stru_rawmidi {
 	void (*private_free) (void *private_data);
 
 	spinlock_t input_lock;
-	spinlock_t input_sleep_lock;
 	spinlock_t output_lock;
-	spinlock_t output_sleep_lock;
 	wait_queue_head_t input_sleep;
 	wait_queue_head_t output_sleep;
 	struct semaphore open_mutex;
