@@ -55,14 +55,24 @@ struct snd_stru_es18xx {
 	snd_spin_define(ctrl);
 };
 
-#define ES18XX_PCM2 0x01	/* Has two useable PCM */
-#define ES18XX_3D 0x02		/* Has 3D Spatializer */
-#define ES18XX_RECMIX 0x04	/* Has record mixer */
-#define ES18XX_DUPLEX_MONO 0x08	/* Has mono duplex only */
-#define ES18XX_DUPLEX_SAME 0x10	/* Playback and record must share the same rate */
-#define ES18XX_NEW_RATE 0x20	/* More precise rate setting */
-#define ES18XX_AUXB 0x40	/* AuxB mixer control */
-#define ES18XX_SPEAKER 0x80	/* Speaker mixer control */
+#define AUDIO1_IRQ	0x01
+#define AUDIO2_IRQ	0x02
+#define HWV_IRQ		0x04
+#define MPU_IRQ		0x08
+
+#define ES18XX_PCM2	0x0001	/* Has two useable PCM */
+#define ES18XX_3D	0x0002	/* Has 3D Spatializer */
+#define ES18XX_RECMIX	0x0004	/* Has record mixer */
+#define ES18XX_DUPLEX_MONO 0x0008	/* Has mono duplex only */
+#define ES18XX_DUPLEX_SAME 0x0010	/* Playback and record must share the same rate */
+#define ES18XX_NEW_RATE	0x0020	/* More precise rate setting */
+#define ES18XX_AUXB	0x0040	/* AuxB mixer control */
+#define ES18XX_SPEAKER	0x0080	/* Speaker mixer control */
+#define ES18XX_MONO	0x0100	/* Mono_in mixer control */
+#define ES18XX_I2S	0x0200	/* I2S mixer control */
+#define ES18XX_MUTEREC	0x0400	/* Record source can be muted */
+#define ES18XX_CONTROL	0x0800	/* Has control ports */
+#define ES18XX_HWV	0x1000	/* Has hardware volume */
 
 typedef struct snd_stru_es18xx es18xx_t;
 

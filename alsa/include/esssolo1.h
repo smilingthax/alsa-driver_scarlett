@@ -101,6 +101,12 @@
 #define SL_CMD_ENABLEAUDIO1 0xd1
 #define SL_CMD_CONTDMA 0xd4
 
+#define SL_RECSRC_MIC 0
+#define SL_RECSRC_AUXACD 2
+#define SL_RECSRC_AUXB 5
+#define SL_RECSRC_LINE 6
+#define SL_RECSRC_NONE 7
+
 /*
 
  */

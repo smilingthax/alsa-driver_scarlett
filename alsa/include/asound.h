@@ -63,6 +63,8 @@ typedef struct snd_ctl_switch snd_ctl_switch_t;
 typedef struct snd_mixer_info snd_mixer_info_t;
 typedef struct snd_mixer_channel_info snd_mixer_channel_info_t;
 typedef struct snd_mixer_channel snd_mixer_channel_t;
+typedef struct snd_mixer_channel_direction_info snd_mixer_channel_direction_info_t;
+typedef struct snd_mixer_channel_direction snd_mixer_channel_direction_t;
 typedef struct snd_mixer_switch snd_mixer_switch_t;
 typedef struct snd_pcm_info snd_pcm_info_t;
 typedef struct snd_pcm_playback_info snd_pcm_playback_info_t;
@@ -82,6 +84,12 @@ typedef struct snd_rawmidi_output_params snd_rawmidi_output_params_t;
 typedef struct snd_rawmidi_input_params snd_rawmidi_input_params_t;
 typedef struct snd_rawmidi_output_status snd_rawmidi_output_status_t;
 typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
+typedef struct snd_timer_general_info snd_timer_general_info_t;
+typedef struct snd_timer_select snd_timer_select_t;
+typedef struct snd_timer_info snd_timer_info_t;
+typedef struct snd_timer_params snd_timer_params_t;
+typedef struct snd_timer_status snd_timer_status_t;
+typedef struct snd_timer_read snd_timer_read_t;
 
 /****************************************************************************
  *                                                                          *
@@ -90,11 +98,6 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
  ****************************************************************************/
 
 #define SND_CTL_VERSION			SND_PROTOCOL_VERSION( 1, 0, 0 )
-
-#define SND_CTL_GCAPS_MIDI		0x0000001	/* driver has MIDI interface */
-
-#define SND_CTL_LCAPS_SYNTH		0x0000001	/* soundcard has synthesizer */
-#define SND_CTL_LCAPS_RAWFM		0x0000002	/* soundcard has RAW FM/OPL3 */
 
 #define SND_CTL_SW_TYPE_BOOLEAN		0	/* 0 or 1 (enable) */
 #define SND_CTL_SW_TYPE_BYTE		1	/* 0 to 255 (low to high) */
@@ -108,17 +111,16 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
 
 struct snd_ctl_hw_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
-	unsigned int gcaps;	/* look to SND_CTL_GCAPS_XXXX */
-	unsigned int lcaps;	/* look to SND_CTL_LCAPS_XXXX */
 	unsigned int pcmdevs;	/* count of PCM devices (0 to N) */
 	unsigned int mixerdevs;	/* count of MIXER devices (0 to N) */
 	unsigned int mididevs;	/* count of raw MIDI devices (0 to N) */
+	unsigned int timerdevs;	/* count of timer devices (0 to N) */
 	char id[16];		/* ID of card (user selectable) */
 	char abbreviation[16];	/* Abbreviation for soundcard */
 	char name[32];		/* Short name of soundcard */
 	char longname[80];	/* name + info text about soundcard */
 	unsigned int switches;	/* count of switches */
-	unsigned char reserved[124];	/* reserved for future */
+	unsigned char reserved[128];	/* reserved for future */
 };
 
 struct snd_ctl_switch {
@@ -166,11 +168,6 @@ struct snd_ctl_switch {
 #define SND_CTL_IOCTL_RAWMIDI_ISWITCHES	_IOR ( 'U', 0x36, int )
 #define SND_CTL_IOCTL_RAWMIDI_ISWITCH_READ _IOR ( 'U', 0x37, snd_rawmidi_switch_t )
 #define SND_CTL_IOCTL_RAWMIDI_ISWITCH_WRITE _IOWR ( 'U', 0x37, snd_rawmidi_switch_t )
-#if 0
-#define SND_CTL_IOCTL_FM_INFO		_IOR ( 'U', 0x40, snd_fm_info_t )
-#define SND_CTL_IOCTL_SYNTH_INFO	_IOR ( 'U', 0x50, snd_synth_info_t )
-#define SND_CTL_IOCTL_MIDI_INFO		_IOR ( 'U', 0x60, snd_midi_info_t )
-#endif
 
 
 /****************************************************************************
@@ -238,39 +235,50 @@ struct snd_ctl_switch {
 #define SND_MIXER_SW_IEC958OUT		"IEC-958 (S/PDIF) Output"	/* No comment */
 #define SND_MIXER_SW_IEC958IN		"IEC-958 (S/PDIF) Input"	/* No comment */
 
-#define SND_MIXER_INFO_CAP_EXCL_RECORD	0x00000001
+/* Mixer general capabilities */
 
-#define SND_MIXER_CINFO_CAP_RECORD	0x00000001
-#define SND_MIXER_CINFO_CAP_STEREO	0x00000002
-#define SND_MIXER_CINFO_CAP_MUTE	0x00000004	/* always set at this moment, driver emulates mute */
-#define SND_MIXER_CINFO_CAP_HWMUTE	0x00000008	/* channel supports hardware mute */
-#define SND_MIXER_CINFO_CAP_DIGITAL	0x00000010	/* channel does digital (not analog) mixing */
-#define SND_MIXER_CINFO_CAP_INPUT	0x00000020	/* external input channel */
-#define SND_MIXER_CINFO_CAP_JOINMUTE	0x00000040	/* join mute is supported only (left and right channel doesn't have separate mute control) */
-#define SND_MIXER_CINFO_CAP_JOINRECORD	0x00000080	/* join record is supported only (left and right channel doesn't have separate record control) */
-#define SND_MIXER_CINFO_CAP_LTOR_OUT	0x00000100	/* route left input to right output is supported */
-#define SND_MIXER_CINFO_CAP_RTOL_OUT	0x00000200	/* route right input to left output is supported */
-#define SND_MIXER_CINFO_CAP_LTOR_IN	0x00000400	/* route left input to right ADC input is supported */
-#define SND_MIXER_CINFO_CAP_RTOL_IN	0x00000800	/* route right input to left ADC input is supported */
-#define SND_MIXER_CINFO_CAP_SWITCH_OUT	0x00001000	/* output route is only switch */
-#define SND_MIXER_CINFO_CAP_SWITCH_IN	0x00002000	/* input route is only switch */
-#define SND_MIXER_CINFO_CAP_RECORDBYMUTE 0x00004000	/* we can record data even if output path is muted (to avoid loopback) */
-#define SND_MIXER_CINFO_CAP_RECORDVOLUME 0x00008000	/* separate record volume setup is available */
+/* Channel general capabilities */
+#define SND_MIXER_CINFO_CAP_OUTPUT	0x00000001	/* the channel have got output direction */
+#define SND_MIXER_CINFO_CAP_INPUT	0x00000002	/* the channel have got input direction */
+#define SND_MIXER_CINFO_CAP_EXTINPUT	0x00000010	/* external input channel */
+#define SND_MIXER_CINFO_CAP_EFFECT	0x00000020	/* effect channel */
 
-#define SND_MIXER_FLG_RECORD_LEFT	0x00000001	/* channel record source - left input */
-#define SND_MIXER_FLG_RECORD_RIGHT	0x00000002	/* channel record source - right input */
-#define SND_MIXER_FLG_RECORD		0x00000003	/* channel record source both inputs */
-#define SND_MIXER_FLG_MUTE_LEFT		0x00010000
-#define SND_MIXER_FLG_MUTE_RIGHT	0x00020000
-#define SND_MIXER_FLG_MUTE		0x00030000
-#define SND_MIXER_FLG_LTOR_OUT		0x00100000	/* route left input to right output */
-#define SND_MIXER_FLG_RTOL_OUT		0x00200000	/* route right input to left output */
-#define SND_MIXER_FLG_SWITCH_OUT	0x00300000	/* switch left & right input to output */
-#define SND_MIXER_FLG_LTOR_IN		0x00400000	/* route left input to right ADC input */
-#define SND_MIXER_FLG_RTOL_IN		0x00800000	/* route right input to left ADC input */
-#define SND_MIXER_FLG_SWITCH_IN		0x00c00000	/* switch left & right input to ADC input */
-#define SND_MIXER_FLG_DECIBEL		0x40000000	/* if this bit is set, driver sets volume from dB variables (left_dB, right_dB) */
-#define SND_MIXER_FLG_FORCE		0x80000000	/* force set - don't use in user space - reserved for kernel */
+/* Channel direction dependant capabilities (bits 0-15) */
+#define SND_MIXER_CINFO_DCAP_VOLUME	0x00000001	/* volume setup is available */
+#define SND_MIXER_CINFO_DCAP_STEREO	0x00000002
+#define SND_MIXER_CINFO_DCAP_MUTE	0x00000010	/* always set at this moment, driver emulates mute */
+#define SND_MIXER_CINFO_DCAP_HWMUTE	0x00000020	/* direction supports hardware mute */
+#define SND_MIXER_CINFO_DCAP_JOINMUTE	0x00000040	/* join mute is supported only (left and right channel doesn't have separate mute control) */
+#define SND_MIXER_CINFO_DCAP_NOMUTEALL	0x00000080	/* at least one of this channel must be unmuted */
+#define SND_MIXER_CINFO_DCAP_EXCLUSIVE	0x00000100	/* exclude all others */
+#define SND_MIXER_CINFO_DCAP_ROUTE	0x00000200	/* route left to right and/or vice versa is supported */
+#define SND_MIXER_CINFO_DCAP_SWAPROUTE	0x00000400	/* route is only swap */
+#define SND_MIXER_CINFO_DCAP_DIGITAL	0x00001000	/* direction does digital (not analog) mixing */
+
+/* Output direction only capabilities (bits 16-31) */
+/* NONE currently */
+
+/* Input direction only capabilities (bits 16-31) */
+#define SND_MIXER_CINFO_DCAP_RECORDBYMUTE 0x00010000	/* we can record data even if output path is muted (to avoid loopback) */
+
+/* Channel general flags */
+/* NONE currently */
+
+/* Channel direction dependant flags (bits 0-15) */
+#define SND_MIXER_DFLG_FORCE		0x00000001	/* force set - don't use in user space - reserved for kernel */
+#define SND_MIXER_DFLG_DECIBEL		0x00000002	/* if this bit is set, driver sets volume from dB variables (left_dB, right_dB) */
+#define SND_MIXER_DFLG_MUTE_LEFT	0x00000010
+#define SND_MIXER_DFLG_MUTE_RIGHT	0x00000020
+#define SND_MIXER_DFLG_MUTE		0x00000030
+#define SND_MIXER_DFLG_LTOR		0x00010000	/* route left to right */
+#define SND_MIXER_DFLG_RTOL		0x00020000	/* route right to left */
+#define SND_MIXER_DFLG_SWAP		0x00030000	/* swap left & right */
+
+/* Output direction only flags (bits 16-31) */
+/* NONE currently */
+
+/* Output direction only flags (bits 16-31) */
+/* NONE currently */
 
 #define SND_MIXER_PARENT		0xffffffff	/* this is parent channel */
 
@@ -289,17 +297,29 @@ struct snd_mixer_channel_info {
 	unsigned int parent;	/* parent channel # or SND_MIXER_PARENT */
 	unsigned char name[12];	/* name of this device */
 	unsigned int caps;	/* some flags about this device (SND_MIXER_CINFO_XXXX) */
-	int min;		/* min. value when exact mode (or always 0) */
-	int max;		/* max. value when exact mode (or always 100) */
-	int min_dB;		/* minimum decibel value (*100) */
-	int max_dB;		/* maximum decibel value (*100) */
-	int step_dB;		/* step decibel value (*100) */
-	unsigned char reserved[16];
+	unsigned char reserved[20];
 };
 
 struct snd_mixer_channel {
 	unsigned int channel;	/* channel # (filled by application) */
 	unsigned int flags;	/* some flags to read/write (SND_MIXER_FLG_XXXX) */
+	unsigned char reserved[16];
+};
+
+struct snd_mixer_channel_direction_info {
+	unsigned int channel;	/* channel # (filled by application) */
+	unsigned int parent;	/* parent channel # or SND_MIXER_PARENT */
+	unsigned int caps;	/* some flags about this device (SND_MIXER_CINFO_XXXX) */
+	int min;		/* min. value when exact mode (or always 0) */
+	int max;		/* max. value when exact mode (or always 100) */
+	int min_dB;		/* minimum decibel value (*100) */
+	int max_dB;		/* maximum decibel value (*100) */
+	unsigned char reserved[16];
+};
+
+struct snd_mixer_channel_direction {
+	unsigned int channel;	/* channel # (filled by application) */
+	unsigned int flags;	/* some flags to read/write (SND_MIXER_DFLG_XXXX) */
 	int left;		/* min - max when exact mode (or 0 - 100) */
 	int right;		/* min - max when exact mode (or 0 - 100) */
 	int left_dB;		/* dB * 100 */
@@ -326,14 +346,24 @@ struct snd_mixer_switch {
 #define SND_MIXER_IOCTL_CHANNELS	_IOR ( 'R', 0x01, int )
 #define SND_MIXER_IOCTL_INFO		_IOR ( 'R', 0x02, struct snd_mixer_info )
 #define SND_MIXER_IOCTL_EXACT		_IOWR( 'R', 0x03, int )
-#define SND_MIXER_IOCTL_CHANNEL_INFO	_IOR ( 'R', 0x03, struct snd_mixer_channel_info )
-#define SND_MIXER_IOCTL_CHANNEL_READ	_IOR ( 'R', 0x04, struct snd_mixer_channel )
-#define SND_MIXER_IOCTL_CHANNEL_WRITE	_IOWR( 'R', 0x04, struct snd_mixer_channel )
-#define SND_MIXER_IOCTL_SWITCHES	_IOR ( 'R', 0x05, int )
-#define SND_MIXER_IOCTL_SWITCH_READ	_IOR ( 'R', 0x06, struct snd_mixer_switch )
-#define SND_MIXER_IOCTL_SWITCH_WRITE	_IOWR( 'R', 0x06, struct snd_mixer_switch )
-#define SND_MIXER_IOCTL_CHANNEL_RREAD	_IOR ( 'R', 0x07, struct snd_mixer_channel )
-#define SND_MIXER_IOCTL_CHANNEL_RWRITE	_IOWR( 'R', 0x07, struct snd_mixer_channel )
+#define SND_MIXER_IOCTL_CHANNEL_INFO	_IOR ( 'R', 0x04, struct snd_mixer_channel_info )
+#define SND_MIXER_IOCTL_CHANNEL_READ	_IOR ( 'R', 0x05, struct snd_mixer_channel )
+#define SND_MIXER_IOCTL_CHANNEL_WRITE	_IOWR( 'R', 0x05, struct snd_mixer_channel )
+#define SND_MIXER_IOCTL_CHANNEL_OINFO	_IOR ( 'R', 0x06, struct snd_mixer_channel_direction_info )
+#define SND_MIXER_IOCTL_CHANNEL_OREAD	_IOR ( 'R', 0x07, struct snd_mixer_channel_direction )
+#define SND_MIXER_IOCTL_CHANNEL_OWRITE	_IOWR( 'R', 0x07, struct snd_mixer_channel_direction )
+#define SND_MIXER_IOCTL_CHANNEL_IINFO	_IOR ( 'R', 0x08, struct snd_mixer_channel_direction_info )
+#define SND_MIXER_IOCTL_CHANNEL_IREAD	_IOR ( 'R', 0x09, struct snd_mixer_channel_direction )
+#define SND_MIXER_IOCTL_CHANNEL_IWRITE	_IOWR( 'R', 0x09, struct snd_mixer_channel_direction )
+#define SND_MIXER_IOCTL_SWITCHES	_IOR ( 'R', 0x0a, int )
+#define SND_MIXER_IOCTL_SWITCH_READ	_IOR ( 'R', 0x0b, struct snd_mixer_switch )
+#define SND_MIXER_IOCTL_SWITCH_WRITE	_IOWR( 'R', 0x0b, struct snd_mixer_switch )
+
+/* the commands of the read interface */
+#define SND_MIXER_CHANGED		0
+#define SND_MIXER_OUTPUT_CHANGED	1
+#define SND_MIXER_INPUT_CHANGED		2
+#define SND_MIXER_SWITCH_CHANGED	3
 
 /*
  *  Obsolete interface compatible with Open Sound System API
@@ -912,7 +942,76 @@ struct snd_rawmidi_input_status {
 #define SND_RAWMIDI_IOCTL_FLUSH_INPUT	_IO  ( 'W', 0x32 )
 
 /*
+ *  Timer section - /dev/snd/timer
+ */
 
+#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+
+#define SND_TIMER_MAX			1024
+#define SND_TIMER_SYSTEM		0	/* system timer number */
+
+#define SND_TIMER_STYPE_NONE		0
+#define SND_TIMER_STYPE_APPLICATION	1
+#define SND_TIMER_STYPE_SEQUENCER	2
+#define SND_TIMER_STYPE_OSS_SEQUENCER	3
+
+#define SND_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
+
+#define SND_TIMER_PSFLG_AUTO		(1<<0)	/* auto start */
+
+struct snd_timer_general_info {
+	int count;			/* count of global timers */
+	char reserved[64];
+};
+
+struct snd_timer_select {
+	int number;			/* timer number */
+	int slave;			/* timer is slave */
+	unsigned int slave_type;	/* slave type - SND_TIMER_STYPE_ */
+	unsigned int slave_id;		/* slave identification */
+	char reserved[32];
+};
+
+struct snd_timer_info {
+	unsigned int flags;		/* timer flags - SND_MIXER_FLG_* */
+	char id[32];			/* timer identificator */
+	char name[80];			/* timer name */
+	unsigned long ticks;		/* maximum ticks */
+	unsigned long resolution;	/* average resolution */
+	char reserved[64];
+};
+
+struct snd_timer_params {
+	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
+	unsigned long ticks;		/* requested resolution in ticks */
+	char reserved[64];
+};
+
+struct snd_timer_status {
+	unsigned long resolution;	/* current resolution */
+	unsigned long lost;		/* counter of master tick lost */
+	unsigned long overrun;		/* count of read queue overruns */
+	int queue;			/* queue size */
+	char reserved[64];
+};
+
+#define SND_TIMER_IOCTL_PVERSION	_IOR ('T', 0x00, int)
+#define SND_TIMER_IOCTL_GINFO		_IOW ('T', 0x01, snd_timer_general_info_t)
+#define SND_TIMER_IOCTL_SELECT		_IOW ('T', 0x10, snd_timer_select_t)
+#define SND_TIMER_IOCTL_INFO		_IOR ('T', 0x11, snd_timer_info_t)
+#define SND_TIMER_IOCTL_PARAMS		_IOW ('T', 0x12, snd_timer_params_t)
+#define SND_TIMER_IOCTL_STATUS		_IOW ('T', 0x13, snd_timer_status_t)
+#define SND_TIMER_IOCTL_START		_IO  ('T', 0x20)
+#define SND_TIMER_IOCTL_STOP		_IO  ('T', 0x21)
+#define SND_TIMER_IOCTL_CONTINUE	_IO  ('T', 0x22)
+
+struct snd_timer_read {
+	unsigned long resolution;
+	unsigned long ticks;
+};
+
+/*
+ *
  */
 
 #endif				/* __ASOUND_H */

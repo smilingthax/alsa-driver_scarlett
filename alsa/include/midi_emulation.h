@@ -28,7 +28,7 @@
  * channel.  All drivers for hardware that does not understand midi
  * directly will probably need to use this structure.
  */
-typedef struct snd_midi_channel {
+struct snd_midi_channel {
 	void *private;		/* A back pointer to driver data */
 	int  number;		/* The channel number */
 	int  client;	/* The client associated with this channel */
@@ -52,7 +52,7 @@ typedef struct snd_midi_channel {
 	short gm_rpn_fine_tuning; 	/* Master fine tuning */
 	short gm_rpn_coarse_tuning;	/* Master coarse tuning */
 
-} snd_midi_channel_t;
+};
 
 /*
  * A structure that represets a set of channels bound to a port.  There

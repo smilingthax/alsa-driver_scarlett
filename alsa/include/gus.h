@@ -365,6 +365,7 @@ struct snd_stru_gus_card {
 	unsigned short max_cntrl_val;	/* GUS MAX control value */
 	unsigned short mix_cntrl_reg;	/* mixer control register */
 	unsigned short joystick_dac;	/* joystick DAC level */
+	int timer_dev;			/* timer device */
 
 	struct snd_stru_gf1 gf1;	/* gf1 specific variables */
 	snd_pcm_t *pcm;
@@ -557,7 +558,8 @@ snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 				 unsigned short port,
 				 snd_irq_t * irqnum,
 				 snd_dma_t * dma1num,
-				 snd_dma_t * dma2num);
+				 snd_dma_t * dma2num,
+				 int timer_dev);
 int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);

@@ -42,10 +42,13 @@
 struct snd_seq_stru_user_client;
 struct snd_seq_stru_kernel_client;
 struct snd_seq_stru_client;
+struct snd_seq_stru_queue;
 
 typedef struct snd_seq_stru_user_client user_client_t;
 typedef struct snd_seq_stru_kernel_client kernel_client_t;
 typedef struct snd_seq_stru_client client_t;
+typedef struct snd_seq_stru_queue queue_t;
+typedef struct snd_midi_channel snd_midi_channel_t;
 
 /* call-backs for kernel client */
 

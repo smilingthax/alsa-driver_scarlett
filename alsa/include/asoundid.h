@@ -55,7 +55,9 @@
 #define SND_CARD_TYPE_OPTI9XX		0x00000017	/* Opti 9xx chipset */
 #define SND_CARD_TYPE_SERIAL		0x00000018	/* Serial MIDI driver */
 #define SND_CARD_TYPE_AD1848		0x00000019	/* Generic AD1848 driver */
+#define SND_CARD_TYPE_TRID4DWAVEDX	0x0000001A	/* Trident 4DWave DX */
+#define SND_CARD_TYPE_TRID4DWAVENX	0x0000001B	/* Trident 4DWave NX */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x0000001A
+#define SND_CARD_TYPE_LAST		0x0000001B
   
 #endif				/* __ASOUNDID_H */

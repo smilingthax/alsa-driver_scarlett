@@ -237,7 +237,7 @@ struct snd_opl3 {
 	unsigned short r_port;
 	unsigned short hardware;
 	unsigned short timer_enable;
-	int timers;		/* flag if timers are connected to IRQ line (useable) */
+	int timer_dev;		/* timer device number */
 	snd_timer_t *timer1;
 	snd_timer_t *timer2;
 	snd_spin_define(reg);
@@ -249,6 +249,6 @@ extern snd_synth_t *snd_opl3_new_device(snd_card_t * card,
 					unsigned short l_port,
 					unsigned short r_port,
 					unsigned short hardware,
-					int timers);
+					int timer_dev);
 
 #endif				/* __OPL3_H */

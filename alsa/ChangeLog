@@ -11,6 +11,9 @@
 * changed native device naming style
 * added support for the 2.2.0+ soundcore module
   - the modules configuration (/etc/conf.modules) is heavy changed
+* added driver for Trident 4DWave DX/NX chips
+* added EMU-8000 driver
+* added OSS sequencer emulation client
 
 0.1.4 -> 0.2.0
 

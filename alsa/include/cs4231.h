@@ -297,7 +297,8 @@ extern snd_pcm_t *snd_cs4231_new_device(snd_card_t * card,
 					snd_irq_t * irqptr,
 					snd_dma_t * dmaptr1,
 					snd_dma_t * dmaptr2,
-					unsigned short hardware);
+					unsigned short hardware,
+					int timer_dev);
 
 snd_kmixer_t *snd_cs4231_new_mixer(snd_pcm_t * pcm);
 
@@ -307,7 +308,8 @@ extern snd_pcm_t *snd_cs4236_new_device(snd_card_t * card,
 					snd_irq_t * irqptr,
 					snd_dma_t * dmaptr1,
 					snd_dma_t * dmaptr2,
-					unsigned short hardware);
+					unsigned short hardware,
+					int timer_dev);
 
 snd_kmixer_t *snd_cs4236_new_mixer(snd_pcm_t * pcm);
 

@@ -231,7 +231,7 @@ typedef struct {
 } snd_seq_client_info_t;
 
 
-	/* know port numbers */
+	/* known port numbers */
 #define SND_SEQ_PORT_SYSTEM_TIMER	0
 #define SND_SEQ_PORT_SYSTEM_ANNOUNCE	1
 
@@ -256,8 +256,8 @@ typedef struct {
 
 /* other standards...*/
 #define SND_SEQ_PORT_TYPE_SYNTH		(1<<10)	/* Synth device */
-#define SND_SEQ_PORT_TYPE_SAMPLE	(1<<11)	/* Sampling device (support sample download) */
-#define SND_SEQ_PORT_TYPE_SOUNDFONT	(1<<12)	/* SoundFont compatible device */
+#define SND_SEQ_PORT_TYPE_DIRECT_SAMPLE	(1<<11)	/* Sampling device (support sample download) */
+#define SND_SEQ_PORT_TYPE_SAMPLE	(1<<12)	/* Sampling device (sample can be downloaded at any time) */
 /*...*/
 #define SND_SEQ_PORT_TYPE_APPLICATION	(1<<20)	/* application (sequencer/editor) */
 

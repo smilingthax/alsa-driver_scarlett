@@ -26,7 +26,7 @@
 /* Prototypes for seq_alloc.c */
 void snd_init_port_callback(snd_seq_port_callback_t *p);
 snd_seq_port_callback_t *snd_alloc_port_callback(void);
-void snd_init_midi_channel(struct snd_midi_channel *p, int n);
+void snd_init_midi_channel(snd_midi_channel_t *p, int n);
 struct snd_midi_channel *snd_alloc_midi_channels(int n);
 struct snd_midi_channel_set *snd_alloc_midi_channel_set(int n);
 
