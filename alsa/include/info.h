@@ -165,11 +165,7 @@ static inline int snd_info_unregister(snd_info_entry_t * entry) { return 0; }
 
 #define SND_OSS_INFO_DEV_COUNT	6
 
-#ifndef LINUX_2_2
 extern int snd_oss_info_register(int dev, int num, char *string);
-#else
-static inline int snd_oss_info_register(int dev, int num, char *string) { return 0; }
-#endif
 #define snd_oss_info_unregister(dev, num) snd_oss_info_register(dev, num, NULL)
 
 #endif				/* CONFIG_SND_OSSEMUL */
