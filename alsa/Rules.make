@@ -99,7 +99,7 @@ ifneq "$(strip $(ALL_SUB_DIRS))" ""
 $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)):
 	$(MAKE) -C $(patsubst _sfdep_%,%,$@) fastdep
 endif
-	
+
 #
 # A rule to make subdirectories
 #
@@ -130,6 +130,17 @@ endif
 .PHONY: modules
 modules: $(ALL_MOBJS) dummy \
 	 $(patsubst %,_modsubdir_%,$(MOD_DIRS))
+
+.PHONY: _modinst__
+_modinst__: dummy
+ifneq "$(strip $(ALL_MOBJS))" ""
+	mkdir -p $(DESTDIR)$(moddir)
+	cp $(ALL_MOBJS) $(DESTDIR)$(moddir)
+endif
+
+.PHONY: modules_install
+modules_install: _modinst__ \
+	 $(patsubst %,_modinst_%,$(MOD_DIRS))
 
 #
 # A rule to do nothing
@@ -183,7 +194,7 @@ $(MODINCL)/$(MODPREFIX)%.ver: %.c
 		if [ -r $@ ] && cmp -s $@ $@.tmp; then echo $@ is unchanged; rm -f $@.tmp; \
 		else echo mv $@.tmp $@; mv -f $@.tmp $@; fi; \
 	fi; touch $(MODINCL)/$(MODPREFIX)$*.stamp
-	
+
 $(addprefix $(MODINCL)/$(MODPREFIX),$(export-objs:.o=.ver)): $(TOPDIR)/include/config.h $(TOPDIR)/include/config1.h
 
 # updates .ver files but not modversions.h
@@ -239,7 +250,11 @@ update-sndversions: dummy
 	$(update-sndvers)
 
 ifneq "$(strip $(export-objs))" ""
+ifeq (y,$(CONFIG_SND_MVERSION))
 $(export-objs): $(addprefix $(MODINCL)/$(MODPREFIX),$(export-objs:.o=.ver)) $(export-objs:.o=.c)
+else
+$(export-objs): $(export-objs:.o=.c)
+endif
 	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$@) -DEXPORT_SYMTAB -c $(@:.o=.c)
 endif
 
@@ -253,7 +268,7 @@ ifneq "$(strip $(ALL_SUB_DIRS))" ""
 $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)):
 	$(MAKE) -C $(patsubst _sfclean_%,%,$@) clean
 endif
-	
+
 #
 # include dependency files if they exist
 #

@@ -120,10 +120,9 @@ install-headers:
 	fi
 
 .PHONY: install-modules
-install-modules: compile
-	mkdir -p $(DESTDIR)$(moddir)
+install-modules:
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
-	cp modules/*.o $(DESTDIR)$(moddir)
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
 	/sbin/depmod -a
 else
