@@ -120,13 +120,13 @@ typedef struct snd_stru_pcm_oss_runtime {
 	int rate;				/* requested rate */
 	int format;				/* requested OSS format */
 	unsigned int channels;			/* requested channels */
-	unsigned int fragment;			/* requested OSS fragment */
+	unsigned int fragshift;
+	unsigned int maxfrags;
 	unsigned int subdivision;		/* requested subdivision */
 	size_t fragment_size;			/* requested fragment size */
-	unsigned int fragments;			/* requested fragments */
+	size_t buffer_size;			/* requested fragment size */
 	size_t bytes;				/* total # bytes processed */
-	size_t mmap_fragment_size;
-	unsigned int mmap_fragments;
+	size_t mmap_buffer_size;
 	char *buffer;				/* vmallocated fragment */
 	size_t buffer_used;			/* used length from buffer */
 	snd_pcm_plugin_t *plugin_first;
