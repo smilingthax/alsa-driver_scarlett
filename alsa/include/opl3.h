@@ -295,9 +295,6 @@ struct snd_opl3 {
 };
 
 /* opl3.c */
-void snd_opl3_outb(opl3_t * opl3, unsigned long port, unsigned char val);
-unsigned char snd_opl3_inb(opl3_t * opl3, unsigned long port);
-void snd_opl3_command(opl3_t * opl3, unsigned short cmd, unsigned char val);
 void snd_opl3_interrupt(snd_hwdep_t * hw);
 int snd_opl3_create(snd_card_t * card,
 		    unsigned long l_port, unsigned long r_port,
