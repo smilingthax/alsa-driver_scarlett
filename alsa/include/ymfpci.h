@@ -297,6 +297,8 @@ struct _snd_ymfpci {
 	dma_addr_t bank_base_capture_addr;
 	dma_addr_t bank_base_effect_addr;
 	dma_addr_t work_base_addr;
+	void *ac3_tmp_base;
+	dma_addr_t ac3_tmp_base_addr;
 
 	u32 *ctrl_playback;
 	snd_ymfpci_playback_bank_t *bank_playback[YDSXG_PLAYBACK_VOICES][2];
@@ -326,6 +328,8 @@ struct _snd_ymfpci {
 
 	spinlock_t reg_lock;
 	spinlock_t voice_lock;
+	wait_queue_head_t interrupt_sleep;
+	atomic_t interrupt_sleep_count;
 	snd_info_entry_t *proc_entry;
 };
 
