@@ -2,6 +2,8 @@
  *  Configuration header file for compilation of the ALSA driver
  */
 
+#include "config1.h"
+
 #undef SND_VERSION
 #undef SNDCFG_KERNELDIR
 #undef SNDCFG_MAJOR
