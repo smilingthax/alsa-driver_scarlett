@@ -252,6 +252,7 @@ struct snd_opl3 {
 	unsigned short hardware;
 	unsigned short timer_enable;
 	int timer_dev;		/* timer device number */
+	int seq_dev_num;	/* sequencer device number */
 	snd_timer_t *timer1;
 	snd_timer_t *timer2;
 	spinlock_t timer_lock;
@@ -288,7 +289,7 @@ void snd_opl3_interrupt(snd_hwdep_t * hw);
 int snd_opl3_new(snd_card_t * card, int device,
 		 unsigned long l_port, unsigned long r_port,
 		 unsigned short hardware,
-		 int timer_dev,
+		 int timer_dev, int seq_dev,
 		 snd_hwdep_t ** rawmidi);
 
 /* opl3_synth */

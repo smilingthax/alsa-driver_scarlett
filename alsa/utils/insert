@@ -77,6 +77,10 @@ function basic() {
       banner "snd-ainstr-iw"
       if ! $INSMOD -m $MODDIR/snd-ainstr-iw.o >> $MAP; then exit 1; fi
     fi
+    if [ -r $MODDIR/snd-ainstr-fm.o ]; then
+      banner "snd-ainstr-fm"
+      if ! $INSMOD -m $MODDIR/snd-ainstr-fm.o >> $MAP; then exit 1; fi
+    fi
     if [ -r $MODDIR/snd-seq-oss.o ]; then
       banner "snd-seq-oss"
       if ! $INSMOD -m $MODDIR/snd-seq-oss.o >> $MAP; then exit 1; fi
@@ -206,6 +210,7 @@ case "$1" in
     insert snd-opl3.o
     insert snd-gus.o
     insert snd-synth-gus.o
+    insert snd-synth-opl3.o
     insert snd-card-gusextreme.o snd_irq=10 snd_irq1=11 snd_mpu_port=0x300
     restore gusextreme.conf
     ;;
