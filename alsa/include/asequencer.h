@@ -929,7 +929,7 @@ struct sndrv_seq_instr_get {
 	unsigned int cmd;		/* query command */
 	char reserved[16];		/* reserved for the future use */
 	unsigned int len;		/* real instrument data length (without header) */
-} sndrv_seq_instr_get_t;
+};
 
 struct sndrv_seq_instr_get_result {
 	int result;			/* operation result */
