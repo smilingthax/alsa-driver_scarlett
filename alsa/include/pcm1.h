@@ -63,6 +63,7 @@
 #define SND_PCM1_FLG_TRIGGERA	0x00000300	/* both above flags */
 #define SND_PCM1_FLG_SYNC	0x00000400	/* synchronize playback/record */
 #define SND_PCM1_FLG_TIME	0x00000800	/* time */
+#define SND_PCM1_FLG_PAUSE	0x00001000	/* pause in progress */
 
 #define SND_PCM1_HW_BATCH	0x00000001	/* double buffering */
 #define SND_PCM1_HW_8BITONLY	0x00000002	/* hardware supports only 8-bit DMA, but does conversions from 16-bit to 8-bit */
@@ -70,6 +71,14 @@
 #define SND_PCM1_HW_COPYMASK	0x00000007	/* flags to copy to info structure */
 #define SND_PCM1_HW_AUTODMA	0x10000000	/* hardware supports auto dma - good */
 #define SND_PCM1_HW_BLOCKPTR	0x20000000	/* current pointer needs size and returns offset to current block */
+#define SND_PCM1_HW_PAUSE	0x40000000	/* for playback - pause is supported */
+#define SND_PCM1_HW_OVERRANGE	0x40000000	/* for record - ADC overrange variable is valid */
+
+#define SND_PCM1_IOCTL_FALSE	((void *)0)
+#define SND_PCM1_IOCTL_TRUE	((void *)1)
+
+#define SND_PCM1_IOCTL_RATE	0x00000001	/* compute rate */
+#define SND_PCM1_IOCTL_PAUSE	0x00000001	/* pause */
 
 #define snd_pcm1_lockzero( channel ) \
   ((channel) -> block_lock = -1)
@@ -98,6 +107,7 @@ struct snd_stru_pcm1_hardware {
   /* -- must be filled with low-level driver */
   unsigned int flags;		/* see to SND_PCM_HW_XXXX */
   unsigned int formats;		/* supported formats... */
+  unsigned int hw_formats;	/* supported formats by hardware... */
   unsigned int align;		/* align value... */
   unsigned short min_fragment;	/* minimal fragment... */
   unsigned short min_rate;	/* minimal rate... */
@@ -106,7 +116,7 @@ struct snd_stru_pcm1_hardware {
   /* -- low-level functions -- */
   int (*open)( snd_pcm1_t *pcm );
   void (*close)( snd_pcm1_t *pcm );
-  void (*compute_rate)( snd_pcm1_t *pcm );
+  int (*ioctl)( snd_pcm1_t *pcm, unsigned int cmd, unsigned long *arg );
   void (*prepare)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned int size, unsigned int offset, unsigned int count );
   void (*trigger)( snd_pcm1_t *pcm, int up );
   unsigned int (*pointer)( snd_pcm1_t *pcm, unsigned int used_size );
@@ -128,6 +138,7 @@ struct snd_stru_pcm1_channel {
   volatile unsigned int processed_bytes;
   volatile unsigned int interrupts;
   volatile unsigned int xruns;
+  volatile unsigned int overrange;		/* ADC overrange */
   volatile unsigned int total_discarded;	/* discarded blocks... */
   volatile unsigned int total_xruns;		/* under/overruns */
   /* -- physical/flags -- */

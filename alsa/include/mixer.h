@@ -31,7 +31,8 @@
 #define SND_MIXER_PRI_MASTER_MONO	0x00000103
 #define SND_MIXER_PRI_3D		0x00000108
 #define SND_MIXER_PRI_3D_CENTER		0x00000109
-#define SND_MIXER_PRI_3D_DEPTH		0x0000010a
+#define SND_MIXER_PRI_3D_SPACE		0x0000010a
+#define SND_MIXER_PRI_3D_DEPTH		0x0000010b
 #define SND_MIXER_PRI_BASS		0x00000110
 #define SND_MIXER_PRI_TREBLE		0x00000120
 #define SND_MIXER_PRI_FADER		0x00000140
@@ -59,6 +60,7 @@
 #define SND_MIXER_PRI_AUXB		0xf0000100
 #define SND_MIXER_PRI_AUXC		0xf0000200
 #define SND_MIXER_PRI_PARENT		0xffffffff
+#define SND_MIXER_PRI_HIDDEN		0xffffffff
 
 #define SND_MIX_MUTE_LEFT	1
 #define SND_MIX_MUTE_RIGHT	2
@@ -116,14 +118,15 @@ struct snd_stru_mixer_channel {
 
 struct snd_stru_mixer_switch {
   char name[32];
-  int (*set_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
   int (*get_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
+  int (*set_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
   unsigned int private_value;
   void *private_data;		/* not freed by mixer.c */
 };
 
 struct snd_stru_mixer_file {
   snd_kmixer_t *mixer;
+  int osscompat;		/* oss compatible mode */
   int exact;			/* exact mode for this file */
   volatile unsigned int changes;
   volatile unsigned int schanges;
@@ -143,6 +146,7 @@ struct snd_stru_mixer {
   unsigned char name[80];
 
   unsigned int channels_count;		/* channels count */
+  unsigned int channels_visible;	/* channels count exclude hidden */
   snd_kmixer_channel_t *channels[ SND_MIXER_CHANNELS ];
 
   unsigned int switches_count;

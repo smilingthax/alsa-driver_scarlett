@@ -185,9 +185,11 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP4_SPEAKER_DEV	0x3b
 #define SB_DSP4_LINE_DEV	0x38
 #define SB_DSP4_MIC_DEV		0x3a
+#define SB_DSP4_OUTPUT_SW	0x3c
 #define SB_DSP4_CD_DEV		0x36
 #define SB_DSP4_IGAIN_DEV	0x3f
 #define SB_DSP4_OGAIN_DEV	0x41
+#define SB_DSP4_MIC_AGC		0x43
 
 /*
  *
