@@ -59,6 +59,9 @@ MODULE_PARM(snd_ac97_clock, "1-" __MODULE_STRING(SNDRV_CARDS) "l");
 MODULE_PARM_DESC(snd_ac97_clock, "AC'97 codec clock (default 48000Hz).");
 MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
 
+
+#define VIA_USE_MULTPLAY	/* use multi-channel playback SGD */
+
 /*
  *  Direct registers
  */
@@ -94,16 +97,32 @@ MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
 #define VIA_REG_OFFSET_CURR_INDEX	0x0f	/* byte - channel current index */
 
 #define VIA_NUM_OF_DMA_CHANNELS	2
-/* playback block */
+
+/* playback block (VT8233/8233C) - channels 0-3 (0-0x3f) */
 #define VIA_REG_PLAYBACK_STATUS		0x00	/* byte - channel status */
 #define VIA_REG_PLAYBACK_CONTROL	0x01	/* byte - channel control */
 #define VIA_REG_PLAYBACK_VOLUME_L	0x02	/* byte */
 #define VIA_REG_PLAYBACK_VOLUME_R	0x03	/* byte */
 #define VIA_REG_PLAYBACK_TABLE_PTR	0x04	/* dword - channel table pointer */
 #define VIA_REG_PLAYBACK_CURR_PTR	0x04	/* dword - channel current pointer */
-#define VIA_REG_PLAYBACK_TYPE		0x08    /* long - stop index, channel type, sample rate */ /* byte - channel type */
+#define VIA_REG_PLAYBACK_TYPE		0x08    /* dword - stop index, channel type, sample rate */
 #define VIA_REG_PLAYBACK_CURR_COUNT	0x0c	/* dword - channel current count (24 bit) */
 #define VIA_REG_PLAYBACK_CURR_INDEX	0x0f	/* byte - channel current index */
+
+/* multi-channel playback */
+#define VIA_REG_MULTPLAY_STATUS		0x40	/* byte - channel status */
+#define VIA_REG_MULTPLAY_CONTROL	0x01	/* byte - channel control */
+#define VIA_REG_MULTPLAY_FORMAT		0x02	/* byte - format and channels */
+#define   VIA_REG_MULTPLAY_FMT_8BIT	0x00
+#define   VIA_REG_MULTPLAY_FMT_16BIT	0x80
+#define   VIA_REG_MULTPLAY_FMT_CH_MASK	0x70	/* # channels << 4 (valid = 1,2,4,6) */
+#define VIA_REG_MULTPLAY_SCRATCH	0x03	/* byte - nop */
+#define VIA_REG_MULTPLAY_TABLE_PTR	0x04	/* dword - channel table pointer */
+#define VIA_REG_MULTPLAY_CURR_PTR	0x04	/* dword - channel current pointer */
+#define VIA_REG_MULTPLAY_TYPE		0x08    /* dword - stop index */
+#define VIA_REG_PLAYBACK_CURR_COUNT	0x0c	/* dword - channel current count (24 bit) */
+#define VIA_REG_PLAYBACK_CURR_INDEX	0x0f	/* byte - channel current index */
+
 /* capture block */
 #define VIA_REG_CAPTURE_STATUS		0x60	/* byte - channel status */
 #define VIA_REG_CAPTURE_CONTROL		0x61	/* byte - channel control */
@@ -112,6 +131,7 @@ MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
 #define VIA_REG_CAPTURE_CHANNEL		0x63	/* byte - input select */
 #define   VIA_REG_CAPTURE_CHANNEL_MIC	0x4
 #define   VIA_REG_CAPTURE_CHANNEL_LINE	0
+#define   VIA_REG_CAPTURE_SELECT_CODEC	0x03	/* recording source codec (0 = primary) */
 #define VIA_REG_CAPTURE_TABLE_PTR	0x64	/* dword - channel table pointer */
 #define VIA_REG_CAPTURE_CURR_PTR	0x64	/* dword - channel current pointer */
 #define VIA_REG_CAPTURE_TYPE		0x68	/* byte - channel type */
@@ -332,10 +352,18 @@ static void snd_via8233_setup_periods(via8233_t *chip, viadev_t *viadev,
 
 	snd_via8233_channel_reset(chip, viadev);
 	outl(viadev->table_addr, port + VIA_REG_OFFSET_TABLE_PTR);
-	outl((runtime->format == SNDRV_PCM_FORMAT_S16_LE ? VIA_REG_TYPE_16BIT : 0) |
-	     (runtime->channels > 1 ? VIA_REG_TYPE_STEREO : 0) |
-			0xff000000,    /* STOP index is never reached */
-			port + VIA_REG_OFFSET_TYPE);
+	if (viadev->reg_offset == VIA_REG_MULTPLAY_STATUS) {
+		int fmt = (runtime->format == SNDRV_PCM_FORMAT_S16_LE) ? 0x80 : 0x00;
+		fmt |= runtime->channels << 4;
+		outb(fmt, VIA_REG_MULTPLAY_FORMAT);
+		/* FIXME: slot selection for bit 0-23? */
+		outl(0xff000000, VIA_REG_MULTPLAY_TYPE); /* STOP index is never reached */
+	} else {
+		outl((runtime->format == SNDRV_PCM_FORMAT_S16_LE ? VIA_REG_TYPE_16BIT : 0) |
+		     (runtime->channels > 1 ? VIA_REG_TYPE_STEREO : 0) |
+		     0xff000000,    /* STOP index is never reached */
+		     port + VIA_REG_OFFSET_TYPE);
+	}
 
 	if (viadev->size == viadev->fragsize) {
 		table[0] = cpu_to_le32(viadev->physbuf);
@@ -373,8 +401,13 @@ static void snd_via8233_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	via8233_t *chip = snd_magic_cast(via8233_t, dev_id, return);
 
+#ifdef VIA_USE_MULTPLAY
+	if (inb(VIAREG(chip, MULTPLAY_STATUS)) & (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG))
+		snd_via8233_update(chip, &chip->playback);
+#else
 	if (inb(VIAREG(chip, PLAYBACK_STATUS)) & (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG))
 		snd_via8233_update(chip, &chip->playback);
+#endif
 	if (inb(VIAREG(chip, CAPTURE_STATUS)) & (VIA_REG_STAT_EOL|VIA_REG_STAT_FLAG))
 		snd_via8233_update(chip, &chip->capture);
 }
@@ -417,11 +450,13 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t * substream)
 
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
 	snd_via8233_setup_periods(chip, &chip->playback, substream);
+#ifndef VIA_USE_MULTPLAY
 	/* I don't understand this stuff but its from the documentation and this way it works */
 	outb(0 , VIAREG(chip, PLAYBACK_VOLUME_L));
 	outb(0 , VIAREG(chip, PLAYBACK_VOLUME_R));
 	tmp = inl(VIAREG(chip, PLAYBACK_TYPE)) & ~0xfffff;
 	outl(tmp | (0xffff * runtime->rate)/(48000/16), VIAREG(chip, PLAYBACK_TYPE));
+#endif
 	return 0;
 }
 
@@ -763,7 +798,14 @@ static int __devinit snd_via8233_create(snd_card_t * card,
 	synchronize_irq();
 
 	/* initialize offsets */
-	chip->playback.reg_offset = VIA_REG_PLAYBACK_STATUS;
+#ifdef VIA_USE_MULTPLAY
+	/* we use multi-channel playback mode, since this mode is supported
+	 * by all VIA8233 models (and obviously suitable for our purpose).
+	 */
+	chip->playback.reg_offset = VIA_REG_MULTPLAY_STATUS;
+#else
+	chip->playback.reg_offset = VIA_REG_PLAYBACK_STATUS; /* this doesn't work on VIA8233A */
+#endif
 	chip->capture.reg_offset = VIA_REG_CAPTURE_STATUS;
 
 	/* allocate buffer descriptor lists */
