@@ -64,12 +64,15 @@ struct snd_stru_es18xx {
 	snd_kmixer_element_t *mix_ocd_v, *mix_icd_v;
 	snd_kmixer_element_t *mix_oaux_v, *mix_iaux_v;
 	snd_kmixer_element_t *mix_output_v, *mix_output_s;
+	snd_kmixer_element_t *mix_playback1, *mix_playback2;
+	snd_kmixer_element_t *mix_capture;
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_a_subchn;
 	snd_pcm_subchn_t *capture_a_subchn;
 	snd_pcm_subchn_t *playback_b_subchn;
+	snd_kmixer_t *mixer;
 
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;

@@ -145,6 +145,7 @@ struct snd_stru_sbdsp {
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
 	snd_pcm_subchn_t *capture_subchn;
+	snd_kmixer_t *kmixer;
 
 	spinlock_t reg_lock;
 	spinlock_t open8_lock;

@@ -382,6 +382,8 @@ struct snd_stru_trident {
 
 	unsigned int musicvol_wavevol;
 
+	ac97_t *ac97;
+
 	snd_trident_pcm_mixer_t pcm_mixer[32];
 
 	snd_kmixer_element_t *me_wave;

@@ -22,6 +22,10 @@
  *
  */
 
+#ifndef __MIXER_H
+#include "mixer.h"
+#endif
+
 typedef struct snd_stru_pcm_file snd_pcm_file_t;
 typedef struct snd_stru_pcm_subchn snd_pcm_subchn_t;
 typedef struct snd_stru_pcm_channel snd_pcm_channel_t;
@@ -126,8 +130,13 @@ typedef struct snd_stru_pcm_runtime {
 	int underrun;
 	int overrun;
 	int overrange;
+	snd_pcm_digital_t *dig_mask;	/* digital mask */
+	void (*dig_mask_free)(void *dig_mask);
 	snd_pcm_digital_t digital;	/* digital format information */
+	snd_pcm_sync_t sync;		/* hardware synchronization ID */
 	snd_pcm_sync_t sync_group;	/* synchronization group */
+	int mixer_device;		/* mixer device */
+	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
 	union {
 		struct {
 			int queue_size; /* queue size in bytes */
@@ -151,9 +160,14 @@ typedef struct snd_stru_pcm_runtime {
 	/* -- private section -- */
 	void *private_data;
 	void (*private_free)(void *private_data);
-	/* -- own transfer routines -- */
+	/* -- own hardware routines -- */
+	snd_pcm_hardware_t *hw;
+	void (*hw_free)(void *hw);
 	int (*hw_memcpy)(snd_pcm_subchn_t *subchn, int pos, const void *src, int count);
 	int (*hw_memset)(snd_pcm_subchn_t *subchn, int pos, int c, int count);
+	/* -- interrupt callbacks -- */
+	void (*transfer_ack_begin)(snd_pcm_subchn_t *subchn);
+	void (*transfer_ack_end)(snd_pcm_subchn_t *subchn);
 	/* -- timer -- */
 	unsigned int timer_resolution;	/* timer resolution */
 	int timer_running;		/* time is running */
@@ -172,13 +186,6 @@ struct snd_stru_pcm_subchn {
 	int number;
 	char name[32];			/* subchannel name */
 	int channel;			/* channel (direction) */
-	/* -- constants -- */
-	snd_pcm_hardware_t *hw;
-	void (*hw_free)(void *hw);
-	snd_pcm_sync_t sync;		/* hardware synchronization ID */
-	snd_pcm_digital_t *dig_mask;	/* digital mask */
-	int mixer_device;		/* mixer device */
-	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
 	/* -- runtime information -- */
 	snd_pcm_runtime_t *runtime;
         /* -- timer section -- */
@@ -192,9 +199,6 @@ struct snd_stru_pcm_subchn {
 	snd_pcm_subchn_t *next;
 	snd_pcm_file_t *file;
 	struct file *ffile;
-	/* -- callback -- */
-	void (*transfer_ack_begin)(snd_pcm_subchn_t *subchn);
-	void (*transfer_ack_end)(snd_pcm_subchn_t *subchn);
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
 	snd_pcm_oss_subchn_t oss;
@@ -308,7 +312,10 @@ extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 extern ssize_t snd_pcm_format_size(int format, size_t samples);
  
 extern int snd_pcm_dma_alloc(snd_pcm_subchn_t * subchn, snd_dma_t * dma, char *ident);
+extern int snd_pcm_dma_setup(snd_pcm_subchn_t * subchn, snd_dma_area_t * area);
 extern int snd_pcm_dma_free(snd_pcm_subchn_t * subchn);
+extern void snd_pcm_set_sync(snd_pcm_subchn_t * subchn);
+extern void snd_pcm_set_mixer(snd_pcm_subchn_t * subchn, int mixer_device, snd_kmixer_element_t * element);
 extern unsigned int snd_pcm_lib_transfer_size(snd_pcm_subchn_t *subchn);
 extern unsigned int snd_pcm_lib_transfer_fragment(snd_pcm_subchn_t *subchn);
 extern unsigned char snd_pcm_lib_silence(snd_pcm_subchn_t *subchn);

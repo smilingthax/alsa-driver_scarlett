@@ -1,10 +1,10 @@
-#ifndef __ESSSOLO1_H
-#define __ESSSOLO1_H
+#ifndef __ES1938_H
+#define __ES1938_H
 
 /*
  *  Copyright (c) by Jaromir Koutek <miri@punknet.cz>,
  *                   Jaroslav Kysela <perex@suse.cz>
- *  Definitions for ESS Solo-1
+ *  Definitions for ESS Solo-1 (ES1938)
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -93,7 +93,9 @@ struct snd_stru_solo {
 	snd_kmixer_element_t *mix_ocd_v, *mix_icd_v;
 	snd_kmixer_element_t *mix_oaux_v, *mix_iaux_v;
 	snd_kmixer_element_t *mix_output_v, *mix_output_s;
-  
+	snd_kmixer_element_t *mix_playback;
+	snd_kmixer_element_t *mix_capture;  
+
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;
         snd_info_entry_t *proc_entry;
@@ -114,4 +116,4 @@ int snd_solo_new_mixer(es1938_t * codec, int device, snd_pcm_t * pcm, snd_kmixer
 
 void snd_solo_midi(es1938_t * solo, mpu401_t * mpu);
 
-#endif				/* __ESSSOLO1_H */
+#endif				/* __ES1938_H */
