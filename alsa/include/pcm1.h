@@ -47,6 +47,9 @@
 #define SND_PCM1_MODE_ADPCM	0x00002000	/* IMA ADPCM 4:1 */
 #define SND_PCM1_MODE_MPEG	0x00004000	/* MPEG 1/2 */
 #define SND_PCM1_MODE_GSM	0x00008000	/* GSM */
+#define SND_PCM1_MODE_24	0x00010000	/* unset = nothing, set = 24 bit */
+#define SND_PCM1_MODE_32	0x00020000	/* unset = nothing, set = 32 bit */
+#define SND_PCM1_MODE_FLOAT	0x00040000	/* unset = nothing, set = Float */
 #define SND_PCM1_MODE_TYPE	0xffffff00	/* bitmask */
 
 #define SND_PCM1_FLG_NONE	0x00000000

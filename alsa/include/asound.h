@@ -414,6 +414,16 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_SFMT_U16_BE		8
 #define SND_PCM_SFMT_MPEG		9
 #define SND_PCM_SFMT_GSM		10
+#define SND_PCM_SFMT_S24_LE		11
+#define SND_PCM_SFMT_S24_BE		12
+#define SND_PCM_SFMT_U24_LE		13
+#define SND_PCM_SFMT_U24_BE		14
+#define SND_PCM_SFMT_S32_LE		15
+#define SND_PCM_SFMT_S32_BE		16
+#define SND_PCM_SFMT_U32_LE		17
+#define SND_PCM_SFMT_U32_BE		18
+#define SND_PCM_SFMT_FLOAT		19	/* 4-byte float, need specification!! */
+#define SND_PCM_SFMT_SPECIAL		31
 
 #define SND_PCM_FMT_QUERY		0
 #define SND_PCM_FMT_MU_LAW		(1 << SND_PCM_SFMT_MU_LAW)
@@ -427,6 +437,16 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_FMT_U16_BE		(1 << SND_PCM_SFMT_U16_BE)
 #define SND_PCM_FMT_MPEG		(1 << SND_PCM_SFMT_MPEG)
 #define SND_PCM_FMT_GSM			(1 << SND_PCM_SFMT_GSM)
+#define SND_PCM_FMT_S24_LE		(1 << SND_PCM_SFMT_S32_LE)
+#define SND_PCM_FMT_S24_BE		(1 << SND_PCM_SFMT_S32_BE)
+#define SND_PCM_FMT_U24_LE		(1 << SND_PCM_SFMT_U32_LE)
+#define SND_PCM_FMT_U24_BE		(1 << SND_PCM_SFMT_U32_BE)
+#define SND_PCM_FMT_S32_LE		(1 << SND_PCM_SFMT_S32_LE)
+#define SND_PCM_FMT_S32_BE		(1 << SND_PCM_SFMT_S32_BE)
+#define SND_PCM_FMT_U32_LE		(1 << SND_PCM_SFMT_U32_LE)
+#define SND_PCM_FMT_U32_BE		(1 << SND_PCM_SFMT_U32_BE)
+#define SND_PCM_FMT_FLOAT		(1 << SND_PCM_SFMT_FLOAT)
+#define SND_PCM_FMT_SPECIAL		(1 << SND_PCM_SFMT_SPECIAL)
 
 #define SND_PCM_INFO_CODEC		0x00000001
 #define SND_PCM_INFO_DSP		SND_PCM_INFO_CODEC
@@ -524,7 +544,8 @@ struct snd_pcm_format {
 	unsigned int format;		/* SND_PCM_SFMT_XXXX */
 	unsigned int rate;		/* rate in Hz */
 	unsigned int channels;		/* channels (voices) */
-	unsigned char reserved[16];
+	unsigned int special;		/* special description of format */
+	unsigned char reserved[12];
 };
 
 struct snd_pcm_playback_params {
