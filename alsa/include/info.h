@@ -90,6 +90,7 @@ struct snd_info_entry {
 	void *private_data;
 	void (*private_free)(snd_info_entry_t *entry);
 	snd_card_t *card;
+	struct module *module;
 	struct proc_dir_entry *p;
 	struct semaphore access;
 };
@@ -106,25 +107,26 @@ extern int snd_info_minor_unregister(void);
 
 #ifdef CONFIG_PROC_FS
 
-extern int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...);
-extern int snd_info_init(void);
-extern int snd_info_done(void);
+int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...);
+int snd_info_init(void);
+int snd_info_done(void);
 
-extern int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len);
-extern char *snd_info_get_str(char *dest, char *src, int len);
-extern snd_info_entry_t *snd_info_create_entry(snd_card_t * card, const char *name);
-extern void snd_info_free_entry(snd_info_entry_t * entry);
-extern snd_info_entry_t *snd_info_create_device(const char *name,
-					        unsigned int number,
-					        unsigned int mode);
-extern void snd_info_free_device(snd_info_entry_t * entry);
-extern int snd_info_store_text(snd_info_entry_t * entry);
-extern int snd_info_restore_text(snd_info_entry_t * entry);
+int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len);
+char *snd_info_get_str(char *dest, char *src, int len);
+snd_info_entry_t *snd_info_global_entry(struct module * module, const char *name);
+snd_info_entry_t *snd_info_create_entry(snd_card_t * card, const char *name);
+void snd_info_free_entry(snd_info_entry_t * entry);
+snd_info_entry_t *snd_info_create_device(const char *name,
+					 unsigned int number,
+					 unsigned int mode);
+void snd_info_free_device(snd_info_entry_t * entry);
+int snd_info_store_text(snd_info_entry_t * entry);
+int snd_info_restore_text(snd_info_entry_t * entry);
 
-extern int snd_info_card_register(snd_card_t * card);
-extern int snd_info_card_unregister(snd_card_t * card);
-extern int snd_info_register(snd_info_entry_t * entry);
-extern int snd_info_unregister(snd_info_entry_t * entry);
+int snd_info_card_register(snd_card_t * card);
+int snd_info_card_unregister(snd_card_t * card);
+int snd_info_register(snd_info_entry_t * entry);
+int snd_info_unregister(snd_info_entry_t * entry);
 
 #else
 
@@ -134,6 +136,7 @@ static inline int snd_info_done(void) { return 0; }
 
 static inline int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len) { return 0; }
 static inline char *snd_info_get_str(char *dest, char *src, int len) { return NULL; }
+static inline snd_info_entry_t *snd_info_global_entry(struct module * module, const char *name) { return NULL; }
 static inline snd_info_entry_t *snd_info_create_entry(snd_card_t * card, const char *name) { return NULL; }
 static inline void snd_info_free_entry(snd_info_entry_t * entry) { ; }
 static inline snd_info_entry_t *snd_info_create_device(const char *name,
