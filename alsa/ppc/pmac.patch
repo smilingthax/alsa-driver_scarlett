@@ -23,9 +23,3 @@
  #define chip_t pmac_t
  
  
-@@ -1317,3 +1329,5 @@
- }
- 
- #endif /* CONFIG_PM && CONFIG_PMAC_PBOOK */
-+
-+#include "pmac.inc1"
