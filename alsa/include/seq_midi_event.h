@@ -39,11 +39,13 @@ struct snd_midi_event_t {
 	int status;	/* running status */
 	int type;	/* current event type */
 	unsigned char lastcmd;
-	unsigned char buf[MAX_MIDI_EVENT_BUF];	/* input buffer */
+	int bufsize;
+	unsigned char *buf;	/* input buffer */
 	spinlock_t lock;
 };
 
-int snd_midi_event_new(snd_midi_event_t **rdev);
+int snd_midi_event_new(int bufsize, snd_midi_event_t **rdev);
+int snd_midi_event_resize_buffer(snd_midi_event_t *dev, int bufsize);
 void snd_midi_event_free(snd_midi_event_t *dev);
 void snd_midi_event_init(snd_midi_event_t *dev);
 void snd_midi_event_reset_encode(snd_midi_event_t *dev);

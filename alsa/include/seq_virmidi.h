@@ -91,6 +91,8 @@ struct snd_virmidi_dev {
 	/* linked-list of opened files */
 	rwlock_t list_lock;
 	int files;
+	int read_files;
+	int write_files;
 	snd_virmidi_t *filelist;
 
 #ifdef CONFIG_SND_OSSEMUL
