@@ -12,8 +12,16 @@ Q: How can I store and restore mixer settings?
 A: Use the native alsactl program (strongly preffered) or an another ALSA mixer
    program.
 
-Q: The driver is working (the mixer at least), but OSS programs says:
-   Can't open /dev/dsp. What is wrong?
+Q: The driver is loaded, but OSS programs say: Can't open /dev/mixer.
+   What is wrong?
+A: The OSS compatible mixer emulation comes as an add-on module which is not
+   loaded by default. If you have got modified /etc/conf.module as suggested
+   in the INSTALL file, it should be loaded with kerneld or kmod. Check it -
+   if this method for some reason doesn't work - you need to insert
+   the 'snd-mixer-oss' module manualy.
+
+Q: The driver is loaded, but OSS programs say: Can't open /dev/dsp.
+   What is wrong?
 A: The OSS compatible PCM (digital audio) emulation comes as an add-on module
    which is not loaded by default. If you have got modified /etc/conf.module
    as suggested in the INSTALL file, it should be loaded with kerneld or kmod.
