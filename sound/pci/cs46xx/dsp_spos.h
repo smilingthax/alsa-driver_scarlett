@@ -76,6 +76,7 @@ typedef enum  {
 #define MIX_SAMPLE_BUF2          0x2D00
 #define MIX_SAMPLE_BUF3          0x2E00
 #define MIX_SAMPLE_BUF4          0x2F00
+#define MIX_SAMPLE_BUF5          0x3000
 
 /* Task stack address */
 #define HFG_STACK                0x066A
@@ -127,6 +128,7 @@ typedef enum  {
 #define SCBfuncEntryPtr      0xA
 #define SRCCorPerGof         0x2
 #define SRCPhiIncr6Int26Frac 0xd
+#define SCBVolumeCtrl        0xe
 
 /* conf */
 #define UseASER1Input 1
@@ -190,6 +192,14 @@ static inline void cs46xx_dsp_spos_update_scb (cs46xx_t * chip,dsp_scb_descripto
 			(scb->address + SCBsubListPtr) << 2,
 			(scb->sub_list_ptr->address << 0x10) |
 			(scb->next_scb_ptr->address));	
+}
+
+static inline void cs46xx_dsp_scb_set_volume (cs46xx_t * chip,dsp_scb_descriptor_t * scb,
+					      u16 right,u16 left) {
+	unsigned int val = ((0xffff - right) << 16 | (0xffff - left));	
+
+	snd_cs46xx_poke(chip, (scb->address + SCBVolumeCtrl) << 2, val);
+	snd_cs46xx_poke(chip, (scb->address + SCBVolumeCtrl + 1) << 2, val);
 }
 
 #endif /* __DSP_SPOS_H__ */

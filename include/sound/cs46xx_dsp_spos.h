@@ -60,9 +60,10 @@
 #define DSP_PCM_LFE_CHANNEL     4
 #define DSP_IEC958_CHANNEL      5
 
-#define DSP_SDPIF_STATUS_OUTPUT_ENABLED 1
-#define DSP_SDPIF_STATUS_PLAYBACK_OPEN  2
-#define DSP_SDPIF_STATUS_HW_ENABLED     4
+#define DSP_SPDIF_STATUS_OUTPUT_ENABLED 1
+#define DSP_SPDIF_STATUS_PLAYBACK_OPEN  2
+#define DSP_SPDIF_STATUS_HW_ENABLED     4
+#define DSP_SPDIF_STATUS_AC3_MODE       8
 
 struct _dsp_module_desc_t;
 
@@ -155,6 +156,8 @@ typedef struct _dsp_spos_instance_t {
 
 	/* Main PCM playback mixer */
 	dsp_scb_descriptor_t * master_mix_scb;
+	u16 dac_volume_right;
+	u16 dac_volume_left;
 
 	/* Rear PCM playback mixer */
 	dsp_scb_descriptor_t * rear_mix_scb;
@@ -191,7 +194,8 @@ typedef struct _dsp_spos_instance_t {
 	/* SPDIF status */
 	int spdif_status_out;
 	int spdif_status_in;
-	u32 spdif_input_volume;
+	u16 spdif_input_volume_right;
+	u16 spdif_input_volume_left;
 
 	/* SPDIF input sample rate converter */
 	dsp_scb_descriptor_t * spdif_in_src;
@@ -221,4 +225,3 @@ typedef struct _dsp_spos_instance_t {
 } dsp_spos_instance_t;
 
 #endif /* __DSP_SPOS_H__ */
-
