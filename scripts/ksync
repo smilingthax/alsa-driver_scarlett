@@ -132,6 +132,7 @@ COMMENT_MAP = [
 		('/pci/ice1712/ice1724.c','ICE1724 driver'),
 		('/pci/ice1712'		,'ICE1712 driver'),
 		('/pci/korg1212'	,'KORG1212 driver'),
+		('/pci/mixart'		,'MIXART driver'),
 		('/pci/nm256'		,'NM256 driver'),
 		('/include/hdsp.h'	,'RME HDSP driver'),
 		('/pci/rme9652/hdsp.c'	,'RME HDSP driver'),
@@ -918,8 +919,21 @@ def cvsps(changeset):
 				bkfile = remap_alsa_file(i[string.find(i, '/'):-1])
 				fp.write(change_diff_line(i, bkfile))
 				idx = 1
+			elif i[0:13] == '--- /dev/null':
+				prevline = i
+				idx = 100
 			elif idx > 0 and idx < 4:
 				fp.write(change_diff_line(i, bkfile))
+				idx += 1
+			elif idx == 100:
+				str = string.expandtabs(i[string.find(i, '/'):-1])
+				str = str[0:string.find(str, ' ')]
+				bkfile = remap_alsa_file(str)
+				fp.write('Index: %s\n' % bkfile)
+				fp.write('diff -u %s.old %s\n' % (bkfile, bkfile))
+				fp.write(change_diff_line(prevline, bkfile))
+				fp.write(change_diff_line(i, bkfile))
+				idx = 3
 			else:
 				fp.write(i)
 		fp.close()
@@ -1047,6 +1061,8 @@ def cvsps_merge1(f,t=0):
 	if t:
 		print lines
 		return
+	nlines = string.replace(nlines, '"', "'")
+	lines = string.replace(lines, '"', "'")
 	while os.system('bk import -tpatch -C -y"' + nlines + '" ' + ff + ' .'):
 		print 'BK patch import of %s error, xterm? (any key to continue or Control-C to abort)' % ff
 		sys.stdin.readline()
