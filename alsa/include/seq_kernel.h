@@ -52,7 +52,7 @@
 #define SND_SEQ_DEFAULT_CLIENT_EVENTS	200
 
 /* max delivery path length */
-#define SND_SEQ_MAX_PATH_LEN		10
+#define SND_SEQ_MAX_HOPS		10
 
 /* typedefs */
 struct snd_seq_stru_user_client;
