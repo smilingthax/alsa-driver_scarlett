@@ -43,9 +43,9 @@
 #define SND_RAWMIDI_LFLG_OPEN	0x00000003	/* open */
 #define SND_RAWMIDI_LFLG_APPEND	0x00000004	/* append flag for output */
 
-typedef struct snd_stru_rawmidi_direction snd_rawmidi_direction_t;
+typedef struct snd_stru_rawmidi_channel snd_rawmidi_channel_t;
 
-struct snd_stru_rawmidi_direction_hw {
+struct snd_stru_rawmidi_channel_hw {
 	unsigned int flags;	/* SND_RAWMIDI_HW_XXXX */
 	void *private_data;
 	void (*private_free) (void *private_data);
@@ -59,7 +59,7 @@ struct snd_stru_rawmidi_direction_hw {
 	void (*abort) (snd_rawmidi_t * rmidi);
 };
 
-struct snd_stru_rawmidi_direction {
+struct snd_stru_rawmidi_channel {
 	unsigned int flags;	/* SND_RAWMIDI_FLG_XXXX */
 	int use_count;		/* use counter (for output) */
 	/* midi stream buffer */
@@ -75,6 +75,8 @@ struct snd_stru_rawmidi_direction {
 	/* misc */
 	unsigned int bytes;
 	struct timer_list timer;	/* poll timer */
+	spinlock_t lock;
+	wait_queue_head_t sleep;
 	/* event handler (room [output] or new bytes [input]) */
 	void (*event)(snd_rawmidi_t *rmidi);
 	void *private_data;
@@ -82,7 +84,7 @@ struct snd_stru_rawmidi_direction {
 	/* switches */
 	snd_kswitch_list_t switches;
 	/* hardware layer */
-	struct snd_stru_rawmidi_direction_hw hw;
+	struct snd_stru_rawmidi_channel_hw hw;
 };
 
 struct snd_stru_rawmidi {
@@ -98,16 +100,11 @@ struct snd_stru_rawmidi {
 	int ossreg;
 #endif
 
-	snd_rawmidi_direction_t input;
-	snd_rawmidi_direction_t output;
+	snd_rawmidi_channel_t chn[2];
 
 	void *private_data;
 	void (*private_free) (void *private_data);
 
-	spinlock_t input_lock;
-	spinlock_t output_lock;
-	wait_queue_head_t input_sleep;
-	wait_queue_head_t output_sleep;
 	struct semaphore open_mutex;
 	wait_queue_head_t open_wait;
 
@@ -122,9 +119,9 @@ struct snd_stru_rawmidi {
 /* main rawmidi functions */
 
 extern int snd_rawmidi_new(snd_card_t * card, char *id, int device, snd_rawmidi_t ** rmidi);
-extern int snd_rawmidi_switch_add(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
-extern int snd_rawmidi_switch_remove(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
-extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw, void *private_data);
+extern int snd_rawmidi_switch_add(snd_rawmidi_channel_t * dir, snd_kswitch_t * ksw);
+extern int snd_rawmidi_switch_remove(snd_rawmidi_channel_t * dir, snd_kswitch_t * ksw);
+extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_channel_t * dir, snd_kswitch_t * ksw, void *private_data);
 
 /* control functions */
 
