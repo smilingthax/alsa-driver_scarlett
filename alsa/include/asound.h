@@ -523,6 +523,7 @@ typedef struct snd_hwdep_info {
 
 #define SND_PCM_XRUN_FLUSH		0	/* stop on xrun */
 #define SND_PCM_XRUN_DRAIN		1	/* erase and stop on xrun (capture) */
+#define SND_PCM_XRUN_RESTART		2	/* automatic prepare and go after xrun */
 
 #define SND_PCM_FILL_NONE		0	/* don't fill the buffer with silent samples */
 #define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
