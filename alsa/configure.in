@@ -304,12 +304,37 @@ case "$debug" in
 esac
 AC_SUBST(moddir)
 
+dnl Check for PCI support (for 2.4 kernel)...
+if test $kpatchlevel -ge 3; then
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_MSG_CHECKING(for ISA support in kernel)
+isasup="n"
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main( void ) {
+#ifndef CONFIG_ISA
+  exit(1);
+#else
+  exit(0);
+#endif
+}
+],
+  AC_MSG_RESULT("yes");isasup="y",
+  AC_MSG_RESULT("no");isasup="n",
+  AC_MSG_RESULT("unknown");isasup="n"
+)
+CFLAGS="$ac_save_CFLAGS"
+CONFIG_ISA="$isasup"
+else
+CONFIG_ISA=probe
+fi
+
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
 CONFIG_L3=n
 CONFIG_ARM=n
 CONFIG_PPC=n
-CONFIG_ISA=y
 CONFIG_SND_BIT32_EMUL=n
 processor=""
 rm -f processor.id
@@ -427,7 +452,7 @@ case "$processor" in
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
-    CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   alpha*)
     c_opts="-pipe -mno-fp-regs -ffixed-8"
@@ -469,15 +494,17 @@ case "$processor" in
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     CONFIG_PPC=y
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   ppc64)
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -pipe -Wno-uninitialized -mminimal-toc -fno-builtin"
-    # CONFIG_ISA=n
     CONFIG_SND_BIT32_EMUL=m
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   mips)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   sparc)
     IS_EGCS=n
@@ -493,7 +520,7 @@ case "$processor" in
       c_opts="-m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
     fi
     processor="sparc";
-    CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   sparc64)
     CC=gcc
@@ -515,24 +542,28 @@ case "$processor" in
       c_opts="-pipe -mno-fpu -mtune=ultrasparc -mmedlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare"
     fi
     processor="sparc64"
-    CONFIG_ISA=n
     CONFIG_SND_BIT32_EMUL=m
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   x86_64)
     LD="ld -m elf_x86_64 -e stext"
     c_opts="-mno-red-zone -mcmodel=kernel -pipe -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   sa1100)
     c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
     CONFIG_ARM=y
     CONFIG_L3=y
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
   *)
     processor="unknown"
-    CONFIG_ISA=n
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
 esac
+
+test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
 
 case "$processor" in
   i?86*|k?|crusoe)
