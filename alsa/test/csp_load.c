@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 
 
 	/* open CSP hw_dep device */
-	if ((fd = open(device, O_WRONLY)) == -1) {
+	if ((fd = open(device, O_WRONLY | O_NONBLOCK)) == -1) {
 		printf("can't open CSP device '%s'\n", device);
 		return ERR;
 	}
