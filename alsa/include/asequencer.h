@@ -761,21 +761,20 @@ typedef struct {
 
 
 /* sequencer timer sources */
-#define SND_SEQ_TIMER_MASTER		0	/* master timer */
-#define SND_SEQ_TIMER_SLAVE		1	/* slave timer */
-#define SND_SEQ_TIMER_MIDI_CLOCK	2	/* Midi Clock (CLOCK event) */
-#define SND_SEQ_TIMER_MIDI_TICK		3	/* Midi Timer Tick (TICK event) */
+#define SND_SEQ_TIMER_ALSA		0	/* ALSA timer */
+#define SND_SEQ_TIMER_MIDI_CLOCK	1	/* Midi Clock (CLOCK event) */
+#define SND_SEQ_TIMER_MIDI_TICK		2	/* Midi Timer Tick (TICK event) */
 
 /* queue timer info */
 typedef struct {
 	int queue;			/* sequencer queue */
-
-	/* source timer selection */
-	int type;			/* timer type */
-	int slave;			/* timer slave type */
-	int number;			/* timer number/identification */
-	int resolution;			/* timer resolution in Hz */
-
+	int type;			/* source timer type */
+	union {
+		struct {
+			snd_timer_id_t id;	/* ALSA's timer ID */
+			unsigned int resolution; /* resolution in Hz */
+		} alsa;
+	} u;
 	char reserved[64];		/* for the future use */
 } snd_seq_queue_timer_t;
 

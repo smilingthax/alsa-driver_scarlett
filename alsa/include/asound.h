@@ -53,12 +53,6 @@
 	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion)))
 
 /*
- *  various limits
- */
-
-#define SND_CARDS			8
-
-/*
  *  Types of sound drivers...
  *  Note: Do not assign a new number to 100% clones...
  *  Note: The order should not be preserved but the assigment must be!!!
@@ -125,7 +119,7 @@
 #define SND_CARD_TYPE_CS4281		0x0000003b	/* CS4281 */
 #define SND_CARD_TYPE_MPU401_UART	0x0000003c	/* MPU-401 UART */
 
-#define SND_CARD_TYPE_LAST		0x0000003b
+#define SND_CARD_TYPE_LAST		0x0000003c
 
 typedef struct timeval snd_timestamp_t;
 
@@ -139,11 +133,6 @@ typedef struct timeval snd_timestamp_t;
 
 typedef struct _snd_ctl_hw_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
-	unsigned int hwdepdevs;	/* count of hardware dependent devices */
-	unsigned int pcmdevs;	/* count of PCM devices */
-	unsigned int mididevs;	/* count of raw MIDI devices */
-	unsigned int timerdevs;	/* count of timer devices */
-	unsigned int resdevs[4]; /* reserved for possible future devices */
 	char id[16];		/* ID of card (user selectable) */
 	char abbreviation[16];	/* Abbreviation for soundcard */
 	char name[32];		/* Short name of soundcard */
@@ -246,11 +235,14 @@ typedef struct _snd_control_t {
 #define SND_CTL_IOCTL_CONTROL_WRITE	_IOWR('U', 0x13, snd_control_t)
 #define SND_CTL_IOCTL_CONTROL_LOCK	_IOW ('U', 0x14, snd_control_id_t)
 #define SND_CTL_IOCTL_CONTROL_UNLOCK	_IOW ('U', 0x15, snd_control_id_t)
-#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x20, snd_hwdep_info_t)
-#define SND_CTL_IOCTL_PCM_INFO		_IOWR('U', 0x30, snd_pcm_info_t)
-#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x31, int)
-#define SND_CTL_IOCTL_RAWMIDI_INFO	_IOWR('U', 0x40, snd_rawmidi_info_t)
-#define SND_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE _IOW('U', 0x41, int)
+#define SND_CTL_IOCTL_HWDEP_NEXT_DEVICE	_IOWR('U', 0x20, int)
+#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x21, snd_hwdep_info_t)
+#define SND_CTL_IOCTL_PCM_NEXT_DEVICE	_IOR ('U', 0x30, int)
+#define SND_CTL_IOCTL_PCM_INFO		_IOWR('U', 0x31, snd_pcm_info_t)
+#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x32, int)
+#define SND_CTL_IOCTL_RAWMIDI_NEXT_DEVICE _IOWR('U', 0x40, int)
+#define SND_CTL_IOCTL_RAWMIDI_INFO	_IOWR('U', 0x41, snd_rawmidi_info_t)
+#define SND_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE _IOW('U', 0x42, int)
 
 /*
  *  Read interface.
@@ -1015,7 +1007,7 @@ typedef struct _snd_rawmidi_params {
 	size_t buffer_size;	/* requested queue size in bytes */
 	size_t avail_min;	/* minimum avail bytes for wakeup */
 	unsigned int fail_mask;	/* failure locations */
-	unsigned int no_active_sensing: 1; /* O do not send active sensing byte in close() */
+	unsigned int no_active_sensing: 1; /* do not send active sensing byte in close() */
 	char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
@@ -1040,69 +1032,46 @@ typedef struct _snd_rawmidi_status {
 
 #define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
-#define SND_TIMER_TYPE_GLOBAL		(0<<28)
-#define SND_TIMER_TYPE_SOUNDCARD	(1<<28)
-#define SND_TIMER_TYPE_PCM		(2<<28)
-#define SND_TIMER_TYPE_MAX		(7<<28)
-
-/* type */
-#define SND_TIMER_TYPE(tmr)		(((tmr) >> 28) & 0x3f)
-/* global number */
-#define SND_TIMER_GLOBAL_MAX		0x000003ff
-#define SND_TIMER_GLOBAL(tmr)		((tmr) & SND_TIMER_GLOBAL_MAX)
-#define SND_TIMER_GLOBAL_SYSTEM		0	/* system timer number */
-#define SND_TIMER_GLOBAL_RTC		1	/* RTC timer */
-/* soundcard number */
-#define SND_TIMER_SOUNDCARD_CARD_MAX	(SND_CARDS-1)
-#define SND_TIMER_SOUNDCARD_CARD_SHIFT	22
-#define SND_TIMER_SOUNDCARD_CARD(tmr)	(((tmr) >> SND_TIMER_SOUNDCARD_CARD_SHIFT) & SND_TIMER_SOUNDCARD_CARD_MAX)
-#define SND_TIMER_SOUNDCARD_DEV_MAX	0x003fffff
-#define SND_TIMER_SOUNDCARD_DEV(tmr)	((tmr) & SND_TIMER_SOUNDCARD_DEV_MAX)
-#define SND_TIMER_SOUNDCARD(card,dev)	(SND_TIMER_TYPE_SOUNDCARD|(((card)&SND_TIMER_SOUNDCARD_CARD_MAX)<<SND_TIMER_SOUNDCARD_CARD_SHIFT)|((dev)&SND_TIMER_SOUNDCARD_DEV_MAX))
-/* PCM slave timer numbers */
-#if SND_CARDS > 64
-#error "There is not enough space for the timer identifier."
-#endif
-#define SND_TIMER_PCM_CARD_MAX		(SND_CARDS-1)
-#define SND_TIMER_PCM_CARD_SHIFT	22
-#define SND_TIMER_PCM_CARD(tmr)		(((tmr) >> SND_TIMER_PCM_CARD_SHIFT) & SND_TIMER_PCM_CARD_MAX)
-#define SND_TIMER_PCM_DEV_MAX		0x000003ff
-#define SND_TIMER_PCM_DEV_SHIFT		12
-#define SND_TIMER_PCM_DEV(tmr)		(((tmr) >> SND_TIMER_PCM_DEV_SHIFT) & SND_TIMER_PCM_DEV_MAX)
-#define SND_TIMER_PCM_SUBDEV_MAX	0x00000fff
-#define SND_TIMER_PCM_SUBDEV(tmr)	(tmr & SND_TIMER_PCM_SUBDEV_MAX)
-#define SND_TIMER_PCM(card,dev,subdev)	(SND_TIMER_TYPE_PCM|(((card)&SND_TIMER_PCM_CARD_MAX)<<SND_TIMER_PCM_CARD_SHIFT)|(((dev)&SND_TIMER_PCM_DEV_MAX)<<SND_TIMER_PCM_DEV_SHIFT)|((subdev)&SND_TIMER_PCM_SUBDEV_MAX))
+typedef enum _snd_timer_type {
+	SND_TIMER_TYPE_NONE = -1,
+	SND_TIMER_TYPE_SLAVE = 0,
+	SND_TIMER_TYPE_GLOBAL,
+	SND_TIMER_TYPE_CARD,
+	SND_TIMER_TYPE_PCM
+} snd_timer_type_t;
 
 /* slave timer types */
-#define SND_TIMER_STYPE_NONE		0
-#define SND_TIMER_STYPE_APPLICATION	1
-#define SND_TIMER_STYPE_SEQUENCER	2
-#define SND_TIMER_STYPE_OSS_SEQUENCER	3
+typedef enum _snd_timer_slave_type {
+	SND_TIMER_STYPE_NONE = 0,
+	SND_TIMER_STYPE_APPLICATION,
+	SND_TIMER_STYPE_SEQUENCER,		/* alias */
+	SND_TIMER_STYPE_OSS_SEQUENCER		/* alias */
+} snd_timer_slave_type_t;
 
-#define SND_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
+/* global timers (device member) */
+typedef enum _snd_timer_global {
+	SND_TIMER_GLOBAL_SYSTEM = 0,
+	SND_TIMER_GLOBAL_RTC
+} snd_timer_global_t;
 
-#define SND_TIMER_PSFLG_AUTO		(1<<0)	/* auto start */
-
-typedef struct _snd_timer_general_info {
-	unsigned int count;		/* count of global timers */
-	char reserved[64];
-} snd_timer_general_info_t;
+typedef struct _snd_timer_id {
+	snd_timer_type_t type;		/* timer type - SND_TIMER_TYPE_* */
+	snd_timer_slave_type_t stype;	/* slave type - SND_TIMER_STYPE_* */
+	int card;
+	int device;
+	int subdevice;
+} snd_timer_id_t;
 
 typedef struct _snd_timer_select {
-	unsigned int slave: 1;		/* timer is slave */
-	union {
-		int number;		/* timer number */
-		struct {
-			int type;	/* slave type - SND_TIMER_STYPE_ */
-			int id;		/* slave identification */
-		} slave;
-	} data;
+	snd_timer_id_t id;		/* bind to timer ID */
 	char reserved[32];
 } snd_timer_select_t;
 
+#define SND_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
+
 typedef struct _snd_timer_info {
-	unsigned int flags;		/* timer flags - SND_MIXER_FLG_* */
-	char id[64];			/* timer identificator (user selectable) */
+	unsigned int flags;		/* timer flags - SND_TIMER_FLG_* */
+	char id[64];			/* timer identificator */
 	char name[80];			/* timer name */
 	unsigned long ticks;		/* maximum ticks */
 	unsigned long resolution;	/* average resolution */
@@ -1112,6 +1081,8 @@ typedef struct _snd_timer_info {
 #define SND_TIMER_PARBIT_FLAGS		(1<<0)
 #define SND_TIMER_PARBIT_TICKS		(1<<1)
 #define SND_TIMER_PARBIT_QUEUE_SIZE	(1<<2)
+
+#define SND_TIMER_PSFLG_AUTO		(1<<0)	/* supports auto start */
 
 typedef struct _snd_timer_params {
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
@@ -1131,7 +1102,7 @@ typedef struct _snd_timer_status {
 } snd_timer_status_t;
 
 #define SND_TIMER_IOCTL_PVERSION	_IOR ('T', 0x00, int)
-#define SND_TIMER_IOCTL_GINFO		_IOW ('T', 0x01, snd_timer_general_info_t)
+#define SND_TIMER_IOCTL_NEXT_DEVICE	_IOWR('T', 0x01, snd_timer_id_t)
 #define SND_TIMER_IOCTL_SELECT		_IOW ('T', 0x10, snd_timer_select_t)
 #define SND_TIMER_IOCTL_INFO		_IOR ('T', 0x11, snd_timer_info_t)
 #define SND_TIMER_IOCTL_PARAMS		_IOW ('T', 0x12, snd_timer_params_t)

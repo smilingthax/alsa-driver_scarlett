@@ -59,8 +59,10 @@ struct _snd_timer_hardware {
 };
 
 struct _snd_timer {
+	snd_timer_type_t tmr_type;
 	snd_card_t *card;
-	int number;			/* timer number */
+	int tmr_device;
+	int tmr_subdevice;
 	char id[64];
 	char name[80];
 	unsigned int flags;
@@ -86,7 +88,7 @@ struct _snd_timer_instance {
 	unsigned long ticks;
 	unsigned long cticks;
 	unsigned long lost;		/* lost ticks */
-	unsigned int slave_type;
+	snd_timer_slave_type_t slave_type;
 	unsigned int slave_id;
 	snd_timer_instance_t *next;
 	snd_timer_instance_t *inext;
@@ -99,15 +101,13 @@ struct _snd_timer_instance {
  *  Registering
  */
 
-extern int snd_timer_new(snd_card_t * card, char *id, int device, snd_timer_t ** rtimer);
-extern int snd_timer_global_new(char *id, snd_timer_t **rtimer);
+extern int snd_timer_new(snd_card_t *card, char *id, snd_timer_id_t *tid, snd_timer_t ** rtimer);
+extern int snd_timer_global_new(char *id, int device, snd_timer_t **rtimer);
 extern int snd_timer_global_free(snd_timer_t *timer);
-extern int snd_timer_global_register(snd_timer_t *timer, int device);
+extern int snd_timer_global_register(snd_timer_t *timer);
 extern int snd_timer_global_unregister(snd_timer_t *timer);
 
-extern snd_timer_instance_t *snd_timer_open(char *owner, int timer_no, unsigned int slave_type, unsigned int slave_id);
-extern snd_timer_instance_t *snd_timer_open1(char *owner, snd_timer_t *timer, unsigned int slave_type, unsigned int slave_id);
-extern snd_timer_instance_t *snd_timer_open_slave(char *owner, unsigned int slave_type, unsigned int slave_id);
+extern snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid);
 extern int snd_timer_close(snd_timer_instance_t * timeri);
 extern int snd_timer_set_owner(snd_timer_instance_t * timeri, pid_t pid, gid_t gid);
 extern int snd_timer_reset_owner(snd_timer_instance_t * timeri);
