@@ -548,6 +548,7 @@ AC_ARG_ENABLE(verbose-printk,
   verbose_printk="$enableval", verbose_printk="yes")
 case "$verbose_printk" in
   yes)
+    CONFIG_SND_VERBOSE_PRINTK=y
     AC_DEFINE(CONFIG_SND_VERBOSE_PRINTK)
     AC_MSG_RESULT(on)
     ;;
@@ -560,29 +561,28 @@ esac
 dnl Debug level
 AC_MSG_CHECKING(for debug level)
 AC_ARG_WITH(debug,
-  [  --with-debug=level      give the debug level (none,basic,memory,full,detect)],
+  [  --with-debug=level      give the debug level (none,basic,full,detect)],
   debug="$withval", debug="none")
 case "$debug" in
   basic)
     AC_MSG_RESULT(basic)
+    CONFIG_SND_DEBUG=y
     AC_DEFINE(CONFIG_SND_DEBUG)
     ;;
-  memory)
-    AC_MSG_RESULT(memory)
-    AC_DEFINE(CONFIG_SND_DEBUG)
-    AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
-    ;;
-  full)
+  memory|full)
     AC_MSG_RESULT(full)
+    CONFIG_SND_DEBUG=y
     AC_DEFINE(CONFIG_SND_DEBUG)
+    CONFIG_SND_DEBUG_MEMORY=y
     AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
-    AC_DEFINE(CONFIG_SND_DEBUG_FULL)
-    ;;    
+    ;;
   detect)
     AC_MSG_RESULT(detect)
+    CONFIG_SND_DEBUG=y
     AC_DEFINE(CONFIG_SND_DEBUG)
+    CONFIG_SND_DEBUG_MEMORY=y
     AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
-    AC_DEFINE(CONFIG_SND_DEBUG_FULL)
+    CONFIG_SND_DEBUG_DETECT=y
     AC_DEFINE(CONFIG_SND_DEBUG_DETECT)
     ;;
   *)
@@ -965,9 +965,11 @@ else
 fi
 AC_SUBST(msmp)
 
-dnl Check for video device support...
+dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
+if test $kpatchlevel -gt 2; then
 CHECK_KERNEL_CONFIG(CONFIG_VIDEO_DEV, [Video device support in kernel])
 AC_SUBST(CONFIG_VIDEO_DEV)
+fi
 
 dnl Check for ISA PnP driver in kernel...
 AC_MSG_CHECKING(for ISA PnP driver in kernel)
@@ -1402,7 +1404,6 @@ CONFIG_SND_OSSEMUL=""
 if test "$ossemul" = "yes"; then
   CONFIG_SND_OSSEMUL="y"
 fi
-AC_SUBST(CONFIG_SND_OSSEMUL)
 if test "$CONFIG_SND_OSSEMUL" = "y"; then
   AC_DEFINE(CONFIG_SND_OSSEMUL)
   AC_DEFINE(CONFIG_SND_MIXER_OSS_MODULE)
@@ -1495,6 +1496,18 @@ AC_SUBST(CONFIG_X86_PC9800)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_SELECT
+
+dnl OSS emulations
+if test "$CONFIG_SND_OSSEMUL" = "y"; then
+  CONFIG_SND_MIXER_OSS="$CONFIG_SND"
+  CONFIG_SND_PCM_OSS="$CONFIG_SND_PCM"
+  if test -n "$CONFIG_SND_SEQUENCER"; then
+    CONFIG_SND_SEQUENCER_OSS="y"
+  fi
+fi
+
+dnl Output all stuffs
+ALSA_TOPLEVEL_OUTPUT
 
 dnl Some late substitutes...
 c_opts="$c_opts -DLINUX"
