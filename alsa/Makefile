@@ -14,12 +14,15 @@ dummy:
 	@echo
 endif
 
-SUBDIRS  = kernel lowlevel cards detect
+SUBDIRS  = support kernel lowlevel cards detect
 CSUBDIRS = include test utils
 
 all: compile
 
-compile: $(PEXPORT)
+include/isapnp.h:
+	ln -sf ../support/isapnp.h include/isapnp.h
+
+compile: $(PEXPORT) include/isapnp.h
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
 	@echo "ALSA modules were sucessfully compiled."
