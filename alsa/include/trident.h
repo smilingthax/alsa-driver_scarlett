@@ -40,14 +40,25 @@
 #endif
 
 #ifndef PCI_VENDOR_ID_TRIDENT
-#define PCI_VENDOR_ID_TRIDENT          0x1023
+#define PCI_VENDOR_ID_TRIDENT		0x1023
 #endif
 #ifndef PCI_DEVICE_ID_TRIDENT_4DWAVE_DX 
-#define PCI_DEVICE_ID_TRIDENT_4DWAVE_DX 0x2000
+#define PCI_DEVICE_ID_TRIDENT_4DWAVE_DX	0x2000
 #endif
 #ifndef PCI_DEVICE_ID_TRIDENT_4DWAVE_NX 
-#define PCI_DEVICE_ID_TRIDENT_4DWAVE_NX 0x2001
+#define PCI_DEVICE_ID_TRIDENT_4DWAVE_NX	0x2001
 #endif
+
+#ifndef PCI_VENDOR_ID_SI
+#define PCI_VENDOR_ID_SI		0x1039
+#endif
+#ifndef PCI_DEVICE_ID_SI_7018
+#define PCI_DEVICE_ID_SI_7018		0x7018
+#endif
+
+#define TRIDENT_DEVICE_ID_DX		((PCI_VENDOR_ID_TRIDENT<<16)|PCI_DEVICE_ID_TRIDENT_4DWAVE_DX)
+#define TRIDENT_DEVICE_ID_NX		((PCI_VENDOR_ID_TRIDENT<<16)|PCI_DEVICE_ID_TRIDENT_4DWAVE_NX)
+#define TRIDENT_DEVICE_ID_SI7018	((PCI_VENDOR_ID_SI<<16)|PCI_DEVICE_ID_SI_7018)
 
 /* Trident chipsets have 1GB memory limit */
 #ifdef __alpha__
@@ -116,6 +127,28 @@
 
 // Global registers
 
+#define T4D_BANK_A	0
+#define T4D_BANK_B	1
+#define T4D_NUM_BANKS	2
+
+enum global_control_bits {
+	CHANNEL_IDX = 0x0000003f, OVERRUN_IE = 0x00000400,
+	UNDERRUN_IE = 0x00000800, ENDLP_IE   = 0x00001000,
+	MIDLP_IE    = 0x00002000, ETOG_IE    = 0x00004000,
+	EDROP_IE    = 0x00008000, BANK_B_EN  = 0x00010000
+};
+
+enum miscint_bits {
+	PB_UNDERRUN_IRO = 0x00000001, REC_OVERRUN_IRQ = 0x00000002,
+	SB_IRQ		= 0x00000004, MPU401_IRQ      = 0x00000008,
+	OPL3_IRQ        = 0x00000010, ADDRESS_IRQ     = 0x00000020,
+	ENVELOPE_IRQ    = 0x00000040, PB_UNDERRUN     = 0x00000100,
+	REC_OVERRUN	= 0x00000200, MIXER_UNDERFLOW = 0x00000400,
+	MIXER_OVERFLOW  = 0x00000800, ST_TARGET_REACHED = 0x00008000,
+	PB_24K_MODE     = 0x00010000, ST_IRQ_EN       = 0x00800000,
+	ACGPIO_IRQ	= 0x01000000
+};
+
 // T2 legacy dma control registers.
 #define LEGACY_DMAR0                0x00  // ADR0
 #define LEGACY_DMAR4                0x04  // CNT0
@@ -179,6 +212,20 @@
 #define NX_ACR1_AC97_W              0x44
 #define NX_ACR2_AC97_R_PRIMARY      0x48
 #define NX_ACR3_AC97_R_SECONDARY    0x4c
+
+#define SI_AC97_WRITE		    0x40
+#define SI_AC97_READ		    0x44
+#define SI_SERIAL_INTF_CTRL	    0x48
+#define SI_AC97_GPIO		    0x4c
+
+#define SI_AC97_BUSY_WRITE	    0x00008000
+#define SI_AC97_AUDIO_BUSY	    0x00004000
+#define DX_AC97_BUSY_WRITE	    0x00008000
+#define NX_AC97_BUSY_WRITE	    0x00000800
+#define SI_AC97_BUSY_READ	    0x00008000
+#define DX_AC97_BUSY_READ	    0x00008000
+#define NX_AC97_BUSY_READ	    0x00000800
+
 
 typedef struct tChannelControl
 {
@@ -269,7 +316,6 @@ struct snd_trident_stru_voice {
 };
 
 struct snd_stru_4dwave {
-
 	int seq_client;
 
 	snd_trident_port_t seq_ports[4];
@@ -281,7 +327,6 @@ struct snd_stru_4dwave {
 	int ChanSynthCount;		/* number of allocated synth channels */
 	int max_size;			/* maximum synth memory size in bytes */
 	int current_size;		/* current allocated synth mem in bytes */
-
 };
 
 struct snd_stru_trident_pcm_mixer {
@@ -300,7 +345,7 @@ struct snd_stru_trident {
 	snd_dma_t * dma4ptr;	/* SPDIF Channel */
 	snd_irq_t * irqptr;
 
-	int isNX;		/* NX chip present */
+	unsigned int device;	/* device ID */
 
         unsigned char  bDMAStart;
 
