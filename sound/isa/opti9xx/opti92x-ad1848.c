@@ -1022,7 +1022,7 @@ static int snd_opti93x_playback_prepare(snd_pcm_substream_t * substream)
 		OPTi93X_PLAYBACK_ENABLE | OPTi93X_PLAYBACK_PIO,
 		~(OPTi93X_PLAYBACK_ENABLE | OPTi93X_PLAYBACK_PIO));
 
-	snd_dma_program(chip->dma1, runtime->dma_area, size,
+	snd_dma_program(chip->dma1, runtime->dma_addr, size,
 		DMA_MODE_WRITE | DMA_AUTOINIT);
 
 	format = snd_opti93x_get_freq(runtime->rate);
@@ -1055,7 +1055,7 @@ static int snd_opti93x_capture_prepare(snd_pcm_substream_t *substream)
 		OPTi93X_CAPTURE_ENABLE | OPTi93X_CAPTURE_PIO,
 		(unsigned char)~(OPTi93X_CAPTURE_ENABLE | OPTi93X_CAPTURE_PIO));
 
-	snd_dma_program(chip->dma2, runtime->dma_area, size,
+	snd_dma_program(chip->dma2, runtime->dma_addr, size,
 		DMA_MODE_READ | DMA_AUTOINIT);
 
 	format = snd_opti93x_get_freq(runtime->rate);

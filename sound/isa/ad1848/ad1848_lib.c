@@ -526,7 +526,7 @@ static int snd_ad1848_playback_prepare(snd_pcm_substream_t * substream)
 
 	chip->dma_size = size;
 	chip->image[AD1848_IFACE_CTRL] &= ~(AD1848_PLAYBACK_ENABLE | AD1848_PLAYBACK_PIO);
-	snd_dma_program(chip->dma, runtime->dma_area, size, DMA_MODE_WRITE | DMA_AUTOINIT);
+	snd_dma_program(chip->dma, runtime->dma_addr, size, DMA_MODE_WRITE | DMA_AUTOINIT);
 	count = snd_ad1848_get_count(chip->image[AD1848_DATA_FORMAT], count) - 1;
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_ad1848_out(chip, AD1848_DATA_LWR_CNT, (unsigned char) count);
@@ -570,7 +570,7 @@ static int snd_ad1848_capture_prepare(snd_pcm_substream_t * substream)
 
 	chip->dma_size = size;
 	chip->image[AD1848_IFACE_CTRL] &= ~(AD1848_CAPTURE_ENABLE | AD1848_CAPTURE_PIO);
-	snd_dma_program(chip->dma, runtime->dma_area, size, DMA_MODE_READ | DMA_AUTOINIT);
+	snd_dma_program(chip->dma, runtime->dma_addr, size, DMA_MODE_READ | DMA_AUTOINIT);
 	count = snd_ad1848_get_count(chip->image[AD1848_DATA_FORMAT], count) - 1;
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_ad1848_out(chip, AD1848_DATA_LWR_CNT, (unsigned char) count);

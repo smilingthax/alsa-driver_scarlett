@@ -407,7 +407,7 @@ static int snd_es1688_playback_prepare(snd_pcm_substream_t * substream)
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	/* --- */
 	count = -count;
-	snd_dma_program(chip->dma8, runtime->dma_area, size, DMA_MODE_WRITE | DMA_AUTOINIT);
+	snd_dma_program(chip->dma8, runtime->dma_addr, size, DMA_MODE_WRITE | DMA_AUTOINIT);
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_es1688_write(chip, 0xa4, (unsigned char) count);
 	snd_es1688_write(chip, 0xa5, (unsigned char) (count >> 8));
@@ -464,7 +464,7 @@ static int snd_es1688_capture_prepare(snd_pcm_substream_t * substream)
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	/* --- */
 	count = -count;
-	snd_dma_program(chip->dma8, runtime->dma_area, size, DMA_MODE_READ | DMA_AUTOINIT);
+	snd_dma_program(chip->dma8, runtime->dma_addr, size, DMA_MODE_READ | DMA_AUTOINIT);
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_es1688_write(chip, 0xa4, (unsigned char) count);
 	snd_es1688_write(chip, 0xa5, (unsigned char) (count >> 8));

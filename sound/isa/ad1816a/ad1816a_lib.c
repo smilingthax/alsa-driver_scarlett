@@ -241,7 +241,7 @@ static int snd_ad1816a_playback_prepare(snd_pcm_substream_t *substream)
 	snd_ad1816a_out_mask(chip, AD1816A_PLAYBACK_CONFIG,
 		AD1816A_PLAYBACK_ENABLE | AD1816A_PLAYBACK_PIO, 0x00);
 
-	snd_dma_program(chip->dma1, runtime->dma_area, size,
+	snd_dma_program(chip->dma1, runtime->dma_addr, size,
 			DMA_MODE_WRITE | DMA_AUTOINIT);
 
 	snd_ad1816a_write(chip, AD1816A_PLAYBACK_SAMPLE_RATE, runtime->rate);
@@ -270,7 +270,7 @@ static int snd_ad1816a_capture_prepare(snd_pcm_substream_t *substream)
 	snd_ad1816a_out_mask(chip, AD1816A_CAPTURE_CONFIG,
 		AD1816A_CAPTURE_ENABLE | AD1816A_CAPTURE_PIO, 0x00);
 
-	snd_dma_program(chip->dma2, runtime->dma_area, size,
+	snd_dma_program(chip->dma2, runtime->dma_addr, size,
 			DMA_MODE_READ | DMA_AUTOINIT);
 
 	snd_ad1816a_write(chip, AD1816A_CAPTURE_SAMPLE_RATE, runtime->rate);
