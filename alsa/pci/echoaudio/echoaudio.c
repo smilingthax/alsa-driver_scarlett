@@ -1455,9 +1455,6 @@ static snd_kcontrol_new_t snd_echo_clock_source_switch __devinitdata = {
 /******************* Phantom power switch *******************/
 static int snd_echo_phantom_power_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 {
-	echoaudio_t *chip;
-
-	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	uinfo->count = 1;
 	uinfo->value.integer.min = 0;
@@ -1468,22 +1465,23 @@ static int snd_echo_phantom_power_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
 static int snd_echo_phantom_power_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+
 	ucontrol->value.integer.value[0] = chip->phantom_power;
 	return 0;
 }
 
 static int snd_echo_phantom_power_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
-	echoaudio_t *chip;
-	int changed = 0;
+	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	int power, changed = 0;
 
-	chip = snd_kcontrol_chip(kcontrol);
-	if (chip->phantom_power != !!ucontrol->value.integer.value[0]) {
+	power = !!ucontrol->value.integer.value[0];
+	if (chip->phantom_power != power) {
 		spin_lock_irq(&chip->lock);
-		changed = set_phantom_power(chip, ucontrol->value.integer.value[0]);
+		changed = set_phantom_power(chip, power);
+		spin_unlock_irq(&chip->lock);
 		if (changed == 0)
 			changed = 1;	/* no errors */
-		spin_unlock_irq(&chip->lock);
 	}
 	return changed;
 }
