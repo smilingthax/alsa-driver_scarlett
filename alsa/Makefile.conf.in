@@ -54,8 +54,9 @@ MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
 else
-EXTRA_CFLAGS += -I$(MAINSRCDIR)/include -Iinclude -DALSA_BUILD
-CPPFLAGS := $(subst -Iinclude ,,$(CPPFLAGS))
-CFLAGS := $(subst -Iinclude ,,$(CFLAGS))
+EXTRA_CFLAGS += -DALSA_BUILD
+CPPFLAGS := -I$(MAINSRCDIR)/include $(CPPFLAGS)
+CFLAGS := -I$(MAINSRCDIR)/include $(CFLAGS)
+MAKE_ADDS = @MAKE_ADDS@
 endif
 

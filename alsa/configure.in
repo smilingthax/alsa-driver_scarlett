@@ -74,9 +74,7 @@ AC_ARG_WITH(kernel,
   kerneldir="$withval",
   kerneldir="$DEFAULT_KERNEL_DIR"
 )
-AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$kerneldir")
 CONFIG_SND_KERNELDIR="$kerneldir"
-AC_SUBST(CONFIG_SND_KERNELDIR)
 AC_MSG_RESULT($kerneldir)
 
 dnl Check for kernel version...
@@ -442,6 +440,42 @@ else
   fi
 fi
 
+dnl Check for forced SUSE kernels
+AC_MSG_CHECKING(for SUSE kernel)
+AC_ARG_WITH(suse,
+  [  --with-suse=no,yes,auto  specify SUSE kernel build],
+  suse_kernel="$withval", suse_kernel="auto")
+CONFIG_SUSE_KERNEL="auto"
+if test "$suse_kernel" = "yes"; then
+  CONFIG_SUSE_KERNEL="y"
+  AC_MSG_RESULT("yes")
+else
+  if test "$suse_kernel" = "no"; then
+    CONFIG_SUSE_KERNEL=""
+    AC_MSG_RESULT("no")
+  else
+    AC_MSG_RESULT("auto")
+    CHECK_KERNEL_CONFIG(CONFIG_SUSE_KERNEL, [SUSE kernel])
+  fi
+fi
+
+MAKE_ADDS=""
+if test "$CONFIG_SUSE_KERNEL" = "y"; then
+  if test ! -f $CONFIG_SND_KERNELDIR/include/linux/kernel.h; then
+    if test "$CONFIG_SND_KERNELDIR" != "/usr/src/linux"; then
+      echo "Tweaking the kernel source directories for SUSE kernels..."
+      MAKE_ADDS="O=$CONFIG_SND_KERNELDIR"
+      CONFIG_SND_KERNELDIR="/usr/src/linux"
+      KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
+    fi
+  fi
+fi
+
+dnl define kernel directory now
+AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$CONFIG_SND_KERNELDIR")
+AC_SUBST(CONFIG_SND_KERNELDIR)
+AC_SUBST(MAKE_ADDS)
+
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
 CHECK_KERNEL_HEADER(linux/compiler.h)
@@ -623,6 +657,8 @@ int main(void) {
 	fprintf(file, "i486");
 #elif defined(CONFIG_M586)
 	fprintf(file, "i586");
+#elif defined(CONFIG_X86_64) /* this needs to be chcked before K8 */
+	fprintf(file, "x86_64");
 #elif defined(CONFIG_M586TSC)
 	fprintf(file, "i586tsc");
 #elif defined(CONFIG_M586MMX)
@@ -675,8 +711,6 @@ int main(void) {
 	fprintf(file, "sparc");
 #elif defined(CONFIG_SPARC64)
 	fprintf(file, "sparc64");
-#elif defined(CONFIG_X86_64)
-	fprintf(file, "x86_64");
 #elif defined(CONFIG_ARCH_SA1100)
 	fprintf(file, "sa1100");
 #elif defined(CONFIG_ARCH_PXA)

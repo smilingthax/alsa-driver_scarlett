@@ -18,7 +18,6 @@ export-objs :=
 prepare: $(clean-files)
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
 	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
-	 echo $$d; \
 	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare; fi; \
 	done
 
