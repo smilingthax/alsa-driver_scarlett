@@ -13,6 +13,6 @@ size_t hack_copy_in_user(void __user *to, const void __user *from, size_t size);
 #define copy_in_user hack_copy_in_user
 #endif
 
-#include "../../alsa-kernel/core/ioctl32/timer32.c"
+#include "timer32_new.c"
 
 #endif

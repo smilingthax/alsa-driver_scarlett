@@ -12,6 +12,8 @@ include $(SND_TOPDIR)/alsa-kernel/core/Makefile
 
 snd-page-alloc-objs += memory_wrapper.o
 
+obj-$(CONFIG_SND_BIT32_EMUL) += ioctl32/
+
 include $(SND_TOPDIR)/Rules.make
 
 info.c: info.inc info.patch $(SND_TOPDIR)/alsa-kernel/core/info.c
