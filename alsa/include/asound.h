@@ -411,13 +411,16 @@ typedef struct snd_mixer_groups {
 	snd_mixer_gid_t *pgroups; /* array */
 } snd_mixer_groups_t;
 
-#define SND_MIXER_CHN_MONO		0
-#define SND_MIXER_CHN_FRONT_LEFT	0
-#define SND_MIXER_CHN_FRONT_RIGHT	1
-#define SND_MIXER_CHN_FRONT_CENTER	2
-#define SND_MIXER_CHN_REAR_LEFT		3
-#define SND_MIXER_CHN_REAR_RIGHT	4
-#define SND_MIXER_CHN_WOOFER		5
+typedef enum {
+	SND_MIXER_CHN_FRONT_LEFT,
+	SND_MIXER_CHN_FRONT_RIGHT,
+	SND_MIXER_CHN_FRONT_CENTER,
+	SND_MIXER_CHN_REAR_LEFT,
+	SND_MIXER_CHN_REAR_RIGHT,
+	SND_MIXER_CHN_WOOFER,
+	SND_MIXER_CHN_LAST = 31,
+	SND_MIXER_CHN_MONO = SND_MIXER_CHN_FRONT_LEFT
+} snd_mixer_channel_t;
 
 #define SND_MIXER_CHN_MASK_MONO		(1<<SND_MIXER_CHN_MONO)
 #define SND_MIXER_CHN_MASK_FRONT_LEFT	(1<<SND_MIXER_CHN_FRONT_LEFT)
@@ -429,11 +432,12 @@ typedef struct snd_mixer_groups {
 #define SND_MIXER_CHN_MASK_STEREO	(SND_MIXER_CHN_MASK_FRONT_LEFT|SND_MIXER_CHN_MASK_FRONT_RIGHT)
 
 #define SND_MIXER_GRPCAP_VOLUME		(1<<0)
-#define SND_MIXER_GRPCAP_MUTE		(1<<1)
-#define SND_MIXER_GRPCAP_JOINTLY_MUTE	(1<<2)
-#define SND_MIXER_GRPCAP_RECORD		(1<<3)
-#define SND_MIXER_GRPCAP_JOINTLY_RECORD	(1<<4)
-#define SND_MIXER_GRPCAP_EXCL_RECORD	(1<<5)
+#define SND_MIXER_GRPCAP_JOINTLY_VOLUME	(1<<1)
+#define SND_MIXER_GRPCAP_MUTE		(1<<2)
+#define SND_MIXER_GRPCAP_JOINTLY_MUTE	(1<<3)
+#define SND_MIXER_GRPCAP_RECORD		(1<<4)
+#define SND_MIXER_GRPCAP_JOINTLY_RECORD	(1<<5)
+#define SND_MIXER_GRPCAP_EXCL_RECORD	(1<<6)
 
 typedef struct snd_mixer_group {
 	snd_mixer_gid_t gid;
@@ -448,13 +452,17 @@ typedef struct snd_mixer_group {
 	int record_group;		/* record group (for exclusive record source) */
 	int min;			/* minimum value */
 	int max;			/* maximum value */
-	int front_left;			/* front left value */
-	int front_right;		/* front right value */
-	int front_center;		/* front center */
-	int rear_left;			/* left rear */
-	int rear_right;			/* right rear */
-	int woofer;			/* woofer */
-	char reserved[64];		/* for the future use */
+	union {
+		struct {
+			int front_left;		/* front left value */
+			int front_right;	/* front right value */
+			int front_center;	/* front center */
+			int rear_left;		/* left rear */
+			int rear_right;		/* right rear */
+			int woofer;		/* woofer */
+		} names;
+		int values[32];
+	} volume;
 } snd_mixer_group_t;
 
 /*
