@@ -324,7 +324,11 @@ static void tx_loop(serialmidi_t *serial)
 		count = count > TX_BUF_SIZE ? TX_BUF_SIZE : count;
 		count = snd_rawmidi_transmit_peek(serial->substream_output, buf, count);
 		if (count > 0) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 10)
+			count = driver->write(tty, buf, count);
+#else
 			count = driver->write(tty, 0, buf, count);
+#endif
 			snd_rawmidi_transmit_ack(serial->substream_output, count);
 		} else {
 			clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
