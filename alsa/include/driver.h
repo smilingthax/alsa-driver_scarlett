@@ -109,8 +109,13 @@
 #endif
 
 #ifdef SNDCFG_ISAPNP
+#undef CONFIG_ISAPNP
 #define CONFIG_ISAPNP
+#ifdef SNDCFG_ISAPNP_KERNEL
+#include <linux/isapnp.h>
+#else
 #include "isapnp.h"
+#endif
 #endif
 
 #undef SND_POLL

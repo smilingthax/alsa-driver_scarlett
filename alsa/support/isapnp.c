@@ -40,14 +40,24 @@
 #include <linux/ioport.h>
 #include <linux/string.h>
 #include <linux/malloc.h>
+#include <linux/proc_fs.h>
 #include <asm/io.h>
 #include <asm/dma.h>
 #include <asm/irq.h>
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
-#ifndef LINUX_2_1
+#ifdef LINUX_2_1
+#include <linux/vmalloc.h>
+#include <linux/poll.h>
+#include <asm/uaccess.h>
+#else
 #include <linux/bios32.h>
 #endif
+#endif
+#ifndef ALSA_BUILD
+#include <linux/isapnp.h>
+#else
+#include "isapnp.h"
 #endif
 
 #ifndef __initfunc
@@ -56,7 +66,12 @@
 #include <linux/init.h>
 #endif
 
-#include "isapnp.h"
+#ifndef LINUX_2_1
+#define copy_from_user memcpy_fromfs
+#define copy_to_user memcpy_tofs
+#endif 
+
+#include "isapnp_proc.c"
 
 #if 0
 #define ISAPNP_REGION_OK
@@ -65,6 +80,7 @@
 #define ISAPNP_DEBUG
 #endif
 
+int isapnp_disable = 0;			/* Disable ISA PnP */
 int isapnp_rdp = 0;			/* Read Data Port */
 int isapnp_reset = 0;			/* reset all PnP cards (deactivate) */
 int isapnp_skip_pci_scan = 0;		/* skip PCI resource scanning */
@@ -74,8 +90,10 @@ int isapnp_reserve_dma[8] = { [0 ... 7] = -1 };		/* reserve (don't use) some DMA
 int isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
 int isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
 #ifdef MODULE_PARM
-MODULE_AUTHOR("Jaroslav Kysela <perex@jcu.cz>");
+MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
+MODULE_PARM(isapnp_disable, "i");
+MODULE_PARM_DESC(isapnp_disable, "ISA Plug & Play disable");
 MODULE_PARM(isapnp_rdp, "i");
 MODULE_PARM_DESC(isapnp_rdp, "ISA Plug & Play read data port");
 MODULE_PARM(isapnp_reset, "i");
@@ -117,9 +135,6 @@ MODULE_PARM_DESC(isapnp_reserve_mem, "ISA Plug & Play - reserve memory region(s)
 #define _LTAG_MEM32RANGE	0x85
 #define _LTAG_FIXEDMEM32RANGE	0x86
 
-extern void isapnp_proc_init(void);
-extern void isapnp_proc_done(void);
-
 struct isapnp_dev *isapnp_devices = NULL;	/* device list */
 static unsigned char isapnp_checksum_value;
 static struct semaphore isapnp_cfg_mutex = MUTEX;
@@ -136,7 +151,7 @@ static void isapnp_delay(int loops)
 			inb(0x80);
 }
 
-void *isapnp_alloc(long size)
+static void *isapnp_alloc(long size)
 {
 	void *result;
 
@@ -224,10 +239,12 @@ __initfunc(static void isapnp_peek(unsigned char *data, int bytes))
 	}
 }
 
+#define RDP_STEP	32	/* minimum is 4 */
+
 static int isapnp_next_rdp(int rdp)
 {
 	while (rdp <= 0x3ff && check_region(rdp, 1))
-		rdp += 4;
+		rdp += RDP_STEP;
 	return rdp;
 }
 
@@ -305,7 +322,7 @@ __initfunc(static int isapnp_isolate(void))
 			goto __next;
 		}
 		if (iteration == 1) {
-			rdp += 0x04;
+			rdp += RDP_STEP;
 			if ((rdp = isapnp_isolate_rdp_select(rdp))<0)
 				return -1;
 		} else if (iteration > 1) {
@@ -1919,7 +1936,9 @@ static void isapnp_free_logdev(struct isapnp_logdev *logdev)
 
 static void isapnp_free_all_resources(void)
 {
+#ifdef MODULE
 	struct isapnp_dev *dev, *devnext;
+#endif
 
 #ifdef ISAPNP_REGION_OK
 	release_region(_PIDXR, 1);
@@ -2108,6 +2127,11 @@ __initfunc(int isapnp_init(void))
 	struct isapnp_dev *dev;
 	struct isapnp_logdev *logdev;
 
+	if (isapnp_disable) {
+		isapnp_detected = 0;
+		printk("isapnp: ISA Plug & Play support disabled\n");
+		return 0;
+	}
 #ifdef ISAPNP_REGION_OK
 	if (check_region(_PIDXR, 1)) {
 		printk("isapnp: Index Register 0x%x already used\n", _PIDXR);
@@ -2123,13 +2147,13 @@ __initfunc(int isapnp_init(void))
 			printk("isapnp: Read Data Register 0x%x already used\n", isapnp_rdp);
 			return -EBUSY;
 		}
-		request_region(isapnp_rdp, 1, "ISA PnP read");
+		request_region(isapnp_rdp, 1, "isapnp read");
 	}
 	isapnp_detected = 1;
 #ifdef ISAPNP_REGION_OK
-	request_region(_PIDXR, 1, "ISA PnP index");
+	request_region(_PIDXR, 1, "isapnp index");
 #endif
-	request_region(_PNPWRP, 1, "ISA PnP write");
+	request_region(_PNPWRP, 1, "isapnp write");
 	if (isapnp_rdp < 0x203 || isapnp_rdp > 0x3ff) {
 		devices = isapnp_isolate();
 		if (devices < 0 || 
@@ -2139,7 +2163,7 @@ __initfunc(int isapnp_init(void))
 			printk("isapnp: No Plug & Play device found\n");
 			return 0;
 		}
-		request_region(isapnp_rdp, 1, "ISA PnP read");
+		request_region(isapnp_rdp, 1, "isapnp read");
 	}
 	isapnp_build_device_list();
 	devices = 0;

@@ -283,8 +283,20 @@ else
 fi
 AC_SUBST(msmp)
 
-dnl Check for ISA PnP driver...
-AC_MSG_CHECKING(for ISA PnP driver)
+dnl Check for ISA PnP driver in kernel...
+AC_MSG_CHECKING(for ISA PnP driver in kernel)
+SNDCFG_ISAPNP_KERNEL="0"
+if test -r $SNDCFG_KERNELDIR/include/linux/isapnp.h; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(SNDCFG_ISAPNP_KERNEL)
+  SNDCFG_ISAPNP_KERNEL="1"
+else
+  AC_MSG_RESULT(no)  
+fi
+AC_SUBST(SNDCFG_ISAPNP_KERNEL)
+
+dnl Check for ISA PnP support...
+AC_MSG_CHECKING(for ISA PnP support)
 AC_ARG_WITH(isapnp,
   [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
   pnp="$withval", pnp="auto")

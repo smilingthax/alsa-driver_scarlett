@@ -12,15 +12,21 @@ COPTS   += -DMODVERSIONS \
 		-include $(SNDCFG_KERNELDIR)/include/linux/modversions.h \
 		-include $(TOPDIR)/include/sndversions.h
 endif
-COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB -DCONFIG_ISAPNP
+COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB -DCONFIG_ISAPNP -DALSA_BUILD
 
 TARGETS = $(SNDVERSIONS)
 ifeq (1,$(SNDCFG_ISAPNP))
+ifeq (0,$(SNDCFG_ISAPNP_KERNEL))
 TARGETS+= $(TOPDIR)/modules/isapnp.o
+endif
 endif
 ISAPNP	= isapnp.o isapnp_proc.o
 ISAPNPE	= $(DEXPORT)/isapnp.ver
+ifeq (1,$(SNDCFG_ISAPNP))
+ifeq (0,$(SNDCFG_ISAPNP_KERNEL))
 SYMFILES = $(ISAPNPE)
+endif
+endif
 
 include $(TOPDIR)/Rules.make
 

@@ -1,6 +1,6 @@
 /*
  *  ISA Plug & Play support
- *  Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -19,43 +19,8 @@
  *
  */
 
-#include <linux/config.h>
-#include <linux/version.h>
-
-#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
-
-#if LinuxVersionCode(2, 0, 0) > LINUX_VERSION_CODE
-#error "This driver is designed only for Linux 2.0.0 and highter."
-#endif
-#if LinuxVersionCode(2, 1, 0) <= LINUX_VERSION_CODE
-#define LINUX_2_1
-#if LinuxVersionCode(2, 1, 127) > LINUX_VERSION_CODE
-#error "This driver requires Linux 2.1.127 and highter."
-#endif
-#endif
-
-#define __NO_VERSION__
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/errno.h>
-#include <linux/string.h>
-#include <linux/malloc.h>
-#include <linux/proc_fs.h>
-#ifdef LINUX_2_1
-#include <linux/vmalloc.h>
-#include <linux/poll.h>
-#include <asm/uaccess.h>
-#endif
-
-#ifndef LINUX_2_1
-#define copy_from_user memcpy_fromfs
-#define copy_to_user memcpy_tofs
-#endif
-
-#include "isapnp.h"
-
-extern void *isapnp_alloc(long size);
-extern struct isapnp_dev *isapnp_devices;
+static void *isapnp_alloc(long size);
+struct isapnp_dev *isapnp_devices;
 
 struct isapnp_info_buffer {
 	char *buffer;		/* pointer to begin of buffer */
@@ -543,7 +508,7 @@ static struct proc_dir_entry isapnp_info_entry =
 };
 #endif
 
-int isapnp_proc_init(void)
+__initfunc(static int isapnp_proc_init(void))
 {
 #ifdef LINUX_2_1
 	struct proc_dir_entry *p;
@@ -565,12 +530,14 @@ int isapnp_proc_init(void)
 	return 0;
 }
 
-int isapnp_proc_done(void)
+#ifdef MODULE
+static int isapnp_proc_done(void)
 {
 	if (isapnp_proc_entry)
 		proc_unregister(&proc_root, isapnp_proc_entry->low_ino);
 	return 0;
 }
+#endif /* MODULE */
 
 /*
  *
