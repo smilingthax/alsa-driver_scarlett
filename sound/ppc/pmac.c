@@ -1284,14 +1284,13 @@ static snd_kcontrol_new_t auto_mute_controls[] __initdata = {
 
 int __init snd_pmac_add_automute(pmac_t *chip)
 {
-	int i, err;
+	int err;
 	chip->auto_mute = 1;
-	for (i = 0; i < 2; i++) {
-		err = snd_ctl_add(chip->card, snd_ctl_new1(&auto_mute_controls[i], chip));
-		if (err < 0)
-			return err;
-	}
-	return 0;
+	err = snd_ctl_add(chip->card, snd_ctl_new1(&auto_mute_controls[0], chip));
+	if (err < 0)
+		return err;
+	chip->hp_detect_ctl = snd_ctl_new1(&auto_mute_controls[1], chip);
+	return snd_ctl_add(chip->card, chip->hp_detect_ctl);
 }
 #endif /* PMAC_SUPPORT_AUTOMUTE */
 
@@ -1350,7 +1349,7 @@ int __init snd_pmac_new(snd_card_t *card, pmac_t **chip_return)
 	chip->awacs = (volatile struct awacs_regs *) ioremap(np->addrs[0].address, 0x1000);
 	chip->playback.dma = (volatile struct dbdma_regs *) ioremap(np->addrs[1].address, 0x100);
 	chip->capture.dma = (volatile struct dbdma_regs *) ioremap(np->addrs[2].address, 0x100);
-	if (chip->mode <= PMAC_BURGUNDY) {
+	if (chip->model <= PMAC_BURGUNDY) {
 		if (request_irq(np->intrs[0].line, snd_pmac_ctrl_intr, 0,
 				"PMac", (void*)chip)) {
 			snd_printk(KERN_ERR "pmac: unable to grab IRQ %d\n", np->intrs[0].line);
@@ -1423,8 +1422,6 @@ int __init snd_pmac_new(snd_card_t *card, pmac_t **chip_return)
 	card->set_power_state = snd_pmac_set_power_state;
 	card->power_state_private_data = chip;
 #endif
-
-	chip->initialized = 1;
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0)
 		goto __error;

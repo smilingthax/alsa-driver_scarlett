@@ -548,9 +548,7 @@ static int tumbler_detect_headphone(pmac_t *chip)
 static void check_mute(pmac_t *chip, pmac_gpio_t *gp, int val, int do_notify, snd_kcontrol_t *sw)
 {
 	pmac_tumbler_t *mix = chip->mixer_data;
-	int oval;
-	oval = read_audio_gpio(gp);
-	if (val != oval) {
+	if (val != read_audio_gpio(gp)) {
 		write_audio_gpio(&mix->amp_mute, val);
 		if (do_notify)
 			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE, &sw->id);
@@ -571,6 +569,9 @@ static void tumbler_update_automute(pmac_t *chip, int do_notify)
 			check_mute(chip, &mix->amp_mute, 0, do_notify, chip->speaker_sw_ctl);
 			check_mute(chip, &mix->hp_mute, 1, do_notify, chip->master_sw_ctl);
 		}
+		if (do_notify)
+			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
+				       &chip->hp_detect_ctl->id);
 	}
 }
 #endif /* PMAC_SUPPORT_AUTOMUTE */
@@ -580,7 +581,7 @@ static void tumbler_update_automute(pmac_t *chip, int do_notify)
 static void headphone_intr(int irq, void *devid, struct pt_regs *regs)
 {
 	pmac_t *chip = snd_magic_cast(pmac_t, devid, return);
-	if (chip->update_automute)
+	if (chip->update_automute && chip->initialized)
 		chip->update_automute(chip, 1);
 }
 
@@ -700,13 +701,13 @@ static int __init tumbler_init(pmac_t *chip)
 
 	/* activate headphone status interrupts */
   	if (irq >= 0) {
+		unsigned char val;
 		if ((err = request_irq(irq, headphone_intr, 0,
 				       "Tumbler Headphone Detection", chip)) < 0)
 			return err;
 		/* activate headphone status interrupts */
-		/* writeb(readb(mix->headphone_detect) | (1<<7), mix->headphone_status); */
-		pmac_call_feature(PMAC_FTR_WRITE_GPIO, NULL, mix->hp_detect.addr,
-				  pmac_call_feature(PMAC_FTR_READ_GPIO, NULL, mix->hp_detect.addr, 0) | 0x80);
+		val = do_gpio_read(&mix->hp_detect);
+		do_gpio_write(&mix->hp_detect, val | 0x80);
 	}
 	mix->headphone_irq = irq;
   
@@ -772,7 +773,7 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 #endif
 
 #ifdef PMAC_SUPPORT_AUTOMUTE
-	if ((err = snd_pmac_add_automute(chip)) < 0)
+	if (mix->headphone_irq >=0 && (err = snd_pmac_add_automute(chip)) < 0)
 		return err;
 	chip->detect_headphone = tumbler_detect_headphone;
 	chip->update_automute = tumbler_update_automute;

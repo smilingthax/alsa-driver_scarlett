@@ -680,6 +680,8 @@ static void snd_pmac_awacs_update_automute(pmac_t *chip, int do_notify)
 				       &chip->master_sw_ctl->id);
 			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
 				       &chip->speaker_sw_ctl->id);
+			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
+				       &chip->hp_detect_ctl->id);
 		}
 	}
 }

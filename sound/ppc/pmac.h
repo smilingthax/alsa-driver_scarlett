@@ -176,6 +176,7 @@ struct snd_pmac {
 	void (*mixer_free)(pmac_t *);
 	snd_kcontrol_t *master_sw_ctl;
 	snd_kcontrol_t *speaker_sw_ctl;
+	snd_kcontrol_t *hp_detect_ctl;
 
 	/* lowlevel callbacks */
 	void (*set_format)(pmac_t *chip);
