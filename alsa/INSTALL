@@ -973,8 +973,8 @@ The ALSA driver fully supports the devfs extension.
 You should add lines below to your devfsd.conf file:
 
 LOOKUP snd MODLOAD ACTION snd
-REGISTER sound/.* PERMISSIONS root.audio 660
-REGISTER snd/.* PERMISSIONS root.audio 660
+REGISTER ^sound/.* PERMISSIONS root.audio 660
+REGISTER ^snd/.* PERMISSIONS root.audio 660
 
 Warning: These lines assume that you have the audio group in your system.
          Otherwise replace audio word with another group name (root for
