@@ -33,6 +33,7 @@
 #define SB_HW_16		5
 #define SB_HW_16CSP		6	/* SB16 with CSP chip */
 #define SB_HW_ALS100		7	/* Avance Logic ALS100 chip */
+#define SB_HW_ALS4000		8	/* Avance Logic ALS4000 chip */
 
 #define SB_OPEN_PCM		1
 #define SB_OPEN_MIDI_INPUT	2
@@ -48,14 +49,16 @@
 #define SB_MODE16_PLAYBACK16	4
 #define SB_MODE16_CAPTURE16	8
 #define SB_MODE16_RATE_LOCK_P	16
-#define SB_MODE16_RATE_LOCK_R	32
-#define SB_MODE16_RATE_LOCK	(SB_MODE16_RATE_LOCK_P|SB_MODE16_RATE_LOCK_R)
+#define SB_MODE16_RATE_LOCK_C	32
+#define SB_MODE16_RATE_LOCK	(SB_MODE16_RATE_LOCK_P|SB_MODE16_RATE_LOCK_C)
 
 #define SB_MPU_INPUT		1
 
 struct _snd_sb {
 	unsigned long port;		/* base port of DSP chip */
 	struct resource *res_port;
+	unsigned long alt_port;		/* alternate port (ALS4000) */
+	struct resource *res_alt_port;
 	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
 	int irq;			/* IRQ number of DSP chip */
 	int dma8;			/* 8-bit DMA */
@@ -65,12 +68,16 @@ struct _snd_sb {
 	unsigned short version;		/* version of DSP chip */
 	unsigned short hardware;	/* see to SB_HW_XXXX */
 
+	struct pci_dev *pci;		/* ALS4000 */
+
 	unsigned int open;		/* see to SB_OPEN_XXXX for sb8 */
 					/* also SND_SB_CSP_MODE_XXX for sb16_csp */
 	unsigned int mode;		/* current mode of stream */
 	unsigned int force_mode16;	/* force 16-bit mode of streams */
 	unsigned short speed8;		/* input speed */
 	unsigned char fmt8;		/* format */
+	unsigned int playback_format;
+	unsigned int capture_format;
 	struct timer_list midi_timer;
 	unsigned int p_dma_size;
 	unsigned int p_frag_size;
