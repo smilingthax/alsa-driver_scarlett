@@ -7,6 +7,14 @@
 #include <linux/pagemap.h>
 #include <linux/ioport.h>
 
+#ifndef likely
+#if __GNUC__ == 2 && __GNUC_MINOR__ < 96
+#define __builtin_expect(x, expected_value) (x)
+#endif
+#define likely(x)	__builtin_expect((x),1)
+#define unlikely(x)	__builtin_expect((x),0)
+#endif
+
 #if defined(SND_NEED_USB_WRAPPER) && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
 /* include linux/usb.h at first since it defines another compatibility layers, which
  * conflicts with ours...
