@@ -2,7 +2,6 @@
 H fix nonblock semantics for close and flush
 H multiple, partial, read only mmap support
 H lock, grant and revoke ioctls (not available to alsa-lib I propose)
-H add to OSS emulation an option to skip plugin insertion
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 H better solution for OSS mmap automatic frame_data update (for cards like cs461x)
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
