@@ -649,6 +649,9 @@ static int __init snd_opl3sa2_pnp(int dev, opl3sa2_t *chip,
 		pnp_resource_change(&cfg->dma_resource[1], dma2[dev], 1);
 	if (irq[dev] != SNDRV_AUTO_IRQ)
 		pnp_resource_change(&cfg->irq_resource[0], irq[dev], 1);
+	err = pnp_manual_config_dev(pdev, cfg, 0);
+	if (err < 0)
+		snd_printk(KERN_ERR "PnP manual resources are invalid, using auto config\n");
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
 		kfree(cfg);
@@ -663,9 +666,9 @@ static int __init snd_opl3sa2_pnp(int dev, opl3sa2_t *chip,
 	dma1[dev] = pnp_dma(pdev, 0);
 	dma2[dev] = pnp_dma(pdev, 1);
 	irq[dev] = pnp_irq(pdev, 0);
-	snd_printdd("isapnp OPL3-SA: sb port=0x%lx, wss port=0x%lx, fm port=0x%lx, midi port=0x%lx\n",
+	snd_printdd("PnP OPL3-SA: sb port=0x%lx, wss port=0x%lx, fm port=0x%lx, midi port=0x%lx\n",
 		sb_port[dev], wss_port[dev], fm_port[dev], midi_port[dev]);
-	snd_printdd("isapnp OPL3-SA: control port=0x%lx, dma1=%i, dma2=%i, irq=%i\n",
+	snd_printdd("PnP OPL3-SA: control port=0x%lx, dma1=%i, dma2=%i, irq=%i\n",
 		port[dev], dma1[dev], dma2[dev], irq[dev]);
 	kfree(cfg);
 	return 0;
@@ -708,7 +711,7 @@ static int __devinit snd_opl3sa2_probe(int dev,
 	};
 	int err;
 
-#ifdef __ISAPNP__
+#ifdef CONFIG_PNP
 	if (!isapnp[dev]) {
 #endif
 		if (port[dev] == SNDRV_AUTO_PORT) {
@@ -727,7 +730,7 @@ static int __devinit snd_opl3sa2_probe(int dev,
 			snd_printk("specify midi_port\n");
 			return -EINVAL;
 		}
-#ifdef __ISAPNP__
+#ifdef CONFIG_PNP
 	}
 #endif
 	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
@@ -743,7 +746,7 @@ static int __devinit snd_opl3sa2_probe(int dev,
 	chip->irq = -1;
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0)
 		goto __error;
-#ifdef __ISAPNP__
+#ifdef CONFIG_PNP
 	if (isapnp[dev] && (err = snd_opl3sa2_pnp(dev, chip, pcard, pid)) < 0)
 		goto __error;
 #endif
@@ -877,14 +880,14 @@ static int __init alsa_card_opl3sa2_init(void)
 	for (dev = 0; dev < SNDRV_CARDS; dev++) {
 		if (!enable[dev])
 			continue;
-#ifdef __ISAPNP__
+#ifdef CONFIG_PNP
 		if (isapnp[dev])
 			continue;
 #endif
 		if (snd_opl3sa2_probe(dev, NULL, NULL) >= 0)
 			cards++;
 	}
-#ifdef __ISAPNP__
+#ifdef CONFIG_PNP
 	cards += pnp_register_card_driver(&opl3sa2_pnpc_driver);
 #endif
 	if (!cards) {
@@ -900,8 +903,10 @@ static void __exit alsa_card_opl3sa2_exit(void)
 {
 	int idx;
 
+#ifdef CONFIG_PNP
 	/* PnP cards first */
 	pnp_unregister_card_driver(&opl3sa2_pnpc_driver);
+#endif
 	for (idx = 0; idx < SNDRV_CARDS; idx++)
 		snd_card_free(snd_opl3sa2_legacy[idx]);
 }
@@ -936,7 +941,7 @@ static int __init alsa_card_opl3sa2_setup(char *str)
 	       get_option(&str,&dma1[nr_dev]) == 2 &&
 	       get_option(&str,&dma2[nr_dev]) == 2 &&
 	       get_option(&str,&opl3sa3_ymode[nr_dev]) == 2);
-#ifdef __ISAPNP__
+#ifdef CONFIG_PNP
 	if (pnp != INT_MAX)
 		isapnp[nr_dev] = pnp;
 #endif
