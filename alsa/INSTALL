@@ -65,7 +65,7 @@ Module parameters
     Module for ESS AudioDrive ES-1688 and ES-688 soundcards.
 
     snd_port	- port # for ES-1688 chip (0x220,0x240,0x260)
-    snd_mpu_port - port # for MPU-401 port (0x300,0x310,0x320,0x330), -1 = disable
+    snd_mpu_port - port # for MPU-401 port (0x300,0x310,0x320,0x330), -1 = disable (default)
     snd_irq	- IRQ # for ES-1688 chip (5,7,9,10)
     snd_mpu_irq	- IRQ # for MPU-401 port (5,7,9,10)
     snd_dma8	- DMA # for ES-1688 chip (0,1,3)
