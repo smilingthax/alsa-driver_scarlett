@@ -86,7 +86,7 @@ MA: Jaromir Koutek <miri@punknet.cz>
 
 ID: ESS ES18XX
 IF: MIXER,PCM,MIDI
-MA: Abramo Bagnara <abbagnara@racine.ra.it>
+MA: Abramo Bagnara <abramo@alsa-project.org>
 
 ID: OPTi 82C9xx
 SC: Audio 16 Pro  EPC-SOUN9301      (82C930 based)

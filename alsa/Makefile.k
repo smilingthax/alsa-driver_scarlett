@@ -16,8 +16,8 @@ M_OBJS       :=
 MX_OBJS      :=
 MIX_OBJS     :=
 
-ifeq ($(CONFIG_SND_PCM_OSS),y)
-L_OBJS       += kernel/plugin/snd_plugin.o
+ifeq ($(CONFIG_SND_OSSEMUL),y)
+L_OBJS       += kernel/oss/snd_oss.o
 endif
 ifeq ($(CONFIG_SND_SEQUENCER),y)
 L_OBJS       += kernel/seq/snd_seq.o

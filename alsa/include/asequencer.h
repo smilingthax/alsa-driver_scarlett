@@ -271,13 +271,13 @@ typedef struct {
 
 	/* external stored data */
 typedef struct {
-	int len;		/* length of data */
-	void *ptr;		/* pointer to data (note: maybe 64-bit) */
+	size_t len;		/* length of data */
+	void *ptr;		/* pointer to data */
 } snd_seq_ev_ext;
 
 	/* external stored data - IPC shared memory */
 typedef struct {
-	int len;		/* length of data */
+	size_t len;		/* length of data */
 	key_t ipc;		/* IPC key */
 } snd_seq_ev_ipcshm;
 

@@ -1,8 +1,7 @@
 /*
  *  Advanced Linux Sound Architecture - ALSA - Driver
- *
- *  The interface file between the ALSA driver & the user space
- *  Copyright (c) 1994-2000 by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) 1994-2000 by Jaroslav Kysela <perex@suse.cz>,
+ *                             Abramo Bagnara <abramo@alsa-project.org>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -229,7 +228,7 @@ typedef struct snd_hwdep_info {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(1, 0, 1)
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
 /* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
@@ -352,7 +351,7 @@ typedef struct snd_hwdep_info {
  *  voice definitions
  */
 
-#define SND_MIXER_VOICE_UNUSED		0
+#define SND_MIXER_VOICE_UNKNOWN		0
 #define SND_MIXER_VOICE_MONO		1
 #define SND_MIXER_VOICE_LEFT		2
 #define SND_MIXER_VOICE_RIGHT		3
@@ -381,8 +380,7 @@ typedef struct snd_hwdep_info {
 					 SND_MIXER_VOICE_MASK_WOOFER)
 
 typedef struct {
-	unsigned short voice: 15,
-		       vindex: 1;
+	unsigned short position;	/* SND_MIXER_VOICE_* */
 } snd_mixer_voice_t;
 
 typedef struct {
@@ -425,6 +423,14 @@ typedef struct snd_mixer_elements {
 /*
  *  Route information.
  */
+
+typedef struct snd_mixer_route {
+	snd_mixer_eid_t src_eid; /* source element identification */
+	snd_mixer_eid_t dst_eid; /* destination element identification */
+	int src_voices;		/* source voices */
+	int dst_voices;		/* destination voices */
+	unsigned int *voice_wires; /* source * destination bitmap matrix */
+} snd_mixer_route_t;
 
 typedef struct snd_mixer_routes {
 	snd_mixer_eid_t eid;
@@ -585,16 +591,11 @@ struct snd_mixer_element_switch2 {
 
 struct snd_mixer_element_switch3_info {
 	unsigned int type;		/* SND_MIXER_SWITCH3_* */
-	/* X = output / Y = input voice descriptors */
-	int voices_size;		/* size in voice descriptors */
-	int voices;			/* count of filled voice descriptors */
-	int voices_over;		/* missing voice descriptors */
-	snd_mixer_voice_t *pvoices;	/* array */
 };
 
 struct snd_mixer_element_switch3 {
 	/* two dimensional matrix of voice route switch */
-	int rsw_size;			/* size in voice route descriptors (must be voice_size * voice_size bits !!!) */
+	int rsw_size;			/* size in voice route descriptors (must be input_voices * output_voices bits !!!) */
 	int rsw;			/* count of filled voice route descriptors */
 	int rsw_over;			/* missing voice descriptors */
 	unsigned int *prsw;		/* array */
@@ -634,7 +635,6 @@ struct snd_mixer_element_volume1 {
 struct snd_mixer_element_volume2_range {
 	int min, max;		/* linear volume */
 	int min_dB, max_dB;	/* negative - attenuation, positive - amplification */
-	snd_mixer_voice_t dvoice; /* destonation voice */
 };
 
 struct snd_mixer_element_volume2_info {
@@ -643,7 +643,7 @@ struct snd_mixer_element_volume2_info {
 	int svoices;
 	int svoices_over;
 	snd_mixer_voice_t *psvoices;
-	/* destonation ranges */
+	/* destination ranges */
 	int range_size;		/* size of range descriptors */
 	int range;		/* count of filled range descriptors */
 	int range_over;		/* missing range descriptors */
@@ -874,6 +874,8 @@ struct snd_mixer_element_pre_effect1 {
 
 typedef struct snd_mixer_element_info {
 	snd_mixer_eid_t eid;
+	int input_voices;
+	int output_voices;
 	union {
 		struct snd_mixer_element_io_info io;
 		struct snd_mixer_element_pcm1_info pcm1;
@@ -924,9 +926,10 @@ typedef struct snd_mixer_filter {
 #define SND_MIXER_IOCTL_INFO		_IOR ('R', 0x01, snd_mixer_info_t)
 #define SND_MIXER_IOCTL_ELEMENTS	_IOWR('R', 0x10, snd_mixer_elements_t)
 #define SND_MIXER_IOCTL_ROUTES		_IOWR('R', 0x11, snd_mixer_routes_t)
-#define SND_MIXER_IOCTL_GROUPS		_IOWR('R', 0x12, snd_mixer_groups_t)
-#define SND_MIXER_IOCTL_GROUP_READ	_IOWR('R', 0x13, snd_mixer_group_t)
-#define SND_MIXER_IOCTL_GROUP_WRITE	_IOWR('R', 0x14, snd_mixer_group_t)
+#define SND_MIXER_IOCTL_ROUTE		_IOWR('R', 0x12, snd_mixer_route_t)
+#define SND_MIXER_IOCTL_GROUPS		_IOWR('R', 0x13, snd_mixer_groups_t)
+#define SND_MIXER_IOCTL_GROUP_READ	_IOWR('R', 0x14, snd_mixer_group_t)
+#define SND_MIXER_IOCTL_GROUP_WRITE	_IOWR('R', 0x15, snd_mixer_group_t)
 #define SND_MIXER_IOCTL_ELEMENT_INFO	_IOWR('R', 0x20, snd_mixer_element_info_t)
 #define SND_MIXER_IOCTL_ELEMENT_READ	_IOWR('R', 0x21, snd_mixer_element_t)
 #define SND_MIXER_IOCTL_ELEMENT_WRITE	_IOWR('R', 0x22, snd_mixer_element_t)
@@ -1185,9 +1188,8 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_START_FULL		1	/* start when whole queue is filled (playback) */
 #define SND_PCM_START_GO		2	/* start on the go command */
 
-#define SND_PCM_STOP_STOP		0	/* stop when underrun/overrun */
-#define SND_PCM_STOP_STOP_ERASE		1	/* stop & erase when overrun (capture) */
-#define SND_PCM_STOP_ROLLOVER		2	/* rollover when overrun/underrun */
+#define SND_PCM_XRUN_FLUSH		0	/* stop on xrun */
+#define SND_PCM_XRUN_DRAIN		1	/* erase and stop on xrun (capture) */
 
 #define SND_PCM_FILL_NONE		0	/* don't fill the buffer with silent samples */
 #define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
@@ -1197,98 +1199,101 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_STATUS_READY		1	/* channel is ready for prepare call */
 #define SND_PCM_STATUS_PREPARED		2	/* channel is ready to go */
 #define SND_PCM_STATUS_RUNNING		3	/* channel is running */
-#define SND_PCM_STATUS_UNDERRUN		4	/* channel reached an underrun and it is not ready */
-#define SND_PCM_STATUS_OVERRUN		5	/* channel reached an overrun and it is not ready */
-#define SND_PCM_STATUS_PAUSED		6	/* channel is paused */
-
-#define SND_PCM_BOUNDARY		0xf0000000
+#define SND_PCM_STATUS_XRUN		4
+#define SND_PCM_STATUS_UNDERRUN		SND_PCM_STATUS_XRUN	/* channel reached an underrun and it is not ready */
+#define SND_PCM_STATUS_OVERRUN		SND_PCM_STATUS_XRUN	/* channel reached an overrun and it is not ready */
+#define SND_PCM_STATUS_PAUSED		5	/* channel is paused */
 
 #define SND_PCM_MMAP_OFFSET_CONTROL	0x00000000
 #define SND_PCM_MMAP_OFFSET_DATA	0x80000000
 
-#define SND_PCM_DIG0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
-#define SND_PCM_DIG0_NONAUDIO		(1<<1)	/* 0 = audio, 1 = non-audio */
-#define SND_PCM_DIG0_PRO_EMPHASIS	(7<<2)	/* mask - emphasis */
-#define SND_PCM_DIG0_PRO_EMPHASIS_NOTID	(0<<2)	/* emphasis not indicated */
-#define SND_PCM_DIG0_PRO_EMPHASIS_NONE	(1<<2)	/* none emphasis */
-#define SND_PCM_DIG0_PRO_EMPHASIS_5015	(3<<2)	/* 50/15us emphasis */
-#define SND_PCM_DIG0_PRO_EMPHASIS_CCITT	(7<<2)	/* CCITT J.17 emphasis */
-#define SND_PCM_DIG0_PRO_FREQ_UNLOCKED	(1<<5)	/* source sample frequency: 0 = locked, 1 = unlocked */
-#define SND_PCM_DIG0_PRO_FS		(3<<6)	/* mask - sample frequency */
-#define SND_PCM_DIG0_PRO_FS_NOTID	(0<<6)	/* fs not indicated */
-#define SND_PCM_DIG0_PRO_FS_44100	(1<<6)	/* 44.1kHz */
-#define SND_PCM_DIG0_PRO_FS_48000	(2<<6)	/* 48kHz */
-#define SND_PCM_DIG0_PRO_FS_32000	(3<<6)	/* 32kHz */
-#define SND_PCM_DIG0_CON_NOT_COPYRIGHT	(1<<2)	/* 0 = copyright, 1 = not copyright */
-#define SND_PCM_DIG0_CON_EMPHASIS	(7<<3)	/* mask - emphasis */
-#define SND_PCM_DIG0_CON_EMPHASIS_NONE	(0<<3)	/* none emphasis */
-#define SND_PCM_DIG0_CON_EMPHASIS_5015	(1<<3)	/* 50/15us emphasis */
-#define SND_PCM_DIG0_CON_MODE		(3<<6)	/* mask - mode */
-#define SND_PCM_DIG1_PRO_MODE		(15<<0)	/* mask - channel mode */
-#define SND_PCM_DIG1_PRO_MODE_NOTID	(0<<0)	/* not indicated */
-#define SND_PCM_DIG1_PRO_MODE_STEREOPHONIC (2<<0) /* stereophonic - ch A is left */
-#define SND_PCM_DIG1_PRO_MODE_SINGLE	(4<<0)	/* single channel */
-#define SND_PCM_DIG1_PRO_MODE_TWO	(8<<0)	/* two channels */
-#define SND_PCM_DIG1_PRO_MODE_PRIMARY	(12<<0)	/* primary/secondary */
-#define SND_PCM_DIG1_PRO_MODE_BYTE3	(15<<0)	/* vector to byte 3 */
-#define SND_PCM_DIG1_PRO_USERBITS	(15<<4)	/* mask - user bits */
-#define SND_PCM_DIG1_PRO_USERBITS_NOTID	(0<<4)	/* not indicated */
-#define SND_PCM_DIG1_PRO_USERBITS_192	(8<<4)	/* 192-bit structure */
-#define SND_PCM_DIG1_PRO_USERBITS_UDEF	(12<<4)	/* user defined application */
-#define SND_PCM_DIG1_CON_CATEGORY	0x7f
-#define SND_PCM_DIG1_CON_GENERAL	0x00
-#define SND_PCM_DIG1_CON_EXPERIMENTAL	0x40
-#define SND_PCM_DIG1_CON_SOLIDMEM_MASK	0x0f
-#define SND_PCM_DIG1_CON_SOLIDMEM_ID	0x08
-#define SND_PCM_DIG1_CON_BROADCAST1_MASK 0x07
-#define SND_PCM_DIG1_CON_BROADCAST1_ID	0x04
-#define SND_PCM_DIG1_CON_DIGDIGCONV_MASK 0x07
-#define SND_PCM_DIG1_CON_DIGDIGCONV_ID	0x02
-#define SND_PCM_DIG1_CON_ADC_COPYRIGHT_MASK 0x1f
-#define SND_PCM_DIG1_CON_ADC_COPYRIGHT_ID 0x06
-#define SND_PCM_DIG1_CON_ADC_MASK	0x1f
-#define SND_PCM_DIG1_CON_ADC_ID		0x16
-#define SND_PCM_DIG1_CON_BROADCAST2_MASK 0x0f
-#define SND_PCM_DIG1_CON_BROADCAST2_ID	0x0e
-#define SND_PCM_DIG1_CON_LASEROPT_MASK	0x07
-#define SND_PCM_DIG1_CON_LASEROPT_ID	0x01
-#define SND_PCM_DIG1_CON_MUSICAL_MASK	0x07
-#define SND_PCM_DIG1_CON_MUSICAL_ID	0x05
-#define SND_PCM_DIG1_CON_MAGNETIC_MASK	0x07
-#define SND_PCM_DIG1_CON_MAGNETIC_ID	0x03
-#define SND_PCM_DIG1_CON_IEC908_CD	(SND_PCM_DIG1_CON_LASEROPT_ID|0x00)
-#define SND_PCM_DIG1_CON_NON_IEC908_CD	(SND_PCM_DIG1_CON_LASEROPT_ID|0x08)
-#define SND_PCM_DIG1_CON_PCM_CODER	(SND_PCM_DIG1_CON_DIGDIGCONV_ID|0x00)
-#define SND_PCM_DIG1_CON_SAMPLER	(SND_PCM_DIG1_CON_DIGDIGCONV_ID|0x20)
-#define SND_PCM_DIG1_CON_MIXER		(SND_PCM_DIG1_CON_DIGDIGCONV_ID|0x10)
-#define SND_PCM_DIG1_CON_RATE_CONVERTER	(SND_PCM_DIG1_CON_DIGDIGCONV_ID|0x18)
-#define SND_PCM_DIG1_CON_SYNTHESIZER	(SND_PCM_DIG1_CON_MUSICAL_ID|0x00)
-#define SND_PCM_DIG1_CON_MICROPHONE	(SND_PCM_DIG1_CON_MUSICAL_ID|0x08)
-#define SND_PCM_DIG1_CON_DAT		(SND_PCM_DIG1_CON_MAGNETIC_ID|0x00)
-#define SND_PCM_DIG1_CON_VCR		(SND_PCM_DIG1_CON_MAGNETIC_ID|0x08)
-#define SND_PCM_DIG1_CON_ORIGINAL	(1<<7)	/* this bits depends on the category code */
-#define SND_PCM_DIG2_PRO_SBITS		(7<<0)	/* mask - sample bits */
-#define SND_PCM_DIG2_PRO_SBITS_20	(2<<0)	/* 20-bit - coordination */
-#define SND_PCM_DIG2_PRO_SBITS_24	(4<<0)	/* 24-bit - main audio */
-#define SND_PCM_DIG2_PRO_SBITS_UDEF	(6<<0)	/* user defined application */
-#define SND_PCM_DIG2_PRO_WORDLEN	(7<<3)	/* mask - source word length */
-#define SND_PCM_DIG2_PRO_WORDLEN_NOTID	(0<<3)	/* not indicated */
-#define SND_PCM_DIG2_PRO_WORDLEN_22_18	(2<<3)	/* 22-bit or 18-bit */
-#define SND_PCM_DIG2_PRO_WORDLEN_23_19	(4<<3)	/* 23-bit or 19-bit */
-#define SND_PCM_DIG2_PRO_WORDLEN_24_20	(5<<3)	/* 24-bit or 20-bit */
-#define SND_PCM_DIG2_PRO_WORDLEN_20_16	(6<<3)	/* 20-bit or 16-bit */
-#define SND_PCM_DIG2_CON_SOURCE		(15<<0)	/* mask - source number */
-#define SND_PCM_DIG2_CON_SOURCE_UNSPEC	(0<<0)	/* unspecified */
-#define SND_PCM_DIG2_CON_CHANNEL	(15<<4)	/* mask - channel number */
-#define SND_PCM_DIG2_CON_CHANNEL_UNSPEC	(0<<4)	/* unspecified */
-#define SND_PCM_DIG3_CON_FS		(15<<0)	/* mask - sample frequency */
-#define SND_PCM_DIG3_CON_FS_44100	(0<<0)	/* 44.1kHz */
-#define SND_PCM_DIG3_CON_FS_48000	(2<<0)	/* 48kHz */
-#define SND_PCM_DIG3_CON_FS_32000	(3<<0)	/* 32kHz */
-#define SND_PCM_DIG3_CON_CLOCK		(3<<4)	/* mask - clock accuracy */
-#define SND_PCM_DIG3_CON_CLOCK_1000PPM	(0<<4)	/* 1000 ppm */
-#define SND_PCM_DIG3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
-#define SND_PCM_DIG3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
+/* digital setup types */
+#define SND_PCM_DIG_AES_IEC958		0
+
+/* AES/IEC958 channel status bits */
+#define SND_PCM_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
+#define SND_PCM_AES0_NONAUDIO		(1<<1)	/* 0 = audio, 1 = non-audio */
+#define SND_PCM_AES0_PRO_EMPHASIS	(7<<2)	/* mask - emphasis */
+#define SND_PCM_AES0_PRO_EMPHASIS_NOTID	(0<<2)	/* emphasis not indicated */
+#define SND_PCM_AES0_PRO_EMPHASIS_NONE	(1<<2)	/* none emphasis */
+#define SND_PCM_AES0_PRO_EMPHASIS_5015	(3<<2)	/* 50/15us emphasis */
+#define SND_PCM_AES0_PRO_EMPHASIS_CCITT	(7<<2)	/* CCITT J.17 emphasis */
+#define SND_PCM_AES0_PRO_FREQ_UNLOCKED	(1<<5)	/* source sample frequency: 0 = locked, 1 = unlocked */
+#define SND_PCM_AES0_PRO_FS		(3<<6)	/* mask - sample frequency */
+#define SND_PCM_AES0_PRO_FS_NOTID	(0<<6)	/* fs not indicated */
+#define SND_PCM_AES0_PRO_FS_44100	(1<<6)	/* 44.1kHz */
+#define SND_PCM_AES0_PRO_FS_48000	(2<<6)	/* 48kHz */
+#define SND_PCM_AES0_PRO_FS_32000	(3<<6)	/* 32kHz */
+#define SND_PCM_AES0_CON_NOT_COPYRIGHT	(1<<2)	/* 0 = copyright, 1 = not copyright */
+#define SND_PCM_AES0_CON_EMPHASIS	(7<<3)	/* mask - emphasis */
+#define SND_PCM_AES0_CON_EMPHASIS_NONE	(0<<3)	/* none emphasis */
+#define SND_PCM_AES0_CON_EMPHASIS_5015	(1<<3)	/* 50/15us emphasis */
+#define SND_PCM_AES0_CON_MODE		(3<<6)	/* mask - mode */
+#define SND_PCM_AES1_PRO_MODE		(15<<0)	/* mask - channel mode */
+#define SND_PCM_AES1_PRO_MODE_NOTID	(0<<0)	/* not indicated */
+#define SND_PCM_AES1_PRO_MODE_STEREOPHONIC (2<<0) /* stereophonic - ch A is left */
+#define SND_PCM_AES1_PRO_MODE_SINGLE	(4<<0)	/* single channel */
+#define SND_PCM_AES1_PRO_MODE_TWO	(8<<0)	/* two channels */
+#define SND_PCM_AES1_PRO_MODE_PRIMARY	(12<<0)	/* primary/secondary */
+#define SND_PCM_AES1_PRO_MODE_BYTE3	(15<<0)	/* vector to byte 3 */
+#define SND_PCM_AES1_PRO_USERBITS	(15<<4)	/* mask - user bits */
+#define SND_PCM_AES1_PRO_USERBITS_NOTID	(0<<4)	/* not indicated */
+#define SND_PCM_AES1_PRO_USERBITS_192	(8<<4)	/* 192-bit structure */
+#define SND_PCM_AES1_PRO_USERBITS_UDEF	(12<<4)	/* user defined application */
+#define SND_PCM_AES1_CON_CATEGORY	0x7f
+#define SND_PCM_AES1_CON_GENERAL	0x00
+#define SND_PCM_AES1_CON_EXPERIMENTAL	0x40
+#define SND_PCM_AES1_CON_SOLIDMEM_MASK	0x0f
+#define SND_PCM_AES1_CON_SOLIDMEM_ID	0x08
+#define SND_PCM_AES1_CON_BROADCAST1_MASK 0x07
+#define SND_PCM_AES1_CON_BROADCAST1_ID	0x04
+#define SND_PCM_AES1_CON_DIGDIGCONV_MASK 0x07
+#define SND_PCM_AES1_CON_DIGDIGCONV_ID	0x02
+#define SND_PCM_AES1_CON_ADC_COPYRIGHT_MASK 0x1f
+#define SND_PCM_AES1_CON_ADC_COPYRIGHT_ID 0x06
+#define SND_PCM_AES1_CON_ADC_MASK	0x1f
+#define SND_PCM_AES1_CON_ADC_ID		0x16
+#define SND_PCM_AES1_CON_BROADCAST2_MASK 0x0f
+#define SND_PCM_AES1_CON_BROADCAST2_ID	0x0e
+#define SND_PCM_AES1_CON_LASEROPT_MASK	0x07
+#define SND_PCM_AES1_CON_LASEROPT_ID	0x01
+#define SND_PCM_AES1_CON_MUSICAL_MASK	0x07
+#define SND_PCM_AES1_CON_MUSICAL_ID	0x05
+#define SND_PCM_AES1_CON_MAGNETIC_MASK	0x07
+#define SND_PCM_AES1_CON_MAGNETIC_ID	0x03
+#define SND_PCM_AES1_CON_IEC908_CD	(SND_PCM_AES1_CON_LASEROPT_ID|0x00)
+#define SND_PCM_AES1_CON_NON_IEC908_CD	(SND_PCM_AES1_CON_LASEROPT_ID|0x08)
+#define SND_PCM_AES1_CON_PCM_CODER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x00)
+#define SND_PCM_AES1_CON_SAMPLER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x20)
+#define SND_PCM_AES1_CON_MIXER		(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x10)
+#define SND_PCM_AES1_CON_RATE_CONVERTER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x18)
+#define SND_PCM_AES1_CON_SYNTHESIZER	(SND_PCM_AES1_CON_MUSICAL_ID|0x00)
+#define SND_PCM_AES1_CON_MICROPHONE	(SND_PCM_AES1_CON_MUSICAL_ID|0x08)
+#define SND_PCM_AES1_CON_DAT		(SND_PCM_AES1_CON_MAGNETIC_ID|0x00)
+#define SND_PCM_AES1_CON_VCR		(SND_PCM_AES1_CON_MAGNETIC_ID|0x08)
+#define SND_PCM_AES1_CON_ORIGINAL	(1<<7)	/* this bits depends on the category code */
+#define SND_PCM_AES2_PRO_SBITS		(7<<0)	/* mask - sample bits */
+#define SND_PCM_AES2_PRO_SBITS_20	(2<<0)	/* 20-bit - coordination */
+#define SND_PCM_AES2_PRO_SBITS_24	(4<<0)	/* 24-bit - main audio */
+#define SND_PCM_AES2_PRO_SBITS_UDEF	(6<<0)	/* user defined application */
+#define SND_PCM_AES2_PRO_WORDLEN	(7<<3)	/* mask - source word length */
+#define SND_PCM_AES2_PRO_WORDLEN_NOTID	(0<<3)	/* not indicated */
+#define SND_PCM_AES2_PRO_WORDLEN_22_18	(2<<3)	/* 22-bit or 18-bit */
+#define SND_PCM_AES2_PRO_WORDLEN_23_19	(4<<3)	/* 23-bit or 19-bit */
+#define SND_PCM_AES2_PRO_WORDLEN_24_20	(5<<3)	/* 24-bit or 20-bit */
+#define SND_PCM_AES2_PRO_WORDLEN_20_16	(6<<3)	/* 20-bit or 16-bit */
+#define SND_PCM_AES2_CON_SOURCE		(15<<0)	/* mask - source number */
+#define SND_PCM_AES2_CON_SOURCE_UNSPEC	(0<<0)	/* unspecified */
+#define SND_PCM_AES2_CON_CHANNEL	(15<<4)	/* mask - channel number */
+#define SND_PCM_AES2_CON_CHANNEL_UNSPEC	(0<<4)	/* unspecified */
+#define SND_PCM_AES3_CON_FS		(15<<0)	/* mask - sample frequency */
+#define SND_PCM_AES3_CON_FS_44100	(0<<0)	/* 44.1kHz */
+#define SND_PCM_AES3_CON_FS_48000	(2<<0)	/* 48kHz */
+#define SND_PCM_AES3_CON_FS_32000	(3<<0)	/* 32kHz */
+#define SND_PCM_AES3_CON_CLOCK		(3<<4)	/* mask - clock accuracy */
+#define SND_PCM_AES3_CON_CLOCK_1000PPM	(0<<4)	/* 1000 ppm */
+#define SND_PCM_AES3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
+#define SND_PCM_AES3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
 
 typedef union snd_pcm_sync {
 	char id[16];
@@ -1297,10 +1302,17 @@ typedef union snd_pcm_sync {
 } snd_pcm_sync_t;
 
 typedef struct snd_pcm_digital {
-	unsigned char dig_status[24];	/* AES/EBU/IEC958 channel status bits */
-	unsigned char dig_subcode[147];	/* AES/EBU/IEC958 subcode bits */
-	unsigned char dig_valid: 1;	/* must be non-zero to accept these values */
-	unsigned char dig_subframe[4];	/* AES/EBU/IEC958 subframe bits */
+	int type;			/* digital API type */
+	int valid: 1;			/* set if the digital setup is valid */
+	union {
+		struct {
+			unsigned char status[24];	/* AES/IEC958 channel status bits */
+			unsigned char subcode[147];	/* AES/IEC958 subcode bits */
+			unsigned char pad;		/* nothing */
+			unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
+		} aes;
+		char reserved[256];
+	} dig;
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_digital_t;
 
@@ -1324,25 +1336,25 @@ typedef struct snd_pcm_channel_info {
 	unsigned int flags;		/* see to SND_PCM_CHNINFO_XXXX */
 	unsigned int formats;		/* supported formats */
 	unsigned int rates;		/* hardware rates */
-	int min_rate;			/* min rate (in Hz) */
-	int max_rate;			/* max rate (in Hz) */
-	int min_voices;			/* min voices */
-	int max_voices;			/* max voices */
-	int buffer_size;		/* max buffer size in bytes */
-	int min_fragment_size;		/* min fragment size in bytes */
-	int max_fragment_size;		/* max fragment size in bytes */
-	int fragment_align;		/* align fragment value */
-	int fifo_size;			/* stream FIFO size in bytes */
-	int transfer_block_size;	/* bus transfer block size in bytes */
+	unsigned int min_rate;		/* min rate (in Hz) */
+	unsigned int max_rate;		/* max rate (in Hz) */
+	unsigned int min_voices;	/* min voices */
+	unsigned int max_voices;	/* max voices */
+	size_t buffer_size;		/* max buffer size in bytes */
+	size_t min_fragment_size;	/* min fragment size in bytes */
+	size_t max_fragment_size;	/* max fragment size in bytes */
+	size_t fragment_align;		/* align fragment value */
+	size_t fifo_size;		/* stream FIFO size in bytes */
+	size_t transfer_block_size;	/* bus transfer block size in bytes */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
-	long mmap_size;			/* mmap data size */
+	size_t mmap_size;		/* mmap data size */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	char reserved[64];		/* reserved for future... */
 } snd_pcm_channel_info_t;
 
 typedef struct snd_pcm_voice_info {
-	int voice;			/* voice number */
+	unsigned int voice;		/* voice number */
 	char voice_name[32];		/* name of voice */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
@@ -1354,8 +1366,8 @@ typedef struct snd_pcm_voice_info {
 typedef struct snd_pcm_format {
 	int interleave: 1;		/* data are interleaved */
 	int format;			/* SND_PCM_SFMT_XXXX */
-	int rate;			/* rate in Hz */
-	int voices;			/* voices */
+	unsigned int rate;		/* rate in Hz */
+	unsigned int voices;		/* voices */
 	int special;			/* special (custom) description of format */
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
@@ -1366,28 +1378,31 @@ typedef struct snd_pcm_channel_params {
 	snd_pcm_format_t format;	/* playback format */
 	snd_pcm_digital_t digital;	/* digital setup */
 	int start_mode;			/* start mode - SND_PCM_START_XXXX */
-	int stop_mode;			/* stop mode - SND_PCM_STOP_XXXX */
+	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
 	int time: 1,			/* timestamp (gettimeofday) switch */
 	    ust_time: 1;		/* UST time switch */
 	snd_pcm_sync_t sync;		/* sync group */
+	size_t buffer_size;		/* requested buffer size */
+	size_t frag_size;		/* requested size of fragment in bytes */
 	union {
 		struct {
-			int queue_size;	/* queue size in bytes */
-			int fill;	/* fill mode - SND_PCM_FILL_XXXX */
-			int max_fill;	/* maximum silence fill in bytes */
+			size_t bytes_min;	/* min available bytes for wakeup */
+			size_t bytes_align;	/* transferred size need to be a multiple */
+			size_t bytes_xrun_max;	/* maximum size of underrun/overrun before unconditional stop */
+			int fill;		/* fill mode - SND_PCM_FILL_XXXX */
+			size_t bytes_fill_max;	/* maximum silence fill in bytes */
 		} stream;
 		struct {
-			int frag_size;  /* requested size of fragment in bytes */
-			int frags_min;	/* capture: minimum of filled fragments for wakeup */
-					/* playback: minimum number of fragments writeable for wakeup */
-			int frags_max;  /* playback: maximum number of fragments in queue for wakeup */
+			size_t frags_min;	/* min available fragments for wakeup */
+			size_t frags_xrun_max;	/* max size of underrun/overrun before unconditional stop */
 		} block;
+		int reserved[16];
 	} buf;				/* buffer parameters */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_channel_params_t;
 
 typedef struct snd_pcm_voice_params {
-	int voice;
+	unsigned int voice;
 	snd_pcm_digital_t digital;	/* digital setup */
 	char reserved[64];
 } snd_pcm_voice_params_t;
@@ -1396,32 +1411,37 @@ typedef struct snd_pcm_channel_setup {
 	int channel;			/* channel information */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* real used format */
-	int msbits_per_sample;		/* used most significant bits per sample */
 	snd_pcm_digital_t digital;	/* digital setup */
 	int start_mode;			/* start mode - SND_PCM_START_XXXX */
-	int stop_mode;			/* stop mode - SND_PCM_STOP_XXXX */
+	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
 	int time: 1,			/* timestamp (gettimeofday) switch */
 	    ust_time: 1;		/* UST time switch */
 	snd_pcm_sync_t sync;		/* sync group */
+	size_t buffer_size;		/* current buffer size in bytes */
+	size_t frag_size;		/* current fragment size in bytes */
+	size_t frags;			/* allocated fragments */
+	size_t frag_boundary;		/* fragment number wrap point */
+	size_t pos_boundary;		/* position in bytes wrap point */
+	unsigned int msbits_per_sample;		/* used most significant bits per sample */
 	union {
 		struct {
-			int queue_size;	/* real queue size in bytes */
-			int fill;	/* fill mode - SND_PCM_FILL_XXXX */
-			int max_fill;	/* maximum silence fill in bytes */
+			size_t bytes_min;	/* min available bytes for wakeup */
+			size_t bytes_align;	/* transferred size need to be a multiple */
+			size_t bytes_xrun_max;	/* max size of underrun/overrun before unconditional stop */
+			int fill;		/* fill mode - SND_PCM_FILL_XXXX */
+			size_t bytes_fill_max;	/* maximum silence fill in bytes */
 		} stream;
 		struct {
-			int frag_size;	/* current fragment size in bytes */
-			int frags;	/* allocated fragments */
-			int frags_min;	/* capture: minimum of filled fragments for wakeup */
-					/* playback: minimum number of fragments writeable for wakeup */
-			int frags_max;  /* playback: maximum number of fragments in queue for wakeup */
+			size_t frags_min;	/* min available frags for wakeup */
+			size_t frags_xrun_max;	/* max size of underrun/overrun before unconditional stop */
 		} block;
+		int reserved[16];
 	} buf;
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_channel_setup_t;
 
 typedef struct snd_pcm_voice_setup {
-	int voice;
+	unsigned int voice;
 	snd_pcm_digital_t digital;	/* digital setup */
 	off_t addr;			/* byte offset to voice samples */
 	unsigned int first;		/* offset to first sample in bits */
@@ -1430,37 +1450,31 @@ typedef struct snd_pcm_voice_setup {
 } snd_pcm_voice_setup_t;
 
 typedef struct snd_pcm_channel_status {
-	int channel;			/* channel information */
-	int status;			/* channel status - SND_PCM_STATUS_XXXX */
-	unsigned int scount;		/* number of bytes processed from playback/capture start */
-	struct timeval stime;		/* time when playback/capture was started */
-	long long ust_stime;		/* UST time when playback/capture was started */
-	int frag;			/* current fragment */
-	int count;			/* number of bytes in queue/buffer */
-	int free;			/* bytes in queue still free */
-	int underrun;			/* count of underruns (playback) from last status */
-	int overrun;			/* count of overruns (capture) from last status */
-	int overrange;			/* count of ADC (capture) overrange detections from last status */
-	char reserved[64];		/* must be filled with zero */
+	int channel;		/* channel information */
+	int status;		/* channel status - SND_PCM_STATUS_XXXX */
+	struct timeval stime;	/* time when playback/capture was started */
+	long long ust_stime;	/* UST time when playback/capture was started */
+	size_t frag_io;		/* current I/O fragment */
+	size_t frag_data;	/* current I/O fragment */
+	ssize_t frags_used;	/* Used fragments */
+	ssize_t frags_free;	/* Free fragments */
+	size_t pos_io;		/* current I/O position in bytes */
+	size_t pos_data;	/* current data position */
+	ssize_t bytes_used;	/* number of bytes in queue/buffer */
+	ssize_t bytes_free;	/* bytes in queue still free */
+	size_t bytes_avail_max;	/* max bytes available since last status */
+	unsigned int xruns;	/* count of underruns/overruns from last status */
+	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
+	char reserved[64];	/* must be filled with zero */
 } snd_pcm_channel_status_t;
 
 typedef struct {
-	volatile int status;		/* RO: status - SND_PCM_STATUS_XXXX */
-	volatile int frag_io;		/* RO: index to the fragment under I/O operation */
-	volatile unsigned int block;	/* RO: block number */
-	volatile unsigned int expblock; /* RW: expected block number for wakeup */
-	int res[12];			/* reserved */
-} snd_pcm_mmap_io_status_t;
-
-typedef struct {
-	volatile char data;		/* RW: non-zero - contains valid data */
-	volatile char io;		/* RO: non-zero - I/O operation (don't change data) */
-	char res[2];			/* reserved */
-} snd_pcm_mmap_fragment_t;
-
-typedef struct {
-	snd_pcm_mmap_io_status_t status;
-	snd_pcm_mmap_fragment_t fragments[128];
+	volatile int status;	/* RO: status - SND_PCM_STATUS_XXXX */
+	size_t frag_io;		/* RO: frag under I/O operation (0 ... frag_boundary-1) */
+	size_t frag_data;	/* RW: application current frag (0 ... frag_boundary-1) */
+	size_t pos_io;		/* RO: I/O position (0 ... pos_boundary-1) updated only on status query and at interrupt time */
+	size_t pos_data;	/* RW: application position (0 ... pos_boundary-1) checked only on status query and at interrupt time */
+	int reserved[59];	/* reserved */
 } snd_pcm_mmap_control_t;
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
@@ -1469,6 +1483,7 @@ typedef struct {
 #define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x10, snd_pcm_channel_params_t)
 #define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x20, snd_pcm_channel_setup_t)
 #define SND_PCM_IOCTL_CHANNEL_STATUS	_IOR ('A', 0x21, snd_pcm_channel_status_t)
+#define SND_PCM_IOCTL_CHANNEL_UPDATE	_IO  ('A', 0x22)
 #define SND_PCM_IOCTL_CHANNEL_PREPARE	_IO  ('A', 0x30)
 #define SND_PCM_IOCTL_CHANNEL_GO	_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_CHANNEL_FLUSH	_IO  ('A', 0x32)
@@ -1478,35 +1493,6 @@ typedef struct {
 #define SND_PCM_IOCTL_VOICE_INFO	_IOR ('A', 0x40, snd_pcm_voice_info_t)
 #define SND_PCM_IOCTL_VOICE_PARAMS	_IOW ('A', 0x41, snd_pcm_voice_params_t)
 #define SND_PCM_IOCTL_VOICE_SETUP	_IOR ('A', 0x42, snd_pcm_voice_setup_t)
-
-/*
- *  Loopback interface
- */
-
-#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
-
-#define SND_PCM_LB_STREAM_MODE_RAW	0
-#define SND_PCM_LB_STREAM_MODE_PACKET	1
-
-#define SND_PCM_LB_TYPE_DATA		0	/* sample data */
-#define SND_PCM_LB_TYPE_FORMAT		1	/* format change */
-#define SND_PCM_LB_TYPE_POSITION	2	/* position change (in bytes) */
-#define SND_PCM_LB_TYPE_SILENCE		3	/* silence (no data) */
-
-typedef struct snd_pcm_loopback_header {
-	int size;			/* block size in bytes */
-	int type;			/* block type (SND_PCM_LB_TYPE_*) */
-} snd_pcm_loopback_header_t;
-
-typedef struct snd_pcm_loopback_status {
-	snd_pcm_channel_status_t status; /* channel status */
-	unsigned int lost;		/* bytes lost */
-} snd_pcm_loopback_status_t;
-
-#define SND_PCM_LB_IOCTL_PVERSION	_IOR ('L', 0x00, int)
-#define SND_PCM_LB_IOCTL_STREAM_MODE	_IOW ('L', 0x01, int)
-#define SND_PCM_LB_IOCTL_FORMAT		_IOR ('L', 0x02, snd_pcm_format_t)
-#define SND_PCM_LB_IOCTL_STATUS		_IOR ('L', 0x03, snd_pcm_loopback_status_t)
 
 /*
  *  Interface compatible with Open Sound System API
@@ -1726,29 +1712,29 @@ typedef struct snd_rawmidi_info {
 
 typedef struct snd_rawmidi_params {
 	int channel;		/* Requested channel */
-	int size;		/* I/O requested queue size in bytes */
-	int min;		/* I minimum number of bytes fragments for wakeup */
-	int max;		/* O maximum number of bytes in queue for wakeup */
-	int room;		/* minumum number of bytes writeable for wakeup */
+	size_t size;		/* I/O requested queue size in bytes */
+	size_t min;		/* I minimum count of bytes in queue for wakeup */
+	size_t max;		/* O maximum count of bytes in queue for wakeup */
+	size_t room;		/* O minumum number of bytes writeable for wakeup */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
 typedef struct snd_rawmidi_setup {
 	int channel;		/* Requested channel */
-	int size;		/* I/O real queue queue size in bytes */
-	int min;		/* I minimum number of bytes fragments for wakeup */
-	int max;		/* O maximum number of bytes in queue for wakeup */
-	int room;		/* minumum number of bytes writeable for wakeup */
+	size_t size;		/* I/O real queue queue size in bytes */
+	size_t min;		/* I minimum count of bytes in queue for wakeup */
+	size_t max;		/* O maximum count of bytes in queue for wakeup */
+	size_t room;		/* O minumum number of bytes writeable for wakeup */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_setup_t;
 
 typedef struct snd_rawmidi_status {
 	int channel;		/* Requested channel */
-	int count;		/* I/O number of bytes readable/writeable without blocking */
-	int queue;		/* O number of bytes in queue */
-	int pad;		/* O not used yet */
-	int free;		/* I bytes in buffer still free */
-	int overrun;		/* I count of overruns from last status (in bytes) */
+	size_t count;		/* I/O number of bytes readable/writeable without blocking */
+	size_t queue;		/* O number of bytes in queue */
+	size_t pad;		/* O not used yet */
+	size_t free;		/* I bytes in buffer still free */
+	size_t overrun;		/* I count of overruns since last status (in bytes) */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_status_t;
 

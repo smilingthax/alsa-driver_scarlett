@@ -38,6 +38,8 @@ typedef struct snd_stru_mixer_element_new {
 	char *name;			/* element name */
 	int index;			/* extension to the element name */
 	int type;			/* element type */
+	int input_voices;
+	int output_voices;
 	int ext_size;			/* requested size of the extended area */
 	void *ext_ptr;			/* pointer to the extended area */
 	snd_kmixer_element_info_t *info;
@@ -47,10 +49,20 @@ typedef struct snd_stru_mixer_element_new {
 	snd_kmixer_free_t *private_free;
 } snd_kmixer_element_new_t;
 
+typedef struct snd_stru_mixer_route_info {
+	int share_count;
+	unsigned int *wires;
+} snd_kmixer_route_info_t;
+
+typedef struct snd_stru_mixer_route {
+	snd_kmixer_route_info_t *info;
+	snd_kmixer_element_t *route;
+} snd_kmixer_route_t;
+
 typedef struct snd_stru_mixer_element_route {
 	int size;
 	int count;
-	snd_kmixer_element_t **routes;
+	snd_kmixer_route_t *routes;
 } snd_kmixer_element_route_t;
 
 struct snd_stru_mixer_element {
@@ -58,6 +70,8 @@ struct snd_stru_mixer_element {
 	int index;			/* extension to the element name */
 	int type;			/* element type */
 	int ext_size;			/* extension data size */
+	int input_voices;
+	int output_voices;
 	snd_kmixer_element_info_t *info;
 	snd_kmixer_element_control_t *control;
 	unsigned long private_value;
@@ -369,9 +383,7 @@ typedef int (snd_mixer_sw3_control_t)(snd_kmixer_element_t *element, int w_flag,
 
 struct snd_stru_mixer_lib_sw3 {
 	int type;
-	int voices_count;
-	snd_mixer_voice_t *voices;
-	snd_mixer_sw1_control_t *control;
+	snd_mixer_sw3_control_t *control;
 };
 
 extern snd_kmixer_element_t *
@@ -380,7 +392,6 @@ extern snd_kmixer_element_t *
 			  int index,
 			  int type,
 			  int voices_count,
-			  snd_mixer_voice_t *voices,
 			  snd_mixer_sw1_control_t *control,
 			  void *private_data);
 extern snd_kmixer_element_t *
@@ -389,7 +400,6 @@ extern snd_kmixer_element_t *
 				int index,
 				int type,
 				int voices_count,
-				snd_mixer_voice_t *voices,
 				snd_mixer_sw1_control_t *control,
 				void *private_data,
 				unsigned long private_value);

@@ -24,26 +24,26 @@
 
 
 #ifdef CONFIG_SND_DEBUG
-void *_snd_magic_kcalloc(size_t size, int flags, int magic);
-void *_snd_magic_kmalloc(size_t size, int flags, int magic);
+void *_snd_magic_kcalloc(size_t size, int flags, unsigned int magic);
+void *_snd_magic_kmalloc(size_t size, int flags, unsigned int magic);
 void _snd_magic_kfree(void *ptr);
 
 #define snd_magic_kcalloc(type, extra, flags) (type *) _snd_magic_kcalloc(sizeof(type) + extra, flags, type##_magic)
 #define snd_magic_kmalloc(type, extra, flags) (type *) _snd_magic_kmalloc(sizeof(type) + extra, flags, type##_magic)
 
-static inline int _snd_magic_value(void *obj)
+static inline unsigned int _snd_magic_value(void *obj)
 {
 	return obj == NULL ? -1 : *(((int *)obj) - 1);
 }
 
-static inline int _snd_magic_bad(void *obj, int magic)
+static inline int _snd_magic_bad(void *obj, unsigned int magic)
 {
 	return _snd_magic_value(obj) != magic;
 }
 
 #define snd_magic_cast(type, ptr, retval) (type *) ({\
 	void *__ptr = ptr;\
-	int __magic = _snd_magic_value(__ptr);\
+	unsigned int __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
 		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
 		return retval;\

@@ -43,21 +43,23 @@ typedef struct snd_stru_pcm_oss_runtime {
             sync_trigger: 1;			/* sync trigger flag */
 	int rate;				/* requested rate */
 	int format;				/* requested OSS format */
-	int voices;				/* requested voices */
-	int fragment;				/* requested OSS fragment */
-	int subdivision;			/* requested subdivision */
-	int fragment_size;			/* requested fragment size */
-	int fragments;				/* requested fragments */
-	int mmap_fragment_size;
-	int mmap_fragments;
+	unsigned int voices;			/* requested voices */
+	unsigned int fragment;			/* requested OSS fragment */
+	unsigned int subdivision;		/* requested subdivision */
+	size_t fragment_size;			/* requested fragment size */
+	unsigned int fragments;			/* requested fragments */
+	size_t bytes;				/* total # bytes processed */
+	size_t mmap_fragment_size;
+	unsigned int mmap_fragments;
 	char *buffer;				/* vmallocated fragment */
-	int buffer_used;			/* used length from buffer */
-	int plugin_initial_samples;
+	size_t buffer_used;			/* used length from buffer */
+	size_t plugin_initial_samples;
 	snd_pcm_plugin_t *plugin_first;
 	snd_pcm_plugin_t *plugin_last;
 	char *xbuffer[2];
-	long xbuffer_size[2];
+	size_t xbuffer_size[2];
 	char xbuffer_lock[2];
+	unsigned int prev_frag_io;
 } snd_pcm_oss_runtime_t;
 
 typedef struct snd_stru_pcm_oss_file {

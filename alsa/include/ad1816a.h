@@ -133,6 +133,8 @@ struct snd_stru_ad1816a {
 	unsigned short dma2;
 	snd_dma_t *dma1ptr;
 	snd_dma_t *dma2ptr;
+
+	unsigned short hardware;
 	unsigned short version;
 
 	spinlock_t lock;
@@ -205,6 +207,12 @@ struct snd_stru_ad1816a {
 	snd_kmixer_element_t *me_dig_accu;
 	snd_kmixer_element_t *me_playback;
 };
+
+
+#define AD1816A_HW_AUTO		0
+#define AD1816A_HW_AD1816A	1
+#define AD1816A_HW_AD1815	2
+#define AD1816A_HW_AD18MAX10	3
 
 #define AD1816A_MODE_PLAYBACK	0x01
 #define AD1816A_MODE_CAPTURE	0x02

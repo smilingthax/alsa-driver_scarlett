@@ -33,8 +33,6 @@ function basic() {
   banner "snd-pcm"
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-pcm-oss.o ]; then
-    banner "snd-pcm-plugin"
-    if ! $INSMOD -m $MODDIR/snd-pcm-plugin.o >> $MAP; then exit 1; fi  
     banner "snd-pcm-oss"
     if ! $INSMOD -m $MODDIR/snd-pcm-oss.o >> $MAP; then exit 1; fi  
   fi

@@ -3,10 +3,8 @@
 
 /*
  *  Header file for ES18xx
- *  Copyright (c) by Christian Fischbach
- *  <fishbach@pool.informatik.rwth-aachen.de>
- *  Copyright (c) by Abramo Bagnara
- *  <abbagnara@racine.ra.it>
+ *  Copyright (c) by Christian Fischbach <fishbach@pool.informatik.rwth-aachen.de>
+ *  Copyright (c) by Abramo Bagnara <abramo@alsa-project.org>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
