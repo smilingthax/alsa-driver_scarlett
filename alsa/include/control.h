@@ -84,8 +84,7 @@ typedef int (*snd_kctl_ioctl_func_t) (snd_card_t * card,
 				 snd_ctl_file_t * control,
 				 unsigned int cmd, unsigned long arg);
 
-void snd_ctl_notify_all(snd_card_t * card, unsigned int mask, snd_ctl_elem_id_t * id);
-void snd_ctl_notify_value_change(snd_ctl_file_t * ctl, snd_kcontrol_t * control);
+void snd_ctl_notify(snd_card_t * card, unsigned int mask, snd_ctl_elem_id_t * id);
 
 snd_kcontrol_t *snd_ctl_new(snd_kcontrol_t * kcontrol);
 snd_kcontrol_t *snd_ctl_new1(snd_kcontrol_new_t * kcontrolnew, void * private_data);

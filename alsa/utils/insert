@@ -160,7 +160,7 @@ case "$1" in
     insert snd-sb-common.o
     insert snd-sb8-dsp.o
     insert snd-opl3.o
-    insert snd-card-sb8.o snd_port=0x220 snd_irq=5 snd_dma8=3
+    insert snd-card-sb8.o snd_port=0x220 snd_irq=7 snd_dma8=1
     restore sb.conf
     ;;
   sbawe)
@@ -259,7 +259,6 @@ case "$1" in
   s3)
     basic
     insert snd-mpu401-uart.o 
-    insert snd-s3-86c617.o
     insert snd-opl3.o
     insert snd-card-sonicvibes.o snd_reverb=1
     restore sonicvibes.conf
