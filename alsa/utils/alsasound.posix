@@ -50,9 +50,11 @@ case "$1" in
 		grep -E "^alias( |\t)+snd-card-[[:digit:]]" | \
 		awk '{print $3}' | 
 		while read line; do \
-		  echo -n "Starting sound driver: $line "; \
-		  /sbin/modprobe $line; \
-		  echo "done"; \
+                  if [ "$line" != off ]; then \
+		    echo -n "Starting sound driver: $line "; \
+		    /sbin/modprobe $line; \
+		    echo "done"; \
+		  fi \
 		done
           # 
           # restore driver settings
