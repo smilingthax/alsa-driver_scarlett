@@ -51,6 +51,10 @@ extern snd_pcm_ops_t snd_cs46xx_playback_ops;
 extern snd_pcm_ops_t snd_cs46xx_playback_indirect_ops;
 extern snd_pcm_ops_t snd_cs46xx_capture_ops;
 extern snd_pcm_ops_t snd_cs46xx_capture_indirect_ops;
+extern snd_pcm_ops_t snd_cs46xx_playback_rear_ops;
+extern snd_pcm_ops_t snd_cs46xx_playback_indirect_rear_ops;
+extern snd_pcm_ops_t snd_cs46xx_playback_iec958_ops;
+extern snd_pcm_ops_t snd_cs46xx_playback_indirect_iec958_ops;
 
 
 /*
@@ -185,7 +189,8 @@ dsp_scb_descriptor_t *  cs46xx_dsp_create_magic_snoop_scb(cs46xx_t * chip,char *
                                                           dsp_scb_descriptor_t * snoop_scb,
                                                           dsp_scb_descriptor_t * parent_scb,
                                                           int scb_child_type);
-pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sample_rate, void * private_data, u32 hw_dma_addr);
+pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sample_rate, void * private_data, u32 hw_dma_addr,
+                                                          int pcm_channel_id);
 void                       cs46xx_dsp_destroy_pcm_channel (cs46xx_t * chip,
                                                            pcm_channel_descriptor_t * pcm_channel);
 void                       cs46xx_dsp_set_src_sample_rate(cs46xx_t * chip,dsp_scb_descriptor_t * src, 
@@ -196,4 +201,6 @@ dsp_scb_descriptor_t *     cs46xx_add_record_source (cs46xx_t *chip,dsp_scb_desc
                                                      u16 addr,char * scb_name);
 int                         cs46xx_src_unlink(cs46xx_t *chip,dsp_scb_descriptor_t * src);
 int                         cs46xx_src_link(cs46xx_t *chip,dsp_scb_descriptor_t * src);
+int                         cs46xx_iec958_pre_open (cs46xx_t *chip);
+int                         cs46xx_iec958_post_close (cs46xx_t *chip);
 #endif /* __CS46XX_LIB_H__ */
