@@ -108,7 +108,7 @@ ESS ES1887 AudioDrive:(ab):U:Incomplete 16 bit dma support
 ESS ES1888 AudioDrive:(ab):U:Incomplete 16 bit dma support
 
 - snd-card-es1938
-ESS ES1938
+ESS ES1938:ab:000715:See notes inside driver
 TerraTec 128i PCI
 
 - snd-card-es1968
@@ -121,7 +121,7 @@ TerraTec DMX
 ESS AudioDrive ES968
 
 - snd-card-fm801
-ForteMedia FM801:jk
+ForteMedia FM801:ab
 
 - snd-card-gusclassic
 Gravis UltraSound Classic:jk
@@ -188,7 +188,7 @@ RME Digi96/8 PAD
 
 - snd-card-rme9652
 RME Hammerfall
-RME Hammerfall-Light:ab,jk:000628:missing SPDIF setting
+RME Hammerfall-Light:ab,jk:000715:
 
 - snd-card-sb16
 Creative Labs SB 16:ti
