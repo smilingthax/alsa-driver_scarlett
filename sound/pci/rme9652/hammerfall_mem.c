@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: hammerfall_mem.c,v 1.10 2003/06/06 11:54:28 perex Exp $
+    $Id: hammerfall_mem.c,v 1.11 2003/06/10 14:07:23 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
