@@ -835,10 +835,10 @@ typedef struct {
 } snd_pcm_sync_t;
 
 typedef struct {
-	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
+	volatile long state;	/* RO: status - SND_PCM_STATE_XXXX */
 	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
 	snd_timestamp_t tstamp;	/* Timestamp */
-	char pad[PAGE_SIZE - (sizeof(size_t) + sizeof(int) +
+	char pad[PAGE_SIZE - (sizeof(size_t) + sizeof(long) +
 			      sizeof(snd_timestamp_t))];		
 } snd_pcm_mmap_status_t;
 

@@ -115,8 +115,8 @@ struct snd_stru_pcm_runtime {
 	size_t frag_size;
 	size_t frags;			/* fragments */
 
-	volatile int *state;		/* stream status */
-	int _sstate;			/* static status location */
+	volatile long *state;		/* stream status */
+	long _sstate;			/* static status location */
 	volatile size_t *frame_io;
 	size_t _sframe_io;
 	volatile size_t *frame_data;
