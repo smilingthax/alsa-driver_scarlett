@@ -644,7 +644,7 @@ struct sndrv_ctl_card_info {
 	int card;			/* R: card number */
 	enum sndrv_card_type type;	/* type of card */
 	unsigned char id[16];		/* ID of card (user selectable) */
-	unsigned char abbreviation[16];	/* Abbreviation for soundcard */
+	unsigned char driver[16];	/* Driver name */
 	unsigned char name[32];		/* Short name of soundcard */
 	unsigned char longname[80];	/* name + info text about soundcard */
 	unsigned char mixerid[16];	/* ID of mixer */

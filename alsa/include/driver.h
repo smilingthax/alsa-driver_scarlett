@@ -139,6 +139,7 @@
 #define HACK_PCI_ALLOC_CONSISTENT
 void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 				    dma_addr_t *dma_handle);
+#undef pci_alloc_consistent
 #define pci_alloc_consistent snd_pci_hack_alloc_consistent
 #endif /* i386 or ppc */
 #endif
@@ -339,7 +340,7 @@ struct _snd_card {
 	unsigned int type;		/* type (number ID) of soundcard */
 
 	char id[16];			/* id string of this card */
-	char abbreviation[16];		/* abbreviation of soundcard name */
+	char driver[16];		/* driver name */
 	char shortname[32];		/* short name of this soundcard */
 	char longname[80];		/* name of this soundcard */
 	char mixerid[16];		/* mixer ID */
