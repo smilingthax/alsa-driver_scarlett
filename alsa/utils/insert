@@ -37,14 +37,14 @@ case "$1" in
     insert snd-i2c.o
     insert snd-tea6330t.o
     insert snd-interwave-stb.o snd_dma1=5 snd_dma2=6 snd_midi=1
-    cat /etc/sound/0/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/0/mixer0 > /proc/asound/0/mixer0
     ;;
   interwave|iw)
     basic
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-interwave.o snd_dma1=5 snd_dma2=6 snd_midi=1
-    cat /etc/sound/0/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/0/mixer0 > /proc/asound/0/mixer0
     ;;
   es1688)
     basic
@@ -59,7 +59,7 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
     insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5
-    cat /etc/sound/0/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/0/mixer0 > /proc/asound/0/mixer0
     ;;
   sbawe)
     basic
@@ -68,7 +68,7 @@ case "$1" in
     insert snd-opl3.o
     insert snd-emu8000.o
     insert snd-sbawe.o snd_irq=5 snd_dma8=1 snd_dma16=5
-    cat /etc/sound/0/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/0/mixer0 > /proc/asound/0/mixer0
     ;;
   sb8)
     basic
@@ -81,13 +81,13 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-gusmax.o
-    cat /etc/sound/0/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/0/mixer0 > /proc/asound/0/mixer0
     ;;
   gusc*|clas*)
     basic
     insert snd-gus.o
     insert snd-gusclassic.o snd_irq=11 snd_dma1=6 snd_dma2=7
-    cat /etc/sound/1/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/1/mixer0 > /proc/asound/0/mixer0
     ;;
   guse*|ext*)
     basic
@@ -118,8 +118,8 @@ case "$1" in
     insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5 snd_mpu_port=0x330
     insert snd-gus.o
     insert snd-gusclassic.o snd_dma2=-1
-    cat /etc/sound/0/mixer0 > /proc/asound/0/mixer0
-    cat /etc/sound/1/mixer0 > /proc/asound/1/mixer0
+    cat /etc/asound/0/mixer0 > /proc/asound/0/mixer0
+    cat /etc/asound/1/mixer0 > /proc/asound/1/mixer0
     ;;
   p2)
     basic
@@ -136,8 +136,8 @@ case "$1" in
     insert snd-s3-86c617.o
     insert snd-opl3.o
     insert snd-sonicvibes.o snd_reverb=1
-    if [ -r /etc/sound/sonicvibes ]; then
-      cat /etc/sound/sonicvibes > /proc/asound/0/mixer0
+    if [ -r /etc/asound/sonicvibes ]; then
+      cat /etc/asound/sonicvibes > /proc/asound/0/mixer0
     fi
     ;;
   audiopci)
@@ -145,8 +145,8 @@ case "$1" in
     insert snd-ac97-codec.o
     insert snd-es1370.o
     insert snd-audiopci.o
-    if [ -r /etc/sound/es1370 ]; then
-      cat /etc/sound/es1370 > /proc/asound/0/mixer0
+    if [ -r /etc/asound/es1370 ]; then
+      cat /etc/asound/es1370 > /proc/asound/0/mixer0
     fi
     ;;
   detect)

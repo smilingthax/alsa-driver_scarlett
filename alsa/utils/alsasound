@@ -44,11 +44,11 @@ function start() {
   #
   idx=0
   while [ $idx -lt $maxcards ]; do
-    if [ -d /etc/sound/$idx ] && [ -d /proc/asound/$idx ]; then
+    if [ -d /etc/asound/$idx ] && [ -d /proc/asound/$idx ]; then
       idx1=0
       while [ $idx1 -lt $maxmixers ]; do
-        if [ -r /etc/sound/$idx/mixer$idx1 ] && [ -w /proc/asound/$idx/mixer$idx1 ]; then
-          cat /etc/sound/$idx/mixer$idx1 > /proc/asound/$idx/mixer$idx1
+        if [ -r /etc/asound/$idx/mixer$idx1 ] && [ -w /proc/asound/$idx/mixer$idx1 ]; then
+          cat /etc/asound/$idx/mixer$idx1 > /proc/asound/$idx/mixer$idx1
         fi
         idx1=$[$idx1+1]
       done
@@ -67,8 +67,8 @@ function stop() {
       idx1=0
       while [ $idx1 -lt $maxmixers ]; do
         if [ -r /proc/asound/$idx/mixer$idx1 ]; then
-          mkdir -p /etc/sound/$idx
-          cat /proc/asound/$idx/mixer$idx1 > /etc/sound/$idx/mixer$idx1
+          mkdir -p /etc/asound/$idx
+          cat /proc/asound/$idx/mixer$idx1 > /etc/asound/$idx/mixer$idx1
         fi
         idx1=$[$idx1+1]
       done
