@@ -435,9 +435,9 @@ typedef enum {
 #define SND_MIXER_GRPCAP_JOINTLY_VOLUME	(1<<1)
 #define SND_MIXER_GRPCAP_MUTE		(1<<2)
 #define SND_MIXER_GRPCAP_JOINTLY_MUTE	(1<<3)
-#define SND_MIXER_GRPCAP_RECORD		(1<<4)
-#define SND_MIXER_GRPCAP_JOINTLY_RECORD	(1<<5)
-#define SND_MIXER_GRPCAP_EXCL_RECORD	(1<<6)
+#define SND_MIXER_GRPCAP_CAPTURE	(1<<4)
+#define SND_MIXER_GRPCAP_JOINTLY_CAPTURE (1<<5)
+#define SND_MIXER_GRPCAP_EXCL_CAPTURE	(1<<6)
 
 typedef struct snd_mixer_group {
 	snd_mixer_gid_t gid;
@@ -448,8 +448,8 @@ typedef struct snd_mixer_group {
 	unsigned int caps;		/* capabilities */
 	unsigned int channels;		/* bitmap of active channels */	
 	unsigned int mute;		/* bitmap of muted channels */
-	unsigned int record;		/* bitmap of record channels */
-	int record_group;		/* record group (for exclusive record source) */
+	unsigned int capture;		/* bitmap of capture channels */
+	int capture_group;		/* capture group (for exclusive capture source) */
 	int min;			/* minimum value */
 	int max;			/* maximum value */
 	union {
@@ -877,7 +877,7 @@ typedef struct snd_mixer_read {
 
 #ifdef __SND_OSS_COMPAT__
 
-#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001	/* only one recording source at moment */
+#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001	/* only one capture source at moment */
 
 #define SND_MIXER_OSS_DEVS	25
 #define SND_MIXER_OSS_VOLUME	0
@@ -992,7 +992,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_INFO_PLAYBACK		0x00000100
 #define SND_PCM_INFO_CAPTURE		0x00000200
 #define SND_PCM_INFO_DUPLEX		0x00000400
-#define SND_PCM_INFO_DUPLEX_LIMIT	0x00000800	/* rate for playback & record channels must be same!!! */
+#define SND_PCM_INFO_DUPLEX_LIMIT	0x00000800	/* rate for playback & capture channels must be same!!! */
 #define SND_PCM_INFO_DUPLEX_MONO	0x00001000	/* in duplex mode - only mono (one channel) is supported */
 
 #define SND_PCM_PINFO_BATCH		0x00000001	/* double buffering */

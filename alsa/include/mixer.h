@@ -122,6 +122,8 @@ struct snd_stru_mixer {
 #ifdef CONFIG_SND_OSSEMUL
 	int oss_change_count;
 	int ossreg;
+	int oss_recsrc;
+	int oss_volume_levels[32][2];
 #endif
 
 	void *private_data;
