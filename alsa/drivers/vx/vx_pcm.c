@@ -560,7 +560,7 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 	unsigned int audio;
 	int err;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 
 	audio = subs->pcm->device * 2;
@@ -706,7 +706,7 @@ void vx_pcm_playback_update_buffer(vx_core_t *chip, snd_pcm_substream_t *subs, v
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (! pipe->prepared || chip->is_stale)
+	if (! pipe->prepared || (chip->chip_status & VX_STAT_IS_STALE))
 		return;
 	if ((err = vx_update_playback_buffer(chip, runtime, pipe)) < 0)
 		return;
@@ -721,7 +721,7 @@ void vx_pcm_playback_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (pipe->running && ! chip->is_stale) {
+	if (pipe->running && ! (chip->chip_status & VX_STAT_IS_STALE)) {
 		if ((err = vx_update_pipe_position(chip, runtime, pipe)) < 0)
 			return;
 		if (pipe->transferred >= (int)runtime->period_size) {
@@ -762,7 +762,7 @@ static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return -EINVAL);
 	int err;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 
 	switch (cmd) {
@@ -838,7 +838,7 @@ static int vx_pcm_prepare(snd_pcm_substream_t *subs)
 	int err, data_mode;
 	// int max_size, nchunks;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 
 	data_mode = (chip->uer_bits & IEC958_AES0_NONAUDIO) != 0;
@@ -869,7 +869,7 @@ static int vx_pcm_prepare(snd_pcm_substream_t *subs)
 	if ((err = vx_set_format(chip, pipe, runtime)) < 0)
 		return err;
 
-	if (chip->type >= VX_TYPE_VXPOCKET) {
+	if (vx_is_pcmcia(chip)) {
 		/* minimal DMA alignment = 6 */
 		if (snd_pcm_format_physical_width(runtime->format) == 16)
 			pipe->align = runtime->channels * 6;
@@ -945,7 +945,7 @@ static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
 	unsigned int audio;
 	int err;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 
 	audio = subs->pcm->device * 2;
@@ -989,7 +989,7 @@ void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t
 	int size, space;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
-	if (! pipe->prepared || chip->is_stale)
+	if (! pipe->prepared || (chip->chip_status & VX_STAT_IS_STALE))
 		return;
 
 	size = runtime->buffer_size - snd_pcm_capture_avail(runtime);

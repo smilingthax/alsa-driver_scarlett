@@ -11,8 +11,8 @@ snd-vx-lib snd-pcm
 %dir linux/sound/pci
 |snd-azt3328 snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
-# %dir linux/sound/pci/vx222
-# |snd-vx222 snd-vx-lib
+%dir linux/sound/pci/vx222
+|snd-vx222 snd-vx-lib
 
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm

@@ -74,7 +74,6 @@ static int snd_vxpocket_free(vx_core_t *chip)
 	if (link->handle)
 		CardServices(DeregisterClient, link->handle);
 
-	chip->initialized = 0;
 	hw = vxp->hw_entry;
 	if (hw)
 		hw->card_list[vxp->index] = NULL;
@@ -221,20 +220,10 @@ static int snd_vxpocket_assign_resources(vx_core_t *chip, int port, int irq)
 	sprintf(card->longname, "%s at 0x%x, irq %i",
 		card->shortname, port, irq);
 
-	if ((err = snd_vx_init(chip)) < 0)
+	if ((err = snd_vx_hwdep_new(chip)) < 0)
 		return err;
 
 	chip->irq = irq;
-
-	if ((err = snd_vx_pcm_new(chip)) < 0)
-		return err;
-
-	if ((err = snd_vx_mixer_new(chip)) < 0)
-		return err;
-	if ((err = vxp_add_mic_controls(chip)) < 0)
-		return err;
-
-	chip->initialized = 1;
 
 	if ((err = snd_card_register(chip->card)) < 0)
 		return err;
@@ -264,7 +253,7 @@ void snd_vxpocket_detach(struct snd_vxp_entry *hw, dev_link_t *link)
 		if (*linkp)
 			*linkp = link->next;
 	}
-	chip->is_stale = 1; /* to be sure */
+	chip->chip_status |= VX_STAT_IS_STALE; /* to be sure */
 	snd_card_disconnect(chip->card);
 	snd_card_free_in_thread(chip->card);
 }
@@ -346,7 +335,7 @@ static int vxpocket_event(event_t event, int priority, event_callback_args_t *ar
 		link->state &= ~DEV_PRESENT;
 		if (link->state & DEV_CONFIG) {
 			mod_timer(&link->release, jiffies + HZ/20);
-			chip->is_stale = 1;
+			chip->chip_status |= VX_STAT_IS_STALE;
 		}
 		break;
 	case CS_EVENT_CARD_INSERTION:

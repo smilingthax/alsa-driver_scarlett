@@ -113,8 +113,7 @@ static int vx_check_magic(vx_core_t *chip)
  */
 static int vxp_test_xilinx(vx_core_t *chip)
 {
-	chip->xilinx_tested = 1; /* always ok */
-	return 0;
+	return 0; /* always ok */
 }
 
 
@@ -157,18 +156,22 @@ static void vxp_reset_codec(vx_core_t *_chip)
  * vx_load_xilinx_binary - load the xilinx binary image
  * the binary image is the binary array converted from the bitstream file.
  */
-static int vxp_load_xilinx_binary(vx_core_t *_chip)
+static int vxp_load_xilinx_binary(vx_core_t *_chip, const struct snd_vx_loader *load)
 {
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
-	const struct snd_vx_image *xilinx = &_chip->hw->xilinx;
+	const struct snd_vx_image *xilinx = &load->binary;
 	unsigned int i;
 	int c, err;
 	int regCSUER, regRUER;
+	unsigned char *image, data;
+
+	if (verify_area(VERIFY_READ, xilinx->image, xilinx->length))
+		return -EFAULT;
 
 	if ((err = vx_check_magic(_chip)) < 0)
 		return err;
 
-	if ((err = snd_vx_load_boot_image(_chip, &_chip->hw->boot)) < 0)
+	if ((err = snd_vx_load_boot_image(_chip, &load->boot)) < 0)
 		return err;
 
 	snd_printdd(KERN_DEBUG "loading xilinx: size = %d\n", xilinx->length);
@@ -190,17 +193,18 @@ static int vxp_load_xilinx_binary(vx_core_t *_chip)
 
 	/* set HF1 for loading xilinx binary */
 	vx_outb(chip, ICR, ICR_HF1);
-	for (i = 0; i < xilinx->length; i++) {
+	image = xilinx->image;
+	for (i = 0; i < xilinx->length; i++, image++) {
+		__get_user(data, image);
 		if (vx_wait_isr_bit(_chip, ISR_TX_EMPTY) < 0)
 			goto _error;
-		vx_outb(chip, TXL, xilinx->image[i]);
-
+		vx_outb(chip, TXL, data);
 		/* wait for reading */
 		if (vx_wait_for_rx_full(_chip) < 0)
 			goto _error;
 		c = vx_inb(chip, RXL);
-		if (c != xilinx->image[i])
-			snd_printk(KERN_ERR "vxpocket: load xilinx mismatch at %d: 0x%x != 0x%x\n", i, c, xilinx->image[i]);
+		if (c != (int)data)
+			snd_printk(KERN_ERR "vxpocket: load xilinx mismatch at %d: 0x%x != 0x%x\n", i, c, (int)data);
         }
 
 	/* reset HF1 */
@@ -267,7 +271,7 @@ static int vxp_test_and_ack(vx_core_t *_chip)
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
 
 	/* not booted yet? */
-	if (! _chip->xilinx_tested)
+	if (! (_chip->chip_status & VX_STAT_XILINX_TESTED))
 		return -ENXIO;
 
 	if (! (vx_inb(chip, DIALOG) & VXP_DLG_MEMIRQ_MASK))
@@ -453,7 +457,7 @@ void vx_set_mic_boost(vx_core_t *chip, int boost)
 	struct snd_vxpocket *pchip = (struct snd_vxpocket *)chip;
 	unsigned long flags;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
@@ -496,7 +500,7 @@ void vx_set_mic_level(vx_core_t *chip, int level)
 	struct snd_vxpocket *pchip = (struct snd_vxpocket *)chip;
 	unsigned long flags;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
@@ -566,7 +570,7 @@ static void vxp_set_clock_source(vx_core_t *_chip, int source)
 /*
  * reset the board
  */
-static void vxp_reset_board(vx_core_t *_chip)
+static void vxp_reset_board(vx_core_t *_chip, int cold_reset)
 {
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
 
@@ -590,6 +594,7 @@ struct snd_vx_ops snd_vxpocket_ops = {
 	.set_clock_source = vxp_set_clock_source,
 	.test_xilinx = vxp_test_xilinx,
 	.load_xilinx = vxp_load_xilinx_binary,
+	.add_controls = vxp_add_mic_controls,
 	.reset_dsp = vxp_reset_dsp,
 	.reset_board = vxp_reset_board,
 	.dma_write = vxp_dma_write,

@@ -24,6 +24,7 @@
 #define __VX_COMMON_H
 
 #include <sound/pcm.h>
+#include <sound/vx_load.h>
 
 typedef struct snd_vx_core vx_core_t;
 typedef struct vx_pipe vx_pipe_t;
@@ -31,10 +32,7 @@ typedef struct vx_pipe vx_pipe_t;
 #define vx_core_t_magic		0xa15a4110
 #define vx_pipe_t_magic		0xa15a4112
 
-struct snd_vx_image {
-	unsigned char *image;
-	unsigned int length;
-};
+#define VX_DRIVER_VERSION	0x010000	/* 1.0.0 */
 
 /*
  */
@@ -96,14 +94,16 @@ struct snd_vx_ops {
 	void (*validate_irq)(vx_core_t *chip, int enable);
 	/* codec */
 	void (*write_codec)(vx_core_t *chip, int codec, unsigned int data);
+	void (*akm_write)(vx_core_t *chip, int reg, unsigned int data);
 	void (*reset_codec)(vx_core_t *chip);
 	void (*change_audio_source)(vx_core_t *chip, int src);
 	void (*set_clock_source)(vx_core_t *chp, int src);
 	/* chip init */
 	int (*test_xilinx)(vx_core_t *chip);
-	int (*load_xilinx)(vx_core_t *chip);
+	int (*load_xilinx)(vx_core_t *chip, const struct snd_vx_loader *loader);
 	void (*reset_dsp)(vx_core_t *chip);
-	void (*reset_board)(vx_core_t *chip);
+	void (*reset_board)(vx_core_t *chip, int cold_reset);
+	int (*add_controls)(vx_core_t *chip);
 	/* pcm */
 	void (*dma_write)(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 			  vx_pipe_t *pipe, int count);
@@ -114,12 +114,6 @@ struct snd_vx_ops {
 struct snd_vx_hardware {
 	const char *name;
 	int type;	/* VX_TYPE_XXX */
-
-	/* xilinx and dsp images */
-	struct snd_vx_image boot;
-	struct snd_vx_image xilinx;
-	struct snd_vx_image dsp_boot;
-	struct snd_vx_image dsp;
 
 	/* hardware specs */
 	unsigned int num_codecs;
@@ -144,12 +138,11 @@ struct snd_vx_core {
 	spinlock_t irq_lock;
 	struct tasklet_struct tq;
 
-	unsigned int initialized: 1;
-	unsigned int in_suspend: 1;
-	unsigned int xilinx_tested: 1;
-	unsigned int is_stale: 1;
-
+	unsigned int chip_status;
 	unsigned int pcm_running;
+
+	struct semaphore hwdep_mutex;
+	int hwdep_used;
 
 	struct vx_rmh irq_rmh;	/* RMH used in interrupts */
 
@@ -183,8 +176,9 @@ struct snd_vx_core {
  */
 vx_core_t *snd_vx_create(snd_card_t *card, struct snd_vx_hardware *hw,
 			 struct snd_vx_ops *ops, int extra_size);
-int snd_vx_init(vx_core_t *chip);
+int snd_vx_hwdep_new(vx_core_t *chip);
 int snd_vx_load_boot_image(vx_core_t *chip, const struct snd_vx_image *boot);
+int snd_vx_dsp_init(vx_core_t *chip, const struct snd_vx_loader *dsp);
 
 /*
  * interrupt handler; exported for pcmcia
@@ -257,7 +251,7 @@ int vx_send_msg_nolock(vx_core_t *chip, struct vx_rmh *rmh);
 int vx_send_rih(vx_core_t *chip, int cmd);
 int vx_send_rih_nolock(vx_core_t *chip, int cmd);
 
-void vx_reset_codec(vx_core_t *chip);
+void vx_reset_codec(vx_core_t *chip, int cold_reset);
 
 /*
  * check the bit on the specified register
@@ -316,6 +310,7 @@ int vx_sync_audio_source(vx_core_t *chip);
  */
 void vx_set_iec958_status(vx_core_t *chip, unsigned int bits);
 int vx_set_clock(vx_core_t *chip, unsigned int freq);
+void vx_change_clock_source(vx_core_t *chip, int source);
 void vx_set_internal_clock(vx_core_t *chip, unsigned int freq);
 int vx_change_frequency(vx_core_t *chip);
 
@@ -324,16 +319,8 @@ int vx_change_frequency(vx_core_t *chip);
  * hardware constants
  */
 
-/* hardware type */
-enum {
-	/* VX222 PCI */
-	VX_TYPE_BOARD,		/* old VX222 PCI */
-	VX_TYPE_V2,		/* VX222 V2 PCI */
-	VX_TYPE_MIC,		/* VX222 Mic PCI */
-	/* VX-pocket */
-	VX_TYPE_VXPOCKET,	/* VXpocket V2 */
-	VX_TYPE_VXP440		/* VXpocket 440 */
-};
+#define vx_has_new_dsp(chip)	((chip)->type != VX_TYPE_BOARD)
+#define vx_is_pcmcia(chip)	((chip)->type >= VX_TYPE_VXPOCKET)
 
 /* audio input source */
 enum {
