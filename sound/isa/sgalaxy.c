@@ -26,6 +26,7 @@
 #include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/time.h>
+#include <linux/irq.h>
 #include <sound/core.h>
 #include <sound/sb.h>
 #include <sound/ad1848.h>
@@ -117,8 +118,6 @@ static int __init snd_sgalaxy_setup_wss(unsigned long port, int irq, int dma)
 	static int dma_bits[] = {1, 2, 0, 3};
 	int tmp, tmp1;
 
-	unsigned long flags;
-
 	if ((tmp = inb(port + 3)) == 0xff)
 	{
 		snd_printdd("I/O address dead (0x%lx)\n", port);
@@ -140,20 +139,18 @@ static int __init snd_sgalaxy_setup_wss(unsigned long port, int irq, int dma)
 	snd_printdd("sgalaxy - setting up IRQ/DMA for WSS\n");
 #endif
 
-	save_flags(flags);
-	cli();
+	/* FIXME: this is really bogus --jk */
+	/* the irq line is not allocated (thus locked) for this device at the moment */
+	disable_irq(irq);
 
         /* initialize IRQ for WSS codec */
         tmp = interrupt_bits[irq % 16];
-        if (tmp < 0) {
-		restore_flags(flags);
+        if (tmp < 0)
                 return -EINVAL;
-	}
         outb(tmp | 0x40, port);
         tmp1 = dma_bits[dma % 4];
         outb(tmp | tmp1, port);
 
-	restore_flags(flags);
 	return 0;
 }
 
