@@ -361,6 +361,7 @@ snd_kmixer_t *snd_cs4236_new_mixer(snd_pcm_t * pcm, int pcm_device);
  *  mixer library
  */
 
+int snd_cs4231_mixer_mux(void *private_data, int w_flag,snd_kmixer_element_t **elements);
 int snd_cs4231_mixer_stereo_volume(cs4231_t *codec, int w_flag, int *voices,
 					int max, int invert, int shift,
 					unsigned char left_reg,
@@ -390,15 +391,15 @@ int snd_cs4231_mixer_dac_switch(void *private_data, int w_flag, unsigned int *bi
 
 /* For Interwave ... */
 int snd_cs4231_mixer_group_ctrl1(cs4231_t *codec,
-				        snd_kmixer_file_t * file,
-				        int w_flag,
-				        snd_mixer_group_t * ugroup,
-				        snd_mixer_volume1_control_t *volume1,
-				        snd_kmixer_element_t *volume1_element,
-				        int max,
-				        snd_mixer_sw1_control_t *sw1,
-				        snd_kmixer_element_t *sw1_element,
-				        snd_kmixer_element_t *mux_in);
+				 snd_kmixer_file_t * file,
+				 int w_flag,
+				 snd_mixer_group_t * ugroup,
+				 snd_mixer_volume1_control_t *volume1,
+				 snd_kmixer_element_t *volume1_element,
+				 int max,
+				 snd_mixer_sw1_control_t *sw1,
+				 snd_kmixer_element_t *sw1_element,
+				 snd_kmixer_element_t *mux_in);
 
 #ifdef CONFIG_SND_DEBUG
 void snd_cs4231_debug(cs4231_t * codec);

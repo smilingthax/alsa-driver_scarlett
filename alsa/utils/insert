@@ -187,7 +187,7 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
     insert snd-gus.o
-    insert snd-gusextreme.o snd_irq1=11 snd_mpu_port=0x300
+    insert snd-gusextreme.o snd_irq1=7 snd_mpu_port=0x300
     restore gusextreme.conf
     ;;
   opl3sa)
