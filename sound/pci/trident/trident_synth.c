@@ -600,7 +600,7 @@ static int snd_trident_simple_remove_sample(void *private_data, simple_instrumen
 		size <<= 1;
 
 	trident->synth.current_size -= size;
-	if (trident->synth.current_size < 0)	/* shouldnt need this check... */
+	if (trident->synth.current_size < 0)	/* shouldn't need this check... */
 		trident->synth.current_size = 0;
 
 	return 0;
