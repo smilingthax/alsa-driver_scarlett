@@ -247,13 +247,14 @@ struct _snd_cs4231 {
 	struct semaphore mce_mutex;
 	struct semaphore open_mutex;
 
-	struct pm_dev *pm_dev;
-
 	int (*rate_constraint) (snd_pcm_runtime_t *runtime);
 	void (*set_playback_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char pdfr);
 	void (*set_capture_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char cdfr);
+#ifdef CONFIG_APM
+	struct pm_dev *pm_dev;
 	void (*suspend) (cs4231_t *chip);
 	void (*resume) (cs4231_t *chip);
+#endif
 	void *dma_private_data;
 	int (*claim_dma) (cs4231_t *chip, void *dma_private_data, int dma);
 	int (*release_dma) (cs4231_t *chip, void *dma_private_data, int dma);
