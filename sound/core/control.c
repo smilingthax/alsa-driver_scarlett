@@ -396,10 +396,6 @@ static snd_kcontrol_t *_ctl_find_id(snd_card_t * card, snd_ctl_elem_id_t *id)
 			continue;
 		if (kctl->id.index + kctl->count <= id->index)
 			continue;
-		if (kctl->id.index != id->index) {
-			printk("BOOOR: %i, %i, %i\n", kctl->id.index, kctl->count, id->index);
-			continue;
-		}
 		return kctl;
 	}
 	return NULL;
