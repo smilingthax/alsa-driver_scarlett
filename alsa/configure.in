@@ -103,7 +103,7 @@ int main( void ) {
 ],
   AC_MSG_RESULT("yes");mversion="1",
   AC_MSG_RESULT("no");mversion="0",
-  AC_MSG_RESULT("uknown");mversion="0"
+  AC_MSG_RESULT("unknown");mversion="0"
 )
 CONFIG_SND_MVERSION=$mversion
 AC_SUBST(CONFIG_SND_MVERSION)
@@ -127,7 +127,7 @@ int main( void ) {
 ],
   AC_MSG_RESULT("yes");pcisup="1",
   AC_MSG_RESULT("no");pcisup="0",
-  AC_MSG_RESULT("uknown");pcisup="0"
+  AC_MSG_RESULT("unknown");pcisup="0"
 )
 CONFIG_SND_PCI=$pcisup
 AC_SUBST(CONFIG_SND_PCI)
@@ -198,60 +198,78 @@ AC_SUBST(moddir)
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
-AC_ARG_WITH(processor,
-  [  --with-processor=cpu    give the processor type]
-  [                        (i386,i486,i586,i686,alpha,ppc,mips,auto)],
-  processor="$withval", processor="auto")
-if test "$processor" = "auto"; then
-  CPUID=`cat /proc/cpuinfo | grep cpu | grep -v "cpu family" | grep -v cpuid | grep -v "cpu MHz" | grep -v "cpu model" | cut -d : -f 2 | colrm 1 1 | head -n 1`
-  if test "$CPUID""x" = "x"; then
-    CPUID=`cat /proc/cpuinfo | grep "cpu family" | cut -d : -f 2 | colrm 1 1 | head -n 1`
-    if test "$CPUID" != "alpha" && test "$CPUID" != "Alpha"; then
-      CPUID="i""$CPUID""86"
-    fi
-  else
-    if test "$CPUID" != "alpha" && test "$CPUID" != "Alpha" && test "$CPUID" != "MIPS" ; then
-      CPUID="i""$CPUID"
-    fi
-  fi
-  processor="$CPUID"
-fi
+processor=""
+rm -f processor.id
+AC_TRY_RUN([
+#include <stdio.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main(void) {
+	FILE *file = fopen("processor.id", "w+");
+	if (file == NULL)
+		exit(1);
+#if defined(CONFIG_M386)
+	fprintf(file, "i386");
+#elif defined(CONFIG_M486)
+	fprintf(file, "i486");
+#elif defined(CONFIG_M586)
+	fprintf(file, "i586");
+#elif defined(CONFIG_M586TSC)
+	fprintf(file, "i586tsc");
+#elif defined(CONFIG_M686)
+	fprintf(file, "i686");
+#elif defined(CONFIG_EV4) || defined(CONFIG_EV5) || defined(CONFIG_EV6)
+	fprintf(file, "alpha");
+#elif defined(CONFIG_PPC)
+	fprintf(file, "ppc");
+#elif defined(CONFIG_CPU_R3000) || defined(CONFIG_CPU_R6000)
+	fprintf(file, "mips");
+#elif defined(CONFIG_CPU_R4300) || defined(CONFIG_CPU_R4X00)
+	fprintf(file, "mips");
+#elif defined(CONFIG_CPU_R5000) || defined(CONFIG_CPU_NEVADA)
+	fprintf(file, "mips");
+#elif defined(CONFIG_CPU_R8000) || defined(CONFIG_CPU_R10000)
+	fprintf(file, "mips");
+#else
+	fclose(file);
+	exit(1);
+#endif
+	fclose(file);
+	exit(0);
+}
+],
+  processor=`cat processor.id`;AC_MSG_RESULT($processor),
+  AC_MSG_RESULT("unknown");processor="",
+  AC_MSG_RESULT("unknown");processor=""
+)
+rm -f processor.id
 c_opts=""
 case "$processor" in
-  i386)
+  i386*)
     c_opts="-m386 -DCPU=386"
-    AC_MSG_RESULT(i386)    
     ;;
-  i486)
+  i486*)
     c_opts="-m486 -DCPU=486"
-    AC_MSG_RESULT(i486)    
     ;;
-  i586)
+  i586*)
     c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=586"
-    AC_MSG_RESULT(i586)    
     ;;
-  i686)
+  i686*)
     c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=686"
-    AC_MSG_RESULT(i686)    
     ;;
-  alpha|Alpha)
+  alpha)
     c_opts="-fno-strength-reduce -mno-fp-regs"
     if test "$newkernel" = "1"; then
       c_opts="$c_opts -ffixed-8"
     fi
-    AC_MSG_RESULT(alpha)
     processor="alpha"
     ;;
   ppc)
-    AC_MSG_RESULT(ppc)
     ;;
-  mips|MIPS)
+  mips)
     c_opts="-mcpu=r4600 -mips2 -fno-pic -mno-abicalls -mlong-calls"
-    AC_MSG_RESULT(mips)
     processor="mips"
     ;;
   *)
-    AC_MSG_RESULT(unknown)
     processor="unknown"
     ;;
 esac
@@ -260,38 +278,26 @@ AC_SUBST(processor)
 
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)
-AC_ARG_WITH(smp,
-  [  --with-smp=yes,no,auto  driver will (not) be compiled with SMP support],
-  smp="$withval", smp="auto")
 msmp=""
-if test "$smp" = "auto"; then
-  if test $kversion -ge 2 && test $kpatchlevel -ge 2; then
-    msmp=`grep -E "^#define[ |\t]+CONFIG_SMP[ |\t]+1" $CONFIG_SND_KERNELDIR/include/linux/autoconf.h | wc -l`
-    msmp=`expr $msmp + 0`
-  else
-    CPUNUM=`grep -E "^SMP.+=.+1" $CONFIG_SND_KERNELDIR/Makefile`
-    if test "$CPUNUM""x" = "x"; then
-      CPUNUM=`cat /proc/cpuinfo | grep ^processor | wc -l`
-      CPUNUM=`expr $CPUNUM + 0`
-      if test $CPUNUM -gt 1; then
-        msmp="1"
-      fi
-    else
-      msmp="1"
-    fi
-  fi
-fi
-if test "$smp" = "yes"; then
-  msmp="1"
-fi
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main(void) {
+#ifndef CONFIG_SMP
+	exit(1);
+#else
+	exit(0);
+#endif
+}
+],
+  AC_MSG_RESULT("yes");msmp="1",
+  AC_MSG_RESULT("no");msmp="",
+  AC_MSG_RESULT("unknown");msmp=""
+)
 if test "$msmp" = "1"; then
   if test "$newkernel" = "1"; then
     GENKSYMS="$GENKSYMS -p smp_"
   fi
   c_opts="$c_opts -D__SMP__ -DCONFIG_SMP"
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
 fi
 AC_SUBST(msmp)
 
