@@ -361,9 +361,9 @@ static int snd_ac97_put_mux(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * uc
 }
 
 #define AC97_ENUM_DOUBLE(xname, reg, shift, invert) \
-{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: xname, info: snd_ac97_info_enum_double, \
-  get: snd_ac97_get_enum_double, put: snd_ac97_put_enum_double, \
-  private_value: reg | (shift << 8) | (invert << 24) }
+{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .info = snd_ac97_info_enum_double, \
+  .get = snd_ac97_get_enum_double, .put = snd_ac97_put_enum_double, \
+  .private_value = reg | (shift << 8) | (invert << 24) }
 
 static int snd_ac97_info_enum_double(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
@@ -423,9 +423,9 @@ static int snd_ac97_put_enum_double(snd_kcontrol_t * kcontrol, snd_ctl_elem_valu
 }
 
 #define AC97_SINGLE(xname, reg, shift, mask, invert) \
-{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: xname, info: snd_ac97_info_single, \
-  get: snd_ac97_get_single, put: snd_ac97_put_single, \
-  private_value: reg | (shift << 8) | (mask << 16) | (invert << 24) }
+{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .info = snd_ac97_info_single, \
+  .get = snd_ac97_get_single, .put = snd_ac97_put_single, \
+  .private_value = reg | (shift << 8) | (mask << 16) | (invert << 24) }
 
 static int snd_ac97_info_single(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
@@ -468,9 +468,9 @@ static int snd_ac97_put_single(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t *
 }
 
 #define AC97_DOUBLE(xname, reg, shift_left, shift_right, mask, invert) \
-{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: (xname), info: snd_ac97_info_double, \
-  get: snd_ac97_get_double, put: snd_ac97_put_double, \
-  private_value: reg | (shift_left << 8) | (shift_right << 12) | (mask << 16) | (invert << 24) }
+{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = (xname), .info = snd_ac97_info_double, \
+  .get = snd_ac97_get_double, .put = snd_ac97_put_double, \
+  .private_value = reg | (shift_left << 8) | (shift_right << 12) | (mask << 16) | (invert << 24) }
 
 static int snd_ac97_info_double(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
@@ -757,25 +757,25 @@ static int snd_ac97_spdif_default_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 
 static const snd_kcontrol_new_t snd_ac97_controls_spdif[5] = {
 	{
-		access: SNDRV_CTL_ELEM_ACCESS_READ,
-		iface: SNDRV_CTL_ELEM_IFACE_MIXER,
-		name: SNDRV_CTL_NAME_IEC958("",PLAYBACK,CON_MASK),
-		info: snd_ac97_spdif_mask_info,
-		get: snd_ac97_spdif_cmask_get,
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,CON_MASK),
+		.info = snd_ac97_spdif_mask_info,
+		.get = snd_ac97_spdif_cmask_get,
 	},
 	{
-		access: SNDRV_CTL_ELEM_ACCESS_READ,
-		iface: SNDRV_CTL_ELEM_IFACE_MIXER,
-		name: SNDRV_CTL_NAME_IEC958("",PLAYBACK,PRO_MASK),
-		info: snd_ac97_spdif_mask_info,
-		get: snd_ac97_spdif_pmask_get,
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,PRO_MASK),
+		.info = snd_ac97_spdif_mask_info,
+		.get = snd_ac97_spdif_pmask_get,
 	},
 	{
-		iface: SNDRV_CTL_ELEM_IFACE_MIXER,
-		name: SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
-		info: snd_ac97_spdif_mask_info,
-		get: snd_ac97_spdif_default_get,
-		put: snd_ac97_spdif_default_put,
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
+		.info = snd_ac97_spdif_mask_info,
+		.get = snd_ac97_spdif_default_get,
+		.put = snd_ac97_spdif_default_put,
 	},
 
 	AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",PLAYBACK,SWITCH),AC97_EXTENDED_STATUS, 2, 1, 0),
@@ -792,9 +792,9 @@ static const snd_kcontrol_new_t snd_ac97_conexant_controls_spdif[2] = {
 };
 
 #define AD18XX_PCM_BITS(xname, codec, shift, mask) \
-{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: xname, info: snd_ac97_ad18xx_pcm_info_bits, \
-  get: snd_ac97_ad18xx_pcm_get_bits, put: snd_ac97_ad18xx_pcm_put_bits, \
-  private_value: codec | (shift << 8) | (mask << 16) }
+{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .info = snd_ac97_ad18xx_pcm_info_bits, \
+  .get = snd_ac97_ad18xx_pcm_get_bits, .put = snd_ac97_ad18xx_pcm_put_bits, \
+  .private_value = codec | (shift << 8) | (mask << 16) }
 
 static int snd_ac97_ad18xx_pcm_info_bits(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
@@ -831,9 +831,9 @@ static int snd_ac97_ad18xx_pcm_put_bits(snd_kcontrol_t * kcontrol, snd_ctl_elem_
 }
 
 #define AD18XX_PCM_VOLUME(xname, codec) \
-{ iface: SNDRV_CTL_ELEM_IFACE_MIXER, name: xname, info: snd_ac97_ad18xx_pcm_info_volume, \
-  get: snd_ac97_ad18xx_pcm_get_volume, put: snd_ac97_ad18xx_pcm_put_volume, \
-  private_value: codec }
+{ .iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname, .info = snd_ac97_ad18xx_pcm_info_volume, \
+  .get = snd_ac97_ad18xx_pcm_get_volume, .put = snd_ac97_ad18xx_pcm_put_volume, \
+  .private_value = codec }
 
 static int snd_ac97_ad18xx_pcm_info_volume(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
@@ -1452,7 +1452,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	char name[64];
 	signed long end_time;
 	static snd_device_ops_t ops = {
-		dev_free:	snd_ac97_dev_free,
+		.dev_free =	snd_ac97_dev_free,
 	};
 
 	snd_assert(rac97 != NULL, return -EINVAL);
