@@ -495,10 +495,14 @@ int snd_pcm_status(snd_pcm_substream_t *substream,
 		if (runtime->status->state == SNDRV_PCM_STATE_RUNNING ||
 		    runtime->status->state == SNDRV_PCM_STATE_DRAINING)
 			status->delay = runtime->buffer_size - status->avail;
+		else
+			status->delay = 0;
 	} else {
 		status->avail = snd_pcm_capture_avail(runtime);
 		if (runtime->status->state == SNDRV_PCM_STATE_RUNNING)
 			status->delay = status->avail;
+		else
+			status->delay = 0;
 	}
 	status->avail_max = runtime->avail_max;
 	status->overrange = runtime->overrange;
@@ -652,7 +656,8 @@ int snd_pcm_start(snd_pcm_substream_t *substream)
 static inline int snd_pcm_pre_stop(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	if (!snd_pcm_running(substream))
+	if (substream->runtime->status->state != SNDRV_PCM_STATE_RUNNING &&
+	    substream->runtime->status->state != SNDRV_PCM_STATE_DRAINING)
 		return -EBADFD;
 	runtime->trigger_master = substream;
 	return 0;
