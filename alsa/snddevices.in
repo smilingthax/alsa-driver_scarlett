@@ -5,10 +5,14 @@ OSSMAJOR=14
 MAX_CARDS=4
 PERM=666
 OWNER=root.root
+DIR_PERM=755
+DIR_OWNER=root.root
 
 if [ "`grep -w -E "^audio" /etc/group`x" != x ]; then
   PERM=660
   OWNER=root.audio
+  DIR_PERM=750
+  DIR_OWNER=root.audio
 fi
 
 function create_odevice () {
@@ -140,7 +144,8 @@ fi
 
 # Create new ones
 
-mkdir -p /dev/snd
+mkdir -m $DIR_PERM -p /dev/snd
+chown $DIR_OWNER /dev/snd
 create_devices  /dev/snd/control	0
 create_device1  /dev/snd/seq		1
 create_device1  /dev/snd/timer		33
