@@ -1,6 +1,11 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2004-04-06 Karsten Wiese
+	Version 0.6.0:
+	Runs on 2.6.5 kernel without any "--with-debug=" things.
+	us224 reported running.
+
 2004-01-14 Karsten Wiese
 	Version 0.5.1:
 	Runs with 2.6.1 kernel.
@@ -93,7 +98,7 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.4.1");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.6.0");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8007) }}");
@@ -118,7 +123,6 @@ static int snd_usX2Y_card_used[SNDRV_CARDS];
 static void snd_usX2Y_usb_disconnect(struct usb_device* usb_device, void* ptr);
 static void snd_usX2Y_card_private_free(snd_card_t *card);
 
-#ifdef CONFIG_SND_DEBUG
 /* 
  * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
  */
@@ -128,14 +132,15 @@ void snd_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs)
 void snd_usX2Y_Out04Int(struct urb* urb)
 #endif
 {
+#ifdef CONFIG_SND_DEBUG
 	if (urb->status) {
 		int 		i;
 		usX2Ydev_t*	usX2Y = urb->context;
 		for (i = 0; i < 10 && usX2Y->AS04.urb[i] != urb; i++);
-		snd_printd("snd_usX2Y_Out04Int() usX2Y->Seq04=%i urb %i status=%i\n", usX2Y->Seq04, i, urb->status);
+		snd_printd("snd_usX2Y_Out04Int() urb %i status=%i\n", i, urb->status);
 	}
-}
 #endif
+}
 
 #ifndef OLD_USB
 void snd_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs)
@@ -194,7 +199,7 @@ void snd_usX2Y_In04Int(struct urb* urb)
 				int j, send = us428ctls->p4outSent + 1;
 				if (send >= N_us428_p4out_BUFS)
 					send = 0;
-				for (j = 0; j < URBS_AsyncSeq; ++j)
+				for (j = 0; j < URBS_AsyncSeq  &&  !err; ++j)
 					if (0 == usX2Y->AS04.urb[j]->status) {
 						us428_p4out_t *p4out = us428ctls->p4out + send;	// FIXME if more then 1 p4out is new, 1 gets lost.
 						usb_fill_bulk_urb(usX2Y->AS04.urb[j], usX2Y->chip.dev,
@@ -204,7 +209,7 @@ void snd_usX2Y_In04Int(struct urb* urb)
 #ifdef OLD_USB
 						usX2Y->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
 #endif
-						usb_submit_urb(usX2Y->AS04.urb[j], GFP_ATOMIC);
+						err = usb_submit_urb(usX2Y->AS04.urb[j], GFP_ATOMIC);
 						us428ctls->p4outSent = send;
 						break;
 					}
@@ -273,7 +278,6 @@ static snd_card_t* snd_usX2Y_create_card(struct usb_device* device)
 	usX2Y(card)->chip.card = card;
 	init_MUTEX (&usX2Y(card)->open_mutex);
 	INIT_LIST_HEAD(&usX2Y(card)->chip.midi_list);
-	usX2Y(card)->Seq04Complete = 1;
 	strcpy(card->driver, "USB "NAME_ALLCAPS"");
 	sprintf(card->shortname, "TASCAM "NAME_ALLCAPS"");
 	sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
