@@ -145,16 +145,8 @@
 #define __ISAPNP__
 #endif
 
-#ifdef CONFIG_SND_OSSEMUL
-#define __SND_OSS_COMPAT__
-#endif
-#ifndef ALSA_BUILD
-#include <linux/asound.h>
-#include <linux/asoundef.h>
-#else
-#include "asound.h"
-#include "asoundef.h"
-#endif
+#include <sound/asound.h>
+#include <sound/asoundef.h>
 
 /* Name change */
 typedef struct timeval snd_timestamp_t;

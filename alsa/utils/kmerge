@@ -49,20 +49,20 @@ if [ ! -r $KDIR/drivers/sound/sound_core.c ]; then
 fi
 
 pushd $PWD > /dev/null
-cd $KDIR
-if grep CONFIG_SND Makefile > /dev/null; then
-  echo "Makefile already modified"
-else
-  cp -av Makefile Makefile.old
-  cat $ADIR/utils/patches/patch.Makefile.top.2.4.1 | patch -p0
-  echo "Makefile patched"
-fi
+#cd $KDIR
+#if grep CONFIG_SND Makefile > /dev/null; then
+#  echo "Makefile already modified"
+#else
+#  cp -av Makefile Makefile.old
+#  cat $ADIR/utils/patches/patch.Makefile.top.2.4.1 | patch -p0
+#  echo "Makefile patched"
+#fi
 cd $KDIR/drivers/sound
 if grep alsa Makefile > /dev/null; then
   echo "drivers/sound/Makefile already modified"
 else
   cp -av Makefile Makefile.old
-  cat $ADIR/utils/patches/patch.Makefile.2.4.1 | patch -p0
+  cat $ADIR/utils/patches/patch.Makefile.2.4.2 | patch -p0
   echo "drivers/sound/Makefile patched"
 fi
 if grep "Advanced Linux Sound Architecture" Config.in > /dev/null; then

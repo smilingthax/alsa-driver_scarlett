@@ -22,11 +22,7 @@
 #ifndef __MIDI_CODER_H
 #define __MIDI_CODER_H
 
-#ifndef ALSA_BUILD
-#include <linux/asequencer.h>
-#else
 #include "asequencer.h"
-#endif
 
 #define MAX_MIDI_EVENT_BUF	256
 

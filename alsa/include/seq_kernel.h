@@ -21,11 +21,7 @@
 #ifndef __SND_SEQ_KERNEL_H
 #define __SND_SEQ_KERNEL_H
 
-#ifndef ALSA_BUILD
-#include <linux/asequencer.h>
-#else
 #include "asequencer.h"
-#endif
 
 typedef sndrv_seq_tick_time_t snd_seq_tick_time_t;
 typedef sndrv_seq_position_t snd_seq_position_t;
