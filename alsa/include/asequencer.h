@@ -747,7 +747,7 @@ typedef struct {
 	snd_seq_addr_t sender;		/* sender address */
 	snd_seq_addr_t dest;		/* destination address */
 	unsigned char queue;		/* input time-stamp queue (optional) */
-	int exclusive: 1,		/* exclusive mode */
+	unsigned int exclusive: 1,	/* exclusive mode */
 	    realtime: 1,		/* realtime timestamp */
 	    convert_time: 1;		/* convert timestamp */
 	int midi_channels;		/* midi channels setup, zero = do not care */
