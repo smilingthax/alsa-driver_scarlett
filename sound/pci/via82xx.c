@@ -124,7 +124,7 @@ MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
 #define   VIA8233_REG_TYPE_16BIT	0x00200000	/* RW */
 #define   VIA8233_REG_TYPE_STEREO	0x00100000	/* RW */
 #define VIA_REG_OFFSET_CURR_COUNT	0x0c	/* dword - channel current count (24 bit) */
-#define VIA_REG_OFFSET_CURR_INDEX	0x0f	/* byte - channel current index */
+#define VIA_REG_OFFSET_CURR_INDEX	0x0f	/* byte - channel current index (for via8233 only) */
 
 #define DEFINE_VIA_REGSET(name,val) \
 enum {\
@@ -190,12 +190,11 @@ typedef struct {
         unsigned int size;
         unsigned int fragsize;
 	unsigned int frags;
-	unsigned int lastptr;
-	unsigned int lastcount;
 	unsigned int page_per_frag;
 	unsigned int curidx;
 	unsigned int tbl_entries;	/* number of descriptor table entries */
 	unsigned int tbl_size;		/* size of a table entry */
+	unsigned int last_tbl_size;
 	u32 *table; /* physical address + flag */
 	dma_addr_t table_addr;
 } viadev_t;
@@ -229,22 +228,19 @@ static int build_via_table(viadev_t *dev, snd_pcm_substream_t *substream,
 	if (! dev->table)
 		return -ENOMEM;
 
-	if (dev->tbl_size < PAGE_SIZE) {
-		for (i = 0; i < dev->tbl_entries; i++) {
-			unsigned int cur = dev->fragsize * i;
-			dev->table[i << 1] = cpu_to_le32((u32)sgbuf->table[cur >> PAGE_SHIFT].addr + cur % PAGE_SIZE);
-		}
-	} else {
-		for (i = 0; i < dev->tbl_entries; i++)
-			dev->table[i << 1] = cpu_to_le32((u32)sgbuf->table[i].addr);
-	}
+	for (i = 0; i < dev->tbl_entries; i++)
+		dev->table[i << 1] = cpu_to_le32((u32)snd_pcm_sgbuf_get_addr(sgbuf, dev->tbl_size * i));
 	size = dev->size;
 	for (i = 0; i < dev->tbl_entries - 1; i++) {
 		dev->table[(i << 1) + 1] = cpu_to_le32(VIA_TBL_BIT_FLAG | dev->tbl_size);
 		size -= dev->tbl_size;
 	}
+	dev->last_tbl_size = size;
 	dev->table[(dev->tbl_entries << 1) - 1] = cpu_to_le32(VIA_TBL_BIT_EOL | size);
-
+#if 0
+	for (i = 0; i < dev->tbl_entries; i++)
+		printk("via: set table %d = %x, 0x%x\n", i, dev->table[i << 1], dev->table[(i << 1) + 1]);
+#endif
 	return 0;
 }
 
@@ -463,8 +459,6 @@ static int snd_via82xx_setup_periods(via82xx_t *chip, viadev_t *viadev,
 	viadev->size = snd_pcm_lib_buffer_bytes(substream);
 	viadev->fragsize = snd_pcm_lib_period_bytes(substream);
 	viadev->frags = runtime->periods;
-	viadev->lastptr = ~0;
-	viadev->lastcount = ~0;
 	viadev->curidx = 0;
 
 	/* the period size must be in power of 2 */
@@ -480,7 +474,6 @@ static int snd_via82xx_setup_periods(via82xx_t *chip, viadev_t *viadev,
 	if (err < 0)
 		return err;
 
-	runtime->dma_bytes = viadev->size;
 	outl((u32)viadev->table_addr, port + VIA_REG_OFFSET_TABLE_PTR);
 	switch (chip->chip_type) {
 	case TYPE_VIA686:
@@ -626,29 +619,26 @@ static inline unsigned int snd_via82xx_cur_ptr(via82xx_t *chip, viadev_t *viadev
 {
 	unsigned int val, ptr, count;
 	
-	ptr = inl(VIAREG(chip, OFFSET_CURR_PTR) + viadev->reg_offset)/* & 0xffffff*/;
+	snd_assert(viadev->tbl_entries, return 0);
+	if (!(inb(VIAREG(chip, OFFSET_STATUS) + viadev->reg_offset) & VIA_REG_STAT_ACTIVE))
+		return 0;
+
+	count = inl(VIAREG(chip, OFFSET_CURR_COUNT) + viadev->reg_offset) & 0xffffff;
 	switch (chip->chip_type) {
 	case TYPE_VIA686:
-		count = inl(VIAREG(chip, OFFSET_CURR_COUNT) + viadev->reg_offset);
-		if (ptr == viadev->lastptr && count > viadev->lastcount)
-			ptr += 8;
-		if (!(inb(VIAREG(chip, OFFSET_STATUS) + viadev->reg_offset) & VIA_REG_STAT_ACTIVE))
-			return 0;
-		snd_assert(viadev->tbl_entries, return 0);
-		/* get index */
+		/* The via686a does not have the current index register,
+		 * so we need to calculate the index from CURR_PTR.
+		 */
+		ptr = inl(VIAREG(chip, OFFSET_CURR_PTR) + viadev->reg_offset);
 		if (ptr <= (unsigned int)viadev->table_addr)
 			val = 0;
-		else
+		else /* CURR_PTR holds the address + 8 */
 			val = ((ptr - (unsigned int)viadev->table_addr) / 8 - 1) % viadev->tbl_entries;
-		viadev->lastptr = ptr;
-		viadev->lastcount = count;
 		break;
 
 	case TYPE_VIA8233:
 	default:
-		count = inl(VIAREG(chip, OFFSET_CURR_COUNT) + viadev->reg_offset) & 0xffffff;
-		/* The via686a does not have this current index register,
-		 * this register makes life easier for us here. */
+		/* ah, this register makes life easier for us here. */
 		val = inb(VIAREG(chip, OFFSET_CURR_INDEX) + viadev->reg_offset) % viadev->tbl_entries;
 		break;
 	}
@@ -659,9 +649,8 @@ static inline unsigned int snd_via82xx_cur_ptr(via82xx_t *chip, viadev_t *viadev
 		val += viadev->tbl_size - count;
 	} else {
 		val *= viadev->tbl_size;
-		val += (viadev->size % viadev->tbl_size) + 1 - count;
+		val += viadev->last_tbl_size - count;
 	}
-	// printk("pointer: ptr = 0x%x (%i), count = 0x%x, val = 0x%x\n", ptr, count, val);
 	return val;
 }
 
