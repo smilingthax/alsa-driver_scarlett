@@ -45,6 +45,7 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/usb.h>
+#include <linux/usb_ch9.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/pcm.h>
@@ -2616,7 +2617,7 @@ static int snd_usb_extigy_boot_quirk(struct usb_device *dev, struct usb_interfac
 				      0x10, 0x43, 0x0001, 0x000a, NULL, 0, HZ);
 		if (err < 0) snd_printdd("error sending boot message: %d\n", err);
 		err = usb_get_descriptor(dev, USB_DT_DEVICE, 0,
-					 &dev->descriptor, sizeof(dev->descriptor));
+				&dev->descriptor, sizeof(dev->descriptor));
 		config = dev->actconfig;
 		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
 		err = usb_reset_configuration(dev);
