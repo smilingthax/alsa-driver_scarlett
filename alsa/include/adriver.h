@@ -134,6 +134,15 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 	return (struct proc_dir_entry *) inode->u.generic_ip;
 }
 #endif
+#ifndef cond_resched
+#define cond_resched() \
+	do { \
+		if (need_resched()) { \
+			set_current_state(TASK_RUNNING); \
+			schedule(); \
+		} \
+	} while (0)
+#endif
 #include <asm/io.h>
 #if !defined(isa_virt_to_bus)
 #if defined(virt_to_bus) || defined(__alpha__)

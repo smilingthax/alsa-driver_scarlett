@@ -616,7 +616,6 @@ static int snd_us428_urbs_wait_clear(snd_us428_substream_t *subs)
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		snd_printd("snd_us428_urbs_wait_clear waiting\n");
 		schedule_timeout(1);
-		set_current_state(TASK_RUNNING);
 	} while (--timeout > 0);
 	if (alive)
 		snd_printk(KERN_ERR "timeout: still %d active urbs..\n", alive);
@@ -931,7 +930,7 @@ static int us428_rate_set(snd_us428_stream_t *us428_stream, int rate)
 				break;
 
 			add_wait_queue(&us428_stream->us428->In04WaitQueue, &wait);
-			current->state =	TASK_INTERRUPTIBLE;
+			set_current_state(TASK_INTERRUPTIBLE);
 			us->submitted =		0;
 			us->len =		NOOF_SETRATE_URBS;
 			us428_stream->us428->US04 =	us;
@@ -951,7 +950,7 @@ static int us428_rate_set(snd_us428_stream_t *us428_stream, int rate)
 				us428_stream->us428->refframes = rate == 48000 ? 47 : 44;
 			} while (0);
 		
-			current->state = TASK_RUNNING;
+			set_current_state(TASK_RUNNING);
 			remove_wait_queue(&us428_stream->us428->In04WaitQueue, &wait);
 		} while (0);
 
