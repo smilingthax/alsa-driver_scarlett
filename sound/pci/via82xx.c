@@ -1690,7 +1690,7 @@ static struct via823x_info via823x_cards[] __devinitdata = {
 	{ VIA_REV_8233C, "VIA 8233C", TYPE_VIA8233 },
 	{ VIA_REV_8233, "VIA 8233", TYPE_VIA8233 },
 	{ VIA_REV_8233A, "VIA 8233A", TYPE_VIA8233A },
-	{ VIA_REV_8233, "VIA 8235", TYPE_VIA8233 },
+	{ VIA_REV_8235, "VIA 8235", TYPE_VIA8233 },
 };
 
 static int __devinit snd_via82xx_probe(struct pci_dev *pci,
