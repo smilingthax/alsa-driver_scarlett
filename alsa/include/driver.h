@@ -165,6 +165,21 @@ static inline void snd_leave_user(mm_segment_t fs)
 #define SND_DMA_TYPE_PCI_16MB	2	/* PCI DMA (must be in low 16MB memory) */
 #define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
 
+#define SND_INDEX_DESC "allows:{{0,7}},unique,skill:required,dialog:list"
+#define SND_ID_DESC "unique"
+#define SND_DMA8_DESC "allows:{{0,1},{3}},dialog:list"
+#define SND_DMA16_DESC "allows:{{5,7}},dialog:list"
+#define SND_DMA_DESC "allows:{{0,1},{3},{5,7}},dialog:list"
+#define SND_IRQ_DESC "allows:{{5},{7},{9},{10,12},{14,15}},dialog:list"
+#define SND_DMA_SIZE_DESC "allows:{{4, 128}},default:64,skill:advanced"
+#define SND_DMA8_SIZE_DESC "allows:{{4, 64}},default:64,skill:advanced"
+#define SND_DMA16_SIZE_DESC "allows:{{4, 128}},default:64,skill:advanced"
+#define SND_ISAPNP_DESC "allows:{{0,Disabled},{1,Enabled}},default:1,dialog:check"
+#define SND_ENABLE_DESC "allows:{{0,Disabled},{1,Enabled}},default:0,dialog:check"
+#define SND_DISABLE_DESC "allows:{{0,Disabled},{1,Enabled}},default:1,dialog:check"
+#define SND_PORT12_DESC "allows:{{0,0x3fff}},base:16"
+#define SND_PORT_DESC "allows:{{0,0xffff}},base:16"
+
 typedef struct snd_stru_dma_area snd_dma_area_t;
 typedef struct snd_stru_dma snd_dma_t;
 
