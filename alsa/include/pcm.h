@@ -162,7 +162,7 @@ typedef struct snd_stru_pcm_runtime {
 	snd_pcm_hardware_t *hw;
 	void (*hw_free)(void *hw);
 	int (*hw_memcpy)(snd_pcm_subchn_t *subchn, int voice, int pos,
-			 const void *src, int count);
+			 void *src, int count);
 	int (*hw_memset)(snd_pcm_subchn_t *subchn, int voice, int pos,
 			 int c, int count);
 	/* -- interrupt callbacks -- */
