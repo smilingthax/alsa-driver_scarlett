@@ -258,6 +258,7 @@ __initfunc(static int isapnp_isolate_rdp_select(int rdp))
 	outb(0x07, _PNPWRP);	/* reset driver */
 #endif
 	isapnp_delay(200);	/* delay 2000us */
+	isapnp_wait();
 	isapnp_key();
 	isapnp_wake(0x00);
 	outb(0x00, _PIDXR);
