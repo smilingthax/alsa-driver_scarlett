@@ -1,5 +1,5 @@
 %define version  @CONFIG_SND_VERSION@
-%define kversion @kversion@.@kpatchlevel@.@ksublevel@
+%define kversion @kversion@.@kpatchlevel@.@ksublevel@@kextraversion@
 
 Summary:   ALSA driver
 Name:      alsa-driver
