@@ -31,23 +31,23 @@ CSUBDIRS =
 
 ifeq (n,$(CONFIG_ISAPNP_KERNEL))
 ifeq (y,$(CONFIG_ISAPNP))
-ifeq (y,$(CONFIG_SND_ISA))
+ifeq (y,$(CONFIG_ISA))
 SUBDIRS  += support
 endif
 endif
 endif
 
 SUBDIRS  += acore i2c drivers isa synth
-ifeq (y,$(CONFIG_SND_PCI))
+ifeq (y,$(CONFIG_PCI))
 SUBDIRS  += pci
 endif
-ifeq (y,$(CONFIG_SND_ARM))
+ifeq (y,$(CONFIG_ARM))
 SUBDIRS  += arm
 endif
-ifeq (y,$(CONFIG_SND_PPC))
+ifeq (y,$(CONFIG_PPC))
 SUBDIRS  += ppc
 endif
-ifeq (y,$(CONFIG_SND_SGI))
+ifeq (y,$(CONFIG_SGI))
 SUBDIRS  += hal2
 endif
 ifeq (y,$(CONFIG_USB))
