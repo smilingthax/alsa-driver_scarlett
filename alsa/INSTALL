@@ -392,9 +392,9 @@ Module parameters
 			* SoundBlaster PCI 64
 			* SoundBlaster PCI 128
 
-    snd_dac1_frame_size - max dac1 (playback1) frame size in kB (4-128kB)
-    snd_dac2_frame_size - max dac2 (playback2) frame size in kB (4-128kB)
-    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+    snd_playback1_bufsize - max playback1 buffer size in kB (4-128kB)
+    snd_playback2_bufsize - max playback2 buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -406,9 +406,9 @@ Module parameters
 			* SoundBlaster PCI 128
 			* SoundBlaster Vibra PCI
 
-    snd_dac1_frame_size - max dac1 (playback1) frame size in kB (4-128kB)
-    snd_dac2_frame_size - max dac2 (playback2) frame size in kB (4-128kB)
-    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+    snd_playback1_bufsize - max playback1 buffer size in kB (4-128kB)
+    snd_playback2_bufsize - max playback2 buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -507,8 +507,8 @@ Module parameters
 
     Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4280.
 
-    snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
-    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -539,8 +539,8 @@ Module parameters
 			* Shark  Predator4D-PCI
 			* Jaton  SonicWave 4D
 
-    snd_dac_frame_size    - max dac (playback) frame size in kB (4-64kB)
-    snd_adc_frame_size    - max adc (record) frame size in kB (4-64kB)
+    snd_playback_bufsize  - max playback buffer size in kB (4-64kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-64kB)
     snd_pcm_channels	  - max channels (voices) reserved for PCM
     snd_wavetable_size	  - max wavetable size in kB (4-?kb)
 
@@ -551,8 +551,8 @@ Module parameters
 
     Module for ForteMedia FM801 based PCI soundcards.
 
-    snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
-    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -597,12 +597,12 @@ Module parameters
 
     Module for soundcards based on ESS Maestro-1/2/2E (ES1968/ES1978) chips.
 
-    snd_dac_frame_size  - max dac (playback) frame size in kB (4-64kB)
-    snd_adc_frame_size  - max adc (record) frame size in kB (4-64kB)
-    snd_gesbuf		- total buffer size in kB (1-4096kB)
-    snd_midi_enable	- enable MIDI support (0 = off, 1 = on)
-    snd_pcm_channels_p	- playback channels (1-8, default=2)
-    snd_pcm_channels_c	- capture channels (1-8, default=0)
+    snd_playback_bufsize - max playback buffer size in kB (4-64kB)
+    snd_capture_bufsize  - max capture buffer size in kB (4-64kB)
+    snd_gesbuf		 - total buffer size in kB (1-4096kB)
+    snd_midi_enable	 - enable MIDI support (0 = off, 1 = on)
+    snd_pcm_channels_p	 - playback channels (1-8, default=2)
+    snd_pcm_channels_c	 - capture channels (1-8, default=0)
 
     Module supports up to 8 cards and autoprobe.
 
@@ -631,8 +631,8 @@ Module parameters
 			* Sound Blaster Live!
 			* Sound Blaster PCI 512
 
-    snd_dac_frame_size  - max dac (playback) frame size in kB (4-128kB)
-    snd_adc_frame_size  - max adc (record) frame size in kB (4-64kB)
+    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe.
     
@@ -645,10 +645,10 @@ Module parameters
 			* MidiMan M Audio Delta 66
 			* MidiMan M Audio Delta 44
 
-    snd_conp_frame_size  - max consumer dac (playback) frame size in kB (4-128kB)
-    snd_prop_frame_size  - max professional dac (playback) frame size in kB (4-128kB)
-    snd_conc_frame_size  - max consumer adc (playback) frame size in kB (4-256kB)
-    snd_proc_frame_size  - max professional adc (record) frame size in kB (4-256kB)
+    snd_con_playback_bufsize - max consumer playback buffer size in kB (4-128kB)
+    snd_pro_playback_bufsize - max professional playback buffer size in kB (4-128kB)
+    snd_con_capture_bufsize  - max consumer capture buffer size in kB (4-256kB)
+    snd_pro_capture_bufsize  - max professional capture buffer size in kB (4-256kB)
 
     Module supports up to 8 cards and autoprobe. Note: The consumer part
     is not used with all Envy24 based cards (for example in the MidiMan Delta
@@ -677,9 +677,9 @@ Module parameters
     Module for AC'97 motherboards from Intel.
 			* Intel i810/810E, i820, i830, i840, MX440
 
-    snd_pbk_frame_size  - max playback frame size in kB (4-128kB)
-    snd_cap_frame_size  - max capture frame size in kB (4-128kB)
-    snd_mic_frame_size  - max microphone frame size in kB (4-128kB)
+    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
+    snd_mic_bufsize       - max microphone buffer size in kB (4-128kB)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     
@@ -688,10 +688,10 @@ Module parameters
 
     Module for AC'97 motherboards based on VIA 82C686A (south) bridge.
 
-    snd_mpu_port        - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
-    snd_joystick	- 1 = enable, otherwise obtain BIOS setup
-    snd_pbk_frame_size  - max playback frame size in kB (4-128kB)
-    snd_cap_frame_size  - max capture frame size in kB (4-128kB)
+    snd_mpu_port         - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
+    snd_joystick	 - 1 = enable, otherwise obtain BIOS setup
+    snd_playback_bufsize - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize  - max capture buffer size in kB (4-128kB)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     
@@ -700,12 +700,12 @@ Module parameters
 
     Module for C-Media CMI8338 and 8738 PCI soundcards.
 
-    snd_dac_frame_size  - max playback frame size in kB (4-128kB)
-    snd_adc_frame_size  - max capture frame size in kB (4-128kB)
-    snd_enable_midi 	- 1 = enable, 0 = disable (default)
-    snd_enable_fm	- 1 = enable, 0 = disable (default)
-    snd_mpu_port        - 0x300 (default),0x310,0x320,0x330
-    snd_fm_port         - 0x388 (default)
+    snd_playback_bufsize - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize  - max capture buffer size in kB (4-128kB)
+    snd_enable_midi 	 - 1 = enable, 0 = disable (default)
+    snd_enable_fm	 - 1 = enable, 0 = disable (default)
+    snd_mpu_port         - 0x300 (default),0x310,0x320,0x330
+    snd_fm_port          - 0x388 (default)
 
     Module supports autoprobe and multiple chips (max 8).
     
@@ -714,12 +714,12 @@ Module parameters
 
     Module for Yamaha PCI chips (YMF72x, YMF74x & YMF75x).
 
-    snd_dac_frame_size  - max playback frame size in kB (4-128kB)
-    snd_adc_frame_size  - max capture frame size in kB (4-128kB)
-    snd_ac97_frame_size - max AC'97 capture frame size in kB (4-128kB)
-    snd_mpu_port        - 0x300,0x330,0x332,0x334, -1 (disable) by default
-    snd_mpu_irq         - 5,7,9,10,11, -1 (disable) by default
-    snd_fm_port         - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
+    snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
+    snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
+    snd_ac97_bufsize      - max AC'97 capture buffer size in kB (4-128kB)
+    snd_mpu_port          - 0x300,0x330,0x332,0x334, -1 (disable) by default
+    snd_mpu_irq           - 5,7,9,10,11, -1 (disable) by default
+    snd_fm_port           - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
 
     Module supports autoprobe and multiple chips (max 8).
     
