@@ -47,8 +47,6 @@
 #include "seq_timer.h"
 #include "seq_info.h"
 
-static void snd_seq_check_queue_in_tasklet(unsigned long private_data);
-
 /* list of allocated queues */
 static queue_t *queue_list[SNDRV_SEQ_MAX_QUEUES];
 static spinlock_t queue_list_lock = SPIN_LOCK_UNLOCKED;
@@ -123,7 +121,6 @@ static queue_t *queue_new(int owner, int locked)
 	spin_lock_init(&q->check_lock);
 	init_MUTEX(&q->timer_mutex);
 	snd_use_lock_init(&q->use_lock);
-	tasklet_init(&q->taskq, snd_seq_check_queue_in_tasklet, (unsigned long)q);
 	q->queue = -1;
 
 	q->tickq = snd_seq_prioq_new();
@@ -258,8 +255,6 @@ queue_t *snd_seq_queue_find_name(char *name)
 void snd_seq_check_queue(queue_t *q, int atomic, int hop)
 {
 	unsigned long flags;
-	int dequeue;
-	int rc;
 	snd_seq_event_cell_t *cell;
 
 	if (q == NULL)
@@ -275,27 +270,13 @@ void snd_seq_check_queue(queue_t *q, int atomic, int hop)
 	q->check_blocked = 1;
 	spin_unlock_irqrestore(&q->check_lock, flags);
 
-	if (atomic)
-		dequeue = SNDRV_SEQ_MAX_DEQUEUE;
-	else
-		dequeue = 0x7fffffff; /* XXX */
-
       __again:
 	/* Process tick queue... */
-
-	/* limit the number of elements dequeued per pass to save the machine from lockups */
-	while (dequeue > 0) {
-
-		cell = snd_seq_prioq_cell_peek(q->tickq);
-		if (cell == NULL)
-			break;
+	while ((cell = snd_seq_prioq_cell_peek(q->tickq)) != NULL) {
 		if (snd_seq_compare_tick_time(&q->timer->tick.cur_tick, &cell->event.time.tick)) {
 			cell = snd_seq_prioq_cell_out(q->tickq);
-			if (cell != NULL) {
-				rc = snd_seq_dispatch_event(cell, atomic, hop);
-				if (rc > 0)
-					dequeue -= rc;
-			}
+			if (cell)
+				snd_seq_dispatch_event(cell, atomic, hop);
 		} else {
 			/* event remains in the queue */
 			break;
@@ -304,20 +285,11 @@ void snd_seq_check_queue(queue_t *q, int atomic, int hop)
 
 
 	/* Process time queue... */
-
-	/* limit the number of elements dequeued per pass to save the machine from lockups */
-	while (dequeue > 0) {
-		cell = snd_seq_prioq_cell_peek(q->timeq);
-		if (cell == NULL)
-			break;
+	while ((cell = snd_seq_prioq_cell_peek(q->timeq)) != NULL) {
 		if (snd_seq_compare_real_time(&q->timer->cur_time, &cell->event.time.time)) {
 			cell = snd_seq_prioq_cell_out(q->timeq);
-			if (cell != NULL) {
-				rc = snd_seq_dispatch_event(cell, atomic, hop);
-				if (rc > 0)
-					dequeue -= rc;
-			}
-
+			if (cell)
+				snd_seq_dispatch_event(cell, atomic, hop);
 		} else {
 			/* event remains in the queue */
 			break;
@@ -326,23 +298,15 @@ void snd_seq_check_queue(queue_t *q, int atomic, int hop)
 
 	/* free lock */
 	spin_lock_irqsave(&q->check_lock, flags);
-	if (q->check_again && dequeue > 0) {
+	if (q->check_again) {
 		q->check_again = 0;
 		spin_unlock_irqrestore(&q->check_lock, flags);
 		goto __again;
 	}
 	q->check_blocked = 0;
-	if (dequeue <= 0 && atomic)
-		tasklet_hi_schedule(&q->taskq);
 	spin_unlock_irqrestore(&q->check_lock, flags);
 }
 
-/* tasklet */
-static void snd_seq_check_queue_in_tasklet(unsigned long private_data)
-{
-	queue_t *q = (queue_t *)private_data;
-	snd_seq_check_queue(q, 0, 0);
-}
 
 /* enqueue a event to singe queue */
 int snd_seq_enqueue_event(snd_seq_event_cell_t *cell, int atomic, int hop)
