@@ -128,6 +128,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define ymfpci_pcm_t_magic			0xa15a2f02
 #define cs4281_t_magic				0xa15a3001
 #define snd_i2c_bus_t_magic			0xa15a3101
+#define snd_i2c_device_t_magic			0xa15a3102
 #define m3_t_magic				0xa15a3201
 #define m3_dma_t_magic				0xa15a3202
 #define nm256_t_magic				0xa15a3301

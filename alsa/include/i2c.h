@@ -24,14 +24,28 @@
 #define SNDRV_LOCK_I2C_BUS(bus) spin_lock_irqsave(&bus->lock, flags)
 #define SNDRV_UNLOCK_I2C_BUS(bus) spin_unlock_irqrestore(&bus->lock, flags)
 
-typedef struct snd_i2c_bus snd_i2c_bus_t;
+typedef struct _snd_i2c_device snd_i2c_device_t;
+typedef struct _snd_i2c_bus snd_i2c_bus_t;
 
-struct snd_i2c_bus {
+struct _snd_i2c_device {
+	struct list_head list;
+	snd_i2c_bus_t *bus;	/* I2C bus */
+	char name[32];		/* some useful device name */
+	unsigned char addr;	/* device address */
+	unsigned long private_value;
+	void *private_data;
+	void (*private_free)(snd_i2c_device_t *device);
+};
+
+#define snd_i2c_device(n) list_entry(n, snd_i2c_device_t, list)
+
+struct _snd_i2c_bus {
 	snd_card_t *card;	/* card which I2C belongs to */
 	char name[32];		/* some useful label */
-	void *data;		/* free for use by the bus driver */
 
 	spinlock_t lock;
+
+	struct list_head devices; /* attached devices */
 
 	/* Software I2C */
 	void (*i2c_setlines) (snd_i2c_bus_t * bus, int ctrl, int data);
@@ -39,8 +53,7 @@ struct snd_i2c_bus {
 
 	/* Hardware I2C */
 	int (*i2c_read) (snd_i2c_bus_t * bus, unsigned char addr);
-	int (*i2c_write) (snd_i2c_bus_t * bus, unsigned char addr,
-			  unsigned char b1, unsigned char b2, int both);
+	int (*i2c_write) (snd_i2c_bus_t * bus, unsigned char addr, unsigned char b1, unsigned char b2, int both);
 
 	unsigned long private_value;
 	void *private_data;
@@ -48,22 +61,25 @@ struct snd_i2c_bus {
 };
 
 
-int snd_i2c_bus_create(snd_card_t *card, char *name, snd_i2c_bus_t **ri2c);
+int snd_i2c_bus_create(snd_card_t *card, const char *name, snd_i2c_bus_t **ri2c);
+int snd_i2c_device_create(snd_i2c_bus_t *bus, const char *name, unsigned char addr, snd_i2c_device_t **rdevice);
+int snd_i2c_device_free(snd_i2c_device_t *device);
 
 /* i2c bus access functions */
-void snd_i2c_reset(struct snd_i2c_bus *bus);
-void snd_i2c_start(struct snd_i2c_bus *bus);
-void snd_i2c_stop(struct snd_i2c_bus *bus);
-void snd_i2c_one(struct snd_i2c_bus *bus);
-void snd_i2c_zero(struct snd_i2c_bus *bus);
-int snd_i2c_ack(struct snd_i2c_bus *bus);
+void snd_i2c_reset(snd_i2c_bus_t *bus);
+void snd_i2c_start(snd_i2c_bus_t *bus);
+void snd_i2c_stop(snd_i2c_bus_t *bus);
+void snd_i2c_one(snd_i2c_bus_t *bus);
+void snd_i2c_zero(snd_i2c_bus_t *bus);
+int snd_i2c_ack(snd_i2c_bus_t *bus);
 
-int snd_i2c_sendbyte(struct snd_i2c_bus *bus, unsigned char data, int wait_for_ack);
-unsigned char snd_i2c_readbyte(struct snd_i2c_bus *bus, int last);
+int snd_i2c_sendbyte(snd_i2c_bus_t *bus, unsigned char data, int wait_for_ack);
+unsigned char snd_i2c_readbyte(snd_i2c_bus_t *bus, int last);
 
 /* i2c (maybe) hardware functions */
-int snd_i2c_read(struct snd_i2c_bus *bus, unsigned char addr);
-int snd_i2c_write(struct snd_i2c_bus *bus, unsigned char addr,
-		  unsigned char b1, unsigned char b2, int both);
+int snd_i2c_read(snd_i2c_bus_t *bus, unsigned char addr);
+int snd_i2c_write(snd_i2c_bus_t *bus, unsigned char addr, unsigned char b1, unsigned char b2, int both);
+int snd_i2c_dev_read(snd_i2c_device_t *device);
+int snd_i2c_dev_write(snd_i2c_device_t *device, unsigned char b1, unsigned char b2, int both);
 
 #endif				/* __SND_I2C_H */

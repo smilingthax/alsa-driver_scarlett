@@ -26,7 +26,7 @@
 #include "i2c.h"		/* generic i2c support */
 
 typedef struct {
-	struct snd_i2c_bus *bus;
+	snd_i2c_device_t *device;
 	int equalizer;
 	int fader;
 	unsigned char regs[8];
@@ -36,9 +36,7 @@ typedef struct {
 	spinlock_t reg_lock;
 } tea6330t_t;
 
-extern int snd_tea6330t_detect(struct snd_i2c_bus *bus, int equalizer);
-extern int snd_tea6330t_update_mixer(snd_card_t * card,
-				     struct snd_i2c_bus *bus,
-				     int equalizer, int fader);
+extern int snd_tea6330t_detect(snd_i2c_bus_t *bus, int equalizer);
+extern int snd_tea6330t_update_mixer(snd_card_t * card, snd_i2c_bus_t * bus, int equalizer, int fader);
 
 #endif				/* __TEA6330T_H */
