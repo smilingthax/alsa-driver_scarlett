@@ -382,6 +382,7 @@ struct snd_stru_gus_card {
 	snd_spin_define(neutral);
 	snd_mutex_define(dma);
 	snd_sleep_define(neutral);
+	snd_sleep_define(clear);
 };
 
 /* I/O functions for GF1/InterWave chip - gus_io.c */

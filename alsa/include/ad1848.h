@@ -166,6 +166,7 @@ struct snd_stru_ad1848 {
 
 	snd_spin_define(reg);
 	snd_mutex_define(open);
+	snd_sleep_define(mce);
 };
 
 typedef struct snd_stru_ad1848 ad1848_t;

@@ -272,6 +272,7 @@ struct snd_stru_cs4231 {
 	snd_spin_define(reg);
 	snd_mutex_define(mce);
 	snd_mutex_define(open);
+	snd_sleep_define(mce);
 
 	unsigned int (*set_playback_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
 	unsigned int (*set_record_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
