@@ -25,6 +25,8 @@
 #include "rawmidi.h"
 #include "seq_midi_event.h"
 
+typedef struct _snd_virmidi_dev snd_virmidi_dev_t;
+
 /*
  * device file instance:
  * This instance is created at each time the midi device file is
@@ -39,24 +41,29 @@ typedef struct _snd_virmidi {
 	int trigger: 1;
 	snd_midi_event_t *parser;
 	snd_seq_event_t event;
+	snd_virmidi_dev_t *rdev;
 	snd_rawmidi_substream_t *substream;
 } snd_virmidi_t;
+
+#define SND_VIRMIDI_SUBSCRIBE	(1<<0)
+#define SND_VIRMIDI_USE		(1<<1)
 
 /*
  * device record:
  * Each virtual midi device has one device instance.  It contains
  * common information and the linked-list of opened files, 
  */
-typedef struct _snd_virmidi_dev {
+struct _snd_virmidi_dev {
 	snd_card_t *card;		/* associated card */
 	snd_rawmidi_t *rmidi;		/* rawmidi device */
 	int seq_mode;			/* SND_VIRMIDI_XXX */
 	int device;			/* sequencer device */
 	int client;			/* created/attached client */
 	int port;			/* created/attached port */
+	unsigned int flags;		/* SND_VIRMIDI_* */
 	rwlock_t filelist_lock;
 	struct list_head filelist;
-} snd_virmidi_dev_t;
+};
 
 /* sequencer mode:
  * ATTACH = input/output events from midi device are routed to the
