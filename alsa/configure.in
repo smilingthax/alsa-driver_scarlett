@@ -627,12 +627,14 @@ int main(void) {
 	fprintf(file, "i586tsc");
 #elif defined(CONFIG_M586MMX)
 	fprintf(file, "i586mmx");
-#elif defined(CONFIG_M686) || defined(CONFIG_MPENTIUMIII) || defined(CONFIG_MPENTIUM4)
+#elif defined(CONFIG_M686) || defined(CONFIG_MPENTIUMII) || defined(CONFIG_MPENTIUMIII) || defined(CONFIG_MPENTIUM4) || defined(CONFIG_MPENTIUMM)
 	fprintf(file, "i686");
 #elif defined(CONFIG_MK6)
 	fprintf(file, "k6");
 #elif defined(CONFIG_MK7)
 	fprintf(file, "k7");
+#elif defined(CONFIG_MK8)
+	fprintf(file, "k8");
 #elif defined(CONFIG_MCRUSOE)
 	fprintf(file, "crusoe");
 #elif defined(CONFIG_MWINCHIPC6) || defined(CONFIG_MWINCHIP2) || defined(CONFIG_MWINCHIP3D)
@@ -717,7 +719,7 @@ case "$processor" in
       c_opts="-march=i586"
     fi
     ;;
-  k7)
+  k7|k8)
     if $CC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=athlon"
     else
