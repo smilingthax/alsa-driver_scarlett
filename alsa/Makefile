@@ -245,9 +245,13 @@ pack: mrproper
 
 .PHONY: uninstall
 uninstall:
-	rm -rf $(DESTDIR)$(prefix)/include/sound
+	-rm -rf $(DESTDIR)$(prefix)/include/sound
 ifeq ($(moddir_tree),y)
-	rm -rf $(DESTDIR)$(moddir)
+	{ \
+		for i in core $(SUBDIRS) ; do \
+			rm -rf $(DESTDIR)$(moddir)/$$i ; \
+		done ; \
+	}
 else
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 endif
