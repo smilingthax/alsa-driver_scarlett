@@ -146,6 +146,7 @@ void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 #endif
 	}
 
+	memset(vmaddr, 0, size);
 	return vmaddr;
 
  _failed:
@@ -174,7 +175,7 @@ struct page *snd_pcm_sgbuf_ops_page(snd_pcm_substream_t *substream, unsigned lon
 	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, substream->dma_private, return NULL);
 
 	unsigned int idx = offset >> PAGE_SHIFT;
-	if (idx >= sgbuf->pages)
+	if (idx >= (unsigned int)sgbuf->pages)
 		return NULL;
 	return sgbuf->page_table[idx];
 }
