@@ -47,6 +47,7 @@ static void __old_snd_us428_urb_capt_complete(struct urb *urb);
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/pcm.h>
+#include <sound/pcm_params.h>
 #include <sound/initval.h>
 #include "usbus428.h"
 
@@ -153,9 +154,9 @@ static int snd_us428_urb_capt_retire(snd_us428_substream_t *subs,
 			      struct urb *urb)
 {
 	unsigned long 	flags;
-	unsigned char *	cp;
+	unsigned char	*cp;
 	int 		i, len, lens = 0, hwptr_done = subs->hwptr_done;
-	us428dev_t*	us428 = subs->stream->us428;
+	us428dev_t	*us428 = subs->stream->us428;
 
 	for (i = 0; i < NRPACKS; i++) {
 		cp = (unsigned char*)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
@@ -310,7 +311,7 @@ inline static int snd_us428_urb_play_retire(snd_us428_substream_t *subs,
 #if NRPACKS > 1
 			       + urb->iso_frame_desc[1].actual_length
 #endif
-		               ) / 4; //FIXME !!stride 16 24 Bit!!
+		               ) / subs->stream->us428->stride;
 
 	spin_lock_irqsave(&subs->lock, flags);
 	
@@ -348,7 +349,6 @@ static void _snd_us428_urb_play_complete(purb_t urb)
 	snd_us428_substream_t *subs = (snd_us428_substream_t*)urb->context;
 	snd_pcm_substream_t *substream = subs->pcm_substream;
 	int err;
-
 
 	if (urb->status) {
 		snd_printk("play urb->status = %i\n", urb->status);
@@ -390,13 +390,13 @@ static void snd_us428_urb_capt_complete(purb_t urb, struct pt_regs *regs)
 	int err;
 
 	if (urb->status) {
-		snd_printk( "snd_us428_urb_capt_complete(): urb->status = %i\n", urb->status);
+		snd_printk("snd_us428_urb_capt_complete(): urb->status = %i\n", urb->status);
 		urb->status = 0;
 		return;
 	}
 	if (pcm_captsubs && snd_pcm_running(pcm_captsubs))
 		runtime = pcm_captsubs->runtime;
-	if (NULL == runtime){
+	if (NULL == runtime) {
 		snd_us428_substream_t *playsubs = captsubs->stream->substream + SNDRV_PCM_STREAM_PLAYBACK;
 		snd_pcm_substream_t *pcm_playsubs = playsubs->pcm_substream;
 		if (pcm_playsubs && snd_pcm_running(pcm_playsubs))
@@ -592,8 +592,7 @@ static int snd_us428_urbs_wait_clear(snd_us428_substream_t *subs)
 		alive = 0;
 		for (ep = 0; ep < subs->endpoints; ep++)
 			for (i = 0; i < NRURBS; i++) {
-				if (	subs->dataurb[ep][i]
-					&&	subs->dataurb[ep][i]->status)
+				if (subs->dataurb[ep][i] && subs->dataurb[ep][i]->status)
 					alive++;
 			}
 		if (! alive)
@@ -624,11 +623,11 @@ static int snd_us428_pcm_capt_trigger(snd_pcm_substream_t *substream, int cmd)
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		snd_printd("snd_us428_pcm_capt_trigger(START )\n");
+		snd_printd("snd_us428_pcm_capt_trigger(START)\n");
 		err = snd_us428_urb_capt_start(subs, substream->runtime);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		snd_printd("snd_us428_pcm_capt_trigger(STOP )\n");
+		snd_printd("snd_us428_pcm_capt_trigger(STOP)\n");
 		err = snd_us428_urbs_deactivate(subs);
 		break;
 	default:
@@ -647,11 +646,11 @@ static int snd_us428_pcm_play_trigger(snd_pcm_substream_t *substream, int cmd)
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		snd_printd("snd_us428_pcm_play_trigger(START )\n");
+		snd_printd("snd_us428_pcm_play_trigger(START)\n");
 		err = snd_us428_urb_play_start(subs, substream->runtime);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		snd_printd("snd_us428_pcm_play_trigger(STOP )\n");
+		snd_printd("snd_us428_pcm_play_trigger(STOP)\n");
 		err = snd_us428_urbs_deactivate(subs);
 		break;
 	default:
@@ -759,10 +758,8 @@ static int snd_us428_substream_prepare(snd_us428_substream_t *subs, snd_pcm_runt
 static int snd_us428_set_format(snd_us428_substream_t *subs, snd_pcm_runtime_t *runtime)
 {
 	struct usb_device *dev = subs->stream->us428->chip.dev;
-
 	snd_printd("about to set format: format = %s, rate = %d, channels = %d\n",
 			   snd_pcm_format_name(runtime->format), runtime->rate, runtime->channels);
-
 	/* create data pipes */
 	if (subs == (subs->stream->substream + SNDRV_PCM_STREAM_PLAYBACK)) {
 		subs->datapipe[0] = usb_sndisocpipe(dev, subs->endpoint[0]);
@@ -772,7 +769,6 @@ static int snd_us428_set_format(snd_us428_substream_t *subs, snd_pcm_runtime_t *
 		subs->datapipe[1] = usb_rcvisocpipe(dev, subs->endpoint[1]);
 		subs->maxpacksize = dev->epmaxpacketin[subs->endpoint[0]];
 	}
-
 	return 0;
 }
 
@@ -957,15 +953,31 @@ static int us428_rate_set(snd_us428_stream_t *us428_stream, int rate)
 static int snd_us428_hw_params(	snd_pcm_substream_t*	substream,
 				snd_pcm_hw_params_t*	hw_params)
 {
-	int			err = 0, rate = params_rate(hw_params);
- 	snd_us428_stream_t*	us428_stream = snd_pcm_substream_chip(substream);
-
+	int			err = 0;
+	unsigned int		rate = params_rate(hw_params),
+				format = params_format(hw_params);
+ 	snd_us428_stream_t	*us428_stream = snd_pcm_substream_chip(substream);
+	if (us428_stream->us428->format != format) {
+		int alternate;
+		if (format == SNDRV_PCM_FORMAT_S24_3LE) {
+			alternate = 2;
+			us428_stream->us428->stride = 6;
+		} else {
+			alternate = 1;
+			us428_stream->us428->stride = 4;
+		}
+		if ((err = usb_set_interface(us428_stream->us428->chip.dev, 0, alternate))) {
+			snd_printk("usb_set_interface error \n");
+			return err;
+		}
+		us428_stream->us428->format = format;
+		us428_stream->us428->rate = 0;
+	}
 	if (us428_stream->us428->rate != rate)
 		err = us428_rate_set(us428_stream, rate);
-
 	if (0 == err) {
 		if (0 > (err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))))
-		snd_printd("snd_pcm_lib_malloc_pages(%x, %i) returned %i\n", substream, params_buffer_bytes(hw_params), err);
+			snd_printd("snd_pcm_lib_malloc_pages(%x, %i) returned %i\n", substream, params_buffer_bytes(hw_params), err);
 	}
 	return err;
 }
@@ -1001,7 +1013,7 @@ static snd_pcm_hardware_t snd_usb_playback =
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =                 SNDRV_PCM_FMTBIT_S16_LE,
+	.formats =                 SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_3LE,
 	.rates =                   SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000,
 	.rate_min =                44100,
 	.rate_max =                48000,
@@ -1020,7 +1032,7 @@ static snd_pcm_hardware_t snd_usb_capture =
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =                 SNDRV_PCM_FMTBIT_S16_LE,
+	.formats =                 SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_3LE,
 	.rates =                   SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000,
 	.rate_min =                44100,
 	.rate_max =                48000,
@@ -1037,18 +1049,14 @@ static snd_pcm_hardware_t snd_usb_capture =
 static int snd_usb_pcm_open(snd_pcm_substream_t *substream, int direction,
 			    snd_pcm_hardware_t *hw)
 {
-	snd_us428_stream_t *as = snd_pcm_substream_chip(substream);
-	snd_pcm_runtime_t *runtime = substream->runtime;
-	snd_us428_substream_t *subs = &as->substream[direction];
+	snd_us428_stream_t	*as = snd_pcm_substream_chip(substream);
+	snd_pcm_runtime_t	*runtime = substream->runtime;
+	snd_us428_substream_t	*subs = &as->substream[direction];
 
 	runtime->hw = *hw;
-
 	runtime->private_data = subs;
 	subs->pcm_substream = substream;
-	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_PERIOD_TIME,
-				     1000,
-				     200000);
-
+	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_PERIOD_TIME, 1000, 200000);
 	return 0;
 }
 
