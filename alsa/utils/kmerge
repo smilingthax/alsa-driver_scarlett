@@ -28,14 +28,14 @@ if [ ! -a $ADIR/include/version.h ]; then
 	
 ERROR:
 	
-$ADIR/include/version/h does not exist, building will fail
+$ADIR/include/version.h does not exist, building will fail
 without it, please run ./configure in $ADIR first to set
 up the information required to build, then run kmerge to
 merge drivers to the kernel.
 	
 EOF
-	exit 1;
-	fi
+	exit 1
+fi
 
 function copy_file () {
 	ln -svf $ADIR/$1 $KADIR/$2
