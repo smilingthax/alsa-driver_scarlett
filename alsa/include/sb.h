@@ -74,8 +74,7 @@ struct _snd_sb {
 					/* also SND_SB_CSP_MODE_XXX for sb16_csp */
 	unsigned int mode;		/* current mode of stream */
 	unsigned int force_mode16;	/* force 16-bit mode of streams */
-	unsigned short speed8;		/* input speed */
-	unsigned char fmt8;		/* format */
+	unsigned int locked_rate;	/* sb16 duplex */
 	unsigned int playback_format;
 	unsigned int capture_format;
 	struct timer_list midi_timer;
@@ -172,12 +171,6 @@ typedef struct _snd_sb sb_t;
 #define SB_DSP4_INPUT_LEFT	0x3d
 #define SB_DSP4_INPUT_RIGHT	0x3e
 
-#define SB_DSP_CAPTURE_SOURCE	0x0c
-#define SB_DSP_MIXS_MIC0	0x00	/* same as MIC */
-#define SB_DSP_MIXS_CD		0x01
-#define SB_DSP_MIXS_MIC		0x02
-#define SB_DSP_MIXS_LINE	0x03
-
 /* registers for SB 2.0 mixer */
 #define SB_DSP20_MASTER_DEV	0x02
 #define SB_DSP20_PCM_DEV	0x0A
@@ -191,9 +184,15 @@ typedef struct _snd_sb sb_t;
 #define SB_DSP_CD_DEV		0x28
 #define SB_DSP_FM_DEV		0x26
 #define SB_DSP_MIC_DEV		0x0a
+#define SB_DSP_CAPTURE_SOURCE	0x0c
 #define SB_DSP_CAPTURE_FILT	0x0c
 #define SB_DSP_PLAYBACK_FILT	0x0e
 #define SB_DSP_STEREO_SW	0x0e
+
+#define SB_DSP_MIXS_MIC0	0x00	/* same as MIC */
+#define SB_DSP_MIXS_CD		0x01
+#define SB_DSP_MIXS_MIC		0x02
+#define SB_DSP_MIXS_LINE	0x03
 
 /* registers (only for left channel) for SB 16 mixer */
 #define SB_DSP4_MASTER_DEV	0x30
