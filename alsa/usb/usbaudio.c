@@ -171,6 +171,7 @@ void snd_compat_usb_deregister(struct snd_compat_usb_driver *driver)
 
 void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver, struct usb_interface *iface, void *ptr)
 {
+	struct snd_usb_reg_table *tbl;
 	if ((tbl = find_matchingUsb_driver(driver)) != NULL)
 		usb_driver_claim_interface(&tbl->driver, iface, ptr);
 }
