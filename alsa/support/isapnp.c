@@ -1638,8 +1638,8 @@ static int isapnp_check_interrupt(struct isapnp_cfgtmp *cfg, int irq, int idx)
 	}
 	for (dev = isapnp_devices; dev; dev = dev->next) {
 		if (dev->active) {
-			if (dev->irq_resource[0].start == irq ||
-			    dev->irq_resource[1].start == irq)
+			if ((dev->irq_resource[0].flags && dev->irq_resource[0].start == irq) ||
+			    (dev->irq_resource[0].flags && dev->irq_resource[1].start == irq))
 				return 1;
 		}
 	}
@@ -1717,7 +1717,8 @@ static int isapnp_check_dma(struct isapnp_cfgtmp *cfg, int dma, int idx)
 	}
 	for (dev = isapnp_devices; dev; dev = dev->next) {
 		if (dev->active) {
-			if (dev->dma_resource[0].start == dma || dev->dma_resource[1].start == dma)
+			if ((dev->dma_resource[0].flags && dev->dma_resource[0].start == dma) ||
+			    (dev->dma_resource[1].flags && dev->dma_resource[1].start == dma))
 				return 1;
 		}
 	}
@@ -1738,6 +1739,10 @@ static int isapnp_check_dma(struct isapnp_cfgtmp *cfg, int dma, int idx)
 
 static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
 {
+	/* DMA priority: this table is good for i386 */
+	static unsigned short xtab[8] = {
+		1, 3, 5, 6, 7, 0, 2
+	};
 	int err, i;
 	unsigned long *value1, *value2;
 	struct isapnp_dma *dma;
@@ -1753,15 +1758,16 @@ static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
       	value1 = &cfg->result.dma_resource[idx].start;
       	value2 = &cfg->result.dma_resource[idx].end;
 	if (cfg->result.dma_resource[idx].flags & IORESOURCE_AUTO) {
-		for (i = 0; i < 8 && !(dma->map & (1<<i)); i++);
+		for (i = 0; i < 8 && !(dma->map & (1<<xtab[i])); i++);
 		if (i >= 8)
 			return -ENOENT;
 		cfg->result.dma_resource[idx].flags &= ~IORESOURCE_AUTO;
-		if (!isapnp_check_dma(cfg, *value1 = *value2 = i, idx))
+		if (!isapnp_check_dma(cfg, *value1 = *value2 = xtab[i], idx))
 			return 0;
 	}
 	do {
-		for (i = *value1 + 1; i < 8 && !(dma->map & (1<<i)); i++);
+		for (i = 0; i < 8 && xtab[i] != *value1; i++);
+		for (i++; i < 8 && !(dma->map & (1<<xtab[i])); i++);
 		if (i >= 8) {
 			if (dma->res && dma->res->alt) {
 				if ((err = isapnp_alternative_switch(cfg, dma->res, dma->res->alt))<0)
@@ -1770,7 +1776,7 @@ static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
 			}
 			return -ENOENT;
 		} else {
-			*value1 = *value2 = i;
+			*value1 = *value2 = xtab[i];
 		}
 	} while (isapnp_check_dma(cfg, *value1, idx));
 	return 0;
