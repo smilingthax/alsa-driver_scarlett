@@ -28,7 +28,7 @@
 
 /* IO ports */
 
-#define CS4231P(codec, x)	((codec)->port + c_d_c_CS4231##x)
+#define CS4231P(chip, x)	((chip)->port + c_d_c_CS4231##x)
 
 #define c_d_c_CS4231REGSEL	0
 #define c_d_c_CS4231REG		1
@@ -250,25 +250,25 @@ struct snd_stru_cs4231 {
 
 	struct pm_dev *pm_dev;
 
-	unsigned int (*set_playback_rate) (cs4231_t * codec, unsigned int rate);
-	unsigned int (*set_capture_rate) (cs4231_t * codec, unsigned int rate);
-	void (*set_playback_format) (cs4231_t * codec, unsigned char pdfr);
-	void (*set_capture_format) (cs4231_t * codec, unsigned char cdfr);
-	void (*suspend) (cs4231_t * codec);
-	void (*resume) (cs4231_t * codec);
+	unsigned int (*set_playback_rate) (cs4231_t *chip, unsigned int rate);
+	unsigned int (*set_capture_rate) (cs4231_t *chip, unsigned int rate);
+	void (*set_playback_format) (cs4231_t *chip, unsigned char pdfr);
+	void (*set_capture_format) (cs4231_t *chip, unsigned char cdfr);
+	void (*suspend) (cs4231_t *chip);
+	void (*resume) (cs4231_t *chip);
 };
 
 /* exported functions */
 
-void snd_cs4231_out(cs4231_t * codec, unsigned char reg, unsigned char val);
-unsigned char snd_cs4231_in(cs4231_t * codec, unsigned char reg);
-void snd_cs4231_outm(cs4231_t * codec, unsigned char reg, unsigned char mask, unsigned char val);
-void snd_cs4236_ext_out(cs4231_t * codec, unsigned char reg, unsigned char val);
-unsigned char snd_cs4236_ext_in(cs4231_t * codec, unsigned char reg);
-void snd_cs4231_mce_up(cs4231_t * codec);
-void snd_cs4231_mce_down(cs4231_t * codec);
+void snd_cs4231_out(cs4231_t *chip, unsigned char reg, unsigned char val);
+unsigned char snd_cs4231_in(cs4231_t *chip, unsigned char reg);
+void snd_cs4231_outm(cs4231_t *chip, unsigned char reg, unsigned char mask, unsigned char val);
+void snd_cs4236_ext_out(cs4231_t *chip, unsigned char reg, unsigned char val);
+unsigned char snd_cs4236_ext_in(cs4231_t *chip, unsigned char reg);
+void snd_cs4231_mce_up(cs4231_t *chip);
+void snd_cs4231_mce_down(cs4231_t *chip);
 
-void snd_cs4231_interrupt(snd_pcm_t * pcm, unsigned char status);
+void snd_cs4231_interrupt(cs4231_t *chip);
 
 int snd_cs4231_new_pcm(snd_card_t * card, int device,
 		       unsigned long port,
@@ -318,7 +318,7 @@ int snd_cs4231_get_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 int snd_cs4231_put_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 #ifdef CONFIG_SND_DEBUG
-void snd_cs4231_debug(cs4231_t * codec);
+void snd_cs4231_debug(cs4231_t *chip);
 #endif
 
 #endif				/* __CS4231_H */

@@ -932,9 +932,9 @@
  *  configuration register.
  */
 #ifndef NO_CS4612
-#define SERACC_CODEC_TYPE_MASK                  0x00000001
-#define SERACC_CODEC_TYPE_1_03                  0x00000000
-#define SERACC_CODEC_TYPE_2_0                   0x00000001
+#define SERACC_CHIP_TYPE_MASK                  0x00000001
+#define SERACC_CHIP_TYPE_1_03                  0x00000000
+#define SERACC_CHIP_TYPE_2_0                   0x00000001
 #define SERACC_TWO_CODECS                       0x00000002
 #define SERACC_MDM                              0x00000004
 #define SERACC_HSP                              0x00000008
@@ -1686,10 +1686,10 @@ int snd_cs461x_create(snd_card_t *card,
 		      snd_irq_t *irqptr,
 		      cs461x_t **rcodec);
 int snd_cs461x_free(void *private);
-void snd_cs461x_interrupt(cs461x_t * codec);
+void snd_cs461x_interrupt(cs461x_t *chip);
 
-int snd_cs461x_pcm(cs461x_t * codec, int device, snd_pcm_t **rpcm);
-int snd_cs461x_mixer(cs461x_t * codec);
-int snd_cs461x_midi(cs461x_t * codec, int device, snd_rawmidi_t **rmidi);
+int snd_cs461x_pcm(cs461x_t *chip, int device, snd_pcm_t **rpcm);
+int snd_cs461x_mixer(cs461x_t *chip);
+int snd_cs461x_midi(cs461x_t *chip, int device, snd_rawmidi_t **rmidi);
 
 #endif				/* __CS461X_H */

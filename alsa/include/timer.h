@@ -51,8 +51,8 @@ struct snd_stru_timer_hardware {
 	int (*open) (snd_timer_t * timer);
 	int (*close) (snd_timer_t * timer);
 	unsigned long (*c_resolution) (snd_timer_t * timer);
-	void (*start) (snd_timer_t * timer);
-	void (*stop) (snd_timer_t * timer);
+	int (*start) (snd_timer_t * timer);
+	int (*stop) (snd_timer_t * timer);
 };
 
 struct snd_stru_timer {

@@ -144,6 +144,17 @@
 
 #include "sndmagic.h"
 
+#define _snd_pcm_substream_chip(substream) ((substream)->pcm->private_data)
+#define _snd_pcm_chip(pcm) ((pcm)->private_data)
+#define _snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
+#define _snd_timer_chip(timer) ((timer)->private_data)
+
+#define snd_magic_cast1(t, expr, cmd) snd_magic_cast(t, expr, cmd)
+#define snd_pcm_substream_chip(substream) snd_magic_cast1(chip_t, _snd_pcm_substream_chip(substream), return -ENXIO)
+#define snd_pcm_chip(pcm) snd_magic_cast1(chip_t, _snd_pcm_chip(pcm), return -ENXIO)
+#define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
+#define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
+
 static inline mm_segment_t snd_enter_user(void)
 {
 	mm_segment_t fs = get_fs();

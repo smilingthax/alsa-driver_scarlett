@@ -27,7 +27,7 @@
 
 /* IO ports */
 
-#define AD1848P( codec, x ) ( (codec) -> port + c_d_c_AD1848##x )
+#define AD1848P( codec, x ) ( (chip) -> port + c_d_c_AD1848##x )
 
 #define c_d_c_AD1848REGSEL	0
 #define c_d_c_AD1848REG		1
@@ -157,9 +157,9 @@ typedef struct snd_stru_ad1848 ad1848_t;
 
 /* exported functions */
 
-void snd_ad1848_out(ad1848_t * codec, unsigned char reg, unsigned char value);
+void snd_ad1848_out(ad1848_t *chip, unsigned char reg, unsigned char value);
 
-void snd_ad1848_interrupt(snd_pcm_t * pcm, unsigned char status);
+void snd_ad1848_interrupt(ad1848_t *chip);
 
 int snd_ad1848_new_pcm(snd_card_t * card, int device,
 		       unsigned long port,
@@ -191,7 +191,7 @@ int snd_ad1848_get_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 int snd_ad1848_put_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 #ifdef CONFIG_SND_DEBUG
-void snd_ad1848_debug(ad1848_t * codec);
+void snd_ad1848_debug(ad1848_t *chip);
 #endif
 
 #endif				/* __AD1848_H */

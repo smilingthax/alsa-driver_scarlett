@@ -52,7 +52,7 @@
  *  Direct registers
  */
 
-#define YMFREG(codec, reg)		(codec->port + YDSXGR_##reg)
+#define YMFREG(chip, reg)		(chip->port + YDSXGR_##reg)
 
 #define	YDSXGR_INTFLAG			0x0004
 #define	YDSXGR_ACTIVITY			0x0006
@@ -228,14 +228,14 @@ typedef enum {
 } ymfpci_voice_type_t;
 
 struct snd_stru_ymfpci_voice {
-	ymfpci_t *codec;
+	ymfpci_t *chip;
 	int number;
 	int use: 1,
 	    pcm: 1,
 	    synth: 1,
 	    midi: 1;
 	snd_ymfpci_playback_bank_t *bank;
-	void (*interrupt)(ymfpci_t *codec, ymfpci_voice_t *voice);
+	void (*interrupt)(ymfpci_t *chip, ymfpci_voice_t *voice);
 	ymfpci_pcm_t *ypcm;
 };
 
@@ -251,7 +251,7 @@ typedef enum {
 } snd_ymfpci_pcm_type_t;
 
 struct snd_stru_ymfpci_pcm {
-	ymfpci_t *codec;
+	ymfpci_t *chip;
 	snd_ymfpci_pcm_type_t type;
 	snd_pcm_substream_t *substream;
 	ymfpci_voice_t *voices[2];	/* playback only */
@@ -323,14 +323,14 @@ int snd_ymfpci_create(snd_card_t * card,
 		      snd_dma_t * dma3ptr,
 		      snd_irq_t * irqptr,
 		      ymfpci_t ** rcodec);
-void snd_ymfpci_interrupt(ymfpci_t * codec);
+void snd_ymfpci_interrupt(ymfpci_t *chip);
 
-int snd_ymfpci_pcm(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
-int snd_ymfpci_pcm2(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
-int snd_ymfpci_pcm_spdif(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
-int snd_ymfpci_mixer(ymfpci_t * codec);
+int snd_ymfpci_pcm(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
+int snd_ymfpci_pcm2(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
+int snd_ymfpci_pcm_spdif(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
+int snd_ymfpci_mixer(ymfpci_t *chip);
 
-int snd_ymfpci_voice_alloc(ymfpci_t * codec, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);
-int snd_ymfpci_voice_free(ymfpci_t * codec, ymfpci_voice_t *pvoice);
+int snd_ymfpci_voice_alloc(ymfpci_t *chip, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);
+int snd_ymfpci_voice_free(ymfpci_t *chip, ymfpci_voice_t *pvoice);
 
 #endif				/* __YMFPCI_H */

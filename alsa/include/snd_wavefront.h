@@ -95,7 +95,7 @@ struct snd_stru_wavefront {
 };
 
 struct snd_stru_wavefront_card {
-	cs4231_t *codec;
+	cs4231_t *chip;
 	snd_irq_t *cs4232_pcm_irqptr;
 	snd_irq_t *cs4232_mpu_irqptr;
         snd_irq_t *ics2115_irqptr;

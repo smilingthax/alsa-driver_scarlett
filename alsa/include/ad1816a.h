@@ -25,7 +25,7 @@
 #include "pcm.h"
 #include "timer.h"
 
-#define AD1816A_REG(r)			(codec->port + r)
+#define AD1816A_REG(r)			(chip->port + r)
 
 #define AD1816A_CHIP_STATUS		0x00
 #define AD1816A_INDIR_ADDR		0x00
@@ -166,7 +166,7 @@ struct snd_stru_ad1816a {
 				AD1816A_MODE_TIMER)
 
 
-extern void snd_ad1816a_interrupt(snd_pcm_t *pcm, unsigned char status);
+extern void snd_ad1816a_interrupt(ad1816a_t *chip);
 
 extern int snd_ad1816a_new_pcm(snd_card_t *card, int device,
 			       unsigned long port, snd_irq_t *irqptr,

@@ -52,11 +52,11 @@ typedef struct snd_stru_pcm_hardware {
 	size_t fifo_size;		/* fifo size in bytes */
 	size_t transfer_block_size; /* bus transfer block size in bytes */
 	/* -- functions -- */
-	int (*ioctl)(void *private_data, snd_pcm_substream_t * substream,
+	int (*ioctl)(snd_pcm_substream_t * substream,
 		     unsigned int cmd, void *arg);
-	int (*prepare)(void *private_data, snd_pcm_substream_t * substream);
-	int (*trigger)(void *private_data, snd_pcm_substream_t * substream, int cmd);
-	unsigned int (*pointer)(void *private_data, snd_pcm_substream_t * substream);
+	int (*prepare)(snd_pcm_substream_t * substream);
+	int (*trigger)(snd_pcm_substream_t * substream, int cmd);
+	unsigned int (*pointer)(snd_pcm_substream_t * substream);
 	int (*copy)(snd_pcm_substream_t *substream, int channel, unsigned int pos,
 		    void *buf, size_t count);
 	int (*silence)(snd_pcm_substream_t *substream, int channel, 
@@ -97,9 +97,6 @@ typedef struct snd_stru_pcm_hardware {
 struct snd_stru_pcm_file {
 	snd_pcm_substream_t * substream;
 	struct snd_stru_pcm_file * next;
-	/* -- private section */
-	void *private_data;
-	void (*private_free)(void *private_data);
 };
 
 struct snd_stru_pcm_runtime {
@@ -221,15 +218,12 @@ struct snd_stru_pcm_stream {
 	int stream;				/* stream (direction) */
 	snd_pcm_t *pcm;
 	/* -- lowlevel functions -- */
-	int (*open)(void *private_data, snd_pcm_substream_t *substream);
-	int (*close)(void *private_data, snd_pcm_substream_t *substream);
+	int (*open)(snd_pcm_substream_t *substream);
+	int (*close)(snd_pcm_substream_t *substream);
 	/* -- substreams -- */
 	unsigned int substream_count;
 	unsigned int substream_opened;
 	snd_pcm_substream_t *substream;
-	/* -- private section -- */
-	void *private_data;
-	void (*private_free)(void *private_data);
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
 	snd_pcm_oss_stream_t oss;
@@ -414,7 +408,7 @@ extern int snd_pcm_dma_free(snd_pcm_substream_t * substream);
 extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);
 extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);
-extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_substream_t *substream,
+extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
 			     unsigned int cmd, void *arg);                      
 extern void snd_pcm_update_frame_io(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);

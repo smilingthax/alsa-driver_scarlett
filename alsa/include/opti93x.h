@@ -30,7 +30,7 @@
 #define OPTi93X_DATA			0x01
 #define OPTi93X_STATUS			0x02
 #define OPTi93X_DDATA			0x03
-#define OPTi93X_PORT(codec, r)		((codec)->port + OPTi93X_##r)
+#define OPTi93X_PORT(chip, r)		((chip)->port + OPTi93X_##r)
 
 #define OPTi93X_MIXOUT_LEFT		0x00
 #define OPTi93X_MIXOUT_RIGHT		0x01
@@ -122,9 +122,9 @@ struct snd_stru_opti93x {
 	unsigned int p_dma_size;
 	unsigned int c_dma_size;
 
-	unsigned int (*set_rate) (opti93x_t *codec, unsigned int rate);
-	void (*set_playback_format) (opti93x_t *codec, unsigned char format);
-	void (*set_capture_format) (opti93x_t *codec, unsigned char format);
+	unsigned int (*set_rate) (opti93x_t *chip, unsigned int rate);
+	void (*set_playback_format) (opti93x_t *chip, unsigned char format);
+	void (*set_capture_format) (opti93x_t *chip, unsigned char format);
 };
 
 #define OPTi93X_MODE_NONE	0x00
@@ -133,7 +133,7 @@ struct snd_stru_opti93x {
 #define OPTi93X_MODE_OPEN	(OPTi93X_MODE_PLAY | OPTi93X_MODE_CAPTURE)
 
 
-extern void snd_opti93x_interrupt(snd_pcm_t *pcm, unsigned char status);
+extern void snd_opti93x_interrupt(opti93x_t *chip);
 
 extern int snd_opti93x_new_pcm(snd_card_t *card, int device, opti9xx_t *chip,
 			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,

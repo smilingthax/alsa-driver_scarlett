@@ -114,7 +114,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define emu8000_proc_private_t_magic		0xa15a2302
 #define snd_emux_t_magic			0xa15a2303
 #define snd_emux_port_t_magic			0xa15a2304
-#define sbdsp_t_magic				0xa15a2401
+#define sb_t_magic				0xa15a2401
 #define snd_sb_csp_t_magic			0xa15a2402
 #define snd_card_dummy_t_magic			0xa15a2501
 #define snd_card_dummy_pcm_t_magic		0xa15a2502

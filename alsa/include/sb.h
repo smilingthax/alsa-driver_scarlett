@@ -53,14 +53,7 @@
 
 #define SB_MPU_INPUT		1
 
-typedef struct snd_stru_sbmixer sbmixer_t;
-
-struct snd_stru_sbmixer {
-	unsigned long port;
-	spinlock_t lock;
-};
-
-struct snd_stru_sbdsp {
+struct snd_stru_sb {
 	unsigned long port;		/* base port of DSP chip */
 	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
 	unsigned long irq;		/* IRQ number of DSP chip */
@@ -84,7 +77,7 @@ struct snd_stru_sbdsp {
 	unsigned int c_dma_size;
 	unsigned int c_frag_size;
 
-	sbmixer_t mixer;		/* mixer */
+	spinlock_t mixer_lock;
 
 	char name[32];
 
@@ -105,11 +98,11 @@ struct snd_stru_sbdsp {
 	snd_info_entry_t *proc_entry;
 };
 
-typedef struct snd_stru_sbdsp sbdsp_t;
+typedef struct snd_stru_sb sb_t;
 
 /* I/O ports */
 
-#define SBP(codec, x)		((codec)->port + s_b_SB_##x)
+#define SBP(chip, x)		((chip)->port + s_b_SB_##x)
 #define SBP1(port, x)		((port) + s_b_SB_##x)
 
 #define s_b_SB_RESET		0x6
@@ -231,25 +224,25 @@ typedef struct snd_stru_sbdsp sbdsp_t;
  *
  */
 
-static inline void snd_sb_ack_8bit(sbdsp_t * codec)
+static inline void snd_sb_ack_8bit(sb_t *chip)
 {
-	inb(SBP(codec, DATA_AVAIL));
+	inb(SBP(chip, DATA_AVAIL));
 }
 
-static inline void snd_sb_ack_16bit(sbdsp_t * codec)
+static inline void snd_sb_ack_16bit(sb_t *chip)
 {
-	inb(SBP(codec, DATA_AVAIL_16));
+	inb(SBP(chip, DATA_AVAIL_16));
 }
 
 /* sb_common.c */
-extern int snd_sbdsp_command(sbdsp_t * codec, unsigned char val);
-extern int snd_sbdsp_get_byte(sbdsp_t * codec);
-extern int snd_sbdsp_reset(sbdsp_t * codec);
+extern int snd_sbdsp_command(sb_t *chip, unsigned char val);
+extern int snd_sbdsp_get_byte(sb_t *chip);
+extern int snd_sbdsp_reset(sb_t *chip);
 extern int snd_sbdsp_version(snd_pcm_t * pcm);
 extern int snd_sbdsp_probe(snd_pcm_t * pcm);
 extern void snd_sbdsp_free(void *);
-extern void snd_sbmixer_write(sbmixer_t * mixer, unsigned char reg, unsigned char data);
-extern unsigned char snd_sbmixer_read(sbmixer_t * mixer, unsigned char reg);
+extern void snd_sbmixer_write(sb_t *chip, unsigned char reg, unsigned char data);
+extern unsigned char snd_sbmixer_read(sb_t *chip, unsigned char reg);
 
 /* sb8_init.c */
 extern int snd_sb8dsp_new_pcm(snd_card_t * card,
@@ -260,16 +253,16 @@ extern int snd_sb8dsp_new_pcm(snd_card_t * card,
 			      unsigned short hardware,
 			      snd_pcm_t ** rpcm);
 /* sb8.c */
-extern void snd_sb8dsp_interrupt(snd_pcm_t * pcm);
-extern int snd_sb8_playback_open(void *private_data, snd_pcm_substream_t *substream);
-extern int snd_sb8_capture_open(void *private_data, snd_pcm_substream_t *substream);
-extern int snd_sb8_playback_close(void *private_data, snd_pcm_substream_t *substream);
-extern int snd_sb8_capture_close(void *private_data, snd_pcm_substream_t *substream);
+extern void snd_sb8dsp_interrupt(sb_t *chip);
+extern int snd_sb8_playback_open(snd_pcm_substream_t *substream);
+extern int snd_sb8_capture_open(snd_pcm_substream_t *substream);
+extern int snd_sb8_playback_close(snd_pcm_substream_t *substream);
+extern int snd_sb8_capture_close(snd_pcm_substream_t *substream);
 /* mixer8.c */
-extern int snd_sb8dsp_new_mixer(sbdsp_t * codec);
+extern int snd_sb8dsp_new_mixer(sb_t *chip);
 /* midi8.c */
 extern void snd_sb8dsp_midi_interrupt(snd_rawmidi_t * rmidi);
-extern int snd_sb8dsp_midi_new(sbdsp_t * codec, int device, snd_rawmidi_t ** rrawmidi);
+extern int snd_sb8dsp_midi_new(sb_t *chip, int device, snd_rawmidi_t ** rrawmidi);
 
 /* sb16_init.c */
 extern int snd_sb16dsp_new_pcm(snd_card_t * card,
@@ -282,12 +275,12 @@ extern int snd_sb16dsp_new_pcm(snd_card_t * card,
 			       snd_pcm_t ** rpcm);
 extern int snd_sb16dsp_configure(snd_pcm_t * pcm);
 /* sb16.c */
-extern void snd_sb16dsp_interrupt(snd_pcm_t * pcm, unsigned short status);
-extern int snd_sb16_playback_open(void *private_data, snd_pcm_substream_t *substream);
-extern int snd_sb16_capture_open(void *private_data, snd_pcm_substream_t *substream);
-extern int snd_sb16_playback_close(void *private_data, snd_pcm_substream_t *substream);
-extern int snd_sb16_capture_close(void *private_data, snd_pcm_substream_t *substream);
+extern void snd_sb16dsp_interrupt(sb_t *chip, unsigned short status);
+extern int snd_sb16_playback_open(snd_pcm_substream_t *substream);
+extern int snd_sb16_capture_open(snd_pcm_substream_t *substream);
+extern int snd_sb16_playback_close(snd_pcm_substream_t *substream);
+extern int snd_sb16_capture_close(snd_pcm_substream_t *substream);
 /* mixer16.c */
-extern int snd_sb16dsp_new_mixer(sbdsp_t * codec);
+extern int snd_sb16dsp_new_mixer(sb_t *chip);
 
 #endif				/* __SB_H */

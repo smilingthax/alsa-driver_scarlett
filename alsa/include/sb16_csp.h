@@ -119,7 +119,7 @@ typedef struct snd_sb_csp_info {
  * CSP private data
  */
 typedef struct snd_sb_csp {
-	sbdsp_t *codec;		/* SB16 DSP */
+	sb_t *chip;		/* SB16 DSP */
 	int used;		/* usage flag - exclusive */
 	char codec_name[16];	/* name of codec */
 	unsigned short func_nr;	/* function number */
@@ -159,7 +159,7 @@ typedef struct {
 } snd_sb_csp_callback_t;
 
 void snd_sb_csp_register_callbacks(snd_sb_csp_callback_t ** callbacks_ptr);
-int snd_sb_csp_new(sbdsp_t * codec, int device, snd_hwdep_t ** rhwdep);
+int snd_sb_csp_new(sb_t *chip, int device, snd_hwdep_t ** rhwdep);
 #endif
 
 #endif

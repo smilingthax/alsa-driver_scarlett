@@ -163,7 +163,7 @@
 #define HCFG_LOCKSOUNDCACHE    	0x00000008	/* 1 = Cancel bustmaster accesses to soundcache - Do not adjust this */
 #define HCFG_LOCKTANKCACHE     	0x00000004	/* 1 = Cancel bustmaster accesses to tankcache - Do not adjust this */
 #define HCFG_MUTEBUTTONENABLE	0x00000002	/* 1 = Enable master mute button		*/
-#define HCFG_AUDIOENABLE	0x00000001	/* 0 = CODECs transmit zero-valued samples	*/
+#define HCFG_AUDIOENABLE	0x00000001	/* 0 = CHIPs transmit zero-valued samples	*/
 
 #define MUDATA			0x18		/* MPU401 data register        			*/
 
