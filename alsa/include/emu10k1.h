@@ -880,22 +880,22 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define EMU10K1_CARD_EMUAPS		1
 
 /* instruction set */
-#define iMAC0	0x00	/* R = A + (X * Y >> 31)   ; saturation */
-#define iMAC1	0x01	/* R = A + (-X * Y >> 31)  ; saturation */
-#define iMAC2	0x02	/* R = A + (X * Y >> 31)   ; wraparound */
-#define iMAC3	0x03	/* R = A + (-X * Y >> 31)  ; wraparound */
+#define iMAC0	 0x00	/* R = A + (X * Y >> 31)   ; saturation */
+#define iMAC1	 0x01	/* R = A + (-X * Y >> 31)  ; saturation */
+#define iMAC2	 0x02	/* R = A + (X * Y >> 31)   ; wraparound */
+#define iMAC3	 0x03	/* R = A + (-X * Y >> 31)  ; wraparound */
 #define iMACINT0 0x04	/* R = A + X * Y	   ; saturation */
 #define iMACINT1 0x05	/* R = A + X * Y	   ; wraparound (31-bit) */
-#define iACC3	0x06	/* R = A + X + Y	   ; saturation */
-#define iMACMV  0x07	/* R = A, acc += X * Y >> 31 */
-#define iANDXOR 0x08	/* R = (A & X) ^ Y */
-#define iTSTNEG 0x09	/* R = (A >= Y) ? X : ~X */
+#define iACC3	 0x06	/* R = A + X + Y	   ; saturation */
+#define iMACMV   0x07	/* R = A, acc += X * Y >> 31 */
+#define iANDXOR  0x08	/* R = (A & X) ^ Y */
+#define iTSTNEG  0x09	/* R = (A >= Y) ? X : ~X */
 #define iLIMITGE 0x0a	/* R = (A >= Y) ? X : Y */
 #define iLIMITLT 0x0b	/* R = (A < Y) ? X : Y */
-#define iLOG	0x0c	/* ?? */
-#define iEXP	0x0d	/* ?? */
-#define iINTERP 0x0e	/* R = A + (X * (Y - A) >> 31)  ; saturation */
-#define iSKIP   0x0f	/* ?? */
+#define iLOG	 0x0c	/* ?? */
+#define iEXP	 0x0d	/* ?? */
+#define iINTERP  0x0e	/* R = A + (X * (Y - A) >> 31)  ; saturation */
+#define iSKIP    0x0f	/* ?? */
 
 /* GPRs */
 #define FXBUS(x)	(0x00 + (x))	/* x = 0x00 - 0x0f */
@@ -946,33 +946,33 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define FXBUS_MIDI_CHORUS	0x0d
 
 /* Inputs */
-#define EXTIN_AC97_L	0x00	/* AC'97 capture channel - left */
-#define EXTIN_AC97_R	0x01	/* AC'97 capture channel - right */
-#define EXTIN_SPDIF_CD_L 0x02	/* internal S/PDIF CD - onboard - left */
-#define EXTIN_SPDIF_CD_R 0x03	/* internal S/PDIF CD - onboard - right */
-#define EXTIN_ZOOM_L	0x04	/* Zoom Video I2S - left */
-#define EXTIN_ZOOM_R	0x05	/* Zoom Video I2S - right */
-#define EXTIN_TOSLINK_L	0x06	/* LiveDrive - TOSLink Optical - left */
-#define EXTIN_TOSLINK_R 0x07	/* LiveDrive - TOSLink Optical - right */
-#define EXTIN_LINE1_L	0x08	/* LiveDrive - Line/Mic 1 - left */
-#define EXTIN_LINE1_R	0x09	/* LiveDrive - Line/Mic 1 - right */
+#define EXTIN_AC97_L	   0x00	/* AC'97 capture channel - left */
+#define EXTIN_AC97_R	   0x01	/* AC'97 capture channel - right */
+#define EXTIN_SPDIF_CD_L   0x02	/* internal S/PDIF CD - onboard - left */
+#define EXTIN_SPDIF_CD_R   0x03	/* internal S/PDIF CD - onboard - right */
+#define EXTIN_ZOOM_L	   0x04	/* Zoom Video I2S - left */
+#define EXTIN_ZOOM_R	   0x05	/* Zoom Video I2S - right */
+#define EXTIN_TOSLINK_L	   0x06	/* LiveDrive - TOSLink Optical - left */
+#define EXTIN_TOSLINK_R    0x07	/* LiveDrive - TOSLink Optical - right */
+#define EXTIN_LINE1_L	   0x08	/* LiveDrive - Line/Mic 1 - left */
+#define EXTIN_LINE1_R	   0x09	/* LiveDrive - Line/Mic 1 - right */
 #define EXTIN_COAX_SPDIF_L 0x0a	/* LiveDrive - Coaxial S/PDIF - left */
 #define EXTIN_COAX_SPDIF_R 0x0b /* LiveDrive - Coaxial S/PDIF - right */
-#define EXTIN_LINE2_L	0x0c	/* LiveDrive - Line/Mic 2 - left */
-#define EXTIN_LINE2_R	0x0d	/* LiveDrive - Line/Mic 2 - right */
+#define EXTIN_LINE2_L	   0x0c	/* LiveDrive - Line/Mic 2 - left */
+#define EXTIN_LINE2_R	   0x0d	/* LiveDrive - Line/Mic 2 - right */
 
 /* Outputs */
-#define EXTOUT_AC97_L	0x00	/* AC'97 playback channel - left */
-#define EXTOUT_AC97_R	0x01	/* AC'97 playback channel - right */
-#define EXTOUT_TOSLINK_L 0x02	/* LiveDrive - TOSLink Optical - left */
-#define EXTOUT_TOSLINK_R 0x03	/* LiveDrive - TOSLink Optical - right */
+#define EXTOUT_AC97_L	   0x00	/* AC'97 playback channel - left */
+#define EXTOUT_AC97_R	   0x01	/* AC'97 playback channel - right */
+#define EXTOUT_TOSLINK_L   0x02	/* LiveDrive - TOSLink Optical - left */
+#define EXTOUT_TOSLINK_R   0x03	/* LiveDrive - TOSLink Optical - right */
 #define EXTOUT_HEADPHONE_L 0x06	/* LiveDrive - Headphone - left */
 #define EXTOUT_HEADPHONE_R 0x07	/* LiveDrive - Headphone - right */
-#define EXTOUT_REAR_L	0x08	/* Rear channel - left */
-#define EXTOUT_REAR_R	0x09	/* Rear channel - right */
-#define EXTOUT_ADC_CAP_L 0x0a	/* ADC Capture buffer - left */
-#define EXTOUT_ADC_CAP_R 0x0b	/* ADC Capture buffer - right */
-#define EXTOUT_MIC_CAP	0x0c	/* MIC Capture buffer */
+#define EXTOUT_REAR_L	   0x08	/* Rear channel - left */
+#define EXTOUT_REAR_R	   0x09	/* Rear channel - right */
+#define EXTOUT_ADC_CAP_L   0x0a	/* ADC Capture buffer - left */
+#define EXTOUT_ADC_CAP_R   0x0b	/* ADC Capture buffer - right */
+#define EXTOUT_MIC_CAP	   0x0c	/* MIC Capture buffer */
 
 /* definitions for debug register */
 #define EMU10K1_DBG_ZC			0x80000000	/* zero tram counter */
@@ -986,10 +986,10 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 /* tank memory address line */
 #ifndef __KERNEL__
 #define TANKMEMADDRREG_ADDR_MASK 0x000fffff	/* 20 bit tank address field			*/
-#define TANKMEMADDRREG_CLEAR	0x00800000	/* Clear tank memory				*/
-#define TANKMEMADDRREG_ALIGN	0x00400000	/* Align read or write relative to tank access	*/
-#define TANKMEMADDRREG_WRITE	0x00200000	/* Write to tank memory				*/
-#define TANKMEMADDRREG_READ	0x00100000	/* Read from tank memory			*/
+#define TANKMEMADDRREG_CLEAR	 0x00800000	/* Clear tank memory				*/
+#define TANKMEMADDRREG_ALIGN	 0x00400000	/* Align read or write relative to tank access	*/
+#define TANKMEMADDRREG_WRITE	 0x00200000	/* Write to tank memory				*/
+#define TANKMEMADDRREG_READ	 0x00100000	/* Read from tank memory			*/
 #endif
 
 typedef struct {
@@ -1029,24 +1029,19 @@ typedef struct {
 } emu10k1_fx8010_code_remove_t;
 
 typedef struct {
-	int lock: 1;			/* lock (use) external TRAM */
-	unsigned int external_tram_size; /* in samples */
-} emu10k1_fx8010_tram_setup_t;
-
-typedef struct {
 	unsigned int address;		/* 31.bit == 1 -> external TRAM */
 	unsigned int size;		/* size in samples (4 bytes) */
 	unsigned int *samples;		/* pointer to samples (20-bit) */
 					/* NULL->clear memory */	
 } emu10k1_fx8010_tram_t;
 
-#define SNDRV_EMU10K1_IOCTL_INFO		_IOR('H', 0x10, emu10k1_fx8010_info_t)
-#define SNDRV_EMU10K1_IOCTL_CODE		_IOW('H', 0x11, emu10k1_fx8010_code_t)
+#define SNDRV_EMU10K1_IOCTL_INFO	_IOR('H', 0x10, emu10k1_fx8010_info_t)
+#define SNDRV_EMU10K1_IOCTL_CODE	_IOW('H', 0x11, emu10k1_fx8010_code_t)
 #define SNDRV_EMU10K1_IOCTL_CODE_REMOVE	_IOW('H', 0x12, emu10k1_fx8010_code_remove_t)
 #define SNDRV_EMU10K1_IOCTL_TRAM_SETUP	_IOW('H', 0x20, int)
 #define SNDRV_EMU10K1_IOCTL_TRAM_POKE	_IOW('H', 0x21, emu10k1_fx8010_tram_t)
 #define SNDRV_EMU10K1_IOCTL_TRAM_PEEK	_IOR('H', 0x22, emu10k1_fx8010_tram_t)
-#define SNDRV_EMU10K1_IOCTL_STOP		_IO ('H', 0x30)
+#define SNDRV_EMU10K1_IOCTL_STOP	_IO ('H', 0x30)
 #define SNDRV_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x31)
 #define SNDRV_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x32)
 #define SNDRV_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x33, int)
