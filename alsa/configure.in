@@ -74,8 +74,9 @@ fi
 AC_ARG_WITH(kernel,
   [  --with-kernel=dir       give the directory with kernel sources]
   [                        [[/usr/src/linux]]],
-  kerneldir="$withval",
-  kerneldir="$DEFAULT_KERNEL_DIR"
+  [kerneldir="$withval"
+   DEFAULT_KERNEL_BUILD=""],
+  [kerneldir="$DEFAULT_KERNEL_DIR"]
 )
 CONFIG_SND_KERNELDIR="$kerneldir"
 AC_MSG_RESULT($kerneldir)
