@@ -439,6 +439,7 @@ static struct pcxhr_cmd_info pcxhr_dsp_cmds[] = {
 [CMD_FREE_PIPE] =			{ 0x410000, 0, RMH_SSIZE_FIXED },
 [CMD_CONF_PIPE] =			{ 0x422101, 0, RMH_SSIZE_FIXED },
 [CMD_STOP_PIPE] =			{ 0x470004, 0, RMH_SSIZE_FIXED },
+[CMD_PIPE_SAMPLE_COUNT] =		{ 0x49a000, 2, RMH_SSIZE_FIXED },
 [CMD_CAN_START_PIPE] =			{ 0x4b0000, 1, RMH_SSIZE_FIXED },
 [CMD_START_STREAM] =			{ 0x802000, 0, RMH_SSIZE_FIXED },
 [CMD_STREAM_OUT_LEVEL_ADJUST] =		{ 0x822000, 0, RMH_SSIZE_FIXED },
@@ -450,34 +451,31 @@ static struct pcxhr_cmd_info pcxhr_dsp_cmds[] = {
 [CMD_AUDIO_LEVEL_ADJUST] =		{ 0xc22000, 0, RMH_SSIZE_FIXED },
 };
 #ifdef CONFIG_SND_DEBUG
-struct pcxhr_cmd_debug {
-	int print;
-	char *name;
-};
-static struct pcxhr_cmd_debug cmd_dbg[] = {
-[CMD_VERSION] =				{ 1, "CMD_VERSION" },
-[CMD_SUPPORTED] =			{ 1, "CMD_SUPPORTED" },
-[CMD_TEST_IT] =				{ 1, "CMD_TEST_IT" },
-[CMD_SEND_IRQA] =			{ 1, "CMD_SEND_IRQA" },
-[CMD_ACCESS_IO_WRITE] =			{ 1, "CMD_ACCESS_IO_WRITE" },
-[CMD_ACCESS_IO_READ] =			{ 1, "CMD_ACCESS_IO_READ" },
-[CMD_ASYNC] =				{ 1, "CMD_ASYNC" },
-[CMD_MODIFY_CLOCK] =			{ 1, "CMD_MODIFY_CLOCK" },
-[CMD_GET_DSP_RESOURCES] =		{ 1, "CMD_GET_DSP_RESOURCES" },
-[CMD_SET_TIMER_INTERRUPT] =		{ 1, "CMD_SET_TIMER_INTERRUPT" },
-[CMD_RES_PIPE] =			{ 1, "CMD_RES_PIPE" },
-[CMD_FREE_PIPE] =			{ 1, "CMD_FREE_PIPE" },
-[CMD_CONF_PIPE] =			{ 1, "CMD_CONF_PIPE" },
-[CMD_STOP_PIPE] =			{ 1, "CMD_STOP_PIPE" },
-[CMD_CAN_START_PIPE] =			{ 1, "CMD_CAN_START_PIPE" },
-[CMD_START_STREAM] =			{ 1, "CMD_START_STREAM" },
-[CMD_STREAM_OUT_LEVEL_ADJUST] =		{ 1, "CMD_STREAM_OUT_LEVEL_ADJUST" },
-[CMD_STOP_STREAM] =			{ 1, "CMD_STOP_STREAM" },
-[CMD_UPDATE_R_BUFFERS] =		{ 1, "CMD_UPDATE_R_BUFFERS" },
-[CMD_FORMAT_STREAM_OUT] =		{ 1, "CMD_FORMAT_STREAM_OUT" },
-[CMD_FORMAT_STREAM_IN] =		{ 1, "CMD_FORMAT_STREAM_IN" },
-[CMD_STREAM_SAMPLE_COUNT] =		{ 1, "CMD_STREAM_SAMPLE_COUNT" },
-[CMD_AUDIO_LEVEL_ADJUST] =		{ 1, "CMD_AUDIO_LEVEL_ADJUST" },
+static char* cmd_names[] = {
+[CMD_VERSION] =				"CMD_VERSION",
+[CMD_SUPPORTED] =			"CMD_SUPPORTED",
+[CMD_TEST_IT] =				"CMD_TEST_IT",
+[CMD_SEND_IRQA] =			"CMD_SEND_IRQA",
+[CMD_ACCESS_IO_WRITE] =			"CMD_ACCESS_IO_WRITE",
+[CMD_ACCESS_IO_READ] =			"CMD_ACCESS_IO_READ",
+[CMD_ASYNC] =				"CMD_ASYNC",
+[CMD_MODIFY_CLOCK] =			"CMD_MODIFY_CLOCK",
+[CMD_GET_DSP_RESOURCES] =		"CMD_GET_DSP_RESOURCES",
+[CMD_SET_TIMER_INTERRUPT] =		"CMD_SET_TIMER_INTERRUPT",
+[CMD_RES_PIPE] =			"CMD_RES_PIPE",
+[CMD_FREE_PIPE] =			"CMD_FREE_PIPE",
+[CMD_CONF_PIPE] =			"CMD_CONF_PIPE",
+[CMD_STOP_PIPE] =			"CMD_STOP_PIPE",
+[CMD_PIPE_SAMPLE_COUNT] =		"CMD_PIPE_SAMPLE_COUNT",
+[CMD_CAN_START_PIPE] =			"CMD_CAN_START_PIPE",
+[CMD_START_STREAM] =			"CMD_START_STREAM",
+[CMD_STREAM_OUT_LEVEL_ADJUST] =		"CMD_STREAM_OUT_LEVEL_ADJUST",
+[CMD_STOP_STREAM] =			"CMD_STOP_STREAM",
+[CMD_UPDATE_R_BUFFERS] =		"CMD_UPDATE_R_BUFFERS",
+[CMD_FORMAT_STREAM_OUT] =		"CMD_FORMAT_STREAM_OUT",
+[CMD_FORMAT_STREAM_IN] =		"CMD_FORMAT_STREAM_IN",
+[CMD_STREAM_SAMPLE_COUNT] =		"CMD_STREAM_SAMPLE_COUNT",
+[CMD_AUDIO_LEVEL_ADJUST] =		"CMD_AUDIO_LEVEL_ADJUST",
 };
 #endif
 
@@ -519,14 +517,14 @@ static int pcxhr_read_rmh_status(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh)
 			}
 		}
 #ifdef CONFIG_SND_DEBUG
-		if(cmd_dbg[rmh->cmd_idx].print)
+		if(rmh->cmd_idx < CMD_LAST_INDEX)
 			snd_printdd("    stat[%d]=%x\n", i, data);
 #endif
-		if(i<PCXHR_SIZE_MAX_STATUS) rmh->stat[i] = data;
+		if(i < PCXHR_SIZE_MAX_STATUS) rmh->stat[i] = data;
 	}
-	if(rmh->stat_len >= PCXHR_SIZE_MAX_STATUS) {
-		snd_printk(KERN_DEBUG"PCXHR : rmh->stat_len=%x too big\n", rmh->stat_len);
-		rmh->stat_len = PCXHR_SIZE_MAX_STATUS-1;
+	if(rmh->stat_len > PCXHR_SIZE_MAX_STATUS) {
+		snd_printdd("PCXHR : rmh->stat_len=%x too big\n", rmh->stat_len);
+		rmh->stat_len = PCXHR_SIZE_MAX_STATUS;
 	}
 	return 0;
 }
@@ -559,8 +557,8 @@ static int pcxhr_send_msg_nolock(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh)
 	if(rmh->cmd_len > 1)	data |= 0x008000;	/* MASK_MORE_THAN_1_WORD_COMMAND */
 	else			data &= 0xff7fff;	/* MASK_1_WORD_COMMAND */
 #ifdef CONFIG_SND_DEBUG
-	if(cmd_dbg[rmh->cmd_idx].print)
-		snd_printdd("MSG cmd[0]=%x (%s)\n", data, cmd_dbg[rmh->cmd_idx].name);
+	if(rmh->cmd_idx < CMD_LAST_INDEX)
+		snd_printdd("MSG cmd[0]=%x (%s)\n", data, cmd_names[rmh->cmd_idx]);
 #endif
 
 	err = pcxhr_check_reg_bit(mgr, PCXHR_DSP_ISR, PCXHR_ISR_HI08_TRDY, PCXHR_ISR_HI08_TRDY, PCXHR_TIMEOUT_DSP, &reg);
@@ -582,7 +580,7 @@ static int pcxhr_send_msg_nolock(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh)
 			/* send other words */
 			data = rmh->cmd[i];
 #ifdef CONFIG_SND_DEBUG
-			if(cmd_dbg[rmh->cmd_idx].print)
+			if(rmh->cmd_idx < CMD_LAST_INDEX)
 				snd_printdd("    cmd[%d]=%x\n", i, data);
 #endif
 			err = pcxhr_check_reg_bit(mgr, PCXHR_DSP_ISR, PCXHR_ISR_HI08_TRDY, PCXHR_ISR_HI08_TRDY, PCXHR_TIMEOUT_DSP, &reg);
@@ -607,7 +605,8 @@ static int pcxhr_send_msg_nolock(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh)
 		data  = PCXHR_INPB(mgr, PCXHR_DSP_TXH) << 16;
 		data |= PCXHR_INPB(mgr, PCXHR_DSP_TXM) << 8;
 		data |= PCXHR_INPB(mgr, PCXHR_DSP_TXL);
-		snd_printk(KERN_ERR "ERROR RMH: %x\n", data);
+		snd_printk(KERN_ERR "ERROR RMH(%d): 0x%x\n", rmh->cmd_idx, data);
+		err = -EINVAL;
 	} else {
 		/* read the response data */
 		err = pcxhr_read_rmh_status(mgr, rmh);
@@ -671,8 +670,8 @@ int pcxhr_send_msg(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh)
 int pcxhr_is_pipe_running(pcxhr_mgr_t *mgr, int is_capture, int audio)
 {
 	unsigned int start_mask = PCXHR_INPL(mgr, PCXHR_PLX_MBOX2);
+	snd_printdd("CMD_PIPE_STATE MBOX2=0x%06x audio %c %d\n", start_mask & 0xffffff, is_capture?'C':'P', audio);
 	if(is_capture) start_mask >>= 12;
-	snd_printdd("(CMD_PIPE_STATE) %x\n", start_mask & (1<<audio));
 	return (start_mask & (1<<audio));
 }
 
@@ -699,12 +698,12 @@ int pcxhr_write_io_num_reg_cont(pcxhr_mgr_t *mgr, unsigned int mask, unsigned in
 	return err;
 }
 
-#define PCXHR_IRQ_TIMER		0x000200
+#define PCXHR_IRQ_TIMER		0x000300
 #define PCXHR_IRQ_FREQ_CHANGE	0x000800
 #define PCXHR_IRQ_TIME_CODE	0x001000
 #define PCXHR_IRQ_NOTIFY	0x002000
 #define PCXHR_IRQ_ASYNC		0x008000
-#define PCXHR_IRQ_MASK		0x00ba00
+#define PCXHR_IRQ_MASK		0x00bb00
 #define PCXHR_FATAL_DSP_ERR	0xff0000
 
 void pcxhr_msg_tasklet( unsigned long arg)
@@ -795,7 +794,6 @@ static int pcxhr_stream_read_position(pcxhr_mgr_t *mgr, pcxhr_stream_t *stream)
 
 static void pcxhr_update_timer_pos(pcxhr_mgr_t *mgr, pcxhr_stream_t*stream)
 {
-	/*static int lastjiffies = 0;*/
 	int updated = 0;
 	if(stream->substream && (stream->status == PCXHR_STREAM_STATUS_RUNNING)) {
 		stream->timer_elapsed += PCXHR_GRANULARITY;
@@ -815,10 +813,6 @@ static void pcxhr_update_timer_pos(pcxhr_mgr_t *mgr, pcxhr_stream_t*stream)
 					return;
 				}
 			}
-			/*snd_printdd("call snd_pcm_period_elapsed (%ld ms) samples=%lx\n",
-					((jiffies-lastjiffies)*1000)/HZ, stream->timer_abs_samples);
-			lastjiffies = jiffies;
-			*/
 			spin_unlock(&mgr->lock);
 			snd_pcm_period_elapsed(stream->substream);
 			spin_lock(&mgr->lock);
@@ -844,14 +838,20 @@ irqreturn_t pcxhr_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
 		/* timer irq occured */
 		if(reg & PCXHR_IRQ_TIMER) {
+			int timer_toggle = reg & PCXHR_IRQ_TIMER;
+			if(timer_toggle == mgr->timer_toggle) {
+				snd_printk(KERN_DEBUG "ERROR TIMER TOGGLE\n");
+				mgr->timer_err++;
+			}
+			mgr->timer_toggle = timer_toggle;
 			reg &= ~PCXHR_IRQ_TIMER;
 			for(i=0; i<mgr->num_cards; i++) {
 				chip = mgr->chip[i];
 				for(j=0; j<chip->nb_streams_play; j++) {
-					pcxhr_update_timer_pos(mgr, &mgr->chip[i]->playback_stream[j]);
+					pcxhr_update_timer_pos(mgr, &chip->playback_stream[j]);
 				}
 				for(j=0; j<chip->nb_streams_capt; j++) {
-					pcxhr_update_timer_pos(mgr, &mgr->chip[i]->capture_stream[j]);
+					pcxhr_update_timer_pos(mgr, &chip->capture_stream[j]);
 				}
 			}
 		}

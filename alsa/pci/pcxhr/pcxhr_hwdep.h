@@ -37,5 +37,6 @@
 int  pcxhr_setup_firmware(pcxhr_mgr_t *mgr);
 void pcxhr_reset_board(pcxhr_mgr_t *mgr);
 
+int pcxhr_set_pipe_state(pcxhr_mgr_t *mgr, pcxhr_pipe_t* pipe_array[], int nb_pipes, int start_pipe);
 
 #endif /* __SOUND_PCXHR_HWDEP_H */

@@ -63,6 +63,7 @@ enum {
 	CMD_FREE_PIPE,			/* cmd_len = 1	stat_len = 0 */
 	CMD_CONF_PIPE,			/* cmd_len = 2	stat_len = 0 */
 	CMD_STOP_PIPE,			/* cmd_len = 1	stat_len = 0 */
+	CMD_PIPE_SAMPLE_COUNT,		/* cmd_len = 2	stat_len = 2 */
 	CMD_CAN_START_PIPE,		/* cmd_len >= 1	stat_len = 1 */
 	CMD_START_STREAM,		/* cmd_len = 2	stat_len = 0 */
 	CMD_STREAM_OUT_LEVEL_ADJUST,	/* cmd_len >= 1	stat_len = 0 */
@@ -100,6 +101,8 @@ int pcxhr_send_msg(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh);
 #define IO_NUM_REG_MUTE_OUT		2
 #define IO_NUM_SPEED_RATIO		4
 #define IO_NUM_REG_STATUS		5
+#define IO_NUM_REG_CUER			10
+#define IO_NUM_UER_CHIP_REG		11
 #define IO_NUM_REG_OUT_ANA_LEVEL	20
 #define IO_NUM_REG_IN_ANA_LEVEL		21
 
@@ -123,7 +126,15 @@ int pcxhr_send_msg(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh);
 #define REG_STATUS_OPT_NO_DAUGHTER	0x1c
 #define REG_STATUS_OPT_COMPANION_MASK	0xe0
 #define REG_STATUS_OPT_NO_COMPANION	0xe0
-
+#define REG_STATUS_SYNC_32000		0x00
+#define REG_STATUS_SYNC_44100		0x01
+#define REG_STATUS_SYNC_48000		0x02
+#define REG_STATUS_SYNC_64000		0x03
+#define REG_STATUS_SYNC_88200		0x04
+#define REG_STATUS_SYNC_96000		0x05
+#define REG_STATUS_SYNC_128000		0x06
+#define REG_STATUS_SYNC_176400		0x07
+#define REG_STATUS_SYNC_192000		0x08
 
 void pcxhr_delay(int xmsec);
 int pcxhr_is_pipe_running(pcxhr_mgr_t *mgr, int is_capture, int audio);

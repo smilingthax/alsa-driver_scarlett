@@ -40,6 +40,15 @@ typedef struct snd_pcxhr_mgr pcxhr_mgr_t;
 typedef struct snd_pcxhr_stream pcxhr_stream_t;
 typedef struct snd_pcxhr_pipe pcxhr_pipe_t;
 
+enum pcxhr_clock_type {
+	PCXHR_CLOCK_TYPE_INTERNAL = 0,
+	PCXHR_CLOCK_TYPE_WORD_CLOCK,
+	PCXHR_CLOCK_TYPE_AES_SYNC,
+	PCXHR_CLOCK_TYPE_AES_1,
+	PCXHR_CLOCK_TYPE_AES_2,
+	PCXHR_CLOCK_TYPE_AES_3,
+	PCXHR_CLOCK_TYPE_AES_4,
+};
 
 struct snd_pcxhr_mgr {
 	unsigned int num_cards;
@@ -58,6 +67,8 @@ struct snd_pcxhr_mgr {
 
 	/* message tasklet */
 	struct tasklet_struct msg_taskq;
+	/* trigger tasklet */
+	struct tasklet_struct trigger_taskq;
 
 	spinlock_t lock;		/* interrupt spinlock */
 	spinlock_t msg_lock;		/* message spinlock */
@@ -76,19 +87,27 @@ struct snd_pcxhr_mgr {
 
 	struct snd_dma_buffer hostport;
 
+	enum pcxhr_clock_type use_clock_type;	/* clock type selected by mixer */
+	enum pcxhr_clock_type cur_clock_type;	/* current clock type synced */
 	int sample_rate;
 	int ref_count_rate;
 
+	int timer_toggle;		/* timer interrupt toggles between the two values 0x200 and 0x300 */
+	int timer_err;			/* timer interrupt toggle errors */
 	unsigned int src_it_dsp;	/* dsp interrupt source */
 	unsigned int io_num_reg_cont;	/* backup of IO_NUM_REG_CONT */
 	unsigned int codec_speed;	/* speed mode of the codecs */
+	unsigned int sample_rate_real;	/* current real sample rate */
+	int last_reg_stat;
 };
 
 
 enum pcxhr_stream_status {
 	PCXHR_STREAM_STATUS_FREE,
 	PCXHR_STREAM_STATUS_OPEN,
+	PCXHR_STREAM_STATUS_SCHEDULE_RUN,
 	PCXHR_STREAM_STATUS_RUNNING,
+	PCXHR_STREAM_STATUS_SCHEDULE_STOP,
 	PCXHR_STREAM_STATUS_STOPPED,
 	PCXHR_STREAM_STATUS_PAUSED
 };
@@ -145,6 +164,8 @@ struct snd_pcxhr {
 	int digital_capture_volume[2];		/* Mixer : Digital Capture Volume [stereo] */
 	int monitoring_active[2];		/* Mixer : Monitoring Active */
 	int monitoring_volume[2];		/* Mixer : Monitoring Volume */
+	int audio_capture_source;		/* Mixer : Audio Capture Source */
+	unsigned char aes_bits[5];		/* Mixer : IEC958_AES bits */
 };
 
 struct pcxhr_hostport
@@ -155,5 +176,7 @@ struct pcxhr_hostport
 
 /* exported */
 int pcxhr_create_pcm(pcxhr_t* chip);
+int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate);
+int pcxhr_get_external_clock(pcxhr_mgr_t *mgr, enum pcxhr_clock_type clock_type, int *sample_rate);
 
 #endif /* __SOUND_PCXHR_H */
