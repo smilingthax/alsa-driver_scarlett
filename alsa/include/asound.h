@@ -145,30 +145,28 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x09, snd_hwdep_info_t)
 #define SND_CTL_IOCTL_MIXER_DEVICE	_IOWR('U', 0x10, int)
 #define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x10, snd_mixer_info_t)
-#define SND_CTL_IOCTL_MIXER_SWITCH_LIST	_IOWR('U', 0x11, snd_switch_list_t)
-#define SND_CTL_IOCTL_MIXER_SWITCH_READ	_IOWR('U', 0x12, snd_switch_t)
-#define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x13, snd_switch_t)
+#define SND_CTL_IOCTL_MIXER_SWITCH_LIST	_IOWR('U', 0x18, snd_switch_list_t)
+#define SND_CTL_IOCTL_MIXER_SWITCH_READ	_IOWR('U', 0x19, snd_switch_t)
+#define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x1a, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOWR('U', 0x20, int)
 #define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOWR('U', 0x21, int)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOWR('U', 0x22, int)
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x23, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x24, snd_pcm_channel_info_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_LIST	_IOWR('U', 0x25, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_READ  _IOWR('U', 0x26, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_WRITE _IOWR('U', 0x27, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_CSWITCH_LIST	_IOWR('U', 0x28, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_CSWITCH_READ  _IOWR('U', 0x29, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_CSWITCH_WRITE _IOWR('U', 0x2a, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_PSWITCH_LIST	_IOWR('U', 0x28, snd_switch_list_t)
+#define SND_CTL_IOCTL_PCM_PSWITCH_READ  _IOWR('U', 0x29, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_PSWITCH_WRITE _IOWR('U', 0x2a, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_CSWITCH_LIST	_IOWR('U', 0x2b, snd_switch_list_t)
+#define SND_CTL_IOCTL_PCM_CSWITCH_READ  _IOWR('U', 0x2c, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_CSWITCH_WRITE _IOWR('U', 0x2d, snd_switch_t)
 #define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOWR('U', 0x30, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x31, snd_rawmidi_info_t)
-#define SND_CTL_IOCTL_RAWMIDI_OUTPUT_INFO _IOR('U', 0x32, snd_rawmidi_output_info_t)
-#define SND_CTL_IOCTL_RAWMIDI_INPUT_INFO _IOR('U', 0x33, snd_rawmidi_input_info_t)
-#define SND_CTL_IOCTL_RAWMIDI_OSWITCH_LIST _IOWR('U', 0x34, snd_switch_list_t)
-#define SND_CTL_IOCTL_RAWMIDI_OSWITCH_READ _IOWR('U', 0x35, snd_switch_t)
-#define SND_CTL_IOCTL_RAWMIDI_OSWITCH_WRITE _IOWR('U', 0x36, snd_switch_t)
-#define SND_CTL_IOCTL_RAWMIDI_ISWITCH_LIST _IOWR('U', 0x37, snd_switch_list_t)
-#define SND_CTL_IOCTL_RAWMIDI_ISWITCH_READ _IOWR('U', 0x38, snd_switch_t)
-#define SND_CTL_IOCTL_RAWMIDI_ISWITCH_WRITE _IOWR('U', 0x39, snd_switch_t)
+#define SND_CTL_IOCTL_RAWMIDI_OSWITCH_LIST _IOWR('U', 0x38, snd_switch_list_t)
+#define SND_CTL_IOCTL_RAWMIDI_OSWITCH_READ _IOWR('U', 0x39, snd_switch_t)
+#define SND_CTL_IOCTL_RAWMIDI_OSWITCH_WRITE _IOWR('U', 0x3a, snd_switch_t)
+#define SND_CTL_IOCTL_RAWMIDI_ISWITCH_LIST _IOWR('U', 0x3b, snd_switch_list_t)
+#define SND_CTL_IOCTL_RAWMIDI_ISWITCH_READ _IOWR('U', 0x3c, snd_switch_t)
+#define SND_CTL_IOCTL_RAWMIDI_ISWITCH_WRITE _IOWR('U', 0x3d, snd_switch_t)
 
 /*
  *  Read interface.
@@ -388,7 +386,6 @@ typedef struct snd_mixer_info {
 	unsigned char name[80];	/* name of this device */
 	int elements;		/* count of elements */
 	int groups;		/* count of element groups */
-	int switches;		/* count of switches */
 	char reserved[32];	/* reserved for future use */
 } snd_mixer_info_t;
 
@@ -1583,16 +1580,6 @@ typedef struct snd_rawmidi_info {
 	unsigned char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
 
-typedef struct snd_rawmidi_output_info {
-	unsigned int switches;	/* count of switches */
-	unsigned char reserved[64];
-} snd_rawmidi_output_info_t;
-
-typedef struct snd_rawmidi_input_info {
-	unsigned int switches;	/* count of switches */
-	unsigned char reserved[64];
-} snd_rawmidi_input_info_t;
-
 typedef struct snd_rawmidi_output_params {
 	int size;		/* requested queue size in bytes */
 	int max;		/* maximum number of bytes in queue for wakeup */
@@ -1603,6 +1590,7 @@ typedef struct snd_rawmidi_output_params {
 typedef struct snd_rawmidi_input_params {
 	int size;		/* requested queue size in bytes */
 	int min;		/* minimum number of bytes fragments for wakeup */
+	int pad;		/* not used yet */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_input_params_t;
 
@@ -1610,6 +1598,7 @@ typedef struct snd_rawmidi_output_status {
 	int size;		/* real queue size */
 	int count;		/* number of bytes writeable without blocking */
 	int queue;		/* number of bytes in queue */
+	int pad;		/* not used yet */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_output_status_t;
 
@@ -1623,8 +1612,6 @@ typedef struct snd_rawmidi_input_status {
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ('W', 0x01, snd_rawmidi_info_t)
-#define SND_RAWMIDI_IOCTL_OUTPUT_INFO	_IOR ('W', 0x02, snd_rawmidi_output_info_t)
-#define SND_RAWMIDI_IOCTL_INPUT_INFO	_IOR ('W', 0x03, snd_rawmidi_input_info_t)
 #define SND_RAWMIDI_IOCTL_OUTPUT_PARAMS	_IOWR('W', 0x10, snd_rawmidi_output_params_t)
 #define SND_RAWMIDI_IOCTL_INPUT_PARAMS	_IOWR('W', 0x11, snd_rawmidi_input_params_t)
 #define SND_RAWMIDI_IOCTL_OUTPUT_STATUS	_IOR ('W', 0x20, snd_rawmidi_output_status_t)
