@@ -141,6 +141,8 @@
 #define copy_to_user memcpy_tofs
 #define test_and_set_bit set_bit
 #define test_and_clear_bit clear_bit
+#define ioremap vremap
+#define iounmap vfree
 #endif
 
 #ifndef DMA_MODE_AUTOINIT

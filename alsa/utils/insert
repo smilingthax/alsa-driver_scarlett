@@ -202,6 +202,13 @@ case "$1" in
     insert snd-trid4dwave.o
     restore trid4dwave.conf
     ;;
+  cs461x)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-cs461x.o
+    insert snd-card-cs461x.o
+    restore cs461x.conf
+    ;;
   cs4232)
     basic; isapnp
     insert snd-mpu401-uart.o 
