@@ -199,7 +199,7 @@ static inline void snd_power_change_state(snd_card_t *card, unsigned int state)
 #else
 #define snd_power_lock(card)		do { (void)(card); } while (0)
 #define snd_power_unlock(card)		do { (void)(card); } while (0)
-#define snd_power_wait(card)		do { (void)(card); } while (0)
+#define snd_power_wait(card,state,file) do { (void)(card), (void)(state), (void)(file); } while (0)
 #define snd_power_get_state(card)	SNDRV_CTL_POWER_D0
 #define snd_power_change_state(card, state)	do { (void)(card); } while (0)
 #endif
