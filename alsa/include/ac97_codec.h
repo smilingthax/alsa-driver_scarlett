@@ -68,6 +68,40 @@
 #define AC97_VENDOR_ID1		0x7c	/* Vendor ID1 */
 #define AC97_VENDOR_ID2		0x7e	/* Vendor ID2 / revision */
 
+/* extended audio status and control bit defines */
+#define AC97_EA_VRA		0x0001	/* Variable bit rate enable bit */
+#define AC97_EA_DRA		0x0002	/* Double-rate audio enable bit */
+#define AC97_EA_SPDIF		0x0004	/* S/PDIF Enable bit */
+#define AC97_EA_VRM		0x0008	/* Variable bit rate for MIC enable bit */
+#define AC97_EA_CDAC		0x0040	/* PCM Center DAC is ready (Read only) */
+#define AC97_EA_SDAC		0x0040	/* PCM Surround DACs are ready (Read only) */
+#define AC97_EA_LDAC		0x0080	/* PCM LFE DAC is ready (Read only) */
+#define AC97_EA_MDAC		0x0100	/* MIC ADC is ready (Read only) */
+#define AC97_EA_SPCV		0x0400	/* S/PDIF configuration valid (Read only) */
+#define AC97_EA_PRI		0x0800	/* Turns the PCM Center DAC off */
+#define AC97_EA_PRJ		0x1000	/* Turns the PCM Surround DACs off */
+#define AC97_EA_PRK		0x2000	/* Turns the PCM LFE DAC off */
+#define AC97_EA_PRL		0x4000	/* Turns the MIC ADC off */
+#define AC97_EA_SLOT_MASK	0xffcf	/* Mask for slot assignment bits */
+#define AC97_EA_SPSA_3_4	0x0000	/* Slot assigned to 3 & 4 */
+#define AC97_EA_SPSA_7_8	0x0010	/* Slot assigned to 7 & 8 */
+#define AC97_EA_SPSA_6_9	0x0020	/* Slot assigned to 6 & 9 */
+#define AC97_EA_SPSA_10_11	0x0030	/* Slot assigned to 10 & 11 */
+
+/* S/PDIF control bit defines */
+#define AC97_SC_PRO		0x0001	/* Professional status */
+#define AC97_SC_NAUDIO		0x0002	/* Non audio stream */
+#define AC97_SC_COPY		0x0004	/* Copyright status */
+#define AC97_SC_PRE		0x0008	/* Preemphasis status */
+#define AC97_SC_CC_MASK		0x07f0	/* Category Code mask */
+#define AC97_SC_L		0x0800	/* Generation Level status */
+#define AC97_SC_SPSR_MASK	0xcfff	/* S/PDIF Sample Rate bits */
+#define AC97_SC_SPSR_44K	0x0000	/* Use 44.1kHz Sample rate */
+#define AC97_SC_SPSR_48K	0x2000	/* Use 48kHz Sample rate */
+#define AC97_SC_SPSR_32K	0x3000	/* Use 32kHz Sample rate */
+#define AC97_SC_DRS		0x4000	/* Double Rate S/PDIF */
+#define AC97_SC_V		0x8000	/* Validity status */
+
 /* specific - SigmaTel */
 #define AC97_SIGMATEL_ANALOG	0x6c	/* Analog Special */
 #define AC97_SIGMATEL_DAC2INVERT 0x6e
@@ -124,6 +158,7 @@ struct _snd_ac97 {
 	unsigned int rates_mic_adc;
 	unsigned int spdif_status;
 	unsigned short regs[0x80]; /* register cache */
+	unsigned char reg_accessed[0x80 / 8]; /* bit flags */
 	union {			/* vendor specific code */
 		struct {
 			unsigned short unchained[3];	// 0 = C34, 1 = C79, 2 = C69
