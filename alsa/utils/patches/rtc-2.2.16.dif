@@ -163,17 +163,19 @@
   *	The various file operations we support.
 --- linux/include/linux/mc146818rtc.h-dist	Mon Sep  4 11:06:35 2000
 +++ linux/include/linux/mc146818rtc.h	Mon Sep  4 11:07:46 2000
-@@ -145,5 +145,15 @@
+@@ -145,5 +145,17 @@
  #define RTC_EPOCH_READ	_IOR('p', 0x0d, unsigned long)	 /* Read epoch      */
  #define RTC_EPOCH_SET	_IOW('p', 0x0e, unsigned long)	 /* Set epoch       */
  
 +/* Exported functions to other kernel drivers */
 +
 +#ifdef __KERNEL__
-+typedef void (*rtc_callback_t)(void *private_data);
-+typedef struct rtc_task rtc_task_t;
++typedef struct rtc_task {
++	void (*func)(void *private_data);
++	void *private_data;
++} rtc_task_t;
 +
-+int rtc_register(int freq, rtc_callback_t func, void *private_data, rtc_task_t **ret);
++int rtc_register(rtc_task_t *task);
 +int rtc_unregister(rtc_task_t *task);
 +int rtc_control(rtc_task_t *t, unsigned int cmd, unsigned long arg);
 +#endif

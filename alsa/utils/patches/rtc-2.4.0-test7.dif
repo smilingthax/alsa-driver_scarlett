@@ -17,7 +17,7 @@
  
 +#if RTC_IRQ
 +static spinlock_t rtc_task_lock = SPIN_LOCK_UNLOCKED;
-+static rtc_task_t rtc_callback = NULL;
++static rtc_task_t *rtc_callback = NULL;
 +#endif
 +
  /*
@@ -49,7 +49,7 @@
  		 * than 64Hz of interrupts on a multi-user machine.
  		 */
 -		if ((rtc_freq > 64) && (!capable(CAP_SYS_RESOURCE)))
-+		if (!kerenl && (rtc_freq > 64) && (!capable(CAP_SYS_RESOURCE)))
++		if (!kernel && (rtc_freq > 64) && (!capable(CAP_SYS_RESOURCE)))
  			return -EACCES;
  
  		if (!(rtc_status & RTC_TIMER_ON)) {
