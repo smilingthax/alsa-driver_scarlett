@@ -24,6 +24,7 @@
 
 #include <sound/driver.h>
 #include <sound/core.h>
+#include <linux/slab.h>
 #include <pcmcia/version.h>
 #include <pcmcia/ciscode.h>
 #include <pcmcia/cisreg.h>
