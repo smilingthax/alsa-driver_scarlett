@@ -724,6 +724,29 @@ fi
 fi
 dnl 2.2 kernel
 
+dnl Check for vmalloc_to_page...
+AC_MSG_CHECKING(for vmalloc_to_page)
+vmalloc_to_page="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#include <linux/config.h>
+#include <linux/time.h>
+#include <linux/mm.h>
+],[
+ vmalloc_to_page(NULL);
+],
+    AC_MSG_RESULT("yes");vmalloc_to_page="1",
+    AC_MSG_RESULT("no");vmalloc_to_page="0",
+    AC_MSG_RESULT("unknown");vmalloc_to_page="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_VMALLOC_TO_PAGE=$vmalloc_to_page
+dnl AC_SUBST(CONFIG_HAVE_VMALLOC_TO_PAGE)
+if test "$CONFIG_HAVE_VMALLOC_TO_PAGE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VMALLOC_TO_PAGE)
+fi
+
 dnl Check for version...
 AC_MSG_CHECKING(for driver version)
 AC_DEFINE_UNQUOTED(CONFIG_SND_VERSION, "$CONFIG_SND_VERSION")
