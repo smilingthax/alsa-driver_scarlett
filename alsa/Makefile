@@ -32,7 +32,7 @@ cards.config: modules.config
 	make -C utils update-deps
 	make clean
 	./cvscompile
-	@echo "You can ignore following error..."
+	@echo "You may ignore following error..."
 	exit 1
 
 map:

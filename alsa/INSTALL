@@ -385,6 +385,21 @@ Module parameters
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
     
+  Module snd-card-azt2320.o
+  ------------------------
+
+    Module for soundcards based on Aztech System AZT2320 chip.
+
+    snd_port	- port # for AZT2320 (SB8) chip (PnP setup)
+    snd_mpu_port - port # for MPU-401 UART (PnP setup)
+    snd_fm_port - FM port # for AZT2320 chip (PnP setup)
+    snd_irq	- IRQ # for AZT2320 (SB8) chip (PnP setup)
+    snd_mpu_irq - IRQ # for MPU-401 UART (PnP setup)
+    snd_dma1	- DMA # for AZT2320 (SB8) chip (PnP setup)
+    snd_dma1_size - max DMA size in kB (4-64kB)
+    
+    Module supports up to 8 cards, PnP and autoprobe.
+    
   Module snd-card-cs4231.o
   ------------------------
 
