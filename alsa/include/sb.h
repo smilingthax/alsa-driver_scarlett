@@ -58,10 +58,12 @@ typedef struct snd_stru_sbmixer sbmixer_t;
 
 struct snd_stru_sbmixer {
 	unsigned short port;
+
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_line;
 	snd_kmixer_element_t *me_mux_cd;
 
+	snd_kmixer_element_t *me_mux;
 	snd_kmixer_element_t *me_in_accu;
 	snd_kmixer_element_t *me_out_accu;
 	snd_kmixer_element_t *me_playback;
