@@ -172,7 +172,7 @@ AC_ARG_WITH(processor,
   [                        (i386,i486,i586,i686,alpha,ppc,auto)],
   processor="$withval", processor="auto")
 if test "$processor" = "auto"; then
-  CPUID=`cat /proc/cpuinfo | grep cpu | grep -v "cpu family" | grep -v cpuid | cut -d : -f 2 | colrm 1 1 | head -n 1`
+  CPUID=`cat /proc/cpuinfo | grep cpu | grep -v "cpu family" | grep -v cpuid | grep -v "cpu MHz" | cut -d : -f 2 | colrm 1 1 | head -n 1`
   if test "$CPUID""x" = "x"; then
     CPUID=`cat /proc/cpuinfo | grep "cpu family" | cut -d : -f 2 | colrm 1 1 | head -n 1`
     if test "$CPUID" != "alpha" && test "$CPUID" != "Alpha"; then
