@@ -25,10 +25,11 @@
 #include "seq_kernel.h"
 
 /* Instrument cluster */
-typedef struct {
+typedef struct snd_struct_seq_kcluster {
 	snd_seq_instr_cluster_t cluster;
 	char name[32];
 	int priority;
+	struct snd_struct_seq_kcluster *next;
 } snd_seq_kcluster_t;
 
 /* return pointer to private data */
@@ -39,37 +40,42 @@ typedef struct snd_stru_seq_kinstr {
 	snd_seq_instr_t instr;
 	char name[32];
 	int type;			/* instrument type */
+	int use;			/* use count */
+	int add_len;			/* additional length */
 	struct snd_stru_seq_kinstr *next;
 } snd_seq_kinstr_t;
+
+#define SND_SEQ_INSTR_HASH_SIZE		32
 
 /* List of all instruments */
 typedef struct {
 	void *private_data;		/* pointer to the driver privated data */
 	int kinstr_len;			/* kinstr additional length */
 
-	snd_seq_kinstr_t *hash[32];
+	snd_seq_kinstr_t *hash[SND_SEQ_INSTR_HASH_SIZE];
 	int count;			/* count of all instruments */
 	
-	snd_seq_kcluster_t *chash[32];
+	snd_seq_kcluster_t *chash[SND_SEQ_INSTR_HASH_SIZE];
 	int ccount;			/* count of all clusters */
 
 	int owner;			/* current owner of the instrument list */
+
+	snd_spin_define(lock);
+	snd_spin_define(ops);
+	snd_mutex_define(ops);
+	unsigned long ops_flags;
 } snd_seq_kinstr_list_t;
 
 /* Instrument operations - flags */
 #define SND_SEQ_INSTR_OPS_DIRECT	(1<<0)	/* accept only direct events */
 
-/* Instrument space */
-#define SND_SEQ_INSTR_SPACE_KERNEL	0
-#define SND_SEQ_INSTR_SPACE_USER	1
-
 typedef struct {
 	unsigned int flags;
 	int (*reset)(void *private_data);
 	int (*put)(void *private_data, snd_seq_kinstr_t *kinstr,
-		   int space, char *instr_data, int len);
+		   char *instr_type, char *instr_data, int len);
 	int (*get)(void *private_data, snd_seq_kinstr_t *kinstr,
-		   int space, char *instr_data, int len);
+		   char *instr_type, char *instr_data, int len);
 	int (*remove)(void *private_data, snd_seq_kinstr_t *kinstr);
 } snd_seq_kinstr_ops_t;
 
