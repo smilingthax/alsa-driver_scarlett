@@ -933,8 +933,7 @@ static int check_event_type_and_length(snd_seq_event_t *ev)
 {
 	switch (snd_seq_ev_length_type(ev)) {
 	case SNDRV_SEQ_EVENT_LENGTH_FIXED:
-		if (snd_seq_ev_is_variable_type(ev) ||
-		    snd_seq_ev_is_varipc_type(ev))
+		if (snd_seq_ev_is_variable_type(ev))
 			return -EINVAL;
 		break;
 	case SNDRV_SEQ_EVENT_LENGTH_VARIABLE:
@@ -945,10 +944,6 @@ static int check_event_type_and_length(snd_seq_event_t *ev)
 	case SNDRV_SEQ_EVENT_LENGTH_VARUSR:
 		if (! snd_seq_ev_is_instr_type(ev) ||
 		    ! snd_seq_ev_is_direct(ev))
-			return -EINVAL;
-		break;
-	case SNDRV_SEQ_EVENT_LENGTH_VARIPC:
-		if (! snd_seq_ev_is_varipc_type(ev))
 			return -EINVAL;
 		break;
 	}
