@@ -16,7 +16,7 @@
 #
 # static struct isapnp_card_id snd_opl3sa2_pnpids[] __devinitdata = {
 #	{ ISAPNP_CARD_ID('A', 'L', 'S', 0x0001),
-#	  devs : {
+#	  .devs = {
 #		ISAPNP_DEVICE_ID('@', '@', '@', 0x0001),
 #		ISAPNP_DEVICE_ID('@', 'X', '@', 0x0001),
 #		ISAPNP_DEVICE_ID('@', 'H', '@', 0x0001),
@@ -53,10 +53,12 @@ function dataline(line,   a, b, idx, num)
 	num = split($line, a, ",")
 	split(a[1], b, "\"")
 	printdata(b[2], "\t{ ISAPNP_CARD_ID")
-	print "\t  devs : {"
-	for (idx = 2; idx < num - 1; idx = idx + 1) {
+	print "\t  .devs = {"
+	for (idx = 2; idx < num; idx = idx + 1) {
 		split(a[idx], b, "\"")
-		printdata(b[2], "\t\tISAPNP_DEVICE_ID")
+		if (b[2] != "") {
+			printdata(b[2], "\t\tISAPNP_DEVICE_ID")
+		}
 	}
 	print "\t  }"
 	print "\t},"

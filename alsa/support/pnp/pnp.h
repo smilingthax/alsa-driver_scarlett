@@ -131,6 +131,11 @@ struct pnp_fixup {
 #define pnp_can_disable(dev)	0
 #define pnp_can_configure(dev)	1
 
+#define pnp_device_is_isapnp(dev) 1
+
+#define isapnp_card_number(dev) (dev->p.bus->number)
+#define isapnp_csn_number(dev)  (dev->p.devfn)
+
 /*
  * Driver Management
  */
