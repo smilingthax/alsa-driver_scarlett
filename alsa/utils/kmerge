@@ -4,7 +4,7 @@ KDIR=/usr/src/linux
 if [ "x$1" != "x" ]; then
   KDIR="$1"
 fi
-KADIR=$KDIR/drivers/sound/alsa
+KADIR=$KDIR/drivers/sound
 ADIR=$PWD/..
 if [ "x$2" != "x" ]; then
   ADIR="$2"
@@ -14,21 +14,27 @@ function copy_file () {
 	ln -svf $ADIR/$1 $KADIR/$2
 }
 
-function include_file () {
-	rm -f $KADIR/include/$1 $KDIR/include/linux/$1
-	ln -svf $ADIR/include/$1 $KADIR/include/$1
-	ln -svf $ADIR/include/$1 $KDIR/include/linux/$1
-}
-
 function copy_dir () {
 	pushd $PWD > /dev/null
 	cd $ADIR/$1
-	mkdir -p $KADIR/$1
+	mkdir -p $KADIR/$2
 	if [ -r Makefile.k ]; then
-		ln -svf $ADIR/$1/Makefile.k $KADIR/$1/Makefile
+		ln -svf $ADIR/$1/Makefile.k $KADIR/$2/Makefile
 	fi
-	for i in *.[ch]; do
-		ln -svf $ADIR/$1/$i $KADIR/$1/$i
+	if [ "$1" != "lowlevel" ]; then
+		for i in *.[ch]; do
+			ln -svf $ADIR/$1/$i $KADIR/$2/$i
+		done
+	fi
+	popd > /dev/null
+}
+
+function copy_include_dir () {
+	pushd $PWD > /dev/null
+	cd $ADIR/$1
+	for i in *.h; do
+		rm -f $KDIR/include/sound/$i
+		ln -svf $ADIR/$1/$i $KDIR/include/sound
 	done
 	popd > /dev/null
 }
@@ -68,7 +74,7 @@ else
   echo >> Config.in
   echo "tristate 'Advanced Linux Sound Architecture' CONFIG_SND" >> Config.in
   echo "if [ \"\$CONFIG_SND\" != \"n\" ]; then" >> Config.in
-  echo "  source drivers/sound/alsa/Config.in" >> Config.in
+  echo "  source drivers/sound/Alsa-Config.in" >> Config.in
   echo "fi" >> Config.in
   echo >> Config.in
   echo "endmenu" >> Config.in
@@ -77,32 +83,26 @@ fi
 mkdir -p alsa
 cd $ADIR/utils
 make
-./snd-deps --configin > $KDIR/drivers/sound/alsa/Config.in
-copy_file Makefile.k Makefile
-copy_dir include
-rm -f $KADIR/include/config.h
-rm -f $KADIR/include/config1.h
-include_file ainstr_simple.h
-include_file ainstr_gf1.h
-include_file ainstr_iw.h
-include_file ainstr_fm.h
-include_file asound.h
-include_file asoundef.h
-include_file asequencer.h
-include_file asound_fm.h
-copy_dir kernel
-copy_dir kernel/seq
-copy_dir kernel/seq/instr
-copy_dir kernel/seq/oss
-copy_dir kernel/oss
-copy_dir lowlevel
-copy_dir lowlevel/generic
-copy_dir lowlevel/isa
-copy_dir lowlevel/pci
-copy_dir lowlevel/i2c
-copy_dir lowlevel/gus
-copy_dir lowlevel/sb
-copy_dir lowlevel/emu10k1
-copy_dir cards
-copy_dir cards/ppc
+./snd-deps --configin > $KDIR/drivers/sound/Alsa-Config.in
+#copy_file Makefile.k Makefile
+mkdir -p $KDIR/include/sound
+rm -rf $KDIR/include/sound/*.h
+copy_include_dir include
+rm -f $KDIR/include/sound/config.h
+rm -f $KDIR/include/sound/config1.h
+copy_dir kernel alsa
+copy_dir kernel/seq alsa/seq
+copy_dir kernel/seq/instr alsa/seq/instr
+copy_dir kernel/seq/oss alsa/seq/oss
+copy_dir kernel/oss alsa/oss
+copy_dir lowlevel lowlevel
+copy_dir lowlevel/generic lowlevel/generic
+copy_dir lowlevel/isa lowlevel/isa
+copy_dir lowlevel/pci lowlevel/pci
+copy_dir lowlevel/i2c lowlevel/i2c
+copy_dir lowlevel/gus lowlevel/gus
+copy_dir lowlevel/sb lowlevel/sb
+copy_dir lowlevel/emu10k1 lowlevel/emu10k1
+copy_dir cards cards
+copy_dir cards/ppc cards/ppc
 popd > /dev/null

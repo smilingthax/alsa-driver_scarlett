@@ -1,4 +1,4 @@
-#include "../include/sb16_csp.h"
+#include <sound/sb16_csp.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
