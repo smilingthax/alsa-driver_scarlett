@@ -174,7 +174,7 @@ enum sndrv_hwdep_type {
 
 struct sndrv_hwdep_info {
 	unsigned int device;		/* WR: device number */
-	enum sndrv_card_type type; 	/* card type */
+	int card;			/* R: card number */
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* hwdep name */
 	enum sndrv_hwdep_type hw_type;	/* hwdep device type */
@@ -319,13 +319,13 @@ union sndrv_pcm_sync_id {
 struct sndrv_pcm_info {
 	unsigned int device;		/* RO/WR (control): device number */
 	unsigned int subdevice;		/* RO/WR (control): subdevice number */
-	enum sndrv_pcm_stream stream;	/* stream number */
-        enum sndrv_card_type type;      /* card type */
+	enum sndrv_pcm_stream stream;	/* RO/WR (control): stream number */
+	int card;			/* R: card number */
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* name of this device */
 	unsigned char subname[32];	/* subdevice name */
-	enum sndrv_pcm_class device_class; /* SNDRV_PCM_CLASS_* */
-	enum sndrv_pcm_subclass device_subclass; /* SNDRV_PCM_SUBCLASS_* */
+	enum sndrv_pcm_class class;	/* SNDRV_PCM_CLASS_* */
+	enum sndrv_pcm_subclass subclass; /* SNDRV_PCM_SUBCLASS_* */
 	unsigned int subdevices_count;
 	unsigned int subdevices_avail;
 	union sndrv_pcm_sync_id sync;	/* hardware synchronization ID */
@@ -416,7 +416,7 @@ struct sndrv_pcm_sw_params {
 	unsigned char reserved[64];
 };
 
-struct sndrv_pcm_hw_channel_info {
+struct sndrv_pcm_channel_info {
 	unsigned int channel;
 	off_t offset;			/* mmap offset */
 	unsigned int first;		/* offset to first sample in bits */
@@ -425,7 +425,7 @@ struct sndrv_pcm_hw_channel_info {
 
 struct sndrv_pcm_status {
 	enum sndrv_pcm_state state;	/* stream state */
-	struct timeval trigger_time;	/* time when stream was started/stopped/paused */
+	struct timeval trigger_tstamp;	/* time when stream was started/stopped/paused */
 	struct timeval tstamp;		/* reference timestamp */
 	sndrv_pcm_sframes_t delay;	/* current delay in frames */
 	sndrv_pcm_uframes_t avail;	/* number of frames available */
@@ -467,7 +467,7 @@ enum {
 	SNDRV_PCM_IOCTL_SW_PARAMS = _IOWR('A', 0x13, struct sndrv_pcm_sw_params),
 	SNDRV_PCM_IOCTL_STATUS = _IOR('A', 0x20, struct sndrv_pcm_status),
 	SNDRV_PCM_IOCTL_DELAY = _IOR('A', 0x21, sndrv_pcm_sframes_t),
-	SNDRV_PCM_IOCTL_CHANNEL_INFO = _IOR('A', 0x32, struct sndrv_pcm_hw_channel_info),
+	SNDRV_PCM_IOCTL_CHANNEL_INFO = _IOR('A', 0x32, struct sndrv_pcm_channel_info),
 	SNDRV_PCM_IOCTL_PREPARE = _IO('A', 0x40),
 	SNDRV_PCM_IOCTL_RESET = _IO('A', 0x41),
 	SNDRV_PCM_IOCTL_START = _IO('A', 0x42),
@@ -510,7 +510,7 @@ enum sndrv_rawmidi_stream {
 struct sndrv_rawmidi_info {
 	unsigned int device;		/* RO/WR (control): device number */
 	unsigned int subdevice;		/* RO/WR (control): subdevice number */
-	enum sndrv_card_type type;	/* card type */
+	int card;			/* R: card number */
 	unsigned int flags;		/* SNDRV_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* name of device */
@@ -597,6 +597,7 @@ struct sndrv_timer_select {
 
 struct sndrv_timer_info {
 	unsigned int flags;		/* timer flags - SNDRV_TIMER_FLG_* */
+	int card;			/* R: card number */
 	unsigned char id[64];		/* timer identificator */
 	unsigned char name[80];		/* timer name */
 	unsigned long ticks;		/* maximum ticks */
@@ -653,6 +654,7 @@ struct sndrv_timer_read {
 #define SNDRV_CTL_VERSION			SNDRV_PROTOCOL_VERSION(2, 0, 0)
 
 struct sndrv_ctl_hw_info {
+	int card;			/* R: card number */
 	enum sndrv_card_type type;	/* type of card */
 	unsigned char id[16];		/* ID of card (user selectable) */
 	unsigned char abbreviation[16];	/* Abbreviation for soundcard */

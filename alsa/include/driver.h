@@ -180,7 +180,7 @@ typedef enum sndrv_pcm_start snd_pcm_start_t;
 typedef enum sndrv_pcm_xrun snd_pcm_xrun_t;
 typedef enum sndrv_pcm_tstamp snd_pcm_tstamp_t;
 typedef struct sndrv_pcm_sw_params snd_pcm_sw_params_t;
-typedef struct sndrv_pcm_hw_channel_info snd_pcm_hw_channel_info_t;
+typedef struct sndrv_pcm_channel_info snd_pcm_channel_info_t;
 typedef struct sndrv_pcm_status snd_pcm_status_t;
 typedef struct sndrv_pcm_mmap_status snd_pcm_mmap_status_t;
 typedef struct sndrv_pcm_mmap_control snd_pcm_mmap_control_t;
