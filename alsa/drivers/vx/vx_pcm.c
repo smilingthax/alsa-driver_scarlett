@@ -94,7 +94,7 @@ static void vx_flush_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 	unsigned char *buf = (unsigned char *)(runtime->dma_area + offset);
 
 	snd_assert(count % 3 == 0, return);
-	pipe->hw_ptr += count;
+	pipe->hw_ptr += bytes_to_frames(runtime, count);
 	if (pipe->hw_ptr >= runtime->buffer_size)
 		pipe->hw_ptr -= runtime->buffer_size;
 	while (count > 0) {

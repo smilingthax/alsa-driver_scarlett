@@ -110,7 +110,6 @@ int snd_vx_hwdep_new(vx_core_t *chip)
 	if ((err = snd_hwdep_new(chip->card, SND_VX_HWDEP_ID, 0, &hw)) < 0)
 		return err;
 
-	init_MUTEX(&chip->hwdep_mutex);
 	hw->iface = SNDRV_HWDEP_IFACE_VX;
 	hw->private_data = chip;
 	hw->ops.open = vx_hwdep_open;

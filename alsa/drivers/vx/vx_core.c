@@ -751,6 +751,7 @@ vx_core_t *snd_vx_create(snd_card_t *card, struct snd_vx_hardware *hw,
 	chip->type = hw->type;
 	chip->ops = ops;
 	tasklet_init(&chip->tq, vx_interrupt, (unsigned long)chip);
+	init_MUTEX(&chip->mixer_mutex);
 
 	chip->card = card;
 	card->private_data = chip;

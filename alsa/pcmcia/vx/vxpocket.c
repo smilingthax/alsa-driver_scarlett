@@ -111,6 +111,7 @@ static struct snd_vx_hardware vxp_hw = {
 	.num_codecs = NUM_CODECS,
 	.num_ins = NUM_CODECS,
 	.num_outs = NUM_CODECS,
+	.output_level_max = VX_ANALOG_OUT_LEVEL_MAX,
 };	
 
 static struct snd_vxp_entry hw_entry = {

@@ -78,32 +78,35 @@ MODULE_DEVICE_TABLE(pci, snd_vx222_ids);
 
 static struct snd_vx_hardware vx222_old_hw = {
 
-	.name = "VX222 Old",
+	.name = "VX222/Old",
 	.type = VX_TYPE_BOARD,
 	/* hw specs */
 	.num_codecs = 1,
 	.num_ins = 1,
 	.num_outs = 1,
+	.output_level_max = VX_ANALOG_OUT_LEVEL_MAX,
 };
 
 static struct snd_vx_hardware vx222_v2_hw = {
 
-	.name = "VX222 v2",
+	.name = "VX222/v2",
 	.type = VX_TYPE_V2,
 	/* hw specs */
 	.num_codecs = 1,
 	.num_ins = 1,
 	.num_outs = 1,
+	.output_level_max = VX2_AKM_LEVEL_MAX,
 };
 
 static struct snd_vx_hardware vx222_mic_hw = {
 
-	.name = "VX222 Mic",
+	.name = "VX222/Mic",
 	.type = VX_TYPE_MIC,
 	/* hw specs */
 	.num_codecs = 1,
 	.num_ins = 1,
 	.num_outs = 1,
+	.output_level_max = VX2_AKM_LEVEL_MAX,
 };
 
 
@@ -143,13 +146,15 @@ static int __devinit snd_vx222_create(snd_card_t *card, struct pci_dev *pci,
 	static snd_device_ops_t ops = {
 		.dev_free =	snd_vx222_dev_free,
 	};
+	struct snd_vx_ops *vx_ops;
 
 	/* enable PCI device */
 	if ((err = pci_enable_device(pci)) < 0)
 		return err;
 	pci_set_master(pci);
 
-	chip = snd_vx_create(card, hw, &vx222_ops,
+	vx_ops = hw->type == VX_TYPE_BOARD ? &vx222_old_ops : &vx222_ops;
+	chip = snd_vx_create(card, hw, vx_ops,
 			     sizeof(struct snd_vx222) - sizeof(vx_core_t));
 	if (! chip)
 		return -ENOMEM;

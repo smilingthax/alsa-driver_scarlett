@@ -118,6 +118,7 @@ struct snd_vx_hardware {
 	unsigned int num_codecs;
 	unsigned int num_ins;
 	unsigned int num_outs;
+	unsigned int output_level_max;
 };
 
 /* hwdep id string */
@@ -144,6 +145,9 @@ enum {
 	VX_STAT_IS_STALE	= (1 << 15)	/* device is stale */
 };
 
+/* min/max values for analog output for old codecs */
+#define VX_ANALOG_OUT_LEVEL_MAX		0xe3
+
 struct snd_vx_core {
 	/* ALSA stuff */
 	snd_card_t *card;
@@ -164,8 +168,6 @@ struct snd_vx_core {
 	unsigned int chip_status;
 	unsigned int pcm_running;
 
-	struct semaphore hwdep_mutex;
-	int hwdep_used;
 	snd_hwdep_t *hwdep;
 
 	struct vx_rmh irq_rmh;	/* RMH used in interrupts */
@@ -192,6 +194,8 @@ struct snd_vx_core {
 	unsigned char audio_active[4];		/* mute/unmute on digital playback */
 	int audio_monitor[4];			/* playback hw-monitor level */
 	unsigned char audio_monitor_active[4];	/* playback hw-monitor mute/unmute */
+
+	struct semaphore mixer_mutex;
 };
 
 

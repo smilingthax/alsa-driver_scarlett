@@ -101,14 +101,11 @@ static void vx_set_codec_reg(vx_core_t *chip, int codec, int reg, int val)
 }
 
 
-#define ANALOG_OUT_ATTEN_MIN	0x00
-#define ANALOG_OUT_ATTEN_MAX	0xe3
-
 /*
  * vx_set_analog_output_level - set the output attenuation level
  * @codec: the output codec, 0 or 1.  (1 for VXP440 only)
- * @left: left attenuation level, 0 = 0 dB, 0xe3 = -113.5 dB
- * @right: right attenuation level
+ * @left: left output level, 0 = mute
+ * @right: right output level
  */
 static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int right)
 {
@@ -116,6 +113,9 @@ static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int
 		chip->ops->akm_write(chip, XX_CODEC_LEVEL_LEFT_REGISTER, left);
 		chip->ops->akm_write(chip, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
 	} else {
+		/* convert to attenuation level: 0 = 0dB (max), 0xe3 = -113.5 dB (min) */
+		left = VX_ANALOG_OUT_LEVEL_MAX - left;
+		right = VX_ANALOG_OUT_LEVEL_MAX - right;
 		vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_LEFT_REGISTER, left);
 		vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
 	}
@@ -152,6 +152,7 @@ void vx_reset_codec(vx_core_t *chip, int cold_reset)
 
 	chip->ops->reset_codec(chip);
 
+	/* AKM codecs should be initialized in reset_codec callback */
 	if (! chip->ops->akm_write) {
 		/* initialize old codecs */
 		for (i = 0; i < chip->hw->num_codecs; i++) {
@@ -168,11 +169,9 @@ void vx_reset_codec(vx_core_t *chip, int cold_reset)
 
 	/* mute analog output */
 	for (i = 0; i < chip->hw->num_codecs; i++) {
-		chip->output_level[i][0] = ANALOG_OUT_ATTEN_MAX;
-		chip->output_level[i][1] = ANALOG_OUT_ATTEN_MAX;
-		vx_set_analog_output_level(chip, i,
-					   ANALOG_OUT_ATTEN_MAX,
-					   ANALOG_OUT_ATTEN_MAX);
+		chip->output_level[i][0] = 0;
+		chip->output_level[i][1] = 0;
+		vx_set_analog_output_level(chip, i, 0, 0);
 	}
 }
 
@@ -280,7 +279,7 @@ static int vx_read_audio_level(vx_core_t *chip, int audio, int capture,
 	info.monitor_mute = (rmh.Stat[i] & AUDIO_IO_HAS_MUTE_MONITORING_1) ? 1 : 0;
 	return 0;
 }
-#endif
+#endif // not used
 
 /*
  * set the monitoring level and mute state of the given audio
@@ -417,10 +416,11 @@ static int vx_get_audio_vu_meter(vx_core_t *chip, int audio, int capture, struct
  */
 static int vx_output_level_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 {
+	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
-	uinfo->value.integer.min = ANALOG_OUT_ATTEN_MIN;
-	uinfo->value.integer.max = ANALOG_OUT_ATTEN_MAX - ANALOG_OUT_ATTEN_MIN;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = chip->hw->output_level_max;
 	return 0;
 }
 
@@ -428,25 +428,29 @@ static int vx_output_level_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 {
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int codec = kcontrol->id.index;
-	ucontrol->value.integer.value[0] = ANALOG_OUT_ATTEN_MAX - chip->output_level[codec][0];
-	ucontrol->value.integer.value[1] = ANALOG_OUT_ATTEN_MAX - chip->output_level[codec][1];
+	down(&chip->mixer_mutex);
+	ucontrol->value.integer.value[0] = chip->output_level[codec][0];
+	ucontrol->value.integer.value[1] = chip->output_level[codec][1];
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
 static int vx_output_level_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
-	int val[2];
 	int codec = kcontrol->id.index;
-	val[0] = ANALOG_OUT_ATTEN_MAX - ucontrol->value.integer.value[0];
-	val[1] = ANALOG_OUT_ATTEN_MAX - ucontrol->value.integer.value[1];
-	if (val[0] != chip->output_level[codec][0] ||
-	    val[1] != chip->output_level[codec][1]) {
-		vx_set_analog_output_level(chip, codec, val[0], val[1]);
-		chip->output_level[codec][0] = val[0];
-		chip->output_level[codec][1] = val[1];
+	down(&chip->mixer_mutex);
+	if (ucontrol->value.integer.value[0] != chip->output_level[codec][0] ||
+	    ucontrol->value.integer.value[1] != chip->output_level[codec][1]) {
+		vx_set_analog_output_level(chip, codec,
+					   ucontrol->value.integer.value[0],
+					   ucontrol->value.integer.value[1]);
+		chip->output_level[codec][0] = ucontrol->value.integer.value[0];
+		chip->output_level[codec][1] = ucontrol->value.integer.value[1];
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -499,11 +503,14 @@ static int vx_audio_src_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucon
 static int vx_audio_src_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
+	down(&chip->mixer_mutex);
 	if (chip->audio_source_target != ucontrol->value.enumerated.item[0]) {
 		chip->audio_source_target = ucontrol->value.enumerated.item[0];
 		vx_sync_audio_source(chip);
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -533,8 +540,10 @@ static int vx_audio_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 	int audio = kcontrol->private_value & 0xff;
 	int capture = (kcontrol->private_value >> 8) & 1;
 
+	down(&chip->mixer_mutex);
 	ucontrol->value.integer.value[0] = chip->audio_gain[capture][audio];
 	ucontrol->value.integer.value[1] = chip->audio_gain[capture][audio+1];
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -544,12 +553,15 @@ static int vx_audio_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 	int audio = kcontrol->private_value & 0xff;
 	int capture = (kcontrol->private_value >> 8) & 1;
 
+	down(&chip->mixer_mutex);
 	if (ucontrol->value.integer.value[0] != chip->audio_gain[capture][audio] ||
 	    ucontrol->value.integer.value[1] != chip->audio_gain[capture][audio+1]) {
 		vx_set_audio_gain(chip, audio, capture, ucontrol->value.integer.value[0]);
 		vx_set_audio_gain(chip, audio+1, capture, ucontrol->value.integer.value[1]);
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -558,8 +570,10 @@ static int vx_audio_monitor_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
+	down(&chip->mixer_mutex);
 	ucontrol->value.integer.value[0] = chip->audio_monitor[audio];
 	ucontrol->value.integer.value[1] = chip->audio_monitor[audio+1];
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -568,14 +582,17 @@ static int vx_audio_monitor_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
+	down(&chip->mixer_mutex);
 	if (ucontrol->value.integer.value[0] != chip->audio_monitor[audio] ||
 	    ucontrol->value.integer.value[1] != chip->audio_monitor[audio+1]) {
 		vx_set_monitor_level(chip, audio, ucontrol->value.integer.value[0],
 				     chip->audio_monitor_active[audio]);
 		vx_set_monitor_level(chip, audio+1, ucontrol->value.integer.value[1],
 				     chip->audio_monitor_active[audio+1]);
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -593,8 +610,10 @@ static int vx_audio_sw_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
+	down(&chip->mixer_mutex);
 	ucontrol->value.integer.value[0] = chip->audio_active[audio];
 	ucontrol->value.integer.value[1] = chip->audio_active[audio+1];
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -603,12 +622,15 @@ static int vx_audio_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
+	down(&chip->mixer_mutex);
 	if (ucontrol->value.integer.value[0] != chip->audio_active[audio] ||
 	    ucontrol->value.integer.value[1] != chip->audio_active[audio+1]) {
 		vx_set_audio_switch(chip, audio, ucontrol->value.integer.value[0]);
 		vx_set_audio_switch(chip, audio+1, ucontrol->value.integer.value[1]);
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -617,8 +639,10 @@ static int vx_monitor_sw_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
+	down(&chip->mixer_mutex);
 	ucontrol->value.integer.value[0] = chip->audio_monitor_active[audio];
 	ucontrol->value.integer.value[1] = chip->audio_monitor_active[audio+1];
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -627,14 +651,17 @@ static int vx_monitor_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uco
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 	int audio = kcontrol->private_value & 0xff;
 
+	down(&chip->mixer_mutex);
 	if (ucontrol->value.integer.value[0] != chip->audio_monitor_active[audio] ||
 	    ucontrol->value.integer.value[1] != chip->audio_monitor_active[audio+1]) {
 		vx_set_monitor_level(chip, audio, chip->audio_monitor[audio],
 				     ucontrol->value.integer.value[0]);
 		vx_set_monitor_level(chip, audio+1, chip->audio_monitor[audio+1],
 				     ucontrol->value.integer.value[1]);
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
@@ -682,10 +709,12 @@ static int vx_iec958_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontro
 {
 	vx_core_t *chip = snd_kcontrol_chip(kcontrol);
 
+	down(&chip->mixer_mutex);
 	ucontrol->value.iec958.status[0] = (chip->uer_bits >> 0) & 0xff;
 	ucontrol->value.iec958.status[1] = (chip->uer_bits >> 8) & 0xff;
 	ucontrol->value.iec958.status[2] = (chip->uer_bits >> 16) & 0xff;
 	ucontrol->value.iec958.status[3] = (chip->uer_bits >> 24) & 0xff;
+	up(&chip->mixer_mutex);
         return 0;
 }
 
@@ -707,11 +736,14 @@ static int vx_iec958_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontro
 	      (ucontrol->value.iec958.status[1] << 8) |
 	      (ucontrol->value.iec958.status[2] << 16) |
 	      (ucontrol->value.iec958.status[3] << 24);
+	down(&chip->mixer_mutex);
 	if (chip->uer_bits != val) {
 		chip->uer_bits = val;
 		vx_set_iec958_status(chip, val);
+		up(&chip->mixer_mutex);
 		return 1;
 	}
+	up(&chip->mixer_mutex);
 	return 0;
 }
 
