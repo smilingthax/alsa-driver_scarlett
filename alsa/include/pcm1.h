@@ -23,6 +23,7 @@
  */
 
 #include "pcm.h"
+#include "timer.h"
 
 #define SND_PCM1_PLAYBACK	0
 #define SND_PCM1_RECORD		1
@@ -50,11 +51,11 @@
 #define SND_PCM1_MODE_24	0x00010000	/* unset = nothing, set = 24 bit */
 #define SND_PCM1_MODE_32	0x00020000	/* unset = nothing, set = 32 bit */
 #define SND_PCM1_MODE_FLOAT	0x00040000	/* unset = nothing, set = Float */
+#define SND_PCM1_MODE_FLOAT64	0x00080000	/* unset = nothing, set = Float64 */
 #define SND_PCM1_MODE_TYPE	0xffffff00	/* bitmask */
 
 #define SND_PCM1_FLG_NONE	0x00000000
 #define SND_PCM1_FLG_ENABLE	0x00000001	/* enable trigger */
-#define SND_PCM1_FLG_SLEEP	0x00000002	/* channel is in sleep state - need wakeup */
 #define SND_PCM1_FLG_ABORT	0x00000004	/* user abort */
 #define SND_PCM1_FLG_NONBLK	0x00000008	/* non block I/O */
 #define SND_PCM1_FLG_MMAP	0x00000010	/* mmaped access */
@@ -68,6 +69,7 @@
 #define SND_PCM1_FLG_TIME	0x00000800	/* time */
 #define SND_PCM1_FLG_PAUSE	0x00001000	/* pause in progress */
 #define SND_PCM1_FLG_NEEDEMPTY	0x00002000	/* record buffer needs to be empty */
+#define SND_PCM1_FLG_TIMER	0x00004000	/* timer is running */
 
 #define SND_PCM1_HW_BATCH	0x00000001	/* double buffering */
 #define SND_PCM1_HW_8BITONLY	0x00000002	/* hardware supports only 8-bit DMA, but does conversions from 16-bit to 8-bit */
@@ -157,6 +159,8 @@ struct snd_stru_pcm1_channel {
 	volatile unsigned int overrange;	/* ADC overrange */
 	volatile unsigned int total_discarded;	/* discarded blocks... */
 	volatile unsigned int total_xruns;	/* under/overruns */
+	snd_timer_t *timer;			/* timer */
+	unsigned int timer_resolution;		/* timer resolution */
 	/* -- physical/flags -- */
 	unsigned int flags;
 	unsigned int used_size;		/* used size of audio buffer (logical size) */
@@ -185,6 +189,10 @@ struct snd_stru_pcm1_channel {
 	struct snd_stru_pcm1_oss_setup *setup_list;	/* setup list */
 	struct snd_stru_pcm1_oss_setup *setup;		/* active setup */
 	snd_mutex_define(setup_mutex);
+	/* misc */
+	snd_spin_define(lock);
+	snd_spin_define(sleep_lock);
+	snd_sleep_define(sleep);
 };
 
 struct snd_stru_pcm1 {
@@ -196,13 +204,7 @@ struct snd_stru_pcm1 {
 	struct snd_stru_pcm1_channel record;
 	snd_info_entry_t *proc_entry;
 	snd_info_entry_t *proc_oss_entry;
-	snd_sleep_define(playback);
-	snd_sleep_define(record);
 	snd_mutex_define(open);
-	snd_spin_define(playback);
-	snd_spin_define(record);
-	snd_spin_define(playback_sleep);
-	snd_spin_define(record_sleep);
 	void *private_data;
 	void (*private_free) (void *private_data);
 };
