@@ -3,7 +3,7 @@ menu "ISA devices"
 
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
-	depends on SND
+	depends on SND && X86
 	select SND_RAWMIDI
 	select SND_PCM
 	help
