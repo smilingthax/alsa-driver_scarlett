@@ -23,7 +23,7 @@
  {
 @@ -141,7 +144,9 @@
  
- 	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
+ 	data = file->private_data;
  	entry = data->entry;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 3)
  	lock_kernel();

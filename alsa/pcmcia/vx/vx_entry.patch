@@ -19,7 +19,7 @@
  	link->conf.IntType = INT_MEMORY_AND_IO;
 @@ -224,6 +230,10 @@
  {
- 	vx_core_t *chip = snd_magic_cast(vx_core_t, link->priv, return);
+ 	vx_core_t *chip = link->priv;
  
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
 +	del_timer(&link->release);
