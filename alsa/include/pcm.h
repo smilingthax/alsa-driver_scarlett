@@ -308,6 +308,7 @@ extern int snd_pcm_format_linear(int format);
 extern int snd_pcm_format_little_endian(int format);
 extern int snd_pcm_format_big_endian(int format);
 extern int snd_pcm_format_width(int format);		/* in bits */
+extern unsigned char snd_pcm_format_silence(int format);
 extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 extern ssize_t snd_pcm_format_size(int format, size_t samples);
  
@@ -318,7 +319,6 @@ extern void snd_pcm_set_sync(snd_pcm_subchn_t * subchn);
 extern void snd_pcm_set_mixer(snd_pcm_subchn_t * subchn, int mixer_device, snd_kmixer_element_t * element);
 extern unsigned int snd_pcm_lib_transfer_size(snd_pcm_subchn_t *subchn);
 extern unsigned int snd_pcm_lib_transfer_fragment(snd_pcm_subchn_t *subchn);
-extern unsigned char snd_pcm_lib_silence(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_interleave_len(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_subchn_t *subchn, long size);
 extern int snd_pcm_lib_mmap_ctrl_ptr(snd_pcm_subchn_t *subchn, char *ptr);
