@@ -1625,8 +1625,6 @@
 typedef struct snd_stru_cs461x cs461x_t;
 
 struct snd_stru_cs461x {
-	snd_dma_t * dma1ptr;	/* DAC1 */
-	snd_dma_t * dma2ptr;	/* ADC */
 	snd_irq_t * irqptr;
 
 	unsigned long ba0_addr;
@@ -1644,10 +1642,12 @@ struct snd_stru_cs461x {
 	unsigned int mode;
 	
 	struct {
+		snd_dma_t *hw_dma;
+		snd_dma_t *sw_dma;
+		snd_dma_area_t *hw_area;
+		snd_dma_area_t *sw_area;
 		unsigned int ctl;
-		void *hw_buf;		/* 4kB playback buffer */
 		unsigned int shift;	/* Shift count to trasform frames in bytes */
-		void *sw_buf;
 		unsigned int sw_bufsize;
 		unsigned int sw_data;	/* Offset to next dst (or src) in sw ring buffer */
 		unsigned int sw_io;
@@ -1679,12 +1679,12 @@ struct snd_stru_cs461x {
 	snd_info_entry_t *proc_entry;
 };
 
-int snd_cs461x_create(snd_card_t * card,
+int snd_cs461x_create(snd_card_t *card,
 		      struct pci_dev *pci,
-		      snd_dma_t * dma1ptr,
-		      snd_dma_t * dma2ptr,
-		      snd_irq_t * irqptr,
-		      cs461x_t ** rcodec);
+		      snd_dma_t *play_hw_dma, snd_dma_t *play_sw_dma,
+		      snd_dma_t *capt_hw_dma, snd_dma_t *capt_sw_dma,
+		      snd_irq_t *irqptr,
+		      cs461x_t **rcodec);
 int snd_cs461x_free(void *private);
 void snd_cs461x_interrupt(cs461x_t * codec);
 
