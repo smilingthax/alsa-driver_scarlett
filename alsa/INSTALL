@@ -83,7 +83,7 @@ Module parameters
   ------------
 
     snd_major	- major # for sound driver
-		- default is 14 - this value is compatible with OSS/Free
+		- default is 116
     snd_cards_limit
 		- specifies card limit # (1-8)
 		- good for kmod support if you do not want to search
