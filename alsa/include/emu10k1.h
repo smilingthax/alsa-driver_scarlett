@@ -280,6 +280,8 @@ struct snd_stru_emu10k1_voice {
 	    synth: 1,
 	    midi: 1;
 	void (*interrupt)(emu10k1_t *emu, emu10k1_voice_t *pvoice);
+
+	emu10k1_pcm_t *epcm;
 };
 
 struct snd_stru_emu10k1_pcm {
@@ -341,7 +343,6 @@ int snd_emu10k1_create(snd_card_t * card,
 		       snd_irq_t * irqptr,
 		       emu10k1_t ** remu);
 int snd_emu10k1_free(emu10k1_t * emu);
-// void snd_emu10k1_interrupt(emu10k1_t * emu, unsigned short status);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
