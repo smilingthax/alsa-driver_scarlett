@@ -13,7 +13,7 @@ ifeq ($(CONFIG_SOUND_PRIME),y)
   obj-y += oss/sounddrivers.o
 endif
 
-_subdirs = core i2c drivers isa pci ppc synth
+_subdirs := core i2c drivers isa pci ppc synth
 
 subdir-$(CONFIG_SND) += $(_subdirs)
 
