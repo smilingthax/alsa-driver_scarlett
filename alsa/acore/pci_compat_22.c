@@ -262,6 +262,17 @@ int snd_pci_compat_enable_device(struct pci_dev *dev)
 	return 0;
 }
 
+void snd_pci_compat_disable_device(struct pci_dev *dev)
+{
+	u16 pci_command;
+
+	pci_read_config_word(dev, PCI_COMMAND, &pci_command);
+	if (pci_command & PCI_COMMAND_MASTER) {
+		pci_command &= ~PCI_COMMAND_MASTER;
+		pci_write_config_word(dev, PCI_COMMAND, pci_command);
+	}
+}
+
 int snd_pci_compat_find_capability(struct pci_dev *dev, int cap)
 {
 	u16 status;

@@ -212,6 +212,7 @@ int snd_compat_release_resource(struct resource *resource);
 
 #undef pci_enable_device
 #define pci_enable_device snd_pci_compat_enable_device
+#define pci_disable_device snd_pci_compat_disable_device
 #define pci_register_driver snd_pci_compat_register_driver
 #define pci_unregister_driver snd_pci_compat_unregister_driver
 #define pci_set_power_state snd_pci_compat_set_power_state
@@ -274,6 +275,7 @@ unsigned long snd_pci_compat_get_size (struct pci_dev *dev, int n_base);
 int snd_pci_compat_get_flags (struct pci_dev *dev, int n_base);
 int snd_pci_compat_set_power_state(struct pci_dev *dev, int new_state);
 int snd_pci_compat_enable_device(struct pci_dev *dev);
+void snd_pci_compat_disable_device(struct pci_dev *dev);
 int snd_pci_compat_find_capability(struct pci_dev *dev, int cap);
 void *snd_pci_compat_alloc_consistent(struct pci_dev *, long, dma_addr_t *);
 void snd_pci_compat_free_consistent(struct pci_dev *, long, void *, dma_addr_t);
