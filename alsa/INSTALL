@@ -520,5 +520,5 @@ Proc interfaces (/proc/asound)
 
   String "Source external" -> record source is external input
   String "Source mixer" -> record source is mixer
-  String "Mic-Gain" -> set MIC gain to +30dB
-  String "Mic-Gain" -> set MIC gain to +0dB
+  String "Mic-Gain on" -> set MIC gain to +30dB
+  String "Mic-Gain off" -> set MIC gain to +0dB
