@@ -122,6 +122,7 @@ struct _snd_ac97 {
 	unsigned int rates_lfe_dac;
 	unsigned int rates_adc;
 	unsigned int rates_mic_adc;
+	unsigned int spdif_status;
 	unsigned short regs[0x80]; /* register cache */
 	union {			/* vendor specific code */
 		struct {
