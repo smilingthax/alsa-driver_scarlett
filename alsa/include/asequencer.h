@@ -39,9 +39,9 @@
 #define SND_SEQ_EVENT_RESULT		1
 
 	/* note messages */
-#define SND_SEQ_EVENT_NOTE		1
-#define SND_SEQ_EVENT_NOTEON		2
-#define SND_SEQ_EVENT_NOTEOFF		3
+#define SND_SEQ_EVENT_NOTE		5
+#define SND_SEQ_EVENT_NOTEON		6
+#define SND_SEQ_EVENT_NOTEOFF		7
 	
 	/* control messages */
 #define SND_SEQ_EVENT_KEYPRESS		10
