@@ -397,7 +397,10 @@ ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "linux/fs.h"
+#ifdef __alpha__ /* it's required (at least for 2.2.18) */
+#include <asm/current.h>
+#endif
+#include <linux/fs.h>
 ],[
  struct fasync_struct *fa;
  int sig;
