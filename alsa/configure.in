@@ -25,6 +25,12 @@ AC_HEADER_TIME
 dnl Checks for library functions.
 AC_PROG_GCC_TRADITIONAL
 
+dnl Check for current directory
+AC_MSG_CHECKING(for current directory)
+SRCDIR=`pwd`
+AC_SUBST(SRCDIR)
+AC_MSG_RESULT($SRCDIR)
+
 dnl Check for directory with kernel source...
 AC_MSG_CHECKING(for directory with kernel source)
 AC_ARG_WITH(kernel,
