@@ -118,8 +118,9 @@
 #define SND_CARD_TYPE_YMFPCI		0x0000003a	/* YMF724/740/744/754 */
 #define SND_CARD_TYPE_CS4281		0x0000003b	/* CS4281 */
 #define SND_CARD_TYPE_MPU401_UART	0x0000003c	/* MPU-401 UART */
+#define SND_CARD_TYPE_ALS4000		0x0000003d	/* Avance Logic ALS4000 */
 
-#define SND_CARD_TYPE_LAST		0x0000003c
+#define SND_CARD_TYPE_LAST		0x0000003d
 
 typedef struct timeval snd_timestamp_t;
 
