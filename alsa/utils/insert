@@ -6,7 +6,9 @@ MAP="../snd.map"
 OLDMAP="../snd.map.old"
 
 function basic() {
-  if ! $INSMOD -m $MODDIR/isapnp.o > $MAP; then exit 1; fi
+  if [ -r $MODDIR/isapnp.o ]; then
+    if ! $INSMOD -m $MODDIR/isapnp.o > $MAP; then exit 1; fi
+  fi
   if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
@@ -15,8 +17,10 @@ function basic() {
   if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
-  if ! $INSMOD -m $MODDIR/snd-seq.o >> $MAP; then exit 1; fi
-  if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
+  if [ -r $MODDIF/snd-seq.o ]; then
+    if ! $INSMOD -m $MODDIR/snd-seq.o >> $MAP; then exit 1; fi
+    if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
+  fi
 }
 
 function insert() {
