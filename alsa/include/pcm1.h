@@ -81,8 +81,10 @@
 #define SND_PCM1_IOCTL_FALSE	((void *)0)
 #define SND_PCM1_IOCTL_TRUE	((void *)1)
 
-#define SND_PCM1_IOCTL_RATE	0x00000001	/* compute rate */
-#define SND_PCM1_IOCTL_PAUSE	0x00000001	/* pause */
+#define SND_PCM1_IOCTL_MODE	0x00000001	/* check mode (format) */
+#define SND_PCM1_IOCTL_RATE	0x00000002	/* compute rate */
+#define SND_PCM1_IOCTL_VOICES	0x00000003	/* check voices (format) */
+#define SND_PCM1_IOCTL_PAUSE	0x00000004	/* pause */
 
 #define snd_pcm1_lockzero( channel ) \
   ((channel) -> block_lock = -1)
