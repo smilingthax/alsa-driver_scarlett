@@ -2253,14 +2253,15 @@ static int snd_usb_boot_quirk(struct usb_device *dev,
 	/* FIXME: we need to handle composite type quirks later.. */
 	switch (quirk->type) {
 	case QUIRK_BOOT_EXTIGY:
+		snd_printdd(KERN_INFO "extigy_boot: boot length = %d\n", get_cfg_desc(config)->wTotalLength);
 		if (get_cfg_desc(config)->wTotalLength == EXTIGY_FIRMWARE_SIZE_OLD ||
 		    get_cfg_desc(config)->wTotalLength == EXTIGY_FIRMWARE_SIZE_NEW) {
 			/* Send message to force it to reconnect with full interface. */
 			usb_control_msg(dev, usb_sndctrlpipe(dev,0),
 					0x10, 0x43, 0x0001, 0x000a, NULL, 0, HZ);
 			usb_get_device_descriptor(dev);
-			if (usb_set_configuration(dev, get_cfg_desc(config)->bConfigurationValue))
-				return -ENODEV; /* quit this anyway */
+			usb_set_configuration(dev, get_cfg_desc(config)->bConfigurationValue);
+			return -ENODEV; /* quit this anyway */
 		}
 		return 0;
 	}
