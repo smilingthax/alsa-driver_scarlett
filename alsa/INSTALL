@@ -169,7 +169,7 @@ Module parameters
   Module snd-card-gusextreme.o
   ----------------------------
 
-    Module for Gravis UltraSound Extreme soundcard.
+    Module for Gravis UltraSound Extreme (Synergy ViperMax) soundcard.
 
     snd_port	- port # for ES-1688 chip (0x220,0x230,0x240,0x250,0x260)
     snd_gf1_port - port # for GF1 chip (0x210,0x220,0x230,0x240,0x250,0x260,0x270)
