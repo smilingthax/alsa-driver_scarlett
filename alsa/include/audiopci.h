@@ -323,6 +323,8 @@ struct snd_stru_ensoniq {
 	} u;
 
 	struct pci_dev *pci;
+	unsigned short subsystem_vendor_id;
+	unsigned short subsystem_device_id;
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* DAC1/ADC PCM */
 	snd_pcm_t *pcm2;	/* DAC2 PCM */
