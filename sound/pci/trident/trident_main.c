@@ -1370,7 +1370,6 @@ static int snd_trident_spdif_prepare(snd_pcm_substream_t * substream)
 		voice->spurious_threshold = snd_trident_spurious_threshold(runtime->rate, runtime->period_size);
 
 		/* set Loop Back Address */
-		/* FIXME: LBAO?? */
 		LBAO = runtime->dma_addr;
 		if (voice->memblk)
 			voice->LBA = voice->memblk->offset;
@@ -2045,18 +2044,6 @@ static snd_pcm_ops_t snd_trident_capture_ops = {
 	.pointer =	snd_trident_capture_pointer,
 };
 
-static snd_pcm_ops_t snd_trident_nx_capture_ops = {
-	.open =		snd_trident_capture_open,
-	.close =	snd_trident_capture_close,
-	.ioctl =	snd_trident_ioctl,
-	.hw_params =	snd_trident_capture_hw_params,
-	.hw_free =	snd_trident_hw_free,
-	.prepare =	snd_trident_capture_prepare,
-	.trigger =	snd_trident_trigger,
-	.pointer =	snd_trident_capture_pointer,
-	.page =		snd_pcm_sgbuf_ops_page,
-};
-
 static snd_pcm_ops_t snd_trident_si7018_capture_ops = {
 	.open =		snd_trident_capture_open,
 	.close =	snd_trident_capture_close,
@@ -2100,18 +2087,6 @@ static snd_pcm_ops_t snd_trident_spdif_ops = {
 	.prepare =	snd_trident_spdif_prepare,
 	.trigger =	snd_trident_trigger,
 	.pointer =	snd_trident_spdif_pointer,
-};
-
-static snd_pcm_ops_t snd_trident_nx_spdif_ops = {
-	.open =		snd_trident_spdif_open,
-	.close =	snd_trident_spdif_close,
-	.ioctl =	snd_trident_ioctl,
-	.hw_params =	snd_trident_spdif_hw_params,
-	.hw_free =	snd_trident_hw_free,
-	.prepare =	snd_trident_spdif_prepare,
-	.trigger =	snd_trident_trigger,
-	.pointer =	snd_trident_spdif_pointer,
-	.page =		snd_pcm_sgbuf_ops_page,
 };
 
 static snd_pcm_ops_t snd_trident_spdif_7018_ops = {
@@ -2182,14 +2157,13 @@ int __devinit snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm
 
 	if (trident->tlb.entries) {
 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_nx_playback_ops);
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_trident_nx_capture_ops);
 	} else {
 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_playback_ops);
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
-				trident->device != TRIDENT_DEVICE_ID_SI7018 ?
-				&snd_trident_capture_ops :
-				&snd_trident_si7018_capture_ops);
 	}
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+			trident->device != TRIDENT_DEVICE_ID_SI7018 ?
+			&snd_trident_capture_ops :
+			&snd_trident_si7018_capture_ops);
 
 	pcm->info_flags = 0;
 	pcm->dev_subclass = SNDRV_PCM_SUBCLASS_GENERIC_MIX;
@@ -2288,9 +2262,7 @@ int __devinit snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t *
 
 	spdif->private_data = trident;
 	spdif->private_free = snd_trident_spdif_pcm_free;
-	if (trident->tlb.entries) {
-		snd_pcm_set_ops(spdif, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_nx_spdif_ops);
-	} else if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
+	if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
 		snd_pcm_set_ops(spdif, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_spdif_ops);
 	} else {
 		snd_pcm_set_ops(spdif, SNDRV_PCM_STREAM_PLAYBACK, &snd_trident_spdif_7018_ops);
@@ -2299,10 +2271,7 @@ int __devinit snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t *
 	strcpy(spdif->name, "Trident 4DWave IEC958");
 	trident->spdif = spdif;
 
-	if (trident->tlb.entries)
-		snd_pcm_lib_preallocate_sg_pages_for_all(trident->pci, spdif, 64*1024, 128*1024);
-	else
-		snd_pcm_lib_preallocate_pci_pages_for_all(trident->pci, spdif, 64*1024, 128*1024);
+	snd_pcm_lib_preallocate_pci_pages_for_all(trident->pci, spdif, 64*1024, 128*1024);
 
 	if (rpcm)
 		*rpcm = spdif;
