@@ -25,12 +25,11 @@
 
 #ifdef __KERNEL__
 
-#include "pcm.h"
-#include "pcm_sgbuf.h"
-#include "rawmidi.h"
-#include "hwdep.h"
-#include "ac97_codec.h"
-#include "util_mem.h"
+#include <sound/pcm.h>
+#include <sound/rawmidi.h>
+#include <sound/hwdep.h>
+#include <sound/ac97_codec.h>
+#include <sound/util_mem.h>
 #include <asm/io.h>
 
 #ifndef PCI_VENDOR_ID_CREATIVE
@@ -1038,7 +1037,7 @@ unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
-snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, struct snd_sg_buf *sgbuf);
+snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, snd_pcm_substream_t *substream);
 int snd_emu10k1_free_pages(emu10k1_t *emu, snd_util_memblk_t *blk);
 snd_util_memblk_t *snd_emu10k1_synth_alloc(emu10k1_t *emu, unsigned int size);
 int snd_emu10k1_synth_free(emu10k1_t *emu, snd_util_memblk_t *blk);
