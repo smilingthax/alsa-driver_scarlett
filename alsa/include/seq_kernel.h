@@ -62,6 +62,7 @@ typedef int (snd_seq_kernel_port_unsubscribe_t)(void *private_data);
 typedef int (snd_seq_kernel_port_use_t)(void *private_data);
 typedef int (snd_seq_kernel_port_unuse_t)(void *private_data);
 typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, void *private_data);
+typedef void (snd_seq_kernel_port_private_free_t)(void *private_data);
 
 typedef struct {
 	void *private_data;
@@ -70,6 +71,7 @@ typedef struct {
 	snd_seq_kernel_port_subscribe_t *use;
 	snd_seq_kernel_port_use_t *unuse;
 	snd_seq_kernel_port_input_t *event_input;
+	snd_seq_kernel_port_private_free_t *private_free;
 	/*...*/
 } snd_seq_port_callback_t;
 
