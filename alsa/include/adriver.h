@@ -221,7 +221,6 @@ int snd_compat_devfs_mk_dir(const char *dir, ...);
 int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...);
 #define devfs_mk_cdev snd_compat_devfs_mk_cdev
 #endif
-extern int devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
 					      unsigned int major, unsigned int minor,

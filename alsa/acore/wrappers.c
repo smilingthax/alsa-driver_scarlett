@@ -65,8 +65,8 @@ int snd_compat_devfs_mk_dir(const char *dir, ...)
 	va_list args;
 	int n;
 
-	va_start(args, fmt);
-	n = vsnprintf(buf, 64, fmt, args);
+	va_start(args, dir);
+	n = vsnprintf(buf, 64, dir, args);
 	if (n < 64 && buf[0]) {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 		return devfs_mk_dir(NULL, buf, strlen(dir), NULL) ? -EIO : 0;
@@ -74,6 +74,7 @@ int snd_compat_devfs_mk_dir(const char *dir, ...)
 		return devfs_mk_dir(NULL, buf, NULL) ? -EIO : 0;
 #endif
 	}
+	return 0;
 }
 
 extern struct file_operations snd_fops;
@@ -90,6 +91,7 @@ int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
 			       major(dev), minor(dev), mode,
 			       &snd_fops, NULL);
 	}
+	return 0;
 }
 
 #endif /* 2.5.67 */
