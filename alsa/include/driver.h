@@ -293,9 +293,8 @@ struct _snd_card {
 	struct list_head controls;	/* all controls for this card */
 	struct list_head control_files;	/* active control files */
 
-	struct proc_dir_entry *proc_root;	/* root for soundcard specific files */
+	snd_info_entry_t *proc_root;	/* root for soundcard specific files */
 	struct proc_dir_entry *proc_root_link;	/* number link to real id */
-	struct list_head info_entries;		/* info entries */
 
 #ifdef CONFIG_SND_OSSEMUL
 	snd_mixer_oss_t *mixer_oss;

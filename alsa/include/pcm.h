@@ -343,7 +343,7 @@ struct _snd_pcm_substream {
 	/* -- OSS things -- */
 	snd_pcm_oss_substream_t oss;
 #endif
-	struct proc_dir_entry *proc_root;
+	snd_info_entry_t *proc_root;
 	snd_info_entry_t *proc_info_entry;
 	snd_info_entry_t *proc_hw_params_entry;
 	snd_info_entry_t *proc_sw_params_entry;
@@ -370,7 +370,7 @@ struct _snd_pcm_str {
 #endif
 	snd_pcm_file_t *files;
 	snd_minor_t *reg;
-	struct proc_dir_entry *proc_root;
+	snd_info_entry_t *proc_root;
 	snd_info_entry_t *proc_info_entry;
 };
 
