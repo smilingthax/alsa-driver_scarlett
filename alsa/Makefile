@@ -108,6 +108,11 @@ map:
 
 .PHONY: install
 install: install-modules install-headers install-scripts check-snd-prefix
+	@if [ -L /dev/snd ]; then \
+		echo "The ALSA devices were removed from /proc/asound/dev directory." ; \
+		echo "Creating static device entries in /dev/snd." ; \
+		$TOPDIR/snddevices \
+	fi
 	cat WARNING
 
 .PHONY: install-headers
