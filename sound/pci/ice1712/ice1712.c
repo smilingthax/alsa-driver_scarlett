@@ -997,8 +997,10 @@ static void snd_ice1712_set_pro_rate(ice1712_t *ice, unsigned int rate, int forc
 		spin_unlock_irqrestore(&ice->reg_lock, flags);
 		return;
 	}
-	if (!force && is_pro_rate_locked(ice))
-		goto __unlock;
+	if (!force && is_pro_rate_locked(ice)) {
+		spin_unlock_irqrestore(&ice->reg_lock, flags);
+		return;
+	}
 
 	switch (rate) {
 	case 8000: val = 6; break;
