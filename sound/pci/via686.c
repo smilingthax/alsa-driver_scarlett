@@ -636,7 +636,7 @@ static int snd_via686a_playback_open(snd_pcm_substream_t * substream)
 
 	chip->playback.substream = substream;
 	runtime->hw = snd_via686a_playback;
-	runtime->hw.rates = chip->ac97->rates_front_dac;
+	runtime->hw.rates = chip->ac97->rates[AC97_RATES_FRONT_DAC];
 	if (!(runtime->hw.rates & SNDRV_PCM_RATE_8000))
 		runtime->hw.rate_min = 48000;
 	if ((err = snd_pcm_sgbuf_init(substream, chip->pci, 32)) < 0)
@@ -662,7 +662,7 @@ static int snd_via686a_capture_open(snd_pcm_substream_t * substream)
 
 	chip->capture.substream = substream;
 	runtime->hw = snd_via686a_capture;
-	runtime->hw.rates = chip->ac97->rates_adc;
+	runtime->hw.rates = chip->ac97->rates[AC97_RATES_ADC];
 	if (!(runtime->hw.rates & SNDRV_PCM_RATE_8000))
 		runtime->hw.rate_min = 48000;
 	if ((err = snd_pcm_sgbuf_init(substream, chip->pci, 32)) < 0)

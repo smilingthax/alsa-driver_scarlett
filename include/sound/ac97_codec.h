@@ -58,7 +58,7 @@
 #define AC97_PCM_FRONT_DAC_RATE 0x2c	/* PCM Front DAC Rate */
 #define AC97_PCM_SURR_DAC_RATE	0x2e	/* PCM Surround DAC Rate */
 #define AC97_PCM_LFE_DAC_RATE	0x30	/* PCM LFE DAC Rate */
-#define AC97_PCM_LR_ADC_RATE	0x32	/* PCM LR DAC Rate */
+#define AC97_PCM_LR_ADC_RATE	0x32	/* PCM LR ADC Rate */
 #define AC97_PCM_MIC_ADC_RATE	0x34	/* PCM MIC ADC Rate */
 #define AC97_CENTER_LFE_MASTER	0x36	/* Center + LFE Master Volume */
 #define AC97_SURROUND_MASTER	0x38	/* Surround (Rear) Master Volume */
@@ -145,6 +145,14 @@
 #define AC97_CS_SPDIF		(1<<2)	/* Cirrus Logic uses funky SPDIF */
 #define AC97_CX_SPDIF		(1<<3)	/* Conexant's spdif interface */
 
+/* rates indexes */
+#define AC97_RATES_FRONT_DAC	0
+#define AC97_RATES_SURR_DAC	1
+#define AC97_RATES_LFE_DAC	2
+#define AC97_RATES_ADC		3
+#define AC97_RATES_MIC_ADC	4
+#define AC97_RATES_SPDIF	5
+
 /*
 
  */
@@ -172,11 +180,7 @@ struct _snd_ac97 {
 	unsigned int scaps;	/* driver capabilities */
 	unsigned int flags;	/* specific code */
 	unsigned int clock;	/* AC'97 clock (usually 48000Hz) */
-	unsigned int rates_front_dac;
-	unsigned int rates_surr_dac;
-	unsigned int rates_lfe_dac;
-	unsigned int rates_adc;
-	unsigned int rates_mic_adc;
+	unsigned int rates[6];	/* see AC97_RATES_* defines */
 	unsigned int spdif_status;
 	unsigned short regs[0x80]; /* register cache */
 	unsigned int limited_regs; /* allow limited registers only */

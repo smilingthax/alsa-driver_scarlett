@@ -1628,7 +1628,7 @@ static int snd_ice1712_capture_open(snd_pcm_substream_t * substream)
 
 	ice->capture_con_substream = substream;
 	runtime->hw = snd_ice1712_capture;
-	runtime->hw.rates = ice->ac97->rates_adc;
+	runtime->hw.rates = ice->ac97->rates[AC97_RATES_ADC];
 	if (!(runtime->hw.rates & SNDRV_PCM_RATE_8000))
 		runtime->hw.rate_min = 48000;
 	return 0;
