@@ -38,7 +38,7 @@ main()
 	
         struct audio_buf_info info;
 
-	int frag = 0xffff000c;	/* Max # fragments of 2^13=8k bytes */
+	int frag = 0xffff000c;	/* Max # periods of 2^13=8k bytes */
 
 	fd_set writeset;
 
@@ -99,12 +99,12 @@ main()
 	}
 
 /*
- * Select the fragment size. This is propably important only when
- * the program uses select(). Fragment size defines how often
+ * Select the period size. This is propably important only when
+ * the program uses select(). Period size defines how often
  * select call returns.
  */
 
-	ioctl(fd, SNDCTL_DSP_SETFRAGMENT, &frag);
+	ioctl(fd, SNDCTL_DSP_SETPERIOD, &frag);
 
 /*
  * Compute total size of the buffer. It's important to use this value
@@ -121,7 +121,7 @@ main()
 	fsz = info.fragsize;
 	printf( "info.fragstotal = %i\n", info.fragstotal );
 	printf( "info.fragsize = %i\n", info.fragsize );
-	printf( "info.fragments = %i\n", info.fragments );
+	printf( "info.periods = %i\n", info.periods );
 	printf( "info.bytes = %i\n", info.bytes );
 
 /*
@@ -212,7 +212,7 @@ main()
  * bytes field returns number of bytes played since start. It can be used
  * as a real time clock.
  *
- * The blocks field returns number of fragment transitions (interrupts) since
+ * The blocks field returns number of period transitions (interrupts) since
  * previous GETOPTR call. It can be used as a method to detect underrun 
  * situations.
  *
@@ -230,7 +230,7 @@ main()
 
 #ifdef VERBOSE
 
-		printf("Total: %09d, Fragment: %03d, Ptr: %06d",
+		printf("Total: %09d, Period: %03d, Ptr: %06d",
 			count.bytes, nfrag, count.ptr);
 		fflush(stdout);
 #endif
@@ -238,26 +238,26 @@ main()
 /*
  * Caution! This version doesn't check for bounds of the DMA
  * memory area. It's possible that the returned pointer value is not aligned
- * to fragment boundaries. It may be several samples behind the boundary
+ * to period boundaries. It may be several samples behind the boundary
  * in case there was extra delay between the actual hardware interrupt and
  * the time when DSP_GETOPTR was called.
  *
- * Don't just call memcpy() with length set to 'fragment_size' without
+ * Don't just call memcpy() with length set to 'period_size' without
  * first checking that the transfer really fits to the buffer area.
  * A mistake of just one byte causes seg fault. It may be easiest just
- * to align the returned pointer value to fragment boundary before using it.
+ * to align the returned pointer value to period boundary before using it.
  *
- * It would be very good idea to write few extra samples to next fragment
- * too. Otherwise several (uninitialized) samples from next fragment
+ * It would be very good idea to write few extra samples to next period
+ * too. Otherwise several (uninitialized) samples from next period
  * will get played before your program gets chance to initialize them.
  * Take in count the fact thaat there are other processes batling about
- * the same CPU. This effect is likely to be very annoying if fragment
+ * the same CPU. This effect is likely to be very annoying if period
  * size is decreased too much.
  */
 
 /*
  * Just a minor clarification to the above. The following line alings
- * the pointer to fragment boundaries. Note! Don't trust that fragment
+ * the pointer to period boundaries. Note! Don't trust that period
  * size is always a power of 2. It may not be so in future.
  */
 		count.ptr = (count.ptr/fsz)*fsz;
@@ -268,9 +268,9 @@ main()
 #endif
 
 /*
- * Set few bytes in the beginning of next fragment too.
+ * Set few bytes in the beginning of next period too.
  */
-		if ((count.ptr+fsz+16) < sz)	/* Last fragment? */
+		if ((count.ptr+fsz+16) < sz)	/* Last period? */
 		   extra = 16;
 		else
 		   extra = 0;

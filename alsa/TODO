@@ -1,4 +1,5 @@
 - midlevel:
+H add work_ptr
 H change defaults for Wave volume and DAC/ADC volume
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer

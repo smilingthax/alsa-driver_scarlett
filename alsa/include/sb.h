@@ -79,9 +79,9 @@ struct _snd_sb {
 	unsigned int capture_format;
 	struct timer_list midi_timer;
 	unsigned int p_dma_size;
-	unsigned int p_frag_size;
+	unsigned int p_period_size;
 	unsigned int c_dma_size;
-	unsigned int c_frag_size;
+	unsigned int c_period_size;
 
 	spinlock_t mixer_lock;
 

@@ -221,8 +221,12 @@ INLINE int mask_value(const mask_t *mask)
 
 INLINE void interval_all(interval_t *i)
 {
-	i->min = 1;
+	i->min = 0;
+	i->openmin = 0;
 	i->max = UINT_MAX;
+	i->openmax = 0;
+	i->integer = 0;
+	i->empty = 0;
 }
 
 INLINE int interval_checkempty(const interval_t *i)
@@ -276,9 +280,14 @@ INLINE void interval_copy(interval_t *d, const interval_t *s)
 	*d = *s;
 }
 
-INLINE void interval_setreal(interval_t *i)
+INLINE int interval_setinteger(interval_t *i)
 {
-	i->real = 1;
+	if (i->integer)
+		return 0;
+	if (i->openmin && i->openmax && i->min == i->max)
+		return -EINVAL;
+	i->integer = 1;
+	return 1;
 }
 
 INLINE int interval_eq(const interval_t *i1, const interval_t *i2)

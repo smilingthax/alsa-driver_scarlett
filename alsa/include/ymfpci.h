@@ -258,9 +258,9 @@ struct _snd_ymfpci_pcm {
 	ymfpci_voice_t *voices[2];	/* playback only */
 	int running;
 	int spdif;	
-	u32 frag_size;			/* cached from runtime->fragment_size */
+	u32 period_size;			/* cached from runtime->period_size */
 	u32 buffer_size;		/* cached from runtime->buffer_size */
-	u32 frag_pos;
+	u32 period_pos;
 	u32 last_pos;
 	u32 shift_offset;
 	u32 capture_bank_number;

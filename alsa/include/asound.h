@@ -137,6 +137,8 @@ typedef struct timeval snd_timestamp_t;
  *        Digital audio interface					    *
  *                                                                          *
  ****************************************************************************/
+typedef unsigned long snd_pcm_uframes_t;
+typedef long snd_pcm_sframes_t;
 
 /* AES/IEC958 channel status bits */
 #define SND_PCM_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
@@ -257,7 +259,7 @@ typedef enum _snd_hwdep_type {
 } snd_hwdep_type_t;
 
 typedef struct _snd_hwdep_info {
-	int device;		/* WR: device number */
+	unsigned int device;	/* WR: device number */
 	snd_card_type_t type;	/* type of card - look to SND_CARD_TYPE_XXXX */
 	unsigned char id[64];	/* ID of this hardware dependent device (user selectable) */
 	unsigned char name[80];	/* name of this hardware dependent device */
@@ -265,8 +267,10 @@ typedef struct _snd_hwdep_info {
 	unsigned char reserved[64];	/* reserved for future */
 } snd_hwdep_info_t;
 
-#define SND_HWDEP_IOCTL_PVERSION	_IOR ('H', 0x00, int)
-#define SND_HWDEP_IOCTL_INFO		_IOR ('H', 0x01, snd_hwdep_info_t)
+enum {
+	SND_HWDEP_IOCTL_PVERSION = _IOR ('H', 0x00, int),
+	SND_HWDEP_IOCTL_INFO = _IOR ('H', 0x01, snd_hwdep_info_t),
+};
 
 /*****************************************************************************
  *                                                                           *
@@ -295,13 +299,13 @@ typedef enum _snd_pcm_stream {
 } snd_pcm_stream_t;
 
 typedef enum _snd_pcm_access {
-	SND_PCM_ACCESS_MMAP_INTERLEAVED, /* interleaved mmap */
-	SND_PCM_ACCESS_MMAP_NONINTERLEAVED, /* noninterleaved mmap */
-	SND_PCM_ACCESS_MMAP_COMPLEX, /* complex mmap */
-	SND_PCM_ACCESS_RW_INTERLEAVED, /* readi/writei */
-	SND_PCM_ACCESS_RW_NONINTERLEAVED, /* readn/writen */
+	SND_PCM_ACCESS_MMAP_INTERLEAVED,	/* interleaved mmap */
+	SND_PCM_ACCESS_MMAP_NONINTERLEAVED, 	/* noninterleaved mmap */
+	SND_PCM_ACCESS_MMAP_COMPLEX,		/* complex mmap */
+	SND_PCM_ACCESS_RW_INTERLEAVED,		/* readi/writei */
+	SND_PCM_ACCESS_RW_NONINTERLEAVED,	/* readn/writen */
 	SND_PCM_ACCESS_LAST = SND_PCM_ACCESS_RW_NONINTERLEAVED,
-} snd_pcm_access_type_t;
+} snd_pcm_access_t;
 
 typedef enum _snd_pcm_format {
 	SND_PCM_FORMAT_S8,
@@ -362,7 +366,7 @@ typedef enum _snd_pcm_subformat {
 } snd_pcm_subformat_t;
 
 #define SND_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
-#define SND_PCM_INFO_MMAP_VALID		0x00000002	/* fragment data are valid during transfer */
+#define SND_PCM_INFO_MMAP_VALID		0x00000002	/* period data are valid during transfer */
 #define SND_PCM_INFO_DOUBLE		0x00000004	/* Double buffering needed for PCM start/stop */
 #define SND_PCM_INFO_BATCH		0x00000010	/* double buffering */
 #define SND_PCM_INFO_INTERLEAVED	0x00000100	/* channels are interleaved */
@@ -399,41 +403,43 @@ typedef union _snd_pcm_sync_id {
 } snd_pcm_sync_id_t;
 
 typedef struct _snd_pcm_info {
-	int device;			/* device number */
+	unsigned int device;		/* RO/WR (control): device number */
+	unsigned int subdevice;		/* RO/WR (control): subdevice number */
 	snd_pcm_stream_t stream;	/* stream number */
-	int subdevice;			/* subdevice number */
         snd_card_type_t type;           /* soundcard type */
 	unsigned char id[64];		/* ID of this PCM device (user selectable) */
 	unsigned char name[80];		/* name of this device */
 	unsigned char subname[32];	/* subdevice name */
 	snd_pcm_class_t device_class;	/* SND_PCM_CLASS_* */
 	snd_pcm_subclass_t device_subclass;	/* SND_PCM_SUBCLASS_* */
-	int subdevices_count;
-	int subdevices_avail;
+	unsigned int subdevices_count;
+	unsigned int subdevices_avail;
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	unsigned char reserved[64];	/* reserved for future... */
 } snd_pcm_info_t;
 
 typedef enum _snd_pcm_hw_param {
-	SND_PCM_HW_PARAM_ACCESS,
+	SND_PCM_HW_PARAM_ACCESS,	/* Access type */
 	SND_PCM_HW_PARAM_FIRST_MASK = SND_PCM_HW_PARAM_ACCESS,
-	SND_PCM_HW_PARAM_FORMAT,
-	SND_PCM_HW_PARAM_SUBFORMAT,
+	SND_PCM_HW_PARAM_FORMAT,	/* Format */
+	SND_PCM_HW_PARAM_SUBFORMAT,	/* Subformat */
 	SND_PCM_HW_PARAM_LAST_MASK = SND_PCM_HW_PARAM_SUBFORMAT,
 
-	SND_PCM_HW_PARAM_CHANNELS,
-	SND_PCM_HW_PARAM_FIRST_INTERVAL = SND_PCM_HW_PARAM_CHANNELS,
-	SND_PCM_HW_PARAM_RATE,
-	SND_PCM_HW_PARAM_FRAGMENT_LENGTH,
-	SND_PCM_HW_PARAM_FRAGMENT_SIZE,
-	SND_PCM_HW_PARAM_FRAGMENTS,
-	SND_PCM_HW_PARAM_BUFFER_LENGTH,
-	SND_PCM_HW_PARAM_BUFFER_SIZE,
-	SND_PCM_HW_PARAM_SAMPLE_BITS,
-	SND_PCM_HW_PARAM_FRAME_BITS,
-	SND_PCM_HW_PARAM_FRAGMENT_BYTES,
-	SND_PCM_HW_PARAM_BUFFER_BYTES,
-	SND_PCM_HW_PARAM_LAST_INTERVAL = SND_PCM_HW_PARAM_BUFFER_BYTES,
+	SND_PCM_HW_PARAM_SAMPLE_BITS,	/* Bits per sample */
+	SND_PCM_HW_PARAM_FIRST_INTERVAL = SND_PCM_HW_PARAM_SAMPLE_BITS,
+	SND_PCM_HW_PARAM_FRAME_BITS,	/* Bits per frame */
+	SND_PCM_HW_PARAM_CHANNELS,	/* Channels */
+	SND_PCM_HW_PARAM_RATE,		/* Approx rate */
+	SND_PCM_HW_PARAM_PERIOD_TIME,	/* Approx distance between interrupts
+					   in us */
+	SND_PCM_HW_PARAM_PERIOD_SIZE,	/* Approx frames between interrupts */
+	SND_PCM_HW_PARAM_PERIOD_BYTES,	/* Approx bytes between interrupts */
+	SND_PCM_HW_PARAM_PERIODS,	/* Approx interrupts per buffer */
+	SND_PCM_HW_PARAM_BUFFER_TIME,	/* Approx duration of buffer in us */
+	SND_PCM_HW_PARAM_BUFFER_SIZE,	/* Size of buffer in frames */
+	SND_PCM_HW_PARAM_BUFFER_BYTES,	/* Size of buffer in bytes */
+	SND_PCM_HW_PARAM_TICK_TIME,	/* Approx tick duration in us */
+	SND_PCM_HW_PARAM_LAST_INTERVAL = SND_PCM_HW_PARAM_TICK_TIME,
 	SND_PCM_HW_PARAM_LAST = SND_PCM_HW_PARAM_LAST_INTERVAL,
 } snd_pcm_hw_param_t;
 
@@ -443,7 +449,7 @@ typedef struct _interval {
 	unsigned int min, max;
 	unsigned int openmin:1,
 		     openmax:1,
-		     real:1,
+		     integer:1,
 		     empty:1;
 } interval_t;
 
@@ -453,13 +459,12 @@ typedef struct _snd_pcm_hw_params {
 			   SND_PCM_HW_PARAM_FIRST_MASK + 1];
 	interval_t intervals[SND_PCM_HW_PARAM_LAST_INTERVAL -
 			     SND_PCM_HW_PARAM_FIRST_INTERVAL + 1];
-	unsigned int appl_cmask;
-	unsigned int hw_cmask;
+	unsigned int cmask;
 	unsigned int info;		/* R: Info flags for returned setup */
 	unsigned int msbits;		/* R: used most significant bits */
 	unsigned int rate_num;		/* R: rate numerator */
 	unsigned int rate_den;		/* R: rate denominator */
-	size_t fifo_size;		/* R: chip FIFO size in frames */
+	snd_pcm_uframes_t fifo_size;		/* R: chip FIFO size in frames */
 	unsigned char reserved[64];
 } snd_pcm_hw_params_t;
 
@@ -469,24 +474,11 @@ typedef enum _snd_pcm_start {
 	SND_PCM_START_LAST = SND_PCM_START_EXPLICIT,
 } snd_pcm_start_t;
 
-typedef enum _snd_pcm_ready {
-	SND_PCM_READY_FRAGMENT,	/* Efficient ready detection */
-	SND_PCM_READY_ASAP,	/* Accurate ready detection */
-	SND_PCM_READY_LAST = SND_PCM_READY_ASAP,
-} snd_pcm_ready_t;
-
 typedef enum _snd_pcm_xrun {
-	SND_PCM_XRUN_FRAGMENT,	/* Efficient xrun detection */
-	SND_PCM_XRUN_ASAP,	/* Accurate xrun detection */
 	SND_PCM_XRUN_NONE,	/* No xrun detection */
-	SND_PCM_XRUN_LAST = SND_PCM_XRUN_NONE,
+	SND_PCM_XRUN_STOP,	/* Stop on xrun */
+	SND_PCM_XRUN_LAST = SND_PCM_XRUN_STOP,
 } snd_pcm_xrun_t;
-
-typedef enum _snd_pcm_silence {
-	SND_PCM_SILENCE_FRAGMENT,	/* Silencing happens only at interrupt time */
-	SND_PCM_SILENCE_ASAP,	/* Silencing can Use also timers */
-	SND_PCM_SILENCE_LAST = SND_PCM_SILENCE_ASAP,
-} snd_pcm_silence_t;
 
 typedef enum _snd_pcm_tstamp {
 	SND_PCM_TSTAMP_NONE,
@@ -496,15 +488,15 @@ typedef enum _snd_pcm_tstamp {
 
 typedef struct _snd_pcm_sw_params {
 	snd_pcm_start_t start_mode;	/* start mode */
-	snd_pcm_ready_t ready_mode;	/* ready detection mode */
-	snd_pcm_xrun_t xrun_mode;		/* xrun detection mode */
-	snd_pcm_silence_t silence_mode;	/* silence filling mode */
+	snd_pcm_xrun_t xrun_mode;	/* xrun detection mode */
 	snd_pcm_tstamp_t tstamp_mode;	/* timestamp mode */
-	size_t avail_min;		/* min avail frames for wakeup */
-	size_t xfer_align;		/* xfer size need to be a multiple */
-	size_t silence_threshold;	/* min distance to noise for silence filling */
-	size_t silence_size;		/* silence block size */
-	size_t boundary;		/* pointers wrap point */
+	unsigned int period_step;
+	unsigned int sleep_min;		/* min ticks to sleep */
+	snd_pcm_uframes_t avail_min;		/* min avail frames for wakeup */
+	snd_pcm_uframes_t xfer_align;		/* xfer size need to be a multiple */
+	snd_pcm_uframes_t silence_threshold;	/* min distance to noise for silence filling */
+	snd_pcm_uframes_t silence_size;		/* silence block size */
+	snd_pcm_uframes_t boundary;		/* pointers wrap point */
 	unsigned char reserved[64];
 } snd_pcm_sw_params_t;
 
@@ -516,39 +508,39 @@ typedef struct _snd_pcm_hw_channel_info {
 } snd_pcm_hw_channel_info_t;
 
 typedef struct _snd_pcm_status {
-	int state;		/* stream state - SND_PCM_STATE_XXXX */
+	snd_pcm_state_t state;		/* stream state - SND_PCM_STATE_XXXX */
 	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
-	snd_timestamp_t tstamp;	/* Timestamp */
-	ssize_t delay;		/* current delay in frames */
-	size_t avail;		/* number of frames available */
-	size_t avail_max;	/* max frames available on hw since last status */
-	size_t overrange;	/* count of ADC (capture) overrange detections from last status */
+	snd_timestamp_t tstamp;		/* Timestamp */
+	snd_pcm_sframes_t delay;		/* current delay in frames */
+	snd_pcm_uframes_t avail;		/* number of frames available */
+	snd_pcm_uframes_t avail_max;		/* max frames available on hw since last status */
+	snd_pcm_uframes_t overrange;		/* count of ADC (capture) overrange detections from last status */
 	unsigned char reserved[64]; /* must be filled with zero */
 } snd_pcm_status_t;
 
 typedef struct _snd_pcm_mmap_status {
-	int state;		/* RO: state - SND_PCM_STATE_XXXX */
+	snd_pcm_state_t state;	/* RO: state - SND_PCM_STATE_XXXX */
 	int pad1;		/* Needed for 64 bit alignment */
-	size_t hw_ptr;		/* RO: hw side ptr (0 ... boundary-1) 
+	snd_pcm_uframes_t hw_ptr;	/* RO: hw side ptr (0 ... boundary-1) 
 				   updated only on request and at interrupt time */
 	snd_timestamp_t tstamp;	/* Timestamp */
 } snd_pcm_mmap_status_t;
 
 typedef struct _snd_pcm_mmap_control {
-	size_t appl_ptr;	/* RW: application side ptr (0...boundary-1) */
-	size_t avail_min;	/* RW: min available frames for wakeup */
+	snd_pcm_uframes_t appl_ptr;	/* RW: application side ptr (0...boundary-1) */
+	snd_pcm_uframes_t avail_min;	/* RW: min available frames for wakeup */
 } snd_pcm_mmap_control_t;
 
 typedef struct _snd_xferi {
-	ssize_t result;
+	snd_pcm_sframes_t result;
 	void *buf;
-	size_t frames;
+	snd_pcm_uframes_t frames;
 } snd_xferi_t;
 
 typedef struct _snd_xfern {
-	ssize_t result;
+	snd_pcm_sframes_t result;
 	void **bufs;
-	size_t frames;
+	snd_pcm_uframes_t frames;
 } snd_xfern_t;
 
 enum {
@@ -558,7 +550,7 @@ enum {
 	SND_PCM_IOCTL_HW_PARAMS = _IOWR('A', 0x11, snd_pcm_hw_params_t),
 	SND_PCM_IOCTL_SW_PARAMS = _IOWR('A', 0x12, snd_pcm_sw_params_t),
 	SND_PCM_IOCTL_STATUS = _IOR('A', 0x20, snd_pcm_status_t),
-	SND_PCM_IOCTL_DELAY = _IOR('A', 0x21, ssize_t),
+	SND_PCM_IOCTL_DELAY = _IOR('A', 0x21, snd_pcm_sframes_t),
 	SND_PCM_IOCTL_CHANNEL_INFO = _IOR('A', 0x32, snd_pcm_hw_channel_info_t),
 	SND_PCM_IOCTL_PREPARE = _IO('A', 0x40),
 	SND_PCM_IOCTL_RESET = _IO('A', 0x41),
@@ -566,7 +558,7 @@ enum {
 	SND_PCM_IOCTL_DROP = _IO('A', 0x43),
 	SND_PCM_IOCTL_DRAIN = _IO('A', 0x44),
 	SND_PCM_IOCTL_PAUSE = _IOW('A', 0x45, int),
-	SND_PCM_IOCTL_REWIND = _IOW('A', 0x46, size_t),
+	SND_PCM_IOCTL_REWIND = _IOW('A', 0x46, snd_pcm_uframes_t),
 	SND_PCM_IOCTL_WRITEI_FRAMES = _IOW('A', 0x50, snd_xferi_t),
 	SND_PCM_IOCTL_READI_FRAMES = _IOR('A', 0x51, snd_xferi_t),
 	SND_PCM_IOCTL_WRITEN_FRAMES = _IOW('A', 0x52, snd_xfern_t),
@@ -709,17 +701,17 @@ typedef enum _snd_rawmidi_stream {
 #define SND_RAWMIDI_INFO_DUPLEX		0x00000004
 
 typedef struct _snd_rawmidi_info {
-	int device;			/* WR: device number */
-	int subdevice;			/* RO/WR (control): subdevice number */
+	unsigned int device;		/* RO/WR (control): device number */
+	unsigned int subdevice;		/* RO/WR (control): subdevice number */
 	snd_card_type_t type;		/* soundcard type */
 	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
 	unsigned char name[80];		/* name of this raw midi device */
 	unsigned char subname[32];	/* name of active or selected subdevice */
-	int output_subdevices_count;
-	int output_subdevices_avail;
-	int input_subdevices_count;
-	int input_subdevices_avail;
+	unsigned int output_subdevices_count;
+	unsigned int output_subdevices_avail;
+	unsigned int input_subdevices_count;
+	unsigned int input_subdevices_avail;
 	unsigned char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
 
@@ -728,20 +720,20 @@ typedef struct _snd_rawmidi_info {
 #define SND_RAWMIDI_PARBIT_AVAIL_MIN	(1<<2)
 
 typedef struct _snd_rawmidi_params {
-	snd_rawmidi_stream_t stream;		/* Requested stream */
-	size_t buffer_size;	/* requested queue size in bytes */
-	size_t avail_min;	/* minimum avail bytes for wakeup */
-	unsigned int fail_mask;	/* failure locations */
+	snd_rawmidi_stream_t stream;	/* Requested stream */
+	size_t buffer_size;		/* requested queue size in bytes */
+	size_t avail_min;		/* minimum avail bytes for wakeup */
+	unsigned int fail_mask;		/* failure locations */
 	unsigned int no_active_sensing: 1; /* do not send active sensing byte in close() */
-	unsigned char reserved[16]; /* reserved for future use */
+	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
 typedef struct _snd_rawmidi_status {
-	snd_rawmidi_stream_t stream;		/* Requested stream */
-	snd_timestamp_t tstamp;	/* Timestamp */
-	size_t avail;		/* available bytes */
-	size_t xruns;		/* count of overruns since last status (in bytes) */
-	unsigned char reserved[16]; /* reserved for future use */
+	snd_rawmidi_stream_t stream;	/* Requested stream */
+	snd_timestamp_t tstamp;		/* Timestamp */
+	size_t avail;			/* available bytes */
+	size_t xruns;			/* count of overruns since last status (in bytes) */
+	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_status_t;
 
 enum {
@@ -813,18 +805,18 @@ typedef struct _snd_timer_info {
 
 typedef struct _snd_timer_params {
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
-	size_t ticks;			/* requested resolution in ticks */
-	size_t queue_size;		/* total size of queue (32-1024) */
+	unsigned int ticks;		/* requested resolution in ticks */
+	unsigned int queue_size;	/* total size of queue (32-1024) */
 	unsigned int fail_mask;		/* failure locations */
 	unsigned char reserved[64];
 } snd_timer_params_t;
 
 typedef struct _snd_timer_status {
 	snd_timestamp_t tstamp;		/* Timestamp */
-	size_t resolution;		/* current resolution */
-	size_t lost;			/* counter of master tick lost */
-	size_t overrun;			/* count of read queue overruns */
-	size_t queue;			/* used queue size */
+	unsigned int resolution;	/* current resolution */
+	unsigned int lost;		/* counter of master tick lost */
+	unsigned int overrun;		/* count of read queue overruns */
+	unsigned int queue;		/* used queue size */
 	unsigned char reserved[64];
 } snd_timer_status_t;
 
@@ -841,8 +833,8 @@ enum {
 };
 
 typedef struct _snd_timer_read {
-	size_t resolution;
-	size_t ticks;
+	unsigned int resolution;
+	unsigned int ticks;
 } snd_timer_read_t;
 
 /****************************************************************************
@@ -931,8 +923,8 @@ typedef struct _snd_control_info {
 } snd_control_info_t;
 
 typedef struct _snd_control {
-	snd_control_id_t id;			/* W: control ID */
-	int indirect: 1;			/* W: use indirect pointer (xxx_ptr member) */
+	snd_control_id_t id;		/* W: control ID */
+	unsigned int indirect: 1;	/* W: use indirect pointer (xxx_ptr member) */
         union {
 		union {
 			long value[128];

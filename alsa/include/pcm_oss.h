@@ -32,8 +32,8 @@ struct _snd_pcm_oss_setup {
 		     direct:1,
 		     block:1,
 		     nonblock:1;
-	unsigned int fragments;
-	unsigned int fragment_size;
+	unsigned int periods;
+	unsigned int period_size;
 	snd_pcm_oss_setup_t *next;
 };
 
@@ -48,12 +48,12 @@ typedef struct _snd_pcm_oss_runtime {
 	unsigned int fragshift;
 	unsigned int maxfrags;
 	unsigned int subdivision;		/* requested subdivision */
-	size_t fragment_size;			/* requested fragment size */
-	unsigned int fragments;
-	size_t buffer_size;			/* requested fragment size */
+	snd_pcm_uframes_t period_size;			/* requested period size */
+	unsigned int periods;
+	snd_pcm_uframes_t buffer_size;			/* requested period size */
 	size_t bytes;				/* total # bytes processed */
 	size_t mmap_size;
-	char *buffer;				/* vmallocated fragment */
+	char *buffer;				/* vmallocated period */
 	size_t buffer_used;			/* used length from buffer */
 	snd_pcm_plugin_t *plugin_first;
 	snd_pcm_plugin_t *plugin_last;
