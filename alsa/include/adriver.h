@@ -164,6 +164,14 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
 #endif /* LINUX_VERSION_CODE < 2.5.28 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29) && defined(CONFIG_DEVFS_FS)
+#include <linux/fs.h>
+#undef register_chrdev
+#define register_chrdev devfs_register_chrdev
+#undef unregister_chrdev
+#define unregister_chrdev devfs_unregister_chrdev
+#endif
+
 #include "amagic.h"
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
