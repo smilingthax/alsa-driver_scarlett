@@ -94,8 +94,8 @@ static inline int snd_mixer_oss_define_channel(snd_card_t *card,
 					       int stereo,
 					       const char *volume_name,
 					       int volume_index,
-					       const char *mute_name,
-					       int mute_index) { return 0; }
+					       const char *switch_name,
+					       int switch_index) { return 0; }
 
 #endif				/* CONFIG_SND_OSSEMUL */
 
