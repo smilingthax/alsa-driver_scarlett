@@ -1625,7 +1625,7 @@ typedef struct snd_rawmidi_input_status {
  *  Timer section - /dev/snd/timer
  */
 
-#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 1, 0)
 
 #define SND_TIMER_TYPE_GLOBAL		(0<<28)
 #define SND_TIMER_TYPE_SOUNDCARD	(1<<28)
