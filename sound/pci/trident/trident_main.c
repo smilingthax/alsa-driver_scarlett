@@ -1183,7 +1183,7 @@ static int snd_trident_si7018_capture_prepare(snd_pcm_substream_t * substream)
 		evoice->spurious_threshold = voice->spurious_threshold;
 		evoice->LBA = voice->LBA;
 		evoice->CSO = 0;
-		evoice->ESO = (runtime->period_size * 2) + 12 - 1; /* in samples, 12 means correction */
+		evoice->ESO = (runtime->period_size * 2) + 20 - 1; /* in samples, 20 means correction */
 		evoice->CTRL = voice->CTRL;
 		evoice->FMC = 3;
 		evoice->GVSel = 0;
