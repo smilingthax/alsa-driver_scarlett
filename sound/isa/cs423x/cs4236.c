@@ -379,6 +379,7 @@ static int __devinit snd_card_cs4236_pnp(int dev, struct snd_card_cs4236 *acard,
 		}
 		snd_printdd("isapnp MPU: port=0x%lx, irq=%i\n", mpu_port[dev], mpu_irq[dev]);
 	}
+	kfree(cfg);
 	return 0;
 }
 #endif

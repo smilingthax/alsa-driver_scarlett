@@ -2032,6 +2032,7 @@ static int __devinit snd_audiodrive_pnp(int dev, struct snd_audiodrive *acard,
 	irq[dev] = pnp_irq(pdev, 0);
 	snd_printdd("PnP ES18xx: port=0x%lx, fm port=0x%lx, mpu port=0x%lx\n", port[dev], fm_port[dev], mpu_port[dev]);
 	snd_printdd("PnP ES18xx: dma1=%i, dma2=%i, irq=%i\n", dma1[dev], dma2[dev], irq[dev]);
+	kfree(cfg);
 	return 0;
 }
 #endif /* CONFIG_PNP_ */
