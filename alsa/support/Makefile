@@ -17,16 +17,20 @@ COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB -DCONFIG_ISAPNP -DALSA_BUILD
 TARGETS = $(SNDVERSIONS)
 ifeq (1,$(CONFIG_ISAPNP))
 ifeq (0,$(CONFIG_ISAPNP_KERNEL))
+ifeq (0,$(CONFIG_ISAPNP_NEW))
 TARGETS+= $(TOPDIR)/modules/isapnp.o
+endif
 endif
 endif
 ISAPNP	= isapnp.o
 ISAPNPE	= $(DEXPORT)/isapnp.ver
-ifeq (1,$(CONFIG_ISAPNP))
-ifeq (0,$(CONFIG_ISAPNP_KERNEL))
-SYMFILES = $(ISAPNPE)
+
+ifeq (1,$(CONFIG_ISAPNP_NEW))
+TARGETS+= $(TOPDIR)/modules/isapnp_new.o
+TARGETS+= $(TOPDIR)/modules/isapnp_test.o
 endif
-endif
+ISAPNPN = isapnp_new.o
+ISAPNPNE= $(DEXPORT)/isapnp_new.ver
 
 include $(TOPDIR)/Rules.make
 
@@ -38,14 +42,19 @@ all: $(TARGETS)
 include $(TOPDIR)/Rules1.make
 
 $(ISAPNPE): isapnp.c
-ifeq (1,$(newkernel))
 	$(CC) $(INCLUDE) -E -D__GENKSYMS__ -DALSA_BUILD isapnp.c | $(GENKSYMS) > $(DEXPORT)/isapnp.ver
-else
-	$(CC) $(INCLUDE) -E -D__GENKSYMS__ -DALSA_BUILD isapnp.c | $(GENKSYMS) $(DEXPORT)
-endif
 
 $(TOPDIR)/modules/isapnp.o: .depend $(SNDVERSIONS) $(ISAPNPE) $(ISAPNP)
 	$(LINKER) -o $@ $(ISAPNP)
+
+$(ISAPNPNE): isapnp_new.c
+	$(CC) $(INCLUDE) -E -D__GENKSYMS__ -DALSA_BUILD isapnp_new.c | $(GENKSYMS) > $(DEXPORT)/isapnp_new.ver
+
+$(TOPDIR)/modules/isapnp_new.o: .depend $(SNDVERSIONS) $(ISAPNPNE) $(ISAPNPN)
+	$(LINKER) -o $@ $(ISAPNPN)
+
+$(TOPDIR)/modules/isapnp_test.o: .depend $(SNDVERSIONS) isapnp_test.o
+	$(LINKER) -o $@ isapnp_test.o
 
 gcompile: $(TARGETS)
 
