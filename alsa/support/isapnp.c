@@ -67,6 +67,7 @@
 
 int isapnp_rdp = 0;			/* Read Data Port */
 int isapnp_reset = 0;			/* reset all PnP cards (deactivate) */
+int isapnp_skip_pci_scan = 0;		/* skip PCI resource scanning */
 int isapnp_verbose = 1;			/* verbose mode */
 int isapnp_reserve_irq[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some IRQ */
 int isapnp_reserve_dma[8] = { [0 ... 8] = -1 };		/* reserve (don't use) some DMA */
@@ -79,6 +80,8 @@ MODULE_PARM(isapnp_rdp, "i");
 MODULE_PARM_DESC(isapnp_rdp, "ISA Plug & Play read data port");
 MODULE_PARM(isapnp_reset, "i");
 MODULE_PARM_DESC(isapnp_reset, "ISA Plug & Play reset all cards");
+MODULE_PARM(isapnp_skip_pci_scan, "i");
+MODULE_PARM_DESC(isapnp_skip_pci_scan, "ISA Plug & Play skip PCI resource scanning");
 MODULE_PARM(isapnp_verbose, "i");
 MODULE_PARM_DESC(isapnp_verbose, "ISA Plug & Play verbose mode");
 MODULE_PARM(isapnp_reserve_irq, "1-16i");
@@ -2008,13 +2011,6 @@ __initfunc(static void isapnp_pci_scan_bus(int bus))
 #ifdef ISAPNP_DEBUG
 		printk("PCI: devfn = %i, hdr_type = 0x%x, Vendor ID = 0x%x\n", devfn, (int)hdr_type, l);
 #endif
-		pcibios_read_config_byte(bus, devfn, PCI_INTERRUPT_LINE, &irq);
-#ifdef ISAPNP_DEBUG
-		printk("PCI: reserved IRQ: %i\n", irq);
-#endif
-		if (irq > 0 && irq < 15)
-			isapnp_do_reserve_irq(irq);
-
 		pcibios_read_config_dword(bus, devfn, PCI_CLASS_REVISION, &class_type);
 		class_type >>= 8;
 		
@@ -2023,6 +2019,13 @@ __initfunc(static void isapnp_pci_scan_bus(int bus))
 			if (buses)
 				isapnp_pci_scan_bus((buses >> 8) & 0xff);
 		}
+
+		pcibios_read_config_byte(bus, devfn, PCI_INTERRUPT_LINE, &irq);
+#ifdef ISAPNP_DEBUG
+		printk("PCI: reserved IRQ: %i\n", irq);
+#endif
+		if (irq > 0 && irq < 15)
+			isapnp_do_reserve_irq(irq);
 	}
 }
 
@@ -2156,7 +2159,8 @@ __initfunc(int isapnp_init(void))
 	}
 	printk("isapnp: %i Plug & Play device%s detected total\n", devices, devices>1?"s":"");
 #ifdef CONFIG_PCI
-	isapnp_pci_init();
+	if (!isapnp_skip_pci_scan)
+		isapnp_pci_init();
 #endif
 	isapnp_proc_init();
 #ifndef LINUX_2_1
