@@ -1568,8 +1568,8 @@ snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 	snd_card_asihpi_t *asihpi = entry->private_data;
 	HW16 wVersion;
 	HPI_HCONTROL hControl;
-	HW32 dwRate;
-	HW16 wSource;
+	HW32 dwRate=0;
+	HW16 wSource=0;
 	int err;
 
 	snd_iprintf(buffer, "ASIHPI driver proc file\n");
@@ -1580,7 +1580,7 @@ snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 
 	wVersion = asihpi->wVersion;
 	snd_iprintf(buffer,
-		    "S/N=%ld\nHw Version %c%d\nDSP code version %03d\n",
+		    "Serial#=%ld\nHw Version %c%d\nDSP code version %03d\n",
 		    asihpi->dwSerialNumber, ((wVersion >> 3) & 0xf) + 'A',
 		    wVersion & 0x7,
 		    ((wVersion >> 13) * 100) + ((wVersion >> 7) & 0x3f));
@@ -1589,10 +1589,15 @@ snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 				  HPI_SOURCENODE_CLOCK_SOURCE, 0, 0, 0,
 				  HPI_CONTROL_SAMPLECLOCK, &hControl);
 
-	err = HPI_SampleClock_GetSampleRate(phSubSys, hControl, &dwRate);
-	err = HPI_SampleClock_GetSource(phSubSys, hControl, &wSource);
-	snd_iprintf(buffer, "SampleClock=%ldHz, source %s\n", dwRate,
-		    sampleclock_sources[wSource]);
+	if (!err) {
+			err = HPI_SampleClock_GetSampleRate(phSubSys, hControl, &dwRate);
+			err += HPI_SampleClock_GetSource(phSubSys, hControl, &wSource);
+
+			if (!err)
+					snd_iprintf(buffer, "SampleClock=%ldHz, source %s\n", dwRate,
+								sampleclock_sources[wSource]);
+	} 
+
 }
 
 
@@ -1671,8 +1676,8 @@ static int __init snd_card_asihpi_probe(int dev)
 				  HPI_SOURCENODE_CLOCK_SOURCE, 0, 0, 0,
 				  HPI_CONTROL_SAMPLECLOCK, &hControl);
 
-	err =
-	    HPI_SampleClock_SetSampleRate(phSubSys, hControl, adapter_fs);
+	if (!err)
+			err = HPI_SampleClock_SetSampleRate(phSubSys, hControl, adapter_fs);
 
 	snd_asihpi_proc_init(asihpi);
 
