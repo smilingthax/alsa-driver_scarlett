@@ -204,6 +204,7 @@ enum miscint_bits {
 #define SI_AC97_BUSY_READ	    0x00008000
 #define DX_AC97_BUSY_READ	    0x00008000
 #define NX_AC97_BUSY_READ	    0x00000800
+#define SI_AC97_SECONDARY	    0x00000080
 
 /* PCM defaults */
 
