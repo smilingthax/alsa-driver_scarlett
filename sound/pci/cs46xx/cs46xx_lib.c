@@ -49,7 +49,7 @@
  */
 
 #if 0
-#define ACCEPT_VALID		/* REQUIRED ONLY FOR OSS EMULATION */
+#define SND_CONFIG_CS46XX_ACCEPT_VALID		/* REQUIRED ONLY FOR OSS EMULATION */
 #endif
 
 #define CS46XX_BA0_SIZE		0x1000
@@ -1049,7 +1049,7 @@ static void snd_cs46xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 static snd_pcm_hardware_t snd_cs46xx_playback =
 {
 	info:			(SNDRV_PCM_INFO_MMAP |
-#ifdef ACCEPT_VALID
+#ifdef SND_CONFIG_CS46XX_ACCEPT_VALID
 				/* NOT TRUE!!! OSS REQUIRES IT */
 				 SNDRV_PCM_INFO_MMAP_VALID | 
 #endif
@@ -1075,7 +1075,7 @@ static snd_pcm_hardware_t snd_cs46xx_playback =
 static snd_pcm_hardware_t snd_cs46xx_capture =
 {
 	info:			(SNDRV_PCM_INFO_MMAP |
-#ifdef ACCEPT_VALID
+#ifdef SND_CONFIG_CS46XX_ACCEPT_VALID
 				 /* NOT TRUE!!! OSS REQUIRES IT */
 				 SNDRV_PCM_INFO_MMAP_VALID |
 #endif
