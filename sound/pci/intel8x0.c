@@ -388,6 +388,7 @@ struct _snd_intel8x0 {
 	dma_addr_t bdbars_addr;
 	u32 int_sta_reg;		/* interrupt status register */
 	u32 int_sta_mask;		/* interrupt status mask */
+	unsigned int pcm_pos_shift;
 	
 #ifdef CONFIG_PM
 	int in_suspend;
@@ -600,13 +601,9 @@ static int snd_intel8x0_ali_codec_ready(intel8x0_t *chip, int mask)
 static int snd_intel8x0_ali_codec_semaphore(intel8x0_t *chip)
 {
 	int time = 100;
-	do {
-		if (! (igetdword(chip, ICHREG(ALI_CAS)) & ALI_CAS_SEM_BUSY))
-			return snd_intel8x0_ali_codec_ready(chip, ALI_CSPSR_CODEC_READY);
+	while (time-- && (igetdword(chip, ICHREG(ALI_CAS)) & ALI_CAS_SEM_BUSY))
 		udelay(1);
-	} while (time--);
-	snd_printk(KERN_WARNING "intel8x0: AC97 codec semaphore timeout.\n");
-	return -EBUSY;
+	return snd_intel8x0_ali_codec_ready(chip, ALI_CSPSR_CODEC_READY);
 }
 
 static unsigned short snd_intel8x0_ali_codec_read(ac97_t *ac97, unsigned short reg)
@@ -657,7 +654,6 @@ static void snd_intel8x0_setup_periods(intel8x0_t *chip, ichdev_t *ichdev)
 	int idx;
 	u32 *bdbar = ichdev->bdbar;
 	unsigned long port = ichdev->reg_offset;
-	int shiftlen = (chip->device_type == DEVICE_SIS) ? 0 : 1;
 
 	iputdword(chip, port + ICH_REG_OFF_BDBAR, ichdev->bdbar_addr);
 	if (ichdev->size == ichdev->fragsize) {
@@ -666,10 +662,10 @@ static void snd_intel8x0_setup_periods(intel8x0_t *chip, ichdev_t *ichdev)
 		for (idx = 0; idx < (ICH_REG_LVI_MASK + 1) * 2; idx += 4) {
 			bdbar[idx + 0] = cpu_to_le32(ichdev->physbuf);
 			bdbar[idx + 1] = cpu_to_le32(0x80000000 | /* interrupt on completion */
-						     ichdev->fragsize1 >> shiftlen);
+						     ichdev->fragsize1 >> chip->pcm_pos_shift);
 			bdbar[idx + 2] = cpu_to_le32(ichdev->physbuf + (ichdev->size >> 1));
 			bdbar[idx + 3] = cpu_to_le32(0x80000000 | /* interrupt on completion */
-						     ichdev->fragsize1 >> shiftlen);
+						     ichdev->fragsize1 >> chip->pcm_pos_shift);
 		}
 		ichdev->frags = 2;
 	} else {
@@ -678,7 +674,7 @@ static void snd_intel8x0_setup_periods(intel8x0_t *chip, ichdev_t *ichdev)
 		for (idx = 0; idx < (ICH_REG_LVI_MASK + 1) * 2; idx += 2) {
 			bdbar[idx + 0] = cpu_to_le32(ichdev->physbuf + (((idx >> 1) * ichdev->fragsize) % ichdev->size));
 			bdbar[idx + 1] = cpu_to_le32(0x80000000 | /* interrupt on completion */
-						     ichdev->fragsize >> shiftlen);
+						     ichdev->fragsize >> chip->pcm_pos_shift);
 			// printk("bdbar[%i] = 0x%x [0x%x]\n", idx + 0, bdbar[idx + 0], bdbar[idx + 1]);
 		}
 		ichdev->frags = ichdev->size / ichdev->fragsize;
@@ -703,7 +699,6 @@ static inline void snd_intel8x0_update(intel8x0_t *chip, ichdev_t *ichdev)
 	unsigned long port = ichdev->reg_offset;
 	int ack = 0;
 
-	spin_lock(&chip->reg_lock);
 	ichdev->position += ichdev->fragsize1;
 	ichdev->position %= ichdev->size;
 	ichdev->lvi++;
@@ -715,9 +710,11 @@ static inline void snd_intel8x0_update(intel8x0_t *chip, ichdev_t *ichdev)
 	// printk("new: bdbar[%i] = 0x%x [0x%x], prefetch = %i, all = 0x%x, 0x%x\n", ichdev->lvi * 2, ichdev->bdbar[ichdev->lvi * 2], ichdev->bdbar[ichdev->lvi * 2 + 1], inb(ICH_REG_OFF_PIV + port), inl(port + 4), inb(port + ICH_REG_OFF_CR));
 	if ((ack = (--ichdev->ack == 0)) != 0)
 		ichdev->ack = ichdev->ack_reload;
-	spin_unlock(&chip->reg_lock);
-	if (ack && ichdev->substream)
+	if (ack && ichdev->substream) {
+		spin_unlock(&chip->reg_lock);
 		snd_pcm_period_elapsed(ichdev->substream);
+		spin_lock(&chip->reg_lock);
+	}
 	iputbyte(chip, port + ichdev->roff_sr, ICH_FIFOE | ICH_BCIS | ICH_LVBCI);
 }
 
@@ -734,15 +731,16 @@ static irqreturn_t snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs 
 		spin_unlock(&chip->reg_lock);
 		return IRQ_NONE;
 	}
-	/* ack first */
-	iputdword(chip, chip->int_sta_reg, status & ~chip->int_sta_mask);
-	spin_unlock(&chip->reg_lock);
 
 	for (i = 0; i < chip->bdbars_count; i++) {
 		ichdev = &chip->ichd[i];
 		if (status & ichdev->int_sta_mask)
 			snd_intel8x0_update(chip, ichdev);
 	}
+
+	/* ack them */
+	iputdword(chip, chip->int_sta_reg, status & chip->int_sta_mask);
+	spin_unlock(&chip->reg_lock);
 	
 	return IRQ_HANDLED;
 }
@@ -867,9 +865,11 @@ static int snd_intel8x0_pcm_prepare(snd_pcm_substream_t * substream)
 		snd_intel8x0_setup_multi_channels(chip, runtime->channels);
 		spin_unlock(&chip->reg_lock);
 	}
-	for (i = 0; i < 3; i++)
-		if (ichdev->ac97_rate_regs[i])
-			snd_ac97_set_rate(ichdev->ac97, ichdev->ac97_rate_regs[i], runtime->rate);
+	if (ichdev->ac97) {
+		for (i = 0; i < 3; i++)
+			if (ichdev->ac97_rate_regs[i])
+				snd_ac97_set_rate(ichdev->ac97, ichdev->ac97_rate_regs[i], runtime->rate);
+	}
 	snd_intel8x0_setup_periods(chip, ichdev);
 	return 0;
 }
@@ -881,10 +881,7 @@ static snd_pcm_uframes_t snd_intel8x0_pcm_pointer(snd_pcm_substream_t * substrea
 	size_t ptr;
 
 	ptr = ichdev->fragsize1;
-	if (chip->device_type == DEVICE_SIS)
-		ptr -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb);
-	else
-		ptr -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb) << 1;
+	ptr -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb) << chip->pcm_pos_shift;
 	ptr += ichdev->position;
 	return bytes_to_frames(substream->runtime, ptr);
 }
@@ -942,7 +939,7 @@ static int snd_intel8x0_pcm_open(snd_pcm_substream_t * substream, ichdev_t *ichd
 
 	ichdev->substream = substream;
 	runtime->hw = snd_intel8x0_stream;
-	if (ichdev->ac97_rates_idx >= 0)
+	if (ichdev->ac97 && ichdev->ac97_rates_idx >= 0)
 		runtime->hw.rates = ichdev->ac97->rates[ichdev->ac97_rates_idx];
 	if (!(runtime->hw.rates & SNDRV_PCM_RATE_8000))
 		runtime->hw.rate_min = 48000;
@@ -1256,7 +1253,7 @@ static int __devinit snd_intel8x0_pcm1(intel8x0_t *chip, int device, struct ich_
 		strcpy(name, "Intel ICH");
 	err = snd_pcm_new(chip->card, name, device,
 			  rec->playback_ops ? 1 : 0,
-			  rec->capture_ops ? 1 : 01, &pcm);
+			  rec->capture_ops ? 1 : 0, &pcm);
 	if (err < 0)
 		return err;
 
@@ -2033,10 +2030,7 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	/* check the position */
 	pos = ichdev->fragsize1;
-	if (chip->device_type == DEVICE_SIS)
-		pos -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb);
-	else
-		pos -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb) << 1;
+	pos -= igetword(chip, ichdev->reg_offset + ichdev->roff_picb) << chip->pcm_pos_shift;
 	pos += ichdev->position;
 	do_gettimeofday(&stop_time);
 	/* stop */
@@ -2181,8 +2175,8 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		/* ALI5455 has no ac97 region */
 		chip->bmaddr = pci_resource_start(pci, 0);
 		if ((chip->res_bm = request_region(chip->bmaddr, 256, chip->ctrl_name)) == NULL) {
-			snd_intel8x0_free(chip);
 			snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->bmaddr, chip->bmaddr + 64 - 1);
+			snd_intel8x0_free(chip);
 			return -EBUSY;
 		}
 		goto port_inited;
@@ -2192,21 +2186,21 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		chip->mmio = 1;
 		chip->addr = pci_resource_start(pci, 2);
 		if ((chip->res = request_mem_region(chip->addr, 512, chip->ac97_name)) == NULL) {
-			snd_intel8x0_free(chip);
 			snd_printk("unable to grab I/O memory 0x%lx-0x%lx\n", chip->addr, chip->addr + 512 - 1);
+			snd_intel8x0_free(chip);
 			return -EBUSY;
 		}
 		chip->remap_addr = (unsigned long) ioremap_nocache(chip->addr, 512);
 		if (chip->remap_addr == 0) {
-			snd_intel8x0_free(chip);
 			snd_printk("AC'97 space ioremap problem\n");
+			snd_intel8x0_free(chip);
 			return -EIO;
 		}
 	} else {
 		chip->addr = pci_resource_start(pci, 0);
 		if ((chip->res = request_region(chip->addr, 256, chip->ac97_name)) == NULL) {
-			snd_intel8x0_free(chip);
 			snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->addr, chip->addr + 256 - 1);
+			snd_intel8x0_free(chip);
 			return -EBUSY;
 		}
 	}
@@ -2214,29 +2208,29 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		chip->bm_mmio = 1;
 		chip->bmaddr = pci_resource_start(pci, 3);
 		if ((chip->res_bm = request_mem_region(chip->bmaddr, 256, chip->ctrl_name)) == NULL) {
-			snd_intel8x0_free(chip);
 			snd_printk("unable to grab I/O memory 0x%lx-0x%lx\n", chip->bmaddr, chip->bmaddr + 512 - 1);
+			snd_intel8x0_free(chip);
 			return -EBUSY;
 		}
 		chip->remap_bmaddr = (unsigned long) ioremap_nocache(chip->bmaddr, 256);
 		if (chip->remap_bmaddr == 0) {
-			snd_intel8x0_free(chip);
 			snd_printk("Controller space ioremap problem\n");
+			snd_intel8x0_free(chip);
 			return -EIO;
 		}
 	} else {
 		chip->bmaddr = pci_resource_start(pci, 1);
 		if ((chip->res_bm = request_region(chip->bmaddr, 64, chip->ctrl_name)) == NULL) {
-			snd_intel8x0_free(chip);
 			snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->bmaddr, chip->bmaddr + 64 - 1);
+			snd_intel8x0_free(chip);
 			return -EBUSY;
 		}
 	}
 
  port_inited:
 	if (request_irq(pci->irq, snd_intel8x0_interrupt, SA_INTERRUPT|SA_SHIRQ, card->shortname, (void *)chip)) {
-		snd_intel8x0_free(chip);
 		snd_printk("unable to grab IRQ %d\n", pci->irq);
+		snd_intel8x0_free(chip);
 		return -EBUSY;
 	}
 	chip->irq = pci->irq;
@@ -2245,9 +2239,6 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 
 	chip->bdbars_count = bdbars[device_type];
 
-	for (i = 0; i < chip->bdbars_count; i++) {
-		ichdev = &chip->ichd[i];
-	}
 	/* initialize offsets */
 	switch (device_type) {
 	case DEVICE_NFORCE:
@@ -2275,6 +2266,8 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		}
 		ichdev->ali_slot = i + 1;	/* is this right for last three devices? --jk */
 	}
+	/* SIS7012 handles the pcm data in bytes, others are in words */
+	chip->pcm_pos_shift = (device_type == DEVICE_SIS) ? 0 : 1;
 
 	/* allocate buffer descriptor lists */
 	/* the start of each lists must be aligned to 8 bytes */
