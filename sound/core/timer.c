@@ -1319,7 +1319,6 @@ static int snd_timer_user_ginfo(struct file *file, snd_timer_ginfo_t *_ginfo)
 			ginfo.flags |= SNDRV_TIMER_FLG_SLAVE;
 		strncpy(ginfo.id, t->id, sizeof(ginfo.id)-1);
 		strncpy(ginfo.name, t->name, sizeof(ginfo.name)-1);
-		ginfo.ticks = t->hw.ticks;
 		ginfo.resolution = t->hw.resolution;
 		if (t->hw.resolution_min > 0) {
 			ginfo.resolution_min = t->hw.resolution_min;
@@ -1460,7 +1459,6 @@ static int snd_timer_user_info(struct file *file, snd_timer_info_t *_info)
 		info.flags |= SNDRV_TIMER_FLG_SLAVE;
 	strncpy(info.id, t->id, sizeof(info.id)-1);
 	strncpy(info.name, t->name, sizeof(info.name)-1);
-	info.ticks = t->hw.ticks;
 	info.resolution = t->hw.resolution;
 	if (copy_to_user(_info, &info, sizeof(*_info)))
 		return -EFAULT;
