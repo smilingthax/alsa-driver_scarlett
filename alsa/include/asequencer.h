@@ -31,7 +31,7 @@
 #define SND_SEQ_VERSION SND_PROTOCOL_VERSION (1, 0, 0)
 
 /*                                   	*/
-/* definion of sequencer event types 	*/
+/* definition of sequencer event types 	*/
 /*                                   	*/
 
 /* 0-4: system messages
@@ -206,7 +206,7 @@ typedef struct {
 	unsigned char port;	/* Port within client:    0..255, 255 = broadcast to all ports */
 } snd_seq_addr_t;
 
-#define SND_SEQ_ADDRESS_UNKNOWN		253	/* uknown source */
+#define SND_SEQ_ADDRESS_UNKNOWN		253	/* unknown source */
 #define SND_SEQ_ADDRESS_SUBSCRIBERS	254	/* send event to all subscribed ports */
 #define SND_SEQ_ADDRESS_BROADCAST	255	/* send event to all queues/clients/ports/channels */
 
@@ -230,8 +230,8 @@ typedef struct {
 #define SND_SEQ_PRIORITY_HIGH		(1<<4)	/* event should be processed before others */
 #define SND_SEQ_PRIORITY_MASK		(1<<4)
 
-#define SND_SEQ_DEST_QUEUE		(0<<5)	/* normal destonation */
-#define SND_SEQ_DEST_DIRECT		(1<<5)	/* bypass enqueing */
+#define SND_SEQ_DEST_QUEUE		(0<<5)	/* normal destination */
+#define SND_SEQ_DEST_DIRECT		(1<<5)	/* bypass enqueueing */
 #define SND_SEQ_DEST_MASK		(1<<5)
 
 
