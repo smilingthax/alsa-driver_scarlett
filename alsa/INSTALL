@@ -842,10 +842,12 @@ and second means device number.
 DEVFS support
 =============
 
-The ALSA driver fully supports the devfs extension. You should add the line
-below to your devfsd.conf file to make things work properly:
+The ALSA driver fully supports the devfs extension. You should add lines
+below to your devfsd.conf file:
 
-LOOKUP EXECUTE snd /sbin/modprobe snd
+LOOKUP snd EXECUTE /sbin/modprobe snd
+REGISTER sound/.* PERMISSIONS root.audio 660
+REGISTER snd/.* PERMISSIONS root.audio 660
 
 
 Proc interfaces (/proc/asound)
