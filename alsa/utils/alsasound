@@ -31,7 +31,14 @@
 # modified to visually fit into SuSE 6.0+ by Philipp Thomas <pthomas@suse.de>
 # further improvements by Bernd Kaindl, Olaf Hering and Takashi Iwai.
 # 
-#
+### BEGIN INIT INFO
+# Provides:       alsasound
+# Required-Start:
+# Required-Stop:
+# Default-Start:  2 3 5
+# Default-Stop:
+# Description:    Loading ALSA drivers and store/restore the current setting
+### END INIT INFO
 
 if [ -r /etc/rc.config ]; then
   . /etc/rc.config
@@ -40,7 +47,17 @@ else
   rc_done="done"
   rc_warning=""
   rc_reset=""
+  START_ALSA=yes
+  START_ALSA_SEQ=yes
 fi
+
+# Determine the base and follow a runlevel link name.
+base=${0##*/}
+link=${base#*[SK][0-9][0-9]}
+
+# Force execution if not called by a runlevel directory.
+test $link = $base && START_ALSA=yes
+test "$START_ALSA" = yes || exit 0
 
 alsactl=/usr/sbin/alsactl
 asoundcfg=/etc/asound.conf
@@ -61,7 +78,7 @@ function start() {
   #
   # insert sequencer modules
   #
-  if [ -r /proc/asound/seq/drivers ]; then
+  if [ x"$START_ALSA_SEQ" = xyes -a -r /proc/asound/seq/drivers ]; then
     t=`cut -d , -f 1 /proc/asound/seq/drivers`
     if [ "x$t" != "x" ]; then
       /sbin/modprobe $t
@@ -109,7 +126,7 @@ function stop() {
   #
   # remove all sound modules
   #
-  /sbin/lsmod | grep -E "^snd" | fgrep -v "snd-rme9652_mem" | while read line; do \
+  /sbin/lsmod | grep -E "^snd" | grep -v "snd-rme9652_mem" | while read line; do \
      /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
   done
   # remove the 2.2 soundcore module (if possible)
@@ -122,9 +139,6 @@ case "$1" in
         # Start driver if it isn't already up.
 	if [ ! -d /proc/asound ]; then
 	  start
-	  if [ -d /proc/asound ] && [ -d /var/lock/subsys ]; then
-	    touch /var/lock/subsys/alsasound
-	  fi
 	else
 	  echo "ALSA driver is already running."
 	fi
@@ -135,29 +149,18 @@ case "$1" in
           echo -n "Shutting down sound driver: "
 	  terminate
 	  stop
-	  if [ -d /var/lock/subsys ]; then
-	    rm -f /var/lock/subsys/alsasound
-	  fi
  	  echo -e "$rc_done"
 	fi
         ;;
-  restart)
+  restart|reload)
 	$0 stop
 	$0 start
 	;;
   status)
         if [ -d /proc/asound ]; then
           echo -n "ALSA sound driver loaded."
-#          if [ -e /var/lock/subsys/alsasound ]; then
-#            echo -n "ALSA sound driver not locked!"
-#          fi
         else
           echo -n "ALSA sound driver not loaded."
-#          if [ -e /var/lock/subsys/alsasound ]; then
-#            echo -n "but (strangely) locked."
-#          else
-#            echo -n "and not locked either."
-#          fi
         fi
         echo
         ;;
