@@ -141,9 +141,10 @@ case "$1" in
   sb16)
     basic; isapnp
     insert snd-sb16-dsp.o
+    insert snd-sb16-csp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-card-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5
+    insert snd-card-sb16.o snd_irq=7 snd_dma8=1 snd_dma16=5
     restore sb16.conf
     ;;
   sb)
@@ -156,6 +157,7 @@ case "$1" in
   sbawe)
     basic; isapnp
     insert snd-sb16-dsp.o
+    insert snd-sb16-csp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
     if [ -r $MODDIR/snd-emu8000.o ]; then
