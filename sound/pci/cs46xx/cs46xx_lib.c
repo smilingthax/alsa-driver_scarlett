@@ -2102,6 +2102,7 @@ void snd_cs46xx_resume(cs46xx_t *chip, int can_schedule)
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
+	pci_enable_device(chip->pci);
 	amp_saved = chip->amplifier;
 	chip->amplifier = 0;
 	chip->active_ctrl(chip, 1); /* force to on */

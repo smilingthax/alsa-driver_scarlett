@@ -1835,6 +1835,7 @@ void snd_ymfpci_resume(ymfpci_t *chip, int can_schedule)
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
+	pci_enable_device(chip->pci);
 	pci_set_master(chip->pci);
 	snd_ymfpci_aclink_reset(chip->pci);
 	snd_ymfpci_codec_ready(chip, 0, 0);

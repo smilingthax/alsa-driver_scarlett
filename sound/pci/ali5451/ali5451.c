@@ -1933,6 +1933,8 @@ static void snd_ali_resume(struct pci_dev *dev)
 		return;
 #endif
 
+	pci_enable_device(chip->pci);
+
 	save_flags(flags); 
 	cli();
 	
