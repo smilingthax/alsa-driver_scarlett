@@ -19,13 +19,6 @@ typedef struct wait_queue * wait_queue_head_t;
 #define init_waitqueue_entry(q,p) ((q)->task = (p))
 #define set_current_state(xstate) do { current->state = xstate; } while (0)
 
-#define rw_semaphore semaphore
-#define init_rwsem(x) init_MUTEX(x)
-#define down_read(x) down(x)
-#define down_write(x) down(x)
-#define up_read(x) up(x)
-#define up_write(x) up(x)
-
 /*
  * Insert a new entry before the specified head..
  */
@@ -55,6 +48,14 @@ static __inline__ void list_del_init(struct list_head *entry)
 #define list_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, n = pos->next)
+
+/* rw_semaphore - replaced with mutex */
+#define rw_semaphore semaphore
+#define init_rwsem(x) init_MUTEX(x)
+#define down_read(x) down(x)
+#define down_write(x) down(x)
+#define up_read(x) up(x)
+#define up_write(x) up(x)
 
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
 #define get_page(p) atomic_inc(&(p)->count)
