@@ -38,8 +38,8 @@ typedef enum {
 typedef struct snd_stru_pcm_plugin_voice {
 	void *aptr;			/* pointer to the allocated area */
 	void *addr;			/* address to voice samples */
-	unsigned int offset;		/* offset to first voice in bits */
-	unsigned int next;		/* offset to next voice in bits */
+	unsigned int first;		/* offset to first voice in bits */
+	unsigned int step;		/* offset to next voice in bits */
 } snd_pcm_plugin_voice_t;
 
 struct snd_stru_pcm_plugin {
