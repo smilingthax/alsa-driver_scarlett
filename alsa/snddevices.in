@@ -76,7 +76,7 @@ if test $MAJOR -eq 14; then
   create_device /dev/dmfm0		10
   create_device /dev/adsp		12	# alternate dsp
   create_device /dev/amidi		13	# alternate midi
-  create_device /dev/admmidi		14	# alternate direct midi
+  create_device /dev/admmidi0		14	# alternate direct midi
 fi
 
 # New devices (obsolete now)...
