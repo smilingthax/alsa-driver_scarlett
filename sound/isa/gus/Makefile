@@ -38,7 +38,6 @@ ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
   obj-$(CONFIG_SND_INTERWAVE_STB) += snd-gus-synth.o
 endif
 
-obj-y := $(sort $(obj-y))
 obj-m := $(sort $(obj-m))
 
 include $(TOPDIR)/Rules.make

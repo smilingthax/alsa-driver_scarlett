@@ -37,7 +37,6 @@ ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
   obj-$(CONFIG_SND_SBAWE) += snd-emu8000-synth.o
 endif
 
-obj-y := $(sort $(obj-y))
 obj-m := $(sort $(obj-m))
 
 include $(TOPDIR)/Rules.make
