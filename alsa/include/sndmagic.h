@@ -31,9 +31,14 @@ void _snd_magic_kfree(void *ptr);
 #define snd_magic_kcalloc(type, extra, flags) _snd_magic_kcalloc(sizeof(type) + extra, flags, type##_magic)
 #define snd_magic_kmalloc(type, extra, flags) _snd_magic_kmalloc(sizeof(type) + extra, flags, type##_magic)
 
+static inline int _snd_magic_value(void *obj)
+{
+	return obj == NULL ? 0 : *(((int *)obj) - 1);
+}
+
 static inline int _snd_magic_bad(void *obj, int magic)
 {
-	return *(((int *)obj) - 1) != magic;
+	return _snd_magic_value(obj) != magic;
 }
 
 #define snd_magic_cast(type, ptr, retval) ({\
@@ -43,7 +48,7 @@ static inline int _snd_magic_bad(void *obj, int magic)
 		return retval;\
 	}\
 	if (_snd_magic_bad(__ptr, type##_magic)) {\
-		snd_printk("MAGIC: %s: %i [%s]\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("MAGIC: %s: %i [%s] {0x%x}\n", __FILE__, __LINE__, __PRETTY_FUNCTION__, _snd_magic_value(__ptr));\
 		return retval;\
 	}\
 	__ptr;\
