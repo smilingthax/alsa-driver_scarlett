@@ -338,6 +338,12 @@ case "$1" in
     insert snd-card-intel8x0.o
     restore intel8x0.conf
     ;;
+  via686a|via)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-card-via686a.o
+    restore via686a.conf
+    ;;
   dummy)
     basic
     insert snd-card-dummy.o
