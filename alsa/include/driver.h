@@ -154,7 +154,6 @@ typedef struct snd_stru_dma {
 	long size;			/* real size of DMA buffer */
 	long rsize;			/* requested size of DMA buffer */
 	char *owner;			/* owner of this DMA channel */
-	char *soft_owner;		/* owner of soft DMA channel */
 	struct vm_area_struct *vma;	/* virtual memory area */
 	struct semaphore lock;		/* mutex for locking */
 	struct semaphore mutex;		/* snd_dma_malloc/free */

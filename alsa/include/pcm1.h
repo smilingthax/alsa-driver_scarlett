@@ -122,19 +122,19 @@ struct snd_stru_pcm1_hardware {
 	unsigned int (*pointer) (void *private_data,
 				 snd_pcm_subchn_t * subchn,
 				 unsigned int used_size);
-	void (*dma) (void *private_data,
-		     snd_pcm_subchn_t * subchn,
-		     unsigned char *buffer, unsigned int offset,
-		     unsigned char *user, unsigned int count);
-	void (*dma_move) (void *private_data,
-			  snd_pcm_subchn_t * subchn,
-			  unsigned char *dbuffer, unsigned int dest_offset,
-			  unsigned char *sbuffer, unsigned int src_offset,
-			  unsigned int count);
-	void (*dma_neutral) (void *private_data,
-			     snd_pcm_subchn_t * subchn,
-			     unsigned char *buffer, unsigned offset,
-			     unsigned int count, unsigned char neutral_byte);
+	int (*dma) (void *private_data,
+		    snd_pcm_subchn_t * subchn,
+		    unsigned char *buffer, unsigned int offset,
+		    unsigned char *user, unsigned int count);
+	int (*dma_move) (void *private_data,
+			 snd_pcm_subchn_t * subchn,
+			 unsigned char *dbuffer, unsigned int dest_offset,
+			 unsigned char *sbuffer, unsigned int src_offset,
+			 unsigned int count);
+	int (*dma_neutral) (void *private_data,
+			    snd_pcm_subchn_t * subchn,
+			    unsigned char *buffer, unsigned offset,
+			    unsigned int count, unsigned char neutral_byte);
 };
 
 struct snd_stru_pcm1_subchn {
@@ -200,35 +200,35 @@ struct snd_stru_pcm1_channel {
 #endif
 };
 
-extern void snd_pcm1_playback_dma(void *private_data,
+extern int snd_pcm1_playback_dma(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count);
-extern void snd_pcm1_playback_dma_ulaw(void *private_data,
+extern int snd_pcm1_playback_dma_ulaw(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count);
-extern void snd_pcm1_playback_dma_ulaw_loud(void *private_data,
+extern int snd_pcm1_playback_dma_ulaw_loud(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count);
-extern void snd_pcm1_playback_dma_neutral(void *private_data,
+extern int snd_pcm1_playback_dma_neutral(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned int count, unsigned char neutral_byte);
-extern void snd_pcm1_capture_dma(void *private_data,
+extern int snd_pcm1_capture_dma(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count);
-extern void snd_pcm1_capture_dma_ulaw(void *private_data,
+extern int snd_pcm1_capture_dma_ulaw(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count);
-extern void snd_pcm1_capture_dma_ulaw_loud(void *private_data,
+extern int snd_pcm1_capture_dma_ulaw_loud(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count);
-extern void snd_pcm1_dma_move(void *private_data,
+extern int snd_pcm1_dma_move(void *private_data,
 				snd_pcm_subchn_t * subchn,
 				unsigned char *dbuffer, unsigned int dest_offset,
 				unsigned char *sbuffer, unsigned int src_offset,

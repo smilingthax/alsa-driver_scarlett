@@ -639,8 +639,8 @@ Proc interfaces (/proc/asound)
 -------------------------
   String "Playback erase" - erase all additional informations about OSS applications
   String "Playback <app_name> <fragments> <fragment_size> [<options>]"
-  String "Record erase" - erase all additional informations about OSS applications
-  String "Record <app_name> <fragments> <fragment_size> [<options>]"
+  String "Capture erase" - erase all additional informations about OSS applications
+  String "Capture <app_name> <fragments> <fragment_size> [<options>]"
 
    <app_name> - name of application with (highter priority) or without path
    <fragments> - number of fragments or zero if auto
