@@ -1264,14 +1264,14 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
 #define SND_PCM_FILL_SILENCE		2	/* fill the partial buffer with silence */
 
-#define SND_PCM_STATUS_NOTREADY		0	/* stream is not ready */
-#define SND_PCM_STATUS_READY		1	/* stream is ready for prepare call */
-#define SND_PCM_STATUS_PREPARED		2	/* stream is ready to go */
-#define SND_PCM_STATUS_RUNNING		3	/* stream is running */
-#define SND_PCM_STATUS_XRUN		4
-#define SND_PCM_STATUS_UNDERRUN		SND_PCM_STATUS_XRUN	/* stream reached an underrun and it is not ready */
-#define SND_PCM_STATUS_OVERRUN		SND_PCM_STATUS_XRUN	/* stream reached an overrun and it is not ready */
-#define SND_PCM_STATUS_PAUSED		5	/* stream is paused */
+#define SND_PCM_STATE_NOTREADY		0	/* stream is not ready */
+#define SND_PCM_STATE_READY		1	/* stream is ready for prepare call */
+#define SND_PCM_STATE_PREPARED		2	/* stream is ready to go */
+#define SND_PCM_STATE_RUNNING		3	/* stream is running */
+#define SND_PCM_STATE_XRUN		4
+#define SND_PCM_STATE_UNDERRUN		SND_PCM_STATE_XRUN	/* stream reached an underrun and it is not ready */
+#define SND_PCM_STATE_OVERRUN		SND_PCM_STATE_XRUN	/* stream reached an overrun and it is not ready */
+#define SND_PCM_STATE_PAUSED		5	/* stream is paused */
 
 #define SND_PCM_MMAP_OFFSET_CONTROL	0x00000000
 #define SND_PCM_MMAP_OFFSET_DATA	0x80000000
@@ -1508,7 +1508,7 @@ typedef struct snd_pcm_channel_setup {
 
 typedef struct snd_pcm_stream_status {
 	int stream;		/* stream information */
-	int status;		/* stream status - SND_PCM_STATUS_XXXX */
+	int state;		/* stream state - SND_PCM_STATE_XXXX */
 	struct timeval stime;	/* time when playback/capture was started */
 	long long ust_stime;	/* UST time when playback/capture was started */
 	size_t byte_io;		/* current I/O position in bytes */
@@ -1521,7 +1521,7 @@ typedef struct snd_pcm_stream_status {
 } snd_pcm_stream_status_t;
 
 typedef struct {
-	volatile int status;	/* RO: status - SND_PCM_STATUS_XXXX */
+	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
 	size_t byte_io;		/* RO: I/O position (0 ... byte_boundary-1) updated only on status query and at interrupt time */
 	size_t byte_data;	/* RW: application position (0 ... byte_boundary-1) checked only on status query and at interrupt time */
 	int reserved[59];	/* reserved */
