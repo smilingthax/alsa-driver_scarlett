@@ -110,6 +110,7 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define snd_magic_kmalloc(type, extra, flags) (type *) snd_kmalloc(sizeof(type) + extra, flags)
 #define snd_magic_cast(type, ptr, retval) (type *) ptr
 #define snd_magic_kfree snd_kfree
+#define _snd_magic_kfree _snd_kfree
 #endif
 
 #endif
