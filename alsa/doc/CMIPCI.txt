@@ -164,9 +164,9 @@ In addition to the standard SB mixer, CM8x38 provides more functions.
 MIDI CONTROLLER
 ---------------
 
-The MPU401-UART interface is not enabled as default.
-You need to pass a module option "snd_enable_midi=1" to
-snd-card-cmipci module.
+The MPU401-UART interface is enabled as default only for the first
+(CMIPCI) card.  You need to set module options "snd_enable_midi"
+and "snd_midi_port" properly for the 2nd (CMIPCI) card.
 
 There is _no_ hardware wavetable function on this chip (except for
 OPL3 synth below).
@@ -178,8 +178,9 @@ playing MIDI music.
 FM OPL/3 Synth
 --------------
 
-The FM OPL/3 is also not enabled as default.
-Pass "snd_enable_fm=1" module option.
+The FM OPL/3 is also enabled as default only for the first card.
+Set "snd_enable_fm" and "snd_fm_port" module options for more
+cards.
 
 The output quality of FM OPL/3 is, however, very weird.
 I don't know why..
