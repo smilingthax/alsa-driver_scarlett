@@ -64,7 +64,7 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@jcu.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
 MODULE_PARM(isapnp_rdp, "i");
 MODULE_PARM_DESC(isapnp_rdp, "ISA Plug & Play read data port");
-MODULE_PARM(isapnp_reset, "i")
+MODULE_PARM(isapnp_reset, "i");
 MODULE_PARM_DESC(isapnp_reset, "ISA Plug & Play reset all cards");
 MODULE_PARM(isapnp_verbose, "i");
 MODULE_PARM_DESC(isapnp_verbose, "ISA Plug & Play verbose mode");
