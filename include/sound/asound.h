@@ -93,7 +93,7 @@ struct sndrv_aes_iec958 {
  *                                                                          *
  ****************************************************************************/
 
-#define SNDRV_HWDEP_VERSION		SNDRV_PROTOCOL_VERSION(1, 0, 0)
+#define SNDRV_HWDEP_VERSION		SNDRV_PROTOCOL_VERSION(1, 0, 1)
 
 enum sndrv_hwdep_iface {
 	SNDRV_HWDEP_IFACE_OPL2 = 0,
