@@ -1,5 +1,6 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
+H better solution for OSS mmap automatic frame_data update (for cards like cs461x)
 M clean endianness stuff
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
