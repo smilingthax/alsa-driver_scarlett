@@ -2828,7 +2828,7 @@ unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait)
 	return mask;
 }
 
-static struct page * snd_pcm_mmap_status_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
+static struct page * snd_pcm_mmap_status_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 {
 	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
 	snd_pcm_runtime_t *runtime;
@@ -2840,6 +2840,8 @@ static struct page * snd_pcm_mmap_status_nopage(struct vm_area_struct *area, uns
 	page = virt_to_page(runtime->status);
 	if (!PageReserved(page))
 		get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
 	return page;
 }
 
@@ -2866,7 +2868,7 @@ int snd_pcm_mmap_status(snd_pcm_substream_t *substream, struct file *file,
 	return 0;
 }
 
-static struct page * snd_pcm_mmap_control_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
+static struct page * snd_pcm_mmap_control_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 {
 	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
 	snd_pcm_runtime_t *runtime;
@@ -2878,6 +2880,8 @@ static struct page * snd_pcm_mmap_control_nopage(struct vm_area_struct *area, un
 	page = virt_to_page(runtime->control);
 	if (!PageReserved(page))
 		get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
 	return page;
 }
 
@@ -2916,7 +2920,7 @@ static void snd_pcm_mmap_data_close(struct vm_area_struct *area)
 	atomic_dec(&substream->runtime->mmap_count);
 }
 
-static struct page * snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
+static struct page * snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 {
 	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
 	snd_pcm_runtime_t *runtime;
@@ -2944,6 +2948,8 @@ static struct page * snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsig
 	}
 	if (!PageReserved(page))
 		get_page(page);
+	if (type)
+		*type = VM_FAULT_MINOR;
 	return page;
 }
 
