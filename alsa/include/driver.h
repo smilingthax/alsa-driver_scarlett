@@ -423,15 +423,12 @@ extern int snd_cards_count;
 extern unsigned int snd_cards_bitmap;
 extern snd_card_t *snd_cards[SND_CARDS];
 
-extern void snd_driver_init(void);
-
 extern snd_card_t *snd_card_new(int idx, char *id,
 				void (*use_inc) (snd_card_t * card),
 				void (*use_dec) (snd_card_t * card),
 				int extra_size);
 extern int snd_card_free(snd_card_t * card);
 extern int snd_card_register(snd_card_t * card);
-extern int snd_card_unregister(snd_card_t * card);
 extern int snd_card_info_init(void);
 extern int snd_card_info_done(void);
 
