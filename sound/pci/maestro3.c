@@ -2304,8 +2304,10 @@ static int snd_m3_free(m3_t *chip)
 
 	synchronize_irq();
 
-	if (chip->iobase_res)
+	if (chip->iobase_res) {
 		release_resource(chip->iobase_res);
+		kfree(chip->iobase_res);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 

@@ -1970,8 +1970,10 @@ static int snd_ali_free(ali_t * codec)
 	synchronize_irq();
 	if (codec->irq >=0)
 		free_irq(codec->irq, (void *)codec);
-	if (codec->res_port)
+	if (codec->res_port) {
 		release_resource(codec->res_port);
+		kfree(codec->res_port);
+	}
 #ifdef CONFIG_PM
 	if (codec->image)
 		kfree(codec->image);

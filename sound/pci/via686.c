@@ -945,8 +945,10 @@ static int snd_via686a_free(via686a_t *chip)
 	synchronize_irq();
 	if (chip->tables)
 		snd_free_pci_pages(chip->pci, 3 * sizeof(unsigned int) * VIA_MAX_FRAGS * 2, chip->tables, chip->tables_addr);
-	if (chip->res_port)
+	if (chip->res_port) {
 		release_resource(chip->res_port);
+		kfree(chip->res_port);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	pci_write_config_byte(chip->pci, 0x42, chip->old_legacy);

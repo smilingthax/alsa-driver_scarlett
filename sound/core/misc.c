@@ -51,13 +51,14 @@ struct resource *snd_compat_request_region(unsigned long start, unsigned long si
 {
 	struct resource *resource;
 
-	resource = snd_kcalloc(sizeof(struct resource), GFP_KERNEL);
+	resource = kmalloc(sizeof(struct resource), GFP_KERNEL);
 	if (resource == NULL)
 		return NULL;
 	if (check_region(start, size)) {
 		kfree(resource);
 		return NULL;
 	}
+	memset(resource, 0, sizeof(struct resource));
 	snd_wrapper_request_region(start, size, name);
 	resource->name = name;
 	resource->start = start;
@@ -72,7 +73,6 @@ int snd_compat_release_resource(struct resource *resource)
 	if (resource == &snd_compat_mem_region)
 		return 0;
 	release_region(resource->start, (resource->end - resource->start) + 1);
-	kfree(resource);
 	return 0;
 }
 

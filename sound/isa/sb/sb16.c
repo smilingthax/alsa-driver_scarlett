@@ -348,8 +348,10 @@ static void snd_sb16_free(snd_card_t *card)
 
 	if (acard == NULL)
 		return;
-	if (acard->fm_res)
+	if (acard->fm_res) {
 		release_resource(acard->fm_res);
+		kfree(acard->fm_res);
+	}
 #ifdef __ISAPNP__
 	snd_sb16_deactivate(acard);
 #endif

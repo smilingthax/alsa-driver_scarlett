@@ -4068,14 +4068,22 @@ static int snd_ice1712_free(ice1712_t *ice)
 	synchronize_irq();
 	if (ice->irq)
 		free_irq(ice->irq, (void *) ice);
-	if (ice->res_port)
+	if (ice->res_port) {
 		release_resource(ice->res_port);
-	if (ice->res_ddma_port)
+		kfree(ice->res_port);
+	}
+	if (ice->res_ddma_port) {
 		release_resource(ice->res_ddma_port);
-	if (ice->res_dmapath_port)
+		kfree(ice->res_ddma_port);
+	}
+	if (ice->res_dmapath_port) {
 		release_resource(ice->res_dmapath_port);
-	if (ice->res_profi_port)
+		kfree(ice->res_dmapath_port);
+	}
+	if (ice->res_profi_port) {
 		release_resource(ice->res_profi_port);
+		kfree(ice->res_profi_port);
+	}
 	snd_magic_kfree(ice);
 	return 0;
 }

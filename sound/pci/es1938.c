@@ -1328,16 +1328,26 @@ static int snd_es1938_free(es1938_t *chip)
 	if (chip->gameport.io)
 		gameport_unregister_port(&chip->gameport);
 #endif
-	if (chip->res_io_port)
+	if (chip->res_io_port) {
 		release_resource(chip->res_io_port);
-	if (chip->res_sb_port)
+		kfree(chip->res_io_port);
+	}
+	if (chip->res_sb_port) {
 		release_resource(chip->res_sb_port);
-	if (chip->res_vc_port)
+		kfree(chip->res_sb_port);
+	}
+	if (chip->res_vc_port) {
 		release_resource(chip->res_vc_port);
-	if (chip->res_mpu_port)
+		kfree(chip->res_vc_port);
+	}
+	if (chip->res_mpu_port) {
 		release_resource(chip->res_mpu_port);
-	if (chip->res_game_port)
+		kfree(chip->res_mpu_port);
+	}
+	if (chip->res_game_port) {
 		release_resource(chip->res_game_port);
+		kfree(chip->res_game_port);
+	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	snd_magic_kfree(chip);

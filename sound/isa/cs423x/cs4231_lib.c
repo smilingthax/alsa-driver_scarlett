@@ -1328,10 +1328,14 @@ static int snd_cs4231_pm_callback(struct pm_dev *dev, pm_request_t rqst, void *d
 
 static int snd_cs4231_free(cs4231_t *chip)
 {
-	if (chip->res_port)
+	if (chip->res_port) {
 		release_resource(chip->res_port);
-	if (chip->res_cport)
+		kfree(chip->res_port);
+	}
+	if (chip->res_cport) {
 		release_resource(chip->res_cport);
+		kfree(chip->res_port);
+	}
 	if (chip->irq >= 0) {
 		disable_irq(chip->irq);
 		if (!(chip->hwshare & CS4231_HWSHARE_IRQ))

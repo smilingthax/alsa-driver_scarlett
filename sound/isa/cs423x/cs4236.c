@@ -385,8 +385,10 @@ static void snd_card_cs4236_free(snd_card_t *card)
 #ifdef __ISAPNP__
 		snd_card_cs4236_deactivate(acard);
 #endif
-		if (acard->res_sb_port)
+		if (acard->res_sb_port) {
 			release_resource(acard->res_sb_port);
+			kfree(acard->res_sb_port);
+		}
 	}
 }
 

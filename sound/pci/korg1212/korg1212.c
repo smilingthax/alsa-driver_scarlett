@@ -2118,14 +2118,17 @@ snd_korg1212_free(void *private_data)
         }
         if (korg1212->res_iomem != NULL) {
                 release_resource(korg1212->res_iomem);
+                kfree(korg1212->res_iomem);
                 korg1212->res_iomem = NULL;
         }
         if (korg1212->res_ioport != NULL) {
                 release_resource(korg1212->res_ioport);
+                kfree(korg1212->res_ioport);
                 korg1212->res_ioport = NULL;
         }
         if (korg1212->res_iomem2 != NULL) {
                 release_resource(korg1212->res_iomem2);
+                kfree(korg1212->res_iomem2);
                 korg1212->res_iomem2 = NULL;
         }
 

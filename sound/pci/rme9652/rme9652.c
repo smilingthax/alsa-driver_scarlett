@@ -1847,8 +1847,10 @@ static int snd_rme9652_free(rme9652_t *rme9652)
 
 	if (rme9652->iobase)
 		iounmap((void *) rme9652->iobase);
-	if (rme9652->res_port)
+	if (rme9652->res_port) {
 		release_resource(rme9652->res_port);
+		kfree(rme9652->res_port);
+	}
 	if (rme9652->irq >= 0)
 		free_irq(rme9652->irq, (void *)rme9652);
 	return 0;
