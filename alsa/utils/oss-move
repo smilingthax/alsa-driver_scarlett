@@ -3,10 +3,10 @@
 basekdir=/usr/src/linux
 #basekdir=/home/src/1/linux
 kdir=$basekdir/drivers/sound
-backup=$kdir/../sound.backup
 if [ "x$1" != "x" ]; then
   kdir="$1"
 fi
+backup=$kdir/../sound.backup
 
 rm -rf `find $kdir -name "*.[ao]"`
 rm -rf $kdir/oss
