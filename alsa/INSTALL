@@ -236,17 +236,6 @@ Additional Modules
     See docs/hdspm.txt for details.
 
 
-  Module snd-atiixp
-  -----------------
-
-    Module for ATI IXP 150/200/250 AC97 controllers.
-
-    ac97_clock		- AC'97 clock (defalut = 48000)
-    spdif_aclink	- S/PDIF transfer over AC-link (default = 1)
-
-    This module supports up to 8 cards and autoprobe.
-
-
   Module snd-mpu401-acpi
   ----------------------
 
