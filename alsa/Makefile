@@ -206,7 +206,7 @@ pack: mrproper
 		mv alsa-kernel alsa-driver ; \
 		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
 		tar --exclude=CVS --exclude=kchanges \
-                    --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 -C . \
+                    --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 \
                     -f alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION) ; \
 		mv alsa-driver-$(CONFIG_SND_VERSION) alsa-driver ; \
 		mv alsa-driver/alsa-kernel . ; \
