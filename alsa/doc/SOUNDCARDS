@@ -131,6 +131,10 @@ ID: C-Media CMI8330
 IF: MIXER,PCM
 MA: George Talusan <gstalusan@uwaterloo.ca>
 
+ID: C-Media CMI8338/8738
+IF: MIXER,PCM,MIDI
+MA: Takashi Iwai <tiwai@suse.de>
+
 ID: Avance Logic ALS100/ALS120
 IF: MIXER,PCM,MIDI
 MA: Massimo Piccioni <dafastidio@libero.it>
