@@ -82,7 +82,7 @@ case "$1" in
   	  # store driber settings
 	  #
 	  if [ -x $alsactl ]; then
-	    $alsactl store
+	    $alsactl -f $asoundcfg store
 	  else
 	    echo -n "ERROR: alsactl not found"
 	  fi

@@ -3,7 +3,8 @@
 # alsasound     This shell script takes care of starting and stopping
 #               the ALSA sound driver.
 #
-# This script requires /usr/sbin/alsactl program from alsa-utils package.
+# This script requires /usr/sbin/alsactl and /usr/bin/aconnect programs
+# from the alsa-utils package.
 #
 # Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
 #
@@ -65,7 +66,7 @@ function start() {
       echo "No mixer config in /etc/asound.conf, you have to unmute your card!"
     else
       if [ -x $alsactl ]; then
-        $alsactl restore
+        $alsactl -f $asoundcfg restore
       else
         echo -e "${rc_warning}ERROR: alsactl not found${rc_reset}"
       fi
@@ -79,12 +80,12 @@ function terminate() {
   #
   DEVS=`find /dev/ -follow -type c -maxdepth 1 -ls 2>/dev/null | grep "1*1[46]," | cut -d: -f2 | cut -d" " -f2; echo /proc/asound/dev/*`
   fuser -k $DEVS 2> /dev/null 1>/dev/null
- #
- # remove all sequencer connections if any
- #
- if [ -f /proc/asound/seq/clients -a -x $aconnect ]; then
-   $aconnect --removeall
- fi
+  #
+  # remove all sequencer connections if any
+  #
+  if [ -f /proc/asound/seq/clients -a -x $aconnect ]; then
+    $aconnect --removeall
+  fi
 }
 
 function stop() {
@@ -92,7 +93,7 @@ function stop() {
   # store driver settings
   #
   if [ -x $alsactl ]; then
-    $alsactl store
+    $alsactl -f $asoundcfg store
   else
     echo -n -e "${rc_warning}!!!alsactl not found!!!${rc_reset} "
   fi
