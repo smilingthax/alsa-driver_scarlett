@@ -76,6 +76,12 @@
 #define module_exit(x)      void cleanup_module(void) { x(); }
 #endif
 
+MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+MODULE_DESCRIPTION("Plug & Play 2.5 compatible layer");
+#ifdef MODULE_LICENSE
+MODULE_LICENSE("GPL");
+#endif
+
 struct pnp_driver_instance {
 	struct pnp_dev * dev;
 	struct pnp_driver * driver;
