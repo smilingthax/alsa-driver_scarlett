@@ -42,7 +42,7 @@ if grep CONFIG_SND Makefile > /dev/null; then
   echo "Makefile already modified"
 else
   cp -av Makefile Makefile.old
-  cat $ADIR/utils/patches/patch.Makefile.top.2.4.0-test10 | patch -p0
+  cat $ADIR/utils/patches/patch.Makefile.top.2.4.1 | patch -p0
   echo "Makefile patched"
 fi
 cd $KDIR/drivers/sound
@@ -50,7 +50,7 @@ if grep alsa Makefile > /dev/null; then
   echo "drivers/sound/Makefile already modified"
 else
   cp -av Makefile Makefile.old
-  cat $ADIR/utils/patches/patch.Makefile.2.4.0-test10 | patch -p0
+  cat $ADIR/utils/patches/patch.Makefile.2.4.1 | patch -p0
   echo "drivers/sound/Makefile patched"
 fi
 if grep "Advanced Linux Sound Architecture" Config.in > /dev/null; then
@@ -81,7 +81,9 @@ include_file ainstr_gf1.h
 include_file ainstr_iw.h
 include_file ainstr_fm.h
 include_file asound.h
+include_file asoundef.h
 include_file asequencer.h
+include_file asound_fm.h
 copy_dir kernel
 copy_dir kernel/seq
 copy_dir kernel/seq/instr
