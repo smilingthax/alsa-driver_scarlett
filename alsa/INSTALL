@@ -266,13 +266,11 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
-    Note: This module supports partly SoundBlaster VibraX16 soundcard.
-          This soundcard uses two 8-bit DMA channels and seems that
-          documentation is not available at Creative Labs WWW site.
-          If you know where can be get documentation, mail us...
-          Otherwise - this soundcard is not supported yet, so do not
-          send us any e-mails with "my soundcard is not working
-          properly (full duplex, 16-bit samples)"...
+    Note: To use Vibra16X cards in 16-bit half duplex mode, you must
+          disable 16bit DMA with snd_dma16 = -1 module parameter.
+          Also, all Sound Blaster 16 type cards can operate in 16-bit
+          half duplex mode through 8-bit DMA channel by disabling their
+          16-bit DMA channel.
     
   Module snd-card-opl3sa2.o
   -------------------------
