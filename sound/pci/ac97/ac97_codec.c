@@ -73,6 +73,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 { 0x49434500, 0xffffff00, "ICEnsemble",		NULL },
 { 0x49544500, 0xffffff00, "ITE Tech.Inc",	NULL },
 { 0x4e534300, 0xffffff00, "National Semiconductor", NULL },
+{ 0x50534300, 0xffffff00, "Philips",		NULL },
 { 0x53494c00, 0xffffff00, "Silicon Laboratory",	NULL },
 { 0x54524100, 0xffffff00, "TriTech",		NULL },
 { 0x54584e00, 0xffffff00, "Texas Instruments",	NULL },
@@ -124,6 +125,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x49544520, 0xffffffff, "IT2226E",		NULL },
 { 0x4e534300, 0xffffffff, "LM4540/43/45/46/48",	NULL }, // only guess --jk
 { 0x4e534331, 0xffffffff, "LM4549",		NULL },
+{ 0x50534304, 0xffffffff, "UCB1400",		NULL },
 { 0x53494c22, 0xffffffff, "Si3036",		NULL },
 { 0x53494c23, 0xffffffff, "Si3038",		NULL },
 { 0x54524102, 0xffffffff, "TR28022",		NULL },
