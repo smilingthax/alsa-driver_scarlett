@@ -89,6 +89,12 @@ MODULE_LICENSE("GPL");
 		pos = n, n = pos->next)
 #endif
 
+#ifdef ISAPNP_ALSA_LOCAL
+extern struct isapnp_card *isapnp_cards;
+#else
+extern struct list_head isapnp_cards;
+#endif
+
 struct pnp_driver_instance {
 	struct pnp_dev * dev;
 	struct pnp_driver * driver;
@@ -161,20 +167,29 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 	unsigned short subvendor, subdevice;
 	unsigned int i, res = 0;
 	const struct pnp_card_device_id *cid;
-	struct pnp_card *card;
+	struct isapnp_card *card;
 	struct pnp_dev *dev;
 	struct pnp_card_driver_instance *ninst = NULL;
+#ifndef ISAPNP_ALSA_LOCAL
+	struct list_head *p;
+#endif
 	
 	if (! drv->probe) {
 		printk(KERN_ERR "pnp: no probe function!\n");
 		return -EINVAL;
 	}
 
-	for (cid = drv->id_table; cid->id[0] != '\0'; cid++) {
-		if (parse_id(cid->id, &vendor, &device) < 0)
-			continue;
-		card = NULL; 
-		while ((card = (struct pnp_card *)isapnp_find_card(vendor, device, (struct isapnp_card *)card)) != NULL) {
+#ifdef ISAPNP_ALSA_LOCAL
+	for (card = isapnp_cards; card; card = card->next) {
+#else
+	list_for_each(p, &isapnp_cards) {
+		card = pci_bus_b(p);
+#endif
+		for (cid = drv->id_table; cid->id[0] != '\0'; cid++) {
+			if (parse_id(cid->id, &vendor, &device) < 0)
+				continue;
+			if (card->vendor != vendor || card->device != device)
+				continue;
 			if (ninst == NULL) {
 				ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 				if (ninst == NULL)
@@ -187,9 +202,9 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 			for (i = 0; i < PNP_MAX_DEVICES && cid->devs[i].id[0] != '\0'; i++) {
 				if (parse_id(cid->devs[i].id, &subvendor, &subdevice) < 0)
 					goto __next_id;
-				dev = ninst->devs[i] = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)card, subvendor, subdevice, NULL);
+				dev = ninst->devs[i] = (struct pnp_dev *)isapnp_find_dev(card, subvendor, subdevice, NULL);
 				if (dev == NULL)
-					goto __next_card;
+					goto __next_id;
 			}
 
 			/* all parsed successfully */
@@ -205,7 +220,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 					dev->p.prepare((struct isapnp_dev *)dev);
 				}
 			}
-			ninst->link.card = card;
+			ninst->link.card = (struct pnp_card *)card;
 			ninst->link.driver = drv;
 			ninst->link.driver_data = NULL;
 			if (drv->probe(&ninst->link, cid) >= 0) {
@@ -213,11 +228,11 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 				ninst = NULL;
 				res++;
 			}
-		__next_card:
+			break; /* next card */
+
+		__next_id:
 			;
 		}
-	__next_id:
-		;
 	}
 
 	if (ninst != NULL)
