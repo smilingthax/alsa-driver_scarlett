@@ -69,7 +69,8 @@
 #define AC97_VENDOR_ID2		0x7e	/* Vendor ID2 / revision */
 
 /* specific */
-#define AC97_SIGMATEL_DAC2INVERT 0x6E
+#define AC97_SIGMATEL_ANALOG	0x6c	/* Analog Special */
+#define AC97_SIGMATEL_DAC2INVERT 0x6e
 #define AC97_SIGMATEL_BIAS1	0x70
 #define AC97_SIGMATEL_BIAS2	0x72
 #define AC97_SIGMATEL_CIC1	0x76
@@ -94,7 +95,7 @@ struct snd_stru_ac97 {
 	char name[64];		/* CODEC name */
 	unsigned short caps;	/* capabilities (register 0) */
 	unsigned short micgain;	/* mic gain is active */
-	unsigned short regs[0x3c]; /* register cache */
+	unsigned short regs[0x80]; /* register cache */
 	unsigned char bass;	/* tone control - bass value */
 	unsigned char treble;	/* tone control - treble value */
 	unsigned char max_master; /* master maximum volume value */
