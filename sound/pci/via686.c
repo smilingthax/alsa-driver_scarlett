@@ -959,8 +959,8 @@ static int snd_via686a_free(via686a_t *chip)
 	snd_via686a_channel_reset(chip, &chip->capture);
 	/*snd_via686a_channel_reset(chip, &chip->playback_fm);*/
 	/* --- */
+	synchronize_irq(chip->irq);
       __end_hw:
-	synchronize_irq();
 	if (chip->res_port) {
 		release_resource(chip->res_port);
 		kfree_nocheck(chip->res_port);
@@ -1020,7 +1020,7 @@ static int __devinit snd_via686a_create(snd_card_t * card,
 	if (ac97_clock >= 8000 && ac97_clock <= 48000)
 		chip->ac97_clock = ac97_clock;
 	pci_read_config_byte(pci, PCI_REVISION_ID, &chip->revision);
-	synchronize_irq();
+	synchronize_irq(chip->irq);
 
 	/* initialize offsets */
 	chip->playback.reg_offset = VIA_REG_PLAYBACK_STATUS;
