@@ -15,9 +15,11 @@
  * 2002-04-04   Tomas Kasparek  better rates handling (allow non-standard rates)
  * 2003-02-14   Brian Avery     fixed full duplex mode, other updates
  * 2003-02-20   Tomas Kasparek  merged updates by Brian (except HAL)
+ * 2003-04-19   Jaroslav Kysela recoded DMA stuff to follow 2.4.18rmk3-hh24 kernel
+ *				working suspend and resume
  */
 
-/* $Id: sa11xx-uda1341.c,v 1.9 2003/04/19 13:34:33 perex Exp $ */
+/* $Id: sa11xx-uda1341.c,v 1.10 2003/04/19 13:44:41 perex Exp $ */
 
 /***************************************************************************************************
 *
