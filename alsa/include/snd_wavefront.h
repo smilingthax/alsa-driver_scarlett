@@ -1,7 +1,6 @@
 #ifndef __SND_WAVEFRONT_H__
 #define __SND_WAVEFRONT_H__
 
-#include "config.h"
 #include "cs4231.h"
 #include "mpu401.h"
 #include "hwdep.h"
