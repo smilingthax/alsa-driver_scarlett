@@ -71,8 +71,8 @@ PCM interface:
 
 IEC958 S/PDIF interface:
 
-  [...] [Input] IEC958 Default	 		/* default or global value - read/write */
-  [...] [Input] IEC958 Mask			/* consumer and professional mask */
-  [...] [Input] IEC958 Con Mask			/* consumer mask */
-  [...] [Input] IEC958 Pro Mask			/* professional mask */
-  [...] [Input] IEC958 PCM Stream		/* the settings assigned to a PCM stream */
+  [Playback|Capture] [...] IEC958 Default	/* default or global value - read/write */
+  [Playback|Capture] [...] IEC958 Mask		/* consumer and professional mask */
+  [Playback|Capture] [...] IEC958 Con Mask	/* consumer mask */
+  [Playback|Capture] [...] IEC958 Pro Mask	/* professional mask */
+  [Playback|Capture] [...] IEC958 PCM Stream	/* the settings assigned to a PCM stream */
