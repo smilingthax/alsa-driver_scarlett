@@ -108,7 +108,13 @@ mv -f /dev/1sndstat /dev/sndstat
 #create_devices2 /dev/sndmidi		200	4
 #create_devices	/dev/sndfm		248
 
+
 # New dynamic sound device filesystem
 
 echo "ALSA dynamic sound device filesystem"
 ln -sfv /proc/asound/dev /dev/snd
+
+# Loader devices
+
+echo "ALSA loader devices"
+create_devices  /dev/aload		144
