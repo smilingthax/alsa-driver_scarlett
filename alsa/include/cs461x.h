@@ -1652,6 +1652,8 @@ struct snd_stru_cs461x {
 	unsigned char *cbuffer;
 	unsigned int csize;
 	unsigned int cringbuf;
+	unsigned int cff;
+	unsigned int cffc;
 
 	ac97_t *ac97;
 
