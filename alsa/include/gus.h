@@ -471,25 +471,6 @@ struct snd_stru_gus_card {
 	spinlock_t uart_cmd_lock;
 	struct semaphore dma_mutex;
 	struct semaphore register_mutex;
-	
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_out_master;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_sw_master;
-	snd_kmixer_element_t *me_in_line;
-	snd_kmixer_element_t *me_vol_line;
-	snd_kmixer_element_t *me_sw_line;
-	snd_kmixer_element_t *me_in_mic;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_sw_mic;
-	snd_kmixer_element_t *me_in_gf1;
-	snd_kmixer_element_t *me_vol_gf1;
-	snd_kmixer_element_t *me_sw_gf1;
-	snd_kmixer_element_t *me_in_cd;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_sw_cd;
-	snd_kmixer_element_t *me_vol_pcm;
-	snd_kmixer_element_t *me_playback;
 };
 
 /* I/O functions for GF1/InterWave chip - gus_io.c */
@@ -658,13 +639,11 @@ int snd_gf1_stop(snd_gus_card_t * gus);
 
 /* gus_mixer.c */
 
-int snd_gf1_new_mixer(snd_gus_card_t * gus, int device, snd_kmixer_t ** rmixer);
+int snd_gf1_new_mixer(snd_gus_card_t * gus);
 
 /* gus_pcm.c */
 
-int snd_gf1_pcm_new(snd_gus_card_t * gus, snd_kmixer_t * mixer,
-		    snd_kmixer_element_t * parent, int pcm_dev,
-		    snd_pcm_t ** rpcm);
+int snd_gf1_pcm_new(snd_gus_card_t * gus, int pcm_dev, int control_index, snd_pcm_t ** rpcm);
 
 #ifdef CONFIG_SND_DEBUG
 extern void snd_gf1_print_voice_registers(snd_gus_card_t * gus);
