@@ -104,7 +104,7 @@ static void screamer_recalibrate(pmac_t *chip, int can_schedule)
 	do_mdelay(750, can_schedule);
 	snd_pmac_awacs_write_noreg(chip, 1,
 				   chip->awacs_reg[1] | MASK_RECALIBRATE | MASK_CMUTE | MASK_AMUTE);
-	mdelay(1000, can_schedule);
+	do_mdelay(1000, can_schedule);
 	snd_pmac_awacs_write_noreg(chip, 1, chip->awacs_reg[1]);
 }
 
