@@ -528,7 +528,8 @@ typedef struct snd_hwdep_info {
 
 #define SND_PCM_XRUN_FRAGMENT		0	/* Efficient xrun detection */
 #define SND_PCM_XRUN_ASAP		1	/* Accurate xrun detection */
-#define SND_PCM_XRUN_LAST		1
+#define SND_PCM_XRUN_NONE		2	/* No xrun detection */
+#define SND_PCM_XRUN_LAST		2
 
 #define SND_PCM_READY_FRAGMENT		0	/* Efficient ready detection */
 #define SND_PCM_READY_ASAP		1	/* Accurate ready detection */

@@ -7,7 +7,6 @@ M add schedule call in all loop that may last more than 1 ms (search udelay/mdel
 M add master/divisor to timer
 L lock, grant and revoke ioctls (not available to application I propose)
 L change functions to not use hw data directly but info obtained with snd_pcm_params_info 
-L make xrun detection optional (Abramo)
 L nonblocking async mode (with requests queue)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
