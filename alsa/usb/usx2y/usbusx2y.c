@@ -1,6 +1,10 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2003-12-30 Karsten Wiese
+	Version 0.4.1:
+	Fix 24Bit 4Channel capturing for the us428.
+
 2003-11-27 Karsten Wiese, Martin Langer
 	Version 0.4:
 	us122 support.
@@ -85,7 +89,7 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.4");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.4.1");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8007) }}");
