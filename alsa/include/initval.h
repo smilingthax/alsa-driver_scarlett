@@ -33,7 +33,7 @@ static const char __module_generic_string_##name## [] \
 
 #define MODULE_CLASSES(val) MODULE_GENERIC_STRING(info_classes, val)
 #define MODULE_DEVICES(val) MODULE_GENERIC_STRING(info_devices, val)
-#define MODULE_PARM_SYNTAX(id, val) MODULE_GENERIC_STRING(parm_syntax_##id, val)
+#define MODULE_PARM_SYNTAX(id, val) MODULE_GENERIC_STRING(info_parm_##id, val)
 
 #define SND_AUTO_PORT		0xffff
 #define SND_AUTO_IRQ		0xffff
