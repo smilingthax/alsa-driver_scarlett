@@ -24,6 +24,7 @@
 #include <linux/init.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#include <linux/kmod.h>
 #include <sound/core.h>
 #include "pmac.h"
 
@@ -246,6 +247,10 @@ int __init snd_pmac_daca_init(pmac_t *chip)
 {
 	int i, err;
 	pmac_daca_t *mix;
+
+#ifdef CONFIG_KMOD
+	request_module("i2c-keywest");
+#endif /* CONFIG_KMOD */	
 
 	mix = kmalloc(sizeof(*mix), GFP_KERNEL);
 	if (! mix)

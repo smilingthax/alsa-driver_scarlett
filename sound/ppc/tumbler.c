@@ -25,6 +25,7 @@
 #include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
+#include <linux/kmod.h>
 #include <sound/core.h>
 #include <asm/io.h>
 #include <asm/irq.h>
@@ -740,6 +741,10 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 	pmac_tumbler_t *mix;
 	u32 *paddr;
 	struct device_node *tas_node;
+
+#ifdef CONFIG_KMOD
+	request_module("i2c-keywest");
+#endif /* CONFIG_KMOD */	
 
 	mix = kmalloc(sizeof(*mix), GFP_KERNEL);
 	if (! mix)
