@@ -766,8 +766,7 @@ typedef struct {
 #define SND_SEQ_INSTR_ID_SOUNDFONT	"SoundFont"
 #define SND_SEQ_INSTR_ID_GUS_PATCH	"GUS Patch"
 #define SND_SEQ_INSTR_ID_INTERWAVE	"InterWave FFFF"
-#define SND_SEQ_INSTR_ID_OPL2		"OPL2"
-#define SND_SEQ_INSTR_ID_OPL3		"OPL3"
+#define SND_SEQ_INSTR_ID_OPL3		"OPL2/3 FM"
 #define SND_SEQ_INSTR_ID_OPL4		"OPL4"
 
 /* instrument types */
