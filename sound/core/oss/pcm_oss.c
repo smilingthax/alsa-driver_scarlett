@@ -445,7 +445,7 @@ static int snd_pcm_oss_change_params(snd_pcm_substream_t *substream)
 	} else {
 		sw_params->start_threshold = runtime->boundary;
 	}
-	if (atomic_read(&runtime->mmap_count))
+	if (atomic_read(&runtime->mmap_count) || substream->stream == SNDRV_PCM_STREAM_CAPTURE)
 		sw_params->stop_threshold = runtime->boundary;
 	else
 		sw_params->stop_threshold = runtime->buffer_size;
@@ -570,6 +570,31 @@ static int snd_pcm_oss_make_ready(snd_pcm_substream_t *substream)
 	return 0;
 }
 
+static int snd_pcm_oss_capture_position_fixup(snd_pcm_substream_t *substream, snd_pcm_status_t *status)
+{
+	snd_pcm_runtime_t *runtime;
+	snd_pcm_uframes_t frames;
+	int err = 0;
+
+	while (1) {
+		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, status);
+		if (err < 0)
+			break;
+		runtime = substream->runtime;
+		if (status->avail <= runtime->buffer_size)
+			break;
+		/* in case of overrun, skip whole periods like OSS/Linux driver does */
+		/* until avail <= buffer_size */
+		frames = (status->avail - runtime->buffer_size) + runtime->period_size - 1;
+		frames /= runtime->period_size;
+		frames *= runtime->period_size;
+		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_FORWARD, &frames);
+		if (err < 0)
+			break;
+	}
+	return err;
+}
+
 snd_pcm_sframes_t snd_pcm_oss_write3(snd_pcm_substream_t *substream, const char *ptr, snd_pcm_uframes_t frames, int in_kernel)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
@@ -608,6 +633,7 @@ snd_pcm_sframes_t snd_pcm_oss_write3(snd_pcm_substream_t *substream, const char 
 snd_pcm_sframes_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, snd_pcm_uframes_t frames, int in_kernel)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
+	snd_pcm_status_t status;
 	int ret;
 	while (1) {
 		if (runtime->status->state == SNDRV_PCM_STATE_XRUN ||
@@ -626,6 +652,9 @@ snd_pcm_sframes_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, s
 			if (ret < 0)
 				break;
 		}
+		ret = snd_pcm_oss_capture_position_fixup(substream, &status);
+		if (ret < 0)
+			break;
 		if (in_kernel) {
 			mm_segment_t fs;
 			fs = snd_enter_user();
@@ -1354,7 +1383,11 @@ static int snd_pcm_oss_get_ptr(snd_pcm_oss_file_t *pcm_oss_file, int stream, str
 		return 0;
 	}
 	memset(&status, 0, sizeof(status));
-	err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, &status);
+	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, &status);
+	} else {
+		err = snd_pcm_oss_capture_position_fixup(substream, &status);
+	}
 	if (err < 0)
 		return err;
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
@@ -1414,7 +1447,11 @@ static int snd_pcm_oss_get_space(snd_pcm_oss_file_t *pcm_oss_file, int stream, s
 			info.fragments = 0;
 		}
 	} else {
-		err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, &status);
+		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
+			err = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_STATUS, &status);
+		} else {
+			err = snd_pcm_oss_capture_position_fixup(substream, &status);
+		}
 		if (err < 0)
 			return err;
 		info.bytes = snd_pcm_oss_bytes(substream, status.avail);
