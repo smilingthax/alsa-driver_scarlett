@@ -812,10 +812,10 @@ struct snd_pcm_buffer_description {
 #define SND_RAWMIDI_SW_TYPE_USER	(~0)	/* user type */
 
 struct snd_rawmidi_info {
-	unsigned int type;	/* soundcard type */
-	unsigned int flags;	/* SND_RAWMIDI_INFO_XXXX */
-	unsigned char id[32];	/* ID of this raw midi device */
-	unsigned char name[80];	/* name of this raw midi device */
+	unsigned int type;		/* soundcard type */
+	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
+	unsigned char id[32];		/* ID of this raw midi device */
+	unsigned char name[80];		/* name of this raw midi device */
 	unsigned char reserved[64];	/* reserved for future use */
 };
 
