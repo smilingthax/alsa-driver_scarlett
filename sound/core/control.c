@@ -125,12 +125,14 @@ static int snd_ctl_release(struct inode *inode, struct file *file)
 	card = ctl->card;
 	write_lock_irqsave(&card->control_rwlock, flags);
 	list_del(&ctl->list);
+	write_lock(&card->control_owner_lock);
 	list_for_each(list, &card->controls) {
 		control = snd_kcontrol(list);
 		if (control->owner == ctl)
 			control->owner = NULL;
 	}
 	write_unlock(&card->control_owner_lock);
+	write_lock_irqrestore(&card->control_rwlock, flags);
 	snd_ctl_empty_read_queue(ctl);
 	snd_magic_kfree(ctl);
 	dec_mod_count(card->module);
