@@ -1174,7 +1174,6 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_CHNINFO_BATCH		0x00000010	/* double buffering */
 #define SND_PCM_CHNINFO_INTERLEAVE	0x00000100	/* voices are interleaved */
 #define SND_PCM_CHNINFO_NONINTERLEAVE	0x00000200	/* voices are not interleaved */
-#define SND_PCM_CHNINFO_VOICE_OPS	0x00000400	/* voice operations are active */
 #define SND_PCM_CHNINFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
 #define SND_PCM_CHNINFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
 #define SND_PCM_CHNINFO_MMAP_VALID	0x00040000	/* fragment data are valid during transfer */
@@ -1417,6 +1416,9 @@ typedef struct snd_pcm_channel_setup {
 typedef struct snd_pcm_voice_setup {
 	int voice;
 	snd_pcm_digital_t digital;	/* digital setup */
+	off_t addr;			/* byte offset to voice samples */
+	off_t first;			/* offset to first sample in bits */
+	off_t step;			/* samples distance in bits */
 	char reserved[64];
 } snd_pcm_voice_setup_t;
 
@@ -1439,18 +1441,12 @@ typedef struct snd_pcm_channel_status {
 typedef struct {
 	volatile int status;		/* RO: status - SND_PCM_STATUS_XXXX */
 	volatile int frag_io;		/* RO: index to the fragment under I/O operation */
-	int frags;			/* RO: fragments */
-	int frag_size;			/* RO: fragment size */
-	int voices;			/* RO: number of voices, -1 = interleaved */
 	volatile unsigned int block;	/* RO: block number */
 	volatile unsigned int expblock; /* RW: expected block number for wakeup */
-	int res[9];			/* reserved */
+	int res[12];			/* reserved */
 } snd_pcm_mmap_io_status_t;
 
 typedef struct {
-	unsigned int number;		/* RO: fragment number */
-	off_t addr;			/* RO: fragment address */
-	int voice;			/* RO: voice number, -1 = interleaved */
 	volatile char data;		/* RW: non-zero - contains valid data */
 	volatile char io;		/* RO: non-zero - I/O operation (don't change data) */
 	char res[2];			/* reserved */
