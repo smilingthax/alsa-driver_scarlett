@@ -9,6 +9,9 @@
  *  Heavily based on PCI quirks handling which is
  *
  *  Copyright (c) 1999 Martin Mares <mj@suse.cz>
+ *
+ *  2-20-2000 Added Soundblaster 16 audio device port range quirk.
+ *    Paul Laufer <pelaufer@csupomona.edu>
  */
 
 #ifdef ALSA_BUILD
@@ -70,6 +73,36 @@ static void quirk_awe32_resources(struct isapnp_dev *dev)
 }
 
 
+static void __init quirk_sb16audio_resources(struct isapnp_dev *dev)
+{
+	struct isapnp_port *port, *port2, *port3;
+	struct isapnp_resources *res = dev->sysdata;
+
+	/* 
+	 * The default range on the 3rd port for these devices is 0x388-0x388.
+	 * That is bad. This little quirk should make it all better . . .
+	 */
+	
+	for( ; res ; res = res->alt ) {
+		port = res->port;
+		if(!port)
+			continue;
+		port2 = port->next;
+		if(!port2)
+			continue;
+		port3 = port2->next;
+		if(!port3)
+			continue;
+		if(port3->min != port3->max)
+			continue;
+		port3->max += 0x70;
+	}
+#ifndef MODULE
+	printk(KERN_INFO "ISAPnP: SB audio device quirk - increasing port range\n");
+#endif
+}
+
+
 /*
  *  ISAPnP Quirks
  *  Cards or devices that need some tweaking due to broken hardware
@@ -82,6 +115,16 @@ static struct isapnp_fixup isapnp_fixups[] __initdata = {
 		quirk_awe32_resources },
 	{ ISAPNP_VENDOR('C','T','L'), ISAPNP_DEVICE(0x0023),
 		quirk_awe32_resources },
+	{ ISAPNP_VENDOR('C','T','L'), ISAPNP_DEVICE(0x0031),
+		quirk_sb16audio_resources },
+	{ ISAPNP_VENDOR('C','T','L'), ISAPNP_DEVICE(0x0041),
+		quirk_sb16audio_resources },
+	{ ISAPNP_VENDOR('C','T','L'), ISAPNP_DEVICE(0x0042),
+		quirk_sb16audio_resources },
+	{ ISAPNP_VENDOR('C','T','L'), ISAPNP_DEVICE(0x0044),
+		quirk_sb16audio_resources },
+	{ ISAPNP_VENDOR('C','T','L'), ISAPNP_DEVICE(0x0045),
+		quirk_sb16audio_resources },
 	{ 0 }
 };
 
