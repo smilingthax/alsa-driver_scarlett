@@ -589,6 +589,7 @@ Module parameters
     snd_max_synth_voices - limit of voices used for wavetable (64 by default)
     snd_max_buffer_size  - specifies the maximum size of wavetable/pcm buffers
                            given in MB unit.  Default value is 128.
+    snd_enable_ir - enable IR
 
     Module supports up to 8 cards and autoprobe.
 

@@ -171,6 +171,9 @@
 #define HCFG_GPINPUT0		0x00004000	/* External pin112				*/
 #define HCFG_GPINPUT1		0x00002000	/* External pin110				*/
 #define HCFG_GPOUTPUT_MASK	0x00001c00	/* External pins which may be controlled	*/
+#define HCFG_GPOUT0		0x00001000	/* External pin? (spdif enable on 5.1)		*/
+#define HCFG_GPOUT1		0x00000800	/* External pin? (IR)				*/
+#define HCFG_GPOUT2		0x00000400	/* External pin? (IR)				*/
 #define HCFG_JOYENABLE      	0x00000200	/* Internal joystick enable    			*/
 #define HCFG_PHASETRACKENABLE	0x00000100	/* Phase tracking enable			*/
 						/* 1 = Force all 3 async digital inputs to use	*/
@@ -879,6 +882,7 @@ int snd_emu10k1_create(snd_card_t * card,
 		       unsigned short extin_mask,
 		       unsigned short extout_mask,
 		       long max_cache_bytes,
+		       int enable_ir,
 		       emu10k1_t ** remu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
