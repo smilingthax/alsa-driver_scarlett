@@ -19,6 +19,8 @@
 
 #include "opl4_local.h"
 #include <sound/initval.h>
+#include <linux/ioport.h>
+#include <asm/io.h>
 
 MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
 MODULE_DESCRIPTION("OPL4 driver");

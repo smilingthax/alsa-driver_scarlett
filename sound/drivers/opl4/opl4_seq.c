@@ -32,6 +32,7 @@
  */
 
 #include "opl4_local.h"
+#include <linux/init.h>
 #include <sound/initval.h>
 
 MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
@@ -45,22 +46,16 @@ MODULE_PARM(volume_boost, "i");
 MODULE_PARM_DESC(volume_boost, "Additional volume for OPL4 wavetable sounds.");
 MODULE_PARM_SYNTAX(volume_boost, "default:8");
 
-static inline void dec_mod_count(struct module *module)
-{
-	if (module)
-		__MOD_DEC_USE_COUNT(module);
-}
-
 static int snd_opl4_seq_use_inc(opl4_t *opl4)
 {
-	if (!try_inc_mod_count(opl4->card->module))
+	if (!try_module_get(opl4->card->module))
 		return -EFAULT;
 	return 0;
 }
 
 static void snd_opl4_seq_use_dec(opl4_t *opl4)
 {
-	dec_mod_count(opl4->card->module);
+	module_put(opl4->card->module);
 }
 
 static int snd_opl4_seq_use(void *private_data, snd_seq_port_subscribe_t *info)
