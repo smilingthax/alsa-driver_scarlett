@@ -676,12 +676,12 @@ enum sndrv_control_iface {
 	SNDRV_CONTROL_IFACE_SEQUENCER		/* sequencer client */
 };
 
-#define SNDRV_CONTROL_ACCESS_READ		(1<<0)
+#define SNDRV_CONTROL_ACCESS_READ	(1<<0)
 #define SNDRV_CONTROL_ACCESS_WRITE	(1<<1)
 #define SNDRV_CONTROL_ACCESS_READWRITE	(SNDRV_CONTROL_ACCESS_READ|SNDRV_CONTROL_ACCESS_WRITE)
 #define SNDRV_CONTROL_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without a notification */
 #define SNDRV_CONTROL_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
-#define SNDRV_CONTROL_ACCESS_LOCK		(1<<9)	/* write lock */
+#define SNDRV_CONTROL_ACCESS_LOCK	(1<<9)	/* write lock */
 #define SNDRV_CONTROL_ACCESS_INDIRECT	(1<<31)	/* indirect access */
 
 struct sndrv_control_id {
