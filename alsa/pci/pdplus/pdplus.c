@@ -350,39 +350,31 @@ EXPORT_NO_SYMBOLS;
 MODULE_AUTHOR("Henrik Theiling <henrik@theiling.de>");
 MODULE_DESCRIPTION("SekD/Marian Prodif Plus");
 MODULE_LICENSE("GPL");
-MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{SMarian,Prodif Plus}}");
+MODULE_SUPPORTED_DEVICE("{{SMarian,Prodif Plus}}");
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for Prodif Plus soundcard.");
-MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 
 MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
 MODULE_PARM_DESC(id, "ID string for Prodif Plus soundcard.");
-MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 
 MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(enable, "Enable Prodif Plus soundcard.");
-MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 
 static int silent_exit = 0;
 MODULE_PARM(silent_exit, "i");
 MODULE_PARM_DESC(silent_exit, "Do not reset when driver is unloaded.");
-MODULE_PARM_SYNTAX(silent_exit, "global," SNDRV_BOOLEAN_FALSE_DESC);
 
 static int init_adat = 0;
 MODULE_PARM(init_adat, "i");
 MODULE_PARM_DESC(init_adat, "Initialise the card in ADAT mode (instead of in digital stereo).");
-MODULE_PARM_SYNTAX(init_adat, "global," SNDRV_BOOLEAN_FALSE_DESC);
 
 #if DEBUG
 static int debug_level = 0;
 
 MODULE_PARM(debug_level, "i");
 MODULE_PARM_DESC(debug_level, "Debug level.");
-MODULE_PARM_SYNTAX(debug_level, "global");
 #endif
-
 /* ********************************************************************** */
 
 #if OVERRIDE_DEBUG_IO_VIRT

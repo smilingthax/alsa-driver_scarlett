@@ -48,7 +48,6 @@ EXPORT_NO_SYMBOLS;
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Serial MIDI");
 MODULE_LICENSE("GPL");
-MODULE_CLASSES("{sound}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;		/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;		/* ID for this card */
@@ -63,25 +62,18 @@ static int boot_devs;
 
 module_param_array(index, int, boot_devs, 0444);
 MODULE_PARM_DESC(index, "Index value for serial device.");
-MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 module_param_array(id, charp, boot_devs, 0444);
 MODULE_PARM_DESC(id, "ID string for serial device.");
-MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 module_param_array(enable, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable, "Enable serial device.");
-MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 module_param_array(sdev, charp, boot_devs, 0444);
 MODULE_PARM_DESC(sdev, "Device file string for serial device.");
-MODULE_PARM_SYNTAX(sdev, SNDRV_ID_DESC);
 module_param_array(speed, int, boot_devs, 0444);
 MODULE_PARM_DESC(speed, "Speed in bauds.");
-MODULE_PARM_SYNTAX(speed, SNDRV_ENABLED ",allows:{9600,19200,38400,57600,115200},dialog:list");
 module_param_array(adaptor, int, boot_devs, 0444);
 MODULE_PARM_DESC(adaptor, "Type of adaptor.");
-MODULE_PARM_SYNTAX(adaptor, SNDRV_ENABLED ",allows:{{0=Soundcanvas,1=MS-124T,2=MS-124W S/A,3=MS-124W M/B}},dialog:list");
 module_param_array(outs, int, boot_devs, 0444);
 MODULE_PARM_DESC(outs, "Number of MIDI outputs.");
-MODULE_PARM_SYNTAX(outs, SNDRV_ENABLED ",allows:{{1,16}},dialog:list");
 module_param_array(devices, int, boot_devs, 0444);
 MODULE_PARM_DESC(devices, "Number of devices to attach to the card.");
 module_param_array(handshake, int, boot_devs, 0444);

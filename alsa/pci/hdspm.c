@@ -62,39 +62,30 @@ static int boot_devs;
 
 module_param_array(index, int, boot_devs, 0444);
 MODULE_PARM_DESC(index, "Index value for RME HDSPM interface.");
-MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 
 module_param_array(id, charp, boot_devs, 0444);
 MODULE_PARM_DESC(id, "ID string for RME HDSPM interface.");
-MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 
 module_param_array(enable, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable, "Enable/disable specific HDSPM soundcards.");
-MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 
 module_param_array(precise_ptr, bool, boot_devs, 0444);
 MODULE_PARM_DESC(precise_ptr, "Enable precise pointer, or disable.");
-MODULE_PARM_SYNTAX(precise_ptr, SNDRV_ENABLED "," SNDRV_BOOLEAN_TRUE_DESC);
 
 module_param_array(line_outs_monitor, bool, boot_devs, 0444);
 MODULE_PARM_DESC(line_outs_monitor,
 		 "Send playback streams to analog outs by default.");
-MODULE_PARM_SYNTAX(line_outs_monitor,
-		   SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
 
 module_param_array(enable_monitor, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable_monitor,
 		 "Enable Analog Out on Channel 63/64 by default.");
-MODULE_PARM_SYNTAX(enable_monitor,
-		   SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
 
 MODULE_AUTHOR
       ("Winfried Ritsch <ritsch_AT_iem.at>, Paul Davis <paul@linuxaudiosystems.com>, "
        "Marcus Andersson, Thomas Charbonnel <thomas@undata.org>");
 MODULE_DESCRIPTION("RME HDSPM");
 MODULE_LICENSE("GPL");
-MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{RME HDSPM-MADI}}");
+MODULE_SUPPORTED_DEVICE("{{RME HDSPM-MADI}}");
 
 /* --- Write registers. --- 
   These are defined as byte-offsets from the iobase value.  */
