@@ -57,6 +57,10 @@ typedef struct snd_stru_pcm_hardware {
 	int (*prepare)(void *private_data, snd_pcm_substream_t * substream);
 	int (*trigger)(void *private_data, snd_pcm_substream_t * substream, int cmd);
 	unsigned int (*pointer)(void *private_data, snd_pcm_substream_t * substream);
+	int (*copy)(snd_pcm_substream_t *substream, int channel, unsigned int pos,
+		    void *buf, size_t count);
+	int (*silence)(snd_pcm_substream_t *substream, int channel, 
+		       unsigned int pos, size_t count);
 } snd_pcm_hardware_t;
 
 /*
@@ -168,10 +172,6 @@ struct snd_stru_pcm_runtime {
 	/* -- own hardware routines -- */
 	snd_pcm_hardware_t *hw;
 	void (*hw_free)(void *hw);
-	int (*hw_memcpy)(snd_pcm_substream_t *substream, int channel, unsigned int pos,
-			 void *buf, size_t count);
-	int (*hw_silence)(snd_pcm_substream_t *substream, int channel, 
-			  unsigned int pos, size_t count);
 	/* -- interrupt callbacks -- */
 	void (*transfer_ack_begin)(snd_pcm_substream_t *substream);
 	void (*transfer_ack_end)(snd_pcm_substream_t *substream);
