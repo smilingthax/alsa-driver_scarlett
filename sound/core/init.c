@@ -222,6 +222,10 @@ int snd_card_disconnect(snd_card_t * card)
  *  snd_card_free: frees given soundcard structure
  *  @card: soundcard structure
  *
+ *  This function releases the soundcard structure and the all assigned
+ *  devices automatically.  That is, you don't have to release the devices
+ *  by yourself.
+ *
  *  Returns - zero. Frees all associated devices and frees the control
  *  interface associated to given soundcard.
  */
@@ -307,6 +311,14 @@ static void snd_card_free_thread(void * __card)
  *  snd_card_free_in_thread: call snd_card_free() in thread
  *  @card: soundcard structure
  *
+ *  This function schedules the call of #snd_card_free function in a
+ *  work queue.  When all devices are released (non-busy), the work
+ *  is woken up and calls #snd_card_free.
+ *
+ *  When a card can be disconnected at any time by hotplug service,
+ *  this function should be used in disconnect (or detach) callback
+ *  instead of calling #snd_card_free directly.
+ *  
  *  Returns - zero otherwise a negative error code if the start of thread failed.
  */
 int snd_card_free_in_thread(snd_card_t * card)
@@ -380,6 +392,17 @@ static void choose_default_id(snd_card_t * card)
 	}
 }
 
+/**
+ *  snd_card_register: register the soundcard
+ *  @card: soundcard structure
+ *
+ *  This function registers all the devices assigned to the soundcard.
+ *  Until calling this, the ALSA control interface is blocked from the
+ *  external accesses.  Thus, you should call this function at the end
+ *  of the initialization of the card.
+ *
+ *  Returns - zero otherwise a negative error code if the registrain failed.
+ */
 int snd_card_register(snd_card_t * card)
 {
 	int err;
@@ -494,6 +517,17 @@ int __exit snd_card_info_done(void)
 	return 0;
 }
 
+/**
+ *  snd_component_add: add a component string
+ *  @card: soundcard structure
+ *  @component: the component id string
+ *
+ *  This function adds the component id string to the supported list.
+ *  The component can be referred from the alsa-lib.
+ *
+ *  Returns - zero otherwise a negative error code.
+ */
+  
 int snd_component_add(snd_card_t *card, const char *component)
 {
 	char *ptr;
@@ -514,6 +548,17 @@ int snd_component_add(snd_card_t *card, const char *component)
 	return 0;
 }
 
+/**
+ *  snd_card_file_add: add the file to the file list of the card
+ *  @card: soundcard structure
+ *  @file: file pointer
+ *
+ *  This function adds the file to the file linked-list of the card.
+ *  This linked-list is used to keep tracking the connection state,
+ *  and to avoid the release of busy resources by hotplug.
+ *
+ *  Returns zero or a negative error code.
+ */
 int snd_card_file_add(snd_card_t *card, struct file *file)
 {
 	struct snd_monitor_file *mfile;
@@ -535,6 +580,19 @@ int snd_card_file_add(snd_card_t *card, struct file *file)
 	return 0;
 }
 
+/**
+ *  snd_card_file_remove: remove the file from the file list
+ *  @card: soundcard structure
+ *  @file: file pointer
+ *
+ *  This function removes the file formerly added to the card via
+ *  #snd_card_file_add function.
+ *  If all files are removed and the release of the card is
+ *  scheduled, it will wake up the the thread to call #snd_card_free
+ *  (see #snd_card_free_in_thread function).
+ *
+ *  Returns zero or a negative error code.
+ */
 int snd_card_file_remove(snd_card_t *card, struct file *file)
 {
 	struct snd_monitor_file *mfile, *pfile = NULL;
@@ -565,7 +623,12 @@ int snd_card_file_remove(snd_card_t *card, struct file *file)
 }
 
 #ifdef CONFIG_PM
-/* the power lock must be active before call */
+/**
+ *  snd_power_wait: wait until the power-state is changed.
+ *  @card: soundcard structure
+ *
+ *  Note: the power lock must be active before call.
+ */
 void snd_power_wait(snd_card_t *card)
 {
 	wait_queue_t wait;
