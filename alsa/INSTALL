@@ -229,6 +229,20 @@ Additional Modules
 
     Module supports up to 8 cards.
 
+  Module snd-audigyls
+  -------------------
+
+    Module for Creative Audigy LS
+
+    Module supports up to 8 cards.
+
+  Module snd-azx
+  --------------
+
+    Module for Intel HD Audio (ICH6, ICH6M)
+
+    Module supports up to 8 cards.
+
 
 Trouble Shooting
 ================
