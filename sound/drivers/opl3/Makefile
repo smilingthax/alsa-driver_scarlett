@@ -8,9 +8,11 @@ O_TARGET     := _opl3.o
 export-objs  := opl3_lib.o
 
 snd-opl3-lib-objs := opl3_lib.o opl3_synth.o
-snd-opl3-synth-objs := opl3_seq.o opl3_midi.o opl3_drums.o
 ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
+snd-opl3-synth-objs := opl3_seq.o opl3_midi.o opl3_drums.o
+ifeq ($(CONFIG_SND_OSSEMUL),y)
 snd-opl3-synth-objs += opl3_oss.o
+endif
 endif
 
 # Toplevel Module Dependency
