@@ -146,6 +146,7 @@ typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, int direct, void 
 typedef void (snd_seq_kernel_port_private_free_t)(void *private_data);
 
 typedef struct {
+	struct module *owner;
 	void *private_data;
 	snd_seq_kernel_port_subscribe_t *subscribe;
 	snd_seq_kernel_port_unsubscribe_t *unsubscribe;
