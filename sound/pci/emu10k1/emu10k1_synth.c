@@ -96,10 +96,6 @@ int snd_emu10k1_synth_delete_device(snd_seq_device_t *dev)
 	return 0;
 }
 
-
-EXPORT_NO_SYMBOLS;
-
-
 /*
  *  INIT part
  */
