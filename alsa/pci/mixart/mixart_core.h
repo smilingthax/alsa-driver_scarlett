@@ -289,7 +289,7 @@ typedef struct mixart_timer_notify mixart_timer_notify_t;
 struct mixart_timer_notify
 {
 	u32                  stream_count;
-	mixart_sample_pos_t  streams[];
+	mixart_sample_pos_t  streams[0];
 } __attribute__((packed));
 
 
