@@ -4,7 +4,7 @@
 
 ID: SoundCard chipset/type
 SC: SoundCard name
-IF: Supported interfaces (MIXER,PCM,SYNTH,OPL,MIDI,EMUL)
+IF: Supported interfaces (MIXER,PCM,SYNTH,SYNTH_MIDI,SEQ,OPL,MIDI,EMUL,HWDEP)
 MA: Maintainer
 CO: Coder
 
@@ -12,7 +12,10 @@ This file is maintained by Jaroslav Kysela <perex@suse.cz>.
 Note: OPL -> Raw (native) OPL
 Note: MIDI -> external MIDI port
 Note: EMUL -> MIDI emulation
-
+Note: SYNTH -> yeah, well ?
+Note: SYNTH_MIDI -> internal synth that handles MIDI data
+Note: SEQ -> kernel client for ALSA sequencer
+Note: HWDEP -> various hardware-dependent interfaces/devices
 =====
 
 ID: AMD InterWave
@@ -21,19 +24,19 @@ SC: Dynasonic 3-D
 SC: STB Sound Rage 32
 SC: UltraSound 32-Pro (STB)
 SC: MED3210
-IF: MIXER,PCM,MIDI
+IF: MIXER,PCM,MIDI,SYNTH
 MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Gravis UltraSound MAX
-IF: MIXER,PCM,MIDI
+IF: MIXER,PCM,MIDI,SYNTH
 MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Gravis UltraSound Extreme
-IF: MIXER,PCM,MIDI
+IF: MIXER,PCM,MIDI,SYNTH
 MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Gravis UltraSound Classic/ACE
-IF: MIXER,PCM
+IF: MIXER,PCM,SYNTH
 MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: ESS AudioDrive ESx688
@@ -119,3 +122,12 @@ MA: perex@suse.cz
 ID: SGI Indy (HAL2)
 IF: PCM
 MA: Ulf Carlsson <ulfc@thepuffingroup.com>
+
+ID: Turtle Beach WaveFront
+SC: Tropez Plus (Tropez+)
+SC: Tropez
+SC: Maui (models with CS4232; others use OPTi 16 which is not handled)
+IF: MIXER,PCM,MIDI,OPL,SYNTH_MIDI,HWDEP
+CO: pbd@op.net
+MA: pbd@op.net
+

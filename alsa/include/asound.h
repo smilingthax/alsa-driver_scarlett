@@ -207,6 +207,10 @@ typedef struct snd_ctl_read {
 #define SND_HWDEP_TYPE_OPL3		1
 #define SND_HWDEP_TYPE_OPL4		2
 #define SND_HWDEP_TYPE_EMU8000		3
+#define SND_HWDEP_TYPE_YSS225           4      /* Yamaha FX processor */
+#define SND_HWDEP_TYPE_ICS2115          5      /* Wavetable synth */
+/* --- */
+#define SND_HWDEP_TYPE_LAST             5
 
 typedef struct snd_hwdep_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */

@@ -59,7 +59,12 @@
 #define SND_CARD_TYPE_TRID4DWAVENX	0x0000001B	/* Trident 4DWave NX */
 #define SND_CARD_TYPE_SGALAXY           0x0000001C      /* Aztech Sound Galaxy */
 #define SND_CARD_TYPE_CS461X		0x0000001D	/* Sound Fusion CS4610/12/15 */
+/* Turtle Beach WaveFront series */
+#define SND_CARD_TYPE_WAVEFRONT         0x0000001E      /* TB WaveFront generic */
+#define SND_CARD_TYPE_TROPEZ            0x0000001F      /* TB Tropez */
+#define SND_CARD_TYPE_TROPEZPLUS        0x00000020      /* TB Tropez+ */
+#define SND_CARD_TYPE_MAUI              0x00000021      /* TB Maui */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x0000001D
- 
+#define SND_CARD_TYPE_LAST		0x00000021
+
 #endif				/* __ASOUNDID_H */

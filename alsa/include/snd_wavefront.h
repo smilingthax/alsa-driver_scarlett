@@ -1,0 +1,158 @@
+#ifndef __SND_WAVEFRONT_H__
+#define __SND_WAVEFRONT_H__
+
+#include "config.h"
+#include "cs4231.h"
+#include "mpu401.h"
+#include "hwdep.h"
+#include "midi.h"
+#include "wavefront.h"  /* generic OSS/ALSA/user-level wavefront header */
+
+/* MIDI interface */
+
+struct snd_stru_wavefront_midi;
+struct snd_stru_wavefront_card;
+struct snd_stru_wavefront;
+
+typedef struct snd_stru_wavefront_midi snd_wavefront_midi_t;
+typedef struct snd_stru_wavefront_card snd_wavefront_card_t;
+typedef struct snd_stru_wavefront snd_wavefront_t;
+
+typedef enum { internal_mpu = 1, external_mpu = 2 } snd_wavefront_mpu_id;
+
+struct snd_stru_wavefront_midi {
+        unsigned short           base;        /* I/O port address */
+	char                     isvirtual;   /* doing virtual MIDI stuff ? */
+        snd_wavefront_mpu_id     output_mpu;  /* most-recently-used */
+        snd_wavefront_mpu_id     input_mpu;   /* most-recently-used */
+        unsigned int             internal_mode;    /* MPU401_MODE_XXX */
+        unsigned int             external_mode;    /* MPU401_MODE_XXX */
+        spinlock_t               open;
+        spinlock_t               input;
+        spinlock_t               output;
+        spinlock_t               virtual;     /* protects isvirtual */
+};
+
+#define	OUTPUT_READY	0x40
+#define	INPUT_AVAIL	0x80
+#define	MPU_ACK		0xFE
+#define	UART_MODE_ON	0x3F
+
+extern struct snd_stru_rawmidi_direction_hw snd_wavefront_midi_output;
+extern struct snd_stru_rawmidi_direction_hw snd_wavefront_midi_input;
+
+extern void   snd_wavefront_midi_enable_virtual (snd_wavefront_card_t *);
+extern void   snd_wavefront_midi_disable_virtual (snd_wavefront_card_t *);
+extern void   snd_wavefront_midi_interrupt (snd_wavefront_card_t *);
+extern int    snd_wavefront_midi_start (snd_wavefront_card_t *);
+
+struct snd_stru_wavefront {
+	unsigned short   irq;   /* "you were one, one of the few ..." */
+	unsigned short   base;  /* low i/o port address */
+
+#define mpu_data_port    base 
+#define mpu_command_port base + 1 /* write semantics */
+#define mpu_status_port  base + 1 /* read semantics */
+#define data_port        base + 2 
+#define status_port      base + 3 /* read semantics */
+#define control_port     base + 3 /* write semantics  */
+#define block_port       base + 4 /* 16 bit, writeonly */
+#define last_block_port  base + 6 /* 16 bit, writeonly */
+
+	/* FX ports. These are mapped through the ICS2115 to the YS225.
+	   The ICS2115 takes care of flipping the relevant pins on the
+	   YS225 so that access to each of these ports does the right
+	   thing. Note: these are NOT documented by Turtle Beach.
+	*/
+
+#define fx_status       base + 8 
+#define fx_op           base + 8 
+#define fx_lcr          base + 9 
+#define fx_dsp_addr     base + 0xa
+#define fx_dsp_page     base + 0xb 
+#define fx_dsp_lsb      base + 0xc 
+#define fx_dsp_msb      base + 0xd 
+#define fx_mod_addr     base + 0xe
+#define fx_mod_data     base + 0xf 
+
+	volatile int irq_ok;               /* set by interrupt handler */
+        volatile int irq_cnt;              /* ditto */
+	char debug;                        /* debugging flags */
+	int freemem;                       /* installed RAM, in bytes */ 
+
+	char fw_version[2];                /* major = [0], minor = [1] */
+	char hw_version[2];                /* major = [0], minor = [1] */
+	char israw;                        /* needs Motorola microcode */
+	char has_fx;                       /* has FX processor (Tropez+) */
+	char prog_status[WF_MAX_PROGRAM];  /* WF_SLOT_* */
+	char patch_status[WF_MAX_PATCH];   /* WF_SLOT_* */
+	char sample_status[WF_MAX_SAMPLE]; /* WF_ST_* | WF_SLOT_* */
+	int samples_used;                  /* how many */
+	char interrupts_are_midi;          /* h/w MPU interrupts enabled ? */
+	char rom_samples_rdonly;           /* can we write on ROM samples */
+	struct wait_queue *interrupt_sleeper; 
+        snd_wavefront_midi_t midi;         /* ICS2115 MIDI interface */
+};
+
+struct snd_stru_wavefront_card {
+	cs4231_t *codec;
+	snd_irq_t *cs4232_pcm_irqptr;
+	snd_irq_t *cs4232_mpu_irqptr;
+        snd_irq_t *ics2115_irqptr;
+	snd_dma_t *dma1ptr;
+	snd_dma_t *dma2ptr;
+	snd_card_t *card;
+	snd_pcm_t *pcm;
+	unsigned short pcm_status_reg;
+	snd_kmixer_t *mixer;
+	snd_rawmidi_t *cs4232_rmidi;
+	snd_rawmidi_t *ics2115_internal_rmidi;
+	snd_rawmidi_t *ics2115_external_rmidi;
+	snd_hwdep_t *fm_synth;
+	snd_hwdep_t *wavefront_synth;
+        snd_hwdep_t *fx_processor;
+        snd_wavefront_t wavefront;
+
+#ifdef CONFIG_ISAPNP
+	struct isapnp_logdev *wss;
+	struct isapnp_logdev *ctrl;
+	struct isapnp_logdev *mpu;
+	struct isapnp_logdev *synth;
+#endif CONFIG_ISAPNP
+};
+
+extern void snd_wavefront_internal_interrupt (snd_wavefront_card_t *card);
+extern int  snd_wavefront_interrupt_bits (int irq);
+extern int  snd_wavefront_detect_irq (snd_wavefront_t *dev) ;
+extern int  snd_wavefront_check_irq (snd_wavefront_t *dev, int irq);
+extern int  snd_wavefront_restart (snd_wavefront_t *dev);
+extern int  snd_wavefront_start (snd_wavefront_t *dev);
+extern int  snd_wavefront_detect (snd_wavefront_card_t *card);
+extern int  snd_wavefront_config_midi (snd_wavefront_t *dev) ;
+extern int  snd_wavefront_cmd (snd_wavefront_t *, int, unsigned char *,
+			       unsigned char *);
+
+extern int snd_wavefront_synth_ioctl   (snd_hwdep_t *, 
+					struct file *,
+					unsigned int cmd, 
+					unsigned long arg);
+extern int  snd_wavefront_synth_open    (snd_hwdep_t *, struct file *);
+extern int  snd_wavefront_synth_release (snd_hwdep_t *, struct file *);
+
+/* FX processor - see also yss225.[ch] */
+
+extern int  snd_wavefront_fx_start  (snd_wavefront_t *);
+extern int  snd_wavefront_fx_detect (snd_wavefront_t *);
+extern int  snd_wavefront_fx_ioctl  (snd_hwdep_t *, 
+				     struct file *,
+				     unsigned int cmd, 
+				     unsigned long arg);
+extern int snd_wavefront_fx_open    (snd_hwdep_t *, struct file *);
+extern int snd_wavefront_fx_release (snd_hwdep_t *, struct file *);
+
+/* prefix in all snd_printk() delivered messages */
+
+#define LOGNAME "WaveFront: "
+
+#endif  __SND_WAVEFRONT_H__
+
