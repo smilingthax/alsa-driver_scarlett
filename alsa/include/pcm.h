@@ -101,6 +101,8 @@ extern snd_pcm_kswitch_t *snd_pcm_new_switch(snd_pcm_t * pcm,
 
 extern void snd_pcm_proc_init(snd_pcm_t * pcm);
 extern void snd_pcm_proc_done(snd_pcm_t * pcm);
+extern void snd_pcm_proc_format(snd_pcm_channel_t * pchn,
+				snd_pcm_format_t * format);
 extern void snd_pcm_proc_write(snd_pcm_channel_t * pchn,
 			       const void *buffer, unsigned int count);
 
