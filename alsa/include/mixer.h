@@ -23,6 +23,7 @@
  */
  
 #define SND_MIXER_CHANNELS	16		/* max channels per card */
+#define SND_MIXER_SWITCHES	16		/* max mixer switches per card */
 
 #define SND_MIXER_PRI_MASTER		0x00000100
 #define SND_MIXER_PRI_MASTER1		0x00000101
@@ -64,6 +65,7 @@
 #define SND_MIX_MUTE		(SND_MIX_MUTE_LEFT|SND_MIX_MUTE_RIGHT)
 
 typedef struct snd_stru_mixer_channel snd_kmixer_channel_t;
+typedef struct snd_stru_mixer_switch snd_kmixer_switch_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
 
 struct snd_stru_mixer_channel_hw {
@@ -71,11 +73,10 @@ struct snd_stru_mixer_channel_hw {
   unsigned int parent_priority;	/* parent.... */
   char name[ 16 ];		/* device name */
   unsigned short ossdev;	/* assigned OSS device number */
-  unsigned short mute: 1,	/* mute is supported */
+  unsigned short mmute: 1,	/* mono mute is supported only */
                  stereo: 1,	/* stereo is supported */
-                 record: 1,	/* record is supported */
                  digital: 1,	/* digital mixer channel */
-                 input: 1;	/* this channel is input channel */
+                 input: 1;	/* this channel is external input channel */
   int min, max;			/* min and max left & right value */
   int min_dB, max_dB, step_dB;	/* min_dB, max_dB, step_dB */
   unsigned int private_value;	/* can be used by low-level driver */
@@ -113,18 +114,25 @@ struct snd_stru_mixer_channel {
   struct snd_stru_mixer_channel_hw hw; /* readonly variables */ 
 };
 
+struct snd_stru_mixer_switch {
+  char name[32];
+  int (*set_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
+  int (*get_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
+  unsigned int private_value;
+  void *private_data;		/* not freed by mixer.c */
+};
+
 struct snd_stru_mixer_file {
   snd_kmixer_t *mixer;
   int exact;			/* exact mode for this file */
   volatile unsigned int changes;
+  volatile unsigned int schanges;
   snd_sleep_define( change );
   struct snd_stru_mixer_file *next;
 };
 
 struct snd_stru_mixer_hw {
   unsigned int caps;
-  int (*set_special)( snd_kmixer_t *mixer, struct snd_mixer_special *special );
-  int (*get_special)( snd_kmixer_t *mixer, struct snd_mixer_special *special );
 };
 
 struct snd_stru_mixer {
@@ -136,6 +144,11 @@ struct snd_stru_mixer {
 
   unsigned int channels_count;		/* channels count */
   snd_kmixer_channel_t *channels[ SND_MIXER_CHANNELS ];
+
+  unsigned int switches_count;
+  snd_kmixer_switch_t *switches[ SND_MIXER_SWITCHES ];
+
+  int modify_counter;			/* for OSS emulation */
 
   void *private_data;
   void (*private_free)( void *private_data );
@@ -158,6 +171,8 @@ extern int snd_mixer_free( snd_kmixer_t *mixer );
 
 extern snd_kmixer_channel_t *snd_mixer_new_channel( snd_kmixer_t *mixer, struct snd_stru_mixer_channel_hw *hw );
 extern void snd_mixer_reorder_channel( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel );
+
+extern snd_kmixer_switch_t *snd_mixer_new_switch( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch );
 
 extern int snd_mixer_register( snd_kmixer_t *mixer, int device );
 extern int snd_mixer_unregister( snd_kmixer_t *mixer );
