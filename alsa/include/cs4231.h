@@ -274,6 +274,7 @@ const char *snd_cs4231_chip_id(cs4231_t *chip);
 
 int snd_cs4231_create(snd_card_t * card,
 		      unsigned long port,
+		      unsigned long cport,
 		      int irq, int dma1, int dma2,
 		      unsigned short hardware,
 		      unsigned short hwshare,
