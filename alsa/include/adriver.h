@@ -50,11 +50,11 @@
 
 #include <linux/module.h>
 
-#if defined(CONFIG_KMOD) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#ifdef CONFIG_HAVE_OLD_REQUEST_MODULE
 #include <linux/kmod.h>
 #undef request_module
 void snd_compat_request_module(const char *name, ...);
-#define request_module snd_compat_request_module
+#define request_module(name, args...) snd_compat_request_module(name, ##args)
 #endif
 
 #include <linux/compiler.h>
@@ -160,11 +160,19 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define MODULE_LICENSE(license)
 #endif
 
-/* no vsnprintf yet? */
-/* FIXME: the version number is not sure.. at least it exists already on 2.4.10 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
-#define snprintf(buf,size,fmt,args...) sprintf(buf,fmt,##args)
-#define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
+#ifndef CONFIG_HAVE_STRLCPY
+size_t snd_compat_strlcpy(char *dest, const char *src, size_t size);
+#define strlcpy(dest, src, size) snd_compat_strlcpy(dest, src, size)
+size_t snd_compat_strlcat(char *dest, const char *src, size_t size);
+#define strlcat(dest, src, size) snd_compat_strlcat(dest, src, size)
+#endif
+
+#ifndef CONFIG_HAVE_SNPRINTF
+#include <stdarg.h>
+int snd_compat_snprintf(char * buf, size_t size, const char * fmt, ...);
+int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
+#define snprintf(buf,size,fmt,args...) snd_compat_snprintf(buf,size,fmt,##args)
+#define vsnprintf(buf,size,fmt,args) snd_compat_vsnprintf(buf,size,fmt,args)
 #endif
 
 #if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)

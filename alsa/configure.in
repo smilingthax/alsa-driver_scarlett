@@ -809,6 +809,102 @@ if test "$CONFIG_ISAPNP" = "y"; then
   AC_DEFINE(CONFIG_PNP)
 fi
 
+dnl Check for strlcpy...
+AC_MSG_CHECKING(for strlcpy)
+strlcpy="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="-Wall -Werror $CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+],[
+  char buf[128];
+  strlcpy(buf, "abcd", sizeof(buf));
+],
+    AC_MSG_RESULT("yes");strlcpy="1",
+    AC_MSG_RESULT("no");strlcpy="0",
+    AC_MSG_RESULT("unknown");strlcpy="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_STRLCPY=$strlcpy
+dnl AC_SUBST(CONFIG_HAVE_STRLCPY)
+if test "$CONFIG_HAVE_STRLCPY" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_STRLCPY)
+fi
+
+dnl Check for snprintf...
+AC_MSG_CHECKING(for snprintf)
+snprintf="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="-Wall -Werror $CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+],[
+  char buf[128];
+  snprintf(buf, sizeof(buf), "abcd");
+],
+    AC_MSG_RESULT("yes");snprintf="1",
+    AC_MSG_RESULT("no");snprintf="0",
+    AC_MSG_RESULT("unknown");snprintf="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_SNPRINTF=$snprintf
+dnl AC_SUBST(CONFIG_HAVE_SNPRINTF)
+if test "$CONFIG_HAVE_SNPRINTF" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_SNPRINTF)
+fi
+
+dnl Check for vmalloc_to_page...
+AC_MSG_CHECKING(for vmalloc_to_page)
+vmalloc_to_page="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/time.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/slab.h"
+],[
+  struct page * (*func)(void*);
+  func = vmalloc_to_page;
+],
+    AC_MSG_RESULT("yes");vmalloc_to_page="1",
+    AC_MSG_RESULT("no");vmalloc_to_page="0",
+    AC_MSG_RESULT("unknown");vmalloc_to_page="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_VMALLOC_TO_PAGE=$vmalloc_to_page
+dnl AC_SUBST(CONFIG_HAVE_VMALLOC_TO_PAGE)
+if test "$CONFIG_HAVE_VMALLOC_TO_PAGE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VMALLOC_TO_PAGE)
+fi
+
+dnl Check for old kmod...
+AC_MSG_CHECKING(for old kmod)
+old_kmod="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/module.h"
+],[
+	kmod("abcd", "def", "ixj");
+],
+    AC_MSG_RESULT("yes");old_kmod="1",
+    AC_MSG_RESULT("no");old_kmod="0",
+    AC_MSG_RESULT("unknown");old_kmod="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_OLD_REQUEST_MODULE=$old_kmod
+dnl AC_SUBST(CONFIG_HAVE_OLD_REQUEST_MODULE)
+if test "$CONFIG_HAVE_OLD_REQUEST_MODULE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_OLD_REQUEST_MODULE)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
@@ -819,10 +915,11 @@ ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
 #define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #ifdef __alpha__ /* it's required (at least for 2.2.18) */
-#include <asm/current.h>
+#include "$CONFIG_SND_KERNELDIR/include/asm/current.h"
 #endif
-#include <linux/fs.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
 ],[
  struct fasync_struct *fa;
  int sig;
@@ -846,7 +943,8 @@ ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include <asm/types.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/asm/types.h"
 ],[
  dma_addr_t addr;
 ],
@@ -868,7 +966,8 @@ ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include <asm/semaphore.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/asm/semaphore.h"
 ],[
 #ifndef init_MUTEX
 #error not defined
@@ -913,31 +1012,6 @@ else
     mkdir -p include/linux
     ln -sf ../../support/pnp/pnp.h include/linux/pnp.h
   fi
-fi
-
-dnl Check for vmalloc_to_page...
-AC_MSG_CHECKING(for vmalloc_to_page)
-vmalloc_to_page="0"
-ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
-AC_TRY_COMPILE([
-#define __KERNEL__
-#include <linux/config.h>
-#include <linux/time.h>
-#include <linux/slab.h>
-],[
-  struct page * (*func)(void*);
-  func = vmalloc_to_page;
-],
-    AC_MSG_RESULT("yes");vmalloc_to_page="1",
-    AC_MSG_RESULT("no");vmalloc_to_page="0",
-    AC_MSG_RESULT("unknown");vmalloc_to_page="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CONFIG_HAVE_VMALLOC_TO_PAGE=$vmalloc_to_page
-dnl AC_SUBST(CONFIG_HAVE_VMALLOC_TO_PAGE)
-if test "$CONFIG_HAVE_VMALLOC_TO_PAGE" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_VMALLOC_TO_PAGE)
 fi
 
 dnl Check for version...
@@ -1000,11 +1074,12 @@ AC_TRY_RUN([
 int main(void) { exit(1); }
 #else
 #define __KERNEL__
-#include <linux/version.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/version.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 12)	/* FIXME: which 2.2.x kernel? */
-#include <linux/rtc.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/rtc.h"
 #else
-#include <linux/mc146818rtc.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/mc146818rtc.h"
 #endif
 int main(void)
 {

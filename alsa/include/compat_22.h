@@ -86,10 +86,12 @@ static __inline__ void list_del_init(struct list_head *entry)
 	do { __restore_flags(flags); } while (0)
 
 /* Some distributions use modified kill_fasync */
+#ifdef CONFIG_OLD_KILL_FASYNC
 #include <linux/fs.h>
 #undef kill_fasync
 #define kill_fasync(fp, sig, band) snd_wrapper_kill_fasync(fp, sig, band)
 void snd_wrapper_kill_fasync(struct fasync_struct **, int, int);
+#endif
 
 /* this is identical with tq_struct but the "routine" field is renamed to "func" */
 struct tasklet_struct {

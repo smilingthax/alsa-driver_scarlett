@@ -12,10 +12,18 @@ EXPORT_SYMBOL(pm_unregister);
 EXPORT_SYMBOL(pm_send);
 #endif
   /* wrappers */
-#if defined(CONFIG_KMOD) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#ifndef CONFIG_HAVE_STRLCPY
+EXPORT_SYMBOL(snd_compat_strlcpy);
+EXPORT_SYMBOL(snd_compat_strlcat);
+#endif
+#ifndef CONFIG_HAVE_SNPRINTF
+EXPORT_SYMBOL(snd_compat_snprintf);
+EXPORT_SYMBOL(snd_compat_vsnprintf);
+#endif
+#ifdef CONFIG_HAVE_OLD_REQUEST_MODULE
 EXPORT_SYMBOL(snd_compat_request_module);
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+#ifdef CONFIG_OLD_KILL_FASYNC
 EXPORT_SYMBOL(snd_wrapper_kill_fasync);
 #endif
 #if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
