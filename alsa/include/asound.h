@@ -37,6 +37,7 @@
 #ifndef __KERNEL__
 #include <sys/time.h>
 #include <netinet/in.h>
+#include <asm/page.h>
 #else
 #include <linux/in.h>
 #endif
@@ -1273,8 +1274,9 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_STATE_OVERRUN		SND_PCM_STATE_XRUN	/* stream reached an overrun and it is not ready */
 #define SND_PCM_STATE_PAUSED		5	/* stream is paused */
 
-#define SND_PCM_MMAP_OFFSET_CONTROL	0x00000000
-#define SND_PCM_MMAP_OFFSET_DATA	0x80000000
+#define SND_PCM_MMAP_OFFSET_DATA	0x00000000
+#define SND_PCM_MMAP_OFFSET_STATUS	0x80000000
+#define SND_PCM_MMAP_OFFSET_CONTROL	0x81000000
 
 /* digital setup types */
 #define SND_PCM_DIG_AES_IEC958		0
@@ -1453,14 +1455,14 @@ typedef struct snd_pcm_stream_params {
 	int time: 1,			/* timestamp (gettimeofday) switch */
 	    ust_time: 1;		/* UST time switch */
 	snd_pcm_sync_t sync;		/* sync group */
-	size_t buffer_size;		/* requested buffer size */
-	size_t frag_size;		/* requested size of fragment in bytes */
-	size_t bytes_min;		/* min available bytes for wakeup */
-	size_t bytes_align;		/* transferred size need to be a multiple */
-	size_t bytes_xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
+	size_t buffer_size;		/* requested buffer size in frames */
+	size_t frag_size;		/* requested size of fragment in frames */
+	size_t frames_min;		/* min available frames for wakeup */
+	size_t frames_align;		/* transferred size need to be a multiple */
+	size_t frames_xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t bytes_fill_max;		/* maximum silence fill in bytes */
-	size_t byte_boundary;		/* position in bytes wrap point */
+	size_t frames_fill_max;		/* maximum silence fill in frames */
+	size_t frame_boundary;		/* position in frames wrap point */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_stream_params_t;
 
@@ -1480,16 +1482,16 @@ typedef struct snd_pcm_stream_setup {
 	int time: 1,			/* timestamp (gettimeofday) switch */
 	    ust_time: 1;		/* UST time switch */
 	snd_pcm_sync_t sync;		/* sync group */
-	size_t buffer_size;		/* current buffer size in bytes */
-	size_t frag_size;		/* current fragment size in bytes */
-	size_t bytes_min;		/* min available bytes for wakeup */
-	size_t bytes_align;		/* transferred size need to be a multiple */
-	size_t bytes_xrun_max;		/* max size of underrun/overrun before unconditional stop */
+	size_t buffer_size;		/* current buffer size in frames */
+	size_t frag_size;		/* current fragment size in frames */
+	size_t frames_min;		/* min available frames for wakeup */
+	size_t frames_align;		/* transferred size need to be a multiple */
+	size_t frames_xrun_max;		/* max size of underrun/overrun before unconditional stop */
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t bytes_fill_max;		/* maximum silence fill in bytes */
-	size_t byte_boundary;		/* position in bytes wrap point */
+	size_t frames_fill_max;		/* maximum silence fill in frames */
+	size_t frame_boundary;		/* position in frames wrap point */
 	size_t frags;			/* allocated fragments */
-	unsigned int msbits_per_sample;		/* used most significant bits per sample */
+	unsigned int msbits_per_sample;	/* used most significant bits per sample */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_stream_setup_t;
 
@@ -1511,10 +1513,10 @@ typedef struct snd_pcm_stream_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
 	struct timeval stime;	/* time when playback/capture was started */
 	long long ust_stime;	/* UST time when playback/capture was started */
-	size_t byte_io;		/* current I/O position in bytes */
-	size_t byte_data;	/* current data position */
-	size_t bytes_avail;	/* number of bytes available for application */
-	size_t bytes_avail_max;	/* max bytes available since last status */
+	size_t frame_io;	/* current I/O position in frames */
+	size_t frame_data;	/* current data position */
+	size_t frames_avail;	/* number of frames available for application */
+	size_t frames_avail_max;	/* max frames available since last status */
 	unsigned int xruns;	/* count of underruns/overruns from last status */
 	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
 	char reserved[64];	/* must be filled with zero */
@@ -1522,10 +1524,24 @@ typedef struct snd_pcm_stream_status {
 
 typedef struct {
 	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
-	size_t byte_io;		/* RO: I/O position (0 ... byte_boundary-1) updated only on status query and at interrupt time */
-	size_t byte_data;	/* RW: application position (0 ... byte_boundary-1) checked only on status query and at interrupt time */
-	int reserved[59];	/* reserved */
+	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
+	char pad[PAGE_SIZE - sizeof(size_t) - sizeof(int)];		
+} snd_pcm_mmap_status_t;
+
+typedef struct {
+	size_t frame_data;	/* RW: application position (0 ... frame_boundary-1) checked only on status query and at interrupt time */
+	char pad[PAGE_SIZE - sizeof(size_t)];
 } snd_pcm_mmap_control_t;
+
+typedef struct {
+	char *buf;
+	size_t count;
+} snd_xfer_t;
+
+typedef struct {
+	const struct iovec *vector;
+	unsigned long count;
+} snd_xferv_t;
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
@@ -1533,7 +1549,7 @@ typedef struct {
 #define SND_PCM_IOCTL_STREAM_PARAMS	_IOW ('A', 0x10, snd_pcm_stream_params_t)
 #define SND_PCM_IOCTL_STREAM_SETUP	_IOR ('A', 0x20, snd_pcm_stream_setup_t)
 #define SND_PCM_IOCTL_STREAM_STATUS	_IOR ('A', 0x21, snd_pcm_stream_status_t)
-#define SND_PCM_IOCTL_STREAM_BYTE_IO	_IO  ('A', 0x22)
+#define SND_PCM_IOCTL_STREAM_FRAME_IO	_IO  ('A', 0x22)
 #define SND_PCM_IOCTL_STREAM_PREPARE	_IO  ('A', 0x30)
 #define SND_PCM_IOCTL_STREAM_GO		_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_STREAM_FLUSH	_IO  ('A', 0x32)
@@ -1543,6 +1559,12 @@ typedef struct {
 #define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
 #define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x41, snd_pcm_channel_params_t)
 #define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x42, snd_pcm_channel_setup_t)
+#define SND_PCM_IOCTL_WRITE_FRAMES	_IOW ('A', 0x50, snd_xfer_t)
+#define SND_PCM_IOCTL_READ_FRAMES	_IOR ('A', 0x51, snd_xfer_t)
+#define SND_PCM_IOCTL_WRITEV_FRAMES	_IOW ('A', 0x52, snd_xferv_t)
+#define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
+#define SND_PCM_IOCTL_STREAM_FRAME_DATA	_IOW ('A', 0x54, off_t)
+
 
 /*
  *  Interface compatible with Open Sound System API
@@ -1912,12 +1934,7 @@ typedef struct snd_timer_read {
  *
  */
 
-typedef struct {
-	const struct iovec *vector;
-	unsigned long count;
-} snd_v_args_t;
-
-#define SND_IOCTL_READV		_IOW ('K', 0x00, snd_v_args_t)
-#define SND_IOCTL_WRITEV	_IOW ('K', 0x01, snd_v_args_t)
+#define SND_IOCTL_READV		_IOW ('K', 0x00, snd_xferv_t)
+#define SND_IOCTL_WRITEV	_IOW ('K', 0x01, snd_xferv_t)
 
 #endif				/* __ASOUND_H */

@@ -164,12 +164,6 @@ int snd_pcm_plugin_build(snd_pcm_plugin_handle_t *handle,
                          snd_pcm_plugin_t **ret);
 int snd_pcm_plugin_free(snd_pcm_plugin_t *plugin);
 int snd_pcm_plugin_clear(snd_pcm_plugin_t **first);
-ssize_t snd_pcm_plugin_src_frames_to_size(snd_pcm_plugin_t *plugin, size_t frames);
-ssize_t snd_pcm_plugin_dst_frames_to_size(snd_pcm_plugin_t *plugin, size_t frames);
-ssize_t snd_pcm_plugin_src_size_to_frames(snd_pcm_plugin_t *plugin, size_t size);
-ssize_t snd_pcm_plugin_dst_size_to_frames(snd_pcm_plugin_t *plugin, size_t size);
-ssize_t snd_pcm_plug_client_frames(snd_pcm_plugin_handle_t *handle, int stream, size_t drv_frames);
-ssize_t snd_pcm_plug_slave_frames(snd_pcm_plugin_handle_t *handle, int stream, size_t clt_frames);
 ssize_t snd_pcm_plug_client_size(snd_pcm_plugin_handle_t *handle, int stream, size_t drv_size);
 ssize_t snd_pcm_plug_slave_size(snd_pcm_plugin_handle_t *handle, int stream, size_t clt_size);
 

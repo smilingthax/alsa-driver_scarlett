@@ -1,8 +1,6 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
-M split mmap control in two pages
-M move toward frame unit
-M add checks for unaligned byte_data coming from user space
+M add to stream_info format request
 M loopback implementation (To think)
 M reimplement mixer/control API (To think)
 M make xrun detection optional (Abramo)
@@ -13,8 +11,13 @@ L timestamp for mmap'ed byte_io and status (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
+H port rme96 to new frame oriented midlevel
+H port pdplus to new frame oriented midlevel (and fix broken interrupt handler)
 M rewrite mixer lowlevel implementation
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
+L get rid of snd_pcm_lib_fragment_bytes and snd_pcm_lib_buffer_bytes
+L optimize lowlevel drivers for frame unit use
+L change the word "frame" used for some module parameters to something less misleading

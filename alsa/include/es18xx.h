@@ -42,9 +42,10 @@ struct snd_stru_es18xx {
 	unsigned short audio2_vol;	/* volume level of audio2 */
 
 	unsigned short active;		/* active channel mask */
-	unsigned int p_a_dma_size;
-	unsigned int c_a_dma_size;
-	unsigned int p_b_dma_size;
+	unsigned int dma1_size;
+	unsigned int dma2_size;
+	unsigned int dma1_shift;
+	unsigned int dma2_shift;
 
 	snd_kmixer_element_t *mix_imux;
 	snd_kmixer_element_t *mix_mic;

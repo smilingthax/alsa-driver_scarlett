@@ -83,7 +83,6 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_PARAMS		1
 #define SND_PCM_IOCTL1_SETUP		2
 #define SND_PCM_IOCTL1_STATUS		3
-#define SND_PCM_IOCTL1_MMAP_CTRL	4
 #define SND_PCM_IOCTL1_MMAP_SIZE	5
 #define SND_PCM_IOCTL1_MMAP_PTR		6
 #define SND_PCM_IOCTL1_PAUSE		7
@@ -122,20 +121,18 @@ struct snd_stru_pcm_runtime {
 
 	volatile int *state;		/* stream status */
 	int _sstate;			/* static status location */
-	volatile size_t *byte_io;
-	size_t _sbyte_io;
-	volatile size_t *byte_data;
-	size_t _sbyte_data;
-	size_t byte_io_base;		/* Position at buffer restart */
-	size_t byte_io_interrupt;	/* Position at interrupt time*/
+	volatile size_t *frame_io;
+	size_t _sframe_io;
+	volatile size_t *frame_data;
+	size_t _sframe_data;
+	size_t frame_io_base;		/* Position at buffer restart */
+	size_t frame_io_interrupt;	/* Position at interrupt time*/
 	int interrupt_pending;
-	size_t frag_io_mod;		/* Fragment under I/O */
-	size_t bytes_per_second;
-	size_t bytes_min_align;		/* Min alignment for the format */
-	size_t xfer_bytes_align;	/* True alignment used */
-	size_t bytes_avail_max;
+	size_t frames_min_align;		/* Min alignment for the format */
+	size_t xfer_frames_align;	/* True alignment used */
+	size_t frames_avail_max;
 
-	size_t byte_boundary;
+	size_t frame_boundary;
 
 	int xruns;
 	int overrange;
@@ -146,16 +143,21 @@ struct snd_stru_pcm_runtime {
 	snd_pcm_sync_t sync_group;	/* synchronization group */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
-	size_t bytes_min;	/* min available bytes for wakeup */
-	size_t bytes_align;	/* Requested alignment */
-	unsigned int bytes_xrun_max;
+	size_t frames_min;	/* min available frames for wakeup */
+	size_t frames_align;	/* Requested alignment */
+	unsigned int frames_xrun_max;
 	int fill_mode;       /* fill mode - SND_PCM_FILL_XXXX */
-	size_t bytes_fill_max;   /* maximum silence fill in bytes */
-	size_t byte_fill;
+	size_t frames_fill_max;   /* maximum silence fill in frames */
+	size_t frame_fill;
+	size_t bits_per_frame;
+	size_t bits_per_sample;
+	size_t byte_align;
 
+	snd_pcm_mmap_status_t *mmap_status;
 	snd_pcm_mmap_control_t *mmap_control;
 	char *mmap_data;
 	unsigned long mmap_data_user;		/* User space address */
+	snd_vma_t *mmap_status_vma;
 	snd_vma_t *mmap_control_vma;
 	snd_vma_t *mmap_data_vma;
 	/* -- locking / scheduling -- */
@@ -312,36 +314,63 @@ extern int snd_pcm_mmap_data(snd_pcm_substream_t *substream, struct file *file,
  *  PCM library
  */
 
-static inline size_t snd_pcm_lib_transfer_size(snd_pcm_substream_t *substream)
+static inline ssize_t bytes_to_samples(snd_pcm_runtime_t *runtime, ssize_t size)
 {
-	return substream->runtime->buffer_size;
+	return size * 8 / runtime->bits_per_sample;
 }
 
-static inline size_t snd_pcm_lib_transfer_fragment(snd_pcm_substream_t *substream)
+static inline ssize_t bytes_to_frames(snd_pcm_runtime_t *runtime, ssize_t size)
 {
-	return substream->runtime->frag_size;
+	return size * 8 / runtime->bits_per_frame;
+}
+
+static inline ssize_t samples_to_bytes(snd_pcm_runtime_t *runtime, ssize_t size)
+{
+	return size * runtime->bits_per_sample / 8;
+}
+
+static inline ssize_t frames_to_bytes(snd_pcm_runtime_t *runtime, ssize_t size)
+{
+	return size * runtime->bits_per_frame / 8;
+}
+
+static inline int frame_aligned(snd_pcm_runtime_t *runtime, ssize_t bytes)
+{
+	return bytes % runtime->byte_align == 0;
+}
+
+static inline size_t snd_pcm_lib_buffer_bytes(snd_pcm_substream_t *substream)
+{
+	snd_pcm_runtime_t *runtime = substream->runtime;
+	return frames_to_bytes(runtime, runtime->buffer_size);
+}
+
+static inline size_t snd_pcm_lib_fragment_bytes(snd_pcm_substream_t *substream)
+{
+	snd_pcm_runtime_t *runtime = substream->runtime;
+	return frames_to_bytes(runtime, runtime->frag_size);
 }
 
 /*
  *  result is: 0 ... (frag_boundary - 1)
  */
-static inline size_t snd_pcm_playback_bytes_avail(snd_pcm_runtime_t *runtime)
+static inline size_t snd_pcm_playback_frames_avail(snd_pcm_runtime_t *runtime)
 {
-	ssize_t bytes_avail = *runtime->byte_io + runtime->buffer_size - *runtime->byte_data;
-	if (bytes_avail < 0)
-		bytes_avail += runtime->byte_boundary;
-	return bytes_avail;
+	ssize_t frames_avail = *runtime->frame_io + runtime->buffer_size - *runtime->frame_data;
+	if (frames_avail < 0)
+		frames_avail += runtime->frame_boundary;
+	return frames_avail;
 }
 
 /*
  *  result is: 0 ... (frag_boundary - 1)
  */
-static inline size_t snd_pcm_capture_bytes_avail(snd_pcm_runtime_t *runtime)
+static inline size_t snd_pcm_capture_frames_avail(snd_pcm_runtime_t *runtime)
 {
-	ssize_t bytes_avail = *runtime->byte_io - *runtime->byte_data;
-	if (bytes_avail < 0)
-		bytes_avail += runtime->byte_boundary;
-	return bytes_avail;
+	ssize_t frames_avail = *runtime->frame_io - *runtime->frame_data;
+	if (frames_avail < 0)
+		frames_avail += runtime->frame_boundary;
+	return frames_avail;
 }
 
 
@@ -356,7 +385,6 @@ extern u_int64_t snd_pcm_format_silence_64(int format);
 extern ssize_t snd_pcm_format_set_silence(int format, void *buf, size_t count);
 extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 extern ssize_t snd_pcm_format_size(int format, size_t samples);
-extern ssize_t snd_pcm_format_bytes_per_second(snd_pcm_format_t *format);
  
 extern int snd_pcm_dma_alloc(snd_pcm_substream_t * substream, snd_dma_t * dma, char *ident);
 extern int snd_pcm_dma_setup(snd_pcm_substream_t * substream, snd_dma_area_t * area);
@@ -365,10 +393,9 @@ extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);
 extern void snd_pcm_set_mixer(snd_pcm_substream_t * substream, int mixer_device, snd_kmixer_element_t * element);
 extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);
-extern int snd_pcm_lib_mmap_ctrl_ptr(snd_pcm_substream_t *substream, char *ptr);
 extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_substream_t *substream,
 			     unsigned int cmd, unsigned long *arg);                      
-extern void snd_pcm_update_byte_io(snd_pcm_substream_t *substream);
+extern void snd_pcm_update_frame_io(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
