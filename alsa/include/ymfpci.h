@@ -328,7 +328,7 @@ void snd_ymfpci_interrupt(ymfpci_t * codec);
 int snd_ymfpci_pcm(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm2(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm_spdif(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
-int snd_ymfpci_mixer(ymfpci_t * codec, int device, snd_pcm_t *pcm, snd_kmixer_t **rmixer);
+int snd_ymfpci_mixer(ymfpci_t * codec);
 
 int snd_ymfpci_voice_alloc(ymfpci_t * codec, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);
 int snd_ymfpci_voice_free(ymfpci_t * codec, ymfpci_voice_t *pvoice);

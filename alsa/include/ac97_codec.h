@@ -85,7 +85,7 @@ typedef struct snd_stru_ac97 ac97_t;
 struct snd_stru_ac97 {
 	void (*write) (ac97_t *ac97, unsigned short reg, unsigned short val);
 	unsigned short (*read) (ac97_t *ac97, unsigned short reg);
-	void (*init) (void *private_data, ac97_t *ac97);
+	void (*init) (ac97_t *ac97);
 	snd_info_entry_t *proc_entry;
 	snd_info_entry_t *proc_regs_entry;
 	void *private_data;

@@ -36,8 +36,6 @@ typedef struct snd_stru_kcontrol_new {
 	snd_kcontrol_get_t *get;
 	snd_kcontrol_put_t *put;
 	unsigned long private_value;
-	void *private_data;
-	void (*private_free)(void *private_data);
 } snd_kcontrol_new_t;
 
 struct snd_stru_kcontrol {
