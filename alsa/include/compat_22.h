@@ -23,6 +23,7 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 
 #endif /* <2.2.18 */
 
+
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
 #define fops_get(x) (x)
 #define fops_put(x) do { ; } while (0)
@@ -277,3 +278,9 @@ extern inline int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 #endif /* CONFIG_APM */
 
 #endif /* <2.3.0 */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
+#else
+#define snd_kill_fasync(fp, sig, band) kill_fasync(fp, sig, band)
+#endif

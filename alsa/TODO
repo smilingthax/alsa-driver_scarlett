@@ -9,7 +9,6 @@ M add master/divisor to timer
 L lock, grant and revoke ioctls (not available to application I propose)
 L nonblocking async mode (with requests queue)
 L check multithread safeness wrt at least read/write
-L async notification support (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 L clean endianness stuff
 L partial PCM mmap support (rme9652)
