@@ -91,7 +91,7 @@ function stop() {
   #
   # remove all sound modules
   #
-  /sbin/lsmod | grep -E "^snd" | while read line; do \
+  /sbin/lsmod | grep -E "^snd" | fgrep -v "snd-rme9652_mem" | while read line; do \
      /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
   done
   # remove the 2.2 soundcore module (if possible)
