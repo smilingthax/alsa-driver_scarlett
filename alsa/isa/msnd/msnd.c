@@ -47,7 +47,11 @@
 #include <linux/vmalloc.h>
 #include <linux/types.h>
 #include <linux/delay.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 10) /* enable_irq(), disable_irq() */
+#include <linux/interrupt.h>
+#else
 #include <asm/irq.h>
+#endif
 #include <asm/io.h>
 #include "msnd.h"
 
