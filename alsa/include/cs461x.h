@@ -1623,6 +1623,13 @@
  *
  */
 
+#define SAVE_REG_MAX             0x10
+#define POWER_DOWN_ALL         0x7f0f
+
+/*
+ *
+ */
+
 typedef struct _snd_cs461x cs461x_t;
 
 typedef struct {
@@ -1688,6 +1695,9 @@ struct _snd_cs461x {
 	unsigned int midcr;
 	unsigned int uartm;
 	snd_info_entry_t *proc_entry;
+#ifdef CONFIG_APM
+	struct pm_dev *pm_dev;
+#endif
 };
 
 int snd_cs461x_create(snd_card_t *card,
