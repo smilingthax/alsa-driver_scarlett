@@ -944,7 +944,7 @@ static void snd_timer_user_interrupt(snd_timer_instance_t *timeri,
 	int prev;
 	
 	spin_lock(&tu->qlock);
-	if (tu->queue_size > 0) {
+	if (tu->qused > 0) {
 		prev = tu->qtail == 0 ? tu->queue_size - 1 : tu->qtail - 1;
 		r = &tu->queue[prev];
 		if (r->resolution == resolution) {
@@ -995,7 +995,7 @@ static void snd_timer_user_tinterrupt(snd_timer_instance_t *timeri,
 		snd_timer_user_append_to_tqueue(tu, &r1);
 		tu->last_resolution = resolution;
 	}
-	if (tu->queue_size > 0) {
+	if (tu->qused > 0) {
 		prev = tu->qtail == 0 ? tu->queue_size - 1 : tu->qtail - 1;
 		r = &tu->tqueue[prev];
 		if (r->event == SNDRV_TIMER_EVENT_TICK) {
@@ -1046,6 +1046,8 @@ static int snd_timer_user_release(struct inode *inode, struct file *file)
 			snd_timer_close(tu->timeri);
 		if (tu->queue)
 			kfree(tu->queue);
+		if (tu->tqueue)
+			kfree(tu->tqueue);
 		snd_magic_kfree(tu);
 	}
 	return 0;
@@ -1177,6 +1179,14 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselec
 	if ((tu->timeri = snd_timer_open(str, &tselect.id, current->pid)) == NULL)
 		return -ENODEV;
 
+	if (tu->queue) {
+		kfree(tu->queue);
+		tu->queue = NULL;
+	}
+	if (tu->tqueue) {
+		kfree(tu->tqueue);
+		tu->tqueue = NULL;
+	}
 	if (tu->tread) {
 		tu->tqueue = (snd_timer_tread_t *)kmalloc(tu->queue_size * sizeof(snd_timer_tread_t), GFP_KERNEL);
 		if (tu->tqueue == NULL) {
@@ -1227,6 +1237,7 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 	snd_timer_params_t params;
 	snd_timer_t *t;
 	snd_timer_read_t *tr;
+	snd_timer_tread_t *ttr;
 	int err;
 	
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
@@ -1252,11 +1263,20 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 	}
 	spin_unlock_irqrestore(&t->lock, flags);
 	if (params.queue_size > 0 && (unsigned int)tu->queue_size != params.queue_size) {
-		tr = (snd_timer_read_t *)kmalloc(params.queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
-		if (tr) {
-			kfree(tu->queue);
-			tu->queue_size = params.queue_size;
-			tu->queue = tr;
+		if (tu->tread) {
+			ttr = (snd_timer_tread_t *)kmalloc(params.queue_size * sizeof(snd_timer_tread_t), GFP_KERNEL);
+			if (ttr) {
+				kfree(tu->tqueue);
+				tu->queue_size = params.queue_size;
+				tu->tqueue = ttr;
+			}
+		} else {
+			tr = (snd_timer_read_t *)kmalloc(params.queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
+			if (tr) {
+				kfree(tu->queue);
+				tu->queue_size = params.queue_size;
+				tu->queue = tr;
+			}
 		}
 	}
 	if (t->hw.flags & SNDRV_TIMER_HW_SLAVE) {
