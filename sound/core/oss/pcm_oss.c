@@ -497,9 +497,12 @@ static int snd_pcm_oss_change_params(snd_pcm_substream_t *substream)
 
 	err = 0;
 failure:
-	kfree(sw_params);
-	kfree(params);
-	kfree(sparams);
+	if (sw_params)
+		kfree(sw_params);
+	if (params)
+		kfree(params);
+	if (sparams)
+		kfree(sparams);
 	return err;
 }
 
