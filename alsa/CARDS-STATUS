@@ -121,7 +121,7 @@ TerraTec DMX
 ESS AudioDrive ES968
 
 - snd-card-fm801
-ForteMedia FM801:ab
+ForteMedia FM801:ab,jk
 
 - snd-card-gusclassic
 Gravis UltraSound Classic:jk
