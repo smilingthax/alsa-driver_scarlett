@@ -207,8 +207,8 @@ typedef struct snd_stru_irq {
 } snd_irq_t;
 
 typedef struct snd_stru_port {
-	unsigned short port;
-	unsigned short size;
+	unsigned int port;
+	unsigned int size;
 	char *name;
 #ifdef NEW_RESOURCE
 	struct resource *res;
