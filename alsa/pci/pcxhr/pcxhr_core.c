@@ -450,7 +450,7 @@ static struct pcxhr_cmd_info pcxhr_dsp_cmds[] = {
 [CMD_STREAM_SAMPLE_COUNT] =		{ 0x902000, 2, RMH_SSIZE_FIXED },	/* stat_len = nb_streams * 2 */
 [CMD_AUDIO_LEVEL_ADJUST] =		{ 0xc22000, 0, RMH_SSIZE_FIXED },
 };
-#ifdef CONFIG_SND_DEBUG
+#ifdef CONFIG_SND_DEBUG_DETECT
 static char* cmd_names[] = {
 [CMD_VERSION] =				"CMD_VERSION",
 [CMD_SUPPORTED] =			"CMD_SUPPORTED",
