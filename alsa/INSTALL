@@ -8,9 +8,9 @@ Please, check if OSS/Lite is compiled in your kernel. Remove it before
 you are trying to install this driver.
 
 Before you are trying install this driver, please, read carefuly
-documentation for insmod, modprobe and kerneld/kmod. If you don't
-understand how these programs work, you can't be success with
-installation.
+documentation for insmod, modprobe, kerneld/kmod and even for isapnp
+if you have ISA PnP soundcard. If you don't understand how these programs
+work, you can't be success with installation.
 
 Quick install
 =============
