@@ -1,9 +1,9 @@
-ISA Plug & Play support by Jaroslav Kysela <perex@jcu.cz>
+ISA Plug & Play support by Jaroslav Kysela <perex@suse.cz>
 =========================================================
 
-Please, notice that device and logical device are two different things.
-The device is whole ISA PnP card and the logical device is part of ISA PnP
-card.
+Please, notice that the device and the logical device are two different
+things. The device is whole ISA PnP card and the logical device is part
+of a ISA PnP card.
 
 Interface /proc/isapnp
 ======================
@@ -16,9 +16,9 @@ No comment..
 Write commands:
 ---------------
 
-With write interface you can simply activate or modify configuration for
-ISA Plug & Play devices. It is mainly useable for drivers which don't
-use ISA Plug & Play kernel support yet.
+With write interface you can simply activate or modify the configuration
+for ISA Plug & Play devices. It is mainly useable for drivers which don't
+use the ISA Plug & Play kernel support yet.
 
 device <idx> <vendor>	- select PnP device by vendor identification
 csn <CSN>		- select PnP device by CSN
@@ -34,7 +34,7 @@ poke <reg> <value>	- poke configuration byte to selected register
 pokew <reg> <value>	- poke configuration word to selected register
 poked <reg> <value>	- poke configuration dword to selected register
 
-Explaination:
+Explanation:
 	- variable <idx> begins with zero
 	- variable <CSN> begins with one
 	- <vendor> is in form 'PNP0000'
@@ -68,21 +68,21 @@ extern struct isapnp_dev *isapnp_find_device(unsigned short vendor,
                                              unsigned short device,
                                              int index);
 
-Above function finds the device by index. For the vendor device should
+The above function finds the device by index. For the vendor device should
 be used ISAPNP_VENDOR(a,b,c) where a,b,c are characters or integers.
 For the device number should be used ISAPNP_DEVICE(x) macro where x is
-integer value. Both vendor and device number should be get from contents
-of /proc/isapnp file.
+integer value. Both vendor and device numbers can be get from contents
+of the /proc/isapnp file.
 
 extern struct isapnp_logdev *isapnp_find_logdev(struct isapnp_dev *dev,
                                                 unsigned short vendor,
                                                 unsigned short function,
                                                 int index) { return NULL; }
 
-Above function finds the logical device by index. If dev is NULL, then
-global search mode is used (all devices are used for searching).
-For the function number should be used ISAPNP_FUNCTION(x) macro
-which works similar as ISAPNP_DEVICE(x) macro.
+The above function finds the logical device by index. If dev is NULL, then
+the global search mode is used (all devices are used for the searching).
+For the function number can be used ISAPNP_FUNCTION(x) macro which works
+similarly as the ISAPNP_DEVICE(x) macro.
 
 ISA PnP configuration
 =====================
@@ -95,35 +95,39 @@ First way is lowlevel
 All ISA PNP configuration registers are accessible via lowlevel
 isapnp_cfg_(set|get)_(byte|word|dword) functions.
 
-Before any lowlevel function must be called function isapnp_cfg_begin()
-and after configuration must be always called function isapnp_cfg_end()
-otherwise access to ISA PnP configuration functions will be blocked.
+Before any lowlevel function 
+The function isapnp_cfg_begin() must be called before any lowlevel function.
+The function isapnp_cfg_end() must be always called after configuration
+otherwise the access to the ISA PnP configuration functions will be blocked.
 
 Second way is auto-configuration
 --------------------------------
 
-These two functions gives to driver real power of ISA PnP feature.
-First function isapnp_config_init() only initialize isapnp_config structure.
-This structure after initialization contains all resources set to auto
-configuration values. Driver for ISA PnP logical device can modify (or not)
-some resource to skip auto configuration for given resource. The driver for
-ISA PnP logical device can also pass to isapnp_configure() function that
-some resources are already used by another logical device over *_disable
-members of isapnp_config structure.
+These two functions gives to the driver the real power of the ISA PnP
+feature. First function isapnp_config_init() only initialize the
+isapnp_config structure. This structure contains all resources set to
+auto configuration values after the initialization. The driver for ISA PnP
+logical device may modify (or not) some resources to skip auto configuration
+for the given resource. The driver for ISA PnP logical device can also
+pass to the isapnp_configure() function that some resources are already
+used by the another logical device over *_disable members of the
+isapnp_config structure.
 
-Function isapnp_configure does:
-	- resources which have auto configure value are configured
-	- configuration is created using ISA PnP resource map
-	- writes configuration to ISA PnP configuration registers
-	- returns to caller actual used resources
+The function isapnp_configure does:
+	- resources which have the auto configuration value are configured
+	- the auto configuration is created using ISA PnP resource map
+	- the function writes configuration to ISA PnP configuration registers
+	- the function returns to the caller actual used resources
 
 Example (game port initialization)
 ==================================
 
+/*** initialization ***/
+
 	struct isapnp_logdev *logdev;
 	struct isapnp_config cfg;
 
-	/* find first game port by standard PnP IDs */
+	/* find the first game port, use standard PnP IDs */
 	logdev = isapnp_find_logdev(ISAPNP_VENDOR('P','N','P'),
 				    ISAPNP_FUNCTION(0xb02f),
 				    0);
@@ -146,6 +150,7 @@ Example (game port initialization)
 	isapnp_activate(logdev->number);	/* activate device */
 	isapnp_cfg_end();
 
+/*** deactivation ***/
 
 	/* to deactivate use: */
 	if (isapnp_cfg_begin(logdev->dev->csn, logdev->number)<0)
