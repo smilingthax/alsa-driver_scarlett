@@ -1065,6 +1065,7 @@ static int snd_via82xx_resume(snd_card_t *card, unsigned int state)
 
 	pci_enable_device(chip->pci);
 	pci_set_power_state(chip->pci, 0);
+	pci_set_master(chip->pci);
 
 	snd_via82xx_chip_init(chip);
 
@@ -1092,6 +1093,7 @@ static int snd_via82xx_free(via82xx_t *chip)
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	pci_release_regions(chip->pci);
+	pci_disable_device(chip->pci);
 	kfree(chip);
 	return 0;
 }
@@ -1118,8 +1120,10 @@ static int __devinit snd_via82xx_create(snd_card_t * card,
 	if ((err = pci_enable_device(pci)) < 0)
 		return err;
 
-	if ((chip = kcalloc(1, sizeof(*chip), GFP_KERNEL)) == NULL)
+	if ((chip = kcalloc(1, sizeof(*chip), GFP_KERNEL)) == NULL) {
+		pci_disable_device(pci);
 		return -ENOMEM;
+	}
 
 	spin_lock_init(&chip->reg_lock);
 	spin_lock_init(&chip->ac97_lock);
@@ -1129,6 +1133,7 @@ static int __devinit snd_via82xx_create(snd_card_t * card,
 
 	if ((err = pci_request_regions(pci, card->driver)) < 0) {
 		kfree(chip);
+		pci_disable_device(pci);
 		return err;
 	}
 	chip->port = pci_resource_start(pci, 0);
