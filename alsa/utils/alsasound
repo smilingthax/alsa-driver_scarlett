@@ -115,6 +115,13 @@ function start() {
       $alsascrdir/$t
     fi
   done
+
+  #
+  # touch lockfile if lockdir exists
+  #
+  if [ -d /var/lock/subsys ] ; then
+    touch /var/lock/subsys/alsasound
+  fi
 }
 
 function terminate() {
@@ -153,6 +160,13 @@ function stop() {
   # remove the 2.2 soundcore module (if possible)
   /sbin/rmmod soundcore 2> /dev/null
   /sbin/rmmod gameport 2> /dev/null
+
+  #
+  # remove lockfile if lockdir exists
+  #
+  if [ -d /var/lock/subsys ] ; then
+    rm -f /var/lock/subsys/alsasound
+  fi
 }
 
 # See how we were called.
