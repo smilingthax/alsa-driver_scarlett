@@ -84,6 +84,11 @@
 #define SND_MIX_ROUTE_RTOL_IN	8
 #define SND_MIX_ROUTE_IN	(SND_MIX_ROUTE_LTOR_IN|SND_MIX_ROUTE_RTOL_IN)
 
+#define SND_MIX_HW_RECVOL	1
+#define SND_MIX_HW_CHANGE	2
+#define SND_MIX_HW_IGNORE_MUTE	4
+#define SND_MIX_HW_TOGGLE_MUTE	8
+
 typedef struct snd_stru_mixer_channel snd_kmixer_channel_t;
 typedef struct snd_stru_mixer_switch snd_kmixer_switch_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
@@ -228,7 +233,7 @@ extern int snd_mixer_unregister(snd_kmixer_t * mixer);
 extern snd_kmixer_channel_t *snd_mixer_find_channel(snd_kmixer_t * mixer,
 						    unsigned int priority);
 extern void snd_mixer_hardware_volume(snd_kmixer_t *mixer,
-				      unsigned int priority, int recordvolume,
+				      unsigned int priority, int flags,
 				      int left, int right, unsigned short mute);
 
 #endif				/* __MIXER_H */
