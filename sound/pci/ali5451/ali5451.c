@@ -267,7 +267,7 @@ static struct pci_device_id snd_ali_ids[] __devinitdata = {
 };
 MODULE_DEVICE_TABLE(pci, snd_ali_ids);
 
-void snd_ali_clear_voices(ali_t *, unsigned int, unsigned int);
+static void snd_ali_clear_voices(ali_t *, unsigned int, unsigned int);
 static unsigned short snd_ali_codec_peek(ali_t *, int, unsigned short);
 static void snd_ali_codec_poke(ali_t *, int, unsigned short, unsigned short);
 
@@ -611,6 +611,7 @@ static void snd_ali_disable_address_interrupt(ali_t * codec)
 	outl(gc, ALI_REG(codec, ALI_GC_CIR));
 }
 
+#if 0 // not used
 static void snd_ali_enable_voice_irq(ali_t *codec, unsigned int channel)
 {
 	unsigned int mask;
@@ -623,6 +624,7 @@ static void snd_ali_enable_voice_irq(ali_t *codec, unsigned int channel)
 	pchregs->data.ainten |= mask;
 	outl(pchregs->data.ainten,ALI_REG(codec,pchregs->regs.ainten));
 }
+#endif
 
 static void snd_ali_disable_voice_irq(ali_t *codec, unsigned int channel)
 {
@@ -714,6 +716,7 @@ static void snd_ali_free_channel_pcm(ali_t *codec, int channel)
 	}
 }
 
+#if 0 // not used
 static void snd_ali_start_voice(ali_t * codec, unsigned int channel)
 {
 	unsigned int mask = 1 << (channel & 0x1f);
@@ -721,6 +724,7 @@ static void snd_ali_start_voice(ali_t * codec, unsigned int channel)
 	snd_ali_printk("start_voice: channel=%d\n",channel);
 	outl(mask, ALI_REG(codec,codec->chregs.regs.start));
 }
+#endif
 
 static void snd_ali_stop_voice(ali_t * codec, unsigned int channel)
 {

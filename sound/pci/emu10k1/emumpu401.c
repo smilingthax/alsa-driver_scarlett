@@ -196,7 +196,7 @@ static int snd_emu10k1_midi_output_close(snd_rawmidi_substream_t * substream)
 static void snd_emu10k1_midi_input_trigger(snd_rawmidi_substream_t * substream, int up)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return -ENXIO);
+	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return);
 	emu = midi->emu;
 	snd_assert(emu, return);
 
@@ -209,7 +209,7 @@ static void snd_emu10k1_midi_input_trigger(snd_rawmidi_substream_t * substream, 
 static void snd_emu10k1_midi_output_trigger(snd_rawmidi_substream_t * substream, int up)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return -ENXIO);
+	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return);
 	unsigned long flags;
 
 	emu = midi->emu;
