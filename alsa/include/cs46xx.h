@@ -1690,6 +1690,13 @@ struct _snd_cs46xx {
 	unsigned int midcr;
 	unsigned int uartm;
 	snd_info_entry_t *proc_entry;
+
+	int amplifier;
+	void (*amplifier_ctrl)(cs46xx_t *, int);
+	void (*active_ctrl)(cs46xx_t *, int);
+	struct pci_dev *acpi_dev;
+	int acpi_port;
+
 #ifdef CONFIG_PM
 	struct pm_dev *pm_dev;
 #endif
@@ -1697,6 +1704,7 @@ struct _snd_cs46xx {
 
 int snd_cs46xx_create(snd_card_t *card,
 		      struct pci_dev *pci,
+		      int external_amp, int thinkpad,
 		      cs46xx_t **rcodec);
 
 int snd_cs46xx_pcm(cs46xx_t *chip, int device, snd_pcm_t **rpcm);
