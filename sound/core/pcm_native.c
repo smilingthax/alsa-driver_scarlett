@@ -2020,7 +2020,7 @@ snd_pcm_sframes_t snd_pcm_playback_forward(snd_pcm_substream_t *substream, snd_p
 	else
 		frames -= frames % runtime->xfer_align;
 	appl_ptr = runtime->control->appl_ptr + frames;
-	if (appl_ptr >= runtime->boundary)
+	if (appl_ptr >= (snd_pcm_sframes_t)runtime->boundary)
 		appl_ptr -= runtime->boundary;
 	runtime->control->appl_ptr = appl_ptr;
 	if (runtime->status->state == SNDRV_PCM_STATE_RUNNING &&
@@ -2070,7 +2070,7 @@ snd_pcm_sframes_t snd_pcm_capture_forward(snd_pcm_substream_t *substream, snd_pc
 	else
 		frames -= frames % runtime->xfer_align;
 	appl_ptr = runtime->control->appl_ptr + frames;
-	if (appl_ptr >= runtime->boundary)
+	if (appl_ptr >= (snd_pcm_sframes_t)runtime->boundary)
 		appl_ptr -= runtime->boundary;
 	runtime->control->appl_ptr = appl_ptr;
 	if (runtime->status->state == SNDRV_PCM_STATE_RUNNING &&
