@@ -157,6 +157,7 @@ static char *no_cards[] = {
 #define READ_STATE_NONE		0
 #define READ_STATE_CONFIG	1
 #define READ_STATE_MENU		2
+#define READ_STATE_COMMENT	3
 
 static void nomem(void)
 {
@@ -275,6 +276,9 @@ static int read_file_1(const char *filename, struct cond **template)
 			result = include_file(buffer + 7, template);
 			if (result < 0)
 				goto __end;
+		}
+		if (!strncmp(buffer, "comment", 7)) {
+			state = READ_STATE_COMMENT;
 		}
 		switch (state) {
 		case READ_STATE_CONFIG:
@@ -805,7 +809,7 @@ static int belongs_to_all(struct dep *dep)
 }
 
 // Print out ALL deps for firstdep (Cards, Deps)
-static void output_card_list(struct dep *firstdep, int space, int size)
+static void output_card_list(struct dep *firstdep, int space, int size, int tristate)
 {
 	struct dep *temp_dep=firstdep;
 	char *card_name;
@@ -817,7 +821,9 @@ static void output_card_list(struct dep *firstdep, int space, int size)
 	while(temp_dep) {
 		if (!is_toplevel(temp_dep))
 			goto __skip;
-		if (temp_dep->is_bool)
+		if (tristate && temp_dep->is_bool)
+			goto __skip;
+		if (!tristate && !temp_dep->is_bool)
 			goto __skip;
 		card_name=get_card_name(temp_dep->name);
 		if (card_name) {
@@ -956,12 +962,15 @@ static void output_acinclude(void)
 	printf("AC_DEFUN([ALSA_TOPLEVEL_SELECT], [\n");
 	printf("dnl Check for which cards to compile driver for...\n");
 	printf("AC_MSG_CHECKING(for which soundcards to compile driver for)\n");
-	printf("AC_ARG_WITH(cards,\n\
-  [  --with-cards=<list>     compile driver for cards in <list>; ]\n\
-  [                        cards may be separated with commas; ]\n\
-  [                        'all' compiles all drivers; ]\n\
-  [                        Possible cards are: ]\n");
-	output_card_list(all_deps, 24, 50);
+	printf("AC_ARG_WITH(cards,\n"
+	       "  [  --with-cards=<list>     compile driver for cards in <list>; ]\n"
+	       "  [                        cards may be separated with commas; ]\n"
+	       "  [                        'all' compiles all drivers; ]\n"
+	       "  [                        Possible cards are: ]\n");
+	output_card_list(all_deps, 24, 50, 1);
+	printf(" ]\n");
+	printf("  [                        Possible additional options are: ]\n");
+	output_card_list(all_deps, 24, 50, 0);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
 	printf("if test \"$cards\" = \"all\"; then\n");
