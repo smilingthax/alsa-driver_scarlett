@@ -83,8 +83,9 @@ struct _snd_timer {
 	struct _snd_timer_hardware hw;
 	spinlock_t lock;
 	atomic_t in_use;		/* don't free */
-	snd_timer_instance_t *first;
-	snd_timer_t *next;
+	struct list_head device_list;
+	struct list_head open_list_head;
+	struct list_head active_list_head;
 };
 
 struct _snd_timer_instance {
@@ -100,11 +101,11 @@ struct _snd_timer_instance {
 	unsigned long lost;		/* lost ticks */
 	snd_timer_slave_class_t slave_class;
 	unsigned int slave_id;
-	snd_timer_instance_t *next;
-	snd_timer_instance_t *inext;
-	snd_timer_instance_t *iprev;
-	snd_timer_instance_t *slave;	/* slave list */
-	snd_timer_instance_t *master;	/* master link */
+	struct list_head open_list;
+	struct list_head active_list;
+	struct list_head slave_list_head;
+	struct list_head slave_active_head;
+	snd_timer_instance_t *master;
 };
 
 /*
@@ -117,7 +118,7 @@ extern int snd_timer_global_free(snd_timer_t *timer);
 extern int snd_timer_global_register(snd_timer_t *timer);
 extern int snd_timer_global_unregister(snd_timer_t *timer);
 
-extern snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid);
+extern snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid, unsigned int slave_id);
 extern int snd_timer_close(snd_timer_instance_t * timeri);
 extern int snd_timer_set_owner(snd_timer_instance_t * timeri, pid_t pid, gid_t gid);
 extern int snd_timer_reset_owner(snd_timer_instance_t * timeri);
