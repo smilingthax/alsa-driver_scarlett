@@ -850,11 +850,13 @@ typedef struct {
 } snd_pcm_mmap_control_t;
 
 typedef struct {
+	ssize_t result;
 	void *buf;
 	size_t frames;
 } snd_xferi_t;
 
 typedef struct {
+	ssize_t result;
 	void **bufs;
 	size_t frames;
 } snd_xfern_t;
