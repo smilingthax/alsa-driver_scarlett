@@ -291,6 +291,8 @@ struct snd_stru_emu10k1_pcm {
 	emu10k1_voice_t *extra;
 	int running;
 	unsigned int start_addr;
+	unsigned int adccr;
+	unsigned int adcbs;
 };
 
 struct snd_stru_emu10k1 {
@@ -333,6 +335,8 @@ struct snd_stru_emu10k1 {
 	void (*timer_interrupt)(emu10k1_t *emu);
 	void (*spdif_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*dsp_interrupt)(emu10k1_t *emu);
+
+	snd_pcm_subchn_t *pcm_capture_subchn;
 
 	unsigned int midi_mode;
 	spinlock_t midi_input_lock;
