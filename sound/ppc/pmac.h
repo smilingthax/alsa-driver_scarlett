@@ -40,6 +40,7 @@
 #endif
 #endif
 #include <linux/nvram.h>
+#include <linux/tty.h>
 #include <linux/vt_kern.h>
 #include <asm/dbdma.h>
 #include <asm/prom.h>
