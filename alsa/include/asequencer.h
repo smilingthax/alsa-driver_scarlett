@@ -611,6 +611,9 @@ typedef struct snd_seq_remove_events {
 #define SND_SEQ_GROUP_DEVICE		"device"
 #define SND_SEQ_GROUP_APPLICATION	"application"
 
+/* misc. conditioning flags */
+#define SND_SEQ_PORT_FLG_GIVEN_PORT	(1<<0)
+
 typedef struct {
 	int client;			/* client number */
 	int port;			/* port number */
@@ -629,7 +632,8 @@ typedef struct {
 
 	void *kernel;			/* reserved for kernel use (must be NULL) */
 
-	char reserved[64];		/* for future use */
+	unsigned int flags;		/* misc. conditioning */
+	char reserved[60];		/* for future use */
 } snd_seq_port_info_t;
 
 
