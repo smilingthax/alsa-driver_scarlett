@@ -308,6 +308,7 @@ struct snd_stru_ensoniq {
 
 	unsigned int ctrl;	/* control register */
 	unsigned int sctrl;	/* serial control register */
+	unsigned int cssr;	/* control status register */
 	unsigned int uartc;	/* uart control register */
 	unsigned int rev;	/* chip revision */
 
