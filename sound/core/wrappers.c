@@ -99,9 +99,17 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 	hwdev->dma_mask = 0xffffffff; /* do without masking */
 	ret = pci_alloc_consistent(hwdev, size, dma_handle);
 	hwdev->dma_mask = dma_mask; /* restore */
-	if (ret && (((unsigned long)*dma_handle + size - 1) & rmask)) {
-		pci_free_consistent(hwdev, size, ret, *dma_handle);
-		ret = pci_alloc_consistent(hwdev, size, dma_handle);
+	if (ret) {
+		/* obtained address is out of range? */
+		if (((unsigned long)*dma_handle + size - 1) & rmask) {
+			/* reallocate with the proper mask */
+			pci_free_consistent(hwdev, size, ret, *dma_handle);
+			ret = pci_alloc_consistent(hwdev, size, dma_handle);
+		}
+	} else {
+		/* wish to success now with the proper mask... */
+		if (dma_mask != 0xffffffff)
+			ret = pci_alloc_consistent(hwdev, size, dma_handle);
 	}
 	return ret;
 }
