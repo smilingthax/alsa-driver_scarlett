@@ -139,13 +139,15 @@ int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, char *buffer, int count);
 
 /* main midi functions */
 
-extern int snd_rawmidi_kernel_info(int cardnum, int device, snd_rawmidi_info_t *info);
-extern int snd_rawmidi_kernel_open(int cardnum, int device, int mode, snd_rawmidi_t ** out);
-extern int snd_rawmidi_kernel_release(snd_rawmidi_t * rmidi, int mode);
-extern int snd_rawmidi_drain_output(snd_rawmidi_t * rmidi);
-extern int snd_rawmidi_flush_output(snd_rawmidi_t * rmidi);
-extern int snd_rawmidi_flush_input(snd_rawmidi_t * rmidi);
-extern long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, char *buf, long count);
-extern long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const char *buf, long count);
+int snd_rawmidi_kernel_info(int cardnum, int device, snd_rawmidi_info_t *info);
+int snd_rawmidi_kernel_open(int cardnum, int device, int mode, snd_rawmidi_t ** out);
+int snd_rawmidi_kernel_release(snd_rawmidi_t * rmidi, int mode);
+int snd_rawmidi_output_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
+int snd_rawmidi_input_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
+int snd_rawmidi_drain_output(snd_rawmidi_t * rmidi);
+int snd_rawmidi_flush_output(snd_rawmidi_t * rmidi);
+int snd_rawmidi_flush_input(snd_rawmidi_t * rmidi);
+long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, char *buf, long count);
+long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const char *buf, long count);
 
 #endif				/* __MIDI_H */
