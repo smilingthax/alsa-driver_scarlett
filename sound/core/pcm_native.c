@@ -632,14 +632,11 @@ static int snd_pcm_action_main(struct action_ops *ops,
 	if (res >= 0) {
 		list_for_each(pos, &substream->link->substreams) {
 			s = list_entry(pos, snd_pcm_substream_t, link_list);
-			if (s->runtime->trigger_master != s)
-				goto _action_done;
 			err = ops->do_action(s, state);
 			if (err < 0) {
 				if (res == 0)
 					res = err;
 			} else {
-			       _action_done:
 				ops->post_action(s, state);
 			}
 			if (snd_pcm_stream_linked(substream) && s != substream)
