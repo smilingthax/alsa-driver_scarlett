@@ -1463,7 +1463,7 @@ static int snd_korg1212_playback_copy(snd_pcm_substream_t *substream,
  
 	snd_assert(pos + count <= K1212_MAX_SAMPLES, return -EINVAL);
 
-        return copy_from_user(dst, src, count * K1212_FRAME_SIZE) : -EFAULT : 0;
+        return copy_from_user(dst, src, count * K1212_FRAME_SIZE) ? -EFAULT : 0;
 }
 
 static int snd_korg1212_capture_copy(snd_pcm_substream_t *substream,
