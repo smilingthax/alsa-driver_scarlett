@@ -79,8 +79,8 @@
 #define   OPL3_LEFT_4OP_2		0x20
 
 #define OPL3_REG_MODE			0x05	/* Right side */
-#define   OPL3_MODE2_ENABLE		0x01	/* OPL3 mode */
-#define   OPL3_MODE3_ENABLE		0x02	/* OPL4 mode */
+#define   OPL3_OPL3_ENABLE		0x01	/* OPL3 mode */
+#define   OPL3_OPL4_ENABLE		0x02	/* OPL4 mode */
 
 #define OPL3_REG_KBD_SPLIT		0x08	/* Left side */
 #define   OPL3_COMPOSITE_SINE_WAVE_MODE	0x80	/* Don't use with OPL-3? */
@@ -134,6 +134,7 @@
  * Wave select (0xE0 to 0xF5)
  */
 #define OPL3_REG_WAVE_SELECT		0xe0
+#define   OPL3_WAVE_SELECT_MASK		0x07
 
 /*
  *    Offsets to the register banks for voices. Just add to the
@@ -205,22 +206,11 @@
 #define     OPL3_VOICE_TO_RIGHT		0x20
 
 /*
- *    Definition table for the physical voices
- */
-
-struct snd_opl3_physical_voice_info {
-	unsigned char num;
-	unsigned char mode;	/* 0=unavailable, 2=2 OP, 4=4 OP */
-	unsigned short ioaddr;	/* I/O port (left or right side) */
-	unsigned char op[4];	/* Operator offsets */
-};
-
-/*
 
  */
 
-#define OPL3_LEFT		0x00000000
-#define OPL3_RIGHT		0x00000100
+#define OPL3_LEFT		0x0000
+#define OPL3_RIGHT		0x0100
 
 #define OPL3_HW_AUTO		0x0000
 #define OPL3_HW_OPL2		0x0200
@@ -231,27 +221,42 @@ struct snd_opl3_physical_voice_info {
 #define OPL3_HW_OPL4		0x0400
 #define OPL3_HW_MASK		0xff00
 
+#define MAX_OPL2_VOICES		9
+#define MAX_OPL3_VOICES		18
+
 typedef struct snd_opl3 opl3_t;
 
 struct snd_opl3 {
-	unsigned short l_port;
-	unsigned short r_port;
+	unsigned long l_port;
+	unsigned long r_port;
 	unsigned short hardware;
 	unsigned short timer_enable;
 	int timer_dev;		/* timer device number */
 	snd_timer_t *timer1;
 	snd_timer_t *timer2;
-	spinlock_t reg_lock;
 	spinlock_t timer_lock;
+
+	spinlock_t reg_lock;
+	int used;			/* usage flag - exclusive */
+	unsigned char fm_mode;		/* OPL mode, see SND_DM_FM_MODE_XXX */
+	unsigned char rhythm;		/* percussion mode flag */
+	char voice[18];			/* 0=unavailable, 2=2 OP, 4=4 OP */
+	struct semaphore access_mutex;	/* locking */
 };
 
-extern void snd_opl3_interrupt(snd_hwdep_t * hw);
-extern int snd_opl3_new(snd_card_t * card,
-			int device,
-			unsigned short l_port,
-			unsigned short r_port,
-			unsigned short hardware,
-			int timer_dev,
-			snd_hwdep_t ** rawmidi);
+/* opl3.c */
+void snd_opl3_command(opl3_t * opl3, unsigned short cmd, unsigned char val);
+void snd_opl3_interrupt(snd_hwdep_t * hw);
+int snd_opl3_new(snd_card_t * card, int device,
+		 unsigned long l_port, unsigned long r_port,
+		 unsigned short hardware,
+		 int timer_dev,
+		 snd_hwdep_t ** rawmidi);
+
+/* opl3_synth */
+int snd_opl3_open(snd_hwdep_t * hw, struct file *file);
+int snd_opl3_ioctl(snd_hwdep_t * hw, struct file *file,
+		   unsigned int cmd, unsigned long arg);
+int snd_opl3_release(snd_hwdep_t * hw, struct file *file);
 
 #endif				/* __OPL3_H */
