@@ -2,3 +2,4 @@
 
 autoconf
 ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes
+make
