@@ -1,6 +1,6 @@
 /*
  *  Main kernel header file for the ALSA sequencer
- *  Copyright (c) 1998 by Frank van de Pol <frank@vande-pol.demon.nl>
+ *  Copyright (c) 1998 by Frank van de Pol <fvdpol@home.nl>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
