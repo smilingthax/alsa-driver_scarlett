@@ -24,7 +24,7 @@
 
 #ifndef __KERNEL__
 #include <linux/ioctl.h>
-#include <sys/ipc.h>
+/*#include <sys/ipc.h>*/
 #endif
 
 #include <sound/asound.h>
@@ -269,15 +269,17 @@ struct sndrv_seq_ev_raw32 {
 
 	/* external stored data */
 struct sndrv_seq_ev_ext {
-	size_t len;		/* length of data */
+	unsigned int len;	/* length of data */
 	void *ptr;		/* pointer to data (note: maybe 64-bit) */
 };
 
+#if 0 /* FIXME: not implemented */
 	/* external stored data - IPC shared memory */
 struct sndrv_seq_ev_ipcshm {
-	size_t len;		/* length of data */
+	unsigned int len;	/* length of data */
 	key_t ipc;		/* IPC key */
 };
+#endif
 
 /* Instrument cluster type */
 typedef unsigned int sndrv_seq_instr_cluster_t;
@@ -415,7 +417,7 @@ struct sndrv_seq_event {
 		struct sndrv_seq_ev_raw8 raw8;
 		struct sndrv_seq_ev_raw32 raw32;
 		struct sndrv_seq_ev_ext ext;
-		struct sndrv_seq_ev_ipcshm ipcshm;
+		/* struct sndrv_seq_ev_ipcshm ipcshm; */
 		struct sndrv_seq_ev_queue_control queue;
 		union sndrv_seq_timestamp time;
 		struct sndrv_seq_addr addr;
