@@ -72,7 +72,7 @@ static struct _snd_timer_hardware rtc_hw = {
 
 int rtctimer_freq = RTC_FREQ;		/* frequency */
 static snd_timer_t *rtctimer;
-static volatile int rtc_inc = 0;
+static atomic_t rtc_inc = ATOMIC_INIT(0);
 static rtc_task_t rtc_task;
 
 /* tasklet */
@@ -101,7 +101,7 @@ rtctimer_start(snd_timer_t *timer)
 	snd_assert(rtc != NULL, return -EINVAL);
 	rtc_control(rtc, RTC_IRQP_SET, rtctimer_freq);
 	rtc_control(rtc, RTC_PIE_ON, 0);
-	rtc_inc = 0;
+	atomic_set(&rtc_inc, 0);
 	return 0;
 }
 
@@ -119,12 +119,15 @@ rtctimer_stop(snd_timer_t *timer)
  */
 static void rtctimer_interrupt(void *private_data)
 {
-	rtc_inc++;
+	atomic_inc(&rtc_inc);
 #ifdef USE_TASKLET
 	tasklet_hi_schedule(&rtc_tq);
 #else
-	snd_timer_interrupt((snd_timer_t*)private_data, rtc_inc);
-	rtc_inc = 0;
+	{
+		int ticks = atomic_read(&rtc_inc);
+		snd_timer_interrupt((snd_timer_t*)private_data, ticks);
+		atomic_sub(ticks, &rtc_inc);
+	}
 #endif /* USE_TASKLET */
 }
 
@@ -132,10 +135,13 @@ static void rtctimer_interrupt(void *private_data)
 static void rtctimer_interrupt2(unsigned long private_data)
 {
 	snd_timer_t *timer = (snd_timer_t *)private_data;
+	int ticks;
+
 	snd_assert(timer != NULL, return);
 	do {
-		snd_timer_interrupt(timer, 1);
-	} while (--rtc_inc > 0);
+		ticks = atomic_read(&rtc_inc);
+		snd_timer_interrupt(timer, ticks);
+	} while (!atomic_sub_and_test(ticks, &rtc_inc));
 }
 #endif /* USE_TASKLET */
 
