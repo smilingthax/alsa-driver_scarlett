@@ -301,7 +301,7 @@ if [ \"$%s\" != \"n\" ]; then\n\
 			if (strcmp(dep_config, "CONFIG_SND"))
 				printf("\
   if [ \"$XX_%s\" != \"n\" ]; then\n\
-    if [ \"$XX_%s\" == \"m\" -o \"$%s\" == \"y\" ]; then\n\
+    if [ \"$XX_%s\" == \"m\" -a \"$%s\" == \"y\" ]; then\n\
       XX_%s=\"y\"\n\
     fi\n\
   else\n\

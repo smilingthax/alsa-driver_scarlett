@@ -80,7 +80,10 @@ copy_dir lowlevel/generic
 copy_dir lowlevel/isa
 copy_dir lowlevel/pci
 copy_dir lowlevel/hal2
+copy_dir lowlevel/i2c
 copy_dir lowlevel/gus
 copy_dir lowlevel/sb
+copy_dir cards
+copy_dir cards/hal2
 copy_dir detect
 popd > /dev/null

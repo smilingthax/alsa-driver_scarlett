@@ -28,9 +28,15 @@
 #include "timer.h"
 #include "seq_midi_emul.h"
 #include "seq_device.h"
+#ifndef ALSA_BUILD
+#include <linux/ainstr_iw.h>
+#include <linux/ainstr_gf1.h>
+#include <linux/ainstr_simple.h>
+#else
 #include "ainstr_iw.h"
 #include "ainstr_gf1.h"
 #include "ainstr_simple.h"
+#endif
 
 #define SND_SEQ_DEV_GUS			"synth-gus"
 
