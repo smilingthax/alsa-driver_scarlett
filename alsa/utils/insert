@@ -144,9 +144,9 @@ case "$1" in
   sb16)
     basic; isapnp
     insert snd-sb-common.o
+    insert snd-mpu401-uart.o 
     insert snd-sb16-dsp.o
     insert snd-sb16-csp.o
-    insert snd-mpu401-uart.o 
     insert snd-opl3.o
     insert snd-card-sb16.o snd_irq=7 snd_dma8=1 snd_dma16=5
     restore sb16.conf
