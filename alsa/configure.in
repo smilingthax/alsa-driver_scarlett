@@ -113,7 +113,7 @@ AC_ARG_WITH(moddir,
   moddir="$withval", 
 # Special test for RH 5.1
   if test -d /lib/modules/preferred; then
-    moddir="/lib/modules/preferred"
+    moddir="/lib/modules/preferred/misc"
   else
     moddir="/lib/modules/$kaversion/misc"
   fi
