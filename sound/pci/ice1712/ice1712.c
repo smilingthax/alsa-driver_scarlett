@@ -1789,9 +1789,12 @@ static int snd_ice1712_pro_internal_clock_put(snd_kcontrol_t * kcontrol, snd_ctl
 		outb(oval | ICE1712_SPDIF_MASTER, ICEMT(ice, RATE));
 	} else {
 		PRO_RATE_DEFAULT = xrate[ucontrol->value.integer.value[0] % 13];
+		spin_unlock_irq(&ice->reg_lock);
 		snd_ice1712_set_pro_rate(ice, PRO_RATE_DEFAULT, 1);
+		spin_lock_irq(&ice->reg_lock);
 	}
 	change = inb(ICEMT(ice, RATE)) != oval;
+	spin_unlock_irq(&ice->reg_lock);
 
 	if ((oval & ICE1712_SPDIF_MASTER) != (inb(ICEMT(ice, RATE)) & ICE1712_SPDIF_MASTER)) {
 		/* change CS8427 clock source too */
