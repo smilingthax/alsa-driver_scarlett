@@ -8,8 +8,7 @@
  *   FIXME (deadlock for alsa-kernel):
  *     - use ISA PnP scheme used by all ALSA ISA drivers
  *     - remove CONFIG_SND_OSSEMUL dependency
- *     - added non-MODULE build option
- *     - remove verify_area() calls, they are obsolete and might cause OOPS
+ *     - add non-MODULE build option
  *
  *
  *   This program is free software; you can redistribute it and/or modify
