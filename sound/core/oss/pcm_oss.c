@@ -454,7 +454,8 @@ static int snd_pcm_oss_change_params(snd_pcm_substream_t *substream)
 	sw_params->sleep_min = 0;
 	sw_params->avail_min = runtime->period_size;
 	sw_params->xfer_align = 1;
-	if (substream->oss.setup && substream->oss.setup->nosilence) {
+	if (atomic_read(&runtime->mmap_count) ||
+	    (substream->oss.setup && substream->oss.setup->nosilence)) {
 		sw_params->silence_threshold = 0;
 		sw_params->silence_size = 0;
 	} else {
