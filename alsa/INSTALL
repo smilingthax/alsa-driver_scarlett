@@ -505,7 +505,8 @@ Module parameters
   Module snd-card-cs461x.o
   ------------------------
 
-    Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4280.
+    Module for PCI soundcards based on CS4610/CS4612/CS4614/CS4615/CS4622/
+				       CS4624/CS4280.
 
     snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
     snd_capture_bufsize   - max capture buffer size in kB (4-128kB)

@@ -77,7 +77,7 @@ SC: Turtle Beach Malibu
 IF: MIXER,PCM,MIDI
 MA: Jaroslav Kysela <perex@suse.cz>
 
-ID: Cirrus Logic / Crystal Semiconductors CS4610/CS4612/CS4615/CS4280
+ID: Cirrus Logic / Crystal Semiconductors CS4610/CS4612/CS4614/CS4615/CS4622/CS4624/CS4280
 IF: MIXER,PCM
 MA: Jaroslav Kysela <perex@suse.cz>
 
