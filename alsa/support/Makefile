@@ -39,9 +39,9 @@ include $(TOPDIR)/Rules1.make
 
 $(ISAPNPE): isapnp.c
 ifeq (1,$(newkernel))
-	$(CC) $(INCLUDE) -E -D__GENKSYMS__ isapnp.c | $(GENKSYMS) > $(DEXPORT)/isapnp.ver
+	$(CC) $(INCLUDE) -E -D__GENKSYMS__ -DALSA_BUILD isapnp.c | $(GENKSYMS) > $(DEXPORT)/isapnp.ver
 else
-	$(CC) $(INCLUDE) -E -D__GENKSYMS__ isapnp.c | $(GENKSYMS) $(DEXPORT)
+	$(CC) $(INCLUDE) -E -D__GENKSYMS__ -DALSA_BUILD isapnp.c | $(GENKSYMS) $(DEXPORT)
 endif
 
 $(TOPDIR)/modules/isapnp.o: .depend $(SNDVERSIONS) $(ISAPNPE) $(ISAPNP)

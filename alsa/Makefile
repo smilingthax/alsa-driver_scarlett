@@ -54,6 +54,7 @@ install: compile
 	cat WARNING
 
 clean:
+	rm -f `find . -name ".depend"`
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 	rm -f core .depend *.o snd.map* *~

@@ -1640,8 +1640,18 @@ struct snd_stru_cs461x {
 	unsigned int cctl;
 	unsigned int mode;
 	
-	void *pbuf;		/* 4kB playback buffer */
-	void *cbuf;		/* 4kB capture buffer */
+	unsigned char *pbuf;		/* 4kB playback buffer */
+	unsigned char *cbuf;		/* 4kB capture buffer */
+
+	unsigned int ppingbuf;
+	unsigned char *pbuffer;
+	unsigned int psize;
+	unsigned int pringbuf;
+
+	unsigned int cpingbuf;
+	unsigned char *cbuffer;
+	unsigned int csize;
+	unsigned int cringbuf;
 
 	ac97_t *ac97;
 
