@@ -3,6 +3,7 @@ H change defaults for Wave volume and DAC/ADC volume
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
 M add configuration parser for OSS PCM (and perhaps mixer) emulation code
+M add the __setup code to all toplevel modules for solid (monolithic) kernels
 L Implement correctly ready_mode
 L lock, grant and revoke ioctls (not available to application I propose)
 L nonblocking async mode (with requests queue)
