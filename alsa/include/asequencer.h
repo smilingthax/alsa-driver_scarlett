@@ -80,6 +80,11 @@
 #define SND_SEQ_EVENT_PORT_START	63	/* new port was created */
 #define SND_SEQ_EVENT_PORT_EXIT		64	/* port was deleted from system */
 #define SND_SEQ_EVENT_PORT_CHANGE	65	/* port status/info has changed */
+	/* subscription change: subscriber = data.addr */
+#define SND_SEQ_EVENT_PORT_SUBSCRIBED	66	/* read port is subscribed */
+#define SND_SEQ_EVENT_PORT_USED		67	/* write port is subscribed */
+#define SND_SEQ_EVENT_PORT_UNSUBSCRIBED	68	/* read port is released */
+#define SND_SEQ_EVENT_PORT_UNUSED	69	/* write port is released */
 
 #define SND_SEQ_EVENT_OSS		70	/* OSS raw event */
 #define SND_SEQ_EVENT_NORMAL_CONTROLS	80
@@ -390,20 +395,24 @@ typedef struct snd_seq_remove_events {
 #define SND_SEQ_REMOVE_IGNORE_OFF 	(1<<5)	/* Do not flush off events */
 #define SND_SEQ_REMOVE_TAG_MATCH 	(1<<6)	/* Restrict to events with given tag */
 
+
 	/* known port numbers */
 #define SND_SEQ_PORT_SYSTEM_TIMER	0
 #define SND_SEQ_PORT_SYSTEM_ANNOUNCE	1
 
 	/* port capabilities (32 bits) */
-#define SND_SEQ_PORT_CAP_IN		(1<<0)
-#define SND_SEQ_PORT_CAP_OUT		(1<<1)
+#define SND_SEQ_PORT_CAP_IN		(1<<0)	/* MIDI-in (read) */
+#define SND_SEQ_PORT_CAP_OUT		(1<<1)	/* MIDI-out (write) */
 
 #define SND_SEQ_PORT_CAP_SYNC_IN	(1<<2)
 #define SND_SEQ_PORT_CAP_SYNC_OUT	(1<<3)
 
 #define SND_SEQ_PORT_CAP_DUPLEX		(1<<4)
 
-#define SND_SEQ_PORT_CAP_SUBSCRIPTION	(1<<5)
+#define SND_SEQ_PORT_CAP_SUBS_OUT	(1<<5)	/* allow read subscription */
+#define SND_SEQ_PORT_CAP_SUBS_IN	(1<<6)	/* allow write subscription */
+#define SND_SEQ_PORT_CAP_SUBSCRIPTION	(3<<5)	/* both in/out */
+#define SND_SEQ_PORT_CAP_NO_EXPORT_ROUTE	(1<<7)	/* routing not allowed */
 
 	/* port type */
 #define SND_SEQ_PORT_TYPE_SPECIFIC	(1<<0)	/* hardware specific */
@@ -431,8 +440,8 @@ typedef struct {
 	int midi_voices;		/* voices per MIDI port */
 	int synth_voices;		/* voices per SYNTH port */
 
-	int out_use;			/* R/O: subscribers for output (this port->sequencer) */
-	int in_use;			/* R/O: subscribers for input (sequencer->this port) */
+	int read_use;			/* R/O: subscribers for output (from this port) */
+	int write_use;			/* R/O: subscribers for input (to this port) */
 
 	void *kernel;			/* reserved for kernel use (must be NULL) */
 
@@ -724,6 +733,9 @@ typedef struct {
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_RESET_POOL	_IOW ('S', 0x4d, snd_seq_reset_pool_t)
+#define SND_SEQ_IOCTL_GET_SUBSCRIPTION	_IOWR('S', 0x50, snd_seq_port_subscribe_t)
+#define SND_SEQ_IOCTL_QUERY_NEXT_CLIENT	_IOWR('S', 0x51, snd_seq_client_info_t)
+#define SND_SEQ_IOCTL_QUERY_NEXT_PORT	_IOWR('S', 0x52, snd_seq_port_info_t)
 #define SND_SEQ_IOCTL_REMOVE_EVENTS	_IOW ('S', 0x4e, snd_seq_remove_events_t)
 
 #endif /* __SND_ASEQUENCER_H */
