@@ -92,18 +92,23 @@ void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data)
 
 unsigned long snd_pci_compat_get_dma_mask (struct pci_dev *dev)
 {
-	struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
-	if (map)
-		return map->dma_mask;
-	return 0;
+	if (dev) {
+		struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
+		if (map)
+			return map->dma_mask;
+		return 0;
+	} else
+		return 0xffffff; /* ISA - 16MB */
 }
 
 
 void snd_pci_compat_set_dma_mask (struct pci_dev *dev, unsigned long mask)
 {
-	struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
-	if (map)
-		map->dma_mask = mask;
+	if (dev) {
+		struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
+		if (map)
+			map->dma_mask = mask;
+	}
 }
 
 
