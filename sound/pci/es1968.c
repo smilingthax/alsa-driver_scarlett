@@ -2695,7 +2695,8 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 	static int dev;
 	snd_card_t *card;
 	es1968_t *chip;
-	int i, err;
+	unsigned int i;
+	int err;
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;

@@ -1786,14 +1786,14 @@ static int __init snd_es18xx_new_device(snd_card_t * card,
 static int __init snd_es18xx_mixer(es18xx_t *chip)
 {
 	snd_card_t *card;
-	int err, idx;
+	int err;
+	unsigned int idx;
 
 	card = chip->card;
 
 	strcpy(card->mixername, chip->pcm->name);
 
-	for (idx = 0; idx < sizeof(snd_es18xx_base_controls) / 
-		     sizeof(snd_es18xx_base_controls[0]); idx++) {
+	for (idx = 0; idx < ARRAY_SIZE(snd_es18xx_base_controls); idx++) {
 		snd_kcontrol_t *kctl;
 		kctl = snd_ctl_new1(&snd_es18xx_base_controls[idx], chip);
 		if (chip->caps & ES18XX_HWV) {
@@ -1812,14 +1812,12 @@ static int __init snd_es18xx_mixer(es18xx_t *chip)
 			return err;
 	}
 	if (chip->caps & ES18XX_PCM2) {
-		for (idx = 0; idx < sizeof(snd_es18xx_pcm2_controls) / 
-			     sizeof(snd_es18xx_pcm2_controls[0]); idx++) {
+		for (idx = 0; idx < ARRAY_SIZE(snd_es18xx_pcm2_controls); idx++) {
 			if ((err = snd_ctl_add(card, snd_ctl_new1(&snd_es18xx_pcm2_controls[idx], chip))) < 0)
 				return err;
 		} 
 	} else {
-		for (idx = 0; idx < sizeof(snd_es18xx_pcm1_controls) / 
-			     sizeof(snd_es18xx_pcm1_controls[0]); idx++) {
+		for (idx = 0; idx < ARRAY_SIZE(snd_es18xx_pcm1_controls); idx++) {
 			if ((err = snd_ctl_add(card, snd_ctl_new1(&snd_es18xx_pcm1_controls[idx], chip))) < 0)
 				return err;
 		}
@@ -1830,8 +1828,7 @@ static int __init snd_es18xx_mixer(es18xx_t *chip)
 			return err;
 	}
 	if (chip->caps & ES18XX_RECMIX) {
-		for (idx = 0; idx < sizeof(snd_es18xx_recmix_controls) / 
-			     sizeof(snd_es18xx_recmix_controls[0]); idx++) {
+		for (idx = 0; idx < ARRAY_SIZE(snd_es18xx_recmix_controls); idx++) {
 			if ((err = snd_ctl_add(card, snd_ctl_new1(&snd_es18xx_recmix_controls[idx], chip))) < 0)
 				return err;
 		}
@@ -1848,15 +1845,13 @@ static int __init snd_es18xx_mixer(es18xx_t *chip)
 		break;
 	}
 	if (chip->caps & ES18XX_SPATIALIZER) {
-		for (idx = 0; idx < sizeof(snd_es18xx_spatializer_controls) / 
-			     sizeof(snd_es18xx_spatializer_controls[0]); idx++) {
+		for (idx = 0; idx < ARRAY_SIZE(snd_es18xx_spatializer_controls); idx++) {
 			if ((err = snd_ctl_add(card, snd_ctl_new1(&snd_es18xx_spatializer_controls[idx], chip))) < 0)
 				return err;
 		}
 	}
 	if (chip->caps & ES18XX_HWV) {
-		for (idx = 0; idx < sizeof(snd_es18xx_hw_volume_controls) / 
-			     sizeof(snd_es18xx_hw_volume_controls[0]); idx++) {
+		for (idx = 0; idx < ARRAY_SIZE(snd_es18xx_hw_volume_controls); idx++) {
 			snd_kcontrol_t *kctl;
 			kctl = snd_ctl_new1(&snd_es18xx_hw_volume_controls[idx], chip);
 			if (idx == 0)

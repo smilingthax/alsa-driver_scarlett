@@ -1178,7 +1178,8 @@ int snd_ad1848_mixer(ad1848_t *chip)
 {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
-	int err, idx;
+	unsigned int idx;
+	int err;
 
 	snd_assert(chip != NULL && chip->pcm != NULL, return -EINVAL);
 

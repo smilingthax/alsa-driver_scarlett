@@ -1014,7 +1014,8 @@ static unsigned char snd_es1688_init_table[][2] = {
 int snd_es1688_mixer(es1688_t *chip)
 {
 	snd_card_t *card;
-	int err, idx;
+	unsigned int idx;
+	int err;
 	unsigned char reg, val;
 
 	snd_assert(chip != NULL && chip->card != NULL, return -EINVAL);

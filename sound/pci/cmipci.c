@@ -560,11 +560,11 @@ static void snd_cmipci_clear_bit_b(cmipci_t *cm, unsigned int cmd, unsigned char
  * calculate frequency
  */
 
-static int rates[] = { 5512, 11025, 22050, 44100, 8000, 16000, 32000, 48000 };
+static unsigned int rates[] = { 5512, 11025, 22050, 44100, 8000, 16000, 32000, 48000 };
 
 static unsigned int snd_cmipci_rate_freq(unsigned int rate)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < ARRAY_SIZE(rates); i++) {
 		if (rates[i] == rate)
 			return i;
@@ -1428,7 +1428,7 @@ static snd_kcontrol_new_t snd_cmipci_spdif_stream __devinitdata =
 static void save_mixer_state(cmipci_t *cm)
 {
 	if (! cm->mixer_insensitive) {
-		int i;
+		unsigned int i;
 		for (i = 0; i < CM_SAVED_MIXERS; i++) {
 			snd_kcontrol_t *ctl = cm->mixer_res_ctl[i];
 			if (ctl) {
@@ -1456,7 +1456,7 @@ static void save_mixer_state(cmipci_t *cm)
 static void restore_mixer_state(cmipci_t *cm)
 {
 	if (cm->mixer_insensitive) {
-		int i;
+		unsigned int i;
 		cm->mixer_insensitive = 0; /* at first clear this;
 					      otherwise the changes will be ignored */
 		for (i = 0; i < CM_SAVED_MIXERS; i++) {
@@ -2693,7 +2693,8 @@ static int __devinit snd_cmipci_mixer_new(cmipci_t *cm, int pcm_spdif_device)
 	snd_card_t *card;
 	snd_kcontrol_new_t *sw;
 	snd_kcontrol_t *kctl;
-	int idx, err;
+	unsigned int idx;
+	int err;
 
 	snd_assert(cm != NULL && cm->card != NULL, return -EINVAL);
 

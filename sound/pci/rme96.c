@@ -1000,7 +1000,7 @@ snd_rme96_playback_hw_params(snd_pcm_substream_t *substream,
 	    (rate = snd_rme96_capture_getrate(rme96, &dummy)) > 0)
 	{
                 /* slave clock */
-                if (params_rate(params) != rate) {
+                if ((int)params_rate(params) != rate) {
 		        spin_unlock_irqrestore(&rme96->lock, flags);
 			return -EIO;                    
                 }
@@ -1065,7 +1065,7 @@ snd_rme96_capture_hw_params(snd_pcm_substream_t *substream,
 			return err;
 		}
 	} else if ((rate = snd_rme96_capture_getrate(rme96, &isadat)) > 0) {
-                if (params_rate(params) != rate) {
+                if ((int)params_rate(params) != rate) {
 			spin_unlock_irqrestore(&rme96->lock, flags);
 			return -EIO;                    
                 }
@@ -2013,7 +2013,7 @@ snd_rme96_get_inputtype_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t 
 {
 	rme96_t *rme96 = _snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
-	int items = 3;
+	unsigned int items = 3;
 	
 	spin_lock_irqsave(&rme96->lock, flags);
 	ucontrol->value.enumerated.item[0] = snd_rme96_getinputtype(rme96);
@@ -2085,7 +2085,7 @@ snd_rme96_put_inputtype_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t 
 	}
 	
 	spin_lock_irqsave(&rme96->lock, flags);
-	change = val != snd_rme96_getinputtype(rme96);
+	change = (int)val != snd_rme96_getinputtype(rme96);
 	snd_rme96_setinputtype(rme96, val);
 	spin_unlock_irqrestore(&rme96->lock, flags);
 	return change;
@@ -2126,7 +2126,7 @@ snd_rme96_put_clockmode_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t 
 	
 	val = ucontrol->value.enumerated.item[0] % 3;
 	spin_lock_irqsave(&rme96->lock, flags);
-	change = val != snd_rme96_getclockmode(rme96);
+	change = (int)val != snd_rme96_getclockmode(rme96);
 	snd_rme96_setclockmode(rme96, val);
 	spin_unlock_irqrestore(&rme96->lock, flags);
 	return change;
@@ -2167,7 +2167,8 @@ snd_rme96_put_attenuation_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
 	
 	val = ucontrol->value.enumerated.item[0] % 4;
 	spin_lock_irqsave(&rme96->lock, flags);
-	change = val != snd_rme96_getattenuation(rme96);
+
+	change = (int)val != snd_rme96_getattenuation(rme96);
 	snd_rme96_setattenuation(rme96, val);
 	spin_unlock_irqrestore(&rme96->lock, flags);
 	return change;
@@ -2208,7 +2209,7 @@ snd_rme96_put_montracks_control(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t 
 	
 	val = ucontrol->value.enumerated.item[0] % 4;
 	spin_lock_irqsave(&rme96->lock, flags);
-	change = val != snd_rme96_getmontracks(rme96);
+	change = (int)val != snd_rme96_getmontracks(rme96);
 	snd_rme96_setmontracks(rme96, val);
 	spin_unlock_irqrestore(&rme96->lock, flags);
 	return change;

@@ -60,7 +60,7 @@ static void snd_sb16_csp_playback_prepare(sb_t *chip, snd_pcm_runtime_t *runtime
 		if (csp->running & SNDRV_SB_CSP_ST_LOADED) {
 			/* manually loaded codec */
 			if ((csp->mode & SNDRV_SB_CSP_MODE_DSP_WRITE) &&
-			    ((1 << runtime->format) == csp->acc_format)) {
+			    ((1U << runtime->format) == csp->acc_format)) {
 				/* Supported runtime PCM format for playback */
 				if (csp->ops.csp_use(csp) == 0) {
 					/* If CSP was successfully acquired */
@@ -108,7 +108,7 @@ static void snd_sb16_csp_capture_prepare(sb_t *chip, snd_pcm_runtime_t *runtime)
 		if (csp->running & SNDRV_SB_CSP_ST_LOADED) {
 			/* manually loaded codec */
 			if ((csp->mode & SNDRV_SB_CSP_MODE_DSP_READ) &&
-			    ((1 << runtime->format) == csp->acc_format)) {
+			    ((1U << runtime->format) == csp->acc_format)) {
 				/* Supported runtime PCM format for capture */
 				if (csp->ops.csp_use(csp) == 0) {
 					/* If CSP was successfully acquired */

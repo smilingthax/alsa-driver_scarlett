@@ -1850,7 +1850,8 @@ static void snd_ali_mixer_free_ac97(ac97_t *ac97)
 static int __devinit snd_ali_mixer(ali_t * codec)
 {
 	ac97_t ac97;
-	int err, idx;
+	unsigned int idx;
+	int err;
 
 	memset(&ac97, 0, sizeof(ac97));
 	ac97.write = snd_ali_codec_write;

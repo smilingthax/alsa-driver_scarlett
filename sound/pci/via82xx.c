@@ -352,8 +352,8 @@ struct _snd_via82xx {
 	struct pci_dev *pci;
 	snd_card_t *card;
 
-	int num_devs;
-	int playback_devno, multi_devno, capture_devno;
+	unsigned int num_devs;
+	unsigned int playback_devno, multi_devno, capture_devno;
 	viadev_t devs[VIA_MAX_DEVS];
 	struct via_rate_lock rates[2]; /* playback and capture */
 
@@ -499,7 +499,7 @@ static void snd_via82xx_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	via82xx_t *chip = snd_magic_cast(via82xx_t, dev_id, return);
 	unsigned int status;
-	int i;
+	unsigned int i;
 
 	spin_lock(&chip->reg_lock);
 	if (chip->chip_type == TYPE_VIA686) {
@@ -1582,7 +1582,7 @@ static int __devinit snd_via82xx_chip_init(via82xx_t *chip)
 
 static int snd_via82xx_free(via82xx_t *chip)
 {
-	int i;
+	unsigned int i;
 
 	if (chip->irq < 0)
 		goto __end_hw;
@@ -1701,7 +1701,8 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 	via82xx_t *chip;
 	unsigned char revision;
 	int chip_type = 0, card_type;
-	int i, err;
+	unsigned int i;
+	int err;
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;

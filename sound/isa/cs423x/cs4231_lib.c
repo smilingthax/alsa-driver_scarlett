@@ -1903,7 +1903,8 @@ CS4231_SINGLE("Loopback Capture Volume", 0, CS4231_LOOPBACK, 2, 63, 1)
 int snd_cs4231_mixer(cs4231_t *chip)
 {
 	snd_card_t *card;
-	int err, idx;
+	unsigned int idx;
+	int err;
 
 	snd_assert(chip != NULL && chip->pcm != NULL, return -EINVAL);
 

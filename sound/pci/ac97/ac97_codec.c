@@ -1346,7 +1346,8 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 {
 	snd_kcontrol_t *kctl;
 	const snd_kcontrol_new_t *knew;
-	int err, idx;
+	int err;
+	unsigned int idx;
 	unsigned char max;
 
 	/* build master controls */

@@ -3670,10 +3670,10 @@ static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			delta = (int)stimer - (int)voice->stimer;
 			if (delta < 0)
 				delta = -delta;
-			if (delta < voice->spurious_threshold) {
+			if ((unsigned int)delta < voice->spurious_threshold) {
 				/* do some statistics here */
 				trident->spurious_irq_count++;
-				if (trident->spurious_irq_max_delta < delta)
+				if (trident->spurious_irq_max_delta < (unsigned int)delta)
 					trident->spurious_irq_max_delta = delta;
 				continue;
 			}
