@@ -31,7 +31,7 @@
  *                                                                          *
  ****************************************************************************/
 
-#define SND_DM_FM_VERSION	SND_PROTOCOL_VERSION( 1, 0, 0 )
+#define SND_DM_FM_VERSION	SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_DM_FM_INFO_OPL2	0x00000001
 #define SND_DM_FM_INFO_OPL3	0x00000002

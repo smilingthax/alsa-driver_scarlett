@@ -115,7 +115,7 @@ typedef struct snd_switch {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 1, 0)
+#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_CTL_SW_JOYSTICK		"Joystick"
 #define SND_CTL_SW_JOYSTICK_ADDRESS	"Joystick Address"
@@ -204,7 +204,7 @@ typedef struct snd_ctl_read {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_HWDEP_VERSION		SND_PROTOCOL_VERSION(1, 1, 0)
+#define SND_HWDEP_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_HWDEP_TYPE_OPL2		0
 #define SND_HWDEP_TYPE_OPL3		1
@@ -232,7 +232,7 @@ typedef struct snd_hwdep_info {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 2, 0)
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 /* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
@@ -997,7 +997,7 @@ struct snd_oss_mixer_info_obsolete {
  *                                                                           *
  *****************************************************************************/
 
-#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
+#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_PCM_CHANNEL_PLAYBACK	0
 #define SND_PCM_CHANNEL_CAPTURE		1
@@ -1334,7 +1334,7 @@ typedef struct {
  *  Loopback interface
  */
 
-#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
+#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_PCM_LB_STREAM_MODE_RAW	0
 #define SND_PCM_LB_STREAM_MODE_PACKET	1
@@ -1557,7 +1557,7 @@ struct snd_pcm_buffer_description {
  *  Raw MIDI section - /dev/snd/midi??
  */
 
-#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(1, 1, 0)
+#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_RAWMIDI_INFO_OUTPUT		0x00000001
 #define SND_RAWMIDI_INFO_INPUT		0x00000002
@@ -1625,7 +1625,7 @@ typedef struct snd_rawmidi_input_status {
  *  Timer section - /dev/snd/timer
  */
 
-#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 1, 0)
+#define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_TIMER_TYPE_GLOBAL		(0<<28)
 #define SND_TIMER_TYPE_SOUNDCARD	(1<<28)
