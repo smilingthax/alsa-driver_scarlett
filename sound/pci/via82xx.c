@@ -1862,7 +1862,7 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 				break;
 			}
 		}
-		if (chip_type == VIA_REV_8233A)
+		if (chip_type == TYPE_VIA8233A)
 			strcpy(card->driver, "VIA8233A");
 		else
 			strcpy(card->driver, "VIA8233");
@@ -1884,7 +1884,7 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 		    (err = snd_via686_init_misc(chip, dev)) < 0)
 			goto __error;
 	} else {
-		if (chip_type == VIA_REV_8233A) {
+		if (chip_type == TYPE_VIA8233A) {
 			if ((err = snd_via8233a_pcm_new(chip)) < 0)
 				goto __error;
 		} else {
