@@ -421,6 +421,26 @@ Module parameters
     (if ISA PnP isn't used) thus main port and control port must be
     specified!!! Other ports are optional.
     
+  Module snd-trid4dwave.o
+  -----------------------
+
+    Module for Trident 4DWave DX/NX soundcards.
+			* Best Union  Miss Melody 4DWave PCI
+			* HIS  4DWave PCI
+			* Warpspeed  ONSpeed 4DWave PCI
+			* AzTech  PCI 64-Q3D
+			* Addonics  SV 750
+			* CHIC  True Sound 4Dwave
+			* Shark  Predator4D-PCI
+			* Jaton  SonicWave 4D
+
+    snd_dac_frame_size_dx - max dac (playback) frame size in kB (4-64kB)
+    snd_adc_frame_size_dx - max adc (record) frame size in kB (4-64kB)
+    snd_dac_frame_size_nx - max dac (playback) frame size in kB (4-128kB)
+    snd_adc_frame_size_nx - max adc (record) frame size in kB (4-64kB)
+
+    Module supports up to 8 cards and autoprobe.
+    
 
 modprobe/kerneld/kmod support
 =============================
