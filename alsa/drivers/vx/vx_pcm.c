@@ -75,8 +75,8 @@ static struct page *snd_pcm_get_vmalloc_page(snd_pcm_substream_t *subs, unsigned
 #endif
 
 /*
- * hw_params callback
  * allocate a buffer via vmalloc_32().
+ * called from hw_params
  * NOTE: this may be called not only once per pcm open!
  */
 static int snd_pcm_alloc_vmalloc_buffer(snd_pcm_substream_t *subs, size_t size)
@@ -97,8 +97,8 @@ static int snd_pcm_alloc_vmalloc_buffer(snd_pcm_substream_t *subs, size_t size)
 }
 
 /*
- * hw_free callback
  * free the buffer.
+ * called from hw_free callback
  * NOTE: this may be called not only once per pcm open!
  */
 static int snd_pcm_free_vmalloc_buffer(snd_pcm_substream_t *subs)
@@ -1198,7 +1198,7 @@ static int vx_init_audio_io(vx_core_t *chip)
 /*
  * free callback for pcm
  */
-static void snd_vxpocket_pcm_free(snd_pcm_t *pcm)
+static void snd_vx_pcm_free(snd_pcm_t *pcm)
 {
 	vx_core_t *chip = snd_magic_cast(vx_core_t, pcm->private_data, return);
 	chip->pcm[pcm->device] = NULL;
@@ -1230,7 +1230,7 @@ int snd_vx_pcm_new(vx_core_t *chip)
 		ins = chip->audio_ins > i * 2 ? 1 : 0;
 		if (! outs && ! ins)
 			break;
-		err = snd_pcm_new(chip->card, "VXPocket", i,
+		err = snd_pcm_new(chip->card, "VX PCM", i,
 				  outs, ins, &pcm);
 		if (err < 0)
 			return err;
@@ -1240,7 +1240,7 @@ int snd_vx_pcm_new(vx_core_t *chip)
 			snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &vx_pcm_capture_ops);
 
 		pcm->private_data = chip;
-		pcm->private_free = snd_vxpocket_pcm_free;
+		pcm->private_free = snd_vx_pcm_free;
 		pcm->info_flags = 0;
 		strcpy(pcm->name, chip->card->shortname);
 		chip->pcm[i] = pcm;
