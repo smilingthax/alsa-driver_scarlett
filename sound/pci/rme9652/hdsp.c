@@ -1137,21 +1137,19 @@ static void snd_hdsp_midi_input_trigger(snd_rawmidi_substream_t * substream, int
 	hdsp_t *hdsp;
 	hdsp_midi_t *hmidi;
 	unsigned long flags;
+	u32 ie;
 
 	hmidi = (hdsp_midi_t *) substream->rmidi->private_data;
 	hdsp = hmidi->hdsp;
+	ie = hmidi->id ? HDSP_Midi1InterruptEnable : HDSP_Midi0InterruptEnable;
 	spin_lock_irqsave (&hdsp->lock, flags);
 	if (up) {
-		snd_hdsp_flush_midi_input (hdsp, hmidi->id);
-		if (hmidi->id) 
-			hdsp->control_register |= HDSP_Midi1InterruptEnable;
-		else 
-			hdsp->control_register |= HDSP_Midi0InterruptEnable;
+		if (!(hdsp->control_register & ie)) {
+			snd_hdsp_flush_midi_input (hdsp, hmidi->id);
+			hdsp->control_register |= ie;
+		}
 	} else {
-		if (hmidi->id) 
-			hdsp->control_register &= ~HDSP_Midi1InterruptEnable;
-		else 
-			hdsp->control_register &= ~HDSP_Midi0InterruptEnable;
+		hdsp->control_register &= ~ie;
 	}
 
 	hdsp_write(hdsp, HDSP_controlRegister, hdsp->control_register);
