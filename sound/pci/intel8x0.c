@@ -475,9 +475,16 @@ static void snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, dev_id, return);
 	unsigned int status;
 
+	spin_lock(&chip->reg_lock);
 	status = inl(ICHREG(chip, GLOB_STA));
-	if ((status & (ICH_MCINT | ICH_POINT | ICH_PIINT)) == 0)
+	if ((status & (ICH_MCINT | ICH_POINT | ICH_PIINT)) == 0) {
+		spin_unlock(&chip->reg_lock);
 		return;
+	}
+	/* ack first */
+	outl(status & (ICH_MCINT | ICH_POINT | ICH_PIINT), ICHREG(chip, GLOB_STA));
+	spin_unlock(&chip->reg_lock);
+
 	if (status & ICH_POINT)
 		snd_intel8x0_update(chip, &chip->playback);
 	if (status & ICH_PIINT)
