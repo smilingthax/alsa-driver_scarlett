@@ -42,6 +42,8 @@ struct snd_stru_es1688 {
 	unsigned short hardware;	/* see to ES1688_HW_XXXX */
 
 	unsigned short trigger_value;
+	unsigned char rec_src;
+	unsigned char pad;
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
