@@ -70,6 +70,7 @@ MODULE_DEVICES("{{Crystal Semiconductors,CS4235},"
 		"{IBM,Aptiva 2137 E24},"
 		"{IBM,IntelliStation M Pro},"
 		"{Intel,Marlin Spike Mobo CS4235},"
+		"{Intel PR440FX Onboard},"
 		"{Guillemot,MaxiSound 16 PnP},"
 		"{NewClear,3D},"
 		"{TerraTec,AudioSystem EWS64L/XL},"
@@ -209,6 +210,8 @@ static struct isapnp_card_id snd_card_pnpids[] __devinitdata = {
 	ISAPNP_CS4232_WOMPU('C','S','C',0x0735,0x0000,0x0010),
 	/* some uknown CS4236B */
 	ISAPNP_CS4232('C','S','C',0x0b35,0x0000,0x0010,0x0003),
+	/* Intel PR440FX Onboard sound */
+	ISAPNP_CS4232('C','S','C',0x0b36,0x0000,0x0010,0x0003),
 	/* CS4235 on mainboard without MPU */
 	ISAPNP_CS4232_WOMPU('C','S','C',0x1425,0x0100,0x0110),
 	/* Gateway E1000 Onboard CS4236B */
