@@ -27,6 +27,7 @@
 #include <linux/interrupt.h>
 #include <linux/init.h>
 #include <sound/core.h>
+#include <sound/initval.h>
 #include "ice1712.h"
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
