@@ -90,7 +90,7 @@
         Upper level for soundcards and specific lowlevel code.
 
      //ddeetteecctt
-        Detection layer (_/_p_r_o_c_/_s_o_u_n_d_/_d_e_t_e_c_t - to make installation
+        Detection layer (_/_p_r_o_c_/_a_s_o_u_n_d_/_d_e_t_e_c_t - to make installation
         easy).
 
   11..22..  DDeevviicceess
@@ -307,7 +307,7 @@
 
   Variables from _s_n_d___c_a_r_d___t structure which must be filled:
 
-  +o  ttyyppee is type identification from _i_n_c_l_u_d_e_/_s_o_u_n_d_d_e_t_e_c_t_._h.
+  +o  ttyyppee is type identification from _i_n_c_l_u_d_e_/_a_s_o_u_n_d_i_d_._h.
 
   +o  aabbbbrreevviiaattiioonn is abbreviation for soundcard (for example 'GUS').
 
@@ -950,7 +950,8 @@
          /* make master as parent */
          for ( idx = 0; idx < mixer -> channels_count; idx++ ) {
            channel = mixer -> channels[ idx ];
-           channel -> hw.parent_priority = SND_MIXER_PRI_MASTER;
+           if ( !channel -> hw.input )
+             channel -> hw.parent_priority = SND_MIXER_PRI_MASTER;
          }
          /* add master volume control */
          master.set_record_source = channel -> hw.set_record_source;

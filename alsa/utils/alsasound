@@ -44,11 +44,11 @@ function start() {
   #
   idx=0
   while [ $idx -lt $maxcards ]; do
-    if [ -d /etc/sound/$idx ] && [ -d /proc/sound/$idx ]; then
+    if [ -d /etc/sound/$idx ] && [ -d /proc/asound/$idx ]; then
       idx1=0
       while [ $idx1 -lt $maxmixers ]; do
-        if [ -r /etc/sound/$idx/mixer$idx1 ] && [ -w /proc/sound/$idx/mixer$idx1 ]; then
-          cat /etc/sound/$idx/mixer$idx1 > /proc/sound/$idx/mixer$idx1
+        if [ -r /etc/sound/$idx/mixer$idx1 ] && [ -w /proc/asound/$idx/mixer$idx1 ]; then
+          cat /etc/sound/$idx/mixer$idx1 > /proc/asound/$idx/mixer$idx1
         fi
         idx1=$[$idx1+1]
       done
@@ -63,12 +63,12 @@ function stop() {
   #
   idx=0
   while [ $idx -lt $maxcards ]; do
-    if [ -d /proc/sound/$idx ]; then
+    if [ -d /proc/asound/$idx ]; then
       idx1=0
       while [ $idx1 -lt $maxmixers ]; do
-        if [ -r /proc/sound/$idx/mixer$idx1 ]; then
+        if [ -r /proc/asound/$idx/mixer$idx1 ]; then
           mkdir -p /etc/sound/$idx
-          cat /proc/sound/$idx/mixer$idx1 > /etc/sound/$idx/mixer$idx1
+          cat /proc/asound/$idx/mixer$idx1 > /etc/sound/$idx/mixer$idx1
         fi
         idx1=$[$idx1+1]
       done
@@ -87,9 +87,9 @@ function stop() {
 case "$1" in
   start)
         # Start driver.
-	if [ ! -d /proc/sound ]; then
+	if [ ! -d /proc/asound ]; then
 	  start
-	  if [ -d /proc/sound ] && [ -d /var/lock/subsys ]; then
+	  if [ -d /proc/asound ] && [ -d /var/lock/subsys ]; then
 	    touch /var/lock/subsys/alsasound
 	  fi
 	else
@@ -98,7 +98,7 @@ case "$1" in
         ;;
   stop)
         # Stop daemons.
-	if [ -d /proc/sound ]; then
+	if [ -d /proc/asound ]; then
           echo -n "Shutting down sound driver: "
 	  stop
 	  if [ -d /var/lock/subsys ]; then

@@ -131,8 +131,8 @@
 #define SND_FOPS_FLUSH
 #endif
 
-#include "sound.h"
-#include "sounddetect.h"
+#include "asound.h"
+#include "asoundid.h"
 
 #ifndef LINUX_2_1
 #define mm_segment_t unsigned int

@@ -11,7 +11,7 @@ Features
 * general
   - modularized architecture with support for 2.0 and latest 2.1 kernels
   - support for versioned and exported symbols
-  - full proc filesystem support - /proc/sound
+  - full proc filesystem support - /proc/asound
 * ISA soundcards
   - support for 128k ISA DMA buffer
 * mixer

@@ -45,7 +45,7 @@ Module parameters
                 - if not set, first free index is assigned
     snd_id	- user identification for card (up to 15 chars)
 		- default expression is 'card<snd_index>' (for example card1)
-		- value is used for /proc/sound filesystem
+		- value is used for /proc/asound filesystem
 		- this value can be used with application for identification
 		  of card if user doesn't want identify card with index number
 
@@ -303,11 +303,11 @@ options snd-gusclassic snd_index=1,2 snd_port=0x220,0x260 snd_irq=5,11 snd_dma1=
 
 -----
 
-Proc interfaces (/proc/sound)
-=============================
+Proc interfaces (/proc/asound)
+==============================
 
-/proc/sound/#card#/pcm#o
-------------------------
+/proc/asound/#card#/pcm#o
+-------------------------
   String "Playback erase" - erase all additional informations about OSS applications
   String "Playback <app_name> <fragments> <fragment_size> [<options>]"
   String "Record erase" - erase all additional informations about OSS applications
@@ -321,11 +321,11 @@ Proc interfaces (/proc/sound)
                       driver rewrites this to O_WRONLY (playback) - good
                       for Quake etc...
 
-  Example: echo "Playback x11amp 128 16384" > /proc/sound/0/pcm0o
-           echo "Playback squake 0 0 WR_ONLY" > /proc/sound/0/pcm0o
+  Example: echo "Playback x11amp 128 16384" > /proc/asound/0/pcm0o
+           echo "Playback squake 0 0 WR_ONLY" > /proc/asound/0/pcm0o
 
-/proc/sound/#card#/sb16
------------------------
+/proc/asound/#card#/sb16
+------------------------
   String "Playback 8" -> driver will use always 8-bit DMA channel for playback.
   String "Playback 16" -> driver will use always 16-bit DMA channel for playback.
   String "Playback auto" (default) -> driver will use auto mode (first opened
@@ -335,10 +335,10 @@ Proc interfaces (/proc/sound)
   String "Record auto" (default) -> driver will use auto mode (first opened
   direction will use 16-bit DMA channel).
 
-  Example: echo "Record 16" > /proc/sound/0/sb16
+  Example: echo "Record 16" > /proc/asound/0/sb16
 
-/proc/sound/#card#/sonicvibes
------------------------------
+/proc/asound/#card#/sonicvibes
+------------------------------
   String "SRS on" -> enable SRS 3D audio enhancement
   String "SRS off" -> disable SRS 3D audio enhancement
   String "Space 100%" -> set SRS space to 100%
@@ -361,10 +361,10 @@ Proc interfaces (/proc/sound)
   String "ExtTx on" -> host MIDI data can be output to external device
   String "ExtTx off" -> host MIDI data cannot be output to external device
 
-  Example: echo "Synth off" > /proc/sound/0/sonicvibes
+  Example: echo "Synth off" > /proc/asound/0/sonicvibes
 
-/proc/sound/#card#/audiopci
----------------------------
+/proc/asound/#card#/audiopci
+----------------------------
   Interface for Ensoniq AudioPCI.
 
   +-- ES1370 only
@@ -382,8 +382,8 @@ Proc interfaces (/proc/sound)
   | String "Jport 0x218" -> set joystick base port to 0x218
   +--
 
-/proc/sound/#card#/ac97
------------------------
+/proc/asound/#card#/ac97
+------------------------
   Interface for Audio Codec '97.
 
   String "Mic-Gain on" -> set MIC gain to +20dB
@@ -403,8 +403,8 @@ Proc interfaces (/proc/sound)
   String "Loopback on" -> enable ADC/DAC loopback
   String "Loopback off" -> disable ADC/DAC loopback
 
-/proc/sound/#card#/ak4531
--------------------------
+/proc/asound/#card#/ak4531
+--------------------------
   Interface for Asahi Kasei AK4531 audio codec.
 
   String "Source external" -> record source is external input

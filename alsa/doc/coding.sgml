@@ -48,7 +48,7 @@ Source files are separated to:
 <tag>/cards</tag>
   Upper level for soundcards and specific lowlevel code.
 <tag>/detect</tag>
-  Detection layer (<it>/proc/sound/detect</it> - to make installation easy).
+  Detection layer (<it>/proc/asound/detect</it> - to make installation easy).
 </descrip>
 
 <sect1>Devices
@@ -264,7 +264,7 @@ Functions list:
 Variables from <it>snd_card_t</it> structure which must be filled:
 
 <itemize>
-<item><bf>type</bf> is type identification from <it>include/sounddetect.h</it>.
+<item><bf>type</bf> is type identification from <it>include/asoundid.h</it>.
 <item><bf>abbreviation</bf> is abbreviation for soundcard (for example 'GUS').
 <item><bf>shortname</bf> is shortname for soundcard (for example 'Gravis UltraSound MAX').
 <item><bf>longname</bf> is full identification for soundcard (for example 'Gravis UltraSound MAX at 0x220, irq 5, dma 1&5').

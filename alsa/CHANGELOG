@@ -28,9 +28,13 @@
 * improved support for MPU401-UART
 * improved support for CS4231(A) chips
 * improved /proc interface
-  - added /proc/sound/dev directory interface for sound devices
-  - added /proc/sound/#card#/pcm#o interface
+  - renamed ALSA directory from sound to asound
+    (due possible conflict in future with OSS/Lite)
+  - added /proc/asound/dev directory interface for sound devices
+  - added /proc/asound/#card#/pcm#o interface
 * added switches interfaces (control, mixer, pcm, rawmidi)
+* sound.h file renamed to asound.h (due to conflict with newer 2.1.X kernels)
+* sounddetect.h file renamed to asoundid.h
 
 0.1.3 -> 0.1.4
 

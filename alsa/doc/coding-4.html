@@ -285,7 +285,8 @@ snd_kmixer_t *snd_cs4231_new_mixer( snd_pcm_t *pcm )
   /* make master as parent */
   for ( idx = 0; idx &lt; mixer -&gt; channels_count; idx++ ) {
     channel = mixer -&gt; channels[ idx ];
-    channel -&gt; hw.parent_priority = SND_MIXER_PRI_MASTER;
+    if ( !channel -&gt; hw.input )
+      channel -&gt; hw.parent_priority = SND_MIXER_PRI_MASTER;
   }
   /* add master volume control */
   master.set_record_source = channel -&gt; hw.set_record_source;

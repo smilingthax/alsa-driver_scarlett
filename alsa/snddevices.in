@@ -93,4 +93,4 @@ create_devices	/dev/sndfm		248
 
 # New dynamic sound device filesystem
 
-ln -sfv /proc/sound/dev /dev/snd
+ln -sfv /proc/asound/dev /dev/snd
