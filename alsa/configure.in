@@ -173,6 +173,7 @@ CHECK_KERNEL_HEADER(linux/pm.h)
 CHECK_KERNEL_HEADER(linux/spinlock.h)
 CHECK_KERNEL_HEADER(linux/irq.h)
 CHECK_KERNEL_HEADER(linux/threads.h)
+CHECK_KERNEL_HEADER(linux/rwsem.h)
 
 dnl Check kernel configurations
 
