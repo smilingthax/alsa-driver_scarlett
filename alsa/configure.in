@@ -279,7 +279,7 @@ AC_SUBST(c_opts)
 AC_SUBST(GENKSYMS)
 
 dnl Output files...
-AC_OUTPUT(Makefile.conf snddevices utils/alsadriver.spec)
+AC_OUTPUT(Makefile.conf snddevices utils/alsa-driver.spec)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices

@@ -2,22 +2,22 @@
 %define kversion @kversion@.@kpatchlevel@.@ksublevel@
 
 Summary:   ALSA driver
-Name:      alsadriver
+Name:      alsa-driver
 Version:   %{version}
 Release:   1
-Source:    alsadriver-%{version}.tar.gz
+Source:    alsa-driver-%{version}.tar.gz
 URL:       http://alsa.jcu.cz
 Copyright: GPL
 Group:     Base/Kernel
 Requires:  kernel kernel-headers
-BuildRoot: /tmp/alsadriver-%{version}-root
+BuildRoot: /tmp/alsa-driver-%{version}-root
 
 %description
 Advanced Linux Sound Architecture driver. Driver is fully compatible
 with OSS/Lite, but contains many enhanced features.
 
 %prep
-%setup -n alsadriver
+%setup -n alsa-driver
 
 %build
 ./configure --prefix=/usr

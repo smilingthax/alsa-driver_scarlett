@@ -50,7 +50,7 @@ clean:
 
 mrproper: clean
 	rm -f config.cache config.log config.status Makefile.conf
-	rm -f utils/alsadriver.spec
+	rm -f utils/alsa-driver.spec
 
 cvsclean: mrproper
 	rm -f configure snddevices include/config.h
