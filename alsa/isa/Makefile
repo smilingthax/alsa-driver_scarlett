@@ -18,6 +18,8 @@ extra-subdir-m	:= $(extra-subdir-y)
 snd-sscape-objs := sscape.o
 extra-obj-$(CONFIG_SND_SSCAPE) += snd-sscape.o
 
+isapnp-files := als100.isapnp
+
 #
 #
 #

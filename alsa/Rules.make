@@ -91,10 +91,13 @@ ifdef USE_STANDARD_AS_RULE
 
 endif
 
+%.isapnp: %.c
+	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | $(TOPDIR)/utils/convert_isapnp_ids > $@
+
 #
 #
 #
-all_targets: $(O_TARGET) $(L_TARGET)
+all_targets: $(isapnp-files) $(O_TARGET) $(L_TARGET)
 
 #
 # Rule to compile a set of .o files into one .o file
@@ -165,7 +168,7 @@ $(patsubst %,_modinst_%,$(MOD_DIRS)) : dummy
 endif
 
 .PHONY: modules
-modules: $(ALL_MOBJS) dummy \
+modules: $(isapnp-files) $(ALL_MOBJS) dummy \
 	 $(patsubst %,_modsubdir_%,$(MOD_DIRS))
 
 .PHONY: _modinst__
