@@ -4,13 +4,12 @@
 			    Installation guide
 
 The ALSA driver replaces the OSS/Lite driver. The OSS/Lite is present in
-current Linux kernels. If you have got a 2.2+ kernel, you must compile
+current Linux kernels (2.2). Since 0.4.0 version ALSA has supported only
+2.2+ kernels. The 2.0 kernels are no longer supported. You must compile
 kernel with sound support (you need not select any other modules than
-sound support). If you have got 2.0 or 2.1 kernels, check if the OSS/Lite
-driver is active in your kernel. You must remove it before you are
-trying to install the ALSA driver.
+sound support).
 
-Before installation of this driver, please, you need carefully read
+Before the installation of this driver, please, you need carefully read
 documentation  for insmod, modprobe, kerneld/kmod and even for the isapnp
 module if you have the ISA PnP soundcard. If you do not understand how
 these programs are working, you cannot be success with the installation.
@@ -18,8 +17,7 @@ these programs are working, you cannot be success with the installation.
 Quick install
 =============
 
-1) If you have got 2.2 or later kernel, you must turn on sound support.
-   If you have got 2.0 kernel or 2.1 kernel, you can silently skip this step.
+1) You must turn on sound support.
 2) Run './configure' script.
    If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
    If you want sequencer support, use --with-sequencer=yes switch.
@@ -47,13 +45,12 @@ Note: All mixer channels are muted by default. You must use some native
 Driver cannot be activated?
 ===========================
 
-1) Is the OSS(/Lite) driver present? - remove it (2.0 and 2.1 kernels only)
-2) You can check your soundcard setup again and read this install file
+1) You can check your soundcard setup again and read this install file
    (module parameters) carefully.
-3) If you have got ISA PnP soundcard:
+2) If you have got ISA PnP soundcard:
    - native ISA PnP support: is your setup in /proc/isapnp.conf correct?
    - isapnptools: is configuration on isapnp.conf same as for the driver?
-4) The driver is not still working: remake driver with:
+3) The driver is not still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
    there are not some messages. If these messages do not help you, send us
@@ -432,6 +429,7 @@ Module parameters
     snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
     snd_dma2_size - max second DMA size in kB (4-64kB)
+    snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards. This module does not support autoprobe
     thus main port must be specified!!! Other ports are optional.
@@ -452,6 +450,7 @@ Module parameters
     snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
     snd_dma2_size - max second DMA size in kB (4-64kB)
+    snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards. This module does not support autoprobe
     (if ISA PnP is not used) thus main port and control port must be
@@ -507,11 +506,8 @@ Native ALSA devices have got default number 116. Thus line like
 got compiled ALSA driver with OSS/Lite emulation code, please, follow
 these lines:
 
-The ALSA driver uses soundcore multiplexer for 2.2 kernels and OSS compatible
+The ALSA driver uses soundcore multiplexer for 2.2+ kernels and OSS compatible
 devices. You should add line like 'alias char-major-14 soundcore'.
-For 2.0/2.1 kernels the ALSA driver takes control for the char major device
-14 itself, thus you may add line 'alias char-major-14 snd' to your
-modprobe configuration file.
 
 Example for 2.2 kernel (with OSS/Lite emulation turned on):
 
@@ -521,17 +517,6 @@ Example for 2.2 kernel (with OSS/Lite emulation turned on):
 alias char-major-116 snd
 # OSS/Lite portion
 alias char-major-14 soundcore
-
------ /etc/conf.modules
-
-Example for 2.0/2.1 kernels (with OSS/Lite emulation turned on):
-
------ /etc/conf.modules
-
-# ALSA portion
-alias char-major-116 snd
-# OSS/Lite portion
-alias char-major-14 snd
 
 ----- /etc/conf.modules
 
