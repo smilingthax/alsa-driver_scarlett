@@ -904,7 +904,7 @@ static snd_pcm_hardware_t snd_cs4281_capture =
 	period_bytes_min:	64,
 	period_bytes_max:	(512*1024),
 	periods_min:		1,
-	periods_max:		1024,
+	periods_max:		2,
 	fifo_size:		CS4281_FIFO_SIZE,
 };
 
