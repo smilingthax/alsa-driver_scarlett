@@ -239,8 +239,8 @@ struct _snd_pcm_runtime {
 	snd_timestamp_t trigger_time;	/* trigger timestamp */
 	int overrange;
 	snd_pcm_uframes_t avail_max;
-	snd_pcm_uframes_t hw_ptr_base;		/* Position at buffer restart */
-	snd_pcm_uframes_t hw_ptr_interrupt;	/* Position at interrupt time*/
+	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
+	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time*/
 
 	/* -- HW params -- */
 	snd_pcm_access_t access;	/* access mode */
@@ -248,11 +248,11 @@ struct _snd_pcm_runtime {
 	snd_pcm_subformat_t subformat;	/* subformat */
 	unsigned int rate;		/* rate in Hz */
 	unsigned int channels;		/* channels */
-	snd_pcm_uframes_t period_size;		/* period size */
+	snd_pcm_uframes_t period_size;	/* period size */
 	unsigned int periods;		/* periods */
-	snd_pcm_uframes_t buffer_size;		/* buffer size */
+	snd_pcm_uframes_t buffer_size;	/* buffer size */
 	unsigned int tick_time;		/* tick time */
-	snd_pcm_uframes_t min_align;		/* Min alignment for the format */
+	snd_pcm_uframes_t min_align;	/* Min alignment for the format */
 	size_t byte_align;
 	unsigned int bits_per_frame;
 	unsigned int bits_per_sample;
@@ -266,12 +266,12 @@ struct _snd_pcm_runtime {
 	snd_pcm_tstamp_t tstamp_mode;	/* mmap timestamp is updated */
   	unsigned int period_step;
 	unsigned int sleep_min;		/* min ticks to sleep */
-	snd_pcm_uframes_t xfer_align;		/* xfer size need to be a multiple */
+	snd_pcm_uframes_t xfer_align;	/* xfer size need to be a multiple */
 	unsigned int silence_mode;	/* Silence filling mode */
-	snd_pcm_uframes_t silence_threshold;	/* Silence filling happens when
-					   noise is nearest than this */
-	snd_pcm_uframes_t silence_size;		/* Silence filling size */
-	snd_pcm_uframes_t boundary;		/* pointers wrap point */
+	snd_pcm_uframes_t silence_threshold; /* Silence filling happens when
+					        noise is nearest than this */
+	snd_pcm_uframes_t silence_size;	/* Silence filling size */
+	snd_pcm_uframes_t boundary;	/* pointers wrap point */
 
 	snd_pcm_uframes_t silenced_start;
 	snd_pcm_uframes_t silenced_size;
@@ -309,7 +309,7 @@ struct _snd_pcm_runtime {
 	/* -- DMA -- */           
 	unsigned char *dma_area;	/* DMA area */
 	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
-	unsigned long dma_bytes;		/* size of DMA area */
+	unsigned long dma_bytes;	/* size of DMA area */
 
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
@@ -323,6 +323,11 @@ struct _snd_pcm_substream {
 	int number;
 	char name[32];			/* substream name */
 	int stream;			/* stream (direction) */
+	size_t buffer_bytes_max;	/* limit ring buffer size */
+	snd_kcontrol_t *kctl_buffer_bytes_max;
+	void *dma_area;
+	dma_addr_t dma_addr;
+	size_t dma_bytes;
 	/* -- hardware operations -- */
 	snd_pcm_ops_t *ops;
 	/* -- runtime information -- */
@@ -401,6 +406,9 @@ extern int snd_pcm_new(snd_card_t * card, char *id, int device,
 		       int playback_count, int capture_count, snd_pcm_t **rpcm);
 
 extern int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
+
+extern int snd_pcm_add_buffer_bytes_control(snd_pcm_substream_t *substream);
+extern int snd_pcm_add_buffer_bytes_controls(snd_pcm_t *pcm);
 
 extern snd_minor_t snd_pcm_reg[2];
 
@@ -768,20 +776,32 @@ extern void snd_pcm_timer_init(snd_pcm_substream_t * substream);
 extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 
 /*
- *  Misc
+ *  Memory
  */
 
-#define SND_PCM_DEFAULT_CON_SPDIF	(SND_PCM_AES0_CON_EMPHASIS_NONE|\
-					 (SND_PCM_AES1_CON_ORIGINAL<<8)|\
-					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
-					 (SND_PCM_AES3_CON_FS_48000<<24))
-
+extern int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
+					 size_t size, unsigned int flags);
+extern int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
+						 size_t size,
+						 unsigned int flags);
+extern void snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
+extern void snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
 extern int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream,
 				    size_t size,
 				    unsigned int flags);
 extern void snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
 
 #ifdef CONFIG_PCI
+extern int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
+					     snd_pcm_substream_t *substream,
+					     size_t size);
+extern int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
+						     snd_pcm_t *pcm,
+						     size_t size);
+extern void snd_pcm_lib_preallocate_pci_free(struct pci_dev *pci,
+					     snd_pcm_substream_t *substream);
+extern void snd_pcm_lib_preallocate_pci_free_for_all(struct pci_dev *pci,
+						     snd_pcm_t *pcm);
 extern int snd_pcm_lib_malloc_pci_pages(struct pci_dev *pci,
                                         snd_pcm_substream_t *substream,
                                         size_t size);
@@ -793,5 +813,14 @@ static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
 {
 	*max = dma < 4 ? 64 * 1024 : 128 * 1024;
 }
+
+/*
+ *  Misc
+ */
+
+#define SND_PCM_DEFAULT_CON_SPDIF	(SND_PCM_AES0_CON_EMPHASIS_NONE|\
+					 (SND_PCM_AES1_CON_ORIGINAL<<8)|\
+					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
+					 (SND_PCM_AES3_CON_FS_48000<<24))
 
 #endif				/* __PCM_H */

@@ -29,7 +29,7 @@ function basic() {
   banner "snd-timer"
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   banner "snd-pcm"
-  if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd-pcm.o snd_preallocate_dma=1 >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-pcm-oss.o ]; then
     banner "snd-pcm-oss"
     if ! $INSMOD -m $MODDIR/snd-pcm-oss.o >> $MAP; then exit 1; fi  
