@@ -2091,6 +2091,7 @@ static void isapnp_free_device(struct isapnp_dev *dev)
 
 #endif /* MODULE */
 
+#ifdef NEW_RESOURCE
 static void isapnp_release_resource(struct resource *res)
 {
 	if (res) {
@@ -2098,6 +2099,7 @@ static void isapnp_release_resource(struct resource *res)
 		kfree(res);
 	}
 }
+#endif
 
 static void isapnp_free_all_resources(void)
 {
