@@ -1,4 +1,5 @@
 - midlevel:
+H NASTY bug in OSS mmap (introduced recently)
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 H replace int with unsigned long (alpha machines) for port values (Jaroslav)
 M implement stream silence fill (Abramo)
