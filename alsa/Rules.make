@@ -11,6 +11,7 @@
 
 .sym.c:
 	$(PEXPORT) $<
+	rm -f $(DEXPORT)/$*.ver
 	$(CC) $(INCLUDE) -E -D__GENKSYMS__ $*.c | $(GENKSYMS) > $(DEXPORT)/$*.ver
 
 .nsym.c:

@@ -4,6 +4,7 @@
 #
 
 $(DEXPORT)/%.ver: %.c
+	rm -f $(DEXPORT)/$*.ver
 	$(CC) $(INCLUDE) -E -D__GENKSYMS__ $*.c | $(GENKSYMS) > $(DEXPORT)/$*.ver
 
 $(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver)): $(TOPDIR)/include/config.h $(TOPDIR)/include/config1.h
