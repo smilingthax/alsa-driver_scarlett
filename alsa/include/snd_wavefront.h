@@ -138,5 +138,5 @@ extern int snd_wavefront_fx_release (snd_hwdep_t *, struct file *);
 
 #define LOGNAME "WaveFront: "
 
-#endif  __SND_WAVEFRONT_H__
+#endif  /* __SND_WAVEFRONT_H__ */
 
