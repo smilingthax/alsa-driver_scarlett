@@ -124,6 +124,9 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)
 #define pci_set_dma_mask(pci, mask) pci->dma_mask = mask
 #endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 7)
+#define PCI_NEW_SUSPEND
+#endif
 #ifndef virt_to_page
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
 #endif
