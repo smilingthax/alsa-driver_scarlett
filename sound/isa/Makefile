@@ -5,7 +5,7 @@
 
 O_TARGET     := isa.o
 
-subdir-y     := ad1816a ad1848 cs4231 es1688 gus opti9xx sb wavefront
+subdir-y     := ad1816a ad1848 cs423x es1688 gus opti9xx sb wavefront
 subdir-m     := $(subdir-y)
 
 list-multi   := snd-als100.o snd-azt2320.o snd-cmi8330.o snd-dt0197h.o \
