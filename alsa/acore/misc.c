@@ -217,25 +217,20 @@ static int work_caller(void *data)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 8)
 	reparent_to_init();
 #endif
-	strcpy(current->comm, "snd-free"); /* FIXME: different names? */
+	strcpy(current->comm, "snd"); /* FIXME: different names? */
 
 	works->func(works->data);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 	unlock_kernel();
 #endif
-	kfree(works);
 
 	return 0;
 }
 
 int snd_compat_schedule_work(struct work_struct *works)
 {
-	struct work_struct *wp = kmalloc(sizeof(*wp), GFP_KERNEL);
-	if (! wp)
-		return 0;
-	*wp = *works;
-	return kernel_thread(work_caller, wp, 0) >= 0;
+	return kernel_thread(work_caller, works, 0) >= 0;
 }
 
 #endif
