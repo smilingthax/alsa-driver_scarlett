@@ -179,4 +179,9 @@ int snd_ac97_mixer(snd_card_t * card, int device,
 		   ac97_t * ac97, int pcm_count, int *pcm_devs,
 		   snd_kmixer_t ** rmixer);
 
+void snd_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short value);
+unsigned short snd_ac97_read(ac97_t *ac97, unsigned short reg);
+void snd_ac97_write_lock(ac97_t *ac97, unsigned short reg, unsigned short value);
+unsigned short snd_ac97_read_lock(ac97_t *ac97, unsigned short reg);
+
 #endif				/* __AC97_CODEC_H */
