@@ -50,7 +50,7 @@ typedef struct sndrv_pcm_mmap_status snd_pcm_mmap_status_t;
 typedef struct sndrv_pcm_mmap_control snd_pcm_mmap_control_t;
 typedef struct sndrv_mask snd_mask_t;
 
-#define _snd_pcm_substream_chip(substream) ((substream)->pcm->private_data)
+#define _snd_pcm_substream_chip(substream) ((substream)->private_data)
 #define snd_pcm_substream_chip(substream) snd_magic_cast1(chip_t, _snd_pcm_substream_chip(substream), return -ENXIO)
 #define _snd_pcm_chip(pcm) ((pcm)->private_data)
 #define snd_pcm_chip(pcm) snd_magic_cast1(chip_t, _snd_pcm_chip(pcm), return -ENXIO)
@@ -363,6 +363,7 @@ struct _snd_pcm_runtime {
 struct _snd_pcm_substream {
 	snd_pcm_t *pcm;
 	snd_pcm_str_t *pstr;
+	void *private_data;		/* copied from pcm->private_data */
 	int number;
 	char name[32];			/* substream name */
 	int stream;			/* stream (direction) */
