@@ -20,7 +20,7 @@ ifeq (0,$(SNDCFG_ISAPNP_KERNEL))
 TARGETS+= $(TOPDIR)/modules/isapnp.o
 endif
 endif
-ISAPNP	= isapnp.o isapnp_proc.o
+ISAPNP	= isapnp.o
 ISAPNPE	= $(DEXPORT)/isapnp.ver
 ifeq (1,$(SNDCFG_ISAPNP))
 ifeq (0,$(SNDCFG_ISAPNP_KERNEL))
