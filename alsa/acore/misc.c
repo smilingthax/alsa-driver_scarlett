@@ -30,12 +30,14 @@ struct resource *snd_compat_request_region(unsigned long start, unsigned long si
 #endif
 	if (resource == NULL)
 		return NULL;
-	if (! is_memory && check_region(start, size)) {
-		kfree_nocheck(resource);
-		return NULL;
+	if (! is_memory) {
+		if (check_region(start, size)) {
+			kfree_nocheck(resource);
+			return NULL;
+		}
+		snd_wrapper_request_region(start, size, name);
 	}
 	memset(resource, 0, sizeof(struct resource));
-	snd_wrapper_request_region(start, size, name);
 	resource->name = name;
 	resource->start = start;
 	resource->end = start + size - 1;

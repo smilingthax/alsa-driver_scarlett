@@ -351,15 +351,11 @@ int snd_pci_compat_request_region(struct pci_dev *pdev, int bar, char *res_name)
 		return 0;
 	flags = snd_pci_compat_get_flags(pdev, bar);
 	if (flags & IORESOURCE_IO) {
-		if (!request_region(pci_resource_start(pdev, bar),
-				    pci_resource_len(pdev, bar), res_name))
+		if (check_region(pci_resource_start(pdev, bar), pci_resource_len(pdev, bar)))
 			goto err_out;
-	} else if (flags & IORESOURCE_MEM) {
-		if (!request_mem_region(pci_resource_start(pdev, bar),
-				        pci_resource_len(pdev, bar), res_name))
-			goto err_out;
+		snd_wrapper_request_region(pci_resource_start(pdev, bar),
+					   pci_resource_len(pdev, bar), res_name);
 	}
-	
 	return 0;
 
 err_out:
@@ -374,15 +370,14 @@ err_out:
 void snd_pci_compat_release_region(struct pci_dev *pdev, int bar)
 {
 	int flags;
+
 	if (pci_resource_len(pdev, bar) == 0)
 		return;
 	flags = snd_pci_compat_get_flags(pdev, bar);
-	if (flags & IORESOURCE_IO)
+	if (flags & IORESOURCE_IO) {
 		release_region(pci_resource_start(pdev, bar),
-				pci_resource_len(pdev, bar));
-	else if (flags & IORESOURCE_MEM)
-		release_mem_region(pci_resource_start(pdev, bar),
-				   pci_resource_len(pdev, bar));
+			       pci_resource_len(pdev, bar));
+	}
 }
 
 int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name)
