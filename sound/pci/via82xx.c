@@ -217,7 +217,7 @@ static int build_via_table(viadev_t *dev, snd_pcm_substream_t *substream,
 			return -ENOMEM;
 	}
 	if (! dev->idx_table) {
-		dev->idx_table = kmalloc(sizeof(unsigned int) * VIA_TABLE_SIZE, GFP_KERNEL);
+		dev->idx_table = kmalloc(sizeof(*dev->idx_table) * VIA_TABLE_SIZE, GFP_KERNEL);
 		if (! dev->idx_table)
 			return -ENOMEM;
 	}
