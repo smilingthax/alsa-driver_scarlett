@@ -19,6 +19,13 @@ typedef struct wait_queue * wait_queue_head_t;
 #define init_waitqueue_entry(q,p) ((q)->task = (p))
 #define set_current_state(xstate) do { current->state = xstate; } while (0)
 
+#define rw_semaphore semaphore
+#define init_rwsem(x) init_MUTEX(x)
+#define down_read(x) down(x)
+#define down_write(x) down(x)
+#define up_read(x) up(x)
+#define up_write(x) up(x)
+
 /*
  * Insert a new entry before the specified head..
  */
