@@ -561,6 +561,12 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 #endif /* CONFIG_SND_DEBUG */
 
+#ifdef CONFIG_SND_DEBUG_DETECT
+#define snd_printdd(args...) snd_printk(##args)
+#else
+#define snd_printdd(args...) /* nothing */
+#endif
+
 #endif /* NEW_MACRO_VARARGS */
 
 #define snd_BUG() snd_debug_check(0, )
