@@ -5,8 +5,10 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-snd-pdaudiocf-objs := pdaudiocf.o pdaudiocf_core.o pdaudiocf_irq.o pdaudiocf_pcm.o
+clean-files := pdaudiocf.c
 
-obj-$(CONFIG_SND_PDAUDIOCF) += snd-pdaudiocf.o
+include $(SND_TOPDIR)/alsa-kernel/pcmcia/pdaudiocf/Makefile
 
 include $(SND_TOPDIR)/Rules.make
+
+pdaudiocf.c: pdaudiocf.patch $(SND_TOPDIR)/alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c
