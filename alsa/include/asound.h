@@ -459,12 +459,13 @@ typedef struct _snd_pcm_hw_params {
 			   SND_PCM_HW_PARAM_FIRST_MASK + 1];
 	interval_t intervals[SND_PCM_HW_PARAM_LAST_INTERVAL -
 			     SND_PCM_HW_PARAM_FIRST_INTERVAL + 1];
+	unsigned int rmask;
 	unsigned int cmask;
 	unsigned int info;		/* R: Info flags for returned setup */
 	unsigned int msbits;		/* R: used most significant bits */
 	unsigned int rate_num;		/* R: rate numerator */
 	unsigned int rate_den;		/* R: rate denominator */
-	snd_pcm_uframes_t fifo_size;		/* R: chip FIFO size in frames */
+	snd_pcm_uframes_t fifo_size;	/* R: chip FIFO size in frames */
 	unsigned char reserved[64];
 } snd_pcm_hw_params_t;
 
