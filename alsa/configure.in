@@ -533,7 +533,8 @@ CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
 AC_SUBST(CONFIG_PCI)
 
 dnl Check experimental drivers...
-CHECK_KERNEL_CONFIG(CONFIG_EXPERIMENTAL, [Experimental drivers in kernel])
+# CHECK_KERNEL_CONFIG(CONFIG_EXPERIMENTAL, [Experimental drivers in kernel])
+CONFIG_EXPERIMENTAL=y
 AC_SUBST(CONFIG_EXPERIMENTAL)
 
 dnl Check for SGI/MIPS (HAL2) support...
