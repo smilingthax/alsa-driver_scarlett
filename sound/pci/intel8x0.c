@@ -1230,11 +1230,11 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	chip->playback.size = chip->playback.fragsize = INTEL8X0_TESTBUF_SIZE;
 	chip->playback.substream = NULL; /* don't process interrupts */
 
-	spin_lock_irqsave(&chip->reg_lock, flags);
 	/* set rate */
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, 48000);
 	snd_intel8x0_setup_periods(chip, &chip->playback);
 	port = chip->bmport + chip->playback.reg_offset;
+	spin_lock_irqsave(&chip->reg_lock, flags);
 	outb(ICH_IOCE | ICH_STARTBM, port + ICH_REG_PI_CR); /* trigger */
 	do_gettimeofday(&start_time);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
