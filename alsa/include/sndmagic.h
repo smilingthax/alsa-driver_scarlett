@@ -55,9 +55,10 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 
 #define snd_pcm_t_magic				0xa15a0101
 #define snd_pcm_file_t_magic			0xa15a0102
-#define snd_pcm_substream_t_magic			0xa15a0103
+#define snd_pcm_substream_t_magic		0xa15a0103
 #define snd_pcm_proc_private_t_magic		0xa15a0104
 #define snd_pcm_oss_file_t_magic		0xa15a0105
+#define snd_mixer_oss_t_magic			0xa15a0106
 
 #define snd_info_private_data_t_magic		0xa15a0201
 #define snd_kctl_t_magic			0xa15a0301
@@ -68,6 +69,7 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 #define snd_timer_t_magic			0xa15a0501
 #define snd_timer_user_t_magic			0xa15a0502
 #define snd_hwdep_t_magic			0xa15a0601
+#define snd_seq_device_t_magic			0xa15a0701
 
 
 #define snd_card_share_pcm_t_magic		0xa15a1001
