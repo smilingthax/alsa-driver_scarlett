@@ -2390,10 +2390,10 @@ snd_hdspm_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 		    ((status & HDSPM_BufferID) ? 1 : 0),
 		    (status & HDSPM_BufferPositionMask),
 		    (status & HDSPM_BufferPositionMask) % (2 *
-							   hdspm->
+							   (int)hdspm->
 							   period_bytes),
 		    ((status & HDSPM_BufferPositionMask) -
-		     64) % (2 * hdspm->period_bytes),
+		     64) % (2 * (int)hdspm->period_bytes),
 		    (long) hdspm_hw_pointer(hdspm) * 4);
 
 	snd_iprintf(buffer,
@@ -3626,7 +3626,7 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	     (hdspm_mixer_t *) kmalloc(sizeof(hdspm_mixer_t), GFP_KERNEL))
 	    == NULL) {
 		snd_printk(KERN_ERR "HDSPM: unable to kmalloc Mixer memory of %d Bytes\n",
-			   sizeof(hdspm_mixer_t));
+			   (int)sizeof(hdspm_mixer_t));
 		return err;
 	}
 
