@@ -467,7 +467,6 @@ struct snd_stru_gus_card {
 	spinlock_t voice_alloc;
 	spinlock_t active_voice_lock;
 	spinlock_t event_lock;
-	spinlock_t playback_lock;
 	spinlock_t dma_lock;
 	spinlock_t pcm_volume_level_lock;
 	spinlock_t uart_cmd_lock;
