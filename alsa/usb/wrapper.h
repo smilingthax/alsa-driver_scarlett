@@ -1,3 +1,6 @@
+/* this makes makedep happy */
+#include <linux/version.h>
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 inline static urb_t *usb_alloc_urb_wrapper(int iso_packets, int flags)
 {
