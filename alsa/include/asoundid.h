@@ -52,7 +52,7 @@
 #define SND_CARD_TYPE_ESS_ES1938	0x00000014	/* ESS Solo-1 ES1938 */
 #define SND_CARD_TYPE_ESS_ES18XX	0x00000015	/* ESS AudioDrive ES18XX */
 #define SND_CARD_TYPE_CS4231		0x00000016      /* CS4231 */
-#define SND_CARD_TYPE_OPTI9XX		0x00000017	/* Opti 9xx chipset */
+#define SND_CARD_TYPE_OPTI92X		0x00000017	/* OPTi 92x chipset */
 #define SND_CARD_TYPE_SERIAL		0x00000018	/* Serial MIDI driver */
 #define SND_CARD_TYPE_AD1848		0x00000019	/* Generic AD1848 driver */
 #define SND_CARD_TYPE_TRID4DWAVEDX	0x0000001A	/* Trident 4DWave DX */
@@ -70,7 +70,8 @@
 #define SND_CARD_TYPE_ALS100		0x00000024	/* Avance Logic ALS100 */
 #define SND_CARD_TYPE_SHARE		0x00000025	/* share soundcard */
 #define SND_CARD_TYPE_SI_7018		0x00000026	/* SiS 7018 */
+#define SND_CARD_TYPE_OPTI93X		0x00000027	/* OPTi 93x chipset */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000026
+#define SND_CARD_TYPE_LAST		0x00000027
 
 #endif				/* __ASOUNDID_H */

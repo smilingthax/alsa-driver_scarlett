@@ -1,9 +1,10 @@
+
 #ifndef __OPTi93X_H
 #define __OPTi93X_H
 
 /*
-    opti93x.h - definitions for OPTi 82C93x chips.
-    Copyright (C) 1999 by Massimo Piccioni <piccio@caronte.csr.unibo.it>
+    opti93x.h - definitions for OPTi 82c93x chips.
+    Copyright (C) 1999 by Massimo Piccioni <dafastidio@libero.it>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -95,6 +96,7 @@
 
 
 typedef struct snd_stru_opti93x opti93x_t;
+
 struct snd_stru_opti93x {
 	unsigned short port;
 	unsigned short irq;

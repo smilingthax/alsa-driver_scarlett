@@ -4,7 +4,7 @@
 
 /*
     opti9xx.h - definitions for OPTi 82c9xx chips.
-    Copyright (C) 1998-99 by Massimo Piccioni <piccio@caronte.csr.unibo.it>
+    Copyright (C) 1998-99 by Massimo Piccioni <dafastidio@libero.it>
 
     Part of this code was developed at the Italian Ministry of Air Defence,
     Sixth Division (oh, che pace ...), Rome.
