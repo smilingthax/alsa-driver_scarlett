@@ -28,7 +28,6 @@
 #define ES1688_HW_AUTO		0x0000
 #define ES1688_HW_688		0x0001
 #define ES1688_HW_1688		0x0002
-#define ES1688_HW_1688_GUS	0x0003	/* GUS Extreme */
 
 struct snd_stru_es1688 {
   unsigned short port;		/* port of ESS chip */
@@ -97,6 +96,9 @@ typedef struct snd_stru_es1688 es1688_t;
 /*
  *
  */
+
+extern void snd_es1688_mixer_write( es1688_t *codec, unsigned char reg, unsigned char data ); 
+extern unsigned char snd_es1688_mixer_read( es1688_t *codec, unsigned char reg );
 
 extern void snd_es1688_interrupt( snd_pcm_t *pcm );
  
