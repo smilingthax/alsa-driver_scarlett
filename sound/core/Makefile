@@ -7,7 +7,7 @@ export-objs  := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o
 
 snd-objs     := sound.o init.o memory.o info.o control.o misc.o \
                 device.o wrappers.o
-ifeq ($(CONFIG_PCI),y)
+ifeq ($(CONFIG_ISA),y)
 snd-objs     += isadma.o
 endif
 ifeq ($(CONFIG_SND_OSSEMUL),y)
