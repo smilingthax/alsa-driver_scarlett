@@ -2,6 +2,7 @@
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 
+#include <linux/slab.h>
 #include <asm/io.h>
 
 int try_inc_mod_count(struct module *module)
