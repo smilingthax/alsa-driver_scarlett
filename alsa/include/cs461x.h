@@ -2,7 +2,8 @@
 #define __CS461X_H
 
 /*
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>,
+ *		     Cirrus Logic, Inc.
  *  Definitions for Cirrus Logic CS461x chips
  *
  *
