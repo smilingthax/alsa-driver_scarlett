@@ -98,8 +98,9 @@ extern int snd_timer_free(snd_timer_t * timer);
 extern int snd_timer_register(snd_timer_t * timer, int device);
 extern int snd_timer_unregister(snd_timer_t * timer);
 
-extern snd_timer_instance_t *snd_timer_open(char *owner, int timer_no, int slave, unsigned int slave_type, unsigned int slave_id);
-extern snd_timer_instance_t *snd_timer_open1(char *owner, snd_timer_t *timer, int slave, unsigned int slave_type, unsigned int slave_id);
+extern snd_timer_instance_t *snd_timer_open(char *owner, int timer_no, unsigned int slave_type, unsigned int slave_id);
+extern snd_timer_instance_t *snd_timer_open1(char *owner, snd_timer_t *timer, unsigned int slave_type, unsigned int slave_id);
+extern snd_timer_instance_t *snd_timer_open_slave(char *owner, unsigned int slave_type, unsigned int slave_id);
 extern int snd_timer_close(snd_timer_instance_t * timeri);
 extern int snd_timer_set_owner(snd_timer_instance_t * timeri, pid_t pid, gid_t gid);
 extern int snd_timer_reset_owner(snd_timer_instance_t * timeri);
