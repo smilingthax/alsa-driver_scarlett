@@ -808,6 +808,24 @@ Module parameters
     Module supports autoprobe a chip.
     Note: the driver may have problems regarding endianess.
 
+  Module snd-usb-audio.o
+  ----------------------
+
+    Module for USB audio devices.
+
+    This module supports up to 8 cards, autoprobe and hotplugging.
+
+  Module snd-usb-midi.o
+  ---------------------
+
+    Module for MIDI devices connected to a USB port.
+
+    snd_int_transfer    - transfer type for MIDI input
+                          0 = bulk transfers (default)
+                          1 = interrupt transfers, if supported by the device
+
+    This module supports up to 8 cards, autoprobe and hotplugging.
+
 
 modprobe/kmod support
 =====================
