@@ -3725,16 +3725,13 @@ void snd_cs46xx_suspend(cs46xx_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
-		goto __skip;
+		return;
 	snd_pcm_suspend_all(chip->pcm);
 	// chip->ac97_powerdown = snd_cs46xx_codec_read(chip, AC97_POWER_CONTROL);
 	// chip->ac97_general_purpose = snd_cs46xx_codec_read(chip, BA0_AC97_GENERAL_PURPOSE);
 	snd_cs46xx_hw_stop(chip);
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 void snd_cs46xx_resume(cs46xx_t *chip)
@@ -3742,9 +3739,8 @@ void snd_cs46xx_resume(cs46xx_t *chip)
 	snd_card_t *card = chip->card;
 	int amp_saved;
 
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
-		goto __skip;
+		return;
 
 	pci_enable_device(chip->pci);
 	amp_saved = chip->amplifier;
@@ -3773,8 +3769,6 @@ void snd_cs46xx_resume(cs46xx_t *chip)
 		chip->active_ctrl(chip, -1);
 	}
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 static int snd_cs46xx_set_power_state(snd_card_t *card, unsigned int power_state)

@@ -1900,17 +1900,15 @@ static void intel8x0_suspend(intel8x0_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	chip->in_suspend = 1;
-	snd_power_lock(card);
-	if (card->power_state == SNDRV_CTL_POWER_D3hot)
-		goto __skip;
+	if (chip->in_suspend ||
+	    card->power_state == SNDRV_CTL_POWER_D3hot)
+		return;
 
+	chip->in_suspend = 1;
 	snd_pcm_suspend_all(chip->pcm);
 	if (chip->pcm_mic)
 		snd_pcm_suspend_all(chip->pcm_mic);
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 static void intel8x0_resume(intel8x0_t *chip)
@@ -1918,9 +1916,9 @@ static void intel8x0_resume(intel8x0_t *chip)
 	snd_card_t *card = chip->card;
 	int i;
 
-	snd_power_lock(card);
-	if (card->power_state == SNDRV_CTL_POWER_D0)
-		goto __skip;
+	if (! chip->in_suspend ||
+	    card->power_state == SNDRV_CTL_POWER_D0)
+		return;
 
 	pci_enable_device(chip->pci);
 	snd_intel8x0_chip_init(chip);
@@ -1930,8 +1928,6 @@ static void intel8x0_resume(intel8x0_t *chip)
 
 	chip->in_suspend = 0;
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 #ifndef PCI_OLD_SUSPEND

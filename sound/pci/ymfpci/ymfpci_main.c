@@ -2127,9 +2127,8 @@ void snd_ymfpci_suspend(ymfpci_t *chip)
 	snd_card_t *card = chip->card;
 	int i;
 	
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
-		goto __skip;
+		return;
 	snd_pcm_suspend_all(chip->pcm);
 	snd_pcm_suspend_all(chip->pcm2);
 	snd_pcm_suspend_all(chip->pcm_spdif);
@@ -2140,8 +2139,6 @@ void snd_ymfpci_suspend(ymfpci_t *chip)
 	snd_ymfpci_writel(chip, YDSXGR_NATIVEDACOUTVOL, 0);
 	snd_ymfpci_disable_dsp(chip);
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 void snd_ymfpci_resume(ymfpci_t *chip)
@@ -2149,10 +2146,8 @@ void snd_ymfpci_resume(ymfpci_t *chip)
 	snd_card_t *card = chip->card;
 	int i;
 
-	snd_power_lock(card);
-
 	if (card->power_state == SNDRV_CTL_POWER_D0)
-		goto __skip;
+		return;
 
 	pci_enable_device(chip->pci);
 	pci_set_master(chip->pci);
@@ -2174,8 +2169,6 @@ void snd_ymfpci_resume(ymfpci_t *chip)
 		spin_unlock(&chip->reg_lock);
 	}
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 static int snd_ymfpci_set_power_state(snd_card_t *card, unsigned int power_state)

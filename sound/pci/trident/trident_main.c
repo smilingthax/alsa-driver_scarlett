@@ -3732,9 +3732,8 @@ void snd_trident_suspend(trident_t *trident)
 {
 	snd_card_t *card = trident->card;
 
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
-		goto __skip;
+		return;
 	snd_pcm_suspend_all(trident->pcm);
 	if (trident->foldback)
 		snd_pcm_suspend_all(trident->foldback);
@@ -3748,17 +3747,14 @@ void snd_trident_suspend(trident_t *trident)
 		break;
 	}
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
-      __skip:
-      	snd_power_unlock(card);
 }
 
 void snd_trident_resume(trident_t *trident)
 {
 	snd_card_t *card = trident->card;
 
-	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
-		goto __skip;
+		return;
 	switch (trident->device) {
 	case TRIDENT_DEVICE_ID_DX:
 	case TRIDENT_DEVICE_ID_NX:
@@ -3767,8 +3763,6 @@ void snd_trident_resume(trident_t *trident)
 		break;
 	}
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
-      __skip:
-	snd_power_unlock(card);
 }
 
 static int snd_trident_set_power_state(snd_card_t *card, unsigned int power_state)
