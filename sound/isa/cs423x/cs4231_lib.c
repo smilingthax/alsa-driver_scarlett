@@ -1455,6 +1455,7 @@ const char *snd_cs4231_chip_id(cs4231_t *chip)
 	case CS4231_HW_CS4232:	return "CS4232";
 	case CS4231_HW_CS4232A:	return "CS4232A";
 	case CS4231_HW_CS4235:	return "CS4235";
+	case CS4231_HW_CS4236:  return "CS4236";
 	case CS4231_HW_CS4236B: return "CS4236B";
 	case CS4231_HW_CS4237B: return "CS4237B";
 	case CS4231_HW_CS4238B: return "CS4238B";
