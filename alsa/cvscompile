@@ -18,7 +18,7 @@ if [ -d ../alsa-lib ]; then
   ln -fv ../../../alsa-lib/src/pcm/plugin/linear.c linear.c
   ln -fv ../../../alsa-lib/src/pcm/plugin/mulaw.c mulaw.c
   ln -fv ../../../alsa-lib/src/pcm/plugin/rate.c rate.c
-  ln -fv ../../../alsa-lib/src/pcm/plugin/voices.c voices.c
+  ln -fv ../../../alsa-lib/src/pcm/plugin/route.c route.c
   cd ../..
 fi
 aclocal $ACLOCAL_FLAGS
