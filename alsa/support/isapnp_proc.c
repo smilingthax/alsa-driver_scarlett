@@ -743,8 +743,8 @@ static void isapnp_print_resources(isapnp_info_buffer_t *buffer, char *space, st
 	struct isapnp_mem32 *mem32;
 
 	switch (res->priority) {
-	case ISAPNP_RES_PRIORITY_PREFFERED:
-		s = "preffered";
+	case ISAPNP_RES_PRIORITY_PREFERRED:
+		s = "preferred";
 		break;
 	case ISAPNP_RES_PRIORITY_ACCEPTABLE:
 		s = "acceptable";

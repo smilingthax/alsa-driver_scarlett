@@ -413,7 +413,7 @@ __initfunc(static struct isapnp_resources *isapnp_build_resources(struct isapnp_
 			res->priority = ISAPNP_RES_PRIORITY_INVALID;
 		res->dependent = 1;
 	} else {
-		res->priority = ISAPNP_RES_PRIORITY_PREFFERED;
+		res->priority = ISAPNP_RES_PRIORITY_PREFERRED;
 		res->dependent = 0;
 	}
 	return res;

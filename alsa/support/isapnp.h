@@ -126,7 +126,7 @@ struct isapnp_mem32 {
 	struct isapnp_mem32 *next;	/* next 32-bit memory resource */
 };
 
-#define ISAPNP_RES_PRIORITY_PREFFERED	0
+#define ISAPNP_RES_PRIORITY_PREFERRED	0
 #define ISAPNP_RES_PRIORITY_ACCEPTABLE	1
 #define ISAPNP_RES_PRIORITY_FUNCTIONAL	2
 #define ISAPNP_RES_PRIORITY_INVALID	65535
