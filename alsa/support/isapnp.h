@@ -236,6 +236,7 @@ struct isapnp_logdev *isapnp_find_logdev(struct isapnp_dev *dev,
 					 int index);
 int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logdev);
 int isapnp_configure(struct isapnp_config *config);
+int isapnp_init(void);
 
 #else /* !CONFIG_ISAPNP */
 
