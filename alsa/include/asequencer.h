@@ -633,7 +633,9 @@ typedef snd_seq_queue_info_t snd_seq_queue_owner_t; /* alias */
 
 
 /* queue flags */
+#ifdef use_seqsync
 #define SND_SEQ_QUEUE_FLG_SYNC_LOST	(1<<0)	/* synchronization was lost */
+#endif
 
 /* queue info/status */
 typedef struct {
@@ -676,6 +678,7 @@ typedef struct {
 	int number;			/* timer number/identification */
 	int resolution;			/* timer resolution in Hz */
 
+#ifdef use_seqsync
 	/* MIDI timer parameters */
 	int midi_client;		/* sequencer client */
 	int midi_port;			/* sequencer port */
@@ -683,11 +686,12 @@ typedef struct {
 	/* tick & real-time queue synchronization */
 	long int sync_tick_resolution;	/* resolution per 10ms midi tick (TICK event) (ticks * 1000000) */
 	long int sync_real_resolution;	/* resolution per midi tick (CLOCK event) or zero (nanoseconds) */
-
+#endif
 	char reserved[64];		/* for the future use */
 } snd_seq_queue_timer_t;
 
 
+#ifdef use_seqsync
 /* synchronization types */
 #define SND_SEQ_SYNC_NONE		0	/* none synchronization */
 #define SND_SEQ_SYNC_MTC		1	/* Midi Time Code synchronization */
@@ -705,7 +709,7 @@ typedef struct {
 
 	char reserved[64];		/* for the future use */
 } snd_seq_queue_sync_t;
-
+#endif
 
 typedef struct {
 	int queue;			/* sequencer queue */
@@ -933,8 +937,12 @@ typedef struct {
 #define SND_SEQ_IOCTL_SET_QUEUE_OWNER	_IOW ('S', 0x44, snd_seq_queue_owner_t)
 #define SND_SEQ_IOCTL_GET_QUEUE_TIMER   _IOWR('S', 0x45, snd_seq_queue_timer_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_TIMER	_IOW ('S', 0x46, snd_seq_queue_timer_t)
+
+#ifdef use_seqsync
 #define SND_SEQ_IOCTL_GET_QUEUE_SYNC	_IOWR('S', 0x47, snd_seq_queue_sync_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_SYNC	_IOW ('S', 0x48, snd_seq_queue_sync_t)
+#endif
+
 #define SND_SEQ_IOCTL_GET_QUEUE_CLIENT	_IOWR('S', 0x49, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
