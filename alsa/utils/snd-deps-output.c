@@ -180,22 +180,7 @@ void output_configin(void)
 	printf("\
 # ALSA soundcard-configuration\n\
 \n\
-if [ \"x$CONFIG_SND_SEQUENCER\" = \"x\" ]; then\n\
-  CONFIG_SND_SEQUENCER=\"n\"\n\
-fi\n\
-if [ \"x$CONFIG_SND_OSSEMUL\" = \"x\" ]; then\n\
-  CONFIG_SND_OSSEMUL=\"n\"\n\
-fi\n\
-if [ \"x$CONFIG_SND_MIXER_OSS\" = \"x\" ]; then\n\
-  CONFIG_SND_MIXER_OSS=\"n\"\n\
-fi\n\
-if [ \"x$CONFIG_SND_PCM_OSS\" = \"x\" ]; then\n\
-  CONFIG_SND_PCM_OSS=\"n\"\n\
-fi\n\
-if [ \"x$CONFIG_SND_SEQUENCER_OSS\" = \"x\" ]; then\n\
-  CONFIG_SND_SEQUENCER_OSS=\"n\"\n\
-fi\n\
-if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
+if [ \"$CONFIG_SND\" = \"y\" -o \"$CONFIG_SND\" = \"m\" ]; then\n\
   dep_tristate 'Sequencer support' CONFIG_SND_SEQUENCER $CONFIG_SND\n\
   bool 'OSS API emulation' CONFIG_SND_OSSEMUL\n\
   if [ \"$CONFIG_SND_OSSEMUL\" = \"y\" ]; then\n\
@@ -213,16 +198,31 @@ if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
   fi\n\
 fi\n\n");
 	output1_dep(Deps);
-printf("\
-XX_CONFIG_SND_SEQ_DEVICE=$CONFIG_SND_SEQUENCER\n\
-XX_CONFIG_SND_SEQ=$CONFIG_SND_SEQUENCER\n\
-XX_CONFIG_SND_TIMER=$CONFIG_SND_SEQUENCER\n\
-XX_CONFIG_SND_PCM=$CONFIG_SND_PCM_OSS\n\
-XX_CONFIG_SND_SEQ_MIDI_EVENT=$CONFIG_SND_SEQUENCER_OSS\n\
-");
+	printf("\n");
+	output_need_bool("CONFIG_SND_NEED_SEQ_DEVICE", "CONFIG_SND_SEQUENCER", 1);
+	output_need_bool("CONFIG_SND_NEED_SEQ", "CONFIG_SND_SEQUENCER", 1);
+	output_need_bool("CONFIG_SND_NEED_TIMER", "CONFIG_SND_SEQUENCER", 1);
+	output_need_bool("CONFIG_SND_NEED_PCM", "CONFIG_SND_PCM_OSS", 1);
+	output_need_bool("CONFIG_SND_NEED_SEQ_MIDI_EVENT", "CONFIG_SND_SEQUENCER_OSS", 1);
+	printf("\n");
 	output1_card(Cards);
 	output2_dep(Deps);
 	return;
+}
+
+// output simple boolean with dependency
+void output_need_bool(const char *dst, const char *src, int no_default)
+{
+	if (!no_default) {
+		printf("define_bool %s n\n", dst);
+		printf("define_bool %s_MODULE n\n", dst);
+	}
+	printf("if [ \"$%s\" = \"y\" ]; then\n", src);
+	printf("  define_bool %s y\n", dst);
+	printf("fi\n");
+	printf("if [ \"$%s\" = \"m\" ]; then\n", src);
+	printf("  define_bool %s_MODULE y\n", dst);
+	printf("fi\n");
 }
 
 // Print out all deps for firstdep (Cards, Deps) according to format
@@ -233,7 +233,7 @@ void output_dep(dep *firstdep, char *format, int num)
 
 	while(tempdep)
 	{
-		text=convert_to_config_uppercase(tempdep->name);
+		text=convert_to_config_uppercase("CONFIG_", tempdep->name);
 		if(num==1)
 			printf(format, text);
 		else if(num==2)
@@ -248,13 +248,18 @@ void output_dep(dep *firstdep, char *format, int num)
 void output1_dep(dep *firstdep)
 {
 	dep *tempdep=firstdep;
-	char *text;
+	char *text, *need_text;
 
 	while(tempdep)
 	{
-		text=convert_to_config_uppercase(tempdep->name);
-		if (strcmp(text, "CONFIG_SND"))
-			printf("XX_%s=\"n\"\n", text);
+		text=convert_to_config_uppercase("CONFIG_", tempdep->name);
+		need_text=convert_to_config_uppercase("CONFIG_NEED_", tempdep->name);
+		if (strcmp(text, "CONFIG_SND")) {
+			printf("define_tristate %s n\n", text);
+			printf("define_bool %s n\n", need_text);
+			printf("define_bool %s_MODULE n\n", need_text);
+		}
+		free(need_text);
 		free(text);
 		tempdep=tempdep->link;
 	}
@@ -265,13 +270,22 @@ void output1_dep(dep *firstdep)
 void output2_dep(dep *firstdep)
 {
 	dep *tempdep=firstdep;
-	char *text;
+	char *text, *need_text;
 
 	while(tempdep)
 	{
-		text=convert_to_config_uppercase(tempdep->name);
-		if (strcmp(text, "CONFIG_SND"))
-			printf("define_bool %s $XX_%s\n", text, text);
+		text=convert_to_config_uppercase("CONFIG_", tempdep->name);
+		need_text=convert_to_config_uppercase("CONFIG_NEED_", tempdep->name);
+		if (strcmp(text, "CONFIG_SND")) {
+			printf("if [ \"$%s\" = \"y\" ]; then\n", need_text);
+			printf("  define_tristate %s y\n", text, need_text);
+			printf("else\n");
+			printf("  if [ \"$%s_MODULE\" = \"y\" ]; then\n", need_text);
+			printf("    define_tristate %s m\n", text, need_text);
+			printf("  fi\n");
+			printf("fi\n");
+		}
+		free(need_text);
 		free(text);
 		tempdep=tempdep->link;
 	}
@@ -291,12 +305,12 @@ void output_card(dep *firstdep, char *card_format, char *dep_format)
 	while(temp_dep)
 	{
 		card_name=get_card_name(temp_dep->name);
-		card_config=convert_to_config_uppercase(temp_dep->name);
+		card_config=convert_to_config_uppercase("CONFIG_", temp_dep->name);
 		printf(card_format, card_name, card_config, card_config);
 		num=make_list_of_deps_for_dep(temp_dep, list, 0);
 		for(i=0;i<num;i++)
 		{
-			dep_config=convert_to_config_uppercase(list[i]);
+			dep_config=convert_to_config_uppercase("CONFIG_", list[i]);
 			printf(dep_format, dep_config, dep_config);
 			free(dep_config);
 		}
@@ -347,34 +361,36 @@ void output1_card(dep *firstdep)
 	char *card_name;
 	char *card_config;
 	char *card_comment;
-	char *dep_config;
+	char *dep_config, *need_config;
 	
 	while(temp_dep)
 	{
 		card_name=get_card_name(temp_dep->name);
-		card_config=convert_to_config_uppercase(temp_dep->name);
+		card_config=convert_to_config_uppercase("CONFIG_", temp_dep->name);
 		card_comment=convert_to_escape(temp_dep->comment);
-		printf("\
-dep_tristate '%s' %s $CONFIG_SND\n\
-if [ \"$%s\" != \"n\" ]; then\n\
-", card_comment, card_config, card_config);
+
+		printf("dep_tristate '%s' %s $CONFIG_SND\n", card_comment, card_config);
+
+		printf("if [ \"$%s\" = \"y\" ]; then\n", card_config);
 		num=make_list_of_deps_for_dep(temp_dep, list, 0);
 		for(i=0;i<num;i++)
 		{
-			dep_config=convert_to_config_uppercase(list[i]);
-			if (strcmp(dep_config, "CONFIG_SND"))
-				printf("\
-  if [ \"$XX_%s\" != \"n\" ]; then\n\
-    if [ \"$XX_%s\" = \"m\" -a \"$%s\" = \"y\" ]; then\n\
-      XX_%s=\"y\"\n\
-    fi\n\
-  else\n\
-    XX_%s=$%s\n\
-  fi\n\
-", dep_config, dep_config, card_config, dep_config, dep_config, card_config);
-			free(dep_config);
+			dep_config=convert_to_config_uppercase("CONFIG_NEED_", list[i]);
+			if (strcmp(dep_config, "CONFIG_NEED_SND"))
+				printf("  define_bool %s y\n", dep_config);
 		}
 		printf("fi\n");
+
+		printf("if [ \"$%s\" = \"m\" ]; then\n", card_config);
+		num=make_list_of_deps_for_dep(temp_dep, list, 0);
+		for(i=0;i<num;i++)
+		{
+			dep_config=convert_to_config_uppercase("CONFIG_NEED_", list[i]);
+			if (strcmp(dep_config, "CONFIG_NEED_SND"))
+				printf("  define_bool %s_MODULE y\n", dep_config);
+		}
+		printf("fi\n\n");
+
 		free(card_comment);
 		free(card_name);
 		free(card_config);
@@ -384,9 +400,8 @@ if [ \"$%s\" != \"n\" ]; then\n\
 }
 
 // example: snd-sb16 -> CONFIG_SND_SB16
-char *convert_to_config_uppercase(const char *line)
+char *convert_to_config_uppercase(const char *pre, const char *line)
 {
-	char pre[]="CONFIG_";
 	char *holder, *p;
 	int i;
 
