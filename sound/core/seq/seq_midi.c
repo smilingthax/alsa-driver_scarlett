@@ -138,7 +138,7 @@ static int event_process_midi(snd_seq_event_t * ev, int direct,
 	snd_assert(msynth != NULL, return -EINVAL);
 	substream = msynth->output_rfile.output;
 	if (substream == NULL)
-		return -EINVAL;
+		return -ENODEV;
 	if (ev->type == SNDRV_SEQ_EVENT_SYSEX) {	/* special case, to save space */
 		if ((ev->flags & SNDRV_SEQ_EVENT_LENGTH_MASK) != SNDRV_SEQ_EVENT_LENGTH_VARIABLE) {
 			/* invalid event */
