@@ -178,6 +178,7 @@ DEFINE_REGSET(SP, 0x60);	/* SPDIF out */
 
 /* global block */
 #define ICH_REG_GLOB_CNT		0x2c	/* dword - global control */
+#define   ICH_PCM_20BIT		0x00400000	/* 20-bit samples (ICH4) */
 #define   ICH_PCM_246_MASK	0x00300000	/* 6 channels (not all chips) */
 #define   ICH_PCM_6		0x00200000	/* 6 channels (not all chips) */
 #define   ICH_PCM_4		0x00100000	/* 4 channels (not all chips) */
@@ -415,9 +416,9 @@ static u16 igetword(intel8x0_t *chip, u32 offset)
 static u32 igetdword(intel8x0_t *chip, u32 offset)
 {
 	if (chip->bm_mmio)
-		return readw(chip->remap_bmaddr + offset);
+		return readl(chip->remap_bmaddr + offset);
 	else
-		return inw(chip->bmaddr + offset);
+		return inl(chip->bmaddr + offset);
 }
 
 static void iputbyte(intel8x0_t *chip, u32 offset, u8 val)
@@ -2000,12 +2001,12 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		}
 		sprintf(chip->ctrl_name, "%s - Controller", card->shortname);
 		chip->bmaddr = pci_resource_start(pci, 3);
-		if ((chip->res_bm = request_mem_region(chip->bmaddr, 512, chip->ctrl_name)) == NULL) {
+		if ((chip->res_bm = request_mem_region(chip->bmaddr, 256, chip->ctrl_name)) == NULL) {
 			snd_intel8x0_free(chip);
 			snd_printk("unable to grab I/O memory 0x%lx-0x%lx\n", chip->bmaddr, chip->bmaddr + 512 - 1);
 			return -EBUSY;
 		}
-		chip->remap_bmaddr = (unsigned long) ioremap_nocache(chip->bmaddr, 512);
+		chip->remap_bmaddr = (unsigned long) ioremap_nocache(chip->bmaddr, 256);
 		if (chip->remap_bmaddr == 0) {
 			snd_intel8x0_free(chip);
 			snd_printk("Controller space ioremap problem\n");
