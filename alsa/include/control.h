@@ -68,7 +68,8 @@ struct snd_stru_kctl {
 	struct list_head list;		/* list of all control files */
 	snd_card_t *card;
 	pid_t pid;
-	int prefer_subdevice;
+	int prefer_pcm_subdevice;
+	int prefer_rawmidi_subdevice;
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */

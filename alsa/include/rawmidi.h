@@ -129,8 +129,8 @@ int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, unsigned char *buffer, int count
 
 /* main midi functions */
 
-int snd_rawmidi_kernel_info(int cardnum, int device, snd_rawmidi_info_t *info);
-int snd_rawmidi_kernel_open(int cardnum, int device, int mode, snd_rawmidi_t ** out);
+int snd_rawmidi_kernel_info(int cardnum, int device, int subdevice, snd_rawmidi_info_t *info);
+int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice, int mode, snd_rawmidi_t ** out);
 int snd_rawmidi_kernel_release(snd_rawmidi_t * rmidi, int mode);
 int snd_rawmidi_output_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
 int snd_rawmidi_input_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);

@@ -250,6 +250,7 @@ typedef struct snd_control {
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x30, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x31, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x40, snd_rawmidi_info_t)
+#define SND_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE _IOW('U', 0x41, int)
 
 /*
  *  Read interface.
@@ -998,6 +999,7 @@ typedef struct {
 
 typedef struct snd_rawmidi_info {
 	int device;			/* WR: device number */
+	int subdevice;			/* WR: subdevice number */
 	unsigned int type;		/* soundcard type */
 	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
