@@ -180,6 +180,7 @@ static int snd_sbdsp_free(sb_t *chip)
 		release_resource(chip->res_alt_port);
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *) chip);
+#ifdef CONFIG_ISA
 	if (chip->dma8 >= 0) {
 		disable_dma(chip->dma8);
 		free_dma(chip->dma8);
@@ -188,6 +189,7 @@ static int snd_sbdsp_free(sb_t *chip)
 		disable_dma(chip->dma16);
 		free_dma(chip->dma16);
 	}
+#endif
 	snd_magic_kfree(chip);
 	return 0;
 }
@@ -243,6 +245,7 @@ int snd_sbdsp_create(snd_card_t *card,
 		return -EBUSY;
 	}
 
+#ifdef CONFIG_ISA
 	if (dma8 >= 0 && request_dma(dma8, "SoundBlaster - 8bit")) {
 		snd_sbdsp_free(chip);
 		return -EBUSY;
@@ -253,6 +256,7 @@ int snd_sbdsp_create(snd_card_t *card,
 		return -EBUSY;
 	}
 	chip->dma16 = dma16;
+#endif
 
       __skip_allocation:
 	chip->card = card;
