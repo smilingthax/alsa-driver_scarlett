@@ -35,6 +35,7 @@
 #include <linux/delay.h>
 
 #define SNDRV_SERIAL_MAX_OUTS		16 /* min 16 */
+#define TX_BUF_SIZE			256
 
 #define SERIAL_ADAPTOR_SOUNDCANVAS 	0  /* Roland Soundcanvas; F5 NN selects part */
 #define SERIAL_ADAPTOR_MS124T		1  /* Midiator MS-124T */
@@ -103,6 +104,7 @@ typedef struct _snd_serialmidi {
 	void (*old_write_wakeup)(struct tty_struct *);
 	int old_exclusive;
 	int old_low_latency;
+	unsigned char tx_buf[TX_BUF_SIZE];
 } serialmidi_t;
 
 static snd_card_t *snd_serialmidi_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
@@ -192,6 +194,7 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 	}
 
 	cflag = speed | CREAD | CSIZE | CS8 | CRTSCTS | HUPCL;
+	// cflag = speed | CREAD | CSIZE | CS8 | HUPCL;
 
 	switch (serial->adaptor) {
 	case SERIAL_ADAPTOR_MS124W_SA:
@@ -285,26 +288,29 @@ static void ldisc_receive_buf(struct tty_struct *tty, const unsigned char *cp, c
 static void tx_loop(serialmidi_t *serial)
 {
 	struct tty_struct *tty;
-	char buf[64];
+	char *buf = serial->tx_buf;
 	int count;
 
 	tty = serial->tty;
-	count = tty->driver.write_room(tty);
-	while (count > 0) {
-		printk("write_room: %i\n", count);
-		count = count > sizeof(buf) ? sizeof(buf) : count;
+	if (down_trylock(&tty->atomic_write))
+		return;
+	while (1) {
+		count = tty->driver.write_room(tty);
+		if (count <= 0) {
+			up(&tty->atomic_write);
+			return;
+		}
+		count = count > TX_BUF_SIZE ? TX_BUF_SIZE : count;
 		count = snd_rawmidi_transmit_peek(serial->substream_output, buf, count);
-		printk("peek: %i\n", count);
 		if (count > 0) {
 			count = tty->driver.write(tty, 0, buf, count);
-			printk("written: %i\n", count);
 			snd_rawmidi_transmit_ack(serial->substream_output, count);
-			count = tty->driver.write_room(tty);
 		} else {
 			clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
 			break;
 		}
 	}
+	up(&tty->atomic_write);
 }
 
 static void ldisc_write_wakeup(struct tty_struct *tty)
