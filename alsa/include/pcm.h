@@ -120,6 +120,7 @@ typedef struct snd_stru_pcm_runtime {
 	unsigned int interrupts;
 	unsigned int position;
 	unsigned int buf_position;
+	unsigned int fill_position;
 	int underrun;
 	int overrun;
 	int overrange;
@@ -293,7 +294,7 @@ extern int snd_pcm_lib_16bit(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_unsigned(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_big_endian(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_neutral_byte(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_lib_sample_len(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_lib_sample_width(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_interleave_len(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_subchn_t *subchn, long size);
 extern int snd_pcm_lib_mmap_ctrl_ptr(snd_pcm_subchn_t *subchn, char *ptr);
@@ -316,6 +317,7 @@ extern long snd_pcm_capture_read(void *private_data, snd_pcm_subchn_t *subchn,
  *  Timer interface
  */
 
+extern void snd_pcm_timer_resolution_change(snd_pcm_subchn_t *subchn);
 extern void snd_pcm_timer_init(snd_pcm_subchn_t * subchn);
 extern void snd_pcm_timer_done(snd_pcm_subchn_t * subchn);
 
