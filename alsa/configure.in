@@ -1106,6 +1106,29 @@ if test "$CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK)
 fi
 
+dnl Check for tty->count is the atomic type
+AC_MSG_CHECKING(for tty->count is the atomic type)
+tty_count_atomic="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/tty.h"
+],[
+	struct tty_struct tty;
+	atomic_read(&tty.count);
+],
+    AC_MSG_RESULT("yes");tty_count_atomic="1",
+    AC_MSG_RESULT("no");tty_count_atomic="0",
+    AC_MSG_RESULT("unknown");tty_count_atomic="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_TTY_COUNT_ATOMIC=$tty_count_atomic
+if test "$CONFIG_HAVE_TTY_COUNT_ATOMIC" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_TTY_COUNT_ATOMIC)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
