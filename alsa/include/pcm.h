@@ -295,7 +295,9 @@ extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_subchn_t *subchn,
 			     unsigned int cmd, unsigned long *arg);                      
 extern int snd_pcm_playback_ok(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_capture_ok(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_playback_data(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_playback_empty(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_capture_empty(snd_pcm_subchn_t *subchn);
 extern void snd_pcm_clear_values(snd_pcm_subchn_t *subchn);
 extern void snd_pcm_transfer_stop(snd_pcm_subchn_t *subchn, int status);
 extern void snd_pcm_transfer_done(snd_pcm_subchn_t *subchn);
