@@ -1,12 +1,5 @@
 
 WARNING!!! Mixer channels for ALSA driver are muted by default!!!
 *****************************************************************
-Some soundcards (like GUS MAX/PnP, OAK Mozart, OPTi 82C9xx based), supports
-hardware muting and this muting should be turned off only with these ways:
-
-1. ALSA native (not OSS) mixers:
-   Look for alsa-lib and alsa-utils packages for amixer and alsamixer...
-2. You can edit configuration file (usually /etc/asound.conf) for alsactl
-   program which can be found in alsa-utils package and remove words mute
-   by selected channel(s).
+You would use some ALSA or OSS mixer to set appropriate volume.
 
