@@ -118,3 +118,11 @@ pack: mrproper
 	mv ../alsa-driver ../alsa-driver-$(CONFIG_SND_VERSION)
 	tar --exclude=CVS --owner=root --group=root -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
 	mv ../alsa-driver-$(CONFIG_SND_VERSION) ../alsa-driver
+
+uninstall:
+	rm -rf $(DESTDIR)$(prefix)/include/sound
+	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
+	rm -f $(DESTDIR)/sbin/init.d/alsasound
+	rm -f $(DESTDIR)/etc/rc.d/init.d/alsasound
+	rm -f $(DESTDIR)/etc/init.d/alsasound
+
