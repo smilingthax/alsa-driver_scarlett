@@ -121,14 +121,22 @@ def modify_version_file():
 	fp.close()
 	os.rename(filename + '.new', filename)
 
-def update_cvs_file(file):
+def update_cvs_file(file, destfile = '', params = ''):
 	path, file = os.path.split(file)
 	os.chdir(get_cvs_root() + '/' + path)
-	cmd = 'cvs update %s' % file
+	if destfile == '':
+		cmd = 'cvs -z3 update %s' % file
+	else:
+		cmd = 'cvs -z3 update -p %s %s' % (params, file)
 	fp = os.popen(cmd)
 	lines = fp.readlines()
 	fp.close()
-	print_file(sys.stderr, lines)
+	if destfile == '':
+		print_file(sys.stderr, lines)
+	else:
+		fp = open(destfile, 'w')
+		print_file(fp, lines)
+		fp.close()
 
 def update_bk_file(file):
 	path, file = os.path.split(file)
@@ -283,11 +291,29 @@ def remap_kernel_file(file):
 		path = path + '/'
 	return path + comp[-1]
 
-def collect_cvs_logs(file, cvs_time):
+def get_cvs_date_param(from_cvs_time, to_cvs_time):
+	if from_cvs_time:
+		xtime1 = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(from_cvs_time))
+	if to_cvs_time:
+		xtime2 = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(to_cvs_time))
+	if from_cvs_time and not to_cvs_time:
+		return "-d'%s<'" % xtime1
+	elif not from_cvs_time and to_cvs_time:
+		return "-d'%s>'" % xtime2
+	else:
+		return "-d'%s<%s'" % (xtime1, xtime2)
+
+def get_cvs_date_param1(to_cvs_time):
+	if to_cvs_time:
+		xtime1 = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(to_cvs_time))
+		return "-D'%s'" % xtime1
+	else:
+		return ''
+
+def collect_cvs_logs(file, from_cvs_time, to_cvs_time):
 	path, file = os.path.split(file)
 	os.chdir(get_cvs_root() + '/' + path)
-	xtime = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(cvs_time))
-	cmd = "cvs log -d'%s<' %s" % (xtime, file)
+	cmd = "cvs -z3 log %s %s" % (get_cvs_date_param(from_cvs_time, to_cvs_time), file)
 	fp = os.popen(cmd)
 	lines = fp.readlines()
 	fp.close()
@@ -325,16 +351,24 @@ def collect_cvs_logs(file, cvs_time):
 			i = i + 1
 	return result, dead
 
-def do_alsa_kernel_diff(alsa, kernel, cvs_time):
+def do_alsa_kernel_diff(alsa, kernel, from_cvs_time, to_cvs_time):
 	ncvsflag = 0
 	nbkflag = 0
-	afile = get_cvs_root() + alsa;
-	kfile = get_bk_root() + kernel;
-	if not os.path.exists(afile):
-		update_cvs_file(alsa)
+	lsyncflag = 0
+	if from_cvs_time or to_cvs_time:
+		lsyncflag = 1
+		ncvsflag = 1
+		afile = '/tmp/ksync_kernel_diff'
+		params = get_cvs_date_param1(to_cvs_time)
+		update_cvs_file(alsa, afile, params)
+	else:
+		afile = get_cvs_root() + alsa;
 		if not os.path.exists(afile):
-			ncvsflag = 1
-			os.system('touch %s' % afile)
+			update_cvs_file(alsa)
+			if not os.path.exists(afile):
+				ncvsflag = 1
+				os.system('touch %s' % afile)
+	kfile = get_bk_root() + kernel;
 	if not os.path.exists(kfile):
 		update_bk_file(kfile)
 		if not os.path.exists(kfile):
@@ -345,8 +379,8 @@ def do_alsa_kernel_diff(alsa, kernel, cvs_time):
 	lines = fp.readlines()
 	fp.close()
 	if len(lines) > 1:
-		if cvs_time > 0:
-			collected_logs, dead = collect_cvs_logs(alsa, cvs_time)
+		if lsyncflag > 0:
+			collected_logs, dead = collect_cvs_logs(alsa, from_cvs_time, to_cvs_time)
 			os.chdir(get_bk_root())
 			print 'Updating file %s' % kfile
 			if not nbkflag and not dead:
@@ -410,7 +444,7 @@ def show_last_changeset():
 	print_file_comment(sys.stdout, lines, '  ')
 	print '#'
 
-def diffall(reverse, cvs_time):
+def diffall(reverse, from_cvs_time = 0, to_cvs_time = 0):
 	cdirs, cfiles = get_cvs_files(get_cvs_root(), '/')
 	bdirs, bfiles = get_bk_files(get_bk_root(), '/')
 	print 'BKROOT = %s' % BKROOT
@@ -484,7 +518,7 @@ def diffall(reverse, cvs_time):
 		df = f
 		f = remap_alsa_file(df)
 		if not reverse:
-			do_alsa_kernel_diff(df, f, cvs_time)
+			do_alsa_kernel_diff(df, f, from_cvs_time, to_cvs_time)
 		else:
 			do_kernel_alsa_diff(f, df)
 		if bfiles.count(f):
@@ -493,7 +527,7 @@ def diffall(reverse, cvs_time):
 		df = f
 		f = remap_kernel_file(df)
 		if not reverse:
-			do_alsa_kernel_diff(f, df, cvs_time)
+			do_alsa_kernel_diff(f, df, from_cvs_time, to_cvs_time)
 		else:
 			do_kernel_alsa_diff(df, f)
 		if cfiles.count(f):
@@ -501,7 +535,7 @@ def diffall(reverse, cvs_time):
 	update_cvs_file('include/version.h')
 	modify_version_file()
 	if not reverse:
-		do_alsa_kernel_diff('/include/version.h', '/include/sound/version.h', cvs_time)
+		do_alsa_kernel_diff('/include/version.h', '/include/sound/version.h', from_cvs_time, to_cvs_time)
 	else:
 		do_kernel_alsa_diff('/include/sound/version.h', '/include/version.h')
 	os.remove(get_cvs_root() + '/include/version.h')
@@ -567,6 +601,17 @@ def kdiffs(cs = '1.403.56.48'):
 	fp.close()
 	print_file(sys.stdout, lines)
 
+def parse_time(str):
+	args = string.split(str, '/')
+	if len(args) < 3:
+		args.insert(0, time.strftime("%Y", time.gmtime(time.time())))
+	if len(args) != 3:
+		print 'Bad date syntax'
+		sys.exit(0)
+	str = args[0] + ' ' + args[1] + ' ' + args[2]
+	t = time.mktime(time.strptime(str, '%Y %m %d'))
+	return t - time.timezone
+
 def main():
 	global CVSROOT, BKROOT, ALSA_MAP, KERNEL_MAP
 	try:
@@ -574,6 +619,8 @@ def main():
 					   ['cvsroot=', 'bkroot=', 'help']);
 	except getopt.error, msg:
 		usage(1, msg)
+
+	cwd = os.getcwd()
 
 	# parse the options
 	for opt, arg in opts:
@@ -599,14 +646,35 @@ def main():
 				reverse=1
 			else:
 				print 'Ignoring extra arguments %s' % args[1:]
-		diffall(reverse, 0)
+		diffall(reverse)
 	elif args[0] == 'lsync':
+		to_cvs_time = 0
+		patch = ''
+		if len(args) > 1:
+			to_cvs_time = parse_time(args[1])
+		if len(args) > 2:
+			patch = os.path.abspath(os.path.expanduser(args[2]))
+
 		os.chdir(os.path.expanduser('~/bk/linux-sound'))
 		os.system('rm -rf work')
-		os.system('bk clone -l main work')
+		os.system('bk clone -l linux-sound work')
 		BKROOT = '~/bk/linux-sound/work'
-		cvs_time = get_last_lsync_time()
-		diffall(0, cvs_time)
+
+		os.chdir(os.path.expanduser('~/'))
+		CVSROOT = '~/alsa.local'
+		os.system('rm -rf alsa.local')
+		os.system('mkdir alsa.local')
+		os.chdir(os.path.expanduser('~/alsa.local'))
+		os.system('cvs -d/mnt/exthd/cvsroot/alsa co -P %s .' % get_cvs_date_param1(to_cvs_time))
+		if os.path.exists(patch):
+			os.chdir(os.path.expanduser('~/alsa.local/alsa-kernel'))
+			os.system('patch -p2 < %s' % patch)
+
+		from_cvs_time = get_last_lsync_time()
+		if to_cvs_time <= from_cvs_time:
+			print 'Time < last_lsync_time (%s)' % time.strftime('%Y/%m/%d %H:%M:%S', time.gmtime(from_cvs_time))
+			sys.exit(1)
+		diffall(0, from_cvs_time, to_cvs_time)
 	elif args[0] == 'filename':
 		ver = 1
 		if len(args) > 1:
