@@ -52,9 +52,17 @@
 #define AC97_3D_CONTROL		0x22	/* 3D Control (optional) */
 #define AC97_RESERVED		0x24	/* Reserved */
 #define AC97_POWERDOWN		0x26	/* Powerdown control / status */
-/* range 0x28-0x3a - AUDIO */
-#define AC97_EXTENDED_STATUS	0x3a	/* Extended Status */
-#define AC97_SURROUND_MASTER	0x38	/* Surround Master Volume */
+/* range 0x28-0x3a - AUDIO AC'97 2.0 extensions */
+#define AC97_EXTENDED_ID	0x28	/* Extended Audio ID */
+#define AC97_EXTENDED_STATUS	0x2a	/* Extended Audio Status */
+#define AC97_PCM_FRONT_DAC_RATE 0x2c	/* PCM Front DAC Rate */
+#define AC97_PCM_SURR_DAC_RATE	0x2e	/* PCM Surround DAC Rate */
+#define AC97_PCM_LFE_DAC_RATE	0x30	/* PCM LFE DAC Rate */
+#define AC97_PCM_LR_DAC_RATE	0x32	/* PCM LR DAC Rate */
+#define AC97_PCM_MIC_ADC_RATE	0x34	/* PCM MIC ADC Rate */
+#define AC97_CENTER_LFE_MASTER	0x36	/* Center + LFE Master Volume */
+#define AC97_SURROUND_MASTER	0x38	/* Surround (Rear) Master Volume */
+#define AC97_RESERVED_3A	0x3a	/* Reserved */
 /* range 0x3c-0x58 - MODEM */
 /* range 0x5a-0x7b - Vendor Specific */
 #define AC97_VENDOR_ID1		0x7c	/* Vendor ID1 */
@@ -88,6 +96,9 @@ struct snd_stru_ac97 {
 	unsigned char max_mono;	/* mono maximum volume value */
 	unsigned char max_3d;	/* 3d maximum volume value */
 	unsigned char shift_3d;	/* 3d shift value */
+	unsigned char max_center; /* center master maximum volume value */
+	unsigned char max_lfe;	  /* lfe master maximum volume value */
+	unsigned char max_surround; /* surround master maximum volume value */
 
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_cd;
@@ -140,6 +151,18 @@ struct snd_stru_ac97 {
 	snd_kmixer_element_t *me_vol_igain_mic;
 	snd_kmixer_element_t *me_sw_igain_mic;
 	snd_kmixer_element_t *me_capture;
+	snd_kmixer_element_t *me_in_center;
+	snd_kmixer_element_t *me_vol_center;
+	snd_kmixer_element_t *me_sw_center;
+	snd_kmixer_element_t *me_out_center;
+	snd_kmixer_element_t *me_in_lfe;
+	snd_kmixer_element_t *me_vol_lfe;
+	snd_kmixer_element_t *me_sw_lfe;
+	snd_kmixer_element_t *me_out_lfe;
+	snd_kmixer_element_t *me_in_surround;
+	snd_kmixer_element_t *me_vol_surround;
+	snd_kmixer_element_t *me_sw_surround;
+	snd_kmixer_element_t *me_out_surround;
 };
 
 snd_kmixer_t *snd_ac97_mixer(snd_card_t * card, ac97_t * ac97, int pcm_count, int *pcm_devs);

@@ -246,6 +246,9 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_IN_MONO		"Mono"
 #define SND_MIXER_IN_SPEAKER		"PC Speaker"
 #define SND_MIXER_IN_AUX		"Aux"
+#define SND_MIXER_IN_CENTER		"Center Input"
+#define SND_MIXER_IN_WOOFER		"Woofer Input"
+#define SND_MIXER_IN_SURROUND		"Surround Input"
 
 /* outputs */				/* max 24 chars */
 #define SND_MIXER_OUT_MASTER		"Master"
@@ -253,6 +256,8 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_OUT_MASTER_DIGITAL	"Master Digital"
 #define SND_MIXER_OUT_HEADPHONE		"Headphone"
 #define SND_MIXER_OUT_PHONE		"Phone Output"
+#define SND_MIXER_OUT_CENTER		"Center"
+#define SND_MIXER_OUT_WOOFER		"Woofer"
 #define SND_MIXER_OUT_SURROUND		"Surround"
 #define SND_MIXER_OUT_DSP		"DSP Output"
 
@@ -344,6 +349,7 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_VOICE_CENTER		4
 #define SND_MIXER_VOICE_REAR_LEFT	5
 #define SND_MIXER_VOICE_REAR_RIGHT	6
+#define SND_MIXER_VOICE_WOOFER		7
 
 typedef struct {
 	unsigned short voice: 15,
