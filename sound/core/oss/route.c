@@ -58,7 +58,7 @@ struct ttable_dst {
 };
 
 struct route_private_data {
-	enum {UINT32=0, UINT64=1, FLOAT=2} sum_type;
+	enum {R_UINT32=0, R_UINT64=1, R_FLOAT=2} sum_type;
 	int get, put;
 	int conv;
 	int src_sample_size;
@@ -558,12 +558,12 @@ int snd_pcm_plugin_build_route(snd_pcm_plug_t *plug,
 	data->conv = conv_index(src_format->format, dst_format->format);
 
 #if ROUTE_PLUGIN_USE_FLOAT
-	data->sum_type = FLOAT;
+	data->sum_type = R_FLOAT;
 #else
 	if (snd_pcm_format_width(src_format->format) == 32)
-		data->sum_type = UINT64;
+		data->sum_type = R_UINT64;
 	else
-		data->sum_type = UINT32;
+		data->sum_type = R_UINT32;
 #endif
 	data->src_sample_size = snd_pcm_format_width(src_format->format) / 8;
 
