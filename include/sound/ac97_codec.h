@@ -79,7 +79,8 @@
 #define AC97_EI_SDAC		0x0080	/* PCM Surround DACs available */
 #define AC97_EI_LDAC		0x0100	/* PCM LFE DAC available */
 #define AC97_EI_AMAP		0x0200	/* indicates optional slot/DAC mapping based on codec ID */
-#define AC97_EI_REV_MASK	0x0c00	/* AC'97 revision 00 = rev2.1?, 01 = rev2.2 */
+#define AC97_EI_REV_MASK	0x0c00	/* AC'97 revision mask */
+#define AC97_EI_REV_22		0x0100	/* AC'97 revision 2.2 */
 #define AC97_EI_REV_SHIFT	8
 #define AC97_EI_ADDR_MASK	0xc000	/* physical codec ID (address) */
 #define AC97_EI_ADDR_SHIFT	14
@@ -171,7 +172,7 @@
 #define AC97_RATES_SPDIF	5
 
 /*
-
+ *
  */
 
 typedef struct _snd_ac97 ac97_t;
@@ -213,6 +214,13 @@ struct _snd_ac97 {
 	} spec;
 };
 
+/* conditions */
+static inline int ac97_is_rev22(ac97_t * ac97)
+{
+	return (ac97->ext_id & AC97_EI_REV_MASK) == AC97_EI_REV_22;
+}
+
+/* functions */
 int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97);
 
 void snd_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short value);
