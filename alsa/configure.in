@@ -471,7 +471,6 @@ CHECK_KERNEL_HEADER(linux/pmu.h, [#include <asm/pmu.h>
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
-  CONFIG_HAVE_DUMP_STACK="y"
   AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
 else
   CHECK_EXPORTED(CONFIG_HAVE_DUMP_STACK, dump_stack)
