@@ -206,9 +206,9 @@ snd_seq_oss_midi_check_new_port(snd_seq_port_info_t *pinfo)
 	}
 	if (i >= max_midi_devs) {
 		if (max_midi_devs >= SNDRV_SEQ_OSS_MAX_MIDI_DEVS) {
+			spin_unlock_irqrestore(&register_lock, flags);
 			snd_midi_event_free(mdev->coder);
 			kfree(mdev);
-			spin_unlock_irqrestore(&register_lock, flags);
 			return -ENOMEM;
 		}
 		max_midi_devs++;
@@ -464,8 +464,7 @@ snd_seq_oss_midi_reset(seq_oss_devinfo_t *dp, int dev)
 		return;
 	}
 
-	if (dp->seq_mode == SNDRV_SEQ_OSS_MODE_MUSIC &&
-	    (mdev->opened & PERM_WRITE)) {
+	if (mdev->opened & PERM_WRITE) {
 		snd_seq_event_t ev;
 		int c;
 
@@ -475,16 +474,22 @@ snd_seq_oss_midi_reset(seq_oss_devinfo_t *dp, int dev)
 		ev.dest.port = mdev->port;
 		ev.queue = dp->queue;
 		ev.source.port = dp->port;
+		if (dp->seq_mode == SNDRV_SEQ_OSS_MODE_SYNTH) {
+			ev.type = SNDRV_SEQ_EVENT_SENSING;
+			snd_seq_oss_dispatch(dp, &ev, 0, 0); /* active sensing */
+		}
 		for (c = 0; c < 16; c++) {
 			ev.type = SNDRV_SEQ_EVENT_CONTROLLER;
 			ev.data.control.channel = c;
 			ev.data.control.param = 123;
 			snd_seq_oss_dispatch(dp, &ev, 0, 0); /* all notes off */
-			ev.data.control.param = 121;
-			snd_seq_oss_dispatch(dp, &ev, 0, 0); /* reset all controllers */
-			ev.type = SNDRV_SEQ_EVENT_PITCHBEND;
-			ev.data.control.value = 0;
-			snd_seq_oss_dispatch(dp, &ev, 0, 0); /* bender off */
+			if (dp->seq_mode == SNDRV_SEQ_OSS_MODE_MUSIC) {
+				ev.data.control.param = 121;
+				snd_seq_oss_dispatch(dp, &ev, 0, 0); /* reset all controllers */
+				ev.type = SNDRV_SEQ_EVENT_PITCHBEND;
+				ev.data.control.value = 0;
+				snd_seq_oss_dispatch(dp, &ev, 0, 0); /* bender off */
+			}
 		}
 	}
 	snd_seq_oss_midi_close(dp, dev);
