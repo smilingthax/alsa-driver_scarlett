@@ -15,7 +15,7 @@
  * 2002-04-04   Tomas Kasparek  better rates handling (allow non-standard rates)
  */
 
-/* $Id: h3600-uda1341.c,v 1.7 2002/04/12 20:06:30 perex Exp $ */
+/* $Id: h3600-uda1341.c,v 1.8 2002/04/16 09:06:45 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -37,6 +37,8 @@
 #undef DEBUG_MODE
 #undef DEBUG_FUNCTION_NAMES
 #include <uda1341.h>
+
+/* {{{ Type definitions */
 
 EXPORT_NO_SYMBOLS;
 
@@ -218,7 +220,7 @@ static void h3600_set_samplerate(h3600_t *h3600, long rate)
 
 /* }}} */
 
-/* {{{ WH init and shutdown */
+/* {{{ HW init and shutdown */
 
 static void h3600_audio_init(h3600_t *h3600)
 {
@@ -619,7 +621,7 @@ static int snd_card_h3600_playback_close(snd_pcm_substream_t * substream)
 static int snd_card_h3600_playback_ioctl(snd_pcm_substream_t * substream,
 				         unsigned int cmd, void *arg)
 {
-	DEBUG_NAME(KERN_DEBUG "playback_ioctl\n");
+	DEBUG_NAME(KERN_DEBUG "playback_ioctl cmd: %d\n", cmd);
 	return snd_pcm_lib_ioctl(substream, cmd, arg);
 }
 
@@ -692,7 +694,7 @@ static int snd_card_h3600_capture_close(snd_pcm_substream_t * substream)
 static int snd_card_h3600_capture_ioctl(snd_pcm_substream_t * substream,
 					unsigned int cmd, void *arg)
 {
-	DEBUG_NAME(KERN_DEBUG "record_ioctl\n");
+	DEBUG_NAME(KERN_DEBUG "record_ioctl cmd: %d\n", cmd);
 	return snd_pcm_lib_ioctl(substream, cmd, arg);
 }
 
