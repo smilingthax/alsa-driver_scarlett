@@ -44,14 +44,14 @@
 #define AD1848_AUX2_RIGHT_INPUT	0x05	/* right AUX2 input control */
 #define AD1848_LEFT_OUTPUT	0x06	/* left output control register */
 #define AD1848_RIGHT_OUTPUT	0x07	/* right output control register */
-#define AD1848_DATA_FORMAT	0x08	/* clock and data format - playback/record - bits 7-0 MCE */
+#define AD1848_DATA_FORMAT	0x08	/* clock and data format - playback/capture - bits 7-0 MCE */
 #define AD1848_IFACE_CTRL	0x09	/* interface control - bits 7-2 MCE */
 #define AD1848_PIN_CTRL		0x0a	/* pin control */
 #define AD1848_TEST_INIT	0x0b	/* test and initialization */
 #define AD1848_MISC_INFO	0x0c	/* miscellaneaous information */
 #define AD1848_LOOPBACK		0x0d	/* loopback control */
-#define AD1848_DATA_UPR_CNT	0x0e	/* playback/record upper base count */
-#define AD1848_DATA_LWR_CNT	0x0f	/* playback/record lower base count */
+#define AD1848_DATA_UPR_CNT	0x0e	/* playback/capture upper base count */
+#define AD1848_DATA_LWR_CNT	0x0f	/* playback/capture lower base count */
 
 /* definitions for codec register select port - CODECP( REGSEL ) */
 
@@ -85,12 +85,12 @@
 
 /* definitions for interface control register - AD1848_IFACE_CTRL */
 
-#define AD1848_RECORD_PIO	0x80	/* record PIO enable */
+#define AD1848_CAPTURE_PIO	0x80	/* capture PIO enable */
 #define AD1848_PLAYBACK_PIO	0x40	/* playback PIO enable */
 #define AD1848_CALIB_MODE	0x18	/* calibration mode bits */
 #define AD1848_AUTOCALIB	0x08	/* auto calibrate */
 #define AD1848_SINGLE_DMA	0x04	/* use single DMA channel */
-#define AD1848_RECORD_ENABLE	0x02	/* record enable */
+#define AD1848_CAPTURE_ENABLE	0x02	/* capture enable */
 #define AD1848_PLAYBACK_ENABLE	0x01	/* playback enable */
 
 /* definitions for pin control register - AD1848_PIN_CTRL */
@@ -116,9 +116,9 @@ struct snd_stru_ad1848_freq {
 
 #define AD1848_MODE_NONE	0x0000
 #define AD1848_MODE_PLAY	0x0001
-#define AD1848_MODE_RECORD	0x0002
+#define AD1848_MODE_CAPTURE	0x0002
 #define AD1848_MODE_TIMER	0x0004
-#define AD1848_MODE_OPEN	(AD1848_MODE_PLAY|AD1848_MODE_RECORD|AD1848_MODE_TIMER)
+#define AD1848_MODE_OPEN	(AD1848_MODE_PLAY|AD1848_MODE_CAPTURE|AD1848_MODE_TIMER)
 
 /* defines for codec.hardware */
 
@@ -139,6 +139,10 @@ struct snd_stru_ad1848 {
 	unsigned short single_dma:1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
 
 	snd_pcm_t *pcm;
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *capture_subchn1; 
 	snd_card_t *card;
 	snd_kmixer_t *mixer;
 

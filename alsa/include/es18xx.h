@@ -46,9 +46,22 @@ struct snd_stru_es18xx {
 	unsigned short open;		/* open channel mask */
 	unsigned short active;		/* active channel mask */
 
+	snd_kmixer_element_t *mix_mic;
+	snd_kmixer_element_t *mix_line;
+	snd_kmixer_element_t *mix_cd;
+	snd_kmixer_element_t *mix_iaccu;
+	snd_kmixer_element_t *mix_oaccu;
+	snd_kmixer_element_t *mix_igain;
+
 	snd_card_t *card;
 	snd_pcm_t *pcm_a;
 	snd_pcm_t *pcm_b;
+	snd_pcm_subchn_t *playback_a_subchn;
+	snd_pcm1_subchn_t *playback_a_subchn1;
+	snd_pcm_subchn_t *capture_a_subchn;
+	snd_pcm1_subchn_t *capture_a_subchn1;
+	snd_pcm_subchn_t *playback_b_subchn;
+	snd_pcm1_subchn_t *playback_b_subchn1;
 
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;
