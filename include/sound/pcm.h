@@ -745,9 +745,9 @@ int snd_pcm_hw_constraints_init(snd_pcm_substream_t *substream);
 int snd_pcm_hw_constraints_complete(snd_pcm_substream_t *substream);
 
 int snd_pcm_hw_constraint_mask(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
-			       unsigned int mask);
+			       u_int32_t mask);
 int snd_pcm_hw_constraint_mask64(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
-				 u64 mask);
+				 u_int64_t mask);
 int snd_pcm_hw_constraint_minmax(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
 				 unsigned int min, unsigned int max);
 int snd_pcm_hw_constraint_integer(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var);

@@ -326,7 +326,7 @@ struct sndrv_interval {
 #define SNDRV_MASK_MAX	256
 
 struct sndrv_mask {
-	unsigned int bits[(SNDRV_MASK_MAX+31)/32];
+	u_int32_t bits[(SNDRV_MASK_MAX+31)/32];
 };
 
 struct sndrv_pcm_hw_params {

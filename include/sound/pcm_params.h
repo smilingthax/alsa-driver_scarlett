@@ -81,7 +81,7 @@ INLINE void snd_mask_none(snd_mask_t *mask)
 
 INLINE void snd_mask_any(snd_mask_t *mask)
 {
-	memset(mask, 0xff, SNDRV_MASK_SIZE * 4);
+	memset(mask, 0xff, SNDRV_MASK_SIZE * sizeof(u_int32_t));
 }
 
 INLINE int snd_mask_empty(const snd_mask_t *mask)
@@ -161,7 +161,7 @@ INLINE void snd_mask_intersect(snd_mask_t *mask, const snd_mask_t *v)
 
 INLINE int snd_mask_eq(const snd_mask_t *mask, const snd_mask_t *v)
 {
-	return ! memcmp(mask, v, SNDRV_MASK_SIZE * 4);
+	return ! memcmp(mask, v, SNDRV_MASK_SIZE * sizeof(u_int32_t));
 }
 
 INLINE void snd_mask_copy(snd_mask_t *mask, const snd_mask_t *v)

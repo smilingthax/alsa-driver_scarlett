@@ -810,7 +810,7 @@ int snd_pcm_hw_rule_add(snd_pcm_runtime_t *runtime, unsigned int cond,
 }				    
 
 int snd_pcm_hw_constraint_mask(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
-			       unsigned int mask)
+			       u_int32_t mask)
 {
 	snd_pcm_hw_constraints_t *constrs = &runtime->hw_constraints;
 	snd_mask_t *maskp = constrs_mask(constrs, var);
@@ -822,12 +822,12 @@ int snd_pcm_hw_constraint_mask(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t va
 }
 
 int snd_pcm_hw_constraint_mask64(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
-				 u64 mask)
+				 u_int64_t mask)
 {
 	snd_pcm_hw_constraints_t *constrs = &runtime->hw_constraints;
 	snd_mask_t *maskp = constrs_mask(constrs, var);
-	maskp->bits[0] &= (unsigned int)mask;
-	maskp->bits[1] &= (unsigned int)(mask >> 32);
+	maskp->bits[0] &= (u_int32_t)mask;
+	maskp->bits[1] &= (u_int32_t)(mask >> 32);
 	memset(maskp->bits + 2, 0, (SNDRV_MASK_MAX-64) / 8); /* clear rest */
 	if (! maskp->bits[0] && ! maskp->bits[1])
 		return -EINVAL;
