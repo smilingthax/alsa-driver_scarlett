@@ -140,6 +140,11 @@ case "$1" in
       cat /etc/sound/sonicvibes > /proc/sound/0/mixer0
     fi
     ;;
+  audiopci)
+    basic
+    insert snd-es1370.o
+    insert snd-audiopci.o
+    ;;
   detect)
     if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
     if ! $INSMOD -m $MODDIR/snd-detect.o >> $MAP; then exit 1; fi
