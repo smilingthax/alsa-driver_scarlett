@@ -407,7 +407,7 @@ extern int snd_pcm_mmap_data(snd_pcm_substream_t *substream, struct file *file,
 static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
 {
 	*rem = *n % div;
-	*rem /= div;
+	*n /= div;
 }
 
 #elif defined(i386)
