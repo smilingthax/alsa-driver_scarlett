@@ -23,7 +23,6 @@
 #ifndef __SOUND_PCXHR_CORE_H
 #define __SOUND_PCXHR_CORE_H
 
-
 struct firmware;
 
 /* init and firmware download commands */
