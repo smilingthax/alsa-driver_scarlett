@@ -60,6 +60,14 @@ function basic() {
       banner "snd-seq-instr"
       if ! $INSMOD -m $MODDIR/snd-seq-instr.o >> $MAP; then exit 1; fi
     fi
+    if [ -r $MODDIR/snd-ainstr-simple.o ]; then
+      banner "snd-ainstr-simple"
+      if ! $INSMOD -m $MODDIR/snd-ainstr-simple.o >> $MAP; then exit 1; fi
+    fi
+    if [ -r $MODDIR/snd-ainstr-gf1.o ]; then
+      banner "snd-ainstr-gf1"
+      if ! $INSMOD -m $MODDIR/snd-ainstr-gf1.o >> $MAP; then exit 1; fi
+    fi
     if [ -r $MODDIR/snd-ainstr-iw.o ]; then
       banner "snd-ainstr-iw"
       if ! $INSMOD -m $MODDIR/snd-ainstr-iw.o >> $MAP; then exit 1; fi
