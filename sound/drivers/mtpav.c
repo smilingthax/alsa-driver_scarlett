@@ -1,7 +1,7 @@
 /*
  *      MOTU Midi Timepiece ALSA Main routines
  *      Copyright by Michael T. Mayers (c) Jan 09, 2000
- *      mail: tweakoz@pacbell.net
+ *      mail: michael@tweakoz.com
  *      Thanks to John Galbraith
  *
  *      This program is free software; you can redistribute it and/or modify
