@@ -251,6 +251,110 @@ Additional Modules
 
     Module supports up to 8 cards.
 
+  Module snd-darla20
+  ------------------
+
+    Module for Echoaudio Darla20
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-gina20
+  -----------------
+
+    Module for Echoaudio Gina20
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-layla20
+  ------------------
+
+    Module for Echoaudio Layla20
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-darla24
+  ------------------
+
+    Module for Echoaudio Darla24
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-gina24
+  -----------------
+
+    Module for Echoaudio Gina24
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-layla24
+  ------------------
+
+    Module for Echoaudio Layla24
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-mona
+  ---------------
+
+    Module for Echoaudio Mona
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-mia
+  ---------------
+
+    Module for Echoaudio Mia
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-gina3g
+  -----------------
+
+    Module for Echoaudio Gina3G
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-layla3g
+  ------------------
+
+    Module for Echoaudio Layla3G
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-indigo
+  -----------------
+
+    Module for Echoaudio Indigo
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-indigoio
+  -------------------
+
+    Module for Echoaudio Indigo IO
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
+  Module snd-indigodj
+  -------------------
+
+    Module for Echoaudio Indigo DJ
+
+    Module supports up to 8 cards.
+    The driver requires the firmware loader support on kernel.
+
 
 Trouble Shooting
 ================
