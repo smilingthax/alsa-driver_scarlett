@@ -66,6 +66,7 @@ struct snd_stru_mpu401 {
 	spinlock_t open_lock;
 	spinlock_t input_lock;
 	spinlock_t output_lock;
+	spinlock_t timer_lock;
 
 	struct timer_list timer;
 };
