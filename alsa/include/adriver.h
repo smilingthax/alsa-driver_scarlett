@@ -499,6 +499,11 @@ static inline void class_simple_device_remove(int devnum) { return; }
 	MODULE_PARM(name, SNDRV_MODULE_TYPE_##type)
 #endif
 
+/* dump_stack hack */
+#ifndef CONFIG_HAVE_DUMP_STACK
+#define dump_stack()
+#endif
+
 /* power management compatibility layer */
 #ifdef CONFIG_PM
 #ifdef PCI_OLD_SUSPEND
