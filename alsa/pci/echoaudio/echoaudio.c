@@ -42,7 +42,7 @@ static int get_firmware(const struct firmware **fw_entry, const struct firmware 
 	return err;
 }
 
-static inline void free_firmware(const struct firmware *fw_entry)
+static void free_firmware(const struct firmware *fw_entry)
 {
 	release_firmware(fw_entry);
 	DE_ACT(("firmware released\n"));

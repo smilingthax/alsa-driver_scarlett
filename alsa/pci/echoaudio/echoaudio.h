@@ -421,7 +421,7 @@ static int load_firmware(echoaudio_t *chip);
 static int wait_handshake(echoaudio_t *chip);
 static int send_vector(echoaudio_t *chip, u32 command);
 static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, echoaudio_t *chip);
-static inline void free_firmware(const struct firmware *fw_entry);
+static void free_firmware(const struct firmware *fw_entry);
 
 #ifdef ECHOCARD_HAS_MIDI
 static int enable_midi_input(echoaudio_t *chip, char enable);
