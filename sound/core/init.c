@@ -29,7 +29,7 @@
 #include <sound/info.h>
 
 int snd_cards_count = 0;
-unsigned int snd_cards_lock = 0;	/* locked for registering/using */
+unsigned long snd_cards_lock = 0;	/* locked for registering/using */
 snd_card_t *snd_cards[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = NULL};
 rwlock_t snd_card_rwlock = RW_LOCK_UNLOCKED;
 
@@ -72,12 +72,12 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 	if (idx < 0) {
 		int idx2;
 		for (idx2 = 0; idx2 < snd_ecards_limit; idx2++)
-			if (!(snd_cards_lock & (1 << idx2))) {
+			if (!test_bit(idx2, &snd_cards_lock)) {
 				idx = idx2;
 				break;
 			}
 	} else if (idx < snd_ecards_limit) {
-		if (snd_cards_lock & (1 << idx))
+		if (test_bit(idx, &snd_cards_lock))
 			idx = -1;	/* invalid */
 	}
 	if (idx < 0 || idx >= snd_ecards_limit) {
@@ -86,7 +86,7 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 			snd_printk(KERN_ERR "card %i is out of range (0-%i)\n", idx, snd_ecards_limit-1);
 		goto __error;
 	}
-	snd_cards_lock |= 1 << idx;		/* lock it */
+	set_bit(idx, &snd_cards_lock);		/* lock it */
 	write_unlock(&snd_card_rwlock);
 	card->number = idx;
 	card->module = module;
@@ -200,7 +200,7 @@ int snd_card_free(snd_card_t * card)
 		/* Not fatal error */
 	}
 	write_lock(&snd_card_rwlock);
-	snd_cards_lock &= ~(1 << card->number);
+	clear_bit(card->number, &snd_cards_lock);
 	write_unlock(&snd_card_rwlock);
 	kfree(card);
 	return 0;

@@ -293,7 +293,7 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count);
 /* init.c */
 
 extern int snd_cards_count;
-extern unsigned int snd_cards_lock;
+extern unsigned long snd_cards_lock;
 extern snd_card_t *snd_cards[SNDRV_CARDS];
 extern rwlock_t snd_card_rwlock;
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)

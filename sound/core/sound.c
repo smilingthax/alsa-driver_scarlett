@@ -79,7 +79,7 @@ void snd_request_card(int card)
 	int locked;
 
 	read_lock(&snd_card_rwlock);
-	locked = snd_cards_lock & (1<<card);
+	locked = test_bit(card, &snd_cards_lock);
 	read_unlock(&snd_card_rwlock);
 	if (locked)
 		return;
