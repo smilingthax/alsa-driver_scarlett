@@ -430,11 +430,11 @@ case "$processor" in
     if $CC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=athlon"
     else
-      c_opts="-march=i686 -malign-functions=4"
+      c_opts="-march=i686 -falign-functions=4"
     fi
     ;;
   crusoe)
-    c_opts="-march=i686 -malign-functions=0 -malign-jumps=0 -malign-loops=0"
+    c_opts="-march=i686 -falign-functions=0 -falign-jumps=0 -falign-loops=0"
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
