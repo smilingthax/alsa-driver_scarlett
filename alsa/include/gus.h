@@ -28,6 +28,8 @@
 #include "timer.h"
 #include "seq_midi_emul.h"
 #include "ainstr_iw.h"
+#include "ainstr_gf1.h"
+#include "ainstr_simple.h"
 
 /* IO ports */
 
@@ -313,6 +315,8 @@ struct snd_stru_gf1 {
 	snd_gus_port_t seq_ports[4];
 	snd_seq_kinstr_list_t *ilist;
 	snd_iwffff_ops_t iwffff_ops;
+	snd_gf1_ops_t gf1_ops;
+	snd_simple_ops_t simple_ops;
 
 	/* timer */
 
@@ -622,6 +626,18 @@ int snd_gus_iwffff_put_sample(void *private_data, iwffff_wave_t *wave,
 int snd_gus_iwffff_get_sample(void *private_data, iwffff_wave_t *wave,
 			      char *data, long len, int atomic);
 int snd_gus_iwffff_remove_sample(void *private_data, iwffff_wave_t *wave,
+				 int atomic);
+int snd_gus_gf1_put_sample(void *private_data, gf1_wave_t *wave,
+			   char *data, long len, int atomic);
+int snd_gus_gf1_get_sample(void *private_data, gf1_wave_t *wave,
+			   char *data, long len, int atomic);
+int snd_gus_gf1_remove_sample(void *private_data, gf1_wave_t *wave,
+			      int atomic);
+int snd_gus_simple_put_sample(void *private_data, simple_instrument_t *instr,
+			      char *data, long len, int atomic);
+int snd_gus_simple_get_sample(void *private_data, simple_instrument_t *instr,
+			      char *data, long len, int atomic);
+int snd_gus_simple_remove_sample(void *private_data, simple_instrument_t *instr,
 				 int atomic);
 #endif
 

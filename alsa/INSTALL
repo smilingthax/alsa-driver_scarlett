@@ -346,10 +346,23 @@ Module parameters
     
     Module supports up to 8 cards and autoprobe.
 
-  Module snd-audiopci.o
-  ---------------------
+  Module snd-audiopci1370.o
+  -------------------------
 
-    Module for Ensoniq AudioPCI ES1370/1371 PCI soundcards.
+    Module for Ensoniq AudioPCI ES1370 PCI soundcards.
+			* SoundBlaster PCI 64
+			* SoundBlaster PCI 128
+
+    snd_dac1_frame_size - max dac1 (playback1) frame size in kB (4-128kB)
+    snd_dac2_frame_size - max dac2 (playback2) frame size in kB (4-128kB)
+    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+
+    Module supports up to 8 cards and autoprobe.
+    
+  Module snd-audiopci1371.o
+  -------------------------
+
+    Module for Ensoniq AudioPCI ES1371 PCI soundcards.
 			* SoundBlaster PCI 64
 			* SoundBlaster PCI 128
 
