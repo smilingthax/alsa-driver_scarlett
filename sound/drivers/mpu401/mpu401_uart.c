@@ -309,12 +309,17 @@ static void snd_mpu401_uart_input_trigger(snd_rawmidi_substream_t * substream, i
 		
 		/* read data in advance */
 		/* prevent double enter via rawmidi->event callback */
-		local_irq_save(flags);
-		if (spin_trylock(&mpu->input_lock)) {
-			snd_mpu401_uart_input_read(mpu);
-			spin_unlock(&mpu->input_lock);
+		if (!test_and_set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode)) {
+			local_irq_save(flags);
+			if (spin_trylock(&mpu->input_lock)) {
+				snd_mpu401_uart_input_read(mpu);
+				clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
+				spin_unlock(&mpu->input_lock);
+			} else {
+				clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
+			}
+			local_irq_restore(flags);
 		}
-		local_irq_restore(flags);
 	} else {
 		if (mpu->irq < 0)
 			snd_mpu401_uart_remove_timer(mpu, 1);
@@ -388,6 +393,7 @@ static void snd_mpu401_uart_output_trigger(snd_rawmidi_substream_t * substream, 
 	mpu = snd_magic_cast(mpu401_t, substream->rmidi->private_data, return);
 	if (up) {
 		set_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode);
+
 		/* try to add the timer at each output trigger,
 		 * since the output timer might have been removed in
 		 * snd_mpu401_uart_output_write().
@@ -396,12 +402,17 @@ static void snd_mpu401_uart_output_trigger(snd_rawmidi_substream_t * substream, 
 
 		/* output pending data */
 		/* prevent double enter via rawmidi->event callback */
-		local_irq_save(flags);
-		if (spin_trylock(&mpu->output_lock)) {
-			snd_mpu401_uart_output_write(mpu);
-			spin_unlock(&mpu->output_lock);
+		if (!test_and_set_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode)) {
+			local_irq_save(flags);
+			if (spin_trylock(&mpu->output_lock)) {
+				snd_mpu401_uart_output_write(mpu);
+				clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
+				spin_unlock(&mpu->output_lock);
+			} else {
+				clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
+			}
+			local_irq_restore(flags);
 		}
-		local_irq_restore(flags);
 	} else {
 		snd_mpu401_uart_remove_timer(mpu, 0);
 		clear_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode);
