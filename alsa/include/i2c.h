@@ -21,9 +21,6 @@
  *
  */
 
-#define SNDRV_LOCK_I2C_BUS(bus) spin_lock_irqsave(&bus->lock, flags)
-#define SNDRV_UNLOCK_I2C_BUS(bus) spin_unlock_irqrestore(&bus->lock, flags)
-
 typedef struct _snd_i2c_device snd_i2c_device_t;
 typedef struct _snd_i2c_bus snd_i2c_bus_t;
 
@@ -72,6 +69,9 @@ void snd_i2c_stop(snd_i2c_bus_t *bus);
 void snd_i2c_one(snd_i2c_bus_t *bus);
 void snd_i2c_zero(snd_i2c_bus_t *bus);
 int snd_i2c_ack(snd_i2c_bus_t *bus);
+
+static inline void snd_i2c_lock_irq(snd_i2c_bus_t *bus) { spin_lock_irq(&bus->lock); }
+static inline void snd_i2c_unlock_irq(snd_i2c_bus_t *bus) { spin_unlock_irq(&bus->lock); }
 
 int snd_i2c_sendbyte(snd_i2c_bus_t *bus, unsigned char data, int wait_for_ack);
 unsigned char snd_i2c_readbyte(snd_i2c_bus_t *bus, int last);

@@ -27,13 +27,13 @@
 
 typedef struct {
 	snd_i2c_device_t *device;
+	snd_i2c_bus_t *bus;
 	int equalizer;
 	int fader;
 	unsigned char regs[8];
 	unsigned char mleft, mright;
 	unsigned char bass, treble;
 	unsigned char max_bass, max_treble;
-	spinlock_t reg_lock;
 } tea6330t_t;
 
 extern int snd_tea6330t_detect(snd_i2c_bus_t *bus, int equalizer);
