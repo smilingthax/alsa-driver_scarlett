@@ -2693,7 +2693,7 @@ module_exit(alsa_card_m3_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-maestro3=snd_enable,snd_index,snd_id,snd_external_amp */
+/* format is: snd-maestro3=snd_enable,snd_index,snd_id,snd_external_amp */
 
 static int __init alsa_card_maestro3_setup(char *str)
 {
@@ -2709,6 +2709,6 @@ static int __init alsa_card_maestro3_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-maestro3=", alsa_card_maestro3_setup);
+__setup("snd-maestro3=", alsa_card_maestro3_setup);
 
 #endif /* ifndef MODULE */

@@ -239,8 +239,8 @@ module_exit(alsa_card_trident_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-trident=snd_enable,snd_index,snd_id,
-			       snd_pcm_channels,snd_wavetable_size */
+/* format is: snd-trident=snd_enable,snd_index,snd_id,
+			  snd_pcm_channels,snd_wavetable_size */
 
 static int __init alsa_card_trident_setup(char *str)
 {
@@ -257,6 +257,6 @@ static int __init alsa_card_trident_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-trident=", alsa_card_trident_setup);
+__setup("snd-trident=", alsa_card_trident_setup);
 
 #endif /* ifndef MODULE */

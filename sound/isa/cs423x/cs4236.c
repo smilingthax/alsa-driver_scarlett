@@ -577,14 +577,14 @@ module_exit(alsa_card_cs423x_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-cs4232=snd_enable,snd_index,snd_id,snd_isapnp,snd_port,
-			      snd_cport,snd_mpu_port,snd_fm_port,snd_sb_port,
-			      snd_irq,snd_mpu_irq,snd_dma1,snd_dma1_size,
-			      snd_dma2,snd_dma2_size */
-/* format is: snd-card-cs4236=snd_enable,snd_index,snd_id,snd_isapnp,snd_port,
-			      snd_cport,snd_mpu_port,snd_fm_port,snd_sb_port,
-			      snd_irq,snd_mpu_irq,snd_dma1,snd_dma1_size,
-			      snd_dma2,snd_dma2_size */
+/* format is: snd-cs4232=snd_enable,snd_index,snd_id,snd_isapnp,snd_port,
+			 snd_cport,snd_mpu_port,snd_fm_port,snd_sb_port,
+			 snd_irq,snd_mpu_irq,snd_dma1,snd_dma1_size,
+			 snd_dma2,snd_dma2_size */
+/* format is: snd-cs4236=snd_enable,snd_index,snd_id,snd_isapnp,snd_port,
+			 snd_cport,snd_mpu_port,snd_fm_port,snd_sb_port,
+			 snd_irq,snd_mpu_irq,snd_dma1,snd_dma1_size,
+			 snd_dma2,snd_dma2_size */
 
 static int __init alsa_card_cs423x_setup(char *str)
 {
@@ -615,9 +615,9 @@ static int __init alsa_card_cs423x_setup(char *str)
 }
 
 #ifdef CS4232
-__setup("snd-card-cs4232=", alsa_card_cs423x_setup);
+__setup("snd-cs4232=", alsa_card_cs423x_setup);
 #else /* CS4236 */
-__setup("snd-card-cs4236=", alsa_card_cs423x_setup);
+__setup("snd-cs4236=", alsa_card_cs423x_setup);
 #endif
 
 #endif /* ifndef MODULE */

@@ -1431,8 +1431,7 @@ module_exit(alsa_card_intel8x0_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-intel8x0=snd_enable,snd_index,snd_id,
-				snd_ac97_clock */
+/* format is: snd-intel8x0=snd_enable,snd_index,snd_id,snd_ac97_clock */
 
 static int __init alsa_card_intel8x0_setup(char *str)
 {
@@ -1448,6 +1447,6 @@ static int __init alsa_card_intel8x0_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-intel8x0=", alsa_card_intel8x0_setup);
+__setup("snd-intel8x0=", alsa_card_intel8x0_setup);
 
 #endif /* ifndef MODULE */

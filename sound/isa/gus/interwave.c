@@ -972,11 +972,11 @@ module_exit(alsa_card_interwave_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-interwave=snd_enable,snd_index,snd_id,snd_isapnp,
-				 snd_port[,snd_port_tc],snd_irq,
-				 snd_dma1,snd_dma2,
-				 snd_joystick_dac,snd_midi,
-				 snd_pcm_channels,snd_effect */
+/* format is: snd-interwave=snd_enable,snd_index,snd_id,snd_isapnp,
+			    snd_port[,snd_port_tc],snd_irq,
+			    snd_dma1,snd_dma2,
+			    snd_joystick_dac,snd_midi,
+			    snd_pcm_channels,snd_effect */
 
 static int __init alsa_card_interwave_setup(char *str)
 {
@@ -1009,9 +1009,9 @@ static int __init alsa_card_interwave_setup(char *str)
 }
 
 #ifndef SNDRV_STB
-__setup("snd-card-interwave=", alsa_card_interwave_setup);
+__setup("snd-interwave=", alsa_card_interwave_setup);
 #else
-__setup("snd-card-interwave-stb=", alsa_card_interwave_setup);
+__setup("snd-interwave-stb=", alsa_card_interwave_setup);
 #endif
 
 #endif /* ifndef MODULE */

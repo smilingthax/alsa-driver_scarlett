@@ -2501,7 +2501,7 @@ module_exit(alsa_card_rme96_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-rme96=snd_enable,snd_index,snd_id */
+/* format is: snd-rme96=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_rme96_setup(char *str)
 {
@@ -2516,6 +2516,6 @@ static int __init alsa_card_rme96_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-rme96=", alsa_card_rme96_setup);
+__setup("snd-rme96=", alsa_card_rme96_setup);
 
 #endif /* ifndef MODULE */

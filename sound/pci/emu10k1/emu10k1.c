@@ -214,8 +214,8 @@ module_exit(alsa_card_emu10k1_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-emu10k1=snd_enable,snd_index,snd_id,
-			       snd_seq_ports,snd_max_synth_voices */
+/* format is: snd-emu10k1=snd_enable,snd_index,snd_id,
+			  snd_seq_ports,snd_max_synth_voices */
 
 static int __init alsa_card_emu10k1_setup(char *str)
 {
@@ -232,6 +232,6 @@ static int __init alsa_card_emu10k1_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-emu10k1=", alsa_card_emu10k1_setup);
+__setup("snd-emu10k1=", alsa_card_emu10k1_setup);
 
 #endif /* ifndef MODULE */

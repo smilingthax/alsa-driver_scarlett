@@ -199,7 +199,7 @@ module_exit(alsa_card_cs46xx_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-cs46xx=snd_enable,snd_index,snd_id */
+/* format is: snd-cs46xx=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_cs46xx_setup(char *str)
 {
@@ -214,6 +214,6 @@ static int __init alsa_card_cs46xx_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-cs46xx=", alsa_card_cs46xx_setup);
+__setup("snd-cs46xx=", alsa_card_cs46xx_setup);
 
 #endif /* ifndef MODULE */

@@ -891,7 +891,7 @@ module_exit(alsa_card_via8233_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-via8233=snd_enable,snd_index,snd_id,snd_ac97_clock */
+/* format is: snd-via8233=snd_enable,snd_index,snd_id,snd_ac97_clock */
 
 static int __init alsa_card_via8233_setup(char *str)
 {
@@ -907,6 +907,6 @@ static int __init alsa_card_via8233_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-via8233=", alsa_card_via8233_setup);
+__setup("snd-via8233=", alsa_card_via8233_setup);
 
 #endif /* ifndef MODULE */

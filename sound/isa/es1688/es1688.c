@@ -212,10 +212,10 @@ module_exit(alsa_card_es1688_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-es1688=snd_enable,snd_index,snd_id,
-			      snd_port,snd_mpu_port,
-			      snd_irq,snd_mpu_irq,
-			      snd_dma8 */
+/* format is: snd-es1688=snd_enable,snd_index,snd_id,
+			 snd_port,snd_mpu_port,
+			 snd_irq,snd_mpu_irq,
+			 snd_dma8 */
 
 static int __init alsa_card_es1688_setup(char *str)
 {
@@ -235,6 +235,6 @@ static int __init alsa_card_es1688_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-es1688=", alsa_card_es1688_setup);
+__setup("snd-es1688=", alsa_card_es1688_setup);
 
 #endif /* ifndef MODULE */

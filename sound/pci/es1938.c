@@ -1684,7 +1684,7 @@ module_exit(alsa_card_es1938_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-es1938=snd_enable,snd_index,snd_id */
+/* format is: snd-es1938=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_es1938_setup(char *str)
 {
@@ -1699,6 +1699,6 @@ static int __init alsa_card_es1938_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-es1938=", alsa_card_es1938_setup);
+__setup("snd-es1938=", alsa_card_es1938_setup);
 
 #endif /* ifndef MODULE */

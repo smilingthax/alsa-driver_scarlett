@@ -2260,8 +2260,7 @@ module_exit(alsa_card_ali_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-ali=snd_enable,snd_index,snd_id,
-			       snd_pcm_channels */
+/* format is: snd-ali5451=snd_enable,snd_index,snd_id,snd_pcm_channels */
 
 static int __init alsa_card_ali_setup(char *str)
 {
@@ -2277,6 +2276,6 @@ static int __init alsa_card_ali_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-ali=", alsa_card_ali_setup);
+__setup("snd-ali5451=", alsa_card_ali_setup);
 
 #endif /* ifndef */

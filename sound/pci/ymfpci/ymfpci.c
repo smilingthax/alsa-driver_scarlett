@@ -351,8 +351,8 @@ module_exit(alsa_card_ymfpci_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-ymfpci=snd_enable,snd_index,snd_id,
-			      snd_fm_port,snd_mpu_port,snd_mpu_irq */
+/* format is: snd-ymfpci=snd_enable,snd_index,snd_id,
+			 snd_fm_port,snd_mpu_port,snd_mpu_irq */
 
 static int __init alsa_card_ymfpci_setup(char *str)
 {
@@ -370,6 +370,6 @@ static int __init alsa_card_ymfpci_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-ymfpci=", alsa_card_ymfpci_setup);
+__setup("snd-ymfpci=", alsa_card_ymfpci_setup);
 
 #endif /* ifndef MODULE */

@@ -272,8 +272,8 @@ module_exit(alsa_card_es968_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-es968=snd_enable,snd_index,snd_id,
-			     snd_port,snd_irq,snd_dma1 */
+/* format is: snd-es968=snd_enable,snd_index,snd_id,
+			snd_port,snd_irq,snd_dma1 */
 
 static int __init alsa_card_es968_setup(char *str)
 {
@@ -291,6 +291,6 @@ static int __init alsa_card_es968_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-es968=", alsa_card_es968_setup);
+__setup("snd-es968=", alsa_card_es968_setup);
 
 #endif /* ifndef MODULE */

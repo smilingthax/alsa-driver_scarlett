@@ -324,9 +324,9 @@ module_exit(alsa_card_sgalaxy_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-sgalaxy=snd_enable,snd_index,snd_id,
-			       snd_sbport,snd_wssport,
-			       snd_irq,snd_dma1 */
+/* format is: snd-sgalaxy=snd_enable,snd_index,snd_id,
+			  snd_sbport,snd_wssport,
+			  snd_irq,snd_dma1 */
 
 static int __init alsa_card_sgalaxy_setup(char *str)
 {
@@ -345,6 +345,6 @@ static int __init alsa_card_sgalaxy_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-sgalaxy=", alsa_card_sgalaxy_setup);
+__setup("snd-sgalaxy=", alsa_card_sgalaxy_setup);
 
 #endif /* ifndef MODULE */

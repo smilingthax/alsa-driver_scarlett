@@ -2830,11 +2830,11 @@ module_exit(alsa_card_es1968_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-es1968=snd_enable,snd_index,snd_id,
-			      snd_total_bufsize,snd_midi_enable,
-			      snd_pcm_substreams_p,
-			      snd_pcm_substreams_c,
-			      snd_clock
+/* format is: snd-es1968=snd_enable,snd_index,snd_id,
+			 snd_total_bufsize,snd_midi_enable,
+			 snd_pcm_substreams_p,
+			 snd_pcm_substreams_c,
+			 snd_clock
 */
 
 static int __init alsa_card_es1968_setup(char *str)
@@ -2855,6 +2855,6 @@ static int __init alsa_card_es1968_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-es1968=", alsa_card_es1968_setup);
+__setup("snd-es1968=", alsa_card_es1968_setup);
 
 #endif /* ifndef MODULE */

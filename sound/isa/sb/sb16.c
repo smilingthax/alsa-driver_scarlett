@@ -641,11 +641,11 @@ module_exit(alsa_card_sb16_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-sb16=snd_enable,snd_index,snd_id,snd_isapnp,
-			    snd_port,snd_mpu_port,snd_fm_port,
-			    snd_irq,snd_dma8,snd_dma16,
-			    snd_mic_agc,snd_csp,
-			    [snd_awe_port,snd_seq_ports] */
+/* format is: snd-sb16=snd_enable,snd_index,snd_id,snd_isapnp,
+		       snd_port,snd_mpu_port,snd_fm_port,
+		       snd_irq,snd_dma8,snd_dma16,
+		       snd_mic_agc,snd_csp,
+		       [snd_awe_port,snd_seq_ports] */
 
 static int __init alsa_card_sb16_setup(char *str)
 {
@@ -689,9 +689,9 @@ static int __init alsa_card_sb16_setup(char *str)
 }
 
 #ifndef SNDRV_SBAWE_EMU8000
-__setup("snd-card-sb16=", alsa_card_sb16_setup);
+__setup("snd-sb16=", alsa_card_sb16_setup);
 #else
-__setup("snd-card-sbawe=", alsa_card_sb16_setup);
+__setup("snd-sbawe=", alsa_card_sb16_setup);
 #endif
 
 #endif /* ifndef MODULE */

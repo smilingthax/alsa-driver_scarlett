@@ -168,7 +168,7 @@ module_exit(alsa_card_pmac_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-pmac=snd_enable,snd_index,snd_id,snd_enable_beep
+/* format is: snd-pmac=snd_enable,snd_index,snd_id,snd_enable_beep
  */
 
 static int __init alsa_card_pmac_setup(char *str)
@@ -181,6 +181,6 @@ static int __init alsa_card_pmac_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-pmac=", alsa_card_pmac_setup);
+__setup("snd-pmac=", alsa_card_pmac_setup);
 
 #endif /* ifndef MODULE */

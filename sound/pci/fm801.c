@@ -1118,7 +1118,7 @@ module_exit(alsa_card_fm801_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-fm801=snd_enable,snd_index,snd_id */
+/* format is: snd-fm801=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_fm801_setup(char *str)
 {
@@ -1133,6 +1133,6 @@ static int __init alsa_card_fm801_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-fm801=", alsa_card_fm801_setup);
+__setup("snd-fm801=", alsa_card_fm801_setup);
 
 #endif /* ifndef MODULE */

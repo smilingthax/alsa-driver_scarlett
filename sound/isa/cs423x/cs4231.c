@@ -179,9 +179,9 @@ module_exit(alsa_card_cs4231_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-cs4231=snd_enable,snd_index,snd_id,
-			      snd_port,snd_mpu_port,snd_irq,snd_mpu_irq,
-			      snd_dma1,snd_dma2 */
+/* format is: snd-cs4231=snd_enable,snd_index,snd_id,
+			 snd_port,snd_mpu_port,snd_irq,snd_mpu_irq,
+			 snd_dma1,snd_dma2 */
 
 static int __init alsa_card_cs4231_setup(char *str)
 {
@@ -204,6 +204,6 @@ static int __init alsa_card_cs4231_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-cs4231=", alsa_card_cs4231_setup);
+__setup("snd-cs4231=", alsa_card_cs4231_setup);
 
 #endif /* ifndef MODULE */

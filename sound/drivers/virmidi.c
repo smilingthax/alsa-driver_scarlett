@@ -162,7 +162,7 @@ module_exit(alsa_card_virmidi_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-virmidi=snd_enable,snd_index,snd_id,snd_midi_devs */
+/* format is: snd-virmidi=snd_enable,snd_index,snd_id,snd_midi_devs */
 
 static int __init alsa_card_virmidi_setup(char *str)
 {
@@ -178,6 +178,6 @@ static int __init alsa_card_virmidi_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-virmidi=", alsa_card_virmidi_setup);
+__setup("snd-virmidi=", alsa_card_virmidi_setup);
 
 #endif /* ifndef MODULE */

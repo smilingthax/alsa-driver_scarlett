@@ -905,10 +905,10 @@ module_exit(alsa_card_opl3sa2_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-opl3sa2=snd_enable,snd_index,snd_id,snd_isapnp,
-			       snd_port,snd_sb_port,snd_wss_port,snd_fm_port,
-			       snd_midi_port,snd_irq,snd_dma1,snd_dma2,
-			       snd_opl3sa3_ymode */
+/* format is: snd-opl3sa2=snd_enable,snd_index,snd_id,snd_isapnp,
+			  snd_port,snd_sb_port,snd_wss_port,snd_fm_port,
+			  snd_midi_port,snd_irq,snd_dma1,snd_dma2,
+			  snd_opl3sa3_ymode */
 
 static int __init alsa_card_opl3sa2_setup(char *str)
 {
@@ -938,6 +938,6 @@ static int __init alsa_card_opl3sa2_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-opl3sa2=", alsa_card_opl3sa2_setup);
+__setup("snd-opl3sa2=", alsa_card_opl3sa2_setup);
 
 #endif /* ifndef MODULE */

@@ -130,7 +130,7 @@ module_exit(alsa_card_mpu401_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-mpu401=snd_enable,snd_index,snd_id,snd_port,snd_irq */
+/* format is: snd-mpu401=snd_enable,snd_index,snd_id,snd_port,snd_irq */
 
 static int __init alsa_card_mpu401_setup(char *str)
 {
@@ -147,6 +147,6 @@ static int __init alsa_card_mpu401_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-mpu401=", alsa_card_mpu401_setup);
+__setup("snd-mpu401=", alsa_card_mpu401_setup);
 
 #endif /* ifndef MODULE */

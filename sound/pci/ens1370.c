@@ -2058,7 +2058,7 @@ module_exit(alsa_card_ens137x_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-ens1370=snd_enable,snd_index,snd_id */
+/* format is: snd-ens1370=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_ens137x_setup(char *str)
 {
@@ -2074,9 +2074,9 @@ static int __init alsa_card_ens137x_setup(char *str)
 }
 
 #if defined(CHIP1370)
-__setup("snd-card-ens1370=", alsa_card_ens137x_setup);
+__setup("snd-ens1370=", alsa_card_ens137x_setup);
 #elif defined(CHIP1371)
-__setup("snd-card-ens1371=", alsa_card_ens137x_setup);
+__setup("snd-ens1371=", alsa_card_ens137x_setup);
 #endif
 
 #endif /* ifndef MODULE */

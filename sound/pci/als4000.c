@@ -705,7 +705,7 @@ module_exit(alsa_card_als4k_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-als4000=snd_enable,snd_index,snd_id */
+/* format is: snd-als4000=snd_enable,snd_index,snd_id */
 
 static int __init alsa_card_als4000_setup(char *str)
 {
@@ -720,6 +720,6 @@ static int __init alsa_card_als4000_setup(char *str)
 	return 1;
 }
 
-__setup("snd-card-als4000=", alsa_card_als4000_setup);
+__setup("snd-als4000=", alsa_card_als4000_setup);
 
 #endif /* ifndef MODULE */
