@@ -954,6 +954,8 @@ static void output_acinclude(void)
 			printf("\tif test \"$CONFIG_PPC\" = \"y\"; then\n");
 		else if (strstr(tempdep->dir, "/arm"))
 			printf("\tif test \"$CONFIG_ARM\" = \"y\"; then\n");
+		else if (strstr(tempdep->dir, "/parisc"))
+			printf("\tif test \"$CONFIG_PARISC\" = \"y\"; then\n");
 		else if (strstr(tempdep->name, "/pcmcia"))
 			printf("\tif test \"$CONFIG_PCMCIA\" = \"y\"; then\n");
 		else
