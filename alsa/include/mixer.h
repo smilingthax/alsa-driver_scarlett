@@ -437,6 +437,22 @@ extern snd_kmixer_element_t *snd_mixer_lib_tone_control1(snd_kmixer_t *mixer,
 					snd_mixer_tone_control1_control_t *control,
 					void *private_data);
 
+typedef int (snd_mixer_pan_control1_control_t)(void *private_data, int w_flag, struct snd_mixer_element_pan_control1 *pan1);
+
+struct snd_stru_mixer_lib_pan_control1 {
+	struct snd_mixer_element_pan_control1_info data;
+	snd_mixer_pan_control1_control_t *control;
+	void *private_data;
+	snd_kmixer_free_t *private_free;
+};
+
+extern snd_kmixer_element_t *snd_mixer_lib_pan_control1(snd_kmixer_t *mixer,
+					char *name,
+					int index,
+					struct snd_mixer_element_pan_control1_info *info,
+					snd_mixer_pan_control1_control_t *control,
+					void *private_data);
+
 typedef int (snd_mixer_3d_effect1_control_t)(void *private_data, int w_flag, struct snd_mixer_element_3d_effect1 *effect1);
 
 struct snd_stru_mixer_lib_3d_effect1 {

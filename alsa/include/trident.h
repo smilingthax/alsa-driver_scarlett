@@ -63,7 +63,7 @@
 #endif
 #endif
 
-#define SND_SEQ_DEV_TRIDENT			"synth-4dwave"
+#define SND_SEQ_DEV_TRIDENT			"synth-trident"
 
 #define SND_TRIDENT_VOICE_TYPE_PCM		0
 #define SND_TRIDENT_VOICE_TYPE_SYNTH		1
@@ -203,6 +203,7 @@ typedef struct tChannelControl
 
 typedef struct snd_stru_trident trident_t;
 typedef struct snd_trident_stru_voice snd_trident_voice_t;
+typedef struct snd_stru_trident_pcm_mixer snd_trident_pcm_mixer_t;
 
 typedef struct {
 	void (*sample_start)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_position_t position);
@@ -287,6 +288,24 @@ struct snd_stru_4dwave {
 
 };
 
+typedef struct {
+	snd_kmixer_group_control_t *group;
+	snd_mixer_volume1_control_t *vol;
+	snd_mixer_pan_control1_control_t *pan;
+	snd_mixer_volume1_control_t *rvol;
+	snd_mixer_volume1_control_t *cvol;
+} snd_trident_mixer_ops_t;
+
+struct snd_stru_trident_pcm_mixer {
+	int number;			/* hardware index 32 - 63 */
+
+	snd_kmixer_group_t *group;
+	snd_kmixer_element_t *me_pcm;
+	snd_kmixer_element_t *me_vol_vol;
+	snd_kmixer_element_t *me_pan;
+	snd_kmixer_element_t *me_vol_rvol;
+	snd_kmixer_element_t *me_vol_cvol;
+};
 
 struct snd_stru_trident {
 	snd_dma_t * dma1ptr;	/* DAC Channel */
@@ -324,8 +343,15 @@ struct snd_stru_trident {
 	snd_seq_device_t *seq_dev;
 
 	unsigned int musicvol_wavevol;
+
+	snd_trident_pcm_mixer_t pcm_mixer[32];
+
+	snd_kmixer_element_t *me_wave;
 	snd_kmixer_element_t *me_vol_wave;
+	snd_kmixer_element_t *me_music;
 	snd_kmixer_element_t *me_vol_music;
+	snd_kmixer_element_t *me_reverb;
+	snd_kmixer_element_t *me_sw2_reverb;
 
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
@@ -357,6 +383,5 @@ void snd_trident_stop_voice(trident_t * trident, unsigned int HwChannel);
 void snd_trident_enable_voice_irq(trident_t * trident, unsigned int HwChannel);
 void snd_trident_disable_voice_irq(trident_t * trident, unsigned int HwChannel);
 void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigned short v_max);
-
 #endif				/* __TRID4DWAVE_H */
 

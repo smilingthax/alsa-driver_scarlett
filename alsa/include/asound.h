@@ -335,6 +335,8 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_TONE_CONTROL1	500
 /* equalizer */
 #define SND_MIXER_ETYPE_EQUALIZER1	501
+/* simple pan control */
+#define SND_MIXER_ETYPE_PAN_CONTROL1	502
 /* simple 3D effect */
 #define SND_MIXER_ETYPE_3D_EFFECT1	600
 /* predefined effect */
@@ -722,6 +724,20 @@ struct snd_mixer_element_tone_control1 {
 };
 
 /*
+ *  Simple pan control
+ */
+
+struct snd_mixer_element_pan_control1_info {
+	int min, max;
+	int min_dB, max_dB;
+};
+
+struct snd_mixer_element_pan_control1 {
+	int pan_ctrl: 1;		/* Left/Right switch */
+	int pan;			/* PAN control */
+};
+
+/*
  *  Equalizer
  */
 
@@ -822,6 +838,7 @@ typedef struct snd_mixer_element_info {
 		struct snd_mixer_element_mux1_info mux1;
 		struct snd_mixer_element_mux2_info mux2;
 		struct snd_mixer_element_tone_control1_info tc1;
+		struct snd_mixer_element_pan_control1_info pan1;
 		struct snd_mixer_element_3d_effect1_info teffect1;
 		struct snd_mixer_element_pre_effect1_info peffect1;
 		char reserve[120];
@@ -840,6 +857,7 @@ typedef struct snd_mixer_element {
 		struct snd_mixer_element_volume1 volume1;
 		struct snd_mixer_element_volume2 volume2;
 		struct snd_mixer_element_tone_control1 tc1;
+		struct snd_mixer_element_pan_control1 pan1;
 		struct snd_mixer_element_3d_effect1 teffect1;
 		struct snd_mixer_element_pre_effect1 peffect1;
 		char reserve[120];
