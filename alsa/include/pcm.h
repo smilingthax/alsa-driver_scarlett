@@ -768,6 +768,13 @@ extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
 					 (SND_PCM_AES3_CON_FS_48000<<24))
 
+#ifdef CONFIG_PCI
+extern int snd_pcm_lib_malloc_pci_pages(struct pci_dev *pci,
+                                        snd_pcm_substream_t *substream);
+extern void snd_pcm_lib_free_pci_pages(struct pci_dev *pci,
+                                       snd_pcm_substream_t *substream);
+#endif
+
 static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
 {
 	*max = dma < 4 ? 64 * 1024 : 128 * 1024;
