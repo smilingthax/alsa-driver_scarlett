@@ -1925,16 +1925,17 @@ static int snd_usb_roland_ua100_hack_intf(snd_usb_audio_t *chip, int ifnum)
 
 static int snd_usb_roland_ua100_hack(snd_usb_audio_t *chip)
 {
+	static const snd_usb_midi_endpoint_info_t ep_quirk = {
+		.epnum = -1,
+		.out_cables = 0x0007,
+		.in_cables  = 0x0007
+	};
 	static const snd_usb_audio_quirk_t midi_quirk = {
 		.vendor_name = "Roland",
 		.product_name = "UA-100",
 		.ifnum = 2,
 		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-		.data = & (const snd_usb_midi_endpoint_info_t) {
-			.epnum = -1,
-			.out_cables = 0x0007,
-			.in_cables  = 0x0007
-		}
+		.data = &ep_quirk
 	};
 	struct usb_config_descriptor *cfg = chip->dev->actconfig;
 	struct usb_interface *iface;
