@@ -2,7 +2,7 @@
  *  Advanced Linux Sound Architecture - ALSA - Driver
  *
  *  The interface file between the ALSA driver & the user space
- *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) 1994-99 by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -872,7 +872,7 @@ typedef struct snd_mixer_read {
 } snd_mixer_read_t;
 
 /*
- *  Obsolete interface compatible with Open Sound System API
+ *  Interface compatible with Open Sound System API
  */
 
 #ifdef __SND_OSS_COMPAT__
@@ -919,15 +919,15 @@ struct snd_oss_mixer_info_obsolete {
 	char name[32];
 };
 
-#define SND_MIXER_OSS_SET_RECSRC _IOWR( 'M', 255, int )
-#define SND_MIXER_OSS_RECSRC	_IOR ( 'M', 255, int )
-#define SND_MIXER_OSS_DEVMASK	_IOR ( 'M', 254, int )
-#define SND_MIXER_OSS_RECMASK	_IOR ( 'M', 253, int )
-#define SND_MIXER_OSS_CAPS	_IOR ( 'M', 252, int )
-#define SND_MIXER_OSS_STEREODEVS _IOR ( 'M', 251, int )
-#define SND_MIXER_OSS_INFO      _IOR ( 'M', 101, struct snd_oss_mixer_info )
-#define SND_MIXER_OSS_OLD_INFO	_IOR ( 'M', 101, struct snd_oss_mixer_info_obsolete )
-#define SND_OSS_GETVERSION	_IOR ( 'M', 118, int )
+#define SND_MIXER_OSS_SET_RECSRC _IOWR('M', 255, int)
+#define SND_MIXER_OSS_RECSRC	_IOR ('M', 255, int)
+#define SND_MIXER_OSS_DEVMASK	_IOR ('M', 254, int)
+#define SND_MIXER_OSS_RECMASK	_IOR ('M', 253, int)
+#define SND_MIXER_OSS_CAPS	_IOR ('M', 252, int)
+#define SND_MIXER_OSS_STEREODEVS _IOR ('M', 251, int)
+#define SND_MIXER_OSS_INFO      _IOR ('M', 101, struct snd_oss_mixer_info)
+#define SND_MIXER_OSS_OLD_INFO	_IOR ('M', 101, struct snd_oss_mixer_info_obsolete)
+#define SND_OSS_GETVERSION	_IOR ('M', 118, int)
 
 #endif				/* __SND_OSS_COMPAT__ */
 
@@ -1141,7 +1141,7 @@ typedef struct snd_pcm_loopback_header {
 #define SND_PCM_LB_IOCTL_FORMAT		_IOR ( 'L', 0x02, struct snd_pcm_format )
 
 /*
- *  Obsolete interface compatible with Open Sound System API
+ *  Interface compatible with Open Sound System API
  */
 
 #ifdef __SND_OSS_COMPAT__

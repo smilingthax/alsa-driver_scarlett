@@ -34,7 +34,7 @@
 #define MPU401_HW_FM801			8	/* ForteMedia FM801 */
 #define MPU401_HW_TRID4DWAVE		9	/* Trident 4DWave */
 #define MPU401_HW_AZT2320		10	/* Aztech AZT2320 */
-#define MPU401_HW_ALS100		11	/* Avance Login ALS100 */
+#define MPU401_HW_ALS100		11	/* Avance Logic ALS100 */
 
 #define MPU401_MODE_INPUT		1
 #define MPU401_MODE_OUTPUT		2

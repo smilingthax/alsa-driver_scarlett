@@ -32,10 +32,11 @@
 #define SB_HW_201		3
 #define SB_HW_PRO		4
 #define SB_HW_16		5
+#define SB_HW_ALS100		6	/* Avance Logic ALS100 chip */
 
 #define SB_MODE8_HALT		0
 #define SB_MODE8_PLAYBACK	1
-#define SB_MODE8_CAPTURE		2
+#define SB_MODE8_CAPTURE	2
 
 #define SB_OPEN_PCM		1
 #define SB_OPEN_MIDI_INPUT	2

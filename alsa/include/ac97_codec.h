@@ -73,22 +73,13 @@ struct snd_stru_ac97 {
 	void *private_data;
 	void (*private_free) (ac97_t * ac97);
 	/* --- */
+	spinlock_t reg_lock;
 	int rev_is_not_rev;
 	unsigned int id;	/* identification of codec */
 	char name[64];		/* CODEC name */
 	unsigned short caps;	/* capabilities (register 0) */
 	unsigned short micgain;	/* mic gain is active */
 	unsigned short regs[0x3c]; /* register cache */
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_cd;
-	snd_kmixer_element_t *me_mux_video;
-	snd_kmixer_element_t *me_mux_aux;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_mix;
-	snd_kmixer_element_t *me_mux_mono_mix;
-	snd_kmixer_element_t *me_mux_phone;
-	snd_kmixer_element_t *me_mux2_out_mono_accu;
-	snd_kmixer_element_t *me_mux2_mic;
 	unsigned char bass;	/* tone control - bass value */
 	unsigned char treble;	/* tone control - treble value */
 	unsigned char max_master; /* master maximum volume value */
@@ -97,7 +88,58 @@ struct snd_stru_ac97 {
 	unsigned char max_mono;	/* mono maximum volume value */
 	unsigned char max_3d;	/* 3d maximum volume value */
 	unsigned char shift_3d;	/* 3d shift value */
-	spinlock_t reg_lock;
+
+	snd_kmixer_element_t *me_mux_mic;
+	snd_kmixer_element_t *me_mux_cd;
+	snd_kmixer_element_t *me_mux_video;
+	snd_kmixer_element_t *me_mux_aux;
+	snd_kmixer_element_t *me_mux_line;
+	snd_kmixer_element_t *me_mux_mix;
+	snd_kmixer_element_t *me_mux_mono_mix;
+	snd_kmixer_element_t *me_mux_phone;
+
+	snd_kmixer_element_t *me_mux2_out_mono_accu;
+	snd_kmixer_element_t *me_mux2_mic;
+
+	snd_kmixer_element_t *me_accu;
+	snd_kmixer_element_t *me_pcm_accu;
+	snd_kmixer_element_t *me_bypass_accu;
+	snd_kmixer_element_t *me_mono_accu;
+	snd_kmixer_element_t *me_mono_accu_in;
+	snd_kmixer_element_t *me_mux;
+	snd_kmixer_element_t *me_mono_mux;
+	snd_kmixer_element_t *me_playback;
+	snd_kmixer_element_t *me_vol_pcm;
+	snd_kmixer_element_t *me_sw_pcm;
+	snd_kmixer_element_t *me_vol_pc_beep;
+	snd_kmixer_element_t *me_sw_pc_beep;
+	snd_kmixer_element_t *me_vol_phone;
+	snd_kmixer_element_t *me_sw_phone;
+	snd_kmixer_element_t *me_vol_mic;
+	snd_kmixer_element_t *me_sw_mic;	
+	snd_kmixer_element_t *me_vol_line;
+	snd_kmixer_element_t *me_sw_line;
+	snd_kmixer_element_t *me_vol_cd;
+	snd_kmixer_element_t *me_sw_cd;
+	snd_kmixer_element_t *me_vol_video;
+	snd_kmixer_element_t *me_sw_video;
+	snd_kmixer_element_t *me_vol_aux;
+	snd_kmixer_element_t *me_sw_aux;
+	snd_kmixer_element_t *me_tone;
+	snd_kmixer_element_t *me_vol_master;
+	snd_kmixer_element_t *me_sw_master;
+	snd_kmixer_element_t *me_out_master;
+	snd_kmixer_element_t *me_vol_headphone;
+	snd_kmixer_element_t *me_sw_headphone;
+	snd_kmixer_element_t *me_out_headphone;
+	snd_kmixer_element_t *me_vol_master_mono;
+	snd_kmixer_element_t *me_sw_master_mono;
+	snd_kmixer_element_t *me_out_master_mono;
+	snd_kmixer_element_t *me_vol_igain;
+	snd_kmixer_element_t *me_sw_igain;
+	snd_kmixer_element_t *me_vol_igain_mic;
+	snd_kmixer_element_t *me_sw_igain_mic;
+	snd_kmixer_element_t *me_capture;
 };
 
 snd_kmixer_t *snd_ac97_mixer(snd_card_t * card, ac97_t * ac97, int pcm_count, int *pcm_devs);

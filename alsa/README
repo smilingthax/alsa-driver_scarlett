@@ -16,7 +16,7 @@ Features
   - support for 128k ISA DMA buffer
 * mixer
   - new enhanced and flexible API for applications
-  - support for unlimited number of channels
+  - support for unlimited number of elements and groups
   - support for mute (and hardware mute if hardware supports it)
   - support for mixer events
     - this allows two or more applications to be synchronized
