@@ -788,12 +788,13 @@ Proc interfaces (/proc/asound)
    <fragments> - number of fragments or zero if auto
    <fragment_size> - size of fragment in bytes or zero if auto
    <options> - optional parameters
-	  - WR_ONLY - if an application tries to open a pcm device with
-                      O_RDWR, then the driver rewrites the open mode to
-		      O_WRONLY (playback only) - it's good for Quake etc...
+	  - disable - the application tries to open a pcm device for
+		      this channel but does not want to use it.
+		      (Cause a bug or mmap needs)
+		      It's good for Quake etc...
 	  - block   - force block mode (rvplayer)
 	  - non-block - force non-block mode
 
   Example: echo "Playback x11amp 128 16384" > /proc/asound/0/pcmD0o
-           echo "Playback squake 0 0 WR_ONLY" > /proc/asound/0/pcmD0o
+           echo "Capture squake 0 0 disable" > /proc/asound/0/pcmD0o
 	   echo "Playback rvplayer 0 0 block" > /proc/asound/0/pcmD0o
