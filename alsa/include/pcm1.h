@@ -64,6 +64,7 @@
 #define SND_PCM1_FLG_SYNC	0x00000400	/* synchronize playback/record */
 #define SND_PCM1_FLG_TIME	0x00000800	/* time */
 #define SND_PCM1_FLG_PAUSE	0x00001000	/* pause in progress */
+#define SND_PCM1_FLG_NEEDEMPTY	0x00002000	/* record buffer needs to be empty */
 
 #define SND_PCM1_HW_BATCH	0x00000001	/* double buffering */
 #define SND_PCM1_HW_8BITONLY	0x00000002	/* hardware supports only 8-bit DMA, but does conversions from 16-bit to 8-bit */
@@ -147,6 +148,7 @@ struct snd_stru_pcm1_channel {
 	volatile unsigned int processed_bytes;
 	volatile unsigned int interrupts;
 	volatile unsigned int xruns;
+	unsigned int lastxruns;
 	volatile unsigned int overrange;	/* ADC overrange */
 	volatile unsigned int total_discarded;	/* discarded blocks... */
 	volatile unsigned int total_xruns;	/* under/overruns */
@@ -234,6 +236,10 @@ extern void snd_pcm1_fill_with_neutral(snd_pcm1_t * pcm,
 extern int snd_pcm1_dma_alloc(snd_pcm1_t * pcm, int direction,
 			      int dmanum, char *ident);
 extern int snd_pcm1_dma_free(snd_pcm1_t * pcm, int direction, int dmanum);
+
+extern void snd_pcm1_proc_format(snd_pcm_channel_t * pchn,
+			         snd_pcm1_channel_t * pchn1);
+
 
 /*
  *  Registering
