@@ -1,6 +1,8 @@
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
 	depends on SND
+	select SND_RAWMIDI
+	select SND_PCM
 	help
 	  Say 'Y' or 'M' to include support for Turtle Beach MultiSound
 	  Pinnacle/Fiji soundcards.
