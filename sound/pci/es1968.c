@@ -2092,7 +2092,7 @@ static void snd_es1968_ac97_reset(es1968_t *chip)
 	unsigned short save_ringbus_a;
 	unsigned short save_68;
 	unsigned short w;
-	unsigned short vend;
+	unsigned int vend;
 
 	/* save configuration */
 	save_ringbus_a = inw(ioaddr + 0x36);
@@ -2106,7 +2106,7 @@ static void snd_es1968_ac97_reset(es1968_t *chip)
 	outw(0x0000, ioaddr + 0x36);
 	save_68 = inw(ioaddr + 0x68);
 	pci_read_config_word(chip->pci, 0x58, &w);	/* something magical with gpio and bus arb. */
-	pci_read_config_word(chip->pci, PCI_SUBSYSTEM_VENDOR_ID, &vend);
+	pci_read_config_dword(chip->pci, PCI_SUBSYSTEM_VENDOR_ID, &vend);
 	if (w & 1)
 		save_68 |= 0x10;
 	outw(0xfffe, ioaddr + 0x64);	/* unmask gpio 0 */
