@@ -48,10 +48,10 @@ SOURCE:
 
 Exceptions:
   Capture Source
-  Capture Switch	(aka input gain switch)
-  Capture Volume	(aka input gain volume)
-  Playback Switch	(aka output gain switch)
-  Playback Volume	(aka output gain volume)
+  [Digital] Capture Switch	(aka input gain switch)
+  [Digital] Capture Volume	(aka input gain volume)
+  [Digital] Playback Switch	(aka output gain switch)
+  [Digital] Playback Volume	(aka output gain volume)
   Tone Control - Bass
   Tone Control - Treble
   3D Control - Switch
