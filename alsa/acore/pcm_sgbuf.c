@@ -123,15 +123,15 @@ void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 	if (! vmaddr)
 		goto _failed;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 	if (store_page_tables(sgbuf, vmaddr, pages) < 0) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 		release_vm_buffer(sgbuf, vmaddr);
 		vmaddr = vmalloc_dma(pages << PAGE_SHIFT);
 		if (! vmaddr)
 			goto _failed;
 		store_page_tables(sgbuf, vmaddr, pages);
-	}
 #endif
+	}
 
 	return vmaddr;
 
