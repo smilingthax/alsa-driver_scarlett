@@ -60,12 +60,6 @@
 #endif
 #endif
 
-#ifdef SNDCFG_PNP
-#ifndef CONFIG_PNP_DRV
-#error "I'm sorry, but I can't detect PnP driver in your kernel..."
-#endif
-#endif
-
 #if defined( CONFIG_MODVERSIONS ) && !defined( __GENKSYMS__ ) && !defined( __DEPEND__ )
 #define MODVERSIONS
 #include <linux/modversions.h>
@@ -113,6 +107,10 @@
 #include <linux/proc_fs.h>
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
+#endif
+
+#ifdef SNDCFG_PNP
+#include "isapnp.h"
 #endif
 
 #undef SND_POLL

@@ -246,14 +246,14 @@ else
 fi
 AC_SUBST(msmp)
 
-dnl Check for Tom Lees PnP driver...
-AC_MSG_CHECKING(for Tom Lees PnP driver)
+dnl Check for ISA PnP driver...
+AC_MSG_CHECKING(for ISA PnP driver)
 AC_ARG_WITH(pnp,
   [  --with-pnp=yes,no,auto  driver will (not) be compiled with PnP support],
   pnp="$withval", pnp="auto")
 mpnp=""
 if test "$pnp" = "auto"; then
-  if test -f /proc/sys/pnp; then
+  if test -f /proc/isapnp; then
     mpnp="1"
   fi
 else
