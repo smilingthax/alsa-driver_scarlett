@@ -125,9 +125,10 @@ typedef enum _snd_card_type {
 	SND_CARD_TYPE_AWACS,		/* PMac AWACS */
 	SND_CARD_TYPE_NM256AV,		/* NM256AV */
 	SND_CARD_TYPE_NM256ZX,		/* NM256ZX */
+	SND_CARD_TYPE_VIA8233,		/* VIA VT8233 */
 
 	/* Don't forget to change the following: */
-	SND_CARD_TYPE_LAST = SND_CARD_TYPE_NM256ZX,
+	SND_CARD_TYPE_LAST = SND_CARD_TYPE_VIA8233,
 } snd_card_type_t;
 
 typedef struct timeval snd_timestamp_t;
