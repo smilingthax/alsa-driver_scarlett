@@ -72,7 +72,7 @@ mrproper: clean
 	rm -f utils/alsa-driver.spec
 
 cvsclean: mrproper
-	rm -f configure snddevices include/config.h aclocal.m4
+	rm -f configure snddevices aclocal.m4 include/config.h include/isapnp.h
 
 pack: mrproper
 	chown -R root.root ../alsa-driver
