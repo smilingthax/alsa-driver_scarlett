@@ -36,12 +36,15 @@
 #define MPU401_HW_AZT2320		10	/* Aztech AZT2320 */
 #define MPU401_HW_ALS100		11	/* Avance Logic ALS100 */
 #define MPU401_HW_ICE1712		12	/* Envy24 */
+#define MPU401_HW_VIA686A		13	/* VIA 82C686A */
 
-#define MPU401_MODE_INPUT		1
-#define MPU401_MODE_OUTPUT		2
-#define MPU401_MODE_INPUT_TRIGGER	4
-#define MPU401_MODE_OUTPUT_TRIGGER	8
-#define MPU401_MODE_TIMER		16
+#define MPU401_MODE_INPUT		(1<<0)
+#define MPU401_MODE_OUTPUT		(1<<1)
+#define MPU401_MODE_INPUT_TRIGGER	(1<<2)
+#define MPU401_MODE_OUTPUT_TRIGGER	(1<<3)
+#define MPU401_MODE_INPUT_TIMER		(1<<4)
+#define MPU401_MODE_OUTPUT_TIMER	(1<<5)
+#define MPU401_MODE_TIMER		((1<<4)|(1<<5))
 
 typedef struct snd_stru_mpu401 mpu401_t;
 
@@ -49,8 +52,8 @@ struct snd_stru_mpu401 {
 	snd_rawmidi_t *rmidi;
 
 	unsigned short hardware;	/* MPU401_HW_XXXX */
-	unsigned short port;		/* base port of MPU-401 chip */
-	unsigned short irq;		/* IRQ number of MPU-401 chip */
+	int port;			/* base port of MPU-401 chip */
+	int irq;			/* IRQ number of MPU-401 chip */
 
 	unsigned int mode;		/* MPU401_MODE_XXXX */
 
@@ -81,8 +84,8 @@ extern void snd_mpu401_uart_interrupt(snd_rawmidi_t * rmidi);
 extern int snd_mpu401_uart_new(snd_card_t * card,
 			       int device,
 			       unsigned short hardware,
-			       unsigned short port,
-			       unsigned short irqnum,
+			       int port,
+			       int irqnum,
 			       snd_rawmidi_t ** rrawmidi);
 
 #endif				/* __MPU401_H */
