@@ -6,6 +6,9 @@ EXPORT_SYMBOL(try_inc_mod_count);
 EXPORT_SYMBOL(snd_compat_request_region);
 EXPORT_SYMBOL(snd_compat_release_resource);
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 19)
+EXPORT_SYMBOL(snd_vmalloc_to_page);
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_PCI)
 EXPORT_SYMBOL(snd_pci_compat_match_device);
 EXPORT_SYMBOL(snd_pci_compat_register_driver);
