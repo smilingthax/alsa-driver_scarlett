@@ -9,7 +9,7 @@ include $(SND_TOPDIR)/Makefile.conf
 # ALSA extra code
 #
 
-clean-files := intel8x0.c
+clean-files := bt87x.c intel8x0.c
 
 obj-$(CONFIG_SND) += pdplus/ azx/
 
@@ -29,4 +29,5 @@ include $(SND_TOPDIR)/alsa-kernel/pci/Makefile
 
 include $(SND_TOPDIR)/Rules.make
 
+bt87x.c: bt87x.patch $(SND_TOPDIR)/alsa-kernel/pci/bt87x.c
 intel8x0.c: intel8x0.patch $(SND_TOPDIR)/alsa-kernel/pci/intel8x0.c
