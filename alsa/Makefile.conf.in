@@ -1,0 +1,30 @@
+#
+# Configuration Makefile for ALSA driver
+# Copyright (c) 1994-98 by Jaroslav Kysela <perex@jcu.cz>
+#
+
+srcdir=@srcdir@
+VPATH=@srcdir@
+prefix=@prefix@
+moddir=@moddir@
+c_opts=@c_opts@
+processor=@processor@
+msmp=@msmp@
+newkernel=@newkernel@
+SND_VERSION=@SND_VERSION@
+kversion=@kversion@
+kpatchlevel=@kpatchlevel@
+ksublevel=@ksublevel@
+GENKSYMS=@GENKSYMS@
+
+SNDCFG_KERNELDIR=@SNDCFG_KERNELDIR@
+SNDCFG_PCI=@SNDCFG_PCI@
+
+CC=@CC@
+CPP=@CPP@ -M -D__DEPEND__
+INCLUDE=-I$(SNDCFG_KERNELDIR)/include -I$(TOPDIR)/include
+COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
+LINKER=ld -r
+SNDVERSIONS=$(TOPDIR)/include/sndversions.h
+PEXPORT=$(TOPDIR)/utils/export-symbols
+DEXPORT=$(TOPDIR)/include/modules

@@ -1,0 +1,204 @@
+0.1.4 -> 0.2.0
+
+* added sequencer snapshot 15 July 1998
+* added timer interface
+* added kernel-side rawmidi interface
+* deadlock / oops fixes in rawmidi code
+* fixes in SB-16 mixer code
+  - added snd_mic_agc option for snd-sb16 module to allow control of Mic AGC
+* enhanced OSS's /dev/sndstat information interface
+* added support for Yamaha OPL3-SA2/SA3 soundcards
+* added empty envelopes for synthesizers
+  - OPL2/OPL3 (AdLib timers are supported when connected to IRQ line)
+  - GUS (GF1, InterWave)
+  - EMU-8000 (SB AWE)
+* big PCM code changes (separated middle level code)
+* changes in header files (added deep checking)
+* added generic i2c bus code (from bttv driver)
+  - added support for TEA6330T chip (i2c bus)
+  - added support for InterWave card from STB with TEA6330T chip
+* added support for S3 SonicVibes PCI chip
+* added /proc/sound/dev directory interface for sound devices
+* improved support for MPU401-UART
+
+0.1.3 -> 0.1.4
+
+* fixes in OSS PCM emulation (mmaped access, OSPACE/ISPACE)
+* fixes in MIXER (mute change)
+* fixes in gusclassic.c (GUS ACE MIDI oops)
+* new spec file for RPM
+* updates in configuration
+
+0.1.2 -> 0.1.3
+
+* ---
+
+0.1.1 -> 0.1.2
+
+* first kernel-side documentation is available
+* minor fixes in driver code (mixer, pcm)
+* first code for OAK Mozart soundcards
+  - added support for generic AD1848/CS4248 chips
+* added support for PCI devices (not tested!!!)
+
+0.1.0 -> 0.1.1
+
+* updated alsadriver.spec
+* fixes for one DMA channel mode for SB16 driver
+* removed PnP check for SB16 configuration
+
+0.0.12 -> 0.1.0
+
+* next fix for stereo rate calculation for SB Pro (I hope last)
+* fixes in GUS modules one DMA channel mode
+* fixes in GUS Extreme driver (wrong control range)
+* added alpha MIDI code for all supported soundcards except ES688 chip
+  - GUS MIDI support
+  - MPU-401 in UART mode support
+  - SB MIDI support (not tested)
+* Sound Blaster 16
+  - fixed strange bugs in neutral fill which should cause system hangup
+  - fixed real_rate computing
+  - added /proc/sound/#/sb16 interface for DMA usage
+    - 'echo "Playback 16" > /proc/sound/#/sb16' == use 16-bit DMA for playback
+    - 'echo "Playback 8" > /proc/sound/#/sb16' == use 8-bit DMA for playback
+    - 'echo "Playback auto" > /proc/sound/#/sb16' == auto DMA mode for playback
+    - similar setup should be done for "Record" direction
+* cleanups in event interface for mixer (for alsamixer which now works great)
+* fixes in timing for CS4231 chip, GUS MAX should now work ok
+* fixes in CS4231 module for one DMA channel mode
+* alpha support for persistent data
+* fixes in mmaped PCM for GF1 chip (all GUSes)
+* renamed script sound.init to alsasound
+* minor updates for Alpha machines (tested with Jensen)
+* changed script snddevices
+
+0.0.11 -> 0.0.12
+
+* native PCM
+  - added scount variable to status structures for playback & record
+  - new time computing method for playback & record
+  - set number of voices before computing rate, instead of afterwards
+* PCM OSS emulation
+  - quake works now ok again - fixed error from 0.0.11
+  - fixed error with large buffers - (problems Doom etc...)
+  - rate is now computed after voices setup, too
+* stereo rate calculation fixed for SB Pro
+* MIXER
+  - fixed mute bug (problems with GUS PnP & GUS MAX)
+* MIDI
+  - first code for raw midi interface (designed only kernel API in sound.h)
+
+0.0.10 -> 0.0.11
+
+* fix for PCM OSS emulation (groove demo now works ok)
+* fixes for spin lock support
+* new 2.1 SMP kernels should be now detected ok
+  - use 2.1.95+ kernels for SMP
+  - previous kernels have bug caused by spinlocks (total hangup)
++ added GPL notice to all source files
+* recoded export-symbols script to C program
+* extended info interface (two info types - text & data)
++ added /proc interface to PCM record & playback channels
+  - digital audio data now should be read back
+  - added /proc/sound/#/pcm# interface
+* fixes in native PCM
+* fixes in cs4231.c (calibration)
++ added INSTALL file (and removed doc/kerneld.txt and doc/kmod.txt)
++ added /proc/sound/#/mixer# interface for read and write mixer settings
+* all mixer channels are now set to minimum value and muted by startup
+  - look to utils/sound.init script how can be handled mixer settings in
+    rc scripts
+
+0.0.9 -> 0.0.10
+
+* big internal coding changes, cleanups
+* audio buffer can now be allocated anywhere in kernel space (PCI support)
+* added spinlock support
+* added support for versioned symbols (for both 2.0 & 2.1 kernels)
+* only some symbols are now exported to other modules
+* updates in mixer code (mainly bug fixes)
+* fixed bug in native PCM code (duplex)
+* added testing code for sound manager program support
+  - must be activated manualy in kernel/soundman.c
+  - it isn't working for 2.0.X kernel and maybe it will be removed :-(
+  - help is wanted how can be run user program from kernel module...
+* code can be compiled cleanly with egcs 1.0.2
+
+0.0.8 -> 0.0.9
+
+* recoded info routines with use of proc filesystem
+* fixed bug in es1688.c which caused Oops when insert...
+
+0.0.7 -> 0.0.8
+
+* changes for Tom Lees PnP driver for GUS PnP & SB16
+* cleanups in card/device names
+* control interface extended by pcm playback/record info
+* fixed strange open bug in native PCM for SB & ESS soundcards
+* fixed dB ranges & steps for SoundBlaster 16 (CTL1745)
+
+0.0.6 -> 0.0.7
+
+* minor fixes in sound.h
+* minor numbers are changed!!! please, run script snddevices again
++ added full support for kerneld/kmod (best used with modutils 2.1.55+)
+  - driver requests for add-on OSS modules by 'snd-minor-oss-#'
+  - driver requests for card modules by 'snd-card-#'
+  - look to doc/kerneld.txt for example
++ added support for Gravis UltraSound MAX
++ added support for Gravis UltraSound Classic/Ace
+  - unique DMA transfer algoritm from system to onboard memory was used
+    for best PCM performance
+* stereo mode with SB Pro should now work ok
++ mixer
+  - SND_MIXER_CINFO_CAP_INPUT added for channel info caps variable
+  - snd_mixer_channel_info extended by min & max variables
+  - SND_MIXER_IOCTL_EXACT added for support of exact mode
+  - volume can now set in decibel (not tested) or in exact mode
++ pcm
+  - snd_pcm_playback_status & snd_pcm_record_status extended by rate
+    variable which passes to application real playback/record rate and
+    by stime variable which contains time when playback/record was started
+  - SND_PCM_IOCTL_PLAYBACK_TIME & SND_PCM_IOCTL_RECORD_TIME added for
+    turning on/off time computing for status ioctl's
+
+0.0.5 -> 0.0.6
+
+* changes in control interface
+* updates for kernel 2.1.89
+* fixed SMP autodetection
+
+0.0.4 -> 0.0.5
+
+* fixed SND_PCM_IOCTL_PLAYBACK_STATUS (count variable have now correct value)
+* some minor changes in mixer API 
+  + DIGITAL flag and info about parent channels
+* some minor changes in PCM API
+  + info flags in channel_info
++ support for SoundBlaster 1.0/2.0/Pro/16/AWE soundcards
+  + full duplex for SB 16/AWE
+
+0.0.3 -> 0.0.4
+
+* change name from elsadriver to alsadriver
+* soundcard module now supports up to 8 soundcards
+* cleanups in sound.h - changed structure names from uppercase to lowercase
+* mixer
+   - support volume read in decibels (todo: set volume in decibels)
+   - most bugfixes
+* PCM
+   + separated code for OSS PCM and native PCM
+   + native PCM code - original API idea by Thomas Sailer modified by me (Jaroslav Kysela)
+   + fixes in OSS PCM - underruns are now OK - RealVideo 5.0b3 works now perfectly
+     - note: this driver with RV 5.0b3 with ISDN stream 40kbit/s on Pentium II -
+             10% CPU usage, with OSS/Lite from 2.0.33 - 50% CPU usage
+
+0.0.2 -> 0.0.3
+
+* change name from ultradriver to elsadriver
+* changed prefixes 'ultra_' and 'ULTRA_' to 'snd_' and 'SND_'
+* changed ultra.h to sound.h
+* changed names of modules from 'ultra-xxxx.o' to 'snd-xxxx.o'
+* updates for 2.1.85+ kernel
++ support for ESS AudioDrive ES1688 soundcards

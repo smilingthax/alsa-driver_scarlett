@@ -1,0 +1,86 @@
+<HTML>
+<HEAD>
+<TITLE>Advanced Linux Sound Architecture - Driver: File operations</TITLE>
+</HEAD>
+<BODY>
+<A HREF="coding-2.html">Previous</A>
+<A HREF="coding-4.html">Next</A>
+<A HREF="coding.html#toc3">Table of Contents</A>
+<HR>
+<H2><A NAME="s3">3. File operations</A></H2>
+
+<P>File operations related structures and function is in <I>include/driver.h</I>
+header file. Basic structure for registering fileoperations for minor number
+is <I>snd_minor_t</I>. Minor constants are in <I>include/minors.h</I>
+header file.</P>
+
+<H2><A NAME="ss3.1">3.1 Variables and functions</A></H2>
+
+<P>Functions list:</P>
+<P>
+<UL>
+<LI><B>int snd_register_minor( unsigned short minor, snd_minor_t *reg )</B>
+<UL>
+<LI><B>minor</B> minor number</LI>
+<LI><B>reg</B> pointer to registration structure with file operations</LI>
+<LI>returns negative value when error occured</LI>
+</UL>
+</LI>
+<LI><B>int snd_unregister_minor( unsigned short minor )</B>
+<UL>
+<LI><B>minor</B> minor number</LI>
+<LI>returns negative value when error occured</LI>
+</UL>
+</LI>
+</UL>
+</P>
+<P><B>Note:</B> Devices (minor numbers) are registered only if device is
+present in the system. It isn't preffered do some pre-registration from
+some middle-level code for each possible devices per interface.</P>
+
+
+<H2><A NAME="ss3.2">3.2 Examples</A></H2>
+
+
+<P>
+<BLOCKQUOTE><CODE>
+<HR>
+<PRE>
+static snd_minor_t snd_pcm_reg = {
+  &quot;digital audio&quot;,
+
+  NULL,                         /* unregister */
+
+  NULL,                         /* lseek */
+  snd_pcm_read,                 /* read */
+  snd_pcm_write,                /* write */
+  snd_pcm_open,                 /* open */
+  snd_pcm_release,              /* release */
+#ifdef SND_POLL
+  snd_pcm_poll,                 /* poll */
+#else
+  snd_pcm_select,               /* select */
+#endif
+  snd_pcm_ioctl,                /* ioctl */
+  NULL,                         /* mmap */
+};
+
+...
+  if ( (err = snd_register_minor( SND_MINOR_PCM + device, &amp;snd_pcm_reg )) &lt; 0 )
+    return err;
+...
+  snd_unregister_minor( SND_MINOR_PCM + device );
+</PRE>
+<HR>
+</CODE></BLOCKQUOTE>
+</P>
+
+
+
+
+<HR>
+<A HREF="coding-2.html">Previous</A>
+<A HREF="coding-4.html">Next</A>
+<A HREF="coding.html#toc3">Table of Contents</A>
+</BODY>
+</HTML>

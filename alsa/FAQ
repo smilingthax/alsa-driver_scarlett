@@ -1,0 +1,40 @@
+
+		Advanced Linux Sound Architecture - Driver
+		==========================================
+	             FAQ - Frequently Asked Questions
+
+Q: Driver is installed and sucessfully loaded in kernel, but it doesn't
+   produce any sound. What's wrong?
+A: You should raise volume for mixer channels and/or unmute mixer channels.
+   Look for alsa-utils package at http://alsa.jcu.cz where are native mixers.
+
+Q: Can I verify without native mixer program if outputs for card are muted?
+A: Yes. You can do 'cat /proc/sound/0/mixer0'. If this command shows words
+   like 'lmute' and 'rmute' by selected channels - mute is on.
+
+Q: How can I store and restore mixer settings?
+A: Use some native mixer program (for example amixer) or you can do simply
+   'cat /proc/sound/#/mixer0 > file' where # is soundcard number. To restore
+   use opposite way 'cat file > /proc/sound/#/mixer0'.
+
+Q: Driver is working (mixer at least), but OSS programs says: Can't open
+   /dev/dsp. What's wrong?
+A: OSS compatible PCM (digital audio) emulation comes as add-on module which
+   isn't loaded by default. If you have modified /etc/conf.module as suggested
+   in INSTALL, it should be loaded with kerneld or kmod. Check it - if this
+   method for some reason doesn't work - you need insert 'snd-pcm1-oss' module
+   manualy.
+
+Q: Can I specify which DMA channel will be used for some direction for
+   Sound Blaster 16/AWE soundcards?
+A: Yes, you can change default settings (which is auto) over /proc filesystem.
+   'echo "Playback 16" > /proc/sound/#/sb16' specifies that 16-bit DMA channel
+   will be used for playback. Opposite 'echo "Record 16" > /proc/sound' speci-
+   fies that 16-bit DMA channel will be used for record. To return to default
+   state you should use 'echo "Playback auto" > /proc/sound/#/sb16'. You can
+   also check current settings and status by command 'cat /proc/sound/#/sb16'.
+
+Q: I have Plug and Play soundcard, but ALSA driver doesn't detect it.
+   What's wrong?
+A: Plug and Play soundcards should be initialized with isapnp utility
+   at first (can be found in isapnptools package).

@@ -1,0 +1,12 @@
+
+WARNING!!! Mixer channels for ALSA driver are muted by default!!!
+*****************************************************************
+Some soundcards (like GUS MAX/PnP, OAK Mozart), supports hardware muting
+and this muting should be turned off only with these ways:
+
+1. ALSA native (not OSS) mixers:
+   Look for alsa-lib and alsa-utils packages for amixer and alsamixer...
+2. You can edit of output from /proc/sound/0/mixer0 file and remove
+   words lmute and rmute by selected channel. Write back changes to
+   same file...
+

@@ -1,0 +1,50 @@
+<HTML>
+<HEAD>
+<TITLE>Advanced Linux Sound Architecture - Driver: Private data/values</TITLE>
+</HEAD>
+<BODY>
+<A HREF="coding-5.html">Previous</A>
+<A HREF="coding-7.html">Next</A>
+<A HREF="coding.html#toc6">Table of Contents</A>
+<HR>
+<H2><A NAME="s6">6. Private data/values</A></H2>
+
+<P>Some structures have pointers on private data and values. These variables
+aren't used with abstract layers and use is intended for low-level code. </P>
+<P>
+<HR>
+<PRE>
+snd_card_t -&gt; private_data
+snd_card_t -&gt; private_free (called from snd_card_free if not NULL)
+</PRE>
+<HR>
+</P>
+<P>
+<HR>
+<PRE>
+struct snd_stru_pcm_hardware -&gt; private_data
+struct snd_stru_pcm_hardware -&gt; private_free (called from snd_pcm_free if not NULL)
+snd_pcm_t -&gt; private_data
+snd_pcm_t -&gt; private_free (called from snd_pcm_free if not NULL)
+</PRE>
+<HR>
+</P>
+<P>
+<HR>
+<PRE>
+struct snd_stru_mixer_channel_hw -&gt; private_value
+snd_kmixer_channel_t -&gt; private_data
+snd_kmixer_channel_t -&gt; private_free (called from snd_mixer_free if not NULL)
+snd_kmixer_t -&gt; private_value
+snd_kmixer_t -&gt; private_data
+snd_kmixer_t -&gt; private_free (called from snd_mixer_free if not NULL)
+</PRE>
+<HR>
+</P>
+
+<HR>
+<A HREF="coding-5.html">Previous</A>
+<A HREF="coding-7.html">Next</A>
+<A HREF="coding.html#toc6">Table of Contents</A>
+</BODY>
+</HTML>
