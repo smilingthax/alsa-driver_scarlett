@@ -80,7 +80,6 @@ struct snd_mem_list {
 #define snd_assert(expr, args...) /**/
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #ifdef CONFIG_PCI
 #if defined(__i386__) || defined(__ppc__) || defined(__x86_64__)
 #define HACK_PCI_ALLOC_CONSISTENT
@@ -133,7 +132,6 @@ static void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 
 #endif /* arch */
 #endif /* CONFIG_PCI */
-#endif /* LINUX >= 2.4.0 */
 
 
 /*
@@ -625,7 +623,7 @@ void snd_free_pci_pages(struct pci_dev *pci,
 }
 
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) && defined(__i386__)
+#if defined(__i386__)
 /*
  * on ix86, we allocate a page with GFP_KERNEL to assure the
  * allocation.  the code is almost same with kernel/i386/pci-dma.c but
