@@ -25,6 +25,7 @@
 #define calloc(n, size) snd_kcalloc(n * size, GFP_KERNEL)
 #define free(ptr) snd_kfree(ptr)
 #define strdup(str) snd_kmalloc_strdup(str, GFP_KERNEL)
+#define assert(expr) snd_debug_check(!(expr), -EINVAL)
 
 #define bswap_16(x) swab16((x))
 #define bswap_32(x) swab32((x))
@@ -159,7 +160,7 @@ int snd_pcm_plugin_build(snd_pcm_plugin_handle_t *handle,
                          const char *name,
                          snd_pcm_format_t *src_format,
                          snd_pcm_format_t *dst_format,
-                         int extra,
+                         size_t extra,
                          snd_pcm_plugin_t **ret);
 int snd_pcm_plugin_free(snd_pcm_plugin_t *plugin);
 int snd_pcm_plugin_clear(snd_pcm_plugin_t **first);
