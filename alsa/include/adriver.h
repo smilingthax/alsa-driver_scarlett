@@ -244,6 +244,20 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #define usb_set_interface(dev,iface,alt) snd_hack_usb_set_interface(dev,iface,alt)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45)
+#define URB_ISO_ASAP		USB_ISO_ASAP
+#define URB_ASYNC_UNLINK	USB_ASYNC_UNLINK
+#define usb_fill_int_urb	FILL_INT_URB
+#define usb_fill_bulk_urb	FILL_BULK_URB
+#define usb_host_config		usb_config_descriptor
+#define usb_host_interface	usb_interface_descriptor
+#define usb_host_endpoint	usb_endpoint_descriptor
+#define get_iface_desc(iface)	(iface)
+#define get_endpoint(alt,ep)	(&(alt)->endpoint[ep])
+#define get_ep_desc(ep)		(ep)
+#define get_cfg_desc(cfg)	(cfg)
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #include "amagic.h"
