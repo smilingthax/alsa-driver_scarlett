@@ -239,6 +239,13 @@ Additional Modules
 
     Module supports up to 8 cards.
 
+  Module snd-atiixp-modem
+  -----------------------
+
+    Module for ATI IXP 150/200/250 AC97 modem
+
+    Module supports up to 8 cards.
+
 
 Trouble Shooting
 ================
