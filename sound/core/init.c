@@ -130,6 +130,11 @@ snd_card_t *snd_card_new(int idx, const char *xid,
       	return NULL;
 }
 
+static unsigned int snd_disconnect_poll(struct file * file, poll_table * wait)
+{
+	return POLLERR | POLLNVAL;
+}
+
 /**
  *  snd_card_disconnect: disconnect all APIs from the file-operations (user space)
  *  @card: soundcard structure
@@ -178,6 +183,7 @@ int snd_card_disconnect(snd_card_t * card)
 		memset(f_ops, 0, sizeof(*f_ops));
 		f_ops->owner = file->f_op->owner;
 		f_ops->release = file->f_op->release;
+		f_ops->poll = snd_disconnect_poll;
 
 		s_f_ops->next = card->s_f_ops;
 		card->s_f_ops = s_f_ops;
