@@ -1945,7 +1945,7 @@ static int __devinit snd_card_opti9xx_probe(struct pnp_card_link *pcard,
 	chip = (opti9xx_t *)card->private_data;
 
 #ifdef CONFIG_PNP
-	if (isapnp && (hw = snd_card_opti9xx_pnp(chip, pcard, pid)) > 0) {
+	if (isapnp && pcard && (hw = snd_card_opti9xx_pnp(chip, pcard, pid)) > 0) {
 		switch (hw) {
 		case 0x0924:
 			hw = OPTi9XX_HW_82C924;
