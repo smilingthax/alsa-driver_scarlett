@@ -158,7 +158,9 @@ struct snd_stru_solo {
 	snd_pcm_subchn_t *playback2_subchn;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
-	snd_hwdep_t *fmsynth;	/* FM */
+
+	unsigned int p_dma_size;
+	unsigned int c_dma_size;	
 
 	snd_kmixer_element_t *mix_imux;
 	snd_kmixer_element_t *mix_mic;
