@@ -293,6 +293,7 @@ struct _snd_ac97 {
 			unsigned short codec_cfg[3];	// CODEC_CFG bits
 			struct semaphore mutex;
 		} ad18xx;
+		unsigned int dev_flags;		/* device specific */
 	} spec;
 };
 
