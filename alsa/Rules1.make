@@ -20,7 +20,7 @@ $(TOPDIR)/include/sndversions.h: $(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver))
 	echo "#endif") \
 	> $(TOPDIR)/include/sndversions.h
 
-$(EXPORTS): $(TOPDIR)/include/sndversions.h $(EXPORTS:.o=.c)
+$(EXPORTS): $(EXPORTS:.o=.c)
 	$(CC) $(COPTS) $(INCLUDE) -DEXPORT_SYMTAB -c $(@:.o=.c)
 
 ifdef SUBDIRS
