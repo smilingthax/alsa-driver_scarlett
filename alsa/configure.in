@@ -81,6 +81,8 @@ sources (default is /usr/src/linux).
 EOF
   exit 1
 fi
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
@@ -123,6 +125,7 @@ int main()
 }],kaversion=`cat conftestdata`,
 kaversion="",
 kaversion="")])
+CFLAGS=$ac_save_CFLAGS
 kversion=`echo $kaversion | cut -d : -f 1`
 kpatchlevel=`echo $kaversion | cut -d : -f 2`
 ksublevel=`echo $kaversion | cut -d : -f 3`
