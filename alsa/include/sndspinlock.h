@@ -39,7 +39,7 @@ static inline void snd_sti(unsigned long *flags)
 
 #ifndef SND_DEBUG_SPIN
 
-#if defined( LINUX_2_1 ) && defined( __SMP__ )
+#if defined(__SMP__)
 #define snd_spin_lock( object, name, flags ) \
   spin_lock_irqsave( &(object) -> spin_lock_##name, *(flags) )
 #define snd_spin_unlock( object, name, flags ) \

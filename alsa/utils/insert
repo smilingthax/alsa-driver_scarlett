@@ -5,45 +5,67 @@ MODDIR="../modules"
 MAP="../snd.map"
 OLDMAP="../snd.map.old"
 
+function banner() {
+   echo > /dev/null
+#  echo "Inserting $1.."
+#  sleep 1
+}
+
 function isapnp() {
   if [ -r $MODDIR/isapnp.o ]; then
+    banner "isapnp"
     if ! $INSMOD -m $MODDIR/isapnp.o >> $MAP; then exit 1; fi
   fi
 }
 
 function basic() {
+  banner "snd"
   if ! $INSMOD -m $MODDIR/snd.o >> $MAP; then exit 1; fi
+  banner "snd-mixer"
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-mixer-oss.o ]; then
+    banner "snd-mixer-oss"
     if ! $INSMOD -m $MODDIR/snd-mixer-oss.o >> $MAP; then exit 1; fi  
   fi
+  banner "snd-timer"
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
+  banner "snd-pcm"
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
+  banner "snd-pcm1"
   if ! $INSMOD -m $MODDIR/snd-pcm1.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-pcm1-oss.o ]; then
+    banner "snd-pcm1-oss"
     if ! $INSMOD -m $MODDIR/snd-pcm1-oss.o >> $MAP; then exit 1; fi  
   fi
   if [ -r $MODDIR/snd-midi.o ]; then
+    banner "snd-midi"
     if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
   fi
   if [ -r $MODDIR/snd-synth.o ]; then
+    banner "snd-synth"
     if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
   fi
   if [ -r $MODDIR/snd-seq.o ]; then
+    banner "snd-seq"
     if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
     if [ -r $MODDIR/snd-seq-midi.o ]; then
+      banner "snd-seq-midi"
       if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
     fi
     if [ -r $MODDIR/snd-seq-midi-emul.o ]; then
+      banner "snd-seq-midi-emul"
       if ! $INSMOD -m $MODDIR/snd-seq-midi-emul.o >> $MAP; then exit 1; fi
     fi
     if [ -r $MODDIR/snd-seq-instr.o ]; then
+      banner "snd-seq-instr"
       if ! $INSMOD -m $MODDIR/snd-seq-instr.o >> $MAP; then exit 1; fi
     fi
     if [ -r $MODDIR/snd-ainstr-iw.o ]; then
+      banner "snd-ainstr-iw"
       if ! $INSMOD -m $MODDIR/snd-ainstr-iw.o >> $MAP; then exit 1; fi
     fi
     if [ -r $MODDIR/snd-seq-oss.o ]; then
+      banner "snd-seq-oss"
       if ! $INSMOD -m $MODDIR/snd-seq-oss.o >> $MAP; then exit 1; fi
     fi
   fi

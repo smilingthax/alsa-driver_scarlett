@@ -22,7 +22,6 @@
  *
  */
 
-#include "sndpci.h"
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
@@ -290,7 +289,7 @@ struct snd_stru_ensoniq {
 		} es1370;
 	} u;
 
-	struct snd_pci_dev *pci;
+	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* DAC1/ADC PCM */
 	snd_pcm_t *pcm2;	/* DAC2 PCM */
@@ -302,7 +301,7 @@ struct snd_stru_ensoniq {
 	snd_info_entry_t *proc_entry;
 };
 
-ensoniq_t *snd_ensoniq_1370_create(snd_card_t * card, struct snd_pci_dev *pci,
+ensoniq_t *snd_ensoniq_1370_create(snd_card_t * card, struct pci_dev *pci,
 			      	   snd_dma_t * dma1ptr,
 				   snd_dma_t * dma2ptr,
 			           snd_dma_t * dma3ptr,
@@ -315,7 +314,7 @@ snd_pcm_t *snd_ensoniq_1370_pcm2(ensoniq_t * ensoniq);
 snd_kmixer_t *snd_ensoniq_1370_mixer(ensoniq_t * ensoniq, int pcm_count, int *pcm_devs);
 snd_rawmidi_t *snd_ensoniq_1370_midi(ensoniq_t * ensoniq);
 
-ensoniq_t *snd_ensoniq_1371_create(snd_card_t * card, struct snd_pci_dev *pci,
+ensoniq_t *snd_ensoniq_1371_create(snd_card_t * card, struct pci_dev *pci,
 			      	   snd_dma_t * dma1ptr,
 				   snd_dma_t * dma2ptr,
 			           snd_dma_t * dma3ptr,

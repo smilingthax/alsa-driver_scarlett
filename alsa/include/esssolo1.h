@@ -23,7 +23,6 @@
  *
  */
 
-#include "sndpci.h"
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
@@ -139,7 +138,7 @@ struct snd_stru_solo {
 
 	unsigned int mode;
 
-	struct snd_pci_dev *pci;
+	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm2;  
@@ -151,7 +150,7 @@ struct snd_stru_solo {
 	snd_info_entry_t *proc_entry;
 };
 
-esssolo_t *snd_solo_create(snd_card_t * card, struct snd_pci_dev *pci,
+esssolo_t *snd_solo_create(snd_card_t * card, struct pci_dev *pci,
 			   snd_dma_t * dma1ptr,
 			   snd_dma_t * dma2ptr,
 			   snd_irq_t * irqptr,

@@ -61,13 +61,8 @@ struct snd_info_entry_data {
 		       struct file * file, const char *buf, long count);
 	long long (*lseek) (void *private_data, void *file_private_data,
 			    struct file * file, long long offset, int orig);
-#ifdef SND_POLL
 	unsigned int (*poll) (void *private_data, void *file_private_data,
 			      struct file * file, poll_table * wait);
-#else
-	int (*select) (void *private_data, void *file_private_data,
-		       struct file * file, int sel_type, select_table * wait);
-#endif
 	int (*ioctl) (void *private_data, void *file_private_data,
 		      struct file * file, unsigned int cmd, unsigned long arg);
 	int (*mmap) (void *private_data, void *file_private_data,

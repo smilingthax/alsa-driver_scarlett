@@ -22,23 +22,10 @@
  *
  */
 
-#if defined( LINUX_2_1 ) || LinuxVersionCode( 2, 0, 34 ) <= LINUX_VERSION_CODE
-
 int snd_persist_store(char *key, const char *data, int data_len);
 int snd_persist_restore(char *key, char *data, int data_len);
 int snd_persist_length(char *key);
 int snd_persist_present(char *key);
 int snd_persist_remove(char *key);
-
-#else
-
-#include "persist.h"
-#define snd_persist_store persist_store
-#define snd_persist_restore persist_restore
-#define snd_persist_length persist_length
-#define snd_persist_present persist_present
-#define snd_persist_remove persist_remove
-
-#endif
 
 #endif				/* SND_PERSIST_H__ */

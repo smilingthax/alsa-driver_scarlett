@@ -22,7 +22,6 @@
  *
  */
 
-#include "sndpci.h"
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
@@ -120,7 +119,7 @@ struct snd_stru_fm801 {
 
 	ac97_t *ac97;
 
-	struct snd_pci_dev *pci;
+	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_kmixer_t *mixer;
@@ -131,7 +130,7 @@ struct snd_stru_fm801 {
 	snd_info_entry_t *proc_entry;
 };
 
-fm801_t *snd_fm801_create(snd_card_t * card, struct snd_pci_dev *pci,
+fm801_t *snd_fm801_create(snd_card_t * card, struct pci_dev *pci,
 			      	   snd_dma_t * dma1ptr,
 				   snd_dma_t * dma2ptr,
 			           snd_irq_t * irqptr);

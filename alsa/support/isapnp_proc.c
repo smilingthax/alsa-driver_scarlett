@@ -59,227 +59,7 @@ int isapnp_printf(isapnp_info_buffer_t * buffer, char *fmt,...)
 	return res;
 }
 
-#ifndef LINUX_2_1
-
-#if 0
-static struct inode *isapnp_info_get_inode(struct super_block *s, int ino, struct proc_dir_entry *de)
-{
-	struct inode *inode = iget(s, ino);
-	if (inode && inode->i_sb == s) {
-		inode->u.generic_ip = (void *) de;
-		if (de) {
-			if (de->mode) {
-				inode->i_mode = de->mode;
-				inode->i_uid = de->uid;
-				inode->i_gid = de->gid;
-			}
-			if (de->size)
-				inode->i_size = de->size;
-			if (de->ops)
-				inode->i_op = de->ops;
-			if (de->nlink)
-				inode->i_nlink = de->nlink;
-			if (de->fill_inode)
-				de->fill_inode(inode);
-		}
-	}
-	return inode;
-}
-
-static int isapnp_info_match(int len, const char *name, struct proc_dir_entry *de)
-{
-	if (!de || !de->low_ino)
-		return 0;
-	/* "" means "." ---> so paths like "/usr/lib//libc.a" work */
-	if (!len && (de->name[0] == '.') && (de->name[1] == '\0'))
-		return 1;
-	if (de->namelen != len)
-		return 0;
-	return !memcmp(name, de->name, len);
-}
-
-static int isapnp_info_lookup(struct inode *dir, const char *name, int len,
-			      struct inode **result)
-{
-	struct proc_dir_entry *de;
-	int ino;
-
-	*result = NULL;
-	if (!dir || !S_ISDIR(dir->i_mode)) {
-		iput(dir);
-		return -ENOTDIR;
-	}
-	de = (struct proc_dir_entry *) dir->u.generic_ip;
-	if (!de) {
-		iput(dir);
-		return -EINVAL;
-	}
-	/* Special case "." and "..": they aren't on the directory list */
-	*result = dir;
-	if (!len)
-		return 0;
-	if (name[0] == '.') {
-		if (len == 1)
-			return 0;
-		if (name[1] == '.' && len == 2) {
-			struct inode *inode;
-			inode = isapnp_info_get_inode(dir->i_sb,
-						   de->parent->low_ino,
-						   de->parent);
-			iput(dir);
-			if (!inode)
-				return -EINVAL;
-			*result = inode;
-			return 0;
-		}
-	}
-	*result = NULL;
-	for (de = de->subdir; de; de = de->next) {
-		if (isapnp_info_match(len, name, de))
-			break;
-	}
-	if (!de) {
-		iput(dir);
-		return -ENOENT;
-	}
-	ino = de->low_ino | (dir->i_ino & ~(0xffff));
-
-	if (!(*result = isapnp_info_get_inode(dir->i_sb, ino, de))) {
-		iput(dir);
-		return -EINVAL;
-	}
-	iput(dir);
-	return 0;
-}
-
-/*
- * This returns non-zero if at EOF, so that the /proc
- * root directory can use this and check if it should
- * continue with the <pid> entries..
- *
- * Note that the VFS-layer doesn't care about the return
- * value of the readdir() call, as long as it's non-negative
- * for success..
- */
-static int isapnp_info_readdir(struct inode *inode, struct file *filp,
-			       void *dirent, filldir_t filldir)
-{
-	struct proc_dir_entry *de;
-	unsigned int ino;
-	int i;
-
-	if (!inode || !S_ISDIR(inode->i_mode))
-		return -ENOTDIR;
-	ino = inode->i_ino;
-	de = (struct proc_dir_entry *) inode->u.generic_ip;
-	if (!de)
-		return -EINVAL;
-	i = filp->f_pos;
-	switch (i) {
-	case 0:
-		if (filldir(dirent, ".", 1, i, ino) < 0)
-			return 0;
-		i++;
-		filp->f_pos++;
-		/* fall through */
-	case 1:
-		if (filldir(dirent, "..", 2, i, de->parent->low_ino) < 0)
-			return 0;
-		i++;
-		filp->f_pos++;
-		/* fall through */
-	default:
-		ino &= ~0xffff;
-		de = de->subdir;
-		i -= 2;
-		for (;;) {
-			if (!de)
-				return 1;
-			if (!i)
-				break;
-			de = de->next;
-			i--;
-		}
-
-		do {
-			if (filldir(dirent, de->name, de->namelen,
-				    filp->f_pos, ino | de->low_ino) < 0)
-				return 0;
-			filp->f_pos++;
-			de = de->next;
-		} while (de);
-	}
-	return 1;
-}
-
-static struct file_operations isapnp_info_dir_operations =
-{
-	NULL,			/* lseek - default */
-	NULL,			/* read - bad */
-	NULL,			/* write - bad */
-	isapnp_info_readdir,	/* readdir */
-	NULL,			/* select - default */
-	NULL,			/* ioctl - default */
-	NULL,			/* mmap */
-	NULL,			/* no special open code */
-	NULL,			/* no special release code */
-	NULL			/* can't fsync */
-};
-
-static struct inode_operations isapnp_info_dir_inode_operations =
-{
-	&isapnp_info_dir_operations,	/* default net directory file-ops */
-	NULL,				/* create */
-	isapnp_info_lookup,		/* lookup */
-	NULL,				/* link */
-	NULL,				/* unlink */
-	NULL,				/* symlink */
-	NULL,				/* mkdir */
-	NULL,				/* rmdir */
-	NULL,				/* mknod */
-	NULL,				/* rename */
-	NULL,				/* readlink */
-	NULL,				/* follow_link */
-	NULL,				/* readpage */
-	NULL,				/* writepage */
-	NULL,				/* bmap */
-	NULL,				/* truncate */
-	NULL				/* permission */
-};
-#endif
-
-struct inode *snd_proc_get_inode(struct super_block *s, int ino, struct proc_dir_entry *de)
-{
-	struct inode *inode = iget(s, ino);
-	if (inode && inode->i_sb == s) {
-		inode->u.generic_ip = (void *) de;
-		if (de) {
-			if (de->mode) {
-				inode->i_mode = de->mode;
-				inode->i_uid = de->uid;
-				inode->i_gid = de->gid;
-			}
-			if (de->size)
-				inode->i_size = de->size;
-			if (de->ops)
-				inode->i_op = de->ops;
-			if (de->nlink)
-				inode->i_nlink = de->nlink;
-			if (de->fill_inode)
-				de->fill_inode(inode);
-		}
-	}
-	return inode;
-}
-
-#endif
-
-#ifdef LINUX_2_1
 static loff_t isapnp_info_entry_lseek(struct file *file, loff_t offset, int orig)
-#else
-static int isapnp_info_entry_lseek(struct inode *inode, struct file *file,
-				   off_t offset, int orig)
-#endif
 {
 	switch (orig) {
 	case 0:	/* SEEK_SET */
@@ -295,13 +75,8 @@ static int isapnp_info_entry_lseek(struct inode *inode, struct file *file,
 	return -ENXIO;
 }
 
-#ifdef LINUX_2_1
 static ssize_t isapnp_info_entry_read(struct file *file, char *buffer,
 				      size_t count, loff_t * offset)
-#else
-static int isapnp_info_entry_read(struct inode *inode, struct file *file,
-			          char *buffer, int count)
-#endif
 {
 	isapnp_info_buffer_t *buf;
 	long size = 0, size1;
@@ -326,13 +101,8 @@ static int isapnp_info_entry_read(struct inode *inode, struct file *file,
 	return size;
 }
 
-#ifdef LINUX_2_1
 static ssize_t isapnp_info_entry_write(struct file *file, const char *buffer,
 				       size_t count, loff_t * offset)
-#else
-static int isapnp_info_entry_write(struct inode *inode, struct file *file,
-				   const char *buffer, int count)
-#endif
 {
 	isapnp_info_buffer_t *buf;
 	long size = 0, size1;
@@ -405,24 +175,12 @@ static int isapnp_info_entry_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-#ifdef LINUX_2_1
 static unsigned int isapnp_info_entry_poll(struct file *file, poll_table * wait)
 {
 	if (!file->private_data)
 		return 0;
 	return POLLIN | POLLRDNORM;
 }
-#else
-static int isapnp_info_entry_select(struct inode *inode, struct file *file,
-				    int sel_type, select_table * wait)
-{
-	if (!file->private_data)
-		return 0;
-	if (sel_type == SEL_IN)
-		return 1;
-	return 0;
-}
-#endif
 
 static int isapnp_info_entry_ioctl(struct inode *inode, struct file *file,
 				   unsigned int cmd, unsigned long arg)
@@ -430,18 +188,8 @@ static int isapnp_info_entry_ioctl(struct inode *inode, struct file *file,
 	return -EINVAL;
 }
 
-#ifdef LINUX_2_1
 static int isapnp_info_entry_mmap(struct file *file, struct vm_area_struct *vma)
-#else
-static int isapnp_info_entry_mmap(struct inode *inode, struct file *file,
-			       struct vm_area_struct *vma)
-#endif
 {
-#if 0
-#ifdef LINUX_2_1
-	struct inode *inode = file->f_dentry->d_inode;
-#endif
-#endif
 	return -ENXIO;
 }
 
@@ -451,28 +199,17 @@ static struct file_operations isapnp_info_entry_operations =
 	isapnp_info_entry_read,		/* read */
 	isapnp_info_entry_write,	/* write */
 	NULL,				/* readdir */
-#ifdef LINUX_2_1
 	isapnp_info_entry_poll,		/* poll */
-#else
-	isapnp_info_entry_select,	/* select */
-#endif
 	isapnp_info_entry_ioctl,	/* ioctl - default */
 	isapnp_info_entry_mmap,		/* mmap */
 	isapnp_info_entry_open,		/* open */
-#ifdef LINUX_2_1
 	NULL,				/* flush */
 	isapnp_info_entry_release,	/* release */
-#else
-	(void (*)(struct inode * inode, struct file * file))
-			isapnp_info_entry_release,	/* release */
-#endif
 	NULL,				/* can't fsync */
-#ifdef LINUX_2_1
 	NULL,				/* fasync */
 	NULL,				/* check_media_change */
 	NULL,				/* revalidate */
 	NULL,				/* lock */
-#endif
 };
 
 static struct inode_operations isapnp_info_entry_inode_operations =
@@ -496,37 +233,16 @@ static struct inode_operations isapnp_info_entry_inode_operations =
 	NULL			/* permission */
 };
 
-#ifndef LINUX_2_1
-static struct proc_dir_entry isapnp_info_entry =
-{
-	0, 6, "isapnp",		/* inode, namelen, name */
-	S_IFREG | S_IRUGO | S_IWUSR, 1, 0, 0,	/* mode, nlink, uid, gid */
-	0, &isapnp_info_entry_inode_operations,	/* size, ops */
-	NULL, NULL,		/* get_info, fill_inode */
-	NULL,			/* next */
-	NULL, NULL		/* parent, subdir */
-};
-#endif
-
 __initfunc(static int isapnp_proc_init(void))
 {
-#ifdef LINUX_2_1
 	struct proc_dir_entry *p;
-#endif
 
 	isapnp_proc_entry = NULL;
-#ifdef LINUX_2_1
 	p = create_proc_entry("isapnp", S_IFREG | S_IRUGO | S_IWUSR, &proc_root);
 	if (!p)
 		return -ENOMEM;
 	p->ops = &isapnp_info_entry_inode_operations;
 	isapnp_proc_entry = p;
-#else
-	if (proc_register_dynamic(&proc_root, &isapnp_info_entry) < 0) {
-		return -EAGAIN;
-	}
-	isapnp_proc_entry = &isapnp_info_entry;
-#endif
 	return 0;
 }
 

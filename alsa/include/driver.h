@@ -46,20 +46,14 @@
 #include <linux/config.h>
 #include <linux/version.h>
 
-#if LinuxVersionCode(2, 0, 0) > LINUX_VERSION_CODE
-#error "This driver is designed only for Linux 2.0.0 and highter."
-#endif
-#if LinuxVersionCode(2, 1, 0) <= LINUX_VERSION_CODE
-#define LINUX_2_1
-#if LinuxVersionCode(2, 1, 127) > LINUX_VERSION_CODE
-#error "This driver requires Linux 2.1.127 and highter."
+#if LinuxVersionCode(2, 2, 3) > LINUX_VERSION_CODE
+#error "This driver requires Linux 2.2.3 and highter."
 #endif
 #if LinuxVersionCode(2, 2, 0) <= LINUX_VERSION_CODE
 #define LINUX_2_2
 #endif
 #if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
 #define LINUX_2_3
-#endif
 #endif
 
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
@@ -72,9 +66,7 @@
 #endif
 #ifdef SND_NO_MODVERS
 #undef MODVERSIONS
-#ifdef LINUX_2_1
 #undef _set_ver
-#endif
 #endif
 #include <linux/module.h>
 
@@ -90,26 +82,19 @@
 #include <asm/irq.h>
 #include <asm/dma.h>
 #include <asm/segment.h>
-#ifdef LINUX_2_1
 #include <asm/uaccess.h>
-#endif
 #include <asm/system.h>
 #include <asm/string.h>
 
-#include <linux/interrupt.h>
-#include <linux/fs.h>
-#include <linux/fcntl.h>
-#ifdef LINUX_2_1
-#include <linux/vmalloc.h>
-#else
-#ifdef CONFIG_PCI
-#include <linux/bios32.h>
-#endif
-#endif
-#include <linux/proc_fs.h>
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
 #endif
+#include <linux/interrupt.h>
+#include <linux/fs.h>
+#include <linux/fcntl.h>
+#include <linux/vmalloc.h>
+#include <linux/proc_fs.h>
+#include <linux/poll.h>
 
 #ifdef CONFIG_ISAPNP
 #ifdef CONFIG_ISAPNP_KERNEL
@@ -119,41 +104,8 @@
 #endif
 #endif
 
-#undef SND_POLL
-#if LinuxVersionCode(2, 1, 72) <= LINUX_VERSION_CODE
-#define SND_POLL
-#endif
-#ifdef __MAX_POLL_TABLE_ENTRIES	/* new kernel with poll() */
-#define SND_POLL
-#endif
-#ifdef SND_POLL
-#include <linux/poll.h>
-#endif
-
-#if LinuxVersionCode(2, 1, 35) >= LINUX_VERSION_CODE
-#define in_interrupt() intr_count
-#endif
-
-#if LinuxVersionCode(2, 1, 118) <= LINUX_VERSION_CODE
-#define SND_FOPS_FLUSH
-#endif
-
 #include "asound.h"
 #include "asoundid.h"
-
-#ifndef LINUX_2_1
-#define mm_segment_t unsigned int
-#define copy_from_user memcpy_fromfs
-#define copy_to_user memcpy_tofs
-#define test_and_set_bit set_bit
-#define test_and_clear_bit clear_bit
-#define ioremap vremap
-#define iounmap vfree
-#endif
-
-#ifndef DMA_MODE_AUTOINIT
-#define DMA_MODE_AUTOINIT	0x10
-#endif
 
 static inline mm_segment_t snd_enter_user(void)
 {
@@ -285,11 +237,7 @@ typedef long (snd_read_t) (struct file * file, char *buf, long count);
 typedef long (snd_write_t) (struct file * file, const char *buf, long count);
 typedef int (snd_open_t) (unsigned short minor, int cardnum, int device, struct file * file);
 typedef int (snd_release_t) (unsigned short minor, int cardnum, int device, struct file * file);
-#ifdef SND_POLL
 typedef unsigned int (snd_poll_t) (struct file * file, poll_table * wait);
-#else
-typedef int (snd_select_t) (struct file * file, int sel_type, select_table * wait);
-#endif
 typedef int (snd_ioctl_t) (struct file * file, unsigned int cmd, unsigned long arg);
 typedef int (snd_mmap_t) (struct inode * inode, struct file * file, struct vm_area_struct * vma);
 
@@ -304,11 +252,7 @@ struct snd_stru_minor {
 	snd_write_t *write;
 	snd_open_t *open;
 	snd_release_t *release;
-#ifdef SND_POLL
 	snd_poll_t *poll;
-#else
-	snd_select_t *select;
-#endif
 	snd_ioctl_t *ioctl;
 	snd_mmap_t *mmap;
 };

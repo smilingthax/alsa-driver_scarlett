@@ -24,14 +24,8 @@
 
 #define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
 
-#if LinuxVersionCode(2, 0, 0) > LINUX_VERSION_CODE
-#error "This driver is designed only for Linux 2.0.0 and highter."
-#endif
-#if LinuxVersionCode(2, 1, 0) <= LINUX_VERSION_CODE
-#define LINUX_2_1
-#if LinuxVersionCode(2, 1, 127) > LINUX_VERSION_CODE
-#error "This driver requires Linux 2.1.127 and highter."
-#endif
+#if LinuxVersionCode(2, 2, 0) > LINUX_VERSION_CODE
+#error "This driver is designed only for Linux 2.2.0 and highter."
 #endif
 
 #include <linux/module.h>
@@ -44,32 +38,16 @@
 #include <asm/io.h>
 #include <asm/dma.h>
 #include <asm/irq.h>
-#ifdef CONFIG_PCI
 #include <linux/pci.h>
-#ifdef LINUX_2_1
 #include <linux/vmalloc.h>
 #include <linux/poll.h>
+#include <linux/init.h>
 #include <asm/uaccess.h>
-#else
-#include <linux/bios32.h>
-#endif
-#endif
 #ifndef ALSA_BUILD
 #include <linux/isapnp.h>
 #else
 #include "isapnp.h"
 #endif
-
-#ifndef __initfunc
-#define __initfunc(__initarg) __initarg 
-#else
-#include <linux/init.h>
-#endif
-
-#ifndef LINUX_2_1
-#define copy_from_user memcpy_fromfs
-#define copy_to_user memcpy_tofs
-#endif 
 
 #ifdef CONFIG_PROC_FS
 #include "isapnp_proc.c"
@@ -1989,7 +1967,6 @@ __initfunc(static int isapnp_do_reserve_irq(int irq))
 }
 
 #ifdef CONFIG_PCI
-#ifdef LINUX_2_1
 
 __initfunc(static void isapnp_pci_init(void))
 {
@@ -2013,93 +1990,8 @@ __initfunc(static void isapnp_pci_init(void))
 	}
 }
 
-#else
-
-__initfunc(static void isapnp_pci_scan_bus(int bus))
-{
-	int devfn, is_multi = 0;
-	unsigned char hdr_type, irq;
-	unsigned int l, class_type, buses;
-	
-#ifdef ISAPNP_DEBUG
-	printk("PCI: scanning bus %i\n", bus);
-#endif
-	for (devfn = 0; devfn < 255; devfn++) {
-		if (PCI_FUNC(devfn) && !is_multi)
-			continue;
-		pcibios_read_config_byte(bus, devfn, PCI_HEADER_TYPE, &hdr_type);
-		if (!PCI_FUNC(devfn))
-			is_multi = hdr_type & 0x80;
-			
-		/* some broken boards return 0 if a slot is empty: */
-		pcibios_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l);
-		if (l == 0xffffffff || l == 0x00000000)
-			continue;
-
-#ifdef ISAPNP_DEBUG
-		printk("PCI: devfn = %i, hdr_type = 0x%x, Vendor ID = 0x%x\n", devfn, (int)hdr_type, l);
-#endif
-		pcibios_read_config_dword(bus, devfn, PCI_CLASS_REVISION, &class_type);
-		class_type >>= 8;
-		
-		if ((class_type >> 8) == PCI_CLASS_BRIDGE_PCI) {
-			pcibios_read_config_dword(bus, devfn, 0x18, &buses);
-			if (buses)
-				isapnp_pci_scan_bus((buses >> 8) & 0xff);
-		}
-
-		pcibios_read_config_byte(bus, devfn, PCI_INTERRUPT_LINE, &irq);
-#ifdef ISAPNP_DEBUG
-		printk("PCI: reserved IRQ: %i\n", irq);
-#endif
-		if (irq > 0 && irq < 15)
-			isapnp_do_reserve_irq(irq);
-	}
-}
-
-__initfunc(static void isapnp_pci_init(void))
-{
-	isapnp_pci_scan_bus(0);
-}
-
-#endif
 #endif /* CONFIG_PCI */
 
-#ifndef LINUX_2_1
-static struct symbol_table isapnp_syms = {
-	#include <linux/symtab_begin.h>
-	X(isapnp_present),
-	X(isapnp_cfg_begin),
-	X(isapnp_cfg_end),
-	X(isapnp_cfg_get_byte),
-	X(isapnp_cfg_get_word),
-	X(isapnp_cfg_get_dword),
-	X(isapnp_cfg_set_byte),
-	X(isapnp_cfg_set_word),
-	X(isapnp_cfg_set_dword),
-	X(isapnp_wake),
-	X(isapnp_logdev),
-	X(isapnp_activate),
-	X(isapnp_deactivate),
-	X(isapnp_find_port),
-	X(isapnp_find_irq),
-	X(isapnp_find_dma),
-	X(isapnp_find_mem),
-	X(isapnp_find_mem32),
-	X(isapnp_verify_port),
-	X(isapnp_verify_irq),
-	X(isapnp_verify_dma),
-	X(isapnp_verify_mem),
-	X(isapnp_verify_mem32),
-	X(isapnp_find_device),
-	X(isapnp_find_logdev),
-	X(isapnp_config_init),
-	X(isapnp_configure),
-#include <linux/symtab_end.h>
-};
-#endif /* !LINUX_2_1 */
-
-#ifdef LINUX_2_1
 EXPORT_SYMBOL(isapnp_present);
 EXPORT_SYMBOL(isapnp_cfg_begin);
 EXPORT_SYMBOL(isapnp_cfg_end);
@@ -2127,7 +2019,6 @@ EXPORT_SYMBOL(isapnp_find_device);
 EXPORT_SYMBOL(isapnp_find_logdev);
 EXPORT_SYMBOL(isapnp_config_init);
 EXPORT_SYMBOL(isapnp_configure);
-#endif /* LINUX_2_1 */
 
 __initfunc(int isapnp_init(void))
 {
@@ -2201,10 +2092,6 @@ __initfunc(int isapnp_init(void))
 #endif
 #ifdef CONFIG_PROC_FS
 	isapnp_proc_init();
-#endif
-#ifndef LINUX_2_1
-	if (register_symtab(&isapnp_syms))
-		printk("isapnp: cannot register symtab!!!\n");
 #endif
 	return 0;
 }

@@ -65,7 +65,7 @@
 		(object)->sleeper_timeout_##ident = schedule_timeout(time); \
 	} while (0)
 
-#elif defined(LINUX_2_1)
+#else
 
 #define snd_sleep_define(ident) \
 	struct wait_queue *sleeper_##ident; \
@@ -103,49 +103,7 @@
 		(object)->sleeper_timeout_##ident = schedule_timeout(time); \
 	} while ( 0 )
 
-#else /* Linux 2.0.x */
-
-#define snd_sleep_define(ident) \
-	struct wait_queue *sleeper_##ident; \
-	unsigned long sleeper_end_jiffies_##ident; \
-	unsigned short sleeper_lock_##ident;
-#define snd_sleep_prepare(object, ident) \
-	do { (object)->sleeper_##ident = NULL; \
-	     (object)->sleeper_end_jiffies_##ident = -1; } while (0)
-#define snd_sleep(object, ident, time) \
-	do { \
-		(object)->sleeper_end_jiffies_##ident = \
-			current->timeout = jiffies + (time); \
-		interruptible_sleep_on(&(object)->sleeper_##ident); \
-	} while (0)
-#define snd_sleep_forever(object, ident) \
-	do { \
-		current->timeout = jiffies + 0x7fffffff; \
-		interruptible_sleep_on(&(object)->sleeper_##ident); \
-	} while (0)
-#define snd_select_wait(object, ident, table) \
-	select_wait(&(object)->sleeper_##ident, table);
-#define snd_sleep_abort(object, ident) \
-	(current->signal & ~current->blocked)
-#define snd_wakeup(object, ident) \
-	do { \
-		wake_up(&(object)->sleeper_##ident); \
-		need_resched = 1; \
-	} while (0)
-#define snd_getlock(object, ident) (object)->sleeper_lock_##ident
-#define snd_timeout(object, ident) \
-			((object)->sleeper_end_jiffies_##ident < jiffies)
-#define snd_timevalue(object, ident) \
-			((signed long)((object)->sleeper_end_jiffies_##ident - jiffies))
-#define snd_schedule(object, ident, time) \
-	do { \
-		(object)->sleeper_end_jiffies_##ident = \
-			current->timeout = jiffies + (time); \
-		current->state = TASK_INTERRUPTIBLE; \
-		schedule(); \
-	} while (0)
-
-#endif /* LINUX_2_1 */
+#endif /* LINUX_2_2 */
 
 /* mutex */
 
