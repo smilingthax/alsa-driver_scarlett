@@ -96,8 +96,6 @@ struct snd_pmac_stream {
 
 	snd_pcm_substream_t *substream;
 
-	spinlock_t lock;
-
 	unsigned int cur_freqs;		/* currently available frequences */
 	unsigned int cur_formats;	/* currently available formats */
 };
@@ -193,7 +191,6 @@ struct snd_pmac {
 int snd_pmac_new(snd_card_t *card, pmac_t **chip_return);
 int snd_pmac_pcm_new(pmac_t *chip);
 int snd_pmac_attach_beep(pmac_t *chip);
-void snd_pmac_detach_beep(pmac_t *chip);
 #ifdef CONFIG_PMAC_PBOOK
 int snd_pmac_register_sleep_notifier(pmac_t *chip);
 int snd_pmac_unregister_sleep_notifier(pmac_t *chip);
