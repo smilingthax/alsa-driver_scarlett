@@ -128,19 +128,20 @@ typedef struct snd_stru_es1688 es1688_t;
 
  */
 
-extern void snd_es1688_mixer_write(es1688_t * codec, unsigned char reg, unsigned char data);
-extern unsigned char snd_es1688_mixer_read(es1688_t * codec, unsigned char reg);
+void snd_es1688_mixer_write(es1688_t * codec, unsigned char reg, unsigned char data);
+unsigned char snd_es1688_mixer_read(es1688_t * codec, unsigned char reg);
 
-extern void snd_es1688_interrupt(snd_pcm_t * pcm);
+void snd_es1688_interrupt(snd_pcm_t * pcm);
 
-extern snd_pcm_t *snd_es1688_new_device(snd_card_t * card,
-					unsigned short port,
-					unsigned short mpu_port,
-					snd_irq_t * irqptr,
-					snd_irq_t * mpu_irqptr,
-					snd_dma_t * dma8ptr,
-					unsigned short hardware);
-extern int snd_es1688_init(snd_pcm_t * pcm, int enable);
-extern snd_kmixer_t *snd_es1688_new_mixer(snd_pcm_t * pcm, int pcm_dev);
+int snd_es1688_new_pcm(snd_card_t * card, int device,
+		       unsigned short port,
+		       unsigned short mpu_port,
+		       snd_irq_t * irqptr,
+		       snd_irq_t * mpu_irqptr,
+		       snd_dma_t * dma8ptr,
+		       unsigned short hardware,
+		       snd_pcm_t ** rpcm);
+int snd_es1688_init(snd_pcm_t * pcm, int enable);
+int snd_es1688_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t ** rmixer);
 
 #endif				/* __ES1688_H */

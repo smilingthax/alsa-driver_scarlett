@@ -103,16 +103,16 @@ extern unsigned char snd_es18xx_mixer_read(es18xx_t * codec, unsigned char reg);
 
 extern void snd_es18xx_interrupt(es18xx_t * codec, unsigned char status);
 
-extern es18xx_t *snd_es18xx_new_device(snd_card_t * card,
-				       unsigned short port,
-				       unsigned short mpu_port,
-				       unsigned short fm_port,
-				       snd_irq_t * irqnum,
-				       snd_dma_t * dma1num,
-				       snd_dma_t * dma2num);
+extern int snd_es18xx_new_device(snd_card_t * card,
+				 unsigned short port,
+				 unsigned short mpu_port,
+				 unsigned short fm_port,
+				 snd_irq_t * irqnum,
+				 snd_dma_t * dma1num,
+				 snd_dma_t * dma2num,
+				 es18xx_t ** codec);
 extern int snd_es18xx_init(es18xx_t * codec, int enable);
-extern snd_pcm_t *snd_es18xx_pcm(es18xx_t * codec);
-extern snd_kmixer_t *snd_es18xx_mixer(es18xx_t * codec);
+extern int snd_es18xx_new_pcm(es18xx_t * codec, int device, snd_pcm_t ** rpcm);
+extern int snd_es18xx_new_mixer(es18xx_t * codec, snd_pcm_t * pcm1, snd_pcm_t * pcm2, snd_kmixer_t ** rmixer);
 
 #endif				/* __ES18xx_H */
-

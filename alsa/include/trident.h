@@ -356,19 +356,21 @@ struct snd_stru_trident {
 	snd_info_entry_t *proc_entry;
 };
 
-trident_t *snd_trident_create(snd_card_t * card, struct pci_dev *pci,
-			      snd_dma_t * dma1ptr,
-			      snd_dma_t * dma2ptr,
-			      snd_dma_t * dma3ptr,
-			      snd_irq_t * irqptr,
-			      int pcm_channels,
-			      int max_wavetable_size);
-void snd_trident_free(trident_t * trident);
+int snd_trident_create(snd_card_t * card,
+		       struct pci_dev *pci,
+		       snd_dma_t * dma1ptr,
+		       snd_dma_t * dma2ptr,
+		       snd_dma_t * dma3ptr,
+		       snd_irq_t * irqptr,
+		       int pcm_channels,
+		       int max_wavetable_size,
+		       trident_t ** rtrident);
+int snd_trident_free(trident_t * trident);
 void snd_trident_interrupt(trident_t * trident);
 
-snd_pcm_t *snd_trident_pcm(trident_t * trident);
-snd_pcm_t *snd_trident_spdif_pcm(trident_t * trident);
-snd_kmixer_t *snd_trident_mixer(trident_t * trident);
+int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
+int snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
+int snd_trident_mixer(trident_t * trident, int device, snd_pcm_t * pcm, snd_kmixer_t **rmixer);
 void snd_trident_rawmidi(trident_t * trident, mpu401_t * mpu);
 int snd_trident_attach_synthesizer(trident_t * trident);
 int snd_trident_detach_synthesizer(trident_t * trident);

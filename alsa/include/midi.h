@@ -130,17 +130,18 @@ struct snd_stru_rawmidi {
 
 /* main rawmidi functions */
 
-extern snd_rawmidi_t *snd_rawmidi_new_device(snd_card_t * card, char *id);
+extern int snd_rawmidi_new(snd_card_t * card, char *id, int device, snd_rawmidi_t ** rmidi);
 extern int snd_rawmidi_free(snd_rawmidi_t * rmidi);
-extern int __snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device);
-extern int __snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
+extern int snd_rawmidi_register(snd_rawmidi_t * rmidi, snd_device_t *devptr);
+extern int snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
+#if 0	/* remove */
 #ifdef CONFIG_SND_SEQUENCER
 #include "seq_device.h"
-static inline int snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device)
+static inline int snd_rawmidi_register(snd_rawmidi_t * rmidi, snd_device_t *devptr)
 {
 	int err;
 
-	if ((err = __snd_rawmidi_register(rmidi, rawmidi_device))<0)
+	if ((err = __snd_rawmidi_register(rmidi, devptr))<0)
 		return err;
 	snd_seq_device_register(rmidi->card, rmidi->device, NULL,
 				SND_SEQ_DEV_MIDISYNTH, NULL, 0, NULL);
@@ -157,6 +158,7 @@ static inline int snd_rawmidi_unregister(snd_rawmidi_t * rmidi)
 #else
 #define snd_rawmidi_register __snd_rawmidi_register
 #define snd_rawmidi_unregister __snd_rawmidi_unregister
+#endif
 #endif
 extern int snd_rawmidi_switch_add(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
 extern int snd_rawmidi_switch_remove(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);

@@ -133,15 +133,17 @@ struct snd_stru_fm801 {
 	snd_info_entry_t *proc_entry;
 };
 
-fm801_t *snd_fm801_create(snd_card_t * card, struct pci_dev *pci,
-			      	   snd_dma_t * dma1ptr,
-				   snd_dma_t * dma2ptr,
-			           snd_irq_t * irqptr);
+int snd_fm801_create(snd_card_t * card,
+		     struct pci_dev *pci,
+		     snd_dma_t * dma1ptr,
+		     snd_dma_t * dma2ptr,
+		     snd_irq_t * irqptr,
+		     fm801_t ** rcodec);
 void snd_fm801_free(fm801_t * codec);
 void snd_fm801_interrupt(fm801_t * codec, unsigned short status);
 
-snd_pcm_t *snd_fm801_pcm(fm801_t * codec);
-snd_kmixer_t *snd_fm801_mixer(fm801_t * codec, int pcm_dev);
-snd_rawmidi_t *snd_fm801_midi(fm801_t * codec);
+int snd_fm801_pcm(fm801_t * codec, int device, snd_pcm_t ** rpcm);
+int snd_fm801_mixer(fm801_t * codec, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
+int snd_fm801_midi(fm801_t * codec, int device, snd_rawmidi_t ** rrawmidi);
 
 #endif				/* __AUDIOPCI_H */

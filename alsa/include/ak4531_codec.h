@@ -122,6 +122,8 @@ struct snd_stru_ak4531 {
 	snd_kmixer_element_t *me_sw_mic_in;
 };
 
-snd_kmixer_t *snd_ak4531_mixer(snd_card_t * card, ak4531_t * ak4531, int pcm_count, int *pcm_devs);
+int snd_ak4531_mixer(snd_card_t * card, int device,
+		     ak4531_t * ak4531, int pcm_count, int *pcm_devs,
+		     snd_kmixer_t ** rmixer);
 
 #endif				/* __AK4531_CODEC_H */

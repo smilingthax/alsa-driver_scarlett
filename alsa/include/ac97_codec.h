@@ -172,6 +172,8 @@ struct snd_stru_ac97 {
 	snd_kmixer_element_t *me_out_surround;
 };
 
-snd_kmixer_t *snd_ac97_mixer(snd_card_t * card, ac97_t * ac97, int pcm_count, int *pcm_devs);
+int snd_ac97_mixer(snd_card_t * card, int device, 
+		   ac97_t * ac97, int pcm_count, int *pcm_devs,
+		   snd_kmixer_t ** rmixer);
 
 #endif				/* __AC97_CODEC_H */

@@ -245,12 +245,10 @@ extern snd_pcm_t *snd_pcm_devices[];
 
 extern void snd_pcm_lock(int unlock);
 
-extern snd_pcm_t *snd_pcm_new_device(snd_card_t * card,
-				     char *id,
-				     int playback_count,
-				     int capture_count);
+extern int snd_pcm_new(snd_card_t * card, char *id, int device,
+		       int playback_count, int capture_count, snd_pcm_t **rpcm);
 extern int snd_pcm_free(snd_pcm_t * pcm);
-extern int snd_pcm_register(snd_pcm_t * pcm, int pcm_device);
+extern int snd_pcm_register(snd_pcm_t * pcm, snd_device_t *devptr);
 extern int snd_pcm_unregister(snd_pcm_t * pcm);
 
 extern int snd_pcm_notify(struct snd_stru_pcm_notify *notify, int nfree);

@@ -246,10 +246,12 @@ struct snd_opl3 {
 };
 
 extern void snd_opl3_interrupt(snd_hwdep_t * hw);
-extern snd_hwdep_t *snd_opl3_new_device(snd_card_t * card,
-					unsigned short l_port,
-					unsigned short r_port,
-					unsigned short hardware,
-					int timer_dev);
+extern int snd_opl3_new(snd_card_t * card,
+			int device,
+			unsigned short l_port,
+			unsigned short r_port,
+			unsigned short hardware,
+			int timer_dev,
+			snd_hwdep_t ** rawmidi);
 
 #endif				/* __OPL3_H */

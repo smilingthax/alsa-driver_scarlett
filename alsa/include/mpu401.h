@@ -72,9 +72,11 @@ struct snd_stru_mpu401 {
 
 extern void snd_mpu401_uart_interrupt(snd_rawmidi_t * rmidi);
 
-extern snd_rawmidi_t *snd_mpu401_uart_new_device(snd_card_t * card,
-						 unsigned short hardware,
-						 unsigned short port,
-						 unsigned short irqnum);
+extern int snd_mpu401_uart_new(snd_card_t * card,
+			       int device,
+			       unsigned short hardware,
+			       unsigned short port,
+			       unsigned short irqnum,
+			       snd_rawmidi_t ** rrawmidi);
 
 #endif				/* __MPU401_H */

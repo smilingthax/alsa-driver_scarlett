@@ -182,13 +182,14 @@ void snd_ad1848_out(ad1848_t * codec, unsigned char reg, unsigned char value);
 
 void snd_ad1848_interrupt(snd_pcm_t * pcm, unsigned char status);
 
-extern snd_pcm_t *snd_ad1848_new_device(snd_card_t * card,
-					unsigned short port,
-					snd_irq_t * irqptr,
-					snd_dma_t * dmaptr,
-					unsigned short hardware);
+int snd_ad1848_new_pcm(snd_card_t * card, int device,
+		       unsigned short port,
+		       snd_irq_t * irqptr,
+		       snd_dma_t * dmaptr,
+		       unsigned short hardware,
+		       snd_pcm_t ** rpcm);
 
-snd_kmixer_t *snd_ad1848_new_mixer(snd_pcm_t * pcm, int pcm_dev);
+int snd_ad1848_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t ** rmixer);
 
 int snd_ad1848_mixer_stereo_volume(void *private_data, int w_flag, int *voices,
 					int bit, int invert, int shift,

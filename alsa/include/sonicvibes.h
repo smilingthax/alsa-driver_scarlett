@@ -235,17 +235,18 @@ struct snd_stru_sonicvibes {
 	snd_kmixer_element_t *me_capture;
 };
 
-sonicvibes_t *snd_sonicvibes_create(snd_card_t * card,
-				    struct pci_dev *pci,
-				    snd_dma_t * dma1ptr,
-				    snd_dma_t * dma2ptr,
-				    snd_irq_t * irqptr,
-				    int reverb, int mge);
+int snd_sonicvibes_create(snd_card_t * card,
+			  struct pci_dev *pci,
+			  snd_dma_t * dma1ptr,
+			  snd_dma_t * dma2ptr,
+			  snd_irq_t * irqptr,
+			  int reverb, int mge,
+			  sonicvibes_t ** rsonic);
 void snd_sonicvibes_free(sonicvibes_t * sonic);
 void snd_sonicvibes_interrupt(sonicvibes_t * sonic);
 
-snd_pcm_t *snd_sonicvibes_pcm(sonicvibes_t * sonic);
-snd_kmixer_t *snd_sonicvibes_mixer(sonicvibes_t * sonic);
+int snd_sonicvibes_pcm(sonicvibes_t * sonic, int device, snd_pcm_t ** rpcm);
+int snd_sonicvibes_mixer(sonicvibes_t * sonic, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
 void snd_sonicvibes_midi(sonicvibes_t * sonic, mpu401_t * mpu);
 
 #endif				/* __SONICVIBES_H */

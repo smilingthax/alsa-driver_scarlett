@@ -224,11 +224,51 @@ typedef struct snd_stru_vma {
 	struct snd_stru_vma *next;
 } snd_vma_t;
 
+typedef enum {
+	MIXER = 0,
+	PCM,
+	RAWMIDI,
+	TIMER,
+	SEQUENCER,
+	HWDEP,
+	LOWLEVEL
+} snd_device_type_t;
+
+typedef enum {
+	BUILD = 0,
+	REGISTERED = 1
+} snd_device_state_t;
+
+typedef struct snd_stru_card snd_card_t;
+typedef struct snd_stru_device snd_device_t;
+
+typedef int (snd_dev_free_t)(void *devstr);
+typedef int (snd_dev_register_t)(void *devstr, snd_device_t *device);
+typedef int (snd_dev_unregister_t)(void *devstr);
+
+typedef struct {
+	snd_dev_free_t *dev_free;
+	snd_dev_register_t *dev_register;
+	snd_dev_unregister_t *dev_unregister;
+} snd_device_ops_t;
+
+struct snd_stru_device {
+	snd_card_t *card;		/* card which holds this device */
+	snd_device_state_t state;	/* state of the device */
+	snd_device_type_t type;		/* device type */
+	void *devstr;			/* device structure */
+	int number;			/* device number */
+	void *arg;			/* optional argument (dynamically allocated) */
+	int size;			/* size of an optional argument */
+	snd_device_ops_t *ops;		/* operations */
+	snd_device_t *parent;		/* must be freed at first */
+	snd_device_t *next;
+};
+
 /* various typedefs */
 
 typedef struct snd_stru_switch snd_kswitch_t;
 typedef struct snd_stru_switch_list snd_kswitch_list_t;
-typedef struct snd_stru_card snd_card_t;
 typedef struct snd_info_entry snd_info_entry_t;
 typedef struct snd_stru_pcm snd_pcm_t;
 typedef struct snd_stru_mixer snd_kmixer_t;
@@ -265,6 +305,8 @@ struct snd_stru_card {
 	void (*private_free) (void *private);	/* callback for freeing of private data */
 
 	void *static_data;			/* private static data for soundcard */
+
+	snd_device_t *devices;			/* devices */
 
 	snd_kswitch_list_t switches;		/* switches */
 	snd_control_t *fcontrol;		/* first control file */
@@ -397,6 +439,17 @@ extern int snd_register_interrupt(snd_card_t * card, char *name, int number,
 				  void *dev_id, int *possible_numbers,
 				  snd_irq_t ** rirq);
 extern int snd_unregister_interrupts(snd_card_t * card);
+
+/* device.c */
+
+extern int snd_device_new(snd_card_t *card, snd_device_type_t type,
+			  void *devstr, int number, snd_device_ops_t *ops,
+			  snd_device_t ** rdev);
+extern int snd_device_free(snd_card_t *card, void *devstr);
+extern int snd_device_register(snd_card_t *card, void *devstr);
+extern int snd_device_unregister(snd_card_t *card, void *devstr);
+extern int snd_device_register_all(snd_card_t *card);
+extern int snd_device_free_all(snd_card_t *card);
 
 /* isadma.c */
 

@@ -49,7 +49,7 @@
 
  */
 
-typedef struct snd_stru_solo esssolo_t;
+typedef struct snd_stru_solo es1938_t;
 
 struct snd_stru_solo {
 	snd_dma_t * dma1ptr;
@@ -110,17 +110,20 @@ struct snd_stru_solo {
         snd_info_entry_t *proc_entry;
 };
 
-esssolo_t *snd_solo_create(snd_card_t * card, struct pci_dev *pci,
-			   snd_dma_t * dma1ptr,
-			   snd_dma_t * dma2ptr,
-			   snd_irq_t * irqptr,
-			   int reverb, int mge);
-void snd_solo_free(esssolo_t * solo);
-void snd_solo_interrupt(esssolo_t * solo);
+int snd_solo_create(snd_card_t * card,
+		    struct pci_dev *pci,
+		    snd_dma_t * dma1ptr,
+		    snd_dma_t * dma2ptr,
+		    snd_irq_t * irqptr,
+		    int reverb, int mge,
+		    es1938_t ** rsolo);
+void snd_solo_free(es1938_t * solo);
+void snd_solo_interrupt(es1938_t * solo);
 
-snd_pcm_t *snd_solo_pcm(esssolo_t * solo);
-snd_pcm_t *snd_solo_pcm2(esssolo_t * solo);
-snd_kmixer_t *snd_solo_mixer(esssolo_t * codec, int pcm1_num, int pcm2_num);
-void snd_solo_midi(esssolo_t * solo, mpu401_t * mpu);
+int snd_solo_new_pcm(es1938_t * solo, int device, snd_pcm_t ** rpcm);
+int snd_solo_new_pcm2(es1938_t * solo, int device, snd_pcm_t ** rpcm);
+int snd_solo_new_mixer(es1938_t * codec, int device, snd_pcm_t * pcm, snd_pcm_t * pcm2, snd_kmixer_t ** rmixer);
+
+void snd_solo_midi(es1938_t * solo, mpu401_t * mpu);
 
 #endif				/* __ESSSOLO1_H */

@@ -47,9 +47,11 @@ struct snd_seq_dev_ops {
  * prototypes
  */
 void snd_seq_device_load_drivers(void);
-int snd_seq_device_register(snd_card_t *card, int device, char *name, char *id, void *arg, int size, snd_seq_device_t **result);
-snd_seq_device_t *snd_seq_device_find(snd_card_t *card, int device, char *id);
+int snd_seq_device_new(snd_card_t *card, int device, char *name, char *id, void *arg, int size, snd_seq_device_t **result);
+int snd_seq_device_free(snd_seq_device_t *dev);
+int snd_seq_device_register(snd_seq_device_t *dev, snd_device_t *devptr);
 int snd_seq_device_unregister(snd_seq_device_t *dev);
+snd_seq_device_t *snd_seq_device_find(snd_card_t *card, int device, char *id);
 int snd_seq_device_register_driver(char *id, snd_seq_dev_ops_t *entry);
 int snd_seq_device_unregister_driver(char *id);
 

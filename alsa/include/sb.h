@@ -278,28 +278,32 @@ extern void snd_sb16dsp_free(void *);
 extern void snd_sb8dsp_interrupt(snd_pcm_t * pcm);
 extern void snd_sb16dsp_interrupt(snd_pcm_t * pcm, unsigned short status);
 
-extern snd_pcm_t *snd_sb8dsp_new_device(snd_card_t * card,
-				        unsigned short port,
-				        snd_irq_t * irqptr,
-				        snd_dma_t * dma8ptr,
-				        unsigned short hardware);
-extern snd_pcm_t *snd_sb16dsp_new_device(snd_card_t * card,
-				         unsigned short port,
-				         snd_irq_t * irqptr,
-				         snd_dma_t * dma8ptr,
-				         snd_dma_t * dma16ptr,
-				         unsigned short hardware);
+extern int snd_sb8dsp_new_pcm(snd_card_t * card,
+			      int device,
+			      unsigned short port,
+			      snd_irq_t * irqptr,
+			      snd_dma_t * dma8ptr,
+			      unsigned short hardware,
+			      snd_pcm_t ** rpcm);
+extern int snd_sb16dsp_new_pcm(snd_card_t * card,
+			       int device,
+			       unsigned short port,
+			       snd_irq_t * irqptr,
+			       snd_dma_t * dma8ptr,
+			       snd_dma_t * dma16ptr,
+			       unsigned short hardware,
+			       snd_pcm_t ** rpcm);
 extern int snd_sb8dsp_probe(snd_pcm_t * pcm);
 extern int snd_sb16dsp_probe(snd_pcm_t * pcm);
 extern int snd_sb16dsp_configure(snd_pcm_t * pcm);
-extern snd_kmixer_t *snd_sb8dsp_new_mixer(snd_card_t * card,
-					  sbdsp_t * codec,
-					  unsigned short hardware,
-					  int pcm_dev);
-extern snd_kmixer_t *snd_sb16dsp_new_mixer(snd_card_t * card,
-					   sbdsp_t * codec,
-					   unsigned short hardware,
-					   int pcm_dev);
+extern int snd_sb8dsp_new_mixer(sbdsp_t * codec,
+			        int device,
+				snd_pcm_t * pcm,
+				snd_kmixer_t ** rmixer);
+extern int snd_sb16dsp_new_mixer(sbdsp_t * codec,
+				 int device,
+				 snd_pcm_t * pcm,
+				 snd_kmixer_t ** rmixer);
 
 extern int snd_sb8_playback_open(void *private_data, snd_pcm_subchn_t *subchn);
 extern int snd_sb8_capture_open(void *private_data, snd_pcm_subchn_t *subchn);
@@ -314,6 +318,6 @@ extern void snd_sb16dsp_proc_init(snd_pcm_t * pcm);
 extern void snd_sb16dsp_proc_done(snd_pcm_t * pcm);
 
 extern void snd_sb8dsp_midi_interrupt(snd_rawmidi_t * rmidi);
-extern snd_rawmidi_t *snd_sb8dsp_midi_new_device(snd_card_t * card, snd_pcm_t * pcm);
+extern int snd_sb8dsp_midi_new(sbdsp_t * codec, int device, snd_rawmidi_t ** rrawmidi);
 
 #endif				/* __SB_H */

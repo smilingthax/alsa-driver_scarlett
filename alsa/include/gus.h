@@ -660,12 +660,13 @@ int snd_gf1_stop(snd_gus_card_t * gus);
 
 /* gus_mixer.c */
 
-snd_kmixer_t *snd_gf1_new_mixer(snd_gus_card_t * gus);
+int snd_gf1_new_mixer(snd_gus_card_t * gus, int device, snd_kmixer_t ** rmixer);
 
 /* gus_pcm.c */
 
-snd_pcm_t *snd_gf1_pcm_new_device(snd_gus_card_t * gus, snd_kmixer_t * mixer,
-				  snd_kmixer_element_t * parent, int pcm_dev);
+int snd_gf1_pcm_new(snd_gus_card_t * gus, snd_kmixer_t * mixer,
+		    snd_kmixer_element_t * parent, int pcm_dev,
+		    snd_pcm_t ** rpcm);
 
 #ifdef CONFIG_SND_DEBUG
 extern void snd_gf1_print_voice_registers(snd_gus_card_t * gus);
@@ -705,7 +706,7 @@ void snd_gus_irq_profile_done(snd_gus_card_t *gus);
 
 /* gus_uart.c */
 
-snd_rawmidi_t *snd_gf1_rawmidi_new_device(snd_gus_card_t * gus);
+int snd_gf1_rawmidi_new(snd_gus_card_t * gus, int device, snd_rawmidi_t **rrawmidi);
 
 #if 0
 extern void snd_engine_instrument_register(unsigned short mode,

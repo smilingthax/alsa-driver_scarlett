@@ -312,30 +312,34 @@ struct snd_stru_ensoniq {
 	snd_info_entry_t *proc_entry;
 };
 
-ensoniq_t *snd_ensoniq_1370_create(snd_card_t * card, struct pci_dev *pci,
-			      	   snd_dma_t * dma1ptr,
-				   snd_dma_t * dma2ptr,
-			           snd_dma_t * dma3ptr,
-			           snd_irq_t * irqptr);
+int snd_ensoniq_1370_create(snd_card_t * card,
+			    struct pci_dev *pci,
+			    snd_dma_t * dma1ptr,
+			    snd_dma_t * dma2ptr,
+			    snd_dma_t * dma3ptr,
+			    snd_irq_t * irqptr,
+			    ensoniq_t ** rensoniq);
 void snd_ensoniq_1370_free(ensoniq_t * ensoniq);
 void snd_ensoniq_1370_interrupt(ensoniq_t * ensoniq);
 
-snd_pcm_t *snd_ensoniq_1370_pcm(ensoniq_t * ensoniq);
-snd_pcm_t *snd_ensoniq_1370_pcm2(ensoniq_t * ensoniq);
-snd_kmixer_t *snd_ensoniq_1370_mixer(ensoniq_t * ensoniq, int pcm_count, int *pcm_devs);
-snd_rawmidi_t *snd_ensoniq_1370_midi(ensoniq_t * ensoniq);
+int snd_ensoniq_1370_pcm(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm);
+int snd_ensoniq_1370_pcm2(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm);
+int snd_ensoniq_1370_mixer(ensoniq_t * ensoniq, int device, int pcm_count, int *pcm_devs, snd_kmixer_t ** rmixer);
+int snd_ensoniq_1370_midi(ensoniq_t * ensoniq, int device, snd_rawmidi_t ** rrawmidi);
 
-ensoniq_t *snd_ensoniq_1371_create(snd_card_t * card, struct pci_dev *pci,
-			      	   snd_dma_t * dma1ptr,
-				   snd_dma_t * dma2ptr,
-			           snd_dma_t * dma3ptr,
-			           snd_irq_t * irqptr);
+int snd_ensoniq_1371_create(snd_card_t * card,
+			    struct pci_dev *pci,
+			    snd_dma_t * dma1ptr,
+			    snd_dma_t * dma2ptr,
+			    snd_dma_t * dma3ptr,
+			    snd_irq_t * irqptr,
+			    ensoniq_t ** rensoniq);
 void snd_ensoniq_1371_free(ensoniq_t * ensoniq);
 void snd_ensoniq_1371_interrupt(ensoniq_t * ensoniq);
 
-snd_pcm_t *snd_ensoniq_1371_pcm(ensoniq_t * ensoniq);
-snd_pcm_t *snd_ensoniq_1371_pcm2(ensoniq_t * ensoniq);
-snd_kmixer_t *snd_ensoniq_1371_mixer(ensoniq_t * ensoniq, int pcm_count, int *pcm_devs);
-snd_rawmidi_t *snd_ensoniq_1371_midi(ensoniq_t * ensoniq);
+int snd_ensoniq_1371_pcm(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm);
+int snd_ensoniq_1371_pcm2(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm);
+int snd_ensoniq_1371_mixer(ensoniq_t * ensoniq, int device, int pcm_count, int *pcm_devs, snd_kmixer_t ** rmixer);
+int snd_ensoniq_1371_midi(ensoniq_t * ensoniq, int device, snd_rawmidi_t ** rrawmidi);
 
 #endif				/* __AUDIOPCI_H */

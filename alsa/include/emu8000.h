@@ -117,9 +117,6 @@ typedef struct snd_emu8000 {
 #define EMU8000_UPDATE_FM2FRQ2	(1<<5)
 #define EMU8000_UPDATE_Q	(1<<6)
 
-/* Prototypes for emu8000.c.new */
-/*snd_hwdep_t *snd_emu8000_new_device(snd_card_t *card, unsigned short base);*/
-
 /* sequencer device id */
 #define SND_SEQ_DEV_EMU8000	"synth-emu8000"
 

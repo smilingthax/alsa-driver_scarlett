@@ -23,11 +23,13 @@
 
 #include "driver.h"
 
-extern snd_rawmidi_t* snd_uart16550_new_device (snd_card_t* card,
-						unsigned short irq_number,
-						unsigned short iobase,
-						unsigned char divisor,
-						int polled);
+extern int snd_uart16550_new_device (snd_card_t* card,
+				     int device,
+				     unsigned short irq_number,
+				     unsigned short iobase,
+				     unsigned char divisor,
+				     int polled,
+				     snd_rawmidi_t ** rrawmidi);
 
 extern int snd_uart16550_set_param (snd_rawmidi_t* rmidi,
 				    unsigned short irq_number,

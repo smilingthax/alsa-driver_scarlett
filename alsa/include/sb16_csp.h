@@ -155,7 +155,7 @@ typedef struct {
 
 #define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
 void snd_sb_csp_register_callbacks(sbdsp_t * codec);
-snd_hwdep_t *snd_sb_csp_new_device(sbdsp_t * codec);
+int snd_sb_csp_new(sbdsp_t * codec, int device, snd_hwdep_t ** rhwdep);
 #endif
 
 #endif
