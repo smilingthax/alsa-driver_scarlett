@@ -110,6 +110,9 @@
 #ifdef LINUX_2_2
 #include "compat_22.h"
 #endif
+#ifdef LINUX_2_3
+#include <linux/init.h>
+#endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
 #if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (KERNEL_VERSION(2, 3, 30) <= LINUX_VERSION_CODE && !defined(ALSA_BUILD))
