@@ -16,9 +16,8 @@ L add work_ptr (to think about)
 - lowlevel:
 M create a driver for Compaq iPAQ handheld PC (Philips UDA1341TS)
 M create an USB audio driver
-M add support for FM801's 4ch & 6ch output
 M reduce prepare path (a lot of stuff may be moved to hw_params) for faster xrun recovery
-L EMU10K1 - direct S/PDIF output using FX8010
+L EMU10K1 - test direct S/PDIF output using FX8010
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L CS4236 - test the half duplex (one DMA) settings
 L rewrite CMI8330 PCM part
