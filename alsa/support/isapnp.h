@@ -36,12 +36,18 @@
 #define ISAPNP_VENDOR(a,b,c)	((((a)-'A'+1)&0x3f)<<2)|\
 				((((b)-'A'+1)&0x18)>>3)|((((b)-'A'+1)&7)<<13)|\
 				((((c)-'A'+1)&0x1f)<<8)
+#define ISAPNP_DEVICE(x)	(((x)&0xf000)>>8)|\
+				(((x)&0x0f00)>>8)|\
+				(((x)&0x00f0)<<8)|\
+				(((x)&0x000f)<<8)
+#define ISAPNP_FUNCTION(x)	ISAPNP_DEVICE(x)
 
 /*
  *
  */
 
 #define ISAPNP_PORT_FLAG_16BITADDR	(1<<0)
+#define ISAPNP_PORT_FLAG_FIXED		(1<<1)
 
 struct isapnp_port {
 	unsigned short min;		/* min base number */
@@ -49,13 +55,8 @@ struct isapnp_port {
 	unsigned char align;		/* align boundary */
 	unsigned char size;		/* size of range */
 	unsigned short flags;		/* port flags */
+	struct isapnp_resources *res;	/* parent */
 	struct isapnp_port *next;	/* next port */
-};
-
-struct isapnp_fixed_port {
-	unsigned short port;		/* base number */
-	unsigned char size;		/* size of range */
-	struct isapnp_fixed_port *next;	/* next port */
 };
 
 #define ISAPNP_IRQ_FLAG_HIGHEDGE	(1<<0)
@@ -66,6 +67,7 @@ struct isapnp_fixed_port {
 struct isapnp_irq {
 	unsigned short map;		/* bitmaks for IRQ lines */
 	unsigned short flags;		/* IRQ flags */
+	struct isapnp_resources *res;	/* parent */
 	struct isapnp_irq *next;	/* next IRQ */
 };
 
@@ -87,6 +89,7 @@ struct isapnp_dma {
 	unsigned char type;		/* DMA type */
 	unsigned char flags;		/* DMA flags */
 	unsigned char speed;		/* DMA speed */
+	struct isapnp_resources *res;	/* parent */
 	struct isapnp_dma *next;	/* next port */
 };
 
@@ -107,19 +110,15 @@ struct isapnp_mem {
 	unsigned int size;		/* size of range */
 	unsigned short flags;		/* memory flags */
 	unsigned short type;		/* memory type */
+	struct isapnp_resources *res;	/* parent */
 	struct isapnp_mem *next;	/* next memory resource */
 };
 
 struct isapnp_mem32 {
 	/* TODO */
 	unsigned char data[17];
+	struct isapnp_resources *res;	/* parent */
 	struct isapnp_mem32 *next;	/* next 32-bit memory resource */
-};
-
-struct isapnp_fixed_mem32 {
-	/* TODO */
-	unsigned char data[17];
-	struct isapnp_fixed_mem32 *next; /* next fixed 32-bit memory resource */
 };
 
 #define ISAPNP_RES_PRIORITY_PREFFERED	0
@@ -131,12 +130,11 @@ struct isapnp_resources {
 	unsigned short priority;	/* priority */
 	unsigned short dependent;	/* dependent resources */
 	struct isapnp_port *port;	/* first port */
-	struct isapnp_fixed_port *fixport; /* first fixed port */
 	struct isapnp_irq *irq;		/* first IRQ */
 	struct isapnp_dma *dma;		/* first DMA */
 	struct isapnp_mem *mem;		/* first memory resource */
 	struct isapnp_mem32 *mem32;	/* first 32-bit memory */
-	struct isapnp_fixed_mem32 *fixmem32; /* first fixed 32-bit memory */
+	struct isapnp_logdev *logdev;	/* parent */
 	struct isapnp_resources *alt;	/* alternative resource (aka dependent resources) */
 	struct isapnp_resources *next;	/* next resource */
 };
@@ -183,8 +181,6 @@ struct isapnp_config {
 	unsigned char dma[2];
 	int mem_count;
 	unsigned int mem[4];
-	void *private_data;
-	int (*accept)(struct isapnp_config *config);
 };
 
 /* lowlevel configuration */
@@ -199,3 +195,23 @@ void isapnp_cfg_set_dword(unsigned char idx, unsigned int val);
 void isapnp_wake(unsigned char csn);
 void isapnp_logdev(unsigned char dev);
 void isapnp_activate(unsigned char value);
+/* manager */
+struct isapnp_port *isapnp_find_port(struct isapnp_logdev *logdev, int index);
+struct isapnp_irq *isapnp_find_irq(struct isapnp_logdev *logdev, int index);
+struct isapnp_dma *isapnp_find_dma(struct isapnp_logdev *logdev, int index);
+struct isapnp_mem *isapnp_find_mem(struct isapnp_logdev *logdev, int index);
+struct isapnp_mem32 *isapnp_find_mem32(struct isapnp_logdev *logdev, int index);
+int isapnp_verify_port(struct isapnp_port *port, unsigned short base);
+int isapnp_verify_irq(struct isapnp_irq *irq, unsigned char value);
+int isapnp_verify_dma(struct isapnp_dma *dma, unsigned char value);
+int isapnp_verify_mem(struct isapnp_mem *mem, unsigned int base);
+int isapnp_verify_mem32(struct isapnp_mem32 *mem32, unsigned int base);
+struct isapnp_dev *isapnp_find_device(unsigned short vendor,
+				      unsigned short device,
+				      int index);
+struct isapnp_logdev *isapnp_find_logdev(struct isapnp_dev *dev,
+					 unsigned short vendor,
+					 unsigned short function,
+					 int index);
+int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logdev);
+int isapnp_configure(struct isapnp_config *config);

@@ -41,6 +41,8 @@
 #include <linux/string.h>
 #include <linux/malloc.h>
 #include <asm/io.h>
+#include <asm/dma.h>
+#include <asm/irq.h>
 
 #ifndef __initfunc
 #define __initfunc(__initarg) __initarg 
@@ -51,7 +53,7 @@
 #include "isapnp.h"
 
 int isapnp_rdp = 0;			/* Read Data Port */
-int isapnp_verbose = 0;			/* verbose mode */
+int isapnp_verbose = 1;			/* verbose mode */
 #ifdef MODULE_PARM
 MODULE_AUTHOR("Jaroslav Kysela <perex@jcu.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
@@ -347,6 +349,7 @@ __initfunc(static struct isapnp_resources *isapnp_build_resources(struct isapnp_
 	res = isapnp_alloc(sizeof(struct isapnp_resources));
 	if (!res)
 		return NULL;
+	res->logdev = logdev;
 	ptr = logdev->res;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
@@ -403,6 +406,7 @@ __initfunc(static void isapnp_add_irq_resource(struct isapnp_logdev *logdev,
 		irq->flags = tmp[2];
 	else
 		irq->flags = ISAPNP_IRQ_FLAG_HIGHEDGE;
+	irq->res = *res;
 	ptr = (*res)->irq;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
@@ -438,6 +442,7 @@ __initfunc(static void isapnp_add_dma_resource(struct isapnp_logdev *logdev,
 	dma->type = tmp[1] & 3;
 	dma->flags = (tmp[1] >> 2) & 7;
 	dma->speed = (tmp[1] >> 6) & 3;
+	dma->res = *res;
 	ptr = (*res)->dma;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
@@ -474,6 +479,7 @@ __initfunc(static void isapnp_add_port_resource(struct isapnp_logdev *logdev,
 	port->align = tmp[5];
 	port->size = tmp[6];
 	port->flags = tmp[0] ? ISAPNP_PORT_FLAG_16BITADDR : 0;
+	port->res = *res;
 	ptr = (*res)->port;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
@@ -492,10 +498,10 @@ __initfunc(static void isapnp_add_fixed_port_resource(struct isapnp_logdev *logd
 						      int dependent, int size))
 {
 	unsigned char tmp[3];
-	struct isapnp_fixed_port *port, *ptr;
+	struct isapnp_port *port, *ptr;
 
 	isapnp_peek(tmp, size);
-	port = isapnp_alloc(sizeof(struct isapnp_fixed_port));
+	port = isapnp_alloc(sizeof(struct isapnp_port));
 	if (!port)
 		return;
 	if (*res == NULL) {
@@ -505,15 +511,18 @@ __initfunc(static void isapnp_add_fixed_port_resource(struct isapnp_logdev *logd
 			return;
 		}
 	}
-	port->port = (tmp[1] << 8) | tmp[0];
+	port->min = port->max = (tmp[1] << 8) | tmp[0];
 	port->size = tmp[2];
-	ptr = (*res)->fixport;
+	port->align = 0;
+	port->flags = ISAPNP_PORT_FLAG_FIXED;
+	port->res = *res;
+	ptr = (*res)->port;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
 	if (ptr)
 		ptr->next = port;
 	else
-		(*res)->fixport = port;
+		(*res)->port = port;
 }
 
 /*
@@ -545,6 +554,7 @@ __initfunc(static void isapnp_add_mem_resource(struct isapnp_logdev *logdev,
 	mem->flags = tmp[0] & 7;
 	mem->flags |= (tmp[0] >> 2) & 0x18;
 	mem->type = (tmp[0] >> 3) & 3;
+	mem->res = *res;
 	ptr = (*res)->mem;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
@@ -577,6 +587,7 @@ __initfunc(static void isapnp_add_mem32_resource(struct isapnp_logdev *logdev,
 		}
 	}
 	memcpy(mem32->data, tmp, 17);
+	mem32->res = *res;
 	ptr = (*res)->mem32;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
@@ -595,27 +606,28 @@ __initfunc(static void isapnp_add_fixed_mem32_resource(struct isapnp_logdev *log
 						       int dependent, int size))
 {
 	unsigned char tmp[17];
-	struct isapnp_fixed_mem32 *fmem32, *ptr;
+	struct isapnp_mem32 *mem32, *ptr;
 
 	isapnp_peek(tmp, size);
-	fmem32 = isapnp_alloc(sizeof(struct isapnp_mem32));
-	if (!fmem32)
+	mem32 = isapnp_alloc(sizeof(struct isapnp_mem32));
+	if (!mem32)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(logdev, dependent);
 		if (*res == NULL) {
-			kfree(fmem32);
+			kfree(mem32);
 			return;
 		}
 	}
-	memcpy(fmem32->data, tmp, 17);
-	ptr = (*res)->fixmem32;
+	memcpy(mem32->data, tmp, 17);
+	mem32->res = *res;
+	ptr = (*res)->mem32;
 	while (ptr && ptr->next)
 		ptr = ptr->next;
 	if (ptr)
-		ptr->next = fmem32;
+		ptr->next = mem32;
 	else
-		(*res)->fixmem32 = fmem32;
+		(*res)->mem32 = mem32;
 }
 
 /*
@@ -964,6 +976,171 @@ void isapnp_cfg_set_dword(unsigned char idx, unsigned int val)
 }
 
 /*
+ *  Resource manager.
+ */
+
+struct isapnp_port *isapnp_find_port(struct isapnp_logdev *logdev, int index)
+{
+	struct isapnp_resources *res;
+	struct isapnp_port *port;
+	
+	if (!logdev || index < 0 || index > 7)
+		return NULL;
+	for (res = logdev->res; res; res = res->next) {
+		for (port = res->port; port; port = port->next) {
+			if (!index)
+				return port;
+			index--;
+		}
+	}
+	return NULL;
+}
+
+struct isapnp_irq *isapnp_find_irq(struct isapnp_logdev *logdev, int index)
+{
+	struct isapnp_resources *res;
+	struct isapnp_irq *irq;
+	
+	if (!logdev || index < 0 || index > 7)
+		return NULL;
+	for (res = logdev->res; res; res = res->next) {
+		for (irq = res->irq; irq; irq = irq->next) {
+			if (!index)
+				return irq;
+			index--;
+		}
+	}
+	return NULL;
+}
+
+struct isapnp_dma *isapnp_find_dma(struct isapnp_logdev *logdev, int index)
+{
+	struct isapnp_resources *res;
+	struct isapnp_dma *dma;
+	
+	if (!logdev || index < 0 || index > 7)
+		return NULL;
+	for (res = logdev->res; res; res = res->next) {
+		for (dma = res->dma; dma; dma = dma->next) {
+			if (!index)
+				return dma;
+			index--;
+		}
+	}
+	return NULL;
+}
+
+struct isapnp_mem *isapnp_find_mem(struct isapnp_logdev *logdev, int index)
+{
+	struct isapnp_resources *res;
+	struct isapnp_mem *mem;
+	
+	if (!logdev || index < 0 || index > 7)
+		return NULL;
+	for (res = logdev->res; res; res = res->next) {
+		for (mem = res->mem; mem; mem = mem->next) {
+			if (!index)
+				return mem;
+			index--;
+		}
+	}
+	return NULL;
+}
+
+struct isapnp_mem32 *isapnp_find_mem32(struct isapnp_logdev *logdev, int index)
+{
+	struct isapnp_resources *res;
+	struct isapnp_mem32 *mem32;
+	
+	if (!logdev || index < 0 || index > 7)
+		return NULL;
+	for (res = logdev->res; res; res = res->next) {
+		for (mem32 = res->mem32; mem32; mem32 = mem32->next) {
+			if (!index)
+				return mem32;
+			index--;
+		}
+	}
+	return NULL;
+}
+
+int isapnp_verify_port(struct isapnp_port *port, unsigned short base)
+{
+	if (!port)
+		return -EINVAL;
+	while (port) {
+		if (port->min <= base && port->max >= base &&
+		    ((base & (port->align-1)) == 0 || port->align == 0))
+			return 0;
+		if (port->res->alt)
+			port = port->res->alt->port;
+		else
+			port = NULL;
+	}
+	return -ENOENT;
+}
+
+int isapnp_verify_irq(struct isapnp_irq *irq, unsigned char value)
+{
+	if (!irq || value > 15)
+		return -EINVAL;
+	while (irq) {
+		if (irq->map & (1 << value))
+			return 0;
+		if (irq->res->alt)
+			irq = irq->res->alt->irq;
+		else
+			irq = NULL;
+	}
+	return -ENOENT;
+}
+
+int isapnp_verify_dma(struct isapnp_dma *dma, unsigned char value)
+{
+	if (!dma || value > 7)
+		return -EINVAL;
+	while (dma) {
+		if (dma->map & (1 << value))
+			return 0;
+		if (dma->res->alt)
+			dma = dma->res->alt->dma;
+		else
+			dma = NULL;
+	}
+	return -ENOENT;
+}
+
+int isapnp_verify_mem(struct isapnp_mem *mem, unsigned int base)
+{
+	if (!mem)
+		return -EINVAL;
+	while (mem) {
+		if (mem->min <= base && mem->max >= base &&
+		    ((base & (mem->align-1)) == 0 || mem->align == 0))
+			return 0;
+		if (mem->res->alt)
+			mem = mem->res->alt->mem;
+		else
+			mem = NULL;
+	}
+	return -ENOENT;
+}
+
+int isapnp_verify_mem32(struct isapnp_mem32 *mem32, unsigned int base)
+{
+	if (!mem32)
+		return -EINVAL;
+	while (mem32) {
+		/* TODO!!! */
+		if (mem32->res->alt)
+			mem32 = mem32->res->alt->mem32;
+		else
+			mem32 = NULL;
+	}
+	return -ENOENT;
+}
+
+/*
  *  Device manager.
  */
 
@@ -1053,7 +1230,7 @@ int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logde
 	config->dma[0] = config->dma[1] = 255;
 	for (res = logdev->res; res; res = res->next) {
 		port_count = irq_count = dma_count = mem_count = 0;
-		for (resa = res; resa; resa = resa->next) {
+		for (resa = res; resa; resa = resa->alt) {
 			port_count1 = 0;
 			for (port = resa->port; port; port = port->next)
 				port_count1++;
@@ -1083,72 +1260,357 @@ int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logde
 	return 0;
 }
 
-int isapnp_configure(struct isapnp_config *config)
-{
+struct isapnp_cfgtmp {
+	struct isapnp_port *port[8];
+	struct isapnp_irq *irq[2];
+	struct isapnp_dma *dma[2];
+	struct isapnp_mem *mem[4];
+	struct isapnp_config *request;
 	struct isapnp_config result;
-	struct isapnp_resources *res[16], *restmp;
-	int res_count, res_idx;
+};
+
+static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
+				     struct isapnp_resources *from,
+				     struct isapnp_resources *to)
+{
+	int tmp;
 	struct isapnp_port *port;
 	struct isapnp_irq *irq;
 	struct isapnp_dma *dma;
 	struct isapnp_mem *mem;
-	int port_idx[16];
-	int irq_idx[16];
-	int dma_idx[16];
-	int mem_idx[16];
-	int tmp, tmp1, auto;
+
+	if (!cfg)
+		return -EINVAL;
+	/* process port settings */
+	for (tmp = 0; tmp < cfg->result.port_count; tmp++) {
+		if (!cfg->request->port[tmp])
+			continue;		/* don't touch */
+		port = cfg->port[tmp];
+		if (!port) {
+			cfg->port[tmp] = port = isapnp_find_port(cfg->result.logdev, tmp);
+			if (!port)
+				return -EINVAL;
+		}
+		if (from && port->res == from) {
+			while (port->res != to) {
+				if (!port->res->alt)
+					return -EINVAL;
+				cfg->port[tmp] = port = port->res->alt->port;
+				cfg->result.port[tmp] = 0;	/* auto */
+				if (!port)
+					return -ENOENT;
+			}
+		}
+	}
+	/* process irq settings */
+	for (tmp = 0; tmp < cfg->result.irq_count; tmp++) {
+		if (cfg->request->irq[tmp] != 255)
+			continue;		/* don't touch */
+		irq = cfg->irq[tmp];
+		if (!irq) {
+			cfg->irq[tmp] = irq = isapnp_find_irq(cfg->result.logdev, tmp);
+			if (!irq)
+				return -EINVAL;
+		}
+		if (from && irq->res == from) {
+			while (irq->res != to) {
+				if (!irq->res->alt)
+					return -EINVAL;
+				cfg->irq[tmp] = irq = irq->res->alt->irq;
+				cfg->result.irq[tmp] = 255;	/* auto */
+				if (!irq)
+					return -ENOENT;
+			}
+		}
+	}
+	/* process dma settings */
+	for (tmp = 0; tmp < cfg->result.dma_count; tmp++) {
+		if (cfg->request->dma[tmp] != 255)
+			continue;		/* don't touch */
+		dma = cfg->dma[tmp];
+		if (!dma) {
+			cfg->dma[tmp] = dma = isapnp_find_dma(cfg->result.logdev, tmp);
+			if (!dma)
+				return -EINVAL;
+		}
+		if (from && dma->res == from) {
+			while (dma->res != to) {
+				if (!dma->res->alt)
+					return -EINVAL;
+				cfg->dma[tmp] = dma = dma->res->alt->dma;
+				cfg->result.dma[tmp] = 255;	/* auto */
+				if (!dma)
+					return -ENOENT;
+			}
+		}
+	}
+	/* process memory settings */
+	for (tmp = 0; tmp < cfg->result.mem_count; tmp++) {
+		if (cfg->request->mem[tmp])
+			continue;		/* don't touch */
+		mem = cfg->mem[tmp];
+		if (!mem) {
+			cfg->mem[tmp] = mem = isapnp_find_mem(cfg->result.logdev, tmp);
+			if (!mem)
+				return -EINVAL;
+		}
+		if (from && mem->res == from) {
+			while (mem->res != to) {
+				if (!mem->res->alt)
+					return -EINVAL;
+				cfg->mem[tmp] = mem = mem->res->alt->mem;
+				cfg->result.mem[tmp] = 0;	/* auto */
+				if (!mem)
+					return -ENOENT;
+			}
+		}
+	}
+	return 0;
+}
+
+static int isapnp_valid_port(struct isapnp_cfgtmp *cfg, int idx)
+{
+	int err;
+	unsigned short *value;
+	struct isapnp_port *port;
+
+	if (!cfg || idx < 0 || idx > 7)
+		return -EINVAL;
+	if (cfg->request->port[idx])	/* don't touch */
+		return 0;
+      __again:
+      	port = cfg->port[idx];
+      	value = &cfg->result.port[idx];
+	if (!*value) {		/* auto */
+		if (!check_region(*value = port->min, port->size))
+			return 0;
+	}
+	do {
+		*value += port->align;
+		if (*value > port->max || !port->align) {
+			if (port->res && port->res->alt) {
+				if ((err = isapnp_alternative_switch(cfg, port->res, port->res->alt))<0)
+					return err;
+				goto __again;
+			}
+			return -ENOENT;
+		}
+	} while (check_region(*value, port->size));
+	return 0;
+}
+
+static void isapnp_test_handler(int irq, void *dev_id, struct pt_regs *regs)
+{
+}
+
+static int isapnp_check_interrupt(int irq)
+{
+	if (irq < 0 || irq > 15)
+		return 1;
+	if (request_irq(irq, isapnp_test_handler, SA_INTERRUPT, "isapnp", NULL))
+		return 1;
+	free_irq(irq, NULL);
+	return 0;
+}
+
+static int isapnp_valid_irq(struct isapnp_cfgtmp *cfg, int idx)
+{
+	int err, i;
+	unsigned char *value;
+	struct isapnp_irq *irq;
+
+	if (!cfg || idx < 0 || idx > 1)
+		return -EINVAL;
+	if (cfg->request->irq[idx] != 255)	/* don't touch */
+		return 0;
+      __again:
+      	irq = cfg->irq[idx];
+      	value = &cfg->result.irq[idx];
+	if (*value == 255) {			/* auto */
+		for (i = 0; i < 16 && !(irq->map & (1<<i)); i++);
+		if (i >= 16)
+			return -ENOENT;
+		if (!isapnp_check_interrupt(*value = i))
+			return 0;
+	}
+	do {
+		for (i = *value + 1; i < 16 && !(irq->map & (1<<i)); i++);
+		if (i >= 16) {
+			if (irq->res && irq->res->alt) {
+				if ((err = isapnp_alternative_switch(cfg, irq->res, irq->res->alt))<0)
+					return err;
+				goto __again;
+			}
+			return -ENOENT;
+		} else {
+			*value = i;
+		}
+	} while (isapnp_check_interrupt(*value));
+	return 0;
+}
+
+static int isapnp_check_dma(int dma)
+{
+	if (dma < 0 || dma == 4 || dma > 7)
+		return 1;
+	if (request_dma(dma, "isapnp"))
+		return 1;
+	free_dma(dma);
+	return 0;
+}
+
+static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
+{
+	int err, i;
+	unsigned char *value;
+	struct isapnp_dma *dma;
+
+	if (!cfg || idx < 0 || idx > 1)
+		return -EINVAL;
+	if (cfg->request->irq[idx] != 255)	/* don't touch */
+		return 0;
+      __again:
+      	dma = cfg->dma[idx];
+      	value = &cfg->result.dma[idx];
+	if (*value == 255) {			/* auto */
+		for (i = 0; i < 8 && !(dma->map & (1<<i)); i++);
+		if (i >= 8)
+			return -ENOENT;
+		if (!isapnp_check_interrupt(*value = i))
+			return 0;
+	}
+	do {
+		for (i = *value + 1; i < 8 && !(dma->map & (1<<i)); i++);
+		if (i >= 8) {
+			if (dma->res && dma->res->alt) {
+				if ((err = isapnp_alternative_switch(cfg, dma->res, dma->res->alt))<0)
+					return err;
+				goto __again;
+			}
+			return -ENOENT;
+		} else {
+			*value = i;
+		}
+	} while (isapnp_check_dma(*value));
+	return 0;
+}
+
+static int isapnp_check_mem(unsigned int addr, unsigned int size)
+{
+	return 0;	/* always valid - maybe wrong */
+}
+
+static int isapnp_valid_mem(struct isapnp_cfgtmp *cfg, int idx)
+{
+	int err;
+	unsigned int *value;
+	struct isapnp_mem *mem;
+
+	if (!cfg || idx < 0 || idx > 3)
+		return -EINVAL;
+	if (cfg->request->dma[idx])	/* don't touch */
+		return 0;
+      __again:
+      	mem = cfg->mem[idx];
+      	value = &cfg->result.mem[idx];
+	if (!*value) {			/* auto */
+		*value = mem->min;
+		if (!isapnp_check_mem(*value, mem->size))
+			return 0;
+	}
+	do {
+		*value += mem->align;
+		if (*value >= 8 || !mem->align) {
+			if (mem->res && mem->res->alt) {
+				if ((err = isapnp_alternative_switch(cfg, mem->res, mem->res->alt))<0)
+					return err;
+				goto __again;
+			}
+			return -ENOENT;
+		}
+	} while (isapnp_check_mem(*value, mem->size));
+	return 0;
+}
+
+static int isapnp_check_valid(struct isapnp_cfgtmp *cfg)
+{
+	int tmp;
+	
+	for (tmp = 0; tmp < cfg->result.port_count; tmp++)
+		if (!cfg->result.port[tmp])
+			return -EAGAIN;
+	for (tmp = 0; tmp < cfg->result.irq_count; tmp++)
+		if (cfg->result.irq[tmp] == 255)
+			return -EAGAIN;
+	for (tmp = 0; tmp < cfg->result.dma_count; tmp++)
+		if (cfg->result.dma[tmp] == 255)
+			return -EAGAIN;
+	for (tmp = 0; tmp < cfg->result.mem_count; tmp++)
+		if (!cfg->result.mem[tmp])
+			return -EAGAIN;
+	return 0;
+}
+
+int isapnp_configure(struct isapnp_config *config)
+{
+	struct isapnp_cfgtmp cfg;
+	int tmp, fauto, err;
 	
 	if (!config || !config->logdev)
 		return -EINVAL;
-	memcpy(&result, config, sizeof(struct isapnp_config));
+	printk("AAAA\n");
+	memset(&cfg, 0, sizeof(cfg));
+	memcpy(&cfg.result, config, sizeof(struct isapnp_config));
 	/* check if all values are set, otherwise try auto-configuration */
-	for (tmp = auto = 0; !auto && tmp < config.port_count; tmp++) {
-		if (!config.port[tmp])
-			auto++;
+	for (tmp = fauto = 0; !fauto && tmp < cfg.result.port_count; tmp++) {
+		if (!config->port[tmp])
+			fauto++;
 	}
-	for (tmp = 0; !auto && tmp < config.irq_count; tmp++) {
-		if (config.irq[tmp] == 255)
-			auto++;
+	for (tmp = 0; !fauto && tmp < cfg.result.irq_count; tmp++) {
+		if (config->irq[tmp] == 255)
+			fauto++;
 	}
-	for (tmp = 0; !auto && tmp < config.dma_count; tmp++) {
-		if (config.dma[tmp] == 255)
-			auto++;
+	for (tmp = 0; !fauto && tmp < cfg.result.dma_count; tmp++) {
+		if (config->dma[tmp] == 255)
+			fauto++;
 	}
-	for (tmp = 0; !auto && tmp < config.mem_count; tmp++) {
-		if (!config.mem[tmp])
-			auto++;
+	for (tmp = 0; !fauto && tmp < cfg.result.mem_count; tmp++) {
+		if (config->mem[tmp])
+			fauto++;
 	}
-	if (!auto)
+	if (!fauto)
 		goto __skip_auto;
 	/* set variables to initial values */
-	res_count = 0;
-	port_idx[0] = irq_idx[0] = dma_idx[0] = mem_idx[0] = 0;
-	for (restmp = logdev->res; restmp && res_count < 15; restmp = restmp->next) {
-		port_idx[res_count+1] = port_idx[res_count];
-		irq_idx[res_count+1] = irq_idx[res_count];
-		dma_idx[res_count+1] = dma_idx[res_count];
-		mem_idx[res_count+1] = res_idx[res_count];
-		for (port = restmp->port; port; port = port->next)
-			port_idx[res_count+1]++;
-		for (irq = restmp->irq; irq; irq = irq->next)
-			irq_idx[res_count+1]++;
-		for (dma = restmp->dma; dma; dma = dma->next)
-			dma_idx[res_count+1]++;
-		for (mem = restmp->mem; mem; mem = mem->next)
-			mem_idx[res_count+1]++;
-		res[res_count++] = restmp;
+	if ((err = isapnp_alternative_switch(&cfg, NULL, NULL))<0) {
+		printk("f1 - %i\n", err);
+		return err;
 	}
-	/* ok. we are looking for first valid configuration */
-	for (res_idx = 0; res_idx < res_count; res_idx++) {
-		for (tmp = 0; tmp < config.port_count; tmp++) {
-			for (tmp1 = 0; tmp1 < res_count && tmp < port_idx[tmp1]; tmp1++);
-			if (tmp1 >= res_count)
-				return -ENOENT;
-		}
-	}
+	/* find first valid configuration */
+	do {
+		for (tmp = 0; tmp < cfg.result.port_count; tmp++)
+			if ((err = isapnp_valid_port(&cfg, tmp))<0) {
+				printk("f2 - %i\n", err);
+				return err;
+			}
+		for (tmp = 0; tmp < cfg.result.irq_count; tmp++)
+			if ((err = isapnp_valid_irq(&cfg, tmp))<0) {
+				printk("f3 - %i\n", err);
+				return err;
+			}
+		for (tmp = 0; tmp < cfg.result.dma_count; tmp++)
+			if ((err = isapnp_valid_dma(&cfg, tmp))<0) {
+				printk("f4 - %i\n", err);
+				return err;
+			}
+		for (tmp = 0; tmp < cfg.result.mem_count; tmp++)
+			if ((err = isapnp_valid_mem(&cfg, tmp))<0) {
+				printk("f5 - %i\n", err);
+				return err;
+			}
+	} while (isapnp_check_valid(&cfg)<0);
       __skip_auto:
       	/* we have valid configuration, try configure hardware */
-	return -1;
+	return 0;
 }
 
 /*
@@ -1165,17 +1627,6 @@ static void isapnp_free_port(struct isapnp_port *port)
 		next = port->next;
 		kfree(port);
 		port = next;
-	}
-}
-
-static void isapnp_free_fixed_port(struct isapnp_fixed_port *fixport)
-{
-	struct isapnp_fixed_port *next;
-
-	while (fixport) {
-		next = fixport->next;
-		kfree(fixport);
-		fixport = next;
 	}
 }
 
@@ -1223,17 +1674,6 @@ static void isapnp_free_mem32(struct isapnp_mem32 *mem32)
 	}
 }
 
-static void isapnp_free_fixed_mem32(struct isapnp_fixed_mem32 *fixmem32)
-{
-	struct isapnp_fixed_mem32 *next;
-
-	while (fixmem32) {
-		next = fixmem32->next;
-		kfree(fixmem32);
-		fixmem32 = next;
-	}
-}
-
 static void isapnp_free_compatid(struct isapnp_compatid *compat)
 {
 	struct isapnp_compatid *next;
@@ -1252,12 +1692,10 @@ static void isapnp_free_resources(struct isapnp_resources *resources, int alt)
 	while (resources) {
 		next = alt ? resources->alt : resources->next;
 		isapnp_free_port(resources->port);
-		isapnp_free_fixed_port(resources->fixport);
 		isapnp_free_irq(resources->irq);
 		isapnp_free_dma(resources->dma);
 		isapnp_free_mem(resources->mem);
 		isapnp_free_mem32(resources->mem32);
-		isapnp_free_fixed_mem32(resources->fixmem32);
 		if (!alt && resources->alt)
 			isapnp_free_resources(resources->alt, 1);
 		kfree(resources);
@@ -1301,6 +1739,66 @@ static void isapnp_free_all_resources(void)
 	isapnp_proc_done();
 #endif
 }
+
+#ifndef LINUX_2_1
+static struct symbol_table isapnp_syms = {
+	#include <linux/symtab_begin.h>
+	X(isapnp_cfg_begin),
+	X(isapnp_cfg_end),
+	X(isapnp_cfg_get_byte),
+	X(isapnp_cfg_get_word),
+	X(isapnp_cfg_get_dword),
+	X(isapnp_cfg_set_byte),
+	X(isapnp_cfg_set_word),
+	X(isapnp_cfg_set_dword),
+	X(isapnp_wake),
+	X(isapnp_logdev),
+	X(isapnp_activate),
+	X(isapnp_find_port),
+	X(isapnp_find_irq),
+	X(isapnp_find_dma),
+	X(isapnp_find_mem),
+	X(isapnp_find_mem32),
+	X(isapnp_verify_port),
+	X(isapnp_verify_irq),
+	X(isapnp_verify_dma),
+	X(isapnp_verify_mem),
+	X(isapnp_verify_mem32),
+	X(isapnp_find_device),
+	X(isapnp_find_logdev),
+	X(isapnp_config_init),
+	X(isapnp_configure),
+#include <linux/symtab_end.h>
+};
+#endif /* !LINUX_2_1 */
+
+#ifdef LINUX_2_1
+EXPORT_SYMBOL(isapnp_cfg_begin);
+EXPORT_SYMBOL(isapnp_cfg_end);
+EXPORT_SYMBOL(isapnp_cfg_get_byte);
+EXPORT_SYMBOL(isapnp_cfg_get_word);
+EXPORT_SYMBOL(isapnp_cfg_get_dword);
+EXPORT_SYMBOL(isapnp_cfg_set_byte);
+EXPORT_SYMBOL(isapnp_cfg_set_word);
+EXPORT_SYMBOL(isapnp_cfg_set_dword);
+EXPORT_SYMBOL(isapnp_wake);
+EXPORT_SYMBOL(isapnp_logdev);
+EXPORT_SYMBOL(isapnp_activate);
+EXPORT_SYMBOL(isapnp_find_port);
+EXPORT_SYMBOL(isapnp_find_irq);
+EXPORT_SYMBOL(isapnp_find_dma);
+EXPORT_SYMBOL(isapnp_find_mem);
+EXPORT_SYMBOL(isapnp_find_mem32);
+EXPORT_SYMBOL(isapnp_verify_port);
+EXPORT_SYMBOL(isapnp_verify_irq);
+EXPORT_SYMBOL(isapnp_verify_dma);
+EXPORT_SYMBOL(isapnp_verify_mem);
+EXPORT_SYMBOL(isapnp_verify_mem32);
+EXPORT_SYMBOL(isapnp_find_device);
+EXPORT_SYMBOL(isapnp_find_logdev);
+EXPORT_SYMBOL(isapnp_config_init);
+EXPORT_SYMBOL(isapnp_configure);
+#endif /* LINUX_2_1 */
 
 __initfunc(int isapnp_init(void))
 {
@@ -1348,12 +1846,18 @@ __initfunc(int isapnp_init(void))
 	if (isapnp_verbose) {
 		for (dev = isapnp_devices; dev; dev = dev->next) {
 			printk( "isapnp: Device '%s'\n", dev->identifier?dev->identifier:"Unknown");
+			if (isapnp_verbose < 2)
+				continue;
 			for (logdev = dev->logdev; logdev; logdev = logdev->next)
 				printk("isapnp:   Logical device '%s'\n", logdev->identifier?logdev->identifier:"Unknown");
 		}
 	}
 	printk("isapnp: %i Plug & Play device%s detected total\n", devices, devices>1?"s":"");
 	isapnp_proc_init();
+#ifndef LINUX_2_1
+	if (register_symtab(&isapnp_syms))
+		printk("isapnp: cannot register symtab!!!\n");
+#endif
 	return 0;
 }
 

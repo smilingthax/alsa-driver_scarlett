@@ -559,6 +559,7 @@ static void isapnp_print_compatible(isapnp_info_buffer_t *buffer, struct isapnp_
 	while (compat) {
 		isapnp_printf(buffer, "    Compatible device ");
 		isapnp_print_devid(buffer, compat->vendor, compat->function);
+		isapnp_printf(buffer, "\n");
 		compat = compat->next;
 	}
 }
@@ -566,14 +567,8 @@ static void isapnp_print_compatible(isapnp_info_buffer_t *buffer, struct isapnp_
 static void isapnp_print_port(isapnp_info_buffer_t *buffer, char *space, struct isapnp_port *port)
 {
 	isapnp_printf(buffer, "%sPort 0x%x-0x%x, align 0x%x, size 0x%x, %i-bit address decoding\n",
-			space, port->min, port->max, port->align-1, port->size,
+			space, port->min, port->max, port->align ? (port->align-1) : 0, port->size,
 			port->flags & ISAPNP_PORT_FLAG_16BITADDR ? 16 : 10);
-}
-
-static void isapnp_print_fixed_port(isapnp_info_buffer_t *buffer, char *space, struct isapnp_fixed_port *fport)
-{
-	isapnp_printf(buffer, "%sFixed port 0x%x, size 0x%x\n",
-			space, fport->port, fport->size);
 }
 
 static void isapnp_print_irq(isapnp_info_buffer_t *buffer, char *space, struct isapnp_irq *irq)
@@ -593,6 +588,8 @@ static void isapnp_print_irq(isapnp_info_buffer_t *buffer, char *space, struct i
 			else
 				isapnp_printf(buffer, "%i", i);
 		}
+	if (!irq->map)
+		isapnp_printf(buffer, "<none>");
 	if (irq->flags & ISAPNP_IRQ_FLAG_HIGHEDGE)
 		isapnp_printf(buffer, " High-Edge");
 	if (irq->flags & ISAPNP_IRQ_FLAG_LOWEDGE)
@@ -619,6 +616,8 @@ static void isapnp_print_dma(isapnp_info_buffer_t *buffer, char *space, struct i
 			}
 			isapnp_printf(buffer, "%i", i);
 		}
+	if (!dma->map)
+		isapnp_printf(buffer, "<none>");
 	switch (dma->type) {
 	case ISAPNP_DMA_TYPE_8BIT:
 		s = "8-bit";
@@ -697,31 +696,14 @@ static void isapnp_print_mem32(isapnp_info_buffer_t *buffer, char *space, struct
 	}
 }
 
-static void isapnp_print_fixed_mem32(isapnp_info_buffer_t *buffer, char *space, struct isapnp_fixed_mem32 *fmem32)
-{
-	int first = 1, i;
-
-	isapnp_printf(buffer, "%s32-bit fixed memory ", space);
-	for (i = 0; i < 17; i++) {
-		if (first) {
-			first = 0;
-		} else {
-			isapnp_printf(buffer, ":");
-		}
-		isapnp_printf(buffer, "%02x", fmem32->data[i]);
-	}
-}
-
 static void isapnp_print_resources(isapnp_info_buffer_t *buffer, char *space, struct isapnp_resources *res)
 {
 	char *s;
 	struct isapnp_port *port;
-	struct isapnp_fixed_port *fport;
 	struct isapnp_irq *irq;
 	struct isapnp_dma *dma;
 	struct isapnp_mem *mem;
 	struct isapnp_mem32 *mem32;
-	struct isapnp_fixed_mem32 *fmem32;
 
 	switch (res->priority) {
 	case ISAPNP_RES_PRIORITY_PREFFERED:
@@ -739,8 +721,6 @@ static void isapnp_print_resources(isapnp_info_buffer_t *buffer, char *space, st
 	isapnp_printf(buffer, "%sPriority %s\n", space, s);
 	for (port = res->port; port; port = port->next)
 		isapnp_print_port(buffer, space, port);
-	for (fport = res->fixport; fport; fport = fport->next)
-		isapnp_print_fixed_port(buffer, space, fport);
 	for (irq = res->irq; irq; irq = irq->next)
 		isapnp_print_irq(buffer, space, irq);
 	for (dma = res->dma; dma; dma = dma->next)
@@ -749,8 +729,6 @@ static void isapnp_print_resources(isapnp_info_buffer_t *buffer, char *space, st
 		isapnp_print_mem(buffer, space, mem);
 	for (mem32 = res->mem32; mem32; mem32 = mem32->next)
 		isapnp_print_mem32(buffer, space, mem32);
-	for (fmem32 = res->fixmem32; fmem32; fmem32 = fmem32->next)
-		isapnp_print_fixed_mem32(buffer, space, fmem32);
 }
 
 static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isapnp_logdev *logdev)

@@ -8,7 +8,9 @@ TOPDIR  = ..
 include $(TOPDIR)/Makefile.conf
 
 ifeq (1,$(SNDCFG_MVERSION))
-COPTS   += -include $(SNDCFG_KERNELDIR)/include/linux/modversions.h
+COPTS   += -DMODVERSIONS \
+		-include $(SNDCFG_KERNELDIR)/include/linux/modversions.h \
+		-include $(TOPDIR)/include/sndversions.h
 endif
 COPTS   += -D__KERNEL__ -DMODULE
 
