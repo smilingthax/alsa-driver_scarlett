@@ -102,10 +102,8 @@ typedef struct snd_stru_es18xx es18xx_t;
 
 
 extern void snd_es18xx_mixer_write(es18xx_t * codec, unsigned char reg, unsigned char data);
-extern unsigned char snd_es18xx_mixer_read(es18xx_t * codec, unsigned char reg);
-
+extern int snd_es18xx_mixer_read(es18xx_t * codec, unsigned char reg);
 extern void snd_es18xx_interrupt(es18xx_t * codec, unsigned char status);
-
 extern int snd_es18xx_new_device(snd_card_t * card,
 				 unsigned short port,
 				 unsigned short mpu_port,
