@@ -2085,6 +2085,9 @@ static void isapnp_free_all_resources(void)
 	struct isapnp_card *card, *cardnext;
 #endif
 
+#if defined(MODULE) && defined(CONFIG_PROC_FS)
+	isapnp_proc_done();
+#endif
 #ifdef ISAPNP_REGION_OK
 #ifdef NEW_RESOURCE
 	release_resource(pidxr_res);
@@ -2109,9 +2112,6 @@ static void isapnp_free_all_resources(void)
 		isapnp_free_device(card->devices);
 		kfree(card);
 	}
-#ifdef CONFIG_PROC_FS
-	isapnp_proc_done();
-#endif
 #endif
 }
 
