@@ -246,6 +246,16 @@ static int snd_via686a_codec_valid(via686a_t *chip, int secondary)
 	return -EIO;
 }
  
+static void snd_via686a_codec_wait(ac97_t *ac97)
+{
+	via686a_t *chip = snd_magic_cast(via686a_t, ac97->private_data, return);
+	int err;
+	err = snd_via686a_codec_ready(chip, ac97->num);
+	/* here we need to wait fairly for long time.. */
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	schedule_timeout(HZ/2);
+}
+
 static void snd_via686a_codec_write(ac97_t *ac97,
 				    unsigned short reg,
 				    unsigned short val)
@@ -811,6 +821,7 @@ static int __devinit snd_via686a_mixer(via686a_t *chip)
 	ac97.write = snd_via686a_codec_write;
 	ac97.read = snd_via686a_codec_read;
 	ac97.init = snd_via686a_codec_init;
+	ac97.wait = snd_via686a_codec_wait;
 	ac97.private_data = chip;
 	ac97.private_free = snd_via686a_mixer_free_ac97;
 	ac97.clock = chip->ac97_clock;
