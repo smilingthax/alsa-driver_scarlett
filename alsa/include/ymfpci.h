@@ -266,6 +266,7 @@ struct _snd_ymfpci_pcm {
 	u32 period_pos;
 	u32 last_pos;
 	u32 capture_bank_number;
+	u32 shift;
 };
 
 struct _snd_ymfpci {
