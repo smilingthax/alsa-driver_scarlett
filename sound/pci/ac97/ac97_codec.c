@@ -1312,7 +1312,7 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 		if (!(val & mask))
 			return 0;	/* nothing here */
 	}
-	return 1;		/* success, usable */
+	return 1;		/* success, useable */
 }
 
 static int snd_ac97_try_bit(ac97_t * ac97, int reg, int bit)
