@@ -411,6 +411,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_INFO_RECORD		0x00000200
 #define SND_PCM_INFO_DUPLEX		0x00000400
 #define SND_PCM_INFO_DUPLEX_LIMIT	0x00000800	/* rate for playback & record channels must be same!!! */
+#define SND_PCM_INFO_DUPLEX_MONO	0x00001000	/* in duplex mode - only mono (one channel) is supported */
 
 #define SND_PCM_PINFO_BATCH		0x00000001	/* double buffering */
 #define SND_PCM_PINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
