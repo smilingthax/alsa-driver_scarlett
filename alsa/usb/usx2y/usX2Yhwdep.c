@@ -25,7 +25,7 @@
 #include <sound/core.h>
 #include "usx2y.h"
 #include <sound/memalloc.h>
-#include "usbus428.h"
+#include "usbusx2y.h"
 #include "usX2Yhwdep.h"
 
 
@@ -61,7 +61,7 @@ static unsigned long us428ctls_vm_nopage(struct vm_area_struct *area, unsigned l
 #endif
 	offset += address - area->vm_start;
 	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
-	vaddr = (char*)((us428dev_t*)area->vm_private_data)->us428ctls_sharedmem + offset;
+	vaddr = (char*)((usX2Ydev_t*)area->vm_private_data)->us428ctls_sharedmem + offset;
 	page = virt_to_page(vaddr);
 	get_page(page);
 	snd_printd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%X\n", vaddr, page, offset);
@@ -85,11 +85,11 @@ static struct vm_operations_struct us428ctls_vm_ops = {
 static int us428ctls_mmap(snd_hwdep_t * hw, struct file *filp, struct vm_area_struct *area)
 {
 	unsigned long	size = (unsigned long)(area->vm_end - area->vm_start);
-	us428dev_t	*us428 = (us428dev_t*)hw->private_data;
+	usX2Ydev_t	*us428 = (usX2Ydev_t*)hw->private_data;
 
 	// FIXME this hwdep interface is used twice: fpga download and mmap for controlling Lights etc. Maybe better using 2 hwdep devs?
 	// so as long as the device isn't fully initialised yet we return -EBUSY here.
- 	if (!(((us428dev_t*)hw->private_data)->chip_status & USX2Y_STAT_CHIP_INIT))
+ 	if (!(((usX2Ydev_t*)hw->private_data)->chip_status & USX2Y_STAT_CHIP_INIT))
 		return -EBUSY;
 
 	/* if userspace tries to mmap beyond end of our buffer, fail */ 
@@ -120,7 +120,7 @@ static int us428ctls_mmap(snd_hwdep_t * hw, struct file *filp, struct vm_area_st
 static unsigned int us428ctls_poll(snd_hwdep_t *hw, struct file *file, poll_table *wait)
 {
 	unsigned int	mask = 0;
-	us428dev_t	*us428 = (us428dev_t*)hw->private_data;
+	usX2Ydev_t	*us428 = (usX2Ydev_t*)hw->private_data;
 	static unsigned	LastN;
 
 	if (us428->chip_status & USX2Y_STAT_CHIP_HUP)
@@ -157,10 +157,24 @@ static int usX2Y_hwdep_dsp_status(snd_hwdep_t *hw, snd_hwdep_dsp_status_t *info)
 		[USX2Y_TYPE_224] = "us224",
 		[USX2Y_TYPE_428] = "us428",
 	};
+	int id = -1;
 
-	strcpy(info->id, type_ids[USX2Y_TYPE_428]);
+	switch (((usX2Ydev_t*)hw->private_data)->chip.dev->descriptor.idProduct) {
+	case USB_ID_US122:
+		id = USX2Y_TYPE_122;
+		break;
+	case USB_ID_US224:
+		id = USX2Y_TYPE_224;
+		break;
+	case USB_ID_US428:
+		id = USX2Y_TYPE_428;
+		break;
+	}
+	if (0 > id)
+		return -ENODEV;
+	strcpy(info->id, type_ids[id]);
 	info->num_dsps = 2;		// 0: Prepad Data, 1: FPGA Code
- 	if (((us428dev_t*)hw->private_data)->chip_status & USX2Y_STAT_CHIP_INIT) 
+ 	if (((usX2Ydev_t*)hw->private_data)->chip_status & USX2Y_STAT_CHIP_INIT) 
 		info->chip_ready = 1;
  	info->version = USX2Y_DRIVER_VERSION; 
 	return 0;
@@ -169,62 +183,74 @@ static int usX2Y_hwdep_dsp_status(snd_hwdep_t *hw, snd_hwdep_dsp_status_t *info)
 /*
  * Prepare some urbs
  */
-static int snd_us428_AsyncSeq04_init(us428dev_t* us428)
+static int snd_usX2Y_AsyncSeq04_init(usX2Ydev_t* usX2Y)
 {
 	int	err = 0,
 		i;
-	us428->Seq04 = 0;
+	usX2Y->Seq04 = 0;
 
-	if (NULL == (us428->AS04.buffer = kmalloc(URB_DataLen_AsyncSeq*URBS_AsyncSeq, GFP_KERNEL))) {
+	if (NULL == (usX2Y->AS04.buffer = kmalloc(URB_DataLen_AsyncSeq*URBS_AsyncSeq, GFP_KERNEL))) {
 		err = -ENOMEM;
 	}else
 		for (i = 0; i < URBS_AsyncSeq; ++i) {
-			if (NULL == (us428->AS04.urb[i] = usb_alloc_urb(0, GFP_KERNEL))) {
+			if (NULL == (usX2Y->AS04.urb[i] = usb_alloc_urb(0, GFP_KERNEL))) {
 				err = -ENOMEM;
 				break;
 			}
-			usb_fill_bulk_urb(	us428->AS04.urb[i], us428->chip.dev,
-						usb_sndbulkpipe(us428->chip.dev, 0x04),
-						us428->AS04.buffer + URB_DataLen_AsyncSeq*i, 0,
-						snd_us428_Out04Int, us428
+			usb_fill_bulk_urb(	usX2Y->AS04.urb[i], usX2Y->chip.dev,
+						usb_sndbulkpipe(usX2Y->chip.dev, 0x04),
+						usX2Y->AS04.buffer + URB_DataLen_AsyncSeq*i, 0,
+						snd_usX2Y_Out04Int, usX2Y
 				);
 		}
 	return err;
 }
-static int snd_us428_create_usbmidi(snd_card_t* card )
+static int snd_usX2Y_create_usbmidi(snd_card_t* card )
 {
-	static snd_usb_midi_endpoint_info_t quirk_data = {
+	static snd_usb_midi_endpoint_info_t quirk_data_1 = {
+		.out_ep =0x06,
+		.in_ep = 0x06,
+		.out_cables =	0x001,
+		.in_cables =	0x001
+	};
+	static snd_usb_audio_quirk_t quirk_1 = {
+		.vendor_name =	"TASCAM",
+		.product_name =	NAME_ALLCAPS,
+		.ifnum = 	0,
+       		.type = QUIRK_MIDI_FIXED_ENDPOINT,
+		.data = &quirk_data_1
+	};
+	static snd_usb_midi_endpoint_info_t quirk_data_2 = {
 		.out_ep =0x06,
 		.in_ep = 0x06,
 		.out_cables =	0x003,
 		.in_cables =	0x003
 	};
-	static snd_usb_audio_quirk_t quirk = {
+	static snd_usb_audio_quirk_t quirk_2 = {
 		.vendor_name =	"TASCAM",
-		.product_name =	NAME_ALLCAPS,
+		.product_name =	"US428",
 		.ifnum = 	0,
        		.type = QUIRK_MIDI_FIXED_ENDPOINT,
-		.data = &quirk_data
+		.data = &quirk_data_2
 	};
-	struct usb_interface *iface;
+	struct usb_device *dev = usX2Y(card)->chip.dev;
+	struct usb_interface *iface = get_iface(dev->actconfig, 0);
+	snd_usb_audio_quirk_t *quirk = dev->descriptor.idProduct == USB_ID_US428 ? &quirk_2 : &quirk_1;
 
-	snd_printd("snd_us428_create_usbmidi \n");
-
-	iface = get_iface(us428(card)->chip.dev->actconfig, 0);
-
-	return snd_usb_create_midi_interface(&us428(card)->chip, iface, &quirk);
+	snd_printd("snd_usX2Y_create_usbmidi \n");
+	return snd_usb_create_midi_interface(&usX2Y(card)->chip, iface, quirk);
 }
 
-static int snd_us428_create_alsa_devices(snd_card_t* card)
+static int snd_usX2Y_create_alsa_devices(snd_card_t* card)
 {
 	int err;
 
 	do {
-		if ((err = snd_us428_create_usbmidi(card)) < 0) {
+		if ((err = snd_usX2Y_create_usbmidi(card)) < 0) {
 			snd_printk("snd_us428_create_alsa_devices: snd_us428_create_usbmidi error %i \n", err);
 			break;
 		}
-		if ((err = snd_us428_audio_create(card)) < 0) 
+		if ((err = snd_usX2Y_audio_create(card)) < 0) 
 			break;
 		if ((err = snd_card_register(card)) < 0)
 			break;
@@ -233,26 +259,26 @@ static int snd_us428_create_alsa_devices(snd_card_t* card)
 	return err;
 } 
 
-static int snd_us428_In04_init(us428dev_t* us428)
+static int snd_usX2Y_In04_init(usX2Ydev_t* usX2Y)
 {
 	int	err = 0;
-	if (! (us428->In04urb = usb_alloc_urb(0, GFP_KERNEL)))
+	if (! (usX2Y->In04urb = usb_alloc_urb(0, GFP_KERNEL)))
 		return -ENOMEM;
 
-	if (! (us428->In04Buf = kmalloc(21, GFP_KERNEL))) {
-		usb_free_urb(us428->In04urb);
+	if (! (usX2Y->In04Buf = kmalloc(21, GFP_KERNEL))) {
+		usb_free_urb(usX2Y->In04urb);
 		return -ENOMEM;
 	}
 	 
-	init_waitqueue_head(&us428->In04WaitQueue);
-	usb_fill_int_urb(us428->In04urb, us428->chip.dev, usb_rcvintpipe(us428->chip.dev, 0x4),
-			 us428->In04Buf, 21,
-			 snd_us428_In04Int, us428,
+	init_waitqueue_head(&usX2Y->In04WaitQueue);
+	usb_fill_int_urb(usX2Y->In04urb, usX2Y->chip.dev, usb_rcvintpipe(usX2Y->chip.dev, 0x4),
+			 usX2Y->In04Buf, 21,
+			 snd_usX2Y_In04Int, usX2Y,
 			 10);
 #ifdef OLD_USB
-	us428->In04urb->transfer_flags = USB_QUEUE_BULK;
+	usX2Y->In04urb->transfer_flags = USB_QUEUE_BULK;
 #endif
-	err = usb_submit_urb(us428->In04urb, GFP_KERNEL);
+	err = usb_submit_urb(usX2Y->In04urb, GFP_KERNEL);
 	return err;
 }
 
@@ -266,7 +292,7 @@ static int usX2Y_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
 
 	err = -EINVAL;
 	if (access_ok(VERIFY_READ, dsp->image, dsp->length)) {
-		struct usb_device* dev = ((us428dev_t*)hw->private_data)->chip.dev;
+		struct usb_device* dev = ((usX2Ydev_t*)hw->private_data)->chip.dev;
 		buf = kmalloc(dsp->length, GFP_KERNEL);
 		copy_from_user(buf, dsp->image, dsp->length);
 		if ((err = usb_set_interface(dev, 0, 1)))
@@ -277,20 +303,20 @@ static int usX2Y_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
 	}
 	if (!err  &&  1 == dsp->index)
 		do {
-			if ((err = snd_us428_AsyncSeq04_init((us428dev_t*)hw->private_data))) {
+			if ((err = snd_usX2Y_AsyncSeq04_init((usX2Ydev_t*)hw->private_data))) {
 				snd_printk("snd_us428_AsyncSeq04_init error \n");
 				break;
 			}
-			if ((err = snd_us428_In04_init((us428dev_t*)hw->private_data))) {
+			if ((err = snd_usX2Y_In04_init((usX2Ydev_t*)hw->private_data))) {
 				snd_printk("snd_us428_In04_init error \n");
 				break;
 			}
-			if ((err = snd_us428_create_alsa_devices(hw->card))) {
+			if ((err = snd_usX2Y_create_alsa_devices(hw->card))) {
 				snd_printk("snd_us428_create_alsa_devices error %i \n", err);
 				snd_card_free(hw->card);
 				break;
 			}
-			((us428dev_t*)hw->private_data)->chip_status |= USX2Y_STAT_CHIP_INIT; 
+			((usX2Ydev_t*)hw->private_data)->chip_status |= USX2Y_STAT_CHIP_INIT; 
 			snd_printd("%s: alsa all started\n", hw->name);
 		} while (0);
 	return err;
@@ -306,7 +332,7 @@ int snd_usX2Y_hwdep_new(snd_card_t* card, struct usb_device* device)
 		return err;
 
 	hw->iface = SNDRV_HWDEP_IFACE_USX2Y;
-	hw->private_data = us428(card);
+	hw->private_data = usX2Y(card);
 	hw->ops.open = usX2Y_hwdep_open;
 	hw->ops.release = usX2Y_hwdep_release;
 	hw->ops.dsp_status = usX2Y_hwdep_dsp_status;
@@ -315,7 +341,7 @@ int snd_usX2Y_hwdep_new(snd_card_t* card, struct usb_device* device)
 	hw->ops.poll = us428ctls_poll;
 	hw->exclusive = 1;
 	sprintf(hw->name, "/proc/bus/usb/%03d/%03d", device->bus->busnum, device->devnum);
-	us428(card)->hwdep = hw;
+	usX2Y(card)->hwdep = hw;
 
 	return 0;
 }

@@ -17,8 +17,8 @@
 %dir linux/sound/pcmcia/pdaudiocf
 |snd-pdaudiocf snd-pcm
 
-%dir linux/sound/usb/us428
-|snd-usb-us428 snd-usb-audio snd-hwdep
+%dir linux/sound/usb/usx2y
+|snd-usb-usx2y snd-usb-audio snd-hwdep
 
 %dir linux/sound/pci/au88x0
 |snd-au8810 snd-pcm snd-ac97-codec snd-mpu401-uart

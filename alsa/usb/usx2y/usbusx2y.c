@@ -74,16 +74,16 @@
 
 #include <sound/rawmidi.h>
 #include "usx2y.h"
-#include "usbus428.h"
+#include "usbusx2y.h"
 #include "usX2Yhwdep.h"
 
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.3");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.4");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001) }}");
+MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8007) }}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX; /* Index 0-max */
 static char* id[SNDRV_CARDS] = SNDRV_DEFAULT_STR; /* Id for this card */
@@ -100,61 +100,61 @@ MODULE_PARM_DESC(enable, "Enable "NAME_ALLCAPS".");
 MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 
 
-static int snd_us428_card_used[SNDRV_CARDS];
+static int snd_usX2Y_card_used[SNDRV_CARDS];
 
-static void snd_us428_usb_disconnect(struct usb_device* usb_device, void* ptr);
-static void snd_us428_card_private_free(snd_card_t *card);
+static void snd_usX2Y_usb_disconnect(struct usb_device* usb_device, void* ptr);
+static void snd_usX2Y_card_private_free(snd_card_t *card);
 
 #ifdef CONFIG_SND_DEBUG
 /* 
  * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
  */
 #ifndef OLD_USB
-void snd_us428_Out04Int(urb_t* urb, struct pt_regs *regs)
+void snd_usX2Y_Out04Int(urb_t* urb, struct pt_regs *regs)
 #else
-void snd_us428_Out04Int(urb_t* urb)
+void snd_usX2Y_Out04Int(urb_t* urb)
 #endif
 {
 	if (urb->status) {
 		int 		i;
-		us428dev_t*	us428 = urb->context;
-		for (i = 0; i < 10 && us428->AS04.urb[i] != urb; i++);
-		snd_printd("snd_us428_Out04Int() us428->Seq04=%i urb %i status=%i\n", us428->Seq04, i, urb->status);
+		usX2Ydev_t*	usX2Y = urb->context;
+		for (i = 0; i < 10 && usX2Y->AS04.urb[i] != urb; i++);
+		snd_printd("snd_usX2Y_Out04Int() usX2Y->Seq04=%i urb %i status=%i\n", usX2Y->Seq04, i, urb->status);
 	}
 }
 #endif
 
 #ifndef OLD_USB
-void snd_us428_In04Int(urb_t* urb, struct pt_regs *regs)
+void snd_usX2Y_In04Int(urb_t* urb, struct pt_regs *regs)
 #else
-void snd_us428_In04Int(urb_t* urb)
+void snd_usX2Y_In04Int(urb_t* urb)
 #endif
 {
 	int			err = 0;
-	us428dev_t		*us428 = urb->context;
-	us428ctls_sharedmem_t	*us428ctls = us428->us428ctls_sharedmem;
+	usX2Ydev_t		*usX2Y = urb->context;
+	us428ctls_sharedmem_t	*us428ctls = usX2Y->us428ctls_sharedmem;
 	
-	us428->In04IntCalls++;
+	usX2Y->In04IntCalls++;
 
 	if (urb->status) {
 		snd_printk( "Interrupt Pipe 4 came back with status=%i\n", urb->status);
 		return;
 	}
 
-	//	printk("%i:0x%02X ", 8, (int)((unsigned char*)us428->In04Buf)[8]); Master volume shows 0 here if fader is at max during boot ?!?
+	//	printk("%i:0x%02X ", 8, (int)((unsigned char*)usX2Y->In04Buf)[8]); Master volume shows 0 here if fader is at max during boot ?!?
 	if (us428ctls) {
 		int diff = -1;
 		if (-2 == us428ctls->CtlSnapShotLast) {
 			diff = 0;
-			memcpy(us428->In04Last, us428->In04Buf, sizeof(us428->In04Last));
+			memcpy(usX2Y->In04Last, usX2Y->In04Buf, sizeof(usX2Y->In04Last));
 			us428ctls->CtlSnapShotLast = -1;
 		} else {
 			int i;
 			for (i = 0; i < 21; i++) {
-				if (us428->In04Last[i] != ((char*)us428->In04Buf)[i]) {
+				if (usX2Y->In04Last[i] != ((char*)usX2Y->In04Buf)[i]) {
 					if (diff < 0)
 						diff = i;
-					us428->In04Last[i] = ((char*)us428->In04Buf)[i];
+					usX2Y->In04Last[i] = ((char*)usX2Y->In04Buf)[i];
 				}
 			}
 		}
@@ -162,19 +162,19 @@ void snd_us428_In04Int(urb_t* urb)
 			int n = us428ctls->CtlSnapShotLast + 1;
 			if (n >= N_us428_ctl_BUFS  ||  n < 0)
 				n = 0;
-			memcpy(us428ctls->CtlSnapShot + n, us428->In04Buf, sizeof(us428ctls->CtlSnapShot[0]));
+			memcpy(us428ctls->CtlSnapShot + n, usX2Y->In04Buf, sizeof(us428ctls->CtlSnapShot[0]));
 			us428ctls->CtlSnapShotDiffersAt[n] = diff;
 			us428ctls->CtlSnapShotLast = n;
-			wake_up(&us428->us428ctls_wait_queue_head);
+			wake_up(&usX2Y->us428ctls_wait_queue_head);
 		}
 	}
 	
 	
-	if (us428->US04) {
-		if (0 == us428->US04->submitted)
+	if (usX2Y->US04) {
+		if (0 == usX2Y->US04->submitted)
 			do
-				err = usb_submit_urb(us428->US04->urb[us428->US04->submitted++], GFP_KERNEL);
-			while (!err && us428->US04->submitted < us428->US04->len);
+				err = usb_submit_urb(usX2Y->US04->urb[usX2Y->US04->submitted++], GFP_KERNEL);
+			while (!err && usX2Y->US04->submitted < usX2Y->US04->len);
 	} else
 		if (us428ctls && us428ctls->p4outLast >= 0 && us428ctls->p4outLast < N_us428_p4out_BUFS) {
 			if (us428ctls->p4outLast != us428ctls->p4outSent) {
@@ -182,16 +182,16 @@ void snd_us428_In04Int(urb_t* urb)
 				if (send >= N_us428_p4out_BUFS)
 					send = 0;
 				for (j = 0; j < URBS_AsyncSeq; ++j)
-					if (0 == us428->AS04.urb[j]->status) {
+					if (0 == usX2Y->AS04.urb[j]->status) {
 						us428_p4out_t *p4out = us428ctls->p4out + send;	// FIXME if more then 1 p4out is new, 1 gets lost.
-						usb_fill_bulk_urb(us428->AS04.urb[j], us428->chip.dev,
-								  usb_sndbulkpipe(us428->chip.dev, 0x04), &p4out->val.vol, 
+						usb_fill_bulk_urb(usX2Y->AS04.urb[j], usX2Y->chip.dev,
+								  usb_sndbulkpipe(usX2Y->chip.dev, 0x04), &p4out->val.vol, 
 								  p4out->type == eLT_Light ? sizeof(us428_lights_t) : 5,
-								  snd_us428_Out04Int, us428);
+								  snd_usX2Y_Out04Int, usX2Y);
 #ifdef OLD_USB
-						us428->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
+						usX2Y->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
 #endif
-						usb_submit_urb(us428->AS04.urb[j], GFP_KERNEL);
+						usb_submit_urb(usX2Y->AS04.urb[j], GFP_KERNEL);
 						us428ctls->p4outSent = send;
 						break;
 					}
@@ -203,7 +203,7 @@ void snd_us428_In04Int(urb_t* urb)
 	}
 }
 
-static void snd_us428_unlinkSeq(snd_us428_AsyncSeq_t* S)
+static void snd_usX2Y_unlinkSeq(snd_usX2Y_AsyncSeq_t* S)
 {
 	int	i;
 	for (i = 0; i < URBS_AsyncSeq; ++i) {
@@ -218,52 +218,58 @@ static void snd_us428_unlinkSeq(snd_us428_AsyncSeq_t* S)
 }
 
 
-static struct usb_device_id snd_us428_usb_id_table[] = {
+static struct usb_device_id snd_usX2Y_usb_id_table[] = {
 	{
 		.match_flags =	USB_DEVICE_ID_MATCH_DEVICE,
 		.idVendor =	0x1604,
-		.idProduct =	0x8001 
+		.idProduct =	USB_ID_US428 
+	},
+	{
+		.match_flags =	USB_DEVICE_ID_MATCH_DEVICE,
+		.idVendor =	0x1604,
+		.idProduct =	USB_ID_US122 
 	},
 	{ /* terminator */ }
 };
 
-static snd_card_t* snd_us428_create_card(struct usb_device* device)
+static snd_card_t* snd_usX2Y_create_card(struct usb_device* device)
 {
 	int		dev;
 	snd_card_t*	card;
 	for (dev = 0; dev < SNDRV_CARDS; ++dev)
-		if (enable[dev] && !snd_us428_card_used[dev])
+		if (enable[dev] && !snd_usX2Y_card_used[dev])
 			break;
 	if (dev >= SNDRV_CARDS)
 		return NULL;
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof(us428dev_t));
+	card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof(usX2Ydev_t));
 	if (!card)
 		return NULL;
-	snd_us428_card_used[us428(card)->chip.index = dev] = 1;
-	card->private_free = snd_us428_card_private_free;
-	us428(card)->chip.dev = device;
-	us428(card)->chip.card = card;
-	init_MUTEX (&us428(card)->open_mutex);
-	INIT_LIST_HEAD(&us428(card)->chip.midi_list);
-	us428(card)->Seq04Complete = 1;
+	snd_usX2Y_card_used[usX2Y(card)->chip.index = dev] = 1;
+	card->private_free = snd_usX2Y_card_private_free;
+	usX2Y(card)->chip.dev = device;
+	usX2Y(card)->chip.card = card;
+	init_MUTEX (&usX2Y(card)->open_mutex);
+	INIT_LIST_HEAD(&usX2Y(card)->chip.midi_list);
+	usX2Y(card)->Seq04Complete = 1;
 	strcpy(card->driver, "USB "NAME_ALLCAPS"");
 	sprintf(card->shortname, "TASCAM "NAME_ALLCAPS"");
 	sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
 		card->shortname, 
-		snd_us428_usb_id_table[0].idVendor, snd_us428_usb_id_table[0].idProduct,
+		snd_usX2Y_usb_id_table[0].idVendor, snd_usX2Y_usb_id_table[0].idProduct,
 		0,//us428(card)->usbmidi.ifnum,
-		us428(card)->chip.dev->bus->busnum, us428(card)->chip.dev->devnum
+		usX2Y(card)->chip.dev->bus->busnum, usX2Y(card)->chip.dev->devnum
 		);
 	return card;
 }
 
 
-static void* snd_us428_usb_probe(struct usb_device* device, struct usb_interface *intf, const struct usb_device_id* device_id)
+static void* snd_usX2Y_usb_probe(struct usb_device* device, struct usb_interface *intf, const struct usb_device_id* device_id)
 {
 	int		err;
 	snd_card_t*	card;
-	if (device->descriptor.idVendor != 0x1604 || device->descriptor.idProduct != 0x8001 ||
-	    !(card = snd_us428_create_card(device)))
+	if (device->descriptor.idVendor != 0x1604 ||
+	    (device->descriptor.idProduct != USB_ID_US122 && device->descriptor.idProduct != USB_ID_US428) ||
+	    !(card = snd_usX2Y_create_card(device)))
 		return 0;
 	if ((err = snd_usX2Y_hwdep_new(card, device)) < 0  ||
 	    (err = snd_card_register(card)) < 0) {
@@ -277,10 +283,10 @@ static void* snd_us428_usb_probe(struct usb_device* device, struct usb_interface
 /*
  * new 2.5 USB kernel API
  */
-static int snd_us428_probe(struct usb_interface *intf, const struct usb_device_id *id)
+static int snd_usX2Y_probe(struct usb_interface *intf, const struct usb_device_id *id)
 {
 	void *chip;
-	chip = snd_us428_usb_probe(interface_to_usbdev(intf), intf, id);
+	chip = snd_usX2Y_usb_probe(interface_to_usbdev(intf), intf, id);
 	if (chip) {
 		dev_set_drvdata(&intf->dev, chip);
 		return 0;
@@ -288,91 +294,91 @@ static int snd_us428_probe(struct usb_interface *intf, const struct usb_device_i
 		return -EIO;
 }
 
-static void snd_us428_disconnect(struct usb_interface *intf)
+static void snd_usX2Y_disconnect(struct usb_interface *intf)
 {
-	snd_us428_usb_disconnect(interface_to_usbdev(intf),
+	snd_usX2Y_usb_disconnect(interface_to_usbdev(intf),
 				 dev_get_drvdata(&intf->dev));
 }
 #else
 /*
  * 2.4 USB kernel API
  */
-static void *snd_us428_probe(struct usb_device *dev, unsigned int ifnum, const struct usb_device_id *id)
+static void *snd_usX2Y_probe(struct usb_device *dev, unsigned int ifnum, const struct usb_device_id *id)
 {
-	return snd_us428_usb_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
+	return snd_usX2Y_usb_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
 }
                                        
-static void snd_us428_disconnect(struct usb_device *dev, void *ptr)
+static void snd_usX2Y_disconnect(struct usb_device *dev, void *ptr)
 {
-	snd_us428_usb_disconnect(dev, ptr);
+	snd_usX2Y_usb_disconnect(dev, ptr);
 }
 #endif
 
-MODULE_DEVICE_TABLE(usb, snd_us428_usb_id_table);
-static struct usb_driver snd_us428_usb_driver = {
+MODULE_DEVICE_TABLE(usb, snd_usX2Y_usb_id_table);
+static struct usb_driver snd_usX2Y_usb_driver = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 70)	/* FIXME: find right number */
  	.owner =	THIS_MODULE,
 #endif
-	.name =		"snd-usb-us428",
-	.probe =	snd_us428_probe,
-	.disconnect =	snd_us428_disconnect,
-	.id_table =	snd_us428_usb_id_table,
+	.name =		"snd-usb-usx2y",
+	.probe =	snd_usX2Y_probe,
+	.disconnect =	snd_usX2Y_disconnect,
+	.id_table =	snd_usX2Y_usb_id_table,
 #ifdef OLD_USB
-	.driver_list =	LIST_HEAD_INIT(snd_us428_usb_driver.driver_list), 
+	.driver_list =	LIST_HEAD_INIT(snd_usX2Y_usb_driver.driver_list), 
 #endif
 };
 
-static void snd_us428_card_private_free(snd_card_t *card)
+static void snd_usX2Y_card_private_free(snd_card_t *card)
 {
-	if (us428(card)->In04Buf)
-		kfree(us428(card)->In04Buf);
-	usb_free_urb(us428(card)->In04urb);
-	if (us428(card)->us428ctls_sharedmem)
-		snd_free_pages(us428(card)->us428ctls_sharedmem, sizeof(*us428(card)->us428ctls_sharedmem));
-	if (us428(card)->chip.index >= 0  &&  us428(card)->chip.index < SNDRV_CARDS)
-		snd_us428_card_used[us428(card)->chip.index] = 0;
+	if (usX2Y(card)->In04Buf)
+		kfree(usX2Y(card)->In04Buf);
+	usb_free_urb(usX2Y(card)->In04urb);
+	if (usX2Y(card)->us428ctls_sharedmem)
+		snd_free_pages(usX2Y(card)->us428ctls_sharedmem, sizeof(*usX2Y(card)->us428ctls_sharedmem));
+	if (usX2Y(card)->chip.index >= 0  &&  usX2Y(card)->chip.index < SNDRV_CARDS)
+		snd_usX2Y_card_used[usX2Y(card)->chip.index] = 0;
 }
 
 /*
  * Frees the device.
  */
-static void snd_us428_usb_disconnect(struct usb_device* device, void* ptr)
+static void snd_usX2Y_usb_disconnect(struct usb_device* device, void* ptr)
 {
 	if (ptr) {
-		us428dev_t* us428 = us428((snd_card_t*)ptr);
+		usX2Ydev_t* usX2Y = usX2Y((snd_card_t*)ptr);
 		struct list_head* p;
-		us428->chip_status = USX2Y_STAT_CHIP_HUP;
-		snd_us428_unlinkSeq(&us428->AS04);
-		usb_unlink_urb(us428->In04urb);
+		usX2Y->chip_status = USX2Y_STAT_CHIP_HUP;
+		snd_usX2Y_unlinkSeq(&usX2Y->AS04);
+		usb_unlink_urb(usX2Y->In04urb);
 		/* release the midi resources */
-		list_for_each(p, &us428->chip.midi_list) {
-			snd_usbmidi_disconnect(p, &snd_us428_usb_driver);
+		list_for_each(p, &usX2Y->chip.midi_list) {
+			snd_usbmidi_disconnect(p, &snd_usX2Y_usb_driver);
 		}
 		snd_card_disconnect((snd_card_t*)ptr);
-		if (us428->us428ctls_sharedmem) 
-			wake_up(&us428->us428ctls_wait_queue_head);
+		if (usX2Y->us428ctls_sharedmem) 
+			wake_up(&usX2Y->us428ctls_wait_queue_head);
 		snd_card_free_in_thread((snd_card_t*)ptr);
 	}
 }
 
-static int __init snd_us428_module_init(void)
+static int __init snd_usX2Y_module_init(void)
 {
-	return usb_register(&snd_us428_usb_driver);
+	return usb_register(&snd_usX2Y_usb_driver);
 }
 
-static void __exit snd_us428_module_exit(void)
+static void __exit snd_usX2Y_module_exit(void)
 {
-	usb_deregister(&snd_us428_usb_driver);
+	usb_deregister(&snd_usX2Y_usb_driver);
 }
 
-module_init(snd_us428_module_init)
-module_exit(snd_us428_module_exit)
+module_init(snd_usX2Y_module_init)
+module_exit(snd_usX2Y_module_exit)
 
 #ifndef MODULE
 
-/* format is: snd-usb-us428=enable,index,id */
+/* format is: snd-usb-usX2Y=enable,index,id */
 
-static int __init snd_us428_setup(char* str)
+static int __init snd_usX2Y_setup(char* str)
 {
 	static unsigned __initdata nr_dev = 0;
 
@@ -385,7 +391,7 @@ static int __init snd_us428_setup(char* str)
 	return 1;
 }
 
-__setup("snd-usb-us428=", snd_us428_setup);
+__setup("snd-usb-usx2y=", snd_usX2Y_setup);
 
 #endif /* !MODULE */
 

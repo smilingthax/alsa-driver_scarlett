@@ -1,5 +1,5 @@
-#ifndef USBUS428_H
-#define USBUS428_H
+#ifndef USBUSX2Y_H
+#define USBUSX2Y_H
 #include <linux/usb.h>
 #include "../../alsa-kernel/usb/usbaudio.h"
 #include "usbus428ctldefs.h" 
@@ -17,13 +17,13 @@ typedef struct urb* purb_t;
 typedef struct {
 	urb_t*	urb[URBS_AsyncSeq];
 	char*   buffer;
-} snd_us428_AsyncSeq_t;
+} snd_usX2Y_AsyncSeq_t;
 
 typedef struct {
 	int	submitted;
 	int	len;
 	urb_t*	urb[0];
-} snd_us428_urbSeq_t;
+} snd_usX2Y_urbSeq_t;
 
 
 typedef struct {
@@ -33,11 +33,11 @@ typedef struct {
 	void*			In04Buf;
 	char			In04Last[24];
 	unsigned		In04IntCalls;
-	snd_us428_urbSeq_t*	US04;
+	snd_usX2Y_urbSeq_t*	US04;
 	int			Seq04;
 	int 			Seq04Complete;
 	wait_queue_head_t	In04WaitQueue;
-	snd_us428_AsyncSeq_t	AS04;
+	snd_usX2Y_AsyncSeq_t	AS04;
 	unsigned int		rate,
 				format;
 	int			refframes;
@@ -48,25 +48,25 @@ typedef struct {
 	struct semaphore	open_mutex;
 	us428ctls_sharedmem_t*	us428ctls_sharedmem;
 	wait_queue_head_t	us428ctls_wait_queue_head;
-} us428dev_t;
+} usX2Ydev_t;
 
 
-#define us428(c) ((us428dev_t*)(c)->private_data)
+#define usX2Y(c) ((usX2Ydev_t*)(c)->private_data)
 
-int snd_us428_audio_create(snd_card_t* card);
+int snd_usX2Y_audio_create(snd_card_t* card);
 
 #ifndef OLD_USB
-void snd_us428_Out04Int(urb_t* urb, struct pt_regs *regs);
-void snd_us428_In04Int(urb_t* urb, struct pt_regs *regs);
+void snd_usX2Y_Out04Int(urb_t* urb, struct pt_regs *regs);
+void snd_usX2Y_In04Int(urb_t* urb, struct pt_regs *regs);
 #else
-void snd_us428_Out04Int(urb_t* urb);
-void snd_us428_In04Int(urb_t* urb);
+void snd_usX2Y_Out04Int(urb_t* urb);
+void snd_usX2Y_In04Int(urb_t* urb);
 #endif
 
 #ifndef CONFIG_SND_DEBUG
-#define snd_us428_Out04Int 0
+#define snd_usX2Y_Out04Int 0
 #endif
 
-#define NAME_ALLCAPS "US-428"
+#define NAME_ALLCAPS "US-X2Y"
 
 #endif

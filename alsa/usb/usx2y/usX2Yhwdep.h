@@ -1,5 +1,5 @@
-#ifndef USBUSX2Y_H
-#define USBUSX2Y_H
+#ifndef USX2YHWDEP_H
+#define USX2YHWDEP_H
 
 int snd_usX2Y_hwdep_new(snd_card_t* card, struct usb_device* device);
 

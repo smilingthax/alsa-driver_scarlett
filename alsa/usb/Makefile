@@ -10,7 +10,7 @@ clean-files := usbaudio.c
 # for compatibility
 extra-snd-usb-audio-objs := usbcompat.o
 
-obj-$(CONFIG_SND) += us428/
+obj-$(CONFIG_SND) += usx2y/
 
 export-objs := usbaudio.o usbmidi.o
 
