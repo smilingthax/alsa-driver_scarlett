@@ -23,7 +23,7 @@
  */
 
 
-#ifdef CONFIG_SND_DEBUG
+#ifdef CONFIG_SND_DEBUG_MEMORY
 void *_snd_magic_kcalloc(unsigned long magic, size_t size, int flags);
 void *_snd_magic_kmalloc(unsigned long magic, size_t size, int flags);
 void snd_magic_kfree(void *ptr);
@@ -136,12 +136,14 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define pmac_t_magic				0xa15a3501
 
 #else
+
 #define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)
 #define snd_magic_kmalloc(type, extra, flags) (type *) kmalloc(sizeof(type) + extra, flags)
 #define snd_magic_cast(type, ptr, retval) (type *) ptr
 #define snd_magic_cast1(type, ptr, retval) snd_magic_cast(type, ptr, retval)
 #define snd_magic_kfree kfree
-#endif
 
 #endif
+
+#endif /* __SNDMAGIC_H */
 
