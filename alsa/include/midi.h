@@ -135,19 +135,23 @@ extern int snd_rawmidi_free(snd_rawmidi_t * rmidi);
 extern int __snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device);
 extern int __snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
 #ifdef CONFIG_SND_SEQUENCER
-#include "seq_midi.h"
+#include "seq_device.h"
 static inline int snd_rawmidi_register(snd_rawmidi_t * rmidi, int rawmidi_device)
 {
 	int err;
 
 	if ((err = __snd_rawmidi_register(rmidi, rawmidi_device))<0)
 		return err;
-	snd_seq_midisynth_register_port(rmidi->card, rmidi->device, NULL);
+	snd_seq_device_register(rmidi->card, rmidi->device, NULL,
+				SND_SEQ_DEV_MIDISYNTH, NULL, 0, NULL);
 	return err;
 }
 static inline int snd_rawmidi_unregister(snd_rawmidi_t * rmidi)
 {
-	snd_seq_midisynth_unregister_port(rmidi->card, rmidi->device);
+	snd_seq_device_t *dev;
+	dev = snd_seq_device_find(rmidi->card, rmidi->device, SND_SEQ_DEV_MIDISYNTH);
+	if (dev)
+		snd_seq_device_unregister(dev);
 	return __snd_rawmidi_unregister(rmidi);
 }
 #else

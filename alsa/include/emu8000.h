@@ -25,6 +25,7 @@
 
 #include "hwdep.h"
 #include "seq_kernel.h"
+#include "seq_device.h"
 
 
 /*
@@ -103,7 +104,7 @@ typedef struct snd_emu8000 {
 	struct semaphore patch_mutex;
 
 #ifdef CONFIG_SND_OSSEMUL
-	int oss_synth;
+	snd_seq_device_t *oss_synth;
 #endif
 
 } emu8000_t;
@@ -117,6 +118,10 @@ typedef struct snd_emu8000 {
 #define EMU8000_UPDATE_Q	(1<<6)
 
 /* Prototypes for emu8000.c.new */
-snd_hwdep_t *snd_emu8000_new_device(snd_card_t *card, unsigned short base);
+/*snd_hwdep_t *snd_emu8000_new_device(snd_card_t *card, unsigned short base);*/
+
+/* sequencer device id */
+#define SND_SEQ_DEV_EMU8000	"synth-emu8000"
+
 
 #endif

@@ -26,10 +26,10 @@
 #define SND_MINOR_CONTROL	0	/* 0 - 0 */
 #define SND_MINOR_SEQUENCER	1
 #define SND_MINOR_TIMER		(1+32)
-#define SND_MINOR_HWDEP		2	/* 2 - 3 */
-#define SND_MINOR_HWDEPS	2
-#define SND_MINOR_MIXER		4	/* 4 - 7 */
-#define SND_MINOR_MIXERS	4
+#define SND_MINOR_HWDEP		2	/* 2 - 5 */
+#define SND_MINOR_HWDEPS	4
+#define SND_MINOR_MIXER		6	/* 6 - 7 */
+#define SND_MINOR_MIXERS	2
 #define SND_MINOR_RAWMIDI	8	/* 8 - 15 */
 #define SND_MINOR_RAWMIDIS	8
 #define SND_MINOR_PCM		16	/* 16 - 31 */

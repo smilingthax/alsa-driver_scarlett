@@ -22,8 +22,8 @@
 
 #ifdef CONFIG_SND_SEQUENCER
 /* register/unregister midisynth port */
-extern int snd_seq_midisynth_register_port(snd_card_t *card, int device, char *portname);
-extern int snd_seq_midisynth_unregister_port(snd_card_t *card, int device);
+/*extern int snd_seq_midisynth_register_port(snd_card_t *card, int device, char *portname);*/
+/*extern int snd_seq_midisynth_unregister_port(snd_card_t *card, int device);*/
 #endif
                         
 #endif /* __SND_SEQ_MIDISYNTH_H */

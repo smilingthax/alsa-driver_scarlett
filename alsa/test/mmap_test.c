@@ -206,7 +206,7 @@ main()
 		tim.tv_sec = 10;
 		tim.tv_usec= 0;
 
-		select(fd+1, &writeset, &writeset, NULL, NULL);
+		select(fd+1, NULL, &writeset, NULL, NULL);
 /*
  * SNDCTL_DSP_GETOPTR (and GETIPTR as well) return three items. The
  * bytes field returns number of bytes played since start. It can be used

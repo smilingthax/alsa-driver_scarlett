@@ -94,21 +94,20 @@
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
 #define SND_SEQ_EVENT_INSTR_END		102	/* end of instrument management */
 #define SND_SEQ_EVENT_INSTR_PUT		103	/* put instrument to port */
-#define SND_SEQ_EVENT_INSTR_MODIFY	104
-#define SND_SEQ_EVENT_INSTR_GET		105	/* get instrument from port */
-#define SND_SEQ_EVENT_INSTR_GET_RESULT	106	/* result */
-#define SND_SEQ_EVENT_INSTR_FREE	107	/* free instrument(s) */
-#define SND_SEQ_EVENT_INSTR_LIST	108	/* instrument list */
-#define SND_SEQ_EVENT_INSTR_LIST_RESULT 109	/* result */
-#define SND_SEQ_EVENT_INSTR_RESET	110	/* reset instrument memory */
-#define SND_SEQ_EVENT_INSTR_INFO	111	/* instrument interface info */
-#define SND_SEQ_EVENT_INSTR_INFO_RESULT 112	/* result */
-#define SND_SEQ_EVENT_INSTR_STATUS	113	/* instrument interface status */
-#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 114	/* result */
-#define SND_SEQ_EVENT_INSTR_CLUSTER	115	/* cluster parameters */
-#define SND_SEQ_EVENT_INSTR_CLUSTER_GET	117	/* get cluster parameters */
-#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 118	/* result */
-#define SND_SEQ_EVENT_INSTR_CHANGE	118	/* instrument change */
+#define SND_SEQ_EVENT_INSTR_GET		104	/* get instrument from port */
+#define SND_SEQ_EVENT_INSTR_GET_RESULT	105	/* result */
+#define SND_SEQ_EVENT_INSTR_FREE	106	/* free instrument(s) */
+#define SND_SEQ_EVENT_INSTR_LIST	107	/* instrument list */
+#define SND_SEQ_EVENT_INSTR_LIST_RESULT 108	/* result */
+#define SND_SEQ_EVENT_INSTR_RESET	109	/* reset instrument memory */
+#define SND_SEQ_EVENT_INSTR_INFO	110	/* instrument interface info */
+#define SND_SEQ_EVENT_INSTR_INFO_RESULT 111	/* result */
+#define SND_SEQ_EVENT_INSTR_STATUS	112	/* instrument interface status */
+#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 113	/* result */
+#define SND_SEQ_EVENT_INSTR_CLUSTER	114	/* cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_GET	115	/* get cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 116	/* result */
+#define SND_SEQ_EVENT_INSTR_CHANGE	117	/* instrument change */
 
 	/* hardware specific events - range 192-255 */
 
@@ -470,6 +469,7 @@ typedef struct {
 /* instrument ASCII identifiers */
 #define SND_SEQ_INSTR_ID_DLS1		"DLS1"
 #define SND_SEQ_INSTR_ID_DLS2		"DLS2"
+#define SND_SEQ_INSTR_ID_SIMPLE		"Simple Wave"
 #define SND_SEQ_INSTR_ID_SOUNDFONT	"SoundFont"
 #define SND_SEQ_INSTR_ID_GUS_PATCH	"GUS Patch"
 #define SND_SEQ_INSTR_ID_INTERWAVE	"InterWave FFFF"
@@ -480,12 +480,24 @@ typedef struct {
 /* instrument types */
 #define SND_SEQ_INSTR_TYPE0_DLS1	(1<<0)	/* MIDI DLS v1 */
 #define SND_SEQ_INSTR_TYPE0_DLS2	(1<<1)	/* MIDI DLS v2 */
-#define SND_SEQ_INSTR_TYPE1_SOUNDFONT	(1<<0)	/* EMU SoundFont */
-#define SND_SEQ_INSTR_TYPE1_GUS_PATCH	(1<<1)	/* Gravis UltraSound Patch */
-#define SND_SEQ_INSTR_TYPE1_INTERWAVE	(1<<2)	/* InterWave FFFF */
+#define SND_SEQ_INSTR_TYPE1_SIMPLE	(1<<0)	/* Simple Wave */
+#define SND_SEQ_INSTR_TYPE1_SOUNDFONT	(1<<1)	/* EMU SoundFont */
+#define SND_SEQ_INSTR_TYPE1_GUS_PATCH	(1<<2)	/* Gravis UltraSound Patch */
+#define SND_SEQ_INSTR_TYPE1_INTERWAVE	(1<<3)	/* InterWave FFFF */
 #define SND_SEQ_INSTR_TYPE2_OPL2	(1<<0)	/* Yamaha OPL2 */
 #define SND_SEQ_INSTR_TYPE2_OPL3	(1<<1)	/* Yamaha OPL3 */
 #define SND_SEQ_INSTR_TYPE2_OPL4	(1<<2)	/* Yamaha OPL4 */
+
+/* put commands */
+#define SND_SEQ_INSTR_PUT_CMD_CREATE	0
+#define SND_SEQ_INSTR_PUT_CMD_REPLACE	1
+#define SND_SEQ_INSTR_PUT_CMD_MODIFY	2
+#define SND_SEQ_INSTR_PUT_CMD_ADD	3
+#define SND_SEQ_INSTR_PUT_CMD_REMOVE	4
+
+/* get commands */
+#define SND_SEQ_INSTR_GET_CMD_FULL	0
+#define SND_SEQ_INSTR_GET_CMD_PARTIAL	1
 
 /* query flags */
 #define SND_SEQ_INSTR_QUERY_FOLLOW_ALIAS (1<<0)
@@ -501,10 +513,11 @@ typedef struct {
 	} data;
 } snd_seq_instr_data_t;
 
-/* INSTR_PUT/MODIFY, data are stored in one block (extended or IPC), header + data */
+/* INSTR_PUT, data are stored in one block (extended or IPC), header + data */
 
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
+	int cmd;			/* put command */
 	char reserved[16];		/* for the future */
 	long len;			/* real instrument data length (without header) */
 	snd_seq_instr_data_t data;	/* instrument data */
@@ -515,6 +528,7 @@ typedef struct {
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
 	unsigned int flags;		/* query flags */
+	int cmd;			/* query command */
 	char reserved[16];		/* reserved for the future use */
 	long len;			/* real instrument data length (without header) */
 } snd_seq_instr_get_t;

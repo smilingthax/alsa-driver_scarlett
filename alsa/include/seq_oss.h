@@ -84,19 +84,33 @@ struct snd_seq_oss_callback_t {
 
 
 /*
+ * data pointer to snd_seq_register_device
+ */
+typedef struct snd_seq_oss_reg {
+	int type;
+	int subtype;
+	int nvoices;
+	snd_seq_oss_callback_t oper;
+	void *private_data;
+} snd_seq_oss_reg_t;
+
+/* device id */
+#define SND_SEQ_DEV_OSS		"seq-oss"
+
+/*
  * registration of synth port:
  * returns a unique index if succeeded.
  * Arguments name, type, subtype and nvoices are used for OSS synth_info.
  * Callbacks oper must be given.  Private data pointer is passed only for
  * open callback.
  */
-int snd_seq_oss_synth_register(char *name, int type, int subtype, int nvoices,
-			      snd_seq_oss_callback_t *oper, void *private_data);
+/*int snd_seq_oss_synth_register(char *name, int type, int subtype, int nvoices,
+			      snd_seq_oss_callback_t *oper, void *private_data);*/
 /*
  * unregistration of synth port:
  * give the registration index returned by seq_oss_synth_register().
  */
-int snd_seq_oss_synth_unregister(int index);
+/*int snd_seq_oss_synth_unregister(int index);*/
 
 
 #endif

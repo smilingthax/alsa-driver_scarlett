@@ -71,9 +71,9 @@ typedef struct snd_seq_kinstr_ops {
 	long add_len;			/* additional length */
 	char *instr_type;
 	int (*put)(void *private_data, snd_seq_kinstr_t *kinstr,
-		   char *instr_data, long len, int atomic);
+		   char *instr_data, long len, int atomic, int cmd);
 	int (*get)(void *private_data, snd_seq_kinstr_t *kinstr,
-		   char *instr_data, long len, int atomic);
+		   char *instr_data, long len, int atomic, int cmd);
 	int (*get_size)(void *private_data, snd_seq_kinstr_t *kinstr, long *size);
 	int (*remove)(void *private_data, snd_seq_kinstr_t *kinstr, int atomic);
 	struct snd_seq_kinstr_ops *next;
