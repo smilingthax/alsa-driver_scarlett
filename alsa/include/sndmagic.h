@@ -126,9 +126,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define ad1816a_t_magic				0xa15a2901
 #define intel8x0_t_magic			0xa15a2a01
 #define es1968_t_magic				0xa15a2b01
-#define esschanp_t_magic			0xa15a2b02
-#define esschanc_t_magic			0xa15a2b03
-#define esmdma_t_magic				0xa15a2b04
+#define esschan_t_magic				0xa15a2b02
 #define via686a_t_magic				0xa15a2c01
 #define pdplus_t_magic				0xa15a2d01
 #define cmipci_t_magic				0xa15a2e01

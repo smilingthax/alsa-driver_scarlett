@@ -1695,7 +1695,7 @@ struct _snd_cs46xx {
 	unsigned int midcr;
 	unsigned int uartm;
 	snd_info_entry_t *proc_entry;
-#ifdef CONFIG_APM
+#ifdef CONFIG_PM
 	struct pm_dev *pm_dev;
 #endif
 };
