@@ -247,6 +247,6 @@ void snd_sonicvibes_interrupt(sonicvibes_t * sonic);
 
 int snd_sonicvibes_pcm(sonicvibes_t * sonic, int device, snd_pcm_t ** rpcm);
 int snd_sonicvibes_mixer(sonicvibes_t * sonic, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
-void snd_sonicvibes_midi(sonicvibes_t * sonic, mpu401_t * mpu);
+void snd_sonicvibes_midi(sonicvibes_t * sonic, snd_rawmidi_t * rmidi);
 
 #endif				/* __SONICVIBES_H */
