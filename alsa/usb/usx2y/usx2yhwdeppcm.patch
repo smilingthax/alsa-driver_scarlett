@@ -19,7 +19,7 @@
  {
  	int pack;
  	for (pack = 0; pack < nr_of_packs(); ++pack) {
-+#ifndef LINUX_2_2
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 20)
  		struct usb_iso_packet_descriptor *desc = urb->iso_frame_desc + pack;
 +#else
 +		iso_packet_descriptor_t *desc = urb->iso_frame_desc + pack;
