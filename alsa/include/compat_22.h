@@ -8,6 +8,11 @@ typedef struct wait_queue * wait_queue_head_t;
 #define init_waitqueue_entry(q,p) ((q)->task = (p))
 #define set_current_state(xstate) do { current->state = xstate; } while (0)
 
+#define local_irq_save(flags) \
+	do { __save_flags(flags); __cli(); } while (0)
+#define local_irq_restore(flags) \
+	do { __restore_flags(flags); } while (0)
+
 #define __init
 #define __exit
 #define __exitdata

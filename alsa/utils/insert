@@ -334,6 +334,11 @@ case "$1" in
     insert snd-card-intel8x0.o
     restore intel8x0.conf
     ;;
+  pdplus|prodif-plus)
+    basic
+    insert snd-card-pdplus.o
+    restore prodif-plus.conf
+    ;;
   via686a|via)
     basic
     insert snd-ac97-codec.o
