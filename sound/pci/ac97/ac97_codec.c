@@ -2537,7 +2537,7 @@ static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97, const char *pre
 
 static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
 {
-	unsigned short old, bits, reg;
+	unsigned short old, bits, reg, mask;
 
 	if (! (ac97->ext_id & AC97_EI_SPDIF))
 		return -ENODEV;
@@ -2551,6 +2551,7 @@ static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
 			return -EINVAL;
 		}
 		reg = AC97_CSR_SPDIF;
+		mask = 1 << AC97_SC_SPSR_SHIFT;
 	} else {
 		switch (rate) {
 		case 44100: bits = AC97_SC_SPSR_44K; break;
@@ -2561,14 +2562,15 @@ static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
 			return -EINVAL;
 		}
 		reg = AC97_SPDIF;
+		mask = AC97_SC_SPSR_MASK;
 	}
 
 	spin_lock(&ac97->reg_lock);
-	old = ac97->regs[reg] & ~AC97_SC_SPSR_MASK;
+	old = ac97->regs[reg] & ~mask;
 	spin_unlock(&ac97->reg_lock);
 	if (old != bits) {
 		snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
-		snd_ac97_update_bits(ac97, reg, AC97_SC_SPSR_MASK, bits);
+		snd_ac97_update_bits(ac97, reg, mask, bits);
 	}
 	snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, AC97_EA_SPDIF);
 	return 0;
@@ -2660,7 +2662,7 @@ void snd_ac97_suspend(ac97_t *ac97)
  */
 void snd_ac97_resume(ac97_t *ac97)
 {
-	int i;
+	int i, is_ad18xx, codec;
 
 	if (ac97->reset) {
 		ac97->reset(ac97);
@@ -2685,6 +2687,20 @@ __reset_ready:
 	if (ac97->init)
 		ac97->init(ac97);
 
+	is_ad18xx = (ac97->id & 0xffffff40) == AC97_ID_AD1881;
+	if (is_ad18xx) {
+		/* restore the AD18xx codec configurations */
+		for (codec = 0; codec < 3; codec++) {
+			if (! ac97->spec.ad18xx.id[codec])
+				continue;
+			/* select single codec */
+			ac97->write(ac97, AC97_AD_SERIAL_CFG, ac97->spec.ad18xx.unchained[codec] | ac97->spec.ad18xx.chained[codec]);
+			ac97->write(ac97, AC97_AD_CODEC_CFG, ac97->spec.ad18xx.codec_cfg[codec]);
+		}
+		/* select all codecs */
+		ac97->write(ac97, AC97_AD_SERIAL_CFG, 0x7000);
+	}
+
 	/* restore ac97 status */
 	for (i = 2; i < 0x7c ; i += 2) {
 		if (i == AC97_POWERDOWN || i == AC97_EXTENDED_ID)
@@ -2693,8 +2709,42 @@ __reset_ready:
 		 * some chip (e.g. nm256) may hang up when unsupported registers
 		 * are accessed..!
 		 */
-		if (test_bit(i, ac97->reg_accessed))
+		if (test_bit(i, ac97->reg_accessed)) {
+			if (is_ad18xx) {
+				/* handle multi codecs for AD18xx */
+				if (i == AC97_PCM) {
+					for (codec = 0; codec < 3; codec++) {
+						if (! ac97->spec.ad18xx.id[codec])
+							continue;
+						/* select single codec */
+						ac97->write(ac97, AC97_AD_SERIAL_CFG, ac97->spec.ad18xx.unchained[codec] | ac97->spec.ad18xx.chained[codec]);
+						/* update PCM bits */
+						ac97->write(ac97, AC97_PCM, ac97->spec.ad18xx.pcmreg[codec]);
+					}
+					/* select all codecs */
+					ac97->write(ac97, AC97_AD_SERIAL_CFG, 0x7000);
+					continue;
+				} else if (i == AC97_AD_TEST ||
+					   i == AC97_AD_CODEC_CFG ||
+					   i == AC97_AD_SERIAL_CFG)
+					continue; /* ignore */
+			}
 			snd_ac97_write(ac97, i, ac97->regs[i]);
+			snd_ac97_read(ac97, i);
+		}
+	}
+
+	if (ac97->ext_id & AC97_EI_SPDIF) {
+		if (ac97->regs[AC97_EXTENDED_STATUS] & AC97_EA_SPDIF) {
+			/* reset spdif status */
+			snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
+			snd_ac97_write(ac97, AC97_EXTENDED_STATUS, ac97->regs[AC97_EXTENDED_STATUS]);
+			if (ac97->flags & AC97_CS_SPDIF)
+				snd_ac97_write(ac97, AC97_CSR_SPDIF, ac97->regs[AC97_CSR_SPDIF]);
+			else
+				snd_ac97_write(ac97, AC97_SPDIF, ac97->regs[AC97_SPDIF]);
+			snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, AC97_EA_SPDIF); /* turn on again */
+		}
 	}
 }
 #endif
