@@ -1,5 +1,5 @@
---- intel8x0.c	2004-04-07 16:59:38.351259987 +0200
-+++ intel8x0.c	2004-04-07 18:32:11.698303544 +0200
+--- intel8x0.c	2004-04-08 15:21:31.571408477 +0200
++++ intel8x0.c	2004-04-08 15:23:17.550321555 +0200
 @@ -43,7 +43,9 @@
  #include <sound/initval.h>
  /* for 440MX workaround */
@@ -10,7 +10,7 @@
  
  MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
  MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
-@@ -751,7 +753,7 @@
+@@ -747,7 +749,7 @@
  	iputbyte(chip, port + ichdev->roff_sr, ICH_FIFOE | ICH_BCIS | ICH_LVBCI);
  }
  
@@ -19,7 +19,7 @@
  /*
   * Intel 82443MX running a 100MHz processor system bus has a hardware bug,
   * which aborts PCI busmaster for audio transfer.  A workaround is to set
-@@ -762,7 +764,9 @@
+@@ -758,7 +760,9 @@
  {
  	size = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
  	change_page_attr(virt_to_page(buf), size, nocache ? PAGE_KERNEL_NOCACHE : PAGE_KERNEL);
@@ -29,34 +29,7 @@
  }
  #else
  #define fill_nocache(buf,size,nocache)
-@@ -2235,6 +2239,7 @@
- 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
- }
- 
-+#ifndef PCI_OLD_SUSPEND
- static int snd_intel8x0_suspend(struct pci_dev *dev, u32 state)
- {
- 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
-@@ -2247,6 +2252,18 @@
- 	intel8x0_resume(chip);
- 	return 0;
- }
-+#else
-+static void snd_intel8x0_suspend(struct pci_dev *dev)
-+{
-+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
-+	intel8x0_suspend(chip);
-+}
-+static void snd_intel8x0_resume(struct pci_dev *dev)
-+{
-+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
-+	intel8x0_resume(chip);
-+}
-+#endif
- 
- /* callback */
- static int snd_intel8x0_set_power_state(snd_card_t *card, unsigned int power_state)
-@@ -2863,3 +2880,5 @@
+@@ -2809,3 +2813,5 @@
  
  module_init(alsa_card_intel8x0_init)
  module_exit(alsa_card_intel8x0_exit)
