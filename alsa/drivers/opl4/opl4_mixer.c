@@ -1,3 +1,5 @@
+#define __NO_VERSION__
+
 /*
  * OPL4 mixer functions
  * Copyright (c) 2003 by Clemens Ladisch <clemens@ladisch.de>

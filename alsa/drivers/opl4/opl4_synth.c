@@ -1,3 +1,5 @@
+#define __NO_VERSION__
+
 /*
  * OPL4 MIDI synthesizer functions
  *

@@ -1,3 +1,5 @@
+#define __NO_VERSION__
+
 /*
  * OPL4 sequencer functions
  *
