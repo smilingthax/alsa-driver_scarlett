@@ -1,7 +1,7 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 H replace direct I/O memory access with readb/writeb etc. (Jaroslav)
-H cmi8330 driver uses wrong IRQ spinlock inside interrupt (Jaroslav)
+H cmi8330 driver (maybe others) uses wrong IRQ spinlock inside interrupt (Jaroslav)
 M clean endianness stuff
 M make a definitive decision about SND_PCM_CHECK_SYNC
 M add master/divisor to timer
@@ -18,9 +18,10 @@ M add detailed failure to params ioctl (see es18xx)
 M add needed callbacks for params_info (see es18xx)
 M change real rate params to use snd_pcm_clock_* (where useful) and to set rate_{master,divisor} (see es18xx)
 M rewrite mixer lowlevel implementation
-M fix trident driver
+M fix trident driver (PCM?)
 M add digital params/setup support to rme9652
 M fix es1968 driver to compute real rate at params time
+M add new MPU401 uart driver (Jaroslav)
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
