@@ -2,7 +2,7 @@
 	
 		Advanced Linux Sound Architecture (ALSA) - Driver
 		=================================================
-			   WWW: http://alsa.jcu.cz
+			 WWW: http://www.alsa-project.org
 
 
 Features
@@ -15,9 +15,8 @@ Features
 * ISA soundcards
   - support for 128k ISA DMA buffer
 * mixer
-  - new enhanced API for applications
+  - new enhanced and flexible API for applications
   - support for unlimited number of channels
-  - volume can be set in three ways (percentual (0-100), exact and decibel)
   - support for mute (and hardware mute if hardware supports it)
   - support for mixer events
     - this allows two or more applications to be synchronized

@@ -358,6 +358,9 @@ extern void snd_dma_soft_release(snd_card_t * card, snd_dma_t * dma);
 extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
 extern int snd_memory_info_init(void);
 extern int snd_memory_info_done(void);
+#ifdef SNDCFG_DEBUG_MEMORY
+extern void snd_memory_debug1(void);
+#endif
 
 /* init.c */
 

@@ -25,25 +25,6 @@
 #include "pcm1.h"
 #include "mixer.h"
 
-struct snd_stru_ad1848_image {
-	unsigned char lic;	/* 00: left input (ADC) control */
-	unsigned char ric;	/* 01: right input (ADC) control */
-	unsigned char la1ic;	/* 02: left AUX #1 input control */
-	unsigned char ra1ic;	/* 03: right AUX #1 input control */
-	unsigned char la2ic;	/* 04: left AUX #2 input control */
-	unsigned char ra2ic;	/* 05: right AUX #2 input control */
-	unsigned char loc;	/* 06: left output (DAC) control */
-	unsigned char roc;	/* 07: right output (DAC) control */
-	unsigned char dfr;	/* 08: clock and data format - playback/record */
-	unsigned char ic;	/* 09: interface control */
-	unsigned char pc;	/* 0a: pin control */
-	unsigned char ti;	/* 0b: test and initialization */
-	unsigned char mi;	/* 0c: miscellaneaous information */
-	unsigned char lbc;	/* 0d: loopback control */
-	unsigned char dru;	/* 0e: playback/record upper base count */
-	unsigned char drl;	/* 0f: playback/record lower base count */
-};
-
 /* IO ports */
 
 #define AD1848P( codec, x ) ( (codec) -> port + c_d_c_AD1848##x )
@@ -86,9 +67,9 @@ struct snd_stru_ad1848_image {
 
 #define AD1848_ENABLE_MIC_GAIN	0x20
 
-#define AD1848_MIXS_LINE	0x00
+#define AD1848_MIXS_LINE1	0x00
 #define AD1848_MIXS_AUX1	0x40
-#define AD1848_MIXS_MIC		0x80
+#define AD1848_MIXS_LINE2	0x80
 #define AD1848_MIXS_ALL		0xc0
 
 /* definitions for clock and data format register - AD1848_PLAYBK_FORMAT */
@@ -161,8 +142,14 @@ struct snd_stru_ad1848 {
 	snd_card_t *card;
 	snd_kmixer_t *mixer;
 
-	struct snd_stru_ad1848_image image;
+	unsigned char image[32];	/* SGalaxy needs an access to extended registers */
 	int mce_bit;
+	int calibrate_mute;
+
+	snd_kmixer_element_t *me_mux_line1;
+	snd_kmixer_element_t *me_mux_aux1;
+	snd_kmixer_element_t *me_mux_line2;
+	snd_kmixer_element_t *me_mux_mix;
 
 	snd_spin_define(reg);
 	snd_mutex_define(open);
@@ -181,7 +168,21 @@ extern snd_pcm_t *snd_ad1848_new_device(snd_card_t * card,
 					snd_dma_t * dmaptr,
 					unsigned short hardware);
 
-snd_kmixer_t *snd_ad1848_new_mixer(snd_pcm_t * pcm);
+snd_kmixer_t *snd_ad1848_new_mixer(snd_pcm_t * pcm, int pcm_dev);
+
+int snd_ad1848_mixer_stereo_volume(int w_flag, int *voices, ad1848_t *codec,
+					int bit, int invert, int shift,
+					unsigned char left_reg,
+					unsigned char right_reg);
+int snd_ad1848_mixer_mono_volume(int w_flag, int *voices, ad1848_t *codec,
+					int bit, int invert, int shift,
+					unsigned char reg);
+int snd_ad1848_mixer_stereo_switch(int w_flag, unsigned int *bitmap, ad1848_t *codec,
+					int bit, int invert,
+					unsigned char left_reg,
+					unsigned char right_reg);
+int snd_ad1848_mixer_mono_switch(int w_flag, unsigned int *bitmap, ad1848_t *codec,
+					int bit, int invert, unsigned char reg);
 
 #ifdef SNDCFG_DEBUG
 void snd_ad1848_debug(ad1848_t * codec);

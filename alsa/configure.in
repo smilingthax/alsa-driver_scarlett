@@ -170,7 +170,7 @@ case "$debug" in
 esac
 AC_SUBST(moddir)
 
-dnl Check pro processor type...
+dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
 AC_ARG_WITH(processor,
   [  --with-processor=cpu    give the processor type]

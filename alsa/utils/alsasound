@@ -58,6 +58,8 @@ function detect_stop() {
   /sbin/lsmod | grep -E "^snd" | while read line; do \
      /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
   done
+  # remove the 2.2 soundcore module (if possible)
+  /sbin/rmmod soundcore 2> /dev/null
 }
 
 function stop() {

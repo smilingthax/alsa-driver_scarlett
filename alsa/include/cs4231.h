@@ -26,41 +26,6 @@
 #include "mixer.h"
 #include "timer.h"
 
-struct snd_stru_cs4231_image {
-	unsigned char lic;	/* 00: left input (ADC) control */
-	unsigned char ric;	/* 01: right input (ADC) control */
-	unsigned char la1ic;	/* 02: left AUX #1 input control */
-	unsigned char ra1ic;	/* 03: right AUX #1 input control */
-	unsigned char la2ic;	/* 04: left AUX #2 input control */
-	unsigned char ra2ic;	/* 05: right AUX #2 input control */
-	unsigned char loc;	/* 06: left output (DAC) control */
-	unsigned char roc;	/* 07: right output (DAC) control */
-	unsigned char pdfr;	/* 08: clock and data format - playback */
-	unsigned char ic;	/* 09: interface control */
-	unsigned char pc;	/* 0a: pin control */
-	unsigned char ti;	/* 0b: test and initialization */
-	unsigned char mi;	/* 0c: miscellaneaous information */
-	unsigned char lbc;	/* 0d: loopback control */
-	unsigned char pbru;	/* 0e: playback upper base count */
-	unsigned char pbrl;	/* 0f: playback lower base count */
-	unsigned char afei;	/* 10: alternate #1 feature enable */
-	unsigned char afeii;	/* 11: alternate #2 feature enable */
-	unsigned char llic;	/* 12: left line input control */
-	unsigned char rlic;	/* 13: right line input control */
-	unsigned char tlb;	/* 14: timer low byte */
-	unsigned char thb;	/* 15: timer high byte */
-	unsigned char la3ic;	/* 16: left MIC input control register (InterWave only) */
-	unsigned char ra3ic;	/* 17: right MIC input control register (InterWave only) */
-	unsigned char afs;	/* 18: irq status register */
-	unsigned char lamoc;	/* 19: version / left line output control register (InterWave only) */
-	unsigned char mioc;	/* 1a: mono input/output control */
-	unsigned char ramoc;	/* 1b: right line output control register (InterWave only) */
-	unsigned char cdfr;	/* 1c: clock and data format - record */
-	unsigned char pdfr_var;	/* 1d: playback variable frequency (InterWave only) */
-	unsigned char cbru;	/* 1e: record upper count */
-	unsigned char cbrl;	/* 1f: record lower count */
-};
-
 /* IO ports */
 
 #define CS4231P( codec, x ) ( (codec) -> port + c_d_c_CS4231##x )
@@ -102,8 +67,10 @@ struct snd_stru_cs4231_image {
 #define CS4231_VERSION		0x19	/* CS4231(A) - version values */
 #define CS4231_MONO_CTRL	0x1a	/* mono input/output control */
 #define CS4231_LINE_RIGHT_OUTPUT 0x1b	/* right line output control register (InterWave only) */
+#define CS4235_LEFT_MASTER	0x1b	/* left master output control */
 #define CS4231_REC_FORMAT	0x1c	/* clock and data format - record - bits 7-0 MCE */
 #define CS4231_PLY_VAR_FREQ	0x1d	/* playback variable frequency */
+#define CS4235_RIGHT_MASTER	0x1d	/* right master output control */
 #define CS4231_REC_UPR_CNT	0x1e	/* record upper count */
 #define CS4231_REC_LWR_CNT	0x1f	/* record lower count */
 
@@ -185,6 +152,8 @@ struct snd_stru_cs4231_image {
 
 /* definitions for Extended Registers - CS4236+ */
 
+#define CS4236_REG(reg)		(((reg << 2) & 0x10) | ((reg >> 4) & 0x0f))
+
 #define CS4236_LEFT_LINE	0x08	/* left LINE alternate volume */
 #define CS4236_RIGHT_LINE	0x18	/* right LINE alternate volume */
 #define CS4236_LEFT_MIC		0x28	/* left MIC volume */
@@ -264,7 +233,8 @@ struct snd_stru_cs4231 {
 	snd_kmixer_t *mixer;
 	snd_timer_t *timer;
 
-	struct snd_stru_cs4231_image image;
+	unsigned char image[32];	/* image */
+	unsigned char eimage[32];	/* extended image */
 	int mce_bit;
 	int calibrate_mute;
 
@@ -273,6 +243,11 @@ struct snd_stru_cs4231 {
 	snd_mutex_define(open);
 	snd_sleep_define(mce);
 	snd_sleep_define(iec958);
+
+	snd_kmixer_element_t *me_mux_mic;
+	snd_kmixer_element_t *me_mux_line;
+	snd_kmixer_element_t *me_mux_aux1;
+	snd_kmixer_element_t *me_mux_mix;
 
 	unsigned int (*set_playback_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
 	unsigned int (*set_record_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
@@ -300,7 +275,7 @@ extern snd_pcm_t *snd_cs4231_new_device(snd_card_t * card,
 					unsigned short hardware,
 					int timer_dev);
 
-snd_kmixer_t *snd_cs4231_new_mixer(snd_pcm_t * pcm);
+snd_kmixer_t *snd_cs4231_new_mixer(snd_pcm_t * pcm, int pcm_dev);
 
 extern snd_pcm_t *snd_cs4236_new_device(snd_card_t * card,
 					unsigned short port,
@@ -311,7 +286,38 @@ extern snd_pcm_t *snd_cs4236_new_device(snd_card_t * card,
 					unsigned short hardware,
 					int timer_dev);
 
-snd_kmixer_t *snd_cs4236_new_mixer(snd_pcm_t * pcm);
+snd_kmixer_t *snd_cs4236_new_mixer(snd_pcm_t * pcm, int pcm_device);
+
+/*
+ *  mixer library
+ */
+
+int snd_cs4231_mixer_stereo_volume(int w_flag, int *voices, cs4231_t *codec,
+					int max, int invert, int shift,
+					unsigned char left_reg,
+					unsigned char right_reg);
+int snd_cs4231_mixer_mono_volume(int w_flag, int *voices, cs4231_t *codec,
+					int max, int invert, int shift,
+					unsigned char reg);
+int snd_cs4231_mixer_stereo_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec,
+					int bit, int invert,
+					unsigned char left_reg,
+					unsigned char right_reg);
+int snd_cs4231_mixer_mono_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec,
+					int bit, int invert,
+					unsigned char reg);
+int snd_cs4231_mixer_line_volume(int w_flag, int *voices, cs4231_t *codec);
+int snd_cs4231_mixer_line_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
+int snd_cs4231_mixer_aux1_volume(int w_flag, int *voices, cs4231_t *codec);
+int snd_cs4231_mixer_aux1_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
+int snd_cs4231_mixer_aux2_volume(int w_flag, int *voices, cs4231_t *codec);
+int snd_cs4231_mixer_aux2_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
+int snd_cs4231_mixer_monoin_volume(int w_flag, int *voices, cs4231_t *codec);
+int snd_cs4231_mixer_monoin_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
+int snd_cs4231_mixer_mono_bypass_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
+int snd_cs4231_mixer_igain_volume(int w_flag, int *voices, cs4231_t *codec);
+int snd_cs4231_mixer_dac_volume(int w_flag, int *voices, cs4231_t *codec);
+int snd_cs4231_mixer_dac_switch(int w_flag, unsigned int *bitmap, cs4231_t *codec);
 
 #ifdef SNDCFG_DEBUG
 void snd_cs4231_debug(cs4231_t * codec);

@@ -263,6 +263,7 @@ struct snd_stru_gf1 {
 	unsigned short reg_dram;
 	unsigned short reg_timerctrl;
 	unsigned short reg_timerdata;
+	unsigned char ics_regs[6][2];
 	/* --------- */
 
 	unsigned char active_voice;	/* selected voice (GF1PAGE register) */
@@ -340,6 +341,8 @@ struct snd_stru_gf1 {
 	unsigned int pcm_mmap_mask;
 	unsigned short pcm_volume_level_left;
 	unsigned short pcm_volume_level_right;
+	unsigned short pcm_volume_level_left1;
+	unsigned short pcm_volume_level_right1;
 	unsigned char pcm_volume[32];
 	unsigned char pcm_pan[32];
 	unsigned char pcm_rcntrl_reg;
@@ -543,7 +546,8 @@ snd_kmixer_t *snd_gf1_new_mixer(snd_gus_card_t * gus);
 
 /* gus_pcm.c */
 
-snd_pcm_t *snd_gf1_pcm_new_device(snd_gus_card_t * gus, snd_kmixer_t * mixer);
+snd_pcm_t *snd_gf1_pcm_new_device(snd_gus_card_t * gus, snd_kmixer_t * mixer,
+				  snd_kmixer_element_t * parent, int pcm_dev);
 
 #ifdef SNDCFG_DEBUG
 extern void snd_gf1_print_voice_registers(snd_gus_card_t * gus);

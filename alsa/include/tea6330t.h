@@ -25,17 +25,21 @@
 #include "i2c.h"		/* generic i2c support */
 #include "mixer.h"
 
-struct snd_tea6330t_mapping {
-	unsigned int priority;
-	unsigned int parent_priority;
-	char *name;
-	unsigned int ossdev;
-};
+typedef struct {
+	struct snd_i2c_bus *bus;
+	int equalizer;
+	int fader;
+	unsigned char regs[8];
+	unsigned char mleft, mright;
+	unsigned char bass, treble;
+	snd_spin_define(access);
+} tea6330t_t;
 
 extern int snd_tea6330t_detect(struct snd_i2c_bus *bus, int equalizer);
 extern int snd_tea6330t_update_mixer(snd_kmixer_t * mixer,
 				     struct snd_i2c_bus *bus,
-				     struct snd_tea6330t_mapping *mapping,
+				     snd_kmixer_element_t *input,
+				     snd_kmixer_element_t *output,
 				     int equalizer, int fader);
 
 #endif				/* __TEA6330T_H */

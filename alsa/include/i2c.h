@@ -127,6 +127,8 @@ struct snd_i2c_bus {
 	int devcount;
 
 	unsigned int private_value;
+	void *private_data;
+	void (*private_free)(void *private_data);
 };
 
 
@@ -150,6 +152,8 @@ struct snd_i2c_device {
 /* i2c module functions                                                */
 
 /* register/unregister a i2c bus */
+struct snd_i2c_bus *snd_i2c_bus_new(int id, char *name);
+int snd_i2c_bus_free(struct snd_i2c_bus *bus);
 int snd_i2c_register_bus(struct snd_i2c_bus *bus);
 int snd_i2c_unregister_bus(struct snd_i2c_bus *bus);
 

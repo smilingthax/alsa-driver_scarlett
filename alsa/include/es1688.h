@@ -43,6 +43,11 @@ struct snd_stru_es1688 {
 
 	unsigned short trigger_value;
 
+	snd_kmixer_element_t *me_mux_mic;
+	snd_kmixer_element_t *me_mux_line;
+	snd_kmixer_element_t *me_mux_cd;
+	snd_kmixer_element_t *me_mux_mix;
+
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 
@@ -117,6 +122,6 @@ extern snd_pcm_t *snd_es1688_new_device(snd_card_t * card,
 					snd_dma_t * dma8ptr,
 					unsigned short hardware);
 extern int snd_es1688_init(snd_pcm_t * pcm, int enable);
-extern snd_kmixer_t *snd_es1688_new_mixer(snd_pcm_t * pcm);
+extern snd_kmixer_t *snd_es1688_new_mixer(snd_pcm_t * pcm, int pcm_dev);
 
 #endif				/* __ES1688_H */

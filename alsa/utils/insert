@@ -14,6 +14,9 @@ function isapnp() {
 function basic() {
   if ! $INSMOD -m $MODDIR/snd.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
+  if [ -r $MODDIR/snd-mixer-oss.o ]; then
+    if ! $INSMOD -m $MODDIR/snd-mixer-oss.o >> $MAP; then exit 1; fi  
+  fi
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm1.o >> $MAP; then exit 1; fi
@@ -82,7 +85,7 @@ case "$1" in
     ;;
   sb16)
     basic; isapnp
-    insert snd-sb-dsp.o
+    insert snd-sb16-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
     insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5
@@ -90,23 +93,25 @@ case "$1" in
     ;;
   sb)
     basic; isapnp
-    insert snd-sb-dsp.o
+    insert snd-sb8-dsp.o
     insert snd-opl3.o
     insert snd-sb8.o snd_port=0x220 snd_irq=5 snd_dma8=3
     restore sb.conf
     ;;
   sbawe)
     basic; isapnp
-    insert snd-sb-dsp.o
+    insert snd-sb16-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-emu8000.o
+    if [ -r $MODDIR/snd-emu8000.o ]; then
+      insert snd-emu8000.o
+    fi
     insert snd-sbawe.o snd_irq=5 snd_dma8=1 snd_dma16=5
     restore sbawe.conf
     ;;
   sb8)
     basic
-    insert snd-sb-dsp.o
+    insert snd-sb8-dsp.o
     insert snd-opl3.o
     insert snd-sb8.o snd_irq=5 snd_dma8=1
     restore sb8.conf
@@ -115,7 +120,7 @@ case "$1" in
     basic
     insert snd-cs4231.o
     insert snd-gus.o
-    insert snd-gusmax.o
+    insert snd-gusmax.o snd_irq=7
     restore gusmax.conf
     ;;
   gusc*|clas*)
@@ -151,7 +156,7 @@ case "$1" in
     ;;
   p1)
     basic; isapnp
-    insert snd-sb-dsp.o
+    insert snd-sb16-dsp.o
     insert snd-mpu401-uart.o 
     insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5 snd_mpu_port=0x330
     insert snd-gus.o
@@ -176,12 +181,19 @@ case "$1" in
     insert snd-sonicvibes.o snd_reverb=1
     restore sonicvibes.conf
     ;;
-  audiopci)
+  ens1370)
+    basic
+    insert snd-ak4531-codec.o
+    insert snd-ens1370.o
+    insert snd-audiopci1370.o
+    restore es1370.conf
+    ;;
+  ens1371)
     basic
     insert snd-ac97-codec.o
-    insert snd-ens1370.o
-    insert snd-audiopci.o
-    restore es1370.conf
+    insert snd-ens1371.o
+    insert snd-audiopci1371.o
+    restore es1371.conf
     ;;
   trident)
     basic

@@ -26,6 +26,7 @@
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
+#include "ak4531_codec.h"
 #include "ac97_codec.h"
 
 #ifndef PCI_VENDOR_ID_ENSONIQ
@@ -271,8 +272,6 @@ struct snd_stru_ensoniq {
 	snd_dma_t * dma3ptr;	/* DAC2 */
 	snd_irq_t * irqptr;
 
-	int es1371;		/* ES1371 chip present */
-
 	unsigned int port;
 	unsigned int mode;
 	unsigned int uartm;	/* UART mode */
@@ -303,17 +302,30 @@ struct snd_stru_ensoniq {
 	snd_info_entry_t *proc_entry;
 };
 
-ensoniq_t *snd_ensoniq_create(snd_card_t * card, struct snd_pci_dev *pci,
-			      snd_dma_t * dma1ptr,
-			      snd_dma_t * dma2ptr,
-			      snd_dma_t * dma3ptr,
-			      snd_irq_t * irqptr);
-void snd_ensoniq_free(ensoniq_t * ensoniq);
-void snd_ensoniq_interrupt(ensoniq_t * ensoniq);
+ensoniq_t *snd_ensoniq_1370_create(snd_card_t * card, struct snd_pci_dev *pci,
+			      	   snd_dma_t * dma1ptr,
+				   snd_dma_t * dma2ptr,
+			           snd_dma_t * dma3ptr,
+			           snd_irq_t * irqptr);
+void snd_ensoniq_1370_free(ensoniq_t * ensoniq);
+void snd_ensoniq_1370_interrupt(ensoniq_t * ensoniq);
 
-snd_pcm_t *snd_ensoniq_pcm(ensoniq_t * ensoniq);
-snd_pcm_t *snd_ensoniq_pcm2(ensoniq_t * ensoniq);
-snd_kmixer_t *snd_ensoniq_mixer(ensoniq_t * ensoniq);
-snd_rawmidi_t *snd_ensoniq_midi(ensoniq_t * ensoniq);
+snd_pcm_t *snd_ensoniq_1370_pcm(ensoniq_t * ensoniq);
+snd_pcm_t *snd_ensoniq_1370_pcm2(ensoniq_t * ensoniq);
+snd_kmixer_t *snd_ensoniq_1370_mixer(ensoniq_t * ensoniq, int pcm_count, int *pcm_devs);
+snd_rawmidi_t *snd_ensoniq_1370_midi(ensoniq_t * ensoniq);
+
+ensoniq_t *snd_ensoniq_1371_create(snd_card_t * card, struct snd_pci_dev *pci,
+			      	   snd_dma_t * dma1ptr,
+				   snd_dma_t * dma2ptr,
+			           snd_dma_t * dma3ptr,
+			           snd_irq_t * irqptr);
+void snd_ensoniq_1371_free(ensoniq_t * ensoniq);
+void snd_ensoniq_1371_interrupt(ensoniq_t * ensoniq);
+
+snd_pcm_t *snd_ensoniq_1371_pcm(ensoniq_t * ensoniq);
+snd_pcm_t *snd_ensoniq_1371_pcm2(ensoniq_t * ensoniq);
+snd_kmixer_t *snd_ensoniq_1371_mixer(ensoniq_t * ensoniq, int pcm_count, int *pcm_devs);
+snd_rawmidi_t *snd_ensoniq_1371_midi(ensoniq_t * ensoniq);
 
 #endif				/* __AUDIOPCI_H */

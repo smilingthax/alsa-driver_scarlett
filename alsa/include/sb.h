@@ -57,11 +57,9 @@ typedef struct snd_stru_sbmixer sbmixer_t;
 
 struct snd_stru_sbmixer {
 	unsigned short port;
-	unsigned char record_source;
-	unsigned char left_input_mask;
-	unsigned char right_input_mask;
-	unsigned char mono;	/* for update inputs */
-	void (*update_inputs) (sbmixer_t *);
+	snd_kmixer_element_t *me_mux_mic;
+	snd_kmixer_element_t *me_mux_line;
+	snd_kmixer_element_t *me_mux_cd;
 	snd_spin_define(mixer);
 };
 
@@ -168,7 +166,7 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP_ESS_EXTENDED	0xc6
 
 #define SB_DSP_RECORD_SOURCE    0x0c
-#define SB_DSP_MIXS_NONE        0x00
+#define SB_DSP_MIXS_MIC0        0x00	/* same as MIC */
 #define SB_DSP_MIXS_MIC         0x01
 #define SB_DSP_MIXS_CD          0x03
 #define SB_DSP_MIXS_LINE        0x07
@@ -203,32 +201,49 @@ typedef struct snd_stru_sbdsp sbdsp_t;
  *
  */
 
-extern int snd_sbdsp_command(sbdsp_t * codec, unsigned char val);
-extern int snd_sbdsp_get_byte(sbdsp_t * codec);
-extern void snd_sbmixer_write(sbmixer_t * mixer, unsigned char reg, unsigned char data);
-extern unsigned char snd_sbmixer_read(sbmixer_t * mixer, unsigned char reg);
-extern int snd_sbdsp_reset(sbdsp_t * codec);
-extern void snd_sbdsp_free(void *);
+extern int snd_sb8dsp_command(sbdsp_t * codec, unsigned char val);
+extern int snd_sb16dsp_command(sbdsp_t * codec, unsigned char val);
+extern int snd_sb8dsp_get_byte(sbdsp_t * codec);
+extern int snd_sb16dsp_get_byte(sbdsp_t * codec);
+extern void snd_sb8mixer_write(sbmixer_t * mixer, unsigned char reg, unsigned char data);
+extern void snd_sb16mixer_write(sbmixer_t * mixer, unsigned char reg, unsigned char data);
+extern unsigned char snd_sb8mixer_read(sbmixer_t * mixer, unsigned char reg);
+extern unsigned char snd_sb16mixer_read(sbmixer_t * mixer, unsigned char reg);
+extern int snd_sb8dsp_reset(sbdsp_t * codec);
+extern int snd_sb16dsp_reset(sbdsp_t * codec);
+extern void snd_sb8dsp_free(void *);
+extern void snd_sb16dsp_free(void *);
 
-extern void snd_sbdsp_sb8_interrupt(snd_pcm_t * pcm);
-extern void snd_sbdsp_sb16_interrupt(snd_pcm_t * pcm, unsigned short status);
+extern void snd_sb8dsp_interrupt(snd_pcm_t * pcm);
+extern void snd_sb16dsp_interrupt(snd_pcm_t * pcm, unsigned short status);
 
-extern snd_pcm_t *snd_sbdsp_new_device(snd_card_t * card,
-				       unsigned short port,
-				       snd_irq_t * irqptr,
-				       snd_dma_t * dma8ptr,
-				       snd_dma_t * dma16ptr,
-				       unsigned short hardware);
-extern int snd_sbdsp_probe(snd_pcm_t * pcm);
-extern int snd_sbdsp_sb16_configure(snd_pcm_t * pcm);
-extern snd_kmixer_t *snd_sbdsp_new_mixer(snd_card_t * card,
-					 sbmixer_t * sbmix,
-					 unsigned short hardware);
+extern snd_pcm_t *snd_sb8dsp_new_device(snd_card_t * card,
+				        unsigned short port,
+				        snd_irq_t * irqptr,
+				        snd_dma_t * dma8ptr,
+				        unsigned short hardware);
+extern snd_pcm_t *snd_sb16dsp_new_device(snd_card_t * card,
+				         unsigned short port,
+				         snd_irq_t * irqptr,
+				         snd_dma_t * dma8ptr,
+				         snd_dma_t * dma16ptr,
+				         unsigned short hardware);
+extern int snd_sb8dsp_probe(snd_pcm_t * pcm);
+extern int snd_sb16dsp_probe(snd_pcm_t * pcm);
+extern int snd_sb16dsp_configure(snd_pcm_t * pcm);
+extern snd_kmixer_t *snd_sb8dsp_new_mixer(snd_card_t * card,
+					  sbmixer_t * sbmix,
+					  unsigned short hardware,
+					  int pcm_dev);
+extern snd_kmixer_t *snd_sb16dsp_new_mixer(snd_card_t * card,
+					   sbmixer_t * sbmix,
+					   unsigned short hardware,
+					   int pcm_dev);
 
-extern void snd_sb16_proc_init(snd_pcm_t * pcm);
-extern void snd_sb16_proc_done(snd_pcm_t * pcm);
+extern void snd_sb16dsp_proc_init(snd_pcm_t * pcm);
+extern void snd_sb16dsp_proc_done(snd_pcm_t * pcm);
 
-extern void snd_sbdsp_midi_interrupt(snd_rawmidi_t * rmidi);
-extern snd_rawmidi_t *snd_sbdsp_midi_new_device(snd_card_t * card, snd_pcm_t * pcm);
+extern void snd_sb8dsp_midi_interrupt(snd_rawmidi_t * rmidi);
+extern snd_rawmidi_t *snd_sb8dsp_midi_new_device(snd_card_t * card, snd_pcm_t * pcm);
 
 #endif				/* __SB_H */

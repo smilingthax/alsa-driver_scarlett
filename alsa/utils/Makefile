@@ -16,8 +16,8 @@ all: $(TARGETS)
 export-symbols: .depend
 	$(CC) $(COPTS) $(INCLUDE) -o $@ $@.c
 
-snd-deps: snd-deps.o
-	$(CC) $(COPTS) $(INCLUDE) snd-deps.o -o $@ 
+snd-deps: snd-deps-find.o snd-deps-output.o
+	$(CC) $(COPTS) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
 
 update-deps: snd-deps
 	./update-deps
