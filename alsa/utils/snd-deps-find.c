@@ -181,11 +181,12 @@ dep *find_dep(char *parent, char *depname)
 int make_list_of_deps_for_dep(dep *dependency, depname list[], int num)
 {
 	int i,j;
-	int add=1;
+	int add;
 
 	for(i=0;i<dependency->numdeps;i++)
 		if(dependency->deps[i])
 		{
+			add=1;
 			for(j=0;j<num;j++)
 				if(!strcmp(list[j], dependency->deps[i]->name))
 					add=0;
