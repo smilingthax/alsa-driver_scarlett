@@ -615,6 +615,8 @@ Module parameters
                         * TerraTec EWS 88D
                         * TerraTec EWX 24/96
 
+    snd_omni	  - Omni I/O support for MidiMan M-Audio Delta44/66
+
     Module supports up to 8 cards and autoprobe. Note: The consumer part
     is not used with all Envy24 based cards (for example in the MidiMan Delta
     serie).
