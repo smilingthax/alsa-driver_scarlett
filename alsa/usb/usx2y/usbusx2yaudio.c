@@ -1238,11 +1238,11 @@ static int snd_usX2Y_audio_stream_new(snd_card_t* card)
 
 	if (0 > (err = snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream,
 						     SNDRV_DMA_TYPE_CONTINUOUS,
-						     snd_pcm_dma_flags(GFP_KERNEL),
+						     snd_dma_continuous_data(GFP_KERNEL),
 						     64*1024, 128*1024)) ||
 	    0 > (err = snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream,
 	    					     SNDRV_DMA_TYPE_CONTINUOUS,
-	    					     snd_pcm_dma_flags(GFP_KERNEL),
+	    					     snd_dma_continuous_data(GFP_KERNEL),
 						     usX2Y_capt_substream->endpoints * 64*1024,
 						     usX2Y_capt_substream->endpoints * 128*1024)) ||
 	    (usX2Y(card)->chip.dev->descriptor.idProduct == USB_ID_US428 &&
