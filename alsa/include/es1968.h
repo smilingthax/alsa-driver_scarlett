@@ -275,7 +275,6 @@ struct snd_stru_es1968 {
 
 	/* Resources... */
 	snd_dma_t *dma1ptr;
-	snd_dma_t *dma2ptr;
 	snd_irq_t *irqptr;
 
 	unsigned int io_port;
@@ -306,9 +305,9 @@ struct snd_stru_es1968 {
 };
 
 int snd_es1968_create(snd_card_t * card, struct pci_dev *pci,
-		   snd_dma_t * dma1ptr, snd_dma_t * dma2ptr,
-		   snd_irq_t * irqptr, int midi_enable, int gesbuf,
-		   int pcmp, int pcmc, es1968_t ** resm);
+		   snd_dma_t * dma1ptr, snd_irq_t * irqptr, 
+                   int midi_enable, int gesbuf, int pcmp, int pcmc, 
+                   es1968_t ** resm);
 
 int snd_es1968_free(es1968_t * esm);
 void snd_es1968_interrupt(es1968_t * esm);
