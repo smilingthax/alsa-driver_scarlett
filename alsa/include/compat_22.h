@@ -14,7 +14,7 @@ typedef unsigned long dma_addr_t;
 
 /* i386 */
 #if defined(CONFIG_M386) || defined(CONFIG_M486) || defined(CONFIG_M586) ||\
- defined(CONFIG_M586TSG) || defined(CONFIG_M686)
+ defined(CONFIG_M586TSC) || defined(CONFIG_M686)
 #define CONFIG_ISA
 
 /* alpha */
