@@ -101,6 +101,8 @@ int                    cs46xx_dsp_enable_spdif_in (cs46xx_t *chip);
 int                    cs46xx_dsp_disable_spdif_in (cs46xx_t *chip);
 int                    cs46xx_poke_via_dsp (cs46xx_t *chip,u32 address,u32 data);
 dsp_scb_descriptor_t * cs46xx_dsp_create_scb (cs46xx_t *chip,char * name, u32 * scb_data,u32 dest);
+void                   cs46xx_dsp_proc_free_scb_desc (dsp_scb_descriptor_t * scb);
+void                   cs46xx_dsp_proc_register_scb_desc (cs46xx_t *chip,dsp_scb_descriptor_t * scb);
 dsp_task_descriptor_t * cs46xx_dsp_create_task_tree (cs46xx_t *chip,char * name, 
                                                      u32 * task_data,u32 dest,int size);
 dsp_scb_descriptor_t * cs46xx_dsp_create_timing_master_scb (cs46xx_t *chip);
@@ -129,7 +131,7 @@ dsp_scb_descriptor_t *  cs46xx_dsp_create_codec_in_scb(cs46xx_t * chip,char * co
                                                        int scb_child_type);
 dsp_scb_descriptor_t * cs46xx_dsp_create_pcm_reader_scb(cs46xx_t * chip,char * scb_name,
                                                         u16 sample_buffer_addr,u32 dest,
-                                                        int virtual_channel,
+                                                        int virtual_channel,u32 playback_hw_addr,
                                                         dsp_scb_descriptor_t * parent_scb,
                                                         int scb_child_type);
 dsp_scb_descriptor_t *  cs46xx_dsp_create_src_task_scb(cs46xx_t * chip,char * scb_name,
@@ -179,4 +181,11 @@ dsp_scb_descriptor_t *  cs46xx_dsp_create_magic_snoop_scb(cs46xx_t * chip,char *
                                                           dsp_scb_descriptor_t * snoop_scb,
                                                           dsp_scb_descriptor_t * parent_scb,
                                                           int scb_child_type);
+pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,u32 sample_rate, void * private_data);
+void                       cs46xx_dsp_destroy_pcm_channel (cs46xx_t * chip,
+                                                           pcm_channel_descriptor_t * pcm_channel);
+void                       cs46xx_dsp_set_src_sample_rate(cs46xx_t * chip,dsp_scb_descriptor_t * src, 
+                                                          u32 rate);
+int                        cs46xx_dsp_pcm_unlink (cs46xx_t * chip,pcm_channel_descriptor_t * pcm_channel);
+int                        cs46xx_dsp_pcm_link (cs46xx_t * chip,pcm_channel_descriptor_t * pcm_channel);
 #endif /* __CS46XX_LIB_H__ */

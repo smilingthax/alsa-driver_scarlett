@@ -62,16 +62,16 @@ typedef enum  {
 #define CODEC_INPUT_BUF1         0x0500
 #define PCM_READER_BUF1          0x0600
 #define SRC_DELAY_BUF1           0x0680
-#define MIX_SAMPLE_BUF1          0x1400
 #define VARI_DECIMATE_BUF0       0x0780
 #define SRC_OUTPUT_BUF1          0x07A0
 #define ASYNC_IP_OUTPUT_BUFFER1  0x0A00
-#define SPDIFO_IP_OUTPUT_BUFFER1 0x1800
+#define OUTPUT_SNOOP_BUFFER      0x0B00
 #define SPDIFI_IP_OUTPUT_BUFFER1 0x0E00
-#define ASYNC_IP_OUTPUT_BUFFER4  0x1000
-#define OUTPUT_SNOOP_BUFFER      0x1200
-#define SRC_OUTPUT_BUF2          0x1280
-#define SRC_DELAY_BUF2           0x1288
+#define SPDIFO_IP_OUTPUT_BUFFER1 0x1000
+#define MIX_SAMPLE_BUF1          0x1400
+
+// #define SRC_OUTPUT_BUF2          0x1280
+// #define SRC_DELAY_BUF2           0x1288
 
 /* Task stack address */
 #define HFG_STACK                0x066A
@@ -99,6 +99,7 @@ typedef enum  {
 #define PCMSERIALINII_SCB_ADDR   0x120
 #define SPIOWRITE_SCB_ADDR       0x130
 #define SEC_CODECOUT_SCB_ADDR    0x140
+#define OUTPUTSNOOPII_SCB_ADDR   0x150
 
 /* hyperforground SCB's*/
 #define HFG_TREE_SCB             0xBA0
@@ -107,15 +108,17 @@ typedef enum  {
 #define WRITE_BACK_SPB           0x0D0
 
 /* offsets */
-#define AsyncCIOFIFOPointer 0xd
-#define SPDIFOFIFOPointer   0xd
-#define SPDIFIFIFOPointer   0xd
-#define TCBData             0xb
-#define HFGFlags            0xa
-#define TCBContextBlk       0x10
-#define AFGTxAccumPhi       0x4
-#define SCBsubListPtr       0x9
-#define SCBfuncEntryPtr     0xA
+#define AsyncCIOFIFOPointer  0xd
+#define SPDIFOFIFOPointer    0xd
+#define SPDIFIFIFOPointer    0xd
+#define TCBData              0xb
+#define HFGFlags             0xa
+#define TCBContextBlk        0x10
+#define AFGTxAccumPhi        0x4
+#define SCBsubListPtr        0x9
+#define SCBfuncEntryPtr      0xA
+#define SRCCorPerGof         0x2
+#define SRCPhiIncr6Int26Frac 0xd
 
 /* conf */
 #define UseASER1Input 1
