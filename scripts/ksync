@@ -439,9 +439,9 @@ def filename(ver = 1):
 	cs, kernel = get_last_changeset()
         print 'alsa-%s-%s-linux-%s-cs%s.patch' % (time.strftime("%Y-%m-%d", time.gmtime(time.time())), ver, kernel, cs)	
 
-def kdiffs(cs = '1.532'):
+def kdiffs(cs = '1.403.56.48'):
 	os.chdir(get_bk_root())
-	cmd = 'sh -c \'bk rset -hr%s.. | grep -E "^(sound/|include/sound/)" | bk gnupatch -du\'' % cs
+	cmd = 'sh -c \'bk rset -hr%s.. | grep -E "^(sound/|include/sound/)" | grep -E -v "^(sound/oss)" | bk gnupatch -du\'' % cs
 	fp = os.popen(cmd)
 	lines = fp.readlines()
 	fp.close()
