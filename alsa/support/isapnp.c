@@ -178,7 +178,7 @@ static void isapnp_peek(unsigned char *data, int bytes)
 			d = inb(isapnp_rdp);
 			if (d & 1)
 				break;
-			isapnp_delay(1);
+			isapnp_delay(1);;
 		}
 		if (!(d & 1)) {
 			*data++ = 0xff;
@@ -911,6 +911,7 @@ int isapnp_cfg_begin(int csn, int logdev)
 {
 	if (csn < 1 || csn > 10 || logdev > 10)
 		return -EINVAL;
+	MOD_INC_USE_COUNT;
 	down(&isapnp_cfg_mutex);
 	isapnp_wait();
 	isapnp_key();
@@ -924,6 +925,7 @@ int isapnp_cfg_end(void)
 {
 	isapnp_wait();
 	up(&isapnp_cfg_mutex);
+	MOD_DEC_USE_COUNT;
 	return 0;
 }
 
@@ -1014,7 +1016,7 @@ struct isapnp_irq *isapnp_find_irq(struct isapnp_logdev *logdev, int index)
 		return NULL;
 	for (res = logdev->res; res; res = res->next) {
 		index3 = 0;
-		for (resa = logdev->res; resa; resa = resa->alt) {
+		for (resa = res; resa; resa = resa->alt) {
 			index1 = index;
 			index2 = 0;
 			for (irq = resa->irq; irq; irq = irq->next) {
