@@ -34,12 +34,18 @@ function getstructname(line)
 	return b[1]
 }
 
-function printdata(id, prefix)
+function printdata(id, prefix,   h, l)
 {
+	h = "0x"
+	l = substr(id, 4, 4)
+	if (match(l, "^XXXX") != 0) {
+		l = "ISAPNP_ANY_ID"
+		h = ""
+	}
 	print prefix "('" substr(id, 1, 1) "', '" \
 			  substr(id, 2, 1) "', '" \
-			  substr(id, 3, 1) "', 0x" \
-			  substr(id, 4, 4) "),"
+			  substr(id, 3, 1) "', " \
+			  h l "),"
 }
 
 function dataline(line,   a, b, idx, num)
