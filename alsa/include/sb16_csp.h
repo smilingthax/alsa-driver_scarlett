@@ -41,6 +41,13 @@
 #define SND_SB_CSP_MONO			0x01
 #define SND_SB_CSP_STEREO		0x02
 
+/* CSP rates */
+#define SND_SB_CSP_RATE_8000		0x01
+#define SND_SB_CSP_RATE_11025		0x02
+#define SND_SB_CSP_RATE_22050		0x04
+#define SND_SB_CSP_RATE_44100		0x08
+#define SND_SB_CSP_RATE_ALL		0x0f
+
 /* CSP running state */
 #define SND_SB_CSP_ST_IDLE		0x00
 #define SND_SB_CSP_ST_LOADED		0x01
@@ -52,7 +59,7 @@
 /* maximum QSound value (180 degrees right) */
 #define SND_SB_CSP_QSOUND_MAX		0x20
 
-/* maximum microcode file size */
+/* maximum microcode RIFF file size */
 #define SND_SB_CSP_MAX_MICROCODE_FILE_SIZE	0x3000
 
 /* microcode header */
@@ -80,6 +87,7 @@ typedef struct snd_sb_csp_info {
 	unsigned int acc_format;	/* accepted PCM formats */
 	unsigned short acc_channels;	/* accepted channels */
 	unsigned short acc_width;	/* accepted sample width */
+	unsigned short acc_rates;	/* accepted sample rates */
 	unsigned short csp_mode;	/* CSP mode, see above */
 	unsigned short run_channels;	/* current channels  */
 	unsigned short run_width;	/* current sample width */
@@ -132,6 +140,7 @@ typedef struct snd_sb_csp {
 	unsigned int acc_format;	/* accepted PCM formats */
 	int acc_channels;	/* accepted channels */
 	int acc_width;		/* accepted sample width */
+	int acc_rates;		/* accepted sample rates */
 	int mode;		/* MODE */
 	int run_channels;	/* current CSP channels */
 	int run_width;		/* current sample width */
