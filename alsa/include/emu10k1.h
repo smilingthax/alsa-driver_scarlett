@@ -23,8 +23,11 @@
  *
  */
 
+#ifdef __KERNEL__
+
 #include "pcm.h"
 #include "rawmidi.h"
+#include "hwdep.h"
 #include "ac97_codec.h"
 #include "util_mem.h"
 
@@ -705,6 +708,16 @@ typedef struct snd_emu10k1_memblk_arg {
 	short first_page, last_page;
 } snd_emu10k1_memblk_arg_t;
 
+typedef struct {
+	struct list_head list;
+	unsigned int gpr_regs[0x100/32]; /* used GPR registers */
+	unsigned int tram_data[0xa0/32];    /* used tram data lines */
+	unsigned int tram_address[0xa0/32]; /* used tram address lines */
+	int kcontrols_size;		/* size of allocated kcontrols */
+	int kcontrols_count;		/* count of used kcontrols */
+	snd_kcontrol_t *kcontrols;	/* kcontrols array */
+} snd_emu10k1_fx8010_t;
+
 struct snd_stru_emu10k1 {
 	snd_dma_t * dma1ptr;	/* DAC1 */
 	snd_dma_t * dma2ptr;	/* ADC */
@@ -717,12 +730,17 @@ struct snd_stru_emu10k1 {
 	unsigned int serial;	/* serial number */
 	unsigned short model;	/* subsystem id */
 	unsigned int ecard_ctrl; /* ecard control bits */
+	unsigned int itram_size; /* internal TRAM size in samples */
+	unsigned int etram_size; /* external TRAM size in samples */
+	unsigned int dbg;	/* FX debugger register */
 
-	void *silent_page;	/* silent page */
-	volatile unsigned int *ptb_pages; /* page table pages */
-	snd_util_memhdr_t *memhdr;	/* page allocation list */
+	void *silent_page;			/* silent page */
+	volatile unsigned int *ptb_pages;	/* page table pages */
+	snd_util_memhdr_t *memhdr;		/* page allocation list */
 	snd_util_memblk_t *reserved_page;	/* reserved page */
 
+	struct list_head fx8010; /* FX8010 allocation table */
+	
 	ac97_t *ac97;
 
 	struct pci_dev *pci;
@@ -766,6 +784,10 @@ struct snd_stru_emu10k1 {
 	unsigned int efx_voices_mask;
 
 	snd_info_entry_t *proc_entry;
+	snd_info_entry_t *proc_entry_fx8010_gpr;
+	snd_info_entry_t *proc_entry_fx8010_tram_data;
+	snd_info_entry_t *proc_entry_fx8010_tram_addr;
+	snd_info_entry_t *proc_entry_fx8010_code;
 };
 
 int snd_emu10k1_create(snd_card_t * card,
@@ -779,8 +801,12 @@ int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu);
+int snd_emu10k1_fx8010_new(emu10k1_t *emu, int device, snd_hwdep_t ** rhwdep);
 
 void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
+
+/* initialization */
+void snd_emu10k1_init_efx(emu10k1_t *emu);
 
 /* I/O functions */
 unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned int chn);
@@ -818,5 +844,58 @@ int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
 /* proc interface */
 int snd_emu10k1_proc_init(emu10k1_t * emu);
 int snd_emu10k1_proc_done(emu10k1_t * emu);
+
+#endif /* __KERNEL__ */
+
+#define EMU10K1_CARD_CREATIVE		0
+#define EMU10K1_CARD_EMUAPS		1
+
+/* definitions for debug registers */
+#define EMU10K1_DBG_ZC			0x80000000	/* zero tram counter */
+#define EMU10K1_DBG_SATURATION_OCCURED	0x02000000	/* saturation control */
+#define EMU10K1_DBG_SATURATION_ADDR	0x01ff0000	/* saturation address */
+#define EMU10K1_DBG_SINGLE_STEP		0x00008000	/* single step mode */
+#define EMU10K1_DBG_STEP		0x00004000	/* start single step */
+#define EMU10K1_DBG_CONDITION_CODE	0x00003e00	/* condition code */
+#define EMU10K1_DBG_SINGLE_STEP_ADDR	0x000001ff	/* single step address */
+
+typedef struct {
+	unsigned int card;			/* card type */
+	unsigned int internal_tram_size;	/* in samples */
+	unsigned int external_tram_size;	/* in samples */
+} emu10k1_fx8010_info_t;
+
+#define EMU10K1_FX8110_CODE_MAGIC	(('F'<<24)|('X'<<16)|0x8110)
+
+typedef struct {
+	unsigned char gpr;		/* GPR number */
+	snd_control_id_t id;		/* full control ID definition */
+	unsigned int min;		/* minimum range */
+	unsigned int max;		/* maximum range */
+} emu10k1_fx8010_control_gpr_t;
+
+typedef struct {
+	unsigned int magic;		/* magic number */
+	char name[64];
+	unsigned int gpr_used[0x100/32]; /* bitmask of used GPRs */
+	unsigned int gpr_reloc[0x100/32]; /* bitmask of relocatable GPRs */
+	unsigned int gpr_valid[0x100/32]; /* bitmask of valid initializers */
+	unsigned int gpr_map[0x100];	/* initializers */
+	unsigned int grp_control_count;	/* count of exported GPR controls */
+	emu10k1_fx8010_control_gpr_t *gpr_controls; /* GPR controls */
+	unsigned int tank_data[0x80];
+	unsigned int tank_address[0x80];
+	unsigned int tank_data_ext[0x20];
+	unsigned int tank_address_ext[0x20];
+	unsigned int code[512][2];	/* one instruction - 64 bits */
+} emu10k1_fx8010_code_t;
+
+#define SND_EMU10K1_IOCTL_INFO		_IOR('H', 0x10, emu10k1_fx8010_info_t)
+#define SND_EMU10K1_IOCTL_CODE		_IOW('H', 0x11, emu10k1_fx8010_code_t)
+#define SND_EMU10K1_IOCTL_STOP		_IO ('H', 0x12)
+#define SND_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x13)
+#define SND_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x14)
+#define SND_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x15, int)
+#define SND_EMU10K1_IOCTL_DBG_READ	_IOR('H', 0x16, int)
 
 #endif	/* __EMU10K1_H */

@@ -340,7 +340,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_HWDEP_TYPE_OPL3		1
 #define SND_HWDEP_TYPE_OPL4		2
 #define SND_HWDEP_TYPE_SB16CSP		3	/* Creative Signal Processor */
-#define SND_HWDEP_TYPE_EMU8000		4
+#define SND_HWDEP_TYPE_EMU10K1		4	/* FX8010 processor in EMU10K1 chip */
 #define SND_HWDEP_TYPE_YSS225		5	/* Yamaha FX processor */
 #define SND_HWDEP_TYPE_ICS2115		6	/* Wavetable synth */
 /* --- */
