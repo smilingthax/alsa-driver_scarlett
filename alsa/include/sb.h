@@ -32,7 +32,8 @@
 #define SB_HW_201		3
 #define SB_HW_PRO		4
 #define SB_HW_16		5
-#define SB_HW_ALS100		6	/* Avance Logic ALS100 chip */
+#define SB_HW_16CSP		6	/* SB16 with CSP chip */
+#define SB_HW_ALS100		7	/* Avance Logic ALS100 chip */
 
 #define SB_MODE8_HALT		0
 #define SB_MODE8_PLAYBACK	1
@@ -92,7 +93,10 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_in_synth;
 	snd_kmixer_element_t *me_vol_synth;
 	snd_kmixer_element_t *me_sw3_synth_input;
-	
+
+#ifdef CONFIG_SND_SB16_CSP	
+	snd_kmixer_element_t *me_qsound_pcm;
+#endif
 	snd_kmixer_element_t *me_vol_pcm;
 
 	snd_kmixer_element_t *me_vol_ogain;
