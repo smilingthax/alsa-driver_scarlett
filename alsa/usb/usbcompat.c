@@ -52,24 +52,6 @@ void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *, struc
 #define USB_DEVICE_ID_MATCH_INT_SUBCLASS	0x0100
 #define USB_DEVICE_ID_MATCH_INT_PROTOCOL	0x0200
 
-#define USB_DEVICE_ID_MATCH_DEVICE		(USB_DEVICE_ID_MATCH_VENDOR | USB_DEVICE_ID_MATCH_PRODUCT)
-#define USB_DEVICE_ID_MATCH_DEV_RANGE		(USB_DEVICE_ID_MATCH_DEV_LO | USB_DEVICE_ID_MATCH_DEV_HI)
-#define USB_DEVICE_ID_MATCH_DEVICE_AND_VERSION	(USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_DEV_RANGE)
-#define USB_DEVICE_ID_MATCH_DEV_INFO \
-	(USB_DEVICE_ID_MATCH_DEV_CLASS | USB_DEVICE_ID_MATCH_DEV_SUBCLASS | USB_DEVICE_ID_MATCH_DEV_PROTOCOL)
-#define USB_DEVICE_ID_MATCH_INT_INFO \
-	(USB_DEVICE_ID_MATCH_INT_CLASS | USB_DEVICE_ID_MATCH_INT_SUBCLASS | USB_DEVICE_ID_MATCH_INT_PROTOCOL)
-
-/* Some useful macros */
-#define USB_DEVICE(vend,prod) \
-	match_flags: USB_DEVICE_ID_MATCH_DEVICE, idVendor: (vend), idProduct: (prod)
-#define USB_DEVICE_VER(vend,prod,lo,hi) \
-	match_flags: USB_DEVICE_ID_MATCH_DEVICE_AND_VERSION, idVendor: (vend), idProduct: (prod), bcdDevice_lo: (lo), bcdDevice_hi: (hi)
-#define USB_DEVICE_INFO(cl,sc,pr) \
-	match_flags: USB_DEVICE_ID_MATCH_DEV_INFO, bDeviceClass: (cl), bDeviceSubClass: (sc), bDeviceProtocol: (pr)
-#define USB_INTERFACE_INFO(cl,sc,pr) \
-	match_flags: USB_DEVICE_ID_MATCH_INT_INFO, bInterfaceClass: (cl), bInterfaceSubClass: (sc), bInterfaceProtocol: (pr)
-
 #define MAX_USB_DRIVERS	5
 struct snd_usb_reg_table {
 	struct usb_driver driver;
@@ -93,23 +75,23 @@ static void *snd_usb_compat_probe(struct usb_device *dev, unsigned int ifnum)
 			/* we are too lazy to check all entries... */
 			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_VENDOR) &&
 			    tbl->idVendor != dev->descriptor.idVendor)
-				return NULL;
+				continue;
 			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_PRODUCT) &&
 			    tbl->idProduct != dev->descriptor.idProduct)
-				return NULL;
+				continue;
 			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_INT_CLASS) &&
 			    tbl->bInterfaceClass != alts->bInterfaceClass)
-				return NULL;
+				continue;
 			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_INT_SUBCLASS) &&
 			    tbl->bInterfaceSubClass != alts->bInterfaceSubClass)
-				return NULL;
+				continue;
+			id = *tbl;
+			id.idVendor = dev->descriptor.idVendor;
+			id.idProduct = dev->descriptor.idProduct;
+			id.bInterfaceClass = alts->bInterfaceClass;
+			id.bInterfaceSubClass = alts->bInterfaceSubClass;
+			return p->probe(dev, ifnum, &id);
 		}
-		id = *tbl;
-		id.idVendor = dev->descriptor.idVendor;
-		id.idProduct = dev->descriptor.idProduct;
-		id.bInterfaceClass = alts->bInterfaceClass;
-		id.bInterfaceSubClass = alts->bInterfaceSubClass;
-		return p->probe(dev, ifnum, &id);
 	}
 	return NULL;
 }
@@ -148,8 +130,10 @@ static struct snd_usb_reg_table *find_matching_usb_driver(struct snd_compat_usb_
 void snd_compat_usb_deregister(struct snd_compat_usb_driver *driver)
 {
 	struct snd_usb_reg_table *tbl;	
-	if ((tbl = find_matching_usb_driver(driver)) != NULL)
+	if ((tbl = find_matching_usb_driver(driver)) != NULL) {
+		usb_deregister(&tbl->driver);
 		tbl->orig = NULL;
+	}
 }
 
 void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver, struct usb_interface *iface, void *ptr)
