@@ -651,6 +651,44 @@
 #define HIWORD_RESULT_MASK	0x000ffc00	/* Instruction result				*/
 #define HIWORD_OPA_MASK		0x000003ff	/* Instruction operand A			*/
 
+/* ---- FX8010 ---- */
+
+/* FX buses */
+
+#define FXBUS_PCM_LEFT		0x00
+#define FXBUS_PCM_RIGHT		0x01
+#define FXBUS_PCM_LEFT_REAR	0x02
+#define FXBUS_PCM_RIGHT_REAR	0x03
+
+/* Inputs */
+#define EXTIN_AC97_L	0x00	/* AC'97 capture channel - left */
+#define EXTIN_AC97_R	0x01	/* AC'97 capture channel - right */
+#define EXTIN_SPDIF_CD_L 0x02	/* internal S/PDIF CD - onboard - left */
+#define EXTIN_SPDIF_CD_R 0x03	/* internal S/PDIF CD - onboard - right */
+#define EXTIN_ZOOM_L	0x04	/* Zoom Video I2S - left */
+#define EXTIN_ZOOM_R	0x05	/* Zoom Video I2S - right */
+#define EXTIN_TOSLINK_L	0x06	/* LiveDrive - TOSLink Optical - left */
+#define EXTIN_TOSLINK_R 0x07	/* LiveDrive - TOSLink Optical - right */
+#define EXTIN_LINE1_L	0x08	/* LiveDrive - Line/Mic 1 - left */
+#define EXTIN_LINE1_R	0x09	/* LiveDrive - Line/Mic 1 - right */
+#define EXTIN_COAX_SPDIF_L 0x0a	/* LiveDrive - Coaxial S/PDIF - left */
+#define EXTIN_COAX_SPDIF_R 0x0b /* LiveDrive - Coaxial S/PDIF - right */
+#define EXTIN_LINE2_L	0x0c	/* LiveDrive - Line/Mic 2 - left */
+#define EXTIN_LINE2_R	0x0d	/* LiveDrive - Line/Mic 2 - right */
+
+/* Outputs */
+#define EXTOUT_AC97_L	0x00	/* AC'97 playback channel - left */
+#define EXTOUT_AC97_R	0x01	/* AC'97 playback channel - right */
+#define EXTOUT_TOSLINK_L 0x02	/* LiveDrive - TOSLink Optical - left */
+#define EXTOUT_TOSLINK_R 0x03	/* LiveDrive - TOSLink Optical - right */
+#define EXTOUT_HEADPHONE_L 0x06	/* LiveDrive - Headphone - left */
+#define EXTOUT_HEADPHONE_R 0x07	/* LiveDrive - Headphone - right */
+#define EXTOUT_REAR_L	0x08	/* Rear channel - left */
+#define EXTOUT_REAR_R	0x09	/* Rear channel - right */
+#define EXTOUT_ADC_CAP_L 0x0a	/* ADC Capture buffer - left */
+#define EXTOUT_ADC_CAP_R 0x0b	/* ADC Capture buffer - right */
+#define EXTOUT_MIC_CAP	0x0c	/* MIC Capture buffer */
+
 /* ------------------- STRUCTURES -------------------- */
 
 typedef struct snd_stru_emu10k1 emu10k1_t;
@@ -708,11 +746,18 @@ typedef struct snd_emu10k1_memblk_arg {
 	short first_page, last_page;
 } snd_emu10k1_memblk_arg_t;
 
+#define EMU10K1_MAX_TRAM_BLOCKS_PER_CODE	16
+
 typedef struct {
 	struct list_head list;
-	unsigned int gpr_regs[0x100/32]; /* used GPR registers */
-	unsigned int tram_data[0xa0/32];    /* used tram data lines */
-	unsigned int tram_address[0xa0/32]; /* used tram address lines */
+	unsigned char name[64];
+	unsigned int gpr_used[0x100/32]; /* used GPR registers */
+	unsigned int gpr_temp[0x100/32]; /* temporary GPR registers */
+	unsigned int tram[0xa0/32];	/* used tram lines */
+	unsigned int tram_block_start[EMU10K1_MAX_TRAM_BLOCKS_PER_CODE]; /* in samples */
+	unsigned int tram_block_size[EMU10K1_MAX_TRAM_BLOCKS_PER_CODE];  /* in samples */
+	unsigned int code_start;	/* first instruction */
+	unsigned int code_size;		/* in instructions */
 	int kcontrols_size;		/* size of allocated kcontrols */
 	int kcontrols_count;		/* count of used kcontrols */
 	snd_kcontrol_t *kcontrols;	/* kcontrols array */
@@ -740,6 +785,7 @@ struct snd_stru_emu10k1 {
 	snd_util_memblk_t *reserved_page;	/* reserved page */
 
 	struct list_head fx8010; /* FX8010 allocation table */
+	struct semaphore fx8010_lock;
 	
 	ac97_t *ac97;
 
@@ -750,7 +796,10 @@ struct snd_stru_emu10k1 {
 	snd_pcm_t *pcm_efx;
 	snd_rawmidi_t *rmidi;
 
-	int vol_rear[2];
+	unsigned char dig_vol[6][9][2];	  /* output, input, left/right */
+	unsigned char tone_control[2][2]; /* bass/treble, left/right */
+	unsigned int tone_control_active; /* bitmap of active tone controls */
+	snd_kcontrol_t *tone_bass, *tone_treble;
 
 	spinlock_t synth_lock;
 	void *synth;
@@ -788,6 +837,7 @@ struct snd_stru_emu10k1 {
 	snd_info_entry_t *proc_entry_fx8010_tram_data;
 	snd_info_entry_t *proc_entry_fx8010_tram_addr;
 	snd_info_entry_t *proc_entry_fx8010_code;
+	snd_info_entry_t *proc_entry_fx8010_iblocks;
 };
 
 int snd_emu10k1_create(snd_card_t * card,
@@ -806,12 +856,16 @@ int snd_emu10k1_fx8010_new(emu10k1_t *emu, int device, snd_hwdep_t ** rhwdep);
 void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
 
 /* initialization */
-void snd_emu10k1_init_efx(emu10k1_t *emu);
+int snd_emu10k1_init_efx(emu10k1_t *emu);
+void snd_emu10k1_free_efx(emu10k1_t *emu);
+int snd_emu10k1_fx8010_tone_control_activate(emu10k1_t *emu, int output);
+int snd_emu10k1_fx8010_tone_control_deactivate(emu10k1_t *emu, int output);
 
 /* I/O functions */
 unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned int chn);
 void snd_emu10k1_ptr_write(emu10k1_t *emu, unsigned int reg, unsigned int chn, unsigned int data);
 static inline void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data) { snd_emu10k1_ptr_write(emu, MICROCODEBASE + pc, 0, data); }
+static inline unsigned int snd_emu10k1_efx_read(emu10k1_t *emu, unsigned int pc) { return snd_emu10k1_ptr_read(emu, MICROCODEBASE + pc, 0); }
 void snd_emu10k1_intr_enable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_intr_disable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_voice_intr_enable(emu10k1_t *emu, unsigned int voicenum);
@@ -883,30 +937,42 @@ typedef struct {
 	unsigned int magic;		/* magic number */
 	char name[64];
 	unsigned int gpr_used[0x100/32]; /* bitmask of used GPRs */
-	unsigned int gpr_reloc[0x100/32]; /* bitmask of relocatable GPRs */
+	unsigned int gpr_temp[0x100/32];  /* temporary GPRs */
 	unsigned int gpr_valid[0x100/32]; /* bitmask of valid initializers */
 	unsigned int gpr_map[0x100];	/* initializers */
 	unsigned int gpr_control_count;	/* count of exported GPR controls */
 	emu10k1_fx8010_control_gpr_t *gpr_controls; /* GPR controls */
 	unsigned int tram_used[0x80/32];
-	unsigned int tram_reloc[0x80/32];
+	unsigned int tram_temp[0x80/32];
 	unsigned int tram_valid[0x80/32];
 	unsigned int tram_data_map[0x80];
 	unsigned int tram_addr_map[0x80];
+	unsigned int tram_addr_start[0x80]; /* in samples */
+	unsigned int tram_addr_size[0x80];  /* in samples */
 	unsigned int tram_ext_used[0x20/32];
-	unsigned int tram_ext_reloc[0x20/32];
+	unsigned int tram_ext_temp[0x20/32];
 	unsigned int tram_ext_valid[0x20/32];
-	unsigned int tram_ext_data_map[0x80];
-	unsigned int tram_ext_addr_map[0x80];
+	unsigned int tram_ext_data_map[0x20];
+	unsigned int tram_ext_addr_map[0x20];
+	unsigned int tram_ext_addr_start[0x20];
+	unsigned int tram_ext_addr_size[0x20];
+	unsigned int code_top;		/* place code on top */
+	unsigned int code_size;		/* in instructions */
 	unsigned int code[512][2];	/* one instruction - 64 bits */
 } emu10k1_fx8010_code_t;
 
+typedef struct {
+	unsigned int magic;
+	char name[64];
+} emu10k1_fx8010_code_remove_t;
+
 #define SND_EMU10K1_IOCTL_INFO		_IOR('H', 0x10, emu10k1_fx8010_info_t)
 #define SND_EMU10K1_IOCTL_CODE		_IOW('H', 0x11, emu10k1_fx8010_code_t)
-#define SND_EMU10K1_IOCTL_STOP		_IO ('H', 0x12)
-#define SND_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x13)
-#define SND_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x14)
-#define SND_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x15, int)
-#define SND_EMU10K1_IOCTL_DBG_READ	_IOR('H', 0x16, int)
+#define SND_EMU10K1_IOCTL_CODE_REMOVE	_IOW('H', 0x12, emu10k1_fx8010_code_remove_t)
+#define SND_EMU10K1_IOCTL_STOP		_IO ('H', 0x20)
+#define SND_EMU10K1_IOCTL_CONTINUE	_IO ('H', 0x21)
+#define SND_EMU10K1_IOCTL_ZERO_TRAM_COUNTER _IO ('H', 0x22)
+#define SND_EMU10K1_IOCTL_SINGLE_STEP	_IOW('H', 0x23, int)
+#define SND_EMU10K1_IOCTL_DBG_READ	_IOR('H', 0x24, int)
 
 #endif	/* __EMU10K1_H */
