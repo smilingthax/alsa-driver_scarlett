@@ -22,6 +22,9 @@
  *
  */
 
+typedef enum sndrv_hwdep_iface snd_hwdep_iface_t;
+typedef struct sndrv_hwdep_info snd_hwdep_info_t;
+
 typedef struct _snd_hwdep_ops {
 	long long (*llseek) (snd_hwdep_t *hw, struct file * file, long long offset, int orig);
 	long (*read) (snd_hwdep_t * hw, char *buf, long count, loff_t *offset);

@@ -22,6 +22,16 @@
  *
  */
 
+typedef enum sndrv_timer_class snd_timer_class_t;
+typedef enum sndrv_timer_slave_class snd_timer_slave_class_t;
+typedef enum sndrv_timer_global snd_timer_global_t;
+typedef struct sndrv_timer_id snd_timer_id_t;
+typedef struct sndrv_timer_select snd_timer_select_t;
+typedef struct sndrv_timer_info snd_timer_info_t;
+typedef struct sndrv_timer_params snd_timer_params_t;
+typedef struct sndrv_timer_status snd_timer_status_t;
+typedef struct sndrv_timer_read snd_timer_read_t;
+
 #define _snd_timer_chip(timer) ((timer)->private_data)
 #define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
 

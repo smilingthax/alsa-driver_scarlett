@@ -30,6 +30,11 @@
  *  Raw MIDI interface
  */
 
+typedef enum sndrv_rawmidi_stream snd_rawmidi_stream_t;
+typedef struct sndrv_rawmidi_info snd_rawmidi_info_t;
+typedef struct sndrv_rawmidi_params snd_rawmidi_params_t;
+typedef struct sndrv_rawmidi_status snd_rawmidi_status_t;
+
 #define SNDRV_RAWMIDI_DEVICES	4
 
 #define SNDRV_RAWMIDI_LFLG_OUTPUT         (1<<0)

@@ -167,58 +167,12 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 #include <sound/asound.h>
 #include <sound/asoundef.h>
 
-/* Name change */
+/* Typedef's */
 typedef struct timeval snd_timestamp_t;
 typedef struct sndrv_interval snd_interval_t;
 typedef enum sndrv_card_type snd_card_type;
-typedef sndrv_pcm_uframes_t snd_pcm_uframes_t;
-typedef sndrv_pcm_sframes_t snd_pcm_sframes_t;
-typedef struct sndrv_aes_iec958 snd_aes_iec958_t;
-typedef enum sndrv_hwdep_iface snd_hwdep_iface_t;
-typedef struct sndrv_hwdep_info snd_hwdep_info_t;
-typedef enum sndrv_pcm_class snd_pcm_class_t;
-typedef enum sndrv_pcm_subclass snd_pcm_subclass_t;
-typedef enum sndrv_pcm_stream snd_pcm_stream_t;
-typedef enum sndrv_pcm_access snd_pcm_access_t;
-typedef enum sndrv_pcm_format snd_pcm_format_t;
-typedef enum sndrv_pcm_subformat snd_pcm_subformat_t;
-typedef enum sndrv_pcm_state snd_pcm_state_t;
-typedef union sndrv_pcm_sync_id snd_pcm_sync_id_t;
-typedef struct sndrv_pcm_info snd_pcm_info_t;
-typedef enum sndrv_pcm_hw_param snd_pcm_hw_param_t;
-typedef struct sndrv_pcm_hw_params snd_pcm_hw_params_t;
-typedef enum sndrv_pcm_start snd_pcm_start_t;
-typedef enum sndrv_pcm_xrun snd_pcm_xrun_t;
-typedef enum sndrv_pcm_tstamp snd_pcm_tstamp_t;
-typedef struct sndrv_pcm_sw_params snd_pcm_sw_params_t;
-typedef struct sndrv_pcm_channel_info snd_pcm_channel_info_t;
-typedef struct sndrv_pcm_status snd_pcm_status_t;
-typedef struct sndrv_pcm_mmap_status snd_pcm_mmap_status_t;
-typedef struct sndrv_pcm_mmap_control snd_pcm_mmap_control_t;
 typedef struct sndrv_xferi snd_xferi_t;
 typedef struct sndrv_xfern snd_xfern_t;
-typedef enum sndrv_rawmidi_stream snd_rawmidi_stream_t;
-typedef struct sndrv_rawmidi_info snd_rawmidi_info_t;
-typedef struct sndrv_rawmidi_params snd_rawmidi_params_t;
-typedef struct sndrv_rawmidi_status snd_rawmidi_status_t;
-typedef enum sndrv_timer_class snd_timer_class_t;
-typedef enum sndrv_timer_slave_class snd_timer_slave_class_t;
-typedef enum sndrv_timer_global snd_timer_global_t;
-typedef struct sndrv_timer_id snd_timer_id_t;
-typedef struct sndrv_timer_select snd_timer_select_t;
-typedef struct sndrv_timer_info snd_timer_info_t;
-typedef struct sndrv_timer_params snd_timer_params_t;
-typedef struct sndrv_timer_status snd_timer_status_t;
-typedef struct sndrv_timer_read snd_timer_read_t;
-typedef struct sndrv_ctl_card_info snd_ctl_card_info_t;
-typedef enum sndrv_ctl_elem_type snd_ctl_elem_type_t;
-typedef enum sndrv_ctl_elem_iface snd_ctl_elem_iface_t;
-typedef struct sndrv_ctl_elem_id snd_ctl_elem_id_t;
-typedef struct sndrv_ctl_elem_list snd_ctl_elem_list_t;
-typedef struct sndrv_ctl_elem_info snd_ctl_elem_info_t;
-typedef struct sndrv_ctl_elem_value snd_ctl_elem_value_t;
-typedef enum sndrv_ctl_event_type snd_ctl_event_type_t;
-typedef struct sndrv_ctl_event snd_ctl_event_t;
 typedef struct sndrv_xferv snd_xferv_t;
 
 #ifdef CONFIG_SND_DEBUG_MEMORY

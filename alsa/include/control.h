@@ -22,6 +22,17 @@
  *
  */
 
+typedef struct sndrv_aes_iec958 snd_aes_iec958_t;
+typedef struct sndrv_ctl_card_info snd_ctl_card_info_t;
+typedef enum sndrv_ctl_elem_type snd_ctl_elem_type_t;
+typedef enum sndrv_ctl_elem_iface snd_ctl_elem_iface_t;
+typedef struct sndrv_ctl_elem_id snd_ctl_elem_id_t;
+typedef struct sndrv_ctl_elem_list snd_ctl_elem_list_t;
+typedef struct sndrv_ctl_elem_info snd_ctl_elem_info_t;
+typedef struct sndrv_ctl_elem_value snd_ctl_elem_value_t;
+typedef enum sndrv_ctl_event_type snd_ctl_event_type_t;
+typedef struct sndrv_ctl_event snd_ctl_event_t;
+
 #define _snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
 #define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
 

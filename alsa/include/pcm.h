@@ -23,6 +23,28 @@
  *
  */
 
+typedef sndrv_pcm_uframes_t snd_pcm_uframes_t;
+typedef sndrv_pcm_sframes_t snd_pcm_sframes_t;
+typedef enum sndrv_pcm_class snd_pcm_class_t;
+typedef enum sndrv_pcm_subclass snd_pcm_subclass_t;
+typedef enum sndrv_pcm_stream snd_pcm_stream_t;
+typedef enum sndrv_pcm_access snd_pcm_access_t;
+typedef enum sndrv_pcm_format snd_pcm_format_t;
+typedef enum sndrv_pcm_subformat snd_pcm_subformat_t;
+typedef enum sndrv_pcm_state snd_pcm_state_t;
+typedef union sndrv_pcm_sync_id snd_pcm_sync_id_t;
+typedef struct sndrv_pcm_info snd_pcm_info_t;
+typedef enum sndrv_pcm_hw_param snd_pcm_hw_param_t;
+typedef struct sndrv_pcm_hw_params snd_pcm_hw_params_t;
+typedef enum sndrv_pcm_start snd_pcm_start_t;
+typedef enum sndrv_pcm_xrun snd_pcm_xrun_t;
+typedef enum sndrv_pcm_tstamp snd_pcm_tstamp_t;
+typedef struct sndrv_pcm_sw_params snd_pcm_sw_params_t;
+typedef struct sndrv_pcm_channel_info snd_pcm_channel_info_t;
+typedef struct sndrv_pcm_status snd_pcm_status_t;
+typedef struct sndrv_pcm_mmap_status snd_pcm_mmap_status_t;
+typedef struct sndrv_pcm_mmap_control snd_pcm_mmap_control_t;
+
 #define _snd_pcm_substream_chip(substream) ((substream)->pcm->private_data)
 #define snd_pcm_substream_chip(substream) snd_magic_cast1(chip_t, _snd_pcm_substream_chip(substream), return -ENXIO)
 #define _snd_pcm_chip(pcm) ((pcm)->private_data)
