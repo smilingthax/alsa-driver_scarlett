@@ -23,8 +23,7 @@ export-objs  := seq_device.o seq.o seq_ports.o seq_instr.o seq_midi_emul.o \
 snd-seq-device-objs := seq_device.o
 snd-seq-objs := seq.o seq_lock.o seq_clientmgr.o seq_memory.o seq_queue.o \
                 seq_fifo.o seq_prioq.o seq_timer.o \
-                seq_system.o seq_ports.o seq_info.o seq_sync.o \
-		seq_midi_clock.o seq_mtc.o seq_dtl.o
+                seq_system.o seq_ports.o seq_info.o
 snd-seq-midi-objs := seq_midi.o
 snd-seq-midi-emul-objs := seq_midi_emul.o
 snd-seq-midi-event-objs := seq_midi_event.o
