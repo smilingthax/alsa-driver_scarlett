@@ -177,7 +177,7 @@ struct sndrv_hwdep_info {
 	int card;			/* R: card number */
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* hwdep name */
-	enum sndrv_hwdep_type hw_type;	/* hwdep device type */
+	enum sndrv_hwdep_type type;	/* hwdep device type */
 	unsigned char reserved[64];	/* reserved for future */
 };
 
@@ -569,10 +569,8 @@ enum sndrv_timer_slave_type {
 };
 
 /* global timers (device member) */
-enum sndrv_timer_global {
-	SNDRV_TIMER_GLOBAL_SYSTEM,
-	SNDRV_TIMER_GLOBAL_RTC
-};
+#define SNDRV_TIMER_GLOBAL_SYSTEM	0
+#define SNDRV_TIMER_GLOBAL_RTC		1
 
 struct sndrv_timer_id {
 	enum sndrv_timer_type type;	
