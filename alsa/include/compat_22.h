@@ -119,6 +119,7 @@ int snd_compat_release_resource(struct resource *resource);
 #define pci_enable_device snd_pci_compat_enable_device
 #define pci_register_driver snd_pci_compat_register_driver
 #define pci_unregister_driver snd_pci_compat_unregister_driver
+#define pci_set_power_state snd_pci_compat_set_power_state
 
 #define pci_alloc_consistent snd_pci_compat_alloc_consistent
 #define pci_free_consistent snd_pci_compat_free_consistent
