@@ -139,12 +139,6 @@ struct snd_stru_pcm_plugin {
 	int (*action)(snd_pcm_plugin_t *plugin,
 		      snd_pcm_plugin_action_t action,
 		      unsigned long data);
-	int (*parameter_set)(snd_pcm_plugin_t *plugin,
-			     const char *name,
-			     unsigned long value);
-	int (*parameter_get)(snd_pcm_plugin_t *plugin,
-			     const char *name,
-			     unsigned long *value);
 	snd_pcm_plugin_t *prev;
 	snd_pcm_plugin_t *next;
 	snd_pcm_plug_t *plug;

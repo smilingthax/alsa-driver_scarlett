@@ -1,6 +1,6 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
-M reimplement sync go (also sync stop?) for multiple card support (perhaps it's better to add a support for generic sync request?)
+M add master/divisor to pcm rate and timer
 M loopback implementation (To think)
 M reimplement mixer/control API (To think)
 M make xrun detection optional (Abramo)
@@ -13,6 +13,8 @@ L extend the use of __init and __exit to all initialization code wherever it is
 H port pdplus to new frame oriented midlevel (and fix broken interrupt handler)
 M rewrite mixer lowlevel implementation
 M fix trident driver
+M add digital params/setup support to rme9652
+M fix es1968 driver to compute real rate at params time
 L add detailed failure to params ioctl
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L fix CMI8330 mixer

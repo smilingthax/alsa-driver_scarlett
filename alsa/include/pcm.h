@@ -57,7 +57,7 @@ typedef struct snd_stru_pcm_hardware {
 	size_t transfer_block_size; /* bus transfer block size in bytes */
 	/* -- functions -- */
 	int (*ioctl)(void *private_data, snd_pcm_substream_t * substream,
-		     unsigned int cmd, unsigned long *arg);
+		     unsigned int cmd, void *arg);
 	int (*prepare)(void *private_data, snd_pcm_substream_t * substream);
 	int (*trigger)(void *private_data, snd_pcm_substream_t * substream, int cmd);
 	unsigned int (*pointer)(void *private_data, snd_pcm_substream_t * substream);
@@ -71,8 +71,8 @@ typedef struct snd_stru_pcm_hardware {
 
 #define SND_PCM_DEFAULT_RATE	8000
 
-#define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
-#define SND_PCM_IOCTL1_TRUE	((unsigned long *)1)
+#define SND_PCM_IOCTL1_FALSE	((void *)0)
+#define SND_PCM_IOCTL1_TRUE	((void *)1)
 
 #define SND_PCM_IOCTL1_INFO		0
 #define SND_PCM_IOCTL1_PARAMS		1
@@ -85,6 +85,7 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_CHANNEL_INFO	8
 #define SND_PCM_IOCTL1_CHANNEL_SETUP	9
 #define SND_PCM_IOCTL1_CHANNEL_PARAMS	10
+#define SND_PCM_IOCTL1_SYNC		11
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_GO		1
@@ -108,7 +109,8 @@ struct snd_stru_pcm_runtime {
 	unsigned int dma_ok: 1,		/* DMA is set up */
 		time: 1,		/* Status has timestamp */
 		mmap: 1;		/* mmap requested */
-	snd_timestamp_t stime;		/* time value */
+	snd_timestamp_t stime;		/* start timestamp */
+	int sync_id;
 	int start_mode;
 	int xrun_mode;
 
@@ -139,8 +141,7 @@ struct snd_stru_pcm_runtime {
 	snd_pcm_digital_t *dig_mask;	/* digital mask */
 	void (*dig_mask_free)(void *dig_mask);
 	snd_pcm_digital_t digital;	/* digital format information */
-	snd_pcm_sync_t sync;		/* hardware synchronization ID */
-	snd_pcm_sync_t sync_group;	/* synchronization group */
+	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
 	size_t frames_min;	/* min available frames for wakeup */
@@ -266,6 +267,13 @@ struct snd_stru_pcm_notify {
 	struct snd_stru_pcm_notify *next;
 };
 
+typedef struct {
+	snd_pcm_substream_t *substream;
+	void *arg;
+	snd_timestamp_t tstamp;
+	int result;
+} snd_pcm_ksync_request_t;
+
 /*
  *  Registering
  */
@@ -293,11 +301,12 @@ extern snd_minor_t snd_pcm_reg[2];
 extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
 extern int snd_pcm_go(snd_pcm_substream_t *substream);
 extern int snd_pcm_go_pre(snd_pcm_substream_t *substream);
-extern int snd_pcm_go_post(snd_pcm_substream_t *substream, int err);
+extern int snd_pcm_go_post(snd_pcm_substream_t *substream);
 extern void snd_pcm_stop(snd_pcm_substream_t *substream, int status);
-extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, unsigned long arg);
-extern int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, unsigned long arg);
-extern int snd_pcm_kernel_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, unsigned long arg);
+extern int snd_pcm_kernel_sync_go(snd_pcm_ksync_request_t *kreqs, unsigned int kreqs_count, snd_pcm_sync_mode_t mode);
+extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
+extern int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
+extern int snd_pcm_kernel_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
 extern int snd_pcm_open(unsigned short minor, int cardnum, int device, struct file *file, int stream);
 extern int snd_pcm_release(unsigned short minor, int cardnum, int device, struct file *file);
 extern unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait);
@@ -392,7 +401,7 @@ extern void snd_pcm_set_mixer(snd_pcm_substream_t * substream, int mixer_device,
 extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);
 extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_substream_t *substream,
-			     unsigned int cmd, unsigned long *arg);                      
+			     unsigned int cmd, void *arg);                      
 extern void snd_pcm_update_frame_io(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);

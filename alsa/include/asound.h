@@ -1230,8 +1230,9 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_INFO_OVERRANGE		0x00020000	/* hardware supports ADC (capture) overrange detection */
 #define SND_PCM_INFO_MMAP_VALID		0x00040000	/* fragment data are valid during transfer */
 #define SND_PCM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
-#define SND_PCM_INFO_HALF_DUPLEX	0x00100000
-#define SND_PCM_INFO_JOINT_DUPLEX	0x00200000
+#define SND_PCM_INFO_HALF_DUPLEX	0x00100000	/* only half duplex */
+#define SND_PCM_INFO_JOINT_DUPLEX	0x00200000	/* playback and capture stream are somewhat correlated */
+#define SND_PCM_INFO_SYNC_GO		0x00400000	/* pcm support some kind of sync go */
 
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
@@ -1346,11 +1347,11 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_AES3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
 #define SND_PCM_AES3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
 
-typedef union snd_pcm_sync {
+typedef union snd_pcm_sync_id {
 	char id[16];
 	short id16[8];
 	int id32[4];
-} snd_pcm_sync_t;
+} snd_pcm_sync_id_t;
 
 typedef struct snd_pcm_digital {
 	int type;			/* digital API type */
@@ -1377,9 +1378,9 @@ typedef struct snd_pcm_info {
 	unsigned char subname[32];	/* subdevice name */
 	unsigned short device_class;	/* SND_PCM_CLASS_* */
 	unsigned short device_subclass;	/* SND_PCM_SCLASS_* */
-	int subdevices_count;
-	int subdevices_avail;
-	snd_pcm_sync_t sync;		/* hardware synchronization ID */
+	unsigned int subdevices_count;
+	unsigned int subdevices_avail;
+	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
 	int mixer_device;		/* mixer device */
@@ -1433,7 +1434,6 @@ typedef struct snd_pcm_params {
 	int start_mode;			/* start mode - SND_PCM_START_XXXX */
 	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
 	unsigned int time: 1;		/* timestamp switch */
-	snd_pcm_sync_t sync;		/* sync group */
 	size_t buffer_size;		/* requested buffer size in frames */
 	size_t frag_size;		/* requested size of fragment in frames */
 	size_t frames_min;		/* min available frames for wakeup */
@@ -1488,7 +1488,6 @@ typedef struct snd_pcm_setup {
 	int start_mode;			/* start mode - SND_PCM_START_XXXX */
 	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
 	unsigned int time: 1;		/* timestamp switch */
-	snd_pcm_sync_t sync;		/* sync group */
 	size_t buffer_size;		/* current buffer size in frames */
 	size_t frag_size;		/* current fragment size in frames */
 	size_t frames_min;		/* min available frames for wakeup */
@@ -1531,6 +1530,26 @@ typedef struct snd_pcm_status {
 	char reserved[64];	/* must be filled with zero */
 } snd_pcm_status_t;
 
+typedef enum {
+	SND_PCM_SYNC_MODE_NORMAL,	/* Returns on first failure */
+	SND_PCM_SYNC_MODE_HARDWARE,	/* Only if hw support exists */
+	SND_PCM_SYNC_MODE_RELAXED	/* Try all requests */
+} snd_pcm_sync_mode_t;
+
+typedef struct {
+	int fd;			/* W: File descriptor */
+	void *arg;		/* W: ioctl arg */
+	snd_timestamp_t tstamp;	/* R: same value for hw sync'ed */
+	int result;		/* R: request result */
+} snd_pcm_sync_request_t;
+
+typedef struct {
+	snd_pcm_sync_mode_t mode;	/* W: mode */
+	int cmd;			/* W: SND_PCM_IOCTL_* */
+	unsigned int requests_count;	/* W: Number of requests */
+	snd_pcm_sync_request_t *requests;
+} snd_pcm_sync_t;
+
 typedef struct {
 	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
 	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
@@ -1566,7 +1585,6 @@ typedef struct {
 #define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
 #define SND_PCM_IOCTL_GO		_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_FLUSH		_IO  ('A', 0x32)
-#define SND_PCM_IOCTL_SYNC_GO		_IOW ('A', 0x33, snd_pcm_sync_t)
 #define SND_PCM_IOCTL_DRAIN		_IO  ('A', 0x34)
 #define SND_PCM_IOCTL_PAUSE		_IOW ('A', 0x35, int)
 #define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
@@ -1577,6 +1595,8 @@ typedef struct {
 #define SND_PCM_IOCTL_WRITEV_FRAMES	_IOW ('A', 0x52, snd_xferv_t)
 #define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
 #define SND_PCM_IOCTL_FRAME_DATA	_IOW ('A', 0x54, off_t)
+#define SND_PCM_IOCTL_SYNC		_IOW ('A', 0x60, snd_pcm_sync_t)
+
 
 
 /*
@@ -1886,7 +1906,7 @@ typedef struct snd_rawmidi_status {
 #define SND_TIMER_PSFLG_AUTO		(1<<0)	/* auto start */
 
 typedef struct snd_timer_general_info {
-	int count;			/* count of global timers */
+	unsigned int count;		/* count of global timers */
 	char reserved[64];
 } snd_timer_general_info_t;
 

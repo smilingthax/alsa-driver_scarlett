@@ -503,6 +503,7 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 #ifdef CONFIG_X86_TSC
 #include <asm/msr.h>
+/* FIXME: this is a wrong naive implementation */
 static inline long long snd_timestamp_now(void)
 {
 	long long tsc;
