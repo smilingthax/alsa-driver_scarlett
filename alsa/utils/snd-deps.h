@@ -47,6 +47,7 @@ typedef char depname[MODULENAME_MAXLENGTH];
 typedef struct depStruct
 {
 	depname name;
+	char *comment;
 	int numdeps;
 	struct depStruct **deps;
 	struct depStruct *link;

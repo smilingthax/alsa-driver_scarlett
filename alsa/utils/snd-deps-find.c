@@ -29,22 +29,53 @@ dep *Deps;	// All other modules
 
 int read_file(char *filename)
 {
-	char buffer[255];
+	char *buffer, *newbuf;
 	FILE *file;
+	int c, prev, idx, size, result = 0;
 
 	if((file=fopen(filename,"r"))==NULL)
 		return -errno;
 
+	size = 512;
+	buffer = (char *)malloc(size);
+	if (!buffer) {
+		fclose(file);
+		return -ENOMEM;
+	}
 	while(!feof(file))
-	{
-		bzero(buffer,255);
-		fscanf(file,"%[^\n]\n",buffer);
+	{	
+		buffer[idx = 0] = prev = '\0';	
+		while (1) {
+			if (idx + 1 >= size) {
+				newbuf = (char *) realloc(buffer, size += 256);
+				if (newbuf == NULL) {
+					result = -ENOMEM;
+					goto __end;
+				}
+				buffer = newbuf;
+			}
+			c = fgetc(file);
+			if (c == EOF)
+				break;
+			if (c == '\n') {
+				if (prev == '\\') {
+					idx--;
+					continue;
+				}
+				break;
+			}
+			buffer[idx++] = prev = c;
+		}
+		buffer[idx] = '\0';
 		if(buffer[0]=='|')
 			add_dep(&buffer[1], Cards, TYPE_CARDS); // Card modules (skip |)
 		else if(isalpha(buffer[0]))
 			add_dep(buffer, Deps, TYPE_DEPS); // Other modules
 	}
-	return 0;
+     __end:
+	free(buffer);
+	fclose(file);
+	return result;
 }
 
 // Add a new dependency or soundcard to the list
@@ -63,6 +94,11 @@ void add_dep(char *line, dep *firstdep, short type)
 	}
 	get_word(line, word);
 	strcpy(new_dep->name, word); // Fill inn name of dependency
+
+	if (type == TYPE_CARDS) {
+		get_word(line, word);
+		new_dep->comment = strdup(word);
+	}
 
 	new_dep->deps=malloc(1);
 	if(new_dep->deps==NULL)
@@ -123,28 +159,41 @@ dep *alloc_mem_for_dep(dep *firstdep, short type)
 // Put the first word in "line" in "word". Put the rest back in "line"
 char *get_word(char *line, char *word)
 {
-	int i,j;
+	int i,j,c;
 	char *full_line;
 
 	if(strlen(line)==0)
 		return NULL;
 
-	full_line=malloc(strlen(line)+1);
+	c = line[i = 0];
+	if (c != '\'' && c != '"') {
+		c = ' ';
+	} else {
+		i++;
+	}
+
+	if (strlen(line)==i)
+		return NULL;
+
+	full_line=malloc(strlen(line + i)+1);
 	if(full_line==NULL)
 	{
 		fprintf(stderr, "Not enough memory\n");
 		exit(EXIT_FAILURE);
 	}
-	strcpy(full_line, line);
-
-	for(i=0;i<strlen(full_line);i++)
+	strcpy(full_line, line + i);
+	for(i = 0;i<strlen(full_line);i++)
 	{
-		if(full_line[i]!=' ')
+		if((c != ' ' && full_line[i]!=c) ||
+		   (c == ' ' && full_line[i]!='\t' && full_line[i] != ' '))
 			word[i]=full_line[i];
 		else
 		{
 			// We got the whole word
 			word[i++]='\0';
+			while (full_line[i] != '\0' &&
+			       full_line[i] == ' ' || full_line[i] == '\t')
+				i++;
 			for(j=0;i<strlen(full_line);i++,j++)
 				line[j]=full_line[i];
 			line[j]='\0';

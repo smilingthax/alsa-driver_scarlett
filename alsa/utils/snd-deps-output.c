@@ -293,7 +293,7 @@ void output1_card(dep *firstdep)
 		printf("\
 dep_tristate '%s' %s $CONFIG_SND\n\
 if [ \"$%s\" != \"n\" ]; then\n\
-", card_name, card_config, card_config);
+", temp_dep->comment, card_config, card_config);
 		num=make_list_of_deps_for_dep(temp_dep, list, 0);
 		for(i=0;i<num;i++)
 		{
