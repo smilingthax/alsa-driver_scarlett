@@ -94,7 +94,9 @@ static void _snd_mpu401_uart_interrupt(mpu401_t *mpu)
 {
 	spin_lock(&mpu->input_lock);
 	if (test_bit(MPU401_MODE_BIT_INPUT, &mpu->mode)) {
+		atomic_dec(&mpu->rx_loop);
 		snd_mpu401_uart_input_read(mpu);
+		atomic_inc(&mpu->rx_loop);
 	} else {
 		snd_mpu401_uart_clear_rx(mpu);
 	}
@@ -103,7 +105,9 @@ static void _snd_mpu401_uart_interrupt(mpu401_t *mpu)
 	if (test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode) &&
 	    test_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode)) {
 		if (spin_trylock(&mpu->output_lock)) {
+			atomic_dec(&mpu->tx_loop);
 			snd_mpu401_uart_output_write(mpu);
+			atomic_inc(&mpu->tx_loop);
 			spin_unlock(&mpu->output_lock);
 		}
 	}
@@ -239,6 +243,7 @@ static int snd_mpu401_uart_input_open(snd_rawmidi_substream_t * substream)
 		snd_mpu401_uart_cmd(mpu, MPU401_ENTER_UART, 1);
 	}
 	mpu->substream_input = substream;
+	atomic_set(&mpu->rx_loop, 1);
 	set_bit(MPU401_MODE_BIT_INPUT, &mpu->mode);
 	return 0;
 }
@@ -256,6 +261,7 @@ static int snd_mpu401_uart_output_open(snd_rawmidi_substream_t * substream)
 		snd_mpu401_uart_cmd(mpu, MPU401_ENTER_UART, 1);
 	}
 	mpu->substream_output = substream;
+	atomic_set(&mpu->tx_loop, 1);
 	set_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode);
 	return 0;
 }
@@ -309,17 +315,15 @@ static void snd_mpu401_uart_input_trigger(snd_rawmidi_substream_t * substream, i
 		
 		/* read data in advance */
 		/* prevent double enter via rawmidi->event callback */
-		if (!test_and_set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode)) {
+		if (atomic_dec_and_test(&mpu->rx_loop)) {
 			local_irq_save(flags);
 			if (spin_trylock(&mpu->input_lock)) {
 				snd_mpu401_uart_input_read(mpu);
-				clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
 				spin_unlock(&mpu->input_lock);
-			} else {
-				clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
 			}
 			local_irq_restore(flags);
 		}
+		atomic_inc(&mpu->rx_loop);
 	} else {
 		if (mpu->irq < 0)
 			snd_mpu401_uart_remove_timer(mpu, 1);
@@ -402,17 +406,15 @@ static void snd_mpu401_uart_output_trigger(snd_rawmidi_substream_t * substream, 
 
 		/* output pending data */
 		/* prevent double enter via rawmidi->event callback */
-		if (!test_and_set_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode)) {
+		if (atomic_dec_and_test(&mpu->tx_loop)) {
 			local_irq_save(flags);
 			if (spin_trylock(&mpu->output_lock)) {
 				snd_mpu401_uart_output_write(mpu);
-				clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
 				spin_unlock(&mpu->output_lock);
-			} else {
-				clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
 			}
 			local_irq_restore(flags);
 		}
+		atomic_inc(&mpu->tx_loop);
 	} else {
 		snd_mpu401_uart_remove_timer(mpu, 0);
 		clear_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode);
