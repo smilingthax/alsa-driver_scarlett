@@ -488,10 +488,8 @@ Module parameters
 			* Shark  Predator4D-PCI
 			* Jaton  SonicWave 4D
 
-    snd_dac_frame_size_dx - max dac (playback) frame size in kB (4-64kB)
-    snd_adc_frame_size_dx - max adc (record) frame size in kB (4-64kB)
-    snd_dac_frame_size_nx - max dac (playback) frame size in kB (4-128kB)
-    snd_adc_frame_size_nx - max adc (record) frame size in kB (4-64kB)
+    snd_dac_frame_size    - max dac (playback) frame size in kB (4-64kB)
+    snd_adc_frame_size    - max adc (record) frame size in kB (4-64kB)
     snd_pcm_channels	  - max channels (voices) reserved for PCM
     snd_wavetable_size	  - max wavetable size in kB (4-?kb)
 

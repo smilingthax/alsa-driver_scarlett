@@ -77,6 +77,7 @@
 #define SND_PCM1_IOCTL_VOICES	0x00000003	/* check voices (format) */
 #define SND_PCM1_IOCTL_PAUSE	0x00000004	/* pause */
 #define SND_PCM1_IOCTL_FRAG	0x00000005	/* fragment size */
+#define SND_PCM1_IOCTL_SIZE	0x00000006	/* buffer size */
 
 #define snd_pcm1_clear_time( channel ) \
   ((channel)->time.tv_sec = (channel)->time.tv_usec = 0)

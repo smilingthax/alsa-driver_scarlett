@@ -215,15 +215,6 @@ typedef struct {
 } snd_trident_sample_ops_t;
 
 typedef struct {
-	trident_t *trident;
-	snd_trident_voice_t *channel0;	/* hardware channel pointer */
-	snd_trident_voice_t *channel1;	/* hardware channel pointer */
-	snd_pcm_subchn_t *subchn;
-	snd_pcm1_subchn_t *subchn1;
-	int running;
-} snd_trident_pcm_t;
-
-typedef struct {
 	snd_midi_channel_set_t * chset;
 	trident_t * trident;
 	int mode;		/* operation mode */
@@ -263,6 +254,16 @@ struct snd_trident_stru_voice {
 
 	unsigned int negCSO;	/* nonzero - use negative CSO */
 
+
+	/* PCM data */
+
+	trident_t *trident;
+	snd_pcm_subchn_t *subchn;
+	snd_pcm1_subchn_t *subchn1;
+	int running;
+	int eso;                /* final ESO value for channel */
+	int count;              /* count between interrupts */
+	int csoint;             /* CSO value for next expected interrupt */
 
 	/* --- */
 
@@ -309,7 +310,6 @@ struct snd_stru_trident {
         
         int ChanPCM;			/* max number of PCM channels */
 	int ChanPCMcnt;			/* actual number of PCM channels */
-	snd_trident_pcm_t * ChanDataPCM[64];
 
 	struct snd_stru_4dwave synth;	/* synth specific variables */
 
