@@ -741,8 +741,8 @@ static int snd_ensoniq_trigger(snd_pcm_substream_t *substream, int cmd)
 		unsigned int what = 0;
 		struct list_head *pos;
 		snd_pcm_substream_t *s;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == ensoniq->playback1_substream) {
 				what |= ES_P1_PAUSE;
 				snd_pcm_trigger_done(s, substream);
@@ -767,8 +767,8 @@ static int snd_ensoniq_trigger(snd_pcm_substream_t *substream, int cmd)
 		unsigned int what = 0;
 		struct list_head *pos;
 		snd_pcm_substream_t *s;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == ensoniq->playback1_substream) {
 				what |= ES_DAC1_EN;
 				snd_pcm_trigger_done(s, substream);

@@ -3214,8 +3214,8 @@ static int snd_hdsp_reset(snd_pcm_substream_t *substream)
 		struct list_head *pos;
 		snd_pcm_substream_t *s;
 		snd_pcm_runtime_t *oruntime = other->runtime;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == other) {
 				oruntime->status->hw_ptr = runtime->status->hw_ptr;
 				break;
@@ -3385,8 +3385,8 @@ static int snd_hdsp_trigger(snd_pcm_substream_t *substream, int cmd)
 	if (other) {
 		struct list_head *pos;
 		snd_pcm_substream_t *s;
-		snd_pcm_for_each_streams(pos, substream) {
-			s = snd_pcm_for_each_streams_entry(pos);
+		snd_pcm_group_for_each(pos, substream) {
+			s = snd_pcm_group_substream_entry(pos);
 			if (s == other) {
 				snd_pcm_trigger_done(s, substream);
 				if (cmd == SNDRV_PCM_TRIGGER_START)

@@ -468,8 +468,8 @@ static int snd_cs4231_trigger(snd_pcm_substream_t *substream,
 	}
 
 	what = 0;
-	snd_pcm_for_each_streams(pos, substream) {
-		s = snd_pcm_for_each_streams_entry(pos);
+	snd_pcm_group_for_each(pos, substream) {
+		s = snd_pcm_group_substream_entry(pos);
 		if (s == chip->playback_substream) {
 			what |= CS4231_PLAYBACK_ENABLE;
 			snd_pcm_trigger_done(s, substream);

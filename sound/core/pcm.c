@@ -593,10 +593,10 @@ int snd_pcm_new_stream(snd_pcm_t *pcm, int stream, int substream_count)
 			snd_magic_kfree(substream);
 			return err;
 		}
-		substream->link = &substream->local_link;
-		spin_lock_init(&substream->local_link.lock);
-		INIT_LIST_HEAD(&substream->local_link.substreams);
-		list_add_tail(&substream->link_list, &substream->local_link.substreams);
+		substream->group = &substream->self_group;
+		spin_lock_init(&substream->self_group.lock);
+		INIT_LIST_HEAD(&substream->self_group.substreams);
+		list_add_tail(&substream->link_list, &substream->self_group.substreams);
 		spin_lock_init(&substream->timer_lock);
 		prev = substream;
 	}

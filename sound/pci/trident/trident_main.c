@@ -1525,8 +1525,8 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 	what = whati = capture_flag = spdif_flag = 0;
 	spin_lock(&trident->reg_lock);
 	val = inl(TRID_REG(trident, T4D_STIMER)) & 0x00ffffff;
-	snd_pcm_for_each_streams(pos, substream) {
-		s = snd_pcm_for_each_streams_entry(pos);
+	snd_pcm_group_for_each(pos, substream) {
+		s = snd_pcm_group_substream_entry(pos);
 		if ((trident_t *) _snd_pcm_chip(s->pcm) == trident) {
 			voice = (snd_trident_voice_t *) s->runtime->private_data;
 			evoice = voice->extra;
