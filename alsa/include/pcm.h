@@ -125,8 +125,8 @@ struct _snd_pcm_file {
 };
 
 typedef struct {
-	unsigned long min;
-	unsigned long max;
+	unsigned int min;
+	unsigned int max;
 	unsigned int openmin:1,
 		openmax:1,
 		real:1,
@@ -138,6 +138,8 @@ typedef struct {
 #define VAR_FRAGMENT_LENGTH	2
 #define VAR_FRAGMENTS		3
 #define VAR_BUFFER_LENGTH	4
+#define VAR_LAST_INFO		4
+
 #define VAR_SAMPLE_BITS		5
 #define VAR_FRAME_BITS		6
 #define VAR_FRAGMENT_SIZE	7
@@ -145,27 +147,14 @@ typedef struct {
 #define VAR_BUFFER_SIZE		9
 #define VAR_BUFFER_BYTES	10
 #define VAR_LAST_INTERVAL	10
+
 #define VAR_ACCESS		11
 #define VAR_FORMAT		12
 #define VAR_SUBFORMAT		13
 #define VAR_LAST		13
 
-#define VARBIT_CHANNELS		(1<<VAR_CHANNELS)
-#define VARBIT_RATE		(1<<VAR_RATE)
-#define VARBIT_FRAGMENT_LENGTH	(1<<VAR_FRAGMENT_LENGTH)
-#define VARBIT_FRAGMENTS	(1<<VAR_FRAGMENTS)
-#define VARBIT_BUFFER_LENGTH	(1<<VAR_BUFFER_LENGTH)
-#define VARBIT_SAMPLE_BITS	(1<<VAR_SAMPLE_BITS)
-#define VARBIT_FRAME_BITS	(1<<VAR_FRAME_BITS)
-#define VARBIT_FRAGMENT_SIZE	(1<<VAR_FRAGMENT_SIZE)
-#define VARBIT_FRAGMENT_BYTES	(1<<VAR_FRAGMENT_BYTES)
-#define VARBIT_BUFFER_SIZE	(1<<VAR_BUFFER_SIZE)
-#define VARBIT_BUFFER_BYTES	(1<<VAR_BUFFER_BYTES)
-#define VARBIT_ACCESS		(1<<VAR_ACCESS)
-#define VARBIT_FORMAT		(1<<VAR_FORMAT)
-#define VARBIT_SUBFORMAT	(1<<VAR_SUBFORMAT)
-
 typedef struct _snd_pcm_hw_infok {
+	unsigned int flags;
 	unsigned int access_mask;
 	unsigned int format_mask;
 	unsigned int subformat_mask;
@@ -184,6 +173,7 @@ typedef int (*snd_pcm_hw_infoc_func_t)(snd_pcm_hw_infok_t *info,
 				       snd_pcm_hw_infoc_constr_t *constr);
 
 struct _snd_pcm_hw_infoc_constr {
+	unsigned int cond;
 	snd_pcm_hw_infoc_func_t func;
 	unsigned int var;
 	int deps[4];
@@ -201,13 +191,13 @@ typedef struct _snd_pcm_hw_infoc {
 } snd_pcm_hw_infoc_t;
 
 typedef struct {
-	unsigned long num;
-	unsigned long den_min, den_max, den_step;
+	unsigned int num;
+	unsigned int den_min, den_max, den_step;
 } ratnum_t;
 
 typedef struct {
-	unsigned long num_min, num_max, num_step;
-	unsigned long den;
+	unsigned int num_min, num_max, num_step;
+	unsigned int den;
 } ratden_t;
 
 typedef struct {
@@ -222,7 +212,7 @@ typedef struct {
 
 typedef struct {
 	unsigned int count;
-	unsigned long *list;
+	unsigned int *list;
 	unsigned int mask;
 } snd_pcm_hw_infoc_list_t;
 
@@ -412,6 +402,80 @@ extern void snd_pcm_vma_notify_data(void *client, void *data);
 extern int snd_pcm_mmap_data(snd_pcm_substream_t *substream, struct file *file,
 			     struct vm_area_struct *area);
 
+#if BITS_PER_LONG >= 64
+
+static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
+{
+	*rem = *n % div;
+	*rem /= div;
+}
+
+#elif defined(i386)
+
+static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
+{
+	u_int32_t low, high;
+	low = *n & 0xffffffff;
+	high = *n >> 32;
+	if (high) {
+		u_int32_t high1 = high % div;
+		high /= div;
+		asm("divl %2":"=a" (low), "=d" (*rem):"rm" (div), "a" (low), "d" (high1));
+		*n = (u_int64_t)high << 32 | low;
+	} else {
+		*n = low / div;
+		*rem = low % div;
+	}
+}
+#else
+
+static inline void divl(u_int32_t high, u_int32_t low,
+			u_int32_t div,
+			u_int32_t *q, u_int32_t *r)
+{
+	u_int64_t n = (u_int64_t)high << 32 | low;
+	u_int64_t d = (u_int64_t)div << 31;
+	u_int32_t q1 = 0;
+	int c = 32;
+	while (n > 0xffffffffU) {
+		q1 <<= 1;
+		if (n > d) {
+			n -= d;
+			q1 |= 1;
+		}
+		d >>= 1;
+		c--;
+	}
+	q1 <<= c;
+	if (n) {
+		low = n;
+		*q = q1 | (low / div);
+		*r = low % div;
+	} else {
+		*r = 0;
+		*q = q1;
+	}
+	return;
+}
+
+static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
+{
+	u_int32_t low, high;
+	low = *n & 0xffffffff;
+	high = *n >> 32;
+	if (high) {
+		u_int32_t high1 = high % div;
+		u_int32_t low1 = low;
+		high /= div;
+		divl(high1, low1, div, &low, rem);
+		*n = (u_int64_t)high << 32 | low;
+	} else {
+		*n = low / div;
+		*rem = low % div;
+	}
+}
+#endif
+
 /*
  *  PCM library
  */
@@ -484,35 +548,46 @@ static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream,
 extern int interval_refine(interval_t *i, const interval_t *v);
 extern int interval_mul(interval_t *a, interval_t *b, interval_t *c);
 extern int interval_div(interval_t *a, interval_t *b, interval_t *c);
-extern int interval_mul1(interval_t *a, unsigned long k,
+extern int interval_mul1(interval_t *a, unsigned int k,
 			 interval_t *b, interval_t *c);
-extern int interval_div1(interval_t *a, unsigned long k,
+extern int interval_div1(interval_t *a, unsigned int k,
 			 interval_t *b, interval_t *c);
 extern int interval_list(interval_t *i, 
-			 size_t count, unsigned long *list, unsigned int mask);
-extern int interval_step(interval_t *i, unsigned long min, unsigned long step);
+			 size_t count, unsigned int *list, unsigned int mask);
+extern int interval_step(interval_t *i, unsigned int min, unsigned int step);
 extern int interval_ratnum(interval_t *i,
 			   unsigned int rats_count, ratnum_t *rats,
-			   unsigned long *nump, unsigned long *denp);
+			   unsigned int *nump, unsigned int *denp);
 extern int interval_ratden(interval_t *i,
 			   unsigned int rats_count, ratden_t *rats,
-			   unsigned long *nump, unsigned long *denp);
+			   unsigned int *nump, unsigned int *denp);
+
+extern snd_pcm_hw_infok_t snd_pcm_hw_infok_any;
+extern int snd_pcm_hw_infok(snd_pcm_substream_t *substream,
+			    snd_pcm_hw_infok_t *info);
 
 extern int snd_pcm_hw_infoc_init(snd_pcm_substream_t *substream);
 extern int snd_pcm_hw_infoc_complete(snd_pcm_substream_t *substream);
 
-extern int snd_pcm_hw_infoc_list(snd_pcm_runtime_t *runtime, unsigned int var,
+extern int snd_pcm_hw_infoc_minmax(snd_pcm_runtime_t *runtime, unsigned int var,
+				   unsigned int min, unsigned int max);
+extern int snd_pcm_hw_infoc_list(snd_pcm_runtime_t *runtime, 
+				 unsigned int cond,
+				 unsigned int var,
 				 snd_pcm_hw_infoc_list_t *l);
 extern int snd_pcm_hw_infoc_ratnums(snd_pcm_runtime_t *runtime, 
+				    unsigned int cond,
 				    snd_pcm_hw_infoc_ratnums_t *r);
 extern int snd_pcm_hw_infoc_ratdens(snd_pcm_runtime_t *runtime, 
+				    unsigned int cond,
 				    snd_pcm_hw_infoc_ratdens_t *r);
 extern int snd_pcm_hw_infoc_msbits(snd_pcm_runtime_t *runtime, 
+				   unsigned int cond,
 				   unsigned int width,
 				   unsigned int msbits);
-extern int snd_pcm_hw_infoc_minmax(snd_pcm_runtime_t *runtime, unsigned int var,
-				   unsigned long min, unsigned long max);
-extern int snd_pcm_hw_infoc_add(snd_pcm_runtime_t *runtime, unsigned int var,
+extern int snd_pcm_hw_infoc_add(snd_pcm_runtime_t *runtime,
+				unsigned int cond,
+				unsigned int var,
 				snd_pcm_hw_infoc_func_t func, void *private,
 				int dep, ...);
 

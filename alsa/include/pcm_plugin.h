@@ -204,9 +204,7 @@ int snd_pcm_plug_format_plugins(snd_pcm_plug_t *substream,
 				snd_pcm_hw_params_t *params,
 				snd_pcm_hw_params_t *slave_params);
 
-int snd_pcm_plug_slave_format(snd_pcm_hw_params_t *params,
-			      snd_pcm_hw_info_t *slave_info,
-			      snd_pcm_hw_params_t *slave_params);
+int snd_pcm_plug_slave_fmt(int format, unsigned int format_mask);
 
 int snd_pcm_plugin_append(snd_pcm_plugin_t *plugin);
 

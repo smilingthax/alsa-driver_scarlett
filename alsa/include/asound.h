@@ -686,15 +686,24 @@ typedef struct _snd_pcm_dig_params {
 	char reserved[64];
 } snd_pcm_dig_params_t;
 
-#define SND_PCM_HW_PARAM_ACCESS		0
-#define SND_PCM_HW_PARAM_FORMAT		1
-#define SND_PCM_HW_PARAM_SUBFORMAT	2
-#define SND_PCM_HW_PARAM_CHANNELS	3
-#define SND_PCM_HW_PARAM_RATE		4
+#define SND_PCM_HW_INFO_ACCESS		0
+#define SND_PCM_HW_INFO_FORMAT		1
+#define SND_PCM_HW_INFO_SUBFORMAT	2
+#define SND_PCM_HW_INFO_CHANNELS	3
+#define SND_PCM_HW_INFO_RATE		4
+#define SND_PCM_HW_INFO_FRAGMENT_LENGTH 5
+#define SND_PCM_HW_INFO_FRAGMENTS	6
+#define SND_PCM_HW_INFO_BUFFER_LENGTH	7
+#define SND_PCM_HW_INFO_LAST		7
+
+#define SND_PCM_HW_PARAM_ACCESS		SND_PCM_HW_INFO_ACCESS
+#define SND_PCM_HW_PARAM_FORMAT		SND_PCM_HW_INFO_FORMAT
+#define SND_PCM_HW_PARAM_SUBFORMAT	SND_PCM_HW_INFO_SUBFORMAT
+#define SND_PCM_HW_PARAM_CHANNELS	SND_PCM_HW_INFO_CHANNELS
+#define SND_PCM_HW_PARAM_RATE		SND_PCM_HW_INFO_RATE
 #define SND_PCM_HW_PARAM_FRAGMENT_SIZE	5
-#define SND_PCM_HW_PARAM_FRAGMENTS	6
-#define SND_PCM_HW_PARAM_BUFFER_SIZE	7
-#define SND_PCM_HW_PARAM_LAST		7
+#define SND_PCM_HW_PARAM_FRAGMENTS	SND_PCM_HW_INFO_FRAGMENTS
+#define SND_PCM_HW_PARAM_LAST		6
 
 #define SND_PCM_HW_PARBIT_ACCESS	(1<<SND_PCM_HW_PARAM_ACCESS)
 #define SND_PCM_HW_PARBIT_FORMAT	(1<<SND_PCM_HW_PARAM_FORMAT)
@@ -703,9 +712,11 @@ typedef struct _snd_pcm_dig_params {
 #define SND_PCM_HW_PARBIT_RATE		(1<<SND_PCM_HW_PARAM_RATE)
 #define SND_PCM_HW_PARBIT_FRAGMENT_SIZE (1<<SND_PCM_HW_PARAM_FRAGMENT_SIZE)
 #define SND_PCM_HW_PARBIT_FRAGMENTS	(1<<SND_PCM_HW_PARAM_FRAGMENTS)
-#define SND_PCM_HW_PARBIT_BUFFER_SIZE	(1<<SND_PCM_HW_PARAM_BUFFER_SIZE)
+
+#define SND_PCM_HW_INFO_RUNTIME		(1<<0)
 
 typedef struct _snd_pcm_hw_info {
+	unsigned int flags;             /* SND_PCM_HW_INFO_* */
 	unsigned int access_mask;	/* RW: access mask */
 	unsigned int format_mask;	/* RW: format mask */
 	unsigned int subformat_mask;	/* RW: subformat mask */
@@ -713,12 +724,12 @@ typedef struct _snd_pcm_hw_info {
 	unsigned int channels_max;	/* RW: max channels */
 	unsigned int rate_min;		/* RW: min rate */
 	unsigned int rate_max;		/* RW: max rate */
-	size_t fragment_size_min;	/* RW: min fragment size */
-	size_t fragment_size_max;	/* RW: max fragment size */
+	unsigned int fragment_length_min; /* RW: min fragment duration (us) */
+	unsigned int fragment_length_max; /* RW: max fragment duration (us) */
 	unsigned int fragments_min;	/* RW: min fragments */
 	unsigned int fragments_max;	/* RW: max fragments */
-	size_t buffer_size_min;		/* RW: min buffer size */
-	size_t buffer_size_max;		/* RW: max buffer size */
+	unsigned int buffer_length_min;	/* RW: min buffer duration (us) */
+	unsigned int buffer_length_max;	/* RW: max buffer duration (us) */
 	/* The following fields are filled only when applicable to 
 	   all params combinations */
 	unsigned int info;		/* R: Info for returned setup */
