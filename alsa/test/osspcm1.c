@@ -30,7 +30,10 @@ void main( void )
   if ( ( r = ioctl( fd, SNDCTL_DSP_SETFRAGMENT, &i ) ) < 0 ) { perror( "setfragment" ); return; }
   printf( "fragment = 0x20008, result = 0x%x (%i)\n", i, r );
   printf( "write - begin\n" );
-  write( fd, buffer, sizeof( buffer ) );
+  while ( 1 ) {
+    write( fd, buffer, 1024 );
+    usleep( 10000 );
+  }
   printf( "write - end\n" );
   close( fd );
 }
