@@ -219,11 +219,12 @@ typedef struct snd_stru_port {
 
 typedef void (snd_irq_handler_t) (int irq, void *dev_id, struct pt_regs * regs);
 
-/* main structure for soundcard */
+/* various typedefs */
 
+typedef struct snd_stru_switch snd_kswitch_t;
+typedef struct snd_stru_switch_list snd_kswitch_list_t;
 typedef struct snd_stru_card snd_card_t;
 typedef struct snd_info_entry snd_info_entry_t;
-typedef struct snd_stru_ctl_switch snd_ctl_kswitch_t;
 typedef struct snd_stru_pcm snd_pcm_t;
 typedef struct snd_stru_mixer snd_kmixer_t;
 typedef struct snd_stru_rawmidi snd_rawmidi_t;
@@ -231,6 +232,10 @@ typedef struct snd_stru_control snd_control_t;
 typedef struct snd_stru_timer snd_timer_t;
 typedef struct snd_stru_timer_instance snd_timer_instance_t;
 typedef struct snd_stru_synth snd_synth_t;
+
+/* main structure for soundcard */
+
+#include "switch.h"
 
 struct snd_stru_card {
 	int number;				/* number of soundcard (index to snd_cards) */
@@ -256,8 +261,7 @@ struct snd_stru_card {
 
 	void *static_data;			/* private static data for soundcard */
 
-	int switches_count;			/* switches count */
-	snd_ctl_kswitch_t **switches;		/* switches */
+	snd_kswitch_list_t switches;		/* switches */
 
 	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
 	struct proc_dir_entry *proc_dir_link;	/* number link to real id */

@@ -27,28 +27,13 @@
 #define SND_PCM_TYPE_1		1
 
 typedef struct snd_stru_pcm_channel snd_pcm_channel_t;
-typedef struct snd_stru_pcm_switch snd_pcm_kswitch_t;
 
 struct snd_stru_pcm_channel {
-	unsigned int switches_count;
-	snd_pcm_kswitch_t **switches;
-	snd_mutex_define(switches);
+	snd_kswitch_list_t switches;
 	/* -- /proc interface -- */
 	void *proc_entry;
 	void *proc_private;
 	snd_mutex_define(proc);
-};
-
-struct snd_stru_pcm_switch {
-	char name[32];
-	int (*get_switch) (snd_pcm_t * pcm,
-			   snd_pcm_kswitch_t * kswitch,
-			   snd_pcm_switch_t * uswitch);
-	int (*set_switch) (snd_pcm_t * pcm,
-			   snd_pcm_kswitch_t * kswitch,
-			   snd_pcm_switch_t * uswitch);
-	unsigned int private_value;
-	void *private_data;	/* not freed by pcm.c */
 };
 
 struct snd_stru_pcm {
@@ -94,9 +79,9 @@ extern int snd_pcm_unregister(snd_pcm_t * pcm);
 extern int snd_pcm_notify(struct snd_stru_pcm_notify *notify, int nfree);
 
 extern int snd_pcm_ioctl(snd_pcm_t * pcm, unsigned int cmd, unsigned long arg);
-extern snd_pcm_kswitch_t *snd_pcm_new_switch(snd_pcm_t * pcm,
-					     snd_pcm_channel_t * pchn,
-					     snd_pcm_kswitch_t * ksw);
+extern int snd_pcm_switch_add(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
+extern int snd_pcm_switch_remove(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
+extern snd_kswitch_t *snd_pcm_switch_new(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw, void *private_data);
 
 /*
  *  /proc interface

@@ -44,7 +44,6 @@
 #define SND_RAWMIDI_LFLG_OPEN	0x00000003	/* open */
 
 typedef struct snd_stru_rawmidi_direction snd_rawmidi_direction_t;
-typedef struct snd_stru_rawmidi_switch snd_rawmidi_kswitch_t;
 
 struct snd_stru_rawmidi_direction_hw {
 	unsigned int flags;	/* SND_RAWMIDI_HW_XXXX */
@@ -97,23 +96,9 @@ struct snd_stru_rawmidi_direction {
 	int (*reset) (snd_rawmidi_t * rmidi);	/* reset MIDI command!!! */
 	int (*data) (snd_rawmidi_t * rmidi, char *buffer, int count);
 	/* switches */
-	unsigned int switches_count;
-	snd_rawmidi_kswitch_t **switches;
-	 snd_mutex_define(switches);
+	snd_kswitch_list_t switches;
 	/* hardware layer */
 	struct snd_stru_rawmidi_direction_hw hw;
-};
-
-struct snd_stru_rawmidi_switch {
-	char name[32];
-	int (*get_switch) (snd_rawmidi_t * rmidi,
-			   snd_rawmidi_kswitch_t * kswitch,
-			   snd_rawmidi_switch_t * uswitch);
-	int (*set_switch) (snd_rawmidi_t * rmidi,
-			   snd_rawmidi_kswitch_t * kswitch,
-			   snd_rawmidi_switch_t * uswitch);
-	unsigned int private_value;
-	void *private_data;	/* not freed by rawmidi.c */
 };
 
 struct snd_stru_rawmidi {
@@ -173,9 +158,9 @@ static inline int snd_rawmidi_unregister(snd_rawmidi_t * rmidi)
 #define snd_rawmidi_register __snd_rawmidi_register
 #define snd_rawmidi_unregister __snd_rawmidi_unregister
 #endif
-extern snd_rawmidi_kswitch_t *snd_rawmidi_new_switch(snd_rawmidi_t * rmidi,
-				snd_rawmidi_direction_t * dir,
-				snd_rawmidi_kswitch_t * ksw);
+extern int snd_rawmidi_switch_add(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
+extern int snd_rawmidi_switch_remove(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
+extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw, void *private_data);
 
 /* control functions */
 

@@ -95,7 +95,6 @@
 #define SND_MIX_HW_JOIN_MUTE	8
 
 typedef struct snd_stru_mixer_channel snd_kmixer_channel_t;
-typedef struct snd_stru_mixer_switch snd_kmixer_switch_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
 
 struct snd_stru_mixer_channel_hw {
@@ -150,14 +149,6 @@ struct snd_stru_mixer_channel {
 	struct snd_stru_mixer_channel_hw hw;	/* readonly variables */
 };
 
-struct snd_stru_mixer_switch {
-	char name[32];
-	int (*get_switch) (snd_kmixer_t * mixer, snd_kmixer_switch_t * kswitch, snd_mixer_switch_t * uswitch);
-	int (*set_switch) (snd_kmixer_t * mixer, snd_kmixer_switch_t * kswitch, snd_mixer_switch_t * uswitch);
-	unsigned int private_value;
-	void *private_data;	/* not freed by mixer.c */
-};
-
 struct snd_stru_mixer_file {
 	snd_kmixer_t *mixer;
 	int osscompat;		/* oss compatible mode */
@@ -188,8 +179,7 @@ struct snd_stru_mixer {
 	unsigned int channels_visible;	/* channels count exclude hidden */
 	snd_kmixer_channel_t *channels[SND_MIXER_CHANNELS];
 
-	unsigned int switches_count;
-	snd_kmixer_switch_t *switches[SND_MIXER_SWITCHES];
+	snd_kswitch_list_t switches;
 
 	int modify_counter;		/* for OSS emulation */
 
@@ -219,8 +209,13 @@ extern snd_kmixer_channel_t *snd_mixer_new_channel(snd_kmixer_t * mixer,
 extern void snd_mixer_reorder_channel(snd_kmixer_t * mixer,
 				      snd_kmixer_channel_t * channel);
 
-extern snd_kmixer_switch_t *snd_mixer_new_switch(snd_kmixer_t * mixer,
-					snd_kmixer_switch_t * kswitch);
+extern int snd_mixer_switch_add(snd_kmixer_t * mixer,
+				snd_kswitch_t * kswitch);
+extern int snd_mixer_switch_remove(snd_kmixer_t * mixer,
+				   snd_kswitch_t * kswitch);
+extern snd_kswitch_t *snd_mixer_switch_new(snd_kmixer_t * mixer,
+					   snd_kswitch_t * kswitch,
+					   void *private_data);
 
 extern int snd_mixer_register(snd_kmixer_t * mixer, int device);
 extern int snd_mixer_unregister(snd_kmixer_t * mixer);

@@ -186,10 +186,10 @@ struct snd_stru_sonicvibes {
 	snd_rawmidi_t *rmidi;
 	snd_synth_t *synth;	/* S3FM */
 
-	snd_rawmidi_kswitch_t *switch_wavesource;
-	snd_rawmidi_kswitch_t *switch_synth;
-	snd_rawmidi_kswitch_t *switch_rxtosynth;
-	snd_rawmidi_kswitch_t *switch_txtoext;
+	snd_kswitch_t *switch_wavesource;
+	snd_kswitch_t *switch_synth;
+	snd_kswitch_t *switch_rxtosynth;
+	snd_kswitch_t *switch_txtoext;
 
 	snd_spin_define(reg);
 	snd_info_entry_t *proc_entry;

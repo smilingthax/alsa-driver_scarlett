@@ -3,17 +3,17 @@
 		==========================================
 			    Installation guide
 
-The ALSA driver replaces OSS/Lite driver. The OSS/Lite is present in
-current Linux kernels. If you have got 2.2+ kernel, you must compile
+The ALSA driver replaces the OSS/Lite driver. The OSS/Lite is present in
+current Linux kernels. If you have got a 2.2+ kernel, you must compile
 kernel with sound support (you needn't select any other modules than
 sound support). If you have got 2.0 or 2.1 kernels, check if the OSS/Lite
 driver is active in your kernel. You must remove it before you are
 trying to install the ALSA driver.
 
-Before installation of this driver, please, you need read documentation 
-carefully for insmod, modprobe, kerneld/kmod and even for isapnp
-module if you have the ISA PnP soundcard. If you don't understand how
-are working these programs, you cannot be success with the installation.
+Before installation of this driver, please, you need carefully read
+documentation  for insmod, modprobe, kerneld/kmod and even for the isapnp
+module if you have the ISA PnP soundcard. If you do not understand how
+these programs are working, you cannot be success with the installation.
 
 Quick install
 =============
@@ -23,26 +23,26 @@ Quick install
 2) Run './configure' script.
    If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
    If you want sequencer support, use --with-sequencer=yes switch.
-   If you don't want OSS/Lite emulation, use --with-oss=no switch.
+   If you do not want OSS/Lite emulation, use --with-oss=no switch.
    If you want turn on debug mode use --with-debug=full switch.
    If you want debug soundcard detection try --with-debug=detect switch.
    Example: ./configure --with-isapnp=yes --with-debug=full
 3) Run 'make install'.
-4) Run './snddevices' script to create new sound devices in /dev directory.
+4) Run the './snddevices' script to create new sound devices in /dev directory.
 5) Edit your /etc/conf.modules (look to kerneld/kmod support section).
-6) Run 'modprobe snd-card' where card is name of your card.
-   Note: If you have ISA PnP soundcard you should need run isapnp program
-         from isapnptools package at first to initialize soundcard if
-	 you don't select native ISA PnP support via --with-isapnp=yes
-	 switch.
+6) Run 'modprobe snd-card' where the card is a name of your card.
+   Note: If you have a ISA PnP soundcard you should need run the isapnp
+         program from isapnptools package at first to initialize your
+         soundcard. You can also use the native ISA PnP support with
+         using the --with-isapnp=yes configuration switch.
 
-You can also look to file utils/alsasound. This script is designed for
-RedHat distribution, but it should be used with other distributions which
-use System V style rc init scripts.
+You can also look to the utils/alsasound file. This script is designed for
+the RedHat distribution, but it should be used with other distributions which
+are using System V style rc init scripts.
 
 Note: All mixer channels are muted by default. You must use some native
-      mixer program to unmute appropriate channels (for example mixer from
-      alsa-utils package).
+      mixer program to unmute appropriate channels (for example a mixer
+      from the alsa-utils package).
 
 Driver cannot be activated?
 ===========================
@@ -56,13 +56,14 @@ Driver cannot be activated?
 4) The driver isn't still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
-   there aren't some messages. If these messages doesn't help you, send us
+   there are not some messages. If these messages do not help you, send us
    to <alsa-devel@alsa.jcu.cz> mailing list:
 	- soundcard name + chip names present on your soundcard
 	- your /proc/isapnp or isapnp.conf if you have ISA PnP soundcard
-	- your conf.modules or line which you activate ALSA driver
-	- all messages from /var/log/messages which should be relevant to
-          ALSA driver
+	- your conf.modules or commands which you are using to activate
+          the ALSA driver
+	- all messages from /var/log/messages which could be relevant to
+          the ALSA driver
 
 Bug report
 ==========
@@ -74,16 +75,19 @@ We need know at least these things:
    - the soundcard name provided by manufacture
    - list of chips which soundcard have onboard
    - contents of 'cat /proc/asound/cards'
-3) all messages from /var/log/messages which should be relevant to
-   ALSA driver
-4) problem description
+3) ISA PnP configuration (only for the ISA PnP soundcards)
+   - contents of 'cat /proc/isapnp' or the isapnp.conf file
+4) all messages from /var/log/messages which could be relevant to
+   the ALSA driver
+5) a short problem description
 
 Module parameters
 =================
 
-  User can modify/set parameters at load time of module. If the module supports
-  more cards and you have got more than one card of same type, simply specify
-  more values for the parameter delimited with commas.
+  An user can modify or set parameters at the load time of module. If
+  the module supports more cards and you have got more than one card
+  of same type, you may simply to specify more values for the parameter
+  delimited with commas.
   
   Module snd.o
   ------------
