@@ -211,6 +211,10 @@ int main(void) {
 	fprintf(file, "alpha_ev5");
 #elif defined(CONFIG_EV6) || defined(CONFIG_ALPHA_EV6)
 	fprintf(file, "alpha_ev6");
+#elif defined(CONFIG_ALPHA_GENERIC)
+	fprintf(file, "alpha_generic");
+#elif defined(CONFIG_ALPHA_NONAME)
+	fprintf(file, "alpha_noname");
 #elif defined(CONFIG_PPC)
 	fprintf(file, "ppc");
 #elif defined(CONFIG_CPU_R3000) || defined(CONFIG_CPU_R6000)
@@ -250,6 +254,14 @@ case "$processor" in
     ;;
   alpha*)
     c_opts="-fno-strength-reduce -mno-fp-regs -ffixed-8"
+    case "$processor" in
+      alpha_ev5)
+        c_opts="$c_opts -mcpu=ev5"
+        ;;
+      alpha_ev6)
+        c_opts="$c_opts -mcpu=ev6"
+        ;;
+    esac
     processor="alpha"
     ;;
   ppc)
@@ -260,14 +272,6 @@ case "$processor" in
     ;;
   *)
     processor="unknown"
-    ;;
-esac
-case "$processor" in
-  alpha_ev5)
-    c_opts="$c_opts -mcpu=ev5"
-    ;;
-  alpha_ev6)
-    c_opts="$c_opts -mcpu=ev6"
     ;;
 esac
 c_opts="-O2 $c_opts"
