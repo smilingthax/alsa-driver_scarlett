@@ -45,7 +45,7 @@ typedef struct _snd_kcontrol_new {
 struct _snd_kcontrol {
 	struct list_head list;		/* list of controls */
 	snd_ctl_elem_id_t id;
-	pid_t owner;			/* locked */
+	snd_ctl_file_t *owner;		/* locked */
 	unsigned int access;		/* access rights */
 	snd_kcontrol_info_t *info;
 	snd_kcontrol_get_t *get;
