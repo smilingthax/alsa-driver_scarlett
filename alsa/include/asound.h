@@ -814,26 +814,6 @@ typedef struct snd_pcm_status {
 	char reserved[64];	/* must be filled with zero */
 } snd_pcm_status_t;
 
-typedef enum {
-	SND_PCM_SYNC_MODE_NORMAL,	/* Returns on first failure */
-	SND_PCM_SYNC_MODE_HARDWARE,	/* Only if hw support exists */
-	SND_PCM_SYNC_MODE_RELAXED	/* Try all requests */
-} snd_pcm_sync_mode_t;
-
-typedef struct {
-	int fd;			/* W: File descriptor */
-	void *arg;		/* W: ioctl arg */
-	snd_timestamp_t tstamp;	/* R: same value for hw sync'ed */
-	int result;		/* R: request result */
-} snd_pcm_sync_request_t;
-
-typedef struct {
-	snd_pcm_sync_mode_t mode;	/* W: mode */
-	int cmd;			/* W: SND_PCM_IOCTL_* */
-	unsigned int requests_count;	/* W: Number of requests */
-	snd_pcm_sync_request_t *requests;
-} snd_pcm_sync_t;
-
 typedef struct {
 	volatile long state;	/* RO: status - SND_PCM_STATE_XXXX */
 	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
@@ -879,7 +859,6 @@ typedef struct {
 #define SND_PCM_IOCTL_WRITEV_FRAMES	_IOW ('A', 0x52, snd_xferv_t)
 #define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
 #define SND_PCM_IOCTL_FRAME_DATA	_IOW ('A', 0x54, off_t)
-#define SND_PCM_IOCTL_SYNC		_IOW ('A', 0x60, snd_pcm_sync_t)
 #define SND_PCM_IOCTL_LINK		_IOW ('A', 0x61, int)
 #define SND_PCM_IOCTL_UNLINK		_IO  ('A', 0x62)
 
