@@ -152,6 +152,10 @@ ID: Aztech Sound Galaxy
 IF: MIXER,PCM,MIDI
 MA: Christopher Butler <chrisb@sandy.force9.co.uk>
 
+ID: Aztech AZF3328/PCI168
+IF: MIXER,PCM,MIDI,OPL,SYNTH
+MA: Andreas Mohr <hw7oshyuv3001@sneakemail.com>
+
 ID: MOTU MidiTimePiece AV multiport MIDI interface
 IF: MIDI
 MA: Michael T. Mayers <tweakoz@pacbell.net>
