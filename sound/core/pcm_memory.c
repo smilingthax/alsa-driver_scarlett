@@ -232,7 +232,7 @@ int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
 
 	for (stream = 0; stream < 2; stream++)
 		for (substream = pcm->streams[stream].substream; substream; substream = substream->next)
-			if ((err = snd_pcm_lib_preallocate_isa_pages(substream, size, max, flags)) < 0)
+			if ((err = snd_pcm_lib_preallocate_pages(substream, size, max, flags)) < 0)
 				return err;
 	return 0;
 }
