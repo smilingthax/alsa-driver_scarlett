@@ -22,8 +22,8 @@
  *
  */
 
+#include "control.h"
 #include "pcm.h"
-#include "mixer.h"
 #include "timer.h"
 
 /* IO ports */
@@ -249,76 +249,6 @@ struct snd_stru_cs4231 {
 	struct semaphore mce_mutex;
 	struct semaphore open_mutex;
 
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_aux1;
-	snd_kmixer_element_t *me_mux_mix;
-
-	snd_kmixer_element_t *me_mux;
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_in_accu;
-	snd_kmixer_element_t *me_mono_accu;
-	snd_kmixer_element_t *me_dig_accu;
-	snd_kmixer_element_t *me_out_master;
-	snd_kmixer_element_t *me_sw_master_mono;
-	snd_kmixer_element_t *me_out_master_mono;	
-	snd_kmixer_element_t *me_in_mic;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_sw_mic_in;
-	snd_kmixer_element_t *me_sw_mic_out;
-	snd_kmixer_element_t *me_vol_mic_out;
-	snd_kmixer_element_t *me_vol_mic_boost;
-	snd_kmixer_element_t *me_in_line;
-	snd_kmixer_element_t *me_vol_line;		
-	snd_kmixer_element_t *me_sw_line;
-	snd_kmixer_element_t *me_sw_line_bypass;
-	snd_kmixer_element_t *me_sw_line_in;
-	snd_kmixer_element_t *me_in_aux1;
-	snd_kmixer_element_t *me_vol_aux1;
-	snd_kmixer_element_t *me_sw_aux1;
-	snd_kmixer_element_t *me_sw_aux1_bypass;
-	snd_kmixer_element_t *me_sw_aux1_in;
-	snd_kmixer_element_t *me_in_aux2;
-	snd_kmixer_element_t *me_vol_aux2;
-	snd_kmixer_element_t *me_sw_aux2;
-	snd_kmixer_element_t *me_sw_aux2_in;
-	snd_kmixer_element_t *me_in_mono;
-	snd_kmixer_element_t *me_vol_mono;
-	snd_kmixer_element_t *me_sw_mono;
-	snd_kmixer_element_t *me_sw_mono_bypass;
-	snd_kmixer_element_t *me_sw_mono_bypass_atten;
-	snd_kmixer_element_t *me_vol_igain;
-	snd_kmixer_element_t *me_adc;
-	snd_kmixer_element_t *me_capture;
-	snd_kmixer_element_t *me_vol_loop;
-	snd_kmixer_element_t *me_sw_loop;
-	snd_kmixer_element_t *me_sw_loop_analog;
-	snd_kmixer_element_t *me_playback;
-	snd_kmixer_element_t *me_dac;
-	snd_kmixer_element_t *me_vol_pcm;
-	snd_kmixer_element_t *me_sw_pcm;
-	snd_kmixer_element_t *me_sw_pcm_in;
-	snd_kmixer_element_t *me_out_dsp;
-	snd_kmixer_element_t *me_in_dsp;
-	snd_kmixer_element_t *me_vol_dsp;
-	snd_kmixer_element_t *me_sw_dsp;
-	snd_kmixer_element_t *me_in_fm;
-	snd_kmixer_element_t *me_vol_fm;
-	snd_kmixer_element_t *me_sw_fm;
-	snd_kmixer_element_t *me_in_wavetable;
-	snd_kmixer_element_t *me_vol_wavetable;
-	snd_kmixer_element_t *me_sw_wavetable;
-	snd_kmixer_element_t *me_3d;
-	snd_kmixer_element_t *me_vol_master_dig;
-	snd_kmixer_element_t *me_sw_master_dig_in;
-	snd_kmixer_element_t *me_sw_master_dig_out;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_sw_master;
-	snd_kmixer_element_t *me_dac2;
-	snd_kmixer_element_t *me_vol_dac2;
-	snd_kmixer_element_t *me_sw_dac2_in;
-	snd_kmixer_element_t *me_sw_dac2_out;	
-
 	struct pm_dev *pm_dev;
 
 	unsigned int (*set_playback_rate) (cs4231_t * codec, unsigned int rate);
@@ -350,7 +280,7 @@ int snd_cs4231_new_pcm(snd_card_t * card, int device,
 		       int timer_dev,
 		       snd_pcm_t **rpcm);
 
-int snd_cs4231_new_mixer(snd_pcm_t * pcm, int deivce, snd_kmixer_t **rmixer);
+int snd_cs4231_new_mixer(snd_pcm_t * pcm);
 
 int snd_cs4236_new_pcm(snd_card_t * card, int device,
 		       unsigned long port,
@@ -362,55 +292,31 @@ int snd_cs4236_new_pcm(snd_card_t * card, int device,
 		       int timer_dev,
 		       snd_pcm_t **rpcm);
 
-int snd_cs4236_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t **rmixer);
+int snd_cs4236_new_mixer(snd_pcm_t * pcm);
 
 /*
  *  mixer library
  */
 
-int snd_cs4231_mixer_mux(snd_kmixer_element_t *element, int w_flag,snd_kmixer_element_t **elements);
-int snd_cs4231_mixer_stereo_volume(snd_kmixer_element_t *element,
-					int w_flag, int *channels,
-					int max, int invert, int shift,
-					unsigned char left_reg,
-					unsigned char right_reg);
-int snd_cs4231_mixer_mono_volume(snd_kmixer_element_t *element,
-					int w_flag, int *channels,
-					int max, int invert, int shift,
-					unsigned char reg);
-int snd_cs4231_mixer_stereo_switch(snd_kmixer_element_t *element,
-					int w_flag, unsigned int *bitmap,
-					int bit, int invert,
-					unsigned char left_reg,
-					unsigned char right_reg);
-int snd_cs4231_mixer_mono_switch(snd_kmixer_element_t *element,
-					int w_flag, int *value,
-					int bit, int invert,
-					unsigned char reg);
-int snd_cs4231_mixer_line_volume(snd_kmixer_element_t *element, int w_flag, int *channels);
-int snd_cs4231_mixer_line_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_aux1_volume(snd_kmixer_element_t *element, int w_flag, int *channels);
-int snd_cs4231_mixer_aux1_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_aux2_volume(snd_kmixer_element_t *element, int w_flag, int *channels);
-int snd_cs4231_mixer_aux2_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_monoin_volume(snd_kmixer_element_t *element, int w_flag, int *channels);
-int snd_cs4231_mixer_monoin_switch(snd_kmixer_element_t *element, int w_flag, int *value);
-int snd_cs4231_mixer_mono_bypass_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_igain_volume(snd_kmixer_element_t *element, int w_flag, int *channels);
-int snd_cs4231_mixer_dac_volume(snd_kmixer_element_t *element, int w_flag, int *channels);
-int snd_cs4231_mixer_dac_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
+#define CS4231_SINGLE(xname, xindex, reg, shift, mask, invert) \
+{ iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \
+  info: snd_cs4231_info_single, \
+  get: snd_cs4231_get_single, put: snd_cs4231_put_single, \
+  private_value: reg | (shift << 8) | (mask << 16) | (invert << 24) }
 
-/* For Interwave ... */
-int snd_cs4231_mixer_group_ctrl1(snd_kmixer_group_t * group,
-				 snd_kmixer_file_t * file,
-				 int w_flag,
-				 snd_mixer_group_t * ugroup,
-				 snd_mixer_volume1_control_t *volume1,
-				 snd_kmixer_element_t *volume1_element,
-				 int max,
-				 snd_mixer_sw1_control_t *sw1,
-				 snd_kmixer_element_t *sw1_element,
-				 snd_kmixer_element_t *mux_in);
+int snd_cs4231_info_single(snd_kcontrol_t *kcontrol, snd_control_info_t * uinfo);
+int snd_cs4231_get_single(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+int snd_cs4231_put_single(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+
+#define CS4231_DOUBLE(xname, xindex, left_reg, right_reg, shift_left, shift_right, mask, invert) \
+{ iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \
+  info: snd_cs4231_info_double, \
+  get: snd_cs4231_get_double, put: snd_cs4231_put_double, \
+  private_value: left_reg | (right_reg << 8) | (shift_left << 16) | (shift_right << 19) | (mask << 24) | (invert << 22) }
+
+int snd_cs4231_info_double(snd_kcontrol_t *kcontrol, snd_control_info_t * uinfo);
+int snd_cs4231_get_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+int snd_cs4231_put_double(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 #ifdef CONFIG_SND_DEBUG
 void snd_cs4231_debug(cs4231_t * codec);

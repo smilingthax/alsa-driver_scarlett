@@ -23,7 +23,6 @@
  */
 
 #include "pcm.h"
-#include "mixer.h"
 #include "rawmidi.h"
 #include "timer.h"
 

@@ -22,12 +22,42 @@
  *
  */
 
-typedef struct snd_stru_ctl_read {
-	snd_ctl_read_t data;
-	struct snd_stru_ctl_read *next;
-} snd_kctl_read_t;
+typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_control_info_t * uinfo);
+typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+typedef int (snd_kcontrol_put_t) (snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
-struct snd_stru_control {
+typedef struct snd_stru_kcontrol_new {
+	snd_control_iface_t iface;	/* interface identifier */
+	unsigned int device;		/* device/client number */
+	unsigned int subdevice;		/* subdevice (substream) number */
+	unsigned char *name;		/* ASCII name of item */
+	unsigned int index;		/* index of item */
+	snd_kcontrol_info_t *info;
+	snd_kcontrol_get_t *get;
+	snd_kcontrol_put_t *put;
+	unsigned long private_value;
+	void *private_data;
+	void (*private_free)(void *private_data);
+} snd_kcontrol_new_t;
+
+struct snd_stru_kcontrol {
+	snd_control_id_t id;
+	snd_kcontrol_info_t *info;
+	snd_kcontrol_get_t *get;
+	snd_kcontrol_put_t *put;
+	unsigned long private_value;
+	void *private_data;
+	void (*private_free)(void *private_data);
+	snd_kcontrol_t *prev;
+	snd_kcontrol_t *next;
+};
+
+typedef struct snd_stru_ctl_event {
+	snd_ctl_event_t data;
+	struct snd_stru_ctl_event *next;
+} snd_kctl_event_t;
+
+struct snd_stru_kctl {
 	snd_card_t *card;
 	pid_t pid;
 	int prefer_subdevice;
@@ -35,28 +65,31 @@ struct snd_stru_control {
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the structure */
-	snd_kctl_read_t *first_item;
-	snd_kctl_read_t *last_item;
-	struct snd_stru_control *next;
+	snd_kctl_event_t *first_event;
+	snd_kctl_event_t *last_event;
+	snd_kctl_t *prev;
+	snd_kctl_t *next;
 };
 
-typedef int (*snd_control_ioctl_t) (snd_card_t * card,
-				    snd_control_t * control,
-				    unsigned int cmd, unsigned long arg);
+typedef int (*snd_kctl_ioctl_t) (snd_card_t * card,
+				 snd_kctl_t * control,
+				 unsigned int cmd, unsigned long arg);
 
-extern int snd_control_busy(snd_control_t * control);
-extern void snd_control_notify_structure_change(snd_control_t * control, snd_ctl_read_t * read);
-extern void snd_control_notify_value_change(snd_control_t * control, snd_ctl_read_t * read, int atomic);
-extern void snd_control_notify_switch_change(snd_card_t * card, int cmd, int iface, int device, int stream, char *name);
-extern void snd_control_notify_switch_value_change(snd_control_t * control, int iface, int device, int stream, char *name, int atomic);
+int snd_ctl_busy(snd_kctl_t * ctl);
+void snd_ctl_notify_structure_change(snd_card_t * card, snd_ctl_event_type_t etype, snd_control_id_t * id);
+void snd_ctl_notify_value_change(snd_kctl_t * ctl, snd_kcontrol_t * control);
 
-extern int snd_control_register(snd_card_t *card);
-extern int snd_control_unregister(snd_card_t *card);
-extern int snd_control_register_ioctl(snd_control_ioctl_t fcn);
-extern int snd_control_unregister_ioctl(snd_control_ioctl_t fcn);
-extern int snd_control_switch_add(snd_card_t * card, snd_kswitch_t * ksw);
-extern int snd_control_switch_remove(snd_card_t * card, snd_kswitch_t * ksw);
-extern snd_kswitch_t *snd_control_switch_new(snd_card_t * card, snd_kswitch_t * ksw, void *private_data);
-extern int snd_control_switch_change(snd_card_t * card, snd_kswitch_t * ksw);
+snd_kcontrol_t *snd_ctl_new(snd_kcontrol_t * kcontrol);
+snd_kcontrol_t *snd_ctl_new1(snd_kcontrol_new_t * kcontrolnew, void * private_data);
+void snd_ctl_free_one(snd_kcontrol_t * kcontrol);
+int snd_ctl_add(snd_card_t * card, snd_kcontrol_t * kcontrol);
+int snd_ctl_remove(snd_card_t * card, snd_kcontrol_t * kcontrol);
+snd_kcontrol_t *snd_ctl_find_numid(snd_card_t * card, unsigned int numid);
+snd_kcontrol_t *snd_ctl_find_id(snd_card_t * card, snd_control_id_t *id);
+
+int snd_ctl_register(snd_card_t *card);
+int snd_ctl_unregister(snd_card_t *card);
+int snd_ctl_register_ioctl(snd_kctl_ioctl_t fcn);
+int snd_ctl_unregister_ioctl(snd_kctl_ioctl_t fcn);
 
 #endif				/* __CONTROL_H */

@@ -22,8 +22,8 @@
  *
  */
 
+#include "control.h"
 #include "pcm.h"
-#include "mixer.h"
 
 /* IO ports */
 
@@ -152,26 +152,6 @@ struct snd_stru_ad1848 {
 
 	spinlock_t reg_lock;
 	struct semaphore open_mutex;
-
-	snd_kmixer_element_t *me_mux_line1;
-	snd_kmixer_element_t *me_mux_aux1;
-	snd_kmixer_element_t *me_mux_line2;
-	snd_kmixer_element_t *me_mux_mix;
-
-	snd_kmixer_element_t *me_mux;
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_dig_accu;
-	snd_kmixer_element_t *me_vol_aux1;
-	snd_kmixer_element_t *me_sw_aux1;
-	snd_kmixer_element_t *me_vol_aux2;
-	snd_kmixer_element_t *me_sw_aux2;
-	snd_kmixer_element_t *me_vol_igain;
-	snd_kmixer_element_t *me_capture;
-	snd_kmixer_element_t *me_vol_loop;
-	snd_kmixer_element_t *me_sw_loop;
-	snd_kmixer_element_t *me_playback;
-	snd_kmixer_element_t *me_vol_pcm;
-	snd_kmixer_element_t *me_sw_pcm;
 };
 
 typedef struct snd_stru_ad1848 ad1848_t;
@@ -189,25 +169,27 @@ int snd_ad1848_new_pcm(snd_card_t * card, int device,
 		       unsigned short hardware,
 		       snd_pcm_t ** rpcm);
 
-int snd_ad1848_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t ** rmixer);
+int snd_ad1848_new_mixer(snd_pcm_t *pcm);
 
-int snd_ad1848_mixer_stereo_volume(snd_kmixer_element_t *element,
-					int w_flag, int *channels,
-					int bit, int invert, int shift,
-					unsigned char left_reg,
-					unsigned char right_reg);
-int snd_ad1848_mixer_mono_volume(snd_kmixer_element_t *element,
-					int w_flag, int *channels,
-					int bit, int invert, int shift,
-					unsigned char reg);
-int snd_ad1848_mixer_stereo_switch(snd_kmixer_element_t *element,
-					int w_flag, unsigned int *bitmap,
-					int bit, int invert,
-					unsigned char left_reg,
-					unsigned char right_reg);
-int snd_ad1848_mixer_mono_switch(snd_kmixer_element_t * element,
-					int w_flag, int *value,
-					int bit, int invert, unsigned char reg);
+#define AD1848_SINGLE(xname, xindex, reg, shift, mask, invert) \
+{ iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \
+  info: snd_ad1848_info_single, \
+  get: snd_ad1848_get_single, put: snd_ad1848_put_single, \
+  private_value: reg | (shift << 8) | (mask << 16) | (invert << 24) }
+
+int snd_ad1848_info_single(snd_kcontrol_t *kcontrol, snd_control_info_t * uinfo);
+int snd_ad1848_get_single(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+int snd_ad1848_put_single(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+
+#define AD1848_DOUBLE(xname, xindex, left_reg, right_reg, shift_left, shift_right, mask, invert) \
+{ iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \
+  info: snd_ad1848_info_double, \
+  get: snd_ad1848_get_double, put: snd_ad1848_put_double, \
+  private_value: left_reg | (right_reg << 8) | (shift_left << 16) | (shift_right << 19) | (mask << 24) | (invert << 22) }
+
+int snd_ad1848_info_double(snd_kcontrol_t *kcontrol, snd_control_info_t * uinfo);
+int snd_ad1848_get_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+int snd_ad1848_put_double(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 #ifdef CONFIG_SND_DEBUG
 void snd_ad1848_debug(ad1848_t * codec);

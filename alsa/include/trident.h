@@ -24,7 +24,6 @@
  */
 
 #include "pcm.h"
-#include "mixer.h"
 #include "mpu401.h"
 #include "ac97_codec.h"
 #include "seq_midi_emul.h"
@@ -330,12 +329,15 @@ struct snd_stru_4dwave {
 };
 
 struct snd_stru_trident_pcm_mixer {
-	snd_kmixer_group_t *group;
-	snd_kmixer_element_t *me_pcm;
-	snd_kmixer_element_t *me_vol_vol;
-	snd_kmixer_element_t *me_pan;
-	snd_kmixer_element_t *me_vol_rvol;
-	snd_kmixer_element_t *me_vol_cvol;
+	int voice;			/* -1 - inactive */
+	unsigned char vol;		/* front volume */
+	unsigned char pan;		/* pan control */
+	unsigned char rvol;		/* rear volume */
+	unsigned char cvol;		/* center volume */
+	snd_kcontrol_t *ctl_vol;	/* front volume */
+	snd_kcontrol_t *ctl_pan;	/* pan */
+	snd_kcontrol_t *ctl_rvol;	/* rear volume */
+	snd_kcontrol_t *ctl_cvol;	/* center volume */
 };
 
 struct snd_stru_trident {
@@ -376,22 +378,13 @@ struct snd_stru_trident {
 	snd_pcm_t *pcm;		/* ADC/DAC PCM */
 	snd_pcm_t *foldback;	/* Foldback PCM */
 	snd_pcm_t *spdif;	/* SPDIF PCM */
-	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_seq_device_t *seq_dev;
 
-	unsigned int musicvol_wavevol;
-
 	ac97_t *ac97;
 
+	unsigned int musicvol_wavevol;
 	snd_trident_pcm_mixer_t pcm_mixer[32];
-
-	snd_kmixer_element_t *me_wave;
-	snd_kmixer_element_t *me_vol_wave;
-	snd_kmixer_element_t *me_music;
-	snd_kmixer_element_t *me_vol_music;
-	snd_kmixer_element_t *me_reverb;
-	snd_kmixer_element_t *me_sw2_reverb;
 
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
@@ -413,8 +406,6 @@ void snd_trident_interrupt(trident_t * trident);
 int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
 int snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
 int snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
-int snd_trident_mixer(trident_t * trident, int device, snd_pcm_t * pcm, snd_kmixer_t **rmixer);
-void snd_trident_rawmidi(trident_t * trident, mpu401_t * mpu);
 int snd_trident_attach_synthesizer(trident_t * trident);
 int snd_trident_detach_synthesizer(trident_t * trident);
 snd_trident_voice_t *snd_trident_alloc_voice(trident_t * trident, int type, int client, int port);
@@ -429,5 +420,5 @@ void snd_trident_stop_voice(trident_t * trident, unsigned int HwChannel);
 void snd_trident_enable_voice_irq(trident_t * trident, unsigned int HwChannel);
 void snd_trident_disable_voice_irq(trident_t * trident, unsigned int HwChannel);
 void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigned short v_max);
-#endif				/* __TRID4DWAVE_H */
 
+#endif				/* __TRID4DWAVE_H */

@@ -25,8 +25,8 @@
  *
  */
 
-#include "mixer.h"
 #include "info.h"
+#include "control.h"
 
 /*
  *  ASAHI KASEI - AK4531 codec
@@ -67,64 +67,15 @@
 typedef struct snd_stru_ak4531 ak4531_t;
 
 struct snd_stru_ak4531 {
-	void (*write) (void *private_data, unsigned short reg, unsigned short val);
+	void (*write) (ak4531_t *ak4531, unsigned short reg, unsigned short val);
 	snd_info_entry_t *proc_entry;
 	void *private_data;
 	void (*private_free) (void *private_data);
 	/* --- */
 	unsigned char regs[0x20];
 	spinlock_t reg_lock;
-
-	snd_kmixer_element_t *me_in_accu;
-	snd_kmixer_element_t *me_out_accu;
-	snd_kmixer_element_t *me_mono_accu;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_sw_master;
-	snd_kmixer_element_t *me_vol_master_mono;
-	snd_kmixer_element_t *me_sw_master_mono;
-	snd_kmixer_element_t *me_playback;
-	snd_kmixer_element_t *me_vol_pcm;
-	snd_kmixer_element_t *me_sw_pcm;
-	snd_kmixer_element_t *me_sw_pcm_out;
-	snd_kmixer_element_t *me_sw_pcm_in;
-	snd_kmixer_element_t *me_playback1;
-	snd_kmixer_element_t *me_vol_pcm1;
-	snd_kmixer_element_t *me_sw_pcm1;
-	snd_kmixer_element_t *me_sw_pcm1_out;
-	snd_kmixer_element_t *me_sw_pcm1_in;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_sw_cd;
-	snd_kmixer_element_t *me_sw_cd_out;
-	snd_kmixer_element_t *me_sw_cd_in;
-	snd_kmixer_element_t *me_vol_line;
-	snd_kmixer_element_t *me_sw_line;
-	snd_kmixer_element_t *me_sw_line_out;
-	snd_kmixer_element_t *me_sw_line_in;
-	snd_kmixer_element_t *me_vol_aux;
-	snd_kmixer_element_t *me_sw_aux;
-	snd_kmixer_element_t *me_sw_aux_out;
-	snd_kmixer_element_t *me_sw_aux_in;
-	snd_kmixer_element_t *me_sw_mono_bypass;
-	snd_kmixer_element_t *me_vol_mono;
-	snd_kmixer_element_t *me_sw_mono;
-	snd_kmixer_element_t *me_sw_mono_out;
-	snd_kmixer_element_t *me_sw_mono_in;
-	snd_kmixer_element_t *me_sw_mono1_bypass;
-	snd_kmixer_element_t *me_vol_mono1;
-	snd_kmixer_element_t *me_sw_mono1;
-	snd_kmixer_element_t *me_sw_mono1_out;
-	snd_kmixer_element_t *me_sw_mono1_in;
-	snd_kmixer_element_t *me_vol_mic_gain;
-	snd_kmixer_element_t *me_sw_mic_bypass;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_sw_mic;
-	snd_kmixer_element_t *me_sw_mic_out;
-	snd_kmixer_element_t *me_sw_mic_in;
-	snd_kmixer_element_t *me_capture;
 };
 
-int snd_ak4531_mixer(snd_card_t * card, int device,
-		     ak4531_t * ak4531, int pcm_count, int *pcm_devs,
-		     snd_kmixer_t ** rmixer);
+int snd_ak4531_mixer(snd_card_t * card, ak4531_t * _ak4531, ak4531_t ** rak4531);
 
 #endif				/* __AK4531_CODEC_H */

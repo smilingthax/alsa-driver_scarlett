@@ -89,12 +89,12 @@
 #define SND_CARD_TYPE_OPTI92X		0x00000017	/* OPTi 92x chipset */
 #define SND_CARD_TYPE_SERIAL		0x00000018	/* Serial MIDI driver */
 #define SND_CARD_TYPE_AD1848		0x00000019	/* Generic AD1848 driver */
-#define SND_CARD_TYPE_TRID4DWAVEDX	0x0000001A	/* Trident 4DWave DX */
-#define SND_CARD_TYPE_TRID4DWAVENX	0x0000001B	/* Trident 4DWave NX */
-#define SND_CARD_TYPE_SGALAXY           0x0000001C      /* Aztech Sound Galaxy */
-#define SND_CARD_TYPE_CS461X		0x0000001D	/* Sound Fusion CS4610/12/15 */
-#define SND_CARD_TYPE_WAVEFRONT         0x0000001E      /* TB WaveFront generic */
-#define SND_CARD_TYPE_TROPEZ            0x0000001F      /* TB Tropez */
+#define SND_CARD_TYPE_TRID4DWAVEDX	0x0000001a	/* Trident 4DWave DX */
+#define SND_CARD_TYPE_TRID4DWAVENX	0x0000001b	/* Trident 4DWave NX */
+#define SND_CARD_TYPE_SGALAXY           0x0000001c      /* Aztech Sound Galaxy */
+#define SND_CARD_TYPE_CS461X		0x0000001d	/* Sound Fusion CS4610/12/15 */
+#define SND_CARD_TYPE_WAVEFRONT         0x0000001e      /* TB WaveFront generic */
+#define SND_CARD_TYPE_TROPEZ            0x0000001f      /* TB Tropez */
 #define SND_CARD_TYPE_TROPEZPLUS        0x00000020      /* TB Tropez+ */
 #define SND_CARD_TYPE_MAUI              0x00000021      /* TB Maui */
 #define SND_CARD_TYPE_CMI8330           0x00000022      /* C-Media CMI8330 */
@@ -127,97 +127,119 @@
 
 typedef long long snd_timestamp_t;
 
-/*
- *  Universal switch interface
- */
-
-#define SND_SW_TYPE_NONE		0	/* invalid */
-#define SND_SW_TYPE_BOOLEAN		1	/* 0 or 1 (enable) */
-#define SND_SW_TYPE_BYTE		2	/* 0 to 255 (low to high) */
-#define SND_SW_TYPE_WORD		3	/* 0 to 65535 (low to high) */
-#define SND_SW_TYPE_DWORD		4	/* 0 to 4294967296 (low to high) */
-#define SND_SW_TYPE_LIST		5	/* list type */
-#define SND_SW_TYPE_LIST_ITEM		6	/* list item */
-#define SND_SW_TYPE_LAST		6	/* last known */
-#define SND_SW_TYPE_USER_READ_ONLY	0xfffffffe /* user type - read only */
-#define SND_SW_TYPE_USER		0xffffffff /* user type */
-
-#define SND_SW_SUBTYPE_NONE		0	/* ignored */
-#define SND_SW_SUBTYPE_HEXA		1	/* hexadecimal value */
-
-#define SND_CTL_IFACE_CONTROL		0
-#define SND_CTL_IFACE_MIXER		1
-#define SND_CTL_IFACE_PCM		2
-#define SND_CTL_IFACE_RAWMIDI		3
-
-typedef struct snd_switch_list_item {
-	unsigned char name[32];
-} snd_switch_list_item_t;
-
-typedef struct snd_switch_list {
-	int iface;			/* WR: switch interface number */
-	int device;			/* WR: device number */
-	int stream;			/* WR: stream number */
-	int switches_size;		/* WR: size of switches in array */
-	int switches;			/* RO: filled switches in array */
-	int switches_over;		/* RO: missing switches in array */
-	snd_switch_list_item_t *pswitches; /* WR: pointer to list item array */
-	char reserved[12];
-} snd_switch_list_t;
-
-typedef struct snd_switch {
-	int iface;		/* WR: interface number */
-	int device;		/* WR: device number */
-	int stream;		/* WR: stream number */
-	unsigned char name[32];	/* WR: unique identification of switch (from driver) */
-	unsigned int type;	/* RW: look to SND_SW_TYPE_* */
-	unsigned int subtype;	/* RW: look to SND_SW_SUBTYPE_* */
-	unsigned int low;	/* RO: low range value */
-	unsigned int high;	/* RO: high range value */
-	union {
-		unsigned int enable: 1;		/* 0 = off, 1 = on */
-		unsigned char data8[32];	/* 8-bit data */
-		unsigned short data16[16];	/* 16-bit data */
-		unsigned int data32[8];		/* 32-bit data */
-		unsigned int item_number;	/* active list item number */
-		char item[32];			/* list item, low -> item number */
-	} value;		/* RO */
-	unsigned char reserved[32];
-} snd_switch_t;
- 
 /****************************************************************************
  *                                                                          *
  *        Section for driver control interface - /dev/snd/control?          *
  *                                                                          *
  ****************************************************************************/
 
-#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(1, 0, 0)
-
-#define SND_CTL_SW_JOYSTICK		"Joystick"
-#define SND_CTL_SW_JOYSTICK_ADDRESS	"Joystick Address"
-#define SND_CTL_SW_JOYSTICK_SPEED	"Joystick Speed Compensation"
+#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
 
 typedef struct snd_ctl_hw_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
-	unsigned int hwdepdevs;	/* count of hardware dependent devices (0 to A) */
+	unsigned int hwdepdevs;	/* count of hardware dependent devices */
 	unsigned int pcmdevs;	/* count of PCM devices */
-	unsigned int mixerdevs;	/* count of MIXER devices */
 	unsigned int mididevs;	/* count of raw MIDI devices */
 	unsigned int timerdevs;	/* count of timer devices */
+	unsigned int resdevs[4]; /* reserved for possible future devices */
 	char id[16];		/* ID of card (user selectable) */
 	char abbreviation[16];	/* Abbreviation for soundcard */
 	char name[32];		/* Short name of soundcard */
 	char longname[80];	/* name + info text about soundcard */
+	char mixerid[16];	/* ID of mixer */
+	char mixername[80];	/* mixer identification */
 	unsigned char reserved[128];	/* reserved for future */
 } snd_ctl_hw_info_t;
 
+typedef enum {
+	SND_CONTROL_TYPE_NONE = 0,		/* invalid */
+	SND_CONTROL_TYPE_BOOLEAN,		/* boolean type */
+	SND_CONTROL_TYPE_INTEGER,		/* integer type */
+	SND_CONTROL_TYPE_ENUMERATED,		/* enumerated type */
+	SND_CONTROL_TYPE_BYTES			/* byte array */
+} snd_control_type_t;
+
+typedef enum {
+	SND_CONTROL_IFACE_CARD = 0,		/* global control */
+	SND_CONTROL_IFACE_HWDEP,		/* hardware dependent device */
+	SND_CONTROL_IFACE_MIXER,		/* virtual mixer device */
+	SND_CONTROL_IFACE_PCM,			/* PCM device */
+	SND_CONTROL_IFACE_RAWMIDI,		/* RawMidi device */
+	SND_CONTROL_IFACE_TIMER,		/* timer device */
+	SND_CONTROL_IFACE_SEQUENCER		/* sequencer client */
+} snd_control_iface_t;
+
+#define SND_CONTROL_ACCESS_READ		(1<<0)
+#define SND_CONTROL_ACCESS_WRITE	(1<<1)
+#define SND_CONTROL_ACCESS_READWRITE	(SND_CONTROL_ACCESS_READ|SND_CONTROL_ACCESS_WRITE)
+#define SND_CONTROL_ACCESS_INACTIVE	(1<<8)
+
+typedef struct snd_control_id {
+	unsigned int numid;		/* numeric identifier, zero = invalid */
+	snd_control_iface_t iface;	/* interface identifier */
+	unsigned int device;		/* device/client number */
+	unsigned int subdevice;		/* subdevice (substream) number */
+        unsigned char name[44];		/* ASCII name of item */
+	unsigned int index;		/* index of item */
+} snd_control_id_t;
+
+typedef struct snd_control_list {
+	unsigned int controls_offset;	/* W: first control ID to get */
+	unsigned int controls_request;	/* W: count of control IDs to get */
+	unsigned int controls_count;	/* R: count of available (set) IDs */
+	unsigned int controls;		/* R: count of all available controls */
+	snd_control_id_t *pids;		/* W: IDs */
+        char reserved[50];
+} snd_control_list_t;
+
+typedef struct snd_control_info {
+	snd_control_id_t id;		/* W: control ID */
+	snd_control_type_t type;	/* R: value type - SND_CONTROL_TYPE_* */
+	unsigned int access;		/* R: value access (bitmask) - SND_CONTROL_ACCESS_* */
+	unsigned int values_count;	/* count of values */
+	union {
+		struct {
+			long min;		/* R: minimum value */
+			long max;		/* R: maximum value */
+			long step;		/* R: step (0 variable) */
+		} integer;
+		struct {
+			unsigned int items;	/* R: number of items */
+			unsigned int item;	/* W: item number */
+			char name[64];		/* R: value name */
+		} enumerated;
+		unsigned char reserved[128];
+	} value;
+	unsigned char reserved[64];
+} snd_control_info_t;
+
+typedef struct snd_control {
+	snd_control_id_t id;			/* W: control ID */
+	int indirect: 1;			/* W: use indirect pointer (xxx_ptr member) */
+        union {
+		union {
+			long value[128];
+			long *value_ptr;
+		} integer;
+		union {
+			unsigned int item[128];
+			unsigned int *item_ptr;
+		} enumerated;
+		union {
+			unsigned char data[512];
+			unsigned char *data_ptr;
+		} bytes;
+        } value;                /* RO */
+        unsigned char reserved[128];
+} snd_control_t;
+
 #define SND_CTL_IOCTL_PVERSION		_IOR ('U', 0x00, int)
 #define SND_CTL_IOCTL_HW_INFO		_IOR ('U', 0x01, snd_ctl_hw_info_t)
-#define SND_CTL_IOCTL_SWITCH_LIST	_IOWR('U', 0x02, snd_switch_list_t)
-#define SND_CTL_IOCTL_SWITCH_READ	_IOWR('U', 0x03, snd_switch_t)
-#define SND_CTL_IOCTL_SWITCH_WRITE	_IOWR('U', 0x04, snd_switch_t)
-#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x10, snd_hwdep_info_t)
-#define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x20, snd_mixer_info_t)
+#define SND_CTL_IOCTL_CONTROL_LIST	_IOWR('U', 0x10, snd_control_list_t)
+#define SND_CTL_IOCTL_CONTROL_INFO	_IOWR('U', 0x11, snd_control_info_t)
+#define SND_CTL_IOCTL_CONTROL_READ	_IOWR('U', 0x12, snd_control_t)
+#define SND_CTL_IOCTL_CONTROL_WRITE	_IOWR('U', 0x13, snd_control_t)
+#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x20, snd_hwdep_info_t)
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x30, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x31, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x40, snd_rawmidi_info_t)
@@ -226,28 +248,85 @@ typedef struct snd_ctl_hw_info {
  *  Read interface.
  */
 
-#define SND_CTL_READ_REBUILD		0	/* rebuild the whole structure */
-#define SND_CTL_READ_SWITCH_VALUE	1	/* the switch value was changed */
-#define SND_CTL_READ_SWITCH_CHANGE	2	/* the switch was changed */
-#define SND_CTL_READ_SWITCH_ADD		3	/* the switch was added */
-#define SND_CTL_READ_SWITCH_REMOVE	4	/* the switch was removed */
+typedef enum {
+	SND_CTL_EVENT_REBUILD = 0,	/* rebuild everything */
+	SND_CTL_EVENT_VALUE,		/* a control value was changed */
+	SND_CTL_EVENT_CHANGE,		/* a control was changed */
+	SND_CTL_EVENT_ADD,		/* a control was added */
+	SND_CTL_EVENT_REMOVE,		/* a control was removed */
+} snd_ctl_event_type_t;
 
-typedef struct snd_ctl_read {
-	unsigned int cmd;		/* command - SND_MIXER_READ_* */
+typedef struct snd_ctl_event {
+	snd_ctl_event_type_t type;	/* event type - SND_CTL_EVENT_* */
 	union {
-		struct {
-			int iface;	/* interface */
-			int device;	/* device */
-			int stream;	/* stream */
-			snd_switch_list_item_t switem; /* switch item */
-		} sw;
-		unsigned char data8[60];
-	} data;
-} snd_ctl_read_t;
+		snd_control_id_t id;
+                unsigned char data8[60];
+        } data;
+} snd_ctl_event_t;
+
+/*
+ *  Mixer interface compatible with Open Sound System API
+ */
+
+#ifdef __SND_OSS_COMPAT__
+
+#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001	/* only one capture source at moment */
+
+#define SND_MIXER_OSS_DEVS	25
+#define SND_MIXER_OSS_VOLUME	0
+#define SND_MIXER_OSS_BASS	1
+#define SND_MIXER_OSS_TREBLE	2
+#define SND_MIXER_OSS_SYNTH	3
+#define SND_MIXER_OSS_PCM	4
+#define SND_MIXER_OSS_SPEAKER	5
+#define SND_MIXER_OSS_LINE	6
+#define SND_MIXER_OSS_MIC	7
+#define SND_MIXER_OSS_CD	8
+#define SND_MIXER_OSS_IMIX	9	/* recording monitor */
+#define SND_MIXER_OSS_ALTPCM	10
+#define SND_MIXER_OSS_RECLEV	11	/* recording level */
+#define SND_MIXER_OSS_IGAIN	12	/* input gain */
+#define SND_MIXER_OSS_OGAIN	13	/* output gain */
+#define SND_MIXER_OSS_LINE1	14
+#define SND_MIXER_OSS_LINE2	15
+#define SND_MIXER_OSS_LINE3	16
+#define SND_MIXER_OSS_DIGITAL1	17
+#define SND_MIXER_OSS_DIGITAL2	18
+#define SND_MIXER_OSS_DIGITAL3	19
+#define SND_MIXER_OSS_PHONEIN	20
+#define SND_MIXER_OSS_PHONEOUT	21
+#define SND_MIXER_OSS_VIDEO	22
+#define SND_MIXER_OSS_RADIO	23
+#define SND_MIXER_OSS_MONITOR	24
+#define SND_MIXER_OSS_UNKNOWN	(32+1)
+
+struct snd_oss_mixer_info {
+	char id[16];
+	char name[32];
+	int modify_counter;
+	int fillers[10];
+};
+
+struct snd_oss_mixer_info_obsolete {
+	char id[16];
+	char name[32];
+};
+
+#define SND_MIXER_OSS_SET_RECSRC _IOWR('M', 255, int)
+#define SND_MIXER_OSS_RECSRC	_IOR ('M', 255, int)
+#define SND_MIXER_OSS_DEVMASK	_IOR ('M', 254, int)
+#define SND_MIXER_OSS_RECMASK	_IOR ('M', 253, int)
+#define SND_MIXER_OSS_CAPS	_IOR ('M', 252, int)
+#define SND_MIXER_OSS_STEREODEVS _IOR ('M', 251, int)
+#define SND_MIXER_OSS_INFO      _IOR ('M', 101, struct snd_oss_mixer_info)
+#define SND_MIXER_OSS_OLD_INFO	_IOR ('M', 101, struct snd_oss_mixer_info_obsolete)
+#define SND_OSS_GETVERSION	_IOR ('M', 118, int)
+
+#endif				/* __SND_OSS_COMPAT__ */
 
 /****************************************************************************
  *                                                                          *
- *        Section for driver control interface - /dev/snd/control?          *
+ *      Section for driver hardware dependent interface - /dev/snd/hw?      *
  *                                                                          *
  ****************************************************************************/
 
@@ -274,745 +353,6 @@ typedef struct snd_hwdep_info {
 
 #define SND_HWDEP_IOCTL_PVERSION	_IOR ('H', 0x00, int)
 #define SND_HWDEP_IOCTL_INFO		_IOR ('H', 0x01, snd_hwdep_info_t)
-
-/****************************************************************************
- *                                                                          *
- *                  MIXER interface - /dev/snd/mixer??                      *
- *                                                                          *
- ****************************************************************************/
-
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
-
-/* inputs */				/* max 24 chars */
-#define SND_MIXER_IN_SYNTHESIZER	"Synth"
-#define SND_MIXER_IN_PCM		"PCM"
-#define SND_MIXER_IN_DAC		"DAC"
-#define SND_MIXER_IN_FM			"FM"
-#define SND_MIXER_IN_DSP		"DSP Input"
-#define SND_MIXER_IN_LINE		"Line"
-#define SND_MIXER_IN_MIC		"MIC"
-#define SND_MIXER_IN_CD			"CD"
-#define SND_MIXER_IN_VIDEO		"Video"
-#define SND_MIXER_IN_RADIO		"Radio"
-#define SND_MIXER_IN_PHONE		"Phone"
-#define SND_MIXER_IN_MONO		"Mono"
-#define SND_MIXER_IN_SPEAKER		"PC Speaker"
-#define SND_MIXER_IN_AUX		"Aux"
-#define SND_MIXER_IN_CENTER		"Center Input"
-#define SND_MIXER_IN_WOOFER		"Woofer Input"
-#define SND_MIXER_IN_SURROUND		"Surround Input"
-
-/* outputs */				/* max 24 chars */
-#define SND_MIXER_OUT_MASTER		"Master"
-#define SND_MIXER_OUT_MASTER_MONO	"Master Mono"
-#define SND_MIXER_OUT_MASTER_DIGITAL	"Master Digital"
-#define SND_MIXER_OUT_HEADPHONE		"Headphone"
-#define SND_MIXER_OUT_PHONE		"Phone Output"
-#define SND_MIXER_OUT_CENTER		"Center"
-#define SND_MIXER_OUT_WOOFER		"Woofer"
-#define SND_MIXER_OUT_SURROUND		"Surround"
-#define SND_MIXER_OUT_DSP		"DSP Output"
-
-/* groups */				/* max 24 chars */
-#define SND_MIXER_GRP_BASS		"Bass"
-#define SND_MIXER_GRP_TREBLE		"Treble"
-#define SND_MIXER_GRP_EQUALIZER		"Equalizer"
-#define SND_MIXER_GRP_FADER		"Fader"
-#define SND_MIXER_GRP_EFFECT		"Effect"
-#define SND_MIXER_GRP_EFFECT_3D		"3D Effect"
-#define SND_MIXER_GRP_MIC_GAIN		"Mic Gain"
-#define SND_MIXER_GRP_IGAIN		"Input Gain"
-#define SND_MIXER_GRP_OGAIN		"Output Gain"
-#define SND_MIXER_GRP_ANALOG_LOOPBACK	"Analog Loopback"
-#define SND_MIXER_GRP_DIGITAL_LOOPBACK	"Digital Loopback"
-
-/* others */
-#define SND_MIXER_ELEMENT_TONE_CONTROL	"Tone Control"
-#define SND_MIXER_ELEMENT_INPUT_MUX	"Input MUX"
-#define SND_MIXER_ELEMENT_DIGITAL_ACCU	"Digital Accumulator"
-#define SND_MIXER_ELEMENT_OUTPUT_ACCU	"Output Accumulator"
-#define SND_MIXER_ELEMENT_INPUT_ACCU	"Input Accumulator"
-#define SND_MIXER_ELEMENT_MONO_OUT_ACCU	"Mono-Out Accumulator"
-#define SND_MIXER_ELEMENT_MONO_IN_ACCU	"Mono-In Accumulator"
-#define SND_MIXER_ELEMENT_DAC		"Digital-Analog Converter"
-#define SND_MIXER_ELEMENT_ADC		"Analog-Digital Converter"
-#define SND_MIXER_ELEMENT_CAPTURE	"Capture"
-#define SND_MIXER_ELEMENT_PLAYBACK	"Playback"
-
-/* switches */
-#define SND_MIXER_SW_IEC958_OUTPUT	"IEC-958 (S/PDIF) Output"
-#define SND_MIXER_SW_IEC958_INPUT	"IEC-958 (S/PDIF) Input"
-#define SND_MIXER_SW_SIM_STEREO		"Simulated Stereo Enhancement"
-#define SND_MIXER_SW_LOUDNESS		"Loudness (bass boost)"
-
-/*
- *  element types
- */
-
-/* input */
-#define SND_MIXER_ETYPE_INPUT		0
-/* output */
-#define SND_MIXER_ETYPE_OUTPUT		1
-/* capture stream endpoint */
-#define SND_MIXER_ETYPE_CAPTURE1	2
-/* capture substream endpoint */
-#define SND_MIXER_ETYPE_CAPTURE2	3
-/* playback stream startpoint */
-#define SND_MIXER_ETYPE_PLAYBACK1	4
-/* playback substream startpoint */
-#define SND_MIXER_ETYPE_PLAYBACK2	5
-/* ADC */
-#define SND_MIXER_ETYPE_ADC		6
-/* DAC */
-#define SND_MIXER_ETYPE_DAC		7
-/* capture substream/channel endpoint */
-#define SND_MIXER_ETYPE_CAPTURE3	8
-/* playback substream/channel endpoint */
-#define SND_MIXER_ETYPE_PLAYBACK3	9
-/* simple on/off switch (channels separated) */
-#define SND_MIXER_ETYPE_SWITCH1		100
-/* simple on/off switch (all channels together) */
-#define SND_MIXER_ETYPE_SWITCH2		101
-/* simple channel route switch */
-#define SND_MIXER_ETYPE_SWITCH3		102
-/* simple volume control */
-#define SND_MIXER_ETYPE_VOLUME1		200
-/* simple volume control - PCM channels to DAC */
-#define SND_MIXER_ETYPE_VOLUME2		201
-/* simple accumulator */
-#define SND_MIXER_ETYPE_ACCU1		300
-/* simple accumulator with MONO output */
-#define SND_MIXER_ETYPE_ACCU2		301
-/* simple accumulator with programmable attenuation */
-#define SND_MIXER_ETYPE_ACCU3		302
-/* simple MUX (channels separated) */
-#define SND_MIXER_ETYPE_MUX1		400
-/* simple MUX (all channels together) */
-#define SND_MIXER_ETYPE_MUX2		401
-/* simple tone control */
-#define SND_MIXER_ETYPE_TONE_CONTROL1	500
-/* equalizer */
-#define SND_MIXER_ETYPE_EQUALIZER1	501
-/* simple pan control */
-#define SND_MIXER_ETYPE_PAN_CONTROL1	502
-/* simple 3D effect */
-#define SND_MIXER_ETYPE_3D_EFFECT1	600
-/* predefined effect */
-#define SND_MIXER_ETYPE_PRE_EFFECT1	610
-
-/*
- *  channel definitions
- */
-
-#define SND_MIXER_CHANNEL_UNKNOWN		0
-#define SND_MIXER_CHANNEL_MONO		1
-#define SND_MIXER_CHANNEL_LEFT		2
-#define SND_MIXER_CHANNEL_RIGHT		3
-#define SND_MIXER_CHANNEL_CENTER		4
-#define SND_MIXER_CHANNEL_REAR_LEFT	5
-#define SND_MIXER_CHANNEL_REAR_RIGHT	6
-#define SND_MIXER_CHANNEL_WOOFER		7
-
-#define SND_MIXER_CHANNEL_MASK_MONO	(1 << (SND_MIXER_CHANNEL_MONO-1))
-#define SND_MIXER_CHANNEL_MASK_LEFT	(1 << (SND_MIXER_CHANNEL_LEFT-1))
-#define SND_MIXER_CHANNEL_MASK_RIGHT	(1 << (SND_MIXER_CHANNEL_RIGHT-1))
-#define SND_MIXER_CHANNEL_MASK_CENTER	(1 << (SND_MIXER_CHANNEL_CENTER-1))
-#define SND_MIXER_CHANNEL_MASK_REAR_LEFT	(1 << (SND_MIXER_CHANNEL_REAR_LEFT-1))
-#define SND_MIXER_CHANNEL_MASK_REAR_RIGHT	(1 << (SND_MIXER_CHANNEL_REAR_RIGHT-1))
-#define SND_MIXER_CHANNEL_MASK_WOOFER	(1 << (SND_MIXER_CHANNEL_WOOFER-1))
-
-#define SND_MIXER_CHANNEL_MASK_FOUR	(SND_MIXER_CHANNEL_MASK_LEFT|\
-					 SND_MIXER_CHANNEL_MASK_RIGHT|\
-					 SND_MIXER_CHANNEL_MASK_REAR_LEFT|\
-					 SND_MIXER_CHANNEL_MASK_REAR_RIGHT)
-#define SND_MIXER_CHANNEL_MASK_SIX	(SND_MIXER_CHANNEL_MASK_LEFT|\
-					 SND_MIXER_CHANNEL_MASK_RIGHT|\
-					 SND_MIXER_CHANNEL_MASK_CENTER|\
-					 SND_MIXER_CHANNEL_MASK_REAR_LEFT|\
-					 SND_MIXER_CHANNEL_MASK_REAR_RIGHT|\
-					 SND_MIXER_CHANNEL_MASK_WOOFER)
-
-typedef struct {
-	unsigned short position;	/* SND_MIXER_CHANNEL_* */
-} snd_mixer_channel_t;
-
-typedef struct {
-	unsigned char name[24];
-	int index;			/* 0..N */
-	int type;			/* element type - SND_MIXER_ETYPE_ */
-} snd_mixer_eid_t;
-
-typedef struct {
-	unsigned char name[24];
-	int index;			/* 0..N */
-	int reserved;
-} snd_mixer_gid_t;
-
-/*
- *  General information.
- */
-
-typedef struct snd_mixer_info {
-	int device;		/* WR: device number */
-	unsigned int type;	/* type of soundcard - SND_CARD_TYPE_XXXX */
-	unsigned int attrib;	/* attributes, not used */
-	unsigned char id[64];	/* ID of this mixer */
-	unsigned char name[80];	/* name of this device */
-	int elements;		/* count of elements */
-	int groups;		/* count of element groups */
-	char reserved[32];	/* reserved for future use */
-} snd_mixer_info_t;
-
-/*
- *  Element information.
- */
-
-typedef struct snd_mixer_elements {
-	int elements_size;	/* WR: size in element identifiers */
-	int elements;		/* WR: count of filled element identifiers */
-	int elements_over;	/* RO: missing element identifiers */
-	snd_mixer_eid_t *pelements; /* WR: array */
-} snd_mixer_elements_t;
-
-/*
- *  Route information.
- */
-
-typedef struct snd_mixer_route {
-	snd_mixer_eid_t src_eid; /* WR: source element identification */
-	snd_mixer_eid_t dst_eid; /* WR: destination element identification */
-	int src_channels;		/* RO: source channels */
-	int dst_channels;		/* RO: destination channels */
-	unsigned int *channel_wires; /* WR: source * destination bitmap matrix */
-} snd_mixer_route_t;
-
-typedef struct snd_mixer_routes {
-	snd_mixer_eid_t eid;	/* WR: element identifier */
-	int routes_size;	/* WR: size in element identifiers */
-	int routes;		/* RO: count of filled element identifiers */
-	int routes_over;	/* RO: missing element identifiers */
-	snd_mixer_eid_t *proutes; /* WR: array */
-} snd_mixer_routes_t;
-
-/*
- *  Group information.
- */
-
-typedef struct snd_mixer_groups {
-	int groups_size;	/* WR: size in group identifiers */
-	int groups;		/* RO: count of filled group identifiers */
-	int groups_over;	/* RO: missing group identifiers */
-	snd_mixer_gid_t *pgroups; /* WR: array */
-} snd_mixer_groups_t;
-
-typedef enum {
-	SND_MIXER_CHN_FRONT_LEFT,
-	SND_MIXER_CHN_FRONT_RIGHT,
-	SND_MIXER_CHN_FRONT_CENTER,
-	SND_MIXER_CHN_REAR_LEFT,
-	SND_MIXER_CHN_REAR_RIGHT,
-	SND_MIXER_CHN_WOOFER,
-	SND_MIXER_CHN_LAST = 31,
-	SND_MIXER_CHN_MONO = SND_MIXER_CHN_FRONT_LEFT
-} snd_mixer_channel_id_t;
-
-#define SND_MIXER_CHN_MASK_MONO		(1<<SND_MIXER_CHN_MONO)
-#define SND_MIXER_CHN_MASK_FRONT_LEFT	(1<<SND_MIXER_CHN_FRONT_LEFT)
-#define SND_MIXER_CHN_MASK_FRONT_RIGHT	(1<<SND_MIXER_CHN_FRONT_RIGHT)
-#define SND_MIXER_CHN_MASK_FRONT_CENTER	(1<<SND_MIXER_CHN_FRONT_CENTER)
-#define SND_MIXER_CHN_MASK_REAR_LEFT	(1<<SND_MIXER_CHN_REAR_LEFT)
-#define SND_MIXER_CHN_MASK_REAR_RIGHT	(1<<SND_MIXER_CHN_REAR_RIGHT)
-#define SND_MIXER_CHN_MASK_WOOFER	(1<<SND_MIXER_CHN_WOOFER)
-#define SND_MIXER_CHN_MASK_STEREO	(SND_MIXER_CHN_MASK_FRONT_LEFT|SND_MIXER_CHN_MASK_FRONT_RIGHT)
-
-#define SND_MIXER_GRPCAP_VOLUME		(1<<0)
-#define SND_MIXER_GRPCAP_JOINTLY_VOLUME	(1<<1)
-#define SND_MIXER_GRPCAP_MUTE		(1<<2)
-#define SND_MIXER_GRPCAP_JOINTLY_MUTE	(1<<3)
-#define SND_MIXER_GRPCAP_CAPTURE	(1<<4)
-#define SND_MIXER_GRPCAP_JOINTLY_CAPTURE (1<<5)
-#define SND_MIXER_GRPCAP_EXCL_CAPTURE	(1<<6)
-
-typedef struct snd_mixer_group {
-	snd_mixer_gid_t gid;		/* WR: group identification */
-	int elements_size;		/* WR: size in element identifiers */
-	int elements;			/* RO: count of filled element identifiers */
-	int elements_over;		/* RO: missing element identifiers */
-	snd_mixer_eid_t *pelements;	/* WR: array */
-	unsigned int caps;		/* RO: capabilities */
-	unsigned int channels;		/* RO: bitmap of active channels */	
-	unsigned int mute;		/* RW: bitmap of muted channels */
-	unsigned int capture;		/* RW: bitmap of capture channels */
-	int capture_group;		/* RO: capture group (for exclusive capture source) */
-	int min;			/* RO: minimum value */
-	int max;			/* RO: maximum value */
-	union {
-		struct {
-			int front_left;		/* front left value */
-			int front_right;	/* front right value */
-			int front_center;	/* front center */
-			int rear_left;		/* left rear */
-			int rear_right;		/* right rear */
-			int woofer;		/* woofer */
-		} names;
-		int values[32];
-	} volume;			/* RW */
-} snd_mixer_group_t;
-
-/*
- *  INPUT/OUTPUT - read only
- *
- *    The input element describes input channels.
- */
-
-#define SND_MIXER_EIO_DIGITAL		(0<<1)
-
-struct snd_mixer_element_io_info {
-	unsigned int attrib;		/* RO: SND_MIXER_EIO_* */
-	int channels_size;		/* WR: size in channel descriptors */
-	int channels;			/* RO: count of filled channel descriptors */
-	int channels_over;		/* RO: missing channel descriptors */
-	snd_mixer_channel_t *pchannels;	/* WR: array */
-};
-
-/*
- *  PCM CAPTURE/PLAYBACK - read only
- *
- *    The element controls a playback or capture endpoint.
- */
-
-struct snd_mixer_element_pcm1_info {
-	int devices_size;		/* WR: size in device descriptors */
-	int devices;			/* RO: count of filled device descriptors */
-	int devices_over;		/* RO: missing device descriptors */
-	int *pdevices;			/* WR: PCM devices - array */
-};
-
-struct snd_mixer_element_pcm2_info {
-	int device;			/* RO: device index */
-	int subdevice;			/* RO: subdevice index */
-};
-
-struct snd_mixer_element_pcm3_info {
-	int device;			/* RO: device index */
-	int subdevice;			/* RO: subdevice index */
-	int channel;			/* RO: channel index */
-};
-
-/*
- *  ADC/DAC - read only
- *
- *    The element controls an analog-digital/digital-analog converter.
- */
-
-struct snd_mixer_element_converter_info {
-	unsigned int resolution;	/* RO: resolution in bits (usually 16) */
-};
-
-/*
- *  Simple on/off switch - read write
- *
- *    This switch turns on or off the channel route for a group of channels.
- */
-
-struct snd_mixer_element_switch1 {
-	int sw_size;			/* WR: size of bitmap (in bits) */
-	int sw;				/* RO: count of filled bits */
-	int sw_over;			/* RO: missing bits */
-	unsigned int *psw;		/* WR: bitmap!!! */
-};
-
-/*
- *  Simple on/off switch for each channels - read write
- *
- *    This switch turns on or off the channel route for group of channels.
- */
-
-struct snd_mixer_element_switch2 {
-	unsigned int sw: 1;		/* RW */
-};
-
-/*
- *  Simple channel route switch - read write
- *
- *    This switch determines route from input channels to output channels.
- */
-
-#define SND_MIXER_SWITCH3_FULL_FEATURED			0
-#define SND_MIXER_SWITCH3_ALWAYS_DESTINATION		1
-#define SND_MIXER_SWITCH3_ONE_DESTINATION		2
-#define SND_MIXER_SWITCH3_ALWAYS_ONE_DESTINATION	3
-
-struct snd_mixer_element_switch3_info {
-	unsigned int type;		/* RO: SND_MIXER_SWITCH3_* */
-};
-
-struct snd_mixer_element_switch3 {
-	/* two dimensional matrix of channel route switch */
-	int rsw_size;			/* WR: size in channel route descriptors (must be input_channels * output_channels bits !!!) */
-	int rsw;			/* RO: count of filled channel route descriptors */
-	int rsw_over;			/* RO: missing channel descriptors */
-	unsigned int *prsw;		/* WR: array */
-};
-
-/*
- *  Volume (attenuation/gain) control - read write
- *
- *    The volume must be always linear!!!
- */
-
-struct snd_mixer_element_volume1_range {
-	int min, max;		/* RO: linear volume */
-	int min_dB, max_dB;	/* RO: negative - attenuation, positive - amplification */
-};
-
-struct snd_mixer_element_volume1_info {
-	int range_size;		/* WR: size of range descriptors */
-	int range;		/* RO: count of filled range descriptors */
-	int range_over;		/* RO: missing range descriptors */
-	struct snd_mixer_element_volume1_range *prange;	/* WR: array */
-};
-
-struct snd_mixer_element_volume1 {
-	int channels_size;	/* WR: size of channel descriptors */	
-	int channels;		/* RO: count of filled channel descriptors */
-	int channels_over;	/* RO: missing channel descriptors */
-	int *pchannels;		/* WR: array of volumes */
-};
-
-/*
- *  Volume (balance) control - read write
- *
- *    The volume must be always linear!!!
- */
-
-struct snd_mixer_element_volume2_range {
-	int min, max;		/* RO: linear volume */
-	int min_dB, max_dB;	/* RO: negative - attenuation, positive - amplification */
-};
-
-struct snd_mixer_element_volume2_info {
-	/* source channels */
-	int schannels_size;	/* WR: size of source channels */
-	int schannels;		/* RO: count of filled channel descriptors */
-	int schannels_over;	/* RO: missing channel descriptors */
-	snd_mixer_channel_t *pschannels; /* WR: array of channels */
-	/* destination ranges */
-	int range_size;		/* WR: size of range descriptors */
-	int range;		/* RO: count of filled range descriptors */
-	int range_over;		/* RO: missing range descriptors */
-	struct snd_mixer_element_volume2_range *prange;	/* WR: array */
-};
-
-/* achannels means the array of channels which describes volume offsets for */
-/* each outputs, the size of this array is info->schannels * info->range */
-
-struct snd_mixer_element_volume2 {
-	int achannels_size;	/* WR: size of channel descriptors */	
-	int achannels;		/* RO: count of filled channel descriptors */
-	int achannels_over;	/* RO: missing channel descriptors */
-	int *pachannels;		/* WR: array of volumes */
-};
-
-/*
- *  Simple accumulator
- */
-
-struct snd_mixer_element_accu1_info {
-	int attenuation;	/* RO: in dB */
-};
-
-/*
- *  Simple accumulator with the MONO output
- */
-
-struct snd_mixer_element_accu2_info {
-	int attenuation;	/* RO: in dB */
-};
-
-/* 
- *  Simple accumulator with programmable attenuation
- */
-
-struct snd_mixer_element_accu3_range {
-	int min, max;		/* RO: linear volume */
-	int min_dB, max_dB;	/* RO: negative - attenuation, positive - amplification */
-};
-
-struct snd_mixer_element_accu3_info {
-	int range_size;		/* WR: size of range descriptors */
-	int range;		/* RO: count of filled range descriptors */
-	int range_over;		/* RO: missing range descriptors */
-	struct snd_mixer_element_accu3_range *prange;	/* WR: array */
-};
-
-struct snd_mixer_element_accu3 {
-	int channels_size;	/* WR: size of channel descriptors */	
-	int channels;		/* RO: count of filled channel descriptors */
-	int channels_over;	/* RO: missing channel descriptors */
-	int *pchannels;		/* WR: array of volumes */
-};
-
-/*
- *  Simple MUX
- *
- *     This mux allows selection of exactly one (or none - optional) source
- *     per each channel.
- */
-
-#define SND_MIXER_MUX1_NONE		(1<<0)
-
-struct snd_mixer_element_mux1_info {
-	unsigned int attrib;	/* RO: SND_MIXER_MUX1_ */
-};
-
-struct snd_mixer_element_mux1 {
-	int sel_size;		/* WR: size of mixer elements */
-	int sel;		/* RO: count of mixer elements */
-	int sel_over;		/* RO: missing channel elements */
-	snd_mixer_eid_t *psel;	/* WR: selected source on element output */
-};
-
-/*
- *  Simple MUX
- *
- *     This mux allows selection of exactly one (or none - optional) source.
- */
-
-#define SND_MIXER_MUX2_NONE		(1<<0)
-
-struct snd_mixer_element_mux2_info {
-	unsigned int attrib;	/* RO: SND_MIXER_MUX1_ */
-};
-
-struct snd_mixer_element_mux2 {
-	snd_mixer_eid_t sel;	/* RO: selected input source on element output */
-};
-
-/*
- *  Simple tone control
- */
-
-#define SND_MIXER_TC1_SW		(1<<0)
-#define SND_MIXER_TC1_BASS		(1<<1)
-#define SND_MIXER_TC1_TREBLE		(1<<2)
-
-struct snd_mixer_element_tone_control1_info {
-	unsigned int tc;		/* RO: bitmap of SND_MIXER_TC_* */
-	int min_bass, max_bass;		/* RO: Bass */
-	int min_bass_dB, max_bass_dB;	/* RO: in decibels * 100 */
-	int min_treble, max_treble;	/* RO: Treble */
-	int min_treble_dB, max_treble_dB; /* RO: in decibels * 100 */
-};
-
-struct snd_mixer_element_tone_control1 {
-	unsigned int tc;		/* WR: bitmap of SND_MIXER_TC_* */
-	unsigned int sw: 1;		/* WR: on/off switch */
-	int bass;			/* WR: Bass control */
-	int treble;			/* WR: Treble control */
-};
-
-/*
- *  Simple pan control
- */
-
-#define SND_MIXER_PAN_LEFT_RIGHT        0
-#define SND_MIXER_PAN_FRONT_REAR        1
-#define SND_MIXER_PAN_BOTTOM_UP         2
-
-struct snd_mixer_element_pan_control1_range {
-	int pan_type;		/* RO: SND_MIXER_PAN_XXXX */
-	int min, max;		/* RO: min & max range */
-	int min_dB, max_dB;	/* RO: min dB & max dB range */
-};
-
-struct snd_mixer_element_pan_control1_info {
-	int range_size;		/* WR: size of range descriptors */
-	int range;		/* RO: count of filled range descriptors */
-	int range_over;		/* RO: missing range descriptors */
-	struct snd_mixer_element_pan_control1_range *prange; /* WR: array */
-};
-
-struct snd_mixer_element_pan_control1 {
-	int pan_size;		/* WR: size of pan descriptors */
-	int pan;		/* RO: count of filled pan descriptors */
-	int pan_over;		/* RO: missing pan descriptors */
-	int *ppan;		/* WR: array of pan values */
-};
-
-/*
- *  Equalizer
- */
-
-/* TODO */
-
-/*
- *  Simple 3D Effect
- */
-
-#define SND_MIXER_EFF1_SW		(1<<0)
-#define SND_MIXER_EFF1_MONO_SW		(1<<1)
-#define SND_MIXER_EFF1_WIDE		(1<<2)
-#define SND_MIXER_EFF1_VOLUME		(1<<3)
-#define SND_MIXER_EFF1_CENTER		(1<<4)
-#define SND_MIXER_EFF1_SPACE		(1<<5)
-#define SND_MIXER_EFF1_DEPTH		(1<<6)
-#define SND_MIXER_EFF1_DELAY		(1<<7)
-#define SND_MIXER_EFF1_FEEDBACK		(1<<8)
-
-#define SND_MIXER_EFF1_DEPTH_REAR	(1<<9)
-
-struct snd_mixer_element_3d_effect1_info {
-	unsigned int effect;		/* RO: bitmap of SND_MIXER_EFF1_* */
-	int min_wide, max_wide;		/* RO: 3D wide */
-	int min_volume, max_volume;	/* RO: 3D volume */
-	int min_center, max_center;	/* RO: 3D center */
-	int min_space, max_space;	/* RO: 3D space */
-	int min_depth, max_depth;	/* RO: 3D depth */
-	int min_delay, max_delay;	/* RO: 3D delay */
-	int min_feedback, max_feedback;	/* RO: 3D feedback */
-	int min_depth_rear, max_depth_rear;	/* RO: 3D depth rear */
-};
-
-struct snd_mixer_element_3d_effect1 {
-	unsigned int effect;		/* RW: bitmap of SND_MIXER_EFF1_* */
-	unsigned int sw: 1,		/* RW: on/off switch */
-		     mono_sw: 1;	/* RW: on/off switch */
-	int wide;			/* RW: 3D wide */
-	int volume;			/* RW: 3D volume */
-	int center;			/* RW: 3D center */
-	int space;			/* RW: 3D space */
-	int depth;			/* RW: 3D depth */
-	int delay;			/* RW: 3D delay */
-	int feedback;			/* RW: 3D feedback */
-	int depth_rear;			/* RW: 3D depth rear */
-};
-
-/*
- *  Simple predefined effect
- */
-
-struct snd_mixer_element_pre_effect1_info_item {
-	char name[32];
-};
-
-struct snd_mixer_element_pre_effect1_info_parameter {
-	char name[32];			/* RO: parameter name */
-	int min, max;			/* RO: minimum and maximum value */
-};
-
-struct snd_mixer_element_pre_effect1_info {
-	/* predefined programs */
-	int items_size;			/* WR: size of programs */
-	int items;			/* RO: count of filled programs */
-	int items_over;			/* RO: missing programs */
-	struct snd_mixer_element_pre_effect1_info_item *pitems; /* WR: array */
-	/* user parameters */
-	int parameters_size;		/* WR: size of parameters */
-	int parameters;			/* RO: count of filled parameters */
-	int parameters_over;		/* RO: missing parameters */
-	struct snd_mixer_element_pre_effect1_info_parameter *pparameters; /* WR: array */
-};
-
-struct snd_mixer_element_pre_effect1 {
-	int item;			/* WR: chose item index or -1 = user parameters */
-	int parameters_size;		/* WR: size of parameters */
-	int parameters;			/* RO: count of filled parameters */
-	int parameters_over;		/* RO: missing parameters */
-	int *pparameters;		/* WR: array */
-};
-
-/*
- *
- */
-
-typedef struct snd_mixer_element_info {
-	snd_mixer_eid_t eid;		/* WR: element identification */
-	int input_channels;		/* RO: input channels to element */
-	int output_channels;		/* RO: output channels from element */
-	union {
-		struct snd_mixer_element_io_info io;
-		struct snd_mixer_element_pcm1_info pcm1;
-		struct snd_mixer_element_pcm2_info pcm2;
-		struct snd_mixer_element_pcm3_info pcm3;
-		struct snd_mixer_element_converter_info converter;
-		struct snd_mixer_element_switch3_info switch3;
-		struct snd_mixer_element_volume1_info volume1;
-		struct snd_mixer_element_volume2_info volume2;
-		struct snd_mixer_element_accu1_info accu1;
-		struct snd_mixer_element_accu2_info accu2;
-		struct snd_mixer_element_accu3_info accu3;
-		struct snd_mixer_element_mux1_info mux1;
-		struct snd_mixer_element_mux2_info mux2;
-		struct snd_mixer_element_tone_control1_info tc1;
-		struct snd_mixer_element_pan_control1_info pc1;
-		struct snd_mixer_element_3d_effect1_info teffect1;
-		struct snd_mixer_element_pre_effect1_info peffect1;
-		char reserve[120];
-	} data;
-} snd_mixer_element_info_t;
-
-typedef struct snd_mixer_element {
-	snd_mixer_eid_t eid;
-	union {
-		struct snd_mixer_element_switch1 switch1;
-		struct snd_mixer_element_switch2 switch2;
-		struct snd_mixer_element_switch3 switch3;
-		struct snd_mixer_element_mux1 mux1;
-		struct snd_mixer_element_mux2 mux2;
-		struct snd_mixer_element_accu3 accu3;
-		struct snd_mixer_element_volume1 volume1;
-		struct snd_mixer_element_volume2 volume2;
-		struct snd_mixer_element_tone_control1 tc1;
-		struct snd_mixer_element_pan_control1 pc1;
-		struct snd_mixer_element_3d_effect1 teffect1;
-		struct snd_mixer_element_pre_effect1 peffect1;
-		char reserve[120];
-	} data;
-} snd_mixer_element_t;
-
-typedef struct snd_mixer_filter {
-	unsigned int read_cmds[8];
-} snd_mixer_filter_t;
-
-/* ioctl commands */
-#define SND_MIXER_IOCTL_PVERSION	_IOR ('R', 0x00, int)
-#define SND_MIXER_IOCTL_INFO		_IOR ('R', 0x01, snd_mixer_info_t)
-#define SND_MIXER_IOCTL_ELEMENTS	_IOWR('R', 0x10, snd_mixer_elements_t)
-#define SND_MIXER_IOCTL_ROUTES		_IOWR('R', 0x11, snd_mixer_routes_t)
-#define SND_MIXER_IOCTL_ROUTE		_IOWR('R', 0x12, snd_mixer_route_t)
-#define SND_MIXER_IOCTL_GROUPS		_IOWR('R', 0x13, snd_mixer_groups_t)
-#define SND_MIXER_IOCTL_GROUP_READ	_IOWR('R', 0x14, snd_mixer_group_t)
-#define SND_MIXER_IOCTL_GROUP_WRITE	_IOWR('R', 0x15, snd_mixer_group_t)
-#define SND_MIXER_IOCTL_ELEMENT_INFO	_IOWR('R', 0x20, snd_mixer_element_info_t)
-#define SND_MIXER_IOCTL_ELEMENT_READ	_IOWR('R', 0x21, snd_mixer_element_t)
-#define SND_MIXER_IOCTL_ELEMENT_WRITE	_IOWR('R', 0x22, snd_mixer_element_t)
-#define SND_MIXER_IOCTL_GET_FILTER	_IOR ('R', 0x30, snd_mixer_filter_t)
-#define SND_MIXER_IOCTL_PUT_FILTER	_IOW ('R', 0x30, snd_mixer_filter_t)
-
-/*
- *  Read interface.
- */
-
-#define SND_MIXER_READ_REBUILD		0	/* rebuild the mixer structure */
-#define SND_MIXER_READ_ELEMENT_VALUE	1	/* the element value was changed */
-#define SND_MIXER_READ_ELEMENT_CHANGE	2	/* the element was changed */
-#define SND_MIXER_READ_ELEMENT_ROUTE	3	/* the element route was changed */
-#define SND_MIXER_READ_ELEMENT_ADD	4	/* the element was added */
-#define SND_MIXER_READ_ELEMENT_REMOVE	5	/* the element was removed */
-#define SND_MIXER_READ_GROUP_VALUE	6	/* the group value was changed */
-#define SND_MIXER_READ_GROUP_CHANGE	7	/* the group was changed */
-#define SND_MIXER_READ_GROUP_ADD	8	/* the group was added */
-#define SND_MIXER_READ_GROUP_REMOVE	9	/* the group was removed */
-
-typedef struct snd_mixer_read {
-	unsigned int cmd;		/* command - SND_MIXER_READ_* */
-	union {
-		snd_mixer_eid_t eid;	/* element identification */
-		snd_mixer_gid_t gid;	/* group identification */
-		unsigned char data8[60];
-	} data;
-} snd_mixer_read_t;
 
 /*****************************************************************************
  *                                                                           *
@@ -1324,16 +664,12 @@ typedef struct snd_pcm_info {
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
-	int mixer_device;		/* mixer device */
-	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	char reserved[64];		/* reserved for future... */
 } snd_pcm_info_t;
 
 typedef struct snd_pcm_channel_info {
 	unsigned int channel;		/* channel number */
 	char channel_name[32];		/* name of channel */
-	int mixer_device;		/* mixer device */
-	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	int dig_group;			/* digital group */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
 	char reserved[64];		/* reserved for future... */

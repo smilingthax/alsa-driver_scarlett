@@ -24,7 +24,6 @@
  */
 
 #include "pcm.h"
-#include "mixer.h"
 
 struct snd_stru_es18xx {
 	unsigned long port;		/* port of ESS chip */

@@ -22,10 +22,6 @@
  *
  */
 
-#ifndef __MIXER_H
-#include "mixer.h"
-#endif
-
 typedef struct snd_stru_pcm_file snd_pcm_file_t;
 typedef struct snd_stru_pcm_runtime snd_pcm_runtime_t;
 typedef struct snd_stru_pcm_substream snd_pcm_substream_t;
@@ -144,8 +140,6 @@ struct snd_stru_pcm_runtime {
 	void (*dig_mask_free)(void *dig_mask);
 	snd_pcm_digital_t digital;	/* digital format information */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
-	int mixer_device;		/* mixer device */
-	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
 	size_t frames_min;	/* min available frames for wakeup */
 	size_t frames_align;	/* Requested alignment */
 	unsigned int frames_xrun_max;
@@ -225,7 +219,6 @@ struct snd_stru_pcm_substream {
 struct snd_stru_pcm_stream {
 	int stream;				/* stream (direction) */
 	snd_pcm_t *pcm;
-	snd_kswitch_list_t switches;
 	/* -- lowlevel functions -- */
 	int (*open)(void *private_data, snd_pcm_substream_t *substream);
 	int (*close)(void *private_data, snd_pcm_substream_t *substream);
@@ -293,11 +286,6 @@ extern int snd_pcm_new(snd_card_t * card, char *id, int device,
 		       int playback_count, int capture_count, snd_pcm_t **rpcm);
 
 extern int snd_pcm_notify(struct snd_stru_pcm_notify *notify, int nfree);
-
-extern int snd_pcm_switch_add(snd_pcm_stream_t * pstr, snd_kswitch_t * ksw);
-extern int snd_pcm_switch_remove(snd_pcm_stream_t * pstr, snd_kswitch_t * ksw);
-extern snd_kswitch_t *snd_pcm_switch_new(snd_pcm_stream_t * pstr, snd_kswitch_t * ksw, void *private_data);
-extern int snd_pcm_switch_change(snd_pcm_stream_t * pstr, snd_kswitch_t * ksw);
 
 extern snd_minor_t snd_pcm_reg[2];
 
@@ -418,7 +406,6 @@ extern int snd_pcm_dma_alloc(snd_pcm_substream_t * substream, snd_dma_t * dma, c
 extern int snd_pcm_dma_setup(snd_pcm_substream_t * substream, snd_dma_area_t * area);
 extern int snd_pcm_dma_free(snd_pcm_substream_t * substream);
 extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);
-extern void snd_pcm_set_mixer(snd_pcm_substream_t * substream, int mixer_device, snd_kmixer_element_t * element);
 extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);
 extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_substream_t *substream,

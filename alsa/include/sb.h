@@ -23,7 +23,6 @@
  */
 
 #include "pcm.h"
-#include "mixer.h"
 #include "rawmidi.h"
 
 #define SB_HW_AUTO		0
@@ -58,51 +57,6 @@ typedef struct snd_stru_sbmixer sbmixer_t;
 
 struct snd_stru_sbmixer {
 	unsigned long port;
-
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_cd;
-
-	snd_kmixer_element_t *me_mux;
-	snd_kmixer_element_t *me_in_accu;
-	snd_kmixer_element_t *me_out_accu;
-	snd_kmixer_element_t *me_playback;
-	snd_kmixer_element_t *me_capture;
-
-	snd_kmixer_element_t *me_vol_igain;
-
-	snd_kmixer_element_t *me_in_speaker;
-	snd_kmixer_element_t *me_vol_speaker;
-
-	snd_kmixer_element_t *me_in_mic;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_sw1_mic_output;
-	snd_kmixer_element_t *me_sw1_mic_input;
-
-	snd_kmixer_element_t *me_in_line;
-	snd_kmixer_element_t *me_vol_line;
-	snd_kmixer_element_t *me_sw1_line_output;
-	snd_kmixer_element_t *me_sw3_line_input;
-
-	snd_kmixer_element_t *me_in_cd;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_sw1_cd_output;
-	snd_kmixer_element_t *me_sw3_cd_input;
-	
-	snd_kmixer_element_t *me_in_synth;
-	snd_kmixer_element_t *me_vol_synth;
-	snd_kmixer_element_t *me_sw3_synth_input;
-
-	snd_kmixer_element_t *me_vol_pcm;
-
-	snd_kmixer_element_t *me_vol_ogain;
-
-	snd_kmixer_element_t *me_tone;
-
-	snd_kmixer_element_t *me_out_master;
-	snd_kmixer_element_t *me_sw1_3dse;
-	snd_kmixer_element_t *me_vol_master;
-	
 	spinlock_t lock;
 };
 
@@ -143,7 +97,6 @@ struct snd_stru_sbdsp {
 	snd_pcm_t *pcm;
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
-	snd_kmixer_t *kmixer;
 
 	spinlock_t reg_lock;
 	spinlock_t open_lock;

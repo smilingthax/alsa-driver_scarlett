@@ -22,7 +22,6 @@
 */
 
 #include "pcm.h"
-#include "mixer.h"
 #define OPTi93X
 #include "opti9xx.h"
 

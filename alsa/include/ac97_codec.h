@@ -25,7 +25,7 @@
  *
  */
 
-#include "mixer.h"
+#include "control.h"
 #include "info.h"
 
 /*
@@ -83,100 +83,23 @@
 typedef struct snd_stru_ac97 ac97_t;
 
 struct snd_stru_ac97 {
-	void (*write) (void *private_data, unsigned short reg, unsigned short val);
-	unsigned short (*read) (void *private_data, unsigned short reg);
+	void (*write) (ac97_t *ac97, unsigned short reg, unsigned short val);
+	unsigned short (*read) (ac97_t *ac97, unsigned short reg);
 	void (*init) (void *private_data, ac97_t *ac97);
 	snd_info_entry_t *proc_entry;
 	snd_info_entry_t *proc_regs_entry;
 	void *private_data;
 	void (*private_free) (void *private_data);
 	/* --- */
-	snd_kmixer_t *mixer;
+	snd_card_t *card;
 	spinlock_t reg_lock;
+	unsigned int num;	/* number of codec: 0 = primary, 1 = secondary */
 	unsigned int id;	/* identification of codec */
 	unsigned short caps;	/* capabilities (register 0) */
-	unsigned short micgain;	/* mic gain is active */
 	unsigned short regs[0x80]; /* register cache */
-	unsigned char bass;	/* tone control - bass value */
-	unsigned char treble;	/* tone control - treble value */
-	unsigned char max_master; /* master maximum volume value */
-	unsigned char max_master_mono; /* master mono maximum volume value */
-	unsigned char max_headphone; /* headphone maximum volume value */
-	unsigned char max_mono;	/* mono maximum volume value */
-	unsigned char max_3d;	/* 3d maximum volume value */
-	unsigned char shift_3d;	/* 3d shift value */
-	unsigned char max_center; /* center master maximum volume value */
-	unsigned char max_lfe;	  /* lfe master maximum volume value */
-	unsigned char max_surround; /* surround master maximum volume value */
-
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_cd;
-	snd_kmixer_element_t *me_mux_video;
-	snd_kmixer_element_t *me_mux_aux;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_mix;
-	snd_kmixer_element_t *me_mux_mono_mix;
-	snd_kmixer_element_t *me_mux_phone;
-
-	snd_kmixer_element_t *me_mux2_out_mono_accu;
-	snd_kmixer_element_t *me_mux2_mic;
-
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_pcm_accu;
-	snd_kmixer_element_t *me_bypass_accu;
-	snd_kmixer_element_t *me_mono_accu;
-	snd_kmixer_element_t *me_mono_accu_in;
-	snd_kmixer_element_t *me_mux;
-	snd_kmixer_element_t *me_mono_mux;
-	snd_kmixer_element_t *me_playback;
-	snd_kmixer_element_t *me_vol_pcm;
-	snd_kmixer_element_t *me_sw_pcm;
-	snd_kmixer_element_t *me_vol_pc_beep;
-	snd_kmixer_element_t *me_sw_pc_beep;
-	snd_kmixer_element_t *me_vol_phone;
-	snd_kmixer_element_t *me_sw_phone;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_sw_mic;	
-	snd_kmixer_element_t *me_vol_line;
-	snd_kmixer_element_t *me_sw_line;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_sw_cd;
-	snd_kmixer_element_t *me_vol_video;
-	snd_kmixer_element_t *me_sw_video;
-	snd_kmixer_element_t *me_vol_aux;
-	snd_kmixer_element_t *me_sw_aux;
-	snd_kmixer_element_t *me_tone;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_sw_master;
-	snd_kmixer_element_t *me_out_master;
-	snd_kmixer_element_t *me_vol_headphone;
-	snd_kmixer_element_t *me_sw_headphone;
-	snd_kmixer_element_t *me_out_headphone;
-	snd_kmixer_element_t *me_vol_master_mono;
-	snd_kmixer_element_t *me_sw_master_mono;
-	snd_kmixer_element_t *me_out_master_mono;
-	snd_kmixer_element_t *me_vol_igain;
-	snd_kmixer_element_t *me_sw_igain;
-	snd_kmixer_element_t *me_vol_igain_mic;
-	snd_kmixer_element_t *me_sw_igain_mic;
-	snd_kmixer_element_t *me_capture;
-	snd_kmixer_element_t *me_in_center;
-	snd_kmixer_element_t *me_vol_center;
-	snd_kmixer_element_t *me_sw_center;
-	snd_kmixer_element_t *me_out_center;
-	snd_kmixer_element_t *me_in_lfe;
-	snd_kmixer_element_t *me_vol_lfe;
-	snd_kmixer_element_t *me_sw_lfe;
-	snd_kmixer_element_t *me_out_lfe;
-	snd_kmixer_element_t *me_in_surround;
-	snd_kmixer_element_t *me_vol_surround;
-	snd_kmixer_element_t *me_sw_surround;
-	snd_kmixer_element_t *me_out_surround;
 };
 
-int snd_ac97_mixer(snd_card_t * card, int device, 
-		   ac97_t * ac97, int pcm_count, int *pcm_devs,
-		   snd_kmixer_t ** rmixer);
+int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97);
 
 void snd_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short value);
 unsigned short snd_ac97_read(ac97_t *ac97, unsigned short reg);

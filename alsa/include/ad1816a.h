@@ -21,8 +21,8 @@
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#include "control.h"
 #include "pcm.h"
-#include "mixer.h"
 #include "timer.h"
 
 #define AD1816A_REG(r)			(codec->port + r)
@@ -111,14 +111,14 @@
 #define AD1816A_TIMER_IRQ_ENABLE	0x2000
 #define AD1816A_TIMER_ENABLE		0x0080
 
-#define AD1816A_SRC_CD			0x20
 #define AD1816A_SRC_LINE		0x00
-#define AD1816A_SRC_MIC			0x50
 #define AD1816A_SRC_OUT			0x10
-#define AD1816A_SRC_PHONE_IN		0x60
+#define AD1816A_SRC_CD			0x20
 #define AD1816A_SRC_SYNTH		0x30
 #define AD1816A_SRC_VIDEO		0x40
+#define AD1816A_SRC_MIC			0x50
 #define AD1816A_SRC_MONO		0x50
+#define AD1816A_SRC_PHONE_IN		0x60
 #define AD1816A_SRC_MASK		0x70
 
 #define AD1816A_CAPTURE_NOT_EQUAL	0x1000
@@ -150,62 +150,6 @@ struct snd_stru_ad1816a {
 	unsigned int c_dma_size;
 
 	snd_timer_t *timer;
-
-	snd_kmixer_t *mixer;
-
-	snd_kmixer_element_t *me_accu;
-	snd_kmixer_element_t *me_mux;
-
-	snd_kmixer_element_t *me_mux_cd;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_out;
-	snd_kmixer_element_t *me_mux_phone_in;
-	snd_kmixer_element_t *me_mux_synth;
-	snd_kmixer_element_t *me_mux_video;
-
-	snd_kmixer_element_t *me_vol_adc;
-	snd_kmixer_element_t *me_vol_cd;
-	snd_kmixer_element_t *me_vol_fm;
-	snd_kmixer_element_t *me_vol_line;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_vol_mic;
-	snd_kmixer_element_t *me_vol_phone_in;
-	snd_kmixer_element_t *me_vol_phone_out;
-	snd_kmixer_element_t *me_vol_synth;
-	snd_kmixer_element_t *me_vol_video;
-	snd_kmixer_element_t *me_vol_voice;
-	snd_kmixer_element_t *me_vol_3d_phat;
-
-	snd_kmixer_element_t *me_sw_adc;
-	snd_kmixer_element_t *me_sw_cd;
-	snd_kmixer_element_t *me_sw_fm;
-	snd_kmixer_element_t *me_sw_line;
-	snd_kmixer_element_t *me_sw_master;
-	snd_kmixer_element_t *me_sw_mic;
-	snd_kmixer_element_t *me_sw_mic_gain;
-	snd_kmixer_element_t *me_sw_phone_in;
-	snd_kmixer_element_t *me_sw_phone_out;
-	snd_kmixer_element_t *me_sw_synth;
-	snd_kmixer_element_t *me_sw_video;
-	snd_kmixer_element_t *me_sw_voice;
-	snd_kmixer_element_t *me_sw_3d_phat;
-
-	snd_kmixer_element_t *me_in_cd;
-	snd_kmixer_element_t *me_in_line;
-	snd_kmixer_element_t *me_in_mic;
-	snd_kmixer_element_t *me_in_phone;
-	snd_kmixer_element_t *me_in_synth;
-	snd_kmixer_element_t *me_in_video;
-
-	snd_kmixer_element_t *me_out_master;
-	snd_kmixer_element_t *me_out_phone;
-
-	snd_kmixer_element_t *me_adc;
-	snd_kmixer_element_t *me_capture;
-	snd_kmixer_element_t *me_dac;
-	snd_kmixer_element_t *me_dig_accu;
-	snd_kmixer_element_t *me_playback;
 };
 
 
@@ -229,8 +173,7 @@ extern int snd_ad1816a_new_pcm(snd_card_t *card, int device,
 			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
 			       int timer_dev, snd_pcm_t **rpcm);
 
-extern int snd_ad1816a_new_mixer(snd_pcm_t *pcm, int device,
-				 snd_kmixer_t **rmixer);
+extern int snd_ad1816a_new_mixer(snd_pcm_t *pcm);
 
 #endif	/* __AD1816A_H */
 

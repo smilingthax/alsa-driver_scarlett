@@ -22,8 +22,6 @@ function isapnp() {
 function basic() {
   banner "snd"
   if ! $INSMOD -m $MODDIR/snd.o snd_cards_limit=$CARDS_LIMIT >> $MAP; then exit 1; fi
-  banner "snd-mixer"
-  if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-mixer-oss.o ]; then
     banner "snd-mixer-oss"
     if ! $INSMOD -m $MODDIR/snd-mixer-oss.o >> $MAP; then exit 1; fi  

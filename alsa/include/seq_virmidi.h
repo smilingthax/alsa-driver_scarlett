@@ -106,8 +106,6 @@ struct snd_virmidi_dev {
 	struct semaphore open_mutex;
 
 	snd_info_entry_t *proc_entry;
-
-	snd_kswitch_list_t switches[2];
 };
 
 /* sequencer mode:
@@ -123,10 +121,5 @@ struct snd_virmidi_dev {
 
 int snd_virmidi_new(snd_card_t *card, int device, snd_virmidi_dev_t **rmidi);
 int snd_virmidi_dev_receive_event(snd_virmidi_dev_t *rdev, snd_seq_event_t *ev);
-#if 0
-int snd_virmidi_switch_add(snd_rawmidi_stream_t *dir, snd_kswitch_t *ksw);
-int snd_virmidi_switch_remove(snd_rawmidi_stream_t *dir, snd_kswitch_t *ksw);
-snd_kswitch_t *snd_virmidi_switch_new(snd_virmidi_stream_t *dir, snd_kswitch_t *ksw, void *private_data);
-#endif
 
 #endif

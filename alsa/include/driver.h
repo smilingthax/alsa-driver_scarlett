@@ -126,6 +126,9 @@
 #define __ISAPNP__
 #endif
 
+#ifdef CONFIG_SND_OSSEMUL
+#define __SND_OSS_COMPAT__
+#endif
 #ifndef ALSA_BUILD
 #include <linux/asound.h>
 #else
@@ -224,13 +227,13 @@ typedef struct snd_stru_vma {
 } snd_vma_t;
 
 typedef enum {
-	SND_DEV_MIXER = 0,
-	SND_DEV_PCM,
+	SND_DEV_PCM = 0,
 	SND_DEV_RAWMIDI,
 	SND_DEV_TIMER,
 	SND_DEV_SEQUENCER,
 	SND_DEV_HWDEP,
-	SND_DEV_LOWLEVEL
+	SND_DEV_LOWLEVEL,
+	SND_DEV_OSS_MIXER,
 } snd_device_type_t;
 
 typedef enum {
@@ -266,20 +269,20 @@ struct snd_stru_device {
 
 /* various typedefs */
 
-typedef struct snd_stru_switch snd_kswitch_t;
-typedef struct snd_stru_switch_list snd_kswitch_list_t;
 typedef struct snd_info_entry snd_info_entry_t;
 typedef struct snd_stru_pcm snd_pcm_t;
 typedef struct snd_stru_mixer snd_kmixer_t;
 typedef struct snd_stru_rawmidi snd_rawmidi_t;
-typedef struct snd_stru_control snd_control_t;
+typedef struct snd_stru_kctl snd_kctl_t;
+typedef struct snd_stru_kcontrol snd_kcontrol_t;
 typedef struct snd_stru_timer snd_timer_t;
 typedef struct snd_stru_timer_instance snd_timer_instance_t;
 typedef struct snd_stru_hwdep snd_hwdep_t;
+#ifdef CONFIG_SND_OSSEMUL
+typedef struct snd_stru_oss_mixer snd_mixer_oss_t;
+#endif
 
 /* main structure for soundcard */
-
-#include "switch.h"
 
 struct snd_stru_card {
 	int number;				/* number of soundcard (index to snd_cards) */
@@ -290,6 +293,8 @@ struct snd_stru_card {
 	char abbreviation[16];			/* abbreviation of soundcard name */
 	char shortname[32];			/* short name of this soundcard */
 	char longname[80];			/* name of this soundcard */
+	char mixerid[16];			/* mixer ID */
+	char mixername[80];			/* mixer name */
 
 	snd_dma_t *dmas;			/* pointer to first DMA */
 	snd_irq_t *irqs;			/* pointer to first IRQ */
@@ -298,22 +303,27 @@ struct snd_stru_card {
 	void (*use_inc) (snd_card_t *card);	/* increment use count */
 	void (*use_dec) (snd_card_t *card);	/* decrement use count */
 
-	struct semaphore control;		/* control card mutex */
-
 	void *private_data;			/* private data for soundcard */
 	void (*private_free) (void *private_data); /* callback for freeing of private data */
 
 	snd_device_t *devices;			/* devices */
 
-	struct semaphore lists_lock;		/* switch lists lock */
-	snd_kswitch_list_t *first_list;		/* first switch list */
-	snd_kswitch_list_t *last_list;		/* last switch list */
-	snd_kswitch_list_t switches;		/* switches */
-	snd_control_t *fcontrol;		/* first control file */
+	unsigned int last_numid;		/* last used numeric ID */
+	spinlock_t control_lock;		/* control list lock */
+	int controls_count;			/* count of all controls */
+	snd_kcontrol_t *first_control;		/* first control */
+	snd_kcontrol_t *last_control;		/* last control */
+	snd_kctl_t *first_control_file;		/* first control file */
+	snd_kctl_t *last_control_file;		/* last control file */
 
 	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
 	struct proc_dir_entry *proc_dir_link;	/* number link to real id */
 	snd_info_entry_t *info_entries;		/* info entries */
+
+#ifdef CONFIG_SND_OSSEMUL
+	snd_mixer_oss_t *mixer_oss;
+	int mixer_oss_change_count;
+#endif
 };
 
 /* device.c */

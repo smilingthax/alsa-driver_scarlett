@@ -24,7 +24,6 @@
  */
 
 #include "pcm.h"
-#include "mixer.h"
 #include "rawmidi.h"
 #include "ac97_codec.h"
 

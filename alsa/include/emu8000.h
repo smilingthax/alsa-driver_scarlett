@@ -24,7 +24,6 @@
 #include "driver.h"
 #include "emux_synth.h"
 #include "seq_kernel.h"
-#include "mixer.h"
 
 /*
  * Hardware parameters.

@@ -73,8 +73,6 @@ struct snd_stru_rawmidi_stream {
 	void (*event)(snd_rawmidi_t *rmidi);
 	void *private_data;
 	void (*private_free)(void *private_data);
-	/* switches */
-	snd_kswitch_list_t switches;
 	/* hardware layer */
 	struct snd_stru_rawmidi_stream_hw hw;
 };
@@ -111,14 +109,11 @@ struct snd_stru_rawmidi {
 /* main rawmidi functions */
 
 extern int snd_rawmidi_new(snd_card_t * card, char *id, int device, snd_rawmidi_t ** rmidi);
-extern int snd_rawmidi_switch_add(snd_rawmidi_stream_t * dir, snd_kswitch_t * ksw);
-extern int snd_rawmidi_switch_remove(snd_rawmidi_stream_t * dir, snd_kswitch_t * ksw);
-extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_stream_t * dir, snd_kswitch_t * ksw, void *private_data);
 
 /* control functions */
 
 extern int snd_rawmidi_control_ioctl(snd_card_t * card,
-				     snd_control_t * control,
+				     snd_kctl_t * control,
 				     unsigned int cmd,
 				     unsigned long arg);
 

@@ -23,7 +23,6 @@
  */
 
 #include "i2c.h"		/* generic i2c support */
-#include "mixer.h"
 
 typedef struct {
 	struct snd_i2c_bus *bus;

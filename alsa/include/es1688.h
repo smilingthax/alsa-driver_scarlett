@@ -23,7 +23,6 @@
  */
 
 #include "pcm.h"
-#include "mixer.h"
 
 #define ES1688_HW_AUTO		0x0000
 #define ES1688_HW_688		0x0001
