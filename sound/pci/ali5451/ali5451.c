@@ -2010,10 +2010,12 @@ static int snd_ali_chip_init(ali_t *codec)
 	if (codec->revision == ALI_5451_V02) {
         	pci_dev = codec->pci_m1533;
 		pci_read_config_byte(pci_dev, 0x59, &temp);
+		temp |= 0x80;
+		pci_write_config_byte(pci_dev, 0x59, temp);
 	
 		pci_dev = codec->pci_m7101;
 		pci_read_config_byte(pci_dev, 0xb8, &temp);
-		temp |= 1 << 6;
+		temp |= 0x20;
 		pci_write_config_byte(pci_dev, 0xB8, temp);
 	}
 
