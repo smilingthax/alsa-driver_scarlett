@@ -17,6 +17,18 @@ typedef struct wait_queue * wait_queue_head_t;
 #define local_irq_restore(flags) \
 	do { __restore_flags(flags); } while (0)
 
+#define tasklet_hi_schedule(t)	queue_task((t), &tq_immediate); \
+				mark_bh(IMMEDIATE_BH)
+
+#define tasklet_init(t,f,d)	(t)->next = NULL; \
+				(t)->sync = 0; \
+				(t)->routine = (void (*)(void *))(f); \
+				(t)->data = (void *)(d)
+
+#define tasklet_struct		tq_struct 
+
+#define tasklet_unlock_wait(t)	while (test_bit(0, &(t)->sync)) { }
+
 #define __init
 #define __exit
 #define __exitdata
