@@ -147,3 +147,18 @@ MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
 ID: Aztech Sound Galaxy
 IF: MIXER,PCM,MIDI
 MA: Christopher Butler <chrisb@sandy.force9.co.uk>
+
+ID: MOTU MidiTimePiece AV multiport MIDI interface
+IF: MIDI
+MA: Michael T. Mayers <mikem@osirisstudios.com>
+
+ID: EMU10K1
+SC: Sound Blaster Live!
+SC: Sound Blaster PCI 512
+SC: E-mu APS
+IF: MIXER,PCM,MIDI,SYNTH_MIDI
+MA: Jaroslav Kysela <perex@suse.cz>
+
+ID: RME Digi9652 (Hammerfall, Hammerfall light)
+IF: PCM
+MA: Paul Barton-Davis <pbd@op.net>
