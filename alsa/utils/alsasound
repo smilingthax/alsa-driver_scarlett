@@ -152,6 +152,7 @@ function stop() {
   done
   # remove the 2.2 soundcore module (if possible)
   /sbin/rmmod soundcore 2> /dev/null
+  /sbin/rmmod gameport 2> /dev/null
 }
 
 # See how we were called.
