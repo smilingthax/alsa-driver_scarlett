@@ -51,5 +51,7 @@ extern int snd_control_register_ioctl(snd_control_ioctl_t fcn);
 extern int snd_control_unregister_ioctl(snd_control_ioctl_t fcn);
 extern snd_ctl_kswitch_t *snd_control_new_switch(snd_card_t * card, 
 						 snd_ctl_kswitch_t * ksw);
+extern void snd_control_store(snd_card_t *card);
+extern void snd_control_restore(snd_card_t *card);
 
 #endif				/* __CONTROL_H */
