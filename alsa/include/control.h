@@ -39,6 +39,7 @@ typedef struct snd_stru_kcontrol_new {
 } snd_kcontrol_new_t;
 
 struct snd_stru_kcontrol {
+	struct list_head list;	/* list of controls */
 	snd_control_id_t id;
 	pid_t owner;		/* locked */
 	unsigned int indirect: 1;
@@ -48,16 +49,19 @@ struct snd_stru_kcontrol {
 	unsigned long private_value;
 	void *private_data;
 	void (*private_free)(void *private_data);
-	snd_kcontrol_t *prev;
-	snd_kcontrol_t *next;
 };
 
+#define snd_kcontrol(n) list_entry(n, snd_kcontrol_t, list)
+
 typedef struct snd_stru_ctl_event {
+	struct list_head list;	/* list of events */
 	snd_ctl_event_t data;
-	struct snd_stru_ctl_event *next;
 } snd_kctl_event_t;
 
+#define snd_kctl_event(n) list_entry(n, snd_kctl_event_t, list)
+
 struct snd_stru_kctl {
+	struct list_head list;		/* list of all control files */
 	snd_card_t *card;
 	pid_t pid;
 	int prefer_subdevice;
@@ -65,11 +69,10 @@ struct snd_stru_kctl {
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the structure */
-	snd_kctl_event_t *first_event;
-	snd_kctl_event_t *last_event;
-	snd_kctl_t *prev;
-	snd_kctl_t *next;
+	struct list_head events;	/* waiting events for read */
 };
+
+#define snd_kctl(n) list_entry(n, snd_kctl_t, list)
 
 typedef int (*snd_kctl_ioctl_t) (snd_card_t * card,
 				 snd_kctl_t * control,

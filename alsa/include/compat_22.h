@@ -42,6 +42,14 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 	__list_add(new, head->prev, head);
 }
 
+/**
+ * list_for_each        -       iterate over a list
+ * @pos:        the &struct list_head to use as a loop counter.
+ * @head:       the head for your list.
+ */
+#define list_for_each(pos, head) \
+	for (pos = (head)->next; pos != (head); pos = pos->next)
+
 #define IORESOURCE_IO           0x00000100      /* Resource type */
 #define IORESOURCE_MEM          0x00000200
 
