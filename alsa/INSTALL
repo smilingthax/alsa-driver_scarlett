@@ -278,7 +278,7 @@ Module parameters
 
     Module for Yamaha OPL3-SA2/SA3 soundcards.
 
-    snd_port	- control port # for OPL3-SA chip
+    snd_port	- control port # for OPL3-SA chip (0x370)
     snd_wss_port - WSS port # for OPL3-SA chip (0x530,0xe80,0xf40,0x604)
     snd_midi_port - port # for MPU-401 UART (0x300,0x330), -1 = disable
     snd_fm_port - FM port # for OPL3-SA chip (0x388), -1 = disable
