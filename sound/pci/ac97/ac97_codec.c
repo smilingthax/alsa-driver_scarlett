@@ -2081,6 +2081,10 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	ac97->card = card;
 	spin_lock_init(&ac97->reg_lock);
 
+	if (ac97->pci) {
+		pci_read_config_word(ac97->pci, PCI_SUBSYSTEM_VENDOR_ID, &ac97->subsystem_vendor);
+		pci_read_config_word(ac97->pci, PCI_SUBSYSTEM_ID, &ac97->subsystem_device);
+	}
 	if (ac97->reset) {
 		ac97->reset(ac97);
 		goto __access_ok;
