@@ -28,12 +28,12 @@ void *_snd_magic_kcalloc(size_t size, int flags, int magic);
 void *_snd_magic_kmalloc(size_t size, int flags, int magic);
 void _snd_magic_kfree(void *ptr);
 
-#define snd_magic_kcalloc(type, extra, flags) _snd_magic_kcalloc(sizeof(type) + extra, flags, type##_magic)
-#define snd_magic_kmalloc(type, extra, flags) _snd_magic_kmalloc(sizeof(type) + extra, flags, type##_magic)
+#define snd_magic_kcalloc(type, extra, flags) (type *) _snd_magic_kcalloc(sizeof(type) + extra, flags, type##_magic)
+#define snd_magic_kmalloc(type, extra, flags) (type *) _snd_magic_kmalloc(sizeof(type) + extra, flags, type##_magic)
 
 static inline int _snd_magic_value(void *obj)
 {
-	return obj == NULL ? 0 : *(((int *)obj) - 1);
+	return obj == NULL ? -1 : *(((int *)obj) - 1);
 }
 
 static inline int _snd_magic_bad(void *obj, int magic)
@@ -41,14 +41,11 @@ static inline int _snd_magic_bad(void *obj, int magic)
 	return _snd_magic_value(obj) != magic;
 }
 
-#define snd_magic_cast(type, ptr, retval) ({\
+#define snd_magic_cast(type, ptr, retval) (type *) ({\
 	void *__ptr = ptr;\
-	if (__ptr == NULL) {\
-		snd_printk("NULL: %s: %i [%s]\n", __FILE__, __LINE__, __PRETTY_FUNCTION__);\
-		return retval;\
-	}\
-	if (_snd_magic_bad(__ptr, type##_magic)) {\
-		snd_printk("MAGIC: %s: %i [%s] {0x%x}\n", __FILE__, __LINE__, __PRETTY_FUNCTION__, _snd_magic_value(__ptr));\
+	int __magic = _snd_magic_value(__ptr);\
+	if (__magic != type##_magic) {\
+		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
 		return retval;\
 	}\
 	__ptr;\
@@ -90,11 +87,28 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define ac97_t_magic				0xa15a1901
 #define ak4531_t_magic				0xa15a1a01
 #define snd_uart16550_t_magic			0xa15a1b01
+#define emu10k1_t_magic				0xa15a1c01
+#define emu10k1_pcm_t_magic			0xa15a1c02
+#define snd_gus_card_t_magic			0xa15a1d01
+#define gus_pcm_private_t_magic			0xa15a1d02
+#define gus_proc_private_t_magic		0xa15a1d03
+#define tea6330t_t_magic			0xa15a1e01
+#define ad1848_t_magic				0xa15a1f01
+#define cs4231_t_magic				0xa15a2001
+#define es1688_t_magic				0xa15a2101
+#define opti93x_t_magic				0xa15a2201
+#define emu8000_t_magic				0xa15a2301
+#define emu8000_proc_private_t_magic		0xa15a2302
+#define sbdsp_t_magic				0xa15a2401
+#define snd_sb_csp_t_magic			0xa15a2402
+#define snd_card_dummy_t_magic			0xa15a2501
+#define snd_card_dummy_pcm_t_magic		0xa15a2502
+#define opl3_t_magic				0xa15a2601
 
 #else
-#define snd_magic_kcalloc(type, extra, flags) snd_kcalloc(sizeof(type) + extra, flags, type##_magic)
-#define snd_magic_kmalloc(type, extra, flags) snd_kmalloc(sizeof(type) + extra, flags, type##_magic)
-#define snd_magic_cast(type, ptr, retval) ptr
+#define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags, type##_magic)
+#define snd_magic_kmalloc(type, extra, flags) (type *) snd_kmalloc(sizeof(type) + extra, flags, type##_magic)
+#define snd_magic_cast(type, ptr, retval) (type *) ptr
 #define snd_magic_kfree snd_kfree
 #endif
 

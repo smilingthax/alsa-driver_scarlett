@@ -148,6 +148,9 @@ typedef struct snd_stru_pcm_runtime {
 	spinlock_t lock;
 	spinlock_t sleep_lock;
 	wait_queue_head_t sleep;
+	/* -- private section -- */
+	void *private_data;
+	void (*private_free)(void *private_data);
 	/* -- own transfer routines -- */
 	int (*hw_memcpy)(snd_pcm_subchn_t *subchn, int pos, const void *src, int count);
 	int (*hw_memset)(snd_pcm_subchn_t *subchn, int pos, int c, int count);
@@ -189,9 +192,6 @@ struct snd_stru_pcm_subchn {
 	snd_pcm_subchn_t *next;
 	snd_pcm_file_t *file;
 	struct file *ffile;
-	/* -- private section -- */
-	void *private_data;
-	void (*private_free)(void *private_data);
 	/* -- callback -- */
 	void (*transfer_ack_begin)(snd_pcm_subchn_t *subchn);
 	void (*transfer_ack_end)(snd_pcm_subchn_t *subchn);

@@ -87,7 +87,7 @@ struct snd_stru_ac97 {
 	unsigned short (*read) (void *private_data, unsigned short reg);
 	snd_info_entry_t *proc_entry;
 	void *private_data;
-	void (*private_free) (ac97_t * ac97);
+	void (*private_free) (void *private_data);
 	/* --- */
 	spinlock_t reg_lock;
 	int rev_is_not_rev;
