@@ -1161,6 +1161,8 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
 #define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_88200|\
 					 SND_PCM_RATE_96000)
+#define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
+					 SND_PCM_RATE_192000)
 
 #define SND_PCM_INFO_PLAYBACK		0x00000001
 #define SND_PCM_INFO_CAPTURE		0x00000002
@@ -1733,12 +1735,17 @@ typedef struct snd_rawmidi_params {
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
-typedef struct snd_rawmidi_status {
+typedef struct snd_rawmidi_setup {
 	int channel;		/* Requested channel */
-	int size;		/* I/O real queue size */
+	int size;		/* I/O real queue queue size in bytes */
 	int min;		/* I minimum number of bytes fragments for wakeup */
 	int max;		/* O maximum number of bytes in queue for wakeup */
 	int room;		/* minumum number of bytes writeable for wakeup */
+	unsigned char reserved[16];	/* reserved for future use */
+} snd_rawmidi_setup_t;
+
+typedef struct snd_rawmidi_status {
+	int channel;		/* Requested channel */
 	int count;		/* I/O number of bytes readable/writeable without blocking */
 	int queue;		/* O number of bytes in queue */
 	int pad;		/* O not used yet */
@@ -1750,6 +1757,7 @@ typedef struct snd_rawmidi_status {
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ('W', 0x01, snd_rawmidi_info_t)
 #define SND_RAWMIDI_IOCTL_CHANNEL_PARAMS _IOW ('W', 0x10, snd_rawmidi_params_t)
+#define SND_RAWMIDI_IOCTL_CHANNEL_SETUP	_IOWR('W', 0x11, snd_rawmidi_setup_t)
 #define SND_RAWMIDI_IOCTL_CHANNEL_STATUS _IOWR('W', 0x20, snd_rawmidi_status_t)
 #define SND_RAWMIDI_IOCTL_CHANNEL_DRAIN	_IOW ('W', 0x30, int)
 #define SND_RAWMIDI_IOCTL_CHANNEL_FLUSH _IOW ('W', 0x31, int)
@@ -1835,13 +1843,17 @@ typedef struct snd_timer_params {
 	char reserved[64];
 } snd_timer_params_t;
 
+typedef struct snd_timer_setup {
+	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
+	unsigned long ticks;		/* requested resolution in ticks */
+	int queue_size;			/* total queue size */
+	char reserved[64];
+} snd_timer_setup_t;
+
 typedef struct snd_timer_status {
 	unsigned long resolution;	/* current resolution */
 	unsigned long lost;		/* counter of master tick lost */
 	unsigned long overrun;		/* count of read queue overruns */
-	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
-	unsigned long ticks;		/* requested resolution in ticks */
-	int queue_size;			/* total queue size */
 	int queue;			/* used queue size */
 	char reserved[64];
 } snd_timer_status_t;
@@ -1851,7 +1863,8 @@ typedef struct snd_timer_status {
 #define SND_TIMER_IOCTL_SELECT		_IOW ('T', 0x10, snd_timer_select_t)
 #define SND_TIMER_IOCTL_INFO		_IOR ('T', 0x11, snd_timer_info_t)
 #define SND_TIMER_IOCTL_PARAMS		_IOW ('T', 0x12, snd_timer_params_t)
-#define SND_TIMER_IOCTL_STATUS		_IOW ('T', 0x13, snd_timer_status_t)
+#define SND_TIMER_IOCTL_SETUP		_IOR ('T', 0x13, snd_timer_setup_t)
+#define SND_TIMER_IOCTL_STATUS		_IOW ('T', 0x14, snd_timer_status_t)
 #define SND_TIMER_IOCTL_START		_IO  ('T', 0x20)
 #define SND_TIMER_IOCTL_STOP		_IO  ('T', 0x21)
 #define SND_TIMER_IOCTL_CONTINUE	_IO  ('T', 0x22)
