@@ -270,10 +270,14 @@ struct snd_stru_emu10k1 {
 	snd_irq_t * irqptr;
 
 	unsigned short port;	/* I/O port number */
-	int APS: 1;		/* APS flag */
+	int APS: 1,		/* APS flag */
+	    tos_link: 1;	/* tos link detected */
 	unsigned int revision;	/* chip revision */
 	unsigned int serial;	/* serial number */
 	unsigned int ecard_ctrl; /* ecard control bits */
+
+	void *silent_page;	/* silent page */
+	void *ptb_pages;	/* PTB pages */
 
 	ac97_t *ac97;
 
