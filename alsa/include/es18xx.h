@@ -63,6 +63,7 @@ struct snd_stru_es18xx {
 	snd_kmixer_element_t *mix_omono_v, *mix_imono_v;
 	snd_kmixer_element_t *mix_ocd_v, *mix_icd_v;
 	snd_kmixer_element_t *mix_oaux_v, *mix_iaux_v;
+	snd_kmixer_element_t *mix_speaker_v;
 	snd_kmixer_element_t *mix_output_v, *mix_output_s;
 	snd_kmixer_element_t *mix_playback1, *mix_playback2;
 	snd_kmixer_element_t *mix_capture;
@@ -91,12 +92,11 @@ struct snd_stru_es18xx {
 #define ES18XX_DUPLEX_SAME 0x0010	/* Playback and record must share the same rate */
 #define ES18XX_NEW_RATE	0x0020	/* More precise rate setting */
 #define ES18XX_AUXB	0x0040	/* AuxB mixer control */
-#define ES18XX_SPEAKER	0x0080	/* Speaker mixer control */
+#define ES18XX_HWV	0x0080	/* Has hardware volume */
 #define ES18XX_MONO	0x0100	/* Mono_in mixer control */
 #define ES18XX_I2S	0x0200	/* I2S mixer control */
 #define ES18XX_MUTEREC	0x0400	/* Record source can be muted */
 #define ES18XX_CONTROL	0x0800	/* Has control ports */
-#define ES18XX_HWV	0x1000	/* Has hardware volume */
 
 typedef struct snd_stru_es18xx es18xx_t;
 
