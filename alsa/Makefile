@@ -36,7 +36,7 @@ install: compile
 	mkdir -p $(moddir)
 	rm -f $(moddir)/snd*.o $(moddir)/persist.o $(moddir)/isapnp.o
 	cp modules/*.o $(moddir)
-	/sbin/depmod -a $(kversion).$(kpatchlevel).$(ksublevel)
+	/sbin/depmod -a $(kaversion)
 	install -m 755 -d $(prefix)/include/linux
 	install -m 644 include/asound.h $(prefix)/include/linux
 	install -m 644 include/asoundid.h $(prefix)/include/linux

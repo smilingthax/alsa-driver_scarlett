@@ -12,9 +12,11 @@ processor=@processor@
 msmp=@msmp@
 newkernel=@newkernel@
 SND_VERSION=@SND_VERSION@
+kaversion=@kaversion@
 kversion=@kversion@
 kpatchlevel=@kpatchlevel@
 ksublevel=@ksublevel@
+kextraversion=@kextraversion@
 GENKSYMS=@GENKSYMS@
 
 SNDCFG_KERNELDIR=@SNDCFG_KERNELDIR@
