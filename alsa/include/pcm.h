@@ -629,7 +629,6 @@ extern ssize_t snd_pcm_lib_writev(snd_pcm_substream_t *substream,
 				  void **bufs, size_t frames);
 extern ssize_t snd_pcm_lib_readv(snd_pcm_substream_t *substream,
 				 void **bufs, size_t frames);
-extern int snd_pcm_lib_default_spdif(snd_pcm_substream_t *substream, int group);
 
 /*
  *  Timer interface
@@ -638,5 +637,14 @@ extern int snd_pcm_lib_default_spdif(snd_pcm_substream_t *substream, int group);
 extern void snd_pcm_timer_resolution_change(snd_pcm_substream_t *substream);
 extern void snd_pcm_timer_init(snd_pcm_substream_t * substream);
 extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
+
+/*
+ *  Misc
+ */
+
+#define SND_PCM_DEFAULT_CON_SPDIF	(SND_PCM_AES0_CON_EMPHASIS_NONE|\
+					 (SND_PCM_AES1_CON_ORIGINAL<<8)|\
+					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
+					 (SND_PCM_AES3_CON_FS_48000<<24))
 
 #endif				/* __PCM_H */
