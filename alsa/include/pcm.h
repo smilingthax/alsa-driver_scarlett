@@ -86,6 +86,7 @@ typedef struct _snd_pcm_ops {
 	int (*hw_free)(snd_pcm_substream_t *substream);
 	int (*prepare)(snd_pcm_substream_t * substream);
 	int (*trigger)(snd_pcm_substream_t * substream, int cmd);
+	int (*resume)(snd_pcm_substream_t * substream);
 	snd_pcm_uframes_t (*pointer)(snd_pcm_substream_t * substream);
 	int (*copy)(snd_pcm_substream_t *substream, int channel, snd_pcm_uframes_t pos,
 		    void *buf, snd_pcm_uframes_t count);

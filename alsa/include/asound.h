@@ -209,6 +209,7 @@ enum sndrv_pcm_subformat {
 #define SNDRV_PCM_INFO_COMPLEX		0x00000400	/* complex frame organization (mmap only) */
 #define SNDRV_PCM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
 #define SNDRV_PCM_INFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
+#define SNDRV_PCM_INFO_RESUME		0x00040000	/* hardware supports stream resume after suspend */
 #define SNDRV_PCM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
 #define SNDRV_PCM_INFO_HALF_DUPLEX	0x00100000	/* only half duplex */
 #define SNDRV_PCM_INFO_JOINT_DUPLEX	0x00200000	/* playback and capture stream are somewhat correlated */
@@ -222,7 +223,8 @@ enum sndrv_pcm_state {
 	SNDRV_PCM_STATE_XRUN,		/* stream reached an xrun */
 	SNDRV_PCM_STATE_DRAINING,	/* stream is draining */
 	SNDRV_PCM_STATE_PAUSED,		/* stream is paused */
-	SNDRV_PCM_STATE_LAST = SNDRV_PCM_STATE_PAUSED,
+	SNDRV_PCM_STATE_SUSPENDED,	/* hardware is suspended */
+	SNDRV_PCM_STATE_LAST = SNDRV_PCM_STATE_SUSPENDED,
 };
 
 enum {
@@ -385,6 +387,7 @@ enum {
 	SNDRV_PCM_IOCTL_DRAIN = _IO('A', 0x44),
 	SNDRV_PCM_IOCTL_PAUSE = _IOW('A', 0x45, int),
 	SNDRV_PCM_IOCTL_REWIND = _IOW('A', 0x46, sndrv_pcm_uframes_t),
+	SNDRV_PCM_IOCTL_RESUME = _IO('A', 0x47),
 	SNDRV_PCM_IOCTL_WRITEI_FRAMES = _IOW('A', 0x50, struct sndrv_xferi),
 	SNDRV_PCM_IOCTL_READI_FRAMES = _IOR('A', 0x51, struct sndrv_xferi),
 	SNDRV_PCM_IOCTL_WRITEN_FRAMES = _IOW('A', 0x52, struct sndrv_xfern),
@@ -597,6 +600,14 @@ enum sndrv_ctl_elem_iface {
 #define SNDRV_CTL_ELEM_ACCESS_OWNER		(1<<10)	/* write lock owner */
 #define SNDRV_CTL_ELEM_ACCESS_INDIRECT		(1<<31)	/* indirect access */
 
+/* for forther details see the ACPI and PCI power management specification */
+#define SNDRV_CTL_POWER_D0		0x0000
+#define SNDRV_CTL_POWER_D1		0x0100
+#define SNDRV_CTL_POWER_D2		0x0200
+#define SNDRV_CTL_POWER_D3		0x0300
+#define SNDRV_CTL_POWER_D3hot		(SNDRV_CTL_POWER_D3|0x0000)
+#define SNDRV_CTL_POWER_D3cold		(SNDRV_CTL_POWER_D3|0x0001)
+
 struct sndrv_ctl_elem_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */
 	enum sndrv_ctl_elem_iface iface; /* interface identifier */
@@ -676,6 +687,8 @@ enum {
 	SNDRV_CTL_IOCTL_RAWMIDI_NEXT_DEVICE = _IOWR('U', 0x40, int),
 	SNDRV_CTL_IOCTL_RAWMIDI_INFO = _IOWR('U', 0x41, struct sndrv_rawmidi_info),
 	SNDRV_CTL_IOCTL_RAWMIDI_PREFER_SUBDEVICE = _IOW('U', 0x42, int),
+	SNDRV_CTL_IOCTL_POWER = _IOWR('U', 0xd0, int),
+	SNDRV_CTL_IOCTL_POWER_STATE = _IOR('U', 0xd1, int),
 };
 
 /*
