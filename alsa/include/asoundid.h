@@ -84,8 +84,9 @@
 #define SND_CARD_TYPE_ESS_ESOLDM1	0x00000032	/* Maestro 1 */
 #define SND_CARD_TYPE_ESS_ES1968	0x00000033	/* Maestro 2 */
 #define SND_CARD_TYPE_ESS_ES1978	0x00000034	/* Maestro 2E */
+#define SND_CARD_TYPE_DIGI96		0x00000035	/* RME Digi96 */
 
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000034
+#define SND_CARD_TYPE_LAST		0x00000035
 
 #endif				/* __ASOUNDID_H */
