@@ -1,7 +1,6 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 M reimplement sync go (also sync stop?) for multiple card support (perhaps it's better to add a support for generic sync request?)
-M add fields to params struct needed for change on running ("when")
 M loopback implementation (To think)
 M reimplement mixer/control API (To think)
 M make xrun detection optional (Abramo)

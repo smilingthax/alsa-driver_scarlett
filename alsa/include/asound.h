@@ -1408,6 +1408,7 @@ typedef struct snd_pcm_format {
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
 
+#define SND_PCM_PARAMS_WHEN		(1<<0)
 #define SND_PCM_PARAMS_MODE		(1<<1)
 #define SND_PCM_PARAMS_INTERLEAVE	(1<<2)
 #define SND_PCM_PARAMS_FORMAT		(1<<3)
@@ -1423,7 +1424,10 @@ typedef struct snd_pcm_format {
 #define SND_PCM_PARAMS_FAIL_INT_INCOMPAT	2
 #define SND_PCM_PARAMS_FAIL_EXT_INCOMPAT	3
 
+#define SND_PCM_PARAMS_WHEN_IDLE        0 /* Apply only if PCM is idle */
+
 typedef struct snd_pcm_params {
+	int when;			/* Params apply time/condition */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* playback format */
 	snd_pcm_digital_t digital;	/* digital setup */
