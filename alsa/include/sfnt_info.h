@@ -1,7 +1,7 @@
 /*
- *  Soundfont defines
+ *  Patch record compatible with AWE driver on OSS
  *
- *  Copyright (C) 1999 Takashi Iwai
+ *  Copyright (C) 1999-2000 Takashi Iwai
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

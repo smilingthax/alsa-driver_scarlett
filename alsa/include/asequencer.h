@@ -30,6 +30,11 @@
 /* version of the sequencer */
 #define SND_SEQ_VERSION SND_PROTOCOL_VERSION (1, 0, 0)
 
+/*
+ * sequencer event record
+ */
+typedef struct snd_seq_event snd_seq_event_t;
+
 /*                                   	*/
 /* definition of sequencer event types 	*/
 /*                                   	*/
@@ -192,7 +197,11 @@
 #define SND_SEQ_EVENT_USR_VARIPC3	148
 #define SND_SEQ_EVENT_USR_VARIPC4	149
 
-/* 150-191: reserved */
+/* 150-151: kernel events with quote - DO NOT use in user clients */
+#define SND_SEQ_EVENT_KERNEL_ERROR	150
+#define SND_SEQ_EVENT_KERNEL_QUOTE	151
+
+/* 152-191: reserved */
 
 /* 192-254: hardware specific events */
 
@@ -201,7 +210,6 @@
 
 
 typedef unsigned char snd_seq_event_type;
-
 
 	/* event address */
 typedef struct {
@@ -373,8 +381,16 @@ typedef struct {
 	} param;
 } snd_seq_ev_queue_control_t;
 
+	/* quoted event - inside the kernel only */
+typedef struct {
+	snd_seq_addr_t origin;		/* original sender */
+	unsigned short value;		/* optional data */
+	snd_seq_event_t *event;		/* quoted event */
+} snd_seq_ev_quote_t;
+
+
 	/* sequencer event */
-typedef struct snd_seq_event_t {
+struct snd_seq_event {
 	snd_seq_event_type type;	/* event type */
 	unsigned char flags;		/* event flags */
 	char tag;
@@ -399,8 +415,9 @@ typedef struct snd_seq_event_t {
 		snd_seq_result_t result;
 		snd_seq_ev_instr_begin_t instr_begin;
 		snd_seq_ev_sample_control_t sample;
+		snd_seq_ev_quote_t quote;
 	} data;
-} snd_seq_event_t;
+};
 
 
 /*
@@ -441,6 +458,8 @@ typedef struct snd_seq_event_bounce {
 #define snd_seq_ev_is_variable_type(ev)	((ev)->type >= 130 && (ev)->type < 140)
 /* ipc shmem events: 140-149 */
 #define snd_seq_ev_is_varipc_type(ev)	((ev)->type >= 140 && (ev)->type < 150)
+/* reserved for kernel */
+#define snd_seq_ev_is_reserved(ev)	((ev)->type >= 150)
 
 /* direct dispatched events */
 #define snd_seq_ev_is_direct(ev)	((ev)->queue == SND_SEQ_QUEUE_DIRECT)

@@ -100,11 +100,15 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define opti93x_t_magic				0xa15a2201
 #define emu8000_t_magic				0xa15a2301
 #define emu8000_proc_private_t_magic		0xa15a2302
+#define snd_emux_t_magic			0xa15a2303
+#define snd_emux_port_t_magic			0xa15a2304
 #define sbdsp_t_magic				0xa15a2401
 #define snd_sb_csp_t_magic			0xa15a2402
 #define snd_card_dummy_t_magic			0xa15a2501
 #define snd_card_dummy_pcm_t_magic		0xa15a2502
 #define opl3_t_magic				0xa15a2601
+
+#define snd_seq_dummy_port_t_magic		0xa15a2701
 
 #else
 #define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)
