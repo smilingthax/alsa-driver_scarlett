@@ -448,6 +448,12 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_MASK_DUPLEX		(SND_PCM_MASK_PLAYBACK|SND_PCM_MASK_RECORD)
 #define SND_PCM_MASK_BOTH		SND_PCM_MASK_DUPLEX
 
+#define SND_PCM_SW_TYPE_BOOLEAN		0	/* 0 or 1 (enable) */
+#define SND_PCM_SW_TYPE_BYTE		1	/* 0 to 255 (low to high) */
+#define SND_PCM_SW_TYPE_WORD		2	/* 0 to 65535 (low to high) */
+#define SND_PCM_SW_TYPE_DWORD		3	/* 0 to 4294967296 (low to high) */
+#define SND_PCM_SW_TYPE_USER		(~0)	/* user type */
+
 /*
  * Things to know:
  *   1) Real fragment size can be aligned by driver if hardware needs.
