@@ -7,20 +7,20 @@ OLDMAP="../snd.map.old"
 
 function isapnp() {
   if [ -r $MODDIR/isapnp.o ]; then
-    if ! $INSMOD -m $MODDIR/isapnp.o > $MAP; then exit 1; fi
+    if ! $INSMOD -m $MODDIR/isapnp.o >> $MAP; then exit 1; fi
   fi
 }
 
 function basic() {
-  if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm1.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-pcm1-oss.o ]; then
     if ! $INSMOD -m $MODDIR/snd-pcm1-oss.o >> $MAP; then exit 1; fi  
   fi
   if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
-  if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-seq.o ]; then
     if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
