@@ -87,6 +87,7 @@ if test $MAJOR -eq 14; then
   create_odevices /dev/amidi		13	# alternate midi
   create_odevices /dev/admmidi		14	# alternate direct midi
   # create symlinks
+  ln -svf /dev/mixer0 /dev/mixer
   ln -svf /dev/midi0 /dev/midi
   ln -svf /dev/dsp0 /dev/dsp
   ln -svf /dev/audio0 /dev/audio
