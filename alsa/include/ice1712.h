@@ -35,6 +35,7 @@
 #define PCI_DEVICE_ID_ICE_1712		0x1712
 #endif
 
+#define ICE1712_SUBDEVICE_SOUNDTRACK_DSP24 0x12141217
 #define ICE1712_SUBDEVICE_DELTA1010	0x121430d6
 #define ICE1712_SUBDEVICE_DELTADIO2496	0x121431d6
 #define ICE1712_SUBDEVICE_DELTA66	0x121432d6
@@ -256,12 +257,17 @@ struct snd_stru_ice1712 {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm_pro;
-        snd_pcm_substream_t *playback_con_substream;
+        snd_pcm_substream_t *playback_con_substream[6];
         snd_pcm_substream_t *capture_con_substream;
         snd_pcm_substream_t *playback_pro_substream;
         snd_pcm_substream_t *capture_pro_substream;
 	unsigned int playback_pro_size;
 	unsigned int capture_pro_size;
+	unsigned int playback_con_virt_addr[6];
+	unsigned int playback_con_active_buf[6];
+	unsigned int capture_con_rates;
+	unsigned int capture_con_virt_addr;
+	unsigned int ac97_ext_id;
 	ac97_t *ac97;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi[2];
