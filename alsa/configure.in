@@ -305,10 +305,12 @@ AC_DEFUN(CHECK_KERNEL_HEADER, [
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
         mkdir -p include/linux
+        mkdir -p include/asm
         touch include/$1
       else
         echo "Creating <$1>..."
         mkdir -p include/linux
+        mkdir -p include/asm
         echo "$2" > include/$1
       fi
     fi
