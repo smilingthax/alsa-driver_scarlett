@@ -146,18 +146,21 @@ static int snd_emu10k1_send_routing_put(snd_kcontrol_t * kcontrol,
 	spin_lock_irqsave(&emu->reg_lock, flags);
 	for (voice = 0; voice < 3; voice++)
 		for (idx = 0; idx < 4; idx++) {
+			val = ucontrol->value.integer.value[(voice * 4) + idx];
 			if (emu->audigy) {
-				val = ucontrol->value.integer.value[(voice * 4) + idx] & 0x3f;
-				if (((mix->send_routing[voice] >> (idx * 8)) & 0x3f) != val) {
-					mix->send_routing[voice] &= ~(0x3f << (idx * 8));
-					mix->send_routing[voice] |= val << (idx * 8);
+				int shift = idx * 8;
+				val &= 0x3f;
+				if (((mix->send_routing[voice] >> shift) & 0x3f) != val) {
+					mix->send_routing[voice] &= ~(0x3f << shift);
+					mix->send_routing[voice] |= val << shift;
 					change = 1;
 				}
 			} else {
+				int shift = idx * 4;
 				val = ucontrol->value.integer.value[(voice * 4) + idx] & 15;
-				if (((mix->send_routing[voice] >> (idx * 4)) & 15) != val) {
-					mix->send_routing[voice] &= ~(15 << (idx * 4));
-					mix->send_routing[voice] |= val << (idx * 4);
+				if (((mix->send_routing[voice] >> shift) & 15) != val) {
+					mix->send_routing[voice] &= ~(15 << shift);
+					mix->send_routing[voice] |= val << shift;
 					change = 1;
 				}
 			}
