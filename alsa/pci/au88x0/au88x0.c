@@ -78,6 +78,10 @@ static void __devinit snd_vortex_workaround(struct pci_dev *vortex, int fix)
 			fix = 3; // do latency and via bridge workaround
 		}
 	}
+
+		/* default value - nothing to do */
+	if (fix == 255)
+		return;
 	
 		/* fix vortex latency */
 	if(fix & 0x01) {
