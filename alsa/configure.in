@@ -50,7 +50,7 @@ kaversion=`grep UTS_RELEASE $SNDCFG_KERNELDIR/include/linux/version.h 2>/dev/nul
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
 ksublevel=`echo $kaversion | cut -d . -f 3 | cut -d - -f 1`
-kextraversion=`echo $kaversion | cut -d . -f 3 | cut -d - -f 2`
+kextraversion=`echo $kaversion | cut -d . -f 3 | cut -d - -f 2-`
 if test "$kextraversion" = "$ksublevel"; then
   kextraversion=""
 else
@@ -295,7 +295,7 @@ AC_ARG_WITH(sequencer,
   [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
   sequencer="$withval", sequencer="no")
 SNDCFG_SEQUENCER="0"
-if test "$pnp" = "yes"; then
+if test "$sequencer" = "yes"; then
   SNDCFG_SEQUENCER="1"
 fi
 AC_SUBST(SNDCFG_SEQUENCER)
