@@ -919,16 +919,6 @@ static int snd_rme32_capture_spdif_open(snd_pcm_substream_t * substream)
 
 	snd_pcm_set_sync(substream);
 
-	runtime->hw = snd_rme32_capture_spdif_info;
-        if ((rate = snd_rme32_capture_getrate(rme32, &isadat)) > 0) {
-                if (isadat) {
-                        return -EIO;
-                }
-                runtime->hw.rates = snd_rme32_ratecode(rate);
-                runtime->hw.rate_min = rate;
-                runtime->hw.rate_max = rate;
-        }
-
 	spin_lock_irqsave(&rme32->lock, flags);
         if (rme32->capture_substream != NULL) {
 	        spin_unlock_irqrestore(&rme32->lock, flags);
@@ -938,9 +928,18 @@ static int snd_rme32_capture_spdif_open(snd_pcm_substream_t * substream)
 	rme32->capture_ptr = 0;
 	spin_unlock_irqrestore(&rme32->lock, flags);
 
+	runtime->hw = snd_rme32_capture_spdif_info;
 	if (RME32_PRO_WITH_8414(rme32)) {
 		runtime->hw.rates |= SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000;
 		runtime->hw.rate_max = 96000;
+	}
+	if ((rate = snd_rme32_capture_getrate(rme32, &isadat)) > 0) {
+		if (isadat) {
+			return -EIO;
+		}
+		runtime->hw.rates = snd_rme32_ratecode(rate);
+		runtime->hw.rate_min = rate;
+		runtime->hw.rate_max = rate;
 	}
 
 	snd_pcm_hw_constraint_minmax(runtime,
