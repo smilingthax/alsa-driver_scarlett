@@ -37,8 +37,6 @@ struct snd_stru_control {
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the structure */
-	int pool_size;			/* size of pool in items */
-	snd_kctl_read_t *pool;		/* atomic pool */
 	snd_kctl_read_t *first_item;
 	snd_kctl_read_t *last_item;
 	struct snd_stru_control *next;

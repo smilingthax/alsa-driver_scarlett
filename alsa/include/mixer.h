@@ -107,8 +107,6 @@ struct snd_stru_mixer_file {
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the mixer structure */
-	int pool_size;
-	snd_kmixer_read_t *pool;	/* atomic pool */
 	snd_kmixer_read_t *first_item;
 	snd_kmixer_read_t *last_item;
 	struct snd_stru_mixer_file *next;
