@@ -63,7 +63,7 @@ typedef struct _snd_pcm_ops {
 	int (*close)(snd_pcm_substream_t *substream);
 	int (*ioctl)(snd_pcm_substream_t * substream,
 		     unsigned int cmd, void *arg);
-	int (*hw_params)(snd_pcm_substream_t * substream);
+	int (*hw_params)(snd_pcm_substream_t * substream, snd_pcm_hw_params_t * params);
 	int (*prepare)(snd_pcm_substream_t * substream);
 	int (*trigger)(snd_pcm_substream_t * substream, int cmd);
 	snd_pcm_uframes_t (*pointer)(snd_pcm_substream_t * substream);
@@ -633,6 +633,7 @@ static inline const interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *p
 #define params_period_size(p) hw_param_interval((p), SND_PCM_HW_PARAM_PERIOD_SIZE)->min
 #define params_periods(p) hw_param_interval((p), SND_PCM_HW_PARAM_PERIODS)->min
 #define params_buffer_size(p) hw_param_interval((p), SND_PCM_HW_PARAM_BUFFER_SIZE)->min
+#define params_buffer_bytes(p) hw_param_interval((p), SND_PCM_HW_PARAM_BUFFER_BYTES)->min
 #define params_tick_time(p) hw_param_interval((p), SND_PCM_HW_PARAM_TICK_TIME)->min
 
 
@@ -770,7 +771,8 @@ extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 
 #ifdef CONFIG_PCI
 extern int snd_pcm_lib_malloc_pci_pages(struct pci_dev *pci,
-                                        snd_pcm_substream_t *substream);
+                                        snd_pcm_substream_t *substream,
+                                        size_t size);
 extern void snd_pcm_lib_free_pci_pages(struct pci_dev *pci,
                                        snd_pcm_substream_t *substream);
 #endif
