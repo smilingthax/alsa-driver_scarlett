@@ -88,6 +88,12 @@ void snd_remove_proc_entry(struct proc_dir_entry *parent,
 		proc_unregister(parent, de->low_ino);
 	}
 }
+
+static struct inode_operations snd_info_entry_inode_operations =
+{
+	        &snd_info_entry_operations,     /* default sound info directory file-ops */
+};
+
 #endif /* LINUX_VERSION_CODE < 2.4.0 */
 
 #include "../alsa-kernel/core/info.c"
