@@ -14,6 +14,7 @@ L async notification support (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
+M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster xrun recovery
 M add detailed failure to params ioctl (see es18xx)
 M add needed callbacks for params_info (see es18xx)
 M change real rate params to use snd_pcm_clock_* (where useful) and to set rate_{master,divisor} (see es18xx)
