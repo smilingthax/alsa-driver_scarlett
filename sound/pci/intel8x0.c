@@ -54,7 +54,7 @@ MODULE_DEVICES("{{Intel,82801AA},"
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
-static int snd_ac97_clock[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 48000};
+static int snd_ac97_clock[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 0};
 
 MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_index, "Index value for Intel i8x0 soundcard.");
@@ -66,8 +66,8 @@ MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_enable, "Enable Intel i8x0 soundcard.");
 MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_ac97_clock, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_ac97_clock, "AC'97 codec clock (default 48000Hz).");
-MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
+MODULE_PARM_DESC(snd_ac97_clock, "AC'97 codec clock (0 = auto-detect).");
+MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:0");
 
 /*
  *  Direct registers
@@ -177,10 +177,10 @@ MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
 
 typedef struct {
 	unsigned long reg_offset;
-	unsigned int *bdbar;			/* CPU address */
-	dma_addr_t bdbar_addr;			/* PCI bus address */
-        snd_pcm_substream_t *substream;
-        dma_addr_t physbuf;
+	u32 *bdbar;			/* CPU address (32bit) */
+	unsigned int bdbar_addr;		/* PCI bus address (32bit) */
+	snd_pcm_substream_t *substream;
+	unsigned int physbuf;			/* physical address (32bit) */
         unsigned int size;
         unsigned int fragsize;
         unsigned int fragsize1;
@@ -233,7 +233,7 @@ struct _snd_intel8x0 {
 	spinlock_t ac97_lock;
 	snd_info_entry_t *proc_entry;
 	
-	unsigned int *bdbars;
+	u32 *bdbars;
 	dma_addr_t bdbars_addr;
 	
 	unsigned int reg_pi_sr;
@@ -363,7 +363,7 @@ static int snd_intel8x0_trigger(intel8x0_t *chip, ichdev_t *ichdev, int cmd)
 static void snd_intel8x0_setup_periods(intel8x0_t *chip, ichdev_t *ichdev) 
 {
 	int idx;
-	unsigned int *bdbar = ichdev->bdbar;
+	u32 *bdbar = ichdev->bdbar;
 	unsigned long port = chip->bmport + ichdev->reg_offset;
 	int shiftlen = (chip->device_type == DEVICE_SIS) ? 0 : 1;
 
@@ -741,7 +741,7 @@ static int __devinit snd_intel8x0_pcm(intel8x0_t *chip, int device, snd_pcm_t **
 	pcm->private_data = chip;
 	pcm->private_free = snd_intel8x0_pcm_free;
 	pcm->info_flags = 0;
-	strcpy(pcm->name, "Intel ICH");
+	strcpy(pcm->name, chip->card->shortname);
 	chip->pcm = pcm;
 
 	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 64*1024, 128*1024);
@@ -881,7 +881,7 @@ static int __devinit snd_intel8x0_pcm_mic(intel8x0_t *chip, int device, snd_pcm_
 	pcm->private_data = chip;
 	pcm->private_free = snd_intel8x0_pcm_mic_free;
 	pcm->info_flags = 0;
-	strcpy(pcm->name, "Intel ICH - MIC ADC");
+	sprintf(pcm->name, "%s - MIC ADC", chip->card->shortname);
 
 	chip->pcm_mic = pcm;	
 	if (rpcm)
@@ -1056,7 +1056,7 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 	synchronize_irq();
       __hw_end:
 	if (chip->bdbars)
-		snd_free_pci_pages(chip->pci, 3 * sizeof(unsigned int) * ICH_MAX_FRAGS * 2, chip->bdbars, chip->bdbars_addr);
+		snd_free_pci_pages(chip->pci, 3 * sizeof(u32) * ICH_MAX_FRAGS * 2, chip->bdbars, chip->bdbars_addr);
 	if (chip->res_port) {
 		release_resource(chip->res_port);
 		kfree(chip->res_port);
@@ -1219,7 +1219,7 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
 	if (pos && (pos > 48500 || pos < 47500)) {
 		chip->ac97->clock = (chip->ac97->clock * 48000) / pos;
-		snd_printd("setting clocking to %d\n", chip->ac97->clock);
+		printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
 	}
 }
 
@@ -1239,6 +1239,7 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 	static snd_device_ops_t ops = {
 		dev_free:	snd_intel8x0_dev_free,
 	};
+	char name[32];
 
 	*r_intel8x0 = NULL;
 
@@ -1255,18 +1256,20 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 	chip->pci = pci;
 	chip->irq = -1;
 	chip->port = pci_resource_start(pci, 0);
-	if ((chip->res_port = request_region(chip->port, 256, "Intel ICH - AC'97")) == NULL) {
+	sprintf(name, "%s - AC'97", card->shortname);
+	if ((chip->res_port = request_region(chip->port, 256, name)) == NULL) {
 		snd_intel8x0_free(chip);
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->port, chip->port + 256 - 1);
 		return -EBUSY;
 	}
+	sprintf(name, "%s - Controller", card->shortname);
 	chip->bmport = pci_resource_start(pci, 1);
-	if ((chip->res_bmport = request_region(chip->bmport, 64, "Intel ICH - Controller")) == NULL) {
+	if ((chip->res_bmport = request_region(chip->bmport, 64, name)) == NULL) {
 		snd_intel8x0_free(chip);
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->bmport, chip->bmport + 64 - 1);
 		return -EBUSY;
 	}
-	if (request_irq(pci->irq, snd_intel8x0_interrupt, SA_INTERRUPT|SA_SHIRQ, "Intel ICH", (void *)chip)) {
+	if (request_irq(pci->irq, snd_intel8x0_interrupt, SA_INTERRUPT|SA_SHIRQ, card->shortname, (void *)chip)) {
 		snd_intel8x0_free(chip);
 		snd_printk("unable to grab IRQ %d\n", pci->irq);
 		return -EBUSY;
@@ -1296,19 +1299,27 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 
 	/* allocate buffer descriptor lists */
 	/* the start of each lists must be aligned to 8 bytes */
-	chip->bdbars = (unsigned int *)snd_malloc_pci_pages(pci, 3 * sizeof(unsigned int) * ICH_MAX_FRAGS * 2, &chip->bdbars_addr);
+	chip->bdbars = (u32 *)snd_malloc_pci_pages(pci, 3 * sizeof(unsigned int) * ICH_MAX_FRAGS * 2, &chip->bdbars_addr);
 	if (chip->bdbars == NULL) {
 		snd_intel8x0_free(chip);
 		return -ENOMEM;
 	}
 	/* tables must be aligned to 8 bytes here, but the kernel pages
-	   are much bigger, so we don't care */
-	chip->playback.bdbar = chip->bdbars;
-	chip->playback.bdbar_addr = chip->bdbars_addr;
+	   are much bigger, so we don't care (on i386) */
+#ifndef __i386__
+	/* .. not sure on other architectures, so we check now. */
+	if (chip->bdbars_addr & ~((dma_addr_t)0xffffffff | 0x07)) {
+		snd_printk("invalid i/o port address %lx\n", (unsigned long)chip->bdbars_addr);
+		snd_intel8x0_free(chip);
+		return -ENOMEM;
+	}
+#endif
+	chip->playback.bdbar = chip->bdbars; /* crop to 32bit */
+	chip->playback.bdbar_addr = (unsigned int)chip->bdbars_addr;
 	chip->capture.bdbar = chip->playback.bdbar + ICH_MAX_FRAGS * 2;
-	chip->capture.bdbar_addr = chip->playback.bdbar_addr + sizeof(unsigned int) * ICH_MAX_FRAGS * 2;
+	chip->capture.bdbar_addr = chip->playback.bdbar_addr + sizeof(u32) * ICH_MAX_FRAGS * 2;
 	chip->capture_mic.bdbar = chip->capture.bdbar + ICH_MAX_FRAGS * 2;
-	chip->capture_mic.bdbar_addr = chip->capture.bdbar_addr + sizeof(unsigned int) * ICH_MAX_FRAGS * 2;
+	chip->capture_mic.bdbar_addr = chip->capture.bdbar_addr + sizeof(u32) * ICH_MAX_FRAGS * 2;
 
 	if ((err = snd_intel8x0_chip_init(chip)) < 0) {
 		snd_intel8x0_free(chip);
@@ -1362,6 +1373,15 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 	if (card == NULL)
 		return -ENOMEM;
 
+	strcpy(card->driver, "ICH");
+	strcpy(card->shortname, "Intel ICH");
+	for (name = shortnames; name->id; name++) {
+		if (pci->device == name->id) {
+			strcpy(card->shortname, name->s);
+			break;
+		}
+	}
+
 	if ((err = snd_intel8x0_create(card, pci, id->driver_data, &chip)) < 0) {
 		snd_card_free(card);
 		return err;
@@ -1382,19 +1402,10 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 		}
 	}
 	
-	strcpy(card->driver, "ICH");
-	strcpy(card->shortname, "Intel ICH");
-	for (name = shortnames; name->id; name++) {
-		if (chip->pci->device == name->id) {
-			strcpy(card->shortname, name->s);
-			break;
-		}
-	}
-
 	sprintf(card->longname, "%s at 0x%lx, irq %i",
 		card->shortname, chip->port, chip->irq);
 
-	if (chip->ac97->clock == 48000)
+	if (! snd_ac97_clock[dev])
 		intel8x0_measure_ac97_clock(chip);
 
 	if ((err = snd_card_register(card)) < 0) {
