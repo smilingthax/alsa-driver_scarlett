@@ -72,7 +72,7 @@ struct sndrv_pcm_hw_params32 {
 
 #define CVT_sndrv_pcm_hw_params()\
 {\
-	int i;\
+	unsigned int i;\
 	COPY(flags);\
 	for (i = 0; i < numberof(dst->masks); i++)\
 		COPY(masks[i]);\
