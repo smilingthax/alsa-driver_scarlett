@@ -74,7 +74,7 @@ install-headers:
 		rm -rf $(DESTDIR)$(prefix)/include/sound; \
 		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
 		for f in include/*.h; do \
-			install -m 755 -g root -o root $$f $(DESTDIR)$(prefix)/include/sound; \
+			install -m 644 -g root -o root $$f $(DESTDIR)$(prefix)/include/sound; \
 		done \
 	fi
 
