@@ -796,8 +796,7 @@ static void snd_miro_proc_read(snd_info_entry_t * entry,
 			       snd_info_buffer_t * buffer)
 {
 	miro_t *miro = (miro_t *) entry->private_data;
-
-	snd_iprintf(buffer, "\n");
+	char* model = "unknown";
 
 	/* miroSOUND PCM1 pro, early PCM12 */
 
@@ -806,10 +805,10 @@ static void snd_miro_proc_read(snd_info_entry_t * entry,
 	    (miro->aci_product == 'A')) {
 		switch(miro->aci_version) {
 		case 3:
-			snd_iprintf(buffer, "miroSOUND PCM1 pro\n\n");
+			model = "miroSOUND PCM1 pro";
 			break;
 		default:
-			snd_iprintf(buffer, "miroSOUND PCM1 pro / (early) PCM12\n\n");
+			model = "miroSOUND PCM1 pro / (early) PCM12";
 			break;
 		}
 	}
@@ -821,13 +820,13 @@ static void snd_miro_proc_read(snd_info_entry_t * entry,
 	    (miro->aci_product == 'B')) {
 		switch(miro->aci_version) {
 		case 4:
-			snd_iprintf(buffer, "miroSOUND PCM12\n\n");
+			model = "miroSOUND PCM12";
 			break;
 		case 176:
-			snd_iprintf(buffer, "miroSOUND PCM12 (Rev. E)\n\n");
+			model = "miroSOUND PCM12 (Rev. E)";
 			break;
 		default:
-			snd_iprintf(buffer, "miroSOUND PCM12 / PCM12 pnp\n\n");
+			model = "miroSOUND PCM12 / PCM12 pnp";
 			break;
 		}
 	}
@@ -837,7 +836,19 @@ static void snd_miro_proc_read(snd_info_entry_t * entry,
 	if ((miro->hardware == OPTi9XX_HW_82C924) &&
 	    (miro->aci_vendor == 'm') && 
 	    (miro->aci_product == 'C')) 
-		snd_iprintf(buffer, "miroSOUND PCM20 radio\n\n");
+		model = "miroSOUND PCM20 radio";
+
+	snd_iprintf(buffer, "\nGeneral information:\n");
+	snd_iprintf(buffer, "  model   : %s\n", model);
+	snd_iprintf(buffer, "  opti    : %s\n", miro->name);
+	snd_iprintf(buffer, "  codec   : %s\n", miro->pcm->name);
+	snd_iprintf(buffer, "  port    : 0x%lx\n", miro->wss_base);
+	snd_iprintf(buffer, "  irq     : %d\n", miro->irq);
+	snd_iprintf(buffer, "  dma     : %d,%d\n\n", miro->dma1, miro->dma2);
+
+	snd_iprintf(buffer, "MPU-401:\n");
+	snd_iprintf(buffer, "  port    : 0x%lx\n", miro->mpu_port);
+	snd_iprintf(buffer, "  irq     : %d\n\n", miro->mpu_irq);
 
 	snd_iprintf(buffer, "ACI information:\n");
 	snd_iprintf(buffer, "  vendor  : ");
@@ -868,9 +879,13 @@ static void snd_miro_proc_read(snd_info_entry_t * entry,
 
 	snd_iprintf(buffer, "  firmware: %d (0x%x)\n",
 		    miro->aci_version, miro->aci_version);
-	snd_iprintf(buffer, "  port    : 0x%lx-0x%lx\n\n", 
+	snd_iprintf(buffer, "  port    : 0x%lx-0x%lx\n", 
 		    miro->aci_port, miro->aci_port+2);
-
+	snd_iprintf(buffer, "  wss     : 0x%x\n", wss);
+	snd_iprintf(buffer, "  ide     : 0x%x\n", ide);
+	snd_iprintf(buffer, "  solomode: 0x%x\n", miro->aci_solomode);
+	snd_iprintf(buffer, "  amp     : 0x%x\n", miro->aci_amp);
+	snd_iprintf(buffer, "  preamp  : 0x%x\n", miro->aci_preamp);
 }
 
 static void __devinit snd_miro_proc_init(miro_t * miro)
