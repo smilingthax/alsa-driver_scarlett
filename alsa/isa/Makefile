@@ -10,10 +10,6 @@ include $(SND_TOPDIR)/Makefile.conf
 #
 ifeq (y,$(CONFIG_X86))
 obj-y	+= msnd/
-else
-ifeq (y,$(CONFIG_ALPHA))
-obj-y	+= msnd/
-endif
 endif
 
 isapnp-files := als100.isapnp azt2320.isapnp dt019x.isapnp opl3sa2.isapnp \
