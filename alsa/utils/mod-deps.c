@@ -114,6 +114,7 @@ static char *kernel_deps[] = {
 	"PPC64",
 	"X86_64",
 	"X86",
+	"MIPS",
 	"MIPS64",
 	"IA32_EMULATION",
 	/* architecture specific */
