@@ -33,6 +33,11 @@
 #include "pcxhr_core.h"
 
 
+/* should be in alsa-driver tree only */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#define CONFIG_USE_PCXHRLOADER
+#endif
+
 #if defined(CONFIG_FW_LOADER) || defined(CONFIG_FW_LOADER_MODULE)
 #if !defined(CONFIG_USE_PCXHRLOADER) && !defined(CONFIG_SND_PCXHR) /* built-in kernel */
 #define SND_PCXHR_FW_LOADER	/* use the standard firmware loader */
