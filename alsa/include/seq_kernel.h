@@ -55,7 +55,7 @@
 #define SND_SEQ_MAX_HOPS		10
 
 /* max size of event size */
-#define SND_SEQ_MAX_EVENT_LEN		4096
+#define SND_SEQ_MAX_EVENT_LEN		0x3fffffff
 
 /* typedefs */
 struct snd_seq_stru_user_client;
