@@ -28,7 +28,6 @@
 #define SND_PCM1_PLAYBACK	0
 #define SND_PCM1_CAPTURE	1
 
-#define SND_PCM1_MODE_MULTI	0x00000010	/* set - multitrack (1-32) operation enabled */
 #define SND_PCM1_MODE_VALID	0x00000080	/* unset = not valid, set = valid */
 #define SND_PCM1_MODE_U		0x00000100	/* unset = signed, set = unsigned */
 #define SND_PCM1_MODE_16	0x00000200	/* unset = 8 bit , set = 16 bit   */

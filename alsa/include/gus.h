@@ -172,28 +172,20 @@
 #define SND_GF1_MODE_PCM_RECORD		0x0008
 #define SND_GF1_MODE_PCM		0x000c
 
-/* indexs for voice_ranges array */
-
-#define SND_GF1_VOICE_RANGES		3
-#define SND_GF1_VOICE_RANGE_SYNTH	0
-#define SND_GF1_VOICE_RANGE_PCM		1
-#define SND_GF1_VOICE_RANGE_EFFECT	2
-
 /* constants for interrupt handlers */
 
 #define SND_GF1_HANDLER_MIDI_OUT	0x00010000
 #define SND_GF1_HANDLER_MIDI_IN		0x00020000
 #define SND_GF1_HANDLER_TIMER1		0x00040000
 #define SND_GF1_HANDLER_TIMER2		0x00080000
-#define SND_GF1_HANDLER_RANGE		0x00100000
+#define SND_GF1_HANDLER_VOICE		0x00100000
 #define SND_GF1_HANDLER_DMA_WRITE	0x00200000
 #define SND_GF1_HANDLER_DMA_READ	0x00400000
-#define SND_GF1_HANDLER_ALL		(0xffff0000&~SND_GF1_HANDLER_RANGE)
+#define SND_GF1_HANDLER_ALL		(0xffff0000&~SND_GF1_HANDLER_VOICE)
 
 /* constants for DMA flags */
 
 #define SND_GF1_DMA_TRIGGER		1
-#define SND_GF1_DMA_SLEEP		2
 
 /* --- */
 
@@ -233,6 +225,9 @@ typedef struct snd_gf1_dma_block {
 	unsigned int addr;	/* address in onboard memory */
 	unsigned int count;	/* count in bytes */
 	unsigned int cmd;	/* DMA command (format) */
+	void (*ack)(snd_gus_card_t * gus, void *private_data);
+	void *private_data;
+	struct snd_gf1_dma_block *next;
 } snd_gf1_dma_block_t;
 
 typedef struct {
@@ -242,11 +237,35 @@ typedef struct {
 	int client;		/* sequencer client number */
 } snd_gus_port_t;
 
+#define SND_GF1_VOICE_TYPE_PCM		0
+#define SND_GF1_VOICE_TYPE_SYNTH 	1
+#define SND_GF1_VOICE_TYPE_MIDI		2
+
+typedef struct snd_gus_stru_voice snd_gus_voice_t;
+
+struct snd_gus_stru_voice {
+	int number;
+	int use: 1,
+	    pcm: 1;
+	
+#ifdef CONFIG_SND_INTERRUPTS_PROFILE
+	unsigned int interrupt_stat_wave;
+	unsigned int interrupt_stat_volume;
+#endif
+	void (*handler_wave) (snd_gus_card_t * gus, snd_gus_voice_t * voice);
+	void (*handler_volume) (snd_gus_card_t * gus, snd_gus_voice_t * voice);
+	void (*volume_change) (snd_gus_card_t * gus);
+
+	void *private_data;
+	void (*private_free)(void *private_data);
+};
+
 struct snd_stru_gf1 {
 
 	unsigned int enh_mode:1,	/* enhanced mode (GFA1) */
 		     hw_lfo:1,		/* use hardware LFO */
-		     sw_lfo:1;		/* use software LFO */
+		     sw_lfo:1,		/* use software LFO */
+		     effect:1;		/* use effect voices */
 
 	unsigned short port;		/* port of GF1 chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
@@ -273,8 +292,10 @@ struct snd_stru_gf1 {
 	unsigned char ics_regs[6][2];
 	/* --------- */
 
+	unsigned char active_voices;	/* active voices */
 	unsigned char active_voice;	/* selected voice (GF1PAGE register) */
-	unsigned char active_voices;	/* all active voices */
+
+	snd_gus_voice_t voices[32];	/* GF1 voices */
 
 	unsigned int default_voice_address;
 
@@ -282,23 +303,6 @@ struct snd_stru_gf1 {
 	unsigned short mode;		/* see to SND_GF1_MODE_XXXX */
 
 	unsigned char *lfos;
-
-	/* special interrupt handlers / callbacks */
-
-	struct SND_STRU_GF1_VOICE_RANGE {
-		unsigned short rvoices;		/* requested voices */
-		unsigned short voices;		/* total voices for this range */
-		unsigned short min, max;	/* minimal & maximal voice */
-#ifdef CONFIG_SND_INTERRUPTS_PROFILE
-		unsigned int interrupt_stat_wave;
-		unsigned int interrupt_stat_volume;
-#endif
-		void (*interrupt_handler_wave) (snd_gus_card_t * gus, int voice);
-		void (*interrupt_handler_volume) (snd_gus_card_t * gus, int voice);
-		void (*voices_change_start) (snd_gus_card_t * gus);
-		void (*voices_change_stop) (snd_gus_card_t * gus);
-		void (*volume_change) (snd_gus_card_t * gus);
-	} voice_ranges[SND_GF1_VOICE_RANGES];
 
 	/* interrupt handlers */
 
@@ -334,30 +338,24 @@ struct snd_stru_gf1 {
 
 	unsigned int dma_flags;
 	unsigned int dma_shared;
-	snd_gf1_dma_block_t *dma_data;
-	unsigned int dma_blocks;
-	unsigned int dma_used;
-	unsigned int dma_head;
-	unsigned int dma_tail;
+	snd_gf1_dma_block_t *dma_data_pcm;
+	snd_gf1_dma_block_t *dma_data_pcm_last;
+	snd_gf1_dma_block_t *dma_data_synth;
+	snd_gf1_dma_block_t *dma_data_synth_last;
+	void (*dma_ack)(snd_gus_card_t * gus, void *private_data);
+	void *dma_private_data;
 
 	/* pcm */
-
-	unsigned char *pcm_buffer;
-	unsigned int pcm_memory;
-	unsigned short pcm_pflags;
-	unsigned int pcm_pos;
-	unsigned char pcm_voice_ctrl, pcm_ramp_ctrl;
-	unsigned int pcm_bpos;
-	unsigned int pcm_blocks;
-	unsigned int pcm_block_size;
-	unsigned int pcm_mmap_mask;
-	unsigned short pcm_volume_level_left;
+	int pcm_voices;
+	int pcm_alloc_voices;
+	atomic_t pcm_open;
+        unsigned short pcm_volume_level_left;
 	unsigned short pcm_volume_level_right;
 	unsigned short pcm_volume_level_left1;
 	unsigned short pcm_volume_level_right1;
-	unsigned char pcm_volume[32];
-	unsigned char pcm_pan[32];
+                                
 	unsigned char pcm_rcntrl_reg;
+	unsigned char pad_end;
 };
 
 /* main structure for GUS card */
@@ -384,22 +382,23 @@ struct snd_stru_gus_card {
 
 	struct snd_stru_gf1 gf1;	/* gf1 specific variables */
 	snd_pcm_t *pcm;
+#if 0
 	snd_pcm_subchn_t *pcm_subchn;
 	snd_pcm1_subchn_t *pcm_subchn1;
+#endif
 	snd_pcm_subchn_t *pcm_cap_subchn;
 	snd_pcm1_subchn_t *pcm_cap_subchn1;
 	snd_rawmidi_t *midi_uart;
 
 	spinlock_t reg_lock;
+	spinlock_t voice_alloc;
 	spinlock_t active_voice_lock;
 	spinlock_t playback_lock;
 	spinlock_t dma_lock;
 	spinlock_t pcm_volume_level_lock;
 	spinlock_t uart_cmd_lock;
-	spinlock_t neutral_lock;
 	struct semaphore dma_mutex;
 	struct semaphore register_mutex;
-	wait_queue_head_t neutral_sleep;
 };
 
 /* I/O functions for GF1/InterWave chip - gus_io.c */
@@ -478,7 +477,7 @@ extern void snd_gf1_i_adlib_write(snd_gus_card_t * gus, unsigned char reg, unsig
 extern void snd_gf1_i_write_addr(snd_gus_card_t * gus, unsigned char reg, unsigned int addr, short w_16bit);
 extern unsigned int snd_gf1_i_read_addr(snd_gus_card_t * gus, unsigned char reg, short w_16bit);
 
-extern void snd_gf1_reselect_active_voices(snd_gus_card_t * gus);
+extern void snd_gf1_select_active_voices(snd_gus_card_t * gus);
 
 /* gus_lfo.c */
 
@@ -536,10 +535,9 @@ void snd_gf1_dma_ack(snd_gus_card_t * gus);
 int snd_gf1_dma_init(snd_gus_card_t * gus);
 int snd_gf1_dma_done(snd_gus_card_t * gus);
 int snd_gf1_dma_transfer_block(snd_gus_card_t * gus,
-			       unsigned int addr,
-			       void *buffer,
-			       unsigned int count,
-			       unsigned int cmd);
+			       snd_gf1_dma_block_t * block,
+			       int atomic,
+			       int synth);
 
 /* gus_volume.c */
 
@@ -562,6 +560,8 @@ void snd_gf1_smart_stop_voice(snd_gus_card_t * gus, unsigned short voice);
 void snd_gf1_stop_voice(snd_gus_card_t * gus, unsigned short voice);
 void snd_gf1_clear_voices(snd_gus_card_t * gus, unsigned short v_min, unsigned short v_max);
 void snd_gf1_stop_voices(snd_gus_card_t * gus, unsigned short v_min, unsigned short v_max);
+snd_gus_voice_t *snd_gf1_alloc_voice(snd_gus_card_t * gus, int type);
+void snd_gf1_free_voice(snd_gus_card_t * gus, snd_gus_voice_t *voice);
 int snd_gf1_start(snd_gus_card_t * gus);
 int snd_gf1_stop(snd_gus_card_t * gus);
 void snd_gf1_open(snd_gus_card_t * gus, unsigned short mode);
@@ -592,7 +592,10 @@ snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 				 snd_irq_t * irqnum,
 				 snd_dma_t * dma1num,
 				 snd_dma_t * dma2num,
-				 int timer_dev);
+				 int timer_dev,
+				 int voices,
+				 int pcm_voices,
+				 int effect);
 int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);

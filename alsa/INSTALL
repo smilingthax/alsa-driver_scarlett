@@ -161,6 +161,8 @@ Module parameters
     snd_dma2	- DMA # for GF1 chip (1,3,5,6,7,-1=disable)
     snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+    snd_voices  - GF1 voices limit (14-32)
+    snd_pcm_voices - reserved PCM voices
 
     Module supports up to 8 cards and autoprobe.
 
@@ -180,6 +182,8 @@ Module parameters
     snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
     snd_dma1_size - max DMA1 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+    snd_voices  - GF1 voices limit (14-32)
+    snd_pcm_voices - reserved PCM voices
 
     Module supports up to 8 cards and autoprobe (without MPU-401 port).
 
@@ -195,6 +199,8 @@ Module parameters
     snd_dma2	- DMA # for GF1 chip (1,3,5,6,7,-1=disable)
     snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+    snd_voices  - GF1 voices limit (14-32)
+    snd_pcm_voices - reserved PCM voices
 
     Module supports up to 8 cards and autoprobe.
     
@@ -212,6 +218,9 @@ Module parameters
     snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_midi    - 1 = MIDI UART enable, 0 = MIDI UART disable (default)
+    snd_pcm_voices - reserved PCM voices for the synthesizer (default 2)
+    snd_effect  - 1 = InterWave effects enable (default 0);
+                  requires 8 voices
 
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
@@ -231,6 +240,9 @@ Module parameters
     snd_dma2_size - max DMA2 size in kB (4-128kB)
     snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
     snd_midi    - 1 = MIDI UART enable, 0 = MIDI UART disable (default)
+    snd_pcm_voices - reserved PCM voices for the synthesizer (default 2)
+    snd_effect  - 1 = InterWave effects enable (default 0);
+                  requires 8 voices
 
     Module supports up to 8 cards, autoprobe and ISA PnP.
 

@@ -165,6 +165,7 @@ struct snd_stru_dma {
 	int dma;			/* DMA number */
 	char *name;			/* pointer to name */
 	long rsize;			/* requested size of DMA buffer */
+	char *multi_match[2];		/* allowed owners for multi alloc */
 	struct semaphore mutex;		/* snd_dma_malloc/free */
 	struct snd_stru_dma_area *areas;  /* DMA areas */
 	struct snd_stru_dma *next;
@@ -367,6 +368,7 @@ extern int snd_unregister_interrupts(snd_card_t * card);
 #define DMA_MODE_NO_ENABLE	0x0100
 
 extern void snd_dma_program(int dma, const void *buf, unsigned int size, unsigned short mode);
+extern void snd_dma_disable(int dma);
 extern unsigned int snd_dma_residue(int dma);
 
 /* misc.c */

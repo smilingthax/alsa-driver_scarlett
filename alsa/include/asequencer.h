@@ -193,7 +193,7 @@ typedef unsigned long snd_seq_instr_cluster_t;
 /* Instrument type */
 typedef struct {
 	snd_seq_instr_cluster_t cluster;
-	unsigned int std;
+	unsigned int std;		/* the upper byte means a private instrument (owner - client #) */
 	unsigned short bank;
 	unsigned short prg;
 } snd_seq_instr_t;
@@ -211,7 +211,7 @@ typedef struct {
 } snd_seq_ev_cluster;
 
 	/* sample position */
-typedef unsigned int snd_seq_position_t; /* playback position (in bytes) * 16 */
+typedef unsigned int snd_seq_position_t; /* playback position (in samples) * 16 */
 
 	/* sample stop mode */
 typedef enum {
@@ -232,8 +232,8 @@ typedef struct {
 
 	/* simple loop redefinition */
 typedef struct {
-	unsigned int begin;	/* loop begin (in bytes) * 16 */
-	unsigned int end;	/* loop end (in bytes) * 16 */
+	unsigned int begin;	/* loop begin (in samples) * 16 */
+	unsigned int end;	/* loop end (in samples) * 16 */
 } snd_seq_ev_loop;
 
 /* INSTR_BEGIN event */
@@ -557,7 +557,7 @@ typedef struct {
 #define SND_SEQ_INSTR_FREE_CMD_ALL	0
 #define SND_SEQ_INSTR_FREE_CMD_PRIVATE	1
 #define SND_SEQ_INSTR_FREE_CMD_CLUSTER	2
-#define SND_SEQ_INSTR_FREE_CMD_EXACT	3
+#define SND_SEQ_INSTR_FREE_CMD_SINGLE	3
 
 /* instrument data */
 typedef struct {

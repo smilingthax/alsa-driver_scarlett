@@ -109,7 +109,7 @@ case "$1" in
     insert snd-gus.o
     insert snd-i2c.o
     insert snd-tea6330t.o
-    insert snd-interwave-stb.o snd_irq=5 snd_dma1=5 snd_dma2=6 snd_midi=1
+    insert snd-interwave-stb.o snd_irq=5 snd_dma1=5 snd_dma2=6 snd_midi=1 snd_pcm_voices=8
     restore interwave-stb.conf
     ;;
   interwave|iw)
@@ -172,7 +172,7 @@ case "$1" in
     basic
     insert snd-cs4231.o
     insert snd-gus.o
-    insert snd-gusmax.o snd_irq=7
+    insert snd-gusmax.o snd_irq=7 snd_pcm_voices=8
     restore gusmax.conf
     ;;
   gusc*|clas*)
