@@ -1346,7 +1346,7 @@ static int snd_cs4231_probe(cs4231_t *chip)
 				break;	/* this is valid value */
 		}
 	}
-	snd_printdd("cs4231: port = 0x%lx, id = 0x%x\n", chip->port, id);
+	snd_printdd("cs4231: port = %p, id = 0x%x\n", chip->port, id);
 	if (id != 0x0a)
 		return -ENODEV;	/* no valid device found */
 
