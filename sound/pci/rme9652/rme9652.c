@@ -1912,8 +1912,13 @@ static int __init snd_rme9652_initialize_memory(rme9652_t *rme9652)
 	rme9652_write(rme9652, RME9652_rec_buffer, cb_bus);
 	rme9652_write(rme9652, RME9652_play_buffer, pb_bus);
 
+#if 0 // not all architectures have this macro
 	rme9652->capture_buffer = bus_to_virt(cb_bus);
 	rme9652->playback_buffer = bus_to_virt(pb_bus);
+#else
+	rme9652->capture_buffer += cb_bus - cb_addr;
+	rme9652->playback_buffer += pb_bus - pb_addr;
+#endif
 
 	return 0;
 }
