@@ -23,9 +23,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- *   ToDo: - Switching to Mono (32, 32/8, 32Pro)
- *         - ADAT (32/8)
- *         - DAC (32Pro)
+ *   ToDo: - ADAT (32/8)
  *         - full duplex (32, 32/8, 32Pro)
  */
 
@@ -81,7 +79,14 @@ MODULE_DEVICES("{{RME,Digi32}," "{RME,Digi32/8}," "{RME,Digi32 PRO}}");
 
 /* Write control register bits */
 #define RME32_WCR_START     (1 << 0)
-#define RME32_WCR_MONO      (1 << 1)
+#define RME32_WCR_MONO      (1 << 1)    /* 0: stereo, 1: mono
+                                           Setting the whole card to mono
+                                           don't seems to be very useful.
+                                           A software-solution can handle 
+                                           full-duplex with one direction in
+                                           stereo and the other way in mono. 
+                                           So, the hardware should work all 
+                                           the time in stereo! */
 #define RME32_WCR_MODE24    (1 << 2)
 #define RME32_WCR_SEL       (1 << 3)
 #define RME32_WCR_FREQ_0    (1 << 4)
@@ -323,6 +328,13 @@ static snd_pcm_hardware_t snd_rme32_capture_spdif_info = {
 	fifo_size:	0,
 };
 
+static void snd_rme32_reset_dac(rme32_t *rme32)
+{
+        writel(rme32->wcreg | RME32_WCR_PD,
+               rme32->iobase + RME32_IO_CONTROL_REGISTER);
+        writel(rme32->wcreg, rme32->iobase + RME32_IO_CONTROL_REGISTER);
+}
+
 static int snd_rme32_playback_getrate(rme32_t * rme32)
 {
 	int rate;
@@ -403,6 +415,9 @@ static int snd_rme32_capture_getrate(rme32_t * rme32, int *is_adat)
 
 static int snd_rme32_playback_setrate(rme32_t * rme32, int rate)
 {
+        int ds;
+
+        ds = rme32->wcreg & RME32_WCR_DS_BM;
 	switch (rate) {
 	case 32000:
 		rme32->wcreg &= ~RME32_WCR_DS_BM;
@@ -443,7 +458,14 @@ static int snd_rme32_playback_setrate(rme32_t * rme32, int rate)
 	default:
 		return -EINVAL;
 	}
-	writel(rme32->wcreg, rme32->iobase + RME32_IO_CONTROL_REGISTER);
+        if ((!ds && rme32->wcreg & RME32_WCR_DS_BM) ||
+            (ds && !(rme32->wcreg & RME32_WCR_DS_BM)))
+        {
+                /* change to/from double-speed: reset the DAC (if available) */
+                snd_rme32_reset_dac(rme32);
+        } else {
+                writel(rme32->wcreg, rme32->iobase + RME32_IO_CONTROL_REGISTER);
+	}
 	return 0;
 }
 
@@ -1107,6 +1129,9 @@ static int __devinit snd_rme32_create(rme32_t * rme32)
 	/* make sure playback/capture is stopped, if by some reason active */
 	snd_rme32_playback_stop(rme32);
 	snd_rme32_capture_stop(rme32);
+
+        /* reset DAC */
+        snd_rme32_reset_dac(rme32);
 
 	/* reset buffer pointer */
 	writel(0, rme32->iobase + RME32_IO_RESET_POS);
