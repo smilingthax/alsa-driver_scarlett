@@ -352,7 +352,6 @@ int snd_emu10k1_create(snd_card_t * card,
 		       snd_dma_t * dma2ptr,
 		       snd_irq_t * irqptr,
 		       emu10k1_t ** remu);
-int snd_emu10k1_free(emu10k1_t * emu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
