@@ -2173,7 +2173,7 @@ int __devinit snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm
 	strcpy(pcm->name, "Trident 4DWave");
 	trident->pcm = pcm;
 
-	if (! trident->tlb.entries)
+	if (trident->tlb.entries)
 		snd_pcm_lib_preallocate_sg_pages_for_all(trident->pci, pcm);
 	else
 		snd_pcm_lib_preallocate_pci_pages_for_all(trident->pci, pcm, 64*1024, 128*1024);
@@ -2228,7 +2228,7 @@ int __devinit snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_
 	}
 	trident->foldback = foldback;
 
-	if (! trident->tlb.entries)
+	if (trident->tlb.entries)
 		snd_pcm_lib_preallocate_sg_pages_for_all(trident->pci, foldback);
 	else
 		snd_pcm_lib_preallocate_pci_pages_for_all(trident->pci, foldback, 64*1024, 128*1024);
@@ -2272,7 +2272,7 @@ int __devinit snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t *
 	strcpy(spdif->name, "Trident 4DWave IEC958");
 	trident->spdif = spdif;
 
-	if (! trident->tlb.entries)
+	if (trident->tlb.entries)
 		snd_pcm_lib_preallocate_sg_pages_for_all(trident->pci, spdif);
 	else
 		snd_pcm_lib_preallocate_pci_pages_for_all(trident->pci, spdif, 64*1024, 128*1024);
