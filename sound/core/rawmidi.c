@@ -825,7 +825,7 @@ void snd_rawmidi_receive_reset(snd_rawmidi_substream_t * substream)
 	/* TODO: reset current state */
 }
 
-int snd_rawmidi_receive(snd_rawmidi_substream_t * substream, unsigned char *buffer, int count)
+int snd_rawmidi_receive(snd_rawmidi_substream_t * substream, const unsigned char *buffer, int count)
 {
 	unsigned long flags;
 	int result = 0, count1;
