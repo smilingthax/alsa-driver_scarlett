@@ -296,6 +296,7 @@ extern int snd_pcm_format_linear(int format);
 extern int snd_pcm_format_little_endian(int format);
 extern int snd_pcm_format_big_endian(int format);
 extern int snd_pcm_format_width(int format);		/* in bits */
+extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 extern ssize_t snd_pcm_format_size(int format, size_t samples);
  
 extern int snd_pcm_dma_alloc(snd_pcm_subchn_t * subchn, snd_dma_t * dma, char *ident);
