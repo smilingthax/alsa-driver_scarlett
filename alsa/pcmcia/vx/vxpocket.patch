@@ -8,18 +8,6 @@
  #include "vxpocket.h"
  #include <sound/initval.h>
  
-@@ -67,7 +68,11 @@
- MODULE_PARM_DESC(enable, "Enable " CARD_NAME " soundcard.");
- module_param(irq_mask, int, 0444);
- MODULE_PARM_DESC(irq_mask, "IRQ bitmask for " CARD_NAME " soundcard.");
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-+MODULE_PARM(irq_list, "1-4i");
-+#else
- module_param_array(irq_list, int, NULL, 0444);
-+#endif
- MODULE_PARM_DESC(irq_list, "List of Available interrupts for " CARD_NAME " soundcard.");
- module_param_array(ibl, int, NULL, 0444);
- MODULE_PARM_DESC(ibl, "Capture IBL size for " CARD_NAME " soundcard.");
 @@ -170,3 +175,5 @@
  
  module_init(init_vxpocket);
