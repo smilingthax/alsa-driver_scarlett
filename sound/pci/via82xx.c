@@ -910,25 +910,6 @@ static int snd_via8233_multi_prepare(snd_pcm_substream_t *substream)
 	snd_via82xx_channel_reset(chip, viadev);
 	snd_via82xx_set_table_ptr(chip, viadev);
 
-	/* FIXME: a more generic solutions would be better */
-	if (chip->chip_type == TYPE_VIA8233A) {
-		/* VIA8233A cannot change the slot mapping, so we need
-		 * to swap the RL/RR with C/L.
-		 */
-#define AC97_ID_ALC650		0x414c4720
-
-		if (chip->ac97->id == AC97_ID_ALC650) {
-			unsigned short val;
-			if (runtime->channels > 4)
-				/* slot mapping: 3,4,7,8 */
-				val = 0;
-			else
-				/* slot mapping: 3,4,6,9,7,8 */
-				val = 0x4000;
-			snd_ac97_update_bits(chip->ac97, AC97_ALC650_MULTICH, 0xc000, val);
-		}
-	}
-
 	fmt = (runtime->format == SNDRV_PCM_FORMAT_S16_LE) ? VIA_REG_MULTPLAY_FMT_16BIT : VIA_REG_MULTPLAY_FMT_8BIT;
 	fmt |= runtime->channels << 4;
 	outb(fmt, VIADEV_REG(viadev, OFS_MULTPLAY_FORMAT));
