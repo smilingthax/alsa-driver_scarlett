@@ -260,7 +260,7 @@ void *snd_pci_compat_alloc_consistent(struct pci_dev *, long, dma_addr_t *);
 void snd_pci_compat_free_consistent(struct pci_dev *, long, void *, dma_addr_t);
 int snd_pci_compat_dma_supported(struct pci_dev *, dma_addr_t mask);
 unsigned long snd_pci_compat_get_dma_mask(struct pci_dev *);
-void snd_pci_compat_set_dma_mask(struct pci_dev *, unsigned long mask);
+int snd_pci_compat_set_dma_mask(struct pci_dev *, unsigned long mask);
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev);
 void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data);
 
@@ -403,5 +403,19 @@ extern inline int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 }
 
 #endif /* CONFIG_APM */
+
+/*
+ * ISA space access
+ */
+#define __ISA_IO_base phys_to_virt(0)
+#define isa_readb(a) readb(phys_to_virt(a))
+#define isa_readw(a) readw(phys_to_virt(a))
+#define isa_readl(a) readl(phys_to_virt(a))
+#define isa_writeb(b,a) writeb(b,phys_to_virt(a))
+#define isa_writew(w,a) writew(w,phys_to_virt(a))
+#define isa_writel(l,a) writel(l,phys_to_virt(a))
+#define isa_memset_io(a,b,c)		memset_io(phys_to_virt(a),(b),(c))
+#define isa_memcpy_fromio(a,b,c)	memcpy_fromio((a),phys_to_virt(b),(c))
+#define isa_memcpy_toio(a,b,c)		memcpy_toio(phys_to_virt(a),(b),(c))
 
 #endif /* <2.3.0 */
