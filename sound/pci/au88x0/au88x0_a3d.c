@@ -862,7 +862,7 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* HRTF controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, &(vortex->a3d[i]))) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
 		kcontrol->id.numid = CTRLID_HRTF;
 		kcontrol->info = snd_vortex_a3d_hrtf_info;
@@ -873,7 +873,7 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* ITD controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, &(vortex->a3d[i]))) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
 		kcontrol->id.numid = CTRLID_ITD;
 		kcontrol->info = snd_vortex_a3d_itd_info;
@@ -884,7 +884,7 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* ILD (gains) controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, &(vortex->a3d[i]))) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
 		kcontrol->id.numid = CTRLID_GAINS;
 		kcontrol->info = snd_vortex_a3d_ild_info;
@@ -895,7 +895,7 @@ static int vortex_a3d_register_controls(vortex_t * vortex)
 	/* Filter controls. */
 	for (i = 0; i < NR_A3D; i++) {
 		if ((kcontrol =
-		     snd_ctl_new1(&vortex_a3d_kcontrol, &(vortex->a3d[i]))) == NULL)
+		     snd_ctl_new1(&vortex_a3d_kcontrol, &vortex->a3d[i])) == NULL)
 			return -ENOMEM;
 		kcontrol->id.numid = CTRLID_FILTER;
 		kcontrol->info = snd_vortex_a3d_filter_info;
