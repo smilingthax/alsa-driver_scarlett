@@ -17,7 +17,7 @@ Advanced Linux Sound Architecture driver. Driver is fully compatible
 with OSS/Lite, but contains many enhanced features.
 
 %prep
-%setup -n alsa-driver
+%setup
 
 %build
 ./configure --prefix=/usr
@@ -53,7 +53,7 @@ fi
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%attr(-,root,root) %doc CHANGELOG FAQ INSTALL README TODO snddevices doc/
+%attr(-,root,root) %doc ChangeLog FAQ INSTALL README TODO snddevices doc/
 %attr(-,root,root) %config /etc/rc.d/init.d/*
 %attr(-,root,root) /usr/include/linux/*.h
 %attr(-,root,root) /lib/modules/%{kversion}/misc/*.o
