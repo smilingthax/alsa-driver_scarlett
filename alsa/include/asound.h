@@ -24,7 +24,7 @@
 #ifndef __ASOUND_H
 #define __ASOUND_H
 
-#if defined( LINUX ) || defined( __LINUX__ ) || defined( __linux__ )
+#if defined(LINUX) || defined(__LINUX__) || defined(__linux__)
 #include <linux/ioctl.h>
 #include <endian.h>
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -33,6 +33,9 @@
 #endif
 #ifndef __KERNEL__
 #include <sys/time.h>
+#include <netinet/in.h>
+#else
+#include <linux/in.h>
 #endif
 
 /*
@@ -47,6 +50,15 @@
 	( SND_PROTOCOL_MAJOR(kversion) != SND_PROTOCOL_MAJOR(uversion) || \
 	 ( SND_PROTOCOL_MAJOR(kversion) == SND_PROTOCOL_MAJOR(uversion) && \
 	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion) ) )
+
+/*
+ *  hardware independent conversion
+ */
+
+#define snd_htoi_32(val) htonl(val)
+#define snd_htoi_16(val) htons(val)
+#define snd_itoh_32(val) ntohl(val)
+#define snd_itoh_16(val) ntohs(val)
 
 /*
  *  various limits

@@ -253,6 +253,8 @@ struct snd_stru_gf1 {
 	unsigned int rom_banks;		/* GUS's ROM banks */
 
 	snd_gf1_mem_t mem_alloc;
+	snd_info_entry_t *ram_entries[4];
+	snd_info_entry_t *rom_entries[4];
 
 	/* registers */
 	unsigned short reg_page;
@@ -499,6 +501,11 @@ snd_gf1_mem_block_t *snd_gf1_mem_alloc(snd_gf1_mem_t * alloc, char *name, int si
 int snd_gf1_mem_free(snd_gf1_mem_t * alloc, unsigned int address);
 int snd_gf1_mem_init(snd_gus_card_t * gus);
 int snd_gf1_mem_done(snd_gus_card_t * gus);
+
+/* gus_mem_proc.c */
+
+int snd_gf1_mem_proc_init(snd_gus_card_t * gus);
+int snd_gf1_mem_proc_done(snd_gus_card_t * gus);
 
 /* gus_dma.c */
 
