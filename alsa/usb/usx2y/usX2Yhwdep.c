@@ -247,7 +247,7 @@ static int snd_usX2Y_create_alsa_devices(snd_card_t* card)
 
 	do {
 		if ((err = snd_usX2Y_create_usbmidi(card)) < 0) {
-			snd_printk("snd_us428_create_alsa_devices: snd_us428_create_usbmidi error %i \n", err);
+			snd_printk("snd_usX2Y_create_alsa_devices: snd_usX2Y_create_usbmidi error %i \n", err);
 			break;
 		}
 		if ((err = snd_usX2Y_audio_create(card)) < 0) 
@@ -304,15 +304,15 @@ static int usX2Y_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
 	if (!err  &&  1 == dsp->index)
 		do {
 			if ((err = snd_usX2Y_AsyncSeq04_init((usX2Ydev_t*)hw->private_data))) {
-				snd_printk("snd_us428_AsyncSeq04_init error \n");
+				snd_printk("snd_usX2Y_AsyncSeq04_init error \n");
 				break;
 			}
 			if ((err = snd_usX2Y_In04_init((usX2Ydev_t*)hw->private_data))) {
-				snd_printk("snd_us428_In04_init error \n");
+				snd_printk("snd_usX2Y_In04_init error \n");
 				break;
 			}
 			if ((err = snd_usX2Y_create_alsa_devices(hw->card))) {
-				snd_printk("snd_us428_create_alsa_devices error %i \n", err);
+				snd_printk("snd_usX2Y_create_alsa_devices error %i \n", err);
 				snd_card_free(hw->card);
 				break;
 			}
