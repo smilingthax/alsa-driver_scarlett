@@ -113,12 +113,13 @@ enum global_control_bits {
 };
 
 enum miscint_bits {
-	PB_UNDERRUN_IRO = 0x00000001, REC_OVERRUN_IRQ = 0x00000002,
+	PB_UNDERRUN_IRQ = 0x00000001, REC_OVERRUN_IRQ = 0x00000002,
 	SB_IRQ		= 0x00000004, MPU401_IRQ      = 0x00000008,
 	OPL3_IRQ        = 0x00000010, ADDRESS_IRQ     = 0x00000020,
 	ENVELOPE_IRQ    = 0x00000040, PB_UNDERRUN     = 0x00000100,
 	REC_OVERRUN	= 0x00000200, MIXER_UNDERFLOW = 0x00000400,
-	MIXER_OVERFLOW  = 0x00000800, ST_TARGET_REACHED = 0x00008000,
+	MIXER_OVERFLOW  = 0x00000800, NX_SB_IRQ_DISABLE = 0x00001000,
+        ST_TARGET_REACHED = 0x00008000,
 	PB_24K_MODE     = 0x00010000, ST_IRQ_EN       = 0x00800000,
 	ACGPIO_IRQ	= 0x01000000
 };
@@ -126,6 +127,7 @@ enum miscint_bits {
 /* T2 legacy dma control registers. */
 #define LEGACY_DMAR0                0x00  // ADR0
 #define LEGACY_DMAR4                0x04  // CNT0
+#define LEGACY_DMAR6		    0x06  // CNT0 - High bits
 #define LEGACY_DMAR11               0x0b  // MOD 
 #define LEGACY_DMAR15               0x0f  // MMR 
 
@@ -146,6 +148,7 @@ enum miscint_bits {
 #define T4D_STOP_B                   0xb8
 #define T4D_SBBL_SBCL                0xc0
 #define T4D_SBCTRL_SBE2R_SBDD        0xc4
+#define T4D_STIMER		     0xc8
 #define T4D_AINT_B                   0xd8
 #define T4D_AINTEN_B                 0xdc
 #define T4D_RCI                      0x70
@@ -204,6 +207,13 @@ enum miscint_bits {
 #define SI_AC97_BUSY_READ	    0x00008000
 #define DX_AC97_BUSY_READ	    0x00008000
 #define NX_AC97_BUSY_READ	    0x00000800
+
+/* PCM defaults */
+
+#define T4D_DEFAULT_PCM_VOL	10	/* 0 - 255 */
+#define T4D_DEFAULT_PCM_PAN	0	/* 0 - 127 */
+#define T4D_DEFAULT_PCM_RVOL	127	/* 0 - 127 */
+#define T4D_DEFAULT_PCM_CVOL	127	/* 0 - 127 */
 
 typedef struct snd_stru_trident trident_t;
 typedef struct snd_trident_stru_voice snd_trident_voice_t;
@@ -277,9 +287,13 @@ struct snd_trident_stru_voice {
 
 	trident_t *trident;
 	snd_pcm_substream_t *substream;
+	snd_trident_voice_t *extra;	/* extra PCM voice (acts as interrupt generator) */
 	int running: 1,
-            capture: 1;
+            capture: 1,
+            spdif: 1,
+            foldback: 1;
 	int foldback_chan;		/* foldback subdevice number */
+	unsigned int stimer;		/* global sample timer (to detect spurious interrupts) */
 
 	/* --- */
 
@@ -302,7 +316,7 @@ struct snd_stru_4dwave {
 };
 
 struct snd_stru_trident_pcm_mixer {
-	int voice;			/* -1 - inactive */
+	snd_trident_voice_t *voice;	/* active voice */
 	unsigned char vol;		/* front volume */
 	unsigned char pan;		/* pan control */
 	unsigned char rvol;		/* rear volume */
@@ -326,6 +340,9 @@ struct snd_stru_trident {
 
 	unsigned long port;
 	unsigned long midi_port;
+
+	unsigned int spurious_irq_count;
+	unsigned int spurious_irq_max_delta;
 
         snd_trident_tlb_t tlb;	/* TLB entries for NX cards */
 
