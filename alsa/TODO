@@ -1,9 +1,8 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 M add checks for unaligned byte_data coming from user space
-M add user/kernel lock for mmap'ed control (To think)
-M add card number to snd_mixer_eid_t
 M loopback implementation (To think)
+M reimplement mixer/control API (To think)
 L implement silence fill for xrun smoothing (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
@@ -11,10 +10,9 @@ L timestamp for mmap'ed byte_io and status (To think)
 L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
+M rewrite mixer lowlevel implementation
 M Yamaha PCI driver (Jaroslav)
 M ICE1712 - consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
-L rewrite ICE1712 mixer (Abramo)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
-L rewrite mixer lowlevel implementation using __initdata structs to describe elements
