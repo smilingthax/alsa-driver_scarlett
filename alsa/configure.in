@@ -110,7 +110,14 @@ AC_MSG_CHECKING(for directory to store kernel modules)
 AC_ARG_WITH(moddir,
   [  --with-moddir=/path     give the path for the alsa driver kernel modules]
   [                        [/lib/modules/<KVER>/misc]],
-  moddir="$withval", moddir="/lib/modules/$kaversion/misc")
+  moddir="$withval", 
+# Special test for RH 5.1
+  if test -d /lib/modules/preferred; then
+    moddir="/lib/modules/preferred"
+  else
+    moddir="/lib/modules/$kaversion/misc"
+  fi
+)
 AC_SUBST(moddir)
 AC_MSG_RESULT($moddir)
 
