@@ -53,8 +53,8 @@ SIC CrystalWave 32
 
 - snd-card-cs4236
 Genius Sound Maker 3DJ
-Crystal Semiconductors CS4236B
 Crystal Semiconductors CS4235:jk
+Crystal Semiconductors CS4236B
 Hewlett Packard HP6330 sound
 Acer AW37
 EliteGroup P5TX-LA sound
@@ -62,13 +62,11 @@ Crystal 3D
 NewClear 3D
 Dell Optiplex GX1
 Dell Workstation 400 sound
-Turtle Beach Malibu
+Turtle Beach Malibu:jk
 Maxi Sound 16 PnP
 Gallant SC-70P
 Acer AW37/Pro
 Acer AW35/Pro
-Crystal Semiconductors CS4235
-Crystal Semiconductors CS4236B
 
 - snd-card-cs461x
 Cirrus Logic Sound Fusion (CS4280/CS4610/CS4612):jk
@@ -86,7 +84,7 @@ Ensoniq AudioPCI-97 ES1370:jk
 Creative Labs SB PCI64/128 (ES1370)
 
 - snd-card-ens1371
-Ensoniq AudioPCI ES1371/73:ti
+Ensoniq AudioPCI ES1371/73:ti,jk
 Ensoniq AudioPCI ES1373
 Creative Labs Ectiva EV1938
 Creative Labs SB PCI64/128 (ES1371/73)
@@ -110,7 +108,7 @@ ESS ES1887 AudioDrive:(ab):U:Incomplete 16 bit dma support
 ESS ES1888 AudioDrive:(ab):U:Incomplete 16 bit dma support
 
 - snd-card-es1938
-ESS ES1938:jk
+ESS ES1938
 TerraTec 128i PCI
 
 - snd-card-es1968
@@ -139,11 +137,12 @@ MidiMan M Audio Delta 1010:jk:
 MidiMan M Audio Delta DiO 2496
 MidiMan M Audio Delta 66:ab:000628:SPDIF setting does not work
 MidiMan M Audio Delta 44:ab:000628:
+Hoontech AudioTrack DSP24:jk
 ICEnsemble Generic ICE1712
 ICEnsemble Generic Envy24
 
 - snd-card-intel8x0
-Intel 82801AA
+Intel 82801AA:jk
 Intel 82901AB
 Intel MX440
 
@@ -151,7 +150,7 @@ Intel MX440
 AMD InterWave STB with TEA6330T:jk
 
 - snd-card-interwave
-Gravis UltraSound Plug & Play
+Gravis UltraSound Plug & Play:jk
 STB SoundRage32
 MED MED3210
 Dynasonix Dynasonix Pro
@@ -189,7 +188,7 @@ RME Digi96/8 PAD
 
 - snd-card-rme9652
 RME Hammerfall
-RME Hammerfall-Light:ab:000628:missing SPDIF setting
+RME Hammerfall-Light:ab,jk:000628:missing SPDIF setting
 
 - snd-card-sb16
 Creative Labs SB 16:ti
@@ -203,7 +202,7 @@ Creative Labs SB 1.0/SB 2.0/SB Pro
 
 - snd-card-sbawe
 Creative Labs SB AWE 32
-Creative Labs SB AWE 64:ti
+Creative Labs SB AWE 64:ti,jk
 Creative Labs SB AWE 64 Gold
 
 - snd-card-serial
@@ -217,8 +216,8 @@ S3 SonicVibes PCI
 
 - snd-card-trident
 Trident 4DWave DX
-Trident 4DWave NX:ti
-SiS 7018 PCI Audio
+Trident 4DWave NX:ti,jk
+SiS 7018 PCI Audio:jk
 Best Union Miss Melody 4DWave PCI
 HIS 4DWave PCI
 Warpspeed ONSpeed 4DWave PCI
