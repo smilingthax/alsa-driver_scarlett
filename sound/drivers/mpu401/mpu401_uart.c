@@ -418,9 +418,9 @@ int snd_mpu401_uart_new(snd_card_t * card, int device,
 			snd_device_free(card, rmidi);
 			return -EBUSY;
 		}
-		mpu->irq = irq;
-		mpu->irq_flags = irq_flags;
 	}
+	mpu->irq = irq;
+	mpu->irq_flags = irq_flags;
 	strcpy(rmidi->name, "MPU-401 (UART)");
 	snd_rawmidi_set_ops(rmidi, SNDRV_RAWMIDI_STREAM_OUTPUT, &snd_mpu401_uart_output);
 	snd_rawmidi_set_ops(rmidi, SNDRV_RAWMIDI_STREAM_INPUT, &snd_mpu401_uart_input);
