@@ -126,7 +126,7 @@ void snd_pcm_playback_silence(snd_pcm_substream_t *substream, snd_pcm_uframes_t 
 	}
 }
 
-int snd_pcm_update_hw_ptr_interrupt(snd_pcm_substream_t *substream)
+static inline int snd_pcm_update_hw_ptr_interrupt(snd_pcm_substream_t *substream)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_uframes_t pos;
