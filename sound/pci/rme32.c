@@ -25,10 +25,8 @@
  * 
  *   ToDo: - Switching to Mono (32, 32/8, 32Pro)
  *         - ADAT (32/8)
- *         - Doublespeed-Bit, 96kHz (32Pro)
  *         - DAC (32Pro)
- *         - full duplex should be possible
- *         - testing, testing, testing ....
+ *         - full duplex (32, 32/8, 32Pro)
  */
 
 #include <sound/driver.h>
@@ -168,9 +166,6 @@ typedef struct snd_rme32 {
 	u32 rcreg;		/* cached read control register value */
 
 	u8 rev;			/* card revision number */
-
-	pid_t capture_pid;
-	pid_t playback_pid;
 
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
@@ -344,7 +339,7 @@ static int snd_rme32_playback_getrate(rme32_t * rme32)
 	default:
 		return -1;
 	}
-	return rate;
+	return (rme32->wcreg & RME32_WCR_DS_BM) ? rate << 1 : rate;
 }
 
 static int snd_rme32_capture_getrate(rme32_t * rme32, int *is_adat)
@@ -407,14 +402,37 @@ static int snd_rme32_playback_setrate(rme32_t * rme32, int rate)
 {
 	switch (rate) {
 	case 32000:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & ~RME32_WCR_FREQ_1;
+		rme32->wcreg &= ~RME32_WCR_DS_BM;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & 
+			~RME32_WCR_FREQ_1;
 		break;
 	case 44100:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_1) & ~RME32_WCR_FREQ_0;
+		rme32->wcreg &= ~RME32_WCR_DS_BM;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_1) & 
+			~RME32_WCR_FREQ_0;
 		break;
 	case 48000:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | RME32_WCR_FREQ_1;
+		rme32->wcreg &= ~RME32_WCR_DS_BM;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | 
+			RME32_WCR_FREQ_1;
 		break;
+#ifdef PCI_DEVICE_ID_DIGI32_PRO
+	case 64000:
+		rme32->wcreg |= RME32_WCR_DS_BM;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & 
+			~RME32_WCR_FREQ_1;
+		break;
+	case 88200:
+		rme32->wcreg |= RME32_WCR_DS_BM;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_1) & 
+			~RME32_WCR_FREQ_0;
+		break;
+	case 96000:
+		rme32->wcreg |= RME32_WCR_DS_BM;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | 
+			RME32_WCR_FREQ_1;
+		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -426,16 +444,20 @@ static int snd_rme32_setclockmode(rme32_t * rme32, int mode)
 {
 	switch (mode) {
 	case RME32_CLOCKMODE_SLAVE:
-		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_FREQ_0) & ~RME32_WCR_FREQ_1;
+		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_FREQ_0) & 
+			~RME32_WCR_FREQ_1;
 		break;
 	case RME32_CLOCKMODE_MASTER_32:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & ~RME32_WCR_FREQ_1;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & 
+			~RME32_WCR_FREQ_1;
 		break;
 	case RME32_CLOCKMODE_MASTER_44:
-		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_FREQ_0) | RME32_WCR_FREQ_1;
+		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_FREQ_0) | 
+			RME32_WCR_FREQ_1;
 		break;
 	case RME32_CLOCKMODE_MASTER_48:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | RME32_WCR_FREQ_1;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | 
+			RME32_WCR_FREQ_1;
 		break;
 	default:
 		return -EINVAL;
@@ -454,16 +476,20 @@ static int snd_rme32_setinputtype(rme32_t * rme32, int type)
 {
 	switch (type) {
 	case RME32_INPUT_OPTICAL:
-		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_INP_0) & ~RME32_WCR_INP_1;
+		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_INP_0) & 
+			~RME32_WCR_INP_1;
 		break;
 	case RME32_INPUT_COAXIAL:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_INP_0) & ~RME32_WCR_INP_1;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_INP_0) & 
+			~RME32_WCR_INP_1;
 		break;
 	case RME32_INPUT_INTERNAL:
-		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_INP_0) | RME32_WCR_INP_1;
+		rme32->wcreg = (rme32->wcreg & ~RME32_WCR_INP_0) | 
+			RME32_WCR_INP_1;
 		break;
 	case RME32_INPUT_XLR:
-		rme32->wcreg = (rme32->wcreg | RME32_WCR_INP_0) | RME32_WCR_INP_1;
+		rme32->wcreg = (rme32->wcreg | RME32_WCR_INP_0) | 
+			RME32_WCR_INP_1;
 		break;
 	default:
 		return -EINVAL;
@@ -704,7 +730,6 @@ static int snd_rme32_playback_spdif_open(snd_pcm_substream_t * substream)
 	rme32->playback_substream = substream;
 	rme32->playback_last_appl_ptr = 0;
 	rme32->playback_ptr = 0;
-	rme32->playback_pid = current->pid;
 	spin_unlock_irqrestore(&rme32->lock, flags);
 
 	runtime->hw = snd_rme32_playback_spdif_info;
@@ -743,7 +768,6 @@ static int snd_rme32_capture_spdif_open(snd_pcm_substream_t * substream)
 
 	spin_lock_irqsave(&rme32->lock, flags);
 
-	rme32->capture_pid = current->pid;
 	rme32->capture_substream = substream;
 	rme32->capture_ptr = 0;
 	spin_unlock_irqrestore(&rme32->lock, flags);
@@ -768,7 +792,6 @@ static int snd_rme32_playback_close(snd_pcm_substream_t * substream)
 	int spdif = 0;
 
 	spin_lock_irqsave(&rme32->lock, flags);
-	rme32->playback_pid = -1;
 	rme32->playback_substream = NULL;
 	rme32->playback_periodsize = 0;
 	spdif = (rme32->wcreg & RME32_WCR_ADAT) == 0;
@@ -788,7 +811,6 @@ static int snd_rme32_capture_close(snd_pcm_substream_t * substream)
 	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
 
 	spin_lock_irqsave(&rme32->lock, flags);
-	rme32->capture_pid = -1;
 	rme32->capture_substream = NULL;
 	rme32->capture_periodsize = 0;
 	spin_unlock_irqrestore(&rme32->lock, flags);
@@ -1093,8 +1115,6 @@ static int __devinit snd_rme32_create(rme32_t * rme32)
 	/* init proc interface */
 	snd_rme32_proc_init(rme32);
 
-	rme32->playback_pid = -1;
-	rme32->capture_pid = -1;
 	rme32->capture_substream = NULL;
 	rme32->playback_substream = NULL;
 
