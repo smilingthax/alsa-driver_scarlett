@@ -33,7 +33,18 @@ struct pnp_card {
 
 struct pnp_dev {
 	struct isapnp_dev p;
+	void * driver_data;
 };
+
+static inline void *pnp_get_drvdata (struct pnp_dev *dev)
+{
+	return dev->driver_data;
+}
+
+static inline void pnp_set_drvdata (struct pnp_dev *dev, void *data)
+{
+	dev->driver_data = data;
+}
 
 /*
  * Resource Management
