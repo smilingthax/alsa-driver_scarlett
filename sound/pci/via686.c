@@ -605,7 +605,7 @@ static snd_pcm_hardware_t snd_via686a_playback =
 	.period_bytes_min =	32,
 	.period_bytes_max =	128 * 1024,
 	.periods_min =		2,
-	.periods_max =		1024,
+	.periods_max =		128,
 	.fifo_size =		0,
 };
 
@@ -624,7 +624,7 @@ static snd_pcm_hardware_t snd_via686a_capture =
 	.period_bytes_min =	32,
 	.period_bytes_max =	128 * 1024,
 	.periods_min =		2,
-	.periods_max =		1024,
+	.periods_max =		128,
 	.fifo_size =		0,
 };
 
