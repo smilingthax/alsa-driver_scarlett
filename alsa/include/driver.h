@@ -337,8 +337,6 @@ typedef struct _snd_oss_mixer snd_mixer_oss_t;
 struct _snd_card {
 	int number;			/* number of soundcard (index to snd_cards) */
 
-	unsigned int type;		/* type (number ID) of soundcard */
-
 	char id[16];			/* id string of this card */
 	char driver[16];		/* driver name */
 	char shortname[32];		/* short name of this soundcard */

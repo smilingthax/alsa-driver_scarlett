@@ -441,6 +441,7 @@ struct _snd_gus_card {
 	 daughter_flag:1,		/* have we daughter board? */
 	 interwave:1,			/* hey - we have InterWave card */
 	 ess_flag:1,			/* ESS chip found... GUS Extreme */
+	 ace_flag:1,			/* GUS ACE detected */
 	 uart_enable:1;			/* enable MIDI UART */
 	unsigned short revision;	/* revision of chip */
 	unsigned short max_cntrl_val;	/* GUS MAX control value */

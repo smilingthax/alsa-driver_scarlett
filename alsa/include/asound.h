@@ -52,96 +52,11 @@
 	 (SNDRV_PROTOCOL_MAJOR(kversion) == SNDRV_PROTOCOL_MAJOR(uversion) && \
 	   SNDRV_PROTOCOL_MINOR(kversion) != SNDRV_PROTOCOL_MINOR(uversion)))
 
-/*
- *  Types of sound drivers...
- *  Note: Do not assign a new number to 100% clones...
- */
-
-enum sndrv_card_type {
-	SNDRV_CARD_TYPE_GUS_CLASSIC,	/* GUS Classic */
-	SNDRV_CARD_TYPE_GUS_EXTREME,	/* GUS Extreme */
-	SNDRV_CARD_TYPE_GUS_ACE,	/* GUS ACE */
-	SNDRV_CARD_TYPE_GUS_MAX,	/* GUS MAX */
-	SNDRV_CARD_TYPE_AMD_INTERWAVE,	/* GUS PnP - AMD InterWave */
-	SNDRV_CARD_TYPE_SB_10,		/* SoundBlaster v1.0 */
-	SNDRV_CARD_TYPE_SB_20,		/* SoundBlaster v2.0 */
-	SNDRV_CARD_TYPE_SB_PRO,		/* SoundBlaster Pro */
-	SNDRV_CARD_TYPE_SB_16,		/* SoundBlaster 16 */
-	SNDRV_CARD_TYPE_SB_AWE,		/* SoundBlaster AWE */
-	SNDRV_CARD_TYPE_ESS_ES1688,	/* ESS AudioDrive ESx688 */
-	SNDRV_CARD_TYPE_OPL3_SA2,	/* Yamaha OPL3 SA2/SA3 */
-	SNDRV_CARD_TYPE_MOZART,		/* OAK Mozart */
-	SNDRV_CARD_TYPE_S3_SONICVIBES,	/* S3 SonicVibes */
-	SNDRV_CARD_TYPE_ENS1370,	/* Ensoniq ES1370 */
-	SNDRV_CARD_TYPE_ENS1371,	/* Ensoniq ES1371 */
-	SNDRV_CARD_TYPE_CS4232,		/* CS4232/CS4232A */
-	SNDRV_CARD_TYPE_CS4236,		/* CS4235/CS4236B/CS4237B/CS4238B/CS4239 */
-	SNDRV_CARD_TYPE_AMD_INTERWAVE_STB,/* AMD InterWave + TEA6330T */
-	SNDRV_CARD_TYPE_ESS_ES1938,	/* ESS Solo-1 ES1938 */
-	SNDRV_CARD_TYPE_ESS_ES18XX,	/* ESS AudioDrive ES18XX */
-	SNDRV_CARD_TYPE_CS4231,		/* CS4231 */
-	SNDRV_CARD_TYPE_OPTI92X,	/* OPTi 92x chipset */
-	SNDRV_CARD_TYPE_SERIAL,		/* Serial MIDI driver */
-	SNDRV_CARD_TYPE_AD1848,		/* Generic AD1848 driver */
-	SNDRV_CARD_TYPE_TRID4DWAVEDX,	/* Trident 4DWave DX */
-	SNDRV_CARD_TYPE_TRID4DWAVENX,	/* Trident 4DWave NX */
-	SNDRV_CARD_TYPE_SGALAXY,	/* Aztech Sound Galaxy */
-	SNDRV_CARD_TYPE_CS46XX,		/* Sound Fusion CS4610/12/15 */
-	SNDRV_CARD_TYPE_WAVEFRONT,	/* TB WaveFront generic */
-	SNDRV_CARD_TYPE_TROPEZ,		/* TB Tropez */
-	SNDRV_CARD_TYPE_TROPEZPLUS,	/* TB Tropez+ */
-	SNDRV_CARD_TYPE_MAUI,		/* TB Maui */
-	SNDRV_CARD_TYPE_CMI8330,	/* C-Media CMI8330 */
-	SNDRV_CARD_TYPE_DUMMY,		/* dummy soundcard */
-	SNDRV_CARD_TYPE_ALS100,		/* Avance Logic ALS100 */
-	SNDRV_CARD_TYPE_SHARE,		/* share soundcard */
-	SNDRV_CARD_TYPE_SI_7018,	/* SiS 7018 */
-	SNDRV_CARD_TYPE_OPTI93X,	/* OPTi 93x chipset */
-	SNDRV_CARD_TYPE_MTPAV,		/* MOTU MidiTimePiece AV multiport MIDI */
-	SNDRV_CARD_TYPE_VIRMIDI,	/* Virtual MIDI */
-	SNDRV_CARD_TYPE_EMU10K1,	/* EMU10K1 */
-	SNDRV_CARD_TYPE_HAMMERFALL,	/* RME Digi9652	 */
-	SNDRV_CARD_TYPE_HAMMERFALL_LIGHT, /* RME Digi9652, but no expansion card */
-	SNDRV_CARD_TYPE_ICE1712,	/* ICE1712 */
-	SNDRV_CARD_TYPE_CMI8338,	/* C-Media CMI8338 */
-	SNDRV_CARD_TYPE_CMI8738,	/* C-Media CMI8738 */
-	SNDRV_CARD_TYPE_AD1816A,	/* ADI SoundPort AD1816A */
-	SNDRV_CARD_TYPE_INTEL8X0,	/* Intel 810/820/830/840/MX440 */
-	SNDRV_CARD_TYPE_ESS_ESOLDM1,	/* Maestro 1 */
-	SNDRV_CARD_TYPE_ESS_ES1968,	/* Maestro 2 */
-	SNDRV_CARD_TYPE_ESS_ES1978,	/* Maestro 2E */
-	SNDRV_CARD_TYPE_DIGI96,		/* RME Digi96 */
-	SNDRV_CARD_TYPE_VIA82C686A,	/* VIA 82C686A */
-	SNDRV_CARD_TYPE_FM801,		/* FM801 */
-	SNDRV_CARD_TYPE_AZT2320,	/* AZT2320 */
-	SNDRV_CARD_TYPE_PRODIF_PLUS,	/* Marian/Sek'D Prodif Plus */
-	SNDRV_CARD_TYPE_YMFPCI,		/* YMF724/740/744/754 */
-	SNDRV_CARD_TYPE_CS4281,		/* CS4281 */
-	SNDRV_CARD_TYPE_MPU401_UART,	/* MPU-401 UART */
-	SNDRV_CARD_TYPE_ALS4000,	/* Avance Logic ALS4000 */
-	SNDRV_CARD_TYPE_ALLEGRO_1,	/* ESS Allegro-1 */
-	SNDRV_CARD_TYPE_ALLEGRO,	/* ESS Allegro */
-	SNDRV_CARD_TYPE_MAESTRO3,	/* ESS Maestro3 */
-	SNDRV_CARD_TYPE_AWACS,		/* PMac AWACS */
-	SNDRV_CARD_TYPE_NM256AV,	/* NM256AV */
-	SNDRV_CARD_TYPE_NM256ZX,	/* NM256ZX */
-	SNDRV_CARD_TYPE_VIA8233,	/* VIA VT8233 */
-	SNDRV_CARD_TYPE_PMAC_AWACS,	/* PMac AWACS */
-	SNDRV_CARD_TYPE_PMAC_BURGUNDY,	/* PMac Burgundy */
-	SNDRV_CARD_TYPE_PMAC_DACA,	/* PMac DACA */
-	SNDRV_CARD_TYPE_ALI5451,	/* ALi PCI Audio M5451 */
-
-	/* Don't forget to change the following: */
-	SNDRV_CARD_TYPE_LAST = SNDRV_CARD_TYPE_ALI5451,
-};
-
 /****************************************************************************
  *                                                                          *
  *        Digital audio interface					    *
  *                                                                          *
  ****************************************************************************/
-typedef unsigned long sndrv_pcm_uframes_t;
-typedef long sndrv_pcm_sframes_t;
 
 struct sndrv_aes_iec958 {
 	unsigned char status[24];	/* AES/IEC958 channel status bits */
@@ -192,6 +107,9 @@ enum {
  *****************************************************************************/
 
 #define SNDRV_PCM_VERSION			SNDRV_PROTOCOL_VERSION(2, 0, 0)
+
+typedef unsigned long sndrv_pcm_uframes_t;
+typedef long sndrv_pcm_sframes_t;
 
 enum sndrv_pcm_class {
 	SNDRV_PCM_CLASS_GENERIC,	/* standard mono or stereo device */
@@ -641,8 +559,8 @@ struct sndrv_timer_read {
 #define SNDRV_CTL_VERSION			SNDRV_PROTOCOL_VERSION(2, 0, 0)
 
 struct sndrv_ctl_card_info {
-	int card;			/* R: card number */
-	enum sndrv_card_type type;	/* type of card */
+	int card;			/* card number */
+	int pad;			/* reserved for future (was type) */
 	unsigned char id[16];		/* ID of card (user selectable) */
 	unsigned char driver[16];	/* Driver name */
 	unsigned char name[32];		/* Short name of soundcard */
