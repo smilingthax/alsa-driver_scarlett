@@ -4,7 +4,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
 AC_INIT(acore/sound.c)
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0rc3"
+CONFIG_SND_VERSION="0.9.0rc4"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -172,6 +172,7 @@ dnl Check kernel headers for 2.2
 CHECK_KERNEL_HEADER(linux/pm.h)
 CHECK_KERNEL_HEADER(linux/spinlock.h)
 CHECK_KERNEL_HEADER(linux/irq.h)
+CHECK_KERNEL_HEADER(linux/threads.h)
 
 dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
@@ -745,21 +746,12 @@ if test "$CONFIG_ISAPNP" = "y"; then
   fi
 fi
 
-if test ! -f include/linux/threads.h; then
-  echo "/* Empty file */" > include/linux/threads.h
-fi
-
 else
 dnl 2.4/2.5 kernels
 
 if test -f include/linux/isapnp.h; then
   echo "Removing local linux/isapnp.h."
   rm include/linux/isapnp.h
-fi
-
-if test -f include/linux/threads.h; then
-  echo "Removing local linux/threads.h."
-  rm include/linux/threads.h
 fi
 
 fi
@@ -870,6 +862,29 @@ int main(void) {
 CFLAGS="$ac_save_CFLAGS"
 CONFIG_USB="$usbsup"
 AC_SUBST(CONFIG_USB)
+
+dnl Check for PCMCIA
+AC_MSG_CHECKING(for PCMCIA)
+pcmciasup=n
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main(void) {
+#if !defined(CONFIG_PCMCIA) && !defined(CONFIG_PCMCIA_MODULE)
+	exit(1);
+#else
+	exit(0);
+#endif
+}
+],
+  AC_MSG_RESULT("yes");pcmciasup="y",
+  AC_MSG_RESULT("no");pcmciasup="n",
+  AC_MSG_RESULT("unknown");pcmciasup="n"
+)
+CFLAGS="$ac_save_CFLAGS"
+CONFIG_PCMCIA="$pcmciasup"
+AC_SUBST(CONFIG_PCMCIA)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_INIT
