@@ -150,6 +150,7 @@ static inline void snd_leave_user(mm_segment_t fs)
 typedef struct wait_queue wait_queue_t;
 typedef struct wait_queue * wait_queue_head_t;
 #define init_waitqueue_head(x) *(x) = NULL
+#define init_waitqueue_entry(q,p) ((q)->task = (p))
 #endif
 
 /*

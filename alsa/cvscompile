@@ -25,10 +25,10 @@ aclocal $ACLOCAL_FLAGS
 autoconf
 if [ $# -eq 0 ]; then
   echo "./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes"
-  ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes
+  ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes || exit 1
 else
   echo "./configure $@"
-  ./configure $@
+  ./configure $@ || exit 1
 fi
 make dep
 make
