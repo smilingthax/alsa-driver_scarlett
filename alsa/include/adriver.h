@@ -464,4 +464,8 @@ static inline struct device *snd_kdevice_pci(struct pci_dev *pci)
 
 #endif
 
+#ifndef __GFP_NOWARN
+#define __GFP_NOWARN	0
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
