@@ -58,7 +58,7 @@ KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
 		  '/Rules.make','/include/sound/version.h']
 KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 		      '/Documentation',
-		      '/arch', '/drivers', '/fs',
+		      '/arch', '/drivers', '/crypto', '/fs',
 		      '/include', '/init', '/ipc',
 		      '/kernel', '/lib', '/mm',
 		      '/net', '/scripts', '/security',
@@ -66,7 +66,7 @@ KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 # force to process
 ALSA_FORCE = []
 ALSA_FORCE_DIR = ['/']
-KERNEL_FORCE = ['/sound/oss/Makefile']
+KERNEL_FORCE = []
 KERNEL_FORCE_DIR = ['/Documentation/sound/alsa', '/include/sound']
 
 # Directory mapping
