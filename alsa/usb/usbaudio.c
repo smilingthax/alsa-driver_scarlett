@@ -155,7 +155,7 @@ struct snd_usb_substream {
 	char syncbuf[SYNC_URBS * NRPACKS * 3]; /* sync buffer; it's so small - let's get static */
 	char *tmpbuf;			/* temporary buffer for playback */
 
-	unsigned int formats;		/* format bitmasks (all or'ed) */
+	u64 formats;			/* format bitmasks (all or'ed) */
 	int num_formats;		/* number of supported audio formats (list) */
 	struct list_head fmt_list;	/* format list */
 	spinlock_t lock;
@@ -1458,7 +1458,7 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 		pcm_format = -1;
 		switch (format) {
 		case USB_AUDIO_FORMAT_PCM:
-			/* check the sample bit width */
+			/* check the format byte size */
 			switch (fmt[6]) {
 			case 8:
 				subs->formats |= SNDRV_PCM_FMTBIT_U8;
@@ -1468,35 +1468,24 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 				subs->formats |= SNDRV_PCM_FMTBIT_S16_LE;
 				pcm_format = SNDRV_PCM_FORMAT_S16_LE;
 				break;
-#if 0 // XXX test
 			case 18:
-				if (fmt[5] == 3) {
-					subs->formats |= (1 << SNDRV_PCM_FORMAT_S18_3LE);
-					pcm_format = SNDRV_PCM_FORMAT_S18_3LE;
-				} else {
-					snd_printk(KERN_ERR "%d:%u:%d : non-supported sample bit %d in %d bytes\n",
-						   dev->devnum, iface_no, altno, fmt[6], fmt[5]);
-				}
-				break;
 			case 20:
 				if (fmt[5] == 3) {
-					subs->formats |= (1 << SNDRV_PCM_FORMAT_S20_3LE);
-					pcm_format = SNDRV_PCM_FORMAT_S20_3LE;
+					subs->formats |= SNDRV_PCM_FMTBIT_S24_3LE;
+					pcm_format = SNDRV_PCM_FORMAT_S24_3LE;
 				} else {
 					snd_printk(KERN_ERR "%d:%u:%d : non-supported sample bit %d in %d bytes\n",
 						   dev->devnum, iface_no, altno, fmt[6], fmt[5]);
 				}
 				break;
-#endif
 			case 24:
 				if (fmt[5] == 4) {
+					/* FIXME: correct?  or S32_LE? */
 					subs->formats |= SNDRV_PCM_FMTBIT_S24_LE;
 					pcm_format = SNDRV_PCM_FORMAT_S24_LE;
-#if 0 // XXX test
 				} else if (fmt[5] == 3) {
-					subs->formats |= (1 <<  SNDRV_PCM_FORMAT_S24_3LE);
+					subs->formats |= SNDRV_PCM_FMTBIT_S24_3LE;
 					pcm_format = SNDRV_PCM_FORMAT_S24_3LE;
-#endif
 				} else {
 					snd_printk(KERN_ERR "%d:%u:%d : non-supported sample bit %d in %d bytes\n",
 						   dev->devnum, iface_no, altno, format, fmt[5]);
@@ -1654,18 +1643,19 @@ static void proc_dump_substream_formats(snd_usb_substream_t *subs, snd_info_buff
 	list_for_each(p, &subs->fmt_list) {
 		struct audioformat *fp;
 		fp = list_entry(p, struct audioformat, list);
-		snd_iprintf(buffer, "  Format: %s\n", snd_pcm_format_name(fp->format));
-		snd_iprintf(buffer, "  Channels: %d\n", fp->channels);
-		snd_iprintf(buffer, "  Endpoint: %d %s (%s)\n",
+		snd_iprintf(buffer, "  Altset %d\n", fp->altset_idx);
+		snd_iprintf(buffer, "    Format: %s\n", snd_pcm_format_name(fp->format));
+		snd_iprintf(buffer, "    Channels: %d\n", fp->channels);
+		snd_iprintf(buffer, "    Endpoint: %d %s (%s)\n",
 			    fp->endpoint & USB_ENDPOINT_NUMBER_MASK,
 			    fp->endpoint & USB_DIR_IN ? "IN" : "OUT",
 			    sync_types[(fp->ep_attr & EP_ATTR_MASK) >> 2]);
 		if (fp->rates & SNDRV_PCM_RATE_CONTINUOUS) {
-			snd_iprintf(buffer, "  Rates: %d - %d (continous)\n",
+			snd_iprintf(buffer, "    Rates: %d - %d (continous)\n",
 				    fp->rate_min, fp->rate_max);
 		} else {
 			int i;
-			snd_iprintf(buffer, "  Rates: ");
+			snd_iprintf(buffer, "    Rates: ");
 			for (i = 0; i < fp->nr_rates; i++) {
 				if (i > 0)
 					snd_iprintf(buffer, ", ");
@@ -1673,6 +1663,19 @@ static void proc_dump_substream_formats(snd_usb_substream_t *subs, snd_info_buff
 			}
 			snd_iprintf(buffer, "\n");
 		}
+	}
+}
+
+static void proc_dump_substream_status(snd_usb_substream_t *subs, snd_info_buffer_t *buffer)
+{
+	if (subs->running) {
+		snd_iprintf(buffer, "  Status: Running\n");
+		snd_iprintf(buffer, "    Packets = %d\n", subs->npacks);
+		snd_iprintf(buffer, "    URBs = %d\n", subs->nurbs);
+		snd_iprintf(buffer, "    Packet Size = %d\n", subs->curpacksize);
+		snd_iprintf(buffer, "    Nominal freq = %d.%14d", subs->freqn >> 14, subs->freqn % ((1 << 14) - 1));
+	} else {
+		snd_iprintf(buffer, "  Status: Stop\n");
 	}
 }
 
@@ -1684,10 +1687,12 @@ static void proc_pcm_format_read(snd_info_entry_t *entry, snd_info_buffer_t *buf
 
 	if (stream->substream[SNDRV_PCM_STREAM_PLAYBACK].num_formats) {
 		snd_iprintf(buffer, "\nPlayback:\n");
+		proc_dump_substream_status(&stream->substream[SNDRV_PCM_STREAM_PLAYBACK], buffer);
 		proc_dump_substream_formats(&stream->substream[SNDRV_PCM_STREAM_PLAYBACK], buffer);
 	}
 	if (stream->substream[SNDRV_PCM_STREAM_CAPTURE].num_formats) {
 		snd_iprintf(buffer, "\nCapture:\n");
+		proc_dump_substream_status(&stream->substream[SNDRV_PCM_STREAM_CAPTURE], buffer);
 		proc_dump_substream_formats(&stream->substream[SNDRV_PCM_STREAM_CAPTURE], buffer);
 	}
 }
