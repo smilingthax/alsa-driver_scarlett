@@ -106,14 +106,21 @@ int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
 	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, dmab->private_data, return -EINVAL);
 	int i;
 
+	for (i = 0; i < sgbuf->pages; i++)
+		snd_free_pci_page(sgbuf->pci, sgbuf->table[i].buf, sgbuf->table[i].addr);
+
+	/* some version of kernel use vfree() as vunmap().
+	 * this conflicts with our vfree wrapper, so force to use the native vfree().
+	 */
+#ifdef vfree
+#undef vfree
+#endif
 	if (dmab->area)
 		vunmap(dmab->area);
 	dmab->area = NULL;
-	for (i = 0; i < sgbuf->pages; i++)
-		snd_free_pci_page(sgbuf->pci, sgbuf->table[i].buf, sgbuf->table[i].addr);
+
 	if (sgbuf->table)
 		kfree(sgbuf->table);
-	sgbuf->table = NULL;
 	if (sgbuf->page_table)
 		kfree(sgbuf->page_table);
 	snd_magic_kfree(sgbuf);
