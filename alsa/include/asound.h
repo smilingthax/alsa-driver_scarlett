@@ -1328,7 +1328,7 @@ typedef struct {
 #define SND_PCM_IOCTL_DRAIN_PLAYBACK	_IO  ('A', 0x40)
 #define SND_PCM_IOCTL_FLUSH_PLAYBACK	_IO  ('A', 0x41)
 #define SND_PCM_IOCTL_FLUSH_CAPTURE	_IO  ('A', 0x42)
-#define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR('A', 0x43, int)
+#define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR('A', 0x50, int)
 
 /*
  *  Loopback interface
