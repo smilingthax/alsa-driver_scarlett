@@ -106,7 +106,14 @@ fi
 KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
 MAKE_ADDS=""
 if test -n "$kernelbuild"; then
-  KERNEL_INC="-I$kernelbuild/include -I$kernelbuild/include2 $KERNEL_INC"
+  kpath=""
+  if test -d "$kernelbuild/include"; then
+    kpath="-I$kernelbuild/include"
+  fi
+  if test -d "$kernelbuild/include2"; then
+    kpath="$kpath -I$kernelbuild/include2"
+  fi
+  KERNEL_INC="$kpath $KERNEL_INC"
   MAKE_ADDS="O=$kernelbuild"
 fi
 HACK_KERNEL_INC=""
@@ -1066,11 +1073,19 @@ case "$processor" in
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
     fi
+    mach_dir=""
     if test -d $CONFIG_SND_KERNELDIR/include/asm-i386/mach-default; then
+      mach_dir="$CONFIG_SND_KERNELDIR/include/asm-i386"
+    elif test -n "$kernelbuild" -a -d $kernelbuild/include/asm-i386/mach-default; then
+      mach_dir="$kernelbuild/include/asm-i386"
+    elif test -n "$kernelbuild" -a -d $kernelbuild/include2/asm-i386/mach-default; then
+      mach_dir="$kernelbuild/include2/asm-i386"
+    fi
+    if test -n "$mach_dir"; then
 	AC_MSG_CHECKING(for i386 machine type)
 	machine="default"
 	ac_save_CFLAGS="$CFLAGS"
-	CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+	CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 	rm -f machine.id
 	if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
 	  KERNDIR=$kernelbuild
@@ -1106,7 +1121,7 @@ int main(void) {
 	machine=`cat machine.id`;AC_MSG_RESULT($machine))
 	CFLAGS="$ac_save_CFLAGS"
 	rm -f machine.id
-	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/include/asm-i386/mach-$machine"
+	KERNEL_INC="$KERNEL_INC -I$mach_dir/mach-$machine"
     fi
     ;;
 esac
