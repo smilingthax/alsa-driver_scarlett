@@ -483,22 +483,26 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_printk( args... ) printk( "snd: " ##args )
 #ifdef CONFIG_SND_DEBUG
 #define snd_printd( args... ) snd_printk( ##args )
-#define snd_debug_check(expr, retval) do { \
+#define snd_debug_check(expr, action...) do {\
 	if (expr) {\
-		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
-		return retval;\
+		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__) ;\
+		## action;\
 	}\
 } while (0)
-#define snd_error_check(expr, retval) do { \
+#define snd_error_check(expr, action) do {\
 	if (expr) {\
-		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
-		return retval;\
+		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__) ;\
+		action;\
 	}\
 } while (0)
 #else
 #define snd_printd( args... )	/* nothing */
-#define snd_debug_check(expr, retval)	/* nothing */
-#define snd_error_check(expr, retval) do { if (expr) return retval; } while (0)
+#define snd_debug_check(expr, action...)	/* nothing */
+#define snd_error_check(expr, action) do {\
+	if (expr) {\
+		action;\
+	}\
+} while (0)
 #endif
 
 #ifdef CONFIG_SND_DEBUG_DETECT

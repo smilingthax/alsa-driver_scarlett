@@ -26,7 +26,7 @@
 #define calloc(n, size) snd_kcalloc((n) * (size), GFP_KERNEL)
 #define free(ptr) snd_kfree(ptr)
 #define strdup(str) snd_kmalloc_strdup(str, GFP_KERNEL)
-#define assert(expr) snd_debug_check(!(expr), -EINVAL)
+#define assert(expr) snd_debug_check(!(expr), return -EINVAL)
 
 #define bswap_16(x) swab16((x))
 #define bswap_32(x) swab32((x))

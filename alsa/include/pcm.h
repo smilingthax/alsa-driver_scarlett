@@ -296,6 +296,7 @@ extern snd_minor_t snd_pcm_reg[2];
  */
 
 extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
+extern int snd_pcm_prepare(snd_pcm_substream_t *substream);
 extern int snd_pcm_go(snd_pcm_substream_t *substream);
 extern int snd_pcm_stop(snd_pcm_substream_t *substream, int status);
 extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);

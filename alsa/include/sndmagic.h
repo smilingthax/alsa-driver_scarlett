@@ -41,12 +41,12 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 	return _snd_magic_value(obj) != magic;
 }
 
-#define snd_magic_cast(type, ptr, retval) (type *) ({\
+#define snd_magic_cast(type, ptr, action...) (type *) ({\
 	void *__ptr = ptr;\
 	unsigned int __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
-		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
-		return retval;\
+		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__) ;\
+		## action;\
 	}\
 	__ptr;\
 })
