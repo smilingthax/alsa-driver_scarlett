@@ -240,6 +240,9 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP4_OGAIN_DEV	0x41
 #define SB_DSP4_MIC_AGC		0x43
 
+/* additional register for SB 16 ASP mixer */
+#define SB_DSP4_CSP		0x81
+
 /* additional registers for SB AWE32/64 mixer */
 #define SB_DSP4_3D		0x90
 
