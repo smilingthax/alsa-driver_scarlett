@@ -560,7 +560,7 @@ static void __exit cleanup_soundcore(void)
 
 static int __init init_soundcore(void)
 {
-	if(register_chrdev(SOUND_MAJOR, "sound", &soundcore_fops)==-1) {
+	if (register_chrdev(SOUND_MAJOR, "sound", &soundcore_fops)==-1) {
 		printk(KERN_ERR "soundcore: sound device already in use.\n");
 		return -EBUSY;
 	}
