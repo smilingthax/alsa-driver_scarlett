@@ -1023,7 +1023,6 @@ static void snd_ice1712_set_pro_rate(ice1712_t *ice, unsigned int rate, int forc
 	}
 	outb(val, ICEMT(ice, RATE));
 
-      __unlock:
 	spin_unlock_irqrestore(&ice->reg_lock, flags);
 
 	if (ice->ak4524.ops.set_rate_val)
