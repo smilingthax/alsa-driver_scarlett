@@ -201,7 +201,7 @@ extern void snd_pcm1_dma_move( snd_pcm1_t *pcm,
                                unsigned int count );
 
 extern void snd_pcm1_clear_channel( snd_pcm1_channel_t *pchn );
-extern unsigned short snd_pcm1_file_flags( unsigned short f_flags );
+extern unsigned short snd_pcm1_file_flags( struct file *file  );
 extern void snd_pcm1_fill_with_neutral( snd_pcm1_t *pcm, snd_pcm1_channel_t *pchn );
 
 extern int snd_pcm1_dma_alloc( snd_pcm1_t *pcm, int direction, int dmanum, char *ident );
