@@ -1,20 +1,19 @@
 #define __NO_VERSION__
 #include <linux/version.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
-#include "../alsa-kernel/core/pcm_sgbuf.c"
+#include "../alsa-kernel/core/sgbuf.c"
 #else
+#include "adriver.h"
 
 /*
  * we don't have vmap/vunmap, so use vmalloc_32 and vmalloc_dma instead
  */
 
-#include <sound/driver.h>
+#include <linux/pci.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include <sound/core.h>
-#include <sound/pcm.h>
-#include <sound/pcm_sgbuf.h>
 #include <asm/io.h>
+#include <sound/memalloc.h>
 
 /* table entries are align to 32 */
 #define SGBUF_TBL_ALIGN		32
@@ -77,7 +76,7 @@ static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned in
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 18)
-#define vmalloc_32(x) vmalloc_nocheck(x) /* don't use wrapper */
+#define vmalloc_32(x) vmalloc(x)
 #endif
 
 /* remove all vmalloced pages */
@@ -92,28 +91,31 @@ static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
 		}
 	sgbuf->pages = 0;
 	if (vmaddr)
-		vfree_nocheck(vmaddr); /* don't use wrapper */
+		vfree(vmaddr); /* don't use wrapper */
 }
 
-void *snd_pcm_sgbuf_alloc_pages(struct pci_dev *pci, size_t size, struct snd_pcm_dma_buffer *dmab)
+void *snd_malloc_sgbuf_pages(struct pci_dev *pci, size_t size, struct snd_dma_buffer *dmab)
 {
 	struct snd_sg_buf *sgbuf;
 	unsigned int pages;
 
 	dmab->area = NULL;
 	dmab->addr = 0;
-	dmab->private_data = sgbuf = snd_magic_kcalloc(snd_pcm_sgbuf_t, 0, GFP_KERNEL);
+	dmab->private_data = sgbuf = kmalloc(sizeof(*sgbuf), GFP_KERNEL);
 	if (! sgbuf)
 		return NULL;
+	memset(sgbuf, 0, sizeof(*sgbuf));
 	sgbuf->pci = pci;
-	pages = snd_pcm_sgbuf_pages(size);
+	pages = snd_sgbuf_aligned_pages(size);
 	sgbuf->tblsize = sgbuf_align_table(pages);
-	sgbuf->table = snd_kcalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
+	sgbuf->table = kmalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
 	if (! sgbuf->table)
 		goto _failed;
-	sgbuf->page_table = snd_kcalloc(sizeof(*sgbuf->page_table) * sgbuf->tblsize, GFP_KERNEL);
+	memset(sgbuf->table, 0, sizeof(*sgbuf->table) * sgbuf->tblsize);
+	sgbuf->page_table = kmalloc(sizeof(*sgbuf->page_table) * sgbuf->tblsize, GFP_KERNEL);
 	if (! sgbuf->page_table)
 		goto _failed;
+	memset(sgbuf->page_table, 0, sizeof(*sgbuf->page_table) * sgbuf->tblsize);
 
 	sgbuf->size = size;
 	dmab->area = vmalloc_32(pages << PAGE_SHIFT);
@@ -134,13 +136,13 @@ void *snd_pcm_sgbuf_alloc_pages(struct pci_dev *pci, size_t size, struct snd_pcm
 	return dmab->area;
 
  _failed:
-	snd_pcm_sgbuf_free_pages(dmab); /* free the table */
+	snd_free_sgbuf_pages(dmab); /* free the table */
 	return NULL;
 }
 
-int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
+int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
 {
-	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, dmab->private_data, return -EINVAL);
+	struct snd_sg_buf *sgbuf = dmab->private_data;
 
 	if (dmab->area)
 		release_vm_buffer(sgbuf, dmab->area);
@@ -150,24 +152,10 @@ int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
 	sgbuf->table = NULL;
 	if (sgbuf->page_table)
 		kfree(sgbuf->page_table);
-	snd_magic_kfree(sgbuf);
+	kfree(sgbuf);
 	dmab->private_data = NULL;
 	
 	return 0;
 }
 
-struct page *snd_pcm_sgbuf_ops_page(snd_pcm_substream_t *substream, unsigned long offset)
-{
-	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, _snd_pcm_substream_sgbuf(substream), return NULL);
-
-	unsigned int idx = offset >> PAGE_SHIFT;
-	if (idx >= (unsigned int)sgbuf->pages)
-		return NULL;
-	return sgbuf->page_table[idx];
-}
-
-
-EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages);
-EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages_for_all);
-EXPORT_SYMBOL(snd_pcm_sgbuf_ops_page);
 #endif /* < 2.5.0 */
