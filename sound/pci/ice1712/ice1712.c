@@ -73,9 +73,11 @@ MODULE_DEVICES("{"
 	       HOONTECH_DEVICE_DESC
 	       DELTA_DEVICE_DESC
 	       EWS_DEVICE_DESC
-		   AMP_AUDIO2000_DEVICE_DESC
+	       AMP_AUDIO2000_DEVICE_DESC
 		"{ICEnsemble,Generic ICE1712},"
-		"{ICEnsemble,Generic Envy24}}");
+		"{ICEnsemble,Generic Envy24},");
+		"{ICEnsemble,Generic ICE1724},"
+		"{ICEnsemble,Generic Envy24HT}}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
@@ -2767,19 +2769,19 @@ static int __devinit snd_ice1712_create(snd_card_t * card,
 		snd_ice1712_proc_init(ice);
 		synchronize_irq(pci->irq);
 
-		if ((ice->res_port = request_region(ice->port, 32, "ICE1712 - Controller")) == NULL) {
+		if ((ice->res_port = request_region(ice->port, 32, "ICE1724 - Controller")) == NULL) {
 			snd_ice1712_free(ice);
 			snd_printk("unable to grab ports 0x%lx-0x%lx\n", ice->port, ice->port + 32 - 1);
 			return -EIO;
 		}
 
-		if ((ice->res_profi_port = request_region(ice->profi_port, 128, "ICE1712 - Professional")) == NULL) {
+		if ((ice->res_profi_port = request_region(ice->profi_port, 128, "ICE1724 - Professional")) == NULL) {
 			snd_ice1712_free(ice);
 			snd_printk("unable to grab ports 0x%lx-0x%lx\n", ice->profi_port, ice->profi_port + 16 - 1);
 			return -EIO;
 		}
 		
-		if (request_irq(pci->irq, snd_vt1724_interrupt, SA_INTERRUPT|SA_SHIRQ, "ICE1712", (void *) ice)) {
+		if (request_irq(pci->irq, snd_vt1724_interrupt, SA_INTERRUPT|SA_SHIRQ, "ICE1724", (void *) ice)) {
 			snd_ice1712_free(ice);
 			snd_printk("unable to grab IRQ %d\n", pci->irq);
 			return -EIO;
@@ -2904,8 +2906,13 @@ static int __devinit snd_ice1712_probe(struct pci_dev *pci,
 	if (card == NULL)
 		return -ENOMEM;
 
-	strcpy(card->driver, "ICE1712");
-	strcpy(card->shortname, "ICEnsemble ICE1712");
+	if (pci->device==PCI_DEVICE_ID_ICE_1712) {
+		strcpy(card->driver, "ICE1712");
+		strcpy(card->shortname, "ICEnsemble ICE1712");
+	} else {
+		strcpy(card->driver, "ICE1724");
+		strcpy(card->shortname, "ICEnsemble ICE1724");
+	}
 	
 	if ((err = snd_ice1712_create(card, pci, omni[dev], &ice)) < 0) {
 		snd_card_free(card);
