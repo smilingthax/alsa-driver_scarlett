@@ -73,6 +73,7 @@ typedef struct snd_pcm_playback_params snd_pcm_playback_params_t;
 typedef struct snd_pcm_record_params snd_pcm_record_params_t;
 typedef struct snd_pcm_playback_status snd_pcm_playback_status_t;
 typedef struct snd_pcm_record_status snd_pcm_record_status_t;
+typedef struct snd_pcm_loopback_header snd_pcm_loopback_header_t;
 typedef struct snd_rawmidi_info snd_rawmidi_info_t;
 typedef struct snd_rawmidi_output_info snd_rawmidi_output_info_t;
 typedef struct snd_rawmidi_input_info snd_rawmidi_input_info_t;
@@ -579,6 +580,27 @@ struct snd_pcm_record_status {
 #define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR( 'A', 0x33, int )
 #define SND_PCM_IOCTL_PLAYBACK_TIME	_IOWR( 'A', 0x40, int )
 #define SND_PCM_IOCTL_RECORD_TIME	_IOWR( 'A', 0x41, int )
+
+/*
+ *  Loopback interface
+ */
+
+#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION( 1, 0, 0 )
+
+#define SND_PCM_LB_STREAM_MODE_RAW	0
+#define SND_PCM_LB_STREAM_MODE_PACKET	1
+
+#define SND_PCM_LB_TYPE_DATA		0	/* sample data */
+#define SND_PCM_LB_TYPE_FORMAT		1	/* format change */
+
+struct snd_pcm_loopback_header {
+	unsigned int size;		/* block size */
+	unsigned int type;		/* block type (SND_PCM_LB_TYPE_*) */
+};
+
+#define SND_PCM_LB_IOCTL_PVERSION	_IOR ( 'L', 0x00, int )
+#define SND_PCM_LB_IOCTL_STREAM_MODE	_IOWR( 'L', 0x01, int )
+#define SND_PCM_LB_IOCTL_FORMAT		_IOR ( 'L', 0x02, struct snd_pcm_format )
 
 /*
  *  Obsolete interface compatible with Open Sound System API
