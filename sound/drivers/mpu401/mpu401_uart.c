@@ -370,7 +370,7 @@ static void snd_mpu401_uart_output_trigger(snd_rawmidi_substream_t * substream, 
 		if (! test_and_set_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode)) {
 			spin_lock_irqsave(&mpu->output_lock, flags);
 			snd_mpu401_uart_output_write(mpu);
-			spin_unlock_irqrestore(&mpu->mpu_output_lock, flags);
+			spin_unlock_irqrestore(&mpu->output_lock, flags);
 			clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
 		}
 	} else {
