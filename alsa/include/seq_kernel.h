@@ -33,10 +33,16 @@
 #define SND_SEQ_MAX_CLIENTS 		192
 
 /* max number of events in memory pool */
-#define SND_SEQ_MAX_EVENTS		500
+#define SND_SEQ_MAX_EVENTS		2000
+
+/* default number of events in memory pool */
+#define SND_SEQ_DEFAULT_EVENTS		500
 
 /* max number of events in memory pool for one client (outqueue) */
-#define SND_SEQ_MAX_CLIENT_EVENTS	200
+#define SND_SEQ_MAX_CLIENT_EVENTS	2000
+
+/* default number of events in memory pool for one client (outqueue) */
+#define SND_SEQ_DEFAULT_CLIENT_EVENTS	200
 
 /* typedefs */
 struct snd_seq_stru_user_client;

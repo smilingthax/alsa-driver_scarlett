@@ -259,6 +259,7 @@ typedef struct {
 	int clients;			/* maximum clients count */
 	int ports;			/* maximum ports per client */
 	int channels;			/* maximum channels per port */
+	char reserved[32];
 } snd_seq_system_info_t;
 
 
@@ -288,6 +289,15 @@ typedef struct {
 	char reserved[64];		/* for future use */
 } snd_seq_client_info_t;
 
+
+/* client pool size */
+typedef struct {
+	int client;			/* client number to inquire */
+	int output_pool;		/* outgoing (write) pool size */
+	int input_pool;			/* incoming (read) pool size */
+	int output_room;		/* minimum free pool size for select/blocking mode */
+	char reserved[64];
+} snd_seq_client_pool_t;
 
 	/* known port numbers */
 #define SND_SEQ_PORT_SYSTEM_TIMER	0
@@ -433,8 +443,6 @@ typedef struct {
 	int client;			/* sequencer client */
 	int used;			/* queue is used with this client (must be set for accepting events) */
 	/* per client watermarks */
-	int low;			/* low watermark for wakeup (minimum free events in queue) */
-	int high;			/* high watermark for wakeup (maximum used events in queue) */
 	char reserved[64];		/* for future use */
 } snd_seq_queue_client_t;
 
@@ -594,5 +602,7 @@ typedef struct {
 #define SND_SEQ_IOCTL_SET_QUEUE_SYNC	_IOW ('S', 0x48, snd_seq_queue_sync_t)
 #define SND_SEQ_IOCTL_GET_QUEUE_CLIENT	_IOWR('S', 0x49, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
+#define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
+#define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
 
 #endif /* __SND_ASEQUENCER_H */
