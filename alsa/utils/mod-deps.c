@@ -58,7 +58,6 @@ struct dep {
 	// forced selection (dependency) part
 	struct sel *sel;
 	// misc
-	int hitflag;
 	struct dep *next;
 };
 
@@ -72,7 +71,7 @@ static struct cond *create_cond(char *line);
 static struct dep *alloc_mem_for_dep(void);
 static struct dep *find_or_create_dep(char *line);
 static void add_dep(struct dep * dep, char *line, struct cond *template);
-static void add_select(struct dep * dep, char *line);
+static void add_select(struct dep * dep, char *line, struct cond *template);
 static char *get_word(char *line, char *word);
 static struct dep *find_dep(char *parent, char *depname);
 static void del_all_from_list(void);
@@ -90,10 +89,32 @@ static char *basedir = "../alsa-kernel";
 static char *hiddendir = "..";
 
 static char *kernel_deps[] = {
-	"ARCH_SA1100",
+	/* buses */
+	"ISA",
+	"ISAPNP",
+	"EISA",
+	"PCI",
 	"SBUS",
+	"L3",
+	"USB",
+	"PCMCIA",
+	/* architectures */
+	"ARM",
 	"PARISC",
+	"SPARC32",
+	"SPARC64",
+	"PPC",
+	"PPC64",
+	"X86_64",
+	"IA32_EMULATION",
+	/* architecture specific */
+	"ARCH_SA1100",
+	/* other drivers */
+	"RTC",
 	"GAMEPORT",
+	"VIDEO_DEV",
+	/* some flags */
+	"EXPERIMENTAL",
 	NULL
 };
 
@@ -202,6 +223,11 @@ static int read_file_1(const char *filename, struct cond **template)
 		/* ignore some keywords */
 		if (buffer[0] == '#')
 			continue;
+		if (!strncmp(buffer, "        ", 8)) {
+			buffer[0] = '\t';
+			for (idx = 8; idx <= strlen(buffer); idx++)
+				buffer[idx-7] = buffer[idx];
+		}
 		if (!strncmp(buffer, "endmenu", 7)) {
 			struct cond *otemplate;
 		    	state = READ_STATE_NONE;
@@ -242,7 +268,7 @@ static int read_file_1(const char *filename, struct cond **template)
 			if (!strncmp(buffer, "\tdepends on ", 12))
 				add_dep(dep, buffer + 12, *template);
 			if (!strncmp(buffer, "\tselect ", 8))
-				add_select(dep, buffer + 8);
+				add_select(dep, buffer + 8, *template);
 			continue;
 		case READ_STATE_MENU:
 			if (!strncmp(buffer, "\tdepends on ", 12)) {
@@ -451,7 +477,7 @@ static void add_dep(struct dep * dep, char *line, struct cond *template)
 }
 
 // Add a new forced (selected) dependency to the current one
-static void add_select(struct dep * dep, char *line)
+static void add_select(struct dep * dep, char *line, struct cond *template)
 {
 	char *word = NULL;
 	struct sel *sel, *nsel;
@@ -460,6 +486,11 @@ static void add_select(struct dep * dep, char *line)
 	if (word == NULL)
 		nomem();
 	get_word(line, word);
+	if (strncmp(word, "SND_", 4)) {
+		add_dep(dep, word, template);
+		free(word);
+		return;
+	}
 	nsel = calloc(sizeof(struct sel), 1);
 	if (nsel == NULL)
 		nomem();
@@ -566,7 +597,7 @@ static void resolve_dep(struct dep * parent)
 	}
 }
 
-// Resolve all dependencies
+// Optimize all dependencies
 static void optimize_dep(struct dep * parent)
 {
 	struct cond *cond, *prev;
@@ -698,6 +729,10 @@ static int is_toplevel(struct dep *dep)
 	
 	if (dep == NULL)
 		return 0;
+	for (idx = 0; kernel_deps[idx]; idx++) {
+		if (!strcmp(kernel_deps[idx], dep->name))
+			return 0;
+	}
 	for (idx = 0; no_cards[idx]; idx++) {
 		str = no_cards[idx];
 		if (*str == '%')
@@ -826,8 +861,6 @@ static void output_acinclude(void)
 		if (!is_toplevel(tempdep))
 			continue;
 		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
-			//if (is_always_true(cond->dep))
-			//	continue;
 			if (!put_if)
 				printf("\tif ");
 			else {
