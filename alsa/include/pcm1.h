@@ -161,7 +161,7 @@ struct snd_stru_pcm1_subchn {
 	unsigned char neutral_byte;
 	unsigned int size;		/* real size of audio buffer */
 	unsigned char *buffer;		/* pointer to audio buffer */
-	snd_dma_t *dmaptr;		/* dma pointer */
+	snd_dma_area_t *dmaptr;		/* dma pointer */
 	/* -- ack callback -- */
 	snd_pcm1_interrupt_t ack;	/* acknowledge interrupt to abstract layer */
 	/* -- logical blocks -- */
@@ -239,7 +239,7 @@ extern unsigned short snd_pcm1_file_flags(struct file *file);
 extern void snd_pcm1_fill_with_neutral(snd_pcm_subchn_t * subchn);
 
 extern int snd_pcm1_dma_alloc(snd_pcm_subchn_t * subchn, snd_dma_t * dma, char *ident);
-extern int snd_pcm1_dma_free(snd_pcm_subchn_t * subchn, snd_dma_t * dma);
+extern int snd_pcm1_dma_free(snd_pcm_subchn_t * subchn);
 
 extern void snd_pcm1_proc_format(snd_pcm_subchn_t * subchn);
 

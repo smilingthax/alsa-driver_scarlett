@@ -143,22 +143,31 @@ typedef struct wait_queue * wait_queue_head_t;
 #define SND_DMA_TYPE_PCI_16MB	2	/* PCI DMA (must be in low 16MB memory) */
 #define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
 
-typedef struct snd_stru_dma {
-	int type;			/* dma type - see SND_DMA_TYPE_XXXX */
+typedef struct snd_stru_dma_area snd_dma_area_t;
+typedef struct snd_stru_dma snd_dma_t;
+
+struct snd_stru_dma_area {
 	volatile unsigned short
 	 mmaped:1,			/* mmaped area to user space */
 	 mmap_free:1;			/* free mmaped buffer */
-	int dma;			/* DMA number */
-	char *name;			/* pointer to name */
 	unsigned char *buf;		/* pointer to DMA buffer */
 	long size;			/* real size of DMA buffer */
-	long rsize;			/* requested size of DMA buffer */
 	char *owner;			/* owner of this DMA channel */
 	struct vm_area_struct *vma;	/* virtual memory area */
-	struct semaphore lock;		/* mutex for locking */
+	snd_dma_t *dma;
+	snd_dma_area_t *next;
+};
+
+struct snd_stru_dma {
+	int type;			/* dma type - see SND_DMA_TYPE_XXXX */
+	int multi: 1;			/* multi area support */
+	int dma;			/* DMA number */
+	char *name;			/* pointer to name */
+	long rsize;			/* requested size of DMA buffer */
 	struct semaphore mutex;		/* snd_dma_malloc/free */
+	struct snd_stru_dma_area *areas;  /* DMA areas */
 	struct snd_stru_dma *next;
-} snd_dma_t;
+};
 
 #define SND_IRQ_TYPE_ISA	0	/* ISA IRQ */
 #define SND_IRQ_TYPE_PCI	1	/* PCI IRQ (shareable) */
@@ -307,8 +316,8 @@ extern char *snd_malloc_pages(unsigned long size, int *pg, int dma);
 extern void *snd_vmalloc(unsigned long size);
 extern void snd_vfree(void *obj);
 extern void snd_free_pages(char *ptr, unsigned long size);
-extern int snd_dma_malloc(snd_card_t * card, snd_dma_t * dma, char *owner);
-extern void snd_dma_free(snd_card_t * card, snd_dma_t * dma);
+extern int snd_dma_malloc(snd_card_t * card, snd_dma_t * dma, char *owner, snd_dma_area_t **rarea);
+extern void snd_dma_free(snd_card_t * card, snd_dma_area_t *area);
 extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
 #ifdef CONFIG_SND_DEBUG_MEMORY
 extern int snd_memory_info_init(void);
