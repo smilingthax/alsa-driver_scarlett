@@ -16,5 +16,11 @@ ossdelay: ossdelay.c
 mmap_test: mmap_test.c
 	$(CC) $(CFLAGS) -DVERBOSE -o mmap_test mmap_test.c -lm
 
+seq1: seq1.c
+	$(CC) $(CFLAGS) -DVERBOSE -o seq1 seq1.c
+
+seq2: seq2.c
+	$(CC) $(CFLAGS) -DVERBOSE -o seq2 seq2.c
+
 clean:
 	rm -f *.o $(TARGETS) *~
