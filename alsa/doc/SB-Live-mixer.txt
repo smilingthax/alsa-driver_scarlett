@@ -13,14 +13,15 @@ details. The ALSA driver programs this portion of chip by default code
 1) IEC958 (S/PDIF) raw PCM
 --------------------------
 
-This PCM device (it's 3rd PCM device for given card and first (0) subdevice)
-allows to forward 48kHz, stereo, 16-bit little endian stream without any
-modifications to the digital output (coaxial or digital). The universal
-interface allows creation up to 8 raw PCM devices operating at 48kHz,
-16-bit little endian. It could be easy to add support for multichannel
-devices to the current code, but the conversion routines exist only for
-stereo (2-channel streams) at the time. Look to tram_poke routines in
-lowlevel/emu10k1/emufx.c for more details.
+This PCM device (it's 4th PCM device - index 3 - for given card and
+first subdevice - index 0) allows to forward 48kHz, stereo, 16-bit
+little endian stream without any modifications to the digital output
+(coaxial or optical). The universal interface allows creation up
+to 8 raw PCM devices operating at 48kHz, 16-bit little endian. It would
+be easy to add support for multichannel devices to the current code,
+but the conversion routines exist only for stereo (2-channel streams)
+at the time. Look to tram_poke routines in lowlevel/emu10k1/emufx.c
+for more details.
 
 
 2) Digital mixer controls
@@ -28,7 +29,24 @@ lowlevel/emu10k1/emufx.c for more details.
 
 These controls are built using the DSP instructions. They offer extended
 functionality. Only the default build-in code in the ALSA driver is described
-here.
+here. Note that the attenuate word means "all the way up". The maximum
+value is the neutral position leaving the signal unchanged. Note that if
+same destination is mentioned in multiple controls, the signal is
+accumulated and can be wrapped to the maximal possible value.
+
+Explanation of used abbreviations:
+
+DAC - digital analog converter
+ADC - analog digital converter
+I2S - one-way three wire serial bus for digital sound by Philips Semiconductors
+    - this standard is used for connecting standalone DAC and ADC converters
+LFE - low frequency effects (subwoofer signal)
+AC'97 - a chip containing analog mixer, DAC and ADC converters
+IEC958 - S/PDIF
+FX-bus - EMU10K1 chip has an effect bus containing 16 accumulators,
+         each voice from synthesizer can feed the samples to these accumulators
+         and the DSP microcontroller can operate with the resulting sum
+
 
 name='Wave Playback Volume',index=0
 
@@ -40,29 +58,29 @@ name='Wave Surround Playback Volume',index=0
 
 This control is used to attenuate samples for left and right PCM FX-bus
 accumulators. ALSA uses accumulators 0 and 1 for left and right PCM samples.
-The result samples are forwarded to the rear I2S DACs. These DACs separates
+The result samples are forwarded to the rear I2S DACs. These DACs operates
 separately (they are not inside the AC'97 codec).
 
 name='Wave Center Playback Volume',index=0
 
 This control is used to attenuate samples for left and right PCM FX-bus
 accumulators. ALSA uses accumulators 0 and 1 for left and right PCM samples.
-The result is converted to single channel (mono) and forwarded to the ??rear??
-right DAC PCM slot of the AC'97 codec.
+The result is mixed to mono signal (single channel) and forwarded to
+the ??rear?? right DAC PCM slot of the AC'97 codec.
 
 name='Wave LFE Playback Volume',index=0
 
 This control is used to attenuate samples for left and right PCM FX-bus
 accumulators. ALSA uses accumulators 0 and 1 for left and right PCM.
-The result is converted to single channel (mono) and forwarded to the ??rear??
-left DAC PCM slot of the AC'97 codec.
+The result is mixed to mono signal (single channel) and forwarded to
+the ??rear?? left DAC PCM slot of the AC'97 codec.
 
 name='Wave Capture Volume',index=0
 name='Wave Capture Switch',index=0
 
 These controls are used to attenuate samples for left and right PCM FX-bus
 accumulator. ALSA uses accumulators 0 and 1 for left and right PCM.
-The result is forwared to the ADC capture FIFO (thus to the standard capture
+The result is forwarded to the ADC capture FIFO (thus to the standard capture
 PCM device).
 
 name='Music Playback Volume',index=0
@@ -76,14 +94,14 @@ name='Music Capture Switch',index=0
 
 These controls are used to attenuate samples for left and right MIDI FX-bus
 accumulator. ALSA uses accumulators 4 and 5 for left and right PCM.
-The result is forwared to the ADC capture FIFO (thus to the standard capture
+The result is forwarded to the ADC capture FIFO (thus to the standard capture
 PCM device).
 
 name='Surround Digital Playback Volume',index=0
 
 This control is used to attenuate samples for left and right rear PCM FX-bus
 accumulators. ALSA uses accumulators 2 and 3 for left and right rear PCM samples.
-The result samples are forwarded to the rear I2S DACs. These DACs separates
+The result samples are forwarded to the rear I2S DACs. These DACs operates
 separately (they are not inside the AC'97 codec).
 
 name='Surround Digital Capture Volume',index=0
@@ -91,7 +109,7 @@ name='Surround Digital Capture Switch',index=0
 
 Thes controls are used to attenuate samples for left and right rear PCM FX-bus
 accumulator. ALSA uses accumulators 2 and 3 for left and right rear PCM samples.
-The result is forwared to the ADC capture FIFO (thus to the standard capture
+The result is forwarded to the ADC capture FIFO (thus to the standard capture
 PCM device).
 
 name='Center Playback Volume',index=0
@@ -110,78 +128,83 @@ name='AC'97 Playback Volume',index=0
 
 This control is used to attenuate samples for left and right front ADC PCM slots
 of the AC'97 codec. The result samples are forwarded to the front DAC PCM
-slots of the AC'97 codec. Note: This control should be zero for the standard
-operations, otherwise an digital loopback is activated.
+slots of the AC'97 codec.
+********************************************************************************
+*** Note: This control should be zero for the standard operations, otherwise ***
+*** an digital loopback is activated.                                        ***
+********************************************************************************
 
 name='AC'97 Capture Volume',index=0
 
 This control is used to attenuate samples for left and right front ADC PCM slots
-of the AC'97 codec. The result is forwared to the ADC capture FIFO (thus to
-the standard capture PCM device). Note: This control should be 100 (maximal
-value), otherwise no analog inputs of the AC'97 codec can be captured
-(recorded).
+of the AC'97 codec. The result is forwarded to the ADC capture FIFO (thus to
+the standard capture PCM device).
+********************************************************************************
+*** Note: This control should be 100 (maximal value), otherwise no analog    ***
+*** inputs of the AC'97 codec can be captured (recorded).                    ***
+********************************************************************************
 
 name='IEC958 TTL Playback Volume',index=0
 
-This control is used to attenuate samples for left and right IEC958 TTL
+This control is used to attenuate samples from left and right IEC958 TTL
 digital inputs (usually used by a CDROM drive). The result samples are
 forwarded to the front DAC PCM slots of the AC'97 codec.
 
 name='IEC958 TTL Capture Volume',index=0
 
-This control is used to attenuate samples for left and right IEC958 TTL
+This control is used to attenuate samples from left and right IEC958 TTL
 digital inputs (usually used by a CDROM drive). The result samples are
-forwared to the ADC capture FIFO (thus to the standard capture PCM device).
+forwarded to the ADC capture FIFO (thus to the standard capture PCM device).
 
 name='Zoom Video Playback Volume',index=0
 
-This control is used to attenuate samples for left and right zoom video
+This control is used to attenuate samples from left and right zoom video
 digital inputs (usually used by a CDROM drive). The result samples are
 forwarded to the front DAC PCM slots of the AC'97 codec.
 
 name='Zoom Video Capture Volume',index=0
 
-This control is used to attenuate samples for left and right zoom video
+This control is used to attenuate samples from left and right zoom video
 digital inputs (usually used by a CDROM drive). The result samples are
-forwared to the ADC capture FIFO (thus to the standard capture PCM device).
+forwarded to the ADC capture FIFO (thus to the standard capture PCM device).
 
 name='IEC958 Optical Playback Volume',index=0
 
-This control is used to attenuate samples for left and right IEC958 optical
+This control is used to attenuate samples from left and right IEC958 optical
 digital input. The result samples are forwarded to the front DAC PCM slots
 of the AC'97 codec.
 
 name='IEC958 Optical Capture Volume',index=0
 
-This control is used to attenuate samples for left and right IEC958 optical
-digital inputs. The result samples are forwared to the ADC capture FIFO
+qThis control is used to attenuate samples from left and right IEC958 optical
+digital inputs. The result samples are forwarded to the ADC capture FIFO
 (thus to the standard capture PCM device).
 
 name='IEC958 Coaxial Playback Volume',index=0
 
-This control is used to attenuate samples for left and right IEC958 coaxial
+This control is used to attenuate samples from left and right IEC958 coaxial
 digital inputs. The result samples are forwarded to the front DAC PCM slots
 of the AC'97 codec.
 
 name='IEC958 Coaxial Capture Volume',index=0
 
-This control is used to attenuate samples for left and right IEC958 coaxial
-digital inputs. The result samples are forwared to the ADC capture FIFO
+This control is used to attenuate samples from left and right IEC958 coaxial
+digital inputs. The result samples are forwarded to the ADC capture FIFO
 (thus to the standard capture PCM device).
 
 name='Line LiveDrive Playback Volume',index=0
 name='Line LiveDrive Playback Volume',index=1
 
-This control is used to attenuate samples for left and right I2S ADC
+This control is used to attenuate samples from left and right I2S ADC
 inputs (on the LiveDrive). The result samples are forwarded to the front
 DAC PCM slots of the AC'97 codec.
 
-name='Line LiveDrive Capture Volume',index=0
-name='Line LiveDrive Playback Volume',index=1
+name='Line LiveDrive Capture Volume',index=1
+name='Line LiveDrive Capture Volume',index=1
 
-This control is used to attenuate samples for left and right I2S ADC
-inputs (on the LiveDrive). The result samples are
-forwared to the ADC capture FIFO (thus to the standard capture PCM device).
+This control is used to attenuate samples from left and right I2S ADC
+inputs (on the LiveDrive). The result samples are forwarded to the ADC
+capture FIFO (thus to the standard capture PCM device).
 
 name='Tone Control - Switch',index=0
 
@@ -190,17 +213,21 @@ and center / LFE outputs are affected.
 
 name='Tone Control - Bass',index=0
 
-This control sets the bass intensity.
+This control sets the bass intensity. There is no neutral value!!
+When the tone control code is activated, the samples are always modified.
+The closest value to pure signal is 20.
 
 name='Tone Control - Treble',index=0
 
-This control sets the treble intensity.
+This control sets the treble intensity. There is no neutral value!!
+When the tone control code is activated, the samples are always modified.
+The closest value to pure signal is 20.
 
 name='IEC958 Optical Raw Playback Switch',index=0
 
-If this switch is on, then the samples for the IEC958 digital output are
-taken only from the raw FX8010 PCM, otherwise standard front PCM samples
-are taken.
+If this switch is on, then the samples for the IEC958 (S/PDIF) digital
+output are taken only from the raw FX8010 PCM, otherwise standard front
+PCM samples are taken.
 
 name='Headphone Playback Volume',index=1
 
