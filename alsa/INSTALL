@@ -290,21 +290,11 @@ Module parameters
     Module supports up to 8 cards and ISA PnP. This module does not support
     autoprobe (if ISA PnP is not used) thus all ports must be specified!!!
     
-  Module snd-card-mozart.o
-  ------------------------
-
-    Module for OAK Mozart cards.
-
-    snd_port	- port # for WSS chip (0x530,0xe80,0xf40,0x604)
-    snd_irq	- IRQ # for WSS chip (7,9,10,11)
-    snd_dma1	- DMA # for WSS chip (0,1,3)
-    
-    Module supports only one card and autoprobe.
-
   Module snd-card-opti92x-ad1848.o
   --------------------------------
 
     Module for soundcards based on OPTi 82c92x and Analog Devices AD1848 chips.
+    Module works with OAK Mozart cards as well.
     
     snd_port      - port # for WSS chip (0x530,0xe80,0xf40,0x604)
     snd_mpu_port  - port # for MPU-401 UART (0x300,0x310,0x320,0x330)
