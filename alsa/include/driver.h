@@ -36,7 +36,7 @@
 #define CONFIG_SND_MAJOR	116
 #endif
 
-#if !defined(CONFIG_SND_DEBUG)
+#ifndef CONFIG_SND_DEBUG
 #undef CONFIG_SND_DEBUG_MEMORY
 #endif
 
@@ -202,7 +202,7 @@ typedef enum sndrv_ctl_event_type snd_ctl_event_type_t;
 typedef struct sndrv_ctl_event snd_ctl_event_t;
 typedef struct sndrv_xferv snd_xferv_t;
 
-#ifdef CONFIG_SND_DEBUG
+#ifdef CONFIG_SND_DEBUG_MEMORY
 void *snd_wrapper_kmalloc(size_t, int);
 #undef kmalloc
 void snd_wrapper_kfree(const void *);
