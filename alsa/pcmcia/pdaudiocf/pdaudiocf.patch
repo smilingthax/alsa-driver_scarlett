@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2004-04-07 19:56:08.513212299 +0200
-+++ pdaudiocf.c	2004-04-07 19:40:37.755214505 +0200
+--- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2004-11-08 12:48:27.000000000 +0100
++++ pdaudiocf.c	2004-11-17 14:48:16.279565054 +0100
 @@ -18,6 +18,10 @@
   *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
   */
@@ -18,20 +18,20 @@
 +#include "compat_cs.h"	/* remove from 2.5 tree */
  #include "pdaudiocf.h"
  #include <sound/initval.h>
- 
-@@ -57,7 +62,11 @@
- MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
+ #include <linux/init.h>
+@@ -53,7 +58,11 @@
+ MODULE_PARM_DESC(enable, "Enable " CARD_NAME " soundcard.");
  module_param(irq_mask, int, 0444);
  MODULE_PARM_DESC(irq_mask, "IRQ bitmask for " CARD_NAME " soundcard.");
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 +MODULE_PARM(irq_list, "1-4i");
 +#else
- module_param_array(irq_list, int, boot_devs, 0444);
+ module_param_array(irq_list, int, NULL, 0444);
 +#endif
  MODULE_PARM_DESC(irq_list, "List of Available interrupts for " CARD_NAME " soundcard.");
   
  
-@@ -75,6 +84,17 @@
+@@ -71,6 +80,17 @@
  static int pdacf_event(event_t event, int priority, event_callback_args_t *args);
  static void snd_pdacf_detach(dev_link_t *link);
  
@@ -49,7 +49,7 @@
  static void pdacf_release(dev_link_t *link)
  {
  	if (link->state & DEV_CONFIG) {
-@@ -176,6 +196,10 @@
+@@ -172,6 +192,10 @@
  			link->irq.IRQInfo2 |= 1 << irq_list[i];
  	link->irq.Handler = pdacf_interrupt;
  	link->irq.Instance = pdacf;
@@ -60,7 +60,7 @@
  	link->conf.Attributes = CONF_ENABLE_IRQ;
  	link->conf.IntType = INT_MEMORY_AND_IO;
  	link->conf.ConfigIndex = 1;
-@@ -262,6 +286,9 @@
+@@ -255,6 +279,9 @@
  {
  	pdacf_t *chip = link->priv;
  
@@ -70,7 +70,7 @@
  	snd_printdd(KERN_DEBUG "pdacf_detach called\n");
  	/* Remove the interface data from the linked list */
  	{
-@@ -357,6 +384,9 @@
+@@ -350,6 +377,9 @@
  		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
  		link->state &= ~DEV_PRESENT;
  		if (link->state & DEV_CONFIG) {
@@ -80,7 +80,7 @@
  			chip->chip_status |= PDAUDIOCF_STAT_IS_STALE;
  		}
  		break;
-@@ -425,3 +455,6 @@
+@@ -418,3 +448,6 @@
  
  module_init(init_pdacf);
  module_exit(exit_pdacf);
