@@ -199,11 +199,11 @@ if [ \"$CONFIG_SND\" = \"y\" -o \"$CONFIG_SND\" = \"m\" ]; then\n\
 fi\n\n");
 	output1_dep(Deps);
 	printf("\n");
-	output_need_bool("CONFIG_SND_NEED_SEQ_DEVICE", "CONFIG_SND_SEQUENCER", 1);
-	output_need_bool("CONFIG_SND_NEED_SEQ", "CONFIG_SND_SEQUENCER", 1);
-	output_need_bool("CONFIG_SND_NEED_TIMER", "CONFIG_SND_SEQUENCER", 1);
-	output_need_bool("CONFIG_SND_NEED_PCM", "CONFIG_SND_PCM_OSS", 1);
-	output_need_bool("CONFIG_SND_NEED_SEQ_MIDI_EVENT", "CONFIG_SND_SEQUENCER_OSS", 1);
+	output_need_bool("CONFIG_NEED_SND_SEQ_DEVICE", "CONFIG_SND_SEQUENCER", 1);
+	output_need_bool("CONFIG_NEED_SND_SEQ", "CONFIG_SND_SEQUENCER", 1);
+	output_need_bool("CONFIG_NEED_SND_TIMER", "CONFIG_SND_SEQUENCER", 1);
+	output_need_bool("CONFIG_NEED_SND_PCM", "CONFIG_SND_PCM_OSS", 1);
+	output_need_bool("CONFIG_NEED_SND_SEQ_MIDI_EVENT", "CONFIG_SND_SEQUENCER_OSS", 1);
 	printf("\n");
 	output1_card(Cards);
 	output2_dep(Deps);
