@@ -324,8 +324,8 @@ struct sndrv_pcm_info {
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* name of this device */
 	unsigned char subname[32];	/* subdevice name */
-	enum sndrv_pcm_class class;	/* SNDRV_PCM_CLASS_* */
-	enum sndrv_pcm_subclass subclass; /* SNDRV_PCM_SUBCLASS_* */
+	enum sndrv_pcm_class dev_class;	/* SNDRV_PCM_CLASS_* */
+	enum sndrv_pcm_subclass dev_subclass; /* SNDRV_PCM_SUBCLASS_* */
 	unsigned int subdevices_count;
 	unsigned int subdevices_avail;
 	union sndrv_pcm_sync_id sync;	/* hardware synchronization ID */

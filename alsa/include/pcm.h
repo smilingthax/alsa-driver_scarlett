@@ -380,8 +380,8 @@ struct _snd_pcm {
 	snd_card_t *card;
 	unsigned int device;	/* device number */
 	unsigned int info_flags;
-	unsigned short device_class;
-	unsigned short device_subclass;
+	unsigned short dev_class;
+	unsigned short dev_subclass;
 	char id[64];
 	char name[80];
 	snd_pcm_str_t streams[2];
