@@ -405,6 +405,12 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #define EXPORT_NO_SYMBOLS
 #endif
 
+/* MODULE_ALIAS & co. */
+#ifndef MODULE_ALIAS
+#define MODULE_ALIAS(x)
+#define MODULE_ALIAS_CHARDEV_MAJOR(x)
+#endif
+
 #include "amagic.h"
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
