@@ -191,6 +191,10 @@ DEFINE_REGSET(SP, 0x60);	/* SPDIF out */
 #define   ICH_PCM_6		0x00200000	/* 6 channels (not all chips) */
 #define   ICH_PCM_4		0x00100000	/* 4 channels (not all chips) */
 #define   ICH_PCM_2		0x00000000	/* 2 channels (stereo) */
+#define   ICH_SIS_PCM_246_MASK	0x000000c0	/* 6 channels (SIS7012) */
+#define   ICH_SIS_PCM_6		0x00000080	/* 6 channels (SIS7012) */
+#define   ICH_SIS_PCM_4		0x00000040	/* 4 channels (SIS7012) */
+#define   ICH_SIS_PCM_2		0x00000000	/* 2 channels (SIS7012) */
 #define   ICH_SRIE		0x00000020	/* secondary resume interrupt enable */
 #define   ICH_PRIE		0x00000010	/* primary resume interrupt enable */
 #define   ICH_ACLINK		0x00000008	/* AClink shut off */
@@ -818,11 +822,20 @@ static int snd_intel8x0_hw_free(snd_pcm_substream_t * substream)
 
 static void snd_intel8x0_setup_multi_channels(intel8x0_t *chip, int channels)
 {
-	unsigned int cnt = igetdword(chip, ICHREG(GLOB_CNT)) & ~ICH_PCM_246_MASK;
-	if (chip->multi4 && channels == 4)
-		cnt |= ICH_PCM_4;
-	else if (chip->multi6 && channels == 6)
-		cnt |= ICH_PCM_6;
+	unsigned int cnt = igetdword(chip, ICHREG(GLOB_CNT));
+	if (chip->device_type == DEVICE_SIS) {
+		cnt &= ~ICH_SIS_PCM_246_MASK;
+		if (chip->multi4 && channels == 4)
+			cnt |= ICH_SIS_PCM_4;
+		else if (chip->multi6 && channels == 6)
+			cnt |= ICH_SIS_PCM_6;
+	} else {
+		cnt &= ~ICH_PCM_246_MASK;
+		if (chip->multi4 && channels == 4)
+			cnt |= ICH_PCM_4;
+		else if (chip->multi6 && channels == 6)
+			cnt |= ICH_PCM_6;
+	}
 	iputdword(chip, ICHREG(GLOB_CNT), cnt);
 }
 
@@ -1510,6 +1523,7 @@ static struct _ac97_ali_rate_regs {
 
 static struct ac97_quirk ac97_quirks[] = {
 	{ 0x1028, 0x0126, "Dell Optiplex GX260", AC97_TUNE_HP_ONLY },
+	{ 0x1734, 0x0088, "Fujisu-Siemens D1522", AC97_TUNE_HP_ONLY },
 	{ } /* terminator */
 };
 
