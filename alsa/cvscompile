@@ -2,5 +2,5 @@
 
 aclocal
 autoconf
-./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes --with-oss=no
+./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes
 make
