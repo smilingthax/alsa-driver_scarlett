@@ -26,6 +26,7 @@
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
+#include "ac97_codec.h"
 
 #ifndef PCI_VENDOR_ID_ENSONIQ
 #define PCI_VENDOR_ID_ENSONIQ           0x1274
@@ -131,12 +132,12 @@
 #define   ES_1371_SRC_DISABLE      (1<<22)	/* sample rate converter disable */
 #define   ES_1371_DIS_P1	   (1<<21)	/* playback channel 1 accumulator update disable */
 #define   ES_1371_DIS_P2	   (1<<20)      /* playback channel 1 accumulator update disable */
-#define   ES_1371_DIS_REC	   (1<<19)      /* record channel accumulator update disable */
+#define   ES_1371_DIS_R1	   (1<<19)      /* record channel accumulator update disable */
 #define   ES_1371_SRC_RAM_DATAO(o) (((o)&0xffff)<<0) /* current value of the sample rate converter */
 #define   ES_1371_SRC_RAM_DATAM	   (0xffff<<0)	     /* mask for above */
 #define   ES_1371_SRC_RAM_DATAI(i) (((i)>>0)&0xffff) /* current value of the sample rate converter */
 
-#define ES_REG_1371_LEGACY	/* W/R: Legacy control/status register */
+#define ES_REG_1371_LEGACY 0x18	/* W/R: Legacy control/status register */
 #define   ES_1371_JFAST		(1<<31)	  /* fast joystick timing */
 #define   ES_1371_HIB		(1<<30)	  /* host interrupt blocking enable */
 #define   ES_1371_VSB		(1<<29)   /* SB; 0 = addr 0x220xH, 1 = 0x22FxH */
@@ -225,42 +226,26 @@
 #define ES_PAGE_UART1	0x0f
 
 /*
+ *  Sample rate converter addresses
+ */
+
+#define ES_SMPREG_DAC1		0x70
+#define ES_SMPREG_DAC2		0x74
+#define ES_SMPREG_ADC		0x78
+#define ES_SMPREG_VOL_ADC	0x6c
+#define ES_SMPREG_VOL_DAC1	0x7c
+#define ES_SMPREG_VOL_DAC2	0x7e
+#define ES_SMPREG_TRUNC_N	0x00
+#define ES_SMPREG_INT_REGS	0x01
+#define ES_SMPREG_ACCUM_FRAC	0x02
+#define ES_SMPREG_VFREQ_FRAC	0x03
+
+/*
  *  Some contants
  */
  
 #define ES_1370_SRTODIV(x) (((1411200+(x)/2)/(x))-2)
 #define ES_1370_DIVTOSR(x) (1411200/((x)+2))
-
-/*
- *  ASAHI KASEI / AK4531 codec registers (ES1370)
- */
-
-#define AK4531_LMASTER	0x00	/* master volume left */
-#define AK4531_RMASTER	0x01	/* master volume right */
-#define AK4531_LVOICE	0x02	/* voice volume left */
-#define AK4531_RVOICE	0x03	/* voice volume right */
-#define AK4531_LFM	0x04	/* FM volume left */
-#define AK4531_RFM	0x05	/* FM volume right */
-#define AK4531_LCD	0x06	/* CD volume left */
-#define AK4531_RCD	0x07	/* CD volume right */
-#define AK4531_LLINE	0x08	/* LINE volume left */
-#define AK4531_RLINE	0x09	/* LINE volume right */
-#define AK4531_LAUXA	0x0a	/* AUXA volume left */
-#define AK4531_RAUXA	0x0b	/* AUXA volume right */
-#define AK4531_MONO1	0x0c	/* MONO1 volume left */
-#define AK4531_MONO2	0x0d	/* MONO1 volume right */
-#define AK4531_MIC	0x0e	/* MIC volume */
-#define AK4531_MONO_OUT	0x0f	/* Mono-out volume */
-#define AK4531_OUT_SW1	0x10	/* Output mixer switch 1 */
-#define AK4531_OUT_SW2	0x11	/* Output mixer switch 2 */
-#define AK4531_LIN_SW1	0x12	/* Input left mixer switch 1 */
-#define AK4531_RIN_SW1	0x13	/* Input right mixer switch 1 */
-#define AK4531_LIN_SW2	0x14	/* Input left mixer switch 2 */
-#define AK4531_RIN_SW2	0x15	/* Input right mixer switch 2 */
-#define AK4531_RESET	0x16	/* Reset & power down */
-#define AK4531_CLOCK	0x17	/* Clock select */
-#define AK4531_AD_IN	0x18	/* AD input select */
-#define AK4531_MIC_GAIN	0x19	/* MIC amplified gain */
 
 /*
  *  Open modes
@@ -297,15 +282,11 @@ struct snd_stru_ensoniq {
 
   union {
     struct {
+      ac97_t *ac97;
+    } es1371;
+    struct {
       int pclkdiv_lock;
-      unsigned char ak4531[0x10];
-      unsigned char out_sw1;
-      unsigned char out_sw2;
-      unsigned char lin_sw1;
-      unsigned char rin_sw1;
-      unsigned char lin_sw2;
-      unsigned char rin_sw2;
-      unsigned short micgain;
+      ak4531_t *ak4531;
     } es1370;
   } u;
 
