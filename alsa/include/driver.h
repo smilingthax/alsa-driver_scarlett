@@ -324,8 +324,11 @@ struct _snd_card {
 	snd_info_entry_t *proc_id;	/* the card id */
 	struct proc_dir_entry *proc_root_link;	/* number link to real id */
 
+#ifdef CONFIG_PM
 	int (*set_power_state) (snd_card_t *card, unsigned int state);
+	void *power_state_private_data;
 	unsigned int power_state;	/* power state */
+#endif
 
 #ifdef CONFIG_SND_OSSEMUL
 	snd_mixer_oss_t *mixer_oss;
