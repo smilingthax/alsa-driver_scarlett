@@ -1990,12 +1990,20 @@ static unsigned int snd_pcm_oss_poll(struct file *file, poll_table * wait)
 	}
 	if (csubstream != NULL) {
 		snd_pcm_runtime_t *runtime = csubstream->runtime;
+		enum sndrv_pcm_state ostate;
 		poll_wait(file, &runtime->sleep, wait);
 		snd_pcm_stream_lock_irq(csubstream);
-		if (runtime->status->state != SNDRV_PCM_STATE_RUNNING ||
+		if ((ostate = runtime->status->state) != SNDRV_PCM_STATE_RUNNING ||
 		    snd_pcm_oss_capture_ready(csubstream))
 			mask |= POLLIN | POLLRDNORM;
 		snd_pcm_stream_unlock_irq(csubstream);
+		if (ostate != SNDRV_PCM_STATE_RUNNING && runtime->oss.trigger) {
+			snd_pcm_oss_file_t ofile;
+			memset(&ofile, 0, sizeof(ofile));
+			ofile.streams[SNDRV_PCM_STREAM_CAPTURE] = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
+			runtime->oss.trigger = 0;
+			snd_pcm_oss_set_trigger(&ofile, PCM_ENABLE_INPUT);
+		}
 	}
 
 	return mask;
