@@ -6,7 +6,7 @@
 
 #include <linux/devfs_fs_kernel.h>
 
-void snd_compat_devfs_remove(const char *str, ...)
+void snd_compat_devfs_remove(const char *fmt, ...)
 {
 	char buf[64];
 	va_list args;
