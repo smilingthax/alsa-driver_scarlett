@@ -196,8 +196,8 @@ typedef void irqreturn_t;
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-#ifdef CONFIG_DEVFS_FS
 #include <linux/devfs_fs_kernel.h>
+#ifdef CONFIG_DEVFS_FS
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 #include <linux/fs.h>
 #undef register_chrdev
@@ -207,6 +207,11 @@ typedef void irqreturn_t;
 #undef devfs_remove
 void snd_compat_devfs_remove(const char *fmt, ...);
 #define devfs_remove snd_compat_devfs_remove
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
+#undef devfs_mk_dir
+devfs_handle_t snd_compat_devfs_mkdir(const char *dir);
+#define devfs_mk_dir snd_compat_devfs_mkdir
+#endif
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
@@ -227,10 +232,12 @@ static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *na
 	devfs_unregister(master);
 }
 #endif
-#else
+#else /* !CONFIG_DEVFS_FS */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 static inline void devfs_remove(const char *fmt, ...) { }
 #endif
+#undef devfs_mk_dir
+#define devfs_mk_dir(dir) do { (void)(dir); } while (0)
 #endif /* CONFIG_DEVFS_FS */
 
 /* workarounds for USB API */
@@ -335,6 +342,13 @@ static inline void module_put(struct module *module)
 #ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
 struct page *snd_compat_vmalloc_to_page(void *addr);
 #define vmalloc_to_page(addr) snd_compat_vmalloc_to_page(addr)
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#include <linux/vmalloc.h>
+#undef vmap
+void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot);
+#define vmap snd_compat_vmap
 #endif
 
 #include "amagic.h"
