@@ -3,7 +3,6 @@ dnl
 dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
 AC_INIT(acore/sound.c)
-AM_CONDITIONAL(INSTALL_M4, test "x${ACLOCAL}" = "xaclocal")
 AC_PREFIX_DEFAULT(/usr)
 CONFIG_SND_VERSION="0.9.0rc2"
 
@@ -687,6 +686,14 @@ CONFIG_HAVE_MUTEX_MACROS=$have_mutex_macros
 dnl AC_SUBST(CONFIG_HAVE_MUTEX_MACROS)
 if test "$CONFIG_HAVE_MUTEX_MACROS" = "1"; then
   AC_DEFINE(CONFIG_HAVE_MUTEX_MACROS)
+fi
+
+if test "$CONFIG_ISAPNP" = "y"; then
+  if test ! -f include/linux/isapnp.h; then
+    echo "Symlinking <linux/isapnp.h>..."
+    mkdir -p include/linux
+    ln -sf ../../support/isapnp.h include/linux/isapnp.h
+  fi
 fi
 
 fi
