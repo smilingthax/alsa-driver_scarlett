@@ -41,7 +41,7 @@ typedef struct snd_stru_pcm_stream snd_pcm_stream_t;
 
 typedef struct snd_stru_pcm_hardware {
 	/* -- constants -- */
-	unsigned int stream_info;	/* SND_PCM_STREAM_INFO_* */
+	unsigned int info;	/* SND_PCM_INFO_* */
 	unsigned int formats;	/* SND_PCM_FMT_* */
 	unsigned int rates;	/* SND_PCM_RATE_* */
 	unsigned int min_rate;	/* min rate */
@@ -237,7 +237,6 @@ struct snd_stru_pcm_stream {
 	/* -- OSS things -- */
 	snd_pcm_oss_stream_t oss;
 #endif
-	int open_prefer_substream;
 	snd_pcm_file_t *files;
 	snd_info_entry_t *dev;
 	snd_minor_t *reg;
@@ -291,8 +290,7 @@ extern snd_minor_t snd_pcm_reg[2];
  *  Native I/O
  */
 
-extern int snd_pcm_info(snd_pcm_t * pcm, snd_pcm_info_t * _info);
-extern int snd_pcm_stream_info(snd_pcm_substream_t * substream, snd_pcm_stream_info_t * _info);
+extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
 extern int snd_pcm_stream_go(snd_pcm_substream_t *substream);
 extern int snd_pcm_stream_go_pre(snd_pcm_substream_t *substream);
 extern int snd_pcm_stream_go_post(snd_pcm_substream_t *substream, int err);
