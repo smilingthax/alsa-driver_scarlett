@@ -6,8 +6,11 @@ config SND_PDPLUS
 	depends on SND
 	select SND_PCM
 	help
-	  Say 'Y' or 'M' to include support for Sek'D/Marian Prodif Plus
-          soundcard.
+	  Say Y here to include support for Sek'D/Marian Prodif Plus
+	  soundcards.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-pdplus.
 
 config SND_HDSPM
 	tristate "RME Hammerfall DSP MADI"
@@ -15,37 +18,53 @@ config SND_HDSPM
 	select SND_HWDEP
 	select SND_PCM
 	help
-	  Say 'Y' or 'M' to include support for RME Hammerfall DSP MADI
+	  Say Y here to include support for RME Hammerfall DSP MADI
 	  soundcards.
 
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-hdspm.
+
 config SND_EMU10K1X
-	tristate "EMU10K1X (Dell OEM Version)"
+	tristate "Emu10k1X (Dell OEM Version)"
 	depends on SND
 	select SND_AC97_CODEC
 	help
-	  Say 'Y' or 'M' to include support for Sound Blaster Live Dell
-	  OEM version.
+	  Say Y here to include support for the Dell OEM version of the
+	  Sound Blaster Live!.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-emu10k1x.
 
 config SND_AUDIGYLS
 	tristate "SB Audigy LS"
 	depends on SND
 	select SND_AC97_CODEC
 	help
-	  Say 'Y' or 'M' to include support for Sound Blaster Audigy LS
-	  OEM version.
+	  Say Y here to include support for the Sound Blaster Audigy LS.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-audigyls.
 
 config SND_AZX
 	tristate "Intel HD Audio"
 	depends on SND
 	select SND_PCM
 	help
-	  Say 'Y' or 'M' to include support for Intel HD Audio (Azalia).
+	  Say Y here to include support for Intel "High Definition
+	  Audio" (Azalia) motherboard devices.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-azx.
 
 config SND_VIA82XX_MODEM
 	tristate "VIA 82C686A/B, 8233 based Modems"
 	depends on SND
 	select SND_AC97_CODEC
 	help
-	  Say 'Y' or 'M' to include support for VIA VT82C686A/B, VT8233 based modems..
+	  Say Y here to include support for the integrated MC97 modem on
+	  motherboards with VIA chipsets.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-via82xx-modem.
 
 endmenu
