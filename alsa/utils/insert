@@ -88,6 +88,13 @@ case "$1" in
     insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5
     restore sb16.conf
     ;;
+  sb)
+    basic; isapnp
+    insert snd-sb-dsp.o
+    insert snd-opl3.o
+    insert snd-sb8.o snd_port=0x220 snd_irq=5 snd_dma8=3
+    restore sb.conf
+    ;;
   sbawe)
     basic; isapnp
     insert snd-sb-dsp.o
