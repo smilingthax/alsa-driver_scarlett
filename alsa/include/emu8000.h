@@ -26,6 +26,7 @@
 #include "hwdep.h"
 #include "seq_kernel.h"
 #include "seq_device.h"
+#include "mixer.h"
 
 
 /*
@@ -54,6 +55,16 @@
 #define EMU8000_CHECK(emu) (! (emu))
 #endif
 
+
+/*
+ * mixer elements
+ */
+typedef struct snd_emu8000_mixer {
+	snd_kmixer_t *mixer;
+	snd_kmixer_element_t *me_tone;
+	snd_kmixer_group_t *me_bass;
+	snd_kmixer_group_t *me_treble;
+} emu8000_mixer_t;
 
 /*
  * Structure to hold all state information for the emu8000 driver.
@@ -95,6 +106,8 @@ typedef struct snd_emu8000 {
 	int bass_level;
 	int treble_level;
 
+	emu8000_mixer_t mixer; /* mixer elements */
+
 	int use_time;	/* allocation counter */
 
 	spinlock_t voice_lock;	/* Lock for voice access */
@@ -120,5 +133,12 @@ typedef struct snd_emu8000 {
 /* sequencer device id */
 #define SND_SEQ_DEV_ID_EMU8000	"synth-emu8000"
 
+/* argument for snd_seq_device_new */
+typedef struct emu8000_arg {
+	int port;		/* base i/o port */
+	snd_kmixer_t *mixer;	/* mixer interface to attach */
+	int mixer_index;	/* mixer extension index */
+	snd_kmixer_element_t *mixer_dest; /* output target */
+} emu8000_arg_t;
 
 #endif
