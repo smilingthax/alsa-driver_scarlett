@@ -70,6 +70,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 { 0x45838300, 0xffffff00, "ESS Technology",	NULL },
 { 0x48525300, 0xffffff00, "Intersil",		NULL },
 { 0x49434500, 0xffffff00, "ICEnsemble",		NULL },
+{ 0x49544500, 0xffffff00, "ITE Tech.Inc",	NULL },
 { 0x4e534300, 0xffffff00, "National Semiconductor", NULL },
 { 0x53494c00, 0xffffff00, "Silicon Laboratory",	NULL },
 { 0x54524100, 0xffffff00, "TriTech",		NULL },
@@ -116,6 +117,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x48525300, 0xffffff00, "HMP9701",		NULL },
 { 0x49434501, 0xffffffff, "ICE1230",		NULL },
 { 0x49434511, 0xffffffff, "ICE1232",		NULL }, // alias VIA VT1611A?
+{ 0x49544520, 0xffffffff, "IT2226E",		NULL },
 { 0x4e534300, 0xffffffff, "LM4540/43/45/46/48",	NULL }, // only guess --jk
 { 0x4e534331, 0xffffffff, "LM4549",		NULL },
 { 0x53494c22, 0xffffffff, "Si3036",		NULL },
@@ -181,6 +183,9 @@ static const char *snd_ac97_stereo_enhancements[] =
 
 static int snd_ac97_valid_reg(ac97_t *ac97, unsigned short reg)
 {
+	if (ac97->limited_regs && ! test_bit(reg, ac97->reg_accessed))
+  		return 0;
+
 	/* filter some registers for buggy codecs */
 	switch (ac97->id) {
 	case AC97_ID_AK4540:
@@ -242,8 +247,6 @@ void snd_ac97_write_cache(ac97_t *ac97, unsigned short reg, unsigned short value
 
 static void snd_ac97_write_cache_test(ac97_t *ac97, unsigned short reg, unsigned short value)
 {
-	if (ac97->limited_regs && ! test_bit(reg, ac97->reg_accessed))
-  		return;
 #if 0
 	if (!snd_ac97_valid_reg(ac97, reg))
 		return;
@@ -911,7 +914,7 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 {
 	unsigned short val, mask = 0x8000;
 
-	if (ac97->limited_regs && ! test_bit(reg, ac97->reg_accessed))
+	if (! snd_ac97_valid_reg(ac97, reg))
 		return 0;
 
 	switch (reg) {
@@ -1752,10 +1755,7 @@ static void snd_ac97_proc_regs_read_main(ac97_t *ac97, snd_info_buffer_t * buffe
 	int reg, val;
 
 	for (reg = 0; reg < 0x80; reg += 2) {
-		if (ac97->limited_regs && ! test_bit(reg, ac97->reg_accessed))
-			val = 0xffff;
-		else
-			val = snd_ac97_read(ac97, reg);
+		val = snd_ac97_read(ac97, reg);
 		snd_iprintf(buffer, "%i:%02x = %04x\n", subidx, reg, val);
 	}
 }
