@@ -11,7 +11,7 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := bt87x.c intel8x0.c
 
-obj-$(CONFIG_SND) += pdplus/ azx/
+obj-$(CONFIG_SND) += pdplus/ azx/ ca0106/
 
 snd-hdspm-objs := hdspm.o
 snd-asihpi-objs := asihpi.o
