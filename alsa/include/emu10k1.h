@@ -1061,6 +1061,8 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define EXTOUT_ADC_CAP_L   0x0a	/* ADC Capture buffer - left */
 #define EXTOUT_ADC_CAP_R   0x0b	/* ADC Capture buffer - right */
 #define EXTOUT_MIC_CAP	   0x0c	/* MIC Capture buffer */
+#define EXTOUT_ACENTER	   0x11 /* Analog Center */
+#define EXTOUT_ALFE	   0x12 /* Analog LFE */
 
 /* definitions for debug register */
 #define EMU10K1_DBG_ZC			0x80000000	/* zero tram counter */
@@ -1086,7 +1088,7 @@ typedef struct {
 	unsigned int external_tram_size;	/* in samples */
 	char fxbus_names[16][32];		/* names of FXBUSes */
 	char extin_names[16][32];		/* names of external inputs */
-	char extout_names[16][32];		/* names of external outputs */
+	char extout_names[32][32];		/* names of external outputs */
 	unsigned int gpr_controls;		/* count of GPR controls */
 } emu10k1_fx8010_info_t;
 
