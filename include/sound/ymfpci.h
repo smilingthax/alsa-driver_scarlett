@@ -25,6 +25,7 @@
 #include "pcm.h"
 #include "rawmidi.h"
 #include "ac97_codec.h"
+#include "timer.h"
 #include <linux/gameport.h>
 
 #ifndef PCI_VENDOR_ID_YAMAHA
@@ -349,6 +350,7 @@ struct _snd_ymfpci {
 
 	ac97_t *ac97;
 	snd_rawmidi_t *rawmidi;
+	snd_timer_t *timer;
 
 	struct pci_dev *pci;
 	snd_card_t *card;
@@ -389,6 +391,7 @@ int snd_ymfpci_pcm2(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm_spdif(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm_4ch(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_mixer(ymfpci_t *chip, int rear_switch);
+int snd_ymfpci_timer(ymfpci_t *chip, int device);
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 int snd_ymfpci_joystick(ymfpci_t *chip);
 #endif
