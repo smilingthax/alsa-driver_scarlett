@@ -15,7 +15,7 @@ L add work_ptr (to think about)
 
 - lowlevel:
 H make ADC/DAC Loopback from ac97_codec.c available only with an module option
-M create a driver for Compaq iPAQ handheld PC (Philips UDA1341TS)
+M create a driver for Compaq iPAQ handheld PC (Philips UDA1341TS) (Kasparek Tomas <xkaspa06@stud.fee.vutbr.cz>)
 M create an USB audio driver
 M reduce prepare path (a lot of stuff may be moved to hw_params) for faster xrun recovery
 L EMU10K1 - test direct S/PDIF output using FX8010
