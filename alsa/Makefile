@@ -58,7 +58,9 @@ cvsclean: mrproper
 pack: mrproper
 	chown -R root.root ../alsa-driver
 	chmod 755 utils/alsasound
-	tar cvz -C .. -f ../alsa-driver-$(SND_VERSION).tar.gz alsa-driver
+	mv ../alsa-driver ../alsa-driver-$(SND_VERSION)
+	tar cvz -C .. -f ../alsa-driver-$(SND_VERSION).tar.gz alsa-driver-$(SND_VERSION)
+	mv ../alsa-driver-$(SND_VERSION) ../alsa-driver
 
 $(PEXPORT): $(TOPDIR)/utils/export-symbols.c
 	make -C $(TOPDIR)/utils export-symbols
