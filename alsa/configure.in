@@ -493,10 +493,6 @@ dnl Check for PCI support...
 CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
 AC_SUBST(CONFIG_PCI)
 
-dnl Check for ACPI bus driver...
-CHECK_KERNEL_CONFIG(CONFIG_ACPI_BUS, [ACPI bus driver])
-AC_SUBST(CONFIG_ACPI_BUS)
-
 dnl Check experimental drivers...
 CHECK_KERNEL_CONFIG(CONFIG_EXPERIMENTAL, [Experimental drivers in kernel])
 AC_SUBST(CONFIG_EXPERIMENTAL)

@@ -236,14 +236,6 @@ Additional Modules
     See docs/hdspm.txt for details.
 
 
-  Module snd-mpu401-acpi
-  ----------------------
-
-    Module for MPU-401 devices on ACPI-enabled motherboards.
-
-    This module supports up to 8 devices and autoprobe.
-
-
 Trouble Shooting
 ================
 
