@@ -69,10 +69,6 @@ static int ac97_clock[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 0};
 static int ac97_quirk[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = AC97_TUNE_DEFAULT};
 static int buggy_irq[SNDRV_CARDS];
 static int xbox[SNDRV_CARDS];
-#endif
-#ifdef SUPPORT_MIDI
-static int mpu_port[SNDRV_CARDS]; /* disabled */
-#endif
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for Intel i8x0 soundcard.");
