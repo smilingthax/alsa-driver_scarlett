@@ -1,5 +1,5 @@
---- usbaudio.c	2003-11-24 18:49:59.000000000 +0100
-+++ usbaudio.c	2003-11-24 18:51:33.000000000 +0100
+--- usbaudio.c	2004-04-07 17:00:15.942732479 +0200
++++ usbaudio.c	2004-04-07 18:39:37.361460360 +0200
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
@@ -16,10 +16,10 @@
 +#else
 +0; /* disabled as default for buggy async-unlink handling */
 +#endif
+ static int boot_devs;
  
- MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
- MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
-@@ -1761,9 +1767,11 @@
+ module_param_array(index, int, boot_devs, 0444);
+@@ -1890,9 +1896,11 @@
   * entry point for linux usb interface
   */
  
@@ -31,7 +31,7 @@
  
  static struct usb_device_id usb_audio_ids [] = {
  #include "usbquirks.h"
-@@ -1776,10 +1784,15 @@
+@@ -1905,10 +1913,15 @@
  MODULE_DEVICE_TABLE (usb, usb_audio_ids);
  
  static struct usb_driver usb_audio_driver = {
@@ -47,7 +47,7 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -2918,6 +2931,7 @@
+@@ -3100,6 +3113,7 @@
  	}
  }
  
@@ -55,7 +55,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -2938,6 +2952,8 @@
+@@ -3120,6 +3134,8 @@
  	snd_usb_audio_disconnect(interface_to_usbdev(intf),
  				 dev_get_drvdata(&intf->dev));
  }
@@ -64,9 +64,9 @@
  
  
  static int __init snd_usb_audio_init(void)
-@@ -2981,3 +2997,5 @@
- __setup("snd-usb-audio=", snd_usb_audio_module_setup);
+@@ -3140,3 +3156,5 @@
  
- #endif /* !MODULE */
+ module_init(snd_usb_audio_init);
+ module_exit(snd_usb_audio_cleanup);
 +
 +#include "usbaudio.inc1"

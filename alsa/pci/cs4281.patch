@@ -1,6 +1,6 @@
---- cs4281.c	2003-06-10 15:21:01.000000000 +0200
-+++ cs4281.c.old	2003-06-10 15:20:49.000000000 +0200
-@@ -2119,6 +2119,7 @@
+--- cs4281.c	2004-04-07 16:51:11.897147390 +0200
++++ cs4281.c	2004-04-07 18:33:11.039877468 +0200
+@@ -2117,6 +2117,7 @@
  	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
  }
  
@@ -8,7 +8,7 @@
  static int snd_cs4281_suspend(struct pci_dev *dev, u32 state)
  {
  	cs4281_t *chip = snd_magic_cast(cs4281_t, pci_get_drvdata(dev), return -ENXIO);
-@@ -2131,6 +2132,18 @@
+@@ -2129,6 +2130,18 @@
  	cs4281_resume(chip);
  	return 0;
  }
@@ -27,8 +27,9 @@
  
  /* callback */
  static int snd_cs4281_set_power_state(snd_card_t *card, unsigned int power_state)
-@@ -2206,3 +2219,4 @@
- __setup("snd-cs4281=", alsa_card_cs4281_setup);
+@@ -2183,3 +2196,5 @@
  
- #endif /* ifndef MODULE */
+ module_init(alsa_card_cs4281_init)
+ module_exit(alsa_card_cs4281_exit)
++
 +EXPORT_NO_SYMBOLS;

@@ -478,4 +478,16 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#define SNDRV_MODULE_TYPE_int	"i"
+#define SNDRV_MODULE_TYPE_bool	"b"
+#define SNDRV_MODULE_TYPE_uint	"i"
+#define SNDRV_MODULE_TYPE_charp	"s"
+#define SNDRV_MODULE_TYPE_long	"l"
+#define module_param_array(name, type, num, perm) \
+	MODULE_PARM(name, "1-" __MODULE_STRING(SNDRV_CARDS) SNDRV_MODULE_TYPE_##type)
+#define module_param(name, type, perm) \
+	MODULE_PARM(name, SNDRV_MODULE_TYPE_##type)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */

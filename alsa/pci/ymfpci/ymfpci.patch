@@ -1,6 +1,6 @@
---- ymfpci.c	2003-06-10 15:28:14.000000000 +0200
-+++ ymfpci.c.old	2003-06-10 15:28:03.000000000 +0200
-@@ -249,6 +249,7 @@
+--- ymfpci.c	2004-04-07 16:59:29.513264858 +0200
++++ ymfpci.c	2004-04-07 18:35:33.146723726 +0200
+@@ -318,6 +318,7 @@
  }
  
  #ifdef CONFIG_PM
@@ -8,7 +8,7 @@
  static int snd_card_ymfpci_suspend(struct pci_dev *pci, u32 state)
  {
  	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return -ENXIO);
-@@ -261,6 +262,18 @@
+@@ -330,6 +331,18 @@
  	snd_ymfpci_resume(chip);
  	return 0;
  }
@@ -27,8 +27,9 @@
  #endif
  
  static void __devexit snd_card_ymfpci_remove(struct pci_dev *pci)
-@@ -326,3 +339,4 @@
- __setup("snd-ymfpci=", alsa_card_ymfpci_setup);
+@@ -371,3 +384,5 @@
  
- #endif /* ifndef MODULE */
+ module_init(alsa_card_ymfpci_init)
+ module_exit(alsa_card_ymfpci_exit)
++
 +EXPORT_NO_SYMBOLS;
