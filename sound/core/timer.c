@@ -1665,7 +1665,7 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
 	unit = tu->tread ? sizeof(snd_timer_tread_t) : sizeof(snd_timer_read_t);
 	spin_lock_irq(&tu->qlock);
-	while (count - result >= unit) {
+	while ((long)count - result >= unit) {
 		while (!tu->qused) {
 			wait_queue_t wait;
 
