@@ -1621,7 +1621,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 			continue;
 		}
 		chip->ac97[i++] = x97;
-		if (!(x97->scaps & AC97_SCAP_AUDIO))
+		if (!ac97_is_audio(x97))
 			continue;
 		switch (chip->device_type) {
 		case DEVICE_INTEL_ICH4:
@@ -1663,14 +1663,14 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	}
       	for (i = 0; i < codecs; i++) {
 		x97 = chip->ac97[i];
-		if (!(x97->scaps & AC97_SCAP_AUDIO))
+		if (!ac97_is_audio(x97))
 			continue;
 		if (x97->scaps & AC97_SCAP_SURROUND_DAC)
 			chip->multi4 = 1;
 	}
       	for (i = 0; i < codecs && chip->multi4; i++) {
 		x97 = chip->ac97[i];
-		if (!(x97->scaps & AC97_SCAP_AUDIO))
+		if (!ac97_is_audio(x97))
 			continue;
 		if (x97->scaps & AC97_SCAP_CENTER_LFE_DAC)
 			chip->multi6 = 1;
@@ -1682,7 +1682,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 			goto __6ch;
 		for ( ; i < codecs; i++) {
 			x97 = chip->ac97[i];
-			if (!(x97->scaps & AC97_SCAP_AUDIO))
+			if (!ac97_is_audio(x97))
 				continue;
 			if (ac97_is_rev22(x97)) {
 				snd_ac97_update_bits(x97, AC97_EXTENDED_ID, AC97_EI_DACS_SLOT_MASK, 1);
@@ -1693,7 +1693,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	      __6ch:
 		for ( ; i < codecs && chip->multi4; i++) {
 			x97 = chip->ac97[i];
-			if (!(x97->scaps & AC97_SCAP_AUDIO))
+			if (!ac97_is_audio(x97))
 				continue;
 			if (ac97_is_rev22(x97)) {
 				snd_ac97_update_bits(x97, AC97_EXTENDED_ID, AC97_EI_DACS_SLOT_MASK, 2);
@@ -1705,7 +1705,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 		if (!chip->multi4) {
 			for (i = 1; i < codecs; i++) {
 				x97 = chip->ac97[i];
-				if (!(x97->scaps & AC97_SCAP_AUDIO))
+				if (!ac97_is_audio(x97))
 					continue;
 				if (ac97_can_amap(x97)) {
 					if (x97->addr == 1) {
@@ -1715,7 +1715,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 				}
 			}
 			for ( ; i < codecs && chip->multi4; i++) {
-				if (!(x97->scaps & AC97_SCAP_AUDIO))
+				if (!ac97_is_audio(x97))
 					continue;
 				if (ac97_can_amap(x97)) {
 					if (x97->addr == 2) {
