@@ -125,10 +125,10 @@ extern int snd_rawmidi_control_ioctl(snd_card_t * card,
 /* callbacks */
 
 void snd_rawmidi_receive_reset(snd_rawmidi_t * rmidi);
-int snd_rawmidi_receive(snd_rawmidi_t * rmidi, char *buffer, int count);
+int snd_rawmidi_receive(snd_rawmidi_t * rmidi, unsigned char *buffer, int count);
 void snd_rawmidi_transmit_reset(snd_rawmidi_t * rmidi);
 int snd_rawmidi_transmit_empty(snd_rawmidi_t * rmidi);
-int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, char *buffer, int count);
+int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, unsigned char *buffer, int count);
 
 /* main midi functions */
 
@@ -140,7 +140,7 @@ int snd_rawmidi_input_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * param
 int snd_rawmidi_drain_output(snd_rawmidi_t * rmidi);
 int snd_rawmidi_flush_output(snd_rawmidi_t * rmidi);
 int snd_rawmidi_flush_input(snd_rawmidi_t * rmidi);
-long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, char *buf, long count);
-long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const char *buf, long count);
+long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, unsigned char *buf, long count);
+long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const unsigned char *buf, long count);
 
 #endif				/* __MIDI_H */
