@@ -85,11 +85,7 @@
 #include <linux/errno.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 7)
-#include <linux/malloc.h>
-#else
 #include <linux/slab.h>
-#endif
 #include <linux/delay.h>
 #include <linux/bitops.h>
 

@@ -34,7 +34,7 @@
 #include <linux/errno.h>
 #include <linux/ioport.h>
 #include <linux/string.h>
-#include <linux/malloc.h>
+#include <linux/slab.h>
 #include <linux/proc_fs.h>
 #include <asm/io.h>
 #include <asm/dma.h>
