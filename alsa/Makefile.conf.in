@@ -8,6 +8,7 @@ VPATH=@srcdir@
 prefix=@prefix@
 moddir=@moddir@
 c_opts=@c_opts@
+m_opts=@m_opts@
 processor=@processor@
 msmp=@msmp@
 CONFIG_SND_VERSION=@CONFIG_SND_VERSION@
@@ -33,8 +34,6 @@ CPP=@CPP@ $(CPPFLAGS) -M -D__DEPEND__ -DALSA_BUILD -D__KERNEL__
 INCLUDE=-I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)
 COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
 LINKER=ld -r
-ifeq (1,$(msmp))
-MAKE+=-j3
-endif
+MAKE+=$(m_opts)
 SNDVERSIONS=$(TOPDIR)/include/sndversions.h
 DEXPORT=$(TOPDIR)/include/modules

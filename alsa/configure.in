@@ -402,7 +402,12 @@ ALSA_CARDS_SELECT
 
 dnl Some late substitutes...
 c_opts="$c_opts -DLINUX"
+m_opts=""
+if test -r /etc/asound/make_opts; then
+  m_opts="$m_opts `cat /etc/asound/make_opts`"
+fi
 AC_SUBST(c_opts)
+AC_SUBST(m_opts)
 AC_SUBST(GENKSYMS)
 
 dnl Output files...
