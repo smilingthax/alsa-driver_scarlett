@@ -659,6 +659,8 @@ extern void snd_interval_muldivk(const snd_interval_t *a, const snd_interval_t *
 			     unsigned int k, snd_interval_t *c);
 extern void snd_interval_mulkdiv(const snd_interval_t *a, unsigned int k,
 			     const snd_interval_t *b, snd_interval_t *c);
+extern void snd_interval_muldiv(const snd_interval_t *a,
+			        const snd_interval_t *b, snd_interval_t *c);
 extern int snd_interval_list(snd_interval_t *i, 
 			 unsigned int count, unsigned int *list, unsigned int mask);
 extern int snd_interval_step(snd_interval_t *i, unsigned int min, unsigned int step);
