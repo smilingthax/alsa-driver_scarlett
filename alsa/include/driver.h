@@ -60,8 +60,8 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 1)
 #define LINUX_2_3
 #endif
-#if defined(LINUX_2_3) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 99)
-#error "This code requires Linux 2.3.99-pre5 and higher."
+#if defined(LINUX_2_3) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
+#error "This code requires Linux 2.4.0-test1 and higher."
 #endif
 
 #ifdef ALSA_BUILD
@@ -116,6 +116,9 @@
 #include <linux/pm.h>
 #define PCI_GET_DRIVER_DATA(pci) pci->driver_data
 #define PCI_SET_DRIVER_DATA(pci, data) pci->driver_data = data
+#ifndef virt_to_page
+#define virt_to_page(x) (&mem_map[MAP_NR(x)])
+#endif
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
