@@ -705,7 +705,7 @@ static void cs46xx_dsp_proc_sample_dump_read (snd_info_entry_t *entry, snd_info_
 
 		snd_iprintf(buffer,"%08X ",readl(dst + i));
 	}
-
+#if 0
 	snd_iprintf(buffer,"\nWRITE_BACK_BUF1: \n");
 	col = 0;
 	for (i = WRITE_BACK_BUF1;i < WRITE_BACK_BUF1 + 0x40; i += sizeof(u32),col ++) {
@@ -720,7 +720,22 @@ static void cs46xx_dsp_proc_sample_dump_read (snd_info_entry_t *entry, snd_info_
 
 		snd_iprintf(buffer,"%08X ",readl(dst + i));
 	}
+#endif
 
+	snd_iprintf(buffer,"\nSPDIFI_IP_OUTPUT_BUFFER1: \n");
+	col = 0;
+	for (i = SPDIFI_IP_OUTPUT_BUFFER1;i < SPDIFI_IP_OUTPUT_BUFFER1 + 0x80; i += sizeof(u32),col ++) {
+		if (col == 4) {
+			snd_iprintf(buffer,"\n");
+			col = 0;
+		}
+
+		if (col == 0) {
+			snd_iprintf(buffer, "%04X ",i);
+		}
+		
+		snd_iprintf(buffer,"%08X ",readl(dst + i));
+	}
 	snd_iprintf(buffer,"\n");
 }
 
@@ -1597,6 +1612,9 @@ int cs46xx_dsp_enable_spdif_in (cs46xx_t *chip)
 	/* reset FIFO ptr */
 	cs46xx_poke_via_dsp (chip,SP_SPDIN_FIFOPTR, 0x0);
 	cs46xx_src_link(chip,ins->spdif_in_src);
+
+	/* unmute SRC volume */
+	cs46xx_dsp_scb_set_volume (chip,ins->spdif_in_src,0x7fff,0x7fff);
 
 	spin_unlock_irq(&chip->reg_lock);
 

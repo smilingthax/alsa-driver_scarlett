@@ -1914,8 +1914,8 @@ static int snd_cs46xx_vol_iec958_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_val
 {
 	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
 
-	ucontrol->value.integer.value[0] = chip->dsp_spos_instance->spdif_input_volume_right;
-	ucontrol->value.integer.value[1] = chip->dsp_spos_instance->spdif_input_volume_left;
+	ucontrol->value.integer.value[0] = chip->dsp_spos_instance->spdif_input_volume_left;
+	ucontrol->value.integer.value[1] = chip->dsp_spos_instance->spdif_input_volume_right;
 	return 0;
 }
 
@@ -1924,8 +1924,8 @@ static int snd_cs46xx_vol_iec958_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_val
 	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
 	int change = 0;
 
-	if (chip->dsp_spos_instance->spdif_input_volume_right != ucontrol->value.integer.value[0] ||
-	    chip->dsp_spos_instance->spdif_input_volume_left != ucontrol->value.integer.value[1]) {
+	if (chip->dsp_spos_instance->spdif_input_volume_left  != ucontrol->value.integer.value[0] ||
+	    chip->dsp_spos_instance->spdif_input_volume_right!= ucontrol->value.integer.value[1]) {
 		cs46xx_dsp_set_iec958_volume (chip,
 					      ucontrol->value.integer.value[0],
 					      ucontrol->value.integer.value[1]);
@@ -2206,6 +2206,7 @@ static int snd_cs46xx_spdif_stream_put(snd_kcontrol_t * kcontrol,
 }
 
 #endif /* CONFIG_SND_CS46XX_NEW_DSP */
+
 
 #ifdef CONFIG_SND_CS46XX_DEBUG_GPIO
 static int snd_cs46xx_egpio_select_info(snd_kcontrol_t *kcontrol, 

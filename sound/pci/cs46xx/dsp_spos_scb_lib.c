@@ -1270,8 +1270,8 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,
 	}
 
 	if (pcm_channel_id == DSP_IEC958_CHANNEL && sample_rate == 48000) {
-		snd_assert (ins->spdif_pcm_input_scb = NULL);
-
+		snd_assert (ins->spdif_pcm_input_scb == NULL);
+		
 		/* a hack to make the skip the SRC and pass the stream 
 		   directly to the SPDIF task */
 		ins->spdif_pcm_input_scb = 
@@ -1281,7 +1281,7 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,
 							       ins->asynch_tx_scb,
 							       SCB_ON_PARENT_SUBLIST_SCB);		
 	}
-
+	
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	ins->pcm_channels[pcm_index].sample_rate = sample_rate;
 	ins->pcm_channels[pcm_index].pcm_reader_scb = pcm_scb;
@@ -1664,6 +1664,9 @@ int cs46xx_iec958_post_close (cs46xx_t *chip)
 
 	cs46xx_dsp_remove_scb (chip,ins->asynch_tx_scb);
 	ins->asynch_tx_scb = NULL;
+
+	/* clear buffer to prevent any undesired noise */
+	_dsp_clear_sample_buffer(chip,SPDIFO_IP_OUTPUT_BUFFER1,256);
 
 	/* restore state */
 
