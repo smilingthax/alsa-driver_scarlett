@@ -83,7 +83,8 @@ typedef struct snd_seq_kinstr_ops {
 snd_seq_kinstr_list_t *snd_seq_instr_list_new(void);
 void snd_seq_instr_list_free(snd_seq_kinstr_list_t **list);
 snd_seq_kinstr_t *snd_seq_instr_find(snd_seq_kinstr_list_t *list,
-				     snd_seq_instr_t *instr);
+				     snd_seq_instr_t *instr,
+				     int exact);
 int snd_seq_instr_event(snd_seq_kinstr_ops_t *ops,
 			snd_seq_kinstr_list_t *list,
 			snd_seq_event_t *ev,

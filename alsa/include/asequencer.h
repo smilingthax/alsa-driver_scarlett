@@ -83,12 +83,13 @@
 
 	/* synthesizer events */	
 #define SND_SEQ_EVENT_SAMPLE		80	/* sample select */
-#define SND_SEQ_EVENT_SAMPLE_START	81	/* voice start */
-#define SND_SEQ_EVENT_SAMPLE_STOP	82	/* voice stop */
-#define SND_SEQ_EVENT_SAMPLE_FREQ	83	/* playback frequency */
-#define SND_SEQ_EVENT_SAMPLE_VOLUME	84	/* volume and balance */
-#define SND_SEQ_EVENT_SAMPLE_LOOP	85	/* sample loop */
-#define SND_SEQ_EVENT_SAMPLE_POSITION	86	/* sample position */
+#define SND_SEQ_EVENT_SAMPLE_CLUSTER	81	/* sample cluster select */
+#define SND_SEQ_EVENT_SAMPLE_START	82	/* voice start */
+#define SND_SEQ_EVENT_SAMPLE_STOP	83	/* voice stop */
+#define SND_SEQ_EVENT_SAMPLE_FREQ	84	/* playback frequency */
+#define SND_SEQ_EVENT_SAMPLE_VOLUME	85	/* volume and balance */
+#define SND_SEQ_EVENT_SAMPLE_LOOP	86	/* sample loop */
+#define SND_SEQ_EVENT_SAMPLE_POSITION	87	/* sample position */
 
 	/* instrument layer */
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
@@ -150,6 +151,7 @@ typedef struct {
 #define SND_SEQ_DEST_DIRECT		(1<<5)	/* bypass enqueing */
 #define SND_SEQ_DEST_MASK		(1<<5)
 
+
 	/* note event */
 typedef struct {
 	unsigned char note;
@@ -157,25 +159,21 @@ typedef struct {
 	unsigned int duration;
 } snd_seq_ev_note;
 
-
 	/* controller event */
 typedef struct {
 	unsigned int param;
 	signed int value;
 } snd_seq_ev_ctrl;
 
-
 	/* generic set of bytes (8x8 bit) */
 typedef struct {
 	unsigned char d[8];	/* 8 bit value */
 } snd_seq_ev_raw8;
 
-
 	/* generic set of integers (2x32 bit) */
 typedef struct {
 	unsigned int d[2];	/* 32 bit value */
 } snd_seq_ev_raw32;
-
 
 	/* external stored data */
 typedef struct {
@@ -183,13 +181,11 @@ typedef struct {
 	void *ptr;		/* pointer to data (note: maybe 64-bit) */
 } snd_seq_ev_ext;
 
-
 	/* external stored data - IPC shared memory */
 typedef struct {
 	int len;		/* length of data */
 	key_t ipc;		/* IPC key */
 } snd_seq_ev_ipcshm;
-
 
 /* Instrument cluster type */
 typedef unsigned long snd_seq_instr_cluster_t;
@@ -202,12 +198,42 @@ typedef struct {
 	unsigned short prg;
 } snd_seq_instr_t;
 
+	/* sample number */
+typedef struct {
+	unsigned short bank;
+	unsigned short prg;
+} snd_seq_ev_sample;
+
+	/* sample position */
+typedef unsigned int snd_seq_position_t; /* playback position (in bytes) * 16 */
+
+	/* sample stop mode */
+typedef enum {
+	SAMPLE_STOP_IMMEDIATELY = 0,	/* terminate playing immediately */
+	SAMPLE_STOP_LOOP = 1		/* terminate loop and finish wave */
+} snd_seq_stop_mode_t;
+
+	/* sample frequency */
+typedef int snd_seq_frequency_t; /* playback frequency in HZ * 16 */
+
+	/* sample volume control; if any value is set to -1 == do not change */
+typedef struct {
+	signed short volume;	/* range: 0-16384 */
+	signed short lr;	/* left-right balance; range: 0-16384 */
+	signed short fr;	/* front-rear balance; range: 0-16384 */
+	signed short du;	/* down-up balance; range: 0-16384 */
+} snd_seq_ev_volume;
+
+	/* simple loop redefinition */
+typedef struct {
+	unsigned int begin;	/* loop begin (in bytes) * 16 */
+	unsigned int end;	/* loop end (in bytes) * 16 */
+} snd_seq_ev_loop;
 
 /* INSTR_BEGIN event */
 typedef struct {
 	long timeout;	/* zero = forever, otherwise timeout in ms */
 } snd_seq_ev_instr_begin_t;
-
 
 typedef struct {
 	int event;		/* processed event type */
@@ -252,6 +278,13 @@ typedef struct snd_seq_event_t {
 		snd_seq_addr_t addr;
 		snd_seq_result_t result;
 		snd_seq_ev_instr_begin_t instr_begin;
+		snd_seq_ev_sample sample;
+		snd_seq_instr_cluster_t cluster;
+		snd_seq_position_t position;
+		snd_seq_stop_mode_t stop_mode;
+		snd_seq_frequency_t frequency;
+		snd_seq_ev_volume volume;
+		snd_seq_ev_loop loop;
 	} data;
 } snd_seq_event_t;
 
