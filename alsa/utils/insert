@@ -23,11 +23,17 @@ function basic() {
   if [ -r $MODDIR/snd-pcm1-oss.o ]; then
     if ! $INSMOD -m $MODDIR/snd-pcm1-oss.o >> $MAP; then exit 1; fi  
   fi
-  if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
-  if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
+  if [ -r $MODDIR/snd-midi.o ]; then
+    if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
+  fi
+  if [ -r $MODDIR/snd-synth.o ]; then
+    if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
+  fi
   if [ -r $MODDIR/snd-seq.o ]; then
     if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
-    if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
+    if [ -r $MODDIR/snd-seq-midi.o ]; then
+      if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
+    fi
     if [ -r $MODDIR/snd-seq-midi-emul.o ]; then
       if ! $INSMOD -m $MODDIR/snd-seq-midi-emul.o >> $MAP; then exit 1; fi
     fi
@@ -229,6 +235,12 @@ case "$1" in
     insert snd-opl3.o
     insert snd-card-fm801.o
     restore fm801.conf
+    ;;
+  solo1)
+    basic
+    insert snd-es1938.o
+    insert snd-esssolo1.o
+    restore solo1.conf
     ;;
   cs4232)
     basic; isapnp
