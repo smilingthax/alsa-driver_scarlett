@@ -831,9 +831,16 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 		break;
 	}
 
-	/* hack for Philips USB Digital Speaker System */
-	if (state->vendor == 0x471 && state->product == 0x104 && !strcmp(kctl->id.name, "PCM Playback Volume"))
+	/* quirk for UDA1321/N101 */
+	/* note that detection between firmware 2.1.1.7 (N101) and later 2.1.1.21 */
+	/* is not very clear from datasheets */
+	/* I hope that the min value is -15360 for newer firmware --jk */
+	if (((state->vendor == 0x471 && (state->product == 0x104 || state->product == 0x105 || state->product == 0x101)) ||
+	     (state->vendor == 0x672 && state->product == 0x1041)) && !strcmp(kctl->id.name, "PCM Playback Volume") &&
+	     cval->min == -15616) {
+		snd_printk("USB Audio: using volume control quirk for the UDA1321/N101 chip\n");
 		cval->max = -256;
+	}
 
 	snd_printdd(KERN_INFO "[%d] FU [%s] ch = %d, val = %d/%d/%d\n",
 		    cval->id, kctl->id.name, cval->channels, cval->min, cval->max, cval->res);
