@@ -332,6 +332,8 @@ fi
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
+CONFIG_X86=n
+CONFIG_ALPHA=n
 CONFIG_L3=n
 CONFIG_ARM=n
 CONFIG_PPC=n
@@ -453,6 +455,7 @@ case "$processor" in
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
+    CONFIG_IA64=y
     ;;
   alpha*)
     c_opts="-pipe -mno-fp-regs -ffixed-8"
@@ -490,6 +493,7 @@ case "$processor" in
     fi
     c_opts="$c_opts -Wa,-mev6"
     processor="alpha"
+    CONFIG_ALPHA=y
     ;;
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
@@ -501,7 +505,7 @@ case "$processor" in
     CONFIG_SND_BIT32_EMUL=m
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
     ;;
-  mips)
+  mips*)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=n
@@ -563,20 +567,24 @@ case "$processor" in
     ;;
 esac
 
-test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
-
+dnl set ia32 (X86)
 case "$processor" in
   i?86*|k?|crusoe)
-    # ia32
     if $CC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
+      CONFIG_X86=y
     fi
     ;;
 esac
 
+dnl ia32 and alpha
+test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
+
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(LD)
+AC_SUBST(CONFIG_X86)
+AC_SUBST(CONFIG_ALPHA)
 AC_SUBST(CONFIG_L3)
 AC_SUBST(CONFIG_ARM)
 AC_SUBST(CONFIG_PPC)
