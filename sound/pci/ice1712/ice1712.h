@@ -345,7 +345,7 @@ struct _snd_ice1712 {
 	unsigned char hoontech_boxbits[4];
 	unsigned int hoontech_config;
 	unsigned short hoontech_boxconfig[4];
-	int cur_rate;			/* current rate */
+	unsigned int cur_rate;		/* current rate */
 
 	unsigned int akm_codecs;
 	akm4xxx_t *akm;
