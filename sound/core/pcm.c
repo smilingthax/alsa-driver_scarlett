@@ -41,7 +41,6 @@ static int snd_pcm_free(snd_pcm_t *pcm);
 static int snd_pcm_dev_free(snd_device_t *device);
 static int snd_pcm_dev_register(snd_device_t *device);
 static int snd_pcm_dev_disconnect(snd_device_t *device);
-static int snd_pcm_dev_can_unregister(snd_device_t *device);
 static int snd_pcm_dev_unregister(snd_device_t *device);
 
 void snd_pcm_lock(int xup)
@@ -601,7 +600,6 @@ int snd_pcm_new(snd_card_t * card, char *id, int device,
 		.dev_free = snd_pcm_dev_free,
 		.dev_register =	snd_pcm_dev_register,
 		.dev_disconnect = snd_pcm_dev_disconnect,
-		.dev_can_unregister = snd_pcm_dev_can_unregister,
 		.dev_unregister = snd_pcm_dev_unregister
 	};
 
@@ -611,7 +609,6 @@ int snd_pcm_new(snd_card_t * card, char *id, int device,
 	pcm = snd_magic_kcalloc(snd_pcm_t, 0, GFP_KERNEL);
 	if (pcm == NULL)
 		return -ENOMEM;
-	atomic_set(&pcm->use_count, 0);
 	pcm->card = card;
 	pcm->device = device;
 	if (id) {
@@ -796,12 +793,6 @@ void snd_pcm_release_substream(snd_pcm_substream_t *substream)
 	kfree(runtime);
 	substream->runtime = NULL;
 	substream->pstr->substream_opened--;
-}
-
-static int snd_pcm_dev_can_unregister(snd_device_t *device)
-{
-	snd_pcm_t *pcm = snd_magic_cast(snd_pcm_t, device->device_data, return -ENXIO);
-	return atomic_read(&pcm->use_count) != 0;
 }
 
 static int snd_pcm_dev_register(snd_device_t *device)

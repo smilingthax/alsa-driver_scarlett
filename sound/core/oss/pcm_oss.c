@@ -1554,11 +1554,12 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 		err = -ENODEV;
 		goto __error1;
 	}
-	atomic_inc(&pcm->use_count);
+	err = snd_card_file_add(pcm->card, file);
+	if (err < 0)
+		goto __error1;
 	if (!try_inc_mod_count(pcm->card->module)) {
 		err = -EFAULT;
-		atomic_dec(&pcm->use_count);
-		goto __error1;
+		goto __error2;
 	}
 	if (snd_task_name(current, task_name, sizeof(task_name)) < 0) {
 		err = -EFAULT;
@@ -1617,7 +1618,8 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 
       __error:
       	dec_mod_count(pcm->card->module);
-	atomic_dec(&pcm->use_count);
+      __error2:
+      	snd_card_file_remove(pcm->card, file);
       __error1:
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
@@ -1643,8 +1645,7 @@ static int snd_pcm_oss_release(struct inode *inode, struct file *file)
 	up(&pcm->open_mutex);
 	wake_up(&pcm->open_wait);
 	dec_mod_count(pcm->card->module);
-	if (atomic_dec_and_test(&pcm->use_count))
-		wake_up(&pcm->card->shutdown_sleep);
+	snd_card_file_remove(pcm->card, file);
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif

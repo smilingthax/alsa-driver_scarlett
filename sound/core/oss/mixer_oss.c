@@ -45,15 +45,20 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 	int cardnum = SNDRV_MINOR_OSS_CARD(minor(inode->i_rdev));
 	snd_card_t *card;
 	snd_mixer_oss_file_t *fmixer;
+	int err;
 
 	if ((card = snd_cards[cardnum]) == NULL)
 		return -ENODEV;
 	if (card->mixer_oss == NULL)
 		return -ENODEV;
+	err = snd_card_file_add(card, file);
+	if (err < 0)
+		return err;
 	fmixer = (snd_mixer_oss_file_t *)snd_kcalloc(sizeof(*fmixer), GFP_KERNEL);
-	if (fmixer == NULL)
+	if (fmixer == NULL) {
+		snd_card_file_remove(card, file);
 		return -ENOMEM;
-	atomic_inc(&card->ctl_use_count);
+	}
 	fmixer->card = card;
 	fmixer->mixer = card->mixer_oss;
 	file->private_data = fmixer;
@@ -65,8 +70,7 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 #ifdef LINUX_2_2
 		MOD_DEC_USE_COUNT;
 #endif
-		if (atomic_dec_and_test(&card->ctl_use_count))
-			wake_up(&card->shutdown_sleep);
+		snd_card_file_remove(card, file);
 		return -EFAULT;
 	}
 	return 0;
@@ -82,8 +86,7 @@ static int snd_mixer_oss_release(struct inode *inode, struct file *file)
 #ifdef LINUX_2_2
 		MOD_DEC_USE_COUNT;
 #endif
-		if (atomic_dec_and_test(&fmixer->card->ctl_use_count))
-			wake_up(&fmixer->card->shutdown_sleep);
+		snd_card_file_remove(fmixer->card, file);
 		kfree(fmixer);
 	}
 	return 0;

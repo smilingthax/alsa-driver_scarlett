@@ -426,7 +426,6 @@ struct _snd_pcm_str {
 
 struct _snd_pcm {
 	snd_card_t *card;
-	atomic_t use_count;
 	unsigned int device;	/* device number */
 	unsigned int info_flags;
 	unsigned short dev_class;

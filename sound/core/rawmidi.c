@@ -52,7 +52,6 @@ static int snd_rawmidi_free(snd_rawmidi_t *rawmidi);
 static int snd_rawmidi_dev_free(snd_device_t *device);
 static int snd_rawmidi_dev_register(snd_device_t *device);
 static int snd_rawmidi_dev_disconnect(snd_device_t *device);
-static int snd_rawmidi_dev_can_unregister(snd_device_t *device);
 static int snd_rawmidi_dev_unregister(snd_device_t *device);
 
 snd_rawmidi_t *snd_rawmidi_devices[SNDRV_CARDS * SNDRV_RAWMIDI_DEVICES];
@@ -196,10 +195,9 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 		err = -ENODEV;
 		goto __error1;
 	}
-	atomic_inc(&rmidi->use_count);
 	if (!try_inc_mod_count(rmidi->card->module)) {
 		err = -EFAULT;
-		goto __error2;
+		goto __error1;
 	}
 	down(&rmidi->open_mutex);
 	if (mode & SNDRV_RAWMIDI_LFLG_INPUT) {
@@ -349,8 +347,6 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 	}
 	dec_mod_count(rmidi->card->module);
 	up(&rmidi->open_mutex);
-      __error2:
-      	atomic_dec(&rmidi->use_count);
       __error1:
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
@@ -394,19 +390,24 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 	rmidi = snd_rawmidi_devices[(cardnum * SNDRV_RAWMIDI_DEVICES) + device];
 	if (rmidi == NULL)
 		return -ENODEV;
-	card = rmidi->card;
 #ifdef CONFIG_SND_OSSEMUL
 	if (maj == SOUND_MAJOR && !rmidi->ossreg)
 		return -ENXIO;
 #endif
-	fflags = snd_rawmidi_file_flags(file);
-	if ((file->f_flags & O_APPEND) && !(file->f_flags & O_NONBLOCK))
+	if ((file->f_flags & O_APPEND) && !(file->f_flags & O_NONBLOCK)) 
 		return -EINVAL;		/* invalid combination */
+	card = rmidi->card;
+	err = snd_card_file_add(card, file);
+	if (err < 0)
+		return -ENODEV;
+	fflags = snd_rawmidi_file_flags(file);
 	if ((file->f_flags & O_APPEND) || maj != CONFIG_SND_MAJOR) /* OSS emul? */
 		fflags |= SNDRV_RAWMIDI_LFLG_APPEND;
 	rawmidi_file = snd_magic_kmalloc(snd_rawmidi_file_t, 0, GFP_KERNEL);
-	if (rawmidi_file == NULL)
+	if (rawmidi_file == NULL) {
+		snd_card_file_remove(card, file);
 		return -ENOMEM;
+	}
 	init_waitqueue_entry(&wait, current);
 	add_wait_queue(&rmidi->open_wait, &wait);
 	while (1) {
@@ -448,6 +449,7 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 	if (err >= 0) {
 		file->private_data = rawmidi_file;
 	} else {
+		snd_card_file_remove(card, file);
 		snd_magic_kfree(rawmidi_file);
 	}
 	return err;
@@ -503,8 +505,6 @@ int snd_rawmidi_kernel_release(snd_rawmidi_file_t * rfile)
 	}
 	up(&rmidi->open_mutex);
 	dec_mod_count(rmidi->card->module);
-	if (atomic_dec_and_test(&rmidi->use_count))
-		wake_up(&rmidi->card->shutdown_sleep);
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
@@ -514,12 +514,15 @@ int snd_rawmidi_kernel_release(snd_rawmidi_file_t * rfile)
 static int snd_rawmidi_release(struct inode *inode, struct file *file)
 {
 	snd_rawmidi_file_t *rfile;
+	snd_rawmidi_t *rmidi;
 	int err;
 
 	rfile = snd_magic_cast(snd_rawmidi_file_t, file->private_data, return -ENXIO);
 	err = snd_rawmidi_kernel_release(rfile);
-	wake_up(&rfile->rmidi->open_wait);
+	rmidi = rfile->rmidi;
+	wake_up(&rmidi->open_wait);
 	snd_magic_kfree(rfile);
+	snd_card_file_remove(rmidi->card, file);
 	return err;
 }
 
@@ -1326,7 +1329,6 @@ int snd_rawmidi_new(snd_card_t * card, char *id, int device,
 		.dev_free = snd_rawmidi_dev_free,
 		.dev_register = snd_rawmidi_dev_register,
 		.dev_disconnect = snd_rawmidi_dev_disconnect,
-		.dev_can_unregister = snd_rawmidi_dev_can_unregister,
 		.dev_unregister = snd_rawmidi_dev_unregister
 	};
 
@@ -1485,13 +1487,6 @@ static int snd_rawmidi_dev_disconnect(snd_device_t *device)
 	snd_rawmidi_devices[idx] = NULL;
 	up(&register_mutex);
 	return 0;
-}
-
-static int snd_rawmidi_dev_can_unregister(snd_device_t *device)
-{
-	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
-
-	return atomic_read(&rmidi->use_count) != 0;
 }
 
 static int snd_rawmidi_dev_unregister(snd_device_t *device)

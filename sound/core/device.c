@@ -95,25 +95,6 @@ int snd_device_disconnect(snd_card_t *card, void *device_data)
 	return -ENXIO;
 }
 
-int snd_device_can_unregister(snd_card_t *card, void *device_data)
-{
-	struct list_head *list;
-	snd_device_t *dev;
-	
-	snd_assert(card != NULL, return -ENXIO);
-	snd_assert(device_data != NULL, return -ENXIO);
-	list_for_each(list, &card->devices) {
-		dev = snd_device(list);
-		if (dev->device_data != device_data)
-			continue;
-		if ((dev->state == SNDRV_DEV_REGISTERED || dev->state == SNDRV_DEV_DISCONNECTED) && dev->ops->dev_can_unregister)
-			return dev->ops->dev_can_unregister(dev);
-		return 0;
-	}
-	snd_printd("device disconnect %p (from %p), not found\n", device_data, __builtin_return_address(0));
-	return -ENXIO;
-}
-
 int snd_device_register(snd_card_t *card, void *device_data)
 {
 	struct list_head *list;
@@ -166,24 +147,6 @@ int snd_device_disconnect_all(snd_card_t *card)
 		dev = snd_device(list);
 		if (snd_device_disconnect(card, dev->device_data) < 0)
 			err = -ENXIO;
-	}
-	return err;
-}
-
-int snd_device_can_unregister_all(snd_card_t *card)
-{
-	snd_device_t *dev;
-	struct list_head *list;
-	int err = 0, res;
-
-	snd_assert(card != NULL, return -ENXIO);
-	list_for_each(list, &card->devices) {
-		dev = snd_device(list);
-		res = snd_device_can_unregister(card, dev->device_data);
-		if (res < 0)
-			err = -ENXIO;
-		if (res > 0)	/* locked */
-			return 1;
 	}
 	return err;
 }

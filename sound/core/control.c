@@ -62,9 +62,14 @@ static int snd_ctl_open(struct inode *inode, struct file *file)
 		err = -ENODEV;
 		goto __error1;
 	}
+	err = snd_card_file_add(card, file);
+	if (err < 0) {
+		err = -ENODEV;
+		goto __error1;
+	}
 	if (!try_inc_mod_count(card->module)) {
 		err = -EFAULT;
-		goto __error1;
+		goto __error2;
 	}
 	ctl = snd_magic_kcalloc(snd_ctl_file_t, 0, GFP_KERNEL);
 	if (ctl == NULL) {
@@ -78,13 +83,14 @@ static int snd_ctl_open(struct inode *inode, struct file *file)
 	ctl->pid = current->pid;
 	file->private_data = ctl;
 	write_lock_irqsave(&card->control_rwlock, flags);
-	atomic_inc(&card->ctl_use_count);
 	list_add_tail(&ctl->list, &card->ctl_files);
 	write_unlock_irqrestore(&card->control_rwlock, flags);
 	return 0;
 
       __error:
       	dec_mod_count(card->module);
+      __error2:
+	snd_card_file_remove(card, file);
       __error1:
 #ifdef LINUX_2_2
       	MOD_DEC_USE_COUNT;
@@ -119,8 +125,6 @@ static int snd_ctl_release(struct inode *inode, struct file *file)
 	card = ctl->card;
 	write_lock_irqsave(&card->control_rwlock, flags);
 	list_del(&ctl->list);
-	if (atomic_dec_and_test(&card->ctl_use_count))
-		wake_up(&card->shutdown_sleep);
 	list_for_each(list, &card->controls) {
 		control = snd_kcontrol(list);
 		if (control->owner == ctl)
@@ -130,6 +134,7 @@ static int snd_ctl_release(struct inode *inode, struct file *file)
 	snd_ctl_empty_read_queue(ctl);
 	snd_magic_kfree(ctl);
 	dec_mod_count(card->module);
+	snd_card_file_remove(card, file);
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
@@ -661,7 +666,7 @@ static ssize_t snd_ctl_read(struct file *file, char *buffer, size_t count, loff_
 
 	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
 	snd_assert(ctl != NULL && ctl->card != NULL, return -ENXIO);
-	if (!ctl->subscribed || ctl->card->ctl_shutdown)
+	if (!ctl->subscribed)
 		return -EBADFD;
 	if (count < sizeof(snd_ctl_event_t))
 		return -EINVAL;
@@ -716,9 +721,6 @@ static unsigned int snd_ctl_poll(struct file *file, poll_table * wait)
 	if (!ctl->subscribed)
 		return 0;
 	poll_wait(file, &ctl->change_sleep, wait);
-
-	if (ctl->card->ctl_shutdown)
-		return POLLERR;
 
 	mask = 0;
 	if (!list_empty(&ctl->events))
@@ -817,21 +819,14 @@ int snd_ctl_disconnect(snd_card_t *card)
 	struct list_head *flist;
 	snd_ctl_file_t *ctl;
 
-	card->ctl_shutdown = 1;
 	read_lock_irq(&card->control_rwlock);
 	list_for_each(flist, &card->ctl_files) {
 		ctl = snd_ctl_file(flist);
-		printk("ctl disconnect %p\n", ctl);
 		wake_up(&ctl->change_sleep);
 		kill_fasync(&ctl->fasync, SIGIO, POLL_ERR);
 	}
 	read_unlock_irq(&card->control_rwlock);
 	return 0;
-}
-
-int snd_ctl_can_unregister(snd_card_t *card)
-{
-	return atomic_read(&card->ctl_use_count) != 0;
 }
 
 int snd_ctl_unregister(snd_card_t *card)

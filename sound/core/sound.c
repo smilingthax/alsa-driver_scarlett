@@ -79,7 +79,7 @@ void snd_request_card(int card)
 	int locked;
 
 	read_lock(&snd_card_rwlock);
-	locked = test_bit(card, &snd_cards_lock);
+	locked = snd_cards_lock & (1 << card);
 	read_unlock(&snd_card_rwlock);
 	if (locked)
 		return;
@@ -429,8 +429,11 @@ EXPORT_SYMBOL(snd_mixer_oss_notify_callback);
 EXPORT_SYMBOL(snd_card_new);
 EXPORT_SYMBOL(snd_card_disconnect);
 EXPORT_SYMBOL(snd_card_free);
+EXPORT_SYMBOL(snd_card_free_in_thread);
 EXPORT_SYMBOL(snd_card_register);
 EXPORT_SYMBOL(snd_component_add);
+EXPORT_SYMBOL(snd_card_file_add);
+EXPORT_SYMBOL(snd_card_file_remove);
 #ifdef CONFIG_PM
 EXPORT_SYMBOL(snd_power_wait);
 #endif
