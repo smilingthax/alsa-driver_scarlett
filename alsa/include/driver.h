@@ -22,10 +22,6 @@
  *
  */
 
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
-#define NEW_MACRO_VARARGS
-#endif
-
 #ifdef ALSA_BUILD
 #include "config.h"
 #endif
@@ -493,91 +489,43 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 /* --- */
 
-#ifdef NEW_MACRO_VARARGS
-
-/*
- *  VARARGS section
- */
-
-#define snd_printk(...) do {\
+#define snd_printk(format, args...) do { \
 	printk("ALSA %s:%d: ", __FILE__, __LINE__); \
- 	printk(__VA_ARGS__); \
+	printk(format, ##args); \
 } while (0)
 
 #ifdef CONFIG_SND_DEBUG
 
-#define snd_printd(...) snd_printk(__VA_ARGS__)
-#define snd_assert(expr, ...) do {\
-	if (!(expr)) {\
-		snd_printk("BUG? (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
-		__VA_ARGS__;\
-	}\
-} while (0)
-#define snd_runtime_check(expr, ...) do {\
-	if (!(expr)) {\
-		snd_printk("ERROR (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
-		__VA_ARGS__;\
-	}\
-} while (0)
-
-#else /* !CONFIG_SND_DEBUG */
-
-#define snd_printd(...)	/* nothing */
-#define snd_assert(expr, ...)	/* nothing */
-#define snd_runtime_check(expr, ...) do { if (!(expr)) {__VA_ARGS__;} } while (0)
-
-#endif /* CONFIG_SND_DEBUG */
-
-#ifdef CONFIG_SND_DEBUG_DETECT
-#define snd_printdd(...) snd_printk(__VA_ARGS__)
-#else
-#define snd_printdd(...) /* nothing */
-#endif
-
-#else /* !NEW_MACRO_VARARGS */
-
-/*
- *  Old args section...
- */
-
-#define snd_printk(args...) do {\
-	printk("ALSA %s:%d: ", __FILE__, __LINE__); \
- 	printk(##args); \
-} while (0)
-
-#ifdef CONFIG_SND_DEBUG
-
-#define snd_printd(args...) snd_printk(##args)
+#define snd_printd(format, args...) snd_printk(format, ##args)
 #define snd_assert(expr, args...) do {\
 	if (!(expr)) {\
-		snd_printk("BUG? (%s)\n", __STRING(expr));\
+		snd_printk("BUG? (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
 		##args;\
 	}\
 } while (0)
 #define snd_runtime_check(expr, args...) do {\
 	if (!(expr)) {\
-		snd_printk("ERROR (%s)\n", __STRING(expr));\
+		snd_printk("ERROR (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
 		##args;\
 	}\
 } while (0)
 
 #else /* !CONFIG_SND_DEBUG */
 
-#define snd_printd(args...) /* nothing */
+#define snd_printd(format, args...)	/* nothing */
 #define snd_assert(expr, args...)	/* nothing */
-#define snd_runtime_check(expr, args...) do { if (!(expr)) {##args;} } while (0)
+#define snd_runtime_check(expr, args...) do { if (!(expr)) { ##args; } } while (0)
 
 #endif /* CONFIG_SND_DEBUG */
 
 #ifdef CONFIG_SND_DEBUG_DETECT
-#define snd_printdd(args...) snd_printk(##args)
+#define snd_printdd(format, args...) snd_printk(format, ##args)
 #else
-#define snd_printdd(args...) /* nothing */
+#define snd_printdd(format, args...) /* nothing */
 #endif
 
-#endif /* NEW_MACRO_VARARGS */
-
 #define snd_BUG() snd_assert(0, )
+
 
 #define snd_timestamp_now(tstamp) do_gettimeofday(tstamp)
 #define snd_timestamp_zero(tstamp) do { (tstamp)->tv_sec = 0; (tstamp)->tv_usec = 0; } while (0)

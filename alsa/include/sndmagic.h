@@ -43,17 +43,6 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 
 #define snd_magic_cast1(t, expr, cmd) snd_magic_cast(t, expr, cmd)
 
-#ifdef NEW_MACRO_VARARGS
-#define snd_magic_cast(type, ptr, ...) (type *) ({\
-	void *__ptr = ptr;\
-	unsigned long __magic = _snd_magic_value(__ptr);\
-	if (__magic != type##_magic) {\
-		snd_printk("bad MAGIC (0x%lx)\n", __magic);\
-		__VA_ARGS__;\
-	}\
-	__ptr;\
-})
-#else
 #define snd_magic_cast(type, ptr, action...) (type *) ({\
 	void *__ptr = ptr;\
 	unsigned long __magic = _snd_magic_value(__ptr);\
@@ -63,7 +52,6 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 	}\
 	__ptr;\
 })
-#endif
 
 #define snd_device_t_magic			0xa15a00ff
 #define snd_pcm_t_magic				0xa15a0101
