@@ -143,7 +143,6 @@ struct snd_stru_ad1848 {
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
 	snd_card_t *card;
-	snd_kmixer_t *mixer;
 
 	unsigned char image[32];	/* SGalaxy needs an access to extended registers */
 	int mce_bit;

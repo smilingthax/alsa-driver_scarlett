@@ -646,12 +646,9 @@ struct snd_stru_emu10k1 {
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm_mic;
 	snd_pcm_t *pcm_efx;
-	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 
-	snd_kmixer_element_t *me_vol_rear, *me_sw_rear;
 	int vol_rear[2];
-	unsigned int rear_active;
 
 	spinlock_t synth_lock;
 	void *synth;
@@ -697,7 +694,7 @@ int snd_emu10k1_create(snd_card_t * card,
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
-int snd_emu10k1_mixer(emu10k1_t * emu, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
+int snd_emu10k1_mixer(emu10k1_t * emu);
 
 void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
 
@@ -714,8 +711,8 @@ void snd_emu10k1_voice_set_loop_stop(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_voice_clear_loop_stop(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_wait(emu10k1_t *emu, unsigned int wait);
 static inline unsigned int snd_emu10k1_wc(emu10k1_t *emu) { return (inl(emu->port + WC) >> 6) & 0xfffff; }
-unsigned short snd_emu10k1_ac97_read(void *private_data, unsigned short reg);
-void snd_emu10k1_ac97_write(void *private_data, unsigned short reg, unsigned short data);
+unsigned short snd_emu10k1_ac97_read(ac97_t *ac97, unsigned short reg);
+void snd_emu10k1_ac97_write(ac97_t *ac97, unsigned short reg, unsigned short data);
 unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 

@@ -268,7 +268,6 @@ struct snd_stru_ice1712 {
 	unsigned int capture_con_virt_addr;
 	unsigned int ac97_ext_id;
 	ac97_t *ac97;
-	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi[2];
 
 	spinlock_t reg_lock;
@@ -280,8 +279,6 @@ struct snd_stru_ice1712 {
 	unsigned int pro_volumes[20];
 	unsigned char ak4524_adc_volume[4];
 	unsigned char ak4524_dac_volume[4];
-	snd_kmixer_element_t *me_pro_pbk;
-	snd_kmixer_element_t *me_pro_cap;
 
 	unsigned int spdif_defaults;
 };
@@ -299,6 +296,6 @@ void snd_ice1712_interrupt(ice1712_t * ice1712);
 
 int snd_ice1712_pcm(ice1712_t * ice1712, int device, snd_pcm_t ** rpcm);
 int snd_ice1712_pcm_profi(ice1712_t * ice1712, int device, snd_pcm_t ** rpcm);
-int snd_ice1712_mixer(ice1712_t * ice1712, int device, int pcm_count, int *pcm_devs, snd_kmixer_t ** rmixer);
+int snd_ice1712_mixer(ice1712_t * ice1712);
 
 #endif				/* __ICE1712_H */

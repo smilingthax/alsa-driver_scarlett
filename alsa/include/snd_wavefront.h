@@ -104,7 +104,6 @@ struct snd_stru_wavefront_card {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	unsigned short pcm_status_reg;
-	snd_kmixer_t *mixer;
 	snd_rawmidi_t *cs4232_rmidi;
 	snd_rawmidi_t *ics2115_internal_rmidi;
 	snd_rawmidi_t *ics2115_external_rmidi;

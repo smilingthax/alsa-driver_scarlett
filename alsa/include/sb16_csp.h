@@ -133,16 +133,14 @@ typedef struct snd_sb_csp {
 	int version;		/* CSP version (0x10 - 0x1f) */
 	int running;		/* running state */
 
-	snd_kmixer_t		*mixer;		/* mixer interface to attach */
-	snd_kmixer_element_t	*mixer_dest;	/* output target */
-	snd_kmixer_element_t	*qsound_element;
-	snd_kmixer_group_t 	*qsound_group;
-
 	spinlock_t q_lock;	/* locking */
 	int q_enabled;		/* enabled flag */
 	int qpos_left;		/* left position */
 	int qpos_right;		/* right position */
 	int qpos_changed;	/* position changed flag */
+
+	snd_kcontrol_t *control_mute;
+	snd_kcontrol_t *control_volume;
 
 	struct semaphore access_mutex;	/* locking */
 	snd_info_entry_t *proc;	/* proc interface */

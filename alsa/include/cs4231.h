@@ -233,7 +233,6 @@ struct snd_stru_cs4231 {
 	snd_pcm_t *pcm;
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
-	snd_kmixer_t *mixer;
 	snd_timer_t *timer;
 
 	unsigned char image[32];	/* registers image */

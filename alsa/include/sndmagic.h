@@ -67,8 +67,6 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 #define snd_timer_t_magic			0xa15a0501
 #define snd_timer_user_t_magic			0xa15a0502
 #define snd_hwdep_t_magic			0xa15a0601
-#define snd_kmixer_t_magic			0xa15a0701
-#define snd_kmixer_file_t_magic			0xa15a0702
 
 
 #define snd_card_share_pcm_t_magic		0xa15a1001

@@ -256,10 +256,7 @@ extern int snd_sb8_capture_open(void *private_data, snd_pcm_substream_t *substre
 extern int snd_sb8_playback_close(void *private_data, snd_pcm_substream_t *substream);
 extern int snd_sb8_capture_close(void *private_data, snd_pcm_substream_t *substream);
 /* mixer8.c */
-extern int snd_sb8dsp_new_mixer(sbdsp_t * codec,
-			        int device,
-				snd_pcm_t * pcm,
-				snd_kmixer_t ** rmixer);
+extern int snd_sb8dsp_new_mixer(sbdsp_t * codec);
 /* midi8.c */
 extern void snd_sb8dsp_midi_interrupt(snd_rawmidi_t * rmidi);
 extern int snd_sb8dsp_midi_new(sbdsp_t * codec, int device, snd_rawmidi_t ** rrawmidi);
@@ -281,9 +278,6 @@ extern int snd_sb16_capture_open(void *private_data, snd_pcm_substream_t *substr
 extern int snd_sb16_playback_close(void *private_data, snd_pcm_substream_t *substream);
 extern int snd_sb16_capture_close(void *private_data, snd_pcm_substream_t *substream);
 /* mixer16.c */
-extern int snd_sb16dsp_new_mixer(sbdsp_t * codec,
-				 int device,
-				 snd_pcm_t * pcm,
-				 snd_kmixer_t ** rmixer);
+extern int snd_sb16dsp_new_mixer(sbdsp_t * codec);
 
 #endif				/* __SB_H */

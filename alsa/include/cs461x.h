@@ -1667,7 +1667,6 @@ struct snd_stru_cs461x {
 	snd_pcm_t *pcm;
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
-	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 
 	void *entry_proc_BA0;
@@ -1692,7 +1691,7 @@ int snd_cs461x_free(cs461x_t * codec);
 void snd_cs461x_interrupt(cs461x_t * codec);
 
 int snd_cs461x_pcm(cs461x_t * codec, int device, snd_pcm_t **rpcm);
-int snd_cs461x_mixer(cs461x_t * codec, int device, snd_pcm_t *pcm, snd_kmixer_t **rmixer);
+int snd_cs461x_mixer(cs461x_t * codec);
 int snd_cs461x_midi(cs461x_t * codec, int device, snd_rawmidi_t **rmidi);
 
 #endif				/* __CS461X_H */

@@ -307,10 +307,9 @@ struct snd_stru_ymfpci {
 	snd_pcm_t *pcm_spdif;
 	snd_pcm_substream_t *capture_substream[YDSXG_CAPTURE_VOICES];
 	snd_pcm_substream_t *effect_substream[YDSXG_EFFECT_VOICES];
-	snd_kmixer_t *mixer;
-	snd_kmixer_element_t *me_vol_recsrc;
-	snd_kmixer_element_t *me_vol_adcrec;
-	snd_kmixer_element_t *me_vol_spdifrec;
+	snd_kcontrol_t *ctl_vol_recsrc;
+	snd_kcontrol_t *ctl_vol_adcrec;
+	snd_kcontrol_t *ctl_vol_spdifrec;
 
 	spinlock_t reg_lock;
 	spinlock_t voice_lock;

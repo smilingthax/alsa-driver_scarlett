@@ -39,16 +39,6 @@
 #define EMU8000_RAM_CLOSE  2
 
 /*
- * mixer elements
- */
-typedef struct snd_emu8000_mixer {
-	snd_kmixer_t *mixer;
-	snd_kmixer_element_t *me_tone;
-	snd_kmixer_group_t *me_bass;
-	snd_kmixer_group_t *me_treble;
-} emu8000_mixer_t;
-
-/*
  * Structure to hold all state information for the emu8000 driver.
  *
  * Note 1: The chip supports 32 channels in hardware this is max_channels
@@ -75,8 +65,11 @@ typedef struct snd_emu8000 {
 	int bass_level;
 	int treble_level;
 
-	emu8000_mixer_t mixer; /* mixer elements */
 	snd_emux_memhdr_t *memhdr;
+
+	spinlock_t control_lock;
+	snd_kcontrol_t * control_bass;
+	snd_kcontrol_t * control_treble;
 
 } emu8000_t;
 
@@ -87,9 +80,6 @@ typedef struct snd_emu8000 {
 typedef struct emu8000_arg {
 	int port;		/* base i/o port */
 	int index;		/* sequencer client index */
-	snd_kmixer_t *mixer;	/* mixer interface to attach */
-	int mixer_index;	/* mixer extension index */
-	snd_kmixer_element_t *mixer_dest; /* output target */
 	int seq_ports;		/* number of sequencer ports to be created */
 } emu8000_arg_t;
 
