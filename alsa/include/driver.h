@@ -504,16 +504,13 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 #ifdef CONFIG_X86_TSC
 #include <asm/msr.h>
 /* FIXME: this is a wrong naive implementation */
-static inline long long snd_timestamp_now(void)
-{
-	long long tsc;
-	rdtscll(tsc);
-	return tsc;
-}
+#define snd_timestamp_now(tstamp) rdtscll(*(tstamp))
 #else
 /* FIXME */
-#define snd_timestamp_now() 0
+#define snd_timestamp_now(tstamp) (*(tstamp) = 0)
 #endif
+
+#define snd_timestamp_null(tstamp) (*(tstamp) = 0)
 
 #define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 
