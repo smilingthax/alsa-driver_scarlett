@@ -55,6 +55,9 @@
 #endif
 #if LinuxVersionCode( 2, 1, 0 ) <= LINUX_VERSION_CODE
 #define LINUX_2_1
+#if LinuxVersionCode( 2, 1, 127 ) > LINUX_VERSION_CODE
+#error "This driver requires Linux 2.1.127 and highter."
+#endif
 #endif
 
 #ifdef SNDCFG_PNP
