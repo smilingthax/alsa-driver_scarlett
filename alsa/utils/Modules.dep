@@ -5,22 +5,12 @@
 %dir linux/sound/drivers
 |snd-serialmidi snd-seq-midi
 
-%dir linux/sound/drivers/vx
-snd-vx-lib snd-pcm
-
 %dir linux/sound/pci
 |snd-azt3328 snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
-
-%dir linux/sound/pci/vx222
-|snd-vx222 snd-vx-lib
 
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm
 
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
-
-%dir linux/sound/pcmcia/vx
-|snd-vxpocket snd-vx-lib
-|snd-vxp440 snd-vx-lib
 
