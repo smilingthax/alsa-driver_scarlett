@@ -195,7 +195,11 @@ pack: mrproper
 .PHONY: uninstall
 uninstall:
 	rm -rf $(DESTDIR)$(prefix)/include/sound
+ifeq ($(moddir_tree),y)
+	rm -rf $(DESTDIR)$(moddir)
+else
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
+endif
 	rm -f $(DESTDIR)/sbin/init.d/alsasound
 	rm -f $(DESTDIR)/etc/rc.d/init.d/alsasound
 	rm -f $(DESTDIR)/etc/init.d/alsasound
