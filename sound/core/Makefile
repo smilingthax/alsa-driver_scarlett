@@ -24,7 +24,7 @@ snd-rtctimer-objs := rtctimer.o
 snd-hwdep-objs    := hwdep.o
 
 obj-$(CONFIG_SND) += snd.o
-ifeq ($(CONFIG_RTC),y)
+ifeq ($(subst m,y,$(CONFIG_RTC)),y)
   obj-$(CONFIG_SND_RTCTIMER) += snd-timer.o
   obj-$(CONFIG_SND_RTCTIMER) += snd-rtctimer.o
 endif
