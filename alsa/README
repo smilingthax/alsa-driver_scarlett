@@ -1,5 +1,3 @@
-
-	
 		Advanced Linux Sound Architecture (ALSA) - Driver
 		=================================================
 			 WWW: http://www.alsa-project.org
@@ -9,38 +7,31 @@ Features
 ========
 
 * general
-  - modularized architecture with support for 2.2+ kernels
-  - support for versioned and exported symbols
+  - GPL license
+  - fully modularized architecture
   - full proc filesystem support - /proc/asound
-* ISA soundcards
-  - support for 128k ISA DMA buffer
-* mixer
+  - SMP safe
+  - thread safe
+  - integrated to 2.6+ kernels
+  - moved all additional code (stream conversions etc.) outside the kernel
+* universal control API
   - new enhanced and flexible API for applications
-  - support for unlimited number of elements and groups
+  - support for unlimited number of controls
   - support for mute (and hardware mute if hardware supports it)
   - support for mixer events
     - this allows two or more applications to be synchronized
 * digital audio (PCM)
+  - support for all types of hardware
   - new enhanced API for applications
   - full real duplex support
-  - full duplex support for SoundBlaster 16/AWE soundcards
-  - digital audio data for playback and record should be read back using
-    proc filesystem
-* OSS/Free compatibility
-  - full mixer compatibility
-  - full PCM (/dev/dsp) compatibility
+  - stream start synchronization
+* sequencer
+  - support multiple event queues
+* hardware depedent API
+  - support hw specific things (like FX accelerated processing etc.)
+* OSS/Free kernel emulation
+  - mixer
+  - PCM (/dev/dsp) compatibility
 
-More information about ALSA sound driver is located in doc directory.
-
-
-Notes to soundcards
-===================
-
-Sound Blaster 16/AWE
---------------------
-    Quake and other OSS/Free programs should abort with 'Segmentation
-fault' or other errors. This is due to ALSA driver isn't able support
-8-bit or 16-bit sample wide for mmaped (direct) access at some time 
-(this depends if some other application isn't using record or playback
-direction). For normal access ALSA driver does sample width conversions.
-You can try use different sample width for these programs.
+More information about the ALSA sound driver is located in alsa-driver/doc
+and alsa-kernel/Documentation directories.
