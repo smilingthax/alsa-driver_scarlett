@@ -131,14 +131,15 @@ static char *kernel_deps[] = {
 };
 
 /* % -> always true */
+/* # -> define */
 static char *no_cards[] = {
 	"%SOUND",
 	"SOUND_PRIME",
 	"%SND",
-	"SND_TIMER",
-	"SND_HWDEP",
-	"SND_RAWMIDI",
-	"SND_PCM",
+	"#SND_TIMER",
+	"#SND_HWDEP",
+	"#SND_RAWMIDI",
+	"#SND_PCM",
 	"SND_SEQUENCER",
 	"SND_MIXER_OSS",
 	"SND_PCM_OSS",
@@ -150,12 +151,13 @@ static char *no_cards[] = {
 	"SND_DEBUG_DETECT",
 	"SND_VERBOSE_PRINTK",
 	"SND_BIT32_EMUL",
-	"SND_OPL3_LIB",
-	"SND_OPL4_LIB",
-	"SND_VX_LIB",
-	"SND_MPU401_UART",
-	"SND_GUS_SYNTH",
-	"SND_AC97_CODEC",
+	"#SND_OPL3_LIB",
+	"#SND_OPL4_LIB",
+	"#SND_VX_LIB",
+	"#SND_MPU401_UART",
+	"#SND_GUS_SYNTH",
+	"#SND_AC97_CODEC",
+	"#SND_GENERIC_PM",
 	NULL
 };
 
@@ -287,9 +289,9 @@ static int read_file_1(const char *filename, struct cond **template)
 		}
 		switch (state) {
 		case READ_STATE_CONFIG:
-			if (!strncmp(buffer, "\ttristate ", 10))
+			if (!strncmp(buffer, "\ttristate", 9))
 				dep->is_bool = 0;
-			else if (!strncmp(buffer, "\tbool ", 6))
+			else if (!strncmp(buffer, "\tbool", 5))
 				dep->is_bool = 1;
 			else if (!strncmp(buffer, "\tdepends on ", 12))
 				add_dep(dep, buffer + 12, *template);
@@ -767,10 +769,37 @@ static int is_toplevel(struct dep *dep)
 	}
 	for (idx = 0; no_cards[idx]; idx++) {
 		str = no_cards[idx];
-		if (*str == '%')
+		if (*str == '%' || *str == '#')
 			str++;
 		if (!strcmp(str, dep->name))
 			return 0;
+	}
+	return 1;
+}
+
+// whether to output AC_DEFINE() for this variable
+static int output_ac_define(struct dep *dep)
+{
+	int idx;
+	char *str;
+	
+	if (dep == NULL)
+		return 0;
+	for (idx = 0; kernel_deps[idx]; idx++) {
+		if (!strcmp(kernel_deps[idx], dep->name))
+			return 0;
+	}
+	for (idx = 0; no_cards[idx]; idx++) {
+		int def = 0;
+		str = no_cards[idx];
+		if (*str == '%')
+			str++;
+		if (*str == '#') {
+			def = 1;
+			str++;
+		}
+		if (!strcmp(str, dep->name))
+			return def;
 	}
 	return 1;
 }
@@ -947,7 +976,7 @@ static void output_acinclude(void)
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("      %s=\"m\"\n", text);
+		printf("      %s=\"%c\"\n", text, tempdep->is_bool ? 'y' : 'm');
 		free(text);
 		printf("      probed=1\n");
 		if (put_if)
@@ -1034,7 +1063,7 @@ static void output_acinclude(void)
 	printf("AC_MSG_RESULT($SELECTED_CARDS)\n\n");
 	printf("CONFIG_SND=\"m\"\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		if (!is_toplevel(tempdep))
+		if (!output_ac_define(tempdep))
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("if test -n \"$%s\"; then\n", text);
