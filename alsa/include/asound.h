@@ -129,9 +129,10 @@ enum sndrv_card_type {
 	SNDRV_CARD_TYPE_PMAC_AWACS,	/* PMac AWACS */
 	SNDRV_CARD_TYPE_PMAC_BURGUNDY,	/* PMac Burgundy */
 	SNDRV_CARD_TYPE_PMAC_DACA,	/* PMac DACA */
+	SNDRV_CARD_TYPE_ALI5451,	/* ALi PCI Audio M5451 */
 
 	/* Don't forget to change the following: */
-	SNDRV_CARD_TYPE_LAST = SNDRV_CARD_TYPE_PMAC_DACA,
+	SNDRV_CARD_TYPE_LAST = SNDRV_CARD_TYPE_ALI5451,
 };
 
 /****************************************************************************
