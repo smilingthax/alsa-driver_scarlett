@@ -226,13 +226,6 @@ Additional Modules
 
     See docs/hdspm.txt for details.
 
-  Module snd-ca0106
-  -----------------
-
-    Module for Creative Audigy LS and SB Live 24bit
-
-    Module supports up to 8 cards.
-
   Module snd-azx
   --------------
 
