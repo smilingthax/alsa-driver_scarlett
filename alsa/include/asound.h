@@ -510,27 +510,21 @@ enum sndrv_rawmidi_stream {
 struct sndrv_rawmidi_info {
 	unsigned int device;		/* RO/WR (control): device number */
 	unsigned int subdevice;		/* RO/WR (control): subdevice number */
+	enum sndrv_rawmidi_stream stream; /* WR: stream */
 	int card;			/* R: card number */
 	unsigned int flags;		/* SNDRV_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID (user selectable) */
 	unsigned char name[80];		/* name of device */
 	unsigned char subname[32];	/* name of active or selected subdevice */
-	unsigned int output_subdevices_count;
-	unsigned int output_subdevices_avail;
-	unsigned int input_subdevices_count;
-	unsigned int input_subdevices_avail;
+	unsigned int subdevices_count;
+	unsigned int subdevices_avail;
 	unsigned char reserved[64];	/* reserved for future use */
 };
-
-#define SNDRV_RAWMIDI_PARBIT_STREAM	(1<<0)
-#define SNDRV_RAWMIDI_PARBIT_BUFFER_SIZE	(1<<1)
-#define SNDRV_RAWMIDI_PARBIT_AVAIL_MIN	(1<<2)
 
 struct sndrv_rawmidi_params {
 	enum sndrv_rawmidi_stream stream;
 	size_t buffer_size;		/* queue size in bytes */
 	size_t avail_min;		/* minimum avail bytes for wakeup */
-	unsigned int fail_mask;		/* failure locations */
 	unsigned int no_active_sensing: 1; /* do not send active sensing byte in close() */
 	unsigned char reserved[16];	/* reserved for future use */
 };

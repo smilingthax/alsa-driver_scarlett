@@ -729,17 +729,17 @@ extern int snd_pcm_hw_rule_add(snd_pcm_runtime_t *runtime,
 				snd_pcm_hw_rule_func_t func, void *private,
 				int dep, ...);
 
-extern int snd_pcm_format_signed(int format);
-extern int snd_pcm_format_unsigned(int format);
-extern int snd_pcm_format_linear(int format);
-extern int snd_pcm_format_little_endian(int format);
-extern int snd_pcm_format_big_endian(int format);
-extern int snd_pcm_format_width(int format);			/* in bits */
-extern int snd_pcm_format_physical_width(int format);		/* in bits */
-extern u_int64_t snd_pcm_format_silence_64(int format);
-extern int snd_pcm_format_set_silence(int format, void *buf, unsigned int frames);
-extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
-extern ssize_t snd_pcm_format_size(int format, size_t samples);
+extern int snd_pcm_format_signed(snd_pcm_format_t format);
+extern int snd_pcm_format_unsigned(snd_pcm_format_t format);
+extern int snd_pcm_format_linear(snd_pcm_format_t format);
+extern int snd_pcm_format_little_endian(snd_pcm_format_t format);
+extern int snd_pcm_format_big_endian(snd_pcm_format_t format);
+extern int snd_pcm_format_width(snd_pcm_format_t format);			/* in bits */
+extern int snd_pcm_format_physical_width(snd_pcm_format_t format);		/* in bits */
+extern u_int64_t snd_pcm_format_silence_64(snd_pcm_format_t format);
+extern int snd_pcm_format_set_silence(snd_pcm_format_t format, void *buf, unsigned int frames);
+extern snd_pcm_format_t snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
+extern ssize_t snd_pcm_format_size(snd_pcm_format_t format, size_t samples);
  
 extern void snd_pcm_set_ops(snd_pcm_t * pcm, int direction, snd_pcm_ops_t *ops);
 extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);

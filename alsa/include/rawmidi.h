@@ -159,7 +159,7 @@ int snd_rawmidi_transmit(snd_rawmidi_substream_t * substream, unsigned char *buf
 
 /* main midi functions */
 
-int snd_rawmidi_kernel_info(int cardnum, int device, int subdevice, snd_rawmidi_info_t *info);
+int snd_rawmidi_info_select(snd_card_t *card, snd_rawmidi_info_t *info);
 int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice, int mode, snd_rawmidi_file_t * rfile);
 int snd_rawmidi_kernel_release(snd_rawmidi_file_t * rfile);
 int snd_rawmidi_output_params(snd_rawmidi_substream_t * substream, snd_rawmidi_params_t * params);
