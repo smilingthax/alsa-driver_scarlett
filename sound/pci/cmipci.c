@@ -2511,7 +2511,7 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	snd_cmipci_write(cm, CM_REG_FUNCTRL1, 0);
 
 	snd_cmipci_write(cm, CM_REG_CHFORMAT, 0);
-	snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_XCHGDAC|CM_ENDBDAC|CM_N4SPK3D);
+	snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC|CM_N4SPK3D);
 
 	/* set MPU address */
 	switch (iomidi) {
