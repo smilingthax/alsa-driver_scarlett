@@ -187,15 +187,17 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #endif
 
 #ifdef CONFIG_DEVFS_FS
+#include <linux/devfs_fs_kernel.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 #include <linux/fs.h>
 #undef register_chrdev
 #define register_chrdev devfs_register_chrdev
 #undef unregister_chrdev
 #define unregister_chrdev devfs_unregister_chrdev
+#undef devfs_remove
+#define devfs_remove snd_compat_devfs_remove
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-#include <linux/devfs_fs_kernel.h>
 static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
 					      unsigned int major, unsigned int minor,
                                               char type, int traverse_symlinks)
@@ -205,7 +207,6 @@ static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *na
 	devfs_unregister(master);
 }
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#include <linux/devfs_fs_kernel.h>
 static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
 					      unsigned int major, unsigned int minor,
                                               char type, int traverse_symlinks)
@@ -214,6 +215,10 @@ static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *na
 	master = devfs_find_handle(dir, name, major, minor, type, traverse_symlinks);
 	devfs_unregister(master);
 }
+#endif
+#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
+static inline void devfs_remove(const char *fmt, ...) { }
 #endif
 #endif /* CONFIG_DEVFS_FS */
 
