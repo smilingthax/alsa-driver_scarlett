@@ -110,6 +110,14 @@ static int __devinit snd_card_cs46xx_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
+    if ((err = snd_cs46xx_pcm_rear(chip,1, NULL)) < 0) {
+        snd_card_free(card);
+        return err;
+    }
+    if ((err = snd_cs46xx_pcm_iec958(chip,2,NULL)) < 0) {
+        snd_card_free(card);
+        return err;
+    }
 	if ((err = snd_cs46xx_mixer(chip)) < 0) {
 		snd_card_free(card);
 		return err;
@@ -132,6 +140,7 @@ static int __devinit snd_card_cs46xx_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
+
 	pci_set_drvdata(pci, chip);
 	dev++;
 	return 0;
