@@ -20,6 +20,7 @@
 
 /* vmalloc_to_page wrapper */
 #ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
+#include <linux/highmem.h>
 struct page *snd_compat_vmalloc_to_page(void *pageptr)
 {
 	pgd_t *pgd;
