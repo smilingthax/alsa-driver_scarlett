@@ -1,0 +1,380 @@
+#ifndef __DRIVER_H
+#define __DRIVER_H
+
+/*
+ *  Main header file for the ALSA driver
+ *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@jcu.cz>
+ *
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ */
+
+#include "config.h"
+
+#define SND_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
+
+#ifndef SNDCFG_MAJOR			/* standard configuration */
+#define SNDCFG_MAJOR		14
+#endif
+
+#if !defined( SNDCFG_DEBUG )
+#undef SNDCFG_DEBUG_MEMORY
+#endif
+
+/*
+ *  ==========================================================================
+ */
+
+#define __KERNEL__
+#define MODULE
+
+#define LinuxVersionCode( v, p, s ) (((v)<<16)|((p)<<8)|(s))
+
+#include <linux/config.h>
+#include <linux/version.h>
+
+#if 0
+#undef CONFIG_MODVERSIONS
+#endif
+
+#if LinuxVersionCode( 2, 0, 0 ) > LINUX_VERSION_CODE
+#error "This driver is designed only for Linux 2.0.0 and highter."
+#endif
+#if LinuxVersionCode( 2, 1, 0 ) <= LINUX_VERSION_CODE
+#define LINUX_2_1
+#endif
+
+#ifdef SNDCFG_PNP
+#ifndef CONFIG_PNP_DRV
+#error "I'm sorry, but I can't detect PnP driver in your kernel..."
+#endif
+#endif
+
+#if defined( CONFIG_MODVERSIONS ) && !defined( __GENKSYMS__ ) && !defined( __DEPEND__ )
+#define MODVERSIONS
+#include <linux/modversions.h>
+#include "sndversions.h"
+#endif
+#ifndef SND_MAIN_OBJECT_FILE
+#define __NO_VERSION__
+#endif
+#ifdef SND_NO_MODVERS
+#undef MODVERSIONS
+#ifdef LINUX_2_1
+#undef _set_ver
+#endif
+#endif
+#include <linux/module.h>
+
+#include <linux/utsname.h>
+#include <linux/errno.h>
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/malloc.h>
+
+#include <linux/ioport.h>
+
+#include <asm/io.h>
+#include <asm/irq.h>
+#include <asm/dma.h>
+#include <asm/segment.h>
+#ifdef LINUX_2_1
+#include <asm/uaccess.h>
+#endif
+#include <asm/system.h>
+#include <asm/string.h>
+
+#include <linux/interrupt.h>
+#include <linux/fs.h>
+#include <linux/fcntl.h>
+#ifdef LINUX_2_1
+#include <linux/vmalloc.h>
+#else
+#ifdef CONFIG_PCI
+#include <linux/bios32.h>
+#endif
+#endif
+#include <linux/proc_fs.h>
+#ifdef CONFIG_PCI
+#include <linux/pci.h>
+#endif
+
+#undef SND_POLL
+#if LinuxVersionCode( 2, 1, 72 ) <= LINUX_VERSION_CODE
+#define SND_POLL
+#endif
+#ifdef __MAX_POLL_TABLE_ENTRIES		/* new kernel with poll() */
+#define SND_POLL
+#endif
+#ifdef SND_POLL
+#include <linux/poll.h>
+#endif
+
+#if LinuxVersionCode( 2, 1, 35 ) >= LINUX_VERSION_CODE
+#define in_interrupt() intr_count
+#endif
+
+#include "sound.h"
+#include "sounddetect.h"
+
+#ifndef LINUX_2_1
+#define mm_segment_t unsigned int
+#define copy_from_user memcpy_fromfs
+#define copy_to_user memcpy_tofs
+#endif
+
+#ifndef DMA_MODE_AUTOINIT
+#define DMA_MODE_AUTOINIT	0x10
+#endif
+
+static inline mm_segment_t snd_enter_user( void ) { mm_segment_t fs = get_fs(); set_fs( get_ds() ); return fs; }
+static inline void snd_leave_user( mm_segment_t fs ) { set_fs( fs ); }
+
+/*
+ *  ==========================================================================
+ */
+
+#include "sndspinlock.h"
+#include "misc.h"
+#include "schedule.h"
+
+/* auto values */
+
+#define SND_AUTO_PORT		0x00ff
+#define SND_AUTO_IRQ		16
+#define SND_AUTO_DMA		8
+#define SND_AUTO_DMA_SIZE	(0x7fffffff)
+#define SND_IRQ_DISABLE		0xffff
+#define SND_DMA_DISABLE		0xffff
+
+/* Hardware resources allocation */
+
+#define SND_DMAS		4	/* max DMA # for soundcard */
+#define SND_IRQS		4	/* max IRQ # for soundcard */
+#define SND_PORTS		8	/* max PORT regions for soundcard */
+
+/* DMA */
+
+#define SND_DMA_TYPE_ISA	0	/* ISA DMA */
+#define SND_DMA_TYPE_PCI	1	/* PCI DMA (anywhere in kernel memory) */
+#define SND_DMA_TYPE_PCI_16MB	2	/* PCI DMA (must be in low 16MB memory) */
+#define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
+
+struct snd_stru_dma {
+  int type;			/* dma type - see SND_DMA_TYPE_XXXX */
+  volatile unsigned short
+  		mmaped: 1,	/* mmaped area to user space */
+  		mmap_free: 1;	/* free mmaped buffer */
+  int dma;			/* DMA number */
+  char *name;			/* pointer to name */
+  unsigned char *buf;		/* pointer to DMA buffer */
+  long size;			/* real size of DMA buffer */
+  long rsize;			/* requested size of DMA buffer */
+  char *owner;			/* owner of this DMA channel */
+  char *soft_owner;		/* owner of soft DMA channel */
+  struct vm_area_struct *vma;	/* virtual memory area */
+  snd_mutex_define( lock );	/* mutex for locking */
+  snd_mutex_define( mutex );	/* snd_dma_malloc/free */
+};
+
+#define SND_IRQ_TYPE_ISA	0	/* ISA IRQ */
+#define SND_IRQ_TYPE_PCI	1	/* PCI IRQ (shareable) */
+#define SND_IRQ_TYPE_EISA	SND_IRQ_TYPE_PCI
+
+struct snd_stru_irq {
+  int type;			/* see to SND_IRQ_TYPE_XXXX */
+  unsigned short irq;
+  char *name;
+  void *dev_id;
+};
+
+struct snd_stru_port {
+  unsigned short port;
+  unsigned short size;
+  char *name;
+};
+
+typedef void (snd_irq_handler_t)( int irq, void *dev_id, struct pt_regs *regs );
+
+/* main structure for soundcard */
+
+typedef struct snd_stru_card snd_card_t;
+typedef struct snd_info_entry snd_info_entry_t;
+typedef struct snd_stru_pcm snd_pcm_t;
+typedef struct snd_stru_mixer snd_kmixer_t;
+typedef struct snd_stru_rawmidi snd_rawmidi_t;
+typedef struct snd_stru_control snd_control_t;
+typedef struct snd_stru_timer snd_timer_t;
+typedef struct snd_stru_synth snd_synth_t;
+
+struct snd_stru_card {
+  int number;			/* number of soundcard (index to snd_cards) */
+
+  unsigned int type;		/* type (number ID) of soundcard */
+
+  char id[ 16 ];		/* id string of this card */
+  char abbreviation[ 16 ];	/* abbreviation of soundcard name */
+  char shortname[ 32 ];		/* short name of this soundcard */
+  char longname[ 80 ];		/* name of this soundcard */
+
+  struct snd_stru_dma *dmas[ SND_DMAS ];
+  volatile unsigned int dmas_map; /* bitmask for allocated DMA channels */
+  
+  struct snd_stru_irq *irqs[ SND_IRQS ];
+  volatile unsigned int irqs_map; /* bitmask for allocated IRQ channels */
+
+  struct snd_stru_port *ports[ SND_PORTS ];
+  volatile unsigned int ports_map; /* bitmask for allocated port numbers */
+
+  void (*use_inc)( snd_card_t *card );	/* increment use count */
+  void (*use_dec)( snd_card_t *card );	/* decrement use count */
+
+  snd_mutex_define( control );	/* control card mutex */
+  
+  void *private_data;		/* private data for soundcard */
+  void (*private_free)( void *private ); /* callback for freeing of private data */
+
+  void *static_data;		/* private static data for soundcard */
+
+  struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
+  struct proc_dir_entry *proc_dir_link;	/* number link to real id */
+  snd_info_entry_t *info_entries;	/* info entries */
+};
+
+/* device.c */
+
+typedef int (snd_unregister_t)( unsigned short minor );
+
+typedef long long (snd_lseek_t)( struct file *file, long long offset, int orig );
+typedef long (snd_read_t)( struct file *file, char *buf, long count );
+typedef long (snd_write_t)( struct file *file, const char *buf, long count );
+typedef int (snd_open_t)( unsigned short minor, int cardnum, int device, struct file *file );
+typedef int (snd_release_t)( unsigned short minor, int cardnum, int device, struct file *file );
+#ifdef SND_POLL
+typedef unsigned int (snd_poll_t)( struct file *file, poll_table *wait );
+#else
+typedef int (snd_select_t)( struct file *file, int sel_type, select_table *wait );
+#endif
+typedef int (snd_ioctl_t)( struct file *file, unsigned int cmd, unsigned long arg );
+typedef int (snd_mmap_t)( struct inode *inode, struct file *file, struct vm_area_struct *vma );
+
+struct snd_stru_minor {
+  char *comment;		/* for /dev/sndinfo */
+
+  snd_unregister_t *unregister;
+
+  snd_lseek_t *lseek;
+  snd_read_t *read;
+  snd_write_t *write;
+  snd_open_t *open;
+  snd_release_t *release;
+#ifdef SND_POLL
+  snd_poll_t *poll;
+#else
+  snd_select_t *select;
+#endif
+  snd_ioctl_t *ioctl;
+  snd_mmap_t *mmap;
+};
+
+typedef struct snd_stru_minor snd_minor_t;
+
+/* sound.c */
+
+extern int snd_ecards_limit;
+
+extern int snd_register_minor( unsigned short minor, snd_minor_t *reg );
+extern int snd_unregister_minor( unsigned short minor );
+
+extern int snd_minor_info_init( void );
+extern int snd_minor_info_done( void );
+
+extern int snd_ioctl_in( long *addr );
+extern int snd_ioctl_out( long *addr, int value );
+
+/* memory.c */
+
+extern void snd_malloc_init( void );
+extern void snd_malloc_done( void );
+extern void *snd_malloc( unsigned long size );
+extern void *snd_calloc( unsigned long size );
+extern void snd_free( void *obj, unsigned long size );
+extern char *snd_malloc_strdup( char *string );
+extern void snd_free_str( char *string );
+extern char *snd_malloc_pages( unsigned long size, int *pg, int dma );
+extern void snd_free_pages( char *ptr, unsigned long size );
+extern int snd_dma_malloc( snd_card_t *card, int dmanum, char *owner, int soft );
+extern void snd_dma_free( snd_card_t *card, int dmanum, int soft );
+extern int snd_dma_soft_grab( snd_card_t *card, int dmanum );
+extern void snd_dma_soft_release( snd_card_t *card, int dmanum );
+extern void snd_dma_notify_vma_close( struct vm_area_struct *area );
+extern int snd_memory_info_init( void );
+extern int snd_memory_info_done( void );
+
+/* init.c */
+
+extern int snd_cards_count;
+extern unsigned int snd_cards_bitmap;
+extern snd_card_t *snd_cards[ SND_CARDS ];
+
+extern void snd_driver_init( void );
+
+extern snd_card_t *snd_card_new( int idx, char *id, void (*use_inc)( snd_card_t *card ), void (*use_dec)( snd_card_t *card ) );
+extern int snd_card_free( snd_card_t *card );
+extern int snd_card_register( snd_card_t *card );
+extern int snd_card_unregister( snd_card_t *card );
+extern int snd_card_info_init( void );
+extern int snd_card_info_done( void );
+
+extern void snd_delay( int loops );
+
+extern int snd_register_ioport( snd_card_t *card, int port, int size, char *name );
+extern int snd_unregister_ioports( snd_card_t *card );
+
+extern int snd_register_dma_channel( snd_card_t *card, char *name, int number, int type, int rsize, int *possible_numbers );
+extern int snd_unregister_dma_channels( snd_card_t *card );
+
+extern int snd_register_interrupt( snd_card_t *card, char *name, int number, int type, snd_irq_handler_t *handler, void *dev_id, int *possible_numbers );
+extern int snd_unregister_interrupts( snd_card_t *card );
+
+static inline void snd_enable_irq( snd_card_t *card, int irqnum ) { enable_irq( card -> irqs[ irqnum ] -> irq ); }
+static inline void snd_disable_irq( snd_card_t *card, int irqnum ) { disable_irq( card -> irqs[ irqnum ] -> irq ); }
+
+/* isadma.c */
+
+extern void snd_dma_program( int dma, const void *buf, unsigned int size, unsigned char mode );
+extern unsigned int snd_dma_residue( int dma );
+
+/* misc.c */
+
+extern int snd_task_name( struct task_struct *task, char *name, int size );
+
+/* --- */
+
+#define snd_printk( args... ) printk( "snd: " ##args )
+#ifdef SNDCFG_DEBUG
+#define snd_printd( args... ) snd_printk( ##args )
+#else
+#define snd_printd( args... ) /* nothing */
+#endif
+
+#ifdef SNDCFG_DEBUG_DETECT
+#define snd_printdd( args... ) snd_printk( ##args )
+#else
+#define snd_printdd( args... ) /* nothing */
+#endif
+
+#endif /* __DRIVER_H */

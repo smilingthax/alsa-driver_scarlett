@@ -1,0 +1,12 @@
+/*
+ *  Configuration header file for compilation of the ALSA driver
+ */
+
+#undef SND_VERSION
+#undef SNDCFG_KERNELDIR
+#undef SNDCFG_MAJOR
+#undef SNDCFG_PNP
+#undef SNDCFG_DEBUG
+#undef SNDCFG_DEBUG_MEMORY
+#undef SNDCFG_DEBUG_FULL
+#undef SNDCFG_DEBUG_DETECT

@@ -1,0 +1,24 @@
+Stage 2 (before final 0.2.0):
+
+* timer interface (done)
+* sequencer
+  - only external MIDI support
+
+Stage 3:
+
+* sequencer
+  - add internal synthesizer interface
+
+Stage 4:
+
+* sequencer
+  - add MIDI emulation for internal synthesizer
+
+General:
+
+* extend documentation for programmers (driver side)
+* extend documentation for users
+* detection for OAK Mozart soundcards
+* detection for Yamaha OPL3-SA[2,3] soundcards
+* code for multiple playback PCM devices for GF1 chip (GUS cards)
+* setup CVS

@@ -1,0 +1,350 @@
+
+		Advanced Linux Sound Architecture - Driver
+		==========================================
+			    Installation guide
+
+ALSA driver replaces OSS/Lite driver which is in current Linux kernels.
+Please, check if OSS/Lite is compiled in your kernel. Remove it before
+you are trying to install this driver.
+
+Before you are trying install this driver, please, read carefuly
+documentation for insmod, modprobe and kerneld/kmod. If you don't
+understand how these programs work, you can't be success with
+installation.
+
+Quick install
+=============
+
+1) Run './configure' script.
+   If you want turn on debug try './configure --with-debug=full'.
+   If you want debug soundcard detection try './configure --with-debug=detect'.
+2) Run 'make install'.
+3) Run './snddevices' script to create new sound devices in /dev directory.
+4) Edit your /etc/conf.modules (look to kerneld/kmod support section).
+5) Run 'modprobe snd-card' where card is name of your card.
+
+You can also look to file utils/alsasound. This script is designed for
+RedHat distribution, but it should be used with other distributions which
+use System V style rc init scripts.
+
+Note: All mixer channels are muted by default. You must use some native
+      mixer program to unmute appropriate channels (for example mixer from
+      alsa-utils package).
+
+Module parameters
+=================
+
+  User can modify/set parameters at load time of module. If modules supports
+  more cards and you have more than one card of same type, simply specify more
+  values for parameter delimited with commas.
+  
+  Global parameters
+  -----------------
+
+    snd_index	- 1-8 - index for soundcard
+                - if not set, first free index is assigned
+    snd_id	- user identification for card (up to 15 chars)
+		- default expression is 'card<snd_index>' (for example card1)
+		- value is used for /proc/sound filesystem
+		- this value can be used with application for identification
+		  of card if user doesn't want identify card with index number
+
+  Module snd.o
+  ------------
+
+    snd_major	- major # for sound driver
+		- default is 14 - this value is compatible with OSS/Lite
+    snd_cards_limit
+		- specifies card limit # (1-8)
+		- good for kerneld/kmod support if you don't want search
+		  for soundcards which aren't installed in your system
+
+  Module snd-audiodrive1688.o
+  ---------------------------
+
+    Module for ESS AudioDrive ES-1688 and ES-688 soundcards.
+
+    snd_port	- port # for ES-1688 chip (0x220,0x240,0x260)
+    snd_mpu_port - port # for MPU-401 port (0x300,0x310,0x320,0x330), -1 = disable
+    snd_irq	- IRQ # for ES-1688 chip (5,7,9,10)
+    snd_mpu_irq	- IRQ # for MPU-401 port (5,7,9,10)
+    snd_dma8	- DMA # for ES-1688 chip (0,1,3)
+    snd_dma8_size - max DMA size in kB (4-64kB)
+
+    Module supports up to 8 cards and autoprobe (without MPU-401 port).
+
+  Module snd-gusclassic.o
+  -----------------------
+
+    Module for Gravis UltraSound Classic soundcard.
+
+    snd_port	- port # for GF1 chip (0x220,0x230,0x240,0x250,0x260)
+    snd_irq	- IRQ # for GF1 chip (3,5,9,11,12,15)
+    snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
+    snd_dma1_size - max DMA1 size in kB (4-128kB)
+    snd_dma2	- DMA # for GF1 chip (1,3,5,6,7)
+    snd_dma2_size - max DMA2 size in kB (4-128kB)
+    snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+
+    Module supports up to 8 cards and autoprobe.
+
+  Module snd-gusextreme.o
+  -----------------------
+
+    Module for Gravis UltraSound Extreme soundcard.
+
+    snd_port	- port # for GF1 chip (0x220,0x230,0x240,0x250,0x260)
+    snd_mpu_port - port # for MPU-401 port (0x300,0x310,0x320,0x330), -1 = disable
+    snd_irq	- IRQ # for ES-1688 chip (5,7,9,10)
+    snd_mpu_irq	- IRQ # for MPU-401 port (5,7,9,10)
+    snd_irq1	- IRQ # for GF1 chip (3,5,9,11,12,15)
+    snd_dma8	- DMA # for ES-1688 chip (0,1,3)
+    snd_dma8_size - max DMA8 size in kB (4-64kB)
+    snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
+    snd_dma1_size - max DMA1 size in kB (4-128kB)
+    snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+
+    Module supports up to 8 cards and autoprobe (without MPU-401 port).
+
+  Module snd-gusmax.o
+  -------------------
+
+    Module for Gravis UltraSound MAX soundcard.
+
+    snd_port	- port # for GF1 chip (0x220,0x230,0x240,0x250,0x260)
+    snd_irq	- IRQ # for GF1 chip (3,5,9,11,12,15)
+    snd_dma1	- DMA # for GF1 chip (1,3,5,6,7)
+    snd_dma1_size - max DMA1 size in kB (4-128kB)
+    snd_dma2	- DMA # for GF1 chip (1,3,5,6,7)
+    snd_dma2_size - max DMA2 size in kB (4-128kB)
+    snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+
+    Module supports up to 8 cards and autoprobe.
+    
+  Module snd-interwave.o
+  ----------------------
+
+    Module for Gravis UltraSound PnP, Dynasonic 3-D/Pro and other soundcards
+    based on AMD InterWave (tm) chip.
+  
+    snd_port	- port # for InterWave chip (0x210,0x220,0x230,0x240,0x250,0x260)
+    snd_irq	- IRQ # for InterWave chip (3,5,9,11,12,15)
+    snd_dma1	- DMA # for InterWave chip (0,1,3,5,6,7)
+    snd_dma1_size - max DMA1 size in kB (4-128kB)
+    snd_dma2	- DMA # for InterWave chip (0,1,3,5,6,7)
+    snd_dma2_size - max DMA2 size in kB (4-128kB)
+    snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+    snd_midi    - 1 = MIDI UART enable, 0 = MIDI UART disable (default)
+
+    Module supports up to 8 cards, autoprobe and TL PnP.
+
+  Module snd-interwave-stb.o
+  --------------------------
+
+    Module for UltraSound 32-Pro (soundcard from STB used by Compaq)
+    and other soundcards based on AMD InterWave (tm) chip with TEA6330T
+    circuit for extended control of bass, treble and master volume.
+  
+    snd_port	- port # for InterWave chip (0x210,0x220,0x230,0x240,0x250,0x260)
+    snd_port_tc - tone control (i2c bus) port # for TEA6330T chip (0x350,0x360,0x370,0x380)
+    snd_irq	- IRQ # for InterWave chip (3,5,9,11,12,15)
+    snd_dma1	- DMA # for InterWave chip (0,1,3,5,6,7)
+    snd_dma1_size - max DMA1 size in kB (4-128kB)
+    snd_dma2	- DMA # for InterWave chip (0,1,3,5,6,7)
+    snd_dma2_size - max DMA2 size in kB (4-128kB)
+    snd_joystick_dac - 0 to 31, (0.59V-4.52V or 0.389V-2.98V)
+    snd_midi    - 1 = MIDI UART enable, 0 = MIDI UART disable (default)
+
+    Module supports up to 8 cards, autoprobe and TL PnP.
+
+  Module snd-sb8.o
+  ----------------
+
+    Module for 8-bit SoundBlaster cards: SoundBlaster 1.0,
+					 SoundBlaster 2.0,
+					 SoundBlaster Pro
+
+    snd_port	- port # for SB DSP chip (0x220,0x240,0x260)
+    snd_irq	- IRQ # for SB DSP chip (5,7,9,10)
+    snd_dma8	- DMA # for SB DSP chip (1,3)
+    snd_dma8_size - max DMA size in kB (4-64kB)
+
+    Module supports up to 8 cards and autoprobe.
+    
+  Module snd-sb16.o
+  -----------------
+
+    Module for 16-bit SoundBlaster cards: SoundBlaster 16 (PnP),
+					  SoundBlaster AWE 32 (PnP),
+					  SoundBlaster AWE 64 PnP
+
+    snd_port	- port # for SB DSP 4.x chip (0x220,0x240,0x260)
+    snd_mpu_port - port # for MPU-401 UART (0x300,0x330), -1 = disable
+    snd_irq	- IRQ # for SB DSP 4.x chip (5,7,9,10)
+    snd_dma8	- 8-bit DMA # for SB DSP 4.x chip (0,1,3)
+    snd_dma8_size - max 8-bit DMA size in kB (4-64kB)
+    snd_dma16	- 16-bit DMA # for SB DSP 4.x chip (5,6,7)
+    snd_dma16_size - max 16-bit DMA size in kB (4-128kB)
+    snd_mic_agc - Mic Auto-Gain-Control - 1 = enable (default), 0 = disable
+    
+    Module supports up to 8 cards, autoprobe and TL PnP.
+    
+  Module snd-opl3sa.o
+  -----------------
+
+    Module for Yamaha OPL3-SA2/SA3 soundcards.
+
+    snd_port	- control port # for OPL3-SA chip
+    snd_wss_port - WSS port # for OPL3-SA chip (0x530,0xe80,0xf40,0x604)
+    snd_midi_port - port # for MPU-401 UART (0x300,0x330), -1 = disable
+    snd_fm_port - FM port # for OPL3-SA chip (0x388), -1 = disable
+    snd_irq	- IRQ # for SB DSP 4.x chip (5,7,9,10)
+    snd_dma1	- first DMA # for Yamaha OPL3-SA chip (0,1,3)
+    snd_dma1_size - max first DMA size in kB (4-64kB)
+    snd_dma2	- second DMA # for Yamaha OPL3-SA chip (0,1,3), -1 = disable
+    snd_dma2_size - max second DMA size in kB (4-128kB)
+    
+    Module supports up to 8 cards. This module doesn't supports autoprobe
+    thus all ports must be specified!!!
+    
+  Module mozart.o
+  -----------------
+
+    Module for OAK Mozart cards.
+
+    snd_port	- port # for WSS chip (0x530,0xe80,0xf40,0x604)
+    snd_irq	- IRQ # for WSS chip (7,9,10,11)
+    snd_dma1	- DMA # for WSS chip (0,1,3)
+    snd_dma1_size - max DMA size in kB (4-64kB)
+    
+    Module supports only one card and autoprobe.
+    
+  Module snd-sonicvibes.o
+  -----------------------
+
+    Module for S3 SonicVibes PCI soundcards.
+			* PINE Schubert 32 PCI
+
+    snd_dmaa_size - max DDMA-A (playback) size in kB (4-128kB)
+    snd_dmac_size - max DDMA-C (record) size in kB (4-128kB)
+    snd_reverb    - Reverb Enable - 1 = enable, 0 = disable (default)
+                  - SoundCard must have onboard SRAM for this.
+    snd_mge       - Mic Gain Enable - 1 = enable, 0 = disable (default)
+    
+    Module supports up to 8 cards and autoprobe.
+    
+
+Note: TL PnP = Tom Lees Plug & Play driver for Linux
+
+modprobe/kerneld/kmod support
+=============================
+
+Bellow example is for Gravis UltraSound PnP soundcard:
+
+----- /etc/conf.modules
+
+alias char-major-14 snd
+alias snd-minor-oss-0 snd-interwave
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
+alias snd-card-0 snd-interwave
+options snd snd_major=14 snd_cards_limit=1
+options snd-interwave snd_index=1 snd_id="guspnp" snd_port=0x220 snd_irq=5 snd_dma1=5 snd_dma2=6
+
+-----
+
+Example if you want use more soundcards in one machine (bellow configuration
+is for Sound Blaster 16 and Gravis UltraSound Classic):
+
+----- /etc/conf.modules
+
+alias char-major-14 off
+alias snd-minor-oss-0 snd-mixer
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-card-0 snd-sb16
+alias snd-card-1 snd-gusclassic
+options snd snd_major=14 snd_cards_limit=2
+options snd-sb16 snd_index=1 snd_port=0x220 snd_irq=5 snd_dma8=1 snd_dma16=5
+options snd-gusclassic snd_index=2 snd_irq=11 snd_dma1=6 snd_dma2=7
+
+-----
+
+Example if two Gravis UltraSound Classic soundcards are present in system:
+
+----- /etc/conf.modules
+
+alias char-major-14 off
+alias snd-minor-oss-0 snd-mixer
+alias snd-minor-oss-3 snd-pcm1-oss
+alias snd-minor-oss-4 snd-pcm1-oss
+alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-card-0 snd-gusclassic
+alias snd-card-1 snd-gusclassic
+options snd snd_major=14 snd_cards_limit=2
+options snd-gusclassic snd_index=1,2 snd_port=0x220,0x260 snd_irq=5,11 snd_dma1=5,6 snd_dma2=7,3
+
+-----
+
+Proc interfaces (/proc/sound)
+=============================
+
+/proc/sound/#card#/pcm#o
+------------------------
+  String "Playback erase" - erase all additional informations about OSS applications
+  String "Playback <app_name> <fragments> <fragment_size> [<options>]"
+  String "Record erase" - erase all additional informations about OSS applications
+  String "Record <app_name> <fragments> <fragment_size> [<options>]"
+
+   <app_name> - name of application with (highter priority) or without path
+   <fragments> - number of fragments or zero if auto
+   <fragment_size> - size of fragment in bytes or zero if auto
+   <options> - optional parameters
+	  - WR_ONLY - if application tries open pcm device with O_RDWR
+                      driver rewrites this to O_WRONLY (playback) - good
+                      for Quake etc...
+
+  Example: echo "Playback x11amp 128 16384" > /proc/sound/0/pcm0o
+           echo "Playback squake 0 0 WR_ONLY" > /proc/sound/0/pcm0o
+
+/proc/sound/#card#/sb16
+-----------------------
+  String "Playback 8" -> driver will use always 8-bit DMA channel for playback.
+  String "Playback 16" -> driver will use always 16-bit DMA channel for playback.
+  String "Playback auto" (default) -> driver will use auto mode (first opened
+  direction will use 16-bit DMA channel).
+  String "Record 8" -> driver will use always 8-bit DMA channel for record.
+  String "Record 16" -> driver will use always 16-bit DMA channel for record.
+  String "Record auto" (default) -> driver will use auto mode (first opened
+  direction will use 16-bit DMA channel).
+
+  Example: echo "Record 16" > /proc/sound/0/sb16
+
+/proc/sound/#card#/sonicvibes
+-----------------------------
+  String "SRS on" -> enable SRS 3D audio enhancement
+  String "SRS off" -> disable SRS 3D audio enhancement
+  String "Space 100%" -> set SRS space to 100%
+  String "Space 75%" -> set SRS space to 75%
+  String "Space 50%" -> set SRS space to 50%
+  String "Space 25%" -> set SRS space to 25%
+  String "Space 0%" -> set SRS space to 0%
+  String "Center 100%" -> set SRS center to 100%
+  String "Center 75%" -> set SRS center to 75%
+  String "Center 50%" -> set SRS center to 50%
+  String "Center 25%" -> set SRS center to 25%
+  String "Center 0%" -> set SRS center to 0%
+  String "WaveTable ROM" -> set on-board ROM as wavetable sample source
+  String "WaveTable PCI" -> set PCI bus as wavetable sample source
+  String "WaveTable both" -> set on-board ROM + PCI bus as wavetable sample source
+  String "Synth on" -> host MIDI data can be sent to the synthesizer
+  String "Synth off" -> host MIDI data cannot be sent to the synthesizer
+  String "RxSynth on" -> external MIDI data can be sent to the synthesizer
+  String "RxSynth off" -> external MIDI data cannot be sent to the synthesizer
+  String "ExtTx on" -> host MIDI data can be output to external device
+  String "ExtTx off" -> host MIDI data cannot be output to external device
+
+  Example: echo "Synth off" > /proc/sound/0/sonicvibes

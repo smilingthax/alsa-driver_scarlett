@@ -1,0 +1,104 @@
+
+		   Advanced Linux Sound Architecture (ALSA)
+		   ========================================
+
+
+Architecture is separated to bellow two layers:
+
+1) a) ALSA Kernel Driver
+   b) ALSA Kernel Driver Manager
+2) ALSA Library
+
+Notes:
+
+1b) Manager for /etc/conf.modules. This manager will automaticaly detect
+    soundcards over ALSA Kernel Driver or user can specify soundcard
+    manualy. Note that in this program must be probably database of
+    sound kernel modules. Program must know what modules must be loaded
+    for apropriate soundcard.
+
+2) ALSA Library contains ALSA Library API to hide ALSA Kernel Driver API.
+   layer1) hidden ALSA Kernel Driver API
+   layer2) mixing PCM outputs
+           instrument loaders etc..
+   layer3) wav player, midi player etc..
+
+
+			        ALSA Kernel Driver
+				==================
+
+Driver coding:
+==============
+
+All functions and structures have prefixes 'snd_' or 'SND_' for C 
+contants/defines.
+
+Planned structure of kernel modules (example for AMD InterWave soundcard):
+==========================================================================
+
+snd
+ |- snd-mixer
+ |   |- snd-cs4231
+ |   \- snd-interwave
+ |- snd-pcm
+ |   |- snd-cs4231
+ |   |- snd-gus
+ |   \- snd-interwave
+ |- snd-pcm-oss
+ |   |- snd-cs4231
+ |   |- snd-gus
+ |   \- snd-interwave
+ |- snd-synth
+ |   |- snd-gus
+ |   \- snd-interwave
+ |- snd-cs4231
+ |   \- snd-interwave 
+ |- snd-midi
+ |   \- snd-gus
+ |- snd-gus
+ |   \- snd-interwave
+ |- snd-interwave
+ \- snd-detect
+
+Explain:
+--------
+
+Top level:
+  snd		- top level module (sound kernel)
+
+Middle level:
+  snd-mixer	- abstract layer for MIXER interface
+  snd-pcm	- abstract layer for PCM interface
+  snd-pcm-oss	- abstract layer for Open Sound System PCM interface
+  snd-synth	- abstract layer for SYNTHESIZER interface
+  snd-midi	- abstract layer for raw & sequenced MIDI
+  snd-detect	- layer for soundcard detection, this module can't depend
+		  on anything other than sound kernel (snd.o)
+
+Bottom level:
+  snd-cs4231	- lowlevel code for MIXER and PCM for Crystal CS4231 chip
+  snd-gus	- lowlevel code for GF1/InterWave synthesizer chip
+  snd-interwave - specific code for InterWave chip
+
+
+                      -------------
+                      |    PCM    |
+		      -------------
+                          /   \
+                   /------     -----\
+               ----------       -----------
+               | Native |       | OSS PCM |
+               ----------       -----------
+                 |        \____/         |
+                 |        /    \         |
+              --------------  --------------
+              | Lowlevel 1 |  | Lowlevel 2 |      ...
+              --------------  --------------
+
+
+				ALSA Library
+				============
+
+
+Coding style is same as driver coding style with prefixes 'snd_' and 'SND_'.
+ALSA C Library is distributed in separate package with name 'alsalib-ver.tar.gz'.
