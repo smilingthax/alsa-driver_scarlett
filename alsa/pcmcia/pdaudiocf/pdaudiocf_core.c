@@ -23,6 +23,7 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <sound/core.h>
+#include <sound/info.h>
 #include "pdaudiocf.h"
 #define SNDRV_GET_ID
 #include <sound/initval.h>
@@ -129,8 +130,24 @@ void pdacf_reinit(pdacf_t *chip, int resume)
 	pdacf_reg_write(chip, PDAUDIOCF_REG_IER, chip->regmap[PDAUDIOCF_REG_IER>>1]);
 }
 
+static void pdacf_proc_read(snd_info_entry_t * entry,
+                            snd_info_buffer_t * buffer)
+{
+	pdacf_t *chip = snd_magic_cast(pdacf_t, entry->private_data, return);
+	u16 tmp;
+
+	snd_iprintf(buffer, "PDAudioCF\n\n");
+	tmp = pdacf_reg_read(chip, PDAUDIOCF_REG_SCR);
+	snd_iprintf(buffer, "FPGA revision      : 0x%x\n", PDAUDIOCF_FPGAREV(tmp));
+	                                   
+}
+
 static void pdacf_proc_init(pdacf_t *chip)
 {
+	snd_info_entry_t *entry;
+
+	if (! snd_card_proc_new(chip->card, "pdaudiocf", &entry))
+		snd_info_set_text_ops(entry, chip, pdacf_proc_read);
 }
 
 pdacf_t *snd_pdacf_create(snd_card_t *card)
