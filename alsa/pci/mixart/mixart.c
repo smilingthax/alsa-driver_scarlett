@@ -62,7 +62,7 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 /*
  */
 
-static struct pci_device_id snd_mixart_ids[] __devinitdata = {
+static struct pci_device_id snd_mixart_ids[] = {
 	{ 0x1057, 0x0003, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0, }, /* MC8240 */
 	{ 0, }
 };

@@ -6183,7 +6183,7 @@ static void __devexit pdplus_remove(pci_dev_t *pci)
         LEAVE_VOID;
 }
 
-static struct pci_device_id pdplus_ids[] __devinitdata = {
+static struct pci_device_id pdplus_ids[] = {
         {
                 PCI_VENDOR_ID_MARIAN,
                 PCI_DEVICE_ID_MARIAN_PRODIF_PLUS,
