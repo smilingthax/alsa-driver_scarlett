@@ -557,7 +557,6 @@ snd_pcm_sframes_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, s
 			if (ret < 0)
 				break;
 		}
-		ret = snd_pcm_lib_read(substream, ptr, frames);
 		if (in_kernel) {
 			mm_segment_t fs;
 			fs = snd_enter_user();
