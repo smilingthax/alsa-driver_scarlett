@@ -1,13 +1,13 @@
 Stage 2 (before final 0.2.0):
 
 * timer interface (done)
-* sequencer
+* sequencer (first pre-alpha exist)
   - only external MIDI support
 
 Stage 3:
 
 * sequencer
-  - add internal synthesizer interface
+  - add internal synthesizer interface (envelopes exist)
 
 Stage 4:
 
@@ -16,9 +16,16 @@ Stage 4:
 
 General:
 
+* check why S3 SonicVibes volume levels are non-linear
+* add mono mute to mixer proc interface
+* add mono mute flag handling to mixer
+  - replace mute with mono-mute
+  - mute should be defined if set_mute callback was present
+* add exclusive record source feature to mixer
+* debug ES1371 code (with external testers)
+
 * extend documentation for programmers (driver side)
 * extend documentation for users
 * detection for OAK Mozart soundcards
 * detection for Yamaha OPL3-SA[2,3] soundcards
 * code for multiple playback PCM devices for GF1 chip (GUS cards)
-* setup CVS
