@@ -810,7 +810,7 @@ struct sndrv_ctl_event {
 #define SNDRV_CTL_NAME_IEC958_CON_MASK			"Con Mask"
 #define SNDRV_CTL_NAME_IEC958_PRO_MASK			"Pro Mask"
 #define SNDRV_CTL_NAME_IEC958_PCM_STREAM		"PCM Stream"
-#define SNDRV_CTL_NAME_IEC958(direction, what)		"IEC958 " SNDRV_CTL_NAME_##direction SNDRV_CTL_NAME_IEC958_##what
+#define SNDRV_CTL_NAME_IEC958(expl,direction,what)	"IEC958 " expl SNDRV_CTL_NAME_##direction SNDRV_CTL_NAME_IEC958_##what
 
 /*
  *
