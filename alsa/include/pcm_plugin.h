@@ -96,9 +96,6 @@ typedef struct snd_stru_pcm_plugin snd_pcm_plugin_t;
 typedef enum {
 	INIT = 0,
 	PREPARE = 1,
-	DRAIN = 2,
-	FLUSH = 3,
-	PAUSE = 4,
 } snd_pcm_plugin_action_t;
 
 typedef struct snd_stru_pcm_plugin_channel {

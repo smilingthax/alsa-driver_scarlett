@@ -33,7 +33,7 @@
 #define SND_RAWMIDI_DEVICES	8
 
 #define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
-#define SND_RAWMIDI_FLG_FLUSH	0x00000002	/* flush */
+#define SND_RAWMIDI_FLG_DRAIN	0x00000002	/* drain */
 #define SND_RAWMIDI_FLG_ACTSENS 0x00000004	/* active sensing */
 #define SND_RAWMIDI_FLG_OSS	0x80000000	/* OSS compatible mode */
 
@@ -134,9 +134,9 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int mode, snd_rawmidi_t ** 
 int snd_rawmidi_kernel_release(snd_rawmidi_t * rmidi, int mode);
 int snd_rawmidi_output_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
 int snd_rawmidi_input_params(snd_rawmidi_t * rmidi, snd_rawmidi_params_t * params);
+int snd_rawmidi_drop_output(snd_rawmidi_t * rmidi);
 int snd_rawmidi_drain_output(snd_rawmidi_t * rmidi);
-int snd_rawmidi_flush_output(snd_rawmidi_t * rmidi);
-int snd_rawmidi_flush_input(snd_rawmidi_t * rmidi);
+int snd_rawmidi_drain_input(snd_rawmidi_t * rmidi);
 long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, unsigned char *buf, long count);
 long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const unsigned char *buf, long count);
 

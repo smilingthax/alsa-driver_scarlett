@@ -535,8 +535,8 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_READY_ASAP		1	/* Accurate ready detection */
 #define SND_PCM_READY_LAST		1
 
-#define SND_PCM_XRUN_ACT_FLUSH		0	/* stop on xrun */
-#define SND_PCM_XRUN_ACT_DRAIN		1	/* erase and stop on xrun (capture) */
+#define SND_PCM_XRUN_ACT_STOP		0	/* stop on xrun */
+#define SND_PCM_XRUN_ACT_DROP		1	/* erase and stop on xrun (capture) */
 #define SND_PCM_XRUN_ACT_RESTART	2	/* automatic prepare and go after xrun */
 #define SND_PCM_XRUN_ACT_LAST		2
 
@@ -872,8 +872,8 @@ typedef struct {
 #define SND_PCM_IOCTL_REWIND		_IOW ('A', 0x24, size_t)
 #define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
 #define SND_PCM_IOCTL_START		_IO  ('A', 0x31)
-#define SND_PCM_IOCTL_FLUSH		_IO  ('A', 0x32)
-#define SND_PCM_IOCTL_STOP		_IO  ('A', 0x34)
+#define SND_PCM_IOCTL_STOP		_IO  ('A', 0x32)
+#define SND_PCM_IOCTL_DRAIN		_IO  ('A', 0x34)
 #define SND_PCM_IOCTL_PAUSE		_IOW ('A', 0x35, int)
 #define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
 #define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x41, snd_pcm_channel_params_t)
@@ -1058,8 +1058,8 @@ typedef struct snd_rawmidi_status {
 #define SND_RAWMIDI_IOCTL_STREAM_PARAMS _IOW ('W', 0x10, snd_rawmidi_params_t)
 #define SND_RAWMIDI_IOCTL_STREAM_SETUP	_IOWR('W', 0x11, snd_rawmidi_setup_t)
 #define SND_RAWMIDI_IOCTL_STREAM_STATUS _IOWR('W', 0x20, snd_rawmidi_status_t)
-#define SND_RAWMIDI_IOCTL_STREAM_DRAIN	_IOW ('W', 0x30, int)
-#define SND_RAWMIDI_IOCTL_STREAM_FLUSH _IOW ('W', 0x31, int)
+#define SND_RAWMIDI_IOCTL_STREAM_DROP	_IOW ('W', 0x30, int)
+#define SND_RAWMIDI_IOCTL_STREAM_DRAIN	_IOW ('W', 0x31, int)
 
 /*
  *  Timer section - /dev/snd/timer

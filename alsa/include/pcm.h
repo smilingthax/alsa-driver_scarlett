@@ -167,7 +167,7 @@ struct snd_stru_pcm_runtime {
 	wait_queue_head_t sleep;
 	struct timer_list poll_timer;
 	struct timer_list xrun_timer;
-	int flushing;
+	int draining;
 	/* -- private section -- */
 	void *private_data;
 	void (*private_free)(snd_pcm_runtime_t *runtime);
