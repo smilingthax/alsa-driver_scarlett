@@ -259,13 +259,19 @@ struct _snd_pcm_runtime {
 	unsigned int rate_den;
 
 	/* -- SW params -- */
-	unsigned int time: 1;		/* mmap timestamp is updated */
-	int start_mode;			/* start mode */
-	int ready_mode;			/* ready detection mode */
-	size_t xfer_min;		/* xfer min size */
+	unsigned int start_mode;	/* start mode */
+	unsigned int xrun_mode;		/* xrun detection mode */
+	unsigned int ready_mode;	/* ready detection mode */
+	unsigned int tstamp_mode;	/* mmap timestamp is updated */
 	size_t xfer_align;		/* xfer size need to be a multiple */
-	int xrun_mode;			/* xrun detection mode */
+	unsigned int silence_mode;	/* Silence filling mode */
+	size_t silence_threshold;	/* Silence filling happens when
+					   noise is nearest than this */
+	size_t silence_size;		/* Silence filling size */
 	size_t boundary;		/* pointers wrap point */
+
+	size_t sil_start;
+	size_t sil_size;
 
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 
@@ -280,6 +286,7 @@ struct _snd_pcm_runtime {
 	wait_queue_head_t sleep;
 	struct timer_list poll_timer;
 	struct timer_list xrun_timer;
+	struct timer_list silence_timer;
 	struct fasync_struct *fasync;
 
 	/* -- private section -- */
@@ -561,13 +568,13 @@ static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream,
 	substream->runtime->trigger_master = master;
 }
 
-static inline int is_mask(int var)
+static inline int hw_is_mask(int var)
 {
 	return var >= SND_PCM_HW_PARAM_FIRST_MASK &&
 		var <= SND_PCM_HW_PARAM_LAST_MASK;
 }
 
-static inline int is_interval(int var)
+static inline int hw_is_interval(int var)
 {
 	return var >= SND_PCM_HW_PARAM_FIRST_INTERVAL &&
 		var <= SND_PCM_HW_PARAM_LAST_INTERVAL;
@@ -576,38 +583,38 @@ static inline int is_interval(int var)
 typedef unsigned int mask_t;
 #define MASK_MAX 32
 
-static inline mask_t *params_mask(snd_pcm_hw_params_t *params,
-				  unsigned int var)
+static inline mask_t *hw_param_mask(snd_pcm_hw_params_t *params,
+				     unsigned int var)
 {
 	return (mask_t*)&params->masks[var - SND_PCM_HW_PARAM_FIRST_MASK];
 }
 
-static inline interval_t *params_interval(snd_pcm_hw_params_t *params,
-					  unsigned int var)
+static inline interval_t *hw_param_interval(snd_pcm_hw_params_t *params,
+					     unsigned int var)
 {
 	return &params->intervals[var - SND_PCM_HW_PARAM_FIRST_INTERVAL];
 }
 
-static inline const mask_t *params_mask_c(const snd_pcm_hw_params_t *params,
-					  unsigned int var)
+static inline const mask_t *hw_param_mask_c(const snd_pcm_hw_params_t *params,
+					     unsigned int var)
 {
-	return (const mask_t *)params_mask((snd_pcm_hw_params_t*) params, var);
+	return (const mask_t *)hw_param_mask((snd_pcm_hw_params_t*) params, var);
 }
 
-static inline const interval_t *params_interval_c(const snd_pcm_hw_params_t *params,
-						  unsigned int var)
+static inline const interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *params,
+						     unsigned int var)
 {
-	return (const interval_t *)params_interval((snd_pcm_hw_params_t*) params, var);
+	return (const interval_t *)hw_param_interval((snd_pcm_hw_params_t*) params, var);
 }
 
-#define params_access(p) (ffs(*params_mask((p), SND_PCM_HW_PARAM_ACCESS)) - 1)
-#define params_format(p) (ffs(*params_mask((p), SND_PCM_HW_PARAM_FORMAT)) - 1)
-#define params_subformat(p) (ffs(*params_mask((p), SND_PCM_HW_PARAM_SUBFORMAT)) - 1)
-#define params_channels(p) params_interval((p), SND_PCM_HW_PARAM_CHANNELS)->min
-#define params_rate(p) params_interval((p), SND_PCM_HW_PARAM_RATE)->min
-#define params_fragment_size(p) params_interval((p), SND_PCM_HW_PARAM_FRAGMENT_SIZE)->min
-#define params_fragments(p) params_interval((p), SND_PCM_HW_PARAM_FRAGMENTS)->min
-#define params_buffer_size(p) params_interval((p), SND_PCM_HW_PARAM_BUFFER_SIZE)->min
+#define params_access(p) (ffs(*hw_param_mask((p), SND_PCM_HW_PARAM_ACCESS)) - 1)
+#define params_format(p) (ffs(*hw_param_mask((p), SND_PCM_HW_PARAM_FORMAT)) - 1)
+#define params_subformat(p) (ffs(*hw_param_mask((p), SND_PCM_HW_PARAM_SUBFORMAT)) - 1)
+#define params_channels(p) hw_param_interval((p), SND_PCM_HW_PARAM_CHANNELS)->min
+#define params_rate(p) hw_param_interval((p), SND_PCM_HW_PARAM_RATE)->min
+#define params_fragment_size(p) hw_param_interval((p), SND_PCM_HW_PARAM_FRAGMENT_SIZE)->min
+#define params_fragments(p) hw_param_interval((p), SND_PCM_HW_PARAM_FRAGMENTS)->min
+#define params_buffer_size(p) hw_param_interval((p), SND_PCM_HW_PARAM_BUFFER_SIZE)->min
 
 
 extern int interval_refine(interval_t *i, const interval_t *v);
@@ -629,11 +636,11 @@ extern int interval_ratden(interval_t *i,
 
 extern int snd_pcm_hw_params_any(snd_pcm_substream_t *substream,
 				 snd_pcm_hw_params_t *params);
-extern int snd_pcm_hw_params_first(snd_pcm_substream_t *substream, 
+extern int snd_pcm_hw_param_first(snd_pcm_substream_t *substream, 
 				   snd_pcm_hw_params_t *params, unsigned int var);
-extern int snd_pcm_hw_params_last(snd_pcm_substream_t *substream, 
+extern int snd_pcm_hw_param_last(snd_pcm_substream_t *substream, 
 				  snd_pcm_hw_params_t *params, unsigned int var);
-extern int snd_pcm_hw_params_near(snd_pcm_substream_t *substream, 
+extern int snd_pcm_hw_param_near(snd_pcm_substream_t *substream, 
 				  snd_pcm_hw_params_t *params,
 				  unsigned int var, unsigned int val);
 extern int snd_pcm_hw_params_choose(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
@@ -690,6 +697,7 @@ extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_asap(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_asap(snd_pcm_substream_t *substream);
+extern void snd_pcm_playback_silence(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_ready(snd_pcm_substream_t *substream);
 extern long snd_pcm_playback_ready_jiffies(snd_pcm_substream_t *substream);

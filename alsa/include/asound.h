@@ -485,6 +485,7 @@ typedef struct _snd_hwdep_info {
 
 #define SND_PCM_STREAM_PLAYBACK		0
 #define SND_PCM_STREAM_CAPTURE		1
+#define SND_PCM_STREAM_LAST		1
 
 #define SND_PCM_ACCESS_MMAP_INTERLEAVED		0 /* interleaved mmap */
 #define SND_PCM_ACCESS_MMAP_NONINTERLEAVED	1 /* noninterleaved mmap */
@@ -561,19 +562,6 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_INFO_JOINT_DUPLEX	0x00200000	/* playback and capture stream are somewhat correlated */
 #define SND_PCM_INFO_SYNC_START		0x00400000	/* pcm support some kind of sync go */
 
-#define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
-#define SND_PCM_START_EXPLICIT		1	/* start on the go command */
-#define SND_PCM_START_LAST		1
-
-#define SND_PCM_READY_FRAGMENT		0	/* Efficient ready detection */
-#define SND_PCM_READY_ASAP		1	/* Accurate ready detection */
-#define SND_PCM_READY_LAST		1
-
-#define SND_PCM_XRUN_FRAGMENT		0	/* Efficient xrun detection */
-#define SND_PCM_XRUN_ASAP		1	/* Accurate xrun detection */
-#define SND_PCM_XRUN_NONE		2	/* No xrun detection */
-#define SND_PCM_XRUN_LAST		2
-
 #define SND_PCM_STATE_OPEN		0	/* stream is open */
 #define SND_PCM_STATE_SETUP		1	/* stream has a setup */
 #define SND_PCM_STATE_PREPARED		2	/* stream is ready to start */
@@ -581,6 +569,7 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_STATE_XRUN		4	/* stream reached an xrun */
 #define SND_PCM_STATE_DRAINING		5	/* stream is draining */
 #define SND_PCM_STATE_PAUSED		6	/* stream is paused */
+#define SND_PCM_STATE_LAST		6
 
 #define SND_PCM_MMAP_OFFSET_DATA	0x00000000
 #define SND_PCM_MMAP_OFFSET_STATUS	0x80000000
@@ -622,8 +611,6 @@ typedef struct _snd_pcm_info {
 #define SND_PCM_HW_PARAM_FRAGMENTS		7
 #define SND_PCM_HW_PARAM_BUFFER_LENGTH		8
 #define SND_PCM_HW_PARAM_BUFFER_SIZE		9
-#define SND_PCM_HW_PARAM_LAST_USER_INTERVAL	9
-
 #define SND_PCM_HW_PARAM_SAMPLE_BITS		10
 #define SND_PCM_HW_PARAM_FRAME_BITS		11
 #define SND_PCM_HW_PARAM_FRAGMENT_BYTES		12
@@ -657,25 +644,38 @@ typedef struct _snd_pcm_hw_params {
 	char reserved[64];
 } snd_pcm_hw_params_t;
 
-#define SND_PCM_SW_PARAM_START_MODE	0
-#define SND_PCM_SW_PARAM_READY_MODE	1
-#define SND_PCM_SW_PARAM_AVAIL_MIN	2
-#define SND_PCM_SW_PARAM_XFER_MIN	3
-#define SND_PCM_SW_PARAM_XFER_ALIGN	4
-#define SND_PCM_SW_PARAM_XRUN_MODE	5
-#define SND_PCM_SW_PARAM_TIME		6
-#define SND_PCM_SW_PARAM_LAST		6
+#define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
+#define SND_PCM_START_EXPLICIT		1	/* start on the go command */
+#define SND_PCM_START_LAST		1
+
+#define SND_PCM_READY_FRAGMENT		0	/* Efficient ready detection */
+#define SND_PCM_READY_ASAP		1	/* Accurate ready detection */
+#define SND_PCM_READY_LAST		1
+
+#define SND_PCM_XRUN_FRAGMENT		0	/* Efficient xrun detection */
+#define SND_PCM_XRUN_ASAP		1	/* Accurate xrun detection */
+#define SND_PCM_XRUN_NONE		2	/* No xrun detection */
+#define SND_PCM_XRUN_LAST		2
+
+#define SND_PCM_SILENCE_FRAGMENT	0	/* Silencing happens only at interrupt time */
+#define SND_PCM_SILENCE_ASAP		1	/* Silencing can Use also timers */
+#define SND_PCM_SILENCE_LAST		1
+
+#define SND_PCM_TSTAMP_NONE		0
+#define SND_PCM_TSTAMP_MMAP		1
+#define SND_PCM_TSTAMP_LAST		1
 
 typedef struct _snd_pcm_sw_params {
-	unsigned int start_mode;	/* RW: start mode */
-	unsigned int ready_mode;	/* RW: ready detection mode */
-	unsigned int xrun_mode;		/* RW: xrun detection mode */
-	size_t avail_min;		/* RW: min avail frames for wakeup */
-	size_t xfer_min;		/* RW: xfer min size */
-	size_t xfer_align;		/* RW: xfer size need to be a multiple */
-	unsigned int time: 1;		/* RW: mmap timestamp switch */
-	size_t boundary;		/* R : pointers wrap point */
-	unsigned int fail_mask;		/* R : failure locations */
+	unsigned int start_mode;	/* start mode */
+	unsigned int ready_mode;	/* ready detection mode */
+	unsigned int xrun_mode;		/* xrun detection mode */
+	unsigned int silence_mode;	/* silence filling mode */
+	unsigned int tstamp_mode;	/* timestamp mode */
+	size_t avail_min;		/* min avail frames for wakeup */
+	size_t xfer_align;		/* xfer size need to be a multiple */
+	size_t silence_threshold;	/* min distance to noise for silence filling */
+	size_t silence_size;		/* silence block size */
+	size_t boundary;		/* pointers wrap point */
 	char reserved[64];
 } snd_pcm_sw_params_t;
 
