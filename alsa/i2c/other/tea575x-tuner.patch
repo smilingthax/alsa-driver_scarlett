@@ -1,5 +1,5 @@
 --- tea575x-tuner.c.old	2005-02-15 11:12:28.000000000 +0100
-+++ tea575x-tuner.c	2005-03-13 11:35:41.000000000 +0100
++++ tea575x-tuner.c	2005-03-13 12:35:39.000000000 +0100
 @@ -54,6 +54,19 @@
  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
  #define TEA575X_BIT_FREQ_MASK	0x7fff
@@ -53,7 +53,19 @@
  	
  	switch(cmd) {
  		case VIDIOCGCAP:
-@@ -190,13 +223,21 @@
+@@ -168,9 +201,11 @@
+ 	}
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 8)
+ static void snd_tea575x_release(struct video_device *vfd)
+ {
+ }
++#endif
+ 
+ /*
+  * initialize all the tea575x chips
+@@ -190,13 +225,21 @@
  	strcpy(tea->vd.name, tea->tea5759 ? "TEA5759 radio" : "TEA5757 radio");
  	tea->vd.type = VID_TYPE_TUNER;
  	tea->vd.hardware = VID_HARDWARE_RTRACK;	/* FIXME: assign new number */
