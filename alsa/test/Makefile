@@ -10,6 +10,9 @@ osspcm: osspcm.c
 osspcm1: osspcm1.c
 	$(CC) $(CFLAGS) -o osspcm1 osspcm1.c
 
+osspcm2: osspcm2.c
+	$(CC) $(CFLAGS) -o osspcm2 osspcm2.c
+
 ossdelay: ossdelay.c
 	$(CC) $(CFLAGS) -o ossdelay ossdelay.c
 
