@@ -203,7 +203,7 @@ void *snd_usb_find_csint_desc(void *descstart, int desclen, void *after, u8 dsub
 int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif);
 
 int snd_usb_create_midi_interface(snd_usb_audio_t *chip, struct usb_interface *iface, const snd_usb_audio_quirk_t *quirk);
-void snd_usbmidi_disconnect(struct list_head *p);
+void snd_usbmidi_disconnect(struct list_head *p, struct usb_driver *driver);
 
 /*
  * retrieve usb_interface descriptor from the host interface
