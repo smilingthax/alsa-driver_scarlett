@@ -28,11 +28,7 @@
 #include <sound/driver.h>
 #include <linux/init.h>
 #include <linux/delay.h>
-#ifndef LINUX_ISAPNP_H
-#  include <linux/isapnp.h>
-#  define isapnp_card pci_bus
-#  define isapnp_dev pci_dev
-#endif
+#include <linux/pnp.h>
 #include <linux/spinlock.h>
 #include <asm/dma.h>
 #include <sound/core.h>
@@ -52,12 +48,12 @@ MODULE_AUTHOR("Chris Rankin");
 MODULE_DESCRIPTION("ENSONIQ SoundScape PnP driver");
 MODULE_LICENSE("GPL");
 
-static int __initdata index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
-static char* __initdata id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
-static long __initdata port[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_PORT };
-static int __initdata irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;
-static int __initdata mpu_irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;
-static int __initdata dma[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;
+static int index[SNDRV_CARDS] __devinitdata = SNDRV_DEFAULT_IDX;
+static char* id[SNDRV_CARDS] __devinitdata = SNDRV_DEFAULT_STR;
+static long port[SNDRV_CARDS] __devinitdata = { [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_PORT };
+static int irq[SNDRV_CARDS] __devinitdata = SNDRV_DEFAULT_IRQ;
+static int mpu_irq[SNDRV_CARDS] __devinitdata = SNDRV_DEFAULT_IRQ;
+static int dma[SNDRV_CARDS] __devinitdata = SNDRV_DEFAULT_DMA;
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index number for SoundScape soundcard");
@@ -83,12 +79,14 @@ MODULE_PARM(dma, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(dma, "DMA # for SoundScape driver.");
 MODULE_PARM_SYNTAX(dma, SNDRV_DMA8_DESC);
   
-static const struct isapnp_card_id sscape_pnpids[] __devinitdata = {
-	{ISAPNP_CARD_ID('E', 'N', 'S', 0x3081), .devs = {ISAPNP_DEVICE_ID('E', 'N', 'S', 0x0000)}},
-	{ISAPNP_CARD_END}
+#ifdef CONFIG_PNP
+static struct pnp_card_device_id sscape_pnpids[] __devinitdata = {
+	{ .id = "ENS3081", .devs = { { "ENS0000" } } },
+	{ .id = "" }	/* end */
 };
 
-ISAPNP_CARD_TABLE(sscape_pnpids);
+MODULE_DEVICE_TABLE(pnp_card, sscape_pnpids);
+#endif
 
 static snd_card_t *sscape_card[SNDRV_CARDS];
 
@@ -154,10 +152,6 @@ struct soundscape {
 	int hw_in_use;
 	unsigned long midi_usage;
 	unsigned char midi_vol;
-
-#ifdef __ISAPNP__
-	struct isapnp_dev *isapnp;
-#endif
 };
 
 #define INVALID_IRQ  ((unsigned)-1)
@@ -815,9 +809,9 @@ static snd_kcontrol_new_t midi_mixer_ctl = {
  * These IRQs are encoded as bit patterns so that they can be
  * written to the control registers.
  */
-static unsigned __init get_irq_config(int irq)
+static unsigned __devinit get_irq_config(int irq)
 {
-	static const int __initdata valid_irq[] = { 9, 5, 7, 10 };
+	static const int valid_irq[] __devinitdata = { 9, 5, 7, 10 };
 	unsigned cfg;
 
 	for (cfg = 0; cfg < ARRAY_SIZE(valid_irq); ++cfg) {
@@ -833,7 +827,7 @@ static unsigned __init get_irq_config(int irq)
  * Perform certain arcane port-checks to see whether there
  * is a SoundScape board lurking behind the given ports.
  */
-static int __init detect_sscape(struct soundscape *s)
+static int __devinit detect_sscape(struct soundscape *s)
 {
 	unsigned long flags;
 	unsigned d;
@@ -927,7 +921,7 @@ static void mpu401_close(mpu401_t * mpu)
 /*
  * Initialse an MPU-401 subdevice for MIDI support on the SoundScape.
  */
-static int __init create_mpu401(snd_card_t * card, int devnum, unsigned long port, int irq)
+static int __devinit create_mpu401(snd_card_t * card, int devnum, unsigned long port, int irq)
 {
 	struct soundscape *sscape = get_card_soundscape(card);
 	snd_rawmidi_t *rawmidi;
@@ -1032,7 +1026,7 @@ static void ad1845_capture_format(cs4231_t * chip, snd_pcm_hw_params_t * params,
  * try to support at least some of the extra bits by overriding
  * some of the CS4231 callback.
  */
-static int __init create_ad1845(snd_card_t * card, unsigned port, int irq, int dma1)
+static int __devinit create_ad1845(snd_card_t * card, unsigned port, int irq, int dma1)
 {
 	register struct soundscape *sscape = get_card_soundscape(card);
 	cs4231_t *chip;
@@ -1127,10 +1121,6 @@ struct params
 	int irq;
 	int mpu_irq;
 	int dma1;
-
-#ifdef __ISAPNP__
-	struct isapnp_dev *isapnp;
-#endif
 };
 
 
@@ -1141,8 +1131,7 @@ init_params(struct params *params,
             unsigned port,
             int irq,
             int mpu_irq,
-            int dma1,
-            struct isapnp_dev *isapnp)
+            int dma1)
 {
 	params->index = index;
 	params->id = id;
@@ -1151,11 +1140,7 @@ init_params(struct params *params,
 	params->mpu_irq = mpu_irq;  
 	params->dma1 = (dma1 & 0x03);
 
-#ifdef __ISAPNP__
-	params->isapnp = isapnp;
-#endif
-
- return params;
+	return params;
 }
 
 
@@ -1163,7 +1148,7 @@ init_params(struct params *params,
  * Create an ALSA soundcard entry for the SoundScape, using
  * the given list of port, IRQ and DMA resources.
  */
-static int __init create_sscape(const struct params *params)
+static int __devinit create_sscape(const struct params *params, snd_card_t **rcardp)
 {
 	snd_card_t *card;
 	register struct soundscape *sscape;
@@ -1307,10 +1292,6 @@ static int __init create_sscape(const struct params *params)
 	host_write_ctrl_unsafe(sscape->io_base, 0, 100);
 	host_write_ctrl_unsafe(sscape->io_base, CMD_XXX_MIDI_VOL, 100);
 
-#ifdef __ISAPNP__
-	sscape->isapnp = params->isapnp;
-#endif
-
 	/*
 	 * Now that we have successfully created this sound card,
 	 * it is safe to store the pointer.
@@ -1318,7 +1299,7 @@ static int __init create_sscape(const struct params *params)
 	 *       function now that our "constructor" has completed.
 	 */
 	card->private_free = soundscape_free;
-	sscape_card[card->number] = card;
+	*rcardp = card;
 
 	return 0;
 
@@ -1336,18 +1317,11 @@ static int __init create_sscape(const struct params *params)
 }
 
 
-#ifdef __ISAPNP__
-struct isapnp_data
-{
-	struct params *params;
-	unsigned cards;
-	unsigned idx;
-};
+static int sscape_cards __devinitdata;
+static struct params sscape_params[SNDRV_CARDS] __devinitdata;
 
-static void* __initdata hackptr;
-
-
-static inline int __init get_next_autoindex(int i)
+#ifdef CONFIG_PNP
+static inline int __devinit get_next_autoindex(int i)
 {
 	while ((i < SNDRV_CARDS) && (port[i] != SNDRV_AUTO_PORT)) {
 		++i;
@@ -1357,7 +1331,7 @@ static inline int __init get_next_autoindex(int i)
 }
 
 
-static inline int __init is_port_known(unsigned io, struct params *params, int cards)
+static inline int __devinit is_port_known(unsigned io, struct params *params, int cards)
 {
 	while (--cards >= 0) {
 		if (params[cards].port == io)
@@ -1367,18 +1341,18 @@ static inline int __init is_port_known(unsigned io, struct params *params, int c
 	return 0;
 }
 
-
-static int __init sscape_isapnp_card(struct isapnp_card *card, const struct isapnp_card_id *pnpid)
+static int __devinit sscape_pnp_detect(struct pnp_card_link *pcard,
+				       const struct pnp_card_device_id *pid)
 {
-	struct isapnp_data *data = hackptr;
-	struct isapnp_dev *dev;
+	struct pnp_dev *dev;
+	static int idx = 0;
 	int ret;
 
 	/*
 	 * Allow this function to fail *quietly* if all the ISA PnP
 	 * devices were configured using module parameters instead.
 	 */
-	if ((data->idx = get_next_autoindex(data->idx)) >= SNDRV_CARDS) {
+	if ((idx = get_next_autoindex(idx)) >= SNDRV_CARDS) {
 		return -ENOSPC;
 	}
 
@@ -1397,75 +1371,80 @@ static int __init sscape_isapnp_card(struct isapnp_card *card, const struct isap
 	 * This strategy is utterly useless if we compile the driver
 	 * into the kernel, of course.
 	 */
-	printk(KERN_INFO "sscape: %s\n", card->name);
+	// printk(KERN_INFO "sscape: %s\n", card->name);
 
 	/*
 	 * Check that we still have room for another sound card ...
 	 */
-	if (data->cards >= SNDRV_CARDS) {
+	if (sscape_cards >= SNDRV_CARDS) {
 		printk(KERN_ERR "sscape: No room for another ALSA device\n");
 		return -ENOSPC;
 	}
 
 	ret = -ENODEV;
 
-	dev = isapnp_find_dev(card, pnpid->devs[0].vendor, pnpid->devs[0].function, NULL);
+	dev = pnp_request_card_device(pcard, pid->devs[0].id, NULL);
 	if (dev) {
-		if (!dev->active) {
-			printk(KERN_INFO "sscape: device is inactive\n");
-		} else {
-			struct params *this;
-
-			/*
-			 * Read the correct parameters off the ISA PnP bus ...
-			 */
-			this = init_params(&data->params[data->cards],
-			                   index[data->idx],
-			                   id[data->idx],
-			                   dev->resource[0].start,
-			                   dev->irq_resource[0].start,
-			                   dev->irq_resource[1].start,
-			                   dev->dma_resource[0].start,
-			                   dev);
-
-			/*
-			 * Do we know about this sound card already?
-			 */
-			if ( !is_port_known(this->port, data->params, data->cards) ) {
-				++(data->cards);
-				++(data->idx);
-				ret = 0;
+		struct params *this;
+		if (!pnp_is_active(dev)) {
+			if (pnp_activate_dev(dev) < 0) {
+				printk(KERN_INFO "sscape: device is inactive\n");
+				return -EBUSY;
 			}
+		}
+		/*
+		 * Read the correct parameters off the ISA PnP bus ...
+		 */
+		this = init_params(&sscape_params[sscape_cards],
+				   index[idx],
+				   id[idx],
+				   pnp_port_start(dev, 0),
+				   pnp_irq(dev, 0),
+				   pnp_irq(dev, 1),
+				   pnp_dma(dev, 0));
+
+		/*
+		 * Do we know about this sound card already?
+		 */
+		if ( !is_port_known(this->port, sscape_params, sscape_cards) ) {
+			snd_card_t *card;
+
+			ret = create_sscape(this, &card);
+			if (ret < 0)
+				return ret;
+			pnp_set_card_drvdata(pcard, card);
+			++sscape_cards;
+			++idx;
 		}
 	}
 
 	return ret;
 }
 
-
-static int __init sscape_isapnp_probe(struct params *sscape_params, int cards)
+static void __devexit sscape_pnp_remove(struct pnp_card_link * pcard)
 {
-	struct isapnp_data  probe_data;
-
-	probe_data.params = sscape_params;
-	probe_data.cards = cards;
-	probe_data.idx = 0;
-
-	/*
-	 * This is the best way to pass data into the ISA-PnP
-	 * callback function. We have NO CHOICE but to use a
-	 * global variable (Ewwwwwww!) ...
-	 */
-	hackptr = &probe_data;
-	return isapnp_probe_cards(sscape_pnpids, sscape_isapnp_card);
+	snd_card_t *card = (snd_card_t *) pnp_get_card_drvdata(pcard);
+        
+	pnp_set_card_drvdata(pcard, NULL);
+	snd_card_disconnect(card);
+	snd_card_free_in_thread(card);
 }
-#endif
 
+static struct pnp_card_driver sscape_pnpc_driver = {
+	.flags = PNP_DRIVER_RES_DISABLE,
+	.name = "sscape",
+	.id_table = sscape_pnpids,
+	.probe = sscape_pnp_detect,
+	.remove = __devexit_p(sscape_pnp_remove),
+};
+
+#endif /* CONFIG_PNP */
 
 static int __init sscape_manual_probe(struct params *params)
 {
-	int cards = 0;
+	int ret;
 	unsigned i;
+	snd_card_t *card;
 
 	for (i = 0; i < SNDRV_CARDS; ++i) {
 		/*
@@ -1491,19 +1470,28 @@ static int __init sscape_manual_probe(struct params *params)
 		/*
 		 * This cards looks OK ...
 		 */
-		init_params(params, index[i], id[i], port[i], irq[i], mpu_irq[i], dma[i], NULL);
-		++params;
-		++cards;
+		init_params(params, index[i], id[i], port[i], irq[i], mpu_irq[i], dma[i]);
+
+		ret = create_sscape(params, &card);
+		if (ret < 0)
+			return ret;
+
+		sscape_card[sscape_cards] = card;
+		params++;
+		sscape_cards++;
 	} /* for */
 
-	return cards;
+	return 0;
 }
 
 
-static void __exit sscape_exit(void)
+static void sscape_exit(void)
 {
 	unsigned i;
 
+#ifdef CONFIG_PNP
+	pnp_unregister_card_driver(&sscape_pnpc_driver);
+#endif
 	for (i = 0; i < ARRAY_SIZE(sscape_card); ++i) {
 		snd_card_free(sscape_card[i]);
 	} /* for */
@@ -1512,10 +1500,7 @@ static void __exit sscape_exit(void)
 
 static int __init sscape_init(void)
 {
-	struct params sscape_params[ARRAY_SIZE(sscape_card)];
-	int cards;
 	int ret;
-	int i;
 
 	/*
 	 * First check whether we were passed any parameters.
@@ -1523,37 +1508,25 @@ static int __init sscape_init(void)
 	 * of allocating cards, because the operator is
 	 * S-P-E-L-L-I-N-G it out for us...
 	 */
-	cards = sscape_manual_probe(sscape_params);
-	if (cards < 0)
-		return cards;
+	ret = sscape_manual_probe(sscape_params);
+	if (ret < 0) {
+		int i;
+		for (i = 0; i < sscape_cards; ++i)
+			snd_card_free(sscape_card[i]);
+		return ret;
+	}
 
-#ifdef __ISAPNP__
-	if (cards < SNDRV_CARDS)
-		cards += sscape_isapnp_probe(sscape_params, cards);
+#ifdef CONFIG_PNP
+	if (sscape_cards < SNDRV_CARDS) {
+		ret = pnp_register_card_driver(&sscape_pnpc_driver);
+		if (ret < 0) {
+			sscape_exit();
+			return ret;
+		}
+	}
 #endif
 
-	/*
-	 * Now try to attach drivers for any cards we've found ...
-	 */ 
-	ret = -ENODEV;
-
-	for (i = 0; i < cards; ++i) {
-		ret = create_sscape(&sscape_params[i]);
-
-		/*
-		 * Did we create this SoundScape driver successfully?
-		 */
-		if (ret != 0) {
-			/*
-			 * Linux will NOT clean up automatically if the
-			 * module_init function fails ...
-			 */
-			sscape_exit();
-			break;
-		}
-	} /* for */
-
-	return ret;
+	return 0;
 }
 
 module_init(sscape_init);
