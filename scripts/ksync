@@ -60,7 +60,7 @@ KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 		      '/Documentation',
 		      '/arch', '/drivers', '/crypto', '/fs',
 		      '/include', '/init', '/ipc',
-		      '/kernel', '/lib', '/mm',
+		      '/kernel', '/lib', '/mm', '/usr',
 		      '/net', '/scripts', '/security',
 		      '/sound/oss']
 # force to process
