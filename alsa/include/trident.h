@@ -63,7 +63,7 @@
 #endif
 #endif
 
-#define SND_SEQ_DEV_TRIDENT			"synth-trident"
+#define SND_SEQ_DEV_ID_TRIDENT			"synth-trident"
 
 #define SND_TRIDENT_VOICE_TYPE_PCM		0
 #define SND_TRIDENT_VOICE_TYPE_SYNTH		1

@@ -118,7 +118,7 @@ typedef struct snd_emu8000 {
 #define EMU8000_UPDATE_Q	(1<<6)
 
 /* sequencer device id */
-#define SND_SEQ_DEV_EMU8000	"synth-emu8000"
+#define SND_SEQ_DEV_ID_EMU8000	"synth-emu8000"
 
 
 #endif

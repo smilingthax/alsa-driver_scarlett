@@ -466,6 +466,24 @@ typedef struct {
 } snd_seq_port_info_t;
 
 
+/* queue information */
+typedef struct {
+	int queue;			/* queue id */
+
+	/*
+	 *  security settings, only owner of this queue can start/stop timer
+	 *  etc. if the queue is locked for other clients
+	 */
+	int owner;			/* client id for owner of the queue */
+	int locked:1;			/* timing queue locked for other queues */
+
+	char name[64];			/* name of this queue */
+	char reserved[64];		/* for future use */
+} snd_seq_queue_info_t;
+
+typedef snd_seq_queue_info_t snd_seq_queue_owner_t; /* alias */
+
+
 /* queue flags */
 #define SND_SEQ_QUEUE_FLG_SYNC_LOST	(1<<0)	/* synchronization was lost */
 
@@ -492,21 +510,6 @@ typedef struct {
 	int ppq;			/* time resolution, ticks/quarter */
 	char reserved[32];		/* for the future */
 } snd_seq_queue_tempo_t;
-
-
-/* queue owner */
-typedef struct {
-	int queue;			/* sequencer queue */
-
-	/*
-	 *  security settings, only owner of this queue can start/stop timer
-	 *  etc. if the queue is locked for other clients
-	 */
-	int locked:1;			/* timing queue locked for other queues */
-	int owner;			/* client id for owner of the queue */
-
-	char reserved[32];		/* for the future use */
-} snd_seq_queue_owner_t;
 
 
 /* sequencer timer sources */
@@ -754,6 +757,11 @@ typedef struct {
 #define SND_SEQ_IOCTL_SUBSCRIBE_PORT	_IOW ('S', 0x30, snd_seq_port_subscribe_t)
 #define SND_SEQ_IOCTL_UNSUBSCRIBE_PORT	_IOW ('S', 0x31, snd_seq_port_subscribe_t)
 
+#define SND_SEQ_IOCTL_CREATE_QUEUE	_IOWR('S', 0x32, snd_seq_queue_info_t)
+#define SND_SEQ_IOCTL_DELETE_QUEUE	_IOW ('S', 0x33, snd_seq_queue_info_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_INFO	_IOWR('S', 0x34, snd_seq_queue_info_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_INFO	_IOWR('S', 0x35, snd_seq_queue_info_t)
+#define SND_SEQ_IOCTL_GET_NAMED_QUEUE	_IOWR('S', 0x36, snd_seq_queue_info_t)
 #define SND_SEQ_IOCTL_GET_QUEUE_STATUS	_IOWR('S', 0x40, snd_seq_queue_status_t)
 #define SND_SEQ_IOCTL_GET_QUEUE_TEMPO	_IOWR('S', 0x41, snd_seq_queue_tempo_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_TEMPO	_IOW ('S', 0x42, snd_seq_queue_tempo_t)
@@ -768,10 +776,10 @@ typedef struct {
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_RESET_POOL	_IOW ('S', 0x4d, snd_seq_reset_pool_t)
+#define SND_SEQ_IOCTL_REMOVE_EVENTS	_IOW ('S', 0x4e, snd_seq_remove_events_t)
 #define SND_SEQ_IOCTL_QUERY_SUBS	_IOWR('S', 0x4f, snd_seq_query_subs_t)
 #define SND_SEQ_IOCTL_GET_SUBSCRIPTION	_IOWR('S', 0x50, snd_seq_port_subscribe_t)
 #define SND_SEQ_IOCTL_QUERY_NEXT_CLIENT	_IOWR('S', 0x51, snd_seq_client_info_t)
 #define SND_SEQ_IOCTL_QUERY_NEXT_PORT	_IOWR('S', 0x52, snd_seq_port_info_t)
-#define SND_SEQ_IOCTL_REMOVE_EVENTS	_IOW ('S', 0x4e, snd_seq_remove_events_t)
 
 #endif /* __SND_ASEQUENCER_H */

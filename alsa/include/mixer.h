@@ -148,9 +148,6 @@ struct snd_stru_mixer_notify {
 };
 
 extern int snd_mixer_new(snd_card_t * card, char *id, int device, snd_kmixer_t **rmixer);
-extern int snd_mixer_free(snd_kmixer_t * mixer);
-extern int snd_mixer_register(snd_kmixer_t * mixer, snd_device_t *devptr);
-extern int snd_mixer_unregister(snd_kmixer_t * mixer);
 extern int snd_mixer_notify(struct snd_stru_mixer_notify * notify, int nfree);
 
 extern int snd_mixer_lock(snd_kmixer_t * mixer, int up);

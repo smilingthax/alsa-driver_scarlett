@@ -139,35 +139,6 @@ struct snd_stru_rawmidi {
 /* main rawmidi functions */
 
 extern int snd_rawmidi_new(snd_card_t * card, char *id, int device, snd_rawmidi_t ** rmidi);
-extern int snd_rawmidi_free(snd_rawmidi_t * rmidi);
-extern int snd_rawmidi_register(snd_rawmidi_t * rmidi, snd_device_t *devptr);
-extern int snd_rawmidi_unregister(snd_rawmidi_t * rmidi);
-#if 0	/* remove */
-#ifdef CONFIG_SND_SEQUENCER
-#include "seq_device.h"
-static inline int snd_rawmidi_register(snd_rawmidi_t * rmidi, snd_device_t *devptr)
-{
-	int err;
-
-	if ((err = __snd_rawmidi_register(rmidi, devptr))<0)
-		return err;
-	snd_seq_device_register(rmidi->card, rmidi->device, NULL,
-				SND_SEQ_DEV_MIDISYNTH, NULL, 0, NULL);
-	return err;
-}
-static inline int snd_rawmidi_unregister(snd_rawmidi_t * rmidi)
-{
-	snd_seq_device_t *dev;
-	dev = snd_seq_device_find(rmidi->card, rmidi->device, SND_SEQ_DEV_MIDISYNTH);
-	if (dev)
-		snd_seq_device_unregister(dev);
-	return __snd_rawmidi_unregister(rmidi);
-}
-#else
-#define snd_rawmidi_register __snd_rawmidi_register
-#define snd_rawmidi_unregister __snd_rawmidi_unregister
-#endif
-#endif
 extern int snd_rawmidi_switch_add(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
 extern int snd_rawmidi_switch_remove(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw);
 extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_direction_t * dir, snd_kswitch_t * ksw, void *private_data);

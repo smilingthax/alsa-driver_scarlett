@@ -94,9 +94,6 @@ struct snd_stru_timer_instance {
  */
 
 extern int snd_timer_new(snd_card_t * card, char *id, int device, snd_timer_t ** rtimer);
-extern int snd_timer_free(snd_timer_t * timer);
-extern int snd_timer_register(snd_timer_t * timer, snd_device_t *device);
-extern int snd_timer_unregister(snd_timer_t * timer);
 
 extern snd_timer_instance_t *snd_timer_open(char *owner, int timer_no, unsigned int slave_type, unsigned int slave_id);
 extern snd_timer_instance_t *snd_timer_open1(char *owner, snd_timer_t *timer, unsigned int slave_type, unsigned int slave_id);

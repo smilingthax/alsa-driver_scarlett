@@ -23,7 +23,29 @@
 
 typedef struct snd_seq_device snd_seq_device_t;
 typedef struct snd_seq_dev_ops snd_seq_dev_ops_t;
-typedef void *snd_seq_dev_entry_t; /* generic pointer */
+
+/*
+ * registered device information
+ */
+
+#define ID_LEN	32
+
+/* status flag */
+#define SND_SEQ_DEVICE_FREE		0
+#define SND_SEQ_DEVICE_REGISTERED	1
+
+struct snd_seq_device {
+	/* device info */
+	snd_card_t *card;	/* sound card */
+	int device;		/* device number */
+	char id[ID_LEN];	/* driver id */
+	char name[80];		/* device name */
+	int argsize;		/* size of the argument */
+	void *driver_data;	/* private data for driver */
+	int status;		/* flag - read only */
+	snd_seq_device_t *next; /* link to next device */
+};
+
 
 /* driver operators
  * init_device:
@@ -32,34 +54,34 @@ typedef void *snd_seq_dev_entry_t; /* generic pointer */
  *		1. call snd_hwdep_new
  *		2. allocate private data and initialize it
  *		3. call snd_hwdep_register
- *		4. store the instance to result pointer.
+ *		4. store the instance to dev->driver_data pointer.
  *		
  * free_device:
  *	Release the private data.
- *	Typically, call snd_hwdep_unregister(entry)
+ *	Typically, call snd_device_free(dev->card, dev->driver_data)
  */
 struct snd_seq_dev_ops {
-	int (*init_device)(snd_card_t *card, int device, char *name, char *id, void *arg, int size, snd_seq_dev_entry_t *result);
-	int (*free_device)(snd_card_t *card, int device, void *arg, int size, snd_seq_dev_entry_t entry);
+	int (*init_device)(snd_seq_device_t *dev);
+	int (*free_device)(snd_seq_device_t *dev);
 };
 
 /*
  * prototypes
  */
 void snd_seq_device_load_drivers(void);
-int snd_seq_device_new(snd_card_t *card, int device, char *name, char *id, void *arg, int size, snd_seq_device_t **result);
-int snd_seq_device_free(snd_seq_device_t *dev);
-int snd_seq_device_register(snd_seq_device_t *dev, snd_device_t *devptr);
-int snd_seq_device_unregister(snd_seq_device_t *dev);
+int snd_seq_device_new(snd_card_t *card, int device, char *id, int argsize, snd_seq_device_t **result);
 snd_seq_device_t *snd_seq_device_find(snd_card_t *card, int device, char *id);
-int snd_seq_device_register_driver(char *id, snd_seq_dev_ops_t *entry);
+int snd_seq_device_register_driver(char *id, snd_seq_dev_ops_t *entry, int argsize);
 int snd_seq_device_unregister_driver(char *id);
+
+#define SND_SEQ_DEVICE_ARGPTR(dev) (void *)((char *)(dev) + sizeof(snd_seq_device_t))
+
 
 /*
  * id strings for generic devices
  */
-#define SND_SEQ_DEV_MIDISYNTH	"synth-midi"
-#define SND_SEQ_DEV_OPL3	"synth-opl3"
+#define SND_SEQ_DEV_ID_MIDISYNTH	"synth-midi"
+#define SND_SEQ_DEV_ID_OPL3		"synth-opl3"
 
 
 #endif

@@ -38,7 +38,7 @@
 #include "ainstr_simple.h"
 #endif
 
-#define SND_SEQ_DEV_GUS			"synth-gus"
+#define SND_SEQ_DEV_ID_GUS			"synth-gus"
 
 /* IO ports */
 

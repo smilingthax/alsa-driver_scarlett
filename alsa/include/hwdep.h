@@ -45,8 +45,5 @@ struct snd_stru_hwdep {
 };
 
 extern int snd_hwdep_new(snd_card_t * card, char *id, int device, snd_hwdep_t ** rhwdep);
-extern int snd_hwdep_free(snd_hwdep_t * hw);
-extern int snd_hwdep_register(snd_hwdep_t * hw, snd_device_t *devptr);
-extern int snd_hwdep_unregister(snd_hwdep_t * hw);
 
 #endif				/* __HWDEP_H */

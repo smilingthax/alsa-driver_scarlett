@@ -235,9 +235,8 @@ typedef enum {
 } snd_device_type_t;
 
 typedef enum {
-	SND_DEV_BUILD,
-	SND_DEV_REGISTERED,
-	SND_DEV_FREE
+	SND_DEV_BUILD = 0,
+	SND_DEV_REGISTERED = 1
 } snd_device_state_t;
 
 typedef struct snd_stru_card snd_card_t;
@@ -447,7 +446,6 @@ extern int snd_device_new(snd_card_t *card, snd_device_type_t type,
 			  void *devstr, int number, snd_device_ops_t *ops,
 			  snd_device_t ** rdev);
 extern int snd_device_free(snd_card_t *card, void *devstr);
-extern int snd_device_remove(snd_card_t *card, void *devstr);
 extern int snd_device_register(snd_card_t *card, void *devstr);
 extern int snd_device_unregister(snd_card_t *card, void *devstr);
 extern int snd_device_register_all(snd_card_t *card);
