@@ -5,6 +5,8 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
+clean-files := tea575x-tuner.c
+
 # Hack for FM801 && TEA575x
 ifeq (y,$(CONFIG_VIDEO_DEV))
 ifeq (m,$(CONFIG_SND_FM801))
@@ -24,3 +26,5 @@ obj-$(CONFIG_SND_PDAUDIOCF) += snd-ak4117.o
 include $(SND_TOPDIR)/alsa-kernel/i2c/other/Makefile
 
 include $(SND_TOPDIR)/Rules.make
+
+tea575x-tuner.c: tea575x-tuner.patch $(SND_TOPDIR)/alsa-kernel/i2c/other/tea575x-tuner.c
