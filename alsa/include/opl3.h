@@ -247,6 +247,8 @@ typedef struct snd_opl3_voice {
 	unsigned long note_off;	/* note-off time */
 	int note_off_check;	/* check note-off time */
 
+	unsigned char keyon_reg;	/* KON register shadow */
+
 	snd_midi_channel_t *chan;	/* Midi channel for this note */
 } snd_opl3_voice_t;
 
