@@ -411,6 +411,10 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #define MODULE_ALIAS_CHARDEV_MAJOR(x)
 #endif
 
+#ifndef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
+#define pci_set_consistent_dma_mask(p,x) pci_set_dma_mask(p,x)
+#endif
+
 #include "amagic.h"
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
