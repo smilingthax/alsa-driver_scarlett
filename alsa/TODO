@@ -14,8 +14,7 @@ L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
 M rewrite mixer lowlevel implementation
-M Yamaha PCI driver (Jaroslav)
-M ICE1712 - consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
+L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
