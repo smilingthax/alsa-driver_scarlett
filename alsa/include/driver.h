@@ -121,6 +121,7 @@ static inline void snd_leave_user(mm_segment_t fs)
 #ifndef LINUX_2_3
 #define init_MUTEX(x) *(x) = MUTEX
 #define DECLARE_MUTEX(x) struct semaphore x = MUTEX
+typedef struct wait_queue wait_queue_t;
 typedef struct wait_queue * wait_queue_head_t;
 #define init_waitqueue_head(x) *(x) = NULL
 #endif
