@@ -165,6 +165,9 @@ extern int snd_mixer_element_change(snd_kmixer_t * mixer,
 extern int snd_mixer_element_value_change(snd_kmixer_file_t * mfile,
 					snd_kmixer_element_t * element,
 					int atomic);
+extern int snd_mixer_element_value_change_all(snd_kmixer_t * mixer,
+					snd_kmixer_element_t * element,
+					int atomic);
 extern int snd_mixer_element_route_add(snd_kmixer_t * mixer,
 					snd_kmixer_element_t * src_element,
 					snd_kmixer_element_t * dst_element);
@@ -186,6 +189,9 @@ extern snd_kmixer_group_t *snd_mixer_group_new(snd_kmixer_t * mixer,
 extern int snd_mixer_group_change(snd_kmixer_t * mixer,
 				  snd_kmixer_group_t * group);
 extern int snd_mixer_group_value_change(snd_kmixer_file_t * mfile,
+					snd_kmixer_group_t * group,
+					int atomic);
+extern int snd_mixer_group_value_change_all(snd_kmixer_t * mixer,
 					snd_kmixer_group_t * group,
 					int atomic);
 extern int snd_mixer_group_element_add(snd_kmixer_t * mixer,
