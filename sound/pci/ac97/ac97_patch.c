@@ -379,3 +379,31 @@ int patch_alc650(ac97_t * ac97)
 	snd_ac97_write_cache(ac97, AC97_ALC650_LFE_DAC_VOL, 0x0808);
 	return 0;
 }
+
+int patch_cm9739(ac97_t * ac97)
+{
+	unsigned short val;
+
+	/* check spdif */
+	val = snd_ac97_read(ac97, AC97_EXTENDED_STATUS);
+	if (val & AC97_EA_SPCV) {
+		/* enable spdif in */
+		snd_ac97_write_cache(ac97, AC97_CM9739_SPDIF_CTRL,
+				     snd_ac97_read(ac97, AC97_CM9739_SPDIF_CTRL) | 0x01);
+	} else {
+		ac97->ext_id &= ~AC97_EI_SPDIF; /* disable extended-id */
+	}
+
+	/* set-up multi channel */
+	/* bit 13: enable internal vref output for mic */
+	/* bit 12: enable center/lfe */
+	/* bit 14: 0 = SPDIF, 1 = EAPD */
+	snd_ac97_write_cache(ac97, AC97_CM9739_MULTI_CHAN, 0x3000);
+
+	/* FIXME: set up GPIO */
+	snd_ac97_write_cache(ac97, 0x70, 0x0100);
+	snd_ac97_write_cache(ac97, 0x72, 0x0020);
+
+	return 0;
+}
+
