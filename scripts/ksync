@@ -101,6 +101,7 @@ COMMENT_MAP = [
 		('/isa/gus'		,'GUS drivers'),
 		('/include/sb.h'	,'SB drivers'),
 		('/isa/sb/es968.c'	,'ES968 driver'),
+		('/include/sfnt_info.h' ,'SoundFont'),
 		('/include/soundfont.h' ,'SoundFont'),
 		('/include/emu8000.h'	,'EMU8000 driver'),
 		('/isa/sb/emu8000.*'	,'EMU8000 driver'),
@@ -171,6 +172,7 @@ COMMENT_MAP = [
 		('/i2c/other'		,'Serial BUS drivers'),
 		('/include/i2c.h'	,'I2C lib core'),
 		('/i2c/i2c.c'		,'I2C lib core'),
+		('/i2c/cs8427.c'	,'I2C cs8427'),
 		('/i2c'			,'ERROR'),
 		('/parisc'		,'ERROR'),
 		('/sparc'		,'ERROR'),
@@ -180,6 +182,7 @@ COMMENT_MAP = [
 		('/pcmcia/Kconfig'	,'PCMCIA Kconfig'),
 		('/pcmcia'		,'ERROR'),
 		('/usb/usbaudio.(c|h)'	,'USB generic driver'),
+		('/usb/usbmidi.(c|h)'	,'USB generic driver'),
 		('/usb/usbmixer.(c|h)'	,'USB generic driver'),
 		('/usb/usbquirks.(c|h)' ,'USB generic driver'),
 		('/usb'			,'ERROR'),
@@ -216,10 +219,12 @@ COMMENT_MAP = [
 		('/core/sound.*'	,'ALSA Core'),
 		('/core/memory.*'	,'ALSA Core'),
 		('/core/misc.*'		,'ALSA Core'),
+		('/core/Makefile'	,'ALSA Core'),
 		('/core'		,'ERROR'),
 		('/Documentation'	,'Documentation'),
 		('/include'		,'ERROR'),
 		('/sound_core.c'	,'OSS device core'),
+		('/scripts'		,'IGNORE'),
 		('/'			,'ERROR')
 	       ]
 
