@@ -31,8 +31,8 @@ struct snd_stru_control {
 
 struct snd_stru_ctl_switch {
   char name[32];
-  int (*get_switch)( snd_card_t *card, struct snd_ctl_switch *uswitch );
-  int (*set_switch)( snd_card_t *card, struct snd_ctl_switch *uswitch );
+  int (*get_switch)( snd_card_t *card, struct snd_stru_ctl_switch *kswitch, struct snd_ctl_switch *uswitch );
+  int (*set_switch)( snd_card_t *card, struct snd_stru_ctl_switch *kswitch, struct snd_ctl_switch *uswitch );
   unsigned int private_value;
   void *private_data;           /* not freed by control.c */
 };

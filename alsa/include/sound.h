@@ -72,6 +72,8 @@ typedef struct snd_pcm_record_params snd_pcm_record_params_t;
 typedef struct snd_pcm_playback_status snd_pcm_playback_status_t;
 typedef struct snd_pcm_record_status snd_pcm_record_status_t;
 typedef struct snd_rawmidi_info snd_rawmidi_info_t;
+typedef struct snd_rawmidi_output_info snd_rawmidi_output_info_t;
+typedef struct snd_rawmidi_input_info snd_rawmidi_input_info_t;
 typedef struct snd_rawmidi_switch snd_rawmidi_switch_t;
 typedef struct snd_rawmidi_output_params snd_rawmidi_output_params_t;
 typedef struct snd_rawmidi_input_params snd_rawmidi_input_params_t;
@@ -199,6 +201,9 @@ struct snd_ctl_switch {
 
 					/* max 32 chars (with '\0') */
 #define SND_MIXER_SW_LOUDNESS		"Loudness"		/* bass boost */
+#define SND_MIXER_SW_SIM_STEREO		"Simulated Stereo Enhancement"
+#define SND_MIXER_SW_3D			"3D Stereo Enhancement"
+#define SND_MIXER_SW_MIC_GAIN		"MIC Gain"		/* Microphone Gain */
 #define SND_MIXER_SW_MIC_AGC		"MIC Auto-Gain-Control"	/* Microphone Auto-Gain-Control */
 #define SND_MIXER_SW_MIC_IMPEDANCE	"Change MIC Impedance"	/* change Microphone impedance */
 #define SND_MIXER_SW_LINE_TO_OUTPUT	"Line In to Output"	/* reroute Line In to Output */
@@ -416,7 +421,8 @@ struct snd_pcm_playback_info {
   unsigned int max_fragment_size;	/* max fragment size in bytes */
   unsigned int fragment_align;		/* align fragment value */
   unsigned int hw_formats;		/* formats supported by hardware */
-  unsigned char reserved[60];		/* reserved for future... */
+  unsigned int switches;		/* count of switches */
+  unsigned char reserved[56];		/* reserved for future... */
 };
 
 struct snd_pcm_record_info {
@@ -431,7 +437,8 @@ struct snd_pcm_record_info {
   unsigned int max_fragment_size;	/* max fragment size in bytes */
   unsigned int fragment_align;		/* align fragment value */
   unsigned int hw_formats;		/* formats supported by hardware */
-  unsigned char reserved[60];		/* reserved for future... */
+  unsigned int switches;		/* count of switches */
+  unsigned char reserved[56];		/* reserved for future... */
 };
 
 struct snd_pcm_switch {
@@ -500,9 +507,12 @@ struct snd_pcm_record_status {
 #define SND_PCM_IOCTL_INFO		_IOR ( 'A', 0x01, struct snd_pcm_info )
 #define SND_PCM_IOCTL_PLAYBACK_INFO	_IOR ( 'A', 0x02, struct snd_pcm_playback_info )
 #define SND_PCM_IOCTL_RECORD_INFO	_IOR ( 'A', 0x03, struct snd_pcm_record_info )
-#define SND_PCM_IOCTL_SWITCHES		_IOR ( 'A', 0x04, int )
-#define SND_PCM_IOCTL_SWITCH_READ	_IOR ( 'A', 0x05, struct snd_pcm_switch )
-#define SND_PCM_IOCTL_SWITCH_WRITE	_IOWR( 'A', 0x05, struct snd_pcm_switch )
+#define SND_PCM_IOCTL_PSWITCHES		_IOR ( 'A', 0x04, int )
+#define SND_PCM_IOCTL_PSWITCH_READ	_IOR ( 'A', 0x05, struct snd_pcm_switch )
+#define SND_PCM_IOCTL_PSWITCH_WRITE	_IOWR( 'A', 0x05, struct snd_pcm_switch )
+#define SND_PCM_IOCTL_RSWITCHES		_IOR ( 'A', 0x06, int )
+#define SND_PCM_IOCTL_RSWITCH_READ	_IOR ( 'A', 0x07, struct snd_pcm_switch )
+#define SND_PCM_IOCTL_RSWITCH_WRITE	_IOWR( 'A', 0x07, struct snd_pcm_switch )
 #define SND_PCM_IOCTL_PLAYBACK_FORMAT	_IOWR( 'A', 0x10, struct snd_pcm_format )
 #define SND_PCM_IOCTL_RECORD_FORMAT	_IOWR( 'A', 0x11, struct snd_pcm_format )
 #define SND_PCM_IOCTL_PLAYBACK_PARAMS	_IOWR( 'A', 0x12, struct snd_pcm_playback_params )
@@ -721,8 +731,17 @@ struct snd_rawmidi_info {
   unsigned int flags;			/* SND_RAWMIDI_INFO_XXXX */
   unsigned char id[32];			/* ID of this raw midi device */
   unsigned char name[80];		/* name of this raw midi device */
+  unsigned char reserved[64];		/* reserved for future use */
+};
+
+struct snd_rawmidi_output_info {
   unsigned int switches;		/* count of switches */
-  unsigned char reserved[60];		/* reserved for future use */
+  unsigned char reserved[64];
+};
+
+struct snd_rawmidi_input_info {
+  unsigned int switches;		/* count of switches */
+  unsigned char reserved[64];
 };
 
 struct snd_rawmidi_switch {
@@ -770,9 +789,14 @@ struct snd_rawmidi_input_status {
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ( 'W', 0x00, int )
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ( 'W', 0x01, struct snd_rawmidi_info )
-#define SND_RAWMIDI_IOCTL_SWITCHES	_IOR ( 'W', 0x02, int )
-#define SND_RAWMIDI_IOCTL_SWITCH_READ	_IOR ( 'W', 0x03, struct snd_rawmidi_switch )
-#define SND_RAWMIDI_IOCTL_SWITCH_WRITE	_IOWR( 'W', 0x03, struct snd_rawmidi_switch )
+#define SND_RAWMIDI_IOCTL_OUTPUT_INFO	_IOR ( 'W', 0x02, struct snd_rawmidi_output_info )
+#define SND_RAWMIDI_IOCTL_INPUT_INFO	_IOR ( 'W', 0x03, struct snd_rawmidi_input_info )
+#define SND_RAWMIDI_IOCTL_OSWITCHES	_IOR ( 'W', 0x04, int )
+#define SND_RAWMIDI_IOCTL_OSWITCH_READ	_IOR ( 'W', 0x05, struct snd_rawmidi_switch )
+#define SND_RAWMIDI_IOCTL_OSWITCH_WRITE	_IOWR( 'W', 0x05, struct snd_rawmidi_switch )
+#define SND_RAWMIDI_IOCTL_ISWITCHES	_IOR ( 'W', 0x06, int )
+#define SND_RAWMIDI_IOCTL_ISWITCH_READ	_IOR ( 'W', 0x07, struct snd_rawmidi_switch )
+#define SND_RAWMIDI_IOCTL_ISWITCH_WRITE	_IOWR( 'W', 0x07, struct snd_rawmidi_switch )
 #define SND_RAWMIDI_IOCTL_OUTPUT_PARAMS	_IOWR( 'W', 0x10, struct snd_rawmidi_output_params )
 #define SND_RAWMIDI_IOCTL_INPUT_PARAMS	_IOWR( 'W', 0x11, struct snd_rawmidi_input_params )
 #define SND_RAWMIDI_IOCTL_OUTPUT_STATUS	_IOR ( 'W', 0x20, struct snd_rawmidi_output_status )
