@@ -154,6 +154,10 @@ dnl Check for linux/pm.h...
 AC_MSG_CHECKING(for kernel linux/pm.h)
 if test -f $CONFIG_SND_KERNELDIR/include/linux/pm.h; then
   AC_MSG_RESULT("yes")
+  if test -f include/linux/pm.h; then
+    echo "Removing a dummy linux/pm.h."
+    rm -f include/linux/pm.h
+  fi
 else
   AC_MSG_RESULT("no")
   if test ! -f include/linux/pm.h; then
@@ -694,6 +698,14 @@ if test "$CONFIG_ISAPNP" = "y"; then
     mkdir -p include/linux
     ln -sf ../../support/isapnp.h include/linux/isapnp.h
   fi
+fi
+
+else
+dnl 2.4/2.5 kernels
+
+if test -f include/linux/isapnp.h; then
+  echo "Removing local linux/isapnp.h."
+  rm include/linux/isapnp.h
 fi
 
 fi
