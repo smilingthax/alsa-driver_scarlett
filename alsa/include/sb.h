@@ -123,7 +123,7 @@ struct snd_stru_sbdsp {
 					/* also SND_SB_CSP_MODE_XXX for sb16_csp */
 	unsigned int mode;		/* current mode of stream */
 	unsigned int force_mode16;	/* force 16-bit mode of streams */
-	unsigned char speed8;		/* input speed */
+	unsigned short speed8;		/* input speed */
 	unsigned char fmt8;		/* format */
 	struct timer_list midi_timer;
 	unsigned int p_dma_size;
