@@ -554,6 +554,7 @@ static int snd_usbmidi_port_input(snd_seq_event_t* ev, int direct,
 	default:
 		return 0;
 	}
+	snd_virmidi_receive(port->rmidi, ev);
 	tasklet_hi_schedule(&port->ep->tasklet);
 	return 0;
 }
