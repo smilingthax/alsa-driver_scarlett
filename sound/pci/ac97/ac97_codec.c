@@ -935,6 +935,11 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("Surround Down Mix", AC97_ALC650_MULTICH, 1, 1, 0),
 	AC97_SINGLE("Center/LFE Down Mix", AC97_ALC650_MULTICH, 2, 1, 0),
 	AC97_SINGLE("Exchange Center/LFE", AC97_ALC650_MULTICH, 3, 1, 0),
+	/* 4: Analog Input To Surround */
+	/* 5: Analog Input To Center/LFE */
+	/* 6: Indepedent Master Volume Right */
+	/* 7: Indepedent Master Volume Left */
+	/* 8: reserved */
 	AC97_SINGLE("Line-In As Surround", AC97_ALC650_MULTICH, 9, 1, 0),
 	AC97_SINGLE("Mic As Center/LFE", AC97_ALC650_MULTICH, 10, 1, 0),
 	AC97_SINGLE("IEC958 Capture Switch", AC97_ALC650_MULTICH, 11, 1, 0),
@@ -944,6 +949,10 @@ static const snd_kcontrol_new_t snd_ac97_controls_alc650[] = {
 	AC97_SINGLE("IEC958 Input Clock Enable", AC97_ALC650_CLOCK, 0, 1, 0),
 	AC97_SINGLE("IEC958 Input Pin Enable", AC97_ALC650_CLOCK, 1, 1, 0),
 #endif
+	AC97_SINGLE("Surround DAC Switch", AC97_ALC650_SURR_DAC_VOL, 15, 1, 1),
+	AC97_DOUBLE("Surround DAC Volume", AC97_ALC650_SURR_DAC_VOL, 8, 0, 31, 1),
+	AC97_SINGLE("Center/LFE DAC Switch", AC97_ALC650_LFE_DAC_VOL, 15, 1, 1),
+	AC97_DOUBLE("Center/LFE DAC Volume", AC97_ALC650_LFE_DAC_VOL, 8, 0, 31, 1),
 };
 
 /* The following snd_ac97_ymf753_... items added by David Shust (dshust@shustring.com) */
