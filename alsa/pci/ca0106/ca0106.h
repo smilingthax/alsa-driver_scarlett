@@ -388,7 +388,7 @@
 						 * Host Right volume [23:16]
 						 * Host Left  volume [31:24]
 						 */
-#define CAPTURE_ROUTING1        0x67            /* Playback Routing. Default 0x32765410 */
+#define CAPTURE_ROUTING1        0x67            /* Capture Routing. Default 0x32765410 */
 						/* Similar to register 0x63, except that the destination is the I2S mixer instead of the SPDIF mixer. I.E. Outputs to the Analog outputs instead of SPDIF. */
 #define CAPTURE_ROUTING2        0x68            /* Unknown Routing. Default 0x76767676 */
 						/* Similar to register 0x64, except that the destination is the I2S mixer instead of the SPDIF mixer. I.E. Outputs to the Analog outputs instead of SPDIF. */
@@ -526,8 +526,8 @@ struct snd_ca0106 {
 	ac97_t *ac97;
 	snd_pcm_t *pcm;
 
-	ca0106_channel_t channels[4];
-	ca0106_channel_t capture_channel;
+	ca0106_channel_t playback_channels[4];
+	ca0106_channel_t capture_channels[4];
 	u32 spdif_bits[4];             /* s/pdif out setup */
 	int spdif_enable;
 	int capture_source;

@@ -1,7 +1,7 @@
 /*
  *  Copyright (c) 2004 James Courtier-Dutton <James@superbug.demon.co.uk>
  *  Driver CA0106 chips. e.g. Sound Blaster Audigy LS and Live 24bit
- *  Version: 0.0.20
+ *  Version: 0.0.21
  *
  *  FEATURES currently supported:
  *    Front, Rear and Center/LFE.
@@ -72,6 +72,9 @@
  *    The output codec needs resetting, otherwise all output is muted.
  *  0.0.20
  *    Merge "pci_disable_device(pci);" fixes.
+ *  0.0.21
+ *    Add 4 capture channels. (SPDIF only comes in on channel 0. )
+ *    Add SPDIF capture using optional digital I/O module for SB Live 24bit. (Analog capture does not yet work.)
  *
  *  BUGS:
  *    Some stability problems when unloading the snd-ca0106 kernel module.
@@ -263,7 +266,7 @@ static void snd_ca0106_pcm_free_substream(snd_pcm_runtime_t *runtime)
 static int snd_ca0106_pcm_open_playback_channel(snd_pcm_substream_t *substream, int channel_id)
 {
 	ca0106_t *chip = snd_pcm_substream_chip(substream);
-        ca0106_channel_t *channel = &(chip->channels[channel_id]);
+        ca0106_channel_t *channel = &(chip->playback_channels[channel_id]);
 	ca0106_pcm_t *epcm;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int err;
@@ -301,7 +304,7 @@ static int snd_ca0106_pcm_close_playback(snd_pcm_substream_t *substream)
 	ca0106_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
         ca0106_pcm_t *epcm = runtime->private_data;
-        chip->channels[epcm->channel_id].use=0;
+        chip->playback_channels[epcm->channel_id].use=0;
 /* FIXME: maybe zero others */
 	return 0;
 }
@@ -330,7 +333,7 @@ static int snd_ca0106_pcm_open_playback_rear(snd_pcm_substream_t *substream)
 static int snd_ca0106_pcm_open_capture_channel(snd_pcm_substream_t *substream, int channel_id)
 {
 	ca0106_t *chip = snd_pcm_substream_chip(substream);
-        ca0106_channel_t *channel = &(chip->capture_channel);
+        ca0106_channel_t *channel = &(chip->capture_channels[channel_id]);
 	ca0106_pcm_t *epcm;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int err;
@@ -368,16 +371,31 @@ static int snd_ca0106_pcm_open_capture_channel(snd_pcm_substream_t *substream, i
 static int snd_ca0106_pcm_close_capture(snd_pcm_substream_t *substream)
 {
 	ca0106_t *chip = snd_pcm_substream_chip(substream);
-	//snd_pcm_runtime_t *runtime = substream->runtime;
-        //ca0106_pcm_t *epcm = runtime->private_data;
-        chip->capture_channel.use=0;
+	snd_pcm_runtime_t *runtime = substream->runtime;
+        ca0106_pcm_t *epcm = runtime->private_data;
+        chip->capture_channels[epcm->channel_id].use=0;
 /* FIXME: maybe zero others */
 	return 0;
 }
 
-static int snd_ca0106_pcm_open_capture(snd_pcm_substream_t *substream)
+static int snd_ca0106_pcm_open_0_capture(snd_pcm_substream_t *substream)
 {
 	return snd_ca0106_pcm_open_capture_channel(substream, 0);
+}
+
+static int snd_ca0106_pcm_open_1_capture(snd_pcm_substream_t *substream)
+{
+	return snd_ca0106_pcm_open_capture_channel(substream, 1);
+}
+
+static int snd_ca0106_pcm_open_2_capture(snd_pcm_substream_t *substream)
+{
+	return snd_ca0106_pcm_open_capture_channel(substream, 2);
+}
+
+static int snd_ca0106_pcm_open_3_capture(snd_pcm_substream_t *substream)
+{
+	return snd_ca0106_pcm_open_capture_channel(substream, 3);
 }
 
 /* hw_params callback */
@@ -666,8 +684,41 @@ static snd_pcm_ops_t snd_ca0106_playback_front_ops = {
 	.pointer =     snd_ca0106_pcm_pointer_playback,
 };
 
-static snd_pcm_ops_t snd_ca0106_capture_ops = {
-	.open =        snd_ca0106_pcm_open_capture,
+static snd_pcm_ops_t snd_ca0106_capture_0_ops = {
+	.open =        snd_ca0106_pcm_open_0_capture,
+	.close =       snd_ca0106_pcm_close_capture,
+	.ioctl =       snd_pcm_lib_ioctl,
+	.hw_params =   snd_ca0106_pcm_hw_params_capture,
+	.hw_free =     snd_ca0106_pcm_hw_free_capture,
+	.prepare =     snd_ca0106_pcm_prepare_capture,
+	.trigger =     snd_ca0106_pcm_trigger_capture,
+	.pointer =     snd_ca0106_pcm_pointer_capture,
+};
+
+static snd_pcm_ops_t snd_ca0106_capture_1_ops = {
+	.open =        snd_ca0106_pcm_open_1_capture,
+	.close =       snd_ca0106_pcm_close_capture,
+	.ioctl =       snd_pcm_lib_ioctl,
+	.hw_params =   snd_ca0106_pcm_hw_params_capture,
+	.hw_free =     snd_ca0106_pcm_hw_free_capture,
+	.prepare =     snd_ca0106_pcm_prepare_capture,
+	.trigger =     snd_ca0106_pcm_trigger_capture,
+	.pointer =     snd_ca0106_pcm_pointer_capture,
+};
+
+static snd_pcm_ops_t snd_ca0106_capture_2_ops = {
+	.open =        snd_ca0106_pcm_open_2_capture,
+	.close =       snd_ca0106_pcm_close_capture,
+	.ioctl =       snd_pcm_lib_ioctl,
+	.hw_params =   snd_ca0106_pcm_hw_params_capture,
+	.hw_free =     snd_ca0106_pcm_hw_free_capture,
+	.prepare =     snd_ca0106_pcm_prepare_capture,
+	.trigger =     snd_ca0106_pcm_trigger_capture,
+	.pointer =     snd_ca0106_pcm_pointer_capture,
+};
+
+static snd_pcm_ops_t snd_ca0106_capture_3_ops = {
+	.open =        snd_ca0106_pcm_open_3_capture,
 	.close =       snd_ca0106_pcm_close_capture,
 	.ioctl =       snd_pcm_lib_ioctl,
 	.hw_params =   snd_ca0106_pcm_hw_params_capture,
@@ -821,7 +872,7 @@ static irqreturn_t snd_ca0106_interrupt(int irq, void *dev_id,
 	//snd_printk("ptr=0x%08x\n",snd_ca0106_ptr_read(chip, PLAYBACK_POINTER, 0));
         mask = 0x11; /* 0x1 for one half, 0x10 for the other half period. */
 	for(i = 0; i < 4; i++) {
-		pchannel = &(chip->channels[i]);
+		pchannel = &(chip->playback_channels[i]);
 		if(stat76 & mask) {
 /* FIXME: Select the correct substream for period elapsed */
 			if(pchannel->use) {
@@ -833,11 +884,20 @@ static irqreturn_t snd_ca0106_interrupt(int irq, void *dev_id,
 	        //printk(KERN_INFO "interrupt stat76[%d] = %08x, use=%d, channel=%d\n", i, stat76, pchannel->use, pchannel->number);
 		mask <<= 1;
 	}
-	if(stat76 & 0x110000) {
-		if(chip->capture_channel.use) {
-                  snd_pcm_period_elapsed(chip->capture_channel.epcm->substream);
-                }
-        }
+        mask = 0x110000; /* 0x1 for one half, 0x10 for the other half period. */
+	for(i = 0; i < 4; i++) {
+		pchannel = &(chip->capture_channels[i]);
+		if(stat76 & mask) {
+/* FIXME: Select the correct substream for period elapsed */
+			if(pchannel->use) {
+                          snd_pcm_period_elapsed(pchannel->epcm->substream);
+	                //printk(KERN_INFO "interrupt [%d] used\n", i);
+                        }
+		}
+	        //printk(KERN_INFO "channel=%p\n",pchannel);
+	        //printk(KERN_INFO "interrupt stat76[%d] = %08x, use=%d, channel=%d\n", i, stat76, pchannel->use, pchannel->number);
+		mask <<= 1;
+	}
 
         snd_ca0106_ptr_write(chip, EXTENDED_INT, 0, stat76);
 	spin_lock(&chip->emu_lock);
@@ -861,12 +921,10 @@ static int __devinit snd_ca0106_pcm(ca0106_t *emu, int device, snd_pcm_t **rpcm)
 	snd_pcm_t *pcm;
 	snd_pcm_substream_t *substream;
 	int err;
-        int capture=0;
   
 	if (rpcm)
 		*rpcm = NULL;
-        if (device == 0) capture=1; 
-	if ((err = snd_pcm_new(emu->card, "ca0106", device, 1, capture, &pcm)) < 0)
+	if ((err = snd_pcm_new(emu->card, "ca0106", device, 1, 1, &pcm)) < 0)
 		return err;
   
 	pcm->private_data = emu;
@@ -875,16 +933,19 @@ static int __devinit snd_ca0106_pcm(ca0106_t *emu, int device, snd_pcm_t **rpcm)
 	switch (device) {
 	case 0:
 	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_ca0106_playback_front_ops);
-	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_ca0106_capture_ops);
+	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_ca0106_capture_0_ops);
           break;
 	case 1:
 	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_ca0106_playback_rear_ops);
+	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_ca0106_capture_1_ops);
           break;
 	case 2:
 	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_ca0106_playback_center_lfe_ops);
+	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_ca0106_capture_2_ops);
           break;
 	case 3:
 	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_ca0106_playback_unknown_ops);
+	  snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_ca0106_capture_3_ops);
           break;
         }
 
