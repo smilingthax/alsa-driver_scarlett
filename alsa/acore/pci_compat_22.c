@@ -359,6 +359,20 @@ void snd_pci_compat_release_regions(struct pci_dev *pdev)
 		snd_pci_compat_release_region(pdev, i);
 }
 
+void snd_pci_compat_save_state(struct pci_dev *pdev, u32 *buffer)
+{
+	int i;
+	for (i = 0; i < 16; i++)
+		pci_read_config_dword(pdev, i * 4, &buffer[i]);
+}
+
+void snd_pci_compat_restore_state(struct pci_dev *pdev, u32 *buffer)
+{
+	int i;
+	for (i = 0; i < 16; i++)
+		pci_write_config_dword(pdev, i * 4, buffer[i]);
+}
+
 #endif /* CONFIG_PCI */
 
 /* these functions are outside of CONFIG_PCI */
