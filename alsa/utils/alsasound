@@ -65,7 +65,7 @@ test $link = $base && START_ALSA=yes
 test "$START_ALSA" = yes || exit 0
 
 alsactl=/usr/sbin/alsactl
-asoundcfg=/etc/asound.conf
+asoundcfg=/etc/asound.state
 aconnect=/usr/bin/aconnect
 alsascrdir=/etc/alsa.d
 

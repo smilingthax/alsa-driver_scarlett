@@ -30,7 +30,7 @@
 
 config=/etc/modules.conf
 alsactl=/usr/sbin/alsactl
-asoundcfg=/etc/asound.conf
+asoundcfg=/etc/asound.state
 
 if [ ! -r $config ]; then
   if [ -r /etc/conf.modules ]; then
