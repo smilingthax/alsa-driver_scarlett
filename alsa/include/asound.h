@@ -894,7 +894,8 @@ typedef struct snd_mixer_filter {
 #define SND_MIXER_IOCTL_ELEMENT_INFO	_IOWR('R', 0x20, snd_mixer_element_info_t)
 #define SND_MIXER_IOCTL_ELEMENT_READ	_IOWR('R', 0x21, snd_mixer_element_t)
 #define SND_MIXER_IOCTL_ELEMENT_WRITE	_IOWR('R', 0x22, snd_mixer_element_t)
-#define SND_MIXER_IOCTL_READ_FILTER	_IOW ('R', 0x30, snd_mixer_filter_t)
+#define SND_MIXER_IOCTL_GET_FILTER	_IOR ('R', 0x30, snd_mixer_filter_t)
+#define SND_MIXER_IOCTL_PUT_FILTER	_IOWR('R', 0x30, snd_mixer_filter_t)
 
 /*
  *  Read interface.
