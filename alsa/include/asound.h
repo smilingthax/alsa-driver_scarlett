@@ -208,11 +208,11 @@ typedef struct snd_switch {
 
 typedef struct snd_ctl_hw_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
-	unsigned int hwdepdevs;	/* count of hardware dependent devices (0 to N) */
-	unsigned int pcmdevs;	/* count of PCM devices (0 to N) */
-	unsigned int mixerdevs;	/* count of MIXER devices (0 to N) */
-	unsigned int mididevs;	/* count of raw MIDI devices (0 to N) */
-	unsigned int timerdevs;	/* count of timer devices (0 to N) */
+	unsigned int hwdepdevs;	/* count of hardware dependent devices (0 to A) */
+	unsigned int pcmdevs;	/* count of PCM devices (0 to B) */
+	unsigned int mixerdevs;	/* count of MIXER devices (0 to C) */
+	unsigned int mididevs;	/* count of raw MIDI devices (0 to D) */
+	unsigned int timerdevs;	/* count of timer devices (0 to E) */
 	char id[16];		/* ID of card (user selectable) */
 	char abbreviation[16];	/* Abbreviation for soundcard */
 	char name[32];		/* Short name of soundcard */
