@@ -113,15 +113,15 @@ unsigned char snd_es1688_mixer_read(es1688_t *chip, unsigned char reg);
 
 void snd_es1688_interrupt(es1688_t *chip);
 
-int snd_es1688_new_pcm(snd_card_t * card, int device,
-		       unsigned long port,
-		       unsigned long mpu_port,
-		       snd_irq_t * irqptr,
-		       snd_irq_t * mpu_irqptr,
-		       snd_dma_t * dma8ptr,
-		       unsigned short hardware,
-		       snd_pcm_t ** rpcm);
-int snd_es1688_init(snd_pcm_t * pcm, int enable);
-int snd_es1688_new_mixer(snd_pcm_t * pcm);
+int snd_es1688_create(snd_card_t * card,
+		      unsigned long port,
+		      unsigned long mpu_port,
+		      snd_irq_t * irqptr,
+		      snd_irq_t * mpu_irqptr,
+		      snd_dma_t * dma8ptr,
+		      unsigned short hardware,
+		      es1688_t ** rchip);
+int snd_es1688_pcm(es1688_t *chip, int device, snd_pcm_t ** rpcm);
+int snd_es1688_mixer(es1688_t *chip);
 
 #endif				/* __ES1688_H */

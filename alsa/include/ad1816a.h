@@ -168,12 +168,13 @@ struct snd_stru_ad1816a {
 
 extern void snd_ad1816a_interrupt(ad1816a_t *chip);
 
-extern int snd_ad1816a_new_pcm(snd_card_t *card, int device,
-			       unsigned long port, snd_irq_t *irqptr,
-			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
-			       int timer_dev, snd_pcm_t **rpcm);
+extern int snd_ad1816a_create(snd_card_t *card,
+			      unsigned long port, snd_irq_t *irqptr,
+			      snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
+			      ad1816a_t **chip);
 
-extern int snd_ad1816a_new_mixer(snd_pcm_t *pcm);
+extern int snd_ad1816a_pcm(ad1816a_t *chip, int device, snd_pcm_t **rpcm);
+extern int snd_ad1816a_mixer(ad1816a_t *chip);
 
 #endif	/* __AD1816A_H */
 

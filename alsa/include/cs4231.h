@@ -270,28 +270,29 @@ void snd_cs4231_mce_down(cs4231_t *chip);
 
 void snd_cs4231_interrupt(cs4231_t *chip);
 
-int snd_cs4231_new_pcm(snd_card_t * card, int device,
-		       unsigned long port,
-		       snd_irq_t * irqptr,
-		       snd_dma_t * dmaptr1,
-		       snd_dma_t * dmaptr2,
-		       unsigned short hardware,
-		       int timer_dev,
-		       snd_pcm_t **rpcm);
+const char *snd_cs4231_chip_id(cs4231_t *chip);
 
-int snd_cs4231_new_mixer(snd_pcm_t * pcm);
+int snd_cs4231_create(snd_card_t * card,
+		      unsigned long port,
+		      snd_irq_t * irqptr,
+		      snd_dma_t * dmaptr1,
+		      snd_dma_t * dmaptr2,
+		      unsigned short hardware,
+		      cs4231_t ** rchip);
+int snd_cs4231_pcm(cs4231_t * chip, int device, snd_pcm_t **rpcm);
+int snd_cs4231_timer(cs4231_t * chip, int device, snd_timer_t **rtimer);
+int snd_cs4231_mixer(cs4231_t * chip);
 
-int snd_cs4236_new_pcm(snd_card_t * card, int device,
-		       unsigned long port,
-		       unsigned long cport,
-		       snd_irq_t * irqptr,
-		       snd_dma_t * dmaptr1,
-		       snd_dma_t * dmaptr2,
-		       unsigned short hardware,
-		       int timer_dev,
-		       snd_pcm_t **rpcm);
-
-int snd_cs4236_new_mixer(snd_pcm_t * pcm);
+int snd_cs4236_create(snd_card_t * card,
+		      unsigned long port,
+		      unsigned long cport,
+		      snd_irq_t * irqptr,
+		      snd_dma_t * dmaptr1,
+		      snd_dma_t * dmaptr2,
+		      unsigned short hardware,
+		      cs4231_t ** rchip);
+int snd_cs4236_pcm(cs4231_t * chip, int device, snd_pcm_t **rpcm);
+int snd_cs4236_mixer(cs4231_t * chip);
 
 /*
  *  mixer library

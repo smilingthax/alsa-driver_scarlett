@@ -161,14 +161,15 @@ void snd_ad1848_out(ad1848_t *chip, unsigned char reg, unsigned char value);
 
 void snd_ad1848_interrupt(ad1848_t *chip);
 
-int snd_ad1848_new_pcm(snd_card_t * card, int device,
-		       unsigned long port,
-		       snd_irq_t * irqptr,
-		       snd_dma_t * dmaptr,
-		       unsigned short hardware,
-		       snd_pcm_t ** rpcm);
+int snd_ad1848_create(snd_card_t * card,
+		      unsigned long port,
+		      snd_irq_t * irqptr,
+		      snd_dma_t * dmaptr,
+		      unsigned short hardware,
+		      ad1848_t ** chip);
 
-int snd_ad1848_new_mixer(snd_pcm_t *pcm);
+int snd_ad1848_pcm(ad1848_t * chip, int device, snd_pcm_t **rpcm);
+int snd_ad1848_mixer(ad1848_t * chip);
 
 #define AD1848_SINGLE(xname, xindex, reg, shift, mask, invert) \
 { iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \

@@ -133,13 +133,14 @@ struct snd_stru_opti93x {
 #define OPTi93X_MODE_OPEN	(OPTi93X_MODE_PLAY | OPTi93X_MODE_CAPTURE)
 
 
-extern void snd_opti93x_interrupt(opti93x_t *chip);
+void snd_opti93x_interrupt(opti93x_t *chip);
 
-extern int snd_opti93x_new_pcm(snd_card_t *card, int device, opti9xx_t *chip,
-			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
-			       snd_pcm_t **rpcm);
+int snd_opti93x_create(snd_card_t *card, opti9xx_t *chip,
+		       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
+		       opti93x_t **rcodec);
 
-extern int snd_opti93x_new_mixer(snd_pcm_t *pcm);
+int snd_opti93x_pcm(opti93x_t *codec, int device, snd_pcm_t **rpcm);
+int snd_opti93x_mixer(opti93x_t *codec);
 
 #endif	/* __OPTi93X_H */
 
