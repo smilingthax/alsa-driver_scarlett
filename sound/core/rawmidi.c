@@ -1108,7 +1108,7 @@ static long snd_rawmidi_kernel_write1(snd_rawmidi_substream_t * substream, const
 	count1 = runtime->avail < runtime->buffer_size;
 	spin_unlock_irqrestore(&runtime->lock, flags);
 	if (count1)
-		substream->ops->write_loop(substream);
+		substream->ops->trigger(substream, 1);
 	return result;
 }
 
