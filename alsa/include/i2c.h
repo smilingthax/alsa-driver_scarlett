@@ -42,6 +42,7 @@ struct _snd_i2c_device {
 typedef struct _snd_i2c_bit_ops {
 	void (*start)(snd_i2c_bus_t *bus);	/* transfer start */
 	void (*stop)(snd_i2c_bus_t *bus);	/* transfer stop */
+	void (*direction)(snd_i2c_bus_t *bus, int clock, int data);  /* set line direction (0 = write, 1 = read) */
 	void (*setlines)(snd_i2c_bus_t *bus, int clock, int data);
 	int (*getclock)(snd_i2c_bus_t *bus);
 	int (*getdata)(snd_i2c_bus_t *bus, int ack);
