@@ -202,13 +202,23 @@ typedef struct _snd_pcm_hw_infoc {
 
 typedef struct {
 	unsigned long num;
-	unsigned long den_min, den_max;
-} rational_t;
+	unsigned long den_min, den_max, den_step;
+} ratnum_t;
+
+typedef struct {
+	unsigned long num_min, num_max, num_step;
+	unsigned long den;
+} ratden_t;
 
 typedef struct {
 	int nrats;
-	rational_t *rats;
-} snd_pcm_hw_infoc_rats_t;
+	ratnum_t *rats;
+} snd_pcm_hw_infoc_ratnums_t;
+
+typedef struct {
+	int nrats;
+	ratden_t *rats;
+} snd_pcm_hw_infoc_ratdens_t;
 
 typedef struct {
 	unsigned int count;
@@ -481,17 +491,22 @@ extern int interval_div1(interval_t *a, unsigned long k,
 extern int interval_list(interval_t *i, 
 			 size_t count, unsigned long *list, unsigned int mask);
 extern int interval_step(interval_t *i, unsigned long min, unsigned long step);
-extern int interval_rational(interval_t *i,
-			     unsigned int rats_count, rational_t *rats,
-			     unsigned long *nump, unsigned long *denp);
+extern int interval_ratnum(interval_t *i,
+			   unsigned int rats_count, ratnum_t *rats,
+			   unsigned long *nump, unsigned long *denp);
+extern int interval_ratden(interval_t *i,
+			   unsigned int rats_count, ratden_t *rats,
+			   unsigned long *nump, unsigned long *denp);
 
 extern int snd_pcm_hw_infoc_init(snd_pcm_substream_t *substream);
 extern int snd_pcm_hw_infoc_complete(snd_pcm_substream_t *substream);
 
 extern int snd_pcm_hw_infoc_list(snd_pcm_runtime_t *runtime, unsigned int var,
 				 snd_pcm_hw_infoc_list_t *l);
-extern int snd_pcm_hw_infoc_clocks(snd_pcm_runtime_t *runtime, 
-				   snd_pcm_hw_infoc_rats_t *r);
+extern int snd_pcm_hw_infoc_ratnums(snd_pcm_runtime_t *runtime, 
+				    snd_pcm_hw_infoc_ratnums_t *r);
+extern int snd_pcm_hw_infoc_ratdens(snd_pcm_runtime_t *runtime, 
+				    snd_pcm_hw_infoc_ratdens_t *r);
 extern int snd_pcm_hw_infoc_msbits(snd_pcm_runtime_t *runtime, 
 				   unsigned int width,
 				   unsigned int msbits);
