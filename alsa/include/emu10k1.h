@@ -697,6 +697,7 @@ struct _snd_emu10k1_pcm {
 	snd_util_memblk_t *memblk;
 	unsigned int start_addr;
 	unsigned int ccca_start_addr;
+	unsigned int capture_ipr;	/* interrupt acknowledge mask */
 	unsigned int capture_inte;	/* interrupt enable mask */
 	unsigned int capture_ba_reg;	/* buffer address register */
 	unsigned int capture_bs_reg;	/* buffer size register */
