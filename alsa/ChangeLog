@@ -3,10 +3,11 @@
 * added full ISA Plug & Play support
 * recoded sequencer prototype
 * recoded system resources (ports, irqs, dmas) allocation
-* added Ensoniq Vivo90 driver
-  - this driver contains only generic AD1848 + MPU401 initialization
+* added generic AD1848 and CS4231 drivers
 * added driver for Opti 9xx chips
 * added serial driver for standard serial ports (for MIDI device connection)
+* added driver for ESS ES1868/1869 chips
+* user can now select only some soundcards
 
 0.1.4 -> 0.2.0
 

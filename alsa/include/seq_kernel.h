@@ -48,13 +48,11 @@ typedef struct snd_seq_stru_kernel_client kernel_client_t;
 typedef struct snd_seq_stru_client client_t;
 
 /* call-backs for kernel client */
-typedef int (snd_seq_kernel_client_input_t)(snd_seq_event_t *ev, void *private_data);
 
 typedef struct {
 	void *private_data;
 	int allow_input: 1,
 	    allow_output: 1;
-	snd_seq_kernel_client_input_t *input;
 	/*...*/
 } snd_seq_client_callback_t;
 
@@ -63,6 +61,7 @@ typedef int (snd_seq_kernel_port_subscribe_t)(void *private_data);
 typedef int (snd_seq_kernel_port_unsubscribe_t)(void *private_data);
 typedef int (snd_seq_kernel_port_use_t)(void *private_data);
 typedef int (snd_seq_kernel_port_unuse_t)(void *private_data);
+typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, void *private_data);
 
 typedef struct {
 	void *private_data;
@@ -70,6 +69,7 @@ typedef struct {
 	snd_seq_kernel_port_use_t *unsubscribe;
 	snd_seq_kernel_port_subscribe_t *use;
 	snd_seq_kernel_port_use_t *unuse;
+	snd_seq_kernel_port_input_t *event_input;
 	/*...*/
 } snd_seq_port_callback_t;
 
