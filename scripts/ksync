@@ -93,6 +93,11 @@ def print_file(fp, lines):
 	for line in lines:
 		fp.write(line)
 
+def print_file_comment(fp, lines, space=''):
+	for line in lines:
+		fp.write('# %s' % space)
+		fp.write(line)
+
 def modify_version_file():
 	filename = get_cvs_root() + '/include/version.h'
 	fp = open(filename)
@@ -308,7 +313,14 @@ def show_last_changeset():
 	fp = os.popen(cmd)
 	lines = fp.readlines()
 	fp.close()
-	print_file(sys.stdout, lines)
+        print '# This is an automatically generated patch'
+        print '# Project: Advanced Linux Sound Architecture (ALSA)'
+        print '# Tool: ksync (path in CVS repository: alsa-kernel/scripts/ksync)'
+        print '# Generated: %s' % time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime(time.time()))
+        print '# Source: ALSA CVS (cvs.alsa-project.org:/cvsroot/alsa)'
+        print '# Kernel ChangeSet:'
+	print_file_comment(sys.stdout, lines, '  ')
+	print '#'
 
 def diffall(reverse):
 	cdirs, cfiles = get_cvs_files(get_cvs_root(), '/')
@@ -342,16 +354,43 @@ def diffall(reverse):
 		cfiles.remove(f)
 	for f in KERNEL_EXCLUDE:
 		bfiles.remove(f)
+	first = 1
 	for d in cdirs:
 		dm = d
 		d = remap_alsa(dm)
 		if not bdirs.count(d):
-			print 'Directory %s (%s) is missing from Kernel tree' % (dm, d)
+			if first:
+				print '# Added directories to Kernel Tree:'
+				first = 0
+			print '#   %s (%s)' % (dm, d)
+	first = 1
 	for d in bdirs:
 		dm = d
 		d = remap_kernel(dm)
 		if not cdirs.count(d):
-			print 'Directory %s (%s) is missing from ALSA tree' % (dm, d)
+			if first:
+				print '# Removed directories from Kernel Tree:'
+				first = 0
+			print '#   %s (%s)' % (dm, d)
+	first = 1
+	for f in cfiles:
+		df = f
+		f = remap_alsa_file(df)
+		if not bfiles.count(f):
+			if first:
+				print '# Added files to Kernel Tree:'
+				first = 0
+			print '#   %s (%s)' % (df, f)
+	first = 1
+	for f in bfiles:
+		df = f
+		f = remap_kernel_file(df)
+		if not cfiles.count(f):
+			if first:
+				print '# Removed files from Kernel Tree:'
+				first = 0
+			print '#   %s (%s)' % (df, f)
+	print '\n'
 	for f in cfiles:
 		df = f
 		f = remap_alsa_file(df)
@@ -361,8 +400,6 @@ def diffall(reverse):
 			do_kernel_alsa_diff(f, df)
 		if bfiles.count(f):
 			bfiles.remove(f)
-#		else:
-#			print 'File %s (%s) is missing from Kernel tree' % (df, f)
 	for f in bfiles:
 		df = f
 		f = remap_kernel_file(df)
@@ -372,8 +409,6 @@ def diffall(reverse):
 			do_kernel_alsa_diff(df, f)
 		if cfiles.count(f):
 			cfiles.remove(f)
-		else:
-			print 'File %s (%s) is missing from ALSA tree' % (df, f)
 	update_cvs_file('include/version.h')
 	modify_version_file()
 	if not reverse:
@@ -382,6 +417,26 @@ def diffall(reverse):
 		do_kernel_alsa_diff('/include/sound/version.h', '/include/version.h')
 	os.remove(get_cvs_root() + '/include/version.h')
 	update_cvs_file('include/version.h')
+
+def get_last_changeset():
+	os.chdir(get_bk_root())
+	cmd = 'bk prs -r+ ChangeSet'
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	cs = '0.0'
+	kernel = '0.0.0'
+	for line in lines:
+		line = line[:-1]
+		words = string.split(line, ' ')
+		if words[0] == 'D':
+			cs = words[1]
+		elif words[0] == 'S':
+			kernel = words[1][1:]
+	return cs, kernel
+
+def filename(ver = 1):
+	cs, kernel = get_last_changeset()
+        print 'alsa-%s-%s-linux-%s-cs%s.patch' % (time.strftime("%Y-%m-%d", time.gmtime(time.time())), ver, kernel, cs)	
 
 def main():
 	try:
@@ -413,6 +468,11 @@ def main():
 			else:
 				print 'Ignoring extra arguments %s' % args[1:]
 		diffall(reverse)
+	elif args[0] == 'filename':
+		ver = 1
+		if len(args) > 1:
+			ver = args[1]
+		filename(ver)
 	else:
 		print 'Unknown command %s' % args[0]
 		sys.exit(1)
