@@ -32,7 +32,7 @@ map:
 install: compile
 	mkdir -p $(moddir)
 	rm -f $(moddir)/snd*.o $(moddir)/persist.o
-	cp modules/* $(moddir)
+	cp modules/*.o $(moddir)
 	/sbin/depmod -a $(kversion).$(kpatchlevel).$(ksublevel)
 	install -m 644 include/sound.h $(prefix)/include/linux
 	install -m 644 include/sounddetect.h $(prefix)/include/linux
