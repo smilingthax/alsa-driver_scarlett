@@ -57,7 +57,8 @@
 #define SND_CARD_TYPE_AD1848		0x00000019	/* Generic AD1848 driver */
 #define SND_CARD_TYPE_TRID4DWAVEDX	0x0000001A	/* Trident 4DWave DX */
 #define SND_CARD_TYPE_TRID4DWAVENX	0x0000001B	/* Trident 4DWave NX */
+#define SND_CARD_TYPE_SGALAXY           0x0000001C      /* Aztech Sound Galaxy */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x0000001B
+#define SND_CARD_TYPE_LAST		0x0000001C
   
 #endif				/* __ASOUNDID_H */
