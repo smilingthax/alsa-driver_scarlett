@@ -856,11 +856,11 @@ static int hdspm_set_rate(hdspm_t * hdspm, int rate, int called_internally)
 }
 
 /* mainly for init to 0 on load */
-static void all_in_all_mixer(hdspm_t * hdspm, float fgain)
+static void all_in_all_mixer(hdspm_t * hdspm, int sgain)
 {
 	int i, j;
 	unsigned int gain =
-	    ((fgain > 1) ? 1 : ((fgain < 0) ? 0 : fgain)) * UNITY_GAIN;
+	    (sgain > UNITY_GAIN) ? UNITY_GAIN : (sgain < 0) ? 0 : sgain;
 
 	for (i = 0; i < HDSPM_MIXER_CHANNELS; i++)
 		for (j = 0; j < HDSPM_MIXER_CHANNELS; j++) {
@@ -2594,7 +2594,7 @@ static int snd_hdspm_set_defaults(hdspm_t * hdspm)
 
 	/* silence everything */
 
-	all_in_all_mixer(hdspm, 0);
+	all_in_all_mixer(hdspm, 0 * UNITY_GAIN);
 
 	if (line_outs_monitor[hdspm->dev]) {
 
