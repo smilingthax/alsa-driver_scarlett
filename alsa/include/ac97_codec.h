@@ -96,6 +96,12 @@ struct snd_stru_ac97 {
 	unsigned int num;	/* number of codec: 0 = primary, 1 = secondary */
 	unsigned int id;	/* identification of codec */
 	unsigned short caps;	/* capabilities (register 0) */
+	unsigned short ext_id;	/* extended feature identification */
+	unsigned int rates_front_dac;
+	unsigned int rates_surr_dac;
+	unsigned int rates_lfe_dac;
+	unsigned int rates_adc;
+	unsigned int rates_mic_adc;
 	unsigned short regs[0x80]; /* register cache */
 };
 
@@ -106,5 +112,6 @@ unsigned short snd_ac97_read(ac97_t *ac97, unsigned short reg);
 void snd_ac97_write_lock(ac97_t *ac97, unsigned short reg, unsigned short value);
 void snd_ac97_write_bitmask_lock(ac97_t *ac97, unsigned short reg, unsigned short bitmask, unsigned short value);
 unsigned short snd_ac97_read_lock(ac97_t *ac97, unsigned short reg);
+int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate);
 
 #endif				/* __AC97_CODEC_H */

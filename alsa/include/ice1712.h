@@ -264,7 +264,6 @@ struct snd_stru_ice1712 {
 	unsigned int capture_pro_size;
 	unsigned int playback_con_virt_addr[6];
 	unsigned int playback_con_active_buf[6];
-	unsigned int capture_con_rates;
 	unsigned int capture_con_virt_addr;
 	unsigned int ac97_ext_id;
 	ac97_t *ac97;

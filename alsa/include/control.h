@@ -83,6 +83,8 @@ snd_kcontrol_t *snd_ctl_new1(snd_kcontrol_new_t * kcontrolnew, void * private_da
 void snd_ctl_free_one(snd_kcontrol_t * kcontrol);
 int snd_ctl_add(snd_card_t * card, snd_kcontrol_t * kcontrol);
 int snd_ctl_remove(snd_card_t * card, snd_kcontrol_t * kcontrol);
+int snd_ctl_remove_id(snd_card_t * card, snd_control_id_t *id);
+int snd_ctl_rename_id(snd_card_t * card, snd_control_id_t *src_id, snd_control_id_t *dst_id);
 snd_kcontrol_t *snd_ctl_find_numid(snd_card_t * card, unsigned int numid);
 snd_kcontrol_t *snd_ctl_find_id(snd_card_t * card, snd_control_id_t *id);
 
