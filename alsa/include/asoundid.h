@@ -70,6 +70,8 @@
 /* --- */
 #define SND_CARD_TYPE_ALS100		0x00000024	/* Avance Logic ALS100 */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000024
+#define SND_CARD_TYPE_SHARE		0x00000025	/* share soundcard */
+/* --- */
+#define SND_CARD_TYPE_LAST		0x00000025
 
 #endif				/* __ASOUNDID_H */

@@ -173,7 +173,7 @@ struct snd_stru_pcm_subchn {
 	/* -- runtime information -- */
 	snd_pcm_runtime_t *runtime;
         /* -- timer section -- */
-	snd_timer_t *timer;		/* timer */ 
+	snd_timer_t *timer;		/* timer */
 	/* -- /proc interface -- */
 	void *proc_entry;
 	void *proc_private;
@@ -185,6 +185,9 @@ struct snd_stru_pcm_subchn {
 	/* -- private section -- */
 	void *private_data;
 	void (*private_free)(void *private_data);
+	/* -- callback -- */
+	void (*transfer_ack_begin)(snd_pcm_subchn_t *subchn);
+	void (*transfer_ack_end)(snd_pcm_subchn_t *subchn);
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
 	snd_pcm_oss_subchn_t oss;

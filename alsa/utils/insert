@@ -260,6 +260,7 @@ case "$1" in
     insert snd-ac97-codec.o
     insert snd-ens1371.o
     insert snd-card-ens1371.o
+    insert snd-card-share.o
     restore ens1371.conf
     ;;
   trident)
