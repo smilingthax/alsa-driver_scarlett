@@ -136,20 +136,18 @@ typedef struct {
 } snd_seq_client_callback_t;
 
 /* call-backs for kernel port */
-typedef int (snd_seq_kernel_port_subscribe_t)(void *private_data, snd_seq_port_subscribe_t *info);
-typedef int (snd_seq_kernel_port_unsubscribe_t)(void *private_data, snd_seq_port_subscribe_t *info);
-typedef int (snd_seq_kernel_port_use_t)(void *private_data, snd_seq_port_subscribe_t *info);
-typedef int (snd_seq_kernel_port_unuse_t)(void *private_data, snd_seq_port_subscribe_t *info);
+typedef int (snd_seq_kernel_port_open_t)(void *private_data, snd_seq_port_subscribe_t *info);
+typedef int (snd_seq_kernel_port_close_t)(void *private_data, snd_seq_port_subscribe_t *info);
 typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, int direct, void *private_data, int atomic, int hop);
 typedef void (snd_seq_kernel_port_private_free_t)(void *private_data);
 
 typedef struct {
 	struct module *owner;
 	void *private_data;
-	snd_seq_kernel_port_subscribe_t *subscribe;
-	snd_seq_kernel_port_unsubscribe_t *unsubscribe;
-	snd_seq_kernel_port_use_t *use;
-	snd_seq_kernel_port_unuse_t *unuse;
+	snd_seq_kernel_port_open_t *subscribe;
+	snd_seq_kernel_port_close_t *unsubscribe;
+	snd_seq_kernel_port_open_t *use;
+	snd_seq_kernel_port_close_t *unuse;
 	snd_seq_kernel_port_input_t *event_input;
 	snd_seq_kernel_port_private_free_t *private_free;
 	unsigned int callback_all;	/* call subscribe callbacks at each connection/disconnection */

@@ -79,8 +79,7 @@
 #define SNDRV_SEQ_EVENT_TEMPO		35	/* (SMF) Tempo event */
 #define SNDRV_SEQ_EVENT_CLOCK		36	/* midi Real Time Clock message */
 #define SNDRV_SEQ_EVENT_TICK		37	/* midi Real Time Tick message */
-#define SNDRV_SEQ_EVENT_SYNC		38	/* sync signal */
-#define SNDRV_SEQ_EVENT_SYNC_POS	39
+#define SNDRV_SEQ_EVENT_QUEUE_SKEW	38	/* skew queue tempo */
 
 /** others
  * event data type = none
@@ -368,6 +367,11 @@ union sndrv_seq_timestamp {
 	struct sndrv_seq_real_time time;
 };
 
+struct sndrv_seq_queue_skew {
+	unsigned int value;
+	unsigned int base;
+};
+
 	/* queue timer control */
 struct sndrv_seq_ev_queue_control {
 	unsigned char queue;			/* affected queue */
@@ -376,6 +380,7 @@ struct sndrv_seq_ev_queue_control {
 		signed int value;		/* affected value (e.g. tempo) */
 		union sndrv_seq_timestamp time;	/* time */
 		unsigned int position;		/* sync position */
+		struct sndrv_seq_queue_skew skew;
 		unsigned int d32[2];
 		unsigned char d8[8];
 	} param;
@@ -668,7 +673,9 @@ struct sndrv_seq_queue_tempo {
 	int queue;			/* sequencer queue */
 	unsigned int tempo;		/* current tempo, us/tick */
 	int ppq;			/* time resolution, ticks/quarter */
-	char reserved[32];		/* for the future */
+	unsigned int skew_value;	/* queue skew */
+	unsigned int skew_base;		/* queue skew base */
+	char reserved[24];		/* for the future */
 };
 
 
