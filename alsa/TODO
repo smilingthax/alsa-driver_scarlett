@@ -3,8 +3,6 @@ Stage 2 (before final 0.2.0):
 * timer interface (done)
 * prototype of sequencer (first pre-alpha exist)
   - only external MIDI support
-* write utility for store/restore driver setup (mixer and switches) and
-  utility for switches control
 * add CTL switch Game Speed Compensation (GUS, SonicVibes)
 * add CTL switch Joystick Enable (GUS, AudioPCI)
 
