@@ -22,6 +22,11 @@
  *
  */
 
+#define _snd_pcm_substream_chip(substream) ((substream)->pcm->private_data)
+#define snd_pcm_substream_chip(substream) snd_magic_cast1(chip_t, _snd_pcm_substream_chip(substream), return -ENXIO)
+#define _snd_pcm_chip(pcm) ((pcm)->private_data)
+#define snd_pcm_chip(pcm) snd_magic_cast1(chip_t, _snd_pcm_chip(pcm), return -ENXIO)
+
 typedef struct snd_stru_pcm_file snd_pcm_file_t;
 typedef struct snd_stru_pcm_runtime snd_pcm_runtime_t;
 typedef struct snd_stru_pcm_substream snd_pcm_substream_t;

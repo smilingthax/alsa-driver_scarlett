@@ -1685,7 +1685,6 @@ int snd_cs461x_create(snd_card_t *card,
 		      snd_dma_t *capt_hw_dma, snd_dma_t *capt_sw_dma,
 		      snd_irq_t *irqptr,
 		      cs461x_t **rcodec);
-int snd_cs461x_free(void *private);
 void snd_cs461x_interrupt(cs461x_t *chip);
 
 int snd_cs461x_pcm(cs461x_t *chip, int device, snd_pcm_t **rpcm);

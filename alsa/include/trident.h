@@ -425,7 +425,7 @@ int snd_trident_create(snd_card_t * card,
 		       int pcm_streams,
 		       int max_wavetable_size,
 		       trident_t ** rtrident);
-int snd_trident_free(void *private);
+int snd_trident_free(trident_t *trident);
 void snd_trident_interrupt(trident_t * trident);
 
 int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);

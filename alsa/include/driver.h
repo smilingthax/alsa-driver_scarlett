@@ -144,17 +144,6 @@
 
 #include "sndmagic.h"
 
-#define _snd_pcm_substream_chip(substream) ((substream)->pcm->private_data)
-#define _snd_pcm_chip(pcm) ((pcm)->private_data)
-#define _snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
-#define _snd_timer_chip(timer) ((timer)->private_data)
-
-#define snd_magic_cast1(t, expr, cmd) snd_magic_cast(t, expr, cmd)
-#define snd_pcm_substream_chip(substream) snd_magic_cast1(chip_t, _snd_pcm_substream_chip(substream), return -ENXIO)
-#define snd_pcm_chip(pcm) snd_magic_cast1(chip_t, _snd_pcm_chip(pcm), return -ENXIO)
-#define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
-#define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
-
 static inline mm_segment_t snd_enter_user(void)
 {
 	mm_segment_t fs = get_fs();
@@ -272,9 +261,9 @@ typedef enum {
 typedef struct snd_stru_card snd_card_t;
 typedef struct snd_stru_device snd_device_t;
 
-typedef int (snd_dev_free_t)(void *devstr);
-typedef int (snd_dev_register_t)(void *devstr, snd_device_t *device);
-typedef int (snd_dev_unregister_t)(void *devstr);
+typedef int (snd_dev_free_t)(snd_device_t *device);
+typedef int (snd_dev_register_t)(snd_device_t *device);
+typedef int (snd_dev_unregister_t)(snd_device_t *device);
 
 typedef struct {
 	snd_dev_free_t *dev_free;
@@ -287,7 +276,7 @@ struct snd_stru_device {
 	snd_card_t *card;		/* card which holds this device */
 	snd_device_state_t state;	/* state of the device */
 	snd_device_type_t type;		/* device type */
-	void *devstr;			/* device structure */
+	void *private_data;			/* device structure */
 	int number;			/* device number */
 	void *arg;			/* optional argument (dynamically allocated) */
 	int size;			/* size of an optional argument */
@@ -488,11 +477,11 @@ int snd_unregister_interrupts(snd_card_t *card);
 /* device.c */
 
 int snd_device_new(snd_card_t *card, snd_device_type_t type,
-		   void *devstr, int number, snd_device_ops_t *ops,
+		   void *private_data, int number, snd_device_ops_t *ops,
 		   snd_device_t **rdev);
-int snd_device_free(snd_card_t *card, void *devstr);
-int snd_device_register(snd_card_t *card, void *devstr);
-int snd_device_unregister(snd_card_t *card, void *devstr);
+int snd_device_free(snd_card_t *card, void *private_data);
+int snd_device_register(snd_card_t *card, void *private_data);
+int snd_device_unregister(snd_card_t *card, void *private_data);
 int snd_device_register_all(snd_card_t *card);
 int snd_device_free_all(snd_card_t *card);
 

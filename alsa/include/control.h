@@ -22,6 +22,9 @@
  *
  */
 
+#define _snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
+#define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
+
 typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_control_info_t * uinfo);
 typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);

@@ -22,6 +22,9 @@
  *
  */
 
+#define _snd_timer_chip(timer) ((timer)->private_data)
+#define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
+
 #define SND_TIMER_DEVICES	16
 
 #define SND_TIMER_DEV_FLG_PCM	0x10000000

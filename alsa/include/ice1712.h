@@ -290,7 +290,6 @@ int snd_ice1712_create(snd_card_t * card,
 		       snd_dma_t * dma_proc,
 		       snd_irq_t * irqptr,
 		       ice1712_t ** ice1712);
-int snd_ice1712_free(void *private);
 void snd_ice1712_interrupt(ice1712_t * ice1712);
 
 int snd_ice1712_pcm(ice1712_t * ice1712, int device, snd_pcm_t ** rpcm);

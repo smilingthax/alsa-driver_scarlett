@@ -41,6 +41,8 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 	return _snd_magic_value(obj) != magic;
 }
 
+#define snd_magic_cast1(t, expr, cmd) snd_magic_cast(t, expr, cmd)
+
 #ifdef NEW_MACRO_VARARGS
 #define snd_magic_cast(type, ptr, ...) (type *) ({\
 	void *__ptr = ptr;\
