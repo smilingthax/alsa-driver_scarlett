@@ -26,6 +26,6 @@ autoconf
 echo "./configure $args"
 ./configure $args || exit 1
 if [ -z "$CVSCOMPILE_NO_MAKE" ]; then
-  make dep
+  make dep || exit 1
   make
 fi
