@@ -77,10 +77,6 @@ static const char __module_generic_string_##name## [] \
 #define SND_PORT12_DESC		SND_ENABLED ",allows:{{0,0x3fff}},base:16"
 #define SND_PORT_DESC		SND_ENABLED ",allows:{{0,0xffff}},base:16"
 
-#ifndef SND_SKIP_EXPORT_NO_SYMBOLS
-EXPORT_NO_SYMBOLS;
-#endif
-
 #ifdef SND_LEGACY_AUTO_PROBE
 static int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsigned long port))
 {
