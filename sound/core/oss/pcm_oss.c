@@ -882,6 +882,8 @@ static int snd_pcm_oss_set_channels(snd_pcm_oss_file_t *pcm_oss_file, int channe
 	int idx;
 	if (channels < 1)
 		channels = 1;
+	if (channels > 128)
+		return -EINVAL;
 	for (idx = 1; idx >= 0; --idx) {
 		snd_pcm_substream_t *substream = pcm_oss_file->streams[idx];
 		snd_pcm_runtime_t *runtime;
