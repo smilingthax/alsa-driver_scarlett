@@ -426,14 +426,14 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #ifdef CONFIG_SND_DEBUG
 
 #define snd_printd(...) snd_printk(__VA_ARGS__)
-#define snd_debug_check(expr, ...) do {\
-	if (expr) {\
+#define snd_assert(expr, ...) do {\
+	if (!(expr)) {\
 		snd_printk("BUG? (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
 		__VA_ARGS__;\
 	}\
 } while (0)
-#define snd_error_check(expr, ...) do {\
-	if (expr) {\
+#define snd_runtime_check(expr, ...) do {\
+	if (!(expr)) {\
 		snd_printk("ERROR (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
 		__VA_ARGS__;\
 	}\
@@ -442,8 +442,8 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #else /* !CONFIG_SND_DEBUG */
 
 #define snd_printd(...)	/* nothing */
-#define snd_debug_check(expr, ...)	/* nothing */
-#define snd_error_check(expr, ...) do { if (expr) {__VA_ARGS__;} } while (0)
+#define snd_assert(expr, ...)	/* nothing */
+#define snd_runtime_check(expr, ...) do { if (!(expr)) {__VA_ARGS__;} } while (0)
 
 #endif /* CONFIG_SND_DEBUG */
 
@@ -467,14 +467,14 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #ifdef CONFIG_SND_DEBUG
 
 #define snd_printd(args...) snd_printk(##args)
-#define snd_debug_check(expr, args...) do {\
-	if (expr) {\
+#define snd_assert(expr, args...) do {\
+	if (!(expr)) {\
 		snd_printk("BUG? (%s)\n", __STRING(expr));\
 		##args;\
 	}\
 } while (0)
-#define snd_error_check(expr, args...) do {\
-	if (expr) {\
+#define snd_runtime_check(expr, args...) do {\
+	if (!(expr)) {\
 		snd_printk("ERROR (%s)\n", __STRING(expr));\
 		##args;\
 	}\
@@ -483,8 +483,8 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #else /* !CONFIG_SND_DEBUG */
 
 #define snd_printd(args...) /* nothing */
-#define snd_debug_check(expr, args...)	/* nothing */
-#define snd_error_check(expr, args...) do { if (expr) {##args;} } while (0)
+#define snd_assert(expr, args...)	/* nothing */
+#define snd_runtime_check(expr, args...) do { if (!(expr)) {##args;} } while (0)
 
 #endif /* CONFIG_SND_DEBUG */
 
@@ -496,7 +496,7 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 #endif /* NEW_MACRO_VARARGS */
 
-#define snd_BUG() snd_debug_check(1, )
+#define snd_BUG() snd_assert(0, )
 
 #define snd_alloc_check(function, args)  ({\
 	void *__ptr;\
