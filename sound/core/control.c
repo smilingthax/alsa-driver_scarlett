@@ -78,6 +78,7 @@ static int snd_ctl_open(struct inode *inode, struct file *file)
 	ctl->pid = current->pid;
 	file->private_data = ctl;
 	write_lock_irqsave(&card->control_rwlock, flags);
+	atomic_inc(&card->ctl_use_count);
 	list_add_tail(&ctl->list, &card->ctl_files);
 	write_unlock_irqrestore(&card->control_rwlock, flags);
 	return 0;
@@ -118,10 +119,8 @@ static int snd_ctl_release(struct inode *inode, struct file *file)
 	card = ctl->card;
 	write_lock_irqsave(&card->control_rwlock, flags);
 	list_del(&ctl->list);
-	write_unlock_irqrestore(&card->control_rwlock, flags);
-	if (snd_ctl_can_unregister(card) == 0)
+	if (atomic_dec_and_test(&card->ctl_use_count))
 		wake_up(&card->shutdown_sleep);
-	write_lock(&card->control_owner_lock);
 	list_for_each(list, &card->controls) {
 		control = snd_kcontrol(list);
 		if (control->owner == ctl)
@@ -832,12 +831,7 @@ int snd_ctl_disconnect(snd_card_t *card)
 
 int snd_ctl_can_unregister(snd_card_t *card)
 {
-	int res;
-
-	write_lock_irq(&card->control_rwlock);
-	res = !list_empty(&card->ctl_files);
-	write_unlock_irq(&card->control_rwlock);
-	return res;
+	return atomic_read(&card->ctl_use_count) != 0;
 }
 
 int snd_ctl_unregister(snd_card_t *card)

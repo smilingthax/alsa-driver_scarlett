@@ -140,6 +140,7 @@ struct _snd_card {
 	struct list_head controls;	/* all controls for this card */
 	struct list_head ctl_files;	/* active control files */
 	int ctl_shutdown;		/* control interface is going down */
+	atomic_t ctl_use_count;		/* reference counter for control files */
 
 	snd_info_entry_t *proc_root;	/* root for soundcard specific files */
 	snd_info_entry_t *proc_id;	/* the card id */
@@ -297,6 +298,9 @@ extern unsigned long snd_cards_lock;
 extern snd_card_t *snd_cards[SNDRV_CARDS];
 extern rwlock_t snd_card_rwlock;
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
+#define SND_MIXER_OSS_NOTIFY_REGISTER	0
+#define SND_MIXER_OSS_NOTIFY_DISCONNECT	1
+#define SND_MIXER_OSS_NOTIFY_FREE	2
 extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int cmd);
 #endif
 

@@ -53,6 +53,7 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 	fmixer = (snd_mixer_oss_file_t *)snd_kcalloc(sizeof(*fmixer), GFP_KERNEL);
 	if (fmixer == NULL)
 		return -ENOMEM;
+	atomic_inc(&card->ctl_use_count);
 	fmixer->card = card;
 	fmixer->mixer = card->mixer_oss;
 	file->private_data = fmixer;
@@ -64,6 +65,8 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 #ifdef LINUX_2_2
 		MOD_DEC_USE_COUNT;
 #endif
+		if (atomic_dec_and_test(&card->ctl_use_count))
+			wake_up(&card->shutdown_sleep);
 		return -EFAULT;
 	}
 	return 0;
@@ -79,6 +82,8 @@ static int snd_mixer_oss_release(struct inode *inode, struct file *file)
 #ifdef LINUX_2_2
 		MOD_DEC_USE_COUNT;
 #endif
+		if (atomic_dec_and_test(&fmixer->card->ctl_use_count))
+			wake_up(&fmixer->card->shutdown_sleep);
 		kfree(fmixer);
 	}
 	return 0;
@@ -765,7 +770,7 @@ static int snd_mixer_oss_get_recsrc2(snd_mixer_oss_file_t *fmixer, int *active_i
 	for (idx = 0; idx < 32; idx++) {
 		if (!(mixer->mask_recsrc & (1 << idx)))
 			continue;
-		pslot = &fmixer->mixer->slots[idx];
+		pslot = &mixer->slots[idx];
 		slot = (struct slot *)pslot->private_data;
 		if (slot->signature != SNDRV_MIXER_OSS_SIGNATURE)
 			continue;
@@ -812,7 +817,7 @@ static int snd_mixer_oss_put_recsrc2(snd_mixer_oss_file_t *fmixer, int active_in
 	for (idx = 0; idx < 32; idx++) {
 		if (!(mixer->mask_recsrc & (1 << idx)))
 			continue;
-		pslot = &fmixer->mixer->slots[idx];
+		pslot = &mixer->slots[idx];
 		slot = (struct slot *)pslot->private_data;
 		if (slot->signature != SNDRV_MIXER_OSS_SIGNATURE)
 			continue;
@@ -1204,7 +1209,7 @@ static int snd_mixer_oss_notify_handler(snd_card_t * card, int cmd)
 {
 	snd_mixer_oss_t *mixer;
 
-	if (cmd == 0) {		/* register */
+	if (cmd == SND_MIXER_OSS_NOTIFY_REGISTER) {
 		char name[128];
 		int idx, err;
 
@@ -1238,7 +1243,7 @@ static int snd_mixer_oss_notify_handler(snd_card_t * card, int cmd)
 		card->mixer_oss = mixer;
 		snd_mixer_oss_build(mixer);
 		snd_mixer_oss_proc_init(mixer);
-	} else if (cmd == 1) {	/* disconnect */
+	} else if (cmd == SND_MIXER_OSS_NOTIFY_DISCONNECT) {
 		mixer = card->mixer_oss;
 		if (mixer == NULL || !mixer->oss_dev_alloc)
 			return 0;
@@ -1266,7 +1271,7 @@ static int __init alsa_mixer_oss_init(void)
 	snd_mixer_oss_notify_callback = snd_mixer_oss_notify_handler;
 	for (idx = 0; idx < SNDRV_CARDS; idx++) {
 		if (snd_cards[idx])
-			snd_mixer_oss_notify_handler(snd_cards[idx], 0);
+			snd_mixer_oss_notify_handler(snd_cards[idx], SND_MIXER_OSS_NOTIFY_REGISTER);
 	}
 	return 0;
 }
@@ -1278,7 +1283,7 @@ static void __exit alsa_mixer_oss_exit(void)
 	snd_mixer_oss_notify_callback = NULL;
 	for (idx = 0; idx < SNDRV_CARDS; idx++) {
 		if (snd_cards[idx])
-			snd_mixer_oss_notify_handler(snd_cards[idx], 1);
+			snd_mixer_oss_notify_handler(snd_cards[idx], SND_MIXER_OSS_NOTIFY_FREE);
 	}
 }
 

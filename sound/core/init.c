@@ -96,6 +96,7 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 	INIT_LIST_HEAD(&card->controls);
 	INIT_LIST_HEAD(&card->ctl_files);
 	init_waitqueue_head(&card->shutdown_sleep);
+	atomic_set(&card->ctl_use_count, 0);
 #ifdef CONFIG_PM
 	init_MUTEX(&card->power_lock);
 	init_waitqueue_head(&card->power_sleep);
@@ -138,7 +139,7 @@ int snd_card_disconnect(snd_card_t * card)
 
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	if (snd_mixer_oss_notify_callback)
-		snd_mixer_oss_notify_callback(card, 1);
+		snd_mixer_oss_notify_callback(card, SND_MIXER_OSS_NOTIFY_DISCONNECT);
 #endif
 
 	/* notify all devices that we are disconnected */
@@ -174,7 +175,7 @@ int snd_card_free(snd_card_t * card)
 
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	if (snd_mixer_oss_notify_callback)
-		snd_mixer_oss_notify_callback(card, 2);
+		snd_mixer_oss_notify_callback(card, SND_MIXER_OSS_NOTIFY_FREE);
 #endif
 	if (snd_device_free_all(card, SNDRV_DEV_CMD_PRE) < 0) {
 		snd_printk(KERN_ERR "unable to free all devices (pre)\n");
@@ -300,7 +301,7 @@ int snd_card_register(snd_card_t * card)
       __skip_info:
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	if (snd_mixer_oss_notify_callback)
-		snd_mixer_oss_notify_callback(card, 0);
+		snd_mixer_oss_notify_callback(card, SND_MIXER_OSS_NOTIFY_REGISTER);
 #endif
 	return 0;
 }
