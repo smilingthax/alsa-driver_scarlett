@@ -678,6 +678,7 @@ Module parameters
     Module for AC'97 motherboards from Intel.
 			* Intel i810/810E, i820, i830, i840, MX440
 
+    snd_ac97_clock	  - AC'97 codec clock base (default 48000Hz)
     snd_playback_bufsize  - max playback buffer size in kB (4-128kB)
     snd_capture_bufsize   - max capture buffer size in kB (4-128kB)
     snd_mic_bufsize       - max microphone buffer size in kB (4-128kB)
@@ -691,6 +692,7 @@ Module parameters
 
     snd_mpu_port         - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
     snd_joystick	 - 1 = enable, otherwise obtain BIOS setup
+    snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
     snd_playback_bufsize - max playback buffer size in kB (4-128kB)
     snd_capture_bufsize  - max capture buffer size in kB (4-128kB)
 
