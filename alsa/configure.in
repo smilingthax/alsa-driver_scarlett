@@ -388,6 +388,20 @@ int main( void ) {
   eval $boolvar="$boolchk"
 ])
 
+dnl Check if symbol is exported
+AC_DEFUN([CHECK_EXPORTED], [
+  AC_MSG_CHECKING(for exported symbol $2)
+  ac_save_CFLAGS="$CFLAGS"
+  boolchk=""
+  if grep EXPORT_SYMBOL "$CONFIG_SND_KERNELDIR/kernel/ksyms.c" | grep "$2" > /dev/null; then
+    AC_MSG_RESULT("yes");boolchk="y"
+    AC_DEFINE($1)
+  else
+    AC_MSG_RESULT("no");boolchk="",
+  fi
+  eval $boolvar="$boolchk"
+])
+
 if test "$kversion.$kpatchlevel" = "2.6"; then
   NEW_KBUILD=y
   AC_SUBST(NEW_KBUILD)
@@ -454,6 +468,14 @@ CHECK_KERNEL_HEADER(linux/cuda.h, [#include <asm/cuda.h>
 ])
 CHECK_KERNEL_HEADER(linux/pmu.h, [#include <asm/pmu.h>
 ])
+
+dnl Check for dump_stack
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  CONFIG_HAVE_DUMP_STACK="y"
+  AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
+else
+  CHECK_EXPORTED(CONFIG_HAVE_DUMP_STACK, dump_stack)
+fi
 
 dnl Check for modversions...
 CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
