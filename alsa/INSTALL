@@ -80,6 +80,8 @@ to compile CVS sources of alsa-driver package.
 
 For compilation you can use these commands:
 
+	make ALSAKERNELDIR=../alsa-kernel all-deps
+		(if the alsa-kernel-dir is really there)
 	aclocal
 	autoconf
 	./configure
