@@ -319,7 +319,7 @@ static int __init alsa_sound_init(void)
 #else
 	if (register_chrdev(snd_major, "alsa", &snd_fops)) {
 #endif
-		snd_printk("unable to register native major device number %d\n", snd_major);
+		snd_printk(KERN_ERR "unable to register native major device number %d\n", snd_major);
 #ifdef CONFIG_SND_OSSEMUL
 		snd_oss_cleanup_module();
 #endif
@@ -391,7 +391,7 @@ static void __exit alsa_sound_exit(void)
 #else
 	if (unregister_chrdev(snd_major, "alsa") != 0)
 #endif
-		snd_printk("unable to unregister major device number %d\n", snd_major);
+		snd_printk(KERN_ERR "unable to unregister major device number %d\n", snd_major);
 #ifdef CONFIG_DEVFS_FS
 	devfs_unregister(devfs_handle);
 #endif

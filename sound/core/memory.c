@@ -68,28 +68,28 @@ void snd_memory_done(void)
 	struct list_head *head;
 	struct snd_alloc_track *t;
 	if (snd_alloc_pages > 0)
-		snd_printk("Not freed snd_alloc_pages = %li\n", snd_alloc_pages);
+		snd_printk(KERN_ERR "Not freed snd_alloc_pages = %li\n", snd_alloc_pages);
 	if (snd_alloc_kmalloc > 0)
-		snd_printk("Not freed snd_alloc_kmalloc = %li\n", snd_alloc_kmalloc);
+		snd_printk(KERN_ERR "Not freed snd_alloc_kmalloc = %li\n", snd_alloc_kmalloc);
 	if (snd_alloc_vmalloc > 0)
-		snd_printk("Not freed snd_alloc_vmalloc = %li\n", snd_alloc_vmalloc);
+		snd_printk(KERN_ERR "Not freed snd_alloc_vmalloc = %li\n", snd_alloc_vmalloc);
 	for (head = snd_alloc_kmalloc_list.prev;
 	     head != &snd_alloc_kmalloc_list; head = head->prev) {
 		t = list_entry(head, struct snd_alloc_track, list);
 		if (t->magic != KMALLOC_MAGIC) {
-			snd_printk("Corrupted kmalloc\n");
+			snd_printk(KERN_ERR "Corrupted kmalloc\n");
 			break;
 		}
-		snd_printk("kmalloc(%ld) from %p not freed\n", (long) t->size, t->caller);
+		snd_printk(KERN_ERR "kmalloc(%ld) from %p not freed\n", (long) t->size, t->caller);
 	}
 	for (head = snd_alloc_vmalloc_list.prev;
 	     head != &snd_alloc_vmalloc_list; head = head->prev) {
 		t = list_entry(head, struct snd_alloc_track, list);
 		if (t->magic != VMALLOC_MAGIC) {
-			snd_printk("Corrupted vmalloc\n");
+			snd_printk(KERN_ERR "Corrupted vmalloc\n");
 			break;
 		}
-		snd_printk("vmalloc(%ld) from %p not freed\n", (long) t->size, t->caller);
+		snd_printk(KERN_ERR "vmalloc(%ld) from %p not freed\n", (long) t->size, t->caller);
 	}
 }
 
@@ -125,12 +125,12 @@ void snd_hidden_kfree(const void *obj)
 	unsigned long flags;
 	struct snd_alloc_track *t;
 	if (obj == NULL) {
-		snd_printk("null kfree (called from %p)\n", __builtin_return_address(0));
+		snd_printk(KERN_WARNING "null kfree (called from %p)\n", __builtin_return_address(0));
 		return;
 	}
 	t = snd_alloc_track_entry(obj);
 	if (t->magic != KMALLOC_MAGIC) {
-		snd_printk("bad kfree (called from %p)\n", __builtin_return_address(0));
+		snd_printk(KERN_WARNING "bad kfree (called from %p)\n", __builtin_return_address(0));
 		return;
 	}
 	spin_lock_irqsave(&snd_alloc_kmalloc_lock, flags);
@@ -166,7 +166,7 @@ void snd_magic_kfree(void *_ptr)
 {
 	unsigned long *ptr = _ptr;
 	if (ptr == NULL) {
-		snd_printk("null snd_magic_kfree (called from %p)\n", __builtin_return_address(0));
+		snd_printk(KERN_WARNING "null snd_magic_kfree (called from %p)\n", __builtin_return_address(0));
 		return;
 	}
 	*--ptr = 0;
@@ -174,7 +174,7 @@ void snd_magic_kfree(void *_ptr)
 		struct snd_alloc_track *t;
 		t = snd_alloc_track_entry(ptr);
 		if (t->magic != KMALLOC_MAGIC) {
-			snd_printk("bad snd_magic_kfree (called from %p)\n", __builtin_return_address(0));
+			snd_printk(KERN_ERR "bad snd_magic_kfree (called from %p)\n", __builtin_return_address(0));
 			return;
 		}
 	}
@@ -204,12 +204,12 @@ void snd_hidden_vfree(void *obj)
 {
 	struct snd_alloc_track *t;
 	if (obj == NULL) {
-		snd_printk("null vfree (called from %p)\n", __builtin_return_address(0));
+		snd_printk(KERN_WARNING "null vfree (called from %p)\n", __builtin_return_address(0));
 		return;
 	}
 	t = snd_alloc_track_entry(obj);
 	if (t->magic != VMALLOC_MAGIC) {
-		snd_printk("bad vfree (called from %p)\n", __builtin_return_address(0));
+		snd_printk(KERN_ERR "bad vfree (called from %p)\n", __builtin_return_address(0));
 		return;
 	}
 	spin_lock(&snd_alloc_vmalloc_lock);
