@@ -1,8 +1,8 @@
 /*
  *   ALSA driver for VIA VT8233 (South Bridge)
  *
- *	Copyright (c) 2000 Jaroslav Kysela <perex@suse.cz>,
- *                         Tjeerd.Mulder@fujitsu-siemens.com
+ *	Copyright (c) 2000 Tjeerd.Mulder@fujitsu-siemens.com
+ *	This driver is based on VIA686 code by Jaroslav Kysela <perex@suse.cz>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
