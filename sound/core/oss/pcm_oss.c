@@ -1480,9 +1480,12 @@ static int snd_pcm_oss_release_file(snd_pcm_oss_file_t *pcm_oss_file)
 		if (snd_pcm_running(substream))
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_SETUP);
 		spin_unlock_irq(&runtime->lock);
-		if (substream->ops->hw_free != NULL)
-			substream->ops->hw_free(substream);
-		substream->ops->close(substream);
+		if (substream->open_flag) {
+			if (substream->ops->hw_free != NULL)
+				substream->ops->hw_free(substream);
+			substream->ops->close(substream);
+			substream->open_flag = 0;
+		}
 		substream->ffile = NULL;
 		snd_pcm_oss_release_substream(substream);
 		snd_pcm_release_substream(substream);
@@ -1546,6 +1549,7 @@ static int snd_pcm_oss_open_file(struct file *file,
 			snd_pcm_oss_release_file(pcm_oss_file);
 			return err;
 		}
+		psubstream->open_flag = 1;
 		err = snd_pcm_hw_constraints_complete(psubstream);
 		if (err < 0) {
 			snd_printd("snd_pcm_hw_constraint_complete failed\n");
@@ -1567,6 +1571,7 @@ static int snd_pcm_oss_open_file(struct file *file,
 			snd_pcm_oss_release_file(pcm_oss_file);
 			return err;
 		}
+		csubstream->open_flag = 1;
 		err = snd_pcm_hw_constraints_complete(csubstream);
 		if (err < 0) {
 			snd_printd("snd_pcm_hw_constraint_complete failed\n");

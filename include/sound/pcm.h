@@ -372,12 +372,13 @@ struct _snd_pcm_substream {
 	struct snd_dma_buffer dma_buffer;
 	size_t dma_max;
 	/* -- hardware operations -- */
+	unsigned int open_flag: 1;	/* lowlevel device has been opened */
 	snd_pcm_ops_t *ops;
 	/* -- runtime information -- */
 	snd_pcm_runtime_t *runtime;
         /* -- timer section -- */
 	snd_timer_t *timer;		/* timer */
-	int timer_running;		/* time is running */
+	int timer_running: 1;		/* time is running */
 	spinlock_t timer_lock;
 	/* -- next substream -- */
 	snd_pcm_substream_t *next;

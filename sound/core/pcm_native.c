@@ -1746,9 +1746,12 @@ static int snd_pcm_release_file(snd_pcm_file_t * pcm_file)
 	runtime = substream->runtime;
 	str = substream->pstr;
 	snd_pcm_unlink(substream);
-	if (substream->ops->hw_free != NULL)
-		substream->ops->hw_free(substream);
-	substream->ops->close(substream);
+	if (substream->open_flag) {
+		if (substream->ops->hw_free != NULL)
+			substream->ops->hw_free(substream);
+		substream->ops->close(substream);
+		substream->open_flag = 0;
+	}
 	substream->ffile = NULL;
 	snd_pcm_remove_file(str, pcm_file);
 	snd_pcm_release_substream(substream);
@@ -1797,6 +1800,7 @@ static int snd_pcm_open_file(struct file *file,
 		snd_pcm_release_file(pcm_file);
 		return err;
 	}
+	substream->open_flag = 1;
 
 	err = snd_pcm_hw_constraints_complete(substream);
 	if (err < 0) {
