@@ -25,12 +25,12 @@
 #define _snd_kcontrol_chip(kcontrol) ((kcontrol)->private_data)
 #define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
 
-typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_control_info_t * uinfo);
-typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
-typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_ctl_element_info_t * uinfo);
+typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_ctl_element_t * ucontrol);
+typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_ctl_element_t * ucontrol);
 
 typedef struct _snd_kcontrol_new {
-	snd_control_iface_t iface;	/* interface identifier */
+	snd_ctl_element_iface_t iface;	/* interface identifier */
 	unsigned int device;		/* device/client number */
 	unsigned int subdevice;		/* subdevice (substream) number */
 	unsigned char *name;		/* ASCII name of item */
@@ -44,7 +44,7 @@ typedef struct _snd_kcontrol_new {
 
 struct _snd_kcontrol {
 	struct list_head list;		/* list of controls */
-	snd_control_id_t id;
+	snd_ctl_element_id_t id;
 	pid_t owner;			/* locked */
 	unsigned int access;		/* access rights */
 	snd_kcontrol_info_t *info;
@@ -84,7 +84,7 @@ typedef int (*snd_kctl_ioctl_func_t) (snd_card_t * card,
 				 unsigned int cmd, unsigned long arg);
 
 int snd_ctl_busy(snd_kctl_t * ctl);
-void snd_ctl_notify_structure_change(snd_card_t * card, snd_ctl_event_type_t etype, snd_control_id_t * id);
+void snd_ctl_notify_structure_change(snd_card_t * card, snd_ctl_event_type_t etype, snd_ctl_element_id_t * id);
 void snd_ctl_notify_value_change(snd_kctl_t * ctl, snd_kcontrol_t * control);
 void snd_ctl_notify_value_change_forall(snd_card_t * card, snd_kcontrol_t * control);
 
@@ -93,10 +93,10 @@ snd_kcontrol_t *snd_ctl_new1(snd_kcontrol_new_t * kcontrolnew, void * private_da
 void snd_ctl_free_one(snd_kcontrol_t * kcontrol);
 int snd_ctl_add(snd_card_t * card, snd_kcontrol_t * kcontrol);
 int snd_ctl_remove(snd_card_t * card, snd_kcontrol_t * kcontrol);
-int snd_ctl_remove_id(snd_card_t * card, snd_control_id_t *id);
-int snd_ctl_rename_id(snd_card_t * card, snd_control_id_t *src_id, snd_control_id_t *dst_id);
+int snd_ctl_remove_id(snd_card_t * card, snd_ctl_element_id_t *id);
+int snd_ctl_rename_id(snd_card_t * card, snd_ctl_element_id_t *src_id, snd_ctl_element_id_t *dst_id);
 snd_kcontrol_t *snd_ctl_find_numid(snd_card_t * card, unsigned int numid);
-snd_kcontrol_t *snd_ctl_find_id(snd_card_t * card, snd_control_id_t *id);
+snd_kcontrol_t *snd_ctl_find_id(snd_card_t * card, snd_ctl_element_id_t *id);
 
 int snd_ctl_register(snd_card_t *card);
 int snd_ctl_unregister(snd_card_t *card);

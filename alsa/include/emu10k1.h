@@ -1004,7 +1004,7 @@ typedef struct {
 typedef struct {
 	unsigned int count;		/* count of GPR */
 	unsigned char gpr[16];		/* GPR number(s) */
-	snd_control_id_t id;		/* full control ID definition */
+	snd_ctl_element_id_t id;		/* full control ID definition */
 	unsigned int min;		/* minimum range */
 	unsigned int max;		/* maximum range */
 	unsigned int translation;	/* translation type */
