@@ -62,6 +62,7 @@ MODULE_DEVICES("{{Hoontech SoundTrack DSP 24},"
 		"{TerraTec,EWX 24/96},"
 		"{TerraTec,EWS 88MT},"
 		"{TerraTec,EWS 88D},"
+		"{TerraTec,DMX 6Fire},"
 		"{ICEnsemble,Generic ICE1712},"
 		"{ICEnsemble,Generic Envy24}}");
 
@@ -81,7 +82,7 @@ MODULE_PARM_DESC(snd_enable, "Enable ICE1712 soundcard.");
 MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_omni, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_omni, "Enable Midiman M-Audio Delta Omni I/O support.");
-MODULE_PARM_SYNTAX(snd_omni, SNDRV_ENABLE_DESC);
+MODULE_PARM_SYNTAX(snd_omni, SNDRV_ENABLED "," SNDRV_ENABLE_DESC);
 
 #ifndef PCI_VENDOR_ID_ICE
 #define PCI_VENDOR_ID_ICE		0x1412
