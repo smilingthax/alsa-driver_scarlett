@@ -611,7 +611,7 @@ static void snd_ali_disable_address_interrupt(ali_t * codec)
 	outl(gc, ALI_REG(codec, ALI_GC_CIR));
 }
 
-void snd_ali_enable_voice_irq(ali_t *codec, unsigned int channel)
+static void snd_ali_enable_voice_irq(ali_t *codec, unsigned int channel)
 {
 	unsigned int mask;
 	snd_ali_channel_control_t *pchregs = &(codec->chregs);
@@ -624,7 +624,7 @@ void snd_ali_enable_voice_irq(ali_t *codec, unsigned int channel)
 	outl(pchregs->data.ainten,ALI_REG(codec,pchregs->regs.ainten));
 }
 
-void snd_ali_disable_voice_irq(ali_t *codec, unsigned int channel)
+static void snd_ali_disable_voice_irq(ali_t *codec, unsigned int channel)
 {
 	unsigned int mask;
 	snd_ali_channel_control_t *pchregs = &(codec->chregs);
@@ -637,7 +637,7 @@ void snd_ali_disable_voice_irq(ali_t *codec, unsigned int channel)
 	outl(pchregs->data.ainten,ALI_REG(codec,pchregs->regs.ainten));
 }
 
-int snd_ali_alloc_pcm_channel(ali_t *codec, int channel)
+static int snd_ali_alloc_pcm_channel(ali_t *codec, int channel)
 {
 	unsigned int idx =  channel & 0x1f;
 
@@ -714,7 +714,7 @@ static void snd_ali_free_channel_pcm(ali_t *codec, int channel)
 	}
 }
 
-void snd_ali_start_voice(ali_t * codec, unsigned int channel)
+static void snd_ali_start_voice(ali_t * codec, unsigned int channel)
 {
 	unsigned int mask = 1 << (channel & 0x1f);
 	
@@ -722,7 +722,7 @@ void snd_ali_start_voice(ali_t * codec, unsigned int channel)
 	outl(mask, ALI_REG(codec,codec->chregs.regs.start));
 }
 
-void snd_ali_stop_voice(ali_t * codec, unsigned int channel)
+static void snd_ali_stop_voice(ali_t * codec, unsigned int channel)
 {
 	unsigned int mask = 1 << (channel & 0x1f);
 
@@ -734,7 +734,7 @@ void snd_ali_stop_voice(ali_t * codec, unsigned int channel)
  *    S/PDIF Part
  */
 
-void snd_ali_delay(ali_t *codec,int interval)
+static void snd_ali_delay(ali_t *codec,int interval)
 {
 	unsigned long  begintimer,currenttimer;
 
@@ -748,7 +748,7 @@ void snd_ali_delay(ali_t *codec,int interval)
 	}
 }
 
-void snd_ali_detect_spdif_rate(ali_t *codec)
+static void snd_ali_detect_spdif_rate(ali_t *codec)
 {
 	u16 wval  = 0;
 	u16 count = 0;
@@ -946,7 +946,7 @@ static void snd_ali_disable_spdif_out(ali_t *codec)
 	snd_ali_disable_spdif_chnout(codec);
 }
 
-void snd_ali_update_ptr(ali_t *codec,int channel)
+static void snd_ali_update_ptr(ali_t *codec,int channel)
 {
 	snd_ali_voice_t *pvoice = NULL;
 	snd_pcm_runtime_t *runtime;
@@ -1001,7 +1001,7 @@ void snd_ali_update_ptr(ali_t *codec,int channel)
 	pchregs->data.aint = old & (~mask);
 }
 
-void snd_ali_interrupt(ali_t * codec)
+static void snd_ali_interrupt(ali_t * codec)
 {
 	int channel;
 	unsigned int audio_int;
@@ -1033,7 +1033,7 @@ static void snd_ali_card_interrupt(int irq,
 }
 
 
-snd_ali_voice_t *snd_ali_alloc_voice(ali_t * codec, int type, int rec)
+static snd_ali_voice_t *snd_ali_alloc_voice(ali_t * codec, int type, int rec)
 {
 	snd_ali_voice_t *pvoice = NULL;
 	unsigned long flags;
@@ -1061,7 +1061,7 @@ snd_ali_voice_t *snd_ali_alloc_voice(ali_t * codec, int type, int rec)
 }
 
 
-void snd_ali_free_voice(ali_t * codec, snd_ali_voice_t *pvoice)
+static void snd_ali_free_voice(ali_t * codec, snd_ali_voice_t *pvoice)
 {
 	unsigned long flags;
 	void (*private_free)(void *);
@@ -1087,7 +1087,7 @@ void snd_ali_free_voice(ali_t * codec, snd_ali_voice_t *pvoice)
 }
 
 
-void snd_ali_clear_voices(ali_t * codec,
+static void snd_ali_clear_voices(ali_t * codec,
 			  unsigned int v_min,
 			  unsigned int v_max)
 {
@@ -1099,7 +1099,7 @@ void snd_ali_clear_voices(ali_t * codec,
 	}
 }
 
-void snd_ali_write_voice_regs(ali_t * codec,
+static void snd_ali_write_voice_regs(ali_t * codec,
 			 unsigned int Channel,
 			 unsigned int LBA,
 			 unsigned int CSO,
@@ -1136,7 +1136,7 @@ void snd_ali_write_voice_regs(ali_t * codec,
 	outl(0x30000000, ALI_REG(codec, ALI_EBUF2));	/* Still Mode */
 }
 
-unsigned int snd_ali_convert_rate(unsigned int rate, int rec)
+static unsigned int snd_ali_convert_rate(unsigned int rate, int rec)
 {
 	unsigned int delta;
 
@@ -1166,7 +1166,7 @@ unsigned int snd_ali_convert_rate(unsigned int rate, int rec)
 	return delta;
 }
 
-unsigned int snd_ali_control_mode(snd_pcm_substream_t *substream)
+static unsigned int snd_ali_control_mode(snd_pcm_substream_t *substream)
 {
 	unsigned int CTRL;
 	snd_pcm_runtime_t *runtime = substream->runtime;
@@ -1687,7 +1687,7 @@ static void snd_ali_pcm_free(snd_pcm_t *pcm)
 	codec->pcm = NULL;
 }
 
-int snd_ali_pcm(ali_t * codec, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_ali_pcm(ali_t * codec, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1813,10 +1813,14 @@ static int snd_ali5451_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ali5451_mixer_spdif[] = {
-ALI5451_SPDIF("S/PDIF Out", 0, 0),
-ALI5451_SPDIF("S/PDIF Out to S/PDIF Channel",0, 1),
-ALI5451_SPDIF("S/PDIF In from S/PDIF Channel",0, 2) };
+static snd_kcontrol_new_t snd_ali5451_mixer_spdif[] __devinit = {
+	/* spdif aplayback switch */
+	ALI5451_SPDIF(SNDRV_CTL_NAME_IEC958("",PLAYBACK,SWITCH), 0, 0),
+	/* spdif out to spdif channel */
+	ALI5451_SPDIF("IEC958 Channel Output Switch", 0, 1),
+	/* spdif in from spdif channel */
+	ALI5451_SPDIF(SNDRV_CTL_NAME_IEC958("",CAPTURE,SWITCH), 0, 2)
+};
 
 static void snd_ali_mixer_free_ac97(ac97_t *ac97)
 {
@@ -1824,7 +1828,7 @@ static void snd_ali_mixer_free_ac97(ac97_t *ac97)
 	codec->ac97 = NULL;
 }
 
-int snd_ali_mixer(ali_t * codec)
+static int __devinit snd_ali_mixer(ali_t * codec)
 {
 	ac97_t ac97;
 	int err, idx;
@@ -2020,7 +2024,7 @@ static int snd_ali_chip_init(ali_t *codec)
 
 }
 
-static int __init snd_ali_resources(ali_t *codec)
+static int __devinit snd_ali_resources(ali_t *codec)
 {
 	snd_ali_printk("resouces allocation ...\n");
 	if ((codec->res_port = request_region(codec->port, 0x100, "ALI 5451")) == NULL) {
@@ -2045,7 +2049,7 @@ static int snd_ali_dev_free(snd_device_t *device)
 	return 0;
 }
 
-static int __init snd_ali_create(snd_card_t * card,
+static int __devinit snd_ali_create(snd_card_t * card,
 				 struct pci_dev *pci,
 				 int pcm_streams,
 				 ali_t ** r_ali)
@@ -2171,15 +2175,12 @@ static int __devinit snd_ali_probe(struct pci_dev *pci,
 
 	snd_ali_printk("probe ...\n");
 
-	for ( ; dev < SNDRV_CARDS; dev++) {
-		if (!snd_enable[dev]) {
-			dev++;
-			return -ENOENT;
-		}
-		break;
+        if (dev >= SNDRV_CARDS)
+                return -ENODEV;
+	if (!snd_enable[dev]) {
+		dev++;
+		return -ENOENT;
 	}
-	if (dev >= SNDRV_CARDS)
-		return -ENODEV;
 
 	card = snd_card_new(snd_index[dev], snd_id[dev], THIS_MODULE, 0);
 	if (card == NULL)
