@@ -558,7 +558,7 @@ static int __init snd_card_serialmidi_probe(int dev)
 					i++;
 					break;
 				}
-			start_dev = simple_strtol(devname + i, NULL, 0);
+			start_dev = simple_strtoul(devname + i, NULL, 0);
 			devname[i] = 0;
 		} else
 			start_dev = 0;
