@@ -25,32 +25,34 @@
 #include "pcm.h"
 #include "rawmidi.h"
 
-#define SB_HW_AUTO		0
-#define SB_HW_10		1
-#define SB_HW_20		2
-#define SB_HW_201		3
-#define SB_HW_PRO		4
-#define SB_HW_16		5
-#define SB_HW_16CSP		6	/* SB16 with CSP chip */
-#define SB_HW_ALS100		7	/* Avance Logic ALS100 chip */
-#define SB_HW_ALS4000		8	/* Avance Logic ALS4000 chip */
+enum sb_hw_type {
+	SB_HW_AUTO,
+	SB_HW_10,
+	SB_HW_20,
+	SB_HW_201,
+	SB_HW_PRO,
+	SB_HW_16,
+	SB_HW_16CSP,		/* SB16 with CSP chip */
+	SB_HW_ALS100,		/* Avance Logic ALS100 chip */
+	SB_HW_ALS4000,		/* Avance Logic ALS4000 chip */
+};
 
-#define SB_OPEN_PCM		1
-#define SB_OPEN_MIDI_INPUT	2
-#define SB_OPEN_MIDI_OUTPUT	4
-#define SB_OPEN_MIDI_TRIGGER	8
+#define SB_OPEN_PCM		0x01
+#define SB_OPEN_MIDI_INPUT	0x02
+#define SB_OPEN_MIDI_OUTPUT	0x04
+#define SB_OPEN_MIDI_TRIGGER	0x08
 
-#define SB_MODE8_HALT		0
-#define SB_MODE8_PLAYBACK	1
-#define SB_MODE8_CAPTURE	2
+#define SB_MODE_HALT		0x00
+#define SB_MODE_PLAYBACK_8	0x01
+#define SB_MODE_PLAYBACK_16	0x02
+#define SB_MODE_PLAYBACK	(SB_MODE_PLAYBACK_8 | SB_MODE_PLAYBACK_16)
+#define SB_MODE_CAPTURE_8	0x04
+#define SB_MODE_CAPTURE_16	0x08
+#define SB_MODE_CAPTURE		(SB_MODE_CAPTURE_8 | SB_MODE_CAPTURE_16)
 
-#define SB_MODE16_PLAYBACK	1
-#define SB_MODE16_CAPTURE	2
-#define SB_MODE16_PLAYBACK16	4
-#define SB_MODE16_CAPTURE16	8
-#define SB_MODE16_RATE_LOCK_P	16
-#define SB_MODE16_RATE_LOCK_C	32
-#define SB_MODE16_RATE_LOCK	(SB_MODE16_RATE_LOCK_P|SB_MODE16_RATE_LOCK_C)
+#define SB_RATE_LOCK_PLAYBACK	0x10
+#define SB_RATE_LOCK_CAPTURE	0x20
+#define SB_RATE_LOCK		(SB_RATE_LOCK_PLAYBACK | SB_RATE_LOCK_CAPTURE)
 
 #define SB_MPU_INPUT		1
 
@@ -64,7 +66,7 @@ struct _snd_sb {
 	int dma8;			/* 8-bit DMA */
 	int dma16;			/* 16-bit DMA */
 	unsigned short version;		/* version of DSP chip */
-	unsigned short hardware;	/* see to SB_HW_XXXX */
+	enum sb_hw_type hardware;	/* see to SB_HW_XXXX */
 
 	struct pci_dev *pci;		/* ALS4000 */
 
