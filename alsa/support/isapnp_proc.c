@@ -245,42 +245,19 @@ static int isapnp_info_entry_mmap(struct file *file, struct vm_area_struct *vma)
 
 static struct file_operations isapnp_info_entry_operations =
 {
-	isapnp_info_entry_lseek,	/* lseek */
-	isapnp_info_entry_read,		/* read */
-	isapnp_info_entry_write,	/* write */
-	NULL,				/* readdir */
-	isapnp_info_entry_poll,		/* poll */
-	isapnp_info_entry_ioctl,	/* ioctl - default */
-	isapnp_info_entry_mmap,		/* mmap */
-	isapnp_info_entry_open,		/* open */
-	NULL,				/* flush */
-	isapnp_info_entry_release,	/* release */
-	NULL,				/* can't fsync */
-	NULL,				/* fasync */
-	NULL,				/* check_media_change */
-	NULL,				/* revalidate */
-	NULL,				/* lock */
+	llseek:		isapnp_info_entry_lseek,
+	read:		isapnp_info_entry_read,
+	write:		isapnp_info_entry_write,
+	poll:		isapnp_info_entry_poll,
+	ioctl:		isapnp_info_entry_ioctl,
+	mmap:		isapnp_info_entry_mmap,
+	open:		isapnp_info_entry_open,
+	release:	isapnp_info_entry_release,
 };
 
 static struct inode_operations isapnp_info_entry_inode_operations =
 {
-	&isapnp_info_entry_operations,	/* default sound info directory file-ops */
-	NULL,			/* create */
-	NULL,			/* lookup */
-	NULL,			/* link */
-	NULL,			/* unlink */
-	NULL,			/* symlink */
-	NULL,			/* mkdir */
-	NULL,			/* rmdir */
-	NULL,			/* mknod */
-	NULL,			/* rename */
-	NULL,			/* readlink */
-	NULL,			/* follow_link */
-	NULL,			/* readpage */
-	NULL,			/* writepage */
-	NULL,			/* bmap */
-	NULL,			/* truncate */
-	NULL			/* permission */
+	default_file_ops:	&isapnp_info_entry_operations,
 };
 
 static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
@@ -338,19 +315,8 @@ static ssize_t isapnp_proc_bus_read(struct file *file, char *buf, size_t nbytes,
 
 static struct file_operations isapnp_proc_bus_file_operations =
 {
-	isapnp_proc_bus_lseek,		/* lseek */
-	isapnp_proc_bus_read,		/* read */
-	NULL,				/* write */
-	NULL,				/* readdir */
-	NULL,				/* poll */
-	NULL,				/* ioctl - default */
-	NULL,				/* mmap */
-	NULL,				/* open */
-	NULL,				/* flush */
-	NULL,				/* release */
-	NULL,				/* can't fsync */
-	NULL,				/* fasync */
-	NULL,				/* lock */
+	llseek:		isapnp_proc_bus_lseek,
+	read:		isapnp_proc_bus_read,
 };
 
 static struct inode_operations isapnp_proc_bus_inode_operations =
