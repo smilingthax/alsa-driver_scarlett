@@ -103,6 +103,37 @@ enum {
 
 
 /*
+ * manual mapping of mixer names
+ * if the mixer topology is too complicated and the parsed names are
+ * ambiguous, add the entries in usbmixer_maps.c.
+ */
+#include "usbmixer_maps.c"
+
+/* get the mapped name if the unit matches */
+static int check_mapped_name(mixer_build_t *state, int unitid, char *buf, int buflen)
+{
+	const struct usbmix_ctl_map *map;
+	const struct usbmix_name_map *p;
+	struct usb_device_descriptor *dev = &state->chip->dev->descriptor;
+
+	for (map = usbmix_ctl_maps; map->vendor; map++) {
+		if (map->vendor != dev->idVendor ||
+		    map->product != dev->idProduct)
+			continue;
+		for (p = map->map; p->id; p++) {
+			if (p->id == unitid) {
+				buflen--;
+				strncpy(buf, p->name, buflen - 1);
+				buf[buflen] = 0;
+				return strlen(buf);
+			}
+		}
+	}
+	return 0;
+}
+
+
+/*
  * find an audio control unit with the given unit id
  */
 static void *find_audio_control_unit(mixer_build_t *state, unsigned char unit)
@@ -610,7 +641,7 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 			      unsigned int ctl_mask, int control,
 			      usb_audio_term_t *iterm, int unitid)
 {
-	int len = 0;
+	int len = 0, mapped_name = 0;
 	int nameid = desc[desc[0] - 1];
 	snd_kcontrol_t *kctl;
 	usb_mixer_elem_info_t *cval;
@@ -666,7 +697,9 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 	}
 	kctl->private_free = usb_mixer_elem_free;
 
-	if (nameid)
+	len = check_mapped_name(state, unitid, kctl->id.name, sizeof(kctl->id.name));
+	mapped_name = len != 0;
+	if (! len && nameid)
 		len = snd_usb_copy_string_desc(state, nameid, kctl->id.name, sizeof(kctl->id.name));
 
 	switch (control) {
@@ -679,7 +712,7 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 		 * - if the connected output can be determined, use it.
 		 * - otherwise, anonymous name.
 		 */
-		if (! nameid) {
+		if (! len) {
 			len = get_term_name(state, iterm, kctl->id.name, sizeof(kctl->id.name), 1);
 			if (! len)
 				len = get_term_name(state, &state->oterm, kctl->id.name, sizeof(kctl->id.name), 1);
@@ -690,20 +723,25 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 		 * if the connected output is USB stream, then it's likely a
 		 * capture stream.  otherwise it should be playback (hopefully :)
 		 */
-		if (! (state->oterm.type >> 16)) {
+		if (! mapped_name && ! (state->oterm.type >> 16)) {
 			if ((state->oterm.type & 0xff00) == 0x0100) {
-				strcpy(kctl->id.name + len, " Capture");
-				len += 8;
+				if (len + 8 < sizeof(kctl->id.name)) {
+					strcpy(kctl->id.name + len, " Capture");
+					len += 8;
+				}
 			} else {
-				strcpy(kctl->id.name + len, " Playback");
-				len += 9;
+				if (len + 9 < sizeof(kctl->id.name)) {
+					strcpy(kctl->id.name + len, " Playback");
+					len += 9;
+				}
 			}
 		}
-		strcpy(kctl->id.name + len, control == USB_FEATURE_MUTE ? " Switch" : " Volume");
+		if (len + 7 < sizeof(kctl->id.name))
+			strcpy(kctl->id.name + len, control == USB_FEATURE_MUTE ? " Switch" : " Volume");
 		break;
 
 	default:
-		if (! nameid)
+		if (! len)
 			strcpy(kctl->id.name, audio_feature_info[control].name);
 		break;
 	}
@@ -823,10 +861,13 @@ static void build_mixer_unit_ctl(mixer_build_t *state, unsigned char *desc,
 	}
 	kctl->private_free = usb_mixer_elem_free;
 
-	len = get_term_name(state, &iterm, kctl->id.name, sizeof(kctl->id.name), 0);
+	len = check_mapped_name(state, unitid, kctl->id.name, sizeof(kctl->id.name));
+	if (! len)
+		len = get_term_name(state, &iterm, kctl->id.name, sizeof(kctl->id.name), 0);
 	if (! len)
 		len = sprintf(kctl->id.name, "Mixer Source %d", in_ch);
-	strcpy(kctl->id.name + len, " Volume");
+	if (len + 7 < sizeof(kctl->id.name))
+		strcpy(kctl->id.name + len, " Volume");
 
 	snd_printdd(KERN_INFO "[%d] MU [%s] ch = %d, val = %d/%d\n",
 		    cval->id, kctl->id.name, cval->channels, cval->min, cval->max);
@@ -973,7 +1014,7 @@ static int build_audio_procunit(mixer_build_t *state, int unitid, unsigned char 
 	int num_ins = dsc[6];
 	usb_mixer_elem_info_t *cval;
 	snd_kcontrol_t *kctl;
-	int i, err, nameid, type;
+	int i, err, nameid, type, len;
 	struct procunit_info *info;
 	struct procunit_value_info *valinfo;
 	static struct procunit_value_info default_value_info[] = {
@@ -1035,17 +1076,25 @@ static int build_audio_procunit(mixer_build_t *state, int unitid, unsigned char 
 		}
 		kctl->private_free = usb_mixer_elem_free;
 
-		if (info->name)
-			sprintf(kctl->id.name, "%s %s", info->name, valinfo->suffix);
+		if (check_mapped_name(state, unitid, kctl->id.name, sizeof(kctl->id.name)))
+			;
+		else if (info->name)
+			strcpy(kctl->id.name, info->name);
 		else {
 			nameid = dsc[12 + num_ins + dsc[11 + num_ins]];
-			if (nameid) {
-				int len = snd_usb_copy_string_desc(state, nameid, kctl->id.name, sizeof(kctl->id.name));
-				strcpy(kctl->id.name + len, valinfo->suffix);
-			} else
-				sprintf(kctl->id.name, "%s %s", name, valinfo->suffix);
+			len = 0;
+			if (nameid)
+				len = snd_usb_copy_string_desc(state, nameid, kctl->id.name, sizeof(kctl->id.name));
+			if (! len) {
+				strncpy(kctl->id.name, name, sizeof(kctl->id.name) - 1);
+				kctl->id.name[sizeof(kctl->id.name)-1] = 0;
+			}
 		}
-
+		len = strlen(kctl->id.name);
+		if (len + sizeof(valinfo->suffix) + 1 < sizeof(kctl->id.name)) {
+			kctl->id.name[len] = ' ';
+			strcpy(kctl->id.name + len + 1, valinfo->suffix);
+		}
 		snd_printdd(KERN_INFO "[%d] PU [%s] ch = %d, val = %d/%d\n",
 			    cval->id, kctl->id.name, cval->channels, cval->min, cval->max);
 		if ((err = add_control_to_empty(state->chip->card, kctl)) < 0)
@@ -1158,7 +1207,7 @@ static void usb_mixer_selector_elem_free(snd_kcontrol_t *kctl)
 static int parse_audio_selector_unit(mixer_build_t *state, int unitid, unsigned char *desc)
 {
 	int num_ins = desc[4];
-	int i, err, nameid;
+	int i, err, nameid, len;
 	usb_mixer_elem_info_t *cval;
 	snd_kcontrol_t *kctl;
 	char **namelist;
@@ -1196,7 +1245,7 @@ static int parse_audio_selector_unit(mixer_build_t *state, int unitid, unsigned 
 #define MAX_ITEM_NAME_LEN	64
 	for (i = 0; i < num_ins; i++) {
 		usb_audio_term_t iterm;
-		int len = 0;
+		len = 0;
 		namelist[i] = kmalloc(MAX_ITEM_NAME_LEN, GFP_KERNEL);
 		if (! namelist[i]) {
 			snd_printk(KERN_ERR "cannot malloc\n");
@@ -1222,17 +1271,23 @@ static int parse_audio_selector_unit(mixer_build_t *state, int unitid, unsigned 
 	kctl->private_free = usb_mixer_selector_elem_free;
 
 	nameid = desc[desc[0] - 1];
-	if (nameid)
+	len = check_mapped_name(state, unitid, kctl->id.name, sizeof(kctl->id.name));
+	if (len)
+		;
+	else if (nameid)
 		snd_usb_copy_string_desc(state, nameid, kctl->id.name, sizeof(kctl->id.name));
 	else {
-		int len = get_term_name(state, &state->oterm,
-					kctl->id.name, sizeof(kctl->id.name), 0);
+		len = get_term_name(state, &state->oterm,
+				    kctl->id.name, sizeof(kctl->id.name), 0);
 		if (! len)
 			len = sprintf(kctl->id.name, "USB");
-		if ((state->oterm.type & 0xff00) == 0x0100)
-			strcpy(kctl->id.name + len, " Capture Source");
-		else
-			strcpy(kctl->id.name + len, " Playback Source");
+		if ((state->oterm.type & 0xff00) == 0x0100) {
+			if (len + 15 < sizeof(kctl->id.name))
+				strcpy(kctl->id.name + len, " Capture Source");
+		} else {
+			if (len + 16 < sizeof(kctl->id.name))
+				strcpy(kctl->id.name + len, " Playback Source");
+		}
 	}
 
 	snd_printdd(KERN_INFO "[%d] SU [%s] items = %d\n",
