@@ -19,9 +19,12 @@
  *
  */
   
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_plugin.h>
+#include "pcm_plugin.h"
+
 #define pcm_write(plug,buf,count) snd_pcm_oss_write3(plug,buf,count,1)
 #define pcm_writev(plug,vec,count) snd_pcm_oss_writev3(plug,vec,count,1)
 #define pcm_read(plug,buf,count) snd_pcm_oss_read3(plug,buf,count,1)

@@ -21,6 +21,7 @@
  */
 
 #include "driver.h"
+#include "core.h"
 #include "seq_kernel.h"
 #include "seq_device.h"
 #include "soundfont.h"

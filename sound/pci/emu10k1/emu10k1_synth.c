@@ -18,7 +18,6 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include "emu10k1_synth_local.h"
 
 MODULE_AUTHOR("Takashi Iwai");

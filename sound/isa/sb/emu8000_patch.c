@@ -19,6 +19,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define __NO_VERSION__
 #include "emu8000_local.h"
 
 MODULE_PARM(emu8000_reset_addr, "i");

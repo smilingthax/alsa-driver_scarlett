@@ -52,6 +52,7 @@
  */
 
 #include "driver.h"
+#include "core.h"
 #include "hwdep.h"
 #include "timer.h"
 #include "seq_midi_emul.h"

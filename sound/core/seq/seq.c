@@ -19,8 +19,8 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/initval.h>
 
 #include <sound/seq_kernel.h>

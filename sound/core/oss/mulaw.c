@@ -21,20 +21,11 @@
  *
  */
   
-#ifdef __KERNEL__
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_plugin.h>
-#else
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <byteswap.h>
-#include <sys/uio.h>
-#include "../pcm_local.h"
-#endif
+#include "pcm_plugin.h"
 
 #define	SIGN_BIT	(0x80)		/* Sign bit for a u-law byte. */
 #define	QUANT_MASK	(0xf)		/* Quantization field mask. */

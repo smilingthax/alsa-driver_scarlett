@@ -22,8 +22,7 @@
  *
  */
 
-#include "pcm_plugin.h"
-
+typedef struct _snd_pcm_plugin snd_pcm_plugin_t;
 typedef struct _snd_pcm_oss_setup snd_pcm_oss_setup_t;
 
 struct _snd_pcm_oss_setup {

@@ -30,8 +30,8 @@
     activation method (full-duplex audio!).
 */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <sound/cs4231.h>

@@ -20,7 +20,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-//#define SNDRV_MAIN_OBJECT_FILE
+#define __NO_VERSION__
 #include <sound/emu8000.h>
 #include <sound/emu8000_reg.h>
 #include <sound/control.h>

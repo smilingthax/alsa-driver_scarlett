@@ -21,6 +21,7 @@
 
 #define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/ad1848.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");

@@ -19,6 +19,7 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
 
 #ifdef CONFIG_SND_OSSEMUL
@@ -27,6 +28,7 @@
 #error "Enable the OSS soundcore multiplexer (CONFIG_SOUND) in the kernel."
 #endif
 
+#include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
 #include <linux/sound.h>

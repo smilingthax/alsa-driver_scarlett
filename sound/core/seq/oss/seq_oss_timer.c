@@ -20,14 +20,15 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define __NO_VERSION__
 #include "seq_oss_timer.h"
 #include "seq_oss_event.h"
 #include <sound/seq_oss_legacy.h>
 
 /*
  */
-#define MIN_OSS_TEMPO	8
-#define MAX_OSS_TEMPO	360
+#define MIN_OSS_TEMPO		8
+#define MAX_OSS_TEMPO		360
 #define MIN_OSS_TIMEBASE	1
 #define MAX_OSS_TIMEBASE	1000
 

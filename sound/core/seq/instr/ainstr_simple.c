@@ -18,8 +18,9 @@
  *
  */
  
-#define SNDRV_MAIN_OBJECT_FILE
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/ainstr_simple.h>
 #include <sound/initval.h>
 

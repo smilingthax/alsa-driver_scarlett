@@ -19,8 +19,8 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/es1688.h>
 
 #define chip_t es1688_t

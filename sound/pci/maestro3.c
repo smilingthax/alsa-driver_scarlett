@@ -28,12 +28,11 @@
  *
  */
  
-#define SNDRV_MAIN_OBJECT_FILE
-
 #define CARD_NAME "ESS Maestro3/Allegro/Canyon3D-2"
 #define DRIVER_NAME "Maestro3"
 
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/info.h>
 #include <sound/control.h>
 #include <sound/pcm.h>

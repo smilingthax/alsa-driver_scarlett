@@ -26,7 +26,9 @@
 
 #undef HAVE_REALLY_SLOW_DMA_CONTROLLER
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 
 #ifdef CONFIG_ISA
 

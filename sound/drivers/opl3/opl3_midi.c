@@ -22,6 +22,7 @@
 #undef DEBUG_ALLOC
 #undef DEBUG_MIDI
 
+#define __NO_VERSION__
 #include "opl3_voice.h"
 
 extern char snd_opl3_regmap[MAX_OPL2_VOICES][4];

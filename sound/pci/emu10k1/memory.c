@@ -21,7 +21,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1.h>
 
 /* page arguments of these two macros are Emu page (4096 bytes), not like

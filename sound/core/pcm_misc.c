@@ -19,9 +19,10 @@
  *
  */
   
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_plugin.h>
 #define bswap_16 swab16
 #define bswap_32 swab32
 #define bswap_64 swab64

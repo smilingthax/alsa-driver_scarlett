@@ -35,7 +35,9 @@
  *     - Addition of experimental sync support.
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 
 #include "seq_memory.h"
 #include "seq_queue.h"

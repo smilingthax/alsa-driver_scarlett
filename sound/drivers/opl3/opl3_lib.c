@@ -23,7 +23,6 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/opl3.h>
 #include <sound/minors.h>
 

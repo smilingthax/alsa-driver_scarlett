@@ -20,7 +20,9 @@
  */
 
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include "pmac.h"
 #include <sound/pcm_params.h>
 #ifdef CONFIG_PPC_HAS_FEATURE_CALLS

@@ -19,6 +19,7 @@
  *
  */
 
+#define __NO_VERSION__
 #include "emux_voice.h"
 
 #define NELEM(arr) (sizeof(arr)/sizeof((arr)[0]))

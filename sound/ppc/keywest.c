@@ -22,7 +22,10 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include "pmac.h"
 
 /* The Tumbler audio equalizer can be really slow sometimes */

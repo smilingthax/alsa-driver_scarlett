@@ -21,8 +21,8 @@
  *
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/sb.h>
 #include <sound/ad1848.h>
 #define SNDRV_LEGACY_FIND_FREE_IRQ

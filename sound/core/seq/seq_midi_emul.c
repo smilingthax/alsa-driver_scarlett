@@ -29,8 +29,8 @@
  * code in here.  If there is it should be reported as a bug.
  */
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/seq_kernel.h>
 #include <sound/seq_midi_emul.h>
 #include <sound/initval.h>

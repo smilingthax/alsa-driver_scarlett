@@ -23,8 +23,13 @@
 #if 0
 #define PLUGIN_DEBUG
 #endif
+
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/pcm.h>
+#include "pcm_plugin.h"
+
 #define snd_pcm_plug_first(plug) ((plug)->runtime->oss.plugin_first)
 #define snd_pcm_plug_last(plug) ((plug)->runtime->oss.plugin_last)
 

@@ -25,7 +25,9 @@
  *
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/emu10k1.h>
 
 void snd_emu10k1_interrupt(int irq, void *dev_id, struct pt_regs *regs)

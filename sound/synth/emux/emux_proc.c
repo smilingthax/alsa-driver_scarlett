@@ -18,6 +18,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define __NO_VERSION__
 #include <sound/emux_synth.h>
 #include <sound/info.h>
 #include "emux_voice.h"

@@ -18,6 +18,7 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#define __NO_VERSION__
 #include "opl3_voice.h"
 
 static int snd_opl3_open_seq_oss(snd_seq_oss_arg_t *arg, void *closure);

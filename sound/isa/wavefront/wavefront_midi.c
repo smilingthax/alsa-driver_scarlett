@@ -47,7 +47,9 @@
  *  
  */
 
+#define __NO_VERSION__
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/snd_wavefront.h>
 
 static inline int 

@@ -22,6 +22,7 @@
 #define __SEQ_OSS_DEVICE_H
 
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/seq_oss.h>
 #include <sound/rawmidi.h>
 #include <sound/seq_kernel.h>
@@ -31,7 +32,7 @@
 #define SNDRV_SEQ_OSS_DEBUG
 
 /* max. applications */
-#define SNDRV_SEQ_OSS_MAX_CLIENTS		16
+#define SNDRV_SEQ_OSS_MAX_CLIENTS	16
 #define SNDRV_SEQ_OSS_MAX_SYNTH_DEVS	16
 #define SNDRV_SEQ_OSS_MAX_MIDI_DEVS	32
 
@@ -39,11 +40,11 @@
 #define SNDRV_SEQ_OSS_MAJOR_VERSION	0
 #define SNDRV_SEQ_OSS_MINOR_VERSION	1
 #define SNDRV_SEQ_OSS_TINY_VERSION	8
-#define SNDRV_SEQ_OSS_VERSION_STR		"0.1.8"
+#define SNDRV_SEQ_OSS_VERSION_STR	"0.1.8"
 
 /* device and proc interface name */
-#define SNDRV_SEQ_OSS_DEVNAME	"seq_oss"
-#define SNDRV_SEQ_OSS_PROCNAME	"oss"
+#define SNDRV_SEQ_OSS_DEVNAME		"seq_oss"
+#define SNDRV_SEQ_OSS_PROCNAME		"oss"
 
 
 /*
