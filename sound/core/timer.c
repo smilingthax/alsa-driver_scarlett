@@ -63,6 +63,7 @@ typedef struct {
 	spinlock_t qlock;
 	unsigned long last_resolution;
 	unsigned int filter;
+	struct timespec tstamp;		/* trigger tstamp */
 	wait_queue_head_t qchange_sleep;
 	struct fasync_struct *fasync;
 } snd_timer_user_t;
@@ -1072,7 +1073,9 @@ static void snd_timer_user_ccallback(snd_timer_instance_t *timeri,
 	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
 	snd_timer_tread_t r1;
 
-	if ((tu->filter & (1 << event)) == 0)
+	if (event >= SNDRV_TIMER_EVENT_START && event <= SNDRV_TIMER_EVENT_PAUSE)
+		tu->tstamp = *tstamp;
+	if ((tu->filter & (1 << event)) == 0 || !tu->tread)
 		return;
 	r1.event = event;
 	r1.tstamp = *tstamp;
@@ -1417,7 +1420,7 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselec
 	
 	tu->timeri->flags |= SNDRV_TIMER_IFLG_FAST;
 	tu->timeri->callback = tu->tread ? snd_timer_user_tinterrupt : snd_timer_user_interrupt;
-	tu->timeri->ccallback = tu->tread ? snd_timer_user_ccallback : NULL;
+	tu->timeri->ccallback = snd_timer_user_ccallback;
 	tu->timeri->callback_data = (void *)tu;
 	return 0;
 }
@@ -1525,6 +1528,7 @@ static int snd_timer_user_status(struct file *file, snd_timer_status_t *_status)
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
 	snd_assert(tu->timeri != NULL, return -ENXIO);
 	memset(&status, 0, sizeof(status));
+	status.tstamp = tu->tstamp;
 	status.resolution = snd_timer_resolution(tu->timeri);
 	status.lost = tu->timeri->lost;
 	status.overrun = tu->overrun;
