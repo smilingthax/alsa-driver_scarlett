@@ -251,7 +251,6 @@ struct snd_opl3 {
 	unsigned long r_port;
 	unsigned short hardware;
 	unsigned short timer_enable;
-	int timer_dev;		/* timer device number */
 	int seq_dev_num;	/* sequencer device number */
 	snd_timer_t *timer1;
 	snd_timer_t *timer2;
