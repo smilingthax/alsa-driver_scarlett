@@ -246,11 +246,13 @@ static int snd_mixer_oss_get_volume(snd_mixer_oss_file_t *fmixer, int slot)
 {
 	snd_mixer_oss_t *mixer = fmixer->mixer;
 	snd_mixer_oss_slot_t *pslot;
-	int result = 0, left = 0, right = 0;
+	int result = 0, left, right;
 
 	if (mixer == NULL || slot > 30)
 		return -EIO;
 	pslot = &mixer->slots[slot];
+	left = fmixer->volume[slot][0];
+	right = fmixer->volume[slot][1];
 	if (pslot->get_volume)
 		result = pslot->get_volume(fmixer, pslot, &left, &right);
 	if (!pslot->stereo)
@@ -283,14 +285,10 @@ static int snd_mixer_oss_set_volume(snd_mixer_oss_file_t *fmixer,
 		left = right = left;
 	if (pslot->put_volume)
 		result = pslot->put_volume(fmixer, pslot, left, right);
-	fmixer->volume[slot][0] = left;
-	fmixer->volume[slot][1] = right;
-	if (result >= 0 && pslot->get_volume)
-		result = pslot->get_volume(fmixer, pslot, &left, &right);
 	if (result < 0)
 		return result;
-	if (!pslot->stereo)
-		left = right;
+	fmixer->volume[slot][0] = left;
+	fmixer->volume[slot][1] = right;
  	return (left & 0xff) | ((right & 0xff) << 8);
 }
 
