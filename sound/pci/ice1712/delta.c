@@ -550,9 +550,6 @@ static int __devinit snd_ice1712_delta_add_controls(ice1712_t *ice)
 	case ICE1712_SUBDEVICE_DELTA1010:
 	case ICE1712_SUBDEVICE_DELTADIO2496:
 	case ICE1712_SUBDEVICE_DELTA66:
-	case ICE1712_SUBDEVICE_AUDIOPHILE:
-	case ICE1712_SUBDEVICE_DELTA410:
-	case ICE1712_SUBDEVICE_DELTA1010LT:
 		err = snd_ice1712_spdif_build_controls(ice);
 		if (err < 0)
 			return err;
