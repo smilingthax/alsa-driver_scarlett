@@ -1605,6 +1605,10 @@ static int parse_audio_format_type(struct usb_device *dev, int iface_no, int alt
 	/* FIXME: correct endianess and sign? */
 	pcm_format = -1;
 	switch (format) {
+	case 0: /* some devices don't define this correctly... */
+		snd_printd(KERN_INFO "%d:%u:%d : format type 0 is detected, processed as PCM\n",
+			   dev->devnum, iface_no, altno);
+		/* fall-through */
 	case USB_AUDIO_FORMAT_PCM:
 		/* check the format byte size */
 		switch (fmt[6]) {
