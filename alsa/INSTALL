@@ -531,6 +531,17 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and PnP.
 
+  Module snd-card-als4000.o
+  ------------------------
+
+    Module for soundcards based on Avance Logic ALS4000 PCI chip.
+
+    snd_joystick_port - port # for legacy joystick support.
+                        default: 0x200 for the 1st card.
+                        0 = disabled
+    
+    Module supports up to 8 cards, autoprobe and PnP.
+
   Module snd-card-es1938.o
   ------------------------
 
