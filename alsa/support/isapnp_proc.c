@@ -41,6 +41,11 @@
 #include <linux/string.h>
 #include <linux/malloc.h>
 #include <linux/proc_fs.h>
+#ifdef LINUX_2_1
+#include <linux/vmalloc.h>
+#include <linux/poll.h>
+#include <asm/uaccess.h>
+#endif
 
 #ifndef LINUX_2_1
 #define copy_from_user memcpy_fromfs
@@ -403,7 +408,7 @@ static int isapnp_info_entry_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-#ifdef SND_POLL
+#ifdef LINUX_2_1
 static unsigned int isapnp_info_entry_poll(struct file *file, poll_table * wait)
 {
 	if (!file->private_data)
@@ -412,7 +417,7 @@ static unsigned int isapnp_info_entry_poll(struct file *file, poll_table * wait)
 }
 #else
 static int isapnp_info_entry_select(struct inode *inode, struct file *file,
-			         int sel_type, select_table * wait)
+				    int sel_type, select_table * wait)
 {
 	if (!file->private_data)
 		return 0;
@@ -449,7 +454,7 @@ static struct file_operations isapnp_info_entry_operations =
 	isapnp_info_entry_read,		/* read */
 	isapnp_info_entry_write,	/* write */
 	NULL,				/* readdir */
-#ifdef SND_POLL
+#ifdef LINUX_2_1
 	isapnp_info_entry_poll,		/* poll */
 #else
 	isapnp_info_entry_select,	/* select */

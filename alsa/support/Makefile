@@ -8,7 +8,7 @@ TOPDIR  = ..
 include $(TOPDIR)/Makefile.conf
 
 ifeq (1,$(SNDCFG_MVERSION))
-COPTS   += -DMODVERSIONS \
+COPTS   += -DMODVERSIONS -DEXPORT_SYMTAB \
 		-include $(SNDCFG_KERNELDIR)/include/linux/modversions.h \
 		-include $(TOPDIR)/include/sndversions.h
 endif
@@ -31,7 +31,7 @@ include $(TOPDIR)/Rules1.make
 
 $(ISAPNPE): isapnp.c
 ifeq (1,$(newkernel))
-	$(CC) $(INCLUDE) -E -D__GENKSYMS__ isapnp.c | $(GENKSYMS) > $(DEXPORT)/isapnp.ve
+	$(CC) $(INCLUDE) -E -D__GENKSYMS__ isapnp.c | $(GENKSYMS) > $(DEXPORT)/isapnp.ver
 else
 	$(CC) $(INCLUDE) -E -D__GENKSYMS__ isapnp.c | $(GENKSYMS) $(DEXPORT)
 endif
