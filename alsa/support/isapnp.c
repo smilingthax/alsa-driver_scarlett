@@ -64,9 +64,9 @@
 #endif
 
 #ifdef NEW_RESOURCE
-struct resource *pidxr_res = { NULL, NULL };
-struct resource *pnpwrp_res = { NULL, NULL };
-struct resource *isapnp_rdp_res = { NULL, NULL };
+struct resource *pidxr_res = NULL;
+struct resource *pnpwrp_res = NULL;
+struct resource *isapnp_rdp_res = NULL;
 #endif
 
 int isapnp_disable = 0;			/* Disable ISA PnP */
@@ -1693,6 +1693,10 @@ static int isapnp_check_mem(unsigned int addr, unsigned int size)
 			return 1;
 		if (addr + size > raddr && addr + size < (raddr + rsize) - 1)
 			return 1;
+#ifdef NEW_RESOURCE
+		if (__check_region(&iomem_resource, addr, size))
+			return 1;
+#endif
 	}
 	return 0;
 }
