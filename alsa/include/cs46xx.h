@@ -1,10 +1,10 @@
-#ifndef __CS461X_H
-#define __CS461X_H
+#ifndef __CS46XX_H
+#define __CS46XX_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>,
  *		     Cirrus Logic, Inc.
- *  Definitions for Cirrus Logic CS461x chips
+ *  Definitions for Cirrus Logic CS46xx chips
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -46,7 +46,7 @@
 
 /*
  *  The following define the offsets of the registers accessed via base address
- *  register zero on the CS461x part.
+ *  register zero on the CS46xx part.
  */
 #define BA0_HISR				0x00000000
 #define BA0_HSR0                                0x00000004
@@ -174,7 +174,7 @@
 
 /*
  *  The following define the offsets of the registers and memories accessed via
- *  base address register one on the CS461x part.
+ *  base address register one on the CS46xx part.
  */
 #define BA1_SP_DMEM0                            0x00000000
 #define BA1_SP_DMEM1                            0x00010000
@@ -1616,8 +1616,8 @@
  *
  */
 
-#define CS461X_MODE_OUTPUT	(1<<0)	 /* MIDI UART - output */ 
-#define CS461X_MODE_INPUT	(1<<1)	 /* MIDI UART - input */
+#define CS46XX_MODE_OUTPUT	(1<<0)	 /* MIDI UART - output */ 
+#define CS46XX_MODE_INPUT	(1<<1)	 /* MIDI UART - input */
 
 /*
  *
@@ -1630,7 +1630,7 @@
  *
  */
 
-typedef struct _snd_cs461x cs461x_t;
+typedef struct _snd_cs46xx cs46xx_t;
 
 typedef struct {
 	char name[24];
@@ -1639,21 +1639,21 @@ typedef struct {
 	unsigned long size;
 	struct resource *resource;
 	void *proc_entry;
-} snd_cs461x_region_t;
+} snd_cs46xx_region_t;
 
-struct _snd_cs461x {
+struct _snd_cs46xx {
 	int irq;
 	unsigned long ba0_addr;
 	unsigned long ba1_addr;
 	union {
 		struct {
-			snd_cs461x_region_t ba0;
-			snd_cs461x_region_t data0;
-			snd_cs461x_region_t data1;
-			snd_cs461x_region_t pmem;
-			snd_cs461x_region_t reg;
+			snd_cs46xx_region_t ba0;
+			snd_cs46xx_region_t data0;
+			snd_cs46xx_region_t data1;
+			snd_cs46xx_region_t pmem;
+			snd_cs46xx_region_t reg;
 		} name;
-		snd_cs461x_region_t idx[5];
+		snd_cs46xx_region_t idx[5];
 	} region;
 
 	unsigned int mode;
@@ -1700,14 +1700,14 @@ struct _snd_cs461x {
 #endif
 };
 
-int snd_cs461x_create(snd_card_t *card,
+int snd_cs46xx_create(snd_card_t *card,
 		      struct pci_dev *pci,
 		      unsigned long play_dma_size,
 		      unsigned long capt_dma_size,
-		      cs461x_t **rcodec);
+		      cs46xx_t **rcodec);
 
-int snd_cs461x_pcm(cs461x_t *chip, int device, snd_pcm_t **rpcm);
-int snd_cs461x_mixer(cs461x_t *chip);
-int snd_cs461x_midi(cs461x_t *chip, int device, snd_rawmidi_t **rmidi);
+int snd_cs46xx_pcm(cs46xx_t *chip, int device, snd_pcm_t **rpcm);
+int snd_cs46xx_mixer(cs46xx_t *chip);
+int snd_cs46xx_midi(cs46xx_t *chip, int device, snd_rawmidi_t **rmidi);
 
-#endif				/* __CS461X_H */
+#endif				/* __CS46XX_H */

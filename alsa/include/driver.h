@@ -398,10 +398,9 @@ int snd_card_info_done(void);
 
 int snd_device_new(snd_card_t *card, snd_device_type_t type,
 		   void *device_data, snd_device_ops_t *ops);
-int snd_device_free(snd_card_t *card, void *device_data);
 int snd_device_register(snd_card_t *card, void *device_data);
-int snd_device_unregister(snd_card_t *card, void *device_data);
 int snd_device_register_all(snd_card_t *card);
+int snd_device_free(snd_card_t *card, void *device_data);
 int snd_device_free_all(snd_card_t *card, snd_device_cmd_t cmd);
 
 /* isadma.c */

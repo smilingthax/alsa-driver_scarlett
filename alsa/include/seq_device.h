@@ -43,6 +43,8 @@ struct snd_seq_device {
 	int argsize;		/* size of the argument */
 	void *driver_data;	/* private data for driver */
 	int status;		/* flag - read only */
+	void *private_data;	/* private data for the caller */
+	void (*private_free)(snd_seq_device_t *device);
 	snd_seq_device_t *next; /* link to next device */
 };
 

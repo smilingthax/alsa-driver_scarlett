@@ -283,12 +283,12 @@ case "$1" in
     insert snd-synth-trident.o
     restore trid4dwave.conf
     ;;
-  cs461x)
+  cs46xx)
     basic
     insert snd-ac97-codec.o
-    insert snd-cs461x.o
-    insert snd-card-cs461x.o
-    restore cs461x.conf
+    insert snd-cs46xx.o
+    insert snd-card-cs46xx.o
+    restore cs46xx.conf
     ;;
   cs4281)
     basic
