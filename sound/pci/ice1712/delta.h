@@ -26,6 +26,7 @@
 
 #define DELTA_DEVICE_DESC \
 		"{MidiMan M Audio,Delta 1010},"\
+		"{MidiMan M Audio,Delta 1010LT},"\
 		"{MidiMan M Audio,Delta DiO 2496},"\
 		"{MidiMan M Audio,Delta 66},"\
 		"{MidiMan M Audio,Delta 44},"\
