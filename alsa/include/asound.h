@@ -1085,7 +1085,7 @@ struct snd_oss_mixer_info_obsolete {
 
 #define SND_PCM_STOP_STOP		0	/* stop when underrun/overrun */
 #define SND_PCM_STOP_STOP_ERASE		1	/* stop & erase when overrun (capture) */
-#define SND_PCM_STOP_ROLLOVER		2	/* rollover when underrun */
+#define SND_PCM_STOP_ROLLOVER		2	/* rollover when overrun/underrun */
 
 #define SND_PCM_FILL_NONE		0	/* don't fill the buffer with silent samples */
 #define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
