@@ -676,6 +676,8 @@ struct sndrv_seq_time_frame {
 	unsigned char subframe;
 };
 
+typedef struct sndrv_seq_time_frame sndrv_seq_time_frame_t;
+
 /* queue status flag */
 #define SNDRV_SEQ_QUEUE_FLG_SYNC_LOST	1
 
@@ -708,6 +710,8 @@ struct sndrv_seq_queue_tick_sync {
 	int x0, x1;
 };
 
+typedef struct sndrv_seq_queue_tick_sync sndrv_seq_queue_tick_sync_t;
+
 /* SMPTE/MTC (real-time) sync */
 struct sndrv_seq_queue_time_sync {
 	unsigned int resolution;	/* frame resolution in nsec */
@@ -717,16 +721,19 @@ struct sndrv_seq_queue_time_sync {
 	int x0, x1;
 };
 
+typedef struct sndrv_seq_queue_time_sync sndrv_seq_queue_time_sync_t;
+
 struct sndrv_seq_queue_sync {
 	unsigned char format;		/* sync format */
 	unsigned char time_format;	/* SMPTE time format */
 	unsigned char info[6];		/* format dependent info */
 	union {
-		struct sndrv_seq_queue_tick_sync tick;
-		struct sndrv_seq_queue_time_sync time;
+		sndrv_seq_queue_tick_sync_t tick;
+		sndrv_seq_queue_time_sync_t time;
 	} param;
 };
 
+typedef struct sndrv_seq_queue_sync sndrv_seq_queue_sync_t;
 
 /* queue info/status */
 struct sndrv_seq_queue_status {
