@@ -137,7 +137,7 @@ SYSTEM_MAP_OPT = -F $(CONFIG_SND_KERNELDIR)/System.map
 endif
 
 .PHONY: install-modules
-install-modules: compile
+install-modules:
 ifeq ($(moddir_tree),y)
 	rm -rf $(DESTDIR)$(moddir)
 else
