@@ -1261,13 +1261,13 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	}
 	pos = (pos / 4) * 1000;
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
-	if ((pos > 40000 && pos < 47500) ||
-	    (pos > 48500 && pos < 60000)) {
+	if (pos < 40000 || pos >= 60000) 
+		/* abnormal value. hw problem? */
+		printk(KERN_INFO "intel8x0: measured clock %d rejected\n", pos);
+	else if (pos < 47500 || pos > 48500)
+		/* not 48000Hz, tuning the clock.. */
 		chip->ac97->clock = (chip->ac97->clock * 48000) / pos;
-		snd_printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
-	} else {
-		snd_printk(KERN_INFO "intel8x0: measured clock %d rejected\n", pos);
-	}
+	printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
 }
 
 static int snd_intel8x0_dev_free(snd_device_t *device)
