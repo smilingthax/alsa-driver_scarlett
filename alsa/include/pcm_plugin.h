@@ -44,19 +44,19 @@ static inline bitset_t *bitset_alloc(int nbits)
 	
 static inline void bitset_set(bitset_t *bitmap, unsigned int pos)
 {
-	int bits = sizeof(*bitmap) * 8;
+	size_t bits = sizeof(*bitmap) * 8;
 	bitmap[pos / bits] |= 1 << (pos % bits);
 }
 
 static inline void bitset_reset(bitset_t *bitmap, unsigned int pos)
 {
-	int bits = sizeof(*bitmap) * 8;
+	size_t bits = sizeof(*bitmap) * 8;
 	bitmap[pos / bits] &= ~(1 << (pos % bits));
 }
 
 static inline int bitset_get(bitset_t *bitmap, unsigned int pos)
 {
-	int bits = sizeof(*bitmap) * 8;
+	size_t bits = sizeof(*bitmap) * 8;
 	return !!(bitmap[pos / bits] & (1 << (pos % bits)));
 }
 
@@ -90,7 +90,7 @@ static inline void bitset_one(bitset_t *dst, unsigned int nbits)
 {
 	bitset_t *end = dst + bitset_size(nbits);
 	while (dst < end)
-		*dst++ = -1;
+		*dst++ = ~(bitset_t)0;
 }
 
 typedef struct snd_stru_pcm_plugin snd_pcm_plugin_t;
