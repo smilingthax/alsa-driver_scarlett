@@ -290,18 +290,20 @@ int snd_emu10k1_memblk_map(emu10k1_t *emu, emu10k1_memblk_t *blk)
 snd_util_memblk_t *
 snd_emu10k1_alloc_pages(emu10k1_t *emu, snd_pcm_substream_t *substream)
 {
-	struct snd_sg_buf *sgbuf = snd_pcm_substream_sgbuf(substream);
+	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_sg_buf *sgbuf = runtime->dma_private;
 	snd_util_memhdr_t *hdr;
 	emu10k1_memblk_t *blk;
 	int page, err, idx;
 
 	snd_assert(emu, return NULL);
-	snd_assert(sgbuf->size > 0 && sgbuf->size < MAXPAGES * EMUPAGESIZE, return NULL);
+	snd_assert(substream->dma_device.type == SNDRV_DMA_TYPE_PCI_SG, return NULL);
+	snd_assert(runtime->dma_bytes > 0 && runtime->dma_bytes < MAXPAGES * EMUPAGESIZE, return NULL);
 	hdr = emu->memhdr;
 	snd_assert(hdr, return NULL);
 
 	down(&hdr->block_mutex);
-	blk = search_empty(emu, sgbuf->size);
+	blk = search_empty(emu, runtime->dma_bytes);
 	if (blk == NULL) {
 		up(&hdr->block_mutex);
 		return NULL;
