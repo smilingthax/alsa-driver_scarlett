@@ -31,7 +31,7 @@
 #define SND_SEQ_VERSION SND_PROTOCOL_VERSION (1, 0, 0)
 
 /* support synchronization feature */
-#define SND_SEQ_SYNC_SUPPORT	1
+/*#define SND_SEQ_SYNC_SUPPORT	1*/
 
 /*
  * sequencer event record
