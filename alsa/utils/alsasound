@@ -3,6 +3,8 @@
 # alsasound     This shell script takes care of starting and stopping
 #               ALSA sound driver.
 #
+# This script requires /usr/sbin/alsactl program from alsa-utils package.
+#
 # Copyright (c) by Jaroslav Kysela <perex@jcu.cz> 
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,13 +22,12 @@
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 #
-# For RedHat 5.0:
+# For RedHat 5.0+:
 # chkconfig: 2345 87 14
 # description: ALSA driver
 #
 
-maxcards=8
-maxmixers=2
+alsactl=/usr/sbin/alsactl
 
 function start() {
   #
@@ -41,47 +42,44 @@ function start() {
       echo "done"; \
     done
   #
-  # restore mixer settings
+  # restore driver settings
   #
-  idx=0
-  while [ $idx -lt $maxcards ]; do
-    if [ -d /etc/asound/$idx ] && [ -d /proc/asound/$idx ]; then
-      idx1=0
-      while [ $idx1 -lt $maxmixers ]; do
-        if [ -r /etc/asound/$idx/mixer$idx1 ] && [ -w /proc/asound/$idx/mixer$idx1 ]; then
-          cat /etc/asound/$idx/mixer$idx1 > /proc/asound/$idx/mixer$idx1
-        fi
-        idx1=$[$idx1+1]
-      done
-    fi
-    idx=$[$idx+1]
-  done
+  if [ -x $alsactl ]; then
+    $alsactl restore
+  else
+    echo "ERROR: alsactl not found"
+  fi
 }
 
-function stop() {
-  #
-  # save mixer settings
-  #
-  idx=0
-  while [ $idx -lt $maxcards ]; do
-    if [ -d /proc/asound/$idx ]; then
-      idx1=0
-      while [ $idx1 -lt $maxmixers ]; do
-        if [ -r /proc/asound/$idx/mixer$idx1 ]; then
-          mkdir -p /etc/asound/$idx
-          cat /proc/asound/$idx/mixer$idx1 > /etc/asound/$idx/mixer$idx1
-        fi
-        idx1=$[$idx1+1]
-      done
-    fi
-    idx=$[$idx+1]
-  done
+function detect_stop() {
   #
   # remove all sound modules
   #
   /sbin/lsmod | grep -E "^snd" | while read line; do \
      /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
   done
+}
+
+function stop() {
+  #
+  # store driver settings
+  #
+  if [ -x $alsactl ]; then
+    $alsactl store
+  else
+    echo -n "!!!alsactl not found!!! "
+  fi
+  #
+  # remove all sound modules
+  #
+  detect_stop
+}
+
+function detect_start() {
+  #
+  # run only detect module
+  #
+  /sbin/modprobe snd-detect
 }
 
 # See how we were called.
@@ -94,14 +92,28 @@ case "$1" in
 	    touch /var/lock/subsys/alsasound
 	  fi
 	else
-	  echo "ALSA driver is already running."
+	  if [ -f /proc/asound/detect ]; then
+	    echo -n "Shutting down sound detect module: "
+	    detect_stop
+	    echo "done"
+	    start
+	    if [ -d /proc/asound ] && [ -d /var/lock/subsys ]; then
+	      touch /var/lock/subsys/alsasound
+	    fi
+          else
+	    echo "ALSA driver is already running."
+	  fi
 	fi
         ;;
   stop)
         # Stop daemons.
 	if [ -d /proc/asound ]; then
           echo -n "Shutting down sound driver: "
-	  stop
+	  if [ -f /proc/asound/detect ]; then
+	    detect_stop
+	  else
+	    stop
+	  fi
 	  if [ -d /var/lock/subsys ]; then
 	    rm -f /var/lock/subsys/alsasound
 	  fi
@@ -114,8 +126,27 @@ case "$1" in
 	$0 stop
 	$0 start
 	;;
+  detect)
+	# Start driver only in detect mode.
+	if [ -d /proc/asound ]; then
+	  if [ -f /proc/asound/detect ]; then
+	    echo "ALSA driver is already running in detect mode."
+	    exit 0
+          else
+	    echo -n "Shutting down sound driver: "
+	    stop
+	    echo "done"
+	  fi
+	fi
+	echo -n "Starting sound detect module: "
+	detect_start
+	echo "done"
+	if [ -d /var/lock/subsys ]; then
+	  touch /var/lock/subsys/alsasound
+	fi
+	;;
   *)
-        echo "Usage: alsasound {start|stop|restart}"
+        echo "Usage: alsasound {start|stop|restart|detect}"
         exit 1
 esac
 
