@@ -930,10 +930,10 @@ static void output_acinclude(void)
 			if (cond->not)
 				printf(" ! ");
 			for (j = 0; j < cond->left; j++)
-				printf("(");
+				printf("( ");
 			printf("( test \"$CONFIG_%s\" = \"y\" -o \"$CONFIG_%s\" = \"m\" )", cond->name, cond->name);
 			for (j = 0; j < cond->right; j++)
-				printf(")");
+				printf(" )");
 			put_if = 1;
 			cond_prev = cond;
 		}

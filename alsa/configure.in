@@ -698,6 +698,9 @@ CONFIG_ALPHA=
 CONFIG_L3=
 CONFIG_ARM=
 CONFIG_PPC=
+CONFIG_SPARC32=
+CONFIG_SPARC64=
+CONFIG_SBUS=
 CONFIG_SND_BIT32_EMUL=
 processor=""
 rm -f processor.id
@@ -920,6 +923,7 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc)
+    CONFIG_SPARC32=y
     IS_EGCS=n
     NEW_GAS=n
     test $CC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && IS_EGCS=y
@@ -936,6 +940,7 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc64)
+    CONFIG_SPARC64=y
     CC=gcc
     test gcc -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || CC=sparc64-linux-gcc
     NEW_GCC=n
@@ -1036,6 +1041,11 @@ esac
 dnl ia32 and alpha
 test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
 
+dnl Check for SBUS support for sparc...
+if test -n "$CONFIG_SPARC32" -o -n "$CONFIG_SPARC64"; then
+  CHECK_KERNEL_CONFIG(CONFIG_SBUS, [SBUS support in kernel])
+fi
+
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(LD)
@@ -1044,6 +1054,9 @@ AC_SUBST(CONFIG_ALPHA)
 AC_SUBST(CONFIG_L3)
 AC_SUBST(CONFIG_ARM)
 AC_SUBST(CONFIG_PPC)
+AC_SUBST(CONFIG_SPARC32)
+AC_SUBST(CONFIG_SPARC64)
+AC_SUBST(CONFIG_SBUS)
 AC_SUBST(CONFIG_ISA)
 AC_SUBST(CONFIG_PARISC)
 AC_SUBST(CONFIG_SND_BIT32_EMUL)
