@@ -58,6 +58,8 @@ struct snd_ossseq_callback_t {
 	int (*close)(snd_ossseq_arg_t *p);
 	int (*ioctl)(snd_ossseq_arg_t *p, unsigned int cmd, unsigned long arg);
 	int (*load_patch)(snd_ossseq_arg_t *p, int format, const char *buf, int offs, int count);
+	int (*reset)(snd_ossseq_arg_t *p);
+	int (*raw_event)(snd_ossseq_arg_t *p, unsigned char *data);
 };
 
 /* flag: file_mode */

@@ -86,8 +86,6 @@
 #define SND_SEQ_EVENT_SAMPLE_LOOP	85	/* sample loop */
 #define SND_SEQ_EVENT_SAMPLE_POSITION	86	/* sample position */
 
-#define SND_SEQ_EVENT_OSSRAW		90
-
 	/* hardware specific events - range 192-255 */
 
 typedef unsigned char snd_seq_event_type;

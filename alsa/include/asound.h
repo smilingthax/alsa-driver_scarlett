@@ -965,10 +965,14 @@ struct snd_timer_general_info {
 };
 
 struct snd_timer_select {
-	int number;			/* timer number */
-	int slave;			/* timer is slave */
-	unsigned int slave_type;	/* slave type - SND_TIMER_STYPE_ */
-	unsigned int slave_id;		/* slave identification */
+	int slave: 1;			/* timer is slave */
+	union {
+		int number;		/* timer number */
+		struct {
+			int type;	/* slave type - SND_TIMER_STYPE_ */
+			int id;		/* slave identification */
+		} slave;
+	} data;
 	char reserved[32];
 };
 
@@ -984,6 +988,7 @@ struct snd_timer_info {
 struct snd_timer_params {
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
 	unsigned long ticks;		/* requested resolution in ticks */
+	int queue_size;			/* total size of queue (32-1024) */
 	char reserved[64];
 };
 
@@ -991,7 +996,8 @@ struct snd_timer_status {
 	unsigned long resolution;	/* current resolution */
 	unsigned long lost;		/* counter of master tick lost */
 	unsigned long overrun;		/* count of read queue overruns */
-	int queue;			/* queue size */
+	int queue_size;			/* total queue size */
+	int queue;			/* used queue size */
 	char reserved[64];
 };
 

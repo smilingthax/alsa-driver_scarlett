@@ -66,8 +66,6 @@ struct snd_stru_timer {
 	void *private_data;
 	void (*private_free) (void *private_data);
 	snd_timer_instance_t *first;
-	snd_timer_instance_t *slave;
-	snd_timer_instance_t *rslave;
 	struct snd_stru_timer_hardware hw;
 	snd_spin_define(lock);
 	snd_timer_t *next;
@@ -89,8 +87,6 @@ struct snd_stru_timer_instance {
 	snd_timer_instance_t *next;
 	snd_timer_instance_t *iprev;
 	snd_timer_instance_t *inext;
-	snd_timer_instance_t *slave;
-	snd_timer_instance_t *rslave;		/* running slave */
 };
 
 /*
