@@ -24,7 +24,7 @@
 #include <sound/driver.h>
 #include <asm/io.h>
 #include <linux/init.h>
-#include <sound/version.h>
+#include <sound/core.h>
 #include "pmac.h"
 
 #define chip_t pmac_t
