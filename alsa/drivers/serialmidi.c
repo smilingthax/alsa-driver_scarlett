@@ -132,6 +132,7 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 	int retval = 0;
 	struct tty_struct *tty;
 	struct termios old_termios, *ntermios;
+	struct tty_driver *driver;
 	int ldisc, speed, cflag;
 
 	down(&serial->open_lock);
@@ -150,7 +151,12 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 		retval = -EIO;
 		goto __end;
 	}
-	if (tty->driver.set_termios == NULL) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) /* correct version? */
+	driver = tty->driver;
+#else
+	driver = &tty->driver;
+#endif
+	if (driver == NULL || driver->set_termios == NULL) {
 		snd_printk(KERN_ERR "tty %s has not set_termios", serial->sdev);
 		retval = -EIO;
 		goto __end;
@@ -215,7 +221,7 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 	ntermios->c_cc[VKILL] = 0;
 	ntermios->c_cc[VMIN] = 0;
 	ntermios->c_cc[VTIME] = 0;
-	(*tty->driver.set_termios)(tty, &old_termios);
+	(*driver->set_termios)(tty, &old_termios);
 	serial->tty = tty;
 
 	/* some magic here, we need own receive_buf */
@@ -290,12 +296,21 @@ static void tx_loop(serialmidi_t *serial)
 	struct tty_struct *tty;
 	char *buf = serial->tx_buf;
 	int count;
+	struct tty_driver *driver;
 
 	tty = serial->tty;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) /* correct version? */
+	driver = tty->driver;
+#else
+	driver = &tty->driver;
+#endif
+	if (driver == NULL)
+		return;
+
 	if (down_trylock(&tty->atomic_write))
 		return;
 	while (1) {
-		count = tty->driver.write_room(tty);
+		count = driver->write_room(tty);
 		if (count <= 0) {
 			up(&tty->atomic_write);
 			return;
@@ -303,7 +318,7 @@ static void tx_loop(serialmidi_t *serial)
 		count = count > TX_BUF_SIZE ? TX_BUF_SIZE : count;
 		count = snd_rawmidi_transmit_peek(serial->substream_output, buf, count);
 		if (count > 0) {
-			count = tty->driver.write(tty, 0, buf, count);
+			count = driver->write(tty, 0, buf, count);
 			snd_rawmidi_transmit_ack(serial->substream_output, count);
 		} else {
 			clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
