@@ -189,10 +189,10 @@
 #define   ES_R1_MODEI(i)	(((i)>>4)&0x03)
 #define   ES_P2_MODEO(o)	(((o)&0x03)<<2)		/* DAC2 mode; -- '' -- */
 #define   ES_P2_MODEM		(0x03<<2)	/* mask for above */
-#define   ES_P2_MODEI(i)	(((i)>>4)&0x03)
+#define   ES_P2_MODEI(i)	(((i)>>2)&0x03)
 #define   ES_P1_MODEO(o)	(((o)&0x03)<<0)		/* DAC1 mode; -- '' -- */
 #define   ES_P1_MODEM		(0x03<<0)	/* mask for above */
-#define   ES_P1_MODEI(i)	(((i)>>4)&0x03)
+#define   ES_P1_MODEI(i)	(((i)>>0)&0x03)
 
 #define ES_REG_DAC1_COUNT 0x24	/* R/W: DAC1 sample count register */
 #define ES_REG_DAC2_COUNT 0x28	/* R/W: DAC2 sample count register */
@@ -210,7 +210,7 @@
 #define ES_REG_ADC_SIZE	  0x34	/* R/W: PAGE 0x0d; ADC frame size */
 #define   ES_REG_FCURR_COUNTO(o) (((o)&0xffff)<<16)
 #define   ES_REG_FCURR_COUNTM    (0xffff<<16)
-#define   ES_REG_FCURR_COUNTI(i) (((i)>>16)&0xffff)
+#define   ES_REG_FCURR_COUNTI(i) (((i)>>14)&0x3fffc)
 #define   ES_REG_FSIZEO(o)	 (((o)&0xffff)<<0)
 #define   ES_REG_FSIZEM		 (0xffff<<0)
 #define   ES_REG_FSIZEI(i)	 (((i)>>0)&0xffff)
