@@ -25,9 +25,9 @@
 
 /* CSP modes */
 #define SND_SB_CSP_MODE_NONE            0x00
-#define SND_SB_CSP_MODE_DSP_READ        0x01  /* Record from DSP */
-#define SND_SB_CSP_MODE_DSP_WRITE       0x02  /* Play to DSP */
-#define SND_SB_CSP_MODE_QSOUND          0x04  /* QSound */
+#define SND_SB_CSP_MODE_DSP_READ        0x01	/* Record from DSP */
+#define SND_SB_CSP_MODE_DSP_WRITE       0x02	/* Play to DSP */
+#define SND_SB_CSP_MODE_QSOUND          0x04	/* QSound */
 
 /* CSP sample width */
 #define SND_SB_CSP_SAMPLE_8BIT          0x01
@@ -42,20 +42,20 @@
 
 /* microcode header */
 typedef struct snd_sb_csp_mc_header {
-        char codec_name[16];            /* id name of codec */
-        unsigned short func_req;        /* requested function */
+	char codec_name[16];		/* id name of codec */
+	unsigned short func_req;	/* requested function */
 } snd_sb_csp_mc_header_t;
 
 /* microcode to be loaded */
 typedef struct snd_sb_csp_microcode {
-        snd_sb_csp_mc_header_t info;
-        unsigned char data[SND_SB_CSP_MAX_MICROCODE_FILE_SIZE];
+	snd_sb_csp_mc_header_t info;
+	unsigned char data[SND_SB_CSP_MAX_MICROCODE_FILE_SIZE];
 } snd_sb_csp_microcode_t;
 
 /* start CSP with pcm_format in mono/stereo */
 typedef struct snd_sb_csp_start {
-        int pcm_format;                 /* pcm format from asound.h */
-        int channels;                   /* channels, look above */
+	int pcm_format;		/* pcm format from asound.h */
+	int channels;		/* channels, look above */
 } snd_sb_csp_start_t;
 
 /* running state */
@@ -67,25 +67,25 @@ typedef struct snd_sb_csp_start {
 
 /* CSP information */
 typedef struct snd_sb_csp_info {
-        char codec_name[16];            /* id name of codec */
-        unsigned short func_nr;         /* function number */
-        unsigned int acc_format;        /* accepted PCM formats */
-        unsigned short acc_channels;    /* accepted channels */
-        unsigned short csp_mode;        /* CSP mode, see above */
-        unsigned int run_format;        /* current CSP format active */
-        unsigned short run_channels;    /* current channels  */
-        unsigned short version;         /* version id: 0x10 - 0x1f */
-        unsigned short state;           /* state bits */
+	char codec_name[16];	/* id name of codec */
+	unsigned short func_nr;	/* function number */
+	unsigned int acc_format;	/* accepted PCM formats */
+	unsigned short acc_channels;	/* accepted channels */
+	unsigned short csp_mode;	/* CSP mode, see above */
+	unsigned int run_format;	/* current CSP format active */
+	unsigned short run_channels;	/* current channels  */
+	unsigned short version;	/* version id: 0x10 - 0x1f */
+	unsigned short state;	/* state bits */
 } snd_sb_csp_info_t;
 
 /* QSound positions */
 typedef struct snd_sb_csp_qsound {
-        /* 33 Qsound positions
-         * from left (0x00) to right (0x20)
-         * in 180 degree field
-         */
-        unsigned char left;             /* left position */
-        unsigned char right;            /* right position */
+	/* 33 Qsound positions
+	 * from left (0x00) to right (0x20)
+	 * in 180 degree field
+	 */
+	unsigned char left;	/* left position */
+	unsigned char right;	/* right position */
 } snd_sb_csp_qsound_t;
 
 /* HWDEP controls */
@@ -113,8 +113,8 @@ typedef struct snd_sb_csp_qsound {
 #ifdef __KERNEL__
 #include "sb.h"
 #include "hwdep.h"
-#define SND_HWDEP_TYPE_SB16CSP  0x10    /* temporarily defined here */
-snd_hwdep_t * snd_sb_csp_new_device(sbdsp_t *codec);
+#define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
+snd_hwdep_t *snd_sb_csp_new_device(sbdsp_t * codec);
 #endif
 
 #endif
