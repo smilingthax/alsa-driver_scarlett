@@ -239,7 +239,7 @@ typedef struct {
         of similar to the ID codes we see for PCI devices. */
     
 /* port id's */
-#ifdef 0
+#if 0
 #define SND_SEQ_PORT_TYPE_BASE		(0<<30)
 #define SND_SEQ_PORT_TYPE_SYS_TIMER	1	/* ALSA Sequencer timer */
 #define SND_SEQ_PORT_TYPE_SYS_ANNOUNCE	2	/* ALSA System announcements */
