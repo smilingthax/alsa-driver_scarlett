@@ -47,122 +47,59 @@ MODULE_SUPPORTED_DEVICE("{{Digigram," DRIVER_NAME "}}");
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;		/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;		/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
-static int mono_capture[SNDRV_CARDS];				/* capture in mono only */
+static int mono[SNDRV_CARDS];					/* capture in mono only */
 
 module_param_array(index, int, NULL, 0444);
-MODULE_PARM_DESC(index, "Index value for Digigram " DRIVER_NAME " soundcard.");
+MODULE_PARM_DESC(index, "Index value for Digigram " DRIVER_NAME " soundcard");
 module_param_array(id, charp, NULL, 0444);
-MODULE_PARM_DESC(id, "ID string for Digigram " DRIVER_NAME " soundcard.");
+MODULE_PARM_DESC(id, "ID string for Digigram " DRIVER_NAME " soundcard");
 module_param_array(enable, bool, NULL, 0444);
-MODULE_PARM_DESC(enable, "Enable Digigram " DRIVER_NAME " soundcard.");
-module_param_array(mono_capture, bool, NULL, 0444);
-MODULE_PARM_DESC(mono_capture, "Mono Capture.");
-
+MODULE_PARM_DESC(enable, "Enable Digigram " DRIVER_NAME " soundcard");
+module_param_array(mono, bool, NULL, 0444);
+MODULE_PARM_DESC(mono, "Mono capture mode (default is stereo)");
 
 enum {
 	PCI_ID_VX882HR,
 	PCI_ID_PCX882HR,
 	PCI_ID_VX881HR,
 	PCI_ID_PCX881HR,
+	PCI_ID_VX1222HR,
+	PCI_ID_PCX1222HR,
+	PCI_ID_VX1221HR,
+	PCI_ID_PCX1221HR,
 	PCI_ID_LAST
 };
 
-/*
- */
 static struct pci_device_id pcxhr_ids[] = {
-	{ 0x10b5, 0x9656, 0x1369, 0xb001, 0, 0, PCI_ID_VX882HR, },  /* VX882HR */
-	{ 0x10b5, 0x9656, 0x1369, 0xb101, 0, 0, PCI_ID_PCX882HR, }, /* PCX882HR */
-	{ 0x10b5, 0x9656, 0x1369, 0xb201, 0, 0, PCI_ID_VX881HR, },  /* VX881HR */
-	{ 0x10b5, 0x9656, 0x1369, 0xb301, 0, 0, PCI_ID_PCX881HR, }, /* PCX881HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb001, 0, 0, PCI_ID_VX882HR, },   /* VX882HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb101, 0, 0, PCI_ID_PCX882HR, },  /* PCX882HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb201, 0, 0, PCI_ID_VX881HR, },   /* VX881HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb301, 0, 0, PCI_ID_PCX881HR, },  /* PCX881HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb401, 0, 0, PCI_ID_VX1222HR, },  /* VX1222HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb501, 0, 0, PCI_ID_PCX1222HR, }, /* PCX1222HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb601, 0, 0, PCI_ID_VX1221HR, },  /* VX1221HR */
+	{ 0x10b5, 0x9656, 0x1369, 0xb701, 0, 0, PCI_ID_PCX1221HR, }, /* PCX1221HR */
 	{ 0, }
 };
 
 MODULE_DEVICE_TABLE(pci, pcxhr_ids);
 
-#define MAX_WAIT_FOR_DSP	20
-
-static char* pcxhr_board_names[] = {
-[PCI_ID_VX882HR] =	"VX882HR",
-[PCI_ID_PCX882HR] =	"PCX882HR",
-[PCI_ID_VX881HR] =	"VX881HR",
-[PCI_ID_PCX881HR] =	"PCX881HR",
+struct board_parameters {
+	char* board_name;
+	short playback_chips;
+	short capture_chips;
+	short firmware_num;
 };
-
-
-static int pcxhr_set_pipe_state(pcxhr_mgr_t *mgr, pcxhr_pipe_t* pipe, int start_pipe)
-{
-	int err, i, current_state;
-	pcxhr_rmh_t rmh;
-
-	if(pipe->status == PCXHR_PIPE_UNDEFINED) {
-		snd_printk(KERN_ERR "error pcxhr_set_pipe_state called with wrong pipe->status!\n");
-		return -EINVAL;
-	}
-	current_state = pcxhr_is_pipe_running(mgr, pipe->is_capture, pipe->first_audio);
-	if(!start_pipe) {
-		if(current_state == 0) {
-			pipe->status = PCXHR_PIPE_STOPPED;
-			return 0;
-		}
-		snd_printdd("pcxhr_set_pipe_state STOP\n");
-	} else {
-		if(current_state != 0) {
-			pipe->status = PCXHR_PIPE_RUNNING;
-			return 0;
-		}
-		snd_printdd("pcxhr_set_pipe_state START\n");
-		pcxhr_init_rmh(&rmh, CMD_CAN_START_PIPE);
-		pcxhr_set_pipe_cmd_params(&rmh, pipe->is_capture, pipe->first_audio, 0, 0);
-		for(i=0; i<MAX_WAIT_FOR_DSP; i++) {
-			err = pcxhr_send_msg(mgr, &rmh);
-			if(err) {
-				snd_printk(KERN_ERR "error pipe start (CMD_CAN_START_PIPE) err=%x!\n", err );
-				return err;
-			}
-			if(rmh.stat[0] != 0) break;
-			pcxhr_delay(1);			/* wait 1 millisecond */
-		}
-		if(rmh.stat[0] == 0) return -EBUSY;
-	}
-	pcxhr_init_rmh(&rmh, CMD_CONF_PIPE);
-	pcxhr_set_pipe_cmd_params(&rmh, pipe->is_capture, 0, 0, 1 << pipe->first_audio);
-	err = pcxhr_send_msg(mgr, &rmh);
-	if(err) {
-		snd_printk(KERN_ERR "error pipe start (CMD_CONF_PIPE) err=%x!\n", err );
-		return err;
-	}
-	pcxhr_init_rmh(&rmh, CMD_SEND_IRQA);
-	err = pcxhr_send_msg(mgr, &rmh);
-	if(err) {
-		snd_printk(KERN_ERR "error pipe start (CMD_SEND_IRQA) err=%x!\n", err );
-		return err;
-	}
-	for(i=0; i<MAX_WAIT_FOR_DSP; i++) {
-		if( pcxhr_is_pipe_running(mgr, pipe->is_capture, pipe->first_audio) ) {
-			if(start_pipe) break;
-		} else {
-			if(!start_pipe) break;
-		}
-		pcxhr_delay(1);			/* wait 1 millisecond */
-	}
-	if(i==MAX_WAIT_FOR_DSP) {
-		snd_printk(KERN_ERR "error pipe start/stop (ED_NO_RESPONSE_AT_IRQA)\n" );
-		return -EBUSY;
-	}
-	if(start_pipe) {
-		pipe->status = PCXHR_PIPE_RUNNING;
-	} else {
-		pcxhr_init_rmh(&rmh, CMD_STOP_PIPE);
-		pcxhr_set_pipe_cmd_params(&rmh, pipe->is_capture, pipe->first_audio, 0, 0);
-		err = pcxhr_send_msg(mgr, &rmh);
-		if(err) {
-			snd_printk(KERN_ERR "error pipe stop (CMD_STOP_PIPE) err=%x!\n", err );
-			return err;
-		}
-		pipe->status = PCXHR_PIPE_STOPPED;
-	}
-	return 0;
-}
+static struct board_parameters pcxhr_board_params[] = {
+[PCI_ID_VX882HR] =	{ "VX882HR",   4, 4, 41, },
+[PCI_ID_PCX882HR] =	{ "PCX882HR",  4, 4, 41, },
+[PCI_ID_VX881HR] =	{ "VX881HR",   4, 4, 41, },
+[PCI_ID_PCX881HR] =	{ "PCX881HR",  4, 4, 41, },
+[PCI_ID_VX1222HR] =	{ "VX1222HR",  6, 1, 42, },
+[PCI_ID_PCX1222HR] =	{ "PCX1222HR", 6, 1, 42, },
+[PCI_ID_VX1221HR] =	{ "VX1221HR",  6, 1, 42, },
+[PCI_ID_PCX1221HR] =	{ "PCX1221HR", 6, 1, 42, },
+};
 
 
 static int pcxhr_pll_freq_register(unsigned int freq, unsigned int* pllreg, unsigned int* realfreq)
@@ -293,91 +230,6 @@ static int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate)
 	return 0;
 }
 
-
-/*
- *  allocate or reference playback/capture pipe (pcmp0/pcmc0)
- */
-pcxhr_pipe_t* pcxhr_add_ref_pipe( pcxhr_t *chip, int capture, int monitoring)
-{
-	int stream_count;
-	pcxhr_pipe_t *pipe;
-
-	if(capture) {
-		pipe = &(chip->capture_pipe);   /* capture */
-		stream_count = PCXHR_CAPTURE_STREAMS;
-	} else {
-		pipe = &(chip->playback_pipe);  /* playback */
-		stream_count = PCXHR_PLAYBACK_STREAMS;
-	}
-	/* a new stream is opened and there are already all streams in use */
-	if( (monitoring == 0) && (pipe->references >= stream_count) ) {
-		return NULL;
-	}
-	/* pipe is not yet defined */
-	if( pipe->status == PCXHR_PIPE_UNDEFINED ) {
-		int err;
-		pcxhr_rmh_t rmh;
-		snd_printdd("snd_add_ref_pipe chip(%d) pcm%c0\n", chip->chip_idx, capture ? 'c' : 'p');
-		snd_assert(stream_count <= MASK_FIRST_FIELD);
- 		pipe->is_capture = capture;
- 		pipe->first_audio = 2 * chip->chip_idx;
-		/* define pipe (stereo only for instance) with flag P_PCM_ONLY_MASK (0x020000) */
-		pcxhr_init_rmh(&rmh, CMD_RES_PIPE);
-		pcxhr_set_pipe_cmd_params(&rmh, capture, pipe->first_audio, 2, stream_count | 0x020000);
-		err = pcxhr_send_msg(chip->mgr, &rmh);
-		if( err < 0) {
-			snd_printk(KERN_ERR "error pipe allocation (CMD_RES_PIPE) err=%x!\n", err );
-			return NULL;
-		}
-		pipe->stream_count = stream_count;
-		pipe->status = PCXHR_PIPE_STOPPED;
-		/* capture levels are set here(important for monitoring) */
-		/* playback levels are set later on */
-		if(capture) {
-			pcxhr_update_audio_pipe_level(chip, 1, 0);	/* left channel */
-			pcxhr_update_audio_pipe_level(chip, 1, 1);	/* right channel */
-		}
-	}
-
-	if(monitoring)	pipe->monitoring = 1;
-	else		pipe->references++;
-
-	return pipe;
-}
-
-
-/*
- *  dereference or destroy playback/capture pipe (pcmp0/pcmc0)
- */
-int pcxhr_kill_ref_pipe( pcxhr_mgr_t *mgr, pcxhr_pipe_t *pipe, int monitoring)
-{
-	pcxhr_rmh_t rmh;
-	int err = 0;
-
-	if( pipe->status == PCXHR_PIPE_UNDEFINED )
-		return 0;
-	if( monitoring )	pipe->monitoring = 0;
-	else			pipe->references--;
-
-	if( (pipe->references <= 0) && (pipe->monitoring == 0) ) {
-		/* stop the pipe */
-		err = pcxhr_set_pipe_state(mgr, pipe, 0);
-		if( err < 0 ) {
-			snd_printk(KERN_ERR "error stopping pipe!\n");
-		}
-		/* release the pipe */
-		pcxhr_init_rmh(&rmh, CMD_FREE_PIPE);
-		pcxhr_set_pipe_cmd_params(&rmh, pipe->is_capture, pipe->first_audio, 0, 0);
-		err = pcxhr_send_msg(mgr, &rmh);
-		if( err < 0 ) {
-			snd_printk(KERN_ERR "error pipe release (CMD_FREE_PIPE) err(%x)\n", err);
-		}
-		pipe->stream_count = 0;
-		pipe->status = PCXHR_PIPE_UNDEFINED;
-	}
-	return err;
-}
-
 /*
  *  start or stop playback/capture substream
  */
@@ -386,16 +238,19 @@ static int pcxhr_set_stream_state(pcxhr_stream_t *stream, int start)
 	int err;
 	pcxhr_t *chip;
 	pcxhr_rmh_t rmh;
+	int stream_mask;
 
 	if(!stream->substream)
 		return -EINVAL;
 
-	stream->timer_in_update = 0;
 	stream->timer_elapsed = 0;
 	stream->timer_abs_samples = 0;            /* reset theoretical stream pos */
+	stream->timer_abs_adjusted = 0;
+
+	stream_mask = stream->pipe->is_capture ? 1 : 1<<stream->substream->number;
 
 	pcxhr_init_rmh(&rmh, start ? CMD_START_STREAM : CMD_STOP_STREAM);
-	pcxhr_set_pipe_cmd_params(&rmh, stream->pipe->is_capture, stream->pipe->first_audio, 0, 1<<stream->substream->number);
+	pcxhr_set_pipe_cmd_params(&rmh, stream->pipe->is_capture, stream->pipe->first_audio, 0, stream_mask);
 
 	chip = snd_pcm_substream_chip(stream->substream);
 
@@ -417,7 +272,7 @@ static int pcxhr_set_stream_state(pcxhr_stream_t *stream, int start)
 
 static int pcxhr_set_format(pcxhr_stream_t *stream)
 {
-	int err, is_capture, sample_rate;
+	int err, is_capture, sample_rate, stream_num;
 	pcxhr_t *chip;
 	pcxhr_rmh_t rmh;
 	unsigned int header;
@@ -443,9 +298,10 @@ static int pcxhr_set_format(pcxhr_stream_t *stream)
 	if(stream->channels == 1)	header |= HEADER_FMT_MONO;
 
 	is_capture = stream->pipe->is_capture;
+	stream_num = is_capture ? 0 : stream->substream->number;
 
 	pcxhr_init_rmh(&rmh, is_capture ? CMD_FORMAT_STREAM_IN : CMD_FORMAT_STREAM_OUT);
-	pcxhr_set_pipe_cmd_params(&rmh, is_capture, stream->pipe->first_audio, stream->substream->number, 0);
+	pcxhr_set_pipe_cmd_params(&rmh, is_capture, stream->pipe->first_audio, stream_num, 0);
 	if(is_capture) rmh.cmd[0] |= 1<<12;
 	rmh.cmd[1] = 0;
 	rmh.cmd[2] = header >> 8;
@@ -460,18 +316,19 @@ static int pcxhr_set_format(pcxhr_stream_t *stream)
 
 static int pcxhr_update_r_buffer(pcxhr_stream_t *stream)
 {
-	int err, is_capture;
+	int err, is_capture, stream_num;
 	pcxhr_rmh_t rmh;
 	snd_pcm_substream_t *subs = stream->substream;
 	pcxhr_t *chip = snd_pcm_substream_chip(subs);
 
 	is_capture = (subs->stream == SNDRV_PCM_STREAM_CAPTURE);
+	stream_num = is_capture ? 0 : subs->number;
 
 	snd_printdd("pcxhr_hw_params(pcm%c0) : addr(%x) bytes(%x) subs(%d)\n", is_capture?'c':'p',
 		    subs->runtime->dma_addr, subs->runtime->dma_bytes, subs->number);
 
 	pcxhr_init_rmh(&rmh, CMD_UPDATE_R_BUFFERS);
-	pcxhr_set_pipe_cmd_params(&rmh, is_capture, stream->pipe->first_audio, subs->number, 0);
+	pcxhr_set_pipe_cmd_params(&rmh, is_capture, stream->pipe->first_audio, stream_num, 0);
 
 	snd_assert(subs->runtime->dma_bytes < 0x200000);	/* max buffer size is 2 MByte */
 	rmh.cmd[1] = subs->runtime->dma_bytes * 8;		/* size in bits */
@@ -559,7 +416,7 @@ static int pcxhr_prepare(snd_pcm_substream_t *subs)
 
 	/* only the first stream can choose the sample rate */
 	/* the further opened streams will be limited to its frequency (see open) */
-	/* set the clock only once (first stream) on the same pipe */
+	/* set the clock only once (first stream) */
 	if(chip->mgr->ref_count_rate == 1) {
 		if( pcxhr_set_clock(chip->mgr, subs->runtime->rate) )
 			return -EINVAL;
@@ -592,11 +449,6 @@ static int pcxhr_hw_params(snd_pcm_substream_t *subs,
 	format = params_format(hw);
 
 	down(&mgr->setup_mutex);
-
-	/* update the stream levels for playback */
-	/* capture stream levels are already updated in pcxhr_add_ref_pipe() */
-	if( subs->stream == SNDRV_PCM_STREAM_PLAYBACK )
-		pcxhr_update_playback_stream_level(chip, subs->number, 0);
 
 	stream->channels = channels;
 	stream->format = format;
@@ -657,7 +509,6 @@ static int pcxhr_open(snd_pcm_substream_t *subs)
 	pcxhr_mgr_t         *mgr = chip->mgr;
 	snd_pcm_runtime_t   *runtime = subs->runtime;
 	pcxhr_stream_t      *stream;
-	pcxhr_pipe_t        *pipe;
 	int err, is_capture;
 
 	down(&mgr->setup_mutex);
@@ -672,9 +523,11 @@ static int pcxhr_open(snd_pcm_substream_t *subs)
 	} else {
 		snd_printdd("pcxhr_open capture chip%d subs%d\n", chip->chip_idx, subs->number);
 		is_capture = 1;
-		stream = &(chip->capture_stream);
+		if(mgr->mono_capture)	runtime->hw.channels_max = 1;
+		else			runtime->hw.channels_min = 2;
+		stream = &(chip->capture_stream[subs->number]);
 	}
-
+	err = 0;
 	if (stream->status != PCXHR_STREAM_STATUS_FREE){
 		/* streams in use */
 		snd_printk(KERN_ERR "pcxhr_open chip%d subs%d in use\n", chip->chip_idx, subs->number);
@@ -682,23 +535,6 @@ static int pcxhr_open(snd_pcm_substream_t *subs)
 		goto _exit_open;
 	}
 
-	/* get pipe pointer (out pipe) */
-	pipe = pcxhr_add_ref_pipe(chip, is_capture, 0);
-
-	if (pipe == NULL) {
-		err = -EINVAL;
-		goto _exit_open;
-	}
-
-	/* start the pipe if necessary */
-	err = pcxhr_set_pipe_state(chip->mgr, pipe, 1);
-	if( err < 0 ) {
-		snd_printk(KERN_ERR "error starting pipe!\n");
-		pcxhr_kill_ref_pipe(chip->mgr, pipe, 0);
-		goto _exit_open;
-	}
-
-	stream->pipe        = pipe;
 	stream->status      = PCXHR_STREAM_STATUS_OPEN;
 	stream->substream   = subs;
 	stream->channels    = 0; /* not configured yet */
@@ -738,13 +574,6 @@ static int pcxhr_close(snd_pcm_substream_t *subs)
 		pcxhr_hardware_timer(chip, 0);	/* stop the DSP-timer */
 	}
 
-	/* delete pipe */
-	if (pcxhr_kill_ref_pipe(mgr, stream->pipe, 0 ) < 0) {
-
-		snd_printk(KERN_ERR "error pcxhr_kill_ref_pipe chip%d subs%d\n", chip->chip_idx, subs->number);
-	}
-
-	stream->pipe      = NULL;
 	stream->status    = PCXHR_STREAM_STATUS_FREE;
 	stream->substream = NULL;
 
@@ -756,32 +585,17 @@ static int pcxhr_close(snd_pcm_substream_t *subs)
 
 static snd_pcm_uframes_t pcxhr_stream_pointer(snd_pcm_substream_t * subs)
 {
+	snd_pcm_uframes_t sample_count;
+	pcxhr_t *chip = snd_pcm_substream_chip(subs);
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	pcxhr_stream_t *stream  = (pcxhr_stream_t*)runtime->private_data;
-	pcxhr_t *chip = snd_pcm_substream_chip(subs);
-	pcxhr_rmh_t rmh;
-	snd_pcm_uframes_t sample_count = 0;
 
-	if(0 /*stream->timer_in_update*/ ) {
-		sample_count = stream->timer_abs_samples;
-	} else {
-		/* get sample count for one stream */
-		pcxhr_init_rmh(&rmh, CMD_STREAM_SAMPLE_COUNT);
-		pcxhr_set_pipe_cmd_params(&rmh, stream->pipe->is_capture, stream->pipe->first_audio, 0, 1<<subs->number);
-		/* do cmd[0] |= (1<<10) to get a byte count instead of sample count */
-		rmh.stat_len = 2;		/* 2 resp data for each stream of the pipe */
-		if( ! pcxhr_send_msg(chip->mgr, &rmh) ) {
-			sample_count = rmh.stat[0] << 24;
-			sample_count |= rmh.stat[1];
-			/*snd_printdd("stream pointer abs %lx (%lx), pointer = %lx\n", sample_count, stream->timer_abs_samples,
-				    sample_count % runtime->buffer_size);
-			*/
-			spin_lock(&chip->mgr->lock);
-			/* adjust the absolute timer position */
-			stream->timer_abs_samples = sample_count;
-			spin_unlock(&chip->mgr->lock);
-		}
-	}
+	spin_lock(&chip->mgr->lock);
+	/* get the absolute timer position */
+	sample_count = stream->timer_abs_samples;
+
+	spin_unlock(&chip->mgr->lock);
+
 	return sample_count % runtime->buffer_size;
 }
 
@@ -808,15 +622,15 @@ int pcxhr_create_pcm(pcxhr_t *chip)
 
 	sprintf(name, "pcxhr %d", chip->chip_idx);
 	if ((err = snd_pcm_new(chip->card, name, 0,
-			       PCXHR_PLAYBACK_STREAMS,
-			       PCXHR_CAPTURE_STREAMS, &pcm)) < 0) {
+			       chip->nb_streams_play,
+			       chip->nb_streams_capt, &pcm)) < 0) {
 		snd_printk(KERN_ERR "cannot create pcm %s\n", name);
 		return err;
 	}
 	pcm->private_data = chip;
 
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &pcxhr_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &pcxhr_ops);
+	if(chip->nb_streams_play)	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &pcxhr_ops);
+	if(chip->nb_streams_capt)	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &pcxhr_ops);
 
 	pcm->info_flags = 0;
 	strcpy(pcm->name, name);
@@ -860,6 +674,14 @@ static int __devinit pcxhr_create(pcxhr_mgr_t *mgr, snd_card_t *card, int idx)
 	chip->chip_idx = idx;
 	chip->mgr = mgr;
 
+	if(idx < mgr->playback_chips)
+		chip->nb_streams_play = PCXHR_PLAYBACK_STREAMS;		/* stereo or mono streams */
+
+	if(idx < mgr->capture_chips) {
+		if(mgr->mono_capture)	chip->nb_streams_capt = 2;	/* 2 mono streams (left+right) */
+		else			chip->nb_streams_capt = 1;	/* or 1 stereo stream */
+	}
+
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
 		pcxhr_chip_free(chip);
 		return err;
@@ -867,7 +689,7 @@ static int __devinit pcxhr_create(pcxhr_mgr_t *mgr, snd_card_t *card, int idx)
 
 	if (idx == 0) {
 		/* create a DSP loader only on first card */
-	  err = pcxhr_setup_firmware(mgr);
+		err = pcxhr_setup_firmware(mgr);
 		if (err < 0)
 			return err;
 	}
@@ -1001,7 +823,11 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 	}
 
 	snd_assert(pci_id->driver_data < PCI_ID_LAST, return -ENODEV);
-	card_name = pcxhr_board_names[pci_id->driver_data];
+	card_name = pcxhr_board_params[pci_id->driver_data].board_name;
+	mgr->playback_chips = pcxhr_board_params[pci_id->driver_data].playback_chips;
+	mgr->capture_chips  = pcxhr_board_params[pci_id->driver_data].capture_chips;
+	mgr->firmware_num  = pcxhr_board_params[pci_id->driver_data].firmware_num;
+	mgr->mono_capture = mono[dev];
 
 	/* resource assignment */
 	if ((err = pci_request_regions(pci, card_name)) < 0) {
@@ -1038,18 +864,20 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 	/* init taslket */
 	tasklet_init( &mgr->msg_taskq, pcxhr_msg_tasklet, (unsigned long) mgr);
 
-	/* card assignment */
-	mgr->num_cards = PCXHR_MAX_CARDS; /* 4  FIXME: configurable? */
-	mgr->mono_capture = mono_capture[dev];
-	for (i = 0; i < mgr->num_cards; i++) {
+	for (i=0; i<PCXHR_MAX_CARDS; i++) {
 		snd_card_t *card;
 		char tmpid[16];
 		int idx;
 
+		if(i >= max(mgr->playback_chips, mgr->capture_chips)) {
+			break;
+		}
+		mgr->num_cards++;
+
 		if (index[dev] < 0)	idx = index[dev];
 		else			idx = index[dev] + i;
 
-		snprintf(tmpid, sizeof(tmpid), "%s-%d", id[dev] ? id[dev] : "PCXHR", i);
+		snprintf(tmpid, sizeof(tmpid), "%s-%d", id[dev] ? id[dev] : card_name, i);
 		card = snd_card_new(idx, tmpid, THIS_MODULE, 0);
 
 		if (! card) {
