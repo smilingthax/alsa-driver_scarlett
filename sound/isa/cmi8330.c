@@ -30,7 +30,7 @@
  *
  *  To quickly load the module,
  *
- *  modprobe -a snd-card-cmi8330 sbport=0x220 sbirq=5 sbdma8=1
+ *  modprobe -a snd-cmi8330 sbport=0x220 sbirq=5 sbdma8=1
  *    sbdma16=5 wssport=0x530 wssirq=11 wssdma=0
  *
  *  This card has two mixers and two PCM devices.  I've cheesed it such
