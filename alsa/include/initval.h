@@ -67,6 +67,7 @@ static inline int snd_legacy_auto_probe(int *ports, int (*probe)(int port))
 	while (*ports >= 0) {
 		if (probe(*ports) >= 0)
 			result++;
+		ports++;
 	}
 	return result;
 }
