@@ -47,7 +47,7 @@ include/isapnp.h:
 compile: /usr/include/byteswap.h sound include/sndversions.h include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
-	@echo "ALSA modules were sucessfully compiled."
+	@echo "ALSA modules were successfully compiled."
 	@echo
 
 dep: /usr/include/byteswap.h sound include/isapnp.h cards.config
@@ -68,27 +68,27 @@ install: install-modules install-headers install-scripts
 	cat WARNING
 
 install-headers:
-	if [ -L $(prefix)/include/sound ]; then \
-		ln -sf $(SRCDIR)/include $(prefix)/include/sound; \
+	if [ -L $(DESTDIR)$(prefix)/include/sound ]; then \
+		ln -sf $(SRCDIR)/include $(DESTDIR)$(prefix)/include/sound; \
 	else \
-		rm -rf $(prefix)/include/sound; \
-		install -d -m 755 -g root -o root $(prefix)/include/sound; \
-		cp include/*.h $(prefix)/include/sound; \
+		rm -rf $(DESTDIR)$(prefix)/include/sound; \
+		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
+		cp include/*.h $(DESTDIR)$(prefix)/include/sound; \
 	fi
 
 install-modules: compile
-	mkdir -p $(moddir)
-	rm -f $(moddir)/snd*.o $(moddir)/persist.o $(moddir)/isapnp.o
-	cp modules/*.o $(moddir)
-	/sbin/depmod -a $(kaversion)
+	mkdir -p $(DESTDIR)$(moddir)
+	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
+	cp modules/*.o $(DESTDIR)$(moddir)
+	/sbin/depmod -a -b $(DESTDIR)$(moddir)
 
 install-scripts:
 	if [ -d /sbin/init.d ]; then \
-	  install -m 755 utils/alsasound /sbin/init.d/alsasound; \
+	  install -m 755 utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
 	elif [ -d /etc/rc.d/init.d ]; then \
-	  install -m 755 utils/alsasound /etc/rc.d/init.d/alsasound; \
+	  install -m 755 utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
 	elif [ -d /etc/init.d ]; then \
-	  install -m 755 utils/alsasound /etc/init.d/alsasound; \
+	  install -m 755 utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
 	fi
 
 clean:
