@@ -1164,10 +1164,8 @@ struct snd_oss_mixer_info_obsolete {
 
 #define SND_PCM_BOUNDARY		0xf0000000
 
-#define SND_PCM_MMAP_OFFSET_PLAYBACK_CONTROL	0x00000000
-#define SND_PCM_MMAP_OFFSET_PLAYBACK		0x40000000
-#define SND_PCM_MMAP_OFFSET_CAPTURE_CONTROL	0x80000000
-#define SND_PCM_MMAP_OFFSET_CAPTURE		0xc0000000
+#define SND_PCM_MMAP_OFFSET_CONTROL		0x00000000
+#define SND_PCM_MMAP_OFFSET_DATA		0x80000000
 
 typedef union snd_pcm_sync {
 	char id[16];
@@ -1329,6 +1327,20 @@ typedef struct {
 #define SND_PCM_IOCTL_FLUSH_PLAYBACK	_IO  ('A', 0x41)
 #define SND_PCM_IOCTL_FLUSH_CAPTURE	_IO  ('A', 0x42)
 #define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR('A', 0x50, int)
+
+/*
+ *  Control interface
+ */
+
+typedef struct {
+	int card;
+	int device;
+	int subdevice;
+	int channel;
+} snd_pcm_mmap_select_t;
+
+#define SND_PCM_CTRL_IOCTL_PVERSION	_IOR ('A', 0x00, int)
+#define SND_PCM_CTRL_IOCTL_SELECT	_IOWR('A', 0xa0, snd_pcm_mmap_select_t)
 
 /*
  *  Loopback interface

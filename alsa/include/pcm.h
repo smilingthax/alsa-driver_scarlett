@@ -70,9 +70,8 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_FLG_TIMER	(1<<1)
 #define SND_PCM_FLG_TIMESTAMP	(1<<2)
 #define SND_PCM_FLG_MMAP	(1<<3)
-#define SND_PCM_FLG_NONBLOCK	(1<<4)
-#define SND_PCM_FLG_OSS_MMAP	(1<<5)
-#define SND_PCM_FLG_TIME	(1<<6)
+#define SND_PCM_FLG_OSS_MMAP	(1<<4)
+#define SND_PCM_FLG_TIME	(1<<5)
 
 #define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
 #define SND_PCM_IOCTL1_TRUE	((unsigned long *)1)
@@ -190,6 +189,7 @@ struct snd_stru_pcm_subchn {
 	/* -- next subchannel -- */
 	snd_pcm_subchn_t *next;
 	snd_pcm_file_t *file;
+	struct file *ffile;
 	/* -- private section -- */
 	void *private_data;
 	void (*private_free)(void *private_data);
@@ -272,6 +272,7 @@ extern snd_kswitch_t *snd_pcm_switch_new(snd_pcm_channel_t * pchn, snd_kswitch_t
 extern int snd_pcm_switch_change(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 
 extern snd_minor_t snd_pcm_reg;
+extern snd_minor_t snd_pcm_control_reg;
 
 /*
  *  Native I/O

@@ -317,8 +317,6 @@ struct snd_stru_card {
 
 /* device.c */
 
-typedef int (snd_unregister_t) (unsigned short minor);
-
 typedef long long (snd_lseek_t) (struct file * file, long long offset, int orig);
 typedef long (snd_read_t) (struct file * file, char *buf, long count);
 typedef long (snd_write_t) (struct file * file, const char *buf, long count);
@@ -331,8 +329,6 @@ typedef int (snd_mmap_t) (struct inode * inode, struct file * file, struct vm_ar
 struct snd_stru_minor {
 	char *comment;			/* for /dev/sndinfo */
 	snd_info_entry_t *dev;		/* for /proc/asound/dev */
-
-	snd_unregister_t *unregister;
 
 	snd_lseek_t *lseek;
 	snd_read_t *read;
