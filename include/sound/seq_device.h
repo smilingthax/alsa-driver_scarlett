@@ -82,7 +82,7 @@ int snd_seq_device_unregister_driver(char *id);
  * id strings for generic devices
  */
 #define SNDRV_SEQ_DEV_ID_MIDISYNTH	"seq-midi"
-#define SNDRV_SEQ_DEV_ID_OPL3		"synth-opl3"
+#define SNDRV_SEQ_DEV_ID_OPL3		"opl3-synth"
 
 
 #endif /* __SOUND_SEQ_DEVICE_H */
