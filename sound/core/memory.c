@@ -465,14 +465,14 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 
 	ret = (void *)__get_free_pages(gfp, get_order(size));
 	if (ret) {
-		if (hwdev && ((virt_to_bus(ret) + size - 1) & ~hwdev->dma_mask)) {
+		if (hwdev && ((virt_to_phys(ret) + size - 1) & ~hwdev->dma_mask)) {
 			free_pages((unsigned long)ret, get_order(size));
 			ret = (void *)__get_free_pages(gfp | GFP_DMA, get_order(size));
 		}
 	}
 	if (ret) {
 		memset(ret, 0, size);
-		*dma_handle = virt_to_bus(ret);
+		*dma_handle = virt_to_phys(ret);
 	}
 	return ret;
 }
