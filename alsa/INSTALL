@@ -275,8 +275,9 @@ Module parameters
     snd_dma8_size - max 8-bit DMA size in kB (4-64kB)
     snd_dma16	- 16-bit DMA # for SB DSP 4.x chip (5,6,7)
     snd_dma16_size - max 16-bit DMA size in kB (4-128kB)
-    snd_mic_agc - Mic Auto-Gain-Control - 1 = enable (default), 0 = disable
-    snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
+    snd_mic_agc	- Mic Auto-Gain-Control - 0 = disable, 1 = enable (default)
+    snd_csp	- CSP chip support - 0 = disable (default), 1 = enable
+    snd_isapnp	- ISA PnP detection - 0 = disable, 1 = enable (default)
     
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
