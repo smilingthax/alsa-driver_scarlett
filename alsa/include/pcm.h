@@ -113,7 +113,6 @@ struct snd_stru_pcm_runtime {
 	int start_mode;
 	int ready_mode;
 	int xrun_mode;
-	int xrun_act;
 	int mmap_shape;
 
 	snd_pcm_params_info_t params_info;
@@ -167,7 +166,6 @@ struct snd_stru_pcm_runtime {
 	wait_queue_head_t sleep;
 	struct timer_list poll_timer;
 	struct timer_list xrun_timer;
-	int draining;
 	/* -- private section -- */
 	void *private_data;
 	void (*private_free)(snd_pcm_runtime_t *runtime);
@@ -416,7 +414,6 @@ extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t si
 extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
 			     unsigned int cmd, void *arg);                      
 extern void snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);
-extern void snd_pcm_xrun(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);

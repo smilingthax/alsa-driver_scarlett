@@ -535,11 +535,6 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_READY_ASAP		1	/* Accurate ready detection */
 #define SND_PCM_READY_LAST		1
 
-#define SND_PCM_XRUN_ACT_DRAIN		0	/* stop but permit retrieval on xrun */
-#define SND_PCM_XRUN_ACT_DROP		1	/* stop and erase on xrun */
-#define SND_PCM_XRUN_ACT_RESTART	2	/* automatic prepare and go after xrun */
-#define SND_PCM_XRUN_ACT_LAST		2
-
 #define SND_PCM_MMAP_UNSPECIFIED	0	/* don't care buffer type */
 #define SND_PCM_MMAP_INTERLEAVED	1	/* simple interleaved buffer */
 #define SND_PCM_MMAP_NONINTERLEAVED	2	/* simple noninterleaved buffer */
@@ -553,11 +548,10 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_PARAMS_READY_MODE	(1<<4)
 #define SND_PCM_PARAMS_XFER_MODE	(1<<5)
 #define SND_PCM_PARAMS_XRUN_MODE	(1<<6)
-#define SND_PCM_PARAMS_XRUN_ACT		(1<<7)
-#define SND_PCM_PARAMS_BUFFER_SIZE	(1<<8)
-#define SND_PCM_PARAMS_FRAGMENT_SIZE	(1<<9)
-#define SND_PCM_PARAMS_MMAP_SHAPE	(1<<10)
-#define SND_PCM_PARAMS_WHEN		(1<<11)
+#define SND_PCM_PARAMS_BUFFER_SIZE	(1<<7)
+#define SND_PCM_PARAMS_FRAGMENT_SIZE	(1<<8)
+#define SND_PCM_PARAMS_MMAP_SHAPE	(1<<9)
+#define SND_PCM_PARAMS_WHEN		(1<<10)
 
 #define SND_PCM_PARAMS_FAIL_NONE		0
 #define SND_PCM_PARAMS_FAIL_INVAL		1
@@ -571,10 +565,9 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_STATE_READY		1	/* stream is ready for prepare call */
 #define SND_PCM_STATE_PREPARED		2	/* stream is ready to go */
 #define SND_PCM_STATE_RUNNING		3	/* stream is running */
-#define SND_PCM_STATE_XRUN		4
-#define SND_PCM_STATE_UNDERRUN		SND_PCM_STATE_XRUN	/* stream reached an underrun and it is not ready */
-#define SND_PCM_STATE_OVERRUN		SND_PCM_STATE_XRUN	/* stream reached an overrun and it is not ready */
-#define SND_PCM_STATE_PAUSED		5	/* stream is paused */
+#define SND_PCM_STATE_XRUN		4	/* stream reached an xrun */
+#define SND_PCM_STATE_DRAINING		5	/* stream is draining */
+#define SND_PCM_STATE_PAUSED		6	/* stream is paused */
 
 #define SND_PCM_MMAP_OFFSET_DATA	0x00000000
 #define SND_PCM_MMAP_OFFSET_STATUS	0x80000000
@@ -731,7 +724,6 @@ typedef struct snd_pcm_params {
 	size_t xfer_min;		/* xfer min size */
 	size_t xfer_align;		/* xfer size need to be a multiple */
 	int xrun_mode;			/* xrun detection mode */
-	int xrun_act;			/* action on xrun */
 	size_t xrun_max;		/* maximum size of xrun before stop */
 	int mmap_shape;			/* mmap buffer shape */
 	size_t buffer_size;		/* requested buffer size in frames */
@@ -791,7 +783,6 @@ typedef struct snd_pcm_setup {
 	size_t xfer_min;		/* xfer min size */
 	size_t xfer_align;		/* xfer size need to be a multiple */
 	int xrun_mode;			/* xrun detection mode */
-	int xrun_act;			/* action on xrun */
 	size_t xrun_max;		/* max size of underrun/overrun before unconditional stop */
 	int mmap_shape;			/* mmap buffer shape */
 	size_t buffer_size;		/* current buffer size in frames */
