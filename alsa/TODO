@@ -17,12 +17,8 @@ Stage 4:
 General:
 
 * check why S3 SonicVibes volume levels are non-linear
-* add mono mute to mixer proc interface
-* add mono mute flag handling to mixer
-  - replace mute with mono-mute
-  - mute should be defined if set_mute callback was present
-* add exclusive record source feature to mixer
 * debug ES1371 code (with external testers)
+* implement CS4231 overload bit propagating to user space
 
 * extend documentation for programmers (driver side)
 * extend documentation for users
