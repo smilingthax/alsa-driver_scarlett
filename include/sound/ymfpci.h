@@ -312,8 +312,6 @@ struct _snd_ymfpci {
 
 	unsigned short old_legacy_ctrl;
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
-	unsigned int joystick_port;
-	struct semaphore joystick_mutex;
 	struct resource *joystick_res;
 	struct gameport gameport;
 #endif
@@ -392,9 +390,6 @@ int snd_ymfpci_pcm_spdif(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm_4ch(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_mixer(ymfpci_t *chip, int rear_switch);
 int snd_ymfpci_timer(ymfpci_t *chip, int device);
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
-int snd_ymfpci_joystick(ymfpci_t *chip);
-#endif
 
 int snd_ymfpci_voice_alloc(ymfpci_t *chip, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);
 int snd_ymfpci_voice_free(ymfpci_t *chip, ymfpci_voice_t *pvoice);
@@ -402,6 +397,10 @@ int snd_ymfpci_voice_free(ymfpci_t *chip, ymfpci_voice_t *pvoice);
 #ifdef CONFIG_PM
 void snd_ymfpci_suspend(ymfpci_t *chip);
 void snd_ymfpci_resume(ymfpci_t *chip);
+#endif
+
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
+#define SUPPORT_JOYSTICK
 #endif
 
 #endif /* __SOUND_YMFPCI_H */
