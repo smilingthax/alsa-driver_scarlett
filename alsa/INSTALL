@@ -3,6 +3,7 @@
 		==========================================
 			    Installation guide
 
+
 The ALSA driver replaces the OSS/Lite driver. The OSS/Lite is present in
 current Linux kernels (2.2). Since 0.4.0 version ALSA has supported only
 2.2+ kernels. The 2.0 kernels are no longer supported. You must compile
@@ -14,10 +15,11 @@ documentation  for insmod, modprobe, kerneld/kmod and even for the isapnp
 module if you have the ISA PnP soundcard. If you do not understand how
 these programs are working, you cannot be success with the installation.
 
+
 Quick install
 =============
 
-1) You must turn on sound support.
+1) You must turn on sound support (soundcore module).
 2) Run './configure' script.
    If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
    If you want sequencer support, use --with-sequencer=yes switch.
@@ -43,6 +45,7 @@ Note: All mixer channels are muted by default. You must use some native
       mixer program to unmute appropriate channels (for example a mixer
       from the alsa-utils package).
 
+
 Driver cannot be activated?
 ===========================
 
@@ -54,30 +57,15 @@ Driver cannot be activated?
 3) The driver is not still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
-   there are not some messages. If these messages do not help you, send us
-   to <alsa-devel@alsa-project.org> mailing list:
-	- soundcard name + chip names present on your soundcard
-	- your /proc/isapnp or isapnp.conf if you have ISA PnP soundcard
-	- your conf.modules or commands which you are using to activate
-          the ALSA driver
-	- all messages from /var/log/messages which could be relevant to
-          the ALSA driver
+   there are not some messages. If these messages do not help you, pleasee,
+   create a new ticked in our bug reporting system.
 
-Bug report
-==========
 
-We need know at least these things:
+Bug reporting system
+====================
 
-1) driver + kernel version: 'cat /proc/asound/version'
-2) the soundcard info
-   - the soundcard name provided by manufacture
-   - list of chips which soundcard have onboard
-   - contents of 'cat /proc/asound/cards'
-3) ISA PnP configuration (only for the ISA PnP soundcards)
-   - contents of 'cat /proc/isapnp' or the isapnp.conf file
-4) all messages from /var/log/messages which could be relevant to
-   the ALSA driver
-5) a short problem description
+http://www.alsa-project.org/cgi-bin/bugs
+
 
 Module parameters
 =================
@@ -117,6 +105,13 @@ Module parameters
 		- value is used for /proc/asound filesystem
 		- this value can be used with application for identification
 		  of card if user does not want identify card with index number
+
+  Module snd-card-dummy.o
+  -----------------------
+
+    Module for the dummy soundcard. This soundcard doesn't do any output
+    or input, but you may use this module for any application which
+    requires a soundcard (like RealPlayer).
 
   Module snd-audiodrive1688.o
   ---------------------------
