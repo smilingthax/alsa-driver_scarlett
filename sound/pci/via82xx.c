@@ -230,8 +230,10 @@ static int build_via_table(viadev_t *dev, snd_pcm_substream_t *substream,
 		return -ENOMEM;
 
 	if (dev->tbl_size < PAGE_SIZE) {
-		for (i = 0; i < dev->tbl_entries; i++)
-			dev->table[i << 1] = cpu_to_le32((u32)sgbuf->table[0].addr + dev->fragsize * i);
+		for (i = 0; i < dev->tbl_entries; i++) {
+			unsigned int cur = dev->fragsize * i;
+			dev->table[i << 1] = cpu_to_le32((u32)sgbuf->table[cur >> PAGE_SHIFT].addr + cur % PAGE_SIZE);
+		}
 	} else {
 		for (i = 0; i < dev->tbl_entries; i++)
 			dev->table[i << 1] = cpu_to_le32((u32)sgbuf->table[i].addr);
@@ -295,8 +297,8 @@ struct _snd_via82xx {
 };
 
 static struct pci_device_id snd_via82xx_ids[] __devinitdata = {
-	{ 0x1106, 0x3058, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0, },	/* 686A */
-	{ 0x1106, 0x3059, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0, },	/* VT8233 */
+	{ 0x1106, 0x3058, PCI_ANY_ID, PCI_ANY_ID, 0, 0, TYPE_VIA686, },	/* 686A */
+	{ 0x1106, 0x3059, PCI_ANY_ID, PCI_ANY_ID, 0, 0, TYPE_VIA8233, },	/* VT8233 */
 	{ 0, }
 };
 
