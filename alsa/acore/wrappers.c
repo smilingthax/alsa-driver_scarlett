@@ -49,7 +49,7 @@ void snd_compat_devfs_remove(const char *fmt, ...)
 	va_start(args, fmt);
 	n = vsnprintf(buf, 64, fmt, args);
 	if (n < 64 && buf[0]) {
-		devfs_handle_t de = devfs_find_handle(NULL, buf, 0, 0, 0, 0);
+		devfs_handle_t de = devfs_get_handle(NULL, buf, 0, 0, 0, 0);
 		devfs_unregister(de);
 		devfs_put(de);
 	}
