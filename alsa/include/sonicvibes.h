@@ -187,7 +187,7 @@ struct snd_stru_sonicvibes {
 	snd_pcm1_subchn_t *capture_subchn1;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
-	snd_synth_t *synth;	/* S3FM */
+	snd_hwdep_t *fmsynth;	/* S3FM */
 
 	snd_kswitch_t *switch_wavesource;
 	snd_kswitch_t *switch_synth;

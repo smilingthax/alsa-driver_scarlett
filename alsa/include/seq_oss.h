@@ -21,7 +21,6 @@
 #ifndef __SEQ_OSS_H
 #define __SEQ_OSS_H
 
-#include "synth.h"
 #include "asequencer.h"
 
 /*

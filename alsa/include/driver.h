@@ -202,7 +202,7 @@ typedef struct snd_stru_rawmidi snd_rawmidi_t;
 typedef struct snd_stru_control snd_control_t;
 typedef struct snd_stru_timer snd_timer_t;
 typedef struct snd_stru_timer_instance snd_timer_instance_t;
-typedef struct snd_stru_synth snd_synth_t;
+typedef struct snd_stru_hwdep snd_hwdep_t;
 
 /* main structure for soundcard */
 

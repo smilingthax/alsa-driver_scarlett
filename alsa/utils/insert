@@ -41,9 +41,9 @@ function basic() {
     banner "snd-midi"
     if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
   fi
-  if [ -r $MODDIR/snd-synth.o ]; then
-    banner "snd-synth"
-    if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
+  if [ -r $MODDIR/snd-hwdep.o ]; then
+    banner "snd-hwdep"
+    if ! $INSMOD -m $MODDIR/snd-hwdep.o >> $MAP; then exit 1; fi
   fi
   if [ -r $MODDIR/snd-seq.o ]; then
     banner "snd-seq"

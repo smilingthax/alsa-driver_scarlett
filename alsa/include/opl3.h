@@ -51,7 +51,7 @@
  *
  */
 
-#include "synth.h"
+#include "hwdep.h"
 #include "timer.h"
 
 /*
@@ -244,8 +244,8 @@ struct snd_opl3 {
 	spinlock_t timer_lock;
 };
 
-extern void snd_opl3_interrupt(snd_synth_t * synth);
-extern snd_synth_t *snd_opl3_new_device(snd_card_t * card,
+extern void snd_opl3_interrupt(snd_hwdep_t * hw);
+extern snd_hwdep_t *snd_opl3_new_device(snd_card_t * card,
 					unsigned short l_port,
 					unsigned short r_port,
 					unsigned short hardware,

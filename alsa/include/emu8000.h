@@ -23,7 +23,7 @@
  *     19980228   Takashi Iwai    Made soundfont lists linked.
  */
 
-#include "synth.h"
+#include "hwdep.h"
 #include "seq_kernel.h"
 
 
@@ -117,6 +117,6 @@ typedef struct snd_emu8000 {
 #define EMU8000_UPDATE_Q	(1<<6)
 
 /* Prototypes for emu8000.c.new */
-snd_synth_t *snd_emu8000_new_device(snd_card_t *card, unsigned short base);
+snd_hwdep_t *snd_emu8000_new_device(snd_card_t *card, unsigned short base);
 
 #endif

@@ -42,11 +42,11 @@
  *  protocol version
  */
 
-#define SND_PROTOCOL_VERSION( major, minor, subminor ) (((major)<<16)|((minor)<<8)|(subminor))
-#define SND_PROTOCOL_MAJOR( version ) (((version)>>16)&0xffff)
-#define SND_PROTOCOL_MINOR( version ) (((version)>>8)&0xff)
-#define SND_PROTOCOL_SUBMINOR( version ) ((version)&0xff)
-#define SND_PROTOCOL_UNCOMPATIBLE( kversion, uversion ) \
+#define SND_PROTOCOL_VERSION(major, minor, subminor) (((major)<<16)|((minor)<<8)|(subminor))
+#define SND_PROTOCOL_MAJOR(version) (((version)>>16)&0xffff)
+#define SND_PROTOCOL_MINOR(version) (((version)>>8)&0xff)
+#define SND_PROTOCOL_SUBMINOR(version) ((version)&0xff)
+#define SND_PROTOCOL_UNCOMPATIBLE(kversion, uversion) \
 	( SND_PROTOCOL_MAJOR(kversion) != SND_PROTOCOL_MAJOR(uversion) || \
 	 ( SND_PROTOCOL_MAJOR(kversion) == SND_PROTOCOL_MAJOR(uversion) && \
 	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion) ) )
@@ -113,7 +113,7 @@ typedef struct snd_switch {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_CTL_VERSION			SND_PROTOCOL_VERSION( 1, 0, 0 )
+#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
 
 #define SND_CTL_SW_JOYSTICK		"Joystick"
 #define SND_CTL_SW_JOYSTICK_ADDRESS	"Joystick Address"
@@ -121,6 +121,7 @@ typedef struct snd_switch {
 
 typedef struct snd_ctl_hw_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
+	unsigned int hwdepdevs;	/* count of hardware dependent devices (0 to N) */
 	unsigned int pcmdevs;	/* count of PCM devices (0 to N) */
 	unsigned int mixerdevs;	/* count of MIXER devices (0 to N) */
 	unsigned int mididevs;	/* count of raw MIDI devices (0 to N) */
@@ -191,6 +192,30 @@ typedef struct snd_ctl_read {
 		unsigned char data8[60];
 	} data;
 } snd_ctl_read_t;
+
+/****************************************************************************
+ *                                                                          *
+ *        Section for driver control interface - /dev/snd/control?          *
+ *                                                                          *
+ ****************************************************************************/
+
+#define SND_HWDEP_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+
+#define SND_HWDEP_TYPE_OPL2		0
+#define SND_HWDEP_TYPE_OPL3		1
+#define SND_HWDEP_TYPE_OPL4		2
+#define SND_HWDEP_TYPE_EMU8000		3
+
+typedef struct snd_hwdep_info {
+	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
+	unsigned char id[32];	/* ID of this hardware dependent device */
+	unsigned char name[80];	/* name of this hardware dependent device */
+	unsigned int hw_type;	/* hardware depedent device type */
+	unsigned char reserved[64];	/* reserved for future */
+} snd_hwdep_info_t;
+
+#define SND_HWDEP_IOCTL_PVERSION	_IOR ('H', 0x00, int)
+#define SND_HWDEP_IOCTL_INFO		_IOR ('H', 0x01, snd_hwdep_info_t)
 
 /****************************************************************************
  *                                                                          *
@@ -855,7 +880,7 @@ struct snd_oss_mixer_info_obsolete {
  *                                                                           *
  *****************************************************************************/
 
-#define SND_PCM_VERSION			SND_PROTOCOL_VERSION( 1, 0, 1 )
+#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(1, 0, 2)
 
 #define SND_PCM_SFMT_MU_LAW		0
 #define SND_PCM_SFMT_A_LAW		1
@@ -1041,7 +1066,7 @@ typedef struct snd_pcm_capture_status {
  *  Loopback interface
  */
 
-#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION( 1, 0, 0 )
+#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_PCM_LB_STREAM_MODE_RAW	0
 #define SND_PCM_LB_STREAM_MODE_PACKET	1
@@ -1245,7 +1270,7 @@ struct snd_pcm_buffer_description {
  *  Raw MIDI section - /dev/snd/midi??
  */
 
-#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION( 1, 0, 0 )
+#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
 #define SND_RAWMIDI_INFO_OUTPUT		0x00000001
 #define SND_RAWMIDI_INFO_INPUT		0x00000002

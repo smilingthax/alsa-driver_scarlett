@@ -152,7 +152,7 @@ struct snd_stru_solo {
 	snd_pcm1_subchn_t *playback2_subchn1;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
-	snd_synth_t *synth;	/* S3FM */
+	snd_hwdep_t *fmsynth;	/* FM */
 
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
