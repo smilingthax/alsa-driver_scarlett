@@ -264,6 +264,11 @@ typedef struct {
 
 typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
 
+	/* timer broadcast */
+typedef struct {
+	snd_seq_addr_t addr;	/* affected queue and caller client/port */
+	signed int value;	/* affected value (e.g. tempo) */
+} snd_seq_ev_queue_control_t;
 
 	/* sequencer event */
 typedef struct snd_seq_event_t {
@@ -288,6 +293,7 @@ typedef struct snd_seq_event_t {
 		snd_seq_ev_raw32 raw32;
 		snd_seq_ev_ext ext;
 		snd_seq_ev_ipcshm ipcshm;
+		snd_seq_ev_queue_control_t queue;
 		union {
 			snd_seq_tick_time_t tick;
 			snd_seq_real_time_t real;
@@ -317,7 +323,9 @@ typedef struct {
 
 	/* known client numbers */
 #define SND_SEQ_CLIENT_SYSTEM		0
+#define SND_SEQ_CLIENT_DUMMY		62	/* dummy ports */
 #define SND_SEQ_CLIENT_OSS		63	/* oss sequencer emulator */
+
 
 	/* client types */
 typedef enum {
