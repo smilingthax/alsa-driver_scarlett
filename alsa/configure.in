@@ -1047,6 +1047,7 @@ EOF
     KLD="ld -m elf_x86_64 -e stext"
     c_opts="-mno-red-zone -mcmodel=kernel -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
+    CONFIG_X86=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sa1100)
