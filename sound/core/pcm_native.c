@@ -1962,35 +1962,34 @@ snd_pcm_sframes_t snd_pcm_capture_rewind(snd_pcm_substream_t *substream, snd_pcm
 	return ret;
 }
 
-static int snd_pcm_playback_delay(snd_pcm_substream_t *substream, snd_pcm_sframes_t *res)
+static int snd_pcm_playback_xavail(snd_pcm_substream_t *substream, snd_pcm_uframes_t *res, int delay)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	int err = 0;
-	snd_pcm_sframes_t n;
+	int err;
+	snd_pcm_uframes_t n;
+	snd_pcm_sframes_t s;
 	spin_lock_irq(&runtime->lock);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
 	case SNDRV_PCM_STATE_DRAINING:
-		if (snd_pcm_update_hw_ptr(substream) >= 0) {
-			n = snd_pcm_playback_hw_avail(runtime);
+		if ((err = snd_pcm_update_hw_ptr(substream)) < 0)
+			break;
+		/* Fall through */
+	case SNDRV_PCM_STATE_PREPARED:
+	case SNDRV_PCM_STATE_SUSPENDED:
+		err = 0;
+		n = snd_pcm_playback_avail(runtime);
+		if (!delay) {
 			if (put_user(n, res))
 				err = -EFAULT;
-			break;
 		} else {
-			err = SNDRV_PCM_STATE_RUNNING ? -EPIPE : -EBADFD;
+			s = runtime->buffer_size - n;
+			if (put_user(s, res))
+				err = -EFAULT;
 		}
 		break;
 	case SNDRV_PCM_STATE_XRUN:
 		err = -EPIPE;
-		break;
-	case SNDRV_PCM_STATE_SUSPENDED:
-		if (runtime->status->suspended_state == SNDRV_PCM_STATE_RUNNING) {
-			n = snd_pcm_playback_hw_avail(runtime);
-			if (put_user(n, res))
-				err = -EFAULT;
-		} else {
-			err = -EBADFD;
-		}
 		break;
 	default:
 		err = -EBADFD;
@@ -2000,32 +1999,26 @@ static int snd_pcm_playback_delay(snd_pcm_substream_t *substream, snd_pcm_sframe
 	return err;
 }
 		
-static int snd_pcm_capture_delay(snd_pcm_substream_t *substream, snd_pcm_sframes_t *res)
+static int snd_pcm_capture_xavail(snd_pcm_substream_t *substream, snd_pcm_sframes_t *res)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	int err = 0;
-	snd_pcm_sframes_t n;
+	int err;
+	snd_pcm_uframes_t n;
 	spin_lock_irq(&runtime->lock);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
-		if (snd_pcm_update_hw_ptr(substream) >= 0) {
-			n = snd_pcm_capture_avail(runtime);
-			if (put_user(n, res))
-				err = -EFAULT;
+		if ((err = snd_pcm_update_hw_ptr(substream)) < 0)
 			break;
-		}
 		/* Fall through */
+	case SNDRV_PCM_STATE_PREPARED:
+	case SNDRV_PCM_STATE_SUSPENDED:
+		err = 0;
+		n = snd_pcm_capture_avail(runtime);
+		if (put_user(n, res))
+			err = -EFAULT;
+		break;
 	case SNDRV_PCM_STATE_XRUN:
 		err = -EPIPE;
-		break;
-	case SNDRV_PCM_STATE_SUSPENDED:
-		if (runtime->status->suspended_state == SNDRV_PCM_STATE_RUNNING) {
-			n = snd_pcm_capture_avail(runtime);
-			if (put_user(n, res))
-				err = -EFAULT;
-		} else {
-			err = -EBADFD;
-		}
 		break;
 	default:
 		err = -EBADFD;
@@ -2097,6 +2090,10 @@ static int snd_pcm_playback_ioctl1(snd_pcm_substream_t *substream,
 	snd_assert(substream != NULL, return -ENXIO);
 	snd_assert(substream->stream == SNDRV_PCM_STREAM_PLAYBACK, return -EINVAL);
 	switch (cmd) {
+	case SNDRV_PCM_IOCTL_AVAIL:
+		return snd_pcm_playback_xavail(substream, (snd_pcm_uframes_t*) arg, 0);
+	case SNDRV_PCM_IOCTL_DELAY:
+		return snd_pcm_playback_xavail(substream, (snd_pcm_sframes_t*) arg, 1);
 	case SNDRV_PCM_IOCTL_WRITEI_FRAMES:
 	{
 		snd_xferi_t xferi, *_xferi = arg;
@@ -2156,8 +2153,6 @@ static int snd_pcm_playback_ioctl1(snd_pcm_substream_t *substream,
 		return snd_pcm_playback_drain(substream);
 	case SNDRV_PCM_IOCTL_DROP:
 		return snd_pcm_playback_drop(substream);
-	case SNDRV_PCM_IOCTL_DELAY:
-		return snd_pcm_playback_delay(substream, (snd_pcm_sframes_t*) arg);
 	}
 	return snd_pcm_common_ioctl1(substream, cmd, arg);
 }
@@ -2168,6 +2163,11 @@ static int snd_pcm_capture_ioctl1(snd_pcm_substream_t *substream,
 	snd_assert(substream != NULL, return -ENXIO);
 	snd_assert(substream->stream == SNDRV_PCM_STREAM_CAPTURE, return -EINVAL);
 	switch (cmd) {
+	case SNDRV_PCM_IOCTL_AVAIL:
+		return snd_pcm_capture_xavail(substream, (snd_pcm_uframes_t*) arg);
+	case SNDRV_PCM_IOCTL_DELAY:
+		/* really, avail and delay callback are same */
+		return snd_pcm_capture_xavail(substream, (snd_pcm_sframes_t*) arg);
 	case SNDRV_PCM_IOCTL_READI_FRAMES:
 	{
 		snd_xferi_t xferi, *_xferi = arg;
@@ -2219,8 +2219,6 @@ static int snd_pcm_capture_ioctl1(snd_pcm_substream_t *substream,
 		return snd_pcm_capture_drain(substream);
 	case SNDRV_PCM_IOCTL_DROP:
 		return snd_pcm_capture_drop(substream);
-	case SNDRV_PCM_IOCTL_DELAY:
-		return snd_pcm_capture_delay(substream, (snd_pcm_sframes_t*) arg);
 	}
 	return snd_pcm_common_ioctl1(substream, cmd, arg);
 }
