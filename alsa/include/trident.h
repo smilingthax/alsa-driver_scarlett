@@ -90,51 +90,20 @@
  * Direct registers
  */
 
-#define FALSE 0
-#define TRUE  1
-
 #define TRID_REG(trident, x) ((trident)->port + (x))
-
-#define CHANNEL_REGS    5
-#define CHANNEL_START   0xe0   // The first bytes of the contiguous register space.
 
 #define ID_4DWAVE_DX        0x2000
 #define ID_4DWAVE_NX        0x2001
 
-#define IWriteAinten( x ) \
-        {int i; \
-         for( i= 0; i < ChanDwordCount; i++) \
-         outl((x)->lpChAinten[i], TRID_REG(trident, (x)->lpAChAinten[i]));}
-
-#define IReadAinten( x ) \
-        {int i; \
-         for( i= 0; i < ChanDwordCount; i++) \
-         (x)->lpChAinten[i] = inl(TRID_REG(trident, (x)->lpAChAinten[i]));}
-
-#define ReadAint( x ) \
-        IReadAint( x ) 
-
-#define WriteAint( x ) \
-        IWriteAint( x ) 
-
-#define IWriteAint( x ) \
-        {int i; \
-         for( i= 0; i < ChanDwordCount; i++) \
-         outl((x)->lpChAint[i], TRID_REG(trident, (x)->lpAChAint[i]));}
-
-#define IReadAint( x ) \
-        {int i; \
-         for( i= 0; i < ChanDwordCount; i++) \
-         (x)->lpChAint[i] = inl(TRID_REG(trident, (x)->lpAChAint[i]));}
-
-
-// Register definitions
-
-// Global registers
+/* Bank definitions */
 
 #define T4D_BANK_A	0
 #define T4D_BANK_B	1
 #define T4D_NUM_BANKS	2
+
+/* Register definitions */
+
+/* Global registers */
 
 enum global_control_bits {
 	CHANNEL_IDX = 0x0000003f, OVERRUN_IE = 0x00000400,
@@ -154,7 +123,7 @@ enum miscint_bits {
 	ACGPIO_IRQ	= 0x01000000
 };
 
-// T2 legacy dma control registers.
+/* T2 legacy dma control registers. */
 #define LEGACY_DMAR0                0x00  // ADR0
 #define LEGACY_DMAR4                0x04  // CNT0
 #define LEGACY_DMAR11               0x0b  // MOD 
@@ -181,23 +150,23 @@ enum miscint_bits {
 #define T4D_AINTEN_B                 0xdc
 #define T4D_RCI                      0x70
 
-// MPU-401 UART
+/* MPU-401 UART */
 #define T4D_MPU401_BASE             0x20
 #define T4D_MPUR0                   0x20
 #define T4D_MPUR1                   0x21
 #define T4D_MPUR2                   0x22
 #define T4D_MPUR3                   0x23
 
-// S/PDIF Registers
+/* S/PDIF Registers */
 #define NX_SPCTRL_SPCSO             0x24
 #define NX_SPLBA                    0x28
 #define NX_SPESO                    0x2c
 #define NX_SPCSTATUS                0x64
 
-// NX Specific Registers
+/* NX Specific Registers */
 #define NX_TLBC                     0x6c
 
-// Channel Registers
+/* Channel Registers */
 
 #define CH_DX_CSO_ALPHA_FMS         0xe0
 #define CH_DX_ESO_DELTA             0xe8
@@ -212,7 +181,7 @@ enum miscint_bits {
 #define CH_EBUF1                    0xf4
 #define CH_EBUF2                    0xf8
 
-// AC-97 Registers
+/* AC-97 Registers */
 
 #define DX_ACR0_AC97_W              0x40
 #define DX_ACR1_AC97_R              0x44
@@ -235,23 +204,6 @@ enum miscint_bits {
 #define SI_AC97_BUSY_READ	    0x00008000
 #define DX_AC97_BUSY_READ	    0x00008000
 #define NX_AC97_BUSY_READ	    0x00000800
-
-
-typedef struct tChannelControl
-{
-    // register data
-    unsigned int *  lpChStart;
-    unsigned int *  lpChStop;
-    unsigned int *  lpChAint;
-    unsigned int *  lpChAinten;
-
-    // register addresses
-    unsigned int *  lpAChStart;
-    unsigned int *  lpAChStop;
-    unsigned int *  lpAChAint;
-    unsigned int *  lpAChAinten;
-
-}CHANNELCONTROL, *LPCHANNELCONTROL;
 
 typedef struct snd_stru_trident trident_t;
 typedef struct snd_trident_stru_voice snd_trident_voice_t;
@@ -309,27 +261,25 @@ struct snd_trident_stru_voice {
 	unsigned char RVol;		/* 7 bits */
 	unsigned char CVol;		/* 7 bits */
 	unsigned char FMC;		/* 2 bits */
-	unsigned int LBA;		/* 30 bits */
 	unsigned char CTRL;		/* 4 bits */
+	unsigned char FMS;		/* 4 bits */
+	unsigned int LBA;		/* 30 bits */
 	unsigned short EC;		/* 12 bits */
-	unsigned short Alpha_FMS;	/* 16 bits */
+	unsigned short Alpha;		/* 12 bits */
 	unsigned int CSO;		/* 24 bits (16 on DX) */
 	unsigned int ESO;		/* 24 bits (16 on DX) */
 
 	unsigned int negCSO;	/* nonzero - use negative CSO */
+
+	snd_util_memblk_t *memblk;	/* memory block if TLB enabled */
 
 	/* PCM data */
 
 	trident_t *trident;
 	snd_pcm_substream_t *substream;
 	int running: 1,
-	    ignore_middle: 1;
-	int eso;                /* final ESO value for channel */
-	int count;              /* count between interrupts */
-	int csoint;             /* CSO value for next expected interrupt */
-
-	int foldback_chan;	/* foldback subdevice number */
-	snd_util_memblk_t *memblk;	/* memory block if TLB enabled */
+            capture: 1;
+	int foldback_chan;		/* foldback subdevice number */
 
 	/* --- */
 
@@ -376,9 +326,6 @@ struct snd_stru_trident {
 
 	unsigned long port;
 	unsigned long midi_port;
-
-        LPCHANNELCONTROL ChRegs;
-        int ChanDwordCount;
 
         snd_trident_tlb_t tlb;	/* TLB entries for NX cards */
 
@@ -435,17 +382,10 @@ int snd_trident_attach_synthesizer(trident_t * trident);
 int snd_trident_detach_synthesizer(trident_t * trident);
 snd_trident_voice_t *snd_trident_alloc_voice(trident_t * trident, int type, int client, int port);
 void snd_trident_free_voice(trident_t * trident, snd_trident_voice_t *voice);
-int snd_trident_write_voice_regs(trident_t * trident, unsigned int Channel,
-			 unsigned int LBA, unsigned int CSO, unsigned int ESO,
-			 unsigned int DELTA, unsigned int ALPHA_FMS, unsigned int FMC_RVOL_CVOL,
-			 unsigned int GVSEL, unsigned int PAN, unsigned int VOL,
-			 unsigned int CTRL, unsigned int EC);
-void snd_trident_start_voice(trident_t * trident, unsigned int HwChannel);
-void snd_trident_stop_voice(trident_t * trident, unsigned int HwChannel);
-void snd_trident_enable_voice_irq(trident_t * trident, unsigned int HwChannel);
-void snd_trident_disable_voice_irq(trident_t * trident, unsigned int HwChannel);
+void snd_trident_start_voice(trident_t * trident, unsigned int voice);
+void snd_trident_stop_voice(trident_t * trident, unsigned int voice);
+void snd_trident_write_voice_regs(trident_t * trident, snd_trident_voice_t *voice);
 void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigned short v_max);
-
 
 /* TLB memory allocation */
 snd_util_memblk_t *snd_trident_alloc_pages(trident_t *trident, void *pages, unsigned long size);
