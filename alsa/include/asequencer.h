@@ -28,84 +28,124 @@
 #endif
 
 /* version of the sequencer */
-#define SND_SEQ_VERSION SND_PROTOCOL_VERSION (0, 0, 1)
+#define SND_SEQ_VERSION SND_PROTOCOL_VERSION (1, 0, 0)
 
 /*                                   	*/
 /* definion of sequencer event types 	*/
 /*                                   	*/
 
-	/* system messages */
+/* 0-4: system messages
+ * event data type = snd_seq_result_t
+ */
 #define SND_SEQ_EVENT_SYSTEM		0
 #define SND_SEQ_EVENT_RESULT		1
+/* 2-4: reserved */
 
-	/* note messages */
+/* 5-9: note messages (channel specific)
+ * event data type = snd_seq_ev_note
+ */
 #define SND_SEQ_EVENT_NOTE		5
 #define SND_SEQ_EVENT_NOTEON		6
 #define SND_SEQ_EVENT_NOTEOFF		7
+#define SND_SEQ_EVENT_KEYPRESS		8
+/* 9-10: reserved */
 	
-	/* control messages */
-#define SND_SEQ_EVENT_KEYPRESS		10
-#define SND_SEQ_EVENT_CONTROLLER	11
-#define SND_SEQ_EVENT_PGMCHANGE		12
-#define SND_SEQ_EVENT_CHANPRESS		13
-#define SND_SEQ_EVENT_PITCHBEND		14
-#define SND_SEQ_EVENT_CONTROL14		15
-#define SND_SEQ_EVENT_NONREGPARAM	16
-#define SND_SEQ_EVENT_REGPARAM		17
+/* 10-19: control messages (channel specific)
+ * event data type = snd_seq_ev_ctrl
+ */
+#define SND_SEQ_EVENT_CONTROLLER	10
+#define SND_SEQ_EVENT_PGMCHANGE		11
+#define SND_SEQ_EVENT_CHANPRESS		12
+#define SND_SEQ_EVENT_PITCHBEND		13	/* from -8192 to 8191 */
+#define SND_SEQ_EVENT_CONTROL14		14	/* 14 bit controller value */
+#define SND_SEQ_EVENT_NONREGPARAM	15	/* 14 bit NRPN */
+#define SND_SEQ_EVENT_REGPARAM		16	/* 14 bit RPN */
+/* 18-19: reserved */
 
-
-	/* synchronisation messages */
+/* 20-29: synchronisation messages
+ * event data type = snd_seq_ev_ctrl
+ */
 #define SND_SEQ_EVENT_SONGPOS		20	/* Song Position Pointer with LSB and MSB values */
 #define SND_SEQ_EVENT_SONGSEL		21	/* Song Select with song ID number */
-#define SND_SEQ_EVENT_CLOCK		22	/* midi Real Time Clock message */
-#define SND_SEQ_EVENT_START		23	/* midi Real Time Start message */
-#define SND_SEQ_EVENT_CONTINUE		24	/* midi Real Time Continue message */
-#define SND_SEQ_EVENT_STOP		25	/* midi Real Time Stop message */	
-#define SND_SEQ_EVENT_QFRAME		26	/* midi time code quarter frame */
-#define SND_SEQ_EVENT_TICK		27	/* midi Real Time Tick message */
-#define	SND_SEQ_EVENT_SETPOS_TICK	28	/* set tick queue position */
-#define SND_SEQ_EVENT_SETPOS_TIME	29	/* set realtime queue position */
-	
-#define SND_SEQ_EVENT_TEMPO		30	/* (SMF) Tempo event */
-#define SND_SEQ_EVENT_TIMESIGN		31	/* SMF Time Signature event */
-#define SND_SEQ_EVENT_KEYSIGN		32	/* SMF Key Signature event */
+#define SND_SEQ_EVENT_QFRAME		22	/* midi time code quarter frame */
+#define SND_SEQ_EVENT_TIMESIGN		23	/* SMF Time Signature event */
+#define SND_SEQ_EVENT_KEYSIGN		24	/* SMF Key Signature event */
+/* 25-29: reserved */
 	        
-#define SND_SEQ_EVENT_SYSEX		40	/* system exclusive data (variable length) */
-#define SND_SEQ_EVENT_TUNE_REQUEST	41	/* tune request */
-#define SND_SEQ_EVENT_RESET		42	/* reset to power-on state */
+/* 30-39: timer messages
+ * event data type = snd_seq_ev_queue_control_t
+ */
+#define SND_SEQ_EVENT_START		30	/* midi Real Time Start message */
+#define SND_SEQ_EVENT_CONTINUE		31	/* midi Real Time Continue message */
+#define SND_SEQ_EVENT_STOP		32	/* midi Real Time Stop message */	
+#define	SND_SEQ_EVENT_SETPOS_TICK	33	/* set tick queue position */
+#define SND_SEQ_EVENT_SETPOS_TIME	34	/* set realtime queue position */
+#define SND_SEQ_EVENT_TEMPO		35	/* (SMF) Tempo event */
+#define SND_SEQ_EVENT_CLOCK		36	/* midi Real Time Clock message */
+#define SND_SEQ_EVENT_TICK		37	/* midi Real Time Tick message */
+/* 38-39: reserved */
 
-#define SND_SEQ_EVENT_SENSING		50	/* "active sensing" event */
-#define SND_SEQ_EVENT_ECHO		51	/* echo event */
+/* 40-49: others
+ * event data type = none
+ */
+#define SND_SEQ_EVENT_TUNE_REQUEST	40	/* tune request */
+#define SND_SEQ_EVENT_RESET		41	/* reset to power-on state */
+#define SND_SEQ_EVENT_SENSING		42	/* "active sensing" event */
+/* 43-49: reserved */
 
-	/* system status messages */
+/* 50-59: echo back, kernel private messages
+ * event data type = any type
+ */
+#define SND_SEQ_EVENT_ECHO		50	/* echo event */
+#define SND_SEQ_EVENT_OSS		51	/* OSS raw event */
+/* 52-59: reserved */
+
+/* 60-69: system status messages (broadcast for subscribers)
+ * event data type = snd_seq_addr_t
+ */
 #define SND_SEQ_EVENT_CLIENT_START	60	/* new client has connected */
 #define SND_SEQ_EVENT_CLIENT_EXIT	61	/* client has left the system */
 #define SND_SEQ_EVENT_CLIENT_CHANGE	62	/* client status/info has changed */
 #define SND_SEQ_EVENT_PORT_START	63	/* new port was created */
 #define SND_SEQ_EVENT_PORT_EXIT		64	/* port was deleted from system */
 #define SND_SEQ_EVENT_PORT_CHANGE	65	/* port status/info has changed */
-	/* subscription change: subscriber = data.addr */
 #define SND_SEQ_EVENT_PORT_SUBSCRIBED	66	/* read port is subscribed */
 #define SND_SEQ_EVENT_PORT_USED		67	/* write port is subscribed */
 #define SND_SEQ_EVENT_PORT_UNSUBSCRIBED	68	/* read port is released */
 #define SND_SEQ_EVENT_PORT_UNUSED	69	/* write port is released */
 
-#define SND_SEQ_EVENT_OSS		70	/* OSS raw event */
+/* 70-79: synthesizer events
+ * event data type = snd_seq_eve_sample_control_t
+ */
+#define SND_SEQ_EVENT_SAMPLE		70	/* sample select */
+#define SND_SEQ_EVENT_SAMPLE_CLUSTER	71	/* sample cluster select */
+#define SND_SEQ_EVENT_SAMPLE_START	72	/* voice start */
+#define SND_SEQ_EVENT_SAMPLE_STOP	73	/* voice stop */
+#define SND_SEQ_EVENT_SAMPLE_FREQ	74	/* playback frequency */
+#define SND_SEQ_EVENT_SAMPLE_VOLUME	75	/* volume and balance */
+#define SND_SEQ_EVENT_SAMPLE_LOOP	76	/* sample loop */
+#define SND_SEQ_EVENT_SAMPLE_POSITION	77	/* sample position */
+#define SND_SEQ_EVENT_SAMPLE_PRIVATE1	78	/* private (hardware dependent) event */
 
-	/* synthesizer events */	
-#define SND_SEQ_EVENT_SAMPLE		80	/* sample select */
-#define SND_SEQ_EVENT_SAMPLE_CLUSTER	81	/* sample cluster select */
-#define SND_SEQ_EVENT_SAMPLE_START	82	/* voice start */
-#define SND_SEQ_EVENT_SAMPLE_STOP	83	/* voice stop */
-#define SND_SEQ_EVENT_SAMPLE_FREQ	84	/* playback frequency */
-#define SND_SEQ_EVENT_SAMPLE_VOLUME	85	/* volume and balance */
-#define SND_SEQ_EVENT_SAMPLE_LOOP	86	/* sample loop */
-#define SND_SEQ_EVENT_SAMPLE_POSITION	87	/* sample position */
-#define SND_SEQ_EVENT_SAMPLE_PRIVATE1	88	/* private (hardware dependent) event */
+/* 80-89: reserved */
 
-#define SND_SEQ_EVENT_NORMAL_CONTROLS	100
+/* 90-99: user-defined events with fixed length
+ * event data type = any
+ */
+#define SND_SEQ_EVENT_USR0		90
+#define SND_SEQ_EVENT_USR1		91
+#define SND_SEQ_EVENT_USR2		92
+#define SND_SEQ_EVENT_USR3		93
+#define SND_SEQ_EVENT_USR4		94
+#define SND_SEQ_EVENT_USR5		95
+#define SND_SEQ_EVENT_USR6		96
+#define SND_SEQ_EVENT_USR7		97
+#define SND_SEQ_EVENT_USR8		98
+#define SND_SEQ_EVENT_USR9		99
 
-	/* instrument layer */
+/* 100-129: instrument layer
+ * variable length data can be passed directly to the driver
+ */
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
 #define SND_SEQ_EVENT_INSTR_END		102	/* end of instrument management */
 #define SND_SEQ_EVENT_INSTR_PUT		103	/* put instrument to port */
@@ -123,21 +163,47 @@
 #define SND_SEQ_EVENT_INSTR_CLUSTER_GET	115	/* get cluster parameters */
 #define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 116	/* result */
 #define SND_SEQ_EVENT_INSTR_CHANGE	117	/* instrument change */
+/* 118-129: reserved */
 
-	/* hardware specific events - range 192-254 */
+/* 130-139: variable length events
+ * event data type = snd_seq_ev_ext
+ * (SND_SEQ_EVENT_LENGTH_VARIABLE must be set)
+ */
+#define SND_SEQ_EVENT_SYSEX		130	/* system exclusive data (variable length) */
+/* 131-134: reserved */
+#define SND_SEQ_EVENT_USR_VAR0		135
+#define SND_SEQ_EVENT_USR_VAR1		136
+#define SND_SEQ_EVENT_USR_VAR2		137
+#define SND_SEQ_EVENT_USR_VAR3		138
+#define SND_SEQ_EVENT_USR_VAR4		139
 
-	/* special event */
+/* 140-149: IPC shared memory events (*NOT SUPPORTED YET*)
+ * event data type = snd_seq_ev_ipcshm
+ * (SND_SEQ_EVENT_LENGTH_VARIPC must be set)
+ */
+#define SND_SEQ_EVENT_IPCSHM		140
+/* 141-144: reserved */
+#define SND_SEQ_EVENT_USR_VARIPC0	145
+#define SND_SEQ_EVENT_USR_VARIPC1	146
+#define SND_SEQ_EVENT_USR_VARIPC2	147
+#define SND_SEQ_EVENT_USR_VARIPC3	148
+#define SND_SEQ_EVENT_USR_VARIPC4	149
+
+/* 150-191: reserved */
+
+/* 192-254: hardware specific events */
+
+/* 255: special event */
 #define SND_SEQ_EVENT_NONE		255
+
 
 typedef unsigned char snd_seq_event_type;
 
 
 	/* event address */
 typedef struct {
-	unsigned char queue;	/* Sequencer queue:       0..255, 255 = broadcast to all queues */
 	unsigned char client;	/* Client number:         0..255, 255 = broadcast to all clients */
 	unsigned char port;	/* Port within client:    0..255, 255 = broadcast to all ports */
-	unsigned char channel;	/* Channel within client: 0..255, 255 = broadcast to all channels */
 } snd_seq_addr_t;
 
 #define SND_SEQ_ADDRESS_UNKNOWN		253	/* uknown source */
@@ -171,25 +237,29 @@ typedef struct {
 
 	/* note event */
 typedef struct {
+	unsigned char channel;
 	unsigned char note;
 	unsigned char velocity;
-	unsigned int duration;
+	unsigned char off_velocity;	/* only for SND_SEQ_EVENT_NOTE */
+	unsigned int duration;		/* only for SND_SEQ_EVENT_NOTE */
 } snd_seq_ev_note;
 
 	/* controller event */
 typedef struct {
+	unsigned char channel;
+	unsigned char unused1, unused2, unused3;	/* pad */
 	unsigned int param;
 	signed int value;
 } snd_seq_ev_ctrl;
 
-	/* generic set of bytes (8x8 bit) */
+	/* generic set of bytes (12x8 bit) */
 typedef struct {
-	unsigned char d[8];	/* 8 bit value */
+	unsigned char d[12];	/* 8 bit value */
 } snd_seq_ev_raw8;
 
-	/* generic set of integers (2x32 bit) */
+	/* generic set of integers (3x32 bit) */
 typedef struct {
-	unsigned int d[2];	/* 32 bit value */
+	unsigned int d[3];	/* 32 bit value */
 } snd_seq_ev_raw32;
 
 	/* external stored data */
@@ -254,6 +324,23 @@ typedef struct {
 	unsigned int end;	/* loop end (in samples) * 16 */
 } snd_seq_ev_loop;
 
+typedef struct {
+	unsigned char channel;
+	unsigned char unused1, unused2, unused3;	/* pad */
+	union {
+		snd_seq_ev_sample sample;
+		snd_seq_ev_cluster cluster;
+		snd_seq_position_t position;
+		snd_seq_stop_mode_t stop_mode;
+		snd_seq_frequency_t frequency;
+		snd_seq_ev_volume volume;
+		snd_seq_ev_loop loop;
+		unsigned char raw8[8];
+	} param;
+} snd_seq_ev_sample_control_t;
+
+
+
 /* INSTR_BEGIN event */
 typedef struct {
 	long timeout;	/* zero = forever, otherwise timeout in ms */
@@ -264,6 +351,7 @@ typedef struct {
 	int result;
 } snd_seq_result_t;
 
+
 typedef struct {
 	long int tv_sec;	/* seconds */
 	long int tv_nsec;	/* nanoseconds */
@@ -271,10 +359,19 @@ typedef struct {
 
 typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
 
-	/* timer control */
+typedef union {
+	snd_seq_tick_time_t tick;
+	snd_seq_real_time_t real;
+} snd_seq_timestamp_t;
+
+	/* queue timer control */
 typedef struct {
-	snd_seq_addr_t addr;	/* affected queue and caller client/port */
-	signed int value;	/* affected value (e.g. tempo) */
+	unsigned char queue;	/* affected queue */
+	unsigned char unused1, unused2, unused3;	/* pad */
+	union {
+		signed int value;	/* affected value (e.g. tempo) */
+		snd_seq_timestamp_t time;
+	} param;
 } snd_seq_ev_queue_control_t;
 
 	/* sequencer event */
@@ -282,14 +379,11 @@ typedef struct snd_seq_event_t {
 	snd_seq_event_type type;	/* event type */
 	unsigned char flags;		/* event flags */
 	char tag;
-	char unused2;
 	
-	/* schedule time */
-	union {
-		snd_seq_tick_time_t tick;
-		snd_seq_real_time_t real;
-	} time;
-			
+	unsigned char queue;		/* schedule queue */
+	snd_seq_timestamp_t time;	/* schedule time */
+
+
 	snd_seq_addr_t source;	/* source address */
 	snd_seq_addr_t dest;	/* destination address */
 
@@ -301,24 +395,64 @@ typedef struct snd_seq_event_t {
 		snd_seq_ev_ext ext;
 		snd_seq_ev_ipcshm ipcshm;
 		snd_seq_ev_queue_control_t queue;
-		union {
-			snd_seq_tick_time_t tick;
-			snd_seq_real_time_t real;
-		} time;
+		snd_seq_timestamp_t time;
 		snd_seq_addr_t addr;
 		snd_seq_result_t result;
 		snd_seq_ev_instr_begin_t instr_begin;
-		snd_seq_ev_sample sample;
-		snd_seq_ev_cluster cluster;
-		snd_seq_position_t position;
-		snd_seq_stop_mode_t stop_mode;
-		snd_seq_frequency_t frequency;
-		snd_seq_ev_volume volume;
-		snd_seq_ev_loop loop;
+		snd_seq_ev_sample_control_t sample;
 	} data;
 } snd_seq_event_t;
 
 
+/*
+ * type check macros
+ */
+/* result events: 0-4 */
+#define snd_seq_ev_is_result_type(ev)	((ev)->type < 5)
+/* channel specific events: 5-19 */
+#define snd_seq_ev_is_channel_type(ev)	((ev)->type >= 5 && (ev)->type < 20)
+/* note events: 5-9 */
+#define snd_seq_ev_is_note_type(ev)	((ev)->type >= 5 && (ev)->type < 10)
+/* control events: 10-19 */
+#define snd_seq_ev_is_control_type(ev)	((ev)->type >= 10 && (ev)->type < 20)
+/* queue control events: 30-39 */
+#define snd_seq_ev_is_queue_type(ev)	((ev)->type >= 30 && (ev)->type < 40)
+/* fixed length events: 0-99 */
+#define snd_seq_ev_is_fixed_type(ev)	((ev)->type < 100)
+/* instrument layer events: 100-129 */
+#define snd_seq_ev_is_instr_type(ev)	((ev)->type >= 100 && (ev)->type < 130)
+/* variable length events: 130-139 */
+#define snd_seq_ev_is_variable_type(ev)	((ev)->type >= 130 && (ev)->type < 140)
+/* ipc shmem events: 140-149 */
+#define snd_seq_ev_is_varipc_type(ev)	((ev)->type >= 140 && (ev)->type < 150)
+
+/*
+ * macros to check event flags
+ */
+/* direct dispatched events */
+#define snd_seq_ev_is_direct(ev)	(((ev)->flags & SND_SEQ_DEST_MASK) == SND_SEQ_DEST_DIRECT)
+/* prior events */
+#define snd_seq_ev_is_prior(ev)		(((ev)->flags & SND_SEQ_PRIORITY_MASK) == SND_SEQ_PRIORITY_HIGH)
+
+/* event length type */
+#define snd_seq_ev_length_type(ev)	((ev)->flags & SND_SEQ_EVENT_LENGTH_MASK)
+#define snd_seq_ev_is_fixed(ev)		(snd_seq_ev_length_type(ev) == SND_SEQ_EVENT_LENGTH_FIXED)
+#define snd_seq_ev_is_variable(ev)	(snd_seq_ev_length_type(ev) == SND_SEQ_EVENT_LENGTH_VARIABLE)
+#define snd_seq_ev_is_varusr(ev)	(snd_seq_ev_length_type(ev) == SND_SEQ_EVENT_LENGTH_VARUSR)
+#define snd_seq_ev_is_varipc(ev)	(snd_seq_ev_length_type(ev) == SND_SEQ_EVENT_LENGTH_VARIPC)
+
+/* time-stamp type */
+#define snd_seq_ev_timestamp_type(ev)	((ev)->flags & SND_SEQ_TIME_STAMP_MASK)
+#define snd_seq_ev_is_tick(ev)		(snd_seq_ev_timestamp_type(ev) == SND_SEQ_TIME_STAMP_TICK)
+#define snd_seq_ev_is_real(ev)		(snd_seq_ev_timestamp_type(ev) == SND_SEQ_TIME_STAMP_REAL)
+
+/* time-mode type */
+#define snd_seq_ev_timemode_type(ev)	((ev)->flags & SND_SEQ_TIME_MODE_MASK)
+#define snd_seq_ev_is_abstime(ev)	(snd_seq_ev_timemode_type(ev) == SND_SEQ_TIME_MODE_ABS)
+#define snd_seq_ev_is_reltime(ev)	(snd_seq_ev_timemode_type(ev) == SND_SEQ_TIME_MODE_REL)
+
+
+	/* system information */
 typedef struct {
 	int queues;			/* maximum queues count */
 	int clients;			/* maximum clients count */
@@ -371,17 +505,6 @@ typedef struct {
 } snd_seq_client_pool_t;
 
 
-/* reset read/write pool */
-#define SND_SEQ_RESET_POOL_NONE		0	/* do not remove events */
-#define SND_SEQ_RESET_POOL_ALL		1	/* purge all events in pool */
-
-typedef struct {
-	int reset_output;		/* purge write pool */
-	snd_seq_addr_t output_match;	/* matching client/port */
-	int reset_input;		/* purge read pool */ 
-	snd_seq_addr_t input_match;	/* matching client/port */
-} snd_seq_reset_pool_t;
-
 /* Remove events by specified criteria */
 typedef struct snd_seq_remove_events {
 	int tick:1; 		/* True when time is in ticks */
@@ -390,12 +513,11 @@ typedef struct snd_seq_remove_events {
 
 	int  remove_mode;	/* Flags that determine what gets removed */
 
-	union {
-		snd_seq_tick_time_t tick;
-		snd_seq_real_time_t real;
-	} time;
+	snd_seq_timestamp_t time;
 
+	unsigned char queue;	/* Queue for REMOVE_DEST */
 	snd_seq_addr_t dest;	/* Address for REMOVE_DEST */
+	unsigned char channel;	/* Channel for REMOVE_DEST */
 
 	int  type;	/* For REMOVE_EVENT_TYPE */
 	char  tag;	/* Tag for REMOVE_TAG */
@@ -405,7 +527,7 @@ typedef struct snd_seq_remove_events {
 } snd_seq_remove_events_t;
 
 /* Flush mode flags */
-#define SND_SEQ_REMOVE_DEST	(1<<0)	/* Restrict by destination q:client:port */
+#define SND_SEQ_REMOVE_DEST		(1<<0)	/* Restrict by destination q:client:port */
 #define SND_SEQ_REMOVE_DEST_CHANNEL	(1<<1)	/* Restrict by channel */
 #define SND_SEQ_REMOVE_TIME_BEFORE	(1<<2)	/* Restrict to before time */
 #define SND_SEQ_REMOVE_TIME_AFTER	(1<<3)	/* Restrict to time or after */
@@ -574,9 +696,11 @@ typedef struct {
 	char reserved[64];		/* for future use */
 } snd_seq_queue_client_t;
 
+
 typedef struct {
 	snd_seq_addr_t sender;		/* sender address */
 	snd_seq_addr_t dest;		/* destination address */
+	unsigned char queue;		/* input time-stamp queue (optional) */
 	int exclusive: 1,		/* exclusive mode */
 	    realtime: 1,		/* realtime timestamp */
 	    convert_time: 1;		/* convert timestamp */
@@ -597,6 +721,7 @@ typedef struct {
 	int index;	/* 0..N-1 */
 	int num_subs;	/* R/O: number of subscriptions on this port */
 	snd_seq_addr_t addr;	/* R/O: result */
+	unsigned char queue;	/* R/O: result */
 	int exclusive: 1;	/* R/O: result */
 	int realtime: 1;	/* R/O: result */
 	int convert_time: 1;	/* R/O: result */
@@ -782,7 +907,6 @@ typedef struct {
 #define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
-#define SND_SEQ_IOCTL_RESET_POOL	_IOW ('S', 0x4d, snd_seq_reset_pool_t)
 #define SND_SEQ_IOCTL_REMOVE_EVENTS	_IOW ('S', 0x4e, snd_seq_remove_events_t)
 #define SND_SEQ_IOCTL_QUERY_SUBS	_IOWR('S', 0x4f, snd_seq_query_subs_t)
 #define SND_SEQ_IOCTL_GET_SUBSCRIPTION	_IOWR('S', 0x50, snd_seq_port_subscribe_t)
