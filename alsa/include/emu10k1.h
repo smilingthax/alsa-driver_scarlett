@@ -615,6 +615,8 @@ struct snd_stru_emu10k1_pcm {
 	unsigned int capture_idx_reg;	/* buffer index register */
 	unsigned int capture_cr_val;	/* control value */
 	unsigned int capture_bs_val;	/* buffer size value */
+	unsigned int capture_bufsize;	/* buffer size in bytes */
+	unsigned int capture_oldtime;	/* timer */
 };
 
 typedef struct snd_emu10k1_memblk_arg {
@@ -704,6 +706,7 @@ void snd_emu10k1_voice_intr_ack(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_voice_set_loop_stop(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_voice_clear_loop_stop(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_wait(emu10k1_t *emu, unsigned int wait);
+static inline unsigned int snd_emu10k1_wc(emu10k1_t *emu) { return (inl(emu->port + WC) >> 6) & 0xfffff; }
 unsigned short snd_emu10k1_ac97_read(void *private_data, unsigned short reg);
 void snd_emu10k1_ac97_write(void *private_data, unsigned short reg, unsigned short data);
 unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
