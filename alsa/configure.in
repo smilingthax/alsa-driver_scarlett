@@ -1027,6 +1027,7 @@ AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
 #include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/proc_fs.h"
 ],[
 	PDE(NULL);
 ],
