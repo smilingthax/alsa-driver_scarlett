@@ -26,6 +26,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/time.h>
 #include <linux/init.h>
