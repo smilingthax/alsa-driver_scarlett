@@ -23,7 +23,7 @@ fi
 # -WV
 #
 
-if [ ! -a $ADIR/include/version.h ]; then
+if [ ! -r $ADIR/include/version.h ]; then
 	cat << EOF
 	
 ERROR:
