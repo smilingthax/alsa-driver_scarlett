@@ -368,7 +368,7 @@ typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
 
 typedef union {
 	snd_seq_tick_time_t tick;
-	snd_seq_real_time_t real;
+	snd_seq_real_time_t time;
 } snd_seq_timestamp_t;
 
 	/* queue timer control */
