@@ -47,6 +47,8 @@ Quick install
    Example: ./configure --with-debug=full
 4) Run 'make'.
 5) Run 'make install'.
+   If you have already a system with ALSA init script, you should install
+   just only modules via 'make install-modules'.
 6) Run the './snddevices' script to create new sound devices in /dev directory.
    Skip this step, if you have a kernel with the DEVFS support.
 7) Edit your /etc/modules.conf (see the kmod support section below).
