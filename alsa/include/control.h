@@ -22,16 +22,37 @@
  *
  */
 
+typedef struct snd_stru_ctl_read {
+	snd_ctl_read_t data;
+	struct snd_stru_ctl_read *next;
+} snd_kctl_read_t;
+
 struct snd_stru_control {
 	snd_card_t *card;
 	unsigned int mixer_device;
 	unsigned int pcm_device;
 	unsigned int rawmidi_device;
+	snd_spin_define(change_lock);
+	snd_sleep_define(change);
+	snd_spin_define(read_lock);
+	int read_active: 1,		/* read interface is activated */
+	    rebuild: 1;			/* rebuild the structure */
+	int pool_size;			/* size of pool in items */
+	snd_kctl_read_t *pool;		/* atomic pool */
+	snd_kctl_read_t *first_item;
+	snd_kctl_read_t *last_item;
+	struct snd_stru_control *next;
 };
 
 typedef int (*snd_control_ioctl_t) (snd_card_t * card,
 				    snd_control_t * control,
 				    unsigned int cmd, unsigned long arg);
+
+extern int snd_control_busy(snd_control_t * control);
+extern void snd_control_notify_structure_change(snd_control_t * control, snd_ctl_read_t * read);
+extern void snd_control_notify_value_change(snd_control_t * control, snd_ctl_read_t * read, int atomic);
+extern void snd_control_notify_switch_change(snd_card_t * card, int cmd, int iface, char *name);
+extern void snd_control_notify_switch_value_change(snd_control_t * control, int iface, char *name, int atomic);
 
 extern int snd_control_register(snd_card_t *card);
 extern int snd_control_unregister(snd_card_t *card);
@@ -40,6 +61,7 @@ extern int snd_control_unregister_ioctl(snd_control_ioctl_t fcn);
 extern int snd_control_switch_add(snd_card_t * card, snd_kswitch_t * ksw);
 extern int snd_control_switch_remove(snd_card_t * card, snd_kswitch_t * ksw);
 extern snd_kswitch_t *snd_control_switch_new(snd_card_t * card, snd_kswitch_t * ksw, void *private_data);
+extern int snd_control_switch_change(snd_card_t * card, snd_kswitch_t * ksw);
 extern void snd_control_store(snd_card_t *card);
 extern void snd_control_restore(snd_card_t *card);
 

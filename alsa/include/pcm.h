@@ -29,6 +29,7 @@
 typedef struct snd_stru_pcm_channel snd_pcm_channel_t;
 
 struct snd_stru_pcm_channel {
+	snd_pcm_t *pcm;
 	snd_kswitch_list_t switches;
 	/* -- /proc interface -- */
 	void *proc_entry;
@@ -82,6 +83,7 @@ extern int snd_pcm_ioctl(snd_pcm_t * pcm, unsigned int cmd, unsigned long arg);
 extern int snd_pcm_switch_add(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 extern int snd_pcm_switch_remove(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 extern snd_kswitch_t *snd_pcm_switch_new(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw, void *private_data);
+extern int snd_pcm_switch_change(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 
 /*
  *  /proc interface

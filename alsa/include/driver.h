@@ -262,6 +262,7 @@ struct snd_stru_card {
 	void *static_data;			/* private static data for soundcard */
 
 	snd_kswitch_list_t switches;		/* switches */
+	snd_control_t *fcontrol;		/* first control file */
 
 	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
 	struct proc_dir_entry *proc_dir_link;	/* number link to real id */

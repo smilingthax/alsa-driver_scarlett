@@ -152,6 +152,33 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_RAWMIDI_ISWITCH_READ _IOWR('U', 0x38, snd_switch_t)
 #define SND_CTL_IOCTL_RAWMIDI_ISWITCH_WRITE _IOWR('U', 0x39, snd_switch_t)
 
+/*
+ *  Read interface.
+ */
+
+#define SND_CTL_READ_REBUILD		0	/* rebuild the whole structure */
+#define SND_CTL_READ_SWITCH_VALUE	1	/* the switch value was changed */
+#define SND_CTL_READ_SWITCH_CHANGE	2	/* the switch was changed */
+#define SND_CTL_READ_SWITCH_ADD		3	/* the switch was added */
+#define SND_CTL_READ_SWITCH_REMOVE	4	/* the switch was removed */
+
+#define SND_CTL_IFACE_CONTROL		0
+#define SND_CTL_IFACE_MIXER		1
+#define SND_CTL_IFACE_PCM_PLAYBACK	2
+#define SND_CTL_IFACE_PCM_RECORD	3
+#define SND_CTL_IFACE_RAWMIDI_OUTPUT	4
+#define SND_CTL_IFACE_RAWMIDI_INPUT	5
+
+typedef struct snd_ctl_read {
+	unsigned int cmd;		/* command - SND_MIXER_READ_* */
+	union {
+		struct {
+			int iface;	/* interface */
+			snd_switch_list_item_t switem; /* switch item */
+		} sw;
+		unsigned char data8[60];
+	} data;
+} snd_ctl_read_t;
 
 /****************************************************************************
  *                                                                          *
@@ -161,7 +188,7 @@ typedef struct snd_ctl_hw_info {
 
 #define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
-/* inputs */				/* max 24 chars (with '\0') */
+/* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
 #define SND_MIXER_IN_PCM		"PCM"
 #define SND_MIXER_IN_DAC		"DAC"
@@ -177,7 +204,7 @@ typedef struct snd_ctl_hw_info {
 #define SND_MIXER_IN_SPEAKER		"PC Speaker"
 #define SND_MIXER_IN_AUX		"Aux"
 
-/* outputs */				/* max 24 chars (with '\0') */
+/* outputs */				/* max 24 chars */
 #define SND_MIXER_OUT_MASTER		"Master"
 #define SND_MIXER_OUT_MASTER_MONO	"Master Mono"
 #define SND_MIXER_OUT_MASTER_DIGITAL	"Master Digital"
@@ -186,7 +213,7 @@ typedef struct snd_ctl_hw_info {
 #define SND_MIXER_OUT_SURROUND		"Surround"
 #define SND_MIXER_OUT_DSP		"DSP Output"
 
-/* groups */				/* max 24 chars (with '\0') */
+/* groups */				/* max 24 chars */
 #define SND_MIXER_GRP_TONE_CONTROL	"Tone Control"
 #define SND_MIXER_GRP_EQUALIZER		"Equalizer"
 #define SND_MIXER_GRP_FADER		"Fader"
@@ -726,9 +753,6 @@ typedef struct snd_mixer_element {
 #define SND_MIXER_IOCTL_ELEMENT_INFO	_IOWR('R', 0x20, snd_mixer_element_info_t)
 #define SND_MIXER_IOCTL_ELEMENT_READ	_IOWR('R', 0x21, snd_mixer_element_t)
 #define SND_MIXER_IOCTL_ELEMENT_WRITE	_IOWR('R', 0x22, snd_mixer_element_t)
-#define SND_MIXER_IOCTL_SWITCH_LIST	_IOWR('R', 0x30, snd_switch_list_t)
-#define SND_MIXER_IOCTL_SWITCH_READ	_IOWR('R', 0x31, snd_switch_t)
-#define SND_MIXER_IOCTL_SWITCH_WRITE	_IOWR('R', 0x32, snd_switch_t)
 
 /*
  *  Read interface.
@@ -743,17 +767,13 @@ typedef struct snd_mixer_element {
 #define SND_MIXER_READ_GROUP_CHANGE	6	/* the group was changed */
 #define SND_MIXER_READ_GROUP_ADD	7	/* the group was added */
 #define SND_MIXER_READ_GROUP_REMOVE	8	/* the group was removed */
-#define SND_MIXER_READ_SWITCH_VALUE	100	/* the switch value was changed */
-#define SND_MIXER_READ_SWITCH_CHANGE	101	/* the switch was changed */
-#define SND_MIXER_READ_SWITCH_ADD	102	/* the switch was added */
-#define SND_MIXER_READ_SWITCH_REMOVE	103	/* the switch was removed */
 
 typedef struct snd_mixer_read {
 	unsigned int cmd;		/* command - SND_MIXER_READ_* */
 	union {
-		snd_switch_list_item_t switem; /* switch item */
 		snd_mixer_eid_t eid;	/* element identification */
 		snd_mixer_gid_t gid;	/* group identification */
+		unsigned char data8[60];
 	} data;
 } snd_mixer_read_t;
 
@@ -995,12 +1015,6 @@ typedef struct snd_pcm_record_status {
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
 #define SND_PCM_IOCTL_PLAYBACK_INFO	_IOR ('A', 0x02, snd_pcm_playback_info_t)
 #define SND_PCM_IOCTL_RECORD_INFO	_IOR ('A', 0x03, snd_pcm_record_info_t)
-#define SND_PCM_IOCTL_PSWITCH_LIST	_IOWR('A', 0x04, snd_switch_list_t)
-#define SND_PCM_IOCTL_PSWITCH_READ	_IOWR('A', 0x05, snd_switch_t)
-#define SND_PCM_IOCTL_PSWITCH_WRITE	_IOWR('A', 0x06, snd_switch_t)
-#define SND_PCM_IOCTL_RSWITCH_LIST	_IOWR('A', 0x07, snd_switch_list_t)
-#define SND_PCM_IOCTL_RSWITCH_READ	_IOWR('A', 0x08, snd_switch_t)
-#define SND_PCM_IOCTL_RSWITCH_WRITE	_IOWR('A', 0x09, snd_switch_t)
 #define SND_PCM_IOCTL_PLAYBACK_FORMAT	_IOWR('A', 0x10, snd_pcm_format_t)
 #define SND_PCM_IOCTL_RECORD_FORMAT	_IOWR('A', 0x11, snd_pcm_format_t)
 #define SND_PCM_IOCTL_PLAYBACK_PARAMS	_IOWR('A', 0x12, snd_pcm_playback_params_t)
@@ -1279,12 +1293,6 @@ typedef struct snd_rawmidi_input_status {
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ('W', 0x01, snd_rawmidi_info_t)
 #define SND_RAWMIDI_IOCTL_OUTPUT_INFO	_IOR ('W', 0x02, snd_rawmidi_output_info_t)
 #define SND_RAWMIDI_IOCTL_INPUT_INFO	_IOR ('W', 0x03, snd_rawmidi_input_info_t)
-#define SND_RAWMIDI_IOCTL_OSWITCH_LIST	_IOWR('W', 0x04, snd_switch_list_t)
-#define SND_RAWMIDI_IOCTL_OSWITCH_READ	_IOWR('W', 0x05, snd_switch_t)
-#define SND_RAWMIDI_IOCTL_OSWITCH_WRITE	_IOWR('W', 0x06, snd_switch_t)
-#define SND_RAWMIDI_IOCTL_ISWITCH_LIST	_IOWR('W', 0x07, snd_switch_list_t)
-#define SND_RAWMIDI_IOCTL_ISWITCH_READ	_IOWR('W', 0x08, snd_switch_t)
-#define SND_RAWMIDI_IOCTL_ISWITCH_WRITE	_IOWR('W', 0x09, snd_switch_t)
 #define SND_RAWMIDI_IOCTL_OUTPUT_PARAMS	_IOWR('W', 0x10, snd_rawmidi_output_params_t)
 #define SND_RAWMIDI_IOCTL_INPUT_PARAMS	_IOWR('W', 0x11, snd_rawmidi_input_params_t)
 #define SND_RAWMIDI_IOCTL_OUTPUT_STATUS	_IOR ('W', 0x20, snd_rawmidi_output_status_t)
