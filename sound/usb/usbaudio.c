@@ -1321,7 +1321,8 @@ static void proc_dump_substream_formats(snd_usb_substream_t *subs, snd_info_buff
 	list_for_each(p, &subs->fmt_list) {
 		struct audioformat *fp;
 		fp = list_entry(p, struct audioformat, list);
-		snd_iprintf(buffer, "  Altset %d\n", fp->altset_idx);
+		snd_iprintf(buffer, "  Interface %d\n", fp->iface);
+		snd_iprintf(buffer, "    Altset %d\n", fp->altset_idx);
 		snd_iprintf(buffer, "    Format: %s\n", snd_pcm_format_name(fp->format));
 		snd_iprintf(buffer, "    Channels: %d\n", fp->channels);
 		snd_iprintf(buffer, "    Endpoint: %d %s (%s)\n",
@@ -1349,6 +1350,7 @@ static void proc_dump_substream_status(snd_usb_substream_t *subs, snd_info_buffe
 	if (subs->running) {
 		int i;
 		snd_iprintf(buffer, "  Status: Running\n");
+		snd_iprintf(buffer, "    Interface = %d\n", subs->interface);
 		snd_iprintf(buffer, "    Altset = %d\n", subs->format);
 		snd_iprintf(buffer, "    URBs = %d [ ", subs->nurbs);
 		for (i = 0; i < subs->nurbs; i++)
@@ -1438,6 +1440,8 @@ static void free_substream(snd_usb_substream_t *subs)
 {
 	struct list_head *p, *n;
 
+	if (! subs->num_formats)
+		return; /* not initialized */
 	list_for_each_safe(p, n, &subs->fmt_list) {
 		struct audioformat *fp = list_entry(p, struct audioformat, list);
 		if (fp->rate_table)
@@ -1774,6 +1778,7 @@ static int parse_audio_endpoints(snd_usb_audio_t *chip, unsigned char *buffer, i
 		}
 
 		
+		snd_printdd(KERN_INFO "%d:%u:%d: add audio endpoint 0x%x\n", dev->devnum, iface_no, i, fp->endpoint);
 		err = add_audio_endpoint(chip, stream, fp);
 		if (err < 0) {
 			if (fp->rate_table)
