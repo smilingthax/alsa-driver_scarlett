@@ -2947,6 +2947,7 @@ static int __devinit snd_trident_mixer(trident_t * trident, int pcm_spdif_device
 	_ac97.read = snd_trident_codec_read;
 	_ac97.private_data = trident;
 	trident->ac97_detect = 1;
+
       __again:
 	if ((err = snd_ac97_mixer(trident->card, &_ac97, &trident->ac97)) < 0) {
 		if (trident->device == TRIDENT_DEVICE_ID_SI7018) {
@@ -2958,6 +2959,16 @@ static int __devinit snd_trident_mixer(trident_t * trident, int pcm_spdif_device
 		}
 		return err;
 	}
+	
+	/* secondary codec? */
+	if (trident->device == TRIDENT_DEVICE_ID_SI7018 &&
+	    (inl(TRID_REG(trident, SI_SERIAL_INTF_CTRL)) & SI_AC97_PRIMARY_READY) != 0) {
+		_ac97.num = 1;
+		err = snd_ac97_mixer(trident->card, &_ac97, &trident->ac97_sec);
+		if (err < 0)
+			snd_printk("SI7018: the secondary codec - invalid access\n");
+	}
+	
 	trident->ac97_detect = 0;
 
 	if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
@@ -3181,6 +3192,12 @@ static int snd_trident_sis_reset(trident_t *trident)
 		goto __si7018_retry;
 	}
       __si7018_ok:
+	/* wait for the second codec */
+	do {
+		if ((inl(TRID_REG(trident, SI_SERIAL_INTF_CTRL)) & SI_AC97_SECONDARY_READY) != 0)
+			break;
+		do_delay(trident);
+	} while (time_after_eq(end_time, jiffies));
 	/* enable 64 channel mode */
 	outl(BANK_B_EN, TRID_REG(trident, T4D_LFO_GC_CIR));
 	return 0;
