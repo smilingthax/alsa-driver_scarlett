@@ -9,7 +9,10 @@ mainsrcdir	= @srcdir@
 MAINSRCDIR	= @SRCDIR@
 
 CROSS_COMPILE   ?= @CROSS_COMPILE@
-ifndef NEW_KBUILD
+ARCH            ?= @ARCH@
+ifdef NEW_KBUILD
+export CROSS_COMPILE ARCH
+else
 AS		= $(CROSS_COMPILE)@AS@
 LD		= $(CROSS_COMPILE)@LD@
 CC		= $(CROSS_COMPILE)@CC@
