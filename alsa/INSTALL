@@ -682,6 +682,18 @@ Module parameters
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     
+  Module snd-card-via686a.o
+  -------------------------
+
+    Module for AC'97 motherboards based on VIA 82C686A (south) bridge.
+
+    snd_mpu_port        - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
+    snd_joystick	- 1 = enable, otherwise obtain BIOS setup
+    snd_pbk_frame_size  - max playback frame size in kB (4-128kB)
+    snd_cap_frame_size  - max capture frame size in kB (4-128kB)
+
+    Module supports autoprobe and multiple bus-master chips (max 8).
+    
 
 modprobe/kmod support
 =====================
