@@ -293,7 +293,7 @@ static int __devinit snd_card_sb16_pnp(int dev, struct snd_card_sb16 *acard,
 		pnp_resource_change(&cfg->dma_resource[1], dma16[dev], 1);
 	if (irq[dev] != SNDRV_AUTO_IRQ)
 		pnp_resource_change(&cfg->irq_resource[0], irq[dev], 1);
-	if ((pnp_manual_config_dev(pdev, cfg, 0)) < 0) 
+	if (pnp_manual_config_dev(pdev, cfg, 0) < 0) 
 		snd_printk(KERN_ERR PFX "AUDIO the requested resources are invalid, using auto config\n"); 
 	err = pnp_activate_dev(pdev); 
 	if (err < 0) { 
