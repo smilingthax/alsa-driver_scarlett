@@ -1,5 +1,6 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
+H replace int with unsigned long (alpha machines) for port values (Jaroslav)
 M implement stream silence fill (Abramo)
 M port card-share to pcm2 (Abramo)
 M add user/kernel lock for mmap'ed control (To think)
