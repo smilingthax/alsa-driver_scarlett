@@ -202,8 +202,6 @@ void vx_toggle_dac_mute(vxpocket_t *chip, int mute)
 				 mute ? DAC_ATTEN_MAX : DAC_ATTEN_MIN);
 }
 
-#define XX_CODEC_RESET_WAIT_TIME	10	// 10 milliseconds
-
 /*
  * vx_reset_codec - reset and initialize the codecs
  */
@@ -213,7 +211,7 @@ void vx_reset_codec(vxpocket_t *chip)
 
 	/* Set the reset CODEC bit to 1. */
 	vx_outb(chip, CDSP, chip->regCDSP | VXP_CDSP_CODEC_RESET_MASK);
-	vx_delay(chip, XX_CODEC_RESET_WAIT_TIME);
+	vx_delay(chip, 10);
 	/* Set the reset CODEC bit to 0. */
 	vx_outb(chip, CDSP, chip->regCDSP & ~VXP_CDSP_CODEC_RESET_MASK);
 	vx_delay(chip, 1);
@@ -237,6 +235,7 @@ void vx_reset_codec(vxpocket_t *chip)
 					   ANALOG_OUT_ATTEN_MAX,
 					   ANALOG_OUT_ATTEN_MAX);
 	}
+
 	/* mute input levels */
 	chip->mic_level = 0;
 	if (chip->hw->type == VXP_TYPE_VXP440)

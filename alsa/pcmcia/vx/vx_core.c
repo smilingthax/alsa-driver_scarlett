@@ -61,16 +61,17 @@ void snd_vx_outb(vxpocket_t *chip, int offset, int val)
 
 /*
  * vx_delay - delay for the specified time
- * @msec: the time to delay in msec
+ * @xmsec: the time to delay in msec
  */
-void vx_delay(vxpocket_t *chip, int msec)
+void vx_delay(vxpocket_t *chip, int xmsec)
 {
 	if (! chip->in_suspend && ! in_interrupt() &&
-	    msec >= 1000 / HZ) {
+	    xmsec >= 1000 / HZ) {
 		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout((msec * HZ + 999) / 1000);
-	} else
-		mdelay(msec);
+		schedule_timeout((xmsec * HZ + 999) / 1000);
+	} else {
+		mdelay(xmsec);
+	}
 }
 
 /*
@@ -144,7 +145,7 @@ static int vx_test_xilinx(vxpocket_t *chip)
  * vx_reset_dsp - reset the DSP
  */
 
-#define END_OF_RESET_WAIT_TIME		500	/* ms */
+#define END_OF_RESET_WAIT_TIME		200	/* ms */
 #define XX_DSP_RESET_WAIT_TIME		2	/* ms */
 
 static void vx_reset_dsp(vxpocket_t *chip)
@@ -517,7 +518,7 @@ static int vx_load_boot_image(vxpocket_t *chip, const struct snd_vxp_image *boot
 
 	/* reset dsp */
 	vx_reset_dsp(chip);
-
+	
 	vx_delay(chip, END_OF_RESET_WAIT_TIME); /* another wait? */
 
 	/* download boot strap */
@@ -569,6 +570,8 @@ static int vx_load_xilinx_binary(vxpocket_t *chip)
 	for (i = 0; i < xilinx->length; i++) {
 		if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0)
 			goto _error;
+		if (i == 0)
+			printk("first outb: jiffies = %li\n", jiffies);
 		vx_outb(chip, TXL, xilinx->image[i]);
 
 		/* wait for reading */
@@ -596,11 +599,10 @@ static int vx_load_xilinx_binary(vxpocket_t *chip)
 
 	snd_printd(KERN_DEBUG "xilinx: dsp size received 0x%x, orig 0x%x\n", c, xilinx->length);
 
-	/* set HF0 to start xilinx program */
 	vx_outb(chip, ICR, ICR_HF0);
 
 	/* TEMPO 250ms : wait until Xilinx is downloaded */
-	vx_delay(chip, 500);
+	vx_delay(chip, 300);
 
 	/* test magical word */
 	if (vx_check_magic(chip) < 0)
@@ -613,7 +615,7 @@ static int vx_load_xilinx_binary(vxpocket_t *chip)
 	/* Reset the Xilinx's signal enabling IO access */
 	chip->regDIALOG |= VXP_DLG_XILINX_REPROG_MASK;
 	vx_outb(chip, DIALOG, chip->regDIALOG);
-	vx_delay(chip, 100);
+	vx_delay(chip, 10);
 	chip->regDIALOG &= ~VXP_DLG_XILINX_REPROG_MASK;
 	vx_outb(chip, DIALOG, chip->regDIALOG);
 
@@ -669,7 +671,7 @@ static int vx_load_dsp(vxpocket_t *chip)
 	}
 	snd_printd(KERN_DEBUG "checksum = 0x%08x\n", csum);
 
-	vx_delay(chip, 500);
+	vx_delay(chip, 200);
 
 	err = vx_wait_isr_bit(chip, ISR_CHK);
 
@@ -737,6 +739,22 @@ static void vx_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 	static char *uer_type[] = { "Consumer", "Professional", "Not Present" };
 	
 	snd_iprintf(buffer, "%s\n", chip->card->longname);
+	snd_iprintf(buffer, "DSP audio info:");
+	if (chip->audio_info & VX_AUDIO_INFO_REAL_TIME)
+		snd_iprintf(buffer, " realtime");
+	if (chip->audio_info & VX_AUDIO_INFO_OFFLINE)
+		snd_iprintf(buffer, " offline");
+	if (chip->audio_info & VX_AUDIO_INFO_MPEG1)
+		snd_iprintf(buffer, " mpeg1");
+	if (chip->audio_info & VX_AUDIO_INFO_MPEG2)
+		snd_iprintf(buffer, " mpeg2");
+	if (chip->audio_info & VX_AUDIO_INFO_LINEAR_8)
+		snd_iprintf(buffer, " linear8");
+	if (chip->audio_info & VX_AUDIO_INFO_LINEAR_16)
+		snd_iprintf(buffer, " linear16");
+	if (chip->audio_info & VX_AUDIO_INFO_LINEAR_24)
+		snd_iprintf(buffer, " linear24");
+	snd_iprintf(buffer, "\n");
 	snd_iprintf(buffer, "Input Source: %s\n", audio_src[chip->audio_source]);
 	snd_iprintf(buffer, "Clock Source: %s\n", clock_src[chip->clock_source]);
 	snd_iprintf(buffer, "Frequency: %d\n", chip->freq);
@@ -878,6 +896,7 @@ int snd_vxpocket_assign_resources(vxpocket_t *chip, int port, int irq)
 	sprintf(card->shortname, "Digigram %s", chip->card->driver);
 	sprintf(card->longname, "%s at 0x%x, irq %i",
 		card->shortname, port, irq);
+
 	if ((err = snd_vxpocket_init(chip)) < 0)
 		return err;
 

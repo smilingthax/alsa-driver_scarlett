@@ -148,6 +148,7 @@ struct snd_vxpocket {
 
 	struct vx_rmh irq_rmh;	/* RMH used in interrupts */
 
+	unsigned int audio_info; /* see VX_AUDIO_INFO */
 	int audio_ins;
 	int audio_outs;
 	struct vx_pipe **playback_pipes;
@@ -319,6 +320,14 @@ enum {
 #define ISR_TX_EMPTY	0x02
 #define ISR_RX_FULL	0x01
 
+/* bits for audio_info */
+#define VX_AUDIO_INFO_REAL_TIME	(1<<0)	/* real-time processing available */
+#define VX_AUDIO_INFO_OFFLINE	(1<<1)	/* offline processing available */
+#define VX_AUDIO_INFO_MPEG1	(1<<5)
+#define VX_AUDIO_INFO_MPEG2	(1<<6)
+#define VX_AUDIO_INFO_LINEAR_8	(1<<7)
+#define VX_AUDIO_INFO_LINEAR_16	(1<<8)
+#define VX_AUDIO_INFO_LINEAR_24	(1<<9)
 
 /* Constants used to access the Codec */
 #define XX_CODEC_SELECTOR               0x20
