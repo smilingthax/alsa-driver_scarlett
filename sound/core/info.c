@@ -24,6 +24,7 @@
 #include <linux/init.h>
 #include <linux/vmalloc.h>
 #include <linux/time.h>
+#include <linux/smp_lock.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
