@@ -1782,33 +1782,6 @@ if test "$new_pci_save_state" = "1"; then
 fi
 fi
 
-dnl Check for acpi_register_gsi
-AC_MSG_CHECKING(for acpi_register_gsi)
-acpi_register_gsi="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#include <linux/config.h>
-#include <linux/acpi.h>
-],[
-  unsigned int (*func)(u32, int, int);
-  func = acpi_register_gsi;
-],
-    AC_MSG_RESULT("yes");acpi_register_gsi="1",
-    AC_MSG_RESULT("no");acpi_register_gsi="0",
-    AC_MSG_RESULT("unknown");acpi_register_gsi="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_ACPI_REGISTER_GSI=$acpi_register_gsi
-dnl AC_SUBST(CONFIG_HAVE_ACPI_REGISTER_GSI)
-if test "$CONFIG_HAVE_ACPI_REGISTER_GSI" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_ACPI_REGISTER_GSI)
-fi
-
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
