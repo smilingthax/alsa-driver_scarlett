@@ -142,6 +142,7 @@ case "$1" in
     ;;
   audiopci)
     basic
+    insert snd-ac97-codec.o
     insert snd-es1370.o
     insert snd-audiopci.o
     if [ -r /etc/sound/es1370 ]; then
