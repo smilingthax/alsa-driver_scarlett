@@ -393,8 +393,6 @@ static void choose_default_id(snd_card_t * card)
 			idx_flag++;
 		}
 	}
-		
-	strcpy(card->id, id);
 }
 
 int snd_card_register(snd_card_t * card)
