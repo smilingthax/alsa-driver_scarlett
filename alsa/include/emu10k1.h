@@ -407,8 +407,8 @@
 
 #define FXWC			0x43		/* FX output write channels register			*/
 #define FXWC_DEFAULTROUTE_C	(1<<0)		/* left emu out? */
-#define FXWC_DEFAULTROUTE_B	(1<<1)
-#define FXWC_DEFAULTROUTE_A	(1<<12)		/* right emu out? */
+#define FXWC_DEFAULTROUTE_B	(1<<1)		/* right emu out? */
+#define FXWC_DEFAULTROUTE_A	(1<<12)
 #define FXWC_DEFAULTROUTE_D	(1<<13)
 #define FXWC_ADCLEFT		(1<<18)
 #define FXWC_CDROMSPDIFLEFT	(1<<18)
@@ -649,6 +649,14 @@ struct snd_stru_emu10k1 {
 	snd_pcm_t *pcm_efx;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
+
+	snd_kmixer_element_t *me_vol_rear, *me_sw_rear;
+	int vol_rear[2];
+	unsigned int rear_active : 1;
+
+	spinlock_t synth_lock;
+	void *synth;
+	int (*get_synth_voice)(emu10k1_t *emu);
 
 	spinlock_t reg_lock;
 	spinlock_t emu_lock;
