@@ -10,9 +10,28 @@
 #include "sndversions.h"
 #endif
 
+#include <linux/kmod.h>
 #include <linux/devfs_fs_kernel.h>
 
 #include "../alsa-kernel/core/wrappers.c"
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
+#define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
+#endif
+
+#if defined(CONFIG_KMOD) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+void snd_compat_request_module(const char *fmt, ...)
+{
+	char buf[64];
+	va_list args;
+	int n;
+
+	va_start(args, fmt);
+	n = vsnprintf(buf, 64, fmt, args);
+	if (n < 64 && buf[0])
+		request_module(buf);
+}
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 
@@ -33,10 +52,6 @@ void snd_wrapper_kill_fasync(struct fasync_struct **fp, int sig, int band)
 #endif /* < 2.3.0 */
 
 #if defined(CONFIG_DEVFS_FS)
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
-#define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
-#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 

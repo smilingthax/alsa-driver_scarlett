@@ -12,6 +12,9 @@ EXPORT_SYMBOL(pm_unregister);
 EXPORT_SYMBOL(pm_send);
 #endif
   /* wrappers */
+#if defined(CONFIG_KMOD) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+EXPORT_SYMBOL(snd_compat_request_module);
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 EXPORT_SYMBOL(snd_wrapper_kill_fasync);
 #endif

@@ -50,6 +50,13 @@
 
 #include <linux/module.h>
 
+#if defined(CONFIG_KMOD) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#include <linux/kmod.h>
+#undef request_module
+void snd_compat_request_module(const char *name, ...);
+#define request_module snd_compat_request_module
+#endif
+
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
 #endif
