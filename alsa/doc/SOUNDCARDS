@@ -84,3 +84,12 @@ MA: Jaromir Koutek <miri@punknet.cz>
 ID: ESS ES18XX
 IF: MIXER,PCM,MIDI
 MA: Abramo Bagnara <abbagnara@racine.ra.it>
+
+ID: OPTi 82C9xx
+SC: Audio 16 Pro  EPC-SOUN9301      (82C930 based)
+SC: ExpertColor  MED-3931 v2.0      (82C931 based)
+SC: ExpertMedia Sound 16  MED-1600  (82C928 based - AD1848)
+SC: Mozart  S601206-G               (OTI601 based - CS4231)
+SC: Sound Player S-928              (82C928 based - AD1848)
+IF: MIXER,PCM,MIDI
+MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
