@@ -12,26 +12,15 @@ CC = gcc
 INCLUDE = -I../include
 endif
 
-TARGETS = snd-deps
+TARGETS = dummy
 
 .c.o:
 	$(CC) $(INCLUDE) -c -o $*.o $<
 
 all: $(TARGETS)
 
-snd-deps: snd-deps-find.o snd-deps-output.o
-	$(CC) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
-
-../acinclude.m4: snd-deps ../modules.config
-	./snd-deps --acinclude > ../acinclude.m4
-
-../cards.config.in: snd-deps ../modules.config
-	./snd-deps --makefile > ../cards.config.in
-
-../include/config1.h.in: snd-deps ../modules.config
-	./snd-deps --cinclude > ../include/config1.h.in
-
-update-deps: ../acinclude.m4 ../cards.config.in ../include/config1.h.in
+.PHONY: dummy
+dummy:
 
 kredirect: kredirect.o
 	$(CC) $(INCLUDE) kredirect.o -o $@
