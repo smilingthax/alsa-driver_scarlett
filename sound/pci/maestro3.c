@@ -898,6 +898,7 @@ static struct pci_device_id snd_m3_ids[] __devinitdata = {
 	{0,},
 };
 
+MODULE_DEVICE_TABLE(pci, snd_m3_ids);
 
 /*
  * lowlevel functions
