@@ -400,8 +400,8 @@ Module parameters
     snd_fm_port - FM port # for AZT2320 chip (PnP setup)
     snd_irq	- IRQ # for AZT2320 (SB8) chip (PnP setup)
     snd_mpu_irq - IRQ # for MPU-401 UART (PnP setup)
-    snd_dma1	- DMA # for AZT2320 (SB8) chip (PnP setup)
-    snd_dma1_size - max DMA size in kB (4-64kB)
+    snd_dma8	- DMA # for AZT2320 (SB8) chip (PnP setup)
+    snd_dma8_size - max DMA size in kB (4-64kB)
     
     Module supports up to 8 cards, PnP and autoprobe.
     
