@@ -292,11 +292,14 @@ MODULE_PARM_SYNTAX(snd_fm_port, "allows:{{-1},{0x388},{0x3c8},{0x3e0},{0x3e8}},d
 #endif
 
 /*
+ * channels for playback / capture
  */
+#define CM_CH_PLAY	0
+#define CM_CH_CAPT	1
 
-#define CM_CH_PLAY	1	/* use ch1 for playback */
-#define CM_CH_CAPT	0	/* use ch0 for capture */
-
+/*
+ * flags to check device open/close
+ */
 #define CM_OPEN_NONE	0
 #define CM_OPEN_CH_MASK	0x01
 #define CM_OPEN_DAC	0x10
@@ -307,6 +310,17 @@ MODULE_PARM_SYNTAX(snd_fm_port, "allows:{{-1},{0x388},{0x3c8},{0x3e0},{0x3e8}},d
 #define CM_OPEN_CAPTURE		(CM_CH_CAPT | CM_OPEN_ADC)
 #define CM_OPEN_SPDIF_PLAYBACK	(CM_CH_PLAY | CM_OPEN_DAC | CM_OPEN_SPDIF)
 #define CM_OPEN_SPDIF_CAPTURE	(CM_CH_CAPT | CM_OPEN_ADC | CM_OPEN_SPDIF)
+
+
+/*
+ * define this if you want soft ac3 encoding - it's still buggy..
+ */
+/* #define DO_SOFT_AC3 */
+
+
+/*
+ * driver data
+ */
 
 typedef struct snd_stru_cmipci cmipci_t;
 typedef struct snd_stru_cmipci_pcm cmipci_pcm_t;
@@ -335,8 +349,8 @@ struct cmipci_mixer_auto_switches {
 static const struct cmipci_mixer_auto_switches cm_saved_mixer[] = {
 	{"PCM Playback Switch", 0},
 	{"IEC958 Output Switch", 1},
-	{"IEC958 DAC To Out", 0},
-	{"IEC958 Out To DAC", 1},
+	{"IEC958 Mix Analog", 0},
+	// {"IEC958 Out To DAC", 1}, // no longer used
 	{"IEC958 Loop", 0},
 };
 #define CM_SAVED_MIXERS		(sizeof(cm_saved_mixer)/sizeof(cm_saved_mixer[0]))
@@ -388,6 +402,13 @@ struct snd_stru_cmipci {
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
 };
+
+
+#ifdef DO_SOFT_AC3
+#define cmipci_can_ac3_hw(cm)	((cm)->can_ac3_hw)
+#else
+#define cmipci_can_ac3_hw(cm)	((cm)->can_ac3_hw || (cm)->can_ac3_sw)
+#endif
 
 
 /* read/write operations for dword register */
@@ -579,6 +600,7 @@ static int snd_cmipci_pcm_prepare(cmipci_t *cm, cmipci_pcm_t *rec,
 	/* buffer and period sizes in frame */
 	rec->dma_size = runtime->buffer_size << rec->shift;
 	rec->period_size = runtime->period_size << rec->shift;
+	rec->dma_size <<= rec->ac3_shift;
 	rec->period_size <<= rec->ac3_shift;
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
@@ -752,6 +774,7 @@ static snd_pcm_uframes_t snd_cmipci_capture_pointer(snd_pcm_substream_t *substre
 	return snd_cmipci_pcm_pointer(cm, &cm->channel[CM_CH_CAPT], substream);
 }
 
+#ifdef DO_SOFT_AC3
 /*
  * special tricks for soft ac3 transfer:
  *
@@ -866,6 +889,7 @@ static int snd_cmipci_ac3_silence(snd_pcm_substream_t *subs, int channel,
 
 	return 0;
 }
+#endif /* DO_SOFT_AC3 */
 
 
 /*
@@ -1020,6 +1044,7 @@ static int snd_cmipci_playback_spdif_hw_free(snd_pcm_substream_t *subs)
 #else
 	snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_0);
 #endif
+	snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDO2DAC);
 	snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_AC3EN1);
 	snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_AC3EN2);
 	if (cm->can_ac3_hw)
@@ -1143,6 +1168,8 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 #else
 	snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDF_0);
 #endif
+	/* FIXME: not sure whether we really need this bits, too. */
+	snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_SPDO2DAC);
 
 	cm->channel[CM_CH_PLAY].ac3_shift = 0;
 	cm->spdif_counter = 0;
@@ -1159,6 +1186,9 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 			/* SPD24SEL for 039, 0x20, but cannot be set */
 			snd_cmipci_set_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
 		} else {
+#ifdef DO_SOFT_AC3
+			/* FIXME: ugly hack! */
+			subs->runtime->buffer_size /= 2;
 			/* SPD32SEL for 037 & 039, 0x20 */
 			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_SPD32SEL);
 			/* set 176K sample rate to fix 033 HW bug */
@@ -1170,23 +1200,27 @@ static int snd_cmipci_playback_spdif_prepare(snd_pcm_substream_t *subs)
 #else
 					snd_cmipci_set_bit(cm, CM_REG_CHFORMAT, CM_CH0_SRATE_176K);
 #endif
-				} else
+				} else {
+#if CM_CH_PLAY == 1
 					snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH1_SRATE_176K);
+#else
+					snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH0_SRATE_176K);
+#endif
+				}
 			}
 			cm->channel[CM_CH_PLAY].ac3_shift = 1; /* use 32bit */
+#endif /* DO_SOFT_AC3 */
 		}
 
 	} else {
 		snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_AC3EN1);
 		snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_AC3EN2);
 
-		if (cm->can_ac3_hw)
-			if (subs->runtime->format == SNDRV_PCM_FORMAT_S24_LE)
-				snd_cmipci_set_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
-			else
-				snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
-		else {
+		if (cm->can_ac3_hw) {
+			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
+		} else {
 			snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_SPD32SEL);
+			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_SPD24SEL);
 #if CM_CH_PLAY == 1
 			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CH1_SRATE_176K);
 #else
@@ -1308,7 +1342,7 @@ static snd_pcm_hardware_t snd_cmipci_playback_spdif =
 {
 	info:			(SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER),
-	formats:		SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE,
+	formats:		SNDRV_PCM_FMTBIT_S16_LE /*| SNDRV_PCM_FMTBIT_S32_LE*/,
 	rates:			SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000,
 	rate_min:		44100,
 	rate_max:		48000,
@@ -1362,22 +1396,12 @@ static int open_device_check(cmipci_t *cm, int mode, snd_pcm_substream_t *subs)
 	}
 	cm->opened[ch] = mode;
 	cm->channel[ch].substream = subs;
-	if (mode & CM_OPEN_DAC) {
-		if (! cm->channel[ch].is_dac) {
-			cm->channel[ch].is_dac = 1;
-			if (cm->channel[1-ch].is_dac) {
-				spin_lock_irqsave(&cm->reg_lock, flags);
-				snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
-				spin_unlock_irqrestore(&cm->reg_lock, flags);
-			}
-		}
-	} else {
-		if (cm->channel[ch].is_dac) {
-			cm->channel[ch].is_dac = 0;
-			spin_lock_irqsave(&cm->reg_lock, flags);
-			snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
-			spin_unlock_irqrestore(&cm->reg_lock, flags);
-		}
+	if (! (mode & CM_OPEN_DAC)) {
+		/* disable dual DAC mode */
+		cm->channel[ch].is_dac = 0;
+		spin_lock_irqsave(&cm->reg_lock, flags);
+		snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
+		spin_unlock_irqrestore(&cm->reg_lock, flags);
 	}
 	up(&cm->open_mutex);
 	return 0;
@@ -1385,6 +1409,7 @@ static int open_device_check(cmipci_t *cm, int mode, snd_pcm_substream_t *subs)
 
 static void close_device_check(cmipci_t *cm, int mode)
 {
+	unsigned long flags;
 	int ch = mode & CM_OPEN_CH_MASK;
 
 	down(&cm->open_mutex);
@@ -1392,6 +1417,13 @@ static void close_device_check(cmipci_t *cm, int mode)
 		cm->channel[ch].running = 0;
 		cm->channel[ch].substream = NULL;
 		cm->opened[ch] = 0;
+		if (! cm->channel[ch].is_dac) {
+			/* enable dual DAC mode again */
+			cm->channel[ch].is_dac = 1;
+			spin_lock_irqsave(&cm->reg_lock, flags);
+			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
+			spin_unlock_irqrestore(&cm->reg_lock, flags);
+		}
 	}
 	up(&cm->open_mutex);
 }
@@ -1454,9 +1486,8 @@ static int snd_cmipci_playback_spdif_open(snd_pcm_substream_t *substream)
 	if ((err = open_device_check(cm, CM_OPEN_SPDIF_PLAYBACK, substream)) < 0) /* use channel A */
 		return err;
 	runtime->hw = snd_cmipci_playback_spdif;
-	if (cm->can_ac3_hw) {
+	if (cmipci_can_ac3_hw(cm)) {
 		runtime->hw.info |= SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID;
-		//runtime->hw.formats |= SNDRV_PCM_FMTBIT_S24_LE;
 	}
 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x40000);
 	cm->dig_pcm_status = cm->dig_status;
@@ -1563,6 +1594,7 @@ static snd_pcm_ops_t snd_cmipci_playback_spdif_ops = {
 	pointer:	snd_cmipci_playback_pointer,
 };
 
+#ifdef DO_SOFT_AC3
 static snd_pcm_ops_t snd_cmipci_playback_soft_ac3_ops = {
 	open:		snd_cmipci_playback_spdif_open,
 	close:		snd_cmipci_playback_spdif_close,
@@ -1575,6 +1607,7 @@ static snd_pcm_ops_t snd_cmipci_playback_soft_ac3_ops = {
 	copy:		snd_cmipci_ac3_copy,
 	silence:	snd_cmipci_ac3_silence,
 };
+#endif /* DO_SOFT_AC3 */
 
 static snd_pcm_ops_t snd_cmipci_capture_spdif_ops = {
 	open:		snd_cmipci_capture_spdif_open,
@@ -1650,10 +1683,12 @@ static int __init snd_cmipci_pcm_spdif_new(cmipci_t *cm, int device)
 	if (err < 0)
 		return err;
 
-	if (cm->can_ac3_hw)
+	if (cmipci_can_ac3_hw(cm))
 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_cmipci_playback_spdif_ops);
+#ifdef DO_SOFT_AC3
 	else
 		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_cmipci_playback_soft_ac3_ops);
+#endif
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_cmipci_capture_spdif_ops);
 
 	pcm->private_data = cm;
@@ -2022,11 +2057,11 @@ static snd_kcontrol_new_t snd_cmipci_mixers[] = {
  */
 
 typedef struct snd_cmipci_switch_args {
-	int reg;
-	unsigned int mask;
-	unsigned int mask_on;
-	int is_byte: 1;
-	int always_accessible: 1;
+	int reg;		/* register index */
+	unsigned int mask;	/* mask bits */
+	unsigned int mask_on;	/* mask bits to turn on */
+	int is_byte: 1;		/* byte access? */
+	int ac3_sensitive: 1;	/* access forbidden during non-audio operation? */
 } snd_cmipci_switch_args_t;
 
 static int snd_cmipci_uswitch_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
@@ -2038,14 +2073,16 @@ static int snd_cmipci_uswitch_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t
 	return 0;
 }
 
-static int _snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol, snd_cmipci_switch_args_t *args)
+static int snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	unsigned long flags;
 	unsigned int val;
 	cmipci_t *cm = snd_kcontrol_chip(kcontrol);
+	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
+	snd_assert(args != NULL, return -EINVAL);
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
-	if (args->always_accessible && cm->mixer_insensitive) {
+	if (args->ac3_sensitive && cm->mixer_insensitive) {
 		ucontrol->value.integer.value[0] = 0;
 		spin_unlock_irqrestore(&cm->reg_lock, flags);
 		return 0;
@@ -2059,23 +2096,17 @@ static int _snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	return 0;
 }
 
-static int snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
-	snd_assert(args != NULL, return -EINVAL);
-	return _snd_cmipci_uswitch_get(kcontrol, ucontrol, args);
-}
-
-
-static int _snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol, snd_cmipci_switch_args_t *args)
+static int snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	unsigned long flags;
 	unsigned int val;
 	int change;
 	cmipci_t *cm = snd_kcontrol_chip(kcontrol);
+	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
+	snd_assert(args != NULL, return -EINVAL);
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
-	if (args->always_accessible && cm->mixer_insensitive) {
+	if (args->ac3_sensitive && cm->mixer_insensitive) {
 		/* ignored */
 		spin_unlock_irqrestore(&cm->reg_lock, flags);
 		return 0;
@@ -2100,42 +2131,39 @@ static int _snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	return change;
 }
 
-static int snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
-	snd_assert(args != NULL, return -EINVAL);
-	return _snd_cmipci_uswitch_put(kcontrol, ucontrol, args);
-}
 
-
-#define DEFINE_SWITCH_ARG(sname, xreg, xmask, xmask_on, xis_byte, xaccessible) \
+#define DEFINE_SWITCH_ARG(sname, xreg, xmask, xmask_on, xis_byte, xac3) \
 static snd_cmipci_switch_args_t cmipci_switch_arg_##sname = { \
   reg: xreg, \
   mask: xmask, \
   mask_on: xmask_on, \
   is_byte: xis_byte, \
-  always_accessible: xaccessible, \
+  ac3_sensitive: xac3, \
 }
 	
-#define DEFINE_BIT_SWITCH_ARG(sname, xreg, xmask, xis_byte, xaccessible) \
-	DEFINE_SWITCH_ARG(sname, xreg, xmask, xmask, xis_byte, xaccessible)
+#define DEFINE_BIT_SWITCH_ARG(sname, xreg, xmask, xis_byte, xac3) \
+	DEFINE_SWITCH_ARG(sname, xreg, xmask, xmask, xis_byte, xac3)
 
 #if 0 /* these will be controlled in pcm device */
 DEFINE_BIT_SWITCH_ARG(spdif_in, CM_REG_FUNCTRL1, CM_SPDF_1, 0);
 DEFINE_BIT_SWITCH_ARG(spdif_0, CM_REG_FUNCTRL1, CM_SPDF_0, 0);
 DEFINE_BIT_SWITCH_ARG(spdif_out, CM_REG_LEGACY_CTRL, CM_ENSPDOUT, 0);
 DEFINE_BIT_SWITCH_ARG(spdo_48k, CM_REG_MISC_CTRL, CM_SPDF_AC97|CM_SPDIF48K, 0);
+DEFINE_BIT_SWITCH_ARG(spdo2dac, CM_REG_FUNCTRL1, CM_SPDO2DAC, 0, 1);
 #endif
 DEFINE_BIT_SWITCH_ARG(spdif_enable, CM_REG_LEGACY_CTRL, CM_ENSPDOUT, 0, 0);
 DEFINE_BIT_SWITCH_ARG(spdi_valid, CM_REG_MISC, CM_SPDVALID, 1, 0);
 DEFINE_BIT_SWITCH_ARG(spdif_copyright, CM_REG_LEGACY_CTRL, CM_SPDCOPYRHT, 0, 0);
 DEFINE_BIT_SWITCH_ARG(spdif_dac_out, CM_REG_LEGACY_CTRL, CM_DAC2SPDO, 0, 1);
-DEFINE_BIT_SWITCH_ARG(spdo2dac, CM_REG_FUNCTRL1, CM_SPDO2DAC, 0, 1);
 DEFINE_SWITCH_ARG(spdo_5v, CM_REG_MISC_CTRL, CM_SPDO5V, 0, 0, 0); /* inverse: 0 = 5V */
 DEFINE_BIT_SWITCH_ARG(spdif_loop, CM_REG_FUNCTRL1, CM_SPDFLOOP, 0, 1);
 DEFINE_BIT_SWITCH_ARG(spdi_monitor, CM_REG_MIXER1, CM_CDPLAY, 1, 0);
 DEFINE_BIT_SWITCH_ARG(spdi_phase, CM_REG_MISC, 0x04, 0, 0);
-DEFINE_BIT_SWITCH_ARG(exchange_dac, CM_REG_MISC_CTRL, CM_XCHGDAC, 0, 0);
+#if CM_CH_PLAY == 1
+DEFINE_SWITCH_ARG(exchange_dac, CM_REG_MISC_CTRL, CM_XCHGDAC, 0, 0, 0); /* reversed */
+#else
+DEFINE_SWITCH_ARG(exchange_dac, CM_REG_MISC_CTRL, CM_XCHGDAC, CM_XCHGDAC, 0, 0);
+#endif
 DEFINE_BIT_SWITCH_ARG(fourch, CM_REG_MISC_CTRL, CM_N4SPK3D, 0, 0);
 DEFINE_BIT_SWITCH_ARG(line_rear, CM_REG_MIXER1, CM_SPK4, 1, 0);
 DEFINE_BIT_SWITCH_ARG(line_bass, CM_REG_LEGACY_CTRL, CM_LINE_AS_BASS, 0, 0);
@@ -2154,26 +2182,6 @@ DEFINE_SWITCH_ARG(modem, CM_REG_MISC_CTRL, CM_FLINKON|CM_FLINKOFF, CM_FLINKON, 0
 #define DEFINE_CARD_SWITCH(sname, sarg) DEFINE_SWITCH(sname, SNDRV_CTL_ELEM_IFACE_CARD, sarg)
 #define DEFINE_MIXER_SWITCH(sname, sarg) DEFINE_SWITCH(sname, SNDRV_CTL_ELEM_IFACE_MIXER, sarg)
 
-/*
- * callbacks for spdif output switch
- * needs toggle two registers..
- */
-static int snd_cmipci_spdout_enable_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	int changed;
-	changed = _snd_cmipci_uswitch_get(kcontrol, ucontrol, &cmipci_switch_arg_spdif_enable);
-	changed |= _snd_cmipci_uswitch_get(kcontrol, ucontrol, &cmipci_switch_arg_spdo2dac);
-	return changed;
-}
-
-static int snd_cmipci_spdout_enable_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
-{
-	int changed;
-	changed = _snd_cmipci_uswitch_put(kcontrol, ucontrol, &cmipci_switch_arg_spdif_enable);
-	changed |= _snd_cmipci_uswitch_put(kcontrol, ucontrol, &cmipci_switch_arg_spdo2dac);
-	return changed;
-}
-
 
 /* both for CM8338/8738 */
 static snd_kcontrol_new_t snd_cmipci_mixer_switches[] = {
@@ -2188,15 +2196,9 @@ static snd_kcontrol_new_t snd_cmipci_8738_mixer_switches[] = {
 	DEFINE_MIXER_SWITCH("IEC958 In Record", spdif_in),
 	DEFINE_MIXER_SWITCH("IEC958 Out", spdif_0),
 	DEFINE_MIXER_SWITCH("IEC958 Out 48KHz", spdo_48k),
+	DEFINE_MIXER_SWITCH("IEC958 Out To DAC", spdo2dac),
 #endif
-	// DEFINE_MIXER_SWITCH("IEC958 Output Switch", spdif_enable),
-	// DEFINE_MIXER_SWITCH("IEC958 Out To DAC", spdo2dac),
-	{ name: "IEC958 Output Switch",
-	  iface: SNDRV_CTL_ELEM_IFACE_MIXER,
-	  info: snd_cmipci_uswitch_info,
-	  get: snd_cmipci_spdout_enable_get,
-	  put: snd_cmipci_spdout_enable_put,
-	},
+	DEFINE_MIXER_SWITCH("IEC958 Output Switch", spdif_enable),
 	DEFINE_MIXER_SWITCH("IEC958 In Valid", spdi_valid),
 	DEFINE_MIXER_SWITCH("IEC958 Copyright", spdif_copyright),
 	DEFINE_MIXER_SWITCH("IEC958 Mix Analog", spdif_dac_out),
@@ -2308,7 +2310,7 @@ static void snd_cmipci_proc_read(snd_info_entry_t *entry,
 	cmipci_t *cm = snd_magic_cast(cmipci_t, entry->private_data, return);
 	int i;
 	
-	snd_iprintf(buffer, "C-Media PCI\n\n");
+	snd_iprintf(buffer, "%s\n\n", cm->card->longname);
 	for (i = 0; i < 0x40; i++) {
 		int v = inb(cm->iobase + i);
 		if (i % 4 == 0)
@@ -2468,7 +2470,7 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	cm->iobase = pci_resource_start(pci, 0);
 	cm->channel[0].ch = 0;
 	cm->channel[1].ch = 1;
-	cm->channel[0].is_dac = cm->channel[1].is_dac = 1;
+	cm->channel[0].is_dac = cm->channel[1].is_dac = 1; /* dual DAC mode */
 
 	if ((cm->res_iobase = request_region(cm->iobase, CM_EXTENT_CODEC, card->driver)) == NULL) {
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", cm->iobase, cm->iobase + CM_EXTENT_CODEC - 1);
@@ -2508,8 +2510,8 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	snd_cmipci_write(cm, CM_REG_FUNCTRL0, 0);	/* disable channels */
 	snd_cmipci_write(cm, CM_REG_FUNCTRL1, 0);
 
-	snd_cmipci_write(cm, CM_REG_CHFORMAT, 0x00200000);
-	snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC|CM_N4SPK3D);
+	snd_cmipci_write(cm, CM_REG_CHFORMAT, 0);
+	snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_XCHGDAC|CM_ENDBDAC|CM_N4SPK3D);
 
 	/* set MPU address */
 	switch (iomidi) {
