@@ -1,0 +1,61 @@
+This document describes standard names of mixer controls.
+
+Syntax: SOURCE [DIRECTION] FUNCTION
+
+DIRECTION:
+  <nothing>	(both directions)
+  Playback
+  Capture
+  Bypass Playback
+  Bupass Capture
+
+FUNCTION:
+  Switch	(on/off switch)
+  Volume
+  Route		(route control, hardware specific)
+
+SOURCE:
+  Master
+  Master Mono
+  Hardware Master
+  Headphone
+  PC Speaker
+  Phone
+  Phone Input
+  Phone Output
+  Mic
+  Line
+  CD
+  Video
+  Aux
+  PCM
+  PCM Front
+  PCM Rear
+  PCM Pan
+  Loopback
+  Analog Loopback
+  Digital Loopback
+  Mono
+  Mono Output
+  Multi
+  ADC
+  Wave
+  Music
+  S/PDIF Input
+  S/PDIF Output
+
+Exceptions:
+  Capture Source
+  Capture Switch	(aka input gain switch)
+  Capture Volume	(aka input gain volume)
+  Playback Switch	(aka output gain switch)
+  Playback Volume	(aka output gain volume)
+  Tone Control - Bass
+  Tone Control - Treble
+  3D Control - Switch
+  3D Control - Center
+  3D Control - Depth
+  3D Control - Wide
+  3D Control - Space
+  3D Control - Level
+  Mic Boost [(?dB)]
