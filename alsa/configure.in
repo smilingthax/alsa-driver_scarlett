@@ -51,6 +51,10 @@ if echo $ksublevel | grep -E "[[[:digit:]]]+a" > /dev/null; then
   kextraversion=a`echo $ksublevel | cut -d a -f 2`
   ksublevel=`echo $ksublevel | cut -d a -f 1`
 fi
+if echo $ksublevel | grep -E "[[[:digit:]]]+pre" > /dev/null; then
+  kextraversion=a`echo $ksublevel | cut -d e -f 2`
+  ksublevel=`echo $ksublevel | cut -d p -f 1`
+fi
 kversion=`expr $kversion + 0`
 kpatchlevel=`expr $kpatchlevel + 0`
 ksublevel=`expr $ksublevel + 0`
