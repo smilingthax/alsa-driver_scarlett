@@ -69,6 +69,7 @@ obj-$(CONFIG_SND_SB16) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmi
 obj-$(CONFIG_SND_SBAWE) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
 obj-$(CONFIG_SND_ES968) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o
 obj-$(CONFIG_SND_WAVEFRONT) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
+obj-$(CONFIG_SND_SSCAPE) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
 obj-$(CONFIG_SND_ALS4000) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
 obj-$(CONFIG_SND_CMIPCI) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
 obj-$(CONFIG_SND_CS4281) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
