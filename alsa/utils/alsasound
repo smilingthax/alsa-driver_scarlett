@@ -41,21 +41,15 @@ else
   rc_reset=""
 fi
 
-config=/etc/modules.conf
 alsactl=/usr/sbin/alsactl
 asoundcfg=/etc/asound.conf
-
-if [ ! -r $config ]; then
-  if [ -r /etc/conf.modules ]; then
-    config=/etc/conf.modules
-  fi
-fi
+aconnect=/usr/bin/aconnect
 
 function start() {
   #
   # insert all sound modules
   #
-  cat $config | \
+  /sbin/modprobe -c | \
     grep -E "^alias( |\t)+snd-card-[[:digit:]]" | \
     awk '{print $3}' | \
     while read line; do \
@@ -77,6 +71,20 @@ function start() {
       fi
     fi
   fi
+}
+
+function terminate() {
+  #
+  # Kill processes holding open sound devices
+  #
+  DEVS=`find /dev/ -follow -type c -maxdepth 1 -ls 2>/dev/null | grep "1*1[46]," | cut -d: -f2 | cut -d" " -f2; echo /proc/asound/dev/*`
+  fuser -k $DEVS 2> /dev/null 1>/dev/null
+ #
+ # remove all sequencer connections if any
+ #
+ if [ -f /proc/asound/seq/clients -a -x $aconnect ]; then
+   $aconnect --removeall
+ fi
 }
 
 function stop() {
@@ -115,6 +123,7 @@ case "$1" in
         # Stop daemons.
 	if [ -d /proc/asound ]; then
           echo -n "Shutting down sound driver: "
+	  terminate
 	  stop
 	  if [ -d /var/lock/subsys ]; then
 	    rm -f /var/lock/subsys/alsasound
@@ -126,8 +135,24 @@ case "$1" in
 	$0 stop
 	$0 start
 	;;
+  status)
+        if [ -d /proc/asound ]; then
+          echo -n "ALSA sound driver loaded."
+#          if [ -e /var/lock/subsys/alsasound ]; then
+#            echo -n "ALSA sound driver not locked!"
+#          fi
+        else
+          echo -n "ALSA sound driver not loaded."
+#          if [ -e /var/lock/subsys/alsasound ]; then
+#            echo -n "but (strangely) locked."
+#          else
+#            echo -n "and not locked either."
+#          fi
+        fi
+        echo
+        ;;
   *)
-        echo "Usage: alsasound {start|stop|restart}"
+        echo "Usage: alsasound {start|stop|restart|status}"
         exit 1
 esac
 
