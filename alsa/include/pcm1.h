@@ -69,6 +69,7 @@
 #define SND_PCM1_HW_16BITONLY	0x00000004	/* hardware supports only 16-bit DMA, but does conversion from 8-bit to 16-bit */
 #define SND_PCM1_HW_COPYMASK	0x00000007	/* flags to copy to info structure */
 #define SND_PCM1_HW_AUTODMA	0x10000000	/* hardware supports auto dma - good */
+#define SND_PCM1_HW_BLOCKPTR	0x20000000	/* current pointer needs size and returns offset to current block */
 
 #define snd_pcm1_lockzero( channel ) \
   ((channel) -> block_lock = -1)
