@@ -43,6 +43,8 @@
 
 #define SL_MODE_PLAY 1
 #define SL_MODE_CAPTURE 2
+#define SL_CHANNEL1_ON 1
+#define SL_CHANNEL2_ON 1
 /*
 
  */
@@ -71,7 +73,9 @@ struct snd_stru_solo {
 	unsigned char mpu_switch;
 	unsigned char wave_source;
 
-	unsigned int mode;
+	unsigned char mode;
+	unsigned char channel1;
+	unsigned char channel2;
 
 	struct pci_dev *pci;
 	snd_card_t *card;
