@@ -545,11 +545,11 @@
 #define SRCS_RATELOCKED		0x01000000	/* Sample rate locked				*/
 #define SRCS_ESTSAMPLERATE	0x0007ffff	/* Do not modify this field.			*/
 
-#define ADCIDX			0x63		/* ADC recording buffer index register		*/
-#define ADCIDX_MASK		0x0000ffff	/* 16 bit index field				*/
+#define MICIDX                  0x63            /* Microphone recording buffer index register   */
+#define MICIDX_MASK             0x0000ffff      /* 16-bit value                                 */
 
-#define MICIDX			0x64		/* Microphone recording buffer index register	*/
-#define MICIDX_MASK		0x0000ffff	/* 16-bit value					*/
+#define ADCIDX			0x64		/* ADC recording buffer index register		*/
+#define ADCIDX_MASK		0x0000ffff	/* 16 bit index field				*/
 
 #define FXIDX			0x65		/* FX recording buffer index register		*/
 
@@ -616,7 +616,6 @@ struct snd_stru_emu10k1_pcm {
 	unsigned int capture_cr_val;	/* control value */
 	unsigned int capture_bs_val;	/* buffer size value */
 	unsigned int capture_bufsize;	/* buffer size in bytes */
-	unsigned int capture_oldtime;	/* timer */
 };
 
 typedef struct snd_emu10k1_memblk_arg {
