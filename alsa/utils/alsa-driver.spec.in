@@ -5,7 +5,7 @@ Summary:   ALSA driver
 Name:      alsa-driver
 Version:   %{version}
 Release:   1
-Source:    alsa-driver-%{version}.tar.gz
+Source:    alsa-driver-%{version}.tar.bz2
 URL:       http://www.alsa-project.org
 Copyright: GPL
 Group:     Base/Kernel

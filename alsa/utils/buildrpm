@@ -2,7 +2,7 @@
 
 source=.
 version=`cat $source/../version`
-package=$source/../../alsa-driver-$version.tar.gz
+package=$source/../../alsa-driver-$version.tar.bz2
 
 make -C .. pack
 
