@@ -179,6 +179,10 @@ static int _snd_ioctl32_ctl_elem_info(unsigned int fd, unsigned int cmd, unsigne
 	}
 	memset(&data, 0, sizeof(data));
 	data.id = data32.id;
+	/* we need to copy the item index.
+	 * hope this doesn't break anything..
+	 */
+	data.value.enumerated.item = data32.value.enumerated.item;
 	err = file->f_op->ioctl(file->f_dentry->d_inode, file, native_ctl, (unsigned long)&data);
 	if (err < 0)
 		goto __err;
@@ -192,12 +196,12 @@ static int _snd_ioctl32_ctl_elem_info(unsigned int fd, unsigned int cmd, unsigne
 	case SNDRV_CTL_ELEM_TYPE_BOOLEAN:
 	case SNDRV_CTL_ELEM_TYPE_INTEGER:
 		data32.value.integer.min = data.value.integer.min;
-		data32.value.integer.max = data.value.integer.min;
+		data32.value.integer.max = data.value.integer.max;
 		data32.value.integer.step = data.value.integer.step;
 		break;
 	case SNDRV_CTL_ELEM_TYPE_INTEGER64:
 		data32.value.integer64.min = data.value.integer64.min;
-		data32.value.integer64.max = data.value.integer64.min;
+		data32.value.integer64.max = data.value.integer64.max;
 		data32.value.integer64.step = data.value.integer64.step;
 		break;
 	case SNDRV_CTL_ELEM_TYPE_ENUMERATED:
@@ -251,25 +255,20 @@ static int get_ctl_type(struct file *file, snd_ctl_elem_id_t *id)
 	snd_kcontrol_t *kctl;
 	snd_ctl_elem_info_t info;
 	int err;
-	mm_segment_t oldseg = get_fs();
 
-	set_fs(KERNEL_DS);
 	ctl = snd_magic_cast(snd_ctl_file_t, file->private_data, return -ENXIO);
 
 	read_lock(&ctl->card->control_rwlock);
 	kctl = snd_ctl_find_id(ctl->card, id);
 	if (! kctl) {
 		read_unlock(&ctl->card->control_rwlock);
-		err = -ENXIO;
-		goto __err;
+		return -ENXIO;
 	}
 	info.id = *id;
 	err = kctl->info(kctl, &info);
 	if (err >= 0)
 		err = info.type;
 	read_unlock(&ctl->card->control_rwlock);
- __err:
-	set_fs(oldseg);
 	return err;
 }
 
@@ -324,6 +323,7 @@ static int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsign
 			data.value.iec958 = data32.value.iec958;
 			break;
 		default:
+			printk("unknown type %d\n", type);
 			break;
 		}
 	}
@@ -337,22 +337,22 @@ static int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsign
 		case SNDRV_CTL_ELEM_TYPE_BOOLEAN:
 		case SNDRV_CTL_ELEM_TYPE_INTEGER:
 			for (i = 0; i < 128; i++)
-				data.value.integer.value[i] = data32.value.integer.value[i];
+				data32.value.integer.value[i] = data.value.integer.value[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_INTEGER64:
 			for (i = 0; i < 64; i++)
-				data.value.integer64.value[i] = data32.value.integer64.value[i];
+				data32.value.integer64.value[i] = data.value.integer64.value[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_ENUMERATED:
 			for (i = 0; i < 128; i++)
-				data.value.enumerated.item[i] = data32.value.enumerated.item[i];
+				data32.value.enumerated.item[i] = data.value.enumerated.item[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_BYTES:
-			memcpy(data.value.bytes.data, data32.value.bytes.data,
+			memcpy(data32.value.bytes.data, data.value.bytes.data,
 			       sizeof(data.value.bytes.data));
 			break;
 		case SNDRV_CTL_ELEM_TYPE_IEC958:
-			data.value.iec958 = data32.value.iec958;
+			data32.value.iec958 = data.value.iec958;
 			break;
 		default:
 			break;
