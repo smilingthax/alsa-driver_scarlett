@@ -341,7 +341,7 @@ dnl Check for sequencer support...
 AC_MSG_CHECKING(for sequencer support)
 AC_ARG_WITH(sequencer,
   [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
-  sequencer="$withval", sequencer="no")
+  sequencer="$withval", sequencer="yes")
 CONFIG_SND_SEQUENCER="0"
 if test "$sequencer" = "yes"; then
   CONFIG_SND_SEQUENCER="1"
