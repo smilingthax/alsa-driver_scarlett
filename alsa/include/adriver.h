@@ -234,6 +234,52 @@ do {									\
 	__ret;								\
 })
 #endif
+#ifndef wait_event_interruptible_timeout
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#define __wait_event_interruptible_timeout(wq, condition, ret)		\
+do {									\
+	DEFINE_WAIT(__wait);						\
+									\
+	for (;;) {							\
+		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+		if (condition)						\
+			break;						\
+		if (!signal_pending(current)) {				\
+			ret = schedule_timeout(ret);			\
+			if (!ret)					\
+				break;					\
+			continue;					\
+		}							\
+		ret = -ERESTARTSYS;					\
+		break;							\
+	}								\
+	finish_wait(&wq, &__wait);					\
+} while (0)
+#else
+#define __wait_event_interruptible_timeout(wq, condition, ret)		\
+do {									\
+	wait_queue_t __wait;						\
+	init_waitqueue_entry(&__wait, current);				\
+									\
+	add_wait_queue(&wq, &__wait);					\
+	for (;;) {							\
+		set_current_state(TASK_INTERRUPTIBLE);			\
+		if (condition)						\
+			break;						\
+		if (!signal_pending(current)) {				\
+			ret = schedule_timeout(ret);			\
+			if (!ret)					\
+				break;					\
+			continue;					\
+		}							\
+		ret = -ERESTARTSYS;					\
+		break;							\
+	}								\
+	set_current_state(TASK_RUNNING);				\
+	remove_wait_queue(&wq, &__wait);				\
+} while (0)
+#endif /* 2.6.0 */
+#endif
 
 #ifndef CONFIG_HAVE_STRLCPY
 size_t snd_compat_strlcpy(char *dest, const char *src, size_t size);
