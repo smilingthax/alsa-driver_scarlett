@@ -757,7 +757,7 @@ enum {
 	SNDRV_CTL_IOCTL_ELEM_WRITE = _IOWR('U', 0x13, struct sndrv_ctl_elem_value),
 	SNDRV_CTL_IOCTL_ELEM_LOCK = _IOW('U', 0x14, struct sndrv_ctl_elem_id),
 	SNDRV_CTL_IOCTL_ELEM_UNLOCK = _IOW('U', 0x15, struct sndrv_ctl_elem_id),
-	SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS = _IOWR('A', 0x16, int),
+	SNDRV_CTL_IOCTL_SUBSCRIBE_EVENTS = _IOWR('U', 0x16, int),
 	SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE = _IOWR('U', 0x20, int),
 	SNDRV_CTL_IOCTL_HWDEP_INFO = _IOR('U', 0x21, struct sndrv_hwdep_info),
 	SNDRV_CTL_IOCTL_PCM_NEXT_DEVICE = _IOR('U', 0x30, int),
