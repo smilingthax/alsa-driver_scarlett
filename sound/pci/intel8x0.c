@@ -1087,6 +1087,7 @@ static void intel8x0_suspend(intel8x0_t *chip)
 {
 	snd_card_t *card = chip->card;
 
+	chip->in_suspend = 1;
 	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
