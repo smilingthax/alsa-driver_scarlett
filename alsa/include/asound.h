@@ -1460,6 +1460,7 @@ typedef struct snd_pcm_stream_params {
 	size_t bytes_xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
 	size_t bytes_fill_max;		/* maximum silence fill in bytes */
+	size_t byte_boundary;		/* position in bytes wrap point */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_stream_params_t;
 
@@ -1486,8 +1487,8 @@ typedef struct snd_pcm_stream_setup {
 	size_t bytes_xrun_max;		/* max size of underrun/overrun before unconditional stop */
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
 	size_t bytes_fill_max;		/* maximum silence fill in bytes */
-	size_t frags;			/* allocated fragments */
 	size_t byte_boundary;		/* position in bytes wrap point */
+	size_t frags;			/* allocated fragments */
 	unsigned int msbits_per_sample;		/* used most significant bits per sample */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_stream_setup_t;
@@ -1512,7 +1513,7 @@ typedef struct snd_pcm_stream_status {
 	long long ust_stime;	/* UST time when playback/capture was started */
 	size_t byte_io;		/* current I/O position in bytes */
 	size_t byte_data;	/* current data position */
-	ssize_t bytes_used;	/* number of bytes in queue/buffer */
+	size_t bytes_avail;	/* number of bytes available for application */
 	size_t bytes_avail_max;	/* max bytes available since last status */
 	unsigned int xruns;	/* count of underruns/overruns from last status */
 	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
@@ -1532,9 +1533,9 @@ typedef struct {
 #define SND_PCM_IOCTL_STREAM_PARAMS	_IOW ('A', 0x10, snd_pcm_stream_params_t)
 #define SND_PCM_IOCTL_STREAM_SETUP	_IOR ('A', 0x20, snd_pcm_stream_setup_t)
 #define SND_PCM_IOCTL_STREAM_STATUS	_IOR ('A', 0x21, snd_pcm_stream_status_t)
-#define SND_PCM_IOCTL_STREAM_UPDATE	_IO  ('A', 0x22)
+#define SND_PCM_IOCTL_STREAM_BYTE_IO	_IO  ('A', 0x22)
 #define SND_PCM_IOCTL_STREAM_PREPARE	_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_STREAM_GO	_IO  ('A', 0x31)
+#define SND_PCM_IOCTL_STREAM_GO		_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_STREAM_FLUSH	_IO  ('A', 0x32)
 #define SND_PCM_IOCTL_SYNC_GO		_IOW ('A', 0x33, snd_pcm_sync_t)
 #define SND_PCM_IOCTL_STREAM_DRAIN	_IO  ('A', 0x34)
