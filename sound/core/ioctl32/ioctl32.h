@@ -26,11 +26,6 @@
 #ifndef __ALSA_IOCTL32_H
 #define __ALSA_IOCTL32_H
 
-/*
- */
-
-#ifdef HAVE_IOCTL32
-
 #define TO_PTR(x)  A(x)
 
 #define COPY(x)  (dst->x = src->x)
