@@ -43,8 +43,8 @@ SOURCE:
   ADC
   Wave
   Music
-  S/PDIF Input
-  S/PDIF Output
+  IEC958 Input
+  IEC958 Output
 
 Exceptions:
   Capture Source
@@ -69,10 +69,10 @@ PCM interface:
   External Rate		/* external capture rate */
   Capture Rate		/* capture rate taken from external source */
 
-S/PDIF interface:
+IEC958 S/PDIF interface:
 
-  [...] IEC958 (S/PDIF) 	 	/* default or global value - read/write */
-  [...] IEC958 (S/PDIF) Mask		/* consumer and professional mask */
-  [...] IEC958 (S/PDIF) Consumer Mask	/* consumer mask */
-  [...] IEC958 (S/PDIF) Professional Mask /* professional mask */
-  [...] IEC958 (S/PDIF) Stream		/* the settings assigned to a PCM stream */
+  [...] [Input] IEC958 Default	 		/* default or global value - read/write */
+  [...] [Input] IEC958 Mask			/* consumer and professional mask */
+  [...] [Input] IEC958 Con Mask			/* consumer mask */
+  [...] [Input] IEC958 Pro Mask			/* professional mask */
+  [...] [Input] IEC958 PCM Stream		/* the settings assigned to a PCM stream */
