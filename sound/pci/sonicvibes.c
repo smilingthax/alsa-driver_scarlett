@@ -1407,10 +1407,11 @@ SONICVIBES_SINGLE("SonicVibes External Rx to Synth", 0, SV_IREG_MPU401, 1, 1, 0)
 SONICVIBES_SINGLE("SonicVibes External Tx", 0, SV_IREG_MPU401, 2, 1, 0)
 };
 
-static void snd_sonicvibes_midi_input_open(mpu401_t * mpu)
+static int snd_sonicvibes_midi_input_open(mpu401_t * mpu)
 {
-	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, mpu->private_data, return);
+	sonicvibes_t *sonic = snd_magic_cast(sonicvibes_t, mpu->private_data, return -EIO);
 	outb(sonic->irqmask &= ~SV_MIDI_MASK, SV_REG(sonic, IRQMASK));
+	return 0;
 }
 
 static void snd_sonicvibes_midi_input_close(mpu401_t * mpu)
