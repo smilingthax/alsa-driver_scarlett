@@ -196,14 +196,14 @@ int snd_pcm_plugin_build_copy(snd_pcm_plug_t *handle,
 
 unsigned int snd_pcm_plug_formats(unsigned int formats);
 
-int snd_pcm_plug_format(snd_pcm_plug_t *substream,
-			snd_pcm_params_t *params,
-			snd_pcm_params_t *slave_params);
+int snd_pcm_plug_format_plugins(snd_pcm_plug_t *substream,
+				snd_pcm_format_t *format,
+				snd_pcm_format_t *slave_format);
 
-int snd_pcm_plug_slave_params(snd_pcm_params_t *params,
+int snd_pcm_plug_slave_format(snd_pcm_format_t *format,
 			      snd_pcm_info_t *slave_info,
 			      snd_pcm_params_info_t *slave_params_info,
-			      snd_pcm_params_t *slave_params);
+			      snd_pcm_format_t *slave_format);
 
 int snd_pcm_plugin_append(snd_pcm_plugin_t *plugin);
 
