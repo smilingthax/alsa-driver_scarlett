@@ -135,6 +135,7 @@ struct snd_ctl_hw_info {
 #define SND_MIXER_ID_MASTER_MONO	"Master M"
 #define SND_MIXER_ID_3D			"3D Wide"
 #define SND_MIXER_ID_3D_CENTER		"3D Center"
+#define SND_MIXER_ID_3D_SPACE		"3D Space"
 #define SND_MIXER_ID_3D_DEPTH		"3D Depth"
 #define SND_MIXER_ID_BASS		"Bass"
 #define SND_MIXER_ID_TREBLE		"Treble"
@@ -172,6 +173,8 @@ struct snd_ctl_hw_info {
 					/* max 32 chars (with '\0') */
 #define SND_MIXER_SW_LOUDNESS		"Loudness"		/* bass boost */
 #define SND_MIXER_SW_MIC_AGC		"MIC Auto-Gain-Control"	/* Microphone Auto-Gain-Control */
+#define SND_MIXER_SW_MIC_IMPEDANCE	"Change MIC Impedance"	/* change Microphone impedance */
+#define SND_MIXER_SW_LINE_TO_OUTPUT	"Line In to Output"	/* reroute Line In to Output */
 
 #define SND_MIXER_INFO_CAP_EXCL_RECORD	0x00000001
 
@@ -307,7 +310,7 @@ struct snd_oss_mixer_info_obsolete {
  *                                                                           *
  *****************************************************************************/
 
-#define SND_PCM_VERSION			SND_PROTOCOL_VERSION( 1, 0, 0 )
+#define SND_PCM_VERSION			SND_PROTOCOL_VERSION( 1, 0, 1 )
 
 #define SND_PCM_SFMT_MU_LAW		0
 #define SND_PCM_SFMT_A_LAW		1
@@ -349,6 +352,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_RINFO_BATCH		0x00000001	/* double buffering */
 #define SND_PCM_RINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
 #define SND_PCM_RINFO_16BITONLY		0x00000004	/* hardware supports only 16-bit samples, but driver does conversions from 8-bit to 16-bit */
+#define SND_PCM_RINFO_OVERRANGE		0x00010000	/* hardware supports ADC overrange detection */
 
 #define SND_PCM_MASK_PLAYBACK		0x0001
 #define SND_PCM_MASK_RECORD		0x0002
@@ -382,7 +386,8 @@ struct snd_pcm_playback_info {
   unsigned int min_fragment_size;	/* min fragment size in bytes */
   unsigned int max_fragment_size;	/* max fragment size in bytes */
   unsigned int fragment_align;		/* align fragment value */
-  unsigned char reserved[64];		/* reserved for future... */
+  unsigned int hw_formats;		/* formats supported by hardware */
+  unsigned char reserved[60];		/* reserved for future... */
 };
 
 struct snd_pcm_record_info {
@@ -396,7 +401,8 @@ struct snd_pcm_record_info {
   unsigned int min_fragment_size;	/* min fragment size in bytes */
   unsigned int max_fragment_size;	/* max fragment size in bytes */
   unsigned int fragment_align;		/* align fragment value */
-  unsigned char reserved[64];		/* reserved for future... */
+  unsigned int hw_formats;		/* formats supported by hardware */
+  unsigned char reserved[60];		/* reserved for future... */
 };
 
 struct snd_pcm_format {
@@ -442,7 +448,8 @@ struct snd_pcm_record_status {
   struct timeval time;			/* time the next read was taken */
   struct timeval stime;			/* time when record was started */
   int scount;				/* number of bytes processed from record start */
-  unsigned char reserved[16];
+  int overrange;			/* ADC overrange detection */
+  unsigned char reserved[12];
 };
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ( 'A', 0x00, int )
@@ -458,6 +465,7 @@ struct snd_pcm_record_status {
 #define SND_PCM_IOCTL_DRAIN_PLAYBACK	_IO  ( 'A', 0x30 )
 #define SND_PCM_IOCTL_FLUSH_PLAYBACK	_IO  ( 'A', 0x31 )
 #define SND_PCM_IOCTL_FLUSH_RECORD	_IO  ( 'A', 0x32 )
+#define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR( 'A', 0x33, int )
 #define SND_PCM_IOCTL_PLAYBACK_TIME	_IOWR( 'A', 0x40, int )
 #define SND_PCM_IOCTL_RECORD_TIME	_IOWR( 'A', 0x41, int )
 
