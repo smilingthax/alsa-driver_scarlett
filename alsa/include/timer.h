@@ -67,7 +67,7 @@ struct snd_stru_timer {
 	void (*private_free) (void *private_data);
 	struct snd_stru_timer_hardware hw;
 	spinlock_t lock;
-	int in_use;			/* 1 = user, 2 = IRQ */
+	atomic_t in_use;		/* don't free */
 	snd_timer_instance_t *first;
 	snd_timer_t *next;
 };
