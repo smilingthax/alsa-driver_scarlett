@@ -679,7 +679,7 @@ static void snd_es1371_dac1_rate(ensoniq_t * ensoniq, unsigned int rate)
 {
 	unsigned int freq, r;
 
-	freq = (rate << 15) / 3000;
+	freq = ((rate << 15) + 1500) / 3000;
 	r = (snd_es1371_wait_src_ready(ensoniq) & (ES_1371_SRC_DISABLE | ES_1371_DIS_P2 | ES_1371_DIS_R1)) | ES_1371_DIS_P1;
 	outl(r, ES_REG(ensoniq, 1371_SMPRATE));
 	snd_es1371_src_write(ensoniq, ES_SMPREG_DAC1 + ES_SMPREG_INT_REGS,
@@ -694,7 +694,7 @@ static void snd_es1371_dac2_rate(ensoniq_t * ensoniq, unsigned int rate)
 {
 	unsigned int freq, r;
 
-	freq = (rate << 15) / 3000;
+	freq = ((rate << 15) + 1500) / 3000;
 	r = (snd_es1371_wait_src_ready(ensoniq) & (ES_1371_SRC_DISABLE | ES_1371_DIS_P1 | ES_1371_DIS_R1)) | ES_1371_DIS_P2;
 	outl(r, ES_REG(ensoniq, 1371_SMPRATE));
 	snd_es1371_src_write(ensoniq, ES_SMPREG_DAC2 + ES_SMPREG_INT_REGS,
