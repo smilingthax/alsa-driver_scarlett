@@ -1393,8 +1393,32 @@ fi
 fi
 
 dnl Check for old remap_page_range()
+AC_MSG_CHECKING(for remap_pfn_range)
+remap_pfn_range="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
+],[
+  int (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
+  pgprot_t p;
+  func = remap_pfn_range;
+  remap_pfn_range(NULL, 0, 0, 0, p);
+],
+    AC_MSG_RESULT("yes");remap_pfn_range="1",
+    AC_MSG_RESULT("no");remap_pfn_range="0",
+    AC_MSG_RESULT("unknown");remap_pfn_range="0"
+)
+CFLAGS=$ac_save_CFLAGS
+if test "$remap_pfn_range" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_REMAP_PFN_RANGE)
+fi
+
+if test "$remap_pfn_range" != "1"; then
 AC_MSG_CHECKING(for new remap_page_range)
-kcalloc="0"
+new_remap="0"
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
@@ -1414,6 +1438,7 @@ AC_TRY_COMPILE([
 CFLAGS=$ac_save_CFLAGS
 if test "$new_remap" != "1"; then
   AC_DEFINE(CONFIG_OLD_REMAP_PAGE_RANGE)
+fi
 fi
 
 dnl Check for kcalloc()
@@ -1442,7 +1467,7 @@ fi
 
 dnl Check for saved_config_space in pci_dev
 AC_MSG_CHECKING(for saved_config_space in pci_dev)
-kcalloc="0"
+pci_saved_config="0"
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
@@ -1462,6 +1487,30 @@ CONFIG_HAVE_PCI_SAVED_CONFIG=$pci_saved_config
 dnl AC_SUBST(CONFIG_HAVE_PCI_SAVED_CONFIG)
 if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_SAVED_CONFIG)
+fi
+
+if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
+dnl Check for new pci_save_state()
+AC_MSG_CHECKING(for new pci_save_state)
+new_pci_save_state="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/pci.h"
+],[
+  struct pci_dev *pci;
+  pci_save_state(pci);
+],
+    AC_MSG_RESULT("yes");new_pci_save_state="1",
+    AC_MSG_RESULT("no");new_pci_save_state="0",
+    AC_MSG_RESULT("unknown");new_pci_save_state="0"
+)
+CFLAGS=$ac_save_CFLAGS
+if test "$new_pci_save_state" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_NEW_PCI_SAVE_STATE)
+fi
 fi
 
 dnl Check for acpi_register_gsi
