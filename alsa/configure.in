@@ -253,15 +253,21 @@ int main(void) {
 	fprintf(file, "crusoe");
 #elif defined(CONFIG_IA64)
 	fprintf(file, "ia64");
+#elif defined(CONFIG_ALPHA_GENERIC)
+	fprintf(file, "alpha_generic");
+#elif defined(CONFIG_ALPHA_SX164)
+	fprintf(file, "alpha_sx164");
+#elif defined(CONFIG_ALPHA_PYXIS)
+	fprintf(file, "alpha_pyxis");
+#elif defined(CONFIG_ALPHA_POLARIS)
+	fprintf(file, "alpha_polaris");
 #elif defined(CONFIG_EV4) || defined(CONFIG_ALPHA_EV4)
 	fprintf(file, "alpha_ev4");
 #elif defined(CONFIG_EV5) || defined(CONFIG_ALPHA_EV5)
 	fprintf(file, "alpha_ev5");
 #elif defined(CONFIG_EV6) || defined(CONFIG_ALPHA_EV6)
 	fprintf(file, "alpha_ev6");
-#elif defined(CONFIG_ALPHA_GENERIC)
-	fprintf(file, "alpha_generic");
-#elif defined(CONFIG_ALPHA_NONAME)
+#elif defined(CONFIG_ALPHA_NONAME) || defined(CONFIG_ALPHA)
 	fprintf(file, "alpha_noname");
 #elif defined(CONFIG_PPC)
 	fprintf(file, "ppc");
@@ -327,15 +333,40 @@ case "$processor" in
     CONFIG_SND_ISA=0
     ;;
   alpha*)
-    c_opts="-fno-strength-reduce -mno-fp-regs -ffixed-8"
-    case "$processor" in
-      alpha_ev5)
+    c_opts="-pipe -mno-fp-regs -ffixed-8"
+    if $CC -mcpu=pca56 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+      have_pca56=yes
+    fi
+    if $CC -mcpu=ev5 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+      case "$processor" in
+      alpha_generic)
         c_opts="$c_opts -mcpu=ev5"
         ;;
-      alpha_ev6)
-        c_opts="$c_opts -mcpu=ev6 -Wa,-mev6"
+      alpha_sx164|alpha_polaris)
+	if test x$have_pca56 = xyes; then
+          c_opts="$c_opts -mcpu=pca56"
+	else
+          c_opts="$c_opts -mcpu=ev56"
+        fi
+	;;
+      alpha_pyxis)
+        c_opts="$c_opts -mcpu=ev56"
         ;;
-    esac
+      alpha_ev4)
+        c_opts="$c_opts -mcpu=ev4"
+        ;;
+      alpha_ev6)
+        if $CC -mcpu=ev6 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+	  c_opts="$c_opts -mcpu=ev6"
+	elif test x$have_pca56 = xyes; then
+	  c_opts="$c_opts -mcpu=pca56"
+        else
+	  c_opts="$c_opts -mcpu=ev56"
+        fi
+        ;;
+      esac
+    fi
+    c_opts="$c_opts -Wa,-mev6"
     processor="alpha"
     ;;
   ppc)
