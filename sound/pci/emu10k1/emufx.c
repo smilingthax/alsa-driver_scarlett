@@ -520,8 +520,7 @@ static void snd_emu10k1_fx8010_playback_tram_poke(emu10k1_t *emu,
 	*tram_pos -= frames;
 }
 
-static int snd_emu10k1_fx8010_playback_transfer(snd_pcm_substream_t *substream,
-						snd_pcm_uframes_t frames)
+static int snd_emu10k1_fx8010_playback_transfer(snd_pcm_substream_t *substream)
 {
 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
@@ -529,15 +528,13 @@ static int snd_emu10k1_fx8010_playback_transfer(snd_pcm_substream_t *substream,
 	snd_pcm_uframes_t appl_ptr = runtime->control->appl_ptr;
 	snd_pcm_sframes_t diff = appl_ptr - pcm->appl_ptr;
 	snd_pcm_uframes_t buffer_size = pcm->buffer_size / 2;
+
 	if (diff) {
 		if (diff < -(snd_pcm_sframes_t) (runtime->boundary / 2))
 			diff += runtime->boundary;
-		frames += diff;
+		pcm->sw_ready += diff;
+		pcm->appl_ptr = appl_ptr;
 	}
-	pcm->sw_ready += frames;
-	pcm->appl_ptr += frames;
-	if (pcm->appl_ptr > runtime->boundary)
-		pcm->appl_ptr %= runtime->boundary;
 	while (pcm->hw_ready < buffer_size &&
 	       pcm->sw_ready > 0) {
 	       	size_t hw_to_end = buffer_size - pcm->hw_data;
@@ -634,7 +631,7 @@ static int snd_emu10k1_fx8010_playback_trigger(snd_pcm_substream_t * substream, 
 		result = snd_emu10k1_fx8010_register_irq_handler(emu, snd_emu10k1_fx8010_playback_irq, pcm->gpr_running, substream, &pcm->irq);
 		if (result < 0)
 			goto __err;
-		snd_emu10k1_fx8010_playback_transfer(substream, 0);	/* roll the ball */
+		snd_emu10k1_fx8010_playback_transfer(substream);	/* roll the ball */
 		snd_emu10k1_ptr_write(emu, emu->gpr_base + pcm->gpr_trigger, 0, 1);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -672,26 +669,8 @@ static snd_pcm_uframes_t snd_emu10k1_fx8010_playback_pointer(snd_pcm_substream_t
 	pcm->sw_io += frames;
 	if (pcm->sw_io > runtime->buffer_size)
 		pcm->sw_io -= runtime->buffer_size;
-	snd_emu10k1_fx8010_playback_transfer(substream, 0);
+	snd_emu10k1_fx8010_playback_transfer(substream);
 	return pcm->sw_io;
-}
-
-static int snd_emu10k1_fx8010_playback_copy(snd_pcm_substream_t *substream,
-					    int channel,
-					    snd_pcm_uframes_t hwoff,
-					    void *src,
-					    snd_pcm_uframes_t frames)
-{
-	snd_pcm_runtime_t *runtime = substream->runtime;
-	size_t hwoffb = hwoff << 2;
-	size_t bytes = frames << 2;
-	char *hwbuf = runtime->dma_area + hwoffb;
-	if (copy_from_user(hwbuf, src, bytes))
-		return -EFAULT;
-	spin_lock_irq(&runtime->lock);
-	snd_emu10k1_fx8010_playback_transfer(substream, frames);
-	spin_unlock_irq(&runtime->lock);
-	return 0;
 }
 
 static snd_pcm_hardware_t snd_emu10k1_fx8010_playback =
@@ -750,8 +729,8 @@ static snd_pcm_ops_t snd_emu10k1_fx8010_playback_ops = {
 	.hw_free =		snd_emu10k1_fx8010_playback_hw_free,
 	.prepare =		snd_emu10k1_fx8010_playback_prepare,
 	.trigger =		snd_emu10k1_fx8010_playback_trigger,
-	.copy =			snd_emu10k1_fx8010_playback_copy,
 	.pointer =		snd_emu10k1_fx8010_playback_pointer,
+	.ack =			snd_emu10k1_fx8010_playback_transfer,
 };
 
 static void snd_emu10k1_fx8010_pcm_free(snd_pcm_t *pcm)
