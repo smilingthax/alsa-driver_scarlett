@@ -3243,7 +3243,6 @@ int __devinit snd_cs46xx_create(snd_card_t * card,
 	if (chip == NULL)
 		return -ENOMEM;
 	spin_lock_init(&chip->reg_lock);
-	init_MUTEX(&chip->spos_mutex);
 	chip->card = card;
 	chip->pci = pci;
 	chip->capt.hw_size = PAGE_SIZE;
