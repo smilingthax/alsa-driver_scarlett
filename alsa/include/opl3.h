@@ -55,6 +55,10 @@
 #include "hwdep.h"
 #include "timer.h"
 #include "seq_midi_emul.h"
+#ifdef CONFIG_SND_OSSEMUL
+#include "seq_oss.h"
+#include "seq_oss_legacy.h"
+#endif
 #include "seq_device.h"
 #include "ainstr_fm.h"
 
@@ -273,11 +277,19 @@ struct snd_opl3 {
 	unsigned char rhythm;		/* percussion mode flag */
 	unsigned char max_voices;	/* max number of voices */
 #ifdef CONFIG_SND_SEQUENCER
-	snd_seq_device_t *seq_dev;	/* sequencer device, WIP */
+#define SND_OPL3_MODE_SYNTH 0		/* OSS - voices allocated by application */
+#define SND_OPL3_MODE_SEQ 1		/* ALSA - driver handles voice allocation */
+	int synth_mode;			/* synth mode */
 	int seq_client;
 
+	snd_seq_device_t *seq_dev;	/* sequencer device */
 	snd_midi_channel_set_t * chset;
 
+#ifdef CONFIG_SND_OSSEMUL
+	snd_seq_device_t *oss_seq_dev;	/* OSS sequencer device, WIP */
+	snd_midi_channel_set_t * oss_chset;
+#endif
+ 
 	snd_seq_kinstr_ops_t fm_ops;
 	snd_seq_kinstr_list_t *ilist;
 
