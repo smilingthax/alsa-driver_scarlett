@@ -309,7 +309,7 @@ struct snd_stru_card {
 	snd_device_t *devices;			/* devices */
 
 	unsigned int last_numid;		/* last used numeric ID */
-	spinlock_t control_lock;		/* control list lock */
+	rwlock_t control_lock;		        /* control list lock */
 	int controls_count;			/* count of all controls */
 	snd_kcontrol_t *first_control;		/* first control */
 	snd_kcontrol_t *last_control;		/* last control */
