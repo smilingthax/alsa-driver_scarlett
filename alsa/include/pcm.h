@@ -116,6 +116,7 @@ struct snd_stru_pcm_runtime {
 	int xrun_act;
 	int mmap_shape;
 
+	snd_pcm_params_info_t params_info;
 	snd_pcm_format_t format;	/* format information */
 	unsigned int rate_master;
 	unsigned int rate_divisor;

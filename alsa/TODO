@@ -6,7 +6,6 @@ H better solution for OSS mmap automatic frame_data update (for cards like cs461
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
 L lock, grant and revoke ioctls (not available to application I propose)
-L change functions to not use hw data directly but info obtained with snd_pcm_params_info 
 L nonblocking async mode (with requests queue)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
@@ -15,6 +14,7 @@ L clean endianness stuff
 L partial PCM mmap support (rme9652)
 
 - lowlevel:
+H check missing params_info callback
 M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster xrun recovery
 M add detailed failure to params ioctl (see es18xx)
 M add needed callbacks for params_info (see es18xx)
