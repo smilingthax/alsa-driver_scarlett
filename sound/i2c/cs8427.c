@@ -22,6 +22,7 @@
 
 #include <sound/driver.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -164,15 +165,15 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 {
 	static unsigned char initvals1[] = {
 	  CS8427_REG_CONTROL1 | CS8427_REG_AUTOINC,
-	  /* CS8427_REG_CLOCKSOURCE: RMCK to OMCK, no validity, disable mutes, TCBL=output */
-	  CS8427_SWCLK,
+	  /* CS8427_REG_CLOCKSOURCE: RMCK to OMCK, no validity, disable mutes, TCBL=input */
+	  CS8427_SWCLK | CS8427_TCBLDIR,
 	  /* CS8427_REG_CONTROL2: hold last valid audio sample, RMCK=256*Fs, normal stereo operation */
 	  0x00,
 	  /* CS8427_REG_DATAFLOW: output drivers normal operation, Tx<=serial, Rx=>serial */
 	  CS8427_TXDSERIAL | CS8427_SPDAES3RECEIVER,
 	  /* CS8427_REG_CLOCKSOURCE: Run off, CMCK=256*Fs, output time base = OMCK, input time base =
-	     covered input clock, recovered input clock source is Envy24 */
-	  CS8427_INC,
+	     recovered input clock, recovered input clock source is AES3 input */
+	  CS8427_RXDAES3INPUT,
 	  /* CS8427_REG_SERIALINPUT: Serial audio input port data format = I2S, 24-bit, 64*Fsi */
 	  CS8427_SIDEL | CS8427_SILRPOL,
 	  /* CS8427_REG_SERIALOUTPUT: Serial audio output port data format = I2S, 24-bit, 64*Fsi */
@@ -181,9 +182,8 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 	static unsigned char initvals2[] = {
 	  CS8427_REG_RECVERRMASK | CS8427_REG_AUTOINC,
 	  /* CS8427_REG_RECVERRMASK: unmask the input PLL clock, V, confidence, biphase, parity status bits */
-	  /* CS8427_UNLOCK | CS8427_V | CS8427_CONF | CS8427_BIP | CS8427_PAR,
-	  Why setting CS8427_V causes clicks and glitches? */
-	  CS8427_UNLOCK | CS8427_CONF | CS8427_BIP | CS8427_PAR,
+	  /* CS8427_UNLOCK | CS8427_V | CS8427_CONF | CS8427_BIP | CS8427_PAR, */
+	  0xff, /* set everything */
 	  /* CS8427_REG_CSDATABUF:
 	     Registers 32-55 window to CS buffer
 	     Inhibit D->E transfers from overwriting first 5 bytes of CS data.
@@ -279,6 +279,21 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
       	return err < 0 ? err : -EIO;
 }
 
+void snd_cs8427_reset(snd_i2c_device_t *cs8427)
+{
+	cs8427_t *chip;
+
+	snd_assert(cs8427, return);
+	chip = snd_magic_cast(cs8427_t, cs8427->private_data, return);
+	snd_i2c_lock(cs8427->bus);
+	chip->regmap[CS8427_REG_CLOCKSOURCE] &= ~CS8427_RUN;
+	snd_cs8427_reg_write(cs8427, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE]);
+	udelay(200);
+	chip->regmap[CS8427_REG_CLOCKSOURCE] |= CS8427_RUN;
+	snd_cs8427_reg_write(cs8427, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE]);
+	snd_i2c_unlock(cs8427->bus);
+}
+
 static int snd_cs8427_in_status_info(snd_kcontrol_t *kcontrol,
 				     snd_ctl_elem_info_t *uinfo)
 {
@@ -296,11 +311,41 @@ static int snd_cs8427_in_status_get(snd_kcontrol_t *kcontrol,
 	int data;
 
 	snd_i2c_lock(device->bus);
-	data = snd_cs8427_reg_read(device, 15);
+	data = snd_cs8427_reg_read(device, kcontrol->private_value);
 	snd_i2c_unlock(device->bus);
 	if (data < 0)
 		return data;
 	ucontrol->value.integer.value[0] = data;
+	return 0;
+}
+
+static int snd_cs8427_qsubcode_info(snd_kcontrol_t *kcontrol,
+				    snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BYTES;
+	uinfo->count = 10;
+	return 0;
+}
+
+static int snd_cs8427_qsubcode_get(snd_kcontrol_t *kcontrol,
+				   snd_ctl_elem_value_t *ucontrol)
+{
+	snd_i2c_device_t *device = snd_kcontrol_chip(kcontrol);
+	unsigned char reg = CS8427_REG_QSUBCODE;
+	int err;
+
+	snd_i2c_lock(device->bus);
+	if ((err = snd_i2c_sendbytes(device, &reg, 1)) != 1) {
+		snd_printk("unable to send register 0x%x byte to CS8427\n", reg);
+		snd_i2c_unlock(device->bus);
+		return err < 0 ? err : -EIO;
+	}
+	if ((err = snd_i2c_readbytes(device, ucontrol->value.bytes.data, 10)) != 10) {
+		snd_printk("unable to read Q-subcode bytes from CS8427\n");
+		snd_i2c_unlock(device->bus);
+		return err < 0 ? err : -EIO;
+	}
+	snd_i2c_unlock(device->bus);
 	return 0;
 }
 
@@ -367,6 +412,15 @@ static snd_kcontrol_new_t snd_cs8427_iec958_controls[] = {
 	.name =		"IEC958 CS8427 Input Status",
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
 	.get =		snd_cs8427_in_status_get,
+	.private_value = 15,
+},
+{
+	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
+	.info =		snd_cs8427_in_status_info,
+	.name =		"IEC958 CS8427 Error Status",
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+	.get =		snd_cs8427_in_status_get,
+	.private_value = 16,
 },
 {
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
@@ -391,6 +445,13 @@ static snd_kcontrol_new_t snd_cs8427_iec958_controls[] = {
 	.get =		snd_cs8427_spdif_get,
 	.put =		snd_cs8427_spdif_put,
 	.private_value = 1
+},
+{
+	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
+	.info =		snd_cs8427_qsubcode_info,
+	.name =		"IEC958 Q-subcode Capture Default",
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+	.get =		snd_cs8427_qsubcode_get
 }};
 
 int snd_cs8427_iec958_build(snd_i2c_device_t *cs8427,
@@ -473,6 +534,7 @@ int snd_cs8427_iec958_pcm(snd_i2c_device_t *cs8427, unsigned int rate)
 
 EXPORT_SYMBOL(snd_cs8427_detect);
 EXPORT_SYMBOL(snd_cs8427_create);
+EXPORT_SYMBOL(snd_cs8427_reset);
 EXPORT_SYMBOL(snd_cs8427_iec958_build);
 EXPORT_SYMBOL(snd_cs8427_iec958_active);
 EXPORT_SYMBOL(snd_cs8427_iec958_pcm);
