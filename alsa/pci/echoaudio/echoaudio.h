@@ -389,15 +389,15 @@ struct echoaudio_chip {
 	u8 input_clock;				/* Currently selected sample clock source */
 	u8 output_clock;			/* Layla20 only */
 
-	unsigned int meters_enabled : 1;	/* VU-meters status */
-	unsigned int asic_loaded : 1;		/* Set TRUE when ASIC loaded */
-	unsigned int bad_board : 1;		/* Set TRUE if DSP won't load */
-	unsigned int professional_spdif : 1;	/* 0 = consumer; 1 = professional */
-	unsigned int non_audio_spdif : 1;	/* 3G - only */
-	unsigned int digital_in_automute : 1;	/* Gina24, Layla24, Mona - only */
-	unsigned int phantom_power : 1;		/* Gina3G - only */
-	unsigned int has_midi : 1;
-	unsigned int midi_input_enabled : 1;
+	char meters_enabled;			/* VU-meters status */
+	char asic_loaded;			/* Set TRUE when ASIC loaded */
+	char bad_board;				/* Set TRUE if DSP won't load */
+	char professional_spdif;		/* 0 = consumer; 1 = professional */
+	char non_audio_spdif;			/* 3G - only */
+	char digital_in_automute;		/* Gina24, Layla24, Mona - only */
+	char phantom_power;			/* Gina3G - only */
+	char has_midi;
+	char midi_input_enabled;
 
 	char nominal_level[ECHO_MAXAUDIOPIPES];	/* True == -10dBV  False == +4dBu */
 	s8 input_gain[ECHO_MAXAUDIOINPUTS];	/* Input level -50..+50 unit is 0.5dB */
