@@ -249,7 +249,7 @@ void snd_dma_free_pages(const struct snd_dma_device *dev, struct snd_dma_buffer 
 #endif
 #ifdef CONFIG_SBUS
 	case SNDRV_DMA_TYPE_SBUS:
-		snd_free_sbus_pages(dev->dev.sbus, dmab->bytes, dmab->are, dmab->addr);
+		snd_free_sbus_pages(dev->dev.sbus, dmab->bytes, dmab->area, dmab->addr);
 		break;
 #endif
 	default:
