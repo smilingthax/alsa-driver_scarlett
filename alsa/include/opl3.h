@@ -243,7 +243,8 @@ typedef struct snd_opl3_voice {
 	unsigned int time;	/* An allocation time */
 	unsigned char note;	/* Note currently assigned to this voice */
 
-	unsigned long note_off;	/* note-off time; 0 = don't check */ 
+	unsigned long note_off;	/* note-off time */
+	int note_off_check;	/* check note-off time */
 
 	snd_midi_channel_t *chan;	/* Midi channel for this note */
 } snd_opl3_voice_t;
