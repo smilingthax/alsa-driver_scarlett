@@ -4,6 +4,7 @@
 
 %dir linux/sound/drivers
 |snd-serialmidi snd-seq-midi
+|snd-mpu401-acpi snd-mpu401-uart
 
 %dir linux/sound/pci
 |snd-intel8x0m snd-pcm
