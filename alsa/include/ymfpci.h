@@ -266,15 +266,17 @@ struct snd_stru_ymfpci_pcm {
 };
 
 struct snd_stru_ymfpci {
-	snd_dma_t * dma1ptr;	/* DAC1 */
-	snd_dma_t * dma2ptr;	/* ADC */
-	snd_dma_t * dma3ptr;	/* AC'97 */
-	snd_irq_t * irqptr;
+	unsigned long dma1size;  /* DAC1 */
+	unsigned long dma2size;  /* ADC/AC97 */
+	int irq;
 
 	unsigned int device_id;	/* PCI device ID */
 	unsigned int rev;	/* PCI revision */
 	unsigned long reg_area_phys;
 	unsigned long reg_area_virt;
+	struct resource *res_reg_area;
+
+	unsigned short old_legacy_ctrl;
 
 	void *work_ptr;
 
@@ -318,12 +320,10 @@ struct snd_stru_ymfpci {
 
 int snd_ymfpci_create(snd_card_t * card,
 		      struct pci_dev *pci,
-		      snd_dma_t * dma1ptr,
-		      snd_dma_t * dma2ptr,
-		      snd_dma_t * dma3ptr,
-		      snd_irq_t * irqptr,
+		      unsigned long dma1size,
+		      unsigned long dma2size,
+		      unsigned short old_legacy_ctrl,
 		      ymfpci_t ** rcodec);
-void snd_ymfpci_interrupt(ymfpci_t *chip);
 
 int snd_ymfpci_pcm(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm2(ymfpci_t *chip, int device, snd_pcm_t **rpcm);

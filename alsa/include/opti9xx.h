@@ -50,16 +50,16 @@ struct snd_stru_opti9xx {
 	spinlock_t lock;
 
 	unsigned long wss_base;
-	unsigned long irq;
-	unsigned long dma1;
+	int irq;
+	int dma1;
 #if defined(CS4231) || defined(OPTi93X)
-	unsigned long dma2;
+	int dma2;
 #endif	/* CS4231 || OPTi93X */
 
 	unsigned long fm_port;
 
 	unsigned long mpu_port;
-	unsigned long mpu_irq;
+	int mpu_irq;
 };
 typedef struct snd_stru_opti9xx opti9xx_t;
 
@@ -321,7 +321,7 @@ __skip_base:
 		irq_bits = 0x04;
 		break;
 	default:
-		snd_printk("WSS irq # %ld not valid\n", chip->irq);
+		snd_printk("WSS irq # %d not valid\n", chip->irq);
 		goto __skip_resources;
 	}
 
@@ -336,7 +336,7 @@ __skip_base:
 		dma_bits = 0x03;
 		break;
 	default:
-		snd_printk("WSS dma1 # %ld not valid\n", chip->dma1);
+		snd_printk("WSS dma1 # %d not valid\n", chip->dma1);
 		goto __skip_resources;
 	}
 
@@ -351,7 +351,7 @@ __skip_base:
 	case 1:
 		break;
 	default:
-		snd_printk("WSS dma2 # %ld not valid\n", chip->dma2);
+		snd_printk("WSS dma2 # %d not valid\n", chip->dma2);
 		goto __skip_resources;
 	}
 	dma_bits |= 0x04;
@@ -398,7 +398,7 @@ __skip_resources:
 			mpu_irq_bits = 0x01;
 			break;
 		default:
-			snd_printk("MPU-401 irq # %ld not valid\n",
+			snd_printk("MPU-401 irq # %d not valid\n",
 				chip->mpu_irq);
 			goto __skip_mpu;
 		}

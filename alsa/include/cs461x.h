@@ -1625,28 +1625,42 @@
 
 typedef struct snd_stru_cs461x cs461x_t;
 
-struct snd_stru_cs461x {
-	snd_irq_t * irqptr;
+typedef struct {
+	char name[24];
+	unsigned long base;
+	unsigned long remap_addr;
+	unsigned long size;
+	struct resource *resource;
+	void *proc_entry;
+} snd_cs461x_region_t;
 
+struct snd_stru_cs461x {
+	int irq;
 	unsigned long ba0_addr;
 	unsigned long ba1_addr;
-	unsigned long ba0;
 	union {
 		struct {
-			unsigned long data0;
-			unsigned long data1;
-			unsigned long pmem;
-			unsigned long reg;
+			snd_cs461x_region_t ba0;
+			snd_cs461x_region_t data0;
+			snd_cs461x_region_t data1;
+			snd_cs461x_region_t pmem;
+			snd_cs461x_region_t reg;
 		} name;
-		unsigned long idx[4];
-	} ba1;
+		snd_cs461x_region_t idx[5];
+	} region;
+
 	unsigned int mode;
 	
 	struct {
-		snd_dma_t *hw_dma;
-		snd_dma_t *sw_dma;
-		snd_dma_area_t *hw_area;
-		snd_dma_area_t *sw_area;
+		unsigned long dma_size;	/* requested DMA size */
+	
+		unsigned char *sw_area;
+		dma_addr_t sw_addr;	/* PCI bus address, not accessible */
+		unsigned long sw_size;
+		unsigned char *hw_area;
+		dma_addr_t hw_addr;	/* PCI bus address, not accessible */
+		unsigned long hw_size;
+
 		unsigned int ctl;
 		unsigned int shift;	/* Shift count to trasform frames in bytes */
 		unsigned int sw_bufsize;
@@ -1668,12 +1682,6 @@ struct snd_stru_cs461x {
 	snd_pcm_t *pcm;
 	snd_rawmidi_t *rmidi;
 
-	void *entry_proc_BA0;
-	void *entry_proc_BA1_data0;
-	void *entry_proc_BA1_data1;
-	void *entry_proc_BA1_prg;
-	void *entry_proc_BA1_reg;
-
 	spinlock_t reg_lock;
 	unsigned int midcr;
 	unsigned int uartm;
@@ -1682,11 +1690,9 @@ struct snd_stru_cs461x {
 
 int snd_cs461x_create(snd_card_t *card,
 		      struct pci_dev *pci,
-		      snd_dma_t *play_hw_dma, snd_dma_t *play_sw_dma,
-		      snd_dma_t *capt_hw_dma, snd_dma_t *capt_sw_dma,
-		      snd_irq_t *irqptr,
+		      unsigned long play_dma_size,
+		      unsigned long capt_dma_size,
 		      cs461x_t **rcodec);
-void snd_cs461x_interrupt(cs461x_t *chip);
 
 int snd_cs461x_pcm(cs461x_t *chip, int device, snd_pcm_t **rpcm);
 int snd_cs461x_mixer(cs461x_t *chip);

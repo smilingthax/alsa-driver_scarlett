@@ -128,11 +128,12 @@ typedef struct snd_stru_ad1816a ad1816a_t;
 
 struct snd_stru_ad1816a {
 	unsigned long port;
-	unsigned int irq;
-	unsigned int dma1;
-	unsigned int dma2;
-	snd_dma_t *dma1ptr;
-	snd_dma_t *dma2ptr;
+	struct resource *res_port;
+	int irq;
+	int dma1;
+	int dma2;
+	unsigned long dma1size;
+	unsigned long dma2size;
 
 	unsigned short hardware;
 	unsigned short version;
@@ -166,11 +167,10 @@ struct snd_stru_ad1816a {
 				AD1816A_MODE_TIMER)
 
 
-extern void snd_ad1816a_interrupt(ad1816a_t *chip);
-
-extern int snd_ad1816a_create(snd_card_t *card,
-			      unsigned long port, snd_irq_t *irqptr,
-			      snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
+extern int snd_ad1816a_create(snd_card_t *card, unsigned long port,
+			      int irq,
+			      int dma1, unsigned long dma1_size,
+			      int dma2, unsigned long dma2_size,
 			      ad1816a_t **chip);
 
 extern int snd_ad1816a_pcm(ad1816a_t *chip, int device, snd_pcm_t **rpcm);

@@ -114,10 +114,16 @@
 #ifdef LINUX_2_3
 #include <linux/init.h>
 #include <linux/pm.h>
+#define PCI_GET_DMA_MASK(pci) pci->dma_mask
+#define PCI_SET_DMA_MASK(pci, mask) pci->dma_mask = mask
 #define PCI_GET_DRIVER_DATA(pci) pci->driver_data
 #define PCI_SET_DRIVER_DATA(pci, data) pci->driver_data = data
 #ifndef virt_to_page
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
+#endif
+#define snd_request_region request_region
+#ifndef rwlock_init
+#define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 #endif
 #endif
 
@@ -159,102 +165,20 @@ static inline void snd_leave_user(mm_segment_t fs)
  *  ==========================================================================
  */
 
-/* auto values */
+/* device allocation stuff */
 
-#define SND_AUTO_PORT		0x00ff
-#define SND_AUTO_IRQ		16
-#define SND_AUTO_DMA		8
-#define SND_AUTO_DMA_SIZE	(0x7fffffff)
-
-/* DMA */
-
-#define SND_DMA_TYPE_ISA	0	/* ISA DMA */
-#define SND_DMA_TYPE_PCI	1	/* PCI DMA (anywhere in kernel memory) */
-#define SND_DMA_TYPE_PCI_16MB	2	/* PCI DMA (must be in low 16MB memory) */
-#define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
-
-typedef struct snd_stru_dma_area snd_dma_area_t;
-typedef struct snd_stru_dma snd_dma_t;
-
-struct snd_stru_dma_area {
-	struct list_head list;		/* list of DMA areas */
-	volatile unsigned short
-	 mmaped:1,			/* mmaped area to user space */
-	 mmap_free:1;			/* free mmaped buffer */
-	unsigned char *buf;		/* pointer to DMA buffer */
-	unsigned long size;		/* real size of DMA buffer */
-	char *owner;			/* owner of this DMA channel */
-	snd_dma_t *dma;
-};
-
-#define snd_dma_area(n) list_entry(n, snd_dma_area_t, list)
-
-struct snd_stru_dma {
-	struct list_head list;		/* list of DMA channels */
-	int type;			/* dma type - see SND_DMA_TYPE_XXXX */
-	int multi: 1;			/* multi area support */
-	unsigned long dma;		/* DMA number */
-	int addressbits;		/* physical wired bits (24-64) */
-	char *name;			/* pointer to name */
-	long rsize;			/* requested size of DMA buffer */
-	char *multi_match[2];		/* allowed owners for multi alloc */
-	struct semaphore mutex;		/* snd_dma_malloc/free */
-	struct list_head areas;		/* DMA areas */
-};
-
-#define snd_dma(n) list_entry(n, snd_dma_t, list)
-
-#define SND_IRQ_TYPE_ISA	0	/* ISA IRQ */
-#define SND_IRQ_TYPE_PCI	1	/* PCI IRQ (shareable) */
-#define SND_IRQ_TYPE_EISA	SND_IRQ_TYPE_PCI
-
-typedef struct snd_stru_irq {
-	struct list_head list;		/* list of IRQ channels */
-	int type;
-	unsigned long irq;
-	char *name;
-	void *dev_id;
-} snd_irq_t;
-
-#define snd_irq(n) list_entry(n, snd_irq_t, list)
-
-typedef struct snd_stru_port {
-	struct list_head list;		/* list of port numbers */
-	unsigned long port;
-	unsigned long size;
-	char *name;
-#ifdef LINUX_2_3
-	struct resource *res;
-#endif
-} snd_port_t;
-
-#define snd_port(n) list_entry(n, snd_port_t, list)
-
-typedef void (snd_irq_handler_t) (int irq, void *dev_id, struct pt_regs *regs);
-
-typedef struct snd_stru_vma {
-	struct list_head list;		/* list of all VMAs */
-	struct vm_area_struct *area;
-	void *notify_client;
-	void *notify_data;
-	long notify_size;
-	void (*notify)(void *notify_client, void *notify_data);
-} snd_vma_t;
-
-#define snd_vma(n) list_entry(n, snd_vma_t, list)
-
-#define SND_DEV_TYPE_RANGE_SIZE	0x1000
+#define SND_DEV_TYPE_RANGE_SIZE		0x1000
 
 typedef enum {
-	SND_DEV_TOPLEVEL = (0*SND_DEV_TYPE_RANGE_SIZE),
+	SND_DEV_TOPLEVEL =		(0*SND_DEV_TYPE_RANGE_SIZE),
 	SND_DEV_LOWLEVEL_PRE,
-	SND_DEV_LOWLEVEL_NORMAL = (1*SND_DEV_TYPE_RANGE_SIZE),
+	SND_DEV_LOWLEVEL_NORMAL =	(1*SND_DEV_TYPE_RANGE_SIZE),
 	SND_DEV_PCM,
 	SND_DEV_RAWMIDI,
 	SND_DEV_TIMER,
 	SND_DEV_SEQUENCER,
 	SND_DEV_HWDEP,
-	SND_DEV_LOWLEVEL = (2*SND_DEV_TYPE_RANGE_SIZE)
+	SND_DEV_LOWLEVEL =		(2*SND_DEV_TYPE_RANGE_SIZE)
 } snd_device_type_t;
 
 typedef enum {
@@ -291,6 +215,19 @@ struct snd_stru_device {
 };
 
 #define snd_device(n) list_entry(n, snd_device_t, list)
+
+/* VMA stuff */
+
+typedef struct snd_stru_vma {
+	struct list_head list;		/* list of all VMAs */
+	struct vm_area_struct *area;
+	void *notify_client;
+	void *notify_data;
+	long notify_size;
+	void (*notify)(void *notify_client, void *notify_data);
+} snd_vma_t;
+
+#define snd_vma(n) list_entry(n, snd_vma_t, list)
 
 /* various typedefs */
 
@@ -417,12 +354,16 @@ void _snd_kfree(void *obj);
 #endif
 void *snd_kcalloc(size_t size, int flags);
 char *snd_kmalloc_strdup(const char *string, int flags);
-void *snd_malloc_pages(unsigned long size, int *pg, int dma);
+void *snd_malloc_pages(unsigned long size, unsigned int dma_flags);
+void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsigned long *res_size);
+void snd_free_pages(void *ptr, unsigned long size);
+#ifdef CONFIG_PCI
+void *snd_malloc_pci_pages(struct pci_dev *pci, unsigned long size, dma_addr_t *dmaaddr);
+void *snd_malloc_pci_pages_fallback(struct pci_dev *pci, unsigned long size, dma_addr_t *dmaaddr, unsigned long *res_size);
+void snd_free_pci_pages(struct pci_dev *pci, unsigned long size, void *ptr, dma_addr_t dmaaddr);
+#endif
 void *snd_vmalloc(unsigned long size);
 void snd_vfree(void *obj);
-void snd_free_pages(void *ptr, unsigned long size);
-int snd_dma_malloc(snd_card_t *card, snd_dma_t *dma, char *owner, snd_dma_area_t **rarea);
-void snd_dma_free(snd_card_t *card, snd_dma_area_t *area);
 #ifdef CONFIG_SND_DEBUG_MEMORY
 int snd_memory_info_init(void);
 int snd_memory_info_done(void);
@@ -451,24 +392,6 @@ int snd_card_free(snd_card_t *card);
 int snd_card_register(snd_card_t *card);
 int snd_card_info_init(void);
 int snd_card_info_done(void);
-
-int snd_check_ioport(snd_card_t *card, unsigned long port, unsigned long size);
-int snd_register_ioport(snd_card_t *card,
-			unsigned long port, unsigned long size,
-			char *name, snd_port_t **rport);
-int snd_unregister_ioport(snd_card_t *card, snd_port_t *port);
-int snd_unregister_ioports(snd_card_t *card);
-
-int snd_register_dma_channel(snd_card_t *card, char *name, unsigned long number,
-			     int type, long rsize, long *possible_numbers,
-			     snd_dma_t **rdma);
-int snd_unregister_dma_channels(snd_card_t *card);
-
-int snd_register_interrupt(snd_card_t *card, char *name, unsigned long number,
-			   int type, snd_irq_handler_t *handler,
-			   void *dev_id, long *possible_numbers,
-			   snd_irq_t **rirq);
-int snd_unregister_interrupts(snd_card_t *card);
 
 /* device.c */
 

@@ -310,16 +310,20 @@ typedef struct {
 } ice1712_eeprom_t;
 
 struct snd_stru_ice1712 {
-	snd_dma_t * dma_conp;	/* consumer playback */
-	snd_dma_t * dma_conc;	/* consumer capture */
-	snd_dma_t * dma_prop;	/* professional playback */
-	snd_dma_t * dma_proc;	/* professional capture */
-	snd_irq_t * irqptr;
+	unsigned long conp_dma_size;
+	unsigned long conc_dma_size;
+	unsigned long prop_dma_size;
+	unsigned long proc_dma_size;
+	int irq;
 
 	unsigned long port;
+	struct resource *res_port;
 	unsigned long ddma_port;
+	struct resource *res_ddma_port;
 	unsigned long dmapath_port;
+	struct resource *res_dmapath_port;
 	unsigned long profi_port;
+	struct resource *res_profi_port;
 
 	unsigned int config;	/* system configuration */
 
@@ -358,13 +362,11 @@ struct snd_stru_ice1712 {
 
 int snd_ice1712_create(snd_card_t * card,
 		       struct pci_dev *pci,
-		       snd_dma_t * dma_conp,
-		       snd_dma_t * dma_conc,
-		       snd_dma_t * dma_prop,
-		       snd_dma_t * dma_proc,
-		       snd_irq_t * irqptr,
+		       unsigned long conp_dma_size,
+		       unsigned long conc_dma_size,
+		       unsigned long prop_dma_size,
+		       unsigned long proc_dma_size,
 		       ice1712_t ** ice1712);
-void snd_ice1712_interrupt(ice1712_t * ice1712);
 
 int snd_ice1712_pcm(ice1712_t * ice1712, int device, snd_pcm_t ** rpcm);
 int snd_ice1712_pcm_profi(ice1712_t * ice1712, int device, snd_pcm_t ** rpcm);

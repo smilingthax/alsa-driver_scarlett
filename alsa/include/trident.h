@@ -245,8 +245,10 @@ typedef struct snd_trident_memblk_arg {
 typedef struct {
 	unsigned int * entries;		/* 16k-aligned TLB table */
 	void * buffer;			/* pointer for table calloc */
+	dma_addr_t buffer_dmaaddr;	/* not accessible PCI BUS physical address */
 	snd_util_memhdr_t * memhdr;	/* page allocation list */
 	void * silent_page;		/* silent page */
+	dma_addr_t silent_page_dmaaddr; /* not accessible PCI BUS physical address */
 } snd_trident_tlb_t;
 
 struct snd_trident_stru_voice {
@@ -328,17 +330,18 @@ struct snd_stru_trident_pcm_mixer {
 };
 
 struct snd_stru_trident {
-	snd_dma_t * dma1ptr;	/* DAC Channel */
-	snd_dma_t * dma2ptr;	/* ADC Channel */
-	snd_dma_t * dma3ptr;	/* Foldback Channel */
-	snd_dma_t * dma4ptr;	/* SPDIF Channel */
-	snd_irq_t * irqptr;
+	unsigned long dma1size;	/* DAC Channel */
+	unsigned long dma2size;	/* ADC Channel */
+	unsigned long dma3size;	/* Foldback Channel */
+	unsigned long dma4size;	/* SPDIF Channel */
+	int irq;
 
 	unsigned int device;	/* device ID */
 
         unsigned char  bDMAStart;
 
 	unsigned long port;
+	struct resource *res_port;
 	unsigned long midi_port;
 
 	unsigned int spurious_irq_count;
@@ -381,16 +384,14 @@ struct snd_stru_trident {
 
 int snd_trident_create(snd_card_t * card,
 		       struct pci_dev *pci,
-		       snd_dma_t * dma1ptr,
-		       snd_dma_t * dma2ptr,
-		       snd_dma_t * dma3ptr,
-		       snd_dma_t * dma4ptr,
-		       snd_irq_t * irqptr,
+		       unsigned long dma1size,
+		       unsigned long dma2size,
+		       unsigned long dma3size,
+		       unsigned long dma4size,
 		       int pcm_streams,
 		       int max_wavetable_size,
 		       trident_t ** rtrident);
 int snd_trident_free(trident_t *trident);
-void snd_trident_interrupt(trident_t * trident);
 
 int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
 int snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);

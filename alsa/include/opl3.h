@@ -255,6 +255,8 @@ typedef struct snd_opl3_voice {
 struct snd_opl3 {
 	unsigned long l_port;
 	unsigned long r_port;
+	struct resource *res_l_port;
+	struct resource *res_r_port;
 	unsigned short hardware;
 	/* hardware access */
 	void (*command) (opl3_t * opl3, unsigned short cmd, unsigned char val);

@@ -38,10 +38,10 @@ typedef struct snd_stru_uart16550 {
 
 	spinlock_t open_lock;
 
-	int irq_number;
-	snd_irq_t *irq;
+	int irq;
 
 	unsigned short base;
+	struct resource *res_base;
 
 	unsigned char divisor;
 
@@ -55,7 +55,7 @@ typedef struct snd_stru_uart16550 {
         short int fifo_count;	//used in uart16550
 
 	// ports
-	int ports;
+	int midi_ports;
 	int ports_count;
 	int prev_ports;
 
@@ -65,17 +65,10 @@ typedef struct snd_stru_uart16550 {
         int buff_out;
 } snd_uart16550_t;
 
-extern int snd_uart16550_new_device (snd_card_t* card,
-				     int device,
-				     int irq_number,
-				     unsigned int iobase,
-				     unsigned char divisor,
-				     int ports);
-
-extern int snd_uart16550_set_param (snd_rawmidi_t* rmidi,
-				    int irq_number,
-				    unsigned int iobase,
-				    unsigned char divisor,
-				    int ports);
-
-extern int snd_uart16550_detect (unsigned int io_base);
+int snd_uart16550_detect(unsigned int io_base);
+int snd_uart16550_create(snd_card_t * card,
+			 unsigned int iobase,
+			 int irq,
+			 unsigned char divisor,
+			 snd_uart16550_t **ruart);
+int snd_uart16550_rmidi(snd_uart16550_t *uart, int device, int local_device, snd_rawmidi_t **rmidi);

@@ -213,20 +213,27 @@ struct snd_stru_cs4231_freq {
 #define CS4231_HW_INTERWAVE     0x1000	/* InterWave chip */
 #define CS4231_HW_OPL3SA2       0x1001	/* OPL3-SA2 chip */
 
+/* defines for codec.hwshare */
+#define CS4231_HWSHARE_IRQ	(1<<0)
+#define CS4231_HWSHARE_DMA1	(1<<1)
+#define CS4231_HWSHARE_DMA2	(1<<2)
+
 typedef struct snd_stru_cs4231 cs4231_t;
 
 struct snd_stru_cs4231 {
 	unsigned long port;		/* base i/o port */
+	struct resource *res_port;
 	unsigned long cport;		/* control base i/o port (CS4236) */
-	unsigned int irq;		/* IRQ line */
-	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned int dma1;		/* playback DMA */
-	unsigned int dma2;		/* record DMA */
-	snd_dma_t * dmaptr1;		/* DMA pointer - playback */
-	snd_dma_t * dmaptr2;		/* DMA pointer - record */
+	struct resource *res_cport;
+	int irq;			/* IRQ line */
+	int dma1;			/* playback DMA */
+	int dma2;			/* record DMA */
+	unsigned long dma1size;
+	unsigned long dma2size;
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to CS4231_MODE_XXXX */
 	unsigned short hardware;	/* see to CS4231_HW_XXXX */
+	unsigned short hwshare;		/* shared resources */
 	unsigned short single_dma:1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
 
 	snd_card_t *card;
@@ -256,6 +263,9 @@ struct snd_stru_cs4231 {
 	void (*set_capture_format) (cs4231_t *chip, unsigned char cdfr);
 	void (*suspend) (cs4231_t *chip);
 	void (*resume) (cs4231_t *chip);
+	void *dma_private_data;
+	int (*claim_dma) (cs4231_t *chip, void *dma_private_data, int dma);
+	int (*release_dma) (cs4231_t *chip, void *dma_private_data, int dma);
 };
 
 /* exported functions */
@@ -268,16 +278,17 @@ unsigned char snd_cs4236_ext_in(cs4231_t *chip, unsigned char reg);
 void snd_cs4231_mce_up(cs4231_t *chip);
 void snd_cs4231_mce_down(cs4231_t *chip);
 
-void snd_cs4231_interrupt(cs4231_t *chip);
+void snd_cs4231_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 const char *snd_cs4231_chip_id(cs4231_t *chip);
 
 int snd_cs4231_create(snd_card_t * card,
 		      unsigned long port,
-		      snd_irq_t * irqptr,
-		      snd_dma_t * dmaptr1,
-		      snd_dma_t * dmaptr2,
+		      int irq,
+		      int dma1, unsigned long dma1size,
+		      int dma2, unsigned long dma2size,
 		      unsigned short hardware,
+		      unsigned short hwshare,
 		      cs4231_t ** rchip);
 int snd_cs4231_pcm(cs4231_t * chip, int device, snd_pcm_t **rpcm);
 int snd_cs4231_timer(cs4231_t * chip, int device, snd_timer_t **rtimer);
@@ -286,10 +297,11 @@ int snd_cs4231_mixer(cs4231_t * chip);
 int snd_cs4236_create(snd_card_t * card,
 		      unsigned long port,
 		      unsigned long cport,
-		      snd_irq_t * irqptr,
-		      snd_dma_t * dmaptr1,
-		      snd_dma_t * dmaptr2,
+		      int irq,
+		      int dma1, unsigned long dma1size,
+		      int dma2, unsigned long dma2size,
 		      unsigned short hardware,
+		      unsigned short hwshare,
 		      cs4231_t ** rchip);
 int snd_cs4236_pcm(cs4231_t * chip, int device, snd_pcm_t **rpcm);
 int snd_cs4236_mixer(cs4231_t * chip);

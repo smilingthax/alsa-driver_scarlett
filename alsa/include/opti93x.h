@@ -99,11 +99,12 @@ typedef struct snd_stru_opti93x opti93x_t;
 
 struct snd_stru_opti93x {
 	unsigned long port;
-	unsigned long irq;
-	unsigned long dma1;
-	unsigned long dma2;
-	snd_dma_t *dma1ptr;
-	snd_dma_t *dma2ptr;
+	struct resource *res_port;
+	int irq;
+	int dma1;
+	int dma2;
+	unsigned long dma1size;
+	unsigned long dma2size;
 
 	opti9xx_t *chip;
 	unsigned short hardware;
@@ -133,10 +134,11 @@ struct snd_stru_opti93x {
 #define OPTi93X_MODE_OPEN	(OPTi93X_MODE_PLAY | OPTi93X_MODE_CAPTURE)
 
 
-void snd_opti93x_interrupt(opti93x_t *chip);
+void snd_opti93x_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 int snd_opti93x_create(snd_card_t *card, opti9xx_t *chip,
-		       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
+		       int dma1, unsigned long dma1size,
+		       int dma2, unsigned long dma2size,
 		       opti93x_t **rcodec);
 
 int snd_opti93x_pcm(opti93x_t *codec, int device, snd_pcm_t **rpcm);

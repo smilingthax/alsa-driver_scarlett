@@ -180,7 +180,9 @@ struct snd_stru_pcm_runtime {
 	int timer_running;		/* time is running */
 	spinlock_t timer_lock;
 	/* -- DMA -- */           
-        snd_dma_area_t *dma_area;	/* dma area */
+	unsigned char *dma_area;	/* DMA area */
+	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
+	unsigned long dma_size;		/* size of DMA area */
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
 	snd_pcm_oss_runtime_t oss;
@@ -405,9 +407,6 @@ extern ssize_t snd_pcm_format_set_silence(int format, void *buf, size_t count);
 extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 extern ssize_t snd_pcm_format_size(int format, size_t samples);
  
-extern int snd_pcm_dma_alloc(snd_pcm_substream_t * substream, snd_dma_t * dma, char *ident);
-extern int snd_pcm_dma_setup(snd_pcm_substream_t * substream, snd_dma_area_t * area);
-extern int snd_pcm_dma_free(snd_pcm_substream_t * substream);
 extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);
 extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);

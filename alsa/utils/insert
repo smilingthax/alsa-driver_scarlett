@@ -260,7 +260,6 @@ case "$1" in
   ens1370)
     basic
     insert snd-ak4531-codec.o
-    insert snd-ens1370.o
     insert snd-card-ens1370.o
     restore ens1370.conf
     ;;

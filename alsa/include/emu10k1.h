@@ -730,11 +730,12 @@ typedef struct {
 } snd_emu10k1_fx8010_t;
 
 struct snd_stru_emu10k1 {
-	snd_dma_t * dma1ptr;	/* DAC1 */
-	snd_dma_t * dma2ptr;	/* ADC */
-	snd_irq_t * irqptr;
+	int irq;
+	unsigned long dma1size;	/* DAC/EMU PCM */
+	unsigned long dma2size;	/* ADC */
 
 	unsigned long port;	/* I/O port number */
+	struct resource *res_port;
 	int APS: 1,		/* APS flag */
 	    tos_link: 1;	/* tos link detected */
 	unsigned int revision;	/* chip revision */
@@ -744,10 +745,13 @@ struct snd_stru_emu10k1 {
 	unsigned int itram_size; /* internal TRAM size in samples */
 	unsigned int etram_size; /* external TRAM size in samples */
 	void *etram_pages;	/* allocated pages for external TRAM */
+	dma_addr_t etram_pages_dmaaddr;
 	unsigned int dbg;	/* FX debugger register */
 
 	void *silent_page;			/* silent page */
+	dma_addr_t silent_page_dmaaddr;
 	volatile unsigned int *ptb_pages;	/* page table pages */
+	dma_addr_t ptb_pages_dmaaddr;
 	snd_util_memhdr_t *memhdr;		/* page allocation list */
 	snd_util_memblk_t *reserved_page;	/* reserved page */
 
@@ -811,9 +815,8 @@ struct snd_stru_emu10k1 {
 
 int snd_emu10k1_create(snd_card_t * card,
 		       struct pci_dev *pci,
-		       snd_dma_t * dma1ptr,
-		       snd_dma_t * dma2ptr,
-		       snd_irq_t * irqptr,
+		       unsigned long dma1size,
+		       unsigned long dma2size,
 		       emu10k1_t ** remu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
@@ -822,7 +825,7 @@ int snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu);
 int snd_emu10k1_fx8010_new(emu10k1_t *emu, int device, snd_hwdep_t ** rhwdep);
 
-void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
+void snd_emu10k1_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 /* initialization */
 int snd_emu10k1_init_efx(emu10k1_t *emu);

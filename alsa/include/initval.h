@@ -21,6 +21,11 @@
  *
  */
 
+#define SND_AUTO_PORT		0xffff
+#define SND_AUTO_IRQ		0xffff
+#define SND_AUTO_DMA		0xffff
+#define SND_AUTO_DMA_SIZE	(0x7fffffff)
+
 #define SND_DEFAULT_IDX1	(-1)
 #define SND_DEFAULT_STR1	NULL
 #define SND_DEFAULT_ENABLE1	1
@@ -62,7 +67,8 @@
 EXPORT_NO_SYMBOLS;
 #endif
 
-static inline int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsigned long port))
+#ifdef SND_LEGACY_AUTO_PROBE
+static int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsigned long port))
 {
 	int result = 0;	/* number of detected cards */
 
@@ -72,6 +78,66 @@ static inline int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsig
 		ports++;
 	}
 	return result;
+}
+#endif
+
+#ifdef SND_LEGACY_FIND_FREE_IOPORT
+static long snd_legacy_find_free_ioport(long *port_table, long size)
+{
+	while (*port_table != -1) {
+		if (!check_region(*port_table, size))
+			return *port_table;
+		port_table++;
+	}
+	return -1;
+}
+#endif
+
+#ifdef SND_LEGACY_FIND_FREE_IRQ
+static void snd_legacy_empty_irq_handler(int irq, void *dev_id, struct pt_regs *regs)
+{
+}
+
+static int snd_legacy_find_free_irq(int *irq_table)
+{
+	while (*irq_table != -1) {
+		if (!request_irq(*irq_table, snd_legacy_empty_irq_handler,
+				 SA_INTERRUPT, "ALSA Test IRQ", (void *) irq_table)) {
+			free_irq(*irq_table, (void *) irq_table);
+			return *irq_table;
+		}
+		irq_table++;
+	}
+	return -1;
+}
+#endif
+
+#ifdef SND_LEGACY_FIND_FREE_DMA
+static int snd_legacy_find_free_dma(int *dma_table)
+{
+	while (*dma_table != -1) {
+		if (!request_dma(*dma_table, "ALSA Test DMA")) {
+			free_dma(*dma_table);
+			return *dma_table;
+		}
+		dma_table++;
+	}
+	return -1;
+}
+#endif
+
+static inline unsigned long snd_dma_size(int size_kB, int min_kB, int max_kB)
+{
+	if (size_kB < min_kB)
+		size_kB = min_kB;
+	if (size_kB > max_kB)
+		size_kB = max_kB;
+	return (unsigned long)size_kB * 1024;
+}
+
+static inline int snd_legacy_dma_size(int dma, unsigned long size_kB)
+{
+	return snd_dma_size(size_kB, PAGE_SIZE / 1024, dma < 4 ? 64 : 128);
 }
 
 #endif				/* __INITVAL_H */

@@ -84,9 +84,10 @@ typedef unsigned char UBOOL;
 
 typedef struct Smtp {
 	snd_card_t *card;
-	snd_port_t *rioport;
+	unsigned long port;
+	struct resource *res_port;
 	snd_rawmidi_t *rmidi[NUMPORTS];
-	snd_irq_t *irq;
+	int irq;
 	spinlock_t spinlock;
 	U8 mode[NUMPORTS];
 	int istimer;

@@ -325,9 +325,13 @@ struct snd_stru_gf1 {
 		     effect:1;		/* use effect voices */
 
 	unsigned long port;		/* port of GF1 chip */
-	snd_irq_t * irqptr;		/* IRQ pointer */
-	snd_dma_t * dma1ptr;		/* DMA1 pointer */
-	snd_dma_t * dma2ptr;		/* DMA2 pointer */
+	struct resource *res_port1;
+	struct resource *res_port2;
+	int irq;			/* IRQ number */
+	int dma1;			/* DMA1 number */
+	int dma2;			/* DMA2 number */
+	unsigned long dma1size;		/* DMA1 size */
+	unsigned long dma2size;		/* DMA2 size */
 	unsigned int memory;		/* GUS's DRAM size in bytes */
 	unsigned int rom_memory;	/* GUS's ROM size in bytes */
 	unsigned int rom_present;	/* bitmask */
@@ -433,7 +437,9 @@ struct snd_stru_gf1 {
 struct snd_stru_gus_card {
 	snd_card_t *card;
 
-	unsigned int equal_irq:1,	/* GF1 and CODEC shares IRQ (GUS MAX only) */
+	unsigned int
+	 initialized: 1,		/* resources were initialized */
+	 equal_irq:1,			/* GF1 and CODEC shares IRQ (GUS MAX only) */
 	 equal_dma:1,			/* if dma channels are equal (not valid for daughter board) */
 	 ics_flag:1,			/* have we ICS mixer chip */
 	 ics_flipped:1,			/* ICS mixer have flipped some channels? */
@@ -656,26 +662,21 @@ extern void snd_gf1_peek_print_block(snd_gus_card_t * gus, unsigned int addr, in
 
 void snd_gus_use_inc(snd_gus_card_t * gus);
 void snd_gus_use_dec(snd_gus_card_t * gus);
-snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
-				 unsigned long port,
-				 snd_irq_t * irqnum,
-				 snd_dma_t * dma1num,
-				 snd_dma_t * dma2num,
-				 int timer_dev,
-				 int voices,
-				 int pcm_channels,
-				 int effect);
-int snd_gus_set_port(snd_gus_card_t * card, unsigned long port);
-int snd_gus_detect_memory(snd_gus_card_t * gus);
-int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
-void snd_gus_init_control(snd_gus_card_t * gus);
-int snd_gus_check_version(snd_gus_card_t * gus);
-int snd_gus_attach_synthesizer(snd_gus_card_t *gus);
-int snd_gus_detach_synthesizer(snd_gus_card_t *gus);
+int snd_gus_create(snd_card_t * card,
+		   unsigned long port,
+		   int irq,
+		   int dma1, unsigned long dma1size,
+		   int dma2, unsigned long dma2size,
+		   int timer_dev,
+		   int voices,
+		   int pcm_channels,
+		   int effect,
+		   snd_gus_card_t ** rgus);
+int snd_gus_initialize(snd_gus_card_t * gus);
 
 /* gus_irq.c */
 
-void snd_gus_interrupt(snd_gus_card_t * gus, unsigned char status);
+void snd_gus_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 #ifdef CONFIG_SND_DEBUG
 void snd_gus_irq_profile_init(snd_gus_card_t *gus);
 void snd_gus_irq_profile_done(snd_gus_card_t *gus);

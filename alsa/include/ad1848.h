@@ -130,10 +130,10 @@ struct snd_stru_ad1848_freq {
 
 struct snd_stru_ad1848 {
 	unsigned long port;		/* i/o port */
-	unsigned long irq;		/* IRQ line */
-	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned long dma;		/* data DMA */
-	snd_dma_t * dmaptr;		/* data DMA pointer */
+	struct resource *res_port;
+	int irq;			/* IRQ line */
+	int dma;			/* data DMA */
+	unsigned long dma_rsize;
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to AD1848_MODE_XXXX */
 	unsigned short hardware;	/* see to AD1848_HW_XXXX */
@@ -159,17 +159,16 @@ typedef struct snd_stru_ad1848 ad1848_t;
 
 void snd_ad1848_out(ad1848_t *chip, unsigned char reg, unsigned char value);
 
-void snd_ad1848_interrupt(ad1848_t *chip);
-
 int snd_ad1848_create(snd_card_t * card,
 		      unsigned long port,
-		      snd_irq_t * irqptr,
-		      snd_dma_t * dmaptr,
+		      int irq, int dma,
+		      unsigned long dma_size,
 		      unsigned short hardware,
 		      ad1848_t ** chip);
 
 int snd_ad1848_pcm(ad1848_t * chip, int device, snd_pcm_t **rpcm);
 int snd_ad1848_mixer(ad1848_t * chip);
+void snd_ad1848_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 #define AD1848_SINGLE(xname, xindex, reg, shift, mask, invert) \
 { iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \

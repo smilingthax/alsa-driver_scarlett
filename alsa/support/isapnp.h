@@ -135,12 +135,14 @@ struct isapnp_fixup {
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 15)
 
+#ifndef IORESOURCE_IO
 struct resource {
 	const char *name;
 	unsigned long start, end;
 	unsigned long flags;
 	struct resource *parent, *sibling, *child;
 };
+#endif
 
 /*
  * IO resources have these defined flags.

@@ -31,13 +31,12 @@
 
 struct snd_stru_es1688 {
 	unsigned long port;		/* port of ESS chip */
+	struct resource *res_port;
 	unsigned long mpu_port;		/* MPU-401 port of ESS chip */
-	unsigned long irq;		/* IRQ number of ESS chip */
-	unsigned long mpu_irq;		/* MPU IRQ */
-	snd_irq_t * irqptr;		/* IRQ pointer */
-	snd_irq_t * mpu_irqptr;		/* MPU IRQ pointer */
-	unsigned long dma8;		/* 8-bit DMA */
-	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
+	int irq;			/* IRQ number of ESS chip */
+	int mpu_irq;			/* MPU IRQ */
+	int dma8;			/* 8-bit DMA */
+	unsigned long dma8size;		/* requested DMA size in bytes */
 	unsigned short version;		/* version of ESS chip */
 	unsigned short hardware;	/* see to ES1688_HW_XXXX */
 
@@ -58,7 +57,7 @@ typedef struct snd_stru_es1688 es1688_t;
 
 /* I/O ports */
 
-#define ES1688P( codec, x ) ( (chip) -> port + e_s_s_ESS1688##x )
+#define ES1688P(codec, x) ((codec)->port + e_s_s_ESS1688##x)
 
 #define e_s_s_ESS1688RESET	0x6
 #define e_s_s_ESS1688READ	0xa
@@ -111,14 +110,15 @@ typedef struct snd_stru_es1688 es1688_t;
 void snd_es1688_mixer_write(es1688_t *chip, unsigned char reg, unsigned char data);
 unsigned char snd_es1688_mixer_read(es1688_t *chip, unsigned char reg);
 
-void snd_es1688_interrupt(es1688_t *chip);
+void snd_es1688_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 int snd_es1688_create(snd_card_t * card,
 		      unsigned long port,
 		      unsigned long mpu_port,
-		      snd_irq_t * irqptr,
-		      snd_irq_t * mpu_irqptr,
-		      snd_dma_t * dma8ptr,
+		      int irq,
+		      int mpu_irq,
+		      int dma8,
+		      unsigned long dma8size,
 		      unsigned short hardware,
 		      es1688_t ** rchip);
 int snd_es1688_pcm(es1688_t *chip, int device, snd_pcm_t ** rpcm);

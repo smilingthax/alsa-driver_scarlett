@@ -55,13 +55,14 @@
 
 struct snd_stru_sb {
 	unsigned long port;		/* base port of DSP chip */
+	struct resource *res_port1;
+	struct resource *res_port2;
 	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
-	unsigned long irq;		/* IRQ number of DSP chip */
-	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned long dma8;		/* 8-bit DMA */
-	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
-	unsigned long dma16;		/* 16-bit DMA */
-	snd_dma_t * dma16ptr;		/* 16-bit DMA pointer */
+	int irq;			/* IRQ number of DSP chip */
+	int dma8;			/* 8-bit DMA */
+	int dma16;			/* 16-bit DMA */
+	unsigned long dma8size;
+	unsigned long dma16size;
 	unsigned short version;		/* version of DSP chip */
 	unsigned short hardware;	/* see to SB_HW_XXXX */
 
@@ -90,6 +91,8 @@ struct snd_stru_sb {
 	snd_pcm_t *pcm;
 	snd_pcm_substream_t *playback_substream;
 	snd_pcm_substream_t *capture_substream;
+
+	snd_rawmidi_t *rmidi;
 
 	spinlock_t reg_lock;
 	spinlock_t open_lock;
@@ -246,9 +249,10 @@ int snd_sbdsp_get_byte(sb_t *chip);
 int snd_sbdsp_reset(sb_t *chip);
 int snd_sbdsp_create(snd_card_t *card,
 		     unsigned long port,
-		     snd_irq_t * irqptr,
-		     snd_dma_t * dma8ptr,
-		     snd_dma_t * dma16ptr,
+		     int irq,
+		     void (*irq_handler)(int, void *, struct pt_regs *),
+		     int dma8, unsigned long dma8size,
+		     int dma16, unsigned long dma16size,
 		     unsigned short hardware,
 		     sb_t **r_chip);
 /* sb_mixer.c */
@@ -257,7 +261,7 @@ unsigned char snd_sbmixer_read(sb_t *chip, unsigned char reg);
 int snd_sbmixer_new(sb_t *chip);
 
 /* sb8_init.c */
-int snd_sb8dsp_new_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm);
+int snd_sb8dsp_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm);
 /* sb8.c */
 void snd_sb8dsp_interrupt(sb_t *chip);
 int snd_sb8_playback_open(snd_pcm_substream_t *substream);
@@ -265,14 +269,14 @@ int snd_sb8_capture_open(snd_pcm_substream_t *substream);
 int snd_sb8_playback_close(snd_pcm_substream_t *substream);
 int snd_sb8_capture_close(snd_pcm_substream_t *substream);
 /* midi8.c */
-void snd_sb8dsp_midi_interrupt(snd_rawmidi_t * rmidi);
-int snd_sb8dsp_midi_new(sb_t *chip, int device, snd_rawmidi_t ** rrawmidi);
+void snd_sb8dsp_midi_interrupt(sb_t *chip);
+int snd_sb8dsp_midi(sb_t *chip, int device, snd_rawmidi_t ** rrawmidi);
 
 /* sb16_init.c */
-int snd_sb16dsp_new_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm);
+int snd_sb16dsp_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm);
 int snd_sb16dsp_configure(sb_t *chip);
 /* sb16.c */
-void snd_sb16dsp_interrupt(sb_t *chip, unsigned short status);
+void snd_sb16dsp_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 int snd_sb16_playback_open(snd_pcm_substream_t *substream);
 int snd_sb16_capture_open(snd_pcm_substream_t *substream);
 int snd_sb16_playback_close(snd_pcm_substream_t *substream);

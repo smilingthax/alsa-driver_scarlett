@@ -5,6 +5,8 @@
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18)
 
+typedef unsigned long dma_addr_t;
+
 #define init_MUTEX(x) *(x) = MUTEX
 #define DECLARE_MUTEX(x) struct semaphore x = MUTEX
 typedef struct wait_queue wait_queue_t;
@@ -74,8 +76,27 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define list_for_each(pos, head) \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
+#ifndef IORESOURCE_IO
+struct resource {
+	const char *name;
+	unsigned long start, end;
+	unsigned long flags;
+	struct resource *parent, *sibling, *child;
+};
+#endif
+
+#ifndef IORESOURCE_IO
 #define IORESOURCE_IO           0x00000100      /* Resource type */
-#define IORESOURCE_MEM          0x00000200
+#endif
+
+#define snd_request_region snd_compat_request_region
+#define release_resource snd_compat_release_resource
+#define request_mem_region(from, size, name) (&snd_compat_mem_region)
+
+extern struct resource snd_compat_mem_region;
+
+struct resource *snd_compat_request_region(unsigned long start, unsigned long size, const char *name);
+int snd_compat_release_resource(struct resource *resource);
 
 #ifdef CONFIG_PCI
 
@@ -89,9 +110,16 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define PCI_GET_DRIVER_DATA snd_pci_compat_get_driver_data
 #define PCI_SET_DRIVER_DATA snd_pci_compat_set_driver_data
 
+#define PCI_GET_DMA_MASK snd_pci_compat_get_dma_mask
+#define PCI_SET_DMA_MASK snd_pci_compat_set_dma_mask
+
 #define pci_enable_device snd_pci_compat_enable_device
 #define pci_register_driver snd_pci_compat_register_driver
 #define pci_unregister_driver snd_pci_compat_unregister_driver
+
+#define pci_alloc_consistent snd_pci_compat_alloc_consistent
+#define pci_free_consistent snd_pci_compat_free_consistent
+#define pci_dma_supported snd_pci_compat_dma_supported
 
 #define pci_dev_g(n) list_entry(n, struct pci_dev, global_list)
 #define pci_dev_b(n) list_entry(n, struct pci_dev, bus_list)
@@ -136,6 +164,11 @@ int snd_pci_compat_get_flags (struct pci_dev *dev, int n_base);
 int snd_pci_compat_set_power_state(struct pci_dev *dev, int new_state);
 int snd_pci_compat_enable_device(struct pci_dev *dev);
 int snd_pci_compat_find_capability(struct pci_dev *dev, int cap);
+void *snd_pci_compat_alloc_consistent(struct pci_dev *, long, dma_addr_t *);
+void snd_pci_compat_free_consistent(struct pci_dev *, long, void *, dma_addr_t);
+int snd_pci_compat_dma_supported(struct pci_dev *, dma_addr_t mask);
+unsigned long snd_pci_compat_get_dma_mask(struct pci_dev *);
+void snd_pci_compat_set_dma_mask(struct pci_dev *, unsigned long mask);
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev);
 void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data);
 

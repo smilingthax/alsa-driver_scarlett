@@ -95,23 +95,8 @@ struct snd_stru_wavefront {
 };
 
 struct snd_stru_wavefront_card {
-	cs4231_t *chip;
-	snd_irq_t *cs4232_pcm_irqptr;
-	snd_irq_t *cs4232_mpu_irqptr;
-        snd_irq_t *ics2115_irqptr;
-	snd_dma_t *dma1ptr;
-	snd_dma_t *dma2ptr;
-	snd_card_t *card;
-	snd_pcm_t *pcm;
-	unsigned short pcm_status_reg;
-	snd_rawmidi_t *cs4232_rmidi;
-	snd_rawmidi_t *ics2115_internal_rmidi;
-	snd_rawmidi_t *ics2115_external_rmidi;
-	snd_hwdep_t *fm_synth;
-	snd_hwdep_t *wavefront_synth;
-        snd_hwdep_t *fx_processor;
-        snd_wavefront_t wavefront;
-
+	int ics2115_irq;
+	snd_wavefront_t wavefront;
 #ifdef __ISAPNP__
 	struct isapnp_dev *wss;
 	struct isapnp_dev *ctrl;
