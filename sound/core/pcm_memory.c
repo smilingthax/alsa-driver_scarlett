@@ -144,8 +144,12 @@ static void snd_pcm_lib_preallocate_dma_free(snd_pcm_substream_t *substream)
 }
 
 /**
- * snd_pcm_lib_preallocate_free - release the preallocated buffer
- * of the specified substream.
+ * snd_pcm_lib_preallocate_free - release the preallocated buffer of the specified substream.
+ * @substream: the pcm substream instance
+ *
+ * Releases the pre-allocated buffer of the given substream.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream)
 {
@@ -158,8 +162,12 @@ int snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream)
 }
 
 /**
- * snd_pcm_lib_preallocate_free_for_all - release the preallocated
- * buffers of the whole substreams on the specified pcm.
+ * snd_pcm_lib_preallocate_free_for_all - release all pre-allocated buffers on the pcm
+ * @pcm: the pcm instance
+ *
+ * Releases all the pre-allocated buffers on the given pcm.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm)
 {
@@ -268,8 +276,16 @@ static int snd_pcm_lib_preallocate_pages1(snd_pcm_substream_t *substream,
 	return 0;
 }
 
-/*
- * pre-allocation for the continuous memory type
+/**
+ * snd_pcm_lib_preallocate_pages - pre-allocation for the continuous memory type
+ * @substream: the pcm substream instance
+ * @size: the requested pre-allocation size in bytes
+ * @max: the max. allowed pre-allocation size
+ * @flags: allocation condition, GFP_XXX
+ *
+ * Do pre-allocation for the continuous memory type.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
 				      size_t size, size_t max,
@@ -280,6 +296,18 @@ int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
 	return snd_pcm_lib_preallocate_pages1(substream, size, max);
 }
 
+/**
+ * snd_pcm_lib_preallocate_pages_for_all - pre-allocation for continous memory type (all substreams)
+ * @pcm: pcm to assign the buffer
+ * @size: the requested pre-allocation size in bytes
+ * @max: max. buffer size acceptable for the changes via proc file
+ * @flags: allocation condition, GFP_XXX
+ *
+ * Do pre-allocation to all substreams of the given pcm for the
+ * continuous memory type.
+ *
+ * Returns zero if successful, or a negative error code on failure.
+ */
 int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
 					  size_t size, size_t max,
 					  unsigned int flags)
@@ -297,10 +325,13 @@ int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
 #ifdef CONFIG_ISA
 /**
  * snd_pcm_lib_preallocate_isa_pages - pre-allocation for the ISA bus
- *
  * @substream: substream to assign the buffer
- * @size: the buffer size to be allocated
+ * @size: the requested pre-allocation size in bytes
  * @max: max. buffer size acceptable for the changes via proc file
+ *
+ * Do pre-allocation for the ISA bus.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_isa_pages(snd_pcm_substream_t *substream,
 				      size_t size, size_t max)
@@ -310,13 +341,17 @@ int snd_pcm_lib_preallocate_isa_pages(snd_pcm_substream_t *substream,
 	return snd_pcm_lib_preallocate_pages1(substream, size, max);
 }
 
-/**
- * snd_pcm_lib_preallocate_isa_pages_for_all - pre-allocation
- * for the ISA bus (all substreams)
+/*
+ * FIXME: the function name is too long for docbook!
  *
+ * snd_pcm_lib_preallocate_isa_pages_for_all - pre-allocation for the ISA bus (all substreams)
  * @pcm: pcm to assign the buffer
- * @size: the buffer size to be allocated
  * @max: max. buffer size acceptable for the changes via proc file
+ *
+ * Do pre-allocation to all substreams of the given pcm for the
+ * ISA bus.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_isa_pages_for_all(snd_pcm_t *pcm,
 					      size_t size, size_t max)
@@ -333,11 +368,15 @@ int snd_pcm_lib_preallocate_isa_pages_for_all(snd_pcm_t *pcm,
 #endif /* CONFIG_ISA */
 
 /**
- * snd_pcm_lib_malloc_pages - allocate the DMA buffer on the BUS type
- * given by snd_pcm_lib_preallocate_xxx_pages().
- *
+ * snd_pcm_lib_malloc_pages - allocate the DMA buffer
  * @substream: the substream to allocate the DMA buffer to
  * @size: the requested buffer size in bytes
+ *
+ * Allocates the DMA buffer on the BUS type given by
+ * snd_pcm_lib_preallocate_xxx_pages().
+ *
+ * Returns 1 if the buffer is changed, 0 if not changed, or a negative
+ * code on failure.
  */
 int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size)
 {
@@ -372,10 +411,12 @@ int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size)
 }
 
 /**
- * snd_pcm_lib_free_pages - release the allocated DMA buffer of
- * the specified substream
- *
+ * snd_pcm_lib_free_pages - release the allocated DMA buffer.
  * @substream: the substream to release the DMA buffer
+ *
+ * Releases the DMA buffer allocated via snd_pcm_lib_malloc_pages().
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream)
 {
@@ -401,8 +442,12 @@ int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream)
  *
  * @pci: pci device
  * @substream: substream to assign the buffer
- * @size: the buffer size to be allocated in bytes
+ * @size: the requested pre-allocation size in bytes
  * @max: max. buffer size acceptable for the changes via proc file
+ *
+ * Do pre-allocation for the PCI bus.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
 				      snd_pcm_substream_t *substream,
@@ -413,14 +458,19 @@ int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
 	return snd_pcm_lib_preallocate_pages1(substream, size, max);
 }
 
-/**
- * snd_pcm_lib_preallocate_pci_pages_for_all - pre-allocation
- * for the PCI bus (all substreams)
+/*
+ * FIXME: the function name is too long for docbook!
  *
+ * snd_pcm_lib_preallocate_pci_pages_for_all - pre-allocation for the PCI bus (all substreams)
  * @pci: pci device
  * @pcm: pcm to assign the buffer
- * @size: the buffer size to be allocated
+ * @size: the requested pre-allocation size in bytes
  * @max: max. buffer size acceptable for the changes via proc file
+ *
+ * Do pre-allocation to all substreams of the given pcm for the
+ * PCI bus.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
 					      snd_pcm_t *pcm,
@@ -444,8 +494,11 @@ int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
  *
  * @sbus: SBUS device
  * @substream: substream to assign the buffer
- * @size: the buffer size to be allocated
  * @max: max. buffer size acceptable for the changes via proc file
+ *
+ * Do pre-allocation for the SBUS.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_sbus_pages(struct sbus_dev *sdev,
 				       snd_pcm_substream_t *substream,
@@ -456,14 +509,19 @@ int snd_pcm_lib_preallocate_sbus_pages(struct sbus_dev *sdev,
 	return snd_pcm_lib_preallocate_pages1(substream, size, max);
 }
 
-/**
- * snd_pcm_lib_preallocate_pci_pages_for_all - pre-allocation
- * for the SBUS bus (all substreams)
+/*
+ * FIXME: the function name is too long for docbook!
  *
+ * snd_pcm_lib_preallocate_sbus_pages_for_all - pre-allocation for the SBUS bus (all substreams)
  * @sbus: SBUS device
  * @pcm: pcm to assign the buffer
- * @size: the buffer size to be allocated
+ * @size: the requested pre-allocation size in bytes
  * @max: max. buffer size acceptable for the changes via proc file
+ *
+ * Do pre-allocation to all substreams of the given pcm for the
+ * SUBS.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_lib_preallocate_sbus_pages_for_all(struct sbus_dev *sdev,
 					       snd_pcm_t *pcm,

@@ -47,10 +47,19 @@ static void sgbuf_shrink(struct snd_sg_buf *sgbuf, int pages)
 	}
 }
 
-/*
- * initialize the sg buffer
- * assigned to substream->dma_private.
- * initialize the table with the given size.
+/**
+ * snd_pcm_sgbuf_init - initialize the sg buffer
+ * @substream: the pcm substream instance
+ * @pci: pci device pointer
+ * @tblsize: the default table size
+ *
+ * Initializes the SG-buffer instance and assigns it to
+ * substream->dma_private.  The SG-table is initialized with the
+ * given size.
+ * 
+ * Call this function in the open callback.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_sgbuf_init(snd_pcm_substream_t *substream, struct pci_dev *pci, int tblsize)
 {
@@ -73,8 +82,15 @@ int snd_pcm_sgbuf_init(snd_pcm_substream_t *substream, struct pci_dev *pci, int 
 	return 0;
 }
 
-/*
- * release all pages and free the sgbuf instance
+/**
+ * snd_pcm_sgbuf_delete - release all pages and free the sgbuf instance
+ * @substream: the pcm substream instance
+ *
+ * Releaes all pages and free the sgbuf instance.
+ *
+ * Call this function in the close callback.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_sgbuf_delete(snd_pcm_substream_t *substream)
 {
@@ -142,10 +158,19 @@ inline static void *snd_pci_alloc_page(struct pci_dev *pci, dma_addr_t *addrp)
 #define snd_pci_alloc_page(pci, addrp) snd_malloc_pci_pages(pci, PAGE_SIZE, addrp)
 #endif
 
-/*
- * allocate sg buffer table with the given byte size.
- * if the buffer table already exists, try to resize it.
- * call this from hw_params callback.
+/**
+ * snd_pcm_sgbuf_alloc - allocate the pages for the SG buffer
+ * @substream: the pcm substream instance
+ * @size: the requested buffer size in bytes
+ *
+ * Allocates the buffer pages for the given size and updates the
+ * sg buffer table.  If the buffer table already exists, try to resize
+ * it.
+ *
+ * Call this function from hw_params callback.
+ *
+ * Returns 1 if the buffer is changed, 0 if not changed, or a negative
+ * code on failure.
  */
 int snd_pcm_sgbuf_alloc(snd_pcm_substream_t *substream, size_t size)
 {
@@ -192,10 +217,15 @@ int snd_pcm_sgbuf_alloc(snd_pcm_substream_t *substream, size_t size)
 	return changed;
 }
 
-/*
- * free the sg buffer
- * the table is kept.
- * call this from hw_free callback.
+/**
+ * snd_pcm_sgbuf_free - free the sg buffer
+ * @substream: the pcm substream instance
+ *
+ * Releases the pages.  The SG-table itself is still kept.
+ *
+ * Call this function from hw_free callback.
+ *
+ * Returns zero if successful, or a negative error code on failure.
  */
 int snd_pcm_sgbuf_free(snd_pcm_substream_t *substream)
 {
@@ -221,9 +251,13 @@ static void *sgbuf_get_addr(snd_pcm_substream_t *substream, unsigned long offset
 	return sgbuf->table[idx].buf;
 }
 
-/*
- * get the page struct at the given offset
- * used as the page callback of pcm ops
+/**
+ * snd_pcm_sgbuf_ops_page - get the page struct at the given offset
+ * @substream: the pcm substream instance
+ * @offset: the buffer offset
+ *
+ * Returns the page struct at the given buffer offset.
+ * Used as the page callback of PCM ops.
  */
 struct page *snd_pcm_sgbuf_ops_page(snd_pcm_substream_t *substream, unsigned long offset)
 {
@@ -324,7 +358,9 @@ static int set_silence_sg_buf(snd_pcm_substream_t *substream,
 	return 0;
 }
 
-/*
+/**
+ * snd_pcm_sgbuf_ops_copy_playback - copy callback for playback pcm ops
+ *
  * copy callback for playback pcm ops
  */
 int snd_pcm_sgbuf_ops_copy_playback(snd_pcm_substream_t *substream, int channel,
@@ -340,7 +376,9 @@ int snd_pcm_sgbuf_ops_copy_playback(snd_pcm_substream_t *substream, int channel,
 	}
 }
 
-/*
+/**
+ * snd_pcm_sgbuf_ops_copy_capture - copy callback for capture pcm ops
+ *
  * copy callback for capture pcm ops
  */
 int snd_pcm_sgbuf_ops_copy_capture(snd_pcm_substream_t *substream, int channel,
@@ -356,7 +394,9 @@ int snd_pcm_sgbuf_ops_copy_capture(snd_pcm_substream_t *substream, int channel,
 	}
 }
 
-/*
+/**
+ * snd_pcm_sgbuf_ops_silence - silence callback for pcm ops
+ * 
  * silence callback for pcm ops
  */
 int snd_pcm_sgbuf_ops_silence(snd_pcm_substream_t *substream, int channel,
