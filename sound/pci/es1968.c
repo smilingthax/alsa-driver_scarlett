@@ -2345,11 +2345,6 @@ static void snd_es1968_chip_init(es1968_t *chip)
 	outb(3, iobase + ASSP_CONTROL_A);	/* M: Reserved bits... */
 	outb(0, iobase + ASSP_CONTROL_C);	/* M: Disable ASSP, ASSP IRQ's and FM Port */
 
-	/* Enable IRQ's */
-	w = ESM_HIRQ_DSIE | ESM_HIRQ_MPU401 | ESM_HIRQ_HW_VOLUME;
-	outw(w, iobase + ESM_PORT_HOST_IRQ);
-
-
 	/*
 	 * set up wavecache
 	 */
@@ -2419,6 +2414,14 @@ static void snd_es1968_chip_init(es1968_t *chip)
 	}
 }
 
+/* Enable IRQ's */
+static void snd_es1968_start_irq(es1968_t *chip)
+{
+	unsigned short w;
+	w = ESM_HIRQ_DSIE | ESM_HIRQ_MPU401 | ESM_HIRQ_HW_VOLUME;
+	outw(w, chip->io_port + ESM_PORT_HOST_IRQ);
+}
+
 #ifdef CONFIG_PM
 /*
  * PM support
@@ -2457,6 +2460,8 @@ static void es1968_resume(es1968_t *chip)
 		/* set PCMBAR */
 		wave_set_register(chip, 0x01FC, chip->dma.addr >> 12);
 	}
+
+	snd_es1968_start_irq(chip);
 
 	/* restore ac97 state */
 	snd_ac97_resume(chip->ac97);
@@ -2761,6 +2766,8 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 			return err;
 		}
 	}
+
+	snd_es1968_start_irq(chip);
 
 	chip->clock = clock[dev];
 	if (! chip->clock)
