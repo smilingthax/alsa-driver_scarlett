@@ -1996,7 +1996,7 @@ static int snd_pcm_delay(snd_pcm_substream_t *substream, snd_pcm_sframes_t *res)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int err;
-	snd_pcm_sframes_t n;
+	snd_pcm_sframes_t n = 0;
 
 	spin_lock_irq(&runtime->lock);
 	switch (runtime->status->state) {
