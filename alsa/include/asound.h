@@ -868,7 +868,7 @@ typedef struct {
 #define SND_PCM_IOCTL_SETUP		_IOR ('A', 0x20, snd_pcm_setup_t)
 #define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x21, snd_pcm_status_t)
 #define SND_PCM_IOCTL_DELAY		_IOW ('A', 0x23, ssize_t)
-#define SND_PCM_IOCTL_APPL_PTR		_IOW ('A', 0x24, off_t)
+#define SND_PCM_IOCTL_REWIND		_IOW ('A', 0x24, size_t)
 #define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
 #define SND_PCM_IOCTL_START		_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_FLUSH		_IO  ('A', 0x32)
