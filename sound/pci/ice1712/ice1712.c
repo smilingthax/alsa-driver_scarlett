@@ -75,7 +75,7 @@ MODULE_DEVICES("{"
 	       EWS_DEVICE_DESC
 	       AMP_AUDIO2000_DEVICE_DESC
 		"{ICEnsemble,Generic ICE1712},"
-		"{ICEnsemble,Generic Envy24},");
+		"{ICEnsemble,Generic Envy24},"
 		"{ICEnsemble,Generic ICE1724},"
 		"{ICEnsemble,Generic Envy24HT}}");
 
