@@ -65,3 +65,11 @@ ID: Ensoniq AudioPCI (ES1370,ES1371)
 SC: SoundBlaster PCI 64
 IF: MIXER,PCM,MIDI
 MA: Jaroslav Kysela <perex@jcu.cz>
+
+ID: Cirrus Logic CS4232/CS4232A
+IF: MIXER,PCM,MIDI
+MA: Jaroslav Kysela <perex@jcu.cz>
+
+ID: Cirrus Logic CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239
+IF: MIXER,PCM,MIDI
+MA: Jaroslav Kysela <perex@jcu.cz>
