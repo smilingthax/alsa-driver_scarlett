@@ -60,9 +60,13 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #ifdef MODULE
   #define module_init(x)      int init_module(void) { return x(); }
   #define module_exit(x)      void cleanup_module(void) { x(); }
+  #define THIS_MODULE	      (&__this_module)
+  int try_inc_mod_count(struct module *mod);
 #else
   #define module_init(x)
   #define module_exit(x)
+  #define THIS_MODULE NULL
+  #define try_inc_mod_count(x) do { ; } while (0)
 #endif
 
 #define MODULE_DEVICE_TABLE(foo,bar)

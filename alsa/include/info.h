@@ -89,8 +89,6 @@ struct snd_info_entry {
 	} t;
 	void *private_data;
 	void (*private_free)(snd_info_entry_t *entry);
-	void (*use_inc) (snd_card_t * card);
-	void (*use_dec) (snd_card_t * card);
 	snd_card_t *card;
 	struct proc_dir_entry *p;
 	struct semaphore access;

@@ -247,35 +247,30 @@ typedef struct snd_stru_oss_mixer snd_mixer_oss_t;
 /* main structure for soundcard */
 
 struct snd_stru_card {
-	int number;				/* number of soundcard (index to snd_cards) */
+	int number;			/* number of soundcard (index to snd_cards) */
 
-	unsigned int type;			/* type (number ID) of soundcard */
+	unsigned int type;		/* type (number ID) of soundcard */
 
-	char id[16];				/* id string of this card */
-	char abbreviation[16];			/* abbreviation of soundcard name */
-	char shortname[32];			/* short name of this soundcard */
-	char longname[80];			/* name of this soundcard */
-	char mixerid[16];			/* mixer ID */
-	char mixername[80];			/* mixer name */
+	char id[16];			/* id string of this card */
+	char abbreviation[16];		/* abbreviation of soundcard name */
+	char shortname[32];		/* short name of this soundcard */
+	char longname[80];		/* name of this soundcard */
+	char mixerid[16];		/* mixer ID */
+	char mixername[80];		/* mixer name */
 
-	struct list_head ports;			/* list of I/O ports for this card */
-	struct list_head irqs;			/* list of IRQs for this card */
-	struct list_head dmas;			/* list of DMAs for this card */
+	struct module *module;		/* top-level module */
 
-	void (*use_inc) (snd_card_t *card);	/* increment use count */
-	void (*use_dec) (snd_card_t *card);	/* decrement use count */
-
-	void *private_data;			/* private data for soundcard */
+	void *private_data;		/* private data for soundcard */
 	void (*private_free) (snd_card_t *card); /* callback for freeing of private data */
 
-	struct list_head devices;		/* devices */
+	struct list_head devices;	/* devices */
 
-	unsigned int last_numid;		/* last used numeric ID */
-	rwlock_t control_rwlock;	        /* control list lock */
-	rwlock_t control_owner_lock;		/* control list lock */
-	int controls_count;			/* count of all controls */
-	struct list_head controls;		/* all controls for this card */
-	struct list_head control_files;		/* active control files */
+	unsigned int last_numid;	/* last used numeric ID */
+	rwlock_t control_rwlock;	/* control list lock */
+	rwlock_t control_owner_lock;	/* control list lock */
+	int controls_count;		/* count of all controls */
+	struct list_head controls;	/* all controls for this card */
+	struct list_head control_files;	/* active control files */
 
 	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
 	struct proc_dir_entry *proc_dir_link;	/* number link to real id */
@@ -384,10 +379,8 @@ extern rwlock_t snd_card_rwlock;
 extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int free_flag);
 #endif
 
-snd_card_t *snd_card_new(int idx, char *id,
-			 void (*use_inc) (snd_card_t *card),
-			 void (*use_dec) (snd_card_t *card),
-			 int extra_size);
+snd_card_t *snd_card_new(int idx, const char *id,
+			 struct module *module, int extra_size);
 int snd_card_free(snd_card_t *card);
 int snd_card_register(snd_card_t *card);
 int snd_card_info_init(void);

@@ -59,7 +59,7 @@ typedef struct snd_emux_operators {
 	void (*free_voice)(snd_emux_voice_t *vp);
 	void (*reset)(snd_emux_t *emu, int ch);
 	/* the first parameters are snd_emux_t */
-	void (*use_inc)(snd_emux_t *emu);
+	int (*use_inc)(snd_emux_t *emu);
 	void (*use_dec)(snd_emux_t *emu);
 	int (*sample_new)(snd_emux_t *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr, const void *data, long count);
 	int (*sample_free)(snd_emux_t *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr);

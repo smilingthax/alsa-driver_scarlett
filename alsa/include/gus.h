@@ -660,7 +660,7 @@ extern void snd_gf1_peek_print_block(snd_gus_card_t * gus, unsigned int addr, in
 
 /* gus.c */
 
-void snd_gus_use_inc(snd_gus_card_t * gus);
+int snd_gus_use_inc(snd_gus_card_t * gus);
 void snd_gus_use_dec(snd_gus_card_t * gus);
 int snd_gus_create(snd_card_t * card,
 		   unsigned long port,
