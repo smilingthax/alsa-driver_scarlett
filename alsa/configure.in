@@ -151,7 +151,7 @@ AC_SUBST(kextraversion)
 AC_MSG_RESULT($kaversion)
 
 AC_DEFUN(CHECK_KERNEL_HEADER, [
-  AC_MSG_CHECKING(for kenrel $1)
+  AC_MSG_CHECKING(for kernel $1)
   if test -f "$CONFIG_SND_KERNELDIR/include/$1"; then
     AC_MSG_RESULT("yes")
     if test -f include/$1; then
