@@ -51,6 +51,9 @@
 #define DSP_MAX_SCB_DESC  200
 #define DSP_MAX_TASK_DESC 50
 
+#define DSP_MAX_PCM_CHANNELS 32
+#define DSP_MAX_SRC_NR       6
+
 struct _dsp_module_desc_t;
 
 typedef struct _symbol_entry_t {
@@ -60,13 +63,16 @@ typedef struct _symbol_entry_t {
 
 	/* initialized by driver */
 	struct _dsp_module_desc_t * module;
+	int deleted;
 } symbol_entry_t;
 
 typedef struct _symbol_desc_t {
 	int nsymbols;
 
-
 	symbol_entry_t * symbols;
+
+	/* initialized by driver */
+	int highest_frag_index;
 } symbol_desc_t;
 
 
@@ -99,6 +105,12 @@ typedef struct _dsp_scb_descriptor_t {
 	struct _dsp_scb_descriptor_t * parent_scb_ptr;
 
 	symbol_entry_t * task_entry;
+	symbol_entry_t * scb_symbol;
+
+	snd_info_entry_t *proc_info;
+	int ref_count;
+
+	int deleted;
 } dsp_scb_descriptor_t;
 
 typedef struct _dsp_task_descriptor_t {
@@ -108,6 +120,18 @@ typedef struct _dsp_task_descriptor_t {
 	int index;
 } dsp_task_descriptor_t;
 
+typedef struct _pcm_channel_descriptor_t {
+	int active;
+	int src_slot;
+	int pcm_slot;
+	u32 sample_rate;
+	u32 unlinked;
+	dsp_scb_descriptor_t * pcm_reader_scb;
+	dsp_scb_descriptor_t * src_scb;
+
+	void * private_data;
+} pcm_channel_descriptor_t;
+
 typedef struct _dsp_spos_instance_t {
 	symbol_desc_t symbol_table; /* currently availble loaded symbols in SP */
 
@@ -116,23 +140,39 @@ typedef struct _dsp_spos_instance_t {
 
 	segment_desc_t code;
 
-	/* proc fs */
-	snd_info_entry_t *proc_sym_info_entry;
-	snd_info_entry_t *proc_modules_info_entry;
+	/* PCM playback */
+	struct semaphore pcm_mutex;
 
-	snd_info_entry_t *proc_parameter_dump_info_entry;
-	snd_info_entry_t *proc_sample_dump_info_entry;
+	dsp_scb_descriptor_t * master_mix_scb;
+	int npcm_channels;
+	int nsrc_scb;
+	pcm_channel_descriptor_t pcm_channels[DSP_MAX_PCM_CHANNELS];
+	int src_scb_slots[DSP_MAX_SRC_NR];
+
+	/* cache this symbols */
+	symbol_entry_t * null_algorithm; /* used by PCMreaderSCB's */
+	symbol_entry_t * s16_up;         /* used by SRCtaskSCB's */
+
+	/* proc fs */  
+	snd_card_t * snd_card;
+	snd_info_entry_t * proc_dsp_dir;
+	snd_info_entry_t * proc_sym_info_entry;
+	snd_info_entry_t * proc_modules_info_entry;
+	snd_info_entry_t * proc_parameter_dump_info_entry;
+	snd_info_entry_t * proc_sample_dump_info_entry;
 
 	/* SCB's descriptors */
+	struct semaphore scb_mutex;
 	int nscb;
+	int scb_highest_frag_index;
 	dsp_scb_descriptor_t scbs[DSP_MAX_SCB_DESC];
-	snd_info_entry_t *proc_scb_info_entry;
+	snd_info_entry_t * proc_scb_info_entry;
 	dsp_scb_descriptor_t * the_null_scb;
 
 	/* Task's descriptors */
 	int ntask;
 	dsp_task_descriptor_t tasks[DSP_MAX_TASK_DESC];
-	snd_info_entry_t *proc_task_info_entry;
+	snd_info_entry_t * proc_task_info_entry;
 
 	/* SPDIF status */
 	int spdif_status_out;
