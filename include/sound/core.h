@@ -351,7 +351,7 @@ void snd_printd(const char *format, ...);
 #endif /* CONFIG_SND_DEBUG */
 
 #ifdef CONFIG_SND_DEBUG_DETECT
-#define snd_printdd(args...) snd_printk(format, ##args)
+#define snd_printdd(args...) snd_printk(##args)
 #else
 #define snd_printdd(args...) /* nothing */
 #endif
