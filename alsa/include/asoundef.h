@@ -94,7 +94,7 @@
 #define IEC958_AES2_PRO_SBITS_20	(2<<0)	/* 20-bit - coordination */
 #define IEC958_AES2_PRO_SBITS_24	(4<<0)	/* 24-bit - main audio */
 #define IEC958_AES2_PRO_SBITS_UDEF	(6<<0)	/* user defined application */
-#define IEC958_AES2_PRO_WORDLEN	(7<<3)	/* mask - source word length */
+#define IEC958_AES2_PRO_WORDLEN		(7<<3)	/* mask - source word length */
 #define IEC958_AES2_PRO_WORDLEN_NOTID	(0<<3)	/* not indicated */
 #define IEC958_AES2_PRO_WORDLEN_22_18	(2<<3)	/* 22-bit or 18-bit */
 #define IEC958_AES2_PRO_WORDLEN_23_19	(4<<3)	/* 23-bit or 19-bit */
@@ -102,7 +102,7 @@
 #define IEC958_AES2_PRO_WORDLEN_20_16	(6<<3)	/* 20-bit or 16-bit */
 #define IEC958_AES2_CON_SOURCE		(15<<0)	/* mask - source number */
 #define IEC958_AES2_CON_SOURCE_UNSPEC	(0<<0)	/* unspecified */
-#define IEC958_AES2_CON_CHANNEL	(15<<4)	/* mask - channel number */
+#define IEC958_AES2_CON_CHANNEL		(15<<4)	/* mask - channel number */
 #define IEC958_AES2_CON_CHANNEL_UNSPEC	(0<<4)	/* unspecified */
 #define IEC958_AES3_CON_FS		(15<<0)	/* mask - sample frequency */
 #define IEC958_AES3_CON_FS_44100	(0<<0)	/* 44.1kHz */
