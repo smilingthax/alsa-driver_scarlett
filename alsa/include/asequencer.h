@@ -566,6 +566,24 @@ typedef struct {
 	char reserved[32];		/* for future use */
 } snd_seq_port_subscribe_t;
 
+/* type of query subscription */
+#define SND_SEQ_QUERY_SUBS_READ		0
+#define SND_SEQ_QUERY_SUBS_WRITE	1
+#define SND_SEQ_QUERY_SUBS_READ_TRACK	2
+#define SND_SEQ_QUERY_SUBS_WRITE_TRACK	3
+
+typedef struct {
+	int client;
+	int port;
+	int type;	/* READ,WRITE,READ_TRACK,WRITE_TRACK */
+	int index;	/* 0..N-1 */
+	int num_subs;	/* R/O: number of subscriptions on this port */
+	snd_seq_addr_t addr;	/* R/O: result */
+	int exclusive : 1;	/* R/O: result */
+	int realtime : 1;	/* R/O: result */
+	char reserved[64];	/* for future use */
+} snd_seq_query_subs_t;
+
 
 /*
  *  Instrument abstraction layer
@@ -741,6 +759,7 @@ typedef struct {
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_RESET_POOL	_IOW ('S', 0x4d, snd_seq_reset_pool_t)
+#define SND_SEQ_IOCTL_QUERY_SUBS	_IOWR('S', 0x4f, snd_seq_query_subs_t)
 #define SND_SEQ_IOCTL_GET_SUBSCRIPTION	_IOWR('S', 0x50, snd_seq_port_subscribe_t)
 #define SND_SEQ_IOCTL_QUERY_NEXT_CLIENT	_IOWR('S', 0x51, snd_seq_client_info_t)
 #define SND_SEQ_IOCTL_QUERY_NEXT_PORT	_IOWR('S', 0x52, snd_seq_port_info_t)

@@ -105,6 +105,7 @@ int snd_seq_instr_event(snd_seq_kinstr_ops_t *ops,
 			snd_seq_kinstr_list_t *list,
 			snd_seq_event_t *ev,
 			int client,
-			int atomic);
+			int atomic,
+			int hop);
 
 #endif /* __SND_SEQ_INSTR_H */

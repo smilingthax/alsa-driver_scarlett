@@ -51,6 +51,9 @@
 /* default number of events in memory pool for one client (outqueue) */
 #define SND_SEQ_DEFAULT_CLIENT_EVENTS	200
 
+/* max delivery path length */
+#define SND_SEQ_MAX_PATH_LEN		10
+
 /* typedefs */
 struct snd_seq_stru_user_client;
 struct snd_seq_stru_kernel_client;
@@ -76,7 +79,7 @@ typedef int (snd_seq_kernel_port_subscribe_t)(void *private_data, snd_seq_port_s
 typedef int (snd_seq_kernel_port_unsubscribe_t)(void *private_data, snd_seq_port_subscribe_t *info);
 typedef int (snd_seq_kernel_port_use_t)(void *private_data, snd_seq_port_subscribe_t *info);
 typedef int (snd_seq_kernel_port_unuse_t)(void *private_data, snd_seq_port_subscribe_t *info);
-typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, int direct, void *private_data);
+typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, int direct, void *private_data, int atomic, int hop);
 typedef void (snd_seq_kernel_port_private_free_t)(void *private_data);
 
 typedef struct {
@@ -93,8 +96,8 @@ typedef struct {
 /* interface for kernel client */
 extern int snd_seq_create_kernel_client(snd_card_t *card, int client_index, snd_seq_client_callback_t *callback);
 extern int snd_seq_delete_kernel_client(int client);
-extern int snd_seq_kernel_client_enqueue(int client, snd_seq_event_t *ev, int atomic);
-extern int snd_seq_kernel_client_dispatch(int client, snd_seq_event_t *ev, int atomic);
+extern int snd_seq_kernel_client_enqueue(int client, snd_seq_event_t *ev, int atomic, int hop);
+extern int snd_seq_kernel_client_dispatch(int client, snd_seq_event_t *ev, int atomic, int hop);
 extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg);
 
 /* allocation and releasing of external data (sysex etc.) */
