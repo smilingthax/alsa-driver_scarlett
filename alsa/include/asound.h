@@ -1310,7 +1310,7 @@ typedef struct snd_rawmidi_input_status {
 #define SND_TIMER_TYPE_GLOBAL		(0<<28)
 #define SND_TIMER_TYPE_SOUNDCARD	(1<<28)
 #define SND_TIMER_TYPE_PCM		(2<<28)
-#define SND_TIMER_TYPE_MAX		(15<<28)
+#define SND_TIMER_TYPE_MAX		(7<<28)
 
 /* type */
 #define SND_TIMER_TYPE(tmr)		((tmr >> 28) & 0x3f)

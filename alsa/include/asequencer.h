@@ -140,7 +140,8 @@ typedef struct {
 
 #define SND_SEQ_EVENT_LENGTH_FIXED	(0<<2)	/* fixed event size */
 #define SND_SEQ_EVENT_LENGTH_VARIABLE	(1<<2)	/* variable event size */
-#define SND_SEQ_EVENT_LENGTH_VARIPC	(2<<2)	/* variable event size - IPC */
+#define SND_SEQ_EVENT_LENGTH_VARUSR	(2<<2)	/* variable event size - user memory space */
+#define SND_SEQ_EVENT_LENGTH_VARIPC	(3<<2)	/* variable event size - IPC */
 #define SND_SEQ_EVENT_LENGTH_MASK	(3<<2)
 
 #define SND_SEQ_PRIORITY_NORMAL		(0<<4)	/* normal priority */
@@ -262,6 +263,7 @@ typedef struct {
 
 	/* known client numbers */
 #define SND_SEQ_CLIENT_SYSTEM		0
+#define SND_SEQ_CLIENT_OSSSEQ		63
 
 	/* client types */
 typedef enum {
@@ -379,35 +381,28 @@ typedef struct {
 
 
 /* sequencer timer sources */
-#define SND_SEQ_TIMER_GLOBAL		0	/* global timer */
+#define SND_SEQ_TIMER_MASTER		0	/* master timer */
 #define SND_SEQ_TIMER_SLAVE		1	/* slave timer */
-#define SND_SEQ_TIMER_PCM		2	/* slave PCM timer */
-#define SND_SEQ_TIMER_MIDI_CLOCK	3	/* Midi Clock (CLOCK event) */
-#define SND_SEQ_TIMER_MIDI_TICK		4	/* Midi Timer Tick (TICK event) */
-
-/* queue one timer info */
-typedef struct {
-	int type;			/* timer type */
-	int slave;			/* timer slave type */
-	int number;			/* timer number/identification */
-	int resolution;			/* timer resolution in Hz */
-} snd_seq_timer_t;	
+#define SND_SEQ_TIMER_MIDI_CLOCK	2	/* Midi Clock (CLOCK event) */
+#define SND_SEQ_TIMER_MIDI_TICK		3	/* Midi Timer Tick (TICK event) */
 
 /* queue timer info */
 typedef struct {
 	int queue;			/* sequencer queue */
 
-	/* source timer selection - tick queue */
-	snd_seq_timer_t tick;
-	/* source timer selection - real time queue */
-	snd_seq_timer_t real;
+	/* source timer selection */
+	int type;			/* timer type */
+	int slave;			/* timer slave type */
+	int number;			/* timer number/identification */
+	int resolution;			/* timer resolution in Hz */
 
 	/* MIDI timer parameters */
-	int midi_timer_client;		/* sequencer client */
-	int midi_timer_port;		/* sequencer port */
+	int midi_client;		/* sequencer client */
+	int midi_port;			/* sequencer port */
 
-	long int sync_tick_time_resolution; /* resolution per 10ms midi tick (TICK event) (ticks * 1000000) */
-	long int sync_real_time_resolution; /* resolution per midi tick (CLOCK event) or zero (nanoseconds) */
+	/* tick & real-time queue synchronization */
+	long int sync_tick_resolution;	/* resolution per 10ms midi tick (TICK event) (ticks * 1000000) */
+	long int sync_real_resolution;	/* resolution per midi tick (CLOCK event) or zero (nanoseconds) */
 
 	char reserved[64];		/* for the future use */
 } snd_seq_queue_timer_t;
