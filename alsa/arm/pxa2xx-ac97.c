@@ -115,7 +115,7 @@ static void pxa2xx_ac97_reset(ac97_t *ac97)
 	udelay(50);
 #else
 	GCR = GCR_COLD_RST;
-	GCR |= GCR_PRIRDY_IEN|GCR_SECRDY_IEN;
+	GCR |= GCR_CDONE_IE|GCR_SDONE_IE;
 	wait_event_timeout(gsr_wq, gsr_bits & (GSR_PCR | GSR_SCR), 1);
 #endif
 
@@ -157,12 +157,14 @@ static irqreturn_t pxa2xx_ac97_irq(int irq, void *dev_id, struct pt_regs *regs)
 		gsr_bits |= status;
 		wake_up(&gsr_wq);
 
+#ifdef CONFIG_PXA27x
 		/* Although we don't use those we still need to clear them
 		   since they tend to spuriously trigger when MMC is used
 		   (hardware bug? go figure)... */
 		MISR = MISR_EOC;
 		PISR = PISR_EOC;
 		MCSR = MCSR_EOC;
+#endif
 
 		return IRQ_HANDLED;
 	}
