@@ -349,16 +349,14 @@ static int put_xilinx_data(vx_core_t *chip, unsigned int port, unsigned int coun
 	return 0;
 }
 
-static int vx2_load_xilinx_binary(vx_core_t *chip, const struct snd_vx_loader *load)
+/*
+ * load the xilinx image
+ */
+static int vx2_load_xilinx_binary(vx_core_t *chip, const snd_hwdep_dsp_image_t *xilinx)
 {
 	unsigned int i;
 	unsigned int port;
-	const struct snd_vx_image *xilinx = &load->binary;
 	unsigned char *image, data;
-
-	snd_assert(xilinx->image, return -EINVAL);
-	if (verify_area(VERIFY_READ, xilinx->image, xilinx->length))
-		return -EFAULT;
 
 	/* XILINX reset (wait at least 1 milisecond between reset on and off). */
 	vx_outl(chip, CNTRL, VX_CNTRL_REGISTER_VALUE | VX_XILINX_RESET_MASK);
@@ -399,6 +397,37 @@ static int vx2_load_xilinx_binary(vx_core_t *chip, const struct snd_vx_loader *l
 
 	return 0;
 }
+
+	
+/*
+ * load the boot/dsp images
+ */
+static int vx2_load_dsp(vx_core_t *vx, const snd_hwdep_dsp_image_t *dsp)
+{
+	int err;
+
+	if (*dsp->name)
+		snd_printdd("loading dsp [%d] %s, size = %d\n", dsp->index, dsp->name, dsp->length);
+	switch (dsp->index) {
+	case 0:
+		/* xilinx image */
+		if ((err = vx2_load_xilinx_binary(vx, dsp)) < 0)
+			return err;
+		if ((err = vx2_test_xilinx(vx)) < 0)
+			return err;
+		return 0;
+	case 1:
+		/* DSP boot */
+		return snd_vx_dsp_boot(vx, dsp);
+	case 2:
+		/* DSP image */
+		return snd_vx_dsp_load(vx, dsp);
+	default:
+		snd_BUG();
+		return -EINVAL;
+	}
+}
+
 
 /*
  * vx_test_and_ack - test and acknowledge interrupt
@@ -749,8 +778,7 @@ struct snd_vx_ops vx222_ops = {
 	.reset_codec = vx2_reset_codec,
 	.change_audio_source = vx2_change_audio_source,
 	.set_clock_source = vx2_set_clock_source,
-	.test_xilinx = vx2_test_xilinx,
-	.load_xilinx = vx2_load_xilinx_binary,
+	.load_dsp = vx2_load_dsp,
 	.reset_dsp = vx2_reset_dsp,
 	.reset_board = vx2_reset_board,
 	.dma_write = vx2_dma_write,

@@ -434,12 +434,10 @@ int vx_send_rih(vx_core_t *chip, int cmd)
  * snd_vx_boot_xilinx - boot up the xilinx interface
  * @boot: the boot record to load
  */
-int snd_vx_load_boot_image(vx_core_t *chip, const struct snd_vx_image *boot)
+int snd_vx_load_boot_image(vx_core_t *chip, const snd_hwdep_dsp_image_t *boot)
 {
 	unsigned int i;
 	int no_fillup = vx_has_new_dsp(chip);
-
-	snd_printdd(KERN_DEBUG "loading boot: size = %d\n", boot->length);
 
 	/* check the length of boot image */
 	snd_assert(boot->length > 0, return -EINVAL);
@@ -657,33 +655,41 @@ static void vx_proc_init(vx_core_t *chip)
 }
 
 
-/*
- * snd_vx_init - initialize VX hardware
+/**
+ * snd_vx_dsp_boot - load the DSP boot
  */
-int snd_vx_dsp_init(vx_core_t *chip, const struct snd_vx_loader *dsp)
+int snd_vx_dsp_boot(vx_core_t *chip, const snd_hwdep_dsp_image_t *boot)
 {
-	unsigned int i;
 	int err;
-	unsigned int csum = 0;
-	unsigned char image[3], *cptr;
 	int cold_reset = !(chip->chip_status & VX_STAT_DEVICE_INIT);
 
 	vx_reset_board(chip, cold_reset);
 	vx_validate_irq(chip, 0);
 
-	snd_assert(dsp->binary.length > 0, return -EINVAL);
-	snd_assert(dsp->binary.length % 3 == 0, return -EINVAL);
-
-	vx_toggle_dac_mute(chip, 1);
-
-	if ((err = snd_vx_load_boot_image(chip, &dsp->boot)) < 0)
+	if ((err = snd_vx_load_boot_image(chip, boot)) < 0)
 		return err;
 	snd_vx_delay(chip, 10);
 
-	snd_printdd(KERN_DEBUG "loading dsp: size = %d\n", dsp->binary.length);
+	return 0;
+}
+
+/**
+ * snd_vx_dsp_load - load the DSP image
+ */
+int snd_vx_dsp_load(vx_core_t *chip, const snd_hwdep_dsp_image_t *dsp)
+{
+	unsigned int i;
+	int err;
+	unsigned int csum = 0;
+	unsigned char image[3], *cptr;
+
+	snd_assert(dsp->length % 3 == 0, return -EINVAL);
+
+	vx_toggle_dac_mute(chip, 1);
+
 	/* Transfert data buffer from PC to DSP */
-	for (i = 0; i < dsp->binary.length; i += 3) {
-		if (copy_from_user(image, dsp->binary.image + i, 3))
+	for (i = 0; i < dsp->length; i += 3) {
+		if (copy_from_user(image, dsp->image + i, 3))
 			return -EFAULT;
 		/* Wait DSP ready for a new read */
 		if ((err = vx_wait_isr_bit(chip, ISR_TX_EMPTY)) < 0) {
@@ -767,6 +773,8 @@ void snd_vx_suspend(vx_core_t *chip)
 	chip->chip_status |= VX_STAT_IN_SUSPEND;
 	for (i = 0; i < chip->hw->num_codecs; i++)
 		snd_pcm_suspend_all(chip->pcm[i]);
+	if (chip->hwdep)
+		chip->hwdep->dsp_loaded = 0;
 }
 
 /*
@@ -775,12 +783,7 @@ void snd_vx_suspend(vx_core_t *chip)
 void snd_vx_resume(vx_core_t *chip)
 {
 	/* clear all stuff... */
-	chip->chip_status |= VX_STAT_RESUMING;
-	chip->chip_status &= ~(VX_STAT_XILINX_LOADED|
-			       VX_STAT_XILINX_TESTED|
-			       VX_STAT_DSP_LOADED|
-			       VX_STAT_CHIP_INIT|
-			       VX_STAT_IN_SUSPEND);
+	chip->chip_status &= ~(VX_STAT_IN_SUSPEND|VX_STAT_CHIP_INIT);
 }
 
 #endif
@@ -808,6 +811,8 @@ EXPORT_SYMBOL(snd_vx_create);
 EXPORT_SYMBOL(snd_vx_hwdep_new);
 EXPORT_SYMBOL(snd_vx_irq_handler);
 EXPORT_SYMBOL(snd_vx_delay);
+EXPORT_SYMBOL(snd_vx_dsp_boot);
+EXPORT_SYMBOL(snd_vx_dsp_load);
 EXPORT_SYMBOL(snd_vx_load_boot_image);
 #ifdef CONFIG_PM
 EXPORT_SYMBOL(snd_vx_suspend);

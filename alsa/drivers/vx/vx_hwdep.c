@@ -29,102 +29,58 @@
 
 static int vx_hwdep_open(snd_hwdep_t *hw, struct file *file)
 {
-	vx_core_t *vx = snd_magic_cast(vx_core_t, hw->private_data, return -ENXIO);
-
-	down(&vx->hwdep_mutex);
-	if (vx->hwdep_used) {
-		up(&vx->hwdep_mutex);
-		return -EAGAIN;
-	}
-	vx->hwdep_used++;
-	up(&vx->hwdep_mutex);
-
 	return 0;
 }
 
 static int vx_hwdep_release(snd_hwdep_t *hw, struct file *file)
 {
-	vx_core_t *vx = snd_magic_cast(vx_core_t, hw->private_data, return -ENXIO);
-
-	down(&vx->hwdep_mutex);
-	vx->hwdep_used--;
-	up(&vx->hwdep_mutex);
-
 	return 0;
 }
 
-static int vx_hwdep_ioctl(snd_hwdep_t *hw, struct file *file, unsigned int cmd, unsigned long arg)
+static int vx_hwdep_dsp_status(snd_hwdep_t *hw, snd_hwdep_dsp_status_t *info)
+{
+	static char *type_ids[VX_TYPE_NUMS] = {
+		[VX_TYPE_BOARD] = "vxboard",
+		[VX_TYPE_V2] = "vx222",
+		[VX_TYPE_MIC] = "vx222",
+		[VX_TYPE_VXPOCKET] = "vxpocket",
+		[VX_TYPE_VXP440] = "vxp440",
+	};
+	vx_core_t *vx = snd_magic_cast(vx_core_t, hw->private_data, return -ENXIO);
+
+	snd_assert(type_ids[vx->type], return -EINVAL);
+	strcpy(info->id, type_ids[vx->type]);
+	if (vx_is_pcmcia(vx))
+		info->num_dsps = 4;
+	else
+		info->num_dsps = 3;
+	if (vx->chip_status & VX_STAT_CHIP_INIT)
+		info->chip_ready = 1;
+	info->version = VX_DRIVER_VERSION;
+	return 0;
+}
+
+static int vx_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
 {
 	vx_core_t *vx = snd_magic_cast(vx_core_t, hw->private_data, return -ENXIO);
-	int err;
+	int index, err;
 
-	switch (cmd) {
-	case SND_VX_HWDEP_IOCTL_VERSION: {
-		struct snd_vx_version info;
+	snd_assert(vx->ops->load_dsp, return -ENXIO);
+	err = vx->ops->load_dsp(vx, dsp);
+	if (err < 0)
+		return err;
 
-		memset(&info, 0, sizeof(info));
-		info.type = vx->type;
-		info.status = vx->chip_status;
-		strncpy(info.name, vx->card->shortname, sizeof(info.name) - 1);
-		info.name[sizeof(info.name)-1] = 0;
-		info.version = VX_DRIVER_VERSION;
-		info.num_codecs = vx->hw->num_codecs;
-		info.num_ins = vx->hw->num_ins;
-		info.num_outs = vx->hw->num_outs;
-
-		if (copy_to_user((void *)arg, &info, sizeof(info)))
-			return -EFAULT;
-		return 0;
-	}
-
-	case SND_VX_HWDEP_IOCTL_LOAD_XILINX: {
-		struct snd_vx_loader loader;
-
-		if (vx->chip_status & VX_STAT_XILINX_LOADED)
-			return -EBUSY;
-		if (copy_from_user(&loader, (void *)arg, sizeof(loader)))
-			return -EFAULT;
-
-		snd_assert(vx->ops->load_xilinx &&
-			   vx->ops->test_xilinx, return -ENXIO);
-
-		if (*loader.boot.name)
-			snd_printdd("loading xilinx boot: %s\n", loader.boot.name);
-		if (*loader.binary.name)
-			snd_printdd("loading xilinx image: %s\n", loader.binary.name);
-		if ((err = vx->ops->load_xilinx(vx, &loader)) < 0)
-			return err;
-		if ((err = vx->ops->test_xilinx(vx)) < 0)
-			return err;
+	index = dsp->index;
+	if (! vx_is_pcmcia(vx))
+		index++;
+	if (index == 1)
 		vx->chip_status |= VX_STAT_XILINX_LOADED;
+	if (index < 3)
 		return 0;
-	}
 
-	case SND_VX_HWDEP_IOCTL_LOAD_DSP: {
-		struct snd_vx_loader loader;
-
-		if (! (vx->chip_status & VX_STAT_XILINX_LOADED))
-			return -EIO;
-		if (vx->chip_status & VX_STAT_DSP_LOADED)
-			return -EIO;
-		if (copy_from_user(&loader, (void *)arg, sizeof(loader)))
-			return -EFAULT;
-
-		if (*loader.boot.name)
-			snd_printdd("loading DSP boot: %s\n", loader.boot.name);
-		if (*loader.binary.name)
-			snd_printdd("loading DSP image: %s\n", loader.binary.name);
-		if ((err = snd_vx_dsp_init(vx, &loader)) < 0)
-			return err;
-
-		vx->chip_status |= VX_STAT_DSP_LOADED;
-		return 0;
-	}
-
-	case SND_VX_HWDEP_IOCTL_INIT_DEVICE:
-		if (vx->chip_status & VX_STAT_DEVICE_INIT)
-			return -EBUSY;
-
+	/* ok, we reached to the last one */
+	/* create the devices if not built yet */
+	if (! (vx->chip_status & VX_STAT_DEVICE_INIT)) {
 		if ((err = snd_vx_pcm_new(vx)) < 0)
 			return err;
 
@@ -138,31 +94,10 @@ static int vx_hwdep_ioctl(snd_hwdep_t *hw, struct file *file, unsigned int cmd, 
 		if ((err = snd_card_register(vx->card)) < 0)
 			return err;
 
-		vx->chip_status |= VX_STAT_DEVICE_INIT | VX_STAT_CHIP_INIT;
-		return 0;
-
-	case SND_VX_HWDEP_IOCTL_RESUME:
-
-#define VX_STAT_OK	(VX_STAT_XILINX_LOADED|VX_STAT_DSP_LOADED|VX_STAT_DEVICE_INIT)
-		if ((vx->chip_status & VX_STAT_OK) != VX_STAT_OK)
-			return -EIO;
-		if (vx->chip_status & VX_STAT_CHIP_INIT)
-			return -EBUSY;
-
-		/* restore the clock and source */
-		vx_change_clock_source(vx, vx->clock_source);
-		vx_sync_audio_source(vx);
-
-		/* restore the mixer setting */
-		/* vx_resume_mixer(vx); */
-
-		vx->chip_status &= ~VX_STAT_RESUMING;
-		vx->chip_status |= VX_STAT_CHIP_INIT;
-		return 0;
-
+		vx->chip_status |= VX_STAT_DEVICE_INIT;
 	}
-
-	return -EINVAL;
+	vx->chip_status |= VX_STAT_CHIP_INIT;
+	return 0;
 }
 
 
@@ -172,15 +107,19 @@ int snd_vx_hwdep_new(vx_core_t *chip)
 	int err;
 	snd_hwdep_t *hw;
 
-	if ((err = snd_hwdep_new(chip->card, "VX Loader", 0, &hw)) < 0)
+	if ((err = snd_hwdep_new(chip->card, SND_VX_HWDEP_ID, 0, &hw)) < 0)
 		return err;
 
 	init_MUTEX(&chip->hwdep_mutex);
-	hw->iface = SNDRV_HWDEP_IFACE_VX_LOADER;
+	hw->iface = SNDRV_HWDEP_IFACE_VX;
 	hw->private_data = chip;
 	hw->ops.open = vx_hwdep_open;
-	hw->ops.ioctl = vx_hwdep_ioctl;
 	hw->ops.release = vx_hwdep_release;
+	hw->ops.dsp_status = vx_hwdep_dsp_status;
+	hw->ops.dsp_load = vx_hwdep_dsp_load;
+	hw->exclusive = 1;
+	sprintf(hw->name, "VX Loader (%s)", chip->card->driver);
+	chip->hwdep = hw;
 
 	return 0;
 }
