@@ -376,16 +376,16 @@ static int snd_serialmidi_input_close(snd_rawmidi_substream_t * substream)
 
 static snd_rawmidi_ops_t snd_serialmidi_output =
 {
-	open:		snd_serialmidi_output_open,
-	close:		snd_serialmidi_output_close,
-	trigger:	snd_serialmidi_output_trigger,
+	.open =		snd_serialmidi_output_open,
+	.close =	snd_serialmidi_output_close,
+	.trigger =	snd_serialmidi_output_trigger,
 };
 
 static snd_rawmidi_ops_t snd_serialmidi_input =
 {
-	open:		snd_serialmidi_input_open,
-	close:		snd_serialmidi_input_close,
-	trigger:	snd_serialmidi_input_trigger,
+	.open =		snd_serialmidi_input_open,
+	.close =	snd_serialmidi_input_close,
+	.trigger =	snd_serialmidi_input_trigger,
 };
 
 static int snd_serialmidi_free(serialmidi_t *serial)
@@ -425,7 +425,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 					unsigned int outs, serialmidi_t **rserial)
 {
 	static snd_device_ops_t ops = {
-		dev_free:	snd_serialmidi_dev_free,
+		.dev_free =	snd_serialmidi_dev_free,
 	};
 	serialmidi_t *serial;
 	int err;
