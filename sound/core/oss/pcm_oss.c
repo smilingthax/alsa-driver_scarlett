@@ -1567,16 +1567,14 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 			nonblock = 1;
 		else if (psetup->block)
 			nonblock = 0;
-		else if (!nonblock)
-			nonblock = snd_nonblock_open;
 	} else if (csetup && !csetup->disable) {
 		if (csetup->nonblock)
 			nonblock = 1;
 		else if (csetup->block)
 			nonblock = 0;
-		else if (!nonblock)
-			nonblock = snd_nonblock_open;
 	}
+	if (!nonblock)
+		nonblock = snd_nonblock_open;
 
 	init_waitqueue_entry(&wait, current);
 	add_wait_queue(&pcm->open_wait, &wait);
