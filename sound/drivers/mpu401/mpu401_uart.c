@@ -92,18 +92,20 @@ static void snd_mpu401_uart_clear_rx(mpu401_t *mpu)
 
 static void _snd_mpu401_uart_interrupt(mpu401_t *mpu)
 {
+	spin_lock(&mpu->input_lock);
 	if (test_bit(MPU401_MODE_BIT_INPUT, &mpu->mode)) {
-		spin_lock(&mpu->input_lock);
 		snd_mpu401_uart_input_read(mpu);
-		spin_unlock(&mpu->input_lock);
-	} else
+	} else {
 		snd_mpu401_uart_clear_rx(mpu);
+	}
+	spin_unlock(&mpu->input_lock);
  	/* ok. for better Tx performance try do some output when input is done */
 	if (test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode) &&
 	    test_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode)) {
-		spin_lock(&mpu->output_lock);
-		snd_mpu401_uart_output_write(mpu);
-		spin_unlock(&mpu->output_lock);
+		if (spin_trylock(&mpu->output_lock)) {
+			snd_mpu401_uart_output_write(mpu);
+			spin_unlock(&mpu->output_lock);
+		}
 	}
 }
 
@@ -307,11 +309,12 @@ static void snd_mpu401_uart_input_trigger(snd_rawmidi_substream_t * substream, i
 		
 		/* read data in advance */
 		/* prevent double enter via rawmidi->event callback */
-		if (! test_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode)) {
-			spin_lock_irqsave(&mpu->input_lock, flags);
+		local_irq_save(flags);
+		if (spin_trylock(&mpu->input_lock)) {
 			snd_mpu401_uart_input_read(mpu);
-			spin_unlock_irqrestore(&mpu->input_lock, flags);
+			spin_unlock(&mpu->input_lock);
 		}
+		local_irq_restore(flags);
 	} else {
 		if (mpu->irq < 0)
 			snd_mpu401_uart_remove_timer(mpu, 1);
@@ -328,7 +331,6 @@ static void snd_mpu401_uart_input_read(mpu401_t * mpu)
 	int max = 128;
 	unsigned char byte;
 
-	set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
 	while (max-- > 0) {
 		if (snd_mpu401_input_avail(mpu)) {
 			byte = mpu->read(mpu, MPU401D(mpu));
@@ -338,7 +340,6 @@ static void snd_mpu401_uart_input_read(mpu401_t * mpu)
 			break; /* input not available */
 		}
 	}
-	clear_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode);
 }
 
 /*
@@ -358,7 +359,6 @@ static void snd_mpu401_uart_output_write(mpu401_t * mpu)
 	unsigned char byte;
 	int max = 256, timeout;
 
-	set_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
 	do {
 		if (snd_rawmidi_transmit_peek(mpu->substream_output, &byte, 1) == 1) {
 			for (timeout = 100; timeout > 0; timeout--) {
@@ -368,13 +368,13 @@ static void snd_mpu401_uart_output_write(mpu401_t * mpu)
 					break;
 				}
 			}
-			break;	/* Tx FIFO full - try again later */
+			if (timeout == 0)
+				break;	/* Tx FIFO full - try again later */
 		} else {
 			snd_mpu401_uart_remove_timer (mpu, 0);
 			break;	/* no other data - leave the tx loop */
 		}
 	} while (--max > 0);
-	clear_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode);
 }
 
 /*
@@ -396,11 +396,12 @@ static void snd_mpu401_uart_output_trigger(snd_rawmidi_substream_t * substream, 
 
 		/* output pending data */
 		/* prevent double enter via rawmidi->event callback */
-		if (! test_bit(MPU401_MODE_BIT_TX_LOOP, &mpu->mode)) {
-			spin_lock_irqsave(&mpu->output_lock, flags);
+		local_irq_save(flags);
+		if (spin_trylock(&mpu->output_lock)) {
 			snd_mpu401_uart_output_write(mpu);
-			spin_unlock_irqrestore(&mpu->output_lock, flags);
+			spin_unlock(&mpu->output_lock);
 		}
+		local_irq_restore(flags);
 	} else {
 		snd_mpu401_uart_remove_timer(mpu, 0);
 		clear_bit(MPU401_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode);
