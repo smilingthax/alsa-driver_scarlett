@@ -72,7 +72,7 @@ struct snd_stru_ac97 {
   void (*private_free)( ac97_t *ac97 );
   /* --- */
   unsigned int id;		/* identification of codec */
-  char *name;			/* CODEC name */
+  char name[64];		/* CODEC name */
   unsigned short caps;		/* capabilities (register 0) */
   unsigned short micgain;	/* mic gain is active */
   snd_kmixer_channel_t *mic_channel;
