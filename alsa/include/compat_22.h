@@ -164,8 +164,7 @@ int snd_compat_release_resource(struct resource *resource);
 #define PCI_GET_DRIVER_DATA snd_pci_compat_get_driver_data
 #define PCI_SET_DRIVER_DATA snd_pci_compat_set_driver_data
 
-#define PCI_GET_DMA_MASK snd_pci_compat_get_dma_mask
-#define PCI_SET_DMA_MASK snd_pci_compat_set_dma_mask
+#define pci_set_dma_mask snd_pci_compat_set_dma_mask
 
 #define pci_enable_device snd_pci_compat_enable_device
 #define pci_register_driver snd_pci_compat_register_driver

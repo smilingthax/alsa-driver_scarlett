@@ -119,10 +119,11 @@
 #ifdef LINUX_2_3
 #include <linux/init.h>
 #include <linux/pm.h>
-#define PCI_GET_DMA_MASK(pci) pci->dma_mask
-#define PCI_SET_DMA_MASK(pci, mask) pci->dma_mask = mask
 #define PCI_GET_DRIVER_DATA(pci) pci->driver_data
 #define PCI_SET_DRIVER_DATA(pci, data) pci->driver_data = data
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)
+#define pci_set_dma_mask(pci, mask) pci->dma_mask = mask
+#endif
 #ifndef virt_to_page
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
 #endif
