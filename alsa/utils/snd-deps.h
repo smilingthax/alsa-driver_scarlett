@@ -73,6 +73,7 @@ void output_card(dep *firstdep, char *card_format, char *dep_format);
 void output_card_list(dep *firstdep, int space, int size);
 void output1_card(dep *firstdep);
 char *convert_to_config_uppercase(const char *line);
+char *convert_to_escape(const char *line);
 char *remove_word(const char *remove, const char *line);
 char *get_card_name(const char *line);
 

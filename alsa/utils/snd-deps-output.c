@@ -180,6 +180,21 @@ void output_configin(void)
 	printf("\
 # ALSA soundcard-configuration\n\
 \n\
+if [ \"x$CONFIG_SND_SEQUENCER\" == \"x\" ]; then\n\
+  CONFIG_SND_SEQUENCER=\"n\"\n\
+fi\n\
+if [ \"x$CONFIG_SND_OSSEMUL\" == \"x\" ]; then\n\
+  CONFIG_SND_OSSEMUL=\"n\"\n\
+fi\n\
+if [ \"x$CONFIG_SND_MIXER_OSS\" == \"x\" ]; then\n\
+  CONFIG_SND_MIXER_OSS=\"n\"\n\
+fi\n\
+if [ \"x$CONFIG_SND_PCM_OSS\" == \"x\" ]; then\n\
+  CONFIG_SND_PCM_OSS=\"n\"\n\
+fi\n\
+if [ \"x$CONFIG_SND_SEQUENCER_OSS\" == \"x\" ]; then\n\
+  CONFIG_SND_SEQUENCER_OSS=\"n\"\n\
+fi\n\
 if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
   dep_tristate 'Sequencer support' CONFIG_SND_SEQUENCER $CONFIG_SND\n\
   bool 'OSS API emulation' CONFIG_SND_OSSEMUL\n\
@@ -198,6 +213,13 @@ if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
   fi\n\
 fi\n\n");
 	output1_dep(Deps);
+printf("\
+XX_CONFIG_SND_SEQ_DEVICE=$CONFIG_SND_SEQUENCER\n\
+XX_CONFIG_SND_SEQ=$CONFIG_SND_SEQUENCER\n\
+XX_CONFIG_SND_TIMER=$CONFIG_SND_SEQUENCER\n\
+XX_CONFIG_SND_PCM=$CONFIG_SND_PCM_OSS\n\
+XX_CONFIG_SND_SEQ_MIDI_EVENT=$CONFIG_SND_SEQUENCER_OSS\n\
+");
 	output1_card(Cards);
 	output2_dep(Deps);
 	return;
@@ -324,16 +346,18 @@ void output1_card(dep *firstdep)
 	int num,i;
 	char *card_name;
 	char *card_config;
+	char *card_comment;
 	char *dep_config;
 	
 	while(temp_dep)
 	{
 		card_name=get_card_name(temp_dep->name);
 		card_config=convert_to_config_uppercase(temp_dep->name);
+		card_comment=convert_to_escape(temp_dep->comment);
 		printf("\
 dep_tristate '%s' %s $CONFIG_SND\n\
 if [ \"$%s\" != \"n\" ]; then\n\
-", temp_dep->comment, card_config, card_config);
+", card_comment, card_config, card_config);
 		num=make_list_of_deps_for_dep(temp_dep, list, 0);
 		for(i=0;i<num;i++)
 		{
@@ -351,6 +375,7 @@ if [ \"$%s\" != \"n\" ]; then\n\
 			free(dep_config);
 		}
 		printf("fi\n");
+		free(card_comment);
 		free(card_name);
 		free(card_config);
 		temp_dep=temp_dep->link;
@@ -362,28 +387,57 @@ if [ \"$%s\" != \"n\" ]; then\n\
 char *convert_to_config_uppercase(const char *line)
 {
 	char pre[]="CONFIG_";
-	char *holder;
+	char *holder, *p;
 	int i;
 
-	holder=malloc(strlen(line)+strlen(pre)+1);
+	holder=malloc(strlen(line)*2+strlen(pre)+1);
 	if(holder==NULL)
 	{
 		fprintf(stderr, "Not enough memory\n");
 		exit(EXIT_FAILURE);
 	}
-	strcpy(holder, pre);
+	p = strcpy(holder, pre) + strlen(pre);
 	for(i=0;i<strlen(line);i++)
 		switch(line[i])
 		{
 			case '-':
-				holder[i+strlen(pre)]='_';
+				*p++='_';
 				break;
 			default:
-				holder[i+strlen(pre)]=toupper(line[i]);
+				*p++=toupper(line[i]);
 				break;
 		}
 
-	holder[i+strlen(pre)]='\0';
+	*p++='\0';
+	
+	return holder;
+}
+
+// example: a'b -> a\'b
+char *convert_to_escape(const char *line)
+{
+	char *holder, *p;
+	int i;
+
+	holder=malloc(strlen(line)+1);
+	if(holder==NULL)
+	{
+		fprintf(stderr, "Not enough memory\n");
+		exit(EXIT_FAILURE);
+	}
+	p = holder;
+	for(i=0;i<strlen(line);i++)
+		switch(line[i])
+		{
+			case '\'':
+				*p++='`';
+				break;
+			default:
+				*p++=line[i];
+				break;
+		}
+
+	*p++='\0';
 	
 	return holder;
 }

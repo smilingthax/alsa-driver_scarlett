@@ -804,7 +804,7 @@ A complete example for Gravis UltraSound PnP soundcard:
 
 ----- /etc/modules.conf
 
-# ISA PnP support
+# ISA PnP support (don't use IRQs 9,10,11,12,13)
 options isapnp isapnp_reserve_irq=9,10,11,12,13
 
 # ALSA native device support
@@ -829,7 +829,7 @@ A complete example if you want to use more soundcards in one machine
 
 ----- /etc/modules.conf
 
-# ISA PnP support
+# ISA PnP support (don't use IRQs 9,10,11,12,13)
 options isapnp isapnp_reserve_irq=9,10,11,12,13
 
 # ALSA native device support

@@ -9,7 +9,8 @@ function copy_file () {
 }
 
 function include_file () {
-	rm -f $KADIR/include/$1
+	rm -f $KADIR/include/$1 $KDIR/include/linux/$1
+	ln -svf $ADIR/include/$1 $KADIR/include/$1
 	ln -svf $ADIR/include/$1 $KDIR/include/linux/$1
 }
 
@@ -41,7 +42,7 @@ if grep CONFIG_SND Makefile > /dev/null; then
   echo "Makefile already modified"
 else
   cp -av Makefile Makefile.old
-  cat $ADIR/utils/patches/patch.Makefile.top.2.3.34 | patch -p0
+  cat $ADIR/utils/patches/patch.Makefile.top.2.4.0-test10 | patch -p0
   echo "Makefile patched"
 fi
 cd $KDIR/drivers/sound
@@ -49,16 +50,8 @@ if grep alsa Makefile > /dev/null; then
   echo "drivers/sound/Makefile already modified"
 else
   cp -av Makefile Makefile.old
-  cat $ADIR/utils/patches/patch.Makefile.2.2.10 | patch -p0
+  cat $ADIR/utils/patches/patch.Makefile.2.4.0-test10 | patch -p0
   echo "drivers/sound/Makefile patched"
-fi
-cd $KDIR/drivers/char
-if grep alsa_init mem.c > /dev/null; then
-  echo "drivers/char/mem.c already modified"
-else
-  cp -av mem.c mem.c.old
-  cat $ADIR/utils/patches/patch.mem.c.2.3.34 | patch -p0
-  echo "drivers/char/mem.c patched"
 fi
 if grep "Advanced Linux Sound Architecture" Config.in > /dev/null; then
   echo "drivers/sound/Config.in already modified"
@@ -68,7 +61,7 @@ else
   echo "comment 'Advanced Linux Sound Architecture'" >> Config.in
   echo >> Config.in
   echo "tristate 'Advanced Linux Sound Architecture' CONFIG_SND" >> Config.in
-  echo "if [ \"\$CONFIG_SND\" != "n" ]; then" >> Config.in
+  echo "if [ \"\$CONFIG_SND\" != \"n\" ]; then" >> Config.in
   echo "  source drivers/sound/alsa/Config.in" >> Config.in
   echo "fi" >> Config.in
   echo >> Config.in
@@ -81,25 +74,26 @@ make
 ./snd-deps --configin > $KDIR/drivers/sound/alsa/Config.in
 copy_file Makefile.k Makefile
 copy_dir include
+rm -f $KADIR/include/config.h
+rm -f $KADIR/include/config1.h
 include_file ainstr_simple.h
 include_file ainstr_gf1.h
 include_file ainstr_iw.h
+include_file ainstr_fm.h
 include_file asound.h
 include_file asequencer.h
 copy_dir kernel
-copy_dir kernel/plugin
 copy_dir kernel/seq
 copy_dir kernel/seq/instr
 copy_dir kernel/seq/oss
+copy_dir kernel/oss
 copy_dir lowlevel
 copy_dir lowlevel/generic
 copy_dir lowlevel/isa
 copy_dir lowlevel/pci
-copy_dir lowlevel/hal2
 copy_dir lowlevel/i2c
 copy_dir lowlevel/gus
 copy_dir lowlevel/sb
 copy_dir lowlevel/emu10k1
 copy_dir cards
-copy_dir cards/hal2
 popd > /dev/null
