@@ -582,7 +582,9 @@ static snd_pcm_hardware_t snd_vt1724_capture_pro =
 	.periods_max =		1024,
 };
 
-/* FIXME: it seems some alignment is needed for buffer and period sizes */
+/* multi-channel playback needs alignment 8x32bit regarless of the channels
+ * actually used
+ */
 #define VT1724_BUFFER_ALIGN	0x20
 
 static int snd_vt1724_playback_pro_open(snd_pcm_substream_t * substream)
@@ -622,10 +624,6 @@ static int snd_vt1724_capture_pro_open(snd_pcm_substream_t * substream)
 		snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates_192);
 	else
 		snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates_96);
-	snd_pcm_hw_constraint_step(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_BYTES,
-				   VT1724_BUFFER_ALIGN);
-	snd_pcm_hw_constraint_step(runtime, 0, SNDRV_PCM_HW_PARAM_BUFFER_BYTES,
-				   VT1724_BUFFER_ALIGN);
 	return 0;
 }
 
