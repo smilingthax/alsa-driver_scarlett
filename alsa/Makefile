@@ -54,9 +54,5 @@ pack: clean
 	chown -R root.root ../alsa-driver
 	tar cvz -C .. -f ../alsa-driver-$(SND_VERSION).tar.gz alsa-driver
 
-publish: pack
-	cat ../alsa-driver-$(SND_VERSION).tar.gz | \
-          ssh -l root zarquon.jcu.cz /home/alsa/publish alsa-driver-$(SND_VERSION).tar.gz
-
 $(PEXPORT): $(TOPDIR)/utils/export-symbols.c
 	make -C $(TOPDIR)/utils export-symbols
