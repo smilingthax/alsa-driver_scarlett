@@ -335,8 +335,7 @@ int main(void) {
 	fprintf(file, "i386");
 #elif defined(CONFIG_M486)
 	fprintf(file, "i486");
-#elif defined(CONFIG_M586) || defined(CONFIG_MWINCHIPC6) || defined(CONFIG_MWINCHIP2)\
-	|| defined(CONFIG_MWINCHIP3D) || defined(CONFIG_MCYRIXIII)
+#elif defined(CONFIG_M586)
 	fprintf(file, "i586");
 #elif defined(CONFIG_M586TSC)
 	fprintf(file, "i586tsc");
@@ -434,11 +433,19 @@ case "$processor" in
     if $CC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=athlon"
     else
-      c_opts="-march=i686 -malign-functions=4"
+      if $CC -falign-functions=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+        c_opts="-march=i686 -falign-functions=4"
+      else
+	c_opts="-march=i686 -malign-functions=4"
+      fi
     fi
     ;;
   crusoe)
-    c_opts="-march=i686 -malign-functions=0 -malign-jumps=0 -malign-loops=0"
+    if $CC -falign-functions=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      c_opts="-march=i686 -falign-functions=0 -falign-jumps=0 -falign-loops=0"
+    else
+      c_opts="-march=i686 -malign-functions=0 -malign-jumps=0 -malign-loops=0"
+    fi
     ;;
   mcyrixiii)
     if $CC -march=c3 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
@@ -573,7 +580,7 @@ esac
 
 dnl set ia32 (X86)
 case "$processor" in
-  i?86*|k?|crusoe)
+  i?86*|k?|crusoe|mcyrixiii|mwinchip)
     if $CC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
