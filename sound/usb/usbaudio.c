@@ -2586,6 +2586,7 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 				if (!subs->num_formats)
 					continue;
 				release_substream_urbs(subs, 1);
+				subs->interface = -1;
 			}
 		}
 		/* release the midi resources */
