@@ -385,4 +385,6 @@ extern int snd_task_name( struct task_struct *task, char *name, int size );
 #define snd_printdd( args... ) /* nothing */
 #endif
 
+#define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))     /* 3.8.1a */
+
 #endif /* __DRIVER_H */
