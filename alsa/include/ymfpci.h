@@ -334,6 +334,7 @@ struct _snd_ymfpci {
 
 #ifdef CONFIG_PM
 	u32 *saved_regs;
+	u32 saved_ydsxgr_mode;
 #endif
 };
 
