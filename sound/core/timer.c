@@ -955,7 +955,7 @@ static void snd_timer_s_function(unsigned long data)
 	unsigned long jiff = jiffies;
 	if (time_after(jiff, priv->last_expires))
 		priv->correction = (long)jiff - (long)priv->last_expires;
-	snd_timer_interrupt(timer, timer->sticks);
+	snd_timer_interrupt(timer, (long)jiff - (long)priv->last_jiffies);
 }
 
 static int snd_timer_s_start(snd_timer_t * timer)
