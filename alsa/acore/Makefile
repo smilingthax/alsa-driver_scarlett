@@ -17,8 +17,6 @@ export-objs := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o memalloc.o
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/core/Makefile
 
-ifeq ($(CONFIG_PCI),y)
 snd-page-alloc-objs += memory_wrapper.o
-endif
 
 include $(TOPDIR)/Rules.make
