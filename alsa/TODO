@@ -17,8 +17,7 @@ Stage 4:
 General:
 
 * check why S3 SonicVibes volume levels are non-linear
-* debug ES1371 code (with external testers)
-* add MIC gain switch for CS4231 (without InterWave?, AD1848 too?)
+* check why S3 SonicVibes sometimes stops
 * add PCM switch for ADC overrange setup - CS4231
 * add CTL switch Game Speed Compensation (GUS, SonicVibes)
 * add CTL switch Joystick Enable (GUS, AudioPCI)
