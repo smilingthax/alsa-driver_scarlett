@@ -53,11 +53,7 @@
  */
 
 typedef struct iwffff_wave {
-	unsigned int share_id1;		/* share id (part 1) - 0 = no sharing */
-	unsigned int share_id2;		/* share id (part 2) - 0 = no sharing */
-	unsigned int share_id3;		/* share id (part 3) - 0 = no sharing */
-	unsigned int share_id4;		/* share id (part 4) - 0 = no sharing */
-
+	unsigned int share_id[4];	/* share id - zero = no sharing */
 	unsigned int format;		/* wave format */
 
 	struct {
@@ -221,10 +217,7 @@ typedef struct {
 typedef struct iwffff_xwave {
 	__u32 stype;			/* structure type */
 
-	__u32 share_id1;		/* share id (part 1) - 0 = no sharing */
-	__u32 share_id2;		/* share id (part 2) - 0 = no sharing */
-	__u32 share_id3;		/* share id (part 3) - 0 = no sharing */
-	__u32 share_id4;		/* share id (part 4) - 0 = no sharing */
+	__u32 share_id[4];		/* share id - zero = no sharing */
 
 	__u32 format;			/* wave format */
 	__u32 offset;			/* offset to ROM (address) */
@@ -334,5 +327,27 @@ typedef struct {
 	__u8 vendor_name[64];
 	__u8 description[128];
 } iwffff_rom_header_t;
+
+#ifdef __KERNEL__
+
+#include <seq_instr.h>
+
+typedef struct {
+	void *private_data;
+	int (*put_sample)(void *private_data, iwffff_wave_t *wave,
+	                  char *data, long len, int atomic);
+	int (*get_sample)(void *private_data, iwffff_wave_t *wave,
+			  char *data, long len, int atomic);
+	int (*remove_sample)(void *private_data, iwffff_wave_t *wave,
+			     int atomic);
+	snd_seq_kinstr_ops_t kops;
+} snd_iwffff_ops_t;
+
+int snd_seq_iwffff_init(snd_iwffff_ops_t *ops,
+			void *private_data,
+                        unsigned int flags,
+                        snd_seq_kinstr_ops_t *next);
+
+#endif
 
 #endif /* __SEQ_INSTR_IW_H */

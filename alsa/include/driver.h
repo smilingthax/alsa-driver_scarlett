@@ -173,7 +173,6 @@ static inline void snd_leave_user(mm_segment_t fs)
  */
 
 #include "sndspinlock.h"
-#include "misc.h"
 #include "schedule.h"
 
 /* auto values */

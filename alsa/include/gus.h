@@ -27,10 +27,11 @@
 #include "midi.h"
 #include "timer.h"
 #include "seq_midi_emul.h"
+#include "ainstr_iw.h"
 
 /* IO ports */
 
-#define GUSP( gus, x )			((gus) -> gf1.port + SND_g_u_s_##x)
+#define GUSP(gus, x)			((gus)->gf1.port + SND_g_u_s_##x)
 
 #define SND_g_u_s_MIDICTRL		(0x320-0x220)
 #define SND_g_u_s_MIDISTAT		(0x320-0x220)
@@ -144,8 +145,8 @@
 
 /* ramp ranges */
 
-#define SND_GF1_ATTEN( x )	(snd_gf1_atten_table[ x ])
-#define SND_GF1_VOLUME( x )	(snd_gf1_atten_table[ x ] << 1)
+#define SND_GF1_ATTEN(x)	(snd_gf1_atten_table[x])
+#define SND_GF1_VOLUME(x)	(snd_gf1_atten_table[x] << 1)
 #define SND_GF1_MIN_VOLUME	1800
 #define SND_GF1_MAX_VOLUME	4095
 #define SND_GF1_MIN_OFFSET	(SND_GF1_MIN_VOLUME>>4)
@@ -157,9 +158,9 @@
 #define SND_GF1_MEM_BLOCK_16BIT		0x0001
 
 #define SND_GF1_MEM_OWNER_DRIVER	0x0001
-#define SND_GF1_MEM_OWNER_WAVE		0x0002
-#define SND_GF1_MEM_OWNER_USER		0x0003
-#define SND_GF1_MEM_OWNER_SERVER	0x0004
+#define SND_GF1_MEM_OWNER_WAVE_SIMPLE	0x0002
+#define SND_GF1_MEM_OWNER_WAVE_GF1	0x0003
+#define SND_GF1_MEM_OWNER_WAVE_IWFFFF	0x0004
 
 /* modes */
 
@@ -207,15 +208,11 @@ typedef struct snd_stru_gf1_bank_info {
 typedef struct snd_stru_gf1_mem_block {
 	unsigned short flags;	/* flags - SND_GF1_MEM_BLOCK_XXXX */
 	unsigned short owner;	/* owner - SND_GF1_MEM_OWNER_XXXX */
-	unsigned short lock;	/* locked by - SND_GF1_MEM_OWNER_XXXX */
 	unsigned int share;	/* share count */
-	unsigned int share_id1, share_id2;	/* share ID */
+	unsigned int share_id[4]; /* share ID */
 	unsigned int ptr;
 	unsigned int size;
-	union {
-		char *name;
-		void *data;
-	} data;
+	char *name;
 	struct snd_stru_gf1_mem_block *next;
 	struct snd_stru_gf1_mem_block *prev;
 } snd_gf1_mem_block_t;
@@ -227,7 +224,6 @@ typedef struct snd_stru_gf1_mem {
 	snd_gf1_mem_block_t *last;
 	snd_info_entry_t *info_entry;
 	snd_mutex_define(memory);
-	snd_mutex_define(memory_find);
 } snd_gf1_mem_t;
 
 typedef struct snd_gf1_dma_block {
@@ -247,8 +243,8 @@ typedef struct {
 struct snd_stru_gf1 {
 
 	unsigned int enh_mode:1,	/* enhanced mode (GFA1) */
-	 hw_lfo:1,			/* use hardware LFO */
-	 sw_lfo:1;			/* use software LFO */
+		     hw_lfo:1,		/* use hardware LFO */
+		     sw_lfo:1;		/* use software LFO */
 
 	unsigned short port;		/* port of GF1 chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
@@ -315,6 +311,8 @@ struct snd_stru_gf1 {
 
 	int seq_client;
 	snd_gus_port_t seq_ports[4];
+	snd_seq_kinstr_list_t *ilist;
+	snd_iwffff_ops_t iwffff_ops;
 
 	/* timer */
 
@@ -503,11 +501,17 @@ extern void snd_gf1_lfo_command(snd_gus_card_t * gus, int voice, unsigned char *
 
 /* gus_mem.c */
 
+void snd_gf1_mem_lock(snd_gf1_mem_t * alloc, int xup);
 int snd_gf1_mem_xfree(snd_gf1_mem_t * alloc, snd_gf1_mem_block_t * block);
-snd_gf1_mem_block_t *snd_gf1_mem_look(snd_gf1_mem_t * alloc, unsigned int address);
-snd_gf1_mem_block_t *snd_gf1_mem_share(snd_gf1_mem_t * alloc, unsigned int share_id1, unsigned int share_id2);
-snd_gf1_mem_block_t *snd_gf1_mem_alloc(snd_gf1_mem_t * alloc, char *name, int size, int w_16, int align);
+snd_gf1_mem_block_t *snd_gf1_mem_look(snd_gf1_mem_t * alloc,
+				      unsigned int address);
+snd_gf1_mem_block_t *snd_gf1_mem_share(snd_gf1_mem_t * alloc,
+				       unsigned int *share_id);
+snd_gf1_mem_block_t *snd_gf1_mem_alloc(snd_gf1_mem_t * alloc, int owner,
+				       char *name, int size, int w_16,
+				       int align, unsigned int *share_id);
 int snd_gf1_mem_free(snd_gf1_mem_t * alloc, unsigned int address);
+int snd_gf1_mem_free_owner(snd_gf1_mem_t * alloc, int owner);
 int snd_gf1_mem_init(snd_gus_card_t * gus);
 int snd_gf1_mem_done(snd_gus_card_t * gus);
 
@@ -606,6 +610,24 @@ extern void snd_engine_instrument_register(unsigned short mode,
 		struct SND_STRU_INSTRUMENT_NOTE_COMMANDS *note_cmds,
 	      	struct SND_STRU_INSTRUMENT_CHANNEL_COMMANDS *channel_cmds);
 extern int snd_engine_instrument_register_ask(unsigned short mode);
+#endif
+
+/* gus_intr.c */
+#ifdef SNDCFG_SEQUENCER
+int snd_gus_iwffff_put_sample(void *private_data, iwffff_wave_t *wave,
+			      char *data, long len, int atomic);
+int snd_gus_iwffff_get_sample(void *private_data, iwffff_wave_t *wave,
+			      char *data, long len, int atomic);
+int snd_gus_iwffff_remove_sample(void *private_data, iwffff_wave_t *wave,
+				 int atomic);
+#endif
+
+/* gus_dram.c */
+#ifdef SNDCFG_SEQUENCER
+int snd_gus_dram_write(snd_gus_card_t *gus, char *ptr,
+		       unsigned int addr, unsigned int size);
+int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,
+		      unsigned int addr, unsigned int size, int rom);
 #endif
 
 #endif				/* __GUS_H */

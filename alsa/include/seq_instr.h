@@ -48,9 +48,6 @@ typedef struct snd_stru_seq_kinstr {
 
 /* List of all instruments */
 typedef struct {
-	void *private_data;		/* pointer to the driver privated data */
-	int kinstr_len;			/* kinstr additional length */
-
 	snd_seq_kinstr_t *hash[SND_SEQ_INSTR_HASH_SIZE];
 	int count;			/* count of all instruments */
 	
@@ -68,14 +65,17 @@ typedef struct {
 /* Instrument operations - flags */
 #define SND_SEQ_INSTR_OPS_DIRECT	(1<<0)	/* accept only direct events */
 
-typedef struct {
+typedef struct snd_seq_kinstr_ops {
+	void *private_data;
 	unsigned int flags;
-	int (*reset)(void *private_data);
+	long add_len;			/* additional length */
+	char *instr_type;
 	int (*put)(void *private_data, snd_seq_kinstr_t *kinstr,
-		   char *instr_type, char *instr_data, int len);
+		   char *instr_data, long len, int atomic);
 	int (*get)(void *private_data, snd_seq_kinstr_t *kinstr,
-		   char *instr_type, char *instr_data, int len);
-	int (*remove)(void *private_data, snd_seq_kinstr_t *kinstr);
+		   char *instr_data, long len, int atomic);
+	int (*remove)(void *private_data, snd_seq_kinstr_t *kinstr, int atomic);
+	struct snd_seq_kinstr_ops *next;
 } snd_seq_kinstr_ops_t;
 
 /* instrument operations */

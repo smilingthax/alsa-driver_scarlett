@@ -28,7 +28,15 @@ function basic() {
   if [ -r $MODDIR/snd-seq.o ]; then
     if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
     if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
-    if ! $INSMOD -m $MODDIR/snd-seq-midi-emul.o >> $MAP; then exit 1; fi
+    if [ -r $MODDIR/snd-seq-midi-emul.o ]; then
+      if ! $INSMOD -m $MODDIR/snd-seq-midi-emul.o >> $MAP; then exit 1; fi
+    fi
+    if [ -r $MODDIR/snd-seq-instr.o ]; then
+      if ! $INSMOD -m $MODDIR/snd-seq-instr.o >> $MAP; then exit 1; fi
+    fi
+    if [ -r $MODDIR/snd-ainstr-iw.o ]; then
+      if ! $INSMOD -m $MODDIR/snd-ainstr-iw.o >> $MAP; then exit 1; fi
+    fi
     if [ -r $MODDIR/snd-seq-oss.o ]; then
       if ! $INSMOD -m $MODDIR/snd-seq-oss.o >> $MAP; then exit 1; fi
     fi
