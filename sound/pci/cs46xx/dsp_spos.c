@@ -1021,8 +1021,6 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	dsp_scb_descriptor_t * record_mix_scb;
 	dsp_scb_descriptor_t * write_back_scb;
 	dsp_scb_descriptor_t * vari_decimate_scb;
-	dsp_scb_descriptor_t * pcm_serial_input_task;
-	dsp_scb_descriptor_t * asynch_tx_scb;
 	dsp_scb_descriptor_t * sec_codec_out_scb;
 	dsp_scb_descriptor_t * magic_snoop_scb;
 
@@ -1096,6 +1094,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 		ins->the_null_scb->sub_list_ptr = ins->the_null_scb;
 		ins->the_null_scb->next_scb_ptr = ins->the_null_scb;
 		ins->the_null_scb->parent_scb_ptr = NULL;
+		cs46xx_dsp_proc_register_scb_desc (chip,ins->the_null_scb);
 	}
 
 	{
@@ -1265,9 +1264,9 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 
 	/* create codec in */
 	codec_in_scb = cs46xx_dsp_create_codec_in_scb(chip,"CodecInSCB",0x0010,0x00A0,
-                                                  CODEC_INPUT_BUF1,
-                                                  CODECIN_SCB_ADDR,codec_out_scb,
-                                                  SCB_ON_PARENT_NEXT_SCB);
+						      CODEC_INPUT_BUF1,
+						      CODECIN_SCB_ADDR,codec_out_scb,
+						      SCB_ON_PARENT_NEXT_SCB);
 	if (!codec_in_scb) goto _fail_end;
 	ins->codec_in_scb = codec_in_scb;
 
@@ -1318,10 +1317,10 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 
 	/* create the rear PCM channel  mixer SCB */
 	rear_mix_scb = cs46xx_dsp_create_mix_only_scb(chip,"RearMixerSCB",
-                                                  MIX_SAMPLE_BUF3,
-                                                  REAR_MIXER_SCB_ADDR,
-                                                  sec_codec_out_scb,
-                                                  SCB_ON_PARENT_SUBLIST_SCB);
+						      MIX_SAMPLE_BUF3,
+						      REAR_MIXER_SCB_ADDR,
+						      sec_codec_out_scb,
+						      SCB_ON_PARENT_SUBLIST_SCB);
 	ins->rear_mix_scb = rear_mix_scb;
 	if (!rear_mix_scb) goto _fail_end;
 
@@ -1336,29 +1335,9 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 	if (!magic_snoop_scb) goto _fail_end;
 	ins->ref_snoop_scb = magic_snoop_scb;
 
-
-	/* The asynch. transfer task */
-	asynch_tx_scb = cs46xx_dsp_create_asynch_fg_tx_scb(chip,"AsynchFGTxSCB",ASYNCTX_SCB_ADDR,
-							   SPDIFO_SCB_INST,
-							   SPDIFO_IP_OUTPUT_BUFFER1,
-							   master_mix_scb,
-							   SCB_ON_PARENT_NEXT_SCB);
-
-	if (!asynch_tx_scb) goto _fail_end;
-	ins->asynch_tx_scb = asynch_tx_scb;
-
-	/* pcm input */
-	pcm_serial_input_task = cs46xx_dsp_create_pcm_serial_input_scb(chip,"PCMSerialInput_II",
-								       PCMSERIALINII_SCB_ADDR,
-								       magic_snoop_scb,asynch_tx_scb,
-								       SCB_ON_PARENT_SUBLIST_SCB);
-  
-	if (!pcm_serial_input_task) goto _fail_end;
-	ins->spdif_pcm_input_scb = pcm_serial_input_task; 
-
 	/* SP IO access */
 	if (!cs46xx_dsp_create_spio_write_scb(chip,"SPIOWriteSCB",SPIOWRITE_SCB_ADDR,
-					      asynch_tx_scb,
+					      magic_snoop_scb,
 					      SCB_ON_PARENT_NEXT_SCB))
 		goto _fail_end;
 
@@ -1518,6 +1497,7 @@ int cs46xx_dsp_async_init (cs46xx_t *chip, dsp_scb_descriptor_t * fg_entry)
 		};
 
 		spdifo_scb_desc = cs46xx_dsp_create_scb(chip,"SPDIFOSCB",(u32 *)&spdifo_scb,SPDIFO_SCB_INST);
+
 		snd_assert(spdifo_scb_desc, return -EIO);
 		spdifi_scb_desc = cs46xx_dsp_create_scb(chip,"SPDIFISCB",(u32 *)&spdifi_scb,SPDIFI_SCB_INST);
 		snd_assert(spdifi_scb_desc, return -EIO);
@@ -1543,6 +1523,11 @@ int cs46xx_dsp_async_init (cs46xx_t *chip, dsp_scb_descriptor_t * fg_entry)
 		   is the FG task tree */
 		fg_entry->parent_scb_ptr = spdifo_scb_desc;
 
+		/* for proc fs */
+		cs46xx_dsp_proc_register_scb_desc (chip,spdifo_scb_desc);
+		cs46xx_dsp_proc_register_scb_desc (chip,spdifi_scb_desc);
+		cs46xx_dsp_proc_register_scb_desc (chip,async_codec_scb_desc);
+
 		/* Async MASTER ENABLE, affects both SPDIF input and output */
 		snd_cs46xx_pokeBA0(chip, BA0_ASER_MASTER, 0x1 );
 	}
@@ -1550,7 +1535,7 @@ int cs46xx_dsp_async_init (cs46xx_t *chip, dsp_scb_descriptor_t * fg_entry)
 	return 0;
 }
 
-int cs46xx_dsp_enable_spdif_out (cs46xx_t *chip)
+int cs46xx_dsp_enable_spdif_hw (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
@@ -1560,29 +1545,11 @@ int cs46xx_dsp_enable_spdif_out (cs46xx_t *chip)
 	/* SPDIF output MASTER ENABLE */
 	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CONTROL, 0x80000000);
 
-	/* right and left validate bit 
-	   NOTE: 0x80000000 and enables the SCMC protection on stream 
-	*/
+	/* right and left validate bit */
 	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12));
 
 	/* monitor state */
-	ins->spdif_status_out = 1;
-
-	return 0;
-}
-
-int  cs46xx_dsp_disable_spdif_out (cs46xx_t *chip)
-{
-	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
-
-	/* disable  SPDIF output FIFO slot */
-	snd_cs46xx_pokeBA0(chip, BA0_ASER_FADDR, 0);
-
-	/* SPDIF output MASTER DISABLE */
-	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CONTROL, 0x0);
-
-	/* monitor state */
-	ins->spdif_status_out = 0;
+	ins->spdif_status_out |= DSP_SDPIF_STATUS_HW_ENABLED;
 
 	return 0;
 }

@@ -445,19 +445,19 @@ static void snd_cs46xx_reset(cs46xx_t *chip)
 	snd_cs46xx_poke(chip, BA1_FRMT, 0xadf);
 }
 
-static int cs46xx_wait_for_fifo(cs46xx_t * chip) 
+static int cs46xx_wait_for_fifo(cs46xx_t * chip,int retry_timeout) 
 {
 	u32 i, status;
 	/*
 	 * Make sure the previous FIFO write operation has completed.
 	 */
-	for(i = 0; i < 20; i++){
+	for(i = 0; i < 50; i++){
 		status = snd_cs46xx_peekBA0(chip, BA0_SERBST);
     
 		if( !(status & SERBST_WBSY) )
 			break;
 
-		udelay(50);
+		mdelay(retry_timeout);
 	}
   
 	if(status & SERBST_WBSY) {
@@ -498,7 +498,7 @@ static void snd_cs46xx_clear_serial_FIFOs(cs46xx_t *chip)
 		/*
 		 *  Make sure the previous FIFO write operation has completed.
 		 */
-		if (cs46xx_wait_for_fifo(chip)) {
+		if (cs46xx_wait_for_fifo(chip,1)) {
 			snd_printdd ("failed waiting for FIFO at addr (%02X)\n",idx);
 
 			if (powerdown)
@@ -728,6 +728,8 @@ static int snd_cs46xx_playback_transfer(snd_pcm_substream_t *substream,
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_sframes_t diff;
 	cs46xx_pcm_t * cpcm;
+	int buffer_size = runtime->period_size * CS46XX_FRAGS * 4;
+
 	cpcm = snd_magic_cast(cs46xx_pcm_t, substream->runtime->private_data, return -ENXIO);
 
 	diff = runtime->control->appl_ptr - cpcm->appl_ptr;
@@ -738,11 +740,11 @@ static int snd_cs46xx_playback_transfer(snd_pcm_substream_t *substream,
 	}
 	cpcm->sw_ready += frames << cpcm->shift;
 	cpcm->appl_ptr = runtime->control->appl_ptr + frames;
-	while (cpcm->hw_ready < CS46XX_BUFFER_SIZE && 
+	while (cpcm->hw_ready < buffer_size && 
 	       cpcm->sw_ready > 0) {
-		size_t hw_to_end = CS46XX_BUFFER_SIZE - cpcm->hw_data;
+		size_t hw_to_end = buffer_size - cpcm->hw_data;
 		size_t sw_to_end = cpcm->sw_bufsize - cpcm->sw_data;
-		size_t bytes = CS46XX_BUFFER_SIZE - cpcm->hw_ready;
+		size_t bytes = buffer_size - cpcm->hw_ready;
 		if (cpcm->sw_ready < bytes)
 			bytes = cpcm->sw_ready;
 		if (hw_to_end < bytes)
@@ -753,7 +755,7 @@ static int snd_cs46xx_playback_transfer(snd_pcm_substream_t *substream,
 		       runtime->dma_area + cpcm->sw_data,
 		       bytes);
 		cpcm->hw_data += bytes;
-		if (cpcm->hw_data == CS46XX_BUFFER_SIZE)
+		if (cpcm->hw_data == buffer_size)
 			cpcm->hw_data = 0;
 		cpcm->sw_data += bytes;
 		if (cpcm->sw_data == cpcm->sw_bufsize)
@@ -770,6 +772,7 @@ static int snd_cs46xx_capture_transfer(snd_pcm_substream_t *substream,
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_sframes_t diff = runtime->control->appl_ptr - chip->capt.appl_ptr;
+	int buffer_size = runtime->period_size * CS46XX_FRAGS * 4;
 	if (diff) {
 		if (diff < -(snd_pcm_sframes_t) (runtime->boundary / 2))
 			diff += runtime->boundary;
@@ -779,7 +782,7 @@ static int snd_cs46xx_capture_transfer(snd_pcm_substream_t *substream,
 	chip->capt.appl_ptr = runtime->control->appl_ptr + frames;
 	while (chip->capt.hw_ready > 0 && 
 	       chip->capt.sw_ready < chip->capt.sw_bufsize) {
-		size_t hw_to_end = CS46XX_BUFFER_SIZE - chip->capt.hw_data;
+		size_t hw_to_end = buffer_size - chip->capt.hw_data;
 		size_t sw_to_end = chip->capt.sw_bufsize - chip->capt.sw_data;
 		size_t bytes = chip->capt.sw_bufsize - chip->capt.sw_ready;
 		if (chip->capt.hw_ready < bytes)
@@ -792,7 +795,7 @@ static int snd_cs46xx_capture_transfer(snd_pcm_substream_t *substream,
 		       chip->capt.hw_area + chip->capt.hw_data,
 		       bytes);
 		chip->capt.hw_data += bytes;
-		if (chip->capt.hw_data == CS46XX_BUFFER_SIZE)
+		if (chip->capt.hw_data == buffer_size)
 			chip->capt.hw_data = 0;
 		chip->capt.sw_data += bytes;
 		if (chip->capt.sw_data == chip->capt.sw_bufsize)
@@ -825,6 +828,7 @@ static snd_pcm_uframes_t snd_cs46xx_playback_indirect_pointer(snd_pcm_substream_
 	size_t ptr;
 	cs46xx_pcm_t *cpcm = snd_magic_cast(cs46xx_pcm_t, substream->runtime->private_data, return -ENXIO);
 	ssize_t bytes;
+	int buffer_size = substream->runtime->period_size * CS46XX_FRAGS * 4;
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 	snd_assert (cpcm->pcm_channel,return -ENXIO);
@@ -837,7 +841,7 @@ static snd_pcm_uframes_t snd_cs46xx_playback_indirect_pointer(snd_pcm_substream_
 	bytes = ptr - cpcm->hw_io;
 
 	if (bytes < 0)
-		bytes += CS46XX_BUFFER_SIZE;
+		bytes += buffer_size;
 	cpcm->hw_io = ptr;
 	cpcm->hw_ready -= bytes;
 	cpcm->sw_io += bytes;
@@ -859,8 +863,10 @@ static snd_pcm_uframes_t snd_cs46xx_capture_indirect_pointer(snd_pcm_substream_t
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 	size_t ptr = snd_cs46xx_peek(chip, BA1_CBA) - chip->capt.hw_addr;
 	ssize_t bytes = ptr - chip->capt.hw_io;
+	int buffer_size = substream->runtime->period_size * CS46XX_FRAGS * 4;
+
 	if (bytes < 0)
-		bytes += CS46XX_BUFFER_SIZE;
+		bytes += buffer_size;
 	chip->capt.hw_io = ptr;
 	chip->capt.hw_ready += bytes;
 	chip->capt.sw_io += bytes;
@@ -1023,6 +1029,7 @@ static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 	int err;
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 	int sample_rate = params_rate(hw_params);
+	int period_size = params_period_size(hw_params);
 	cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
@@ -1047,8 +1054,8 @@ static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 		cs46xx_dsp_destroy_pcm_channel (chip,cpcm->pcm_channel);
 
 		if ( (cpcm->pcm_channel = cs46xx_dsp_create_pcm_channel (chip, sample_rate, cpcm, 
-                                                                 cpcm->hw_addr,
-                                                                 cpcm->pcm_channel->pcm_channel_id)) == NULL) {
+									 cpcm->hw_addr,
+									 cpcm->pcm_channel->pcm_channel_id)) == NULL) {
 			snd_printk(KERN_ERR "cs46xx: failed to re-create virtual PCM channel\n");
 			up (&chip->spos_mutex);
 			return -ENXIO;
@@ -1058,6 +1065,12 @@ static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 		cpcm->pcm_channel->sample_rate = sample_rate;
 	}
 
+	if (cs46xx_dsp_pcm_channel_set_period (chip,cpcm->pcm_channel,period_size * 4)) {
+		 up (&chip->spos_mutex);
+		 return -EINVAL;
+	 }
+	snd_printdd ("period_size (%d), periods (%d)\n",
+		     period_size, params_periods(hw_params));
 #endif
 
 	if (params_periods(hw_params) == CS46XX_FRAGS) {
@@ -1089,7 +1102,9 @@ static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 			runtime->dma_bytes = 0;
 		}
 		if ((err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))) < 0) {
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
 			up (&chip->spos_mutex);
+#endif
 			return err;
 		}
 
@@ -1211,7 +1226,13 @@ static int snd_cs46xx_capture_hw_params(snd_pcm_substream_t * substream,
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int err;
+	int period_size = params_period_size(hw_params);
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+	snd_printdd ("capture period size (%d)\n",period_size);
+
+	cs46xx_dsp_pcm_ostream_set_period (chip,period_size * 4);
+#endif
 	if (runtime->periods == CS46XX_FRAGS) {
 		if (runtime->dma_area != chip->capt.hw_area)
 			snd_pcm_lib_free_pages(substream);
@@ -1368,8 +1389,8 @@ static snd_pcm_hardware_t snd_cs46xx_playback =
 	.channels_min =		1,
 	.channels_max =		2,
 	.buffer_bytes_max =	(256 * 1024),
-	.period_bytes_min =	CS46XX_PERIOD_SIZE,
-	.period_bytes_max =	CS46XX_PERIOD_SIZE,
+	.period_bytes_min =	CS46XX_MIN_PERIOD_SIZE,
+	.period_bytes_max =	CS46XX_MAX_PERIOD_SIZE,
 	.periods_min =		CS46XX_FRAGS,
 	.periods_max =		1024,
 	.fifo_size =		0,
@@ -1388,11 +1409,21 @@ static snd_pcm_hardware_t snd_cs46xx_capture =
 	.channels_min =		2,
 	.channels_max =		2,
 	.buffer_bytes_max =	(256 * 1024),
-	.period_bytes_min =	CS46XX_PERIOD_SIZE,
-	.period_bytes_max =	CS46XX_PERIOD_SIZE,
+	.period_bytes_min =	CS46XX_MIN_PERIOD_SIZE,
+	.period_bytes_max =	CS46XX_MAX_PERIOD_SIZE,
 	.periods_min =		CS46XX_FRAGS,
 	.periods_max =		1024,
 	.fifo_size =		0,
+};
+
+static unsigned int period_sizes[] = { 8, 16, 32, 64, 128, 256, 512 };
+
+#define PERIOD_SIZES sizeof(period_sizes) / sizeof(period_sizes[0])
+
+static snd_pcm_hw_constraint_list_t hw_constraints_period_sizes = {
+	.count = PERIOD_SIZES,
+	.list = period_sizes,
+	.mask = 0
 };
 
 static void snd_cs46xx_pcm_free_substream(snd_pcm_runtime_t *runtime)
@@ -1435,6 +1466,8 @@ static int _cs46xx_playback_open_channel (snd_pcm_substream_t * substream,int pc
 		return -ENOMEM;
 	}
 
+	snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_SIZE, 
+				   &hw_constraints_period_sizes);
 	up (&chip->spos_mutex);
 #else
 	chip->playback_pcm = cpcm; /* HACK */
@@ -1467,7 +1500,10 @@ static int snd_cs46xx_playback_open_iec958(snd_pcm_substream_t * substream)
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 
 	snd_printdd("open raw iec958 channel\n");
+
+	down (&chip->spos_mutex);
 	cs46xx_iec958_pre_open (chip);
+	up (&chip->spos_mutex);
 
 	return _cs46xx_playback_open_channel(substream,DSP_IEC958_CHANNEL);
 }
@@ -1479,8 +1515,13 @@ static int snd_cs46xx_playback_close_iec958(snd_pcm_substream_t * substream)
 	int err;
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
   
+	snd_printdd("close raw iec958 channel\n");
+
 	err = snd_cs46xx_playback_close(substream);
+
+	down (&chip->spos_mutex);
 	cs46xx_iec958_post_close (chip);
+	up (&chip->spos_mutex);
 
 	return err;
 }
@@ -1501,6 +1542,10 @@ static int snd_cs46xx_capture_open(snd_pcm_substream_t * substream)
 	chip->active_ctrl(chip, 1);
 	chip->amplifier_ctrl(chip, 1);
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+	snd_pcm_hw_constraint_list(substream->runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_SIZE, 
+				   &hw_constraints_period_sizes);
+#endif
 	return 0;
 }
 
@@ -1645,6 +1690,7 @@ static void snd_cs46xx_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
 static void snd_cs46xx_pcm_rear_free(snd_pcm_t *pcm)
 {
 	cs46xx_t *chip = snd_magic_cast(cs46xx_t, pcm->private_data, return);
@@ -1659,7 +1705,6 @@ static void snd_cs46xx_pcm_iec958_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-#ifdef CONFIG_SND_CS46XX_NEW_DSP
 #define MAX_PLAYBACK_CHANNELS	(DSP_MAX_PCM_CHANNELS - 1)
 #else
 #define MAX_PLAYBACK_CHANNELS	1
@@ -1846,7 +1891,7 @@ static int snd_cs46xx_iec958_get(snd_kcontrol_t *kcontrol,
 	int reg = kcontrol->private_value;
 
 	if (reg == CS46XX_MIXER_SPDIF_OUTPUT_ELEMENT)
-		ucontrol->value.integer.value[0] = chip->dsp_spos_instance->spdif_status_out;
+		ucontrol->value.integer.value[0] = (chip->dsp_spos_instance->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED);
 	else
 		ucontrol->value.integer.value[0] = chip->dsp_spos_instance->spdif_status_in;
 
@@ -1861,13 +1906,15 @@ static int snd_cs46xx_iec958_put(snd_kcontrol_t *kcontrol,
 
 	switch (kcontrol->private_value) {
 	case CS46XX_MIXER_SPDIF_OUTPUT_ELEMENT:
-		change = chip->dsp_spos_instance->spdif_status_out;
+		down (&chip->spos_mutex);
+		change = (chip->dsp_spos_instance->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED);
 		if (ucontrol->value.integer.value[0] && !change) 
 			cs46xx_dsp_enable_spdif_out(chip);
 		else if (change && !ucontrol->value.integer.value[0])
 			cs46xx_dsp_disable_spdif_out(chip);
 
-		res = (change != chip->dsp_spos_instance->spdif_status_out);
+		res = (change != (chip->dsp_spos_instance->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED));
+		up (&chip->spos_mutex);
 		break;
 	case CS46XX_MIXER_SPDIF_INPUT_ELEMENT:
 		change = chip->dsp_spos_instance->spdif_status_in;
@@ -2785,10 +2832,8 @@ static int snd_cs46xx_dev_free(snd_device_t *device)
 /*
  *  initialize chip
  */
-
 static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 {
-	unsigned int tmp;
 	int timeout;
 
 	/* 
@@ -2897,6 +2942,7 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 	snd_cs46xx_pokeBA0(chip, BA0_SERC2, SERC2_SI1F_AC97 | SERC1_SO1EN);
 	snd_cs46xx_pokeBA0(chip, BA0_SERMC1, SERMC1_PTC_AC97 | SERMC1_MSPE);
 
+
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 	snd_cs46xx_pokeBA0(chip, BA0_SERC7, SERC7_ASDI2EN);
 	snd_cs46xx_pokeBA0(chip, BA0_SERC3, 0);
@@ -2906,6 +2952,7 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 #endif
 
 	mdelay(5);
+
 
 	/*
 	 * Wait for the codec ready signal from the AC97 codec.
@@ -2959,6 +3006,7 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 	snd_cs46xx_pokeBA0(chip, BA0_ACCTL2, ACCTL_VFRM | ACCTL_ESYN | ACCTL_RSTN);
 #endif
 
+
 	/*
 	 *  Wait until we've sampled input slots 3 and 4 as valid, meaning that
 	 *  the codec is pumping ADC data across the AC-link.
@@ -2987,7 +3035,10 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 	 *  Now, assert valid frame and the slot 3 and 4 valid bits.  This will
 	 *  commense the transfer of digital audio data to the AC97 codec.
 	 */
-	snd_cs46xx_pokeBA0(chip, BA0_ACOSV, ACOSV_SLV3 | ACOSV_SLV4 | ACOSV_SLV7 | ACOSV_SLV8);
+
+	snd_cs46xx_pokeBA0(chip, BA0_ACOSV, ACOSV_SLV3 | ACOSV_SLV4 | 
+			   ACOSV_SLV7 | ACOSV_SLV8);
+
 
 	/*
 	 *  Power down the DAC and ADC.  We will power them up (if) when we need
@@ -3002,13 +3053,21 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 	/* tmp = snd_cs46xx_peekBA0(chip, BA0_CLKCR1) & ~CLKCR1_SWCE; */
 	/* snd_cs46xx_pokeBA0(chip, BA0_CLKCR1, tmp); */
 
-	/*
-         *  Reset the processor.
-         */
-	snd_cs46xx_reset(chip);
+	return 0;
+}
 
+/*
+ *  start and load DSP 
+ */
+int __devinit snd_cs46xx_start_dsp(cs46xx_t *chip)
+{	
+	unsigned int tmp;
 	/*
-         *  Download the image to the processor.
+	 *  Reset the processor.
+	 */
+	snd_cs46xx_reset(chip);
+	/*
+	 *  Download the image to the processor.
 	 */
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 #if 0
@@ -3040,7 +3099,6 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 
 	if (cs46xx_dsp_scb_and_task_init(chip) < 0)
 		return -EIO;
-	snd_printdd("[get here]\n");
 #else
 	/* old image */
 	if (snd_cs46xx_download_image(chip) < 0) {
@@ -3074,7 +3132,7 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 	 *  Enable interrupts on the part.
 	 */
 	snd_cs46xx_pokeBA0(chip, BA0_HICR, HICR_IEV | HICR_CHGM);
-
+        
 	tmp = snd_cs46xx_peek(chip, BA1_PFIE);
 	tmp &= ~0x0000f03f;
 	snd_cs46xx_poke(chip, BA1_PFIE, tmp);	/* playback interrupt enable */
@@ -3084,19 +3142,24 @@ static int snd_cs46xx_chip_init(cs46xx_t *chip, int busywait)
 	tmp |=  0x00000001;
 	snd_cs46xx_poke(chip, BA1_CIE, tmp);	/* capture interrupt enable */
 	
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+	/* set the attenuation to 0dB */ 
+	snd_cs46xx_poke(chip, (MASTERMIX_SCB_ADDR + 0xE) << 2, 0x80008000); 
+	snd_cs46xx_poke(chip, (VARIDECIMATE_SCB_ADDR + 0xE) << 2, 0x80008000);
+
+	/*
+	 * Initialize cs46xx SPDIF controller
+	 */
+
+	/* time countdown enable */
+	cs46xx_poke_via_dsp (chip,SP_ASER_COUNTDOWN, 0x80000000);
+
+	/* SPDIF input MASTER ENABLE */
+	cs46xx_poke_via_dsp (chip,SP_SPDIN_CONTROL, 0x800003ff);
+#else
 	/* set the attenuation to 0dB */ 
 	snd_cs46xx_poke(chip, BA1_PVOL, 0x80008000);
 	snd_cs46xx_poke(chip, BA1_CVOL, 0x80008000);
-
-#ifdef CONFIG_SND_CS46XX_NEW_DSP
-	/* time countdown enable */
-	cs46xx_poke_via_dsp (chip,SP_ASER_COUNTDOWN, 0x80000000);
-        
-	/* SPDIF input MASTER ENABLE */
-	cs46xx_poke_via_dsp (chip,SP_SPDIN_CONTROL, 0x800003ff);
-
-	/* mute spdif out */
-	cs46xx_dsp_disable_spdif_out(chip);
 #endif
 
 	return 0;
@@ -3175,21 +3238,16 @@ static int voyetra_setup_eapd_slot(cs46xx_t *chip)
 	valid_slots |= 0x200;
 	snd_cs46xx_pokeBA0(chip, BA0_ACOSV, valid_slots);
 
-	valid_slots = snd_cs46xx_peekBA0(chip, BA0_ACOSV2);
-	valid_slots |= 0x200;
-	snd_cs46xx_pokeBA0(chip, BA0_ACOSV2, valid_slots);
+	if ( cs46xx_wait_for_fifo(chip,1) ) {
+	  snd_printdd("FIFO is busy\n");
+	  
+	  return -EINVAL;
+	}
 
 	/*
 	 * Fill slots 12 with the correct value for the GPIO pins. 
 	 */
 	for(idx = 0x90; idx <= 0x9F; idx++) {
-
-		if ( cs46xx_wait_for_fifo(chip) ) {
-			snd_printdd("failed waiting for FIFO at addr (%02X)\n",idx);
-
-			return -EINVAL;
-		}
-
 		/*
 		 * Initialize the fifo so that bits 7 and 8 are on.
 		 *
@@ -3197,6 +3255,15 @@ static int voyetra_setup_eapd_slot(cs46xx_t *chip)
 		 * the left.  0x1800 corresponds to bits 7 and 8.
 		 */
 		snd_cs46xx_pokeBA0(chip, BA0_SERBWP, 0x1800);
+
+		/*
+		 * Wait for command to complete
+		 */
+		if ( cs46xx_wait_for_fifo(chip,200) ) {
+			snd_printdd("failed waiting for FIFO at addr (%02X)\n",idx);
+
+			return -EINVAL;
+		}
             
 		/*
 		 * Write the serial port FIFO index.
@@ -3207,14 +3274,10 @@ static int voyetra_setup_eapd_slot(cs46xx_t *chip)
 		 * Tell the serial port to load the new value into the FIFO location.
 		 */
 		snd_cs46xx_pokeBA0(chip, BA0_SERBCM, SERBCM_WRC);
-
-		/*
-		 * Wait for command to complete
-		 */
 	}
 
 	/* wait for last command to complete */
-	cs46xx_wait_for_fifo(chip);
+	cs46xx_wait_for_fifo(chip,200);
 
 	/*
 	 *  Now, if we powered up the devices, then power them back down again.
@@ -3690,7 +3753,7 @@ int __devinit snd_cs46xx_create(snd_card_t * card,
 		snd_cs46xx_free(chip);
 		return err;
 	}
-
+	
 	chip->active_ctrl(chip, -1);
 
 	*rchip = chip;

@@ -35,9 +35,17 @@
 #define CS46XX_BA1_REG_SIZE	  0x0100
 
 
-#define CS46XX_PERIOD_SIZE 2048
+
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+#define CS46XX_MIN_PERIOD_SIZE 1
+#define CS46XX_MAX_PERIOD_SIZE 1024*1024
+#else
+#define CS46XX_MIN_PERIOD_SIZE 2048
+#define CS46XX_MAX_PERIOD_SIZE 2048
+#endif
+
 #define CS46XX_FRAGS 2
-#define CS46XX_BUFFER_SIZE CS46XX_PERIOD_SIZE * CS46XX_FRAGS
+/* #define CS46XX_BUFFER_SIZE CS46XX_MAX_PERIOD_SIZE * CS46XX_FRAGS */
 
 #define SCB_NO_PARENT             0
 #define SCB_ON_PARENT_NEXT_SCB    1
@@ -100,6 +108,7 @@ int                    snd_cs46xx_download (cs46xx_t *chip,u32 *src,unsigned lon
                                             unsigned long len);
 int                    snd_cs46xx_clear_BA1(cs46xx_t *chip,unsigned long offset,unsigned long len);
 int                    cs46xx_dsp_enable_spdif_out (cs46xx_t *chip);
+int                    cs46xx_dsp_enable_spdif_hw (cs46xx_t *chip);
 int                    cs46xx_dsp_disable_spdif_out (cs46xx_t *chip);
 int                    cs46xx_dsp_enable_spdif_in (cs46xx_t *chip);
 int                    cs46xx_dsp_disable_spdif_in (cs46xx_t *chip);
@@ -199,8 +208,13 @@ int                        cs46xx_dsp_pcm_unlink (cs46xx_t * chip,pcm_channel_de
 int                        cs46xx_dsp_pcm_link (cs46xx_t * chip,pcm_channel_descriptor_t * pcm_channel);
 dsp_scb_descriptor_t *     cs46xx_add_record_source (cs46xx_t *chip,dsp_scb_descriptor_t * source,
                                                      u16 addr,char * scb_name);
-int                         cs46xx_src_unlink(cs46xx_t *chip,dsp_scb_descriptor_t * src);
-int                         cs46xx_src_link(cs46xx_t *chip,dsp_scb_descriptor_t * src);
-int                         cs46xx_iec958_pre_open (cs46xx_t *chip);
-int                         cs46xx_iec958_post_close (cs46xx_t *chip);
+int                        cs46xx_src_unlink(cs46xx_t *chip,dsp_scb_descriptor_t * src);
+int                        cs46xx_src_link(cs46xx_t *chip,dsp_scb_descriptor_t * src);
+int                        cs46xx_iec958_pre_open (cs46xx_t *chip);
+int                        cs46xx_iec958_post_close (cs46xx_t *chip);
+int                        cs46xx_dsp_pcm_channel_set_period (cs46xx_t * chip,
+							       pcm_channel_descriptor_t * pcm_channel,
+							       int period_size);
+int                        cs46xx_dsp_pcm_ostream_set_period (cs46xx_t * chip,
+							      int period_size);
 #endif /* __CS46XX_LIB_H__ */

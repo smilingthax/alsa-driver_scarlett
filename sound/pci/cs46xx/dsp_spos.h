@@ -183,5 +183,14 @@ typedef enum  {
 #define SP_SPDOUT_CONTROL 0x804D
 #define SP_SPDOUT_CSUV    0x808E
 
+static inline void cs46xx_dsp_spos_update_scb (cs46xx_t * chip,dsp_scb_descriptor_t * scb) 
+{
+	/* update nextSCB and subListPtr in SCB */
+	snd_cs46xx_poke(chip,
+			(scb->address + SCBsubListPtr) << 2,
+			(scb->sub_list_ptr->address << 0x10) |
+			(scb->next_scb_ptr->address));	
+}
+
 #endif /* __DSP_SPOS_H__ */
 #endif /* CONFIG_SND_CS46XX_NEW_DSP  */

@@ -36,20 +36,20 @@
 #define SEGTYPE_SP_COEFFICIENT          0x00000004
 
 #define DSP_SPOS_UU      0x0deadul     /* unused */
-#define DSP_SPOS_DC      0x0badul     /* dont care */
-#define DSP_SPOS_DC_DC   0x0bad0badul     /* dont care */
+#define DSP_SPOS_DC      0x0badul      /* dont care */
+#define DSP_SPOS_DC_DC   0x0bad0badul  /* dont care */
 #define DSP_SPOS_UUUU    0xdeadc0edul  /* unused */
 #define DSP_SPOS_UUHI    0xdeadul
 #define DSP_SPOS_UULO    0xc0edul
-#define DSP_SPOS_DCDC    0x0badf1d0ul /* dont care */
+#define DSP_SPOS_DCDC    0x0badf1d0ul  /* dont care */
 #define DSP_SPOS_DCDCHI  0x0badul
 #define DSP_SPOS_DCDCLO  0xf1d0ul
 
-#define DSP_MAX_TASK_NAME 60
+#define DSP_MAX_TASK_NAME   60
 #define DSP_MAX_SYMBOL_NAME 100
-#define DSP_MAX_SCB_NAME  60
-#define DSP_MAX_SCB_DESC  200
-#define DSP_MAX_TASK_DESC 50
+#define DSP_MAX_SCB_NAME    60
+#define DSP_MAX_SCB_DESC    200
+#define DSP_MAX_TASK_DESC   50
 
 #define DSP_MAX_PCM_CHANNELS 32
 #define DSP_MAX_SRC_NR       6
@@ -59,6 +59,10 @@
 #define DSP_PCM_CENTER_CHANNEL  3
 #define DSP_PCM_LFE_CHANNEL     4
 #define DSP_IEC958_CHANNEL      5
+
+#define DSP_SDPIF_STATUS_OUTPUT_ENABLED 1
+#define DSP_SDPIF_STATUS_PLAYBACK_OPEN  2
+#define DSP_SDPIF_STATUS_HW_ENABLED     4
 
 struct _dsp_module_desc_t;
 
