@@ -31,6 +31,25 @@ Note: All mixer channels are muted by default. You must use some native
       mixer program to unmute appropriate channels (for example mixer from
       alsa-utils package).
 
+Driver cannot be activated?
+===========================
+
+1) Is OSS(/Lite) driver present? - remove it
+2) Check your soundcard setup, read carefuly this install file (module
+   parameters).
+3) If you have ISA PnP soundcard, is your setup in isapnp.conf same as for
+   driver?
+4) Driver isn't still working: remake driver with:
+     ./configure --with-debug=detect; make clean; make
+   Reinsert new driver modules to kernel and look to /var/log/messages if
+   there aren't some messages. If these messages doesn't help you, send us
+   to <alsa-devel@alsa.jcu.cz> mailing list:
+	- soundcard name + chip names present on your soundcard
+	- your isapnp.conf if you have ISA PnP soundcard
+	- your conf.modules or line which you activate ALSA driver
+	- all messages from /var/log/messages which should be relevant to
+          ALSA driver
+
 Module parameters
 =================
 
