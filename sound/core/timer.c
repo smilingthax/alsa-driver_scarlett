@@ -233,8 +233,9 @@ static void snd_timer_check_master(snd_timer_instance_t *master)
  * open a timer instance
  * when opening a master, the slave id must be here given.
  */
-snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid,
-				     unsigned int slave_id)
+int snd_timer_open(snd_timer_instance_t **ti,
+		   char *owner, snd_timer_id_t *tid,
+		   unsigned int slave_id)
 {
 	snd_timer_t *timer;
 	snd_timer_instance_t *timeri = NULL;
@@ -244,7 +245,7 @@ snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid,
 		if (tid->dev_sclass <= SNDRV_TIMER_SCLASS_NONE ||
 		    tid->dev_sclass > SNDRV_TIMER_SCLASS_OSS_SEQUENCER) {
 			snd_printd("invalid slave class %i\n", tid->dev_sclass);
-			return NULL;
+			return -EINVAL;
 		}
 		down(&register_mutex);
 		timeri = snd_timer_instance_new(owner, NULL);
@@ -254,7 +255,8 @@ snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid,
 		list_add_tail(&timeri->open_list, &snd_timer_slave_list);
 		snd_timer_check_slave(timeri);
 		up(&register_mutex);
-		return timeri;
+		*ti = timeri;
+		return 0;
 	}
 
 	/* open a master instance */
@@ -269,6 +271,13 @@ snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid,
 	}
 #endif
 	if (timer) {
+		if (!list_empty(&timer->open_list_head)) {
+			timeri = (snd_timer_instance_t *)timer->open_list_head.next;
+			if (timeri->flags & SNDRV_TIMER_IFLG_EXCLUSIVE) {
+				up(&register_mutex);
+				return -EBUSY;
+			}
+		}
 		timeri = snd_timer_instance_new(owner, timer);
 		if (timeri) {
 			timeri->slave_class = tid->dev_sclass;
@@ -278,9 +287,13 @@ snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid,
 			list_add_tail(&timeri->open_list, &timer->open_list_head);
 			snd_timer_check_master(timeri);
 		}
+	} else {
+		up(&register_mutex);
+		return -ENODEV;
 	}
 	up(&register_mutex);
-	return timeri;
+	*ti = timeri;
+	return 0;
 }
 
 static int _snd_timer_stop(snd_timer_instance_t * timeri, int keep_flag, enum sndrv_timer_event event);
@@ -1316,7 +1329,7 @@ static int snd_timer_user_ginfo(struct file *file, snd_timer_ginfo_t *_ginfo)
 			ginfo.clients++;
 		}
 	} else {
-		err = -ENOENT;
+		err = -ENODEV;
 	}
 	up(&register_mutex);
 	if (err >= 0 && copy_to_user(_ginfo, &ginfo, sizeof(ginfo)))
@@ -1344,7 +1357,7 @@ static int snd_timer_user_gparams(struct file *file, snd_timer_gparams_t *_gpara
 			err = -EBUSY;
 		}
 	} else {
-		err = -ENOENT;
+		err = -ENODEV;
 	}
 	up(&register_mutex);
 	return err;
@@ -1376,7 +1389,7 @@ static int snd_timer_user_gstatus(struct file *file, snd_timer_gstatus_t *_gstat
 			gstatus.resolution_den = gstatus.resolution;
 		}
 	} else {
-		err = -ENOENT;
+		err = -ENODEV;
 	}
 	up(&register_mutex);
 	if (err >= 0 && copy_from_user(_gstatus, &gstatus, sizeof(gstatus)))
@@ -1389,6 +1402,7 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselec
 	snd_timer_user_t *tu;
 	snd_timer_select_t tselect;
 	char str[32];
+	int err;
 	
 	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
 	if (tu->timeri)
@@ -1398,8 +1412,8 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselec
 	sprintf(str, "application %i", current->pid);
 	if (tselect.id.dev_class != SNDRV_TIMER_CLASS_SLAVE)
 		tselect.id.dev_sclass = SNDRV_TIMER_SCLASS_APPLICATION;
-	if ((tu->timeri = snd_timer_open(str, &tselect.id, current->pid)) == NULL)
-		return -ENODEV;
+	if ((err = snd_timer_open(&tu->timeri, str, &tselect.id, current->pid)) < 0)
+		return err;
 
 	if (tu->queue) {
 		kfree(tu->queue);
@@ -1496,6 +1510,11 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 		tu->timeri->flags |= SNDRV_TIMER_IFLG_AUTO;
 	} else {
 		tu->timeri->flags &= ~SNDRV_TIMER_IFLG_AUTO;
+	}
+	if (params.flags & SNDRV_TIMER_PSFLG_EXCLUSIVE) {
+		tu->timeri->flags |= SNDRV_TIMER_IFLG_EXCLUSIVE;
+	} else {
+		tu->timeri->flags &= ~SNDRV_TIMER_IFLG_EXCLUSIVE;
 	}
 	spin_unlock_irqrestore(&t->lock, flags);
 	if (params.queue_size > 0 && (unsigned int)tu->queue_size != params.queue_size) {

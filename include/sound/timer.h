@@ -59,6 +59,7 @@ typedef struct sndrv_timer_tread snd_timer_tread_t;
 #define SNDRV_TIMER_IFLG_AUTO	  0x00000008	/* auto restart */
 #define SNDRV_TIMER_IFLG_FAST	  0x00000010	/* fast callback (do not use tasklet) */
 #define SNDRV_TIMER_IFLG_CALLBACK 0x00000020	/* timer callback is active */
+#define SNDRV_TIMER_IFLG_EXCLUSIVE 0x00000040	/* exclusive owner - no more instances */
 
 #define SNDRV_TIMER_FLG_CHANGE	0x00000001
 #define SNDRV_TIMER_FLG_RESCHED	0x00000002	/* need reschedule */
@@ -141,7 +142,7 @@ extern int snd_timer_global_free(snd_timer_t *timer);
 extern int snd_timer_global_register(snd_timer_t *timer);
 extern int snd_timer_global_unregister(snd_timer_t *timer);
 
-extern snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid, unsigned int slave_id);
+extern int snd_timer_open(snd_timer_instance_t ** ti, char *owner, snd_timer_id_t *tid, unsigned int slave_id);
 extern int snd_timer_close(snd_timer_instance_t * timeri);
 extern unsigned long snd_timer_resolution(snd_timer_instance_t * timeri);
 extern int snd_timer_start(snd_timer_instance_t * timeri, unsigned int ticks);

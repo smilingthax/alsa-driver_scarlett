@@ -262,6 +262,7 @@ int snd_seq_timer_open(queue_t *q)
 	snd_timer_instance_t *t;
 	seq_timer_t *tmr;
 	char str[32];
+	int err;
 
 	tmr = q->timer;
 	snd_assert(tmr != NULL, return -EINVAL);
@@ -272,8 +273,8 @@ int snd_seq_timer_open(queue_t *q)
 		return -EINVAL;
 	if (tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE)
 		tmr->alsa_id.dev_sclass = SNDRV_TIMER_SCLASS_SEQUENCER;
-	t = snd_timer_open(str, &tmr->alsa_id, q->queue);
-	if (t == NULL && tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE) {
+	err = snd_timer_open(&t, str, &tmr->alsa_id, q->queue);
+	if (err < 0 && tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE) {
 		if (tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_GLOBAL ||
 		    tmr->alsa_id.device != SNDRV_TIMER_GLOBAL_SYSTEM) {
 			snd_timer_id_t tid;
@@ -282,11 +283,11 @@ int snd_seq_timer_open(queue_t *q)
 			tid.dev_sclass = SNDRV_TIMER_SCLASS_SEQUENCER;
 			tid.card = -1;
 			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
-			t = snd_timer_open(str, &tid, q->queue);
+			err = snd_timer_open(&t, str, &tid, q->queue);
 		}
-		if (t == NULL) {
+		if (err < 0) {
 			snd_printk(KERN_ERR "seq fatal error: cannot create timer\n");
-			return -ENODEV;
+			return err;
 		}
 	}
 	t->callback = snd_seq_timer_interrupt;
