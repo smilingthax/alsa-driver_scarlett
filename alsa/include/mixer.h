@@ -175,7 +175,7 @@ extern int snd_mixer_group_remove(snd_kmixer_t * mixer,
 					snd_kmixer_group_t * group);
 extern int snd_mixer_group_rename(snd_kmixer_t * mixer,
 					char *name, int index,
-					char *nname, int nindex);
+					char *nname, int nindex, int oss_dev);
 extern snd_kmixer_group_t *snd_mixer_group_new(snd_kmixer_t * mixer,
 					snd_kmixer_group_new_t * ngroup);
 extern int snd_mixer_group_change(snd_kmixer_t * mixer,
