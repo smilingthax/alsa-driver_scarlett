@@ -71,7 +71,7 @@ include_file asound.h
 include_file asoundid.h
 include_file asequencer.h
 copy_dir kernel
-copy_dir kernel/pcm1
+copy_dir kernel/plugin
 copy_dir kernel/seq
 copy_dir kernel/seq/instr
 copy_dir kernel/seq/oss
@@ -85,5 +85,4 @@ copy_dir lowlevel/gus
 copy_dir lowlevel/sb
 copy_dir cards
 copy_dir cards/hal2
-copy_dir detect
 popd > /dev/null

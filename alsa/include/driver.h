@@ -54,6 +54,8 @@
 #endif
 #if LinuxVersionCode(2, 2, 0) <= LINUX_VERSION_CODE
 #define LINUX_2_2
+#define __init
+#define __exit
 #endif
 #if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
 #define LINUX_2_3
