@@ -111,18 +111,16 @@
 #include <linux/proc_fs.h>
 #include <linux/poll.h>
 
-#ifdef CONFIG_ISAPNP
-#ifdef CONFIG_ISAPNP_KERNEL
+#if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
+#if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LinuxVersionCode(2, 3, 30) <= LINUX_VERSION_CODE && !defined(ALSA_BUILD))
 #include <linux/isapnp.h>
 #define isapnp_dev pci_dev
 #define isapnp_card pci_bus
 #else
 #include "isapnp.h"
 #endif
-#ifdef ALSA_BUILD
 #undef __ISAPNP__
 #define __ISAPNP__
-#endif
 #endif
 
 #ifndef ALSA_BUILD
