@@ -170,7 +170,7 @@ case "$1" in
   audiopci)
     basic
     insert snd-ac97-codec.o
-    insert snd-es1370.o
+    insert snd-ens1370.o
     insert snd-audiopci.o
     restore es1370.conf
     ;;
