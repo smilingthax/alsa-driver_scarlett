@@ -119,76 +119,95 @@ typedef struct _snd_pcm_ops {
 					 SND_PCM_RATE_88200|SND_PCM_RATE_96000)
 #define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
 					 SND_PCM_RATE_192000)
+#define SND_PCM_FMTBIT_S8		(1 << SND_PCM_FORMAT_S8)
+#define SND_PCM_FMTBIT_U8		(1 << SND_PCM_FORMAT_U8)
+#define SND_PCM_FMTBIT_S16_LE		(1 << SND_PCM_FORMAT_S16_LE)
+#define SND_PCM_FMTBIT_S16_BE		(1 << SND_PCM_FORMAT_S16_BE)
+#define SND_PCM_FMTBIT_U16_LE		(1 << SND_PCM_FORMAT_U16_LE)
+#define SND_PCM_FMTBIT_U16_BE		(1 << SND_PCM_FORMAT_U16_BE)
+#define SND_PCM_FMTBIT_S24_LE		(1 << SND_PCM_FORMAT_S24_LE)
+#define SND_PCM_FMTBIT_S24_BE		(1 << SND_PCM_FORMAT_S24_BE)
+#define SND_PCM_FMTBIT_U24_LE		(1 << SND_PCM_FORMAT_U24_LE)
+#define SND_PCM_FMTBIT_U24_BE		(1 << SND_PCM_FORMAT_U24_BE)
+#define SND_PCM_FMTBIT_S32_LE		(1 << SND_PCM_FORMAT_S32_LE)
+#define SND_PCM_FMTBIT_S32_BE		(1 << SND_PCM_FORMAT_S32_BE)
+#define SND_PCM_FMTBIT_U32_LE		(1 << SND_PCM_FORMAT_U32_LE)
+#define SND_PCM_FMTBIT_U32_BE		(1 << SND_PCM_FORMAT_U32_BE)
+#define SND_PCM_FMTBIT_FLOAT_LE		(1 << SND_PCM_FORMAT_FLOAT_LE)
+#define SND_PCM_FMTBIT_FLOAT_BE		(1 << SND_PCM_FORMAT_FLOAT_BE)
+#define SND_PCM_FMTBIT_FLOAT64_LE	(1 << SND_PCM_FORMAT_FLOAT64_LE)
+#define SND_PCM_FMTBIT_FLOAT64_BE	(1 << SND_PCM_FORMAT_FLOAT64_BE)
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME_LE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_LE)
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME_BE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_BE)
+#define SND_PCM_FMTBIT_MU_LAW		(1 << SND_PCM_FORMAT_MU_LAW)
+#define SND_PCM_FMTBIT_A_LAW		(1 << SND_PCM_FORMAT_A_LAW)
+#define SND_PCM_FMTBIT_IMA_ADPCM	(1 << SND_PCM_FORMAT_IMA_ADPCM)
+#define SND_PCM_FMTBIT_MPEG		(1 << SND_PCM_FORMAT_MPEG)
+#define SND_PCM_FMTBIT_GSM		(1 << SND_PCM_FORMAT_GSM)
+#define SND_PCM_FMTBIT_SPECIAL		(1 << SND_PCM_FORMAT_SPECIAL)
+
+#ifdef SND_LITTLE_ENDIAN
+#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_LE
+#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_LE
+#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_LE
+#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_LE
+#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_LE
+#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_LE
+#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_LE
+#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_LE
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_LE
+#endif
+#ifdef SND_BIG_ENDIAN
+#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_BE
+#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_BE
+#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_BE
+#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_BE
+#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_BE
+#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_BE
+#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_BE
+#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_BE
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_BE
+#endif
+
 struct _snd_pcm_file {
 	snd_pcm_substream_t * substream;
 	struct _snd_pcm_file * next;
 };
 
-typedef struct {
-	unsigned int min;
-	unsigned int max;
-	unsigned int openmin:1,
-		openmax:1,
-		real:1,
-		empty:1;
-} interval_t;
+typedef struct _snd_pcm_hw_rule snd_pcm_hw_rule_t;
 
-#define VAR_CHANNELS		0
-#define VAR_RATE		1
-#define VAR_FRAGMENT_LENGTH	2
-#define VAR_FRAGMENTS		3
-#define VAR_BUFFER_LENGTH	4
-#define VAR_LAST_INFO		4
+typedef int (*snd_pcm_hw_rule_func_t)(snd_pcm_hw_params_t *params,
+				      snd_pcm_hw_rule_t *rule);
 
-#define VAR_SAMPLE_BITS		5
-#define VAR_FRAME_BITS		6
-#define VAR_FRAGMENT_SIZE	7
-#define VAR_FRAGMENT_BYTES	8
-#define VAR_BUFFER_SIZE		9
-#define VAR_BUFFER_BYTES	10
-#define VAR_LAST_INTERVAL	10
-
-#define VAR_ACCESS		11
-#define VAR_FORMAT		12
-#define VAR_SUBFORMAT		13
-#define VAR_LAST		13
-
-typedef struct _snd_pcm_hw_infok {
-	unsigned int flags;
-	unsigned int access_mask;
-	unsigned int format_mask;
-	unsigned int subformat_mask;
-	interval_t intervals[VAR_LAST_INTERVAL + 1];
-	unsigned int info;		/* R: Info for returned setup */
-	unsigned int msbits;		/* R: used most significant bits */
-	unsigned int rate_num;		/* R: rate numerator */
-	unsigned int rate_den;		/* R: rate denominator */
-	size_t fifo_size;		/* R: chip FIFO size in frames */
-	unsigned int dig_groups;	/* R: number of channel groups for digital setup */
-} snd_pcm_hw_infok_t;
-
-typedef struct _snd_pcm_hw_infoc_constr snd_pcm_hw_infoc_constr_t;
-
-typedef int (*snd_pcm_hw_infoc_func_t)(snd_pcm_hw_infok_t *info,
-				       snd_pcm_hw_infoc_constr_t *constr);
-
-struct _snd_pcm_hw_infoc_constr {
+struct _snd_pcm_hw_rule {
 	unsigned int cond;
-	snd_pcm_hw_infoc_func_t func;
-	unsigned int var;
+	snd_pcm_hw_rule_func_t func;
+	int var;
 	int deps[4];
 	void *private;
 };
 
-typedef struct _snd_pcm_hw_infoc {
-	unsigned int access_mask;
-	unsigned int format_mask;
-	unsigned int subformat_mask;
-	interval_t intervals[VAR_LAST_INTERVAL + 1];
-	unsigned int constr_num;
-	unsigned int constr_all;
-	snd_pcm_hw_infoc_constr_t *constrs;
-} snd_pcm_hw_infoc_t;
+typedef struct _snd_pcm_hw_constraints {
+	unsigned int masks[SND_PCM_HW_PARAM_LAST_MASK - 
+			   SND_PCM_HW_PARAM_FIRST_MASK + 1];
+	interval_t intervals[SND_PCM_HW_PARAM_LAST_INTERVAL -
+			     SND_PCM_HW_PARAM_FIRST_INTERVAL + 1];
+	unsigned int rules_num;
+	unsigned int rules_all;
+	snd_pcm_hw_rule_t *rules;
+} snd_pcm_hw_constraints_t;
+
+static inline unsigned int *constrs_mask(snd_pcm_hw_constraints_t *constrs,
+					unsigned int var)
+{
+	return &constrs->masks[var - SND_PCM_HW_PARAM_FIRST_MASK];
+}
+
+static inline interval_t *constrs_interval(snd_pcm_hw_constraints_t *constrs,
+					  unsigned int var)
+{
+	return &constrs->intervals[var - SND_PCM_HW_PARAM_FIRST_INTERVAL];
+}
 
 typedef struct {
 	unsigned int num;
@@ -203,18 +222,18 @@ typedef struct {
 typedef struct {
 	int nrats;
 	ratnum_t *rats;
-} snd_pcm_hw_infoc_ratnums_t;
+} snd_pcm_hw_constraint_ratnums_t;
 
 typedef struct {
 	int nrats;
 	ratden_t *rats;
-} snd_pcm_hw_infoc_ratdens_t;
+} snd_pcm_hw_constraint_ratdens_t;
 
 typedef struct {
 	unsigned int count;
 	unsigned int *list;
 	unsigned int mask;
-} snd_pcm_hw_infoc_list_t;
+} snd_pcm_hw_constraint_list_t;
 
 struct _snd_pcm_runtime {
 	/* -- Status -- */
@@ -272,7 +291,7 @@ struct _snd_pcm_runtime {
 
 	/* -- hardware description -- */
 	snd_pcm_hardware_t hw;
-	snd_pcm_hw_infoc_t infoc;
+	snd_pcm_hw_constraints_t hw_constraints;
 
 	/* -- interrupt callbacks -- */
 	void (*transfer_ack_begin)(snd_pcm_substream_t *substream);
@@ -545,13 +564,62 @@ static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream,
 	substream->runtime->trigger_master = master;
 }
 
+static inline int is_mask(int var)
+{
+	return var >= SND_PCM_HW_PARAM_FIRST_MASK &&
+		var <= SND_PCM_HW_PARAM_LAST_MASK;
+}
+
+static inline int is_interval(int var)
+{
+	return var >= SND_PCM_HW_PARAM_FIRST_INTERVAL &&
+		var <= SND_PCM_HW_PARAM_LAST_INTERVAL;
+}
+
+typedef unsigned int mask_t;
+#define MASK_MAX 32
+
+static inline mask_t *params_mask(snd_pcm_hw_params_t *params,
+				  unsigned int var)
+{
+	return (mask_t*)&params->masks[var - SND_PCM_HW_PARAM_FIRST_MASK];
+}
+
+static inline interval_t *params_interval(snd_pcm_hw_params_t *params,
+					  unsigned int var)
+{
+	return &params->intervals[var - SND_PCM_HW_PARAM_FIRST_INTERVAL];
+}
+
+static inline const mask_t *params_mask_c(const snd_pcm_hw_params_t *params,
+					  unsigned int var)
+{
+	return (const mask_t *)params_mask((snd_pcm_hw_params_t*) params, var);
+}
+
+static inline const interval_t *params_interval_c(const snd_pcm_hw_params_t *params,
+						  unsigned int var)
+{
+	return (const interval_t *)params_interval((snd_pcm_hw_params_t*) params, var);
+}
+
+#define params_access(p) (ffs(*params_mask((p), SND_PCM_HW_PARAM_ACCESS)) - 1)
+#define params_format(p) (ffs(*params_mask((p), SND_PCM_HW_PARAM_FORMAT)) - 1)
+#define params_subformat(p) (ffs(*params_mask((p), SND_PCM_HW_PARAM_SUBFORMAT)) - 1)
+#define params_channels(p) params_interval((p), SND_PCM_HW_PARAM_CHANNELS)->min
+#define params_rate(p) params_interval((p), SND_PCM_HW_PARAM_RATE)->min
+#define params_fragment_size(p) params_interval((p), SND_PCM_HW_PARAM_FRAGMENT_SIZE)->min
+#define params_fragments(p) params_interval((p), SND_PCM_HW_PARAM_FRAGMENTS)->min
+#define params_buffer_size(p) params_interval((p), SND_PCM_HW_PARAM_BUFFER_SIZE)->min
+
+
 extern int interval_refine(interval_t *i, const interval_t *v);
-extern int interval_mul(interval_t *a, interval_t *b, interval_t *c);
-extern int interval_div(interval_t *a, interval_t *b, interval_t *c);
-extern int interval_mul1(interval_t *a, unsigned int k,
-			 interval_t *b, interval_t *c);
-extern int interval_div1(interval_t *a, unsigned int k,
-			 interval_t *b, interval_t *c);
+extern int interval_mul(interval_t *a, const interval_t *b, const interval_t *c);
+extern int interval_div(interval_t *a, const interval_t *b, const interval_t *c);
+extern int interval_muldivk(interval_t *a, unsigned int k,
+			    const interval_t *b, const interval_t *c);
+extern int interval_mulkdiv(interval_t *a, unsigned int k,
+			    const interval_t *b, const interval_t *c);
 extern int interval_list(interval_t *i, 
 			 size_t count, unsigned int *list, unsigned int mask);
 extern int interval_step(interval_t *i, unsigned int min, unsigned int step);
@@ -562,33 +630,45 @@ extern int interval_ratden(interval_t *i,
 			   unsigned int rats_count, ratden_t *rats,
 			   unsigned int *nump, unsigned int *denp);
 
-extern snd_pcm_hw_infok_t snd_pcm_hw_infok_any;
-extern int snd_pcm_hw_infok(snd_pcm_substream_t *substream,
-			    snd_pcm_hw_infok_t *info);
+extern int snd_pcm_hw_params_any(snd_pcm_substream_t *substream,
+				 snd_pcm_hw_params_t *params);
+extern int snd_pcm_hw_params_first(snd_pcm_substream_t *substream, 
+				   snd_pcm_hw_params_t *params, unsigned int var);
+extern int snd_pcm_hw_params_last(snd_pcm_substream_t *substream, 
+				  snd_pcm_hw_params_t *params, unsigned int var);
+extern int snd_pcm_hw_params_near(snd_pcm_substream_t *substream, 
+				  snd_pcm_hw_params_t *params,
+				  unsigned int var, unsigned int val);
+extern int snd_pcm_hw_params_choose(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
 
-extern int snd_pcm_hw_infoc_init(snd_pcm_substream_t *substream);
-extern int snd_pcm_hw_infoc_complete(snd_pcm_substream_t *substream);
+extern int snd_pcm_hw_refine(snd_pcm_substream_t *substream,
+			     snd_pcm_hw_params_t *params);
 
-extern int snd_pcm_hw_infoc_minmax(snd_pcm_runtime_t *runtime, unsigned int var,
+extern int snd_pcm_hw_constraints_init(snd_pcm_substream_t *substream);
+extern int snd_pcm_hw_constraints_complete(snd_pcm_substream_t *substream);
+
+extern int snd_pcm_hw_constraint_mask(snd_pcm_runtime_t *runtime, unsigned int var,
+				      unsigned int mask);
+extern int snd_pcm_hw_constraint_minmax(snd_pcm_runtime_t *runtime, unsigned int var,
 				   unsigned int min, unsigned int max);
-extern int snd_pcm_hw_infoc_list(snd_pcm_runtime_t *runtime, 
+extern int snd_pcm_hw_constraint_list(snd_pcm_runtime_t *runtime, 
 				 unsigned int cond,
 				 unsigned int var,
-				 snd_pcm_hw_infoc_list_t *l);
-extern int snd_pcm_hw_infoc_ratnums(snd_pcm_runtime_t *runtime, 
+				 snd_pcm_hw_constraint_list_t *l);
+extern int snd_pcm_hw_constraint_ratnums(snd_pcm_runtime_t *runtime, 
 				    unsigned int cond,
-				    snd_pcm_hw_infoc_ratnums_t *r);
-extern int snd_pcm_hw_infoc_ratdens(snd_pcm_runtime_t *runtime, 
+				    snd_pcm_hw_constraint_ratnums_t *r);
+extern int snd_pcm_hw_constraint_ratdens(snd_pcm_runtime_t *runtime, 
 				    unsigned int cond,
-				    snd_pcm_hw_infoc_ratdens_t *r);
-extern int snd_pcm_hw_infoc_msbits(snd_pcm_runtime_t *runtime, 
+				    snd_pcm_hw_constraint_ratdens_t *r);
+extern int snd_pcm_hw_constraint_msbits(snd_pcm_runtime_t *runtime, 
 				   unsigned int cond,
 				   unsigned int width,
 				   unsigned int msbits);
-extern int snd_pcm_hw_infoc_add(snd_pcm_runtime_t *runtime,
+extern int snd_pcm_hw_rule_add(snd_pcm_runtime_t *runtime,
 				unsigned int cond,
-				unsigned int var,
-				snd_pcm_hw_infoc_func_t func, void *private,
+				int var,
+				snd_pcm_hw_rule_func_t func, void *private,
 				int dep, ...);
 
 extern int snd_pcm_format_signed(int format);

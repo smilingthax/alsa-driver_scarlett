@@ -388,15 +388,6 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_ACCESS_RW_NONINTERLEAVED	4 /* readn/writen */
 #define SND_PCM_ACCESS_LAST			4
 
-#define SND_PCM_ACCBIT_MMAP_INTERLEAVED	(1 << SND_PCM_ACCESS_MMAP_INTERLEAVED)
-#define SND_PCM_ACCBIT_MMAP_NONINTERLEAVED (1 << SND_PCM_ACCESS_MMAP_NONINTERLEAVED)
-#define SND_PCM_ACCBIT_MMAP_COMPLEX	(1 << SND_PCM_ACCESS_MMAP_COMPLEX)
-#define SND_PCM_ACCBIT_RW_INTERLEAVED	(1 << SND_PCM_ACCESS_RW_INTERLEAVED)
-#define SND_PCM_ACCBIT_RW_NONINTERLEAVED (1 << SND_PCM_ACCESS_RW_NONINTERLEAVED)
-#define SND_PCM_ACCBIT_MMAP	(SND_PCM_ACCBIT_MMAP_INTERLEAVED | \
-				 SND_PCM_ACCBIT_MMAP_NONINTERLEAVED | \
-				 SND_PCM_ACCBIT_MMAP_COMPLEX)
-
 #define SND_PCM_FORMAT_S8		0
 #define SND_PCM_FORMAT_U8		1
 #define SND_PCM_FORMAT_S16_LE		2
@@ -448,60 +439,8 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_FORMAT_IEC958_SUBFRAME	SND_PCM_FORMAT_IEC958_SUBFRAME_BE
 #endif
 
-#define SND_PCM_FMTBIT_S8		(1 << SND_PCM_FORMAT_S8)
-#define SND_PCM_FMTBIT_U8		(1 << SND_PCM_FORMAT_U8)
-#define SND_PCM_FMTBIT_S16_LE		(1 << SND_PCM_FORMAT_S16_LE)
-#define SND_PCM_FMTBIT_S16_BE		(1 << SND_PCM_FORMAT_S16_BE)
-#define SND_PCM_FMTBIT_U16_LE		(1 << SND_PCM_FORMAT_U16_LE)
-#define SND_PCM_FMTBIT_U16_BE		(1 << SND_PCM_FORMAT_U16_BE)
-#define SND_PCM_FMTBIT_S24_LE		(1 << SND_PCM_FORMAT_S24_LE)
-#define SND_PCM_FMTBIT_S24_BE		(1 << SND_PCM_FORMAT_S24_BE)
-#define SND_PCM_FMTBIT_U24_LE		(1 << SND_PCM_FORMAT_U24_LE)
-#define SND_PCM_FMTBIT_U24_BE		(1 << SND_PCM_FORMAT_U24_BE)
-#define SND_PCM_FMTBIT_S32_LE		(1 << SND_PCM_FORMAT_S32_LE)
-#define SND_PCM_FMTBIT_S32_BE		(1 << SND_PCM_FORMAT_S32_BE)
-#define SND_PCM_FMTBIT_U32_LE		(1 << SND_PCM_FORMAT_U32_LE)
-#define SND_PCM_FMTBIT_U32_BE		(1 << SND_PCM_FORMAT_U32_BE)
-#define SND_PCM_FMTBIT_FLOAT_LE		(1 << SND_PCM_FORMAT_FLOAT_LE)
-#define SND_PCM_FMTBIT_FLOAT_BE		(1 << SND_PCM_FORMAT_FLOAT_BE)
-#define SND_PCM_FMTBIT_FLOAT64_LE	(1 << SND_PCM_FORMAT_FLOAT64_LE)
-#define SND_PCM_FMTBIT_FLOAT64_BE	(1 << SND_PCM_FORMAT_FLOAT64_BE)
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME_LE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_LE)
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME_BE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_BE)
-#define SND_PCM_FMTBIT_MU_LAW		(1 << SND_PCM_FORMAT_MU_LAW)
-#define SND_PCM_FMTBIT_A_LAW		(1 << SND_PCM_FORMAT_A_LAW)
-#define SND_PCM_FMTBIT_IMA_ADPCM	(1 << SND_PCM_FORMAT_IMA_ADPCM)
-#define SND_PCM_FMTBIT_MPEG		(1 << SND_PCM_FORMAT_MPEG)
-#define SND_PCM_FMTBIT_GSM		(1 << SND_PCM_FORMAT_GSM)
-#define SND_PCM_FMTBIT_SPECIAL		(1 << SND_PCM_FORMAT_SPECIAL)
-
-#ifdef SND_LITTLE_ENDIAN
-#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_LE
-#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_LE
-#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_LE
-#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_LE
-#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_LE
-#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_LE
-#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_LE
-#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_LE
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_LE
-#endif
-#ifdef SND_BIG_ENDIAN
-#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_BE
-#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_BE
-#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_BE
-#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_BE
-#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_BE
-#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_BE
-#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_BE
-#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_BE
-#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_BE
-#endif
-
 #define SND_PCM_SUBFORMAT_STD		0
 #define SND_PCM_SUBFORMAT_LAST		0
-
-#define SND_PCM_SUBFMTBIT_STD		(1<<SND_PCM_SUBFORMAT_STD)
 
 #define SND_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
 #define SND_PCM_INFO_MMAP_VALID		0x00000002	/* fragment data are valid during transfer */
@@ -546,8 +485,6 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_DIG_NONE		(-1)
 #define SND_PCM_DIG_AES_IEC958C		0	/* consumer mode */
 #define SND_PCM_DIG_AES_IEC958P		1	/* professional mode */
-#define SND_PCM_DIGBIT_AES_IEC958C	(1<<0)	/* consumer mode */
-#define SND_PCM_DIGBIT_AES_IEC958P	(1<<1)	/* professional mode */
 
 /* AES/IEC958 channel status bits */
 #define SND_PCM_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
@@ -666,9 +603,9 @@ typedef union _snd_pcm_digital {
 	char reserved[256];
 } snd_pcm_digital_t;
 
-#define SND_PCM_DIG_PARBIT_GROUP	(1<<0)
-#define SND_PCM_DIG_PARBIT_TYPE		(1<<1)
-#define SND_PCM_DIG_PARBIT_VALUE	(1<<2)	/* data integrity error */
+#define SND_PCM_DIG_PARAM_GROUP		0
+#define SND_PCM_DIG_PARAM_TYPE		1
+#define SND_PCM_DIG_PARAM_VALUE		2	/* data integrity error */
 
 typedef struct _snd_pcm_dig_info {
 	int group;			/* W : channels group */
@@ -688,70 +625,53 @@ typedef struct _snd_pcm_dig_params {
 	char reserved[64];
 } snd_pcm_dig_params_t;
 
-#define SND_PCM_HW_INFO_ACCESS		0
-#define SND_PCM_HW_INFO_FORMAT		1
-#define SND_PCM_HW_INFO_SUBFORMAT	2
-#define SND_PCM_HW_INFO_CHANNELS	3
-#define SND_PCM_HW_INFO_RATE		4
-#define SND_PCM_HW_INFO_FRAGMENT_LENGTH 5
-#define SND_PCM_HW_INFO_FRAGMENTS	6
-#define SND_PCM_HW_INFO_BUFFER_LENGTH	7
-#define SND_PCM_HW_INFO_LAST		7
+#define SND_PCM_HW_PARAM_FIRST_MASK		0
+#define SND_PCM_HW_PARAM_ACCESS			0
+#define SND_PCM_HW_PARAM_FORMAT			1
+#define SND_PCM_HW_PARAM_SUBFORMAT		2
+#define SND_PCM_HW_PARAM_LAST_MASK		2
 
-#define SND_PCM_HW_PARAM_ACCESS		SND_PCM_HW_INFO_ACCESS
-#define SND_PCM_HW_PARAM_FORMAT		SND_PCM_HW_INFO_FORMAT
-#define SND_PCM_HW_PARAM_SUBFORMAT	SND_PCM_HW_INFO_SUBFORMAT
-#define SND_PCM_HW_PARAM_CHANNELS	SND_PCM_HW_INFO_CHANNELS
-#define SND_PCM_HW_PARAM_RATE		SND_PCM_HW_INFO_RATE
-#define SND_PCM_HW_PARAM_FRAGMENT_SIZE	5
-#define SND_PCM_HW_PARAM_FRAGMENTS	SND_PCM_HW_INFO_FRAGMENTS
-#define SND_PCM_HW_PARAM_LAST		6
+#define SND_PCM_HW_PARAM_FIRST_INTERVAL		3
+#define SND_PCM_HW_PARAM_CHANNELS		3
+#define SND_PCM_HW_PARAM_RATE			4
+#define SND_PCM_HW_PARAM_FRAGMENT_LENGTH	5
+#define SND_PCM_HW_PARAM_FRAGMENT_SIZE		6
+#define SND_PCM_HW_PARAM_FRAGMENTS		7
+#define SND_PCM_HW_PARAM_BUFFER_LENGTH		8
+#define SND_PCM_HW_PARAM_BUFFER_SIZE		9
+#define SND_PCM_HW_PARAM_LAST_USER_INTERVAL	9
 
-#define SND_PCM_HW_PARBIT_ACCESS	(1<<SND_PCM_HW_PARAM_ACCESS)
-#define SND_PCM_HW_PARBIT_FORMAT	(1<<SND_PCM_HW_PARAM_FORMAT)
-#define SND_PCM_HW_PARBIT_SUBFORMAT	(1<<SND_PCM_HW_PARAM_SUBFORMAT)
-#define SND_PCM_HW_PARBIT_CHANNELS	(1<<SND_PCM_HW_PARAM_CHANNELS)
-#define SND_PCM_HW_PARBIT_RATE		(1<<SND_PCM_HW_PARAM_RATE)
-#define SND_PCM_HW_PARBIT_FRAGMENT_SIZE (1<<SND_PCM_HW_PARAM_FRAGMENT_SIZE)
-#define SND_PCM_HW_PARBIT_FRAGMENTS	(1<<SND_PCM_HW_PARAM_FRAGMENTS)
+#define SND_PCM_HW_PARAM_SAMPLE_BITS		10
+#define SND_PCM_HW_PARAM_FRAME_BITS		11
+#define SND_PCM_HW_PARAM_FRAGMENT_BYTES		12
+#define SND_PCM_HW_PARAM_BUFFER_BYTES		13
+#define SND_PCM_HW_PARAM_LAST_INTERVAL		13
+#define SND_PCM_HW_PARAM_LAST			13
 
-#define SND_PCM_HW_INFO_RUNTIME		(1<<0)
+#define SND_PCM_HW_PARAMS_RUNTIME		(1<<0)
 
-typedef struct _snd_pcm_hw_info {
-	unsigned int flags;             /* SND_PCM_HW_INFO_* */
-	unsigned int access_mask;	/* RW: access mask */
-	unsigned int format_mask;	/* RW: format mask */
-	unsigned int subformat_mask;	/* RW: subformat mask */
-	unsigned int channels_min;	/* RW: min channels */
-	unsigned int channels_max;	/* RW: max channels */
-	unsigned int rate_min;		/* RW: min rate */
-	unsigned int rate_max;		/* RW: max rate */
-	unsigned int fragment_length_min; /* RW: min fragment duration (us) */
-	unsigned int fragment_length_max; /* RW: max fragment duration (us) */
-	unsigned int fragments_min;	/* RW: min fragments */
-	unsigned int fragments_max;	/* RW: max fragments */
-	unsigned int buffer_length_min;	/* RW: min buffer duration (us) */
-	unsigned int buffer_length_max;	/* RW: max buffer duration (us) */
-	/* The following fields are filled only when applicable to 
-	   all params combinations */
-	unsigned int info;		/* R: Info for returned setup */
+typedef struct _interval {
+	unsigned int min, max;
+	unsigned int openmin:1,
+		     openmax:1,
+		     real:1,
+		     empty:1;
+} interval_t;
+
+typedef struct _snd_pcm_hw_params {
+	unsigned int flags;
+	unsigned int masks[SND_PCM_HW_PARAM_LAST_MASK - 
+			   SND_PCM_HW_PARAM_FIRST_MASK + 1];
+	interval_t intervals[SND_PCM_HW_PARAM_LAST_INTERVAL -
+			     SND_PCM_HW_PARAM_FIRST_INTERVAL + 1];
+	unsigned int appl_cmask;
+	unsigned int hw_cmask;
+	unsigned int info;		/* R: Info flags for returned setup */
 	unsigned int msbits;		/* R: used most significant bits */
 	unsigned int rate_num;		/* R: rate numerator */
 	unsigned int rate_den;		/* R: rate denominator */
 	size_t fifo_size;		/* R: chip FIFO size in frames */
 	unsigned int dig_groups;	/* R: number of channel groups for digital setup */
-	char reserved[64];
-} snd_pcm_hw_info_t;
-
-typedef struct _snd_pcm_hw_params {
-	unsigned int access;		/* W: access mode */
-	unsigned int format;		/* W: SND_PCM_FORMAT_* */
-	unsigned int subformat;		/* W: subformat */
-	unsigned int channels;		/* W: channels */
-	unsigned int rate;		/* W: rate in Hz */
-	size_t fragment_size;		/* W: fragment size */
-	unsigned int fragments;		/* W: fragments */
-	unsigned int fail_mask;		/* R: failure locations */
 	char reserved[64];
 } snd_pcm_hw_params_t;
 
@@ -763,14 +683,6 @@ typedef struct _snd_pcm_hw_params {
 #define SND_PCM_SW_PARAM_XRUN_MODE	5
 #define SND_PCM_SW_PARAM_TIME		6
 #define SND_PCM_SW_PARAM_LAST		6
-
-#define SND_PCM_SW_PARBIT_START_MODE	(1<<SND_PCM_SW_PARAM_START_MODE)
-#define SND_PCM_SW_PARBIT_READY_MODE	(1<<SND_PCM_SW_PARAM_READY_MODE)
-#define SND_PCM_SW_PARBIT_AVAIL_MIN	(1<<SND_PCM_SW_PARAM_AVAIL_MIN)
-#define SND_PCM_SW_PARBIT_XFER_MIN	(1<<SND_PCM_SW_PARAM_XFER_MIN)
-#define SND_PCM_SW_PARBIT_XFER_ALIGN	(1<<SND_PCM_SW_PARAM_XFER_ALIGN)
-#define SND_PCM_SW_PARBIT_XRUN_MODE	(1<<SND_PCM_SW_PARAM_XRUN_MODE)
-#define SND_PCM_SW_PARBIT_TIME		(1<<SND_PCM_SW_PARAM_TIME)
 
 typedef struct _snd_pcm_sw_params {
 	unsigned int start_mode;	/* RW: start mode */
@@ -830,7 +742,7 @@ typedef struct _snd_xfern_t {
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
-#define SND_PCM_IOCTL_HW_INFO		_IOWR('A', 0x10, snd_pcm_hw_info_t)
+#define SND_PCM_IOCTL_HW_REFINE		_IOWR('A', 0x10, snd_pcm_hw_params_t)
 #define SND_PCM_IOCTL_HW_PARAMS		_IOWR('A', 0x11, snd_pcm_hw_params_t)
 #define SND_PCM_IOCTL_SW_PARAMS		_IOWR('A', 0x12, snd_pcm_sw_params_t)
 #define SND_PCM_IOCTL_DIG_INFO		_IOWR('A', 0x13, snd_pcm_dig_info_t)
