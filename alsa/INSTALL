@@ -190,7 +190,7 @@ Module parameters
     Module supports up to 8 cards, autoprobe and TL PnP.
     
   Module snd-opl3sa.o
-  -----------------
+  -------------------
 
     Module for Yamaha OPL3-SA2/SA3 soundcards.
 
@@ -207,8 +207,8 @@ Module parameters
     Module supports up to 8 cards. This module doesn't supports autoprobe
     thus all ports must be specified!!!
     
-  Module mozart.o
-  -----------------
+  Module snd-mozart.o
+  -------------------
 
     Module for OAK Mozart cards.
 
