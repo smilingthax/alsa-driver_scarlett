@@ -108,7 +108,9 @@ struct resource {
 #define IORESOURCE_MEM		0x00000200
 #endif
 
-#define snd_request_region snd_compat_request_region
+void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name);
+#undef request_region
+#define request_region snd_compat_request_region
 #define release_resource snd_compat_release_resource
 #define request_mem_region(from, size, name) (&snd_compat_mem_region)
 

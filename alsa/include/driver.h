@@ -3,7 +3,7 @@
 
 /*
  *  Main header file for the ALSA driver
- *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) 1994-2000 by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -151,6 +151,17 @@
 #include <linux/asound.h>
 #else
 #include "asound.h"
+#endif
+
+#ifdef CONFIG_SND_DEBUG
+void *snd_wrapper_kmalloc(size_t, int);
+#undef kmalloc
+void snd_wrapper_kfree(const void *);
+#undef kfree
+void *snd_wrapper_vmalloc(size_t);
+#undef vmalloc
+void snd_wrapper_vfree(void *);
+#undef vfree
 #endif
 
 #include "sndmagic.h"
@@ -331,21 +342,14 @@ void snd_memory_init(void);
 void snd_memory_done(void);
 int snd_memory_info_init(void);
 int snd_memory_info_done(void);
-void *snd_kmalloc(size_t size, int flags);
-void _snd_kfree(const void *obj);
-#define snd_kfree(obj) { \
-	if (obj == NULL) \
-		snd_printk("kfree(NULL)\n"); \
-	else _snd_kfree(obj); \
-} while (0)
-void *snd_vmalloc(unsigned long size);
-void snd_vfree(void *obj);
-#else
-#define snd_kmalloc kmalloc
-#define _snd_kfree kfree
-#define snd_kfree _snd_kfree
-#define snd_vmalloc vmalloc
-#define snd_vfree vfree
+void *snd_hidden_kmalloc(size_t size, int flags);
+void snd_hidden_kfree(const void *obj);
+void *snd_hidden_vmalloc(unsigned long size);
+void snd_hidden_vfree(void *obj);
+#define kmalloc(size, flags) snd_hidden_kmalloc(size, flags)
+#define kfree(obj) snd_hidden_kfree(obj)
+#define vmalloc(size) snd_hidden_vmalloc(size)
+#define vfree(obj) snd_hidden_vfree(obj)
 #endif
 void *snd_kcalloc(size_t size, int flags);
 char *snd_kmalloc_strdup(const char *string, int flags);
