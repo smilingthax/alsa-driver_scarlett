@@ -6,8 +6,10 @@ include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
 snd-emu10k1x-objs := emu10k1x.o
+snd-audigyls-objs := audigyls.o
 
 obj-$(CONFIG_SND_EMU10K1X) += snd-emu10k1x.o
+obj-$(CONFIG_SND_AUDIGYLS) += snd-audigyls.o
 
 export-objs  := emu10k1_main.o
 
