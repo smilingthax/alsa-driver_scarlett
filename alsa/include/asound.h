@@ -35,6 +35,7 @@
 #endif
 #endif
 #ifndef __KERNEL__
+#include <sys/types.h>
 #include <asm/page.h>
 #endif
 
