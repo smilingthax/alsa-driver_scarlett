@@ -30,7 +30,7 @@ void snd_wrapper_kill_fasync(struct fasync_struct **fp, int sig, int band)
 #endif
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
+#if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
 #define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
