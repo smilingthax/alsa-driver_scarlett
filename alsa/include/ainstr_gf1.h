@@ -184,7 +184,7 @@ typedef struct gf1_xinstrument {
 
 #ifdef __KERNEL__
 
-#include <seq_instr.h>
+#include "seq_instr.h"
 
 extern char *snd_seq_gf1_id;
 

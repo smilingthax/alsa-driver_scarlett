@@ -1,0 +1,86 @@
+#!/bin/bash
+
+KDIR=/usr/src/linux
+KADIR=$KDIR/drivers/sound/alsa
+ADIR=$PWD/..
+
+function copy_file () {
+	ln -svf $ADIR/$1 $KADIR/$2
+}
+
+function include_file () {
+	rm -f $KADIR/include/$1
+	ln -svf $ADIR/include/$1 $KDIR/include/linux/$1
+}
+
+function copy_dir () {
+	pushd $PWD > /dev/null
+	cd $ADIR/$1
+	mkdir -p $KADIR/$1
+	if [ -r Makefile.k ]; then
+		ln -svf $ADIR/$1/Makefile.k $KADIR/$1/Makefile
+	fi
+	for i in *.[ch]; do
+		ln -svf $ADIR/$1/$i $KADIR/$1/$i
+	done
+	popd > /dev/null
+}
+
+if [ ! -r $ADIR/kernel/sound.c ]; then
+  echo "Can't find ALSA sources..."
+  exit
+fi
+if [ ! -r $KDIR/drivers/sound/sound_core.c ]; then
+  echo "Can't find kernel sources..."
+  exit
+fi
+
+pushd $PWD > /dev/null
+cd $KDIR/drivers/sound
+if grep alsa Makefile > /dev/null; then
+  echo "drivers/sound/Makefile already modified"
+else
+  cat $ADIR/utils/patches/patch.Makefile.2.2.10 | patch -p0
+  echo "drivers/sound/Makefile patched"
+fi
+if grep "Advanced Linux Sound Architecture" Config.in > /dev/null; then
+  echo "drivers/sound/Config.in already modified"
+else
+  echo >> Config.in
+  echo "mainmenu_option next_comment" >> Config.in
+  echo "comment 'Advanced Linux Sound Architecture'" >> Config.in
+  echo >> Config.in
+  echo "tristate 'Advanced Linux Sound Architecture' CONFIG_SND" >> Config.in
+  echo "if [ \"\$CONFIG_SND\" != "n" ]; then" >> Config.in
+  echo "  source drivers/sound/alsa/Config.in" >> Config.in
+  echo "fi" >> Config.in
+  echo >> Config.in
+  echo "endmenu" >> Config.in
+  echo "drivers/sound/Config.in patched"
+fi
+mkdir -p alsa
+cd $ADIR/utils
+make
+./snd-deps --configin > $KDIR/drivers/sound/alsa/Config.in
+copy_file Makefile.k Makefile
+copy_dir include
+include_file ainstr_simple.h
+include_file ainstr_gf1.h
+include_file ainstr_iw.h
+include_file asound.h
+include_file asoundid.h
+include_file asequencer.h
+copy_dir kernel
+copy_dir kernel/pcm1
+copy_dir kernel/seq
+copy_dir kernel/seq/instr
+copy_dir kernel/seq/oss
+copy_dir lowlevel
+copy_dir lowlevel/generic
+copy_dir lowlevel/isa
+copy_dir lowlevel/pci
+copy_dir lowlevel/hal2
+copy_dir lowlevel/gus
+copy_dir lowlevel/sb
+copy_dir detect
+popd > /dev/null

@@ -36,6 +36,7 @@
 #define METHOD_ACINCLUDE 1 // Output method
 #define METHOD_MAKEFILE 2
 #define METHOD_CINCLUDE 3
+#define METHOD_CONFIGIN 4
 
 #define TYPE_CARDS 1
 #define TYPE_DEPS 2
@@ -63,8 +64,12 @@ void usage(char *programname);
 void output_acinclude(void);
 void output_makefile(void);
 void output_cinclude(void);
+void output_configin(void);
 void output_dep(dep *firstdep, char *format, int num);
+void output1_dep(dep *firstdep);
+void output2_dep(dep *firstdep);
 void output_card(dep *firstdep, char *card_format, char *dep_format);
+void output1_card(dep *firstdep);
 char *convert_to_config_uppercase(const char *line);
 char *remove_word(const char *remove, const char *line);
 

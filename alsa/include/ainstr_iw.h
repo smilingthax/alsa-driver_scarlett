@@ -331,7 +331,7 @@ typedef struct {
 
 #ifdef __KERNEL__
 
-#include <seq_instr.h>
+#include "seq_instr.h"
 
 extern char *snd_seq_iwffff_id;
 

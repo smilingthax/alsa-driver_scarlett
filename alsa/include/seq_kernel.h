@@ -21,7 +21,11 @@
 #ifndef __SND_SEQ_KERNEL_H
 #define __SND_SEQ_KERNEL_H
 
+#ifndef ALSA_BUILD
+#include <linux/asequencer.h>
+#else
 #include "asequencer.h"
+#endif
 
 /* maximum number of events dequeued per schedule interval */
 #define SND_SEQ_MAX_DEQUEUE		50

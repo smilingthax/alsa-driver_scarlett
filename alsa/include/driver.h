@@ -22,7 +22,9 @@
  *
  */
 
+#ifdef ALSA_BUILD
 #include "config.h"
+#endif
 
 #define SND_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
 
@@ -38,8 +40,10 @@
  *  ==========================================================================
  */
 
+#ifdef ALSA_BUILD
 #define __KERNEL__
 #define MODULE
+#endif
 
 #define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
 
@@ -59,17 +63,20 @@
 #define NEW_RESOURCE
 #endif
 
+#ifdef ALSA_BUILD
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #define MODVERSIONS
 #include <linux/modversions.h>
 #include "sndversions.h"
 #endif
-#ifndef SND_MAIN_OBJECT_FILE
-#define __NO_VERSION__
-#endif
 #ifdef SND_NO_MODVERS
 #undef MODVERSIONS
 #undef _set_ver
+#endif
+#endif
+
+#ifndef SND_MAIN_OBJECT_FILE
+#define __NO_VERSION__
 #endif
 #include <linux/module.h>
 
@@ -107,8 +114,13 @@
 #endif
 #endif
 
+#ifndef ALSA_BUILD
+#include <linux/asound.h>
+#include <linux/asoundid.h>
+#else
 #include "asound.h"
 #include "asoundid.h"
+#endif
 
 static inline mm_segment_t snd_enter_user(void)
 {

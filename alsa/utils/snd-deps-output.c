@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 		method=METHOD_MAKEFILE;
 	else if(strcmp(argv[1], "--cinclude")==0)
 		method=METHOD_CINCLUDE;
+	else if(strcmp(argv[1], "--configin")==0)
+		method=METHOD_CONFIGIN;
 	else
 		usage(argv[0]);
 
@@ -56,6 +58,9 @@ int main(int argc, char *argv[])
 		case METHOD_CINCLUDE:
 			output_cinclude();
 			break;
+		case METHOD_CONFIGIN:
+			output_configin();
+			break;
 		default:
 			fprintf(stderr, "This should not happen!\n");
 			usage(argv[0]);
@@ -74,6 +79,7 @@ void usage(char *programname)
 	fprintf(stderr, "Usage: %s --acinclude\n", programname);
 	fprintf(stderr, "       %s --makefile\n", programname);
 	fprintf(stderr, "       %s --cinclude\n", programname);
+	fprintf(stderr, "       %s --configin\n", programname);
 	exit(EXIT_FAILURE);
 }
 
@@ -165,6 +171,28 @@ void output_cinclude(void)
 	return;
 }
 
+// Output in Config.in format
+void output_configin(void)
+{
+	printf("\
+# ALSA soundcard-configuration\n\
+\n\
+if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
+  bool 'Sequencer support' CONFIG_SND_SEQUENCER\n\
+  bool 'OSS API emulation' CONFIG_SND_OSSEMUL\n\
+  bool 'Debug' CONFIG_SND_DEBUG\n\
+  if [ \"$CONFIG_SND_DEBUG\" == \"y\" ]; then \n\
+    bool 'Debug memory' CONFIG_SND_DEBUG_MEMORY\n\
+    bool 'Debug full' CONFIG_SND_DEBUG_FULL\n\
+    bool 'Debug detection' CONFIG_SND_DEBUG_DETECT\n\
+  fi\n\
+fi\n\n");
+	output1_dep(Deps);
+	output1_card(Cards);
+	output2_dep(Deps);
+	return;
+}
+
 // Print out all deps for firstdep (Cards, Deps) according to format
 void output_dep(dep *firstdep, char *format, int num)
 {
@@ -178,6 +206,40 @@ void output_dep(dep *firstdep, char *format, int num)
 			printf(format, text);
 		else if(num==2)
 			printf(format, text, text);
+		free(text);
+		tempdep=tempdep->link;
+	}
+	return;
+}
+
+// Print out all deps for firstdep (Cards, Deps) according to format
+void output1_dep(dep *firstdep)
+{
+	dep *tempdep=firstdep;
+	char *text;
+
+	while(tempdep)
+	{
+		text=convert_to_config_uppercase(tempdep->name);
+		if (strcmp(text, "CONFIG_SND"))
+			printf("XX_%s=\"n\"\n", text);
+		free(text);
+		tempdep=tempdep->link;
+	}
+	return;
+}
+
+// Print out all deps for firstdep (Cards, Deps) according to format
+void output2_dep(dep *firstdep)
+{
+	dep *tempdep=firstdep;
+	char *text;
+
+	while(tempdep)
+	{
+		text=convert_to_config_uppercase(tempdep->name);
+		if (strcmp(text, "CONFIG_SND"))
+			printf("define_bool %s $XX_%s\n", text, text);
 		free(text);
 		tempdep=tempdep->link;
 	}
@@ -207,6 +269,48 @@ void output_card(dep *firstdep, char *card_format, char *dep_format)
 			free(dep_config);
 		}
 		printf("\t\t;;\n");
+		free(card_name);
+		free(card_config);
+		temp_dep=temp_dep->link;
+	}
+	return;
+}
+
+// Print out ALL deps for firstdep (Cards, Deps)
+void output1_card(dep *firstdep)
+{
+	depname list[200];
+	dep *temp_dep=firstdep;
+	int num,i;
+	char *card_name;
+	char *card_config;
+	char *dep_config;
+	
+	while(temp_dep)
+	{
+		card_name=remove_word("snd_", temp_dep->name);
+		card_config=convert_to_config_uppercase(temp_dep->name);
+		printf("\
+dep_tristate '%s' %s $CONFIG_SND\n\
+if [ \"$%s\" != \"n\" ]; then\n\
+", card_name, card_config, card_config);
+		num=make_list_of_deps_for_dep(temp_dep, list, 0);
+		for(i=0;i<num;i++)
+		{
+			dep_config=convert_to_config_uppercase(list[i]);
+			if (strcmp(dep_config, "CONFIG_SND"))
+				printf("\
+  if [ \"$XX_%s\" != \"n\" ]; then\n\
+    if [ \"$XX_%s\" == \"m\" -o \"$%s\" == \"y\" ]; then\n\
+      XX_%s=\"y\"\n\
+    fi\n\
+  else\n\
+    XX_%s=$%s\n\
+  fi\n\
+", dep_config, dep_config, card_config, dep_config, dep_config, card_config);
+			free(dep_config);
+		}
+		printf("fi\n");
 		free(card_name);
 		free(card_config);
 		temp_dep=temp_dep->link;
