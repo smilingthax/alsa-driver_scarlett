@@ -33,8 +33,8 @@
 # 
 ### BEGIN INIT INFO
 # Provides:       alsasound
-# Required-Start:
-# Required-Stop:
+# Required-Start: $remote_fs
+# Required-Stop: $remote_fs
 # Default-Start:  2 3 5
 # Default-Stop:
 # Description:    Loading ALSA drivers and store/restore the current setting
@@ -47,7 +47,12 @@ else
   rc_done="done"
   rc_warning=""
   rc_reset=""
+fi
+
+if [ x$START_ALSA != xno ]; then
   START_ALSA=yes
+fi
+if [ x$START_ALSA_SEQ != xno ]; then
   START_ALSA_SEQ=yes
 fi
 
@@ -62,18 +67,20 @@ test "$START_ALSA" = yes || exit 0
 alsactl=/usr/sbin/alsactl
 asoundcfg=/etc/asound.conf
 aconnect=/usr/bin/aconnect
+alsascrdir=/etc/alsa.d
 
 function start() {
   #
   # insert all sound modules
   #
-  /sbin/modprobe -c | \
-    grep -E "^alias( |\t)+snd-card-[[:digit:]]" | \
-    awk '{print $3}' | \
-    while read line; do \
-      echo -n "Starting sound driver: $line "; \
-      /sbin/modprobe $line; \
-      echo -e "$rc_done"; \
+
+  drivers=`/sbin/modprobe -c | \
+    grep -E "^[[:space:]]*alias[[:space:]]+snd-card-[[:digit:]]" | \
+    awk '{print $3}'`
+  for i in $drivers; do
+      echo -n "Starting sound driver: $i "
+      /sbin/modprobe $i
+      echo -e "$rc_done"
     done
   #
   # insert sequencer modules
@@ -88,8 +95,8 @@ function start() {
   # restore driver settings
   #
   if [ -d /proc/asound ]; then
-    if [ ! -r /etc/asound.conf ]; then
-      echo "No mixer config in /etc/asound.conf, you have to unmute your card!"
+    if [ ! -r $asoundcfg ]; then
+      echo "No mixer config in $asoundcfg, you have to unmute your card!"
     else
       if [ -x $alsactl ]; then
         $alsactl -f $asoundcfg restore
@@ -98,14 +105,26 @@ function start() {
       fi
     fi
   fi
+  #
+  # run card-dependent scripts
+  for i in $drivers; do
+    t=`echo $i | sed -e 's/snd-card-\(.*\)/\1/'`
+    if [ -x $alsascrdir/$t ]; then
+      $alsascrdir/$t
+    fi
+  done
 }
 
 function terminate() {
   #
   # Kill processes holding open sound devices
   #
-  DEVS=`find /dev/ -follow -type c -maxdepth 1 -ls 2>/dev/null | grep "1*1[46]," | cut -d: -f2 | cut -d" " -f2; echo /proc/asound/dev/*`
-  fuser -k $DEVS 2> /dev/null 1>/dev/null
+  # DEVS=`find /dev/ -follow -type c -maxdepth 1 -print 2>/dev/null | xargs ls -dils | grep "1*1[46]," | cut -d: -f2 | cut -d" " -f2; echo /proc/asound/dev/*`
+  ossdevs="/dev/admmidi? /dev/adsp? /dev/amidi? /dev/audio* /dev/dmfm* \
+     /dev/dmmidi? /dev/dsp* /dev/dspW* /dev/midi0? /dev/mixer? /dev/music \
+     /dev/patmgr? /dev/sequencer* /dev/sndstat"
+  alsadevs="/proc/asound/dev/*"
+  fuser -k $ossdevs $alsadevs 2> /dev/null 1>/dev/null
   #
   # remove all sequencer connections if any
   #
