@@ -1033,7 +1033,7 @@ static int snd_emu10k1_icode_poke(emu10k1_t *emu, emu10k1_fx8010_code_t *icode)
 	/* stop FX processor - this may be dangerous, but it's better to miss
 	   some samples than generate wrong ones - [jk] */
 	if (emu->audigy)
-		snd_emu10k1_ptr_write(emu, A_DBG, 0, (emu->fx8010.dbg = 0) | A_DBG_SINGLE_STEP_ADDR);
+		snd_emu10k1_ptr_write(emu, A_DBG, 0, emu->fx8010.dbg | A_DBG_SINGLE_STEP_ADDR);
 	else
 		snd_emu10k1_ptr_write(emu, DBG, 0, emu->fx8010.dbg | EMU10K1_DBG_SINGLE_STEP);
 	/* ok, do the main job */
