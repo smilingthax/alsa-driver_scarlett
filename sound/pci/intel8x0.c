@@ -1059,11 +1059,11 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 		snd_free_pci_pages(chip->pci, 3 * sizeof(u32) * ICH_MAX_FRAGS * 2, chip->bdbars, chip->bdbars_addr);
 	if (chip->res_port) {
 		release_resource(chip->res_port);
-		kfree(chip->res_port);
+		kfree_nocheck(chip->res_port);
 	}
 	if (chip->res_bmport) {
 		release_resource(chip->res_bmport);
-		kfree(chip->res_bmport);
+		kfree_nocheck(chip->res_bmport);
 	}
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);

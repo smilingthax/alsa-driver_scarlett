@@ -439,7 +439,7 @@ snd_wavefront_free(snd_card_t *card)
 #endif
 		if (acard->wavefront.res_base != NULL) {
 			release_resource(acard->wavefront.res_base);
-			kfree(acard->wavefront.res_base);
+			kfree_nocheck(acard->wavefront.res_base);
 		}
 		if (acard->wavefront.irq > 0)
 			free_irq(acard->wavefront.irq, (void *)acard);

@@ -1765,7 +1765,7 @@ static int snd_ymfpci_free(ymfpci_t *chip)
 		free_irq(chip->irq, (void *)chip);
 	if (chip->res_reg_area) {
 		release_resource(chip->res_reg_area);
-		kfree(chip->res_reg_area);
+		kfree_nocheck(chip->res_reg_area);
 	}
 
 	pci_write_config_word(chip->pci, 0x40, chip->old_legacy_ctrl);

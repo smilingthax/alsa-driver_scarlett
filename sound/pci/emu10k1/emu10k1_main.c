@@ -503,7 +503,7 @@ static int snd_emu10k1_free(emu10k1_t *emu)
 		vfree(emu->page_addr_table);
 	if (emu->res_port) {
 		release_resource(emu->res_port);
-		kfree(emu->res_port);
+		kfree_nocheck(emu->res_port);
 	}
 	if (emu->irq >= 0)
 		free_irq(emu->irq, (void *)emu);

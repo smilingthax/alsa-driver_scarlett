@@ -3336,7 +3336,7 @@ int snd_trident_free(trident_t *trident)
 		free_irq(trident->irq, (void *)trident);
 	if (trident->res_port) {
 		release_resource(trident->res_port);
-		kfree(trident->res_port);
+		kfree_nocheck(trident->res_port);
 	}
 	snd_magic_kfree(trident);
 	return 0;

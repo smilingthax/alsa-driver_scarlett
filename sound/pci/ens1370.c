@@ -1524,7 +1524,7 @@ static int snd_ensoniq_free(ensoniq_t *ensoniq)
 #endif
 	if (ensoniq->res_port) {
 		release_resource(ensoniq->res_port);
-		kfree(ensoniq->res_port);
+		kfree_nocheck(ensoniq->res_port);
 	}
 	if (ensoniq->irq >= 0)
 		free_irq(ensoniq->irq, (void *)ensoniq);

@@ -1243,7 +1243,7 @@ static int snd_opti93x_free(opti93x_t *chip)
 {
 	if (chip->res_port) {
 		release_resource(chip->res_port);
-		kfree(chip->res_port);
+		kfree_nocheck(chip->res_port);
 	}
 	if (chip->dma1 >= 0) {
 		disable_dma(chip->dma1);
@@ -1889,7 +1889,7 @@ static void snd_card_opti9xx_free(snd_card_t *card)
 #endif	/* __ISAPNP__ */
 		if (chip->res_mc_base) {
 			release_resource(chip->res_mc_base);
-			kfree(chip->res_mc_base);
+			kfree_nocheck(chip->res_mc_base);
 		}
 	}
 }
