@@ -25,6 +25,7 @@
 #include <asm/irq.h>
 #include <linux/init.h>
 #include <linux/delay.h>
+#include <linux/slab.h>
 #include <sound/core.h>
 #include "pmac.h"
 #include <sound/pcm_params.h>
