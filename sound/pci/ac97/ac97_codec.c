@@ -1974,12 +1974,14 @@ static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
 		reg = AC97_SPDIF;
 	}
 
+	spin_lock(&ac97->reg_lock);
 	old = ac97->regs[reg] & ~AC97_SC_SPSR_MASK;
 	if (old != bits) {
-		snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
-		snd_ac97_update_bits(ac97, reg, AC97_SC_SPSR_MASK, bits);
+		snd_ac97_update_bits_nolock(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
+		snd_ac97_update_bits_nolock(ac97, reg, AC97_SC_SPSR_MASK, bits);
 	}
-	snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, AC97_EA_SPDIF);
+	snd_ac97_update_bits_nolock(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, AC97_EA_SPDIF);
+	spin_unlock(&ac97->reg_lock);
 	return 0;
 }
 
