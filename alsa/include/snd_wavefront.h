@@ -21,7 +21,7 @@ typedef struct snd_stru_wavefront snd_wavefront_t;
 typedef enum { internal_mpu = 0, external_mpu = 1 } snd_wavefront_mpu_id;
 
 struct snd_stru_wavefront_midi {
-        unsigned short           base;        /* I/O port address */
+        unsigned long            base;        /* I/O port address */
 	char                     isvirtual;   /* doing virtual MIDI stuff ? */
 	char			 istimer;     /* timer is used */
         snd_wavefront_mpu_id     output_mpu;  /* most-recently-used */
@@ -47,8 +47,8 @@ extern void   snd_wavefront_midi_interrupt (snd_wavefront_card_t *);
 extern int    snd_wavefront_midi_start (snd_wavefront_card_t *);
 
 struct snd_stru_wavefront {
-	unsigned short   irq;   /* "you were one, one of the few ..." */
-	unsigned short   base;  /* low i/o port address */
+	unsigned long    irq;   /* "you were one, one of the few ..." */
+	unsigned long    base;  /* low i/o port address */
 
 #define mpu_data_port    base 
 #define mpu_command_port base + 1 /* write semantics */

@@ -32,11 +32,11 @@
 struct snd_stru_es1688 {
 	unsigned long port;		/* port of ESS chip */
 	unsigned long mpu_port;		/* MPU-401 port of ESS chip */
-	unsigned int irq;		/* IRQ number of ESS chip */
-	unsigned int mpu_irq;		/* MPU IRQ */
+	unsigned long irq;		/* IRQ number of ESS chip */
+	unsigned long mpu_irq;		/* MPU IRQ */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	snd_irq_t * mpu_irqptr;		/* MPU IRQ pointer */
-	unsigned short dma8;		/* 8-bit DMA */
+	unsigned long dma8;		/* 8-bit DMA */
 	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
 	unsigned short version;		/* version of ESS chip */
 	unsigned short hardware;	/* see to ES1688_HW_XXXX */

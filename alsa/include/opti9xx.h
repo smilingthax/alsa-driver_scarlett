@@ -41,25 +41,25 @@ struct snd_stru_opti9xx {
 	unsigned char password;
 	char name[7];
 
-	unsigned short mc_base;
+	unsigned long mc_base;
 #ifdef OPTi93X
-	unsigned short mc_indir_index;
+	unsigned long mc_indir_index;
 #endif	/* OPTi93X */
-	unsigned short pwd_reg;
+	unsigned long pwd_reg;
 
 	spinlock_t lock;
 
-	short wss_base;
-	short irq;
-	short dma1;
+	unsigned long wss_base;
+	unsigned long irq;
+	unsigned long dma1;
 #if defined(CS4231) || defined(OPTi93X)
-	short dma2;
+	unsigned long dma2;
 #endif	/* CS4231 || OPTi93X */
 
-	short fm_port;
+	unsigned long fm_port;
 
-	short mpu_port;
-	short mpu_irq;
+	unsigned long mpu_port;
+	unsigned long mpu_irq;
 };
 typedef struct snd_stru_opti9xx opti9xx_t;
 
@@ -296,7 +296,7 @@ extern int snd_opti9xx_configure(opti9xx_t *chip)
 		wss_base_bits = 0x02;
 		break;
 	default:
-		snd_fprintk("WSS port 0x%x not valid\n", chip->wss_base);
+		snd_fprintk("WSS port 0x%lx not valid\n", chip->wss_base);
 		goto __skip_base;
 	}
 	snd_opti9xx_write_mask(chip, OPTi9XX_MC_REG(1), wss_base_bits << 4, 0x30);
@@ -321,7 +321,7 @@ __skip_base:
 		irq_bits = 0x04;
 		break;
 	default:
-		snd_fprintk("WSS irq # %d not valid\n", chip->irq);
+		snd_fprintk("WSS irq # %ld not valid\n", chip->irq);
 		goto __skip_resources;
 	}
 
@@ -336,7 +336,7 @@ __skip_base:
 		dma_bits = 0x03;
 		break;
 	default:
-		snd_fprintk("WSS dma1 # %d not valid\n", chip->dma1);
+		snd_fprintk("WSS dma1 # %ld not valid\n", chip->dma1);
 		goto __skip_resources;
 	}
 
@@ -351,7 +351,7 @@ __skip_base:
 	case 1:
 		break;
 	default:
-		snd_fprintk("WSS dma2 # %d not valid\n", chip->dma2);
+		snd_fprintk("WSS dma2 # %ld not valid\n", chip->dma2);
 		goto __skip_resources;
 	}
 	dma_bits |= 0x04;
@@ -379,7 +379,7 @@ __skip_resources:
 			mpu_port_bits = 0x00;
 			break;
 		default:
-			snd_fprintk("MPU-401 port 0x%x not valid\n",
+			snd_fprintk("MPU-401 port 0x%lx not valid\n",
 				chip->mpu_port);
 			goto __skip_mpu;
 		}
@@ -398,7 +398,7 @@ __skip_resources:
 			mpu_irq_bits = 0x01;
 			break;
 		default:
-			snd_fprintk("MPU-401 irq # %d not valid\n",
+			snd_fprintk("MPU-401 irq # %ld not valid\n",
 				chip->mpu_irq);
 			goto __skip_mpu;
 		}

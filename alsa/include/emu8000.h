@@ -78,7 +78,7 @@ typedef struct snd_emu8000 {
 
 /* argument for snd_seq_device_new */
 typedef struct emu8000_arg {
-	int port;		/* base i/o port */
+	unsigned long port;	/* base i/o port */
 	int index;		/* sequencer client index */
 	int seq_ports;		/* number of sequencer ports to be created */
 } emu8000_arg_t;

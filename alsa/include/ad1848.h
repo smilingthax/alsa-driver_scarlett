@@ -130,9 +130,9 @@ struct snd_stru_ad1848_freq {
 
 struct snd_stru_ad1848 {
 	unsigned long port;		/* i/o port */
-	unsigned int irq;		/* IRQ line */
+	unsigned long irq;		/* IRQ line */
 	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned short dma;		/* data DMA */
+	unsigned long dma;		/* data DMA */
 	snd_dma_t * dmaptr;		/* data DMA pointer */
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to AD1848_MODE_XXXX */

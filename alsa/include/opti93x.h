@@ -99,9 +99,9 @@ typedef struct snd_stru_opti93x opti93x_t;
 
 struct snd_stru_opti93x {
 	unsigned long port;
-	unsigned int irq;
-	unsigned short dma1;
-	unsigned short dma2;
+	unsigned long irq;
+	unsigned long dma1;
+	unsigned long dma2;
 	snd_dma_t *dma1ptr;
 	snd_dma_t *dma2ptr;
 

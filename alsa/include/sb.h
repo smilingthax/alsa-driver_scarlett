@@ -63,11 +63,11 @@ struct snd_stru_sbmixer {
 struct snd_stru_sbdsp {
 	unsigned long port;		/* base port of DSP chip */
 	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
-	unsigned int irq;		/* IRQ number of DSP chip */
+	unsigned long irq;		/* IRQ number of DSP chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned short dma8;		/* 8-bit DMA */
+	unsigned long dma8;		/* 8-bit DMA */
 	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
-	unsigned short dma16;		/* 16-bit DMA */
+	unsigned long dma16;		/* 16-bit DMA */
 	snd_dma_t * dma16ptr;		/* 16-bit DMA pointer */
 	unsigned short version;		/* version of DSP chip */
 	unsigned short hardware;	/* see to SB_HW_XXXX */

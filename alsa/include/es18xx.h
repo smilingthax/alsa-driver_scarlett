@@ -30,11 +30,11 @@ struct snd_stru_es18xx {
 	unsigned long mpu_port;		/* MPU-401 port of ESS chip */
 	unsigned long fm_port;		/* FM port */
 	unsigned long ctrl_port;	/* Control port of ESS chip */
-	unsigned int irq;		/* IRQ number of ESS chip */
+	unsigned long irq;		/* IRQ number of ESS chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned short dma1;		/* DMA 1 */
+	unsigned long dma1;		/* DMA 1 */
 	snd_dma_t * dma1ptr;		/* DMA 1 pointer */
-	unsigned short dma2;		/* DMA 2 */
+	unsigned long dma2;		/* DMA 2 */
 	snd_dma_t * dma2ptr;		/* DMA 2 pointer */
 	unsigned short version;		/* version of ESS chip */
 	int caps;			/* Chip capabilities */

@@ -178,7 +178,7 @@ struct snd_stru_dma_area {
 	 mmaped:1,			/* mmaped area to user space */
 	 mmap_free:1;			/* free mmaped buffer */
 	unsigned char *buf;		/* pointer to DMA buffer */
-	long size;			/* real size of DMA buffer */
+	unsigned long size;		/* real size of DMA buffer */
 	char *owner;			/* owner of this DMA channel */
 	snd_dma_t *dma;
 	snd_dma_area_t *next;
@@ -187,7 +187,7 @@ struct snd_stru_dma_area {
 struct snd_stru_dma {
 	int type;			/* dma type - see SND_DMA_TYPE_XXXX */
 	int multi: 1;			/* multi area support */
-	int dma;			/* DMA number */
+	unsigned long dma;		/* DMA number */
 	int addressbits;		/* physical wired bits (24-64) */
 	char *name;			/* pointer to name */
 	long rsize;			/* requested size of DMA buffer */
@@ -203,7 +203,7 @@ struct snd_stru_dma {
 
 typedef struct snd_stru_irq {
 	int type;		/* see to SND_IRQ_TYPE_XXXX */
-	unsigned short irq;
+	unsigned long irq;
 	char *name;
 	void *dev_id;
 	struct snd_stru_irq *next;
@@ -475,9 +475,9 @@ extern int snd_device_free_all(snd_card_t *card);
 
 #define DMA_MODE_NO_ENABLE	0x0100
 
-extern void snd_dma_program(int dma, const void *buf, unsigned int size, unsigned short mode);
-extern void snd_dma_disable(int dma);
-extern unsigned int snd_dma_residue(int dma);
+extern void snd_dma_program(unsigned long dma, const void *buf, unsigned int size, unsigned short mode);
+extern void snd_dma_disable(unsigned long dma);
+extern unsigned int snd_dma_residue(unsigned long dma);
 
 /* misc.c */
 

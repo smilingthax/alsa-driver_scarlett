@@ -54,8 +54,8 @@ struct snd_stru_mpu401 {
 	snd_rawmidi_t *rmidi;
 
 	unsigned short hardware;	/* MPU401_HW_XXXX */
-	int port;			/* base port of MPU-401 chip */
-	int irq;			/* IRQ number of MPU-401 chip */
+	unsigned long port;		/* base port of MPU-401 chip */
+	signed long irq;		/* IRQ number of MPU-401 chip (-1 = poll) */
 
 	unsigned int mode;		/* MPU401_MODE_XXXX */
 
@@ -87,8 +87,8 @@ extern void snd_mpu401_uart_interrupt(snd_rawmidi_t * rmidi);
 extern int snd_mpu401_uart_new(snd_card_t * card,
 			       int device,
 			       unsigned short hardware,
-			       int port,
-			       int irqnum,
+			       unsigned long port,
+			       signed long irqnum,
 			       snd_rawmidi_t ** rrawmidi);
 
 #endif				/* __MPU401_H */
