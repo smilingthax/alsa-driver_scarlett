@@ -5,12 +5,6 @@ config SND_PDPLUS
 	  Say 'Y' or 'M' to include support for Sek'D/Marian Prodif Plus
           soundcard.
 
-config SND_MIXART
-	tristate "Digigram miXart"
-	depends on SND
-	help
-	  Say 'Y' or 'M' to include support for Digigram miXart soundcard.
-
 config SND_AU8810
         tristate "Aureal Advantage"
         depends on SND
@@ -35,6 +29,13 @@ config SND_INTEL8X0M
 	help
 	  Say 'Y' or 'M' to include support for Intel8x0 and AMD768/8111 based
 	  modems.
+
+config SND_HDSPM
+	tristate "RME Hammerfall DSP MADI"
+	depends on SND
+	help
+	  Say 'Y' or 'M' to include support for RME Hammerfall DSP MADI
+	  soundcards.
 
 config SND_ATIIXP
 	tristate "ATI IXP 150/200/250"
