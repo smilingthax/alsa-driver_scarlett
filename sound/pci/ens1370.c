@@ -1355,6 +1355,7 @@ static snd_kcontrol_new_t snd_ens1373_spdif_default __devinitdata =
 
 static snd_kcontrol_new_t snd_ens1373_spdif_mask __devinitdata =
 {
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
 	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
 	.name =		SNDRV_CTL_NAME_IEC958("",PLAYBACK,MASK),
 	.info =		snd_ens1373_spdif_info,
