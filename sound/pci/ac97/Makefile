@@ -5,8 +5,6 @@
 
 O_TARGET     := _ac97.o
 
-list-multi   := snd-ac97-codec.o snd-ak4531-codec.o
-
 export-objs  := ac97_codec.o ak4531_codec.o
 
 snd-ac97-codec-objs := ac97_codec.o
@@ -33,9 +31,3 @@ obj-$(CONFIG_SND_YMFPCI) += snd-ac97-codec.o
 obj-m := $(sort $(obj-m))
 
 include $(TOPDIR)/Rules.make
-
-snd-ac97-codec.o: $(snd-ac97-codec-objs)
-	$(LD) $(LD_RFLAG) -r -o $@ $(snd-ac97-codec-objs)
-
-snd-ak4531-codec.o: $(snd-ak4531-codec-objs)
-	$(LD) $(LD_RFLAG) -r -o $@ $(snd-ak4531-codec-objs)
