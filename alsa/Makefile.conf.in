@@ -65,7 +65,7 @@ CONFIG_RTC		= @CONFIG_RTC@
 CONFIG_USB		= @CONFIG_USB@
 CONFIG_SND_BIT32_EMUL	= @CONFIG_SND_BIT32_EMUL@
 
-INCLUDE		= -I$(TOPDIR)/include -I$(CONFIG_SND_KERNELDIR)/include
+INCLUDE		= -I$(TOPDIR)/include @EXTRA_INCLUDES@ -I$(CONFIG_SND_KERNELDIR)/include
 CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe -DALSA_BUILD
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
