@@ -200,7 +200,7 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-card-gusmax.o snd_irq=7 snd_pcm_voices=8 snd_dma1=6 snd_dma2=7
+    insert snd-card-gusmax.o snd_irq=7 snd_pcm_channels=8 snd_dma1=6 snd_dma2=7
     restore gusmax.conf
     ;;
   gusc*|clas*)
