@@ -26,9 +26,6 @@
 #include <asm/uaccess.h>
 #include "ioctl32.h"
 
-
-#ifdef HAVE_IOCTL32
-
 struct sndrv_rawmidi_params32 {
 	s32 stream;
 	u32 buffer_size;
@@ -73,7 +70,7 @@ DEFINE_ALSA_IOCTL(rawmidi_status);
 
 #define AP(x) snd_ioctl32_##x
 
-static struct ioctl32_mapper rawmidi_mappers[] = {
+struct ioctl32_mapper rawmidi_mappers[] = {
 	{ SNDRV_RAWMIDI_IOCTL_PVERSION, NULL },
 	{ SNDRV_RAWMIDI_IOCTL_INFO, NULL },
 	{ SNDRV_RAWMIDI_IOCTL_PARAMS, AP(rawmidi_params) },
@@ -87,18 +84,3 @@ static struct ioctl32_mapper rawmidi_mappers[] = {
 
 	{ 0 },
 };
-
-/*
- */
-
-int __init snd_rawmidi_ioctl32_init(void)
-{
-	return snd_ioctl32_register(rawmidi_mappers);
-}
-
-void __exit snd_rawmidi_ioctl32_done(void)
-{
-	snd_ioctl32_unregister(rawmidi_mappers);
-}
-
-#endif /* HAVE_IOCTL32 */

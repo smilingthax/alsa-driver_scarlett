@@ -32,7 +32,6 @@
 #include <sound/control.h>
 #include <sound/minors.h>
 #include <sound/initval.h>
-#include "ioctl32.h"
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Midlevel RawMidi code for ALSA.");
@@ -1542,13 +1541,11 @@ static int __init alsa_rawmidi_init(void)
 		}
 	}
 #endif /* CONFIG_SND_OSSEMUL */
-	snd_rawmidi_ioctl32_init();
 	return 0;
 }
 
 static void __exit alsa_rawmidi_exit(void)
 {
-	snd_rawmidi_ioctl32_done();
 	snd_ctl_unregister_ioctl(snd_rawmidi_control_ioctl);
 }
 

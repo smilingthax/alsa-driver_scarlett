@@ -26,9 +26,6 @@
 #include <asm/uaccess.h>
 #include "ioctl32.h"
 
-
-#ifdef HAVE_IOCTL32
-
 struct sndrv_timer_info32 {
 	u32 flags;
 	s32 card;
@@ -82,7 +79,7 @@ DEFINE_ALSA_IOCTL(timer_status);
 
 #define AP(x) snd_ioctl32_##x
 
-static struct ioctl32_mapper timer_mappers[] = {
+struct ioctl32_mapper timer_mappers[] = {
 	{ SNDRV_TIMER_IOCTL_PVERSION, NULL },
 	{ SNDRV_TIMER_IOCTL_NEXT_DEVICE, NULL },
 	{ SNDRV_TIMER_IOCTL_SELECT, NULL },
@@ -94,18 +91,3 @@ static struct ioctl32_mapper timer_mappers[] = {
 	{ SNDRV_TIMER_IOCTL_CONTINUE, NULL },
 	{ 0 },
 };
-
-/*
- */
-
-int __init snd_timer_ioctl32_init(void)
-{
-	return snd_ioctl32_register(timer_mappers);
-}
-
-void __exit snd_timer_ioctl32_done(void)
-{
-	snd_ioctl32_unregister(timer_mappers);
-}
-
-#endif /* HAVE_IOCTL32 */
