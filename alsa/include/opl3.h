@@ -227,6 +227,7 @@ struct snd_opl3_physical_voice_info {
 #define OPL3_HW_OPL3		0x0300
 #define OPL3_HW_OPL3_SV		0x0301	/* S3 SonicVibes */
 #define OPL3_HW_OPL3_CS		0x0302	/* CS4232/CS4236+ */
+#define OPL3_HW_OPL3_FM801	0x0303	/* FM801 */
 #define OPL3_HW_OPL4		0x0400
 #define OPL3_HW_MASK		0xff00
 
