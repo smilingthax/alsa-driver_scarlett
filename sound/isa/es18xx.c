@@ -460,6 +460,11 @@ static int snd_es18xx_playback_hw_params(snd_pcm_substream_t * substream,
 	return 0;
 }
 
+static int snd_es18xx_pcm_hw_free(snd_pcm_substream_t * substream)
+{
+	return snd_pcm_lib_free_pages(substream);
+}
+
 static int snd_es18xx_playback1_prepare(es18xx_t *chip,
 					snd_pcm_substream_t *substream)
 {
@@ -1540,6 +1545,7 @@ static snd_pcm_ops_t snd_es18xx_playback_ops = {
 	.close =	snd_es18xx_playback_close,
 	.ioctl =	snd_pcm_lib_ioctl,
 	.hw_params =	snd_es18xx_playback_hw_params,
+	.hw_free =	snd_es18xx_pcm_hw_free,
 	.prepare =	snd_es18xx_playback_prepare,
 	.trigger =	snd_es18xx_playback_trigger,
 	.pointer =	snd_es18xx_playback_pointer,
@@ -1550,6 +1556,7 @@ static snd_pcm_ops_t snd_es18xx_capture_ops = {
 	.close =	snd_es18xx_capture_close,
 	.ioctl =	snd_pcm_lib_ioctl,
 	.hw_params =	snd_es18xx_capture_hw_params,
+	.hw_free =	snd_es18xx_pcm_hw_free,
 	.prepare =	snd_es18xx_capture_prepare,
 	.trigger =	snd_es18xx_capture_trigger,
 	.pointer =	snd_es18xx_capture_pointer,
