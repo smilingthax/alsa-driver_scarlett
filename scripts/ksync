@@ -125,7 +125,11 @@ def modify_version_file():
 
 def update_cvs_file(file, destfile = '', params = ''):
 	path, file = os.path.split(file)
-	os.chdir(get_cvs_root() + '/' + path)
+	try:
+		os.chdir(get_cvs_root() + '/' + path)
+	except OSError, msg:
+		os.mkdir(get_cvs_root() + '/' + path)
+		pass
 	if destfile == '':
 		cmd = 'cvs -z3 update %s' % file
 	else:
