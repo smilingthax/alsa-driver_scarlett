@@ -60,6 +60,45 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_line;
 	snd_kmixer_element_t *me_mux_cd;
+
+	snd_kmixer_element_t *me_in_accu;
+	snd_kmixer_element_t *me_out_accu;
+	snd_kmixer_element_t *me_playback;
+	snd_kmixer_element_t *me_capture;
+
+	snd_kmixer_element_t *me_vol_igain;
+
+	snd_kmixer_element_t *me_in_speaker;
+	snd_kmixer_element_t *me_vol_speaker;
+
+	snd_kmixer_element_t *me_in_mic;
+	snd_kmixer_element_t *me_vol_mic;
+	snd_kmixer_element_t *me_sw1_mic_output;
+	snd_kmixer_element_t *me_sw1_mic_input;
+
+	snd_kmixer_element_t *me_in_line;
+	snd_kmixer_element_t *me_vol_line;
+	snd_kmixer_element_t *me_sw1_line_output;
+	snd_kmixer_element_t *me_sw3_line_input;
+
+	snd_kmixer_element_t *me_in_cd;
+	snd_kmixer_element_t *me_vol_cd;
+	snd_kmixer_element_t *me_sw1_cd_output;
+	snd_kmixer_element_t *me_sw3_cd_input;
+	
+	snd_kmixer_element_t *me_in_synth;
+	snd_kmixer_element_t *me_vol_synth;
+	snd_kmixer_element_t *me_sw3_synth_input;
+	
+	snd_kmixer_element_t *me_vol_pcm;
+
+	snd_kmixer_element_t *me_vol_ogain;
+
+	snd_kmixer_element_t *me_tone;
+
+	snd_kmixer_element_t *me_out_master;
+	snd_kmixer_element_t *me_vol_master;
+	
 	spinlock_t lock;
 };
 
