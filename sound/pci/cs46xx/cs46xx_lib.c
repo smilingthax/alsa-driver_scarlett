@@ -2487,12 +2487,6 @@ int __devinit snd_cs46xx_mixer(cs46xx_t *chip)
 
  _end:
 
-	/* dosoundcard specific mixer setup */
-	if (chip->mixer_init) {
-		snd_printdd ("calling chip->mixer_init(chip);\n");
-		chip->mixer_init(chip);
-	}
-    
 #endif /* CONFIG_SND_CS46XX_NEW_DSP */
 
 	/* add cs4630 mixer controls */
@@ -2508,6 +2502,17 @@ int __devinit snd_cs46xx_mixer(cs46xx_t *chip)
 	id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
 	strcpy(id.name, "External Amplifier Power Down");
 	chip->eapd_switch = snd_ctl_find_id(chip->card, &id);
+    
+	/* turn on amplifier */
+	chip->amplifier_ctrl(chip, 1);
+
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+	/* do soundcard specific mixer setup */
+	if (chip->mixer_init) {
+		snd_printdd ("calling chip->mixer_init(chip);\n");
+		chip->mixer_init(chip);
+	}
+#endif
     
 	return 0;
 }
@@ -3620,21 +3625,88 @@ struct cs_card_type
 };
 
 static struct cs_card_type __devinitdata cards[] = {
-	{0x1489, 0x7001, "Genius Soundmaker 128 value", NULL, amp_none, NULL, NULL},
-	{0x5053, 0x3357, "Voyetra", NULL, amp_voyetra, NULL, voyetra_mixer_init},
-	{0x1071, 0x6003, "Mitac MI6020/21", NULL, amp_voyetra, NULL, NULL},
-	{0x14AF, 0x0050, "Hercules Game Theatre XP", NULL, amp_hercules, NULL, hercules_mixer_init},
-	{0x1681, 0x0050, "Hercules Game Theatre XP", NULL, amp_hercules, NULL, hercules_mixer_init},
-	{0x1681, 0x0051, "Hercules Game Theatre XP", NULL, amp_hercules, NULL, hercules_mixer_init},
-	{0x1681, 0x0052, "Hercules Game Theatre XP", NULL, amp_hercules, NULL, hercules_mixer_init},
-	{0x1681, 0x0053, "Hercules Game Theatre XP", NULL, amp_hercules, NULL, hercules_mixer_init},
-	{0x1681, 0x0054, "Hercules Game Theatre XP", NULL, amp_hercules, NULL, hercules_mixer_init},
+	{
+		.vendor = 0x1489,
+		.id = 0x7001,
+		.name = "Genius Soundmaker 128 value",
+		/* nothing special */
+	},
+	{
+		.vendor = 0x5053,
+		.id = 0x3357,
+		.name = "Voyetra",
+		.amp = amp_voyetra,
+		.mixer_init = voyetra_mixer_init
+	},
+	{
+		.vendor = 0x1071,
+		.id = 0x6003,
+		.name = "Mitac MI6020/21",
+		.amp = amp_voyetra
+	},
+	{
+		.vendor = 0x14AF,
+		.id = 0x0050,
+		.name = "Hercules Game Theatre XP",
+		.amp = amp_hercules,
+		.mixer_init = hercules_mixer_init
+	},
+	{
+		.vendor = 0x1681,
+		.id = 0x0050,
+		.name = "Hercules Game Theatre XP",
+		.amp = amp_hercules,
+		.mixer_init = hercules_mixer_init
+	},
+	{
+		.vendor = 0x1681,
+		.id = 0x0051,
+		.name = "Hercules Game Theatre XP",
+		.amp = amp_hercules,
+		.mixer_init = hercules_mixer_init
+	},
+	{
+		.vendor = 0x1681,
+		.id = 0x0052,
+		.name = "Hercules Game Theatre XP",
+		.amp = amp_hercules,
+		.mixer_init = hercules_mixer_init
+	},
+	{
+		.vendor = 0x1681,
+		.id = 0x0053,
+		.name = "Hercules Game Theatre XP",
+		.amp = amp_hercules,
+		.mixer_init = hercules_mixer_init
+	},
+	{
+		.vendor = 0x1681,
+		.id = 0x0054,
+		.name = "Hercules Game Theatre XP",
+		.amp = amp_hercules,
+		.mixer_init = hercules_mixer_init
+	},
 	/* Not sure if the 570 needs the clkrun hack */
-	{PCI_VENDOR_ID_IBM, 0x0132, "Thinkpad 570", clkrun_init, NULL, clkrun_hack, NULL},
-	{PCI_VENDOR_ID_IBM, 0x0153, "Thinkpad 600X/A20/T20", clkrun_init, NULL, clkrun_hack, NULL},
-	{PCI_VENDOR_ID_IBM, 0x1010, "Thinkpad 600E (unsupported)", NULL, NULL, NULL, NULL},
-	{0, 0, "Card without SSID set", NULL, NULL, NULL, NULL },
-	{0, 0, NULL, NULL, NULL, NULL, NULL}
+	{
+		.vendor = PCI_VENDOR_ID_IBM,
+		.id = 0x0132,
+		.name = "Thinkpad 570",
+		.init = clkrun_init,
+		.active = clkrun_hack
+	},
+	{
+		.vendor = PCI_VENDOR_ID_IBM,
+		.id = 0x0153,
+		.name = "Thinkpad 600X/A20/T20",
+		.init = clkrun_init,
+		.active = clkrun_hack
+	},
+	{
+		.vendor = PCI_VENDOR_ID_IBM,
+		.id = 0x1010,
+		.name = "Thinkpad 600E (unsupported)"
+	},
+	{} /* terminator */
 };
 
 
@@ -3828,20 +3900,20 @@ int __devinit snd_cs46xx_create(snd_card_t * card,
 	for (idx = 0; idx < 5; idx++) {
 		region = &chip->region.idx[idx];
 		if ((region->resource = request_mem_region(region->base, region->size, region->name)) == NULL) {
-			snd_cs46xx_free(chip);
 			snd_printk("unable to request memory region 0x%lx-0x%lx\n", region->base, region->base + region->size - 1);
+			snd_cs46xx_free(chip);
 			return -EBUSY;
 		}
 		region->remap_addr = (unsigned long) ioremap_nocache(region->base, region->size);
 		if (region->remap_addr == 0) {
-			snd_cs46xx_free(chip);
 			snd_printk("%s ioremap problem\n", region->name);
+			snd_cs46xx_free(chip);
 			return -ENOMEM;
 		}
 	}
 	if (request_irq(pci->irq, snd_cs46xx_interrupt, SA_INTERRUPT|SA_SHIRQ, "CS46XX", (void *) chip)) {
-		snd_cs46xx_free(chip);
 		snd_printk("unable to grab IRQ %d\n", pci->irq);
+		snd_cs46xx_free(chip);
 		return -EBUSY;
 	}
 	chip->irq = pci->irq;
@@ -3872,9 +3944,6 @@ int __devinit snd_cs46xx_create(snd_card_t * card,
 		return err;
 	}
 	
-	/* turn on amplifier */
-	chip->amplifier_ctrl(chip, 1);
-
 	chip->active_ctrl(chip, -1); /* disable CLKRUN */
 
 	*rchip = chip;
