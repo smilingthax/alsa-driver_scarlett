@@ -1,6 +1,0 @@
-config SND_USB_USX2Y
-	tristate "Tascam USB US-122 and US-428 driver"
-	depends on SND && USB
-	help
-	  Say 'Y' or 'M' to include support for Tascam USB US-122 and US-428.
-
