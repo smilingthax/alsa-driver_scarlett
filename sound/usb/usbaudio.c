@@ -1656,11 +1656,9 @@ void *snd_usb_find_csint_desc(void *buffer, int buflen, void *after, u8 dsubtype
  * entry point for linux usb interface
  */
 
-#ifndef OLD_USB
 static int usb_audio_probe(struct usb_interface *intf,
 			   const struct usb_device_id *id);
 static void usb_audio_disconnect(struct usb_interface *intf);
-#endif
 
 static struct usb_device_id usb_audio_ids [] = {
 #include "usbquirks.h"
@@ -1677,9 +1675,6 @@ static struct usb_driver usb_audio_driver = {
 	.name =		"snd-usb-audio",
 	.probe =	usb_audio_probe,
 	.disconnect =	usb_audio_disconnect,
-#ifdef OLD_USB
-	.driver_list =	LIST_HEAD_INIT(usb_audio_driver.driver_list), 
-#endif
 	.id_table =	usb_audio_ids,
 };
 
@@ -2749,7 +2744,6 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 	}
 }
 
-#ifndef OLD_USB
 /*
  * new 2.5 USB kernel API
  */
@@ -2770,8 +2764,6 @@ static void usb_audio_disconnect(struct usb_interface *intf)
 	snd_usb_audio_disconnect(interface_to_usbdev(intf),
 				 dev_get_drvdata(&intf->dev));
 }
-#endif
-
 
 
 static int __init snd_usb_audio_init(void)
