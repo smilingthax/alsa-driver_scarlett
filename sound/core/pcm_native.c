@@ -607,10 +607,14 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 	snd_pcm_substream_t *s; \
 	int err; \
 	res = 0; \
-	if (substream->link != &substream->local_link) \
+	if (substream->link != &substream->local_link) { \
 		spin_lock(&substream->link->lock); \
+		spin_unlock(&substream->local_link.lock); \
+	} \
 	list_for_each(pos, &substream->link->substreams) { \
 		s = list_entry(pos, snd_pcm_substream_t, link_list); \
+		if (substream->link != &substream->local_link) \
+			spin_lock(&s->local_link.lock); \
 		res = snd_pcm_pre_##aname(s, state); \
 		if (res < 0) \
 			break; \
@@ -628,10 +632,14 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 			       _action_done: \
 				snd_pcm_post_##aname(s, state); \
 			} \
+			if (substream->link != &substream->local_link) \
+				spin_unlock(&s->local_link.lock); \
 		} \
 	} \
-	if (substream->link != &substream->local_link) \
+	if (substream->link != &substream->local_link) { \
+		spin_lock(&substream->local_link.lock); \
 		spin_unlock(&substream->link->lock); \
+	} \
 }
 
 #define SND_PCM_ACTION(aname, substream, state) { \
