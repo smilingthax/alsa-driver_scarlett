@@ -18,19 +18,12 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
- * 
- *================================================================
- * For enabling this timer, apply the patch file to your kernel.
- * The configure script checks the patch automatically.
- * The patches, rtc-xxx.dif, are found under utils/patches, where
- * xxx is the kernel version.
- *================================================================
- *
  */
 
 #include <sound/driver.h>
 #include <linux/init.h>
 #include <linux/time.h>
+#include <linux/interrupt.h>
 #include <sound/core.h>
 #include <sound/timer.h>
 #include <sound/info.h>
@@ -59,7 +52,7 @@ static int rtctimer_stop(snd_timer_t *t);
 
 
 /*
- * The harware depenant description for this timer.
+ * The hardware depenant description for this timer.
  */
 static struct _snd_timer_hardware rtc_hw = {
 	flags:		SNDRV_TIMER_HW_FIRST|SNDRV_TIMER_HW_AUTO,
@@ -216,7 +209,7 @@ static void __exit rtctimer_exit(void)
 
 
 /*
- * exported stuffs
+ * exported stuff
  */
 module_init(rtctimer_init)
 module_exit(rtctimer_exit)
