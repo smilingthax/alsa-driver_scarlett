@@ -1216,8 +1216,8 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define A_EXTOUT_AREAR_R	0x0f	/*             right */
 #define A_EXTOUT_AC97_L		0x10	/* AC97 left (front) */
 #define A_EXTOUT_AC97_R		0x11	/*      right */
-#define A_EXTOUT_ADC_CAP_L	0x12	/* ADC capture buffer left */
-#define A_EXTOUT_ADC_CAP_R	0x13	/*                    right */
+#define A_EXTOUT_ADC_CAP_L	0x16	/* ADC capture buffer left */
+#define A_EXTOUT_ADC_CAP_R	0x17	/*                    right */
 
 /* Audigy constants */
 #define A_C_00000000	0xc0
