@@ -24,6 +24,8 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #endif /* <2.2.18 */
 
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
+#define fops_get(x) (x)
+#define fops_put(x) do { ; } while (0)
 
 #define local_irq_save(flags) \
 	do { __save_flags(flags); __cli(); } while (0)

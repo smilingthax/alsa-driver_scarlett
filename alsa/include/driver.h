@@ -352,31 +352,13 @@ struct snd_stru_card {
 
 /* device.c */
 
-typedef loff_t (snd_llseek_t) (struct file *file, loff_t offset, int orig);
-typedef ssize_t (snd_read_t) (struct file *file, char *buf, size_t count);
-typedef ssize_t (snd_write_t) (struct file *file, const char *buf, size_t count);
-typedef ssize_t (snd_readv_t) (struct file *file, const struct iovec *vector, unsigned long count);
-typedef ssize_t (snd_writev_t) (struct file *file, const struct iovec *vector, unsigned long count);
-typedef int (snd_open_t) (unsigned short minor, int cardnum, int device, struct file *file);
-typedef int (snd_release_t) (unsigned short minor, int cardnum, int device, struct file *file);
-typedef unsigned int (snd_poll_t) (struct file *file, poll_table *wait);
-typedef int (snd_ioctl_t) (struct file *file, unsigned int cmd, unsigned long arg);
-typedef int (snd_mmap_t) (struct inode *inode, struct file *file, struct vm_area_struct *vma);
-
 struct snd_stru_minor {
-	char *comment;			/* for /dev/sndinfo */
+	struct list_head list;		/* list of all minors per card */
+	int number;			/* minor number */
+	int device;			/* device number */
+	const char *comment;		/* for /proc/asound/devices */
 	snd_info_entry_t *dev;		/* for /proc/asound/dev */
-
-	snd_llseek_t *llseek;
-	snd_read_t *read;
-	snd_write_t *write;
-	snd_readv_t *readv;
-	snd_writev_t *writev;
-	snd_open_t *open;
-	snd_release_t *release;
-	snd_poll_t *poll;
-	snd_ioctl_t *ioctl;
-	snd_mmap_t *mmap;
+	struct file_operations *f_ops;	/* file operations */
 };
 
 typedef struct snd_stru_minor snd_minor_t;

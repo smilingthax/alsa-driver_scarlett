@@ -24,13 +24,13 @@
 
 typedef struct snd_stru_hwdep_ops {
 	long long (*llseek) (snd_hwdep_t *hw, struct file * file, long long offset, int orig);
-	long (*read) (snd_hwdep_t * hw, char *buf, long count);
-	long (*write) (snd_hwdep_t * hw, const char *buf, long count);
+	long (*read) (snd_hwdep_t * hw, char *buf, long count, loff_t *offset);
+	long (*write) (snd_hwdep_t * hw, const char *buf, long count, loff_t *offset);
 	int (*open) (snd_hwdep_t * hw, struct file * file);
 	int (*release) (snd_hwdep_t * hw, struct file * file);
 	unsigned int (*poll) (snd_hwdep_t * hw, struct file * file, poll_table * wait);
 	int (*ioctl) (snd_hwdep_t * hw, struct file * file, unsigned int cmd, unsigned long arg);
-	int (*mmap) (snd_hwdep_t * hw, struct inode * inode, struct file * file, struct vm_area_struct * vma);
+	int (*mmap) (snd_hwdep_t * hw, struct file * file, struct vm_area_struct * vma);
 } snd_hwdep_ops_t;
 
 struct snd_stru_hwdep {
