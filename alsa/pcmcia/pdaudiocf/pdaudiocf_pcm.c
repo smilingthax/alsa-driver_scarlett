@@ -78,6 +78,21 @@ static int snd_pcm_free_vmalloc_buffer(snd_pcm_substream_t *subs)
 }
 
 /*
+ * clear the SRAM contents
+ */
+static int pdacf_pcm_clear_sram(pdacf_t *chip)
+{
+	int max_loop = 64 * 1024;
+
+	while (inw(chip->port + PDAUDIOCF_REG_RDP) != inw(chip->port + PDAUDIOCF_REG_WDP)) {
+		if (max_loop-- < 0)
+			return -EIO;
+		inw(chip->port + PDAUDIOCF_REG_MD);
+	}
+	return 0;
+}
+
+/*
  * pdacf_pcm_trigger - trigger callback for capture
  */
 static int pdacf_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
@@ -94,6 +109,7 @@ static int pdacf_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 	case SNDRV_PCM_TRIGGER_START:
 		chip->pcm_hwptr = 0;
 		chip->pcm_tdone = 0;
+		/* fall thru */
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 	case SNDRV_PCM_TRIGGER_RESUME:
 		mask = 0;
@@ -127,8 +143,6 @@ static int pdacf_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 	pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, tmp);
       __end:
 	spin_unlock(&chip->reg_lock);
-	if (cmd == SNDRV_PCM_TRIGGER_STOP)
-		pdacf_reinit(chip, 0);
 	snd_ak4117_check_rate_and_errors(chip->ak4117, AK4117_CHECK_NO_RATE);
 	return ret;
 }
@@ -157,7 +171,7 @@ static int pdacf_pcm_prepare(snd_pcm_substream_t *subs)
 {
 	pdacf_t *chip = snd_pcm_substream_chip(subs);
 	snd_pcm_runtime_t *runtime = subs->runtime;
-	u16 val;
+	u16 val, nval, aval;
 
 	if (chip->chip_status & PDAUDIOCF_STAT_IS_STALE)
 		return -EBUSY;
@@ -174,12 +188,25 @@ static int pdacf_pcm_prepare(snd_pcm_substream_t *subs)
 	if (snd_pcm_format_unsigned(runtime->format))
 		chip->pcm_xor = 0x80008000;
 
-	val = 0;
+	if (pdacf_pcm_clear_sram(chip) < 0)
+		return -EIO;
+	
+	val = nval = pdacf_reg_read(chip, PDAUDIOCF_REG_SCR);
+	nval &= ~(PDAUDIOCF_DATAFMT0|PDAUDIOCF_DATAFMT1);
+	switch (runtime->format) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+	case SNDRV_PCM_FORMAT_S16_BE:
+		break;
+	default: /* 24-bit */
+		nval |= PDAUDIOCF_DATAFMT0 | PDAUDIOCF_DATAFMT1;
+		break;
+	}
+	aval = 0;
 	chip->pcm_sample = 4;
 	switch (runtime->format) {
 	case SNDRV_PCM_FORMAT_S16_LE:
 	case SNDRV_PCM_FORMAT_S16_BE:
-		val = AK4117_DIF_16R;
+		aval = AK4117_DIF_16R;
 		chip->pcm_frame = 2;
 		chip->pcm_sample = 2;
 		break;
@@ -188,25 +215,17 @@ static int pdacf_pcm_prepare(snd_pcm_substream_t *subs)
 		chip->pcm_sample = 3;
 		/* fall trough */
 	default: /* 24-bit */
-		val |= AK4117_DIF_24R;
+		aval = AK4117_DIF_24R;
 		chip->pcm_frame = 3;
 		chip->pcm_xor &= 0xffff0000;
 		break;
 	}
-	snd_ak4117_reg_write(chip->ak4117, AK4117_REG_IO, AK4117_DIF2|AK4117_DIF1|AK4117_DIF0, val);
-	
-	val = pdacf_reg_read(chip, PDAUDIOCF_REG_SCR);
-	val &= ~(PDAUDIOCF_DATAFMT0|PDAUDIOCF_DATAFMT1);
-	switch (runtime->format) {
-	case SNDRV_PCM_FORMAT_S16_LE:
-	case SNDRV_PCM_FORMAT_S16_BE:
-		break;
-	default: /* 24-bit */
-		val |= PDAUDIOCF_DATAFMT0 | PDAUDIOCF_DATAFMT1;
-		break;
+
+	if (val != nval) {
+		snd_ak4117_reg_write(chip->ak4117, AK4117_REG_IO, AK4117_DIF2|AK4117_DIF1|AK4117_DIF0, aval);
+		pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, nval);
 	}
-	pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, val);
-	
+
 	val = pdacf_reg_read(chip,  PDAUDIOCF_REG_IER);
 	val &= ~(PDAUDIOCF_IRQLVLEN1);
 	val |= PDAUDIOCF_IRQLVLEN0;
@@ -278,6 +297,7 @@ static int pdacf_pcm_capture_close(snd_pcm_substream_t *subs)
 
 	if (!chip)
 		return -EINVAL;
+	pdacf_reinit(chip, 0);
 	chip->pcm_substream = NULL;
 	return 0;
 }
