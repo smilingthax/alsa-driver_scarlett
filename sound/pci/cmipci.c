@@ -115,7 +115,7 @@ MODULE_PARM_SYNTAX(snd_fm_port, SNDRV_ENABLED ",allows:{{-1},{0x388},{0x3c8},{0x
 #define CM_SPDIF_SELECT1	0x00080000	/* for model <= 037 ? */
 #define CM_AC3EN1		0x00100000	/* enable AC3: model 037 */
 #define CM_SPD24SEL		0x00020000	/* 24bit spdif: model 037 */
-#define CM_SPDIF_INVERSE	0x00010000
+/* #define CM_SPDIF_INVERSE	0x00010000 */ /* ??? */
 
 #define CM_ADCBITLEN_MASK	0x0000C000	
 #define CM_ADCBITLEN_16		0x00000000
@@ -258,7 +258,8 @@ MODULE_PARM_SYNTAX(snd_fm_port, SNDRV_ENABLED ",allows:{{-1},{0x388},{0x3c8},{0x
 
 #define CM_REG_MISC		0x27
 #define CM_XGPO1		0x20
-#define CM_XGPBIO		0x04
+// #define CM_XGPBIO		0x04
+#define CM_SPDIF_INVERSE	0x04	/* spdif input phase inverse (model 037) */
 #define CM_SPDVALID		0x02	/* spdif input valid check */
 #define CM_DMAUTO		0x01
 
@@ -2154,7 +2155,8 @@ DEFINE_BIT_SWITCH_ARG(spdif_dac_out, CM_REG_LEGACY_CTRL, CM_DAC2SPDO, 0, 1);
 DEFINE_SWITCH_ARG(spdo_5v, CM_REG_MISC_CTRL, CM_SPDO5V, 0, 0, 0); /* inverse: 0 = 5V */
 DEFINE_BIT_SWITCH_ARG(spdif_loop, CM_REG_FUNCTRL1, CM_SPDFLOOP, 0, 1);
 DEFINE_BIT_SWITCH_ARG(spdi_monitor, CM_REG_MIXER1, CM_CDPLAY, 1, 0);
-DEFINE_BIT_SWITCH_ARG(spdi_phase, CM_REG_CHFORMAT, CM_SPDIF_INVERSE, 0, 0);
+/* DEFINE_BIT_SWITCH_ARG(spdi_phase, CM_REG_CHFORMAT, CM_SPDIF_INVERSE, 0, 0); */
+DEFINE_BIT_SWITCH_ARG(spdi_phase, CM_REG_MISC, CM_SPDIF_INVERSE, 1, 0);
 DEFINE_BIT_SWITCH_ARG(spdi_phase2, CM_REG_CHFORMAT, CM_SPDIF_INVERSE2, 0, 0);
 #if CM_CH_PLAY == 1
 DEFINE_SWITCH_ARG(exchange_dac, CM_REG_MISC_CTRL, CM_XCHGDAC, 0, 0, 0); /* reversed */
