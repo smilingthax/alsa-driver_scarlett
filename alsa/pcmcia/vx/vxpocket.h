@@ -37,6 +37,7 @@ struct snd_vxp_entry {
 	int *enable_table;
 	unsigned int *irq_mask_p;
 	int *irq_list;
+	int *ibl;
 
 	/* h/w config */
 	struct snd_vx_hardware *hardware;

@@ -42,6 +42,7 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 static int mic[SNDRV_CARDS]; /* microphone */
+static int ibl[SNDRV_CARDS]; /* microphone */
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for Digigram " CARD_NAME " soundcard.");
@@ -55,6 +56,9 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(mic, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(mic, "Enable Microphone.");
 MODULE_PARM_SYNTAX(mic, SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
+MODULE_PARM(ibl, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(ibl, "Capture IBL size.");
+MODULE_PARM_SYNTAX(ibl, SNDRV_ENABLED);
 
 /*
  */
@@ -229,6 +233,7 @@ static int __devinit snd_vx222_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
+	vx->core.ibl.size = ibl[dev];
 
 	sprintf(card->longname, "%s at 0x%lx & 0x%lx, irq %i",
 		card->shortname, vx->port[0], vx->port[1], vx->core.irq);
