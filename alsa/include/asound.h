@@ -1014,66 +1014,6 @@ typedef struct snd_mixer_read {
 	} data;
 } snd_mixer_read_t;
 
-/*
- *  Interface compatible with Open Sound System API
- */
-
-#ifdef __SND_OSS_COMPAT__
-
-#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001	/* only one capture source at moment */
-
-#define SND_MIXER_OSS_DEVS	25
-#define SND_MIXER_OSS_VOLUME	0
-#define SND_MIXER_OSS_BASS	1
-#define SND_MIXER_OSS_TREBLE	2
-#define SND_MIXER_OSS_SYNTH	3
-#define SND_MIXER_OSS_PCM	4
-#define SND_MIXER_OSS_SPEAKER	5
-#define SND_MIXER_OSS_LINE	6
-#define SND_MIXER_OSS_MIC	7
-#define SND_MIXER_OSS_CD	8
-#define SND_MIXER_OSS_IMIX	9	/* recording monitor */
-#define SND_MIXER_OSS_ALTPCM	10
-#define SND_MIXER_OSS_RECLEV	11	/* recording level */
-#define SND_MIXER_OSS_IGAIN	12	/* input gain */
-#define SND_MIXER_OSS_OGAIN	13	/* output gain */
-#define SND_MIXER_OSS_LINE1	14
-#define SND_MIXER_OSS_LINE2	15
-#define SND_MIXER_OSS_LINE3	16
-#define SND_MIXER_OSS_DIGITAL1	17
-#define SND_MIXER_OSS_DIGITAL2	18
-#define SND_MIXER_OSS_DIGITAL3	19
-#define SND_MIXER_OSS_PHONEIN	20
-#define SND_MIXER_OSS_PHONEOUT	21
-#define SND_MIXER_OSS_VIDEO	22
-#define SND_MIXER_OSS_RADIO	23
-#define SND_MIXER_OSS_MONITOR	24
-#define SND_MIXER_OSS_UNKNOWN	(32+1)
-
-struct snd_oss_mixer_info {
-	char id[16];
-	char name[32];
-	int modify_counter;
-	int fillers[10];
-};
-
-struct snd_oss_mixer_info_obsolete {
-	char id[16];
-	char name[32];
-};
-
-#define SND_MIXER_OSS_SET_RECSRC _IOWR('M', 255, int)
-#define SND_MIXER_OSS_RECSRC	_IOR ('M', 255, int)
-#define SND_MIXER_OSS_DEVMASK	_IOR ('M', 254, int)
-#define SND_MIXER_OSS_RECMASK	_IOR ('M', 253, int)
-#define SND_MIXER_OSS_CAPS	_IOR ('M', 252, int)
-#define SND_MIXER_OSS_STEREODEVS _IOR ('M', 251, int)
-#define SND_MIXER_OSS_INFO      _IOR ('M', 101, struct snd_oss_mixer_info)
-#define SND_MIXER_OSS_OLD_INFO	_IOR ('M', 101, struct snd_oss_mixer_info_obsolete)
-#define SND_OSS_GETVERSION	_IOR ('M', 118, int)
-
-#endif				/* __SND_OSS_COMPAT__ */
-
 /*****************************************************************************
  *                                                                           *
  *             Digital Audio (PCM) interface - /dev/snd/pcm??                *
@@ -1502,6 +1442,8 @@ typedef struct snd_pcm_setup {
 	size_t transfer_block_size;	/* bus transfer block size */
 	size_t mmap_bytes;		/* mmap data size in bytes*/
 	unsigned int msbits_per_sample;	/* used most significant bits per sample */
+	unsigned int rate_master;	/* Exact rate is rate_master / */
+	unsigned int rate_divisor;	/* rate_divisor */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_setup_t;
 
@@ -1597,92 +1539,6 @@ typedef struct {
 #define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
 #define SND_PCM_IOCTL_FRAME_DATA	_IOW ('A', 0x54, off_t)
 #define SND_PCM_IOCTL_SYNC		_IOW ('A', 0x60, snd_pcm_sync_t)
-
-
-
-/*
- *  Interface compatible with Open Sound System API
- */
-
-#ifdef __SND_OSS_COMPAT__
-
-#define SND_PCM_AFMT_QUERY		0
-#define SND_PCM_AFMT_MU_LAW		(1<<0)
-#define SND_PCM_AFMT_A_LAW		(1<<1)
-#define SND_PCM_AFMT_IMA_ADPCM		(1<<2)
-#define SND_PCM_AFMT_U8			(1<<3)
-#define SND_PCM_AFMT_S16_LE		(1<<4)
-#define SND_PCM_AFMT_S16_BE		(1<<5)
-#define SND_PCM_AFMT_S8			(1<<6)
-#define SND_PCM_AFMT_U16_LE		(1<<7)
-#define SND_PCM_AFMT_U16_BE		(1<<8)
-#define SND_PCM_AFMT_MPEG		(1<<9)
-
-#define SND_PCM_ENABLE_CAPTURE		0x00000001
-#define SND_PCM_ENABLE_PLAYBACK		0x00000002
-
-#define SND_PCM_CAP_REVISION		0x000000ff
-#define SND_PCM_CAP_DUPLEX		0x00000100
-#define SND_PCM_CAP_REALTIME		0x00000200
-#define SND_PCM_CAP_BATCH		0x00000400
-#define SND_PCM_CAP_COPROC		0x00000800
-#define SND_PCM_CAP_TRIGGER		0x00001000
-#define SND_PCM_CAP_MMAP		0x00002000
-
-#define SND_PCM_AFP_NORMAL		0
-#define SND_PCM_AFP_NETWORK		1
-#define SND_PCM_AFP_CPUINTENS		2
-
-struct snd_pcm_buffer_info {
-	int fragments;		/* # of available fragments (partially used ones not counted) */
-	int fragstotal;		/* Total # of fragments allocated */
-	int fragsize;		/* Size of a fragment in bytes */
-	int bytes;		/* Available space in bytes (includes partially used fragments) */
-};
-
-struct snd_pcm_count_info {
-	int bytes;		/* Total # of bytes processed */
-	int blocks;		/* # of fragment transitions since last time */
-	int ptr;		/* Current DMA pointer value */
-};
-
-struct snd_pcm_buffer_description {
-	unsigned char *buffer;
-	int size;
-};
-
-#define SND_PCM_IOCTL_OSS_RESET		_IO  ('P', 0)
-#define SND_PCM_IOCTL_OSS_SYNC		_IO  ('P', 1)
-#define SND_PCM_IOCTL_OSS_RATE		_IOWR('P', 2, int)
-#define SND_PCM_IOCTL_OSS_GETRATE	_IOR ('P', 2, int)
-#define SND_PCM_IOCTL_OSS_STEREO	_IOWR('P', 3, int)
-#define SND_PCM_IOCTL_OSS_GETBLKSIZE	_IOWR('P', 4, int)
-#define SND_PCM_IOCTL_OSS_FORMAT	_IOWR('P', 5, int)
-#define SND_PCM_IOCTL_OSS_GETFORMAT	_IOR ('P', 5, int)
-#define SND_PCM_IOCTL_OSS_CHANNELS	_IOWR('P', 6, int)
-#define SND_PCM_IOCTL_OSS_GETCHANNELS	_IOR ('P', 6, int)
-#define SND_PCM_IOCTL_OSS_FILTER	_IOWR('P', 7, int)
-#define SND_PCM_IOCTL_OSS_GETFILTER	_IOR ('P', 7, int)
-#define SND_PCM_IOCTL_OSS_POST		_IO  ('P', 8 )
-#define SND_PCM_IOCTL_OSS_SUBDIVIDE	_IOWR('P', 9, int)
-#define SND_PCM_IOCTL_OSS_SETFRAGMENT	_IOWR('P', 10, int)
-#define SND_PCM_IOCTL_OSS_GETFORMATS	_IOR ('P', 11, int)
-#define SND_PCM_IOCTL_OSS_GETPBKSPACE	_IOR ('P', 12, struct snd_pcm_buffer_info)
-#define SND_PCM_IOCTL_OSS_GETRECSPACE	_IOR ('P', 13, struct snd_pcm_buffer_info)
-#define SND_PCM_IOCTL_OSS_NONBLOCK	_IO  ('P', 14)
-#define SND_PCM_IOCTL_OSS_GETCAPS	_IOR ('P', 15, int)
-#define SND_PCM_IOCTL_OSS_GETTRIGGER	_IOR ('P', 16, int)
-#define SND_PCM_IOCTL_OSS_SETTRIGGER	_IOW ('P', 16, int)
-#define SND_PCM_IOCTL_OSS_GETRECPTR	_IOR ('P', 17, struct snd_pcm_count_info)
-#define SND_PCM_IOCTL_OSS_GETPBKPTR	_IOR ('P', 18, struct snd_pcm_count_info)
-#define SND_PCM_IOCTL_OSS_MAPRECBUFFER	_IOR ('P', 19, struct snd_pcm_buffer_description)
-#define SND_PCM_IOCTL_OSS_MAPPBKBUFFER	_IOR ('P', 20, struct snd_pcm_buffer_description)
-#define SND_PCM_IOCTL_OSS_SYNCRO	_IO  ('P', 21)
-#define SND_PCM_IOCTL_OSS_DUPLEX	_IO  ('P', 22)
-#define SND_PCM_IOCTL_OSS_GETODELAY	_IOR ('P', 23, int)
-#define SND_PCM_IOCTL_OSS_PROFILE	_IOW ('P', 23, int)
-
-#endif				/* __SND_OSS_COMPAT__ */
 
 /*****************************************************************************
  *                                                                           *

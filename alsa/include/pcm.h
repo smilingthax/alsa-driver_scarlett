@@ -115,6 +115,8 @@ struct snd_stru_pcm_runtime {
 	int xrun_mode;
 
 	snd_pcm_format_t format;	/* format information */
+	unsigned int rate_master;
+	unsigned int rate_divisor;
 	size_t buffer_size;
 	size_t frag_size;
 	size_t frags;			/* fragments */
@@ -274,6 +276,11 @@ typedef struct {
 	int result;
 } snd_pcm_ksync_request_t;
 
+typedef struct {
+	unsigned int master;
+	unsigned int div_min, div_max;
+} snd_pcm_clock_t;
+
 /*
  *  Registering
  */
@@ -380,7 +387,21 @@ static inline size_t snd_pcm_capture_frames_avail(snd_pcm_runtime_t *runtime)
 	return frames_avail;
 }
 
-
+extern int snd_pcm_nearest_le_clock(unsigned int hertz, 
+				    unsigned int clocks_count, 
+				    snd_pcm_clock_t *clocks,
+				    unsigned int *masterp, 
+				    unsigned int *divisorp);
+extern int snd_pcm_nearest_ge_clock(unsigned int hertz, 
+				    unsigned int clocks_count, 
+				    snd_pcm_clock_t *clocks,
+				    unsigned int *masterp, 
+				    unsigned int *divisorp);
+extern int snd_pcm_nearest_clock(unsigned int hertz, 
+				 unsigned int clocks_count, 
+				 snd_pcm_clock_t *clocks,
+				 unsigned int *masterp, 
+				 unsigned int *divisorp);
 extern int snd_pcm_format_signed(int format);
 extern int snd_pcm_format_unsigned(int format);
 extern int snd_pcm_format_linear(int format);
