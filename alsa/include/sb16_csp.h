@@ -146,9 +146,17 @@ typedef struct snd_sb_csp {
 	int run_width;		/* current sample width */
 	int version;		/* CSP version (0x10 - 0x1f) */
 	int running;		/* running state */
+
+	snd_kmixer_t *mixer;	/* mixer interface to attach */
+	snd_kmixer_element_t *mixer_dest;	/* output target */
+
+	snd_kmixer_element_t *me_qsound_pcm;
+	snd_kmixer_group_t   *mg_qsound;
+
 	int q_enabled;		/* Q-Sound enabled flag */
 	int qpos_left;		/* Q-Sound left position */
 	int qpos_right;		/* Q-Sound right position */
+
 	struct semaphore access_mutex;	/* locking */
 
 	snd_info_entry_t *proc;	/* proc interface */
@@ -166,7 +174,7 @@ typedef struct {
 } snd_sb_csp_callback_t;
 
 #define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
-void snd_sb_csp_register_callbacks(sbdsp_t * codec);
+void snd_sb_csp_register_callbacks(snd_sb_csp_callback_t ** callbacks_ptr);
 int snd_sb_csp_new(sbdsp_t * codec, int device, snd_hwdep_t ** rhwdep);
 #endif
 

@@ -94,9 +94,6 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_vol_synth;
 	snd_kmixer_element_t *me_sw3_synth_input;
 
-#ifdef CONFIG_SND_SB16_CSP
-	snd_kmixer_element_t *me_qsound_pcm;
-#endif
 	snd_kmixer_element_t *me_vol_pcm;
 
 	snd_kmixer_element_t *me_vol_ogain;
@@ -135,7 +132,6 @@ struct snd_stru_sbdsp {
 	unsigned int force_mode16;	/* force 16-bit mode of streams */
 
 	sbmixer_t mixer;		/* mixer */
-	snd_kmixer_t *mixer_ptr;	/* pointer to mixer structure */
 
 	char name[32];
 
@@ -143,8 +139,6 @@ struct snd_stru_sbdsp {
 	void *csp_callbacks;
 	void *csp_private_data;
 	unsigned int csp_acquired;
-
-	snd_kmixer_group_t *qsgroup;	/* qsound group */
 #endif
 
 	snd_card_t *card;
