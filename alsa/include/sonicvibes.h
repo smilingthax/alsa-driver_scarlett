@@ -189,13 +189,42 @@ struct snd_stru_sonicvibes {
 	snd_rawmidi_t *rmidi;
 	snd_hwdep_t *fmsynth;	/* S3FM */
 
+	spinlock_t reg_lock;
+	snd_info_entry_t *proc_entry;
+
 	snd_kswitch_t *switch_wavesource;
 	snd_kswitch_t *switch_synth;
 	snd_kswitch_t *switch_rxtosynth;
 	snd_kswitch_t *switch_txtoext;
 
-	spinlock_t reg_lock;
-	snd_info_entry_t *proc_entry;
+	snd_kmixer_element_t *me_mux_cd;
+	snd_kmixer_element_t *me_mux_dac;
+	snd_kmixer_element_t *me_mux_aux2;
+	snd_kmixer_element_t *me_mux_line;
+	snd_kmixer_element_t *me_mux_aux1;
+	snd_kmixer_element_t *me_mux_mic;
+	snd_kmixer_element_t *me_mux_out;
+
+	snd_kmixer_element_t *me_mux;
+	snd_kmixer_element_t *me_vol_igain;
+	snd_kmixer_element_t *me_vol_aux1;
+	snd_kmixer_element_t *me_sw_aux1;
+	snd_kmixer_element_t *me_vol_cd;
+	snd_kmixer_element_t *me_sw_cd;
+	snd_kmixer_element_t *me_vol_line;
+	snd_kmixer_element_t *me_sw_line;
+	snd_kmixer_element_t *me_vol_mic;
+	snd_kmixer_element_t *me_sw_mic;
+	snd_kmixer_element_t *me_vol_synth;
+	snd_kmixer_element_t *me_sw_synth;
+	snd_kmixer_element_t *me_vol_aux2;
+	snd_kmixer_element_t *me_sw_aux2;
+	snd_kmixer_element_t *me_vol_master;
+	snd_kmixer_element_t *me_sw_master;
+	snd_kmixer_element_t *me_vol_pcm;
+	snd_kmixer_element_t *me_sw_pcm;
+	snd_kmixer_element_t *me_vol_loop;
+	snd_kmixer_element_t *me_sw_loop;
 };
 
 sonicvibes_t *snd_sonicvibes_create(snd_card_t * card,
