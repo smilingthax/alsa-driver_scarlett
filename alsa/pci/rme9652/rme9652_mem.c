@@ -9,6 +9,7 @@
 #include <linux/modversions.h>
 #include "sndversions.h"
 #endif
+#include <linux/module.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 #include <linux/kernel.h>
