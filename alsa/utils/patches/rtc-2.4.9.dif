@@ -1,17 +1,17 @@
---- linux/drivers/char/Makefile-dist	Mon Sep  4 12:57:41 2000
-+++ linux/drivers/char/Makefile	Mon Sep  4 12:58:35 2000
-@@ -38,7 +38,7 @@
+--- linux-2.4.9/drivers/char/Makefile	Thu Sep 13 21:07:58 2001
++++ linux-2.4.9+rtc/drivers/char/Makefile	Thu Sep 13 21:35:53 2001
+@@ -23,7 +23,7 @@
  
  export-objs     :=	busmouse.o console.o keyboard.o sysrq.o \
  			misc.o pty.o random.o selection.o serial.o \
--			tty_io.o
-+			tty_io.o rtc.o
+-			sonypi.o tty_io.o tty_ioctl.o
++			sonypi.o tty_io.o tty_ioctl.o rtc.o
  
- list-multi	:=	
+ mod-subdirs	:=	joystick ftape drm pcmcia
  
---- linux/drivers/char/rtc.c-dist	Mon Sep  4 12:57:45 2000
-+++ linux/drivers/char/rtc.c	Mon Sep  4 13:01:24 2000
-@@ -136,6 +136,11 @@
+--- linux-2.4.9/drivers/char/rtc.c	Thu Sep 13 21:07:59 2001
++++ linux-2.4.9+rtc/drivers/char/rtc.c	Thu Sep 13 21:33:12 2001
+@@ -137,6 +137,11 @@
  static unsigned long rtc_freq = 0;	/* Current periodic IRQ rate	*/
  static unsigned long rtc_irq_data = 0;	/* our output to the world	*/
  
@@ -23,7 +23,7 @@
  /*
   *	If this driver ever becomes modularised, it will be really nice
   *	to make the epoch retain its value across module reload...
-@@ -177,6 +182,10 @@
+@@ -178,6 +183,10 @@
  	spin_unlock (&rtc_lock);
  
  	/* Now do the rest of the actions */
@@ -34,7 +34,7 @@
  	wake_up_interruptible(&rtc_wait);	
  
  	kill_fasync (&rtc_async_queue, SIGIO, POLL_IN);
-@@ -243,8 +252,7 @@
+@@ -239,8 +248,7 @@
  #endif
  }
  
@@ -44,7 +44,7 @@
  {
  	struct rtc_time wtime; 
  
-@@ -278,7 +286,7 @@
+@@ -274,7 +282,7 @@
  		 * We don't really want Joe User enabling more
  		 * than 64Hz of interrupts on a multi-user machine.
  		 */
@@ -53,7 +53,7 @@
  			return -EACCES;
  
  		if (!(rtc_status & RTC_TIMER_ON)) {
-@@ -453,7 +461,7 @@
+@@ -469,7 +477,7 @@
  		 * We don't really want Joe User generating more
  		 * than 64Hz of interrupts on a multi-user machine.
  		 */
@@ -62,7 +62,7 @@
  			return -EACCES;
  
  		while (arg > (1<<tmp))
-@@ -500,6 +508,12 @@
+@@ -515,6 +523,12 @@
  	return copy_to_user((void *)arg, &wtime, sizeof wtime) ? -EFAULT : 0;
  }
  
@@ -75,7 +75,7 @@
  /*
   *	We enforce only one user at a time here with the open/close.
   *	Also clear the previous interrupt data on an open, and clean
-@@ -563,11 +577,8 @@
+@@ -578,11 +592,8 @@
  
  	spin_lock_irq (&rtc_lock);
  	rtc_irq_data = 0;
@@ -88,7 +88,7 @@
  	return 0;
  }
  
-@@ -590,6 +601,88 @@
+@@ -605,6 +616,88 @@
  #endif
  
  /*
@@ -177,7 +177,7 @@
   *	The various file operations we support.
   */
  
-@@ -750,7 +843,6 @@
+@@ -777,7 +870,6 @@
  
  module_init(rtc_init);
  module_exit(rtc_exit);
@@ -185,11 +185,11 @@
  
  #if RTC_IRQ
  /*
---- linux/include/linux/mc146818rtc.h-dist	Mon Sep  4 12:46:00 2000
-+++ linux/include/linux/mc146818rtc.h	Mon Sep  4 12:46:47 2000
-@@ -95,4 +95,17 @@
- #define BIN_TO_BCD(val) ((val)=(((val)/10)<<4) + (val)%10)
- #endif
+--- linux-2.4.9/include/linux/rtc.h	Thu Sep 13 21:08:21 2001
++++ linux-2.4.9+rtc/include/linux/rtc.h	Thu Sep 13 21:34:58 2001
+@@ -66,4 +66,17 @@
+ #define RTC_WKALM_SET	_IOW('p', 0x0f, struct rtc_wkalrm)/* Set wakeup alarm*/
+ #define RTC_WKALM_RD	_IOR('p', 0x10, struct rtc_wkalrm)/* Get wakeup alarm*/
  
 +/* Exported functions to other kernel drivers */
 +
@@ -204,4 +204,4 @@
 +int rtc_control(rtc_task_t *t, unsigned int cmd, unsigned long arg);
 +#endif
 +
- #endif /* _MC146818RTC_H */
+ #endif /* _LINUX_RTC_H_ */
