@@ -7,6 +7,10 @@
 typedef unsigned long dma_addr_t;
 #endif
 
+#ifndef CONFIG_ISA	/* FIXME: Is it required for all supported archs? --jk */
+#define CONFIG_ISA
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18)
 #define init_MUTEX(x) *(x) = MUTEX
 #define DECLARE_MUTEX(x) struct semaphore x = MUTEX
