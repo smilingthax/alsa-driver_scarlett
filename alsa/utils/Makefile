@@ -5,7 +5,12 @@
 
 TOPDIR  = ..
 
+ifeq ($(TOPDIR)/Makefile.conf,$(wildcard $(TOPDIR)/Makefile.conf))
 include $(TOPDIR)/Makefile.conf
+else
+CC = gcc
+INCLUDE =
+endif
 
 TARGETS = snd-deps
 
@@ -17,13 +22,19 @@ all: $(TARGETS)
 snd-deps: snd-deps-find.o snd-deps-output.o
 	$(CC) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
 
+../acinclude.m4: snd-deps ../modules.config
+	./snd-deps --acinclude > ../acinclude.m4
+
+../cards.config.in: snd-deps ../modules.config
+	./snd-deps --makefile > ../cards.config.in
+
+../include/config1.h.in: snd-deps ../modules.config
+	./snd-deps --cinclude > ../include/config1.h.in
+
+update-deps: ../acinclude.m4 ../cards.config.in ../include/config1.h.in
+
 kredirect: kredirect.o
 	$(CC) $(INCLUDE) kredirect.o -o $@
-
-update-deps: snd-deps ../modules.config
-	./snd-deps --acinclude > ../acinclude.m4
-	./snd-deps --makefile > ../cards.config.in
-	./snd-deps --cinclude > ../include/config1.h.in
 
 clean:
 	rm -f core .depend *.o *.orig *~

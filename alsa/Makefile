@@ -9,6 +9,7 @@ ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
 else
 dummy:
+	make -C utils update-deps
 	@echo
 	@echo "Please, run configure script as first..."
 	@echo

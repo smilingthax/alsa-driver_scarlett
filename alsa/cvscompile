@@ -1,5 +1,15 @@
 #!/bin/bash
 
+if [ $# -eq 0 ]; then
+  if [ -r /etc/asound/driver_args ]; then
+    args="`cat /etc/asound/driver_args`"
+  else
+    args="--with-debug=full --with-isapnp=yes --with-sequencer=yes"
+  fi
+else
+  args="$@"
+fi
+
 if [ -r /usr/share/aclocal/alsa-lib.m4 ]; then
   rm -f /usr/share/aclocal/alsa-lib.m4
 fi
@@ -20,20 +30,10 @@ if [ -d ../alsa-lib ]; then
   done
   cd ../..
 fi
+make -C utils update-deps
 aclocal $ACLOCAL_FLAGS
 autoconf
-if [ $# -eq 0 ]; then
-  if [ -r /etc/asound/driver_args ]; then
-    args="`cat /etc/asound/driver_args`"
-    echo "./configure $args"
-    ./configure $args || exit 1
-  else
-    echo "./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes"
-    ./configure --with-debug=full --with-isapnp=yes --with-sequencer=yes || exit 1
-  fi
-else
-  echo "./configure $@"
-  ./configure $@ || exit 1
-fi
+echo "./configure $args"
+./configure $args || exit 1
 make dep
 make
