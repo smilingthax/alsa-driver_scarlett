@@ -541,7 +541,7 @@ static int work_caller(void *data)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
 	daemonize();
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 8)
 	reparent_to_init();
 #endif
 	strcpy(current->comm, "snd-free"); /* FIXME: different names? */
