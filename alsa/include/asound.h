@@ -823,7 +823,7 @@ typedef struct snd_pcm_status {
 } snd_pcm_status_t;
 
 typedef struct {
-	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
+	int state;		/* RO: status - SND_PCM_STATE_XXXX */
 	int pad1;		/* Needed for 64 bit alignment */
 	size_t hw_ptr;		/* RO: hw side ptr (0 ... boundary-1) 
 				   updated only on request and at interrupt time */
@@ -834,7 +834,8 @@ typedef struct {
 
 typedef struct {
 	size_t appl_ptr;	/* RW: application side ptr (0...boundary-1) */
-	char pad[PAGE_SIZE - sizeof(size_t)];
+	size_t avail_min;	/* RW: min available frames for wakeup */
+	char pad[PAGE_SIZE - sizeof(size_t) * 2];
 } snd_pcm_mmap_control_t;
 
 typedef struct {

@@ -129,6 +129,8 @@ struct snd_stru_pcm_runtime {
 	size_t _shw_ptr;
 	volatile size_t *appl_ptr;
 	size_t _sappl_ptr;
+	volatile size_t *avail_min;
+	size_t _savail_min;
 	snd_timestamp_t *tstamp;
 	snd_timestamp_t _ststamp;
 	size_t hw_ptr_base;		/* Position at buffer restart */
@@ -147,7 +149,6 @@ struct snd_stru_pcm_runtime {
 	void (*dig_mask_free)(void *dig_mask);
 	snd_pcm_digital_t digital;	/* digital format information */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
-	size_t avail_min;		/* min available frames for wakeup */
 	size_t bits_per_frame;
 	size_t bits_per_sample;
 	size_t byte_align;
