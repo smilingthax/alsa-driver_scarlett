@@ -144,7 +144,7 @@ Module parameters
     snd_dma1_size - max first DMA size in kB (4-64kB)
     snd_dma2	- first DMA # for ES-18xx chip (0,1,3)
     snd_dma2_size - max second DMA size in kB (4-64kB)
-    snd_skip_isapnp - skip ISA PnP detection - 0 = disable (default), 1 = enable
+    snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
 
     Module supports up to 8 cards ISA PnP and autoprobe (without MPU-401 port
     if native ISA PnP routines are not used).
