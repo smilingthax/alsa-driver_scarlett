@@ -71,6 +71,8 @@ PCM interface:
 
 IEC958 S/PDIF interface:
 
+  [Playback|Capture] [...] IEC958 Switch	/* turn on/off the IEC958 interface */
+  [Playback|Capture] [...] IEC958 Volume	/* digital volume control */
   [Playback|Capture] [...] IEC958 Default	/* default or global value - read/write */
   [Playback|Capture] [...] IEC958 Mask		/* consumer and professional mask */
   [Playback|Capture] [...] IEC958 Con Mask	/* consumer mask */

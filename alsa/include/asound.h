@@ -796,6 +796,23 @@ struct sndrv_ctl_event {
 };
 
 /*
+ *  Control names
+ */
+
+#define SNDRV_CTL_NAME_NONE				""
+#define SNDRV_CTL_NAME_PLAYBACK				"Playback "
+#define SNDRV_CTL_NAME_CAPTURE				"Capture "
+
+#define SNDRV_CTL_NAME_IEC958_SWITCH			"Switch"
+#define SNDRV_CTL_NAME_IEC958_VOLUME			"Volume"
+#define SNDRV_CTL_NAME_IEC958_DEFAULT			"Default"
+#define SNDRV_CTL_NAME_IEC958_MASK			"Mask"
+#define SNDRV_CTL_NAME_IEC958_CON_MASK			"Con Mask"
+#define SNDRV_CTL_NAME_IEC958_PRO_MASK			"Pro Mask"
+#define SNDRV_CTL_NAME_IEC958_PCM_STREAM		"PCM Stream"
+#define SNDRV_CTL_NAME_IEC958(direction, what)		"IEC958 " SNDRV_CTL_NAME_##direction SNDRV_CTL_NAME_IEC958_##what
+
+/*
  *
  */
 

@@ -224,17 +224,4 @@
 #define MIDI_CTL_MONO1			0x7e
 #define MIDI_CTL_MONO2			0x7f
 
-/****************************************************************************
- *                                                                          *
- *          Control names						    *
- *                                                                          *
- ****************************************************************************/
-
-#define SNDRV_CTL_NAME_IEC958_PLAYBACK_SWITCH		"IEC958 Playback Switch"
-#define SNDRV_CTL_NAME_IEC958_DEFAULT			"IEC958 Default"
-#define SNDRV_CTL_NAME_IEC958_MASK			"IEC958 Mask"
-#define SNDRV_CTL_NAME_IEC958_CON_MASK			"IEC958 Con Mask"
-#define SNDRV_CTL_NAME_IEC958_PRO_MASK			"IEC958 Pro Mask"
-#define SNDRV_CTL_NAME_IEC958_PCM_STREAM		"IEC958 PCM Stream"
-
 #endif				/* __ASOUNDEF_H */
