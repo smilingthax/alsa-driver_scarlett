@@ -1,0 +1,6 @@
+config SND_AZT3328
+	tristate "Aztech AZF3328 (PCI168)"
+	depends on SND
+	help
+	  Say 'Y' or 'M' to include support for Aztech AZF3328 (PCI168) soundcards
+
