@@ -243,6 +243,8 @@ typedef struct snd_opl3_voice {
 	unsigned int time;	/* An allocation time */
 	unsigned char note;	/* Note currently assigned to this voice */
 
+	unsigned long note_off;	/* note-off time; 0 = don't check */ 
+
 	snd_midi_channel_t *chan;	/* Midi channel for this note */
 } snd_opl3_voice_t;
 
@@ -278,6 +280,10 @@ struct snd_opl3 {
 	unsigned char drum_reg;		/* percussion reg shadow */
 
 	spinlock_t voice_lock;		/* Lock for voice access */
+
+	struct timer_list tlist;	/* timer for note-offs and effects */
+	int sys_timer_status;		/* system timer run status */
+	spinlock_t sys_timer_lock;	/* Lock for system timer access */
 #endif
 	struct semaphore access_mutex;	/* locking */
 };
