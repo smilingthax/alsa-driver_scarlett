@@ -4116,6 +4116,10 @@ static int __devinit snd_hdsp_create(snd_card_t *card,
 			hdsp->io_type = Digiface;
 		}
 		
+		if ((err = snd_hdsp_create_hwdep(card, hdsp)) < 0) {
+			return err;
+		}
+		
 		snd_hdsp_initialize_channels(hdsp);
 		
 		snd_hdsp_initialize_midi_flush(hdsp);
