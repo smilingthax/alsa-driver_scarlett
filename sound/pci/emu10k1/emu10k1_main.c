@@ -222,12 +222,21 @@ static int __devinit snd_emu10k1_init(emu10k1_t * emu, int enable_ir)
 		outl(HCFG_LOCKTANKCACHE_MASK | HCFG_AUTOMUTE | HCFG_JOYENABLE, emu->port + HCFG);
 
 	if (enable_ir) {	/* enable IR for SB Live */
-		unsigned int reg = inl(emu->port + HCFG);
-		outl(reg | HCFG_GPOUT2, emu->port + HCFG);
-		udelay(500);
-		outl(reg | HCFG_GPOUT1 | HCFG_GPOUT2, emu->port + HCFG);
-		udelay(100);
-		outl(reg, emu->port + HCFG);
+		if (emu->audigy) {
+			unsigned int reg = inl(emu->port + A_IOCFG);
+			outl(reg | A_IOCFG_GPOUT2, emu->port + A_IOCFG);
+			udelay(500);
+			outl(reg | A_IOCFG_GPOUT1 | A_IOCFG_GPOUT2, emu->port + A_IOCFG);
+			udelay(100);
+			outl(reg, emu->port + A_IOCFG);
+		} else {
+			unsigned int reg = inl(emu->port + HCFG);
+			outl(reg | HCFG_GPOUT2, emu->port + HCFG);
+			udelay(500);
+			outl(reg | HCFG_GPOUT1 | HCFG_GPOUT2, emu->port + HCFG);
+			udelay(100);
+			outl(reg, emu->port + HCFG);
+ 		}
 	}
 	
 	if (!emu->APS) {	/* enable analog output */
