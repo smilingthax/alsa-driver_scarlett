@@ -1341,7 +1341,9 @@ AC_SUBST(GENKSYMS)
 AC_SUBST(EXTRA_INCLUDES)
 
 dnl Output files...
-AC_OUTPUT(version Makefile.conf snddevices utils/alsa-driver.spec utils/buildrpm toplevel.config)
+AC_OUTPUT(version Makefile.conf snddevices \
+	  utils/alsa-driver.spec utils/buildrpm toplevel.config \
+	  utils/alsasound utils/alsasound.posix)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices

@@ -3,7 +3,8 @@
 # alsasound     This shell script takes care of starting and stopping
 #               the ALSA sound driver.
 #
-# This script requires /usr/sbin/alsactl program from alsa-utils package.
+# This script requires @prefix@/sbin/alsactl program from
+# alsa-utils package.
 #
 # Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
 # Modified for being POSIX-complaint by Christian Kurz <shorty@debian.org>
@@ -29,7 +30,7 @@
 #
 
 config=/etc/modules.conf
-alsactl=/usr/sbin/alsactl
+alsactl=@prefix@/sbin/alsactl
 asoundcfg=/etc/asound.state
 if [ -x /sbin/lsmod ]; then
   lsmod=/sbin/lsmod
