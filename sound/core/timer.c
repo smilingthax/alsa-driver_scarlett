@@ -953,7 +953,7 @@ static void snd_timer_user_interrupt(snd_timer_instance_t *timeri,
 	}
 	spin_unlock(&tu->qlock);
 	if (_wake) {
-		kill_fasync(&ctl->fasync, SIGIO, POLL_IN);
+		kill_fasync(&tu->fasync, SIGIO, POLL_IN);
 		wake_up(&tu->qchange_sleep);
 	}
 }
