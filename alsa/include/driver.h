@@ -205,7 +205,7 @@ typedef enum sndrv_ctl_elem_iface snd_ctl_elem_iface_t;
 typedef struct sndrv_ctl_elem_id snd_ctl_elem_id_t;
 typedef struct sndrv_ctl_elem_list snd_ctl_elem_list_t;
 typedef struct sndrv_ctl_elem_info snd_ctl_elem_info_t;
-typedef struct sndrv_ctl_elem snd_ctl_elem_t;
+typedef struct sndrv_ctl_elem_value snd_ctl_elem_value_t;
 typedef enum sndrv_ctl_event_type snd_ctl_event_type_t;
 typedef struct sndrv_ctl_event snd_ctl_event_t;
 typedef struct sndrv_xferv snd_xferv_t;

@@ -727,7 +727,7 @@ struct sndrv_ctl_elem_info {
 	unsigned char reserved[64];
 };
 
-struct sndrv_ctl_elem {
+struct sndrv_ctl_elem_value {
 	struct sndrv_ctl_elem_id id;	/* W: element ID */
 	unsigned int indirect: 1;	/* W: use indirect pointer (xxx_ptr member) */
         union {
@@ -753,8 +753,8 @@ enum {
 	SNDRV_CTL_IOCTL_INFO = _IOR('U', 0x01, struct sndrv_ctl_card_info),
 	SNDRV_CTL_IOCTL_ELEM_LIST = _IOWR('U', 0x10, struct sndrv_ctl_elem_list),
 	SNDRV_CTL_IOCTL_ELEM_INFO = _IOWR('U', 0x11, struct sndrv_ctl_elem_info),
-	SNDRV_CTL_IOCTL_ELEM_READ = _IOWR('U', 0x12, struct sndrv_ctl_elem),
-	SNDRV_CTL_IOCTL_ELEM_WRITE = _IOWR('U', 0x13, struct sndrv_ctl_elem),
+	SNDRV_CTL_IOCTL_ELEM_READ = _IOWR('U', 0x12, struct sndrv_ctl_elem_value),
+	SNDRV_CTL_IOCTL_ELEM_WRITE = _IOWR('U', 0x13, struct sndrv_ctl_elem_value),
 	SNDRV_CTL_IOCTL_ELEM_LOCK = _IOW('U', 0x14, struct sndrv_ctl_elem_id),
 	SNDRV_CTL_IOCTL_ELEM_UNLOCK = _IOW('U', 0x15, struct sndrv_ctl_elem_id),
 	SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE = _IOWR('U', 0x20, int),
@@ -773,10 +773,10 @@ enum {
 
 enum sndrv_ctl_event_type {
 	SNDRV_CTL_EVENT_REBUILD,	/* rebuild everything */
-	SNDRV_CTL_EVENT_VALUE,		/* an element value was changed */
-	SNDRV_CTL_EVENT_CHANGE,		/* an element was changed */
-	SNDRV_CTL_EVENT_ADD,		/* an element was added */
-	SNDRV_CTL_EVENT_REMOVE,		/* an element was removed */
+	SNDRV_CTL_EVENT_VALUE,		/* element value was changed */
+	SNDRV_CTL_EVENT_INFO,		/* element info was changed */
+	SNDRV_CTL_EVENT_ADD,		/* element was added */
+	SNDRV_CTL_EVENT_REMOVE,		/* element was removed */
 	SNDRV_CTL_EVENT_LAST = SNDRV_CTL_EVENT_REMOVE,
 };
 

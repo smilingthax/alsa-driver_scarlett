@@ -26,8 +26,8 @@
 #define snd_kcontrol_chip(kcontrol) snd_magic_cast1(chip_t, _snd_kcontrol_chip(kcontrol), return -ENXIO)
 
 typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_info_t * uinfo);
-typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_t * ucontrol);
-typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_t * ucontrol);
+typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol);
+typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol);
 
 typedef struct _snd_kcontrol_new {
 	snd_ctl_elem_iface_t iface;	/* interface identifier */
