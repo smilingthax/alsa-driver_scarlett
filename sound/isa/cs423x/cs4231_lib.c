@@ -1574,7 +1574,7 @@ int snd_cs4231_timer(cs4231_t *chip, int device, snd_timer_t **rtimer)
 static int snd_cs4231_info_mux(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
 	static char *texts[4] = {
-		"Line", "Aux", "Mic", "Mix"
+		"Line", "Aux0", "Mic", "Mix"
 	};
 	static char *opl3sa_texts[4] = {
 		"Line", "CD", "Mic", "Mix"
