@@ -40,6 +40,7 @@ typedef struct snd_stru_kcontrol_new {
 
 struct snd_stru_kcontrol {
 	snd_control_id_t id;
+	unsigned int indirect: 1;
 	snd_kcontrol_info_t *info;
 	snd_kcontrol_get_t *get;
 	snd_kcontrol_put_t *put;
