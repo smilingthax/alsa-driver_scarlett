@@ -12,7 +12,7 @@ COPTS   += -DMODVERSIONS \
 		-include $(SNDCFG_KERNELDIR)/include/linux/modversions.h \
 		-include $(TOPDIR)/include/sndversions.h
 endif
-COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB
+COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB -DCONFIG_ISAPNP
 
 TARGETS = $(SNDVERSIONS) \
           $(TOPDIR)/modules/isapnp.o

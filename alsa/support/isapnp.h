@@ -19,6 +19,9 @@
  *
  */
 
+#ifndef LINUX_ISAPNP_H
+#define LINUX_ISAPNP_H
+
 /*
  *  Configuration registers (TODO: change by specification)
  */ 
@@ -45,6 +48,8 @@
 /*
  *
  */
+
+#ifdef __KERNEL__
 
 #define ISAPNP_PORT_FLAG_16BITADDR	(1<<0)
 #define ISAPNP_PORT_FLAG_FIXED		(1<<1)
@@ -195,7 +200,10 @@ struct isapnp_config {
 	unsigned int mem_disable_size[8];
 };
 
+#ifdef CONFIG_ISAPNP
+
 /* lowlevel configuration */
+int isapnp_present(void);
 int isapnp_cfg_begin(int csn, int logdev);
 int isapnp_cfg_end(void);
 unsigned char isapnp_cfg_get_byte(unsigned char idx);
@@ -228,3 +236,45 @@ struct isapnp_logdev *isapnp_find_logdev(struct isapnp_dev *dev,
 					 int index);
 int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logdev);
 int isapnp_configure(struct isapnp_config *config);
+
+#else /* !CONFIG_ISAPNP */
+
+/* lowlevel configuration */
+extern inline int isapnp_present(void) { return 0; }
+extern inline int isapnp_cfg_begin(int csn, int logdev) { return -ENODEV; }
+extern inline int isapnp_cfg_end(void) { return -ENODEV; }
+extern inline unsigned char isapnp_cfg_get_byte(unsigned char idx) { return 0xff; }
+extern inline unsigned short isapnp_cfg_get_word(unsigned char idx) { return 0xffff; }
+extern inline unsigned int isapnp_cfg_get_dword(unsigned char idx) { return 0xffffffff; }
+extern inline void isapnp_cfg_set_byte(unsigned char idx, unsigned char val) { ; }
+extern inline void isapnp_cfg_set_word(unsigned char idx, unsigned short val) { ; }
+extern inline void isapnp_cfg_set_dword(unsigned char idx, unsigned int val) { ; }
+extern void isapnp_wake(unsigned char csn) { ; }
+extern void isapnp_logdev(unsigned char logdev) { ; }
+extern void isapnp_activate(unsigned char logdev) { ; }
+extern void isapnp_deactivate(unsigned char logdev) { ; }
+/* manager */
+extern struct isapnp_port *isapnp_find_port(struct isapnp_logdev *logdev, int index) { return NULL; }
+extern struct isapnp_irq *isapnp_find_irq(struct isapnp_logdev *logdev, int index) { return NULL; }
+extern struct isapnp_dma *isapnp_find_dma(struct isapnp_logdev *logdev, int index) { return NULL; }
+extern struct isapnp_mem *isapnp_find_mem(struct isapnp_logdev *logdev, int index) { return NULL; }
+extern struct isapnp_mem32 *isapnp_find_mem32(struct isapnp_logdev *logdev, int index) { return NULL; }
+extern int isapnp_verify_port(struct isapnp_port *port, unsigned short base) { return -EINVAL; }
+extern int isapnp_verify_irq(struct isapnp_irq *irq, unsigned char value) { return -EINVAL; }
+extern int isapnp_verify_dma(struct isapnp_dma *dma, unsigned char value) { return -EINVAL; }
+extern int isapnp_verify_mem(struct isapnp_mem *mem, unsigned int base) { return -EINVAL; }
+extern int isapnp_verify_mem32(struct isapnp_mem32 *mem32, unsigned int base) { return -EINVAL; }
+extern struct isapnp_dev *isapnp_find_device(unsigned short vendor,
+				             unsigned short device,
+				             int index) { return NULL; }
+extern struct isapnp_logdev *isapnp_find_logdev(struct isapnp_dev *dev,
+					        unsigned short vendor,
+					        unsigned short function,
+					        int index) { return NULL; }
+extern int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logdev) { return -ENODEV; }
+extern int isapnp_configure(struct isapnp_config *config) { return -ENOENT; }
+
+#endif /* CONFIG_ISAPNP */
+
+#endif /* __KERNEL__ */
+#endif /* LINUX_ISAPNP_H */
