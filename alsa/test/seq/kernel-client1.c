@@ -69,13 +69,15 @@ int init_module(void)
 {
 
 	snd_seq_client_callback_t callbacks;
+	snd_seq_client_info_t inf;
 
 	callbacks.input = event_input;
 
 	client = snd_seq_register_kernel_client(&callbacks, NULL);
 
 	/* set our name */
-	snd_seq_kernel_client_ctl(client, SND_SEQ_IOCTL_SET_CLIENT_NAME, "Kernel test");
+	strcpy(inf.name, "Kernel test");
+	snd_seq_kernel_client_ctl(client, SND_SEQ_IOCTL_SET_CLIENT_INFO, &inf);
 
 	return 0;
 }

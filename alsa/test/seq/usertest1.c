@@ -28,7 +28,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <string.h>
 #include "seq.h"
 
 int decode_event(snd_seq_event_t * ev)
@@ -134,13 +134,13 @@ void main(void)
 	printf("My client id = %d\n", c);
 
 
-	name = "Event decoder";
-	if (ioctl(fd, SND_SEQ_IOCTL_SET_CLIENT_NAME, name) < 0) {
+	/* set name */
+	memset(&inf, 0, sizeof(snd_seq_client_info_t));
+	strcpy(inf.name, "Event decoder");
+	if (ioctl(fd, SND_SEQ_IOCTL_SET_CLIENT_INFO, &inf) < 0) {
 		perror("ioctl");
 		exit(1);
 	}
-	sleep(1);
-
 
 	have_data = 0;
 	while (1) {

@@ -9,10 +9,12 @@ TOPDIR  = ../..
 include $(TOPDIR)/Makefile.conf
 
 TARGETS = $(SNDVERSIONS) \
-	opn2 opn3 \
-	usertest1 usertest2 \
+	opn2 opn3 opn4\
+	usertest1 usertest2 usertest3 \
 	readtime \
 	snd-client1.o \
+	snd-client_midi.o \
+	snd-client_midi2.o \
 	playmidi
 
 include $(TOPDIR)/Rules.make
@@ -33,11 +35,17 @@ opn2: 	opn2.c
 opn3: 	opn3.c
 	cc $(COPTS) $(INCLUDE) -o $@ opn3.c
 
+opn4: 	opn4.c
+	cc $(COPTS) $(INCLUDE) -o $@ opn4.c
+
 usertest1: 	usertest1.c
 	cc $(COPTS) $(INCLUDE) -o $@ usertest1.c
 
 usertest2: 	usertest2.c
 	cc $(COPTS) $(INCLUDE)  -o $@ usertest2.c
+
+usertest3: 	usertest3.c
+	cc $(COPTS) $(INCLUDE)  -o $@ usertest3.c
 
 readtime: 	readtime.c
 	cc $(COPTS) $(INCLUDE)  -o $@ readtime.c -lcurses
@@ -45,12 +53,18 @@ readtime: 	readtime.c
 snd-client1.o: .depend $(SNDVERSIONS) kernel-client1.o
 	$(LINKER) -o $@ kernel-client1.o
 
+snd-client_midi.o: .depend $(SNDVERSIONS) kernel-client_midi.o
+	$(LINKER) -o $@ kernel-client_midi.o
+
+snd-client_midi2.o: .depend $(SNDVERSIONS) kernel-client_midi2.o
+	$(LINKER) -o $@ kernel-client_midi2.o
+
 playmidi:	playmidi.c midifile.c midifile.h
 	cc -O2 $(INCLUDE) -o $@ playmidi.c midifile.c
 
 ARCH_SOURCES = \
 	Makefile\
-	*.c *.h *.3 *.mid
+	*.c *.h *.3
 
 snapshot: 
 	tar czvf ../../../archive/snapshot-test-`date +%d%b%Y`.tar.gz $(ARCH_SOURCES)

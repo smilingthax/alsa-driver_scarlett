@@ -46,6 +46,9 @@ double local_secs = 0;
 int local_ticks = 0;
 int local_tempo = 500000;
 
+static int dest_client = 1;
+static int dest_port = 0;
+
 extern void alsa_start_timer(void);
 extern void alsa_stop_timer(void);
 
@@ -252,8 +255,8 @@ void do_noteon(int chan, int pitch, int vol)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -281,8 +284,8 @@ void do_noteoff(int chan, int pitch, int vol)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -309,8 +312,8 @@ void do_program(int chan, int program)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -336,8 +339,8 @@ void do_parameter(int chan, int control, int value)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -364,8 +367,8 @@ void do_pitchbend(int chan, int lsb, int msb)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -390,8 +393,8 @@ void do_pressure(int chan, int pitch, int pressure)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -417,8 +420,8 @@ void do_chanpressure(int chan, int pressure)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = chan;
 
 #ifdef USE_REALTIME
@@ -453,8 +456,8 @@ void do_sysex(int len, char *msg)
 	ev.source.channel = 1;
 
 	ev.dest.queue = 1;
-	ev.dest.client = 1;
-	ev.dest.port = 1;
+	ev.dest.client = dest_client;
+	ev.dest.port = dest_port;
 	ev.dest.channel = 0;	/* don't care */
 
 #ifdef USE_REALTIME
@@ -525,6 +528,7 @@ void alsa_stop_timer(void)
 int main(int argc, char *argv[])
 {
 	char *name;
+	snd_seq_client_info_t inf;
 
 #ifdef USE_REALTIME
 	printf("ALSA MIDI Player, feeding events to real-time queue\n");
@@ -538,12 +542,15 @@ int main(int argc, char *argv[])
 		perror("open /dev/sndseq");
 		exit(1);
 	}
-	/* set client name */
-	name = "MIDI file player";
-	if (ioctl(seqfd, SND_SEQ_IOCTL_SET_CLIENT_NAME, name) < 0) {
+		
+	/* set name */
+	memset(&inf, 0, sizeof(snd_seq_client_info_t));
+	strcpy(inf.name, "MIDI file player");
+	if (ioctl(seqfd, SND_SEQ_IOCTL_SET_CLIENT_INFO, &inf) < 0) {
 		perror("ioctl");
 		exit(1);
 	}
+
 	if (argc > 1)
 		F = fopen(argv[1], "r");
 	else

@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include "seq.h"
 
 void main(void)
@@ -32,6 +33,7 @@ void main(void)
 	int f;
 	char *name;
 	int myid;
+	snd_seq_client_info_t inf;
 
 	f = open("/dev/sndseq", O_RDWR);
 
@@ -41,13 +43,15 @@ void main(void)
 	}
 	printf("My client id = %d\n", myid);
 
-
-	name = "Test Program";
-	if (ioctl(f, SND_SEQ_IOCTL_SET_CLIENT_NAME, name) < 0) {
+	/* set name */
+	memset(&inf, 0, sizeof(snd_seq_client_info_t));
+	strcpy(inf.name, "Test program");
+	if (ioctl(f, SND_SEQ_IOCTL_SET_CLIENT_INFO, &inf) < 0) {
 		perror("ioctl");
 		exit(1);
 	}
-	sleep(1);
+	
+
 
 /*      
    inf.client = 1;

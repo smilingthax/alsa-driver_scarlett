@@ -34,7 +34,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
-
+#include <string.h>
 #include <sched.h>		/* real-time task */
 
 #include "seq.h"		/* ALSA sequencer */
@@ -189,7 +189,7 @@ void main(void)
 {
 	int fd;
 
-	//snd_seq_client_info_t inf;
+	snd_seq_client_info_t inf;
 	char *name;
 	int my_id;
 	fd_set reads, writes;
@@ -216,11 +216,14 @@ void main(void)
 	}
 	printf("My client id = %d\n", my_id);
 
-	name = "Gravis Ultrasound MAX";
-	if (ioctl(fd, SND_SEQ_IOCTL_SET_CLIENT_NAME, name) < 0) {
+	/* set name */
+	memset(&inf, 0, sizeof(snd_seq_client_info_t));
+	strcpy(inf.name, "Gravis Ultrasound MAX");
+	if (ioctl(fd, SND_SEQ_IOCTL_SET_CLIENT_INFO, &inf) < 0) {
 		perror("ioctl");
 		exit(1);
 	}
+	
 	strcpy(port.name, "GUS MIDI");
 	port.capability = SND_SEQ_PORT_CAP_MIDI_OUT | SND_SEQ_PORT_CAP_SYNC_OUT |
 		SND_SEQ_PORT_CAP_MIDI_IN | SND_SEQ_PORT_CAP_SYNC_IN;

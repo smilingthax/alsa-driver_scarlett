@@ -28,7 +28,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <curses.h>
-
+#include <string.h>
 #include "seq.h"
 
 int seqfd;			/* file descriptor for ALSA sequencer */
@@ -56,6 +56,7 @@ void main(void)
 {
 	char *name;
 	int myid;
+	snd_seq_client_info_t inf;
 	snd_seq_queue_info_t queue_info;
 	int keypress;
 	int queue = 1;
@@ -68,12 +69,14 @@ void main(void)
 	}
 	printf("My client id = %d\n", myid);
 
-
-	name = "Time Display";
-	if (ioctl(seqfd, SND_SEQ_IOCTL_SET_CLIENT_NAME, name) < 0) {
+	/* set name */
+	memset(&inf, 0, sizeof(snd_seq_client_info_t));
+	strcpy(inf.name, "Time Display");
+	if (ioctl(seqfd, SND_SEQ_IOCTL_SET_CLIENT_INFO, &inf) < 0) {
 		perror("ioctl");
 		exit(1);
 	}
+
 	/* curses init.. */
 	initscr();
 	cbreak();
