@@ -64,8 +64,8 @@ all: compile
 
 alsa-kernel/sound_core.c:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
-	ln -sf $(ALSAKERNELDIR) sound
-	ln -sf $(ALSAKERNELDIR)/scripts scripts
+	ln -sf alsa-kernel sound
+	ln -sf alsa-kernel/scripts scripts
 
 include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
