@@ -46,6 +46,7 @@
 #define MPU401_MODE_INPUT_TIMER		(1<<4)
 #define MPU401_MODE_OUTPUT_TIMER	(1<<5)
 #define MPU401_MODE_TIMER		((1<<4)|(1<<5))
+#define MPU401_MODE_RX_LOOP		(1<<6)
 
 typedef struct snd_stru_mpu401 mpu401_t;
 
