@@ -45,3 +45,4 @@
 #define AC97_ID_CS4205		0x43525958
 #define AC97_ID_CS_MASK		0xfffffff8	/* bit 0-2: rev */
 #define AC97_ID_ALC650		0x414c4720
+#define AC97_ID_YMF753		0x594d4803
