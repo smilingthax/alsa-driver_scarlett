@@ -178,7 +178,7 @@ int snd_ad1848_new_mixer(snd_pcm_t *pcm);
 
 int snd_ad1848_info_single(snd_kcontrol_t *kcontrol, snd_control_info_t * uinfo);
 int snd_ad1848_get_single(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
-int snd_ad1848_put_single(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+int snd_ad1848_put_single(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 #define AD1848_DOUBLE(xname, xindex, left_reg, right_reg, shift_left, shift_right, mask, invert) \
 { iface: SND_CONTROL_IFACE_MIXER, name: xname, index: xindex, \
@@ -188,7 +188,7 @@ int snd_ad1848_put_single(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_cont
 
 int snd_ad1848_info_double(snd_kcontrol_t *kcontrol, snd_control_info_t * uinfo);
 int snd_ad1848_get_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
-int snd_ad1848_put_double(snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+int snd_ad1848_put_double(snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 #ifdef CONFIG_SND_DEBUG
 void snd_ad1848_debug(ad1848_t * codec);

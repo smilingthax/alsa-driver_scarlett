@@ -24,7 +24,7 @@
 
 typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_control_info_t * uinfo);
 typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
-typedef int (snd_kcontrol_put_t) (snd_kctl_t * kctl, snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
+typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
 typedef struct snd_stru_kcontrol_new {
 	snd_control_iface_t iface;	/* interface identifier */
