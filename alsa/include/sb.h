@@ -60,7 +60,7 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_line;
 	snd_kmixer_element_t *me_mux_cd;
-	snd_spin_define(mixer);
+	spinlock_t lock;
 };
 
 struct snd_stru_sbdsp {
@@ -91,10 +91,10 @@ struct snd_stru_sbdsp {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 
-	snd_spin_define(reg);
-	snd_spin_define(open8);
-	snd_spin_define(open16);
-	snd_spin_define(midi_input);
+	spinlock_t reg_lock;
+	spinlock_t open8_lock;
+	spinlock_t open16_lock;
+	spinlock_t midi_input_lock;
 
 	snd_info_entry_t *proc_entry;
 };

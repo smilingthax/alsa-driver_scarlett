@@ -120,10 +120,10 @@ struct snd_stru_rawmidi {
 	void *private_data;
 	void (*private_free) (void *private_data);
 
-	snd_spin_define(input);
-	snd_spin_define(input_sleep);
-	snd_spin_define(output);
-	snd_spin_define(output_sleep);
+	spinlock_t input_lock;
+	spinlock_t input_sleep_lock;
+	spinlock_t output_lock;
+	spinlock_t output_sleep_lock;
 	snd_sleep_define(input);
 	snd_sleep_define(output);
 	snd_mutex_define(open);

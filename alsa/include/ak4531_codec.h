@@ -73,7 +73,7 @@ struct snd_stru_ak4531 {
 	void (*private_free) (ak4531_t * ak4531);
 	/* --- */
 	unsigned char regs[0x20];
-	snd_spin_define(access);
+	spinlock_t reg_lock;
 };
 
 snd_kmixer_t *snd_ak4531_mixer(snd_card_t * card, ak4531_t * ak4531, int pcm_count, int *pcm_devs);

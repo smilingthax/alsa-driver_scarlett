@@ -1668,7 +1668,7 @@ struct snd_stru_cs461x {
 	void *entry_proc_BA1_prg;
 	void *entry_proc_BA1_reg;
 
-	snd_spin_define(reg);
+	spinlock_t reg_lock;
 	snd_sleep_define(codec);
 	snd_info_entry_t *proc_entry;
 };

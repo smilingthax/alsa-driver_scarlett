@@ -98,7 +98,7 @@ typedef struct snd_sf_list {
 	snd_sf_callback_t callback;	/* callback functions */
 	char sf_locked;		/* font lock flag */
 	snd_mutex_define(presets);
-	snd_spin_define(lock);
+	spinlock_t lock;
 } snd_sf_list_t;
 
 /* Prototypes for soundfont.c */

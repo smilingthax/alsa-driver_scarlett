@@ -151,7 +151,7 @@ struct snd_stru_ad1848 {
 	snd_kmixer_element_t *me_mux_line2;
 	snd_kmixer_element_t *me_mux_mix;
 
-	snd_spin_define(reg);
+	spinlock_t reg_lock;
 	snd_mutex_define(open);
 	snd_sleep_define(mce);
 };

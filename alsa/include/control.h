@@ -32,9 +32,9 @@ struct snd_stru_control {
 	unsigned int mixer_device;
 	unsigned int pcm_device;
 	unsigned int rawmidi_device;
-	snd_spin_define(change_lock);
+	spinlock_t change_lock;
 	snd_sleep_define(change);
-	snd_spin_define(read_lock);
+	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the structure */
 	int pool_size;			/* size of pool in items */

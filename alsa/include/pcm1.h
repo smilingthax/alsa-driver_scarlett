@@ -191,8 +191,8 @@ struct snd_stru_pcm1_channel {
 	struct snd_stru_pcm1_oss_setup *setup;		/* active setup */
 	snd_mutex_define(setup_mutex);
 	/* misc */
-	snd_spin_define(lock);
-	snd_spin_define(sleep_lock);
+	spinlock_t lock;
+	spinlock_t sleep_lock;
 	snd_sleep_define(sleep);
 };
 

@@ -96,8 +96,8 @@ typedef struct snd_emu8000 {
 
 	int use_time;	/* allocation counter */
 
-	snd_spin_define(voice);	/* Lock for voice access */
-	snd_spin_define(reg);	/* Lock for chip register access */
+	spinlock_t voice_lock;	/* Lock for voice access */
+	spinlock_t reg_lock;	/* Lock for chip register access */
 	snd_sleep_define(wait);	/* Lock for waits */
 	snd_mutex_define(register);
 	snd_mutex_define(patch);

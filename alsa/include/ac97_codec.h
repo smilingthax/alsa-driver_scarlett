@@ -97,7 +97,7 @@ struct snd_stru_ac97 {
 	unsigned char max_mono;	/* mono maximum volume value */
 	unsigned char max_3d;	/* 3d maximum volume value */
 	unsigned char shift_3d;	/* 3d shift value */
-	snd_spin_define(access);
+	spinlock_t reg_lock;
 };
 
 snd_kmixer_t *snd_ac97_mixer(snd_card_t * card, ac97_t * ac97, int pcm_count, int *pcm_devs);

@@ -56,8 +56,8 @@ typedef struct {
 
 	int owner;			/* current owner of the instrument list */
 
-	snd_spin_define(lock);
-	snd_spin_define(ops);
+	spinlock_t lock;
+	spinlock_t ops_lock;
 	snd_mutex_define(ops);
 	unsigned long ops_flags;
 } snd_seq_kinstr_list_t;
@@ -80,6 +80,7 @@ typedef struct snd_seq_kinstr_ops {
 
 /* instrument operations */
 snd_seq_kinstr_list_t *snd_seq_instr_list_new(void);
+void snd_seq_instr_list_free(snd_seq_kinstr_list_t **list);
 snd_seq_kinstr_t *snd_seq_instr_find(snd_seq_kinstr_list_t *list,
 				     snd_seq_instr_t *instr);
 int snd_seq_instr_event(snd_seq_kinstr_ops_t *ops,

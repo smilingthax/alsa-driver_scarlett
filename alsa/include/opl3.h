@@ -240,8 +240,8 @@ struct snd_opl3 {
 	int timer_dev;		/* timer device number */
 	snd_timer_t *timer1;
 	snd_timer_t *timer2;
-	snd_spin_define(reg);
-	snd_spin_define(timer);
+	spinlock_t reg_lock;
+	spinlock_t timer_lock;
 };
 
 extern void snd_opl3_interrupt(snd_synth_t * synth);

@@ -125,7 +125,7 @@ struct snd_stru_fm801 {
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 
-	snd_spin_define(reg);
+	spinlock_t reg_lock;
 	snd_sleep_define(codec);
 	snd_info_entry_t *proc_entry;
 };

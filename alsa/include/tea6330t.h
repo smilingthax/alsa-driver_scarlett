@@ -32,7 +32,7 @@ typedef struct {
 	unsigned char regs[8];
 	unsigned char mleft, mright;
 	unsigned char bass, treble;
-	snd_spin_define(access);
+	spinlock_t reg_lock;
 } tea6330t_t;
 
 extern int snd_tea6330t_detect(struct snd_i2c_bus *bus, int equalizer);

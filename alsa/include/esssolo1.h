@@ -146,7 +146,7 @@ struct snd_stru_solo {
 	snd_rawmidi_t *rmidi;
 	snd_synth_t *synth;	/* S3FM */
 
-	 snd_spin_define(reg);
+	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
 };
 

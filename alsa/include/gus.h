@@ -382,13 +382,13 @@ struct snd_stru_gus_card {
 	snd_pcm_t *pcm;
 	snd_rawmidi_t *midi_uart;
 
-	snd_spin_define(reg);
-	snd_spin_define(active_voice);
-	snd_spin_define(playback);
-	snd_spin_define(dma);
-	snd_spin_define(pcm_volume_level);
-	snd_spin_define(uart_cmd);
-	snd_spin_define(neutral);
+	spinlock_t reg_lock;
+	spinlock_t active_voice_lock;
+	spinlock_t playback_lock;
+	spinlock_t dma_lock;
+	spinlock_t pcm_volume_level_lock;
+	spinlock_t uart_cmd_lock;
+	spinlock_t neutral_lock;
 	snd_mutex_define(dma);
 	snd_mutex_define(register);
 	snd_sleep_define(neutral);
@@ -401,12 +401,12 @@ static inline void snd_gf1_select_voice(snd_gus_card_t * gus, int voice)
 {
 	unsigned long flags;
 
-	snd_spin_lock(gus, active_voice, &flags);
+	spin_lock_irqsave(&gus->active_voice_lock, flags);
 	if (voice != gus->gf1.active_voice) {
 		gus->gf1.active_voice = voice;
 		outb(voice, GUSP(gus, GF1PAGE));
 	}
-	snd_spin_unlock(gus, active_voice, &flags);
+	spin_unlock_irqrestore(&gus->active_voice_lock, flags);
 }
 
 static inline void snd_gf1_uart_cmd(snd_gus_card_t * gus, unsigned char b)

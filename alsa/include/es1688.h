@@ -51,8 +51,8 @@ struct snd_stru_es1688 {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 
-	snd_spin_define(reg);
-	snd_spin_define(mixer);
+	spinlock_t reg_lock;
+	spinlock_t mixer_lock;
 };
 
 typedef struct snd_stru_es1688 es1688_t;

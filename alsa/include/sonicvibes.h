@@ -190,7 +190,7 @@ struct snd_stru_sonicvibes {
 	snd_kswitch_t *switch_rxtosynth;
 	snd_kswitch_t *switch_txtoext;
 
-	snd_spin_define(reg);
+	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
 };
 

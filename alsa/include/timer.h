@@ -67,7 +67,7 @@ struct snd_stru_timer {
 	void (*private_free) (void *private_data);
 	snd_timer_instance_t *first;
 	struct snd_stru_timer_hardware hw;
-	snd_spin_define(lock);
+	spinlock_t lock;
 	snd_timer_t *next;
 };
 

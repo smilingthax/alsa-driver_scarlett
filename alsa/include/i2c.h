@@ -99,15 +99,15 @@ struct snd_i2c_driver {
  *
  */
 
-#define SND_LOCK_I2C_BUS(bus) snd_spin_lock(bus,lock,&flags)
-#define SND_UNLOCK_I2C_BUS(bus) snd_spin_unlock(bus,lock,&flags)
+#define SND_LOCK_I2C_BUS(bus) spin_lock_irqsave(&bus->lock, flags)
+#define SND_UNLOCK_I2C_BUS(bus) spin_unlock_irqrestore(&bus->lock, flags)
 
 struct snd_i2c_bus {
 	char name[32];		/* some useful label */
 	int id;
 	void *data;		/* free for use by the bus driver */
 
-	 snd_spin_define(lock);
+	spinlock_t lock;
 
 	/* attach/detach inform callbacks */
 	void (*attach_inform) (struct snd_i2c_bus * bus, int id);

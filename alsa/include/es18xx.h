@@ -50,9 +50,9 @@ struct snd_stru_es18xx {
 	snd_pcm_t *pcm_a;
 	snd_pcm_t *pcm_b;
 
-	snd_spin_define(reg);
-	snd_spin_define(mixer);
-	snd_spin_define(ctrl);
+	spinlock_t reg_lock;
+	spinlock_t mixer_lock;
+	spinlock_t ctrl_lock;
 };
 
 #define AUDIO1_IRQ	0x01
