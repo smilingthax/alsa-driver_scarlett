@@ -65,19 +65,19 @@ typedef struct {
 } snd_seq_client_callback_t;
 
 /* call-backs for kernel port */
-typedef int (snd_seq_kernel_port_subscribe_t)(void *private_data);
-typedef int (snd_seq_kernel_port_unsubscribe_t)(void *private_data);
-typedef int (snd_seq_kernel_port_use_t)(void *private_data);
-typedef int (snd_seq_kernel_port_unuse_t)(void *private_data);
+typedef int (snd_seq_kernel_port_subscribe_t)(void *private_data, snd_seq_port_subscribe_t *info);
+typedef int (snd_seq_kernel_port_unsubscribe_t)(void *private_data, snd_seq_port_subscribe_t *info);
+typedef int (snd_seq_kernel_port_use_t)(void *private_data, snd_seq_port_subscribe_t *info);
+typedef int (snd_seq_kernel_port_unuse_t)(void *private_data, snd_seq_port_subscribe_t *info);
 typedef int (snd_seq_kernel_port_input_t)(snd_seq_event_t *ev, int direct, void *private_data);
 typedef void (snd_seq_kernel_port_private_free_t)(void *private_data);
 
 typedef struct {
 	void *private_data;
 	snd_seq_kernel_port_subscribe_t *subscribe;
-	snd_seq_kernel_port_use_t *unsubscribe;
-	snd_seq_kernel_port_subscribe_t *use;
-	snd_seq_kernel_port_use_t *unuse;
+	snd_seq_kernel_port_unsubscribe_t *unsubscribe;
+	snd_seq_kernel_port_use_t *use;
+	snd_seq_kernel_port_unuse_t *unuse;
 	snd_seq_kernel_port_input_t *event_input;
 	snd_seq_kernel_port_private_free_t *private_free;
 	/*...*/

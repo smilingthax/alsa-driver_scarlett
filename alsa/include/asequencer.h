@@ -395,6 +395,7 @@ typedef struct {
 	unsigned int capability;	/* port capability bits */
 	unsigned int type;		/* port type bits */
 	int midi_channels;		/* channels per MIDI port */
+	int midi_voices;		/* voices per MIDI port */
 	int synth_voices;		/* voices per SYNTH port */
 
 	int out_use;			/* R/O: subscribers for output (this port->sequencer) */
@@ -509,6 +510,9 @@ typedef struct {
 	snd_seq_addr_t dest;		/* destination address */
 	int exclusive: 1,		/* exclusive mode */
 	    realtime: 1;		/* realtime timestamp */
+	int midi_channels;		/* midi channels setup, zero = do not care */
+	int midi_voices;		/* midi voices setup, zero = do not care */
+	int synth_voices;		/* synth voices setup, zero = do not care */
 	char reserved[32];		/* for future use */
 } snd_seq_port_subscribe_t;
 
