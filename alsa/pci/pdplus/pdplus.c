@@ -6217,9 +6217,6 @@ static int __init alsa_card_pdplus_init(void)
         snd_assert (PDPLUS_HW_REG_WR_INITIAL_1 == 0x22, return -ENXIO);
         snd_assert (PDPLUS_HW_REG_WR_INITIAL_2 == 0x32, return -ENXIO);
 
-        unless (pci_present())
-                LEAVE (-ENODEV);
-
         printk (PDPLUS_KERN_INFO "version " PDPLUS_VERSION "\n");
         if (pci_register_driver (&driver) <= 0)
                 LEAVE (-ENODEV);
