@@ -1437,6 +1437,11 @@ static void snd_via82xx_mixer_free_ac97(ac97_t *ac97)
 	chip->ac97 = NULL;
 }
 
+static struct ac97_quirk ac97_quirks[] = {
+	{ 0x1106, 0x4161, AC97_TUNE_HP_ONLY }, /* ASRock K7VT2 */
+	{ } /* terminator */
+};
+
 static int __devinit snd_via82xx_mixer_new(via82xx_t *chip)
 {
 	ac97_t ac97;
@@ -1451,6 +1456,8 @@ static int __devinit snd_via82xx_mixer_new(via82xx_t *chip)
 	ac97.clock = chip->ac97_clock;
 	if ((err = snd_ac97_mixer(chip->card, &ac97, &chip->ac97)) < 0)
 		return err;
+
+	snd_ac97_tune_hardware(&chip->ac97, chip->pci, ac97_quirks);
 
 	if (chip->chip_type != TYPE_VIA686) {
 		/* use slot 10/11 */

@@ -2418,6 +2418,80 @@ __reset_ready:
 
 
 /*
+ */
+static int remove_ctl(ac97_t *ac97, const char *name)
+{
+	snd_ctl_elem_id_t id;
+	memset(&id, 0, sizeof(id));
+	strcpy(id.name, name);
+	return snd_ctl_remove_id(ac97->card, &id);
+}
+
+static int rename_ctl(ac97_t *ac97, const char *src, const char *dst)
+{
+	snd_ctl_elem_id_t sid, did;
+	memset(&sid, 0, sizeof(sid));
+	strcpy(sid.name, src);
+	memset(&did, 0, sizeof(did));
+	strcpy(did.name, dst);
+	return snd_ctl_rename_id(ac97->card, &sid, &did);
+}
+
+static int swap_headphone(ac97_t *ac97, int remove_master)
+{
+	/* FIXME: error checks.. */
+	if (remove_master) {
+		remove_ctl(ac97, "Master Playback Switch");
+		remove_ctl(ac97, "Master Playback Volume");
+	} else {
+		rename_ctl(ac97, "Master Playback Switch", "Line-Out Playback Switch");
+		rename_ctl(ac97, "Master Playback Volume", "Line-Out Playback Volume");
+	}
+	rename_ctl(ac97, "Headphone Playback Switch", "Master Playback Switch");
+	rename_ctl(ac97, "Headphone Playback Volume", "Master Playback Volume");
+	return 0;
+}
+
+
+/**
+ * snd_ac97_tune_hardware - tune up the hardware
+ * @ac97: the ac97 instance
+ * @pci: pci device
+ * @quirk: quirk list
+ *
+ * Do some workaround for each pci device, such as renaming of the
+ * headphone (true line-out) control as "Master".
+ * The quirk-list must be terminated with a zero-filled entry.
+ *
+ * Returns zero if successful, or a negative error code on failure.
+ */
+
+int snd_ac97_tune_hardware(ac97_t *ac97, struct pci_dev *pci, struct ac97_quirk *quirk)
+{
+	unsigned short vendor, device;
+	struct ac97_quirk *q;
+
+	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &vendor);
+	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &device);
+
+	for (; quirk->vendor; quirk++) {
+		if (quirk->vendor == vendor && quirk->device == device) {
+			snd_printdd("ac97 quirk for %04x:%04x\n", vendor, device);
+			switch (quirk->type) {
+			case AC97_TUNE_HP_ONLY:
+				return swap_headphone(ac97, 1);
+			case AC97_TUNE_SWAP_HP:
+				return swap_headphone(ac97, 0);
+			}
+			snd_printk(KERN_ERR "invalid quirk type %d\n", quirk->type);
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+
+
+/*
  *  Exported symbols
  */
 
@@ -2428,6 +2502,7 @@ EXPORT_SYMBOL(snd_ac97_update);
 EXPORT_SYMBOL(snd_ac97_update_bits);
 EXPORT_SYMBOL(snd_ac97_mixer);
 EXPORT_SYMBOL(snd_ac97_set_rate);
+EXPORT_SYMBOL(snd_ac97_tune_hardware);
 #ifdef CONFIG_PM
 EXPORT_SYMBOL(snd_ac97_resume);
 #endif
