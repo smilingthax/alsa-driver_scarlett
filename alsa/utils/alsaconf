@@ -36,11 +36,12 @@ else
   distribution="unknown"
 fi
 
-if [ -x /sbin/lsmod ]; then
-  lsmod=/sbin/lsmod
-else
-  lsmod=/bin/lsmod
-fi
+for prog in lspci lsmod; do
+	for path in /sbin /usr/sbin /bin /usr/bin;do
+		[[ -x $path/$prog ]] && eval $prog=$path/$prog
+	done
+done
+unset prog path
 
 usage() {
     echo "ALSA configurator version $version"
@@ -446,7 +447,7 @@ BEGIN {
 /^[<literal space><literal tab>]*PCI: /{
 	gsub(/0x/, "");
 	gsub(/=/, ":");
-	x = sprintf ("/sbin/lspci -n | grep '"'Class 0401'"' | grep %s", $2);
+	x = sprintf ("'$lspci' -n | grep '"'Class 0401'"' | grep %s", $2);
 	if (system (x) == 0)
 		printf "%s %s\n", $2, driver >>"'"$FOUND"'"
 }
@@ -476,7 +477,7 @@ BEGIN {
 #
 find_device_name () {
     if expr "$1" : '[0-9a-f][0-9a-f][0-9a-f][0-9a-f]:[0-9a-f][0-9a-f][0-9a-f][0-9a-f]' >/dev/null; then
-	/sbin/lspci -d $1 | sed -e 's/^..:..\.. Multimedia audio controller: //g'
+	$lspci -d $1 | sed -e 's/^..:..\.. Multimedia audio controller: //g'
 	return
     elif expr "$1" : '[A-Z@][A-Z@][A-Z@][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' >/dev/null; then
 	cardname=`grep '^Card [0-9]\+ '\'$1':' $DUMP | head -n 1 | sed -e 's/^Card [0-9]\+ '\''.*:\(.*\)'\'' .*$/\1/'`
@@ -1034,7 +1035,7 @@ if [ x$devs_found != x ]; then
     # check for TP600E
     #
     if [ ${devs_found[0]} = cs46xx ]; then
-	if /sbin/lspci -nv | grep -q "Subsystem: 1014:1010"; then
+	if $lspci -nv | grep -q "Subsystem: 1014:1010"; then
 	    if $DIALOG --yesno "
  Looks like you having a Thinkpad 600E notebook.
  On this notebook, CS4236 driver should be used
