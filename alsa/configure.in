@@ -72,20 +72,11 @@ if test -z "$kversion" || test -z "$kpatchlevel" || test -z "$ksublevel"; then
   exit 1
 fi
 kaversion="$kversion.$kpatchlevel.$ksublevel$kextraversion"
-newkernel="0"
-if test $kversion -gt 2; then
-  newkernel="1"
-else
-  if test $kversion -eq 2 && test $kpatchlevel -gt 0; then
-    newkernel="1"
-  fi
-fi
 AC_SUBST(kaversion)
 AC_SUBST(kversion)
 AC_SUBST(kpatchlevel)
 AC_SUBST(ksublevel)
 AC_SUBST(kextraversion)
-AC_SUBST(newkernel)
 AC_MSG_RESULT($kaversion)
 
 dnl Check for modversions...
@@ -107,10 +98,7 @@ int main( void ) {
 )
 CONFIG_SND_MVERSION=$mversion
 AC_SUBST(CONFIG_SND_MVERSION)
-GENKSYMS="/sbin/genksyms"
-if test "$newkernel" = "1"; then
-  GENKSYMS="$GENKSYMS -k $kversion.$kpatchlevel.$ksublevel"
-fi
+GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
 dnl Check for PCI support...
 AC_MSG_CHECKING(for PCI support in kernel)
@@ -257,10 +245,7 @@ case "$processor" in
     c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=686"
     ;;
   alpha)
-    c_opts="-fno-strength-reduce -mno-fp-regs"
-    if test "$newkernel" = "1"; then
-      c_opts="$c_opts -ffixed-8"
-    fi
+    c_opts="-fno-strength-reduce -mno-fp-regs -ffixed-8"
     processor="alpha"
     ;;
   ppc)
@@ -294,9 +279,7 @@ int main(void) {
   AC_MSG_RESULT("unknown");msmp=""
 )
 if test "$msmp" = "1"; then
-  if test "$newkernel" = "1"; then
-    GENKSYMS="$GENKSYMS -p smp_"
-  fi
+  GENKSYMS="$GENKSYMS -p smp_"
   c_opts="$c_opts -D__SMP__ -DCONFIG_SMP"
 fi
 AC_SUBST(msmp)
