@@ -51,9 +51,9 @@ static inline void snd_sti(unsigned long *flags)
 #define snd_spin_define( name ) \
   spinlock_t spin_lock_##name
 #define snd_spin_prepare( object, name ) \
-  (object) -> spin_lock_##name = (spinlock_t)SPIN_LOCK_UNLOCKED
+  (object) -> spin_lock_##name = SPIN_LOCK_UNLOCKED
 #define snd_spin_define_static( name ) \
-  static spinlock_t snd_static_spin_lock_##name = (spinlock_t)SPIN_LOCK_UNLOCKED
+  static spinlock_t snd_static_spin_lock_##name = SPIN_LOCK_UNLOCKED
 #else
 #define snd_spin_lock( object, name, flags ) snd_cli( flags )
 #define snd_spin_unlock( object, name, flags ) snd_sti( flags )
