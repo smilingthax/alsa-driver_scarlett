@@ -3,6 +3,10 @@ TOPDIR = ..
 include $(TOPDIR)/toplevel.config
 include $(TOPDIR)/Makefile.conf
 
+ifeq ($(CONFIG_PCI),y)
+snd-page-alloc-objs += memory_wrapper.o
+endif
+
 obj-$(CONFIG_SND_SERIALMIDI) += snd-rawmidi.o snd.o
 obj-$(CONFIG_SND_SSCAPE) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o snd-hwdep.o
 obj-$(CONFIG_SND_MSND_PINNACLE) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o
