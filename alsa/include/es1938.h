@@ -41,10 +41,6 @@
 #define SL_PCI_DDMACONTROL 0x60
 #define SL_PCI_DDMA2CONTROL 0xF0
 
-#define SL_MODE_PLAY 1
-#define SL_MODE_CAPTURE 2
-#define SL_CHANNEL1_ON 1
-#define SL_CHANNEL2_ON 1
 /*
 
  */
@@ -73,15 +69,9 @@ struct snd_stru_solo {
 	unsigned char mpu_switch;
 	unsigned char wave_source;
 
-	unsigned char mode;
-	unsigned char channel1;
-	unsigned char channel2;
-
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
-	snd_pcm_t *pcm2;  
-	snd_pcm_subchn_t *playback_subchn;
 	snd_pcm_subchn_t *capture_subchn;
 	snd_pcm_subchn_t *playback2_subchn;
 	snd_kmixer_t *mixer;
@@ -96,7 +86,6 @@ struct snd_stru_solo {
 	snd_kmixer_element_t *mix_oaccu;
 	snd_kmixer_element_t *mix_igain_v;
 	snd_kmixer_element_t *mix_opcm1_v, *mix_ipcm1_v;
-	snd_kmixer_element_t *mix_opcm2_v;
 	snd_kmixer_element_t *mix_omic_v, *mix_imic_v;
 	snd_kmixer_element_t *mix_oline_v, *mix_iline_v;
 	snd_kmixer_element_t *mix_ofm_v, *mix_ifm_v;
@@ -121,8 +110,7 @@ int snd_solo_free(es1938_t * solo);
 void snd_solo_interrupt(es1938_t * solo);
 
 int snd_solo_new_pcm(es1938_t * solo, int device, snd_pcm_t ** rpcm);
-int snd_solo_new_pcm2(es1938_t * solo, int device, snd_pcm_t ** rpcm);
-int snd_solo_new_mixer(es1938_t * codec, int device, snd_pcm_t * pcm, snd_pcm_t * pcm2, snd_kmixer_t ** rmixer);
+int snd_solo_new_mixer(es1938_t * codec, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
 
 void snd_solo_midi(es1938_t * solo, mpu401_t * mpu);
 
