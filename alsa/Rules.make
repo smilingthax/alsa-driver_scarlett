@@ -128,7 +128,7 @@ $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 # This make dependencies quickly
 #
 fastdep: $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)) update-sndversions
-	$(CPP) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(wildcard *.[chS]) > .depend
+	$(CC) -M -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(wildcard *.[chS]) > .depend
 
 
 ifneq "$(strip $(ALL_SUB_DIRS))" ""
