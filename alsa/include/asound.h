@@ -90,10 +90,10 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
 
 #define SND_CTL_VERSION			SND_PROTOCOL_VERSION( 1, 0, 0 )
 
-#define SND_CTL_GCAPS_MIDI		0x0000001	/* driver have MIDI interface */
+#define SND_CTL_GCAPS_MIDI		0x0000001	/* driver has MIDI interface */
 
-#define SND_CTL_LCAPS_SYNTH		0x0000001	/* soundcard have synthesizer */
-#define SND_CTL_LCAPS_RAWFM		0x0000002	/* soundcard have RAW FM/OPL3 */
+#define SND_CTL_LCAPS_SYNTH		0x0000001	/* soundcard has synthesizer */
+#define SND_CTL_LCAPS_RAWFM		0x0000002	/* soundcard has RAW FM/OPL3 */
 
 #define SND_CTL_SW_TYPE_BOOLEAN		0	/* 0 or 1 (enable) */
 #define SND_CTL_SW_TYPE_BYTE		1	/* 0 to 255 (low to high) */
