@@ -52,7 +52,7 @@ typedef struct snd_emux snd_emux_t;
 typedef struct snd_emux_operators {
 	struct module *owner;
 	snd_emux_voice_t *(*get_voice)(snd_emux_t *emu, snd_emux_port_t *port);
-	void (*prepare)(snd_emux_voice_t *vp);
+	int (*prepare)(snd_emux_voice_t *vp);
 	void (*trigger)(snd_emux_voice_t *vp);
 	void (*release)(snd_emux_voice_t *vp);
 	void (*update)(snd_emux_voice_t *vp, int update);
@@ -173,6 +173,7 @@ struct snd_emux_voice {
 	unsigned char velocity;	/* Velocity of current note */
 
 	snd_sf_zone_t *zone;	/* Zone assigned to this note */
+	void *block;		/* sample block pointer (optional) */
 	snd_midi_channel_t *chan;	/* Midi channel for this note */
 	snd_emux_port_t *port;	/* associated port */
 	snd_emux_t *emu;	/* assigned root info */
