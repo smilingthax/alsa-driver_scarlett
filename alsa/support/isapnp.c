@@ -1244,9 +1244,9 @@ isapnp_match_card(const struct isapnp_card_id *ids, struct isapnp_card *card)
 {
 	int idx;
 
-	while (ids->vendor || ids->device) {
-		if ((ids->vendor == ISAPNP_ANY_ID || ids->vendor == card->vendor) &&
-		    (ids->device == ISAPNP_ANY_ID || ids->device == card->device)) {
+	while (ids->card_vendor || ids->card_device) {
+		if ((ids->card_vendor == ISAPNP_ANY_ID || ids->card_vendor == card->vendor) &&
+		    (ids->card_device == ISAPNP_ANY_ID || ids->card_device == card->device)) {
 			for (idx = 0; idx < ISAPNP_CARD_DEVS; idx++) {
 				if (ids->devs[idx].vendor == 0 &&
 				    ids->devs[idx].function == 0)

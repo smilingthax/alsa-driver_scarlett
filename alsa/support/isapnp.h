@@ -279,18 +279,21 @@ struct isapnp_card {
 #define ISAPNP_CARD_DEVS        8
 
 #define ISAPNP_CARD_ID(_va, _vb, _vc, _device) \
-                vendor: ISAPNP_VENDOR(_va, _vb, _vc), device: ISAPNP_DEVICE(_device)
+                card_vendor: ISAPNP_VENDOR(_va, _vb, _vc), card_device: ISAPNP_DEVICE(_device)
 #define ISAPNP_CARD_END \
-                vendor: 0, device: 0
+                card_vendor: 0, card_device: 0
 #define ISAPNP_DEVICE_ID(_va, _vb, _vc, _function) \
                 { vendor: ISAPNP_VENDOR(_va, _vb, _vc), function: ISAPNP_FUNCTION(_function) }
 
+#define ISAPNP_CARD_TABLE(name) \
+		MODULE_GENERIC_TABLE(isapnp_card, name)
+
 struct isapnp_card_id {
-	unsigned short vendor, device;
+	unsigned long driver_data;      /* data private to the driver */
+	unsigned short card_vendor, card_device;
 	struct {
 		unsigned short vendor, function;
 	} devs[ISAPNP_CARD_DEVS];       /* logical devices */
-	unsigned long driver_data;      /* data private to the driver */
 };
 
 #else
