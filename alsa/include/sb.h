@@ -253,8 +253,23 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP4_IRQSETUP	0x80
 #define SB_DSP4_DMASETUP	0x81
 #define SB_DSP4_IRQSTATUS	0x82
+#define SB_DSP4_MPUSETUP	0x84
 
 #define SB_DSP4_3DSE		0x90
+
+/* IRQ setting bitmap */
+#define SB_IRQSETUP_IRQ9	0x01
+#define SB_IRQSETUP_IRQ5	0x02
+#define SB_IRQSETUP_IRQ7	0x04
+#define SB_IRQSETUP_IRQ10	0x08
+
+/* DMA setting bitmap */
+#define SB_DMASETUP_DMA0	0x01
+#define SB_DMASETUP_DMA1	0x02
+#define SB_DMASETUP_DMA3	0x08
+#define SB_DMASETUP_DMA5	0x20
+#define SB_DMASETUP_DMA6	0x40
+#define SB_DMASETUP_DMA7	0x80
 
 /*
  *
