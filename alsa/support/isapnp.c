@@ -57,12 +57,15 @@
 #endif
 
 int isapnp_rdp = 0;			/* Read Data Port */
+int isapnp_reset = 0;			/* reset all PnP cards (deactivate) */
 int isapnp_verbose = 1;			/* verbose mode */
 #ifdef MODULE_PARM
 MODULE_AUTHOR("Jaroslav Kysela <perex@jcu.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
 MODULE_PARM(isapnp_rdp, "i");
 MODULE_PARM_DESC(isapnp_rdp, "ISA Plug & Play read data port");
+MODULE_PARM(isapnp_reset, "i")
+MODULE_PARM_DESC(isapnp_reset, "ISA Plug & Play reset all cards");
 MODULE_PARM(isapnp_verbose, "i");
 MODULE_PARM_DESC(isapnp_verbose, "ISA Plug & Play verbose mode");
 #endif
@@ -208,7 +211,11 @@ __initfunc(static int isapnp_isolate_rdp_select(int rdp))
 	isapnp_wait();
 	isapnp_key();
 	outb(0x02, _PIDXR);	/* control */
+#ifdef MODULE
+	outb(isapnp_reset ? 0x07 : 0x06, _PNPWRP);	/* reset driver or csn */
+#else
 	outb(0x07, _PNPWRP);	/* reset driver */
+#endif
 	isapnp_delay(200);	/* delay 2000us */
 	isapnp_key();
 	isapnp_wake(0x00);
