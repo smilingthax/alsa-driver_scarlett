@@ -301,7 +301,7 @@ static int __init snd_card_cs4236_isapnp(int dev, struct snd_card_cs4236 *acard)
 		return -EAGAIN;
 	if (snd_port[dev] != SNDRV_AUTO_PORT)
 		isapnp_resource_change(&pdev->resource[0], snd_port[dev], 4);
-	if (snd_fm_port[dev] != SNDRV_AUTO_PORT)
+	if (snd_fm_port[dev] != SNDRV_AUTO_PORT && snd_fm_port[dev] >= 0)
 		isapnp_resource_change(&pdev->resource[1], snd_fm_port[dev], 4);
 	if (snd_sb_port[dev] != SNDRV_AUTO_PORT)
 		isapnp_resource_change(&pdev->resource[2], snd_sb_port[dev], 16);
@@ -316,7 +316,8 @@ static int __init snd_card_cs4236_isapnp(int dev, struct snd_card_cs4236 *acard)
 		return -EBUSY;
 	}
 	snd_port[dev] = pdev->resource[0].start;
-	snd_fm_port[dev] = pdev->resource[1].start;
+	if (snd_fm_port[dev] >= 0)
+		snd_fm_port[dev] = pdev->resource[1].start;
 	snd_sb_port[dev] = pdev->resource[2].start;
 	snd_irq[dev] = pdev->irq_resource[0].start;
 	snd_dma1[dev] = pdev->dma_resource[0].start;
@@ -341,7 +342,7 @@ static int __init snd_card_cs4236_isapnp(int dev, struct snd_card_cs4236 *acard)
 	snd_cport[dev] = pdev->resource[0].start;
 	snd_printdd("isapnp CTRL: control port=0x%lx\n", snd_cport[dev]);
 	/* MPU initialization */
-	if (acard->mpu) {
+	if (acard->mpu && snd_mpu_port[dev] >= 0) {
 		pdev = acard->mpu;
 		if (pdev->prepare(pdev) < 0) {
 			acard->wss->deactivate(acard->wss);
@@ -350,7 +351,7 @@ static int __init snd_card_cs4236_isapnp(int dev, struct snd_card_cs4236 *acard)
 		}
 		if (snd_mpu_port[dev] != SNDRV_AUTO_PORT)
 			isapnp_resource_change(&pdev->resource[0], snd_mpu_port[dev], 2);
-		if (snd_mpu_irq[dev] != SNDRV_AUTO_IRQ)
+		if (snd_mpu_irq[dev] != SNDRV_AUTO_IRQ && snd_mpu_irq[dev] >= 0)
 			isapnp_resource_change(&pdev->irq_resource[0], snd_mpu_irq[dev], 1);
 		if (pdev->activate(pdev)<0) {
 			snd_mpu_port[dev] = SNDRV_AUTO_PORT;
@@ -358,7 +359,8 @@ static int __init snd_card_cs4236_isapnp(int dev, struct snd_card_cs4236 *acard)
 			printk(KERN_ERR IDENT " isapnp configure failed for MPU (out of resources?)\n");
 		} else {
 			snd_mpu_port[dev] = pdev->resource[0].start;
-			if (pdev->irq_resource[0].flags & IORESOURCE_IRQ) {
+			if ((pdev->irq_resource[0].flags & IORESOURCE_IRQ) &&
+			    snd_mpu_irq[dev] >= 0) {
 				snd_mpu_irq[dev] = pdev->irq_resource[0].start;
 			} else {
 				snd_mpu_irq[dev] = -1;	/* disable interrupt */
@@ -513,7 +515,7 @@ static int __init snd_card_cs4236_probe(int dev)
 		}
 	}
 
-	if (snd_mpu_irq[dev] >= 0 && snd_mpu_irq[dev] != SNDRV_AUTO_IRQ) {
+	if (snd_mpu_port[dev] != SNDRV_AUTO_PORT) {
 		if (snd_mpu401_uart_new(card, 0, MPU401_HW_CS4232,
 					snd_mpu_port[dev], 0,
 					snd_mpu_irq[dev],
