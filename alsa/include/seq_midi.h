@@ -1,6 +1,6 @@
 /*
  *   Generic MIDI synth driver for ALSA sequencer
- *   Copyright (c) 1998 by Frank van de Pol <F.K.W.van.de.Pol@inter.nl.net>
+ *   Copyright (c) 1998 by Frank van de Pol <frank@vande-pol.demon.nl>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

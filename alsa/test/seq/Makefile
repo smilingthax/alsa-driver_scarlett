@@ -1,6 +1,6 @@
 #
 # Makefile for ALSA Sequencer test programs
-# Copyright (c) 1998 by Frank van de Pol <F.K.W.van.de.Pol@inter.nl.net>
+# Copyright (c) 1998 by Frank van de Pol <frank@vande-pol.demon.nl>
 #
 
 # let this point to the directory you ALSA driver source 

@@ -51,7 +51,7 @@ This file is maintained by Jaroslav Kysela <perex@jcu.cz>.
 1.13: MIDI v1.0 emulation for internal synthesizer
 1.14: Sequenced MIDI interface
       ST: work in progress
-      RP: Frank van de Pol <F.K.W.van.de.Pol@inter.nl.net>
+      RP: Frank van de Pol <frank@vande-pol.demon.nl>
 1.15: OSS sequencer emulator (low priority)
 
 And lowlevel code for soundcards...
