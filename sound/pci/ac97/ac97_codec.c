@@ -2149,6 +2149,12 @@ int snd_ac97_modem(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	ac97->card = card;
 	spin_lock_init(&ac97->reg_lock);
 
+	ac97->pci = _ac97->pci;
+	if (ac97->pci) {
+		pci_read_config_word(ac97->pci, PCI_SUBSYSTEM_VENDOR_ID, &ac97->subsystem_vendor);
+		pci_read_config_word(ac97->pci, PCI_SUBSYSTEM_ID, &ac97->subsystem_device);
+	}
+
 	if (ac97->reset) {
 		ac97->reset(ac97);
 		goto __access_ok;
@@ -2792,7 +2798,6 @@ static int swap_headphone(ac97_t *ac97, int remove_master)
 /**
  * snd_ac97_tune_hardware - tune up the hardware
  * @ac97: the ac97 instance
- * @pci: pci device
  * @quirk: quirk list
  *
  * Do some workaround for each pci device, such as renaming of the
@@ -2802,17 +2807,12 @@ static int swap_headphone(ac97_t *ac97, int remove_master)
  * Returns zero if successful, or a negative error code on failure.
  */
 
-int snd_ac97_tune_hardware(ac97_t *ac97, struct pci_dev *pci, struct ac97_quirk *quirk)
+int snd_ac97_tune_hardware(ac97_t *ac97, struct ac97_quirk *quirk)
 {
-	unsigned short vendor, device;
-
 	snd_assert(quirk, return -EINVAL);
 
-	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &vendor);
-	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &device);
-
 	for (; quirk->vendor; quirk++) {
-		if (quirk->vendor == vendor && quirk->device == device) {
+		if (quirk->vendor == ac97->subsystem_vendor && quirk->device == ac97->subsystem_device) {
 			snd_printdd("ac97 quirk for %s (%04x:%04x)\n", quirk->name, vendor, device);
 			switch (quirk->type) {
 			case AC97_TUNE_HP_ONLY:

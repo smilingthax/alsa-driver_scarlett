@@ -1453,10 +1453,11 @@ static int __devinit snd_via82xx_mixer_new(via82xx_t *chip)
 	ac97.private_data = chip;
 	ac97.private_free = snd_via82xx_mixer_free_ac97;
 	ac97.clock = chip->ac97_clock;
+	ac97.pci = chip->pci;
 	if ((err = snd_ac97_mixer(chip->card, &ac97, &chip->ac97)) < 0)
 		return err;
 
-	snd_ac97_tune_hardware(chip->ac97, chip->pci, ac97_quirks);
+	snd_ac97_tune_hardware(chip->ac97, ac97_quirks);
 
 	if (chip->chip_type != TYPE_VIA686) {
 		/* use slot 10/11 */

@@ -259,6 +259,9 @@ struct _snd_ac97 {
 	void (*private_free) (ac97_t *ac97);
 	/* --- */
 	snd_card_t *card;
+	struct pci_dev *pci;	/* assigned PCI device - used for quirks */
+	unsigned short subsystem_vendor;
+	unsigned short subsystem_device;
 	spinlock_t reg_lock;
 	unsigned short num;	/* number of codec: 0 = primary, 1 = secondary */
 	unsigned short addr;	/* physical address of codec [0-3] */
@@ -328,6 +331,6 @@ struct ac97_quirk {
 	int type;
 };
 
-int snd_ac97_tune_hardware(ac97_t *ac97, struct pci_dev *pci, struct ac97_quirk *quirk);
+int snd_ac97_tune_hardware(ac97_t *ac97, struct ac97_quirk *quirk);
 
 #endif /* __SOUND_AC97_CODEC_H */
