@@ -412,7 +412,7 @@ typedef struct _snd_pcm_info {
 	unsigned char name[80];		/* name of this device */
 	unsigned char subname[32];	/* subdevice name */
 	snd_pcm_class_t device_class;	/* SND_PCM_CLASS_* */
-	snd_pcm_subclass_t device_subclass;	/* SND_PCM_SUBCLASS_* */
+	snd_pcm_subclass_t device_subclass; /* SND_PCM_SUBCLASS_* */
 	unsigned int subdevices_count;
 	unsigned int subdevices_avail;
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
@@ -494,11 +494,11 @@ typedef struct _snd_pcm_sw_params {
 	snd_pcm_tstamp_t tstamp_mode;	/* timestamp mode */
 	unsigned int period_step;
 	unsigned int sleep_min;		/* min ticks to sleep */
-	snd_pcm_uframes_t avail_min;		/* min avail frames for wakeup */
-	snd_pcm_uframes_t xfer_align;		/* xfer size need to be a multiple */
-	snd_pcm_uframes_t silence_threshold;	/* min distance to noise for silence filling */
-	snd_pcm_uframes_t silence_size;		/* silence block size */
-	snd_pcm_uframes_t boundary;		/* pointers wrap point */
+	snd_pcm_uframes_t avail_min;	/* min avail frames for wakeup */
+	snd_pcm_uframes_t xfer_align;	/* xfer size need to be a multiple */
+	snd_pcm_uframes_t silence_threshold; /* min distance to noise for silence filling */
+	snd_pcm_uframes_t silence_size;	/* silence block size */
+	snd_pcm_uframes_t boundary;	/* pointers wrap point */
 	unsigned char reserved[64];
 } snd_pcm_sw_params_t;
 
@@ -513,18 +513,18 @@ typedef struct _snd_pcm_status {
 	snd_pcm_state_t state;		/* stream state - SND_PCM_STATE_XXXX */
 	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
 	snd_timestamp_t tstamp;		/* Timestamp */
-	snd_pcm_sframes_t delay;		/* current delay in frames */
-	snd_pcm_uframes_t avail;		/* number of frames available */
-	snd_pcm_uframes_t avail_max;		/* max frames available on hw since last status */
-	snd_pcm_uframes_t overrange;		/* count of ADC (capture) overrange detections from last status */
-	unsigned char reserved[64]; /* must be filled with zero */
+	snd_pcm_sframes_t delay;	/* current delay in frames */
+	snd_pcm_uframes_t avail;	/* number of frames available */
+	snd_pcm_uframes_t avail_max;	/* max frames available on hw since last status */
+	snd_pcm_uframes_t overrange;	/* count of ADC (capture) overrange detections from last status */
+	unsigned char reserved[64];	/* must be filled with zero */
 } snd_pcm_status_t;
 
 typedef struct _snd_pcm_mmap_status {
 	snd_pcm_state_t state;	/* RO: state - SND_PCM_STATE_XXXX */
 	int pad1;		/* Needed for 64 bit alignment */
-	snd_pcm_uframes_t hw_ptr;	/* RO: hw side ptr (0 ... boundary-1) 
-				   updated only on request and at interrupt time */
+	snd_pcm_uframes_t hw_ptr; /* RO: hw side ptr (0 ... boundary-1) 
+				     updated only on request and at interrupt time */
 	snd_timestamp_t tstamp;	/* Timestamp */
 } snd_pcm_mmap_status_t;
 
