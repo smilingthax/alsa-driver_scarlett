@@ -436,6 +436,40 @@ int snd_timer_stop(snd_timer_instance_t * timeri)
 }
 
 /*
+ * delete the timer instance from active list.
+ *
+ * call this from the timer callback only!
+ */
+int snd_timer_del(snd_timer_instance_t * timeri)
+{
+	snd_timer_t *timer;
+
+	snd_assert(timeri != NULL, return -ENXIO);
+
+	if (timeri->flags & SNDRV_TIMER_IFLG_SLAVE) {
+		timeri->flags &= ~SNDRV_TIMER_IFLG_RUNNING;
+		list_del_init(&timeri->active_list);
+		return 0;
+	}
+
+	timer = timeri->timer;
+	if (! timer)
+		return -EINVAL;
+	spin_lock(&timer->lock);
+	if (timeri->flags & SNDRV_TIMER_IFLG_RUNNING) {
+		timeri->flags &= ~SNDRV_TIMER_IFLG_RUNNING;
+		list_del_init(&timeri->active_list);
+		if (!(--timer->running))
+			timer->hw.stop(timer);
+	} else if (timeri->flags & SNDRV_TIMER_IFLG_START) {
+		timeri->flags &= ~SNDRV_TIMER_IFLG_START;
+		list_del_init(&timeri->active_list);
+	}
+	spin_unlock(&timer->lock);
+	return 0;
+}
+
+/*
  * start again..  the tick is kept.
  */
 int snd_timer_continue(snd_timer_instance_t * timeri)
@@ -1359,6 +1393,7 @@ EXPORT_SYMBOL(snd_timer_close);
 EXPORT_SYMBOL(snd_timer_resolution);
 EXPORT_SYMBOL(snd_timer_start);
 EXPORT_SYMBOL(snd_timer_stop);
+EXPORT_SYMBOL(snd_timer_del);
 EXPORT_SYMBOL(snd_timer_continue);
 EXPORT_SYMBOL(snd_timer_new);
 EXPORT_SYMBOL(snd_timer_global_new);
