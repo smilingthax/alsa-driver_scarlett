@@ -137,7 +137,11 @@ MODULE_PARM_DESC(isapnp_reserve_mem, "ISA Plug & Play - reserve memory region(s)
 
 struct isapnp_dev *isapnp_devices = NULL;	/* device list */
 static unsigned char isapnp_checksum_value;
+#if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
+static DECLARE_MUTEX(isapnp_cfg_mutex);
+#else
 static struct semaphore isapnp_cfg_mutex = MUTEX;
+#endif
 static int isapnp_detected = 0;
 
 /* delay ten microseconds */
