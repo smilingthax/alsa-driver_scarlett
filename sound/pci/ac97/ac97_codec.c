@@ -141,7 +141,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x57454301, 0xffffffff, "W83971D",		NULL },
 { 0x574d4c00, 0xffffffff, "WM9701A",		patch_wolfson00 },
 { 0x574d4c03, 0xffffffff, "WM9703/9707",	patch_wolfson03 },
-{ 0x574d4c04, 0xffffffff, "WM9704 (quad)",	patch_wolfson04 },
+{ 0x574d4c04, 0xffffffff, "WM9704/quad",	patch_wolfson04 },
 { 0x574d4c05, 0xffffffff, "WM9705",		NULL },	// patch?
 { 0x594d4800, 0xffffffff, "YMF743",		NULL },
 { 0x594d4802, 0xffffffff, "YMF752",		NULL },
@@ -1744,7 +1744,7 @@ static void snd_ac97_get_name(ac97_t *ac97, unsigned int id, char *name)
 				pid->patch(ac97);
 			return;
 		}
-	sprintf(name + strlen(name), " (%x)", id & 0xff);
+	sprintf(name + strlen(name), " id %x", id & 0xff);
 }
 
 
