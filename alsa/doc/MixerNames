@@ -35,8 +35,8 @@ SOURCE:
   PCM Rear
   PCM Pan
   Loopback
-  Analog Loopback
-  Digital Loopback
+  Analog Loopback	(D/A -> A/D loopback)
+  Digital Loopback	(playback -> capture loopback - without analog path)
   Mono
   Mono Output
   Multi
