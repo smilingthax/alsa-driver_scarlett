@@ -1,6 +1,8 @@
 #!/bin/bash
 
-kdir=/usr/src/linux/drivers/sound
+basekdir=/usr/src/linux
+#basekdir=/home/src/1/linux
+kdir=$basekdir/drivers/sound
 backup=$kdir/../sound.backup
 if [ "x$1" != "x" ]; then
   kdir="$1"
