@@ -87,7 +87,6 @@
 #define SND_SEQ_EVENT_PORT_UNUSED	69	/* write port is released */
 
 #define SND_SEQ_EVENT_OSS		70	/* OSS raw event */
-#define SND_SEQ_EVENT_NORMAL_CONTROLS	80
 
 	/* synthesizer events */	
 #define SND_SEQ_EVENT_SAMPLE		80	/* sample select */
@@ -99,6 +98,8 @@
 #define SND_SEQ_EVENT_SAMPLE_LOOP	86	/* sample loop */
 #define SND_SEQ_EVENT_SAMPLE_POSITION	87	/* sample position */
 #define SND_SEQ_EVENT_SAMPLE_PRIVATE1	88	/* private (hardware dependent) event */
+
+#define SND_SEQ_EVENT_NORMAL_CONTROLS	100
 
 	/* instrument layer */
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
@@ -559,7 +560,8 @@ typedef struct {
 	snd_seq_addr_t sender;		/* sender address */
 	snd_seq_addr_t dest;		/* destination address */
 	int exclusive: 1,		/* exclusive mode */
-	    realtime: 1;		/* realtime timestamp */
+	    realtime: 1,		/* realtime timestamp */
+	    convert_time: 1;		/* convert timestamp */
 	int midi_channels;		/* midi channels setup, zero = do not care */
 	int midi_voices;		/* midi voices setup, zero = do not care */
 	int synth_voices;		/* synth voices setup, zero = do not care */
@@ -569,18 +571,17 @@ typedef struct {
 /* type of query subscription */
 #define SND_SEQ_QUERY_SUBS_READ		0
 #define SND_SEQ_QUERY_SUBS_WRITE	1
-#define SND_SEQ_QUERY_SUBS_READ_TRACK	2
-#define SND_SEQ_QUERY_SUBS_WRITE_TRACK	3
 
 typedef struct {
 	int client;
 	int port;
-	int type;	/* READ,WRITE,READ_TRACK,WRITE_TRACK */
+	int type;	/* READ or WRITE */
 	int index;	/* 0..N-1 */
 	int num_subs;	/* R/O: number of subscriptions on this port */
 	snd_seq_addr_t addr;	/* R/O: result */
-	int exclusive : 1;	/* R/O: result */
-	int realtime : 1;	/* R/O: result */
+	int exclusive: 1;	/* R/O: result */
+	int realtime: 1;	/* R/O: result */
+	int convert_time: 1;	/* R/O: result */
 	char reserved[64];	/* for future use */
 } snd_seq_query_subs_t;
 
