@@ -33,18 +33,18 @@
 #define ECHOCARD_BOX	E3G_LAYLA3G
 
 /* Pipe indexes */
-#define PX_ANALOG_OUT	0	/* 6 */
-#define PX_DIGITAL_OUT	6	/* 8 */
-#define PX_ANALOG_IN	14	/* 2 */
-#define PX_DIGITAL_IN	16	/* 8 */
-#define PX_NUM		24
+#define PX_ANALOG_OUT	0	/* 8 */
+#define PX_DIGITAL_OUT	8	/* 8 */
+#define PX_ANALOG_IN	16	/* 8 */
+#define PX_DIGITAL_IN	24	/* 8 */
+#define PX_NUM		32
 
 /* Bus indexes */
-#define BX_ANALOG_OUT	0	/* 6 */
-#define BX_DIGITAL_OUT	6	/* 8 */
-#define BX_ANALOG_IN	14	/* 2 */
-#define BX_DIGITAL_IN	16	/* 8 */
-#define BX_NUM		24
+#define BX_ANALOG_OUT	0	/* 8 */
+#define BX_DIGITAL_OUT	8	/* 8 */
+#define BX_ANALOG_IN	16	/* 8 */
+#define BX_DIGITAL_IN	24	/* 8 */
+#define BX_NUM		32
 
 
 /* Number of channels */
