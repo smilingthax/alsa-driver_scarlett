@@ -248,7 +248,7 @@ static int snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsigne
 				data.value.integer.value[i] = data32.value.integer.value[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_INTEGER64:
-			for (i = 0; i < 128; i++)
+			for (i = 0; i < 64; i++)
 				data.value.integer64.value[i] = data32.value.integer64.value[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_ENUMERATED:
@@ -279,7 +279,7 @@ static int snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsigne
 				data.value.integer.value[i] = data32.value.integer.value[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_INTEGER64:
-			for (i = 0; i < 128; i++)
+			for (i = 0; i < 64; i++)
 				data.value.integer64.value[i] = data32.value.integer64.value[i];
 			break;
 		case SNDRV_CTL_ELEM_TYPE_ENUMERATED:
