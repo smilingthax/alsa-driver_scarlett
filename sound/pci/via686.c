@@ -480,7 +480,6 @@ static int snd_via686a_capture_prepare(snd_pcm_substream_t * substream)
 static inline unsigned int snd_via686a_cur_ptr(via686a_t *chip, viadev_t *viadev)
 {
 	unsigned int val, ptr, count;
-	// unsigned int tmp;
 	
 	ptr = inl(VIAREG(chip, OFFSET_CURR_PTR) + viadev->reg_offset);
 	count = inl(VIAREG(chip, OFFSET_CURR_COUNT) + viadev->reg_offset);
@@ -488,13 +487,12 @@ static inline unsigned int snd_via686a_cur_ptr(via686a_t *chip, viadev_t *viadev
 		ptr += 8;
 	if (!(inb(VIAREG(chip, OFFSET_STATUS) + viadev->reg_offset) & VIA_REG_STAT_ACTIVE))
 		return 0;
-	// tmp =
 	val = (((unsigned int)(ptr - viadev->table_addr) / 8) - 1) % viadev->frags;
 	val *= viadev->fragsize;
 	val += viadev->fragsize - count;
 	viadev->lastptr = ptr;
 	viadev->lastcount = count;
-	// printk("pointer: ptr = 0x%x (%i), count = 0x%x, val = 0x%x\n", ptr, tmp, count, val);
+	// printk("pointer: ptr = 0x%x (%i), count = 0x%x, val = 0x%x\n", ptr, count, val);
 	return val;
 }
 
