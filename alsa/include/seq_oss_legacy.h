@@ -21,8 +21,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __OSSSEQ_LEGACY_H
-#define __OSSSEQ_LEGACY_H
+#ifndef __SEQ_OSS_LEGACY_H
+#define __SEQ_OSS_LEGACY_H
 
 /*
  * ioctl commands

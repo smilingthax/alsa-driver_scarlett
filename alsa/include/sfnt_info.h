@@ -22,7 +22,7 @@
 #ifndef __SFNT_INFO_H
 #define __SFNT_INFO_H
 
-#include "ossseq_legacy.h"
+#include "seq_oss_legacy.h"
 
 /*
  * patch information record

@@ -18,8 +18,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __OSSSEQ_H
-#define __OSSSEQ_H
+#ifndef __SEQ_OSS_H
+#define __SEQ_OSS_H
 
 #include "synth.h"
 #include "asequencer.h"
@@ -27,13 +27,13 @@
 /*
  * type definitions
  */
-typedef struct snd_ossseq_arg_t snd_ossseq_arg_t;
-typedef struct snd_ossseq_callback_t snd_ossseq_callback_t;
+typedef struct snd_seq_oss_arg_t snd_seq_oss_arg_t;
+typedef struct snd_seq_oss_callback_t snd_seq_oss_callback_t;
 
 /*
  * argument structure for synthesizer operations
  */
-struct snd_ossseq_arg_t {
+struct snd_seq_oss_arg_t {
 	/* given by OSS sequencer */
 	int app_index;	/* application unique index */
 	int file_mode;	/* file mode - see below */
@@ -53,35 +53,35 @@ struct snd_ossseq_arg_t {
 /*
  * synthesizer operation callbacks
  */
-struct snd_ossseq_callback_t {
-	int (*open)(snd_ossseq_arg_t *p, void *closure);
-	int (*close)(snd_ossseq_arg_t *p);
-	int (*ioctl)(snd_ossseq_arg_t *p, unsigned int cmd, unsigned long arg);
-	int (*load_patch)(snd_ossseq_arg_t *p, int format, const char *buf, int offs, int count);
-	int (*reset)(snd_ossseq_arg_t *p);
-	int (*raw_event)(snd_ossseq_arg_t *p, unsigned char *data);
+struct snd_seq_oss_callback_t {
+	int (*open)(snd_seq_oss_arg_t *p, void *closure);
+	int (*close)(snd_seq_oss_arg_t *p);
+	int (*ioctl)(snd_seq_oss_arg_t *p, unsigned int cmd, unsigned long arg);
+	int (*load_patch)(snd_seq_oss_arg_t *p, int format, const char *buf, int offs, int count);
+	int (*reset)(snd_seq_oss_arg_t *p);
+	int (*raw_event)(snd_seq_oss_arg_t *p, unsigned char *data);
 };
 
 /* flag: file_mode */
-#define SND_OSSSEQ_FILE_ACMODE		3
-#define SND_OSSSEQ_FILE_READ		1
-#define SND_OSSSEQ_FILE_WRITE		2
-#define SND_OSSSEQ_FILE_NONBLOCK	4
+#define SND_SEQ_OSS_FILE_ACMODE		3
+#define SND_SEQ_OSS_FILE_READ		1
+#define SND_SEQ_OSS_FILE_WRITE		2
+#define SND_SEQ_OSS_FILE_NONBLOCK	4
 
 /* flag: seq_mode */
-#define SND_OSSSEQ_MODE_SYNTH		0
-#define SND_OSSSEQ_MODE_MUSIC		1
+#define SND_SEQ_OSS_MODE_SYNTH		0
+#define SND_SEQ_OSS_MODE_MUSIC		1
 
 /* flag: event_passing */
-#define SND_OSSSEQ_PROCESS_EVENTS	0	/* key == 255 is processed as velocity change */
-#define SND_OSSSEQ_PASS_EVENTS		1	/* pass all events to callback */
-#define SND_OSSSEQ_PROCESS_KEYPRESS	2	/* key >= 128 will be processed as key-pressure */
+#define SND_SEQ_OSS_PROCESS_EVENTS	0	/* key == 255 is processed as velocity change */
+#define SND_SEQ_OSS_PASS_EVENTS		1	/* pass all events to callback */
+#define SND_SEQ_OSS_PROCESS_KEYPRESS	2	/* key >= 128 will be processed as key-pressure */
 
 /* default control rate: fixed */
-#define SND_OSSSEQ_CTRLRATE		100
+#define SND_SEQ_OSS_CTRLRATE		100
 
 /* default max queue length: configurable by module option */
-#define SND_OSSSEQ_MAX_QLEN		1024
+#define SND_SEQ_OSS_MAX_QLEN		1024
 
 
 /*
@@ -91,13 +91,13 @@ struct snd_ossseq_callback_t {
  * Callbacks oper must be given.  Private data pointer is passed only for
  * open callback.
  */
-int snd_ossseq_synth_register(char *name, int type, int subtype, int nvoices,
-			      snd_ossseq_callback_t *oper, void *private_data);
+int snd_seq_oss_synth_register(char *name, int type, int subtype, int nvoices,
+			      snd_seq_oss_callback_t *oper, void *private_data);
 /*
  * unregistration of synth port:
- * give the registration index returned by ossseq_synth_register().
+ * give the registration index returned by seq_oss_synth_register().
  */
-int snd_ossseq_synth_unregister(int index);
+int snd_seq_oss_synth_unregister(int index);
 
 
 #endif
