@@ -511,6 +511,20 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
+  Module snd-card-serial.o
+  -------------------------
+
+    Module for UART16550A serial MIDI ports.
+
+    snd_port	- port # for UART16550A chip
+    snd_irq	- IRQ # for UART16550A chip, -1 = poll mode
+    snd_divisor	- divisor to calculate bit rate (115200bps / #)
+		- 3 = 38.4kbps(default)
+    snd_ports	- number of MIDI ports (1,2,3,4) - 1 = default
+    
+    Module supports up to 8 cards. This module does not support autoprobe
+    thus main port must be specified!!! Other options are optional.
+
   Module snd-card-trident.o
   -------------------------
 
@@ -600,11 +614,28 @@ Module parameters
 			* Sound Blaster Live!
 			* Sound Blaster PCI 512
 
-    snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
+    snd_dac_frame_size  - max dac (playback) frame size in kB (4-128kB)
     snd_adc_frame_size  - max adc (record) frame size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe.
     
+  Module snd-card-ice1712.o
+  -------------------------
+
+    Module for Envy24 (ICE1712) based PCI soundcards.
+			* MidiMan M Audio Delta 1010
+			* MidiMan M Audio Delta DiO 2496
+			* MidiMan M Audio Delta 66
+			* MidiMan M Audio Delta 44
+
+    snd_conp_frame_size  - max consumer dac (playback) frame size in kB (4-128kB)
+    snd_prop_frame_size  - max professional dac (playback) frame size in kB (4-128kB)
+    snd_conc_frame_size  - max consumer adc (playback) frame size in kB (4-256kB)
+    snd_proc_frame_size  - max professional adc (record) frame size in kB (4-256kB)
+
+    Module supports up to 8 cards and autoprobe. Note: The consumer part
+    is not used with all Envy24 based cards (for example in the MidiMan Delta
+    serie).
 
 
 modprobe/kmod support

@@ -23,23 +23,59 @@
 
 #include "driver.h"
 
+#define SND_SERIAL_MAX_PORTS    4
+
+//#define TX_BUFF_SIZE 32		/* Must be 2^n */
+#define TX_BUFF_SIZE 256		/* Must be 2^n */
+//#define TX_BUFF_SIZE 512		/* Must be 2^n */
+#define TX_BUFF_MASK  (TX_BUFF_SIZE - 1)
+
+typedef struct snd_stru_uart16550 {
+	snd_card_t *card;
+	snd_rawmidi_t *rmidi[SND_SERIAL_MAX_PORTS];
+
+	int filemode;		//open status of file
+
+	spinlock_t open_lock;
+
+	int irq_number;
+	snd_irq_t *irq;
+
+	unsigned short base;
+
+	unsigned char divisor;
+
+	unsigned char old_divisor_lsb;
+	unsigned char old_divisor_msb;
+	unsigned char old_line_ctrl_reg;
+
+	//parameter for using of write loop
+	short int fifo_limit;	//used in uart16550
+
+        short int fifo_count;	//used in uart16550
+
+	// ports
+	int ports;
+	int ports_count;
+	int prev_ports;
+
+	//write buffer and its writing/reading position
+	char tx_buff[TX_BUFF_SIZE];
+        int buff_in;
+        int buff_out;
+} snd_uart16550_t;
+
 extern int snd_uart16550_new_device (snd_card_t* card,
 				     int device,
-				     unsigned short irq_number,
-				     unsigned short iobase,
+				     int irq_number,
+				     unsigned int iobase,
 				     unsigned char divisor,
-				     int polled,
-				     snd_rawmidi_t ** rrawmidi);
+				     int ports);
 
 extern int snd_uart16550_set_param (snd_rawmidi_t* rmidi,
-				    unsigned short irq_number,
-				    unsigned short iobase,
+				    int irq_number,
+				    unsigned int iobase,
 				    unsigned char divisor,
-				    int polled);
+				    int ports);
 
-extern int snd_uart16550_detect (unsigned short io_base);
-
-#ifdef CONFIG_SND_SEQUENCER
-extern int snd_seq_uart16550_register_port(snd_card_t * card, snd_rawmidi_t * rmidi, int device);
-extern int snd_seq_uart16550_unregister_port(snd_card_t * card, snd_rawmidi_t * rmidi);
-#endif
+extern int snd_uart16550_detect (unsigned int io_base);
