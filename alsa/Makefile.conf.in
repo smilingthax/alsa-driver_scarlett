@@ -6,8 +6,8 @@
 CROSS_COMPILE   ?= @CROSS_COMPILE@
 AS		= $(CROSS_COMPILE)@AS@
 LD		= $(CROSS_COMPILE)@LD@
-CC		= $(CROSS_COMPILE)@CC@ -DALSA_BUILD
-CPP		= $(CROSS_COMPILE)@CPP@ -M -DALSA_BUILD
+CC		= $(CROSS_COMPILE)@CC@
+CPP		= $(CROSS_COMPILE)@CPP@
 AR		= $(CROSS_COMPILE)@AR@
 MODFLAGS	= -DMODULE=1
 CFLAGS_KERNEL	=
@@ -64,7 +64,7 @@ CONFIG_USB		= @CONFIG_USB@
 CONFIG_SND_BIT32_EMUL	= @CONFIG_SND_BIT32_EMUL@
 
 INCLUDE		= -I$(TOPDIR)/include -I$(CONFIG_SND_KERNELDIR)/include
-CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
+CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe -DALSA_BUILD
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
