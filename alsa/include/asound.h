@@ -495,7 +495,7 @@ struct sndrv_timer_id {
 
 struct sndrv_timer_select {
 	struct sndrv_timer_id id;	/* bind to timer ID */
-	unsigned char reserved[32];
+	unsigned char reserved[32];	/* reserved */
 };
 
 #define SNDRV_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
@@ -507,12 +507,8 @@ struct sndrv_timer_info {
 	unsigned char name[80];		/* timer name */
 	unsigned long ticks;		/* maximum ticks */
 	unsigned long resolution;	/* average resolution */
-	unsigned char reserved[64];
+	unsigned char reserved[64];	/* reserved */
 };
-
-#define SNDRV_TIMER_PARBIT_FLAGS		(1<<0)
-#define SNDRV_TIMER_PARBIT_TICKS		(1<<1)
-#define SNDRV_TIMER_PARBIT_QUEUE_SIZE	(1<<2)
 
 #define SNDRV_TIMER_PSFLG_AUTO		(1<<0)	/* supports auto start */
 
@@ -520,8 +516,8 @@ struct sndrv_timer_params {
 	unsigned int flags;		/* flags - SNDRV_MIXER_PSFLG_* */
 	unsigned int ticks;		/* requested resolution in ticks */
 	unsigned int queue_size;	/* total size of queue (32-1024) */
-	unsigned int fail_mask;		/* failure locations */
-	unsigned char reserved[64];
+	unsigned int reserved0;		/* reserved, was: failure locations */
+	unsigned char reserved[64];	/* reserved */
 };
 
 struct sndrv_timer_status {
@@ -530,7 +526,7 @@ struct sndrv_timer_status {
 	unsigned int lost;		/* counter of master tick lost */
 	unsigned int overrun;		/* count of read queue overruns */
 	unsigned int queue;		/* used queue size */
-	unsigned char reserved[64];
+	unsigned char reserved[64];	/* reserved */
 };
 
 enum {
