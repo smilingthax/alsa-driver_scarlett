@@ -96,6 +96,7 @@ struct snd_stru_cs4231_image {
 #define CS4231_TIMER_HIGH	0x15	/* timer high byte */
 #define CS4231_LEFT_MIC_INPUT	0x16	/* left MIC input control register (InterWave only) */
 #define CS4231_RIGHT_MIC_INPUT	0x17	/* right MIC input control register (InterWave only) */
+#define CS4236_EXT_REG		0x17	/* extended register access */
 #define CS4231_IRQ_STATUS	0x18	/* irq status register */
 #define CS4231_LINE_LEFT_OUTPUT	0x19	/* left line output control register (InterWave only) */
 #define CS4231_VERSION		0x19	/* CS4231(A) - version values */
@@ -173,13 +174,36 @@ struct snd_stru_cs4231_image {
 /* definitions for misc control register - CS4231_MISC_INFO */
 
 #define CS4231_MODE2		0x40	/* MODE 2 */
-#define CS4231_MODE3		0x6c	/* MODE 3 - enhanced mode */
+#define CS4231_IW_MODE3		0x6c	/* MODE 3 - InterWave enhanced mode */
+#define CS4231_4236_MODE3	0x60	/* MODE 3 - CS4236+ enhanced mode */
 
 /* definitions for alternate feature 1 register - CS4231_ALT_FEATURE_1 */
 
 #define	CS4231_DACZ		0x01	/* zero DAC when underrun */
 #define CS4231_TIMER_ENABLE	0x40	/* codec timer enable */
 #define CS4231_OLB		0x80	/* output level bit */
+
+/* definitions for Extended Registers - CS4236+ */
+
+#define CS4236_LEFT_LINE	0x08	/* left LINE alternate volume */
+#define CS4236_RIGHT_LINE	0x18	/* right LINE alternate volume */
+#define CS4236_LEFT_MIC		0x28	/* left MIC volume */
+#define CS4236_RIGHT_MIC	0x38	/* right MIC volume */
+#define CS4236_LEFT_MIX_CTRL	0x48	/* synthesis and left input mixer control */
+#define CS4236_RIGHT_MIX_CTRL	0x58	/* right input mixer control */
+#define CS4236_LEFT_FM		0x68	/* left FM volume */
+#define CS4236_RIGHT_FM		0x78	/* right FM volume */
+#define CS4236_LEFT_DSP		0x88	/* left DSP serial port volume */
+#define CS4236_RIGHT_DSP	0x98	/* right DSP serial port volume */
+#define CS4236_RIGHT_LOOPBACK	0xa8	/* right loopback monitor volume */
+#define CS4236_DAC_MUTE		0xb8	/* DAC mute and IFSE enable */
+#define CS4236_ADC_RATE		0xc8	/* indenpendent ADC sample frequency */
+#define CS4236_DAC_RATE		0xd8	/* indenpendent DAC sample frequency */
+#define CS4236_LEFT_MASTER	0xe8	/* left master digital audio volume */
+#define CS4236_RIGHT_MASTER	0xf8	/* right master digital audio volume */
+#define CS4236_LEFT_WAVE	0x0c	/* left wavetable serial port volume */
+#define CS4236_RIGHT_WAVE	0x1c	/* right wavetable serial port volume */
+#define CS4236_VERSION		0x9c	/* chip version and ID */
 
 /* some structures */
 
@@ -199,11 +223,23 @@ struct snd_stru_cs4231_freq {
 
 /* defines for codec.hardware */
 
-#define CS4231_HW_DETECT	0x0000	/* let CS4231 driver detect chip */
-#define CS4231_HW_CS4231	0x0001	/* CS4231 chip */
-#define CS4231_HW_CS4231A	0x0002	/* CS4231A chip */
-#define CS4231_HW_INTERWAVE	0x0003	/* InterWave chip */
-#define CS4231_HW_OPL3SA	0x0004	/* OPL3-SA chip */
+#define CS4231_HW_DETECT        0x0000  /* let CS4231 driver detect chip */
+#define CS4231_HW_CS4231_MASK   0x0100  /* CS4231 serie */
+#define CS4231_HW_CS4231        0x0100  /* CS4231 chip */
+#define CS4231_HW_CS4231A       0x0101  /* CS4231A chip */
+#define CS4231_HW_CS4232_MASK   0x0200  /* CS4232 serie */
+#define CS4231_HW_CS4232        0x0200  /* CS4232 */
+#define CS4231_HW_CS4232A       0x0201  /* CS4232A */
+#define CS4231_HW_CS4236_MASK	0x0400	/* CS4236 serie */
+#define CS4231_HW_CS4235	0x0400	/* CS4235 - Crystal Clear (tm) stereo enhancement */
+#define CS4231_HW_CS4236        0x0401  /* CS4236 */
+#define CS4231_HW_CS4236B       0x0402  /* CS4236B */
+#define CS4231_HW_CS4237B       0x0403  /* CS4237B - SRS 3D */
+#define CS4231_HW_CS4238B	0x0404	/* CS4238B - QSOUND 3D */
+#define CS4231_HW_CS4239	0x0405	/* CS4239 - Crystal Clear (tm) stereo enhancement */
+/* compatible, but clones */
+#define CS4231_HW_INTERWAVE     0x1000  /* InterWave chip */
+#define CS4231_HW_OPL3SA        0x1001  /* OPL3-SA chip */
 
 struct snd_stru_cs4231 {
   unsigned short port;		/* i/o port */

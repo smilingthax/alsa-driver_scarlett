@@ -298,7 +298,7 @@ struct snd_mixer_switch {
 
 #define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001      /* only one recording source at moment */
 
-#define SND_MIXER_OSS_DEVS	17
+#define SND_MIXER_OSS_DEVS	25
 #define SND_MIXER_OSS_VOLUME	0
 #define SND_MIXER_OSS_BASS	1
 #define SND_MIXER_OSS_TREBLE	2
@@ -316,6 +316,14 @@ struct snd_mixer_switch {
 #define SND_MIXER_OSS_LINE1	14
 #define SND_MIXER_OSS_LINE2	15
 #define SND_MIXER_OSS_LINE3	16
+#define SND_MIXER_OSS_DIGITAL1	17
+#define SND_MIXER_OSS_DIGITAL2	18
+#define SND_MIXER_OSS_DIGITAL3	19
+#define SND_MIXER_OSS_PHONEIN	20
+#define SND_MIXER_OSS_PHONEOUT	21
+#define SND_MIXER_OSS_VIDEO	22
+#define SND_MIXER_OSS_RADIO	23
+#define SND_MIXER_OSS_MONITOR	24
 #define SND_MIXER_OSS_UNKNOWN	(32+1)
 
 struct snd_oss_mixer_info {
