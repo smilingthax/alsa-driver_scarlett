@@ -3,25 +3,27 @@
 		===========================================
 
 
-The EMU10K1 chips have the DSP part which can be programmed to support
-various sample processing. This acticle does not describe the overall
-functionality of the EMU10K1 chips. See the manuals section for further
-details. The ALSA driver programs this portion of chip by default code
-(can be altered later) which offers this kind of functionality:
+The EMU10K1 chips have a DSP part which can be programmed to support
+various ways of sample processing, which is described here.
+(This acticle does not deal with the overall functionality of the 
+EMU10K1 chips. See the manuals section for further details.)
+
+The ALSA driver programs this portion of chip by default code
+(can be altered later) which offers the following functionality:
 
 
 1) IEC958 (S/PDIF) raw PCM
 --------------------------
 
-This PCM device (it's 4th PCM device - index 3 - for given card and
-first subdevice - index 0) allows to forward 48kHz, stereo, 16-bit
-little endian stream without any modifications to the digital output
-(coaxial or optical). The universal interface allows creation up
-to 8 raw PCM devices operating at 48kHz, 16-bit little endian. It would
-be easy to add support for multichannel devices to the current code,
+This PCM device (it's the 4th PCM device (index 3!) and first 
+subdevice (index 0) for a given card) allows to forward 48kHz, stereo, 16-bit
+little endian streams without any modifications to the digital output
+(coaxial or optical). The universal interface allows the creation of up
+to 8 raw PCM devices operating at 48kHz, 16-bit little endian. 
+It would be easy to add support for multichannel devices to the current code,
 but the conversion routines exist only for stereo (2-channel streams)
-at the time. Look to tram_poke routines in lowlevel/emu10k1/emufx.c
-for more details.
+at the time. 
+Look to tram_poke routines in lowlevel/emu10k1/emufx.c for more details.
 
 
 2) Digital mixer controls
@@ -29,23 +31,28 @@ for more details.
 
 These controls are built using the DSP instructions. They offer extended
 functionality. Only the default build-in code in the ALSA driver is described
-here. Note that the attenuate word means "all the way up". The maximum
-value is the neutral position leaving the signal unchanged. Note that if
-same destination is mentioned in multiple controls, the signal is
-accumulated and can be wrapped to the maximal possible value.
+here. Note that the controls work as attenuators: the maximum value is the 
+neutral position leaving the signal unchanged. Note that if the  same destination 
+is mentioned in multiple controls, the signal is accumulated and can be wrapped 
+to the maximal possible value.
+
+	"wrapped" is not clear to me. does it mean i can set all sources to
+	an accumulator to maximum without having to worry about overloading
+	the accu ?
+
 
 Explanation of used abbreviations:
 
-DAC - digital analog converter
-ADC - analog digital converter
-I2S - one-way three wire serial bus for digital sound by Philips Semiconductors
-    - this standard is used for connecting standalone DAC and ADC converters
-LFE - low frequency effects (subwoofer signal)
-AC'97 - a chip containing analog mixer, DAC and ADC converters
+DAC    - digital to analog converter
+ADC    - analog to digital converter
+I2S    - one-way three wire serial bus for digital sound by Philips Semiconductors
+         (this standard is used for connecting standalone DAC and ADC converters)
+LFE    - low frequency effects (subwoofer signal)
+AC'97  - a chip containing an analog mixer, DAC and ADC converters
 IEC958 - S/PDIF
-FX-bus - EMU10K1 chip has an effect bus containing 16 accumulators,
-         each voice from synthesizer can feed the samples to these accumulators
-         and the DSP microcontroller can operate with the resulting sum
+FX-bus - the EMU10K1 chip has an effect bus containing 16 accumulators.
+         Each of the synthesizer voices can feed its output to these accumulators
+         and the DSP microcontroller can operate with the resulting sum.
 
 
 name='Wave Playback Volume',index=0
@@ -101,14 +108,14 @@ name='Surround Digital Playback Volume',index=0
 
 This control is used to attenuate samples for left and right rear PCM FX-bus
 accumulators. ALSA uses accumulators 2 and 3 for left and right rear PCM samples.
-The result samples are forwarded to the rear I2S DACs. These DACs operates
+The result samples are forwarded to the rear I2S DACs. These DACs operate
 separately (they are not inside the AC'97 codec).
 
 name='Surround Digital Capture Volume',index=0
 name='Surround Digital Capture Switch',index=0
 
-Thes controls are used to attenuate samples for left and right rear PCM FX-bus
-accumulator. ALSA uses accumulators 2 and 3 for left and right rear PCM samples.
+These controls are used to attenuate samples for left and right rear PCM FX-bus
+accumulators. ALSA uses accumulators 2 and 3 for left and right rear PCM samples.
 The result is forwarded to the ADC capture FIFO (thus to the standard capture
 PCM device).
 
@@ -131,7 +138,7 @@ of the AC'97 codec. The result samples are forwarded to the front DAC PCM
 slots of the AC'97 codec.
 ********************************************************************************
 *** Note: This control should be zero for the standard operations, otherwise ***
-*** an digital loopback is activated.                                        ***
+*** a digital loopback is activated.                                         ***
 ********************************************************************************
 
 name='AC'97 Capture Volume',index=0
@@ -253,7 +260,7 @@ name='EMU10K1 PCM Volume',index 0-31
 
 Channel volume attenuation in range 0-0xffff. The maximum value (no
 attenuation) is default. The channel mapping for three values is
-following:
+as follows:
 
 	0 - mono, default 0xffff (no attenuation)
 	1 - left, default 0xffff (no attenuation)
@@ -277,8 +284,8 @@ twelve values with this mapping:
 	10 - right, C destination (FX-bus 0-15), default 2
 	11 - right, D destination (FX-bus 0-15), default 3
 
-Don't forget, that it's invalid to use same FX-bus accumulators per channel
-(it means 0=0 && 1=0 is an invalid combination).
+Don't forget that it's illegal to assign a channel to the same FX-bus accumulator 
+more than once (it means 0=0 && 1=0 is an invalid combination).
  
 name='EMU10K1 PCM Send Volume',index 0-31
 
