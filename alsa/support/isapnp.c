@@ -64,6 +64,13 @@
 #include "isapnp.h"
 #endif
 
+#ifdef CONFIG_ALL_PPC
+#include <asm/processor.h>
+#define isPReP (_machine == _MACH_prep)
+#else
+#define isPReP 0
+#endif
+
 #if 0
 #define ISAPNP_REGION_OK
 #endif
@@ -2188,7 +2195,7 @@ __initfunc(int isapnp_init(void))
 	struct isapnp_card *card;
 	struct isapnp_dev *dev;
 
-	if (isapnp_disable) {
+	if (isapnp_disable || !isPReP) {
 		isapnp_detected = 0;
 		printk("isapnp: ISA Plug & Play support disabled\n");
 		return 0;
