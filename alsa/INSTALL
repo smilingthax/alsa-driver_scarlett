@@ -700,8 +700,8 @@ number).
 ----- /etc/modules.conf
 
 # ALSA portion
-alias snd-card-0 snd-interwave
-alias snd-card-1 snd-audiopci
+alias snd-card-0 snd-card-interwave
+alias snd-card-1 snd-card-ens1371
 # OSS/Free portion
 alias sound-slot-0 snd-card-0
 alias sound-slot-1 snd-card-1
