@@ -683,8 +683,6 @@ static int snd_via686a_playback_close(snd_pcm_substream_t * substream)
 	clean_via_table(&chip->playback, substream, chip->pci);
 	snd_pcm_sgbuf_delete(substream);
 	chip->playback.substream = NULL;
-	/* disable DAC power */
-	snd_ac97_update_bits(chip->ac97, AC97_POWERDOWN, 0x0200, 0x0200);
 	return 0;
 }
 
@@ -695,8 +693,6 @@ static int snd_via686a_capture_close(snd_pcm_substream_t * substream)
 	clean_via_table(&chip->capture, substream, chip->pci);
 	snd_pcm_sgbuf_delete(substream);
 	chip->capture.substream = NULL;
-	/* disable ADC power */
-	snd_ac97_update_bits(chip->ac97, AC97_POWERDOWN, 0x0100, 0x0100);
 	return 0;
 }
 
@@ -764,16 +760,6 @@ static int __devinit snd_via686a_pcm(via686a_t *chip, int device, snd_pcm_t ** r
  *  Mixer part
  */
 
-static void snd_via686a_codec_init(ac97_t *ac97)
-{
-	// via686a_t *chip = snd_magic_cast(via686a_t, ac97->private_data, return);
-
-	/* disable DAC & ADC power */
-	snd_ac97_update_bits(ac97, AC97_POWERDOWN, 0x0300, 0x0300);
-	/* disable center DAC/surround DAC/LFE DAC/MIC ADC */
-	snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, 0xe800, 0xe800);
-}
-
 static void snd_via686a_mixer_free_ac97(ac97_t *ac97)
 {
 	via686a_t *chip = snd_magic_cast(via686a_t, ac97->private_data, return);
@@ -788,7 +774,6 @@ static int __devinit snd_via686a_mixer(via686a_t *chip)
 	memset(&ac97, 0, sizeof(ac97));
 	ac97.write = snd_via686a_codec_write;
 	ac97.read = snd_via686a_codec_read;
-	ac97.init = snd_via686a_codec_init;
 	ac97.wait = snd_via686a_codec_wait;
 	ac97.private_data = chip;
 	ac97.private_free = snd_via686a_mixer_free_ac97;
