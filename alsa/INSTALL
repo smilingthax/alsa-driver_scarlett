@@ -4,16 +4,15 @@
 			    Installation guide
 
 
-The ALSA driver replaces the OSS/Lite driver. The OSS/Lite is present in
-current Linux kernels (2.2). Since 0.4.0 version ALSA has supported only
-2.2+ kernels. The 2.0 kernels are no longer supported. You must compile
-kernel with sound support (you need not select any other modules than
-sound support).
+The ALSA driver replaces the OSS/Lite driver. The OSS/Lite driver is
+present in current Linux kernels (2.2).  Since version 0.4.0, ALSA has
+supported only 2.2+ kernels. The 2.0 kernels are no longer supported. You
+must compile the kernel with sound support (you do not need to select
+any of the other sound modules apart from sound support).
 
-Before the installation of this driver, please, you need carefully read
-documentation  for insmod, modprobe, kerneld/kmod and even for the isapnp
-module if you have the ISA PnP soundcard. If you do not understand how
-these programs are working, you cannot be success with the installation.
+Before installing this driver, it will be helpful to read carefully
+the documentation for insmod, modprobe, kerneld/kmod and for the isapnp
+module if you have an ISA PnP soundcard.
 
 
 Quick install
@@ -30,18 +29,19 @@ Quick install
 3) Run 'make install'.
 4) Run the './snddevices' script to create new sound devices in /dev directory.
    Skip this step, if you have a kernel with the DEVFS support.
-5) Edit your /etc/conf.modules (look to kerneld/kmod support section).
-6) Run 'modprobe snd-card' where the card is a name of your card.
-   Note: If you have a ISA PnP soundcard you should need run the isapnp
-         program from isapnptools package at first to initialize your
-         soundcard. You can also use the native ISA PnP support with
-         using the --with-isapnp=yes configuration switch.
+5) Edit your /etc/conf.modules (see the kerneld/kmod support section below).
+6) Run 'modprobe snd-card' where the card is the name of your card.
+   Note: If you have a ISA PnP soundcard you need to first run the isapnp
+         program from isapnptools package to initialize your
+         soundcard. You can also use the native ISA PnP support by
+         using the --with-isapnp=yes configuration switch, in which
+		 case you do not need the isapnptools package.
 
-You can also look to the utils/alsasound file. This script is designed for
-the RedHat distribution, but it should be used with other distributions which
-are using System V style rc init scripts.
+You can also look at the utils/alsasound file. This script is designed for
+the RedHat distribution, but it can be used with other distributions which
+use System V style rc init scripts.
 
-Note: All mixer channels are muted by default. You must use some native
+Note: All mixer channels are muted by default. You must use a native
       mixer program to unmute appropriate channels (for example a mixer
       from the alsa-utils package).
 
@@ -57,8 +57,8 @@ Driver cannot be activated?
 3) The driver is not still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
-   there are not some messages. If these messages do not help you, pleasee,
-   create a new ticked in our bug reporting system.
+   there are some messages. If these messages do not help you, please
+   create a new ticket in our bug reporting system.
 
 
 Bug reporting system
@@ -70,10 +70,10 @@ http://www.alsa-project.org/cgi-bin/bugs
 Module parameters
 =================
 
-  An user can modify or set parameters at the load time of module. If
+  A user can modify or set parameters at the load time of the module. If
   the module supports more cards and you have got more than one card
-  of same type, you may simply to specify more values for the parameter
-  delimited with commas.
+  of the same type, you may simply specify more values for the parameter,
+  delimited by commas.
   
   Module snd.o
   ------------
@@ -82,7 +82,7 @@ Module parameters
 		- default is 14 - this value is compatible with OSS/Lite
     snd_cards_limit
 		- specifies card limit # (1-8)
-		- good for kerneld/kmod support if you do not want search
+		- good for kerneld/kmod support if you do not want to search
 		  for soundcards which are not installed in your system
     snd_device_mode
 		- specifies permission mask for dynamic sound device filesystem
@@ -103,7 +103,7 @@ Module parameters
     snd_id	- user identification for card (up to 15 chars)
 		- default expression is 'card<snd_index>' (for example card1)
 		- value is used for /proc/asound filesystem
-		- this value can be used with application for identification
+		- this value can be used by applications for identification
 		  of card if user does not want identify card with index number
 
   Module snd-card-dummy.o
@@ -560,11 +560,12 @@ Module parameters
 modprobe/kerneld/kmod support
 =============================
 
-The modprobe program must know where are modules for device major numbers.
-Native ALSA devices have got default number 116. Thus line like
+The modprobe program must know which modules are used for the
+device major numbers.
+Native ALSA devices have got default number 116. Thus a line like
 'alias char-major-116 snd' must be added to /etc/conf.modules. If you have 
-got compiled ALSA driver with OSS/Lite emulation code, please, follow
-these lines:
+compiled the ALSA driver with the OSS/Lite emulation code, then you
+will need to add lines as explained below:
 
 The ALSA driver uses soundcore multiplexer for 2.2+ kernels and OSS compatible
 devices. You should add line like 'alias char-major-14 soundcore'.
@@ -597,9 +598,9 @@ alias sound-slot-1 snd-card-1
 
 ----- /etc/conf.modules
 
-We are done at this point the configuration for ALSA native devices,
+We are finished at this point with the configuration for ALSA native devices,
 but you may also need autoloading for ALSA's add-on OSS/Lite emulation
-modules. At this time only one module does not depends on others, thus
+modules. At this time only one module does not depend on any others, thus
 must be loaded separately - snd-pcm1-oss.o. String 'sound-service-%i-%i'
 is requested for OSS/Lite service where first %i means slot number
 (e.g. card number) and second %i means service number.
@@ -641,8 +642,8 @@ alias sound-service-0-12 snd-pcm1-oss
 
 -----
 
-A complete example if you want use more soundcards in one machine
-(bellow configuration is for Sound Blaster 16 and Gravis UltraSound Classic):
+A complete example if you want to use more soundcards in one machine
+(the configuration below is for Sound Blaster 16 and Gravis UltraSound Classic):
 
 ----- /etc/conf.modules
 
@@ -721,7 +722,7 @@ DEVFS support
 =============
 
 The ALSA driver fully supports the devfs extension. You should add the line
-bellow to your devfsd.conf file to make things working properly:
+below to your devfsd.conf file to make things work properly:
 
 LOOKUP EXECUTE snd /sbin/modprobe snd
 
