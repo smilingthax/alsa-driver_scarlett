@@ -1577,10 +1577,10 @@ static snd_pcm_uframes_t snd_trident_playback_pointer(snd_pcm_substream_t * subs
 		cso = (unsigned int) inl(TRID_REG(trident, CH_NX_DELTA_CSO)) & 0x00ffffff;
 	}
 
-	if (++cso > runtime->buffer_size)
-		cso = runtime->buffer_size;
-
 	spin_unlock(&trident->reg_lock);
+
+	if (++cso >= runtime->buffer_size)
+		cso = 0;
 
 	return cso;
 }
@@ -1609,7 +1609,8 @@ static snd_pcm_uframes_t snd_trident_capture_pointer(snd_pcm_substream_t * subst
 	result = inw(TRID_REG(trident, T4D_SBBL_SBCL));
 	if (runtime->channels > 1)
 		result >>= 1;
-	result = runtime->buffer_size - result;
+	if (result > 0)
+		result = runtime->buffer_size - result;
 
 	// printk("capture result = 0x%x, cso = 0x%x\n", result, cso);
 
