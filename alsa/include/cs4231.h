@@ -191,16 +191,16 @@
 #define CS4231_HW_CS4231_MASK   0x0100	/* CS4231 serie */
 #define CS4231_HW_CS4231        0x0100	/* CS4231 chip */
 #define CS4231_HW_CS4231A       0x0101	/* CS4231A chip */
-#define CS4231_HW_CS4232_MASK   0x0200	/* CS4232 serie */
+#define CS4231_HW_CS4232_MASK   0x0200	/* CS4232 serie (has control ports) */
 #define CS4231_HW_CS4232        0x0200	/* CS4232 */
 #define CS4231_HW_CS4232A       0x0201	/* CS4232A */
-#define CS4231_HW_CS4236_MASK	0x0400	/* CS4236 serie */
+#define CS4231_HW_CS4236	0x0202	/* CS4236 */
+#define CS4231_HW_CS4236B_MASK	0x0400	/* CS4236B serie (has extended control regs) */
 #define CS4231_HW_CS4235	0x0400	/* CS4235 - Crystal Clear (tm) stereo enhancement */
-#define CS4231_HW_CS4236        0x0401	/* CS4236 */
-#define CS4231_HW_CS4236B       0x0402	/* CS4236B */
-#define CS4231_HW_CS4237B       0x0403	/* CS4237B - SRS 3D */
-#define CS4231_HW_CS4238B	0x0404	/* CS4238B - QSOUND 3D */
-#define CS4231_HW_CS4239	0x0405	/* CS4239 - Crystal Clear (tm) stereo enhancement */
+#define CS4231_HW_CS4236B       0x0401	/* CS4236B */
+#define CS4231_HW_CS4237B       0x0402	/* CS4237B - SRS 3D */
+#define CS4231_HW_CS4238B	0x0403	/* CS4238B - QSOUND 3D */
+#define CS4231_HW_CS4239	0x0404	/* CS4239 - Crystal Clear (tm) stereo enhancement */
 /* compatible, but clones */
 #define CS4231_HW_INTERWAVE     0x1000	/* InterWave chip */
 #define CS4231_HW_OPL3SA2       0x1001	/* OPL3-SA2 chip */
