@@ -44,6 +44,7 @@
 #define SND_RAWMIDI_LFLG_OPEN	0x00000003	/* open */
 
 typedef struct snd_stru_rawmidi_direction snd_rawmidi_direction_t;
+typedef struct snd_stru_rawmidi_switch snd_rawmidi_kswitch_t;
 
 struct snd_stru_rawmidi_direction_hw {
   unsigned int flags;				/* SND_RAWMIDI_HW_XXXX */
@@ -96,6 +97,14 @@ struct snd_stru_rawmidi_direction {
   struct snd_stru_rawmidi_direction_hw hw;
 };
  
+struct snd_stru_rawmidi_switch {
+  char name[32];
+  int (*get_switch)( snd_rawmidi_t *rmidi, snd_rawmidi_switch_t *uswitch );
+  int (*set_switch)( snd_rawmidi_t *rmidi, snd_rawmidi_switch_t *uswitch );
+  unsigned int private_value;
+  void *private_data;           		/* not freed by rawmidi.c */
+};
+ 
 struct snd_stru_rawmidi {
   snd_card_t *card;
 
@@ -118,6 +127,10 @@ struct snd_stru_rawmidi {
   snd_sleep_define( input );
   snd_sleep_define( output );
   snd_mutex_define( open );
+  snd_mutex_define( switches );
+  
+  unsigned int switches_count;
+  snd_rawmidi_kswitch_t **switches;
 
   snd_info_entry_t *dev;
   snd_info_entry_t *proc_entry;
@@ -129,6 +142,7 @@ extern snd_rawmidi_t *snd_rawmidi_new_device( snd_card_t *card, char *id );
 extern int snd_rawmidi_free( snd_rawmidi_t *rmidi );
 extern int snd_rawmidi_register( snd_rawmidi_t *rmidi, int rawmidi_device );
 extern int snd_rawmidi_unregister( snd_rawmidi_t *rmidi );
+extern snd_rawmidi_kswitch_t *snd_rawmidi_new_switch( snd_rawmidi_t *rmidi, snd_rawmidi_kswitch_t *ksw );
 
 /* control functions */
 

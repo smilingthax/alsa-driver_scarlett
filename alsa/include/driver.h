@@ -213,6 +213,7 @@ typedef void (snd_irq_handler_t)( int irq, void *dev_id, struct pt_regs *regs );
 
 typedef struct snd_stru_card snd_card_t;
 typedef struct snd_info_entry snd_info_entry_t;
+typedef struct snd_stru_ctl_switch snd_ctl_kswitch_t;
 typedef struct snd_stru_pcm snd_pcm_t;
 typedef struct snd_stru_mixer snd_kmixer_t;
 typedef struct snd_stru_rawmidi snd_rawmidi_t;
@@ -231,23 +232,26 @@ struct snd_stru_card {
   char longname[ 80 ];		/* name of this soundcard */
 
   struct snd_stru_dma *dmas[ SND_DMAS ];
-  volatile unsigned int dmas_map; /* bitmask for allocated DMA channels */
+  volatile unsigned int dmas_map; 	/* bitmask for allocated DMA channels */
   
   struct snd_stru_irq *irqs[ SND_IRQS ];
-  volatile unsigned int irqs_map; /* bitmask for allocated IRQ channels */
+  volatile unsigned int irqs_map; 	/* bitmask for allocated IRQ channels */
 
   struct snd_stru_port *ports[ SND_PORTS ];
-  volatile unsigned int ports_map; /* bitmask for allocated port numbers */
+  volatile unsigned int ports_map; 	/* bitmask for allocated port numbers */
 
   void (*use_inc)( snd_card_t *card );	/* increment use count */
   void (*use_dec)( snd_card_t *card );	/* decrement use count */
 
-  snd_mutex_define( control );	/* control card mutex */
+  snd_mutex_define( control );		/* control card mutex */
   
-  void *private_data;		/* private data for soundcard */
+  void *private_data;			/* private data for soundcard */
   void (*private_free)( void *private ); /* callback for freeing of private data */
 
-  void *static_data;		/* private static data for soundcard */
+  void *static_data;			/* private static data for soundcard */
+
+  int switches_count;			/* switches count */
+  snd_ctl_kswitch_t **switches;	 	/* switches */
 
   struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
   struct proc_dir_entry *proc_dir_link;	/* number link to real id */

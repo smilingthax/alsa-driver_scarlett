@@ -65,12 +65,14 @@ typedef struct snd_mixer_switch snd_mixer_switch_t;
 typedef struct snd_pcm_info snd_pcm_info_t;
 typedef struct snd_pcm_playback_info snd_pcm_playback_info_t;
 typedef struct snd_pcm_record_info snd_pcm_record_info_t;
+typedef struct snd_pcm_switch snd_pcm_switch_t;
 typedef struct snd_pcm_format snd_pcm_format_t;
 typedef struct snd_pcm_playback_params snd_pcm_playback_params_t;
 typedef struct snd_pcm_record_params snd_pcm_record_params_t;
 typedef struct snd_pcm_playback_status snd_pcm_playback_status_t;
 typedef struct snd_pcm_record_status snd_pcm_record_status_t;
 typedef struct snd_rawmidi_info snd_rawmidi_info_t;
+typedef struct snd_rawmidi_switch snd_rawmidi_switch_t;
 typedef struct snd_rawmidi_output_params snd_rawmidi_output_params_t;
 typedef struct snd_rawmidi_input_params snd_rawmidi_input_params_t;
 typedef struct snd_rawmidi_output_status snd_rawmidi_output_status_t;
@@ -89,6 +91,12 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
 #define SND_CTL_LCAPS_SYNTH		0x0000001	/* soundcard have synthesizer */
 #define SND_CTL_LCAPS_RAWFM		0x0000002	/* soundcard have RAW FM/OPL3 */
 
+#define SND_CTL_SW_TYPE_BOOLEAN		0	/* 0 or 1 (enable) */
+#define SND_CTL_SW_TYPE_BYTE		1	/* 0 to 255 (low to high) */
+#define SND_CTL_SW_TYPE_WORD		2	/* 0 to 65535 (low to high) */
+#define SND_CTL_SW_TYPE_DWORD		3	/* 0 to 4294967296 (low to high) */
+#define SND_CTL_SW_TYPE_USER		(~0)	/* user type */
+
 struct snd_ctl_hw_info {
   unsigned int type;		/* type of card - look to SND_CARD_TYPE_XXXX */
   unsigned int gcaps;		/* look to SND_CTL_GCAPS_XXXX */
@@ -100,11 +108,30 @@ struct snd_ctl_hw_info {
   char abbreviation[16];	/* Abbreviation for soundcard */
   char name[32];		/* Short name of soundcard */
   char longname[80];		/* name + info text about soundcard */
-  unsigned char reserved[128];	/* reserved for future */
+  unsigned int switches;	/* count of switches */
+  unsigned char reserved[124];	/* reserved for future */
+};
+
+struct snd_ctl_switch {
+  unsigned int switchn;		/* switch # (filled by application) */
+  unsigned char name[32];	/* identification of switch (from driver) */
+  unsigned int type;		/* look to SND_MIXER_SW_TYPE_XXXX */
+  unsigned int low;		/* low range value */
+  unsigned int high;		/* high range value */
+  union {
+    unsigned int enable;	/* 0 = off, 1 = on */
+    unsigned char data8[32];	/* 8-bit data */
+    unsigned short data16[32];	/* 16-bit data */
+    unsigned int data32[8];	/* 32-bit data */
+  } value;
+  unsigned char reserved[32];
 };
 
 #define SND_CTL_IOCTL_PVERSION		_IOR ( 'U', 0x00, int )
 #define SND_CTL_IOCTL_HW_INFO		_IOR ( 'U', 0x01, struct snd_ctl_hw_info )
+#define SND_CTL_IOCTL_SWITCHES		_IOR ( 'U', 0x02, int )
+#define SND_CTL_IOCTL_SWITCH_READ	_IOR ( 'U', 0x03, struct snd_ctl_switch )
+#define SND_CTL_IOCTL_SWITCH_WRITE	_IOWR( 'U', 0x03, struct snd_ctl_switch )
 #define SND_CTL_IOCTL_MIXER_DEVICE	_IOWR( 'U', 0x10, int )
 #define SND_CTL_IOCTL_MIXER_INFO	_IOR ( 'U', 0x10, snd_mixer_info_t )
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOWR( 'U', 0x20, int )
@@ -164,10 +191,10 @@ struct snd_ctl_hw_info {
 #define SND_MIXER_ID_AUXB		"Aux B"
 #define SND_MIXER_ID_AUXC		"Aux C"
 
-#define SND_MIXER_SW_TYPE_BOOLEAN	0	/* 0 or 1 */
-#define SND_MIXER_SW_TYPE_BYTE		1	/* 0 to 255 */
-#define SND_MIXER_SW_TYPE_WORD		2	/* 0 to 65535 */
-#define SND_MIXER_SW_TYPE_DWORD		3	/* 0 to 4294967296 */
+#define SND_MIXER_SW_TYPE_BOOLEAN	0	/* 0 or 1 (enable) */
+#define SND_MIXER_SW_TYPE_BYTE		1	/* 0 to 255 (low to high) */
+#define SND_MIXER_SW_TYPE_WORD		2	/* 0 to 65535 (low to high) */
+#define SND_MIXER_SW_TYPE_DWORD		3	/* 0 to 4294967296 (low to high) */
 #define SND_MIXER_SW_TYPE_USER		(~0)	/* user type */
 
 					/* max 32 chars (with '\0') */
@@ -201,7 +228,7 @@ struct snd_mixer_info {
   unsigned int caps;		/* some flags about this device (SND_MIXER_INFO_CAP_XXXX) */
   unsigned char id[32];		/* ID of this mixer */
   unsigned char name[80];	/* name of this device */
-  unsigned int switches;	/* number of switches */
+  unsigned int switches;	/* count of switches */
   char reserved[28];		/* reserved for future use */
 };
 
@@ -232,6 +259,8 @@ struct snd_mixer_switch {
   unsigned int switchn;		/* switch # (filled by application) */
   unsigned char name[32];	/* identification of switch (from driver) */
   unsigned int type;		/* look to SND_MIXER_SW_TYPE_XXXX */
+  unsigned int low;		/* low range value */
+  unsigned int high;		/* high range value */
   union {
     unsigned int enable;	/* 0 = off, 1 = on */
     unsigned char data8[32];	/* 8-bit data */
@@ -405,6 +434,21 @@ struct snd_pcm_record_info {
   unsigned char reserved[60];		/* reserved for future... */
 };
 
+struct snd_pcm_switch {
+  unsigned int switchn;			/* switch # (filled by application) */
+  unsigned char name[32];		/* identification of switch (from driver) */
+  unsigned int type;			/* look to SND_MIXER_SW_TYPE_XXXX */
+  unsigned int low;			/* low range value */
+  unsigned int high;			/* high range value */
+  union {
+    unsigned int enable;		/* 0 = off, 1 = on */
+    unsigned char data8[32];		/* 8-bit data */
+    unsigned short data16[32];		/* 16-bit data */
+    unsigned int data32[8];		/* 32-bit data */
+  } value;
+  unsigned char reserved[32];
+};
+
 struct snd_pcm_format {
   unsigned int format;			/* SND_PCM_SFMT_XXXX */
   unsigned int rate;			/* rate in Hz */
@@ -456,6 +500,9 @@ struct snd_pcm_record_status {
 #define SND_PCM_IOCTL_INFO		_IOR ( 'A', 0x01, struct snd_pcm_info )
 #define SND_PCM_IOCTL_PLAYBACK_INFO	_IOR ( 'A', 0x02, struct snd_pcm_playback_info )
 #define SND_PCM_IOCTL_RECORD_INFO	_IOR ( 'A', 0x03, struct snd_pcm_record_info )
+#define SND_PCM_IOCTL_SWITCHES		_IOR ( 'A', 0x04, int )
+#define SND_PCM_IOCTL_SWITCH_READ	_IOR ( 'A', 0x05, struct snd_pcm_switch )
+#define SND_PCM_IOCTL_SWITCH_WRITE	_IOWR( 'A', 0x05, struct snd_pcm_switch )
 #define SND_PCM_IOCTL_PLAYBACK_FORMAT	_IOWR( 'A', 0x10, struct snd_pcm_format )
 #define SND_PCM_IOCTL_RECORD_FORMAT	_IOWR( 'A', 0x11, struct snd_pcm_format )
 #define SND_PCM_IOCTL_PLAYBACK_PARAMS	_IOWR( 'A', 0x12, struct snd_pcm_playback_params )
@@ -663,12 +710,34 @@ struct snd_pcm_buffer_description {
 #define SND_RAWMIDI_INFO_INPUT		0x00000002
 #define SND_RAWMIDI_INFO_DUPLEX		0x00000004
 
+#define SND_RAWMIDI_SW_TYPE_BOOLEAN	0	/* 0 or 1 (enable) */
+#define SND_RAWMIDI_SW_TYPE_BYTE	1	/* 0 to 255 (low to high) */
+#define SND_RAWMIDI_SW_TYPE_WORD	2	/* 0 to 65535 (low to high) */
+#define SND_RAWMIDI_SW_TYPE_DWORD	3	/* 0 to 4294967296 (low to high) */
+#define SND_RAWMIDI_SW_TYPE_USER	(~0)	/* user type */
+
 struct snd_rawmidi_info {
   unsigned int type;			/* soundcard type */
   unsigned int flags;			/* SND_RAWMIDI_INFO_XXXX */
   unsigned char id[32];			/* ID of this raw midi device */
   unsigned char name[80];		/* name of this raw midi device */
-  unsigned char reserved[64];		/* reserved for future use */
+  unsigned int switches;		/* count of switches */
+  unsigned char reserved[60];		/* reserved for future use */
+};
+
+struct snd_rawmidi_switch {
+  unsigned int switchn;			/* switch # (filled by application) */
+  unsigned char name[32];		/* identification of switch (from driver) */
+  unsigned int type;			/* look to SND_MIXER_SW_TYPE_XXXX */
+  unsigned int low;			/* low range value */
+  unsigned int high;			/* high range value */
+  union {
+    unsigned int enable;		/* 0 = off, 1 = on */
+    unsigned char data8[32];		/* 8-bit data */
+    unsigned short data16[32];		/* 16-bit data */
+    unsigned int data32[8];		/* 32-bit data */
+  } value;
+  unsigned char reserved[32];
 };
 
 struct snd_rawmidi_output_params {
@@ -701,6 +770,9 @@ struct snd_rawmidi_input_status {
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ( 'W', 0x00, int )
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ( 'W', 0x01, struct snd_rawmidi_info )
+#define SND_RAWMIDI_IOCTL_SWITCHES	_IOR ( 'W', 0x02, int )
+#define SND_RAWMIDI_IOCTL_SWITCH_READ	_IOR ( 'W', 0x03, struct snd_rawmidi_switch )
+#define SND_RAWMIDI_IOCTL_SWITCH_WRITE	_IOWR( 'W', 0x03, struct snd_rawmidi_switch )
 #define SND_RAWMIDI_IOCTL_OUTPUT_PARAMS	_IOWR( 'W', 0x10, struct snd_rawmidi_output_params )
 #define SND_RAWMIDI_IOCTL_INPUT_PARAMS	_IOWR( 'W', 0x11, struct snd_rawmidi_input_params )
 #define SND_RAWMIDI_IOCTL_OUTPUT_STATUS	_IOR ( 'W', 0x20, struct snd_rawmidi_output_status )
