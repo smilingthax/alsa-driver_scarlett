@@ -771,7 +771,8 @@ static int snd_emu10k1_playback_open(snd_pcm_substream_t * substream)
 		return err;
 	}
 	mix = &emu->pcm_mixer[substream->number];
-	mix->send_routing[0] = mix->send_routing[1] = mix->send_routing[2] = 0x3210;
+	mix->send_routing[0] = mix->send_routing[1] = mix->send_routing[2] =
+		emu->audigy ? 0x03020100 : 0x3210;
 	memset(&mix->send_volume, 0, sizeof(mix->send_volume));
 	mix->send_volume[0][0] = mix->send_volume[0][1] =
 	mix->send_volume[1][0] = mix->send_volume[2][1] = 255;
