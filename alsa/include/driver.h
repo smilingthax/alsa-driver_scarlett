@@ -298,23 +298,22 @@ void snd_oss_cleanup_module(void);
 
 /* memory.c */
 
-extern void snd_malloc_init(void);
-extern void snd_malloc_done(void);
-extern void *snd_malloc(unsigned long size);
-extern void *snd_calloc(unsigned long size);
-extern void snd_free(void *obj, unsigned long size);
-extern char *snd_malloc_strdup(char *string);
-extern void snd_free_str(char *string);
+extern void snd_memory_init(void);
+extern void snd_memory_done(void);
+extern void *snd_kmalloc(size_t size, int flags);
+extern void snd_kfree(void *obj);
+extern void *snd_kcalloc(size_t size, int flags);
+extern char *snd_kmalloc_strdup(const char *string, int flags);
 extern char *snd_malloc_pages(unsigned long size, int *pg, int dma);
+extern void *snd_vmalloc(unsigned long size);
+extern void snd_vfree(void *obj);
 extern void snd_free_pages(char *ptr, unsigned long size);
-extern int snd_dma_malloc(snd_card_t * card, snd_dma_t * dma, char *owner, int soft);
-extern void snd_dma_free(snd_card_t * card, snd_dma_t * dma, int soft);
-extern int snd_dma_soft_grab(snd_card_t * card, snd_dma_t * dma);
-extern void snd_dma_soft_release(snd_card_t * card, snd_dma_t * dma);
+extern int snd_dma_malloc(snd_card_t * card, snd_dma_t * dma, char *owner);
+extern void snd_dma_free(snd_card_t * card, snd_dma_t * dma);
 extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
+#ifdef CONFIG_SND_DEBUG_MEMORY
 extern int snd_memory_info_init(void);
 extern int snd_memory_info_done(void);
-#ifdef CONFIG_SND_DEBUG_MEMORY
 extern void snd_memory_debug1(void);
 #endif
 
