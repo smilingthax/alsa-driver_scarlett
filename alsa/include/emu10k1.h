@@ -731,8 +731,6 @@ typedef struct {
 
 struct _snd_emu10k1 {
 	int irq;
-	unsigned long dma1size;	/* DAC/EMU PCM */
-	unsigned long dma2size;	/* ADC */
 
 	unsigned long port;	/* I/O port number */
 	struct resource *res_port;
@@ -818,8 +816,6 @@ struct _snd_emu10k1 {
 
 int snd_emu10k1_create(snd_card_t * card,
 		       struct pci_dev *pci,
-		       unsigned long dma1size,
-		       unsigned long dma2size,
 		       emu10k1_t ** remu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);

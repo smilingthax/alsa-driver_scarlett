@@ -333,10 +333,6 @@ struct _snd_trident_pcm_mixer {
 };
 
 struct _snd_trident {
-	unsigned long dma1size;	/* DAC Channel */
-	unsigned long dma2size;	/* ADC Channel */
-	unsigned long dma3size;	/* Foldback Channel */
-	unsigned long dma4size;	/* SPDIF Channel */
 	int irq;
 
 	unsigned int device;	/* device ID */
@@ -388,10 +384,6 @@ struct _snd_trident {
 
 int snd_trident_create(snd_card_t * card,
 		       struct pci_dev *pci,
-		       unsigned long dma1size,
-		       unsigned long dma2size,
-		       unsigned long dma3size,
-		       unsigned long dma4size,
 		       int pcm_streams,
 		       int pcm_spdif_device,
 		       int max_wavetable_size,

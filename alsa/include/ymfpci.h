@@ -267,8 +267,6 @@ struct _snd_ymfpci_pcm {
 };
 
 struct _snd_ymfpci {
-	unsigned long dma1size;  /* DAC1 */
-	unsigned long dma2size;  /* ADC/AC97 */
 	int irq;
 
 	unsigned int device_id;	/* PCI device ID */
@@ -330,8 +328,6 @@ struct _snd_ymfpci {
 
 int snd_ymfpci_create(snd_card_t * card,
 		      struct pci_dev *pci,
-		      unsigned long dma1size,
-		      unsigned long dma2size,
 		      unsigned short old_legacy_ctrl,
 		      ymfpci_t ** rcodec);
 
