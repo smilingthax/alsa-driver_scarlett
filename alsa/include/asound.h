@@ -132,7 +132,6 @@ typedef struct snd_ctl_hw_info {
 	char abbreviation[16];	/* Abbreviation for soundcard */
 	char name[32];		/* Short name of soundcard */
 	char longname[80];	/* name + info text about soundcard */
-	unsigned int switches;	/* count of switches */
 	unsigned char reserved[128];	/* reserved for future */
 } snd_ctl_hw_info_t;
 
@@ -141,24 +140,24 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_SWITCH_LIST	_IOWR('U', 0x02, snd_switch_list_t)
 #define SND_CTL_IOCTL_SWITCH_READ	_IOWR('U', 0x03, snd_switch_t)
 #define SND_CTL_IOCTL_SWITCH_WRITE	_IOWR('U', 0x04, snd_switch_t)
-#define SND_CTL_IOCTL_HWDEP_DEVICE	_IOW('U', 0x08, int)
+#define SND_CTL_IOCTL_HWDEP_DEVICE	_IOW ('U', 0x08, int)
 #define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x09, snd_hwdep_info_t)
-#define SND_CTL_IOCTL_MIXER_DEVICE	_IOW('U', 0x10, int)
+#define SND_CTL_IOCTL_MIXER_DEVICE	_IOW ('U', 0x10, int)
 #define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x10, snd_mixer_info_t)
 #define SND_CTL_IOCTL_MIXER_SWITCH_LIST	_IOWR('U', 0x18, snd_switch_list_t)
 #define SND_CTL_IOCTL_MIXER_SWITCH_READ	_IOWR('U', 0x19, snd_switch_t)
 #define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x1a, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_DEVICE	_IOW('U', 0x20, int)
-#define SND_CTL_IOCTL_PCM_CHANNEL	_IOW('U', 0x21, int)
-#define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOW('U', 0x22, int)
+#define SND_CTL_IOCTL_PCM_DEVICE	_IOW ('U', 0x20, int)
+#define SND_CTL_IOCTL_PCM_CHANNEL	_IOW ('U', 0x21, int)
+#define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOW ('U', 0x22, int)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x23, int)
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x24, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x25, snd_pcm_channel_info_t)
 #define SND_CTL_IOCTL_PCM_SWITCH_LIST	_IOWR('U', 0x26, snd_switch_list_t)
 #define SND_CTL_IOCTL_PCM_SWITCH_READ	_IOWR('U', 0x27, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_SWITCH_WRITE	_IOWR('U', 0x28, snd_switch_t)
-#define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOW('U', 0x30, int)
-#define SND_CTL_IOCTL_RAWMIDI_CHANNEL	_IOW('U', 0x31, int)
+#define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOW ('U', 0x30, int)
+#define SND_CTL_IOCTL_RAWMIDI_CHANNEL	_IOW ('U', 0x31, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x32, snd_rawmidi_info_t)
 #define SND_CTL_IOCTL_RAWMIDI_SWITCH_LIST _IOWR('U', 0x38, snd_switch_list_t)
 #define SND_CTL_IOCTL_RAWMIDI_SWITCH_READ _IOWR('U', 0x39, snd_switch_t)
@@ -1585,7 +1584,7 @@ typedef struct snd_rawmidi_status {
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ('W', 0x01, snd_rawmidi_info_t)
-#define SND_RAWMIDI_IOCTL_CHANNEL_PARAMS _IOW('W', 0x10, snd_rawmidi_params_t)
+#define SND_RAWMIDI_IOCTL_CHANNEL_PARAMS _IOW ('W', 0x10, snd_rawmidi_params_t)
 #define SND_RAWMIDI_IOCTL_CHANNEL_STATUS _IOWR('W', 0x20, snd_rawmidi_status_t)
 #define SND_RAWMIDI_IOCTL_CHANNEL_DRAIN	_IOW ('W', 0x30, int)
 #define SND_RAWMIDI_IOCTL_CHANNEL_FLUSH _IOW ('W', 0x31, int)
