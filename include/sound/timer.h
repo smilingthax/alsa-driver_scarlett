@@ -80,7 +80,7 @@ struct _snd_timer_hardware {
 	unsigned long (*c_resolution) (snd_timer_t * timer);
 	int (*start) (snd_timer_t * timer);
 	int (*stop) (snd_timer_t * timer);
-	int (*set_resolution) (snd_timer_t * timer, unsigned long resolution);
+	int (*set_period) (snd_timer_t * timer, unsigned long period, unsigned long period_num, unsigned long period_den);
 	int (*precise_resolution) (snd_timer_t * timer, unsigned long *num, unsigned long *den);
 };
 

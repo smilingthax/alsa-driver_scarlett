@@ -584,7 +584,9 @@ struct sndrv_timer_ginfo {
 
 struct sndrv_timer_gparams {
 	struct sndrv_timer_id tid;	/* requested timer ID */
-	unsigned long resolution;	/* requested resolution in ns */
+	unsigned long period;		/* requested minimal period in ns */
+	unsigned long period_num;	/* requested precise period resolution (in seconds) - numerator */
+	unsigned long period_den;	/* requested precise period resolution (in seconds) - denominator */
 	unsigned char reserved[32];
 };
 
@@ -612,6 +614,7 @@ struct sndrv_timer_info {
 };
 
 #define SNDRV_TIMER_PSFLG_AUTO		(1<<0)	/* auto start, otherwise one-shot */
+#define SNDRV_TIMER_PSFLG_EXCLUSIVE	(1<<1)	/* exclusive use, precise start/stop/pause/continue */
 
 struct sndrv_timer_params {
 	unsigned int flags;		/* flags - SNDRV_MIXER_PSFLG_* */
