@@ -68,6 +68,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 { 0x434d4900, 0xffffff00, "C-Media Electronics", NULL },
 { 0x43525900, 0xffffff00, "Cirrus Logic",	NULL },
 { 0x43585400, 0xffffff00, "Conexant",           NULL },
+{ 0x454d4300, 0xffffff00, "eMicro",		NULL },
 { 0x45838300, 0xffffff00, "ESS Technology",	NULL },
 { 0x48525300, 0xffffff00, "Intersil",		NULL },
 { 0x49434500, 0xffffff00, "ICEnsemble",		NULL },
@@ -118,6 +119,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif },
 { 0x43525960, 0xfffffff8, "CS4291",		NULL },
 { 0x43585429, 0xffffffff, "Cx20468",		patch_conexant },
+{ 0x454d4328, 0xffffffff, "28028",		NULL },  // same as TR28028?
 { 0x45838308, 0xffffffff, "ESS1988",		NULL },
 { 0x48525300, 0xffffff00, "HMP9701",		NULL },
 { 0x49434501, 0xffffffff, "ICE1230",		NULL },
