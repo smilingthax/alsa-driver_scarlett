@@ -34,6 +34,7 @@ install: compile
 	rm -f $(moddir)/snd*.o $(moddir)/persist.o
 	cp modules/*.o $(moddir)
 	/sbin/depmod -a $(kversion).$(kpatchlevel).$(ksublevel)
+	install -m 755 -d $(prefix)/include/linux
 	install -m 644 include/asound.h $(prefix)/include/linux
 	install -m 644 include/asoundid.h $(prefix)/include/linux
 	cat WARNING
