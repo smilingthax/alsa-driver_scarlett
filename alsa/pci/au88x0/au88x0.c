@@ -26,6 +26,7 @@
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
+static int pcifix[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = 255 };
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for " CARD_NAME " soundcard.");
@@ -36,6 +37,9 @@ MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(enable, "Enable " CARD_NAME " soundcard.");
 MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
+MODULE_PARM(pcifix, "1-255i");
+MODULE_PARM_DESC(pcifix, "Enable VIA-workaround for " CARD_NAME " soundcard.");
+MODULE_PARM_SYNTAX(pcifix, SNDRV_ENABLED ",allows:{{0,Disabled},{1,Latency},{2,Bridge},{3,Both},{255,Auto}},default:4,dialog:check");
 
 MODULE_DESCRIPTION("Aureal vortex");
 MODULE_CLASSES("{sound}");
@@ -60,6 +64,55 @@ __setup("snd-au88x0=", alsa_card_vortex_setup);
 
 
 MODULE_DEVICE_TABLE(pci, snd_vortex_ids);
+
+static void __devinit snd_vortex_workaround(struct pci_dev *vortex, int fix)
+{
+	int rc;
+	struct pci_dev *via = NULL;
+
+		/* autodetect if workarounds are required */
+	if ((via = pci_find_device(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8365_1, NULL))) {
+		if(fix == 255) {
+			printk(KERN_INFO CARD_NAME
+				": detected VIA KT133/KM133. activating workaround...\n");
+			fix = 3; // do latency and via bridge workaround
+		}
+	}
+	
+		/* fix vortex latency */
+	if(fix & 0x01) {
+		if( !(rc = pci_write_config_byte(vortex, 0x40, 0xff)) ) {
+			printk(KERN_INFO CARD_NAME
+					": vortex latency is 0xff\n");
+		}
+		else {
+			printk(KERN_WARNING CARD_NAME ": could not set vortex latency: pci error 0x%x\n", rc);
+		}
+	}
+
+		/* fix via agp bridge */
+	if(via && (fix & 0x02)) {
+		u8 value;
+
+			/*
+			 * only set the bit (Extend PCI#2 Internal Master for
+			 * Efficient Handling of Dummy Requests) if the can
+			 * read the config and it is not already set
+			 */
+
+		if( !(rc = pci_read_config_byte(via, 0x42, &value)) && (
+			(value & 0x10) ||
+			!(rc=pci_write_config_byte(via, 0x42, value|0x10)) ) ) {
+
+			printk(KERN_INFO CARD_NAME
+					": bridge config is 0x%x\n",
+					value|0x10);
+		}
+		else {
+			printk(KERN_WARNING CARD_NAME ": could not set vortex latency: pci error 0x%x\n", rc);
+		}
+	}
+}
 
 
 // component-destructor
@@ -199,6 +252,7 @@ snd_vortex_probe(struct pci_dev *pci, const struct pci_device_id *pci_id) {
         snd_card_free(card);
         return err;
     }
+    snd_vortex_workaround(pci, pcifix[dev]);
     // (4) Alloc components.
     // ADB pcm.
     if ((err = snd_vortex_new_pcm(chip, VORTEX_PCM_ADB, NR_ADB)) < 0) {
