@@ -150,13 +150,28 @@ struct snd_stru_ad1848 {
 	int mce_bit;
 	int calibrate_mute;
 
+	spinlock_t reg_lock;
+	struct semaphore open_mutex;
+
 	snd_kmixer_element_t *me_mux_line1;
 	snd_kmixer_element_t *me_mux_aux1;
 	snd_kmixer_element_t *me_mux_line2;
 	snd_kmixer_element_t *me_mux_mix;
 
-	spinlock_t reg_lock;
-	struct semaphore open_mutex;
+	snd_kmixer_element_t *me_mux;
+	snd_kmixer_element_t *me_accu;
+	snd_kmixer_element_t *me_dig_accu;
+	snd_kmixer_element_t *me_vol_aux1;
+	snd_kmixer_element_t *me_sw_aux1;
+	snd_kmixer_element_t *me_vol_aux2;
+	snd_kmixer_element_t *me_sw_aux2;
+	snd_kmixer_element_t *me_vol_igain;
+	snd_kmixer_element_t *me_capture;
+	snd_kmixer_element_t *me_vol_loop;
+	snd_kmixer_element_t *me_sw_loop;
+	snd_kmixer_element_t *me_playback;
+	snd_kmixer_element_t *me_vol_pcm;
+	snd_kmixer_element_t *me_sw_pcm;
 };
 
 typedef struct snd_stru_ad1848 ad1848_t;
@@ -184,7 +199,7 @@ int snd_ad1848_mixer_stereo_switch(void *private_data, int w_flag, unsigned int 
 					int bit, int invert,
 					unsigned char left_reg,
 					unsigned char right_reg);
-int snd_ad1848_mixer_mono_switch(void *private_data, int w_flag, unsigned int *bitmap,
+int snd_ad1848_mixer_mono_switch(void *private_data, int w_flag, int *value,
 					int bit, int invert, unsigned char reg);
 
 #ifdef CONFIG_SND_DEBUG

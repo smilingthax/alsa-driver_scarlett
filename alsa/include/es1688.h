@@ -43,11 +43,6 @@ struct snd_stru_es1688 {
 
 	unsigned short trigger_value;
 
-	snd_kmixer_element_t *me_mux_mic;
-	snd_kmixer_element_t *me_mux_line;
-	snd_kmixer_element_t *me_mux_cd;
-	snd_kmixer_element_t *me_mux_mix;
-
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
@@ -57,6 +52,25 @@ struct snd_stru_es1688 {
 
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;
+
+	snd_kmixer_element_t *me_mux_mic;
+	snd_kmixer_element_t *me_mux_line;
+	snd_kmixer_element_t *me_mux_cd;
+	snd_kmixer_element_t *me_mux_mix;
+
+	snd_kmixer_element_t *me_mux;
+	snd_kmixer_element_t *me_accu;
+	snd_kmixer_element_t *me_vol_igain;
+	snd_kmixer_element_t *me_capture;
+	snd_kmixer_element_t *me_playback;
+	snd_kmixer_element_t *me_vol_master;
+	snd_kmixer_element_t *me_vol_line;
+	snd_kmixer_element_t *me_vol_pcm;
+	snd_kmixer_element_t *me_vol_cd;
+	snd_kmixer_element_t *me_vol_fm;
+	snd_kmixer_element_t *me_vol_mic;
+	snd_kmixer_element_t *me_vol_aux;
+	snd_kmixer_element_t *me_vol_speaker;
 };
 
 typedef struct snd_stru_es1688 es1688_t;
