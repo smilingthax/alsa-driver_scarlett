@@ -222,6 +222,7 @@
 #define OPL3_HW_OPL3_SV		0x0301	/* S3 SonicVibes */
 #define OPL3_HW_OPL3_CS		0x0302	/* CS4232/CS4236+ */
 #define OPL3_HW_OPL3_FM801	0x0303	/* FM801 */
+#define OPL3_HW_OPL3_CS4281	0x0304	/* CS4281 */
 #define OPL3_HW_OPL4		0x0400
 #define OPL3_HW_MASK		0xff00
 
@@ -290,6 +291,8 @@ struct snd_opl3 {
 };
 
 /* opl3.c */
+void snd_opl3_outb(opl3_t * opl3, unsigned long port, unsigned char val);
+unsigned char snd_opl3_inb(opl3_t * opl3, unsigned long port);
 void snd_opl3_command(opl3_t * opl3, unsigned short cmd, unsigned char val);
 void snd_opl3_interrupt(snd_hwdep_t * hw);
 int snd_opl3_create(snd_card_t * card,

@@ -291,6 +291,7 @@ case "$1" in
   cs4281)
     basic
     insert snd-ac97-codec.o
+    insert snd-opl3.o
     insert snd-card-cs4281.o
     restore cs4281.conf
     ;;
