@@ -62,6 +62,9 @@
 #if LinuxVersionCode(2, 3, 11) <= LINUX_VERSION_CODE
 #define NEW_RESOURCE
 #endif
+#if LinuxVersionCode(2, 3, 13) <= LINUX_VERSION_CODE
+#define NEW_PCI
+#endif
 
 #ifdef ALSA_BUILD
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
