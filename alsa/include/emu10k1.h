@@ -786,6 +786,7 @@ typedef struct {
 	struct list_head gpr_ctl;	/* GPR controls */
 	struct semaphore lock;
 	snd_emu10k1_fx8010_pcm_t pcm[8];
+	spinlock_t irq_lock;
 	snd_emu10k1_fx8010_irq_t *irq_handlers;
 } snd_emu10k1_fx8010_t;
 
