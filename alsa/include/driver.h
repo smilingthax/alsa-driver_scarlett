@@ -120,7 +120,8 @@
 #include <linux/init.h>
 #endif
 #include "compat_22.h"
-#endif
+#endif /* LINUX_2_2 */
+
 #ifdef LINUX_2_3
 #include <linux/init.h>
 #include <linux/pm.h>
@@ -150,6 +151,10 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 #undef pci_alloc_consistent
 #define pci_alloc_consistent snd_pci_hack_alloc_consistent
 #endif /* i386 or ppc */
+#ifndef list_for_each_safe
+#define list_for_each_safe(pos, n, head) \
+	for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
+#endif
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
