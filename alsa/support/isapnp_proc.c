@@ -1139,7 +1139,6 @@ static int isapnp_decode_line(char *line)
 {
 	char cmd[32];
 
-	printk("line = '%s'\n", line);
 	line = isapnp_get_str(cmd, line, sizeof(cmd));
 	if (!strcmp(cmd, "dev") || !strcmp(cmd, "device"))
 		return isapnp_set_device(line);
