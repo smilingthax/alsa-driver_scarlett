@@ -59,18 +59,14 @@ Returns how many actually written or < 0 on error
 */
 static int write_midi(echoaudio_t *chip, u8 *data, int bytes)
 {
-	if (bytes <= 0)
-		return 0;
+	snd_assert(bytes > 0 && bytes < MIDI_OUT_BUFFER_SIZE, return -EINVAL);
 
 	if (wait_handshake(chip))
 		return -EIO;
 
-	/* Return immediately if HF4 is clear - HF4 indicates that it is safe to write MIDI output data */
+	/* HF4 indicates that it is safe to write MIDI output data */
 	if ((get_dsp_register(chip, CHI32_STATUS_REG) & CHI32_STATUS_REG_HF4) == 0)
-		return 0;	//@@@ -EBUSY ?
-
-	/* The first byte contains the number of bytes to send */
-	snd_assert(bytes < MIDI_OUT_BUFFER_SIZE, return -EINVAL);
+		return 0;
 
 	chip->comm_page->midi_output[0] = bytes;
 	memcpy(&chip->comm_page->midi_output[1], data, bytes);
@@ -198,8 +194,8 @@ static int snd_echo_midi_output_open(snd_rawmidi_substream_t *substream)
 {
 	echoaudio_t *chip = substream->rmidi->private_data;
 
-	init_timer(&chip->timer);
 	chip->tinuse = 0;
+	chip->midi_full = 0;
 	chip->midi_out = substream;
 	DE_MID(("rawmidi_oopen\n"));
 	return 0;
@@ -219,32 +215,36 @@ static void snd_echo_midi_output_write(unsigned long data)
 	if the card's output buffer has room for new data. */
 	sent = bytes = 0;
 	spin_lock_irqsave(&chip->lock, flags);
+	chip->midi_full = 0;
 	if (chip->midi_out && !snd_rawmidi_transmit_empty(chip->midi_out)) {
 		bytes = snd_rawmidi_transmit_peek(chip->midi_out, buf, MIDI_OUT_BUFFER_SIZE - 1);
 		DE_MID(("Try to send %d bytes...\n", bytes));
-		if (bytes > 0) {	//@@ useless ?
-			sent = write_midi(chip, buf, bytes);
-			if (sent < 0) {
-				DE_MID(("write_midi() error %d\n", sent));
-				sent = 1000;	/* retry later */
-			} else {
-				DE_MID(("%d bytes sent\n", sent));
-				snd_rawmidi_transmit_ack(chip->midi_out, sent);
-			}
+		sent = write_midi(chip, buf, bytes);
+		if (sent < 0) {
+			snd_printk("write_midi() error %d\n", sent);
+			/* retry later */
+			sent = 9000;
+			chip->midi_full = 1;
+		} else if (sent > 0) {
+			DE_MID(("%d bytes sent\n", sent));
+			snd_rawmidi_transmit_ack(chip->midi_out, sent);
+		} else {
+			/* Buffer is full. DSP's internal buffer is 64 (128 ?)
+			bytes long. Let's wait until half of them are sent */
+			DE_MID(("Full\n"));
+			sent = 32;
+			chip->midi_full = 1;
 		}
 	}
-	spin_unlock_irqrestore(&chip->lock, flags);
 
 	/* We restart the timer only if there is some data left to send */
 	if (!snd_rawmidi_transmit_empty(chip->midi_out) && chip->tinuse) {
 		/* The timer will expire slightly after the data has been sent */
-		time = (sent << 10) / 3150 + 1;	/* ms */
-		chip->timer.expires = ((time * HZ + 999) / 1000) + jiffies;
-		add_timer(&chip->timer);
+		time = (sent << 3) / 25 + 1;	/* 8/25=0.32ms to send a byte */
+		mod_timer(&chip->timer, jiffies + (time * HZ + 999) / 1000);
 		DE_MID(("Timer armed(%d)\n", ((time * HZ + 999) / 1000)));
 	}
-
-	DE_MID(("snd_echo_midi_output_write done\n"));
+	spin_unlock_irqrestore(&chip->lock, flags);
 }
 
 
@@ -271,9 +271,8 @@ static void snd_echo_midi_output_trigger(snd_rawmidi_substream_t *substream, int
 	}
 	spin_unlock_irq(&chip->lock);
 
-	if (up)
+	if (up && !chip->midi_full)
 		snd_echo_midi_output_write((unsigned long)chip);
-	DE_MID(("rawmidi_otrigger\n"));
 }
 
 

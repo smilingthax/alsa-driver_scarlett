@@ -373,6 +373,7 @@ struct echoaudio_chip {
 #endif
 	struct timer_list timer;
 	char tinuse;				/* Timer in use */
+	char midi_full;				/* MIDI output buffer is full */
 	char can_set_rate;
 	char rate_set;
 
