@@ -123,6 +123,7 @@ static char *kernel_deps[] = {
 	"RTC",
 	"GAMEPORT",
 	"VIDEO_DEV",
+	"ASIHPK", /* external tree */
 	/* some flags */
 	"EXPERIMENTAL",
 	NULL
