@@ -1,5 +1,4 @@
 - midlevel:
-H fix nonblock semantics for close and flush
 H multiple, partial, read only mmap support
 H lock, grant and revoke ioctls (not available to alsa-lib I propose)
 H fix BOGUS use of sleep_on!!! (Jaroslav)
