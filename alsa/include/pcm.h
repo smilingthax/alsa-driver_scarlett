@@ -294,7 +294,7 @@ extern unsigned int snd_pcm_lib_transfer_fragment(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_16bit(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_unsigned(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_big_endian(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_lib_neutral_byte(snd_pcm_subchn_t *subchn);
+extern unsigned char snd_pcm_lib_silence(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_sample_width(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_interleave_len(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_subchn_t *subchn, long size);
