@@ -1,7 +1,7 @@
 Driver can be compiled only under 2.0.X kernels and under 2.1.89+ kernels.
 
-Last checked 2.0.X kernel: 2.0.34/2.0.34pre4
-Last checked 2.1.X kernel: 2.1.109
+Last checked 2.0.X kernel: 2.0.35
+Last checked 2.1.X kernel: 2.1.120
 
 Driver has been tested on platforms:
 
