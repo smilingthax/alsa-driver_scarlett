@@ -1,6 +1,5 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
-H replace int with unsigned long (alpha machines) for port values (Jaroslav)
 M add user/kernel lock for mmap'ed control (To think)
 M add card number to snd_mixer_eid_t
 M loopback implementation (To think)
@@ -12,6 +11,7 @@ L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
 M Yamaha PCI driver (Jaroslav)
+M ICE1712 - consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L rewrite ICE1712 mixer (Abramo)
 L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
