@@ -72,8 +72,8 @@ struct _snd_kctl {
 	int prefer_rawmidi_subdevice;
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
-	int read_active: 1,		/* read interface is activated */
-	    rebuild: 1;			/* rebuild the structure */
+	int read_active;		/* read interface is activated */
+	int rebuild;			/* rebuild the structure */
 	struct list_head events;	/* waiting events for read */
 };
 
