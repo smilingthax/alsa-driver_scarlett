@@ -727,14 +727,28 @@ struct snd_mixer_element_tone_control1 {
  *  Simple pan control
  */
 
-struct snd_mixer_element_pan_control1_info {
+#define SND_MIXER_PAN_LEFT_RIGHT        0
+#define SND_MIXER_PAN_FRONT_REAR        1
+#define SND_MIXER_PAN_BOTTOM_UP         2
+
+struct snd_mixer_element_pan_control1_range {
+	int pan_type;			/* SND_MIXER_PAN_XXXX */
 	int min, max;
 	int min_dB, max_dB;
 };
 
+struct snd_mixer_element_pan_control1_info {
+	int range_size;		/* size of range descriptors */
+	int range;		/* count of filled range descriptors */
+	int range_over;		/* missing range descriptors */
+	struct snd_mixer_element_pan_control1_range *prange;
+};
+
 struct snd_mixer_element_pan_control1 {
-	int pan_ctrl: 1;		/* Left/Right switch */
-	int pan;			/* PAN control */
+	int pan_size;		/* size of pan descriptors */
+	int pan;		/* count of filled pan descriptors */
+	int pan_over;		/* missing pan descriptors */
+	int *ppan;		/* array of pan values */
 };
 
 /*
@@ -838,7 +852,7 @@ typedef struct snd_mixer_element_info {
 		struct snd_mixer_element_mux1_info mux1;
 		struct snd_mixer_element_mux2_info mux2;
 		struct snd_mixer_element_tone_control1_info tc1;
-		struct snd_mixer_element_pan_control1_info pan1;
+		struct snd_mixer_element_pan_control1_info pc1;
 		struct snd_mixer_element_3d_effect1_info teffect1;
 		struct snd_mixer_element_pre_effect1_info peffect1;
 		char reserve[120];
@@ -857,7 +871,7 @@ typedef struct snd_mixer_element {
 		struct snd_mixer_element_volume1 volume1;
 		struct snd_mixer_element_volume2 volume2;
 		struct snd_mixer_element_tone_control1 tc1;
-		struct snd_mixer_element_pan_control1 pan1;
+		struct snd_mixer_element_pan_control1 pc1;
 		struct snd_mixer_element_3d_effect1 teffect1;
 		struct snd_mixer_element_pre_effect1 peffect1;
 		char reserve[120];
