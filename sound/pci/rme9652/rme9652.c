@@ -24,7 +24,6 @@
 #include <asm/io.h>
 #include <linux/delay.h>
 #include <linux/init.h>
-#include <linux/pci.h>
 #include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/control.h>
@@ -480,6 +479,10 @@ static int rme9652_set_rate(rme9652_t *rme9652, int rate)
 	int reject_if_open = 0;
 	int xrate;
 
+	if (!snd_rme9652_use_is_exclusive (rme9652)) {
+		return -EBUSY;
+	}
+
 	/* Changing from a "single speed" to a "double speed" rate is
 	   not allowed if any substreams are open. This is because
 	   such a change causes a shift in the location of 
@@ -523,8 +526,7 @@ static int rme9652_set_rate(rme9652_t *rme9652, int rate)
 		return -EINVAL;
 	}
 
-	if (reject_if_open &&
-	    (rme9652->capture_pid >= 0 || rme9652->playback_pid >= 0)) {
+	if (reject_if_open && (rme9652->capture_pid >= 0 || rme9652->playback_pid >= 0)) {
 		spin_unlock_irq(&rme9652->lock);
 		return -EBUSY;
 	}
@@ -532,7 +534,6 @@ static int rme9652_set_rate(rme9652_t *rme9652, int rate)
 	if ((restart = rme9652->running)) {
 		rme9652_stop(rme9652);
 	}
-
 	rme9652->control_register &= ~(RME9652_freq | RME9652_DS);
 	rme9652->control_register |= rate;
 	rme9652_write(rme9652, RME9652_control_register, rme9652->control_register);
@@ -2231,6 +2232,9 @@ static int snd_rme9652_trigger(snd_pcm_substream_t *substream,
 			    substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
 				rme9652_silence_playback(rme9652);
 		}
+	} else {
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) 
+			rme9652_silence_playback(rme9652);
 	}
  _ok:
 	snd_pcm_trigger_done(substream, substream);
@@ -2543,6 +2547,20 @@ static int __init snd_rme9652_create(snd_card_t *card,
 	rme9652->irq = -1;
 	rme9652->card = card;
 
+	pci_read_config_word(rme9652->pci, PCI_CLASS_REVISION, &rev);
+
+	switch (rev & 0xff) {
+	case 3:
+	case 4:
+	case 8:
+	case 9:
+		break;
+
+	default:
+		/* who knows? */
+		return -ENODEV;
+	}
+
 	if ((err = pci_enable_device(pci)) < 0)
 		return err;
 
@@ -2554,18 +2572,24 @@ static int __init snd_rme9652_create(snd_card_t *card,
 		return -EBUSY;
 	}
 
-	if (request_irq(pci->irq, snd_rme9652_interrupt, SA_INTERRUPT|SA_SHIRQ, "rme9652", (void *)rme9652)) {
-		snd_printk("unable to grab IRQ %d\n", pci->irq);
-		return -EBUSY;
-	}
-	rme9652->irq = pci->irq;
-
 	rme9652->iobase = (unsigned long) ioremap_nocache(rme9652->port, RME9652_IO_EXTENT);
 	if (rme9652->iobase == 0) {
 		snd_printk("unable to remap region 0x%lx-0x%lx\n", rme9652->port, rme9652->port + RME9652_IO_EXTENT - 1);
 		return -EBUSY;
 	}
 	
+	rme9652->iobase = (unsigned long) ioremap_nocache(rme9652->port, RME9652_IO_EXTENT);
+	if (rme9652->iobase == 0) {
+		snd_printk("unable to remap region 0x%lx-0x%lx\n", rme9652->port, rme9652->port + RME9652_IO_EXTENT - 1);
+		return -EBUSY;
+	}
+
+	if (request_irq(pci->irq, snd_rme9652_interrupt, SA_INTERRUPT|SA_SHIRQ, "rme9652", (void *)rme9652)) {
+		snd_printk("unable to grab IRQ %d\n", pci->irq);
+		return -EBUSY;
+	}
+	rme9652->irq = pci->irq;
+
 	rme9652->precise_ptr = precise_ptr;
 
 	/* Determine the h/w rev level of the card. This seems like
@@ -2587,9 +2611,7 @@ static int __init snd_rme9652_create(snd_card_t *card,
 	   relevant.  
 	*/
 
-	pci_read_config_word(rme9652->pci, PCI_CLASS_REVISION, &rev);
-	strcpy(card->driver, "RME9652");
-	switch (rev & 0xff) {
+	switch (rev) {
 	case 8: /* original eprom */
 		strcpy(card->driver, "RME9636");
 		if (rme9652->hw_rev == 15) {
@@ -2605,11 +2627,12 @@ static int __init snd_rme9652_create(snd_card_t *card,
 		rme9652->ss_channels = RME9636_NCHANNELS;
 		break;
 	case 4: /* W52_G EPROM */
+		strcpy(card->driver, "RME9652");
 		rme9652->card_name = "RME Digi9652 (Rev G)";
 		rme9652->ss_channels = RME9652_NCHANNELS;
 		break;
-	default:
 	case 3: /* original eprom */
+		strcpy(card->driver, "RME9652");
 		if (rme9652->hw_rev == 15) {
 			rme9652->card_name = "RME Digi9652 (Rev 1.5)";
 		} else {
