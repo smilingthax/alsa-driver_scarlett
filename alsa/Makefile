@@ -110,7 +110,7 @@ install: install-modules install-headers install-scripts
 install-headers:
 	if [ -L $(DESTDIR)$(prefix)/include/sound ]; then \
 		rm -f $(DESTDIR)$(prefix)/include/sound; \
-		ln -sf $(SRCDIR)/include/sound $(DESTDIR)$(prefix)/include/sound; \
+		ln -sf $(MAINSRCDIR)/include/sound $(DESTDIR)$(prefix)/include/sound; \
 	else \
 		rm -rf $(DESTDIR)$(prefix)/include/sound; \
 		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
