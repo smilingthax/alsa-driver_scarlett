@@ -177,6 +177,17 @@ static inline void snd_leave_user(mm_segment_t fs)
 	set_fs(fs);
 }
 
+#if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)
+#undef writeb
+#define writeb(v, a) ({__writeb((v),(a)); mb(); })
+#undef writew
+#define writew(v, a) ({__writew((v),(a)); mb(); })
+#undef writel
+#define writel(v, a) ({__writel((v),(a)); mb(); })
+#undef writeq
+#define writeq(v, a) ({__writeq((v),(a)); mb(); })
+#endif
+
 /*
  *  ==========================================================================
  */
