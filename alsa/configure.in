@@ -1900,7 +1900,7 @@ if test "$CONFIG_SND_MODULE" = y; then
   echo "Hacking autoconf.h..."
   rm -f include/linux/autoconf.h
   mkdir -p include/linux
-  grep -v CONFIG_SND_ $kernelbuild/include/linux/autoconf.h > include/linux/autoconf.h
+  grep -v CONFIG_SND_ $CONFIG_SND_KERNELDIR/include/linux/autoconf.h > include/linux/autoconf.h
   cat include/autoconf-extra.h >> include/linux/autoconf.h
   cat include/config1.h >> include/linux/autoconf.h
 else
