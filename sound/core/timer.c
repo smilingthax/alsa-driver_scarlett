@@ -1690,9 +1690,10 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 				break;
 			}
 		}
-		spin_unlock_irq(&tu->qlock);
 		if (err < 0)
 			break;
+
+		spin_unlock_irq(&tu->qlock);
 
 		if (tu->tread) {
 			if (copy_to_user(buffer, &tu->tqueue[tu->qhead++], sizeof(snd_timer_tread_t))) {
@@ -1714,6 +1715,7 @@ static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count
 		spin_lock_irq(&tu->qlock);
 		tu->qused--;
 	}
+	spin_unlock_irq(&tu->qlock);
 	return result > 0 ? result : err;
 }
 
