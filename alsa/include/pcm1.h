@@ -87,6 +87,7 @@
 #define SND_PCM1_IOCTL_RATE	0x00000002	/* compute rate */
 #define SND_PCM1_IOCTL_VOICES	0x00000003	/* check voices (format) */
 #define SND_PCM1_IOCTL_PAUSE	0x00000004	/* pause */
+#define SND_PCM1_IOCTL_FRAG	0000000005	/* fragment size */
 
 #define snd_pcm1_lockzero( channel ) \
   ((channel) -> block_lock = -1)

@@ -195,6 +195,78 @@
 #define BA1_OMNI_MEM                            0x000E0000
 
 /*
+ *  The following defines are for the flags in the host interrupt status
+ *  register.
+ */
+#define HISR_VC_MASK                            0x0000FFFF
+#define HISR_VC0                                0x00000001
+#define HISR_VC1                                0x00000002
+#define HISR_VC2                                0x00000004
+#define HISR_VC3                                0x00000008
+#define HISR_VC4                                0x00000010
+#define HISR_VC5                                0x00000020
+#define HISR_VC6                                0x00000040
+#define HISR_VC7                                0x00000080
+#define HISR_VC8                                0x00000100
+#define HISR_VC9                                0x00000200
+#define HISR_VC10                               0x00000400
+#define HISR_VC11                               0x00000800
+#define HISR_VC12                               0x00001000
+#define HISR_VC13                               0x00002000
+#define HISR_VC14                               0x00004000
+#define HISR_VC15                               0x00008000
+#define HISR_INT0                               0x00010000
+#define HISR_INT1                               0x00020000
+#define HISR_DMAI                               0x00040000
+#define HISR_FROVR                              0x00080000
+#define HISR_MIDI                               0x00100000
+#ifdef NO_CS4612
+#define HISR_RESERVED                           0x0FE00000
+#else
+#define HISR_SBINT                              0x00200000
+#define HISR_RESERVED                           0x0FC00000
+#endif
+#define HISR_H0P                                0x40000000
+#define HISR_INTENA                             0x80000000
+
+/*
+ *  The following defines are for the flags in the host signal register 0.
+ */
+#define HSR0_VC_MASK                            0xFFFFFFFF
+#define HSR0_VC16                               0x00000001
+#define HSR0_VC17                               0x00000002
+#define HSR0_VC18                               0x00000004
+#define HSR0_VC19                               0x00000008
+#define HSR0_VC20                               0x00000010
+#define HSR0_VC21                               0x00000020
+#define HSR0_VC22                               0x00000040
+#define HSR0_VC23                               0x00000080
+#define HSR0_VC24                               0x00000100
+#define HSR0_VC25                               0x00000200
+#define HSR0_VC26                               0x00000400
+#define HSR0_VC27                               0x00000800
+#define HSR0_VC28                               0x00001000
+#define HSR0_VC29                               0x00002000
+#define HSR0_VC30                               0x00004000
+#define HSR0_VC31                               0x00008000
+#define HSR0_VC32                               0x00010000
+#define HSR0_VC33                               0x00020000
+#define HSR0_VC34                               0x00040000
+#define HSR0_VC35                               0x00080000
+#define HSR0_VC36                               0x00100000
+#define HSR0_VC37                               0x00200000
+#define HSR0_VC38                               0x00400000
+#define HSR0_VC39                               0x00800000
+#define HSR0_VC40                               0x01000000
+#define HSR0_VC41                               0x02000000
+#define HSR0_VC42                               0x04000000
+#define HSR0_VC43                               0x08000000
+#define HSR0_VC44                               0x10000000
+#define HSR0_VC45                               0x20000000
+#define HSR0_VC46                               0x40000000
+#define HSR0_VC47                               0x80000000
+
+/*
  *  The following defines are for the flags in the host interrupt control
  *  register.
  */
@@ -1555,7 +1627,12 @@ struct snd_stru_cs461x {
 	unsigned long ba1_addr;
 	unsigned int *ba0;
 	unsigned int *ba1;
+	unsigned int pctl;
+	unsigned int cctl;
 	unsigned int mode;
+	
+	void *pbuf;		/* 4kB playback buffer */
+	void *cbuf;		/* 4kB capture buffer */
 
 	ac97_t *ac97;
 
