@@ -1205,8 +1205,8 @@ struct snd_pcm_buffer_description {
 #define SND_MCTL_LSB_GENERAL_PURPOSE3 	0x32
 #define SND_MCTL_LSB_GENERAL_PURPOSE4 	0x33
 #define SND_MCTL_SUSTAIN              	0x40
-#define SND_MCTL_PORNAMENTO           	0x41
-#define SND_MCTL_SOSTENUTO            	0x42
+#define SND_MCTL_PORTAMENTO           	0x41
+#define SND_MCTL_SUSTENUTO            	0x42
 #define SND_MCTL_SOFT_PEDAL           	0x43
 #define SND_MCTL_LEGATO_FOOTSWITCH	0x44
 #define SND_MCTL_HOLD2                	0x45

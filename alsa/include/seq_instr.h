@@ -21,7 +21,6 @@
 #ifndef __SND_SEQ_INSTR_H
 #define __SND_SEQ_INSTR_H
 
-#include "asequencer.h"
 #include "seq_kernel.h"
 
 /* Instrument cluster */

@@ -5,7 +5,7 @@
 
 The ALSA driver replaces the OSS/Lite driver. The OSS/Lite is present in
 current Linux kernels. If you have got a 2.2+ kernel, you must compile
-kernel with sound support (you needn't select any other modules than
+kernel with sound support (you need not select any other modules than
 sound support). If you have got 2.0 or 2.1 kernels, check if the OSS/Lite
 driver is active in your kernel. You must remove it before you are
 trying to install the ALSA driver.
@@ -53,7 +53,7 @@ Driver cannot be activated?
 3) If you have got ISA PnP soundcard:
    - native ISA PnP support: is your setup in /proc/isapnp.conf correct?
    - isapnptools: is configuration on isapnp.conf same as for the driver?
-4) The driver isn't still working: remake driver with:
+4) The driver is not still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
    there are not some messages. If these messages do not help you, send us
@@ -96,8 +96,8 @@ Module parameters
 		- default is 14 - this value is compatible with OSS/Lite
     snd_cards_limit
 		- specifies card limit # (1-8)
-		- good for kerneld/kmod support if you don't want search
-		  for soundcards which aren't installed in your system
+		- good for kerneld/kmod support if you do not want search
+		  for soundcards which are not installed in your system
     snd_device_mode
 		- specifies permission mask for dynamic sound device filesystem
 		- default value = 0666
@@ -118,7 +118,7 @@ Module parameters
 		- default expression is 'card<snd_index>' (for example card1)
 		- value is used for /proc/asound filesystem
 		- this value can be used with application for identification
-		  of card if user doesn't want identify card with index number
+		  of card if user does not want identify card with index number
 
   Module snd-audiodrive1688.o
   ---------------------------
@@ -150,7 +150,7 @@ Module parameters
     snd_skip_isapnp - skip ISA PnP detection - 0 = disable (default), 1 = enable
 
     Module supports up to 8 cards ISA PnP and autoprobe (without MPU-401 port
-    if native ISA PnP routines aren't used).
+    if native ISA PnP routines are not used).
 
   Module snd-gusclassic.o
   -----------------------
@@ -271,12 +271,12 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and ISA PnP.
 
-    Note: This module doesn't support SoundBlaster VibraX16 soundcard.
+    Note: This module does not support SoundBlaster VibraX16 soundcard.
           This soundcard uses two 8-bit DMA channels and seems that
-          documentation isn't available at Creative Labs WWW site.
+          documentation is not available at Creative Labs WWW site.
           If you know where can be get documentation, mail us...
-          Otherwise - this soundcard isn't supported yet, so don't
-          send us any e-mails with "my soundcard isn't working"...
+          Otherwise - this soundcard is not supported yet, so do not
+          send us any e-mails with "my soundcard is not working"...
     
   Module snd-opl3sa.o
   -------------------
@@ -294,8 +294,8 @@ Module parameters
     snd_dma2_size - max second DMA size in kB (4-64kB)
     snd_isapnp  - ISA PnP detection - 0 = disable, 1 = enable (default)
     
-    Module supports up to 8 cards and ISA PnP. This module doesn't supports
-    autoprobe (if ISA PnP isn't used) thus all ports must be specified!!!
+    Module supports up to 8 cards and ISA PnP. This module does not supports
+    autoprobe (if ISA PnP is not used) thus all ports must be specified!!!
     
   Module snd-mozart.o
   -------------------
@@ -369,7 +369,7 @@ Module parameters
     snd_dma1	- DMA # for AD1848 chip (0,1,3)
     snd_dma1_size - max DMA size in kB (4-64kB)
     
-    Module supports up to 8 cards. This module doesn't supports autoprobe
+    Module supports up to 8 cards. This module does not supports autoprobe
     thus main port must be specified!!! Other ports are optional.
     
   Module snd-card-cs4231.o
@@ -386,7 +386,7 @@ Module parameters
     snd_dma2	- second DMA # for CS4231 chip
     snd_dma2_size - max second DMA size in kB (4-128kB)
     
-    Module supports up to 8 cards. This module doesn't supports autoprobe
+    Module supports up to 8 cards. This module does not supports autoprobe
     thus main port must be specified!!! Other ports are optional.
     
   Module snd-card-cs4232.o
@@ -404,7 +404,7 @@ Module parameters
     snd_dma2	- second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
     snd_dma2_size - max second DMA size in kB (4-64kB)
     
-    Module supports up to 8 cards. This module doesn't supports autoprobe
+    Module supports up to 8 cards. This module does not supports autoprobe
     thus main port must be specified!!! Other ports are optional.
     
   Module snd-card-cs4236.o
@@ -424,9 +424,19 @@ Module parameters
     snd_dma2	- second DMA # for Yamaha CS4232 chip (0,1,3), -1 = disable
     snd_dma2_size - max second DMA size in kB (4-64kB)
     
-    Module supports up to 8 cards. This module doesn't supports autoprobe
-    (if ISA PnP isn't used) thus main port and control port must be
+    Module supports up to 8 cards. This module does not supports autoprobe
+    (if ISA PnP is not used) thus main port and control port must be
     specified!!! Other ports are optional.
+    
+  Module snd-card-cs461x.o
+  ------------------------
+
+    Module for PCI soundcards based on CS4610/CS4612/CS4615/CS4680.
+
+    snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
+    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+
+    Module supports up to 8 cards and autoprobe.
     
   Module snd-trid4dwave.o
   -----------------------
@@ -447,7 +457,6 @@ Module parameters
     snd_adc_frame_size_nx - max adc (record) frame size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe.
-
 
   Module snd-card-fm801.o
   ---------------------
@@ -514,9 +523,9 @@ alias sound-slot-1 snd-card-1
 
 ----- /etc/conf.modules
 
-We are done at this point with the configuration for ALSA native devices,
+We are done at this point the configuration for ALSA native devices,
 but you may also need autoloading for ALSA's add-on OSS/Lite emulation
-modules. At this time only one module doesn't depends on others, thus
+modules. At this time only one module does not depends on others, thus
 must be loaded separately - snd-pcm1-oss.o. String 'sound-service-%i-%i'
 is requested for OSS/Lite service where first %i means slot number
 (e.g. card number) and second %i means service number.

@@ -78,6 +78,10 @@ SC: Turtle Beach Malibu
 IF: MIXER,PCM,MIDI
 MA: Jaroslav Kysela <perex@suse.cz>
 
+ID: Cirrus Logic / Crystal Semiconductors CS4210/CS4612/CS4615/CS4280
+IF: MIXER,PCM
+MA: Jaroslav Kysela <perex@suse.cz>
+
 ID: ESS Solo-1 ES1938
 IF: MIXER,PCM
 MA: Jaromir Koutek <miri@punknet.cz>

@@ -48,7 +48,6 @@ typedef struct snd_seq_stru_user_client user_client_t;
 typedef struct snd_seq_stru_kernel_client kernel_client_t;
 typedef struct snd_seq_stru_client client_t;
 typedef struct snd_seq_stru_queue queue_t;
-typedef struct snd_midi_channel snd_midi_channel_t;
 
 /* call-backs for kernel client */
 
@@ -88,5 +87,14 @@ extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg);
 /* allocation and releasing of external data (sysex etc.) */
 extern void *snd_seq_ext_malloc(unsigned long size, int atomic);
 extern void snd_seq_ext_free(void *obj, unsigned long size);
+
+/* port callback routines */
+void snd_port_init_callback(snd_seq_port_callback_t *p);
+snd_seq_port_callback_t *snd_port_alloc_callback(void);
+
+/* port attach/detach */
+int snd_seq_event_port_attach(int client, snd_seq_port_callback_t *pcbp,
+			      int cap, int type, char *portname);
+int snd_seq_event_port_detach(int client, int port);
 
 #endif /* __SND_SEQ_KERNEL_H */

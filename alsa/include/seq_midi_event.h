@@ -19,7 +19,12 @@
  *
  */
 
+#ifndef __SEQ_MIDI_EVENT_H
+#define __SEQ_MIDI_EVENT_H
+
 /* Prototypes for seq_midi_event.c */
 int snd_seq_event_port_attach(int client, snd_seq_port_callback_t *pcbp,
 	 int cap, int type, char *portname);
 int snd_seq_event_port_detach(int client, int port);
+
+#endif /* __SEQ_MIDI_EVENT_H */

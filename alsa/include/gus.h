@@ -25,8 +25,8 @@
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
-#include "synth.h"
 #include "timer.h"
+#include "seq_midi_emul.h"
 
 /* IO ports */
 
@@ -237,6 +237,13 @@ typedef struct snd_gf1_dma_block {
 	unsigned int cmd;	/* DMA command (format) */
 } snd_gf1_dma_block_t;
 
+typedef struct {
+	snd_midi_channel_set_t * chset;
+	snd_gus_card_t * gus;
+	int mode;		/* operation mode */
+	int client;		/* sequencer client number */
+} snd_gus_port_t;
+
 struct snd_stru_gf1 {
 
 	unsigned int enh_mode:1,	/* enhanced mode (GFA1) */
@@ -306,7 +313,8 @@ struct snd_stru_gf1 {
 
 	/* synthesizer */
 
-	snd_synth_t *synth;
+	int seq_client;
+	snd_gus_port_t seq_ports[4];
 
 	/* timer */
 
@@ -384,6 +392,7 @@ struct snd_stru_gus_card {
 	snd_spin_define(uart_cmd);
 	snd_spin_define(neutral);
 	snd_mutex_define(dma);
+	snd_mutex_define(register);
 	snd_sleep_define(neutral);
 	snd_sleep_define(clear);
 };
@@ -565,6 +574,8 @@ extern void snd_gf1_peek_print_block(snd_gus_card_t * gus, unsigned int addr, in
 
 /* gus.c */
 
+void snd_gus_use_inc(snd_gus_card_t * gus);
+void snd_gus_use_dec(snd_gus_card_t * gus);
 snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 				 unsigned short port,
 				 snd_irq_t * irqnum,
@@ -575,8 +586,10 @@ int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
 void snd_gus_init_control(snd_gus_card_t * gus);
+#ifdef SNDCFG_SEQUENCER
 int snd_gus_attach_synthesizer(snd_gus_card_t * gus);
 int snd_gus_detach_synthesizer(snd_gus_card_t * gus);
+#endif
 int snd_gus_check_version(snd_gus_card_t * gus);
 
 /* gus_irq.c */

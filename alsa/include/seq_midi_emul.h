@@ -1,5 +1,3 @@
-#ifndef __MIDI_EMULATION_H
-#define __MIDI_EMULATION_H
 /*
  *  Midi channel definition for optional channel management.
  *
@@ -21,17 +19,20 @@
  *
  */
 
-// #define NRPN_EXTENSION
+#ifndef __SEQ_MIDI_EMUL_H
+#define __SEQ_MIDI_EMUL_H
+
+#include "seq_kernel.h"
 
 /*
  * This structure is used to keep track of the current state on each
  * channel.  All drivers for hardware that does not understand midi
  * directly will probably need to use this structure.
  */
-struct snd_midi_channel {
+typedef struct snd_midi_channel {
 	void *private;		/* A back pointer to driver data */
 	int  number;		/* The channel number */
-	int  client;	/* The client associated with this channel */
+	int  client;		/* The client associated with this channel */
 	int  port;		/* The port associated with this channel */
 
 	unsigned char midi_mode;	/* GM, GS, XG etc */
@@ -52,7 +53,7 @@ struct snd_midi_channel {
 	short gm_rpn_fine_tuning; 	/* Master fine tuning */
 	short gm_rpn_coarse_tuning;	/* Master coarse tuning */
 
-};
+} snd_midi_channel_t;
 
 /*
  * A structure that represets a set of channels bound to a port.  There
@@ -64,11 +65,11 @@ struct snd_midi_channel {
  * channel set type if it wished with the channel array null.
  */
 typedef struct snd_midi_channel_set {
-	void *private_data;	/* Driver data */
-	int  client;		/* Client for this port */
-	int  port;		/* The port number */
+	void *private_data;		/* Driver data */
+	int  client;			/* Client for this port */
+	int  port;			/* The port number */
 
-	int  max_channels;	/* Size of the channels array */
+	int  max_channels;		/* Size of the channels array */
 	snd_midi_channel_t *channels;
 
 	unsigned char midi_mode;	/* MIDI operating mode */
@@ -85,95 +86,34 @@ typedef struct snd_seq_midi_op {
 	void (*note_terminate)(void *private, int note, snd_midi_channel_t *chan); /* terminate note immediately */
 	void (*control)(void *private, int type, snd_midi_channel_t *chan);
 	void (*reset)(void *private);
-#ifdef NRPN_EXTENSION
 	void (*nrpn)(void *private, snd_midi_channel_t *chan, snd_midi_channel_set_t *chset);
 	void (*sysex)(void *private, unsigned char *buf, int len, int parsed, snd_midi_channel_set_t *chset);
-#endif
 } snd_midi_op_t;
 
-/*
- * Controller value numbers.
- */
-#define SND_MIDI_CTL_BANK_SELECT	0
-#define SND_MIDI_CTL_MODULATION 	1
-#define SND_MIDI_CTL_BREATH		2
-#define SND_MIDI_CTL_FOOT_PEDAL 	4
-#define SND_MIDI_CTL_PORTAMENTO_TIME	5
-#define SND_MIDI_CTL_DATA_ENTRY 	6
-#define SND_MIDI_CTL_VOLUME		7
-#define SND_MIDI_CTL_BALANCE		8
-#define SND_MIDI_CTL_PAN		10
-#define SND_MIDI_CTL_EXPRESSION 	11
-#define SND_MIDI_CTL_EFFECT_CONTROL1	12
-#define SND_MIDI_CTL_EFFECT_CONTROL2	13
-#define SND_MIDI_CTL_SLIDER1		16
-#define SND_MIDI_CTL_SLIDER2		17
-#define SND_MIDI_CTL_SLIDER3		18
-#define SND_MIDI_CTL_SLIDER4		19
-
-#define SND_MIDI_CTL_BANK_SELECT_LSB	32
-#define SND_MIDI_CTL_MODULATION_WHEEL_LSB	33
-#define SND_MIDI_CTL_BREATH_LSB		34
-#define SND_MIDI_CTL_FOOT_PEDAL_LSB	36
-#define SND_MIDI_CTL_PORTAMENTO_TIME_LSB	37
-#define SND_MIDI_CTL_DATA_ENTRY_LSB	38
-#define SND_MIDI_CTL_VOLUME_LSB		39
-#define SND_MIDI_CTL_BALANCE_LSB	40
-#define SND_MIDI_CTL_PAN_LSB		42
-#define SND_MIDI_CTL_EXPRESSION_LSB	43
-#define SND_MIDI_CTL_EFFECT_CONTROL1_LSB	44
-#define SND_MIDI_CTL_EFFECT_CONTROL2_LSB	45
-
-#define SND_MIDI_CTL_HOLD	64
-#define SND_MIDI_CTL_PORTAMENTO	65
-#define SND_MIDI_CTL_SUSTENUTO	66
-#define SND_MIDI_CTL_SOSTENUTO	SND_MIDI_CTL_SUSTENUTO
-#define SND_MIDI_CTL_SOFT	67
-#define SND_MIDI_CTL_LEGATO	68
-#define SND_MIDI_CTL_HOLD2	69
-#define SND_MIDI_CTL_SOUND_VARIATION	70
-#define SND_MIDI_CTL_SOUND_TIMBRE	71
-#define SND_MIDI_CTL_SOUND_RELEASE_TIME	72
-#define SND_MIDI_CTL_SOUND_ATTACK_TIME	73
-#define SND_MIDI_CTL_SOUND_BRIGHTNESS	74
-
-#define SND_MIDI_CTL_REVERB_LEVEL		91
-#define SND_MIDI_CTL_CHORUS_LEVEL		93
-
-#define SND_MIDI_CTL_NONREG_PARAM_LSB	98
-#define SND_MIDI_CTL_NONREG_PARAM	99
-#define SND_MIDI_CTL_REG_PARAM_LSB		100
-#define SND_MIDI_CTL_REG_PARAM		101
-
-#define SND_MIDI_CTL_ALL_SOUNDS_OFF	120
-#define SND_MIDI_CTL_ALL_CONTROLLERS_OFF 121
-#define SND_MIDI_CTL_LOCAL_KEYBOARD	122
-
-#define SND_MIDI_CTL_ALL_NOTES_OFF	123
 /*
  * These defines are used so that pitchbend, aftertouch etc, can be
  * distinguished from controller values.
  */
 /* 0-127 controller values */
-#define SND_MIDI_CTL_PITCHBEND	128
-#define SND_MIDI_CTL_AFTERTOUCH	129
-#define SND_MIDI_CTL_CHAN_PRESSURE	130
+#define SND_MCTL_PITCHBEND	0x80
+#define SND_MCTL_AFTERTOUCH	0x81
+#define SND_MCTL_CHAN_PRESSURE	0x82
 
 /*
  * These names exist to allow symbolic access to the controls array.
  * The usage is eg: chan->gm_bank_select.  Another implementation would
  * be really have these members in the struct, and not the array.
  */
-#define gm_bank_select	control[0]
-#define gm_modulation	control[1]
-#define gm_breath	control[2]
-#define gm_foot_pedal	control[4]
+#define gm_bank_select		control[0]
+#define gm_modulation		control[1]
+#define gm_breath		control[2]
+#define gm_foot_pedal		control[4]
 #define gm_portamento_time	control[5]
-#define gm_data_entry	control[6]
-#define gm_volume	control[7]
-#define gm_balance	control[8]
-#define gm_pan		control[10]
-#define gm_expression	control[11]
+#define gm_data_entry		control[6]
+#define gm_volume		control[7]
+#define gm_balance		control[8]
+#define gm_pan			control[10]
+#define gm_expression		control[11]
 #define gm_effect_control1	control[12]
 #define gm_effect_control2	control[13]
 #define gm_slider1		control[16]
@@ -194,25 +134,26 @@ typedef struct snd_seq_midi_op {
 #define gm_effect_control1_lsb	control[44]
 #define gm_effect_control2_lsb	control[45]
 
-#define gm_hold 	control[SND_MIDI_CTL_HOLD]
-#define gm_portamento	control[SND_MIDI_CTL_PORTAMENTO]
-#define gm_sustenuto	control[SND_MIDI_CTL_SUSTENUTO]
+#define gm_sustain	 	control[SND_MCTL_SUSTAIN]
+#define gm_hold			gm_sustain
+#define gm_portamento		control[SND_MCTL_PORTAMENTO]
+#define gm_sustenuto		control[SND_MCTL_SUSTENUTO]
 
 /*
  * These macros give the complete value of the controls that consist
  * of coarse and fine pairs.  Of course the fine controls are seldom used
  * but there is no harm in being complete.
  */
-#define SND_GM_BANK_SELECT(cp)	(((cp)->control[0]<<7)|((cp)->control[32]))
+#define SND_GM_BANK_SELECT(cp)		(((cp)->control[0]<<7)|((cp)->control[32]))
 #define SND_GM_MODULATION_WHEEL(cp)	(((cp)->control[1]<<7)|((cp)->control[33]))
 #define SND_GM_BREATH(cp)		(((cp)->control[2]<<7)|((cp)->control[34]))
-#define SND_GM_FOOT_PEDAL(cp)	(((cp)->control[4]<<7)|((cp)->control[36]))
+#define SND_GM_FOOT_PEDAL(cp)		(((cp)->control[4]<<7)|((cp)->control[36]))
 #define SND_GM_PORTAMENTO_TIME(cp)	(((cp)->control[5]<<7)|((cp)->control[37]))
-#define SND_GM_DATA_ENTRY(cp)	(((cp)->control[6]<<7)|((cp)->control[38]))
+#define SND_GM_DATA_ENTRY(cp)		(((cp)->control[6]<<7)|((cp)->control[38]))
 #define SND_GM_VOLUME(cp)		(((cp)->control[7]<<7)|((cp)->control[39]))
 #define SND_GM_BALANCE(cp)		(((cp)->control[8]<<7)|((cp)->control[40]))
-#define SND_GM_PAN(cp)		(((cp)->control[10]<<7)|((cp)->control[42]))
-#define SND_GM_EXPRESSION(cp)	(((cp)->control[11]<<7)|((cp)->control[43]))
+#define SND_GM_PAN(cp)			(((cp)->control[10]<<7)|((cp)->control[42]))
+#define SND_GM_EXPRESSION(cp)		(((cp)->control[11]<<7)|((cp)->control[43]))
 
 
 /* MIDI mode */
@@ -220,17 +161,17 @@ typedef struct snd_seq_midi_op {
 #define SND_MIDI_MODE_GM	1
 #define SND_MIDI_MODE_GS	2
 #define SND_MIDI_MODE_XG	3
+#define SND_MIDI_MODE_MT32	4
 
 /* MIDI note state */
 #define SND_MIDI_NOTE_OFF		0x00
 #define SND_MIDI_NOTE_ON		0x01
-#define SND_MIDI_NOTE_RELEASED	0x02
-#define SND_MIDI_NOTE_SUSTENUTO	0x04
+#define SND_MIDI_NOTE_RELEASED		0x02
+#define SND_MIDI_NOTE_SUSTENUTO		0x04
  
-#define SND_MIDI_PARAM_TYPE_REGISTERED	0
+#define SND_MIDI_PARAM_TYPE_REGISTERED		0
 #define SND_MIDI_PARAM_TYPE_NONREGISTERED	1
 
-#ifdef NRPN_EXTENSION
 /* SYSEX parse flag */
 enum {
 	SND_MIDI_SYSEX_NOT_PARSED = 0,
@@ -244,12 +185,14 @@ enum {
 	SND_MIDI_SYSEX_GS_DRUM_CHANNEL,
 	SND_MIDI_SYSEX_XG_ON,	
 };
-#endif
-
 
 /* Prototypes for midi_process.c */
 void snd_midi_process_event(snd_midi_op_t *ops, snd_seq_event_t *ev,
-	 snd_midi_channel_set_t *chanset);
+			    snd_midi_channel_set_t *chanset);
 void snd_midi_channel_set_clear(snd_midi_channel_set_t *chset);
+void snd_midi_channel_init(snd_midi_channel_t *p, int n);
+snd_midi_channel_t *snd_midi_channel_init_set(int n);
+snd_midi_channel_set_t *snd_midi_channel_alloc_set(int n);
+void snd_midi_channel_free_set(snd_midi_channel_set_t *chset);
 
-#endif
+#endif /* __SEQ_MIDI_EMUL_H */
