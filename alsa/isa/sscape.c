@@ -161,15 +161,11 @@ struct dmabuf {
 static struct dmabuf *get_dmabuf(struct dmabuf *buf, unsigned long s)
 {
 	if (buf) {
-		while (((buf->data = snd_malloc_isa_pages(s, &buf->addr)) == NULL) && (s > PAGE_SIZE))
-			s /= 2;
-
+		buf->data = snd_malloc_isa_pages_fallback(s, &buf->addr, &buf->size);
 		if (!buf->data) {
 			printk(KERN_ERR "sscape: Failed to allocate %lu bytes for DMA\n", s);
 			return NULL;
 		}
-
-		buf->size = s;
 	}
 
 	return buf;
