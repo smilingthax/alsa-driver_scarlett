@@ -88,7 +88,19 @@ typedef struct Smtp {
 	snd_irq_t *irq;
 	spinlock_t spinlock;
 	U8 mode[NUMPORTS];
+
+	U32 inmidiport;
+	U32 inmidistate;
+
+	U32 outmidiport;
+
 } TSmtp;
+
+typedef struct Smtp_rawmidi_privdata {
+	U32 port;
+	TSmtp *card;
+
+} TSmtp_rawmidi_privdata;
 
 /////////////////////////////////////////////////////////////////////
 //      protos
