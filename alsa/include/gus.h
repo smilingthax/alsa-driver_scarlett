@@ -188,17 +188,17 @@
 
 /* --- */
 
-struct snd_stru_gus_card;
-typedef struct snd_stru_gus_card snd_gus_card_t;
+struct _snd_gus_card;
+typedef struct _snd_gus_card snd_gus_card_t;
 
 /* GF1 specific structure */
 
-typedef struct snd_stru_gf1_bank_info {
+typedef struct _snd_gf1_bank_info {
 	unsigned int address;
 	unsigned int size;
 } snd_gf1_bank_info_t;
 
-typedef struct snd_stru_gf1_mem_block {
+typedef struct _snd_gf1_mem_block {
 	unsigned short flags;	/* flags - SND_GF1_MEM_BLOCK_XXXX */
 	unsigned short owner;	/* owner - SND_GF1_MEM_OWNER_XXXX */
 	unsigned int share;	/* share count */
@@ -206,11 +206,11 @@ typedef struct snd_stru_gf1_mem_block {
 	unsigned int ptr;
 	unsigned int size;
 	char *name;
-	struct snd_stru_gf1_mem_block *next;
-	struct snd_stru_gf1_mem_block *prev;
+	struct _snd_gf1_mem_block *next;
+	struct _snd_gf1_mem_block *prev;
 } snd_gf1_mem_block_t;
 
-typedef struct snd_stru_gf1_mem {
+typedef struct _snd_gf1_mem {
 	snd_gf1_bank_info_t banks_8[4];
 	snd_gf1_bank_info_t banks_16[4];
 	snd_gf1_mem_block_t *first;
@@ -317,7 +317,7 @@ struct snd_gus_stru_voice {
 	void (*private_free)(snd_gus_voice_t *voice);
 };
 
-struct snd_stru_gf1 {
+struct _snd_gf1 {
 
 	unsigned int enh_mode:1,	/* enhanced mode (GFA1) */
 		     hw_lfo:1,		/* use hardware LFO */
@@ -434,7 +434,7 @@ struct snd_stru_gf1 {
 
 /* main structure for GUS card */
 
-struct snd_stru_gus_card {
+struct _snd_gus_card {
 	snd_card_t *card;
 
 	unsigned int
@@ -456,7 +456,7 @@ struct snd_stru_gus_card {
 	unsigned short joystick_dac;	/* joystick DAC level */
 	int timer_dev;			/* timer device */
 
-	struct snd_stru_gf1 gf1;	/* gf1 specific variables */
+	struct _snd_gf1 gf1;	/* gf1 specific variables */
 #ifdef CONFIG_SND_DEBUG
 	snd_info_entry_t *irq_entry;
 #endif
@@ -562,7 +562,7 @@ extern void snd_gf1_select_active_voices(snd_gus_card_t * gus);
 
 /* gus_lfo.c */
 
-struct SND_STRU_IW_LFO_PROGRAM {
+struct _SND_IW_LFO_PROGRAM {
 	unsigned short freq_and_control;
 	unsigned char depth_final;
 	unsigned char depth_inc;
@@ -575,7 +575,7 @@ extern void snd_gf1_lfo_effect_interrupt(snd_gus_card_t * gus, snd_gf1_voice_t *
 #endif
 extern void snd_gf1_lfo_init(snd_gus_card_t * gus);
 extern void snd_gf1_lfo_done(snd_gus_card_t * gus);
-extern void snd_gf1_lfo_program(snd_gus_card_t * gus, int voice, int lfo_type, struct SND_STRU_IW_LFO_PROGRAM *program);
+extern void snd_gf1_lfo_program(snd_gus_card_t * gus, int voice, int lfo_type, struct _SND_IW_LFO_PROGRAM *program);
 extern void snd_gf1_lfo_enable(snd_gus_card_t * gus, int voice, int lfo_type);
 extern void snd_gf1_lfo_disable(snd_gus_card_t * gus, int voice, int lfo_type);
 extern void snd_gf1_lfo_change_freq(snd_gus_card_t * gus, int voice, int lfo_type, int freq);
@@ -691,9 +691,9 @@ int snd_gf1_rawmidi_new(snd_gus_card_t * gus, int device, snd_rawmidi_t **rrawmi
 
 #if 0
 extern void snd_engine_instrument_register(unsigned short mode,
-		struct SND_STRU_INSTRUMENT_VOICE_COMMANDS *voice_cmds,
-		struct SND_STRU_INSTRUMENT_NOTE_COMMANDS *note_cmds,
-	      	struct SND_STRU_INSTRUMENT_CHANNEL_COMMANDS *channel_cmds);
+		struct _SND_INSTRUMENT_VOICE_COMMANDS *voice_cmds,
+		struct _SND_INSTRUMENT_NOTE_COMMANDS *note_cmds,
+	      	struct _SND_INSTRUMENT_CHANNEL_COMMANDS *channel_cmds);
 extern int snd_engine_instrument_register_ask(unsigned short mode);
 #endif
 

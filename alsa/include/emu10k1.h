@@ -655,9 +655,9 @@
 
 /* ------------------- STRUCTURES -------------------- */
 
-typedef struct snd_stru_emu10k1 emu10k1_t;
-typedef struct snd_stru_emu10k1_voice emu10k1_voice_t;
-typedef struct snd_stru_emu10k1_pcm emu10k1_pcm_t;
+typedef struct _snd_emu10k1 emu10k1_t;
+typedef struct _snd_emu10k1_voice emu10k1_voice_t;
+typedef struct _snd_emu10k1_pcm emu10k1_pcm_t;
 
 typedef enum {
 	EMU10K1_PCM,
@@ -665,7 +665,7 @@ typedef enum {
 	EMU10K1_MIDI
 } emu10k1_voice_type_t;
 
-struct snd_stru_emu10k1_voice {
+struct _snd_emu10k1_voice {
 	emu10k1_t *emu;
 	int number;
 	int use: 1,
@@ -684,7 +684,7 @@ typedef enum {
 	CAPTURE_EFX
 } snd_emu10k1_pcm_type_t;
 
-struct snd_stru_emu10k1_pcm {
+struct _snd_emu10k1_pcm {
 	emu10k1_t *emu;
 	snd_emu10k1_pcm_type_t type;
 	snd_pcm_substream_t *substream;
@@ -729,7 +729,7 @@ typedef struct {
 	snd_kcontrol_t *kcontrols;	/* kcontrols array */
 } snd_emu10k1_fx8010_t;
 
-struct snd_stru_emu10k1 {
+struct _snd_emu10k1 {
 	int irq;
 	unsigned long dma1size;	/* DAC/EMU PCM */
 	unsigned long dma2size;	/* ADC */

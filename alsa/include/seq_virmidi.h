@@ -35,16 +35,14 @@ struct snd_virmidi_stream {
 	unsigned int flags;
 	/* midi stream buffer */
 	unsigned char *buffer;	/* buffer for MIDI data */
-	unsigned int size;	/* size of buffer */
-	unsigned int head;	/* buffer head index */
-	unsigned int tail;	/* buffer tail index */
-	unsigned int used;	/* buffer used counter */
-	unsigned int used_max;	/* max used buffer for wakeup */
-	unsigned int used_room;	/* min room in buffer for wakeup */
-	unsigned int used_min;	/* min used buffer for wakeup */
-	unsigned int xruns;	/* over/underruns counter */
+	size_t buffer_size;	/* size of buffer */
+	size_t appl_ptr;	/* application pointer */
+	size_t hw_ptr;		/* hardware pointer */
+	size_t avail_min;	/* min avail for wakeup */
+	size_t avail;		/* max used buffer for wakeup */
+	size_t xruns;		/* over/underruns counter */
 	/* misc */
-	unsigned int bytes;
+	size_t bytes;
 	spinlock_t lock;
 	wait_queue_head_t sleep;
 };

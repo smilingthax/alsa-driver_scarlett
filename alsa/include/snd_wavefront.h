@@ -10,17 +10,17 @@
 
 /* MIDI interface */
 
-struct snd_stru_wavefront_midi;
-struct snd_stru_wavefront_card;
-struct snd_stru_wavefront;
+struct _snd_wavefront_midi;
+struct _snd_wavefront_card;
+struct _snd_wavefront;
 
-typedef struct snd_stru_wavefront_midi snd_wavefront_midi_t;
-typedef struct snd_stru_wavefront_card snd_wavefront_card_t;
-typedef struct snd_stru_wavefront snd_wavefront_t;
+typedef struct _snd_wavefront_midi snd_wavefront_midi_t;
+typedef struct _snd_wavefront_card snd_wavefront_card_t;
+typedef struct _snd_wavefront snd_wavefront_t;
 
 typedef enum { internal_mpu = 0, external_mpu = 1 } snd_wavefront_mpu_id;
 
-struct snd_stru_wavefront_midi {
+struct _snd_wavefront_midi {
         unsigned long            base;        /* I/O port address */
 	char                     isvirtual;   /* doing virtual MIDI stuff ? */
 	char			 istimer;     /* timer is used */
@@ -47,7 +47,7 @@ extern void   snd_wavefront_midi_disable_virtual (snd_wavefront_card_t *);
 extern void   snd_wavefront_midi_interrupt (snd_wavefront_card_t *);
 extern int    snd_wavefront_midi_start (snd_wavefront_card_t *);
 
-struct snd_stru_wavefront {
+struct _snd_wavefront {
 	unsigned long    irq;   /* "you were one, one of the few ..." */
 	unsigned long    base;  /* low i/o port address */
 
@@ -95,7 +95,7 @@ struct snd_stru_wavefront {
         snd_wavefront_midi_t midi;         /* ICS2115 MIDI interface */
 };
 
-struct snd_stru_wavefront_card {
+struct _snd_wavefront_card {
 	int ics2115_irq;
 	snd_wavefront_t wavefront;
 #ifdef __ISAPNP__

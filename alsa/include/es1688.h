@@ -29,7 +29,7 @@
 #define ES1688_HW_688		0x0001
 #define ES1688_HW_1688		0x0002
 
-struct snd_stru_es1688 {
+struct _snd_es1688 {
 	unsigned long port;		/* port of ESS chip */
 	struct resource *res_port;
 	unsigned long mpu_port;		/* MPU-401 port of ESS chip */
@@ -53,7 +53,7 @@ struct snd_stru_es1688 {
 	spinlock_t mixer_lock;
 };
 
-typedef struct snd_stru_es1688 es1688_t;
+typedef struct _snd_es1688 es1688_t;
 
 /* I/O ports */
 

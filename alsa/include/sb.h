@@ -53,7 +53,7 @@
 
 #define SB_MPU_INPUT		1
 
-struct snd_stru_sb {
+struct _snd_sb {
 	unsigned long port;		/* base port of DSP chip */
 	struct resource *res_port;
 	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
@@ -102,7 +102,7 @@ struct snd_stru_sb {
 	snd_info_entry_t *proc_entry;
 };
 
-typedef struct snd_stru_sb sb_t;
+typedef struct _snd_sb sb_t;
 
 /* I/O ports */
 

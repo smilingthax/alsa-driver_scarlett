@@ -80,9 +80,9 @@
 
  */
 
-typedef struct snd_stru_ac97 ac97_t;
+typedef struct _snd_ac97 ac97_t;
 
-struct snd_stru_ac97 {
+struct _snd_ac97 {
 	void (*write) (ac97_t *ac97, unsigned short reg, unsigned short val);
 	unsigned short (*read) (ac97_t *ac97, unsigned short reg);
 	void (*init) (ac97_t *ac97);

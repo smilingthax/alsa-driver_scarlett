@@ -29,7 +29,7 @@ typedef int (snd_kcontrol_info_t) (snd_kcontrol_t * kcontrol, snd_control_info_t
 typedef int (snd_kcontrol_get_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 typedef int (snd_kcontrol_put_t) (snd_kcontrol_t * kcontrol, snd_control_t * ucontrol);
 
-typedef struct snd_stru_kcontrol_new {
+typedef struct _snd_kcontrol_new {
 	snd_control_iface_t iface;	/* interface identifier */
 	unsigned int device;		/* device/client number */
 	unsigned int subdevice;		/* subdevice (substream) number */
@@ -42,7 +42,7 @@ typedef struct snd_stru_kcontrol_new {
 	unsigned long private_value;
 } snd_kcontrol_new_t;
 
-struct snd_stru_kcontrol {
+struct _snd_kcontrol {
 	struct list_head list;		/* list of controls */
 	snd_control_id_t id;
 	pid_t owner;			/* locked */
@@ -57,14 +57,14 @@ struct snd_stru_kcontrol {
 
 #define snd_kcontrol(n) list_entry(n, snd_kcontrol_t, list)
 
-typedef struct snd_stru_ctl_event {
+typedef struct _snd_kctl_event {
 	struct list_head list;	/* list of events */
 	snd_ctl_event_t data;
 } snd_kctl_event_t;
 
 #define snd_kctl_event(n) list_entry(n, snd_kctl_event_t, list)
 
-struct snd_stru_kctl {
+struct _snd_kctl {
 	struct list_head list;		/* list of all control files */
 	snd_card_t *card;
 	pid_t pid;
@@ -79,7 +79,7 @@ struct snd_stru_kctl {
 
 #define snd_kctl(n) list_entry(n, snd_kctl_t, list)
 
-typedef int (*snd_kctl_ioctl_t) (snd_card_t * card,
+typedef int (*snd_kctl_ioctl_func_t) (snd_card_t * card,
 				 snd_kctl_t * control,
 				 unsigned int cmd, unsigned long arg);
 
@@ -100,7 +100,7 @@ snd_kcontrol_t *snd_ctl_find_id(snd_card_t * card, snd_control_id_t *id);
 
 int snd_ctl_register(snd_card_t *card);
 int snd_ctl_unregister(snd_card_t *card);
-int snd_ctl_register_ioctl(snd_kctl_ioctl_t fcn);
-int snd_ctl_unregister_ioctl(snd_kctl_ioctl_t fcn);
+int snd_ctl_register_ioctl(snd_kctl_ioctl_func_t fcn);
+int snd_ctl_unregister_ioctl(snd_kctl_ioctl_func_t fcn);
 
 #endif				/* __CONTROL_H */

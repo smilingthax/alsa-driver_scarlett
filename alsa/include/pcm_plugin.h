@@ -89,7 +89,7 @@ static inline void bitset_one(bitset_t *dst, unsigned int nbits)
 		*dst++ = ~(bitset_t)0;
 }
 
-typedef struct snd_stru_pcm_plugin snd_pcm_plugin_t;
+typedef struct _snd_pcm_plugin snd_pcm_plugin_t;
 #define snd_pcm_plug_t snd_pcm_substream_t
 #define snd_pcm_plug_stream(plug) ((plug)->stream)
 
@@ -98,21 +98,33 @@ typedef enum {
 	PREPARE = 1,
 } snd_pcm_plugin_action_t;
 
-typedef struct snd_stru_pcm_plugin_channel {
+typedef struct _snd_pcm_channel_area {
+	void *addr;			/* base address of channel samples */
+	unsigned int first;		/* offset to first sample in bits */
+	unsigned int step;		/* samples distance in bits */
+} snd_pcm_channel_area_t;
+
+typedef struct _snd_pcm_plugin_channel {
 	void *aptr;			/* pointer to the allocated area */
 	snd_pcm_channel_area_t area;
 	unsigned int enabled:1;		/* channel need to be processed */
 	unsigned int wanted:1;		/* channel is wanted */
 } snd_pcm_plugin_channel_t;
 
-struct snd_stru_pcm_plugin {
+typedef struct _snd_pcm_plugin_format {
+	int format;
+	unsigned int rate;
+	unsigned int channels;
+} snd_pcm_plugin_format_t;
+
+struct _snd_pcm_plugin {
 	const char *name;		/* plug-in name */
 	int stream;
-	snd_pcm_format_t src_format;	/* source format */
-	snd_pcm_format_t dst_format;	/* destination format */
+	snd_pcm_plugin_format_t src_format;	/* source format */
+	snd_pcm_plugin_format_t dst_format;	/* destination format */
 	int src_width;			/* sample width in bits */
 	int dst_width;			/* sample width in bits */
-	int xfer_mode;
+	int access;
 	ssize_t (*src_frames)(snd_pcm_plugin_t *plugin, size_t dst_frames);
 	ssize_t (*dst_frames)(snd_pcm_plugin_t *plugin, size_t src_frames);
 	ssize_t (*client_channels)(snd_pcm_plugin_t *plugin,
@@ -146,8 +158,8 @@ struct snd_stru_pcm_plugin {
 
 int snd_pcm_plugin_build(snd_pcm_plug_t *handle,
                          const char *name,
-                         snd_pcm_format_t *src_format,
-                         snd_pcm_format_t *dst_format,
+                         snd_pcm_plugin_format_t *src_format,
+                         snd_pcm_plugin_format_t *dst_format,
                          size_t extra,
                          snd_pcm_plugin_t **ret);
 int snd_pcm_plugin_free(snd_pcm_plugin_t *plugin);
@@ -162,41 +174,39 @@ ssize_t snd_pcm_plug_slave_size(snd_pcm_plug_t *handle, size_t clt_size);
 typedef int route_ttable_entry_t;
 
 int snd_pcm_plugin_build_io(snd_pcm_plug_t *handle,
-			    snd_pcm_format_t *format,
-			    int xfer_mode,
+			    snd_pcm_hw_params_t *params,
 			    snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_linear(snd_pcm_plug_t *handle,
-				snd_pcm_format_t *src_format,
-				snd_pcm_format_t *dst_format,
+				snd_pcm_plugin_format_t *src_format,
+				snd_pcm_plugin_format_t *dst_format,
 				snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_mulaw(snd_pcm_plug_t *handle,
-			       snd_pcm_format_t *src_format,
-			       snd_pcm_format_t *dst_format,
+			       snd_pcm_plugin_format_t *src_format,
+			       snd_pcm_plugin_format_t *dst_format,
 			       snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_rate(snd_pcm_plug_t *handle,
-			      snd_pcm_format_t *src_format,
-			      snd_pcm_format_t *dst_format,
+			      snd_pcm_plugin_format_t *src_format,
+			      snd_pcm_plugin_format_t *dst_format,
 			      snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_route(snd_pcm_plug_t *handle,
-			       snd_pcm_format_t *src_format,
-			       snd_pcm_format_t *dst_format,
+			       snd_pcm_plugin_format_t *src_format,
+			       snd_pcm_plugin_format_t *dst_format,
 			       route_ttable_entry_t *ttable,
 		               snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_copy(snd_pcm_plug_t *handle,
-			      snd_pcm_format_t *src_format,
-			      snd_pcm_format_t *dst_format,
+			      snd_pcm_plugin_format_t *src_format,
+			      snd_pcm_plugin_format_t *dst_format,
 			      snd_pcm_plugin_t **r_plugin);
 
 unsigned int snd_pcm_plug_formats(unsigned int formats);
 
 int snd_pcm_plug_format_plugins(snd_pcm_plug_t *substream,
-				snd_pcm_format_t *format,
-				snd_pcm_format_t *slave_format,
-				int slave_xfer_mode);
+				snd_pcm_hw_params_t *params,
+				snd_pcm_hw_params_t *slave_params);
 
-int snd_pcm_plug_slave_format(snd_pcm_format_t *format,
-			      snd_pcm_params_info_t *slave_info,
-			      snd_pcm_format_t *slave_format);
+int snd_pcm_plug_slave_format(snd_pcm_hw_params_t *params,
+			      snd_pcm_hw_info_t *slave_info,
+			      snd_pcm_hw_params_t *slave_params);
 
 int snd_pcm_plugin_append(snd_pcm_plugin_t *plugin);
 

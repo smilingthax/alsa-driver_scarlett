@@ -22,7 +22,7 @@
  *
  */
 
-typedef struct snd_stru_hwdep_ops {
+typedef struct _snd_hwdep_ops {
 	long long (*llseek) (snd_hwdep_t *hw, struct file * file, long long offset, int orig);
 	long (*read) (snd_hwdep_t * hw, char *buf, long count, loff_t *offset);
 	long (*write) (snd_hwdep_t * hw, const char *buf, long count, loff_t *offset);
@@ -33,7 +33,7 @@ typedef struct snd_stru_hwdep_ops {
 	int (*mmap) (snd_hwdep_t * hw, struct file * file, struct vm_area_struct * vma);
 } snd_hwdep_ops_t;
 
-struct snd_stru_hwdep {
+struct _snd_hwdep {
 	snd_card_t *card;
 	int device;
 	char id[32];

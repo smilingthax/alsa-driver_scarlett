@@ -37,7 +37,6 @@
 #ifndef __KERNEL__
 #include <sys/time.h>
 #include <sys/types.h>
-#include <asm/page.h>
 #endif
 
 /*
@@ -124,6 +123,7 @@
 #define SND_CARD_TYPE_PRODIF_PLUS	0x00000039	/* Marian/Sek'D Prodif Plus */
 #define SND_CARD_TYPE_YMFPCI		0x0000003a	/* YMF724/740/744/754 */
 #define SND_CARD_TYPE_CS4281		0x0000003b	/* CS4281 */
+#define SND_CARD_TYPE_MPU401_UART	0x0000003c	/* MPU-401 UART */
 
 #define SND_CARD_TYPE_LAST		0x0000003b
 
@@ -137,7 +137,7 @@ typedef struct timeval snd_timestamp_t;
 
 #define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
 
-typedef struct snd_ctl_hw_info {
+typedef struct _snd_ctl_hw_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
 	unsigned int hwdepdevs;	/* count of hardware dependent devices */
 	unsigned int pcmdevs;	/* count of PCM devices */
@@ -150,10 +150,10 @@ typedef struct snd_ctl_hw_info {
 	char longname[80];	/* name + info text about soundcard */
 	char mixerid[16];	/* ID of mixer */
 	char mixername[80];	/* mixer identification */
-	unsigned char reserved[128];	/* reserved for future */
+	char reserved[128];	/* reserved for future */
 } snd_ctl_hw_info_t;
 
-typedef enum {
+typedef enum _snd_control_type {
 	SND_CONTROL_TYPE_NONE = 0,		/* invalid */
 	SND_CONTROL_TYPE_BOOLEAN,		/* boolean type */
 	SND_CONTROL_TYPE_INTEGER,		/* integer type */
@@ -161,7 +161,7 @@ typedef enum {
 	SND_CONTROL_TYPE_BYTES			/* byte array */
 } snd_control_type_t;
 
-typedef enum {
+typedef enum _snd_control_iface {
 	SND_CONTROL_IFACE_CARD = 0,		/* global control */
 	SND_CONTROL_IFACE_HWDEP,		/* hardware dependent device */
 	SND_CONTROL_IFACE_MIXER,		/* virtual mixer device */
@@ -179,7 +179,7 @@ typedef enum {
 #define SND_CONTROL_ACCESS_LOCK		(1<<9)	/* write lock */
 #define SND_CONTROL_ACCESS_INDIRECT	(1<<31)	/* indirect access */
 
-typedef struct snd_control_id {
+typedef struct _snd_control_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */
 	snd_control_iface_t iface;	/* interface identifier */
 	unsigned int device;		/* device/client number */
@@ -188,7 +188,7 @@ typedef struct snd_control_id {
 	unsigned int index;		/* index of item */
 } snd_control_id_t;
 
-typedef struct snd_control_list {
+typedef struct _snd_control_list {
 	unsigned int controls_offset;	/* W: first control ID to get */
 	unsigned int controls_request;	/* W: count of control IDs to get */
 	unsigned int controls_count;	/* R: count of available (set) IDs */
@@ -197,7 +197,7 @@ typedef struct snd_control_list {
         char reserved[50];
 } snd_control_list_t;
 
-typedef struct snd_control_info {
+typedef struct _snd_control_info {
 	snd_control_id_t id;		/* W: control ID */
 	snd_control_type_t type;	/* R: value type - SND_CONTROL_TYPE_* */
 	unsigned int access;		/* R: value access (bitmask) - SND_CONTROL_ACCESS_* */
@@ -213,12 +213,12 @@ typedef struct snd_control_info {
 			unsigned int item;	/* W: item number */
 			char name[64];		/* R: value name */
 		} enumerated;
-		unsigned char reserved[128];
+		char reserved[128];
 	} value;
-	unsigned char reserved[64];
+	char reserved[64];
 } snd_control_info_t;
 
-typedef struct snd_control {
+typedef struct _snd_control_t {
 	snd_control_id_t id;			/* W: control ID */
 	int indirect: 1;			/* W: use indirect pointer (xxx_ptr member) */
         union {
@@ -235,7 +235,7 @@ typedef struct snd_control {
 			unsigned char *data_ptr;
 		} bytes;
         } value;                /* RO */
-        unsigned char reserved[128];
+        char reserved[128];
 } snd_control_t;
 
 #define SND_CTL_IOCTL_PVERSION		_IOR ('U', 0x00, int)
@@ -256,7 +256,7 @@ typedef struct snd_control {
  *  Read interface.
  */
 
-typedef enum {
+typedef enum _snd_ctl_event_type {
 	SND_CTL_EVENT_REBUILD = 0,	/* rebuild everything */
 	SND_CTL_EVENT_VALUE,		/* a control value was changed */
 	SND_CTL_EVENT_CHANGE,		/* a control was changed */
@@ -264,7 +264,7 @@ typedef enum {
 	SND_CTL_EVENT_REMOVE,		/* a control was removed */
 } snd_ctl_event_type_t;
 
-typedef struct snd_ctl_event {
+typedef struct _snd_ctl_event {
 	snd_ctl_event_type_t type;	/* event type - SND_CTL_EVENT_* */
 	union {
 		snd_control_id_t id;
@@ -350,13 +350,13 @@ struct snd_oss_mixer_info_obsolete {
 /* --- */
 #define SND_HWDEP_TYPE_LAST		6
 
-typedef struct snd_hwdep_info {
+typedef struct _snd_hwdep_info {
 	int device;		/* WR: device number */
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
 	unsigned char id[64];	/* ID of this hardware dependent device (user selectable) */
 	unsigned char name[80];	/* name of this hardware dependent device */
 	unsigned int hw_type;	/* hardware depedent device type */
-	unsigned char reserved[64];	/* reserved for future */
+	char reserved[64];	/* reserved for future */
 } snd_hwdep_info_t;
 
 #define SND_HWDEP_IOCTL_PVERSION	_IOR ('H', 0x00, int)
@@ -382,185 +382,179 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_STREAM_PLAYBACK		0
 #define SND_PCM_STREAM_CAPTURE		1
 
-#define SND_PCM_SFMT_S8			0
-#define SND_PCM_SFMT_U8			1
-#define SND_PCM_SFMT_S16_LE		2
-#define SND_PCM_SFMT_S16_BE		3
-#define SND_PCM_SFMT_U16_LE		4
-#define SND_PCM_SFMT_U16_BE		5
-#define SND_PCM_SFMT_S24_LE		6	/* low three bytes */
-#define SND_PCM_SFMT_S24_BE		7	/* low three bytes */
-#define SND_PCM_SFMT_U24_LE		8	/* low three bytes */
-#define SND_PCM_SFMT_U24_BE		9	/* low three bytes */
-#define SND_PCM_SFMT_S32_LE		10
-#define SND_PCM_SFMT_S32_BE		11
-#define SND_PCM_SFMT_U32_LE		12
-#define SND_PCM_SFMT_U32_BE		13
-#define SND_PCM_SFMT_FLOAT_LE		14	/* 4-byte float, IEEE-754 32-bit */
-#define SND_PCM_SFMT_FLOAT_BE		15	/* 4-byte float, IEEE-754 32-bit */
-#define SND_PCM_SFMT_FLOAT64_LE		16	/* 8-byte float, IEEE-754 64-bit */
-#define SND_PCM_SFMT_FLOAT64_BE		17	/* 8-byte float, IEEE-754 64-bit */
-#define SND_PCM_SFMT_IEC958_SUBFRAME_LE	18	/* IEC-958 subframe, Little Endian */
-#define SND_PCM_SFMT_IEC958_SUBFRAME_BE	19	/* IEC-958 subframe, Big Endian */
-#define SND_PCM_SFMT_MU_LAW		20
-#define SND_PCM_SFMT_A_LAW		21
-#define SND_PCM_SFMT_IMA_ADPCM		22
-#define SND_PCM_SFMT_MPEG		23
-#define SND_PCM_SFMT_GSM		24
-#define SND_PCM_SFMT_SPECIAL		31
+#define SND_PCM_ACCESS_MMAP_INTERLEAVED		0 /* interleaved mmap */
+#define SND_PCM_ACCESS_MMAP_NONINTERLEAVED	1 /* noninterleaved mmap */
+#define SND_PCM_ACCESS_MMAP_COMPLEX		2 /* complex mmap */
+#define SND_PCM_ACCESS_RW_INTERLEAVED		3 /* readi/writei */
+#define SND_PCM_ACCESS_RW_NONINTERLEAVED	4 /* readn/writen */
+#define SND_PCM_ACCESS_LAST			4
+
+#define SND_PCM_ACCBIT_MMAP_INTERLEAVED	(1 << SND_PCM_ACCESS_MMAP_INTERLEAVED)
+#define SND_PCM_ACCBIT_MMAP_NONINTERLEAVED (1 << SND_PCM_ACCESS_MMAP_NONINTERLEAVED)
+#define SND_PCM_ACCBIT_MMAP_COMPLEX	(1 << SND_PCM_ACCESS_MMAP_COMPLEX)
+#define SND_PCM_ACCBIT_RW_INTERLEAVED	(1 << SND_PCM_ACCESS_RW_INTERLEAVED)
+#define SND_PCM_ACCBIT_RW_NONINTERLEAVED (1 << SND_PCM_ACCESS_RW_NONINTERLEAVED)
+#define SND_PCM_ACCBIT_MMAP	(SND_PCM_ACCBIT_MMAP_INTERLEAVED | \
+				 SND_PCM_ACCBIT_MMAP_NONINTERLEAVED | \
+				 SND_PCM_ACCBIT_MMAP_COMPLEX)
+
+#define SND_PCM_FORMAT_S8		0
+#define SND_PCM_FORMAT_U8		1
+#define SND_PCM_FORMAT_S16_LE		2
+#define SND_PCM_FORMAT_S16_BE		3
+#define SND_PCM_FORMAT_U16_LE		4
+#define SND_PCM_FORMAT_U16_BE		5
+#define SND_PCM_FORMAT_S24_LE		6	/* low three bytes */
+#define SND_PCM_FORMAT_S24_BE		7	/* low three bytes */
+#define SND_PCM_FORMAT_U24_LE		8	/* low three bytes */
+#define SND_PCM_FORMAT_U24_BE		9	/* low three bytes */
+#define SND_PCM_FORMAT_S32_LE		10
+#define SND_PCM_FORMAT_S32_BE		11
+#define SND_PCM_FORMAT_U32_LE		12
+#define SND_PCM_FORMAT_U32_BE		13
+#define SND_PCM_FORMAT_FLOAT_LE		14	/* 4-byte float, IEEE-754 32-bit */
+#define SND_PCM_FORMAT_FLOAT_BE		15	/* 4-byte float, IEEE-754 32-bit */
+#define SND_PCM_FORMAT_FLOAT64_LE	16	/* 8-byte float, IEEE-754 64-bit */
+#define SND_PCM_FORMAT_FLOAT64_BE	17	/* 8-byte float, IEEE-754 64-bit */
+#define SND_PCM_FORMAT_IEC958_SUBFRAME_LE 18	/* IEC-958 subframe, Little Endian */
+#define SND_PCM_FORMAT_IEC958_SUBFRAME_BE 19	/* IEC-958 subframe, Big Endian */
+#define SND_PCM_FORMAT_MU_LAW		20
+#define SND_PCM_FORMAT_A_LAW		21
+#define SND_PCM_FORMAT_IMA_ADPCM	22
+#define SND_PCM_FORMAT_MPEG		23
+#define SND_PCM_FORMAT_GSM		24
+#define SND_PCM_FORMAT_SPECIAL		31
+#define SND_PCM_FORMAT_LAST		31
 
 #ifdef SND_LITTLE_ENDIAN
-#define SND_PCM_SFMT_S16		SND_PCM_SFMT_S16_LE
-#define SND_PCM_SFMT_U16		SND_PCM_SFMT_U16_LE
-#define SND_PCM_SFMT_S24		SND_PCM_SFMT_S24_LE
-#define SND_PCM_SFMT_U24		SND_PCM_SFMT_U24_LE
-#define SND_PCM_SFMT_S32		SND_PCM_SFMT_S32_LE
-#define SND_PCM_SFMT_U32		SND_PCM_SFMT_U32_LE
-#define SND_PCM_SFMT_FLOAT		SND_PCM_SFMT_FLOAT_LE
-#define SND_PCM_SFMT_FLOAT64		SND_PCM_SFMT_FLOAT64_LE
-#define SND_PCM_SFMT_IEC958_SUBFRAME	SND_PCM_SFMT_IEC958_SUBFRAME_LE
+#define SND_PCM_FORMAT_S16		SND_PCM_FORMAT_S16_LE
+#define SND_PCM_FORMAT_U16		SND_PCM_FORMAT_U16_LE
+#define SND_PCM_FORMAT_S24		SND_PCM_FORMAT_S24_LE
+#define SND_PCM_FORMAT_U24		SND_PCM_FORMAT_U24_LE
+#define SND_PCM_FORMAT_S32		SND_PCM_FORMAT_S32_LE
+#define SND_PCM_FORMAT_U32		SND_PCM_FORMAT_U32_LE
+#define SND_PCM_FORMAT_FLOAT		SND_PCM_FORMAT_FLOAT_LE
+#define SND_PCM_FORMAT_FLOAT64		SND_PCM_FORMAT_FLOAT64_LE
+#define SND_PCM_FORMAT_IEC958_SUBFRAME	SND_PCM_FORMAT_IEC958_SUBFRAME_LE
 #endif
 #ifdef SND_BIG_ENDIAN
-#define SND_PCM_SFMT_S16		SND_PCM_SFMT_S16_BE
-#define SND_PCM_SFMT_U16		SND_PCM_SFMT_U16_BE
-#define SND_PCM_SFMT_S24		SND_PCM_SFMT_S24_BE
-#define SND_PCM_SFMT_U24		SND_PCM_SFMT_U24_BE
-#define SND_PCM_SFMT_S32		SND_PCM_SFMT_S32_BE
-#define SND_PCM_SFMT_U32		SND_PCM_SFMT_U32_BE
-#define SND_PCM_SFMT_FLOAT		SND_PCM_SFMT_FLOAT_BE
-#define SND_PCM_SFMT_FLOAT64		SND_PCM_SFMT_FLOAT64_BE
-#define SND_PCM_SFMT_IEC958_SUBFRAME	SND_PCM_SFMT_IEC958_SUBFRAME_BE
+#define SND_PCM_FORMAT_S16		SND_PCM_FORMAT_S16_BE
+#define SND_PCM_FORMAT_U16		SND_PCM_FORMAT_U16_BE
+#define SND_PCM_FORMAT_S24		SND_PCM_FORMAT_S24_BE
+#define SND_PCM_FORMAT_U24		SND_PCM_FORMAT_U24_BE
+#define SND_PCM_FORMAT_S32		SND_PCM_FORMAT_S32_BE
+#define SND_PCM_FORMAT_U32		SND_PCM_FORMAT_U32_BE
+#define SND_PCM_FORMAT_FLOAT		SND_PCM_FORMAT_FLOAT_BE
+#define SND_PCM_FORMAT_FLOAT64		SND_PCM_FORMAT_FLOAT64_BE
+#define SND_PCM_FORMAT_IEC958_SUBFRAME	SND_PCM_FORMAT_IEC958_SUBFRAME_BE
 #endif
 
-#define SND_PCM_FMT_S8			(1 << SND_PCM_SFMT_S8)
-#define SND_PCM_FMT_U8			(1 << SND_PCM_SFMT_U8)
-#define SND_PCM_FMT_S16_LE		(1 << SND_PCM_SFMT_S16_LE)
-#define SND_PCM_FMT_S16_BE		(1 << SND_PCM_SFMT_S16_BE)
-#define SND_PCM_FMT_U16_LE		(1 << SND_PCM_SFMT_U16_LE)
-#define SND_PCM_FMT_U16_BE		(1 << SND_PCM_SFMT_U16_BE)
-#define SND_PCM_FMT_S24_LE		(1 << SND_PCM_SFMT_S24_LE)
-#define SND_PCM_FMT_S24_BE		(1 << SND_PCM_SFMT_S24_BE)
-#define SND_PCM_FMT_U24_LE		(1 << SND_PCM_SFMT_U24_LE)
-#define SND_PCM_FMT_U24_BE		(1 << SND_PCM_SFMT_U24_BE)
-#define SND_PCM_FMT_S32_LE		(1 << SND_PCM_SFMT_S32_LE)
-#define SND_PCM_FMT_S32_BE		(1 << SND_PCM_SFMT_S32_BE)
-#define SND_PCM_FMT_U32_LE		(1 << SND_PCM_SFMT_U32_LE)
-#define SND_PCM_FMT_U32_BE		(1 << SND_PCM_SFMT_U32_BE)
-#define SND_PCM_FMT_FLOAT_LE		(1 << SND_PCM_SFMT_FLOAT_LE)
-#define SND_PCM_FMT_FLOAT_BE		(1 << SND_PCM_SFMT_FLOAT_BE)
-#define SND_PCM_FMT_FLOAT64_LE		(1 << SND_PCM_SFMT_FLOAT64_LE)
-#define SND_PCM_FMT_FLOAT64_BE		(1 << SND_PCM_SFMT_FLOAT64_BE)
-#define SND_PCM_FMT_IEC958_SUBFRAME_LE	(1 << SND_PCM_SFMT_IEC958_SUBFRAME_LE)
-#define SND_PCM_FMT_IEC958_SUBFRAME_BE	(1 << SND_PCM_SFMT_IEC958_SUBFRAME_BE)
-#define SND_PCM_FMT_MU_LAW		(1 << SND_PCM_SFMT_MU_LAW)
-#define SND_PCM_FMT_A_LAW		(1 << SND_PCM_SFMT_A_LAW)
-#define SND_PCM_FMT_IMA_ADPCM		(1 << SND_PCM_SFMT_IMA_ADPCM)
-#define SND_PCM_FMT_MPEG		(1 << SND_PCM_SFMT_MPEG)
-#define SND_PCM_FMT_GSM			(1 << SND_PCM_SFMT_GSM)
-#define SND_PCM_FMT_SPECIAL		(1 << SND_PCM_SFMT_SPECIAL)
+#define SND_PCM_FMTBIT_S8		(1 << SND_PCM_FORMAT_S8)
+#define SND_PCM_FMTBIT_U8		(1 << SND_PCM_FORMAT_U8)
+#define SND_PCM_FMTBIT_S16_LE		(1 << SND_PCM_FORMAT_S16_LE)
+#define SND_PCM_FMTBIT_S16_BE		(1 << SND_PCM_FORMAT_S16_BE)
+#define SND_PCM_FMTBIT_U16_LE		(1 << SND_PCM_FORMAT_U16_LE)
+#define SND_PCM_FMTBIT_U16_BE		(1 << SND_PCM_FORMAT_U16_BE)
+#define SND_PCM_FMTBIT_S24_LE		(1 << SND_PCM_FORMAT_S24_LE)
+#define SND_PCM_FMTBIT_S24_BE		(1 << SND_PCM_FORMAT_S24_BE)
+#define SND_PCM_FMTBIT_U24_LE		(1 << SND_PCM_FORMAT_U24_LE)
+#define SND_PCM_FMTBIT_U24_BE		(1 << SND_PCM_FORMAT_U24_BE)
+#define SND_PCM_FMTBIT_S32_LE		(1 << SND_PCM_FORMAT_S32_LE)
+#define SND_PCM_FMTBIT_S32_BE		(1 << SND_PCM_FORMAT_S32_BE)
+#define SND_PCM_FMTBIT_U32_LE		(1 << SND_PCM_FORMAT_U32_LE)
+#define SND_PCM_FMTBIT_U32_BE		(1 << SND_PCM_FORMAT_U32_BE)
+#define SND_PCM_FMTBIT_FLOAT_LE		(1 << SND_PCM_FORMAT_FLOAT_LE)
+#define SND_PCM_FMTBIT_FLOAT_BE		(1 << SND_PCM_FORMAT_FLOAT_BE)
+#define SND_PCM_FMTBIT_FLOAT64_LE	(1 << SND_PCM_FORMAT_FLOAT64_LE)
+#define SND_PCM_FMTBIT_FLOAT64_BE	(1 << SND_PCM_FORMAT_FLOAT64_BE)
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME_LE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_LE)
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME_BE (1 << SND_PCM_FORMAT_IEC958_SUBFRAME_BE)
+#define SND_PCM_FMTBIT_MU_LAW		(1 << SND_PCM_FORMAT_MU_LAW)
+#define SND_PCM_FMTBIT_A_LAW		(1 << SND_PCM_FORMAT_A_LAW)
+#define SND_PCM_FMTBIT_IMA_ADPCM	(1 << SND_PCM_FORMAT_IMA_ADPCM)
+#define SND_PCM_FMTBIT_MPEG		(1 << SND_PCM_FORMAT_MPEG)
+#define SND_PCM_FMTBIT_GSM		(1 << SND_PCM_FORMAT_GSM)
+#define SND_PCM_FMTBIT_SPECIAL		(1 << SND_PCM_FORMAT_SPECIAL)
 
 #ifdef SND_LITTLE_ENDIAN
-#define SND_PCM_FMT_S16			SND_PCM_FMT_S16_LE
-#define SND_PCM_FMT_U16			SND_PCM_FMT_U16_LE
-#define SND_PCM_FMT_S24			SND_PCM_FMT_S24_LE
-#define SND_PCM_FMT_U24			SND_PCM_FMT_U24_LE
-#define SND_PCM_FMT_S32			SND_PCM_FMT_S32_LE
-#define SND_PCM_FMT_U32			SND_PCM_FMT_U32_LE
-#define SND_PCM_FMT_FLOAT		SND_PCM_FMT_FLOAT_LE
-#define SND_PCM_FMT_FLOAT64		SND_PCM_FMT_FLOAT64_LE
-#define SND_PCM_FMT_IEC958_SUBFRAME	SND_PCM_FMT_IEC958_SUBFRAME_LE
+#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_LE
+#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_LE
+#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_LE
+#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_LE
+#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_LE
+#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_LE
+#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_LE
+#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_LE
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_LE
 #endif
 #ifdef SND_BIG_ENDIAN
-#define SND_PCM_FMT_S16			SND_PCM_FMT_S16_BE
-#define SND_PCM_FMT_U16			SND_PCM_FMT_U16_BE
-#define SND_PCM_FMT_S24			SND_PCM_FMT_S24_BE
-#define SND_PCM_FMT_U24			SND_PCM_FMT_U24_BE
-#define SND_PCM_FMT_S32			SND_PCM_FMT_S32_BE
-#define SND_PCM_FMT_U32			SND_PCM_FMT_U32_BE
-#define SND_PCM_FMT_FLOAT		SND_PCM_FMT_FLOAT_BE
-#define SND_PCM_FMT_FLOAT64		SND_PCM_FMT_FLOAT64_BE
-#define SND_PCM_FMT_IEC958_SUBFRAME	SND_PCM_FMT_IEC958_SUBFRAME_BE
+#define SND_PCM_FMTBIT_S16		SND_PCM_FMTBIT_S16_BE
+#define SND_PCM_FMTBIT_U16		SND_PCM_FMTBIT_U16_BE
+#define SND_PCM_FMTBIT_S24		SND_PCM_FMTBIT_S24_BE
+#define SND_PCM_FMTBIT_U24		SND_PCM_FMTBIT_U24_BE
+#define SND_PCM_FMTBIT_S32		SND_PCM_FMTBIT_S32_BE
+#define SND_PCM_FMTBIT_U32		SND_PCM_FMTBIT_U32_BE
+#define SND_PCM_FMTBIT_FLOAT		SND_PCM_FMTBIT_FLOAT_BE
+#define SND_PCM_FMTBIT_FLOAT64		SND_PCM_FMTBIT_FLOAT64_BE
+#define SND_PCM_FMTBIT_IEC958_SUBFRAME	SND_PCM_FMTBIT_IEC958_SUBFRAME_BE
 #endif
+
+#define SND_PCM_SUBFORMAT_STD		0
+#define SND_PCM_SUBFORMAT_LAST		0
+
+#define SND_PCM_SUBFMTBIT_STD		(1<<SND_PCM_SUBFORMAT_STD)
 
 #define SND_PCM_RATE_CONTINUOUS		(1<<0)		/* continuous range */
 #define SND_PCM_RATE_KNOT		(1<<1)		/* supports more non-continuos rates */
-#define SND_PCM_RATE_8000		(1<<2)		/* 8000Hz */
-#define SND_PCM_RATE_11025		(1<<3)		/* 11025Hz */
-#define SND_PCM_RATE_16000		(1<<4)		/* 16000Hz */
-#define SND_PCM_RATE_22050		(1<<5)		/* 22050Hz */
-#define SND_PCM_RATE_32000		(1<<6)		/* 32000Hz */
-#define SND_PCM_RATE_44100		(1<<7)		/* 44100Hz */
-#define SND_PCM_RATE_48000		(1<<8)		/* 48000Hz */
-#define SND_PCM_RATE_88200		(1<<9)		/* 88200Hz */
-#define SND_PCM_RATE_96000		(1<<10)		/* 96000Hz */
-#define SND_PCM_RATE_176400		(1<<11)		/* 176400Hz */
-#define SND_PCM_RATE_192000		(1<<12)		/* 192000Hz */
+#define SND_PCM_RATE_5512		(1<<2)		/* 5512Hz */
+#define SND_PCM_RATE_8000		(1<<3)		/* 8000Hz */
+#define SND_PCM_RATE_11025		(1<<4)		/* 11025Hz */
+#define SND_PCM_RATE_16000		(1<<5)		/* 16000Hz */
+#define SND_PCM_RATE_22050		(1<<6)		/* 22050Hz */
+#define SND_PCM_RATE_32000		(1<<7)		/* 32000Hz */
+#define SND_PCM_RATE_44100		(1<<8)		/* 44100Hz */
+#define SND_PCM_RATE_48000		(1<<9)		/* 48000Hz */
+#define SND_PCM_RATE_64000		(1<<10)		/* 64000Hz */
+#define SND_PCM_RATE_88200		(1<<11)		/* 88200Hz */
+#define SND_PCM_RATE_96000		(1<<12)		/* 96000Hz */
+#define SND_PCM_RATE_176400		(1<<13)		/* 176400Hz */
+#define SND_PCM_RATE_192000		(1<<14)		/* 192000Hz */
 
 #define SND_PCM_RATE_8000_44100		(SND_PCM_RATE_8000|SND_PCM_RATE_11025|\
 					 SND_PCM_RATE_16000|SND_PCM_RATE_22050|\
 					 SND_PCM_RATE_32000|SND_PCM_RATE_44100)
 #define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
-#define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_88200|\
-					 SND_PCM_RATE_96000)
+#define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_64000|\
+					 SND_PCM_RATE_88200|SND_PCM_RATE_96000)
 #define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
 					 SND_PCM_RATE_192000)
 
 #define SND_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
+#define SND_PCM_INFO_MMAP_VALID		0x00000002	/* fragment data are valid during transfer */
+#define SND_PCM_INFO_DOUBLE		0x00000004	/* Double buffering needed for PCM start/stop */
 #define SND_PCM_INFO_BATCH		0x00000010	/* double buffering */
 #define SND_PCM_INFO_INTERLEAVED	0x00000100	/* channels are interleaved */
 #define SND_PCM_INFO_NONINTERLEAVED	0x00000200	/* channels are not interleaved */
 #define SND_PCM_INFO_COMPLEX		0x00000400	/* complex frame organization (mmap only) */
 #define SND_PCM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
 #define SND_PCM_INFO_OVERRANGE		0x00020000	/* hardware supports ADC (capture) overrange detection */
-#define SND_PCM_INFO_MMAP_VALID		0x00040000	/* fragment data are valid during transfer */
 #define SND_PCM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
 #define SND_PCM_INFO_HALF_DUPLEX	0x00100000	/* only half duplex */
 #define SND_PCM_INFO_JOINT_DUPLEX	0x00200000	/* playback and capture stream are somewhat correlated */
 #define SND_PCM_INFO_SYNC_START		0x00400000	/* pcm support some kind of sync go */
 
-#define SND_PCM_XFER_UNSPECIFIED	0	/* don't care access type */
-#define SND_PCM_XFER_INTERLEAVED	1	/* read/write access type */
-#define SND_PCM_XFER_NONINTERLEAVED	2	/* readv/writev access type */
-#define SND_PCM_XFER_LAST		2
-
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
 #define SND_PCM_START_EXPLICIT		1	/* start on the go command */
 #define SND_PCM_START_LAST		1
-
-#define SND_PCM_XRUN_FRAGMENT		0	/* Efficient xrun detection */
-#define SND_PCM_XRUN_ASAP		1	/* Accurate xrun detection */
-#define SND_PCM_XRUN_NONE		2	/* No xrun detection */
-#define SND_PCM_XRUN_LAST		2
 
 #define SND_PCM_READY_FRAGMENT		0	/* Efficient ready detection */
 #define SND_PCM_READY_ASAP		1	/* Accurate ready detection */
 #define SND_PCM_READY_LAST		1
 
-#define SND_PCM_MMAP_UNSPECIFIED	0	/* don't care buffer type */
-#define SND_PCM_MMAP_INTERLEAVED	1	/* simple interleaved buffer */
-#define SND_PCM_MMAP_NONINTERLEAVED	2	/* simple noninterleaved buffer */
-#define SND_PCM_MMAP_COMPLEX		3	/* complex buffer */
-#define SND_PCM_MMAP_LAST		3
-
-#define SND_PCM_PARAMS_SFMT		(1<<0)
-#define SND_PCM_PARAMS_RATE		(1<<1)
-#define SND_PCM_PARAMS_CHANNELS		(1<<2)
-#define SND_PCM_PARAMS_START_MODE	(1<<3)
-#define SND_PCM_PARAMS_READY_MODE	(1<<4)
-#define SND_PCM_PARAMS_XFER_MODE	(1<<5)
-#define SND_PCM_PARAMS_XRUN_MODE	(1<<6)
-#define SND_PCM_PARAMS_BUFFER_SIZE	(1<<7)
-#define SND_PCM_PARAMS_FRAGMENT_SIZE	(1<<8)
-#define SND_PCM_PARAMS_MMAP_SHAPE	(1<<9)
-#define SND_PCM_PARAMS_WHEN		(1<<10)
-
-#define SND_PCM_PARAMS_FAIL_NONE		0
-#define SND_PCM_PARAMS_FAIL_INVAL		1
-#define SND_PCM_PARAMS_FAIL_INT_INCOMPAT	2
-#define SND_PCM_PARAMS_FAIL_EXT_INCOMPAT	3
-
-#define SND_PCM_WHEN_IDLE		0 /* Apply only if PCM is idle */
-#define SND_PCM_WHEN_LAST		0
+#define SND_PCM_XRUN_FRAGMENT		0	/* Efficient xrun detection */
+#define SND_PCM_XRUN_ASAP		1	/* Accurate xrun detection */
+#define SND_PCM_XRUN_NONE		2	/* No xrun detection */
+#define SND_PCM_XRUN_LAST		2
 
 #define SND_PCM_STATE_OPEN		0	/* stream is open */
 #define SND_PCM_STATE_SETUP		1	/* stream has a setup */
@@ -575,7 +569,11 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_MMAP_OFFSET_CONTROL	0x81000000
 
 /* digital setup types */
-#define SND_PCM_DIG_AES_IEC958		0
+#define SND_PCM_DIG_NONE		(-1)
+#define SND_PCM_DIG_AES_IEC958C		0	/* consumer mode */
+#define SND_PCM_DIG_AES_IEC958P		1	/* professional mode */
+#define SND_PCM_DIGBIT_AES_IEC958C	(1<<0)	/* consumer mode */
+#define SND_PCM_DIGBIT_AES_IEC958P	(1<<1)	/* professional mode */
 
 /* AES/IEC958 channel status bits */
 #define SND_PCM_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
@@ -662,28 +660,13 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_AES3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
 #define SND_PCM_AES3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
 
-typedef union snd_pcm_sync_id {
+typedef union _snd_pcm_sync_id {
 	char id[16];
 	short id16[8];
 	int id32[4];
 } snd_pcm_sync_id_t;
 
-typedef struct snd_pcm_digital {
-	int type;			/* digital API type */
-	unsigned int valid: 1;		/* set if the digital setup is valid */
-	union {
-		struct {
-			unsigned char status[24];	/* AES/IEC958 channel status bits */
-			unsigned char subcode[147];	/* AES/IEC958 subcode bits */
-			unsigned char pad;		/* nothing */
-			unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
-		} aes;
-		char reserved[256];
-	} dig;
-	char reserved[16];		/* must be filled with zero */
-} snd_pcm_digital_t;
-
-typedef struct snd_pcm_info {
+typedef struct _snd_pcm_info {
 	int device;			/* device number */
 	int stream;			/* stream number */
 	int subdevice;			/* subdevice number */
@@ -699,119 +682,128 @@ typedef struct snd_pcm_info {
 	char reserved[64];		/* reserved for future... */
 } snd_pcm_info_t;
 
-typedef struct snd_pcm_channel_info {
-	unsigned int channel;		/* channel number */
-	char channel_name[32];		/* name of channel */
-	int dig_group;			/* digital group */
-	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
-	char reserved[64];		/* reserved for future... */
-} snd_pcm_channel_info_t;
+typedef union _snd_pcm_digital {
+	struct {
+		unsigned char status[24];	/* AES/IEC958 channel status bits */
+		unsigned char subcode[147];	/* AES/IEC958 subcode bits */
+		unsigned char pad;		/* nothing */
+		unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
+	} aes;
+	char reserved[256];
+} snd_pcm_digital_t;
 
-typedef struct snd_pcm_format {
-	int sfmt;			/* SND_PCM_SFMT_XXXX */
-	unsigned int rate;		/* rate in Hz */
-	unsigned int channels;		/* channels */
-	int special;			/* special (custom) description of format */
-	char reserved[16];		/* must be filled with zero */
-} snd_pcm_format_t;
+#define SND_PCM_DIG_PARBIT_GROUP	(1<<0)
+#define SND_PCM_DIG_PARBIT_TYPE		(1<<1)
+#define SND_PCM_DIG_PARBIT_VALUE	(1<<2)	/* data integrity error */
 
-typedef struct snd_pcm_params {
-	snd_pcm_format_t format;	/* format */
-	snd_pcm_digital_t digital;	/* digital setup */
-	int start_mode;			/* start mode */
-	int ready_mode;			/* ready detection mode */
-	size_t avail_min;		/* min available frames for wakeup */
-	int xfer_mode;			/* xfer mode */
-	size_t xfer_min;		/* xfer min size */
-	size_t xfer_align;		/* xfer size need to be a multiple */
-	int xrun_mode;			/* xrun detection mode */
-	int mmap_shape;			/* mmap buffer shape */
-	size_t buffer_size;		/* requested buffer size in frames */
-	size_t frag_size;		/* requested fragment size in frames */
-	size_t boundary;		/* pointers wrap point */
-	unsigned int time: 1;		/* timestamp switch */
-	int when;			/* Params apply time/condition */
-	snd_timestamp_t tstamp;		/* Timestamp */
-	unsigned int fail_mask;		/* failure locations */
-	int fail_reason;		/* failure reason */
-	char reserved[64];		/* must be filled with zero */
-} snd_pcm_params_t;
-
-typedef struct {
-	unsigned int req_mask;		/* Requests mask */
-	snd_pcm_params_t req;		/* Requested params (only some fields 
-					   are currently relevant) */
-	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
-	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
-	unsigned int formats;		/* supported formats */
-	unsigned int rates;		/* hardware rates */
-	unsigned int min_rate;		/* min rate (in Hz) */
-	unsigned int max_rate;		/* max rate (in Hz) */
-	unsigned int min_channels;	/* min channels */
-	unsigned int max_channels;	/* max channels */
-	size_t buffer_size;		/* max buffer size */
-	size_t min_fragment_size;	/* min fragment size */
-	size_t max_fragment_size;	/* max fragment size */
-	size_t min_fragments;		/* min # of fragments */
-	size_t max_fragments;		/* max # of fragments */
-	size_t fragment_align;		/* align fragment value */
-	/* NB: If a param is requested, the relating min and max fields are
-	   loaded with the nearest valid value <= and >= the requested one.
-	   NB: size fields are filled only if frame size is known
-	*/
-  
+typedef struct _snd_pcm_dig_info {
+	int group;			/* W : channels group */
+	unsigned int type_mask;		/* R : supported digital types */
+	int type;			/* W : digital type (none - don't handle mask/val) */
+	snd_pcm_digital_t mask;		/* R : supported bits */
+	snd_pcm_digital_t val;		/* R : actual value */
+	unsigned int fail_mask;		/* R : failure locations */
 	char reserved[64];
-} snd_pcm_params_info_t;
+} snd_pcm_dig_info_t;
 
-typedef struct snd_pcm_channel_params {
+typedef struct _snd_pcm_dig_params {
+	int group;			/* W : channels group */
+	int type;			/* W : digital type */
+	snd_pcm_digital_t val;		/* W : values */
+	unsigned int fail_mask;		/* R : failure locations */
+	char reserved[64];
+} snd_pcm_dig_params_t;
+
+#define SND_PCM_HW_PARAM_ACCESS		0
+#define SND_PCM_HW_PARAM_FORMAT		1
+#define SND_PCM_HW_PARAM_SUBFORMAT	2
+#define SND_PCM_HW_PARAM_CHANNELS	3
+#define SND_PCM_HW_PARAM_RATE		4
+#define SND_PCM_HW_PARAM_FRAGMENT_SIZE	5
+#define SND_PCM_HW_PARAM_FRAGMENTS	6
+#define SND_PCM_HW_PARAM_LAST		6
+
+#define SND_PCM_HW_PARBIT_ACCESS	(1<<SND_PCM_HW_PARAM_ACCESS)
+#define SND_PCM_HW_PARBIT_FORMAT	(1<<SND_PCM_HW_PARAM_FORMAT)
+#define SND_PCM_HW_PARBIT_SUBFORMAT	(1<<SND_PCM_HW_PARAM_SUBFORMAT)
+#define SND_PCM_HW_PARBIT_CHANNELS	(1<<SND_PCM_HW_PARAM_CHANNELS)
+#define SND_PCM_HW_PARBIT_RATE		(1<<SND_PCM_HW_PARAM_RATE)
+#define SND_PCM_HW_PARBIT_FRAGMENT_SIZE (1<<SND_PCM_HW_PARAM_FRAGMENT_SIZE)
+#define SND_PCM_HW_PARBIT_FRAGMENTS	(1<<SND_PCM_HW_PARAM_FRAGMENTS)
+
+typedef struct _snd_pcm_hw_info {
+	unsigned int access_mask;	/* RW: access mask */
+	unsigned int format_mask;	/* RW: format mask */
+	unsigned int subformat_mask;	/* RW: subformat mask */
+	unsigned int channels_min;	/* RW: min channels */
+	unsigned int channels_max;	/* RW: max channels */
+	unsigned int rate_min;		/* RW: min rate */
+	unsigned int rate_max;		/* RW: max rate */
+	size_t fragment_size_min;	/* RW: min fragment size */
+	size_t fragment_size_max;	/* RW: max fragment size */
+	unsigned int fragments_min;	/* RW: min fragments */
+	unsigned int fragments_max;	/* RW: max fragments */
+	/* The following fields are filled only when applicable to 
+	   all params combinations */
+	unsigned int info;		/* R: Info for returned setup */
+	unsigned int msbits;		/* R: used most significant bits */
+	unsigned int rate_master;	/* R: Exact rate is rate_master / */
+	unsigned int rate_divisor;	/* R: rate_divisor */
+	size_t fifo_size;		/* R: chip FIFO size in frames */
+	unsigned int dig_groups;	/* R: number of channel groups for digital setup */
+	char reserved[64];
+} snd_pcm_hw_info_t;
+
+typedef struct _snd_pcm_hw_params {
+	unsigned int access;		/* W: access mode */
+	unsigned int format;		/* W: SND_PCM_FORMAT_* */
+	unsigned int subformat;		/* W: subformat */
+	unsigned int rate;		/* W: rate in Hz */
+	unsigned int channels;		/* W: channels */
+	size_t fragment_size;		/* W: fragment size */
+	unsigned int fragments;		/* W: fragments */
+	unsigned int fail_mask;		/* R: failure locations */
+	char reserved[64];
+} snd_pcm_hw_params_t;
+
+#define SND_PCM_SW_PARAM_START_MODE	0
+#define SND_PCM_SW_PARAM_READY_MODE	1
+#define SND_PCM_SW_PARAM_AVAIL_MIN	2
+#define SND_PCM_SW_PARAM_XFER_MIN	3
+#define SND_PCM_SW_PARAM_XFER_ALIGN	4
+#define SND_PCM_SW_PARAM_XRUN_MODE	5
+#define SND_PCM_SW_PARAM_TIME		6
+#define SND_PCM_SW_PARAM_LAST		6
+
+#define SND_PCM_SW_PARBIT_START_MODE	(1<<SND_PCM_SW_PARAM_START_MODE)
+#define SND_PCM_SW_PARBIT_READY_MODE	(1<<SND_PCM_SW_PARAM_READY_MODE)
+#define SND_PCM_SW_PARBIT_AVAIL_MIN	(1<<SND_PCM_SW_PARAM_AVAIL_MIN)
+#define SND_PCM_SW_PARBIT_XFER_MIN	(1<<SND_PCM_SW_PARAM_XFER_MIN)
+#define SND_PCM_SW_PARBIT_XFER_ALIGN	(1<<SND_PCM_SW_PARAM_XFER_ALIGN)
+#define SND_PCM_SW_PARBIT_XRUN_MODE	(1<<SND_PCM_SW_PARAM_XRUN_MODE)
+#define SND_PCM_SW_PARBIT_TIME		(1<<SND_PCM_SW_PARAM_TIME)
+
+typedef struct _snd_pcm_sw_params {
+	unsigned int start_mode;	/* RW: start mode */
+	unsigned int ready_mode;	/* RW: ready detection mode */
+	unsigned int xrun_mode;		/* RW: xrun detection mode */
+	size_t avail_min;		/* RW: min avail frames for wakeup */
+	size_t xfer_min;		/* RW: xfer min size */
+	size_t xfer_align;		/* RW: xfer size need to be a multiple */
+	unsigned int time: 1;		/* RW: mmap timestamp switch */
+	size_t boundary;		/* R : pointers wrap point */
+	unsigned int fail_mask;		/* R : failure locations */
+	char reserved[64];
+} snd_pcm_sw_params_t;
+
+typedef struct _snd_pcm_hw_channel_info {
 	unsigned int channel;
-	snd_pcm_digital_t digital;	/* digital setup */
-	int when;			/* Params apply time/condition */
-	snd_timestamp_t tstamp;		/* Timestamp */
-	unsigned int fail_mask;		/* failure locations */
-	int fail_reason;		/* failure reason */
-	char reserved[64];
-} snd_pcm_channel_params_t;
-
-typedef struct snd_pcm_setup {
-	snd_pcm_format_t format;	/* real used format */
-	snd_pcm_digital_t digital;	/* digital setup */
-	int start_mode;			/* start mode */
-	int ready_mode;			/* ready detection mode */
-	size_t avail_min;		/* min available frames for wakeup */
-	int xfer_mode;			/* xfer mode */
-	size_t xfer_min;		/* xfer min size */
-	size_t xfer_align;		/* xfer size need to be a multiple */
-	int xrun_mode;			/* xrun detection mode */
-	int mmap_shape;			/* mmap buffer shape */
-	size_t buffer_size;		/* current buffer size in frames */
-	size_t frag_size;		/* current fragment size in frames */
-	size_t boundary;		/* position in frames wrap point */
-	unsigned int time: 1;		/* timestamp switch */
-	size_t frags;			/* allocated fragments */
-	size_t mmap_bytes;		/* mmap data size in bytes*/
-	unsigned int msbits;		/* used most significant bits */
-	unsigned int rate_master;	/* Exact rate is rate_master / */
-	unsigned int rate_divisor;	/* rate_divisor */
-	size_t fifo_size;		/* chip FIFO size in frames */
-	char reserved[64];		/* must be filled with zero */
-} snd_pcm_setup_t;
-
-typedef struct snd_pcm_channel_area {
-	void *addr;			/* base address of channel samples */
+	off_t offset;			/* mmap offset */
 	unsigned int first;		/* offset to first sample in bits */
 	unsigned int step;		/* samples distance in bits */
-} snd_pcm_channel_area_t;
+} snd_pcm_hw_channel_info_t;
 
-typedef struct snd_pcm_channel_setup {
-	unsigned int channel;
-	snd_pcm_digital_t digital;	/* digital setup */
-	snd_pcm_channel_area_t running_area;
-	snd_pcm_channel_area_t stopped_area;
-	char reserved[64];
-} snd_pcm_channel_setup_t;
-
-typedef struct snd_pcm_status {
+typedef struct _snd_pcm_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
 	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
 	snd_timestamp_t tstamp;	/* Timestamp */
@@ -822,56 +814,53 @@ typedef struct snd_pcm_status {
 	char reserved[64];	/* must be filled with zero */
 } snd_pcm_status_t;
 
-typedef struct {
-	int state;		/* RO: status - SND_PCM_STATE_XXXX */
+typedef struct _snd_pcm_mmap_status {
+	int state;		/* RO: state - SND_PCM_STATE_XXXX */
 	int pad1;		/* Needed for 64 bit alignment */
 	size_t hw_ptr;		/* RO: hw side ptr (0 ... boundary-1) 
 				   updated only on request and at interrupt time */
 	snd_timestamp_t tstamp;	/* Timestamp */
-	char pad[PAGE_SIZE - (sizeof(int) * 2 + sizeof(size_t) +
-			      sizeof(snd_timestamp_t))];		
 } snd_pcm_mmap_status_t;
 
-typedef struct {
+typedef struct _snd_pcm_mmap_control {
 	size_t appl_ptr;	/* RW: application side ptr (0...boundary-1) */
 	size_t avail_min;	/* RW: min available frames for wakeup */
-	char pad[PAGE_SIZE - sizeof(size_t) * 2];
 } snd_pcm_mmap_control_t;
 
-typedef struct {
+typedef struct _snd_xferi {
 	ssize_t result;
 	void *buf;
 	size_t frames;
 } snd_xferi_t;
 
-typedef struct {
+typedef struct _snd_xfern_t {
 	ssize_t result;
 	void **bufs;
 	size_t frames;
 } snd_xfern_t;
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
-#define SND_PCM_IOCTL_INFO		_IOR ('A', 0x02, snd_pcm_info_t)
-#define SND_PCM_IOCTL_PARAMS		_IOW ('A', 0x10, snd_pcm_params_t)
-#define SND_PCM_IOCTL_PARAMS_INFO	_IOW ('A', 0x11, snd_pcm_params_info_t)
-#define SND_PCM_IOCTL_SETUP		_IOR ('A', 0x20, snd_pcm_setup_t)
-#define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x21, snd_pcm_status_t)
-#define SND_PCM_IOCTL_DELAY		_IOW ('A', 0x23, ssize_t)
-#define SND_PCM_IOCTL_REWIND		_IOW ('A', 0x24, size_t)
-#define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_START		_IO  ('A', 0x31)
-#define SND_PCM_IOCTL_DROP		_IO  ('A', 0x32)
-#define SND_PCM_IOCTL_DRAIN		_IO  ('A', 0x34)
-#define SND_PCM_IOCTL_PAUSE		_IOW ('A', 0x35, int)
-#define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
-#define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x41, snd_pcm_channel_params_t)
-#define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x42, snd_pcm_channel_setup_t)
+#define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
+#define SND_PCM_IOCTL_HW_INFO		_IOWR('A', 0x10, snd_pcm_hw_info_t)
+#define SND_PCM_IOCTL_HW_PARAMS		_IOWR('A', 0x11, snd_pcm_hw_params_t)
+#define SND_PCM_IOCTL_SW_PARAMS		_IOWR('A', 0x12, snd_pcm_sw_params_t)
+#define SND_PCM_IOCTL_DIG_INFO		_IOWR('A', 0x13, snd_pcm_dig_info_t)
+#define SND_PCM_IOCTL_DIG_PARAMS	_IOWR('A', 0x14, snd_pcm_dig_params_t)
+#define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x20, snd_pcm_status_t)
+#define SND_PCM_IOCTL_DELAY		_IOR ('A', 0x21, ssize_t)
+#define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x32, snd_pcm_hw_channel_info_t)
+#define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x40)
+#define SND_PCM_IOCTL_START		_IO  ('A', 0x41)
+#define SND_PCM_IOCTL_DROP		_IO  ('A', 0x42)
+#define SND_PCM_IOCTL_DRAIN		_IO  ('A', 0x43)
+#define SND_PCM_IOCTL_PAUSE		_IOW ('A', 0x44, int)
+#define SND_PCM_IOCTL_REWIND		_IOW ('A', 0x45, size_t)
 #define SND_PCM_IOCTL_WRITEI_FRAMES	_IOW ('A', 0x50, snd_xferi_t)
 #define SND_PCM_IOCTL_READI_FRAMES	_IOR ('A', 0x51, snd_xferi_t)
 #define SND_PCM_IOCTL_WRITEN_FRAMES	_IOW ('A', 0x52, snd_xfern_t)
 #define SND_PCM_IOCTL_READN_FRAMES	_IOR ('A', 0x53, snd_xfern_t)
-#define SND_PCM_IOCTL_LINK		_IOW ('A', 0x61, int)
-#define SND_PCM_IOCTL_UNLINK		_IO  ('A', 0x62)
+#define SND_PCM_IOCTL_LINK		_IOW ('A', 0x60, int)
+#define SND_PCM_IOCTL_UNLINK		_IO  ('A', 0x61)
 
 /*****************************************************************************
  *                                                                           *
@@ -1009,40 +998,28 @@ typedef struct _snd_rawmidi_info {
 	unsigned int output_subdevices_avail;
 	unsigned int input_subdevices_count;
 	unsigned int input_subdevices_avail;
-	unsigned char reserved[64];	/* reserved for future use */
+	char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
 
-#define SND_RAWMIDI_PARAM_STREAM	0
-#define SND_RAWMIDI_PARAM_SIZE		1
-#define SND_RAWMIDI_PARAM_MIN		2
-#define SND_RAWMIDI_PARAM_MAX		3
-#define SND_RAWMIDI_PARAM_ROOM		4
-
-#define SND_RAWMIDI_PARBIT_STREAM	(1<<SND_RAWMIDI_PARAM_STREAM)
-#define SND_RAWMIDI_PARBIT_SIZE		(1<<SND_RAWMIDI_PARAM_SIZE)
-#define SND_RAWMIDI_PARBIT_MIN		(1<<SND_RAWMIDI_PARAM_MIN)
-#define SND_RAWMIDI_PARBIT_MAX		(1<<SND_RAWMIDI_PARAM_MAX)
-#define SND_RAWMIDI_PARBIT_ROOM		(1<<SND_RAWMIDI_PARAM_ROOM)
+#define SND_RAWMIDI_PARBIT_STREAM	(1<<0)
+#define SND_RAWMIDI_PARBIT_BUFFER_SIZE	(1<<1)
+#define SND_RAWMIDI_PARBIT_AVAIL_MIN	(1<<2)
 
 typedef struct _snd_rawmidi_params {
 	int stream;		/* Requested stream */
-	size_t size;		/* I/O requested queue size in bytes */
-	size_t min;		/* I minimum count of bytes in queue for wakeup */
-	size_t max;		/* O maximum count of bytes in queue for wakeup */
-	size_t room;		/* O minumum number of bytes writeable for wakeup */
+	size_t buffer_size;	/* requested queue size in bytes */
+	size_t avail_min;	/* minimum avail bytes for wakeup */
 	unsigned int fail_mask;	/* failure locations */
-	int no_active_sensing: 1; /* O do not send active sensing byte in close() */
-	unsigned char reserved[16];	/* reserved for future use */
+	unsigned int no_active_sensing: 1; /* O do not send active sensing byte in close() */
+	char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
 typedef struct _snd_rawmidi_status {
 	int stream;		/* Requested stream */
-	size_t count;		/* I/O number of bytes readable/writeable without blocking */
-	size_t queue;		/* O number of bytes in queue */
-	size_t pad;		/* O not used yet */
-	size_t free;		/* I bytes in buffer still free */
-	size_t overrun;		/* I count of overruns since last status (in bytes) */
-	unsigned char reserved[16];	/* reserved for future use */
+	snd_timestamp_t tstamp;	/* Timestamp */
+	size_t avail;		/* available bytes */
+	size_t xruns;		/* I count of overruns since last status (in bytes) */
+	char reserved[16];	/* reserved for future use */
 } snd_rawmidi_status_t;
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
@@ -1101,12 +1078,12 @@ typedef struct _snd_rawmidi_status {
 
 #define SND_TIMER_PSFLG_AUTO		(1<<0)	/* auto start */
 
-typedef struct snd_timer_general_info {
+typedef struct _snd_timer_general_info {
 	unsigned int count;		/* count of global timers */
 	char reserved[64];
 } snd_timer_general_info_t;
 
-typedef struct snd_timer_select {
+typedef struct _snd_timer_select {
 	unsigned int slave: 1;		/* timer is slave */
 	union {
 		int number;		/* timer number */
@@ -1118,7 +1095,7 @@ typedef struct snd_timer_select {
 	char reserved[32];
 } snd_timer_select_t;
 
-typedef struct snd_timer_info {
+typedef struct _snd_timer_info {
 	unsigned int flags;		/* timer flags - SND_MIXER_FLG_* */
 	char id[64];			/* timer identificator (user selectable) */
 	char name[80];			/* timer name */
@@ -1127,25 +1104,19 @@ typedef struct snd_timer_info {
 	char reserved[64];
 } snd_timer_info_t;
 
-typedef struct snd_timer_params {
-	int when;			/* Params apply time/condition */
-	snd_timestamp_t tstamp;		/* Timestamp */
+#define SND_TIMER_PARBIT_FLAGS		(1<<0)
+#define SND_TIMER_PARBIT_TICKS		(1<<1)
+#define SND_TIMER_PARBIT_QUEUE_SIZE	(1<<2)
+
+typedef struct _snd_timer_params {
 	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
 	unsigned long ticks;		/* requested resolution in ticks */
 	int queue_size;			/* total size of queue (32-1024) */
 	unsigned int fail_mask;		/* failure locations */
-	int fail_reason;		/* failure reason */
 	char reserved[64];
 } snd_timer_params_t;
 
-typedef struct snd_timer_setup {
-	unsigned int flags;		/* flags - SND_MIXER_PSFLG_* */
-	unsigned long ticks;		/* requested resolution in ticks */
-	int queue_size;			/* total queue size */
-	char reserved[64];
-} snd_timer_setup_t;
-
-typedef struct snd_timer_status {
+typedef struct _snd_timer_status {
 	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned long resolution;	/* current resolution */
 	unsigned long lost;		/* counter of master tick lost */
@@ -1159,13 +1130,12 @@ typedef struct snd_timer_status {
 #define SND_TIMER_IOCTL_SELECT		_IOW ('T', 0x10, snd_timer_select_t)
 #define SND_TIMER_IOCTL_INFO		_IOR ('T', 0x11, snd_timer_info_t)
 #define SND_TIMER_IOCTL_PARAMS		_IOW ('T', 0x12, snd_timer_params_t)
-#define SND_TIMER_IOCTL_SETUP		_IOR ('T', 0x13, snd_timer_setup_t)
 #define SND_TIMER_IOCTL_STATUS		_IOW ('T', 0x14, snd_timer_status_t)
 #define SND_TIMER_IOCTL_START		_IO  ('T', 0x20)
 #define SND_TIMER_IOCTL_STOP		_IO  ('T', 0x21)
 #define SND_TIMER_IOCTL_CONTINUE	_IO  ('T', 0x22)
 
-typedef struct snd_timer_read {
+typedef struct _snd_timer_read {
 	unsigned long resolution;
 	unsigned long ticks;
 } snd_timer_read_t;

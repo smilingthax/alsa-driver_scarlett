@@ -27,6 +27,12 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 
 
 #define virt_to_page(x) (&mem_map[MAP_NR(x)])
+#define get_page(p) atomic_inc(&(p)->count)
+#define SetPageReserved(p) set_bit(PG_reserved, &(p)->flags)
+#define ClearPageReserved(p) clear_bit(PG_reserved, &(p)->flags)
+#define vm_private_data vm_pte
+#define NOPAGE_OOM 0
+#define NOPAGE_SIGBUS (-1)
 #define fops_get(x) (x)
 #define fops_put(x) do { ; } while (0)
 
@@ -34,6 +40,12 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 	do { __save_flags(flags); __cli(); } while (0)
 #define local_irq_restore(flags) \
 	do { __restore_flags(flags); } while (0)
+
+#ifndef __rh_config_h__	/* RedHat uses modified kill_fasync */
+#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
+#else
+#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig, band)
+#endif
 
 #define tasklet_hi_schedule(t)	queue_task((t), &tq_immediate); \
 				mark_bh(IMMEDIATE_BH)
@@ -58,9 +70,13 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define __devexitdata
 
 #ifdef MODULE
+  #ifndef module_init
   #define module_init(x)      int init_module(void) { return x(); }
   #define module_exit(x)      void cleanup_module(void) { x(); }
+  #endif
+  #ifndef THIS_MODULE
   #define THIS_MODULE	      (&__this_module)
+  #endif
   int try_inc_mod_count(struct module *mod);
 #else
   #define module_init(x)
@@ -315,9 +331,3 @@ extern inline int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 #endif /* CONFIG_APM */
 
 #endif /* <2.3.0 */
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
-#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
-#else
-#define snd_kill_fasync(fp, sig, band) kill_fasync(fp, sig, band)
-#endif

@@ -27,10 +27,10 @@
 #define _snd_pcm_chip(pcm) ((pcm)->private_data)
 #define snd_pcm_chip(pcm) snd_magic_cast1(chip_t, _snd_pcm_chip(pcm), return -ENXIO)
 
-typedef struct snd_stru_pcm_file snd_pcm_file_t;
-typedef struct snd_stru_pcm_runtime snd_pcm_runtime_t;
-typedef struct snd_stru_pcm_substream snd_pcm_substream_t;
-typedef struct snd_stru_pcm_stream snd_pcm_stream_t;
+typedef struct _snd_pcm_file snd_pcm_file_t;
+typedef struct _snd_pcm_runtime snd_pcm_runtime_t;
+typedef struct _snd_pcm_substream snd_pcm_substream_t;
+typedef struct _snd_pcm_stream snd_pcm_stream_t;
 
 #ifdef CONFIG_SND_OSSEMUL
 #include "pcm_oss.h"
@@ -40,22 +40,27 @@ typedef struct snd_stru_pcm_stream snd_pcm_stream_t;
  *  Hardware (lowlevel) section
  */
 
-typedef struct snd_stru_pcm_hardware {
-	/* -- constants -- */
-	unsigned int info;	/* SND_PCM_INFO_* */
-	unsigned int formats;	/* SND_PCM_FMT_* */
-	unsigned int rates;	/* SND_PCM_RATE_* */
-	unsigned int min_rate;	/* min rate */
-	unsigned int max_rate;	/* max rate */
+typedef struct _snd_pcm_hardware {
+	unsigned int info;		/* SND_PCM_INFO_* */
+	unsigned int max_refine_steps;	/* max refine steps - 1 */
+	unsigned int formats;		/* SND_PCM_FMTBIT_* */
+	unsigned int rates;		/* SND_PCM_RATE_* */
+	unsigned int min_rate;		/* min rate */
+	unsigned int max_rate;		/* max rate */
 	unsigned int min_channels;	/* min channels */
 	unsigned int max_channels;	/* max channels */
 	size_t min_fragment_size;	/* min fragment size */
 	size_t max_fragment_size;	/* max fragment size */
-	size_t min_fragments;	/* min # of fragments */
-	size_t max_fragments;	/* max # of fragments */
-	size_t fragment_align;	/* fragment align value */
+	size_t step_fragment_size;	/* fragment size step */
+	size_t min_fragments;		/* min # of fragments */
+	size_t max_fragments;		/* max # of fragments */
 	size_t fifo_size;		/* fifo size in bytes */
-	/* -- functions -- */
+	unsigned int dig_groups;	/* digital groups */
+} snd_pcm_hardware_t;
+
+typedef struct _snd_pcm_ops {
+	int (*open)(snd_pcm_substream_t *substream);
+	int (*close)(snd_pcm_substream_t *substream);
 	int (*ioctl)(snd_pcm_substream_t * substream,
 		     unsigned int cmd, void *arg);
 	int (*prepare)(snd_pcm_substream_t * substream);
@@ -65,7 +70,7 @@ typedef struct snd_stru_pcm_hardware {
 		    void *buf, size_t count);
 	int (*silence)(snd_pcm_substream_t *substream, int channel, 
 		       unsigned int pos, size_t count);
-} snd_pcm_hardware_t;
+} snd_pcm_ops_t;
 
 /*
  *
@@ -79,16 +84,11 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_TRUE	((void *)1)
 
 #define SND_PCM_IOCTL1_INFO		0
-#define SND_PCM_IOCTL1_PARAMS		1
-#define SND_PCM_IOCTL1_PARAMS_INFO	2
-#define SND_PCM_IOCTL1_SETUP		3
-#define SND_PCM_IOCTL1_STATUS		4
-#define SND_PCM_IOCTL1_MMAP_BYTES	5
-#define SND_PCM_IOCTL1_MMAP_PTR		6
-#define SND_PCM_IOCTL1_CHANNEL_INFO	8
-#define SND_PCM_IOCTL1_CHANNEL_SETUP	9
-#define SND_PCM_IOCTL1_CHANNEL_PARAMS	10
-#define SND_PCM_IOCTL1_SYNC		11
+#define SND_PCM_IOCTL1_HW_INFO		1
+#define SND_PCM_IOCTL1_HW_PARAMS	2
+#define SND_PCM_IOCTL1_DIG_INFO		3
+#define SND_PCM_IOCTL1_DIG_PARAMS	4
+#define SND_PCM_IOCTL1_CHANNEL_INFO	5
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_START		1
@@ -98,66 +98,53 @@ typedef struct snd_stru_pcm_hardware {
 #define snd_pcm_clear_time(stream) \
 	((stream)->time.tv_sec = (stream)->time.tv_usec = 0)
 
-struct snd_stru_pcm_file {
+struct _snd_pcm_file {
 	snd_pcm_substream_t * substream;
-	struct snd_stru_pcm_file * next;
+	struct _snd_pcm_file * next;
 };
 
-struct snd_stru_pcm_runtime {
-	unsigned int dma_ok: 1,		/* DMA is set up */
-		time: 1,		/* Status has timestamp */
-		mmap: 1;		/* mmap requested */
+struct _snd_pcm_runtime {
+	/* -- Status -- */
 	snd_pcm_substream_t *trigger_master;
-	snd_timestamp_t trigger_time;	/* start timestamp */
-	int start_mode;
-	int ready_mode;
-	int xrun_mode;
-	int mmap_shape;
-
-	snd_pcm_params_info_t params_info;
-	snd_pcm_format_t format;	/* format information */
-	unsigned int rate_master;
-	unsigned int rate_divisor;
-	size_t buffer_size;
-	size_t frag_size;
-	size_t frags;			/* fragments */
-
-	volatile int *state;		/* stream status */
-	int _sstate;			/* static status location */
-	volatile size_t *hw_ptr;
-	size_t _shw_ptr;
-	volatile size_t *appl_ptr;
-	size_t _sappl_ptr;
-	volatile size_t *avail_min;
-	size_t _savail_min;
-	snd_timestamp_t *tstamp;
-	snd_timestamp_t _ststamp;
+	snd_timestamp_t trigger_time;	/* trigger timestamp */
+	int overrange;
+	size_t avail_max;
 	size_t hw_ptr_base;		/* Position at buffer restart */
 	size_t hw_ptr_interrupt;	/* Position at interrupt time*/
-	int interrupt_pending;
+
+	/* -- HW params -- */
+	int access;			/* access mode */
+	int format;			/* SND_PCM_FORMAT_* */
+	int subformat;			/* subformat */
+	unsigned int rate;		/* rate in Hz */
+	unsigned int channels;		/* channels */
+	size_t fragment_size;		/* fragment size */
+	size_t fragments;		/* fragments */
+	size_t buffer_size;		/* buffer size */
 	size_t min_align;		/* Min alignment for the format */
-	int xfer_mode;
-	size_t xfer_min;
-	size_t xfer_align;		/* True alignment used */
-	size_t avail_max;
-
-	size_t boundary;
-
-	int overrange;
-	snd_pcm_digital_t *dig_mask;	/* digital mask */
-	void (*dig_mask_free)(const void *dig_mask);
-	snd_pcm_digital_t digital;	/* digital format information */
-	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
+	size_t byte_align;
 	size_t bits_per_frame;
 	size_t bits_per_sample;
-	size_t byte_align;
+	unsigned int info;
+	unsigned int rate_master;
+	unsigned int rate_divisor;
 
-	snd_pcm_mmap_status_t *mmap_status;
-	snd_pcm_mmap_control_t *mmap_control;
-	char *mmap_data;
-	int mmap_status_count;
-	int mmap_control_count;
-	int mmap_data_count;
+	/* -- SW params -- */
+	unsigned int time: 1;		/* mmap timestamp is updated */
+	int start_mode;			/* start mode */
+	int ready_mode;			/* ready detection mode */
+	size_t xfer_min;		/* xfer min size */
+	size_t xfer_align;		/* xfer size need to be a multiple */
+	int xrun_mode;			/* xrun detection mode */
+	size_t boundary;		/* pointers wrap point */
+
+	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
+
+	/* -- mmap -- */
+	snd_pcm_mmap_status_t *status;
+	volatile snd_pcm_mmap_control_t *control;
+	atomic_t mmap_count;
+
 	/* -- locking / scheduling -- */
 	spinlock_t lock;
 	spinlock_t sleep_lock;
@@ -165,35 +152,42 @@ struct snd_stru_pcm_runtime {
 	struct timer_list poll_timer;
 	struct timer_list xrun_timer;
 	struct fasync_struct *fasync;
+
 	/* -- private section -- */
 	void *private_data;
 	void (*private_free)(snd_pcm_runtime_t *runtime);
-	/* -- own hardware routines -- */
-	snd_pcm_hardware_t *hw;
-	void (*hw_free)(const void *hw);
+
+	/* -- hardware description -- */
+	snd_pcm_hardware_t hw;
+
 	/* -- interrupt callbacks -- */
 	void (*transfer_ack_begin)(snd_pcm_substream_t *substream);
 	void (*transfer_ack_end)(snd_pcm_substream_t *substream);
+
 	/* -- timer -- */
 	unsigned int timer_resolution;	/* timer resolution */
 	int timer_running;		/* time is running */
 	spinlock_t timer_lock;
+
 	/* -- DMA -- */           
 	unsigned char *dma_area;	/* DMA area */
 	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
 	unsigned long dma_size;		/* size of DMA area */
+
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
 	snd_pcm_oss_runtime_t oss;
 #endif
 };
 
-struct snd_stru_pcm_substream {
+struct _snd_pcm_substream {
 	snd_pcm_t *pcm;
 	snd_pcm_stream_t *pstr;
 	int number;
 	char name[32];			/* substream name */
 	int stream;			/* stream (direction) */
+	/* -- hardware operations -- */
+	snd_pcm_ops_t *ops;
 	/* -- runtime information -- */
 	snd_pcm_runtime_t *runtime;
         /* -- timer section -- */
@@ -218,12 +212,9 @@ struct snd_stru_pcm_substream {
 #endif
 
 
-struct snd_stru_pcm_stream {
+struct _snd_pcm_stream {
 	int stream;				/* stream (direction) */
 	snd_pcm_t *pcm;
-	/* -- lowlevel functions -- */
-	int (*open)(snd_pcm_substream_t *substream);
-	int (*close)(snd_pcm_substream_t *substream);
 	/* -- substreams -- */
 	unsigned int substream_count;
 	unsigned int substream_opened;
@@ -237,7 +228,7 @@ struct snd_stru_pcm_stream {
 	snd_minor_t *reg;
 };
 
-struct snd_stru_pcm {
+struct _snd_pcm {
 	snd_card_t *card;
 	unsigned int device;	/* device number */
 	unsigned int info_flags;
@@ -255,11 +246,11 @@ struct snd_stru_pcm {
 #endif
 };
 
-struct snd_stru_pcm_notify {
+typedef struct _snd_pcm_notify {
 	int (*n_register) (unsigned short minor, snd_pcm_t * pcm);
 	int (*n_unregister) (unsigned short minor, snd_pcm_t * pcm);
 	struct list_head list;
-};
+} snd_pcm_notify_t;
 
 typedef struct {
 	struct file *file;
@@ -285,7 +276,7 @@ extern void snd_pcm_lock(int unlock);
 extern int snd_pcm_new(snd_card_t * card, char *id, int device,
 		       int playback_count, int capture_count, snd_pcm_t **rpcm);
 
-extern int snd_pcm_notify(struct snd_stru_pcm_notify *notify, int nfree);
+extern int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
 
 extern snd_minor_t snd_pcm_reg[2];
 
@@ -348,7 +339,7 @@ static inline size_t snd_pcm_lib_buffer_bytes(snd_pcm_substream_t *substream)
 static inline size_t snd_pcm_lib_fragment_bytes(snd_pcm_substream_t *substream)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
-	return frames_to_bytes(runtime, runtime->frag_size);
+	return frames_to_bytes(runtime, runtime->fragment_size);
 }
 
 /*
@@ -356,7 +347,7 @@ static inline size_t snd_pcm_lib_fragment_bytes(snd_pcm_substream_t *substream)
  */
 static inline size_t snd_pcm_playback_avail(snd_pcm_runtime_t *runtime)
 {
-	ssize_t avail = *runtime->hw_ptr + runtime->buffer_size - *runtime->appl_ptr;
+	ssize_t avail = runtime->status->hw_ptr + runtime->buffer_size - runtime->control->appl_ptr;
 	if (avail < 0)
 		avail += runtime->boundary;
 	return avail;
@@ -367,7 +358,7 @@ static inline size_t snd_pcm_playback_avail(snd_pcm_runtime_t *runtime)
  */
 static inline size_t snd_pcm_capture_avail(snd_pcm_runtime_t *runtime)
 {
-	ssize_t avail = *runtime->hw_ptr - *runtime->appl_ptr;
+	ssize_t avail = runtime->status->hw_ptr - runtime->control->appl_ptr;
 	if (avail < 0)
 		avail += runtime->boundary;
 	return avail;
@@ -379,21 +370,19 @@ static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream,
 	substream->runtime->trigger_master = master;
 }
 
-extern int snd_pcm_nearest_le_clock(unsigned int hertz, 
-				    unsigned int clocks_count, 
-				    snd_pcm_clock_t *clocks,
-				    unsigned int *masterp, 
-				    unsigned int *divisorp);
-extern int snd_pcm_nearest_ge_clock(unsigned int hertz, 
-				    unsigned int clocks_count, 
-				    snd_pcm_clock_t *clocks,
-				    unsigned int *masterp, 
-				    unsigned int *divisorp);
-extern int snd_pcm_nearest_clock(unsigned int hertz, 
-				 unsigned int clocks_count, 
-				 snd_pcm_clock_t *clocks,
-				 unsigned int *masterp, 
-				 unsigned int *divisorp);
+extern int snd_pcm_hw_info_bits_per_sample(snd_pcm_hw_info_t *info, 
+					   unsigned int *min, unsigned int *max);
+extern int snd_pcm_hw_info_generic(snd_pcm_hw_info_t *info, snd_pcm_substream_t *substream);
+extern int snd_pcm_hw_info_channels_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
+extern int snd_pcm_hw_info_rate_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
+extern int snd_pcm_hw_info_fragment_size_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
+extern int snd_pcm_hw_info_fragments_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
+extern int snd_pcm_hw_info_rate_clocks(snd_pcm_hw_info_t *info, unsigned int clocks_count, snd_pcm_clock_t *clocks);
+extern int snd_pcm_hw_info_max_buffer_bytes(snd_pcm_hw_info_t *info, 
+					    size_t max_buffer_bytes);
+extern int snd_pcm_hw_info_max_buffer_size(snd_pcm_hw_info_t *info, 
+					   size_t max_buffer_size);
+
 extern int snd_pcm_format_signed(int format);
 extern int snd_pcm_format_unsigned(int format);
 extern int snd_pcm_format_linear(int format);
@@ -406,9 +395,9 @@ extern ssize_t snd_pcm_format_set_silence(int format, void *buf, size_t count);
 extern int snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 extern ssize_t snd_pcm_format_size(int format, size_t samples);
  
+extern void snd_pcm_set_ops(snd_pcm_t * pcm, int direction, snd_pcm_ops_t *ops);
 extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);
 extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
-extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);
 extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
 			     unsigned int cmd, void *arg);                      
 extern void snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);

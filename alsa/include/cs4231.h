@@ -175,14 +175,6 @@
 #define CS4236_RIGHT_WAVE	0x1c	/* right wavetable serial port volume */
 #define CS4236_VERSION		0x9c	/* chip version and ID */
 
-/* some structures */
-
-struct snd_stru_cs4231_freq {
-	unsigned int hertz;
-	unsigned int rate;
-	unsigned char bits;
-};
-
 /* defines for codec.mode */
 
 #define CS4231_MODE_NONE	0x0000
@@ -218,9 +210,9 @@ struct snd_stru_cs4231_freq {
 #define CS4231_HWSHARE_DMA1	(1<<1)
 #define CS4231_HWSHARE_DMA2	(1<<2)
 
-typedef struct snd_stru_cs4231 cs4231_t;
+typedef struct _snd_cs4231 cs4231_t;
 
-struct snd_stru_cs4231 {
+struct _snd_cs4231 {
 	unsigned long port;		/* base i/o port */
 	struct resource *res_port;
 	unsigned long cport;		/* control base i/o port (CS4236) */
@@ -257,10 +249,9 @@ struct snd_stru_cs4231 {
 
 	struct pm_dev *pm_dev;
 
-	unsigned int (*set_playback_rate) (cs4231_t *chip, unsigned int rate);
-	unsigned int (*set_capture_rate) (cs4231_t *chip, unsigned int rate);
-	void (*set_playback_format) (cs4231_t *chip, unsigned char pdfr);
-	void (*set_capture_format) (cs4231_t *chip, unsigned char cdfr);
+	int (*refine_rate) (snd_pcm_hw_info_t *hw_info);
+	void (*set_playback_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char pdfr);
+	void (*set_capture_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char cdfr);
 	void (*suspend) (cs4231_t *chip);
 	void (*resume) (cs4231_t *chip);
 	void *dma_private_data;

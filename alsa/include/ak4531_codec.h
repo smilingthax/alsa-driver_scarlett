@@ -64,9 +64,9 @@
 #define AK4531_AD_IN    0x18	/* AD input select */
 #define AK4531_MIC_GAIN 0x19	/* MIC amplified gain */
 
-typedef struct snd_stru_ak4531 ak4531_t;
+typedef struct _snd_ak4531 ak4531_t;
 
-struct snd_stru_ak4531 {
+struct _snd_ak4531 {
 	void (*write) (ak4531_t *ak4531, unsigned short reg, unsigned short val);
 	snd_info_entry_t *proc_entry;
 	void *private_data;

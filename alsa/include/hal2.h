@@ -261,9 +261,9 @@
 
 typedef volatile unsigned long snd_hal2_reg_t;
 
-typedef struct snd_stru_hal2_ctl_regs snd_hal2_ctl_regs_t;
+typedef struct _snd_hal2_ctl_regs snd_hal2_ctl_regs_t;
 
-struct snd_stru_hal2_ctl_regs {
+struct _snd_hal2_ctl_regs {
 	snd_hal2_reg_t _unused0[4];
 	snd_hal2_reg_t isr;		/* 0x10 Status Register */
 	snd_hal2_reg_t _unused1[3];
@@ -280,9 +280,9 @@ struct snd_stru_hal2_ctl_regs {
 	snd_hal2_reg_t idr3;		/* 0x70 Indirect Data Register 3 */
 };
 
-typedef struct snd_stru_hal2_aes_regs snd_hal2_aes_regs_t;
+typedef struct _snd_hal2_aes_regs snd_hal2_aes_regs_t;
 
-struct snd_stru_hal2_aes_regs {
+struct _snd_hal2_aes_regs {
 	snd_hal2_reg_t rx_stat[2];	/* Status registers */
 	snd_hal2_reg_t rx_cr[2];	/* Control registers */
 	snd_hal2_reg_t rx_ud[4];	/* User data window */
@@ -294,16 +294,16 @@ struct snd_stru_hal2_aes_regs {
 	snd_hal2_reg_t tx_st[24];	/* Channel status data */
 };
 
-typedef struct snd_stru_hal2_vol_regs snd_hal2_vol_regs_t;
+typedef struct _snd_hal2_vol_regs snd_hal2_vol_regs_t;
 
-struct snd_stru_hal2_vol_regs {
+struct _snd_hal2_vol_regs {
 	snd_hal2_reg_t right;		/* 0x00 Right volume */
 	snd_hal2_reg_t left;		/* 0x04 Left volume */
 };
 
-typedef struct snd_stru_hal2_syn_regs snd_hal2_syn_regs_t;
+typedef struct _snd_hal2_syn_regs snd_hal2_syn_regs_t;
 
-struct snd_stru_hal2_syn_regs {
+struct _snd_hal2_syn_regs {
 	snd_hal2_reg_t _unused0[2];
 	snd_hal2_reg_t page;		/* DOC Page register */
 	snd_hal2_reg_t regsel;		/* DOC Register selection */
@@ -313,21 +313,21 @@ struct snd_stru_hal2_syn_regs {
 	snd_hal2_reg_t dram;		/* DRAM Access */
 };
 
-struct snd_stru_hal2_card;
-typedef struct snd_stru_hal2_card snd_hal2_card_t;
+struct _snd_hal2_card;
+typedef struct _snd_hal2_card snd_hal2_card_t;
 
 /* HAL2 specific structure */
 
-typedef struct snd_stru_hal2_ring snd_hal2_ring_t;
+typedef struct _snd_hal2_ring snd_hal2_ring_t;
 
-struct snd_stru_hal2_ring {
+struct _snd_hal2_ring {
 	volatile struct hpc_dma_desc desc;
 	unsigned long _padding;		/* 8 byte aligned */
 };
 
-typedef struct snd_stru_hal2_pbus snd_hal2_pbus_t;
+typedef struct _snd_hal2_pbus snd_hal2_pbus_t;
 
-struct snd_stru_hal2_pbus {
+struct _snd_hal2_pbus {
 	struct hpc3_pbus_dmacregs *pbus;
 	int pbusnr;
 	unsigned long fifobeg;
@@ -337,16 +337,16 @@ struct snd_stru_hal2_pbus {
 	unsigned long ctrl;		/* Current state of pbus->pbdma_ctrl */
 };
 
-typedef struct snd_stru_hal2_codec snd_hal2_codec_t;
+typedef struct _snd_hal2_codec snd_hal2_codec_t;
 
-struct snd_stru_hal2_codec {
+struct _snd_hal2_codec {
 	snd_dma_t *dmaptr;		/* DMA1 pointer */
 	snd_hal2_ring_t *ringbuf;	/* DMA descirptors */
 	snd_hal2_pbus_t pbus;
 	unsigned short blocks;
 };
 
-struct snd_stru_hal2 {
+struct _snd_hal2 {
 	snd_irq_t *irqptr;		/* IRQ pointer */
 	snd_hal2_ctl_regs_t *ctl_regs;	/* HAL2 ctl registers */
 	snd_hal2_aes_regs_t *aes_regs;	/* HAL2 vol registers */
@@ -363,7 +363,7 @@ struct snd_stru_hal2 {
 
 /* main structure for HAL2 card */
 
-struct snd_stru_hal2_card {
+struct _snd_hal2_card {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_rawmidi_t *midi_uart;
@@ -373,7 +373,7 @@ struct snd_stru_hal2_card {
 	snd_pcm1_substream_t *playback_substream1;
 	snd_pcm1_substream_t *capture_substream1;
 
-	struct snd_stru_hal2 hal2;	/* HAL2 specific variables */
+	struct _snd_hal2 hal2;	/* HAL2 specific variables */
 
 	int usecount;
 };

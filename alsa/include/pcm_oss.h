@@ -100,9 +100,9 @@ struct snd_pcm_buffer_description {
 #define SND_PCM_IOCTL_OSS_GETODELAY	_IOR ('P', 23, int)
 #define SND_PCM_IOCTL_OSS_PROFILE	_IOW ('P', 23, int)
 
-typedef struct snd_stru_pcm_oss_setup snd_pcm_oss_setup_t;
+typedef struct _snd_pcm_oss_setup snd_pcm_oss_setup_t;
 
-struct snd_stru_pcm_oss_setup {
+struct _snd_pcm_oss_setup {
 	char *task_name;
 	unsigned int disable:1,
 		     direct:1,
@@ -113,7 +113,7 @@ struct snd_stru_pcm_oss_setup {
 	snd_pcm_oss_setup_t *next;
 };
 
-typedef struct snd_stru_pcm_oss_runtime {
+typedef struct _snd_pcm_oss_runtime {
 	int params: 1,				/* format/parameter change */
             prepare: 1,				/* need to prepare the operation */
             trigger: 1,				/* trigger flag */
@@ -135,23 +135,23 @@ typedef struct snd_stru_pcm_oss_runtime {
 	unsigned int prev_hw_ptr_interrupt;
 } snd_pcm_oss_runtime_t;
 
-typedef struct snd_stru_pcm_oss_file {
+typedef struct _snd_pcm_oss_file {
 	snd_pcm_substream_t *streams[2];
 } snd_pcm_oss_file_t;
 
-typedef struct snd_stru_pcm_oss_substream {
+typedef struct _snd_pcm_oss_substream {
 	int oss: 1;				/* oss mode */
 	snd_pcm_oss_setup_t *setup;		/* active setup */
 	snd_pcm_oss_file_t *file;
 } snd_pcm_oss_substream_t;
 
-typedef struct snd_stru_pcm_oss_stream {
+typedef struct _snd_pcm_oss_stream {
 	snd_pcm_oss_setup_t *setup_list;	/* setup list */
         struct semaphore setup_mutex;
         snd_info_entry_t *proc_entry;
 } snd_pcm_oss_stream_t;
 
-typedef struct snd_stru_pcm_oss {
+typedef struct _snd_pcm_oss {
 	int reg;
 	snd_info_entry_t *proc_ctrl_entry;
 } snd_pcm_oss_t;

@@ -102,6 +102,7 @@
 #include <linux/pci.h>
 #endif
 #include <linux/interrupt.h>
+#include <linux/pagemap.h>
 #include <linux/fs.h>
 #include <linux/fcntl.h>
 #include <linux/vmalloc.h>
@@ -109,6 +110,9 @@
 #include <linux/poll.h>
 
 #ifdef LINUX_2_2
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
+#include <linux/init.h>
+#endif
 #include "compat_22.h"
 #endif
 #ifdef LINUX_2_3
@@ -125,6 +129,7 @@
 #ifndef rwlock_init
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 #endif
+#define snd_kill_fasync(fp, sig, band) kill_fasync(fp, sig, band)
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
@@ -192,8 +197,8 @@ typedef enum {
 	SND_DEV_CMD_POST = 2
 } snd_device_cmd_t;
 
-typedef struct snd_stru_card snd_card_t;
-typedef struct snd_stru_device snd_device_t;
+typedef struct _snd_card snd_card_t;
+typedef struct _snd_device snd_device_t;
 
 typedef int (snd_dev_free_t)(snd_device_t *device);
 typedef int (snd_dev_register_t)(snd_device_t *device);
@@ -205,7 +210,7 @@ typedef struct {
 	snd_dev_unregister_t *dev_unregister;
 } snd_device_ops_t;
 
-struct snd_stru_device {
+struct _snd_device {
 	struct list_head list;		/* list of registered devices */
 	snd_card_t *card;		/* card which holds this device */
 	snd_device_state_t state;	/* state of the device */
@@ -216,37 +221,24 @@ struct snd_stru_device {
 
 #define snd_device(n) list_entry(n, snd_device_t, list)
 
-/* VMA stuff */
-
-typedef struct snd_stru_vma {
-	struct list_head list;		/* list of all VMAs */
-	struct vm_area_struct *area;
-	void *notify_client;
-	void *notify_data;
-	long notify_size;
-	void (*notify)(void *notify_client, void *notify_data);
-} snd_vma_t;
-
-#define snd_vma(n) list_entry(n, snd_vma_t, list)
-
 /* various typedefs */
 
 typedef struct snd_info_entry snd_info_entry_t;
-typedef struct snd_stru_pcm snd_pcm_t;
-typedef struct snd_stru_mixer snd_kmixer_t;
+typedef struct _snd_pcm snd_pcm_t;
+typedef struct _snd_mixer snd_kmixer_t;
 typedef struct _snd_rawmidi snd_rawmidi_t;
-typedef struct snd_stru_kctl snd_kctl_t;
-typedef struct snd_stru_kcontrol snd_kcontrol_t;
-typedef struct snd_stru_timer snd_timer_t;
-typedef struct snd_stru_timer_instance snd_timer_instance_t;
-typedef struct snd_stru_hwdep snd_hwdep_t;
+typedef struct _snd_kctl snd_kctl_t;
+typedef struct _snd_kcontrol snd_kcontrol_t;
+typedef struct _snd_timer snd_timer_t;
+typedef struct _snd_timer_instance snd_timer_instance_t;
+typedef struct _snd_hwdep snd_hwdep_t;
 #ifdef CONFIG_SND_OSSEMUL
-typedef struct snd_stru_oss_mixer snd_mixer_oss_t;
+typedef struct _snd_oss_mixer snd_mixer_oss_t;
 #endif
 
 /* main structure for soundcard */
 
-struct snd_stru_card {
+struct _snd_card {
 	int number;			/* number of soundcard (index to snd_cards) */
 
 	unsigned int type;		/* type (number ID) of soundcard */
@@ -284,7 +276,7 @@ struct snd_stru_card {
 
 /* device.c */
 
-struct snd_stru_minor {
+struct _snd_minor {
 	struct list_head list;		/* list of all minors per card */
 	int number;			/* minor number */
 	int device;			/* device number */
@@ -293,7 +285,7 @@ struct snd_stru_minor {
 	struct file_operations *f_ops;	/* file operations */
 };
 
-typedef struct snd_stru_minor snd_minor_t;
+typedef struct _snd_minor snd_minor_t;
 
 /* sound.c */
 
@@ -365,11 +357,6 @@ void *snd_malloc_pci_pages(struct pci_dev *pci, unsigned long size, dma_addr_t *
 void *snd_malloc_pci_pages_fallback(struct pci_dev *pci, unsigned long size, dma_addr_t *dmaaddr, unsigned long *res_size);
 void snd_free_pci_pages(struct pci_dev *pci, unsigned long size, void *ptr, dma_addr_t dmaaddr);
 #endif
-
-/* vma.c */
-
-void snd_vma_add(snd_vma_t *vma);
-void snd_vma_disconnect(void *notify_client);
 
 /* init.c */
 

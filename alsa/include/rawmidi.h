@@ -47,20 +47,23 @@ typedef struct _snd_rawmidi_ops {
 	void (*trigger) (snd_rawmidi_substream_t * substream, int up);
 } snd_rawmidi_ops_t;
 
+typedef struct _snd_rawmidi_global_ops {
+	int (*dev_register) (snd_rawmidi_t * rmidi);
+	int (*dev_unregister) (snd_rawmidi_t * rmidi);
+} snd_rawmidi_global_ops_t;
+
 struct _snd_rawmidi_runtime {
 	unsigned int trigger: 1, /* transfer is running */
 		     drain: 1,	/* drain stage */
 		     oss: 1;	/* OSS compatible mode */
 	/* midi stream buffer */
 	unsigned char *buffer;	/* buffer for MIDI data */
-	unsigned int size;	/* size of buffer */
-	unsigned int head;	/* buffer head index */
-	unsigned int tail;	/* buffer tail index */
-	unsigned int used;	/* buffer used counter */
-	unsigned int used_max;	/* max used buffer for wakeup */
-	unsigned int used_room;	/* min room in buffer for wakeup */
-	unsigned int used_min;	/* min used buffer for wakeup */
-	unsigned int xruns;	/* over/underruns counter */
+	size_t buffer_size;	/* size of buffer */
+	size_t appl_ptr;	/* application pointer */
+	size_t hw_ptr;		/* hardware pointer */
+	size_t avail_min;	/* min avail for wakeup */
+	size_t avail;		/* max used buffer for wakeup */
+	size_t xruns;		/* over/underruns counter */
 	/* misc */
 	spinlock_t lock;
 	wait_queue_head_t sleep;
@@ -79,7 +82,7 @@ struct _snd_rawmidi_substream {
 		     append: 1,		/* append flag (merge more streams) */
 		     active_sensing: 1; /* send active sensing when close */
 	int use_count;			/* use counter (for output) */
-	unsigned int bytes;
+	size_t bytes;
 	snd_rawmidi_t *rmidi;
 	snd_rawmidi_stream_t *pstr;
 	char name[32];
@@ -111,6 +114,8 @@ struct _snd_rawmidi {
 #ifdef CONFIG_SND_OSSEMUL
 	int ossreg;
 #endif
+
+	snd_rawmidi_global_ops_t *ops;
 
 	snd_rawmidi_stream_t streams[2];
 

@@ -104,14 +104,6 @@
 #define AD1848_CALIB_IN_PROGRESS 0x20	/* auto calibrate in progress */
 #define AD1848_DMA_REQUEST	0x10	/* DMA request in progress */
 
-/* some structures */
-
-struct snd_stru_ad1848_freq {
-	unsigned int hertz;
-	unsigned int rate;
-	unsigned char bits;
-};
-
 /* defines for codec.mode */
 
 #define AD1848_MODE_NONE	0x0000
@@ -128,7 +120,7 @@ struct snd_stru_ad1848_freq {
 #define AD1848_HW_CS4248	0x0003	/* CS4248 chip */
 #define AD1848_HW_CMI8330	0x0004	/* CMI8330 chip */
 
-struct snd_stru_ad1848 {
+struct _snd_ad1848 {
 	unsigned long port;		/* i/o port */
 	struct resource *res_port;
 	int irq;			/* IRQ line */
@@ -153,7 +145,7 @@ struct snd_stru_ad1848 {
 	struct semaphore open_mutex;
 };
 
-typedef struct snd_stru_ad1848 ad1848_t;
+typedef struct _snd_ad1848 ad1848_t;
 
 /* exported functions */
 

@@ -1623,7 +1623,7 @@
  *
  */
 
-typedef struct snd_stru_cs461x cs461x_t;
+typedef struct _snd_cs461x cs461x_t;
 
 typedef struct {
 	char name[24];
@@ -1634,7 +1634,7 @@ typedef struct {
 	void *proc_entry;
 } snd_cs461x_region_t;
 
-struct snd_stru_cs461x {
+struct _snd_cs461x {
 	int irq;
 	unsigned long ba0_addr;
 	unsigned long ba1_addr;

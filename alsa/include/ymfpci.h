@@ -170,7 +170,7 @@
  *
  */
 
-typedef struct snd_stru_ymfpci_playback_bank {
+typedef struct _snd_ymfpci_playback_bank {
 	u32 format;
 	u32 loop_default;
 	u32 base;			/* 32-bit address */
@@ -203,23 +203,23 @@ typedef struct snd_stru_ymfpci_playback_bank {
 	u32 lpfD2;
 } snd_ymfpci_playback_bank_t;
 
-typedef struct snd_stru_ymfpci_capture_bank {
+typedef struct _snd_ymfpci_capture_bank {
 	u32 base;			/* 32-bit address */
 	u32 loop_end;			/* 32-bit offset */
 	u32 start;			/* 32-bit offset */
 	u32 num_of_loops;		/* counter */
 } snd_ymfpci_capture_bank_t;
 
-typedef struct snd_stru_ymfpci_effect_bank {
+typedef struct _snd_ymfpci_effect_bank {
 	u32 base;			/* 32-bit address */
 	u32 loop_end;			/* 32-bit offset */
 	u32 start;			/* 32-bit offset */
 	u32 temp;
 } snd_ymfpci_effect_bank_t;
 
-typedef struct snd_stru_ymfpci_voice ymfpci_voice_t;
-typedef struct snd_stru_ymfpci_pcm ymfpci_pcm_t;
-typedef struct snd_stru_ymfpci ymfpci_t;
+typedef struct _snd_ymfpci_voice ymfpci_voice_t;
+typedef struct _snd_ymfpci_pcm ymfpci_pcm_t;
+typedef struct _snd_ymfpci ymfpci_t;
 
 typedef enum {
 	YMFPCI_PCM,
@@ -227,7 +227,7 @@ typedef enum {
 	YMFPCI_MIDI
 } ymfpci_voice_type_t;
 
-struct snd_stru_ymfpci_voice {
+struct _snd_ymfpci_voice {
 	ymfpci_t *chip;
 	int number;
 	int use: 1,
@@ -251,14 +251,14 @@ typedef enum {
 	EFFECT_EFF3
 } snd_ymfpci_pcm_type_t;
 
-struct snd_stru_ymfpci_pcm {
+struct _snd_ymfpci_pcm {
 	ymfpci_t *chip;
 	snd_ymfpci_pcm_type_t type;
 	snd_pcm_substream_t *substream;
 	ymfpci_voice_t *voices[2];	/* playback only */
 	int running;
 	int spdif;	
-	u32 frag_size;			/* cached from runtime->frag_size */
+	u32 frag_size;			/* cached from runtime->fragment_size */
 	u32 buffer_size;		/* cached from runtime->buffer_size */
 	u32 frag_pos;
 	u32 last_pos;
@@ -266,7 +266,7 @@ struct snd_stru_ymfpci_pcm {
 	u32 capture_bank_number;
 };
 
-struct snd_stru_ymfpci {
+struct _snd_ymfpci {
 	unsigned long dma1size;  /* DAC1 */
 	unsigned long dma2size;  /* ADC/AC97 */
 	int irq;

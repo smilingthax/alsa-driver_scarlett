@@ -45,7 +45,7 @@
 
 typedef void (*snd_timer_callback_t) (snd_timer_instance_t * timeri, unsigned long ticks, unsigned long resolution, void *data);
 
-struct snd_stru_timer_hardware {
+struct _snd_timer_hardware {
 	/* -- must be filled with low-level driver */
 	unsigned int flags;		/* various flags */
 	unsigned long resolution;	/* average timer resolution for one tick in nsec */
@@ -58,7 +58,7 @@ struct snd_stru_timer_hardware {
 	int (*stop) (snd_timer_t * timer);
 };
 
-struct snd_stru_timer {
+struct _snd_timer {
 	snd_card_t *card;
 	int number;			/* timer number */
 	char id[64];
@@ -68,14 +68,14 @@ struct snd_stru_timer {
 	unsigned long sticks;		/* schedule ticks */
 	void *private_data;
 	void (*private_free) (snd_timer_t *timer);
-	struct snd_stru_timer_hardware hw;
+	struct _snd_timer_hardware hw;
 	spinlock_t lock;
 	atomic_t in_use;		/* don't free */
 	snd_timer_instance_t *first;
 	snd_timer_t *next;
 };
 
-struct snd_stru_timer_instance {
+struct _snd_timer_instance {
 	snd_timer_t * timer;
 	char *owner;
 	unsigned int flags;

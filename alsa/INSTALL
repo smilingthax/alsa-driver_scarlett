@@ -726,6 +726,16 @@ Module parameters
 
     Module supports autoprobe and multiple chips (max 8).
     
+  Module snd-card-mpu401.o
+  ------------------------
+
+    Module for MPU-401 UART devices.
+
+    snd_port		- port number or -1 (disable)
+    snd_irq		- IRQ number or -1 (disable)
+
+    Module supports multiple devices (max 8).
+    
 
 modprobe/kmod support
 =====================

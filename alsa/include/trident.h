@@ -216,9 +216,9 @@ enum miscint_bits {
 #define T4D_DEFAULT_PCM_RVOL	127	/* 0 - 127 */
 #define T4D_DEFAULT_PCM_CVOL	127	/* 0 - 127 */
 
-typedef struct snd_stru_trident trident_t;
+typedef struct _snd_trident trident_t;
 typedef struct snd_trident_stru_voice snd_trident_voice_t;
-typedef struct snd_stru_trident_pcm_mixer snd_trident_pcm_mixer_t;
+typedef struct _snd_trident_pcm_mixer snd_trident_pcm_mixer_t;
 
 typedef struct {
 	void (*sample_start)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_position_t position);
@@ -306,7 +306,7 @@ struct snd_trident_stru_voice {
 	void (*private_free)(snd_trident_voice_t *voice);
 };
 
-struct snd_stru_4dwave {
+struct _snd_4dwave {
 	int seq_client;
 
 	snd_trident_port_t seq_ports[4];
@@ -320,7 +320,7 @@ struct snd_stru_4dwave {
 	int current_size;		/* current allocated synth mem in bytes */
 };
 
-struct snd_stru_trident_pcm_mixer {
+struct _snd_trident_pcm_mixer {
 	snd_trident_voice_t *voice;	/* active voice */
 	unsigned char vol;		/* front volume */
 	unsigned char pan;		/* pan control */
@@ -332,7 +332,7 @@ struct snd_stru_trident_pcm_mixer {
 	snd_kcontrol_t *ctl_cvol;	/* center volume */
 };
 
-struct snd_stru_trident {
+struct _snd_trident {
 	unsigned long dma1size;	/* DAC Channel */
 	unsigned long dma2size;	/* ADC Channel */
 	unsigned long dma3size;	/* Foldback Channel */
@@ -363,7 +363,7 @@ struct snd_stru_trident {
         int ChanPCM;			/* max number of PCM channels */
 	int ChanPCMcnt;			/* actual number of PCM channels */
 
-	struct snd_stru_4dwave synth;	/* synth specific variables */
+	struct _snd_4dwave synth;	/* synth specific variables */
 
 	spinlock_t event_lock;
 	spinlock_t voice_alloc;

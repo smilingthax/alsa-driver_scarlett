@@ -24,8 +24,8 @@
 
 #ifdef CONFIG_SND_OSSEMUL
 
-typedef struct snd_stru_oss_mixer_slot snd_mixer_oss_slot_t;
-typedef struct snd_stru_oss_file snd_mixer_oss_file_t;
+typedef struct _snd_oss_mixer_slot snd_mixer_oss_slot_t;
+typedef struct _snd_oss_file snd_mixer_oss_file_t;
 
 typedef int (*snd_mixer_oss_get_volume_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_slot_t *chn, int *left, int *right);
 typedef int (*snd_mixer_oss_put_volume_t)(snd_mixer_oss_file_t *fmixer, snd_mixer_oss_slot_t *chn, int left, int right);
@@ -34,7 +34,7 @@ typedef int (*snd_mixer_oss_put_recsrc_t)(snd_mixer_oss_file_t *fmixer, snd_mixe
 typedef int (*snd_mixer_oss_get_recsrce_t)(snd_mixer_oss_file_t *fmixer, int *active_index);
 typedef int (*snd_mixer_oss_put_recsrce_t)(snd_mixer_oss_file_t *fmixer, int active_index);
 
-struct snd_stru_oss_mixer_slot {
+struct _snd_oss_mixer_slot {
 	int number;
 	int stereo: 1;
 	snd_mixer_oss_get_volume_t get_volume;
@@ -46,7 +46,7 @@ struct snd_stru_oss_mixer_slot {
 	void (*private_free)(snd_mixer_oss_slot_t *slot);
 };
 
-struct snd_stru_oss_mixer {
+struct _snd_oss_mixer {
 	snd_card_t *card;
 	char id[16];
 	char name[32];
@@ -60,7 +60,7 @@ struct snd_stru_oss_mixer {
 	int oss_recsrc;
 };
 
-struct snd_stru_oss_file {
+struct _snd_oss_file {
 	int volume[32][2];
 	snd_card_t *card;
 	snd_mixer_oss_t *mixer;

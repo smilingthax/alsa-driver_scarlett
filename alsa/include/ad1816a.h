@@ -124,9 +124,9 @@
 #define AD1816A_CAPTURE_NOT_EQUAL	0x1000
 #define AD1816A_WSS_ENABLE		0x8000
 
-typedef struct snd_stru_ad1816a ad1816a_t;
+typedef struct _snd_ad1816a ad1816a_t;
 
-struct snd_stru_ad1816a {
+struct _snd_ad1816a {
 	unsigned long port;
 	struct resource *res_port;
 	int irq;

@@ -54,9 +54,9 @@
 #define MPU401_MODE_INPUT_TIMER		(1<<0)
 #define MPU401_MODE_OUTPUT_TIMER	(1<<1)
 
-typedef struct snd_stru_mpu401 mpu401_t;
+typedef struct _snd_mpu401 mpu401_t;
 
-struct snd_stru_mpu401 {
+struct _snd_mpu401 {
 	snd_rawmidi_t *rmidi;
 
 	unsigned short hardware;	/* MPU401_HW_XXXX */

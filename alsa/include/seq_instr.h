@@ -24,11 +24,11 @@
 #include "seq_kernel.h"
 
 /* Instrument cluster */
-typedef struct snd_struct_seq_kcluster {
+typedef struct _snd_seq_kcluster {
 	snd_seq_instr_cluster_t cluster;
 	char name[32];
 	int priority;
-	struct snd_struct_seq_kcluster *next;
+	struct _snd_seq_kcluster *next;
 } snd_seq_kcluster_t;
 
 /* return pointer to private data */
@@ -37,7 +37,7 @@ typedef struct snd_struct_seq_kcluster {
 typedef struct snd_seq_kinstr_ops snd_seq_kinstr_ops_t;
 
 /* Instrument structure */
-typedef struct snd_stru_seq_kinstr {
+typedef struct _snd_seq_kinstr {
 	snd_seq_instr_t instr;
 	char name[32];
 	int type;			/* instrument type */
@@ -45,7 +45,7 @@ typedef struct snd_stru_seq_kinstr {
 	int busy;			/* not useable */
 	int add_len;			/* additional length */
 	snd_seq_kinstr_ops_t *ops;	/* operations */
-	struct snd_stru_seq_kinstr *next;
+	struct _snd_seq_kinstr *next;
 } snd_seq_kinstr_t;
 
 #define SND_SEQ_INSTR_HASH_SIZE		32
