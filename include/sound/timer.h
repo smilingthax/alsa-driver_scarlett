@@ -60,6 +60,7 @@ typedef struct sndrv_timer_tread snd_timer_tread_t;
 #define SNDRV_TIMER_FLG_RESCHED	0x00000002	/* need reschedule */
 
 typedef void (*snd_timer_callback_t) (snd_timer_instance_t * timeri, unsigned long ticks, unsigned long resolution);
+typedef void (*snd_timer_ccallback_t) (snd_timer_instance_t * timeri, enum sndrv_timer_event event, unsigned long resolution);
 
 struct _snd_timer_hardware {
 	/* -- must be filled with low-level driver */
@@ -103,6 +104,7 @@ struct _snd_timer_instance {
 	void *private_data;
 	void (*private_free) (snd_timer_instance_t *ti);
 	snd_timer_callback_t callback;
+	snd_timer_ccallback_t ccallback;
 	void *callback_data;
 	unsigned long ticks;		/* auto-load ticks when expired */
 	unsigned long cticks;		/* current ticks */
@@ -131,13 +133,11 @@ extern int snd_timer_global_unregister(snd_timer_t *timer);
 
 extern snd_timer_instance_t *snd_timer_open(char *owner, snd_timer_id_t *tid, unsigned int slave_id);
 extern int snd_timer_close(snd_timer_instance_t * timeri);
-extern int snd_timer_set_owner(snd_timer_instance_t * timeri, pid_t pid, gid_t gid);
-extern int snd_timer_reset_owner(snd_timer_instance_t * timeri);
-extern int snd_timer_set_resolution(snd_timer_instance_t * timeri, unsigned long resolution);
 extern unsigned long snd_timer_resolution(snd_timer_instance_t * timeri);
 extern int snd_timer_start(snd_timer_instance_t * timeri, unsigned int ticks);
 extern int snd_timer_stop(snd_timer_instance_t * timeri);
 extern int snd_timer_continue(snd_timer_instance_t * timeri);
+extern int snd_timer_pause(snd_timer_instance_t * timeri);
 
 extern void snd_timer_interrupt(snd_timer_t * timer, unsigned long ticks_left);
 

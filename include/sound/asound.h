@@ -612,6 +612,7 @@ enum {
 	SNDRV_TIMER_IOCTL_START = _IO('T', 0x20),
 	SNDRV_TIMER_IOCTL_STOP = _IO('T', 0x21),
 	SNDRV_TIMER_IOCTL_CONTINUE = _IO('T', 0x22),
+	SNDRV_TIMER_IOCTL_PAUSE = _IO('T', 0x23),
 };
 
 struct sndrv_timer_read {
@@ -624,7 +625,8 @@ enum sndrv_timer_event {
 	SNDRV_TIMER_EVENT_TICK,			/* val = ticks */
 	SNDRV_TIMER_EVENT_START,		/* val = resolution in ns */
 	SNDRV_TIMER_EVENT_STOP,			/* val = 0 */
-	SNDRV_TIMER_EVENT_CONTINUE		/* val = resolution in ns */
+	SNDRV_TIMER_EVENT_CONTINUE,		/* val = resolution in ns */
+	SNDRV_TIMER_EVENT_PAUSE,		/* val = 0 */
 };
 
 struct sndrv_timer_tread {

@@ -319,7 +319,7 @@ int snd_seq_timer_stop(seq_timer_t * tmr)
 	if (!tmr->running)
 		return 0;
 	tmr->running = 0;
-	snd_timer_stop(tmr->timeri);
+	snd_timer_pause(tmr->timeri);
 	return 0;
 }
 

@@ -383,8 +383,12 @@ int snd_timer_start(snd_timer_instance_t * timeri, unsigned int ticks)
 
 	if (timeri == NULL || ticks < 1)
 		return -EINVAL;
-	if (timeri->flags & SNDRV_TIMER_IFLG_SLAVE)
-		return snd_timer_start_slave(timeri);
+	if (timeri->flags & SNDRV_TIMER_IFLG_SLAVE) {
+		result = snd_timer_start_slave(timeri);
+		if (timeri->ccallback)
+			timeri->ccallback(timeri, SNDRV_TIMER_EVENT_START, snd_timer_resolution(timeri));
+		return result;
+	}
 	timer = timeri->timer;
 	if (timer == NULL)
 		return -EINVAL;
@@ -393,6 +397,8 @@ int snd_timer_start(snd_timer_instance_t * timeri, unsigned int ticks)
 	timeri->pticks = 0;
 	result = snd_timer_start1(timer, timeri, ticks);
 	spin_unlock_irqrestore(&timer->lock, flags);
+	if (timeri->ccallback)
+		timeri->ccallback(timeri, SNDRV_TIMER_EVENT_START, snd_timer_resolution(timeri));
 	return result;
 }
 
@@ -402,7 +408,6 @@ static int _snd_timer_stop(snd_timer_instance_t * timeri, int keep_flag)
 	unsigned long flags;
 
 	snd_assert(timeri != NULL, return -ENXIO);
-
 
 	timer = timeri->timer;
 	if (! timer)
@@ -432,6 +437,8 @@ static int _snd_timer_stop(snd_timer_instance_t * timeri, int keep_flag)
 	if (!keep_flag)
 		timeri->flags &= ~(SNDRV_TIMER_IFLG_RUNNING|SNDRV_TIMER_IFLG_START);
 	spin_unlock_irqrestore(&timer->lock, flags);
+	if (timeri->ccallback)
+		timeri->ccallback(timeri, SNDRV_TIMER_EVENT_STOP, 0);
 	return 0;
 }
 
@@ -442,7 +449,19 @@ static int _snd_timer_stop(snd_timer_instance_t * timeri, int keep_flag)
  */
 int snd_timer_stop(snd_timer_instance_t * timeri)
 {
-	return _snd_timer_stop(timeri, 0);
+	snd_timer_t *timer;
+	unsigned long flags;
+	int err;
+
+	err = _snd_timer_stop(timeri, 0);
+	if (err < 0)
+		return err;
+	timer = timeri->timer;
+	spin_lock_irqsave(&timer->lock, flags);
+	timeri->cticks = timeri->ticks;
+	timeri->pticks = 0;
+	spin_unlock_irqrestore(&timer->lock, flags);
+	return 0;
 }
 
 /*
@@ -467,7 +486,17 @@ int snd_timer_continue(snd_timer_instance_t * timeri)
 	timeri->pticks = 0;
 	result = snd_timer_start1(timer, timeri, timer->sticks);
 	spin_unlock_irqrestore(&timer->lock, flags);
+	if (timeri->ccallback)
+		timeri->ccallback(timeri, SNDRV_TIMER_EVENT_CONTINUE, snd_timer_resolution(timeri));
 	return result;
+}
+
+/*
+ * pause.. remember the ticks left
+ */
+int snd_timer_pause(snd_timer_instance_t * timeri)
+{
+	return _snd_timer_stop(timeri, 0);
 }
 
 /*
@@ -977,6 +1006,23 @@ static void snd_timer_user_append_to_tqueue(snd_timer_user_t *tu, snd_timer_trea
 	}
 }
 
+static void snd_timer_user_ccallback(snd_timer_instance_t *timeri,
+				     enum sndrv_timer_event event,
+				     unsigned long resolution)
+{
+	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
+	snd_timer_tread_t r1;
+	struct timespec tstamp;
+
+	snd_timestamp_now(&tstamp, 1);
+	r1.event = event;
+	r1.tstamp = tstamp;
+	r1.val = resolution;
+	spin_lock(&tu->qlock);
+	snd_timer_user_append_to_tqueue(tu, &r1);
+	spin_unlock(&tu->qlock);
+}
+
 static void snd_timer_user_tinterrupt(snd_timer_instance_t *timeri,
 				      unsigned long resolution,
 				      unsigned long ticks)
@@ -1203,6 +1249,7 @@ static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselec
 	
 	tu->timeri->flags |= SNDRV_TIMER_IFLG_FAST;
 	tu->timeri->callback = tu->tread ? snd_timer_user_tinterrupt : snd_timer_user_interrupt;
+	tu->timeri->ccallback = tu->tread ? snd_timer_user_ccallback : NULL;
 	tu->timeri->callback_data = (void *)tu;
 	return 0;
 }
@@ -1553,6 +1600,7 @@ EXPORT_SYMBOL(snd_timer_resolution);
 EXPORT_SYMBOL(snd_timer_start);
 EXPORT_SYMBOL(snd_timer_stop);
 EXPORT_SYMBOL(snd_timer_continue);
+EXPORT_SYMBOL(snd_timer_pause);
 EXPORT_SYMBOL(snd_timer_new);
 EXPORT_SYMBOL(snd_timer_global_new);
 EXPORT_SYMBOL(snd_timer_global_free);
