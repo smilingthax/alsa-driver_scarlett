@@ -88,6 +88,12 @@ static int PRO_RATE_RESET = 1;
 static unsigned int PRO_RATE_DEFAULT = 44100;
 
 /*
+ *  AK4xxx stuff
+ */
+
+#include "ak4xxx.c"
+
+/*
  *  Basic I/O
  */
  
@@ -1695,8 +1701,7 @@ static int snd_vt1724_free(ice1712_t *ice)
 		release_resource(ice->res_profi_port);
 		kfree_nocheck(ice->res_profi_port);
 	}
-	if (ice->akm)
-		kfree(ice->akm);
+	snd_ice1712_akm4xxx_free(ice);
 	snd_magic_kfree(ice);
 	return 0;
 }
