@@ -62,9 +62,9 @@ static void footer( FILE *out )
 static void symbol( FILE *out, const char *symbol )
 {
 #if LinuxVersionCode( 2, 1, 0 ) <= LINUX_VERSION_CODE
-  fprintf( out, "  EXPORT_SYMBOL%s( %s );\n", nover ? "_NOVERS" : "", symbol );
+  fprintf( out, "EXPORT_SYMBOL%s(%s);\n", nover ? "_NOVERS" : "", symbol );
 #else
-  fprintf( out, "  X( %s ),\n", symbol );
+  fprintf( out, "  X(%s),\n", symbol );
 #endif
 }
 
