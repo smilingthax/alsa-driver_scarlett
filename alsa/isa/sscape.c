@@ -7,7 +7,6 @@
  *
  *   FIXME (deadlock for alsa-kernel):
  *     - use ISA PnP scheme used by all ALSA ISA drivers
- *     - remove CONFIG_SND_OSSEMUL dependency
  *     - add non-MODULE build option
  *
  *
@@ -28,6 +27,7 @@
 
 #include <sound/driver.h>
 #include <linux/init.h>
+#include <linux/delay.h>
 #include <linux/isapnp.h>
 #include <linux/spinlock.h>
 #include <asm/dma.h>
@@ -41,10 +41,6 @@
 
 #define chip_t cs4231_t
 
-
-#ifndef CONFIG_SND_OSSEMUL
-#  error Need ALSA configuration!
-#endif
 
 EXPORT_NO_SYMBOLS;
 
@@ -262,8 +258,10 @@ static int host_read_ctrl_unsafe(unsigned io_base, unsigned timeout)
 {
 	int data;
 
-	while (((data = host_read_unsafe(io_base)) < 0) && (timeout != 0))
+	while (((data = host_read_unsafe(io_base)) < 0) && (timeout != 0)) {
+		udelay(100);
 		--timeout;
+	} /* while */
 
 	return data;
 }
@@ -292,8 +290,10 @@ static int host_write_ctrl_unsafe(unsigned io_base, unsigned char data,
 {
 	int err;
 
-	while (!(err = host_write_unsafe(io_base, data)) && (timeout != 0))
+	while (!(err = host_write_unsafe(io_base, data)) && (timeout != 0)) {
+		udelay(100);
 		--timeout;
+	} /* while */
 
 	return err;
 }
@@ -369,8 +369,10 @@ static inline void sscape_start_dma_unsafe(unsigned io_base, enum GA_REG reg)
  */
 static int sscape_wait_dma_unsafe(unsigned io_base, enum GA_REG reg, unsigned timeout)
 {
-	while (!(sscape_read_unsafe(io_base, reg) & 0x01) && (timeout != 0))
+	while (!(sscape_read_unsafe(io_base, reg) & 0x01) && (timeout != 0)) {
+		udelay(100);
 		--timeout;
+	} /* while */
 
 	return (sscape_read_unsafe(io_base, reg) & 0x01);
 }
@@ -397,7 +399,7 @@ static int obp_startup_ack(struct soundscape *s, unsigned timeout)
 			return 1;
 
 		--timeout;
-	}			/* while */
+	} /* while */
 
 	return 0;
 }
@@ -424,7 +426,7 @@ static int host_startup_ack(struct soundscape *s, unsigned timeout)
 			return 1;
 
 		--timeout;
-	}			/* while */
+	} /* while */
 
 	return 0;
 }
@@ -479,7 +481,7 @@ static int upload_dma_data(struct soundscape *s,
 		size -= len;
 		snd_dma_program(s->chip->dma1, dma.addr, len, DMA_MODE_WRITE);
 		sscape_start_dma_unsafe(s->io_base, GA_DMAA_REG);
-		if (!sscape_wait_dma_unsafe(s->io_base, GA_DMAA_REG, 5000 * HZ)) {
+		if (!sscape_wait_dma_unsafe(s->io_base, GA_DMAA_REG, 5000)) {
 			/*
 			 * Don't forget to release this spinlock we're holding ...
 			 */
@@ -489,7 +491,7 @@ static int upload_dma_data(struct soundscape *s,
 			ret = -EAGAIN;
 			goto _release_dma;
 		}
-	}			/* while */
+	} /* while */
 
 	set_host_mode_unsafe(s->io_base);
 
@@ -505,10 +507,10 @@ static int upload_dma_data(struct soundscape *s,
 	 * give it 5 seconds (max) ...
 	 */
 	ret = 0;
-	if (!obp_startup_ack(s, 5 * HZ)) {
+	if (!obp_startup_ack(s, 5)) {
 		printk(KERN_ERR "sscape: No response from on-board processor after upload\n");
 		ret = -EAGAIN;
-	} else if (!host_startup_ack(s, 5 * HZ)) {
+	} else if (!host_startup_ack(s, 5)) {
 		printk(KERN_ERR "sscape: SoundScape failed to initialise\n");
 		ret = -EAGAIN;
 	}
@@ -542,7 +544,7 @@ static int sscape_upload_bootblock(struct soundscape *sscape, struct sscape_boot
 
 	spin_lock_irqsave(&sscape->lock, flags);
 	if (ret == 0) {
-		data = host_read_ctrl_unsafe(sscape->io_base, 100 * HZ);
+		data = host_read_ctrl_unsafe(sscape->io_base, 100);
 	}
 	set_midi_mode_unsafe(sscape->io_base);
 	spin_unlock_irqrestore(&sscape->lock, flags);
@@ -707,8 +709,8 @@ static int sscape_midi_get(snd_kcontrol_t * kctl,
 	spin_lock_irqsave(&s->lock, flags);
 	set_host_mode_unsafe(s->io_base);
 
-	if (host_write_ctrl_unsafe(s->io_base, CMD_GET_MIDI_VOL, 100 * HZ)) {
-		uctl->value.integer.value[0] = host_read_ctrl_unsafe(s->io_base, 100 * HZ);
+	if (host_write_ctrl_unsafe(s->io_base, CMD_GET_MIDI_VOL, 100)) {
+		uctl->value.integer.value[0] = host_read_ctrl_unsafe(s->io_base, 100);
 	}
 
 	set_midi_mode_unsafe(s->io_base);
@@ -739,13 +741,13 @@ static int sscape_midi_put(snd_kcontrol_t * kctl,
 	 * and then perform another volume-related command. Perhaps the
 	 * first command is an "open" and the second command is a "close"?
 	 */
-	if (s->midi_vol != ((unsigned char) uctl->value.integer. value[0] & 127)) {
+	if (s->midi_vol == ((unsigned char) uctl->value.integer. value[0] & 127)) {
 		change = 0;
 		goto __skip_change;
 	}
-	change = (host_write_ctrl_unsafe(s->io_base, CMD_SET_MIDI_VOL, 100 * HZ)
-		  && host_write_ctrl_unsafe(s->io_base, ((unsigned char) uctl->value.integer. value[0]) & 127, 100 * HZ)
-		  && host_write_ctrl_unsafe(s->io_base, CMD_XXX_MIDI_VOL, 100 * HZ));
+	change = (host_write_ctrl_unsafe(s->io_base, CMD_SET_MIDI_VOL, 100)
+	          && host_write_ctrl_unsafe(s->io_base, ((unsigned char) uctl->value.integer. value[0]) & 127, 100)
+	          && host_write_ctrl_unsafe(s->io_base, CMD_XXX_MIDI_VOL, 100));
       __skip_change:
 
 	/*
@@ -1209,9 +1211,9 @@ static int __init create_sscape(unsigned port, int irq, int mpu_irq, int dma1, i
 	 * Initialize mixer
 	 */
 	sscape->midi_vol = 0;
-	host_write_ctrl_unsafe(sscape->io_base, CMD_SET_MIDI_VOL, 100 * HZ);
-	host_write_ctrl_unsafe(sscape->io_base, 0, 100 * HZ);
-	host_write_ctrl_unsafe(sscape->io_base, CMD_XXX_MIDI_VOL, 100 * HZ);
+	host_write_ctrl_unsafe(sscape->io_base, CMD_SET_MIDI_VOL, 100);
+	host_write_ctrl_unsafe(sscape->io_base, 0, 100);
+	host_write_ctrl_unsafe(sscape->io_base, CMD_XXX_MIDI_VOL, 100);
 
 
 	/*
@@ -1300,7 +1302,7 @@ static void __exit sscape_exit(void)
 	while ((i < ARRAY_SIZE(sscape_card)) && sscape_card[i]) {
 		snd_card_free(sscape_card[i]);
 		++i;
-	}			/* while */
+	} /* while */
 }
 
 module_init(sscape_init);
