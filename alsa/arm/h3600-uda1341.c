@@ -14,7 +14,7 @@
  * 2002-03-29   Tomas Kasparek  capture is working (OSS emulation)
  */
 
-/* $Id: h3600-uda1341.c,v 1.4 2002/04/04 07:27:09 perex Exp $ */
+/* $Id: h3600-uda1341.c,v 1.5 2002/04/04 07:31:54 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -561,6 +561,7 @@ static int snd_card_h3600_playback_open(snd_pcm_substream_t * substream)
 {
         h3600_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
+	int err;
         
         DEBUG_NAME(KERN_DEBUG "playback_open\n");
 
@@ -572,7 +573,10 @@ static int snd_card_h3600_playback_open(snd_pcm_substream_t * substream)
         audio_reset(chip->s[PLAYBACK]);
  
 	runtime->hw = snd_h3600_playback;
-        snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates);
+        if ((err = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS)) < 0)
+        	return err;
+	if ((err = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates)) < 0)
+		return err;
         
         return 0;
 }
@@ -630,6 +634,7 @@ static int snd_card_h3600_capture_open(snd_pcm_substream_t * substream)
 {
         h3600_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
+	int err;
 
         DEBUG_NAME(KERN_DEBUG "record_open\n");
 
@@ -641,7 +646,10 @@ static int snd_card_h3600_capture_open(snd_pcm_substream_t * substream)
         audio_reset(chip->s[PLAYBACK]);        
 
 	runtime->hw = snd_h3600_capture;
-        snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates);
+        if ((err = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS)) < 0)
+        	return err;
+	if ((err = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates)) < 0)
+		return err;
 	return 0;
 }
 
