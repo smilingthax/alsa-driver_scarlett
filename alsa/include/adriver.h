@@ -57,6 +57,11 @@ void snd_compat_request_module(const char *name, ...);
 #define request_module snd_compat_request_module
 #endif
 
+#include <linux/compiler.h>
+#ifndef __user
+#define __user
+#endif
+
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
 #endif
