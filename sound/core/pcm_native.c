@@ -648,7 +648,7 @@ static int snd_pcm_action_main(struct action_ops *ops,
 			if (substream->link != &substream->local_link && s != substream)
 				spin_unlock(&s->local_link.lock);
 		}
-	} else if (res < 0 && substream->link != &substream->local_link) {
+	} else if (substream->link != &substream->local_link) {
 		snd_pcm_substream_t *s1;
 		/* unlock all streams */
 		list_for_each(pos, &substream->link->substreams) {
