@@ -104,7 +104,7 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_tone;
 
 	snd_kmixer_element_t *me_out_master;
-	snd_kmixer_element_t *me_sw1_3d_enh;
+	snd_kmixer_element_t *me_sw1_3dse;
 	snd_kmixer_element_t *me_vol_master;
 	
 	spinlock_t lock;
@@ -141,7 +141,7 @@ struct snd_stru_sbdsp {
 #ifdef CONFIG_SND_SB16_CSP
 	void *csp_callbacks;
 	void *csp_private_data;
-	int csp_acquired;
+	unsigned int csp_acquired;
 #endif
 
 	snd_card_t *card;
@@ -256,7 +256,7 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_DSP4_CSP		0x81
 
 /* additional registers for SB AWE32/64 mixer */
-#define SB_DSP4_3D		0x90
+#define SB_DSP4_3DSE		0x90
 
 /*
  *

@@ -52,9 +52,9 @@ typedef struct snd_sb_csp_microcode {
 	unsigned char data[SND_SB_CSP_MAX_MICROCODE_FILE_SIZE];
 } snd_sb_csp_microcode_t;
 
-/* start CSP with pcm_format in mono/stereo */
+/* start CSP with sample_width in mono/stereo */
 typedef struct snd_sb_csp_start {
-	int pcm_format;		/* pcm format from asound.h */
+	int sample_width;	/* sample width, look above */
 	int channels;		/* channels, look above */
 } snd_sb_csp_start_t;
 
@@ -71,9 +71,10 @@ typedef struct snd_sb_csp_info {
 	unsigned short func_nr;	/* function number */
 	unsigned int acc_format;	/* accepted PCM formats */
 	unsigned short acc_channels;	/* accepted channels */
+	unsigned short acc_width;	/* accepted sample width */
 	unsigned short csp_mode;	/* CSP mode, see above */
-	unsigned int run_format;	/* current CSP format active */
 	unsigned short run_channels;	/* current channels  */
+	unsigned short run_width;	/* current sample width */
 	unsigned short version;	/* version id: 0x10 - 0x1f */
 	unsigned short state;	/* state bits */
 } snd_sb_csp_info_t;
@@ -124,9 +125,10 @@ typedef struct snd_sb_csp {
 	unsigned short func_nr;	/* function number */
 	unsigned int acc_format;	/* accepted PCM formats */
 	int acc_channels;	/* accepted channels */
+	int acc_width;		/* accepted sample width */
 	int mode;		/* MODE */
-	unsigned int run_format;	/* active PCM format */
 	int run_channels;	/* current CSP channels */
+	int run_width;		/* current sample width */
 	int version;		/* CSP version (0x10 - 0x1f) */
 	int running;		/* running state */
 	int q_enabled;		/* Q-Sound enabled flag */
@@ -143,7 +145,7 @@ typedef struct snd_sb_csp {
 typedef struct {
 	int (*csp_use)(snd_sb_csp_t * p);
 	int (*csp_unuse)(snd_sb_csp_t * p);
-	int (*csp_start)(snd_sb_csp_t * p, int pcm_format, int channels);
+	int (*csp_start)(snd_sb_csp_t * p, int sample_width, int channels);
 	int (*csp_stop)(snd_sb_csp_t * p);
 	int (*csp_pause)(snd_sb_csp_t * p);
 	int (*csp_restart)(snd_sb_csp_t * p);
