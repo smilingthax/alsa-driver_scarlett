@@ -385,19 +385,6 @@ struct sndrv_pcm_hw_params {
 	unsigned char reserved[64];
 };
 
-enum sndrv_pcm_start {
-	SNDRV_PCM_START_DATA,	/* start when some data are written (playback)
-				   or requested (capture) */
-	SNDRV_PCM_START_EXPLICIT,	/* start on the go command */
-	SNDRV_PCM_START_LAST = SNDRV_PCM_START_EXPLICIT,
-};
-
-enum sndrv_pcm_xrun {
-	SNDRV_PCM_XRUN_NONE,	/* No xrun detection */
-	SNDRV_PCM_XRUN_STOP,	/* Stop on xrun */
-	SNDRV_PCM_XRUN_LAST = SNDRV_PCM_XRUN_STOP,
-};
-
 enum sndrv_pcm_tstamp {
 	SNDRV_PCM_TSTAMP_NONE,
 	SNDRV_PCM_TSTAMP_MMAP,
@@ -405,16 +392,16 @@ enum sndrv_pcm_tstamp {
 };
 
 struct sndrv_pcm_sw_params {
-	enum sndrv_pcm_start start_mode;	/* start mode */
-	enum sndrv_pcm_xrun xrun_mode;	/* xrun detection mode */
-	enum sndrv_pcm_tstamp tstamp_mode; /* timestamp mode */
+	enum sndrv_pcm_tstamp tstamp_mode;	/* timestamp mode */
 	unsigned int period_step;
-	unsigned int sleep_min;		/* min ticks to sleep */
-	sndrv_pcm_uframes_t avail_min;	/* min avail frames for wakeup */
-	sndrv_pcm_uframes_t xfer_align;	/* xfer size need to be a multiple */
-	sndrv_pcm_uframes_t silence_threshold; /* min distance to noise for silence filling */
-	sndrv_pcm_uframes_t silence_size; /* silence block size */
-	sndrv_pcm_uframes_t boundary;	/* pointers wrap point */
+	unsigned int sleep_min;			/* min ticks to sleep */
+	sndrv_pcm_uframes_t avail_min;		/* min avail frames for wakeup */
+	sndrv_pcm_uframes_t xfer_align;		/* xfer size need to be a multiple */
+	sndrv_pcm_uframes_t start_threshold;	/* min hw_avail frames for automatic start */
+	sndrv_pcm_uframes_t stop_threshold;	/* min avail frames for automatic stop */
+	sndrv_pcm_uframes_t silence_threshold;	/* min distance from noise for silence filling */
+	sndrv_pcm_uframes_t silence_size;	/* silence block size */
+	sndrv_pcm_uframes_t boundary;		/* pointers wrap point */
 	unsigned char reserved[64];
 };
 
