@@ -98,6 +98,7 @@ struct snd_stru_ac97 {
 	unsigned int test;
 	unsigned short caps;	/* capabilities (register 0) */
 	unsigned short ext_id;	/* extended feature identification */
+	unsigned int clock;	/* AC'97 clock (usually 48000Hz) */
 	unsigned int rates_front_dac;
 	unsigned int rates_surr_dac;
 	unsigned int rates_lfe_dac;
