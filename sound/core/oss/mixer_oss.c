@@ -33,7 +33,7 @@ MODULE_LICENSE("GPL");
 
 static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 {
-	int cardnum = SNDRV_MINOR_OSS_CARD(MINOR(inode->i_rdev));
+	int cardnum = SNDRV_MINOR_OSS_CARD(minor(inode->i_rdev));
 	snd_card_t *card;
 	snd_mixer_oss_file_t *fmixer;
 

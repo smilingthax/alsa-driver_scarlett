@@ -38,7 +38,7 @@ static LIST_HEAD(snd_control_ioctls);
 
 static int snd_ctl_open(struct inode *inode, struct file *file)
 {
-	int cardnum = SNDRV_MINOR_CARD(MINOR(inode->i_rdev));
+	int cardnum = SNDRV_MINOR_CARD(minor(inode->i_rdev));
 	unsigned long flags;
 	snd_card_t *card;
 	snd_ctl_file_t *ctl;

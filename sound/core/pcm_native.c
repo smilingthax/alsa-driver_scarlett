@@ -1189,11 +1189,11 @@ static struct file *snd_pcm_file_fd(int fd)
 		return 0;
 	inode = file->f_dentry->d_inode;
 	if (!S_ISCHR(inode->i_mode) ||
-	    MAJOR(inode->i_rdev) != CONFIG_SND_MAJOR) {
+	    major(inode->i_rdev) != CONFIG_SND_MAJOR) {
 		fput(file);
 		return 0;
 	}
-	minor = MINOR(inode->i_rdev);
+	minor = minor(inode->i_rdev);
 	if (minor >= 256 || 
 	    minor % SNDRV_MINOR_DEVICES < SNDRV_MINOR_PCM_PLAYBACK) {
 		fput(file);
@@ -1663,8 +1663,8 @@ static int snd_pcm_open_file(struct file *file,
 
 int snd_pcm_open(struct inode *inode, struct file *file)
 {
-	int cardnum = SNDRV_MINOR_CARD(MINOR(inode->i_rdev));
-	int device = SNDRV_MINOR_DEVICE(MINOR(inode->i_rdev));
+	int cardnum = SNDRV_MINOR_CARD(minor(inode->i_rdev));
+	int device = SNDRV_MINOR_DEVICE(minor(inode->i_rdev));
 	int err;
 	snd_pcm_t *pcm;
 	snd_pcm_file_t *pcm_file;
