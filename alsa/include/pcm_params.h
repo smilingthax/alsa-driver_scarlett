@@ -90,11 +90,6 @@ INLINE int snd_mask_empty(const snd_mask_t *mask)
 	return snd_mask_bits(mask) == 0;
 }
 
-INLINE unsigned int snd_mask_count(const snd_mask_t *mask)
-{
-	return hweight32(snd_mask_bits(mask));
-}
-
 INLINE unsigned int snd_mask_min(const snd_mask_t *mask)
 {
 	assert(!snd_mask_empty(mask));
