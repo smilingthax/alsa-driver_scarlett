@@ -231,7 +231,6 @@ int snd_card_disconnect(snd_card_t * card)
  */
 int snd_card_free(snd_card_t * card)
 {
-	wait_queue_t wait;
 	struct snd_shutdown_f_ops *s_f_ops;
 
 	if (card == NULL)
@@ -242,13 +241,7 @@ int snd_card_free(snd_card_t * card)
 	write_unlock(&snd_card_rwlock);
 
 	/* wait, until all devices are ready for the free operation */
-	init_waitqueue_entry(&wait, current);
-	add_wait_queue(&card->shutdown_sleep, &wait);
-	while (card->files) {
-		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout(30 * HZ);
-	}
-	remove_wait_queue(&card->shutdown_sleep, &wait);
+	wait_event(card->shutdown_sleep, card->files == NULL);
 
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 	if (snd_mixer_oss_notify_callback)
@@ -298,8 +291,6 @@ static void snd_card_free_thread(void * __card)
 		snd_printk(KERN_ERR "unable to lock toplevel module for card %i in free thread\n", card->number);
 		module = NULL;
 	}
-
-	wait_event(card->shutdown_sleep, card->files == NULL);
 
 	snd_card_free(card);
 
