@@ -341,8 +341,8 @@ struct _snd_card {
 	char driver[16];		/* driver name */
 	char shortname[32];		/* short name of this soundcard */
 	char longname[80];		/* name of this soundcard */
-	char mixerid[16];		/* mixer ID */
 	char mixername[80];		/* mixer name */
+	char components[80];		/* card components delimited with space */
 
 	struct module *module;		/* top-level module */
 
@@ -457,6 +457,7 @@ int snd_card_free(snd_card_t *card);
 int snd_card_register(snd_card_t *card);
 int snd_card_info_init(void);
 int snd_card_info_done(void);
+int snd_component_add(snd_card_t *card, const char *component);
 
 /* device.c */
 

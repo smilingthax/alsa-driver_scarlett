@@ -565,9 +565,10 @@ struct sndrv_ctl_card_info {
 	unsigned char driver[16];	/* Driver name */
 	unsigned char name[32];		/* Short name of soundcard */
 	unsigned char longname[80];	/* name + info text about soundcard */
-	unsigned char mixerid[16];	/* ID of mixer */
-	unsigned char mixername[80];	/* mixer identification */
-	unsigned char reserved[128];	/* reserved for future */
+	unsigned char reserved_[16];	/* reserved for future (was ID of mixer) */
+	unsigned char mixername[80];	/* visual mixer identification */
+	unsigned char components[80];	/* card components / fine identification, delimited with one space (AC97 etc..) */
+	unsigned char reserved[48];	/* reserved for future */
 };
 
 enum sndrv_ctl_elem_type {
