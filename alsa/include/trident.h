@@ -351,6 +351,7 @@ struct _snd_trident_voice {
             foldback: 1;
 	int foldback_chan;		/* foldback subdevice number */
 	unsigned int stimer;		/* global sample timer (to detect spurious interrupts) */
+	unsigned int spurious_threshold; /* spurious threshold */
 
 	/* --- */
 
