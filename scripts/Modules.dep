@@ -81,6 +81,10 @@ snd-opl3-lib snd-hwdep snd-timer
 snd-opl3-synth @if_sequencer snd-opl3-lib snd-seq-device \
 	       snd-seq-midi-emul snd-ainstr-fm
 
+%dir linux/sound/isa/opl4
+snd-opl4-lib snd-seq-device
+snd-opl4-synth @if_sequencer snd-opl4-lib snd-seq-midi-emul
+
 %dir linux/sound/isa
 |snd-als100 @pnponly snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-azt2320 @pnponly snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
@@ -123,8 +127,8 @@ snd-gus-synth @if_sequencer snd-gus-lib snd-seq-midi-emul \
 |snd-interwave-stb snd-gus-lib snd-gus-synth snd-cs4231-lib snd-tea6330t
 
 %dir linux/sound/isa/opti9xx
-|snd-opti92x-ad1848 snd-ad1848-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
-|snd-opti92x-cs4231 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-opti92x-ad1848 snd-ad1848-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth snd-opl4-lib snd-opl4-synth
+|snd-opti92x-cs4231 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth snd-opl4-lib snd-opl4-synth
 |snd-opti93x snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/sb
