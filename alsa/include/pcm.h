@@ -629,6 +629,7 @@ extern ssize_t snd_pcm_lib_writev(snd_pcm_substream_t *substream,
 				  void **bufs, size_t frames);
 extern ssize_t snd_pcm_lib_readv(snd_pcm_substream_t *substream,
 				 void **bufs, size_t frames);
+extern int snd_pcm_lib_default_spdif(snd_pcm_substream_t *substream, int group);
 
 /*
  *  Timer interface
