@@ -1507,7 +1507,7 @@ static int isapnp_valid_irq(struct isapnp_cfgtmp *cfg, int idx)
 
 	if (!cfg || idx < 0 || idx > 1)
 		return -EINVAL;
-	if (cfg->result.irq[idx] != 255)	/* don't touch */
+	if (cfg->result.irq[idx] != ISAPNP_AUTO_IRQ)	/* don't touch */
 		return 0;
       __again:
       	irq = cfg->irq[idx];
@@ -1569,7 +1569,7 @@ static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
 
 	if (!cfg || idx < 0 || idx > 1)
 		return -EINVAL;
-	if (cfg->result.dma[idx] != 255)	/* don't touch */
+	if (cfg->result.dma[idx] != ISAPNP_AUTO_DMA)	/* don't touch */
 		return 0;
       __again:
       	dma = cfg->dma[idx];
