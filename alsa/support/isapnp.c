@@ -277,7 +277,7 @@ void isapnp_deactivate(unsigned char logdev)
 static void __init isapnp_peek(unsigned char *data, int bytes)
 {
 	int i, j;
-	unsigned char d;
+	unsigned char d = 0;
 
 	for (i = 1; i <= bytes; i++) {
 		for (j = 0; j < 10; j++) {
@@ -2093,7 +2093,7 @@ __initfunc(static int isapnp_do_reserve_irq(int irq))
 __initfunc(static void isapnp_pci_init(void))
 {
 	int devfn;
-	struct pci_dev *dev;
+	struct pci_dev *dev = NULL;
 	
 	for (devfn = 0; devfn < 255; devfn++) {
 		dev = pci_find_slot(0, devfn);
