@@ -57,7 +57,6 @@ int main()
 }],kaversion=`cat conftestdata`,
 kaversion="",
 kaversion="")])
-AC_MSG_RESULT($kaversion)
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
 ksublevel=`echo $kaversion | cut -d . -f 3 | cut -d - -f 1`
@@ -142,11 +141,6 @@ int main( void ) {
 )
 CONFIG_SND_PCI=$pcisup
 AC_SUBST(CONFIG_SND_PCI)
-if test $CONFIG_SND_PCI -eq 1; then
-  AC_MSG_RESULT("yes")
-else
-  AC_MSG_RESULT("no")
-fi
 
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
