@@ -535,7 +535,9 @@ static int snd_emu10k1_fx8010_playback_transfer(snd_pcm_substream_t *substream,
 		frames += diff;
 	}
 	pcm->sw_ready += frames;
-	pcm->appl_ptr = appl_ptr + frames;
+	pcm->appl_ptr += frames;
+	if (pcm->appl_ptr > runtime->boundary)
+		pcm->appl_ptr %= runtime->boundary;
 	while (pcm->hw_ready < buffer_size &&
 	       pcm->sw_ready > 0) {
 	       	size_t hw_to_end = buffer_size - pcm->hw_data;
