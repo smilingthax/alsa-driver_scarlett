@@ -55,8 +55,7 @@
 
 struct snd_stru_sb {
 	unsigned long port;		/* base port of DSP chip */
-	struct resource *res_port1;
-	struct resource *res_port2;
+	struct resource *res_port;
 	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
 	int irq;			/* IRQ number of DSP chip */
 	int dma8;			/* 8-bit DMA */

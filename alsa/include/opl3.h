@@ -301,6 +301,7 @@ void snd_opl3_interrupt(snd_hwdep_t * hw);
 int snd_opl3_create(snd_card_t * card,
 		    unsigned long l_port, unsigned long r_port,
 		    unsigned short hardware,
+		    int integrated,
 		    opl3_t ** opl3);
 int snd_opl3_timer_new(opl3_t * opl3, int timer1_dev, int timer2_dev);
 int snd_opl3_hwdep_new(opl3_t * opl3, int device, int seq_device,
