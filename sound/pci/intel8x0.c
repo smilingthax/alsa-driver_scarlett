@@ -1579,6 +1579,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	if (codecs < 2)
 		goto __skip_secondary;
 	for (i = 1; i < codecs; i++) {
+		ac97.num = i;
 		if ((err = snd_ac97_mixer(chip->card, &ac97, &x97)) < 0)
 			return err;
 		chip->ac97[i] = x97;
