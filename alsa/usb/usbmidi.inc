@@ -13,7 +13,6 @@
 #ifdef OLD_USB
 #define snd_usb_complete_callback(x) __old_ ## x
 static void __old_snd_usbmidi_in_urb_complete(struct urb* urb);
-static void __old_snd_usbmidi_in_midiman_complete(struct urb* urb);
 static void __old_snd_usbmidi_out_urb_complete(struct urb* urb);
 #endif
 

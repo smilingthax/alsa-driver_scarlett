@@ -1,24 +1,12 @@
---- ../alsa-kernel/usb/usbmidi.c	2005-01-28 15:43:45.000000000 +0100
-+++ usbmidi.c	2005-01-28 15:43:20.000000000 +0100
+--- ../alsa-kernel/usb/usbmidi.c	2005-02-02 00:24:21.000000000 +0100
++++ usbmidi.c	2005-02-02 00:26:26.000000000 +0100
 @@ -1,3 +1,5 @@
 +#include "usbmidi.inc"
 +
  /*
   * usbmidi.c - ALSA USB MIDI driver
   *
-@@ -520,7 +522,11 @@
- 	struct usb_host_interface *hostif;
- 	struct usb_interface_descriptor* intfd;
- 
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	if (le16_to_cpu(umidi->chip->dev->descriptor.idVendor) != 0x0582)
-+#else
-+	if (umidi->chip->dev->descriptor.idVendor != 0x0582)
-+#endif
- 		return NULL;
- 	intf = umidi->iface;
- 	if (!intf || intf->num_altsetting != 2)
-@@ -837,8 +843,13 @@
+@@ -851,8 +853,13 @@
  
  	/* TODO: read port name from jack descriptor */
  	name_format = "%s MIDI %d";
@@ -32,7 +20,29 @@
  	for (i = 0; i < ARRAY_SIZE(snd_usbmidi_port_names); ++i) {
  		if (snd_usbmidi_port_names[i].vendor == vendor &&
  		    snd_usbmidi_port_names[i].product == product &&
-@@ -1268,3 +1279,5 @@
+@@ -1022,13 +1029,21 @@
+ 	struct usb_endpoint_descriptor* epd;
+ 	int i, out_eps = 0, in_eps = 0;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 	if (le16_to_cpu(umidi->chip->dev->descriptor.idVendor) == 0x0582)
++#else
++	if (umidi->chip->dev->descriptor.idVendor == 0x0582)
++#endif
+ 		snd_usbmidi_switch_roland_altsetting(umidi);
+ 
+ 	intf = umidi->iface;
+ 	if (!intf || intf->num_altsetting < 1)
+ 		return -ENOENT;
++#ifndef OLD_USB
+ 	hostif = intf->cur_altsetting;
++#else
++	hostif = &intf->altsetting[intf->act_altsetting];
++#endif
+ 	intfd = get_iface_desc(hostif);
+ 
+ 	for (i = 0; i < intfd->bNumEndpoints; ++i) {
+@@ -1352,3 +1367,5 @@
  EXPORT_SYMBOL(snd_usbmidi_input_stop);
  EXPORT_SYMBOL(snd_usbmidi_input_start);
  EXPORT_SYMBOL(snd_usbmidi_disconnect);
