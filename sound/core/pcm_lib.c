@@ -2658,6 +2658,9 @@ EXPORT_SYMBOL(snd_pcm_lib_preallocate_isa_pages_for_all);
 #ifdef CONFIG_PCI
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_pci_pages);
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_pci_pages_for_all);
+EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages);
+EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages_for_all);
+EXPORT_SYMBOL(snd_pcm_sgbuf_ops_page);
 #endif
 #ifdef CONFIG_SBUS
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_sbus_pages);

@@ -41,7 +41,6 @@
 #include <sound/control.h>
 #include <sound/trident.h>
 #include <sound/asoundef.h>
-#include <sound/pcm_sgbuf.h>
 
 #include <asm/io.h>
 

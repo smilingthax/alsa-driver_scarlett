@@ -28,7 +28,6 @@
 #include <linux/time.h>
 #include <sound/core.h>
 #include <sound/trident.h>
-#include <sound/pcm_sgbuf.h>
 
 /* page arguments of these two macros are Trident page (4096 bytes), not like
  * aligned pages in others
@@ -189,7 +188,7 @@ snd_trident_alloc_pages(trident_t *trident, snd_pcm_substream_t *substream)
 	snd_util_memhdr_t *hdr;
 	snd_util_memblk_t *blk;
 	int idx, page;
-	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, _snd_pcm_substream_sgbuf(substream), return NULL);
+	struct snd_sg_buf *sgbuf = snd_pcm_substream_sgbuf(substream);
 
 	snd_assert(trident != NULL, return NULL);
 	snd_assert(sgbuf->size > 0 && sgbuf->size < SNDRV_TRIDENT_MAX_PAGES * SNDRV_TRIDENT_PAGE_SIZE, return NULL);

@@ -1,5 +1,5 @@
 /*
- * Scatter-Gather PCM access
+ * Scatter-Gather buffer
  *
  *  Copyright (c) by Takashi Iwai <tiwai@suse.de>
  *
@@ -19,12 +19,12 @@
  *
  */
 
-#include <sound/driver.h>
+#include <linux/config.h>
+#include <linux/version.h>
+#include <linux/pci.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include <sound/core.h>
-#include <sound/pcm.h>
-#include <sound/pcm_sgbuf.h>
+#include <sound/memalloc.h>
 
 
 /* table entries are align to 32 */
@@ -33,39 +33,43 @@
 
 
 /**
- * snd_pcm_sgbuf_alloc_pages - allocate the pages for the SG buffer
+ * snd_malloc_sgbuf_pages - allocate the pages for the PCI SG buffer
  * @pci: the pci device pointer
  * @size: the requested buffer size in bytes
- * @dmab: the dma-buffer record to store
+ * @dmab: the buffer record to store
  *
  * Initializes the SG-buffer table and allocates the buffer pages
  * for the given size.
  * The pages are mapped to the virtually continuous memory.
  *
- * This function is usually called from snd_pcm_lib_malloc_pages().
+ * This function is usually called from the middle-level functions such as
+ * snd_pcm_lib_malloc_pages().
  *
  * Returns the mapped virtual address of the buffer if allocation was
  * successful, or NULL at error.
  */
-void *snd_pcm_sgbuf_alloc_pages(struct pci_dev *pci, size_t size, struct snd_pcm_dma_buffer *dmab)
+void *snd_malloc_sgbuf_pages(struct pci_dev *pci, size_t size, struct snd_dma_buffer *dmab)
 {
 	struct snd_sg_buf *sgbuf;
 	unsigned int i, pages;
 
 	dmab->area = NULL;
 	dmab->addr = 0;
-	dmab->private_data = sgbuf = snd_magic_kcalloc(snd_pcm_sgbuf_t, 0, GFP_KERNEL);
+	dmab->private_data = sgbuf = kmalloc(sizeof(*sgbuf), GFP_KERNEL);
 	if (! sgbuf)
 		return NULL;
+	memset(sgbuf, 0, sizeof(*sgbuf));
 	sgbuf->pci = pci;
-	pages = snd_pcm_sgbuf_pages(size);
+	pages = snd_sgbuf_aligned_pages(size);
 	sgbuf->tblsize = sgbuf_align_table(pages);
-	sgbuf->table = snd_kcalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
+	sgbuf->table = kmalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
 	if (! sgbuf->table)
 		goto _failed;
-	sgbuf->page_table = snd_kcalloc(sizeof(*sgbuf->page_table) * sgbuf->tblsize, GFP_KERNEL);
+	memset(sgbuf->table, 0, sizeof(*sgbuf->table) * sgbuf->tblsize);
+	sgbuf->page_table = kmalloc(sizeof(*sgbuf->page_table) * sgbuf->tblsize, GFP_KERNEL);
 	if (! sgbuf->page_table)
 		goto _failed;
+	memset(sgbuf->page_table, 0, sizeof(*sgbuf->page_table) * sgbuf->tblsize);
 
 	/* allocate each page */
 	for (i = 0; i < pages; i++) {
@@ -87,24 +91,28 @@ void *snd_pcm_sgbuf_alloc_pages(struct pci_dev *pci, size_t size, struct snd_pcm
 	return dmab->area;
 
  _failed:
-	snd_pcm_sgbuf_free_pages(dmab); /* free the table */
+	snd_free_sgbuf_pages(dmab); /* free the table */
 	return NULL;
 }
 
 /**
- * snd_pcm_sgbuf_free_pages - free the sg buffer
- * @dmab: dma buffer record
+ * snd_free_sgbuf_pages - free the sg buffer
+ * @dmab: buffer record
  *
  * Releases the pages and the SG-buffer table.
  *
- * This function is called usually from snd_pcm_lib_free_pages().
+ * This function is called usually from the middle-level function
+ * such as snd_pcm_lib_free_pages().
  *
  * Returns zero if successful, or a negative error code on failure.
  */
-int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
+int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
 {
-	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, dmab->private_data, return -EINVAL);
+	struct snd_sg_buf *sgbuf = dmab->private_data;
 	int i;
+
+	if (! sgbuf)
+		return -EINVAL;
 
 	for (i = 0; i < sgbuf->pages; i++)
 		snd_free_pci_page(sgbuf->pci, sgbuf->table[i].buf, sgbuf->table[i].addr);
@@ -116,34 +124,8 @@ int snd_pcm_sgbuf_free_pages(struct snd_pcm_dma_buffer *dmab)
 		kfree(sgbuf->table);
 	if (sgbuf->page_table)
 		kfree(sgbuf->page_table);
-	snd_magic_kfree(sgbuf);
+	kfree(sgbuf);
 	dmab->private_data = NULL;
 	
 	return 0;
 }
-
-/**
- * snd_pcm_sgbuf_ops_page - get the page struct at the given offset
- * @substream: the pcm substream instance
- * @offset: the buffer offset
- *
- * Returns the page struct at the given buffer offset.
- * Used as the page callback of PCM ops.
- */
-struct page *snd_pcm_sgbuf_ops_page(snd_pcm_substream_t *substream, unsigned long offset)
-{
-	struct snd_sg_buf *sgbuf = snd_magic_cast(snd_pcm_sgbuf_t, _snd_pcm_substream_sgbuf(substream), return NULL);
-
-	unsigned int idx = offset >> PAGE_SHIFT;
-	if (idx >= (unsigned int)sgbuf->pages)
-		return NULL;
-	return sgbuf->page_table[idx];
-}
-
-
-/*
- *  Exported symbols
- */
-EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages);
-EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages_for_all);
-EXPORT_SYMBOL(snd_pcm_sgbuf_ops_page);

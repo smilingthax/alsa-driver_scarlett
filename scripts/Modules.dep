@@ -29,11 +29,12 @@
 
 %dir linux/sound/core
 snd
+snd-page-alloc
 snd-rawmidi snd
 snd-timer snd
 snd-rtctimer snd-timer
 snd-hwdep snd
-snd-pcm snd-timer
+snd-pcm snd-timer snd-page-alloc
 
 %dir linux/sound/core/seq
 snd-seq-device snd

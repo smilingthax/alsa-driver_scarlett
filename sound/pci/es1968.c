@@ -557,7 +557,7 @@ struct snd_es1968 {
 	/* buffer */
 	void *dma_buf;
 	dma_addr_t dma_buf_addr;
-	unsigned long dma_buf_size;
+	size_t dma_buf_size;
 
 	/* Resources... */
 	int irq;
