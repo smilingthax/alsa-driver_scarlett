@@ -171,7 +171,7 @@ void __devinit snd_ice1712_ak4524_init(ice1712_t *ice)
 		0x09, 0x01, /* 9: ATS=0, RSTN=1 */
 		0x0a, 0x3f, /* A: all power up, no zero/overflow detection */
 		0x00, 0x08, /* 0: TDM=0, 24bit I2S, SMUTE=0 */
-		0x01, 0x02, /* 1: ACKS=1, ADC, loop off */
+		0x01, 0x00, /* 1: ACKS=0, ADC, loop off */
 		0x02, 0xff, /* 2: LOUT1 muted */
 		0x03, 0xff, /* 3: ROUT1 muted */
 		0x04, 0xff, /* 4: LOUT2 muted */
