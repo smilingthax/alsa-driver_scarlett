@@ -1,4 +1,15 @@
 #define __NO_VERSION__
+#include "config.h"
+
+#include <linux/version.h>
+#include <linux/config.h>
+
+#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
+#define MODVERSIONS
+#include <linux/modversions.h>
+#include "sndversions.h"
+#endif
+
 #include "../alsa-kernel/core/wrappers.c"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
