@@ -2,6 +2,20 @@
 		==========================================
 	             FAQ - Frequently Asked Questions
 
+Q: When I play something and I try to play something other the second attempt
+   will not fail but instead it hangs waiting for the completion of the first
+   sound.
+A: This is definitely the standard behaviour as described in many official
+   documents that now ALSA follows. There is no reasons to complain about that
+   for the following reasons:
+   - it's the right (standard) way
+   - the application that want a different behaviour can open the device in 
+     O_NONBLOCK mode
+   - all modern OSS drivers in mainstream kernel (cmpci, es1370, es1371,
+     esssolo1, maestro, sonicvibes, vwsnd) works in the same ways and the 
+     others have to be intended buggy
+   - we want you ask to broken applications author to fix them ;-)
+
 Q: The driver is installed and sucessfully loaded in the runtime kernel,
    but it does not produce any sound. What's wrong?
 A: You should raise the volume for mixer channels and/or unmute mixer channels.
