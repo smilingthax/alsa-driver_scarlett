@@ -148,7 +148,7 @@ static queue_t *queue_new(int owner, int locked)
 static void queue_delete(queue_t *q)
 {
 	/* stop and release the timer */
-	snd_seq_timer_stop(q->timer, 0);
+	snd_seq_timer_stop(q->timer);
 	snd_seq_timer_close(q);
 	/* wait until access free */
 	snd_use_lock_sync(&q->use_lock);
@@ -606,7 +606,7 @@ void snd_seq_queue_client_termination(int client)
 		spin_unlock_irqrestore(&q->owner_lock, flags);
 		if (q->owner == client) {
 			if (q->timer->running)
-				snd_seq_timer_stop(q->timer, 0);
+				snd_seq_timer_stop(q->timer);
 			snd_seq_timer_reset(q->timer);
 		}
 		queuefree(q);
@@ -716,17 +716,17 @@ void snd_seq_queue_process_event(queue_t *q, snd_seq_event_t *ev, int from_timer
 	case SNDRV_SEQ_EVENT_START:
 		snd_seq_prioq_leave(q->tickq, ev->source.client, 1);
 		snd_seq_prioq_leave(q->timeq, ev->source.client, 1);
-		if (! snd_seq_timer_start(q->timer, atomic))
+		if (! snd_seq_timer_start(q->timer))
 			queue_broadcast_event(q, ev, from_timer_port, atomic, hop);
 		break;
 
 	case SNDRV_SEQ_EVENT_CONTINUE:
-		if (! snd_seq_timer_continue(q->timer, atomic))
+		if (! snd_seq_timer_continue(q->timer))
 			queue_broadcast_event(q, ev, from_timer_port, atomic, hop);
 		break;
 
 	case SNDRV_SEQ_EVENT_STOP:
-		snd_seq_timer_stop(q->timer, atomic);
+		snd_seq_timer_stop(q->timer);
 		queue_broadcast_event(q, ev, from_timer_port, atomic, hop);
 		break;
 
