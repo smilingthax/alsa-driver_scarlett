@@ -232,6 +232,13 @@ Additional Modules
 
     See docs/hdspm.txt for details.
 
+  Module snd-emu10k1x
+  -------------------
+
+    Module for Creative Emu10k1X (SB Live Dell OEM version)
+
+    Module supports up to 8 cards.
+
 
 Trouble Shooting
 ================
