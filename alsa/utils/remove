@@ -7,5 +7,6 @@ $LSMOD | grep "^snd" | while read line; do \
   XX=`echo $line | cut -d ' ' -f 1`; \
   $RMMOD $XX; \
 done
+rmmod isapnp 2> /dev/null
 echo "Remove done..."
 
