@@ -73,7 +73,9 @@ install-headers:
 	else \
 		rm -rf $(DESTDIR)$(prefix)/include/sound; \
 		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
-		cp include/*.h $(DESTDIR)$(prefix)/include/sound; \
+		for f in include/*.h; do \
+			install -m 755 -g root -o root $$f $(DESTDIR)$(prefix)/include/sound; \
+		done \
 	fi
 
 install-modules: compile
@@ -88,11 +90,11 @@ endif
 
 install-scripts:
 	if [ -d /sbin/init.d ]; then \
-	  install -m 755 utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
+	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
 	elif [ -d /etc/rc.d/init.d ]; then \
-	  install -m 755 utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
+	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
 	elif [ -d /etc/init.d ]; then \
-	  install -m 755 utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
+	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
 	fi
 
 clean:
