@@ -5,7 +5,7 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-export-objs += ak4xxx-adda.o ak4117.o tea575x-tuner.o
+export-objs += ak4xxx-adda.o ak4117.o
 
 snd-ak4117-objs := ak4117.o
 
