@@ -1,0 +1,43 @@
+--- hammerfall_mem.c	2003-05-31 13:28:32.000000000 +0200
++++ hammerfall_mem.c.old	2003-05-31 13:32:43.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "hammerfall_mem.inc"
+ /* 
+     ALSA memory allocation module for the RME Digi9652
+   
+@@ -98,7 +99,15 @@
+ {
+ 	void *res;
+ 
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 3, 0)
+ 	res = (void *) pci_alloc_consistent(pci, size, dmaaddr);
++#else
++	int pg;
++	for (pg = 0; PAGE_SIZE * (1 << pg) < size; pg++);
++	res = (void *)__get_free_pages(GFP_KERNEL, pg);
++	if (res != NULL)
++		*dmaaddr = virt_to_bus(res);
++#endif
+ 	if (res != NULL) {
+ 		struct page *page = virt_to_page(res);
+ 		struct page *last_page = page + (size + PAGE_SIZE - 1) / PAGE_SIZE;
+@@ -119,7 +128,19 @@
+ 	last_page = virt_to_page(ptr) + (size + PAGE_SIZE - 1) / PAGE_SIZE;
+ 	while (page < last_page)
+ 		clear_bit(PG_reserved, &(page++)->flags);
++#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 3, 0)
+ 	pci_free_consistent(pci, size, ptr, dmaaddr);
++#else
++	{
++		int pg;
++		for (pg = 0; PAGE_SIZE * (1 << pg) < size; pg++);
++		if (bus_to_virt(dmaaddr) != ptr) {
++			printk(KERN_ERR "hammerfall_free_pages: dmaaddr != ptr\n");
++			return;
++		}
++		free_pages((unsigned long)ptr, pg);
++	}
++#endif
+ }
+ 
+ void *snd_hammerfall_get_buffer (struct pci_dev *pcidev, dma_addr_t *dmaaddr)
