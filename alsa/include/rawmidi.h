@@ -30,7 +30,7 @@
  *  Raw MIDI interface
  */
 
-#define SND_RAWMIDI_DEVICES	4
+#define SND_RAWMIDI_DEVICES	8
 
 #define SND_RAWMIDI_HW_POLL	0x00000001	/* polled mode */
 
