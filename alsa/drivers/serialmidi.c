@@ -526,7 +526,7 @@ static int __init snd_card_serialmidi_probe(int dev)
 		return -ENOMEM;
 	strcpy(card->driver, "Serial MIDI");
 	if (id[dev] && *id[dev])
-		snprintf(card->shortname, sizeof(card->shortname), "Serial MIDI %s", card->id);
+		snprintf(card->shortname, sizeof(card->shortname), "%s", id[dev]);
 	else
 		strcpy(card->shortname, card->driver);
 
