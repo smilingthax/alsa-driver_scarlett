@@ -81,17 +81,12 @@ void snd_remove_proc_entry(struct proc_dir_entry *parent,
 			   struct proc_dir_entry *de)
 {
 	if (parent && de) {
-		if (S_ISDIR(de->mode) && de->data) {
+		if (S_ISLNK(de->mode) && de->data) {
 			kfree(de->data);
 			de->data = 0;
 		}
 		proc_unregister(parent, de->low_ino);
 	}
 }
-
-static struct inode_operations snd_info_entry_inode_operations =
-{
-	        &snd_info_entry_operations,     /* default sound info directory file-ops */
-};
 
 #endif /* LINUX_VERSION_CODE < 2.4.0 */

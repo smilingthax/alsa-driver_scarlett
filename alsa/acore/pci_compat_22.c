@@ -175,16 +175,35 @@ unsigned long snd_pci_compat_get_size (struct pci_dev *dev, int n_base)
 	return sz;
 }
 
+/* hack, hack, hack - why 2.2 kernels are so broken? */
+static struct broken_addr {
+	u16 vendor;
+	u16 device;
+	u32 flags;
+} broken_addr[] = {
+	{ 0x8086, 0x2415, IORESOURCE_IO },		/* 82801AA */
+	{ 0x8086, 0x2425, IORESOURCE_IO },		/* 82901AB */
+	{ 0x8086, 0x2445, IORESOURCE_IO },		/* 82801BA */
+	{ 0x8086, 0x2485, IORESOURCE_IO },		/* ICH3 */
+	{ 0x8086, 0x7195, IORESOURCE_IO },		/* 440MX */
+	{ 0, 0, 0 }
+};
+
 int snd_pci_compat_get_flags (struct pci_dev *dev, int n_base)
 {
-	unsigned long foo = dev->base_address[n_base] & PCI_BASE_ADDRESS_SPACE;
+	unsigned long foo;
 	int flags = 0;
+
+	for (foo = 0; broken_addr[foo].vendor; foo++)
+		if (dev->vendor == broken_addr[foo].vendor &&
+		    dev->device == broken_addr[foo].device)
+		    	return broken_addr[foo].flags;
 	
 	if (foo == 0)
 		flags |= IORESOURCE_MEM;
 	if (foo == 1)
 		flags |= IORESOURCE_IO;
-	
+
 	return flags;
 }
 
