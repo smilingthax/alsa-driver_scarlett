@@ -757,18 +757,18 @@
 /*
  *  The following defines are for the flags in the MIDI control register.
  */
-#define MIDCR_TXE                               0x00000001
-#define MIDCR_RXE                               0x00000002
-#define MIDCR_RIE                               0x00000004
-#define MIDCR_TIE                               0x00000008
-#define MIDCR_MLB                               0x00000010
-#define MIDCR_MRST                              0x00000020
+#define MIDCR_TXE                               0x00000001	/* Enable transmitting. */
+#define MIDCR_RXE                               0x00000002	/* Enable receiving. */
+#define MIDCR_RIE                               0x00000004	/* Interrupt upon tx ready. */
+#define MIDCR_TIE                               0x00000008	/* Interrupt upon rx ready. */
+#define MIDCR_MLB                               0x00000010	/* Enable midi loopback. */
+#define MIDCR_MRST                              0x00000020	/* Reset interface. */
 
 /*
  *  The following defines are for the flags in the MIDI status register.
  */
-#define MIDSR_TBF                               0x00000001
-#define MIDSR_RBE                               0x00000002
+#define MIDSR_TBF                               0x00000001	/* Tx FIFO is full. */
+#define MIDSR_RBE                               0x00000002	/* Rx FIFO is empty. */
 
 /*
  *  The following defines are for the flags in the MIDI write port register.
@@ -1613,7 +1613,14 @@
 #define BA1_CSPB                0x340    /* BA1_CAPTURE_SPB_ADDRESS */
 
 /*
+ *
+ */
 
+#define CS461X_MODE_OUTPUT	(1<<0)	 /* MIDI UART - output */ 
+#define CS461X_MODE_INPUT	(1<<1)	 /* MIDI UART - input */
+
+/*
+ *
  */
 
 typedef struct snd_stru_cs461x cs461x_t;
@@ -1671,6 +1678,8 @@ struct snd_stru_cs461x {
 	void *entry_proc_BA1_reg;
 
 	spinlock_t reg_lock;
+	unsigned int midcr;
+	unsigned int uartm;
 	snd_info_entry_t *proc_entry;
 };
 
