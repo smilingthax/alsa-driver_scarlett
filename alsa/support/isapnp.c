@@ -47,7 +47,11 @@
 #include <linux/errno.h>
 #include <linux/ioport.h>
 #include <linux/string.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 7)
 #include <linux/malloc.h>
+#else
+#include <linux/slab.h>
+#endif
 #include <linux/delay.h>
 #include <linux/proc_fs.h>
 #include <asm/io.h>
