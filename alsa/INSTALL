@@ -10,7 +10,7 @@ you are trying to install this driver.
 Before you are trying install this driver, please, read carefuly
 documentation for insmod, modprobe, kerneld/kmod and even for isapnp
 if you have ISA PnP soundcard. If you don't understand how these programs
-work, you can't be success with installation.
+work, you cannot be success with installation.
 
 Quick install
 =============
@@ -22,6 +22,8 @@ Quick install
 3) Run './snddevices' script to create new sound devices in /dev directory.
 4) Edit your /etc/conf.modules (look to kerneld/kmod support section).
 5) Run 'modprobe snd-card' where card is name of your card.
+   Note: If you have ISA PnP soundcard you should need run isapnp program
+         from isapnptools package at first to initialize soundcard.
 
 You can also look to file utils/alsasound. This script is designed for
 RedHat distribution, but it should be used with other distributions which
