@@ -8,10 +8,14 @@ Source:    alsa-driver-%{version}.tar.bz2
 URL:       http://www.alsa-project.org
 Copyright: GPL
 Group:     Base/Kernel
-Requires:  kernel kernel-headers
-BuildRoot: /tmp/alsa-driver-%{version}-root
+Requires:  kernel-headers
+BuildRoot: /var/tmp/alsa-driver-%{version}-root
 
 %changelog
+
+* Tue Nov 20 2001 Jaroslav Kysela <perex@suse.cz>
+
+- changed BuildRoot to /var/tmp
 
 * Sun Nov 11 2001 Miroslav Benes <mbenes@tenez.cz>
 
@@ -30,7 +34,7 @@ with OSS/Lite, but contains many enhanced features.
 %setup
 
 %build
-./configure --prefix=/usr ${EXTRA_ALSA_DRIVER_CONFIG_FLAGS}
+./configure --prefix=%_prefix ${EXTRA_ALSA_DRIVER_CONFIG_FLAGS}
 make
 
 %install
@@ -54,11 +58,11 @@ make prefix=$RPM_BUILD_ROOT/usr \
 install -m755 utils/alsasound $RPM_BUILD_ROOT/etc/rc.d/init.d/alsasound
 
 # files list - path for modules depends on kernel version
-echo "%attr(-,root,root) /lib/modules/$KVERSION/misc/*.o"			>/tmp/files.lst
+echo "%attr(-,root,root) /lib/modules/$KVERSION/misc/*.o"			>/tmp/alsa-driver-files.lst
 # other files must be in file list too
-echo "%attr(-,root,root) %doc FAQ INSTALL README TODO snddevices doc/*" 	>>/tmp/files.lst
-echo "%attr(-,root,root) %config /etc/rc.d/init.d/*"                            >>/tmp/files.lst
-echo "%attr(-,root,root) /usr/include/sound/*.h"                                >>/tmp/files.lst
+echo "%attr(-,root,root) %doc FAQ INSTALL README TODO snddevices doc/*" 	>>/tmp/alsa-driver-files.lst
+echo "%attr(-,root,root) %config /etc/rc.d/init.d/*"                            >>/tmp/alsa-driver-files.lst
+echo "%attr(-,root,root) /usr/include/sound/*.h"                                >>/tmp/alsa-driver-files.lst
 
 %post
 if [ -x /sbin/chkconfig ]; then
@@ -74,7 +78,7 @@ if [ "$1" = 0 ] ; then
 fi
 
 %clean
-rm -f /tmp/files.lst
+rm -f /tmp/alsa-driver-files.lst
 [ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
 
-%files -f /tmp/files.lst
+%files -f /tmp/alsa-driver-files.lst
