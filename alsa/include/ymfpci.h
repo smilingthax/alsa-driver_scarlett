@@ -256,7 +256,8 @@ struct snd_stru_ymfpci_pcm {
 	snd_ymfpci_pcm_type_t type;
 	snd_pcm_substream_t *substream;
 	ymfpci_voice_t *voices[2];	/* playback only */
-	int running;	
+	int running;
+	int spdif;	
 	u32 frag_size;			/* cached from runtime->frag_size */
 	u32 buffer_size;		/* cached from runtime->buffer_size */
 	u32 frag_pos;
@@ -268,6 +269,7 @@ struct snd_stru_ymfpci_pcm {
 struct snd_stru_ymfpci {
 	snd_dma_t * dma1ptr;	/* DAC1 */
 	snd_dma_t * dma2ptr;	/* ADC */
+	snd_dma_t * dma3ptr;	/* AC'97 */
 	snd_irq_t * irqptr;
 
 	unsigned int device_id;	/* PCI device ID */
@@ -303,6 +305,7 @@ struct snd_stru_ymfpci {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm2;
+	snd_pcm_t *pcm_spdif;
 	snd_pcm_substream_t *capture_substream[YDSXG_CAPTURE_VOICES];
 	snd_pcm_substream_t *effect_substream[YDSXG_EFFECT_VOICES];
 	snd_kmixer_t *mixer;
@@ -316,12 +319,14 @@ int snd_ymfpci_create(snd_card_t * card,
 		      struct pci_dev *pci,
 		      snd_dma_t * dma1ptr,
 		      snd_dma_t * dma2ptr,
+		      snd_dma_t * dma3ptr,
 		      snd_irq_t * irqptr,
 		      ymfpci_t ** rcodec);
 void snd_ymfpci_interrupt(ymfpci_t * codec);
 
 int snd_ymfpci_pcm(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm2(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
+int snd_ymfpci_pcm_spdif(ymfpci_t * codec, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_mixer(ymfpci_t * codec, int device, snd_pcm_t *pcm, snd_kmixer_t **rmixer);
 
 int snd_ymfpci_voice_alloc(ymfpci_t * codec, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);

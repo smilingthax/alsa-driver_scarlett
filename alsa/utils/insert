@@ -349,6 +349,7 @@ case "$1" in
     basic
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o
+    insert snd-opl3.o
     insert snd-ymfpci.o
     insert snd-card-ymfpci.o
     restore ymfpci.conf

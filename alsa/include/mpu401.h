@@ -37,6 +37,7 @@
 #define MPU401_HW_ALS100		11	/* Avance Logic ALS100 */
 #define MPU401_HW_ICE1712		12	/* Envy24 */
 #define MPU401_HW_VIA686A		13	/* VIA 82C686A */
+#define MPU401_HW_YMFPCI		14	/* YMF DS-XG PCI */
 
 #define MPU401_MODE_INPUT		(1<<0)
 #define MPU401_MODE_OUTPUT		(1<<1)
