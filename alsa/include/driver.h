@@ -241,13 +241,13 @@ static inline void dec_mod_count(struct module *module)
 
 #if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)
 #undef writeb
-#define writeb(v, a) ({__writeb((v),(a)); mb(); })
+#define writeb(v, a) do { __writeb((v),(a)); mb(); } while(0)
 #undef writew
-#define writew(v, a) ({__writew((v),(a)); mb(); })
+#define writew(v, a) do {__writew((v),(a)); mb(); } while(0)
 #undef writel
-#define writel(v, a) ({__writel((v),(a)); mb(); })
+#define writel(v, a) do {__writel((v),(a)); mb(); } while(0)
 #undef writeq
-#define writeq(v, a) ({__writeq((v),(a)); mb(); })
+#define writeq(v, a) do {__writeq((v),(a)); mb(); } while(0)
 #endif
 
 /*
@@ -558,16 +558,6 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #endif /* NEW_MACRO_VARARGS */
 
 #define snd_BUG() snd_assert(0, )
-
-#define snd_alloc_check(function, args)  ({\
-	void *__ptr;\
-	__ptr = function args;\
-	if (__ptr == NULL)\
-		return -ENOMEM;\
-	__ptr;\
-})
-#define snd_kmalloc_check(size, flags) snd_alloc_check(snd_kmalloc, (size, flags))
-#define snd_kcalloc_check(size, flags) snd_alloc_check(snd_kcalloc, (size, flags))
 
 #define snd_timestamp_now(tstamp) do_gettimeofday(tstamp)
 #define snd_timestamp_zero(tstamp) do { (tstamp)->tv_sec = 0; (tstamp)->tv_usec = 0; } while (0)
