@@ -555,15 +555,16 @@ static void vx_interrupt(unsigned long private_data)
 /**
  * snd_vx_irq_handler - interrupt handler
  */
-void snd_vx_irq_handler(int irq, void *dev, struct pt_regs *regs)
+irqreturn_t snd_vx_irq_handler(int irq, void *dev, struct pt_regs *regs)
 {
-	vx_core_t *chip = snd_magic_cast(vx_core_t, dev, return);
+	vx_core_t *chip = snd_magic_cast(vx_core_t, dev, return IRQ_NONE);
 
 	if (! (chip->chip_status & VX_STAT_CHIP_INIT) ||
 	    (chip->chip_status & VX_STAT_IS_STALE))
-		return;
+		return IRQ_NONE;
 	if (! vx_test_and_ack(chip))
 		tasklet_hi_schedule(&chip->tq);
+	return IRQ_HANDLED;
 }
 
 

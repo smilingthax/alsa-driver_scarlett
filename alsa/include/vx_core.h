@@ -215,7 +215,7 @@ int snd_vx_dsp_load(vx_core_t *chip, const snd_hwdep_dsp_image_t *dsp);
 /*
  * interrupt handler; exported for pcmcia
  */
-void snd_vx_irq_handler(int irq, void *dev, struct pt_regs *regs);
+irqreturn_t snd_vx_irq_handler(int irq, void *dev, struct pt_regs *regs);
 
 /*
  * power-management routines

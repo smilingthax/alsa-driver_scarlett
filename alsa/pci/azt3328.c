@@ -1018,9 +1018,9 @@ static snd_pcm_uframes_t snd_azf3328_capture_pointer(snd_pcm_substream_t * subst
 	return frmres;
 }
 
-static void snd_azf3328_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t snd_azf3328_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	azf3328_t *chip = snd_magic_cast(azf3328_t, dev_id, return);
+	azf3328_t *chip = snd_magic_cast(azf3328_t, dev_id, return IRQ_NONE);
 	unsigned int status, which;
 	static unsigned long count = 0;
 
@@ -1028,7 +1028,7 @@ static void snd_azf3328_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 
         /* fast path out, to ease interrupt sharing */
 	if (!(status & (IRQ_PLAYBACK|IRQ_RECORDING|IRQ_MPU401|IRQ_SOMEIRQ)))
-		return; /* must be interrupt for another device */
+		return IRQ_NONE; /* must be interrupt for another device */
 
 	snd_azf3328_dbgplay("Interrupt %ld !\nIDX_IO_PLAY_FLAGS %04x, IDX_IO_PLAY_IRQMASK %04x, IDX_IO_IRQSTATUS %04x\n", count, inw(chip->codec_port+IDX_IO_PLAY_FLAGS), inw(chip->codec_port+IDX_IO_PLAY_IRQMASK), inw(chip->codec_port+IDX_IO_IRQSTATUS));
 		
@@ -1085,6 +1085,7 @@ static void snd_azf3328_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	if (status & IRQ_SOMEIRQ)
 		printk(KERN_ERR "azt3328: unknown IRQ type occurred, please report !\n");
 	count++;
+	return IRQ_HANDLED;
 }
 
 /*****************************************************************/

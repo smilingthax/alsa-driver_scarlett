@@ -493,11 +493,11 @@ static __inline__ void snd_msnd_eval_dsp_msg(register WORD wMessage)
 }
 
 //static int InInterrupt = 0;
-static void snd_msnd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+irqreturn_t snd_msnd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	/*if( InInterrupt){
 		printk(  "INTERRUPT in InInterrupt\n");
-		return;
+		return IRQ_NONE;
 	}
 	InInterrupt = 1;*/
 #ifdef CONFIG_SND_DEBUG
@@ -522,6 +522,7 @@ static void snd_msnd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	/* Send ack to DSP */
 	inb(dev.io + HP_RXL);
 	//InInterrupt = 0;
+	return IRQ_HANDLED;
 }
 
 
