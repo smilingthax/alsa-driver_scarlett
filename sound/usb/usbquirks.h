@@ -398,6 +398,7 @@
 	}
 },
 {
+	/* thanks to Emiliano Grilli <emillo@libero.it> for helping researching this data */
 	USB_DEVICE(0x0582, 0x000c),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "Roland",
@@ -416,6 +417,23 @@
 					.altset_idx = 1,
 					.attributes = 0,
 					.endpoint = 0x01,
+					.ep_attr = 0x01,
+					.rates = SNDRV_PCM_RATE_CONTINUOUS,
+					.rate_min = 44100,
+					.rate_max = 44100,
+				}
+			},
+			{
+				.ifnum = 1,
+				.type = QUIRK_AUDIO_FIXED_ENDPOINT,
+				.data = & (const struct audioformat) {
+					.format = SNDRV_PCM_FORMAT_S24_3LE,
+					.channels = 2,
+					.iface = 1,
+					.altsetting = 1,
+					.altset_idx = 1,
+					.attributes = 0,
+					.endpoint = 0x81,
 					.ep_attr = 0x01,
 					.rates = SNDRV_PCM_RATE_CONTINUOUS,
 					.rate_min = 44100,
