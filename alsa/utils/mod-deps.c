@@ -40,6 +40,7 @@ struct cond {
 	struct dep *dep;	/* dependency pointer */
 	int left;		/* left brackets */
 	int right;		/* right brackets (after this condition element) */
+	int not;
 	int type;
 	struct cond *next;
 	struct cond *stack_prev;
@@ -305,6 +306,7 @@ static int read_file_1(const char *filename, struct cond **template)
 				(*template)->dep = ntemplate->dep;
 				(*template)->left = ntemplate->left;
 				(*template)->right = ntemplate->right;
+				(*template)->not = ntemplate->not;
 				(*template)->type = ntemplate->type;
 				(*template)->next = ntemplate->next;
 				free(ntemplate);
@@ -360,6 +362,11 @@ static struct cond * create_cond(char *line)
 			for (i = 1; i < strlen(word) + 1; i++)
 				word[i - 1] = word[i];
 			cond->left++;
+		}
+		/* hack for !XXX */
+		if (word[0] == '!' && isascii(word[1])) {
+			cond->not = 1;
+			memmove(word, word + 1, strlen(word));
 		}
 		for (i = 0; i < strlen(word); i++) {
 			if (word[i] == '!' || word[i] == '=' ||
@@ -918,6 +925,8 @@ static void output_acinclude(void)
 				printf(cond_prev->type == COND_AND ? " &&" : " ||");
 				printf("\n      ");
 			}
+			if (cond->not)
+				printf(" ! ");
 			for (j = 0; j < cond->left; j++)
 				printf("(");
 			printf("( test \"$CONFIG_%s\" == \"y\" -o \"$CONFIG_%s\" == \"m\" )", cond->name, cond->name);
