@@ -1,5 +1,3 @@
-#include "../alsa-kernel/core/sound.c"
-
 /* misc.c */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 EXPORT_SYMBOL(try_inc_mod_count);

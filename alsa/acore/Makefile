@@ -18,3 +18,9 @@ include $(TOPDIR)/Rules.make
 
 info.c: info.inc info.patch $(TOPDIR)/alsa-kernel/core/info.c
 pcm_native.c: pcm_native.patch $(TOPDIR)/alsa-kernel/core/pcm_native.c
+control.c: control.patch $(TOPDIR)/alsa-kernel/core/control.c
+hwdep.c: hwdep.patch $(TOPDIR)/alsa-kernel/core/hwdep.c
+init.c: init.patch $(TOPDIR)/alsa-kernel/core/init.c
+rawmidi.c: rawmidi.patch $(TOPDIR)/alsa-kernel/core/rawmidi.c
+sound.c: sound.patch $(TOPDIR)/alsa-kernel/core/sound.c
+timer.c: timer.patch $(TOPDIR)/alsa-kernel/core/timer.c
