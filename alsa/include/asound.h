@@ -1056,6 +1056,7 @@ typedef struct snd_rawmidi_status {
 #define SND_TIMER_GLOBAL_MAX		0x000003ff
 #define SND_TIMER_GLOBAL(tmr)		((tmr) & SND_TIMER_GLOBAL_MAX)
 #define SND_TIMER_GLOBAL_SYSTEM		0	/* system timer number */
+#define SND_TIMER_GLOBAL_RTC		1	/* RTC timer */
 /* soundcard number */
 #define SND_TIMER_SOUNDCARD_CARD_MAX	(SND_CARDS-1)
 #define SND_TIMER_SOUNDCARD_CARD_SHIFT	22

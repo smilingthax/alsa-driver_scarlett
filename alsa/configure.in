@@ -396,6 +396,36 @@ else
   AC_MSG_RESULT(no)
 fi
 
+dnl Check for RTC timer support...
+AC_MSG_CHECKING(for RTC callback support in kernel)
+rtcsup="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#if defined(__alpha__) || (!defined(CONFIG_RTC) && !defined(CONFIG_RTC_MODULE))
+int main(void) { exit(1); }
+#else
+#define __KERNEL__
+#include <linux/mc146818rtc.h>
+int main(void)
+{
+  rtc_task_t *cb = 0;
+  exit(0);
+}
+#endif
+],
+  AC_MSG_RESULT("yes");rtcsup="1",
+  AC_MSG_RESULT("no");rtcsup="0",
+  AC_MSG_RESULT("unknown");rtcsup="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_SND_RTC=$rtcsup
+AC_SUBST(CONFIG_SND_RTC)
+if test "$CONFIG_SND_RTC" = "1"; then
+  AC_DEFINE(CONFIG_SND_RTC)
+fi
+
 dnl Check for which cards to compile driver for...
 ALSA_CARDS_INIT
 ALSA_CARDS_SELECT
