@@ -24,12 +24,25 @@
 #define __SOUND_ASOUND_H
 
 #if defined(LINUX) || defined(__LINUX__) || defined(__linux__)
+
 #include <linux/ioctl.h>
+
 #ifdef __KERNEL__
+
 #include <linux/types.h>
+#include <asm/byteorder.h>
+
+#if  __LITTLE_ENDIAN == 1234
+#define SNDRV_LITTLE_ENDIAN
+#elif __BIG_ENDIAN == 4321
+#define SNDRV_BIG_ENDIAN
 #else
-#include <endian.h>
+#error "Unsupported endian..."
 #endif
+
+#else /* !__KERNEL__ */
+
+#include <endian.h>
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SNDRV_LITTLE_ENDIAN
 #elif __BYTE_ORDER == __BIG_ENDIAN
@@ -37,7 +50,11 @@
 #else
 #error "Unsupported endian..."
 #endif
-#endif
+
+#endif /* __KERNEL **/
+
+#endif /* LINUX */
+
 #ifndef __KERNEL__
 #include <sys/time.h>
 #include <sys/types.h>

@@ -2812,7 +2812,7 @@ module_exit(alsa_card_es1968_exit)
 #ifndef MODULE
 
 /* format is: snd-es1968=snd_enable,snd_index,snd_id,
-			 snd_total_bufsize,snd_midi_enable,
+			 snd_total_bufsize,
 			 snd_pcm_substreams_p,
 			 snd_pcm_substreams_c,
 			 snd_clock
@@ -2828,7 +2828,6 @@ static int __init alsa_card_es1968_setup(char *str)
 	       get_option(&str,&snd_index[nr_dev]) == 2 &&
 	       get_id(&str,&snd_id[nr_dev]) == 2 &&
 	       get_option(&str,&snd_total_bufsize[nr_dev]) == 2 &&
-	       get_option(&str,&snd_midi_enable[nr_dev]) == 2 &&
 	       get_option(&str,&snd_pcm_substreams_p[nr_dev]) == 2 &&
 	       get_option(&str,&snd_pcm_substreams_c[nr_dev]) == 2 &&
 	       get_option(&str,&snd_clock[nr_dev]) == 2);

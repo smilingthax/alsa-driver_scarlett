@@ -1,7 +1,7 @@
 # ALSA generic drivers
 
 mainmenu_option next_comment
-comment 'ALSA generic devices'
+comment 'Generic devices'
 
 dep_tristate 'Dummy (/dev/null) soundcard' CONFIG_SND_DUMMY $CONFIG_SND
 dep_tristate 'Virtual MIDI soundcard' CONFIG_SND_VIRMIDI $CONFIG_SND $CONFIG_SND_SEQUENCER
