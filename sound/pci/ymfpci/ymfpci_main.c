@@ -1706,7 +1706,7 @@ int __devinit snd_ymfpci_mixer(ymfpci_t *chip, int rear_switch)
  * joystick support
  */
 
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 static int ymfpci_joystick_ports[4] = {
 	0x201, 0x202, 0x204, 0x205
 };
@@ -2119,7 +2119,7 @@ static int snd_ymfpci_free(ymfpci_t *chip)
 		release_resource(chip->fm_res);
 		kfree_nocheck(chip->fm_res);
 	}
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 	if (chip->joystick_res)
 		snd_ymfpci_disable_joystick(chip);
 #endif
@@ -2272,7 +2272,7 @@ int __devinit snd_ymfpci_create(snd_card_t * card,
 	spin_lock_init(&chip->voice_lock);
 	init_waitqueue_head(&chip->interrupt_sleep);
 	atomic_set(&chip->interrupt_sleep_count, 0);
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 	init_MUTEX(&chip->joystick_mutex);
 #endif
 	chip->card = card;

@@ -229,7 +229,7 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 			return err;
 		}
 	}
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 	if ((err = snd_ymfpci_joystick(chip)) < 0) {
 		printk(KERN_WARNING "ymfpci: cannot initialize joystick, skipping...\n");
 	}

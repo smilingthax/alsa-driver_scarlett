@@ -2743,7 +2743,7 @@ int __devinit snd_cs46xx_midi(cs46xx_t *chip, int device, snd_rawmidi_t **rrawmi
  * gameport interface
  */
 
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 
 typedef struct snd_cs46xx_gameport {
 	struct gameport info;
@@ -2960,7 +2960,7 @@ static int snd_cs46xx_free(cs46xx_t *chip)
 	if (chip->active_ctrl)
 		chip->active_ctrl(chip, 1);
 
-#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#if defined(CONFIG_GAMEPORT) || (defined(MODULE) && defined(CONFIG_GAMEPORT_MODULE))
 	if (chip->gameport) {
 		gameport_unregister_port(&chip->gameport->info);
 		kfree(chip->gameport);
