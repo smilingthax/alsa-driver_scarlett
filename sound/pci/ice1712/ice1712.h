@@ -248,6 +248,7 @@ struct snd_ak4524 {
 	unsigned int cif: 1;
 	unsigned char data_mask;
 	unsigned char clk_mask;
+	unsigned char caddr;		/* C0 and C1 bits */
 	unsigned char cs_mask;
 	unsigned char cs_addr;
 	unsigned char cs_none;
