@@ -1936,7 +1936,7 @@ static void __exit pdplus_shutdown_ll (pdplus_t *scard)
 static __inline__ /* only used twice */
 void pdplus_copy_from_user_ll (
         vm_offset_t dst,
-        u32 const *src,
+        const u32 __user *src,
         size_t byte_count)
 
 /* FIXME: Maybe with a few kernel patches this would result in better code. */
@@ -2032,7 +2032,7 @@ static int pdplus_a_play_copy_ll (
         snd_pcm_substream_t *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
-        void *src,
+        void __user *src,
         snd_pcm_uframes_t ucount
 )
 {
@@ -2047,7 +2047,7 @@ static int pdplus_a_play_copy_ll (
          *             So we cannot memcpy_toio. */
         pdplus_copy_from_user_ll (
                 scard->MEM_iomem.vaddr + PDPLUS_A_PLAY_OFFSET + bpos,
-                (u32*)src,
+                src,
                 bcount);
 
         return ucount;
@@ -2084,7 +2084,7 @@ static int pdplus_a_capt_copy_ll (
         snd_pcm_substream_t *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
-        void *dst,
+        void __user *dst,
         snd_pcm_uframes_t ucount
 )
 {
@@ -2096,8 +2096,8 @@ static int pdplus_a_capt_copy_ll (
         snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
 
         /* No constraints about access here.  So we can use memcpy */
-        memcpy_fromio (
-                (u32*)dst,
+        copy_to_user_fromio (
+                dst,
                 scard->MEM_iomem.vaddr + PDPLUS_A_CAPT_OFFSET + bpos,
                 bcount);
 
@@ -2110,7 +2110,7 @@ static int pdplus_d_play_copy_ll (
         snd_pcm_substream_t *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
-        void *src,
+        void __user *src,
         snd_pcm_uframes_t ucount
 )
 {
@@ -2123,7 +2123,7 @@ static int pdplus_d_play_copy_ll (
 
         pdplus_copy_from_user_ll (
                 scard->MEM_iomem.vaddr + PDPLUS_D_PLAY_OFFSET + bpos,
-                (u32*)src,
+                src,
                 bcount);
 
         return ucount;
@@ -2182,7 +2182,7 @@ static int pdplus_d_capt_copy_ll (
         snd_pcm_substream_t *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
-        void *dst,
+        void __user *dst,
         snd_pcm_uframes_t ucount
 )
 {
@@ -2198,8 +2198,8 @@ static int pdplus_d_capt_copy_ll (
                 return -EIO;
 
         /* No constraints about access here.  So we can use memcpy */
-        memcpy_fromio (
-                (u32*)dst,
+        copy_to_user_fromio (
+                dst,
                 scard->MEM_iomem.vaddr + PDPLUS_D_CAPT_OFFSET + bpos,
                 bcount);
 
@@ -4895,9 +4895,9 @@ static int pdplus_soft_ramp_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
                 .name =  "Digital Input Clock",   \
                 .index = 0,                       \
                 .access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE, \
-                info:  pdplus_d_capt_rate_info, \
-                get:   pdplus_d_capt_rate_get,  \
-                put:   NULL                     \
+                .info = pdplus_d_capt_rate_info, \
+                .get = pdplus_d_capt_rate_get,  \
+                .put = NULL                     \
         }
 
 static int pdplus_d_capt_rate_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
@@ -5962,10 +5962,10 @@ static int __devinit pdplus_init(
         scard->auto_profi_mode = 1;
 
         /* ALSA should have kcallocked our private_data.  Check this. */
-        snd_assert (scard->PLX_iomem.vaddr == 0,  scard->PLX_iomem.vaddr = 0);
-        snd_assert (scard->MEM_iomem.vaddr == 0,  scard->MEM_iomem.vaddr = 0);
-        snd_assert (scard->FPGA_iomem.vaddr == 0, scard->FPGA_iomem.vaddr = 0);
-        snd_assert (scard->HW_iomem.vaddr == 0,   scard->HW_iomem.vaddr = 0);
+        snd_assert (scard->PLX_iomem.vaddr == NULL,  scard->PLX_iomem.vaddr = NULL);
+        snd_assert (scard->MEM_iomem.vaddr == NULL,  scard->MEM_iomem.vaddr = NULL);
+        snd_assert (scard->FPGA_iomem.vaddr == NULL, scard->FPGA_iomem.vaddr = NULL);
+        snd_assert (scard->HW_iomem.vaddr == NULL,   scard->HW_iomem.vaddr = NULL);
 
 #if MANY_CHECKS
         DL (1, "Checking PCI resources");
