@@ -1886,8 +1886,8 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	else {
 		udelay(50);
 		if (ac97_reset_wait(ac97, HZ/2, 0) < 0 &&
-		    (err = ac97_reset_wait(ac97, HZ/2, 1)) < 0) {
-			snd_printk("AC'97 %d:%d does not respond - RESET [REC_GAIN = 0x%x]\n", ac97->num, ac97->addr, err);
+		    ac97_reset_wait(ac97, HZ/2, 1) < 0) {
+			snd_printk("AC'97 %d:%d does not respond - RESET\n", ac97->num, ac97->addr);
 			snd_ac97_free(ac97);
 			return -ENXIO;
 		}
