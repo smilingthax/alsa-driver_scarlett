@@ -1,6 +1,29 @@
 #define __NO_VERSION__
 #include "../alsa-kernel/core/misc.c"
 
+
+#if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2,5,29)
+
+#include <linux/devfs_fs_kernel.h>
+
+void snd_compat_devfs_remove(const char *str, ...)
+{
+	char buf[64];
+	va_list args;
+	int n;
+
+	va_start(args, fmt);
+	n = vsnprintf(buf, 64, fmt, args);
+	if (n < 64) {
+		devfs_handle_t de = devfs_get_handle(NULL, buf, 0, 0, 0, 0);
+	        devfs_unregister(de);
+	        devfs_put(de);
+	}
+}
+
+#endif
+
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 
 #include <linux/slab.h>
@@ -49,6 +72,7 @@ int snd_compat_release_resource(struct resource *resource)
 }
 
 #endif
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_PCI)
 
