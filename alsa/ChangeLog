@@ -38,6 +38,8 @@
 * sound.h file renamed to asound.h (due to conflict with newer 2.1.X kernels)
 * sounddetect.h file renamed to asoundid.h
 * changed script snddevices
+* CodingStyle changed to /usr/src/linux/Documentation/CodingStyle
+  - indent -kr -i8
 
 0.1.3 -> 0.1.4
 
