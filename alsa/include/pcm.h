@@ -87,6 +87,7 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_MMAP_SIZE	5
 #define SND_PCM_IOCTL1_MMAP_PTR		6
 #define SND_PCM_IOCTL1_PAUSE		7
+#define SND_PCM_IOCTL1_VOICE_SETUP	8
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_GO		1
@@ -115,7 +116,9 @@ struct snd_stru_pcm_runtime {
 	int stop_mode;
 	snd_pcm_format_t format;	/* format information */
 	int frags;			/* fragments */
+#if 0
 	int voice;
+#endif
 	volatile int *frag_head;
 	int _sfrag_head;		/* static fragment tail */
 	volatile int *frag_tail;
