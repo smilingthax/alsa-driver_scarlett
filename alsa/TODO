@@ -6,7 +6,6 @@ M clean endianness stuff
 M make a definitive decision about SND_PCM_CHECK_SYNC
 M add master/divisor to timer
 M loopback implementation (To think)
-M reimplement mixer/control API (To think)
 M make xrun detection optional (Abramo)
 L implement silence fill for xrun smoothing (To think)
 L check multithread safeness wrt at least read/write
@@ -18,12 +17,10 @@ M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster x
 M add detailed failure to params ioctl (see es18xx)
 M add needed callbacks for params_info (see es18xx)
 M change real rate params to use snd_pcm_clock_* (where useful) and to set rate_{master,divisor} (see es18xx)
-M rewrite mixer lowlevel implementation
 M fix trident driver (PCM?)
 M fix es1968 driver to compute real rate at params time
 M add new MPU401 uart driver (Jaroslav)
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
-L fix CMI8330 mixer
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
 L get rid of snd_pcm_lib_fragment_bytes and snd_pcm_lib_buffer_bytes
