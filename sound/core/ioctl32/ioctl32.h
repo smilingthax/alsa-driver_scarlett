@@ -27,9 +27,11 @@
 #define __ALSA_IOCTL32_H
 
 #ifndef A
-#ifdef __x86_64__
+#ifdef CONFIG_PPC64
+#include <asm/ppc32.h>
+#else
+/* x86-64, sparc64 */
 #define A(__x) ((void *)(unsigned long)(__x))
-#define AA(__x)	A(__x)
 #endif
 #endif
 
