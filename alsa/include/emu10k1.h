@@ -604,6 +604,10 @@
 #define SPBYPASS		0x5e		/* SPDIF BYPASS mode register			*/
 #define SPBYPASS_ENABLE		0x00000001	/* Enable SPDIF bypass mode			*/
 
+#define AC97SLOT		0x5f            /* additional AC97 slots enable bits		*/
+#define AC97SLOT_CNTR		0x10            /* Center enable */
+#define AC97SLOT_LFE		0x20            /* LFE enable */
+
 #define CDSRCS			0x60		/* CD-ROM Sample Rate Converter status register	*/
 
 #define GPSRCS			0x61		/* General Purpose SPDIF sample rate cvt status */
@@ -1048,6 +1052,8 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define EXTOUT_AC97_R	   0x01	/* AC'97 playback channel - right */
 #define EXTOUT_TOSLINK_L   0x02	/* LiveDrive - TOSLink Optical - left */
 #define EXTOUT_TOSLINK_R   0x03	/* LiveDrive - TOSLink Optical - right */
+#define EXTOUT_CENTER      0x04	/* SB Live 5.1 - center */
+#define EXTOUT_LFE         0x05 /* SB Live 5.1 - LFE */
 #define EXTOUT_HEADPHONE_L 0x06	/* LiveDrive - Headphone - left */
 #define EXTOUT_HEADPHONE_R 0x07	/* LiveDrive - Headphone - right */
 #define EXTOUT_REAR_L	   0x08	/* Rear channel - left */
