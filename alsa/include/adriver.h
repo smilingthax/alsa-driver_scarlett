@@ -760,7 +760,7 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #define gameport_get_port_data(gp) ((struct snd_gameport *)(gp))->port_data
 #define gameport_set_dev_parent(gp,xdev)
 #define gameport_set_name(gp,x)
-#define gameport_set_phys(gp,x)
+#define gameport_set_phys(gp,x,y)
 #endif /* to_gameport_driver */
 #endif /* GAMEPORT || GAMEPORT_MODULE */
 
