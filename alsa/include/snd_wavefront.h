@@ -113,12 +113,12 @@ struct snd_stru_wavefront_card {
         snd_hwdep_t *fx_processor;
         snd_wavefront_t wavefront;
 
-#ifdef CONFIG_ISAPNP
+#ifdef __ISAPNP__
 	struct isapnp_dev *wss;
 	struct isapnp_dev *ctrl;
 	struct isapnp_dev *mpu;
 	struct isapnp_dev *synth;
-#endif CONFIG_ISAPNP
+#endif /* CONFIG_ISAPNP */
 };
 
 extern void snd_wavefront_internal_interrupt (snd_wavefront_card_t *card);
