@@ -3,7 +3,7 @@
 
 /*
  *  Copyright (c) by Jaromir Koutek <miri@punknet.cz>,
- *                   Jaroslav Kysela <perex@suse.cz>
+ *                   Jaroslav Kysela <perex@jcu.cz>
  *  Definitions for ESS Solo-1
  *
  *
@@ -99,6 +99,8 @@
 #define SL_CMD_ENABLEEXT 0xc6
 #define SL_CMD_PAUSEDMA 0xd0
 #define SL_CMD_ENABLEAUDIO1 0xd1
+#define SL_CMD_STOPAUDIO1 0xd3
+#define SL_CMD_AUDIO1STATUS 0xd8
 #define SL_CMD_CONTDMA 0xd4
 
 #define SL_RECSRC_MIC 0
@@ -140,6 +142,7 @@ struct snd_stru_solo {
 	struct snd_pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
+	snd_pcm_t *pcm2;  
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_synth_t *synth;	/* S3FM */
@@ -157,7 +160,8 @@ void snd_solo_free(esssolo_t * solo);
 void snd_solo_interrupt(esssolo_t * solo);
 
 snd_pcm_t *snd_solo_pcm(esssolo_t * solo);
-snd_kmixer_t *snd_solo_mixer(esssolo_t * solo);
+snd_pcm_t *snd_solo_pcm2(esssolo_t * solo);
+snd_kmixer_t *snd_solo_mixer(esssolo_t * solo, int pcmnum_audio1, int pcmnum_audio2);
 void snd_solo_midi(esssolo_t * solo, mpu401_t * mpu);
 
 #endif				/* __ESSSOLO1_H */
