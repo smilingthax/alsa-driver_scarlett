@@ -2668,12 +2668,13 @@ static unsigned long snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsig
 	if (offset > dma_bytes - PAGE_SIZE)
 		return NOPAGE_SIGBUS;
 	if (substream->ops->page) {
-		vaddr = substream->ops->page(substream, offset);
-		if (! vaddr)
+		page = substream->ops->page(substream, offset);
+		if (! page)
 			return NOPAGE_OOM;
-	} else
+	} else {
 		vaddr = runtime->dma_area + offset;
-	page = virt_to_page(vaddr);
+		page = virt_to_page(vaddr);
+	}
 	get_page(page);
 #ifndef LINUX_2_2
 	return page;
