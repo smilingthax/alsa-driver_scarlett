@@ -75,3 +75,7 @@ ID: Cirrus Logic / Crystal Semiconductors CS4235/CS4236/CS4236B/CS4237B/CS4238B/
 SC: Turtle Beach Malibu
 IF: MIXER,PCM,MIDI
 MA: Jaroslav Kysela <perex@jcu.cz>
+
+ID: ESS Solo-1 ES1938
+IF: MIXER,PCM
+MA: Jaromir Koutek <miri@punknet.cz>
