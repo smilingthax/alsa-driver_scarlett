@@ -1456,6 +1456,7 @@ static struct _ac97_rate_regs ali_ac97_rate_regs[] __devinitdata = {
 static struct ac97_quirk ac97_quirks[] __devinitdata = {
 	{ 0x1028, 0x0126, "Dell Optiplex GX260", AC97_TUNE_HP_ONLY },
 	{ 0x1734, 0x0088, "Fujisu-Siemens D1522", AC97_TUNE_HP_ONLY },
+	{ 0x8086, 0x4d44, "Intel D850EMV2", AC97_TUNE_HP_ONLY },
 	{ } /* terminator */
 };
 
