@@ -275,6 +275,23 @@ AC_DEFINE_UNQUOTED(SND_VERSION, "$SND_VERSION")
 AC_SUBST(SND_VERSION)
 AC_MSG_RESULT($SND_VERSION)
 
+dnl Check for sequencer support...
+AC_MSG_CHECKING(for sequencer support)
+AC_ARG_WITH(sequencer,
+  [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
+  sequencer="$withval", sequencer="no")
+SNDCFG_SEQUENCER="0"
+if test "$pnp" = "yes"; then
+  SNDCFG_SEQUENCER="1"
+fi
+AC_SUBST(SNDCFG_SEQUENCER)
+if test "$SNDCFG_SEQUENCER" = "1"; then
+  AC_DEFINE(SNDCFG_SEQUENCER)
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
 dnl Some late substitutes...
 c_opts="$c_opts -DLINUX"
 AC_SUBST(c_opts)
