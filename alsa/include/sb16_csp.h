@@ -57,7 +57,7 @@
 #define SND_SB_CSP_ST_QSOUND		0x10
 
 /* maximum QSound value (180 degrees right) */
-#define SND_SB_CSP_QSOUND_MAX		0x20
+#define SND_SB_CSP_QSOUND_MAX_RIGHT	0x20
 
 /* maximum microcode RIFF file size */
 #define SND_SB_CSP_MAX_MICROCODE_FILE_SIZE	0x3000
@@ -95,12 +95,6 @@ typedef struct snd_sb_csp_info {
 	unsigned short state;		/* state bits */
 } snd_sb_csp_info_t;
 
-/* 33 QSound positions from left (0x00) to right (0x20) in 180 degree field */
-typedef struct snd_sb_csp_qsound {
-	unsigned char left;
-	unsigned char right;
-} snd_sb_csp_qsound_t;
-
 /* HWDEP controls */
 /* get CSP information */
 #define SND_SB_CSP_IOCTL_INFO		_IOR('H', 0x10, snd_sb_csp_info_t)
@@ -116,14 +110,6 @@ typedef struct snd_sb_csp_qsound {
 #define SND_SB_CSP_IOCTL_PAUSE		_IO('H', 0x15)
 /* restart CSP and DMA transfer */
 #define SND_SB_CSP_IOCTL_RESTART	_IO('H', 0x16)
-/* start QSound codec */
-#define SND_SB_CSP_IOCTL_QSOUND_SET_STATE	_IOW('H', 0x20, int)
-/* stop QSound codec */
-#define SND_SB_CSP_IOCTL_QSOUND_GET_STATE	_IOR('H', 0x21, int)
-/* set QSound channel positions */
-#define SND_SB_CSP_IOCTL_QSOUND_SET_POS	_IOW('H', 0x22, snd_sb_csp_qsound_t)
-/* get current QSound channel positions */
-#define SND_SB_CSP_IOCTL_QSOUND_GET_POS	_IOR('H', 0x23, snd_sb_csp_qsound_t)
 
 #ifdef __KERNEL__
 #include "sb.h"
@@ -147,18 +133,18 @@ typedef struct snd_sb_csp {
 	int version;		/* CSP version (0x10 - 0x1f) */
 	int running;		/* running state */
 
-	snd_kmixer_t *mixer;	/* mixer interface to attach */
-	snd_kmixer_element_t *mixer_dest;	/* output target */
+	snd_kmixer_t		*mixer;		/* mixer interface to attach */
+	snd_kmixer_element_t	*mixer_dest;	/* output target */
+	snd_kmixer_element_t	*qsound_element;
+	snd_kmixer_group_t 	*qsound_group;
 
-	snd_kmixer_element_t *me_qsound_pcm;
-	snd_kmixer_group_t   *mg_qsound;
-
-	int q_enabled;		/* Q-Sound enabled flag */
-	int qpos_left;		/* Q-Sound left position */
-	int qpos_right;		/* Q-Sound right position */
+	spinlock_t q_lock;	/* locking */
+	int q_enabled;		/* enabled flag */
+	int qpos_left;		/* left position */
+	int qpos_right;		/* right position */
+	int qpos_changed;	/* position changed flag */
 
 	struct semaphore access_mutex;	/* locking */
-
 	snd_info_entry_t *proc;	/* proc interface */
 } snd_sb_csp_t;
 
@@ -171,6 +157,7 @@ typedef struct {
 	int (*csp_autoload) (snd_sb_csp_t * p, int pcm_sfmt, int play_rec_mode);
 	int (*csp_start) (snd_sb_csp_t * p, int sample_width, int channels);
 	int (*csp_stop) (snd_sb_csp_t * p);
+	int (*csp_qsound_transfer) (snd_sb_csp_t * p);
 } snd_sb_csp_callback_t;
 
 #define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
