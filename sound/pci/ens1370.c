@@ -2030,14 +2030,13 @@ static int __devinit snd_ensoniq_create(snd_card_t * card,
 
 static void snd_ensoniq_midi_interrupt(ensoniq_t * ensoniq)
 {
-	unsigned long flags;
 	snd_rawmidi_t * rmidi = ensoniq->rmidi;
 	unsigned char status, mask, byte;
 
 	if (rmidi == NULL)
 		return;
 	/* do Rx at first */
-	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+	spin_lock(&ensoniq->reg_lock);
 	mask = ensoniq->uartm & ES_MODE_INPUT ? ES_RXRDY : 0;
 	while (mask) {
 		status = inb(ES_REG(ensoniq, UART_STATUS));
@@ -2046,10 +2045,10 @@ static void snd_ensoniq_midi_interrupt(ensoniq_t * ensoniq)
 		byte = inb(ES_REG(ensoniq, UART_DATA));
 		snd_rawmidi_receive(ensoniq->midi_input, &byte, 1);
 	}
-	spin_unlock_irqrestore(&ensoniq->reg_lock, flags);
+	spin_unlock(&ensoniq->reg_lock);
 
 	/* do Tx at second */
-	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+	spin_lock(&ensoniq->reg_lock);
 	mask = ensoniq->uartm & ES_MODE_OUTPUT ? ES_TXRDY : 0;
 	while (mask) {
 		status = inb(ES_REG(ensoniq, UART_STATUS));
@@ -2063,7 +2062,7 @@ static void snd_ensoniq_midi_interrupt(ensoniq_t * ensoniq)
 			outb(byte, ES_REG(ensoniq, UART_DATA));
 		}
 	}
-	spin_unlock_irqrestore(&ensoniq->reg_lock, flags);
+	spin_unlock(&ensoniq->reg_lock);
 }
 
 static int snd_ensoniq_midi_input_open(snd_rawmidi_substream_t * substream)
@@ -2230,7 +2229,6 @@ static int __devinit snd_ensoniq_midi(ensoniq_t * ensoniq, int device, snd_rawmi
 
 static irqreturn_t snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	unsigned long flags;
 	ensoniq_t *ensoniq = dev_id;
 	unsigned int status, sctrl;
 
@@ -2241,7 +2239,7 @@ static irqreturn_t snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs 
 	if (!(status & ES_INTR))
 		return IRQ_NONE;
 
-	spin_lock_irqsave(&ensoniq->reg_lock, flags);
+	spin_lock(&ensoniq->reg_lock);
 	sctrl = ensoniq->sctrl;
 	if (status & ES_DAC1)
 		sctrl &= ~ES_P1_INT_EN;
@@ -2251,7 +2249,7 @@ static irqreturn_t snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs 
 		sctrl &= ~ES_R1_INT_EN;
 	outl(sctrl, ES_REG(ensoniq, SERIAL));
 	outl(ensoniq->sctrl, ES_REG(ensoniq, SERIAL));
-	spin_unlock_irqrestore(&ensoniq->reg_lock, flags);
+	spin_unlock(&ensoniq->reg_lock);
 
 	if (status & ES_UART)
 		snd_ensoniq_midi_interrupt(ensoniq);
