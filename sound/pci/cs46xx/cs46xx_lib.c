@@ -2797,7 +2797,7 @@ static long snd_cs46xx_io_read(snd_info_entry_t *entry, void *file_private_data,
 	snd_cs46xx_region_t *region = (snd_cs46xx_region_t *)entry->private_data;
 	
 	size = count;
-	if (file->f_pos + size > region->size)
+	if (file->f_pos + (size_t)size > region->size)
 		size = region->size - file->f_pos;
 	if (size > 0) {
 		char *tmp;
