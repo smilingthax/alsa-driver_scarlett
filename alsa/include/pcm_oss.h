@@ -128,7 +128,7 @@ typedef struct _snd_pcm_oss_runtime {
 	unsigned int fragments;
 	size_t buffer_size;			/* requested fragment size */
 	size_t bytes;				/* total # bytes processed */
-	size_t mmap_buffer_size;
+	size_t mmap_size;
 	char *buffer;				/* vmallocated fragment */
 	size_t buffer_used;			/* used length from buffer */
 	snd_pcm_plugin_t *plugin_first;
