@@ -87,8 +87,7 @@ int isapnp_reserve_dma[8] = { [0 ... 7] = -1 };		/* reserve (don't use) some DMA
 long isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
 long isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
-MODULE_DESCRIPTION("Generic ISA Plug & Play support\n\
-classes: {system}");
+MODULE_DESCRIPTION("Generic ISA Plug & Play support");
 MODULE_PARM(isapnp_disable, "i");
 MODULE_PARM_DESC(isapnp_disable, "ISA Plug & Play disable");
 MODULE_PARM(isapnp_rdp, "i");
