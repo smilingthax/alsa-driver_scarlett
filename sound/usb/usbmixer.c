@@ -55,6 +55,8 @@ struct usb_audio_term {
 	int name;
 };
 
+struct usbmix_name_map;
+
 struct usb_mixer_build {
 	snd_usb_audio_t *chip;
 	unsigned char *buffer;
@@ -62,6 +64,7 @@ struct usb_mixer_build {
 	unsigned int ctrlif;
 	DECLARE_BITMAP(unitbitmap, 32*32);
 	usb_audio_term_t oterm;
+	const struct usbmix_name_map *map;
 };
 
 struct usb_mixer_elem_info {
@@ -147,22 +150,18 @@ enum {
 /* get the mapped name if the unit matches */
 static int check_mapped_name(mixer_build_t *state, int unitid, int control, char *buf, int buflen)
 {
-	const struct usbmix_ctl_map *map;
 	const struct usbmix_name_map *p;
-	struct usb_device_descriptor *dev = &state->chip->dev->descriptor;
 
-	for (map = usbmix_ctl_maps; map->vendor; map++) {
-		if (map->vendor != dev->idVendor ||
-		    map->product != dev->idProduct)
-			continue;
-		for (p = map->map; p->id; p++) {
-			if (p->id == unitid &&
-			    (! control || ! p->control || control == p->control)) {
-				buflen--;
-				strncpy(buf, p->name, buflen - 1);
-				buf[buflen] = 0;
-				return strlen(buf);
-			}
+	if (! state->map)
+		return 0;
+
+	for (p = state->map; p->id; p++) {
+		if (p->id == unitid &&
+		    (! control || ! p->control || control == p->control)) {
+			buflen--;
+			strncpy(buf, p->name, buflen - 1);
+			buf[buflen] = 0;
+			return strlen(buf);
 		}
 	}
 	return 0;
@@ -1385,6 +1384,8 @@ int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif, unsigned char *buffe
 	unsigned char *desc;
 	mixer_build_t state;
 	int err;
+	const struct usbmix_ctl_map *map;
+	struct usb_device_descriptor *dev = &chip->dev->descriptor;
 
 	strcpy(chip->card->mixername, "USB Mixer");
 
@@ -1393,6 +1394,15 @@ int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif, unsigned char *buffe
 	state.buffer = buffer;
 	state.buflen = buflen;
 	state.ctrlif = ctrlif;
+
+	/* check the mapping table */
+	for (map = usbmix_ctl_maps; map->vendor; map++) {
+		if (map->vendor == dev->idVendor && map->product == dev->idProduct) {
+			state.map = map->map;
+			break;
+		}
+	}
+
 	desc = NULL;
 	while ((desc = snd_usb_find_csint_desc(buffer, buflen, desc, OUTPUT_TERMINAL, ctrlif, -1)) != NULL) {
 		if (desc[0] < 9)
