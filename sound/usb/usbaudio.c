@@ -2079,7 +2079,7 @@ static void *_usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 	snd_card_t *card;
 	snd_usb_audio_t *chip;
 
-	if (quirk && ifnum != quirk->ifnum)
+	if (quirk && quirk->ifnum != QUIRK_ANY_INTERFACE && ifnum != quirk->ifnum)
 		goto __err_val;
 
 	if (usb_set_configuration(dev, config->bConfigurationValue) < 0) {
