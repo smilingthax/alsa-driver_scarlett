@@ -189,12 +189,12 @@ struct snd_stru_pcm1_channel {
 	void (*private_free) (void *private_data);
 	/* -- hardware -- */
 	struct snd_stru_pcm1_hardware hw;
+#ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
 	struct snd_stru_pcm1_oss_setup *setup_list;	/* setup list */
 	struct snd_stru_pcm1_oss_setup *setup;		/* active setup */
 	struct semaphore setup_mutex;
 	/* -- proc interface -- */
-#ifdef CONFIG_SND_OSSEMUL
 	snd_info_entry_t *proc_oss_entry;
 #endif
 };

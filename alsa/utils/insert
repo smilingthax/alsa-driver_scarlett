@@ -302,6 +302,7 @@ case "$1" in
     restore cs4236.conf
     ;;
   detect)
+    isapnp
     if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
     if ! $INSMOD -m $MODDIR/snd-detect.o >> $MAP; then exit 1; fi
     cat /proc/asound/detect
