@@ -1,6 +1,6 @@
 - midlevel:
 H remove *fallback memory allocation functions once the hw_params stuff is finished
-H add work_ptr
+H add work_ptr (to think about)
 H change defaults for Wave volume and DAC/ADC volume
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
@@ -13,10 +13,9 @@ L extend the use of __init and __exit to all initialization code wherever it is
 L clean endianness stuff
 
 - lowlevel:
-H fix dynamic constraints for sb8, sb16, es18xx, rme9652
 M create a driver for Compaq iPAQ handheld PC (Philips UDA1341TS)
 M create an USB audio driver
-M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster xrun recovery
+M reduce prepare path (a lot of stuff may be moved to hw_params) for faster xrun recovery
 L EMU10K1 - direct S/PDIF output using FX8010
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L CS4236 - test the half duplex (one DMA) settings
