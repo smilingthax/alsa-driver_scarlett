@@ -1,0 +1,96 @@
+
+		ALSA PCM realtime mixing interface - Draft v0.1
+		===============================================
+		        Jaroslav Kysela <perex@jcu.cz>
+
+
+    ALSA driver already supports all features which are needed for exclusive
+access to PCM devices. Modern sound driver needs ability of realtime mixing
+of independend PCM streams. Mixing should be done in user space or in kernel
+space. Unfortunately user space have some limitations for which this
+implementation isn't very good:
+	1) user code doesn't know precise current position in stream
+	2) user code may deliver samples to kernel space delayed
+	3) user code doesn't have access to hardware and use optimal mode
+           for data transfers and playback (GUS cards)
+   ALSA implementation leaves some code to user space. In user space should
+be code for conversion to mixing format, rate and adding some digital
+effects (echo, 3D etc..).
+   As transfer method between user space and kernel space will be used
+mmaped access. This means that application will write samples directly
+to driver's buffer (this shouldn't be hardware buffer of necessity).
+This eliminates one copy of samples.
+   As synchronization source (as standard PCM code uses) will be used
+system clock (gettimeofday). This method of synchronization will also allow
+delayed start of samples.
+
+   Compatibility issues: Interface isn't compatible with current available
+interfaces such as OSS and exclusive ALSA PCM interface. Author of draft is
+expecting that application authors will use new interface in applications and
+some ports of old applications will be done. Main goal of ALSA project is
+creating something new and modern. If we will support old OSS interface,
+authors probably will leave at this interface and this doesn't ensure good
+performance for future. ALSA already offers OSS compatibility in exclusive
+mode. This should be enough. Author simply doesn't know how can be done good
+(without compromises) mixing with fragment issues.
+
+   Other issues: Using ALSA PCM mixing interface and exclusive interfaces
+(ALSA PCM or OSS emulation). Mixing interface will be coded on top of
+hardware drivers and sharing between exclusive interfaces cannot be
+possible. User must choose if he (she) want run exlusive application or
+rather application which will use shared mixed playback.
+
+   Record direction: Is needed to create multiple record input? Author of
+this draft think that all applications are using exclusive record input
+at this time and this feature isn't needed for future. Data for record 
+monitoring should be already read via proc interface at current time.
+
+==== expected additions to asound.h ====
+
+/*****************************************************************************
+ *                                                                           *
+ *        Digital Audio (PCM) mixing interface - /dev/snd/pcmmix??           *
+ *                                                                           *
+ *****************************************************************************/
+
+#define SND_PCM_MIX_VERSION		SND_PROTOCOL_VERSION( 1, 0, 0 )
+
+struct snd_pcm_mix_info {
+  unsigned int type;			/* soundcard type */
+  unsigned char id[32];			/* ID of PCM mixing device */
+  unsigned char name[80];		/* name of device */
+  unsigned int format;                  /* SND_PCM_SFMT_XXXX */
+  unsigned int rate;                    /* mixing rate in Hz */
+  unsigned int channels;                /* hardware channels (voices) */
+  unsigned char *buffer;		/* initial buffer for mmaped access */
+  unsigned int size;			/* initial buffer size for mmaped access */
+  unsigned char reserved[64];		/* reserved for future */
+};
+
+struct snd_pcm_mix_setup {
+  unsigned char volume[128];		/* linear volume levels (0-255) */
+  unsigned int channels;		/* channels (voices) */
+  struct timeval start;			/* start time in us or zero=now */
+  unsigned int size;			/* buffer size in bytes or zero=initial */
+  int wakeup_size;			/* wakeup size in bytes */
+  unsigned char reserved[256];		/* reserved for future */
+};
+
+struct snd_pcm_mix_status {
+  int count;                            /* number of bytes writeable without blocking */
+  int queue;                            /* number of bytes in queue */
+  int freeptr;				/* pointer to free area in byte offset */
+  int underrun;                         /* count of underruns from last status */
+  struct timeval time;                  /* time the next write is going to play */
+  struct timeval stime;                 /* time when playback was started */
+  int scount;                           /* number of bytes processed from playback start (last underrun) */
+  unsigned char reserved[64];		/* reserved for future */
+};
+
+#define SND_PCM_MIX_IOCTL_PVERSION	_IOR ( 'm', 0x00, int )
+#define SND_PCM_MIX_IOCTL_INFO		_IOR ( 'm', 0x01, struct snd_pcm_mix_info )
+#define SND_PCM_MIX_IOCTL_SETUP		_IOWR( 'm', 0x10, struct snd_pcm_mix_setup )
+#define SND_PCM_MIX_IOCTL_STATUS	_IOR ( 'm', 0x20, struct snd_pcm_mix_status )
+#define SND_PCM_MIX_IOCTL_FLUSH		_IO  ( 'm', 0x30 )
+#define SND_PCM_MIX_IOCTL_DRAIN		_IO  ( 'm', 0x31 )
+#define SND_PCM_MIX_IOCTL_PAUSE		_IOWR( 'm', 0x32, int )
