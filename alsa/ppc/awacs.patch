@@ -1,0 +1,28 @@
+--- awacs.c	2003-05-31 13:38:32.000000000 +0200
++++ awacs.c.old	2003-05-31 13:37:30.000000000 +0200
+@@ -1,3 +1,4 @@
++#define __NO_VERSION__
+ /*
+  * PMac AWACS lowlevel functions
+  *
+@@ -32,7 +33,7 @@
+ #define chip_t pmac_t
+ 
+ 
+-#ifdef CONFIG_ADB_CUDA
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) || defined(CONFIG_ADB_CUDA)
+ #define PMAC_AMP_AVAIL
+ #endif
+ 
+@@ -43,7 +44,11 @@
+ 	unsigned char amp_tone[2];
+ } awacs_amp_t;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
++#define CHECK_CUDA_AMP() (adb_hardware == ADB_VIACUDA)
++#else
+ #define CHECK_CUDA_AMP() (sys_ctrler == SYS_CTRLER_CUDA)
++#endif
+ 
+ #endif /* PMAC_AMP_AVAIL */
+ 
