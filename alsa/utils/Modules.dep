@@ -8,6 +8,7 @@
 %dir linux/sound/pci
 |snd-intel8x0m snd-pcm
 |snd-hdspm snd-pcm snd-seq-midi snd-hwdep
+|snd-atiixp snd-pcm
 
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm

@@ -35,3 +35,10 @@ config SND_INTEL8X0M
 	help
 	  Say 'Y' or 'M' to include support for Intel8x0 and AMD768/8111 based
 	  modems.
+
+config SND_ATIIXP
+	tristate "ATI IXP 150/200/250"
+	depends on SND && EXPERIMENTAL
+	help
+	  Say 'Y' or 'M' to include support for ATI IXP 150/200/250 AC97 controller.
+
