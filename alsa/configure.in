@@ -241,6 +241,8 @@ int main(void) {
 	fprintf(file, "i586");
 #elif defined(CONFIG_M586TSC)
 	fprintf(file, "i586tsc");
+#elif defined(CONFIG_M586MMX)
+	fprintf(file, "i586mmx");
 #elif defined(CONFIG_M686) || defined(CONFIG_MPENTIUMIII) || defined(CONFIG_MPENTIUM4)
 	fprintf(file, "i686");
 #elif defined(CONFIG_MK6)
