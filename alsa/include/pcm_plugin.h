@@ -50,6 +50,7 @@ struct snd_stru_pcm_plugin {
 	int dst_width;			/* sample width in bits */                
 	ssize_t (*src_samples)(snd_pcm_plugin_t *plugin, size_t dst_samples);
 	ssize_t (*dst_samples)(snd_pcm_plugin_t *plugin, size_t src_samples);
+#if 0
 	int (*src_voices)(snd_pcm_plugin_t *plugin,
 			  snd_pcm_plugin_voice_t **voices,
 			  size_t samples,
@@ -58,6 +59,7 @@ struct snd_stru_pcm_plugin {
 			  snd_pcm_plugin_voice_t **voices,
 			  size_t samples,
 			  void *(*plugin_alloc)(snd_pcm_plugin_handle_t *handle, size_t size));
+#endif
 	ssize_t (*transfer)(snd_pcm_plugin_t *plugin,
 			    const snd_pcm_plugin_voice_t *src_voices,
 			    const snd_pcm_plugin_voice_t *dst_voices,
@@ -90,23 +92,11 @@ ssize_t snd_pcm_plugin_hardware_samples(snd_pcm_plugin_handle_t *handle, int cha
 ssize_t snd_pcm_plugin_client_size(snd_pcm_plugin_handle_t *handle, int channel, size_t drv_size);
 ssize_t snd_pcm_plugin_hardware_size(snd_pcm_plugin_handle_t *handle, int channel, size_t clt_size);
 
-int snd_pcm_plugin_build_interleave(snd_pcm_plugin_handle_t *handle,
-				    snd_pcm_format_t *src_format,
-				    snd_pcm_format_t *dst_format,
-				    snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_linear(snd_pcm_plugin_handle_t *handle,
 				snd_pcm_format_t *src_format,
 				snd_pcm_format_t *dst_format,
 				snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_mulaw(snd_pcm_plugin_handle_t *handle,
-			       snd_pcm_format_t *src_format,
-			       snd_pcm_format_t *dst_format,
-			       snd_pcm_plugin_t **r_plugin);
-int snd_pcm_plugin_build_alaw(snd_pcm_plugin_handle_t *handle,
-			      snd_pcm_format_t *src_format,
-			      snd_pcm_format_t *dst_format,
-			      snd_pcm_plugin_t **r_plugin);
-int snd_pcm_plugin_build_adpcm(snd_pcm_plugin_handle_t *handle,
 			       snd_pcm_format_t *src_format,
 			       snd_pcm_format_t *dst_format,
 			       snd_pcm_plugin_t **r_plugin);
