@@ -1023,6 +1023,7 @@ static int snd_cs46xx_capture_trigger(snd_pcm_substream_t * substream,
 	return result;
 }
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
 static int _cs46xx_adjust_sample_rate (cs46xx_t *chip, cs46xx_pcm_t *cpcm,
 				       int sample_rate) 
 {
@@ -1051,7 +1052,6 @@ static int _cs46xx_adjust_sample_rate (cs46xx_t *chip, cs46xx_pcm_t *cpcm,
 									 cpcm->hw_addr,
 									 cpcm->pcm_channel->pcm_channel_id)) == NULL) {
 			snd_printk(KERN_ERR "cs46xx: failed to re-create virtual PCM channel\n");
-			up (&chip->spos_mutex);
 			return -ENXIO;
 		}
 
@@ -1061,6 +1061,8 @@ static int _cs46xx_adjust_sample_rate (cs46xx_t *chip, cs46xx_pcm_t *cpcm,
 
 	return 0;
 }
+#endif
+
 static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 					 snd_pcm_hw_params_t * hw_params)
 {
@@ -1083,6 +1085,7 @@ static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 	if (cpcm->pcm_channel->pcm_channel_id != DSP_IEC958_CHANNEL ||
 	    !(chip->dsp_spos_instance->spdif_status_out & DSP_SPDIF_STATUS_AC3_MODE)) {
 		if (_cs46xx_adjust_sample_rate (chip,cpcm,sample_rate)) {
+			up (&chip->spos_mutex);
 			return -ENXIO;
 		}
 	}
