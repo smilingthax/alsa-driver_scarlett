@@ -5,7 +5,6 @@
 #include "config1.h"
 
 /* ALSA section */
-#undef CONFIG_SND_VERSION
 #undef CONFIG_SND_ISA
 #undef CONFIG_SND_SEQUENCER_MODULE
 #undef CONFIG_SND_OSSEMUL
