@@ -36,6 +36,7 @@
 
 	/* system messages */
 #define SND_SEQ_EVENT_SYSTEM		0
+#define SND_SEQ_EVENT_RESULT		1
 
 	/* note messages */
 #define SND_SEQ_EVENT_NOTE		1
@@ -91,26 +92,23 @@
 
 	/* instrument layer */
 #define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
-#define SND_SEQ_EVENT_INSTR_BEGIN_RESULT 101	/* result */
 #define SND_SEQ_EVENT_INSTR_END		102	/* end of instrument management */
-#define SND_SEQ_EVENT_INSTR_END_RESULT	103	/* result */
-#define SND_SEQ_EVENT_INSTR_PUT		104	/* put instrument to port */
-#define SND_SEQ_EVENT_INSTR_PUT_RESULT	105	/* result */
-#define SND_SEQ_EVENT_INSTR_GET		106	/* get instrument from port */
-#define SND_SEQ_EVENT_INSTR_GET_RESULT	107	/* result */
-#define SND_SEQ_EVENT_INSTR_FREE	108	/* free instrument(s) */
-#define SND_SEQ_EVENT_INSTR_FREE_RESULT	109	/* result */
-#define SND_SEQ_EVENT_INSTR_LIST	110	/* instrument list */
-#define SND_SEQ_EVENT_INSTR_LIST_RESULT 111	/* result */
-#define SND_SEQ_EVENT_INSTR_RESET	112	/* reset instrument memory */
-#define SND_SEQ_EVENT_INSTR_RESET_RESULT 113	/* result */
-#define SND_SEQ_EVENT_INSTR_INFO	114	/* instrument interface info */
-#define SND_SEQ_EVENT_INSTR_INFO_RESULT 115	/* result */
-#define SND_SEQ_EVENT_INSTR_STATUS	116	/* instrument interface status */
-#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 117	/* result */
-#define SND_SEQ_EVENT_INSTR_CLUSTER	118	/* cluster parameters */
-#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 119	/* result */
-#define SND_SEQ_EVENT_INSTR_CHANGE	120	/* instrument change */
+#define SND_SEQ_EVENT_INSTR_PUT		103	/* put instrument to port */
+#define SND_SEQ_EVENT_INSTR_MODIFY	104
+#define SND_SEQ_EVENT_INSTR_GET		105	/* get instrument from port */
+#define SND_SEQ_EVENT_INSTR_GET_RESULT	106	/* result */
+#define SND_SEQ_EVENT_INSTR_FREE	107	/* free instrument(s) */
+#define SND_SEQ_EVENT_INSTR_LIST	108	/* instrument list */
+#define SND_SEQ_EVENT_INSTR_LIST_RESULT 109	/* result */
+#define SND_SEQ_EVENT_INSTR_RESET	110	/* reset instrument memory */
+#define SND_SEQ_EVENT_INSTR_INFO	111	/* instrument interface info */
+#define SND_SEQ_EVENT_INSTR_INFO_RESULT 112	/* result */
+#define SND_SEQ_EVENT_INSTR_STATUS	113	/* instrument interface status */
+#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 114	/* result */
+#define SND_SEQ_EVENT_INSTR_CLUSTER	115	/* cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_GET	117	/* get cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 118	/* result */
+#define SND_SEQ_EVENT_INSTR_CHANGE	118	/* instrument change */
 
 	/* hardware specific events - range 192-255 */
 
@@ -213,6 +211,11 @@ typedef struct {
 
 
 typedef struct {
+	int event;		/* processed event type */
+	int result;
+} snd_seq_result_t;
+
+typedef struct {
 	long int tv_sec;	/* seconds */
 	long int tv_nsec;	/* nanoseconds */
 } snd_seq_real_time_t;
@@ -248,7 +251,7 @@ typedef struct snd_seq_event_t {
 			snd_seq_real_time_t real;
 		} time;
 		snd_seq_addr_t addr;
-		int result;
+		snd_seq_result_t result;
 		snd_seq_ev_instr_begin_t instr_begin;
 	} data;
 } snd_seq_event_t;
@@ -484,6 +487,9 @@ typedef struct {
 #define SND_SEQ_INSTR_TYPE2_OPL3	(1<<1)	/* Yamaha OPL3 */
 #define SND_SEQ_INSTR_TYPE2_OPL4	(1<<2)	/* Yamaha OPL4 */
 
+/* query flags */
+#define SND_SEQ_INSTR_QUERY_FOLLOW_ALIAS (1<<0)
+
 /* instrument data */
 typedef struct {
 	char name[32];			/* instrument name */
@@ -495,7 +501,7 @@ typedef struct {
 	} data;
 } snd_seq_instr_data_t;
 
-/* INSTR_PUT, data are stored in one block (extended or IPC), header + data */
+/* INSTR_PUT/MODIFY, data are stored in one block (extended or IPC), header + data */
 
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
@@ -508,9 +514,9 @@ typedef struct {
 
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
+	unsigned int flags;		/* query flags */
 	char reserved[16];		/* reserved for the future use */
 	long len;			/* real instrument data length (without header) */
-	snd_seq_instr_data_t data;	/* instrument data */
 } snd_seq_instr_get_t;
 
 typedef struct {
