@@ -131,3 +131,6 @@ IF: MIXER,PCM,MIDI,OPL,SYNTH_MIDI,HWDEP
 CO: pbd@op.net
 MA: pbd@op.net
 
+ID: C-Media CMI8330
+IF: MIXER,PCM
+MA: George Talusan <gstalusan@uwaterloo.ca>
