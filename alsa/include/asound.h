@@ -146,11 +146,6 @@ struct sndrv_aes_iec958 {
 	unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
 };
 
-union sndrv_digital_audio {
-	struct sndrv_aes_iec958 aes;
-	unsigned char reserved[256];
-};
-
 /****************************************************************************
  *                                                                          *
  *      Section for driver hardware dependent interface - /dev/snd/hw?      *
@@ -199,11 +194,15 @@ enum sndrv_pcm_class {
 	SNDRV_PCM_CLASS_MULTI,		/* multichannel device */
 	SNDRV_PCM_CLASS_MODEM,		/* software modem class */
 	SNDRV_PCM_CLASS_DIGITIZER,	/* digitizer class */
+	/* Don't forget to change the following: */
+	SNDRV_PCM_CLASS_LAST = SNDRV_PCM_CLASS_DIGITIZER,
 };
 
 enum sndrv_pcm_subclass {
-	SNDRV_PCM_SUBCLASS_GENERIC_MIX = 0x0001,	/* mono or stereo subdevices are mixed together */
-	SNDRV_PCM_SUBCLASS_MULTI_MIX = 0x0001,	/* multichannel subdevices are mixed together */
+	SNDRV_PCM_SUBCLASS_GENERIC_MIX,	/* mono or stereo subdevices are mixed together */
+	SNDRV_PCM_SUBCLASS_MULTI_MIX,	/* multichannel subdevices are mixed together */
+	/* Don't forget to change the following: */
+	SNDRV_PCM_SUBCLASS_LAST = SNDRV_PCM_SUBCLASS_MULTI_MIX,
 };
 
 enum sndrv_pcm_stream {
@@ -501,6 +500,7 @@ enum {
 enum sndrv_rawmidi_stream {
 	SNDRV_RAWMIDI_STREAM_OUTPUT,
 	SNDRV_RAWMIDI_STREAM_INPUT,
+	SNDRV_RAWMIDI_STREAM_LAST = SNDRV_RAWMIDI_STREAM_INPUT,
 };
 
 #define SNDRV_RAWMIDI_INFO_OUTPUT		0x00000001
@@ -557,7 +557,8 @@ enum sndrv_timer_type {
 	SNDRV_TIMER_TYPE_SLAVE = 0,
 	SNDRV_TIMER_TYPE_GLOBAL,
 	SNDRV_TIMER_TYPE_CARD,
-	SNDRV_TIMER_TYPE_PCM
+	SNDRV_TIMER_TYPE_PCM,
+	SNDRV_TIMER_TYPE_LAST = SNDRV_TIMER_TYPE_PCM,
 };
 
 /* slave timer types */
@@ -565,7 +566,8 @@ enum sndrv_timer_slave_type {
 	SNDRV_TIMER_STYPE_NONE,
 	SNDRV_TIMER_STYPE_APPLICATION,
 	SNDRV_TIMER_STYPE_SEQUENCER,		/* alias */
-	SNDRV_TIMER_STYPE_OSS_SEQUENCER		/* alias */
+	SNDRV_TIMER_STYPE_OSS_SEQUENCER,	/* alias */
+	SNDRV_TIMER_STYPE_LAST = SNDRV_TIMER_STYPE_OSS_SEQUENCER,
 };
 
 /* global timers (device member) */
@@ -645,7 +647,7 @@ struct sndrv_timer_read {
 
 #define SNDRV_CTL_VERSION			SNDRV_PROTOCOL_VERSION(2, 0, 0)
 
-struct sndrv_ctl_hw_info {
+struct sndrv_ctl_info {
 	int card;			/* R: card number */
 	enum sndrv_card_type type;	/* type of card */
 	unsigned char id[16];		/* ID of card (user selectable) */
@@ -663,7 +665,8 @@ enum sndrv_control_type {
 	SNDRV_CONTROL_TYPE_INTEGER,		/* integer type */
 	SNDRV_CONTROL_TYPE_ENUMERATED,		/* enumerated type */
 	SNDRV_CONTROL_TYPE_BYTES,		/* byte array */
-	SNDRV_CONTROL_TYPE_IEC958 = 0x1000,	/* IEC958 (S/PDIF) setup */
+	SNDRV_CONTROL_TYPE_IEC958,		/* IEC958 (S/PDIF) setup */
+	SNDRV_CONTROL_TYPE_LAST = SNDRV_CONTROL_TYPE_IEC958,
 };
 
 enum sndrv_control_iface {
@@ -673,7 +676,8 @@ enum sndrv_control_iface {
 	SNDRV_CONTROL_IFACE_PCM,		/* PCM device */
 	SNDRV_CONTROL_IFACE_RAWMIDI,		/* RawMidi device */
 	SNDRV_CONTROL_IFACE_TIMER,		/* timer device */
-	SNDRV_CONTROL_IFACE_SEQUENCER		/* sequencer client */
+	SNDRV_CONTROL_IFACE_SEQUENCER,		/* sequencer client */
+	SNDRV_CONTROL_IFACE_LAST = SNDRV_CONTROL_IFACE_SEQUENCER,
 };
 
 #define SNDRV_CONTROL_ACCESS_READ	(1<<0)
@@ -694,11 +698,11 @@ struct sndrv_control_id {
 };
 
 struct sndrv_control_list {
-	unsigned int controls_offset;	/* W: first control ID to get */
-	unsigned int controls_request;	/* W: count of control IDs to get */
-	unsigned int controls_count;	/* R: count of available (set) IDs */
-	unsigned int controls;		/* R: count of all available controls */
-	struct sndrv_control_id *pids;	/* W: IDs */
+	unsigned int offset;		/* W: first control ID to get */
+	unsigned int space;		/* W: count of control IDs to get */
+	unsigned int used;		/* R: count of control IDs set */
+	unsigned int count;		/* R: count of all controls */
+	struct sndrv_control_id *pids;	/* R: IDs */
 	unsigned char reserved[50];
 };
 
@@ -706,7 +710,7 @@ struct sndrv_control_info {
 	struct sndrv_control_id id;	/* W: control ID */
 	enum sndrv_control_type type;	/* R: value type - SNDRV_CONTROL_TYPE_* */
 	unsigned int access;		/* R: value access (bitmask) - SNDRV_CONTROL_ACCESS_* */
-	unsigned int values_count;	/* count of values */
+	unsigned int count;		/* count of values */
 	union {
 		struct {
 			long min;		/* R: minimum value */
@@ -739,14 +743,14 @@ struct sndrv_control {
 			unsigned char data[512];
 			unsigned char *data_ptr;
 		} bytes;
-		union sndrv_digital_audio diga;
+		struct sndrv_aes_iec958 iec958;
         } value;                /* RO */
         unsigned char reserved[128];
 };
 
 enum {
 	SNDRV_CTL_IOCTL_PVERSION = _IOR('U', 0x00, int),
-	SNDRV_CTL_IOCTL_HW_INFO = _IOR('U', 0x01, struct sndrv_ctl_hw_info),
+	SNDRV_CTL_IOCTL_INFO = _IOR('U', 0x01, struct sndrv_ctl_info),
 	SNDRV_CTL_IOCTL_CONTROL_LIST = _IOWR('U', 0x10, struct sndrv_control_list),
 	SNDRV_CTL_IOCTL_CONTROL_INFO = _IOWR('U', 0x11, struct sndrv_control_info),
 	SNDRV_CTL_IOCTL_CONTROL_READ = _IOWR('U', 0x12, struct sndrv_control),
@@ -768,11 +772,12 @@ enum {
  */
 
 enum sndrv_ctl_event_type {
-	SNDRV_CTL_EVENT_REBUILD,		/* rebuild everything */
+	SNDRV_CTL_EVENT_REBUILD,	/* rebuild everything */
 	SNDRV_CTL_EVENT_VALUE,		/* a control value was changed */
 	SNDRV_CTL_EVENT_CHANGE,		/* a control was changed */
 	SNDRV_CTL_EVENT_ADD,		/* a control was added */
 	SNDRV_CTL_EVENT_REMOVE,		/* a control was removed */
+	SNDRV_CTL_EVENT_LAST = SNDRV_CTL_EVENT_REMOVE,
 };
 
 struct sndrv_ctl_event {
