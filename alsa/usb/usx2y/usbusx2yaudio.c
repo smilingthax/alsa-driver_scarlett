@@ -1028,7 +1028,7 @@ static int usX2Y_audio_stream_new(snd_card_t* card)
 
 	pcm->private_data = usX2Y_stream;
 	pcm->private_free = snd_usX2Y_audio_pcm_free;
-	pcm->info_flags = SNDRV_PCM_INFO_NONATOMIC_OPS;
+	pcm->info_flags = 0;
 
 	sprintf(pcm->name, NAME_ALLCAPS" Audio #%d", usX2Y(card)->chip.pcm_devs);
 
