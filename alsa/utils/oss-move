@@ -1,19 +1,21 @@
 #!/bin/bash
 
 kdir=/usr/src/linux/drivers/sound
+backup=$kdir/../sound.backup
 if [ "x$1" != "x" ]; then
   kdir="$1"
 fi
 
-rm -rf `find $kdir -name "*.o"`
+rm -rf `find $kdir -name "*.[ao]"`
 rm -rf $kdir/oss
-if [ -d $kdir/old ]; then
-  mv $kdir/old/* $kdir
-  rm -rf $kdir/old
+if [ -d $backup ]; then
+  rm -rf $kdir/*
+  mv $backup/* $kdir
 fi
 
-mkdir $kdir/old
-cp -a $kdir/* $kdir/old
+mkdir -p $backup
+rm -rf $backup/*
+cp -a $kdir/* $backup
 
 mkdir $kdir/oss
 mv $kdir/*.[chS] $kdir/oss
@@ -97,7 +99,50 @@ patch -p0 << EOF
 EOF
 cd -
 
+
 cd $kdir/oss
+
+if [ -d $kdir/alsa ]; then
+
+  echo "ALSA already installed, trying to recover."
+
+  patch -R -p0 << EOF
+--- Makefile.old	Mon Mar 19 20:19:24 2001
++++ Makefile	Fri Mar 23 23:28:04 2001
+@@ -83,6 +83,11 @@
+   obj-y += dmasound/dmasound.o
+ endif
+ 
++subdir-\$(CONFIG_SND) += alsa lowlevel cards
++
++ifeq (\$(CONFIG_SND),y)
++  obj-y += alsa/s.o lowlevel/lowlevel.o cards/cards.o
++endif
+ 
+ # Declare multi-part drivers.
+ 
+EOF
+
+  patch -p0 << EOF
+--- Config.in.old	Mon Oct 15 17:39:36 2001
++++ Config.in	Mon Oct 15 17:39:42 2001
+@@ -212,12 +212,3 @@
+   fi
+ fi
+ 
+-mainmenu_option next_comment
+-comment 'Advanced Linux Sound Architecture'
+-
+-tristate 'Advanced Linux Sound Architecture' CONFIG_SND
+-if [ "\$CONFIG_SND" != "n" ]; then
+-  source drivers/sound/Alsa-Config.in
+-fi
+-
+-endmenu
+EOF
+
+fi
+
 patch -p0 << EOF
 --- Makefile.old	Tue Jul 10 10:57:29 2001
 +++ Makefile	Tue Jul 10 11:02:55 2001
@@ -148,7 +193,7 @@ EOF
 cd -
 
 cat << EOF
-The directory $kdir/old contains backup of original sources.
-Don't forget to run this command after the ALSA patch:
+The directory $kdir/../sound.backup contains backup of original sources.
+Don't forget to run bellow command, if you apply the ALSA patch later:
 mv $kdir/Makefile.orig $kdir/Makefile
 EOF
