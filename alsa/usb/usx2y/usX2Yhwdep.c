@@ -64,7 +64,7 @@ static unsigned long us428ctls_vm_nopage(struct vm_area_struct *area, unsigned l
 	vaddr = (char*)((usX2Ydev_t*)area->vm_private_data)->us428ctls_sharedmem + offset;
 	page = virt_to_page(vaddr);
 	get_page(page);
-	snd_printd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%X\n", vaddr, page, offset);
+	snd_printd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%lX\n", vaddr, page, offset);
 #ifndef LINUX_2_2
 	return page;
 #else
@@ -94,7 +94,7 @@ static int us428ctls_mmap(snd_hwdep_t * hw, struct file *filp, struct vm_area_st
 
 	/* if userspace tries to mmap beyond end of our buffer, fail */ 
         if (size > ((PAGE_SIZE - 1 + sizeof(us428ctls_sharedmem_t)) / PAGE_SIZE) * PAGE_SIZE) {
-		snd_printd( "%i > %i\n", size,sizeof(us428ctls_sharedmem_t)); 
+		snd_printd( "%lu > %lu\n", size, (unsigned long)sizeof(us428ctls_sharedmem_t)); 
                 return -EINVAL;
 	}
 
