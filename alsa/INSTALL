@@ -396,13 +396,16 @@ Module parameters
 
     Module for soundcards based on Aztech System AZT2320 chip (PnP only).
 
-    snd_port	- port # for AZT2320 (SB8) chip (PnP setup)
+    snd_port	- port # for AZT2320 chip (PnP setup)
+    snd_wss_port - port # for WSS (PnP setup)
     snd_mpu_port - port # for MPU-401 UART (PnP setup)
     snd_fm_port - FM port # for AZT2320 chip (PnP setup)
-    snd_irq	- IRQ # for AZT2320 (SB8) chip (PnP setup)
+    snd_irq	- IRQ # for AZT2320 (WSS) chip (PnP setup)
     snd_mpu_irq - IRQ # for MPU-401 UART (PnP setup)
-    snd_dma8	- DMA # for AZT2320 (SB8) chip (PnP setup)
-    snd_dma8_size - max DMA size in kB (4-64kB)
+    snd_dma1	- 1st DMA # for AZT2320 (WSS) chip (PnP setup)
+    snd_dma1_size - max 1st DMA size in kB (4-64kB)
+    snd_dma2	- 2nd DMA # for AZT2320 (WSS) chip (PnP setup)
+    snd_dma2_size - max 2nd DMA size in kB (4-64kB)
     
     Module supports up to 8 cards, PnP and autoprobe.
     
