@@ -119,7 +119,7 @@ else
 fi
 
 alsa_device_opts=""
-if modinfo -p snd | grep uid ; then
+if modinfo -p snd | grep -q uid ; then
   if [ x"$alsa_uid" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_uid=$alsa_uid"
   fi
@@ -127,7 +127,7 @@ if modinfo -p snd | grep uid ; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_gid=$alsa_gid"
   fi
 fi
-if modinfo -p snd | grep device_mode ; then
+if modinfo -p snd | grep -q device_mode ; then
   if [ x"$alsa_mode" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_mode=$alsa_mode"
   fi
@@ -343,6 +343,10 @@ trap cleanup 0
 
 # convert ISA PnP id number to string 'ABC'
 convert_isapnp_id () {
+    if [ -z "$1" ]; then
+	echo "XXXX"
+	return
+    fi
     let a='('$1'>>2) & 0x3f'
     let b='(('$1' & 0x03) << 3) | (('$1' >> 13) & 0x07)'
     let c='('$1'>> 8) & 0x1f'
@@ -352,6 +356,10 @@ convert_isapnp_id () {
 
 # swap high & low bytes
 swap_number () {
+    if [ -z "$1" ]; then
+	echo "0000"
+	return
+    fi
     let v='(('$1'>>8)&0xff)|(('$1'&0xff)<<8)'
     printf "%04x" $v
 }
