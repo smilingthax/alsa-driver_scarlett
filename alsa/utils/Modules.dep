@@ -28,6 +28,3 @@ snd-opl4-synth @if_sequencer snd-opl4-lib snd-seq-midi-emul
 |snd-vxpocket snd-vx-lib
 |snd-vxp440 snd-vx-lib
 
-%dir linux/sound/parisc
-|snd-harmony snd-pcm
-
