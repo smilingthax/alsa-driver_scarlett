@@ -95,5 +95,3 @@ static struct inode_operations snd_info_entry_inode_operations =
 };
 
 #endif /* LINUX_VERSION_CODE < 2.4.0 */
-
-#include "../alsa-kernel/core/info.c"
