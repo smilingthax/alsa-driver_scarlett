@@ -1077,7 +1077,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_CHNINFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
 #define SND_PCM_CHNINFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
 #define SND_PCM_CHNINFO_MMAP_VALID	0x00040000	/* fragment data are valid during transfer */
-#define SND_PCM_CHNINFO_PAUSE		0x00050000	/* pause ioctl is supported */
+#define SND_PCM_CHNINFO_PAUSE		0x00080000	/* pause ioctl is supported */
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
 #define SND_PCM_START_FULL		1	/* start when whole queue is filled (playback) */
