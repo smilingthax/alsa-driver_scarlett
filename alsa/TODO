@@ -1,7 +1,7 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 M clean endianness stuff
-M make a definitive decision about SND_PCM_CHECK_SYNC
+M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
 M loopback implementation (To think)
 M make xrun detection optional (Abramo)
