@@ -65,6 +65,27 @@ Driver cannot be activated?
    create a new ticket in our bug reporting system.
 
 
+Compilation from CVS sources
+============================
+
+You need GNU packages autoconf and automake installed in your system
+to compile CVS sources of alsa-driver package.
+
+For compilation you can use these commands:
+
+	make -C utils update-deps
+	aclocal
+	autoconf
+	./configure
+	make dep
+	make
+
+The included cvscompile script does this job for you.
+
+Note: Some automake packages have missing aclocal program. Use newer version
+      in the case.
+
+
 Bug reporting system
 ====================
 
