@@ -416,6 +416,7 @@ extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t si
 extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
 			     unsigned int cmd, void *arg);                      
 extern void snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);
+extern void snd_pcm_xrun(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
