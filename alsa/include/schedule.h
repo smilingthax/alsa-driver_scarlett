@@ -153,7 +153,7 @@
   struct semaphore mutex_##ident;
 #ifdef LINUX_2_3
 #define snd_mutex_prepare(object, ident) \
-  (object)->mutex_##ident = (struct semaphore)__MUTEX_INITIALIZER((object)->mutex_##ident);
+  init_MUTEX(&(object)->mutex_##ident);
 #else
 #define snd_mutex_prepare(object, ident) \
   (object)->mutex_##ident = MUTEX;
