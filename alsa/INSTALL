@@ -109,6 +109,7 @@ Module parameters
 		- value is used for /proc/asound filesystem
 		- this value can be used by applications for identification
 		  of card if user does not want identify card with index number
+    snd_enable  - enable card (only first card is enabled by default)
 
   Module snd-card-dummy.o
   -----------------------
@@ -693,6 +694,34 @@ Module parameters
     snd_cap_frame_size  - max capture frame size in kB (4-128kB)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
+    
+  Module snd-card-cmipci.o
+  ------------------------
+
+    Module for C-Media CMI8338 and 8738 PCI soundcards.
+
+    snd_dac_frame_size  - max playback frame size in kB (4-128kB)
+    snd_adc_frame_size  - max capture frame size in kB (4-128kB)
+    snd_enable_midi 	- 1 = enable, 0 = disable (default)
+    snd_enable_fm	- 1 = enable, 0 = disable (default)
+    snd_mpu_port        - 0x300 (default),0x310,0x320,0x330
+    snd_fm_port         - 0x388 (default)
+
+    Module supports autoprobe and multiple chips (max 8).
+    
+  Module snd-card-ymfpci.o
+  ------------------------
+
+    Module for Yamaha PCI chips (YMF72x, YMF74x & YMF75x).
+
+    snd_dac_frame_size  - max playback frame size in kB (4-128kB)
+    snd_adc_frame_size  - max capture frame size in kB (4-128kB)
+    snd_ac97_frame_size - max AC'97 capture frame size in kB (4-128kB)
+    snd_mpu_port        - 0x300,0x330,0x332,0x334, -1 (disable) by default
+    snd_mpu_irq         - 5,7,9,10,11, -1 (disable) by default
+    snd_fm_port         - 0x388,0x398,0x3a0,0x3a8, -1 (disable) by default
+
+    Module supports autoprobe and multiple chips (max 8).
     
 
 modprobe/kmod support
