@@ -2,7 +2,7 @@
  *  Advanced Linux Sound Architecture - ALSA - Driver
  *
  *  The interface file between the ALSA driver & the user space
- *  Copyright (c) 1994-99 by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) 1994-2000 by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
