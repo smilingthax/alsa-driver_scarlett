@@ -142,7 +142,6 @@ struct snd_stru_pcm_runtime {
 
 	size_t boundary;
 
-	int xruns;
 	int overrange;
 	snd_pcm_digital_t *dig_mask;	/* digital mask */
 	void (*dig_mask_free)(void *dig_mask);

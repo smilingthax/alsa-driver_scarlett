@@ -816,7 +816,6 @@ typedef struct snd_pcm_status {
 	snd_timestamp_t tstamp;	/* Timestamp */
 	ssize_t delay;		/* current delay in frames */
 	size_t avail_max;	/* max frames available on hw since last status */
-	size_t xruns;		/* count of underruns/overruns from last status */
 	size_t overrange;	/* count of ADC (capture) overrange detections from last status */
 	size_t appl_ptr;	/* current application side ptr in frames */
 	size_t hw_ptr;		/* current hardware side ptr in frames */
