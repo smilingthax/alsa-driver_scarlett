@@ -462,6 +462,7 @@ struct _snd_gus_card {
 	snd_pcm_substream_t *pcm_cap_substream;
 	unsigned int c_dma_size;
 	unsigned int c_period_size;
+	unsigned int c_pos;
 
 	snd_rawmidi_t *midi_uart;
 	snd_rawmidi_substream_t *midi_substream_output;

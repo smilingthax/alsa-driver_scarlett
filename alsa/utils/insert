@@ -375,7 +375,7 @@ case "$1" in
     ;;
   dummy)
     basic
-    insert snd-card-dummy.o
+    insert snd-card-dummy.o snd_pcm_devs=4
     #restore dummy.conf
     ;;
   t1)
