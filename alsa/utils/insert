@@ -212,6 +212,15 @@ case "$1" in
     insert snd-card-cs461x.o
     restore cs461x.conf
     ;;
+  fm801)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-fm801.o
+    insert snd-mpu401-uart.o 
+    insert snd-opl3.o
+    insert snd-card-fm801.o
+    restore fm801.conf
+    ;;
   cs4232)
     basic; isapnp
     insert snd-mpu401-uart.o 
