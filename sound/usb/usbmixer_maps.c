@@ -23,6 +23,7 @@
 struct usbmix_name_map {
 	int id;
 	const char *name;
+	int control;
 };
 
 struct usbmix_ctl_map {
@@ -38,31 +39,52 @@ struct usbmix_ctl_map {
 /*
  * Topology of SB Extigy (see on the wide screen :)
 
-USB_IN[1] --->FU[2] -----------------------------+->MU[16] - PE[17]-+- FU[18] -+- EU[27] -+- EU[21] - FU[22] -+- FU[23] > Dig_OUT[24]
-                                                 |                  |          |          |                   |
-USB_IN[3] -+->SU[5] - FU[6] -+- MU[14] - PE[15] -+                  |          |          |                   +- FU[25] > Dig_OUT[26]
-           ^                 |                   |                  |          |          |
-Dig_IN[4] -+                 |                   |                  |          |          +- FU[28] --------------------> Spk_OUT[19]
+USB_IN[1] --->FU[2]------------------------------+->MU[16]-->PE[17]-+->FU[18]--+->EU[27]--+->EU[21]-->FU[22]--+->FU[23] > Dig_OUT[24]
+                                                 ^                  |          |          |                   |
+USB_IN[3] -+->SU[5]-->FU[6]--+->MU[14] ->PE[15]->+                  |          |          |                   +->FU[25] > Dig_OUT[26]
+           ^                 ^                   |                  |          |          |
+Dig_IN[4] -+                 |                   |                  |          |          +->FU[28]---------------------> Spk_OUT[19]
                              |                   |                  |          |
-Lin-IN[7] -+-- FU[8] --------+                   |                  |          +----------------------------------------> Hph_OUT[20]
+Lin-IN[7] -+-->FU[8]---------+                   |                  |          +----------------------------------------> Hph_OUT[20]
            |                                     |                  |
-Mic-IN[9] --+- FU[10] ---------------------------+                  |
+Mic-IN[9] --+->FU[10]----------------------------+                  |
            ||                                                       |
            ||  +----------------------------------------------------+
            VV  V
-           ++--+->SU[11] ->FU[12] --------------------------------------------------------------------------------------> USB_OUT[13]
+           ++--+->SU[11]-->FU[12] --------------------------------------------------------------------------------------> USB_OUT[13]
 */
 
 static struct usbmix_name_map extigy_map[] = {
+	/* 1: IT pcm */
 	{ 2, "PCM Playback" }, /* FU */
-	{ 5, "Digital Playback Source" }, /* SU */
-	{ 6, "Digital" }, /* FU */
+	/* 3: IT pcm */
+	/* 4: IT digital in */
+	{ 5, "Digital In Playback Source" }, /* SU */
+	{ 6, "Digital In" }, /* FU */
+	/* 7: IT line */
 	{ 8, "Line Playback" }, /* FU */
+	/* 9: IT mic */
 	{ 10, "Mic Playback" }, /* FU */
 	{ 11, "Capture Source" }, /* SU */
 	{ 12, "Capture" }, /* FU */
-	{ 18, "Master Playback" }, /* FU */
-	/* FIXME: more to come here... */
+	/* 13: OT pcm capture */
+	/* 14: MU (w/o controls) */
+	/* 15: PE (3D enh) */
+	/* 16: MU (w/o controls) */
+	/* 17: PE (updown) */		/* FIXME: what control? */
+	{ 18, "Tone Control - Bass", USB_FEATURE_BASS }, /* FU */
+	{ 18, "Tone Control - Treble", USB_FEATURE_TREBLE }, /* FU */
+	{ 18, "Master Playback" }, /* FU; others */
+	/* 19: OT speaker */
+	/* 20: OT headphone */
+	{ 21, "Digital Out Extension" }, /* EU */ /* FIXME: what? */
+	{ 22, "Digital Out Playback" }, /* FU */
+	{ 23, "Digital Out1 Playback" }, /* FU */  /* FIXME: corresponds to 24 */
+	/* 24: OT digital out */
+	{ 25, "Digital Out2 Playback" }, /* FU */  /* FIXME: corresponds to 26 */
+	/* 26: OT digital out */
+	{ 27, "Output Extension" }, /* EU */ /* FIXME: what? */
+	/* 28: FU (mute) */
 	{ 0 } /* terminator */
 };
 
