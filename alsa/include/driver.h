@@ -392,7 +392,9 @@ extern int snd_unregister_interrupts(snd_card_t * card);
 
 /* isadma.c */
 
-extern void snd_dma_program(int dma, const void *buf, unsigned int size, unsigned char mode);
+#define DMA_MODE_NO_ENABLE	0x0100
+
+extern void snd_dma_program(int dma, const void *buf, unsigned int size, unsigned short mode);
 extern unsigned int snd_dma_residue(int dma);
 
 /* misc.c */
