@@ -93,7 +93,7 @@ struct _snd_wavefront {
 	char rom_samples_rdonly;           /* can we write on ROM samples */
 	spinlock_t irq_lock;
 	wait_queue_head_t interrupt_sleeper; 
-        snd_wavefront_midi_t midi;         /* ICS2115 MIDI interface */
+	snd_wavefront_midi_t midi;         /* ICS2115 MIDI interface */
 };
 
 struct _snd_wavefront_card {
