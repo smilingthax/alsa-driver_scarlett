@@ -74,7 +74,7 @@
 #undef MODVERSIONS
 #undef _set_ver
 #endif
-#endif
+#endif /* ALSA_BUILD */
 
 #ifndef SND_MAIN_OBJECT_FILE
 #define __NO_VERSION__
@@ -175,6 +175,11 @@ static inline mm_segment_t snd_enter_user(void)
 static inline void snd_leave_user(mm_segment_t fs)
 {
 	set_fs(fs);
+}
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
 }
 
 #if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)
