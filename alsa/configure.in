@@ -176,12 +176,14 @@ AC_ARG_WITH(moddir,
   [                        [/lib/modules/<KVER>/misc]],
   moddir="$withval", 
   moddir_tree=n
+  modsubdir="misc"
 # Special test for RH 5.1
   if test -d /lib/modules/preferred; then
     moddir="/lib/modules/preferred/misc"
   else
     if test -d /lib/modules/$kaversion/kernel; then
-      moddir="/lib/modules/$kaversion/kernel/sound"
+      modsubdir="kernel/sound"
+      moddir="/lib/modules/$kaversion/$modsubdir"
       moddir_tree=y
     else
       moddir="/lib/modules/$kaversion/misc"
@@ -189,6 +191,7 @@ AC_ARG_WITH(moddir,
   fi
 )
 AC_SUBST(moddir)
+AC_SUBST(modsubdir)
 AC_SUBST(moddir_tree)
 AC_MSG_RESULT($moddir)
 
