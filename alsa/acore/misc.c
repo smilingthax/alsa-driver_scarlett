@@ -504,9 +504,9 @@ int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 #endif /* kernel version < 2.3.0 && CONFIG_APM */
 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
 #if defined(CONFIG_SND_USB_AUDIO) || defined(CONFIG_SND_USB_AUDIO_MODULE) ||\
     defined(CONFIG_SND_USB_MIDI) || defined(CONFIG_SND_USB_MIDI_MODULE)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
 /* M-Audio Quattro has weird alternate settings.  the altsetting jumps
  * from 0 to 4 or 3 insuccessively, and this screws up
  * usb_set_interface() (at least on 2.4.18/19 and 2.4.21).
@@ -573,5 +573,107 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 	return 0;
 }
 
-#endif /* CONFIG_SND_USB_* */
 #endif /* LINUX_VERSION < 2.5.24 */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+/*
+ * 2.2 compatible layer
+ */
+#undef usb_driver
+#undef usb_device_id
+#undef usb_register
+#undef usb_deregister
+#undef usb_driver_claim_interface
+
+#define MAX_USB_DRIVERS	5
+struct snd_usb_reg_table {
+	struct usb_driver driver;
+	struct snd_compat_usb_driver *orig;
+};
+
+static struct snd_usb_reg_table my_usb_drivers[MAX_USB_DRIVERS];
+
+static void *snd_usb_compat_probe(struct usb_device *dev, unsigned int ifnum)
+{
+	struct usb_config_descriptor *config = dev->actconfig;	
+	struct snd_compat_usb_driver *p;
+	struct usb_interface_descriptor *alts = config->interface[ifnum].altsetting;
+	const struct snd_compat_usb_device_id *tbl;
+	struct snd_compat_usb_device_id id;
+	int i;
+
+	for (i = 0; i < MAX_USB_DRIVERS; i++) {
+		if (! (p = my_usb_drivers[i].orig))
+			continue;
+		for (tbl = p->id_table; tbl->match_flags; tbl++) {
+			/* we are too lazy to check all entries... */
+			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_VENDOR) &&
+			    tbl->idVendor != dev->descriptor.idVendor)
+				return NULL;
+			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_PRODUCT) &&
+			    tbl->idProduct != dev->descriptor.idProduct)
+				return NULL;
+			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_INT_CLASS) &&
+			    tbl->bInterfaceClass != alts->bInterfaceClass)
+				return NULL;
+			if ((tbl->match_flags & USB_DEVICE_ID_MATCH_INT_SUBCLASS) &&
+			    tbl->bInterfaceSubClass != alts->bInterfaceSubClass)
+				return NULL;
+		}
+		id = *tbl;
+		id.idVendor = dev->descriptor.idVendor;
+		id.idProduct = dev->descriptor.idProduct;
+		id.bInterfaceClass = alts->bInterfaceClass;
+		id.bInterfaceSubClass = alts->bInterfaceSubClass;
+		return p->probe(dev, ifnum, &id);
+	}
+	return NULL;
+}
+
+int snd_compat_usb_register(struct snd_compat_usb_driver *driver)
+{
+	int i;
+	struct usb_driver *drv;
+
+	for (i = 0; i < MAX_USB_DRIVERS; i++) {
+		if (! my_usb_drivers[i].orig)
+			break;
+	}
+	if (i >= MAX_USB_DRIVERS)
+		return -ENOMEM;
+	my_usb_drivers[i].orig = driver;
+	drv = &my_usb_drivers[i].driver;
+	drv->name = driver->name;
+	drv->probe = snd_usb_compat_probe;
+	drv->disconnect = driver->disconnect;
+	INIT_LIST_HEAD(&drv->driver_list);
+	usb_register(drv);
+	return 0;
+}
+
+static struct snd_usb_reg_table *find_matching_usb_driver(struct snd_compat_usb_driver *driver)
+{
+	int i;
+	for (i = 0; i < MAX_USB_DRIVERS; i++) {
+		if (my_usb_drivers[i].orig == driver)
+			return &my_usb_drivers[i];
+	}
+	return NULL;
+}
+
+void snd_compat_usb_deregister(struct snd_compat_usb_driver *driver)
+{
+	struct snd_usb_reg_table *tbl;	
+	if ((tbl = find_matchingUsb_driver(driver)) != NULL)
+		tbl->orig = NULL;
+}
+
+void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver, struct usb_interface *iface, void *ptr)
+{
+	if ((tbl = find_matchingUsb_driver(driver)) != NULL)
+		usb_driver_claim_interface(&tbl->driver, iface, ptr);
+}
+
+#endif /* LINUX_VERSION < 2.3.0 */
+
+#endif /* CONFIG_SND_USB_* */
