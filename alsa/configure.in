@@ -516,7 +516,7 @@ if test "$CONFIG_HAVE_DMA_ADDR_T" = "1"; then
   AC_DEFINE(CONFIG_HAVE_DMA_ADDR_T)
 fi
 
-dnl Check for dma_addr_t
+dnl Check for MUTEX macros
 AC_MSG_CHECKING(for MUTEX macros)
 have_mutex_macros="0"
 ac_save_CFLAGS="$CFLAGS"
