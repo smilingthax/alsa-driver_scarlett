@@ -197,6 +197,7 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #undef unregister_chrdev
 #define unregister_chrdev devfs_unregister_chrdev
 #undef devfs_remove
+void snd_compat_devfs_remove(const char *fmt, ...);
 #define devfs_remove snd_compat_devfs_remove
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
