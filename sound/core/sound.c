@@ -38,7 +38,9 @@
 static int major = CONFIG_SND_MAJOR;
 int snd_major;
 static int cards_limit = 1;
+#ifdef CONFIG_DEVFS_FS
 static int device_mode = S_IFCHR | S_IRUGO | S_IWUGO;
+#endif
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Advanced Linux Sound Architecture driver for soundcards.");
