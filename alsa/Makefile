@@ -48,6 +48,7 @@ install: compile
 	install -m 644 include/asound.h $(prefix)/include/linux
 	install -m 644 include/asoundid.h $(prefix)/include/linux
 	install -m 644 include/asequencer.h $(prefix)/include/linux
+	install -m 644 include/ainstr_iw.h $(prefix)/include/linux
 	if [ -x /etc/rc.d/init.d/alsasound ]; then \
 	  install -m 755 utils/alsasound /etc/rc.d/init.d/alsasound; \
 	fi
