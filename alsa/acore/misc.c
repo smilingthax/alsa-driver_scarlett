@@ -283,7 +283,7 @@ struct workqueue_struct {
 	const char *name;
 	struct list_head worklist;
 	int task_pid;
-	task_t *task;
+	struct task_struct *task;
 	wait_queue_head_t more_work;
 	wait_queue_head_t work_done;
 	struct completion thread_exited;
