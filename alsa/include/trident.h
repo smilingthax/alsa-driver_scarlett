@@ -261,6 +261,7 @@ struct snd_trident_stru_voice {
 	unsigned int CSO;		/* 24 bits (16 on DX) */
 	unsigned int ESO;		/* 24 bits (16 on DX) */
 
+	unsigned int negCSO;	/* nonzero - use negative CSO */
 
 
 	/* --- */
