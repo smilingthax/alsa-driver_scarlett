@@ -147,7 +147,7 @@ function stop() {
   #
   # remove all sound modules
   #
-  /sbin/lsmod | grep -E "^snd" | grep -v "snd-rme9652-mem" | while read line; do \
+  /sbin/lsmod | grep -E "^snd" | grep -v "snd-hammerfall-mem" | while read line; do \
      /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
   done
   # remove the 2.2 soundcore module (if possible)
