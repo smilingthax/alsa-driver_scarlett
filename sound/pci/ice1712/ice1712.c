@@ -1813,7 +1813,7 @@ static int snd_ice1712_pro_internal_clock_put(snd_kcontrol_t * kcontrol, snd_ctl
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ice1712_pro_internal_clock = __devinitdata {
+static snd_kcontrol_new_t snd_ice1712_pro_internal_clock __devinitdata = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "Multi Track Internal Clock",
 	.info = snd_ice1712_pro_internal_clock_info,
