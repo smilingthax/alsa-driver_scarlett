@@ -1,6 +1,35 @@
---- intel8x0.c	2003-06-10 15:08:31.000000000 +0200
-+++ intel8x0.c.old	2003-06-10 15:10:32.000000000 +0200
-@@ -1942,6 +1942,7 @@
+--- intel8x0.c	2004-01-26 12:26:04.000000000 +0100
++++ intel8x0.c	2004-01-26 12:26:35.000000000 +0100
+@@ -43,7 +43,9 @@
+ #include <sound/initval.h>
+ /* for 440MX workaround */
+ #include <asm/pgtable.h>
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
+ #include <asm/cacheflush.h>
++#endif
+ 
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
+@@ -725,7 +727,7 @@
+ 	iputbyte(chip, port + ichdev->roff_sr, ICH_FIFOE | ICH_BCIS | ICH_LVBCI);
+ }
+ 
+-#ifdef __i386__
++#if defined(__i386__) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
+ /*
+  * Intel 82443MX running a 100MHz processor system bus has a hardware bug,
+  * which aborts PCI busmaster for audio transfer.  A workaround is to set
+@@ -736,7 +738,9 @@
+ {
+ 	size = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	change_page_attr(virt_to_page(buf), size, nocache ? PAGE_KERNEL_NOCACHE : PAGE_KERNEL);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
+ 	global_flush_tlb();
++#endif
+ }
+ #else
+ #define fill_nocache(buf,size,nocache)
+@@ -2139,6 +2143,7 @@
  	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
  }
  
@@ -8,7 +37,7 @@
  static int snd_intel8x0_suspend(struct pci_dev *dev, u32 state)
  {
  	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
-@@ -1954,6 +1955,18 @@
+@@ -2151,6 +2156,18 @@
  	intel8x0_resume(chip);
  	return 0;
  }
@@ -27,7 +56,7 @@
  
  /* callback */
  static int snd_intel8x0_set_power_state(snd_card_t *card, unsigned int power_state)
-@@ -2539,3 +2552,4 @@
+@@ -2789,3 +2806,4 @@
  __setup("snd-intel8x0=", alsa_card_intel8x0_setup);
  
  #endif /* ifndef MODULE */
