@@ -1939,11 +1939,11 @@ static void snd_es1968_update_pcm(es1968_t *chip, esschan_t *es)
 	es->hwptr = hwptr;
 	es->count += diff;
 
-	while (es->count > es->frag_size) {
+	if (es->count > es->frag_size) {
 		spin_unlock(&chip->substream_lock);
 		snd_pcm_period_elapsed(subs);
 		spin_lock(&chip->substream_lock);
-		es->count -= es->frag_size;
+		es->count %= es->frag_size;
 	}
 }
 

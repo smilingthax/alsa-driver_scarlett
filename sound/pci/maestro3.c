@@ -1489,8 +1489,8 @@ static void snd_m3_update_ptr(m3_t *chip, m3_dma_t *s)
 	diff = (s->dma_size + hwptr - s->hwptr) % s->dma_size;
 	s->hwptr = hwptr;
 	s->count += diff;
-	while (s->count >= (signed)s->period_size) {
-		s->count -= s->period_size;
+	if (s->count >= (signed)s->period_size) {
+		s->count %= s->period_size;
 		spin_unlock(&chip->reg_lock);
 		snd_pcm_period_elapsed(subs);
 		spin_lock(&chip->reg_lock);
