@@ -2668,7 +2668,7 @@ static int snd_es1968_joystick_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	val = oval & ~0x04;
 	if (ucontrol->value.integer.value[0])
 		val |= 0x04;
-	if (val != oval); {
+	if (val != oval) {
 		pci_write_config_word(chip->pci, ESM_LEGACY_AUDIO_CONTROL, val);
 		return 1;
 	}
