@@ -42,6 +42,8 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 
 #define tasklet_unlock_wait(t)	while (test_bit(0, &(t)->sync)) { }
 
+#define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
+
 #define __init
 #define __exit
 #define __exitdata
