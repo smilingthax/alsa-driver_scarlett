@@ -25,6 +25,7 @@
 #include <linux/init.h>
 #include <sound/core.h>
 #include <sound/es1688.h>
+#include <sound/initval.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("ESS ESx688 lowlevel module");
