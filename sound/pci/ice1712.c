@@ -960,17 +960,25 @@ static snd_i2c_bit_ops_t snd_ice1712_ewx_cs8427_bit_ops = {
 };
 
 /* AK4524 chip select; address 0x48 bit 0-3 */
-static void snd_ice1712_ews88mt_chip_select(ice1712_t *ice, int chip_mask)
+static int snd_ice1712_ews88mt_chip_select(ice1712_t *ice, int chip_mask)
 {
 	unsigned char data, ndata;
 
-	snd_assert(chip_mask >= 0 && chip_mask <= 0x0f, return);
+	snd_assert(chip_mask >= 0 && chip_mask <= 0x0f, return -EINVAL);
 	snd_i2c_lock(ice->i2c);
-	snd_runtime_check(snd_i2c_readbytes(ice->pcf8574[1], &data, 1) == 1, snd_i2c_unlock(ice->i2c); return);
+	if (snd_i2c_readbytes(ice->pcf8574[1], &data, 1) != 1)
+		goto __error;
 	ndata = (data & 0xf0) | chip_mask;
 	if (ndata != data)
-		snd_runtime_check(snd_i2c_sendbytes(ice->pcf8574[1], &ndata, 1) == 1, snd_i2c_unlock(ice->i2c); return);
+		if (snd_i2c_sendbytes(ice->pcf8574[1], &ndata, 1) != 1)
+			goto __error;
 	snd_i2c_unlock(ice->i2c);
+	return 0;
+
+     __error:
+	snd_i2c_unlock(ice->i2c);
+	snd_printk(KERN_ERR "AK4524 chip select failed, check cable to the front module\n");
+	return -EIO;
 }
 
 /*
@@ -988,7 +996,8 @@ static void snd_ice1712_ak4524_write(ice1712_t *ice, int chip,
 
 	if (ice->eeprom.subvendor == ICE1712_SUBDEVICE_EWS88MT) {
 		/* assert AK4524 CS */
-		snd_ice1712_ews88mt_chip_select(ice, ~(1 << chip) & 0x0f);
+		if (snd_ice1712_ews88mt_chip_select(ice, ~(1 << chip) & 0x0f) < 0)
+			return;
 		//snd_ice1712_ews88mt_chip_select(ice, 0x0f);
 	}
 
@@ -3836,11 +3845,15 @@ static int __devinit snd_ice1712_chip_init(ice1712_t *ice)
 	}
 	/* second stage of initialization, analog parts and others */
 	switch (ice->eeprom.subvendor) {
+	case ICE1712_SUBDEVICE_EWS88MT:
+		/* Check if the front module is connected */
+		if ((err = snd_ice1712_ews88mt_chip_select(ice, 0x0f)) < 0)
+			return err;
+		/* Fall through */
 	case ICE1712_SUBDEVICE_DELTA66:
 	case ICE1712_SUBDEVICE_DELTA44:
 	case ICE1712_SUBDEVICE_AUDIOPHILE:
 	case ICE1712_SUBDEVICE_EWX2496:
-	case ICE1712_SUBDEVICE_EWS88MT:
 	case ICE1712_SUBDEVICE_DMX6FIRE:
 		snd_ice1712_ak4524_init(ice);
 		break;
