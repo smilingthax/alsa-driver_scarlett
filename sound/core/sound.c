@@ -225,13 +225,8 @@ int snd_register_device(int type, snd_card_t * card, int dev, snd_minor_t * reg,
 	}
 	list_add_tail(&preg->list, &snd_minors_hash[SNDRV_MINOR_CARD(minor)]);
 #ifdef CONFIG_DEVFS_FS
-	if (strncmp(name, "controlC", 8)) {     /* created in sound.c */
-		char dname[32];
-		sprintf(dname, "snd/%s", name);
-		devfs_register(NULL, dname, DEVFS_FL_DEFAULT,
-			       major, minor, device_mode | S_IFCHR,
-			       &snd_fops, NULL);
-	}
+	if (strncmp(name, "controlC", 8))     /* created in sound.c */
+		devfs_mk_cdev(MKDEV(major, minor), S_IFCHR | device_mode, "snd/%s", name);
 #endif
 	up(&sound_mutex);
 	return 0;
@@ -332,7 +327,6 @@ static int __init alsa_sound_init(void)
 {
 #ifdef CONFIG_DEVFS_FS
 	short controlnum;
-	char controlname[24];
 #endif
 #ifdef CONFIG_SND_OSSEMUL
 	int err;
@@ -368,12 +362,8 @@ static int __init alsa_sound_init(void)
 	snd_info_minor_register();
 #endif
 #ifdef CONFIG_DEVFS_FS
-	for (controlnum = 0; controlnum < cards_limit; controlnum++) {
-		sprintf(controlname, "snd/controlC%d", controlnum);
-		devfs_register(NULL, controlname, DEVFS_FL_DEFAULT,
-				major, controlnum<<5, device_mode | S_IFCHR,
-				&snd_fops, NULL);
-	}
+	for (controlnum = 0; controlnum < cards_limit; controlnum++) 
+		devfs_mk_cdev(MKDEV(major, controlnum<<5), S_IFCHR | device_mode, "snd/controlC%d", controlnum);
 #endif
 #ifndef MODULE
 	printk(KERN_INFO "Advanced Linux Sound Architecture Driver Version " CONFIG_SND_VERSION CONFIG_SND_DATE ".\n");
