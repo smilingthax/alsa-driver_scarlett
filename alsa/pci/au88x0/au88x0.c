@@ -217,6 +217,8 @@ snd_vortex_create(snd_card_t *card, struct pci_dev *pci, vortex_t **rchip) {
     	goto alloc_out;
     }
 
+    snd_card_set_dev(card, &pci->dev);
+
     *rchip = chip;
 
     return 0;

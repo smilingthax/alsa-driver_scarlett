@@ -6112,6 +6112,8 @@ static int __devinit pdplus_probe(
 	}
 	card->private_free = pdplus_sweep;
 
+	snd_card_set_dev(card, &pci->dev);
+
         err = pdplus_init (pci, card);
 
         if (err != 0) {

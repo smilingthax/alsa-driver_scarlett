@@ -1000,6 +1000,8 @@ static int __devinit snd_mixart_create(mixart_mgr_t *mgr, snd_card_t *card, int 
 			return err;
 	}
 
+	snd_card_set_dev(card, &mgr->pci->dev);
+
 	return 0;
 }
 
