@@ -98,6 +98,10 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3)
 #define need_resched() (current->need_resched)
 #endif
+#include <asm/io.h>
+#if defined(virt_to_bus) && !defined(isa_virt_to_bus)
+#define isa_virt_to_bus virt_to_bus
+#endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
 #if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 30) && !defined(ALSA_BUILD))
@@ -148,13 +152,6 @@ static inline void dec_mod_count(struct module *module)
 #define writel(v, a) do { __writel((v),(a)); mb(); } while(0)
 #undef writeq
 #define writeq(v, a) do { __writeq((v),(a)); mb(); } while(0)
-#endif
-
-/* do we have virt_to_bus? */
-#if defined(CONFIG_SPARC64)
-#undef HAVE_VIRT_TO_BUS
-#else
-#define HAVE_VIRT_TO_BUS  1
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
