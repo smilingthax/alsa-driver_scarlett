@@ -101,6 +101,7 @@ static char *kernel_deps[] = {
 	"EISA",
 	"PCI",
 	"SBUS",
+	"I2C",
 	"L3",
 	"USB",
 	"PCMCIA",
