@@ -2311,7 +2311,9 @@ static ssize_t snd_pcm_write(struct file *file, const char *buf, size_t count, l
 	snd_pcm_runtime_t *runtime;
 	snd_pcm_sframes_t result;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	up(&file->f_dentry->d_inode->i_sem);
+#endif
 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
 	substream = pcm_file->substream;
 	snd_assert(substream != NULL, result = -ENXIO; goto end);
@@ -2329,7 +2331,9 @@ static ssize_t snd_pcm_write(struct file *file, const char *buf, size_t count, l
 	if (result > 0)
 		result = frames_to_bytes(runtime, result);
  end:
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	down(&file->f_dentry->d_inode->i_sem);
+#endif
 	return result;
 }
 
@@ -2376,7 +2380,9 @@ static ssize_t snd_pcm_writev(struct file *file, const struct iovec *_vector,
 	void *bufs[128];
 	snd_pcm_uframes_t frames;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	up(&file->f_dentry->d_inode->i_sem);
+#endif
 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, result = -ENXIO; goto end);
 	substream = pcm_file->substream;
 	snd_assert(substream != NULL, result = -ENXIO; goto end);
@@ -2397,7 +2403,9 @@ static ssize_t snd_pcm_writev(struct file *file, const struct iovec *_vector,
 	if (result > 0)
 		result = frames_to_bytes(runtime, result);
  end:
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
 	down(&file->f_dentry->d_inode->i_sem);
+#endif
 	return result;
 }
 #endif
