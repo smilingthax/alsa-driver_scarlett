@@ -2433,6 +2433,8 @@ unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
 	avail = snd_pcm_playback_avail(runtime);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
+	case SNDRV_PCM_STATE_PREPARED:
+	case SNDRV_PCM_STATE_PAUSED:
 		if (avail >= runtime->control->avail_min) {
 			mask = POLLOUT | POLLWRNORM;
 			break;
@@ -2441,12 +2443,6 @@ unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
 	case SNDRV_PCM_STATE_DRAINING:
 		mask = 0;
 		break;
-	case SNDRV_PCM_STATE_PREPARED:
-		if (avail > 0) {
-			mask = POLLOUT | POLLWRNORM;
-			break;
-		}
-		/* Fall through */
 	default:
 		mask = POLLOUT | POLLWRNORM | POLLERR;
 		break;
@@ -2475,6 +2471,8 @@ unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait)
 	avail = snd_pcm_capture_avail(runtime);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
+	case SNDRV_PCM_STATE_PREPARED:
+	case SNDRV_PCM_STATE_PAUSED:
 		if (avail >= runtime->control->avail_min) {
 			mask = POLLIN | POLLRDNORM;
 			break;
