@@ -421,8 +421,6 @@ extern int snd_card_unregister(snd_card_t * card);
 extern int snd_card_info_init(void);
 extern int snd_card_info_done(void);
 
-extern void snd_delay(int loops);
-
 extern int snd_check_ioport(snd_card_t * card, int port, int size);
 extern int snd_register_ioport(snd_card_t * card, int port, int size, char *name,
                                snd_port_t ** rport);

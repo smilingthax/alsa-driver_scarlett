@@ -113,7 +113,7 @@ SC: Shark  Predator4D-PCI
 SC: Jaton  SonicWave 4D
 SC: Hoontech SoundTrack Digital 4DWave NX
 IF: MIXER,PCM,MIDI
-MA: audio@tridentmicro.com
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: ForteMedia FM801
 SC: DT-0398
