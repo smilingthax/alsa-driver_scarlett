@@ -53,7 +53,7 @@ PATCH_UPDATE = '~/alsa/alsa-kernel/scripts/kchanges/update'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']
-ALSA_EXCLUDE_DIR = ['/scripts', '/oss']
+ALSA_EXCLUDE_DIR = ['/scripts', '/oss', '/kbuild']
 KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
 		  '/MAINTAINERS','/Makefile',
 		  '/README','/REPORTING-BUGS',
