@@ -59,23 +59,23 @@ struct isapnp_port {
 	unsigned short max;		/* max base number */
 	unsigned char align;		/* align boundary */
 	unsigned char size;		/* size of range */
-	unsigned short flags;		/* port flags */
+	unsigned char flags;		/* port flags */
+	unsigned char pad;		/* pad */
 	struct isapnp_resources *res;	/* parent */
 	struct isapnp_port *next;	/* next port */
 };
 
 struct isapnp_irq {
 	unsigned short map;		/* bitmaks for IRQ lines */
-	unsigned short flags;		/* IRQ flags */
+	unsigned char flags;		/* IRQ flags */
+	unsigned char pad;		/* pad */
 	struct isapnp_resources *res;	/* parent */
 	struct isapnp_irq *next;	/* next IRQ */
 };
 
 struct isapnp_dma {
 	unsigned char map;		/* bitmask for DMA channels */
-	unsigned char type;		/* DMA type */
 	unsigned char flags;		/* DMA flags */
-	unsigned char speed;		/* DMA speed */
 	struct isapnp_resources *res;	/* parent */
 	struct isapnp_dma *next;	/* next port */
 };
@@ -85,8 +85,8 @@ struct isapnp_mem {
 	unsigned int max;		/* max base number */
 	unsigned int align;		/* align boundary */
 	unsigned int size;		/* size of range */
-	unsigned short flags;		/* memory flags */
-	unsigned short type;		/* memory type */
+	unsigned char flags;		/* memory flags */
+	unsigned char pad;		/* pad */
 	struct isapnp_resources *res;	/* parent */
 	struct isapnp_mem *next;	/* next memory resource */
 };
@@ -126,61 +126,80 @@ struct isapnp_resources {
 
 #include <linux/pci.h>
 
-#if LinuxVersionCode(2, 3, 13) > LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 3, 14) == LINUX_VERSION_CODE
+#error "Please, upgrade to 2.3.15 kernel."
+#endif
+
+#if LinuxVersionCode(2, 3, 15) > LINUX_VERSION_CODE
 
 struct resource {
 	const char *name;
 	unsigned long start, end;
 	unsigned long flags;
-	unsigned char bits;		/* decoded bits */
-	unsigned char fixed;		/* fixed range */
-	unsigned short hw_flags;	/* hardware flags */
-	unsigned short type;		/* region type */
 	struct resource *parent, *sibling, *child;
 };
 
+/*
+ * IO resources have these defined flags.
+ */
+#define IORESOURCE_BITS		0x000000ff	/* Bus-specific bits */
+
+#define IORESOURCE_IO		0x00000100	/* Resource type */
+#define IORESOURCE_MEM		0x00000200
+#define IORESOURCE_IRQ		0x00000400
+#define IORESOURCE_DMA		0x00000800
+
+#define IORESOURCE_PREFETCH	0x00001000	/* No side effects */
+#define IORESOURCE_READONLY	0x00002000
+#define IORESOURCE_CACHEABLE	0x00004000
+#define IORESOURCE_RANGELENGTH	0x00008000
+#define IORESOURCE_SHADOWABLE	0x00010000
+
+#define IORESOURCE_UNSET	0x20000000
+#define IORESOURCE_AUTO		0x40000000
+#define IORESOURCE_BUSY		0x80000000	/* Driver has marked this resource busy */
+
+/* ISA PnP IRQ specific bits (IORESOURCE_BITS) */
+#define IORESOURCE_IRQ_HIGHEDGE		(1<<0)
+#define IORESOURCE_IRQ_LOWEDGE		(1<<1)
+#define IORESOURCE_IRQ_HIGHLEVEL	(1<<2)
+#define IORESOURCE_IRQ_LOWLEVEL		(1<<3)
+
+/* ISA PnP DMA specific bits (IORESOURCE_BITS) */
+#define IORESOURCE_DMA_TYPE_MASK	(3<<0)
+#define IORESOURCE_DMA_8BIT		(0<<0)
+#define IORESOURCE_DMA_8AND16BIT	(1<<0)
+#define IORESOURCE_DMA_16BIT		(2<<0)
+
+#define IORESOURCE_DMA_MASTER		(1<<2)
+#define IORESOURCE_DMA_BYTE		(1<<3)
+#define IORESOURCE_DMA_WORD		(1<<4)
+
+#define IORESOURCE_DMA_SPEED_MASK	(3<<6)
+#define IORESOURCE_DMA_COMPATIBLE	(0<<6)
+#define IORESOURCE_DMA_TYPEA		(1<<6)
+#define IORESOURCE_DMA_TYPEB		(2<<6)
+#define IORESOURCE_DMA_TYPEF		(3<<6)
+
+/* ISA PnP memory I/O specific bits (IORESOURCE_BITS) */
+#define IORESOURCE_MEM_WRITEABLE	(1<<0)	/* dup: IORESOURCE_READONLY */
+#define IORESOURCE_MEM_CACHEABLE	(1<<1)	/* dup: IORESOURCE_CACHEABLE */
+#define IORESOURCE_MEM_RANGELENGTH	(1<<2)	/* dup: IORESOURCE_RANGELENGTH */
+#define IORESOURCE_MEM_TYPE_MASK	(3<<3)
+#define IORESOURCE_MEM_8BIT		(0<<3)
+#define IORESOURCE_MEM_16BIT		(1<<3)
+#define IORESOURCE_MEM_8AND16BIT	(2<<3)
+#define IORESOURCE_MEM_SHADOWABLE	(1<<5)	/* dup: IORESOURCE_SHADOWABLE */
+#define IORESOURCE_MEM_EXPANSIONROM	(1<<6)
+
+
 #define DEVICE_COUNT_COMPATIBLE	4
+#define DEVICE_COUNT_IRQ	2
 #define DEVICE_COUNT_DMA	2
 #define DEVICE_COUNT_RESOURCE	12
 
-#define DEVICE_IRQ_NOTSET	0xffffffff
-#define DEVICE_IRQ_AUTO		0xfffffffe
-#define DEVICE_DMA_NOTSET	0xff
-#define DEVICE_DMA_AUTO		0xfe
-#define DEVICE_IO_NOTSET	(~0)
-#define DEVICE_IO_AUTO		((~0)-1)
-
-#define DEVICE_IRQ_FLAG_HIGHEDGE	(1<<0)
-#define DEVICE_IRQ_FLAG_LOWEDGE		(1<<1)
-#define DEVICE_IRQ_FLAG_HIGHLEVEL	(1<<2)
-#define DEVICE_IRQ_FLAG_LOWLEVEL	(1<<3)
-
-#define DEVICE_DMA_TYPE_8BIT		0
-#define DEVICE_DMA_TYPE_8AND16BIT	1
-#define DEVICE_DMA_TYPE_16BIT		2
-
-#define DEVICE_DMA_FLAG_MASTER		(1<<0)
-#define DEVICE_DMA_FLAG_BYTE		(1<<1)
-#define DEVICE_DMA_FLAG_WORD		(1<<2)
-
-#define DEVICE_DMA_SPEED_COMPATIBLE	0
-#define DEVICE_DMA_SPEED_TYPEA		1
-#define DEVICE_DMA_SPEED_TYPEB		2
-#define DEVICE_DMA_SPEED_TYPEF		3
-
-#define DEVICE_IO_FLAG_WRITEABLE	(1<<0)
-#define DEVICE_IO_FLAG_CACHEABLE	(1<<1)
-#define DEVICE_IO_FLAG_RANGELENGTH	(1<<2)
-#define DEVICE_IO_FLAG_SHADOWABLE	(1<<4)
-#define DEVICE_IO_FLAG_EXPANSIONROM	(1<<5)
-
-#define DEVICE_IO_TYPE_8BIT		0
-#define DEVICE_IO_TYPE_16BIT		1
-#define DEVICE_IO_TYPE_8AND16BIT	2
-
 /*
- * There is one pci_dev structure for each slot-number/function-number
- * combination:
+ * The pci_dev structure is used to describe both PCI and ISAPnP devices.
  */
 struct isapnp_dev {
 	int active;			/* device is active */
@@ -196,43 +215,28 @@ struct isapnp_dev {
 	unsigned int	devfn;		/* encoded device & function index */
 	unsigned short	vendor;
 	unsigned short	device;
+	unsigned short	subsystem_vendor;
+	unsigned short	subsystem_device;
 	unsigned int	class;		/* 3 bytes: (base,sub,prog-if) */
 	unsigned int	hdr_type;	/* PCI header type */
 	unsigned int	master : 1;	/* set if device is master capable */
 
-	unsigned short regs;		/* supported reserved registers */
+	unsigned short	regs;
 
 	/* device is compatible with these IDs */
 	unsigned short vendor_compatible[DEVICE_COUNT_COMPATIBLE];
 	unsigned short device_compatible[DEVICE_COUNT_COMPATIBLE];
 
-	char		name[48];
-
 	/*
-	 * In theory, the irq level can be read from configuration
-	 * space and all would be fine.  However, old PCI chips don't
-	 * support these registers and return 0 instead.  For example,
-	 * the Vision864-P rev 0 chip can uses INTA, but returns 0 in
-	 * the interrupt line and pin registers.  pci_init()
-	 * initializes this field with the value at PCI_INTERRUPT_LINE
-	 * and it is the job of pcibios_fixup() to change it if
-	 * necessary.  The field must not be 0 unless the device
-	 * cannot generate interrupts at all.
+	 * Instead of touching interrupt line and base address registers
+	 * directly, use the values stored here. They might be different!
 	 */
-	unsigned int	irq;		/* irq generated by this device */
-	unsigned short	irq_flags;	/* irq type */
-	unsigned int	irq2;
-	unsigned short	irq2_flags;	
-	unsigned char	dma[DEVICE_COUNT_DMA];
-	unsigned char	dma_type[DEVICE_COUNT_DMA];
-	unsigned char	dma_flags[DEVICE_COUNT_DMA];
-	unsigned char	dma_speed[DEVICE_COUNT_DMA];
+	unsigned int	irq;
+	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
+	struct resource dma_resource[DEVICE_COUNT_DMA];
+	struct resource irq_resource[DEVICE_COUNT_IRQ];
 
-	/* Base registers for this device, can be adjusted by
-	 * pcibios_fixup() as necessary.
-	 */
-	struct resource resource[DEVICE_COUNT_RESOURCE];
-	unsigned long	rom_address;
+	char		name[48];	/* Device name */
 
 	int (*prepare)(struct isapnp_dev *dev);
 	int (*activate)(struct isapnp_dev *dev);
@@ -243,6 +247,7 @@ struct isapnp_card {
 	struct isapnp_card *parent;	/* parent bus this bridge is on */
 	struct isapnp_card *children;	/* chain of P2P bridges on this bus */
 	struct isapnp_card *next;	/* chain of all PCI buses */
+	struct pci_ops	*ops;		/* configuration access functions */
 
 	struct isapnp_dev *self;	/* bridge device as seen by parent */
 	struct isapnp_dev *devices;	/* devices behind this bridge */
@@ -255,14 +260,14 @@ struct isapnp_card {
 	unsigned char	secondary;	/* number of secondary bridge */
 	unsigned char	subordinate;	/* max number of subordinate buses */
 
-	char name[48];
-	unsigned short vendor;
-	unsigned short device;
-	unsigned int serial;		/* serial number */
-	unsigned char pnpver;		/* Plug & Play version */
-	unsigned char productver;	/* product version */
-	unsigned char checksum;		/* if zero - checksum passed */
-	unsigned char pad1;
+	char		name[48];
+	unsigned short	vendor;
+	unsigned short	device;
+	unsigned int	serial;		/* serial number */
+	unsigned char	pnpver;		/* Plug & Play version */
+	unsigned char	productver;	/* product version */
+	unsigned char	checksum;	/* if zero - checksum passed */
+	unsigned char	pad1;
 };
 
 #else
@@ -296,6 +301,10 @@ struct isapnp_dev *isapnp_find_dev(struct isapnp_card *card,
 				   unsigned short vendor,
 				   unsigned short function,
 				   struct isapnp_dev *from);
+/* misc */
+void isapnp_resource_change(struct resource *resource,
+			    unsigned long start,
+			    unsigned long size);
 /* init/main.c */
 int isapnp_init(void);
 
@@ -323,6 +332,9 @@ extern struct isapnp_dev *isapnp_find_dev(struct isapnp_card *card,
 					  unsigned short vendor,
 					  unsigned short function,
 					  struct isapnp_dev *from) { return NULL; }
+extern void isapnp_resource_change(struct resource *resource,
+				   unsigned long start,
+				   unsigned long size) { ; }
 
 #endif /* CONFIG_ISAPNP */
 

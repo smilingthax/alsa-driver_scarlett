@@ -4,7 +4,7 @@ INSMOD="/sbin/insmod"
 MODDIR="../modules"
 MAP="../snd.map"
 OLDMAP="../snd.map.old"
-CARDS_LIMIT=1
+CARDS_LIMIT=2
 
 function banner() {
    echo > /dev/null
@@ -259,8 +259,9 @@ case "$1" in
     basic
     insert snd-mpu401-uart.o 
     insert snd-ac97-codec.o
-    insert snd-trident_dx_nx.o
-    insert snd-card-trid4dwave.o
+    insert snd-trident.o
+    insert snd-card-trident.o
+    insert snd-synth-trident.o
     restore trid4dwave.conf
     ;;
   cs461x)
@@ -313,6 +314,17 @@ case "$1" in
     basic
     insert snd-card-dummy.o
     restore dummy.conf
+    ;;
+  t1)
+    basic; isapnp
+    insert snd-mpu401-uart.o 
+    insert snd-cs4231.o
+    insert snd-cs4236.o
+    insert snd-opl3.o
+    insert snd-sb16-dsp.o
+    insert snd-sb16-csp.o
+    insert snd-card-sb16.o snd_irq=10 snd_dma8=1 snd_dma16=5
+    insert snd-card-cs4236.o
     ;;
   detect)
     isapnp
