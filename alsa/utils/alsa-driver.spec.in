@@ -53,7 +53,7 @@ fi
 rm -rf $RPM_BUILD_ROOT
 
 %files
-%attr(-,root,root) %doc ChangeLog FAQ INSTALL README TODO snddevices doc/
+%attr(-,root,root) %doc FAQ INSTALL README TODO snddevices doc/
 %attr(-,root,root) %config /etc/rc.d/init.d/*
-%attr(-,root,root) /usr/include/linux/*.h
+%attr(-,root,root) /usr/include/sound/*.h
 %attr(-,root,root) /lib/modules/%{kversion}/misc/*.o
