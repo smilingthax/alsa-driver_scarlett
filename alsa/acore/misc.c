@@ -91,16 +91,16 @@ static int pci_compat_pm_callback(struct pm_dev *pdev, pm_request_t rqst, void *
 	switch (rqst) {
 	case PM_SUSPEND:
 		pci_for_each_dev(dev) {
-			struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
-			if (map && map->drv && map->drv->suspend)
-				map->drv->suspend(dev);
+			struct pci_driver *drv = snd_pci_compat_get_pci_driver(dev);
+			if (drv && drv->suspend)
+				drv->suspend(dev);
 		}
 		break;
 	case PM_RESUME:
 		pci_for_each_dev(dev) {
-			struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
-			if (map && map->drv && map->drv->resume)
-				map->drv->resume(dev);
+			struct pci_driver *drv = snd_pci_compat_get_pci_driver(dev);
+			if (drv && drv->resume)
+				drv->resume(dev);
 		}
 		break;
 	}	

@@ -21,6 +21,7 @@
 
 #include <linux/pci.h>
 #include <linux/slab.h>
+#include <linux/pagemap.h>
 #include <linux/vmalloc.h>
 #include <asm/io.h>
 #include <sound/memalloc.h>

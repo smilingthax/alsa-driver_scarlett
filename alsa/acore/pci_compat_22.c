@@ -25,6 +25,14 @@ static struct pci_driver_mapping *get_pci_driver_mapping(struct pci_dev *dev)
 	return NULL;
 }
 
+struct pci_driver *snd_pci_compat_get_pci_driver(struct pci_dev *dev)
+{
+	struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
+	if (map)
+		return map->drv;
+	return NULL;
+}
+
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev)
 {
 	struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
