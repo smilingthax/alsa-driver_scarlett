@@ -291,10 +291,10 @@ extern snd_minor_t snd_pcm_reg[2];
  */
 
 extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
-extern int snd_pcm_stream_go(snd_pcm_substream_t *substream);
-extern int snd_pcm_stream_go_pre(snd_pcm_substream_t *substream);
-extern int snd_pcm_stream_go_post(snd_pcm_substream_t *substream, int err);
-extern void snd_pcm_stream_stop(snd_pcm_substream_t *substream, int status);
+extern int snd_pcm_go(snd_pcm_substream_t *substream);
+extern int snd_pcm_go_pre(snd_pcm_substream_t *substream);
+extern int snd_pcm_go_post(snd_pcm_substream_t *substream, int err);
+extern void snd_pcm_stop(snd_pcm_substream_t *substream, int status);
 extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, unsigned long arg);
 extern int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, unsigned long arg);
 extern int snd_pcm_kernel_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, unsigned long arg);
