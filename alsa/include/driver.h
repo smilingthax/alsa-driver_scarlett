@@ -315,6 +315,9 @@ struct snd_stru_card {
 
 	snd_device_t *devices;			/* devices */
 
+	struct semaphore lists_lock;		/* switch lists lock */
+	snd_kswitch_list_t *first_list;		/* first switch list */
+	snd_kswitch_list_t *last_list;		/* last switch list */
 	snd_kswitch_list_t switches;		/* switches */
 	snd_control_t *fcontrol;		/* first control file */
 

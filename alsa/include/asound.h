@@ -86,20 +86,33 @@
 #define SND_SW_SUBTYPE_NONE		0	/* ignored */
 #define SND_SW_SUBTYPE_HEXA		1	/* hexadecimal value */
 
+#define SND_CTL_IFACE_CONTROL		0
+#define SND_CTL_IFACE_MIXER		1
+#define SND_CTL_IFACE_PCM		2
+#define SND_CTL_IFACE_RAWMIDI		3
+
 typedef struct snd_switch_list_item {
 	unsigned char name[32];
 } snd_switch_list_item_t;
 
 typedef struct snd_switch_list {
+	int iface;			/* switch interface number */
+	int device;			/* device number */
+	int channel;			/* channel number */
 	int switches_size;		/* size of switches in array */
 	int switches;			/* filled switches in array */
 	int switches_over;		/* missing switches in array */
 	snd_switch_list_item_t *pswitches; /* pointer to list item array */
+	char reserved[12];
 } snd_switch_list_t;
 
 typedef struct snd_switch {
+	int iface;		/* interface number */
+	int device;		/* device number */
+	int channel;		/* channel number */
 	unsigned char name[32];	/* unique identification of switch (from driver) */
 	unsigned int type;	/* look to SND_SW_TYPE_* */
+	unsigned int subtype;	/* look to SND_SW_SUBTYPE_* */
 	unsigned int low;	/* low range value */
 	unsigned int high;	/* high range value */
 	union {
@@ -110,8 +123,7 @@ typedef struct snd_switch {
 		int item_number;		/* active list item number */
 		char item[32];			/* list item, low=high -> item number */
 	} value;
-	unsigned int subtype;	/* look to SND_SW_SUBTYPE_* */
-	unsigned char reserved[28];
+	unsigned char reserved[32];
 } snd_switch_t;
  
 /****************************************************************************
@@ -149,24 +161,15 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x09, snd_hwdep_info_t)
 #define SND_CTL_IOCTL_MIXER_DEVICE	_IOW ('U', 0x10, int)
 #define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x10, snd_mixer_info_t)
-#define SND_CTL_IOCTL_MIXER_SWITCH_LIST	_IOWR('U', 0x18, snd_switch_list_t)
-#define SND_CTL_IOCTL_MIXER_SWITCH_READ	_IOWR('U', 0x19, snd_switch_t)
-#define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x1a, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOW ('U', 0x20, int)
 #define SND_CTL_IOCTL_PCM_CHANNEL	_IOW ('U', 0x21, int)
 #define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOW ('U', 0x22, int)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x23, int)
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x24, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x25, snd_pcm_channel_info_t)
-#define SND_CTL_IOCTL_PCM_SWITCH_LIST	_IOWR('U', 0x26, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_SWITCH_READ	_IOWR('U', 0x27, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_SWITCH_WRITE	_IOWR('U', 0x28, snd_switch_t)
 #define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOW ('U', 0x30, int)
 #define SND_CTL_IOCTL_RAWMIDI_CHANNEL	_IOW ('U', 0x31, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x32, snd_rawmidi_info_t)
-#define SND_CTL_IOCTL_RAWMIDI_SWITCH_LIST _IOWR('U', 0x38, snd_switch_list_t)
-#define SND_CTL_IOCTL_RAWMIDI_SWITCH_READ _IOWR('U', 0x39, snd_switch_t)
-#define SND_CTL_IOCTL_RAWMIDI_SWITCH_WRITE _IOWR('U', 0x3a, snd_switch_t)
 
 /*
  *  Read interface.
@@ -178,18 +181,13 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_READ_SWITCH_ADD		3	/* the switch was added */
 #define SND_CTL_READ_SWITCH_REMOVE	4	/* the switch was removed */
 
-#define SND_CTL_IFACE_CONTROL		0
-#define SND_CTL_IFACE_MIXER		1
-#define SND_CTL_IFACE_PCM_PLAYBACK	2
-#define SND_CTL_IFACE_PCM_CAPTURE	3
-#define SND_CTL_IFACE_RAWMIDI_OUTPUT	4
-#define SND_CTL_IFACE_RAWMIDI_INPUT	5
-
 typedef struct snd_ctl_read {
 	unsigned int cmd;		/* command - SND_MIXER_READ_* */
 	union {
 		struct {
 			int iface;	/* interface */
+			int device;	/* device */
+			int channel;	/* channel */
 			snd_switch_list_item_t switem; /* switch item */
 		} sw;
 		unsigned char data8[60];
