@@ -197,6 +197,9 @@ extern void snd_pcm1_playback_dma( snd_pcm1_t *pcm,
 extern void snd_pcm1_playback_dma_ulaw( snd_pcm1_t *pcm,
 			                unsigned char *buffer, unsigned int offset,
 			                unsigned char *user, unsigned int count );
+extern void snd_pcm1_playback_dma_ulaw_loud( snd_pcm1_t *pcm,
+			                     unsigned char *buffer, unsigned int offset,
+			                     unsigned char *user, unsigned int count );
 extern void snd_pcm1_playback_dma_neutral( snd_pcm1_t *pcm,
 				           unsigned char *buffer, unsigned int offset,
 				           unsigned int count,
@@ -207,6 +210,9 @@ extern void snd_pcm1_record_dma( snd_pcm1_t *pcm,
 extern void snd_pcm1_record_dma_ulaw( snd_pcm1_t *pcm,
 		 	              unsigned char *buffer, unsigned int offset,
 		 	              unsigned char *user, unsigned int count );
+extern void snd_pcm1_record_dma_ulaw_loud( snd_pcm1_t *pcm,
+		 	                   unsigned char *buffer, unsigned int offset,
+		 	                   unsigned char *user, unsigned int count );
 extern void snd_pcm1_dma_move( snd_pcm1_t *pcm,
                                unsigned char *buffer,
                                unsigned int dest_offset, unsigned int src_offset,
