@@ -101,6 +101,14 @@ MODULE_PARM_SYNTAX(ac97_clock, SNDRV_ENABLED ",default:48000");
 #define PCI_DEVICE_ID_VIA_8233_5	0x3059
 #endif
 
+/* revision numbers for via686 */
+#define VIA_REV_686_A		0x10
+#define VIA_REV_686_B		0x11
+#define VIA_REV_686_C		0x12
+#define VIA_REV_686_D		0x13
+#define VIA_REV_686_E		0x14
+#define VIA_REV_686_H		0x20
+
 /* revision numbers for via8233 */
 #define VIA_REV_PRE_8233	0x10	/* not in market */
 #define VIA_REV_8233C		0x20	/* 2 rec, 4 pb, 1 multi-pb */
@@ -209,6 +217,9 @@ DEFINE_VIA_REGSET(FM, 0x20);
 #define   VIA8233_REG_SGD_REC0_SHIFT	24
 #define   VIA8233_REG_SGD_REC1_SHIFT	28
 
+#define VIA_REG_GPI_STATUS		0x88
+#define VIA_REG_GPI_INTR		0x8c
+
 /* multi-channel and capture registers for via8233 */
 DEFINE_VIA_REGSET(MULTPLAY, 0x40);
 DEFINE_VIA_REGSET(CAPTURE_8233, 0x60);
@@ -230,6 +241,46 @@ DEFINE_VIA_REGSET(CAPTURE_8233, 0x60);
 
 #define VIA_TBL_BIT_FLAG	0x40000000
 #define VIA_TBL_BIT_EOL		0x80000000
+
+/* pci space */
+#define VIA_ACLINK_STAT		0x40
+#define  VIA_ACLINK_C11_READY	0x20
+#define  VIA_ACLINK_C10_READY	0x10
+#define  VIA_ACLINK_C01_READY	0x04 /* secondary codec ready */
+#define  VIA_ACLINK_LOWPOWER	0x02 /* low-power state */
+#define  VIA_ACLINK_C00_READY	0x01 /* primary codec ready */
+#define VIA_ACLINK_CTRL		0x41
+#define  VIA_ACLINK_CTRL_ENABLE	0x80 /* 0: disable, 1: enable */
+#define  VIA_ACLINK_CTRL_RESET	0x40 /* 0: assert, 1: de-assert */
+#define  VIA_ACLINK_CTRL_SYNC	0x20 /* 0: release SYNC, 1: force SYNC hi */
+#define  VIA_ACLINK_CTRL_SDO	0x10 /* 0: release SDO, 1: force SDO hi */
+#define  VIA_ACLINK_CTRL_VRA	0x08 /* 0: disable VRA, 1: enable VRA */
+#define  VIA_ACLINK_CTRL_PCM	0x04 /* 0: disable PCM, 1: enable PCM */
+#define  VIA_ACLINK_CTRL_FM	0x02 /* via686 only */
+#define  VIA_ACLINK_CTRL_SB	0x01 /* via686 only */
+#define  VIA_ACLINK_CTRL_INIT	(VIA_ACLINK_CTRL_ENABLE|\
+				 VIA_ACLINK_CTRL_RESET|\
+				 VIA_ACLINK_CTRL_PCM|\
+				 VIA_ACLINK_CTRL_VRA)
+#define VIA_FUNC_ENABLE		0x42
+#define  VIA_FUNC_MIDI_PNP	0x80 /* FIXME: it's 0x40 in the datasheet! */
+#define  VIA_FUNC_MIDI_IRQMASK	0x40 /* FIXME: not documented! */
+#define  VIA_FUNC_RX2C_WRITE	0x20
+#define  VIA_FUNC_SB_FIFO_EMPTY	0x10
+#define  VIA_FUNC_ENABLE_GAME	0x08
+#define  VIA_FUNC_ENABLE_FM	0x04
+#define  VIA_FUNC_ENABLE_MIDI	0x02
+#define  VIA_FUNC_ENABLE_SB	0x01
+#define VIA_PNP_CONTROL		0x43
+#define VIA_FM_NMI_CTRL		0x48
+#define VIA8233_VOLCHG_CTRL	0x48
+#define VIA8233_SPDIF_CTRL	0x49
+#define  VIA8233_SPDIF_DX3	0x08
+#define  VIA8233_SPDIF_SLOT_MASK	0x03
+#define  VIA8233_SPDIF_SLOT_1011	0x00
+#define  VIA8233_SPDIF_SLOT_34		0x01
+#define  VIA8233_SPDIF_SLOT_78		0x02
+#define  VIA8233_SPDIF_SLOT_69		0x03
 
 /*
  */
@@ -1306,8 +1357,8 @@ static int snd_via8233_dxs3_spdif_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
 	u8 val;
 
-	pci_read_config_byte(chip->pci, 0x49, &val);
-	ucontrol->value.integer.value[0] = (val & 0x08) ? 1 : 0;
+	pci_read_config_byte(chip->pci, VIA8233_SPDIF_CTRL, &val);
+	ucontrol->value.integer.value[0] = (val & VIA8233_SPDIF_DX3) ? 1 : 0;
 	return 0;
 }
 
@@ -1316,12 +1367,12 @@ static int snd_via8233_dxs3_spdif_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
 	u8 val, oval;
 
-	pci_read_config_byte(chip->pci, 0x49, &oval);
-	val = oval & ~0x08;
+	pci_read_config_byte(chip->pci, VIA8233_SPDIF_CTRL, &oval);
+	val = oval & ~VIA8233_SPDIF_DX3;
 	if (ucontrol->value.integer.value[0])
-		val |= 0x08;
+		val |= VIA8233_SPDIF_DX3;
 	if (val != oval) {
-		pci_write_config_byte(chip->pci, 0x49, val);
+		pci_write_config_byte(chip->pci, VIA8233_SPDIF_CTRL, val);
 		return 1;
 	}
 	return 0;
@@ -1427,8 +1478,8 @@ static int snd_via82xx_joystick_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
 	u16 val;
 
-	pci_read_config_word(chip->pci, 0x42, &val);
-	ucontrol->value.integer.value[0] = (val & 0x08) ? 1 : 0;
+	pci_read_config_word(chip->pci, VIA_FUNC_ENABLE, &val);
+	ucontrol->value.integer.value[0] = (val & VIA_FUNC_ENABLE_GAME) ? 1 : 0;
 	return 0;
 }
 
@@ -1437,12 +1488,12 @@ static int snd_via82xx_joystick_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
 	u16 val, oval;
 
-	pci_read_config_word(chip->pci, 0x42, &oval);
-	val = oval & ~0x08;
+	pci_read_config_word(chip->pci, VIA_FUNC_ENABLE, &oval);
+	val = oval & ~VIA_FUNC_ENABLE_GAME;
 	if (ucontrol->value.integer.value[0])
-		val |= 0x08;
+		val |= VIA_FUNC_ENABLE_GAME;
 	if (val != oval) {
-		pci_write_config_word(chip->pci, 0x42, val);
+		pci_write_config_word(chip->pci, VIA_FUNC_ENABLE, val);
 		return 1;
 	}
 	return 0;
@@ -1480,9 +1531,9 @@ static int snd_via8233_init_misc(via82xx_t *chip, int dev)
 		return err;
 
 	/* select spdif data slot 10/11 */
-	pci_read_config_byte(chip->pci, 0x49, &val);
-	val &= ~0x03;
-	pci_write_config_byte(chip->pci, 0x49, val);
+	pci_read_config_byte(chip->pci, VIA8233_SPDIF_CTRL, &val);
+	val = (val & ~VIA8233_SPDIF_SLOT_MASK) | VIA8233_SPDIF_SLOT_1011;
+	pci_write_config_byte(chip->pci, VIA8233_SPDIF_CTRL, val);
 
 	return 0;
 }
@@ -1494,65 +1545,62 @@ static int snd_via686_init_misc(via82xx_t *chip, int dev)
 
 	legacy = chip->old_legacy;
 	legacy_cfg = chip->old_legacy_cfg;
-	legacy |= 0x40;		/* disable MIDI */
-	legacy &= ~0x08;	/* disable joystick */
-	if (chip->revision >= 0x20) {
-		if (check_region(pci_resource_start(chip->pci, 2), 4)) {
-			rev_h = 0;
-			legacy &= ~0x80;	/* disable PCI I/O 2 */
-		} else {
-			rev_h = 1;
-			legacy |= 0x80;		/* enable PCI I/O 2 */
-		}
+	legacy |= VIA_FUNC_MIDI_IRQMASK;	/* FIXME: correct? (disable MIDI) */
+	legacy &= ~VIA_FUNC_ENABLE_GAME;	/* disable joystick */
+	if (chip->revision >= VIA_REV_686_H) {
+		rev_h = 1;
+		if (check_region(pci_resource_start(chip->pci, 2), 4))
+			legacy &= ~VIA_FUNC_MIDI_PNP;	/* disable PCI I/O 2 */
+		else
+			legacy |= VIA_FUNC_MIDI_PNP;	/* enable PCI I/O 2 */
 	}
-	pci_write_config_byte(chip->pci, 0x42, legacy);
-	pci_write_config_byte(chip->pci, 0x43, legacy_cfg);
-	if (rev_h && mpu_port[dev] >= 0x200) {	/* force MIDI */
-		legacy |= 0x02;	/* enable MPU */
-		pci_write_config_dword(chip->pci, 0x18, (mpu_port[dev] & 0xfffc) | 0x01);
-	} else {
-		if (rev_h && (legacy & 0x02)) {
+	pci_write_config_byte(chip->pci, VIA_FUNC_ENABLE, legacy);
+	pci_write_config_byte(chip->pci, VIA_PNP_CONTROL, legacy_cfg);
+	if (rev_h) {
+		if (mpu_port[dev] >= 0x200) {	/* force MIDI */
+			pci_write_config_dword(chip->pci, 0x18, (mpu_port[dev] & 0xfffc) | 0x01);
+		} else if (legacy & VIA_FUNC_MIDI_PNP) {
 			mpu_port[dev] = pci_resource_start(chip->pci, 2);
 			if (mpu_port[dev] < 0x200)	/* bad value */
-				legacy &= ~0x02;	/* disable MIDI */
-		} else {
-			switch (mpu_port[dev]) {	/* force MIDI */
-			case 0x300:
-			case 0x310:
-			case 0x320:
-			case 0x330:
-				legacy_cfg &= ~(3 << 2);
-				legacy_cfg |= (mpu_port[dev] & 0x0030) >> 2;
-				legacy |= 0x02;
-				break;
-			default:			/* no, use BIOS settings */
-				if (legacy & 0x02)
-					mpu_port[dev] = 0x300 + ((legacy_cfg & 0x000c) << 2);
-			}
+				legacy &= ~VIA_FUNC_ENABLE_MIDI;	/* disable MIDI */
+		}
+		if (mpu_port[dev] >= 0x200)
+			legacy |= VIA_FUNC_ENABLE_MIDI;
+		else
+			legacy &= ~VIA_FUNC_ENABLE_MIDI;
+	} else {
+		switch (mpu_port[dev]) {	/* force MIDI */
+		case 0x300:
+		case 0x310:
+		case 0x320:
+		case 0x330:
+			legacy_cfg &= ~(3 << 2);
+			legacy_cfg |= (mpu_port[dev] & 0x0030) >> 2;
+			legacy |= VIA_FUNC_ENABLE_MIDI;
+			break;
+		default:			/* no, use BIOS settings */
+			if (legacy & VIA_FUNC_ENABLE_MIDI)
+				mpu_port[dev] = 0x300 + ((legacy_cfg & 0x000c) << 2);
+			break;
 		}
 	}
-	pci_write_config_byte(chip->pci, 0x42, legacy);
-	pci_write_config_byte(chip->pci, 0x43, legacy_cfg);
-	if (legacy & 0x02) {
+	if (legacy & VIA_FUNC_ENABLE_MIDI) {
 		if (check_region(mpu_port[dev], 2)) {
 			printk(KERN_WARNING "unable to get MPU-401 port at 0x%lx, skipping\n", mpu_port[dev]);
-			legacy &= ~0x02;
-			pci_write_config_byte(chip->pci, 0x42, legacy);
-			goto __skip_mpu;
-		}
-		if (snd_mpu401_uart_new(chip->card, 0, MPU401_HW_VIA686A,
-					mpu_port[dev], 0,
-					chip->irq, 0,
-					&chip->rmidi) < 0) {
+			legacy &= ~VIA_FUNC_ENABLE_MIDI;
+		} else if (snd_mpu401_uart_new(chip->card, 0, MPU401_HW_VIA686A,
+					       mpu_port[dev], 0,
+					       chip->irq, 0,
+					       &chip->rmidi) < 0) {
 			printk(KERN_WARNING "unable to initialize MPU-401 at 0x%lx, skipping\n", mpu_port[dev]);
-			legacy &= ~0x02;
-			pci_write_config_byte(chip->pci, 0x42, legacy);
-			goto __skip_mpu;
+			legacy &= ~VIA_FUNC_ENABLE_MIDI;
 		}
-		legacy &= ~0x40;	/* enable MIDI interrupt */
-		pci_write_config_byte(chip->pci, 0x42, legacy);
-	__skip_mpu:
-		;
+	}
+	pci_write_config_byte(chip->pci, VIA_FUNC_ENABLE, legacy);
+	pci_write_config_byte(chip->pci, VIA_PNP_CONTROL, legacy_cfg);
+	if (legacy & VIA_FUNC_ENABLE_MIDI) {
+		legacy &= ~VIA_FUNC_MIDI_IRQMASK;	/* enable MIDI interrupt */
+		pci_write_config_byte(chip->pci, VIA_FUNC_ENABLE, legacy);
 	}
 	
 	/* card switches */
@@ -1577,40 +1625,46 @@ static int __devinit snd_via82xx_chip_init(via82xx_t *chip)
 #if 0 /* broken on K7M? */
 	if (chip->chip_type == TYPE_VIA686)
 		/* disable all legacy ports */
-		pci_write_config_byte(chip->pci, 0x42, 0);
+		pci_write_config_byte(chip->pci, VIA_FUNC_ENABLE, 0);
 #endif
-	pci_read_config_byte(chip->pci, 0x40, &pval);
-	if (! (pval & 0x01)) { /* codec not ready? */
+	pci_read_config_byte(chip->pci, VIA_ACLINK_STAT, &pval);
+	if (! (pval & VIA_ACLINK_C00_READY)) { /* codec not ready? */
 		/* deassert ACLink reset, force SYNC */
-		pci_write_config_byte(chip->pci, 0x41, 0xe0);
+		pci_write_config_byte(chip->pci, VIA_ACLINK_CTRL,
+				      VIA_ACLINK_CTRL_ENABLE |
+				      VIA_ACLINK_CTRL_RESET |
+				      VIA_ACLINK_CTRL_SYNC);
 		udelay(100);
+#if 1 /* FIXME: should we do full reset here for all chip models? */
+		pci_write_config_byte(chip->pci, VIA_ACLINK_CTRL, 0x00);
+		udelay(100);
+#else
 		/* deassert ACLink reset, force SYNC (warm AC'97 reset) */
-		pci_write_config_byte(chip->pci, 0x41, 0x60);
+		pci_write_config_byte(chip->pci, VIA_ACLINK_CTRL,
+				      VIA_ACLINK_CTRL_RESET|VIA_ACLINK_CTRL_SYNC);
 		udelay(2);
-		/* pci_write_config_byte(chip->pci, 0x41, 0x00);
-		   udelay(100);
-		*/
+#endif
 		/* ACLink on, deassert ACLink reset, VSR, SGD data out */
 		/* note - FM data out has trouble with non VRA codecs !! */
-		pci_write_config_byte(chip->pci, 0x41, 0xcc);
+		pci_write_config_byte(chip->pci, VIA_ACLINK_CTRL, VIA_ACLINK_CTRL_INIT);
 		udelay(100);
 	}
 	
 	/* Make sure VRA is enabled, in case we didn't do a
 	 * complete codec reset, above */
-	pci_read_config_byte(chip->pci, 0x41, &pval);
-	if ((pval & 0xcc) != 0xcc) {
+	pci_read_config_byte(chip->pci, VIA_ACLINK_CTRL, &pval);
+	if ((pval & VIA_ACLINK_CTRL_INIT) != VIA_ACLINK_CTRL_INIT) {
 		/* ACLink on, deassert ACLink reset, VSR, SGD data out */
 		/* note - FM data out has trouble with non VRA codecs !! */
-		pci_write_config_byte(chip->pci, 0x41, 0xcc);
+		pci_write_config_byte(chip->pci, VIA_ACLINK_CTRL, VIA_ACLINK_CTRL_INIT);
 		udelay(100);
 	}
 
 	/* wait until codec ready */
 	max_count = ((3 * HZ) / 4) + 1;
 	do {
-		pci_read_config_byte(chip->pci, 0x40, &pval);
-		if (pval & 0x01) /* primary codec ready */
+		pci_read_config_byte(chip->pci, VIA_ACLINK_STAT, &pval);
+		if (pval & VIA_ACLINK_C00_READY) /* primary codec ready */
 			break;
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(1);
@@ -1647,9 +1701,9 @@ static int __devinit snd_via82xx_chip_init(via82xx_t *chip)
 
 	if (chip->chip_type == TYPE_VIA686) {
 		/* route FM trap to IRQ, disable FM trap */
-		pci_write_config_byte(chip->pci, 0x48, 0);
+		pci_write_config_byte(chip->pci, VIA_FM_NMI_CTRL, 0);
 		/* disable all GPI interrupts */
-		outl(0, chip->port + 0x8c);
+		outl(0, VIAREG(chip, GPI_INTR));
 	}
 
 	return 0;
@@ -1673,8 +1727,8 @@ static int snd_via82xx_free(via82xx_t *chip)
 	if (chip->irq >= 0)
 		free_irq(chip->irq, (void *)chip);
 	if (chip->chip_type == TYPE_VIA686) {
-		pci_write_config_byte(chip->pci, 0x42, chip->old_legacy);
-		pci_write_config_byte(chip->pci, 0x43, chip->old_legacy_cfg);
+		pci_write_config_byte(chip->pci, VIA_FUNC_ENABLE, chip->old_legacy);
+		pci_write_config_byte(chip->pci, VIA_PNP_CONTROL, chip->old_legacy_cfg);
 	}
 	snd_magic_kfree(chip);
 	return 0;
@@ -1716,8 +1770,8 @@ static int __devinit snd_via82xx_create(snd_card_t * card,
 	chip->pci = pci;
 	chip->irq = -1;
 
-	pci_read_config_byte(pci, 0x42, &chip->old_legacy);
-	pci_read_config_byte(pci, 0x43, &chip->old_legacy_cfg);
+	pci_read_config_byte(pci, VIA_FUNC_ENABLE, &chip->old_legacy);
+	pci_read_config_byte(pci, VIA_PNP_CONTROL, &chip->old_legacy_cfg);
 
 	chip->port = pci_resource_start(pci, 0);
 	if ((chip->res_port = request_region(chip->port, 256, card->driver)) == NULL) {
@@ -1795,12 +1849,12 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 	switch (card_type) {
 	case TYPE_CARD_VIA686:
 		strcpy(card->driver, "VIA686A");
-		strcpy(card->shortname, "VIA 82C686A/B");
+		sprintf(card->shortname, "VIA 82C686A/B rev%x", revision);
 		chip_type = TYPE_VIA686;
 		break;
 	case TYPE_CARD_VIA8233:
 		chip_type = TYPE_VIA8233;
-		sprintf(card->shortname, "VIA 823x rev%d", revision);
+		sprintf(card->shortname, "VIA 823x rev%x", revision);
 		for (i = 0; i < ARRAY_SIZE(via823x_cards); i++) {
 			if (revision == via823x_cards[i].revision) {
 				chip_type = via823x_cards[i].type;
