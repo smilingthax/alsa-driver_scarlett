@@ -17,8 +17,9 @@ export-objs :=
 # apply patches beforehand
 prepare: $(clean-files)
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
-	          $(patsubst %/,%,$(filter %/, $(obj-m))); do \
-	 $(MAKE) -C $$d prepare; \
+	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
+	 echo $$d; \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare; fi; \
 	done
 
 ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))
@@ -29,8 +30,8 @@ ifneq "$(strip $(ALL_MOBJS))" ""
 	cp $(ALL_MOBJS:.o=.ko) $(DESTDIR)$(moddir)/$(MODCURDIR)
 endif
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
-	          $(patsubst %/,%,$(filter %/, $(obj-m))); do \
-	 $(MAKE) -C $$d modules_install; \
+	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install; fi; \
 	done
 
 else
