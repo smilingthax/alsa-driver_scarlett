@@ -47,6 +47,7 @@
 #define ES_REG_CONTROL	0x00	/* R/W: Interrupt/Chip select control register */
 #define   ES_1370_ADC_STOP	(1<<31)		/* disable capture buffer transfers */
 #define   ES_1370_XCTL1 	(1<<30)		/* general purpose output bit */
+#define   ES_1371_SPDIF_EN	(1<<26)		/* SPDIF enable */
 #define   ES_1371_JOY_ASEL(o)	(((o)&0x03)<<24)	/* joystick port mapping */
 #define   ES_1371_JOY_ASELM	(0x03<<24)	/* mask for above */
 #define   ES_1371_JOY_ASELI(i)  (((i)>>24)&0x03)
@@ -81,8 +82,11 @@
 #define   ES_1370_SERR_DISABLE	(1<<0)	/* PCI serr signal disable */
 #define   ES_1371_PCICLKDIS     (1<<0)	/* PCI clock disable */
 #define ES_REG_STATUS	0x04	/* R/O: Interrupt/Chip select status register */
-#define   ES_INTR               (1<<31)		/* Interrupt is pending */
-#define   ES_1370_CSTAT		(1<<10)		/* CODEC is busy or register write in progress */
+#define   ES_INTR               (1<<31)	/* Interrupt is pending */
+#define   ES_1371_ST_SPDIF_EN	(1<<18) /* SPDIF enable */
+#define   ES_1371_ST_SPDIF_TEST (1<<17) /* SPDIF test */
+#define   ES_1371_TEST          (1<<16) /* test ASIC */
+#define   ES_1370_CSTAT		(1<<10)	/* CODEC is busy or register write in progress */
 #define   ES_1370_CBUSY         (1<<9)	/* CODEC is busy */
 #define   ES_1370_CWRIP		(1<<8)	/* CODEC register write in progress */
 #define   ES_1371_SYNC_ERR	(1<<8)	/* CODEC synchronization error occured */
