@@ -728,7 +728,7 @@ int snd_info_card_register(snd_card_t * card)
 	if (!strcmp(card->id, card->proc_root->name))
 		return 0;
 
-	s = snd_kmalloc_strdup(card->id, GFP_KERNEL);
+	s = snd_kmalloc_strdup(card->proc_root->name, GFP_KERNEL);
 	if (s == NULL)
 		return -ENOMEM;
 	p = snd_create_proc_entry(card->id, S_IFLNK | S_IRUGO | S_IWUGO | S_IXUGO, snd_proc_root);
