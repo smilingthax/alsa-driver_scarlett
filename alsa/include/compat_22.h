@@ -41,7 +41,8 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define local_irq_restore(flags) \
 	do { __restore_flags(flags); } while (0)
 
-#ifndef __rh_config_h__	/* RedHat uses modified kill_fasync */
+/* RedHat uses modified kill_fasync */
+#if defined(__rh_config_h__) || defined(__rh_kernel_autoconf_h__)
 #define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
 #else
 #define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig, band)
