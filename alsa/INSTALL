@@ -539,6 +539,23 @@ Module parameters
 
     Module for soundcards based on ESS Solo-1 (ES1938,ES1946) chips.
 
+  Module snd-card-cmi8330.o
+  ------------------------
+
+    Module for soundcards based on C-Media CMI8330 chips.
+
+    snd_wssport	- port # for CMI8330 chip (WSS)
+    snd_wssirq	- IRQ # for CMI8330 chip (WSS)
+    snd_wssdma	- first DMA # for CMI8330 chip (WSS)
+    snd_wssdma_size  - max first DMA size in kB (4-128kB) (ESS)
+    snd_sbport  - port # for CMI8330 chip (SB16)
+    snd_sbirq   - IRQ # for CMI8330 chip (SB16)
+    snd_sbdma8  - 8bit DMA # for CMI8330 chip (SB16)
+    snd_sbdma8_size  - max 8bit DMA size in kB (SB16)
+    snd_sbdma16 - 16bit DMA # for CMI8330 chip (SB16)
+    snd_sbdma16_size - max 16bit DMA size in kB (SB16)
+
+    Module supports up to 8 cards.
 
 modprobe/kerneld/kmod support
 =============================

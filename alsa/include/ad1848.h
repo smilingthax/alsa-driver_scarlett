@@ -126,6 +126,7 @@ struct snd_stru_ad1848_freq {
 #define AD1848_HW_AD1847	0x0001	/* AD1847 chip */
 #define AD1848_HW_AD1848	0x0002	/* AD1848 chip */
 #define AD1848_HW_CS4248	0x0003	/* CS4248 chip */
+#define AD1848_HW_CMI8330	0x0004	/* CMI8330 chip */
 
 struct snd_stru_ad1848 {
 	unsigned short port;		/* i/o port */
@@ -177,6 +178,8 @@ struct snd_stru_ad1848 {
 typedef struct snd_stru_ad1848 ad1848_t;
 
 /* exported functions */
+
+void snd_ad1848_out(ad1848_t * codec, unsigned char reg, unsigned char value);
 
 void snd_ad1848_interrupt(snd_pcm_t * pcm, unsigned char status);
 

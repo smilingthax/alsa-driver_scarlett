@@ -64,9 +64,10 @@
 #define SND_CARD_TYPE_TROPEZ            0x0000001F      /* TB Tropez */
 #define SND_CARD_TYPE_TROPEZPLUS        0x00000020      /* TB Tropez+ */
 #define SND_CARD_TYPE_MAUI              0x00000021      /* TB Maui */
+#define SND_CARD_TYPE_CMI8330           0x00000022      /* C-Media CMI8330 */
 /* --- */
-#define SND_CARD_TYPE_DUMMY		0x00000022	/* dummy soundcard */
+#define SND_CARD_TYPE_DUMMY		0x00000023	/* dummy soundcard */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000022
+#define SND_CARD_TYPE_LAST		0x00000023
 
 #endif				/* __ASOUNDID_H */
