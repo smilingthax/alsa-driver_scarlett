@@ -165,15 +165,15 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 {
 	static unsigned char initvals1[] = {
 	  CS8427_REG_CONTROL1 | CS8427_REG_AUTOINC,
-	  /* CS8427_REG_CLOCKSOURCE: RMCK to OMCK, no validity, disable mutes, TCBL=input */
+	  /* CS8427_REG_CONTROL1: RMCK to OMCK, valid PCM audio, disable mutes, TCBL=output */
 	  CS8427_SWCLK | CS8427_TCBLDIR,
 	  /* CS8427_REG_CONTROL2: hold last valid audio sample, RMCK=256*Fs, normal stereo operation */
 	  0x00,
 	  /* CS8427_REG_DATAFLOW: output drivers normal operation, Tx<=serial, Rx=>serial */
 	  CS8427_TXDSERIAL | CS8427_SPDAES3RECEIVER,
 	  /* CS8427_REG_CLOCKSOURCE: Run off, CMCK=256*Fs, output time base = OMCK, input time base =
-	     recovered input clock, recovered input clock source is AES3 input */
-	  CS8427_RXDAES3INPUT,
+	     recovered input clock, recovered input clock source is ILRCK changed to AES3INPUT (workaround, see snd_cs8427_reset) */
+	  CS8427_RXDILRCK,
 	  /* CS8427_REG_SERIALINPUT: Serial audio input port data format = I2S, 24-bit, 64*Fsi */
 	  CS8427_SIDEL | CS8427_SILRPOL,
 	  /* CS8427_REG_SERIALOUTPUT: Serial audio output port data format = I2S, 24-bit, 64*Fsi */
@@ -251,10 +251,10 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 		goto __fail;
 	memcpy(chip->playback.def_status, buf, 24);
 	memcpy(chip->playback.pcm_status, buf, 24);
+	snd_i2c_unlock(bus);
+
 	/* turn on run bit and rock'n'roll */
-	chip->regmap[CS8427_REG_CLOCKSOURCE] = initvals1[4] | CS8427_RUN;
-	if ((err = snd_cs8427_reg_write(device, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE])) < 0)
-		goto __fail;
+	snd_cs8427_reset(device);
 
 #if 0	// it's nice for read tests
 	{
@@ -268,7 +268,6 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 	}
 #endif
 	
-	snd_i2c_unlock(bus);
 	if (r_cs8427)
 		*r_cs8427 = device;
 	return 0;
@@ -279,17 +278,40 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
       	return err < 0 ? err : -EIO;
 }
 
+/*
+ * Reset the chip using run bit, also lock PLL using ILRCK and
+ * put back AES3INPUT. This workaround is described in latest
+ * CS8427 datasheet, otherwise TXDSERIAL will not work.
+ */
 void snd_cs8427_reset(snd_i2c_device_t *cs8427)
 {
 	cs8427_t *chip;
+	unsigned long end_time;
+	int data;
 
 	snd_assert(cs8427, return);
 	chip = snd_magic_cast(cs8427_t, cs8427->private_data, return);
 	snd_i2c_lock(cs8427->bus);
-	chip->regmap[CS8427_REG_CLOCKSOURCE] &= ~CS8427_RUN;
+	chip->regmap[CS8427_REG_CLOCKSOURCE] &= ~(CS8427_RUN | CS8427_RXDMASK);
 	snd_cs8427_reg_write(cs8427, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE]);
 	udelay(200);
-	chip->regmap[CS8427_REG_CLOCKSOURCE] |= CS8427_RUN;
+	chip->regmap[CS8427_REG_CLOCKSOURCE] |= CS8427_RUN | CS8427_RXDILRCK;
+	snd_cs8427_reg_write(cs8427, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE]);
+	udelay(200);
+	snd_i2c_unlock(cs8427->bus);
+	end_time = jiffies + HZ / 2;
+	while (time_after_eq(end_time, jiffies)) {
+		snd_i2c_lock(cs8427->bus);
+		data = snd_cs8427_reg_read(cs8427, CS8427_REG_RECVERRORS);
+		snd_i2c_unlock(cs8427->bus);
+		if (!(data & CS8427_UNLOCK))
+			break;
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(HZ/100);
+	}
+	snd_i2c_lock(cs8427->bus);
+	chip->regmap[CS8427_REG_CLOCKSOURCE] &= ~CS8427_RXDMASK;
+	chip->regmap[CS8427_REG_CLOCKSOURCE] |= CS8427_RXDAES3INPUT;
 	snd_cs8427_reg_write(cs8427, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE]);
 	snd_i2c_unlock(cs8427->bus);
 }
