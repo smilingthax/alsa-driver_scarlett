@@ -69,6 +69,19 @@ typedef struct snd_soundfont {
 } snd_soundfont_t;
 
 /*
+ * Type of the sample access callback
+ */
+typedef int (*snd_sf_sample_write_t)(void *private, snd_sf_sample_t *sp,
+				     const void *buf, long count);
+typedef int (*snd_sf_sample_reset_t)(void *private);
+
+typedef struct snd_sf_callback {
+	void *private_data;
+	snd_sf_sample_write_t sample_write;
+	snd_sf_sample_reset_t sample_reset;
+} snd_sf_callback_t;
+
+/*
  * List of soundfonts.
  */
 typedef struct snd_sf_list {
@@ -82,27 +95,19 @@ typedef struct snd_sf_list {
 	int sample_counter;	/* last allocated time for sample */
 	int zone_locked;	/* locked time for zone */
 	int sample_locked;	/* locked time for sample */
+	snd_sf_callback_t callback;	/* callback functions */
+	char sf_locked;		/* font lock flag */
 	snd_mutex_define(presets);
 	snd_spin_define(lock);
 } snd_sf_list_t;
 
-/* Type of the sample write callback */
-typedef int (*snd_sf_sample_write_t)(void *private, snd_sf_sample_t *sp,
-				     const void *buf, long count);
-
-typedef struct snd_sf_callback_t {
-	void *private_data;
-	snd_sf_sample_write_t sample_write;
-} snd_sf_callback_t;
-
 /* Prototypes for soundfont.c */
-int snd_soundfont_load(snd_sf_list_t *sflist, const void *data, long count,
-		       snd_sf_callback_t *callback, int client);
+int snd_soundfont_load(snd_sf_list_t *sflist, const void *data, long count, int client);
 int snd_soundfont_load_guspatch(snd_sf_list_t *sflist, const char *data,
-				long count, snd_sf_callback_t *callback, int client);
+				long count, int client);
 int snd_soundfont_close_check(snd_sf_list_t *sflist, int client);
 
-snd_sf_list_t *snd_sf_new(void);
+snd_sf_list_t *snd_sf_new(snd_sf_callback_t *callback);
 void snd_sf_free(snd_sf_list_t *sflist);
 
 int snd_soundfont_remove_samples(snd_sf_list_t *sflist);
