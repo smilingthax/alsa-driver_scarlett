@@ -68,13 +68,7 @@ install: install-modules install-headers install-scripts
 	cat WARNING
 
 install-headers:
-	install -m 755 -d $(prefix)/include/linux
-	install -m 644 include/asound.h $(prefix)/include/linux
-	install -m 644 include/asoundef.h $(prefix)/include/linux
-	install -m 644 include/asequencer.h $(prefix)/include/linux
-	for i in include/ainstr_*.h; do\
-	install -m 644 $$i $(prefix)/include/linux;\
-	done
+	ln -sf $(SRCDIR)/include $(prefix)/include/sound
 
 install-modules: compile
 	mkdir -p $(moddir)
