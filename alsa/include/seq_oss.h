@@ -21,7 +21,11 @@
 #ifndef __SEQ_OSS_H
 #define __SEQ_OSS_H
 
+#ifndef ALSA_BUILD
+#include <linux/asequencer.h>
+#else
 #include "asequencer.h"
+#endif
 
 /*
  * type definitions
