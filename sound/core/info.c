@@ -36,12 +36,6 @@
  *
  */
 
-static inline void dec_mod_count(struct module *module)
-{
-	if (module)
-		__MOD_DEC_USE_COUNT(module);
-}
-
 int snd_info_check_reserved_words(const char *str)
 {
 	static char *reserved[] =
@@ -299,10 +293,7 @@ static int snd_info_entry_open(struct inode *inode, struct file *file)
 		up(&info_mutex);
 		return -ENODEV;
 	}
-#ifdef LINUX_2_2
-	MOD_INC_USE_COUNT;
-#endif
-	if (entry->module && !try_inc_mod_count(entry->module)) {
+	if (!try_module_get(entry->module)) {
 		err = -EFAULT;
 		goto __error1;
 	}
@@ -407,11 +398,8 @@ static int snd_info_entry_open(struct inode *inode, struct file *file)
 	return 0;
 
       __error:
-	dec_mod_count(entry->module);
+	module_put(entry->module);
       __error1:
-#ifdef LINUX_2_2
-	MOD_DEC_USE_COUNT;
-#endif
 	up(&info_mutex);
 	return err;
 }
@@ -450,10 +438,7 @@ static int snd_info_entry_release(struct inode *inode, struct file *file)
 					      data->file_private_data);
 		break;
 	}
-	dec_mod_count(entry->module);
-#ifdef LINUX_2_2
-	MOD_DEC_USE_COUNT;
-#endif
+	module_put(entry->module);
 	snd_magic_kfree(data);
 	return 0;
 }
