@@ -221,13 +221,15 @@ typedef struct timeval snd_timestamp_t;
 #define SND_PCM_AES3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
 #define SND_PCM_AES3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
 
+typedef struct _snd_aes_iec958 {
+	unsigned char status[24];	/* AES/IEC958 channel status bits */
+	unsigned char subcode[147];	/* AES/IEC958 subcode bits */
+	unsigned char pad;		/* nothing */
+	unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
+} snd_aes_iec958_t;
+
 typedef union _snd_digital_audio {
-	struct {
-		unsigned char status[24];	/* AES/IEC958 channel status bits */
-		unsigned char subcode[147];	/* AES/IEC958 subcode bits */
-		unsigned char pad;		/* nothing */
-		unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
-	} aes;
+	snd_aes_iec958_t aes;
 	char reserved[256];
 } snd_digital_audio_t;
 
