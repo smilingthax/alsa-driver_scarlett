@@ -64,11 +64,11 @@ install: compile
 	rm -f $(moddir)/snd*.o $(moddir)/persist.o $(moddir)/isapnp.o
 	cp modules/*.o $(moddir)
 	/sbin/depmod -a $(kaversion)
-	install -m 755 -d $(CONFIG_SND_KERNELDIR)/include/linux
-	install -m 644 include/asound.h $(CONFIG_SND_KERNELDIR)/include/linux
-	install -m 644 include/asequencer.h $(CONFIG_SND_KERNELDIR)/include/linux
+	install -m 755 -d $(prefix)/include/linux
+	install -m 644 include/asound.h $(prefix)/include/linux
+	install -m 644 include/asequencer.h $(prefix)/include/linux
 	for i in include/ainstr_*.h; do\
-	install -m 644 $$i $(CONFIG_SND_KERNELDIR)/include/linux;\
+	install -m 644 $$i $(prefix)/include/linux;\
 	done
 	if [ -d /sbin/init.d ]; then \
 	  install -m 755 utils/alsasound /sbin/init.d/alsasound; \
