@@ -735,7 +735,9 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #endif
 
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#define wait_ms gameport_wait_ms
 #include <linux/gameport.h>
+#undef wait_ms
 #ifndef to_gameport_driver
 /* old gameport interface */
 struct snd_gameport {
