@@ -32,6 +32,7 @@
 #define METHOD_MAKEFILE		1
 #define METHOD_ACINCLUDE	2
 #define METHOD_MAKECONF		3
+#define METHOD_INCLUDE		4
 
 // Dependency type
 typedef enum {
@@ -804,13 +805,13 @@ static void output_acinclude(void)
   [                        'all' compiles all drivers; ]\n\
   [                        Possible cards are: ]\n");
 	output_card_list(Deps, 24, 50);
-	printf(" ]\n");
+	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
 	printf("if test \"$cards\" = \"all\"; then\n");
 	printf("  ALSA_TOPLEVEL_ALL\n");
 	printf("  AC_MSG_RESULT(all)\n");
 	printf("else\n");
-	printf("  cards=`echo $cards | sed 's/,/ /g'`n");
+	printf("  cards=`echo $cards | sed 's/,/ /g'`\n");
 	printf("  for card in $cards\n");
 	printf("  do\n");
 	printf("    case \"$card\" in\n");
@@ -858,6 +859,24 @@ static void output_makeconf(void)
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("%s=@%s@\n", text, text);
+		free(text);
+	}
+}
+
+// Output in config.h
+static void output_include(void)
+{
+	dep *tempdep;
+	char *text;
+	
+	printf("/* Soundcard configuration for ALSA driver */\n");
+	printf("/* Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>, */\n");
+	printf("/*                  Jaroslav Kysela <perex@suse.cz> */\n\n");
+	for (tempdep = Deps; tempdep; tempdep = tempdep->link) {
+		if (tempdep->type != TYPE_TOPLEVEL)
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("#undef %s_MODULE\n", text);
 		free(text);
 	}
 }
@@ -965,6 +984,8 @@ int main(int argc, char *argv[])
 		method = METHOD_ACINCLUDE;
 	else if (strcmp(argv[argidx], "--makeconf") == 0)
 		method = METHOD_MAKECONF;
+	else if (strcmp(argv[argidx], "--include") == 0)
+		method = METHOD_INCLUDE;
 	else
 		usage(argv[0]);
 	argidx++;
@@ -1012,6 +1033,9 @@ int main(int argc, char *argv[])
 		break;
 	case METHOD_MAKECONF:
 		output_makeconf();
+		break;
+	case METHOD_INCLUDE:
+		output_include();
 		break;
 	default:
 		fprintf(stderr, "This should not happen!\n");
