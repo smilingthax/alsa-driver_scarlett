@@ -166,6 +166,12 @@ case "$1" in
     insert snd-card-sbawe.o snd_irq=10 snd_dma8=1 snd_dma16=5
     restore sbawe.conf
     ;;
+  emu10k1|live)
+    basic
+    insert snd-emu10k1.o
+    insert snd-card-emu10k1.o
+    restore emu10k1.conf
+    ;;
   sb8)
     basic
     insert snd-sb8-dsp.o
