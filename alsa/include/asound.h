@@ -174,6 +174,7 @@ typedef enum {
 #define SND_CONTROL_ACCESS_WRITE	(1<<1)
 #define SND_CONTROL_ACCESS_READWRITE	(SND_CONTROL_ACCESS_READ|SND_CONTROL_ACCESS_WRITE)
 #define SND_CONTROL_ACCESS_INACTIVE	(1<<8)
+#define SND_CONTROL_ACCESS_LOCK		(1<<9)	/* write lock */
 
 typedef struct snd_control_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */
@@ -240,6 +241,8 @@ typedef struct snd_control {
 #define SND_CTL_IOCTL_CONTROL_INFO	_IOWR('U', 0x11, snd_control_info_t)
 #define SND_CTL_IOCTL_CONTROL_READ	_IOWR('U', 0x12, snd_control_t)
 #define SND_CTL_IOCTL_CONTROL_WRITE	_IOWR('U', 0x13, snd_control_t)
+#define SND_CTL_IOCTL_CONTROL_LOCK	_IOW ('U', 0x14, snd_control_id_t)
+#define SND_CTL_IOCTL_CONTROL_UNLOCK	_IOW ('U', 0x15, snd_control_id_t)
 #define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x20, snd_hwdep_info_t)
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x30, snd_pcm_info_t)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x31, int)
