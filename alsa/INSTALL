@@ -92,6 +92,15 @@ Note: Some automake packages have missing aclocal program. Use newer version
       in the case.
 
 
+Cross-compiling
+===============
+
+Use '--with-cross=prefix' parameter for the configure script.
+
+Example:
+  './configure --with-cross=arm-linux- --with-kernel=/home/ipaq/kernel/linux'.
+
+
 Bug reporting system
 ====================
 
