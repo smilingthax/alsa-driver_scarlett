@@ -1696,6 +1696,7 @@ struct _snd_cs46xx {
 	void (*active_ctrl)(cs46xx_t *, int);
 	struct pci_dev *acpi_dev;
 	int acpi_port;
+	snd_kcontrol_t *eapd_switch; /* for amplifier hack */
 
 #ifdef CONFIG_PM
 	struct pm_dev *pm_dev;
