@@ -151,6 +151,11 @@ static void _dsp_unlink_scb (cs46xx_t *chip,dsp_scb_descriptor_t * scb)
 		spin_lock_irqsave(&chip->reg_lock, flags);    
 		/* update entry in DSP RAM */
 		snd_cs46xx_poke(chip,
+				(scb->address + SCBsubListPtr) << 2,
+				(scb->sub_list_ptr->address << 0x10) |
+				(scb->next_scb_ptr->address));
+		/* update parent entry in DSP RAM */
+		snd_cs46xx_poke(chip,
 				(scb->parent_scb_ptr->address + SCBsubListPtr) << 2,
 				(scb->parent_scb_ptr->sub_list_ptr->address << 0x10) |
 				(scb->parent_scb_ptr->next_scb_ptr->address));
