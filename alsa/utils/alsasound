@@ -101,7 +101,7 @@ function start() {
       echo "No mixer config in $asoundcfg, you have to unmute your card!"
     else
       if [ -x $alsactl ]; then
-        $alsactl -f $asoundcfg restore
+        $alsactl -F -f $asoundcfg restore
       else
         echo -e "${rc_warning}ERROR: alsactl not found${rc_reset}"
       fi
