@@ -48,6 +48,7 @@ typedef struct soundfont_patch_info_t {
 #define SND_SFNT_MAP_PRESET	6	/* awe_voice_map */
 	/* 7 is not used */
 #define SND_SFNT_PROBE_DATA		8	/* optarg=sample */
+#define SND_SFNT_REMOVE_INFO		9	/* optarg=(bank<<8)|instr */
 
 	short reserved;			/* word alignment data */
 
@@ -166,6 +167,8 @@ typedef struct soundfont_voice_rec_hdr_t {
 	char nvoices;			/* number of voices */
 	char write_mode;		/* write mode; normally 0 */
 #define SND_SFNT_WR_APPEND		0	/* append anyway */
+#define SND_SFNT_WR_EXCLUSIVE		1	/* skip if already exists */
+#define SND_SFNT_WR_REPLACE		2	/* replace if already exists */
 } soundfont_voice_rec_hdr_t;
 
 
