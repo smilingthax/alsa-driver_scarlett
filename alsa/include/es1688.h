@@ -30,10 +30,10 @@
 #define ES1688_HW_1688		0x0002
 
 struct snd_stru_es1688 {
-	unsigned short port;		/* port of ESS chip */
-	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
-	unsigned short irq;		/* IRQ number of ESS chip */
-	unsigned short mpu_irq;		/* MPU IRQ */
+	unsigned long port;		/* port of ESS chip */
+	unsigned long mpu_port;		/* MPU-401 port of ESS chip */
+	unsigned int irq;		/* IRQ number of ESS chip */
+	unsigned int mpu_irq;		/* MPU IRQ */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	snd_irq_t * mpu_irqptr;		/* MPU IRQ pointer */
 	unsigned short dma8;		/* 8-bit DMA */
@@ -135,8 +135,8 @@ unsigned char snd_es1688_mixer_read(es1688_t * codec, unsigned char reg);
 void snd_es1688_interrupt(snd_pcm_t * pcm);
 
 int snd_es1688_new_pcm(snd_card_t * card, int device,
-		       unsigned short port,
-		       unsigned short mpu_port,
+		       unsigned long port,
+		       unsigned long mpu_port,
 		       snd_irq_t * irqptr,
 		       snd_irq_t * mpu_irqptr,
 		       snd_dma_t * dma8ptr,

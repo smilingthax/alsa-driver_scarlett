@@ -127,10 +127,10 @@
 typedef struct snd_stru_ad1816a ad1816a_t;
 
 struct snd_stru_ad1816a {
-	unsigned short port;
-	unsigned short irq;
-	unsigned short dma1;
-	unsigned short dma2;
+	unsigned long port;
+	unsigned int irq;
+	unsigned int dma1;
+	unsigned int dma2;
 	snd_dma_t *dma1ptr;
 	snd_dma_t *dma2ptr;
 
@@ -225,7 +225,7 @@ struct snd_stru_ad1816a {
 extern void snd_ad1816a_interrupt(snd_pcm_t *pcm, unsigned char status);
 
 extern int snd_ad1816a_new_pcm(snd_card_t *card, int device,
-			       unsigned short port, snd_irq_t *irqptr,
+			       unsigned long port, snd_irq_t *irqptr,
 			       snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
 			       int timer_dev, snd_pcm_t **rpcm);
 

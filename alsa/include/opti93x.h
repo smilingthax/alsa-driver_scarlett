@@ -98,8 +98,8 @@
 typedef struct snd_stru_opti93x opti93x_t;
 
 struct snd_stru_opti93x {
-	unsigned short port;
-	unsigned short irq;
+	unsigned long port;
+	unsigned int irq;
 	unsigned short dma1;
 	unsigned short dma2;
 	snd_dma_t *dma1ptr;

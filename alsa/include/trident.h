@@ -349,8 +349,8 @@ struct snd_stru_trident {
 
         unsigned char  bDMAStart;
 
-	unsigned int port;
-	unsigned int midi_port;
+	unsigned long port;
+	unsigned long midi_port;
 
         LPCHANNELCONTROL ChRegs;
         int ChanDwordCount;

@@ -204,8 +204,8 @@ typedef struct snd_stru_irq {
 } snd_irq_t;
 
 typedef struct snd_stru_port {
-	unsigned int port;
-	unsigned int size;
+	unsigned long port;
+	unsigned long size;
 	char *name;
 #ifdef LINUX_2_3
 	struct resource *res;
@@ -429,8 +429,8 @@ extern int snd_card_register(snd_card_t *card);
 extern int snd_card_info_init(void);
 extern int snd_card_info_done(void);
 
-extern int snd_check_ioport(snd_card_t *card, int port, int size);
-extern int snd_register_ioport(snd_card_t *card, int port, int size, char *name,
+extern int snd_check_ioport(snd_card_t *card, unsigned long port, unsigned long size);
+extern int snd_register_ioport(snd_card_t *card, unsigned long port, unsigned long size, char *name,
                                snd_port_t **rport);
 extern int snd_unregister_ioport(snd_card_t *card, snd_port_t *port);
 extern int snd_unregister_ioports(snd_card_t *card);

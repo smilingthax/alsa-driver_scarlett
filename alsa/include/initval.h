@@ -62,11 +62,11 @@
 EXPORT_NO_SYMBOLS;
 #endif
 
-static inline int snd_legacy_auto_probe(int *ports, int (*probe)(int port))
+static inline int snd_legacy_auto_probe(unsigned long *ports, int (*probe)(unsigned long port))
 {
 	int result = 0;	/* number of detected cards */
 
-	while (*ports >= 0) {
+	while ((signed long)*ports != -1) {
 		if (probe(*ports) >= 0)
 			result++;
 		ports++;

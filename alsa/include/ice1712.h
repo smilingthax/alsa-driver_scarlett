@@ -245,10 +245,10 @@ struct snd_stru_ice1712 {
 	snd_dma_t * dma_proc;	/* professional capture */
 	snd_irq_t * irqptr;
 
-	unsigned int port;
-	unsigned int ddma_port;
-	unsigned int dmapath_port;
-	unsigned int profi_port;
+	unsigned long port;
+	unsigned long ddma_port;
+	unsigned long dmapath_port;
+	unsigned long profi_port;
 
 	unsigned int config;	/* system configuration */
 

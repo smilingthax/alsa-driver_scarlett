@@ -27,11 +27,11 @@
 #include "mixer.h"
 
 struct snd_stru_es18xx {
-	unsigned short port;		/* port of ESS chip */
-	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
-	unsigned short fm_port;		/* FM port */
-	unsigned short ctrl_port;	/* Control port of ESS chip */
-	unsigned short irq;		/* IRQ number of ESS chip */
+	unsigned long port;		/* port of ESS chip */
+	unsigned long mpu_port;		/* MPU-401 port of ESS chip */
+	unsigned long fm_port;		/* FM port */
+	unsigned long ctrl_port;	/* Control port of ESS chip */
+	unsigned int irq;		/* IRQ number of ESS chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma1;		/* DMA 1 */
 	snd_dma_t * dma1ptr;		/* DMA 1 pointer */
@@ -103,9 +103,9 @@ extern void snd_es18xx_mixer_write(es18xx_t * codec, unsigned char reg, unsigned
 extern int snd_es18xx_mixer_read(es18xx_t * codec, unsigned char reg);
 extern void snd_es18xx_interrupt(es18xx_t * codec, unsigned char status);
 extern int snd_es18xx_new_device(snd_card_t * card,
-				 unsigned short port,
-				 unsigned short mpu_port,
-				 unsigned short fm_port,
+				 unsigned long port,
+				 unsigned long mpu_port,
+				 unsigned long fm_port,
 				 snd_irq_t * irqnum,
 				 snd_dma_t * dma1num,
 				 snd_dma_t * dma2num,

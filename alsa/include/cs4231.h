@@ -28,7 +28,7 @@
 
 /* IO ports */
 
-#define CS4231P( codec, x ) ( (codec) -> port + c_d_c_CS4231##x )
+#define CS4231P(codec, x)	((codec)->port + c_d_c_CS4231##x)
 
 #define c_d_c_CS4231REGSEL	0
 #define c_d_c_CS4231REG		1
@@ -215,12 +215,12 @@ struct snd_stru_cs4231_freq {
 typedef struct snd_stru_cs4231 cs4231_t;
 
 struct snd_stru_cs4231 {
-	unsigned short port;		/* base i/o port */
-	unsigned short cport;		/* control base i/o port (CS4236) */
-	unsigned short irq;		/* IRQ line */
+	unsigned long port;		/* base i/o port */
+	unsigned long cport;		/* control base i/o port (CS4236) */
+	unsigned int irq;		/* IRQ line */
 	snd_irq_t * irqptr;		/* IRQ pointer */
-	unsigned short dma1;		/* playback DMA */
-	unsigned short dma2;		/* record DMA */
+	unsigned int dma1;		/* playback DMA */
+	unsigned int dma2;		/* record DMA */
 	snd_dma_t * dmaptr1;		/* DMA pointer - playback */
 	snd_dma_t * dmaptr2;		/* DMA pointer - record */
 	unsigned short version;		/* version of CODEC chip */
@@ -336,7 +336,7 @@ void snd_cs4231_mce_down(cs4231_t * codec);
 void snd_cs4231_interrupt(snd_pcm_t * pcm, unsigned char status);
 
 int snd_cs4231_new_pcm(snd_card_t * card, int device,
-		       unsigned short port,
+		       unsigned long port,
 		       snd_irq_t * irqptr,
 		       snd_dma_t * dmaptr1,
 		       snd_dma_t * dmaptr2,
@@ -347,8 +347,8 @@ int snd_cs4231_new_pcm(snd_card_t * card, int device,
 int snd_cs4231_new_mixer(snd_pcm_t * pcm, int deivce, snd_kmixer_t **rmixer);
 
 int snd_cs4236_new_pcm(snd_card_t * card, int device,
-		       unsigned short port,
-		       unsigned short cport,
+		       unsigned long port,
+		       unsigned long cport,
 		       snd_irq_t * irqptr,
 		       snd_dma_t * dmaptr1,
 		       snd_dma_t * dmaptr2,

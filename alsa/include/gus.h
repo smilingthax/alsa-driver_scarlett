@@ -325,7 +325,7 @@ struct snd_stru_gf1 {
 		     sw_lfo:1,		/* use software LFO */
 		     effect:1;		/* use effect voices */
 
-	unsigned short port;		/* port of GF1 chip */
+	unsigned long port;		/* port of GF1 chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	snd_dma_t * dma1ptr;		/* DMA1 pointer */
 	snd_dma_t * dma2ptr;		/* DMA2 pointer */
@@ -679,7 +679,7 @@ extern void snd_gf1_peek_print_block(snd_gus_card_t * gus, unsigned int addr, in
 void snd_gus_use_inc(snd_gus_card_t * gus);
 void snd_gus_use_dec(snd_gus_card_t * gus);
 snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
-				 unsigned short port,
+				 unsigned long port,
 				 snd_irq_t * irqnum,
 				 snd_dma_t * dma1num,
 				 snd_dma_t * dma2num,
@@ -687,7 +687,7 @@ snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 				 int voices,
 				 int pcm_voices,
 				 int effect);
-int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
+int snd_gus_set_port(snd_gus_card_t * card, unsigned long port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
 void snd_gus_init_control(snd_gus_card_t * gus);

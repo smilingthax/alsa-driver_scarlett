@@ -61,9 +61,9 @@ typedef struct snd_emu8000 {
 	snd_emux_t *emu;
 
 	int mem_size;
-	unsigned short port1;	/* Port usually base+0 */
-	unsigned short port2;	/* Port usually at base+0x400 */
-	unsigned short port3;	/* Port usually at base+0x800 */
+	unsigned long port1;	/* Port usually base+0 */
+	unsigned long port2;	/* Port usually at base+0x400 */
+	unsigned long port3;	/* Port usually at base+0x800 */
 	unsigned short last_reg;/* Last register command */
 	spinlock_t reg_lock;
 

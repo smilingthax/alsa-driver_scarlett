@@ -129,8 +129,8 @@ struct snd_stru_ad1848_freq {
 #define AD1848_HW_CMI8330	0x0004	/* CMI8330 chip */
 
 struct snd_stru_ad1848 {
-	unsigned short port;		/* i/o port */
-	unsigned short irq;		/* IRQ line */
+	unsigned long port;		/* i/o port */
+	unsigned int irq;		/* IRQ line */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma;		/* data DMA */
 	snd_dma_t * dmaptr;		/* data DMA pointer */
@@ -183,7 +183,7 @@ void snd_ad1848_out(ad1848_t * codec, unsigned char reg, unsigned char value);
 void snd_ad1848_interrupt(snd_pcm_t * pcm, unsigned char status);
 
 int snd_ad1848_new_pcm(snd_card_t * card, int device,
-		       unsigned short port,
+		       unsigned long port,
 		       snd_irq_t * irqptr,
 		       snd_dma_t * dmaptr,
 		       unsigned short hardware,

@@ -627,7 +627,7 @@ struct snd_stru_emu10k1 {
 	snd_dma_t * dma2ptr;	/* ADC */
 	snd_irq_t * irqptr;
 
-	unsigned int port;	/* I/O port number */
+	unsigned long port;	/* I/O port number */
 	int APS: 1,		/* APS flag */
 	    tos_link: 1;	/* tos link detected */
 	unsigned int revision;	/* chip revision */

@@ -58,7 +58,7 @@
 typedef struct snd_stru_sbmixer sbmixer_t;
 
 struct snd_stru_sbmixer {
-	unsigned short port;
+	unsigned long port;
 
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_line;
@@ -108,9 +108,9 @@ struct snd_stru_sbmixer {
 };
 
 struct snd_stru_sbdsp {
-	unsigned short port;		/* base port of DSP chip */
-	unsigned short mpu_port;	/* MPU port for SB DSP 4.0+ */
-	unsigned short irq;		/* IRQ number of DSP chip */
+	unsigned long port;		/* base port of DSP chip */
+	unsigned long mpu_port;		/* MPU port for SB DSP 4.0+ */
+	unsigned int irq;		/* IRQ number of DSP chip */
 	snd_irq_t * irqptr;		/* IRQ pointer */
 	unsigned short dma8;		/* 8-bit DMA */
 	snd_dma_t * dma8ptr;		/* 8-bit DMA pointer */
@@ -160,8 +160,8 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 
 /* I/O ports */
 
-#define SBP( codec, x ) ( (codec) -> port + s_b_SB_##x )
-#define SBP1( port, x ) ( (port) + s_b_SB_##x )
+#define SBP(codec, x)		((codec)->port + s_b_SB_##x)
+#define SBP1(port, x)		((port) + s_b_SB_##x)
 
 #define s_b_SB_RESET		0x6
 #define s_b_SB_READ		0xa
@@ -300,14 +300,14 @@ extern void snd_sb16dsp_interrupt(snd_pcm_t * pcm, unsigned short status);
 
 extern int snd_sb8dsp_new_pcm(snd_card_t * card,
 			      int device,
-			      unsigned short port,
+			      unsigned long port,
 			      snd_irq_t * irqptr,
 			      snd_dma_t * dma8ptr,
 			      unsigned short hardware,
 			      snd_pcm_t ** rpcm);
 extern int snd_sb16dsp_new_pcm(snd_card_t * card,
 			       int device,
-			       unsigned short port,
+			       unsigned long port,
 			       snd_irq_t * irqptr,
 			       snd_dma_t * dma8ptr,
 			       snd_dma_t * dma16ptr,
