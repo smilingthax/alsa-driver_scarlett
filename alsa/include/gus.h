@@ -274,7 +274,7 @@ struct snd_gus_stru_voice {
 	unsigned char index;
 	unsigned char pad;
 	
-#ifdef CONFIG_SND_INTERRUPTS_PROFILE
+#ifdef CONFIG_SND_DEBUG
 	unsigned int interrupt_stat_wave;
 	unsigned int interrupt_stat_volume;
 #endif
@@ -369,6 +369,16 @@ struct snd_stru_gf1 {
 	void (*interrupt_handler_dma_write) (snd_gus_card_t * gus);
 	void (*interrupt_handler_dma_read) (snd_gus_card_t * gus);
 
+#ifdef CONFIG_SND_DEBUG
+	unsigned int interrupt_stat_midi_out;
+	unsigned int interrupt_stat_midi_in;
+	unsigned int interrupt_stat_timer1;
+	unsigned int interrupt_stat_timer2;
+	unsigned int interrupt_stat_dma_write;
+	unsigned int interrupt_stat_dma_read;
+	unsigned int interrupt_stat_voice_lost;
+#endif
+
 	/* synthesizer */
 
 	int seq_client;
@@ -436,6 +446,9 @@ struct snd_stru_gus_card {
 	int timer_dev;			/* timer device */
 
 	struct snd_stru_gf1 gf1;	/* gf1 specific variables */
+#ifdef CONFIG_SND_DEBUG
+	snd_info_entry_t *irq_entry;
+#endif
 	snd_pcm_t *pcm;
 #if 0
 	snd_pcm_subchn_t *pcm_subchn;
@@ -682,6 +695,10 @@ int snd_gus_detach_synthesizer(snd_gus_card_t *gus);
 /* gus_irq.c */
 
 void snd_gus_interrupt(snd_gus_card_t * gus, unsigned char status);
+#ifdef CONFIG_SND_DEBUG
+void snd_gus_irq_profile_init(snd_gus_card_t *gus);
+void snd_gus_irq_profile_done(snd_gus_card_t *gus);
+#endif
 
 /* gus_uart.c */
 

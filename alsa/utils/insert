@@ -183,7 +183,7 @@ case "$1" in
     basic
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-card-gusclassic.o snd_irq=5 snd_dma1=6 snd_dma2=7
+    insert snd-card-gusclassic.o snd_irq=7 snd_dma1=6 snd_dma2=7
     restore gusclassic.conf
     ;;
   guse*|ext*)
