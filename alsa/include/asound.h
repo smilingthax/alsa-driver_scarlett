@@ -659,57 +659,57 @@ struct sndrv_ctl_card_info {
 	unsigned char reserved[128];	/* reserved for future */
 };
 
-enum sndrv_ctl_element_type {
-	SNDRV_CTL_ELEMENT_TYPE_NONE,		/* invalid */
-	SNDRV_CTL_ELEMENT_TYPE_BOOLEAN,		/* boolean type */
-	SNDRV_CTL_ELEMENT_TYPE_INTEGER,		/* integer type */
-	SNDRV_CTL_ELEMENT_TYPE_ENUMERATED,	/* enumerated type */
-	SNDRV_CTL_ELEMENT_TYPE_BYTES,		/* byte array */
-	SNDRV_CTL_ELEMENT_TYPE_IEC958,		/* IEC958 (S/PDIF) setup */
-	SNDRV_CTL_ELEMENT_TYPE_LAST = SNDRV_CTL_ELEMENT_TYPE_IEC958,
+enum sndrv_ctl_elem_type {
+	SNDRV_CTL_ELEM_TYPE_NONE,		/* invalid */
+	SNDRV_CTL_ELEM_TYPE_BOOLEAN,		/* boolean type */
+	SNDRV_CTL_ELEM_TYPE_INTEGER,		/* integer type */
+	SNDRV_CTL_ELEM_TYPE_ENUMERATED,	/* enumerated type */
+	SNDRV_CTL_ELEM_TYPE_BYTES,		/* byte array */
+	SNDRV_CTL_ELEM_TYPE_IEC958,		/* IEC958 (S/PDIF) setup */
+	SNDRV_CTL_ELEM_TYPE_LAST = SNDRV_CTL_ELEM_TYPE_IEC958,
 };
 
-enum sndrv_ctl_element_iface {
-	SNDRV_CTL_ELEMENT_IFACE_CARD,		/* global control */
-	SNDRV_CTL_ELEMENT_IFACE_HWDEP,		/* hardware dependent device */
-	SNDRV_CTL_ELEMENT_IFACE_MIXER,		/* virtual mixer device */
-	SNDRV_CTL_ELEMENT_IFACE_PCM,		/* PCM device */
-	SNDRV_CTL_ELEMENT_IFACE_RAWMIDI,	/* RawMidi device */
-	SNDRV_CTL_ELEMENT_IFACE_TIMER,		/* timer device */
-	SNDRV_CTL_ELEMENT_IFACE_SEQUENCER,	/* sequencer client */
-	SNDRV_CTL_ELEMENT_IFACE_LAST = SNDRV_CTL_ELEMENT_IFACE_SEQUENCER,
+enum sndrv_ctl_elem_iface {
+	SNDRV_CTL_ELEM_IFACE_CARD,		/* global control */
+	SNDRV_CTL_ELEM_IFACE_HWDEP,		/* hardware dependent device */
+	SNDRV_CTL_ELEM_IFACE_MIXER,		/* virtual mixer device */
+	SNDRV_CTL_ELEM_IFACE_PCM,		/* PCM device */
+	SNDRV_CTL_ELEM_IFACE_RAWMIDI,	/* RawMidi device */
+	SNDRV_CTL_ELEM_IFACE_TIMER,		/* timer device */
+	SNDRV_CTL_ELEM_IFACE_SEQUENCER,	/* sequencer client */
+	SNDRV_CTL_ELEM_IFACE_LAST = SNDRV_CTL_ELEM_IFACE_SEQUENCER,
 };
 
-#define SNDRV_CTL_ELEMENT_ACCESS_READ		(1<<0)
-#define SNDRV_CTL_ELEMENT_ACCESS_WRITE		(1<<1)
-#define SNDRV_CTL_ELEMENT_ACCESS_READWRITE	(SNDRV_CTL_ELEMENT_ACCESS_READ|SNDRV_CTL_ELEMENT_ACCESS_WRITE)
-#define SNDRV_CTL_ELEMENT_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without a notification */
-#define SNDRV_CTL_ELEMENT_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
-#define SNDRV_CTL_ELEMENT_ACCESS_LOCK		(1<<9)	/* write lock */
-#define SNDRV_CTL_ELEMENT_ACCESS_INDIRECT	(1<<31)	/* indirect access */
+#define SNDRV_CTL_ELEM_ACCESS_READ		(1<<0)
+#define SNDRV_CTL_ELEM_ACCESS_WRITE		(1<<1)
+#define SNDRV_CTL_ELEM_ACCESS_READWRITE	(SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE)
+#define SNDRV_CTL_ELEM_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without a notification */
+#define SNDRV_CTL_ELEM_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
+#define SNDRV_CTL_ELEM_ACCESS_LOCK		(1<<9)	/* write lock */
+#define SNDRV_CTL_ELEM_ACCESS_INDIRECT	(1<<31)	/* indirect access */
 
-struct sndrv_ctl_element_id {
+struct sndrv_ctl_elem_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */
-	enum sndrv_ctl_element_iface iface; /* interface identifier */
+	enum sndrv_ctl_elem_iface iface; /* interface identifier */
 	unsigned int device;		/* device/client number */
 	unsigned int subdevice;		/* subdevice (substream) number */
         unsigned char name[44];		/* ASCII name of item */
 	unsigned int index;		/* index of item */
 };
 
-struct sndrv_ctl_element_list {
+struct sndrv_ctl_elem_list {
 	unsigned int offset;		/* W: first element ID to get */
 	unsigned int space;		/* W: count of element IDs to get */
 	unsigned int used;		/* R: count of element IDs set */
 	unsigned int count;		/* R: count of all elements */
-	struct sndrv_ctl_element_id *pids; /* R: IDs */
+	struct sndrv_ctl_elem_id *pids; /* R: IDs */
 	unsigned char reserved[50];
 };
 
-struct sndrv_ctl_element_info {
-	struct sndrv_ctl_element_id id;	/* W: element ID */
-	enum sndrv_ctl_element_type type; /* R: value type - SNDRV_CTL_ELEMENT_TYPE_* */
-	unsigned int access;		/* R: value access (bitmask) - SNDRV_CTL_ELEMENT_ACCESS_* */
+struct sndrv_ctl_elem_info {
+	struct sndrv_ctl_elem_id id;	/* W: element ID */
+	enum sndrv_ctl_elem_type type; /* R: value type - SNDRV_CTL_ELEM_TYPE_* */
+	unsigned int access;		/* R: value access (bitmask) - SNDRV_CTL_ELEM_ACCESS_* */
 	unsigned int count;		/* count of values */
 	union {
 		struct {
@@ -727,8 +727,8 @@ struct sndrv_ctl_element_info {
 	unsigned char reserved[64];
 };
 
-struct sndrv_ctl_element {
-	struct sndrv_ctl_element_id id;	/* W: element ID */
+struct sndrv_ctl_elem {
+	struct sndrv_ctl_elem_id id;	/* W: element ID */
 	unsigned int indirect: 1;	/* W: use indirect pointer (xxx_ptr member) */
         union {
 		union {
@@ -751,12 +751,12 @@ struct sndrv_ctl_element {
 enum {
 	SNDRV_CTL_IOCTL_PVERSION = _IOR('U', 0x00, int),
 	SNDRV_CTL_IOCTL_INFO = _IOR('U', 0x01, struct sndrv_ctl_card_info),
-	SNDRV_CTL_IOCTL_ELEMENT_LIST = _IOWR('U', 0x10, struct sndrv_ctl_element_list),
-	SNDRV_CTL_IOCTL_ELEMENT_INFO = _IOWR('U', 0x11, struct sndrv_ctl_element_info),
-	SNDRV_CTL_IOCTL_ELEMENT_READ = _IOWR('U', 0x12, struct sndrv_ctl_element),
-	SNDRV_CTL_IOCTL_ELEMENT_WRITE = _IOWR('U', 0x13, struct sndrv_ctl_element),
-	SNDRV_CTL_IOCTL_ELEMENT_LOCK = _IOW('U', 0x14, struct sndrv_ctl_element_id),
-	SNDRV_CTL_IOCTL_ELEMENT_UNLOCK = _IOW('U', 0x15, struct sndrv_ctl_element_id),
+	SNDRV_CTL_IOCTL_ELEM_LIST = _IOWR('U', 0x10, struct sndrv_ctl_elem_list),
+	SNDRV_CTL_IOCTL_ELEM_INFO = _IOWR('U', 0x11, struct sndrv_ctl_elem_info),
+	SNDRV_CTL_IOCTL_ELEM_READ = _IOWR('U', 0x12, struct sndrv_ctl_elem),
+	SNDRV_CTL_IOCTL_ELEM_WRITE = _IOWR('U', 0x13, struct sndrv_ctl_elem),
+	SNDRV_CTL_IOCTL_ELEM_LOCK = _IOW('U', 0x14, struct sndrv_ctl_elem_id),
+	SNDRV_CTL_IOCTL_ELEM_UNLOCK = _IOW('U', 0x15, struct sndrv_ctl_elem_id),
 	SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE = _IOWR('U', 0x20, int),
 	SNDRV_CTL_IOCTL_HWDEP_INFO = _IOR('U', 0x21, struct sndrv_hwdep_info),
 	SNDRV_CTL_IOCTL_PCM_NEXT_DEVICE = _IOR('U', 0x30, int),
@@ -783,7 +783,7 @@ enum sndrv_ctl_event_type {
 struct sndrv_ctl_event {
 	enum sndrv_ctl_event_type type;	/* event type - SNDRV_CTL_EVENT_* */
 	union {
-		struct sndrv_ctl_element_id id;
+		struct sndrv_ctl_elem_id id;
                 unsigned char data8[60];
         } data;
 };
