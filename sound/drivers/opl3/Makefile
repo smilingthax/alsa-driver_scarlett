@@ -15,7 +15,7 @@ endif
 
 OPL3_OBJS = snd-opl3-lib.o
 ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
-OBJ3_OBJS += snd-opl3-synth.o
+OPL3_OBJS += snd-opl3-synth.o
 endif
 
 # Toplevel Module Dependency
