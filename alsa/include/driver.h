@@ -385,7 +385,16 @@ void snd_oss_cleanup_module(void);
 extern void snd_memory_init(void);
 extern void snd_memory_done(void);
 extern void *snd_kmalloc(size_t size, int flags);
-extern void snd_kfree(void *obj);
+extern void _snd_kfree(void *obj);
+#ifdef CONFIG_SND_DEBUG
+#define snd_kfree(obj) { \
+	if (obj == NULL) \
+		printk("snd: kfree NULL - %s:%i [%s]\n", __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+	else _snd_kfree(obj); \
+} while (0)
+#else
+#define snd_kfree _snd_kfree
+#endif
 extern void *snd_kcalloc(size_t size, int flags);
 extern char *snd_kmalloc_strdup(const char *string, int flags);
 extern void *snd_malloc_pages(unsigned long size, int *pg, int dma);
