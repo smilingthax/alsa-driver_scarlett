@@ -154,7 +154,7 @@ int snd_card_free(snd_card_t * card)
 
 static void choose_default_id(snd_card_t *card)
 {
-	int i, len, idx_flag = 0;
+	int i, len, idx_flag = 0, loops = 8;
 	char *id, *spos;
 	
 	id = spos = card->shortname;	
@@ -173,25 +173,35 @@ static void choose_default_id(snd_card_t *card)
 
 	id = card->id;
 
-      __again:
-	for (i = 0; i < snd_ecards_limit; i++) {
-		if (snd_cards[i] && !strcmp(snd_cards[i]->id, id)) {
-			len = strlen(id);
-			if (idx_flag)
-				id[len-1]++;
-			else if (len <= sizeof(card->id) - 3) {
-				strcat(id, "_1");
-				idx_flag++;
-			} else {
-				spos = id + len - 2;
-				if (len <= sizeof(card->id) - 2)
-					spos++;
-				*spos++ = '_';
-				*spos++ = '1';
-				*spos++ = '\0';
-				idx_flag++;
-			}
-			goto __again;
+	while (1) {
+	      	if (loops-- == 0) {
+      			snd_printk(KERN_ERR "unable to choose default card id (%s)", id);
+      			strcpy(card->id, card->proc_root->name);
+      			return;
+      		}
+	      	if (snd_info_check_reserved_words(id))
+      			goto __change;
+		for (i = 0; i < snd_ecards_limit; i++) {
+			if (snd_cards[i] && !strcmp(snd_cards[i]->id, id))
+				goto __change;
+		}
+		break;
+
+	      __change:
+		len = strlen(id);
+		if (idx_flag)
+			id[len-1]++;
+		else if (len <= sizeof(card->id) - 3) {
+			strcat(id, "_1");
+			idx_flag++;
+		} else {
+			spos = id + len - 2;
+			if (len <= sizeof(card->id) - 2)
+				spos++;
+			*spos++ = '_';
+			*spos++ = '1';
+			*spos++ = '\0';
+			idx_flag++;
 		}
 	}
 		
