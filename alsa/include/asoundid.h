@@ -68,6 +68,8 @@
 /* --- */
 #define SND_CARD_TYPE_DUMMY		0x00000023	/* dummy soundcard */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000023
+#define SND_CARD_TYPE_ALS100		0x00000024	/* Avance Logic ALS100 */
+/* --- */
+#define SND_CARD_TYPE_LAST		0x00000024
 
 #endif				/* __ASOUNDID_H */
