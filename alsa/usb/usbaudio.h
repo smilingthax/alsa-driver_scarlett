@@ -1,3 +1,5 @@
+#include <sound/driver.h>
+
 /*
  */
 
@@ -120,13 +122,10 @@ void *snd_usb_find_csint_desc(void *descstart, unsigned int desclen, void *after
 
 int snd_usb_create_mixer(snd_usb_audio_t *chip, unsigned char *buffer, unsigned int buflen, unsigned int ctrlif);
 
-
-     
-#if LINUX_VERSION < KERNEL_VERSION(2,5,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #define do_usb_alloc_urb(n,flags) usb_alloc_urb(n)
 #define do_usb_submit_urb(p,flags) usb_submit_urb(p)
 #else
 #define do_usb_alloc_urb(n,flags) usb_alloc_urb(n,flags)
 #define do_usb_submit_urb(p,flags) usb_submit_urb(p,flags)
 #endif
-
