@@ -619,7 +619,7 @@ Module parameters
   Module snd-card-via686a.o
   -------------------------
 
-    Module for AC'97 motherboards based on VIA 82C686A (south) bridge.
+    Module for AC'97 motherboards based on VIA 82C686A/686B (south) bridge.
 
     snd_mpu_port         - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
     snd_joystick	 - 1 = enable, otherwise obtain BIOS setup
