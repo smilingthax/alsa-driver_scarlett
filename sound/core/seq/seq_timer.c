@@ -268,28 +268,26 @@ int snd_seq_timer_open(queue_t *q)
 	if (tmr->timeri)
 		return -EBUSY;
 	sprintf(str, "sequencer queue %i", q->queue);
-	if (tmr->type == SNDRV_SEQ_TIMER_ALSA) {	/* standard ALSA timer */
-		if (tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE)
-			tmr->alsa_id.dev_sclass = SNDRV_TIMER_SCLASS_SEQUENCER;
-		t = snd_timer_open(str, &tmr->alsa_id, q->queue);
-		if (t == NULL && tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE) {
-			if (tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_GLOBAL ||
-			    tmr->alsa_id.device != SNDRV_TIMER_GLOBAL_SYSTEM) {
-				snd_timer_id_t tid;
-				memset(&tid, 0, sizeof(tid));
-				tid.dev_class = SNDRV_TIMER_CLASS_GLOBAL;
-				tid.dev_sclass = SNDRV_TIMER_SCLASS_SEQUENCER;
-				tid.card = -1;
-				tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
-				t = snd_timer_open(str, &tid, q->queue);
-			}
-			if (t == NULL) {
-				snd_printk(KERN_ERR "fatal error: cannot create timer\n");
-				return -ENODEV;
-			}
-		}
-	} else {
+	if (tmr->type != SNDRV_SEQ_TIMER_ALSA)	/* standard ALSA timer */
 		return -EINVAL;
+	if (tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE)
+		tmr->alsa_id.dev_sclass = SNDRV_TIMER_SCLASS_SEQUENCER;
+	t = snd_timer_open(str, &tmr->alsa_id, q->queue);
+	if (t == NULL && tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_SLAVE) {
+		if (tmr->alsa_id.dev_class != SNDRV_TIMER_CLASS_GLOBAL ||
+		    tmr->alsa_id.device != SNDRV_TIMER_GLOBAL_SYSTEM) {
+			snd_timer_id_t tid;
+			memset(&tid, 0, sizeof(tid));
+			tid.dev_class = SNDRV_TIMER_CLASS_GLOBAL;
+			tid.dev_sclass = SNDRV_TIMER_SCLASS_SEQUENCER;
+			tid.card = -1;
+			tid.device = SNDRV_TIMER_GLOBAL_SYSTEM;
+			t = snd_timer_open(str, &tid, q->queue);
+		}
+		if (t == NULL) {
+			snd_printk(KERN_ERR "seq fatal error: cannot create timer\n");
+			return -ENODEV;
+		}
 	}
 	t->callback = snd_seq_timer_interrupt;
 	t->callback_data = q;
