@@ -1156,11 +1156,11 @@ static int snd_ice1712_cs8427_set_input_clock(ice1712_t *ice, int spdif_clock)
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_sendbytes(ice->cs8427, reg, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	if (snd_i2c_readbytes(ice->cs8427, &val, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	nval = val & 0xf0;
 	if (spdif_clock)
@@ -1170,7 +1170,7 @@ static int snd_ice1712_cs8427_set_input_clock(ice1712_t *ice, int spdif_clock)
 	if (val != nval) {
 		reg[1] = nval;
 		if (snd_i2c_sendbytes(ice->cs8427, reg, 2) != 2) {
-			res = -EREMOTE;
+			res = -EIO;
 		} else {
 			res++;
 		}
@@ -3196,7 +3196,7 @@ static int snd_ice1712_ews88mt_output_sense_get(snd_kcontrol_t *kcontrol, snd_ct
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_readbytes(ice->pcf8574[1], &data, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	ucontrol->value.enumerated.item[0] = data & ICE1712_EWS88MT_OUTPUT_SENSE ? 1 : 0; /* high = -10dBV, low = +4dBu */
@@ -3212,12 +3212,12 @@ static int snd_ice1712_ews88mt_output_sense_put(snd_kcontrol_t *kcontrol, snd_ct
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_readbytes(ice->pcf8574[1], &data, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	ndata = (data & ~ICE1712_EWS88MT_OUTPUT_SENSE) | (ucontrol->value.enumerated.item[0] ? ICE1712_EWS88MT_OUTPUT_SENSE : 0);
 	if (ndata != data && snd_i2c_sendbytes(ice->pcf8574[1], &ndata, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	return ndata != data;
@@ -3234,7 +3234,7 @@ static int snd_ice1712_ews88mt_input_sense_get(snd_kcontrol_t *kcontrol, snd_ctl
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_readbytes(ice->pcf8574[0], &data, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	/* reversed; high = +4dBu, low = -10dBV */
 	ucontrol->value.enumerated.item[0] = data & (1 << channel) ? 0 : 1;
@@ -3252,12 +3252,12 @@ static int snd_ice1712_ews88mt_input_sense_put(snd_kcontrol_t *kcontrol, snd_ctl
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_readbytes(ice->pcf8574[0], &data, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	ndata = (data & ~(1 << channel)) | (ucontrol->value.enumerated.item[0] ? 0 : (1 << channel));
 	if (ndata != data && snd_i2c_sendbytes(ice->pcf8574[0], &ndata, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	return ndata != data;
@@ -3303,7 +3303,7 @@ static int snd_ice1712_ews88d_control_get(snd_kcontrol_t *kcontrol, snd_ctl_elem
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_readbytes(ice->pcf8575, data, 2) != 2) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	data[0] = (data[shift >> 3] >> (shift & 7)) & 0x01;
@@ -3324,7 +3324,7 @@ static int snd_ice1712_ews88d_control_put(snd_kcontrol_t * kcontrol, snd_ctl_ele
 	snd_i2c_lock(ice->i2c);
 	if (snd_i2c_readbytes(ice->pcf8575, data, 2) != 2) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	ndata[shift >> 3] = data[shift >> 3] & ~(1 << (shift & 7));
 	if (invert) {
@@ -3337,7 +3337,7 @@ static int snd_ice1712_ews88d_control_put(snd_kcontrol_t * kcontrol, snd_ctl_ele
 	change = (data[shift >> 3] != ndata[shift >> 3]);
 	if (change && snd_i2c_sendbytes(ice->pcf8575, data, 2) != 2) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	return change;
@@ -3375,7 +3375,7 @@ static int snd_ice1712_6fire_read_pca(ice1712_t *ice)
 	snd_i2c_sendbytes(ice->pcf8575, &byte, 1);
 	if (snd_i2c_readbytes(ice->pcf8575, &byte, 1) != 1) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	return byte;
@@ -3389,7 +3389,7 @@ static int snd_ice1712_6fire_write_pca(ice1712_t *ice, unsigned char data)
 	bytes[1] = data;
 	if (snd_i2c_sendbytes(ice->pcf8575, bytes, 2) != 2) {
 		snd_i2c_unlock(ice->i2c);
-		return -EREMOTE;
+		return -EIO;
 	}
 	snd_i2c_unlock(ice->i2c);
 	return 0;
