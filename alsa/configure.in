@@ -206,6 +206,7 @@ AC_SUBST(moddir)
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
+CONFIG_SND_PPC=0
 processor=""
 rm -f processor.id
 AC_TRY_RUN([
@@ -285,6 +286,7 @@ case "$processor" in
     processor="alpha"
     ;;
   ppc)
+    CONFIG_SND_PPC=1
     ;;
   mips)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
@@ -296,6 +298,7 @@ case "$processor" in
 esac
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
+AC_SUBST(CONFIG_SND_PPC)
 
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)

@@ -3,10 +3,11 @@
  */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18)
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18) || defined(__powerpc__)
 typedef unsigned long dma_addr_t;
+#endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18)
 #define init_MUTEX(x) *(x) = MUTEX
 #define DECLARE_MUTEX(x) struct semaphore x = MUTEX
 typedef struct wait_queue wait_queue_t;
@@ -42,7 +43,7 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 	do { __restore_flags(flags); } while (0)
 
 /* RedHat 6.2 uses modified kill_fasync */
-#if defined(__rh_config_h__) || (defined(__rh_kernel_autoconf_h__) && LINUX_VERSION_CODE > KERNEL_VERSION(2, 2, 12))
+#if defined(__powerpc__) || defined(__rh_config_h__) || (defined(__rh_kernel_autoconf_h__) && LINUX_VERSION_CODE > KERNEL_VERSION(2, 2, 12))
 #define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig, band)
 #else
 #define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)

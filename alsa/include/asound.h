@@ -126,9 +126,12 @@ enum sndrv_card_type {
 	SNDRV_CARD_TYPE_NM256AV,	/* NM256AV */
 	SNDRV_CARD_TYPE_NM256ZX,	/* NM256ZX */
 	SNDRV_CARD_TYPE_VIA8233,	/* VIA VT8233 */
+	SNDRV_CARD_TYPE_PMAC_AWACS,	/* PMac AWACS */
+	SNDRV_CARD_TYPE_PMAC_BURGUNDY,	/* PMac Burgundy */
+	SNDRV_CARD_TYPE_PMAC_DACA,	/* PMac DACA */
 
 	/* Don't forget to change the following: */
-	SNDRV_CARD_TYPE_LAST = SNDRV_CARD_TYPE_VIA8233,
+	SNDRV_CARD_TYPE_LAST = SNDRV_CARD_TYPE_PMAC_DACA,
 };
 
 /****************************************************************************

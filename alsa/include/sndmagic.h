@@ -133,6 +133,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define nm256_t_magic				0xa15a3301
 #define nm256_dma_t_magic			0xa15a3302
 #define via8233_t_magic				0xa15a3401
+#define pmac_t_magic				0xa15a3501
 
 #else
 #define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)
