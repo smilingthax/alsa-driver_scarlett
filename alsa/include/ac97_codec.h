@@ -54,7 +54,7 @@
 #define AC97_POWERDOWN		0x26	/* Powerdown control / status */
 /* range 0x28-0x3a - AUDIO */
 /* range 0x3c-0x58 - MODEM */
-/* range 0x5a-0x7a - Vendor Specific */
+/* range 0x5a-0x7b - Vendor Specific */
 #define AC97_VENDOR_ID1		0x7c	/* Vendor ID1 */
 #define AC97_VENDOR_ID2		0x7e	/* Vendor ID2 / revision */
 
