@@ -2404,11 +2404,11 @@ static void snd_es1968_chip_init(es1968_t *chip)
 /*
  * PM support
  */
-static void es1968_suspend(es1968_t *chip, int can_schedule)
+static void es1968_suspend(es1968_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 
@@ -2419,11 +2419,11 @@ static void es1968_suspend(es1968_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-static void es1968_resume(es1968_t *chip, int can_schedule)
+static void es1968_resume(es1968_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
@@ -2452,25 +2452,25 @@ static void es1968_resume(es1968_t *chip, int can_schedule)
 static int snd_es1968_suspend(struct pci_dev *dev, u32 state)
 {
 	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return -ENXIO);
-	es1968_suspend(chip, 0);
+	es1968_suspend(chip);
 	return 0;
 }
 static int snd_es1968_resume(struct pci_dev *dev)
 {
 	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return -ENXIO);
-	es1968_resume(chip, 0);
+	es1968_resume(chip);
 	return 0;
 }
 #else
 static void snd_es1968_suspend(struct pci_dev *dev)
 {
 	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return);
-	es1968_suspend(chip, 0);
+	es1968_suspend(chip);
 }
 static void snd_es1968_resume(struct pci_dev *dev)
 {
 	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return);
-	es1968_resume(chip, 0);
+	es1968_resume(chip);
 }
 #endif
 
@@ -2482,11 +2482,11 @@ static int snd_es1968_set_power_state(snd_card_t *card, unsigned int power_state
 	case SNDRV_CTL_POWER_D0:
 	case SNDRV_CTL_POWER_D1:
 	case SNDRV_CTL_POWER_D2:
-		es1968_resume(chip, 1);
+		es1968_resume(chip);
 		break;
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
-		es1968_suspend(chip, 1);
+		es1968_suspend(chip);
 		break;
 	default:
 		return -EINVAL;

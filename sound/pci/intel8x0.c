@@ -1076,11 +1076,11 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 /*
  * power management
  */
-static void intel8x0_suspend(intel8x0_t *chip, int can_schedule)
+static void intel8x0_suspend(intel8x0_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 
@@ -1092,11 +1092,11 @@ static void intel8x0_suspend(intel8x0_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-static void intel8x0_resume(intel8x0_t *chip, int can_schedule)
+static void intel8x0_resume(intel8x0_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
@@ -1114,25 +1114,25 @@ static void intel8x0_resume(intel8x0_t *chip, int can_schedule)
 static int snd_intel8x0_suspend(struct pci_dev *dev, u32 state)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
-	intel8x0_suspend(chip, 0);
+	intel8x0_suspend(chip);
 	return 0;
 }
 static int snd_intel8x0_resume(struct pci_dev *dev)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
-	intel8x0_resume(chip, 0);
+	intel8x0_resume(chip);
 	return 0;
 }
 #else
 static void snd_intel8x0_suspend(struct pci_dev *dev)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
-	intel8x0_suspend(chip, 0);
+	intel8x0_suspend(chip);
 }
 static void snd_intel8x0_resume(struct pci_dev *dev)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
-	intel8x0_resume(chip, 0);
+	intel8x0_resume(chip);
 }
 #endif
 
@@ -1144,11 +1144,11 @@ static int snd_intel8x0_set_power_state(snd_card_t *card, unsigned int power_sta
 	case SNDRV_CTL_POWER_D0:
 	case SNDRV_CTL_POWER_D1:
 	case SNDRV_CTL_POWER_D2:
-		intel8x0_resume(chip, 1);
+		intel8x0_resume(chip);
 		break;
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
-		intel8x0_suspend(chip, 1);
+		intel8x0_suspend(chip);
 		break;
 	default:
 		return -EINVAL;

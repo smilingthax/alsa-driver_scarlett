@@ -89,6 +89,7 @@ snd_card_t *snd_card_new(int idx, const char *xid,
 	INIT_LIST_HEAD(&card->controls);
 	INIT_LIST_HEAD(&card->ctl_files);
 #ifdef CONFIG_PM
+	init_MUTEX(&card->power_lock);
 	init_waitqueue_head(&card->power_sleep);
 #endif
 	/* the control interface cannot be accessed from the user space until */
@@ -280,7 +281,7 @@ int snd_component_add(snd_card_t *card, const char *component)
 
 #ifdef CONFIG_PM
 /* the power lock must be active before call */
-void snd_power_wait(snd_card_t *card, int can_schedule)
+void snd_power_wait(snd_card_t *card)
 {
 	wait_queue_t wait;
 
@@ -289,6 +290,6 @@ void snd_power_wait(snd_card_t *card, int can_schedule)
 	snd_power_unlock(card);
 	schedule_timeout(30 * HZ);
 	remove_wait_queue(&card->power_sleep, &wait);
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 }
 #endif /* CONFIG_PM */

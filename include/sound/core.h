@@ -132,7 +132,7 @@ struct _snd_card {
 	int (*set_power_state) (snd_card_t *card, unsigned int state);
 	void *power_state_private_data;
 	unsigned int power_state;	/* power state */
-	unsigned int power_lock;	/* power lock */
+	struct semaphore power_lock;	/* power lock */
 	wait_queue_head_t power_sleep;
 #endif
 
@@ -143,22 +143,17 @@ struct _snd_card {
 };
 
 #ifdef CONFIG_PM
-static inline void snd_power_lock(snd_card_t *card, int can_schedule)
+static inline void snd_power_lock(snd_card_t *card)
 {
-	while (test_and_set_bit(0, &card->power_lock)) {
-		if (can_schedule) {
-			set_current_state(TASK_INTERRUPTIBLE);
-                        schedule_timeout(1);
-		}
-	}
+	down(&card->power_lock);
 }
 
 static inline void snd_power_unlock(snd_card_t *card)
 {
-	clear_bit(0, &card->power_lock);
+	up(&card->power_lock);
 }
 
-void snd_power_wait(snd_card_t *card, int can_schedule);
+void snd_power_wait(snd_card_t *card);
 
 static inline unsigned int snd_power_get_state(snd_card_t *card)
 {

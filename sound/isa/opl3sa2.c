@@ -541,11 +541,11 @@ static int __init snd_opl3sa2_mixer(opl3sa2_t *chip)
 
 /* Power Management support functions */
 #ifdef CONFIG_PM
-static void snd_opl3sa2_suspend(opl3sa2_t *chip, int can_schedule)
+static void snd_opl3sa2_suspend(opl3sa2_t *chip)
 {
 	snd_card_t *card = chip->card;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 
@@ -561,12 +561,12 @@ static void snd_opl3sa2_suspend(opl3sa2_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-static void snd_opl3sa2_resume(opl3sa2_t *chip, int can_schedule)
+static void snd_opl3sa2_resume(opl3sa2_t *chip)
 {
 	snd_card_t *card = chip->card;
 	int i;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
@@ -598,11 +598,11 @@ static int snd_opl3sa2_set_power_state(snd_card_t *card, unsigned int power_stat
 	case SNDRV_CTL_POWER_D0:
 	case SNDRV_CTL_POWER_D1:
 	case SNDRV_CTL_POWER_D2:
-		snd_opl3sa2_resume(chip, 1);
+		snd_opl3sa2_resume(chip);
 		break;
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
-		snd_opl3sa2_suspend(chip, 1);
+		snd_opl3sa2_suspend(chip);
 		break;
 	default:
 		return -EINVAL;
@@ -616,10 +616,10 @@ static int snd_opl3sa2_pm_callback(struct pm_dev *dev, pm_request_t rqst, void *
 
 	switch (rqst) {
 	case PM_SUSPEND:
-		snd_opl3sa2_suspend(chip, 0);
+		snd_opl3sa2_suspend(chip);
 		break;
 	case PM_RESUME:
-		snd_opl3sa2_resume(chip, 0);
+		snd_opl3sa2_resume(chip);
 		break;
 	}
 	return 0;

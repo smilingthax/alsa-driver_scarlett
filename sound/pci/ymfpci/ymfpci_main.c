@@ -1928,12 +1928,12 @@ static int saved_regs_index[] = {
 };
 #define YDSXGR_NUM_SAVED_REGS	(sizeof(saved_regs_index)/sizeof(saved_regs_index[0]))
 
-void snd_ymfpci_suspend(ymfpci_t *chip, int can_schedule)
+void snd_ymfpci_suspend(ymfpci_t *chip)
 {
 	snd_card_t *card = chip->card;
 	int i;
 	
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
 		goto __skip;
 	snd_pcm_suspend_all(chip->pcm);
@@ -1950,12 +1950,12 @@ void snd_ymfpci_suspend(ymfpci_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-void snd_ymfpci_resume(ymfpci_t *chip, int can_schedule)
+void snd_ymfpci_resume(ymfpci_t *chip)
 {
 	snd_card_t *card = chip->card;
 	int i;
 
-	snd_power_lock(card, can_schedule);
+	snd_power_lock(card);
 
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
@@ -1992,11 +1992,11 @@ static int snd_ymfpci_set_power_state(snd_card_t *card, unsigned int power_state
 	case SNDRV_CTL_POWER_D0:
 	case SNDRV_CTL_POWER_D1:
 	case SNDRV_CTL_POWER_D2:
-		snd_ymfpci_resume(chip, 1);
+		snd_ymfpci_resume(chip);
 		break;
 	case SNDRV_CTL_POWER_D3hot:
 	case SNDRV_CTL_POWER_D3cold:
-		snd_ymfpci_suspend(chip, 1);
+		snd_ymfpci_suspend(chip);
 		break;
 	default:
 		return -EINVAL;
