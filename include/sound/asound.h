@@ -575,11 +575,10 @@ struct sndrv_timer_ginfo {
 	unsigned char id[64];		/* timer identification */
 	unsigned char name[80];		/* timer name */
 	unsigned long ticks;		/* maximum ticks between interrupts */
-	unsigned long resolution;	/* average resolution in ns */
-	unsigned long resolution_min;	/* minimal resolution in ns */
-	unsigned long resolution_max;	/* maximal resolution in ns */
-	unsigned long resolution_step;	/* resolution step in ns */
-	unsigned int instances;		/* active timer instances */
+	unsigned long resolution;	/* average period resolution in ns */
+	unsigned long resolution_min;	/* minimal period resolution in ns */
+	unsigned long resolution_max;	/* maximal period resolution in ns */
+	unsigned int clients;		/* active timer clients */
 	unsigned char reserved[32];
 };
 
@@ -591,7 +590,9 @@ struct sndrv_timer_gparams {
 
 struct sndrv_timer_gstatus {
 	struct sndrv_timer_id tid;	/* requested timer ID */
-	unsigned long resolution;	/* current resolution in ns */
+	unsigned long resolution;	/* current period resolution in ns */
+	unsigned long resolution_num;	/* precise current period resolution (in seconds) - numerator */
+	unsigned long resolution_den;	/* precise current period resolution (in seconds) - denominator */
 	unsigned char reserved[32];
 };
 
@@ -606,7 +607,7 @@ struct sndrv_timer_info {
 	unsigned char id[64];		/* timer identificator */
 	unsigned char name[80];		/* timer name */
 	unsigned long ticks;		/* maximum ticks between interrupts */
-	unsigned long resolution;	/* average resolution in ns */
+	unsigned long resolution;	/* average period resolution in ns */
 	unsigned char reserved[64];	/* reserved */
 };
 
@@ -623,7 +624,7 @@ struct sndrv_timer_params {
 
 struct sndrv_timer_status {
 	struct timespec tstamp;		/* Timestamp - last update */
-	unsigned int resolution;	/* current resolution in ns */
+	unsigned int resolution;	/* current period resolution in ns */
 	unsigned int lost;		/* counter of master tick lost */
 	unsigned int overrun;		/* count of read queue overruns */
 	unsigned int queue;		/* used queue size */

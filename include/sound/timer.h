@@ -73,7 +73,6 @@ struct _snd_timer_hardware {
 	unsigned long resolution;	/* average timer resolution for one tick in nsec */
 	unsigned long resolution_min;	/* minimal resolution */
 	unsigned long resolution_max;	/* maximal resolution */
-	unsigned long resolution_step;	/* step for resolution */
 	unsigned long ticks;		/* max timer ticks per interrupt */
 	/* -- low-level functions -- */
 	int (*open) (snd_timer_t * timer);
@@ -82,6 +81,7 @@ struct _snd_timer_hardware {
 	int (*start) (snd_timer_t * timer);
 	int (*stop) (snd_timer_t * timer);
 	int (*set_resolution) (snd_timer_t * timer, unsigned long resolution);
+	int (*precise_resolution) (snd_timer_t * timer, unsigned long *num, unsigned long *den);
 };
 
 struct _snd_timer {

@@ -1311,10 +1311,9 @@ static int snd_timer_user_ginfo(struct file *file, snd_timer_ginfo_t *_ginfo)
 		if (t->hw.resolution_min > 0) {
 			ginfo.resolution_min = t->hw.resolution_min;
 			ginfo.resolution_max = t->hw.resolution_max;
-			ginfo.resolution_step = t->hw.resolution_step;
 		}
 		list_for_each(p, &t->open_list_head) {
-			ginfo.instances++;
+			ginfo.clients++;
 		}
 	} else {
 		err = -ENOENT;
@@ -1370,6 +1369,12 @@ static int snd_timer_user_gstatus(struct file *file, snd_timer_gstatus_t *_gstat
 			gstatus.resolution = t->hw.c_resolution(t);
 		else
 			gstatus.resolution = t->hw.resolution;
+		if (t->hw.precise_resolution) {
+			t->hw.precise_resolution(t, &gstatus.resolution_num, &gstatus.resolution_den);
+		} else {
+			gstatus.resolution_num = 1;
+			gstatus.resolution_den = gstatus.resolution;
+		}
 	} else {
 		err = -ENOENT;
 	}
