@@ -654,6 +654,8 @@ extern int interval_ratden(interval_t *i,
 			   unsigned int *nump, unsigned int *denp);
 
 extern void _snd_pcm_hw_params_any(snd_pcm_hw_params_t *params);
+extern void _snd_pcm_hw_param_setempty(snd_pcm_hw_params_t *params,
+				       snd_pcm_hw_param_t var);
 extern int snd_pcm_hw_param_min(snd_pcm_substream_t *substream, 
 				snd_pcm_hw_params_t *params,
 				snd_pcm_hw_param_t var,
