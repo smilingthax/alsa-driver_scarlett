@@ -115,7 +115,7 @@ struct snd_emux {
 	int ports[SND_EMUX_MAX_PORTS];	/* The ports for this device */
 	int used;	/* use counter */
 	char *name;	/* name of the device (internal) */
-	snd_virmidi_dev_t **vmidi;
+	snd_rawmidi_t **vmidi;
 
 	snd_util_memhdr_t *memhdr;	/* memory chunk information */
 
