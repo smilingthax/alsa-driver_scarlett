@@ -4,6 +4,7 @@
 #
 
 srcdir=@srcdir@
+SRCDIR=@SRCDIR@
 VPATH=@srcdir@
 prefix=@prefix@
 moddir=@moddir@
