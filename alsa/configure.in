@@ -1450,6 +1450,32 @@ if test "$CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK)
 fi
 
+dnl Check for pci_consistent_set_dma_mask()
+AC_MSG_CHECKING(for pci_dev_present)
+pci_consistent_defined="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/pci.h>
+],[
+	int (*func)();
+	func = pci_dev_present;
+],
+    AC_MSG_RESULT("yes");pci_dev_present_defined="1",
+    AC_MSG_RESULT("no");pci_dev_present_defined="0",
+    AC_MSG_RESULT("unknown");pci_dev_present_defined="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_PCI_DEV_PRESENT=$pci_dev_present_defined
+if test "$CONFIG_HAVE_PCI_DEV_PRESENT" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PCI_DEV_PRESENT)
+fi
+
 dnl Check for tty->count is the atomic type
 AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
