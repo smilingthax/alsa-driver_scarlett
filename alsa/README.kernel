@@ -1,7 +1,7 @@
-Driver can be compiled only under 2.0.X kernels and under 2.1.89+ kernels.
+Driver can be compiled only under 2.0.X kernels and under 2.1.127+ kernels.
 
-Last checked 2.0.X kernel: 2.0.35
-Last checked 2.1.X kernel: 2.1.120
+Last checked 2.0.X kernel: 2.0.36-pre15
+Last checked 2.1.X kernel: 2.1.127
 
 Driver has been tested on platforms:
 
