@@ -516,11 +516,11 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count)
 /*
  * A dirty hack... when the kernel code is fixed this should be removed.
  *
- * since pci_alloc_consistent always tries GFP_ATOMIC when the requested
+ * since pci_alloc_consistent always tries GFP_DMA when the requested
  * pci memory region is below 32bit, it happens quite often that even
  * 2 order or pages cannot be allocated.
  *
- * so in the following, GFP_ATOMIC is used only when the first allocation
+ * so in the following, GFP_DMA is used only when the first allocation
  * doesn't match the requested region.
  */
 void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
@@ -529,6 +529,8 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 	void *ret;
 	int gfp = GFP_ATOMIC;
 
+	if (hwdev == NULL)
+		gfp |= GFP_DMA;
 	ret = (void *)__get_free_pages(gfp, get_order(size));
 	if (ret) {
 		if (hwdev && ((virt_to_phys(ret) + size - 1) & ~hwdev->dma_mask)) {
