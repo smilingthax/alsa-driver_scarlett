@@ -234,7 +234,7 @@ snd_emu8000_sample_new(snd_emux_t *rec, snd_sf_sample_t *sp,
 		/* we may take too long time in this loop.
 		 * so give controls back to kernel if needed.
 		 */
-		if (current->need_resched) {
+		if (need_resched()) {
 			if (current->state != TASK_RUNNING)
 				set_current_state(TASK_RUNNING);
 			schedule();
