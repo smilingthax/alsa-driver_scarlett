@@ -161,20 +161,6 @@ Additional Modules
 
     Module supports up to 8 cards.
 
-  Module snd-sscape
-  -----------------
-
-    Module for ENSONIQ SoundScape PnP cards.
-
-    port	- Port # (PnP setup)
-    irq		- IRQ # (PnP setup)
-    mpu_irq	- MPU-401 IRQ # (PnP setup)
-    dma		- DMA # (PnP setup)
-
-    Module supports up to 8 cards.  ISA PnP must be enabled.
-    You need sscape_ctl tool in alsa-tools package for loading
-    the microcode.
-
   Module snd-vx222
   ----------------
 
