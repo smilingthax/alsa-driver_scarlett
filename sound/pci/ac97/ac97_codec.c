@@ -98,43 +98,19 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x41445348, 0xffffffff, "AD1881A",		patch_ad1881 },
 { 0x41445360, 0xffffffff, "AD1885",		patch_ad1881 },
 { 0x41445361, 0xffffffff, "AD1886",		patch_ad1881 },
+{ 0x41445362, 0xffffffff, "AD1887",		patch_ad1881 },
 { 0x414c4300, 0xfffffff0, "RL5306",	 	NULL },
 { 0x414c4310, 0xfffffff0, "RL5382", 		NULL },
 { 0x414c4320, 0xfffffff0, "RL5383", 		NULL },
 { 0x414c4710, 0xffffffff, "ALC200/200P",	NULL },
-{ 0x43525901, 0xffffffff, "CS4297 rev A",	NULL },
-{ 0x43525902, 0xffffffff, "CS4297 rev B",	NULL },
-{ 0x43525903, 0xffffffff, "CS4297 rev C",	NULL },
-{ 0x43525911, 0xffffffff, "CS4297A rev A",	NULL },
-{ 0x43525912, 0xffffffff, "CS4297A rev B",	NULL },
-{ 0x43525913, 0xffffffff, "CS4297A rev C",	NULL },
-{ 0x43525914, 0xffffffff, "CS4297A rev DEFGH",	NULL },
-{ 0x43525915, 0xffffffff, "CS4297A rev K",	NULL },
-{ 0x43525916, 0xffffffff, "CS4297A rev L",	NULL },
-{ 0x42525921, 0xffffffff, "CS4294/4298 rev A",	NULL },
-{ 0x42525922, 0xffffffff, "CS4294/4298 rev B",	NULL },
-{ 0x42525923, 0xffffffff, "CS4298 rev C",	NULL },
-{ 0x42525924, 0xffffffff, "CS4298 rev D",	NULL },
-{ 0x42525925, 0xffffffff, "CS4298 rev E",	NULL },
-{ 0x4252592B, 0xffffffff, "CS4294 rev C",	NULL },
-{ 0x4252592C, 0xffffffff, "CS4294 rev D",	NULL },
-{ 0x4252592D, 0xffffffff, "CS4294 rev E",	NULL },
-{ 0x43525931, 0xffffffff, "CS4299 rev A",	patch_cirrus_cs4299 },
-{ 0x43525932, 0xffffffff, "CS4299 rev B",	patch_cirrus_cs4299 },
-{ 0x43525933, 0xffffffff, "CS4299 rev C",	patch_cirrus_cs4299 },
-{ 0x43525934, 0xffffffff, "CS4299 rev DEFGH",	patch_cirrus_cs4299 },
-{ 0x43525935, 0xffffffff, "CS4299 rev K",	patch_cirrus_cs4299 },
-{ 0x43525936, 0xffffffff, "CS4299 rev L",	patch_cirrus_cs4299 },
-{ 0x43525949, 0xffffffff, "CS4201 rev A",	NULL },
-{ 0x4352594a, 0xffffffff, "CS4201 rev B",	NULL },
-{ 0x4352594b, 0xffffffff, "CS4201 rev C",	NULL },
-{ 0x4352594c, 0xffffffff, "CS4201 rev D",	NULL },
-{ 0x4352594d, 0xffffffff, "CS4201 rev E",	NULL },
-{ 0x43525959, 0xffffffff, "CS4205 rev A",	NULL },
-{ 0x4352595a, 0xffffffff, "CS4205 rev B",	NULL },
-{ 0x4352595b, 0xffffffff, "CS4205 rev C",	NULL },
-{ 0x43525961, 0xffffffff, "CS4291 rev A",	NULL },
-{ 0x43525962, 0xffffffff, "CS4291 rev B",	NULL },
+{ 0x43525900, 0xfffffff8, "CS4297",		NULL },
+{ 0x43525910, 0xfffffff8, "CS4297A",		NULL },
+{ 0x42525920, 0xfffffff8, "CS4294/4298",	NULL },
+{ 0x42525928, 0xfffffff8, "CS4294",		NULL },
+{ 0x43525930, 0xfffffff8, "CS4299",		patch_cirrus_cs4299 },
+{ 0x43525948, 0xfffffff8, "CS4201",		NULL },
+{ 0x43525958, 0xfffffff8, "CS4205",		NULL },
+{ 0x43525960, 0xfffffff8, "CS4291",		NULL },
 { 0x48525300, 0xffffff00, "HMP9701",		NULL },
 { 0x49434501, 0xffffffff, "ICE1230",		NULL },
 { 0x49434511, 0xffffffff, "ICE1232",		NULL }, // only guess --jk
@@ -167,6 +143,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 #define AC97_ID_AD1881A		0x41445348
 #define AC97_ID_AD1885		0x41445360
 #define AC97_ID_AD1886		0x41445361
+#define AC97_ID_AD1887		0x41445362
 #define AC97_ID_TR28028		0x54524108
 #define AC97_ID_STAC9700	0x83847600
 #define AC97_ID_STAC9704	0x83847604
@@ -233,6 +210,7 @@ static int snd_ac97_valid_reg(ac97_t *ac97, unsigned short reg)
 		return 1;
 	case AC97_ID_AD1885:	/* AD1885 */
 	case AC97_ID_AD1886:	/* AD1886 */
+	case AC97_ID_AD1887:	/* AD1887 - !!verify!! --jk */
 		if (reg == 0x5a)
 			return 1;
 		if (reg >= 0x3c && reg <= 0x6e)	/* 0x59 */
