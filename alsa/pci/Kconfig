@@ -65,4 +65,15 @@ config SND_ASIHPI
 	help
 	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
 
+config SND_PCXHR
+	tristate "Digigram PCXHR"
+	depends on SND
+	select SND_PCM
+	select SND_HWDEP
+	help
+	  Say Y here to include support for Digigram PCXHR boards.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called snd-pcxhr.
+
 endmenu
