@@ -85,8 +85,13 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
   #define try_inc_mod_count(x) do { ; } while (0)
 #endif
 
-#define MODULE_DEVICE_TABLE(foo,bar)
-
+#define MODULE_GENERIC_TABLE(gtype,name)        \
+static const unsigned long __module_##gtype##_size \
+  __attribute__ ((unused)) = sizeof(struct gtype##_id); \
+static const struct gtype##_id * __module_##gtype##_table \
+  __attribute__ ((unused)) = name
+#define MODULE_DEVICE_TABLE(type,name)          \
+  MODULE_GENERIC_TABLE(type##_device,name)
 
 /**
  * list_for_each        -       iterate over a list
