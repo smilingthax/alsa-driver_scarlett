@@ -83,6 +83,7 @@ struct snd_info_entry_device {
 struct snd_info_entry {
 	const char *name;
 	mode_t mode;
+	long size;
 	unsigned short type;
 	unsigned short subtype;
 	union {

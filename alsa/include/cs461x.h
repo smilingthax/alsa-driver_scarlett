@@ -180,6 +180,7 @@
 #define BA1_SP_DMEM0                            0x00000000
 #define BA1_SP_DMEM1                            0x00010000
 #define BA1_SP_PMEM                             0x00020000
+#define BA1_SP_REG				0x00030000
 #define BA1_SPCR                                0x00030000
 #define BA1_DREG                                0x00030004
 #define BA1_DSRWP                               0x00030008
@@ -1626,7 +1627,15 @@ struct snd_stru_cs461x {
 	unsigned long ba0_addr;
 	unsigned long ba1_addr;
 	unsigned int *ba0;
-	unsigned int *ba1;
+	union {
+		struct {
+			unsigned int *data0;
+			unsigned int *data1;
+			unsigned int *pmem;
+			unsigned int *reg;
+		} name;
+		unsigned int *idx[4];
+	} ba1;
 	unsigned int pctl;
 	unsigned int cctl;
 	unsigned int mode;
@@ -1641,6 +1650,12 @@ struct snd_stru_cs461x {
 	snd_pcm_t *pcm;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
+
+	void *entry_proc_BA0;
+	void *entry_proc_BA1_data0;
+	void *entry_proc_BA1_data1;
+	void *entry_proc_BA1_prg;
+	void *entry_proc_BA1_reg;
 
 	snd_spin_define(reg);
 	snd_sleep_define(codec);
