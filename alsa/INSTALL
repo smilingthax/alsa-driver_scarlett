@@ -630,8 +630,9 @@ Module parameters
     snd_ac97_clock	  - AC'97 codec clock base (default 48000Hz)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
-    Note: some i815 chips have different clocks.  if you encounter
-    too fast playback, add module option "snd_ac97_clock=41194".
+    Note: the latest driver supports auto-detection of chip clock.
+    if you still encounter too fast playback, specify the clock
+    explicitly via the module option "snd_ac97_clock=41194".
     
   Module snd-card-via686a.o
   -------------------------
@@ -723,6 +724,25 @@ Module parameters
     The driver supports only ac97 codec.  It's possible to force
     to initialize/use ac97 although it's not detected.  In such a
     case, use snd_force_ac97=1 option.
+
+  Module snd-card-ali5451.o
+  ------------------------
+
+    Module for ALi M5451
+
+    snd_pcm_channels     - Number of hardware channels assigned for PCM
+
+    Module supports autoprobe and multiple chips (max 8).
+
+  Module snd-card-pmac.o (on ppc only)
+  ------------------------------------
+
+    Module for PowerMac, iMac and iBook on-board soundchips
+
+    snd_enable_beep     - enable beep using PCM (enabled as default)
+
+    Module supports autoprobe a chip.
+    Note: the driver may have problems regarding endianess.
 
 
 modprobe/kmod support
