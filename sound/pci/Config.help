@@ -76,7 +76,8 @@ CONFIG_SND_ICE1712
   Say 'Y' or 'M' to include support for ICE1712 (Envy24) based soundcards.
 
 CONFIG_SND_INTEL8X0
-  Say 'Y' or 'M' to include support for Intel8x0 based soundcards.
+  Say 'Y' or 'M' to include support for Intel8x0 based soundcards,
+  SiS 7012, AMD768/8111 and NVidia NForce chips.
 
 CONFIG_SND_SONICVIBES
   Say 'Y' or 'M' to include support for S3 SonicVibes based soundcards.
