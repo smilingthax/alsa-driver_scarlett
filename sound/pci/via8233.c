@@ -175,7 +175,6 @@ struct _snd_via8233 {
 	unsigned int ac97_clock;
 
 	spinlock_t reg_lock;
-	spinlock_t update_lock;
 	snd_info_entry_t *proc_entry;
 
 	void *tables;
@@ -417,8 +416,6 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t * substream)
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	unsigned long tmp;
 
-	if (inb(VIAREG(chip, PLAYBACK_STATUS)) & VIA_REG_STAT_ACTIVE)
-		return 0;
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
 	snd_via8233_setup_periods(chip, &chip->playback, substream);
 	/* I don't understand this stuff but its from the documentation and this way it works */
@@ -746,7 +743,6 @@ static int __devinit snd_via8233_create(snd_card_t * card,
 		return -ENOMEM;
 
 	spin_lock_init(&chip->reg_lock);
-	spin_lock_init(&chip->update_lock);
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;
