@@ -1,8 +1,13 @@
 
-		ALSA PCM realtime mixing interface - Draft v0.2
+		ALSA PCM realtime mixing interface - Draft v0.3
 		===============================================
 		        Jaroslav Kysela <perex@jcu.cz>
 
+**************************************************************************
+OK. People, I'm postponing this feature and marking as 'it will be
+implemented only if future will show that this is right way'...
+This was only thought from me... Back to safe user space...
+**************************************************************************
 
     ALSA driver already supports all features which are needed for exclusive
 access to PCM devices. Modern sound driver needs ability of realtime mixing
@@ -10,7 +15,8 @@ of independend PCM streams. Mixing should be done in user space or in kernel
 space. Unfortunately user space have some limitations for which this
 implementation isn't very good:
 	1) user code doesn't know precise current position in stream
-	2) user code may deliver samples to kernel space delayed
+	2) mixing server in user space can't reflect to new data
+           immediately (some data must be always in hardware buffers)
 	3) user code doesn't have access to hardware and use optimal mode
            for data transfers and playback (GUS cards)
    ALSA implementation leaves some code to user space. In user space should
@@ -22,7 +28,7 @@ to driver's buffer (this shouldn't be hardware buffer of necessity).
 This eliminates one copy of samples.
    As synchronization source (as standard PCM code uses) will be used
 system clock (gettimeofday). This method of synchronization will also allow
-delayed start of samples.
+delayed start of streams.
 
    Compatibility issues: Interface isn't compatible with current available
 interfaces such as OSS and exclusive ALSA PCM interface. Author of draft is
@@ -62,18 +68,17 @@ struct snd_pcm_mix_info {
   unsigned int format;                  /* SND_PCM_FMT_XXXX - supported formats */
   unsigned int rate;                    /* mixing rate in Hz - if zero=variable */
   unsigned int channels;                /* hardware channels (voices) */
-  unsigned char *buffer;		/* initial buffer for mmaped access */
-  unsigned int size;			/* initial buffer size for mmaped access */
   unsigned char reserved[64];		/* reserved for future */
 };
 
 struct snd_pcm_mix_setup {
-  unsigned char volume[128];		/* linear volume levels (0-255) */
+  unsigned char lvolume[128];		/* linear left volume levels (0-255) */
+  unsigned char rvolume[128];		/* linear right volume levels (0-255) */
   unsigned int format;			/* SND_PCM_SFMT_XXXX - data format */
   unsigned int rate;			/* rate (if info returns variable rate otherwise it must be set to mixing rate) */
   unsigned int channels;		/* channels (voices) */
   struct timeval start;			/* start time in us or zero=now */
-  unsigned int size;			/* buffer size in bytes or zero=initial */
+  unsigned int size;			/* required buffer size for mmaped access */
   int wakeup_size;			/* wakeup size in bytes */
   unsigned char reserved[256];		/* reserved for future */
 };
@@ -93,7 +98,14 @@ struct snd_pcm_mix_status {
 #define SND_PCM_MIX_IOCTL_INFO		_IOR ( 'm', 0x01, struct snd_pcm_mix_info )
 #define SND_PCM_MIX_IOCTL_SETUP		_IOWR( 'm', 0x10, struct snd_pcm_mix_setup )
 #define SND_PCM_MIX_IOCTL_STATUS	_IOR ( 'm', 0x20, struct snd_pcm_mix_status )
-#define SND_PCM_MIX_IOCTL_START		_IO  ( 'm', 0x30 )
+#define SND_PCM_MIX_IOCTL_START		_IO  ( 'm', 0x30, unsigned int )
 #define SND_PCM_MIX_IOCTL_FLUSH		_IO  ( 'm', 0x31 )
 #define SND_PCM_MIX_IOCTL_DRAIN		_IO  ( 'm', 0x32 )
 #define SND_PCM_MIX_IOCTL_PAUSE		_IOWR( 'm', 0x33, int )
+
+==== end of changes ====
+
+Notes to ioctl commands:
+
+SND_PCM_MIX_IOCTL_START - argument is size in bytes of new PCM data which
+                          application writes to mmaped buffer...
