@@ -564,6 +564,7 @@ snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 int snd_gus_set_port(snd_gus_card_t * card, unsigned short port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
+void snd_gus_init_control(snd_gus_card_t * gus);
 int snd_gus_attach_synthesizer(snd_gus_card_t * gus);
 int snd_gus_detach_synthesizer(snd_gus_card_t * gus);
 int snd_gus_check_version(snd_gus_card_t * gus);
