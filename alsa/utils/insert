@@ -111,7 +111,7 @@ case "$1" in
     insert snd-synth-gus.o
     insert snd-i2c.o
     insert snd-tea6330t.o
-    insert snd-card-interwave-stb.o snd_port=0x240 snd_irq=5 snd_dma1=5 snd_dma2=6 snd_midi=1 snd_pcm_voices=8
+    insert snd-card-interwave-stb.o snd_port=0x240 snd_irq=7 snd_dma1=5 snd_dma2=6 snd_midi=1 snd_pcm_voices=8
     restore interwave-stb.conf
     ;;
   interwave|iw)

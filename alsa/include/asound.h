@@ -739,6 +739,8 @@ struct snd_mixer_element_tone_control1 {
 #define SND_MIXER_EFF1_DELAY		(1<<7)
 #define SND_MIXER_EFF1_FEEDBACK		(1<<8)
 
+#define SND_MIXER_EFF1_DEPTH_REAR	(1<<9)
+
 struct snd_mixer_element_3d_effect1_info {
 	unsigned int effect;		/* bitmap of SND_MIXER_EFF1_* */
 	int min_wide, max_wide;		/* 3D wide */
@@ -748,6 +750,7 @@ struct snd_mixer_element_3d_effect1_info {
 	int min_depth, max_depth;	/* 3D depth */
 	int min_delay, max_delay;	/* 3D delay */
 	int min_feedback, max_feedback;	/* 3D feedback */
+	int min_depth_rear, max_depth_rear;	/* 3D depth rear */
 };
 
 struct snd_mixer_element_3d_effect1 {
@@ -761,6 +764,7 @@ struct snd_mixer_element_3d_effect1 {
 	int depth;			/* 3D depth */
 	int delay;			/* 3D delay */
 	int feedback;			/* 3D feedback */
+	int depth_rear;			/* 3D depth rear */
 };
 
 /*
