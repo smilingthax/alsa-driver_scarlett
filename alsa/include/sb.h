@@ -94,7 +94,7 @@ struct snd_stru_sbmixer {
 	snd_kmixer_element_t *me_vol_synth;
 	snd_kmixer_element_t *me_sw3_synth_input;
 
-#ifdef CONFIG_SND_SB16_CSP	
+#ifdef CONFIG_SND_SB16_CSP
 	snd_kmixer_element_t *me_qsound_pcm;
 #endif
 	snd_kmixer_element_t *me_vol_pcm;
@@ -133,6 +133,12 @@ struct snd_stru_sbdsp {
 	sbmixer_t mixer;		/* mixer */
 
 	char name[32];
+
+#ifdef CONFIG_SND_SB16_CSP
+	void *csp_callbacks;
+	void *csp_private_data;
+	int csp_acquired;
+#endif
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
@@ -285,11 +291,11 @@ extern int snd_sb8dsp_probe(snd_pcm_t * pcm);
 extern int snd_sb16dsp_probe(snd_pcm_t * pcm);
 extern int snd_sb16dsp_configure(snd_pcm_t * pcm);
 extern snd_kmixer_t *snd_sb8dsp_new_mixer(snd_card_t * card,
-					  sbmixer_t * sbmix,
+					  sbdsp_t * codec,
 					  unsigned short hardware,
 					  int pcm_dev);
 extern snd_kmixer_t *snd_sb16dsp_new_mixer(snd_card_t * card,
-					   sbmixer_t * sbmix,
+					   sbdsp_t * codec,
 					   unsigned short hardware,
 					   int pcm_dev);
 

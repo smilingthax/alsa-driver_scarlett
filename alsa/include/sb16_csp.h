@@ -1,3 +1,6 @@
+#ifndef __SB16_CSP_H
+#define __SB16_CSP_H
+
 /*
  *  Copyright (c) 1999 by Uros Bizjak <uros@kss-loka.si>
  *                        Takashi Iwai <iwai@ww.uni-erlangen.de>
@@ -19,9 +22,6 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
-
-#ifndef __SB16_CSP_H
-#define __SB16_CSP_H
 
 /* CSP modes */
 #define SND_SB_CSP_MODE_NONE            0x00
@@ -102,17 +102,57 @@ typedef struct snd_sb_csp_qsound {
 /* restart CSP and DMA transfer */
 #define SND_SB_CSP_IOCTL_RESTART        _IO('H', 0x15)
 /* start QSound codec */
-#define SND_SB_CSP_IOCTL_QSOUND_START   _IO('H', 0x20)
+#define SND_SB_CSP_IOCTL_QSOUND_SET_STATE _IOW('H', 0x20, int)
 /* stop QSound codec */
-#define SND_SB_CSP_IOCTL_QSOUND_STOP    _IO('H', 0x21)
+#define SND_SB_CSP_IOCTL_QSOUND_GET_STATE _IOR('H', 0x21, int)
 /* set QSound channel positions */
-#define SND_SB_CSP_IOCTL_QSOUND_POS     _IOW('H', 0x22, snd_sb_csp_qsound_t)
+#define SND_SB_CSP_IOCTL_QSOUND_SET_POS _IOW('H', 0x22, snd_sb_csp_qsound_t)
 /* get current QSound channel positions */
 #define SND_SB_CSP_IOCTL_QSOUND_GET_POS _IOR('H', 0x23, snd_sb_csp_qsound_t)
 
 #ifdef __KERNEL__
 #include "sb.h"
 #include "hwdep.h"
+
+/*
+ * CSP private data
+ */
+typedef struct snd_sb_csp {
+	sbdsp_t *codec;		/* SB16 DSP */
+	int used;		/* usage flag - exclusive */
+	char codec_name[16];	/* name of codec */
+	unsigned short func_nr;	/* function number */
+	unsigned int acc_format;	/* accepted PCM formats */
+	int acc_channels;	/* accepted channels */
+	int mode;		/* MODE */
+	unsigned int run_format;	/* active PCM format */
+	int run_channels;	/* current CSP channels */
+	int version;		/* CSP version (0x10 - 0x1f) */
+	int running;		/* running state */
+	int q_enabled;		/* Q-Sound enabled flag */
+	int qpos_left;		/* Q-Sound left position */
+	int qpos_right;		/* Q-Sound right position */
+	struct semaphore access_mutex;	/* locking */
+
+	snd_info_entry_t *proc;	/* proc interface */
+} snd_sb_csp_t;
+
+/*
+ * CSP call-backs
+ */
+typedef struct {
+	int (*csp_use)(snd_sb_csp_t * p);
+	int (*csp_unuse)(snd_sb_csp_t * p);
+	int (*csp_start)(snd_sb_csp_t * p, int pcm_format, int channels);
+	int (*csp_stop)(snd_sb_csp_t * p);
+	int (*csp_pause)(snd_sb_csp_t * p);
+	int (*csp_restart)(snd_sb_csp_t * p);
+	int (*csp_qsound_set_state)(snd_sb_csp_t * p, int qstate);
+	int (*csp_qsound_get_state)(snd_sb_csp_t * p, int *qstate);
+	int (*csp_qsound_set_pos)(snd_sb_csp_t * p, int left, int right);
+	int (*csp_qsound_get_pos)(snd_sb_csp_t * p, int *left, int *right);
+} snd_sb_csp_callback_t;
+
 #define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
 snd_hwdep_t *snd_sb_csp_new_device(sbdsp_t * codec);
 #endif
