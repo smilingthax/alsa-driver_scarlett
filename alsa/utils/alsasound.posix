@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # alsasound     This shell script takes care of starting and stopping
-#               ALSA sound driver.
+#               the ALSA sound driver.
 #
 # This script requires /usr/sbin/alsactl program from alsa-utils package.
 #
@@ -30,6 +30,7 @@
 
 config=/etc/modules.conf
 alsactl=/usr/sbin/alsactl
+asoundcfg=/etc/asound.conf
 
 if [ ! -r $config ]; then
   if [ -r /etc/conf.modules ]; then
@@ -57,7 +58,11 @@ case "$1" in
           # restore driver settings
           #
           if [ -x $alsactl ]; then
-            $alsactl restore
+            if [ -r $asoundcfg ]; then
+              $alsactl -f $asoundcfg restore
+            else
+              echo "ERROR: alsactl can't start, $asoundcfg is not readable"
+            fi
           else
             echo "ERROR: alsactl not found"
           fi
@@ -79,7 +84,7 @@ case "$1" in
 	  if [ -x $alsactl ]; then
 	    $alsactl store
 	  else
-	    echo -n "!!!alsactl not found!!! "
+	    echo -n "ERROR: alsactl not found"
 	  fi
 	  #
 	  # remove all sound modules
@@ -99,8 +104,8 @@ case "$1" in
 	fi
         ;;
   restart)
-	/etc/init.d/alsasound stop
-	/etc/init.d/alsasound start
+	$0 stop
+	$0 start
 	;;
   *)
         echo "Usage: alsasound {start|stop|restart}"

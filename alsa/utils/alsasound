@@ -7,6 +7,7 @@
 #
 # Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
 #
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
@@ -29,6 +30,7 @@
 
 config=/etc/modules.conf
 alsactl=/usr/sbin/alsactl
+asoundcfg=/etc/asound.conf
 
 if [ ! -r $config ]; then
   if [ -r /etc/conf.modules ]; then
@@ -52,7 +54,11 @@ function start() {
   # restore driver settings
   #
   if [ -x $alsactl ]; then
-    $alsactl restore
+    if [ -r $asoundcfg ]; then
+      $alsactl -f $asoundcfg restore
+    else
+      echo "ERROR: alsactl can't start, $asoundcfg is not readable"
+    fi
   else
     echo "ERROR: alsactl not found"
   fi
@@ -65,7 +71,7 @@ function stop() {
   if [ -x $alsactl ]; then
     $alsactl store
   else
-    echo -n "!!!alsactl not found!!! "
+    echo -n "ERROR: alsactl not found"
   fi
   #
   # remove all sound modules
