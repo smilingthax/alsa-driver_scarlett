@@ -56,53 +56,53 @@
 typedef struct snd_stru_sbmixer sbmixer_t;
 
 struct snd_stru_sbmixer {
-  unsigned short port;
-  unsigned char record_source;
-  unsigned char left_input_mask;
-  unsigned char right_input_mask;
-  unsigned char mono;		/* for update inputs */
-  void (*update_inputs)( sbmixer_t * );
-  snd_spin_define( mixer );
+	unsigned short port;
+	unsigned char record_source;
+	unsigned char left_input_mask;
+	unsigned char right_input_mask;
+	unsigned char mono;	/* for update inputs */
+	void (*update_inputs) (sbmixer_t *);
+	snd_spin_define(mixer);
 };
 
 struct snd_stru_sbdsp {
-  unsigned short port;		/* base port of DSP chip */
-  unsigned short mpu_port;	/* MPU port for SB DSP 4.0+ */
-  unsigned short irq;		/* IRQ number of DSP chip */
-  unsigned short irqnum;	/* IRQ number (index) */
-  unsigned short dma8;		/* 8-bit DMA */
-  unsigned short dma8num;	/* 8-bit DMA index */
-  unsigned short dma16;		/* 16-bit DMA */
-  unsigned short dma16num;	/* 16-bit DMA index */
-  unsigned short version;	/* version of DSP chip */
-  unsigned short hardware;	/* see to SB_HW_XXXX */
+	unsigned short port;		/* base port of DSP chip */
+	unsigned short mpu_port;	/* MPU port for SB DSP 4.0+ */
+	unsigned short irq;		/* IRQ number of DSP chip */
+	unsigned short irqnum;		/* IRQ number (index) */
+	unsigned short dma8;		/* 8-bit DMA */
+	unsigned short dma8num;		/* 8-bit DMA index */
+	unsigned short dma16;		/* 16-bit DMA */
+	unsigned short dma16num;	/* 16-bit DMA index */
+	unsigned short version;		/* version of DSP chip */
+	unsigned short hardware;	/* see to SB_HW_XXXX */
 
-  unsigned int open8;		/* see to SB_OPEN_XXXX */
-  unsigned int mode8;		/* current mode of stream */
-  unsigned char speed8;		/* input speed */
-  unsigned char fmt8;		/* format */
-  unsigned int count8;		/* size of one block for SB 1.0 */
+	unsigned int open8;		/* see to SB_OPEN_XXXX */
+	unsigned int mode8;		/* current mode of stream */
+	unsigned char speed8;		/* input speed */
+	unsigned char fmt8;		/* format */
+	unsigned int count8;		/* size of one block for SB 1.0 */
 
-  unsigned int mode16;		/* current 16-bit mode of streams */
-  unsigned int force_mode16;	/* force 16-bit mode of streams */
+	unsigned int mode16;		/* current 16-bit mode of streams */
+	unsigned int force_mode16;	/* force 16-bit mode of streams */
 
-  sbmixer_t mixer;		/* mixer */
+	sbmixer_t mixer;		/* mixer */
 
-  char name[32];
+	char name[32];
 
-  snd_card_t *card;
-  snd_pcm_t *pcm;
+	snd_card_t *card;
+	snd_pcm_t *pcm;
 
-  snd_spin_define( reg );
-  snd_spin_define( open8 );
-  snd_spin_define( open16 );
-  snd_spin_define( midi_input );
+	snd_spin_define(reg);
+	snd_spin_define(open8);
+	snd_spin_define(open16);
+	snd_spin_define(midi_input);
 
-  snd_info_entry_t *proc_entry;
+	snd_info_entry_t *proc_entry;
 };
 
 typedef struct snd_stru_sbdsp sbdsp_t;
-                        
+
 /* I/O ports */
 
 #define SBP( codec, x ) ( (codec) -> port + s_b_SB_##x )
@@ -200,32 +200,32 @@ typedef struct snd_stru_sbdsp sbdsp_t;
  *
  */
 
-extern int snd_sbdsp_command( sbdsp_t *codec, unsigned char val );
-extern int snd_sbdsp_get_byte( sbdsp_t *codec );
-extern void snd_sbmixer_write( sbmixer_t *mixer, unsigned char reg, unsigned char data );
-extern unsigned char snd_sbmixer_read( sbmixer_t *mixer, unsigned char reg );
-extern int snd_sbdsp_reset( sbdsp_t *codec );
-extern void snd_sbdsp_free( void * );
+extern int snd_sbdsp_command(sbdsp_t * codec, unsigned char val);
+extern int snd_sbdsp_get_byte(sbdsp_t * codec);
+extern void snd_sbmixer_write(sbmixer_t * mixer, unsigned char reg, unsigned char data);
+extern unsigned char snd_sbmixer_read(sbmixer_t * mixer, unsigned char reg);
+extern int snd_sbdsp_reset(sbdsp_t * codec);
+extern void snd_sbdsp_free(void *);
 
-extern void snd_sbdsp_sb8_interrupt( snd_pcm_t *pcm );
-extern void snd_sbdsp_sb16_interrupt( snd_pcm_t *pcm, unsigned short status );
+extern void snd_sbdsp_sb8_interrupt(snd_pcm_t * pcm);
+extern void snd_sbdsp_sb16_interrupt(snd_pcm_t * pcm, unsigned short status);
 
-extern snd_pcm_t *snd_sbdsp_new_device( snd_card_t *card,
-                                        unsigned short port,
-                                        unsigned short irqnum,
-                                        unsigned short dma8num,
-                                        unsigned short dma16num,
-                                        unsigned short hardware );
-extern int snd_sbdsp_probe( snd_pcm_t *pcm );
-extern int snd_sbdsp_sb16_configure( snd_pcm_t *pcm );
-extern snd_kmixer_t *snd_sbdsp_new_mixer( snd_card_t *card,
-                                          sbmixer_t *sbmix,
-                                          unsigned short hardware );
+extern snd_pcm_t *snd_sbdsp_new_device(snd_card_t * card,
+				       unsigned short port,
+				       unsigned short irqnum,
+				       unsigned short dma8num,
+				       unsigned short dma16num,
+				       unsigned short hardware);
+extern int snd_sbdsp_probe(snd_pcm_t * pcm);
+extern int snd_sbdsp_sb16_configure(snd_pcm_t * pcm);
+extern snd_kmixer_t *snd_sbdsp_new_mixer(snd_card_t * card,
+					 sbmixer_t * sbmix,
+					 unsigned short hardware);
 
-extern void snd_sb16_proc_init( snd_pcm_t *pcm );
-extern void snd_sb16_proc_done( snd_pcm_t *pcm ); 
+extern void snd_sb16_proc_init(snd_pcm_t * pcm);
+extern void snd_sb16_proc_done(snd_pcm_t * pcm);
 
-extern void snd_sbdsp_midi_interrupt( snd_rawmidi_t *rmidi );
-extern snd_rawmidi_t *snd_sbdsp_midi_new_device( snd_card_t *card, snd_pcm_t *pcm );
+extern void snd_sbdsp_midi_interrupt(snd_rawmidi_t * rmidi);
+extern snd_rawmidi_t *snd_sbdsp_midi_new_device(snd_card_t * card, snd_pcm_t * pcm);
 
-#endif /* __SB_H */
+#endif				/* __SB_H */

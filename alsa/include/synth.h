@@ -25,22 +25,22 @@
 #define SND_SYNTH_DEVICES	16
 
 struct snd_stru_synth_hardware {
-  void (*event)( snd_synth_t *synth, unsigned char *buffer );			/* process sequencer event */
-  void (*ioctl)( snd_synth_t *synth, unsigned int cmd, unsigned long arg );
+	void (*event) (snd_synth_t * synth, unsigned char *buffer);	/* process sequencer event */
+	void (*ioctl) (snd_synth_t * synth, unsigned int cmd, unsigned long arg);
 };
 
 struct snd_stru_synth {
-  snd_card_t *card;
-  char id[32];
-  char name[80];
-  struct snd_stru_synth_hardware hw;
-  void *private_data;
-  void (*private_free)( void *private_data );
+	snd_card_t *card;
+	char id[32];
+	char name[80];
+	struct snd_stru_synth_hardware hw;
+	void *private_data;
+	void (*private_free) (void *private_data);
 };
- 
-extern snd_synth_t *snd_synth_new_device( snd_card_t *card, char *id );
-extern int snd_synth_free( snd_synth_t *synth );
-extern int snd_synth_register( snd_synth_t *synth );
-extern int snd_synth_unregister( snd_synth_t *synth );
 
-#endif /* __SYNTH_H */
+extern snd_synth_t *snd_synth_new_device(snd_card_t * card, char *id);
+extern int snd_synth_free(snd_synth_t * synth);
+extern int snd_synth_register(snd_synth_t * synth);
+extern int snd_synth_unregister(snd_synth_t * synth);
+
+#endif				/* __SYNTH_H */

@@ -21,9 +21,9 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
- 
-#define SND_MIXER_CHANNELS	16		/* max channels per card */
-#define SND_MIXER_SWITCHES	16		/* max mixer switches per card */
+
+#define SND_MIXER_CHANNELS	16	/* max channels per card */
+#define SND_MIXER_SWITCHES	16	/* max mixer switches per card */
 
 #define SND_MIXER_PRI_MASTER		0x00000100
 #define SND_MIXER_PRI_MASTER1		0x00000101
@@ -86,118 +86,133 @@ typedef struct snd_stru_mixer_switch snd_kmixer_switch_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
 
 struct snd_stru_mixer_channel_hw {
-  unsigned int priority;	/* this is sorting key - highter value = end */
-  unsigned int parent_priority;	/* parent.... */
-  char name[ 16 ];		/* device name */
-  unsigned short ossdev;	/* assigned OSS device number */
-  unsigned int caps;		/* capabilities - SND_MIXER_CINFO_CAP_XXXX */
-  int min, max;			/* min and max left & right value */
-  int min_dB, max_dB, step_dB;	/* min_dB, max_dB, step_dB */
-  unsigned int private_value;	/* can be used by low-level driver */
+	unsigned int priority;		/* this is sorting key - highter value = end */
+	unsigned int parent_priority;	/* parent.... */
+	char name[16];			/* device name */
+	unsigned short ossdev;		/* assigned OSS device number */
+	unsigned int caps;		/* capabilities - SND_MIXER_CINFO_CAP_XXXX */
+	int min, max;			/* min and max left & right value */
+	int min_dB, max_dB, step_dB;	/* min_dB, max_dB, step_dB */
+	unsigned int private_value;	/* can be used by low-level driver */
 
-  /* input = dB value from application, output = min..max (linear volume) */
-  int (*compute_linear)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, int dB );
-  /* input = min to max (user volume), output = dB value */
-  int (*compute_dB)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, int volume );
-  /* --- */
-  void (*set_record_source)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, unsigned int rec );
-  void (*set_mute)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, unsigned int mute );
-  void (*set_volume_level)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, int left, int right );
-  void (*set_route)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, unsigned int route );
+	/* input = dB value from application, output = min..max (linear volume) */
+	int (*compute_linear) (snd_kmixer_t * mixer,
+			       snd_kmixer_channel_t * channel,
+			       int dB);
+	/* input = min to max (user volume), output = dB value */
+	int (*compute_dB) (snd_kmixer_t * mixer,
+			   snd_kmixer_channel_t * channel,
+			   int volume);
+	/* --- */
+	void (*set_record_source) (snd_kmixer_t * mixer,
+				   snd_kmixer_channel_t * channel,
+				   unsigned int rec);
+	void (*set_mute) (snd_kmixer_t * mixer,
+			  snd_kmixer_channel_t * channel,
+			  unsigned int mute);
+	void (*set_volume_level) (snd_kmixer_t * mixer,
+				  snd_kmixer_channel_t * channel,
+				  int left, int right);
+	void (*set_route) (snd_kmixer_t * mixer,
+			   snd_kmixer_channel_t * channel,
+			   unsigned int route);
 };
 
 struct snd_stru_mixer_channel {
-  unsigned short channel;	/* channel index */
-  unsigned char record;		/* recording source */
-  unsigned char route;		/* route path */
- 
-  unsigned char umute;		/* user mute */
-  unsigned char kmute;		/* kernel mute */
+	unsigned short channel;	/* channel index */
+	unsigned char record;	/* recording source */
+	unsigned char route;	/* route path */
 
-  unsigned char mute;		/* real mute flags */
-  unsigned char pad;		/* reserved */
+	unsigned char umute;	/* user mute */
+	unsigned char kmute;	/* kernel mute */
 
-  unsigned char aleft;		/* application - 0 to 100 */
-  unsigned char aright;		/* application - 0 to 100 */
-  int uleft;			/* user - 0 to max */
-  int uright;			/* user - 0 to max */
-  int left;			/* real - 0 to max */
-  int right;			/* real - 0 to max */
+	unsigned char mute;	/* real mute flags */
+	unsigned char pad;	/* reserved */
 
-  unsigned int private_value;
-  void *private_data;		/* not freed by mixer.c */
-  
-  struct snd_stru_mixer_channel_hw hw; /* readonly variables */ 
+	unsigned char aleft;	/* application - 0 to 100 */
+	unsigned char aright;	/* application - 0 to 100 */
+	int uleft;		/* user - 0 to max */
+	int uright;		/* user - 0 to max */
+	int left;		/* real - 0 to max */
+	int right;		/* real - 0 to max */
+
+	unsigned int private_value;
+	void *private_data;	/* not freed by mixer.c */
+
+	struct snd_stru_mixer_channel_hw hw;	/* readonly variables */
 };
 
 struct snd_stru_mixer_switch {
-  char name[32];
-  int (*get_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
-  int (*set_switch)( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch, snd_mixer_switch_t *uswitch );
-  unsigned int private_value;
-  void *private_data;		/* not freed by mixer.c */
+	char name[32];
+	int (*get_switch) (snd_kmixer_t * mixer, snd_kmixer_switch_t * kswitch, snd_mixer_switch_t * uswitch);
+	int (*set_switch) (snd_kmixer_t * mixer, snd_kmixer_switch_t * kswitch, snd_mixer_switch_t * uswitch);
+	unsigned int private_value;
+	void *private_data;	/* not freed by mixer.c */
 };
 
 struct snd_stru_mixer_file {
-  snd_kmixer_t *mixer;
-  int osscompat;		/* oss compatible mode */
-  int exact;			/* exact mode for this file */
-  volatile unsigned int changes;
-  volatile unsigned int schanges;
-  snd_sleep_define( change );
-  struct snd_stru_mixer_file *next;
+	snd_kmixer_t *mixer;
+	int osscompat;		/* oss compatible mode */
+	int exact;		/* exact mode for this file */
+	volatile unsigned int changes;
+	volatile unsigned int schanges;
+	snd_sleep_define(change);
+	struct snd_stru_mixer_file *next;
 };
 
 struct snd_stru_mixer_hw {
-  unsigned int caps;
+	unsigned int caps;
 };
 
 struct snd_stru_mixer {
-  snd_card_t *card;
-  unsigned int device;			/* device # */
+	snd_card_t *card;
+	unsigned int device;		/* device # */
 
-  char id[32];
-  unsigned char name[80];
+	char id[32];
+	unsigned char name[80];
 
-  unsigned int channels_count;		/* channels count */
-  unsigned int channels_visible;	/* channels count exclude hidden */
-  snd_kmixer_channel_t *channels[ SND_MIXER_CHANNELS ];
+	unsigned int channels_count;	/* channels count */
+	unsigned int channels_visible;	/* channels count exclude hidden */
+	snd_kmixer_channel_t *channels[SND_MIXER_CHANNELS];
 
-  unsigned int switches_count;
-  snd_kmixer_switch_t *switches[ SND_MIXER_SWITCHES ];
+	unsigned int switches_count;
+	snd_kmixer_switch_t *switches[SND_MIXER_SWITCHES];
 
-  int modify_counter;			/* for OSS emulation */
+	int modify_counter;		/* for OSS emulation */
 
-  void *private_data;
-  void (*private_free)( void *private_data );
-  unsigned int private_value;
+	void *private_data;
+	void (*private_free) (void *private_data);
+	unsigned int private_value;
 
-  struct snd_stru_mixer_hw hw; 		/* readonly variables */
+	struct snd_stru_mixer_hw hw;	/* readonly variables */
 
-  snd_kmixer_file_t *ffile;		/* first file */
-  snd_mutex_define( ffile );
-  snd_spin_define( lock );
+	snd_kmixer_file_t *ffile;	/* first file */
+	 snd_mutex_define(ffile);
+	 snd_spin_define(lock);
 
-  snd_info_entry_t *dev;
-  snd_info_entry_t *proc_entry;
+	snd_info_entry_t *dev;
+	snd_info_entry_t *proc_entry;
 };
 
-extern void snd_mixer_set_kernel_mute( snd_kmixer_t *mixer, unsigned int priority, unsigned short mute );
+extern void snd_mixer_set_kernel_mute(snd_kmixer_t * mixer,
+				      unsigned int priority,
+				      unsigned short mute);
 
-extern snd_kmixer_t *snd_mixer_new( snd_card_t *card, char *id );
-extern int snd_mixer_free( snd_kmixer_t *mixer );
+extern snd_kmixer_t *snd_mixer_new(snd_card_t * card, char *id);
+extern int snd_mixer_free(snd_kmixer_t * mixer);
 
-extern snd_kmixer_channel_t *snd_mixer_new_channel( snd_kmixer_t *mixer, struct snd_stru_mixer_channel_hw *hw );
-extern void snd_mixer_reorder_channel( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel );
+extern snd_kmixer_channel_t *snd_mixer_new_channel(snd_kmixer_t * mixer,
+					struct snd_stru_mixer_channel_hw *hw);
+extern void snd_mixer_reorder_channel(snd_kmixer_t * mixer,
+				      snd_kmixer_channel_t * channel);
 
-extern snd_kmixer_switch_t *snd_mixer_new_switch( snd_kmixer_t *mixer, snd_kmixer_switch_t *kswitch );
+extern snd_kmixer_switch_t *snd_mixer_new_switch(snd_kmixer_t * mixer,
+					snd_kmixer_switch_t * kswitch);
 
-extern int snd_mixer_register( snd_kmixer_t *mixer, int device );
-extern int snd_mixer_unregister( snd_kmixer_t *mixer );
+extern int snd_mixer_register(snd_kmixer_t * mixer, int device);
+extern int snd_mixer_unregister(snd_kmixer_t * mixer);
 
-extern snd_kmixer_channel_t *snd_mixer_find_channel( snd_kmixer_t *mixer, unsigned int priority );
-#if 0
-extern int snd_mixer_channel_init( snd_kmixer_t *mixer, unsigned int priority, unsigned char left, unsigned char right, unsigned int flags );
-#endif
+extern snd_kmixer_channel_t *snd_mixer_find_channel(snd_kmixer_t * mixer,
+						    unsigned int priority);
 
-#endif /* __MIXER_H */
+#endif				/* __MIXER_H */

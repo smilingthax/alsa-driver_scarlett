@@ -22,10 +22,10 @@
  *
  */
 
-void persist_lock( int up );
-int persist_store( char *key, const char *data, int data_len );
-int persist_restore( char *key, char *data, int data_len );
-int persist_present( char *key );
-int persist_remove( char *key );
+void persist_lock(int up);
+int persist_store(char *key, const char *data, int data_len);
+int persist_restore(char *key, char *data, int data_len);
+int persist_present(char *key);
+int persist_remove(char *key);
 
-#endif /* __PERSIST_H */
+#endif				/* __PERSIST_H */

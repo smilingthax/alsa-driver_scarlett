@@ -23,26 +23,33 @@
  */
 
 struct snd_stru_control {
-  snd_card_t *card;
-  unsigned int mixer_device;
-  unsigned int pcm_device;
-  unsigned int rawmidi_device;
+	snd_card_t *card;
+	unsigned int mixer_device;
+	unsigned int pcm_device;
+	unsigned int rawmidi_device;
 };
 
 struct snd_stru_ctl_switch {
-  char name[32];
-  int (*get_switch)( snd_card_t *card, struct snd_stru_ctl_switch *kswitch, struct snd_ctl_switch *uswitch );
-  int (*set_switch)( snd_card_t *card, struct snd_stru_ctl_switch *kswitch, struct snd_ctl_switch *uswitch );
-  unsigned int private_value;
-  void *private_data;           /* not freed by control.c */
+	char name[32];
+	int (*get_switch) (snd_card_t * card,
+			   struct snd_stru_ctl_switch * kswitch,
+			   struct snd_ctl_switch * uswitch);
+	int (*set_switch) (snd_card_t * card,
+			   struct snd_stru_ctl_switch * kswitch,
+			   struct snd_ctl_switch * uswitch);
+	unsigned int private_value;
+	void *private_data;	/* not freed by control.c */
 };
 
-typedef int (*snd_control_ioctl_t)( snd_card_t *card, snd_control_t *control, unsigned int cmd, unsigned long arg );
+typedef int (*snd_control_ioctl_t) (snd_card_t * card,
+				    snd_control_t * control,
+				    unsigned int cmd, unsigned long arg);
 
-extern int snd_control_register( int cardnum );
-extern int snd_control_unregister( int cardnum );
-extern int snd_control_register_ioctl( snd_control_ioctl_t fcn );
-extern int snd_control_unregister_ioctl( snd_control_ioctl_t fcn );
-extern snd_ctl_kswitch_t *snd_control_new_switch( snd_card_t *card, snd_ctl_kswitch_t *ksw );
+extern int snd_control_register(int cardnum);
+extern int snd_control_unregister(int cardnum);
+extern int snd_control_register_ioctl(snd_control_ioctl_t fcn);
+extern int snd_control_unregister_ioctl(snd_control_ioctl_t fcn);
+extern snd_ctl_kswitch_t *snd_control_new_switch(snd_card_t * card, 
+						 snd_ctl_kswitch_t * ksw);
 
-#endif /* __CONTROL_H */
+#endif				/* __CONTROL_H */

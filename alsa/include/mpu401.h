@@ -38,21 +38,21 @@
 typedef struct snd_stru_mpu401 mpu401_t;
 
 struct snd_stru_mpu401 {
-  unsigned short hardware;	/* MPU401_HW_XXXX */
-  unsigned short port;		/* base port of MPU-401 chip */
-  unsigned short irq;		/* IRQ number of MPU-401 chip */
+	unsigned short hardware;	/* MPU401_HW_XXXX */
+	unsigned short port;		/* base port of MPU-401 chip */
+	unsigned short irq;		/* IRQ number of MPU-401 chip */
 
-  unsigned int mode;		/* MPU401_MODE_XXXX */
+	unsigned int mode;		/* MPU401_MODE_XXXX */
 
-  void (*open_input)( mpu401_t *mpu );
-  void (*close_input)( mpu401_t *mpu );
-  void (*open_output)( mpu401_t *mpu );
-  void (*close_output)( mpu401_t *mpu );
-  void *private_data;
+	void (*open_input) (mpu401_t * mpu);
+	void (*close_input) (mpu401_t * mpu);
+	void (*open_output) (mpu401_t * mpu);
+	void (*close_output) (mpu401_t * mpu);
+	void *private_data;
 
-  snd_spin_define( open );
-  snd_spin_define( input );
-  snd_spin_define( output );
+	snd_spin_define(open);
+	snd_spin_define(input);
+	snd_spin_define(output);
 };
 
 /* I/O ports */
@@ -61,14 +61,14 @@ struct snd_stru_mpu401 {
 #define MPU401D( mpu ) ( (mpu) -> port + 0 )
 
 /*
- *
+
  */
 
-extern void snd_mpu401_uart_interrupt( snd_rawmidi_t *rmidi );
+extern void snd_mpu401_uart_interrupt(snd_rawmidi_t * rmidi);
 
-extern snd_rawmidi_t *snd_mpu401_uart_new_device( snd_card_t *card,
-						  unsigned short hardware,
-                                                  unsigned short port,
-                                                  unsigned short irqnum );
+extern snd_rawmidi_t *snd_mpu401_uart_new_device(snd_card_t * card,
+						 unsigned short hardware,
+						 unsigned short port,
+						 unsigned short irqnum);
 
-#endif /* __MPU401_H */
+#endif				/* __MPU401_H */

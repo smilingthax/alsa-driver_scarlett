@@ -27,8 +27,15 @@
 #endif
 #endif
 
-static inline void snd_cli( unsigned long *flags ) { save_flags( *(flags) ); cli(); }
-static inline void snd_sti( unsigned long *flags ) { restore_flags( *(flags) ); }
+static inline void snd_cli(unsigned long *flags)
+{
+	save_flags(*(flags));
+	cli();
+}
+static inline void snd_sti(unsigned long *flags)
+{
+	restore_flags(*(flags));
+}
 
 #ifndef SND_DEBUG_SPIN
 
@@ -54,10 +61,10 @@ static inline void snd_sti( unsigned long *flags ) { restore_flags( *(flags) ); 
 #define snd_spin_unlock_static( name, flags ) snd_sti( flags )
 #define snd_spin_define( name )	/* nothing */
 #define snd_spin_prepare( object, name ) do { ; } while ( 0 )
-#define snd_spin_define_static( name ) /* nothing */
+#define snd_spin_define_static( name )	/* nothing */
 #endif
 
-#else /* SND_DEBUG_SPIN */
+#else				/* SND_DEBUG_SPIN */
 
 /*
  * This debug implementation doesn't use real spin locks, but shows
@@ -65,9 +72,9 @@ static inline void snd_sti( unsigned long *flags ) { restore_flags( *(flags) ); 
  */
 
 struct snd_spin_lock {
-  unsigned int used;
-  char *file;
-  int line;
+	unsigned int used;
+	char *file;
+	int line;
 };
 
 #define snd_spin_lock( object, name, flags ) \
@@ -109,6 +116,6 @@ struct snd_spin_lock {
 #define snd_spin_define_static( name ) \
   static struct snd_spin_lock snd_static_spin_lock_##name = (struct snd_spin_lock){ 0, NULL, -1 }
 
-#endif /* SND_DEBUG_SPIN */
+#endif				/* SND_DEBUG_SPIN */
 
-#endif /* __SNDSPINLOCK_H */
+#endif				/* __SNDSPINLOCK_H */

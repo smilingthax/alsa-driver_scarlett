@@ -27,10 +27,10 @@
 typedef struct snd_emu8000 emu8000_t;
 
 struct snd_emu8000 {
-  unsigned short port;
-  snd_spin_define( reg );
+	unsigned short port;
+	snd_spin_define(reg);
 };
 
-extern snd_synth_t *snd_emu8000_new_device( snd_card_t *card, unsigned short port );
+extern snd_synth_t *snd_emu8000_new_device(snd_card_t * card, unsigned short port);
 
-#endif /* __EMU8000_H */
+#endif				/* __EMU8000_H */

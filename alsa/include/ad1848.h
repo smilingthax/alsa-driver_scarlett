@@ -26,22 +26,22 @@
 #include "mixer.h"
 
 struct snd_stru_ad1848_image {
-  unsigned char lic;		/* 00: left input (ADC) control */
-  unsigned char ric;		/* 01: right input (ADC) control */
-  unsigned char la1ic;		/* 02: left AUX #1 input control */
-  unsigned char ra1ic;		/* 03: right AUX #1 input control */
-  unsigned char la2ic;		/* 04: left AUX #2 input control */
-  unsigned char ra2ic;		/* 05: right AUX #2 input control */
-  unsigned char loc;		/* 06: left output (DAC) control */
-  unsigned char roc;		/* 07: right output (DAC) control*/
-  unsigned char dfr;		/* 08: clock and data format - playback/record */
-  unsigned char ic;		/* 09: interface control */
-  unsigned char pc;		/* 0a: pin control */
-  unsigned char ti;		/* 0b: test and initialization */
-  unsigned char mi;		/* 0c: miscellaneaous information */
-  unsigned char lbc;		/* 0d: loopback control */
-  unsigned char dru;		/* 0e: playback/record upper base count */
-  unsigned char drl;		/* 0f: playback/record lower base count */
+	unsigned char lic;	/* 00: left input (ADC) control */
+	unsigned char ric;	/* 01: right input (ADC) control */
+	unsigned char la1ic;	/* 02: left AUX #1 input control */
+	unsigned char ra1ic;	/* 03: right AUX #1 input control */
+	unsigned char la2ic;	/* 04: left AUX #2 input control */
+	unsigned char ra2ic;	/* 05: right AUX #2 input control */
+	unsigned char loc;	/* 06: left output (DAC) control */
+	unsigned char roc;	/* 07: right output (DAC) control */
+	unsigned char dfr;	/* 08: clock and data format - playback/record */
+	unsigned char ic;	/* 09: interface control */
+	unsigned char pc;	/* 0a: pin control */
+	unsigned char ti;	/* 0b: test and initialization */
+	unsigned char mi;	/* 0c: miscellaneaous information */
+	unsigned char lbc;	/* 0d: loopback control */
+	unsigned char dru;	/* 0e: playback/record upper base count */
+	unsigned char drl;	/* 0f: playback/record lower base count */
 };
 
 /* IO ports */
@@ -126,9 +126,9 @@ struct snd_stru_ad1848_image {
 /* some structures */
 
 struct snd_stru_ad1848_freq {
-  unsigned int hertz;
-  unsigned int rate;
-  unsigned char bits;
+	unsigned int hertz;
+	unsigned int rate;
+	unsigned char bits;
 };
 
 /* defines for codec.mode */
@@ -147,43 +147,43 @@ struct snd_stru_ad1848_freq {
 #define AD1848_HW_CS4248	0x0003	/* CS4248 chip */
 
 struct snd_stru_ad1848 {
-  unsigned short port;		/* i/o port */
-  unsigned short irq;		/* IRQ line */
-  unsigned short irqnum;	/* IRQ number */
-  unsigned short dma;		/* data DMA */
-  unsigned short dmanum;	/* data DMA number */
-  unsigned short version;	/* version of CODEC chip */
-  unsigned short mode;		/* see to AD1848_MODE_XXXX */
-  unsigned short hardware;	/* see to AD1848_HW_XXXX */
-  unsigned short single_dma: 1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
+	unsigned short port;		/* i/o port */
+	unsigned short irq;		/* IRQ line */
+	unsigned short irqnum;		/* IRQ number */
+	unsigned short dma;		/* data DMA */
+	unsigned short dmanum;		/* data DMA number */
+	unsigned short version;		/* version of CODEC chip */
+	unsigned short mode;		/* see to AD1848_MODE_XXXX */
+	unsigned short hardware;	/* see to AD1848_HW_XXXX */
+	unsigned short single_dma:1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
 
-  snd_pcm_t *pcm;
-  snd_card_t *card;
-  snd_kmixer_t *mixer;
-  
-  struct snd_stru_ad1848_image image;
-  int mce_bit;
+	snd_pcm_t *pcm;
+	snd_card_t *card;
+	snd_kmixer_t *mixer;
 
-  snd_spin_define( reg );
-  snd_mutex_define( open );
+	struct snd_stru_ad1848_image image;
+	int mce_bit;
+
+	snd_spin_define(reg);
+	snd_mutex_define(open);
 };
 
 typedef struct snd_stru_ad1848 ad1848_t;
 
 /* exported functions */
 
-void snd_ad1848_interrupt( snd_pcm_t *pcm, unsigned char status );
+void snd_ad1848_interrupt(snd_pcm_t * pcm, unsigned char status);
 
-extern snd_pcm_t *snd_ad1848_new_device( snd_card_t *card,
-                                         unsigned short port,
-                                         unsigned short irqnum,
-                                         unsigned short dmanum,
-                                         unsigned short hardware );
+extern snd_pcm_t *snd_ad1848_new_device(snd_card_t * card,
+					unsigned short port,
+					unsigned short irqnum,
+					unsigned short dmanum,
+					unsigned short hardware);
 
-snd_kmixer_t *snd_ad1848_new_mixer( snd_pcm_t *pcm );
+snd_kmixer_t *snd_ad1848_new_mixer(snd_pcm_t * pcm);
 
 #ifdef SNDCFG_DEBUG
-void snd_ad1848_debug( ad1848_t *codec );
+void snd_ad1848_debug(ad1848_t * codec);
 #endif
 
-#endif /* __AD1848_H */
+#endif				/* __AD1848_H */

@@ -25,7 +25,7 @@
 /* sleep & wakeup state */
 
 #define SND_WK_NONE             0x00
-#define SND_WK_SLEEP            0x01    /* process is sleeping */
+#define SND_WK_SLEEP            0x01	/* process is sleeping */
 
 #define snd_sleep_define( ident ) \
   struct wait_queue *sleeper_##ident; \
@@ -51,10 +51,10 @@
   select_wait( &(object) -> sleeper_##ident, table );
 #endif
 #if LinuxVersionCode( 2, 1, 71 ) <= LINUX_VERSION_CODE
-  #define snd_sleep_abort( object, ident ) \
+#define snd_sleep_abort( object, ident ) \
     ( signal_pending( current ) )
 #else
-  #define snd_sleep_abort( object, ident ) \
+#define snd_sleep_abort( object, ident ) \
     ( current -> signal & ~current -> blocked )
 #endif
 #ifdef LINUX_2_1
@@ -84,4 +84,4 @@
 #define snd_mutex_down_static( ident ) down( &local_mutex_##ident )
 #define snd_mutex_up_static( ident ) up( &local_mutex_##ident )
 
-#endif /* __SCHEDULE_H */
+#endif				/* __SCHEDULE_H */

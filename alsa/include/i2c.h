@@ -38,9 +38,9 @@
  *
  */
 
-#define SND_I2C_BUS_MAX       4    /* max # of bus drivers  */
-#define SND_I2C_DRIVER_MAX    8    /* max # of chip drivers */
-#define SND_I2C_DEVICE_MAX    8    /* max # of devices per bus/driver */
+#define SND_I2C_BUS_MAX       4	/* max # of bus drivers  */
+#define SND_I2C_DRIVER_MAX    8	/* max # of chip drivers */
+#define SND_I2C_DEVICE_MAX    8	/* max # of devices per bus/driver */
 
 struct snd_i2c_bus;
 struct snd_i2c_driver;
@@ -68,18 +68,18 @@ struct snd_i2c_device;
  */
 
 struct snd_i2c_driver {
-    char           name[32];         /* some useful label         */
-    int            id;               /* device type ID            */
-    unsigned char  addr_l, addr_h;   /* address range of the chip */
+	char name[32];		/* some useful label         */
+	int id;			/* device type ID            */
+	unsigned char addr_l, addr_h;	/* address range of the chip */
 
-    int (*attach)(struct snd_i2c_device *device);
-    int (*detach)(struct snd_i2c_device *device);
-    int (*command)(struct snd_i2c_device *device,
-		   unsigned int cmd, void *arg);
+	int (*attach) (struct snd_i2c_device * device);
+	int (*detach) (struct snd_i2c_device * device);
+	int (*command) (struct snd_i2c_device * device,
+			unsigned int cmd, void *arg);
 
-    /* i2c internal */
-    struct snd_i2c_device *devices[SND_I2C_DEVICE_MAX];
-    int                 devcount;
+	/* i2c internal */
+	struct snd_i2c_device *devices[SND_I2C_DEVICE_MAX];
+	int devcount;
 };
 
 
@@ -92,7 +92,7 @@ struct snd_i2c_driver {
  * One must hold the spinlock to access the i2c bus (XXX: is the irqsave
  * required? Maybe better use a semaphore?).
  * [-AC-] having a spinlock_irqsave is only needed if we have drivers wishing
- *	  to bang their i2c bus from an interrupt.
+ *        to bang their i2c bus from an interrupt.
  * 
  * attach/detach_inform is a callback to inform the bus driver about
  * attached chip drivers.
@@ -103,30 +103,30 @@ struct snd_i2c_driver {
 #define SND_UNLOCK_I2C_BUS(bus) snd_spin_unlock(bus,lock,&flags)
 
 struct snd_i2c_bus {
-    char  name[32];         /* some useful label */
-    int   id;
-    void  *data;            /* free for use by the bus driver */
+	char name[32];		/* some useful label */
+	int id;
+	void *data;		/* free for use by the bus driver */
 
-    snd_spin_define( lock );
+	 snd_spin_define(lock);
 
-    /* attach/detach inform callbacks */
-    void    (*attach_inform)(struct snd_i2c_bus *bus, int id);
-    void    (*detach_inform)(struct snd_i2c_bus *bus, int id);
+	/* attach/detach inform callbacks */
+	void (*attach_inform) (struct snd_i2c_bus * bus, int id);
+	void (*detach_inform) (struct snd_i2c_bus * bus, int id);
 
-    /* Software I2C */
-    void    (*i2c_setlines)(struct snd_i2c_bus *bus, int ctrl, int data);
-    int     (*i2c_getdataline)(struct snd_i2c_bus *bus);
+	/* Software I2C */
+	void (*i2c_setlines) (struct snd_i2c_bus * bus, int ctrl, int data);
+	int (*i2c_getdataline) (struct snd_i2c_bus * bus);
 
-    /* Hardware I2C */
-    int     (*i2c_read)(struct snd_i2c_bus *bus, unsigned char addr);
-    int     (*i2c_write)(struct snd_i2c_bus *bus, unsigned char addr,
-			 unsigned char b1, unsigned char b2, int both);
+	/* Hardware I2C */
+	int (*i2c_read) (struct snd_i2c_bus * bus, unsigned char addr);
+	int (*i2c_write) (struct snd_i2c_bus * bus, unsigned char addr,
+			  unsigned char b1, unsigned char b2, int both);
 
-    /* internal data for i2c module */
-    struct snd_i2c_device *devices[SND_I2C_DEVICE_MAX];
-    int                 devcount;
+	/* internal data for i2c module */
+	struct snd_i2c_device *devices[SND_I2C_DEVICE_MAX];
+	int devcount;
 
-    unsigned int        private_value;
+	unsigned int private_value;
 };
 
 
@@ -136,13 +136,13 @@ struct snd_i2c_bus {
  */
 
 struct snd_i2c_device {
-    char           name[32];         /* some useful label */
-    void           *data;            /* free for use by the chip driver */
-    unsigned char  addr;             /* chip addr */
+	char name[32];		/* some useful label */
+	void *data;		/* free for use by the chip driver */
+	unsigned char addr;	/* chip addr */
 
-    /* i2c internal */
-    struct snd_i2c_bus     *bus;
-    struct snd_i2c_driver  *driver;
+	/* i2c internal */
+	struct snd_i2c_bus *bus;
+	struct snd_i2c_driver *driver;
 };
 
 
@@ -159,22 +159,22 @@ int snd_i2c_unregister_driver(struct snd_i2c_driver *driver);
 
 /* send a command to a chip using the ioctl-like callback interface */
 int snd_i2c_control_device(struct snd_i2c_bus *bus, int id,
-		           unsigned int cmd, void *arg);
+			   unsigned int cmd, void *arg);
 
 /* i2c bus access functions */
-void    snd_i2c_reset(struct snd_i2c_bus *bus);
-void    snd_i2c_start(struct snd_i2c_bus *bus);
-void    snd_i2c_stop(struct snd_i2c_bus *bus);
-void    snd_i2c_one(struct snd_i2c_bus *bus);
-void    snd_i2c_zero(struct snd_i2c_bus *bus);
-int     snd_i2c_ack(struct snd_i2c_bus *bus);
+void snd_i2c_reset(struct snd_i2c_bus *bus);
+void snd_i2c_start(struct snd_i2c_bus *bus);
+void snd_i2c_stop(struct snd_i2c_bus *bus);
+void snd_i2c_one(struct snd_i2c_bus *bus);
+void snd_i2c_zero(struct snd_i2c_bus *bus);
+int snd_i2c_ack(struct snd_i2c_bus *bus);
 
-int     snd_i2c_sendbyte(struct snd_i2c_bus *bus,unsigned char data,int wait_for_ack);
-unsigned char snd_i2c_readbyte(struct snd_i2c_bus *bus,int last);
+int snd_i2c_sendbyte(struct snd_i2c_bus *bus, unsigned char data, int wait_for_ack);
+unsigned char snd_i2c_readbyte(struct snd_i2c_bus *bus, int last);
 
 /* i2c (maybe) hardware functions */
-int     snd_i2c_read(struct snd_i2c_bus *bus, unsigned char addr);
-int     snd_i2c_write(struct snd_i2c_bus *bus, unsigned char addr,
-		      unsigned char b1, unsigned char b2, int both);
+int snd_i2c_read(struct snd_i2c_bus *bus, unsigned char addr);
+int snd_i2c_write(struct snd_i2c_bus *bus, unsigned char addr,
+		  unsigned char b1, unsigned char b2, int both);
 
-#endif /* __I2C_H */
+#endif				/* __I2C_H */

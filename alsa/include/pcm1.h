@@ -30,7 +30,7 @@
 #define SND_PCM1_LFLG_NONE	0x0000
 #define SND_PCM1_LFLG_PLAY	0x0001
 #define SND_PCM1_LFLG_RECORD	0x0002
-#define SND_PCM1_LFLG_BOTH	(SND_PCM1_LFLG_PLAY|SND_PCM1_LFLG_RECORD) 
+#define SND_PCM1_LFLG_BOTH	(SND_PCM1_LFLG_PLAY|SND_PCM1_LFLG_RECORD)
 #define SND_PCM1_LFLG_OSS_PLAY	0x0004
 #define SND_PCM1_LFLG_OSS_RECORD 0x0008
 #define SND_PCM1_LFLG_OSS	(SND_PCM1_LFLG_OSS_PLAY|SND_PCM1_LFLG_OSS_RECORD)
@@ -93,142 +93,152 @@ typedef struct snd_stru_pcm1_channel snd_pcm1_channel_t;
 typedef struct snd_stru_pcm1 snd_pcm1_t;
 
 struct snd_stru_pcm1_oss_setup {
-  char *task_name;
-  unsigned int playback_only: 1;
-  unsigned int fragments;
-  unsigned int fragment_size;
-  struct snd_stru_pcm1_oss_setup *next;
+	char *task_name;
+	unsigned int playback_only:1;
+	unsigned int fragments;
+	unsigned int fragment_size;
+	struct snd_stru_pcm1_oss_setup *next;
 };
 
 struct snd_stru_pcm1_hardware {
-  /* -- these values aren't erased -- */
-  void *private_data;		/* private structure */
-  void (*private_free)( void *private_data );
-  /* -- must be filled with low-level driver */
-  unsigned int flags;		/* see to SND_PCM_HW_XXXX */
-  unsigned int formats;		/* supported formats... */
-  unsigned int hw_formats;	/* supported formats by hardware... */
-  unsigned int align;		/* align value... */
-  unsigned short min_fragment;	/* minimal fragment... */
-  unsigned short min_rate;	/* minimal rate... */
-  unsigned short max_rate;	/* maximal rate... */
-  unsigned short max_voices;	/* maximal voices... */
-  /* -- low-level functions -- */
-  int (*open)( snd_pcm1_t *pcm );
-  void (*close)( snd_pcm1_t *pcm );
-  int (*ioctl)( snd_pcm1_t *pcm, unsigned int cmd, unsigned long *arg );
-  void (*prepare)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned int size, unsigned int offset, unsigned int count );
-  void (*trigger)( snd_pcm1_t *pcm, int up );
-  unsigned int (*pointer)( snd_pcm1_t *pcm, unsigned int used_size );
-  void (*dma)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned int offset, unsigned char *user, unsigned int count );
-  void (*dma_move)( snd_pcm1_t *pcm, unsigned char *dbuffer, unsigned int dest_offset, unsigned char *sbuffer, unsigned int src_offset, unsigned int count );
-  void (*dma_neutral)( snd_pcm1_t *pcm, unsigned char *buffer, unsigned offset, unsigned int count, unsigned char neutral_byte );
+	/* -- these values aren't erased -- */
+	void *private_data;		/* pointer to private structure */
+	void (*private_free) (void *private_data);
+	/* -- must be filled with low-level driver */
+	unsigned int flags;		/* see to SND_PCM_HW_XXXX */
+	unsigned int formats;		/* supported formats... */
+	unsigned int hw_formats;	/* supported formats by hardware... */
+	unsigned int align;		/* align value... */
+	unsigned short min_fragment;	/* minimal fragment... */
+	unsigned short min_rate;	/* minimal rate... */
+	unsigned short max_rate;	/* maximal rate... */
+	unsigned short max_voices;	/* maximal voices... */
+	/* -- low-level functions -- */
+	int (*open) (snd_pcm1_t * pcm);
+	void (*close) (snd_pcm1_t * pcm);
+	int (*ioctl) (snd_pcm1_t * pcm, unsigned int cmd, unsigned long *arg);
+	void (*prepare) (snd_pcm1_t * pcm,
+			 unsigned char *buffer, unsigned int size,
+			 unsigned int offset, unsigned int count);
+	void (*trigger) (snd_pcm1_t * pcm, int up);
+	unsigned int (*pointer) (snd_pcm1_t * pcm, unsigned int used_size);
+	void (*dma) (snd_pcm1_t * pcm,
+		     unsigned char *buffer, unsigned int offset,
+		     unsigned char *user, unsigned int count);
+	void (*dma_move) (snd_pcm1_t * pcm,
+			  unsigned char *dbuffer, unsigned int dest_offset,
+			  unsigned char *sbuffer, unsigned int src_offset,
+			  unsigned int count);
+	void (*dma_neutral) (snd_pcm1_t * pcm,
+			     unsigned char *buffer, unsigned offset,
+			     unsigned int count, unsigned char neutral_byte);
 };
 
 struct snd_stru_pcm1_channel {
-  /* -- format/buffering -- */
-  unsigned short voices;	/* or channels 1-32 */
-  unsigned int mode;
-  unsigned int format;
-  unsigned int rate;
-  unsigned int real_rate;
-  unsigned int requested_block_size;
-  unsigned int requested_blocks;
-  unsigned int requested_subdivision;
-  volatile unsigned int processed_bytes;
-  volatile unsigned int interrupts;
-  volatile unsigned int xruns;
-  volatile unsigned int overrange;		/* ADC overrange */
-  volatile unsigned int total_discarded;	/* discarded blocks... */
-  volatile unsigned int total_xruns;		/* under/overruns */
-  /* -- physical/flags -- */
-  unsigned int flags;
-  unsigned int used_size;	/* used size of audio buffer (logical size) */
-  unsigned int mmap_size;	/* for OSS */
-  unsigned char neutral_byte;
-  unsigned int size;		/* real size of audio buffer */
-  unsigned char *buffer;	/* pointer to audio buffer */
-  int dmanum;			/* dma number */
-  /* -- ack callback -- */
-  void (*ack)( snd_pcm1_t *pcm ); /* acknowledge interrupt to abstract layer */
-  /* -- logical blocks -- */
-  unsigned short blocks;	/* number of blocks (2-N) */
-  unsigned int block_size;	/* size of one block */
-  volatile unsigned short used;	/* number of used blocks */
-  volatile unsigned int frag_size; /* size of partly used block */
-  volatile unsigned short head;	/* fill it... */
-  volatile unsigned short tail;	/* remove it... */
-  volatile int block_lock;	/* locked block... */
-  unsigned int blocks_max;	/* max blocks in queue for wakeup */
-  unsigned int blocks_room;	/* min blocks in queue for wakeup */
-  unsigned int blocks_min;	/* min blocks in queue for wakeup */
-  struct timeval time;		/* time value */
-  /* -- hardware -- */
-  struct snd_stru_pcm1_hardware hw;
-  /* -- OSS things -- */
-  struct snd_stru_pcm1_oss_setup *setup_list;	/* setup list */
-  struct snd_stru_pcm1_oss_setup *setup;	/* active setup */
-  snd_mutex_define( setup_mutex );
+	/* -- format/buffering -- */
+	unsigned short voices;			/* or channels 1-32 */
+	unsigned int mode;
+	unsigned int format;
+	unsigned int rate;
+	unsigned int real_rate;
+	unsigned int requested_block_size;
+	unsigned int requested_blocks;
+	unsigned int requested_subdivision;
+	volatile unsigned int processed_bytes;
+	volatile unsigned int interrupts;
+	volatile unsigned int xruns;
+	volatile unsigned int overrange;	/* ADC overrange */
+	volatile unsigned int total_discarded;	/* discarded blocks... */
+	volatile unsigned int total_xruns;	/* under/overruns */
+	/* -- physical/flags -- */
+	unsigned int flags;
+	unsigned int used_size;	/* used size of audio buffer (logical size) */
+	unsigned int mmap_size;	/* for OSS */
+	unsigned char neutral_byte;
+	unsigned int size;	/* real size of audio buffer */
+	unsigned char *buffer;	/* pointer to audio buffer */
+	int dmanum;		/* dma number */
+	/* -- ack callback -- */
+	void (*ack) (snd_pcm1_t * pcm);	/* acknowledge interrupt to abstract layer */
+	/* -- logical blocks -- */
+	unsigned short blocks;		/* number of blocks (2-N) */
+	unsigned int block_size;	/* size of one block */
+	volatile unsigned short used;	/* number of used blocks */
+	volatile unsigned int frag_size;/* size of partly used block */
+	volatile unsigned short head;	/* fill it... */
+	volatile unsigned short tail;	/* remove it... */
+	volatile int block_lock;	/* locked block... */
+	unsigned int blocks_max;	/* max blocks in queue for wakeup */
+	unsigned int blocks_room;	/* min blocks in queue for wakeup */
+	unsigned int blocks_min;	/* min blocks in queue for wakeup */
+	struct timeval time;		/* time value */
+	/* -- hardware -- */
+	struct snd_stru_pcm1_hardware hw;
+	/* -- OSS things -- */
+	struct snd_stru_pcm1_oss_setup *setup_list;	/* setup list */
+	struct snd_stru_pcm1_oss_setup *setup;		/* active setup */
+	snd_mutex_define(setup_mutex);
 };
 
 struct snd_stru_pcm1 {
-  snd_card_t *card;
-  snd_pcm_t *pcm;		/* pointer to master PCM structure */
-  unsigned int flags;
-  unsigned short mask;
-  struct snd_stru_pcm1_channel playback;
-  struct snd_stru_pcm1_channel record;
-  snd_info_entry_t *proc_entry;
-  snd_info_entry_t *proc_oss_entry;
-  snd_sleep_define( playback );
-  snd_sleep_define( record );
-  snd_mutex_define( open );
-  snd_spin_define( playback );
-  snd_spin_define( record );
-  snd_spin_define( playback_sleep );
-  snd_spin_define( record_sleep );
-  void *private_data;
-  void (*private_free)( void *private_data );
+	snd_card_t *card;
+	snd_pcm_t *pcm;		/* pointer to master PCM structure */
+	unsigned int flags;
+	unsigned short mask;
+	struct snd_stru_pcm1_channel playback;
+	struct snd_stru_pcm1_channel record;
+	snd_info_entry_t *proc_entry;
+	snd_info_entry_t *proc_oss_entry;
+	snd_sleep_define(playback);
+	snd_sleep_define(record);
+	snd_mutex_define(open);
+	snd_spin_define(playback);
+	snd_spin_define(record);
+	snd_spin_define(playback_sleep);
+	snd_spin_define(record_sleep);
+	void *private_data;
+	void (*private_free) (void *private_data);
 };
 
-extern void snd_pcm1_playback_dma( snd_pcm1_t *pcm,
-			           unsigned char *buffer, unsigned int offset,
-			           unsigned char *user, unsigned int count );
-extern void snd_pcm1_playback_dma_ulaw( snd_pcm1_t *pcm,
-			                unsigned char *buffer, unsigned int offset,
-			                unsigned char *user, unsigned int count );
-extern void snd_pcm1_playback_dma_ulaw_loud( snd_pcm1_t *pcm,
-			                     unsigned char *buffer, unsigned int offset,
-			                     unsigned char *user, unsigned int count );
-extern void snd_pcm1_playback_dma_neutral( snd_pcm1_t *pcm,
-				           unsigned char *buffer, unsigned int offset,
-				           unsigned int count,
-				           unsigned char neutral_byte );
-extern void snd_pcm1_record_dma( snd_pcm1_t *pcm,
-			         unsigned char *buffer, unsigned int offset,
-			         unsigned char *user, unsigned int count );
-extern void snd_pcm1_record_dma_ulaw( snd_pcm1_t *pcm,
-		 	              unsigned char *buffer, unsigned int offset,
-		 	              unsigned char *user, unsigned int count );
-extern void snd_pcm1_record_dma_ulaw_loud( snd_pcm1_t *pcm,
-		 	                   unsigned char *buffer, unsigned int offset,
-		 	                   unsigned char *user, unsigned int count );
-extern void snd_pcm1_dma_move( snd_pcm1_t *pcm,
-                               unsigned char *dbuffer, unsigned int dest_offset,
-                               unsigned char *sbuffer, unsigned int src_offset,
-                               unsigned int count );
+extern void snd_pcm1_playback_dma(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned char *user, unsigned int count);
+extern void snd_pcm1_playback_dma_ulaw(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned char *user, unsigned int count);
+extern void snd_pcm1_playback_dma_ulaw_loud(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned char *user, unsigned int count);
+extern void snd_pcm1_playback_dma_neutral(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned int count, unsigned char neutral_byte);
+extern void snd_pcm1_record_dma(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned char *user, unsigned int count);
+extern void snd_pcm1_record_dma_ulaw(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned char *user, unsigned int count);
+extern void snd_pcm1_record_dma_ulaw_loud(snd_pcm1_t * pcm,
+			      unsigned char *buffer, unsigned int offset,
+			      unsigned char *user, unsigned int count);
+extern void snd_pcm1_dma_move(snd_pcm1_t * pcm,
+			      unsigned char *dbuffer, unsigned int dest_offset,
+			      unsigned char *sbuffer, unsigned int src_offset,
+			      unsigned int count);
 
-extern void snd_pcm1_clear_channel( snd_pcm1_channel_t *pchn );
-extern unsigned short snd_pcm1_file_flags( struct file *file  );
-extern void snd_pcm1_fill_with_neutral( snd_pcm1_t *pcm, snd_pcm1_channel_t *pchn );
+extern void snd_pcm1_clear_channel(snd_pcm1_channel_t * pchn);
+extern unsigned short snd_pcm1_file_flags(struct file *file);
+extern void snd_pcm1_fill_with_neutral(snd_pcm1_t * pcm,
+				       snd_pcm1_channel_t * pchn);
 
-extern int snd_pcm1_dma_alloc( snd_pcm1_t *pcm, int direction, int dmanum, char *ident );
-extern int snd_pcm1_dma_free( snd_pcm1_t *pcm, int direction, int dmanum );
+extern int snd_pcm1_dma_alloc(snd_pcm1_t * pcm, int direction,
+			      int dmanum, char *ident);
+extern int snd_pcm1_dma_free(snd_pcm1_t * pcm, int direction, int dmanum);
 
 /*
  *  Registering
  */
 
-extern snd_pcm_t *snd_pcm1_new_device( snd_card_t *card, char *id );
+extern snd_pcm_t *snd_pcm1_new_device(snd_card_t * card, char *id);
 
-#endif /* __PCM1_H */
+#endif				/* __PCM1_H */

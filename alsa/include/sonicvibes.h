@@ -34,28 +34,28 @@
 
 #define SV_REG( sonic, x ) ( (sonic) -> enh_port + SV_REG_##x )
 
-#define SV_REG_CONTROL	0x00	/* R/W: CODEC/Mixer control register */ 
-#define   SV_ENHANCED	  0x01	  /* audio mode select - enhanced mode */
-#define   SV_TEST	  0x02	  /* test bit */
-#define   SV_REVERB	  0x04	  /* reverb enable */
-#define   SV_WAVETABLE	  0x08	  /* wavetable active / FM active if not set */
-#define   SV_INTA	  0x20	  /* INTA driving - should be always 1 */
-#define   SV_RESET	  0x80	  /* reset chip */
+#define SV_REG_CONTROL	0x00	/* R/W: CODEC/Mixer control register */
+#define   SV_ENHANCED	  0x01	/* audio mode select - enhanced mode */
+#define   SV_TEST	  0x02	/* test bit */
+#define   SV_REVERB	  0x04	/* reverb enable */
+#define   SV_WAVETABLE	  0x08	/* wavetable active / FM active if not set */
+#define   SV_INTA	  0x20	/* INTA driving - should be always 1 */
+#define   SV_RESET	  0x80	/* reset chip */
 #define SV_REG_IRQMASK	0x01	/* R/W: CODEC/Mixer interrupt mask register */
-#define   SV_DMAA_MASK	  0x01	  /* mask DMA-A interrupt */
-#define   SV_DMAC_MASK	  0x04	  /* mask DMA-C interrupt */
-#define   SV_SPEC_MASK	  0x08	  /* special interrupt mask - should be always masked */
-#define   SV_UD_MASK	  0x40	  /* Up/Down button interrupt mask */
-#define   SV_MIDI_MASK	  0x80	  /* mask MIDI interrupt */
+#define   SV_DMAA_MASK	  0x01	/* mask DMA-A interrupt */
+#define   SV_DMAC_MASK	  0x04	/* mask DMA-C interrupt */
+#define   SV_SPEC_MASK	  0x08	/* special interrupt mask - should be always masked */
+#define   SV_UD_MASK	  0x40	/* Up/Down button interrupt mask */
+#define   SV_MIDI_MASK	  0x80	/* mask MIDI interrupt */
 #define SV_REG_STATUS	0x02	/* R/O: CODEC/Mixer status register */
-#define   SV_DMAA_IRQ	  0x01	  /* DMA-A interrupt */
-#define   SV_DMAC_IRQ	  0x04	  /* DMA-C interrupt */
-#define   SV_SPEC_IRQ	  0x08	  /* special interrupt */
-#define   SV_UD_IRQ	  0x40	  /* Up/Down interrupt */
-#define   SV_MIDI_IRQ	  0x80	  /* MIDI interrupt */
+#define   SV_DMAA_IRQ	  0x01	/* DMA-A interrupt */
+#define   SV_DMAC_IRQ	  0x04	/* DMA-C interrupt */
+#define   SV_SPEC_IRQ	  0x08	/* special interrupt */
+#define   SV_UD_IRQ	  0x40	/* Up/Down interrupt */
+#define   SV_MIDI_IRQ	  0x80	/* MIDI interrupt */
 #define SV_REG_INDEX	0x04	/* R/W: CODEC/Mixer index address register */
-#define   SV_MCE          0x40	  /* mode change enable */
-#define   SV_TRD	  0x80    /* DMA transfer request disabled */
+#define   SV_MCE          0x40	/* mode change enable */
+#define   SV_TRD	  0x80	/* DMA transfer request disabled */
 #define SV_REG_DATA	0x05	/* R/W: CODEC/Mixer index data register */
 
 /*
@@ -150,57 +150,60 @@
 #define SV_MODE_RECORD		2
 
 /*
- *
+
  */
 
 typedef struct snd_stru_sonicvibes sonicvibes_t;
 
 struct snd_stru_sonicvibes {
-  int dma1num;
-  int dma2num;
-  int irqnum;
+	int dma1num;
+	int dma2num;
+	int irqnum;
 
-  unsigned int sb_port;
-  unsigned int enh_port;
-  unsigned int synth_port;
-  unsigned int midi_port;
-  unsigned int game_port;
-  unsigned int dmaa_port;
-  unsigned int dmac_port;
+	unsigned int sb_port;
+	unsigned int enh_port;
+	unsigned int synth_port;
+	unsigned int midi_port;
+	unsigned int game_port;
+	unsigned int dmaa_port;
+	unsigned int dmac_port;
 
-  unsigned char enable;
-  unsigned char irqmask;
-  unsigned char revision;
-  unsigned char format;
-  unsigned char srs_space;
-  unsigned char srs_center;
-  unsigned char mpu_switch;
-  unsigned char wave_source;
+	unsigned char enable;
+	unsigned char irqmask;
+	unsigned char revision;
+	unsigned char format;
+	unsigned char srs_space;
+	unsigned char srs_center;
+	unsigned char mpu_switch;
+	unsigned char wave_source;
 
-  unsigned int mode;
+	unsigned int mode;
 
-  struct snd_pci_dev *pci;
-  snd_card_t *card;
-  snd_pcm_t *pcm;
-  snd_kmixer_t *mixer;
-  snd_rawmidi_t *rmidi;
-  snd_synth_t *synth;		/* S3FM */
+	struct snd_pci_dev *pci;
+	snd_card_t *card;
+	snd_pcm_t *pcm;
+	snd_kmixer_t *mixer;
+	snd_rawmidi_t *rmidi;
+	snd_synth_t *synth;	/* S3FM */
 
-  snd_rawmidi_kswitch_t *switch_wavesource;
-  snd_rawmidi_kswitch_t *switch_synth;
-  snd_rawmidi_kswitch_t *switch_rxtosynth;
-  snd_rawmidi_kswitch_t *switch_txtoext;
+	snd_rawmidi_kswitch_t *switch_wavesource;
+	snd_rawmidi_kswitch_t *switch_synth;
+	snd_rawmidi_kswitch_t *switch_rxtosynth;
+	snd_rawmidi_kswitch_t *switch_txtoext;
 
-  snd_spin_define( reg );
-  snd_info_entry_t *proc_entry;
+	snd_spin_define(reg);
+	snd_info_entry_t *proc_entry;
 };
 
-sonicvibes_t *snd_sonicvibes_create( snd_card_t *card, struct snd_pci_dev *pci, int dma1num, int dma2num, int irqnum, int reverb, int mge );
-void snd_sonicvibes_free( sonicvibes_t *sonic );
-void snd_sonicvibes_interrupt( sonicvibes_t *sonic );
+sonicvibes_t *snd_sonicvibes_create(snd_card_t * card,
+				    struct snd_pci_dev *pci,
+				    int dma1num, int dma2num, int irqnum,
+				    int reverb, int mge);
+void snd_sonicvibes_free(sonicvibes_t * sonic);
+void snd_sonicvibes_interrupt(sonicvibes_t * sonic);
 
-snd_pcm_t *snd_sonicvibes_pcm( sonicvibes_t *sonic );
-snd_kmixer_t *snd_sonicvibes_mixer( sonicvibes_t *sonic );
-void snd_sonicvibes_midi( sonicvibes_t *sonic, mpu401_t *mpu );
+snd_pcm_t *snd_sonicvibes_pcm(sonicvibes_t * sonic);
+snd_kmixer_t *snd_sonicvibes_mixer(sonicvibes_t * sonic);
+void snd_sonicvibes_midi(sonicvibes_t * sonic, mpu401_t * mpu);
 
-#endif /* __SONICVIBES_H */
+#endif				/* __SONICVIBES_H */

@@ -41,11 +41,11 @@
 #define SND_DM_FM_MODE_OPL3	1
 
 struct snd_dm_fm_info {
-  unsigned int type;		/* soundcard type */
-  unsigned int flags;		/* see to SND_DM_FM_INFO_XXXX */
-  unsigned char id[32];		/* ID of this direct FM device */
-  unsigned char name[64];	/* name of this device */
-  unsigned char reserved[64];	/* reserved for future... */
+	unsigned int type;	/* soundcard type */
+	unsigned int flags;	/* see to SND_DM_FM_INFO_XXXX */
+	unsigned char id[32];	/* ID of this direct FM device */
+	unsigned char name[64];	/* name of this device */
+	unsigned char reserved[64];	/* reserved for future... */
 };
 
 /*
@@ -53,27 +53,27 @@ struct snd_dm_fm_info {
  */
 
 struct snd_dm_fm_voice {
-  unsigned char op;		/* operator cell (0 or 1) */
-  unsigned char voice;		/* FM voice (0 to 17) */
+	unsigned char op;		/* operator cell (0 or 1) */
+	unsigned char voice;		/* FM voice (0 to 17) */
 
-  unsigned char am;		/* amplitude modulation */
-  unsigned char vibrato;	/* vibrato effect */
-  unsigned char do_sustain;	/* sustain phase */
-  unsigned char kbd_scale;	/* keyboard scaling */
-  unsigned char harmonic;	/* 4 bits: harmonic and multiplier */
-  unsigned char scale_level;	/* 2 bits: decrease output freq rises */
-  unsigned char volume;		/* 6 bits: volume */
+	unsigned char am;		/* amplitude modulation */
+	unsigned char vibrato;		/* vibrato effect */
+	unsigned char do_sustain;	/* sustain phase */
+	unsigned char kbd_scale;	/* keyboard scaling */
+	unsigned char harmonic;		/* 4 bits: harmonic and multiplier */
+	unsigned char scale_level;	/* 2 bits: decrease output freq rises */
+	unsigned char volume;		/* 6 bits: volume */
 
-  unsigned char attack;		/* 4 bits: attack rate */
-  unsigned char decay;		/* 4 bits: decay rate */
-  unsigned char sustain;	/* 4 bits: sustain level */
-  unsigned char release;	/* 4 bits: release rate */
+	unsigned char attack;		/* 4 bits: attack rate */
+	unsigned char decay;		/* 4 bits: decay rate */
+	unsigned char sustain;		/* 4 bits: sustain level */
+	unsigned char release;		/* 4 bits: release rate */
 
-  unsigned char feedback;	/* 3 bits: feedback for op0 */
-  unsigned char connection;	/* 0 for serial, 1 for parallel */
-  unsigned char left;		/* stereo left */
-  unsigned char right;		/* stereo right */
-  unsigned char waveform;	/* 3 bits: waveform shape */
+	unsigned char feedback;		/* 3 bits: feedback for op0 */
+	unsigned char connection;	/* 0 for serial, 1 for parallel */
+	unsigned char left;		/* stereo left */
+	unsigned char right;		/* stereo right */
+	unsigned char waveform;		/* 3 bits: waveform shape */
 };
 
 /*
@@ -82,10 +82,10 @@ struct snd_dm_fm_voice {
  */
 
 struct snd_dm_fm_note {
-  unsigned char voice;		/* 0-17 voice channel */
-  unsigned char octave;		/* 3 bits: what octave to play */
-  unsigned int fnum;		/* 10 bits: frequency number */
-  unsigned char key_on;		/* set for active, clear for silent */
+	unsigned char voice;	/* 0-17 voice channel */
+	unsigned char octave;	/* 3 bits: what octave to play */
+	unsigned int fnum;	/* 10 bits: frequency number */
+	unsigned char key_on;	/* set for active, clear for silent */
 };
 
 /*
@@ -93,17 +93,17 @@ struct snd_dm_fm_note {
  */
 
 struct snd_dm_fm_params {
-  unsigned char am_depth;	/* amplitude modulation depth (1=hi) */
-  unsigned char vib_depth;	/* vibrato depth (1=hi) */
-  unsigned char kbd_split;	/* keyboard split */
-  unsigned char rhythm;		/* percussion mode select */
+	unsigned char am_depth;		/* amplitude modulation depth (1=hi) */
+	unsigned char vib_depth;	/* vibrato depth (1=hi) */
+	unsigned char kbd_split;	/* keyboard split */
+	unsigned char rhythm;		/* percussion mode select */
 
-  /* This block is the percussion instrument data */
-  unsigned char bass;
-  unsigned char snare;
-  unsigned char tomtom;
-  unsigned char cymbal;
-  unsigned char hihat;
+	/* This block is the percussion instrument data */
+	unsigned char bass;
+	unsigned char snare;
+	unsigned char tomtom;
+	unsigned char cymbal;
+	unsigned char hihat;
 };
 
 /*
@@ -117,10 +117,10 @@ struct snd_dm_fm_params {
 #define SND_DM_FM_IOCTL_PLAY_NOTE	_IOWR( 'F', 0x04, struct snd_dm_fm_note )
 #define SND_DM_FM_IOCTL_SET_VOICE	_IOWR( 'F', 0x05, struct snd_dm_fm_voice )
 #define SND_DM_FM_IOCTL_SET_PARAMS	_IOWR( 'F', 0x06, struct snd_dm_fm_params )
-#define SND_DM_FM_IOCTL_SET_CONNECTION	_IOWR( 'F', 0x07, int )	/* for OPL3 only */
+#define SND_DM_FM_IOCTL_SET_CONNECTION	_IOWR( 'F', 0x07, int )		/* for OPL3 only */
 
 #ifdef __SND_OSS_COMPAT__
- 
+
 #define SND_DM_FM_OSS_IOCTL_RESET	0x20
 #define SND_DM_FM_OSS_IOCTL_PLAY_NOTE	0x21
 #define SND_DM_FM_OSS_IOCTL_SET_VOICE	0x22
@@ -130,4 +130,4 @@ struct snd_dm_fm_params {
 
 #endif
 
-#endif /* __ASOUND_FM_H */
+#endif				/* __ASOUND_FM_H */

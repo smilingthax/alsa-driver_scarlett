@@ -26,13 +26,16 @@
 #include "mixer.h"
 
 struct snd_tea6330t_mapping {
-  unsigned int priority;
-  unsigned int parent_priority;
-  char *name;
-  unsigned int ossdev;
+	unsigned int priority;
+	unsigned int parent_priority;
+	char *name;
+	unsigned int ossdev;
 };
 
-extern int snd_tea6330t_detect( struct snd_i2c_bus *bus, int equalizer );
-extern int snd_tea6330t_update_mixer( snd_kmixer_t *mixer, struct snd_i2c_bus *bus, struct snd_tea6330t_mapping *mapping, int equalizer, int fader );
+extern int snd_tea6330t_detect(struct snd_i2c_bus *bus, int equalizer);
+extern int snd_tea6330t_update_mixer(snd_kmixer_t * mixer,
+				     struct snd_i2c_bus *bus,
+				     struct snd_tea6330t_mapping *mapping,
+				     int equalizer, int fader);
 
-#endif /* __TEA6330T_H */
+#endif				/* __TEA6330T_H */

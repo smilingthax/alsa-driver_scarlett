@@ -26,7 +26,7 @@
 
 #define SND_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
 
-#ifndef SNDCFG_MAJOR			/* standard configuration */
+#ifndef SNDCFG_MAJOR		/* standard configuration */
 #define SNDCFG_MAJOR		14
 #endif
 
@@ -116,7 +116,7 @@
 #if LinuxVersionCode( 2, 1, 72 ) <= LINUX_VERSION_CODE
 #define SND_POLL
 #endif
-#ifdef __MAX_POLL_TABLE_ENTRIES		/* new kernel with poll() */
+#ifdef __MAX_POLL_TABLE_ENTRIES	/* new kernel with poll() */
 #define SND_POLL
 #endif
 #ifdef SND_POLL
@@ -144,8 +144,16 @@
 #define DMA_MODE_AUTOINIT	0x10
 #endif
 
-static inline mm_segment_t snd_enter_user( void ) { mm_segment_t fs = get_fs(); set_fs( get_ds() ); return fs; }
-static inline void snd_leave_user( mm_segment_t fs ) { set_fs( fs ); }
+static inline mm_segment_t snd_enter_user(void)
+{
+	mm_segment_t fs = get_fs();
+	set_fs(get_ds());
+	return fs;
+}
+static inline void snd_leave_user(mm_segment_t fs)
+{
+	set_fs(fs);
+}
 
 /*
  *  ==========================================================================
@@ -178,20 +186,20 @@ static inline void snd_leave_user( mm_segment_t fs ) { set_fs( fs ); }
 #define SND_DMA_TYPE_HARDWARE	3	/* buffer mapped from device */
 
 struct snd_stru_dma {
-  int type;			/* dma type - see SND_DMA_TYPE_XXXX */
-  volatile unsigned short
-  		mmaped: 1,	/* mmaped area to user space */
-  		mmap_free: 1;	/* free mmaped buffer */
-  int dma;			/* DMA number */
-  char *name;			/* pointer to name */
-  unsigned char *buf;		/* pointer to DMA buffer */
-  long size;			/* real size of DMA buffer */
-  long rsize;			/* requested size of DMA buffer */
-  char *owner;			/* owner of this DMA channel */
-  char *soft_owner;		/* owner of soft DMA channel */
-  struct vm_area_struct *vma;	/* virtual memory area */
-  snd_mutex_define( lock );	/* mutex for locking */
-  snd_mutex_define( mutex );	/* snd_dma_malloc/free */
+	int type;		/* dma type - see SND_DMA_TYPE_XXXX */
+	volatile unsigned short
+	 mmaped:1,		/* mmaped area to user space */
+	 mmap_free:1;		/* free mmaped buffer */
+	int dma;		/* DMA number */
+	char *name;		/* pointer to name */
+	unsigned char *buf;	/* pointer to DMA buffer */
+	long size;		/* real size of DMA buffer */
+	long rsize;		/* requested size of DMA buffer */
+	char *owner;		/* owner of this DMA channel */
+	char *soft_owner;	/* owner of soft DMA channel */
+	struct vm_area_struct *vma;	/* virtual memory area */
+	snd_mutex_define(lock);		/* mutex for locking */
+	snd_mutex_define(mutex);	/* snd_dma_malloc/free */
 };
 
 #define SND_IRQ_TYPE_ISA	0	/* ISA IRQ */
@@ -199,19 +207,19 @@ struct snd_stru_dma {
 #define SND_IRQ_TYPE_EISA	SND_IRQ_TYPE_PCI
 
 struct snd_stru_irq {
-  int type;			/* see to SND_IRQ_TYPE_XXXX */
-  unsigned short irq;
-  char *name;
-  void *dev_id;
+	int type;		/* see to SND_IRQ_TYPE_XXXX */
+	unsigned short irq;
+	char *name;
+	void *dev_id;
 };
 
 struct snd_stru_port {
-  unsigned short port;
-  unsigned short size;
-  char *name;
+	unsigned short port;
+	unsigned short size;
+	char *name;
 };
 
-typedef void (snd_irq_handler_t)( int irq, void *dev_id, struct pt_regs *regs );
+typedef void (snd_irq_handler_t) (int irq, void *dev_id, struct pt_regs * regs);
 
 /* main structure for soundcard */
 
@@ -226,76 +234,76 @@ typedef struct snd_stru_timer snd_timer_t;
 typedef struct snd_stru_synth snd_synth_t;
 
 struct snd_stru_card {
-  int number;			/* number of soundcard (index to snd_cards) */
+	int number;		/* number of soundcard (index to snd_cards) */
 
-  unsigned int type;		/* type (number ID) of soundcard */
+	unsigned int type;	/* type (number ID) of soundcard */
 
-  char id[ 16 ];		/* id string of this card */
-  char abbreviation[ 16 ];	/* abbreviation of soundcard name */
-  char shortname[ 32 ];		/* short name of this soundcard */
-  char longname[ 80 ];		/* name of this soundcard */
+	char id[16];		/* id string of this card */
+	char abbreviation[16];	/* abbreviation of soundcard name */
+	char shortname[32];	/* short name of this soundcard */
+	char longname[80];	/* name of this soundcard */
 
-  struct snd_stru_dma *dmas[ SND_DMAS ];
-  volatile unsigned int dmas_map; 	/* bitmask for allocated DMA channels */
-  
-  struct snd_stru_irq *irqs[ SND_IRQS ];
-  volatile unsigned int irqs_map; 	/* bitmask for allocated IRQ channels */
+	struct snd_stru_dma *dmas[SND_DMAS];
+	volatile unsigned int dmas_map;		/* bitmask for allocated DMA channels */
 
-  struct snd_stru_port *ports[ SND_PORTS ];
-  volatile unsigned int ports_map; 	/* bitmask for allocated port numbers */
+	struct snd_stru_irq *irqs[SND_IRQS];
+	volatile unsigned int irqs_map;		/* bitmask for allocated IRQ channels */
 
-  void (*use_inc)( snd_card_t *card );	/* increment use count */
-  void (*use_dec)( snd_card_t *card );	/* decrement use count */
+	struct snd_stru_port *ports[SND_PORTS];
+	volatile unsigned int ports_map;	/* bitmask for allocated port numbers */
 
-  snd_mutex_define( control );		/* control card mutex */
-  
-  void *private_data;			/* private data for soundcard */
-  void (*private_free)( void *private ); /* callback for freeing of private data */
+	void (*use_inc) (snd_card_t * card);	/* increment use count */
+	void (*use_dec) (snd_card_t * card);	/* decrement use count */
 
-  void *static_data;			/* private static data for soundcard */
+	 snd_mutex_define(control);	/* control card mutex */
 
-  int switches_count;			/* switches count */
-  snd_ctl_kswitch_t **switches;	 	/* switches */
+	void *private_data;	/* private data for soundcard */
+	void (*private_free) (void *private);	/* callback for freeing of private data */
 
-  struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
-  struct proc_dir_entry *proc_dir_link;	/* number link to real id */
-  snd_info_entry_t *info_entries;	/* info entries */
+	void *static_data;	/* private static data for soundcard */
+
+	int switches_count;		/* switches count */
+	snd_ctl_kswitch_t **switches;	/* switches */
+
+	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
+	struct proc_dir_entry *proc_dir_link;	/* number link to real id */
+	snd_info_entry_t *info_entries;		/* info entries */
 };
 
 /* device.c */
 
-typedef int (snd_unregister_t)( unsigned short minor );
+typedef int (snd_unregister_t) (unsigned short minor);
 
-typedef long long (snd_lseek_t)( struct file *file, long long offset, int orig );
-typedef long (snd_read_t)( struct file *file, char *buf, long count );
-typedef long (snd_write_t)( struct file *file, const char *buf, long count );
-typedef int (snd_open_t)( unsigned short minor, int cardnum, int device, struct file *file );
-typedef int (snd_release_t)( unsigned short minor, int cardnum, int device, struct file *file );
+typedef long long (snd_lseek_t) (struct file * file, long long offset, int orig);
+typedef long (snd_read_t) (struct file * file, char *buf, long count);
+typedef long (snd_write_t) (struct file * file, const char *buf, long count);
+typedef int (snd_open_t) (unsigned short minor, int cardnum, int device, struct file * file);
+typedef int (snd_release_t) (unsigned short minor, int cardnum, int device, struct file * file);
 #ifdef SND_POLL
-typedef unsigned int (snd_poll_t)( struct file *file, poll_table *wait );
+typedef unsigned int (snd_poll_t) (struct file * file, poll_table * wait);
 #else
-typedef int (snd_select_t)( struct file *file, int sel_type, select_table *wait );
+typedef int (snd_select_t) (struct file * file, int sel_type, select_table * wait);
 #endif
-typedef int (snd_ioctl_t)( struct file *file, unsigned int cmd, unsigned long arg );
-typedef int (snd_mmap_t)( struct inode *inode, struct file *file, struct vm_area_struct *vma );
+typedef int (snd_ioctl_t) (struct file * file, unsigned int cmd, unsigned long arg);
+typedef int (snd_mmap_t) (struct inode * inode, struct file * file, struct vm_area_struct * vma);
 
 struct snd_stru_minor {
-  char *comment;		/* for /dev/sndinfo */
+	char *comment;		/* for /dev/sndinfo */
 
-  snd_unregister_t *unregister;
+	snd_unregister_t *unregister;
 
-  snd_lseek_t *lseek;
-  snd_read_t *read;
-  snd_write_t *write;
-  snd_open_t *open;
-  snd_release_t *release;
+	snd_lseek_t *lseek;
+	snd_read_t *read;
+	snd_write_t *write;
+	snd_open_t *open;
+	snd_release_t *release;
 #ifdef SND_POLL
-  snd_poll_t *poll;
+	snd_poll_t *poll;
 #else
-  snd_select_t *select;
+	snd_select_t *select;
 #endif
-  snd_ioctl_t *ioctl;
-  snd_mmap_t *mmap;
+	snd_ioctl_t *ioctl;
+	snd_mmap_t *mmap;
 };
 
 typedef struct snd_stru_minor snd_minor_t;
@@ -307,72 +315,83 @@ extern int snd_device_mode;
 extern int snd_device_gid;
 extern int snd_device_uid;
 
-extern int snd_register_minor( unsigned short minor, snd_minor_t *reg );
-extern int snd_unregister_minor( unsigned short minor );
+extern int snd_register_minor(unsigned short minor, snd_minor_t * reg);
+extern int snd_unregister_minor(unsigned short minor);
 
-extern int snd_minor_info_init( void );
-extern int snd_minor_info_done( void );
+extern int snd_minor_info_init(void);
+extern int snd_minor_info_done(void);
 
-extern int snd_ioctl_in( long *addr );
-extern int snd_ioctl_out( long *addr, int value );
+extern int snd_ioctl_in(long *addr);
+extern int snd_ioctl_out(long *addr, int value);
 
 /* memory.c */
 
-extern void snd_malloc_init( void );
-extern void snd_malloc_done( void );
-extern void *snd_malloc( unsigned long size );
-extern void *snd_calloc( unsigned long size );
-extern void snd_free( void *obj, unsigned long size );
-extern char *snd_malloc_strdup( char *string );
-extern void snd_free_str( char *string );
-extern char *snd_malloc_pages( unsigned long size, int *pg, int dma );
-extern void snd_free_pages( char *ptr, unsigned long size );
-extern int snd_dma_malloc( snd_card_t *card, int dmanum, char *owner, int soft );
-extern void snd_dma_free( snd_card_t *card, int dmanum, int soft );
-extern int snd_dma_soft_grab( snd_card_t *card, int dmanum );
-extern void snd_dma_soft_release( snd_card_t *card, int dmanum );
-extern void snd_dma_notify_vma_close( struct vm_area_struct *area );
-extern int snd_memory_info_init( void );
-extern int snd_memory_info_done( void );
+extern void snd_malloc_init(void);
+extern void snd_malloc_done(void);
+extern void *snd_malloc(unsigned long size);
+extern void *snd_calloc(unsigned long size);
+extern void snd_free(void *obj, unsigned long size);
+extern char *snd_malloc_strdup(char *string);
+extern void snd_free_str(char *string);
+extern char *snd_malloc_pages(unsigned long size, int *pg, int dma);
+extern void snd_free_pages(char *ptr, unsigned long size);
+extern int snd_dma_malloc(snd_card_t * card, int dmanum, char *owner, int soft);
+extern void snd_dma_free(snd_card_t * card, int dmanum, int soft);
+extern int snd_dma_soft_grab(snd_card_t * card, int dmanum);
+extern void snd_dma_soft_release(snd_card_t * card, int dmanum);
+extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
+extern int snd_memory_info_init(void);
+extern int snd_memory_info_done(void);
 
 /* init.c */
 
 extern int snd_cards_count;
 extern unsigned int snd_cards_bitmap;
-extern snd_card_t *snd_cards[ SND_CARDS ];
+extern snd_card_t *snd_cards[SND_CARDS];
 
-extern void snd_driver_init( void );
+extern void snd_driver_init(void);
 
-extern snd_card_t *snd_card_new( int idx, char *id, void (*use_inc)( snd_card_t *card ), void (*use_dec)( snd_card_t *card ) );
-extern int snd_card_free( snd_card_t *card );
-extern int snd_card_register( snd_card_t *card );
-extern int snd_card_unregister( snd_card_t *card );
-extern int snd_card_info_init( void );
-extern int snd_card_info_done( void );
+extern snd_card_t *snd_card_new(int idx, char *id,
+			void (*use_inc) (snd_card_t * card),
+			void (*use_dec) (snd_card_t * card));
+extern int snd_card_free(snd_card_t * card);
+extern int snd_card_register(snd_card_t * card);
+extern int snd_card_unregister(snd_card_t * card);
+extern int snd_card_info_init(void);
+extern int snd_card_info_done(void);
 
-extern void snd_delay( int loops );
+extern void snd_delay(int loops);
 
-extern int snd_check_ioport( snd_card_t *card, int port, int size );
-extern int snd_register_ioport( snd_card_t *card, int port, int size, char *name );
-extern int snd_unregister_ioports( snd_card_t *card );
+extern int snd_check_ioport(snd_card_t * card, int port, int size);
+extern int snd_register_ioport(snd_card_t * card, int port, int size, char *name);
+extern int snd_unregister_ioports(snd_card_t * card);
 
-extern int snd_register_dma_channel( snd_card_t *card, char *name, int number, int type, int rsize, int *possible_numbers );
-extern int snd_unregister_dma_channels( snd_card_t *card );
+extern int snd_register_dma_channel(snd_card_t * card, char *name, int number,
+				    int type, int rsize, int *possible_numbers);
+extern int snd_unregister_dma_channels(snd_card_t * card);
 
-extern int snd_register_interrupt( snd_card_t *card, char *name, int number, int type, snd_irq_handler_t *handler, void *dev_id, int *possible_numbers );
-extern int snd_unregister_interrupts( snd_card_t *card );
+extern int snd_register_interrupt(snd_card_t * card, char *name, int number,
+				  int type, snd_irq_handler_t * handler,
+				  void *dev_id, int *possible_numbers);
+extern int snd_unregister_interrupts(snd_card_t * card);
 
-static inline void snd_enable_irq( snd_card_t *card, int irqnum ) { enable_irq( card -> irqs[ irqnum ] -> irq ); }
-static inline void snd_disable_irq( snd_card_t *card, int irqnum ) { disable_irq( card -> irqs[ irqnum ] -> irq ); }
+static inline void snd_enable_irq(snd_card_t * card, int irqnum)
+{
+	enable_irq(card->irqs[irqnum]->irq);
+}
+static inline void snd_disable_irq(snd_card_t * card, int irqnum)
+{
+	disable_irq(card->irqs[irqnum]->irq);
+}
 
 /* isadma.c */
 
-extern void snd_dma_program( int dma, const void *buf, unsigned int size, unsigned char mode );
-extern unsigned int snd_dma_residue( int dma );
+extern void snd_dma_program(int dma, const void *buf, unsigned int size, unsigned char mode);
+extern unsigned int snd_dma_residue(int dma);
 
 /* misc.c */
 
-extern int snd_task_name( struct task_struct *task, char *name, int size );
+extern int snd_task_name(struct task_struct *task, char *name, int size);
 
 /* --- */
 
@@ -380,15 +399,15 @@ extern int snd_task_name( struct task_struct *task, char *name, int size );
 #ifdef SNDCFG_DEBUG
 #define snd_printd( args... ) snd_printk( ##args )
 #else
-#define snd_printd( args... ) /* nothing */
+#define snd_printd( args... )	/* nothing */
 #endif
 
 #ifdef SNDCFG_DEBUG_DETECT
 #define snd_printdd( args... ) snd_printk( ##args )
 #else
-#define snd_printdd( args... ) /* nothing */
+#define snd_printdd( args... )	/* nothing */
 #endif
 
-#define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))     /* 3.8.1a */
+#define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 
-#endif /* __DRIVER_H */
+#endif				/* __DRIVER_H */

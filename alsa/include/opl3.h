@@ -8,31 +8,31 @@
  *                  Hannu Savolainen 1993-1996
  *
  *
- *	The OPL-3 mode is switched on by writing 0x01, to the offset 5
- *	of the right side.
+ *      The OPL-3 mode is switched on by writing 0x01, to the offset 5
+ *      of the right side.
  *
- *	Another special register at the right side is at offset 4. It contains
- *	a bit mask defining which voices are used as 4 OP voices.
+ *      Another special register at the right side is at offset 4. It contains
+ *      a bit mask defining which voices are used as 4 OP voices.
  *
- *	The percussive mode is implemented in the left side only.
+ *      The percussive mode is implemented in the left side only.
  *
- *	With the above exceptions the both sides can be operated independently.
- *	
- *	A 4 OP voice can be created by setting the corresponding
- *	bit at offset 4 of the right side.
+ *      With the above exceptions the both sides can be operated independently.
+ *      
+ *      A 4 OP voice can be created by setting the corresponding
+ *      bit at offset 4 of the right side.
  *
- *	For example setting the rightmost bit (0x01) changes the
- *	first voice on the right side to the 4 OP mode. The fourth
- *	voice is made inaccessible.
+ *      For example setting the rightmost bit (0x01) changes the
+ *      first voice on the right side to the 4 OP mode. The fourth
+ *      voice is made inaccessible.
  *
- *	If a voice is set to the 2 OP mode, it works like 2 OP modes
- *	of the original YM3812 (AdLib). In addition the voice can 
- *	be connected the left, right or both stereo channels. It can
- *	even be left unconnected. This works with 4 OP voices also.
+ *      If a voice is set to the 2 OP mode, it works like 2 OP modes
+ *      of the original YM3812 (AdLib). In addition the voice can 
+ *      be connected the left, right or both stereo channels. It can
+ *      even be left unconnected. This works with 4 OP voices also.
  *
- *	The stereo connection bits are located in the FEEDBACK_CONNECTION
- *	register of the voice (0xC0-0xC8). In 4 OP voices these bits are
- *	in the second half of the voice.
+ *      The stereo connection bits are located in the FEEDBACK_CONNECTION
+ *      register of the voice (0xC0-0xC8). In 4 OP voices these bits are
+ *      in the second half of the voice.
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -55,7 +55,7 @@
 #include "timer.h"
 
 /*
- *	Register numbers for the global registers
+ *    Register numbers for the global registers
  */
 
 #define OPL3_REG_TEST			0x01
@@ -97,27 +97,27 @@
 #define   OPL3_HIHAT_ON			0x01
 
 /*
- *	Offsets to the register banks for operators. To get the
- *	register number just add the operator offset to the bank offset
+ *    Offsets to the register banks for operators. To get the
+ *      register number just add the operator offset to the bank offset
  *
- *	AM/VIB/EG/KSR/Multiple (0x20 to 0x35)
+ *      AM/VIB/EG/KSR/Multiple (0x20 to 0x35)
  */
 #define OPL3_REG_AM_VIB			0x20
 #define   OPL3_TREMOLO_ON		0x80
 #define   OPL3_VIBRATO_ON		0x40
 #define   OPL3_SUSTAIN_ON		0x20
-#define   OPL3_KSR			0x10 	/* Key scaling rate */
+#define   OPL3_KSR			0x10	/* Key scaling rate */
 #define   OPL3_MULTIPLE_MASK		0x0f	/* Frequency multiplier */
 
  /*
-  *	KSL/Total level (0x40 to 0x55)
+  *   KSL/Total level (0x40 to 0x55)
   */
 #define OPL3_REG_KSL_LEVEL		0x40
 #define   OPL3_KSL_MASK			0xc0	/* Envelope scaling bits */
 #define   OPL3_TOTAL_LEVEL_MASK		0x3f	/* Strength (volume) of OP */
 
 /*
- *	Attack / Decay rate (0x60 to 0x75)
+ *    Attack / Decay rate (0x60 to 0x75)
  */
 #define OPL3_REG_ATTACK_DECAY		0x60
 #define   OPL3_ATTACK_MASK		0xf0
@@ -136,15 +136,15 @@
 #define OPL3_REG_WAVE_SELECT		0xe0
 
 /*
- *	Offsets to the register banks for voices. Just add to the
- *	voice number to get the register number.
+ *    Offsets to the register banks for voices. Just add to the
+ *      voice number to get the register number.
  *
- *	F-Number low bits (0xA0 to 0xA8).
+ *      F-Number low bits (0xA0 to 0xA8).
  */
 #define OPL3_REG_FNUM_LOW		0xa0
 
 /*
- *	F-number high bits / Key on / Block (octave) (0xB0 to 0xB8)
+ *    F-number high bits / Key on / Block (octave) (0xB0 to 0xB8)
  */
 #define OPL3_REG_KEYON_BLOCK		0xb0
 #define	  OPL3_KEYON_BIT		0x20
@@ -152,71 +152,71 @@
 #define   OPL3_FNUM_HIGH_MASK		0x03
 
 /*
- *	Feedback / Connection (0xc0 to 0xc8)
+ *    Feedback / Connection (0xc0 to 0xc8)
  *
- *	These registers have two new bits when the OPL-3 mode
- *	is selected. These bits controls connecting the voice
- *	to the stereo channels. For 4 OP voices this bit is
- *	defined in the second half of the voice (add 3 to the
- *	register offset).
+ *      These registers have two new bits when the OPL-3 mode
+ *      is selected. These bits controls connecting the voice
+ *      to the stereo channels. For 4 OP voices this bit is
+ *      defined in the second half of the voice (add 3 to the
+ *      register offset).
  *
- *	For 4 OP voices the connection bit is used in the
- *	both halves (gives 4 ways to connect the operators).
+ *      For 4 OP voices the connection bit is used in the
+ *      both halves (gives 4 ways to connect the operators).
  */
 #define OPL3_REG_FEEDBACK_CONNECTION	0xc0
 #define   OPL3_FEEDBACK_MASK		0x0e	/* Valid just for 1st OP of a voice */
 #define   OPL3_CONNECTION_BIT		0x01
 /*
- *	In the 4 OP mode there is four possible configurations how the
- *	operators can be connected together (in 2 OP modes there is just
- *	AM or FM). The 4 OP connection mode is defined by the rightmost
- *	bit of the FEEDBACK_CONNECTION (0xC0-0xC8) on the both halves.
+ *    In the 4 OP mode there is four possible configurations how the
+ *      operators can be connected together (in 2 OP modes there is just
+ *      AM or FM). The 4 OP connection mode is defined by the rightmost
+ *      bit of the FEEDBACK_CONNECTION (0xC0-0xC8) on the both halves.
  *
- *	First half	Second half	Mode
+ *      First half      Second half     Mode
  *
- *					 +---+
- *					 v   |
- *	0		0		>+-1-+--2--3--4-->
+ *                                       +---+
+ *                                       v   |
+ *      0               0               >+-1-+--2--3--4-->
  *
  *
- *					
- *					 +---+
- *					 |   |
- *	0		1		>+-1-+--2-+
- *						  |->
- *					>--3----4-+
- *					
- *					 +---+
- *					 |   |
- *	1		0		>+-1-+-----+
- *						   |->
- *					>--2--3--4-+
+ *                                      
+ *                                       +---+
+ *                                       |   |
+ *      0               1               >+-1-+--2-+
+ *                                                |->
+ *                                      >--3----4-+
+ *                                      
+ *                                       +---+
+ *                                       |   |
+ *      1               0               >+-1-+-----+
+ *                                                 |->
+ *                                      >--2--3--4-+
  *
- *					 +---+
- *					 |   |
- *	1		1		>+-1-+--+
- *						|
- *					>--2--3-+->
- *						|
- *					>--4----+
+ *                                       +---+
+ *                                       |   |
+ *      1               1               >+-1-+--+
+ *                                              |
+ *                                      >--2--3-+->
+ *                                              |
+ *                                      >--4----+
  */
 #define   OPL3_STEREO_BITS		0x30	/* OPL-3 only */
 #define     OPL3_VOICE_TO_LEFT		0x10
 #define     OPL3_VOICE_TO_RIGHT		0x20
 
 /*
- * 	Definition table for the physical voices
+ *    Definition table for the physical voices
  */
 
 struct snd_opl3_physical_voice_info {
-  unsigned char num;
-  unsigned char mode;		/* 0=unavailable, 2=2 OP, 4=4 OP */
-  unsigned short ioaddr; 	/* I/O port (left or right side) */
-  unsigned char op[4]; 		/* Operator offsets */
+	unsigned char num;
+	unsigned char mode;	/* 0=unavailable, 2=2 OP, 4=4 OP */
+	unsigned short ioaddr;	/* I/O port (left or right side) */
+	unsigned char op[4];	/* Operator offsets */
 };
 
 /*
- *
+
  */
 
 #define OPL3_LEFT		0x00000000
@@ -229,22 +229,26 @@ struct snd_opl3_physical_voice_info {
 #define OPL3_HW_OPL3_CS		0x0302	/* CS4232/CS4236+ */
 #define OPL3_HW_OPL4		0x0400
 #define OPL3_HW_MASK		0xff00
- 
+
 typedef struct snd_opl3 opl3_t;
 
 struct snd_opl3 {
-  unsigned short l_port;
-  unsigned short r_port;
-  unsigned short hardware;
-  unsigned short timer_enable;
-  int timers;			/* flag if timers are connected to IRQ line (useable) */
-  snd_timer_t *timer1;
-  snd_timer_t *timer2;
-  snd_spin_define( reg );
-  snd_spin_define( timer );
+	unsigned short l_port;
+	unsigned short r_port;
+	unsigned short hardware;
+	unsigned short timer_enable;
+	int timers;		/* flag if timers are connected to IRQ line (useable) */
+	snd_timer_t *timer1;
+	snd_timer_t *timer2;
+	snd_spin_define(reg);
+	snd_spin_define(timer);
 };
 
-extern void snd_opl3_interrupt( snd_synth_t *synth );
-extern snd_synth_t *snd_opl3_new_device( snd_card_t *card, unsigned short l_port, unsigned short r_port, unsigned short hardware, int timers );
+extern void snd_opl3_interrupt(snd_synth_t * synth);
+extern snd_synth_t *snd_opl3_new_device(snd_card_t * card,
+					unsigned short l_port,
+					unsigned short r_port,
+					unsigned short hardware,
+					int timers);
 
-#endif /* __OPL3_H */
+#endif				/* __OPL3_H */

@@ -54,4 +54,4 @@
 #define SND_MINOR_RES2		/* 240 */ (SND_MINOR_RES1+SND_CARDS)
 #define SND_MINOR_FM		/* 248 */ (SND_MINOR_RES2+SND_CARDS)
 
-#endif /* __MINORS_H */
+#endif				/* __MINORS_H */

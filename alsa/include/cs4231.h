@@ -27,38 +27,38 @@
 #include "timer.h"
 
 struct snd_stru_cs4231_image {
-  unsigned char lic;		/* 00: left input (ADC) control */
-  unsigned char ric;		/* 01: right input (ADC) control */
-  unsigned char la1ic;		/* 02: left AUX #1 input control */
-  unsigned char ra1ic;		/* 03: right AUX #1 input control */
-  unsigned char la2ic;		/* 04: left AUX #2 input control */
-  unsigned char ra2ic;		/* 05: right AUX #2 input control */
-  unsigned char loc;		/* 06: left output (DAC) control */
-  unsigned char roc;		/* 07: right output (DAC) control*/
-  unsigned char pdfr;		/* 08: clock and data format - playback */
-  unsigned char ic;		/* 09: interface control */
-  unsigned char pc;		/* 0a: pin control */
-  unsigned char ti;		/* 0b: test and initialization */
-  unsigned char mi;		/* 0c: miscellaneaous information */
-  unsigned char lbc;		/* 0d: loopback control */
-  unsigned char pbru;		/* 0e: playback upper base count */
-  unsigned char pbrl;		/* 0f: playback lower base count */
-  unsigned char afei;		/* 10: alternate #1 feature enable */
-  unsigned char afeii;		/* 11: alternate #2 feature enable */
-  unsigned char llic;		/* 12: left line input control */
-  unsigned char rlic;		/* 13: right line input control */
-  unsigned char tlb;		/* 14: timer low byte */
-  unsigned char thb;		/* 15: timer high byte */
-  unsigned char la3ic;		/* 16: left MIC input control register (InterWave only) */
-  unsigned char ra3ic;		/* 17: right MIC input control register (InterWave only) */
-  unsigned char afs;		/* 18: irq status register */
-  unsigned char lamoc;		/* 19: version / left line output control register (InterWave only) */
-  unsigned char mioc;		/* 1a: mono input/output control */
-  unsigned char ramoc;		/* 1b: right line output control register (InterWave only) */
-  unsigned char cdfr;		/* 1c: clock and data format - record */
-  unsigned char pdfr_var;	/* 1d: playback variable frequency (InterWave only) */
-  unsigned char cbru;		/* 1e: record upper count */
-  unsigned char cbrl;		/* 1f: record lower count */
+	unsigned char lic;	/* 00: left input (ADC) control */
+	unsigned char ric;	/* 01: right input (ADC) control */
+	unsigned char la1ic;	/* 02: left AUX #1 input control */
+	unsigned char ra1ic;	/* 03: right AUX #1 input control */
+	unsigned char la2ic;	/* 04: left AUX #2 input control */
+	unsigned char ra2ic;	/* 05: right AUX #2 input control */
+	unsigned char loc;	/* 06: left output (DAC) control */
+	unsigned char roc;	/* 07: right output (DAC) control */
+	unsigned char pdfr;	/* 08: clock and data format - playback */
+	unsigned char ic;	/* 09: interface control */
+	unsigned char pc;	/* 0a: pin control */
+	unsigned char ti;	/* 0b: test and initialization */
+	unsigned char mi;	/* 0c: miscellaneaous information */
+	unsigned char lbc;	/* 0d: loopback control */
+	unsigned char pbru;	/* 0e: playback upper base count */
+	unsigned char pbrl;	/* 0f: playback lower base count */
+	unsigned char afei;	/* 10: alternate #1 feature enable */
+	unsigned char afeii;	/* 11: alternate #2 feature enable */
+	unsigned char llic;	/* 12: left line input control */
+	unsigned char rlic;	/* 13: right line input control */
+	unsigned char tlb;	/* 14: timer low byte */
+	unsigned char thb;	/* 15: timer high byte */
+	unsigned char la3ic;	/* 16: left MIC input control register (InterWave only) */
+	unsigned char ra3ic;	/* 17: right MIC input control register (InterWave only) */
+	unsigned char afs;	/* 18: irq status register */
+	unsigned char lamoc;	/* 19: version / left line output control register (InterWave only) */
+	unsigned char mioc;	/* 1a: mono input/output control */
+	unsigned char ramoc;	/* 1b: right line output control register (InterWave only) */
+	unsigned char cdfr;	/* 1c: clock and data format - record */
+	unsigned char pdfr_var;	/* 1d: playback variable frequency (InterWave only) */
+	unsigned char cbru;	/* 1e: record upper count */
+	unsigned char cbrl;	/* 1f: record lower count */
 };
 
 /* IO ports */
@@ -208,9 +208,9 @@ struct snd_stru_cs4231_image {
 /* some structures */
 
 struct snd_stru_cs4231_freq {
-  unsigned int hertz;
-  unsigned int rate;
-  unsigned char bits;
+	unsigned int hertz;
+	unsigned int rate;
+	unsigned char bits;
 };
 
 /* defines for codec.mode */
@@ -223,96 +223,96 @@ struct snd_stru_cs4231_freq {
 
 /* defines for codec.hardware */
 
-#define CS4231_HW_DETECT        0x0000  /* let CS4231 driver detect chip */
+#define CS4231_HW_DETECT        0x0000	/* let CS4231 driver detect chip */
 #define CS4231_HW_DETECT3	0x0001	/* allow mode 3 */
 #define CS4231_HW_TYPE_MASK	0xff00	/* type mask */
-#define CS4231_HW_CS4231_MASK   0x0100  /* CS4231 serie */
-#define CS4231_HW_CS4231        0x0100  /* CS4231 chip */
-#define CS4231_HW_CS4231A       0x0101  /* CS4231A chip */
-#define CS4231_HW_CS4232_MASK   0x0200  /* CS4232 serie */
-#define CS4231_HW_CS4232        0x0200  /* CS4232 */
-#define CS4231_HW_CS4232A       0x0201  /* CS4232A */
+#define CS4231_HW_CS4231_MASK   0x0100	/* CS4231 serie */
+#define CS4231_HW_CS4231        0x0100	/* CS4231 chip */
+#define CS4231_HW_CS4231A       0x0101	/* CS4231A chip */
+#define CS4231_HW_CS4232_MASK   0x0200	/* CS4232 serie */
+#define CS4231_HW_CS4232        0x0200	/* CS4232 */
+#define CS4231_HW_CS4232A       0x0201	/* CS4232A */
 #define CS4231_HW_CS4236_MASK	0x0400	/* CS4236 serie */
 #define CS4231_HW_CS4235	0x0400	/* CS4235 - Crystal Clear (tm) stereo enhancement */
-#define CS4231_HW_CS4236        0x0401  /* CS4236 */
-#define CS4231_HW_CS4236B       0x0402  /* CS4236B */
-#define CS4231_HW_CS4237B       0x0403  /* CS4237B - SRS 3D */
+#define CS4231_HW_CS4236        0x0401	/* CS4236 */
+#define CS4231_HW_CS4236B       0x0402	/* CS4236B */
+#define CS4231_HW_CS4237B       0x0403	/* CS4237B - SRS 3D */
 #define CS4231_HW_CS4238B	0x0404	/* CS4238B - QSOUND 3D */
 #define CS4231_HW_CS4239	0x0405	/* CS4239 - Crystal Clear (tm) stereo enhancement */
 /* compatible, but clones */
-#define CS4231_HW_INTERWAVE     0x1000  /* InterWave chip */
-#define CS4231_HW_OPL3SA        0x1001  /* OPL3-SA chip */
+#define CS4231_HW_INTERWAVE     0x1000	/* InterWave chip */
+#define CS4231_HW_OPL3SA        0x1001	/* OPL3-SA chip */
 
 typedef struct snd_stru_cs4231 cs4231_t;
 
 struct snd_stru_cs4231 {
-  unsigned short port;		/* base i/o port */
-  unsigned short cport;		/* control base i/o port (CS4236) */
-  unsigned short jport;		/* joystick port */
-  unsigned short irq;		/* IRQ line */
-  unsigned short irqnum;	/* IRQ number */
-  unsigned short dma1;		/* playback DMA */
-  unsigned short dma2;		/* record DMA */
-  unsigned short dmanum1;	/* DMA number - playback */
-  unsigned short dmanum2;	/* DMA number - record */
-  unsigned short version;	/* version of CODEC chip */
-  unsigned short mode;		/* see to CS4231_MODE_XXXX */
-  unsigned short hardware;	/* see to CS4231_HW_XXXX */
-  unsigned short single_dma: 1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
+	unsigned short port;		/* base i/o port */
+	unsigned short cport;		/* control base i/o port (CS4236) */
+	unsigned short jport;		/* joystick port */
+	unsigned short irq;		/* IRQ line */
+	unsigned short irqnum;		/* IRQ number */
+	unsigned short dma1;		/* playback DMA */
+	unsigned short dma2;		/* record DMA */
+	unsigned short dmanum1;		/* DMA number - playback */
+	unsigned short dmanum2;		/* DMA number - record */
+	unsigned short version;		/* version of CODEC chip */
+	unsigned short mode;		/* see to CS4231_MODE_XXXX */
+	unsigned short hardware;	/* see to CS4231_HW_XXXX */
+	unsigned short single_dma:1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
 
-  snd_pcm_t *pcm;
-  snd_card_t *card;
-  snd_kmixer_t *mixer;
-  snd_timer_t *timer;
-  
-  struct snd_stru_cs4231_image image;
-  int mce_bit;
-  int calibrate_mute;
+	snd_pcm_t *pcm;
+	snd_card_t *card;
+	snd_kmixer_t *mixer;
+	snd_timer_t *timer;
 
-  snd_spin_define( reg );
-  snd_mutex_define( mce );
-  snd_mutex_define( open );
+	struct snd_stru_cs4231_image image;
+	int mce_bit;
+	int calibrate_mute;
 
-  unsigned int (*set_playback_rate)( snd_pcm1_t *pcm1, cs4231_t *codec, unsigned int rate );
-  unsigned int (*set_record_rate)( snd_pcm1_t *pcm1, cs4231_t *codec, unsigned int rate );
-  void (*set_playback_format)( snd_pcm1_t *pcm1, cs4231_t *codec, unsigned char pdfr );
-  void (*set_record_format)( snd_pcm1_t *pcm1, cs4231_t *codec, unsigned char cdfr );
+	snd_spin_define(reg);
+	snd_mutex_define(mce);
+	snd_mutex_define(open);
+
+	unsigned int (*set_playback_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
+	unsigned int (*set_record_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
+	void (*set_playback_format) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned char pdfr);
+	void (*set_record_format) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned char cdfr);
 };
 
 /* exported functions */
 
-void snd_cs4231_out( cs4231_t *codec, unsigned char reg, unsigned char val );
-unsigned char snd_cs4231_in( cs4231_t *codec, unsigned char reg );
-void snd_cs4231_outm( cs4231_t *codec, unsigned char reg, unsigned char mask, unsigned char val );
-void snd_cs4236_ext_out( cs4231_t *codec, unsigned char reg, unsigned char val );
-unsigned char snd_cs4236_ext_in( cs4231_t *codec, unsigned char reg );
-void snd_cs4231_mce_up( cs4231_t *codec );
-void snd_cs4231_mce_down( cs4231_t *codec );
+void snd_cs4231_out(cs4231_t * codec, unsigned char reg, unsigned char val);
+unsigned char snd_cs4231_in(cs4231_t * codec, unsigned char reg);
+void snd_cs4231_outm(cs4231_t * codec, unsigned char reg, unsigned char mask, unsigned char val);
+void snd_cs4236_ext_out(cs4231_t * codec, unsigned char reg, unsigned char val);
+unsigned char snd_cs4236_ext_in(cs4231_t * codec, unsigned char reg);
+void snd_cs4231_mce_up(cs4231_t * codec);
+void snd_cs4231_mce_down(cs4231_t * codec);
 
-void snd_cs4231_interrupt( snd_pcm_t *pcm, unsigned char status );
+void snd_cs4231_interrupt(snd_pcm_t * pcm, unsigned char status);
 
-extern snd_pcm_t *snd_cs4231_new_device( snd_card_t *card,
-                                         unsigned short port,
-                                         unsigned short irqnum,
-                                         unsigned short dmanum1,
-                                         unsigned short dmanum2,
-                                         unsigned short hardware );
-                                         
-snd_kmixer_t *snd_cs4231_new_mixer( snd_pcm_t *pcm );
+extern snd_pcm_t *snd_cs4231_new_device(snd_card_t * card,
+					unsigned short port,
+					unsigned short irqnum,
+					unsigned short dmanum1,
+					unsigned short dmanum2,
+					unsigned short hardware);
 
-extern snd_pcm_t *snd_cs4236_new_device( snd_card_t *card,
-                                         unsigned short port,
-                                         unsigned short cport,
-                                         unsigned short jport,
-                                         unsigned short irqnum,
-                                         unsigned short dmanum1,
-                                         unsigned short dmanum2,
-                                         unsigned short hardware );
-                                         
-snd_kmixer_t *snd_cs4236_new_mixer( snd_pcm_t *pcm );
+snd_kmixer_t *snd_cs4231_new_mixer(snd_pcm_t * pcm);
+
+extern snd_pcm_t *snd_cs4236_new_device(snd_card_t * card,
+					unsigned short port,
+					unsigned short cport,
+					unsigned short jport,
+					unsigned short irqnum,
+					unsigned short dmanum1,
+					unsigned short dmanum2,
+					unsigned short hardware);
+
+snd_kmixer_t *snd_cs4236_new_mixer(snd_pcm_t * pcm);
 
 #ifdef SNDCFG_DEBUG
-void snd_cs4231_debug( cs4231_t *codec );
+void snd_cs4231_debug(cs4231_t * codec);
 #endif
 
-#endif /* __CS4231_H */
+#endif				/* __CS4231_H */

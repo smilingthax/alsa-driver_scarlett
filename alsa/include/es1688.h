@@ -30,28 +30,28 @@
 #define ES1688_HW_1688		0x0002
 
 struct snd_stru_es1688 {
-  unsigned short port;		/* port of ESS chip */
-  unsigned short mpu_port;	/* MPU-401 port of ESS chip */
-  unsigned short irq;		/* IRQ number of ESS chip */
-  unsigned short mpu_irq;	/* MPU IRQ */
-  unsigned short irqnum;	/* IRQ number (index) */
-  unsigned short mpu_irqnum;	/* MPU IRQ number (index) */
-  unsigned short dma8;		/* 8-bit DMA */
-  unsigned short dma8num;	/* 8-bit DMA index */
-  unsigned short version;	/* version of ESS chip */
-  unsigned short hardware;	/* see to ES1688_HW_XXXX */
+	unsigned short port;		/* port of ESS chip */
+	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
+	unsigned short irq;		/* IRQ number of ESS chip */
+	unsigned short mpu_irq;		/* MPU IRQ */
+	unsigned short irqnum;		/* IRQ number (index) */
+	unsigned short mpu_irqnum;	/* MPU IRQ number (index) */
+	unsigned short dma8;		/* 8-bit DMA */
+	unsigned short dma8num;		/* 8-bit DMA index */
+	unsigned short version;		/* version of ESS chip */
+	unsigned short hardware;	/* see to ES1688_HW_XXXX */
 
-  unsigned short trigger_value;
+	unsigned short trigger_value;
 
-  snd_card_t *card;
-  snd_pcm_t *pcm;
+	snd_card_t *card;
+	snd_pcm_t *pcm;
 
-  snd_spin_define( reg );
-  snd_spin_define( mixer );
+	snd_spin_define(reg);
+	snd_spin_define(mixer);
 };
 
 typedef struct snd_stru_es1688 es1688_t;
-                        
+
 /* I/O ports */
 
 #define ES1688P( codec, x ) ( (codec) -> port + e_s_s_ESS1688##x )
@@ -78,7 +78,7 @@ typedef struct snd_stru_es1688 es1688_t;
 #define ES1688_DSP_CMD_DMAON	0xd0
 #define ES1688_DSP_CMD_DMAOFF	0xd4
 
-#define ES1688_PCM_DEV		0x14 
+#define ES1688_PCM_DEV		0x14
 #define ES1688_MIC_DEV		0x1a
 #define ES1688_REC_DEV		0x1c
 #define ES1688_MASTER_DEV	0x32
@@ -101,22 +101,22 @@ typedef struct snd_stru_es1688 es1688_t;
 #define ES1688_MIXS_MUTE	0x10
 
 /*
- *
+
  */
 
-extern void snd_es1688_mixer_write( es1688_t *codec, unsigned char reg, unsigned char data ); 
-extern unsigned char snd_es1688_mixer_read( es1688_t *codec, unsigned char reg );
+extern void snd_es1688_mixer_write(es1688_t * codec, unsigned char reg, unsigned char data);
+extern unsigned char snd_es1688_mixer_read(es1688_t * codec, unsigned char reg);
 
-extern void snd_es1688_interrupt( snd_pcm_t *pcm );
- 
-extern snd_pcm_t *snd_es1688_new_device( snd_card_t *card,
-                                         unsigned short port,
-                                         unsigned short mpu_port,
-                                         unsigned short irqnum,
-                                         unsigned short mpu_irqnum,
-                                         unsigned short dma8num,
-                                         unsigned short hardware );                                                                                                                                                        
-extern int snd_es1688_init( snd_pcm_t *pcm, int enable );
-extern snd_kmixer_t *snd_es1688_new_mixer( snd_pcm_t *pcm );
+extern void snd_es1688_interrupt(snd_pcm_t * pcm);
 
-#endif /* __ES1688_H */
+extern snd_pcm_t *snd_es1688_new_device(snd_card_t * card,
+					unsigned short port,
+					unsigned short mpu_port,
+					unsigned short irqnum,
+					unsigned short mpu_irqnum,
+					unsigned short dma8num,
+					unsigned short hardware);
+extern int snd_es1688_init(snd_pcm_t * pcm, int enable);
+extern snd_kmixer_t *snd_es1688_new_mixer(snd_pcm_t * pcm);
+
+#endif				/* __ES1688_H */

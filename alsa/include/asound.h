@@ -106,33 +106,33 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
 #define SND_CTL_SW_JOYSTICK_SPEED	"Joystick Speed Compensation"
 
 struct snd_ctl_hw_info {
-  unsigned int type;		/* type of card - look to SND_CARD_TYPE_XXXX */
-  unsigned int gcaps;		/* look to SND_CTL_GCAPS_XXXX */
-  unsigned int lcaps;		/* look to SND_CTL_LCAPS_XXXX */
-  unsigned int pcmdevs;		/* count of PCM devices (0 to N) */
-  unsigned int mixerdevs;	/* count of MIXER devices (0 to N) */
-  unsigned int mididevs;	/* count of raw MIDI devices (0 to N) */
-  char id[16];			/* ID of card (user selectable) */
-  char abbreviation[16];	/* Abbreviation for soundcard */
-  char name[32];		/* Short name of soundcard */
-  char longname[80];		/* name + info text about soundcard */
-  unsigned int switches;	/* count of switches */
-  unsigned char reserved[124];	/* reserved for future */
+	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
+	unsigned int gcaps;	/* look to SND_CTL_GCAPS_XXXX */
+	unsigned int lcaps;	/* look to SND_CTL_LCAPS_XXXX */
+	unsigned int pcmdevs;	/* count of PCM devices (0 to N) */
+	unsigned int mixerdevs;	/* count of MIXER devices (0 to N) */
+	unsigned int mididevs;	/* count of raw MIDI devices (0 to N) */
+	char id[16];		/* ID of card (user selectable) */
+	char abbreviation[16];	/* Abbreviation for soundcard */
+	char name[32];		/* Short name of soundcard */
+	char longname[80];	/* name + info text about soundcard */
+	unsigned int switches;	/* count of switches */
+	unsigned char reserved[124];	/* reserved for future */
 };
 
 struct snd_ctl_switch {
-  unsigned int switchn;		/* switch # (filled by application) */
-  unsigned char name[32];	/* identification of switch (from driver) */
-  unsigned int type;		/* look to SND_MIXER_SW_TYPE_XXXX */
-  unsigned int low;		/* low range value */
-  unsigned int high;		/* high range value */
-  union {
-    unsigned int enable;	/* 0 = off, 1 = on */
-    unsigned char data8[32];	/* 8-bit data */
-    unsigned short data16[16];	/* 16-bit data */
-    unsigned int data32[8];	/* 32-bit data */
-  } value;
-  unsigned char reserved[32];
+	unsigned int switchn;	/* switch # (filled by application) */
+	unsigned char name[32];	/* identification of switch (from driver) */
+	unsigned int type;	/* look to SND_MIXER_SW_TYPE_XXXX */
+	unsigned int low;	/* low range value */
+	unsigned int high;	/* high range value */
+	union {
+		unsigned int enable;		/* 0 = off, 1 = on */
+		unsigned char data8[32];	/* 8-bit data */
+		unsigned short data16[16];	/* 16-bit data */
+		unsigned int data32[8];		/* 32-bit data */
+	} value;
+	unsigned char reserved[32];
 };
 
 #define SND_CTL_IOCTL_PVERSION		_IOR ( 'U', 0x00, int )
@@ -177,7 +177,7 @@ struct snd_ctl_switch {
  *                  MIXER interface - /dev/snd/mixer??                      *
  *                                                                          *
  ****************************************************************************/
- 
+
 #define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 1, 0 )
 
 					/* max 12 chars (with '\0') */
@@ -227,15 +227,15 @@ struct snd_ctl_switch {
 #define SND_MIXER_SW_TYPE_USER		(~0)	/* user type */
 
 					/* max 32 chars (with '\0') */
-#define SND_MIXER_SW_LOUDNESS		"Loudness"		/* bass boost */
+#define SND_MIXER_SW_LOUDNESS		"Loudness"	/* bass boost */
 #define SND_MIXER_SW_SIM_STEREO		"Simulated Stereo Enhancement"
 #define SND_MIXER_SW_3D			"3D Stereo Enhancement"
-#define SND_MIXER_SW_MIC_GAIN		"MIC Gain"		/* Microphone Gain */
-#define SND_MIXER_SW_MIC_AGC		"MIC Auto-Gain-Control"	/* Microphone Auto-Gain-Control */
+#define SND_MIXER_SW_MIC_GAIN		"MIC Gain"	/* Microphone Gain */
+#define SND_MIXER_SW_MIC_AGC		"MIC Auto-Gain-Control"		/* Microphone Auto-Gain-Control */
 #define SND_MIXER_SW_MIC_IMPEDANCE	"Change MIC Impedance"	/* change Microphone impedance */
 #define SND_MIXER_SW_LINE_TO_OUTPUT	"Line In to Output"	/* reroute Line In to Output */
-#define SND_MIXER_SW_IEC958OUT		"IEC-958 (S/PDIF) Output" /* No comment */
-#define SND_MIXER_SW_IEC958IN		"IEC-958 (S/PDIF) Input"  /* No comment */
+#define SND_MIXER_SW_IEC958OUT		"IEC-958 (S/PDIF) Output"	/* No comment */
+#define SND_MIXER_SW_IEC958IN		"IEC-958 (S/PDIF) Input"	/* No comment */
 
 #define SND_MIXER_INFO_CAP_EXCL_RECORD	0x00000001
 
@@ -273,51 +273,51 @@ struct snd_ctl_switch {
 #define SND_MIXER_PARENT		0xffffffff	/* this is parent channel */
 
 struct snd_mixer_info {
-  unsigned int type;		/* type of soundcard - SND_CARD_TYPE_XXXX */
-  unsigned int channels;	/* count of mixer devices */
-  unsigned int caps;		/* some flags about this device (SND_MIXER_INFO_CAP_XXXX) */
-  unsigned char id[32];		/* ID of this mixer */
-  unsigned char name[80];	/* name of this device */
-  unsigned int switches;	/* count of switches */
-  char reserved[28];		/* reserved for future use */
+	unsigned int type;	/* type of soundcard - SND_CARD_TYPE_XXXX */
+	unsigned int channels;	/* count of mixer devices */
+	unsigned int caps;	/* some flags about this device (SND_MIXER_INFO_CAP_XXXX) */
+	unsigned char id[32];	/* ID of this mixer */
+	unsigned char name[80];	/* name of this device */
+	unsigned int switches;	/* count of switches */
+	char reserved[28];	/* reserved for future use */
 };
 
 struct snd_mixer_channel_info {
-  unsigned int channel;		/* channel # (filled by application) */
-  unsigned int parent;		/* parent channel # or SND_MIXER_PARENT */
-  unsigned char name[12];	/* name of this device */
-  unsigned int caps;		/* some flags about this device (SND_MIXER_CINFO_XXXX) */
-  int min;			/* min. value when exact mode (or always 0) */
-  int max;			/* max. value when exact mode (or always 100) */
-  int min_dB;			/* minimum decibel value (*100) */
-  int max_dB;			/* maximum decibel value (*100) */
-  int step_dB;			/* step decibel value (*100) */
-  unsigned char reserved[16];
+	unsigned int channel;	/* channel # (filled by application) */
+	unsigned int parent;	/* parent channel # or SND_MIXER_PARENT */
+	unsigned char name[12];	/* name of this device */
+	unsigned int caps;	/* some flags about this device (SND_MIXER_CINFO_XXXX) */
+	int min;		/* min. value when exact mode (or always 0) */
+	int max;		/* max. value when exact mode (or always 100) */
+	int min_dB;		/* minimum decibel value (*100) */
+	int max_dB;		/* maximum decibel value (*100) */
+	int step_dB;		/* step decibel value (*100) */
+	unsigned char reserved[16];
 };
 
 struct snd_mixer_channel {
-  unsigned int channel;		/* channel # (filled by application) */
-  unsigned int flags;		/* some flags to read/write (SND_MIXER_FLG_XXXX) */
-  int left;			/* min - max when exact mode (or 0 - 100) */
-  int right;			/* min - max when exact mode (or 0 - 100) */
-  int left_dB;			/* dB * 100 */
-  int right_dB;			/* dB * 100 */
-  unsigned char reserved[16];
+	unsigned int channel;	/* channel # (filled by application) */
+	unsigned int flags;	/* some flags to read/write (SND_MIXER_FLG_XXXX) */
+	int left;		/* min - max when exact mode (or 0 - 100) */
+	int right;		/* min - max when exact mode (or 0 - 100) */
+	int left_dB;		/* dB * 100 */
+	int right_dB;		/* dB * 100 */
+	unsigned char reserved[16];
 };
 
 struct snd_mixer_switch {
-  unsigned int switchn;		/* switch # (filled by application) */
-  unsigned char name[32];	/* identification of switch (from driver) */
-  unsigned int type;		/* look to SND_MIXER_SW_TYPE_XXXX */
-  unsigned int low;		/* low range value */
-  unsigned int high;		/* high range value */
-  union {
-    unsigned int enable;	/* 0 = off, 1 = on */
-    unsigned char data8[32];	/* 8-bit data */
-    unsigned short data16[16];	/* 16-bit data */
-    unsigned int data32[8];	/* 32-bit data */
-  } value;
-  unsigned char reserved[32];
+	unsigned int switchn;	/* switch # (filled by application) */
+	unsigned char name[32];	/* identification of switch (from driver) */
+	unsigned int type;	/* look to SND_MIXER_SW_TYPE_XXXX */
+	unsigned int low;	/* low range value */
+	unsigned int high;	/* high range value */
+	union {
+		unsigned int enable;		/* 0 = off, 1 = on */
+		unsigned char data8[32];	/* 8-bit data */
+		unsigned short data16[16];	/* 16-bit data */
+		unsigned int data32[8];		/* 32-bit data */
+	} value;
+	unsigned char reserved[32];
 };
 
 #define SND_MIXER_IOCTL_PVERSION	_IOR ( 'R', 0x00, int )
@@ -337,7 +337,7 @@ struct snd_mixer_switch {
 
 #ifdef __SND_OSS_COMPAT__
 
-#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001      /* only one recording source at moment */
+#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001	/* only one recording source at moment */
 
 #define SND_MIXER_OSS_DEVS	25
 #define SND_MIXER_OSS_VOLUME	0
@@ -349,11 +349,11 @@ struct snd_mixer_switch {
 #define SND_MIXER_OSS_LINE	6
 #define SND_MIXER_OSS_MIC	7
 #define SND_MIXER_OSS_CD	8
-#define SND_MIXER_OSS_IMIX	9               /* recording monitor */
+#define SND_MIXER_OSS_IMIX	9	/* recording monitor */
 #define SND_MIXER_OSS_ALTPCM	10
-#define SND_MIXER_OSS_RECLEV	11              /* recording level */
-#define SND_MIXER_OSS_IGAIN	12              /* input gain */
-#define SND_MIXER_OSS_OGAIN	13              /* output gain */
+#define SND_MIXER_OSS_RECLEV	11	/* recording level */
+#define SND_MIXER_OSS_IGAIN	12	/* input gain */
+#define SND_MIXER_OSS_OGAIN	13	/* output gain */
 #define SND_MIXER_OSS_LINE1	14
 #define SND_MIXER_OSS_LINE2	15
 #define SND_MIXER_OSS_LINE3	16
@@ -368,15 +368,15 @@ struct snd_mixer_switch {
 #define SND_MIXER_OSS_UNKNOWN	(32+1)
 
 struct snd_oss_mixer_info {
-  char id[ 16 ];
-  char name[ 32 ];
-  int modify_counter;
-  int fillers[ 10 ];
+	char id[16];
+	char name[32];
+	int modify_counter;
+	int fillers[10];
 };
 
 struct snd_oss_mixer_info_obsolete {
-  char id[ 16 ];
-  char name[ 32 ];
+	char id[16];
+	char name[32];
 };
 
 #define SND_MIXER_OSS_SET_RECSRC _IOWR( 'M', 255, int )
@@ -389,7 +389,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_MIXER_OSS_OLD_INFO	_IOR ( 'M', 101, struct snd_oss_mixer_info_obsolete )
 #define SND_OSS_GETVERSION	_IOR ( 'M', 118, int )
 
-#endif /* __SND_OSS_COMPAT__ */
+#endif				/* __SND_OSS_COMPAT__ */
 
 /*****************************************************************************
  *                                                                           *
@@ -456,105 +456,105 @@ struct snd_oss_mixer_info_obsolete {
  */
 
 struct snd_pcm_info {
-  unsigned int type;			/* soundcard type */
-  unsigned int flags;			/* see to SND_PCM_INFO_XXXX */
-  unsigned char id[32];			/* ID of this PCM device */
-  unsigned char name[80];		/* name of this device */
-  unsigned char reserved[64];		/* reserved for future... */
+	unsigned int type;		/* soundcard type */
+	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
+	unsigned char id[32];		/* ID of this PCM device */
+	unsigned char name[80];		/* name of this device */
+	unsigned char reserved[64];	/* reserved for future... */
 };
 
 struct snd_pcm_playback_info {
-  unsigned int flags;			/* see to SND_PCM_PINFO_XXXX */
-  unsigned int formats;			/* supported formats */
-  unsigned int min_rate;		/* min rate (in Hz) */
-  unsigned int max_rate;		/* max rate (in Hz) */
-  unsigned int min_channels;		/* min channels (probably always 1) */
-  unsigned int max_channels;		/* max channels */
-  unsigned int buffer_size;		/* playback buffer size */
-  unsigned int min_fragment_size;	/* min fragment size in bytes */
-  unsigned int max_fragment_size;	/* max fragment size in bytes */
-  unsigned int fragment_align;		/* align fragment value */
-  unsigned int hw_formats;		/* formats supported by hardware */
-  unsigned int switches;		/* count of switches */
-  unsigned char reserved[56];		/* reserved for future... */
+	unsigned int flags;		/* see to SND_PCM_PINFO_XXXX */
+	unsigned int formats;		/* supported formats */
+	unsigned int min_rate;		/* min rate (in Hz) */
+	unsigned int max_rate;		/* max rate (in Hz) */
+	unsigned int min_channels;	/* min channels (probably always 1) */
+	unsigned int max_channels;	/* max channels */
+	unsigned int buffer_size;	/* playback buffer size */
+	unsigned int min_fragment_size;	/* min fragment size in bytes */
+	unsigned int max_fragment_size;	/* max fragment size in bytes */
+	unsigned int fragment_align;	/* align fragment value */
+	unsigned int hw_formats;	/* formats supported by hardware */
+	unsigned int switches;		/* count of switches */
+	unsigned char reserved[56];	/* reserved for future... */
 };
 
 struct snd_pcm_record_info {
-  unsigned int flags;			/* see to SND_PCM_RINFO_XXXX */
-  unsigned int formats;			/* supported formats */
-  unsigned int min_rate;		/* min rate (in Hz) */
-  unsigned int max_rate;		/* max rate (in Hz) */
-  unsigned int min_channels;		/* min channels (probably always 1) */
-  unsigned int max_channels;		/* max channels */
-  unsigned int buffer_size;		/* record buffer size */
-  unsigned int min_fragment_size;	/* min fragment size in bytes */
-  unsigned int max_fragment_size;	/* max fragment size in bytes */
-  unsigned int fragment_align;		/* align fragment value */
-  unsigned int hw_formats;		/* formats supported by hardware */
-  unsigned int switches;		/* count of switches */
-  unsigned char reserved[56];		/* reserved for future... */
+	unsigned int flags;		/* see to SND_PCM_RINFO_XXXX */
+	unsigned int formats;		/* supported formats */
+	unsigned int min_rate;		/* min rate (in Hz) */
+	unsigned int max_rate;		/* max rate (in Hz) */
+	unsigned int min_channels;	/* min channels (probably always 1) */
+	unsigned int max_channels;	/* max channels */
+	unsigned int buffer_size;	/* record buffer size */
+	unsigned int min_fragment_size;	/* min fragment size in bytes */
+	unsigned int max_fragment_size;	/* max fragment size in bytes */
+	unsigned int fragment_align;	/* align fragment value */
+	unsigned int hw_formats;	/* formats supported by hardware */
+	unsigned int switches;		/* count of switches */
+	unsigned char reserved[56];	/* reserved for future... */
 };
 
 struct snd_pcm_switch {
-  unsigned int switchn;			/* switch # (filled by application) */
-  unsigned char name[32];		/* identification of switch (from driver) */
-  unsigned int type;			/* look to SND_MIXER_SW_TYPE_XXXX */
-  unsigned int low;			/* low range value */
-  unsigned int high;			/* high range value */
-  union {
-    unsigned int enable;		/* 0 = off, 1 = on */
-    unsigned char data8[32];		/* 8-bit data */
-    unsigned short data16[16];		/* 16-bit data */
-    unsigned int data32[8];		/* 32-bit data */
-  } value;
-  unsigned char reserved[32];
+	unsigned int switchn;	/* switch # (filled by application) */
+	unsigned char name[32];	/* identification of switch (from driver) */
+	unsigned int type;	/* look to SND_MIXER_SW_TYPE_XXXX */
+	unsigned int low;	/* low range value */
+	unsigned int high;	/* high range value */
+	union {
+		unsigned int enable;		/* 0 = off, 1 = on */
+		unsigned char data8[32];	/* 8-bit data */
+		unsigned short data16[16];	/* 16-bit data */
+		unsigned int data32[8];		/* 32-bit data */
+	} value;
+	unsigned char reserved[32];
 };
 
 struct snd_pcm_format {
-  unsigned int format;			/* SND_PCM_SFMT_XXXX */
-  unsigned int rate;			/* rate in Hz */
-  unsigned int channels;		/* channels (voices) */
-  unsigned char reserved[16];
+	unsigned int format;		/* SND_PCM_SFMT_XXXX */
+	unsigned int rate;		/* rate in Hz */
+	unsigned int channels;		/* channels (voices) */
+	unsigned char reserved[16];
 };
 
 struct snd_pcm_playback_params {
-  int fragment_size;			/* requested size of fragment in bytes */
-  int fragments_max;			/* maximum number of fragments in queue for wakeup */
-  int fragments_room;			/* minumum number of fragments writeable for wakeup */
-  unsigned char reserved[16];		/* must be filled with zero */
+	int fragment_size;		/* requested size of fragment in bytes */
+	int fragments_max;		/* maximum number of fragments in queue for wakeup */
+	int fragments_room;		/* minumum number of fragments writeable for wakeup */
+	unsigned char reserved[16];	/* must be filled with zero */
 };
 
 struct snd_pcm_record_params {
-  int fragment_size;			/* requested size of fragment in bytes */
-  int fragments_min;			/* minimum number of filled fragments for wakeup */
-  unsigned char reserved[16];		/* must be filled with zero */
+	int fragment_size;		/* requested size of fragment in bytes */
+	int fragments_min;		/* minimum number of filled fragments for wakeup */
+	unsigned char reserved[16];	/* must be filled with zero */
 };
 
 struct snd_pcm_playback_status {
-  unsigned int rate;			/* real used rate */
-  int fragments;			/* allocated fragments */
-  int fragment_size;			/* current fragment size in bytes */
-  int count;				/* number of bytes writeable without blocking */
-  int queue;				/* number of bytes in queue */
-  int underrun;				/* count of underruns from last status */
-  struct timeval time;			/* time the next write is going to play */
-  struct timeval stime;			/* time when playback was started */
-  int scount;				/* number of bytes processed from playback start (last underrun) */
-  unsigned char reserved[16];
+	unsigned int rate;	/* real used rate */
+	int fragments;		/* allocated fragments */
+	int fragment_size;	/* current fragment size in bytes */
+	int count;		/* number of bytes writeable without blocking */
+	int queue;		/* number of bytes in queue */
+	int underrun;		/* count of underruns from last status */
+	struct timeval time;	/* time the next write is going to play */
+	struct timeval stime;	/* time when playback was started */
+	int scount;		/* number of bytes processed from playback start (last underrun) */
+	unsigned char reserved[16];
 };
 
 struct snd_pcm_record_status {
-  unsigned int rate;			/* real used rate */
-  int fragments;			/* allocated fragments */
-  int fragment_size;			/* current fragment size in bytes */
-  int count;				/* number of bytes readable without blocking */
-  int free;				/* bytes in buffer still free */
-  int overrun;				/* count of overruns from last status */
-  struct timeval time;			/* time the next read was taken */
-  struct timeval stime;			/* time when record was started */
-  int scount;				/* number of bytes processed from record start */
-  int overrange;			/* ADC overrange detection */
-  unsigned char reserved[12];
+	unsigned int rate;	/* real used rate */
+	int fragments;		/* allocated fragments */
+	int fragment_size;	/* current fragment size in bytes */
+	int count;		/* number of bytes readable without blocking */
+	int free;		/* bytes in buffer still free */
+	int overrun;		/* count of overruns from last status */
+	struct timeval time;	/* time the next read was taken */
+	struct timeval stime;	/* time when record was started */
+	int scount;		/* number of bytes processed from record start */
+	int overrange;		/* ADC overrange detection */
+	unsigned char reserved[12];
 };
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ( 'A', 0x00, int )
@@ -602,21 +602,21 @@ struct snd_pcm_record_status {
 #define SND_PCM_AFP_CPUINTENS		2
 
 struct snd_pcm_buffer_info {
-  int fragments;			/* # of available fragments (partially used ones not counted) */
-  int fragstotal;			/* Total # of fragments allocated */
-  int fragsize;				/* Size of a fragment in bytes */
-  int bytes;				/* Available space in bytes (includes partially used fragments) */ 
+	int fragments;		/* # of available fragments (partially used ones not counted) */
+	int fragstotal;		/* Total # of fragments allocated */
+	int fragsize;		/* Size of a fragment in bytes */
+	int bytes;		/* Available space in bytes (includes partially used fragments) */
 };
 
 struct snd_pcm_count_info {
-  int bytes;				/* Total # of bytes processed */
-  int blocks;				/* # of fragment transitions since last time */
-  int ptr;				/* Current DMA pointer value */
+	int bytes;		/* Total # of bytes processed */
+	int blocks;		/* # of fragment transitions since last time */
+	int ptr;		/* Current DMA pointer value */
 };
 
 struct snd_pcm_buffer_description {
-  unsigned char *buffer;
-  int size;
+	unsigned char *buffer;
+	int size;
 };
 
 #define SND_PCM_IOCTL_OSS_RESET		_IO  ( 'P', 0 )
@@ -651,7 +651,7 @@ struct snd_pcm_buffer_description {
 #define SND_PCM_IOCTL_OSS_PROFILE	_IOW ( 'P', 23, int )
 #define SND_PCM_IOCTL_OSS_MASK		_IOW ( 'X', 0, int )
 
-#endif /* __SND_OSS_COMPAT__ */
+#endif				/* __SND_OSS_COMPAT__ */
 
 /*****************************************************************************
  *                                                                           *
@@ -665,7 +665,7 @@ struct snd_pcm_buffer_description {
 /*
  *  MIDI commands
  */
- 
+
 #define SND_MCMD_NOTE_OFF		0x80
 #define SND_MCMD_NOTE_ON		0x90
 #define SND_MCMD_NOTE_PRESSURE		0xa0
@@ -690,7 +690,7 @@ struct snd_pcm_buffer_description {
 /*
  *  MIDI controllers
  */
- 
+
 #define SND_MCTL_MSB_BANK		0x00
 #define SND_MCTL_MSB_MODWHEEL         	0x01
 #define SND_MCTL_MSB_BREATH           	0x02
@@ -781,64 +781,64 @@ struct snd_pcm_buffer_description {
 #define SND_RAWMIDI_SW_TYPE_USER	(~0)	/* user type */
 
 struct snd_rawmidi_info {
-  unsigned int type;			/* soundcard type */
-  unsigned int flags;			/* SND_RAWMIDI_INFO_XXXX */
-  unsigned char id[32];			/* ID of this raw midi device */
-  unsigned char name[80];		/* name of this raw midi device */
-  unsigned char reserved[64];		/* reserved for future use */
+	unsigned int type;	/* soundcard type */
+	unsigned int flags;	/* SND_RAWMIDI_INFO_XXXX */
+	unsigned char id[32];	/* ID of this raw midi device */
+	unsigned char name[80];	/* name of this raw midi device */
+	unsigned char reserved[64];	/* reserved for future use */
 };
 
 struct snd_rawmidi_output_info {
-  unsigned int switches;		/* count of switches */
-  unsigned char reserved[64];
+	unsigned int switches;	/* count of switches */
+	unsigned char reserved[64];
 };
 
 struct snd_rawmidi_input_info {
-  unsigned int switches;		/* count of switches */
-  unsigned char reserved[64];
+	unsigned int switches;	/* count of switches */
+	unsigned char reserved[64];
 };
 
 struct snd_rawmidi_switch {
-  unsigned int switchn;			/* switch # (filled by application) */
-  unsigned char name[32];		/* identification of switch (from driver) */
-  unsigned int type;			/* look to SND_MIXER_SW_TYPE_XXXX */
-  unsigned int low;			/* low range value */
-  unsigned int high;			/* high range value */
-  union {
-    unsigned int enable;		/* 0 = off, 1 = on */
-    unsigned char data8[32];		/* 8-bit data */
-    unsigned short data16[16];		/* 16-bit data */
-    unsigned int data32[8];		/* 32-bit data */
-  } value;
-  unsigned char reserved[32];
+	unsigned int switchn;	/* switch # (filled by application) */
+	unsigned char name[32];	/* identification of switch (from driver) */
+	unsigned int type;	/* look to SND_MIXER_SW_TYPE_XXXX */
+	unsigned int low;	/* low range value */
+	unsigned int high;	/* high range value */
+	union {
+		unsigned int enable;		/* 0 = off, 1 = on */
+		unsigned char data8[32];	/* 8-bit data */
+		unsigned short data16[16];	/* 16-bit data */
+		unsigned int data32[8];		/* 32-bit data */
+	} value;
+	unsigned char reserved[32];
 };
 
 struct snd_rawmidi_output_params {
-  int size;				/* requested queue size in bytes */
-  int max;				/* maximum number of bytes in queue for wakeup */
-  int room;				/* minumum number of bytes writeable for wakeup */
-  unsigned char reserved[16];		/* reserved for future use */
+	int size;		/* requested queue size in bytes */
+	int max;		/* maximum number of bytes in queue for wakeup */
+	int room;		/* minumum number of bytes writeable for wakeup */
+	unsigned char reserved[16];	/* reserved for future use */
 };
 
 struct snd_rawmidi_input_params {
-  int size;				/* requested queue size in bytes */
-  int min;				/* minimum number of bytes fragments for wakeup */
-  unsigned char reserved[16];		/* reserved for future use */
+	int size;		/* requested queue size in bytes */
+	int min;		/* minimum number of bytes fragments for wakeup */
+	unsigned char reserved[16];	/* reserved for future use */
 };
 
 struct snd_rawmidi_output_status {
-  int size;				/* real queue size */
-  int count;				/* number of bytes writeable without blocking */
-  int queue;				/* number of bytes in queue */
-  unsigned char reserved[16];		/* reserved for future use */
+	int size;		/* real queue size */
+	int count;		/* number of bytes writeable without blocking */
+	int queue;		/* number of bytes in queue */
+	unsigned char reserved[16];	/* reserved for future use */
 };
 
 struct snd_rawmidi_input_status {
-  int size;				/* real queue size */
-  int count;				/* number of bytes readable without blocking */
-  int free;				/* bytes in buffer still free */
-  int overrun;				/* count of overruns from last status (in bytes) */
-  unsigned char reserved[16];		/* reserved for future use */
+	int size;		/* real queue size */
+	int count;		/* number of bytes readable without blocking */
+	int free;		/* bytes in buffer still free */
+	int overrun;		/* count of overruns from last status (in bytes) */
+	unsigned char reserved[16];	/* reserved for future use */
 };
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ( 'W', 0x00, int )
@@ -860,7 +860,7 @@ struct snd_rawmidi_input_status {
 #define SND_RAWMIDI_IOCTL_FLUSH_INPUT	_IO  ( 'W', 0x32 )
 
 /*
- *
+
  */
- 
-#endif /* __ASOUND_H */
+
+#endif				/* __ASOUND_H */

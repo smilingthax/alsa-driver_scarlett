@@ -3,6 +3,6 @@
  */
 
 struct SND_STRU_BANK_INFO {
-  unsigned int address;
-  unsigned int size;
+	unsigned int address;
+	unsigned int size;
 };

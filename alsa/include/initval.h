@@ -45,4 +45,4 @@
 EXPORT_NO_SYMBOLS;
 #endif
 
-#endif /* __INITVAL_H */
+#endif				/* __INITVAL_H */

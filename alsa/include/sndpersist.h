@@ -24,10 +24,10 @@
 
 #if defined( LINUX_2_1 ) || LinuxVersionCode( 2, 0, 34 ) <= LINUX_VERSION_CODE
 
-int snd_persist_store( char *key, const char *data, int data_len );
-int snd_persist_restore( char *key, char *data, int data_len );
-int snd_persist_present( char *key );
-int snd_persist_remove( char *key );
+int snd_persist_store(char *key, const char *data, int data_len);
+int snd_persist_restore(char *key, char *data, int data_len);
+int snd_persist_present(char *key);
+int snd_persist_remove(char *key);
 
 #else
 
@@ -39,4 +39,4 @@ int snd_persist_remove( char *key );
 
 #endif
 
-#endif /* SND_PERSIST_H__ */
+#endif				/* SND_PERSIST_H__ */

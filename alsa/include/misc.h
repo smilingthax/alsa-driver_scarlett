@@ -20,102 +20,102 @@
  *
  */
 
-extern inline void snd_put_byte( unsigned char *array, unsigned int idx, unsigned char b )
+extern inline void snd_put_byte(unsigned char *array, unsigned int idx, unsigned char b)
 {
-  *(array + idx) = b;
+	*(array + idx) = b;
 }
 
-extern inline unsigned char snd_get_byte( unsigned char *array, unsigned int idx )
+extern inline unsigned char snd_get_byte(unsigned char *array, unsigned int idx)
 {
-  return *(array + idx);
+	return *(array + idx);
 }
 
 #if defined( __i386__ )
 
-extern inline void snd_put_word( unsigned char *array, unsigned int idx, unsigned short w )
+extern inline void snd_put_word(unsigned char *array, unsigned int idx, unsigned short w)
 {
-  *(unsigned short *)(array + idx) = w;
+	*(unsigned short *) (array + idx) = w;
 }
 
-extern inline unsigned short snd_get_word( unsigned char *array, unsigned int idx )
+extern inline unsigned short snd_get_word(unsigned char *array, unsigned int idx)
 {
-  return *(unsigned short *)(array + idx);
+	return *(unsigned short *) (array + idx);
 }
 
-extern inline void snd_put_dword( unsigned char *array, unsigned int idx, unsigned int dw )
+extern inline void snd_put_dword(unsigned char *array, unsigned int idx, unsigned int dw)
 {
-  *(unsigned int *)(array + idx) = dw;
+	*(unsigned int *) (array + idx) = dw;
 }
 
-extern inline unsigned int snd_get_dword( unsigned char *array, unsigned int idx )
+extern inline unsigned int snd_get_dword(unsigned char *array, unsigned int idx)
 {
-  return *(unsigned int *)(array + idx );
+	return *(unsigned int *) (array + idx);
 }
 
 #else
 
 #ifdef SND_LITTLE_ENDIAN
 
-extern inline void snd_put_word( unsigned char *array, unsigned int idx, unsigned short w )
+extern inline void snd_put_word(unsigned char *array, unsigned int idx, unsigned short w)
 {
-  *(array + idx + 0) = (unsigned char)(w >> 0);
-  *(array + idx + 1) = (unsigned char)(w >> 8);
+	*(array + idx + 0) = (unsigned char) (w >> 0);
+	*(array + idx + 1) = (unsigned char) (w >> 8);
 }
 
-extern inline unsigned short snd_get_word( unsigned char *array, unsigned int idx )
+extern inline unsigned short snd_get_word(unsigned char *array, unsigned int idx)
 {
-  return ( *(array + idx + 0) << 0 ) |
-         ( *(array + idx + 1) << 8 );
+	return (*(array + idx + 0) << 0) |
+	    (*(array + idx + 1) << 8);
 }
 
-extern inline void snd_put_dword( unsigned char *array, unsigned int idx, unsigned int dw )
+extern inline void snd_put_dword(unsigned char *array, unsigned int idx, unsigned int dw)
 {
-  *(array + idx + 0) = (unsigned char)(dw >>  0);
-  *(array + idx + 1) = (unsigned char)(dw >>  8);
-  *(array + idx + 2) = (unsigned char)(dw >> 16);
-  *(array + idx + 3) = (unsigned char)(dw >> 24);
+	*(array + idx + 0) = (unsigned char) (dw >> 0);
+	*(array + idx + 1) = (unsigned char) (dw >> 8);
+	*(array + idx + 2) = (unsigned char) (dw >> 16);
+	*(array + idx + 3) = (unsigned char) (dw >> 24);
 }
 
-extern inline unsigned int snd_get_dword( unsigned char *array, unsigned int idx )
+extern inline unsigned int snd_get_dword(unsigned char *array, unsigned int idx)
 {
-  return ( *(array + idx + 0) <<  0 ) |
-         ( *(array + idx + 1) <<  8 ) |
-         ( *(array + idx + 2) << 16 ) |
-         ( *(array + idx + 3) << 24 );
+	return (*(array + idx + 0) << 0) |
+	    (*(array + idx + 1) << 8) |
+	    (*(array + idx + 2) << 16) |
+	    (*(array + idx + 3) << 24);
 }
 
 #else
 
-extern inline void snd_put_word( unsigned char *array, unsigned int idx, unsigned short w )
+extern inline void snd_put_word(unsigned char *array, unsigned int idx, unsigned short w)
 {
-  *(array + idx + 0) = (unsigned char)(w >> 8);
-  *(array + idx + 1) = (unsigned char)(w >> 0);
+	*(array + idx + 0) = (unsigned char) (w >> 8);
+	*(array + idx + 1) = (unsigned char) (w >> 0);
 }
 
-extern inline unsigned short snd_get_word( unsigned char *array, unsigned int idx )
+extern inline unsigned short snd_get_word(unsigned char *array, unsigned int idx)
 {
-  return ( *(array + idx + 0) << 8 ) |
-         ( *(array + idx + 1) << 0 );
+	return (*(array + idx + 0) << 8) |
+	    (*(array + idx + 1) << 0);
 }
 
-extern inline void snd_put_dword( unsigned char *array, unsigned int idx, unsigned int dw )
+extern inline void snd_put_dword(unsigned char *array, unsigned int idx, unsigned int dw)
 {
-  *(array + idx + 0) = (unsigned char)(dw >> 24);
-  *(array + idx + 1) = (unsigned char)(dw >> 16);
-  *(array + idx + 2) = (unsigned char)(dw >>  8);
-  *(array + idx + 3) = (unsigned char)(dw >>  0);
+	*(array + idx + 0) = (unsigned char) (dw >> 24);
+	*(array + idx + 1) = (unsigned char) (dw >> 16);
+	*(array + idx + 2) = (unsigned char) (dw >> 8);
+	*(array + idx + 3) = (unsigned char) (dw >> 0);
 }
 
-extern inline unsigned int snd_get_dword( unsigned char *array, unsigned int idx )
+extern inline unsigned int snd_get_dword(unsigned char *array, unsigned int idx)
 {
-  return ( *(array + idx + 0) << 24 ) |
-         ( *(array + idx + 1) << 16 ) |
-         ( *(array + idx + 2) <<  8 ) |
-         ( *(array + idx + 3) <<  0 );
+	return (*(array + idx + 0) << 24) |
+	    (*(array + idx + 1) << 16) |
+	    (*(array + idx + 2) << 8) |
+	    (*(array + idx + 3) << 0);
 }
 
 #endif
 
 #endif
 
-#endif /* __MISC_H */
+#endif				/* __MISC_H */
