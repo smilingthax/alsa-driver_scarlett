@@ -143,6 +143,7 @@ int snd_rawmidi_drain_output(snd_rawmidi_substream_t * substream)
 			break;
 		}
 		if (runtime->avail < runtime->buffer_size && !timeout) {
+			snd_printk(KERN_WARNING "rawmidi drain error (avail = %li, buffer_size = %li)\n", runtime->avail, runtime->buffer_size);
 			err = -EIO;
 			break;
 		}
@@ -1104,8 +1105,10 @@ static long snd_rawmidi_kernel_write1(snd_rawmidi_substream_t * substream, const
       __end:
 	if (result > 0)
 		runtime->trigger = 1;
+	count1 = runtime->avail < runtime->buffer_size;
 	spin_unlock_irqrestore(&runtime->lock, flags);
-	substream->ops->trigger(substream, 1);
+	if (count1)
+		substream->ops->write_loop(substream);
 	return result;
 }
 
