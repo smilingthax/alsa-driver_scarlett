@@ -69,6 +69,7 @@ static int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigned long 
 	oldseg = get_fs();\
 	set_fs(KERNEL_DS);\
 	err = file->f_op->ioctl(file->f_dentry->d_inode, file, native_ctl, (unsigned long)&data);\
+	set_fs(oldseg);\
 	if (err < 0) \
 		return err;\
 	if (native_ctl & (_IOC_READ << _IOC_DIRSHIFT)) {\
@@ -101,6 +102,7 @@ static int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigned long 
 	oldseg = get_fs();\
 	set_fs(KERNEL_DS);\
 	err = file->f_op->ioctl(file->f_dentry->d_inode, file, native_ctl, (unsigned long)data);\
+	set_fs(oldseg);\
 	if (err < 0) \
 		goto __end;\
 	err = 0;\
