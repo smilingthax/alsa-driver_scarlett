@@ -120,6 +120,7 @@ struct snd_stru_ak4531 {
 	snd_kmixer_element_t *me_sw_mic;
 	snd_kmixer_element_t *me_sw_mic_out;
 	snd_kmixer_element_t *me_sw_mic_in;
+	snd_kmixer_element_t *me_capture;
 };
 
 int snd_ak4531_mixer(snd_card_t * card, int device,
