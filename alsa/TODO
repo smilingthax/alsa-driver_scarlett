@@ -1,5 +1,18 @@
 - midlevel:
-H multiple, partial, read only mmap support
+H rename (Abramo):
+  xrun_mode -> xrun_action
+  mode -> xrun_mode
+  format.format -> format.sfmt
+H remove (Abramo):
+  fill_mode
+  SND_PCM_START_FULL
+  fragment mode alignment constraints
+H To decide:
+  xfer_min
+H To decide:
+  non notifying controls flag
+  non saved/restored controls flag
+  notifying disable on a specific control
 H lock, grant and revoke ioctls (not available to alsa-lib I propose)
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 H better solution for OSS mmap automatic frame_data update (for cards like cs461x)
@@ -7,6 +20,7 @@ M add schedule call in all loop that may last more than 1 ms (search udelay/mdel
 M add master/divisor to timer
 M loopback implementation (To think)
 M make xrun detection optional (Abramo)
+L nonblocking async mode (with requests queue)
 L implement silence fill for xrun smoothing (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
