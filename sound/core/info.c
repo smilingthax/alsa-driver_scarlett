@@ -167,7 +167,7 @@ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
 
 	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
 	entry = data->entry;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 5)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 3)
 	lock_kernel();
 #endif
 	switch (entry->content) {
@@ -198,7 +198,7 @@ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
 	}
 	ret = -ENXIO;
 out:
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 5)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 3)
 	unlock_kernel();
 #endif
 	return ret;
