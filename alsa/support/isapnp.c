@@ -2130,7 +2130,7 @@ __initfunc(int isapnp_init(void))
 	request_region(_PNPWRP, 1, "ISA PnP write");
 	if (isapnp_rdp < 0x203 || isapnp_rdp > 0x3ff) {
 		devices = isapnp_isolate();
-		if (devices <= 0) {
+		if (devices < 0) {
 			isapnp_free_all_resources();
 			return -ENOENT;
 		}
@@ -2144,7 +2144,7 @@ __initfunc(int isapnp_init(void))
 	devices = 0;
 	for (dev = isapnp_devices; dev; dev = dev->next)
 		devices++;
-	if (devices <= 0) {
+	if (devices < 0) {
 		isapnp_free_all_resources();
 		return -ENOENT;
 	}
@@ -2157,7 +2157,11 @@ __initfunc(int isapnp_init(void))
 				printk("isapnp:   Logical device '%s'\n", logdev->identifier?logdev->identifier:"Unknown");
 		}
 	}
-	printk("isapnp: %i Plug & Play device%s detected total\n", devices, devices>1?"s":"");
+	if (devices) {
+		printk("isapnp: %i Plug & Play device%s detected total\n", devices, devices>1?"s":"");
+	} else {
+		printk("isapnp: No Plug & Play device found\n");
+	}
 #ifdef CONFIG_PCI
 	if (!isapnp_skip_pci_scan)
 		isapnp_pci_init();
