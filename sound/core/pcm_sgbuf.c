@@ -47,8 +47,9 @@
  * Returns the mapped virtual address of the buffer if allocation was
  * successful, or NULL at error.
  */
-void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size, struct snd_pcm_dma_buffer *dmab)
+void *snd_pcm_sgbuf_alloc_pages(struct pci_dev *pci, size_t size, struct snd_pcm_dma_buffer *dmab)
 {
+	struct snd_sg_buf *sgbuf;
 	unsigned int i, pages;
 
 	dmab->area = NULL;
