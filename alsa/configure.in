@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
-AC_INIT(acore/sound.c)
+AC_INIT(acore/sound.patch)
 AC_PREFIX_DEFAULT(/usr)
 CONFIG_SND_VERSION="0.9.3c"
 

@@ -146,7 +146,7 @@ $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 #
 # This make dependencies quickly
 #
-fastdep: $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)) update-sndversions
+fastdep: $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)) update-sndversions $(depend-files)
 ifneq "$(strip $(depend-files))" ""
 		$(CC) -M -D__KERNEL__ -D__isapnp_now__ $(CFLAGS) $(EXTRA_CFLAGS) $(depend-files) > .depend
 endif
@@ -317,7 +317,7 @@ endif # CONFIG_MODULES
 
 .PHONY: clean1
 clean1:
-	rm -f .depend *.o *.isapnp
+	rm -f .depend *.o *.isapnp $(EXTRA_CLEAN)
 
 .PHONY: clean
 clean: $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)) clean1
