@@ -102,6 +102,7 @@ COMMENT_MAP = [
 		('/isa/cs423x'		,'CS423x drivers'),
 		('/include/es1688.h'	,'ES1688 driver'),
 		('/isa/es1688'		,'ES1688 driver'),
+		('/include/gus.h'	,'GUS Library'),
 		('/isa/gus/gus_.*'	,'GUS Library'),
 		('/isa/gus/gusclassic.c','GUS Classic driver'),
 		('/isa/gus/gusextreme.c','GUS Extreme driver'),
@@ -118,6 +119,7 @@ COMMENT_MAP = [
 		('/isa/sb/sb8.*'	,'SB8 driver'),
 		('/isa/sb'		,'SB drivers'),
 		('/isa/opti9xx'		,'Opti9xx drivers'),
+		('/include/snd_wavefront.h', 'Wavefront drivers'),
 		('/isa/wavefront'	,'Wavefront drivers'),
 		('/isa/als100.c' 	,'ALS100 driver'),
 		('/isa/azt2320.c'	,'AZT2320 driver'),
@@ -228,6 +230,7 @@ COMMENT_MAP = [
 		('/include/pcm_oss.h'	,'ALSA<-OSS emulation'),
 		('/core/oss'		,'ALSA<-OSS emulation'),
 		('/core/seq/oss'	,'ALSA<-OSS sequencer'),
+		('/include/ainstr.*'	,'Instrument layer'),
 		('/core/seq/instr'	,'Instrument layer'),
 		('/include/seq_kernel.h','ALSA sequencer'),
 		('/include/asequencer.h','ALSA sequencer'),
@@ -268,6 +271,7 @@ COMMENT_MAP = [
 		('/include'		,'ERROR'),
 		('/sound_core.c'	,'OSS device core'),
 		('/scripts'		,'IGNORE'),
+		('/Kconfig'		,'Sound Core'),
 		('/'			,'ERROR')
 	       ]
 
@@ -1128,7 +1132,9 @@ def cvsps_merge1(f,t=0):
 		print lines
 		return
 	nlines = string.replace(nlines, '"', "'")
+	nlines = string.replace(nlines, '`', "'")
 	lines = string.replace(lines, '"', "'")
+	lines = string.replace(lines, '`', "'")
 	while os.system('bk import -tpatch -C -y"' + nlines + '" ' + ff + ' .'):
 		print 'BK patch import of %s error, xterm? (any key to continue or Control-C to abort)' % ff
 		sys.stdin.readline()
