@@ -608,10 +608,8 @@ static int snd_via82xx_capture_prepare(snd_pcm_substream_t * substream)
 	snd_pcm_runtime_t *runtime = substream->runtime;
 
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_LR_ADC_RATE, runtime->rate);
-	if (chip->chip_type == TYPE_VIA8233) {
-		outb(VIA_REG_CAPTURE_CHANNEL_LINE, VIAREG(chip, CAPTURE_CHANNEL));
+	if (chip->chip_type == TYPE_VIA8233)
 		outb(VIA_REG_CAPTURE_FIFO_ENABLE, VIAREG(chip, CAPTURE_FIFO));
-	}
 	return snd_via82xx_setup_periods(chip, &chip->capture, substream);
 }
 
@@ -854,6 +852,52 @@ static int __devinit snd_via82xx_pcm(via82xx_t *chip, int device, snd_pcm_t ** r
 /*
  *  Mixer part
  */
+
+static int snd_via8233_capture_source_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	static char *texts[2] = {
+		"Line", "Mic"
+	};
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 2;
+	if (uinfo->value.enumerated.item >= 2)
+		uinfo->value.enumerated.item = 1;
+	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int snd_via8233_capture_source_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.enumerated.item[0] = inb(VIAREG(chip, CAPTURE_CHANNEL)) & VIA_REG_CAPTURE_CHANNEL_MIC ? 1 : 0;
+	return 0;
+}
+
+static int snd_via8233_capture_source_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
+	unsigned long flags;
+	u8 val, oval;
+
+	spin_lock_irqsave(&chip->reg_lock, flags);
+	oval = inb(VIAREG(chip, CAPTURE_CHANNEL));
+	val = oval & ~VIA_REG_CAPTURE_CHANNEL_MIC;
+	if (ucontrol->value.enumerated.item[0])
+		val |= VIA_REG_CAPTURE_CHANNEL_MIC;
+	if (val != oval)
+		outb(val, VIAREG(chip, CAPTURE_CHANNEL));
+	spin_unlock_irqrestore(&chip->reg_lock, flags);
+	return val != oval;
+}
+
+static snd_kcontrol_new_t snd_via8233_capture_source __devinitdata = {
+	.name = "Input Source Select",
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.info = snd_via8233_capture_source_info,
+	.get = snd_via8233_capture_source_get,
+	.put = snd_via8233_capture_source_put,
+};
 
 static void snd_via82xx_mixer_free_ac97(ac97_t *ac97)
 {
@@ -1258,6 +1302,14 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 	
 		/* card switches */
 		err = snd_ctl_add(card, snd_ctl_new1(&snd_via82xx_joystick_control, chip));
+		if (err < 0) {
+			snd_card_free(card);
+			return err;
+		}
+
+	} else {
+		/* VIA8233 */
+		err = snd_ctl_add(card, snd_ctl_new1(&snd_via8233_capture_source, chip));
 		if (err < 0) {
 			snd_card_free(card);
 			return err;
