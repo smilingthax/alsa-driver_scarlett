@@ -25,5 +25,7 @@ aclocal $ACLOCAL_FLAGS
 autoconf
 echo "./configure $args"
 ./configure $args || exit 1
-make dep
-make
+if [ -z "$CVSCOMPILE_NO_MAKE" ]; then
+  make dep
+  make
+fi
