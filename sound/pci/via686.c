@@ -643,14 +643,10 @@ static int snd_via686a_playback_open(snd_pcm_substream_t * substream)
 		return err;
 	if ((err = snd_pcm_hw_constraint_pow2(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_BYTES)) < 0)
 		return err;
-#if 0
-	/* applying the following constraint together with the power-of-2 rule
-	 * above may result in too narrow space.
-	 * this one is not strictly necessary, so let's disable it.
-	 */
+	/* we may remove following constaint when we modify table entries
+	   in interrupt */
 	if ((err = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS)) < 0)
 		return err;
-#endif
 	return 0;
 }
 
@@ -669,10 +665,8 @@ static int snd_via686a_capture_open(snd_pcm_substream_t * substream)
 		return err;
 	if ((err = snd_pcm_hw_constraint_pow2(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_BYTES)) < 0)
 		return err;
-#if 0
 	if ((err = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS)) < 0)
 		return err;
-#endif
 	return 0;
 }
 
