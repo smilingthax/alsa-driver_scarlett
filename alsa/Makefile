@@ -117,7 +117,7 @@ install-headers:
 		done \
 	fi
 
-ifeq ($(DESTDIR)$(CONFIG_SND_KERNELDIR)/System.map,$(wildcard $(DESTDIR)$(CONFIG_SND_KERNELDIR)/System.map))
+ifeq ($(CONFIG_SND_KERNELDIR)/System.map,$(wildcard $(CONFIG_SND_KERNELDIR)/System.map))
 SYSTEM_MAP_OPT = -F $(CONFIG_SND_KERNELDIR)/System.map
 endif
 
@@ -131,8 +131,6 @@ endif
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
 	-/sbin/depmod -a $(kaversion) $(SYSTEM_MAP_OPT)
-else
-	-/sbin/depmod -a -b $(DESTDIR)/ $(SYSTEM_MAP_OPT) $(kaversion)
 endif
 
 .PHONY: install-scripts
