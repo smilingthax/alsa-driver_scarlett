@@ -30,13 +30,14 @@ typedef struct snd_midi_event_t snd_midi_event_t;
 
 /* midi status */
 struct snd_midi_event_t {
-	int qlen;	/* queue length */
-	int read;	/* chars read */
-	int type;	/* current event type */
+	int qlen;		/* queue length */
+	int read;		/* chars read */
+	int type;		/* current event type */
 	unsigned char lastcmd;
 	unsigned char nostat;
+	unsigned char xreg_hit;
 	int bufsize;
-	unsigned char *buf; /* input buffer */
+	unsigned char *buf;	/* input buffer */
 	spinlock_t lock;
 };
 
