@@ -43,7 +43,6 @@ typedef struct _snd_pcm_stream snd_pcm_stream_t;
 
 typedef struct _snd_pcm_hardware {
 	unsigned int info;		/* SND_PCM_INFO_* */
-	unsigned int max_refine_steps;	/* max refine steps - 1 */
 	unsigned int formats;		/* SND_PCM_FMTBIT_* */
 	unsigned int rates;		/* SND_PCM_RATE_* */
 	unsigned int min_rate;		/* min rate */
@@ -84,17 +83,17 @@ typedef struct _snd_pcm_ops {
 
 #define SND_PCM_IOCTL1_RESET		0
 #define SND_PCM_IOCTL1_INFO		1
-#define SND_PCM_IOCTL1_HW_INFO		2
-#define SND_PCM_IOCTL1_HW_PARAMS	3
-#define SND_PCM_IOCTL1_DIG_INFO		4
-#define SND_PCM_IOCTL1_DIG_PARAMS	5
-#define SND_PCM_IOCTL1_CHANNEL_INFO	6
+#define SND_PCM_IOCTL1_HW_PARAMS	2
+#define SND_PCM_IOCTL1_DIG_INFO		3
+#define SND_PCM_IOCTL1_DIG_PARAMS	4
+#define SND_PCM_IOCTL1_CHANNEL_INFO	5
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_START		1
 #define SND_PCM_TRIGGER_PAUSE_PUSH	3
 #define SND_PCM_TRIGGER_PAUSE_RELEASE	4
 
+/* If you change this don't forget to changed snd_pcm_rates table in pcm_lib.c */
 #define SND_PCM_RATE_5512		(1<<0)		/* 5512Hz */
 #define SND_PCM_RATE_8000		(1<<1)		/* 8000Hz */
 #define SND_PCM_RATE_11025		(1<<2)		/* 11025Hz */
@@ -108,6 +107,7 @@ typedef struct _snd_pcm_ops {
 #define SND_PCM_RATE_96000		(1<<10)		/* 96000Hz */
 #define SND_PCM_RATE_176400		(1<<11)		/* 176400Hz */
 #define SND_PCM_RATE_192000		(1<<12)		/* 192000Hz */
+
 #define SND_PCM_RATE_CONTINUOUS		(1<<30)		/* continuous range */
 #define SND_PCM_RATE_KNOT		(1<<31)		/* supports more non-continuos rates */
 
@@ -123,6 +123,98 @@ struct _snd_pcm_file {
 	snd_pcm_substream_t * substream;
 	struct _snd_pcm_file * next;
 };
+
+typedef struct {
+	unsigned long min;
+	unsigned long max;
+	unsigned int openmin:1,
+		openmax:1,
+		real:1,
+		empty:1;
+} interval_t;
+
+#define VAR_CHANNELS		0
+#define VAR_RATE		1
+#define VAR_FRAGMENT_LENGTH	2
+#define VAR_FRAGMENTS		3
+#define VAR_BUFFER_LENGTH	4
+#define VAR_SAMPLE_BITS		5
+#define VAR_FRAME_BITS		6
+#define VAR_FRAGMENT_SIZE	7
+#define VAR_FRAGMENT_BYTES	8
+#define VAR_BUFFER_SIZE		9
+#define VAR_BUFFER_BYTES	10
+#define VAR_LAST_INTERVAL	10
+#define VAR_ACCESS		11
+#define VAR_FORMAT		12
+#define VAR_SUBFORMAT		13
+#define VAR_LAST		13
+
+#define VARBIT_CHANNELS		(1<<VAR_CHANNELS)
+#define VARBIT_RATE		(1<<VAR_RATE)
+#define VARBIT_FRAGMENT_LENGTH	(1<<VAR_FRAGMENT_LENGTH)
+#define VARBIT_FRAGMENTS	(1<<VAR_FRAGMENTS)
+#define VARBIT_BUFFER_LENGTH	(1<<VAR_BUFFER_LENGTH)
+#define VARBIT_SAMPLE_BITS	(1<<VAR_SAMPLE_BITS)
+#define VARBIT_FRAME_BITS	(1<<VAR_FRAME_BITS)
+#define VARBIT_FRAGMENT_SIZE	(1<<VAR_FRAGMENT_SIZE)
+#define VARBIT_FRAGMENT_BYTES	(1<<VAR_FRAGMENT_BYTES)
+#define VARBIT_BUFFER_SIZE	(1<<VAR_BUFFER_SIZE)
+#define VARBIT_BUFFER_BYTES	(1<<VAR_BUFFER_BYTES)
+#define VARBIT_ACCESS		(1<<VAR_ACCESS)
+#define VARBIT_FORMAT		(1<<VAR_FORMAT)
+#define VARBIT_SUBFORMAT	(1<<VAR_SUBFORMAT)
+
+typedef struct _snd_pcm_hw_infok {
+	unsigned int access_mask;
+	unsigned int format_mask;
+	unsigned int subformat_mask;
+	interval_t intervals[VAR_LAST_INTERVAL + 1];
+	unsigned int info;		/* R: Info for returned setup */
+	unsigned int msbits;		/* R: used most significant bits */
+	unsigned int rate_num;		/* R: rate numerator */
+	unsigned int rate_den;		/* R: rate denominator */
+	size_t fifo_size;		/* R: chip FIFO size in frames */
+	unsigned int dig_groups;	/* R: number of channel groups for digital setup */
+} snd_pcm_hw_infok_t;
+
+typedef struct _snd_pcm_hw_infoc_constr snd_pcm_hw_infoc_constr_t;
+
+typedef int (*snd_pcm_hw_infoc_func_t)(snd_pcm_hw_infok_t *info,
+				       snd_pcm_hw_infoc_constr_t *constr);
+
+struct _snd_pcm_hw_infoc_constr {
+	snd_pcm_hw_infoc_func_t func;
+	unsigned int var;
+	int deps[4];
+	void *private;
+};
+
+typedef struct _snd_pcm_hw_infoc {
+	unsigned int access_mask;
+	unsigned int format_mask;
+	unsigned int subformat_mask;
+	interval_t intervals[VAR_LAST_INTERVAL + 1];
+	unsigned int constr_num;
+	unsigned int constr_all;
+	snd_pcm_hw_infoc_constr_t *constrs;
+} snd_pcm_hw_infoc_t;
+
+typedef struct {
+	unsigned long num;
+	unsigned long den_min, den_max;
+} rational_t;
+
+typedef struct {
+	int nrats;
+	rational_t *rats;
+} snd_pcm_hw_infoc_rats_t;
+
+typedef struct {
+	unsigned int count;
+	unsigned long *list;
+	unsigned int mask;
+} snd_pcm_hw_infoc_list_t;
 
 struct _snd_pcm_runtime {
 	/* -- Status -- */
@@ -147,8 +239,8 @@ struct _snd_pcm_runtime {
 	size_t bits_per_frame;
 	size_t bits_per_sample;
 	unsigned int info;
-	unsigned int rate_master;
-	unsigned int rate_divisor;
+	unsigned int rate_num;
+	unsigned int rate_den;
 
 	/* -- SW params -- */
 	unsigned int time: 1;		/* mmap timestamp is updated */
@@ -180,6 +272,7 @@ struct _snd_pcm_runtime {
 
 	/* -- hardware description -- */
 	snd_pcm_hardware_t hw;
+	snd_pcm_hw_infoc_t infoc;
 
 	/* -- interrupt callbacks -- */
 	void (*transfer_ack_begin)(snd_pcm_substream_t *substream);
@@ -272,11 +365,6 @@ typedef struct _snd_pcm_notify {
 	int (*n_unregister) (unsigned short minor, snd_pcm_t * pcm);
 	struct list_head list;
 } snd_pcm_notify_t;
-
-typedef struct {
-	unsigned int master;
-	unsigned int div_min, div_max;
-} snd_pcm_clock_t;
 
 /*
  *  Registering
@@ -383,19 +471,32 @@ static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream,
 	substream->runtime->trigger_master = master;
 }
 
-extern int snd_pcm_hw_info_bits_per_sample(snd_pcm_hw_info_t *info, 
-					   unsigned int *min, unsigned int *max);
-extern int snd_pcm_hw_info_generic(snd_pcm_hw_info_t *info, snd_pcm_substream_t *substream);
-extern int snd_pcm_hw_info_channels_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
-extern int snd_pcm_hw_info_rate_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
-extern int snd_pcm_hw_info_fragment_size_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
-extern int snd_pcm_hw_info_fragments_list(snd_pcm_hw_info_t *info, unsigned int count, unsigned int *values);
-extern int snd_pcm_hw_info_rate_clocks(snd_pcm_hw_info_t *info, unsigned int clocks_count, snd_pcm_clock_t *clocks);
-extern int snd_pcm_hw_info_buffer_bytes_max(snd_pcm_hw_info_t *info, 
-					    size_t max_buffer_bytes);
-extern int snd_pcm_hw_info_buffer_size_max(snd_pcm_hw_info_t *info,
-					   size_t max_buffer_size);
-extern int snd_pcm_hw_info_buffer_size(snd_pcm_hw_info_t *info);
+extern int interval_refine(interval_t *i, const interval_t *v);
+extern int interval_mul(interval_t *a, interval_t *b, interval_t *c);
+extern int interval_div(interval_t *a, interval_t *b, interval_t *c);
+extern int interval_mul1(interval_t *a, unsigned long k,
+			 interval_t *b, interval_t *c);
+extern int interval_div1(interval_t *a, unsigned long k,
+			 interval_t *b, interval_t *c);
+extern int interval_list(interval_t *i, 
+			 size_t count, unsigned long *list, unsigned int mask);
+extern int interval_step(interval_t *i, unsigned long min, unsigned long step);
+extern int interval_rational(interval_t *i,
+			     unsigned int rats_count, rational_t *rats,
+			     unsigned long *nump, unsigned long *denp);
+
+extern int snd_pcm_hw_infoc_list(snd_pcm_runtime_t *runtime, unsigned int var,
+				 snd_pcm_hw_infoc_list_t *l);
+extern int snd_pcm_hw_infoc_clocks(snd_pcm_runtime_t *runtime, 
+				   snd_pcm_hw_infoc_rats_t *r);
+extern int snd_pcm_hw_infoc_msbits(snd_pcm_runtime_t *runtime, 
+				   unsigned int width,
+				   unsigned int msbits);
+extern int snd_pcm_hw_infoc_minmax(snd_pcm_runtime_t *runtime, unsigned int var,
+				   unsigned long min, unsigned long max);
+extern int snd_pcm_hw_infoc_add(snd_pcm_runtime_t *runtime, unsigned int var,
+				snd_pcm_hw_infoc_func_t func, void *private,
+				int dep, ...);
 
 extern int snd_pcm_format_signed(int format);
 extern int snd_pcm_format_unsigned(int format);

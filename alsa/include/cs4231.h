@@ -249,7 +249,7 @@ struct _snd_cs4231 {
 
 	struct pm_dev *pm_dev;
 
-	int (*refine_rate) (snd_pcm_hw_info_t *hw_info);
+	int (*rate_constraint) (snd_pcm_runtime_t *runtime);
 	void (*set_playback_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char pdfr);
 	void (*set_capture_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char cdfr);
 	void (*suspend) (cs4231_t *chip);

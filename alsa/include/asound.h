@@ -719,8 +719,8 @@ typedef struct _snd_pcm_hw_info {
 	   all params combinations */
 	unsigned int info;		/* R: Info for returned setup */
 	unsigned int msbits;		/* R: used most significant bits */
-	unsigned int rate_master;	/* R: Exact rate is rate_master / */
-	unsigned int rate_divisor;	/* R: rate_divisor */
+	unsigned int rate_num;		/* R: rate numerator */
+	unsigned int rate_den;		/* R: rate denominator */
 	size_t fifo_size;		/* R: chip FIFO size in frames */
 	unsigned int dig_groups;	/* R: number of channel groups for digital setup */
 	char reserved[64];
