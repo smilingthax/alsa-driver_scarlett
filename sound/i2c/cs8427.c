@@ -48,6 +48,7 @@ typedef struct {
 
 typedef struct {
 	unsigned char regmap[0x14];	/* map of first 1 + 13 registers */
+	unsigned int rate;
 	cs8427_stream_t playback;
 	cs8427_stream_t capture;
 } cs8427_t;
@@ -523,7 +524,7 @@ int snd_cs8427_iec958_pcm(snd_i2c_device_t *cs8427, unsigned int rate)
 {
 	cs8427_t *chip;
 	char *status;
-	int err;
+	int err, reset;
 
 	snd_assert(cs8427, return -ENXIO);
 	chip = snd_magic_cast(cs8427_t, cs8427->private_data, return -ENXIO);
@@ -550,7 +551,10 @@ int snd_cs8427_iec958_pcm(snd_i2c_device_t *cs8427, unsigned int rate)
 		snd_ctl_notify(cs8427->bus->card,
 			       SNDRV_CTL_EVENT_MASK_VALUE,
 			       &chip->playback.pcm_ctl->id);
+	reset = chip->rate != rate;
 	snd_i2c_unlock(cs8427->bus);
+	if (reset)
+		snd_cs8427_reset(cs8427);
 	return err < 0 ? err : 0;
 }
 
