@@ -26,14 +26,14 @@ extern unsigned char snd_ulaw_dsp_loud[];
 extern unsigned char snd_dsp_ulaw[];
 extern unsigned char snd_dsp_ulaw_loud[];
 
-extern void snd_translate_to_user(unsigned char *table,
-				  unsigned char *dest,
-				  unsigned char *src,
-				  unsigned int count);
+extern int snd_translate_to_user(unsigned char *table,
+				 unsigned char *dest,
+				 unsigned char *src,
+				 unsigned int count);
 
-extern void snd_translate_from_user(unsigned char *table,
-				    unsigned char *dest,
-				    unsigned char *src,
-				    unsigned int count);
+extern int snd_translate_from_user(unsigned char *table,
+				   unsigned char *dest,
+				   unsigned char *src,
+				   unsigned int count);
 
 #endif				/* __ULAW_H */
