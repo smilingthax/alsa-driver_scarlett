@@ -63,7 +63,7 @@ static int snd_pcm_plugin_dst_channels_mask(snd_pcm_plugin_t *plugin,
 static int rate_match(unsigned int src_rate, unsigned int dst_rate)
 {
 	unsigned int low = (src_rate * 95) / 100;
-	unsigned int high = (src_rate * 105) / 105;
+	unsigned int high = (src_rate * 105) / 100;
 	return dst_rate >= low && dst_rate <= high;
 }
 
