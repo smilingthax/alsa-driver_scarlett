@@ -39,6 +39,7 @@ obj-$(CONFIG_SND_ICE1712) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_SONICVIBES) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_VIA686) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_ALI5451) += snd-mpu401-uart.o
+obj-$(CONFIG_SND_TRIDENT) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_YMFPCI) += snd-mpu401-uart.o
 
 include $(TOPDIR)/Rules.make
