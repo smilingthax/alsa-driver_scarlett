@@ -354,12 +354,12 @@ case "$1" in
     insert snd-pdplus.o
     restore prodif-plus.conf
     ;;
-  via686a|via)
+  via686*|via)
     basic
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o
-    insert snd-via686a.o snd_mpu_port=0x330
-    restore via686a.conf
+    insert snd-via686.o snd_mpu_port=0x330
+    restore via686.conf
     ;;
   ymfpci|yamaha)
     basic
