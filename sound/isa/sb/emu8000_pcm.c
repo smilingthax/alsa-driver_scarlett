@@ -441,7 +441,7 @@ static int emu8k_pcm_copy(snd_pcm_substream_t *subs,
 		int i, err;
 		count /= rec->voices;
 		for (i = 0; i < rec->voices; i++) {
-			err = emu8k_transfer_block(emu, pos + rec->loop_start[0], buf, count);
+			err = emu8k_transfer_block(emu, pos + rec->loop_start[i], buf, count);
 			if (err < 0)
 				return err;
 			buf += count;
@@ -505,6 +505,7 @@ static int emu8k_pcm_hw_params(snd_pcm_substream_t *subs,
 	if (! rec->block)
 		return -ENOMEM;
 	rec->offset = EMU8000_DRAM_OFFSET + (rec->block->offset >> 1); /* in word */
+	subs->dma_bytes = params_buffer_bytes(hw_params);
 
 	return 0;
 }
@@ -571,6 +572,8 @@ static int emu8k_pcm_prepare(snd_pcm_substream_t *subs)
 	}
 
 	setup_voice(rec, 0);
+	if (rec->voices > 1)
+		setup_voice(rec, 1);
 	return 0;
 }
 
