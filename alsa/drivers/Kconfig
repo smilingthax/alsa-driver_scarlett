@@ -1,0 +1,10 @@
+# ALSA generic drivers
+
+config SND_MPU401_ACPI
+	tristate "MPU401-UART ACPI driver"
+	depends on SND && ACPI_BUS
+	select SND_MPU401_UART
+	help
+	  Say 'Y' or 'M' to include support for MPU401 ports on motherboards
+          identified by ACPI PnP.
+
