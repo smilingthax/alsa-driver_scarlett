@@ -630,7 +630,7 @@ Module parameters
           not be generated properly.  In such a case, please try to
           set the SMP (or MPS) version on BIOS to 1.1 instead of
           default value 1.4.  Then the interrupt number will be
-          assigned under 15.
+          assigned under 15. You might also upgrade your BIOS.
     
   Module snd-card-via8233.o
   -------------------------
