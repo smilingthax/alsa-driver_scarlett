@@ -52,16 +52,10 @@ CSUBDIRS += include test utils
 .PHONY: all
 all: compile
 
-#
-# some old kernels does not have include/linux/pm.h file
-# 
-$(CONFIG_SND_KERNELDIR)/include/linux/pm.h:
-	touch $@
-
 alsa-kernel/Config.in:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 
-include/sound/version.h: include/version.h $(CONFIG_SND_KERNELDIR)/include/linux/pm.h
+include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
 	  ln -sf ../alsa-kernel/include include/sound ; \
 	fi
