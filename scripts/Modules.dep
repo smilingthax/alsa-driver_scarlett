@@ -157,6 +157,7 @@ snd-emu8000-synth @if_sequencer snd-emux-synth snd-hwdep
 %dir linux/sound/pci
 |snd-als4000 snd-sb-common snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-azt3328 snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-bt87x snd-pcm
 |snd-cmipci snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-cs4281 snd-pcm snd-ac97-codec snd-seq-midi snd-opl3-lib snd-opl3-synth
 |snd-ens1370 snd-pcm snd-ak4531-codec snd-seq-midi
