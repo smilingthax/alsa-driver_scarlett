@@ -408,6 +408,18 @@ case "$1" in
     insert snd-card-ice1712.o
     restore t2.conf
     ;;
+  t3)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-mpu401-uart.o
+    insert snd-opl3.o
+    insert snd-ymfpci.o
+    insert snd-card-ymfpci.o
+    insert snd-i2c.o
+    insert snd-cs8427.o
+    insert snd-card-ice1712.o
+    restore t3.conf
+    ;;
   *)
     echo "Unknown soundcard $1..."
     ;;

@@ -86,7 +86,6 @@ typedef struct _snd_pcm_ops {
 	int (*hw_free)(snd_pcm_substream_t *substream);
 	int (*prepare)(snd_pcm_substream_t * substream);
 	int (*trigger)(snd_pcm_substream_t * substream, int cmd);
-	int (*resume)(snd_pcm_substream_t * substream);
 	snd_pcm_uframes_t (*pointer)(snd_pcm_substream_t * substream);
 	int (*copy)(snd_pcm_substream_t *substream, int channel, snd_pcm_uframes_t pos,
 		    void *buf, snd_pcm_uframes_t count);
@@ -112,6 +111,8 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_TRIGGER_START		1
 #define SNDRV_PCM_TRIGGER_PAUSE_PUSH	3
 #define SNDRV_PCM_TRIGGER_PAUSE_RELEASE	4
+#define SNDRV_PCM_TRIGGER_SUSPEND	5
+#define SNDRV_PCM_TRIGGER_RESUME	6
 
 #define SNDRV_PCM_DMA_TYPE_CONTINUOUS	0
 #define SNDRV_PCM_DMA_TYPE_PCI		1	/* PCI continuous */
@@ -432,38 +433,39 @@ typedef struct _snd_pcm_notify {
  */
 
 extern snd_pcm_t *snd_pcm_devices[];
-
-extern void snd_pcm_lock(int unlock);
-
-extern int snd_pcm_new(snd_card_t * card, char *id, int device,
-		       int playback_count, int capture_count, snd_pcm_t **rpcm);
-
-extern int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
-
 extern snd_minor_t snd_pcm_reg[2];
+
+void snd_pcm_lock(int unlock);
+
+int snd_pcm_new(snd_card_t * card, char *id, int device,
+		int playback_count, int capture_count,
+		snd_pcm_t **rpcm);
+
+int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
 
 /*
  *  Native I/O
  */
 
-extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
-extern int snd_pcm_info_user(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
-extern int snd_pcm_status(snd_pcm_substream_t * substream, snd_pcm_status_t *status);
-extern int snd_pcm_prepare(snd_pcm_substream_t *substream);
-extern int snd_pcm_start(snd_pcm_substream_t *substream);
-extern int snd_pcm_stop(snd_pcm_substream_t *substream, int status);
-extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
-extern int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
-extern int snd_pcm_kernel_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
-extern int snd_pcm_open(struct inode *inode, struct file *file);
-extern int snd_pcm_release(struct inode *inode, struct file *file);
-extern unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait);
-extern unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait);
-extern int snd_pcm_open_substream(snd_pcm_t *pcm, int stream, snd_pcm_substream_t **rsubstream);
-extern void snd_pcm_release_substream(snd_pcm_substream_t *substream);
-extern void snd_pcm_vma_notify_data(void *client, void *data);
-extern int snd_pcm_mmap_data(snd_pcm_substream_t *substream, struct file *file,
-			     struct vm_area_struct *area);
+int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
+int snd_pcm_info_user(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
+int snd_pcm_status(snd_pcm_substream_t * substream, snd_pcm_status_t *status);
+int snd_pcm_prepare(snd_pcm_substream_t *substream);
+int snd_pcm_start(snd_pcm_substream_t *substream);
+int snd_pcm_stop(snd_pcm_substream_t *substream, int status);
+int snd_pcm_suspend(snd_pcm_substream_t *substream);
+int snd_pcm_suspend_all(snd_pcm_t *pcm);
+int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
+int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
+int snd_pcm_kernel_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
+int snd_pcm_open(struct inode *inode, struct file *file);
+int snd_pcm_release(struct inode *inode, struct file *file);
+unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait);
+unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait);
+int snd_pcm_open_substream(snd_pcm_t *pcm, int stream, snd_pcm_substream_t **rsubstream);
+void snd_pcm_release_substream(snd_pcm_substream_t *substream);
+void snd_pcm_vma_notify_data(void *client, void *data);
+int snd_pcm_mmap_data(snd_pcm_substream_t *substream, struct file *file, struct vm_area_struct *area);
 
 #if BITS_PER_LONG >= 64
 
@@ -679,160 +681,157 @@ static inline const snd_interval_t *hw_param_interval_c(const snd_pcm_hw_params_
 #define params_tick_time(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_TICK_TIME)->min
 
 
-extern int snd_interval_refine(snd_interval_t *i, const snd_interval_t *v);
-extern void snd_interval_mul(const snd_interval_t *a, const snd_interval_t *b, snd_interval_t *c);
-extern void snd_interval_div(const snd_interval_t *a, const snd_interval_t *b, snd_interval_t *c);
-extern void snd_interval_muldivk(const snd_interval_t *a, const snd_interval_t *b, 
-			     unsigned int k, snd_interval_t *c);
-extern void snd_interval_mulkdiv(const snd_interval_t *a, unsigned int k,
-			     const snd_interval_t *b, snd_interval_t *c);
-extern int snd_interval_list(snd_interval_t *i, 
-			 unsigned int count, unsigned int *list, unsigned int mask);
-extern int snd_interval_step(snd_interval_t *i, unsigned int min, unsigned int step);
-extern int snd_interval_ratnum(snd_interval_t *i,
-			   unsigned int rats_count, ratnum_t *rats,
-			   unsigned int *nump, unsigned int *denp);
-extern int snd_interval_ratden(snd_interval_t *i,
-			   unsigned int rats_count, ratden_t *rats,
-			   unsigned int *nump, unsigned int *denp);
+int snd_interval_refine(snd_interval_t *i, const snd_interval_t *v);
+void snd_interval_mul(const snd_interval_t *a, const snd_interval_t *b, snd_interval_t *c);
+void snd_interval_div(const snd_interval_t *a, const snd_interval_t *b, snd_interval_t *c);
+void snd_interval_muldivk(const snd_interval_t *a, const snd_interval_t *b, 
+			  unsigned int k, snd_interval_t *c);
+void snd_interval_mulkdiv(const snd_interval_t *a, unsigned int k,
+			  const snd_interval_t *b, snd_interval_t *c);
+int snd_interval_list(snd_interval_t *i, unsigned int count, unsigned int *list, unsigned int mask);
+int snd_interval_step(snd_interval_t *i, unsigned int min, unsigned int step);
+int snd_interval_ratnum(snd_interval_t *i,
+			unsigned int rats_count, ratnum_t *rats,
+			unsigned int *nump, unsigned int *denp);
+int snd_interval_ratden(snd_interval_t *i,
+			unsigned int rats_count, ratden_t *rats,
+			unsigned int *nump, unsigned int *denp);
 
-extern void _snd_pcm_hw_params_any(snd_pcm_hw_params_t *params);
-extern void _snd_pcm_hw_param_setempty(snd_pcm_hw_params_t *params,
-				       snd_pcm_hw_param_t var);
-extern int snd_pcm_hw_param_min(snd_pcm_substream_t *substream, 
+void _snd_pcm_hw_params_any(snd_pcm_hw_params_t *params);
+void _snd_pcm_hw_param_setempty(snd_pcm_hw_params_t *params, snd_pcm_hw_param_t var);
+int snd_pcm_hw_param_min(snd_pcm_substream_t *substream, 
+			 snd_pcm_hw_params_t *params,
+			 snd_pcm_hw_param_t var,
+			 unsigned int val, int *dir);
+int snd_pcm_hw_param_max(snd_pcm_substream_t *substream, 
+			 snd_pcm_hw_params_t *params,
+			 snd_pcm_hw_param_t var,
+			 unsigned int val, int *dir);
+int snd_pcm_hw_param_setinteger(snd_pcm_substream_t *substream, 
 				snd_pcm_hw_params_t *params,
-				snd_pcm_hw_param_t var,
-				unsigned int val, int *dir);
-extern int snd_pcm_hw_param_max(snd_pcm_substream_t *substream, 
-				snd_pcm_hw_params_t *params,
-				snd_pcm_hw_param_t var,
-				unsigned int val, int *dir);
-extern int snd_pcm_hw_param_setinteger(snd_pcm_substream_t *substream, 
-				       snd_pcm_hw_params_t *params,
-				       snd_pcm_hw_param_t var);
-extern int snd_pcm_hw_param_first(snd_pcm_substream_t *substream, 
-				  snd_pcm_hw_params_t *params,
-				  snd_pcm_hw_param_t var, int *dir);
-extern int snd_pcm_hw_param_last(snd_pcm_substream_t *substream, 
-				  snd_pcm_hw_params_t *params,
-				 snd_pcm_hw_param_t var, int *dir);
-extern int snd_pcm_hw_param_near(snd_pcm_substream_t *substream, 
-				  snd_pcm_hw_params_t *params,
-				  snd_pcm_hw_param_t var, 
-				 unsigned int val, int *dir);
-extern int snd_pcm_hw_params_choose(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
+				snd_pcm_hw_param_t var);
+int snd_pcm_hw_param_first(snd_pcm_substream_t *substream, 
+			   snd_pcm_hw_params_t *params,
+			   snd_pcm_hw_param_t var, int *dir);
+int snd_pcm_hw_param_last(snd_pcm_substream_t *substream, 
+			  snd_pcm_hw_params_t *params,
+			  snd_pcm_hw_param_t var, int *dir);
+int snd_pcm_hw_param_near(snd_pcm_substream_t *substream, 
+			  snd_pcm_hw_params_t *params,
+			  snd_pcm_hw_param_t var, 
+			  unsigned int val, int *dir);
+int snd_pcm_hw_params_choose(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
 
-extern int snd_pcm_hw_refine(snd_pcm_substream_t *substream,
-			     snd_pcm_hw_params_t *params);
+int snd_pcm_hw_refine(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *params);
 
-extern int snd_pcm_hw_constraints_init(snd_pcm_substream_t *substream);
-extern int snd_pcm_hw_constraints_complete(snd_pcm_substream_t *substream);
+int snd_pcm_hw_constraints_init(snd_pcm_substream_t *substream);
+int snd_pcm_hw_constraints_complete(snd_pcm_substream_t *substream);
 
-extern int snd_pcm_hw_constraint_mask(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
-				      unsigned int mask);
-extern int snd_pcm_hw_constraint_minmax(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
-					unsigned int min, unsigned int max);
-extern int snd_pcm_hw_constraint_integer(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var);
-extern int snd_pcm_hw_constraint_list(snd_pcm_runtime_t *runtime, 
-				      unsigned int cond,
-				      snd_pcm_hw_param_t var,
-				      snd_pcm_hw_constraint_list_t *l);
-extern int snd_pcm_hw_constraint_ratnums(snd_pcm_runtime_t *runtime, 
-					 unsigned int cond,
-					 snd_pcm_hw_param_t var,
-					 snd_pcm_hw_constraint_ratnums_t *r);
-extern int snd_pcm_hw_constraint_ratdens(snd_pcm_runtime_t *runtime, 
-					 unsigned int cond,
-					 snd_pcm_hw_param_t var,
-					 snd_pcm_hw_constraint_ratdens_t *r);
-extern int snd_pcm_hw_constraint_msbits(snd_pcm_runtime_t *runtime, 
-					unsigned int cond,
-					unsigned int width,
-					unsigned int msbits);
-extern int snd_pcm_hw_constraint_step(snd_pcm_runtime_t *runtime,
-				      unsigned int cond,
-				      snd_pcm_hw_param_t var,
-				      unsigned long step);
-extern int snd_pcm_hw_rule_add(snd_pcm_runtime_t *runtime,
-				unsigned int cond,
-				int var,
-				snd_pcm_hw_rule_func_t func, void *private,
-				int dep, ...);
+int snd_pcm_hw_constraint_mask(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
+			       unsigned int mask);
+int snd_pcm_hw_constraint_minmax(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var,
+				 unsigned int min, unsigned int max);
+int snd_pcm_hw_constraint_integer(snd_pcm_runtime_t *runtime, snd_pcm_hw_param_t var);
+int snd_pcm_hw_constraint_list(snd_pcm_runtime_t *runtime, 
+			       unsigned int cond,
+			       snd_pcm_hw_param_t var,
+			       snd_pcm_hw_constraint_list_t *l);
+int snd_pcm_hw_constraint_ratnums(snd_pcm_runtime_t *runtime, 
+				  unsigned int cond,
+				  snd_pcm_hw_param_t var,
+				  snd_pcm_hw_constraint_ratnums_t *r);
+int snd_pcm_hw_constraint_ratdens(snd_pcm_runtime_t *runtime, 
+				  unsigned int cond,
+				  snd_pcm_hw_param_t var,
+				  snd_pcm_hw_constraint_ratdens_t *r);
+int snd_pcm_hw_constraint_msbits(snd_pcm_runtime_t *runtime, 
+				 unsigned int cond,
+				 unsigned int width,
+				 unsigned int msbits);
+int snd_pcm_hw_constraint_step(snd_pcm_runtime_t *runtime,
+			       unsigned int cond,
+			       snd_pcm_hw_param_t var,
+			       unsigned long step);
+int snd_pcm_hw_rule_add(snd_pcm_runtime_t *runtime,
+			unsigned int cond,
+			int var,
+			snd_pcm_hw_rule_func_t func, void *private,
+			int dep, ...);
 
-extern int snd_pcm_format_signed(snd_pcm_format_t format);
-extern int snd_pcm_format_unsigned(snd_pcm_format_t format);
-extern int snd_pcm_format_linear(snd_pcm_format_t format);
-extern int snd_pcm_format_little_endian(snd_pcm_format_t format);
-extern int snd_pcm_format_big_endian(snd_pcm_format_t format);
-extern int snd_pcm_format_width(snd_pcm_format_t format);			/* in bits */
-extern int snd_pcm_format_physical_width(snd_pcm_format_t format);		/* in bits */
-extern u_int64_t snd_pcm_format_silence_64(snd_pcm_format_t format);
-extern int snd_pcm_format_set_silence(snd_pcm_format_t format, void *buf, unsigned int frames);
-extern snd_pcm_format_t snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
-extern ssize_t snd_pcm_format_size(snd_pcm_format_t format, size_t samples);
+int snd_pcm_format_signed(snd_pcm_format_t format);
+int snd_pcm_format_unsigned(snd_pcm_format_t format);
+int snd_pcm_format_linear(snd_pcm_format_t format);
+int snd_pcm_format_little_endian(snd_pcm_format_t format);
+int snd_pcm_format_big_endian(snd_pcm_format_t format);
+int snd_pcm_format_width(snd_pcm_format_t format);			/* in bits */
+int snd_pcm_format_physical_width(snd_pcm_format_t format);		/* in bits */
+u_int64_t snd_pcm_format_silence_64(snd_pcm_format_t format);
+int snd_pcm_format_set_silence(snd_pcm_format_t format, void *buf, unsigned int frames);
+snd_pcm_format_t snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
+ssize_t snd_pcm_format_size(snd_pcm_format_t format, size_t samples);
  
-extern void snd_pcm_set_ops(snd_pcm_t * pcm, int direction, snd_pcm_ops_t *ops);
-extern void snd_pcm_set_sync(snd_pcm_substream_t * substream);
-extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
-extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
-			     unsigned int cmd, void *arg);                      
-extern int snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);
-extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
-extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
-extern int snd_pcm_playback_xrun_asap(snd_pcm_substream_t *substream);
-extern int snd_pcm_capture_xrun_asap(snd_pcm_substream_t *substream);
-extern void snd_pcm_playback_silence(snd_pcm_substream_t *substream);
-extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
-extern int snd_pcm_capture_ready(snd_pcm_substream_t *substream);
-extern long snd_pcm_playback_ready_jiffies(snd_pcm_substream_t *substream);
-extern long snd_pcm_capture_ready_jiffies(snd_pcm_substream_t *substream);
-extern int snd_pcm_playback_data(snd_pcm_substream_t *substream);
-extern int snd_pcm_playback_empty(snd_pcm_substream_t *substream);
-extern int snd_pcm_capture_empty(snd_pcm_substream_t *substream);
-extern void snd_pcm_tick_prepare(snd_pcm_substream_t *substream);
-extern void snd_pcm_tick_set(snd_pcm_substream_t *substream, unsigned long ticks);
-extern void snd_pcm_tick_elapsed(snd_pcm_substream_t *substream);
-extern void snd_pcm_period_elapsed(snd_pcm_substream_t *substream);
-extern snd_pcm_sframes_t snd_pcm_lib_write(snd_pcm_substream_t *substream,
-				 const void *buf, snd_pcm_uframes_t frames);
-extern snd_pcm_sframes_t snd_pcm_lib_read(snd_pcm_substream_t *substream,
-				void *buf, snd_pcm_uframes_t frames);
-extern snd_pcm_sframes_t snd_pcm_lib_writev(snd_pcm_substream_t *substream,
-				  void **bufs, snd_pcm_uframes_t frames);
-extern snd_pcm_sframes_t snd_pcm_lib_readv(snd_pcm_substream_t *substream,
-				 void **bufs, snd_pcm_uframes_t frames);
+void snd_pcm_set_ops(snd_pcm_t * pcm, int direction, snd_pcm_ops_t *ops);
+void snd_pcm_set_sync(snd_pcm_substream_t * substream);
+int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
+int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
+		      unsigned int cmd, void *arg);                      
+int snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);
+int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
+int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
+int snd_pcm_playback_xrun_asap(snd_pcm_substream_t *substream);
+int snd_pcm_capture_xrun_asap(snd_pcm_substream_t *substream);
+void snd_pcm_playback_silence(snd_pcm_substream_t *substream);
+int snd_pcm_playback_ready(snd_pcm_substream_t *substream);
+int snd_pcm_capture_ready(snd_pcm_substream_t *substream);
+long snd_pcm_playback_ready_jiffies(snd_pcm_substream_t *substream);
+long snd_pcm_capture_ready_jiffies(snd_pcm_substream_t *substream);
+int snd_pcm_playback_data(snd_pcm_substream_t *substream);
+int snd_pcm_playback_empty(snd_pcm_substream_t *substream);
+int snd_pcm_capture_empty(snd_pcm_substream_t *substream);
+void snd_pcm_tick_prepare(snd_pcm_substream_t *substream);
+void snd_pcm_tick_set(snd_pcm_substream_t *substream, unsigned long ticks);
+void snd_pcm_tick_elapsed(snd_pcm_substream_t *substream);
+void snd_pcm_period_elapsed(snd_pcm_substream_t *substream);
+snd_pcm_sframes_t snd_pcm_lib_write(snd_pcm_substream_t *substream,
+				    const void *buf, snd_pcm_uframes_t frames);
+snd_pcm_sframes_t snd_pcm_lib_read(snd_pcm_substream_t *substream,
+				   void *buf, snd_pcm_uframes_t frames);
+snd_pcm_sframes_t snd_pcm_lib_writev(snd_pcm_substream_t *substream,
+				     void **bufs, snd_pcm_uframes_t frames);
+snd_pcm_sframes_t snd_pcm_lib_readv(snd_pcm_substream_t *substream,
+				    void **bufs, snd_pcm_uframes_t frames);
 
 /*
  *  Timer interface
  */
 
-extern void snd_pcm_timer_resolution_change(snd_pcm_substream_t *substream);
-extern void snd_pcm_timer_init(snd_pcm_substream_t * substream);
-extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
+void snd_pcm_timer_resolution_change(snd_pcm_substream_t *substream);
+void snd_pcm_timer_init(snd_pcm_substream_t * substream);
+void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 
 /*
  *  Memory
  */
 
-extern int snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
-extern int snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
-extern int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size);
-extern int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
+int snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
+int snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
+int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size);
+int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
 
-extern int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
-					 size_t size, size_t max,
-					 unsigned int flags);
-extern int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
-						 size_t size, size_t max,
-						 unsigned int flags);
+int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
+				  size_t size, size_t max,
+				  unsigned int flags);
+int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
+					  size_t size, size_t max,
+					  unsigned int flags);
 #ifdef CONFIG_PCI
-extern int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
-					     snd_pcm_substream_t *substream,
-					     size_t size, size_t max);
-extern int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
-						     snd_pcm_t *pcm,
-						     size_t size,
-						     size_t max);
+int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
+				      snd_pcm_substream_t *substream,
+				      size_t size, size_t max);
+int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
+					      snd_pcm_t *pcm,
+					      size_t size,
+					      size_t max);
 #endif
 
 static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)

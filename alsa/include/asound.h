@@ -343,7 +343,8 @@ struct sndrv_pcm_status {
 	sndrv_pcm_uframes_t avail;	/* number of frames available */
 	sndrv_pcm_uframes_t avail_max;	/* max frames available on hw since last status */
 	sndrv_pcm_uframes_t overrange;	/* count of ADC (capture) overrange detections from last status */
-	unsigned char reserved[64];	/* must be filled with zero */
+	enum sndrv_pcm_state suspended_state; /* suspended stream state */
+	unsigned char reserved[60];	/* must be filled with zero */
 };
 
 struct sndrv_pcm_mmap_status {
@@ -351,6 +352,7 @@ struct sndrv_pcm_mmap_status {
 	int pad1;			/* Needed for 64 bit alignment */
 	sndrv_pcm_uframes_t hw_ptr;	/* RO: hw ptr (0...boundary-1) */
 	struct timeval tstamp;		/* Timestamp */
+	enum sndrv_pcm_state suspended_state; /* RO: suspended stream state */
 };
 
 struct sndrv_pcm_mmap_control {
@@ -600,13 +602,13 @@ enum sndrv_ctl_elem_iface {
 #define SNDRV_CTL_ELEM_ACCESS_OWNER		(1<<10)	/* write lock owner */
 #define SNDRV_CTL_ELEM_ACCESS_INDIRECT		(1<<31)	/* indirect access */
 
-/* for forther details see the ACPI and PCI power management specification */
-#define SNDRV_CTL_POWER_D0		0x0000
-#define SNDRV_CTL_POWER_D1		0x0100
-#define SNDRV_CTL_POWER_D2		0x0200
-#define SNDRV_CTL_POWER_D3		0x0300
-#define SNDRV_CTL_POWER_D3hot		(SNDRV_CTL_POWER_D3|0x0000)
-#define SNDRV_CTL_POWER_D3cold		(SNDRV_CTL_POWER_D3|0x0001)
+/* for further details see the ACPI and PCI power management specification */
+#define SNDRV_CTL_POWER_D0		0x0000	/* full On */
+#define SNDRV_CTL_POWER_D1		0x0100	/* partial On */
+#define SNDRV_CTL_POWER_D2		0x0200	/* partial On */
+#define SNDRV_CTL_POWER_D3		0x0300	/* Off */
+#define SNDRV_CTL_POWER_D3hot		(SNDRV_CTL_POWER_D3|0x0000)	/* Off, with power */
+#define SNDRV_CTL_POWER_D3cold		(SNDRV_CTL_POWER_D3|0x0001)	/* Off, without power */
 
 struct sndrv_ctl_elem_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */

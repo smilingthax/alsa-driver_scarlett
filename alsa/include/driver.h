@@ -333,6 +333,7 @@ struct _snd_card {
 	int (*set_power_state) (snd_card_t *card, unsigned int state);
 	void *power_state_private_data;
 	unsigned int power_state;	/* power state */
+	unsigned int power_lock;	/* power lock */
 #endif
 
 #ifdef CONFIG_SND_OSSEMUL
@@ -340,6 +341,23 @@ struct _snd_card {
 	int mixer_oss_change_count;
 #endif
 };
+
+#ifdef CONFIG_PM
+static inline void snd_power_lock(snd_card_t *card, int can_schedule)
+{
+	while (test_and_set_bit(0, &card->power_lock)) {
+		if (can_schedule) {
+			set_current_state(TASK_INTERRUPTIBLE);
+                        schedule_timeout(1);
+		}
+	}
+}
+
+static inline void snd_power_unlock(snd_card_t *card)
+{
+	clear_bit(0, &card->power_lock);
+}
+#endif
 
 /* device.c */
 
