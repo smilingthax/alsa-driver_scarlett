@@ -38,7 +38,7 @@ include/sound: alsa-kernel
 	ln -sf ../alsa-kernel/include include/sound
 
 include/sound/version.h: include/sound include/version.h
-	cp -av include/version.h include/sound/version.h
+	cp -auv include/version.h include/sound/version.h
 
 include/sndversions.h:
 	make dep
