@@ -45,6 +45,9 @@ function copy_dir () {
 	if [ -r Config.in ]; then
 		ln -svf $ADIR/$1/Config.in $KADIR/$2/Config.in
 	fi
+	if [ -r Config.help ]; then
+		ln -svf $ADIR/$1/Config.help $KADIR/$2/Config.help
+	fi
 	if [ 1 -eq 1 ]; then
 		for i in *.[ch]; do
 			ln -svf $ADIR/$1/$i $KADIR/$2/$i
