@@ -326,6 +326,7 @@ struct _snd_pcm_substream {
 	void *dma_area;
 	dma_addr_t dma_addr;
 	size_t dma_bytes;
+	void *dma_private;
 	/* -- hardware operations -- */
 	snd_pcm_ops_t *ops;
 	/* -- runtime information -- */
@@ -348,6 +349,7 @@ struct _snd_pcm_substream {
 	snd_info_entry_t *proc_hw_params_entry;
 	snd_info_entry_t *proc_sw_params_entry;
 	snd_info_entry_t *proc_status_entry;
+	snd_info_entry_t *proc_prealloc_entry;
 };
 
 #ifdef CONFIG_SND_OSSEMUL
