@@ -593,6 +593,20 @@ Module parameters
 
     Module supports up to 8 cards.
 
+  Module snd-card-emu10k1.o
+  -------------------------
+
+    Module for EMU10K1 based PCI soundcards.
+			* Sound Blaster Live!
+			* Sound Blaster PCI 512
+
+    snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
+    snd_adc_frame_size  - max adc (record) frame size in kB (4-64kB)
+
+    Module supports up to 8 cards and autoprobe.
+    
+
+
 modprobe/kmod support
 =====================
 
