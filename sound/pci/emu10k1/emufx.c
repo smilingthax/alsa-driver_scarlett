@@ -1065,9 +1065,9 @@ static int snd_emu10k1_list_controls(emu10k1_t *emu, emu10k1_fx8010_code_t *icod
 			gctl.translation = ctl->translation;
 			if (copy_to_user(_gctl, &gctl, sizeof(gctl)))
 				return -EFAULT;
+			_gctl++;
+			i++;
 		}
-		_gctl++;
-		i++;
 	}
 	icode->gpr_list_control_total = total;
 	return 0;
