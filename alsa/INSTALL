@@ -243,3 +243,19 @@ Additional Modules
            control correctly. If you have problems regarding this, try
            another ALSA compliant mixer (alsamixer works).
 
+
+Trouble Shooting
+================
+
+Unresolved symbol with RedHat 9
+-------------------------------
+
+Run depmod -ae and check which symbol is missing.
+If the unresolved symbol is "schedule_work", tihis is because RedHat
+shipped the kernel with incomplete implementation of workqueue.
+For solving this problem, run the following on the top of alsa-driver
+directory:
+
+	% touch include/linux/workqueue.h
+
+and run "make clean", "make" again.
