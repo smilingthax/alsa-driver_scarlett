@@ -374,6 +374,25 @@ fi
 CHECK_KERNEL_CONFIG(CONFIG_SND_MODULE, [existing ALSA module])
 test "$CONFIG_SND_MODULE" = "y" && AC_DEFINE(CONFIG_SND_MODULE)
 
+dnl Check for forced Red Hat kernels
+AC_MSG_CHECKING(for Red Hat kernel)
+AC_ARG_WITH(redhat,
+  [  --with-redhat=no,yes,auto  specify Red Hat kernel build],
+  redhat_kernel="$withval", redhat_kernel="auto")
+RED_HAT_LINUX_KERNEL="auto"
+if test "$redhat_kernel" = "yes"; then
+  RED_HAT_LINUX_KERNEL="y"
+  AC_MSG_RESULT("yes")
+else
+  if test "$redhat_kernel" = "no"; then
+    RED_HAT_LINUX_KERNEL="n"
+    AC_MSG_RESULT("no")
+  else
+    AC_MSG_RESULT("auto")
+    CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [Red Hat kernel])
+  fi
+fi
+
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
 CHECK_KERNEL_HEADER(linux/compiler.h)
@@ -387,14 +406,12 @@ CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
 if test ! -f include/linux/workqueue.h; then
-  if test "x$kversion.$kpatchlevel" = "x2.4"; then
-    CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [redhat kernel])
-    if test "x$RED_HAT_LINUX_KERNEL" = "xy"; then
-      echo "It looks like you're using a RedHat 9 kernel."
-      echo "Disabling their incomplete workqueue.h modification."
-      mkdir -p include/linux
-      touch include/linux/workqueue.h
-    fi
+  if test "x$kversion.$kpatchlevel" = "x2.4" -a \
+     test "x$RED_HAT_LINUX_KERNEL" = "xy"; then
+    echo "It looks like you're using a RedHat 9 kernel."
+    echo "Disabling their incomplete workqueue.h modification."
+    mkdir -p include/linux
+    touch include/linux/workqueue.h
   fi
 fi
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
