@@ -126,7 +126,7 @@ extern opti9xx_t * snd_opti9xx_new_device(unsigned short hardware)
 #endif	/* OPTi93X */
 
 	default:
-		snd_fprintk("chip %d not supported\n", hardware);
+		snd_printk("chip %d not supported\n", hardware);
 		snd_opti9xx_free(chip);
 		chip = NULL;
 	}
@@ -169,7 +169,7 @@ extern inline unsigned char snd_opti9xx_read(opti9xx_t *chip,
 #endif	/* OPTi93X */
 
 	default:
-		snd_fprintk("chip %d not supported\n", chip->hardware);
+		snd_printk("chip %d not supported\n", chip->hardware);
 	}
 
 	spin_unlock_irqrestore(&chip->lock, flags);
@@ -211,7 +211,7 @@ extern inline void snd_opti9xx_write(opti9xx_t *chip, unsigned char reg,
 #endif	/* OPTi93X */
 
 	default:
-		snd_fprintk("chip %d not supported\n", chip->hardware);
+		snd_printk("chip %d not supported\n", chip->hardware);
 	}
 
 	spin_unlock_irqrestore(&chip->lock, flags);
@@ -278,7 +278,7 @@ extern int snd_opti9xx_configure(opti9xx_t *chip)
 #endif	/* OPTi93X */
 
 	default:
-		snd_fprintk("chip %d not supported\n", chip->hardware);
+		snd_printk("chip %d not supported\n", chip->hardware);
 		return -EINVAL;
 	}
 
@@ -296,7 +296,7 @@ extern int snd_opti9xx_configure(opti9xx_t *chip)
 		wss_base_bits = 0x02;
 		break;
 	default:
-		snd_fprintk("WSS port 0x%lx not valid\n", chip->wss_base);
+		snd_printk("WSS port 0x%lx not valid\n", chip->wss_base);
 		goto __skip_base;
 	}
 	snd_opti9xx_write_mask(chip, OPTi9XX_MC_REG(1), wss_base_bits << 4, 0x30);
@@ -321,7 +321,7 @@ __skip_base:
 		irq_bits = 0x04;
 		break;
 	default:
-		snd_fprintk("WSS irq # %ld not valid\n", chip->irq);
+		snd_printk("WSS irq # %ld not valid\n", chip->irq);
 		goto __skip_resources;
 	}
 
@@ -336,13 +336,13 @@ __skip_base:
 		dma_bits = 0x03;
 		break;
 	default:
-		snd_fprintk("WSS dma1 # %ld not valid\n", chip->dma1);
+		snd_printk("WSS dma1 # %ld not valid\n", chip->dma1);
 		goto __skip_resources;
 	}
 
 #if defined(CS4231) || defined(OPTi93X)
 	if (chip->dma1 == chip->dma2) {
-		snd_fprintk("don't want to share dmas\n");
+		snd_printk("don't want to share dmas\n");
 		return -EBUSY;
 	}
 
@@ -351,7 +351,7 @@ __skip_base:
 	case 1:
 		break;
 	default:
-		snd_fprintk("WSS dma2 # %ld not valid\n", chip->dma2);
+		snd_printk("WSS dma2 # %ld not valid\n", chip->dma2);
 		goto __skip_resources;
 	}
 	dma_bits |= 0x04;
@@ -379,7 +379,7 @@ __skip_resources:
 			mpu_port_bits = 0x00;
 			break;
 		default:
-			snd_fprintk("MPU-401 port 0x%lx not valid\n",
+			snd_printk("MPU-401 port 0x%lx not valid\n",
 				chip->mpu_port);
 			goto __skip_mpu;
 		}
@@ -398,7 +398,7 @@ __skip_resources:
 			mpu_irq_bits = 0x01;
 			break;
 		default:
-			snd_fprintk("MPU-401 irq # %ld not valid\n",
+			snd_printk("MPU-401 irq # %ld not valid\n",
 				chip->mpu_irq);
 			goto __skip_mpu;
 		}

@@ -46,7 +46,7 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 	void *__ptr = ptr;\
 	unsigned int __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
-		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("bad MAGIC (0x%x)\n", __magic);\
 		__VA_ARGS__;\
 	}\
 	__ptr;\
@@ -56,7 +56,7 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 	void *__ptr = ptr;\
 	unsigned int __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
-		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("bad MAGIC (0x%x)\n", __magic);\
 		##action;\
 	}\
 	__ptr;\

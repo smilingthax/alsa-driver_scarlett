@@ -403,7 +403,7 @@ extern void _snd_kfree(void *obj);
 #ifdef CONFIG_SND_DEBUG
 #define snd_kfree(obj) { \
 	if (obj == NULL) \
-		printk("snd: kfree NULL - %s:%i [%s]\n", __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+		snd_printk("kfree(NULL)\n"); \
 	else _snd_kfree(obj); \
 } while (0)
 #else
@@ -491,21 +491,23 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
  *  VARARGS section
  */
 
-#define snd_printk(...) printk("snd: " __VA_ARGS__)
-#define snd_fprintk(...) printk("snd: " __FILE__ ": " __VA_ARGS__)
+#define snd_printk(...) do {\
+	printk("ALSA %s:%d: ", __FILE__, __LINE__); \
+ 	printk(__VA_ARGS__); \
+} while (0)
 
 #ifdef CONFIG_SND_DEBUG
 
 #define snd_printd(...) snd_printk(__VA_ARGS__)
 #define snd_debug_check(expr, ...) do {\
 	if (expr) {\
-		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("BUG? (%s)\n", __STRING(expr));\
 		__VA_ARGS__;\
 	}\
 } while (0)
 #define snd_error_check(expr, ...) do {\
 	if (expr) {\
-		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("ERROR (%s)\n", __STRING(expr));\
 		__VA_ARGS__;\
 	}\
 } while (0)
@@ -530,21 +532,23 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
  *  Old args section...
  */
 
-#define snd_printk(args...) printk("snd: " ##args)
-#define snd_fprintk(args...) printk("snd: " __FILE__ ": " ##args)
+#define snd_printk(args...) do {\
+	printk("ALSA %s:%d: ", __FILE__, __LINE__); \
+ 	printk(##args); \
+} while (0)
 
 #ifdef CONFIG_SND_DEBUG
 
 #define snd_printd(args...) snd_printk(##args)
 #define snd_debug_check(expr, args...) do {\
 	if (expr) {\
-		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("BUG? (%s)\n", __STRING(expr));\
 		##args;\
 	}\
 } while (0)
 #define snd_error_check(expr, args...) do {\
 	if (expr) {\
-		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("ERROR (%s)\n", __STRING(expr));\
 		##args;\
 	}\
 } while (0)
