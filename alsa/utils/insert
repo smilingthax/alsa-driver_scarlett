@@ -379,7 +379,7 @@ case "$1" in
   virmidi)
     basic
     insert snd-seq-virmidi.o
-    insert snd-virmidi.o
+    insert snd-virmidi.o snd_enable=1,1 snd_midi_devs=8,8
     ;;
   serialmidi)
     basic
