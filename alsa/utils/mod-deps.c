@@ -150,6 +150,7 @@ static char *no_cards[] = {
 	"@SND_OPL4_LIB",
 	"@SND_VX_LIB",
 	"@SND_MPU401_UART",
+	"@SND_GUS_SYNTH",
 	NULL
 };
 
