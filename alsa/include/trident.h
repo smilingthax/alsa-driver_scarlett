@@ -172,6 +172,8 @@ enum miscint_bits {
 
 /* Channel Registers */
 
+#define CH_START		    0xe0
+
 #define CH_DX_CSO_ALPHA_FMS         0xe0
 #define CH_DX_ESO_DELTA             0xe8
 #define CH_DX_FMC_RVOL_CVOL         0xec
@@ -269,21 +271,22 @@ struct _snd_trident_voice {
 	snd_trident_sample_ops_t *sample_ops;
 
 	/* channel parameters */
-	unsigned short Delta;		/* 16 bits */
-	unsigned short Attribute;	/* 16 bits - SiS 7018 */
-	unsigned char Vol;		/* 8 bits */
-	unsigned char Pan;		/* 7 bits */
-	unsigned char GVSel;		/* 1 bit */
-	unsigned char RVol;		/* 7 bits */
-	unsigned char CVol;		/* 7 bits */
-	unsigned char FMC;		/* 2 bits */
-	unsigned char CTRL;		/* 4 bits */
-	unsigned char FMS;		/* 4 bits */
+	unsigned int CSO;		/* 24 bits (16 on DX) */
+	unsigned int ESO;		/* 24 bits (16 on DX) */
 	unsigned int LBA;		/* 30 bits */
 	unsigned short EC;		/* 12 bits */
 	unsigned short Alpha;		/* 12 bits */
-	unsigned int CSO;		/* 24 bits (16 on DX) */
-	unsigned int ESO;		/* 24 bits (16 on DX) */
+	unsigned short Delta;		/* 16 bits */
+	unsigned short Attribute;	/* 16 bits - SiS 7018 */
+	unsigned short Vol;		/* 12 bits (6.6) */
+	unsigned char Pan;		/* 7 bits (1.4.2) */
+	unsigned char GVSel;		/* 1 bit */
+	unsigned char RVol;		/* 7 bits (5.2) */
+	unsigned char CVol;		/* 7 bits (5.2) */
+	unsigned char FMC;		/* 2 bits */
+	unsigned char CTRL;		/* 4 bits */
+	unsigned char FMS;		/* 4 bits */
+	unsigned char LFO;		/* 8 bits */
 
 	unsigned int negCSO;	/* nonzero - use negative CSO */
 
@@ -323,10 +326,11 @@ struct _snd_4dwave {
 
 struct _snd_trident_pcm_mixer {
 	snd_trident_voice_t *voice;	/* active voice */
-	unsigned char vol;		/* front volume */
+	unsigned short vol;		/* front volume */
 	unsigned char pan;		/* pan control */
 	unsigned char rvol;		/* rear volume */
 	unsigned char cvol;		/* center volume */
+	unsigned char pad;
 	snd_kcontrol_t *ctl_vol;	/* front volume */
 	snd_kcontrol_t *ctl_pan;	/* pan */
 	snd_kcontrol_t *ctl_rvol;	/* rear volume */
