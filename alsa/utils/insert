@@ -14,6 +14,8 @@ function basic() {
   if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd-seq.o >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi
 }
 
 function insert() {
@@ -181,10 +183,12 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-cs4236.o
     insert snd-opl3.o
-    insert snd-card-cs4236.o snd_port=0x534 snd_cport=0x120 \
-		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
-		snd_dma1=1 snd_dma2=0 \
-		snd_irq=5 snd_mpu_irq=7
+#    insert snd-card-cs4236.o snd_port=0x534 snd_cport=0x120 \
+#		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
+#		snd_dma1=1 snd_dma2=0 \
+#		snd_irq=5 snd_mpu_irq=7
+    insert isapnp.o
+    insert snd-card-cs4236.o
     restore cs4236.conf
     ;;
   detect)
