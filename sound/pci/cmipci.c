@@ -2837,7 +2837,7 @@ static void __devinit snd_cmipci_proc_init(cmipci_t *cm)
 	snd_info_entry_t *entry;
 
 	if (! snd_card_proc_new(cm->card, "cmipci", &entry))
-		snd_info_set_text_ops(entry, cm, snd_cmipci_proc_read);
+		snd_info_set_text_ops(entry, cm, 1024, snd_cmipci_proc_read);
 }
 
 
