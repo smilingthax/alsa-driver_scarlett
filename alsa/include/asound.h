@@ -82,7 +82,7 @@ typedef struct snd_rawmidi_input_status snd_rawmidi_input_status_t;
 
 /****************************************************************************
  *                                                                          *
- *        Section for driver control interface - /dev/sndcontrol?           *
+ *        Section for driver control interface - /dev/snd/control?          *
  *                                                                          *
  ****************************************************************************/
 
@@ -155,7 +155,7 @@ struct snd_ctl_switch {
 
 /****************************************************************************
  *                                                                          *
- *                  MIXER interface - /dev/sndmixer?                        *
+ *                  MIXER interface - /dev/snd/mixer??                      *
  *                                                                          *
  ****************************************************************************/
  
@@ -164,9 +164,12 @@ struct snd_ctl_switch {
 					/* max 12 chars (with '\0') */
 #define SND_MIXER_ID_MASTER		"Master"
 #define SND_MIXER_ID_MASTER1		"Master 1"
+#define SND_MIXER_ID_MASTERD		"Master D"
+#define SND_MIXER_ID_MASTERD1		"Master D1"
 #define SND_MIXER_ID_HEADPHONE		"Headphone"
 #define SND_MIXER_ID_MASTER_MONO	"Master M"
 #define SND_MIXER_ID_3D			"3D Wide"
+#define SND_MIXER_ID_3D_VOLUME		"3D Volume"
 #define SND_MIXER_ID_3D_CENTER		"3D Center"
 #define SND_MIXER_ID_3D_SPACE		"3D Space"
 #define SND_MIXER_ID_3D_DEPTH		"3D Depth"
@@ -177,6 +180,7 @@ struct snd_ctl_switch {
 #define SND_MIXER_ID_SYNTHESIZER1	"Synth 1"
 #define SND_MIXER_ID_FM			"FM"
 #define SND_MIXER_ID_EFFECT		"Effect"
+#define SND_MIXER_ID_DSP		"DSP"
 #define SND_MIXER_ID_PCM		"PCM"
 #define SND_MIXER_ID_PCM1		"PCM 1"
 #define SND_MIXER_ID_LINE		"Line-In"
@@ -352,7 +356,7 @@ struct snd_oss_mixer_info_obsolete {
 
 /*****************************************************************************
  *                                                                           *
- *             Digital Audio (PCM) interface - /dev/sndpcm?                  *
+ *             Digital Audio (PCM) interface - /dev/snd/pcm??                *
  *                                                                           *
  *****************************************************************************/
 
@@ -723,7 +727,7 @@ struct snd_pcm_buffer_description {
 #define SND_MCTL_MONO2			0x7f
 
 /*
- *  Raw MIDI section
+ *  Raw MIDI section - /dev/snd/midi??
  */
 
 #define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION( 1, 0, 0 )
