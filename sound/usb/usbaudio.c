@@ -150,8 +150,8 @@ struct snd_usb_substream {
 	unsigned int phase;      /* phase accumulator */
 	unsigned int maxpacksize;	/* max packet size in bytes */
 	unsigned int maxframesize;	/* max packet size in frames */
-	unsigned int curpacksize;	/* current packet size in bytes */
-	unsigned int curframesize;	/* current packet size in frames */
+	unsigned int curpacksize;	/* current packet size in bytes (for capture) */
+	unsigned int curframesize;	/* current packet size in frames (for capture) */
 	unsigned int fill_max: 1;	/* fill max packet size always */
 
 	unsigned int running: 1;	/* running status */
@@ -1856,6 +1856,7 @@ static int snd_usb_create_streams(snd_usb_audio_t *chip, int ctrlif,
 			continue;
 		}
 		parse_audio_endpoints(chip, buffer, buflen, j);
+		usb_set_interface(dev, j, 0); /* reset the current interface */
 		usb_driver_claim_interface(&usb_audio_driver, iface, (void *)-1);
 	}
 
