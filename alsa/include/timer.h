@@ -65,9 +65,10 @@ struct snd_stru_timer {
 	unsigned long sticks;		/* schedule ticks */
 	void *private_data;
 	void (*private_free) (void *private_data);
-	snd_timer_instance_t *first;
 	struct snd_stru_timer_hardware hw;
 	spinlock_t lock;
+	int in_use;			/* 1 = user, 2 = IRQ */
+	snd_timer_instance_t *first;
 	snd_timer_t *next;
 };
 
@@ -81,12 +82,14 @@ struct snd_stru_timer_instance {
 	void *callback_data;
 	unsigned long ticks;
 	unsigned long cticks;
-	unsigned long lost;			/* lost ticks */
+	unsigned long lost;		/* lost ticks */
 	unsigned int slave_type;
 	unsigned int slave_id;
 	snd_timer_instance_t *next;
-	snd_timer_instance_t *iprev;
 	snd_timer_instance_t *inext;
+	snd_timer_instance_t *iprev;
+	snd_timer_instance_t *slave;	/* slave list */
+	snd_timer_instance_t *master;	/* master link */
 };
 
 /*
