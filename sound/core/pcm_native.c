@@ -626,7 +626,7 @@ static int snd_pcm_action_main(struct action_ops *ops,
 
 	list_for_each(pos, &substream->link->substreams) {
 		s = list_entry(pos, snd_pcm_substream_t, link_list);
-		if (substream->link != &substream->local_link && s != substream)
+		if (snd_pcm_stream_linked(substream) && s != substream)
 			spin_lock(&s->local_link.lock);
 		res = ops->pre_action(s, state);
 		if (res < 0)
@@ -645,10 +645,10 @@ static int snd_pcm_action_main(struct action_ops *ops,
 			       _action_done:
 				ops->post_action(s, state);
 			}
-			if (substream->link != &substream->local_link && s != substream)
+			if (snd_pcm_stream_linked(substream) && s != substream)
 				spin_unlock(&s->local_link.lock);
 		}
-	} else if (substream->link != &substream->local_link) {
+	} else if (snd_pcm_stream_linked(substream)) {
 		snd_pcm_substream_t *s1;
 		/* unlock all streams */
 		list_for_each(pos, &substream->link->substreams) {
@@ -672,7 +672,7 @@ static int snd_pcm_action(struct action_ops *ops,
 {
 	int res;
 
-	if (substream->link != &substream->local_link) {
+	if (snd_pcm_stream_linked(substream)) {
 		if (!spin_trylock(&substream->link->lock)) {
 			spin_unlock(&substream->local_link.lock);
 			spin_lock(&substream->link->lock);
@@ -680,7 +680,7 @@ static int snd_pcm_action(struct action_ops *ops,
 		}
 	}
 	res = snd_pcm_action_main(ops, substream, state, flags);
-	if (substream->link != &substream->local_link)
+	if (snd_pcm_stream_linked(substream))
 		spin_unlock(&substream->link->lock);
 	return res;
 }
@@ -696,12 +696,12 @@ static int snd_pcm_action_lock_irq(struct action_ops *ops,
 	int res;
 
 	read_lock_irq(&snd_pcm_link_rwlock);
-	if (substream->link != &substream->local_link)
+	if (snd_pcm_stream_linked(substream))
 		spin_lock(&substream->link->lock);
 	spin_lock(&substream->local_link.lock);
 	res = snd_pcm_action_main(ops, substream, state, flags);
 	spin_unlock(&substream->local_link.lock);
-	if (substream->link != &substream->local_link)
+	if (snd_pcm_stream_linked(substream))
 		spin_unlock(&substream->link->lock);
 	read_unlock_irq(&snd_pcm_link_rwlock);
 	return res;
@@ -1412,11 +1412,11 @@ static int snd_pcm_link(snd_pcm_substream_t *substream, int fd)
 		res = -EBADFD;
 		goto _end;
 	}
-	if (substream1->link != &substream1->local_link) {
+	if (snd_pcm_stream_linked(substream1)) {
 		res = -EALREADY;
 		goto _end;
 	}
-	if (substream->link == &substream->local_link) {
+	if (!snd_pcm_stream_linked(substream)) {
 		substream->link = kmalloc(sizeof(snd_pcm_link_t), GFP_ATOMIC);
 		if (substream->link == NULL) {
 			res = -ENOMEM;
@@ -1447,7 +1447,7 @@ static int snd_pcm_unlink(snd_pcm_substream_t *substream)
 	int res = 0, count = 0;
 
 	write_lock_irq(&snd_pcm_link_rwlock);
-	if (substream->link == &substream->local_link) {
+	if (!snd_pcm_stream_linked(substream)) {
 		res = -EINVAL;
 		goto _end;
 	}

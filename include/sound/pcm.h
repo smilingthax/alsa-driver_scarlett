@@ -576,6 +576,11 @@ static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
  *  PCM library
  */
 
+static inline int snd_pcm_stream_linked(snd_pcm_substream_t *substream)
+{
+	return substream->link != &substream->local_link;
+}
+
 static inline void snd_pcm_stream_lock(snd_pcm_substream_t *substream)
 {
 	read_lock(&snd_pcm_link_rwlock);
