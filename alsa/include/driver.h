@@ -512,7 +512,8 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_kcalloc_check(size, flags) snd_alloc_check(snd_kcalloc, (size, flags))
 
 #define snd_timestamp_now(tstamp) do_gettimeofday(tstamp)
-#define snd_timestamp_null(tstamp) do { (tstamp)->tv_sec = 0; (tstamp)->tv_usec = 0; } while (0)
+#define snd_timestamp_zero(tstamp) do { (tstamp)->tv_sec = 0; (tstamp)->tv_usec = 0; } while (0)
+#define snd_timestamp_null(tstamp) ((tstamp)->tv_sec == 0 && (tstamp)->tv_usec ==0)
 
 #define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 

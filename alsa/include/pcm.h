@@ -77,7 +77,6 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_STATUS		4
 #define SND_PCM_IOCTL1_MMAP_BYTES	5
 #define SND_PCM_IOCTL1_MMAP_PTR		6
-#define SND_PCM_IOCTL1_PAUSE		7
 #define SND_PCM_IOCTL1_CHANNEL_INFO	8
 #define SND_PCM_IOCTL1_CHANNEL_SETUP	9
 #define SND_PCM_IOCTL1_CHANNEL_PARAMS	10
@@ -85,7 +84,6 @@ typedef struct snd_stru_pcm_hardware {
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_GO		1
-#define SND_PCM_TRIGGER_SYNC_GO		2
 #define SND_PCM_TRIGGER_PAUSE_PUSH	3
 #define SND_PCM_TRIGGER_PAUSE_RELEASE	4
 
@@ -105,8 +103,8 @@ struct snd_stru_pcm_runtime {
 	unsigned int dma_ok: 1,		/* DMA is set up */
 		time: 1,		/* Status has timestamp */
 		mmap: 1;		/* mmap requested */
-	snd_timestamp_t stime;		/* start timestamp */
-	int sync_id;
+	snd_pcm_substream_t *trigger_master;
+	snd_timestamp_t trigger_time;	/* start timestamp */
 	int start_mode;
 	int xrun_mode;
 
@@ -201,6 +199,9 @@ struct snd_stru_pcm_substream {
 	snd_timer_t *timer;		/* timer */
 	/* -- next substream -- */
 	snd_pcm_substream_t *next;
+	/* -- linked substreams -- */
+	snd_pcm_substream_t *link_next;
+	snd_pcm_substream_t *link_prev;
 	snd_pcm_file_t *file;
 	struct file *ffile;
 #ifdef CONFIG_SND_OSSEMUL
@@ -263,6 +264,7 @@ struct snd_stru_pcm_notify {
 };
 
 typedef struct {
+	struct file *file;
 	snd_pcm_substream_t *substream;
 	void *arg;
 	snd_timestamp_t tstamp;
@@ -295,10 +297,7 @@ extern snd_minor_t snd_pcm_reg[2];
 
 extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
 extern int snd_pcm_go(snd_pcm_substream_t *substream);
-extern int snd_pcm_go_pre(snd_pcm_substream_t *substream);
-extern int snd_pcm_go_post(snd_pcm_substream_t *substream);
-extern void snd_pcm_stop(snd_pcm_substream_t *substream, int status);
-extern int snd_pcm_kernel_sync_go(snd_pcm_ksync_request_t *kreqs, unsigned int kreqs_count, snd_pcm_sync_mode_t mode);
+extern int snd_pcm_stop(snd_pcm_substream_t *substream, int status);
 extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
 extern int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
 extern int snd_pcm_kernel_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
@@ -373,6 +372,12 @@ static inline size_t snd_pcm_capture_frames_avail(snd_pcm_runtime_t *runtime)
 	if (frames_avail < 0)
 		frames_avail += runtime->frame_boundary;
 	return frames_avail;
+}
+
+static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream, 
+					snd_pcm_substream_t *master)
+{
+	substream->runtime->trigger_master = master;
 }
 
 extern int snd_pcm_nearest_le_clock(unsigned int hertz, 

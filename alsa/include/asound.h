@@ -799,7 +799,7 @@ typedef struct snd_pcm_channel_setup {
 
 typedef struct snd_pcm_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
-	snd_timestamp_t stime;	/* time when playback/capture was started */
+	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
 	snd_timestamp_t tstamp;	/* Timestamp */
 	size_t frame_io;	/* current I/O position in frames */
 	size_t frame_data;	/* current data position */
@@ -876,6 +876,8 @@ typedef struct {
 #define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
 #define SND_PCM_IOCTL_FRAME_DATA	_IOW ('A', 0x54, off_t)
 #define SND_PCM_IOCTL_SYNC		_IOW ('A', 0x60, snd_pcm_sync_t)
+#define SND_PCM_IOCTL_LINK		_IOW ('A', 0x61, int)
+#define SND_PCM_IOCTL_UNLINK		_IO  ('A', 0x62)
 
 /*****************************************************************************
  *                                                                           *
