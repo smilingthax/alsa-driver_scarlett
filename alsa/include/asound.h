@@ -426,6 +426,8 @@ struct sndrv_pcm_status {
 	enum sndrv_pcm_state state;	/* stream state */
 	struct timeval trigger_tstamp;	/* time when stream was started/stopped/paused */
 	struct timeval tstamp;		/* reference timestamp */
+	sndrv_pcm_uframes_t appl_ptr;	/* appl ptr */
+	sndrv_pcm_uframes_t hw_ptr;	/* hw ptr */
 	sndrv_pcm_sframes_t delay;	/* current delay in frames */
 	sndrv_pcm_uframes_t avail;	/* number of frames available */
 	sndrv_pcm_uframes_t avail_max;	/* max frames available on hw since last status */
