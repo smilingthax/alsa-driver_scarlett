@@ -72,7 +72,7 @@
 #include <asm/processor.h>
 #define isPReP (_machine == _MACH_prep)
 #else
-#define isPReP 0
+#define isPReP 1
 #endif
 
 #if 0
