@@ -395,9 +395,9 @@ Module parameters
     thus main port must be specified!!! Other ports are optional.
     
   Module snd-card-azt2320.o
-  ------------------------
+  -------------------------
 
-    Module for soundcards based on Aztech System AZT2320 chip.
+    Module for soundcards based on Aztech System AZT2320 chip (PnP only).
 
     snd_port	- port # for AZT2320 (SB8) chip (PnP setup)
     snd_mpu_port - port # for MPU-401 UART (PnP setup)
@@ -467,7 +467,7 @@ Module parameters
     Module supports up to 8 cards. This module does not support autoprobe
     (if ISA PnP is not used) thus main port and control port must be
     specified!!! Other ports are optional.
-    
+
   Module snd-card-cs461x.o
   ------------------------
 
@@ -500,7 +500,7 @@ Module parameters
     Module supports up to 8 cards and autoprobe.
 
   Module snd-card-fm801.o
-  ---------------------
+  -----------------------
 
     Module for ForteMedia FM801 based PCI soundcards.
 
@@ -509,6 +509,35 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
+  Module snd-card-es968.o
+  -----------------------
+
+    Module for soundcards based on ESS ES968 chip (PnP only).
+
+    snd_port	- port # for ES968 (SB8) chip (PnP setup)
+    snd_irq	- IRQ # for ES968 (SB8) chip (PnP setup)
+    snd_dma1	- DMA # for ES968 (SB8) chip (PnP setup)
+    snd_dma1_size - max DMA size in kB (4-64kB)
+    
+    Module supports up to 8 cards, PnP and autoprobe.
+    
+  Module snd-card-als100.o
+  ------------------------
+
+    Module for soundcards based on Avance Logic ALS100 chip.
+
+    snd_port	- port # for ALS100 (SB16) chip (PnP setup)
+    snd_irq	- IRQ # for ALS100 (SB16) chip (PnP setup)
+    snd_dma8	- 8-bit DMA # for ALS100 (SB16) chip (PnP setup)
+    snd_dma8_size - max 8-bit DMA size in kB (4-64kB)
+    snd_dma16	- 16-bit DMA # for ALS100 (SB16) chip (PnP setup)
+    snd_dma16_size - max 16-bit DMA size in kB (4-128kB)
+    snd_mpu_port - port # for MPU-401 UART (PnP setup)
+    snd_mpu_irq	- IRQ # for MPU-401 (PnP setup)
+    snd_fm_port - port # for OPL3 FM (PnP setup)
+    
+    Module supports up to 8 cards, autoprobe and PnP.
+
 
 modprobe/kerneld/kmod support
 =============================
