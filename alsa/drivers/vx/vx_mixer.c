@@ -109,13 +109,14 @@ static void vx_set_codec_reg(vx_core_t *chip, int codec, int reg, int val)
  */
 static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int right)
 {
+	left  = chip->hw->output_level_max - left;
+	right = chip->hw->output_level_max - right;
+
 	if (chip->ops->akm_write) {
 		chip->ops->akm_write(chip, XX_CODEC_LEVEL_LEFT_REGISTER, left);
 		chip->ops->akm_write(chip, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
 	} else {
 		/* convert to attenuation level: 0 = 0dB (max), 0xe3 = -113.5 dB (min) */
-		left = VX_ANALOG_OUT_LEVEL_MAX - left;
-		right = VX_ANALOG_OUT_LEVEL_MAX - right;
 		vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_LEFT_REGISTER, left);
 		vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
 	}
