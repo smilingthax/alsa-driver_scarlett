@@ -42,7 +42,7 @@
 #include <sound/initval.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
-MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,MX440; SiS 7012");
+MODULE_DESCRIPTION("Intel 82801AA,82901AB,i810,i820,i830,i840,i845,MX440; SiS 7012; Ali 5455");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{Intel,82801AA-ICH},"
@@ -127,52 +127,57 @@ MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED ",allows:{{0},{0x330},{0x300}},di
 #define PCI_DEVICE_ID_NVIDIA_MCP_AUDIO	0x01b1
 #endif
 
-#define DEVICE_INTEL		0
-#define DEVICE_INTEL_ICH4	1
-#define DEVICE_SIS		2
+enum { DEVICE_INTEL, DEVICE_INTEL_ICH4, DEVICE_SIS, DEVICE_ALI };
 
 #define ICHREG(x) ICH_REG_##x
 
-/* capture block */
-#define ICH_REG_PI_BDBAR		0x00	/* dword - buffer descriptor list base address */
-#define ICH_REG_PI_CIV			0x04	/* byte - current index value */
-#define ICH_REG_PI_LVI			0x05	/* byte - last valid index */
-#define   ICH_REG_LVI_MASK		0x1f
-#define ICH_REG_PI_SR			0x06	/* byte - status register */
-#define   ICH_FIFOE			0x10	/* FIFO error */
-#define   ICH_BCIS			0x08	/* buffer completion interrupt status */
-#define   ICH_LVBCI			0x04	/* last valid buffer completion interrupt */
-#define   ICH_CELV			0x02	/* current equals last valid */
-#define   ICH_DCH			0x01	/* DMA controller halted */
-#define ICH_REG_PI_PICB			0x08	/* word - position in current buffer */
-#define ICH_REG_PI_PIV			0x0a	/* byte - prefetched index value */
-#define   ICH_REG_PIV_MASK		0x1f	/* mask */
-#define ICH_REG_PI_CR			0x0b	/* byte - control register */
-#define   ICH_IOCE			0x10	/* interrupt on completion enable */
-#define   ICH_FEIE			0x08	/* fifo error interrupt enable */
-#define   ICH_LVBIE			0x04	/* last valid buffer interrupt enable */
-#define   ICH_RESETREGS			0x02	/* reset busmaster registers */
-#define   ICH_STARTBM			0x01	/* start busmaster operation */
-/* playback block */
-#define ICH_REG_PO_BDBAR		0x10	/* dword - buffer descriptor list base address */
-#define ICH_REG_PO_CIV			0x14	/* byte - current index value */
-#define ICH_REG_PO_LVI			0x15	/* byte - last valid command */
-#define ICH_REG_PO_SR			0x16	/* byte - status register */
-#define ICH_REG_PO_PICB			0x18	/* word - position in current buffer */
-#define ICH_REG_PO_PIV			0x1a	/* byte - prefetched index value */
-#define ICH_REG_PO_CR			0x1b	/* byte - control register */
-/* mic capture block */
-#define ICH_REG_MC_BDBAR		0x20	/* dword - buffer descriptor list base address */
-#define ICH_REG_MC_CIV			0x24	/* byte - current index value */
-#define ICH_REG_MC_LVI			0x25	/* byte - last valid command */
-#define ICH_REG_MC_SR			0x26	/* byte - status register */
-#define ICH_REG_MC_PICB			0x28	/* word - position in current buffer */
-#define ICH_REG_MC_PIV			0x2a	/* byte - prefetched index value */
-#define ICH_REG_MC_CR			0x2b	/* byte - control register */
+#define DEFINE_REGSET(name,base) \
+enum { \
+	ICH_REG_##name##_BDBAR	= base + 0x0,	/* dword - buffer descriptor list base address */ \
+	ICH_REG_##name##_CIV	= base + 0x04,	/* byte - current index value */ \
+	ICH_REG_##name##_LVI	= base + 0x05,	/* byte - last valid index */ \
+	ICH_REG_##name##_SR	= base + 0x06,	/* byte - status register */ \
+	ICH_REG_##name##_PICB	= base + 0x08,	/* word - position in current buffer */ \
+	ICH_REG_##name##_PIV	= base + 0x0a,	/* byte - prefetched index value */ \
+	ICH_REG_##name##_CR	= base + 0x0b,	/* byte - control register */ \
+};
+
+/* busmaster blocks */
+DEFINE_REGSET(OFF, 0);		/* offset */
+DEFINE_REGSET(PI, 0x00);	/* PCM in */
+DEFINE_REGSET(PO, 0x10);	/* PCM out */
+DEFINE_REGSET(MC, 0x20);	/* Mic in */
+
+/* ICH4 busmater blocks */
+DEFINE_REGSET(MC2, 0x40);	/* Mic in 2 */
+DEFINE_REGSET(PI2, 0x50);	/* PCM in 2 */
+DEFINE_REGSET(SP, 0x60);	/* SPDIF out */
+
+/* values for each busmaster block */
+
+/* LVI */
+#define ICH_REG_LVI_MASK		0x1f
+
+/* SR */
+#define ICH_FIFOE			0x10	/* FIFO error */
+#define ICH_BCIS			0x08	/* buffer completion interrupt status */
+#define ICH_LVBCI			0x04	/* last valid buffer completion interrupt */
+#define ICH_CELV			0x02	/* current equals last valid */
+#define ICH_DCH				0x01	/* DMA controller halted */
+
+/* PIV */
+#define ICH_REG_PIV_MASK		0x1f	/* mask */
+
+/* CR */
+#define ICH_IOCE			0x10	/* interrupt on completion enable */
+#define ICH_FEIE			0x08	/* fifo error interrupt enable */
+#define ICH_LVBIE			0x04	/* last valid buffer interrupt enable */
+#define ICH_RESETREGS			0x02	/* reset busmaster registers */
+#define ICH_STARTBM			0x01	/* start busmaster operation */
+
+
 /* global block */
 #define ICH_REG_GLOB_CNT		0x2c	/* dword - global control */
-#define   ICH_PCM_SMP_MASK	0x00c00000	/* sample width mask */
-#define   ICH_PCM_SMP_20BIT	0x00400000	/* 20-bit samples */
 #define   ICH_PCM_246_MASK	0x00300000	/* 6 channels (not all chips) */
 #define   ICH_PCM_6		0x00200000	/* 6 channels (not all chips) */
 #define   ICH_PCM_4		0x00100000	/* 4 channels (not all chips) */
@@ -184,17 +189,24 @@ MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED ",allows:{{0},{0x330},{0x300}},di
 #define   ICH_AC97COLD		0x00000002	/* AC'97 cold reset */
 #define   ICH_GIE		0x00000001	/* GPI interrupt enable */
 #define ICH_REG_GLOB_STA		0x30	/* dword - global status */
-#define   ICH_TCR		0x01000000	/* tertiary codec ready */
+#define   ICH_TRI		0x20000000	/* ICH4: tertiary (AC_SDIN2) resume interrupt */
+#define   ICH_TCR		0x10000000	/* ICH4: tertiary (AC_SDIN2) codec ready */
+#define   ICH_BCS		0x08000000	/* ICH4: bit clock stopped */
+#define   ICH_SPINT		0x04000000	/* ICH4: S/PDIF interrupt */
+#define   ICH_P2INT		0x02000000	/* ICH4: PCM2-In interrupt */
+#define   ICH_M2INT		0x01000000	/* ICH4: Mic2-In interrupt */
+#define   ICH_SAMPLE_CAP	0x00c00000	/* ICH4: sample capability bits (RO) */
+#define   ICH_MULTICHAN_CAP	0x00300000	/* ICH4: multi-channel capability bits (RO) */
 #define   ICH_MD3		0x00020000	/* modem power down semaphore */
 #define   ICH_AD3		0x00010000	/* audio power down semaphore */
 #define   ICH_RCS		0x00008000	/* read completion status */
 #define   ICH_BIT3		0x00004000	/* bit 3 slot 12 */
 #define   ICH_BIT2		0x00002000	/* bit 2 slot 12 */
 #define   ICH_BIT1		0x00001000	/* bit 1 slot 12 */
-#define   ICH_SRI		0x00000800	/* secondary resume interrupt */
-#define   ICH_PRI		0x00000400	/* primary resume interrupt */
-#define   ICH_SCR		0x00000200	/* secondary codec ready */
-#define   ICH_PCR		0x00000100	/* primary codec ready */
+#define   ICH_SRI		0x00000800	/* secondary (AC_SDIN1) resume interrupt */
+#define   ICH_PRI		0x00000400	/* primary (AC_SDIN0) resume interrupt */
+#define   ICH_SCR		0x00000200	/* secondary (AC_SDIN1) codec ready */
+#define   ICH_PCR		0x00000100	/* primary (AC_SDIN0) codec ready */
 #define   ICH_MCINT		0x00000080	/* MIC capture interrupt */
 #define   ICH_POINT		0x00000040	/* playback interrupt */
 #define   ICH_PIINT		0x00000020	/* capture interrupt */
@@ -202,29 +214,73 @@ MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED ",allows:{{0},{0x330},{0x300}},di
 #define   ICH_MIINT		0x00000002	/* modem capture interrupt */
 #define   ICH_GSCI		0x00000001	/* GPI status change interrupt */
 #define ICH_REG_ACC_SEMA		0x34	/* byte - codec write semaphore */
-#define   ICH_CAS			0x01	/* codec access semaphore */
-#define ICH_SDM				0x80
+#define   ICH_CAS		0x01		/* codec access semaphore */
+#define ICH_REG_SDM		0x80
 #define   ICH_DI2L_MASK		0x000000c0	/* PCM In 2, Mic In 2 data in line */
 #define   ICH_DI2L_SHIFT	6
 #define   ICH_DI1L_MASK		0x00000030	/* PCM In 1, Mic In 1 data in line */
 #define   ICH_DI1L_SHIFT	4
 #define   ICH_SE		0x00000008	/* steer enable */
 #define   ICH_LDI_MASK		0x00000003	/* last codec read data input */
-#define   ICH_LDI_SHIFT		0
 
 #define ICH_MAX_FRAGS		32		/* max hw frags */
+
+
+/*
+ * registers for Ali5455
+ */
+
+/* ALi 5455 busmaster blocks */
+DEFINE_REGSET(AL_PI, 0x40);	/* ALi PCM in */
+DEFINE_REGSET(AL_PO, 0x50);	/* Ali PCM out */
+DEFINE_REGSET(AL_MC, 0x60);	/* Ali Mic in */
+DEFINE_REGSET(AL_CDC_SPO, 0x70);	/* Ali Codec SPDIF out */
+DEFINE_REGSET(AL_CLR_SPI, 0xa0);	/* Ali Controller SPDIF in */
+DEFINE_REGSET(AL_CLR_SPO, 0xb0);	/* Ali Controller SPDIF out */
+
+enum {
+	ICH_REG_ALI_SCR = 0x00,		/* System Control Register */
+	ICH_REG_ALI_SSR = 0x04,		/* System Status Register  */
+	ICH_REG_ALI_DMACR = 0x08,	/* DMA Control Register    */
+	ICH_REG_ALI_FIFOCR1 = 0x0c,	/* FIFO Control Register 1  */
+	ICH_REG_ALI_INTERFACECR = 0x10,	/* Interface Control Register */
+	ICH_REG_ALI_INTERRUPTCR = 0x14,	/* Interrupt control Register */
+	ICH_REG_ALI_INTERRUPTSR = 0x18,	/* Interrupt  Status Register */
+	ICH_REG_ALI_FIFOCR2 = 0x1c,	/* FIFO Control Register 2   */
+	ICH_REG_ALI_CPR = 0x20,		/* Command Port Register     */
+	ICH_REG_ALI_SPR = 0x24,		/* Status Port Register      */
+	ICH_REG_ALI_FIFOCR3 = 0x2c,	/* FIFO Control Register 3  */
+	ICH_REG_ALI_TTSR = 0x30,	/* Transmit Tag Slot Register */
+	ICH_REG_ALI_RTSR = 0x34,	/* Receive Tag Slot  Register */
+	ICH_REG_ALI_CSPSR = 0x38,	/* Command/Status Port Status Register */
+	ICH_REG_ALI_CAS = 0x3c,		/* Codec Write Semaphore Register */
+	ICH_REG_ALI_SPDIFCSR = 0xf8,	/* spdif channel status register  */
+	ICH_REG_ALI_SPDIFICS = 0xfc	/* spdif interface control/status  */
+};
+
+/* interrupts for the whole chip by interrupt status register finish */
+ 
+#define ALI_INT_SPDIFOUT	(1<<23)	/* controller spdif out INTERRUPT */
+#define ALI_INT_SPDIFIN		(1<<22)
+#define ALI_INT_CODECSPDIFOUT	(1<<19)
+#define ALI_INT_MICIN		(1<<18)
+#define ALI_INT_PCMOUT		(1<<17)
+#define ALI_INT_PCMIN		(1<<16)
+#define ALI_INT_CPRAIS		(1<<7)
+#define ALI_INT_SPRAIS		(1<<5)
+#define ALI_INT_GPIO		(1<<1)
+#define ALI_INT_MASK		(ALI_INT_SPDIFOUT|ALI_INT_CODECSPDIFOUT|ALI_INT_MICIN|ALI_INT_PCMOUT|ALI_INT_PCMIN)
+
+#define ALI_PCM_CH4		0x100
+#define ALI_PCM_CH6		0x200
+#define ALI_PCM_MASK		(ALI_PCM_CH4 | ALI_PCM_CH6)
 
 /*
  *  
  */
 
-#define ICHD_PCMIN	0
-#define ICHD_PCMOUT	1
-#define ICHD_MIC	2
-#define ICHD_MIC2	3
-#define ICHD_PCM2IN	4
-#define ICHD_SPBAR	5
-#define ICHD_LAST	5
+enum { ICHD_PCMIN, ICHD_PCMOUT, ICHD_MIC, ICHD_MIC2, ICHD_PCM2IN, ICHD_SPBAR, ICHD_LAST = ICHD_SPBAR };
+enum { ALID_PCMIN, ALID_PCMOUT, ALID_MIC, ALID_AC97SPDIFOUT, ALID_SPDIFIN, ALID_SPDIFOUT, ALID_LAST = ALID_SPDIFOUT };
 
 #define get_ichdev(substream) (ichdev_t *)(substream->runtime->private_data)
 
@@ -247,9 +303,11 @@ typedef struct {
 	unsigned int ack_bit;
 	unsigned int roff_sr;
 	unsigned int roff_picb;
+	unsigned int int_sta_mask;		/* interrupt status mask */
+	unsigned int ali_slot;			/* ALI DMA slot */
 	ac97_t *ac97;
 	unsigned short ac97_rate_regs[3];
-	unsigned int ac97_rates_idx;
+	int ac97_rates_idx;
 #ifdef CONFIG_PM
 	unsigned char civ_saved;
 	unsigned char piv_saved;
@@ -288,6 +346,7 @@ struct _snd_intel8x0 {
 	snd_pcm_t *pcm_mic2;
 	snd_pcm_t *pcm2;
 	snd_pcm_t *pcm_spdif;
+	snd_pcm_t *pcm_ac97spdif;
 	ichdev_t ichd[6];
 
 	int multi4: 1,
@@ -297,6 +356,7 @@ struct _snd_intel8x0 {
 	int no_codec_check: 1;
 
 	ac97_t *ac97[3];
+	unsigned int ac97_sdin[3];
 
 	snd_rawmidi_t *rmidi;
 
@@ -307,6 +367,8 @@ struct _snd_intel8x0 {
 	u32 bdbars_count;
 	u32 *bdbars;
 	dma_addr_t bdbars_addr;
+	u32 int_sta_reg;		/* interrupt status register */
+	u32 int_sta_mask;		/* interrupt status mask */
 	
 #ifdef CONFIG_PM
 	int in_suspend;
@@ -324,6 +386,7 @@ static struct pci_device_id snd_intel8x0_ids[] __devinitdata = {
 	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* NFORCE */
 	{ 0x1022, 0x746d, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD8111 */
 	{ 0x1022, 0x7445, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD768 */
+	{ 0x10b9, 0x5455, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_ALI },   /* Ali5455 */
 	{ 0, }
 };
 
@@ -365,7 +428,6 @@ static void iputbyte(intel8x0_t *chip, u32 offset, u8 val)
 		return outb(val, chip->bmaddr + offset);
 }
 
-#if 0
 static void iputword(intel8x0_t *chip, u32 offset, u16 val)
 {
 	if (chip->bm_mmio)
@@ -373,7 +435,6 @@ static void iputword(intel8x0_t *chip, u32 offset, u16 val)
 	else
 		return outw(val, chip->bmaddr + offset);
 }
-#endif
 
 static void iputdword(intel8x0_t *chip, u32 offset, u32 val)
 {
@@ -405,6 +466,10 @@ static void iaputword(intel8x0_t *chip, u32 offset, u16 val)
 
 /*
  *  Basic I/O
+ */
+
+/*
+ * access to AC97 codec via normal i/o (for ICH and SIS7012)
  */
 static int snd_intel8x0_codec_semaphore(intel8x0_t *chip, unsigned int codec)
 {
@@ -478,10 +543,83 @@ static unsigned short snd_intel8x0_codec_read(ac97_t *ac97,
 			res = 0xffff;
 		}
 	}
+	if (chip->device_type == DEVICE_INTEL_ICH4)
+		chip->ac97_sdin[ac97->num] = igetbyte(chip, ICHREG(SDM)) & ICH_LDI_MASK;
 	spin_unlock(&chip->ac97_lock);
 	return res;
 }
 
+/*
+ * access to AC97 for Ali5455
+ */
+static int snd_intel8x0_ali_codec_ready(intel8x0_t *chip, int mask)
+{
+	int count = 0;
+	for (count = 0; count < 0x7f; count++) {
+		int val = igetbyte(chip, ICHREG(ALI_CSPSR));
+		if (val & mask)
+			return 0;
+	}
+	snd_printd(KERN_WARNING "intel8x0: AC97 codec ready timeout.\n");
+	return -EBUSY;
+}
+
+static int snd_intel8x0_ali_codec_semaphore(intel8x0_t *chip)
+{
+	int time = 100;
+	do {
+		if (igetdword(chip, ICHREG(ALI_CAS)) & 0x80000000)
+			return snd_intel8x0_ali_codec_ready(chip, 0x08);
+		udelay(1);
+	} while (time--);
+	snd_printk(KERN_WARNING "intel8x0: AC97 codec semaphore timeout.\n");
+	return -EBUSY;
+}
+
+static unsigned short snd_intel8x0_ali_codec_read(ac97_t *ac97, unsigned short reg)
+{
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return ~0);
+	unsigned short data, reg2;
+
+	spin_lock(&chip->ac97_lock);
+	if (snd_intel8x0_ali_codec_semaphore(chip))
+		goto __err;
+	reg |= 0x0080;
+	iputword(chip, ICHREG(ALI_CPR) + 2, reg | 0x0080);
+	if (snd_intel8x0_ali_codec_ready(chip, 0x02))
+		goto __err;
+	data = igetword(chip, ICHREG(ALI_SPR));
+	reg2 = igetword(chip, ICHREG(ALI_SPR) + 2);
+	if (reg != reg2) {
+		snd_printd(KERN_WARNING "intel8x0: AC97 read not completed?\n");
+		goto __err;
+	}
+	spin_unlock(&chip->ac97_lock);
+	return data;
+ __err:
+	spin_unlock(&chip->ac97_lock);
+	return 0xffff;
+}
+
+static void snd_intel8x0_ali_codec_write(ac97_t *ac97, unsigned short reg, unsigned short val)
+{
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
+
+	spin_lock(&chip->ac97_lock);
+	if (snd_intel8x0_ali_codec_semaphore(chip)) {
+		spin_unlock(&chip->ac97_lock);
+		return;
+	}
+	iputword(chip, ICHREG(ALI_CPR), val);
+	iputbyte(chip, ICHREG(ALI_CPR) + 2, reg);
+	snd_intel8x0_ali_codec_ready(chip, 0x01);
+	spin_unlock(&chip->ac97_lock);
+}
+
+
+/*
+ * DMA I/O
+ */
 static void snd_intel8x0_setup_periods(intel8x0_t *chip, ichdev_t *ichdev) 
 {
 	int idx;
@@ -554,24 +692,25 @@ static inline void snd_intel8x0_update(intel8x0_t *chip, ichdev_t *ichdev)
 static void snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, dev_id, return);
+	ichdev_t *ichdev;
 	unsigned int status;
+	int i;
 
 	spin_lock(&chip->reg_lock);
-	status = igetdword(chip, ICHREG(GLOB_STA));
-	if ((status & (ICH_MCINT | ICH_POINT | ICH_PIINT)) == 0) {
+	status = igetdword(chip, chip->int_sta_reg);
+	if ((status & chip->int_sta_mask) == 0) {
 		spin_unlock(&chip->reg_lock);
 		return;
 	}
 	/* ack first */
-	iputdword(chip, ICHREG(GLOB_STA), status & (ICH_MCINT | ICH_POINT | ICH_PIINT));
+	iputdword(chip, chip->int_sta_reg, status & chip->int_sta_mask);
 	spin_unlock(&chip->reg_lock);
 
-	if (status & ICH_POINT)
-		snd_intel8x0_update(chip, &chip->ichd[ICHD_PCMOUT]);
-	if (status & ICH_PIINT)
-		snd_intel8x0_update(chip, &chip->ichd[ICHD_PCMIN]);
-	if (status & ICH_MCINT)
-		snd_intel8x0_update(chip, &chip->ichd[ICHD_MIC]);
+	for (i = 0; i < chip->bdbars_count; i++) {
+		ichdev = &chip->ichd[i];
+		if (status & ichdev->int_sta_mask)
+			snd_intel8x0_update(chip, ichdev);
+	}
 }
 
 /*
@@ -608,6 +747,43 @@ static int snd_intel8x0_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 		/* reset whole DMA things */
 		while (!(igetbyte(chip, port + ichdev->roff_sr) & ICH_DCH)) ;
 		iputbyte(chip, port + ICH_REG_PI_CR, ICH_RESETREGS);
+	}
+	return 0;
+}
+
+static int snd_intel8x0_ali_trigger(snd_pcm_substream_t *substream, int cmd)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+	ichdev_t *ichdev = get_ichdev(substream);
+	unsigned long port = ichdev->reg_offset;
+
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+		iputbyte(chip, port + ICH_REG_OFF_CR, ICH_IOCE);
+		iputbyte(chip, ICHREG(ALI_DMACR), 1 << ichdev->ali_slot);
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		iputbyte(chip, ICHREG(ALI_DMACR), 1 << (ichdev->ali_slot + 8));
+		iputbyte(chip, port + ICH_REG_OFF_CR, 0);
+		/* reset whole DMA things */
+		while (!(igetbyte(chip, port + ICH_REG_OFF_CR)))
+			;
+		iputbyte(chip, port + ICH_REG_OFF_CR, ICH_RESETREGS);
+		/* clear interrupts */
+		iputbyte(chip, port + ICH_REG_OFF_SR, igetbyte(chip, port + ICH_REG_OFF_SR) | 0x1e);
+		iputdword(chip, ICHREG(ALI_INTERRUPTSR),
+			  igetdword(chip, ICHREG(ALI_INTERRUPTSR)) & (1 << (ichdev->ali_slot + 8)));
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		iputbyte(chip, port + ICH_REG_OFF_CR, 0);
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		iputbyte(chip, ICHREG(ALI_DMACR), 1 << ichdev->ali_slot);
+		break;
+	default:
+		return -EINVAL;
 	}
 	return 0;
 }
@@ -723,7 +899,8 @@ static int snd_intel8x0_pcm_open(snd_pcm_substream_t * substream, ichdev_t *ichd
 
 	ichdev->substream = substream;
 	runtime->hw = snd_intel8x0_stream;
-	runtime->hw.rates = ichdev->ac97->rates[ichdev->ac97_rates_idx];
+	if (ichdev->ac97_rates_idx >= 0)
+		runtime->hw.rates = ichdev->ac97->rates[ichdev->ac97_rates_idx];
 	if (!(runtime->hw.rates & SNDRV_PCM_RATE_8000))
 		runtime->hw.rate_min = 48000;
 	if (chip->device_type == DEVICE_SIS) {
@@ -840,6 +1017,51 @@ static int snd_intel8x0_spdif_close(snd_pcm_substream_t * substream)
 	return 0;
 }
 
+static int snd_intel8x0_ali_ac97spdifout_open(snd_pcm_substream_t * substream)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+
+	return snd_intel8x0_pcm_open(substream, &chip->ichd[ALID_AC97SPDIFOUT]);
+}
+
+static int snd_intel8x0_ali_ac97spdifout_close(snd_pcm_substream_t * substream)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+
+	chip->ichd[ALID_AC97SPDIFOUT].substream = NULL;
+	return 0;
+}
+
+static int snd_intel8x0_ali_spdifin_open(snd_pcm_substream_t * substream)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+
+	return snd_intel8x0_pcm_open(substream, &chip->ichd[ALID_SPDIFIN]);
+}
+
+static int snd_intel8x0_ali_spdifin_close(snd_pcm_substream_t * substream)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+
+	chip->ichd[ALID_SPDIFIN].substream = NULL;
+	return 0;
+}
+
+static int snd_intel8x0_ali_spdifout_open(snd_pcm_substream_t * substream)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+
+	return snd_intel8x0_pcm_open(substream, &chip->ichd[ALID_SPDIFOUT]);
+}
+
+static int snd_intel8x0_ali_spdifout_close(snd_pcm_substream_t * substream)
+{
+	intel8x0_t *chip = snd_pcm_substream_chip(substream);
+
+	chip->ichd[ALID_SPDIFOUT].substream = NULL;
+	return 0;
+}
+
 static snd_pcm_ops_t snd_intel8x0_playback_ops = {
 	.open =		snd_intel8x0_playback_open,
 	.close =	snd_intel8x0_playback_close,
@@ -906,6 +1128,72 @@ static snd_pcm_ops_t snd_intel8x0_spdif_ops = {
 	.pointer =	snd_intel8x0_pcm_pointer,
 };
 
+static snd_pcm_ops_t snd_intel8x0_ali_playback_ops = {
+	.open =		snd_intel8x0_playback_open,
+	.close =	snd_intel8x0_playback_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_intel8x0_hw_params,
+	.hw_free =	snd_intel8x0_hw_free,
+	.prepare =	snd_intel8x0_pcm_prepare,
+	.trigger =	snd_intel8x0_ali_trigger,
+	.pointer =	snd_intel8x0_pcm_pointer,
+};
+
+static snd_pcm_ops_t snd_intel8x0_ali_capture_ops = {
+	.open =		snd_intel8x0_capture_open,
+	.close =	snd_intel8x0_capture_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_intel8x0_hw_params,
+	.hw_free =	snd_intel8x0_hw_free,
+	.prepare =	snd_intel8x0_pcm_prepare,
+	.trigger =	snd_intel8x0_ali_trigger,
+	.pointer =	snd_intel8x0_pcm_pointer,
+};
+
+static snd_pcm_ops_t snd_intel8x0_ali_capture_mic_ops = {
+	.open =		snd_intel8x0_mic_open,
+	.close =	snd_intel8x0_mic_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_intel8x0_hw_params,
+	.hw_free =	snd_intel8x0_hw_free,
+	.prepare =	snd_intel8x0_pcm_prepare,
+	.trigger =	snd_intel8x0_ali_trigger,
+	.pointer =	snd_intel8x0_pcm_pointer,
+};
+
+static snd_pcm_ops_t snd_intel8x0_ali_ac97spdifout_ops = {
+	.open =		snd_intel8x0_ali_ac97spdifout_open,
+	.close =	snd_intel8x0_ali_ac97spdifout_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_intel8x0_hw_params,
+	.hw_free =	snd_intel8x0_hw_free,
+	.prepare =	snd_intel8x0_pcm_prepare,
+	.trigger =	snd_intel8x0_ali_trigger,
+	.pointer =	snd_intel8x0_pcm_pointer,
+};
+
+static snd_pcm_ops_t snd_intel8x0_ali_spdifin_ops = {
+	.open =		snd_intel8x0_ali_spdifin_open,
+	.close =	snd_intel8x0_ali_spdifin_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_intel8x0_hw_params,
+	.hw_free =	snd_intel8x0_hw_free,
+	.prepare =	snd_intel8x0_pcm_prepare,
+	.trigger =	snd_intel8x0_pcm_trigger,
+	.pointer =	snd_intel8x0_pcm_pointer,
+};
+
+static snd_pcm_ops_t snd_intel8x0_ali_spdifout_ops = {
+	.open =		snd_intel8x0_ali_spdifout_open,
+	.close =	snd_intel8x0_ali_spdifout_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_intel8x0_hw_params,
+	.hw_free =	snd_intel8x0_hw_free,
+	.prepare =	snd_intel8x0_pcm_prepare,
+	.trigger =	snd_intel8x0_pcm_trigger,
+	.pointer =	snd_intel8x0_pcm_pointer,
+};
+
 static void snd_intel8x0_pcm_free(snd_pcm_t *pcm)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pcm->private_data, return);
@@ -924,8 +1212,13 @@ static int __devinit snd_intel8x0_pcm(intel8x0_t *chip, int device, snd_pcm_t **
 	if (err < 0)
 		return err;
 
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_intel8x0_playback_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_intel8x0_capture_ops);
+	if (chip->device_type == DEVICE_ALI) {
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_intel8x0_ali_playback_ops);
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_intel8x0_ali_capture_ops);
+	} else {
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_intel8x0_playback_ops);
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_intel8x0_capture_ops);
+	}
 
 	pcm->private_data = chip;
 	pcm->private_free = snd_intel8x0_pcm_free;
@@ -957,11 +1250,14 @@ static int __devinit snd_intel8x0_pcm_mic(intel8x0_t *chip, int device, snd_pcm_
 
 	if (rpcm)
 		*rpcm = NULL;
-	err = snd_pcm_new(chip->card, "Intel ICH - MIC ADC", device, 1, 1, &pcm);
+	err = snd_pcm_new(chip->card, "Intel ICH - MIC ADC", device, 0, 1, &pcm);
 	if (err < 0)
 		return err;
 
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_intel8x0_capture_mic_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+			chip->device_type == DEVICE_ALI ?
+				&snd_intel8x0_ali_capture_mic_ops :
+				&snd_intel8x0_capture_mic_ops);
 
 	pcm->private_data = chip;
 	pcm->private_free = snd_intel8x0_pcm_mic_free;
@@ -991,7 +1287,7 @@ static int __devinit snd_intel8x0_pcm_mic2(intel8x0_t *chip, int device, snd_pcm
 
 	if (rpcm)
 		*rpcm = NULL;
-	err = snd_pcm_new(chip->card, "Intel ICH - MIC2 ADC", device, 1, 1, &pcm);
+	err = snd_pcm_new(chip->card, "Intel ICH - MIC2 ADC", device, 0, 1, &pcm);
 	if (err < 0)
 		return err;
 
@@ -1025,7 +1321,7 @@ static int __devinit snd_intel8x0_pcm_capture2(intel8x0_t *chip, int device, snd
 
 	if (rpcm)
 		*rpcm = NULL;
-	err = snd_pcm_new(chip->card, "Intel ICH - ADC2", device, 1, 1, &pcm);
+	err = snd_pcm_new(chip->card, "Intel ICH - ADC2", device, 0, 1, &pcm);
 	if (err < 0)
 		return err;
 
@@ -1059,7 +1355,7 @@ static int __devinit snd_intel8x0_pcm_spdif(intel8x0_t *chip, int device, snd_pc
 
 	if (rpcm)
 		*rpcm = NULL;
-	err = snd_pcm_new(chip->card, "Intel ICH - IEC958", device, 1, 1, &pcm);
+	err = snd_pcm_new(chip->card, "Intel ICH - IEC958", device, 1, 0, &pcm);
 	if (err < 0)
 		return err;
 
@@ -1071,6 +1367,75 @@ static int __devinit snd_intel8x0_pcm_spdif(intel8x0_t *chip, int device, snd_pc
 	sprintf(pcm->name, "%s - IEC958", chip->card->shortname);
 
 	chip->pcm_spdif = pcm;	
+	if (rpcm)
+		*rpcm = pcm;
+	return 0;
+}
+
+/*
+ *  PCM code - ALI S/PDIF
+ */
+
+static void snd_intel8x0_ali_spdif_free(snd_pcm_t *pcm)
+{
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pcm->private_data, return);
+	chip->pcm_spdif = NULL;
+}
+
+static int __devinit snd_intel8x0_ali_spdif(intel8x0_t *chip, int device, snd_pcm_t ** rpcm)
+{
+	snd_pcm_t *pcm;
+	int err;
+
+	if (rpcm)
+		*rpcm = NULL;
+	err = snd_pcm_new(chip->card, "Intel ICH - IEC958", device, 1, 1, &pcm);
+	if (err < 0)
+		return err;
+
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_intel8x0_ali_spdifout_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_intel8x0_ali_spdifin_ops);
+
+	pcm->private_data = chip;
+	pcm->private_free = snd_intel8x0_ali_spdif_free;
+	pcm->info_flags = 0;
+	sprintf(pcm->name, "%s - IEC958", chip->card->shortname);
+
+	chip->pcm_spdif = pcm;	
+	if (rpcm)
+		*rpcm = pcm;
+	return 0;
+}
+
+/*
+ *  PCM code - ALI AC'97 S/PDIF
+ */
+
+static void snd_intel8x0_ali_ac97spdif_free(snd_pcm_t *pcm)
+{
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pcm->private_data, return);
+	chip->pcm_ac97spdif = NULL;
+}
+
+static int __devinit snd_intel8x0_ali_ac97spdif(intel8x0_t *chip, int device, snd_pcm_t ** rpcm)
+{
+	snd_pcm_t *pcm;
+	int err;
+
+	if (rpcm)
+		*rpcm = NULL;
+	err = snd_pcm_new(chip->card, "ALI - AC97 IEC958", device, 0, 1, &pcm);
+	if (err < 0)
+		return err;
+
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_intel8x0_ali_ac97spdifout_ops);
+
+	pcm->private_data = chip;
+	pcm->private_free = snd_intel8x0_ali_ac97spdif_free;
+	pcm->info_flags = 0;
+	sprintf(pcm->name, "%s - AC97 IEC958", chip->card->shortname);
+
+	chip->pcm_ac97spdif = pcm;	
 	if (rpcm)
 		*rpcm = pcm;
 	return 0;
@@ -1099,7 +1464,7 @@ static void snd_intel8x0_mixer_free_ac97(ac97_t *ac97)
 static struct _ac97_rate_regs {
 	unsigned int ichd;
 	unsigned short regs[3];
-	unsigned short rates_idx;
+	short rates_idx;
 } ac97_rate_regs[] = {
 	{ ICHD_PCMOUT, { AC97_PCM_FRONT_DAC_RATE, AC97_PCM_SURR_DAC_RATE, AC97_PCM_LFE_DAC_RATE }, AC97_RATES_FRONT_DAC },
 	{ ICHD_PCMIN, { AC97_PCM_LR_ADC_RATE, 0, 0 }, AC97_RATES_ADC },
@@ -1109,26 +1474,61 @@ static struct _ac97_rate_regs {
 	{ ICHD_SPBAR, { AC97_SPDIF, 0, 0 }, AC97_RATES_SPDIF },
 };
 
+static struct _ac97_ali_rate_regs {
+	unsigned int ichd;
+	unsigned short regs[3];
+	short rates_idx;
+} ac97_ali_rate_regs[] = {
+	{ ALID_PCMOUT, { AC97_PCM_FRONT_DAC_RATE, AC97_PCM_SURR_DAC_RATE, AC97_PCM_LFE_DAC_RATE }, AC97_RATES_FRONT_DAC },
+	{ ALID_PCMIN, { AC97_PCM_LR_ADC_RATE, 0, 0 }, AC97_RATES_ADC },
+	{ ALID_MIC, { AC97_PCM_MIC_ADC_RATE, 0, 0 }, AC97_RATES_MIC_ADC },
+	{ ALID_AC97SPDIFOUT, { AC97_SPDIF, 0, 0 }, AC97_RATES_SPDIF },
+	{ ALID_SPDIFOUT, { 0, 0, 0 }, -1 },
+	{ ALID_SPDIFIN, { 0, 0, 0 }, -1 },
+};
+
 
 static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 {
-	ac97_t ac97;
+	ac97_t ac97, *x97, *x97_1, *x97_2;
 	ichdev_t *ichdev;
-	struct _ac97_rate_regs *aregs;
-	int err, i;
+	int err, i, channels = 2, codecs;
+	unsigned int glob_sta = 0;
 
 	for (i = 0; i <= ICHD_LAST; i++) {
-		aregs = &ac97_rate_regs[i];
-		ichdev = &chip->ichd[aregs->ichd];
-		ichdev->ac97_rate_regs[0] = aregs->regs[0];
-		ichdev->ac97_rate_regs[1] = aregs->regs[1];
-		ichdev->ac97_rate_regs[2] = aregs->regs[2];
-		ichdev->ac97_rates_idx = aregs->rates_idx;
+		if (chip->device_type != DEVICE_ALI) {
+			struct _ac97_rate_regs *aregs;
+			aregs = &ac97_rate_regs[i];
+			ichdev = &chip->ichd[aregs->ichd];
+			ichdev->ac97_rate_regs[0] = aregs->regs[0];
+			ichdev->ac97_rate_regs[1] = aregs->regs[1];
+			ichdev->ac97_rate_regs[2] = aregs->regs[2];
+			ichdev->ac97_rates_idx = aregs->rates_idx;
+		} else {
+			struct _ac97_ali_rate_regs *aregs;
+			aregs = &ac97_ali_rate_regs[i];
+			ichdev = &chip->ichd[aregs->ichd];
+			ichdev->ac97_rate_regs[0] = aregs->regs[0];
+			ichdev->ac97_rate_regs[1] = aregs->regs[1];
+			ichdev->ac97_rate_regs[2] = aregs->regs[2];
+			ichdev->ac97_rates_idx = aregs->rates_idx;
+		}
 	}
 	chip->in_ac97_init = 1;
 	memset(&ac97, 0, sizeof(ac97));
-	ac97.write = snd_intel8x0_codec_write;
-	ac97.read = snd_intel8x0_codec_read;
+	if (chip->device_type != DEVICE_ALI) {
+		glob_sta = igetdword(chip, ICHREG(GLOB_STA));
+		ac97.write = snd_intel8x0_codec_write;
+		ac97.read = snd_intel8x0_codec_read;
+		if (glob_sta & ICH_PCM_6)
+			channels = 6;
+		else if (glob_sta & ICH_PCM_4)
+			channels = 4;
+	} else {
+		ac97.write = snd_intel8x0_ali_codec_write;
+		ac97.read = snd_intel8x0_ali_codec_read;
+		channels = 6;
+	}
 	ac97.init = snd_intel8x0_codec_init;
 	ac97.private_data = chip;
 	ac97.private_free = snd_intel8x0_mixer_free_ac97;
@@ -1136,17 +1536,36 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 		ac97.clock = ac97_clock;
 	else
 		ac97.clock = 48000;
-	if ((err = snd_ac97_mixer(chip->card, &ac97, &chip->ac97[0])) < 0)
+	if ((err = snd_ac97_mixer(chip->card, &ac97, &x97)) < 0)
 		return err;
-#if 0 /* it seems that SDIN signals are mixed together (at least for AD CNR boards) */
-	if (inl(ICHREG(chip, GLOB_STA)) & ICH_SCR) {
-		ac97.num = 1;
-		ac97.addr = 1;
-		snd_ac97_mixer(chip->card, &ac97, &chip->ac97[1]);
+	chip->ac97[0] = x97;
+	chip->ichd[ICHD_PCMOUT].ac97 = x97;
+	chip->ichd[ICHD_PCMIN].ac97 = x97;
+	if (x97->ext_id & AC97_EI_VRM)
+		chip->ichd[ICHD_MIC].ac97 = chip->ac97[0];
+	if (x97->ext_id & AC97_EI_SPDIF) {
+		if (chip->device_type != DEVICE_ALI)
+			chip->ichd[ICHD_SPBAR].ac97 = x97;
+		else
+			chip->ichd[ALID_AC97SPDIFOUT].ac97 = x97;
 	}
-#endif
-	if ((igetdword(chip, ICHREG(GLOB_STA)) & (ICH_PCM_4|ICH_PCM_6)) != (ICH_PCM_4|ICH_PCM_6))
-		return 0;
+	/* can we have more AC'97 codecs with ALI chipset? */
+	if (chip->device_type == DEVICE_ALI)
+		goto __end;
+	/* AnalogDevices CNR boards uses special codec chaining */
+	/* skip standard test method for secondary codecs in this case */
+	if (chip->ac97[0]->flags & AC97_AD_MULTI)
+		goto __skip_secondary;
+	codecs = 0;
+	if (glob_sta & ICH_PCR)
+		codecs++;
+	if (glob_sta & ICH_SCR)
+		codecs++;
+	if (glob_sta & ICH_TCR)
+		codecs++;
+	if (codecs < 2)
+		goto __skip_secondary;
+      __skip_secondary:
 	if ((chip->ac97[0]->scaps & AC97_SCAP_SURROUND_DAC) ||
 	    (chip->ac97[1] && (chip->ac97[1]->scaps & AC97_SCAP_SURROUND_DAC))) {
 		chip->multi4 = 1;
@@ -1154,6 +1573,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 		    (chip->ac97[1] && (chip->ac97[1]->scaps & AC97_SCAP_CENTER_LFE_DAC)))
 			chip->multi6 = 1;
 	}
+      __end:
 	chip->in_ac97_init = 0;
 	return 0;
 }
@@ -1162,6 +1582,16 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 /*
  *
  */
+
+static void do_ali_reset(intel8x0_t *chip)
+{
+	iputdword(chip, ICHREG(ALI_SCR), 0x8000000);
+	iputdword(chip, ICHREG(ALI_FIFOCR1), 0x83838383);
+	iputdword(chip, ICHREG(ALI_FIFOCR2), 0x83838383);
+	iputdword(chip, ICHREG(ALI_INTERFACECR), 0x04080002); /* no spdif? */
+	iputdword(chip, ICHREG(ALI_INTERRUPTCR), 0x00000000);
+	iputdword(chip, ICHREG(ALI_INTERRUPTSR), 0x00000000);
+}
 
 static void do_delay(intel8x0_t *chip)
 {
@@ -1175,11 +1605,10 @@ static void do_delay(intel8x0_t *chip)
 	schedule_timeout(1);
 }
 
-static int snd_intel8x0_chip_init(intel8x0_t *chip)
+static int snd_intel8x0_ich_chip_init(intel8x0_t *chip)
 {
 	signed long end_time;
-	unsigned int cnt;
-	int i;
+	unsigned int cnt, status, nstatus;
 	
 	/* put logic to right state */
 	/* first clear status bits */
@@ -1197,47 +1626,102 @@ static int snd_intel8x0_chip_init(intel8x0_t *chip)
 		if ((igetdword(chip, ICHREG(GLOB_CNT)) & ICH_AC97WARM) == 0)
 			goto __ok;
 		do_delay(chip);
-	} while (end_time - (signed long)jiffies >= 0);
+	} while (time_after_eq(end_time, jiffies));
 	snd_printk("AC'97 warm reset still in progress? [0x%x]\n", igetdword(chip, ICHREG(GLOB_CNT)));
 	return -EIO;
 
       __ok:
-	/* wait for primary codec ready status.
+	/* wait for any codec ready status.
 	 * Once it becomes ready it should remain ready
 	 * as long as we do not disable the ac97 link.
  	 */
-	end_time = jiffies + HZ / 10;
-	do {
-		if (igetdword(chip, ICHREG(GLOB_STA)) & ICH_PCR)
-			goto __ok1;
-		do_delay(chip);
-	} while (end_time - (signed long)jiffies >= 0);
-	if (chip->pci->device == PCI_DEVICE_ID_INTEL_ICH4) {
-		/* FIXME: ICH4 may have no PCR and SCR bits...  */
-		snd_printd(KERN_INFO "intel8x0: no codec is probed, perhaps PCR and SCR bits are deactivated.\n");
-		chip->no_codec_check = 1;
-		goto __ok2;
-	}
-	/* check a bit longer... */
 	end_time = jiffies + HZ;
 	do {
-		if (igetdword(chip, ICHREG(GLOB_STA)) & ICH_PCR)
+		status = igetdword(chip, ICHREG(GLOB_STA)) & (ICH_PCR | ICH_SCR | ICH_TCR);
+		if (status)
 			goto __ok1;
 		do_delay(chip);
-	} while (end_time - (signed long)jiffies >= 0);
-	snd_printk(KERN_ERR "codec_ready: primary codec is not ready [0x%x]\n", igetdword(chip, ICHREG(GLOB_STA)));
+	} while (time_after_eq(end_time, jiffies));
+	snd_printk(KERN_ERR "codec_ready: codec is not ready [0x%x]\n", igetdword(chip, ICHREG(GLOB_STA)));
 	return -EIO;
 
       __ok1:
-	/* wait for secondary codec ready status. No secondary codec? , ok */
-	/* the end_time variable is not initialized again */
+      	if (status == (ICH_PCR | ICH_SCR | ICH_TCR))
+      		goto __ok3;
+	/* wait for other codecs ready status. No secondary codecs? , ok */
+	end_time = jiffies + HZ / 4;
 	do {
-		if (igetdword(chip, ICHREG(GLOB_STA)) & ICH_SCR)
-			break;
+		nstatus = igetdword(chip, ICHREG(GLOB_STA)) & (ICH_PCR | ICH_SCR | ICH_TCR);
+		if (nstatus != status) {
+			status = nstatus;
+			goto __ok2;
+		}
 		do_delay(chip);
-	} while (end_time - (signed long)jiffies >= 0);
+	} while (time_after_eq(end_time, jiffies));
 
       __ok2:
+      	if (status == (ICH_PCR | ICH_SCR | ICH_TCR))
+      		goto __ok3;
+	/* wait for other codecs ready status. No other secondary codecs? , ok */
+	/* end_time is not initialized here */
+	do {
+		nstatus = igetdword(chip, ICHREG(GLOB_STA)) & (ICH_PCR | ICH_SCR | ICH_TCR);
+		if (nstatus != status) {
+			status = nstatus;
+			goto __ok2;
+		}
+		do_delay(chip);
+	} while (time_after_eq(end_time, jiffies));
+
+      __ok3:      
+      	return 0;
+}
+
+static int snd_intel8x0_ali_chip_init(intel8x0_t *chip)
+{
+	u32 reg;
+	int i = 0;
+
+	reg = igetdword(chip, ICHREG(ALI_SCR));
+	if ((reg & 2) == 0)	/* Cold required */
+		reg |= 2;
+	else
+		reg |= 1;	/* Warm */
+	reg &= ~0x80000000;	/* ACLink on */
+	iputdword(chip, ICHREG(ALI_SCR), reg);
+
+	for (i = 0; i < HZ / 2; i++) {
+		if (! (igetdword(chip, ICHREG(ALI_INTERRUPTSR)) & ALI_INT_GPIO))
+			goto __ok;
+		do_delay(chip);
+	}
+	snd_printk(KERN_ERR "AC'97 reset failed.\n");
+	return -EIO;
+
+ __ok:
+	for (i = 0; i < HZ / 2; i++) {
+		reg = igetdword(chip, ICHREG(ALI_RTSR));
+		if (reg & 0x80) /* primary codec */
+			break;
+		iputdword(chip, ICHREG(ALI_RTSR), reg | 0x80);
+		do_delay(chip);
+	}
+
+	do_ali_reset(chip);
+	return 0;
+}
+
+static int snd_intel8x0_chip_init(intel8x0_t *chip)
+{
+	int i, err;
+	
+	if (chip->device_type != DEVICE_ALI)
+		err = snd_intel8x0_ich_chip_init(chip);
+	else
+		err = snd_intel8x0_ali_chip_init(chip);
+	if (err < 0)
+		return err;
+
 	iagetword(chip, 0);	/* clear semaphore flag */
 
 	/* disable interrupts */
@@ -1469,8 +1953,20 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 {
 	intel8x0_t *chip;
 	int err, i;
+	unsigned int int_sta_masks;
+	ichdev_t *ichdev;
 	static snd_device_ops_t ops = {
 		.dev_free =	snd_intel8x0_dev_free,
+	};
+	static u32 intel_int_sta_masks[6] = {
+		ICH_PIINT, ICH_POINT, ICH_MCINT, ICH_M2INT, ICH_P2INT, ICH_SPINT
+	};
+	static u32 ali_int_sta_masks[6] = {
+		ALI_INT_PCMIN, ALI_INT_PCMOUT, ALI_INT_MICIN,
+		ALI_INT_CODECSPDIFOUT, ALI_INT_SPDIFIN, ALI_INT_SPDIFOUT
+	};
+	static u32 ali_reg_offsets[6] = {
+		0x40, 0x50, 0x60, 0x70, 0xa0, 0xb0
 	};
 
 	*r_intel8x0 = NULL;
@@ -1542,22 +2038,32 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 
 	/* initialize offsets */
 	for (i = 0; i <= ICHD_LAST; i++) {
-		chip->ichd[i].ichd = i;
-		chip->ichd[i].reg_offset = i * 0x10 + (i >= 0x30 ? 0x10 : 0);
-		chip->ichd[i].roff_sr = ICH_REG_PI_SR;
-		chip->ichd[i].roff_picb = ICH_REG_PI_PICB;
+		ichdev = &chip->ichd[i];
+		ichdev->ichd = i;
+		ichdev->reg_offset = i * 0x10 + (i >= 0x30 ? 0x10 : 0);
+		ichdev->roff_sr = ICH_REG_PI_SR;
+		ichdev->roff_picb = ICH_REG_PI_PICB;
+		ichdev->int_sta_mask = device_type == DEVICE_ALI ? ali_int_sta_masks[i] : intel_int_sta_masks[i];
+		int_sta_masks |= ichdev->int_sta_mask;
 	}
-	if (device_type == DEVICE_SIS) {
+	switch (device_type) {
+	case DEVICE_SIS:
 		for (i = 0; i <= ICHD_LAST; i++) {
 			chip->ichd[i].roff_sr = ICH_REG_PI_PICB;
 			chip->ichd[i].roff_picb = ICH_REG_PI_SR;
+		}
+		break;
+	case DEVICE_ALI:
+		for (i = 0; i <= ALID_LAST; i++) {
+			chip->ichd[i].reg_offset = ali_reg_offsets[i];
+			chip->ichd[i].ali_slot = i + 1;	/* is this right for last three devices? --jk */
 		}
 	}
 
 	/* allocate buffer descriptor lists */
 	/* the start of each lists must be aligned to 8 bytes */
 	chip->bdbars_count = 3;
-	if (device_type == DEVICE_INTEL_ICH4)
+	if (device_type == DEVICE_INTEL_ICH4 || device_type == DEVICE_ALI)
 		chip->bdbars_count = 6;
 	chip->bdbars = (u32 *)snd_malloc_pci_pages(pci, chip->bdbars_count * sizeof(unsigned int) * ICH_MAX_FRAGS * 2, &chip->bdbars_addr);
 	if (chip->bdbars == NULL) {
@@ -1565,7 +2071,7 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		return -ENOMEM;
 	}
 	/* tables must be aligned to 8 bytes here, but the kernel pages
-	   are much bigger, so we don't care (on i386) */
+q	   are much bigger, so we don't care (on i386) */
 #ifndef __i386__
 	/* .. not sure on other architectures, so we check now. */
 	if (chip->bdbars_addr & ~((dma_addr_t)0xffffffff | 0x07)) {
@@ -1574,10 +2080,14 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 		return -ENOMEM;
 	}
 #endif
-	for (i = 0; i <= ICHD_LAST; i++) {
+	int_sta_masks = 0;
+	for (i = 0; i < chip->bdbars_count; i++) {
 		chip->ichd[i].bdbar = chip->bdbars + (i * sizeof(u32) * ICH_MAX_FRAGS * 2);
 		chip->ichd[i].bdbar_addr = chip->bdbars_addr + (i * sizeof(u32) * ICH_MAX_FRAGS * 2);
+		int_sta_masks |= ichdev->int_sta_mask;
 	}
+	chip->int_sta_reg = device_type == DEVICE_ALI ? ICH_REG_ALI_INTERRUPTSR : ICH_REG_GLOB_STA;
+	chip->int_sta_mask = int_sta_masks;
 
 	if ((err = snd_intel8x0_chip_init(chip)) < 0) {
 		snd_intel8x0_free(chip);
@@ -1657,15 +2167,52 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	if (chip->ac97[0]->ext_id & 0x0008) {	/* MIC VRM */
+	/* activate MIC PCM only when associated AC'97 codec */
+	if (chip->ichd[ICHD_MIC].ac97) {
 		if ((err = snd_intel8x0_pcm_mic(chip, pcm_dev++, NULL)) < 0) {
 			snd_card_free(card);
 			return err;
 		}
 	}
+	if (chip->device_type == DEVICE_ALI) {
+		if ((err = snd_intel8x0_ali_spdif(chip, pcm_dev++, NULL)) < 0) {
+			snd_card_free(card);
+			return err;
+		}
+	}
+	/* activate AC'97 S/PDIF only when associated AC'97 codec */
+	if (chip->bdbars_count > 3) {
+		err = 0;
+		if (chip->device_type == DEVICE_ALI) {
+			if (chip->ichd[ALID_AC97SPDIFOUT].ac97)
+				err = snd_intel8x0_ali_ac97spdif(chip, pcm_dev++, NULL);
+		} else {
+			if (chip->ichd[ICHD_SPBAR].ac97)
+				err = snd_intel8x0_pcm_spdif(chip, pcm_dev++, NULL);
+		}
+		if (err < 0) {
+			snd_card_free(card);
+			return err;
+		}
+		if (chip->device_type != DEVICE_ALI) {
+			/* activate MIC2 only when associated AC'97 codec */
+			if (chip->ichd[ICHD_MIC2].ac97)
+				if ((err = snd_intel8x0_pcm_mic2(chip, pcm_dev++, NULL)) < 0) {
+					snd_card_free(card);
+					return err;
+				}
+			/* activate PCM2IN only when associated AC'97 codec */
+			if (chip->ichd[ICHD_PCM2IN].ac97)
+				if ((err = snd_intel8x0_pcm_capture2(chip, pcm_dev++, NULL)) < 0) {
+					snd_card_free(card);
+					return err;
+				}
+		}
+	}
+	
 	
 	if (snd_mpu_port[dev] == 0x300 || snd_mpu_port[dev] == 0x330) {
-		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
+		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_INTEL8X0,
 					       snd_mpu_port[dev], 0,
 					       -1, 0, &chip->rmidi)) < 0) {
 			printk(KERN_ERR "intel8x0: no UART401 device at 0x%x, skipping.\n", snd_mpu_port[dev]);
