@@ -118,11 +118,11 @@ endif
 
 __obj-m = $(filter-out export.o,$(obj-m))
 ld-multi-used-m := $(sort $(foreach m,$(__obj-m),$(patsubst %,$(m),$($(basename $(m))-objs))))
-ld-multi-objs-m := $(foreach m, $(ld-multi-used-m), $($(basename $(m))-objs))
+ld-multi-objs-m := $(foreach m, $(ld-multi-used-m), $($(basename $(m))-objs) $(extra-$(basename $(m))-objs))
 
 $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 	rm -f $@
-	$(LD) $(EXTRA_LDFLAGS) -r -o $@ $(filter $($(basename $@)-objs), $^)
+	$(LD) $(EXTRA_LDFLAGS) -r -o $@ $(filter $($(basename $@)-objs) $(extra-$(basename $@)-objs), $^)
 
 #
 # This make dependencies quickly

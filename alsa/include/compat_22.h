@@ -473,6 +473,11 @@ int snd_compat_usb_register(struct snd_compat_usb_driver *);
 void snd_compat_usb_deregister(struct snd_compat_usb_driver *);
 void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *, struct usb_interface *iface, void *ptr);
 
+#undef usb_driver
+#undef usb_register
+#undef usb_deregister
+#undef usb_driver_claim_interface
+
 #define usb_driver snd_compat_usb_driver
 #define usb_device_id snd_compat_usb_device_id
 #define usb_register(drv) snd_compat_usb_register(drv)

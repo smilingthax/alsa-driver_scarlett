@@ -5,8 +5,8 @@ include $(TOPDIR)/Makefile.conf
 
 TOPDIR = $(MAINSRCDIR)
 
-# for compatibility wrappers
-export-objs := usbaudio.o
+# for compatibility
+extra-snd-usb-audio-objs := usbcompat.o
 
 include $(TOPDIR)/alsa-kernel/usb/Makefile
 
