@@ -41,7 +41,7 @@
 #define SND_CARD_TYPE_SB_AWE		0x0000000a
 /* Various */
 #define SND_CARD_TYPE_ESS_ES1688	0x0000000b	/* ESS AudioDrive ESx688 */
-#define SND_CARD_TYPE_OPL3_SA		0x0000000c	/* Yamaha OPL3 SA */
+#define SND_CARD_TYPE_OPL3_SA2		0x0000000c	/* Yamaha OPL3 SA2/SA3 */
 #define SND_CARD_TYPE_MOZART		0x0000000d	/* OAK Mozart */
 #define SND_CARD_TYPE_S3_SONICVIBES	0x0000000e	/* S3 SonicVibes */
 #define SND_CARD_TYPE_ENS1370		0x0000000f	/* Ensoniq ES1370 */

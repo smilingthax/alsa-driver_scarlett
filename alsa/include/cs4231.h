@@ -210,7 +210,7 @@ struct snd_stru_cs4231_freq {
 #define CS4231_HW_CS4239	0x0405	/* CS4239 - Crystal Clear (tm) stereo enhancement */
 /* compatible, but clones */
 #define CS4231_HW_INTERWAVE     0x1000	/* InterWave chip */
-#define CS4231_HW_OPL3SA        0x1001	/* OPL3-SA chip */
+#define CS4231_HW_OPL3SA2       0x1001	/* OPL3-SA2 chip */
 
 typedef struct snd_stru_cs4231 cs4231_t;
 

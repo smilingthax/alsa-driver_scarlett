@@ -241,7 +241,8 @@ struct snd_stru_pcm {
 	snd_card_t *card;
 	unsigned int device;	/* device number */
 	unsigned int info_flags;
-	int type;		/* PCM type */
+	unsigned short pcm_class;
+	unsigned short pcm_subclass;
 	char id[64];
 	char name[80];
 	snd_pcm_channel_t chn[2];

@@ -56,11 +56,8 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 1)
 #define LINUX_2_3
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 11)
-#define NEW_RESOURCE
-#endif
-#if defined(LINUX_2_3) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 48)
-#error "This driver requires Linux 2.3.48 and higher."
+#if defined(LINUX_2_3) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 99)
+#error "This code requires Linux 2.3.99-pre5 and higher."
 #endif
 
 #ifdef ALSA_BUILD
@@ -210,7 +207,7 @@ typedef struct snd_stru_port {
 	unsigned int port;
 	unsigned int size;
 	char *name;
-#ifdef NEW_RESOURCE
+#ifdef LINUX_2_3
 	struct resource *res;
 #endif
 	struct snd_stru_port *next;
