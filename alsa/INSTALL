@@ -447,6 +447,17 @@ Module parameters
     snd_adc_frame_size_nx - max adc (record) frame size in kB (4-64kB)
 
     Module supports up to 8 cards and autoprobe.
+
+
+  Module snd-card-fm801.o
+  ---------------------
+
+    Module for ForteMedia FM801 based PCI soundcards.
+
+    snd_dac_frame_size  - max dac1 (playback) frame size in kB (4-128kB)
+    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+
+    Module supports up to 8 cards and autoprobe.
     
 
 modprobe/kerneld/kmod support

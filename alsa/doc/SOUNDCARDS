@@ -8,7 +8,7 @@ IF: Supported interfaces (MIXER,PCM,SYNTH,OPL,MIDI,EMUL)
 MA: Maintainer
 CO: Coder
 
-This file is maintained by Jaroslav Kysela <perex@jcu.cz>.
+This file is maintained by Jaroslav Kysela <perex@suse.cz>.
 Note: OPL -> Raw (native) OPL
 Note: MIDI -> external MIDI port
 Note: EMUL -> MIDI emulation
@@ -22,61 +22,61 @@ SC: STB Sound Rage 32
 SC: UltraSound 32-Pro (STB)
 SC: MED3210
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Gravis UltraSound MAX
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Gravis UltraSound Extreme
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Gravis UltraSound Classic/ACE
 IF: MIXER,PCM
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: ESS AudioDrive ESx688
 IF: MIXER,PCM,MIDI(1688)
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: SoundBlaster 1.0/2.0/Pro
 IF: MIXER (Pro only),PCM,MIDI
-CO: Jaroslav Kysela <perex@jcu.cz>
+CO: Jaroslav Kysela <perex@suse.cz>
 MA: Chris Butler <chrisb@sandy.force9.co.uk>
 
 ID: SoundBlaster 16/AWE
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Yamaha OPL3-SA2/SA3
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: OAK Mozart
 IF: MIXER,PCM
-CO: Jaroslav Kysela <perex@jcu.cz>
+CO: Jaroslav Kysela <perex@suse.cz>
 MA: ???
 
 ID: S3 SonicVibes PCI
 SC: Schubert 32 PCI (PINE)
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Ensoniq AudioPCI (ES1370,ES1371)
 SC: SoundBlaster PCI 64
 SC: SoundBlaster PCI 128
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Cirrus Logic / Crystal Semiconductors CS4232/CS4232A
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: Cirrus Logic / Crystal Semiconductors CS4235/CS4236/CS4236B/CS4237B/CS4238B/CS4239
 SC: Turtle Beach Malibu
 IF: MIXER,PCM,MIDI
-MA: Jaroslav Kysela <perex@jcu.cz>
+MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: ESS Solo-1 ES1938
 IF: MIXER,PCM
@@ -106,3 +106,7 @@ SC: Shark  Predator4D-PCI
 SC: Jaton  SonicWave 4D
 IF: MIXER,PCM
 MA: audio@tridentmicro.com
+
+ID: ForteMedia FM801
+IF: MIXER,PCM,MIDI
+MA: perex@suse.cz
