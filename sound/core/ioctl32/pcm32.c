@@ -230,7 +230,7 @@ static int _snd_ioctl32_xfern(unsigned int fd, unsigned int cmd, unsigned long a
 	snd_pcm_file_t *pcm_file;
 	snd_pcm_substream_t *substream;
 	struct sndrv_xfern32 data32, *srcptr = (struct sndrv_xfern32*)arg;
-	void *bufs[] = NULL;
+	void *bufs = NULL;
 	int err = 0, ch, i;
 	u32 *bufptr;
 	mm_segment_t oldseg;
