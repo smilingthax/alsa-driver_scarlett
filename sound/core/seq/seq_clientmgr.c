@@ -128,6 +128,7 @@ client_t *snd_seq_client_use_ptr(int clientid)
 		return NULL;
 	}
 	spin_unlock_irqrestore(&clients_lock, flags);
+#if 0 // XXX: disabled temporarilly
 #ifdef CONFIG_KMOD
 	if (!in_interrupt()) {
 		if (clientid < 64) {
@@ -163,6 +164,7 @@ client_t *snd_seq_client_use_ptr(int clientid)
 		spin_unlock_irqrestore(&clients_lock, flags);
 	}
 #endif
+#endif // XXX
 	return NULL;
 
       __lock:
@@ -2386,8 +2388,10 @@ void snd_seq_info_clients_read(snd_info_entry_t *entry,
 		client = snd_seq_client_use_ptr(c);
 		if (client == NULL)
 			continue;
-		if (client->type == NO_CLIENT)
+		if (client->type == NO_CLIENT) {
+			snd_seq_client_unlock(client);
 			continue;
+		}
 
 		snd_iprintf(buffer, "Client %3d : \"%s\" [%s]\n",
 			    c, client->name,
