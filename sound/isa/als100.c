@@ -39,6 +39,8 @@ MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{Avance Logic,ALS100 - PRO16PNP},"
 	        "{Avance Logic,ALS110},"
+	        "{Avance Logic,ALS120},"
+	        "{Avance Logic,ALS200},"
 	        "{3D Melody,MF1000},"
 	        "{Digimate,3D Sound},"
 	        "{Avance Logic,ALS120},"
@@ -115,6 +117,8 @@ static struct isapnp_card_id snd_als100_pnpids[] __devinitdata = {
 	ISAPNP_ALS100('A','L','S',0x0110,0x1001,0x1001,0x1001),
 	/* ALS120 */
 	ISAPNP_ALS100('A','L','S',0x0120,0x2001,0x2001,0x2001),
+	/* ALS200 */
+	ISAPNP_ALS100('A','L','S',0x0200,0x0020,0x0020,0x0001),
 	/* RTL3000 */
 	ISAPNP_ALS100('R','T','L',0x3000,0x2001,0x2001,0x2001),
 	{ ISAPNP_CARD_END, }
