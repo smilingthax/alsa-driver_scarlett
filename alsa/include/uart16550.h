@@ -1,6 +1,6 @@
 /*
  *   uart16550.h
- *   Copyright (c)  by Isaku Yamahata <yamahata@kusm.kyoto-u.ac.jp>
+ *   Copyright (c)  by Isaku Yamahata <yamahata@private.email.ne.jp>
  *   Fri Jan 8 1999 first version
  *
  * 
