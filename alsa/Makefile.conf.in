@@ -5,6 +5,8 @@
 
 srcdir=@srcdir@
 SRCDIR=@SRCDIR@
+sysconfdir=@sysconfdir@
+sbindir=@sbindir@
 VPATH=@srcdir@
 prefix=@prefix@
 moddir=@moddir@
