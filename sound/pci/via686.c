@@ -850,23 +850,19 @@ static int snd_via686a_joystick_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	val = oval & ~0x08;
 	if (ucontrol->value.integer.value[0])
 		val |= 0x08;
-	if (val != oval); {
+	if (val != oval) {
 		pci_write_config_word(chip->pci, 0x42, val);
 		return 1;
 	}
 	return 0;
 }
 
-#define num_controls(ary) (sizeof(ary) / sizeof(snd_kcontrol_new_t))
-
-static snd_kcontrol_new_t snd_via686a_control_switches[] __devinitdata = {
-	{
-		name: "Joystick",
-		iface: SNDRV_CTL_ELEM_IFACE_CARD,
-		info: snd_via686a_joystick_info,
-		get: snd_via686a_joystick_get,
-		put: snd_via686a_joystick_put,
-	}
+static snd_kcontrol_new_t snd_via686a_joystick_control __devinitdata = {
+	name: "Joystick",
+	iface: SNDRV_CTL_ELEM_IFACE_CARD,
+	info: snd_via686a_joystick_info,
+	get: snd_via686a_joystick_get,
+	put: snd_via686a_joystick_put,
 };
 
 /*
@@ -1099,7 +1095,6 @@ static int __devinit snd_via686a_probe(struct pci_dev *pci,
 	unsigned char legacy;
 	unsigned char legacy_cfg;
 	int rev_h = 0, err;
-	int i;
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
@@ -1203,12 +1198,10 @@ static int __devinit snd_via686a_probe(struct pci_dev *pci,
 	}
 	
 	/* card switches */
-	for (i = 0; i < num_controls(snd_via686a_control_switches); i++) {
-		err = snd_ctl_add(card, snd_ctl_new1(&snd_via686a_control_switches[i], chip));
-		if (err < 0) {
-			snd_card_free(card);
-			return err;
-		}
+	err = snd_ctl_add(card, snd_ctl_new1(&snd_via686a_joystick_control, chip));
+	if (err < 0) {
+		snd_card_free(card);
+		return err;
 	}
 
 	strcpy(card->driver, "VIA686A");
