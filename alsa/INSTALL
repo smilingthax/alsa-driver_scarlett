@@ -324,7 +324,7 @@ Module parameters
                     mitsumi,panasonic,sony)
     cd_port       - cdrom i/o port (0x320,0x330,0x340,0x360)
     cd_irq        - cdrom IRQ # (5,7,9,10,11)   -1 = disabled
-    cd_irq        - cdrom DMA # (0,1,3)   -1 = disabled
+    cd_drq        - cdrom DMA # (0,1,3)   -1 = disabled
     game          - on-board game port enable (enabled,disabled)
 
     Module supports only one card and autoprobe.
