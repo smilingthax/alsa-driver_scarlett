@@ -8,11 +8,12 @@
  *    --
  *
  *  TODO:
- *    We need a DSP code to support multichannel outputs and S/PDIF.
- *    Unfortunately, it seems that Cirrus Logic, Inc. is not willing
- *    to provide us sufficient information about the DSP processor,
- *    so we can't update the driver.
+ *    SPDIF input.
+ *    Secondary CODEC on some soundcards
  *
+ *  NOTE: with CONFIG_SND_CS46XX_NEW_DSP unset uses old DSP image (which
+ *        is default configuration), no SPDIF, no secondary codec, no
+ *        multi channel PCM.  But known to work.
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -334,7 +335,6 @@ int snd_cs46xx_download(cs46xx_t *chip,
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 
-// #include "imgs/cwcemb80.h"
 #include "imgs/cwc4630.h"
 #include "imgs/cwcasync.h"
 #include "imgs/cwcsnoop.h"
@@ -880,12 +880,14 @@ static int snd_cs46xx_playback_trigger(snd_pcm_substream_t * substream,
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
-		if (substream->runtime->periods != CS46XX_FRAGS)
-			snd_cs46xx_playback_transfer(substream, 0);
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 		if (cpcm->pcm_channel->unlinked)
 			cs46xx_dsp_pcm_link(chip,cpcm->pcm_channel);
+		if (substream->runtime->periods != CS46XX_FRAGS)
+			snd_cs46xx_playback_transfer(substream, 0);
 #else
+		if (substream->runtime->periods != CS46XX_FRAGS)
+			snd_cs46xx_playback_transfer(substream, 0);
 		{ unsigned int tmp;
 		tmp = snd_cs46xx_peek(chip, BA1_PCTL);
 		tmp &= 0x0000ffff;
