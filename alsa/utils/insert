@@ -144,6 +144,9 @@ case "$1" in
     basic
     insert snd-es1370.o
     insert snd-audiopci.o
+    if [ -r /etc/sound/es1370 ]; then
+      cat /etc/sound/es1370 > /proc/sound/0/mixer0
+    fi
     ;;
   detect)
     if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi
