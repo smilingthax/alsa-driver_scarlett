@@ -272,7 +272,7 @@ is for Sound Blaster 16 and Gravis UltraSound Classic):
 
 ----- /etc/conf.modules
 
-alias char-major-14 off
+alias char-major-14 snd
 alias snd-minor-oss-0 snd-mixer
 alias snd-minor-oss-3 snd-pcm1-oss
 alias snd-minor-oss-4 snd-pcm1-oss
@@ -290,7 +290,7 @@ Example if two Gravis UltraSound Classic soundcards are present in system:
 
 ----- /etc/conf.modules
 
-alias char-major-14 off
+alias char-major-14 snd
 alias snd-minor-oss-0 snd-mixer
 alias snd-minor-oss-3 snd-pcm1-oss
 alias snd-minor-oss-4 snd-pcm1-oss

@@ -127,6 +127,10 @@
 #define in_interrupt() intr_count
 #endif
 
+#if LinuxVersionCode( 2, 1, 118 ) <= LINUX_VERSION_CODE
+#define SND_FOPS_FLUSH
+#endif
+
 #include "sound.h"
 #include "sounddetect.h"
 
