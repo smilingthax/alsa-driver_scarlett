@@ -101,9 +101,16 @@ typedef struct pmac_tumber_t {
 
 static int tumbler_init_client(pmac_keywest_t *i2c)
 {
-       /* normal operation, SCLK=64fps, i2s output, i2s input, 16bit width */
-       return snd_pmac_keywest_write_byte(i2c, TAS_REG_MCS,
-                                          (1<<6)+(2<<4)+(2<<2)+0);
+	int err, count = 10;
+	do {
+		/* normal operation, SCLK=64fps, i2s output, i2s input, 16bit width */
+		err =  snd_pmac_keywest_write_byte(i2c, TAS_REG_MCS,
+						   (1<<6)+(2<<4)+(2<<2)+0);
+		if (err >= 0)
+			return err;
+		mdelay(10);
+	} while (count--);
+	return -ENXIO;
 }
 
 
