@@ -37,6 +37,29 @@
 #ifndef PCI_DEVICE_ID_ENSONIQ_ES1371
 #define PCI_DEVICE_ID_ENSONIQ_ES1371    0x1371
 #endif
+#ifndef PCI_DEVICE_ID_ENSONIQ_CT5880
+#define PCI_DEVICE_ID_ENSONIQ_CT5880	0x5880
+#endif
+
+#ifndef PCI_VENDOR_ID_ECTIVA
+#define PCI_VENDOR_ID_ECTIVA		0x1102
+#endif
+#ifndef PCI_DEVICE_ID_ECTIVA_EV1938
+#define PCI_DEVICE_ID_ECTIVA_EV1938	0x8938
+#endif
+
+/* ES1371 chip ID */
+/* This is a little confusing because all ES1371 compatible chips have the
+   same DEVICE_ID, the only thing differentiating them is the REV_ID field.
+   This is only significant if you want to enable features on the later parts.
+   Yes, I know it's stupid and why didn't we use the sub IDs?
+*/
+#define ES1371REV_ES1373_A  0x04
+#define ES1371REV_ES1373_B  0x06
+#define ES1371REV_CT5880_A  0x07
+#define CT5880REV_CT5880_C  0x02
+#define ES1371REV_ES1371_B  0x09
+#define EV1938REV_EV1938_A  0x00
 
 /*
  * Direct registers
@@ -83,6 +106,7 @@
 #define   ES_1371_PCICLKDIS     (1<<0)	/* PCI clock disable */
 #define ES_REG_STATUS	0x04	/* R/O: Interrupt/Chip select status register */
 #define   ES_INTR               (1<<31)	/* Interrupt is pending */
+#define   ES_1371_ST_AC97_RST	(1<<29) /* CT5880 AC'97 Reset bit */
 #define   ES_1371_ST_SPDIF_EN	(1<<18) /* SPDIF enable */
 #define   ES_1371_ST_SPDIF_TEST (1<<17) /* SPDIF test */
 #define   ES_1371_TEST          (1<<16) /* test ASIC */
@@ -285,6 +309,7 @@ struct snd_stru_ensoniq {
 	unsigned int ctrl;	/* control register */
 	unsigned int sctrl;	/* serial control register */
 	unsigned int uartc;	/* uart control register */
+	unsigned int rev;	/* chip revision */
 
 	union {
 		struct {
