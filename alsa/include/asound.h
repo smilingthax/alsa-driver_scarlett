@@ -234,6 +234,8 @@ struct snd_ctl_switch {
 #define SND_MIXER_SW_MIC_AGC		"MIC Auto-Gain-Control"	/* Microphone Auto-Gain-Control */
 #define SND_MIXER_SW_MIC_IMPEDANCE	"Change MIC Impedance"	/* change Microphone impedance */
 #define SND_MIXER_SW_LINE_TO_OUTPUT	"Line In to Output"	/* reroute Line In to Output */
+#define SND_MIXER_SW_IEC958OUT		"IEC-958 (S/PDIF) Output" /* No comment */
+#define SND_MIXER_SW_IEC958IN		"IEC-958 (S/PDIF) Input"  /* No comment */
 
 #define SND_MIXER_INFO_CAP_EXCL_RECORD	0x00000001
 
