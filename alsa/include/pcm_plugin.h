@@ -106,9 +106,7 @@ typedef enum {
 
 typedef struct snd_stru_pcm_plugin_voice {
 	void *aptr;			/* pointer to the allocated area */
-	void *addr;			/* address to voice samples */
-	unsigned int first;		/* offset to first sample in bits */
-	unsigned int step;		/* samples distance in bits */
+	snd_pcm_voice_area_t area;
 	unsigned int enabled:1;		/* voice need to be processed */
 	unsigned int wanted:1;		/* voice is wanted */
 } snd_pcm_plugin_voice_t;
@@ -231,9 +229,16 @@ int snd_pcm_plugin_client_voices(snd_pcm_plugin_t *plugin,
                                  size_t samples,
                                  snd_pcm_plugin_voice_t **voices);
 
-void snd_pcm_plugin_silence_voice(snd_pcm_plugin_t *plugin,
-				  const snd_pcm_plugin_voice_t *dst_voice,
-				  size_t samples);
+int snd_pcm_area_silence(const snd_pcm_voice_area_t *dst_voice, size_t dst_offset,
+			 size_t samples, int format);
+int snd_pcm_areas_silence(const snd_pcm_voice_area_t *dst_voices, size_t dst_offset,
+			  size_t vcount, size_t samples, int format);
+int snd_pcm_area_copy(const snd_pcm_voice_area_t *src_voice, size_t src_offset,
+		      const snd_pcm_voice_area_t *dst_voice, size_t dst_offset,
+		      size_t samples, int format);
+int snd_pcm_areas_copy(const snd_pcm_voice_area_t *src_voices, size_t src_offset,
+		       const snd_pcm_voice_area_t *dst_voices, size_t dst_offset,
+		       size_t vcount, size_t samples, int format);
 
 void *snd_pcm_plug_buf_alloc(snd_pcm_plugin_handle_t *pcm, int channel, size_t size);
 void snd_pcm_plug_buf_unlock(snd_pcm_plugin_handle_t *pcm, int channel, void *ptr);

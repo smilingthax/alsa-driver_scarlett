@@ -1487,7 +1487,7 @@ typedef struct snd_pcm_channel_setup {
 	size_t frag_size;		/* current fragment size in bytes */
 	size_t frags;			/* allocated fragments */
 	size_t frag_boundary;		/* fragment number wrap point */
-	size_t pos_boundary;		/* position in bytes wrap point */
+	size_t byte_boundary;		/* position in bytes wrap point */
 	unsigned int msbits_per_sample;		/* used most significant bits per sample */
 	union {
 		struct {
@@ -1506,12 +1506,16 @@ typedef struct snd_pcm_channel_setup {
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_channel_setup_t;
 
+typedef struct snd_pcm_voice_area {
+	void *addr;			/* base address of voice samples */
+	unsigned int first;		/* offset to first sample in bits */
+	unsigned int step;		/* samples distance in bits */
+} snd_pcm_voice_area_t;
+
 typedef struct snd_pcm_voice_setup {
 	unsigned int voice;
 	snd_pcm_digital_t digital;	/* digital setup */
-	off_t addr;			/* byte offset to voice samples */
-	unsigned int first;		/* offset to first sample in bits */
-	unsigned int step;		/* samples distance in bits */
+	snd_pcm_voice_area_t area;
 	char reserved[64];
 } snd_pcm_voice_setup_t;
 
@@ -1524,8 +1528,8 @@ typedef struct snd_pcm_channel_status {
 	size_t frag_data;	/* current I/O fragment */
 	ssize_t frags_used;	/* Used fragments */
 	ssize_t frags_free;	/* Free fragments */
-	size_t pos_io;		/* current I/O position in bytes */
-	size_t pos_data;	/* current data position */
+	size_t byte_io;		/* current I/O position in bytes */
+	size_t byte_data;	/* current data position */
 	ssize_t bytes_used;	/* number of bytes in queue/buffer */
 	ssize_t bytes_free;	/* bytes in queue still free */
 	size_t bytes_avail_max;	/* max bytes available since last status */
@@ -1538,8 +1542,8 @@ typedef struct {
 	volatile int status;	/* RO: status - SND_PCM_STATUS_XXXX */
 	size_t frag_io;		/* RO: frag under I/O operation (0 ... frag_boundary-1) */
 	size_t frag_data;	/* RW: application current frag (0 ... frag_boundary-1) */
-	size_t pos_io;		/* RO: I/O position (0 ... pos_boundary-1) updated only on status query and at interrupt time */
-	size_t pos_data;	/* RW: application position (0 ... pos_boundary-1) checked only on status query and at interrupt time */
+	size_t byte_io;		/* RO: I/O position (0 ... byte_boundary-1) updated only on status query and at interrupt time */
+	size_t byte_data;	/* RW: application position (0 ... byte_boundary-1) checked only on status query and at interrupt time */
 	int reserved[59];	/* reserved */
 } snd_pcm_mmap_control_t;
 

@@ -1,13 +1,12 @@
 - midlevel:
-H NASTY bug in OSS mmap (introduced recently)
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 H replace int with unsigned long (alpha machines) for port values (Jaroslav)
-M implement stream silence fill (Abramo)
+M implement silence fill for xrun smoothing (Abramo)
 M add user/kernel lock for mmap'ed control (To think)
 M loopback implementation (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
-L timestamp for mmap'ed pos_io and status (To think)
+L timestamp for mmap'ed byte_io and status (To think)
 
 - lowlevel:
 M Yamaha PCI driver (Jaroslav)

@@ -73,7 +73,6 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_FLG_TIMER	(1<<1)
 #define SND_PCM_FLG_TIME	(1<<2)
 #define SND_PCM_FLG_MMAP	(1<<3)
-#define SND_PCM_FLG_OSS_MMAP	(1<<4)
 
 #define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
 #define SND_PCM_IOCTL1_TRUE	((unsigned long *)1)
@@ -123,19 +122,19 @@ struct snd_stru_pcm_runtime {
 	size_t _sfrag_io;		/* static fragment io pos */
 	volatile size_t *frag_data;
 	size_t _sfrag_data;		/* static fragment app pos */
-	volatile size_t *pos_io;
-	size_t _spos_io;
-	volatile size_t *pos_data;
-	size_t _spos_data;
-	size_t pos_io_base;		/* Position at buffer restart */
-	size_t pos_io_interrupt;	/* Position at interrupt time*/
+	volatile size_t *byte_io;
+	size_t _sbyte_io;
+	volatile size_t *byte_data;
+	size_t _sbyte_data;
+	size_t byte_io_base;		/* Position at buffer restart */
+	size_t byte_io_interrupt;	/* Position at interrupt time*/
 	size_t frag_io_mod;		/* Fragment under I/O */
 	size_t bytes_per_second;
 	size_t bytes_align;
 	size_t bytes_avail_max;
 
 	size_t frag_boundary;
-	size_t pos_boundary;
+	size_t byte_boundary;
 
 	int xruns;
 	int overrange;
@@ -153,22 +152,24 @@ struct snd_stru_pcm_runtime {
 			unsigned int bytes_xrun_max;
 			int fill;       /* fill mode - SND_PCM_FILL_XXXX */
 			size_t bytes_fill_max;   /* maximum silence fill in bytes */
-			size_t pos_fill;
+			size_t byte_fill;
 		} stream;
 		struct {
 			size_t frags_min;	/* min available fragments for wakeup */
 			unsigned int frags_xrun_max;
 		} block;
 	} buf;
-	snd_pcm_mmap_control_t * mmap_control;
-	char * mmap_data;
-	snd_vma_t * mmap_control_vma;
-	snd_vma_t * mmap_data_vma;
+	snd_pcm_mmap_control_t *mmap_control;
+	char *mmap_data;
+	unsigned long mmap_data_user;		/* User space address */
+	snd_vma_t *mmap_control_vma;
+	snd_vma_t *mmap_data_vma;
 	/* -- locking / scheduling -- */
 	spinlock_t lock;
 	spinlock_t sleep_lock;
 	wait_queue_head_t sleep;
 	struct timer_list poll_timer;
+	struct timer_list xrun_timer;
 	int flushing;
 	/* -- private section -- */
 	void *private_data;
@@ -296,9 +297,10 @@ extern snd_minor_t snd_pcm_reg[2];
 
 extern int snd_pcm_info(snd_pcm_t * pcm, snd_pcm_info_t * _info);
 extern int snd_pcm_channel_info(snd_pcm_subchn_t * subchn, snd_pcm_channel_info_t * _info);
-extern int snd_pcm_channel_go(snd_pcm_subchn_t *subchn, int cmd);
-extern int snd_pcm_channel_go_pre(snd_pcm_subchn_t *subchn, int cmd);
-extern int snd_pcm_channel_go_post(snd_pcm_subchn_t *subchn, int cmd, int err);
+extern int snd_pcm_channel_go(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_channel_go_pre(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_channel_go_post(snd_pcm_subchn_t *subchn, int err);
+extern void snd_pcm_channel_stop(snd_pcm_subchn_t *subchn, int status);
 extern int snd_pcm_kernel_playback_ioctl(snd_pcm_subchn_t *subchn, unsigned int cmd, unsigned long arg);
 extern int snd_pcm_kernel_capture_ioctl(snd_pcm_subchn_t *subchn, unsigned int cmd, unsigned long arg);
 extern int snd_pcm_kernel_ioctl(snd_pcm_subchn_t *subchn, unsigned int cmd, unsigned long arg);
@@ -308,7 +310,10 @@ extern unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait);
 extern unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait);
 extern int snd_pcm_open_subchn(snd_pcm_t *pcm, int channel, snd_pcm_subchn_t **rsubchn);
 extern void snd_pcm_release_subchn(snd_pcm_subchn_t *subchn);
-                           
+extern void snd_pcm_vma_notify_data(void *client, void *data);
+extern int snd_pcm_mmap_data(snd_pcm_subchn_t *subchn, struct file *file,
+			     struct vm_area_struct *area);
+
 /*
  *  PCM library
  */
@@ -346,18 +351,18 @@ extern int snd_pcm_lib_set_buffer_size(snd_pcm_subchn_t *subchn, size_t size);
 extern int snd_pcm_lib_mmap_ctrl_ptr(snd_pcm_subchn_t *subchn, char *ptr);
 extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_subchn_t *subchn,
 			     unsigned int cmd, unsigned long *arg);                      
-extern void snd_pcm_update_pos_io(snd_pcm_subchn_t *subchn);
+extern void snd_pcm_update_byte_io(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_playback_bytes_xrun_check(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_capture_bytes_xrun_check(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_playback_ok(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_capture_ok(snd_pcm_subchn_t *subchn);
-extern long snd_pcm_playback_ok_jiffies(snd_pcm_subchn_t *subchn);
-extern long snd_pcm_capture_ok_jiffies(snd_pcm_subchn_t *subchn);
-extern long snd_pcm_playback_empty_jiffies(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_playback_ready(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_capture_ready(snd_pcm_subchn_t *subchn);
+extern long snd_pcm_playback_ready_jiffies(snd_pcm_subchn_t *subchn);
+extern long snd_pcm_capture_ready_jiffies(snd_pcm_subchn_t *subchn);
+extern long snd_pcm_playback_xrun_jiffies(snd_pcm_subchn_t *subchn);
+extern long snd_pcm_capture_xrun_jiffies(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_playback_data(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_playback_empty(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_capture_empty(snd_pcm_subchn_t *subchn);
-extern void snd_pcm_transfer_stop(snd_pcm_subchn_t *subchn, int status);
 extern void snd_pcm_transfer_done(snd_pcm_subchn_t *subchn);
 extern ssize_t snd_pcm_lib_write(snd_pcm_subchn_t *subchn,
 				 const char *buf, size_t count);
