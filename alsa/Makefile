@@ -65,7 +65,7 @@ include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
 	  ln -sf ../alsa-kernel/include include/sound ; \
 	fi
-	cp -auv include/version.h include/sound/version.h
+	cp -auvf include/version.h include/sound/version.h
 
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h
 	gcc -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
@@ -84,23 +84,15 @@ all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
 include/sndversions.h:
 	make dep
 
-include/isapnp.h:
-	ln -sf ../support/isapnp.h include/isapnp.h
-
-/usr/include/byteswap.h:
-	if [ ! -r /usr/include/byteswap.h ]; then \
-	  cp utils/patches/byteswap.h /usr/include ; \
-	fi
-
 .PHONY: compile
-compile: /usr/include/byteswap.h include/sound/version.h include/sndversions.h include/isapnp.h
+compile: include/sound/version.h include/sndversions.h
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
 	@echo "ALSA modules were successfully compiled."
 	@echo
 
 .PHONY: dep
-dep: /usr/include/byteswap.h include/sound/version.h include/isapnp.h
+dep: include/sound/version.h
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d fastdep; then exit 1; fi; done
 
 .PHONY: map
@@ -169,7 +161,8 @@ mrproper: clean
 .PHONY: cvsclean
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
-	include/config1.h.in include/isapnp.h toplevel.config toplevel.config.in alsa-kernel include/sound
+	include/config1.h.in toplevel.config toplevel.config.in alsa-kernel include/sound
+	rm -f include/linux
 
 .PHONY: pack
 pack: mrproper
