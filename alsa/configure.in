@@ -286,6 +286,7 @@ case "$processor" in
     processor="alpha"
     ;;
   ppc)
+    c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     CONFIG_SND_PPC=1
     ;;
   mips)
