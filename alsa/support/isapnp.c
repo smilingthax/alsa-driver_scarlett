@@ -43,6 +43,12 @@
 #include <asm/io.h>
 #include <asm/dma.h>
 #include <asm/irq.h>
+#ifdef CONFIG_PCI
+#include <linux/pci.h>
+#ifndef LINUX_2_1
+#include <linux/bios32.h>
+#endif
+#endif
 
 #ifndef __initfunc
 #define __initfunc(__initarg) __initarg 
@@ -55,10 +61,17 @@
 #if 0
 #define ISAPNP_REGION_OK
 #endif
+#if 0
+#define ISAPNP_DEBUG
+#endif
 
 int isapnp_rdp = 0;			/* Read Data Port */
 int isapnp_reset = 0;			/* reset all PnP cards (deactivate) */
 int isapnp_verbose = 1;			/* verbose mode */
+int isapnp_reserve_irq[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some IRQ */
+int isapnp_reserve_dma[8] = { [0 ... 8] = -1 };		/* reserve (don't use) some DMA */
+int isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
+int isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
 #ifdef MODULE_PARM
 MODULE_AUTHOR("Jaroslav Kysela <perex@jcu.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
@@ -68,6 +81,14 @@ MODULE_PARM(isapnp_reset, "i");
 MODULE_PARM_DESC(isapnp_reset, "ISA Plug & Play reset all cards");
 MODULE_PARM(isapnp_verbose, "i");
 MODULE_PARM_DESC(isapnp_verbose, "ISA Plug & Play verbose mode");
+MODULE_PARM(isapnp_reserve_irq, "1-16i");
+MODULE_PARM_DESC(isapnp_reserve_irq, "ISA Plug & Play - reserve IRQ line(s)");
+MODULE_PARM(isapnp_reserve_dma, "1-8i");
+MODULE_PARM_DESC(isapnp_reserve_dma, "ISA Plug & Play - reserve DMA channel(s)");
+MODULE_PARM(isapnp_reserve_io, "1-16i");
+MODULE_PARM_DESC(isapnp_reserve_io, "ISA Plug & Play - reserve I/O region(s) - port,size");
+MODULE_PARM(isapnp_reserve_mem, "1-16i");
+MODULE_PARM_DESC(isapnp_reserve_mem, "ISA Plug & Play - reserve memory region(s) - address,size");
 #endif
 
 #define _PIDXR		0x279
@@ -1421,12 +1442,18 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 
 static int isapnp_check_port(struct isapnp_cfgtmp *cfg, int port, int size, int idx)
 {
-	int i, tmp, tsize;
+	int i, tmp, tsize, rport, rsize;
 	struct isapnp_port *xport;
 
 	if (check_region(port, size))
 		return 1;
 	for (i = 0; i < 8; i++) {
+		rport = isapnp_reserve_io[i << 1];
+		rsize = isapnp_reserve_io[(i << 1) + 1];
+		if (port >= rport && port < rport + rsize)
+			return 1;
+		if (port + size > rport && port + size < (rport + rsize) - 1)
+			return 1;
 		tmp = cfg->result.port_disable[i];
 		if (tmp == ISAPNP_AUTO_PORT)
 			continue;
@@ -1503,9 +1530,12 @@ static int isapnp_check_interrupt(struct isapnp_cfgtmp *cfg, int irq, int idx)
 
 	if (irq < 0 || irq > 15)
 		return 1;
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < 16; i++) {
+		if (isapnp_reserve_irq[i] == irq)
+			return 1;
 		if (cfg->result.irq_disable[i] == irq)
 			return 1;
+	}
 	if (request_irq(irq, isapnp_test_handler, SA_INTERRUPT, "isapnp", NULL))
 		return 1;
 	free_irq(irq, NULL);
@@ -1569,9 +1599,12 @@ static int isapnp_check_dma(struct isapnp_cfgtmp *cfg, int dma, int idx)
 
 	if (dma < 0 || dma == 4 || dma > 7)
 		return 1;
-	for (i = 0; i < 8; i++)
+	for (i = 0; i < 8; i++) {
+		if (isapnp_reserve_dma[i] == dma)
+			return 1;
 		if (cfg->result.dma_disable[i] == dma)
 			return 1;
+	}
 	if (request_dma(dma, "isapnp"))
 		return 1;
 	free_dma(dma);
@@ -1626,7 +1659,18 @@ static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
 
 static int isapnp_check_mem(unsigned int addr, unsigned int size)
 {
-	return 0;	/* always valid - maybe wrong */
+	int i;
+	unsigned int raddr, rsize;
+
+	for (i = 0; i < 8; i++) {
+		raddr = (unsigned int)isapnp_reserve_mem[i << 1];
+		rsize = (unsigned int)isapnp_reserve_mem[(i << 1) + 1];
+		if (addr >= raddr && addr < raddr + rsize)
+			return 1;
+		if (addr + size > raddr && addr + size < (raddr + rsize) - 1)
+			return 1;
+	}
+	return 0;
 }
 
 static int isapnp_valid_mem(struct isapnp_cfgtmp *cfg, int idx)
@@ -1879,6 +1923,105 @@ static void isapnp_free_all_resources(void)
 #endif
 }
 
+__initfunc(static int isapnp_do_reserve_irq(int irq))
+{
+	int i;
+	
+	if (irq < 0 || irq > 15)
+		return -EINVAL;
+	for (i = 0; i < 16; i++) {
+		if (isapnp_reserve_irq[i] == irq)
+			return 0;
+	}
+	for (i = 0; i < 16; i++) {
+		if (isapnp_reserve_irq[i] < 0) {
+			isapnp_reserve_irq[i] = irq;
+#ifdef ISAPNP_DEBUG
+			printk("IRQ %i is reserved now.\n", irq);
+#endif
+			return 0;
+		}
+	}
+	return -ENOMEM;
+}
+
+#ifdef CONFIG_PCI
+#ifdef LINUX_2_1
+
+__initfunc(static void isapnp_pci_init(void))
+{
+	int devfn;
+	struct pci_dev *dev;
+	
+	for (devfn = 0; devfn < 255; devfn++) {
+		dev = pci_find_slot(0, devfn);
+		if (dev != NULL)
+			break;
+	}
+	if (dev == NULL)
+		return;
+	while (dev) {
+#ifdef ISAPNP_DEBUG
+		printk("PCI: reserved IRQ: %i\n", dev->irq);
+#endif
+		if (dev->irq > 0)
+			isapnp_do_reserve_irq(dev->irq);
+		dev = dev->next;
+	}
+}
+
+#else
+
+__initfunc(static void isapnp_pci_scan_bus(int bus))
+{
+	int devfn, is_multi = 0;
+	unsigned char hdr_type, irq;
+	unsigned int l, class_type, buses;
+	
+#ifdef ISAPNP_DEBUG
+	printk("PCI: scanning bus %i\n", bus);
+#endif
+	for (devfn = 0; devfn < 255; devfn++) {
+		if (PCI_FUNC(devfn) && !is_multi)
+			continue;
+		pcibios_read_config_byte(bus, devfn, PCI_HEADER_TYPE, &hdr_type);
+		if (!PCI_FUNC(devfn))
+			is_multi = hdr_type & 0x80;
+			
+		/* some broken boards return 0 if a slot is empty: */
+		pcibios_read_config_dword(bus, devfn, PCI_VENDOR_ID, &l);
+		if (l == 0xffffffff || l == 0x00000000)
+			continue;
+
+#ifdef ISAPNP_DEBUG
+		printk("PCI: devfn = %i, hdr_type = 0x%x, Vendor ID = 0x%x\n", devfn, (int)hdr_type, l);
+#endif
+		pcibios_read_config_byte(bus, devfn, PCI_INTERRUPT_LINE, &irq);
+#ifdef ISAPNP_DEBUG
+		printk("PCI: reserved IRQ: %i\n", irq);
+#endif
+		if (irq > 0 && irq < 15)
+			isapnp_do_reserve_irq(irq);
+
+		pcibios_read_config_dword(bus, devfn, PCI_CLASS_REVISION, &class_type);
+		class_type >>= 8;
+		
+		if ((class_type >> 8) == PCI_CLASS_BRIDGE_PCI) {
+			pcibios_read_config_dword(bus, devfn, 0x18, &buses);
+			if (buses)
+				isapnp_pci_scan_bus((buses >> 8) & 0xff);
+		}
+	}
+}
+
+__initfunc(static void isapnp_pci_init(void))
+{
+	isapnp_pci_scan_bus(0);
+}
+
+#endif
+#endif /* CONFIG_PCI */
+
 #ifndef LINUX_2_1
 static struct symbol_table isapnp_syms = {
 	#include <linux/symtab_begin.h>
@@ -2000,6 +2143,9 @@ __initfunc(int isapnp_init(void))
 		}
 	}
 	printk("isapnp: %i Plug & Play device%s detected total\n", devices, devices>1?"s":"");
+#ifdef CONFIG_PCI
+	isapnp_pci_init();
+#endif
 	isapnp_proc_init();
 #ifndef LINUX_2_1
 	if (register_symtab(&isapnp_syms))
