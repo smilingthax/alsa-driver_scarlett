@@ -2181,10 +2181,10 @@ static int __devinit snd_audiopci_probe(struct pci_dev *pci,
 		return err;
 	}
 #ifdef CHIP1370
-	strcpy(card->driver, "ES1370");
+	strcpy(card->driver, "ENS1370");
 #endif
 #ifdef CHIP1371
-	strcpy(card->driver, "ES1371");
+	strcpy(card->driver, "ENS1371");
 #endif
 	strcpy(card->shortname, "Ensoniq AudioPCI");
 	sprintf(card->longname, "%s %s at 0x%lx, irq %i",
