@@ -132,8 +132,6 @@ struct _snd_ad1816a {
 	int irq;
 	int dma1;
 	int dma2;
-	unsigned long dma1size;
-	unsigned long dma2size;
 
 	unsigned short hardware;
 	unsigned short version;
@@ -168,9 +166,7 @@ struct _snd_ad1816a {
 
 
 extern int snd_ad1816a_create(snd_card_t *card, unsigned long port,
-			      int irq,
-			      int dma1, unsigned long dma1_size,
-			      int dma2, unsigned long dma2_size,
+			      int irq, int dma1, int dma2,
 			      ad1816a_t **chip);
 
 extern int snd_ad1816a_pcm(ad1816a_t *chip, int device, snd_pcm_t **rpcm);

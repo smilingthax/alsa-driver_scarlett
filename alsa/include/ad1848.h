@@ -125,7 +125,6 @@ struct _snd_ad1848 {
 	struct resource *res_port;
 	int irq;			/* IRQ line */
 	int dma;			/* data DMA */
-	unsigned long dma_rsize;
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to AD1848_MODE_XXXX */
 	unsigned short hardware;	/* see to AD1848_HW_XXXX */
@@ -154,7 +153,6 @@ void snd_ad1848_out(ad1848_t *chip, unsigned char reg, unsigned char value);
 int snd_ad1848_create(snd_card_t * card,
 		      unsigned long port,
 		      int irq, int dma,
-		      unsigned long dma_size,
 		      unsigned short hardware,
 		      ad1848_t ** chip);
 

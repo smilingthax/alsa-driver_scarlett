@@ -1659,11 +1659,6 @@ struct _snd_cs46xx {
 	unsigned int mode;
 	
 	struct {
-		unsigned long dma_size;	/* requested DMA size */
-	
-		unsigned char *sw_area;
-		dma_addr_t sw_addr;	/* PCI bus address, not accessible */
-		unsigned long sw_size;
 		unsigned char *hw_area;
 		dma_addr_t hw_addr;	/* PCI bus address, not accessible */
 		unsigned long hw_size;
@@ -1702,8 +1697,6 @@ struct _snd_cs46xx {
 
 int snd_cs46xx_create(snd_card_t *card,
 		      struct pci_dev *pci,
-		      unsigned long play_dma_size,
-		      unsigned long capt_dma_size,
 		      cs46xx_t **rcodec);
 
 int snd_cs46xx_pcm(cs46xx_t *chip, int device, snd_pcm_t **rpcm);

@@ -220,8 +220,6 @@ struct _snd_cs4231 {
 	int irq;			/* IRQ line */
 	int dma1;			/* playback DMA */
 	int dma2;			/* record DMA */
-	unsigned long dma1size;
-	unsigned long dma2size;
 	unsigned short version;		/* version of CODEC chip */
 	unsigned short mode;		/* see to CS4231_MODE_XXXX */
 	unsigned short hardware;	/* see to CS4231_HW_XXXX */
@@ -276,9 +274,7 @@ const char *snd_cs4231_chip_id(cs4231_t *chip);
 
 int snd_cs4231_create(snd_card_t * card,
 		      unsigned long port,
-		      int irq,
-		      int dma1, unsigned long dma1size,
-		      int dma2, unsigned long dma2size,
+		      int irq, int dma1, int dma2,
 		      unsigned short hardware,
 		      unsigned short hwshare,
 		      cs4231_t ** rchip);
@@ -289,9 +285,7 @@ int snd_cs4231_mixer(cs4231_t * chip);
 int snd_cs4236_create(snd_card_t * card,
 		      unsigned long port,
 		      unsigned long cport,
-		      int irq,
-		      int dma1, unsigned long dma1size,
-		      int dma2, unsigned long dma2size,
+		      int irq, int dma1, int dma2,
 		      unsigned short hardware,
 		      unsigned short hwshare,
 		      cs4231_t ** rchip);

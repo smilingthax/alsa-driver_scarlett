@@ -84,8 +84,7 @@ typedef struct _snd_pcm_ops {
 
 #define SND_PCM_IOCTL1_RESET		0
 #define SND_PCM_IOCTL1_INFO		1
-#define SND_PCM_IOCTL1_HW_PARAMS	2
-#define SND_PCM_IOCTL1_CHANNEL_INFO	3
+#define SND_PCM_IOCTL1_CHANNEL_INFO	2
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_START		1

@@ -36,7 +36,6 @@ struct _snd_es1688 {
 	int irq;			/* IRQ number of ESS chip */
 	int mpu_irq;			/* MPU IRQ */
 	int dma8;			/* 8-bit DMA */
-	unsigned long dma8size;		/* requested DMA size in bytes */
 	unsigned short version;		/* version of ESS chip */
 	unsigned short hardware;	/* see to ES1688_HW_XXXX */
 
@@ -118,7 +117,6 @@ int snd_es1688_create(snd_card_t * card,
 		      int irq,
 		      int mpu_irq,
 		      int dma8,
-		      unsigned long dma8size,
 		      unsigned short hardware,
 		      es1688_t ** rchip);
 int snd_es1688_pcm(es1688_t *chip, int device, snd_pcm_t ** rpcm);

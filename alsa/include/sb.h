@@ -63,8 +63,6 @@ struct _snd_sb {
 	int irq;			/* IRQ number of DSP chip */
 	int dma8;			/* 8-bit DMA */
 	int dma16;			/* 16-bit DMA */
-	unsigned long dma8size;
-	unsigned long dma16size;
 	unsigned short version;		/* version of DSP chip */
 	unsigned short hardware;	/* see to SB_HW_XXXX */
 
@@ -258,8 +256,7 @@ int snd_sbdsp_create(snd_card_t *card,
 		     unsigned long port,
 		     int irq,
 		     void (*irq_handler)(int, void *, struct pt_regs *),
-		     int dma8, unsigned long dma8size,
-		     int dma16, unsigned long dma16size,
+		     int dma8, int dma16,
 		     unsigned short hardware,
 		     sb_t **r_chip);
 /* sb_mixer.c */

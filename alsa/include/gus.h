@@ -330,8 +330,6 @@ struct _snd_gf1 {
 	int irq;			/* IRQ number */
 	int dma1;			/* DMA1 number */
 	int dma2;			/* DMA2 number */
-	unsigned long dma1size;		/* DMA1 size */
-	unsigned long dma2size;		/* DMA2 size */
 	unsigned int memory;		/* GUS's DRAM size in bytes */
 	unsigned int rom_memory;	/* GUS's ROM size in bytes */
 	unsigned int rom_present;	/* bitmask */
@@ -667,9 +665,7 @@ int snd_gus_use_inc(snd_gus_card_t * gus);
 void snd_gus_use_dec(snd_gus_card_t * gus);
 int snd_gus_create(snd_card_t * card,
 		   unsigned long port,
-		   int irq,
-		   int dma1, unsigned long dma1size,
-		   int dma2, unsigned long dma2size,
+		   int irq, int dma1, int dma2,
 		   int timer_dev,
 		   int voices,
 		   int pcm_channels,
