@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: rme9652_mem.c,v 1.6 2002/02/04 10:21:33 tiwai Exp $
+    $Id: rme9652_mem.c,v 1.7 2002/05/09 11:38:31 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
@@ -190,7 +190,7 @@ void snd_rme9652_free_buffer (int card, void *addr)
 	printk ("RME9652 memory allocator: unknown buffer address passed to free buffer");
 }
 
-static void __exit rme9652_free_buffers (void)
+static void rme9652_free_buffers (void)
 
 {
 	int i;
