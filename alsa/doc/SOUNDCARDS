@@ -114,3 +114,7 @@ MA: audio@tridentmicro.com
 ID: ForteMedia FM801
 IF: MIXER,PCM,MIDI
 MA: perex@suse.cz
+
+ID: SGI Indy (HAL2)
+IF: PCM
+MA: Ulf Carlsson <ulfc@thepuffingroup.com>

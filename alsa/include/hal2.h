@@ -370,6 +370,11 @@ struct snd_stru_hal2_card {
 	snd_pcm_t *pcm;
 	snd_rawmidi_t *midi_uart;
 
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm1_subchn_t *capture_subchn1;
+
 	struct snd_stru_hal2 hal2;	/* HAL2 specific variables */
 
 	int usecount;
