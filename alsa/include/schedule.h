@@ -57,7 +57,19 @@
   #define snd_sleep_abort( object, ident ) \
     ( current -> signal & ~current -> blocked )
 #endif
-#define snd_wakeup( object, ident ) wake_up( &(object) -> sleeper_##ident )
+#ifdef LINUX_2_1
+#define snd_wakeup( object, ident ) \
+  do { \
+    wake_up( &(object) -> sleeper_##ident ); \
+    current -> need_resched = 1; \
+  } while ( 0 )
+#else
+#define snd_wakeup( object, ident ) \
+  do { \
+    wake_up( &(object) -> sleeper_##ident ); \
+    need_resched = 1; \
+  } while ( 0 )
+#endif
 #define snd_getlock( object, ident ) (object) -> sleeper_lock_##ident
 #define snd_timeout( object, ident ) ( (object) -> sleeper_end_jiffies_##ident < jiffies )
 #define snd_timeout_value( object, ident ) ( (object) -> sleeper_end_jiffies_##ident - jiffies )
