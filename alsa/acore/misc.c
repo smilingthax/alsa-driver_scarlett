@@ -241,6 +241,7 @@ struct workqueue_struct {
 	const char *name;
 	struct list_head worklist;
 	int task_pid;
+	task_t *task;
 	wait_queue_head_t more_work;
 	wait_queue_head_t work_done;
 	struct completion thread_exited;
@@ -269,7 +270,7 @@ static void run_workqueue(struct workqueue_struct *wq)
 
 void snd_compat_flush_workqueue(struct workqueue_struct *wq)
 {
-	if (0 /* wq->task == current */) {
+	if (wq->task == current) {
 		run_workqueue(wq);
 	} else {
 		wait_queue_t wait;
@@ -283,6 +284,7 @@ void snd_compat_flush_workqueue(struct workqueue_struct *wq)
 			schedule();
 			spin_lock_irq(&wq->lock);
 		}
+		set_current_state(TASK_RUNNING);
 		remove_wait_queue(&wq->work_done, &wait);
 		spin_unlock_irq(&wq->lock);
 	}
@@ -310,7 +312,7 @@ static int xworker_thread(void *data)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 8)
 	reparent_to_init();
 #endif
-	strcpy(current->comm, wq->name); /* FIXME: different names? */
+	strcpy(current->comm, wq->name);
 
 	do {
 		run_workqueue(wq);
@@ -346,6 +348,7 @@ struct workqueue_struct *snd_compat_create_workqueue(const char *name)
 		snd_compat_destroy_workqueue(wq);
 		wq = NULL;
 	}
+	wq->task = find_task_by_pid(wq->task_pid);
 	return wq;
 }
 
@@ -382,7 +385,7 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struc
 	struct timer_list *timer = &work->timer;
 
 	if (!test_and_set_bit(0, &work->pending)) {
-		work->wq_data = work;
+		work->wq_data = wq;
 		timer->expires = jiffies + delay;
 		timer->data = (unsigned long)work;
 		timer->function = delayed_work_timer_fn;
