@@ -639,7 +639,7 @@ static struct s_c2 SetRate48000[] =
 	{ 0x18, 0x7C},
 	{ 0x18, 0x7E}
 };
-#define NOOF_SETRATE_URBS (sizeof(SetRate48000)/sizeof(SetRate48000[0]))
+#define NOOF_SETRATE_URBS ARRAY_SIZE(SetRate48000)
 
 static int usX2Y_rate_set(snd_usX2Y_stream_t *usX2Y_stream, int rate)
 {

@@ -2273,8 +2273,6 @@ static snd_kcontrol_new_t snd_hdspm_controls[] = {
 	HDSPM_INPUT_SELECT("Input Select", 0),
 };
 
-#define HDSPM_CONTROLS (sizeof(snd_hdspm_controls)/sizeof(snd_kcontrol_new_t))
-
 static snd_kcontrol_new_t snd_hdspm_playback_mixer = HDSPM_PLAYBACK_MIXER;
 
 
@@ -2310,7 +2308,7 @@ int snd_hdspm_create_controls(snd_card_t * card, hdspm_t * hdspm)
 
 	/* add control list first */
 
-	for (idx = 0; idx < HDSPM_CONTROLS; idx++) {
+	for (idx = 0; idx < ARRAY_SIZE(snd_hdspm_controls); idx++) {
 		if ((err =
 		     snd_ctl_add(card, kctl =
 				 snd_ctl_new1(&snd_hdspm_controls[idx],
@@ -3099,10 +3097,8 @@ static snd_pcm_hardware_t snd_hdspm_capture_subinfo = {
 	.fifo_size = 0
 };
 
-#define PERIOD_SIZES sizeof(period_sizes) / sizeof(period_sizes[0])
-
 static snd_pcm_hw_constraint_list_t hw_constraints_period_sizes = {
-	.count = PERIOD_SIZES,
+	.count = ARRAY_SIZE(period_sizes),
 	.list = period_sizes,
 	.mask = 0
 };
