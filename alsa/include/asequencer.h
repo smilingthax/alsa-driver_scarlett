@@ -1,6 +1,7 @@
 /*
  *  Main header file for the ALSA sequencer
  *  Copyright (c) 1998 by Frank van de Pol <frank@vande-pol.demon.nl>
+ *            (c) 1998/1999 by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -18,8 +19,8 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
-#ifndef __SND_SEQ_H
-#define __SND_SEQ_H
+#ifndef __SND_ASEQUENCER_H
+#define __SND_ASEQUENCER_H
 
 #ifndef __KERNEL__
 #include <linux/ioctl.h>
@@ -263,7 +264,7 @@ typedef struct {
 
 	/* known client numbers */
 #define SND_SEQ_CLIENT_SYSTEM		0
-#define SND_SEQ_CLIENT_OSSSEQ		63
+#define SND_SEQ_CLIENT_OSS		63	/* oss sequencer emulator */
 
 	/* client types */
 typedef enum {
@@ -487,7 +488,7 @@ typedef struct {
 } snd_seq_instr_data_t;
 
 /* INSTR_PUT, data are stored in one block (extended or IPC), header + data */
- 
+
 typedef struct {
 	snd_seq_instr_t id;		/* instrument identifier */
 	char reserved[16];		/* for the future */
@@ -594,4 +595,4 @@ typedef struct {
 #define SND_SEQ_IOCTL_GET_QUEUE_CLIENT	_IOWR('S', 0x49, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
 
-#endif /* __SND_SEQ_H */
+#endif /* __SND_ASEQUENCER_H */
