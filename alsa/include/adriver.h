@@ -142,6 +142,7 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 /* no vsnprintf yet? */
 /* FIXME: the version number is not sure.. at least it exists already on 2.4.10 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
+#define snprintf(buf,size,fmt,args...) sprintf(buf,fmt,##args)
 #define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
 #endif
 
