@@ -181,7 +181,9 @@ int snd_card_disconnect(snd_card_t * card)
 		f_ops = &s_f_ops->f_ops;
 
 		memset(f_ops, 0, sizeof(*f_ops));
+#ifndef LINUX_2_2
 		f_ops->owner = file->f_op->owner;
+#endif
 		f_ops->release = file->f_op->release;
 		f_ops->poll = snd_disconnect_poll;
 
@@ -293,7 +295,7 @@ static int snd_card_free_thread(void * __card)
 #endif
 
 	daemonize();
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 	reparent_to_init();
 #endif
 
