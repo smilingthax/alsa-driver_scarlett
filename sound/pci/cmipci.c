@@ -2151,6 +2151,7 @@ DEFINE_SWITCH_ARG(spdo_5v, CM_REG_MISC_CTRL, CM_SPDO5V, 0, 0, 0); /* inverse: 0 
 DEFINE_BIT_SWITCH_ARG(spdif_loop, CM_REG_FUNCTRL1, CM_SPDFLOOP, 0, 1);
 DEFINE_BIT_SWITCH_ARG(spdi_monitor, CM_REG_MIXER1, CM_CDPLAY, 1, 0);
 DEFINE_BIT_SWITCH_ARG(spdi_phase, CM_REG_CHFORMAT, CM_SPDIF_INVERSE, 0, 0);
+DEFINE_BIT_SWITCH_ARG(spdi_phase2, CM_REG_CHFORMAT, CM_SPDIF_INVERSE2, 0, 0);
 #if CM_CH_PLAY == 1
 DEFINE_SWITCH_ARG(exchange_dac, CM_REG_MISC_CTRL, CM_XCHGDAC, 0, 0, 0); /* reversed */
 #else
@@ -2234,18 +2235,19 @@ static snd_kcontrol_new_t snd_cmipci_8738_mixer_switches[] __devinitdata = {
 	DEFINE_MIXER_SWITCH("IEC958 5V", spdo_5v),
 	DEFINE_MIXER_SWITCH("IEC958 Loop", spdif_loop),
 	DEFINE_MIXER_SWITCH("IEC958 In Monitor", spdi_monitor),
-	DEFINE_MIXER_SWITCH("IEC958 In Phase Inverse", spdi_phase),
 };
 
 /* only for model 033/037 */
 static snd_kcontrol_new_t snd_cmipci_old_mixer_switches[] __devinitdata = {
 	DEFINE_MIXER_SWITCH("IEC958 Mix Analog", spdif_dac_out),
+	DEFINE_MIXER_SWITCH("IEC958 In Phase Inverse", spdi_phase),
 };
 
 /* only for model 039 or later */
 static snd_kcontrol_new_t snd_cmipci_extra_mixer_switches[] __devinitdata = {
 	DEFINE_MIXER_SWITCH("Line-In As Bass", line_bass),
 	DEFINE_MIXER_SWITCH("IEC958 In Select", spdif_in_1_2),
+	DEFINE_MIXER_SWITCH("IEC958 In Phase Inverse", spdi_phase2),
 };
 
 /* card control switches */
