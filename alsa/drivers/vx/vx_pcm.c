@@ -764,6 +764,10 @@ static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 
 	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
+		
+	/* FIXME: dmix plugin requires no-xrun mode */
+	if (subs->runtime->stop_threshold >= subs->runtime->boundary)
+		return -EIO;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
