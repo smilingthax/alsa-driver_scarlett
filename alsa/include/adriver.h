@@ -656,4 +656,12 @@ void *snd_compat_kcalloc(size_t n, size_t size, int gfp_flags);
 #endif
 #endif
 
+/* pm_message_t type */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 11)
+typedef u32 /*__bitwise*/ pm_message_t;
+#define PMSG_FREEZE	3
+#define PMSG_SUSPEND	3
+#define PMSG_ON		0
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
