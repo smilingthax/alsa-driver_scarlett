@@ -1,0 +1,268 @@
+diff -ruN linux-2.5.2-pre1/MAINTAINERS linux/MAINTAINERS
+--- linux-2.5.2-pre1/MAINTAINERS	Sun Dec 23 16:47:36 2001
++++ linux/MAINTAINERS	Sun Dec 23 18:21:22 2001
+@@ -1374,6 +1374,12 @@
+ L:	linux-net@vger.kernel.org
+ S:	Maintained
+ 
++SOUND - ALSA
++P:	Jaroslav Kysela
++M:	perex@suse.cz
++L:	alsa-devel@alsa-project.org
++S:	Maintained
++
+ SOUND
+ P:	Alan Cox
+ M:	alan@redhat.com
+diff -ruN linux-2.5.2-pre1/Makefile linux/Makefile
+--- linux-2.5.2-pre1/Makefile	Sun Dec 23 16:47:36 2001
++++ linux/Makefile	Sun Dec 23 18:20:06 2001
+@@ -122,7 +122,7 @@
+ NETWORKS	=net/network.o
+ 
+ LIBS		=$(TOPDIR)/lib/lib.a
+-SUBDIRS		=kernel drivers mm fs net ipc lib
++SUBDIRS		=kernel drivers mm fs net ipc sound lib
+ 
+ DRIVERS-n :=
+ DRIVERS-y :=
+@@ -156,7 +156,7 @@
+ DRIVERS-y += drivers/cdrom/driver.o
+ endif
+ 
+-DRIVERS-$(CONFIG_SOUND) += drivers/sound/sounddrivers.o
++DRIVERS-$(CONFIG_SOUND) += sound/sound.o
+ DRIVERS-$(CONFIG_PCI) += drivers/pci/driver.o
+ DRIVERS-$(CONFIG_MTD) += drivers/mtd/mtdlink.o
+ DRIVERS-$(CONFIG_PCMCIA) += drivers/pcmcia/pcmcia.o
+@@ -198,7 +198,7 @@
+ 	drivers/char/drm/*-mod.c \
+ 	drivers/pci/devlist.h drivers/pci/classlist.h drivers/pci/gen-devlist \
+ 	drivers/zorro/devlist.h drivers/zorro/gen-devlist \
+-	drivers/sound/bin2hex drivers/sound/hex2hex \
++	sound/oss/bin2hex sound/oss/hex2hex \
+ 	drivers/atm/fore200e_mkfirm drivers/atm/{pca,sba}*{.bin,.bin1,.bin2} \
+ 	drivers/scsi/aic7xxx/aicasm/aicasm_gram.c \
+ 	drivers/scsi/aic7xxx/aicasm/aicasm_scan.c \
+@@ -219,11 +219,11 @@
+ 	drivers/net/hamradio/soundmodem/sm_tbl_{hapn4800,psk4800}.h \
+ 	drivers/net/hamradio/soundmodem/sm_tbl_{afsk2400_7,afsk2400_8}.h \
+ 	drivers/net/hamradio/soundmodem/gentbl \
+-	drivers/sound/*_boot.h drivers/sound/.*.boot \
+-	drivers/sound/msndinit.c \
+-	drivers/sound/msndperm.c \
+-	drivers/sound/pndsperm.c \
+-	drivers/sound/pndspini.c \
++	sound/oss/*_boot.h sound/oss/.*.boot \
++	sound/oss/msndinit.c \
++	sound/oss/msndperm.c \
++	sound/oss/pndsperm.c \
++	sound/oss/pndspini.c \
+ 	drivers/atm/fore200e_*_fw.c drivers/atm/.fore200e_*.fw \
+ 	.version .config* config.in config.old \
+ 	scripts/tkparse scripts/kconfig.tk scripts/kconfig.tmp \
+@@ -338,7 +338,7 @@
+ init/do_mounts.o: init/do_mounts.c include/config/MARKER
+ 	$(CC) $(CFLAGS) $(CFLAGS_KERNEL) $(PROFILING) -c -o $*.o $<
+ 
+-fs lib mm ipc kernel drivers net: dummy
++fs lib mm ipc kernel drivers net sound: dummy
+ 	$(MAKE) CFLAGS="$(CFLAGS) $(CFLAGS_KERNEL)" $(subst $@, _dir_$@, $@)
+ 
+ TAGS: dummy
+diff -ruN linux-2.5.2-pre1/Rules.make linux/Rules.make
+--- linux-2.5.2-pre1/Rules.make	Wed Mar  7 04:31:01 2001
++++ linux/Rules.make	Sun Dec 23 18:20:06 2001
+@@ -206,6 +206,8 @@
+ ifneq "$(strip $(export-objs))" ""
+ 
+ MODINCL = $(TOPDIR)/include/linux/modules
++MODCURDIR = $(subst $(TOPDIR)/,,$(shell /bin/pwd))
++MODPREFIX = $(subst /,-,$(MODCURDIR))__
+ 
+ # The -w option (enable warnings) for genksyms will return here in 2.1
+ # So where has it gone?
+@@ -220,20 +222,20 @@
+ 	genksyms_smp_prefix := 
+ endif
+ 
+-$(MODINCL)/%.ver: %.c
+-	@if [ ! -r $(MODINCL)/$*.stamp -o $(MODINCL)/$*.stamp -ot $< ]; then \
++$(MODINCL)/$(MODPREFIX)%.ver: %.c
++	@if [ ! -r $(MODINCL)/$(MODPREFIX)$*.stamp -o $(MODINCL)/$(MODPREFIX)$*.stamp -ot $< ]; then \
+ 		echo '$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $<'; \
+ 		echo '| $(GENKSYMS) $(genksyms_smp_prefix) -k $(VERSION).$(PATCHLEVEL).$(SUBLEVEL) > $@.tmp'; \
+ 		$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $< \
+ 		| $(GENKSYMS) $(genksyms_smp_prefix) -k $(VERSION).$(PATCHLEVEL).$(SUBLEVEL) > $@.tmp; \
+ 		if [ -r $@ ] && cmp -s $@ $@.tmp; then echo $@ is unchanged; rm -f $@.tmp; \
+ 		else echo mv $@.tmp $@; mv -f $@.tmp $@; fi; \
+-	fi; touch $(MODINCL)/$*.stamp
++	fi; touch $(MODINCL)/$(MODPREFIX)$*.stamp
+ 	
+-$(addprefix $(MODINCL)/,$(export-objs:.o=.ver)): $(TOPDIR)/include/linux/autoconf.h
++$(addprefix $(MODINCL)/$(MODPREFIX),$(export-objs:.o=.ver)): $(TOPDIR)/include/linux/autoconf.h
+ 
+ # updates .ver files but not modversions.h
+-fastdep: $(addprefix $(MODINCL)/,$(export-objs:.o=.ver))
++fastdep: $(addprefix $(MODINCL)/$(MODPREFIX),$(export-objs:.o=.ver))
+ 
+ # updates .ver files and modversions.h like before (is this needed?)
+ dep: fastdep update-modverfile
+diff -ruN linux-2.5.2-pre1/arch/alpha/config.in linux/arch/alpha/config.in
+--- linux-2.5.2-pre1/arch/alpha/config.in	Wed Nov 21 00:49:31 2001
++++ linux/arch/alpha/config.in	Sun Dec 23 18:20:06 2001
+@@ -364,7 +364,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-  source drivers/sound/Config.in
++  source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/arm/config.in linux/arch/arm/config.in
+--- linux-2.5.2-pre1/arch/arm/config.in	Fri Nov  9 22:58:02 2001
++++ linux/arch/arm/config.in	Sun Dec 23 18:20:06 2001
+@@ -575,7 +575,7 @@
+ 
+    tristate 'Sound support' CONFIG_SOUND
+    if [ "$CONFIG_SOUND" != "n" ]; then
+-      source drivers/sound/Config.in
++      source sound/Config.in
+    fi
+    endmenu
+ fi
+diff -ruN linux-2.5.2-pre1/arch/cris/config.in linux/arch/cris/config.in
+--- linux-2.5.2-pre1/arch/cris/config.in	Mon Oct 15 22:42:14 2001
++++ linux/arch/cris/config.in	Sun Dec 23 18:20:06 2001
+@@ -236,7 +236,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-  source drivers/sound/Config.in
++  source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/i386/config.in linux/arch/i386/config.in
+--- linux-2.5.2-pre1/arch/i386/config.in	Mon Nov 12 20:58:08 2001
++++ linux/arch/i386/config.in	Sun Dec 23 18:20:06 2001
+@@ -386,7 +386,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-   source drivers/sound/Config.in
++   source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/ia64/config.in linux/arch/ia64/config.in
+--- linux-2.5.2-pre1/arch/ia64/config.in	Fri Nov  9 23:26:17 2001
++++ linux/arch/ia64/config.in	Sun Dec 23 18:20:06 2001
+@@ -228,7 +228,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-  source drivers/sound/Config.in
++  source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/m68k/config.in linux/arch/m68k/config.in
+--- linux-2.5.2-pre1/arch/m68k/config.in	Tue Jun 12 04:15:27 2001
++++ linux/arch/m68k/config.in	Sun Dec 23 18:20:06 2001
+@@ -527,7 +527,7 @@
+ 
+ tristate 'Sound support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-   source drivers/sound/dmasound/Config.in
++   source sound/oss/dmasound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/mips/config.in linux/arch/mips/config.in
+--- linux-2.5.2-pre1/arch/mips/config.in	Mon Oct 15 22:41:34 2001
++++ linux/arch/mips/config.in	Sun Dec 23 18:20:06 2001
+@@ -492,7 +492,7 @@
+ 
+    tristate 'Sound card support' CONFIG_SOUND
+    if [ "$CONFIG_SOUND" != "n" ]; then
+-      source drivers/sound/Config.in
++      source sound/Config.in
+    fi
+    endmenu
+ fi
+diff -ruN linux-2.5.2-pre1/arch/mips64/config.in linux/arch/mips64/config.in
+--- linux-2.5.2-pre1/arch/mips64/config.in	Sun Sep  9 19:43:02 2001
++++ linux/arch/mips64/config.in	Sun Dec 23 18:20:06 2001
+@@ -251,7 +251,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-   source drivers/sound/Config.in
++   source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/parisc/config.in linux/arch/parisc/config.in
+--- linux-2.5.2-pre1/arch/parisc/config.in	Wed Apr 18 02:19:25 2001
++++ linux/arch/parisc/config.in	Sun Dec 23 18:20:06 2001
+@@ -178,7 +178,7 @@
+ comment 'Sound Drivers'
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-   source drivers/sound/Config.in
++   source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/ppc/config.in linux/arch/ppc/config.in
+--- linux-2.5.2-pre1/arch/ppc/config.in	Fri Nov 16 19:10:08 2001
++++ linux/arch/ppc/config.in	Sun Dec 23 18:20:06 2001
+@@ -366,8 +366,8 @@
+ comment 'Sound'
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-  source drivers/sound/dmasound/Config.in
+-  source drivers/sound/Config.in
++  source sound/oss/dmasound/Config.in
++  source sound/Config.in
+ fi
+ 
+ endmenu
+diff -ruN linux-2.5.2-pre1/arch/sh/config.in linux/arch/sh/config.in
+--- linux-2.5.2-pre1/arch/sh/config.in	Tue Dec 11 19:10:18 2001
++++ linux/arch/sh/config.in	Sun Dec 23 18:20:06 2001
+@@ -373,7 +373,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-   source drivers/sound/Config.in
++   source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/arch/sparc64/config.in linux/arch/sparc64/config.in
+--- linux-2.5.2-pre1/arch/sparc64/config.in	Tue Nov 13 18:16:05 2001
++++ linux/arch/sparc64/config.in	Sun Dec 23 18:20:06 2001
+@@ -276,7 +276,7 @@
+ 
+ tristate 'Sound card support' CONFIG_SOUND
+ if [ "$CONFIG_SOUND" != "n" ]; then
+-   source drivers/sound/Config.in
++   source sound/Config.in
+ fi
+ endmenu
+ 
+diff -ruN linux-2.5.2-pre1/drivers/Makefile linux/drivers/Makefile
+--- linux-2.5.2-pre1/drivers/Makefile	Sun Nov 11 19:09:32 2001
++++ linux/drivers/Makefile	Sun Dec 23 18:20:06 2001
+@@ -10,7 +10,7 @@
+ 		message/i2o message/fusion scsi md ieee1394 pnp isdn atm \
+ 		fc4 net/hamradio i2c acpi bluetooth
+ 
+-subdir-y :=	parport char block net sound misc media cdrom hotplug
++subdir-y :=	parport char block net misc media cdrom hotplug
+ subdir-m :=	$(subdir-y)
+ 
+ 
