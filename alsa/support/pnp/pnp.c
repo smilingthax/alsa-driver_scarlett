@@ -167,7 +167,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 				if (ninst == NULL) {
 					ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 					if (ninst == NULL)
-						return res > 0 ? res : -ENOMEM;
+						return res > 0 ? (int)res : -ENOMEM;
 				}
 				for (i = 0; i < PNP_MAX_DEVICES; i++)
 					ninst->devs[i] = NULL;
@@ -227,7 +227,7 @@ int pnp_register_driver(struct pnp_driver *drv)
 		if (ninst == NULL) {
 			ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 			if (ninst == NULL)
-				return res > 0 ? res : -ENOMEM;
+				return res > 0 ? (int)res : -ENOMEM;
 		}
 		if (parse_id(did->id, &vendor, &function) < 0)
 			continue;
