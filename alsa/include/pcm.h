@@ -131,7 +131,8 @@ struct snd_stru_pcm_runtime {
 	int interrupt_pending;
 	size_t frag_io_mod;		/* Fragment under I/O */
 	size_t bytes_per_second;
-	size_t bytes_per_frame;
+	size_t bytes_min_align;		/* Min alignment for the format */
+	size_t xfer_bytes_align;	/* True alignment used */
 	size_t bytes_avail_max;
 
 	size_t byte_boundary;
@@ -146,7 +147,7 @@ struct snd_stru_pcm_runtime {
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
 	size_t bytes_min;	/* min available bytes for wakeup */
-	size_t bytes_align;
+	size_t bytes_align;	/* Requested alignment */
 	unsigned int bytes_xrun_max;
 	int fill_mode;       /* fill mode - SND_PCM_FILL_XXXX */
 	size_t bytes_fill_max;   /* maximum silence fill in bytes */
