@@ -6,7 +6,7 @@ Name:      alsa-driver
 Version:   %{version}
 Release:   1
 Source:    alsa-driver-%{version}.tar.gz
-URL:       http://alsa.jcu.cz
+URL:       http://www.alsa-project.org
 Copyright: GPL
 Group:     Base/Kernel
 Requires:  kernel kernel-headers
