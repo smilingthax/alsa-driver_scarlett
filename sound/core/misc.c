@@ -53,7 +53,7 @@ void snd_verbose_printk(const char *file, int line, const char *format, ...)
 	}
 	va_start(args, format);
 	vsnprintf(tmpbuf, sizeof(tmpbuf)-1, format, args);
-	va_end(ergs);
+	va_end(args);
 	tmpbuf[sizeof(tmpbuf)-1] = '\0';
 	printk(tmpbuf);
 }
@@ -75,7 +75,7 @@ void snd_verbose_printd(const char *file, int line, const char *format, ...)
 	}
 	va_start(args, format);
 	vsnprintf(tmpbuf, sizeof(tmpbuf)-1, format, args);
-	va_end(ergs);
+	va_end(args);
 	tmpbuf[sizeof(tmpbuf)-1] = '\0';
 	printk(tmpbuf);
 }
@@ -97,7 +97,7 @@ void snd_printd(const char *format, ...)
 	}
 	va_start(args, format);
 	vsnprintf(tmpbuf, sizeof(tmpbuf)-1, format, args);
-	va_end(ergs);
+	va_end(args);
 	tmpbuf[sizeof(tmpbuf)-1] = '\0';
 	printk(tmpbuf);
 }
