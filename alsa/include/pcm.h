@@ -343,7 +343,8 @@ extern void snd_pcm_proc_write(snd_pcm_subchn_t * subchn, unsigned int pos,
 extern int snd_pcm_plugin_format(snd_pcm_runtime_t *runtime, 
 				 snd_pcm_channel_params_t *params, 
 				 snd_pcm_channel_params_t *hwparams,
-				 snd_pcm_channel_info_t *hwinfo);
+				 snd_pcm_channel_info_t *hwinfo,
+				 snd_pcm_channel_params_t *newparams);
 ssize_t snd_pcm_plugin_transfer_size(snd_pcm_runtime_t *runtime, int channel, size_t drv_size);
 ssize_t snd_pcm_plugin_hardware_size(snd_pcm_runtime_t *runtime, int channel, size_t trf_size);
 int snd_pcm_oss_plugin_append(snd_pcm_runtime_t *runtime, snd_pcm_plugin_t *plugin);
