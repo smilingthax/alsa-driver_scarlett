@@ -68,6 +68,13 @@
 #define AC97_VENDOR_ID1		0x7c	/* Vendor ID1 */
 #define AC97_VENDOR_ID2		0x7e	/* Vendor ID2 / revision */
 
+/* specific */
+#define AC97_SIGMATEL_DAC2INVERT 0x6E
+#define AC97_SIGMATEL_BIAS1	0x70
+#define AC97_SIGMATEL_BIAS2	0x72
+#define AC97_SIGMATEL_CIC1	0x76
+#define AC97_SIGMATEL_CIC2	0x78
+
 /*
 
  */

@@ -179,12 +179,6 @@
 #define NX_ACR2_AC97_R_PRIMARY      0x48
 #define NX_ACR3_AC97_R_SECONDARY    0x4c
 
-#define AC97_SIGMATEL_DAC2INVERT    0x6E
-#define AC97_SIGMATEL_BIAS1         0x70
-#define AC97_SIGMATEL_BIAS2         0x72
-#define AC97_SIGMATEL_CIC1          0x76
-#define AC97_SIGMATEL_CIC2          0x78
-
 typedef struct tChannelControl
 {
     // register data
