@@ -80,14 +80,14 @@ typedef struct snd_midi_channel_set {
 } snd_midi_channel_set_t;
 
 typedef struct snd_seq_midi_op {
-	void (*note_on)(void *private, int note, int vel, snd_midi_channel_t *chan);
-	void (*note_off)(void *private,int note, int vel, snd_midi_channel_t *chan); /* release note */
-	void (*key_press)(void *private, int note, int vel, snd_midi_channel_t *chan);
-	void (*note_terminate)(void *private, int note, snd_midi_channel_t *chan); /* terminate note immediately */
-	void (*control)(void *private, int type, snd_midi_channel_t *chan);
+	void (*note_on)(void *private_data, int note, int vel, snd_midi_channel_t *chan);
+	void (*note_off)(void *private_data,int note, int vel, snd_midi_channel_t *chan); /* release note */
+	void (*key_press)(void *private_data, int note, int vel, snd_midi_channel_t *chan);
+	void (*note_terminate)(void *private_data, int note, snd_midi_channel_t *chan); /* terminate note immediately */
+	void (*control)(void *private_data, int type, snd_midi_channel_t *chan);
 	void (*reset)(void *private);
-	void (*nrpn)(void *private, snd_midi_channel_t *chan, snd_midi_channel_set_t *chset);
-	void (*sysex)(void *private, unsigned char *buf, int len, int parsed, snd_midi_channel_set_t *chset);
+	void (*nrpn)(void *private_data, snd_midi_channel_t *chan, snd_midi_channel_set_t *chset);
+	void (*sysex)(void *private_data, unsigned char *buf, int len, int parsed, snd_midi_channel_set_t *chset);
 } snd_midi_op_t;
 
 /*
