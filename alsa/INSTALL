@@ -42,6 +42,8 @@ Quick install
    If you want debug soundcard detection try --with-debug=detect switch.
    If you have kernel source code in another directory than /usr/src/linux,
    use --with-kernel=<kernel_directory>.
+   For specifying the separated kernel build directory for 2.6 kernels,
+   use --with-build=<kernel_build_dir> option.
    Example: ./configure --with-debug=full
 4) Run 'make'.
 5) Run 'make install'.

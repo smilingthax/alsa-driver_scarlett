@@ -63,23 +63,37 @@ fi
 
 dnl Check for directory with kernel source...
 AC_MSG_CHECKING(for directory with kernel source)
-if test -d "/lib/modules/`uname -r`/build" -o -L "/lib/modules/`uname -r`/build"; then
+if test -d "/lib/modules/`uname -r`/source" -o -L "/lib/modules/`uname -r`/source"; then
+  DEFAULT_KERNEL_DIR="/lib/modules/`uname -r`/source"
+  DEFAULT_KERNEL_BUILD="/lib/modules/`uname -r`/build"
+elif test -d "/lib/modules/`uname -r`/build" -o -L "/lib/modules/`uname -r`/build"; then
   DEFAULT_KERNEL_DIR="/lib/modules/`uname -r`/build"
 else
   DEFAULT_KERNEL_DIR="/usr/src/linux"
 fi
 AC_ARG_WITH(kernel,
   [  --with-kernel=dir       give the directory with kernel sources]
-  [                        [/usr/src/linux]],
+  [                        [[/usr/src/linux]]],
   kerneldir="$withval",
   kerneldir="$DEFAULT_KERNEL_DIR"
 )
 CONFIG_SND_KERNELDIR="$kerneldir"
 AC_MSG_RESULT($kerneldir)
 
+dnl Check for directory with kernel build tree...
+AC_MSG_CHECKING(for directory with kernel build)
+AC_ARG_WITH(build,
+  [  --with-build=dir        give the directory with kernel build tree],
+  kernelbuild="$withval",
+  kernelbuild="$DEFAULT_KERNEL_BUILD"
+)
+CONFIG_SND_KERNELBUILD="$kernelbuild"
+AC_MSG_RESULT($kernelbuild)
+
 dnl Check for kernel version...
 AC_MSG_CHECKING(for kernel version)
 if ! test -r $CONFIG_SND_KERNELDIR/include/linux/version.h; then
+  if test -n "$kernelbuild" -a ! -f $kernelbuild/include/linux/version.h; then
   cat << EOF
 The file $CONFIG_SND_KERNELDIR/include/linux/version.h does not exist.
 Please, install the package with full kernel sources for your distribution
@@ -87,16 +101,27 @@ or use --with-kernel=dir option to specify another directory with kernel
 sources (default is $DEFAULT_KERNEL_DIR).
 EOF
   exit 1
+  fi
 fi
 KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
+MAKE_ADDS=""
+if test -n "$kernelbuild"; then
+  KERNEL_INC="-I$kernelbuild/include -I$kernelbuild/include2 $KERNEL_INC"
+  MAKE_ADDS="O=$kernelbuild"
+fi
 HACK_KERNEL_INC=""
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+if test -n "$kernelbuild" -a -f $kernelbuild/include/linux/version.h; then
+  KERNDIR=$kernelbuild
+else
+  KERNDIR=$CONFIG_SND_KERNELDIR
+fi
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
-#include "$CONFIG_SND_KERNELDIR/include/linux/version.h"
+#include "$KERNDIR/include/linux/version.h"
 int main()
 {
  FILE *f;
@@ -158,12 +183,17 @@ dnl Check for GCC version...
 AC_MSG_CHECKING(for GCC version)
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+if test -n "$kernelbuild" -a -f $kernelbuild/include/linux/compile.h; then
+  KERNDIR=$kernelbuild
+else
+  KERNDIR=$CONFIG_SND_KERNELDIR
+fi
 AC_CACHE_VAL(kernel_gcc,
 [AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include "$CONFIG_SND_KERNELDIR/include/linux/compile.h"
+#include "$KERNDIR/include/linux/compile.h"
 int main()
 {
  FILE *f;
@@ -300,7 +330,12 @@ dnl compiler version check
 
 AC_DEFUN([CHECK_KERNEL_HEADER], [
   AC_MSG_CHECKING(for kernel $1)
-  if test -f "$CONFIG_SND_KERNELDIR/include/$1"; then
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$1"; then
+    KERNDIR=$kernelbuild
+  else
+    KERNDIR=$CONFIG_SND_KERNELDIR
+  fi
+  if test -f "$KERNDIR/include/$1"; then
     AC_MSG_RESULT("yes")
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -326,7 +361,12 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
 
 AC_DEFUN([MODIFY_KERNEL_HEADER], [
   AC_MSG_CHECKING(to modify of kernel $1)
-  if grep $2 "$CONFIG_SND_KERNELDIR/include/$1" > /dev/null 2>&1; then
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$1"; then
+    KERNDIR=$kernelbuild
+  else
+    KERNDIR=$CONFIG_SND_KERNELDIR
+  fi
+  if grep $2 "$KERNDIR/include/$1" > /dev/null 2>&1; then
     AC_MSG_RESULT("no")
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -338,7 +378,7 @@ AC_DEFUN([MODIFY_KERNEL_HEADER], [
     mkdir -p include/asm
     echo "#ifndef $2" > include/$1
     echo "#define $2" >> include/$1
-    cat "$CONFIG_SND_KERNELDIR/include/$1" >> include/$1
+    cat "$KERNDIR/include/$1" >> include/$1
     echo "#endif /* $2 */" >> include/$1
   fi
 ])
@@ -349,9 +389,14 @@ AC_DEFUN([CHECK_KERNEL_CONFIG_BUILTIN], [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+    KERNDIR=$kernelbuild
+  else
+    KERNDIR=$CONFIG_SND_KERNELDIR
+  fi
   boolchk=""
   AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/linux/autoconf.h"
 int main( void ) {
 #ifndef $boolvar
   exit(1);
@@ -375,9 +420,14 @@ AC_DEFUN([CHECK_KERNEL_CONFIG], [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+    KERNDIR=$kernelbuild
+  else
+    KERNDIR=$CONFIG_SND_KERNELDIR
+  fi
   boolchk=""
   AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/linux/autoconf.h"
 int main( void ) {
 #if !defined($boolvar) && !defined($boolvar1)
   exit(1);
@@ -401,9 +451,14 @@ AC_DEFUN([CHECK_KERNEL_TRISTATE_CONFIG], [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+    KERNDIR=$kernelbuild
+  else
+    KERNDIR=$CONFIG_SND_KERNELDIR
+  fi
   tristatechk=""
   AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/linux/autoconf.h"
 #include <stdio.h>
 int main(void) {
 	FILE *file = fopen("tristate.result", "w+");
@@ -505,18 +560,6 @@ else
   fi
 fi
 
-MAKE_ADDS=""
-if test "$CONFIG_SUSE_KERNEL" = "y"; then
-  if test ! -f $CONFIG_SND_KERNELDIR/include/linux/kernel.h; then
-    if test "$CONFIG_SND_KERNELDIR" != "/usr/src/linux"; then
-      echo "Tweaking the kernel source directories for SUSE kernels..."
-      MAKE_ADDS="O=$CONFIG_SND_KERNELDIR"
-      CONFIG_SND_KERNELDIR="/usr/src/linux"
-      KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
-    fi
-  fi
-fi
-
 dnl define kernel directory now
 AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$CONFIG_SND_KERNELDIR")
 AC_SUBST(CONFIG_SND_KERNELDIR)
@@ -613,7 +656,7 @@ dnl Directory for modules
 AC_MSG_CHECKING(for directory to store kernel modules)
 AC_ARG_WITH(moddir,
   [  --with-moddir=/path     give the path for the alsa driver kernel modules]
-  [                        [/lib/modules/<KVER>/misc]],
+  [                        [[/lib/modules/<KVER>/misc]]],
   moddir="$withval", 
   moddir_tree=
   modsubdir="misc"
@@ -706,9 +749,14 @@ processor=""
 rm -f processor.id
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+  KERNDIR=$kernelbuild
+else
+  KERNDIR=$CONFIG_SND_KERNELDIR
+fi
 AC_TRY_RUN([
 #include <stdio.h>
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/linux/autoconf.h"
 int main(void) {
 	FILE *file = fopen("processor.id", "w+");
 	if (file == NULL)
@@ -1004,9 +1052,14 @@ case "$processor" in
 	ac_save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 	rm -f machine.id
+	if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+	  KERNDIR=$kernelbuild
+	else
+	  KERNDIR=$CONFIG_SND_KERNELDIR
+	fi
 	AC_TRY_RUN([
 #include <stdio.h>
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/linux/autoconf.h"
 int main(void) {
 	FILE *file = fopen("machine.id", "w+");
 	if (file == NULL)
@@ -1154,12 +1207,12 @@ dnl Check for strlcpy...
 AC_MSG_CHECKING(for strlcpy)
 strlcpy="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/string.h"
+#include <linux/config.h>
+#include <linux/kernel.h>
+#include <linux/string.h>
 ],[
   char buf[128];
   strlcpy(buf, "abcd", sizeof(buf));
@@ -1179,11 +1232,11 @@ dnl Check for snprintf...
 AC_MSG_CHECKING(for snprintf)
 snprintf="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+#include <linux/config.h>
+#include <linux/kernel.h>
 ],[
   char buf[128];
   snprintf(buf, sizeof(buf), "abcd");
@@ -1203,11 +1256,11 @@ dnl Check for scnprintf...
 AC_MSG_CHECKING(for scnprintf)
 scnprintf="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+#include <linux/config.h>
+#include <linux/kernel.h>
 ],[
   char buf[128];
   scnprintf(buf, sizeof(buf), "abcd");
@@ -1227,11 +1280,11 @@ dnl Check for sscanf...
 AC_MSG_CHECKING(for sscanf)
 sscanf="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+#include <linux/config.h>
+#include <linux/kernel.h>
 ],[
   unsigned int i;
   sscanf("2a", "%x", &i);
@@ -1251,12 +1304,12 @@ dnl Check for vmalloc_to_page...
 AC_MSG_CHECKING(for vmalloc_to_page)
 vmalloc_to_page="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/time.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
+#include <linux/config.h>
+#include <linux/time.h>
+#include <linux/mm.h>
 ],[
   struct page * (*func)(void*);
   func = vmalloc_to_page;
@@ -1276,11 +1329,11 @@ dnl Check for old kmod...
 AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/kmod.h"
+#include <linux/config.h>
+#include <linux/kmod.h>
 ],[
 	request_module("abcd", "def", "ixj");
 ],
@@ -1299,12 +1352,12 @@ dnl Check for PDE...
 AC_MSG_CHECKING(for PDE)
 pde_defined="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/proc_fs.h"
+#include <linux/config.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
 ],[
 	struct proc_dir_entry * (*func)();
 	func = PDE;
@@ -1324,11 +1377,11 @@ dnl Check for pci_consistent_set_dma_mask()
 AC_MSG_CHECKING(for pci_set_consistent_dma_mask)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/pci.h"
+#include <linux/config.h>
+#include <linux/pci.h>
 ],[
 	int (*func)();
 	func = pci_set_consistent_dma_mask;
@@ -1347,11 +1400,11 @@ dnl Check for tty->count is the atomic type
 AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/tty.h"
+#include <linux/config.h>
+#include <linux/tty.h>
 ],[
 	struct tty_struct tty;
 	atomic_read(&tty.count);
@@ -1371,11 +1424,11 @@ if test "$CONFIG_VIDEO_DEV" = "y"; then
 AC_MSG_CHECKING(for video_get_drvdata)
 video_get_drvdata="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/videodev.h"
+#include <linux/config.h>
+#include <linux/videodev.h>
 ],[
   void *(*func)(struct video_device *);
   func = video_get_drvdata;
@@ -1396,11 +1449,11 @@ dnl Check for old remap_page_range()
 AC_MSG_CHECKING(for remap_pfn_range)
 remap_pfn_range="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
+#include <linux/config.h>
+#include <linux/mm.h>
 ],[
   int (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
   pgprot_t p;
@@ -1420,11 +1473,11 @@ if test "$remap_pfn_range" != "1"; then
 AC_MSG_CHECKING(for new remap_page_range)
 new_remap="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/mm.h"
+#include <linux/config.h>
+#include <linux/mm.h>
 ],[
   int (*func)(struct vm_area_struct *, unsigned long, unsigned long, unsigned long, pgprot_t);
   pgprot_t p;
@@ -1445,11 +1498,11 @@ dnl Check for kcalloc()
 AC_MSG_CHECKING(for kcalloc)
 kcalloc="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/slab.h"
+#include <linux/config.h>
+#include <linux/slab.h>
 ],[
   void * (*func)(size_t, size_t, int);
   func = kcalloc;
@@ -1469,11 +1522,11 @@ dnl Check for saved_config_space in pci_dev
 AC_MSG_CHECKING(for saved_config_space in pci_dev)
 pci_saved_config="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/pci.h"
+#include <linux/config.h>
+#include <linux/pci.h>
 ],[
   struct pci_dev dev;
   dev.saved_config_space[0] = 0;
@@ -1494,11 +1547,11 @@ dnl Check for new pci_save_state()
 AC_MSG_CHECKING(for new pci_save_state)
 new_pci_save_state="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/pci.h"
+#include <linux/config.h>
+#include <linux/pci.h>
 ],[
   struct pci_dev *pci;
   pci_save_state(pci);
@@ -1517,11 +1570,11 @@ dnl Check for acpi_register_gsi
 AC_MSG_CHECKING(for acpi_register_gsi)
 acpi_register_gsi="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/acpi.h"
+#include <linux/config.h>
+#include <linux/acpi.h>
 ],[
   unsigned int (*func)(u32, int, int);
   func = acpi_register_gsi;
@@ -1698,19 +1751,19 @@ dnl Check for RTC timer support...
 AC_MSG_CHECKING(for RTC callback support in kernel)
 rtcsup="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
 AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include <linux/autoconf.h>
 #if defined(__alpha__) || (!defined(CONFIG_RTC) && !defined(CONFIG_RTC_MODULE))
 int main(void) { exit(1); }
 #else
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/version.h"
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include <linux/version.h>
+#include <linux/config.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 12)	/* FIXME: which 2.2.x kernel? */
-#include "$CONFIG_SND_KERNELDIR/include/linux/rtc.h"
+#include <linux/rtc.h>
 #else
-#include "$CONFIG_SND_KERNELDIR/include/linux/mc146818rtc.h"
+#include <linux/mc146818rtc.h>
 #endif
 int main(void)
 {
@@ -1843,7 +1896,7 @@ if test "$CONFIG_SND_MODULE" = y; then
   echo "Hacking autoconf.h..."
   rm -f include/linux/autoconf.h
   mkdir -p include/linux
-  grep -v CONFIG_SND_ $CONFIG_SND_KERNELDIR/include/linux/autoconf.h > include/linux/autoconf.h
+  grep -v CONFIG_SND_ $kernelbuild/include/linux/autoconf.h > include/linux/autoconf.h
   cat include/autoconf-extra.h >> include/linux/autoconf.h
   cat include/config1.h >> include/linux/autoconf.h
 else
