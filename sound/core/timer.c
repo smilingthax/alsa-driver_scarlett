@@ -385,7 +385,7 @@ int snd_timer_start(snd_timer_instance_t * timeri, unsigned int ticks)
 /*
  * stop the timer instance.
  *
- * FIXME: do not call this from the timer callback!
+ * do not call this from the timer callback!
  */
 int snd_timer_stop(snd_timer_instance_t * timeri)
 {
@@ -407,9 +407,12 @@ int snd_timer_stop(snd_timer_instance_t * timeri)
 	timer = timeri->timer;
 	if (! timer)
 		return -EINVAL;
-	while (atomic_read(&timeri->in_use))
-		udelay(10);
 	spin_lock_irqsave(&timer->lock, flags);
+	while (atomic_read(&timeri->in_use)) {
+		spin_unlock_irqrestore(&timer->lock, flags);
+		udelay(10);
+		spin_lock_irqsave(&timer->lock, flags);
+	}
 	if (timeri->flags & SNDRV_TIMER_IFLG_RUNNING) {
 		timeri->flags &= ~SNDRV_TIMER_IFLG_RUNNING;
 		list_del_init(&timeri->active_list);
@@ -424,6 +427,9 @@ int snd_timer_stop(snd_timer_instance_t * timeri)
 				}
 			}
 		}
+	} else if (timeri->flags & SNDRV_TIMER_IFLG_START) {
+		timeri->flags &= ~SNDRV_TIMER_IFLG_START;
+		list_del_init(&timeri->active_list);
 	}
 	spin_unlock_irqrestore(&timer->lock, flags);
 	return 0;
@@ -558,7 +564,8 @@ void snd_timer_interrupt(snd_timer_t * timer, unsigned long ticks_left)
 		ti = (snd_timer_instance_t *)list_entry(p, snd_timer_instance_t, active_list);
 		/* append to active_list */
 		list_del(p);
-		list_add_tail(p, &timer->active_list_head);
+		if (ti->flags & SNDRV_TIMER_IFLG_RUNNING)
+			list_add_tail(p, &timer->active_list_head);
 		spin_unlock(&timer->lock);
 		if (ti->callback)
 			ti->callback(ti, resolution, ti->ticks, ti->callback_data);
@@ -570,8 +577,8 @@ void snd_timer_interrupt(snd_timer_t * timer, unsigned long ticks_left)
 				ts->callback(ts, resolution, ti->ticks, ts->callback_data);
 		}
 		spin_unlock(&slave_active_lock);
-		atomic_dec(&ti->in_use);
 		spin_lock(&timer->lock);
+		atomic_dec(&ti->in_use);
 	}
 	spin_unlock(&timer->lock);
 }
