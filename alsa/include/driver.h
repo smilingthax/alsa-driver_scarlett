@@ -361,11 +361,22 @@ static inline void snd_power_unlock(snd_card_t *card)
 
 void snd_power_wait(snd_card_t *card, int can_schedule);
 
+static inline unsigned int snd_power_get_state(snd_card_t *card)
+{
+	return card->power_state;
+}
+
 static inline void snd_power_change_state(snd_card_t *card, unsigned int state)
 {
 	card->power_state = state;
 	wake_up(&card->power_sleep);
 }
+#else
+#define snd_power_lock(card, can_schedule) do { ; } while (0)
+#define snd_power_unlock(card) do { ; } while (0)
+#define snd_power_wait(card, can_schedule) do { ; } while (0)
+#define snd_power_get_state(card) SNDRV_CTL_POWER_D0
+#define snd_power_change_state(card, state) do { ; } while (0)
 #endif
 
 /* device.c */
