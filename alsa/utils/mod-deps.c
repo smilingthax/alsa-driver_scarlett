@@ -857,16 +857,18 @@ static void sel_print_acinclude(struct sel *sel)
 		return;
 	if (dep->hitflag)
 		return;
-	dep->hitflag = 1;
 	for (nsel = dep->sel; nsel; nsel = nsel->next) {
 		if (nsel->hitflag)
 			continue;
 		nsel->hitflag = 1;
 		sel_print_acinclude(nsel);
-		printf("\t\tCONFIG_%s=\"%c\"\n", nsel->name,
-			(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
-		printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", nsel->name,
-			(nsel->dep && nsel->dep->is_bool) ? "" : "_MODULE");
+		if (!nsel->dep->hitflag) {
+			nsel->dep->hitflag = 1;
+			printf("\t\tCONFIG_%s=\"%c\"\n", nsel->name,
+				(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
+			printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", nsel->name,
+				(nsel->dep && nsel->dep->is_bool) ? "" : "_MODULE");
+		}
 	}
 }
 
