@@ -334,6 +334,7 @@ struct _snd_card {
 	void *power_state_private_data;
 	unsigned int power_state;	/* power state */
 	unsigned int power_lock;	/* power lock */
+	wait_queue_head_t power_sleep;
 #endif
 
 #ifdef CONFIG_SND_OSSEMUL
@@ -356,6 +357,14 @@ static inline void snd_power_lock(snd_card_t *card, int can_schedule)
 static inline void snd_power_unlock(snd_card_t *card)
 {
 	clear_bit(0, &card->power_lock);
+}
+
+void snd_power_wait(snd_card_t *card, int can_schedule);
+
+static inline void snd_power_change_state(snd_card_t *card, unsigned int state)
+{
+	card->power_state = state;
+	wake_up(&card->power_sleep);
 }
 #endif
 
