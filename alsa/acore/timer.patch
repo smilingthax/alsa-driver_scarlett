@@ -1,5 +1,14 @@
 --- timer.c	2003-05-30 15:33:01.000000000 +0200
 +++ timer.c.old	2003-05-30 15:32:56.000000000 +0200
+@@ -969,7 +969,7 @@
+ static struct _snd_timer_hardware snd_timer_system =
+ {
+ 	.flags =	SNDRV_TIMER_HW_FIRST | SNDRV_TIMER_HW_TASKLET,
+-	.resolution =	1000000000L / HZ,
++	// .resolution =	1000000000L / HZ,
+ 	.ticks =	10000000L,
+ 	.start =	snd_timer_s_start,
+ 	.stop =		snd_timer_s_stop
 @@ -1733,7 +1733,9 @@
  
  static struct file_operations snd_timer_f_ops =
@@ -10,3 +19,11 @@
  	.read =		snd_timer_user_read,
  	.open =		snd_timer_user_open,
  	.release =	snd_timer_user_release,
+@@ -1779,6 +1781,7 @@
+ 	int err;
+ 	snd_info_entry_t *entry;
+ 
++	snd_timer_system.resolution = 1000000000L / HZ;
+ #ifdef SNDRV_OSS_INFO_DEV_TIMERS
+ 	snd_oss_info_register(SNDRV_OSS_INFO_DEV_TIMERS, SNDRV_CARDS - 1, "system timer");
+ #endif
