@@ -58,6 +58,8 @@
  *  Various structures
  */
 
+typedef struct snd_ctl_hw_info snd_ctl_hw_info_t;
+typedef struct snd_ctl_switch snd_ctl_switch_t;
 typedef struct snd_mixer_info snd_mixer_info_t;
 typedef struct snd_mixer_channel_info snd_mixer_channel_info_t;
 typedef struct snd_mixer_channel snd_mixer_channel_t;
