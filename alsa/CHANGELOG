@@ -20,6 +20,8 @@
 * added support for S3 SonicVibes PCI chip
 * added /proc/sound/dev directory interface for sound devices
 * improved support for MPU401-UART
+* improved support for CS4231(A) chips
+* added /proc/sound/#card#/pcm#o interface
 
 0.1.3 -> 0.1.4
 
