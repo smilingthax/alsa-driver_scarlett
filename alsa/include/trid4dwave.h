@@ -158,16 +158,16 @@
 typedef struct tChannelControl
 {
     // register data
-    unsigned long *  lpChStart;
-    unsigned long *  lpChStop;
-    unsigned long *  lpChAint;
-    unsigned long *  lpChAinten;
+    unsigned int *  lpChStart;
+    unsigned int *  lpChStop;
+    unsigned int *  lpChAint;
+    unsigned int *  lpChAinten;
 
     // register addresses
-    unsigned long *  lpAChStart;
-    unsigned long *  lpAChStop;
-    unsigned long *  lpAChAint;
-    unsigned long *  lpAChAinten;
+    unsigned int *  lpAChStart;
+    unsigned int *  lpAChStop;
+    unsigned int *  lpAChAint;
+    unsigned int *  lpAChAinten;
 
 }CHANNELCONTROL, *LPCHANNELCONTROL;
 
