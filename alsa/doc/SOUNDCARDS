@@ -134,3 +134,15 @@ MA: pbd@op.net
 ID: C-Media CMI8330
 IF: MIXER,PCM
 MA: George Talusan <gstalusan@uwaterloo.ca>
+
+ID: Avance Logic ALS100/ALS120
+IF: MIXER,PCM,MIDI
+MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
+
+ID: Diamond Technologies DT-0197H
+IF: MIXER,PCM,MIDI
+MA: Massimo Piccioni <piccio@caronte.csr.unibo.it>
+
+ID: Aztech Sound Galaxy
+IF: MIXER,PCM,MIDI
+MA: Christopher Butler <chrisb@sandy.force9.co.uk>
