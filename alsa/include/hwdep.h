@@ -49,7 +49,7 @@ struct snd_stru_hwdep {
 	snd_hwdep_ops_t ops;
 	wait_queue_head_t open_wait;
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (snd_hwdep_t *hwdep);
 };
 
 extern int snd_hwdep_new(snd_card_t * card, char *id, int device, snd_hwdep_t ** rhwdep);

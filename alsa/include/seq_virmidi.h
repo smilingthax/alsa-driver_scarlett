@@ -68,7 +68,7 @@ struct snd_virmidi {
 
 
 typedef void (*snd_virmidi_use_t)(void *private_data);
-typedef void (*snd_virmidi_private_free_t)(void *private_data);
+typedef void (*snd_virmidi_private_free_t)(snd_virmidi_dev_t *devp);
 
 /*
  * device record:

@@ -128,7 +128,7 @@ struct snd_i2c_bus {
 
 	unsigned int private_value;
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(struct snd_i2c_bus *bus);
 };
 
 

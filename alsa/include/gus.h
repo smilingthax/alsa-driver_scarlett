@@ -314,7 +314,7 @@ struct snd_gus_stru_voice {
 	/* --- */
 
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_gus_voice_t *voice);
 };
 
 struct snd_stru_gf1 {

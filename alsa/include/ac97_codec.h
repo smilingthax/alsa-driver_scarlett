@@ -89,7 +89,7 @@ struct snd_stru_ac97 {
 	snd_info_entry_t *proc_entry;
 	snd_info_entry_t *proc_regs_entry;
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (ac97_t *ac97);
 	/* --- */
 	snd_card_t *card;
 	spinlock_t reg_lock;

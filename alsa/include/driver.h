@@ -334,7 +334,7 @@ struct snd_stru_card {
 	void (*use_dec) (snd_card_t *card);	/* decrement use count */
 
 	void *private_data;			/* private data for soundcard */
-	void (*private_free) (void *private_data); /* callback for freeing of private data */
+	void (*private_free) (snd_card_t *card); /* callback for freeing of private data */
 
 	struct list_head devices;		/* devices */
 

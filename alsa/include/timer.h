@@ -64,7 +64,7 @@ struct snd_stru_timer {
 	int running;			/* running instances */
 	unsigned long sticks;		/* schedule ticks */
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (snd_timer_t *timer);
 	struct snd_stru_timer_hardware hw;
 	spinlock_t lock;
 	atomic_t in_use;		/* don't free */
@@ -77,7 +77,7 @@ struct snd_stru_timer_instance {
 	char *owner;
 	unsigned int flags;
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (snd_timer_instance_t *ti);
 	snd_timer_callback_t callback;
 	void *callback_data;
 	unsigned long ticks;

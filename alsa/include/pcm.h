@@ -165,7 +165,7 @@ struct snd_stru_pcm_runtime {
 	int flushing;
 	/* -- private section -- */
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_pcm_runtime_t *runtime);
 	/* -- own hardware routines -- */
 	snd_pcm_hardware_t *hw;
 	void (*hw_free)(void *hw);
@@ -245,7 +245,7 @@ struct snd_stru_pcm {
 	struct semaphore open_mutex;
 	wait_queue_head_t open_wait;
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (snd_pcm_t *pcm);
 #ifdef CONFIG_SND_OSSEMUL
 	snd_pcm_oss_t oss;
 #endif

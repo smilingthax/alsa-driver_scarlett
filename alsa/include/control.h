@@ -48,7 +48,7 @@ struct snd_stru_kcontrol {
 	snd_kcontrol_put_t *put;
 	unsigned long private_value;
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_kcontrol_t *kcontrol);
 };
 
 #define snd_kcontrol(n) list_entry(n, snd_kcontrol_t, list)

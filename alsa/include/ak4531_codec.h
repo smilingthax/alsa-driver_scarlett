@@ -70,7 +70,7 @@ struct snd_stru_ak4531 {
 	void (*write) (ak4531_t *ak4531, unsigned short reg, unsigned short val);
 	snd_info_entry_t *proc_entry;
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (ak4531_t *ak4531);
 	/* --- */
 	unsigned char regs[0x20];
 	spinlock_t reg_lock;

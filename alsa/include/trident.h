@@ -334,7 +334,7 @@ struct snd_trident_stru_voice {
 	/* --- */
 
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_trident_voice_t *voice);
 };
 
 struct snd_stru_4dwave {

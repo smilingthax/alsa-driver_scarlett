@@ -43,7 +43,7 @@ struct snd_stru_oss_mixer_channel {
 	snd_mixer_oss_put_recsrc_t put_recsrc;
 	unsigned long private_value;
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_mixer_oss_channel_t *channel);
 };
 
 struct snd_stru_oss_mixer {
@@ -55,7 +55,7 @@ struct snd_stru_oss_mixer {
 	snd_mixer_oss_get_recsrce_t get_recsrc;
 	snd_mixer_oss_put_recsrce_t put_recsrc;
 	void *private_data_recsrc;
-	void (*private_free_recsrc)(void *private_data);
+	void (*private_free_recsrc)(snd_mixer_oss_t *mixer);
 	/* --- */
 	int oss_recsrc;
 };

@@ -42,10 +42,11 @@
 #define SND_RAWMIDI_LFLG_APPEND	0x00000004	/* append flag for output */
 
 typedef struct snd_stru_rawmidi_stream snd_rawmidi_stream_t;
+typedef struct snd_stru_rawmidi_stream_hw snd_rawmidi_stream_hw_t;
 
 struct snd_stru_rawmidi_stream_hw {
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (snd_rawmidi_stream_hw_t *hw);
 	int (*open) (snd_rawmidi_t * rmidi);
 	int (*close) (snd_rawmidi_t * rmidi);
 	void (*trigger) (snd_rawmidi_t * rmidi, int up);
@@ -72,9 +73,9 @@ struct snd_stru_rawmidi_stream {
 	/* event handler (room [output] or new bytes [input]) */
 	void (*event)(snd_rawmidi_t *rmidi);
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_rawmidi_stream_t *stream);
 	/* hardware layer */
-	struct snd_stru_rawmidi_stream_hw hw;
+	snd_rawmidi_stream_hw_t hw;
 };
 
 struct snd_stru_rawmidi {
@@ -93,7 +94,7 @@ struct snd_stru_rawmidi {
 	snd_rawmidi_stream_t streams[2];
 
 	void *private_data;
-	void (*private_free) (void *private_data);
+	void (*private_free) (snd_rawmidi_t *rmidi);
 
 	struct semaphore open_mutex;
 	wait_queue_head_t open_wait;

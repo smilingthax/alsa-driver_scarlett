@@ -238,9 +238,9 @@ static inline void snd_sb_ack_16bit(sb_t *chip)
 extern int snd_sbdsp_command(sb_t *chip, unsigned char val);
 extern int snd_sbdsp_get_byte(sb_t *chip);
 extern int snd_sbdsp_reset(sb_t *chip);
-extern int snd_sbdsp_version(snd_pcm_t * pcm);
-extern int snd_sbdsp_probe(snd_pcm_t * pcm);
-extern void snd_sbdsp_free(void *);
+extern int snd_sbdsp_version(snd_pcm_t *pcm);
+extern int snd_sbdsp_probe(snd_pcm_t *pcm);
+extern void snd_sbdsp_free(snd_pcm_t *pcm);
 extern void snd_sbmixer_write(sb_t *chip, unsigned char reg, unsigned char data);
 extern unsigned char snd_sbmixer_read(sb_t *chip, unsigned char reg);
 

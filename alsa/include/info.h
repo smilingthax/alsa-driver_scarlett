@@ -88,7 +88,7 @@ struct snd_info_entry {
 		struct snd_info_entry_device device;
 	} t;
 	void *private_data;
-	void (*private_free)(void *private_data);
+	void (*private_free)(snd_info_entry_t *entry);
 	void (*use_inc) (snd_card_t * card);
 	void (*use_dec) (snd_card_t * card);
 	snd_card_t *card;
