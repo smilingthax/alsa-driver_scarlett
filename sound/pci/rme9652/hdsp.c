@@ -21,7 +21,7 @@
 
 #include <sound/driver.h>
 #include <asm/io.h>
-#include <byteswap.h>
+#include <asm/byteorder.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/slab.h>
@@ -549,7 +549,7 @@ static inline int hdsp_spdif_sample_rate(hdsp_t *hdsp)
 	case HDSP_spdifFrequency88_2KHz: return 88200;
 	case HDSP_spdifFrequency96KHz: return 96000;
 	default:
-		snd_printk ("unknown frequency status; bits = 0x%d, status = 0x%x", rate_bits, status);
+		snd_printk ("unknown frequency status; bits = 0x%x, status = 0x%x", rate_bits, status);
 		return 0;
 	}
 }
