@@ -60,7 +60,7 @@ typedef struct snd_stru_es1869 es1869_t;
 extern void snd_es1869_mixer_write(es1869_t * codec, unsigned char reg, unsigned char data);
 extern unsigned char snd_es1869_mixer_read(es1869_t * codec, unsigned char reg);
 
-extern void snd_es1869_interrupt(es1869_t * codec);
+extern void snd_es1869_interrupt(es1869_t * codec, unsigned char status);
 
 extern es1869_t *snd_es1869_new_device(snd_card_t * card,
 				       unsigned short port,
