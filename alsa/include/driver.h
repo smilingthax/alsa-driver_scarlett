@@ -353,6 +353,7 @@ struct _snd_card {
 	struct list_head control_files;	/* active control files */
 
 	snd_info_entry_t *proc_root;	/* root for soundcard specific files */
+	snd_info_entry_t *proc_id;	/* the card id */
 	struct proc_dir_entry *proc_root_link;	/* number link to real id */
 
 #ifdef CONFIG_SND_OSSEMUL
