@@ -21,13 +21,6 @@ obj-$(CONFIG_SND_INTEL8X0M) += snd-intel8x0m.o
 obj-$(CONFIG_SND_HDSPM) +=snd-hdspm.o
 obj-$(CONFIG_SND_ATIIXP) += snd-atiixp.o
 
-# Hack for FM801 && TEA575x
-ifeq (m,$(CONFIG_SND_FM801))
-ifeq (y,$(CONFIG_VIDEO_DEV))
-EXTRA_CFLAGS += -DCONFIG_SND_FM801_TEA575X
-endif
-endif
-
 #
 #
 #
