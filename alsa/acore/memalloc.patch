@@ -65,7 +65,7 @@
 +#define SET_COHERENT_DMA_MASK(dev,val)
 +#endif
 +#else /* 2.4.x */
-+#define VALID_DMA_MASK(dev)	0
++#define VALID_DMA_MASK(dev)	1
 +#define GET_DMA_MASK(dev)	((struct pci_dev *)(dev))->dma_mask
 +#define SET_DMA_MASK(dev,val)	(((struct pci_dev *)(dev))->dma_mask = (val))
 +#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
@@ -84,7 +84,7 @@
  	u64 dma_mask, coherent_dma_mask;
  
 -	if (dev == NULL || !dev->dma_mask)
-+	if (dev == NULL || VALID_DMA_MASK(dev))
++	if (dev == NULL || !VALID_DMA_MASK(dev))
  		return dma_alloc_coherent(dev, size, dma_handle, flags);
 -	dma_mask = *dev->dma_mask;
 -	coherent_dma_mask = dev->coherent_dma_mask;
