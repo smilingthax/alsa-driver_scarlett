@@ -124,7 +124,7 @@ struct snd_ctl_hw_info {
 struct snd_ctl_switch {
 	unsigned int switchn;	/* switch # (filled by application) */
 	unsigned char name[32];	/* identification of switch (from driver) */
-	unsigned int type;	/* look to SND_MIXER_SW_TYPE_XXXX */
+	unsigned int type;	/* look to SND_CTL_SW_TYPE_XXXX */
 	unsigned int low;	/* low range value */
 	unsigned int high;	/* high range value */
 	union {
