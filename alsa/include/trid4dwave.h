@@ -101,6 +101,12 @@
 #define T4D_AINT_B                   0xd8
 #define T4D_AINTEN_B                 0xdc
 
+// S/PDIF Registers
+#define NX_SPCTRL_SPCSO             0x24
+#define NX_SPLBA                    0x28
+#define NX_SPESO                    0x2c
+#define NX_SPCSTATUS                0x64
+
 // Channel Registers
 
 #define CH_DX_CSO_ALPHA_FMS         0xe0
