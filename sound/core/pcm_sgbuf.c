@@ -41,8 +41,7 @@ static void sgbuf_shrink(struct snd_sg_buf *sgbuf, int pages)
 		return;
 	while (sgbuf->pages > pages) {
 		sgbuf->pages--;
-		snd_free_pci_pages(sgbuf->pci, PAGE_SIZE,
-				   sgbuf->table[sgbuf->pages].buf,
+		snd_free_pci_page(sgbuf->pci, sgbuf->table[sgbuf->pages].buf,
 				   sgbuf->table[sgbuf->pages].addr);
 	}
 }
@@ -108,56 +107,6 @@ int snd_pcm_sgbuf_delete(snd_pcm_substream_t *substream)
 	return 0;
 }
 
-/*
- * snd_pci_alloc_page - allocate a page in the valid pci dma mask
- *
- * returns the virtual address and stores the physical address on
- * addrp.  this function cannot be called from interrupt handlers or
- * within spinlocks.
- */
-#ifdef __i386__
-/*
- * on ix86, we allocate a page with GFP_KERNEL to assure the
- * allocation.  the code is almost same with kernel/i386/pci-dma.c but
- * it allocates only a single page and checkes the validity of the
- * page address with the given pci dma mask.
- */
-inline static void *snd_pci_alloc_page(struct pci_dev *pci, dma_addr_t *addrp)
-{
-	void *ptr;
-	dma_addr_t addr;
-	unsigned long rmask;
-
-	if (pci)
-		rmask = ~(unsigned long)pci->dma_mask;
-	else
-		rmask = 0;
-	ptr = (void *)__get_free_page(GFP_KERNEL);
-	if (ptr) {
-		addr = virt_to_phys(ptr);
-		if (((unsigned long)addr + PAGE_SIZE - 1) & rmask) {
-			/* try to reallocate with the GFP_DMA */
-			free_page((unsigned long)ptr);
-			ptr = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
-			if (ptr) /* ok, the address must be within lower 16MB... */
-				addr = virt_to_phys(ptr);
-			else
-				addr = 0;
-		}
-	} else
-		addr = 0;
-	if (ptr)
-		memset(ptr, 0, PAGE_SIZE);
-	*addrp = addr;
-	return ptr;
-}
-#else
-/* on other architectures, call snd_malloc_pci_pages() helper function
- * which uses pci_alloc_consistent().
- */
-#define snd_pci_alloc_page(pci, addrp) snd_malloc_pci_pages(pci, PAGE_SIZE, addrp)
-#endif
-
 /**
  * snd_pcm_sgbuf_alloc - allocate the pages for the SG buffer
  * @substream: the pcm substream instance
@@ -203,7 +152,7 @@ int snd_pcm_sgbuf_alloc(snd_pcm_substream_t *substream, size_t size)
 	while (sgbuf->pages < pages) {
 		void *ptr;
 		dma_addr_t addr;
-		ptr = snd_pci_alloc_page(sgbuf->pci, &addr);
+		ptr = snd_malloc_pci_page(sgbuf->pci, &addr);
 		if (! ptr)
 			return -ENOMEM;
 		sgbuf->table[sgbuf->pages].buf = ptr;

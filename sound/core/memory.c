@@ -695,3 +695,81 @@ int copy_from_user_toio(unsigned long dst, const void *src, size_t count)
 	return 0;
 #endif
 }
+
+
+#ifdef CONFIG_PCI
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) && defined(__i386__)
+/*
+ * on ix86, we allocate a page with GFP_KERNEL to assure the
+ * allocation.  the code is almost same with kernel/i386/pci-dma.c but
+ * it allocates only a single page and checks the validity of the
+ * page address with the given pci dma mask.
+ */
+
+/**
+ * snd_malloc_pci_page - allocate a page in the valid pci dma mask
+ * @pci: pci device pointer
+ * @addrp: the pointer to store the physical address of the buffer
+ *
+ * Allocates a single page for the given PCI device and returns
+ * the virtual address and stores the physical address on addrp.
+ * 
+ * This function cannot be called from interrupt handlers or
+ * within spinlocks.
+ */
+void *snd_malloc_pci_page(struct pci_dev *pci, dma_addr_t *addrp)
+{
+	void *ptr;
+	dma_addr_t addr;
+	unsigned long rmask;
+
+	rmask = ~(unsigned long)(pci ? pci->dma_mask : 0x00ffffff);
+	ptr = (void *)__get_free_page(GFP_KERNEL);
+	if (ptr) {
+		addr = virt_to_phys(ptr);
+		if (((unsigned long)addr + PAGE_SIZE - 1) & rmask) {
+			/* try to reallocate with the GFP_DMA */
+			free_page((unsigned long)ptr);
+			ptr = (void *)__get_free_page(GFP_KERNEL | GFP_DMA);
+			if (ptr) /* ok, the address must be within lower 16MB... */
+				addr = virt_to_phys(ptr);
+			else
+				addr = 0;
+		}
+	} else
+		addr = 0;
+	if (ptr) {
+		struct page *page = virt_to_page(ptr);
+		memset(ptr, 0, PAGE_SIZE);
+		SetPageReserved(page);
+#ifdef CONFIG_SND_DEBUG_MEMORY
+		snd_alloc_pages++;
+#endif
+	}
+	*addrp = addr;
+	return ptr;
+}
+#else
+/* on other architectures, call snd_malloc_pci_pages() helper function
+ * which uses pci_alloc_consistent().
+ */
+void *snd_malloc_pci_page(struct pci_dev *pci, dma_addr_t *addrp)
+{
+	return snd_malloc_pci_pages(pci, PAGE_SIZE, addrp);
+}
+#endif /* 2.4 && i386 */
+
+#if 0 /* for kernel-doc */
+/**
+ * snd_free_pci_page - release a page
+ * @pci: pci device pointer
+ * @ptr: the buffer pointer to release
+ * @dma_addr: the physical address of the buffer
+ *
+ * Releases the buffer allocated via snd_malloc_pci_page().
+ */
+void snd_free_pci_page(struct pci_dev *pci, void *ptr, dma_addr_t dma_addr);
+#endif /* for kernel-doc */
+
+#endif /* CONFIG_PCI */
