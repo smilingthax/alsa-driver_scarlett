@@ -187,6 +187,7 @@ typedef struct snd_usb_midi_in_endpoint snd_usb_midi_in_endpoint_t;
 struct snd_usb_midi {
 	/* filled by usbaudio.c */
 	snd_usb_audio_t *chip;
+	struct usb_interface *iface;
 	int ifnum;
 	const snd_usb_audio_quirk_t *quirk;
 
