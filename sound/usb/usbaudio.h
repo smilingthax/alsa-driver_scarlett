@@ -151,7 +151,8 @@ struct snd_usb_audio {
 #define QUIRK_MIDI_FIXED_ENDPOINT	0
 #define QUIRK_MIDI_YAMAHA		1
 #define QUIRK_MIDI_MIDIMAN		2
-#define QUIRK_ROLAND_UA100		3
+#define QUIRK_COMPOSITE			3
+#define QUIRK_AUDIO_FIXED_ENDPOINT	4
 
 typedef struct snd_usb_audio_quirk snd_usb_audio_quirk_t;
 typedef struct snd_usb_midi_endpoint_info snd_usb_midi_endpoint_info_t;
@@ -176,7 +177,10 @@ struct snd_usb_midi_endpoint_info {
 /* for QUIRK_MIDI_MIDIMAN, data points to a snd_usb_midi_endpoint_info
  * structure (out_cables and in_cables only) */
 
-/* for QUIRK_ROLAND_UA100, data is NULL */
+/* for QUIRK_COMPOSITE, data points to an array of snd_usb_audio_quirk
+ * structures, terminated with .ifnum = -1 */
+
+/* for QUIRK_AUDIO_FIXED_ENDPOINT, data points to an audioformat structure */
 
 /*
  */
