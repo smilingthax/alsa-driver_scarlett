@@ -20,7 +20,7 @@ with OSS/Lite, but contains many enhanced features.
 %setup
 
 %build
-./configure --prefix=/usr
+./configure --prefix=/usr ${EXTRA_ALSA_DRIVER_CONFIG_FLAGS}
 make
 
 %install

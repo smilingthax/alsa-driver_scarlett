@@ -67,7 +67,7 @@ pack: mrproper
 	chown -R root.root ../alsa-driver
 	chmod 755 utils/alsasound
 	mv ../alsa-driver ../alsa-driver-$(SND_VERSION)
-	tar cvz -C .. -f ../alsa-driver-$(SND_VERSION).tar.gz alsa-driver-$(SND_VERSION)
+	tar --exclude=CVS -cvz -C .. -f ../alsa-driver-$(SND_VERSION).tar.gz alsa-driver-$(SND_VERSION)
 	mv ../alsa-driver-$(SND_VERSION) ../alsa-driver
 
 $(PEXPORT): $(TOPDIR)/utils/export-symbols.c
