@@ -313,14 +313,6 @@ static struct pci_driver driver = {
 #endif	
 };
 
-static int snd_ymfpci_notifier(struct notifier_block *nb, unsigned long event, void *buf)
-{
-	pci_unregister_driver(&driver);
-	return NOTIFY_OK;
-}
-
-static struct notifier_block snd_ymfpci_nb = {snd_ymfpci_notifier, NULL, 0};
-
 static int __init alsa_card_ymfpci_init(void)
 {
 	int err;
@@ -331,18 +323,11 @@ static int __init alsa_card_ymfpci_init(void)
 #endif
 		return err;
 	}
-	/* If this driver is not shutdown cleanly at reboot, it can
-	   leave the speaking emitting an annoying noise, so we catch
-	   shutdown events. */ 
-	if (register_reboot_notifier(&snd_ymfpci_nb)) {
-		snd_printk("reboot notifier registration failed; may make noise at shutdown.\n");
-	}
 	return 0;
 }
 
 static void __exit alsa_card_ymfpci_exit(void)
 {
-	unregister_reboot_notifier(&snd_ymfpci_nb);
 	pci_unregister_driver(&driver);
 }
 
