@@ -520,12 +520,15 @@ Module parameters
 
     snd_port	- port # for UART16550A chip
     snd_irq	- IRQ # for UART16550A chip, -1 = poll mode
-    snd_divisor	- divisor to calculate bit rate (115200bps / #)
-		- 3 = 38.4kbps(default)
-    snd_ports	- number of MIDI ports (1,2,3,4) - 1 = default
+    snd_speed	- speed in bauds (9600,19200,38400,57600,115200)
+		  38400 = default
+    snd_base	- base for divisor in bauds (57600,115200,230400,460800)
+		  115200 = default
+    snd_outs	- number of MIDI ports in a serial port (1-4)
+		  1 = default
     
     Module supports up to 8 cards. This module does not support autoprobe
-    thus main port must be specified!!! Other options are optional.
+    thus the main port must be specified!!! Other options are optional.
 
   Module snd-card-trident.o
   -------------------------
