@@ -58,17 +58,6 @@ function start() {
   fi
 }
 
-function detect_stop() {
-  #
-  # remove all sound modules
-  #
-  /sbin/lsmod | grep -E "^snd" | while read line; do \
-     /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
-  done
-  # remove the 2.2 soundcore module (if possible)
-  /sbin/rmmod soundcore 2> /dev/null
-}
-
 function stop() {
   #
   # store driver settings
@@ -81,14 +70,11 @@ function stop() {
   #
   # remove all sound modules
   #
-  detect_stop
-}
-
-function detect_start() {
-  #
-  # run only detect module
-  #
-  /sbin/modprobe snd-detect
+  /sbin/lsmod | grep -E "^snd" | while read line; do \
+     /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
+  done
+  # remove the 2.2 soundcore module (if possible)
+  /sbin/rmmod soundcore 2> /dev/null
 }
 
 # See how we were called.
@@ -101,28 +87,14 @@ case "$1" in
 	    touch /var/lock/subsys/alsasound
 	  fi
 	else
-	  if [ -f /proc/asound/detect ]; then
-	    echo -n "Shutting down sound detect module: "
-	    detect_stop
-	    echo "done"
-	    start
-	    if [ -d /proc/asound ] && [ -d /var/lock/subsys ]; then
-	      touch /var/lock/subsys/alsasound
-	    fi
-          else
-	    echo "ALSA driver is already running."
-	  fi
+	  echo "ALSA driver is already running."
 	fi
         ;;
   stop)
         # Stop daemons.
 	if [ -d /proc/asound ]; then
           echo -n "Shutting down sound driver: "
-	  if [ -f /proc/asound/detect ]; then
-	    detect_stop
-	  else
-	    stop
-	  fi
+	  stop
 	  if [ -d /var/lock/subsys ]; then
 	    rm -f /var/lock/subsys/alsasound
 	  fi
@@ -135,27 +107,8 @@ case "$1" in
 	$0 stop
 	$0 start
 	;;
-  detect)
-	# Start driver only in detect mode.
-	if [ -d /proc/asound ]; then
-	  if [ -f /proc/asound/detect ]; then
-	    echo "ALSA driver is already running in detect mode."
-	    exit 0
-          else
-	    echo -n "Shutting down sound driver: "
-	    stop
-	    echo "done"
-	  fi
-	fi
-	echo -n "Starting sound detect module: "
-	detect_start
-	echo "done"
-	if [ -d /var/lock/subsys ]; then
-	  touch /var/lock/subsys/alsasound
-	fi
-	;;
   *)
-        echo "Usage: alsasound {start|stop|restart|detect}"
+        echo "Usage: alsasound {start|stop|restart}"
         exit 1
 esac
 

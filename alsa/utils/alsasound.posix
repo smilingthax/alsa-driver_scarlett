@@ -40,19 +40,6 @@ fi
 # See how we were called.
 case "$1" in
   start)
-	# Remove the driver, if the detect module is present.
-	if [ -f /proc/asound/detect ]; then
-	  echo -n "Shutting down sound detect module: "
-	  #
-	  # remove all sound modules
-	  #
-	  /sbin/lsmod | grep -E "^snd" | while read line; do \
-		/sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
-		done
-	  # remove the 2.2 soundcore module (if possible)
-	  /sbin/rmmod soundcore 2> /dev/null
-	  echo "done"
-	fi
         # Start driver.
 	if [ ! -d /proc/asound ]; then
 	  #
@@ -86,15 +73,13 @@ case "$1" in
         # Stop daemons.
 	if [ -d /proc/asound ]; then
           echo -n "Shutting down sound driver: "
-	  if [ ! -f /proc/asound/detect ]; then
-	    #
-	    # store driber settings
-	    #
-	    if [ -x $alsactl ]; then
-	      $alsactl store
-	    else
-	      echo -n "!!!alsactl not found!!! "
-	    fi
+	  #
+  	  # store driber settings
+	  #
+	  if [ -x $alsactl ]; then
+	    $alsactl store
+	  else
+	    echo -n "!!!alsactl not found!!! "
 	  fi
 	  #
 	  # remove all sound modules
@@ -117,45 +102,8 @@ case "$1" in
 	/etc/init.d/alsasound stop
 	/etc/init.d/alsasound start
 	;;
-  detect)
-	# Start driver only in detect mode.
-	if [ -d /proc/asound ]; then
-	  if [ -f /proc/asound/detect ]; then
-	    echo "ALSA driver is already running in detect mode."
-	    exit 0
-          else
-	    echo -n "Shutting down sound driver: "
-	    #
-	    # store driver settings
-	    #
-	    if [ -x $alsactl ]; then
-	      $alsactl store
-	    else
-	      echo -n "!!!alsactl not found!!! "
-            fi
-	    #
-	    # remove all sound modules
-	    #
-	    /sbin/lsmod | grep -E "^snd" | while read line; do \
-		/sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
-		done
-	    # remove the 2.2 soundcore module (if possible)
-	    /sbin/rmmod soundcore 2> /dev/null
-	    echo "done"
-	  fi
-	fi
-	echo -n "Starting sound detect module: "
-	#
-	# run only detect module
-	#
-	/sbin/modprobe snd-detect
-	echo "done"
-	if [ -d /var/lock/subsys ]; then
-	  touch /var/lock/subsys/alsasound
-	fi
-	;;
   *)
-        echo "Usage: alsasound {start|stop|restart|detect}"
+        echo "Usage: alsasound {start|stop|restart}"
         exit 1
 esac
 
