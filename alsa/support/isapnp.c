@@ -84,8 +84,8 @@ int isapnp_skip_pci_scan = 0;		/* skip PCI resource scanning */
 int isapnp_verbose = 1;			/* verbose mode */
 int isapnp_reserve_irq[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some IRQ */
 int isapnp_reserve_dma[8] = { [0 ... 7] = -1 };		/* reserve (don't use) some DMA */
-int isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
-int isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
+long isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
+long isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support\n\
 classes: {system}");
@@ -103,9 +103,9 @@ MODULE_PARM(isapnp_reserve_irq, "1-16i");
 MODULE_PARM_DESC(isapnp_reserve_irq, "ISA Plug & Play - reserve IRQ line(s)");
 MODULE_PARM(isapnp_reserve_dma, "1-8i");
 MODULE_PARM_DESC(isapnp_reserve_dma, "ISA Plug & Play - reserve DMA channel(s)");
-MODULE_PARM(isapnp_reserve_io, "1-16i");
+MODULE_PARM(isapnp_reserve_io, "1-16l");
 MODULE_PARM_DESC(isapnp_reserve_io, "ISA Plug & Play - reserve I/O region(s) - port,size");
-MODULE_PARM(isapnp_reserve_mem, "1-16i");
+MODULE_PARM(isapnp_reserve_mem, "1-16l");
 MODULE_PARM_DESC(isapnp_reserve_mem, "ISA Plug & Play - reserve memory region(s) - address,size");
 
 int isapnp_proc_init(void);

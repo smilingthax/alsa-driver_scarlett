@@ -361,7 +361,7 @@ struct SND_STRU_GF1 {
   	       hw_lfo: 1,		/* use hardware LFO */
   	       sw_lfo: 1;		/* use software LFO */
   
-  unsigned int port;		/* port of GF1 chip */
+  unsigned long port;		/* port of GF1 chip */
   unsigned int irq;		/* IRQ number of GF1 chip */
   unsigned int memory;		/* GUS's DRAM size in bytes */
   unsigned int rom_memory;	/* GUS's ROM size in bytes */
