@@ -68,7 +68,13 @@ install: install-modules install-headers install-scripts
 	cat WARNING
 
 install-headers:
-	ln -sf $(SRCDIR)/include $(prefix)/include/sound
+	if [ -L $(prefix)/include/sound ]; then \
+		ln -sf $(SRCDIR)/include $(prefix)/include/sound; \
+	else \
+		rm -rf $(prefix)/include/sound; \
+		install -d -m 755 -g root -o root $(prefix)/include/sound; \
+		cp include/*.h $(prefix)/include/sound; \
+	fi
 
 install-modules: compile
 	mkdir -p $(moddir)
