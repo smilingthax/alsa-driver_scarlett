@@ -36,6 +36,12 @@ else
   distribution="unknown"
 fi
 
+if [ -x /sbin/lsmod ]; then
+  lsmod=/sbin/lsmod
+else
+  lsmod=/bin/lsmod
+fi
+
 usage() {
     echo "ALSA configurator version $version"
     echo "usage: alsaconf [options]"
@@ -630,7 +636,7 @@ options snd-$1 ${*:2}
 " > $TMP
     test $do_logging = 1 && echo "$1 ${*:2}" >> $LOGFILE
     /sbin/modprobe -C $TMP snd-$1 >/dev/null 2>&1
-    /sbin/lsmod | grep snd-$1 >/dev/null 2>&1 || return 1
+    $lsmod | grep -E '(snd-|snd_)' $1 >/dev/null 2>&1 || return 1
     /sbin/modprobe -C $TMP snd-ioctl32 >/dev/null 2>&1
 
     # mute mixers
@@ -671,7 +677,7 @@ options snd-$1 ${*:3}
 " > $TMP
     test $do_logging = 1 && echo "$1 ${*:2}" >> $LOGFILE
     /sbin/modprobe -C $TMP snd-$1 >/dev/null 2>&1
-    /sbin/lsmod | grep snd-$1 >/dev/null 2>&1 || return 1
+    $lsmod | grep -E '(snd-|snd_)' $1 >/dev/null 2>&1 || return 1
     /sbin/modprobe -C $TMP snd-ioctl32 >/dev/null 2>&1
 
     # mute mixers

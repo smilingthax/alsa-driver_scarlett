@@ -68,30 +68,44 @@ alsactl=/usr/sbin/alsactl
 asoundcfg=/etc/asound.state
 aconnect=/usr/bin/aconnect
 alsascrdir=/etc/alsa.d
+if [ -x /sbin/lsmod ]; then
+  lsmod=/sbin/lsmod
+else
+  lsmod=lsmod
+fi
+
+# modprobe returns 255 when failed..
+function probe_module () {
+   /sbin/modprobe $*
+   test $? = 0 && return 0
+   return 1
+}
 
 function start() {
   #
   # insert all sound modules
   #
 
+  module_loaded=0
   drivers=`/sbin/modprobe -c | \
     grep -E "^[[:space:]]*alias[[:space:]]+snd-card-[[:digit:]]" | \
     awk '{print $3}'`
   for i in $drivers; do
     if [ "$i" != off ]; then
       echo -n "Starting sound driver: $i "
-      /sbin/modprobe $i
+      probe_module $i && module_loaded=1
       echo -e "$rc_done"
     fi
   done
+  test $module_loaded -eq 0 && return
   #
   # insert sequencer modules
   #
   if [ x"$START_ALSA_SEQ" = xyes -a -r /proc/asound/seq/drivers ]; then
-    t=`cut -d , -f 1 /proc/asound/seq/drivers`
-    if [ "x$t" != "x" ]; then
-      /sbin/modprobe $t
-    fi
+    cut -d , -f 1 /proc/asound/seq/drivers | \
+    while read t ; do
+      test -z $t || /sbin/modprobe $t
+    done
   fi
   #
   # restore driver settings
@@ -129,11 +143,15 @@ function terminate() {
   # Kill processes holding open sound devices
   #
   # DEVS=`find /dev/ -follow -type c -maxdepth 1 -print 2>/dev/null | xargs ls -dils | grep "1*1[46]," | cut -d: -f2 | cut -d" " -f2; echo /proc/asound/dev/*`
-  ossdevs="/dev/admmidi? /dev/adsp? /dev/amidi? /dev/audio* /dev/dmfm* \
+  fuser -k /dev/admmidi? /dev/adsp? /dev/amidi? /dev/audio* /dev/dmfm* \
      /dev/dmmidi? /dev/dsp* /dev/dspW* /dev/midi0? /dev/mixer? /dev/music \
-     /dev/patmgr? /dev/sequencer* /dev/sndstat"
-  alsadevs="/dev/snd/*"
-  fuser -k $ossdevs $alsadevs 2> /dev/null 1>/dev/null
+     /dev/patmgr? /dev/sequencer* /dev/sndstat >/dev/null 2>&1
+  if [ -d /proc/asound/dev ]; then
+    fuser -k /proc/asound/dev/* >/dev/null 2>&1
+  fi
+  if [ -d /dev/snd ]; then
+    fuser -k /dev/snd/* >/dev/null 2>&1
+  fi
   #
   # remove all sequencer connections if any
   #
@@ -152,9 +170,13 @@ function stop() {
     echo -n -e "${rc_warning}!!!alsactl not found!!!${rc_reset} "
   fi
   #
+  # mute master to avoid clicks at unload
+  #
+  /usr/bin/amixer set Master mute >/dev/null 2>&1
+  #
   # remove all sound modules
   #
-  /sbin/lsmod | grep -E "^snd" | grep -Ev "^snd-page-alloc" | while read line; do \
+  $lsmod | grep -E "^snd" | grep -Ev "(snd-page-alloc|snd_page_alloc)" | while read line; do \
      /sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
   done
   # remove the 2.2 soundcore module (if possible)
