@@ -1641,32 +1641,30 @@ struct snd_stru_cs461x {
 		} name;
 		unsigned long idx[4];
 	} ba1;
-	unsigned int pctl;
-	unsigned int cctl;
 	unsigned int mode;
 	
-	unsigned char *pbuf;		/* 4kB playback buffer */
-	unsigned char *cbuf;		/* 4kB capture buffer */
+	struct {
+		unsigned int ctl;
+		void *hw_buf;		/* 4kB playback buffer */
+		unsigned int shift;	/* Shift count to trasform frames in bytes */
+		void *sw_buf;
+		unsigned int sw_bufsize;
+		unsigned int sw_data;	/* Offset to next dst (or src) in sw ring buffer */
+		unsigned int sw_io;
+		int sw_ready;		/* Bytes ready to be transferred to/from hw */
+		unsigned int hw_data;	/* Offset to next dst (or src) in hw ring buffer */
+		unsigned int hw_io;	/* Ring buffer hw pointer */
+		int hw_ready;		/* Bytes ready for play (or captured) in hw ring buffer */
+		size_t frame_data;	/* Last seen frame_data */
+		snd_pcm_substream_t *substream;
+	} play, capt;
 
-	unsigned int ppingbuf;
-	unsigned char *pbuffer;
-	unsigned int psize;
-	unsigned int pringbuf;
-
-	unsigned int cpingbuf;
-	unsigned char *cbuffer;
-	unsigned int csize;
-	unsigned int cringbuf;
-	unsigned int cff;
-	unsigned int cffc;
 
 	ac97_t *ac97;
 
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
-	snd_pcm_substream_t *playback_substream;
-	snd_pcm_substream_t *capture_substream;
 	snd_rawmidi_t *rmidi;
 
 	void *entry_proc_BA0;
