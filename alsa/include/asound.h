@@ -1004,6 +1004,10 @@ typedef struct snd_rawmidi_info {
 	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
 	unsigned char name[80];		/* name of this raw midi device */
+	unsigned int output_subdevices_count;
+	unsigned int output_subdevices_avail;
+	unsigned int input_subdevices_count;
+	unsigned int input_subdevices_avail;
 	unsigned char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
 

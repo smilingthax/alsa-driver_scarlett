@@ -30,7 +30,7 @@
  *  Raw MIDI interface
  */
 
-#define SND_RAWMIDI_DEVICES	8
+#define SND_RAWMIDI_DEVICES	4
 
 #define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
 #define SND_RAWMIDI_FLG_DRAIN	0x00000002	/* drain */
