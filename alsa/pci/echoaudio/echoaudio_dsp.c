@@ -221,23 +221,25 @@ static int load_asic_generic(echoaudio_t *chip, u32 cmd, const struct firmware *
 
 	/* Send the "Here comes the ASIC" command */
 	if (write_dsp(chip, cmd) < 0)
-		return -EIO;
+		goto la_error;
 
 	/* Write length of ASIC file in bytes */
 	if (write_dsp(chip, size) < 0)
-		return -EIO;
+		goto la_error;
 
 	for (i = 0; i < size; i++) {
-		if (write_dsp(chip, code[i]) < 0) {
-			DE_ACT(("failed on write_dsp\n"));
-			free_firmware(fw);
-			return -EIO;
-		}
+		if (write_dsp(chip, code[i]) < 0)
+			goto la_error;
 	}
 
 	DE_INIT(("ASIC loaded\n"));
 	free_firmware(fw);
 	return 0;
+
+la_error:
+	DE_INIT(("failed on write_dsp\n"));
+	free_firmware(fw);
+	return -EIO;
 }
 
 #endif /* ECHOCARD_HAS_ASIC */
@@ -278,8 +280,11 @@ static int install_resident_loader(echoaudio_t *chip)
 		DE_INIT(("Resident loader already installed; status is 0x%x\n", status));
 		return 0;
 	}
-	/* Set DSP format bits for 24 bit mode */
-	set_dsp_register(chip, CHI32_CONTROL_REG, get_dsp_register(chip, CHI32_CONTROL_REG) | 0x900);
+
+	if ((i = get_firmware(&fw, &card_fw[FW_361_LOADER], chip)) < 0) {
+		snd_printk(KERN_WARNING "Firmware not found !\n");
+		return i;
+	}
 
 	//---------------------------------------------------------------------------
 	//
@@ -297,10 +302,8 @@ static int install_resident_loader(echoaudio_t *chip)
 	//
 	//---------------------------------------------------------------------------
 
-	if ((i = get_firmware(&fw, &card_fw[FW_361_LOADER], chip)) < 0) {
-		snd_printk(KERN_WARNING "Firmware not found !\n");
-		return i;
-	}
+	/* Set DSP format bits for 24 bit mode */
+	set_dsp_register(chip, CHI32_CONTROL_REG, get_dsp_register(chip, CHI32_CONTROL_REG) | 0x900);
 
 	code = (u16 *)fw->data;
 
