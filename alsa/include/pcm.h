@@ -769,6 +769,11 @@ extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
 					 (SND_PCM_AES3_CON_FS_48000<<24))
 
+extern int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream,
+				    size_t size,
+				    unsigned int flags);
+extern void snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
+
 #ifdef CONFIG_PCI
 extern int snd_pcm_lib_malloc_pci_pages(struct pci_dev *pci,
                                         snd_pcm_substream_t *substream,
