@@ -81,6 +81,9 @@
 #define SND_SEQ_EVENT_PORT_EXIT		64	/* port was deleted from system */
 #define SND_SEQ_EVENT_PORT_CHANGE	65	/* port status/info has changed */
 
+#define SND_SEQ_EVENT_PRIVATE		70	/* private event */
+#define SND_SEQ_EVENT_NORMAL_CONTROLS	80
+
 	/* synthesizer events */	
 #define SND_SEQ_EVENT_SAMPLE		80	/* sample select */
 #define SND_SEQ_EVENT_SAMPLE_CLUSTER	81	/* sample cluster select */
@@ -337,6 +340,8 @@ typedef struct {
 	int output_pool;		/* outgoing (write) pool size */
 	int input_pool;			/* incoming (read) pool size */
 	int output_room;		/* minimum free pool size for select/blocking mode */
+	int output_free;		/* unused size */
+	int input_free;			/* unused size */
 	char reserved[64];
 } snd_seq_client_pool_t;
 

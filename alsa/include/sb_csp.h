@@ -25,10 +25,10 @@
 
 /* CSP modes */
 #define SND_SB_CSP_MODE_NONE		0
-#define SND_SB_CSP_MODE_DSP_WRITE	1	/* using pcm_format */
-#define SND_SB_CSP_MODE_DSP_READ	2	/* ?? */
-#define SND_SB_CSP_MODE_DSP_RW		3	/* ?? */
-#define SND_SB_CSP_MODE_QSOUND		4	/* QSound - signed 16bit, stereo only? */
+#define SND_SB_CSP_MODE_DSP_WRITE	1	/* write only */
+#define SND_SB_CSP_MODE_DSP_READ	2	/* read only */
+#define SND_SB_CSP_MODE_DSP_RW		3	/* read/write */
+#define SND_SB_CSP_MODE_QSOUND		4	/* QSound */
 /*..others..*/
 
 /* maximum size of micro code */
@@ -36,9 +36,9 @@
 
 /* microcode to be loaded */
 typedef struct snd_sb_csp_mc_header {
+	char codec_name[16];		/* id name of codec */
 	unsigned int pcm_format;	/* see asound.h */
 	unsigned short csp_mode;	/* see above */
-	unsigned short channels;	/* 1=mono, 2=stereo */
 	unsigned short init_size;	/* size of initiailization code */
 	unsigned short main_size;	/* size of main code */
 } snd_sb_csp_mc_header_t;
@@ -50,15 +50,18 @@ typedef struct snd_sb_csp_microcode {
 } snd_sb_csp_microcode_t;
 
 /* running state */
-#define SND_SB_CSP_ST_RUNNING	0x01
-#define SND_SB_CSP_ST_PAUSE	0x02
-#define SND_SB_CSP_ST_QSOUND	0x04
+#define SND_SB_CSP_ST_IDLE	0x00
+#define SND_SB_CSP_ST_LOADED	0x01
+#define SND_SB_CSP_ST_RUNNING	0x02
+#define SND_SB_CSP_ST_PAUSED	0x04
+#define SND_SB_CSP_ST_QSOUND	0x10
 
 /* CSP information */
 typedef struct snd_sb_csp_info {
-	unsigned int pcm_format;	/* PCM format */
+	char codec_name[16];		/* id name of codec */
+	unsigned int pcm_format;	/* accepted PCM formats */
 	unsigned short csp_mode;	/* CSP mode */
-	unsigned short channels;	/* channels: 1-2 */
+	unsigned short channels;	/* 1=mono, 2=stereo */
 	unsigned short version;		/* version id: 0x10 - 0x1f */
 	unsigned short state;		/* state bits */
 } snd_sb_csp_info_t;
@@ -77,8 +80,8 @@ typedef struct snd_sb_csp_qsound {
 #define SND_SB_CSP_IOCTL_INFO		_IOR('H', 0x10, snd_sb_csp_info_t)
 /* load microcode to CSP */
 #define SND_SB_CSP_IOCTL_LOAD_CODE	_IOW('H', 0x11, snd_sb_csp_microcode_t)
-/* start CSP */
-#define SND_SB_CSP_IOCTL_START		_IO('H', 0x12)
+/* start CSP - argument is mono/stereo flag (mono=1, stereo=0) */
+#define SND_SB_CSP_IOCTL_START		_IOW('H', 0x12, int)
 /* stop CSP */
 #define SND_SB_CSP_IOCTL_STOP		_IO('H', 0x13)
 /* pause CSP and DMA transfer */
