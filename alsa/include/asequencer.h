@@ -157,8 +157,8 @@ typedef struct {
 
 
 typedef struct {
-	int	tv_sec;		/* seconds */
-	int	tv_nsec;	/* nanoseconds */
+	long int tv_sec;	/* seconds */
+	long int tv_nsec;	/* nanoseconds */
 } snd_seq_real_time_t;
 
 typedef unsigned int snd_seq_tick_time_t;	/* midi ticks */
