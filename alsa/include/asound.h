@@ -123,8 +123,9 @@
 #define SND_CARD_TYPE_AZT2320		0x00000038	/* AZT2320 */
 #define SND_CARD_TYPE_PRODIF_PLUS	0x00000039	/* Marian/Sek'D Prodif Plus */
 #define SND_CARD_TYPE_YMFPCI		0x0000003a	/* YMF724/740/744/754 */
+#define SND_CARD_TYPE_CS4281		0x0000003b	/* CS4281 */
 
-#define SND_CARD_TYPE_LAST		0x0000003a
+#define SND_CARD_TYPE_LAST		0x0000003b
 
 typedef struct timeval snd_timestamp_t;
 

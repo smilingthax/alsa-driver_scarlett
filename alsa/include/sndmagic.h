@@ -134,6 +134,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define cmipci_t_magic				0xa15a2e01
 #define ymfpci_t_magic				0xa15a2f01
 #define ymfpci_pcm_t_magic			0xa15a2f02
+#define cs4281_t_magic				0xa15a3001
 
 #else
 #define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)

@@ -288,6 +288,12 @@ case "$1" in
     insert snd-card-cs461x.o
     restore cs461x.conf
     ;;
+  cs4281)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-card-cs4281.o
+    restore cs4281.conf
+    ;;
   fm801)
     basic
     insert snd-ac97-codec.o
