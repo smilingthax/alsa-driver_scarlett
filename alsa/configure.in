@@ -207,7 +207,7 @@ int main(void) {
 	fprintf(file, "i686");
 #elif defined(CONFIG_EV4) || defined(CONFIG_EV5) || defined(CONFIG_EV6)
 	fprintf(file, "alpha");
-#elif defined(CONFIG_ALPHA_EV4) || defined(CONFIG_ALPHA_EV5) || defined(CONFIG_ALPHA_EV6)
+#elif defined(CONFIG_ALPHA_EV4) || defined(CONFIG_ALPHA_EV5) || defined(CONFIG_ALPHA_EV6) || defined(CONFIG_ALPHA_GENERIC)
 	fprintf(file, "alpha");
 #elif defined(CONFIG_PPC)
 	fprintf(file, "ppc");
