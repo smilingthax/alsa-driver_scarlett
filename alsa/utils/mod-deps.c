@@ -1,0 +1,1037 @@
+/*
+ *  Utility to find module dependencies from Modules.dep
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *		     Anders Semb Hermansen <ahermans@vf.telia.no>,
+ *		     Martin Dahl <dahlm@vf.telia.no>,
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *
+ */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <ctype.h>
+#include <errno.h>
+
+// Output methods
+#define METHOD_ACINCLUDE	1
+#define METHOD_MAKECONF		2
+#define METHOD_INCLUDE		3
+
+#define COND_AND		0
+#define COND_OR			1
+
+struct cond {
+	char *name;		/* dependency name */
+	struct dep *dep;	/* dependency pointer */
+	int left;		/* left brackets */
+	int right;		/* right brackets */
+	int type;
+	struct cond *next;
+	struct cond *stack_prev;
+};
+
+struct sel {
+	char *name;		/* dependency name */
+	struct dep *dep;	/* dependency pointer */
+	struct sel *next;
+};
+
+struct dep {
+	char *name;
+	// dependency part - conditions (chain)
+	struct cond *cond;
+	// forced selection (dependency) part
+	struct sel *sel;
+	// misc
+	int hitflag;
+	struct dep *next;
+};
+
+// Prototypes
+
+static int read_file(const char *filename);
+static int read_file_1(const char *filename);
+static int include_file(char *line);
+static void free_cond(struct cond *cond);
+static struct cond *create_cond(char *line);
+static struct dep *alloc_mem_for_dep(void);
+static struct dep *find_or_create_dep(char *line);
+static void add_dep(struct dep * dep, char *line, struct cond *template);
+static void add_select(struct dep * dep, char *line);
+static char *get_word(char *line, char *word);
+static struct dep *find_dep(char *parent, char *depname);
+static void del_all_from_list(void);
+
+int main(int argc, char *argv[]);
+static void usage(char *programname);
+static char *convert_to_config_uppercase(const char *pre, const char *line);
+// static char *convert_to_escape(const char *line);
+static char *get_card_name(const char *line);
+
+// Globals
+static struct dep *all_deps = NULL;
+static char *basedir = "../alsa-kernel";
+static char *hiddendir = "..";
+
+static char *kernel_deps[] = {
+	"ARCH_SA1100",
+	"SBUS",
+	"GAMEPORT",
+	NULL
+};
+
+/* @ -> add to output for all cards */
+/* % -> always true */
+static char *no_cards[] = {
+	"SOUND",
+	"SOUND_PRIME",
+	"%@SND",
+	"@SND_TIMER",
+	"@SND_HWDEP",
+	"@SND_RAWMIDI",
+	"@SND_PCM",
+	"SND_SEQUENCER",
+	"SND_MIXER_OSS",
+	"SND_PCM_OSS",
+	"SND_SEQUENCER_OSS",
+	"SND_OSSEMUL",
+	"SND_RTCTIMER",
+	"SND_DEBUG",
+	"SND_DEBUG_MEMORY",
+	"SND_DEBUG_DETECT",
+	"SND_VERBOSE_PRINTK",
+	"SND_BIT32_EMUL",
+	"@SND_OPL3_LIB",
+	"@SND_OPL4_LIB",
+	"@SND_VX_LIB",
+	"@SND_MPU401_UART",
+	NULL
+};
+
+#define READ_STATE_NONE		0
+#define READ_STATE_CONFIG	1
+#define READ_STATE_MENU		2
+
+static void nomem(void)
+{
+	fprintf(stderr, "No enough memory\n");
+	exit(EXIT_FAILURE);
+}
+
+static int read_file(const char *filename)
+{
+	char *fullfile;
+	int err;
+	
+	fullfile = malloc(strlen(basedir) + strlen(hiddendir) + 1 + strlen(filename) + 1);
+	sprintf(fullfile, "%s/%s", basedir, filename);
+	if ((err = read_file_1(fullfile)) < 0)
+		return err;
+	if (!strncmp(filename, "core/", 5))
+		sprintf(fullfile, "%s/acore/%s", hiddendir, filename + 5);
+	else
+		sprintf(fullfile, "%s/%s", hiddendir, filename);
+	if (access(fullfile, R_OK) == 0) {
+		if ((err = read_file_1(fullfile)) < 0)
+			return err;
+	}
+	return 0;
+}
+
+static int read_file_1(const char *filename)
+{
+	char *buffer, *newbuf;
+	FILE *file;
+	int c, prev, idx, size, result = 0;
+	int state = READ_STATE_NONE;
+	struct dep *dep;
+	struct cond *template = NULL;
+
+	file = fopen(filename, "r");
+	if (file == NULL) {
+		fprintf(stderr, "Unable to open file %s: %s\n", filename, strerror(errno));
+		return -ENOENT;
+	}
+
+	size = 512;
+	buffer = (char *) malloc(size);
+	if (!buffer) {
+		fclose(file);
+		return -ENOMEM;
+	}
+	while (!feof(file)) {
+		buffer[idx = 0] = prev = '\0';
+		while (1) {
+			if (idx + 1 >= size) {
+				newbuf = (char *) realloc(buffer, size += 256);
+				if (newbuf == NULL) {
+					result = -ENOMEM;
+					goto __end;
+				}
+				buffer = newbuf;
+			}
+			c = fgetc(file);
+			if (c == EOF)
+				break;
+			if (c == '\n') {
+				if (prev == '\\') {
+					idx--;
+					continue;
+				}
+				break;
+			}
+			buffer[idx++] = prev = c;
+		}
+		buffer[idx] = '\0';
+		/* ignore some keywords */
+		if (buffer[0] == '#')
+			continue;
+		if (!strncmp(buffer, "endmenu", 7)) {
+			struct cond *otemplate;
+		    	state = READ_STATE_NONE;
+		    	if (template == NULL) {
+		    		fprintf(stderr, "Menu level error\n");
+		    		exit(EXIT_FAILURE);
+		    	}
+		    	otemplate = template;
+		    	template = template->stack_prev;
+		    	free_cond(otemplate);
+			continue;
+		}
+		if (!strncmp(buffer, "menu", 4)) {
+			struct cond *ntemplate;
+			state = READ_STATE_MENU;
+			strcpy(buffer, "EMPTY");
+			ntemplate = create_cond(buffer);
+			ntemplate->stack_prev = template;
+			template = ntemplate;
+			continue;
+		}
+		if (!strncmp(buffer, "config ", 7)) {
+			state = READ_STATE_CONFIG;
+			dep = find_or_create_dep(buffer + 7);
+			if (dep == NULL) {
+				result = -ENOMEM;
+				goto __end;
+			}
+		}
+		if (!strncmp(buffer, "source ", 7)) {
+			state = READ_STATE_NONE;
+			result = include_file(buffer + 7);
+			if (result < 0)
+				goto __end;
+		}
+		switch (state) {
+		case READ_STATE_CONFIG:
+			if (!strncmp(buffer, "\tdepends on ", 12))
+				add_dep(dep, buffer + 12, template);
+			if (!strncmp(buffer, "\tselect ", 8))
+				add_select(dep, buffer + 8);
+			continue;
+		case READ_STATE_MENU:
+			if (!strncmp(buffer, "\tdepends on ", 12)) {
+				struct cond *ntemplate;
+				ntemplate = create_cond(buffer + 12);
+				free(template->name);
+				template->name = ntemplate->name;
+				template->dep = ntemplate->dep;
+				template->left = ntemplate->left;
+				template->right = ntemplate->right;
+				template->type = ntemplate->type;
+				free(ntemplate);
+			}
+			continue;
+		}
+	}
+      __end:
+	if (template)
+		free_cond(template);
+	free(buffer);
+	if (file != stdin)
+		fclose(file);
+	return result;
+}
+
+// include a file
+static int include_file(char *line)
+{
+	char *word = NULL, *ptr;
+	int result;
+
+	word = malloc(strlen(line) + 1);
+	get_word(line, word);
+	ptr = word;
+	if (!strncmp(ptr, "sound/", 6))
+		ptr += 6;
+	if (!strncmp(ptr, "oss/", 4))
+		return 0;
+	result = read_file(ptr);
+	free(word);
+	return result;
+}
+
+// allocate condition chain
+static struct cond * create_cond(char *line)
+{
+	struct cond *first = NULL, *cond, *prev = NULL;
+	char *word = NULL;
+	int i;
+
+	word = malloc(strlen(line) + 1);
+	if (word == NULL)
+		nomem();
+	while (get_word(line, word)) {
+		cond = calloc(sizeof(struct cond), 1);
+		if (cond == NULL)
+			nomem();
+		if (first == NULL)
+			first = cond;
+		if (prev)
+			prev->next = cond;
+		prev = cond;
+		while (word[0] == '(') {
+			for (i = 1; i < strlen(word) + 1; i++)
+				word[i - 1] = word[i];
+			cond->left++;
+		}
+		for (i = 0; i < strlen(word); i++) {
+			if (word[i] == '!' || word[i] == '=' ||
+			    word[i] == '&' || word[i] == ')') {
+			    	if (word[i] == ')') {
+			    		word[i] = '\0';
+			    		cond->right++;
+			    		continue;
+			    	}
+				if (!strcmp(word + i, "!=n")) {
+					word[i] = '\0';
+					break;
+				}
+				fprintf(stderr, "Unknown suffix '%s'\n", word + i);
+				exit(EXIT_FAILURE);
+			}
+		}
+		cond->name = strdup(word);
+		if (cond->name == NULL)
+			nomem();
+		if (strcmp(cond->name, "EMPTY"))
+			find_or_create_dep(word);
+		if (get_word(line, word)) {
+			if (!strcmp(word, "&&"))
+				cond->type = COND_AND;
+			else if (!strcmp(word, "||"))
+				cond->type = COND_OR;
+			else {
+				fprintf(stderr, "Wrong condition %s\n", word);
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+	free(word);
+	return first;
+}
+
+// allocate a new dep structure and put it to the global list
+static struct dep *alloc_mem_for_dep(void)
+{
+	struct dep * firstdep = all_deps, * ndep;
+
+	ndep = (struct dep *) calloc(1, sizeof(struct dep));
+	if (ndep == NULL)
+		nomem();
+	if (!firstdep)
+		return all_deps = ndep;
+	while (firstdep->next)
+		firstdep = firstdep->next;
+	return firstdep->next = ndep;
+}
+
+// Add a new dependency to the list
+static struct dep * find_or_create_dep(char *line)
+{
+	struct dep *new_dep;
+	char *word = NULL;
+
+	word = malloc(strlen(line) + 1);
+	if (word == NULL)
+		nomem();
+	get_word(line, word);
+	new_dep = find_dep("<root>", word);
+	if (new_dep != NULL)
+		return new_dep;
+	new_dep = alloc_mem_for_dep();
+	new_dep->name = strdup(word);	// Fill in name of dependency
+	if (new_dep->name == NULL)
+		nomem();
+	free(word);
+	return new_dep;
+}
+
+// duplicate condition chain
+static struct cond *duplicate_cond(struct cond *cond)
+{
+	struct cond *result = NULL, *tmp, *prev = NULL;
+	
+	while (cond) {
+		tmp = calloc(sizeof(struct cond), 1);
+		if (tmp == NULL)
+			nomem();
+		*tmp = *cond;
+		tmp->name = strdup(cond->name);
+		if (tmp->name == NULL)
+			nomem();
+		tmp->next = NULL;
+		if (result == NULL)
+			result = tmp;
+		if (prev)
+			prev->next = tmp;
+		prev = tmp;
+		cond = cond->next;
+	}
+	return result;
+}
+
+// join condition chain
+static struct cond *join_cond(struct cond *cond1, struct cond *cond2)
+{
+	struct cond *orig = cond1;
+
+	if (cond1 == NULL)
+		return cond2;
+	if (cond2 == NULL)
+		return cond1;
+	while (cond1->next)
+		cond1 = cond1->next;
+	cond1->next = cond2;
+	return orig;
+}
+
+// Add a new dependency to the current one
+static void add_dep(struct dep * dep, char *line, struct cond *template)
+{
+	template = duplicate_cond(template);
+	dep->cond = join_cond(template, create_cond(line));
+}
+
+// Add a new forced (selected) dependency to the current one
+static void add_select(struct dep * dep, char *line)
+{
+	char *word = NULL;
+	struct sel *sel, *nsel;
+
+	word = malloc(strlen(line) + 1);
+	if (word == NULL)
+		nomem();
+	get_word(line, word);
+	nsel = calloc(sizeof(struct sel), 1);
+	if (nsel == NULL)
+		nomem();
+	nsel->name = strdup(word);
+	if (nsel->name == NULL)
+		nomem();
+	nsel->dep = NULL;
+	sel = dep->sel;
+	if (sel == NULL)
+		dep->sel = nsel;
+	else {
+		while (sel->next)
+			sel = sel->next;
+		sel->next = nsel;
+	}
+	free(word);
+}
+
+
+// Put the first word in "line" in "word". Put the rest back in "line"
+static char *get_word(char *line, char *word)
+{
+	int i, j, c;
+	char *full_line;
+
+	if (strlen(line) == 0)
+		return NULL;
+
+	i = 0;
+	while (line[i] == ' ' || line[i] == '\t')
+		i++;
+	c = line[i];
+	if (c != '\'' && c != '"') {
+		c = ' ';
+	} else {
+		i++;
+	}
+
+	if (strlen(line) == i)
+		return NULL;
+
+	full_line = malloc(strlen(line + i) + 1);
+	if (full_line == NULL)
+		nomem();
+	strcpy(full_line, line + i);
+	for (i = 0; i < strlen(full_line); i++) {
+		if ((c != ' ' && full_line[i] != c) ||
+		    (c == ' ' && full_line[i] != '\t'
+		     && full_line[i] != ' '))
+			word[i] = full_line[i];
+		else {
+			// We got the whole word
+			word[i++] = '\0';
+			while (full_line[i] != '\0' &&
+			       (full_line[i] == ' ' || full_line[i] == '\t'))
+				i++;
+			for (j = 0; i < strlen(full_line); i++, j++)
+				line[j] = full_line[i];
+			line[j] = '\0';
+			free(full_line);
+			return word;
+		}
+	}
+	// This was the last word
+	word[i] = '\0';
+	line[0] = '\0';
+	free(full_line);
+	return word;
+}
+
+// Find the dependency named "depname"
+static struct dep *find_dep(char *parent, char *depname)
+{
+	struct dep *temp_dep = all_deps;
+	int idx;
+
+	while (temp_dep) {
+		// fprintf(stderr, "depname = '%s', name = '%s'\n", depname, temp_dep->name);
+		if (!strcmp(depname, temp_dep->name))
+			return temp_dep;
+		temp_dep = temp_dep->next;
+	}
+	for (idx = 0; kernel_deps[idx]; idx++) {
+		if (!strcmp(kernel_deps[idx], depname))
+			return NULL;
+	}
+	if (strcmp(parent, "<root>"))
+		fprintf(stderr, "Warning: Unsatisfied dep for %s: %s\n", parent, depname);
+	return NULL;
+}
+
+// Resolve all dependencies
+static void resolve_dep(struct dep * parent)
+{
+	struct cond *cond;
+
+	while (parent) {
+		cond = parent->cond;
+		while (cond) {
+			cond->dep = find_dep(parent->name, cond->name);
+			cond = cond->next;
+		}
+		parent = parent->next;
+	}
+}
+
+// Resolve fixed (selected) dependecies
+static void resolve_sel(struct dep * parent)
+{
+	struct sel *sel;
+
+	while (parent) {
+		sel = parent->sel;
+		while (sel) {
+			sel->dep = find_dep(parent->name, sel->name);
+			sel = sel->next;
+		}
+		parent = parent->next;
+	}
+}
+
+// free condition chain
+static void free_cond(struct cond *first)
+{
+	struct cond *next;
+	
+	while (first) {
+		next = first->next;
+		free(first->name);
+		free(first);
+		first = next;
+	}
+}
+
+// free selection chain
+static void free_sel(struct sel *first)
+{
+	struct sel *next;
+	
+	while (first) {
+		next = first->next;
+		free(first);
+		first = next;
+	}
+}
+
+// Free memory for all deps in Toplevel and Deps
+static void del_all_from_list(void)
+{
+	struct dep *list = all_deps, *next;
+
+	while (list) {
+		next = list->next;
+		free_cond(list->cond);
+		free_sel(list->sel);
+		if (list->name)
+			free(list->name);
+		free(list);
+		list = next;
+	}
+}
+
+// is toplevel module
+static int is_toplevel(struct dep *dep)
+{
+	int idx;
+	char *str;
+	
+	if (dep == NULL)
+		return 0;
+	for (idx = 0; no_cards[idx]; idx++) {
+		str = no_cards[idx];
+		if (*str == '%')
+			str++;
+		if (*str == '@')
+			str++;
+		if (!strcmp(str, dep->name))
+			return 0;
+	}
+	return 1;
+}
+
+// is CONFIG_ variable is always true
+static int is_always_true(struct dep *dep)
+{
+	int idx;
+	char *str;
+
+	if (dep == NULL)
+		return 0;
+	for (idx = 0; no_cards[idx]; idx++) {
+		str = no_cards[idx];
+		if (*str != '%')
+			continue;
+		str++;
+		if (*str == '@')
+			str++;
+		if (!strcmp(str, dep->name))
+			return 1;
+	}
+	return 0;
+}
+
+// is CONFIG_ variable belongs to all card output
+static int belongs_to_all(struct dep *dep)
+{
+	int idx;
+	char *str;
+
+	if (dep == NULL)
+		return 0;
+	for (idx = 0; no_cards[idx]; idx++) {
+		str = no_cards[idx];
+		if (*str == '%')
+			str++;
+		if (*str != '@')
+			continue;
+		str++;
+		if (!strcmp(str, dep->name))
+			return 1;
+	}
+	return 0;
+}
+
+// Print out ALL deps for firstdep (Cards, Deps)
+static void output_card_list(struct dep *firstdep, int space, int size)
+{
+	struct dep *temp_dep=firstdep;
+	char *card_name;
+	int tmp_size = 0, first = 1, idx;
+
+	printf("  [");
+	for (idx = 0; idx < space; idx++)
+		printf(" ");
+	while(temp_dep) {
+		if (!is_toplevel(temp_dep))
+			goto __skip;
+		card_name=get_card_name(temp_dep->name);
+		if (card_name) {
+			if (!first) {
+				printf(", ");
+				tmp_size += 2;
+			} else {
+				first = 0;
+			}
+			if (tmp_size + strlen(card_name) + 2 > size) {
+				printf("]\n  [");
+				for (idx = 0; idx < space; idx++)
+					printf(" ");
+				tmp_size = 0;
+			}
+			printf(card_name);
+			tmp_size += strlen(card_name);
+			free(card_name);
+		}
+	      __skip:
+		temp_dep=temp_dep->next;
+	}
+}
+
+// Output in acinlude.m4
+static void output_acinclude(void)
+{
+	struct dep *tempdep;
+	char *text;
+	struct cond *cond, *cond_prev;
+	struct sel *sel;
+	
+	printf("dnl ALSA soundcard configuration\n");
+	printf("dnl Find out which cards to compile driver for\n");
+	printf("dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>,\n");
+	printf("dnl                  Anders Semb Hermansen <ahermans@vf.telia.no>\n\n");
+
+	printf("AC_DEFUN(ALSA_TOPLEVEL_INIT, [\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("\t%s=\"\"\n", text);
+		free(text);
+	}
+	printf("])\n\n");
+
+	printf("AC_DEFUN(ALSA_TOPLEVEL_ALL, [\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		if (!belongs_to_all(tempdep))
+			continue;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		if (!strncmp(text, "CONFIG_SND", 10)) {
+			printf("\t%s=\"m\"\n", text);
+			printf("\tAC_DEFINE(%s_MODULE)\n", text);
+		}
+		free(text);
+	}
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		int put_if = 0;
+		if (!is_toplevel(tempdep))
+			continue;
+		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
+			if (is_always_true(cond->dep))
+				continue;
+			if (!put_if)
+				printf("\tif ");
+			else {
+				printf(cond_prev->type == COND_AND ? " &&" : " ||");
+				printf("\n\t   ");
+			}
+			printf("( test \"$CONFIG_%s\" == \"y\" -o \"$CONFIG_%s\" == \"m\" )", cond->name, cond->name);
+			put_if = 1;
+			cond_prev = cond;
+		}
+		if (put_if)
+			printf("; then\n");
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("\t");
+		if (put_if)
+			printf("  ");
+		printf("%s=\"m\"\n", text);
+		printf("\t");
+		if (put_if)
+			printf("  ");
+		printf("AC_DEFINE(%s_MODULE)\n", text);
+		if (put_if)
+			printf("\tfi\n");
+		free(text);
+	}
+	printf("])\n\n");
+	
+	printf("AC_DEFUN(ALSA_TOPLEVEL_SELECT, [\n");
+	printf("dnl Check for which cards to compile driver for...\n");
+	printf("AC_MSG_CHECKING(for which soundcards to compile driver for)\n");
+	printf("AC_ARG_WITH(cards,\n\
+  [  --with-cards=<list>     compile driver for cards in <list>; ]\n\
+  [                        cards may be separated with commas; ]\n\
+  [                        'all' compiles all drivers; ]\n\
+  [                        Possible cards are: ]\n");
+	output_card_list(all_deps, 24, 50);
+	printf(" ],\n");
+	printf("  cards=\"$withval\", cards=\"all\")\n");
+	printf("if test \"$cards\" = \"all\"; then\n");
+	printf("  ALSA_TOPLEVEL_ALL\n");
+	printf("  AC_MSG_RESULT(all)\n");
+	printf("else\n");
+	printf("  cards=`echo $cards | sed 's/,/ /g'`\n");
+	printf("  for card in $cards\n");
+	printf("  do\n");
+	printf("    case \"$card\" in\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		if (!is_toplevel(tempdep))
+			continue;
+		text = get_card_name(tempdep->name);
+		if (text) {
+			printf("\t%s)\n", text);
+			free(text);
+			for (sel = tempdep->sel; sel; sel = sel->next) {
+				if (is_always_true(sel->dep))
+					continue;
+				printf("\t\t%s=\"m\"\n", sel->name);
+				printf("\t\tAC_DEFINE(%s_MODULE)\n", sel->name);
+			}
+			text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+			printf("\t\t%s=\"m\"\n", text);
+			printf("\t\tAC_DEFINE(%s_MODULE)\n", text);
+			printf("\t\t;;\n");
+			free(text);
+		}
+	}
+	printf("\t*)\n");
+	printf("\t\techo \"Unknown soundcard $card, exiting!\"\n");
+	printf("\t\texit 1\n");
+	printf("\t\t;;\n");
+	printf("    esac\n");
+	printf("  done\n");
+	printf("  AC_MSG_RESULT($cards)\n");
+	printf("fi\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("AC_SUBST(%s)\n", text);
+		free(text);
+	}
+	printf("])\n\n");
+}
+
+// Output in toplevel.conf
+static void output_makeconf(void)
+{
+	struct dep *tempdep;
+	char *text;
+	
+	printf("# Soundcard configuration for ALSA driver\n");
+	printf("# Copyright (c) by Jaroslav Kysela <perex@suse.cz>,\n");
+	printf("#                  Anders Semb Hermansen <ahermans@vf.telia.no>\n\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("%s=@%s@\n", text, text);
+		free(text);
+	}
+}
+
+// Output in config.h
+static void output_include(void)
+{
+	struct dep *tempdep;
+	char *text;
+	
+	printf("/* Soundcard configuration for ALSA driver */\n");
+	printf("/* Copyright (c) by Jaroslav Kysela <perex@suse.cz>, */\n");
+	printf("/*                  Anders Semb Hermansen <ahermans@vf.telia.no> */\n\n");
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		printf("#undef %s_MODULE\n", text);
+		free(text);
+	}
+}
+
+// example: sb16 -> CONFIG_SND_SB16
+static char *convert_to_config_uppercase(const char *pre, const char *line)
+{
+	char *holder, *p;
+	int i;
+
+	holder = malloc(strlen(line) * 2 + strlen(pre) + 1);
+	if (holder == NULL)
+		nomem();
+	p = strcpy(holder, pre) + strlen(pre);
+	for (i = 0; i < strlen(line); i++)
+		switch (line[i]) {
+		case '-':
+			*p++ = '_';
+			break;
+		default:
+			*p++ = toupper(line[i]);
+			break;
+		}
+
+	*p++ = '\0';
+
+	return holder;
+}
+
+#if 0
+// example: a'b -> a\'b
+static char *convert_to_escape(const char *line)
+{
+	char *holder, *p;
+	int i;
+
+	holder = malloc(strlen(line) + 1);
+	if (holder == NULL)
+		nomem();
+	p = holder;
+	for (i = 0; i < strlen(line); i++)
+		switch (line[i]) {
+		case '\'':
+			*p++ = '`';
+			break;
+		default:
+			*p++ = line[i];
+			break;
+		}
+
+	*p++ = '\0';
+
+	return holder;
+}
+#endif
+
+// example: snd-sb16 -> sb16
+static char *remove_word(const char *remove, const char *line)
+{
+	char *holder;
+	int i;
+
+	holder=malloc(strlen(line)-strlen(remove)+1);
+	if(holder==NULL)
+	{
+		fprintf(stderr, "Not enough memory\n");
+		exit(EXIT_FAILURE);
+	}
+
+	for(i=strlen(remove);i<strlen(line);i++)
+		holder[i-strlen(remove)]=line[i];
+
+	holder[i-strlen(remove)]='\0';
+
+	return holder;
+}
+
+// example: SND_ABCD_DEF -> abcd-def
+static char *get_card_name(const char *line)
+{
+	char *result, *tmp = malloc(strlen(line) + 16);
+	int i;
+
+	if (tmp == NULL)
+		nomem();
+	for (i = 0; i < strlen(line); i++) {
+		if (line[i] == '_')
+			tmp[i] = '-';
+		else
+			tmp[i] = tolower(line[i]);
+	}
+	tmp[i] = '\0';
+	if (strncmp(tmp, "snd-", 4))
+		return NULL;
+	result = remove_word("snd-", tmp);
+	free(tmp);
+	return result;
+}
+
+// Main function
+int main(int argc, char *argv[])
+{
+	int method = METHOD_ACINCLUDE;
+	int argidx = 1;
+	char *filename;
+
+	// Find out which method to use
+	if (argc < 2)
+		usage(argv[0]);
+	while (1) {
+		if (argc <= argidx + 1)
+			break;
+		if (strcmp(argv[argidx], "--basedir") == 0) {
+			basedir = strdup(argv[argidx + 1]);
+			if (basedir == NULL)
+				nomem();
+			argidx += 2;
+			continue;
+		}
+		if (strcmp(argv[argidx], "--hiddendir") == 0) {
+			hiddendir = strdup(argv[argidx + 1]);
+			if (hiddendir == NULL)
+				nomem();
+			argidx += 2;
+			continue;
+		}
+		break;
+	}
+	if (strcmp(argv[argidx], "--acinclude") == 0)
+		method = METHOD_ACINCLUDE;
+	else if (strcmp(argv[argidx], "--makeconf") == 0)
+		method = METHOD_MAKECONF;
+	else if (strcmp(argv[argidx], "--include") == 0)
+		method = METHOD_INCLUDE;
+	else
+		usage(argv[0]);
+	argidx++;
+	
+	// Check the filename
+	if (argc > argidx)
+		filename = argv[argidx++];
+	else
+		filename = "Kconfig";
+
+	// Read the file into memory
+	if (read_file(filename) < 0) {
+		fprintf(stderr, "Error reading %s: %s\n",
+			filename ? filename : "stdin", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+	// Resolve dependencies
+	resolve_dep(all_deps);
+	resolve_sel(all_deps);
+
+	// Use method
+	switch (method) {
+	case METHOD_ACINCLUDE:
+		output_acinclude();
+		break;
+	case METHOD_MAKECONF:
+		output_makeconf();
+		break;
+	case METHOD_INCLUDE:
+		output_include();
+		break;
+	default:
+		fprintf(stderr, "This should not happen!\n");
+		usage(argv[0]);
+		break;
+	}
+
+	// Free some memory
+	del_all_from_list();
+
+	exit(EXIT_SUCCESS);
+}
+
+// Print out syntax
+static void usage(char *programname)
+{
+	fprintf(stderr, "Usage: %s --acinclude [<cfgfile>]\n", programname);
+	fprintf(stderr, "       %s --makeconf [<cfgfile>]\n", programname);
+	fprintf(stderr, "       %s --include [<cfgfile>]\n", programname);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "       --basedir <basedir>\n");
+	fprintf(stderr, "       --hidendir <hidendir>\n");
+	exit(EXIT_FAILURE);
+}

@@ -22,6 +22,9 @@ all: $(TARGETS)
 .PHONY: dummy
 dummy:
 
+mod-deps: mod-deps.o
+	$(CC) -g $(INCLUDE) mod-deps.o -o $@
+
 kredirect: kredirect.o
 	$(CC) $(INCLUDE) kredirect.o -o $@
 
