@@ -103,5 +103,5 @@ pack: mrproper
 	chown -R root.root ../alsa-driver
 	chmod 755 utils/alsasound
 	mv ../alsa-driver ../alsa-driver-$(CONFIG_SND_VERSION)
-	tar --exclude=CVS -cvz -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.gz alsa-driver-$(CONFIG_SND_VERSION)
+	tar --exclude=CVS -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
 	mv ../alsa-driver-$(CONFIG_SND_VERSION) ../alsa-driver
