@@ -34,6 +34,7 @@
 
 #define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
 #define SND_RAWMIDI_FLG_FLUSH	0x00000002	/* flush */
+#define SND_RAWMIDI_FLG_ACTSENS 0x00000004	/* active sensing */
 #define SND_RAWMIDI_FLG_OSS	0x80000000	/* OSS compatible mode */
 
 #define SND_RAWMIDI_LFLG_OUTPUT	0x00000001	/* open for output */

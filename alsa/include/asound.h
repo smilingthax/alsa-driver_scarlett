@@ -1006,6 +1006,7 @@ typedef struct snd_rawmidi_params {
 	size_t room;		/* O minumum number of bytes writeable for wakeup */
 	unsigned int fail_mask;	/* failure locations */
 	int fail_reason;	/* failure reason */
+	int no_active_sensing: 1; /* O do not send active sensing byte in close() */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_params_t;
 
@@ -1015,6 +1016,7 @@ typedef struct snd_rawmidi_setup {
 	size_t min;		/* I minimum count of bytes in queue for wakeup */
 	size_t max;		/* O maximum count of bytes in queue for wakeup */
 	size_t room;		/* O minumum number of bytes writeable for wakeup */
+	int no_active_sensing: 1;	/* O do not send active sensing byte in close() */
 	unsigned char reserved[16];	/* reserved for future use */
 } snd_rawmidi_setup_t;
 
