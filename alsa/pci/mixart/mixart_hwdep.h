@@ -25,6 +25,15 @@
 
 #include <sound/hwdep.h>
 
+#ifdef LINUX_2_2
+#ifdef __i386__
+#define __raw_readl(x) readl(x)
+#define __raw_writel(x,y) writel(x,y)
+#else
+#warning This architecture will not work correctly!
+#endif
+#endif
+
 #define readl_be(x) be32_to_cpu(__raw_readl(x))
 #define writel_be(data,addr) __raw_writel(cpu_to_be32(data),addr)
 

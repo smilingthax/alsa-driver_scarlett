@@ -599,7 +599,7 @@ int  snd_mixart_send_msg(mixart_mgr_t *mgr, mixart_msg_t *request, int max_resp_
 int  snd_mixart_send_msg_wait_notif(mixart_mgr_t *mgr, mixart_msg_t *request, u32 notif_event);
 int  snd_mixart_send_msg_nonblock(mixart_mgr_t *mgr, mixart_msg_t *request);
 
-void snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+irqreturn_t snd_mixart_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 void snd_mixart_msg_tasklet( unsigned long arg);
 
 void snd_mixart_reset_board(mixart_mgr_t *mgr);
