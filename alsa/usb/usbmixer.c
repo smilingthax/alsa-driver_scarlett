@@ -46,8 +46,6 @@ typedef struct usb_mixer_build mixer_build_t;
 typedef struct usb_audio_term usb_audio_term_t;
 typedef struct usb_mixer_elem_info usb_mixer_elem_info_t;
 
-#define usb_mixer_elem_info_t_magic	0xa15a402	/* should be in sndmagic.h later */
-
 
 struct usb_audio_term {
 	int id;

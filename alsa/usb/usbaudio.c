@@ -40,6 +40,7 @@
 #include <sound/initval.h>
 
 #include "usbaudio.h"
+#include "wrapper.h"	/* for 2.4 compatibility */
 
 
 MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
@@ -51,7 +52,7 @@ MODULE_DEVICES("{{Generic,USB Audio}}");
 
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
-// static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
+static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 
 MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_index, "Index value for the USB audio adapter.");
@@ -59,22 +60,9 @@ MODULE_PARM_SYNTAX(snd_index, SNDRV_INDEX_DESC);
 MODULE_PARM(snd_id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
 MODULE_PARM_DESC(snd_id, "ID string for the USB audio adapter.");
 MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
-// MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-// MODULE_PARM_DESC(snd_enable, "Enable USB audio adapter.");
-// MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
-
-
-
-/* M-Audio Quattro has weird alternate settings.  the altsetting jumps
- * from * 0 to 4 or 3 insuccessively, and this screws up
- * usb_set_interface() (at least on 2.4.18/19 and 2.4.21).
- *
- * if it's already fixed on your kernel, comment out the following.
- */
-#define FIX_INSUCCESSIVE_ALTSETTING
-
-
-EXPORT_NO_SYMBOLS; /* FIXME: for kernels < 2.5 */
+MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(snd_enable, "Enable USB audio adapter.");
+MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 
 
 /*
@@ -89,8 +77,6 @@ EXPORT_NO_SYMBOLS; /* FIXME: for kernels < 2.5 */
 typedef struct snd_usb_substream snd_usb_substream_t;
 typedef struct snd_usb_stream snd_usb_stream_t;
 typedef struct snd_urb_ctx snd_urb_ctx_t;
-
-#define snd_usb_stream_t_magic	0xa15a403	/* FIXME: should be in sndmagic.h later */
 
 struct audioformat {
 	struct list_head list;
@@ -508,7 +494,7 @@ static void snd_complete_urb(struct urb *urb)
 
 	if (subs->running) {
 		if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
-		    (err = do_usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+		    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
 			snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 			return;
@@ -537,7 +523,7 @@ static void snd_complete_sync_urb(struct urb *urb)
 
 	if (subs->running) {
 		if ((err = subs->ops.prepare_sync(subs, substream->runtime, urb))  < 0 ||
-		    (err = do_usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+		    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
 			snd_printd(KERN_ERR "cannot submit sync urb (err = %d)\n", err);
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 			return;
@@ -603,7 +589,7 @@ static int start_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 
 	subs->running = 1;
 	for (i = 0; i < subs->nurbs; i++) {
-		if ((err = do_usb_submit_urb(subs->dataurb[i].urb, GFP_KERNEL)) < 0) {
+		if ((err = usb_submit_urb(subs->dataurb[i].urb, GFP_KERNEL)) < 0) {
 			snd_printk(KERN_ERR "cannot submit datapipe for urb %d, err = %d\n", i, err);
 			goto __error;
 		}
@@ -611,7 +597,7 @@ static int start_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 	}
 	if (subs->syncpipe) {
 		for (i = 0; i < SYNC_URBS; i++) {
-			if ((err = do_usb_submit_urb(subs->syncurb[i].urb, GFP_KERNEL)) < 0) {
+			if ((err = usb_submit_urb(subs->syncurb[i].urb, GFP_KERNEL)) < 0) {
 				snd_printk(KERN_ERR "cannot submit syncpipe for urb %d, err = %d\n", i, err);
 				goto __error;
 			}
@@ -831,7 +817,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 				return -ENOMEM;
 			}
 		}
-		u->urb = do_usb_alloc_urb(u->packets, GFP_KERNEL);
+		u->urb = usb_alloc_urb(u->packets, GFP_KERNEL);
 		if (! u->urb) {
 			release_substream_urbs(subs);
 			return -ENOMEM;
@@ -852,7 +838,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 			u->subs = subs;
 			u->transfer = 0;
 			u->packets = NRPACKS;
-			u->urb = do_usb_alloc_urb(u->packets, GFP_KERNEL);
+			u->urb = usb_alloc_urb(u->packets, GFP_KERNEL);
 			if (! u->urb) {
 				release_substream_urbs(subs);
 				return -ENOMEM;
@@ -898,72 +884,6 @@ static struct audioformat *find_format(snd_usb_substream_t *subs, snd_pcm_runtim
 	return NULL;
 }
 
-
-#ifdef FIX_INSUCCESSIVE_ALTSETTING
-/*
- * the following is a stripped version of usb_set_interface() with the fix
- * for insuccessive altsetting numbers.
- */
-
-/* stripped version for isochronos only */
-static void hack_usb_set_maxpacket(struct usb_device *dev)
-{
-	int i, b;
-
-	for (i=0; i<dev->actconfig->bNumInterfaces; i++) {
-		struct usb_interface *ifp = dev->actconfig->interface + i;
-		struct usb_interface_descriptor *as = ifp->altsetting + ifp->act_altsetting;
-		struct usb_endpoint_descriptor *ep = as->endpoint;
-		int e;
-
-		for (e=0; e<as->bNumEndpoints; e++) {
-			b = ep[e].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
-			if (usb_endpoint_out(ep[e].bEndpointAddress)) {
-				if (ep[e].wMaxPacketSize > dev->epmaxpacketout[b])
-					dev->epmaxpacketout[b] = ep[e].wMaxPacketSize;
-			}
-			else {
-				if (ep[e].wMaxPacketSize > dev->epmaxpacketin [b])
-					dev->epmaxpacketin [b] = ep[e].wMaxPacketSize;
-			}
-		}
-	}
-}
-
-/* stripped version */
-static int hack_usb_set_interface(struct usb_device *dev, int interface, int alternate)
-{
-	struct usb_interface *iface;
-	struct usb_interface_descriptor *iface_as;
-	int i, ret;
-
-	iface = usb_ifnum_to_if(dev, interface);
-	if (!iface)
-		return -EINVAL;
-	if (iface->num_altsetting == 1)
-		return 0;
-	if (alternate < 0 || alternate >= iface->num_altsetting)
-		return -EINVAL;
-
-	if ((ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-				   USB_REQ_SET_INTERFACE, USB_RECIP_INTERFACE,
-				   iface->altsetting[alternate].bAlternateSetting,
-				   interface, NULL, 0, HZ * 5)) < 0)
-		return ret;
-
-	iface->act_altsetting = alternate;
-	iface_as = &iface->altsetting[alternate];
-	for (i = 0; i < iface_as->bNumEndpoints; i++) {
-		u8 ep = iface_as->endpoint[i].bEndpointAddress;
-		usb_settoggle(dev, ep&USB_ENDPOINT_NUMBER_MASK, usb_endpoint_out(ep), 0);
-	}
-	hack_usb_set_maxpacket(dev);
-	return 0;
-}
-#else
-/* ok, we have a new one.  already fixed. */
-#define hack_usb_set_interface(dev,iface,alt) usb_set_interface(dev,iface,alt)
-#endif
 
 /*
  * find a matching format and set up the interface
@@ -1030,7 +950,7 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 	}
 
 	/* set interface */
-	if (hack_usb_set_interface(dev, subs->interface, fmt->altset_idx) < 0) {
+	if (usb_set_interface(dev, subs->interface, fmt->altset_idx) < 0) {
 		snd_printk(KERN_ERR "%d:%d:%d: usb_set_interface failed\n",
 			   dev->devnum, subs->interface, fmt->altsetting);
 		return -EIO;
@@ -2130,3 +2050,26 @@ static void __exit snd_usb_audio_cleanup(void)
 
 module_init(snd_usb_audio_init);
 module_exit(snd_usb_audio_cleanup);
+
+#ifndef MODULE
+/*
+ * format is snd-usb-audio=snd_enable,snd_index,snd_id
+ */
+static int __init snd_usb_audio_module_setup(char* str)
+{
+	static unsigned __initdata nr_dev = 0;
+
+	if (nr_dev >= SNDRV_CARDS)
+		return 0;
+	(void)(get_option(&str, &snd_enable[nr_dev]) == 2 &&
+	       get_option(&str, &snd_index[nr_dev]) == 2 &&
+	       get_id(&str, &snd_id[nr_dev]) == 2);
+	++nr_dev;
+	return 1;
+}
+
+__setup("snd-usb-audio=", snd_usb_audio_module_setup);
+
+#endif /* !MODULE */
+
+EXPORT_NO_SYMBOLS;
