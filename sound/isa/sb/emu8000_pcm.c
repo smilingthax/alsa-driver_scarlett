@@ -51,13 +51,6 @@ struct snd_emu8k_pcm {
 
 #define LOOP_BLANK_SIZE		8
 
-/*
- * err, the non-interleaved implementation seems still buggy.
- * after it's fixed define the following.
- * then two-channel stereo is supported.
- */
-/* #define HAS_SANE_NI_IMPLEMENTATION */
-
 
 /*
  * open up channels for the simultaneous data transfer and playback
@@ -136,21 +129,15 @@ static int calc_rate_offset(int hz)
  */
 
 static snd_pcm_hardware_t emu8k_pcm_hw = {
-// FIXME..
-#ifdef HAS_SANE_NI_IMPLEMENTATION
 	info:			SNDRV_PCM_INFO_NONINTERLEAVED,
-	channels_max:		2,
-#else
-	info:			SNDRV_PCM_INFO_INTERLEAVED,
-	channels_max:		1,
-#endif
 	formats:		SNDRV_PCM_FMTBIT_S16_LE,
 	rates:			SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_48000,
 	rate_min:		4000,
 	rate_max:		48000,
 	channels_min:		1,
+	channels_max:		2,
 	buffer_bytes_max:	(128*1024),
-	period_bytes_min:	256,
+	period_bytes_min:	1024,
 	period_bytes_max:	(128*1024),
 	periods_min:		2,
 	periods_max:		1024,
@@ -227,7 +214,7 @@ static int emu8k_pcm_open(snd_pcm_substream_t *subs)
 	rec->timer.data = (unsigned long)rec;
 
 	runtime->hw = emu8k_pcm_hw;
-	runtime->hw.buffer_bytes_max = emu->mem_size - LOOP_BLANK_SIZE * 4;
+	runtime->hw.buffer_bytes_max = emu->mem_size - LOOP_BLANK_SIZE * 3;
 	runtime->hw.period_bytes_max = runtime->hw.buffer_bytes_max / 2;
 
 	/* use timer to update periods.. (specified in msec) */
