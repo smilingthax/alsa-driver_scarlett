@@ -18,23 +18,10 @@
 #include "../alsa-kernel/core/wrappers.c"
 
 #ifndef CONFIG_HAVE_STRLCPY
-#define strlcpy snd_compat_strlcpy
 #define strlcat snd_compat_strlcat
 #ifndef BUG_ON
 #define BUG_ON(x) /* nothing */
 #endif
-size_t snd_compat_strlcpy(char *dest, const char *src, size_t size)
-{
-	size_t ret = strlen(src);
-
-	if (size) {
-		size_t len = (ret >= size) ? size-1 : ret;
-		memcpy(dest, src, len);
-		dest[len] = '\0';
-	}
-	return ret;
-}
-
 size_t snd_compat_strlcat(char *dest, const char *src, size_t count)
 {
 	size_t dsize = strlen(dest);
@@ -56,28 +43,57 @@ size_t snd_compat_strlcat(char *dest, const char *src, size_t count)
 
 #ifndef CONFIG_HAVE_SNPRINTF
 #define vsnprintf snd_compat_vsnprintf
+int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
+#endif
 
-int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
+#ifndef CONFIG_HAVE_SSCANF
+#include <linux/ctype.h>
+
+/* this function supports any format as long as it's %x  :-) */
+int snd_compat_vsscanf(const char *buf, const char *fmt, va_list args)
 {
-	char *ptr = (void *) __get_free_pages(GFP_KERNEL, 0);
-	if (ptr == NULL) {	/* should not happen - GFP_KERNEL has wait flag */
-		if (size > 0)
-			buf[0] = 0;
-		return 0;
+	const char *str = buf;
+	char *next;
+	int num = 0;
+	unsigned int *p;
+
+	while (*fmt && *str) {
+		while (isspace(*fmt))
+			++fmt;
+
+		if (!*fmt)
+			break;
+
+		if (fmt[0] != '%' || fmt[1] != 'x') {
+			printk(KERN_ERR "snd_compat_vsscanf: format isn't %%x\n");
+			return 0;
+		}
+		fmt += 2;
+
+		while (isspace(*str))
+			++str;
+
+		if (!*str || !isxdigit(*str))
+			break;
+
+		p = (unsigned int*) va_arg(args, unsigned int*);
+		*p = (unsigned int) simple_strtoul(str, &next, 0x10);
+		++num;
+
+		if (!next)
+			break;
+		str = next;
 	}
-	vsprintf(ptr, fmt, args);
-	strlcpy(buf, ptr, size);
-	free_pages((unsigned long) ptr, 0);
-	return strlen(buf);
+	return num;
 }
 
-int snd_compat_snprintf(char *buf, size_t size, const char * fmt, ...)
+int snd_compat_sscanf(const char *buf, const char *fmt, ...)
 {
 	int res;
 	va_list args;
 
 	va_start(args, fmt);
-	res = snd_compat_vsnprintf(buf, size, fmt, args);
+	res = snd_compat_vsscanf(buf, fmt, args);
 	va_end(args);
 	return res;
 }

@@ -197,6 +197,14 @@ int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #define vscnprintf(buf,size,fmt,args) vsnprintf(buf,size,fmt,args)
 #endif
 
+#ifndef CONFIG_HAVE_SSCANF
+#include <stdarg.h>
+int snd_compat_sscanf(const char * buf, const char * fmt, ...);
+int snd_compat_vsscanf(const char * buf, const char * fmt, va_list args);
+#define sscanf(buf,fmt,args...) snd_compat_sscanf(buf,fmt,##args)
+#define vsscanf(buf,fmt,args) snd_compat_vsscanf(buf,fmt,args)
+#endif
+
 #if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)
 #include <asm/io.h>
 #undef writeb

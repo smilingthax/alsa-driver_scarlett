@@ -1202,6 +1202,30 @@ if test "$CONFIG_HAVE_SCNPRINTF" = "1"; then
   AC_DEFINE(CONFIG_HAVE_SCNPRINTF)
 fi
 
+dnl Check for sscanf...
+AC_MSG_CHECKING(for sscanf)
+sscanf="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/kernel.h"
+],[
+  unsigned int i;
+  sscanf("2a", "%x", &i);
+],
+    AC_MSG_RESULT("yes");sscanf="1",
+    AC_MSG_RESULT("no");sscanf="0",
+    AC_MSG_RESULT("unknown");sscanf="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_SSCANF=$sscanf
+dnl AC_SUBST(CONFIG_HAVE_SSCANF)
+if test "$CONFIG_HAVE_SSCANF" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_SSCANF)
+fi
+
 dnl Check for vmalloc_to_page...
 AC_MSG_CHECKING(for vmalloc_to_page)
 vmalloc_to_page="0"

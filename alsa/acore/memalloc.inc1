@@ -27,6 +27,14 @@ EXPORT_SYMBOL(snd_pci_compat_restore_state);
 #endif
 #endif
 
+#ifndef CONFIG_HAVE_STRLCPY
+EXPORT_SYMBOL(snd_compat_strlcpy);
+#endif
+#ifndef CONFIG_HAVE_SNPRINTF
+EXPORT_SYMBOL(snd_compat_snprintf);
+EXPORT_SYMBOL(snd_compat_vsnprintf);
+#endif
+
 #ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
 EXPORT_SYMBOL(snd_compat_vmalloc_to_page);
 #endif

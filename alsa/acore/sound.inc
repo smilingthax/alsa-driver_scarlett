@@ -11,12 +11,11 @@ EXPORT_SYMBOL(pm_send);
 #endif
   /* wrappers */
 #ifndef CONFIG_HAVE_STRLCPY
-EXPORT_SYMBOL(snd_compat_strlcpy);
 EXPORT_SYMBOL(snd_compat_strlcat);
 #endif
-#ifndef CONFIG_HAVE_SNPRINTF
-EXPORT_SYMBOL(snd_compat_snprintf);
-EXPORT_SYMBOL(snd_compat_vsnprintf);
+#ifndef CONFIG_HAVE_SSCANF
+EXPORT_SYMBOL(snd_compat_sscanf);
+EXPORT_SYMBOL(snd_compat_vsscanf);
 #endif
 #ifdef CONFIG_HAVE_OLD_REQUEST_MODULE
 EXPORT_SYMBOL(snd_compat_request_module);
