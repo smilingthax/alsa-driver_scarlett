@@ -11,25 +11,11 @@ typedef unsigned long dma_addr_t;
  */
 
 #ifndef CONFIG_ISA
-
-/* i386 */
-#if defined(CONFIG_M386) || defined(CONFIG_M486) || defined(CONFIG_M586) ||\
- defined(CONFIG_M586TSC) || defined(CONFIG_M686)
+/* for i386, alpha, ppc */
 #define CONFIG_ISA
-
-/* alpha */
-#elif defined(CONFIG_EV4) || defined(CONFIG_ALPHA_EV4) ||\
- defined(CONFIG_EV5) || defined(CONFIG_ALPHA_EV5) ||\
- defined(CONFIG_EV6) || defined(CONFIG_ALPHA_EV6) ||\
- defined(CONFIG_ALPHA_GENERIC) || defined(CONFIG_ALPHA_NONAME)
-#define CONFIG_ISA
-
-/* ppc */
-#elif defined(CONFIG_PPC)
-#define CONFIG_ISA
-
-#endif
-
+/* other architectures might not support ISA but they are not
+ * supported yet on 2.2 and by ALSA anyway..
+ */
 #endif /* CONFIG_ISA */
 
 
