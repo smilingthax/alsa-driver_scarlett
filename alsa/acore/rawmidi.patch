@@ -1,6 +1,33 @@
---- rawmidi.c	2003-05-30 15:26:44.000000000 +0200
-+++ rawmidi.c.old	2003-05-30 15:26:39.000000000 +0200
-@@ -1316,7 +1316,9 @@
+--- ../alsa-kernel/core/rawmidi.c	2005-01-20 16:21:56.039226390 +0100
++++ rawmidi.c	2005-01-20 16:59:15.565037668 +0100
+@@ -1267,12 +1267,25 @@
+ 
+ /*
+  */
+-#ifdef CONFIG_COMPAT
++#if defined(CONFIG_COMPAT) && defined(CONFIG_SND_HAVE_NEW_IOCTL)
+ #include "rawmidi_compat.c"
+ #else
+ #define snd_rawmidi_ioctl_compat	NULL
+ #endif
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int snd_rawmidi_ioctl_old(struct inode *inode, struct file * file,
++				 unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = snd_rawmidi_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
+ /*
+ 
+  */
+@@ -1337,14 +1350,20 @@
  
  static struct file_operations snd_rawmidi_f_ops =
  {
@@ -10,3 +37,14 @@
  	.read =		snd_rawmidi_read,
  	.write =	snd_rawmidi_write,
  	.open =		snd_rawmidi_open,
+ 	.release =	snd_rawmidi_release,
+ 	.poll =		snd_rawmidi_poll,
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 	.unlocked_ioctl =	snd_rawmidi_ioctl,
+ 	.compat_ioctl =	snd_rawmidi_ioctl_compat,
++#else
++	.ioctl =	snd_rawmidi_ioctl_old,
++#endif
+ };
+ 
+ static snd_minor_t snd_rawmidi_reg =

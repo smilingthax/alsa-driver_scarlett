@@ -1,6 +1,33 @@
---- mixer_oss.c	2003-05-31 13:13:48.000000000 +0200
-+++ mixer_oss.c.old	2003-05-31 13:13:42.000000000 +0200
-@@ -376,7 +376,9 @@
+--- ../../alsa-kernel/core/oss/mixer_oss.c	2005-01-20 16:21:56.074219879 +0100
++++ mixer_oss.c	2005-01-20 17:03:06.892911209 +0100
+@@ -377,24 +377,43 @@
+ 	return snd_mixer_oss_ioctl1(&fmixer, cmd, arg);
+ }
+ 
+-#ifdef CONFIG_COMPAT
++#if defined(CONFIG_COMPAT) && defined(CONFIG_SND_HAVE_NEW_IOCTL)
+ /* all compatible */
+ #define snd_mixer_oss_ioctl_compat	snd_mixer_oss_ioctl
+ #else
+ #define snd_mixer_oss_ioctl_compat	NULL
+ #endif
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int snd_mixer_oss_ioctl_old(struct inode *inode, struct file * file,
++				   unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = snd_mixer_oss_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
+ /*
+  *  REGISTRATION PART
+  */
  
  static struct file_operations snd_mixer_oss_f_ops =
  {
@@ -9,4 +36,12 @@
 +#endif
  	.open =		snd_mixer_oss_open,
  	.release =	snd_mixer_oss_release,
- 	.ioctl =	snd_mixer_oss_ioctl,
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 	.unlocked_ioctl =	snd_mixer_oss_ioctl,
+ 	.compat_ioctl =	snd_mixer_oss_ioctl_compat,
++#else
++	.ioctl =	snd_mixer_oss_ioctl_old,
++#endif	
+ };
+ 
+ static snd_minor_t snd_mixer_oss_reg =

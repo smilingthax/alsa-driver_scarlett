@@ -1,6 +1,32 @@
---- hwdep.c	2003-05-30 15:19:39.000000000 +0200
-+++ hwdep.c	2003-05-30 15:19:30.000000000 +0200
-@@ -292,7 +292,9 @@
+--- ../alsa-kernel/core/hwdep.c	2005-01-20 16:21:56.028228436 +0100
++++ hwdep.c	2005-01-20 16:45:56.583956809 +0100
+@@ -303,27 +303,46 @@
+ 	return -ENOIOCTLCMD;
+ }
+ 
+-#ifdef CONFIG_COMPAT
++#if defined(CONFIG_COMPAT) && defined(CONFIG_SND_HAVE_NEW_IOCTL)
+ #include "hwdep_compat.c"
+ #else
+ #define snd_hwdep_ioctl_compat	NULL
+ #endif
+ 
++#ifndef CONFIG_SND_HAVE_NEW_IOCTL
++/* need to unlock BKL to allow preemption */
++static int snd_hwdep_ioctl_old(struct inode *inode, struct file * file,
++			       unsigned int cmd, unsigned long arg)
++{
++	int err;
++	unlock_kernel();
++	err = snd_hwdep_ioctl(file, cmd, arg);
++	lock_kernel();
++	return err;
++}
++#endif
++
+ /*
+ 
+  */
  
  static struct file_operations snd_hwdep_f_ops =
  {
@@ -10,3 +36,15 @@
  	.llseek =	snd_hwdep_llseek,
  	.read = 	snd_hwdep_read,
  	.write =	snd_hwdep_write,
+ 	.open =		snd_hwdep_open,
+ 	.release =	snd_hwdep_release,
+ 	.poll =		snd_hwdep_poll,
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 	.unlocked_ioctl =	snd_hwdep_ioctl,
+ 	.compat_ioctl =	snd_hwdep_ioctl_compat,
++#else
++	.ioctl =	snd_hwdep_ioctl_old,
++#endif
+ 	.mmap =		snd_hwdep_mmap,
+ };
+ 
