@@ -159,8 +159,8 @@ DEFINE_VIA_REGSET(FM, 0x20);
 #define VIA_REG_SGD_SHADOW		0x84	/* dword */
 
 /* multi-channel and capture registers for via8233 */
-DEFINE_VIA_REGSET(MULTPLAY, 0x20);
-DEFINE_VIA_REGSET(CAPTURE_8233, 0x10);
+DEFINE_VIA_REGSET(MULTPLAY, 0x40);
+DEFINE_VIA_REGSET(CAPTURE_8233, 0x60);
 
 /* via8233-specific registers */
 #define VIA_REG_PLAYBACK_VOLUME_L	0x02	/* byte */
@@ -258,7 +258,7 @@ static void clean_via_table(viadev_t *dev, snd_pcm_substream_t *substream,
 /*
  */
 
-enum { TYPE_VIA686, TYPE_VIA8233 };
+enum { TYPE_VIA686 = 1, TYPE_VIA8233 };
 
 typedef struct _snd_via82xx via82xx_t;
 #define chip_t via82xx_t
