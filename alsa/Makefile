@@ -6,10 +6,6 @@
 TOPDIR   = .
 ALSAKERNELDIR = ../alsa-kernel
 
-# for module installation
-TREETOPDIR := $(shell /bin/pwd)
-export TREETOPDIR
-
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
 else
@@ -56,10 +52,16 @@ CSUBDIRS += include test utils
 .PHONY: all
 all: compile
 
+#
+# some old kernels does not have include/linux/pm.h file
+# 
+$(CONFIG_SND_KERNELDIR)/include/linux/pm.h:
+	touch $@
+
 alsa-kernel/Config.in:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 
-include/sound/version.h: include/version.h
+include/sound/version.h: include/version.h $(CONFIG_SND_KERNELDIR)/include/linux/pm.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
 	  ln -sf ../alsa-kernel/include include/sound ; \
 	fi
