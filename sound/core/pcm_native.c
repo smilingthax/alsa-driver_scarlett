@@ -305,7 +305,7 @@ static int snd_pcm_hw_params(snd_pcm_substream_t *substream,
 	default:
 		return -EBADFD;
 	}
-#ifdef CONFIG_SND_OSSEMUL
+#if defined(CONFIG_SND_PCM_OSS) || defined(CONFIG_SND_PCM_OSS_MODULE)
 	if (!substream->oss.oss)
 #endif
 		if (atomic_read(&runtime->mmap_count))

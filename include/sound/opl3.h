@@ -57,7 +57,7 @@
 #include "hwdep.h"
 #include "timer.h"
 #include "seq_midi_emul.h"
-#if defined(CONFIG_SND_SEQUENCER_OSS) || defined(CONFIG_SND_SEQUENCER_OSS_MODULE)
+#ifdef CONFIG_SND_SEQUENCER_OSS
 #include "seq_oss.h"
 #include "seq_oss_legacy.h"
 #endif
@@ -287,7 +287,7 @@ struct snd_opl3 {
 	snd_seq_device_t *seq_dev;	/* sequencer device */
 	snd_midi_channel_set_t * chset;
 
-#if defined(CONFIG_SND_SEQUENCER_OSS) || defined(CONFIG_SND_SEQUENCER_OSS_MODULE)
+#ifdef CONFIG_SND_SEQUENCER_OSS
 	snd_seq_device_t *oss_seq_dev;	/* OSS sequencer device, WIP */
 	snd_midi_channel_set_t * oss_chset;
 #endif

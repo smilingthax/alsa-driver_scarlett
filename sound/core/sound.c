@@ -440,7 +440,7 @@ EXPORT_SYMBOL(copy_from_user_toio);
   /* init.c */
 EXPORT_SYMBOL(snd_cards_count);
 EXPORT_SYMBOL(snd_cards);
-#ifdef CONFIG_SND_OSSEMUL
+#if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 EXPORT_SYMBOL(snd_mixer_oss_notify_callback);
 #endif
 EXPORT_SYMBOL(snd_card_new);
