@@ -180,6 +180,14 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define MODULE_LICENSE(license)
 #endif
 
+#include <linux/types.h>
+#ifndef __bitwise
+typedef __u16 __le16;
+typedef __u16 __be16;
+typedef __u32 __le32;
+typedef __u32 __be32;
+#endif
+
 #endif /* < 2.6.0 */
 
 #include <linux/wait.h>
@@ -301,6 +309,10 @@ typedef void irqreturn_t;
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
+#ifndef BUG_ON
+#define BUG_ON(x) /* nothing */
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
@@ -551,9 +563,12 @@ void snd_compat_msleep(unsigned int msecs);
 #endif
 
 #ifndef CONFIG_HAVE_MSLEEP_INTERRUPTIBLE
+#include <linux/delay.h>
 unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 #define msleep_interruptible snd_compat_msleep_interruptible
+#ifndef ssleep
 #define ssleep(x) msleep((unsigned int)(x) * 1000)
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
