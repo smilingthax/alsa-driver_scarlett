@@ -1796,4 +1796,12 @@ typedef struct snd_timer_read {
  *
  */
 
+typedef struct {
+	const struct iovec *vector;
+	unsigned long count;
+} snd_v_args_t;
+
+#define SND_IOCTL_READV		_IOW ('K', 0x00, snd_v_args_t)
+#define SND_IOCTL_WRITEV	_IOW ('K', 0x01, snd_v_args_t)
+
 #endif				/* __ASOUND_H */

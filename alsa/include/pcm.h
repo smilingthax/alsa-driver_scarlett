@@ -57,8 +57,6 @@ typedef struct snd_stru_pcm_hardware {
 		     unsigned int cmd, unsigned long *arg);
 	int (*prepare)(void *private_data, snd_pcm_subchn_t * subchn);
 	int (*trigger)(void *private_data, snd_pcm_subchn_t * subchn, int cmd);
-	long (*transfer)(void *private_data, snd_pcm_subchn_t * subchn,
-		         const char *_buffer, long size);
 	unsigned int (*pointer)(void *private_data, snd_pcm_subchn_t * subchn);
 } snd_pcm_hardware_t;
 
@@ -163,8 +161,10 @@ typedef struct snd_stru_pcm_runtime {
 	/* -- own hardware routines -- */
 	snd_pcm_hardware_t *hw;
 	void (*hw_free)(void *hw);
-	int (*hw_memcpy)(snd_pcm_subchn_t *subchn, int pos, const void *src, int count);
-	int (*hw_memset)(snd_pcm_subchn_t *subchn, int pos, int c, int count);
+	int (*hw_memcpy)(snd_pcm_subchn_t *subchn, int voice, int pos,
+			 const void *src, int count);
+	int (*hw_memset)(snd_pcm_subchn_t *subchn, int voice, int pos,
+			 int c, int count);
 	/* -- interrupt callbacks -- */
 	void (*transfer_ack_begin)(snd_pcm_subchn_t *subchn);
 	void (*transfer_ack_end)(snd_pcm_subchn_t *subchn);
@@ -332,10 +332,14 @@ extern int snd_pcm_capture_empty(snd_pcm_subchn_t *subchn);
 extern void snd_pcm_clear_values(snd_pcm_subchn_t *subchn);
 extern void snd_pcm_transfer_stop(snd_pcm_subchn_t *subchn, int status);
 extern void snd_pcm_transfer_done(snd_pcm_subchn_t *subchn);
-extern long snd_pcm_playback_write(void *private_data, snd_pcm_subchn_t *subchn,
-				   const char *buf, long count);
-extern long snd_pcm_capture_read(void *private_data, snd_pcm_subchn_t *subchn,
-				 const char *buf, long count);
+extern long snd_pcm_lib_write(snd_pcm_subchn_t *subchn,
+			      const char *buf, long count);
+extern long snd_pcm_lib_read(snd_pcm_subchn_t *subchn,
+			     char *buf, long count);
+extern long snd_pcm_lib_writev(snd_pcm_subchn_t *subchn,
+			       const struct iovec *vector, unsigned long count);
+extern long snd_pcm_lib_readv(snd_pcm_subchn_t *subchn,
+			      const struct iovec *vector, unsigned long count);
 
 /*
  *  Timer interface

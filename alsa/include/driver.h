@@ -327,6 +327,8 @@ struct snd_stru_card {
 typedef long long (snd_lseek_t) (struct file * file, long long offset, int orig);
 typedef long (snd_read_t) (struct file * file, char *buf, long count);
 typedef long (snd_write_t) (struct file * file, const char *buf, long count);
+typedef long (snd_readv_t) (struct file * file, const struct iovec *vector, unsigned long count);
+typedef long (snd_writev_t) (struct file * file, const struct iovec *vector, unsigned long count);
 typedef int (snd_open_t) (unsigned short minor, int cardnum, int device, struct file * file);
 typedef int (snd_release_t) (unsigned short minor, int cardnum, int device, struct file * file);
 typedef unsigned int (snd_poll_t) (struct file * file, poll_table * wait);
@@ -340,6 +342,8 @@ struct snd_stru_minor {
 	snd_lseek_t *lseek;
 	snd_read_t *read;
 	snd_write_t *write;
+	snd_readv_t *readv;
+	snd_writev_t *writev;
 	snd_open_t *open;
 	snd_release_t *release;
 	snd_poll_t *poll;
