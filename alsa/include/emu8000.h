@@ -53,7 +53,7 @@ typedef struct snd_emu8000_mixer {
  * Structure to hold all state information for the emu8000 driver.
  *
  * Note 1: The chip supports 32 channels in hardware this is max_channels
- * some of the channels may be used for other things so max_voices is
+ * some of the channels may be used for other things so max_channels is
  * the number in use for wave voices.
  */
 typedef struct snd_emu8000 {

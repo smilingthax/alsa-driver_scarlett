@@ -24,14 +24,14 @@
 #include "rawmidi.h"
 #include "seq_midi_event.h"
 
-typedef struct snd_virmidi_channel snd_virmidi_channel_t;
+typedef struct snd_virmidi_stream snd_virmidi_stream_t;
 typedef struct snd_virmidi snd_virmidi_t;
 typedef struct snd_virmidi_dev snd_virmidi_dev_t;
 
 /*
  * read/write channel - idetical with rawmidi stuff
  */
-struct snd_virmidi_channel {
+struct snd_virmidi_stream {
 	unsigned int flags;
 	/* midi stream buffer */
 	unsigned char *buffer;	/* buffer for MIDI data */
@@ -60,7 +60,7 @@ struct snd_virmidi {
 	int seq_mode;
 	int client;
 	int port;
-	snd_virmidi_channel_t chn[2];
+	snd_virmidi_stream_t streams[2];
 	snd_midi_event_t *parser;
 	unsigned int flags;		/* SND_RAWMIDI_LFLG_XXXX */
 	snd_virmidi_t *next;		/* next file instance */
@@ -124,9 +124,9 @@ struct snd_virmidi_dev {
 int snd_virmidi_new(snd_card_t *card, int device, snd_virmidi_dev_t **rmidi);
 int snd_virmidi_dev_receive_event(snd_virmidi_dev_t *rdev, snd_seq_event_t *ev);
 #if 0
-int snd_virmidi_switch_add(snd_rawmidi_channel_t *dir, snd_kswitch_t *ksw);
-int snd_virmidi_switch_remove(snd_rawmidi_channel_t *dir, snd_kswitch_t *ksw);
-snd_kswitch_t *snd_virmidi_switch_new(snd_virmidi_channel_t *dir, snd_kswitch_t *ksw, void *private_data);
+int snd_virmidi_switch_add(snd_rawmidi_stream_t *dir, snd_kswitch_t *ksw);
+int snd_virmidi_switch_remove(snd_rawmidi_stream_t *dir, snd_kswitch_t *ksw);
+snd_kswitch_t *snd_virmidi_switch_new(snd_virmidi_stream_t *dir, snd_kswitch_t *ksw, void *private_data);
 #endif
 
 #endif

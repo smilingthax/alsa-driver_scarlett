@@ -140,8 +140,8 @@ struct snd_stru_ad1848 {
 	unsigned short single_dma:1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
 
 	snd_pcm_t *pcm;
-	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm_substream_t *playback_substream;
+	snd_pcm_substream_t *capture_substream;
 	snd_card_t *card;
 	snd_kmixer_t *mixer;
 
@@ -192,12 +192,12 @@ int snd_ad1848_new_pcm(snd_card_t * card, int device,
 int snd_ad1848_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t ** rmixer);
 
 int snd_ad1848_mixer_stereo_volume(snd_kmixer_element_t *element,
-					int w_flag, int *voices,
+					int w_flag, int *channels,
 					int bit, int invert, int shift,
 					unsigned char left_reg,
 					unsigned char right_reg);
 int snd_ad1848_mixer_mono_volume(snd_kmixer_element_t *element,
-					int w_flag, int *voices,
+					int w_flag, int *channels,
 					int bit, int invert, int shift,
 					unsigned char reg);
 int snd_ad1848_mixer_stereo_switch(snd_kmixer_element_t *element,

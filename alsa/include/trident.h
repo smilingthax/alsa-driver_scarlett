@@ -300,7 +300,7 @@ struct snd_trident_stru_voice {
 	/* PCM data */
 
 	trident_t *trident;
-	snd_pcm_subchn_t *subchn;
+	snd_pcm_substream_t *substream;
 	int running: 1,
 	    ignore_middle: 1;
 	int eso;                /* final ESO value for channel */
@@ -404,7 +404,7 @@ int snd_trident_create(snd_card_t * card,
 		       snd_dma_t * dma3ptr,
 		       snd_dma_t * dma4ptr,
 		       snd_irq_t * irqptr,
-		       int pcm_channels,
+		       int pcm_streams,
 		       int max_wavetable_size,
 		       trident_t ** rtrident);
 int snd_trident_free(trident_t * trident);

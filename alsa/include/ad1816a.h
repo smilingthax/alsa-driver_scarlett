@@ -144,8 +144,8 @@ struct snd_stru_ad1816a {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 
-	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm_substream_t *playback_substream;
+	snd_pcm_substream_t *capture_substream;
 	unsigned int p_dma_size;
 	unsigned int c_dma_size;
 

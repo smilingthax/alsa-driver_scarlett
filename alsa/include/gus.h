@@ -418,7 +418,7 @@ struct snd_stru_gf1 {
 	void *dma_private_data;
 
 	/* pcm */
-	int pcm_voices;
+	int pcm_channels;
 	int pcm_alloc_voices;
         unsigned short pcm_volume_level_left;
 	unsigned short pcm_volume_level_right;
@@ -456,7 +456,7 @@ struct snd_stru_gus_card {
 	snd_info_entry_t *irq_entry;
 #endif
 	snd_pcm_t *pcm;
-	snd_pcm_subchn_t *pcm_cap_subchn;
+	snd_pcm_substream_t *pcm_cap_substream;
 	unsigned int c_dma_size;
 	unsigned int c_frag_size;
 	snd_rawmidi_t *midi_uart;
@@ -685,7 +685,7 @@ snd_gus_card_t *snd_gus_new_card(snd_card_t * card,
 				 snd_dma_t * dma2num,
 				 int timer_dev,
 				 int voices,
-				 int pcm_voices,
+				 int pcm_channels,
 				 int effect);
 int snd_gus_set_port(snd_gus_card_t * card, unsigned long port);
 int snd_gus_detect_memory(snd_gus_card_t * gus);

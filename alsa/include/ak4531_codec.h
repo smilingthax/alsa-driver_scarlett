@@ -39,8 +39,8 @@
 
 #define AK4531_LMASTER  0x00	/* master volume left */
 #define AK4531_RMASTER  0x01	/* master volume right */
-#define AK4531_LVOICE   0x02	/* voice volume left */
-#define AK4531_RVOICE   0x03	/* voice volume right */
+#define AK4531_LVOICE   0x02	/* channel volume left */
+#define AK4531_RVOICE   0x03	/* channel volume right */
 #define AK4531_LFM      0x04	/* FM volume left */
 #define AK4531_RFM      0x05	/* FM volume right */
 #define AK4531_LCD      0x06	/* CD volume left */

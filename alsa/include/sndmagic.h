@@ -55,7 +55,7 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 
 #define snd_pcm_t_magic				0xa15a0101
 #define snd_pcm_file_t_magic			0xa15a0102
-#define snd_pcm_subchn_t_magic			0xa15a0103
+#define snd_pcm_substream_t_magic			0xa15a0103
 #define snd_pcm_proc_private_t_magic		0xa15a0104
 #define snd_pcm_oss_file_t_magic		0xa15a0105
 

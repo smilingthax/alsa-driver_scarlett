@@ -256,10 +256,10 @@ struct snd_stru_ice1712 {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm_pro;
-        snd_pcm_subchn_t *playback_con_subchn;
-        snd_pcm_subchn_t *capture_con_subchn;
-        snd_pcm_subchn_t *playback_pro_subchn;
-        snd_pcm_subchn_t *capture_pro_subchn;
+        snd_pcm_substream_t *playback_con_substream;
+        snd_pcm_substream_t *capture_con_substream;
+        snd_pcm_substream_t *playback_pro_substream;
+        snd_pcm_substream_t *capture_pro_substream;
 	unsigned int playback_pro_size;
 	unsigned int capture_pro_size;
 	ac97_t *ac97;

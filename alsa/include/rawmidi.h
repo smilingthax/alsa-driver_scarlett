@@ -41,9 +41,9 @@
 #define SND_RAWMIDI_LFLG_OPEN	0x00000003	/* open */
 #define SND_RAWMIDI_LFLG_APPEND	0x00000004	/* append flag for output */
 
-typedef struct snd_stru_rawmidi_channel snd_rawmidi_channel_t;
+typedef struct snd_stru_rawmidi_stream snd_rawmidi_stream_t;
 
-struct snd_stru_rawmidi_channel_hw {
+struct snd_stru_rawmidi_stream_hw {
 	void *private_data;
 	void (*private_free) (void *private_data);
 	int (*open) (snd_rawmidi_t * rmidi);
@@ -52,7 +52,7 @@ struct snd_stru_rawmidi_channel_hw {
 	void (*abort) (snd_rawmidi_t * rmidi);
 };
 
-struct snd_stru_rawmidi_channel {
+struct snd_stru_rawmidi_stream {
 	unsigned int flags;	/* SND_RAWMIDI_FLG_XXXX */
 	int use_count;		/* use counter (for output) */
 	/* midi stream buffer */
@@ -76,7 +76,7 @@ struct snd_stru_rawmidi_channel {
 	/* switches */
 	snd_kswitch_list_t switches;
 	/* hardware layer */
-	struct snd_stru_rawmidi_channel_hw hw;
+	struct snd_stru_rawmidi_stream_hw hw;
 };
 
 struct snd_stru_rawmidi {
@@ -92,7 +92,7 @@ struct snd_stru_rawmidi {
 	int ossreg;
 #endif
 
-	snd_rawmidi_channel_t chn[2];
+	snd_rawmidi_stream_t streams[2];
 
 	void *private_data;
 	void (*private_free) (void *private_data);
@@ -111,9 +111,9 @@ struct snd_stru_rawmidi {
 /* main rawmidi functions */
 
 extern int snd_rawmidi_new(snd_card_t * card, char *id, int device, snd_rawmidi_t ** rmidi);
-extern int snd_rawmidi_switch_add(snd_rawmidi_channel_t * dir, snd_kswitch_t * ksw);
-extern int snd_rawmidi_switch_remove(snd_rawmidi_channel_t * dir, snd_kswitch_t * ksw);
-extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_channel_t * dir, snd_kswitch_t * ksw, void *private_data);
+extern int snd_rawmidi_switch_add(snd_rawmidi_stream_t * dir, snd_kswitch_t * ksw);
+extern int snd_rawmidi_switch_remove(snd_rawmidi_stream_t * dir, snd_kswitch_t * ksw);
+extern snd_kswitch_t *snd_rawmidi_switch_new(snd_rawmidi_stream_t * dir, snd_kswitch_t * ksw, void *private_data);
 
 /* control functions */
 

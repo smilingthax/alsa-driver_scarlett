@@ -603,7 +603,7 @@ typedef enum {
 struct snd_stru_emu10k1_pcm {
 	emu10k1_t *emu;
 	snd_emu10k1_pcm_type_t type;
-	snd_pcm_subchn_t *subchn;
+	snd_pcm_substream_t *substream;
 	emu10k1_voice_t *voices[2];
 	emu10k1_voice_t *extra;
 	int running;
@@ -674,9 +674,9 @@ struct snd_stru_emu10k1 {
 	void (*spdif_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*dsp_interrupt)(emu10k1_t *emu);
 
-	snd_pcm_subchn_t *pcm_capture_subchn;
-	snd_pcm_subchn_t *pcm_capture_mic_subchn;
-	snd_pcm_subchn_t *pcm_capture_efx_subchn;
+	snd_pcm_substream_t *pcm_capture_substream;
+	snd_pcm_substream_t *pcm_capture_mic_substream;
+	snd_pcm_substream_t *pcm_capture_efx_substream;
 
 	unsigned int midi_mode;
 	spinlock_t midi_input_lock;

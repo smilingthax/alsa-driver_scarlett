@@ -68,9 +68,9 @@ struct snd_stru_es18xx {
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
-	snd_pcm_subchn_t *playback_a_subchn;
-	snd_pcm_subchn_t *capture_a_subchn;
-	snd_pcm_subchn_t *playback_b_subchn;
+	snd_pcm_substream_t *playback_a_substream;
+	snd_pcm_substream_t *capture_a_substream;
+	snd_pcm_substream_t *playback_b_substream;
 	snd_kmixer_t *mixer;
 
 	spinlock_t reg_lock;

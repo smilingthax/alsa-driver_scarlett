@@ -41,13 +41,13 @@ struct snd_stru_switch_list {
 	void *desc;
 	int iface;
 	int device;
-	int channel;
+	int stream;
 	struct snd_stru_switch_list *prev;
 	struct snd_stru_switch_list *next;
 };
 
 void snd_switch_lock(snd_card_t *card, int up);
-int snd_switch_prepare(snd_card_t *card, snd_kswitch_list_t * list, void *desc, int iface, int device, int channel);
+int snd_switch_prepare(snd_card_t *card, snd_kswitch_list_t * list, void *desc, int iface, int device, int stream);
 snd_kswitch_t *snd_switch_new(snd_kswitch_t * kswitch);
 void snd_switch_free_one(snd_kswitch_t * kswitch);
 int snd_switch_add(snd_kswitch_list_t * list, snd_kswitch_t * kswitch);

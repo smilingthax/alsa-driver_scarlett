@@ -43,7 +43,7 @@ typedef struct snd_stru_pcm_oss_runtime {
             sync_trigger: 1;			/* sync trigger flag */
 	int rate;				/* requested rate */
 	int format;				/* requested OSS format */
-	unsigned int voices;			/* requested voices */
+	unsigned int channels;			/* requested channels */
 	unsigned int fragment;			/* requested OSS fragment */
 	unsigned int subdivision;		/* requested subdivision */
 	size_t fragment_size;			/* requested fragment size */
@@ -63,20 +63,20 @@ typedef struct snd_stru_pcm_oss_runtime {
 } snd_pcm_oss_runtime_t;
 
 typedef struct snd_stru_pcm_oss_file {
-	snd_pcm_subchn_t *chn[2];
+	snd_pcm_substream_t *streams[2];
 } snd_pcm_oss_file_t;
 
-typedef struct snd_stru_pcm_oss_subchn {
+typedef struct snd_stru_pcm_oss_substream {
 	int oss: 1;				/* oss mode */
 	snd_pcm_oss_setup_t *setup;		/* active setup */
 	snd_pcm_oss_file_t *file;
-} snd_pcm_oss_subchn_t;
+} snd_pcm_oss_substream_t;
 
-typedef struct snd_stru_pcm_oss_channel {
+typedef struct snd_stru_pcm_oss_stream {
 	snd_pcm_oss_setup_t *setup_list;	/* setup list */
         struct semaphore setup_mutex;
         snd_info_entry_t *proc_entry;
-} snd_pcm_oss_channel_t;
+} snd_pcm_oss_stream_t;
 
 typedef struct snd_stru_pcm_oss {
 	int reg;

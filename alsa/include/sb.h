@@ -144,8 +144,8 @@ struct snd_stru_sbdsp {
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
-	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm_substream_t *playback_substream;
+	snd_pcm_substream_t *capture_substream;
 	snd_kmixer_t *kmixer;
 
 	spinlock_t reg_lock;
@@ -325,14 +325,14 @@ extern int snd_sb16dsp_new_mixer(sbdsp_t * codec,
 				 snd_pcm_t * pcm,
 				 snd_kmixer_t ** rmixer);
 
-extern int snd_sb8_playback_open(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb8_capture_open(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb8_playback_close(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb8_capture_close(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb16_playback_open(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb16_capture_open(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb16_playback_close(void *private_data, snd_pcm_subchn_t *subchn);
-extern int snd_sb16_capture_close(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb8_playback_open(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb8_capture_open(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb8_playback_close(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb8_capture_close(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb16_playback_open(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb16_capture_open(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb16_playback_close(void *private_data, snd_pcm_substream_t *substream);
+extern int snd_sb16_capture_close(void *private_data, snd_pcm_substream_t *substream);
 
 extern void snd_sb16dsp_proc_init(snd_pcm_t * pcm);
 extern void snd_sb16dsp_proc_done(snd_pcm_t * pcm);

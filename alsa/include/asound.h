@@ -163,7 +163,7 @@ typedef struct snd_switch_list_item {
 typedef struct snd_switch_list {
 	int iface;			/* WR: switch interface number */
 	int device;			/* WR: device number */
-	int channel;			/* WR: channel number */
+	int stream;			/* WR: stream number */
 	int switches_size;		/* WR: size of switches in array */
 	int switches;			/* RO: filled switches in array */
 	int switches_over;		/* RO: missing switches in array */
@@ -174,7 +174,7 @@ typedef struct snd_switch_list {
 typedef struct snd_switch {
 	int iface;		/* WR: interface number */
 	int device;		/* WR: device number */
-	int channel;		/* WR: channel number */
+	int stream;		/* WR: stream number */
 	unsigned char name[32];	/* WR: unique identification of switch (from driver) */
 	unsigned int type;	/* RW: look to SND_SW_TYPE_* */
 	unsigned int subtype;	/* RW: look to SND_SW_SUBTYPE_* */
@@ -227,13 +227,13 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_MIXER_DEVICE	_IOW ('U', 0x10, int)
 #define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x10, snd_mixer_info_t)
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOW ('U', 0x20, int)
-#define SND_CTL_IOCTL_PCM_CHANNEL	_IOW ('U', 0x21, int)
+#define SND_CTL_IOCTL_PCM_STREAM	_IOW ('U', 0x21, int)
 #define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOW ('U', 0x22, int)
 #define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x23, int)
 #define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x24, snd_pcm_info_t)
-#define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x25, snd_pcm_channel_info_t)
+#define SND_CTL_IOCTL_PCM_STREAM_INFO	_IOR ('U', 0x25, snd_pcm_stream_info_t)
 #define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOW ('U', 0x30, int)
-#define SND_CTL_IOCTL_RAWMIDI_CHANNEL	_IOW ('U', 0x31, int)
+#define SND_CTL_IOCTL_RAWMIDI_STREAM	_IOW ('U', 0x31, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x32, snd_rawmidi_info_t)
 
 /*
@@ -252,7 +252,7 @@ typedef struct snd_ctl_read {
 		struct {
 			int iface;	/* interface */
 			int device;	/* device */
-			int channel;	/* channel */
+			int stream;	/* stream */
 			snd_switch_list_item_t switem; /* switch item */
 		} sw;
 		unsigned char data8[60];
@@ -366,31 +366,31 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_INPUT		0
 /* output */
 #define SND_MIXER_ETYPE_OUTPUT		1
-/* capture channel endpoint */
+/* capture stream endpoint */
 #define SND_MIXER_ETYPE_CAPTURE1	2
-/* capture subchannel endpoint */
+/* capture substream endpoint */
 #define SND_MIXER_ETYPE_CAPTURE2	3
-/* playback channel startpoint */
+/* playback stream startpoint */
 #define SND_MIXER_ETYPE_PLAYBACK1	4
-/* playback subchannel startpoint */
+/* playback substream startpoint */
 #define SND_MIXER_ETYPE_PLAYBACK2	5
 /* ADC */
 #define SND_MIXER_ETYPE_ADC		6
 /* DAC */
 #define SND_MIXER_ETYPE_DAC		7
-/* capture subchannel/voice endpoint */
+/* capture substream/channel endpoint */
 #define SND_MIXER_ETYPE_CAPTURE3	8
-/* playback subchannel/voice endpoint */
+/* playback substream/channel endpoint */
 #define SND_MIXER_ETYPE_PLAYBACK3	9
-/* simple on/off switch (voices separated) */
+/* simple on/off switch (channels separated) */
 #define SND_MIXER_ETYPE_SWITCH1		100
-/* simple on/off switch (all voices together) */
+/* simple on/off switch (all channels together) */
 #define SND_MIXER_ETYPE_SWITCH2		101
-/* simple voice route switch */
+/* simple channel route switch */
 #define SND_MIXER_ETYPE_SWITCH3		102
 /* simple volume control */
 #define SND_MIXER_ETYPE_VOLUME1		200
-/* simple volume control - PCM voices to DAC */
+/* simple volume control - PCM channels to DAC */
 #define SND_MIXER_ETYPE_VOLUME2		201
 /* simple accumulator */
 #define SND_MIXER_ETYPE_ACCU1		300
@@ -398,9 +398,9 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_ACCU2		301
 /* simple accumulator with programmable attenuation */
 #define SND_MIXER_ETYPE_ACCU3		302
-/* simple MUX (voices separated) */
+/* simple MUX (channels separated) */
 #define SND_MIXER_ETYPE_MUX1		400
-/* simple MUX (all voices together) */
+/* simple MUX (all channels together) */
 #define SND_MIXER_ETYPE_MUX2		401
 /* simple tone control */
 #define SND_MIXER_ETYPE_TONE_CONTROL1	500
@@ -414,40 +414,40 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_PRE_EFFECT1	610
 
 /*
- *  voice definitions
+ *  channel definitions
  */
 
-#define SND_MIXER_VOICE_UNKNOWN		0
-#define SND_MIXER_VOICE_MONO		1
-#define SND_MIXER_VOICE_LEFT		2
-#define SND_MIXER_VOICE_RIGHT		3
-#define SND_MIXER_VOICE_CENTER		4
-#define SND_MIXER_VOICE_REAR_LEFT	5
-#define SND_MIXER_VOICE_REAR_RIGHT	6
-#define SND_MIXER_VOICE_WOOFER		7
+#define SND_MIXER_CHANNEL_UNKNOWN		0
+#define SND_MIXER_CHANNEL_MONO		1
+#define SND_MIXER_CHANNEL_LEFT		2
+#define SND_MIXER_CHANNEL_RIGHT		3
+#define SND_MIXER_CHANNEL_CENTER		4
+#define SND_MIXER_CHANNEL_REAR_LEFT	5
+#define SND_MIXER_CHANNEL_REAR_RIGHT	6
+#define SND_MIXER_CHANNEL_WOOFER		7
 
-#define SND_MIXER_VOICE_MASK_MONO	(1 << (SND_MIXER_VOICE_MONO-1))
-#define SND_MIXER_VOICE_MASK_LEFT	(1 << (SND_MIXER_VOICE_LEFT-1))
-#define SND_MIXER_VOICE_MASK_RIGHT	(1 << (SND_MIXER_VOICE_RIGHT-1))
-#define SND_MIXER_VOICE_MASK_CENTER	(1 << (SND_MIXER_VOICE_CENTER-1))
-#define SND_MIXER_VOICE_MASK_REAR_LEFT	(1 << (SND_MIXER_VOICE_REAR_LEFT-1))
-#define SND_MIXER_VOICE_MASK_REAR_RIGHT	(1 << (SND_MIXER_VOICE_REAR_RIGHT-1))
-#define SND_MIXER_VOICE_MASK_WOOFER	(1 << (SND_MIXER_VOICE_WOOFER-1))
+#define SND_MIXER_CHANNEL_MASK_MONO	(1 << (SND_MIXER_CHANNEL_MONO-1))
+#define SND_MIXER_CHANNEL_MASK_LEFT	(1 << (SND_MIXER_CHANNEL_LEFT-1))
+#define SND_MIXER_CHANNEL_MASK_RIGHT	(1 << (SND_MIXER_CHANNEL_RIGHT-1))
+#define SND_MIXER_CHANNEL_MASK_CENTER	(1 << (SND_MIXER_CHANNEL_CENTER-1))
+#define SND_MIXER_CHANNEL_MASK_REAR_LEFT	(1 << (SND_MIXER_CHANNEL_REAR_LEFT-1))
+#define SND_MIXER_CHANNEL_MASK_REAR_RIGHT	(1 << (SND_MIXER_CHANNEL_REAR_RIGHT-1))
+#define SND_MIXER_CHANNEL_MASK_WOOFER	(1 << (SND_MIXER_CHANNEL_WOOFER-1))
 
-#define SND_MIXER_VOICE_MASK_FOUR	(SND_MIXER_VOICE_MASK_LEFT|\
-					 SND_MIXER_VOICE_MASK_RIGHT|\
-					 SND_MIXER_VOICE_MASK_REAR_LEFT|\
-					 SND_MIXER_VOICE_MASK_REAR_RIGHT)
-#define SND_MIXER_VOICE_MASK_SIX	(SND_MIXER_VOICE_MASK_LEFT|\
-					 SND_MIXER_VOICE_MASK_RIGHT|\
-					 SND_MIXER_VOICE_MASK_CENTER|\
-					 SND_MIXER_VOICE_MASK_REAR_LEFT|\
-					 SND_MIXER_VOICE_MASK_REAR_RIGHT|\
-					 SND_MIXER_VOICE_MASK_WOOFER)
+#define SND_MIXER_CHANNEL_MASK_FOUR	(SND_MIXER_CHANNEL_MASK_LEFT|\
+					 SND_MIXER_CHANNEL_MASK_RIGHT|\
+					 SND_MIXER_CHANNEL_MASK_REAR_LEFT|\
+					 SND_MIXER_CHANNEL_MASK_REAR_RIGHT)
+#define SND_MIXER_CHANNEL_MASK_SIX	(SND_MIXER_CHANNEL_MASK_LEFT|\
+					 SND_MIXER_CHANNEL_MASK_RIGHT|\
+					 SND_MIXER_CHANNEL_MASK_CENTER|\
+					 SND_MIXER_CHANNEL_MASK_REAR_LEFT|\
+					 SND_MIXER_CHANNEL_MASK_REAR_RIGHT|\
+					 SND_MIXER_CHANNEL_MASK_WOOFER)
 
 typedef struct {
-	unsigned short position;	/* SND_MIXER_VOICE_* */
-} snd_mixer_voice_t;
+	unsigned short position;	/* SND_MIXER_CHANNEL_* */
+} snd_mixer_channel_t;
 
 typedef struct {
 	unsigned char name[24];
@@ -493,9 +493,9 @@ typedef struct snd_mixer_elements {
 typedef struct snd_mixer_route {
 	snd_mixer_eid_t src_eid; /* WR: source element identification */
 	snd_mixer_eid_t dst_eid; /* WR: destination element identification */
-	int src_voices;		/* RO: source voices */
-	int dst_voices;		/* RO: destination voices */
-	unsigned int *voice_wires; /* WR: source * destination bitmap matrix */
+	int src_channels;		/* RO: source channels */
+	int dst_channels;		/* RO: destination channels */
+	unsigned int *channel_wires; /* WR: source * destination bitmap matrix */
 } snd_mixer_route_t;
 
 typedef struct snd_mixer_routes {
@@ -526,7 +526,7 @@ typedef enum {
 	SND_MIXER_CHN_WOOFER,
 	SND_MIXER_CHN_LAST = 31,
 	SND_MIXER_CHN_MONO = SND_MIXER_CHN_FRONT_LEFT
-} snd_mixer_channel_t;
+} snd_mixer_channel_id_t;
 
 #define SND_MIXER_CHN_MASK_MONO		(1<<SND_MIXER_CHN_MONO)
 #define SND_MIXER_CHN_MASK_FRONT_LEFT	(1<<SND_MIXER_CHN_FRONT_LEFT)
@@ -574,17 +574,17 @@ typedef struct snd_mixer_group {
 /*
  *  INPUT/OUTPUT - read only
  *
- *    The input element describes input voices.
+ *    The input element describes input channels.
  */
 
 #define SND_MIXER_EIO_DIGITAL		(0<<1)
 
 struct snd_mixer_element_io_info {
 	unsigned int attrib;		/* RO: SND_MIXER_EIO_* */
-	int voices_size;		/* WR: size in voice descriptors */
-	int voices;			/* RO: count of filled voice descriptors */
-	int voices_over;		/* RO: missing voice descriptors */
-	snd_mixer_voice_t *pvoices;	/* WR: array */
+	int channels_size;		/* WR: size in channel descriptors */
+	int channels;			/* RO: count of filled channel descriptors */
+	int channels_over;		/* RO: missing channel descriptors */
+	snd_mixer_channel_t *pchannels;	/* WR: array */
 };
 
 /*
@@ -608,7 +608,7 @@ struct snd_mixer_element_pcm2_info {
 struct snd_mixer_element_pcm3_info {
 	int device;			/* RO: device index */
 	int subdevice;			/* RO: subdevice index */
-	int voice;			/* RO: voice index */
+	int channel;			/* RO: channel index */
 };
 
 /*
@@ -624,7 +624,7 @@ struct snd_mixer_element_converter_info {
 /*
  *  Simple on/off switch - read write
  *
- *    This switch turns on or off the voice route for a group of voices.
+ *    This switch turns on or off the channel route for a group of channels.
  */
 
 struct snd_mixer_element_switch1 {
@@ -635,9 +635,9 @@ struct snd_mixer_element_switch1 {
 };
 
 /*
- *  Simple on/off switch for each voices - read write
+ *  Simple on/off switch for each channels - read write
  *
- *    This switch turns on or off the voice route for group of voices.
+ *    This switch turns on or off the channel route for group of channels.
  */
 
 struct snd_mixer_element_switch2 {
@@ -645,9 +645,9 @@ struct snd_mixer_element_switch2 {
 };
 
 /*
- *  Simple voice route switch - read write
+ *  Simple channel route switch - read write
  *
- *    This switch determines route from input voices to output voices.
+ *    This switch determines route from input channels to output channels.
  */
 
 #define SND_MIXER_SWITCH3_FULL_FEATURED			0
@@ -660,10 +660,10 @@ struct snd_mixer_element_switch3_info {
 };
 
 struct snd_mixer_element_switch3 {
-	/* two dimensional matrix of voice route switch */
-	int rsw_size;			/* WR: size in voice route descriptors (must be input_voices * output_voices bits !!!) */
-	int rsw;			/* RO: count of filled voice route descriptors */
-	int rsw_over;			/* RO: missing voice descriptors */
+	/* two dimensional matrix of channel route switch */
+	int rsw_size;			/* WR: size in channel route descriptors (must be input_channels * output_channels bits !!!) */
+	int rsw;			/* RO: count of filled channel route descriptors */
+	int rsw_over;			/* RO: missing channel descriptors */
 	unsigned int *prsw;		/* WR: array */
 };
 
@@ -686,10 +686,10 @@ struct snd_mixer_element_volume1_info {
 };
 
 struct snd_mixer_element_volume1 {
-	int voices_size;	/* WR: size of voice descriptors */	
-	int voices;		/* RO: count of filled voice descriptors */
-	int voices_over;	/* RO: missing voice descriptors */
-	int *pvoices;		/* WR: array of volumes */
+	int channels_size;	/* WR: size of channel descriptors */	
+	int channels;		/* RO: count of filled channel descriptors */
+	int channels_over;	/* RO: missing channel descriptors */
+	int *pchannels;		/* WR: array of volumes */
 };
 
 /*
@@ -704,11 +704,11 @@ struct snd_mixer_element_volume2_range {
 };
 
 struct snd_mixer_element_volume2_info {
-	/* source voices */
-	int svoices_size;	/* WR: size of source voices */
-	int svoices;		/* RO: count of filled voice descriptors */
-	int svoices_over;	/* RO: missing voice descriptors */
-	snd_mixer_voice_t *psvoices; /* WR: array of voices */
+	/* source channels */
+	int schannels_size;	/* WR: size of source channels */
+	int schannels;		/* RO: count of filled channel descriptors */
+	int schannels_over;	/* RO: missing channel descriptors */
+	snd_mixer_channel_t *pschannels; /* WR: array of channels */
 	/* destination ranges */
 	int range_size;		/* WR: size of range descriptors */
 	int range;		/* RO: count of filled range descriptors */
@@ -716,14 +716,14 @@ struct snd_mixer_element_volume2_info {
 	struct snd_mixer_element_volume2_range *prange;	/* WR: array */
 };
 
-/* avoices means the array of voices which describes volume offsets for */
-/* each outputs, the size of this array is info->svoices * info->range */
+/* achannels means the array of channels which describes volume offsets for */
+/* each outputs, the size of this array is info->schannels * info->range */
 
 struct snd_mixer_element_volume2 {
-	int avoices_size;	/* WR: size of voice descriptors */	
-	int avoices;		/* RO: count of filled voice descriptors */
-	int avoices_over;	/* RO: missing voice descriptors */
-	int *pavoices;		/* WR: array of volumes */
+	int achannels_size;	/* WR: size of channel descriptors */	
+	int achannels;		/* RO: count of filled channel descriptors */
+	int achannels_over;	/* RO: missing channel descriptors */
+	int *pachannels;		/* WR: array of volumes */
 };
 
 /*
@@ -759,17 +759,17 @@ struct snd_mixer_element_accu3_info {
 };
 
 struct snd_mixer_element_accu3 {
-	int voices_size;	/* WR: size of voice descriptors */	
-	int voices;		/* RO: count of filled voice descriptors */
-	int voices_over;	/* RO: missing voice descriptors */
-	int *pvoices;		/* WR: array of volumes */
+	int channels_size;	/* WR: size of channel descriptors */	
+	int channels;		/* RO: count of filled channel descriptors */
+	int channels_over;	/* RO: missing channel descriptors */
+	int *pchannels;		/* WR: array of volumes */
 };
 
 /*
  *  Simple MUX
  *
  *     This mux allows selection of exactly one (or none - optional) source
- *     per each voice.
+ *     per each channel.
  */
 
 #define SND_MIXER_MUX1_NONE		(1<<0)
@@ -781,7 +781,7 @@ struct snd_mixer_element_mux1_info {
 struct snd_mixer_element_mux1 {
 	int sel_size;		/* WR: size of mixer elements */
 	int sel;		/* RO: count of mixer elements */
-	int sel_over;		/* RO: missing voice elements */
+	int sel_over;		/* RO: missing channel elements */
 	snd_mixer_eid_t *psel;	/* WR: selected source on element output */
 };
 
@@ -940,8 +940,8 @@ struct snd_mixer_element_pre_effect1 {
 
 typedef struct snd_mixer_element_info {
 	snd_mixer_eid_t eid;		/* WR: element identification */
-	int input_voices;		/* RO: input voices to element */
-	int output_voices;		/* RO: output voices from element */
+	int input_channels;		/* RO: input channels to element */
+	int output_channels;		/* RO: output channels from element */
 	union {
 		struct snd_mixer_element_io_info io;
 		struct snd_mixer_element_pcm1_info pcm1;
@@ -1097,18 +1097,18 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_CLASS_GENERIC		0x0000	/* standard mono or stereo device */
 #define SND_PCM_SCLASS_GENERIC_MIX	0x0001	/* mono or stereo subdevices are mixed together */
 
-#define SND_PCM_CLASS_MULTI		0x0001	/* multivoice device */
-#define SND_PCM_SCLASS_MULTI_MIX	0x0001	/* multivoice subdevices are mixed together */
+#define SND_PCM_CLASS_MULTI		0x0001	/* multichannel device */
+#define SND_PCM_SCLASS_MULTI_MIX	0x0001	/* multichannel subdevices are mixed together */
 
 #define SND_PCM_CLASS_MODEM		0x0010	/* software modem class */
 #define SND_PCM_CLASS_DIGITIZER		0x0011	/* digitizer class */
 
-#define SND_PCM_CHANNEL_PLAYBACK	0
-#define SND_PCM_CHANNEL_CAPTURE		1
+#define SND_PCM_STREAM_PLAYBACK	0
+#define SND_PCM_STREAM_CAPTURE		1
 
 #define SND_PCM_MODE_UNKNOWN		(-1)
-#define SND_PCM_MODE_STREAM		0
-#define SND_PCM_MODE_BLOCK		1
+#define SND_PCM_MODE_FRAME		0
+#define SND_PCM_MODE_FRAGMENT		1
 
 #define SND_PCM_SFMT_S8			0
 #define SND_PCM_SFMT_U8			1
@@ -1236,19 +1236,19 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_INFO_PLAYBACK		0x00000001
 #define SND_PCM_INFO_CAPTURE		0x00000002
 #define SND_PCM_INFO_DUPLEX		0x00000100
-#define SND_PCM_INFO_DUPLEX_RATE	0x00000200	/* rate for playback & capture channels must be same!!! */
+#define SND_PCM_INFO_DUPLEX_RATE	0x00000200	/* rate for playback & capture streams must be same!!! */
 #define SND_PCM_INFO_DUPLEX_MONO	0x00000400	/* in duplex mode - only mono (one channel) is supported */
 
-#define SND_PCM_CHNINFO_MMAP		0x00000001	/* hardware supports mmap */
-#define SND_PCM_CHNINFO_STREAM		0x00000002	/* hardware supports streaming */
-#define SND_PCM_CHNINFO_BLOCK		0x00000004	/* hardware supports block mode */
-#define SND_PCM_CHNINFO_BATCH		0x00000010	/* double buffering */
-#define SND_PCM_CHNINFO_INTERLEAVE	0x00000100	/* voices are interleaved */
-#define SND_PCM_CHNINFO_NONINTERLEAVE	0x00000200	/* voices are not interleaved */
-#define SND_PCM_CHNINFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
-#define SND_PCM_CHNINFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
-#define SND_PCM_CHNINFO_MMAP_VALID	0x00040000	/* fragment data are valid during transfer */
-#define SND_PCM_CHNINFO_PAUSE		0x00080000	/* pause ioctl is supported */
+#define SND_PCM_STREAM_INFO_MMAP		0x00000001	/* hardware supports mmap */
+#define SND_PCM_STREAM_INFO_FRAME		0x00000002	/* hardware supports frame mode */
+#define SND_PCM_STREAM_INFO_FRAGMENT	0x00000004	/* hardware supports fragment mode */
+#define SND_PCM_STREAM_INFO_BATCH		0x00000010	/* double buffering */
+#define SND_PCM_STREAM_INFO_INTERLEAVE	0x00000100	/* channels are interleaved */
+#define SND_PCM_STREAM_INFO_NONINTERLEAVE	0x00000200	/* channels are not interleaved */
+#define SND_PCM_STREAM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
+#define SND_PCM_STREAM_INFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
+#define SND_PCM_STREAM_INFO_MMAP_VALID	0x00040000	/* fragment data are valid during transfer */
+#define SND_PCM_STREAM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
 #define SND_PCM_START_FULL		1	/* start when whole queue is filled (playback) */
@@ -1261,14 +1261,14 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
 #define SND_PCM_FILL_SILENCE		2	/* fill the partial buffer with silence */
 
-#define SND_PCM_STATUS_NOTREADY		0	/* channel is not ready */
-#define SND_PCM_STATUS_READY		1	/* channel is ready for prepare call */
-#define SND_PCM_STATUS_PREPARED		2	/* channel is ready to go */
-#define SND_PCM_STATUS_RUNNING		3	/* channel is running */
+#define SND_PCM_STATUS_NOTREADY		0	/* stream is not ready */
+#define SND_PCM_STATUS_READY		1	/* stream is ready for prepare call */
+#define SND_PCM_STATUS_PREPARED		2	/* stream is ready to go */
+#define SND_PCM_STATUS_RUNNING		3	/* stream is running */
 #define SND_PCM_STATUS_XRUN		4
-#define SND_PCM_STATUS_UNDERRUN		SND_PCM_STATUS_XRUN	/* channel reached an underrun and it is not ready */
-#define SND_PCM_STATUS_OVERRUN		SND_PCM_STATUS_XRUN	/* channel reached an overrun and it is not ready */
-#define SND_PCM_STATUS_PAUSED		5	/* channel is paused */
+#define SND_PCM_STATUS_UNDERRUN		SND_PCM_STATUS_XRUN	/* stream reached an underrun and it is not ready */
+#define SND_PCM_STATUS_OVERRUN		SND_PCM_STATUS_XRUN	/* stream reached an overrun and it is not ready */
+#define SND_PCM_STATUS_PAUSED		5	/* stream is paused */
 
 #define SND_PCM_MMAP_OFFSET_CONTROL	0x00000000
 #define SND_PCM_MMAP_OFFSET_DATA	0x80000000
@@ -1394,21 +1394,23 @@ typedef struct snd_pcm_info {
 	char reserved[60];		/* reserved for future... */
 } snd_pcm_info_t;
 
-typedef struct snd_pcm_channel_info {
+typedef struct snd_pcm_stream_info {
 	int subdevice;			/* subdevice number */
 	char subname[32];		/* subdevice name */
-	int channel;			/* channel number */
+	int stream;			/* stream number */
 	snd_pcm_sync_t sync;		/* hardware synchronization ID */
-	unsigned int flags;		/* see to SND_PCM_CHNINFO_XXXX */
+	unsigned int flags;		/* see to SND_PCM_STREAM_INFO_XXXX */
 	unsigned int formats;		/* supported formats */
 	unsigned int rates;		/* hardware rates */
 	unsigned int min_rate;		/* min rate (in Hz) */
 	unsigned int max_rate;		/* max rate (in Hz) */
-	unsigned int min_voices;	/* min voices */
-	unsigned int max_voices;	/* max voices */
+	unsigned int min_channels;	/* min channels */
+	unsigned int max_channels;	/* max channels */
 	size_t buffer_size;		/* max buffer size in bytes */
 	size_t min_fragment_size;	/* min fragment size in bytes */
 	size_t max_fragment_size;	/* max fragment size in bytes */
+	size_t min_fragments;		/* min # of fragments */
+	size_t max_fragments;		/* max # of fragments */
 	size_t fragment_align;		/* align fragment value */
 	size_t fifo_size;		/* stream FIFO size in bytes */
 	size_t transfer_block_size;	/* bus transfer block size in bytes */
@@ -1417,29 +1419,29 @@ typedef struct snd_pcm_channel_info {
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	char reserved[64];		/* reserved for future... */
-} snd_pcm_channel_info_t;
+} snd_pcm_stream_info_t;
 
-typedef struct snd_pcm_voice_info {
-	unsigned int voice;		/* voice number */
-	char voice_name[32];		/* name of voice */
+typedef struct snd_pcm_channel_info {
+	unsigned int channel;		/* channel number */
+	char channel_name[32];		/* name of channel */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	int dig_group;			/* digital group */
 	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
 	char reserved[64];		/* reserved for future... */
-} snd_pcm_voice_info_t;
+} snd_pcm_channel_info_t;
 
 typedef struct snd_pcm_format {
 	int interleave: 1;		/* data are interleaved */
 	int format;			/* SND_PCM_SFMT_XXXX */
 	unsigned int rate;		/* rate in Hz */
-	unsigned int voices;		/* voices */
+	unsigned int channels;		/* channels */
 	int special;			/* special (custom) description of format */
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
 
-typedef struct snd_pcm_channel_params {
-	int channel;			/* channel information (IGNORED in kernel space) */
+typedef struct snd_pcm_stream_params {
+	int stream;			/* stream information (IGNORED in kernel space) */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* playback format */
 	snd_pcm_digital_t digital;	/* digital setup */
@@ -1456,16 +1458,16 @@ typedef struct snd_pcm_channel_params {
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
 	size_t bytes_fill_max;		/* maximum silence fill in bytes */
 	char reserved[64];		/* must be filled with zero */
-} snd_pcm_channel_params_t;
+} snd_pcm_stream_params_t;
 
-typedef struct snd_pcm_voice_params {
-	unsigned int voice;
+typedef struct snd_pcm_channel_params {
+	unsigned int channel;
 	snd_pcm_digital_t digital;	/* digital setup */
 	char reserved[64];
-} snd_pcm_voice_params_t;
+} snd_pcm_channel_params_t;
 
-typedef struct snd_pcm_channel_setup {
-	int channel;			/* channel information */
+typedef struct snd_pcm_stream_setup {
+	int stream;			/* stream information */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* real used format */
 	snd_pcm_digital_t digital;	/* digital setup */
@@ -1485,24 +1487,24 @@ typedef struct snd_pcm_channel_setup {
 	size_t byte_boundary;		/* position in bytes wrap point */
 	unsigned int msbits_per_sample;		/* used most significant bits per sample */
 	char reserved[64];		/* must be filled with zero */
-} snd_pcm_channel_setup_t;
+} snd_pcm_stream_setup_t;
 
-typedef struct snd_pcm_voice_area {
-	void *addr;			/* base address of voice samples */
+typedef struct snd_pcm_channel_area {
+	void *addr;			/* base address of channel samples */
 	unsigned int first;		/* offset to first sample in bits */
 	unsigned int step;		/* samples distance in bits */
-} snd_pcm_voice_area_t;
+} snd_pcm_channel_area_t;
 
-typedef struct snd_pcm_voice_setup {
-	unsigned int voice;
+typedef struct snd_pcm_channel_setup {
+	unsigned int channel;
 	snd_pcm_digital_t digital;	/* digital setup */
-	snd_pcm_voice_area_t area;
+	snd_pcm_channel_area_t area;
 	char reserved[64];
-} snd_pcm_voice_setup_t;
+} snd_pcm_channel_setup_t;
 
-typedef struct snd_pcm_channel_status {
-	int channel;		/* channel information */
-	int status;		/* channel status - SND_PCM_STATUS_XXXX */
+typedef struct snd_pcm_stream_status {
+	int stream;		/* stream information */
+	int status;		/* stream status - SND_PCM_STATUS_XXXX */
 	struct timeval stime;	/* time when playback/capture was started */
 	long long ust_stime;	/* UST time when playback/capture was started */
 	size_t byte_io;		/* current I/O position in bytes */
@@ -1512,7 +1514,7 @@ typedef struct snd_pcm_channel_status {
 	unsigned int xruns;	/* count of underruns/overruns from last status */
 	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
 	char reserved[64];	/* must be filled with zero */
-} snd_pcm_channel_status_t;
+} snd_pcm_stream_status_t;
 
 typedef struct {
 	volatile int status;	/* RO: status - SND_PCM_STATUS_XXXX */
@@ -1523,20 +1525,20 @@ typedef struct {
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
-#define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x02, snd_pcm_channel_info_t)
-#define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x10, snd_pcm_channel_params_t)
-#define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x20, snd_pcm_channel_setup_t)
-#define SND_PCM_IOCTL_CHANNEL_STATUS	_IOR ('A', 0x21, snd_pcm_channel_status_t)
-#define SND_PCM_IOCTL_CHANNEL_UPDATE	_IO  ('A', 0x22)
-#define SND_PCM_IOCTL_CHANNEL_PREPARE	_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_CHANNEL_GO	_IO  ('A', 0x31)
-#define SND_PCM_IOCTL_CHANNEL_FLUSH	_IO  ('A', 0x32)
+#define SND_PCM_IOCTL_STREAM_INFO	_IOR ('A', 0x02, snd_pcm_stream_info_t)
+#define SND_PCM_IOCTL_STREAM_PARAMS	_IOW ('A', 0x10, snd_pcm_stream_params_t)
+#define SND_PCM_IOCTL_STREAM_SETUP	_IOR ('A', 0x20, snd_pcm_stream_setup_t)
+#define SND_PCM_IOCTL_STREAM_STATUS	_IOR ('A', 0x21, snd_pcm_stream_status_t)
+#define SND_PCM_IOCTL_STREAM_UPDATE	_IO  ('A', 0x22)
+#define SND_PCM_IOCTL_STREAM_PREPARE	_IO  ('A', 0x30)
+#define SND_PCM_IOCTL_STREAM_GO	_IO  ('A', 0x31)
+#define SND_PCM_IOCTL_STREAM_FLUSH	_IO  ('A', 0x32)
 #define SND_PCM_IOCTL_SYNC_GO		_IOW ('A', 0x33, snd_pcm_sync_t)
-#define SND_PCM_IOCTL_CHANNEL_DRAIN	_IO  ('A', 0x34)
-#define SND_PCM_IOCTL_CHANNEL_PAUSE	_IOW ('A', 0x35, int)
-#define SND_PCM_IOCTL_VOICE_INFO	_IOR ('A', 0x40, snd_pcm_voice_info_t)
-#define SND_PCM_IOCTL_VOICE_PARAMS	_IOW ('A', 0x41, snd_pcm_voice_params_t)
-#define SND_PCM_IOCTL_VOICE_SETUP	_IOR ('A', 0x42, snd_pcm_voice_setup_t)
+#define SND_PCM_IOCTL_STREAM_DRAIN	_IO  ('A', 0x34)
+#define SND_PCM_IOCTL_STREAM_PAUSE	_IOW ('A', 0x35, int)
+#define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
+#define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x41, snd_pcm_channel_params_t)
+#define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x42, snd_pcm_channel_setup_t)
 
 /*
  *  Interface compatible with Open Sound System API
@@ -1739,8 +1741,8 @@ struct snd_pcm_buffer_description {
 
 #define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
-#define SND_RAWMIDI_CHANNEL_OUTPUT	0
-#define SND_RAWMIDI_CHANNEL_INPUT	1
+#define SND_RAWMIDI_STREAM_OUTPUT	0
+#define SND_RAWMIDI_STREAM_INPUT	1
 
 #define SND_RAWMIDI_INFO_OUTPUT		0x00000001
 #define SND_RAWMIDI_INFO_INPUT		0x00000002
@@ -1755,7 +1757,7 @@ typedef struct snd_rawmidi_info {
 } snd_rawmidi_info_t;
 
 typedef struct snd_rawmidi_params {
-	int channel;		/* Requested channel */
+	int stream;		/* Requested stream */
 	size_t size;		/* I/O requested queue size in bytes */
 	size_t min;		/* I minimum count of bytes in queue for wakeup */
 	size_t max;		/* O maximum count of bytes in queue for wakeup */
@@ -1764,7 +1766,7 @@ typedef struct snd_rawmidi_params {
 } snd_rawmidi_params_t;
 
 typedef struct snd_rawmidi_setup {
-	int channel;		/* Requested channel */
+	int stream;		/* Requested stream */
 	size_t size;		/* I/O real queue queue size in bytes */
 	size_t min;		/* I minimum count of bytes in queue for wakeup */
 	size_t max;		/* O maximum count of bytes in queue for wakeup */
@@ -1773,7 +1775,7 @@ typedef struct snd_rawmidi_setup {
 } snd_rawmidi_setup_t;
 
 typedef struct snd_rawmidi_status {
-	int channel;		/* Requested channel */
+	int stream;		/* Requested stream */
 	size_t count;		/* I/O number of bytes readable/writeable without blocking */
 	size_t queue;		/* O number of bytes in queue */
 	size_t pad;		/* O not used yet */
@@ -1784,11 +1786,11 @@ typedef struct snd_rawmidi_status {
 
 #define SND_RAWMIDI_IOCTL_PVERSION	_IOR ('W', 0x00, int)
 #define SND_RAWMIDI_IOCTL_INFO		_IOR ('W', 0x01, snd_rawmidi_info_t)
-#define SND_RAWMIDI_IOCTL_CHANNEL_PARAMS _IOW ('W', 0x10, snd_rawmidi_params_t)
-#define SND_RAWMIDI_IOCTL_CHANNEL_SETUP	_IOWR('W', 0x11, snd_rawmidi_setup_t)
-#define SND_RAWMIDI_IOCTL_CHANNEL_STATUS _IOWR('W', 0x20, snd_rawmidi_status_t)
-#define SND_RAWMIDI_IOCTL_CHANNEL_DRAIN	_IOW ('W', 0x30, int)
-#define SND_RAWMIDI_IOCTL_CHANNEL_FLUSH _IOW ('W', 0x31, int)
+#define SND_RAWMIDI_IOCTL_STREAM_PARAMS _IOW ('W', 0x10, snd_rawmidi_params_t)
+#define SND_RAWMIDI_IOCTL_STREAM_SETUP	_IOWR('W', 0x11, snd_rawmidi_setup_t)
+#define SND_RAWMIDI_IOCTL_STREAM_STATUS _IOWR('W', 0x20, snd_rawmidi_status_t)
+#define SND_RAWMIDI_IOCTL_STREAM_DRAIN	_IOW ('W', 0x30, int)
+#define SND_RAWMIDI_IOCTL_STREAM_FLUSH _IOW ('W', 0x31, int)
 
 /*
  *  Timer section - /dev/snd/timer

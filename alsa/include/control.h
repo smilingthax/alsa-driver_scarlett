@@ -32,10 +32,10 @@ struct snd_stru_control {
 	int hwdep_device;
 	int mixer_device;
 	int pcm_device;
-	int pcm_channel;
+	int pcm_stream;
 	int pcm_subdevice;
 	int rawmidi_device;
-	int rawmidi_channel;
+	int rawmidi_stream;
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
@@ -52,8 +52,8 @@ typedef int (*snd_control_ioctl_t) (snd_card_t * card,
 extern int snd_control_busy(snd_control_t * control);
 extern void snd_control_notify_structure_change(snd_control_t * control, snd_ctl_read_t * read);
 extern void snd_control_notify_value_change(snd_control_t * control, snd_ctl_read_t * read, int atomic);
-extern void snd_control_notify_switch_change(snd_card_t * card, int cmd, int iface, int device, int channel, char *name);
-extern void snd_control_notify_switch_value_change(snd_control_t * control, int iface, int device, int channel, char *name, int atomic);
+extern void snd_control_notify_switch_change(snd_card_t * card, int cmd, int iface, int device, int stream, char *name);
+extern void snd_control_notify_switch_value_change(snd_control_t * control, int iface, int device, int stream, char *name, int atomic);
 
 extern int snd_control_register(snd_card_t *card);
 extern int snd_control_unregister(snd_card_t *card);
