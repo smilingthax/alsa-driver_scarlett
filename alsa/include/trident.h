@@ -393,6 +393,7 @@ int snd_trident_create(snd_card_t * card,
 		       unsigned long dma3size,
 		       unsigned long dma4size,
 		       int pcm_streams,
+		       int pcm_spdif_device,
 		       int max_wavetable_size,
 		       trident_t ** rtrident);
 int snd_trident_free(trident_t *trident);
