@@ -336,7 +336,7 @@ static void soundscape_free(snd_card_t * c)
 {
 	register struct soundscape *sscape = get_card_soundscape(c);
 	release_resource(sscape->io_res);
-	kfree(sscape->io_res);
+	kfree_nocheck(sscape->io_res);
 	free_dma(sscape->chip->dma1);
 }
 
@@ -1236,7 +1236,7 @@ static int __init create_sscape(unsigned port, int irq, int mpu_irq, int dma1, i
 
       _release_region:
 	release_resource(io_res);
-	kfree(io_res);
+	kfree_nocheck(io_res);
 
 	return err;
 }
