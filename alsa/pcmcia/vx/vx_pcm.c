@@ -487,7 +487,7 @@ static int vx_send_irqa(vxpocket_t *chip)
  */
 static int vx_toggle_pipe(vxpocket_t *chip, vx_pipe_t *pipe, int state)
 {
-	int err, i, cur_state;
+	int err, i, cur_state, delay;
 
 	/* Check the pipe is not already in the requested state */
 	if (vx_get_pipe_state(chip, pipe, &cur_state) < 0)
@@ -524,7 +524,7 @@ static int vx_toggle_pipe(vxpocket_t *chip, vx_pipe_t *pipe, int state)
 	 * reaching the expected state before returning
 	 * Check one pipe only (since they are synchronous)
 	 */
-	int delay = WAIT_STATE_DELAY;
+	delay = WAIT_STATE_DELAY;
 	for (i = 0; i < MAX_WAIT_FOR_DSP; i++) {
 		err = vx_get_pipe_state(chip, pipe, &cur_state);
 		if (err < 0 || cur_state == state)
