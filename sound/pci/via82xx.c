@@ -843,12 +843,11 @@ static int via_lock_rate(struct via_rate_lock *rec, int rate)
 	int changed = 0;
 
 	spin_lock(&rec->lock);
-	if (rec->rate) {
-		if (rec->rate != rate && rec->used > 1) {
+	if (rec->rate != rate) {
+		if (rec->rate && rec->used > 1) { /* already set */
 			spin_unlock(&rec->lock);
 			return -EINVAL;
 		}
-	} else {
 		rec->rate = rate;
 		changed = 1;
 	}
