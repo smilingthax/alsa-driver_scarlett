@@ -142,6 +142,9 @@ struct snd_ctl_hw_info {
 #define SND_MIXER_ID_OGAIN		"Out-Gain"
 #define SND_MIXER_ID_LOOPBACK		"Loopback"
 #define SND_MIXER_ID_SPEAKER		"PC Speaker"
+#define SND_MIXER_ID_MONO		"Mono"
+#define SND_MIXER_ID_MONO1		"Mono 1"
+#define SND_MIXER_ID_MONO2		"Mono 2"
 #define SND_MIXER_ID_AUXA		"Aux A"
 #define SND_MIXER_ID_AUXB		"Aux B"
 #define SND_MIXER_ID_AUXC		"Aux C"
@@ -154,6 +157,7 @@ struct snd_ctl_hw_info {
 #define SND_MIXER_CINFO_CAP_HWMUTE	0x00000008	/* channel supports hardware mute */
 #define SND_MIXER_CINFO_CAP_DIGITAL	0x00000010	/* channel does digital (not analog) mixing */
 #define SND_MIXER_CINFO_CAP_INPUT	0x00000020	/* input channel */
+#define SND_MIXER_CINFO_CAP_MONOMUTE	0x00000040	/* mono mute is supported only */
 
 #define SND_MIXER_FLG_RECORD		0x00000001	/* channel record source flag */
 #define SND_MIXER_FLG_MUTE_LEFT		0x00010000
