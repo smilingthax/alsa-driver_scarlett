@@ -48,7 +48,8 @@ MODULE_DEVICES("{{Intel,82801AA},"
 		"{Intel,82801BA},"
 		"{Intel,ICH3},"
 		"{Intel,MX440},"
-		"{SiS,SI7012}}");
+		"{SiS,SI7012},"
+		"{NVidia,NForce Audio}}");
 
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
@@ -89,6 +90,9 @@ MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:48000");
 #endif
 #ifndef PCI_DEVICE_ID_SI_7012
 #define PCI_DEVICE_ID_SI_7012		0x7012
+#endif
+#ifndef PCI_DEVICE_ID_NVIDIA_MCP_AUDIO
+#define PCI_DEVICE_ID_NVIDIA_MCP_AUDIO	0x01b1
 #endif
 
 #define DEVICE_INTEL	0
@@ -252,6 +256,7 @@ static struct pci_device_id snd_intel8x0_ids[] __devinitdata = {
 	{ 0x8086, 0x7195, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 440MX */
 	{ 0x8086, 0x7195, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 440MX */
 	{ 0x1039, 0x7012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_SIS },	/* SI7012 */
+	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* NFORCE */
 	{ 0, }
 };
 
@@ -1319,6 +1324,19 @@ static int __init snd_intel8x0_create(snd_card_t * card,
 	return 0;
 }
 
+static struct shortname_table {
+	unsigned int id;
+	const char *s;
+} shortnames[] = {
+	{ PCI_DEVICE_ID_INTEL_82801, "Intel ICH 82801AA" },
+	{ PCI_DEVICE_ID_INTEL_82901, "Intel ICH 82901AB" },
+	{ PCI_DEVICE_ID_INTEL_440MX, "Intel 440MX" },
+	{ PCI_DEVICE_ID_INTEL_ICH3, "Intel ICH3" },
+	{ PCI_DEVICE_ID_SI_7012, "SiS SI7012" },
+	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce Audio" },
+	{ 0, 0 },
+};
+
 static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 					const struct pci_device_id *id)
 {
@@ -1326,6 +1344,7 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 	snd_card_t *card;
 	intel8x0_t *chip;
 	int pcm_dev = 0, err;
+	struct shortname_table *name;
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
@@ -1360,17 +1379,11 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 	
 	strcpy(card->driver, "ICH");
 	strcpy(card->shortname, "Intel ICH");
-	
-	switch (chip->pci->device) {
-	case PCI_DEVICE_ID_INTEL_82801:
-		strcpy(card->shortname, "Intel ICH 82801AA");
-		break;
-	case PCI_DEVICE_ID_INTEL_82901:
-		strcpy(card->shortname, "Intel ICH 82901AB");
-		break;
-	case PCI_DEVICE_ID_INTEL_440MX:
-		strcpy(card->shortname, "Intel 440MX");
-		break;
+	for (name = shortnames; name->id; name++) {
+		if (chip->pci->device == name->id) {
+			strcpy(card->shortname, name->s);
+			break;
+		}
 	}
 
 	sprintf(card->longname, "%s at 0x%lx, irq %i",
