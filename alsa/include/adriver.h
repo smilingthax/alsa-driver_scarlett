@@ -563,10 +563,20 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #include <linux/moduleparam.h>
 #undef module_param_array
 /* we assumme nump is always NULL so we can use a dummy variable */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 5)
+#define module_param_array(name, type, nump, perm) \
+	static int boot_devs_##name; \
+	static struct kparam_array __param_arr_##name			\
+	= { ARRAY_SIZE(name), &boot_devs_##name, param_set_##type, param_get_##type,	\
+	    sizeof(name[0]), name };					\
+	module_param_call(name, param_array_set, param_array_get, 	\
+			  &__param_arr_##name, perm)
+#else
 #define module_param_array(name, type, nump, perm) \
 	static int boot_devs_##name; \
 	module_param_array_named(name, name, type, boot_devs_##name, perm)
-#endif
+#endif /* < 2.6.5 */
+#endif /* < 2.6.10 */
 
 /* dump_stack hack */
 #ifndef CONFIG_HAVE_DUMP_STACK
