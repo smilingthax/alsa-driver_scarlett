@@ -1,8 +1,14 @@
 #!/bin/bash
 
 KDIR=/usr/src/linux
+if [ "x$1" != "x" ]; then
+  KDIR="$1"
+fi
 KADIR=$KDIR/drivers/sound/alsa
 ADIR=$PWD/..
+if [ "x$2" != "x" ]; then
+  ADIR="$2"
+fi
 
 function copy_file () {
 	ln -svf $ADIR/$1 $KADIR/$2
