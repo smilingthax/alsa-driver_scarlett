@@ -158,7 +158,7 @@ static __CS4231_INLINE__ u8 cs4231_inb(cs4231_t *chip, u8 offset)
 	} else {
 #endif
 #ifdef SBUS_SUPPORT
-		return sbus_writeb(chip->port + (offset << 2));
+		return sbus_readb(chip->port + (offset << 2));
 #endif
 #ifdef EBUS_SUPPORT
 	}
