@@ -278,7 +278,7 @@ struct _snd_pcm_runtime {
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 
 	/* -- mmap -- */
-	snd_pcm_mmap_status_t *status;
+	volatile snd_pcm_mmap_status_t *status;
 	volatile snd_pcm_mmap_control_t *control;
 	atomic_t mmap_count;
 
