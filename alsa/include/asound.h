@@ -815,10 +815,11 @@ typedef struct snd_pcm_status {
 } snd_pcm_status_t;
 
 typedef struct {
-	volatile long state;	/* RO: status - SND_PCM_STATE_XXXX */
+	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
+	int pad1;		/* Needed for 64 bit alignment */
 	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
 	snd_timestamp_t tstamp;	/* Timestamp */
-	char pad[PAGE_SIZE - (sizeof(size_t) + sizeof(long) +
+	char pad[PAGE_SIZE - (sizeof(int) * 2 + sizeof(size_t) +
 			      sizeof(snd_timestamp_t))];		
 } snd_pcm_mmap_status_t;
 
