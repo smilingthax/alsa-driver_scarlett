@@ -76,7 +76,8 @@
 #define SND_CARD_TYPE_EMU10K1		0x0000002a	/* EMU10K1 */
 #define SND_CARD_TYPE_HAMMERFALL	0x0000002b	/* RME Digi9652  */
 #define SND_CARD_TYPE_HAMMERFALL_LIGHT	0x0000002c	/* RME Digi9652, but no expansion card */
+#define SND_CARD_TYPE_ICE1712		0x0000002d	/* ICE1712 */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x0000002c
+#define SND_CARD_TYPE_LAST		0x0000002d
 
 #endif				/* __ASOUNDID_H */

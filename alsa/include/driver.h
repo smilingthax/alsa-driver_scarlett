@@ -188,6 +188,7 @@ struct snd_stru_dma {
 	int type;			/* dma type - see SND_DMA_TYPE_XXXX */
 	int multi: 1;			/* multi area support */
 	int dma;			/* DMA number */
+	int addressbits;		/* physical wired bits (24-64) */
 	char *name;			/* pointer to name */
 	long rsize;			/* requested size of DMA buffer */
 	char *multi_match[2];		/* allowed owners for multi alloc */

@@ -80,7 +80,8 @@
 #define SND_SW_TYPE_LIST		5	/* list type */
 #define SND_SW_TYPE_LIST_ITEM		6	/* list item */
 #define SND_SW_TYPE_LAST		6	/* last known */
-#define SND_SW_TYPE_USER		(~0)	/* user type */
+#define SND_SW_TYPE_USER_READ_ONLY	0xfffffffe /* user type - read only */
+#define SND_SW_TYPE_USER		0xffffffff /* user type */
 
 typedef struct snd_switch_list_item {
 	unsigned char name[32];
@@ -1117,6 +1118,8 @@ struct snd_oss_mixer_info_obsolete {
 					 SND_PCM_RATE_16000|SND_PCM_RATE_22050|\
 					 SND_PCM_RATE_32000|SND_PCM_RATE_44100)
 #define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
+#define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_88200|\
+					 SND_PCM_RATE_96000)
 
 #define SND_PCM_INFO_PLAYBACK		0x00000001
 #define SND_PCM_INFO_CAPTURE		0x00000002

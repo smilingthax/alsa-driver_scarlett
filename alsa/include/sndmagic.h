@@ -77,7 +77,6 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define snd_card_share_mixer_element_t_magic	0xa15a1004
 
 #define es18xx_t_magic				0xa15a1101
-
 #define trident_t_magic				0xa15a1201
 #define es1938_t_magic				0xa15a1301
 #define cs461x_t_magic				0xa15a1401
@@ -107,8 +106,8 @@ static inline int _snd_magic_bad(void *obj, int magic)
 #define snd_card_dummy_t_magic			0xa15a2501
 #define snd_card_dummy_pcm_t_magic		0xa15a2502
 #define opl3_t_magic				0xa15a2601
-
 #define snd_seq_dummy_port_t_magic		0xa15a2701
+#define ice1712_t_magic				0xa15a2801
 
 #else
 #define snd_magic_kcalloc(type, extra, flags) (type *) snd_kcalloc(sizeof(type) + extra, flags)

@@ -323,6 +323,14 @@ case "$1" in
     insert snd-card-cs4236.o snd_irq=7
     restore cs4236.conf
     ;;
+  ice1712|envy24)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-mpu401-uart.o 
+    insert snd-ice1712.o
+    insert snd-card-ice1712.o
+    restore ice1712.conf
+    ;;
   dummy)
     basic
     insert snd-card-dummy.o
