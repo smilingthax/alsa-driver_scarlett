@@ -17,7 +17,7 @@
 
 %makefile group @if_sb16_csp
 %makefile header
-%makefile line ifeq ($(CONFIG_SND_SB16_CSP)),y)
+%makefile line ifeq ($(CONFIG_SND_SB16_CSP),y)
 %makefile endheader
 %makefile indent 2
 %makefile footer
