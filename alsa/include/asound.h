@@ -178,7 +178,7 @@ struct snd_ctl_switch {
  *                                                                          *
  ****************************************************************************/
  
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 0, 1 )
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 1, 0 )
 
 					/* max 12 chars (with '\0') */
 #define SND_MIXER_ID_MASTER		"Master"
@@ -245,12 +245,28 @@ struct snd_ctl_switch {
 #define SND_MIXER_CINFO_CAP_HWMUTE	0x00000008	/* channel supports hardware mute */
 #define SND_MIXER_CINFO_CAP_DIGITAL	0x00000010	/* channel does digital (not analog) mixing */
 #define SND_MIXER_CINFO_CAP_INPUT	0x00000020	/* external input channel */
-#define SND_MIXER_CINFO_CAP_MONOMUTE	0x00000040	/* mono mute is supported only */
+#define SND_MIXER_CINFO_CAP_JOINMUTE	0x00000040	/* join mute is supported only (left and right channel doesn't have separate mute control) */
+#define SND_MIXER_CINFO_CAP_JOINRECORD	0x00000080	/* join record is supported only (left and right channel doesn't have separate record control) */
+#define SND_MIXER_CINFO_CAP_LTOR_OUT	0x00000100	/* route left input to right output is supported */
+#define SND_MIXER_CINFO_CAP_RTOL_OUT	0x00000200	/* route right input to left output is supported */
+#define SND_MIXER_CINFO_CAP_LTOR_IN	0x00000400	/* route left input to right ADC input is supported */
+#define SND_MIXER_CINFO_CAP_RTOL_IN	0x00000800	/* route right input to left ADC input is supported */
+#define SND_MIXER_CINFO_CAP_SWITCH_OUT	0x00001000	/* output route is only switch */
+#define SND_MIXER_CINFO_CAP_SWITCH_IN	0x00002000	/* input route is only switch */
+#define SND_MIXER_CINFO_CAP_RECORDBYMUTE 0x00004000	/* we can record data even if output path is muted (to avoid loopback) */
 
-#define SND_MIXER_FLG_RECORD		0x00000001	/* channel record source flag */
+#define SND_MIXER_FLG_RECORD_LEFT	0x00000001	/* channel record source - left input */
+#define SND_MIXER_FLG_RECORD_RIGHT	0x00000002	/* channel record source - right input */
+#define SND_MIXER_FLG_RECORD		0x00000003	/* channel record source both inputs */
 #define SND_MIXER_FLG_MUTE_LEFT		0x00010000
 #define SND_MIXER_FLG_MUTE_RIGHT	0x00020000
 #define SND_MIXER_FLG_MUTE		0x00030000
+#define SND_MIXER_FLG_LTOR_OUT		0x00100000	/* route left input to right output */
+#define SND_MIXER_FLG_RTOL_OUT		0x00200000	/* route right input to left output */
+#define SND_MIXER_FLG_SWITCH_OUT	0x00300000	/* switch left & right input to output */
+#define SND_MIXER_FLG_LTOR_IN		0x00400000	/* route left input to right ADC input */
+#define SND_MIXER_FLG_RTOL_IN		0x00800000	/* route right input to left ADC input */
+#define SND_MIXER_FLG_SWITCH_IN		0x00c00000	/* switch left & right input to ADC input */
 #define SND_MIXER_FLG_DECIBEL		0x40000000	/* if this bit is set, driver sets volume from dB variables (left_dB, right_dB) */
 #define SND_MIXER_FLG_FORCE		0x80000000	/* force set - don't use in user space - reserved for kernel */
 

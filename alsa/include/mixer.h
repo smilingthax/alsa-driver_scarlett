@@ -70,6 +70,17 @@
 #define SND_MIX_MUTE_RIGHT	2
 #define SND_MIX_MUTE		(SND_MIX_MUTE_LEFT|SND_MIX_MUTE_RIGHT)
 
+#define SND_MIX_REC_LEFT	1
+#define SND_MIX_REC_RIGHT	2
+#define SND_MIX_REC		(SND_MIX_REC_LEFT|SND_MIX_REC_RIGHT)
+
+#define SND_MIX_ROUTE_LTOR_OUT	1
+#define SND_MIX_ROUTE_RTOL_OUT	2
+#define SND_MIX_ROUTE_OUT	(SND_MIX_ROUTE_LTOR_OUT|SND_MIX_ROUTE_RTOL_OUT)
+#define SND_MIX_ROUTE_LTOR_IN	4
+#define SND_MIX_ROUTE_RTOL_IN	8
+#define SND_MIX_ROUTE_IN	(SND_MIX_ROUTE_LTOR_IN|SND_MIX_ROUTE_RTOL_IN)
+
 typedef struct snd_stru_mixer_channel snd_kmixer_channel_t;
 typedef struct snd_stru_mixer_switch snd_kmixer_switch_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
@@ -79,10 +90,7 @@ struct snd_stru_mixer_channel_hw {
   unsigned int parent_priority;	/* parent.... */
   char name[ 16 ];		/* device name */
   unsigned short ossdev;	/* assigned OSS device number */
-  unsigned short mmute: 1,	/* mono mute is supported only */
-                 stereo: 1,	/* stereo is supported */
-                 digital: 1,	/* digital mixer channel */
-                 input: 1;	/* this channel is external input channel */
+  unsigned int caps;		/* capabilities - SND_MIXER_CINFO_CAP_XXXX */
   int min, max;			/* min and max left & right value */
   int min_dB, max_dB, step_dB;	/* min_dB, max_dB, step_dB */
   unsigned int private_value;	/* can be used by low-level driver */
@@ -92,14 +100,16 @@ struct snd_stru_mixer_channel_hw {
   /* input = min to max (user volume), output = dB value */
   int (*compute_dB)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, int volume );
   /* --- */
-  void (*set_record_source)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, int enable );
+  void (*set_record_source)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, unsigned int rec );
   void (*set_mute)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, unsigned int mute );
   void (*set_volume_level)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, int left, int right );
+  void (*set_route)( snd_kmixer_t *mixer, snd_kmixer_channel_t *channel, unsigned int route );
 };
 
 struct snd_stru_mixer_channel {
   unsigned short channel;	/* channel index */
-  unsigned short record: 1;	/* recording is enabled */
+  unsigned char record;		/* recording source */
+  unsigned char route;		/* route path */
  
   unsigned char umute;		/* user mute */
   unsigned char kmute;		/* kernel mute */
