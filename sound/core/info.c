@@ -41,7 +41,6 @@ int snd_info_check_reserved_words(const char *str)
 {
 	static char *reserved[] =
 	{
-		"dev",
 		"version",
 		"meminfo",
 		"memdebug",
@@ -117,7 +116,6 @@ int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...)
  */
 
 struct proc_dir_entry *snd_proc_root = NULL;
-struct proc_dir_entry *snd_proc_dev = NULL;
 snd_info_entry_t *snd_seq_root = NULL;
 #ifdef CONFIG_SND_OSSEMUL
 snd_info_entry_t *snd_oss_root = NULL;
@@ -619,10 +617,6 @@ int __init snd_info_init(void)
 	if (p == NULL)
 		return -ENOMEM;
 	snd_proc_root = p;
-	p = snd_create_proc_entry("dev", S_IFDIR | S_IRUGO | S_IXUGO, snd_proc_root);
-	if (p == NULL)
-		return -ENOMEM;
-	snd_proc_dev = p;
 #ifdef CONFIG_SND_OSSEMUL
 	{
 		snd_info_entry_t *entry;
@@ -681,7 +675,6 @@ int __exit snd_info_done(void)
 		if (snd_oss_root)
 			snd_info_unregister(snd_oss_root);
 #endif
-		snd_remove_proc_entry(snd_proc_root, snd_proc_dev);
 		snd_remove_proc_entry(&proc_root, snd_proc_root);
 	}
 	return 0;
