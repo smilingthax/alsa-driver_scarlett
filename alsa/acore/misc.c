@@ -109,13 +109,14 @@ unsigned long snd_pci_compat_get_dma_mask (struct pci_dev *dev)
 }
 
 
-void snd_pci_compat_set_dma_mask (struct pci_dev *dev, unsigned long mask)
+int snd_pci_compat_set_dma_mask (struct pci_dev *dev, unsigned long mask)
 {
 	if (dev) {
 		struct pci_driver_mapping *map = get_pci_driver_mapping(dev);
 		if (map)
 			map->dma_mask = mask;
 	}
+	return 0;
 }
 
 
