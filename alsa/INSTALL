@@ -593,6 +593,7 @@ Module parameters
 	* Creative Card wo/Digital out + Digital I/O 2  [0x0fc3/0x1f0f]
 	* Creative Card w/Digital out + Digital I/O 2	[0x0fc3/0x1f0f]
 	* Creative Card w/Digital CD in + Digital I/O 2	[0x0fcf/0x1f0f]
+        * Creative Card 5.1/w Digital out + LiveDrive	[0x3fc3/0x1fff]
     
   Module snd-card-ice1712.o
   -------------------------
