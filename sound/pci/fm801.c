@@ -312,48 +312,66 @@ static int snd_fm801_playback_trigger(snd_pcm_substream_t * substream,
 				      int cmd)
 {
 	fm801_t *chip = snd_pcm_substream_chip(substream);
-	int result = 0;
 
 	spin_lock(&chip->reg_lock);
-	if (cmd == SNDRV_PCM_TRIGGER_START) {
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
 		chip->ply_ctrl &= ~(FM801_BUF1_LAST |
 				     FM801_BUF2_LAST |
 				     FM801_PAUSE);
 		chip->ply_ctrl |= FM801_START |
 				   FM801_IMMED_STOP;
-		outw(chip->ply_ctrl, FM801_REG(chip, PLY_CTRL));
-	} else if (cmd == SNDRV_PCM_TRIGGER_STOP) {
-		chip->ply_ctrl &= ~FM801_START;
-		outw(chip->ply_ctrl, FM801_REG(chip, PLY_CTRL));
-	} else {
-		result = -EINVAL;
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+		chip->ply_ctrl &= ~(FM801_START | FM801_PAUSE);
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		chip->cap_ctrl |= FM801_PAUSE;
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		chip->cap_ctrl &= ~FM801_PAUSE;
+		break;
+	default:
+		spin_unlock(&chip->reg_lock);
+		snd_BUG();
+		return -EINVAL;
 	}
+	outw(chip->ply_ctrl, FM801_REG(chip, PLY_CTRL));
 	spin_unlock(&chip->reg_lock);
-	return result;
+	return 0;
 }
 
 static int snd_fm801_capture_trigger(snd_pcm_substream_t * substream,
 				     int cmd)
 {
 	fm801_t *chip = snd_pcm_substream_chip(substream);
-	int result = 0;
 
 	spin_lock(&chip->reg_lock);
-	if (cmd == SNDRV_PCM_TRIGGER_START) {
+	switch (cmd) {
+	case SNDRV_PCM_TRIGGER_START:
 		chip->cap_ctrl &= ~(FM801_BUF1_LAST |
 				     FM801_BUF2_LAST |
 				     FM801_PAUSE);
 		chip->cap_ctrl |= FM801_START |
 				   FM801_IMMED_STOP;
-		outw(chip->cap_ctrl, FM801_REG(chip, CAP_CTRL));
-	} else if (cmd == SNDRV_PCM_TRIGGER_STOP) {
-		chip->cap_ctrl &= ~FM801_START;
-		outw(chip->cap_ctrl, FM801_REG(chip, CAP_CTRL));
-	} else {
-		result = -EINVAL;
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+		chip->cap_ctrl &= ~(FM801_START | FM801_PAUSE);
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
+		chip->cap_ctrl |= FM801_PAUSE;
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
+		chip->cap_ctrl &= ~FM801_PAUSE;
+		break;
+	default:
+		spin_unlock(&chip->reg_lock);
+		snd_BUG();
+		return -EINVAL;
 	}
+	outw(chip->cap_ctrl, FM801_REG(chip, CAP_CTRL));
 	spin_unlock(&chip->reg_lock);
-	return result;
+	return 0;
 }
 
 static int snd_fm801_hw_params(snd_pcm_substream_t * substream,
@@ -513,6 +531,7 @@ static snd_pcm_hardware_t snd_fm801_playback =
 {
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
+				 SNDRV_PCM_INFO_PAUSE |
 				 SNDRV_PCM_INFO_MMAP_VALID),
 	.formats =		SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE,
 	.rates =		SNDRV_PCM_RATE_KNOT | SNDRV_PCM_RATE_8000_48000,
@@ -532,6 +551,7 @@ static snd_pcm_hardware_t snd_fm801_capture =
 {
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
+				 SNDRV_PCM_INFO_PAUSE |
 				 SNDRV_PCM_INFO_MMAP_VALID),
 	.formats =		SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE,
 	.rates =		SNDRV_PCM_RATE_KNOT | SNDRV_PCM_RATE_8000_48000,
@@ -819,6 +839,7 @@ FM801_SINGLE("AC97 18-bit Switch", FM801_CODEC_CTRL, 10, 1, 0),
 FM801_SINGLE("IEC958 Capture Switch", FM801_I2S_MODE, 8, 1, 0),
 FM801_SINGLE("IEC958 Raw Data Playback Switch", FM801_I2S_MODE, 9, 1, 0),
 FM801_SINGLE("IEC958 Raw Data Capture Switch", FM801_I2S_MODE, 10, 1, 0),
+FM801_SINGLE("IEC958 Playback Switch", FM801_GEN_CTRL, 2, 1, 0),
 };
 
 static void snd_fm801_mixer_free_ac97(ac97_t *ac97)
