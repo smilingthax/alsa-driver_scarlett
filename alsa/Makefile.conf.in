@@ -34,5 +34,4 @@ INCLUDE=-I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)/include
 COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
 LINKER=ld -r
 SNDVERSIONS=$(TOPDIR)/include/sndversions.h
-PEXPORT=$(TOPDIR)/utils/export-symbols
 DEXPORT=$(TOPDIR)/include/modules

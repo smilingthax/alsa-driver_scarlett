@@ -8,7 +8,7 @@ $(DEXPORT)/%.ver: %.c
 
 $(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver)): $(TOPDIR)/include/config.h $(TOPDIR)/include/config1.h
 
-$(TOPDIR)/include/sndversions.h: $(SYMFILES) $(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver))
+$(TOPDIR)/include/sndversions.h: $(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver))
 	@echo updating $(TOPDIR)/include/sndversions.h
 	@(echo "#ifndef _LINUX_SNDMODVERSIONS";\
 	echo "#define _LINUX_SNDNODVERSIONS";\

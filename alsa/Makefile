@@ -22,13 +22,13 @@ all: compile
 include/isapnp.h:
 	ln -sf ../support/isapnp.h include/isapnp.h
 
-compile: $(PEXPORT) include/isapnp.h cards.config
+compile: include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
 	@echo "ALSA modules were sucessfully compiled."
 	@echo
 
-dep: $(PEXPORT) include/isapnp.h cards.config
+dep: include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d dep; then exit 1; fi; done
 
 cards.config: modules.config
@@ -89,6 +89,3 @@ pack: mrproper
 	mv ../alsa-driver ../alsa-driver-$(CONFIG_SND_VERSION)
 	tar --exclude=CVS -cvz -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.gz alsa-driver-$(CONFIG_SND_VERSION)
 	mv ../alsa-driver-$(CONFIG_SND_VERSION) ../alsa-driver
-
-$(PEXPORT): $(TOPDIR)/utils/export-symbols.c
-	make -C $(TOPDIR)/utils export-symbols
