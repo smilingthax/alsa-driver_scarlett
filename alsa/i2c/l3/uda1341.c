@@ -14,6 +14,8 @@
  *
  */
 
+/* $Id */
+
 #include <sound/driver.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -136,13 +138,13 @@
 
 #define IS_DATA0(x)     ((x) >= data0_0 && (x) <= data0_2)
 #define IS_DATA1(x)     ((x) == data1)
-#define IS_STATUS(x)    ((x) >= stat0 && (x) <= stat1)
+#define IS_STATUS(x)    ((x) == stat0 || (x) == stat1)
 #define IS_EXTEND(x)   ((x) >= ext0 && (x) <= ext6)
 
 /* }}} */
 
 enum uda1341_regs_names {
-        stat0=0,
+        stat0,
         stat1,
         data0_0,
         data0_1,
@@ -716,8 +718,6 @@ uda1341_command(struct l3_client *clnt, int cmd, void *arg)
 
 static int uda1341_open(struct l3_client *clnt)
 {
-        struct uda1341 *uda = clnt->driver_data;
-
         DEBUG_NAME(KERN_DEBUG "uda1341 open\n");
 
 	uda1341_cmd_init(clnt);

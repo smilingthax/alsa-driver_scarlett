@@ -18,6 +18,8 @@
  *
  */
 
+/* $Id: h3600-uda1341.h,v 1.3 2002/03/28 19:04:56 perex Exp $ */
+
 #ifndef __SOUND_H3600_UDA1341_H_
 #define __SOUND_H3600_UDA1341_H_
 

@@ -11,6 +11,8 @@
  *
  */
 
+/* $Id: h3600-uda1341.c,v 1.3 2002/03/28 19:04:56 perex Exp $ */
+
 #include <sound/driver.h>
 #include <linux/module.h>
 #include <linux/init.h>
@@ -132,7 +134,7 @@ static void h3600_set_samplerate(h3600_t *h3600, long rate)
 	struct uda1341_cfg cfg;
 	int clk_div = 0;
 
-        DEBUG(KERN_DEBUG "set_samplerate rate: %d\n", rate);
+        DEBUG(KERN_DEBUG "set_samplerate rate: %ld\n", rate);
         
 	/* We don't want to mess with clocks when frames are in flight */
 	Ser4SSCR0 &= ~SSCR0_SSE;
@@ -201,7 +203,7 @@ static void h3600_set_samplerate(h3600_t *h3600, long rate)
 	cfg.format = FMT_LSB16;
 	l3_command(h3600->uda1341, L3_UDA1341_CONFIGURE, &cfg);
 	Ser4SSCR0 = (Ser4SSCR0 & ~0xff00) + clk_div + SSCR0_SSE;
-        DEBUG(KERN_DEBUG "set_samplerate done (new rate: %d)\n", rate);
+        DEBUG(KERN_DEBUG "set_samplerate done (new rate: %ld)\n", rate);
 	h3600->samplerate = rate;
 }
 
@@ -310,8 +312,8 @@ static u_int audio_get_dma_pos(audio_stream_t *s)
                 offset = runtime->buffer_size;
         }
 
-        DEBUG(KERN_DEBUG "  hw_ptr_interrupt: %p\n", runtime->hw_ptr_interrupt);
-        DEBUG(KERN_DEBUG "  updated pos [fr]: %d\n", offset - (offset % runtime->min_align));
+        DEBUG(KERN_DEBUG "  hw_ptr_interrupt: %lX\n", (unsigned long)runtime->hw_ptr_interrupt);
+        DEBUG(KERN_DEBUG "  updated pos [fr]: %ld\n", offset - (offset % runtime->min_align));
         
         return offset;
 }
@@ -365,10 +367,13 @@ static void audio_process_dma(audio_stream_t *s)
         while(1) {       
                 unsigned int  dma_size = runtime->period_size << SHIFT_16_STEREO;
                 unsigned int offset = dma_size * s->sent_periods;
-        
-                if (dma_size > MAX_DMA_SIZE)
-			dma_size = CUT_DMA_SIZE; //FIXME
                 
+                if (dma_size > MAX_DMA_SIZE){
+                        DEBUG(KERN_DEBUG "-----> cut dma_size: %d -> ", dma_size);
+			dma_size = CUT_DMA_SIZE; //FIXME
+                        DEBUG("%d <-----\n", dma_size);                        
+                }
+
 		ret = DMA_START(s, runtime->dma_addr + offset, dma_size);
 		if (ret)
 			return;
@@ -424,9 +429,10 @@ static int snd_card_h3600_pcm_trigger(stream_id_t stream_id, snd_pcm_substream_t
         DEBUG_NAME(KERN_DEBUG "pcm_trigger id: %d cmd: %d\n", stream_id, cmd);
 
         DEBUG(KERN_DEBUG "  sound: %d x %d [Hz]\n", runtime->channels, runtime->rate);
-        DEBUG(KERN_DEBUG "  periods: %d x %d [fr]\n", runtime->periods, runtime->period_size);
-        DEBUG(KERN_DEBUG "  buffer_size: %d [fr]\n", runtime->buffer_size);
-        DEBUG(KERN_DEBUG "  dma_addr %p\n", runtime->dma_addr);
+        DEBUG(KERN_DEBUG "  periods: %ld x %ld [fr]\n", (unsigned long)runtime->periods,
+              (unsigned long) runtime->period_size);
+        DEBUG(KERN_DEBUG "  buffer_size: %ld [fr]\n", (unsigned long)runtime->buffer_size);
+        DEBUG(KERN_DEBUG "  dma_addr %p\n", (char *)runtime->dma_addr);
 
 #ifdef DEBUG_MODE
         printk(KERN_DEBUG "  dma_area:");
@@ -461,36 +467,38 @@ static int snd_card_h3600_pcm_trigger(stream_id_t stream_id, snd_pcm_substream_t
 static snd_pcm_hardware_t snd_h3600_capture =
 {
 	info:			(SNDRV_PCM_INFO_INTERLEAVED |
-				 SNDRV_PCM_INFO_BLOCK_TRANSFER),
+				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
+                                 SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID),
 	formats:		SNDRV_PCM_FMTBIT_S16_LE,
 	rates:			SNDRV_PCM_RATE_8000_48000,
 	rate_min:		8000,
 	rate_max:		48000,
 	channels_min:		2,
 	channels_max:		2,
-	buffer_bytes_max:	30*1024*1024,
+	buffer_bytes_max:	16380,
 	period_bytes_min:	64,
-	period_bytes_max:	30*1024, /* <= MAX_DMA_SIZE from ams/arch-sa1100/dma.h */
-	periods_min:		1,
-	periods_max:		1024,
+	period_bytes_max:	8190, /* <= MAX_DMA_SIZE from ams/arch-sa1100/dma.h */
+	periods_min:		2,
+	periods_max:		255,
 	fifo_size:		0,
 };
 
 static snd_pcm_hardware_t snd_h3600_playback =
 {
 	info:			(SNDRV_PCM_INFO_INTERLEAVED |
-				 SNDRV_PCM_INFO_BLOCK_TRANSFER ),
+				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
+                                 SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID),
 	formats:		SNDRV_PCM_FMTBIT_S16_LE,
 	rates:			SNDRV_PCM_RATE_8000_48000,
 	rate_min:		8000,
 	rate_max:		48000,
 	channels_min:		2,
 	channels_max:		2,
-	buffer_bytes_max:	30*1024*1024,
+	buffer_bytes_max:	16380,
 	period_bytes_min:	64,
-	period_bytes_max:	30*1024, /* <= MAX_DMA_SIZE from ams/arch-sa1100/dma.h */
-	periods_min:		1,
-	periods_max:		1024,
+	period_bytes_max:	8190, /* <= MAX_DMA_SIZE from ams/arch-sa1100/dma.h */
+	periods_min:		2,
+	periods_max:		255,
 	fifo_size:		0,
 };
 
@@ -546,7 +554,6 @@ static int snd_card_h3600_playback_prepare(snd_pcm_substream_t * substream)
 {
         h3600_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
-        unsigned long *ptr = (unsigned long *)substream->pcm->private_data;
         
         DEBUG_NAME(KERN_DEBUG "playback_prepare\n");
                 
@@ -558,8 +565,6 @@ static int snd_card_h3600_playback_prepare(snd_pcm_substream_t * substream)
 
 static int snd_card_h3600_playback_trigger(snd_pcm_substream_t * substream, int cmd)
 {
-        h3600_t *chip = snd_pcm_substream_chip(substream);
-
         DEBUG_NAME(KERN_DEBUG "playback_trigger\n");
         return snd_card_h3600_pcm_trigger(play, substream, cmd);
 }

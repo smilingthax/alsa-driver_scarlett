@@ -14,6 +14,8 @@
  *
  */
 
+/* $Id: uda1341.h,v 1.3 2002/03/28 19:04:56 perex Exp $ */
+
 #define UDA1341_ALSA_NAME "snd-uda1341"
 
 struct uda1341_cfg {
