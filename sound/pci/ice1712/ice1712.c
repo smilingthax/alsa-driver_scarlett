@@ -1681,12 +1681,11 @@ static void snd_ice1712_proc_read(snd_info_entry_t *entry,
 			snd_iprintf(buffer, "  CCS%02x         : 0x%02x\n", idx, inb(ice->port+idx));
 		for (idx = 0x0; idx < 0x30 ; idx++)
 			snd_iprintf(buffer, "  MT%02x         : 0x%02x\n", idx, inb(ice->profi_port+idx));
-
-	}
-	else {
+	} else {
 		snd_iprintf(buffer, "  PSDOUT03         : 0x%04x\n", (unsigned)inw(ICEMT(ice, ROUTE_PSDOUT03)));
 		snd_iprintf(buffer, "  CAPTURE          : 0x%08x\n", inl(ICEMT(ice, ROUTE_CAPTURE)));
 		snd_iprintf(buffer, "  SPDOUT           : 0x%04x\n", (unsigned)inw(ICEMT(ice, ROUTE_SPDOUT)));
+		snd_iprintf(buffer, "  RATE             : 0x%02x\n", (unsigned)inb(ICEMT(ice, RATE)));
 	}
 }
 
