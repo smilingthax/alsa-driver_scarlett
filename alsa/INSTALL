@@ -690,6 +690,7 @@ alias sound-service-1-12 snd-pcm1-oss
 
 -----
 
+
 ALSA PCM devices to OSS devices mapping
 =======================================
 
@@ -705,6 +706,16 @@ ALSA PCM devices to OSS devices mapping
 
 The first number from /dev/snd/pcmC{X}D{Y} expression means soundcard number
 and second means device number.
+
+
+DEVFS support
+=============
+
+The ALSA driver fully supports the devfs extension. You should add the line
+bellow to your devfsd.conf file to make things working properly:
+
+LOOKUP EXECUTE snd /sbin/modprobe snd
+
 
 Proc interfaces (/proc/asound)
 ==============================
