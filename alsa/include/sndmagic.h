@@ -51,28 +51,40 @@ static inline int _snd_magic_bad(void *obj, int magic)
 
 #define snd_magic_kfree _snd_magic_kfree
 
-#define snd_pcm_t_magic				0x1234ab02
-#define snd_pcm_file_t_magic			0x1234ab03
-#define snd_pcm_subchn_t_magic			0x1234ab04
-#define snd_pcm_proc_private_t_magic		0x1234ab05
-#define snd_pcm_oss_file_t_magic		0x1235ab03
+#define snd_pcm_t_magic				0xa15a0101
+#define snd_pcm_file_t_magic			0xa15a0102
+#define snd_pcm_subchn_t_magic			0xa15a0103
+#define snd_pcm_proc_private_t_magic		0xa15a0104
+#define snd_pcm_oss_file_t_magic		0xa15a0105
 
-#define snd_info_private_data_t_magic		0x1236ab02
-#define snd_control_t_magic			0x1237ab02
-#define snd_rawmidi_t_magic			0x1238ab02
-#define snd_timer_t_magic			0x1239ab02
-#define snd_timer_user_t_magic			0x1239ab03
-#define snd_hwdep_t_magic			0x123aab02
-#define snd_kmixer_t_magic			0x123bab02
-#define snd_kmixer_file_t_magic			0x123bab03
+#define snd_info_private_data_t_magic		0xa15a0201
+#define snd_control_t_magic			0xa15a0301
+#define snd_rawmidi_t_magic			0xa15a0401
+#define snd_timer_t_magic			0xa15a0501
+#define snd_timer_user_t_magic			0xa15a0502
+#define snd_hwdep_t_magic			0xa15a0601
+#define snd_kmixer_t_magic			0xa15a0701
+#define snd_kmixer_file_t_magic			0xa15a0702
 
 
-#define snd_card_share_pcm_t_magic		0xa3120202
-#define snd_card_share_pcm_open_t_magic		0xa3120203
-#define snd_card_share_mixer_group_t_magic	0xa3120204
-#define snd_card_share_mixer_element_t_magic	0xa3120205
+#define snd_card_share_pcm_t_magic		0xa15a1001
+#define snd_card_share_pcm_open_t_magic		0xa15a1002
+#define snd_card_share_mixer_group_t_magic	0xa15a1003
+#define snd_card_share_mixer_element_t_magic	0xa15a1004
 
-#define es18xx_t_magic				0xabcd1202
+#define es18xx_t_magic				0xa15a1101
+
+#define trident_t_magic				0xa15a1201
+#define snd_trident_voice_t_magic		0xa15a1202
+#define es1938_t_magic				0xa15a1301
+#define cs461x_t_magic				0xa15a1401
+#define ensoniq_t_magic				0xa15a1501
+#define sonicvibes_t_magic			0xa15a1601
+#define mpu401_t_magic				0xa15a1701
+#define fm801_t_magic				0xa15a1801
+#define ac97_t_magic				0xa15a1901
+#define ak4531_t_magic				0xa15a1a01
+#define snd_uart16550_t_magic			0xa15a1b01
 
 #else
 #define snd_magic_kcalloc(type, extra, flags) snd_kcalloc(sizeof(type) + extra, flags, type##_magic)
