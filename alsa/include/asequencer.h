@@ -1,6 +1,6 @@
 /*
  *  Main header file for the ALSA sequencer
- *  Copyright (c) 1998 by Frank van de Pol <frank@vande-pol.demon.nl>
+ *  Copyright (c) 1998-1999 by Frank van de Pol <frank@vande-pol.demon.nl>
  *            (c) 1998/1999 by Jaroslav Kysela <perex@suse.cz>
  *
  *
@@ -61,8 +61,10 @@
 #define SND_SEQ_EVENT_START		23	/* midi Real Time Start message */
 #define SND_SEQ_EVENT_CONTINUE		24	/* midi Real Time Continue message */
 #define SND_SEQ_EVENT_STOP		25	/* midi Real Time Stop message */	
-#define SND_SEQ_EVENT_QFRAME		26	/* Midi time code quarter frame */
+#define SND_SEQ_EVENT_QFRAME		26	/* midi time code quarter frame */
 #define SND_SEQ_EVENT_TICK		27	/* midi Real Time Tick message */
+#define	SND_SEQ_EVENT_SETPOS_TICK	28	/* set tick queue position */
+#define SND_SEQ_EVENT_SETPOS_TIME	29	/* set realtime queue position */
 	
 #define SND_SEQ_EVENT_TEMPO		30	/* (SMF) Tempo event */
 #define SND_SEQ_EVENT_TIMESIGN		31	/* SMF Time Signature event */
