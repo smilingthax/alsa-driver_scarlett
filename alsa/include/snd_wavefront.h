@@ -96,7 +96,6 @@ struct _snd_wavefront {
 };
 
 struct _snd_wavefront_card {
-	int ics2115_irq;
 	snd_wavefront_t wavefront;
 #ifdef __ISAPNP__
 	struct isapnp_dev *wss;
