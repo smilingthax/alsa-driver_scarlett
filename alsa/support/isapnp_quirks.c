@@ -15,7 +15,6 @@
  */
 
 #ifdef ALSA_BUILD
-#define MODULE
 #define CONFIG_ISAPNP
 #endif
 
