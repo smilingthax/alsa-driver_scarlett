@@ -132,7 +132,7 @@ typedef struct snd_stru_pcm_oss_runtime {
 	size_t buffer_used;			/* used length from buffer */
 	snd_pcm_plugin_t *plugin_first;
 	snd_pcm_plugin_t *plugin_last;
-	unsigned int prev_frame_io_interrupt;
+	unsigned int prev_hw_ptr_interrupt;
 } snd_pcm_oss_runtime_t;
 
 typedef struct snd_stru_pcm_oss_file {

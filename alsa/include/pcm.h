@@ -123,20 +123,20 @@ struct snd_stru_pcm_runtime {
 
 	volatile int *state;		/* stream status */
 	int _sstate;			/* static status location */
-	volatile size_t *frame_io;
-	size_t _sframe_io;
-	volatile size_t *frame_data;
-	size_t _sframe_data;
+	volatile size_t *hw_ptr;
+	size_t _shw_ptr;
+	volatile size_t *appl_ptr;
+	size_t _sappl_ptr;
 	snd_timestamp_t *tstamp;
 	snd_timestamp_t _ststamp;
-	size_t frame_io_base;		/* Position at buffer restart */
-	size_t frame_io_interrupt;	/* Position at interrupt time*/
+	size_t hw_ptr_base;		/* Position at buffer restart */
+	size_t hw_ptr_interrupt;	/* Position at interrupt time*/
 	int interrupt_pending;
-	size_t frames_min_align;		/* Min alignment for the format */
-	size_t xfer_frames_align;	/* True alignment used */
-	size_t frames_avail_max;
+	size_t min_align;		/* Min alignment for the format */
+	size_t xfer_align;		/* True alignment used */
+	size_t avail_max;
 
-	size_t frame_boundary;
+	size_t boundary;
 
 	int xruns;
 	int overrange;
@@ -144,11 +144,11 @@ struct snd_stru_pcm_runtime {
 	void (*dig_mask_free)(void *dig_mask);
 	snd_pcm_digital_t digital;	/* digital format information */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
-	size_t frames_min;	/* min available frames for wakeup */
-	size_t frames_align;	/* Requested alignment */
-	unsigned int frames_xrun_max;
-	int fill_mode;       /* fill mode - SND_PCM_FILL_XXXX */
-	size_t frames_fill_max;   /* maximum silence fill in frames */
+	size_t avail_min;		/* min available frames for wakeup */
+	size_t align;			/* Requested alignment */
+	unsigned int xrun_max;
+	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
+	size_t fill_max;		/* maximum silence fill in frames */
 	size_t frame_fill;
 	size_t bits_per_frame;
 	size_t bits_per_sample;
@@ -354,23 +354,23 @@ static inline size_t snd_pcm_lib_fragment_bytes(snd_pcm_substream_t *substream)
 /*
  *  result is: 0 ... (frag_boundary - 1)
  */
-static inline size_t snd_pcm_playback_frames_avail(snd_pcm_runtime_t *runtime)
+static inline size_t snd_pcm_playback_avail(snd_pcm_runtime_t *runtime)
 {
-	ssize_t frames_avail = *runtime->frame_io + runtime->buffer_size - *runtime->frame_data;
-	if (frames_avail < 0)
-		frames_avail += runtime->frame_boundary;
-	return frames_avail;
+	ssize_t avail = *runtime->hw_ptr + runtime->buffer_size - *runtime->appl_ptr;
+	if (avail < 0)
+		avail += runtime->boundary;
+	return avail;
 }
 
 /*
  *  result is: 0 ... (frag_boundary - 1)
  */
-static inline size_t snd_pcm_capture_frames_avail(snd_pcm_runtime_t *runtime)
+static inline size_t snd_pcm_capture_avail(snd_pcm_runtime_t *runtime)
 {
-	ssize_t frames_avail = *runtime->frame_io - *runtime->frame_data;
-	if (frames_avail < 0)
-		frames_avail += runtime->frame_boundary;
-	return frames_avail;
+	ssize_t avail = *runtime->hw_ptr - *runtime->appl_ptr;
+	if (avail < 0)
+		avail += runtime->boundary;
+	return avail;
 }
 
 static inline void snd_pcm_trigger_done(snd_pcm_substream_t *substream, 
@@ -414,7 +414,7 @@ extern int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_substream_t *substream, size_t size);
 extern int snd_pcm_lib_ioctl(snd_pcm_substream_t *substream,
 			     unsigned int cmd, void *arg);                      
-extern void snd_pcm_update_frame_io(snd_pcm_substream_t *substream);
+extern void snd_pcm_update_hw_ptr(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_xrun_check(snd_pcm_substream_t *substream);
 extern int snd_pcm_playback_ready(snd_pcm_substream_t *substream);

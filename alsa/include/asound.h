@@ -719,12 +719,12 @@ typedef struct snd_pcm_params {
 	unsigned int time: 1;		/* timestamp switch */
 	size_t buffer_size;		/* requested buffer size in frames */
 	size_t frag_size;		/* requested size of fragment in frames */
-	size_t frames_min;		/* min available frames for wakeup */
-	size_t frames_align;		/* transferred size need to be a multiple */
-	size_t frames_xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
+	size_t avail_min;		/* min available frames for wakeup */
+	size_t align;			/* transferred size need to be a multiple */
+	size_t xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t frames_fill_max;		/* maximum silence fill in frames */
-	size_t frame_boundary;		/* position in frames wrap point */
+	size_t fill_max;		/* maximum silence fill in frames */
+	size_t boundary;		/* position in frames wrap point */
 	unsigned int fail_mask;		/* failure locations */
 	int fail_reason;		/* failure reason */
 	char reserved[64];		/* must be filled with zero */
@@ -773,12 +773,12 @@ typedef struct snd_pcm_setup {
 	unsigned int time: 1;		/* timestamp switch */
 	size_t buffer_size;		/* current buffer size in frames */
 	size_t frag_size;		/* current fragment size in frames */
-	size_t frames_min;		/* min available frames for wakeup */
-	size_t frames_align;		/* transferred size need to be a multiple */
-	size_t frames_xrun_max;		/* max size of underrun/overrun before unconditional stop */
+	size_t avail_min;		/* min available frames for wakeup */
+	size_t align;			/* transferred size need to be a multiple */
+	size_t xrun_max;		/* max size of underrun/overrun before unconditional stop */
 	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t frames_fill_max;		/* maximum silence fill in frames */
-	size_t frame_boundary;		/* position in frames wrap point */
+	size_t fill_max;		/* maximum silence fill in frames */
+	size_t boundary;		/* position in frames wrap point */
 	size_t frags;			/* allocated fragments */
 	size_t fifo_size;		/* stream FIFO size */
 	size_t transfer_block_size;	/* bus transfer block size */
@@ -806,10 +806,11 @@ typedef struct snd_pcm_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
 	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
 	snd_timestamp_t tstamp;	/* Timestamp */
-	size_t frame_io;	/* current I/O position in frames */
-	size_t frame_data;	/* current data position */
-	size_t frames_avail;	/* number of frames available for application */
-	size_t frames_avail_max;	/* max frames available since last status */
+	size_t appl_ptr;	/* current application side ptr in frames */
+	size_t hw_ptr;		/* current hardware side ptr in frames */
+	size_t now_ptr;		/* current audio position in frames */
+	size_t avail;		/* number of frames available */
+	size_t avail_max;	/* max frames available since last status */
 	unsigned int xruns;	/* count of underruns/overruns from last status */
 	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
 	char reserved[64];	/* must be filled with zero */
@@ -818,14 +819,15 @@ typedef struct snd_pcm_status {
 typedef struct {
 	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
 	int pad1;		/* Needed for 64 bit alignment */
-	size_t frame_io;	/* RO: I/O position (0 ... frame_boundary-1) updated only on status query and at interrupt time */
+	size_t hw_ptr;		/* RO: hw side ptr (0 ... boundary-1) 
+				   updated only on request and at interrupt time */
 	snd_timestamp_t tstamp;	/* Timestamp */
 	char pad[PAGE_SIZE - (sizeof(int) * 2 + sizeof(size_t) +
 			      sizeof(snd_timestamp_t))];		
 } snd_pcm_mmap_status_t;
 
 typedef struct {
-	size_t frame_data;	/* RW: application position (0 ... frame_boundary-1) checked only on status query and at interrupt time */
+	size_t appl_ptr;	/* RW: application side ptr (0...boundary-1) */
 	char pad[PAGE_SIZE - sizeof(size_t)];
 } snd_pcm_mmap_control_t;
 
@@ -847,7 +849,9 @@ typedef struct {
 #define SND_PCM_IOCTL_PARAMS_INFO	_IOW ('A', 0x11, snd_pcm_params_info_t)
 #define SND_PCM_IOCTL_SETUP		_IOR ('A', 0x20, snd_pcm_setup_t)
 #define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x21, snd_pcm_status_t)
-#define SND_PCM_IOCTL_FRAME_IO		_IO  ('A', 0x22)
+#define SND_PCM_IOCTL_HW_PTR		_IO  ('A', 0x22)
+#define SND_PCM_IOCTL_NOW_PTR		_IO  ('A', 0x23)
+#define SND_PCM_IOCTL_APPL_PTR		_IOW ('A', 0x24, off_t)
 #define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
 #define SND_PCM_IOCTL_GO		_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_FLUSH		_IO  ('A', 0x32)
@@ -860,7 +864,6 @@ typedef struct {
 #define SND_PCM_IOCTL_READ_FRAMES	_IOR ('A', 0x51, snd_xfer_t)
 #define SND_PCM_IOCTL_WRITEV_FRAMES	_IOW ('A', 0x52, snd_xferv_t)
 #define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
-#define SND_PCM_IOCTL_FRAME_DATA	_IOW ('A', 0x54, off_t)
 #define SND_PCM_IOCTL_LINK		_IOW ('A', 0x61, int)
 #define SND_PCM_IOCTL_UNLINK		_IO  ('A', 0x62)
 

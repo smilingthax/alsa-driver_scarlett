@@ -1656,7 +1656,7 @@ struct snd_stru_cs461x {
 		unsigned int hw_data;	/* Offset to next dst (or src) in hw ring buffer */
 		unsigned int hw_io;	/* Ring buffer hw pointer */
 		int hw_ready;		/* Bytes ready for play (or captured) in hw ring buffer */
-		size_t frame_data;	/* Last seen frame_data */
+		size_t appl_ptr;	/* Last seen appl_ptr */
 		snd_pcm_substream_t *substream;
 	} play, capt;
 
