@@ -34,6 +34,7 @@
 #ifdef CONFIG_KERNELD
 #include <linux/kerneld.h>
 #endif
+#include "ioctl32.h"
 
 int snd_timer_limit = 1;
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>, Takashi Iwai <tiwai@suse.de>");
@@ -1322,6 +1323,7 @@ static int __init alsa_timer_init(void)
 	if ((err = snd_register_device(SNDRV_DEVICE_TYPE_TIMER,
 					NULL, 0, &snd_timer_reg, "timer"))<0)
 		snd_printk(KERN_ERR "unable to register timer device (%i)\n", err);
+	snd_timer_ioctl32_init();
 	return 0;
 }
 
@@ -1329,6 +1331,7 @@ static void __exit alsa_timer_exit(void)
 {
 	struct list_head *p, *n;
 
+	snd_timer_ioctl32_done();
 	snd_unregister_device(SNDRV_DEVICE_TYPE_TIMER, NULL, 0);
 	/* unregister the system timer */
 	list_for_each_safe(p, n, &snd_timer_list) {

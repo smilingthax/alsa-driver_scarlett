@@ -10,16 +10,16 @@ export-objs  := sound.o pcm.o pcm_lib.o rawmidi.o timer.o rtctimer.o hwdep.o
 list-multi   := snd.o snd-pcm.o snd-rawmidi.o snd-timer.o snd-rtctimer.o snd-hwdep.o
 
 snd-objs     := sound.o init.o isadma.o memory.o info.o control.o misc.o \
-                device.o wrappers.o
+                device.o wrappers.o ioctl32.o
 ifeq ($(CONFIG_SND_OSSEMUL),y)
 snd-objs     += sound_oss.o info_oss.o
 endif
 
 snd-pcm-objs := pcm.o pcm_native.o pcm_lib.o pcm_timer.o pcm_misc.o \
-		pcm_memory.o
+		pcm_memory.o pcm_ioctl32.o
 
-snd-rawmidi-objs  := rawmidi.o
-snd-timer-objs    := timer.o
+snd-rawmidi-objs  := rawmidi.o rawmidi_ioctl32.o
+snd-timer-objs    := timer.o timer_ioctl32.o
 snd-rtctimer-objs := rtctimer.o
 snd-hwdep-objs    := hwdep.o
 
