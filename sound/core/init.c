@@ -154,7 +154,7 @@ int snd_card_disconnect(snd_card_t * card)
 
 	spin_lock(&card->files_lock);
 	if (card->shutdown) {
-		write_unlock(&card->files_lock);
+		spin_unlock(&card->files_lock);
 		return 0;
 	}
 	card->shutdown = 1;
