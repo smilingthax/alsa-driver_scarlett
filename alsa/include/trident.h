@@ -303,6 +303,7 @@ struct snd_stru_trident {
         int ChanDwordCount;
 
 	unsigned char spdif_ctrl;
+	unsigned int ac97_ctrl;
         
         unsigned int ChanMap[2];	/* allocation map for hardware channels */
         
@@ -321,6 +322,10 @@ struct snd_stru_trident {
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_seq_device_t *seq_dev;
+
+	unsigned int musicvol_wavevol;
+	snd_kmixer_element_t *me_vol_wave;
+	snd_kmixer_element_t *me_vol_music;
 
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
