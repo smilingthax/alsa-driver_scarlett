@@ -802,14 +802,23 @@ struct _snd_emu10k1_pcm {
 };
 
 typedef struct {
-	unsigned long send_routing[3];
-	unsigned char send_volume[3][4];
+	unsigned char send_routing[3][8];
+	unsigned char send_volume[3][8];
 	unsigned short attn[3];
 	snd_kcontrol_t *ctl_send_routing;
 	snd_kcontrol_t *ctl_send_volume;
 	snd_kcontrol_t *ctl_attn;
 	emu10k1_pcm_t *epcm;
 } emu10k1_pcm_mixer_t;
+
+#define snd_emu10k1_compose_send_routing(route) \
+((route[0] | (route[1] << 4) | (route[2] << 8) | (route[3] << 12)) << 16)
+
+#define snd_emu10k1_compose_audigy_fxrt1(route) \
+(((unsigned int)route[0] | ((unsigned int)route[1] << 8) | ((unsigned int)route[2] << 16) | ((unsigned int)route[3] << 12)) << 24)
+
+#define snd_emu10k1_compose_audigy_fxrt2(route) \
+(((unsigned int)route[4] | ((unsigned int)route[5] << 8) | ((unsigned int)route[6] << 16) | ((unsigned int)route[7] << 12)) << 24)
 
 typedef struct snd_emu10k1_memblk {
 	snd_util_memblk_t mem;

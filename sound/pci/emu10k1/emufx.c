@@ -1234,8 +1234,8 @@ static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 	gpr += 2;
 
 	/* Wave Surround Playback */
-	A_OP(icode, &ptr, iMAC0, A_GPR(playback+2), A_C_00000000, A_GPR(gpr), A_FXBUS(FXBUS_PCM_LEFT_REAR));
-	A_OP(icode, &ptr, iMAC0, A_GPR(playback+3), A_C_00000000, A_GPR(gpr+1), A_FXBUS(FXBUS_PCM_RIGHT_REAR));
+	A_OP(icode, &ptr, iMAC0, A_GPR(playback+2), A_C_00000000, A_GPR(gpr), A_FXBUS(FXBUS_PCM_LEFT));
+	A_OP(icode, &ptr, iMAC0, A_GPR(playback+3), A_C_00000000, A_GPR(gpr+1), A_FXBUS(FXBUS_PCM_RIGHT));
 	snd_emu10k1_init_stereo_control(&controls[nctl++], "Wave Surround Playback Volume", gpr, 0);
 	gpr += 2;
 
@@ -1269,14 +1269,20 @@ static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 	snd_emu10k1_init_stereo_control(&controls[nctl++], "Music Capture Volume", gpr, 0);
 	gpr += 2;
 
+	/* Surround Playback */
+	A_OP(icode, &ptr, iMAC0, A_GPR(playback+2), A_C_00000000, A_GPR(gpr), A_FXBUS(FXBUS_PCM_LEFT_REAR));
+	A_OP(icode, &ptr, iMAC0, A_GPR(playback+3), A_C_00000000, A_GPR(gpr+1), A_FXBUS(FXBUS_PCM_RIGHT_REAR));
+	snd_emu10k1_init_stereo_control(&controls[nctl++], "Surround Playback Volume", gpr, 80);
+	gpr += 2;
+
 	/* Center Playback */
 	A_OP(icode, &ptr, iMAC0, A_GPR(playback+4), A_GPR(playback+4), A_GPR(gpr), A_FXBUS(FXBUS_PCM_CENTER));
-	snd_emu10k1_init_mono_control(&controls[nctl++], "Center Playback Volume", gpr, 0);
+	snd_emu10k1_init_mono_control(&controls[nctl++], "Center Playback Volume", gpr, 80);
 	gpr++;
 
 	/* LFE Playback */
 	A_OP(icode, &ptr, iMAC0, A_GPR(playback+5), A_GPR(playback+5), A_GPR(gpr), A_FXBUS(FXBUS_PCM_LFE));
-	snd_emu10k1_init_mono_control(&controls[nctl++], "LFE Playback Volume", gpr, 0);
+	snd_emu10k1_init_mono_control(&controls[nctl++], "LFE Playback Volume", gpr, 80);
 	gpr++;
 
 	/*
