@@ -5,7 +5,13 @@
 #include "usbus428ctldefs.h" 
 
 #define NRURBS	        2	/* */
-#define NRPACKS		2	/* usb-frames/ms per urb: 1 and 2 are supported. set to 1 if you want lowest possible latency */
+#define NRPACKS		1	/* usb-frames/ms per urb: 1 and 2 are supported.
+				   setting to 2 will PERHAPS make it easier for slow machines.
+				   Jitter will be higher though.
+				   On my PIII 500Mhz Laptop setting to 1 is the only way to go 
+				   for PLAYING synths. i.e. Jack & Aeolus sound quit nicely 
+				   at 4 periods 64 frames. 
+				*/
 
 #define URBS_AsyncSeq 10
 #define URB_DataLen_AsyncSeq 32
