@@ -163,7 +163,7 @@ static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
 {
 	snd_info_private_data_t *data;
 	struct snd_info_entry *entry;
-	int ret;
+	loff_t ret;
 
 	data = snd_magic_cast(snd_info_private_data_t, file->private_data, return -ENXIO);
 	entry = data->entry;
