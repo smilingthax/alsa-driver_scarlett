@@ -1,3 +1,6 @@
+#ifndef __SOUND_ASOUNDEF_H
+#define __SOUND_ASOUNDEF_H
+
 /*
  *  Advanced Linux Sound Architecture - ALSA - Driver
  *  Copyright (c) 1994-2000 by Jaroslav Kysela <perex@suse.cz>
@@ -18,9 +21,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-
-#ifndef __ASOUNDEF_H
-#define __ASOUNDEF_H
 
 /****************************************************************************
  *                                                                          *
@@ -224,4 +224,4 @@
 #define MIDI_CTL_MONO1			0x7e
 #define MIDI_CTL_MONO2			0x7f
 
-#endif				/* __ASOUNDEF_H */
+#endif /* __SOUND_ASOUNDEF_H */

@@ -1,5 +1,5 @@
-#ifndef __EMU8000_REG_H
-#define __EMU8000_REG_H
+#ifndef __SOUND_EMU8000_REG_H
+#define __SOUND_EMU8000_REG_H
 /*
  *  Register operations for the EMU8000
  *
@@ -204,4 +204,4 @@
 #define EMU8000_00A0_WRITE(emu, chan, val) \
 	snd_emu8000_poke_dw((emu), EMU8000_DATA0(emu), EMU8000_CMD(5, (chan)), (val))
 
-#endif
+#endif /* __SOUND_EMU8000_REG_H */

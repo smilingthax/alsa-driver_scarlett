@@ -1,5 +1,5 @@
-#ifndef __TEA6330T_H
-#define __TEA6330T_H
+#ifndef __SOUND_TEA6330T_H
+#define __SOUND_TEA6330T_H
 
 /*
  *  Routines for control of TEA6330T circuit.
@@ -39,4 +39,4 @@ typedef struct {
 extern int snd_tea6330t_detect(snd_i2c_bus_t *bus, int equalizer);
 extern int snd_tea6330t_update_mixer(snd_card_t * card, snd_i2c_bus_t * bus, int equalizer, int fader);
 
-#endif				/* __TEA6330T_H */
+#endif /* __SOUND_TEA6330T_H */

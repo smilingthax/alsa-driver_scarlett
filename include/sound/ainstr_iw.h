@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __AINSTR_IW_H
-#define __AINSTR_IW_H
+#ifndef __SOUND_AINSTR_IW_H
+#define __SOUND_AINSTR_IW_H
 
 #ifndef __KERNEL__
 #include <asm/types.h>
@@ -372,4 +372,4 @@ int snd_seq_iwffff_init(snd_iwffff_ops_t *ops,
 
 #endif
 
-#endif /* __SEQ_INSTR_IW_H */
+#endif /* __SOUND_AINSTR_IW_H */

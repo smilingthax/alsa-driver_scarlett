@@ -1,5 +1,5 @@
-#ifndef __GUS_H
-#define __GUS_H
+#ifndef __SOUND_GUS_H
+#define __SOUND_GUS_H
 
 /*
  *  Global structures used for GUS part of ALSA driver
@@ -724,6 +724,6 @@ int snd_gus_simple_get_sample(void *private_data, simple_instrument_t *instr,
 int snd_gus_simple_remove_sample(void *private_data, simple_instrument_t *instr,
 				 int atomic);
 
-#endif				/* CONFIG_SND_SEQUENCER */
+#endif /* CONFIG_SND_SEQUENCER */
 
-#endif				/* __GUS_H */
+#endif /* __SOUND_GUS_H */

@@ -1,3 +1,6 @@
+#ifndef __SOUND_SEQ_INSTR_H
+#define __SOUND_SEQ_INSTR_H
+
 /*
  *  Main kernel header file for the ALSA sequencer
  *  Copyright (c) 1999 by Jaroslav Kysela <perex@suse.cz>
@@ -18,9 +21,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-#ifndef __SND_SEQ_INSTR_H
-#define __SND_SEQ_INSTR_H
-
 #include "seq_kernel.h"
 
 /* Instrument cluster */
@@ -109,4 +109,4 @@ int snd_seq_instr_event(snd_seq_kinstr_ops_t *ops,
 			int atomic,
 			int hop);
 
-#endif /* __SND_SEQ_INSTR_H */
+#endif /* __SOUND_SEQ_INSTR_H */

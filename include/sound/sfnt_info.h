@@ -1,3 +1,6 @@
+#ifndef __SOUND_SFNT_INFO_H
+#define __SOUND_SFNT_INFO_H
+
 /*
  *  Patch record compatible with AWE driver on OSS
  *
@@ -18,9 +21,6 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-
-#ifndef __SFNT_INFO_H
-#define __SFNT_INFO_H
 
 #include "seq_oss_legacy.h"
 
@@ -181,4 +181,4 @@ typedef struct soundfont_voice_map_t {
 } soundfont_voice_map_t;
 
 
-#endif
+#endif /* __SOUND_SFNT_INFO_H */

@@ -1,5 +1,5 @@
-#ifndef __MPU401_H
-#define __MPU401_H
+#ifndef __SOUND_MPU401_H
+#define __SOUND_MPU401_H
 
 /*
  *  Header file for MPU-401 and compatible cards
@@ -107,4 +107,4 @@ int snd_mpu401_uart_new(snd_card_t * card,
 			int irq_flags,
 			snd_rawmidi_t ** rrawmidi);
 
-#endif				/* __MPU401_H */
+#endif /* __SOUND_MPU401_H */

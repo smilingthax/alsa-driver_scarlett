@@ -1,3 +1,6 @@
+#ifndef __SOUND_SEQ_MIDI_EVENT_H
+#define __SOUND_SEQ_MIDI_EVENT_H
+
 /*
  *  MIDI byte <-> sequencer event coder
  *
@@ -18,9 +21,6 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
-
-#ifndef __MIDI_CODER_H
-#define __MIDI_CODER_H
 
 #include "asequencer.h"
 
@@ -51,4 +51,4 @@ int snd_midi_event_encode_byte(snd_midi_event_t *dev, int c, snd_seq_event_t *ev
 /* decode from event to bytes - return number of written bytes if success */
 long snd_midi_event_decode(snd_midi_event_t *dev, unsigned char *buf, long count, snd_seq_event_t *ev);
 
-#endif
+#endif /* __SOUND_SEQ_MIDI_EVENT_H */

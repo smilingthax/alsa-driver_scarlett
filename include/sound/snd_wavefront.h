@@ -1,5 +1,5 @@
-#ifndef __SND_WAVEFRONT_H__
-#define __SND_WAVEFRONT_H__
+#ifndef __SOUND_SND_WAVEFRONT_H__
+#define __SOUND_SND_WAVEFRONT_H__
 
 #include "cs4231.h"
 #include "mpu401.h"
@@ -138,5 +138,4 @@ extern int snd_wavefront_fx_release (snd_hwdep_t *, struct file *);
 
 #define LOGNAME "WaveFront: "
 
-#endif  /* __SND_WAVEFRONT_H__ */
-
+#endif  /* __SOUND_SND_WAVEFRONT_H__ */

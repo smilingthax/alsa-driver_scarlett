@@ -1,5 +1,5 @@
-#ifndef __INITVAL_H
-#define __INITVAL_H
+#ifndef __SOUND_INITVAL_H
+#define __SOUND_INITVAL_H
 
 /*
  *  Init values for soundcard modules
@@ -168,4 +168,4 @@ static int __init get_id(char **str, char **dst)
 }
 #endif
 
-#endif				/* __INITVAL_H */
+#endif /* __SOUND_INITVAL_H */

@@ -1,5 +1,5 @@
-#ifndef __SB16_CSP_H
-#define __SB16_CSP_H
+#ifndef __SOUND_SB16_CSP_H
+#define __SOUND_SB16_CSP_H
 
 /*
  *  Copyright (c) 1999 by Uros Bizjak <uros@kss-loka.si>
@@ -165,4 +165,4 @@ struct snd_sb_csp {
 int snd_sb_csp_new(sb_t *chip, int device, snd_hwdep_t ** rhwdep);
 #endif
 
-#endif
+#endif /* __SOUND_SB16_CSP */

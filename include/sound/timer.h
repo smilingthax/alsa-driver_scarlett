@@ -1,5 +1,5 @@
-#ifndef __TIMER_H
-#define __TIMER_H
+#ifndef __SOUND_TIMER_H
+#define __SOUND_TIMER_H
 
 /*
  *  Timer abstract layer
@@ -134,4 +134,4 @@ extern void snd_timer_interrupt(snd_timer_t * timer, unsigned long ticks_left);
 
 extern unsigned int snd_timer_system_resolution(void);
 
-#endif				/* __TIMER_H */
+#endif /* __SOUND_TIMER_H */

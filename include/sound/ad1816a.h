@@ -1,6 +1,5 @@
-
-#ifndef __AD1816A_H
-#define __AD1816A_H
+#ifndef __SOUND_AD1816A_H
+#define __SOUND_AD1816A_H
 
 /*
     ad1816a.h - definitions for ADI SoundPort AD1816A chip.
@@ -172,5 +171,4 @@ extern int snd_ad1816a_create(snd_card_t *card, unsigned long port,
 extern int snd_ad1816a_pcm(ad1816a_t *chip, int device, snd_pcm_t **rpcm);
 extern int snd_ad1816a_mixer(ad1816a_t *chip);
 
-#endif	/* __AD1816A_H */
-
+#endif	/* __SOUND_AD1816A_H */

@@ -1,5 +1,5 @@
-#ifndef __PCM_H
-#define __PCM_H
+#ifndef __SOUND_PCM_H
+#define __SOUND_PCM_H
 
 /*
  *  Digital Audio (PCM) abstract layer
@@ -853,4 +853,4 @@ static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
 					 (IEC958_AES1_CON_PCM_CODER<<8)|\
 					 (IEC958_AES3_CON_FS_48000<<24))
 
-#endif				/* __PCM_H */
+#endif /* __SOUND_PCM_H */

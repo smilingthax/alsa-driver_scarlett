@@ -1,5 +1,5 @@
-#ifndef __SEQ_VIRMIDI_H
-#define __SEQ_VIRMIDI_H
+#ifndef __SOUND_SEQ_VIRMIDI_H
+#define __SOUND_SEQ_VIRMIDI_H
 
 /*
  *  Virtual Raw MIDI client on Sequencer
@@ -78,4 +78,5 @@ struct _snd_virmidi_dev {
 
 int snd_virmidi_new(snd_card_t *card, int device, snd_rawmidi_t **rrmidi);
 
-#endif
+#endif /* __SOUND_SEQ_VIRMIDI */
+

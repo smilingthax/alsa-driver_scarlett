@@ -19,8 +19,8 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  */
-#ifndef __ASEQUENCER_H
-#define __ASEQUENCER_H
+#ifndef __SOUND_ASEQUENCER_H
+#define __SOUND_ASEQUENCER_H
 
 #ifndef __KERNEL__
 #include <linux/ioctl.h>
@@ -915,4 +915,4 @@ struct sndrv_seq_instr_cluster_get {
 #define SNDRV_SEQ_IOCTL_QUERY_NEXT_CLIENT	_IOWR('S', 0x51, struct sndrv_seq_client_info)
 #define SNDRV_SEQ_IOCTL_QUERY_NEXT_PORT	_IOWR('S', 0x52, struct sndrv_seq_port_info)
 
-#endif /* __ASEQUENCER_H */
+#endif /* __SOUND_ASEQUENCER_H */

@@ -1,5 +1,5 @@
-#ifndef __CONTROL_H
-#define __CONTROL_H
+#ifndef __SOUND_CONTROL_H
+#define __SOUND_CONTROL_H
 
 /*
  *  Header file for control interface
@@ -115,4 +115,4 @@ int snd_ctl_unregister(snd_card_t *card);
 int snd_ctl_register_ioctl(snd_kctl_ioctl_func_t fcn);
 int snd_ctl_unregister_ioctl(snd_kctl_ioctl_func_t fcn);
 
-#endif				/* __CONTROL_H */
+#endif	/* __SOUND_CONTROL_H */

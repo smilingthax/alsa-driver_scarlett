@@ -1,5 +1,5 @@
-#ifndef __AD1848_H
-#define __AD1848_H
+#ifndef __SOUND_AD1848_H
+#define __SOUND_AD1848_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
@@ -185,4 +185,4 @@ int snd_ad1848_put_double(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucon
 void snd_ad1848_debug(ad1848_t *chip);
 #endif
 
-#endif				/* __AD1848_H */
+#endif /* __SOUND_AD1848_H */

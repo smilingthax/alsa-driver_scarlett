@@ -1,5 +1,5 @@
-#ifndef __SB_H
-#define __SB_H
+#ifndef __SOUND_SB_H
+#define __SOUND_SB_H
 
 /*
  *  Header file for SoundBlaster cards
@@ -288,4 +288,4 @@ int snd_sb16_capture_open(snd_pcm_substream_t *substream);
 int snd_sb16_playback_close(snd_pcm_substream_t *substream);
 int snd_sb16_capture_close(snd_pcm_substream_t *substream);
 
-#endif				/* __SB_H */
+#endif /* __SOUND_SB_H */

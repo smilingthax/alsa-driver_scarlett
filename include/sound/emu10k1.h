@@ -1,5 +1,5 @@
-#ifndef __EMU10K1_H
-#define __EMU10K1_H
+#ifndef __SOUND_EMU10K1_H
+#define __SOUND_EMU10K1_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>,
@@ -1163,4 +1163,4 @@ typedef struct {
 #define SNDRV_EMU10K1_IOCTL_SINGLE_STEP	_IOW ('H', 0x83, int)
 #define SNDRV_EMU10K1_IOCTL_DBG_READ	_IOR ('H', 0x84, int)
 
-#endif	/* __EMU10K1_H */
+#endif	/* __SOUND_EMU10K1_H */

@@ -1,5 +1,5 @@
-#ifndef __yss255_h__
-#define __yss255_h__
+#ifndef __SOUND_YSS225_H
+#define __SOUND_YSS225_H
 
 extern unsigned char page_zero[256];
 extern unsigned char page_one[256];
@@ -20,5 +20,4 @@ extern unsigned char coefficients2[56];
 extern unsigned char coefficients3[404];
 
 
-#endif /* __ys225_h__ */
-
+#endif /* __SOUND_YSS225_H  */

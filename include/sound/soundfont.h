@@ -1,3 +1,6 @@
+#ifndef __SOUND_SOUNDFONT_H
+#define __SOUND_SOUNDFONT_H
+
 /*
  *  Soundfont defines and definitions.
  *
@@ -18,9 +21,6 @@
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
-
-#ifndef __SOUNDFONT_H
-#define __SOUNDFONT_H
 
 #include "sfnt_info.h"
 #include "util_mem.h"
@@ -127,4 +127,4 @@ int snd_sf_calc_parm_decay(int msec);
 extern int snd_sf_vol_table[128];
 
 
-#endif
+#endif /* __SOUND_SOUNDFONT_H */

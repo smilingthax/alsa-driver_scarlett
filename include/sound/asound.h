@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef __ASOUND_H
-#define __ASOUND_H
+#ifndef __SOUND_ASOUND_H
+#define __SOUND_ASOUND_H
 
 #if defined(LINUX) || defined(__LINUX__) || defined(__linux__)
 #include <linux/ioctl.h>
@@ -750,4 +750,4 @@ enum {
 	SNDRV_IOCTL_WRITEV = _IOW('K', 0x01, struct sndrv_xferv),
 };
 
-#endif				/* __ASOUND_H */
+#endif /* __SOUND_ASOUND_H */

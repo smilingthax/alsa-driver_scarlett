@@ -1,5 +1,5 @@
-#ifndef __SND_CS8403_H
-#define __SND_CS8403_H
+#ifndef __SOUND_CS8403_H
+#define __SOUND_CS8403_H
 
 /*
  *  Routines for Cirrus Logic CS8403/CS8404A IEC958 (S/PDIF) Transmitter
@@ -254,4 +254,4 @@ SND_CS8404_DECL unsigned char SND_CS8404_ENCODE(snd_aes_iec958_t *diga)
 
 #endif /* SND_CS8404 */
 
-#endif /* __SND_CS8403_H */
+#endif /* __SOUND_CS8403_H */
