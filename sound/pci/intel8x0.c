@@ -1559,7 +1559,7 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 	{ 0x1734, 0x0088, "Fujitsu-Siemens D1522", AC97_TUNE_HP_ONLY },
 	{ 0x10f1, 0x2665, "Fujitsu-Siemens Celcius", AC97_TUNE_HP_ONLY },
 	{ 0x8086, 0x4d44, "Intel D850EMV2", AC97_TUNE_HP_ONLY },
-	{ 0x4144, 0x5360, "AMD64 Motherboard", AC97_TUNE_HP_ONLY },
+	/* { 0x4144, 0x5360, "AMD64 Motherboard", AC97_TUNE_HP_ONLY }, */ /* FIXME: this seems invalid */
 	{ 0x1043, 0x80b0, "ASUS P4PE Mobo", AC97_TUNE_SWAP_SURROUND },
 	{ } /* terminator */
 };
