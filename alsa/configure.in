@@ -1162,6 +1162,32 @@ if test "$CONFIG_HAVE_TTY_COUNT_ATOMIC" = "1"; then
   AC_DEFINE(CONFIG_HAVE_TTY_COUNT_ATOMIC)
 fi
 
+dnl Check for video_get_drvdata()
+if test "$CONFIG_VIDEO_DEV" = "y"; then
+AC_MSG_CHECKING(for video_get_drvdata)
+video_get_drvdata="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/videodev.h"
+],[
+  void (*func)(struct video_device *);
+  func = video_get_drvdata;
+],
+    AC_MSG_RESULT("yes");video_get_drvdata="1",
+    AC_MSG_RESULT("no");video_get_drvdata="0",
+    AC_MSG_RESULT("unknown");video_get_drvdata="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_VIDEO_GET_DRVDATA=$video_get_drvdata
+dnl AC_SUBST(CONFIG_HAVE_VIDEO_GET_DRVDATA)
+if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VIDEO_GET_DRVDATA)
+fi
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
