@@ -466,7 +466,7 @@ Module parameters
     Module for soundcards based on CS4232/CS4232A chips.
 
     snd_port	- port # for CS4232 chip (PnP setup - 0x534)
-    snd_cport   - control port # for CS4232 chip (PnP setup - 0x120,0xf00)
+    snd_cport   - control port # for CS4232 chip (PnP setup - 0x120,0x210,0xf00)
     snd_mpu_port - port # for MPU-401 UART (PnP setup - 0x300), -1 = disable
     snd_fm_port - FM port # for CS4232 chip (PnP setup - 0x388), -1 = disable
     snd_irq	- IRQ # for CS4232 chip (5,7,9,11,12,15)
@@ -487,7 +487,7 @@ Module parameters
                                    CS4238B/CS4239 chips.
 
     snd_port	- port # for CS4232 chip (PnP setup - 0x534)
-    snd_cport   - control port # for CS4232 chip (PnP setup - 0x120,0xf00)
+    snd_cport   - control port # for CS4232 chip (PnP setup - 0x120,0x210,0xf00)
     snd_mpu_port - port # for MPU-401 UART (PnP setup - 0x300), -1 = disable
     snd_fm_port - FM port # for CS4232 chip (PnP setup - 0x388), -1 = disable
     snd_irq	- IRQ # for CS4232 chip (5,7,9,11,12,15)
