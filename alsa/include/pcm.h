@@ -49,11 +49,12 @@ typedef struct _snd_pcm_hardware {
 	unsigned int rate_max;		/* max rate */
 	unsigned int channels_min;	/* min channels */
 	unsigned int channels_max;	/* max channels */
+	size_t buffer_bytes_max;	/* max buffer size */
 	size_t period_bytes_min;	/* min period size */
 	size_t period_bytes_max;	/* max period size */
 	size_t period_bytes_step;	/* period size step */
-	unsigned int periods_min;		/* min # of periods */
-	unsigned int periods_max;		/* max # of periods */
+	unsigned int periods_min;	/* min # of periods */
+	unsigned int periods_max;	/* max # of periods */
 	size_t fifo_size;		/* fifo size in bytes */
 } snd_pcm_hardware_t;
 
@@ -62,6 +63,7 @@ typedef struct _snd_pcm_ops {
 	int (*close)(snd_pcm_substream_t *substream);
 	int (*ioctl)(snd_pcm_substream_t * substream,
 		     unsigned int cmd, void *arg);
+	int (*hw_params)(snd_pcm_substream_t * substream);
 	int (*prepare)(snd_pcm_substream_t * substream);
 	int (*trigger)(snd_pcm_substream_t * substream, int cmd);
 	snd_pcm_uframes_t (*pointer)(snd_pcm_substream_t * substream);
@@ -765,5 +767,10 @@ extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 					 (SND_PCM_AES1_CON_ORIGINAL<<8)|\
 					 (SND_PCM_AES1_CON_PCM_CODER<<8)|\
 					 (SND_PCM_AES3_CON_FS_48000<<24))
+
+static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
+{
+	*max = dma < 4 ? 64 * 1024 : 128 * 1024;
+}
 
 #endif				/* __PCM_H */
