@@ -973,6 +973,22 @@ static int __init snd_fm801_create(snd_card_t * card,
 		} while ((timeout - (signed long)jiffies) > 0);
 	}
 
+	/* the recovery phase, it seems that probing for non-existing codec might */
+	/* cause timeout problems */
+	timeout = jiffies + (4 * HZ) / 3;		/* 75ms */
+
+	outw((1<<7) | (0 << FM801_AC97_ADDR_SHIFT), FM801_REG(chip, AC97_CMD));
+	udelay(5);
+	do {
+		if ((inw(FM801_REG(chip, AC97_CMD)) & (3<<8)) == (1<<8))
+			goto __ac97_ok;
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(1);
+	} while ((timeout - (signed long)jiffies) > 0);
+	snd_printk("Primary AC'97 codec not responding\n");
+	snd_fm801_free(chip);
+	return -EIO;
+
       __ac97_ok:
 
 	/* init volume */
