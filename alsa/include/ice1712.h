@@ -267,6 +267,10 @@ struct snd_stru_ice1712 {
 	snd_info_entry_t *proc_entry;
 
 	ice1712_eeprom_t eeprom;
+
+	unsigned int pro_volumes[20];
+	snd_kmixer_element_t *me_pro_pbk;
+	snd_kmixer_element_t *me_pro_cap;
 };
 
 int snd_ice1712_create(snd_card_t * card,
