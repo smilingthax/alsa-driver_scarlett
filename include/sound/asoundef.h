@@ -155,7 +155,7 @@
 #define MIDI_CTL_MSB_MODWHEEL         	0x01
 #define MIDI_CTL_MSB_BREATH           	0x02
 #define MIDI_CTL_MSB_FOOT             	0x04
-#define MIDI_CTL_MSB_PORTNAMENTO_TIME 	0x05
+#define MIDI_CTL_MSB_PORTAMENTO_TIME 	0x05
 #define MIDI_CTL_MSB_DATA_ENTRY		0x06
 #define MIDI_CTL_MSB_MAIN_VOLUME      	0x07
 #define MIDI_CTL_MSB_BALANCE          	0x08
@@ -171,7 +171,7 @@
 #define MIDI_CTL_LSB_MODWHEEL        	0x21
 #define MIDI_CTL_LSB_BREATH           	0x22
 #define MIDI_CTL_LSB_FOOT             	0x24
-#define MIDI_CTL_LSB_PORTNAMENTO_TIME 	0x25
+#define MIDI_CTL_LSB_PORTAMENTO_TIME 	0x25
 #define MIDI_CTL_LSB_DATA_ENTRY		0x26
 #define MIDI_CTL_LSB_MAIN_VOLUME      	0x27
 #define MIDI_CTL_LSB_BALANCE          	0x28
