@@ -43,9 +43,9 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 
 /* RedHat uses modified kill_fasync */
 #if defined(__rh_config_h__) || defined(__rh_kernel_autoconf_h__)
-#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
-#else
 #define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig, band)
+#else
+#define snd_kill_fasync(fp, sig, band) kill_fasync(*(fp), sig)
 #endif
 
 #define tasklet_hi_schedule(t)	queue_task((t), &tq_immediate); \
