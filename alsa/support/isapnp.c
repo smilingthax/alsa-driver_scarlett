@@ -927,6 +927,13 @@ int isapnp_cfg_begin(int csn, int logdev)
 	isapnp_wait();
 	isapnp_key();
 	isapnp_wake(csn);
+#if 1	/* to avoid malfunction when isapnptools is used */
+	outb(0x00, _PIDXR);
+	outb((unsigned char) (isapnp_rdp >> 2), _PNPWRP);
+	isapnp_delay(100);	/* delay 1000us */
+	outb(0x01, _PIDXR);
+	isapnp_delay(100);	/* delay 1000us */
+#endif
 	if (logdev >= 0)
 		isapnp_logdev(logdev);
 	return 0;
@@ -1851,10 +1858,8 @@ static void isapnp_free_all_resources(void)
 	release_region(_PIDXR, 1);
 #endif
 	release_region(_PNPWRP, 1);
-#ifdef ISAPNP_REGION_OK
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff)
 		release_region(isapnp_rdp, 1);
-#endif
 #ifdef MODULE
 	for (dev = isapnp_devices; dev; dev = devnext) {
 		devnext = dev->next;
@@ -1948,9 +1953,7 @@ __initfunc(int isapnp_init(void))
 			printk("isapnp: Read Data Register 0x%x already used\n", isapnp_rdp);
 			return -EBUSY;
 		}
-#ifdef ISAPNP_REGION_OK
 		request_region(isapnp_rdp, 1, "ISA PnP read");
-#endif
 	}
 #ifdef ISAPNP_REGION_OK
 	request_region(_PIDXR, 1, "ISA PnP index");
@@ -1966,9 +1969,7 @@ __initfunc(int isapnp_init(void))
 			isapnp_free_all_resources();
 			return -ENOENT;
 		}
-#ifdef ISAPNP_REGION_OK
 		request_region(isapnp_rdp, 1, "ISA PnP read");
-#endif
 	}
 	isapnp_build_device_list();
 	devices = 0;
