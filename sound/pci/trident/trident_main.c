@@ -489,7 +489,6 @@ void snd_trident_write_voice_regs(trident_t * trident,
 #endif
 }
 
-#if 0
 /*---------------------------------------------------------------------------
    snd_trident_write_cso_reg
   
@@ -512,7 +511,6 @@ static void snd_trident_write_cso_reg(trident_t * trident, snd_trident_voice_t *
 		outl((voice->Delta << 24) | (voice->CSO & 0x00ffffff), TRID_REG(trident, CH_NX_DELTA_CSO));
 	}
 }
-#endif
 
 /*---------------------------------------------------------------------------
    snd_trident_write_eso_reg
@@ -948,7 +946,7 @@ static int snd_trident_playback_prepare(snd_pcm_substream_t * substream)
 		evoice->spurious_threshold = voice->spurious_threshold;
 		evoice->LBA = voice->LBA;
 		evoice->CSO = 0;
-		evoice->ESO = (runtime->period_size * 2) - 1; /* in samples */
+		evoice->ESO = (runtime->period_size * 2) + 4 - 1; /* in samples */
 		evoice->CTRL = voice->CTRL;
 		evoice->FMC = 3;
 		evoice->GVSel = trident->device == TRIDENT_DEVICE_ID_SI7018 ? 0 : 1;
@@ -965,6 +963,9 @@ static int snd_trident_playback_prepare(snd_pcm_substream_t * substream)
 		evoice->Attribute = 0;
 #endif
 		snd_trident_write_voice_regs(trident, evoice);
+		evoice->isync2 = 1;
+		evoice->isync_mark = runtime->period_size;
+		evoice->ESO = (runtime->period_size * 2) - 1;
 	}
 
 	spin_unlock(&trident->reg_lock);
@@ -1064,7 +1065,7 @@ static int snd_trident_capture_prepare(snd_pcm_substream_t * substream)
 
 	// Set voice parameters
 	voice->CSO = 0;
-	voice->ESO = voice->isync_ESO = (runtime->period_size * 2) + 8 - 1;
+	voice->ESO = voice->isync_ESO = (runtime->period_size * 2) + 6 - 1;
 	voice->CTRL = snd_trident_control_mode(substream);
 	voice->FMC = 3;
 	voice->RVol = 0x7f;
@@ -1182,7 +1183,7 @@ static int snd_trident_si7018_capture_prepare(snd_pcm_substream_t * substream)
 		evoice->spurious_threshold = voice->spurious_threshold;
 		evoice->LBA = voice->LBA;
 		evoice->CSO = 0;
-		evoice->ESO = (runtime->period_size * 2) + 8 - 1; /* in samples, 8 means correction */
+		evoice->ESO = (runtime->period_size * 2) + 12 - 1; /* in samples, 12 means correction */
 		evoice->CTRL = voice->CTRL;
 		evoice->FMC = 3;
 		evoice->GVSel = 0;
@@ -1194,6 +1195,9 @@ static int snd_trident_si7018_capture_prepare(snd_pcm_substream_t * substream)
 		evoice->Pan = 0x7f;			/* mute */
 		evoice->Attribute = 0;
 		snd_trident_write_voice_regs(trident, evoice);
+		evoice->isync2 = 1;
+		evoice->isync_mark = runtime->period_size;
+		evoice->ESO = (runtime->period_size * 2) - 1;
 	}
 	
 	spin_unlock(&trident->reg_lock);
@@ -1256,7 +1260,7 @@ static int snd_trident_foldback_prepare(snd_pcm_substream_t * substream)
 		evoice->spurious_threshold = voice->spurious_threshold;
 		evoice->LBA = voice->LBA;
 		evoice->CSO = 0;
-		evoice->ESO = (runtime->period_size * 2) - 1; /* in samples */
+		evoice->ESO = (runtime->period_size * 2) + 4 - 1; /* in samples */
 		evoice->CTRL = voice->CTRL;
 		evoice->FMC = 3;
 		evoice->GVSel = trident->device == TRIDENT_DEVICE_ID_SI7018 ? 0 : 1;
@@ -1268,6 +1272,9 @@ static int snd_trident_foldback_prepare(snd_pcm_substream_t * substream)
 		evoice->Pan = 0x7f;			/* mute */
 		evoice->Attribute = 0;
 		snd_trident_write_voice_regs(trident, evoice);
+		evoice->isync2 = 1;
+		evoice->isync_mark = runtime->period_size;
+		evoice->ESO = (runtime->period_size * 2) - 1;
 	}
 
 	spin_unlock(&trident->reg_lock);
@@ -1376,9 +1383,14 @@ static int snd_trident_spdif_prepare(snd_pcm_substream_t * substream)
 		else
 			voice->LBA = LBAO;
 
+		voice->isync = 1;
+		voice->isync3 = 1;
+		voice->isync_mark = runtime->period_size;
+		voice->isync_max = runtime->buffer_size;
+
 		/* set target ESO for channel */
 		RESO = runtime->buffer_size - 1;
-		voice->ESO = (runtime->period_size * 2) - 1;
+		voice->ESO = voice->isync_ESO = (runtime->period_size * 2) + 6 - 1;
 
 		/* set ctrl mode */
 		voice->CTRL = snd_trident_control_mode(substream);
@@ -1442,7 +1454,7 @@ static int snd_trident_spdif_prepare(snd_pcm_substream_t * substream)
 			evoice->spurious_threshold = voice->spurious_threshold;
 			evoice->LBA = voice->LBA;
 			evoice->CSO = 0;
-			evoice->ESO = (runtime->period_size * 2) - 1; /* in samples */
+			evoice->ESO = (runtime->period_size * 2) + 4 - 1; /* in samples */
 			evoice->CTRL = voice->CTRL;
 			evoice->FMC = 3;
 			evoice->GVSel = trident->device == TRIDENT_DEVICE_ID_SI7018 ? 0 : 1;
@@ -1454,6 +1466,9 @@ static int snd_trident_spdif_prepare(snd_pcm_substream_t * substream)
 			evoice->Pan = 0x7f;			/* mute */
 			evoice->Attribute = 0;
 			snd_trident_write_voice_regs(trident, evoice);
+			evoice->isync2 = 1;
+			evoice->isync_mark = runtime->period_size;
+			evoice->ESO = (runtime->period_size * 2) - 1;
 		}
 
 		outl(trident->spdif_pcm_bits, TRID_REG(trident, SI_SPDIF_CS));
@@ -1602,7 +1617,7 @@ static snd_pcm_uframes_t snd_trident_playback_pointer(snd_pcm_substream_t * subs
 
 	spin_unlock(&trident->reg_lock);
 
-	if (++cso >= runtime->buffer_size)
+	if (cso >= runtime->buffer_size)
 		cso = 0;
 
 	return cso;
@@ -1854,6 +1869,7 @@ static int snd_trident_spdif_open(snd_pcm_substream_t * substream)
 		return -EAGAIN;
 	voice->spdif = 1;
 	voice->substream = substream;
+	spin_lock_irq(&trident->reg_lock);
 	trident->spdif_pcm_bits = trident->spdif_bits;
 	spin_unlock_irq(&trident->reg_lock);
 
@@ -3712,14 +3728,18 @@ static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			}
 			voice->stimer = stimer;
 			if (voice->isync) {
-				tmp = inw(TRID_REG(trident, T4D_SBBL_SBCL));
-				if (trident->bDMAStart & 0x40)
-					tmp >>= 1;
-				if (tmp > 0)
-					tmp = voice->isync_max - tmp;
+				if (!voice->isync3) {
+					tmp = inw(TRID_REG(trident, T4D_SBBL_SBCL));
+					if (trident->bDMAStart & 0x40)
+						tmp >>= 1;
+					if (tmp > 0)
+						tmp = voice->isync_max - tmp;
+				} else {
+					tmp = inl(TRID_REG(trident, NX_SPCTRL_SPCSO)) & 0x00ffffff;
+				}
 				if (tmp < voice->isync_mark) {
-					if (tmp > 0x20)
-						tmp = voice->isync_ESO - 9;
+					if (tmp > 0x10)
+						tmp = voice->isync_ESO - 7;
 					else
 						tmp = voice->isync_ESO + 2;
 					/* update ESO for IRQ voice to preserve sync */
@@ -3727,6 +3747,13 @@ static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 					snd_trident_write_eso_reg(trident, voice, tmp);
 					snd_trident_start_voice(trident, voice->number);
 				}
+			} else if (voice->isync2) {
+				voice->isync2 = 0;
+				/* write original ESO and update CSO for IRQ voice to preserve sync */
+				snd_trident_stop_voice(trident, voice->number);
+				snd_trident_write_cso_reg(trident, voice, voice->isync_mark);
+				snd_trident_write_eso_reg(trident, voice, voice->ESO);
+				snd_trident_start_voice(trident, voice->number);
 			}
 #if 0
 			if (voice->extra) {
