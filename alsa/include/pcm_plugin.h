@@ -22,6 +22,10 @@
  *
  */
 
+#ifndef ATTRIBUTE_UNUSED
+#define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
+#endif
+
 #define malloc(size) snd_kmalloc(size, GFP_KERNEL)
 #define calloc(n, size) snd_kcalloc((n) * (size), GFP_KERNEL)
 #define free(ptr) snd_kfree(ptr)
