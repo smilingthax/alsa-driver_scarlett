@@ -64,6 +64,7 @@
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/smp_lock.h>
+#include <linux/vmalloc.h>
 #include <asm/irq.h>
 #include <asm/io.h>
 
@@ -699,7 +700,6 @@ static int __init snd_msnd_calibrate_adc( WORD srate)
 	return -EIO;
 }
 
-#undef vfree
 static int upload_dsp_code(void)
 {
 	outb(HPBLKSEL_0, dev.io + HP_BLKS);
@@ -713,7 +713,7 @@ static int upload_dsp_code(void)
 	PERMCODESIZE = mod_firmware_load(PERMCODEFILE, &PERMCODE);
 	if (!PERMCODE) {
 		printk(KERN_ERR LOGNAME ": Error loading " PERMCODEFILE);
-		vfree(INITCODE);
+		vfree_nocheck(INITCODE);
 		return -EBUSY;
 	}
 #endif
@@ -729,8 +729,8 @@ static int upload_dsp_code(void)
 #endif
 
 #ifndef HAVE_DSPCODEH
-	vfree(INITCODE);
-	vfree(PERMCODE);
+	vfree_nocheck(INITCODE);
+	vfree_nocheck(PERMCODE);
 #endif
 	return 0;
 }
