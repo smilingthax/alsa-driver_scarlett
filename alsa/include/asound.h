@@ -376,66 +376,6 @@ typedef struct _snd_ctl_event {
         } data;
 } snd_ctl_event_t;
 
-/*
- *  Mixer interface compatible with Open Sound System API
- */
-
-#ifdef __SND_OSS_COMPAT__
-
-#define SND_MIXER_OSS_CAP_EXCL_INPUT	0x00000001	/* only one capture source at moment */
-
-#define SND_MIXER_OSS_DEVS	25
-#define SND_MIXER_OSS_VOLUME	0
-#define SND_MIXER_OSS_BASS	1
-#define SND_MIXER_OSS_TREBLE	2
-#define SND_MIXER_OSS_SYNTH	3
-#define SND_MIXER_OSS_PCM	4
-#define SND_MIXER_OSS_SPEAKER	5
-#define SND_MIXER_OSS_LINE	6
-#define SND_MIXER_OSS_MIC	7
-#define SND_MIXER_OSS_CD	8
-#define SND_MIXER_OSS_IMIX	9	/* recording monitor */
-#define SND_MIXER_OSS_ALTPCM	10
-#define SND_MIXER_OSS_RECLEV	11	/* recording level */
-#define SND_MIXER_OSS_IGAIN	12	/* input gain */
-#define SND_MIXER_OSS_OGAIN	13	/* output gain */
-#define SND_MIXER_OSS_LINE1	14
-#define SND_MIXER_OSS_LINE2	15
-#define SND_MIXER_OSS_LINE3	16
-#define SND_MIXER_OSS_DIGITAL1	17
-#define SND_MIXER_OSS_DIGITAL2	18
-#define SND_MIXER_OSS_DIGITAL3	19
-#define SND_MIXER_OSS_PHONEIN	20
-#define SND_MIXER_OSS_PHONEOUT	21
-#define SND_MIXER_OSS_VIDEO	22
-#define SND_MIXER_OSS_RADIO	23
-#define SND_MIXER_OSS_MONITOR	24
-#define SND_MIXER_OSS_UNKNOWN	(32+1)
-
-struct snd_oss_mixer_info {
-	char id[16];
-	char name[32];
-	int modify_counter;
-	int fillers[10];
-};
-
-struct snd_oss_mixer_info_obsolete {
-	char id[16];
-	char name[32];
-};
-
-#define SND_MIXER_OSS_SET_RECSRC _IOWR('M', 255, int)
-#define SND_MIXER_OSS_RECSRC	_IOR ('M', 255, int)
-#define SND_MIXER_OSS_DEVMASK	_IOR ('M', 254, int)
-#define SND_MIXER_OSS_RECMASK	_IOR ('M', 253, int)
-#define SND_MIXER_OSS_CAPS	_IOR ('M', 252, int)
-#define SND_MIXER_OSS_STEREODEVS _IOR ('M', 251, int)
-#define SND_MIXER_OSS_INFO      _IOR ('M', 101, struct snd_oss_mixer_info)
-#define SND_MIXER_OSS_OLD_INFO	_IOR ('M', 101, struct snd_oss_mixer_info_obsolete)
-#define SND_OSS_GETVERSION	_IOR ('M', 118, int)
-
-#endif				/* __SND_OSS_COMPAT__ */
-
 /****************************************************************************
  *                                                                          *
  *      Section for driver hardware dependent interface - /dev/snd/hw?      *
