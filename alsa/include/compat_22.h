@@ -524,4 +524,27 @@ void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *, struc
 
 #endif /* USB */
 
+#ifdef __SMP__
+#define smp_mb()	mb()
+#define smp_rmb()	rmb()
+#define smp_wmb()	wmb()
+#else
+#define smp_mb()	barrier()
+#define smp_rmb()	barrier()
+#define smp_wmb()	barrier()
+#endif
+#define smp_mb__before_clear_bit()	smp_mb()
+#define smp_mb__after_clear_bit()	smp_mb()
+#define smp_mb__before_atomic_dec()	smp_mb()
+#define smp_mb__after_atomic_dec()	smp_mb()
+#define smp_mb__before_atomic_inc()	smp_mb()
+#define smp_mb__after_atomic_inc()	smp_mb()
+
+#define dump_stack() /*NOP*/
+
+static inline int abs(int val)
+{
+	return (val < 0) ? -val : val;
+}
+
 #endif /* <2.3.0 */
