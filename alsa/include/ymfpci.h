@@ -258,9 +258,10 @@ struct _snd_ymfpci_pcm {
 	snd_ymfpci_pcm_type_t type;
 	snd_pcm_substream_t *substream;
 	ymfpci_voice_t *voices[2];	/* playback only */
-	int running;
-	int spdif;	
-	u32 period_size;			/* cached from runtime->period_size */
+	int running: 1,
+	    spdif: 1,
+	    mode4ch : 1;	
+	u32 period_size;		/* cached from runtime->period_size */
 	u32 buffer_size;		/* cached from runtime->buffer_size */
 	u32 period_pos;
 	u32 last_pos;
@@ -314,6 +315,7 @@ struct _snd_ymfpci {
 	snd_pcm_t *pcm;
 	snd_pcm_t *pcm2;
 	snd_pcm_t *pcm_spdif;
+	snd_pcm_t *pcm_4ch;
 	snd_pcm_substream_t *capture_substream[YDSXG_CAPTURE_VOICES];
 	snd_pcm_substream_t *effect_substream[YDSXG_EFFECT_VOICES];
 	snd_kcontrol_t *ctl_vol_recsrc;
@@ -335,6 +337,7 @@ int snd_ymfpci_create(snd_card_t * card,
 int snd_ymfpci_pcm(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm2(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_pcm_spdif(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
+int snd_ymfpci_pcm_4ch(ymfpci_t *chip, int device, snd_pcm_t **rpcm);
 int snd_ymfpci_mixer(ymfpci_t *chip);
 
 int snd_ymfpci_voice_alloc(ymfpci_t *chip, ymfpci_voice_type_t type, int pair, ymfpci_voice_t **rvoice);
