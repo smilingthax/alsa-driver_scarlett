@@ -199,7 +199,7 @@ static int dmx6fire_ak4524_start(ice1712_t *ice, unsigned char *saved, int chip)
 {
 	unsigned char tmp;
 	snd_ice1712_save_gpio_status(ice, saved);
-	tmp = ice->ak4524.codecs_mask = (1 << chip) & ICE1712_6FIRE_AK4524_CS_MASK;
+	tmp = ice->ak4524.cs_mask = ice->ak4524.cs_addr = (1 << chip) & ICE1712_6FIRE_AK4524_CS_MASK;
 	tmp |= ICE1712_6FIRE_SERIAL_DATA |
 		ICE1712_6FIRE_SERIAL_CLOCK |
 		ICE1712_6FIRE_RW;
@@ -408,8 +408,9 @@ static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 		ak->cif = 1; /* CIF high */
 		ak->data_mask = ICE1712_EWS88_SERIAL_DATA;
 		ak->clk_mask = ICE1712_EWS88_SERIAL_CLOCK;
-		ak->codecs_mask = 0; /* no chip select on gpio */
+		ak->cs_mask = ak->cs_addr = ak->cs_none = 0; /* no chip select on gpio */
 		ak->add_flags = ICE1712_EWS88_RW; /* set rw bit high */
+		ak->mask_flags = 0;
 		ak->ops.start = ews88mt_ak4524_start;
 		ak->ops.stop = ews88mt_ak4524_stop;
 		snd_ice1712_ak4524_init(ice);
@@ -419,8 +420,10 @@ static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 		ak->cif = 1; /* CIF high */
 		ak->data_mask = ICE1712_EWS88_SERIAL_DATA;
 		ak->clk_mask = ICE1712_EWS88_SERIAL_CLOCK;
-		ak->codecs_mask = ICE1712_EWX2496_AK4524_CS;
+		ak->cs_mask = ak->cs_addr = ICE1712_EWX2496_AK4524_CS;
+		ak->cs_none = 0;
 		ak->add_flags = ICE1712_EWS88_RW; /* set rw bit high */
+		ak->mask_flags = 0;
 		ak->ops.start = ewx2496_ak4524_start;
 		snd_ice1712_ak4524_init(ice);
 		break;
@@ -429,8 +432,10 @@ static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 		ak->cif = 1; /* CIF high */
 		ak->data_mask = ICE1712_6FIRE_SERIAL_DATA;
 		ak->clk_mask = ICE1712_6FIRE_SERIAL_CLOCK;
-		ak->codecs_mask = 0; /* set later */
+		ak->cs_mask = ak->cs_addr = 0; /* set later */
+		ak->cs_none = 0;
 		ak->add_flags = ICE1712_6FIRE_RW; /* set rw bit high */
+		ak->mask_flags = 0;
 		ak->ops.start = dmx6fire_ak4524_start;
 		snd_ice1712_ak4524_init(ice);
 		break;
