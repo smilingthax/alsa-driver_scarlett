@@ -83,6 +83,7 @@ struct audioformat {
 	unsigned char altsetting;	/* corresponding alternate setting */
 	unsigned char altset_idx;	/* array index of altenate setting */
 	unsigned char attributes;	/* corresponding attributes of cs endpoint */
+	unsigned char endpoint;		/* endpoint */
 	unsigned int rates;		/* rate bitmasks */
 	int rate_min, rate_max;		/* min/max rates */
 	int nr_rates;			/* number of rate table entries */
@@ -874,6 +875,8 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 
 	iface = &config->interface[subs->interface];
 	alts = &iface->altsetting[fmt->altset_idx];
+	snd_assert(alts->bAlternateSetting == fmt->altsetting, return -EINVAL);
+
 	/* create a data pipe */
 	ep = alts->endpoint[0].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
 	if (is_playback)
@@ -1456,6 +1459,7 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 		fp->format = pcm_format;
 		fp->altsetting = altno;
 		fp->altset_idx = i;
+		fp->endpoint = alts->endpoint[0].bEndpointAddress;
 		fp->channels = channels;
 		fp->attributes = csep[3];
 
@@ -1540,6 +1544,9 @@ static void proc_dump_substream_formats(snd_usb_substream_t *subs, snd_info_buff
 		fp = list_entry(p, struct audioformat, list);
 		snd_iprintf(buffer, "  Format: %s\n", snd_pcm_format_name(fp->format));
 		snd_iprintf(buffer, "  Channels: %d\n", fp->channels);
+		snd_iprintf(buffer, "  Endpoint: %d %s\n",
+			    fp->endpoint & USB_ENDPOINT_NUMBER_MASK,
+			    fp->endpoint & USB_DIR_IN ? "IN" : "OUT");
 		if (fp->rates & SNDRV_PCM_RATE_CONTINUOUS) {
 			snd_iprintf(buffer, "  Rates: %d - %d (continous)\n",
 				    fp->rate_min, fp->rate_max);
