@@ -142,6 +142,7 @@
 #define T4D_SBCTRL_SBE2R_SBDD        0xc4
 #define T4D_AINT_B                   0xd8
 #define T4D_AINTEN_B                 0xdc
+#define T4D_RCI                      0x70
 
 // MPU-401 UART
 #define T4D_MPU401_BASE             0x20
@@ -260,6 +261,8 @@ struct snd_trident_stru_voice {
 	int count;              /* count between interrupts */
 	int csoint;             /* CSO value for next expected interrupt */
 
+	int foldback_chan;	/* foldback subdevice number */
+
 	/* --- */
 
 	void *private_data;
@@ -294,7 +297,8 @@ struct snd_stru_trident_pcm_mixer {
 struct snd_stru_trident {
 	snd_dma_t * dma1ptr;	/* DAC Channel */
 	snd_dma_t * dma2ptr;	/* ADC Channel */
-	snd_dma_t * dma3ptr;	/* SPDIF Channel */
+	snd_dma_t * dma3ptr;	/* Foldback Channel */
+	snd_dma_t * dma4ptr;	/* SPDIF Channel */
 	snd_irq_t * irqptr;
 
 	int isNX;		/* NX chip present */
@@ -326,6 +330,7 @@ struct snd_stru_trident {
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* ADC/DAC PCM */
+	snd_pcm_t *foldback;	/* Foldback PCM */
 	snd_pcm_t *spdif;	/* SPDIF PCM */
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
@@ -351,6 +356,7 @@ int snd_trident_create(snd_card_t * card,
 		       snd_dma_t * dma1ptr,
 		       snd_dma_t * dma2ptr,
 		       snd_dma_t * dma3ptr,
+		       snd_dma_t * dma4ptr,
 		       snd_irq_t * irqptr,
 		       int pcm_channels,
 		       int max_wavetable_size,
@@ -359,6 +365,7 @@ int snd_trident_free(trident_t * trident);
 void snd_trident_interrupt(trident_t * trident);
 
 int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
+int snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
 int snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t **rpcm);
 int snd_trident_mixer(trident_t * trident, int device, snd_pcm_t * pcm, snd_kmixer_t **rmixer);
 void snd_trident_rawmidi(trident_t * trident, mpu401_t * mpu);
