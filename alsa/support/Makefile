@@ -17,7 +17,7 @@ endif
 
 ISAPNP  = isapnp.o isapnp_proc.o isapnp_quirks.o
 
-include $(TOPDIR)/Rules.make
+include $(TOPDIR)/Rules0.make
 
 all: $(TARGETS)
 
