@@ -20,7 +20,6 @@
  */
 
 #ifdef ALSA_BUILD
-#define __KERNEL__
 #define MODULE
 #define CONFIG_ISAPNP
 #endif

@@ -41,7 +41,6 @@
  */
 
 #ifdef ALSA_BUILD
-#define __KERNEL__
 #define MODULE
 #endif
 

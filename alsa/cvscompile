@@ -6,6 +6,18 @@ fi
 if [ -r /usr/local/share/aclocal/alsa-lib.m4 ]; then
   rm -f /usr/local/share/aclocal/alsa-lib.m4
 fi
+echo "Building hard symlinks with alsa-lib sources..."
+cd kernel
+pwd
+ln -fv ../../alsa-lib/src/pcm/pcm_plugin_build.c pcm_oss_plugin.c
+cd plugin
+pwd
+ln -fv ../../../alsa-lib/src/pcm/plugin/interleave.c interleave.c
+ln -fv ../../../alsa-lib/src/pcm/plugin/linear.c linear.c
+ln -fv ../../../alsa-lib/src/pcm/plugin/mulaw.c mulaw.c
+ln -fv ../../../alsa-lib/src/pcm/plugin/rate.c rate.c
+ln -fv ../../../alsa-lib/src/pcm/plugin/voices.c voices.c
+cd ../..
 aclocal $ACLOCAL_FLAGS
 autoconf
 if [ $# -eq 0 ]; then

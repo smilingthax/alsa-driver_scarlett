@@ -26,19 +26,20 @@ typedef struct snd_stru_pcm_plugin snd_pcm_plugin_t;
 
 typedef enum {
 	INIT = 0,
-	DRAIN = 1,
-	FLUSH = 2
+	PREPARE = 1,
+	DRAIN = 2,
+	FLUSH = 3
 } snd_pcm_plugin_action_t;
 
 #define snd_pcm_plugin_extra_data(plugin) (((char *)plugin) + sizeof(*plugin))
 
 struct snd_stru_pcm_plugin {
 	char *name;			/* plugin name */
-	long (*transfer)(snd_pcm_plugin_t *plugin,
-			 char *src_ptr, long src_size,
-			 char *dst_ptr, long dst_size);
-	long (*src_size)(snd_pcm_plugin_t *plugin, long dst_size);
-	long (*dst_size)(snd_pcm_plugin_t *plugin, long src_size);
+	ssize_t (*transfer)(snd_pcm_plugin_t *plugin,
+			    char *src_ptr, size_t src_size,
+			    char *dst_ptr, size_t dst_size);
+	ssize_t (*src_size)(snd_pcm_plugin_t *plugin, size_t dst_size);
+	ssize_t (*dst_size)(snd_pcm_plugin_t *plugin, size_t src_size);
 	int (*action)(snd_pcm_plugin_t *plugin, snd_pcm_plugin_action_t action);
 	snd_pcm_plugin_t *prev;
 	snd_pcm_plugin_t *next;
@@ -50,8 +51,37 @@ extern snd_pcm_plugin_t *snd_pcm_plugin_build(const char *name, int extra);
 extern int snd_pcm_plugin_free(snd_pcm_plugin_t *plugin);
 extern int snd_pcm_plugin_clear(snd_pcm_plugin_t **first);
 
-extern int snd_pcm_plugin_build_interleave(int src_interleave, int dst_interleave, int format, snd_pcm_plugin_t **r_plugin);
-extern int snd_pcm_plugin_build_linear(int src_format, int dst_format, snd_pcm_plugin_t **r_plugin);
-extern int snd_pcm_plugin_build_mulaw(int src_format, int dst_format, snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_interleave(snd_pcm_format_t *src_format,
+				    snd_pcm_format_t *dst_format,
+				    snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_linear(snd_pcm_format_t *src_format,
+				snd_pcm_format_t *dst_format,
+				snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_mulaw(snd_pcm_format_t *src_format,
+			       snd_pcm_format_t *dst_format,
+			       snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_alaw(snd_pcm_format_t *src_format,
+			      snd_pcm_format_t *dst_format,
+			      snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_adpcm(snd_pcm_format_t *src_format,
+			       snd_pcm_format_t *dst_format,
+			       snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_rate(snd_pcm_format_t *src_format,
+			      snd_pcm_format_t *dst_format,
+			      snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_voices(snd_pcm_format_t *src_format,
+				snd_pcm_format_t *dst_format,
+				snd_pcm_plugin_t **r_plugin);
+
+unsigned int snd_pcm_plugin_formats(unsigned int formats);
+int snd_pcm_plugin_hwparams(snd_pcm_channel_params_t *params,
+			    snd_pcm_channel_info_t *hwinfo,
+			    snd_pcm_channel_params_t *hwparams);
+
+#ifdef PLUGIN_DEBUG
+#define pdprintf( args... ) printk( "plugin: " ##args)
+#else
+#define pdprintf( args... ) { ; }
+#endif
 
 #endif				/* __PCM_PLUGIN_H */

@@ -289,16 +289,20 @@ extern unsigned int snd_pcm_poll(struct file *file, poll_table * wait);
 /*
  *  PCM library
  */
+
+extern int snd_pcm_format_signed(int format);
+extern int snd_pcm_format_unsigned(int format);
+extern int snd_pcm_format_linear(int format);
+extern int snd_pcm_format_little_endian(int format);
+extern int snd_pcm_format_big_endian(int format);
+extern int snd_pcm_format_width(int format);		/* in bits */
+extern ssize_t snd_pcm_format_size(int format, size_t samples);
  
 extern int snd_pcm_dma_alloc(snd_pcm_subchn_t * subchn, snd_dma_t * dma, char *ident);
 extern int snd_pcm_dma_free(snd_pcm_subchn_t * subchn);
 extern unsigned int snd_pcm_lib_transfer_size(snd_pcm_subchn_t *subchn);
 extern unsigned int snd_pcm_lib_transfer_fragment(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_lib_16bit(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_lib_unsigned(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_lib_big_endian(snd_pcm_subchn_t *subchn);
 extern unsigned char snd_pcm_lib_silence(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_lib_sample_width(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_interleave_len(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_lib_set_buffer_size(snd_pcm_subchn_t *subchn, long size);
 extern int snd_pcm_lib_mmap_ctrl_ptr(snd_pcm_subchn_t *subchn, char *ptr);
@@ -334,5 +338,15 @@ extern void snd_pcm_proc_done(snd_pcm_t * pcm);
 extern void snd_pcm_proc_format(snd_pcm_subchn_t * subchn);
 extern void snd_pcm_proc_write(snd_pcm_subchn_t * subchn, unsigned int pos,
 			       const void *buffer, long count, int kernel);
+
+#ifdef CONFIG_SND_OSSEMUL
+extern int snd_pcm_plugin_format(snd_pcm_runtime_t *runtime, 
+				 snd_pcm_channel_params_t *params, 
+				 snd_pcm_channel_params_t *hwparams,
+				 snd_pcm_channel_info_t *hwinfo);
+ssize_t snd_pcm_plugin_transfer_size(snd_pcm_runtime_t *runtime, int channel, size_t drv_size);
+ssize_t snd_pcm_plugin_hardware_size(snd_pcm_runtime_t *runtime, int channel, size_t trf_size);
+int snd_pcm_oss_plugin_append(snd_pcm_runtime_t *runtime, snd_pcm_plugin_t *plugin);
+#endif
 
 #endif				/* __PCM_H */

@@ -52,7 +52,8 @@ typedef struct snd_stru_pcm_oss_runtime {
 	int mmap_fragments;
 	char *buffer;				/* vmallocated fragment */
 	int buffer_used;			/* used length from buffer */
-	snd_pcm_plugin_t *plugin;
+	snd_pcm_plugin_t *plugin_first;
+	snd_pcm_plugin_t *plugin_last;
 	char *xbuffer[2];
 	long xbuffer_size[2];
 	char xbuffer_lock[2];
