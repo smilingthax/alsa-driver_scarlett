@@ -116,6 +116,7 @@ typedef struct snd_stru_pcm_runtime {
 	volatile int *frag_tail;
 	int _sfrag_tail;		/* static fragment tail */
 	int frag_used;
+	unsigned int interrupts;
 	unsigned int position;
 	unsigned int buf_position;
 	int underrun;
@@ -136,6 +137,7 @@ typedef struct snd_stru_pcm_runtime {
 		} block;
 	} buf;
 	snd_pcm_mmap_control_t * mmap_control;
+	char * mmap_data;
 	snd_vma_t * mmap_control_vma;
 	snd_vma_t * mmap_data_vma;
 	/* -- locking / scheduling -- */
@@ -177,7 +179,7 @@ struct snd_stru_pcm_subchn {
 	/* -- /proc interface -- */
 	void *proc_entry;
 	void *proc_private;
-	struct semaphore proc;
+	spinlock_t proc_lock;
 	void *proc_entry1;		/* for second midlevel code */
 	/* -- next subchannel -- */
 	snd_pcm_subchn_t *next;
@@ -322,9 +324,8 @@ extern void snd_pcm_timer_done(snd_pcm_subchn_t * subchn);
 
 extern void snd_pcm_proc_init(snd_pcm_t * pcm);
 extern void snd_pcm_proc_done(snd_pcm_t * pcm);
-extern void snd_pcm_proc_format(snd_pcm_subchn_t * subchn,
-				snd_pcm_format_t * format);
-extern void snd_pcm_proc_write(snd_pcm_subchn_t * subchn,
-			       const void *buffer, unsigned int count);
+extern void snd_pcm_proc_format(snd_pcm_subchn_t * subchn);
+extern void snd_pcm_proc_write(snd_pcm_subchn_t * subchn, unsigned int pos,
+			       const void *buffer, long count, int kernel);
 
 #endif				/* __PCM_H */

@@ -1331,21 +1331,22 @@ typedef struct {
 
 #define SND_PCM_LB_TYPE_DATA		0	/* sample data */
 #define SND_PCM_LB_TYPE_FORMAT		1	/* format change */
+#define SND_PCM_LB_TYPE_POSITION	2	/* position change (in bytes) */
 
 typedef struct snd_pcm_loopback_header {
-	unsigned int size;		/* block size in bytes */
-	unsigned int type;		/* block type (SND_PCM_LB_TYPE_*) */
+	int size;			/* block size in bytes */
+	int type;			/* block type (SND_PCM_LB_TYPE_*) */
 } snd_pcm_loopback_header_t;
 
-typedef struct snd_pcm_loopback_queue {
-	int status;			/* PCM status - SND_PCM_STATUS */
-	unsigned int size;		/* queue size in bytes */
-} snd_pcm_loopback_queue_t;
+typedef struct snd_pcm_loopback_status {
+	snd_pcm_channel_status_t status; /* channel status */
+	unsigned int lost;		/* bytes lost */
+} snd_pcm_loopback_status_t;
 
 #define SND_PCM_LB_IOCTL_PVERSION	_IOR ('L', 0x00, int)
 #define SND_PCM_LB_IOCTL_STREAM_MODE	_IOWR('L', 0x01, int)
 #define SND_PCM_LB_IOCTL_FORMAT		_IOR ('L', 0x02, snd_pcm_format_t)
-#define SND_PCM_LB_IOCTL_QUEUE		_IOR ('L', 0x03, snd_pcm_loopback_queue_t)
+#define SND_PCM_LB_IOCTL_STATUS		_IOR ('L', 0x03, snd_pcm_loopback_status_t)
 
 /*
  *  Interface compatible with Open Sound System API
