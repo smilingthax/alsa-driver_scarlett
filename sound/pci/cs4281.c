@@ -168,7 +168,7 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 #define BA0_DMR_TR_WRITE	(1<<2)	/* Write Transfer */
 #define BA0_DMR_TR_READ		(2<<2)	/* Read Transfer */
 
-#define BA0_DCR_HTCIE		(1<<17)	/* Halt Terminal Count Interrupt */
+#define BA0_DCR_HTCIE		(1<<17)	/* Half Terminal Count Interrupt */
 #define BA0_DCR_TCIE		(1<<16)	/* Terminal Count Interrupt */
 #define BA0_DCR_MSK		(1<<0)	/* DMA Mask bit */
 
@@ -177,7 +177,7 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 #define BA0_FCR2		0x0188	/* FIFO Control 2 */
 #define BA0_FCR3		0x018c	/* FIFO Control 3 */
 
-#define BA0_FCR_PEN		(1<<31)	/* FIFO Enable bit */
+#define BA0_FCR_FEN		(1<<31)	/* FIFO Enable bit */
 #define BA0_FCR_DACZ		(1<<30)	/* DAC Zero */
 #define BA0_FCR_PSH		(1<<29)	/* Previous Sample Hold */
 #define BA0_FCR_RS(x)		(((x)&0x1f)<<24) /* Right Slot Mapping */
@@ -462,6 +462,7 @@ struct snd_cs4281_dma {
 	unsigned int valDMR;		/* DMA mode */
 	unsigned int valDCR;		/* DMA command */
 	unsigned int valFCR;		/* FIFO control */
+	unsigned int fifo_offset;	/* FIFO offset within BA1 */
 	unsigned char left_slot;	/* FIFO left slot */
 	unsigned char right_slot;	/* FIFO right slot */
 	int frag;			/* period number */
@@ -529,7 +530,7 @@ MODULE_DEVICE_TABLE(pci, snd_cs4281_ids);
  *  constants
  */
 
-#define CS4281_FIFO_SIZE	16
+#define CS4281_FIFO_SIZE	32
 
 /*
  *  common I/O routines
@@ -708,30 +709,30 @@ static int snd_cs4281_trigger(snd_pcm_substream_t *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		dma->valDCR |= BA0_DCR_MSK;
-		dma->valFCR |= BA0_FCR_PEN;
+		dma->valFCR |= BA0_FCR_FEN;
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		dma->valDCR &= ~BA0_DCR_MSK;
-		dma->valFCR &= ~BA0_FCR_PEN;
+		dma->valFCR &= ~BA0_FCR_FEN;
 		break;
 	case SNDRV_PCM_TRIGGER_START:
 		snd_cs4281_pokeBA0(chip, dma->regDMR, dma->valDMR & ~BA0_DMR_DMA);
 		dma->valDMR |= BA0_DMR_DMA;
 		dma->valDCR &= ~BA0_DCR_MSK;
-		dma->valFCR |= BA0_FCR_PEN;
+		dma->valFCR |= BA0_FCR_FEN;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 		dma->valDMR &= ~(BA0_DMR_DMA|BA0_DMR_POLL);
 		dma->valDCR |= BA0_DCR_MSK;
-		dma->valFCR &= ~BA0_FCR_PEN;
+		dma->valFCR &= ~BA0_FCR_FEN;
 		break;
 	default:
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 		return -EINVAL;
 	}
 	snd_cs4281_pokeBA0(chip, dma->regDMR, dma->valDMR);
-	snd_cs4281_pokeBA0(chip, dma->regDCR, dma->valDCR);
 	snd_cs4281_pokeBA0(chip, dma->regFCR, dma->valFCR);
+	snd_cs4281_pokeBA0(chip, dma->regDCR, dma->valDCR);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	return 0;
 }
@@ -762,6 +763,8 @@ static unsigned int snd_cs4281_rate(unsigned int rate, unsigned int *real_rate)
 
 static void snd_cs4281_mode(cs4281_t *chip, cs4281_dma_t *dma, snd_pcm_runtime_t *runtime, int capture, int src)
 {
+	int rec_mono;
+
 	dma->valDMR = BA0_DMR_TYPE_SINGLE | BA0_DMR_AUTO |
 		      (capture ? BA0_DMR_TR_WRITE : BA0_DMR_TR_READ);
 	if (runtime->channels == 1)
@@ -771,7 +774,10 @@ static void snd_cs4281_mode(cs4281_t *chip, cs4281_dma_t *dma, snd_pcm_runtime_t
 	if (snd_pcm_format_big_endian(runtime->format) > 0)
 		dma->valDMR |= BA0_DMR_BEND;
 	switch (snd_pcm_format_width(runtime->format)) {
-	case 8: dma->valDMR |= BA0_DMR_SIZE8; break;
+	case 8: dma->valDMR |= BA0_DMR_SIZE8;
+		if (runtime->channels == 1)
+			dma->valDMR |= BA0_DMR_SWAPC;
+		break;
 	case 32: dma->valDMR |= BA0_DMR_SIZE20; break;
 	}
 	dma->frag = 0;	/* for workaround */
@@ -781,10 +787,11 @@ static void snd_cs4281_mode(cs4281_t *chip, cs4281_dma_t *dma, snd_pcm_runtime_t
 	/* Initialize DMA */
 	snd_cs4281_pokeBA0(chip, dma->regDBA, runtime->dma_addr);
 	snd_cs4281_pokeBA0(chip, dma->regDBC, runtime->buffer_size - 1);
+	rec_mono = (chip->dma[1].valDMR & BA0_DMR_MONO) == BA0_DMR_MONO;
 	snd_cs4281_pokeBA0(chip, BA0_SRCSA, (chip->src_left_play_slot << 0) |
 					    (chip->src_right_play_slot << 8) |
 					    (chip->src_left_rec_slot << 16) |
-					    ((capture && (dma->valDMR & BA0_DMR_MONO) ? 31 : chip->src_right_rec_slot) << 24));
+					    ((rec_mono ? 31 : chip->src_right_rec_slot) << 24));
 	if (!src)
 		goto __skip_src;
 	if (!capture) {
@@ -804,8 +811,9 @@ static void snd_cs4281_mode(cs4281_t *chip, cs4281_dma_t *dma, snd_pcm_runtime_t
 	/* Initialize FIFO */
 	dma->valFCR = BA0_FCR_LS(dma->left_slot) |
 		      BA0_FCR_RS(capture && (dma->valDMR & BA0_DMR_MONO) ? 31 : dma->right_slot) |
-		      BA0_FCR_SZ(CS4281_FIFO_SIZE);
-	snd_cs4281_pokeBA0(chip, dma->regFCR, dma->valFCR);
+		      BA0_FCR_SZ(CS4281_FIFO_SIZE) |
+		      BA0_FCR_OF(dma->fifo_offset);
+	snd_cs4281_pokeBA0(chip, dma->regFCR, dma->valFCR | (capture ? BA0_FCR_PSH : 0));
 	/* Clear FIFO Status and Interrupt Control Register */
 	snd_cs4281_pokeBA0(chip, dma->regFSIC, 0);
 }
@@ -1393,7 +1401,7 @@ static int __init snd_cs4281_create(snd_card_t * card,
       __ok1:
 
 	/*
-	 *  Assert the vaid frame signal so that we can start sending commands
+	 *  Assert the valid frame signal so that we can start sending commands
 	 *  to the AC97 codec.
 	 */
 
@@ -1442,10 +1450,12 @@ static int __init snd_cs4281_create(snd_card_t * card,
 		dma->regHDSR = BA0_HDSR0 + (tmp * 4);
 		dma->regFCR = BA0_FCR0 + (tmp * 4);
 		dma->regFSIC = BA0_FSIC0 + (tmp * 4);
+		dma->fifo_offset = tmp * CS4281_FIFO_SIZE;
 		snd_cs4281_pokeBA0(chip, dma->regFCR,
 				   BA0_FCR_LS(31) |
 				   BA0_FCR_RS(31) |
-				   BA0_FCR_SZ(CS4281_FIFO_SIZE));
+				   BA0_FCR_SZ(CS4281_FIFO_SIZE) |
+				   BA0_FCR_OF(dma->fifo_offset));
 	}
 
 	chip->src_left_play_slot = 0;	/* AC'97 left PCM playback (3) */
