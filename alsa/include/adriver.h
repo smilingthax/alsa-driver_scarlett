@@ -545,9 +545,15 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #endif
 
 /* msleep */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) || (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 29))
+#ifndef CONFIG_HAVE_MSLEEP
 void snd_compat_msleep(unsigned int msecs);
 #define msleep snd_compat_msleep
+#endif
+
+#ifndef CONFIG_HAVE_MSLEEP_INTERRUPTIBLE
+unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
+#define msleep_interruptible snd_compat_msleep_interruptible
+#define ssleep(x) msleep((unsigned int)(x) * 1000)
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
