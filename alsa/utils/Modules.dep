@@ -7,3 +7,6 @@
 
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm
+
+%dir linux/sound/usb
+|snd-usb-audio snd-pcm

@@ -12,6 +12,12 @@ AC_PROG_CC
 AC_PROG_RANLIB
 AC_PROG_INSTALL
 
+dnl the following should be checked, but they are not used...
+AR=ar
+AS=as
+AC_SUBST(AR)
+AC_SUBST(AS)
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h)
@@ -196,21 +202,21 @@ int main( void ) {
   AC_MSG_RESULT("no");pcisup="n",
   AC_MSG_RESULT("unknown");pcisup="n"
 )
-CONFIG_SND_PCI="$pcisup"
-AC_SUBST(CONFIG_SND_PCI)
+CONFIG_PCI="$pcisup"
+AC_SUBST(CONFIG_PCI)
 
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
-CONFIG_SND_SGI="n"
+CONFIG_SGI="n"
 if test -r "$CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h"; then
-  CONFIG_SND_SGI="y"
+  CONFIG_SGI="y"
 fi
-if test "$CONFIG_SND_SGI" = "y"; then
+if test "$CONFIG_SGI" = "y"; then
   AC_MSG_RESULT("yes")
 else
   AC_MSG_RESULT("no")
 fi
-AC_SUBST(CONFIG_SND_SGI)
+AC_SUBST(CONFIG_SGI)
 
 
 dnl Directory for modules
@@ -292,9 +298,9 @@ AC_SUBST(moddir)
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
 CONFIG_L3=n
-CONFIG_SND_ARM=n
-CONFIG_SND_PPC=n
-CONFIG_SND_ISA=y
+CONFIG_ARM=n
+CONFIG_PPC=n
+CONFIG_ISA=y
 processor=""
 rm -f processor.id
 AC_TRY_RUN([
@@ -408,7 +414,7 @@ case "$processor" in
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
-    CONFIG_SND_ISA=n
+    CONFIG_ISA=n
     ;;
   alpha*)
     c_opts="-pipe -mno-fp-regs -ffixed-8"
@@ -449,11 +455,11 @@ case "$processor" in
     ;;
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
-    CONFIG_SND_PPC=y
+    CONFIG_PPC=y
     ;;
   ppc64)
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -pipe -Wno-uninitialized -mminimal-toc -fno-builtin"
-    # CONFIG_SND_ISA=n
+    # CONFIG_ISA=n
     ;;
   mips)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
@@ -473,7 +479,7 @@ case "$processor" in
       c_opts="-m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
     fi
     processor="sparc";
-    CONFIG_SND_ISA=n
+    CONFIG_ISA=n
     ;;
   sparc64)
     CC=gcc
@@ -495,7 +501,7 @@ case "$processor" in
       c_opts="-pipe -mno-fpu -mtune=ultrasparc -mmedlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare"
     fi
     processor="sparc64"
-    CONFIG_SND_ISA=n
+    CONFIG_ISA=n
     ;;
   x86_64)
    LD="ld -m elf_x86_64 -e stext"
@@ -504,12 +510,12 @@ case "$processor" in
    ;;
   sa1100)
    c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
-   CONFIG_SND_ARM=y
+   CONFIG_ARM=y
    CONFIG_L3=y
    ;;
   *)
     processor="unknown"
-    CONFIG_SND_ISA=n
+    CONFIG_ISA=n
     ;;
 esac
 
@@ -526,10 +532,10 @@ c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(LD)
 AC_SUBST(CONFIG_L3)
-AC_SUBST(CONFIG_SND_ARM)
-AC_SUBST(CONFIG_SND_PPC)
-AC_SUBST(CONFIG_SND_ISA)
-test "$CONFIG_SND_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)
+AC_SUBST(CONFIG_ARM)
+AC_SUBST(CONFIG_PPC)
+AC_SUBST(CONFIG_ISA)
+test "$CONFIG_ISA" = "y" && AC_DEFINE(CONFIG_ISA)
 
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)
@@ -614,7 +620,7 @@ AC_TRY_COMPILE([
 )
 CFLAGS=$ac_save_CFLAGS
 CONFIG_OLD_KILL_FASYNC=$oldkfasync
-AC_SUBST(CONFIG_OLD_KILL_FASYNC)
+dnl AC_SUBST(CONFIG_OLD_KILL_FASYNC)
 if test "$CONFIG_OLD_KILL_FASYNC" = "1"; then
   AC_DEFINE(CONFIG_OLD_KILL_FASYNC)
 fi
@@ -636,7 +642,7 @@ AC_TRY_COMPILE([
 )
 CFLAGS=$ac_save_CFLAGS
 CONFIG_HAVE_DMA_ADDR_T=$dma_addr_t
-AC_SUBST(CONFIG_HAVE_DMA_ADDR_T)
+dnl AC_SUBST(CONFIG_HAVE_DMA_ADDR_T)
 if test "$CONFIG_HAVE_DMA_ADDR_T" = "1"; then
   AC_DEFINE(CONFIG_HAVE_DMA_ADDR_T)
 fi
@@ -661,7 +667,7 @@ exit(0);
 )
 CFLAGS=$ac_save_CFLAGS
 CONFIG_HAVE_MUTEX_MACROS=$have_mutex_macros
-AC_SUBST(CONFIG_HAVE_MUTEX_MACROS)
+dnl AC_SUBST(CONFIG_HAVE_MUTEX_MACROS)
 if test "$CONFIG_HAVE_MUTEX_MACROS" = "1"; then
   AC_DEFINE(CONFIG_HAVE_MUTEX_MACROS)
 fi
@@ -750,6 +756,26 @@ CONFIG_SND_RTCTIMER=$rtcsup
 AC_SUBST(CONFIG_SND_RTCTIMER)
 CONFIG_RTC=$CONFIG_SND_RTCTIMER
 AC_SUBST(CONFIG_RTC)
+
+dnl Check for USB
+AC_MSG_CHECKING(for USB)
+usbsup=n
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main(void) {
+#if !defined(CONFIG_USB) && !defined(CONFIG_USB_MODULE)
+	exit(1);
+#else
+	exit(0);
+#endif
+}
+],
+  AC_MSG_RESULT("yes");usbsup="y",
+  AC_MSG_RESULT("no");usbsup="n",
+  AC_MSG_RESULT("unknown");usbsup="n"
+)
+CONFIG_USB="$usbsup"
+AC_SUBST(CONFIG_USB)
 
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_INIT

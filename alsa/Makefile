@@ -50,6 +50,9 @@ endif
 ifeq (y,$(CONFIG_SND_SGI))
 SUBDIRS  += hal2
 endif
+ifeq (y,$(CONFIG_USB))
+SUBDIRS  += usb
+endif
 CSUBDIRS += include test utils
 
 .PHONY: all
