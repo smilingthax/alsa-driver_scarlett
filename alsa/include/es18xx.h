@@ -45,12 +45,22 @@ struct snd_stru_es18xx {
 
 	unsigned short active;		/* active channel mask */
 
+	snd_kmixer_element_t *mix_imux;
 	snd_kmixer_element_t *mix_mic;
 	snd_kmixer_element_t *mix_line;
 	snd_kmixer_element_t *mix_cd;
 	snd_kmixer_element_t *mix_iaccu;
 	snd_kmixer_element_t *mix_oaccu;
-	snd_kmixer_element_t *mix_igain;
+	snd_kmixer_element_t *mix_igain_v;
+	snd_kmixer_element_t *mix_opcm1_v, *mix_ipcm1_v;
+	snd_kmixer_element_t *mix_opcm2_v;
+	snd_kmixer_element_t *mix_omic_v, *mix_imic_v;
+	snd_kmixer_element_t *mix_oline_v, *mix_iline_v;
+	snd_kmixer_element_t *mix_ofm_v, *mix_ifm_v;
+	snd_kmixer_element_t *mix_omono_v, *mix_imono_v;
+	snd_kmixer_element_t *mix_ocd_v, *mix_icd_v;
+	snd_kmixer_element_t *mix_oaux_v, *mix_iaux_v;
+	snd_kmixer_element_t *mix_output_v, *mix_output_s;
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
