@@ -713,9 +713,16 @@ typedef struct {
 	emu10k1_pcm_t *epcm;
 } emu10k1_pcm_mixer_t;
 
-typedef struct snd_emu10k1_memblk_arg {
-	short first_page, last_page;
-} snd_emu10k1_memblk_arg_t;
+typedef struct snd_emu10k1_memblk {
+	snd_util_memblk_t mem;
+	/* private part */
+	short first_page, last_page, pages, mapped_page;
+	unsigned int map_locked;
+	struct list_head mapped_link;
+	struct list_head mapped_order_link;
+} emu10k1_memblk_t;
+
+#define snd_emu10k1_memblk_offset(blk)	(((blk)->mapped_page << PAGE_SHIFT) | ((blk)->mem.offset & (PAGE_SIZE - 1)))
 
 #define EMU10K1_MAX_TRAM_BLOCKS_PER_CODE	16
 
@@ -796,13 +803,20 @@ struct _snd_emu10k1 {
 	unsigned short model;			/* subsystem id */
 	unsigned int card_type;			/* EMU10K1_CARD_* */
 	unsigned int ecard_ctrl;		/* ecard control bits */
+	int max_cache_pages;			/* max memory size / PAGE_SIZE */
 	void *silent_page;			/* silent page */
 	dma_addr_t silent_page_dmaaddr;
 	volatile unsigned int *ptb_pages;	/* page table pages */
 	dma_addr_t ptb_pages_dmaaddr;
-	unsigned long *ptb_shadow_pages;
 	snd_util_memhdr_t *memhdr;		/* page allocation list */
-	snd_util_memblk_t *reserved_page;	/* reserved page */
+	emu10k1_memblk_t *reserved_page;	/* reserved page */
+
+	struct list_head mapped_link_head;
+	struct list_head mapped_order_link_head;
+	void **page_ptr_table;
+	unsigned long *page_addr_table;
+	spinlock_t memblk_lock;
+
 	unsigned int spdif_bits[3];		/* s/pdif out setup */
 
 	snd_emu10k1_fx8010_t fx8010;		/* FX8010 info */
@@ -863,6 +877,7 @@ int snd_emu10k1_create(snd_card_t * card,
 		       struct pci_dev *pci,
 		       unsigned short extin_mask,
 		       unsigned short extout_mask,
+		       long max_cache_bytes,
 		       emu10k1_t ** remu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
@@ -900,12 +915,13 @@ unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
-snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, void *pages, dma_addr_t addr, unsigned long size);
+snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, dma_addr_t addr, unsigned long size);
 int snd_emu10k1_free_pages(emu10k1_t *emu, snd_util_memblk_t *blk);
 snd_util_memblk_t *snd_emu10k1_synth_alloc(emu10k1_t *emu, unsigned int size);
 int snd_emu10k1_synth_free(emu10k1_t *emu, snd_util_memblk_t *blk);
 int snd_emu10k1_synth_bzero(emu10k1_t *emu, snd_util_memblk_t *blk, int offset, int size);
 int snd_emu10k1_synth_copy_from_user(emu10k1_t *emu, snd_util_memblk_t *blk, int offset, const char *data, int size);
+int snd_emu10k1_memblk_map(emu10k1_t *emu, emu10k1_memblk_t *blk);
 
 /* voice allocation */
 int snd_emu10k1_voice_alloc(emu10k1_t *emu, emu10k1_voice_type_t type, int pair, emu10k1_voice_t **rvoice);

@@ -30,7 +30,7 @@ typedef unsigned int snd_util_unit_t;
 struct snd_util_memblk {
 	snd_util_unit_t size;		/* size of this block */
 	snd_util_unit_t offset;		/* zero-offset of this block */
-	snd_util_memblk_t *next;	/* next block */
+	struct list_head list;		/* link */
 };
 
 #define snd_util_memblk_argptr(blk)	(void*)((char*)(blk) + sizeof(snd_util_memblk_t))
@@ -40,7 +40,7 @@ struct snd_util_memblk {
  */
 struct snd_util_memhdr {
 	snd_util_unit_t size;		/* size of whole data */
-	snd_util_memblk_t *block;	/* block linked-list */
+	struct list_head block;		/* block linked-list header */
 	int nblocks;			/* # of allocated blocks */
 	snd_util_unit_t used;		/* used memory size */
 	int block_extra_size;		/* extra data size of chunk */
@@ -57,9 +57,8 @@ int snd_util_mem_free(snd_util_memhdr_t *hdr, snd_util_memblk_t *blk);
 int snd_util_mem_avail(snd_util_memhdr_t *hdr);
 
 /* functions without mutex */
-snd_util_memblk_t *__snd_util_mem_alloc(snd_util_memhdr_t *hdr, int size, snd_util_memblk_t **prevp);
-int __snd_util_mem_find_prev(snd_util_memhdr_t *hdr, snd_util_memblk_t *blk, snd_util_memblk_t **prevp);
-void __snd_util_mem_free(snd_util_memhdr_t *hdr, snd_util_memblk_t *blk, snd_util_memblk_t *prev);
-snd_util_memblk_t *__snd_util_memblk_new(snd_util_memhdr_t *hdr, snd_util_unit_t units, snd_util_memblk_t *prev);
+snd_util_memblk_t *__snd_util_mem_alloc(snd_util_memhdr_t *hdr, int size);
+void __snd_util_mem_free(snd_util_memhdr_t *hdr, snd_util_memblk_t *blk);
+snd_util_memblk_t *__snd_util_memblk_new(snd_util_memhdr_t *hdr, snd_util_unit_t units, struct list_head *prev);
 
 #endif /* __UTIL_MEM_H */
