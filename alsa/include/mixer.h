@@ -102,7 +102,7 @@ struct snd_stru_mixer {
 
 	char id[32];
 	unsigned char name[80];
-	unsigned int attribute;
+	unsigned int attrib;
 
 	snd_mutex_define(lock);
 	int elements_count;		/* channels count */
