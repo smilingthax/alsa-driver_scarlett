@@ -55,6 +55,9 @@
 #if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
 #define LINUX_2_3
 #endif
+#if LinuxVersionCode(2, 3, 11) <= LINUX_VERSION_CODE
+#define NEW_RESOURCE
+#endif
 
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #define MODVERSIONS
@@ -187,6 +190,9 @@ typedef struct snd_stru_port {
 	unsigned short port;
 	unsigned short size;
 	char *name;
+#ifdef NEW_RESOURCE
+	struct resource *res;
+#endif
 	struct snd_stru_port *next;
 } snd_port_t;
 

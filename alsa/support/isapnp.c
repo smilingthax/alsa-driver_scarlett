@@ -27,6 +27,9 @@
 #if LinuxVersionCode(2, 2, 0) > LINUX_VERSION_CODE
 #error "This driver is designed only for Linux 2.2.0 and highter."
 #endif
+#if LinuxVersionCode(2, 3, 11) <= LINUX_VERSION_CODE
+#define NEW_RESOURCE
+#endif
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -58,6 +61,12 @@
 #endif
 #if 0
 #define ISAPNP_DEBUG
+#endif
+
+#ifdef NEW_RESOURCE
+struct resource *pidxr_res = { NULL, NULL };
+struct resource *pnpwrp_res = { NULL, NULL };
+struct resource *isapnp_rdp_res = { NULL, NULL };
 #endif
 
 int isapnp_disable = 0;			/* Disable ISA PnP */
@@ -1923,11 +1932,23 @@ static void isapnp_free_all_resources(void)
 #endif
 
 #ifdef ISAPNP_REGION_OK
+#ifdef NEW_RESOURCE
+	release_resource(pidxr_res);
+#else
 	release_region(_PIDXR, 1);
 #endif
+#endif
+#ifdef NEW_RESOURCE
+	release_resource(pnpwrp_res);
+#else
 	release_region(_PNPWRP, 1);
+#endif
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff)
+#ifdef NEW_RESOURCE
+		release_resource(isapnp_rdp_res);
+#else
 		release_region(isapnp_rdp, 1);
+#endif
 #ifdef MODULE
 	for (dev = isapnp_devices; dev; dev = devnext) {
 		devnext = dev->next;
@@ -2030,27 +2051,46 @@ __initfunc(int isapnp_init(void))
 		return 0;
 	}
 #ifdef ISAPNP_REGION_OK
+#ifdef NEW_RESOURCE
+	pidxr_res=request_region(_PIDXR, 1, "isapnp index");
+	if(!pidxr_res) {
+#else
 	if (check_region(_PIDXR, 1)) {
+#endif
 		printk("isapnp: Index Register 0x%x already used\n", _PIDXR);
 		return -EBUSY;
 	}
 #endif
+#ifdef NEW_RESOURCE
+	pnpwrp_res=request_region(_PNPWRP, 1, "isapnp write");
+	if(!pnpwrp_res) {
+#else
 	if (check_region(_PNPWRP, 1)) {
+#endif
 		printk("isapnp: Write Data Register 0x%x already used\n", _PNPWRP);
 		return -EBUSY;
 	}
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff) {
+#ifdef NEW_RESOURCE
+		isapnp_rdp_res=request_region(isapnp_rdp, 1, "isapnp read");
+		if(!isapnp_rdp_res) {
+#else
 		if (check_region(isapnp_rdp, 1)) {
+#endif
 			printk("isapnp: Read Data Register 0x%x already used\n", isapnp_rdp);
 			return -EBUSY;
 		}
+#ifndef NEW_RESOURCE
 		request_region(isapnp_rdp, 1, "isapnp read");
+#endif
 	}
 	isapnp_detected = 1;
+#ifndef NEW_RESOURCE
 #ifdef ISAPNP_REGION_OK
 	request_region(_PIDXR, 1, "isapnp index");
 #endif
 	request_region(_PNPWRP, 1, "isapnp write");
+#endif
 	if (isapnp_rdp < 0x203 || isapnp_rdp > 0x3ff) {
 		devices = isapnp_isolate();
 		if (devices < 0 || 
@@ -2060,7 +2100,11 @@ __initfunc(int isapnp_init(void))
 			printk("isapnp: No Plug & Play device found\n");
 			return 0;
 		}
+#ifdef NEW_RESOURCE
+		isapnp_rdp_res=request_region(isapnp_rdp, 1, "isapnp read");
+#else
 		request_region(isapnp_rdp, 1, "isapnp read");
+#endif
 	}
 	isapnp_build_device_list();
 	devices = 0;
