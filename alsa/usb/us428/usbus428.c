@@ -169,15 +169,12 @@ void snd_us428_In04Int(urb_t* urb)
 				int j, send = us428ctls->p4outSent + 1;
 				if (send >= N_us428_p4out_BUFS)
 					send = 0;
-				while (us428ctls->p4out[send].type == eLT_Light && send != us428ctls->p4outLast)
-					if (++send >= N_us428_p4out_BUFS)
-						send = 0;
 				for (j = 0; j < URBS_AsyncSeq; ++j)
 					if (0 == us428->AS04.urb[j]->status) {
 						us428_p4out_t *p4out = us428ctls->p4out + send;	// FIXME if more then 1 p4out is new, 1 gets lost.
 						usb_fill_bulk_urb(us428->AS04.urb[j], us428->chip.dev,
 								  usb_sndbulkpipe(us428->chip.dev, 0x04), &p4out->vol, 
-								  p4out->type == eLT_Light ? sizeof(us428_lights_t) : sizeof(usX2Y_volume_t),
+								  p4out->type == eLT_Light ? sizeof(us428_lights_t) : 5,
 								  snd_us428_Out04Int, us428);
 #ifdef OLD_USB
 						us428->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
@@ -225,7 +222,7 @@ static snd_card_t* snd_us428_create_card(struct usb_device* device)
 
 	for (dev = 0; dev < SNDRV_CARDS; ++dev)
 		if (enable[dev] && !snd_us428_card_used[dev])
-			return NULL;
+			break;
 
 	if (dev >= SNDRV_CARDS)
 		return NULL;
