@@ -45,7 +45,7 @@ struct snd_seq_device {
 	int status;		/* flag - read only */
 	void *private_data;	/* private data for the caller */
 	void (*private_free)(snd_seq_device_t *device);
-	snd_seq_device_t *next; /* link to next device */
+	struct list_head list;	/* link to next device */
 };
 
 
@@ -72,7 +72,6 @@ struct snd_seq_dev_ops {
  */
 void snd_seq_device_load_drivers(void);
 int snd_seq_device_new(snd_card_t *card, int device, char *id, int argsize, snd_seq_device_t **result);
-snd_seq_device_t *snd_seq_device_find(snd_card_t *card, int device, char *id);
 int snd_seq_device_register_driver(char *id, snd_seq_dev_ops_t *entry, int argsize);
 int snd_seq_device_unregister_driver(char *id);
 
