@@ -125,7 +125,7 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define isapnp_dev pci_dev
 #define isapnp_card pci_bus
 #else
-#include "isapnp.h"
+#include <linux/isapnp.h>
 #endif
 #undef __ISAPNP__
 #define __ISAPNP__
@@ -171,6 +171,34 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #undef unregister_chrdev
 #define unregister_chrdev devfs_unregister_chrdev
 #endif
+
+/* workarounds for USB API */
+#if defined(SND_NEED_USB_WRAPPER) && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
+
+#include <linux/usb.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+inline static urb_t *usb_alloc_urb_wrapper(int iso_packets, int flags)
+{
+	return usb_alloc_urb(iso_packets);
+}
+inline static int usb_submit_urb_wrapper(urb_t* urb, int flags)
+{
+	return usb_submit_urb(urb);
+}
+#undef usb_alloc_urb
+#undef usb_submit_urb
+#define usb_alloc_urb(n,flags) usb_alloc_urb_wrapper(n,flags)
+#define usb_submit_urb(p,flags) usb_submit_urb_wrapper(p,flags)
+#endif /* LINUX_VERSION_CODE < 2.5.0 */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
+int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int alternate);
+#undef usb_set_interface
+#define usb_set_interface(dev,iface,alt) snd_hack_usb_set_interface(dev,iface,alt)
+#endif
+
+#endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #include "amagic.h"
 
