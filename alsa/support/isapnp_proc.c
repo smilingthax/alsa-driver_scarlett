@@ -841,6 +841,15 @@ static void isapnp_print_logdev(isapnp_info_buffer_t *buffer, struct isapnp_logd
 	isapnp_print_devid(buffer, logdev->vendor, logdev->function);
 	isapnp_printf(buffer, ":%s'", logdev->identifier?logdev->identifier:"Unknown");
 	isapnp_printf(buffer, "\n");
+#if 0
+	isapnp_cfg_begin(logdev->dev->csn, logdev->number);
+	for (block = 0; block < 128; block++)
+		if ((block % 16) == 15)
+			isapnp_printf(buffer, "%02x\n", isapnp_cfg_get_byte(block));
+		else
+			isapnp_printf(buffer, "%02x:", isapnp_cfg_get_byte(block));
+	isapnp_cfg_end();
+#endif
 	if (logdev->regs)
 		isapnp_printf(buffer, "%sSupported registers 0x%x\n", space, logdev->regs);
 	isapnp_print_compatible(buffer, logdev->compat);
