@@ -1299,7 +1299,7 @@ A_OP(icode, &ptr, iMAC0, A_GPR(var), A_GPR(var), A_GPR(vol), A_EXTIN(input))
 	/* AC'97 Capture Volume */
 	A_ADD_VOLUME_IN(capture, gpr, A_EXTIN_AC97_L);
 	A_ADD_VOLUME_IN(capture+1, gpr+1, A_EXTIN_AC97_R);
-	snd_emu10k1_init_stereo_control(&controls[nctl++], "AC97 Capture Volume", gpr, 0);
+	snd_emu10k1_init_stereo_control(&controls[nctl++], "AC97 Capture Volume", gpr, 100);
 	gpr += 2;
 
 	/* Audigy CD Playback Volume */
