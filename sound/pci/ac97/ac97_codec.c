@@ -1501,7 +1501,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 				goto __access_ok;
 			set_current_state(TASK_UNINTERRUPTIBLE);
 			schedule_timeout(HZ/100);
-		} while (time_after_eq(end_time, jiffies) >= 0);
+		} while (time_after_eq(end_time, jiffies));
 		snd_printd("AC'97 %d:%d does not respond - RESET [REC_GAIN = 0x%x]\n", ac97->num, ac97->addr, err);
 		snd_ac97_free(ac97);
 		return -ENXIO;
@@ -1536,7 +1536,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 			goto __ready_ok;
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(HZ/10);
-	} while (time_after_eq(end_time, jiffies) >= 0);
+	} while (time_after_eq(end_time, jiffies));
 	snd_printk("AC'97 %d:%d analog subsections not ready\n", ac97->num, ac97->addr);
       __ready_ok:
 	if (ac97->clock == 0)
@@ -1906,7 +1906,7 @@ int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate)
 	do {
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(1);
-	} while (time_after_eq(end_time, jiffies) >= 0);
+	} while (time_after_eq(end_time, jiffies));
 	snd_ac97_update(ac97, reg, tmp & 0xffff);
 	udelay(10);
 	// XXXX update spdif rate here too?
@@ -1915,14 +1915,14 @@ int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate)
 	do {
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(1);
-	} while (time_after_eq(end_time, jiffies) >= 0);
+	} while (time_after_eq(end_time, jiffies));
 	end_time = jiffies + (HZ / 10);
 	do {
 		if ((snd_ac97_read(ac97, AC97_POWERDOWN) & 0x0003) == 0x0003)
 			break;
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(1);
-	} while (time_after_eq(end_time, jiffies) >= 0);
+	} while (time_after_eq(end_time, jiffies));
 	return 0;
 }
 
