@@ -66,7 +66,6 @@ MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{RME,Digi32}," "{RME,Digi32/8}," "{RME,Digi32 PRO}}");
 
 /* Defines for RME Digi32 series */
-#define RME32_DRIVER_VERSION "0.3.2"
 #define RME32_SPDIF_NCHANNELS 2
 
 /* Playback and capture buffer size */
@@ -225,7 +224,7 @@ snd_rme32_playback_pointer(snd_pcm_substream_t * substream);
 static snd_pcm_uframes_t
 snd_rme32_capture_pointer(snd_pcm_substream_t * substream);
 
-static void __init snd_rme32_proc_init(rme32_t * rme32);
+static void snd_rme32_proc_init(rme32_t * rme32);
 
 static void snd_rme32_proc_done(rme32_t * rme32);
 
@@ -262,8 +261,9 @@ static int snd_rme32_playback_copy(snd_pcm_substream_t * substream, int channel,
 	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
 	count <<= rme32->playback_frlog;
 	pos <<= rme32->playback_frlog;
-	copy_from_user_toio(rme32->iobase + RME32_IO_DATA_BUFFER + pos,
-			    src, count);
+	if (copy_from_user_toio(rme32->iobase + RME32_IO_DATA_BUFFER + pos,
+			    src, count))
+		return -EFAULT;
 	return 0;
 }
 
@@ -274,9 +274,10 @@ static int snd_rme32_capture_copy(snd_pcm_substream_t * substream, int channel,	
 	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
 	count <<= rme32->capture_frlog;
 	pos <<= rme32->capture_frlog;
-	copy_to_user_fromio(dst,
+	if (copy_to_user_fromio(dst,
 			    rme32->iobase + RME32_IO_DATA_BUFFER + pos,
-			    count);
+			    count))
+		return -EFAULT;
 	return 0;
 }
 
@@ -703,12 +704,10 @@ static int snd_rme32_playback_spdif_open(snd_pcm_substream_t * substream)
 	rme32->playback_substream = substream;
 	rme32->playback_last_appl_ptr = 0;
 	rme32->playback_ptr = 0;
+	rme32->playback_pid = current->pid;
+	spin_unlock_irqrestore(&rme32->lock, flags);
 
 	runtime->hw = snd_rme32_playback_spdif_info;
-	rme32->playback_pid = current->pid;
-	rme32->playback_substream = substream;
-
-	spin_unlock_irqrestore(&rme32->lock, flags);
 
 	snd_pcm_hw_constraint_minmax(runtime,
 				     SNDRV_PCM_HW_PARAM_BUFFER_BYTES,
@@ -830,7 +829,6 @@ static int
 snd_rme32_playback_trigger(snd_pcm_substream_t * substream, int cmd)
 {
 	rme32_t *rme32 = _snd_pcm_substream_chip(substream);
-	spin_lock(&rme32->lock);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		if (!RME32_ISWORKING(rme32)) {
@@ -865,7 +863,6 @@ snd_rme32_playback_trigger(snd_pcm_substream_t * substream, int cmd)
 	default:
 		return -EINVAL;
 	}
-	spin_unlock(&rme32->lock);
 	return 0;
 }
 
@@ -1012,7 +1009,7 @@ static void snd_rme32_free_spdif_pcm(snd_pcm_t * pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_rme32_create(rme32_t * rme32)
+static int __devinit snd_rme32_create(rme32_t * rme32)
 {
 	struct pci_dev *pci = rme32->pci;
 	int err;
@@ -1120,8 +1117,6 @@ snd_rme32_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 	snd_iprintf(buffer, " (index #%d)\n", rme32->card->number + 1);
 
 	snd_iprintf(buffer, "\nGeneral settings\n");
-	snd_iprintf(buffer, "  driver version: %s\n",
-		    RME32_DRIVER_VERSION);
 	if (RME32_PRO_WITH_8414(rme32)) {
 		snd_iprintf(buffer, "  receiver: CS8414\n");
 	} else {
@@ -1201,7 +1196,7 @@ snd_rme32_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 	}
 }
 
-static void __init snd_rme32_proc_init(rme32_t * rme32)
+static void __devinit snd_rme32_proc_init(rme32_t * rme32)
 {
 	snd_info_entry_t *entry;
 
@@ -1597,7 +1592,7 @@ static void snd_rme32_card_free(snd_card_t * card)
 	snd_rme32_free(card->private_data);
 }
 
-static int __init
+static int __devinit
 snd_rme32_probe(struct pci_dev *pci, const struct pci_device_id *id)
 {
 	static int dev = 0;
@@ -1651,7 +1646,7 @@ snd_rme32_probe(struct pci_dev *pci, const struct pci_device_id *id)
 	return 0;
 }
 
-static void __exit snd_rme32_remove(struct pci_dev *pci)
+static void __devexit snd_rme32_remove(struct pci_dev *pci)
 {
 	snd_card_free(pci_get_drvdata(pci));
 	pci_set_drvdata(pci, NULL);
@@ -1661,7 +1656,7 @@ static struct pci_driver driver = {
 	name:		"RME Digi32",
 	id_table:	snd_rme32_ids,
 	probe:		snd_rme32_probe,
-	remove:		snd_rme32_remove,
+	remove:		__devexit_p(snd_rme32_remove),
 };
 
 static int __init alsa_card_rme32_init(void)
