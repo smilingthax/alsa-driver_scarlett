@@ -522,7 +522,7 @@ Module parameters
   Module snd-card-als100.o
   ------------------------
 
-    Module for soundcards based on Avance Logic ALS100 chip.
+    Module for soundcards based on Avance Logic ALS100/ALS120 chip.
 
     snd_port	- port # for ALS100 (SB16) chip (PnP setup)
     snd_irq	- IRQ # for ALS100 (SB16) chip (PnP setup)
