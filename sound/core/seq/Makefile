@@ -32,6 +32,8 @@ snd-seq-instr-objs := seq_instr.o
 snd-seq-dummy-objs := seq_dummy.o
 snd-seq-virmidi-objs := seq_virmidi.o
 
+obj-$(CONFIG_SND_SEQUENCER) += snd-seq.o snd-seq-device.o
+obj-$(CONFIG_SND_SEQUENCER_OSS) += snd-seq-midi-event.o
 obj-$(CONFIG_SND_SEQ_DUMMY) += snd-seq-dummy.o
 
 # Toplevel Module Dependency
