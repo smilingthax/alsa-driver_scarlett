@@ -365,7 +365,7 @@ static void vxp_dma_write(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 			  vx_pipe_t *pipe, int count)
 {
 	long port = vxp_reg_addr(chip, VX_DMA);
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
+	int offset = pipe->hw_ptr;
 	unsigned short *addr = (unsigned short *)(runtime->dma_area + offset);
 
 	vx_setup_pseudo_dma(chip, 1);
@@ -381,7 +381,7 @@ static void vxp_dma_write(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 		addr = (unsigned short *)runtime->dma_area;
 		pipe->hw_ptr = 0;
 	}
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
+	pipe->hw_ptr += count;
 	count >>= 1; /* in 16bit words */
 	/* Transfer using pseudo-dma. */
 	while (count-- > 0) {
@@ -405,10 +405,10 @@ static void vxp_dma_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 {
 	struct snd_vxpocket *pchip = (struct snd_vxpocket *)chip;
 	long port = vxp_reg_addr(chip, VX_DMA);
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
+	int offset = pipe->hw_ptr;
 	unsigned short *addr = (unsigned short *)(runtime->dma_area + offset);
 
-	snd_assert(count % 6 == 0, return);
+	snd_assert(count % 2 == 0, return);
 	vx_setup_pseudo_dma(chip, 0);
 	if (offset + count > pipe->buffer_bytes) {
 		int length = pipe->buffer_bytes - offset;
@@ -420,7 +420,7 @@ static void vxp_dma_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 		addr = (unsigned short *)runtime->dma_area;
 		pipe->hw_ptr = 0;
 	}
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
+	pipe->hw_ptr += count;
 	count >>= 1; /* in 16bit words */
 	/* Transfer using pseudo-dma. */
 	while (count-- > 1)

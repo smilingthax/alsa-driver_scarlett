@@ -73,11 +73,10 @@ struct vx_pipe {
 
 	int hbuf_size;		/* H-buffer size in bytes */
 	int buffer_bytes;	/* the ALSA pcm buffer size in bytes */
-	int appl_ptr;		/* the current applicatin pointer in frames */
-	int hw_ptr;		/* the current hardware pointer in frames */
+	int period_bytes;	/* the ALSA pcm period size in bytes */
+	int hw_ptr;		/* the current hardware pointer in bytes */
 	int position;		/* the current position in frames (playback only) */
 	int transferred;	/* the transferred size (per period) in frames */
-	int chunk_transferred;	/* the transferred size (per period) in frames */
 	int align;		/* size of alignment */
 	u64 cur_count;		/* current sample position (for playback) */
 
