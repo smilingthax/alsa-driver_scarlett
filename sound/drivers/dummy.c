@@ -57,8 +57,8 @@ MODULE_DEVICES("{{ALSA,Dummy soundcard}}");
 #if 0 /* ICE1712 emulation */
 #define MAX_BUFFER_SIZE		(256 * 1024)
 #define USE_FORMATS		SNDRV_PCM_FMTBIT_S32_LE
-#define USE_CHANNELS_MIN	10
-#define USE_CHANNELS_MAX	10
+#define USE_CHANNELS_MIN	12
+#define USE_CHANNELS_MAX	12
 #define USE_PERIODS_MIN		1
 #define USE_PERIODS_MAX		1024
 #endif

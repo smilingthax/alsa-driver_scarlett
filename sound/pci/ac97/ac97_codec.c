@@ -2133,7 +2133,7 @@ int snd_ac97_modem(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	int err;
 	ac97_t *ac97;
 	char name[64];
-	signed long end_time;
+	unsigned long end_time;
 	unsigned short tmp;
 	static snd_device_ops_t ops = {
 		.dev_free =	snd_ac97_dev_free,

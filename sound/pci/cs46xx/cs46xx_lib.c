@@ -24,7 +24,7 @@
  *
  *  FINALLY: A credit to the developers Tom and Jordan 
  *           at Cirrus for have helping me out with the DSP, however we
- *           still dont have sufficient documentation and technical
+ *           still don't have sufficient documentation and technical
  *           references to be able to implement all fancy feutures
  *           supported by the cs46xx DSP's. 
  *           Benny <benny@hostmobility.com>
