@@ -63,7 +63,7 @@ struct snd_stru_es18xx {
 #define MPU_IRQ		0x08
 
 #define ES18XX_PCM2	0x0001	/* Has two useable PCM */
-#define ES18XX_3D	0x0002	/* Has 3D Spatializer */
+#define ES18XX_SPATIALIZER 0x0002	/* Has 3D Spatializer */
 #define ES18XX_RECMIX	0x0004	/* Has record mixer */
 #define ES18XX_DUPLEX_MONO 0x0008	/* Has mono duplex only */
 #define ES18XX_DUPLEX_SAME 0x0010	/* Playback and record must share the same rate */
