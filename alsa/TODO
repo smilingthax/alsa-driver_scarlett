@@ -1,5 +1,7 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
+M split mmap control in two pages
+M move toward frame unit
 M add checks for unaligned byte_data coming from user space
 M loopback implementation (To think)
 M reimplement mixer/control API (To think)
