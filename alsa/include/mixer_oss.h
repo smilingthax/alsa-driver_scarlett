@@ -66,37 +66,6 @@ struct snd_stru_oss_file {
 	snd_mixer_oss_t *mixer;
 };
 
-int snd_mixer_oss_new(snd_card_t * card);
-int snd_mixer_oss_free(snd_card_t * card);
-
-long snd_mixer_oss_conv(long val, long omin, long omax, long nmin, long nmax);
-long snd_mixer_oss_conv1(long val, long min, long max, int *old);
-long snd_mixer_oss_conv2(long val, long min, long max);
-
-void snd_mixer_oss_recsrce_set(snd_card_t *card, int channel);
-int snd_mixer_oss_recsrce_get(snd_card_t *card, int channel);
-int snd_mixer_oss_define_channel(snd_card_t *card,
-				 int oss_channel,
-				 int stereo,
-				 const char *volume_name,
-				 int volume_index,
-				 const char *mute_name,
-				 int mute_index);
-
-#else				/* !CONFIG_SND_OSSEMUL */
-
-static inline int snd_mixer_oss_new(snd_card_t * card) { return 0; }
-static inline int snd_mixer_oss_free(snd_card_t * card) { return 0; }
-static inline void snd_mixer_oss_recsrce_set(snd_card_t *card, int channel) { ; }
-static inline int snd_mixer_oss_recsrce_get(snd_card_t *card, int channel) { return 0; }
-static inline int snd_mixer_oss_define_channel(snd_card_t *card,
-					       int oss_channel,
-					       int stereo,
-					       const char *volume_name,
-					       int volume_index,
-					       const char *switch_name,
-					       int switch_index) { return 0; }
-
 #endif				/* CONFIG_SND_OSSEMUL */
 
 #endif				/* __MIXER_OSS_H */

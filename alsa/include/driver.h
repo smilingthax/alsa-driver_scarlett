@@ -446,6 +446,9 @@ void snd_vma_disconnect(snd_vma_t *vma);
 extern int snd_cards_count;
 extern snd_card_t *snd_cards[SND_CARDS];
 extern rwlock_t snd_card_rwlock;
+#ifdef CONFIG_SND_OSSEMUL
+extern int (*snd_mixer_oss_notify_callback)(snd_card_t *card, int free_flag);
+#endif
 
 snd_card_t *snd_card_new(int idx, char *id,
 			 void (*use_inc) (snd_card_t *card),
