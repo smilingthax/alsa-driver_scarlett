@@ -102,9 +102,9 @@ MODULE_DEVICE_TABLE(pnp_card, snd_dt019x_pnpids);
 #define DRIVER_NAME	"snd-card-dt019x"
 
 
-static int __init snd_card_dt019x_pnp(int dev, struct snd_card_dt019x *acard,
-				      struct pnp_card_link *card,
-				      const struct pnp_card_device_id *pid)
+static int __devinit snd_card_dt019x_pnp(int dev, struct snd_card_dt019x *acard,
+					 struct pnp_card_link *card,
+					 const struct pnp_card_device_id *pid)
 {
 	struct pnp_dev *pdev;
 	struct pnp_resource_table * cfg = kmalloc(sizeof(struct pnp_resource_table), GFP_KERNEL);
@@ -200,7 +200,7 @@ static int __init snd_card_dt019x_pnp(int dev, struct snd_card_dt019x *acard,
 	return 0;
 }
 
-static int __init snd_card_dt019x_probe(int dev, struct pnp_card_link *pcard, const struct pnp_card_device_id *pid)
+static int __devinit snd_card_dt019x_probe(int dev, struct pnp_card_link *pcard, const struct pnp_card_device_id *pid)
 {
 	int error;
 	sb_t *chip;
@@ -281,8 +281,8 @@ static int __init snd_card_dt019x_probe(int dev, struct pnp_card_link *pcard, co
 	return 0;
 }
 
-static int __init snd_dt019x_pnp_probe(struct pnp_card_link *card,
-					    const struct pnp_card_device_id *pid)
+static int __devinit snd_dt019x_pnp_probe(struct pnp_card_link *card,
+					  const struct pnp_card_device_id *pid)
 {
 	static int dev;
 	int res;

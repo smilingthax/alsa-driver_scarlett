@@ -132,9 +132,9 @@ MODULE_DEVICE_TABLE(pnp_card, snd_azt2320_pnpids);
 
 #define	DRIVER_NAME	"snd-card-azt2320"
 
-static int __init snd_card_azt2320_pnp(int dev, struct snd_card_azt2320 *acard,
-				       struct pnp_card_link *card,
-				       const struct pnp_card_device_id *id)
+static int __devinit snd_card_azt2320_pnp(int dev, struct snd_card_azt2320 *acard,
+					  struct pnp_card_link *card,
+					  const struct pnp_card_device_id *id)
 {
 	struct pnp_dev *pdev;
 	struct pnp_resource_table * cfg = kmalloc(sizeof(struct pnp_resource_table), GFP_KERNEL);
@@ -212,7 +212,7 @@ static int __init snd_card_azt2320_pnp(int dev, struct snd_card_azt2320 *acard,
 }
 
 /* same of snd_sbdsp_command by Jaroslav Kysela */
-static int __init snd_card_azt2320_command(unsigned long port, unsigned char val)
+static int __devinit snd_card_azt2320_command(unsigned long port, unsigned char val)
 {
 	int i;
 	unsigned long limit;
@@ -226,7 +226,7 @@ static int __init snd_card_azt2320_command(unsigned long port, unsigned char val
 	return -EBUSY;
 }
 
-static int __init snd_card_azt2320_enable_wss(unsigned long port)
+static int __devinit snd_card_azt2320_enable_wss(unsigned long port)
 {
 	int error;
 
@@ -239,9 +239,9 @@ static int __init snd_card_azt2320_enable_wss(unsigned long port)
 	return 0;
 }
 
-static int __init snd_card_azt2320_probe(int dev,
-							   struct pnp_card_link *pcard,
-							   const struct pnp_card_device_id *pid)
+static int __devinit snd_card_azt2320_probe(int dev,
+					    struct pnp_card_link *pcard,
+					    const struct pnp_card_device_id *pid)
 {
 	int error;
 	snd_card_t *card;
@@ -325,8 +325,8 @@ static int __init snd_card_azt2320_probe(int dev,
 	return 0;
 }
 
-static int __init snd_azt2320_pnp_detect(struct pnp_card_link *card,
-                                            const struct pnp_card_device_id *id)
+static int __devinit snd_azt2320_pnp_detect(struct pnp_card_link *card,
+					    const struct pnp_card_device_id *id)
 {
 	static int dev;
 	int res;
