@@ -27,6 +27,9 @@
 /*
  */
 
+#define USB_SUBCLASS_AUDIO_CONTROL	0x01
+#define USB_SUBCLASS_AUDIO_STREAMING	0x02
+
 #define USB_DT_CS_DEVICE                0x21
 #define USB_DT_CS_CONFIG                0x22
 #define USB_DT_CS_STRING                0x23
@@ -89,9 +92,7 @@
 #define SAMPLING_FREQ_CONTROL      0x01
 #define PITCH_CONTROL              0x02
 
-/*
- */
-
+/* Format Types */
 #define USB_FORMAT_TYPE_I	0x01
 #define USB_FORMAT_TYPE_II	0x02
 #define USB_FORMAT_TYPE_III	0x03
@@ -121,7 +122,7 @@
 
 typedef struct snd_usb_audio snd_usb_audio_t;
 
-#define snd_usb_audio_t_magic	0xa15a401	/* should be in sndmagic.h later */
+#define snd_usb_audio_t_magic	0xa15a401	/* FIXME: should be in sndmagic.h later */
 
 
 struct snd_usb_audio {
@@ -133,8 +134,6 @@ struct snd_usb_audio {
 
 	struct list_head pcm_list;	/* list of pcm streams */
 	int pcm_devs;
-
-	snd_info_entry_t *proc_entry;
 
 };  
 
