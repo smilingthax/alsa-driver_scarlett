@@ -159,13 +159,13 @@ static int __init get_id(char **str, char **dst)
 	if (!(*str) || !(**str))
 		return 0;
 	for (s = *str; isalpha(*s) || isdigit(*s) || *s == '_'; s++);
-	if (s == *str)
-		return 0;
-	*dst = (char *)kmalloc(s - *str, GFP_KERNEL);
-	if ((d = *dst) != NULL) {
-		s = *str;
-		while (isalpha(*s) || isdigit(*s) || *s == '_')
-			*d++ = *s++;
+	if (s != *str) {
+		*dst = (char *)kmalloc(s - *str, GFP_KERNEL);
+		if ((d = *dst) != NULL) {
+			s = *str;
+			while (isalpha(*s) || isdigit(*s) || *s == '_')
+				*d++ = *s++;
+		}
 	}
 	*str = s;
 	if (*s == ',') {
