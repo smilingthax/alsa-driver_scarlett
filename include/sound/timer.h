@@ -34,6 +34,7 @@ typedef struct sndrv_timer_info snd_timer_info_t;
 typedef struct sndrv_timer_params snd_timer_params_t;
 typedef struct sndrv_timer_status snd_timer_status_t;
 typedef struct sndrv_timer_read snd_timer_read_t;
+typedef struct sndrv_timer_tread snd_timer_tread_t;
 
 #define _snd_timer_chip(timer) ((timer)->private_data)
 #define snd_timer_chip(timer) snd_magic_cast1(chip_t, _snd_timer_chip(timer), return -ENXIO)
