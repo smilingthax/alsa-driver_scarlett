@@ -159,7 +159,8 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 		}
 	}
 	if (snd_mpu_port[dev] > 0) {
-		legacy_ctrl |= 0x10; /* MPU401 irq enable */
+		// this bit is for legacy mpu irqs
+		// legacy_ctrl |= 0x10; /* MPU401 irq enable */
 		legacy_ctrl2 |= 1 << 15; /* IMOD */
 	}
 	pci_read_config_word(pci, PCIR_DSXG_LEGACY, &old_legacy_ctrl);
@@ -198,9 +199,10 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					       snd_mpu_port[dev], 0,
 					       pci->irq, 0, &chip->rawmidi)) < 0) {
 			printk(KERN_WARNING "ymfpci: cannot initialize MPU401 at 0x%lx, skipping...\n", snd_mpu_port[dev]);
-		} else {
-			legacy_ctrl &= ~0x10; /* disable MPU401 irq */
-			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
+			snd_mpu_port[dev] = 0;
+			// only for legacy mpu irqs
+			// legacy_ctrl &= ~0x10; /* disable MPU401 irq */
+			// pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 		}
 	}
 	if (snd_fm_port[dev] > 0) {
@@ -209,6 +211,9 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					   snd_fm_port[dev] + 2,
 					   OPL3_HW_OPL3, 0, &opl3)) < 0) {
 			printk(KERN_WARNING "ymfpci: cannot initialize FM OPL3 at 0x%lx, skipping...\n", snd_fm_port[dev]);
+			snd_fm_port[dev] = 0;
+			legacy_ctrl &= ~2;
+			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 		} else if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0) {
 			snd_card_free(card);
 			snd_printk("cannot create opl3 hwdep\n");
