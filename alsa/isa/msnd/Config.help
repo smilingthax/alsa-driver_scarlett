@@ -1,6 +1,0 @@
-CONFIG_SND_MSND_PINNACLE
-  Say 'Y' or 'M' to include support for Turtle Beach Fiji and
-  and Pinnacle soundcards.
-
-
-
