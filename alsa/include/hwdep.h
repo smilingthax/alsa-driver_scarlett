@@ -23,7 +23,7 @@
  */
 
 typedef struct snd_stru_hwdep_ops {
-	long long (*lseek) (snd_hwdep_t *hw, struct file * file, long long offset, int orig);
+	long long (*llseek) (snd_hwdep_t *hw, struct file * file, long long offset, int orig);
 	long (*read) (snd_hwdep_t * hw, char *buf, long count);
 	long (*write) (snd_hwdep_t * hw, const char *buf, long count);
 	int (*open) (snd_hwdep_t * hw, struct file * file);

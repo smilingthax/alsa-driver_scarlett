@@ -106,7 +106,7 @@ static void isapnp_devid(char *str, unsigned short vendor, unsigned short device
 			(device >> 8) & 0x0f);
 }
 
-static loff_t isapnp_info_entry_lseek(struct file *file, loff_t offset, int orig)
+static loff_t isapnp_info_entry_llseek(struct file *file, loff_t offset, int orig)
 {
 	switch (orig) {
 	case 0:	/* SEEK_SET */
@@ -244,7 +244,7 @@ static int isapnp_info_entry_mmap(struct file *file, struct vm_area_struct *vma)
 
 static struct file_operations isapnp_info_entry_operations =
 {
-	llseek:		isapnp_info_entry_lseek,
+	llseek:		isapnp_info_entry_llseek,
 	read:		isapnp_info_entry_read,
 	write:		isapnp_info_entry_write,
 	poll:		isapnp_info_entry_poll,
@@ -259,7 +259,7 @@ static struct inode_operations isapnp_info_entry_inode_operations =
 	default_file_ops:	&isapnp_info_entry_operations,
 };
 
-static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
+static loff_t isapnp_proc_bus_llseek(struct file *file, loff_t off, int whence)
 {
 	loff_t new;
 	
@@ -314,7 +314,7 @@ static ssize_t isapnp_proc_bus_read(struct file *file, char *buf, size_t nbytes,
 
 static struct file_operations isapnp_proc_bus_file_operations =
 {
-	llseek:		isapnp_proc_bus_lseek,
+	llseek:		isapnp_proc_bus_llseek,
 	read:		isapnp_proc_bus_read,
 };
 

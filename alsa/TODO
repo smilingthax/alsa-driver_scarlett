@@ -1,5 +1,6 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
+M add checks for unaligned byte_data coming from user space
 M add user/kernel lock for mmap'ed control (To think)
 M add card number to snd_mixer_eid_t
 M loopback implementation (To think)

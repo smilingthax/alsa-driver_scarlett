@@ -318,7 +318,7 @@ struct snd_stru_card {
 
 /* device.c */
 
-typedef loff_t (snd_lseek_t) (struct file *file, loff_t offset, int orig);
+typedef loff_t (snd_llseek_t) (struct file *file, loff_t offset, int orig);
 typedef ssize_t (snd_read_t) (struct file *file, char *buf, size_t count);
 typedef ssize_t (snd_write_t) (struct file *file, const char *buf, size_t count);
 typedef ssize_t (snd_readv_t) (struct file *file, const struct iovec *vector, unsigned long count);
@@ -333,7 +333,7 @@ struct snd_stru_minor {
 	char *comment;			/* for /dev/sndinfo */
 	snd_info_entry_t *dev;		/* for /proc/asound/dev */
 
-	snd_lseek_t *lseek;
+	snd_llseek_t *llseek;
 	snd_read_t *read;
 	snd_write_t *write;
 	snd_readv_t *readv;

@@ -128,6 +128,7 @@ struct snd_stru_pcm_runtime {
 	size_t _sbyte_data;
 	size_t byte_io_base;		/* Position at buffer restart */
 	size_t byte_io_interrupt;	/* Position at interrupt time*/
+	int interrupt_pending;
 	size_t frag_io_mod;		/* Fragment under I/O */
 	size_t bytes_per_second;
 	size_t bytes_per_frame;
@@ -319,6 +320,28 @@ static inline size_t snd_pcm_lib_transfer_fragment(snd_pcm_substream_t *substrea
 {
 	return substream->runtime->frag_size;
 }
+
+/*
+ *  result is: -(byte_boundary - buffer_size - 1) ... buffer_size
+ */
+static inline ssize_t snd_pcm_playback_bytes_used(snd_pcm_runtime_t *runtime)
+{
+	size_t byte_boundary = runtime->byte_boundary;
+	ssize_t bytes_used = *runtime->byte_data - *runtime->byte_io;
+	if (bytes_used <= (ssize_t)(runtime->buffer_size - byte_boundary))
+		bytes_used += byte_boundary;
+	return bytes_used;
+}
+
+static inline size_t snd_pcm_capture_bytes_used(snd_pcm_runtime_t *runtime)
+{
+	size_t byte_boundary = runtime->byte_boundary;
+	ssize_t bytes_used = *runtime->byte_io - *runtime->byte_data;
+	if (bytes_used < 0)
+		bytes_used += byte_boundary;
+	return bytes_used;
+}
+
 
 extern int snd_pcm_format_signed(int format);
 extern int snd_pcm_format_unsigned(int format);

@@ -59,7 +59,7 @@ struct snd_info_entry_data {
 		      struct file * file, char *buf, long count);
 	long (*write) (void *private_data, void *file_private_data,
 		       struct file * file, const char *buf, long count);
-	long long (*lseek) (void *private_data, void *file_private_data,
+	long long (*llseek) (void *private_data, void *file_private_data,
 			    struct file * file, long long offset, int orig);
 	unsigned int (*poll) (void *private_data, void *file_private_data,
 			      struct file * file, poll_table * wait);
