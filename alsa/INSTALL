@@ -232,6 +232,18 @@ Module parameters
     snd_mge       - Mic Gain Enable - 1 = enable, 0 = disable (default)
     
     Module supports up to 8 cards and autoprobe.
+
+  Module snd-audiopci.o
+  ---------------------
+
+    Module for Ensoniq AudioPCI ES1370/1371 PCI soundcards.
+			* SoundBlaster PCI 64
+
+    snd_dac1_frame_size - max dac1 (playback1) frame size in kB (4-128kB)
+    snd_dac2_frame_size - max dac2 (playback2) frame size in kB (4-128kB)
+    snd_adc_frame_size  - max adc (record) frame size in kB (4-128kB)
+
+    Module supports up to 8 cards and autoprobe.
     
 
 Note: TL PnP = Tom Lees Plug & Play driver for Linux
@@ -350,3 +362,52 @@ Proc interfaces (/proc/sound)
   String "ExtTx off" -> host MIDI data cannot be output to external device
 
   Example: echo "Synth off" > /proc/sound/0/sonicvibes
+
+/proc/sound/#card#/audiopci
+---------------------------
+  Interface for Ensoniq AudioPCI.
+
+  +-- ES1370 only
+  | String "Mic-impedance on" -> change microphone impedance
+  | String "Mic-impedance off" -> don't change microphone impedance
+  | String "AOUT on" -> convert Line In jack to AOUT jack
+  | String "AOUT off" -> leave Line In jack untouched
+  +--
+  String "Joystick on" -> enable joystick port
+  String "Joystick off" -> disable joystick port
+  +-- ES1371 only
+  | String "Jport 0x200" -> set joystick base port to 0x200
+  | String "Jport 0x208" -> set joystick base port to 0x208
+  | String "Jport 0x210" -> set joystick base port to 0x210
+  | String "Jport 0x218" -> set joystick base port to 0x218
+  +--
+
+/proc/sound/#card#/ac97
+-----------------------
+  Interface for Audio Codec '97.
+
+  String "Mic-Gain on" -> set MIC gain to +20dB
+  String "Mic-Gain off" -> set MIC gain to +0dB
+  String "POP post" -> set PCM out path & mute to post 3D
+  String "POP pre" -> set PCM out path & mute to pre 3D
+  String "SStereo on" -> enable simulated stereo enhancement
+  String "SStereo off" -> disable simulated stereo enhancement
+  String "3D on" -> enable 3D stereo enhancement
+  String "3D off" -> disable 3D stereo enhancement
+  String "Loudness on" -> enable loudness (bass boost)
+  String "Loudness off" -> disable loudness (bass boost)
+  String "MonoOut MIC" -> mono output is microphone
+  String "MonoOut MIX" -> mono output is mixer
+  String "MIC MIC1" -> select microphone 1 as MIC source
+  String "MIC MIC2" -> select microphone 2 as MIC source
+  String "Loopback on" -> enable ADC/DAC loopback
+  String "Loopback off" -> disable ADC/DAC loopback
+
+/proc/sound/#card#/ak4531
+-------------------------
+  Interface for Asahi Kasei AK4531 audio codec.
+
+  String "Source external" -> record source is external input
+  String "Source mixer" -> record source is mixer
+  String "Mic-Gain" -> set MIC gain to +30dB
+  String "Mic-Gain" -> set MIC gain to +0dB

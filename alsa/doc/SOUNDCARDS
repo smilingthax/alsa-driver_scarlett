@@ -58,5 +58,10 @@ MA: ???
 
 ID: S3 SonicVibes PCI
 SC: Schubert 32 PCI (PINE)
-IF: MIXER,PCM
+IF: MIXER,PCM,MIDI
+MA: Jaroslav Kysela <perex@jcu.cz>
+
+ID: Ensoniq AudioPCI (ES1370,ES1371)
+SC: SoundBlaster PCI 64
+IF: MIXER,PCM,MIDI
 MA: Jaroslav Kysela <perex@jcu.cz>
