@@ -157,7 +157,7 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 #define minor(x) MINOR(x)
 #endif
 #ifndef mk_kdev
-#define mk_kdev(x) MKDEV(x)
+#define mk_kdev(x,y) MKDEV(x,y)
 #endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
