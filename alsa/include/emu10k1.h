@@ -728,15 +728,4 @@ int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
 int snd_emu10k1_proc_init(emu10k1_t * emu);
 int snd_emu10k1_proc_done(emu10k1_t * emu);
 
-/* Emu page size == 4096 */
-#if EMUPAGESIZE == PAGE_SIZE
-#define get_emupage(offset)	((offset) >> 12)
-#define emupage_offset(page)	((page) << 12)
-#define ptb_to_ptr(emu,pg)	(void*)phys_to_virt(((emu)->ptb_pages[pg] >> 1) & ~(EMUPAGESIZE - 1))
-#define set_ptb_phys(emu,page,ptr)	((emu)->ptb_pages[page] = (ptr << 1) | (page))
-#define set_ptb_virt(emu,page,ptr)	set_ptb_phys(emu, page, (unsigned int)virt_to_phys(ptr))
-#else
-#error page size must be >= 4096!!
-#endif
-
 #endif	/* __EMU10K1_H */

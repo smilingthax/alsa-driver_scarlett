@@ -173,6 +173,7 @@ case "$1" in
   emu10k1|live)
     basic
     insert snd-ac97-codec.o
+    insert snd-emux-mem.o
     insert snd-emu10k1.o
     insert snd-card-emu10k1.o
     restore emu10k1.conf
