@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <asm/ioctls.h>
 
-#define CONSOLE		8		/* Alt + Fx */
+#define CONSOLE		10		/* Alt + Fx */
 
 int main(void)
 {
