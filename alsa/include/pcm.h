@@ -77,8 +77,8 @@ typedef struct _snd_pcm_ops {
 
 #define SNDRV_PCM_DEVICES		8
 
-#define SNDRV_PCM_IOCTL1_FALSE	((void *)0)
-#define SNDRV_PCM_IOCTL1_TRUE	((void *)1)
+#define SNDRV_PCM_IOCTL1_FALSE		((void *)0)
+#define SNDRV_PCM_IOCTL1_TRUE		((void *)1)
 
 #define SNDRV_PCM_IOCTL1_RESET		0
 #define SNDRV_PCM_IOCTL1_INFO		1
@@ -89,6 +89,9 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_TRIGGER_START		1
 #define SNDRV_PCM_TRIGGER_PAUSE_PUSH	3
 #define SNDRV_PCM_TRIGGER_PAUSE_RELEASE	4
+
+#define SNDRV_PCM_DMA_TYPE_CONTINUOUS	0
+#define SNDRV_PCM_DMA_TYPE_PCI		1	/* PCI continuous */
 
 /* If you change this don't forget to changed snd_pcm_rates table in pcm_lib.c */
 #define SNDRV_PCM_RATE_5512		(1<<0)		/* 5512Hz */
@@ -105,14 +108,14 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_RATE_176400		(1<<11)		/* 176400Hz */
 #define SNDRV_PCM_RATE_192000		(1<<12)		/* 192000Hz */
 
-#define SNDRV_PCM_RATE_CONTINUOUS		(1<<30)		/* continuous range */
+#define SNDRV_PCM_RATE_CONTINUOUS	(1<<30)		/* continuous range */
 #define SNDRV_PCM_RATE_KNOT		(1<<31)		/* supports more non-continuos rates */
 
-#define SNDRV_PCM_RATE_8000_44100		(SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|\
+#define SNDRV_PCM_RATE_8000_44100	(SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_11025|\
 					 SNDRV_PCM_RATE_16000|SNDRV_PCM_RATE_22050|\
 					 SNDRV_PCM_RATE_32000|SNDRV_PCM_RATE_44100)
-#define SNDRV_PCM_RATE_8000_48000		(SNDRV_PCM_RATE_8000_44100|SNDRV_PCM_RATE_48000)
-#define SNDRV_PCM_RATE_8000_96000		(SNDRV_PCM_RATE_8000_48000|SNDRV_PCM_RATE_64000|\
+#define SNDRV_PCM_RATE_8000_48000	(SNDRV_PCM_RATE_8000_44100|SNDRV_PCM_RATE_48000)
+#define SNDRV_PCM_RATE_8000_96000	(SNDRV_PCM_RATE_8000_48000|SNDRV_PCM_RATE_64000|\
 					 SNDRV_PCM_RATE_88200|SNDRV_PCM_RATE_96000)
 #define SNDRV_PCM_RATE_8000_192000	(SNDRV_PCM_RATE_8000_96000|SNDRV_PCM_RATE_176400|\
 					 SNDRV_PCM_RATE_192000)
@@ -130,8 +133,8 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_FMTBIT_S32_BE		(1 << SNDRV_PCM_FORMAT_S32_BE)
 #define SNDRV_PCM_FMTBIT_U32_LE		(1 << SNDRV_PCM_FORMAT_U32_LE)
 #define SNDRV_PCM_FMTBIT_U32_BE		(1 << SNDRV_PCM_FORMAT_U32_BE)
-#define SNDRV_PCM_FMTBIT_FLOAT_LE		(1 << SNDRV_PCM_FORMAT_FLOAT_LE)
-#define SNDRV_PCM_FMTBIT_FLOAT_BE		(1 << SNDRV_PCM_FORMAT_FLOAT_BE)
+#define SNDRV_PCM_FMTBIT_FLOAT_LE	(1 << SNDRV_PCM_FORMAT_FLOAT_LE)
+#define SNDRV_PCM_FMTBIT_FLOAT_BE	(1 << SNDRV_PCM_FORMAT_FLOAT_BE)
 #define SNDRV_PCM_FMTBIT_FLOAT64_LE	(1 << SNDRV_PCM_FORMAT_FLOAT64_LE)
 #define SNDRV_PCM_FMTBIT_FLOAT64_BE	(1 << SNDRV_PCM_FORMAT_FLOAT64_BE)
 #define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE (1 << SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE)
@@ -141,7 +144,7 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_FMTBIT_IMA_ADPCM	(1 << SNDRV_PCM_FORMAT_IMA_ADPCM)
 #define SNDRV_PCM_FMTBIT_MPEG		(1 << SNDRV_PCM_FORMAT_MPEG)
 #define SNDRV_PCM_FMTBIT_GSM		(1 << SNDRV_PCM_FORMAT_GSM)
-#define SNDRV_PCM_FMTBIT_SPECIAL		(1 << SNDRV_PCM_FORMAT_SPECIAL)
+#define SNDRV_PCM_FMTBIT_SPECIAL	(1 << SNDRV_PCM_FORMAT_SPECIAL)
 
 #ifdef SNDRV_LITTLE_ENDIAN
 #define SNDRV_PCM_FMTBIT_S16		SNDRV_PCM_FMTBIT_S16_LE
@@ -151,8 +154,8 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_FMTBIT_S32		SNDRV_PCM_FMTBIT_S32_LE
 #define SNDRV_PCM_FMTBIT_U32		SNDRV_PCM_FMTBIT_U32_LE
 #define SNDRV_PCM_FMTBIT_FLOAT		SNDRV_PCM_FMTBIT_FLOAT_LE
-#define SNDRV_PCM_FMTBIT_FLOAT64		SNDRV_PCM_FMTBIT_FLOAT64_LE
-#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME	SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE
+#define SNDRV_PCM_FMTBIT_FLOAT64	SNDRV_PCM_FMTBIT_FLOAT64_LE
+#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE
 #endif
 #ifdef SNDRV_BIG_ENDIAN
 #define SNDRV_PCM_FMTBIT_S16		SNDRV_PCM_FMTBIT_S16_BE
@@ -162,8 +165,8 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_FMTBIT_S32		SNDRV_PCM_FMTBIT_S32_BE
 #define SNDRV_PCM_FMTBIT_U32		SNDRV_PCM_FMTBIT_U32_BE
 #define SNDRV_PCM_FMTBIT_FLOAT		SNDRV_PCM_FMTBIT_FLOAT_BE
-#define SNDRV_PCM_FMTBIT_FLOAT64		SNDRV_PCM_FMTBIT_FLOAT64_BE
-#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME	SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_BE
+#define SNDRV_PCM_FMTBIT_FLOAT64	SNDRV_PCM_FMTBIT_FLOAT64_BE
+#define SNDRV_PCM_FMTBIT_IEC958_SUBFRAME SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_BE
 #endif
 
 struct _snd_pcm_file {
@@ -322,6 +325,7 @@ struct _snd_pcm_substream {
 	char name[32];			/* substream name */
 	int stream;			/* stream (direction) */
 	size_t buffer_bytes_max;	/* limit ring buffer size */
+	int dma_type;			
 	void *dma_area;
 	dma_addr_t dma_addr;
 	size_t dma_bytes;
@@ -787,19 +791,17 @@ extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
  *  Memory
  */
 
+extern int snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
+extern int snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
+extern int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size);
+extern int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
+
 extern int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
 					 size_t size, size_t max,
 					 unsigned int flags);
 extern int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
 						 size_t size, size_t max,
 						 unsigned int flags);
-extern void snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
-extern void snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
-extern int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream,
-				    size_t size,
-				    unsigned int flags);
-extern void snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
-
 #ifdef CONFIG_PCI
 extern int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
 					     snd_pcm_substream_t *substream,
@@ -808,15 +810,6 @@ extern int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
 						     snd_pcm_t *pcm,
 						     size_t size,
 						     size_t max);
-extern void snd_pcm_lib_preallocate_pci_free(struct pci_dev *pci,
-					     snd_pcm_substream_t *substream);
-extern void snd_pcm_lib_preallocate_pci_free_for_all(struct pci_dev *pci,
-						     snd_pcm_t *pcm);
-extern int snd_pcm_lib_malloc_pci_pages(struct pci_dev *pci,
-                                        snd_pcm_substream_t *substream,
-                                        size_t size);
-extern void snd_pcm_lib_free_pci_pages(struct pci_dev *pci,
-                                       snd_pcm_substream_t *substream);
 #endif
 
 static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
