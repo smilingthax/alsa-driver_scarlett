@@ -117,10 +117,10 @@ static int __devinit snd_card_es968_pnp(int dev, struct snd_card_es968 *acard,
 	if (irq[dev] != SNDRV_AUTO_IRQ)
 		pnp_resource_change(&cfg->irq_resource[0], irq[dev], 1);
 	if ((pnp_manual_config_dev(pdev, cfg, 0)) < 0)
-		printk(KERN_ERR PFX "AUDIO the requested resources are invalid, using auto config\n");
+		snd_printk(KERN_ERR PFX "AUDIO the requested resources are invalid, using auto config\n");
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		printk(KERN_ERR PFX "AUDIO pnp configure failure\n");
+		snd_printk(KERN_ERR PFX "AUDIO pnp configure failure\n");
 		return err;
 	}
 	port[dev] = pnp_port_start(pdev, 0);
@@ -223,7 +223,12 @@ static struct pnp_card_driver es968_pnpc_driver = {
 
 static int __init alsa_card_es968_init(void)
 {
-	return (pnp_register_card_driver(&es968_pnpc_driver) ? 0 : -ENODEV);
+	int res = pnp_register_card_driver(&es968_pnpc_driver);
+#ifdef MODULE
+	if (res == 0)
+		snd_printk(KERN_ERR "no ES968 based soundcards found\n");
+#endif
+	return res < 0 ? res : 0;
 }
 
 static void __exit alsa_card_es968_exit(void)
