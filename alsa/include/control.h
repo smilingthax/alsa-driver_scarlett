@@ -45,8 +45,8 @@ typedef int (*snd_control_ioctl_t) (snd_card_t * card,
 				    snd_control_t * control,
 				    unsigned int cmd, unsigned long arg);
 
-extern int snd_control_register(int cardnum);
-extern int snd_control_unregister(int cardnum);
+extern int snd_control_register(snd_card_t *card);
+extern int snd_control_unregister(snd_card_t *card);
 extern int snd_control_register_ioctl(snd_control_ioctl_t fcn);
 extern int snd_control_unregister_ioctl(snd_control_ioctl_t fcn);
 extern snd_ctl_kswitch_t *snd_control_new_switch(snd_card_t * card, 
