@@ -186,8 +186,6 @@ typedef struct sndrv_pcm_mmap_status snd_pcm_mmap_status_t;
 typedef struct sndrv_pcm_mmap_control snd_pcm_mmap_control_t;
 typedef struct sndrv_xferi snd_xferi_t;
 typedef struct sndrv_xfern snd_xfern_t;
-typedef enum sndrv_mcmd snd_mcmd_t;
-typedef enum sndrv_mctl snd_mctl_t;
 typedef enum sndrv_rawmidi_stream snd_rawmidi_stream_t;
 typedef struct sndrv_rawmidi_info snd_rawmidi_info_t;
 typedef struct sndrv_rawmidi_params snd_rawmidi_params_t;
