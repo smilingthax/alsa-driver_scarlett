@@ -615,7 +615,7 @@ static void cs46xx_dsp_proc_sample_dump_read (snd_info_entry_t *entry, snd_info_
 	snd_iprintf(buffer,"\nMIX_SAMPLE_BUF1:\n");
 
 	col = 0;
-	for (i = MIX_SAMPLE_BUF1;i < MIX_SAMPLE_BUF1 + 0x30; i += sizeof(u32),col ++) {
+	for (i = MIX_SAMPLE_BUF1;i < MIX_SAMPLE_BUF1 + 0x40; i += sizeof(u32),col ++) {
 		if (col == 4) {
 			snd_iprintf(buffer,"\n");
 			col = 0;
@@ -628,14 +628,14 @@ static void cs46xx_dsp_proc_sample_dump_read (snd_info_entry_t *entry, snd_info_
 		snd_iprintf(buffer,"%08X ",readl(dst + i));
 	}
 
-	snd_iprintf(buffer,"\n\n");
+	snd_iprintf(buffer,"\nSRC_TASK_SCB1:\n");
 	col = 0;
-	for (i = SPDIFI_IP_OUTPUT_BUFFER1;i < SPDIFI_IP_OUTPUT_BUFFER1 + 0x40; i += sizeof(u32),col ++) {
+	for (i = 0x2580 ; i < 0x2580 + 0x40 ; i += sizeof(u32),col ++) {
 		if (col == 4) {
 			snd_iprintf(buffer,"\n");
 			col = 0;
 		}
-
+		
 		if (col == 0) {
 			snd_iprintf(buffer, "%04X ",i);
 		}
@@ -646,7 +646,7 @@ static void cs46xx_dsp_proc_sample_dump_read (snd_info_entry_t *entry, snd_info_
 
 	snd_iprintf(buffer,"\nSPDIFO_BUFFER:\n");
 	col = 0;
-	for (i = SPDIFO_IP_OUTPUT_BUFFER1;i < SPDIFO_IP_OUTPUT_BUFFER1 + 0x40; i += sizeof(u32),col ++) {
+	for (i = SPDIFO_IP_OUTPUT_BUFFER1;i < SPDIFO_IP_OUTPUT_BUFFER1 + 0x30; i += sizeof(u32),col ++) {
 		if (col == 4) {
 			snd_iprintf(buffer,"\n");
 			col = 0;
@@ -1356,6 +1356,7 @@ int cs46xx_dsp_scb_and_task_init (cs46xx_t *chip)
 
 	/* SPDIF input sampel rate converter */
 	src_task_scb = cs46xx_dsp_create_src_task_scb(chip,"SrcTaskSCB_SPDIFI",
+						      48000,
 						      SRC_OUTPUT_BUF1,
 						      SRC_DELAY_BUF1,SRCTASK_SCB_ADDR,
 						      master_mix_scb,
@@ -1601,7 +1602,7 @@ int cs46xx_dsp_enable_spdif_in (cs46xx_t *chip)
 
 	/* set SPDIF input sample rate and unmute
 	   NOTE: only 48khz support for SPDIF input this time */
-	cs46xx_dsp_set_src_sample_rate(chip,ins->spdif_in_src,48000);
+	/* cs46xx_dsp_set_src_sample_rate(chip,ins->spdif_in_src,48000); */
 
 	/* monitor state */
 	ins->spdif_status_in = 1;
