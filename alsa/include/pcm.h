@@ -4,6 +4,7 @@
 /*
  *  Digital Audio (PCM) abstract layer
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *                   Abramo Bagnara <abramo@alsa-project.org>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -78,25 +79,21 @@ typedef struct _snd_pcm_ops {
 
 #define SND_PCM_DEVICES		8
 
-#define SND_PCM_DEFAULT_RATE	8000
-
 #define SND_PCM_IOCTL1_FALSE	((void *)0)
 #define SND_PCM_IOCTL1_TRUE	((void *)1)
 
-#define SND_PCM_IOCTL1_INFO		0
-#define SND_PCM_IOCTL1_HW_INFO		1
-#define SND_PCM_IOCTL1_HW_PARAMS	2
-#define SND_PCM_IOCTL1_DIG_INFO		3
-#define SND_PCM_IOCTL1_DIG_PARAMS	4
-#define SND_PCM_IOCTL1_CHANNEL_INFO	5
+#define SND_PCM_IOCTL1_RESET		0
+#define SND_PCM_IOCTL1_INFO		1
+#define SND_PCM_IOCTL1_HW_INFO		2
+#define SND_PCM_IOCTL1_HW_PARAMS	3
+#define SND_PCM_IOCTL1_DIG_INFO		4
+#define SND_PCM_IOCTL1_DIG_PARAMS	5
+#define SND_PCM_IOCTL1_CHANNEL_INFO	6
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_START		1
 #define SND_PCM_TRIGGER_PAUSE_PUSH	3
 #define SND_PCM_TRIGGER_PAUSE_RELEASE	4
-
-#define snd_pcm_clear_time(stream) \
-	((stream)->time.tv_sec = (stream)->time.tv_usec = 0)
 
 struct _snd_pcm_file {
 	snd_pcm_substream_t * substream;
@@ -251,14 +248,6 @@ typedef struct _snd_pcm_notify {
 	int (*n_unregister) (unsigned short minor, snd_pcm_t * pcm);
 	struct list_head list;
 } snd_pcm_notify_t;
-
-typedef struct {
-	struct file *file;
-	snd_pcm_substream_t *substream;
-	void *arg;
-	snd_timestamp_t tstamp;
-	int result;
-} snd_pcm_ksync_request_t;
 
 typedef struct {
 	unsigned int master;
