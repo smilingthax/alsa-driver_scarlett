@@ -90,9 +90,11 @@
 
 	/* system status messages */
 #define SND_SEQ_EVENT_CLIENT_START	60	/* new client has connected */
-#define SND_SEQ_EVENT_PORT_START	61	/* new port was created */
-#define SND_SEQ_EVENT_CLIENT_EXIT	62	/* client has left the system */
-#define SND_SEQ_EVENT_PORT_EXIT		63	/* port was deleted from system */
+#define SND_SEQ_EVENT_CLIENT_EXIT	61	/* client has left the system */
+#define SND_SEQ_EVENT_CLIENT_CHANGE	62	/* client status/info has changed */
+#define SND_SEQ_EVENT_PORT_START	63	/* new port was created */
+#define SND_SEQ_EVENT_PORT_EXIT		64	/* port was deleted from system */
+#define SND_SEQ_EVENT_PORT_CHANGE	65	/* port status/info has changed */
 
 typedef unsigned char snd_seq_event_type;
 
@@ -191,6 +193,11 @@ typedef struct snd_seq_event_t {
 		snd_seq_ev_raw8	 raw8;
 		snd_seq_ev_raw32 raw32;		
 		snd_seq_ev_ext	 ext;
+		union {
+			snd_seq_tick_time_t tick;
+			snd_seq_real_time_t real;
+		} time;
+		snd_seq_addr_t	 addr;
 	} data;
 } snd_seq_event_t;
 
