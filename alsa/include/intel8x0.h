@@ -33,6 +33,9 @@
 #ifndef PCI_DEVICE_ID_INTEL_82901
 #define PCI_DEVICE_ID_INTEL_82901	0x2425
 #endif
+#ifndef PCI_DEVICE_ID_INTEL_440MX
+#define PCI_DEVICE_ID_INTEL_440MX	0x7195
+#endif
 
 /*
  *  Direct registers
