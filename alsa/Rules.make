@@ -92,17 +92,10 @@ ifdef USE_STANDARD_AS_RULE
 endif
 
 %.c: %.patch
-	@xtmp="$(MODCURDIR)"; \
-	if [ "$${xtmp:0:5}" = "acore" ]; then \
-		xtmp1=$${xtmp:6} ; \
-		if [ ! -z "$${xtmp1}" ]; then xtmp1="$${xtmp1}/" ; fi ; \
-		echo "coping file alsa-kernel/core/$${xtmp1}$@"; \
-		cp $(TOPDIR)/alsa-kernel/core/$${xtmp1}$@ $@; \
-	else \
-		echo "Coping file alsa-kernel/core/$${xtmp}/$@"; \
-		cp $(TOPDIR)/alsa-kernel/$${xtmp}/$@ $@; \
-	fi
-	@patch -p0 -i $<
+	@xtmp=`echo $(MODCURDIR) | sed -e 's/^acore/core/'`/$@;\
+	echo "copying file alsa-kernel/$$xtmp";\
+	cp "$(TOPDIR)/alsa-kernel/$$xtmp" $@;\
+	patch -p0 -i $<
 
 %.isapnp: %.c
 	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | $(TOPDIR)/utils/convert_isapnp_ids > $@

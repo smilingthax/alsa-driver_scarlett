@@ -210,22 +210,29 @@ dnl my_compiler="2.95.3"
 dnl
 kernel_compiler_type=`echo $kernel_compiler | cut -d ' ' -f 1`
 kernel_compiler_version=`echo $kernel_compiler | cut -d ' ' -f 2`
-if test "${kernel_compiler_version:0:5}" = "egcs-"; then
+case "$kernel_compiler_version" in
+egcs-*)
   kernel_compiler_type="egcs"
-  kernel_compiler_version=`echo ${kernel_compiler_version:5} | cut -d ' ' -f 1`
-fi
-if test "${my_compiler:0:4}" = "gcc-"; then
+  kernel_compiler_version=`echo "$kernel_compiler_version" | cut -b 6-`
+ ;;
+esac
+case "$my_compiler" in
+gcc-*)
   my_compiler_type="gcc"
-  my_compiler_version=`echo ${my_compiler:4} | cut -d ' ' -f 1`
-else
-  if test "${my_compiler:0:5}" = "egcs-"; then
+  my_compiler_version=`echo "$my_compiler" | cut -b 5-`
+  ;;
+*)
+  case "$my_compiler" in
+  egcs-*)
     my_compiler_type="egcs"
-    my_compiler_version=`echo ${my_compiler:5} | cut -d ' ' -f 1`
-  else
+    my_compiler_version=`echo "$my_compiler" | cut -b 6-`
+    ;;
+  *)
     my_compiler_type=`echo $my_compiler | cut -d ' ' -f 1`
-    my_compiler_version=`echo $my_compiler | cut -d ' ' -f 3`
-  fi
-fi
+    my_compiler_version=`echo "$my_compiler" | cut -d ' ' -f 3`
+    ;;
+  esac
+esac
 if test "$my_compiler_type" = "$my_compiler_version"; then
   my_compiler_type="gcc"
 fi
