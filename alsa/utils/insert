@@ -32,11 +32,11 @@ function basic() {
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   banner "snd-pcm"
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
-  banner "snd-pcm1"
-  if ! $INSMOD -m $MODDIR/snd-pcm1.o >> $MAP; then exit 1; fi
-  if [ -r $MODDIR/snd-pcm1-oss.o ]; then
-    banner "snd-pcm1-oss"
-    if ! $INSMOD -m $MODDIR/snd-pcm1-oss.o >> $MAP; then exit 1; fi  
+  if [ -r $MODDIR/snd-pcm-oss.o ]; then
+    banner "snd-pcm-plugin"
+    if ! $INSMOD -m $MODDIR/snd-pcm-plugin.o >> $MAP; then exit 1; fi  
+    banner "snd-pcm-oss"
+    if ! $INSMOD -m $MODDIR/snd-pcm-oss.o >> $MAP; then exit 1; fi  
   fi
   if [ -r $MODDIR/snd-midi.o ]; then
     banner "snd-midi"
@@ -119,7 +119,7 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-gus.o
     insert snd-synth-gus.o
-    insert snd-card-interwave.o snd_dma1=5 snd_dma2=6 snd_midi=1
+    insert snd-card-interwave.o snd_irq=7 snd_dma1=5 snd_dma2=6 snd_midi=1
     restore interwave.conf
     ;;
   es1688)
@@ -307,7 +307,7 @@ case "$1" in
 #		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
 #		snd_dma1=1 snd_dma2=0 \
 #		snd_irq=5 snd_mpu_irq=7
-    insert snd-card-cs4236.o
+    insert snd-card-cs4236.o snd_irq=7
     restore cs4236.conf
     ;;
   dummy)

@@ -25,7 +25,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 
 struct snd_stru_es18xx {
@@ -44,6 +44,9 @@ struct snd_stru_es18xx {
 	unsigned short audio2_vol;	/* volume level of audio2 */
 
 	unsigned short active;		/* active channel mask */
+	unsigned int p_a_dma_size;
+	unsigned int c_a_dma_size;
+	unsigned int p_b_dma_size;
 
 	snd_kmixer_element_t *mix_imux;
 	snd_kmixer_element_t *mix_mic;
@@ -65,11 +68,8 @@ struct snd_stru_es18xx {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_a_subchn;
-	snd_pcm1_subchn_t *playback_a_subchn1;
 	snd_pcm_subchn_t *capture_a_subchn;
-	snd_pcm1_subchn_t *capture_a_subchn1;
 	snd_pcm_subchn_t *playback_b_subchn;
-	snd_pcm1_subchn_t *playback_b_subchn1;
 
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;

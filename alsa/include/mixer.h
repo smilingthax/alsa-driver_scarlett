@@ -107,7 +107,7 @@ struct snd_stru_mixer {
 	snd_card_t *card;
 	int device;			/* device # */
 
-	char id[32];
+	char id[64];
 	unsigned char name[80];
 	unsigned int attrib;
 

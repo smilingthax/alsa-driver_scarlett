@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 
 #define ES1688_HW_AUTO		0x0000
@@ -44,13 +44,12 @@ struct snd_stru_es1688 {
 	unsigned short trigger_value;
 	unsigned char rec_src;
 	unsigned char pad;
+	unsigned int dma_size;
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1;
 
 	spinlock_t reg_lock;
 	spinlock_t mixer_lock;

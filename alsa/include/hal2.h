@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 #include "timer.h"

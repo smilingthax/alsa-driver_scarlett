@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "timer.h"
 
@@ -231,9 +231,7 @@ struct snd_stru_cs4231 {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1;
 	snd_kmixer_t *mixer;
 	snd_timer_t *timer;
 
@@ -242,6 +240,8 @@ struct snd_stru_cs4231 {
 	int mce_bit;
 	int calibrate_mute;
 	int sw_3d_bit;
+	unsigned int p_dma_size;
+	unsigned int c_dma_size;
 
 	spinlock_t reg_lock;
 	struct semaphore mce_mutex;
@@ -315,8 +315,7 @@ struct snd_stru_cs4231 {
 	snd_kmixer_element_t *me_dac2;
 	snd_kmixer_element_t *me_vol_dac2;
 	snd_kmixer_element_t *me_sw_dac2_in;
-	snd_kmixer_element_t *me_sw_dac2_out;
-	
+	snd_kmixer_element_t *me_sw_dac2_out;	
 
 	unsigned int (*set_playback_rate) (cs4231_t * codec, unsigned int rate);
 	unsigned int (*set_capture_rate) (cs4231_t * codec, unsigned int rate);

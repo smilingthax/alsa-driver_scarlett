@@ -1,0 +1,162 @@
+#!/bin/sh
+#
+# alsasound     This shell script takes care of starting and stopping
+#               ALSA sound driver.
+#
+# This script requires /usr/sbin/alsactl program from alsa-utils package.
+#
+# Copyright (c) by Jaroslav Kysela <perex@suse.cz> 
+# Modified for being POSIX-complaint by Christian Kurz <shorty@debian.org>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+#
+# For RedHat 5.0+:
+# chkconfig: 2345 87 14
+# description: ALSA driver
+#
+
+config=/etc/modules.conf
+alsactl=/usr/sbin/alsactl
+
+if [ ! -r $config ]; then
+  if [ -r /etc/conf.modules ]; then
+    config=/etc/conf.modules
+  fi
+fi
+
+# See how we were called.
+case "$1" in
+  start)
+	# Remove the driver, if the detect module is present.
+	if [ -f /proc/asound/detect ]; then
+	  echo -n "Shutting down sound detect module: "
+	  #
+	  # remove all sound modules
+	  #
+	  /sbin/lsmod | grep -E "^snd" | while read line; do \
+		/sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
+		done
+	  # remove the 2.2 soundcore module (if possible)
+	  /sbin/rmmod soundcore 2> /dev/null
+	  echo "done"
+	fi
+        # Start driver.
+	if [ ! -d /proc/asound ]; then
+	  #
+	  # insert all sound modules
+	  #
+	  cat $config | \
+		grep -E "^alias( |\t)+snd-card-[[:digit:]]" | \
+		awk '{print $3}' | 
+		while read line; do \
+		  echo -n "Starting sound driver: $line "; \
+		  /sbin/modprobe $line; \
+		  echo "done"; \
+		done
+          # 
+          # restore driver settings
+          #
+          if [ -x $alsactl ]; then
+            $alsactl restore
+          else
+            echo "ERROR: alsactl not found"
+          fi
+  	  #
+  	  if [ -d /proc/asound ] && [ -d /var/lock/subsys ]; then
+	    touch /var/lock/subsys/alsasound
+	  fi
+        else
+	  echo "ALSA driver is already running."
+	fi
+        ;;
+  stop)
+        # Stop daemons.
+	if [ -d /proc/asound ]; then
+          echo -n "Shutting down sound driver: "
+	  if [ ! -f /proc/asound/detect ]; then
+	    #
+	    # store driber settings
+	    #
+	    if [ -x $alsactl ]; then
+	      $alsactl store
+	    else
+	      echo -n "!!!alsactl not found!!! "
+	    fi
+	  fi
+	  #
+	  # remove all sound modules
+	  #
+	  /sbin/lsmod | grep -E "^snd" | while read line; do \
+		/sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
+		done
+	  # remove the 2.2 soundcore module (if possible)
+	  /sbin/rmmod soundcore 2> /dev/null
+	  #
+	  if [ -d /var/lock/subsys ]; then
+	    rm -f /var/lock/subsys/alsasound
+	  fi
+ 	  echo "done"
+	else
+	  echo "ALSA driver isn't running."
+	fi
+        ;;
+  restart)
+	/etc/init.d/alsasound stop
+	/etc/init.d/alsasound start
+	;;
+  detect)
+	# Start driver only in detect mode.
+	if [ -d /proc/asound ]; then
+	  if [ -f /proc/asound/detect ]; then
+	    echo "ALSA driver is already running in detect mode."
+	    exit 0
+          else
+	    echo -n "Shutting down sound driver: "
+	    #
+	    # store driver settings
+	    #
+	    if [ -x $alsactl ]; then
+	      $alsactl store
+	    else
+	      echo -n "!!!alsactl not found!!! "
+            fi
+	    #
+	    # remove all sound modules
+	    #
+	    /sbin/lsmod | grep -E "^snd" | while read line; do \
+		/sbin/rmmod `echo $line | cut -d ' ' -f 1`; \
+		done
+	    # remove the 2.2 soundcore module (if possible)
+	    /sbin/rmmod soundcore 2> /dev/null
+	    echo "done"
+	  fi
+	fi
+	echo -n "Starting sound detect module: "
+	#
+	# run only detect module
+	#
+	/sbin/modprobe snd-detect
+	echo "done"
+	if [ -d /var/lock/subsys ]; then
+	  touch /var/lock/subsys/alsasound
+	fi
+	;;
+  *)
+        echo "Usage: alsasound {start|stop|restart|detect}"
+        exit 1
+esac
+
+exit 0

@@ -116,6 +116,7 @@ IF: MIXER,PCM,MIDI
 MA: audio@tridentmicro.com
 
 ID: ForteMedia FM801
+SC: DT-0398
 IF: MIXER,PCM,MIDI
 MA: perex@suse.cz
 

@@ -105,7 +105,7 @@ struct snd_stru_rawmidi {
 	unsigned int device;		/* device number */
 	unsigned int flags;		/* SND_RAWMIDI_LFLG_XXXX */
 	unsigned int info_flags;	/* SND_RAWMIDI_INFO_XXXX */
-	char id[32];
+	char id[64];
 	char name[80];
 
 #ifdef CONFIG_SND_OSSEMUL

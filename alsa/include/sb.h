@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 
@@ -126,7 +126,10 @@ struct snd_stru_sbdsp {
 	unsigned int mode8;		/* current mode of stream */
 	unsigned char speed8;		/* input speed */
 	unsigned char fmt8;		/* format */
-	unsigned int count8;		/* size of one block for SB 1.0 */
+	unsigned int p_dma_size;
+	unsigned int p_frag_size;
+	unsigned int c_dma_size;
+	unsigned int c_frag_size;
 
 	unsigned int mode16;		/* current 16-bit mode of streams */
 	unsigned int force_mode16;	/* force 16-bit mode of streams */
@@ -144,9 +147,7 @@ struct snd_stru_sbdsp {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1;
 
 	spinlock_t reg_lock;
 	spinlock_t open8_lock;
@@ -299,6 +300,15 @@ extern snd_kmixer_t *snd_sb16dsp_new_mixer(snd_card_t * card,
 					   sbdsp_t * codec,
 					   unsigned short hardware,
 					   int pcm_dev);
+
+extern int snd_sb8_playback_open(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb8_capture_open(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb8_playback_close(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb8_capture_close(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb16_playback_open(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb16_capture_open(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb16_playback_close(void *private_data, snd_pcm_subchn_t *subchn);
+extern int snd_sb16_capture_close(void *private_data, snd_pcm_subchn_t *subchn);
 
 extern void snd_sb16dsp_proc_init(snd_pcm_t * pcm);
 extern void snd_sb16dsp_proc_done(snd_pcm_t * pcm);

@@ -59,20 +59,10 @@ kaversion="",
 kaversion="")])
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
-ksublevel=`echo $kaversion | cut -d . -f 3 | cut -d - -f 1`
-kextraversion=`echo $kaversion | cut -d . -f 3 | cut -d - -f 2-`
+ksublevel=`echo $kaversion | sed -e 's/.*\.//' -e 's/\([0-9][0-9]*\).*/\1/'`
+kextraversion=`echo $kaversion | sed -e 's/.*\.//' -e  's/^[0-9][0-9]*//'`
 if test "$kextraversion" = "$ksublevel"; then
   kextraversion=""
-else
-  kextraversion=`echo -$kextraversion`
-fi
-if echo $ksublevel | grep -E "[[[:digit:]]]+a" > /dev/null; then
-  kextraversion=a`echo $ksublevel | cut -d a -f 2`
-  ksublevel=`echo $ksublevel | cut -d a -f 1`
-fi
-if echo $ksublevel | grep -E "[[[:digit:]]]+pre" > /dev/null; then
-  kextraversion=pre`echo $ksublevel | cut -d e -f 2`
-  ksublevel=`echo $ksublevel | cut -d p -f 1`
 fi
 kversion=`expr $kversion + 0`
 kpatchlevel=`expr $kpatchlevel + 0`
@@ -364,10 +354,10 @@ else
   AC_MSG_RESULT(no)
 fi
 
-dnl Check for OSS/Lite emulation...
-AC_MSG_CHECKING(for OSS/Lite emulation)
+dnl Check for OSS/Free emulation...
+AC_MSG_CHECKING(for OSS/Free emulation)
 AC_ARG_WITH(oss,
-  [  --with-oss=no,yes       driver will (not) be compiled with OSS/Lite emulation],
+  [  --with-oss=no,yes       driver will (not) be compiled with OSS/Free emulation],
   ossemul="$withval", ossemul="yes")
 CONFIG_SND_OSSEMUL="0"
 if test "$ossemul" = "yes"; then

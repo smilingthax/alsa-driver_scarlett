@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # alsasound     This shell script takes care of starting and stopping
-#               ALSA sound driver.
+#               the ALSA sound driver.
 #
 # This script requires /usr/sbin/alsactl program from alsa-utils package.
 #
@@ -27,13 +27,20 @@
 # description: ALSA driver
 #
 
+config=/etc/modules.conf
 alsactl=/usr/sbin/alsactl
+
+if [ ! -r $config ]; then
+  if [ -r /etc/conf.modules ]; then
+    config=/etc/conf.modules
+  fi
+fi
 
 function start() {
   #
   # insert all sound modules
   #
-  cat /etc/conf.modules | \
+  cat $config | \
     grep -E "^alias( |\t)+snd-card-[[:digit:]]" | \
     awk '{print $3}' | \
     while read line; do \

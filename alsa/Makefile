@@ -14,21 +14,29 @@ dummy:
 	@echo
 endif
 
-SUBDIRS  = support kernel lowlevel cards detect
+SUBDIRS  = support kernel lowlevel cards
 CSUBDIRS = include test utils
 
 all: compile
 
+include/sndversions.h:
+	make dep
+
 include/isapnp.h:
 	ln -sf ../support/isapnp.h include/isapnp.h
 
-compile: include/isapnp.h cards.config
+/usr/include/byteswap.h:
+	if [ ! -r /usr/include/byteswap.h ]; then \
+	  cp utils/patches/byteswap.h /usr/include \
+	fi
+
+compile: /usr/include/byteswap.h include/sndversions.h include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
 	@echo "ALSA modules were sucessfully compiled."
 	@echo
 
-dep: include/isapnp.h cards.config
+dep: /usr/include/byteswap.h include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d dep; then exit 1; fi; done
 
 cards.config: modules.config

@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 
 /* IO ports */
@@ -141,15 +141,14 @@ struct snd_stru_ad1848 {
 
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1; 
 	snd_card_t *card;
 	snd_kmixer_t *mixer;
 
 	unsigned char image[32];	/* SGalaxy needs an access to extended registers */
 	int mce_bit;
 	int calibrate_mute;
+	int dma_size;
 
 	spinlock_t reg_lock;
 	struct semaphore open_mutex;

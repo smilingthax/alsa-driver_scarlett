@@ -23,7 +23,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 #include "mpu401.h"
@@ -128,6 +128,7 @@
 #define T4D_DLY_A		     0x88
 #define T4D_SIGN_CSO_A		     0x8c
 #define T4D_CSPF_A		     0x90
+#define T4D_CSPF_B		     0xbc
 #define T4D_CEBC_A		     0x94
 #define T4D_AINT_A		     0x98
 #define T4D_AINTEN_A		     0x9c
@@ -249,13 +250,12 @@ struct snd_trident_stru_voice {
 
 	unsigned int negCSO;	/* nonzero - use negative CSO */
 
-
 	/* PCM data */
 
 	trident_t *trident;
 	snd_pcm_subchn_t *subchn;
-	snd_pcm1_subchn_t *subchn1;
-	int running;
+	int running: 1,
+	    ignore_middle: 1;
 	int eso;                /* final ESO value for channel */
 	int count;              /* count between interrupts */
 	int csoint;             /* CSO value for next expected interrupt */
@@ -304,6 +304,7 @@ struct snd_stru_trident_pcm_mixer {
 struct snd_stru_trident {
 	snd_dma_t * dma1ptr;	/* DAC Channel */
 	snd_dma_t * dma2ptr;	/* ADC Channel */
+	snd_dma_t * dma3ptr;	/* SPDIF Channel */
 	snd_irq_t * irqptr;
 
 	int isNX;		/* NX chip present */
@@ -317,6 +318,9 @@ struct snd_stru_trident {
         int ChanDwordCount;
 
 	unsigned char spdif_ctrl;
+	unsigned char spdif_pcm_ctrl;
+	unsigned int spdif_bits;
+	unsigned int spdif_pcm_bits;
 	unsigned int ac97_ctrl;
         
         unsigned int ChanMap[2];	/* allocation map for hardware channels */
@@ -332,6 +336,7 @@ struct snd_stru_trident {
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* ADC/DAC PCM */
+	snd_pcm_t *spdif;	/* SPDIF PCM */
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_seq_device_t *seq_dev;
@@ -354,6 +359,7 @@ struct snd_stru_trident {
 trident_t *snd_trident_create(snd_card_t * card, struct pci_dev *pci,
 			      snd_dma_t * dma1ptr,
 			      snd_dma_t * dma2ptr,
+			      snd_dma_t * dma3ptr,
 			      snd_irq_t * irqptr,
 			      int pcm_channels,
 			      int max_wavetable_size);
@@ -361,6 +367,7 @@ void snd_trident_free(trident_t * trident);
 void snd_trident_interrupt(trident_t * trident);
 
 snd_pcm_t *snd_trident_pcm(trident_t * trident);
+snd_pcm_t *snd_trident_spdif_pcm(trident_t * trident);
 snd_kmixer_t *snd_trident_mixer(trident_t * trident);
 void snd_trident_rawmidi(trident_t * trident, mpu401_t * mpu);
 int snd_trident_attach_synthesizer(trident_t * trident);

@@ -88,6 +88,7 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/malloc.h>
+#include <linux/delay.h>
 
 #include <linux/ioport.h>
 
@@ -174,7 +175,6 @@ struct snd_stru_dma_area {
 	unsigned char *buf;		/* pointer to DMA buffer */
 	long size;			/* real size of DMA buffer */
 	char *owner;			/* owner of this DMA channel */
-	struct vm_area_struct *vma;	/* virtual memory area */
 	snd_dma_t *dma;
 	snd_dma_area_t *next;
 };
@@ -214,6 +214,15 @@ typedef struct snd_stru_port {
 } snd_port_t;
 
 typedef void (snd_irq_handler_t) (int irq, void *dev_id, struct pt_regs * regs);
+
+typedef struct snd_stru_vma {
+	struct vm_area_struct * area;
+	void *notify_client;
+	void *notify_data;
+	long notify_size;
+	void (*notify)(void *notify_client, void *notify_data);
+	struct snd_stru_vma *next;
+} snd_vma_t;
 
 /* various typedefs */
 
@@ -316,9 +325,6 @@ extern int snd_unregister_oss_device(int type, snd_card_t * card, int dev);
 extern int snd_minor_info_init(void);
 extern int snd_minor_info_done(void);
 
-extern int snd_ioctl_in(long *addr);
-extern int snd_ioctl_out(long *addr, int value);
-
 /* sound_oss.c */
 
 #ifdef CONFIG_SND_OSSEMUL
@@ -339,18 +345,22 @@ extern void *snd_kmalloc(size_t size, int flags);
 extern void snd_kfree(void *obj);
 extern void *snd_kcalloc(size_t size, int flags);
 extern char *snd_kmalloc_strdup(const char *string, int flags);
-extern char *snd_malloc_pages(unsigned long size, int *pg, int dma);
+extern void *snd_malloc_pages(unsigned long size, int *pg, int dma);
 extern void *snd_vmalloc(unsigned long size);
 extern void snd_vfree(void *obj);
-extern void snd_free_pages(char *ptr, unsigned long size);
+extern void snd_free_pages(void *ptr, unsigned long size);
 extern int snd_dma_malloc(snd_card_t * card, snd_dma_t * dma, char *owner, snd_dma_area_t **rarea);
 extern void snd_dma_free(snd_card_t * card, snd_dma_area_t *area);
-extern void snd_dma_notify_vma_close(struct vm_area_struct *area);
 #ifdef CONFIG_SND_DEBUG_MEMORY
 extern int snd_memory_info_init(void);
 extern int snd_memory_info_done(void);
 extern void snd_memory_debug1(void);
 #endif
+
+/* vma.c */
+
+extern void snd_vma_add(snd_vma_t * vma);
+extern void snd_vma_disconnect(snd_vma_t * vma);
 
 /* init.c */
 

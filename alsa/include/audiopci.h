@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 #include "ak4531_codec.h"
@@ -297,11 +297,14 @@ struct snd_stru_ensoniq {
 	snd_pcm_t *pcm;		/* DAC1/ADC PCM */
 	snd_pcm_t *pcm2;	/* DAC2 PCM */
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *playback2_subchn;
-	snd_pcm1_subchn_t *playback2_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1;
+	unsigned int p1_dma_size;
+	unsigned int p2_dma_size;
+	unsigned int c_dma_size;
+	unsigned int p1_frag_size;
+	unsigned int p2_frag_size;
+	unsigned int c_frag_size;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 

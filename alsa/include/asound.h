@@ -113,7 +113,7 @@ typedef struct snd_switch {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 0, 1)
+#define SND_CTL_VERSION			SND_PROTOCOL_VERSION(2, 1, 0)
 
 #define SND_CTL_SW_JOYSTICK		"Joystick"
 #define SND_CTL_SW_JOYSTICK_ADDRESS	"Joystick Address"
@@ -148,16 +148,15 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x13, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOWR('U', 0x20, int)
 #define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOWR('U', 0x21, int)
-#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x22, snd_pcm_info_t)
-#define SND_CTL_IOCTL_PCM_PLAYBACK_INFO	_IOR ('U', 0x23, snd_pcm_playback_info_t)
-#define SND_CTL_IOCTL_PCM_CAPTURE_INFO	_IOR ('U', 0x24, snd_pcm_capture_info_t)
+#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOWR('U', 0x22, int)
+#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x23, snd_pcm_info_t)
+#define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x24, snd_pcm_channel_info_t)
 #define SND_CTL_IOCTL_PCM_PSWITCH_LIST	_IOWR('U', 0x25, snd_switch_list_t)
 #define SND_CTL_IOCTL_PCM_PSWITCH_READ  _IOWR('U', 0x26, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_PSWITCH_WRITE _IOWR('U', 0x27, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_CSWITCH_LIST	_IOWR('U', 0x28, snd_switch_list_t)
 #define SND_CTL_IOCTL_PCM_CSWITCH_READ  _IOWR('U', 0x29, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_CSWITCH_WRITE _IOWR('U', 0x2a, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOWR('U', 0x2b, int)
 #define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOWR('U', 0x30, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x31, snd_rawmidi_info_t)
 #define SND_CTL_IOCTL_RAWMIDI_OUTPUT_INFO _IOR('U', 0x32, snd_rawmidi_output_info_t)
@@ -203,7 +202,7 @@ typedef struct snd_ctl_read {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_HWDEP_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_HWDEP_VERSION		SND_PROTOCOL_VERSION(1, 1, 0)
 
 #define SND_HWDEP_TYPE_OPL2		0
 #define SND_HWDEP_TYPE_OPL3		1
@@ -216,7 +215,7 @@ typedef struct snd_ctl_read {
 
 typedef struct snd_hwdep_info {
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
-	unsigned char id[32];	/* ID of this hardware dependent device */
+	unsigned char id[64];	/* ID of this hardware dependent device (user selectable) */
 	unsigned char name[80];	/* name of this hardware dependent device */
 	unsigned int hw_type;	/* hardware depedent device type */
 	unsigned char reserved[64];	/* reserved for future */
@@ -231,7 +230,7 @@ typedef struct snd_hwdep_info {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 1, 1)
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 2, 0)
 
 /* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
@@ -379,7 +378,7 @@ typedef struct {
 typedef struct snd_mixer_info {
 	unsigned int type;	/* type of soundcard - SND_CARD_TYPE_XXXX */
 	unsigned int attrib;	/* some attributes about this device (SND_MIXER_ATTR_*) */
-	unsigned char id[32];	/* ID of this mixer */
+	unsigned char id[64];	/* ID of this mixer (user selectable) */
 	unsigned char name[80];	/* name of this device */
 	int elements;		/* count of elements */
 	int groups;		/* count of element groups */
@@ -985,43 +984,46 @@ struct snd_oss_mixer_info_obsolete {
  *                                                                           *
  *****************************************************************************/
 
-#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(1, 0, 2)
+#define SND_PCM_VERSION			SND_PROTOCOL_VERSION(2, 0, 0)
 
-#define SND_PCM_SFMT_MU_LAW		0
-#define SND_PCM_SFMT_A_LAW		1
-#define SND_PCM_SFMT_IMA_ADPCM		2
-#define SND_PCM_SFMT_U8			3
-#define SND_PCM_SFMT_S16_LE		4
-#define SND_PCM_SFMT_S16_BE		5
-#define SND_PCM_SFMT_S8			6
-#define SND_PCM_SFMT_U16_LE		7
-#define SND_PCM_SFMT_U16_BE		8
-#define SND_PCM_SFMT_MPEG		9
-#define SND_PCM_SFMT_GSM		10
-#define SND_PCM_SFMT_S24_LE		11
-#define SND_PCM_SFMT_S24_BE		12
-#define SND_PCM_SFMT_U24_LE		13
-#define SND_PCM_SFMT_U24_BE		14
-#define SND_PCM_SFMT_S32_LE		15
-#define SND_PCM_SFMT_S32_BE		16
-#define SND_PCM_SFMT_U32_LE		17
-#define SND_PCM_SFMT_U32_BE		18
-#define SND_PCM_SFMT_FLOAT		19	/* 4-byte float, need specification!! */
-#define SND_PCM_SFMT_FLOAT64		20	/* 8-byte float, need specification!! */
+#define SND_PCM_CHANNEL_PLAYBACK	0
+#define SND_PCM_CHANNEL_CAPTURE		1
+
+#define SND_PCM_MODE_UNKNOWN		(-1)
+#define SND_PCM_MODE_STREAM		0
+#define SND_PCM_MODE_BLOCK		1
+
+#define SND_PCM_SFMT_S8			0
+#define SND_PCM_SFMT_U8			1
+#define SND_PCM_SFMT_S16_LE		2
+#define SND_PCM_SFMT_S16_BE		3
+#define SND_PCM_SFMT_U16_LE		4
+#define SND_PCM_SFMT_U16_BE		5
+#define SND_PCM_SFMT_S24_LE		6	/* low three bytes */
+#define SND_PCM_SFMT_S24_BE		7	/* low three bytes */
+#define SND_PCM_SFMT_U24_LE		8	/* low three bytes */
+#define SND_PCM_SFMT_U24_BE		9	/* low three bytes */
+#define SND_PCM_SFMT_S32_LE		10
+#define SND_PCM_SFMT_S32_BE		11
+#define SND_PCM_SFMT_U32_LE		12
+#define SND_PCM_SFMT_U32_BE		13
+#define SND_PCM_SFMT_FLOAT		14	/* 4-byte float, need specification!! */
+#define SND_PCM_SFMT_FLOAT64		15	/* 8-byte float, need specification!! */
+#define SND_PCM_SFMT_IEC958_SUBFRAME_LE	16	/* Little Endian !!! */
+#define SND_PCM_SFMT_IEC958_SUBFRAME_BE	17	/* Big Endian !!! */
+#define SND_PCM_SFMT_MU_LAW		18
+#define SND_PCM_SFMT_A_LAW		19
+#define SND_PCM_SFMT_IMA_ADPCM		20
+#define SND_PCM_SFMT_MPEG		21
+#define SND_PCM_SFMT_GSM		22
 #define SND_PCM_SFMT_SPECIAL		31
 
-#define SND_PCM_FMT_QUERY		0
-#define SND_PCM_FMT_MU_LAW		(1 << SND_PCM_SFMT_MU_LAW)
-#define SND_PCM_FMT_A_LAW		(1 << SND_PCM_SFMT_A_LAW)
-#define SND_PCM_FMT_IMA_ADPCM		(1 << SND_PCM_SFMT_IMA_ADPCM)
+#define SND_PCM_FMT_S8			(1 << SND_PCM_SFMT_S8)
 #define SND_PCM_FMT_U8			(1 << SND_PCM_SFMT_U8)
 #define SND_PCM_FMT_S16_LE		(1 << SND_PCM_SFMT_S16_LE)
 #define SND_PCM_FMT_S16_BE		(1 << SND_PCM_SFMT_S16_BE)
-#define SND_PCM_FMT_S8			(1 << SND_PCM_SFMT_S8)
 #define SND_PCM_FMT_U16_LE		(1 << SND_PCM_SFMT_U16_LE)
 #define SND_PCM_FMT_U16_BE		(1 << SND_PCM_SFMT_U16_BE)
-#define SND_PCM_FMT_MPEG		(1 << SND_PCM_SFMT_MPEG)
-#define SND_PCM_FMT_GSM			(1 << SND_PCM_SFMT_GSM)
 #define SND_PCM_FMT_S24_LE		(1 << SND_PCM_SFMT_S24_LE)
 #define SND_PCM_FMT_S24_BE		(1 << SND_PCM_SFMT_S24_BE)
 #define SND_PCM_FMT_U24_LE		(1 << SND_PCM_SFMT_U24_LE)
@@ -1032,146 +1034,244 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_FMT_U32_BE		(1 << SND_PCM_SFMT_U32_BE)
 #define SND_PCM_FMT_FLOAT		(1 << SND_PCM_SFMT_FLOAT)
 #define SND_PCM_FMT_FLOAT64		(1 << SND_PCM_SFMT_FLOAT64)
+#define SND_PCM_FMT_IEC958_SUBFRAME_LE	(1 << SND_PCM_SFMT_IEC958_SUBFRAME_LE)
+#define SND_PCM_FMT_IEC958_SUBFRAME_BE	(1 << SND_PCM_SFMT_IEC958_SUBFRAME_BE)
+#define SND_PCM_FMT_MU_LAW		(1 << SND_PCM_SFMT_MU_LAW)
+#define SND_PCM_FMT_A_LAW		(1 << SND_PCM_SFMT_A_LAW)
+#define SND_PCM_FMT_IMA_ADPCM		(1 << SND_PCM_SFMT_IMA_ADPCM)
+#define SND_PCM_FMT_MPEG		(1 << SND_PCM_SFMT_MPEG)
+#define SND_PCM_FMT_GSM			(1 << SND_PCM_SFMT_GSM)
 #define SND_PCM_FMT_SPECIAL		(1 << SND_PCM_SFMT_SPECIAL)
 
-#define SND_PCM_INFO_CODEC		0x00000001
-#define SND_PCM_INFO_DSP		SND_PCM_INFO_CODEC
-#define SND_PCM_INFO_MMAP		0x00000002	/* for compatibility with OSS, this flag shouldn't be used with native applications */
-#define SND_PCM_INFO_PLAYBACK		0x00000100
-#define SND_PCM_INFO_CAPTURE		0x00000200
-#define SND_PCM_INFO_DUPLEX		0x00000400
-#define SND_PCM_INFO_DUPLEX_LIMIT	0x00000800	/* rate for playback & capture channels must be same!!! */
-#define SND_PCM_INFO_DUPLEX_MONO	0x00001000	/* in duplex mode - only mono (one channel) is supported */
+#define SND_PCM_RATE_PLL		(1<<0)		/* programmable PLL */
+#define SND_PCM_RATE_KNOT		(1<<1)		/* supports more non-continuos rates */
+#define SND_PCM_RATE_8000		(1<<2)		/* 8000Hz */
+#define SND_PCM_RATE_11025		(1<<3)		/* 11025Hz */
+#define SND_PCM_RATE_16000		(1<<4)		/* 16000Hz */
+#define SND_PCM_RATE_22050		(1<<5)		/* 22050Hz */
+#define SND_PCM_RATE_32000		(1<<6)		/* 32000Hz */
+#define SND_PCM_RATE_44100		(1<<7)		/* 44100Hz */
+#define SND_PCM_RATE_48000		(1<<8)		/* 48000Hz */
+#define SND_PCM_RATE_88200		(1<<9)		/* 88200Hz */
+#define SND_PCM_RATE_96000		(1<<10)		/* 96000Hz */
+#define SND_PCM_RATE_176400		(1<<11)		/* 176400Hz */
+#define SND_PCM_RATE_192000		(1<<12)		/* 192000Hz */
 
-#define SND_PCM_PINFO_BATCH		0x00000001	/* double buffering */
-#define SND_PCM_PINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
-#define SND_PCM_PINFO_16BITONLY		0x00000004	/* hardware supports only 16-bit samples, but driver does conversions from 8-bit to 16-bit */
+#define SND_PCM_RATE_8000_44100		(SND_PCM_RATE_8000|SND_PCM_RATE_11025|\
+					 SND_PCM_RATE_16000|SND_PCM_RATE_22050|\
+					 SND_PCM_RATE_32000|SND_PCM_RATE_44100)
+#define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
 
-#define SND_PCM_CINFO_BATCH		0x00000001	/* double buffering */
-#define SND_PCM_CINFO_8BITONLY		0x00000002	/* hardware supports only 8-bit samples, but driver does conversions from 16-bit to 8-bit */
-#define SND_PCM_CINFO_16BITONLY		0x00000004	/* hardware supports only 16-bit samples, but driver does conversions from 8-bit to 16-bit */
-#define SND_PCM_CINFO_OVERRANGE		0x00010000	/* hardware supports ADC overrange detection */
+#define SND_PCM_INFO_PLAYBACK		0x00000001
+#define SND_PCM_INFO_CAPTURE		0x00000002
+#define SND_PCM_INFO_DUPLEX		0x00000100
+#define SND_PCM_INFO_DUPLEX_RATE	0x00000200	/* rate for playback & capture channels must be same!!! */
+#define SND_PCM_INFO_DUPLEX_MONO	0x00000400	/* in duplex mode - only mono (one channel) is supported */
 
-/*
- * Things to know:
- *   1) Real fragment size can be aligned by driver if hardware needs.
- *      Current fragment value can be taken from the status structure.
- *   2) If fragments_max in the playback_params structure is -N, the value
- *      means total fragments - N.
- */
+#define SND_PCM_CHNINFO_MMAP		0x00000001	/* hardware supports mmap */
+#define SND_PCM_CHNINFO_STREAM		0x00000002	/* hardware supports streaming */
+#define SND_PCM_CHNINFO_BLOCK		0x00000004	/* hardware supports block mode */
+#define SND_PCM_CHNINFO_BATCH		0x00000010	/* double buffering */
+#define SND_PCM_CHNINFO_INTERLEAVE	0x00000100	/* voices are interleaved */
+#define SND_PCM_CHNINFO_NONINTERLEAVE	0x00000200	/* voices are not interleaved */
+#define SND_PCM_CHNINFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
+#define SND_PCM_CHNINFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
+#define SND_PCM_CHNINFO_MMAP_VALID	0x00040000	/* fragment data are valid during transfer */
+#define SND_PCM_CHNINFO_PAUSE		0x00050000	/* pause ioctl is supported */
+
+#define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
+#define SND_PCM_START_FULL		1	/* start when whole queue is filled (playback) */
+#define SND_PCM_START_GO		2	/* start on the go command */
+
+#define SND_PCM_STOP_STOP		0	/* stop when underrun/overrun */
+#define SND_PCM_STOP_STOP_ERASE		1	/* stop & erase when overrun (capture) */
+#define SND_PCM_STOP_ROLLOVER		2	/* rollover when underrun */
+
+#define SND_PCM_FILL_NONE		0	/* don't fill the buffer with silent samples */
+#define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
+#define SND_PCM_FILL_SILENCE		2	/* fill the partial buffer with silence */
+
+#define SND_PCM_STATUS_NOTREADY		0	/* channel is not ready */
+#define SND_PCM_STATUS_READY		1	/* channel is ready for prepare call */
+#define SND_PCM_STATUS_PREPARED		2	/* channel is ready to go */
+#define SND_PCM_STATUS_RUNNING		3	/* channel is running */
+#define SND_PCM_STATUS_UNDERRUN		4	/* channel reached an underrun and it is not ready */
+#define SND_PCM_STATUS_OVERRUN		5	/* channel reached an overrun and it is not ready */
+#define SND_PCM_STATUS_PAUSED		6	/* channel is paused */
+
+#define SND_PCM_BOUNDARY		0xf0000000
+
+#define SND_PCM_MMAP_OFFSET_PLAYBACK_CONTROL	0x00000000
+#define SND_PCM_MMAP_OFFSET_PLAYBACK		0x40000000
+#define SND_PCM_MMAP_OFFSET_CAPTURE_CONTROL	0x80000000
+#define SND_PCM_MMAP_OFFSET_CAPTURE		0xc0000000
+
+typedef union snd_pcm_sync {
+	char id[16];
+	short id16[8];
+	int id32[4];
+} snd_pcm_sync_t;
+
+typedef struct snd_pcm_digital {
+	unsigned char dig_status[24];	/* AES/EBU/IEC958 channel status bits */
+	unsigned char dig_subcode[147];	/* AES/EBU/IEC958 subcode bits */
+	unsigned char dig_valid: 1;	/* must be non-zero to accept these values */
+	unsigned char dig_subframe[4];	/* AES/EBU/IEC958 subframe bits */
+	char reserved[16];		/* must be filled with zero */
+} snd_pcm_digital_t;
 
 typedef struct snd_pcm_info {
 	unsigned int type;		/* soundcard type */
 	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
-	unsigned char id[32];		/* ID of this PCM device */
+	unsigned char id[64];		/* ID of this PCM device (user selectable) */
 	unsigned char name[80];		/* name of this device */
-	unsigned int playback;		/* playback subdevices - 1 */
-	unsigned int capture;		/* capture subdevices - 1 */
-	unsigned char reserved[56];	/* reserved for future... */
+	int playback;			/* playback subdevices - 1 */
+	int capture;			/* capture subdevices - 1 */
+	char reserved[64];		/* reserved for future... */
 } snd_pcm_info_t;
 
-typedef struct snd_pcm_playback_info {
-	unsigned int flags;		/* see to SND_PCM_PINFO_XXXX */
+typedef struct snd_pcm_channel_info {
+	int subdevice;			/* subdevice number */
+	char subname[32];		/* subdevice name */
+	int channel;			/* channel information */
+	int mode;			/* transfer mode */
+	snd_pcm_sync_t sync;		/* hardware synchronization ID */
+	unsigned int flags;		/* see to SND_PCM_CHNINFO_XXXX */
 	unsigned int formats;		/* supported formats */
-	unsigned int min_rate;		/* min rate (in Hz) */
-	unsigned int max_rate;		/* max rate (in Hz) */
-	unsigned int min_channels;	/* min channels (probably always 1) */
-	unsigned int max_channels;	/* max channels */
-	unsigned int buffer_size;	/* playback buffer size */
-	unsigned int min_fragment_size;	/* min fragment size in bytes */
-	unsigned int max_fragment_size;	/* max fragment size in bytes */
-	unsigned int fragment_align;	/* align fragment value */
-	unsigned int hw_formats;	/* formats supported by hardware */
-	unsigned int subdevice;		/* subdevice number */
-	unsigned char reserved[56];	/* reserved for future... */
-} snd_pcm_playback_info_t;
-
-typedef struct snd_pcm_capture_info {
-	unsigned int flags;		/* see to SND_PCM_RINFO_XXXX */
-	unsigned int formats;		/* supported formats */
-	unsigned int min_rate;		/* min rate (in Hz) */
-	unsigned int max_rate;		/* max rate (in Hz) */
-	unsigned int min_channels;	/* min channels (probably always 1) */
-	unsigned int max_channels;	/* max channels */
-	unsigned int buffer_size;	/* capture buffer size */
-	unsigned int min_fragment_size;	/* min fragment size in bytes */
-	unsigned int max_fragment_size;	/* max fragment size in bytes */
-	unsigned int fragment_align;	/* align fragment value */
-	unsigned int hw_formats;	/* formats supported by hardware */
-	unsigned int subdevice;		/* subdevice number */
-	unsigned char reserved[56];	/* reserved for future... */
-} snd_pcm_capture_info_t;
+	unsigned int rates;		/* hardware rates */
+	int min_rate;			/* min rate (in Hz) */
+	int max_rate;			/* max rate (in Hz) */
+	int min_voices;			/* min voices (probably always 1) */
+	int max_voices;			/* max voices */
+	int buffer_size;		/* max buffer size in bytes */
+	int min_fragment_size;		/* min fragment size in bytes */
+	int max_fragment_size;		/* max fragment size in bytes */
+	int fragment_align;		/* align fragment value */
+	int fifo_size;			/* stream FIFO size in bytes */
+	int transfer_block_size;	/* bus transfer block size in bytes */
+	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
+	long mmap_size;			/* mmap data size */
+	int mixer_device;		/* mixer device */
+	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
+	char reserved[64];		/* reserved for future... */
+} snd_pcm_channel_info_t;
 
 typedef struct snd_pcm_format {
-	unsigned int format;		/* SND_PCM_SFMT_XXXX */
-	unsigned int rate;		/* rate in Hz */
-	unsigned int channels;		/* channels (voices) */
-	unsigned int special;		/* special description of format */
-	unsigned char reserved[12];
+	int interleave: 1;		/* data are interleaved */
+	int format;			/* SND_PCM_SFMT_XXXX */
+	int rate;			/* rate in Hz */
+	int voices;			/* voices */
+	int special;			/* special (custom) description of format */
+	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
 
-typedef struct snd_pcm_playback_params {
-	int fragment_size;		/* requested size of fragment in bytes */
-	int fragments_max;		/* maximum number of fragments in queue for wakeup */
-	int fragments_room;		/* minimum number of fragments writeable for wakeup */
-	unsigned char reserved[16];	/* must be filled with zero */
-} snd_pcm_playback_params_t;
+typedef struct snd_pcm_channel_params {
+	int channel;			/* channel information */
+	int mode;			/* transfer mode */
+	snd_pcm_format_t format;	/* playback format */
+	snd_pcm_digital_t digital;	/* digital setup */
+	int start_mode;			/* start mode - SND_PCM_START_XXXX */
+	int stop_mode;			/* stop mode - SND_PCM_STOP_XXXX */
+	int time: 1,			/* timestamp (gettimeofday) switch */
+	    ust_time: 1;		/* UST time switch */
+	snd_pcm_sync_t sync;		/* sync group */
+	union {
+		struct {
+			int queue_size;	/* queue size in bytes */
+			int fill;	/* fill mode - SND_PCM_FILL_XXXX */
+			int max_fill;	/* maximum silence fill in bytes */
+		} stream;
+		struct {
+			int frag_size;  /* requested size of fragment in bytes */
+			int frags_min;	/* capture: minimum of filled fragments for wakeup */
+					/* playback: minimum number of fragments writeable for wakeup */
+			int frags_max;  /* playback: maximum number of fragments in queue for wakeup */
+		} block;
+	} buf;				/* buffer parameters */
+	char reserved[64];		/* must be filled with zero */
+} snd_pcm_channel_params_t;
 
-typedef struct snd_pcm_capture_params {
-	int fragment_size;		/* requested size of fragment in bytes */
-	int fragments_min;		/* minimum number of filled fragments for wakeup */
-	unsigned char reserved[16];	/* must be filled with zero */
-} snd_pcm_capture_params_t;
+typedef struct snd_pcm_channel_setup {
+	int channel;			/* channel information */
+	int mode;			/* transfer mode */
+	snd_pcm_format_t format;	/* real used format */
+	snd_pcm_digital_t digital;	/* digital setup */
+	union {
+		struct {
+			int queue_size;	/* real queue size in bytes */
+		} stream;
+		struct {
+			int frag_size;	/* current fragment size in bytes */
+			int frags;	/* allocated fragments */
+			int frags_min;	/* capture: minimum of filled fragments for wakeup */
+					/* playback: minimum number of fragments writeable for wakeup */
+			int frags_max;  /* playback: maximum number of fragments in queue for wakeup */
+		} block;
+	} buf;
+	char reserved[64];		/* must be filled with zero */
+} snd_pcm_channel_setup_t;
 
-typedef struct snd_pcm_playback_status {
-	unsigned int rate;	/* real used rate */
-	int fragments;		/* allocated fragments */
-	int fragment_size;	/* current fragment size in bytes */
-	int count;		/* number of bytes writeable without blocking */
-	int queue;		/* number of bytes in queue */
-	int underrun;		/* count of underruns from last status */
-	struct timeval time;	/* time the next write is going to play */
-	struct timeval stime;	/* time when playback was started */
-	int scount;		/* number of bytes processed from playback start (last underrun) */
-	unsigned char reserved[16];
-} snd_pcm_playback_status_t;
+typedef struct snd_pcm_channel_status {
+	int channel;			/* channel information */
+	int mode;			/* transfer mode */
+	int status;			/* channel status - SND_PCM_STATUS_XXXX */
+	unsigned int scount;		/* number of bytes processed from playback/capture start */
+	struct timeval stime;		/* time when playback/capture was started */
+	long long ust_stime;		/* UST time when playback/capture was started */
+	int frag;			/* current fragment */
+	int count;			/* number of bytes in queue/buffer */
+	int free;			/* bytes in queue still free */
+	int underrun;			/* count of underruns (playback) from last status */
+	int overrun;			/* count of overruns (capture) from last status */
+	int overrange;			/* count of ADC (capture) overrange detections from last status */
+	char reserved[64];		/* must be filled with zero */
+} snd_pcm_channel_status_t;
 
-typedef struct snd_pcm_capture_status {
-	unsigned int rate;	/* real used rate */
-	int fragments;		/* allocated fragments */
-	int fragment_size;	/* current fragment size in bytes */
-	int count;		/* number of bytes readable without blocking */
-	int free;		/* bytes in buffer still free */
-	int overrun;		/* count of overruns from last status */
-	struct timeval time;	/* time the next read was taken */
-	struct timeval stime;	/* time when capture was started */
-	int scount;		/* number of bytes processed from capture start */
-	int overrange;		/* ADC overrange detection */
-	unsigned char reserved[12];
-} snd_pcm_capture_status_t;
+typedef struct {
+	volatile int status;		/* RO: status - SND_PCM_STATUS_XXXX */
+	volatile int frag_io;		/* RO: index to the fragment under I/O operation */
+	int frags;			/* RO: fragments */
+	int frag_size;			/* RO: fragment size */
+	int voices;			/* RO: number of voices, -1 = interleaved */
+	int res[3];			/* reserved */
+} snd_pcm_mmap_io_status_t;
+
+typedef struct {
+	unsigned int number;		/* RO: fragment number */
+	off_t addr;			/* RO: fragment address */
+	int voice;			/* RO: voice number, -1 = interleaved */
+	volatile char data;		/* RW: non-zero - contains valid data */
+	volatile char io;		/* RO: non-zero - I/O operation (don't change data) */
+	char res1;			/* reserved */
+	char res2;			/* reserved */
+} snd_pcm_mmap_fragment_t;
+
+typedef struct {
+	snd_pcm_mmap_io_status_t status;
+	snd_pcm_mmap_fragment_t fragments[128];
+} snd_pcm_mmap_control_t;
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
-#define SND_PCM_IOCTL_PLAYBACK_INFO	_IOR ('A', 0x02, snd_pcm_playback_info_t)
-#define SND_PCM_IOCTL_CAPTURE_INFO	_IOR ('A', 0x03, snd_pcm_capture_info_t)
-#define SND_PCM_IOCTL_PLAYBACK_FORMAT	_IOWR('A', 0x10, snd_pcm_format_t)
-#define SND_PCM_IOCTL_CAPTURE_FORMAT	_IOWR('A', 0x11, snd_pcm_format_t)
-#define SND_PCM_IOCTL_PLAYBACK_PARAMS	_IOWR('A', 0x12, snd_pcm_playback_params_t)
-#define SND_PCM_IOCTL_CAPTURE_PARAMS	_IOWR('A', 0x13, snd_pcm_capture_params_t)
-#define SND_PCM_IOCTL_PLAYBACK_STATUS	_IOR ('A', 0x20, snd_pcm_playback_status_t)
-#define SND_PCM_IOCTL_CAPTURE_STATUS	_IOR ('A', 0x21, snd_pcm_capture_status_t)
-#define SND_PCM_IOCTL_DRAIN_PLAYBACK	_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_FLUSH_PLAYBACK	_IO  ('A', 0x31)
-#define SND_PCM_IOCTL_FLUSH_CAPTURE	_IO  ('A', 0x32)
-#define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR('A', 0x33, int)
-#define SND_PCM_IOCTL_PLAYBACK_TIME	_IOWR('A', 0x40, int)
-#define SND_PCM_IOCTL_CAPTURE_TIME	_IOWR('A', 0x41, int)
+#define SND_PCM_IOCTL_CHANNEL_INFO	_IOWR('A', 0x02, snd_pcm_channel_info_t)
+#define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOWR('A', 0x10, snd_pcm_channel_params_t)
+#define SND_PCM_IOCTL_CHANNEL_SETUP	_IOWR('A', 0x20, snd_pcm_channel_setup_t)
+#define SND_PCM_IOCTL_CHANNEL_STATUS	_IOWR('A', 0x21, snd_pcm_channel_status_t)
+#define SND_PCM_IOCTL_PLAYBACK_PREPARE	_IO  ('A', 0x30)
+#define SND_PCM_IOCTL_CAPTURE_PREPARE	_IO  ('A', 0x31)
+#define SND_PCM_IOCTL_PLAYBACK_GO	_IO  ('A', 0x32)
+#define SND_PCM_IOCTL_CAPTURE_GO	_IO  ('A', 0x33)
+#define SND_PCM_IOCTL_SYNC_GO		_IOWR('A', 0x34, snd_pcm_sync_t)
+#define SND_PCM_IOCTL_DRAIN_PLAYBACK	_IO  ('A', 0x40)
+#define SND_PCM_IOCTL_FLUSH_PLAYBACK	_IO  ('A', 0x41)
+#define SND_PCM_IOCTL_FLUSH_CAPTURE	_IO  ('A', 0x42)
+#define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR('A', 0x43, int)
 
 /*
  *  Loopback interface
  */
 
-#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_PCM_LB_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
 
 #define SND_PCM_LB_STREAM_MODE_RAW	0
 #define SND_PCM_LB_STREAM_MODE_PACKET	1
@@ -1180,19 +1280,37 @@ typedef struct snd_pcm_capture_status {
 #define SND_PCM_LB_TYPE_FORMAT		1	/* format change */
 
 typedef struct snd_pcm_loopback_header {
-	unsigned int size;		/* block size */
+	unsigned int size;		/* block size in bytes */
 	unsigned int type;		/* block type (SND_PCM_LB_TYPE_*) */
 } snd_pcm_loopback_header_t;
 
-#define SND_PCM_LB_IOCTL_PVERSION	_IOR ( 'L', 0x00, int )
-#define SND_PCM_LB_IOCTL_STREAM_MODE	_IOWR( 'L', 0x01, int )
-#define SND_PCM_LB_IOCTL_FORMAT		_IOR ( 'L', 0x02, struct snd_pcm_format )
+typedef struct snd_pcm_loopback_queue {
+	int status;			/* PCM status - SND_PCM_STATUS */
+	unsigned int size;		/* queue size in bytes */
+} snd_pcm_loopback_queue_t;
+
+#define SND_PCM_LB_IOCTL_PVERSION	_IOR ('L', 0x00, int)
+#define SND_PCM_LB_IOCTL_STREAM_MODE	_IOWR('L', 0x01, int)
+#define SND_PCM_LB_IOCTL_FORMAT		_IOR ('L', 0x02, snd_pcm_format_t)
+#define SND_PCM_LB_IOCTL_QUEUE		_IOR ('L', 0x03, snd_pcm_loopback_queue_t)
 
 /*
  *  Interface compatible with Open Sound System API
  */
 
 #ifdef __SND_OSS_COMPAT__
+
+#define SND_PCM_AFMT_QUERY		0
+#define SND_PCM_AFMT_MU_LAW		(1<<0)
+#define SND_PCM_AFMT_A_LAW		(1<<1)
+#define SND_PCM_AFMT_IMA_ADPCM		(1<<2)
+#define SND_PCM_AFMT_U8			(1<<3)
+#define SND_PCM_AFMT_S16_LE		(1<<4)
+#define SND_PCM_AFMT_S16_BE		(1<<5)
+#define SND_PCM_AFMT_S8			(1<<6)
+#define SND_PCM_AFMT_U16_LE		(1<<7)
+#define SND_PCM_AFMT_U16_BE		(1<<8)
+#define SND_PCM_AFMT_MPEG		(1<<9)
 
 #define SND_PCM_ENABLE_CAPTURE		0x00000001
 #define SND_PCM_ENABLE_PLAYBACK		0x00000002
@@ -1375,7 +1493,7 @@ struct snd_pcm_buffer_description {
  *  Raw MIDI section - /dev/snd/midi??
  */
 
-#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_RAWMIDI_VERSION		SND_PROTOCOL_VERSION(1, 1, 0)
 
 #define SND_RAWMIDI_INFO_OUTPUT		0x00000001
 #define SND_RAWMIDI_INFO_INPUT		0x00000002
@@ -1384,7 +1502,7 @@ struct snd_pcm_buffer_description {
 typedef struct snd_rawmidi_info {
 	unsigned int type;		/* soundcard type */
 	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
-	unsigned char id[32];		/* ID of this raw midi device */
+	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
 	unsigned char name[80];		/* name of this raw midi device */
 	unsigned char reserved[64];	/* reserved for future use */
 } snd_rawmidi_info_t;
@@ -1506,7 +1624,7 @@ typedef struct snd_timer_select {
 
 typedef struct snd_timer_info {
 	unsigned int flags;		/* timer flags - SND_MIXER_FLG_* */
-	char id[32];			/* timer identificator */
+	char id[64];			/* timer identificator (user selectable) */
 	char name[80];			/* timer name */
 	unsigned long ticks;		/* maximum ticks */
 	unsigned long resolution;	/* average resolution */

@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 #include "ac97_codec.h"
@@ -1660,9 +1660,7 @@ struct snd_stru_cs461x {
 	snd_card_t *card;
 	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 

@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 #include "ac97_codec.h"
@@ -125,9 +125,9 @@ struct snd_stru_fm801 {
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 	snd_pcm_subchn_t *playback_subchn;
-	snd_pcm1_subchn_t *playback_subchn1;
 	snd_pcm_subchn_t *capture_subchn;
-	snd_pcm1_subchn_t *capture_subchn1;
+	unsigned int p_dma_size;
+	unsigned int c_dma_size;
 
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;

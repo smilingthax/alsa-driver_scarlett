@@ -58,7 +58,7 @@ struct snd_stru_timer_hardware {
 struct snd_stru_timer {
 	snd_card_t *card;
 	int number;			/* timer number */
-	char id[32];
+	char id[64];
 	char name[80];
 	unsigned int flags;
 	int running;			/* running instances */

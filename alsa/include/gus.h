@@ -22,7 +22,7 @@
  *
  */
 
-#include "pcm1.h"
+#include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
 #include "timer.h"
@@ -456,12 +456,9 @@ struct snd_stru_gus_card {
 	snd_info_entry_t *irq_entry;
 #endif
 	snd_pcm_t *pcm;
-#if 0
-	snd_pcm_subchn_t *pcm_subchn;
-	snd_pcm1_subchn_t *pcm_subchn1;
-#endif
 	snd_pcm_subchn_t *pcm_cap_subchn;
-	snd_pcm1_subchn_t *pcm_cap_subchn1;
+	unsigned int c_dma_size;
+	unsigned int c_frag_size;
 	snd_rawmidi_t *midi_uart;
 
 	snd_seq_device_t *seq_dev;

@@ -162,7 +162,7 @@ static inline void write_data(unsigned char x)
 static inline void write_address(unsigned char x)
 {
 	outb(x, _PIDXR);
-	udelay(10);
+	udelay(20);
 }
 
 static inline unsigned char read_data(void)
@@ -266,7 +266,7 @@ void isapnp_activate(unsigned char logdev)
 {
 	isapnp_device(logdev);
 	isapnp_write_byte(ISAPNP_CFG_ACTIVATE, 1);
-	udelay(250);
+	udelay(500);
 }
 
 void isapnp_deactivate(unsigned char logdev)
