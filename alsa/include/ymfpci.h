@@ -296,7 +296,6 @@ struct _snd_ymfpci {
 	dma_addr_t work_base_addr;
 
 	u32 *ctrl_playback;
-	dma_addr_t ctrl_playback_addr;
 	snd_ymfpci_playback_bank_t *bank_playback[YDSXG_PLAYBACK_VOICES][2];
 	snd_ymfpci_capture_bank_t *bank_capture[YDSXG_CAPTURE_VOICES][2];
 	snd_ymfpci_effect_bank_t *bank_effect[YDSXG_EFFECT_VOICES][2];
