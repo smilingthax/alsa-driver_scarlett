@@ -2954,7 +2954,7 @@ static int __devinit snd_cmipci_create(snd_card_t *card,
 	case PCI_DEVICE_ID_CMEDIA_CM8738:
 	case PCI_DEVICE_ID_CMEDIA_CM8738B:
 		txvx = 1;
-		list_for_each(pos, &(pci->global_list)) {
+		pci_for_each_dev(pos) {
 			struct pci_dev * cur = list_entry(pos, struct pci_dev, global_list);
 			if (cur->vendor != 0x8086) /* PCI_VENDOR_ID_INTEL */
 				continue;
