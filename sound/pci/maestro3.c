@@ -931,7 +931,7 @@ static struct m3_quirk m3_quirk_list[] = {
 	/* Dell Inspiron 8000 */
 	{
 		vendor: 0x1028,
-		device: 0x00b0,
+		device: 0x00a4,
 		amp_gpio: -1,
 		irda_workaround: 1,
 	},
