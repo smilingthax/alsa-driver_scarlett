@@ -1137,6 +1137,9 @@ static int __devinit snd_via8233a_pcm_new(via82xx_t *chip)
 	chip->devs[chip->capture_devno].reg_offset = VIA_REG_CAPTURE_8233_STATUS;
 	chip->devs[chip->capture_devno].direction = 1;
 
+	if ((err = snd_pcm_lib_preallocate_sg_pages_for_all(chip->pci, pcm)) < 0)
+		return err;
+
 	/* PCM #1:  DXS3 playback (for spdif) */
 	err = snd_pcm_new(chip->card, chip->card->shortname, 1, 1, 0, &pcm);
 	if (err < 0)
