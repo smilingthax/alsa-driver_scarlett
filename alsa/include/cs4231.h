@@ -246,8 +246,8 @@ struct _snd_cs4231 {
 	struct semaphore open_mutex;
 
 	int (*rate_constraint) (snd_pcm_runtime_t *runtime);
-	void (*set_playback_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char pdfr);
-	void (*set_capture_format) (cs4231_t *chip, snd_pcm_runtime_t *runtime, unsigned char cdfr);
+	void (*set_playback_format) (cs4231_t *chip, snd_pcm_hw_params_t *hw_params, unsigned char pdfr);
+	void (*set_capture_format) (cs4231_t *chip, snd_pcm_hw_params_t *hw_params, unsigned char cdfr);
 #ifdef CONFIG_PM
 	struct pm_dev *pm_dev;
 	void (*suspend) (cs4231_t *chip);
