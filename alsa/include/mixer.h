@@ -22,24 +22,27 @@
  *
  */
 
-#define SND_MIXER_CMD_READ	0
-#define SND_MIXER_CMD_WRITE	1
-
 typedef struct snd_stru_mixer_element snd_kmixer_element_t;
 typedef struct snd_stru_mixer_group snd_kmixer_group_t;
 typedef struct snd_stru_mixer_file snd_kmixer_file_t;
 
-typedef int (snd_kmixer_element_info_t)(void *private_data, snd_kmixer_file_t * file, snd_mixer_element_info_t * info);
-typedef int (snd_kmixer_element_control_t)(void *private_data, snd_kmixer_file_t * file, int cmd, void * data, int size);
-typedef int (snd_kmixer_group_control_t)(void *private_data, snd_kmixer_file_t * file, int w_flag, snd_mixer_group_t * ugroup);
+#define snd_mixer_ext_element_private_data(element)	(void *)(((char *)element) + sizeof(snd_kmixer_element_t))
+#define snd_mixer_ext_group_private_data(group)		(void *)(((char *)group) + sizeof(snd_kmixer_group_t))
+
+typedef int (snd_kmixer_element_info_t)(snd_kmixer_element_t *element, snd_kmixer_file_t * file, snd_mixer_element_info_t * info);
+typedef int (snd_kmixer_element_control_t)(snd_kmixer_element_t *element, snd_kmixer_file_t * file, int w_flag, snd_mixer_element_t * uelement);
+typedef int (snd_kmixer_group_control_t)(snd_kmixer_group_t *group, snd_kmixer_file_t * file, int w_flag, snd_mixer_group_t * ugroup);
 typedef void (snd_kmixer_free_t)(void *private_data);
 
 typedef struct snd_stru_mixer_element_new {
 	char *name;			/* element name */
 	int index;			/* extension to the element name */
 	int type;			/* element type */
+	int ext_size;			/* requested size of the extended area */
+	void *ext_ptr;			/* pointer to the extended area */
 	snd_kmixer_element_info_t *info;
 	snd_kmixer_element_control_t *control;
+	unsigned long private_value;
 	void *private_data;
 	snd_kmixer_free_t *private_free;
 } snd_kmixer_element_new_t;
@@ -54,8 +57,10 @@ struct snd_stru_mixer_element {
 	char *name;			/* element name */
 	int index;			/* extension to the element name */
 	int type;			/* element type */
+	int ext_size;			/* extension data size */
 	snd_kmixer_element_info_t *info;
 	snd_kmixer_element_control_t *control;
+	unsigned long private_value;
 	void *private_data;
 	snd_kmixer_free_t *private_free;
 	snd_kmixer_element_route_t routes_next;
@@ -69,16 +74,20 @@ struct snd_stru_mixer_element {
 typedef struct snd_stru_mixer_group_new {
 	char *name;			/* group name */
 	int index;			/* extension to the group name */
+	int ext_size;			/* requested size of the extended area */
+	void *ext_ptr;			/* pointer to the extended area */	
 } snd_kmixer_group_new_t;
 
 struct snd_stru_mixer_group {
 	char *name;			/* group name */
 	int index;			/* extension to the group name */
 	int oss_dev;			/* OSS device */
+	int ext_size;			/* extension data size */
 	int elements_size;
 	int elements_count;
 	snd_kmixer_element_t **elements;
 	snd_kmixer_group_control_t *control;
+	unsigned long private_value;
 	void *private_data;
 	snd_kmixer_free_t *private_free;
 	struct snd_stru_mixer_group *next;
@@ -226,16 +235,16 @@ static inline int snd_mixer_get_bit(unsigned int *bitmap, int bit)
 	return (bitmap[bit >> 5] & (1 << (bit & 31))) ? 1 : 0;
 }
 
-extern snd_kmixer_group_t *snd_mixer_lib_group(snd_kmixer_t *mixer,
-					       char *name,
-					       int index);
+extern snd_kmixer_group_t *
+	snd_mixer_lib_group(snd_kmixer_t *mixer, char *name, int index);
 
-extern snd_kmixer_group_t *snd_mixer_lib_group_ctrl(snd_kmixer_t *mixer,
-						    char *name,
-						    int index,
-						    int oss_dev,
-						    snd_kmixer_group_control_t *control,
-						    void *private_data);
+extern snd_kmixer_group_t *
+	snd_mixer_lib_group_ctrl(snd_kmixer_t *mixer,
+				 char *name,
+				 int index,
+				 int oss_dev,
+				 snd_kmixer_group_control_t *control,
+				 void *private_data);
 
 struct snd_stru_mixer_lib_io {
 	unsigned int attrib;
@@ -243,23 +252,26 @@ struct snd_stru_mixer_lib_io {
 	snd_mixer_voice_t *voices;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_io(snd_kmixer_t *mixer,
-					      char *name,
-					      int index,
-					      int type,
-					      unsigned int attrib,
-					      int voices_count,
-					      snd_mixer_voice_t *voices);
-extern snd_kmixer_element_t *snd_mixer_lib_io_mono(snd_kmixer_t *mixer,
-						   char *name,
-						   int index,
-						   int type,
-						   unsigned int attrib);
-extern snd_kmixer_element_t *snd_mixer_lib_io_stereo(snd_kmixer_t *mixer,
-						     char *name,
-						     int index,
-						     int type,
-						     unsigned int attrib);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_io(snd_kmixer_t *mixer,
+			 char *name,
+			 int index,
+			 int type,
+			 unsigned int attrib,
+			 int voices_count,
+			 snd_mixer_voice_t *voices);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_io_mono(snd_kmixer_t *mixer,
+			      char *name,
+			      int index,
+			      int type,
+			      unsigned int attrib);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_io_stereo(snd_kmixer_t *mixer,
+				char *name,
+				int index,
+				int type,
+				unsigned int attrib);
 
 struct snd_stru_mixer_lib_pcm {
 	int devices_count;
@@ -277,99 +289,132 @@ struct snd_stru_mixer_lib_converter {
 	unsigned int resolution;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_converter(snd_kmixer_t *mixer,
-						     char *name,
-						     int index,
-						     int type,
-						     unsigned int resolution);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_converter(snd_kmixer_t *mixer,
+				char *name,
+				int index,
+				int type,
+				unsigned int resolution);
 
-typedef int (snd_mixer_sw1_control_t)(void *private_data, int w_flag, unsigned int *bitmap);
+typedef int (snd_mixer_sw1_control_t)(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
 
 struct snd_stru_mixer_lib_sw1 {
 	int switches;				/* size in bits */
 	snd_mixer_sw1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_sw1(snd_kmixer_t *mixer,
+extern snd_kmixer_element_t *
+	snd_mixer_lib_sw1(snd_kmixer_t *mixer,
+			  char *name,
+			  int index,
+			  int switches,
+			  snd_mixer_sw1_control_t *control,
+			  void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_sw1_value(snd_kmixer_t *mixer,
 				char *name,
 				int index,
 				int switches,
 				snd_mixer_sw1_control_t *control,
-				void *private_data);
+				void *private_data,
+				unsigned long private_value);
 
-typedef int (snd_mixer_sw2_control_t)(void *private_data, int w_flag, int *value);
+typedef int (snd_mixer_sw2_control_t)(snd_kmixer_element_t *element, int w_flag, int *value);
 
 struct snd_stru_mixer_lib_sw2 {
         snd_mixer_sw2_control_t *control;
-        void *private_data;
-        snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_sw2(snd_kmixer_t *mixer,
+extern snd_kmixer_element_t *
+	snd_mixer_lib_sw2(snd_kmixer_t *mixer,
+			  char *name,
+			  int index,
+			  snd_mixer_sw2_control_t *control,
+			  void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_sw2_value(snd_kmixer_t *mixer,
 				char *name,
 				int index,
 				snd_mixer_sw2_control_t *control,
-				void *private_data);
+				void *private_data,
+				unsigned long private_value);
 
-typedef int (snd_mixer_sw3_control_t)(void *private_data, int w_flag, unsigned int *bitmap);
+typedef int (snd_mixer_sw3_control_t)(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
 
 struct snd_stru_mixer_lib_sw3 {
 	int type;
 	int voices_count;
 	snd_mixer_voice_t *voices;
 	snd_mixer_sw1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_sw3(snd_kmixer_t *mixer,
+extern snd_kmixer_element_t *
+	snd_mixer_lib_sw3(snd_kmixer_t *mixer,
+			  char *name,
+			  int index,
+			  int type,
+			  int voices_count,
+			  snd_mixer_voice_t *voices,
+			  snd_mixer_sw1_control_t *control,
+			  void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_sw3_value(snd_kmixer_t *mixer,
 				char *name,
 				int index,
 				int type,
 				int voices_count,
 				snd_mixer_voice_t *voices,
 				snd_mixer_sw1_control_t *control,
-				void *private_data);
+				void *private_data,
+				unsigned long private_value);
 
-typedef int (snd_mixer_volume1_control_t)(void *private_data, int w_flag, int *voices);
+typedef int (snd_mixer_volume1_control_t)(snd_kmixer_element_t *element, int w_flag, int *voices);
 
 struct snd_stru_mixer_lib_volume1 {
 	int voices;
 	struct snd_mixer_element_volume1_range *ranges;
 	snd_mixer_volume1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_volume1(snd_kmixer_t *mixer,
-				char *name,
-				int index,
-				int voices,
-				struct snd_mixer_element_volume1_range *range,
-				snd_mixer_volume1_control_t *control,
-				void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_volume1(snd_kmixer_t *mixer,
+			      char *name,
+			      int index,
+			      int voices,
+			      struct snd_mixer_element_volume1_range *range,
+			      snd_mixer_volume1_control_t *control,
+			      void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_volume1_value(snd_kmixer_t *mixer,
+				    char *name,
+				    int index,
+				    int voices,
+				    struct snd_mixer_element_volume1_range *range,
+				    snd_mixer_volume1_control_t *control,
+				    void *private_data,
+				    unsigned long private_value);
 
 struct snd_stru_mixer_lib_accu1 {
         int attenuation;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_accu1(snd_kmixer_t *mixer,
-						 char *name,
-						 int index,
-						 int attenuation);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_accu1(snd_kmixer_t *mixer,
+			    char *name,
+			    int index,
+			    int attenuation);
 
 struct snd_stru_mixer_lib_accu2 {
         int attenuation;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_accu2(snd_kmixer_t *mixer,
-						 char *name,
-						 int index,
-						 int attenuation);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_accu2(snd_kmixer_t *mixer,
+			    char *name,
+			    int index,
+			    int attenuation);
 
-typedef int (snd_mixer_accu3_control_t)(void *private_data, int w_flag, int *voices);
+typedef int (snd_mixer_accu3_control_t)(snd_kmixer_element_t *element, int w_flag, int *voices);
 
 struct snd_stru_mixer_lib_accu3 {
 	int voices;
@@ -379,96 +424,92 @@ struct snd_stru_mixer_lib_accu3 {
 	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_accu3(snd_kmixer_t *mixer,
-				char *name,
-				int index,
-				int voices,
-				struct snd_mixer_element_accu3_range *range,
-				snd_mixer_accu3_control_t *control,
-				void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_accu3(snd_kmixer_t *mixer,
+			    char *name,
+			    int index,
+			    int voices,
+			    struct snd_mixer_element_accu3_range *range,
+			    snd_mixer_accu3_control_t *control,
+			    void *private_data);
 
-typedef int (snd_mixer_mux1_control_t)(void *private_data, int w_flag, snd_kmixer_element_t **elements);
+typedef int (snd_mixer_mux1_control_t)(snd_kmixer_element_t *element, int w_flag, snd_kmixer_element_t **elements);
 
 struct snd_stru_mixer_lib_mux1 {
 	unsigned int attrib;
 	int voices;
 	snd_mixer_mux1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_mux1(snd_kmixer_t *mixer,
-					char *name,
-					int index,
-					unsigned int attrib,
-					int voices,
-					snd_mixer_mux1_control_t *control,
-					void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_mux1(snd_kmixer_t *mixer,
+			   char *name,
+			   int index,
+			   unsigned int attrib,
+			   int voices,
+			   snd_mixer_mux1_control_t *control,
+			   void *private_data);
 
-typedef int (snd_mixer_mux2_control_t)(void *private_data, int w_flag, snd_kmixer_element_t **element);
+typedef int (snd_mixer_mux2_control_t)(snd_kmixer_element_t *element, int w_flag, snd_kmixer_element_t **melement);
 
 struct snd_stru_mixer_lib_mux2 {
 	unsigned int attrib;
 	snd_mixer_mux2_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_mux2(snd_kmixer_t *mixer,
-					char *name,
-					int index,
-					unsigned int attrib,
-					snd_mixer_mux2_control_t *control,
-					void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_mux2(snd_kmixer_t *mixer,
+			   char *name,
+			   int index,
+			   unsigned int attrib,
+			   snd_mixer_mux2_control_t *control,
+			   void *private_data);
 
-typedef int (snd_mixer_tone_control1_control_t)(void *private_data, int w_flag, struct snd_mixer_element_tone_control1 *tc1);
+typedef int (snd_mixer_tone_control1_control_t)(snd_kmixer_element_t *element, int w_flag, struct snd_mixer_element_tone_control1 *tc1);
 
 struct snd_stru_mixer_lib_tone_control1 {
 	struct snd_mixer_element_tone_control1_info data;
 	snd_mixer_tone_control1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_tone_control1(snd_kmixer_t *mixer,
-					char *name,
-					int index,
-					struct snd_mixer_element_tone_control1_info *info,
-					snd_mixer_tone_control1_control_t *control,
-					void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_tone_control1(snd_kmixer_t *mixer,
+				    char *name,
+				    int index,
+				    struct snd_mixer_element_tone_control1_info *info,
+				    snd_mixer_tone_control1_control_t *control,
+				    void *private_data);
 
-typedef int (snd_mixer_pan_control1_control_t)(void *private_data, int w_flag, int *pan);
+typedef int (snd_mixer_pan_control1_control_t)(snd_kmixer_element_t *element, int w_flag, int *pan);
 
 struct snd_stru_mixer_lib_pan_control1 {
 	int pan;
 	struct snd_mixer_element_pan_control1_range *ranges;
 	snd_mixer_pan_control1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_pan_control1(snd_kmixer_t *mixer,
-					char *name,
-					int index,
-					int pan,
-					struct snd_mixer_element_pan_control1_range *ranges,
-					snd_mixer_pan_control1_control_t *control,
-					void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_pan_control1(snd_kmixer_t *mixer,
+				   char *name,
+				   int index,
+				   int pan,
+				   struct snd_mixer_element_pan_control1_range *ranges,
+				   snd_mixer_pan_control1_control_t *control,
+				   void *private_data);
 
-typedef int (snd_mixer_3d_effect1_control_t)(void *private_data, int w_flag, struct snd_mixer_element_3d_effect1 *effect1);
+typedef int (snd_mixer_3d_effect1_control_t)(snd_kmixer_element_t *element, int w_flag, struct snd_mixer_element_3d_effect1 *effect1);
 
 struct snd_stru_mixer_lib_3d_effect1 {
 	struct snd_mixer_element_3d_effect1_info data;
 	snd_mixer_3d_effect1_control_t *control;
-	void *private_data;
-	snd_kmixer_free_t *private_free;
 };
 
-extern snd_kmixer_element_t *snd_mixer_lib_3d_effect1(snd_kmixer_t *mixer,
-					char *name,
-					int index,
-					struct snd_mixer_element_3d_effect1_info *info,
-					snd_mixer_3d_effect1_control_t *control,
-					void *private_data);
+extern snd_kmixer_element_t *
+	snd_mixer_lib_3d_effect1(snd_kmixer_t *mixer,
+				 char *name,
+				 int index,
+				 struct snd_mixer_element_3d_effect1_info *info,
+				 snd_mixer_3d_effect1_control_t *control,
+				 void *private_data);
 
 #endif				/* __MIXER_H */

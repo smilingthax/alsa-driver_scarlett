@@ -191,18 +191,22 @@ int snd_ad1848_new_pcm(snd_card_t * card, int device,
 
 int snd_ad1848_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t ** rmixer);
 
-int snd_ad1848_mixer_stereo_volume(void *private_data, int w_flag, int *voices,
+int snd_ad1848_mixer_stereo_volume(snd_kmixer_element_t *element,
+					int w_flag, int *voices,
 					int bit, int invert, int shift,
 					unsigned char left_reg,
 					unsigned char right_reg);
-int snd_ad1848_mixer_mono_volume(void *private_data, int w_flag, int *voices,
+int snd_ad1848_mixer_mono_volume(snd_kmixer_element_t *element,
+					int w_flag, int *voices,
 					int bit, int invert, int shift,
 					unsigned char reg);
-int snd_ad1848_mixer_stereo_switch(void *private_data, int w_flag, unsigned int *bitmap,
+int snd_ad1848_mixer_stereo_switch(snd_kmixer_element_t *element,
+					int w_flag, unsigned int *bitmap,
 					int bit, int invert,
 					unsigned char left_reg,
 					unsigned char right_reg);
-int snd_ad1848_mixer_mono_switch(void *private_data, int w_flag, int *value,
+int snd_ad1848_mixer_mono_switch(snd_kmixer_element_t * element,
+					int w_flag, int *value,
 					int bit, int invert, unsigned char reg);
 
 #ifdef CONFIG_SND_DEBUG

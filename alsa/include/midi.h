@@ -22,6 +22,10 @@
  *
  */
 
+#ifdef CONFIG_SND_SEQUENCER
+#include "seq_device.h"
+#endif
+
 /*
  *  Raw MIDI interface
  */
@@ -126,6 +130,10 @@ struct snd_stru_rawmidi {
 
 	snd_info_entry_t *dev;
 	snd_info_entry_t *proc_entry;
+
+#ifdef CONFIG_SND_SEQUENCER
+	snd_seq_device_t *seq_dev;
+#endif
 };
 
 /* main rawmidi functions */

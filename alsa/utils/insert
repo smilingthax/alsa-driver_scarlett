@@ -38,6 +38,10 @@ function basic() {
     banner "snd-pcm-oss"
     if ! $INSMOD -m $MODDIR/snd-pcm-oss.o >> $MAP; then exit 1; fi  
   fi
+  if [ -r $MODDIR/snd-seq-device.o ]; then
+    banner "snd-seq-device"
+    if ! $INSMOD -m $MODDIR/snd-seq-device.o >> $MAP; then exit 1; fi
+  fi
   if [ -r $MODDIR/snd-midi.o ]; then
     banner "snd-midi"
     if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
@@ -47,10 +51,6 @@ function basic() {
     if ! $INSMOD -m $MODDIR/snd-hwdep.o >> $MAP; then exit 1; fi
   fi
   if [ -r $MODDIR/snd-seq.o ]; then
-    if [ -r $MODDIR/snd-seq-device.o ]; then
-      banner "snd-seq-device"
-      if ! $INSMOD -m $MODDIR/snd-seq-device.o >> $MAP; then exit 1; fi
-    fi
     banner "snd-seq"
     if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
     if [ -r $MODDIR/snd-seq-midi.o ]; then

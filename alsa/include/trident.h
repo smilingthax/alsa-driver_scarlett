@@ -282,17 +282,7 @@ struct snd_stru_4dwave {
 
 };
 
-typedef struct {
-	snd_kmixer_group_control_t *group;
-	snd_mixer_volume1_control_t *vol;
-	snd_mixer_pan_control1_control_t *pan;
-	snd_mixer_volume1_control_t *rvol;
-	snd_mixer_volume1_control_t *cvol;
-} snd_trident_mixer_ops_t;
-
 struct snd_stru_trident_pcm_mixer {
-	int number;			/* hardware index 32 - 63 */
-
 	snd_kmixer_group_t *group;
 	snd_kmixer_element_t *me_pcm;
 	snd_kmixer_element_t *me_vol_vol;

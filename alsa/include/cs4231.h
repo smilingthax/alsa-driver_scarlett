@@ -362,36 +362,40 @@ int snd_cs4236_new_mixer(snd_pcm_t * pcm, int device, snd_kmixer_t **rmixer);
  *  mixer library
  */
 
-int snd_cs4231_mixer_mux(void *private_data, int w_flag,snd_kmixer_element_t **elements);
-int snd_cs4231_mixer_stereo_volume(cs4231_t *codec, int w_flag, int *voices,
+int snd_cs4231_mixer_mux(snd_kmixer_element_t *element, int w_flag,snd_kmixer_element_t **elements);
+int snd_cs4231_mixer_stereo_volume(snd_kmixer_element_t *element,
+					int w_flag, int *voices,
 					int max, int invert, int shift,
 					unsigned char left_reg,
 					unsigned char right_reg);
-int snd_cs4231_mixer_mono_volume(cs4231_t *codec, int w_flag, int *voices,
+int snd_cs4231_mixer_mono_volume(snd_kmixer_element_t *element,
+					int w_flag, int *voices,
 					int max, int invert, int shift,
 					unsigned char reg);
-int snd_cs4231_mixer_stereo_switch(cs4231_t *codec, int w_flag, unsigned int *bitmap,
+int snd_cs4231_mixer_stereo_switch(snd_kmixer_element_t *element,
+					int w_flag, unsigned int *bitmap,
 					int bit, int invert,
 					unsigned char left_reg,
 					unsigned char right_reg);
-int snd_cs4231_mixer_mono_switch(cs4231_t *codec, int w_flag, int *value,
+int snd_cs4231_mixer_mono_switch(snd_kmixer_element_t *element,
+					int w_flag, int *value,
 					int bit, int invert,
 					unsigned char reg);
-int snd_cs4231_mixer_line_volume(void *private_data, int w_flag, int *voices);
-int snd_cs4231_mixer_line_switch(void *private_data, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_aux1_volume(void *private_data, int w_flag, int *voices);
-int snd_cs4231_mixer_aux1_switch(void *private_data, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_aux2_volume(void *private_data, int w_flag, int *voices);
-int snd_cs4231_mixer_aux2_switch(void *private_data, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_monoin_volume(void *private_data, int w_flag, int *voices);
-int snd_cs4231_mixer_monoin_switch(void *private_data, int w_flag, int *value);
-int snd_cs4231_mixer_mono_bypass_switch(void *private_data, int w_flag, unsigned int *bitmap);
-int snd_cs4231_mixer_igain_volume(void *private_data, int w_flag, int *voices);
-int snd_cs4231_mixer_dac_volume(void *private_data, int w_flag, int *voices);
-int snd_cs4231_mixer_dac_switch(void *private_data, int w_flag, unsigned int *bitmap);
+int snd_cs4231_mixer_line_volume(snd_kmixer_element_t *element, int w_flag, int *voices);
+int snd_cs4231_mixer_line_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
+int snd_cs4231_mixer_aux1_volume(snd_kmixer_element_t *element, int w_flag, int *voices);
+int snd_cs4231_mixer_aux1_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
+int snd_cs4231_mixer_aux2_volume(snd_kmixer_element_t *element, int w_flag, int *voices);
+int snd_cs4231_mixer_aux2_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
+int snd_cs4231_mixer_monoin_volume(snd_kmixer_element_t *element, int w_flag, int *voices);
+int snd_cs4231_mixer_monoin_switch(snd_kmixer_element_t *element, int w_flag, int *value);
+int snd_cs4231_mixer_mono_bypass_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
+int snd_cs4231_mixer_igain_volume(snd_kmixer_element_t *element, int w_flag, int *voices);
+int snd_cs4231_mixer_dac_volume(snd_kmixer_element_t *element, int w_flag, int *voices);
+int snd_cs4231_mixer_dac_switch(snd_kmixer_element_t *element, int w_flag, unsigned int *bitmap);
 
 /* For Interwave ... */
-int snd_cs4231_mixer_group_ctrl1(cs4231_t *codec,
+int snd_cs4231_mixer_group_ctrl1(snd_kmixer_group_t * group,
 				 snd_kmixer_file_t * file,
 				 int w_flag,
 				 snd_mixer_group_t * ugroup,
