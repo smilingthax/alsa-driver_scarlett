@@ -80,18 +80,25 @@ typedef struct snd_stru_es1688 es1688_t;
 
 #define ES1688_PCM_DEV		0x14 
 #define ES1688_MIC_DEV		0x1a
+#define ES1688_REC_DEV		0x1c
 #define ES1688_MASTER_DEV	0x32
 #define ES1688_FM_DEV		0x36
 #define ES1688_CD_DEV		0x38
 #define ES1688_AUX_DEV		0x3a
 #define ES1688_SPEAKER_DEV	0x3c
 #define ES1688_LINE_DEV		0x3e
+#define ES1688_RECLEV_DEV	0xb4
 
-#define ES1688_RECORD_SOURCE	0x0c
-#define ES1688_MIXS_NONE	0x00
-#define ES1688_MIXS_MIC		0x01
-#define ES1688_MIXS_CD		0x03
-#define ES1688_MIXS_LINE	0x07
+#define ES1688_MIXS_MASK	0x17
+#define ES1688_MIXS_MIC		0x00
+#define ES1688_MIXS_MIC_MASTER	0x01
+#define ES1688_MIXS_CD		0x02
+#define ES1688_MIXS_AOUT	0x03
+#define ES1688_MIXS_MIC1	0x04
+#define ES1688_MIXS_REC_MIX	0x05
+#define ES1688_MIXS_LINE	0x06
+#define ES1688_MIXS_MASTER	0x07
+#define ES1688_MIXS_MUTE	0x10
 
 /*
  *
