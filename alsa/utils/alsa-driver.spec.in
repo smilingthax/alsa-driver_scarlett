@@ -1,5 +1,4 @@
 %define version  @CONFIG_SND_VERSION@
-%define kversion @kversion@.@kpatchlevel@.@ksublevel@@kextraversion@
 
 Summary:   ALSA driver
 Name:      alsa-driver
@@ -17,7 +16,11 @@ Advanced Linux Sound Architecture driver. Driver is fully compatible
 with OSS/Lite, but contains many enhanced features.
 
 %prep
+
 %setup
+if [ -z "$TARGET_KERNEL"; then
+  export TARGET_KERNEL=`uname -r`
+fi
 
 %build
 ./configure --prefix=/usr ${EXTRA_ALSA_DRIVER_CONFIG_FLAGS}
@@ -26,12 +29,12 @@ make
 %install
 rm -rf $RPM_BUILD_ROOT
 
-for I in etc/rc.d/init.d usr/include/linux lib/modules/%{kversion}/misc; do
+for I in etc/rc.d/init.d usr/include/linux lib/modules/%{TARGET_KERNEL}/misc; do
   mkdir -p $RPM_BUILD_ROOT/$I
 done
 
 make prefix=$RPM_BUILD_ROOT/usr \
-     moddir=$RPM_BUILD_ROOT/lib/modules/%{kversion}/misc \
+     moddir=$RPM_BUILD_ROOT/lib/modules/%{TARGET_KERNEL}/misc \
      install
 
 install -m755 utils/alsasound $RPM_BUILD_ROOT/etc/rc.d/init.d/alsasound
@@ -56,4 +59,4 @@ rm -rf $RPM_BUILD_ROOT
 %attr(-,root,root) %doc FAQ INSTALL README TODO snddevices doc/
 %attr(-,root,root) %config /etc/rc.d/init.d/*
 %attr(-,root,root) /usr/include/sound/*.h
-%attr(-,root,root) /lib/modules/%{kversion}/misc/*.o
+%attr(-,root,root) /lib/modules/%{TARGET_KERNEL}/misc/*.o
