@@ -2054,7 +2054,7 @@ static int __devinit snd_audiodrive_probe(int dev, struct pnp_card_link *pcard,
 	if (card == NULL)
 		return -ENOMEM;
 	acard = (struct snd_audiodrive *)card->private_data;
-#ifdef CONFIG_ISAPNP
+#ifdef CONFIG_PNP
 	if (isapnp[dev] && (err = snd_audiodrive_pnp(dev, acard, pcard, pid)) < 0) {
 		snd_card_free(card);
 		return err;
