@@ -26,6 +26,8 @@
 #include "sndpci.h"
 #include "pcm1.h"
 #include "mixer.h"
+#include "midi.h"
+#include "mpu401.h"
 #include "ac97_codec.h"
 
 #ifndef PCI_VENDOR_ID_TRIDENT
@@ -101,6 +103,13 @@
 #define T4D_AINT_B                   0xd8
 #define T4D_AINTEN_B                 0xdc
 
+// MPU-401 UART
+#define T4D_MPU401_BASE             0x20
+#define T4D_MPUR0                   0x20
+#define T4D_MPUR1                   0x21
+#define T4D_MPUR2                   0x22
+#define T4D_MPUR3                   0x23
+
 // S/PDIF Registers
 #define NX_SPCTRL_SPCSO             0x24
 #define NX_SPLBA                    0x28
@@ -168,6 +177,7 @@ struct snd_stru_trident {
         unsigned char  bDMAStart;
 
 	unsigned int port;
+	unsigned int midi_port;
 
         LPCHANNELCONTROL ChRegs;
         int ChanDwordCount;
@@ -176,6 +186,7 @@ struct snd_stru_trident {
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* ADC/DAC PCM */
 	snd_kmixer_t *mixer;
+	snd_rawmidi_t *rmidi;
 
 	snd_spin_define(reg);
 	snd_sleep_define(codec);
@@ -191,6 +202,7 @@ void snd_trident_interrupt(trident_t * trident);
 
 snd_pcm_t *snd_trident_pcm(trident_t * trident);
 snd_kmixer_t *snd_trident_mixer(trident_t * trident);
+void snd_trident_rawmidi(trident_t * trident, mpu401_t * mpu);
 
 #endif				/* __TRID4DWAVE_H */
 
