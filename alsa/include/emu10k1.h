@@ -26,7 +26,6 @@
 #include "pcm.h"
 #include "mixer.h"
 #include "midi.h"
-#include "ak4531_codec.h"
 #include "ac97_codec.h"
 
 #ifndef PCI_VENDOR_ID_CREATIVE
