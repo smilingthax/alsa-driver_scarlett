@@ -394,6 +394,52 @@ int main( void ) {
   eval $boolvar="$boolchk"
 ])
 
+dnl Check kernel configurations
+AC_DEFUN([CHECK_KERNEL_TRISTATE_CONFIG], [
+  tristatevar="$1"
+  tristatevar1="$1_MODULE"
+  AC_MSG_CHECKING(for $2)
+  ac_save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+  tristatechk=""
+  AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+#include <stdio.h>
+int main(void) {
+	FILE *file = fopen("tristate.result", "w+");
+	if (file == NULL)
+		exit(1);
+#if defined($tristatevar)
+	fprintf(file, "y");
+#endif
+#if defined(${tristatevar}_MODULE)
+	fprintf(file, "m");
+#endif
+	fclose(file);
+	exit(0);
+}
+],
+    tristatechk="`cat tristate.result`",
+    tristatechk="",
+    tristatechk=""
+  )
+  case $tristatechk in
+  y)
+	tristateres="yes"
+	;;
+  m)
+	tristateres="module"
+	;;
+  *)
+	tristateres="unknown"
+	;;
+  esac
+  AC_MSG_RESULT($tristateres)
+  CFLAGS="$ac_save_CFLAGS"
+  rm -f tristate.result
+  eval $tristatevar="$tristatechk"
+])
+
 dnl Check if symbol is exported
 AC_DEFUN([CHECK_EXPORTED], [
   AC_MSG_CHECKING(for exported symbol $2)
@@ -536,6 +582,10 @@ dnl Check experimental drivers...
 # CHECK_KERNEL_CONFIG(CONFIG_EXPERIMENTAL, [Experimental drivers in kernel])
 CONFIG_EXPERIMENTAL=y
 AC_SUBST(CONFIG_EXPERIMENTAL)
+
+dnl Check for I2C drivers...
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C, [I2C driver in kernel])
+AC_SUBST(CONFIG_I2C)
 
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
