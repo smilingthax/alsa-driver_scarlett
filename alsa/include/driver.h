@@ -22,6 +22,10 @@
  *
  */
 
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
+#define NEW_MACRO_VARARGS
+#endif
+
 #ifdef ALSA_BUILD
 #include "config.h"
 #endif
@@ -481,24 +485,46 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 /* --- */
 
-#define snd_printk( args... ) printk( "snd: " ##args )
+#ifdef NEW_MACRO_VARARGS
+#define snd_printk(...) printk( "snd: " __VA_ARGS__ )
+#define snd_fprintk(...) printk( "snd: " __FILE__ ": " __VA_ARGS__ )
+#else
+#define snd_printk(args...) printk( "snd: " ##args )
+#define snd_fprintk(args...) printk( "snd: " __FILE__ ": " ##args )
+#endif
+
 #ifdef CONFIG_SND_DEBUG
-#define snd_printd( args... ) snd_printk( ##args )
-#define snd_debug_check(expr, action...) do {\
+#ifdef NEW_MACRO_VARARGS
+#define snd_printd(...) snd_printk(__VA_ARGS__)
+#else
+#define snd_printd(args...) snd_printk(##args)
+#endif
+
+#ifdef NEW_MACRO_VARARGS
+#define snd_debug_check(expr, ...) do {\
 	if (expr) {\
-		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__) ;\
-		## action;\
+		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		__VA_ARGS__;\
 	}\
 } while (0)
+#else
+#define snd_debug_check(expr, args...) do {\
+	if (expr) {\
+		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		##args;\
+	}\
+} while (0)
+#endif
+
 #define snd_error_check(expr, action) do {\
 	if (expr) {\
-		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__) ;\
+		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
 		action;\
 	}\
 } while (0)
 #else
-#define snd_printd( args... )	/* nothing */
-#define snd_debug_check(expr, action...)	/* nothing */
+#define snd_printd(...)	/* nothing */
+#define snd_debug_check(expr, ...)	/* nothing */
 #define snd_error_check(expr, action) do {\
 	if (expr) {\
 		action;\
@@ -506,10 +532,16 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 } while (0)
 #endif
 
+#define snd_BUG() snd_debug_check(0, )
+
 #ifdef CONFIG_SND_DEBUG_DETECT
-#define snd_printdd( args... ) snd_printk( ##args )
+#ifdef NEW_MACRO_VARARGS
+#define snd_printdd(...) snd_printk(__VA_ARGS__)
 #else
-#define snd_printdd( args... )	/* nothing */
+#define snd_printdd(args...) snd_printk(##args)
+#endif
+#else
+#define snd_printdd(...)	/* nothing */
 #endif
 
 #define snd_alloc_check(function, args)  ({\

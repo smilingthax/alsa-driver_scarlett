@@ -214,12 +214,12 @@ ssize_t snd_pcm_plug_client_channels_iovec(snd_pcm_plug_t *handle,
 					   const struct iovec *vector, unsigned long count,
 					   snd_pcm_plugin_channel_t **channels);
 ssize_t snd_pcm_plug_client_channels_buf(snd_pcm_plug_t *handle,
-				   char *buf, size_t count,
-				   snd_pcm_plugin_channel_t **channels);
+					 char *buf, size_t count,
+					 snd_pcm_plugin_channel_t **channels);
 
-int snd_pcm_plugin_client_channels(snd_pcm_plugin_t *plugin,
-				   size_t frames,
-				   snd_pcm_plugin_channel_t **channels);
+ssize_t snd_pcm_plugin_client_channels(snd_pcm_plugin_t *plugin,
+				       size_t frames,
+				       snd_pcm_plugin_channel_t **channels);
 
 int snd_pcm_area_silence(const snd_pcm_channel_area_t *dst_channel, size_t dst_offset,
 			 size_t samples, int format);

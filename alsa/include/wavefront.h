@@ -604,7 +604,7 @@ typedef struct wavefront_control {
 
 typedef struct wf_fx_info {
     int request;             /* see list below */
-    int data[4];             /* we don't need much */
+    long data[4];             /* we don't need much */
 } wavefront_fx_info;
 
 /* support for each of these will be forthcoming once I or someone 

@@ -41,15 +41,27 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 	return _snd_magic_value(obj) != magic;
 }
 
+#ifdef NEW_MACRO_VARARGS
+#define snd_magic_cast(type, ptr, ...) (type *) ({\
+	void *__ptr = ptr;\
+	unsigned int __magic = _snd_magic_value(__ptr);\
+	if (__magic != type##_magic) {\
+		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		__VA_ARGS__;\
+	}\
+	__ptr;\
+})
+#else
 #define snd_magic_cast(type, ptr, action...) (type *) ({\
 	void *__ptr = ptr;\
 	unsigned int __magic = _snd_magic_value(__ptr);\
 	if (__magic != type##_magic) {\
-		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__) ;\
-		## action;\
+		snd_printk("MAGIC==0x%x: %s: %i [%s]\n", __magic, __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		##action;\
 	}\
 	__ptr;\
 })
+#endif
 
 #define snd_magic_kfree _snd_magic_kfree
 
