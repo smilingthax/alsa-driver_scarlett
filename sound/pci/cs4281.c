@@ -553,6 +553,7 @@ static void snd_cs4281_delay(unsigned int delay, int can_schedule)
 			delay += 999;
 			delay /= 1000;
 			mdelay(delay > 0 ? delay : 1);
+		}
 	} else {
 		udelay(delay);
 	}
