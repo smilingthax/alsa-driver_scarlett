@@ -19,7 +19,9 @@ SUBDIRS  =
 CSUBDIRS =
 
 ifeq (0,$(CONFIG_ISAPNP_KERNEL))
+ifeq (1,$(CONFIG_SND_ISA)
 SUBDIRS  += support
+endif
 endif
 
 SUBDIRS  += kernel lowlevel cards

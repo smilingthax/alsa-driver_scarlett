@@ -120,6 +120,26 @@ CONFIG_SND_MVERSION=$mversion
 AC_SUBST(CONFIG_SND_MVERSION)
 GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
+dnl Check for ISA support...
+AC_MSG_CHECKING(for ISA support in kernel)
+pcisup="0"
+AC_TRY_RUN([
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main( void ) {
+#ifndef CONFIG_ISA
+  exit(1);
+#else
+  exit(0);
+#endif
+}
+],
+  AC_MSG_RESULT("yes");isasup="1",
+  AC_MSG_RESULT("no");isasup="0",
+  AC_MSG_RESULT("unknown");isasup="0"
+)
+CONFIG_SND_ISA=$isasup
+AC_SUBST(CONFIG_SND_ISA)
+
 dnl Check for PCI support...
 AC_MSG_CHECKING(for PCI support in kernel)
 pcisup="0"
@@ -226,6 +246,8 @@ int main(void) {
 	fprintf(file, "i586tsc");
 #elif defined(CONFIG_M686)
 	fprintf(file, "i686");
+#elif defined(CONFIG_IA64)
+	fprintf(file, "ia64");
 #elif defined(CONFIG_EV4) || defined(CONFIG_ALPHA_EV4)
 	fprintf(file, "alpha_ev4");
 #elif defined(CONFIG_EV5) || defined(CONFIG_ALPHA_EV5)
@@ -272,6 +294,9 @@ case "$processor" in
     ;;
   i686*)
     c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=686"
+    ;;
+  ia64)
+    c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
     ;;
   alpha*)
     c_opts="-fno-strength-reduce -mno-fp-regs -ffixed-8"
