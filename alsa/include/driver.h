@@ -117,6 +117,10 @@
 #else
 #include "isapnp.h"
 #endif
+#ifdef ALSA_BUILD
+#undef __ISAPNP__
+#define __ISAPNP__
+#endif
 #endif
 
 #ifndef ALSA_BUILD

@@ -1217,7 +1217,7 @@ struct isapnp_dev *isapnp_find_dev(struct isapnp_card *card,
 		} else {
 			from = from->next;
 		}
-		if (from->bus != card)	/* something is wrong */
+		if (from == NULL || from->bus != card)	/* something is wrong */
 			return NULL;
 		for (dev = from; dev; dev = dev->sibling) {
 			if (dev->vendor == vendor && dev->device == function)

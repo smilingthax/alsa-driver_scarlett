@@ -279,6 +279,8 @@ struct isapnp_card {
 
 #ifdef CONFIG_ISAPNP
 
+#define __ISAPNP__
+
 /* lowlevel configuration */
 int isapnp_present(void);
 int isapnp_cfg_begin(int csn, int device);
