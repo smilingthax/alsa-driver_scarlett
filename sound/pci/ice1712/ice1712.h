@@ -337,6 +337,7 @@ struct _snd_ice1712 {
 	snd_i2c_device_t *i2cdevs[2];	/* additional i2c devices */
 	
 	unsigned char gpio_direction, gpio_write_mask;
+	int vt1724;
 };
 
 #define chip_t ice1712_t
