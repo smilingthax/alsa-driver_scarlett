@@ -99,8 +99,112 @@
 #define   ES_MEM_PAGEO(o)	(((o)&0x0f)<<0)	 /* memory page select - out */
 #define   ES_MEM_PAGEM		(0x0f<<0)	 /* mask for above */
 #define   ES_MEM_PAGEI(i)       (((i)>>0)&0x0f)  /* memory page select - in */
-#define ES_REG_CODEC	0x10	/* W/O: Codec write register address */
-#define   ES_CODEC_WRITE(a,d)	((((a)&0xff)<<8)|(((d)&0xff)<<0))
+
+#define ES_REG_1370_CODEC 0x10	/* W/O: Codec write register address */
+#define   ES_1370_CODEC_WRITE(a,d) ((((a)&0xff)<<8)|(((d)&0xff)<<0))
+#define ES_REG_1371_CODEC 0x14	/* W/R: Codec Read/Write register address */
+#define   ES_1371_CODEC_WRITE(a,d) ((((a)&0x3f)<<16)|(((d&0xffff)<<0))
+#define   ES_1371_CODEC_RDY	   (1<<31)	 /* codec ready */
+#define   ES_1371_CODEC_WIP	   (1<<30)	 /* codec register access in progress */
+#define   ES_1371_CODEC_READ(i)    (((i)>>0)&0xffff)
+
+#define ES_REG_1371_SMPRATE 0x10 /* W/R: Codec rate converter interface register */
+#define   ES_1371_SRC_RAM_ADDRO(o) (((o)&0x7f)<<25) /* address of the sample rate converter */
+#define   ES_1371_SRC_RAM_ADDRM	   (0x7f<<25)	    /* mask for above */
+#define   ES_1371_SRC_RAM_ADDRI(i) (((i)>>25)&0x7f) /* address of the sample rate converter */
+#define   ES_1371_SRC_RAM_BUSY     (1<<23)	/* R/O: sample rate memory is busy */
+#define   ES_1371_SRC_DISABLE      (1<<22)	/* sample rate converter disable */
+#define   ES_1371_DIS_P1	   (1<<21)	/* playback channel 1 accumulator update disable */
+#define   ES_1371_DIS_P2	   (1<<20)      /* playback channel 1 accumulator update disable */
+#define   ES_1371_DIS_REC	   (1<<19)      /* record channel accumulator update disable */
+#define   ES_1371_SRC_RAM_DATAO(o) (((o)&0xffff)<<0) /* current value of the sample rate converter */
+#define   ES_1371_SRC_RAM_DATAM	   (0xffff<<0)	     /* mask for above */
+#define   ES_1371_SRC_RAM_DATAI(i) (((i)>>0)&0xffff) /* current value of the sample rate converter */
+
+#define ES_REG_1371_LEGACY	/* W/R: Legacy control/status register */
+#define   ES_1371_JFAST		(1<<31)	  /* fast joystick timing */
+#define   ES_1371_HIB		(1<<30)	  /* host interrupt blocking enable */
+#define   ES_1371_VSB		(1<<29)   /* SB; 0 = addr 0x220xH, 1 = 0x22FxH */
+#define   ES_1371_VMPUO(o)	(((o)&0x03)<<27) /* base register address; 0 = 0x320xH; 1 = 0x330xH; 2 = 0x340xH; 3 = 0x350xH */
+#define   ES_1371_VMPUM		(0x03<<27)	 /* mask for above */
+#define   ES_1371_VMPUI(i)	(((i)>>27)&0x03) /* base register address */
+#define   ES_1371_VCDCO(o)	(((o)&0x03)<<25) /* CODEC; 0 = 0x530xH; 1 = undefined; 2 = 0xe80xH; 3 = 0xF40xH */
+#define   ES_1371_VCDCM		(0x03<<25)	 /* mask for above */
+#define   ES_1371_VCDCI(i)	(((i)>>25)&0x03) /* CODEC address */
+#define   ES_1371_FIRQ		(1<<24)	  /* force an interrupt */
+#define   ES_1371_SDMACAP	(1<<23)	  /* enable event capture for slave DMA controller */
+#define   ES_1371_SPICAP	(1<<22)	  /* enable event capture for slave IRQ controller */
+#define   ES_1371_MDMACAP	(1<<21)	  /* enable event capture for master DMA controller */
+#define   ES_1371_MPICAP	(1<<20)	  /* enable event capture for master IRQ controller */
+#define   ES_1371_ADCAP		(1<<19)	  /* enable event capture for ADLIB register; 0x388xH */
+#define   ES_1371_SVCAP		(1<<18)	  /* enable event capture for SB registers */
+#define   ES_1371_CDCCAP	(1<<17)	  /* enable event capture for CODEC registers */
+#define   ES_1371_BACAP		(1<<16)	  /* enable event capture for SoundScape base address */
+#define   ES_1371_EXI(i)	(((i)>>8)&0x07) /* event number */
+#define   ES_1371_AI(i)		(((i)>>3)&0x1f)	/* event significant I/O address */
+#define   ES_1371_WR		(1<<2)	  /* event capture; 0 = read; 1 = write */
+#define   ES_1371_LEGINT	(1<<0)	  /* interrupt for legacy events; 0 = interrupt did occur */
+
+#define ES_REG_SERIAL	0x20	/* R/W: Serial interface control register */
+#define   ES_1371_DAC_TEST	(1<<22)	  /* DAC test mode enable */
+#define   ES_P2_END_INCO(o)	(((o)&0x07)<<19) /* binary offset value to increment / loop end */
+#define   ES_P2_END_INCM	(0x07<<19)       /* mask for above */
+#define   ES_P2_END_INCI(i)	(((i)>>16)&0x07) /* binary offset value to increment / loop end */
+#define   ES_P2_ST_INCO(o)	(((o)&0x07)	 /* binary offset value to increment / start */
+#define   ES_P2_ST_INCM		(0x07<<16)	 /* mask for above */
+#define   ES_P2_ST_INCI(i)	(((i)<<16)&0x07) /* binary offset value to increment / start */
+#define   ES_R1_LOOP_SEL	(1<<15)	  /* ADC; 0 - loop mode; 1 = stop mode */
+#define   ES_P2_LOOP_SEL	(1<<14)	  /* DAC2; 0 - loop mode; 1 = stop mode */
+#define   ES_P1_LOOP_SEL	(1<<13)	  /* DAC1; 0 - loop mode; 1 = stop mode */
+#define   ES_P2_PAUSE		(1<<12)	  /* DAC2; 0 - play mode; 1 = pause mode */
+#define   ES_P1_PAUSE		(1<<11)	  /* DAC1; 0 - play mode; 1 = pause mode */
+#define   ES_R1_INT_EN		(1<<10)	  /* ADC interrupt enable */
+#define   ES_P2_INT_EN		(1<<9)	  /* DAC2 interrupt enable */
+#define   ES_P1_INT_EN		(1<<8)	  /* DAC1 interrupt enable */
+#define   ES_P1_SCT_RLD		(1<<7)	  /* force sample counter reload for DAC1 */
+#define   ES_P2_DAC_SEN		(1<<6)	  /* when stop mode: 0 - DAC2 play back zeros; 1 = DAC2 play back last sample */
+#define   ES_R1_MODEO(o)	(((o)&0x03)<<4)  /* ADC mode; 0 = 8-bit mono; 1 = 8-bit stereo; 2 = 16-bit mono; 3 = 16-bit stereo */
+#define   ES_R1_MODEM		(0x03<<4)	 /* mask for above */
+#define   ES_P2_MODEO(o)	(((o)&0x03)<<2)  /* DAC2 mode; -- '' -- */
+#define   ES_P2_MODEM		(0x03<<2)	 /* mask for above */
+#define   ES_P1_MODEO(o)	(((o)&0x03)<<0)  /* DAC1 mode; -- '' -- */
+#define   ES_P1_MODEM		(0x03<<0)	 /* mask for above */
+
+#define ES_REG_DAC1_COUNT 0x24	/* R/W: DAC1 sample count register */
+#define ES_REG_DAC2_COUNT 0x28	/* R/W: DAC2 sample count register */
+#define ES_REG_ADC_COUNT  0x2c	/* R/W: ADC sample count register */
+#define   ES_REG_CURR_COUNT(i)  (((i)>>16)&0xffff)
+#define   ES_REG_COUNTO(o)	(((o)&0xffff)<<0)
+#define   ES_REG_COUNTM		(0xffff<<0)
+#define   ES_REG_COUNTI(i)	(((i)>>0)&0xffff)
+
+#define ES_REG_DAC1_FRAME 0x30	/* R/W: PAGE 0x0c; DAC1 frame address */
+#define ES_REG_DAC1_SIZE  0x34	/* R/W: PAGE 0x0c; DAC1 frame size */
+#define ES_REG_DAC2_FRAME 0x38	/* R/W: PAGE 0x0c; DAC2 frame address */
+#define ES_REG_DAC2_SIZE  0x3c	/* R/W: PAGE 0x0c; DAC2 frame size */
+#define ES_REG_ADC_FRAME  0x30  /* R/W: PAGE 0x0d; ADC frame address */
+#define ES_REG_ADC_SIZE	  0x34	/* R/W: PAGE 0x0d; ADC frame size */
+#define   ES_REG_FCURR_COUNTO(o) (((o)&0xffff)<<16)
+#define   ES_REG_FCURR_COUNTM    (0xffff<<16)
+#define   ES_REG_FCURR_COUNTI(i) (((i)>>16)&0xffff)
+#define   ES_REG_FSIZEO(o)	 (((o)&0xffff)<<0)
+#define   ES_REG_FSIZEM		 (0xffff<<0)
+#define   ES_REG_FSIZEI(i)	 (((i)>>0)&0xffff)
+
+#define ES_REG_UART_FIFO  0x30	/* R/W: PAGE 0x0e; UART FIFO register */
+#define   ES_REG_UF_VALID	 (1<<8)
+#define   ES_REG_UF_BYTEO(o)	 (((o)&0xff)<<0)
+#define   ES_REG_UF_BYTEM	 (0xff<<0)
+#define   ES_REG_UF_BYTEI(i)	 (((i)>>0)&0xff)
+
+/*
+ *  Pages
+ */
+
+#define ES_PAGE_DAC	0x0c
+#define ES_PAGE_ADC	0x0d
+#define ES_PAGE_UART	0x0e
+#define ES_PAGE_UART1	0x0f
 
 /*
  *
@@ -120,7 +224,7 @@ struct snd_stru_ensoniq {
 
   struct snd_pci_dev *pci;
   snd_card_t *card;
-  snd_pcm_t *pcm;		/* DAC1 PCM */
+  snd_pcm_t *pcm;		/* DAC1/ADC PCM */
   snd_pcm_t *pcm2;		/* DAC2 PCM */
   snd_kmixer_t *mixer;
   snd_rawmidi_t *rmidi;
@@ -136,6 +240,6 @@ void snd_ensoniq_interrupt( ensoniq_t *ensoniq );
 snd_pcm_t *snd_ensoniq_pcm( ensoniq_t *ensoniq );
 snd_pcm_t *snd_ensoniq_pcm2( ensoniq_t *ensoniq );
 snd_kmixer_t *snd_ensoniq_mixer( ensoniq_t *ensoniq );
-void snd_ensoniq_midi( ensoniq_t *ensoniq, mpu401_t *mpu );
+snd_rawmidi_t *snd_ensoniq_midi( ensoniq_t *ensoniq );
 
 #endif /* __ES1370_H */
