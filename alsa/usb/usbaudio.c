@@ -1961,7 +1961,7 @@ static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 		 * now look for an empty slot and create a new card instance
 		 */
 		for (i = 0; i < SNDRV_CARDS; i++)
-			if (! usb_chip[i]) {
+			if (snd_enable[i] && ! usb_chip[i]) {
 				card = snd_card_new(snd_index[i], snd_id[i], THIS_MODULE, 0);
 				if (card == NULL) {
 					snd_printk(KERN_ERR "cannot create a card instance %d\n", i);
