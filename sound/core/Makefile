@@ -43,6 +43,8 @@ ifeq ($(CONFIG_SND_SEQUENCER),y)
   endif
 endif
 
+obj-$(CONFIG_SND_SEQUENCER) += snd-timer.o
+
 # Toplevel Module Dependency
 obj-$(CONFIG_SND_DUMMY) += snd-pcm.o snd-timer.o snd.o
 obj-$(CONFIG_SND_VIRMIDI) += snd-rawmidi.o snd.o snd-timer.o
