@@ -51,6 +51,8 @@ MODULE_PARM_SYNTAX(amidi_map, "default:1,skill:advanced");
 static int snd_rawmidi_free(snd_rawmidi_t *rawmidi);
 static int snd_rawmidi_dev_free(snd_device_t *device);
 static int snd_rawmidi_dev_register(snd_device_t *device);
+static int snd_rawmidi_dev_disconnect(snd_device_t *device);
+static int snd_rawmidi_dev_can_unregister(snd_device_t *device);
 static int snd_rawmidi_dev_unregister(snd_device_t *device);
 
 snd_rawmidi_t *snd_rawmidi_devices[SNDRV_CARDS * SNDRV_RAWMIDI_DEVICES];
@@ -194,9 +196,10 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 		err = -ENODEV;
 		goto __error1;
 	}
+	atomic_inc(&rmidi->use_count);
 	if (!try_inc_mod_count(rmidi->card->module)) {
 		err = -EFAULT;
-		goto __error1;
+		goto __error2;
 	}
 	down(&rmidi->open_mutex);
 	if (mode & SNDRV_RAWMIDI_LFLG_INPUT) {
@@ -346,6 +349,8 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 	}
 	dec_mod_count(rmidi->card->module);
 	up(&rmidi->open_mutex);
+      __error2:
+      	atomic_dec(&rmidi->use_count);
       __error1:
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
@@ -498,6 +503,8 @@ int snd_rawmidi_kernel_release(snd_rawmidi_file_t * rfile)
 	}
 	up(&rmidi->open_mutex);
 	dec_mod_count(rmidi->card->module);
+	if (atomic_dec_and_test(&rmidi->use_count))
+		wake_up(&rmidi->card->shutdown_sleep);
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
@@ -1318,6 +1325,8 @@ int snd_rawmidi_new(snd_card_t * card, char *id, int device,
 	static snd_device_ops_t ops = {
 		.dev_free = snd_rawmidi_dev_free,
 		.dev_register = snd_rawmidi_dev_register,
+		.dev_disconnect = snd_rawmidi_dev_disconnect,
+		.dev_can_unregister = snd_rawmidi_dev_can_unregister,
 		.dev_unregister = snd_rawmidi_dev_unregister
 	};
 
@@ -1466,6 +1475,25 @@ static int snd_rawmidi_dev_register(snd_device_t *device)
 	return 0;
 }
 
+static int snd_rawmidi_dev_disconnect(snd_device_t *device)
+{
+	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
+	int idx;
+
+	down(&register_mutex);
+	idx = (rmidi->card->number * SNDRV_RAWMIDI_DEVICES) + rmidi->device;
+	snd_rawmidi_devices[idx] = NULL;
+	up(&register_mutex);
+	return 0;
+}
+
+static int snd_rawmidi_dev_can_unregister(snd_device_t *device)
+{
+	snd_rawmidi_t *rmidi = snd_magic_cast(snd_rawmidi_t, device->device_data, return -ENXIO);
+
+	return atomic_read(&rmidi->use_count) != 0;
+}
+
 static int snd_rawmidi_dev_unregister(snd_device_t *device)
 {
 	int idx;
@@ -1474,10 +1502,7 @@ static int snd_rawmidi_dev_unregister(snd_device_t *device)
 	snd_assert(rmidi != NULL, return -ENXIO);
 	down(&register_mutex);
 	idx = (rmidi->card->number * SNDRV_RAWMIDI_DEVICES) + rmidi->device;
-	if (snd_rawmidi_devices[idx] != rmidi) {
-		up(&register_mutex);
-		return -EINVAL;
-	}
+	snd_rawmidi_devices[idx] = NULL;
 	if (rmidi->proc_entry) {
 		snd_info_unregister(rmidi->proc_entry);
 		rmidi->proc_entry = NULL;
@@ -1498,7 +1523,6 @@ static int snd_rawmidi_dev_unregister(snd_device_t *device)
 	if (rmidi->ops && rmidi->ops->dev_unregister)
 		rmidi->ops->dev_unregister(rmidi);
 	snd_unregister_device(SNDRV_DEVICE_TYPE_RAWMIDI, rmidi->card, rmidi->device);
-	snd_rawmidi_devices[idx] = NULL;
 	up(&register_mutex);
 #if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	if (rmidi->seq_dev) {
