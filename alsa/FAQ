@@ -2,6 +2,14 @@
 		==========================================
 	             FAQ - Frequently Asked Questions
 
+Q: My card is not detected at all and is ISA based - non Plug & Play.
+   Can I try something?
+A: If you have compiled driver with the ISA PnP support, you must force
+   the detection of non-PnP version of your card with some drivers (use
+   snd_isapnp=0 parameter - check the INSTALL file). This problem may
+   occur mostly in portable computers where vendors suppressed the ISA PnP
+   extension of sound chips.
+
 Q: When I play something and I try to play something other the second attempt
    will not fail but instead it hangs waiting for the completion of the first
    sound.
