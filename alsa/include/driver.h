@@ -131,6 +131,8 @@
 #include "asoundid.h"
 #endif
 
+#include "sndmagic.h"
+
 static inline mm_segment_t snd_enter_user(void)
 {
 	mm_segment_t fs = get_fs();
@@ -467,10 +469,11 @@ extern int snd_task_name(struct task_struct *task, char *name, int size);
 #define snd_printd( args... ) snd_printk( ##args )
 #define snd_debug_check(expr, retval) do { \
 	if (expr) {\
-		snd_printk("Bug? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		snd_printk("BUG? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
 		return retval;\
 	}\
 } while (0)
+
 #else
 #define snd_printd( args... )	/* nothing */
 #define snd_debug_check(expr, retval)	/* nothing */
@@ -481,6 +484,16 @@ extern int snd_task_name(struct task_struct *task, char *name, int size);
 #else
 #define snd_printdd( args... )	/* nothing */
 #endif
+
+#define snd_alloc_check(function, args)  ({\
+	void *__ptr;\
+	__ptr = function args;\
+	if (__ptr == NULL)\
+		return -ENOMEM;\
+	__ptr;\
+})
+#define snd_kmalloc_check(size, flags) snd_alloc_check(snd_kmalloc, (size, flags))
+#define snd_kcalloc_check(size, flags) snd_alloc_check(snd_kcalloc, (size, flags))
 
 #define SND_OSS_VERSION         ((3<<16)|(8<<8)|(1<<4)|(0))	/* 3.8.1a */
 
