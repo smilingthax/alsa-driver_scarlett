@@ -56,110 +56,111 @@ static void snd_ac97_proc_init(snd_card_t * card, ac97_t * ac97);
 typedef struct {
 	unsigned int id;
 	unsigned int mask;
-	char *name;
+	const char *name;
 	int (*patch)(ac97_t *ac97);
+	int (*mpatch)(ac97_t *ac97);
 } ac97_codec_id_t;
 
 static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
-{ 0x414b4d00, 0xffffff00, "Asahi Kasei",	NULL },
-{ 0x41445300, 0xffffff00, "Analog Devices",	NULL },
-{ 0x414c4300, 0xffffff00, "Realtek",		NULL },
-{ 0x414c4700, 0xffffff00, "Avance Logic",	NULL },
-{ 0x434d4900, 0xffffff00, "C-Media Electronics", NULL },
-{ 0x43525900, 0xffffff00, "Cirrus Logic",	NULL },
-{ 0x43585400, 0xffffff00, "Conexant",           NULL },
-{ 0x44543000, 0xffffff00, "Diamond Technology", NULL },
-{ 0x454d4300, 0xffffff00, "eMicro",		NULL },
-{ 0x45838300, 0xffffff00, "ESS Technology",	NULL },
-{ 0x48525300, 0xffffff00, "Intersil",		NULL },
-{ 0x49434500, 0xffffff00, "ICEnsemble",		NULL },
-{ 0x49544500, 0xffffff00, "ITE Tech.Inc",	NULL },
-{ 0x4e534300, 0xffffff00, "National Semiconductor", NULL },
-{ 0x50534300, 0xffffff00, "Philips",		NULL },
-{ 0x53494c00, 0xffffff00, "Silicon Laboratory",	NULL },
-{ 0x54524100, 0xffffff00, "TriTech",		NULL },
-{ 0x54584e00, 0xffffff00, "Texas Instruments",	NULL },
-{ 0x56494100, 0xffffff00, "VIA Technologies",   NULL },
-{ 0x57454300, 0xffffff00, "Winbond",		NULL },
-{ 0x574d4c00, 0xffffff00, "Wolfson",		NULL },
-{ 0x594d4800, 0xffffff00, "Yamaha",		NULL },
-{ 0x83847600, 0xffffff00, "SigmaTel",		NULL },
-{ 0,	      0, 	  NULL,			NULL }
+{ 0x414b4d00, 0xffffff00, "Asahi Kasei",	NULL,	NULL },
+{ 0x41445300, 0xffffff00, "Analog Devices",	NULL,	NULL },
+{ 0x414c4300, 0xffffff00, "Realtek",		NULL,	NULL },
+{ 0x414c4700, 0xffffff00, "Avance Logic",	NULL,	NULL },
+{ 0x434d4900, 0xffffff00, "C-Media Electronics", NULL,	NULL },
+{ 0x43525900, 0xffffff00, "Cirrus Logic",	NULL,	NULL },
+{ 0x43585400, 0xffffff00, "Conexant",           NULL,	NULL },
+{ 0x44543000, 0xffffff00, "Diamond Technology", NULL,	NULL },
+{ 0x454d4300, 0xffffff00, "eMicro",		NULL,	NULL },
+{ 0x45838300, 0xffffff00, "ESS Technology",	NULL,	NULL },
+{ 0x48525300, 0xffffff00, "Intersil",		NULL,	NULL },
+{ 0x49434500, 0xffffff00, "ICEnsemble",		NULL,	NULL },
+{ 0x49544500, 0xffffff00, "ITE Tech.Inc",	NULL,	NULL },
+{ 0x4e534300, 0xffffff00, "National Semiconductor", NULL, NULL },
+{ 0x50534300, 0xffffff00, "Philips",		NULL,	NULL },
+{ 0x53494c00, 0xffffff00, "Silicon Laboratory",	NULL,	NULL },
+{ 0x54524100, 0xffffff00, "TriTech",		NULL,	NULL },
+{ 0x54584e00, 0xffffff00, "Texas Instruments",	NULL,	NULL },
+{ 0x56494100, 0xffffff00, "VIA Technologies",   NULL,	NULL },
+{ 0x57454300, 0xffffff00, "Winbond",		NULL,	NULL },
+{ 0x574d4c00, 0xffffff00, "Wolfson",		NULL,	NULL },
+{ 0x594d4800, 0xffffff00, "Yamaha",		NULL,	NULL },
+{ 0x83847600, 0xffffff00, "SigmaTel",		NULL,	NULL },
+{ 0,	      0, 	  NULL,			NULL,	NULL }
 };
 
 static const ac97_codec_id_t snd_ac97_codec_ids[] = {
-{ 0x014b0502, 0xffffffff, "NM256AV",		NULL }, // FIXME: which real one?
-{ 0x414b4d00, 0xffffffff, "AK4540",		NULL },
-{ 0x414b4d01, 0xffffffff, "AK4542",		NULL },
-{ 0x414b4d02, 0xffffffff, "AK4543",		NULL },
-{ 0x414b4d06, 0xffffffff, "AK4544A",		NULL },
-{ 0x414b4d07, 0xffffffff, "AK4545",		NULL },
-{ 0x41445303, 0xffffffff, "AD1819",		patch_ad1819 },
-{ 0x41445340, 0xffffffff, "AD1881",		patch_ad1881 },
-{ 0x41445348, 0xffffffff, "AD1881A",		patch_ad1881 },
-{ 0x41445360, 0xffffffff, "AD1885",		patch_ad1885 },
-{ 0x41445361, 0xffffffff, "AD1886",		patch_ad1886 },
-{ 0x41445362, 0xffffffff, "AD1887",		patch_ad1881 },
-{ 0x41445363, 0xffffffff, "AD1886A",		patch_ad1881 },
-{ 0x41445370, 0xffffffff, "AD1980",		patch_ad1980 },
-{ 0x41445372, 0xffffffff, "AD1981A",		patch_ad1881 },
-{ 0x414c4300, 0xfffffff0, "RL5306",	 	NULL },
-{ 0x414c4310, 0xfffffff0, "RL5382", 		NULL },
-{ 0x414c4320, 0xfffffff0, "RL5383", 		NULL },
-{ 0x414c4710, 0xfffffff0, "ALC200/200P",	NULL },
-{ 0x414c4720, 0xfffffff0, "ALC650",		patch_alc650 },
-{ 0x414c4730, 0xffffffff, "ALC101",		NULL },
-{ 0x414c4740, 0xfffffff0, "ALC202",		NULL },
-{ 0x414c4750, 0xfffffff0, "ALC250",		NULL },
-{ 0x434d4941, 0xffffffff, "CMI9738",		NULL },
-{ 0x434d4961, 0xffffffff, "CMI9739",		NULL },
-{ 0x43525900, 0xfffffff8, "CS4297",		NULL },
-{ 0x43525910, 0xfffffff8, "CS4297A",		patch_cirrus_spdif },
-{ 0x43525920, 0xfffffff8, "CS4294/4298",	NULL },
-{ 0x43525928, 0xfffffff8, "CS4294",		NULL },
-{ 0x43525930, 0xfffffff8, "CS4299",		patch_cirrus_cs4299 },
-{ 0x43525948, 0xfffffff8, "CS4201",		NULL },
-{ 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif },
-{ 0x43525960, 0xfffffff8, "CS4291",		NULL },
-{ 0x43585421, 0xffffffff, "HSD11246",		NULL },	// SmartMC II
-{ 0x43585428, 0xfffffff8, "Cx20468",		patch_conexant }, // SmartAMC fixme: the mask might be different
-{ 0x44543031, 0xfffffff0, "DT0398",		NULL },
-{ 0x454d4328, 0xffffffff, "28028",		NULL },  // same as TR28028?
-{ 0x45838308, 0xffffffff, "ESS1988",		NULL },
-{ 0x48525300, 0xffffff00, "HMP9701",		NULL },
-{ 0x49434501, 0xffffffff, "ICE1230",		NULL },
-{ 0x49434511, 0xffffffff, "ICE1232",		NULL }, // alias VIA VT1611A?
-{ 0x49434551, 0xffffffff, "VT1616", 		NULL }, 
-{ 0x49544520, 0xffffffff, "IT2226E",		NULL },
-{ 0x4e534300, 0xffffffff, "LM4540/43/45/46/48",	NULL }, // only guess --jk
-{ 0x4e534331, 0xffffffff, "LM4549",		NULL },
-{ 0x50534304, 0xffffffff, "UCB1400",		NULL },
-{ 0x53494c22, 0xffffffff, "Si3036",		NULL },
-{ 0x53494c23, 0xffffffff, "Si3038",		NULL },
-{ 0x54524102, 0xffffffff, "TR28022",		NULL },
-{ 0x54524106, 0xffffffff, "TR28026",		NULL },
-{ 0x54524108, 0xffffffff, "TR28028",		patch_tritech_tr28028 }, // added by xin jin [07/09/99]
-{ 0x54524123, 0xffffffff, "TR28602",		NULL }, // only guess --jk [TR28023 = eMicro EM28023 (new CT1297)]
-{ 0x54584e20, 0xffffffff, "TLC320AD9xC",	NULL },
-{ 0x56494161, 0xffffffff, "VIA1612A",		NULL }, // modified ICE1232 with S/PDIF
-{ 0x57454301, 0xffffffff, "W83971D",		NULL },
-{ 0x574d4c00, 0xffffffff, "WM9701A",		patch_wolfson00 },
-{ 0x574d4c03, 0xffffffff, "WM9703/9707",	patch_wolfson03 },
-{ 0x574d4c04, 0xffffffff, "WM9704/quad",	patch_wolfson04 },
-{ 0x574d4c05, 0xffffffff, "WM9705",		NULL },	// patch?
-{ 0x594d4800, 0xffffffff, "YMF743",		NULL },
-{ 0x594d4802, 0xffffffff, "YMF752",		NULL },
-{ 0x594d4803, 0xffffffff, "YMF753",		patch_yamaha_ymf753 },
-{ 0x83847600, 0xffffffff, "STAC9700/83/84",	NULL },
-{ 0x83847604, 0xffffffff, "STAC9701/3/4/5",	NULL },
-{ 0x83847605, 0xffffffff, "STAC9704",		NULL },
-{ 0x83847608, 0xffffffff, "STAC9708/11",	patch_sigmatel_stac9708 },
-{ 0x83847609, 0xffffffff, "STAC9721/23",	patch_sigmatel_stac9721 },
-{ 0x83847644, 0xffffffff, "STAC9744",		patch_sigmatel_stac9744 },
-{ 0x83847650, 0xffffffff, "STAC9750/51",	NULL },	// patch?
-{ 0x83847656, 0xffffffff, "STAC9756/57",	patch_sigmatel_stac9756 },
-{ 0x83847666, 0xffffffff, "STAC9766/67",	NULL }, // patch?
-{ 0, 	      0,	  NULL,			NULL }
+{ 0x014b0502, 0xffffffff, "NM256AV",		NULL,		NULL }, // FIXME: which real one?
+{ 0x414b4d00, 0xffffffff, "AK4540",		NULL,		NULL },
+{ 0x414b4d01, 0xffffffff, "AK4542",		NULL,		NULL },
+{ 0x414b4d02, 0xffffffff, "AK4543",		NULL,		NULL },
+{ 0x414b4d06, 0xffffffff, "AK4544A",		NULL,		NULL },
+{ 0x414b4d07, 0xffffffff, "AK4545",		NULL,		NULL },
+{ 0x41445303, 0xffffffff, "AD1819",		patch_ad1819,	NULL },
+{ 0x41445340, 0xffffffff, "AD1881",		patch_ad1881,	NULL },
+{ 0x41445348, 0xffffffff, "AD1881A",		patch_ad1881,	NULL },
+{ 0x41445360, 0xffffffff, "AD1885",		patch_ad1885,	NULL },
+{ 0x41445361, 0xffffffff, "AD1886",		patch_ad1886,	NULL },
+{ 0x41445362, 0xffffffff, "AD1887",		patch_ad1881,	NULL },
+{ 0x41445363, 0xffffffff, "AD1886A",		patch_ad1881,	NULL },
+{ 0x41445370, 0xffffffff, "AD1980",		patch_ad1980,	NULL },
+{ 0x41445372, 0xffffffff, "AD1981A",		patch_ad1881,	NULL },
+{ 0x414c4300, 0xfffffff0, "RL5306",	 	NULL,		NULL },
+{ 0x414c4310, 0xfffffff0, "RL5382", 		NULL,		NULL },
+{ 0x414c4320, 0xfffffff0, "RL5383", 		NULL,		NULL },
+{ 0x414c4710, 0xfffffff0, "ALC200/200P",	NULL,		NULL },
+{ 0x414c4720, 0xfffffff0, "ALC650",		patch_alc650,	NULL },
+{ 0x414c4730, 0xffffffff, "ALC101",		NULL,		NULL },
+{ 0x414c4740, 0xfffffff0, "ALC202",		NULL,		NULL },
+{ 0x414c4750, 0xfffffff0, "ALC250",		NULL,		NULL },
+{ 0x434d4941, 0xffffffff, "CMI9738",		NULL,		NULL },
+{ 0x434d4961, 0xffffffff, "CMI9739",		NULL,		NULL },
+{ 0x43525900, 0xfffffff8, "CS4297",		NULL,		NULL },
+{ 0x43525910, 0xfffffff8, "CS4297A",		patch_cirrus_spdif,	NULL },
+{ 0x43525920, 0xfffffff8, "CS4294/4298",	NULL,		NULL },
+{ 0x43525928, 0xfffffff8, "CS4294",		NULL,		NULL },
+{ 0x43525930, 0xfffffff8, "CS4299",		patch_cirrus_cs4299,	NULL },
+{ 0x43525948, 0xfffffff8, "CS4201",		NULL,		NULL },
+{ 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif,	NULL },
+{ 0x43525960, 0xfffffff8, "CS4291",		NULL,		NULL },
+{ 0x43585421, 0xffffffff, "HSD11246",		NULL,		NULL },	// SmartMC II
+{ 0x43585428, 0xfffffff8, "Cx20468",		patch_conexant,	NULL }, // SmartAMC fixme: the mask might be different
+{ 0x44543031, 0xfffffff0, "DT0398",		NULL,		NULL },
+{ 0x454d4328, 0xffffffff, "28028",		NULL,		NULL },  // same as TR28028?
+{ 0x45838308, 0xffffffff, "ESS1988",		NULL,		NULL },
+{ 0x48525300, 0xffffff00, "HMP9701",		NULL,		NULL },
+{ 0x49434501, 0xffffffff, "ICE1230",		NULL,		NULL },
+{ 0x49434511, 0xffffffff, "ICE1232",		NULL,		NULL }, // alias VIA VT1611A?
+{ 0x49434551, 0xffffffff, "VT1616", 		NULL,		NULL }, 
+{ 0x49544520, 0xffffffff, "IT2226E",		NULL,		NULL },
+{ 0x4e534300, 0xffffffff, "LM4540/43/45/46/48",	NULL,		NULL }, // only guess --jk
+{ 0x4e534331, 0xffffffff, "LM4549",		NULL,		NULL },
+{ 0x50534304, 0xffffffff, "UCB1400",		NULL,		NULL },
+{ 0x53494c22, 0xffffffff, "Si3036",		NULL,		NULL },
+{ 0x53494c23, 0xffffffff, "Si3038",		NULL,		NULL },
+{ 0x54524102, 0xffffffff, "TR28022",		NULL,		NULL },
+{ 0x54524106, 0xffffffff, "TR28026",		NULL,		NULL },
+{ 0x54524108, 0xffffffff, "TR28028",		patch_tritech_tr28028,	NULL }, // added by xin jin [07/09/99]
+{ 0x54524123, 0xffffffff, "TR28602",		NULL,		NULL }, // only guess --jk [TR28023 = eMicro EM28023 (new CT1297)]
+{ 0x54584e20, 0xffffffff, "TLC320AD9xC",	NULL,		NULL },
+{ 0x56494161, 0xffffffff, "VIA1612A",		NULL,		NULL }, // modified ICE1232 with S/PDIF
+{ 0x57454301, 0xffffffff, "W83971D",		NULL,		NULL },
+{ 0x574d4c00, 0xffffffff, "WM9701A",		patch_wolfson00,NULL },
+{ 0x574d4c03, 0xffffffff, "WM9703/9707",	patch_wolfson03,NULL },
+{ 0x574d4c04, 0xffffffff, "WM9704/quad",	patch_wolfson04,NULL },
+{ 0x574d4c05, 0xffffffff, "WM9705",		NULL,		NULL },	// patch?
+{ 0x594d4800, 0xffffffff, "YMF743",		NULL,		NULL },
+{ 0x594d4802, 0xffffffff, "YMF752",		NULL,		NULL },
+{ 0x594d4803, 0xffffffff, "YMF753",		patch_yamaha_ymf753,	NULL },
+{ 0x83847600, 0xffffffff, "STAC9700/83/84",	NULL,		NULL },
+{ 0x83847604, 0xffffffff, "STAC9701/3/4/5",	NULL,		NULL },
+{ 0x83847605, 0xffffffff, "STAC9704",		NULL,		NULL },
+{ 0x83847608, 0xffffffff, "STAC9708/11",	patch_sigmatel_stac9708,	NULL },
+{ 0x83847609, 0xffffffff, "STAC9721/23",	patch_sigmatel_stac9721,	NULL },
+{ 0x83847644, 0xffffffff, "STAC9744",		patch_sigmatel_stac9744,	NULL },
+{ 0x83847650, 0xffffffff, "STAC9750/51",	NULL,		NULL },	// patch?
+{ 0x83847656, 0xffffffff, "STAC9756/57",	patch_sigmatel_stac9756,	NULL },
+{ 0x83847666, 0xffffffff, "STAC9766/67",	NULL,		NULL }, // patch?
+{ 0, 	      0,	  NULL,			NULL,		NULL }
 };
 
 static const char *snd_ac97_stereo_enhancements[] =
@@ -1782,6 +1783,12 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 	return 0;
 }
 
+static int snd_ac97_modem_build(snd_card_t * card, ac97_t * ac97)
+{
+	/* TODO */
+	return 0;
+}
+
 static int snd_ac97_test_rate(ac97_t *ac97, int reg, int rate)
 {
 	unsigned short val;
@@ -1818,7 +1825,7 @@ static void snd_ac97_determine_rates(ac97_t *ac97, int reg, unsigned int *r_resu
 	*r_result = result;
 }
 
-static void snd_ac97_get_name(ac97_t *ac97, unsigned int id, char *name)
+static void snd_ac97_get_name(ac97_t *ac97, unsigned int id, char *name, int modem)
 {
 	const ac97_codec_id_t *pid;
 
@@ -1829,8 +1836,12 @@ static void snd_ac97_get_name(ac97_t *ac97, unsigned int id, char *name)
 	for (pid = snd_ac97_codec_id_vendors; pid->id; pid++)
 		if (pid->id == (id & pid->mask)) {
 			strcpy(name, pid->name);
-			if (ac97 && pid->patch)
-				pid->patch(ac97);
+			if (ac97) {
+				if (!modem && pid->patch)
+					pid->patch(ac97);
+				else if (modem && pid->mpatch)
+					pid->mpatch(ac97);
+			} 
 			goto __vendor_ok;
 		}
 	return;
@@ -1842,8 +1853,12 @@ static void snd_ac97_get_name(ac97_t *ac97, unsigned int id, char *name)
 			strcat(name, pid->name);
 			if (pid->mask != 0xffffffff)
 				sprintf(name + strlen(name), " rev %d", id & ~pid->mask);
-			if (ac97 && pid->patch)
-				pid->patch(ac97);
+			if (ac97) {
+				if (!modem && pid->patch)
+					pid->patch(ac97);
+				else if (modem && pid->mpatch)
+					pid->mpatch(ac97);
+			}
 			return;
 		}
 	sprintf(name + strlen(name), " id %x", id & 0xff);
@@ -2034,8 +2049,8 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	/* additional initializations */
 	if (ac97->init)
 		ac97->init(ac97);
-	snd_ac97_get_name(ac97, ac97->id, name);
-	snd_ac97_get_name(NULL, ac97->id, name);  // ac97->id might be changed in the special setup code
+	snd_ac97_get_name(ac97, ac97->id, name, 0);
+	snd_ac97_get_name(NULL, ac97->id, name, 0);  // ac97->id might be changed in the special setup code
 	if (card->mixername[0] == '\0') {
 		strcpy(card->mixername, name);
 	} else {
@@ -2050,7 +2065,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 			return err;
 		}
 	}
-	if (snd_ac97_mixer_build(card, ac97) < 0) {
+	if (ac97_is_audio(ac97) && snd_ac97_mixer_build(card, ac97) < 0) {
 		snd_ac97_free(ac97);
 		return -ENOMEM;
 	}
@@ -2209,8 +2224,8 @@ int snd_ac97_modem(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 
 	if (ac97->init)
 		ac97->init(ac97);
-	snd_ac97_get_name(ac97, ac97->id, name);
-	snd_ac97_get_name(NULL, ac97->id, name);  // ac97->id might be changed in the special setup code
+	snd_ac97_get_name(ac97, ac97->id, name, 1);
+	snd_ac97_get_name(NULL, ac97->id, name, 1);  // ac97->id might be changed in the special setup code
 	if (card->mixername[0] == '\0') {
 		strcpy(card->mixername, name);
 	} else {
@@ -2225,7 +2240,7 @@ int snd_ac97_modem(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 			return err;
 		}
 	}
-	if (snd_ac97_mixer_build(card, ac97) < 0) {
+	if (snd_ac97_modem_build(card, ac97) < 0) {
 		snd_ac97_free(ac97);
 		return -ENOMEM;
 	}
@@ -2253,7 +2268,7 @@ static void snd_ac97_proc_read_main(ac97_t *ac97, snd_info_buffer_t * buffer, in
 
 	id = snd_ac97_read(ac97, AC97_VENDOR_ID1) << 16;
 	id |= snd_ac97_read(ac97, AC97_VENDOR_ID2);
-	snd_ac97_get_name(NULL, id, name);
+	snd_ac97_get_name(NULL, id, name, 0);
 	snd_iprintf(buffer, "%d-%d/%d: %s\n\n", ac97->addr, ac97->num, subidx, name);
 	if ((ac97->scaps & AC97_SCAP_AUDIO) == 0)
 		goto __modem;
