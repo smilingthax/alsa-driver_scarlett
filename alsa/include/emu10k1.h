@@ -892,10 +892,10 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define iTSTNEG  0x09	/* R = (A >= Y) ? X : ~X */
 #define iLIMITGE 0x0a	/* R = (A >= Y) ? X : Y */
 #define iLIMITLT 0x0b	/* R = (A < Y) ? X : Y */
-#define iLOG	 0x0c	/* ?? */
-#define iEXP	 0x0d	/* ?? */
+#define iLOG	 0x0c	/* R = linear_data, A (log_data), X (max_exp), Y (format_word) */
+#define iEXP	 0x0d	/* R = log_data, A (linear_data), X (max_exp), Y (format_word) */
 #define iINTERP  0x0e	/* R = A + (X * (Y - A) >> 31)  ; saturation */
-#define iSKIP    0x0f	/* ?? */
+#define iSKIP    0x0f	/* R = A (cc_reg), X (count), Y (cc_test) */
 
 /* GPRs */
 #define FXBUS(x)	(0x00 + (x))	/* x = 0x00 - 0x0f */
