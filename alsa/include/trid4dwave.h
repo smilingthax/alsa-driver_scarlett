@@ -46,7 +46,7 @@
 #define FALSE 0
 #define TRUE  1
 
-#define TRID_REG( trident, x ) ( (trident) -> port + x )
+#define TRID_REG(trident, x) ((trident)->port + (x))
 
 #define CHANNEL_REGS    5
 #define CHANNEL_START   0xe0   // The first bytes of the contiguous register space.
