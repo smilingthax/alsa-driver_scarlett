@@ -62,13 +62,13 @@
 #define AC97_PCM_MIC_ADC_RATE	0x34	/* PCM MIC ADC Rate */
 #define AC97_CENTER_LFE_MASTER	0x36	/* Center + LFE Master Volume */
 #define AC97_SURROUND_MASTER	0x38	/* Surround (Rear) Master Volume */
-#define AC97_RESERVED_3A	0x3a	/* Reserved */
+#define AC97_SPDIF		0x3a	/* S/PDIF control */
 /* range 0x3c-0x58 - MODEM */
 /* range 0x5a-0x7b - Vendor Specific */
 #define AC97_VENDOR_ID1		0x7c	/* Vendor ID1 */
 #define AC97_VENDOR_ID2		0x7e	/* Vendor ID2 / revision */
 
-/* specific */
+/* specific - SigmaTel */
 #define AC97_SIGMATEL_ANALOG	0x6c	/* Analog Special */
 #define AC97_SIGMATEL_DAC2INVERT 0x6e
 #define AC97_SIGMATEL_BIAS1	0x70
@@ -77,8 +77,20 @@
 #define AC97_SIGMATEL_CIC1	0x76
 #define AC97_SIGMATEL_CIC2	0x78
 
+/* specific - Analog Devices */
+#define AC97_AD_TEST		0x5a	/* test register */
+#define AC97_AD_CODEC_CFG	0x70	/* codec configuration */
+#define AC97_AD_JACK_SPDIF	0x72	/* Jack Sense & S/PDIF */
+#define AC97_AD_SERIAL_CFG	0x74	/* Serial Configuration */
+#define AC97_AD_MISC		0x76	/* Misc Control Bits */
+
+/* ac97->scaps */
+#define AC97_SCAP_SURROUND_DAC	(1<<0)	/* surround L&R DACs are present */
+#define AC97_SCAP_CENTER_LFE_DAC (1<<1)	/* center and LFE DACs are present */
+
 /* ac97->flags */
 #define AC97_HAS_PC_BEEP	(1<<0)
+#define AC97_AD_MULTI		(1<<1)	/* Analog Devices - multi codecs */
 
 /*
 
@@ -101,7 +113,8 @@ struct _snd_ac97 {
 	unsigned short addr;	/* physical address of codec [0-3] */
 	unsigned int id;	/* identification of codec */
 	unsigned short caps;	/* capabilities (register 0) */
-	unsigned short ext_id;	/* extended feature identification */
+	unsigned short ext_id;	/* extended feature identification (register 28) */
+	unsigned int scaps;	/* driver capabilities */
 	unsigned int flags;	/* specific code */
 	unsigned int clock;	/* AC'97 clock (usually 48000Hz) */
 	unsigned int rates_front_dac;
@@ -110,6 +123,15 @@ struct _snd_ac97 {
 	unsigned int rates_adc;
 	unsigned int rates_mic_adc;
 	unsigned short regs[0x80]; /* register cache */
+	union {			/* vendor specific code */
+		struct {
+			unsigned short unchained[3];	// 0 = C34, 1 = C79, 2 = C69
+			unsigned short chained[3];	// 0 = C34, 1 = C79, 2 = C69
+			unsigned short id[3];		// codec IDs (lower 16-bit word)
+			unsigned short pcmreg[3];	// PCM registers
+			struct semaphore mutex;
+		} ad18xx;
+	} spec;
 };
 
 int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97);
