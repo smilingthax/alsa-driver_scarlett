@@ -144,19 +144,27 @@ void isapnp_wake(unsigned char csn)
 	outb(csn, _PNPWRP);	/* write csn */
 }
 
-void isapnp_logdev(unsigned char dev)
+void isapnp_logdev(unsigned char logdev)
 {
 	outb(0x07, _PIDXR);	/* select PLDNI */
-	outb(dev, _PNPWRP);	/* write dev */
+	outb(logdev, _PNPWRP);	/* write logical device */
 }
 
-void isapnp_activate(unsigned char value)
+void isapnp_activate(unsigned char logdev)
 {
-	if (value)
-		value = 0x01;
+	outb(0x07, _PIDXR);	/* select PLDNI */
+	outb(logdev, _PNPWRP);	/* write dev */
 	outb(ISAPNP_CFG_ACTIVATE, _PIDXR);
-	outb(value, _PNPWRP);	/* write mode */
+	outb(0x01, _PNPWRP);	/* write mode */
 	isapnp_delay(25);
+}
+
+void isapnp_deactivate(unsigned char logdev)
+{
+	outb(0x07, _PIDXR);	/* select PLDNI */
+	outb(logdev, _PNPWRP);	/* write dev */
+	outb(ISAPNP_CFG_ACTIVATE, _PIDXR);
+	outb(0x00, _PNPWRP);	/* write mode */
 }
 
 static void isapnp_peek(unsigned char *data, int bytes)
@@ -222,7 +230,7 @@ __initfunc(static int isapnp_isolate(void))
 	unsigned char checksum = 0x6a;
 	unsigned char chksum = 0x00;
 	unsigned char bit = 0x00;
-	int rdp = 0x203;
+	int rdp = /* 0x203 */ 0x213;	/* 0x203 - joystick range */
 	int data;
 	int csn = 0;
 	int i;
@@ -998,17 +1006,27 @@ struct isapnp_port *isapnp_find_port(struct isapnp_logdev *logdev, int index)
 
 struct isapnp_irq *isapnp_find_irq(struct isapnp_logdev *logdev, int index)
 {
-	struct isapnp_resources *res;
+	struct isapnp_resources *res, *resa;
 	struct isapnp_irq *irq;
+	int index1, index2, index3;
 	
 	if (!logdev || index < 0 || index > 7)
 		return NULL;
 	for (res = logdev->res; res; res = res->next) {
-		for (irq = res->irq; irq; irq = irq->next) {
-			if (!index)
-				return irq;
-			index--;
+		index3 = 0;
+		for (resa = logdev->res; resa; resa = resa->alt) {
+			index1 = index;
+			index2 = 0;
+			for (irq = resa->irq; irq; irq = irq->next) {
+				if (!index1)
+					return irq;
+				index1--;
+				index2++;
+			}
+			if (index3 < index2)
+				index3 = index2;
 		}
+		index -= index3;
 	}
 	return NULL;
 }
@@ -1222,13 +1240,18 @@ int isapnp_config_init(struct isapnp_config *config, struct isapnp_logdev *logde
 	int irq_count, irq_count1;
 	int dma_count, dma_count1;
 	int mem_count, mem_count1;
+	int tmp;
 
 	if (!config || !logdev)
 		return -EINVAL;
 	memset(config, 0, sizeof(struct isapnp_config));
 	config->logdev = logdev;
-	config->irq[0] = config->irq[1] = 255;
-	config->dma[0] = config->dma[1] = 255;
+	config->irq[0] = config->irq[1] = ISAPNP_AUTO_IRQ;
+	config->dma[0] = config->dma[1] = ISAPNP_AUTO_DMA;
+	for (tmp = 0; tmp < 16; tmp++)
+		config->irq_disable[tmp] = ISAPNP_AUTO_IRQ;
+	for (tmp = 0; tmp < 8; tmp++)
+		config->dma_disable[tmp] = ISAPNP_AUTO_DMA;
 	for (res = logdev->res; res; res = res->next) {
 		port_count = irq_count = dma_count = mem_count = 0;
 		for (resa = res; resa; resa = resa->alt) {
@@ -1284,7 +1307,7 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 		return -EINVAL;
 	/* process port settings */
 	for (tmp = 0; tmp < cfg->result.port_count; tmp++) {
-		if (cfg->request->port[tmp])
+		if (cfg->request->port[tmp] != ISAPNP_AUTO_PORT)
 			continue;		/* don't touch */
 		port = cfg->port[tmp];
 		if (!port) {
@@ -1305,7 +1328,7 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 	}
 	/* process irq settings */
 	for (tmp = 0; tmp < cfg->result.irq_count; tmp++) {
-		if (cfg->request->irq[tmp] != 255)
+		if (cfg->request->irq[tmp] != ISAPNP_AUTO_IRQ)
 			continue;		/* don't touch */
 		irq = cfg->irq[tmp];
 		if (!irq) {
@@ -1326,7 +1349,7 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 	}
 	/* process dma settings */
 	for (tmp = 0; tmp < cfg->result.dma_count; tmp++) {
-		if (cfg->request->dma[tmp] != 255)
+		if (cfg->request->dma[tmp] != ISAPNP_AUTO_DMA)
 			continue;		/* don't touch */
 		dma = cfg->dma[tmp];
 		if (!dma) {
@@ -1347,7 +1370,7 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 	}
 	/* process memory settings */
 	for (tmp = 0; tmp < cfg->result.mem_count; tmp++) {
-		if (cfg->request->mem[tmp])
+		if (cfg->request->mem[tmp] != ISAPNP_AUTO_MEM)
 			continue;		/* don't touch */
 		mem = cfg->mem[tmp];
 		if (!mem) {
@@ -1371,11 +1394,19 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 
 static int isapnp_check_port(struct isapnp_cfgtmp *cfg, int port, int size, int idx)
 {
-	int i, tmp;
+	int i, tmp, tsize;
 	struct isapnp_port *xport;
 
 	if (check_region(port, size))
 		return 1;
+	for (i = 0; i < 8; i++) {
+		tmp = cfg->result.port_disable[i];
+		if (tmp == ISAPNP_AUTO_PORT)
+			continue;
+		tsize = cfg->result.port_disable_size[i];
+		if (tmp + tsize >= port && tmp <= port + tsize)
+			return 1;
+	}
 	for (i = 0; i < cfg->result.port_count; i++) {
 		if (i == idx)
 			continue;
@@ -1385,7 +1416,7 @@ static int isapnp_check_port(struct isapnp_cfgtmp *cfg, int port, int size, int 
 			if (!xport)
 				return 1;
 			tmp = cfg->result.port[i];
-			if (!tmp)
+			if (tmp == ISAPNP_AUTO_PORT)
 				continue;
 			if (tmp + xport->size >= port && tmp <= port + xport->size)
 				return 1;
@@ -1417,7 +1448,7 @@ static int isapnp_valid_port(struct isapnp_cfgtmp *cfg, int idx)
       	if (!port)
       		return -EINVAL;
       	value = &cfg->result.port[idx];
-	if (!*value) {		/* auto */
+	if (*value == ISAPNP_AUTO_PORT) {
 		if (!isapnp_check_port(cfg, *value = port->min, port->size, idx))
 			return 0;
 	}
@@ -1445,13 +1476,16 @@ static int isapnp_check_interrupt(struct isapnp_cfgtmp *cfg, int irq, int idx)
 
 	if (irq < 0 || irq > 15)
 		return 1;
+	for (i = 0; i < 16; i++)
+		if (cfg->result.irq_disable[i] == irq)
+			return 1;
 	if (request_irq(irq, isapnp_test_handler, SA_INTERRUPT, "isapnp", NULL))
 		return 1;
 	free_irq(irq, NULL);
 	for (i = 0; i < cfg->result.irq_count; i++) {
 		if (i == idx)
 			continue;
-		if (cfg->result.irq[i] == 255)
+		if (cfg->result.irq[i] == ISAPNP_AUTO_IRQ)
 			continue;
 		if (cfg->result.irq[i] == irq)
 			return 1;
@@ -1461,6 +1495,10 @@ static int isapnp_check_interrupt(struct isapnp_cfgtmp *cfg, int irq, int idx)
 
 static int isapnp_valid_irq(struct isapnp_cfgtmp *cfg, int idx)
 {
+	/* IRQ priority: table is good for i386 */
+	static unsigned short xtab[16] = {
+		5, 10, 11, 12, 9, 14, 15, 7, 3, 4, 13, 0, 1, 6, 8, 2
+	};
 	int err, i;
 	unsigned char *value;
 	struct isapnp_irq *irq;
@@ -1474,15 +1512,16 @@ static int isapnp_valid_irq(struct isapnp_cfgtmp *cfg, int idx)
       	if (!irq)
       		return -EINVAL;
       	value = &cfg->result.irq[idx];
-	if (*value == 255) {			/* auto */
-		for (i = 0; i < 16 && !(irq->map & (1<<i)); i++);
+	if (*value == ISAPNP_AUTO_IRQ) {
+		for (i = 0; i < 16 && !(irq->map & (1<<xtab[i])); i++);
 		if (i >= 16)
 			return -ENOENT;
-		if (!isapnp_check_interrupt(cfg, *value = i, idx))
+		if (!isapnp_check_interrupt(cfg, *value = xtab[i], idx))
 			return 0;
 	}
 	do {
-		for (i = *value + 1; i < 16 && !(irq->map & (1<<i)); i++);
+		for (i = 0; i < 16 && xtab[i] != *value; i++);
+		for (i++; i < 16 && !(irq->map & (1<<xtab[i])); i++);
 		if (i >= 16) {
 			if (irq->res && irq->res->alt) {
 				if ((err = isapnp_alternative_switch(cfg, irq->res, irq->res->alt))<0)
@@ -1491,7 +1530,7 @@ static int isapnp_valid_irq(struct isapnp_cfgtmp *cfg, int idx)
 			}
 			return -ENOENT;
 		} else {
-			*value = i;
+			*value = xtab[i];
 		}
 	} while (isapnp_check_interrupt(cfg, *value, idx));
 	return 0;
@@ -1503,13 +1542,16 @@ static int isapnp_check_dma(struct isapnp_cfgtmp *cfg, int dma, int idx)
 
 	if (dma < 0 || dma == 4 || dma > 7)
 		return 1;
+	for (i = 0; i < 8; i++)
+		if (cfg->result.dma_disable[i] == dma)
+			return 1;
 	if (request_dma(dma, "isapnp"))
 		return 1;
 	free_dma(dma);
 	for (i = 0; i < cfg->result.dma_count; i++) {
 		if (i == idx)
 			continue;
-		if (cfg->result.dma[i] == 255)
+		if (cfg->result.dma[i] == ISAPNP_AUTO_DMA)
 			continue;
 		if (cfg->result.dma[i] == dma)
 			return 1;
@@ -1532,7 +1574,7 @@ static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
       	if (!dma)
       		return -EINVAL;
       	value = &cfg->result.dma[idx];
-	if (*value == 255) {			/* auto */
+	if (*value == ISAPNP_AUTO_DMA) {
 		for (i = 0; i < 8 && !(dma->map & (1<<i)); i++);
 		if (i >= 8)
 			return -ENOENT;
@@ -1575,7 +1617,7 @@ static int isapnp_valid_mem(struct isapnp_cfgtmp *cfg, int idx)
       	if (!mem)
       		return -EINVAL;
       	value = &cfg->result.mem[idx];
-	if (!*value) {			/* auto */
+	if (*value == ISAPNP_AUTO_MEM) {
 		*value = mem->min;
 		if (!isapnp_check_mem(*value, mem->size))
 			return 0;
@@ -1599,16 +1641,16 @@ static int isapnp_check_valid(struct isapnp_cfgtmp *cfg)
 	int tmp;
 	
 	for (tmp = 0; tmp < cfg->result.port_count; tmp++)
-		if (!cfg->result.port[tmp])
+		if (cfg->result.port[tmp] == ISAPNP_AUTO_PORT)
 			return -EAGAIN;
 	for (tmp = 0; tmp < cfg->result.irq_count; tmp++)
-		if (cfg->result.irq[tmp] == 255)
+		if (cfg->result.irq[tmp] == ISAPNP_AUTO_IRQ)
 			return -EAGAIN;
 	for (tmp = 0; tmp < cfg->result.dma_count; tmp++)
-		if (cfg->result.dma[tmp] == 255)
+		if (cfg->result.dma[tmp] == ISAPNP_AUTO_DMA)
 			return -EAGAIN;
 	for (tmp = 0; tmp < cfg->result.mem_count; tmp++)
-		if (!cfg->result.mem[tmp])
+		if (cfg->result.mem[tmp] == ISAPNP_AUTO_MEM)
 			return -EAGAIN;
 	return 0;
 }
@@ -1625,19 +1667,19 @@ int isapnp_configure(struct isapnp_config *config)
 	memcpy(&cfg.result, config, sizeof(struct isapnp_config));
 	/* check if all values are set, otherwise try auto-configuration */
 	for (tmp = fauto = 0; !fauto && tmp < cfg.result.port_count; tmp++) {
-		if (!config->port[tmp])
+		if (config->port[tmp] == ISAPNP_AUTO_PORT)
 			fauto++;
 	}
 	for (tmp = 0; !fauto && tmp < cfg.result.irq_count; tmp++) {
-		if (config->irq[tmp] == 255)
+		if (config->irq[tmp] == ISAPNP_AUTO_IRQ)
 			fauto++;
 	}
 	for (tmp = 0; !fauto && tmp < cfg.result.dma_count; tmp++) {
-		if (config->dma[tmp] == 255)
+		if (config->dma[tmp] == ISAPNP_AUTO_DMA)
 			fauto++;
 	}
 	for (tmp = 0; !fauto && tmp < cfg.result.mem_count; tmp++) {
-		if (config->mem[tmp])
+		if (config->mem[tmp] == ISAPNP_AUTO_MEM)
 			fauto++;
 	}
 	if (!fauto)
@@ -1665,6 +1707,18 @@ int isapnp_configure(struct isapnp_config *config)
 		return -EAGAIN;
       __skip_auto:
       	/* we have valid configuration, try configure hardware */
+      	isapnp_logdev(cfg.result.logdev->number);
+	for (tmp = 0; tmp < cfg.result.port_count; tmp++)
+		isapnp_cfg_set_word(ISAPNP_CFG_PORT+(tmp<<1), cfg.result.port[tmp]);
+	for (tmp = 0; tmp < cfg.result.irq_count; tmp++) {
+		if (cfg.result.irq[tmp] == 2)
+			cfg.result.irq[tmp] = 9;
+		isapnp_cfg_set_byte(ISAPNP_CFG_IRQ+(tmp<<1), cfg.result.irq[tmp]);
+	}
+	for (tmp = 0; tmp < cfg.result.dma_count; tmp++)
+		isapnp_cfg_set_byte(ISAPNP_CFG_DMA+tmp, cfg.result.dma[tmp]);
+	for (tmp = 0; tmp < cfg.result.mem_count; tmp++)
+		isapnp_cfg_set_word(ISAPNP_CFG_MEM+(tmp<<2), (cfg.result.mem[tmp] >> 8) & 0xffff);
       	memcpy(config, &cfg.result, sizeof(struct isapnp_config));
 	return 0;
 }
@@ -1810,6 +1864,7 @@ static struct symbol_table isapnp_syms = {
 	X(isapnp_wake),
 	X(isapnp_logdev),
 	X(isapnp_activate),
+	X(isapnp_deactivate),
 	X(isapnp_find_port),
 	X(isapnp_find_irq),
 	X(isapnp_find_dma),
@@ -1840,6 +1895,7 @@ EXPORT_SYMBOL(isapnp_cfg_set_dword);
 EXPORT_SYMBOL(isapnp_wake);
 EXPORT_SYMBOL(isapnp_logdev);
 EXPORT_SYMBOL(isapnp_activate);
+EXPORT_SYMBOL(isapnp_deactivate);
 EXPORT_SYMBOL(isapnp_find_port);
 EXPORT_SYMBOL(isapnp_find_irq);
 EXPORT_SYMBOL(isapnp_find_dma);

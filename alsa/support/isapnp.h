@@ -171,6 +171,11 @@ struct isapnp_dev {
 	struct isapnp_dev *next;	/* next device in list */
 };
 
+#define ISAPNP_AUTO_PORT	0
+#define ISAPNP_AUTO_IRQ		255
+#define ISAPNP_AUTO_DMA		255
+#define ISAPNP_AUTO_MEM		0
+
 struct isapnp_config {
 	struct isapnp_logdev *logdev;	/* device */	
 	int port_count;
@@ -181,6 +186,13 @@ struct isapnp_config {
 	unsigned char dma[2];
 	int mem_count;
 	unsigned int mem[4];
+	/* to avoid resource conflicts (optional) */
+	unsigned short port_disable[8];
+	unsigned short port_disable_size[8];
+	unsigned char irq_disable[16];
+	unsigned char dma_disable[8];
+	unsigned int mem_disable[8];
+	unsigned int mem_disable_size[8];
 };
 
 /* lowlevel configuration */
@@ -193,8 +205,9 @@ void isapnp_cfg_set_byte(unsigned char idx, unsigned char val);
 void isapnp_cfg_set_word(unsigned char idx, unsigned short val);
 void isapnp_cfg_set_dword(unsigned char idx, unsigned int val);
 void isapnp_wake(unsigned char csn);
-void isapnp_logdev(unsigned char dev);
-void isapnp_activate(unsigned char value);
+void isapnp_logdev(unsigned char logdev);
+void isapnp_activate(unsigned char logdev);
+void isapnp_deactivate(unsigned char logdev);
 /* manager */
 struct isapnp_port *isapnp_find_port(struct isapnp_logdev *logdev, int index);
 struct isapnp_irq *isapnp_find_irq(struct isapnp_logdev *logdev, int index);
