@@ -45,15 +45,15 @@ typedef struct _snd_pcm_hardware {
 	unsigned int info;		/* SND_PCM_INFO_* */
 	unsigned int formats;		/* SND_PCM_FMTBIT_* */
 	unsigned int rates;		/* SND_PCM_RATE_* */
-	unsigned int min_rate;		/* min rate */
-	unsigned int max_rate;		/* max rate */
-	unsigned int min_channels;	/* min channels */
-	unsigned int max_channels;	/* max channels */
-	size_t min_fragment_size;	/* min fragment size */
-	size_t max_fragment_size;	/* max fragment size */
-	size_t step_fragment_size;	/* fragment size step */
-	size_t min_fragments;		/* min # of fragments */
-	size_t max_fragments;		/* max # of fragments */
+	unsigned int rate_min;		/* min rate */
+	unsigned int rate_max;		/* max rate */
+	unsigned int channels_min;	/* min channels */
+	unsigned int channels_max;	/* max channels */
+	size_t fragment_bytes_min;	/* min fragment size */
+	size_t fragment_bytes_max;	/* max fragment size */
+	size_t fragment_bytes_step;	/* fragment size step */
+	size_t fragments_min;		/* min # of fragments */
+	size_t fragments_max;		/* max # of fragments */
 	size_t fifo_size;		/* fifo size in bytes */
 	unsigned int dig_groups;	/* digital groups */
 } snd_pcm_hardware_t;

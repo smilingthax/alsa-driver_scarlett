@@ -1895,7 +1895,7 @@ static int isapnp_config_activate(struct isapnp_dev *dev)
 		return -EBUSY;
 	memset(&cfg, 0, sizeof(cfg));
 	cfg.request = dev;
-	memcpy(&cfg.result, dev, sizeof(struct isapnp_dev));
+	cfg.result = *dev;
 	/* check if all values are set, otherwise try auto-configuration */
 	for (tmp = fauto = 0; !fauto && tmp < 8; tmp++) {
 		if (dev->resource[tmp].flags & IORESOURCE_AUTO)

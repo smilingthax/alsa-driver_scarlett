@@ -11,8 +11,8 @@ L extend the use of __init and __exit to all initialization code wherever it is
 L clean endianness stuff
 
 - lowlevel:
+H fix dynamic constraints for sb8, sb16, es18xx, rme9652
 M reduce prepare path (a lot of stuff may be moved to params ioctl) for faster xrun recovery
-M fix es1968 driver to compute real rate at params time
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device

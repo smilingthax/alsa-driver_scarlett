@@ -58,8 +58,8 @@ static void quirk_awe32_resources(struct isapnp_dev *dev)
 		if (!port2 || !port3)
 			return;
 		port = res->port;
-		memcpy(port2, port, sizeof(struct isapnp_port));
-		memcpy(port3, port, sizeof(struct isapnp_port));
+		*port2 = *port;
+		*port3 = *port;
 		port->next = port2;
 		port2->next = port3;
 		port2->min += 0x400;
