@@ -96,7 +96,7 @@ obj-$(CONFIG_SND_KORG1212) += snd-pcm.o snd-timer.o snd.o
 obj-$(CONFIG_SND_NM256) += snd-pcm.o snd-timer.o snd.o
 obj-$(CONFIG_SND_RME9652) += snd-pcm.o snd-timer.o snd.o
 obj-$(CONFIG_SND_TRIDENT) += snd-pcm.o snd-timer.o snd.o snd-rawmidi.o
-obj-$(CONFIG_SND_YMFPCI) += snd-pcm.o snd-timer.o snd.o snd-rawmidi.o
+obj-$(CONFIG_SND_YMFPCI) += snd-pcm.o snd-timer.o snd.o snd-rawmidi.o snd-hwdep.o
 obj-$(CONFIG_SND_POWERMAC) += snd-pcm.o snd-timer.o snd.o
 
 include $(TOPDIR)/Rules.make
