@@ -217,19 +217,11 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_SWITCH_LIST	_IOWR('U', 0x02, snd_switch_list_t)
 #define SND_CTL_IOCTL_SWITCH_READ	_IOWR('U', 0x03, snd_switch_t)
 #define SND_CTL_IOCTL_SWITCH_WRITE	_IOWR('U', 0x04, snd_switch_t)
-#define SND_CTL_IOCTL_HWDEP_DEVICE	_IOW ('U', 0x08, int)
-#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x09, snd_hwdep_info_t)
-#define SND_CTL_IOCTL_MIXER_DEVICE	_IOW ('U', 0x10, int)
-#define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x10, snd_mixer_info_t)
-#define SND_CTL_IOCTL_PCM_DEVICE	_IOW ('U', 0x20, int)
-#define SND_CTL_IOCTL_PCM_STREAM	_IOW ('U', 0x21, int)
-#define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOW ('U', 0x22, int)
-#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x23, int)
-#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x24, snd_pcm_info_t)
-#define SND_CTL_IOCTL_PCM_STREAM_INFO	_IOR ('U', 0x25, snd_pcm_stream_info_t)
-#define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOW ('U', 0x30, int)
-#define SND_CTL_IOCTL_RAWMIDI_STREAM	_IOW ('U', 0x31, int)
-#define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x32, snd_rawmidi_info_t)
+#define SND_CTL_IOCTL_HWDEP_INFO	_IOR ('U', 0x10, snd_hwdep_info_t)
+#define SND_CTL_IOCTL_MIXER_INFO	_IOR ('U', 0x20, snd_mixer_info_t)
+#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x30, snd_pcm_info_t)
+#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOW('U', 0x31, int)
+#define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x40, snd_rawmidi_info_t)
 
 /*
  *  Read interface.
@@ -273,6 +265,7 @@ typedef struct snd_ctl_read {
 #define SND_HWDEP_TYPE_LAST		6
 
 typedef struct snd_hwdep_info {
+	int device;		/* WR: device number */
 	unsigned int type;	/* type of card - look to SND_CARD_TYPE_XXXX */
 	unsigned char id[64];	/* ID of this hardware dependent device (user selectable) */
 	unsigned char name[80];	/* name of this hardware dependent device */
@@ -461,6 +454,7 @@ typedef struct {
  */
 
 typedef struct snd_mixer_info {
+	int device;		/* WR: device number */
 	unsigned int type;	/* type of soundcard - SND_CARD_TYPE_XXXX */
 	unsigned int attrib;	/* attributes, not used */
 	unsigned char id[64];	/* ID of this mixer */
@@ -1228,22 +1222,19 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
 					 SND_PCM_RATE_192000)
 
-#define SND_PCM_INFO_PLAYBACK		0x00000001
-#define SND_PCM_INFO_CAPTURE		0x00000002
-#define SND_PCM_INFO_DUPLEX		0x00000100
-#define SND_PCM_INFO_DUPLEX_RATE	0x00000200	/* rate for playback & capture streams must be same!!! */
-#define SND_PCM_INFO_DUPLEX_MONO	0x00000400	/* in duplex mode - only mono (one channel) is supported */
+#define SND_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
+#define SND_PCM_INFO_FRAME		0x00000002	/* hardware supports frame mode */
+#define SND_PCM_INFO_FRAGMENT		0x00000004	/* hardware supports fragment mode */
+#define SND_PCM_INFO_BATCH		0x00000010	/* double buffering */
+#define SND_PCM_INFO_INTERLEAVE		0x00000100	/* channels are interleaved */
+#define SND_PCM_INFO_NONINTERLEAVE	0x00000200	/* channels are not interleaved */
+#define SND_PCM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
+#define SND_PCM_INFO_OVERRANGE		0x00020000	/* hardware supports ADC (capture) overrange detection */
+#define SND_PCM_INFO_MMAP_VALID		0x00040000	/* fragment data are valid during transfer */
+#define SND_PCM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
+#define SND_PCM_INFO_HALF_DUPLEX	0x00100000
+#define SND_PCM_INFO_JOINT_DUPLEX	0x00200000
 
-#define SND_PCM_STREAM_INFO_MMAP		0x00000001	/* hardware supports mmap */
-#define SND_PCM_STREAM_INFO_FRAME		0x00000002	/* hardware supports frame mode */
-#define SND_PCM_STREAM_INFO_FRAGMENT		0x00000004	/* hardware supports fragment mode */
-#define SND_PCM_STREAM_INFO_BATCH		0x00000010	/* double buffering */
-#define SND_PCM_STREAM_INFO_INTERLEAVE		0x00000100	/* channels are interleaved */
-#define SND_PCM_STREAM_INFO_NONINTERLEAVE	0x00000200	/* channels are not interleaved */
-#define SND_PCM_STREAM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
-#define SND_PCM_STREAM_INFO_OVERRANGE		0x00020000	/* hardware supports ADC (capture) overrange detection */
-#define SND_PCM_STREAM_INFO_MMAP_VALID		0x00040000	/* fragment data are valid during transfer */
-#define SND_PCM_STREAM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
 #define SND_PCM_START_FULL		1	/* start when whole queue is filled (playback) */
@@ -1379,23 +1370,19 @@ typedef struct snd_pcm_digital {
 } snd_pcm_digital_t;
 
 typedef struct snd_pcm_info {
-	unsigned int type;		/* soundcard type */
-	unsigned int flags;		/* see to SND_PCM_INFO_* */
+	int device;			/* device number */
+	int stream;			/* stream number */
+	int subdevice;			/* subdevice number */
+        unsigned int type;              /* soundcard type */
 	unsigned char id[64];		/* ID of this PCM device (user selectable) */
 	unsigned char name[80];		/* name of this device */
-	int playback;			/* playback subdevices - 1 */
-	int capture;			/* capture subdevices - 1 */
-	unsigned short pcm_class;	/* SND_PCM_CLASS_* */
-	unsigned short pcm_subclass;	/* SND_PCM_SCLASS_* */
-	char reserved[60];		/* reserved for future... */
-} snd_pcm_info_t;
-
-typedef struct snd_pcm_stream_info {
-	int subdevice;			/* subdevice number */
-	char subname[32];		/* subdevice name */
-	int stream;			/* stream number */
+	unsigned char subname[32];	/* subdevice name */
+	unsigned short class;		/* SND_PCM_CLASS_* */
+	unsigned short subclass;	/* SND_PCM_SCLASS_* */
+	int subdevices_count;
+	int subdevices_avail;
 	snd_pcm_sync_t sync;		/* hardware synchronization ID */
-	unsigned int flags;		/* see to SND_PCM_STREAM_INFO_XXXX */
+	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
 	unsigned int formats;		/* supported formats */
 	unsigned int rates;		/* hardware rates */
 	unsigned int min_rate;		/* min rate (in Hz) */
@@ -1415,7 +1402,7 @@ typedef struct snd_pcm_stream_info {
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */
 	char reserved[64];		/* reserved for future... */
-} snd_pcm_stream_info_t;
+} snd_pcm_info_t;
 
 typedef struct snd_pcm_channel_info {
 	unsigned int channel;		/* channel number */
@@ -1436,8 +1423,7 @@ typedef struct snd_pcm_format {
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
 
-typedef struct snd_pcm_stream_params {
-	int stream;			/* stream information (IGNORED in kernel space) */
+typedef struct snd_pcm_params {
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* playback format */
 	snd_pcm_digital_t digital;	/* digital setup */
@@ -1455,7 +1441,7 @@ typedef struct snd_pcm_stream_params {
 	size_t frames_fill_max;		/* maximum silence fill in frames */
 	size_t frame_boundary;		/* position in frames wrap point */
 	char reserved[64];		/* must be filled with zero */
-} snd_pcm_stream_params_t;
+} snd_pcm_params_t;
 
 typedef struct snd_pcm_channel_params {
 	unsigned int channel;
@@ -1463,8 +1449,7 @@ typedef struct snd_pcm_channel_params {
 	char reserved[64];
 } snd_pcm_channel_params_t;
 
-typedef struct snd_pcm_stream_setup {
-	int stream;			/* stream information */
+typedef struct snd_pcm_setup {
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* real used format */
 	snd_pcm_digital_t digital;	/* digital setup */
@@ -1484,7 +1469,7 @@ typedef struct snd_pcm_stream_setup {
 	size_t frags;			/* allocated fragments */
 	unsigned int msbits_per_sample;	/* used most significant bits per sample */
 	char reserved[64];		/* must be filled with zero */
-} snd_pcm_stream_setup_t;
+} snd_pcm_setup_t;
 
 typedef struct snd_pcm_channel_area {
 	void *addr;			/* base address of channel samples */
@@ -1499,8 +1484,7 @@ typedef struct snd_pcm_channel_setup {
 	char reserved[64];
 } snd_pcm_channel_setup_t;
 
-typedef struct snd_pcm_stream_status {
-	int stream;		/* stream information */
+typedef struct snd_pcm_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
 	struct timeval stime;	/* time when playback/capture was started */
 	long long ust_stime;	/* UST time when playback/capture was started */
@@ -1511,7 +1495,7 @@ typedef struct snd_pcm_stream_status {
 	unsigned int xruns;	/* count of underruns/overruns from last status */
 	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
 	char reserved[64];	/* must be filled with zero */
-} snd_pcm_stream_status_t;
+} snd_pcm_status_t;
 
 typedef struct {
 	volatile int state;	/* RO: status - SND_PCM_STATE_XXXX */
@@ -1535,18 +1519,17 @@ typedef struct {
 } snd_xferv_t;
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
-#define SND_PCM_IOCTL_INFO		_IOR ('A', 0x01, snd_pcm_info_t)
-#define SND_PCM_IOCTL_STREAM_INFO	_IOR ('A', 0x02, snd_pcm_stream_info_t)
-#define SND_PCM_IOCTL_STREAM_PARAMS	_IOW ('A', 0x10, snd_pcm_stream_params_t)
-#define SND_PCM_IOCTL_STREAM_SETUP	_IOR ('A', 0x20, snd_pcm_stream_setup_t)
-#define SND_PCM_IOCTL_STREAM_STATUS	_IOR ('A', 0x21, snd_pcm_stream_status_t)
-#define SND_PCM_IOCTL_STREAM_FRAME_IO	_IO  ('A', 0x22)
-#define SND_PCM_IOCTL_STREAM_PREPARE	_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_STREAM_GO		_IO  ('A', 0x31)
-#define SND_PCM_IOCTL_STREAM_FLUSH	_IO  ('A', 0x32)
+#define SND_PCM_IOCTL_INFO		_IOR ('A', 0x02, snd_pcm_info_t)
+#define SND_PCM_IOCTL_PARAMS		_IOW ('A', 0x10, snd_pcm_params_t)
+#define SND_PCM_IOCTL_SETUP		_IOR ('A', 0x20, snd_pcm_setup_t)
+#define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x21, snd_pcm_status_t)
+#define SND_PCM_IOCTL_FRAME_IO		_IO  ('A', 0x22)
+#define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
+#define SND_PCM_IOCTL_GO		_IO  ('A', 0x31)
+#define SND_PCM_IOCTL_FLUSH		_IO  ('A', 0x32)
 #define SND_PCM_IOCTL_SYNC_GO		_IOW ('A', 0x33, snd_pcm_sync_t)
-#define SND_PCM_IOCTL_STREAM_DRAIN	_IO  ('A', 0x34)
-#define SND_PCM_IOCTL_STREAM_PAUSE	_IOW ('A', 0x35, int)
+#define SND_PCM_IOCTL_DRAIN		_IO  ('A', 0x34)
+#define SND_PCM_IOCTL_PAUSE		_IOW ('A', 0x35, int)
 #define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
 #define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x41, snd_pcm_channel_params_t)
 #define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x42, snd_pcm_channel_setup_t)
@@ -1554,7 +1537,7 @@ typedef struct {
 #define SND_PCM_IOCTL_READ_FRAMES	_IOR ('A', 0x51, snd_xfer_t)
 #define SND_PCM_IOCTL_WRITEV_FRAMES	_IOW ('A', 0x52, snd_xferv_t)
 #define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
-#define SND_PCM_IOCTL_STREAM_FRAME_DATA	_IOW ('A', 0x54, off_t)
+#define SND_PCM_IOCTL_FRAME_DATA	_IOW ('A', 0x54, off_t)
 
 
 /*
@@ -1766,6 +1749,7 @@ struct snd_pcm_buffer_description {
 #define SND_RAWMIDI_INFO_DUPLEX		0x00000004
 
 typedef struct snd_rawmidi_info {
+	int device;			/* WR: device number */
 	unsigned int type;		/* soundcard type */
 	unsigned int flags;		/* SND_RAWMIDI_INFO_XXXX */
 	unsigned char id[64];		/* ID of this raw midi device (user selectable) */
