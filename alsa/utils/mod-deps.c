@@ -899,10 +899,10 @@ static void output_acinclude(void)
 	       "  [                        cards may be separated with commas; ]\n"
 	       "  [                        'all' compiles all drivers; ]\n"
 	       "  [                        Possible cards are: ]\n");
-	output_card_list(all_deps, 24, 50, 1);
+	output_card_list(all_deps, 26, 50, 1);
 	printf(" ]\n");
 	printf("  [                        Possible additional options are: ]\n");
-	output_card_list(all_deps, 24, 50, 0);
+	output_card_list(all_deps, 26, 50, 0);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
 
