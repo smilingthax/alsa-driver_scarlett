@@ -41,6 +41,8 @@
 #define SL_PCI_DDMACONTROL 0x60
 #define SL_PCI_DDMA2CONTROL 0xF0
 
+#define SL_MODE_PLAY 1
+#define SL_MODE_CAPTURE 2
 /*
 
  */
@@ -77,6 +79,8 @@ struct snd_stru_solo {
 	snd_pcm_t *pcm2;  
 	snd_pcm_subchn_t *playback_subchn;
 	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *capture_subchn1;
 	snd_pcm_subchn_t *playback2_subchn;
 	snd_pcm1_subchn_t *playback2_subchn1;
 	snd_kmixer_t *mixer;
