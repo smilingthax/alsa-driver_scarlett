@@ -827,6 +827,7 @@ int snd_emu10k1_fx8010_new(emu10k1_t *emu, int device, snd_hwdep_t ** rhwdep);
 void snd_emu10k1_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 /* initialization */
+void snd_emu10k1_voice_init(emu10k1_t * emu, int voice);
 int snd_emu10k1_init_efx(emu10k1_t *emu);
 void snd_emu10k1_free_efx(emu10k1_t *emu);
 int snd_emu10k1_fx8010_tone_control_activate(emu10k1_t *emu, int output);
