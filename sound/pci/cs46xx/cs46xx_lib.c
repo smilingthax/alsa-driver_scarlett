@@ -1234,7 +1234,7 @@ static irqreturn_t snd_cs46xx_interrupt(int irq, void *dev_id, struct pt_regs *r
 	status1 = snd_cs46xx_peekBA0(chip, BA0_HISR);
 	if ((status1 & 0x7fffffff) == 0) {
 		snd_cs46xx_pokeBA0(chip, BA0_HICR, HICR_CHGM | HICR_IEV);
-		return IRQ_HANDLED;
+		return IRQ_NONE;
 	}
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
@@ -1305,6 +1305,7 @@ static irqreturn_t snd_cs46xx_interrupt(int irq, void *dev_id, struct pt_regs *r
 	 *  EOI to the PCI part....reenables interrupts
 	 */
 	snd_cs46xx_pokeBA0(chip, BA0_HICR, HICR_CHGM | HICR_IEV);
+
 	return IRQ_HANDLED;
 }
 

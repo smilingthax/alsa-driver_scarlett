@@ -1246,6 +1246,7 @@ static irqreturn_t snd_cs4231_sbus_interrupt(int irq, void *dev_id, struct pt_re
 	sbus_writel(csr, chip->port + APCCSR);
 
 	snd_cs4231_generic_interrupt(chip);
+
 	return IRQ_HANDLED;
 }
 #endif

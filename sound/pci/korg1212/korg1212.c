@@ -1144,7 +1144,7 @@ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id, struct pt_regs 
         doorbellValue = readl(korg1212->inDoorbellPtr);
 
         if (!doorbellValue)
-		return IRQ_HANDLED;
+		return IRQ_NONE;
 
 	spin_lock(&korg1212->lock);
 
@@ -1218,6 +1218,7 @@ static irqreturn_t snd_korg1212_interrupt(int irq, void *dev_id, struct pt_regs 
 	korg1212->inIRQ--;
 
 	spin_unlock(&korg1212->lock);
+
 	return IRQ_HANDLED;
 }
 

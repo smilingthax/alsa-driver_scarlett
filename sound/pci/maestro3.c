@@ -1565,7 +1565,7 @@ snd_m3_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	outw(status, chip->iobase + 0x1A);
 
 	/*if (in_suspend)
-		return;*/
+		return IRQ_NONE;*/
 
 	/*
 	 * ack an assp int if its running
@@ -1592,6 +1592,7 @@ snd_m3_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	/* XXX is this needed? */
 	if (status & 0x40) 
 		outb(0x40, chip->iobase+0x1A);
+
 	return IRQ_HANDLED;
 }
 
