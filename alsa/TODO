@@ -1,12 +1,13 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 H replace int with unsigned long (alpha machines) for port values (Jaroslav)
-M implement silence fill for xrun smoothing (Abramo)
 M add user/kernel lock for mmap'ed control (To think)
 M loopback implementation (To think)
+L implement silence fill for xrun smoothing (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
 L timestamp for mmap'ed byte_io and status (To think)
+L extend the use of __init and __exit to all initialization code wherever it is
 
 - lowlevel:
 M Yamaha PCI driver (Jaroslav)
