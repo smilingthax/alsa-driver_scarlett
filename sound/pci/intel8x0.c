@@ -1808,6 +1808,10 @@ static int snd_intel8x0_ich_chip_init(intel8x0_t *chip)
 	} while (time_after_eq(end_time, jiffies));
 
       __ok3:      
+	if (chip->device_type == DEVICE_SIS) {
+		/* unmute the output on SIS7012 */
+		iputword(chip, 0x4c, igetword(chip, 0x4c) | 1);
+	}
       	return 0;
 }
 
@@ -2494,6 +2498,8 @@ static struct pci_driver joystick_driver = {
 	.id_table = snd_intel8x0_joystick_ids,
 	.probe = snd_intel8x0_joystick_probe,
 };
+
+static int have_joystick;
 #endif
 
 static int __init alsa_card_intel8x0_init(void)
@@ -2507,7 +2513,13 @@ static int __init alsa_card_intel8x0_init(void)
                 return err;
         }
 #if defined(SUPPORT_JOYSTICK) || defined(SUPPORT_MIDI)
-	pci_module_init(&joystick_driver);
+	if (pci_module_init(&joystick_driver) < 0) {
+		snd_printdd(KERN_INFO "no joystick found\n");
+		have_joystick = 0;
+	} else {
+		snd_printdd(KERN_INFO "joystick(s) found\n");
+		have_joystick = 1;
+	}
 #endif
         return 0;
 
@@ -2517,7 +2529,8 @@ static void __exit alsa_card_intel8x0_exit(void)
 {
 	pci_unregister_driver(&driver);
 #if defined(SUPPORT_JOYSTICK) || defined(SUPPORT_MIDI)
-	pci_unregister_driver(&joystick_driver);
+	if (have_joystick)
+		pci_unregister_driver(&joystick_driver);
 #endif
 }
 
