@@ -172,6 +172,11 @@ ssize_t snd_pcm_plug_slave_samples(snd_pcm_plugin_handle_t *handle, int channel,
 ssize_t snd_pcm_plug_client_size(snd_pcm_plugin_handle_t *handle, int channel, size_t drv_size);
 ssize_t snd_pcm_plug_slave_size(snd_pcm_plugin_handle_t *handle, int channel, size_t clt_size);
 
+#define ROUTE_PLUGIN_USE_FLOAT 0
+#define FULL ROUTE_PLUGIN_RESOLUTION
+#define HALF ROUTE_PLUGIN_RESOLUTION / 2
+typedef int route_ttable_entry_t;
+
 int snd_pcm_plugin_build_block(snd_pcm_plugin_handle_t *handle,
 			       int channel,
 			       snd_pcm_plugin_handle_t *slave,
@@ -196,7 +201,7 @@ int snd_pcm_plugin_build_route(snd_pcm_plugin_handle_t *handle,
 			       int channel,
 			       snd_pcm_format_t *src_format,
 			       snd_pcm_format_t *dst_format,
-			       int *ttable,
+			       route_ttable_entry_t *ttable,
 		               snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_copy(snd_pcm_plugin_handle_t *handle,
 			      int channel,
