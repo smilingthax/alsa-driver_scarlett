@@ -973,7 +973,7 @@ static int snd_hdspm_midi_input_read (hdspm_midi_t *hmidi)
 			}
 		} else {
 			/* flush the MIDI input FIFO */
-			while (--n_pending) {
+			while (n_pending--) {
 				snd_hdspm_midi_read_byte (hmidi->hdspm, hmidi->id);
 			}
 		}
