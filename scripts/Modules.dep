@@ -85,6 +85,9 @@ snd-opl3-synth @if_sequencer snd-opl3-lib snd-seq-device \
 snd-opl4-lib snd-seq-device
 snd-opl4-synth @if_sequencer snd-opl4-lib snd-seq-midi-emul
 
+%dir linux/sound/drivers/vx
+snd-vx-lib snd-pcm
+
 %dir linux/sound/isa
 |snd-als100 @pnponly snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-azt2320 @pnponly snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
@@ -201,6 +204,9 @@ snd-hammerfall-mem
 snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 |snd-trident snd-pcm snd-ac97-codec snd-mpu401-uart snd-util-mem snd-trident-synth
 
+%dir linux/sound/pci/vx222
+|snd-vx222 snd-vx-lib
+
 %dir linux/sound/pci/ymfpci
 |snd-ymfpci snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
@@ -215,3 +221,7 @@ snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 
 %dir linux/sound/parisc
 |snd-harmony snd-pcm
+
+%dir linux/sound/pcmcia/vx
+|snd-vxpocket snd-vx-lib
+|snd-vxp440 snd-vx-lib

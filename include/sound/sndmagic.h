@@ -194,6 +194,8 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define ak4117_t_magic				0xa15a4000
 #define psic_t_magic				0xa15a4100
 #define opl4_t_magic				0xa15a2602
+#define vx_core_t_magic				0xa15a4110
+#define vx_pipe_t_magic				0xa15a4112
 
 
 #else

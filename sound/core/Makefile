@@ -106,5 +106,8 @@ obj-$(CONFIG_SND_USB_AUDIO) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-
 obj-$(CONFIG_SND_SUN_AMD7930) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o
 obj-$(CONFIG_SND_SUN_CS4231) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o
 obj-$(CONFIG_SND_HARMONY) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o
+obj-$(CONFIG_SND_VXPOCKET) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-hwdep.o
+obj-$(CONFIG_SND_VXP440) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-hwdep.o
+obj-$(CONFIG_SND_VX222) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-hwdep.o
 
 obj-m := $(sort $(obj-m))
