@@ -1,5 +1,5 @@
 
-		ALSA PCM realtime mixing interface - Draft v0.1
+		ALSA PCM realtime mixing interface - Draft v0.2
 		===============================================
 		        Jaroslav Kysela <perex@jcu.cz>
 
@@ -59,8 +59,8 @@ struct snd_pcm_mix_info {
   unsigned int type;			/* soundcard type */
   unsigned char id[32];			/* ID of PCM mixing device */
   unsigned char name[80];		/* name of device */
-  unsigned int format;                  /* SND_PCM_SFMT_XXXX */
-  unsigned int rate;                    /* mixing rate in Hz */
+  unsigned int format;                  /* SND_PCM_FMT_XXXX - supported formats */
+  unsigned int rate;                    /* mixing rate in Hz - if zero=variable */
   unsigned int channels;                /* hardware channels (voices) */
   unsigned char *buffer;		/* initial buffer for mmaped access */
   unsigned int size;			/* initial buffer size for mmaped access */
@@ -69,6 +69,8 @@ struct snd_pcm_mix_info {
 
 struct snd_pcm_mix_setup {
   unsigned char volume[128];		/* linear volume levels (0-255) */
+  unsigned int format;			/* SND_PCM_SFMT_XXXX - data format */
+  unsigned int rate;			/* rate (if info returns variable rate otherwise it must be set to mixing rate) */
   unsigned int channels;		/* channels (voices) */
   struct timeval start;			/* start time in us or zero=now */
   unsigned int size;			/* buffer size in bytes or zero=initial */
@@ -91,6 +93,7 @@ struct snd_pcm_mix_status {
 #define SND_PCM_MIX_IOCTL_INFO		_IOR ( 'm', 0x01, struct snd_pcm_mix_info )
 #define SND_PCM_MIX_IOCTL_SETUP		_IOWR( 'm', 0x10, struct snd_pcm_mix_setup )
 #define SND_PCM_MIX_IOCTL_STATUS	_IOR ( 'm', 0x20, struct snd_pcm_mix_status )
-#define SND_PCM_MIX_IOCTL_FLUSH		_IO  ( 'm', 0x30 )
-#define SND_PCM_MIX_IOCTL_DRAIN		_IO  ( 'm', 0x31 )
-#define SND_PCM_MIX_IOCTL_PAUSE		_IOWR( 'm', 0x32, int )
+#define SND_PCM_MIX_IOCTL_START		_IO  ( 'm', 0x30 )
+#define SND_PCM_MIX_IOCTL_FLUSH		_IO  ( 'm', 0x31 )
+#define SND_PCM_MIX_IOCTL_DRAIN		_IO  ( 'm', 0x32 )
+#define SND_PCM_MIX_IOCTL_PAUSE		_IOWR( 'm', 0x33, int )
