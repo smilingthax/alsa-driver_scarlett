@@ -131,7 +131,7 @@ int main()
 }],kaversion=`cat conftestdata`,
 kaversion="",
 kaversion="")])
-CFLAGS=$ac_save_CFLAGS
+CFLAGS="$ac_save_CFLAGS"
 kversion=`echo $kaversion | cut -d : -f 1`
 kpatchlevel=`echo $kaversion | cut -d : -f 2`
 ksublevel=`echo $kaversion | cut -d : -f 3`
@@ -167,6 +167,8 @@ fi
 dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
 modversion=n
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
@@ -181,11 +183,14 @@ int main( void ) {
   AC_MSG_RESULT("no");mversion=n,
   AC_MSG_RESULT("unknown");mversion=n
 )
+CFLAGS="$ac_save_CFLAGS"
 CONFIG_SND_MVERSION=$mversion
 AC_SUBST(CONFIG_SND_MVERSION)
 GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
 dnl Check for PCI support...
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_MSG_CHECKING(for PCI support in kernel)
 pcisup="n"
 AC_TRY_RUN([
@@ -202,6 +207,7 @@ int main( void ) {
   AC_MSG_RESULT("no");pcisup="n",
   AC_MSG_RESULT("unknown");pcisup="n"
 )
+CFLAGS="$ac_save_CFLAGS"
 CONFIG_PCI="$pcisup"
 AC_SUBST(CONFIG_PCI)
 
@@ -304,6 +310,8 @@ CONFIG_ISA=y
 CONFIG_SND_BIT32_EMUL=n
 processor=""
 rm -f processor.id
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_RUN([
 #include <stdio.h>
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -380,6 +388,7 @@ int main(void) {
   AC_MSG_RESULT("unknown");processor="",
   AC_MSG_RESULT("unknown");processor=""
 )
+CFLAGS="$ac_save_CFLAGS"
 rm -f processor.id
 c_opts=""
 LD=ld
@@ -545,6 +554,8 @@ test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)
 msmp=""
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main(void) {
@@ -559,6 +570,7 @@ int main(void) {
   AC_MSG_RESULT("no");msmp="",
   AC_MSG_RESULT("unknown");msmp=""
 )
+CFLAGS="$ac_save_CFLAGS"
 if test "$msmp" = "1"; then
   GENKSYMS="$GENKSYMS -p smp_"
   c_opts="$c_opts -D__SMP__ -DCONFIG_SMP"
@@ -756,7 +768,7 @@ int main(void)
   AC_MSG_RESULT("no");rtcsup="n",
   AC_MSG_RESULT("unknown");rtcsup="n"
 )
-CFLAGS=$ac_save_CFLAGS
+CFLAGS="$ac_save_CFLAGS"
 CONFIG_SND_RTCTIMER=$rtcsup
 AC_SUBST(CONFIG_SND_RTCTIMER)
 CONFIG_RTC=$CONFIG_SND_RTCTIMER
@@ -765,6 +777,8 @@ AC_SUBST(CONFIG_RTC)
 dnl Check for USB
 AC_MSG_CHECKING(for USB)
 usbsup=n
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main(void) {
@@ -779,6 +793,7 @@ int main(void) {
   AC_MSG_RESULT("no");usbsup="n",
   AC_MSG_RESULT("unknown");usbsup="n"
 )
+CFLAGS="$ac_save_CFLAGS"
 CONFIG_USB="$usbsup"
 AC_SUBST(CONFIG_USB)
 
