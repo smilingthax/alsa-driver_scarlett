@@ -49,15 +49,21 @@ AC_MSG_CHECKING(for kernel version)
 kaversion=`grep UTS_RELEASE $SNDCFG_KERNELDIR/include/linux/version.h 2>/dev/null | cut -d\" -f2`
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
-ksublevel=`echo $kaversion | cut -d . -f 3`
+ksublevel=`echo $kaversion | cut -d . -f 3 | cut -d - -f 1`
+kextraversion=`echo $kaversion | cut -d . -f 3 | cut -d - -f 2`
+if test "$kextraversion" = "$ksublevel"; then
+  kextraversion=""
+else
+  kextraversion=`echo -$kextraversion`
+fi
 kversion=`expr $kversion + 0`
 kpatchlevel=`expr $kpatchlevel + 0`
 ksublevel=`expr $ksublevel + 0`
 if test -z "$kversion" || test -z "$kpatchlevel" || test -z "$ksublevel"; then
-  echo "failed (probably missing $SNDCFG_KERNELDIR/include/linux/Makefile)"
+  echo "failed (probably missing $SNDCFG_KERNELDIR/include/linux/version.h)"
   exit 1
 fi
-kaversion="$kversion.$kpatchlevel.$ksublevel"
+kaversion="$kversion.$kpatchlevel.$ksublevel$kextraversion"
 newkernel="0"
 if test $kversion -gt 2; then
   newkernel="1"
@@ -66,9 +72,11 @@ else
     newkernel="1"
   fi
 fi
+AC_SUBST(kaversion)
 AC_SUBST(kversion)
 AC_SUBST(kpatchlevel)
 AC_SUBST(ksublevel)
+AC_SUBST(kextraversion)
 AC_SUBST(newkernel)
 AC_MSG_RESULT($kaversion)
 
@@ -221,15 +229,20 @@ AC_ARG_WITH(smp,
   smp="$withval", smp="auto")
 msmp=""
 if test "$smp" = "auto"; then
-  CPUNUM=`grep -E "^SMP.+=.+1" $SNDCFG_KERNELDIR/Makefile`
-  if test "$CPUNUM""x" = "x"; then
-    CPUNUM=`cat /proc/cpuinfo | grep ^processor | wc -l`
-    CPUNUM=`expr $CPUNUM + 0`
-    if test $CPUNUM -gt 1; then
+  if test $kversion -ge 2 && test $kpatchlevel -ge 2; then
+    msmp=`grep -E "^#define[ |\t]+CONFIG_SMP[ |\t]+1" $SNDCFG_KERNELDIR/include/linux/autoconf.h | wc -l`
+    msmp=`expr $msmp + 0`
+  else
+    CPUNUM=`grep -E "^SMP.+=.+1" $SNDCFG_KERNELDIR/Makefile`
+    if test "$CPUNUM""x" = "x"; then
+      CPUNUM=`cat /proc/cpuinfo | grep ^processor | wc -l`
+      CPUNUM=`expr $CPUNUM + 0`
+      if test $CPUNUM -gt 1; then
+        msmp="1"
+      fi
+    else
       msmp="1"
     fi
-  else
-    msmp="1"
   fi
 fi
 if test "$smp" = "yes"; then
@@ -239,7 +252,7 @@ if test "$msmp" = "1"; then
   if test "$newkernel" = "1"; then
     GENKSYMS="$GENKSYMS -p smp_"
   fi
-  c_opts="$c_opts -D__SMP__"
+  c_opts="$c_opts -D__SMP__ -DCONFIG_SMP"
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
