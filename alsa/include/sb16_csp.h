@@ -151,12 +151,6 @@ typedef struct {
 	int (*csp_autoload)(snd_sb_csp_t * p, int pcm_sfmt, int play_rec_mode);
 	int (*csp_start)(snd_sb_csp_t * p, int sample_width, int channels);
 	int (*csp_stop)(snd_sb_csp_t * p);
-	int (*csp_pause)(snd_sb_csp_t * p);
-	int (*csp_restart)(snd_sb_csp_t * p);
-	int (*csp_qsound_set_state)(snd_sb_csp_t * p, int qstate);
-	int (*csp_qsound_get_state)(snd_sb_csp_t * p, int *qstate);
-	int (*csp_qsound_set_pos)(snd_sb_csp_t * p, int left, int right);
-	int (*csp_qsound_get_pos)(snd_sb_csp_t * p, int *left, int *right);
 } snd_sb_csp_callback_t;
 
 #define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
