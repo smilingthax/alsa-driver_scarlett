@@ -27,10 +27,10 @@
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/tty.h>
+#include <linux/moduleparam.h>
 #include <asm/uaccess.h>
 #include <sound/core.h>
 #include <sound/rawmidi.h>
-#define SNDRV_GET_ID
 #include <sound/initval.h>
 #include <linux/delay.h>
 
@@ -57,28 +57,35 @@ static char *sdev[SNDRV_CARDS] = {"/dev/ttyS0", [1 ... (SNDRV_CARDS - 1)] = ""};
 static int speed[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 38400}; /* 9600,19200,38400,57600,115200 */
 static int adaptor[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = SERIAL_ADAPTOR_SOUNDCANVAS};
 static int outs[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* 1 to 16 */
+static int devices[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* 1 to 8 */
+static int handshake[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};     /* bool */
+static int boot_devs;
 
-MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(index, int, boot_devs, 0444);
 MODULE_PARM_DESC(index, "Index value for serial device.");
 MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
-MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+module_param_array(id, charp, boot_devs, 0444);
 MODULE_PARM_DESC(id, "ID string for serial device.");
 MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
-MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(enable, bool, boot_devs, 0444);
 MODULE_PARM_DESC(enable, "Enable serial device.");
 MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
-MODULE_PARM(sdev, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+module_param_array(sdev, charp, boot_devs, 0444);
 MODULE_PARM_DESC(sdev, "Device file string for serial device.");
 MODULE_PARM_SYNTAX(sdev, SNDRV_ID_DESC);
-MODULE_PARM(speed, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(speed, int, boot_devs, 0444);
 MODULE_PARM_DESC(speed, "Speed in bauds.");
 MODULE_PARM_SYNTAX(speed, SNDRV_ENABLED ",allows:{9600,19200,38400,57600,115200},dialog:list");
-MODULE_PARM(adaptor, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(adaptor, int, boot_devs, 0444);
 MODULE_PARM_DESC(adaptor, "Type of adaptor.");
 MODULE_PARM_SYNTAX(adaptor, SNDRV_ENABLED ",allows:{{0=Soundcanvas,1=MS-124T,2=MS-124W S/A,3=MS-124W M/B}},dialog:list");
-MODULE_PARM(outs, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(outs, int, boot_devs, 0444);
 MODULE_PARM_DESC(outs, "Number of MIDI outputs.");
 MODULE_PARM_SYNTAX(outs, SNDRV_ENABLED ",allows:{{1,16}},dialog:list");
+module_param_array(devices, int, boot_devs, 0444);
+MODULE_PARM_DESC(devices, "Number of devices to attach to the card.");
+module_param_array(handshake, int, boot_devs, 0444);
+MODULE_PARM_DESC(handshake, "Do handshaking.");
 
 #define SERIAL_MODE_NOT_OPENED		(0)
 #define SERIAL_MODE_BIT_INPUT		(0)
@@ -89,6 +96,7 @@ MODULE_PARM_SYNTAX(outs, SNDRV_ENABLED ",allows:{{1,16}},dialog:list");
 typedef struct _snd_serialmidi {
 	snd_card_t *card;
 	char *sdev;			/* serial device name (e.g. /dev/ttyS0) */
+	int dev_idx;
 	unsigned int speed;		/* speed in bauds */
 	unsigned int adaptor;		/* see SERIAL_ADAPTOR_ */
 	unsigned long mode;		/* see SERIAL_MODE_* */
@@ -104,6 +112,7 @@ typedef struct _snd_serialmidi {
 	void (*old_write_wakeup)(struct tty_struct *);
 	int old_exclusive;
 	int old_low_latency;
+	int handshake;
 	unsigned char tx_buf[TX_BUF_SIZE];
 } serialmidi_t;
 
@@ -203,14 +212,16 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 		break;
 	}
 
-	cflag = speed | CREAD | CSIZE | CS8 | CRTSCTS | HUPCL;
-	// cflag = speed | CREAD | CSIZE | CS8 | HUPCL;
+	if (serial->handshake)
+		cflag = speed | CREAD | CSIZE | CS8 | CRTSCTS | HUPCL;
+	else
+		cflag = speed | CREAD | CSIZE | CS8 | HUPCL;
 
 	switch (serial->adaptor) {
 	case SERIAL_ADAPTOR_MS124W_SA:
 	case SERIAL_ADAPTOR_MS124W_MB:
 	case SERIAL_ADAPTOR_MS124T:
-		
+		/* TODO */
 		break;
 	}
 	
@@ -435,11 +446,11 @@ static int __init snd_serialmidi_rmidi(serialmidi_t *serial)
         snd_rawmidi_t *rrawmidi;
         int err;
 
-        if ((err = snd_rawmidi_new(serial->card, "UART Serial MIDI", 0, serial->outs, 1, &rrawmidi)) < 0)
+        if ((err = snd_rawmidi_new(serial->card, "UART Serial MIDI", serial->dev_idx, serial->outs, 1, &rrawmidi)) < 0)
                 return err;
         snd_rawmidi_set_ops(rrawmidi, SNDRV_RAWMIDI_STREAM_INPUT, &snd_serialmidi_input);
         snd_rawmidi_set_ops(rrawmidi, SNDRV_RAWMIDI_STREAM_OUTPUT, &snd_serialmidi_output);
-        sprintf(rrawmidi->name, "Serial MIDI #0");
+	snprintf(rrawmidi->name, sizeof(rrawmidi->name), "%s %d", serial->card->shortname, serial->dev_idx);
         rrawmidi->info_flags = SNDRV_RAWMIDI_INFO_OUTPUT |
                                SNDRV_RAWMIDI_INFO_INPUT |
                                SNDRV_RAWMIDI_INFO_DUPLEX;
@@ -450,7 +461,8 @@ static int __init snd_serialmidi_rmidi(serialmidi_t *serial)
 
 static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 					unsigned int speed, unsigned int adaptor,
-					unsigned int outs, serialmidi_t **rserial)
+					unsigned int outs, int idx, int hshake,
+					serialmidi_t **rserial)
 {
 	static snd_device_ops_t ops = {
 		.dev_free =	snd_serialmidi_dev_free,
@@ -483,6 +495,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 
 	init_MUTEX(&serial->open_lock);
 	serial->card = card;
+	serial->dev_idx = idx;
 	serial->sdev = snd_kmalloc_strdup(sdev, GFP_KERNEL);
 	if (serial->sdev == NULL) {
 		snd_serialmidi_free(serial);
@@ -491,6 +504,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 	serial->adaptor = adaptor;
 	serial->speed = speed;
 	serial->outs = outs;
+	serial->handshake = hshake;
 	memset(serial->prev_status, 0x80, sizeof(unsigned char) * SNDRV_SERIAL_MAX_OUTS);
 	
 	/* Register device */
@@ -519,16 +533,52 @@ static int __init snd_card_serialmidi_probe(int dev)
 	if (card == NULL)
 		return -ENOMEM;
 	strcpy(card->driver, "Serial MIDI");
-	strcpy(card->shortname, card->driver);
+	if (id[dev] && *id[dev])
+		snprintf(card->shortname, sizeof(card->shortname), "Serial MIDI %s", card->id);
+	else
+		strcpy(card->shortname, card->driver);
 
-	if ((err = snd_serialmidi_create(card,
-					 sdev[dev],
-					 speed[dev],
-					 adaptor[dev],
-					 outs[dev],
-					 &serial)) < 0) {
-		snd_card_free(card);
-		return err;
+	if (devices[dev] > 1) {
+		int i, start_dev;
+		char devname[32];
+		/* assign multiple devices to a single card */
+		if (devices[dev] > 8) {
+			printk(KERN_ERR "serialmidi: invalid devices %d\n", devices[dev]);
+			snd_card_free(card);
+			return -EINVAL;
+		}
+		/* device name mangling */
+		strncpy(devname, sdev[dev], sizeof(devname));
+		devname[31] = 0;
+		i = strlen(devname);
+		if (i > 0) i--;
+		if (devname[i] >= '0' && devname[i] <= '9') {
+			for (; i > 0; i--)
+				if (devname[i] < '0' || devname[i] > '9') {
+					i++;
+					break;
+				}
+			start_dev = simple_strtol(devname + i, NULL, 0);
+			devname[i] = 0;
+		} else
+			start_dev = 0;
+		for (i = 0; i < devices[dev]; i++) {
+			char devname2[33];
+			sprintf(devname2, "%s%d", devname, start_dev + i);
+			if ((err = snd_serialmidi_create(card, devname2, speed[dev],
+							 adaptor[dev], outs[dev], i,
+							 handshake[dev], &serial)) < 0) {
+				snd_card_free(card);
+				return err;
+			}
+		}
+	} else {
+		if ((err = snd_serialmidi_create(card, sdev[dev], speed[dev],
+						 adaptor[dev], outs[dev], 0,
+						 handshake[dev], &serial)) < 0) {
+			snd_card_free(card);
+			return err;
+		}
 	}
 
 	sprintf(card->longname, "%s at %s", card->shortname, sdev[dev]);
@@ -569,29 +619,3 @@ static void __exit alsa_card_serialmidi_exit(void)
 
 module_init(alsa_card_serialmidi_init)
 module_exit(alsa_card_serialmidi_exit)
-
-#ifndef MODULE
-
-/* format is: snd-serialmidi=enable,index,id,
-			     sdev,speed,adaptor,outs */
-
-static int __init alsa_card_serialmidi_setup(char *str)
-{
-	static unsigned __initdata nr_dev = 0;
-
-	if (nr_dev >= SNDRV_CARDS)
-		return 0;
-	(void)(get_option(&str,&enable[nr_dev]) == 2 &&
-	       get_option(&str,&index[nr_dev]) == 2 &&
-	       get_id(&str,&id[nr_dev]) == 2 &&
-	       get_id(&str,&sdev[nr_dev]) == 2 &&
-	       get_option(&str,&speed[nr_dev]) == 2 &&
-	       get_option(&str,&adaptor[nr_dev]) == 2 &&
-	       get_option(&str,&outs[nr_dev]) == 2);
-	nr_dev++;
-	return 1;
-}
-
-__setup("snd-serialmidi=", alsa_card_serialmidi_setup);
-
-#endif /* ifndef MODULE */

@@ -202,6 +202,12 @@ Additional Modules
     adaptor	- Type of adaptor.
                   0 = Soundcanvas, 1 = MS-124T, 2 = MS-124W S/A,
 		  3 = MS-124W M/B
+    devices	- Number of devices assigned to the card.  Default is 1.
+  		  When this is more than 1, multiple serial devices (up
+		  to 8) are assigned to a single card.  The number of
+		  the tail of the device file name is increased for
+		  each device.
+    handshake	- Enable/disable handshaking (default = 1)	
 
     Module supports up to 8 cards.
 
