@@ -26,7 +26,10 @@ kredirect: kredirect.o
 	$(CC) $(INCLUDE) kredirect.o -o $@
 
 clean:
-	rm -f core .depend *.o *.orig *~
+	rm -f core .depend *.o
+
+mrproper:
+	rm -f *.orig *.rej *~ .#*
 
 .depend:
 	$(CPP) $(INCLUDE) *.c > .depend

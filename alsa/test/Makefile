@@ -23,4 +23,7 @@ seq2: seq2.c
 	$(CC) $(CFLAGS) -DVERBOSE -o seq2 seq2.c
 
 clean:
-	rm -f *.o $(TARGETS) *~
+	rm -f *.o $(TARGETS)
+
+mrproper: clean
+	rm -f *~ *.orig *.rej .#*
