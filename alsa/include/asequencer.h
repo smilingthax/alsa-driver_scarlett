@@ -172,7 +172,8 @@
  * (SND_SEQ_EVENT_LENGTH_VARIABLE must be set)
  */
 #define SND_SEQ_EVENT_SYSEX		130	/* system exclusive data (variable length) */
-/* 131-134: reserved */
+#define SND_SEQ_EVENT_BOUNCE		131	/* error event */
+/* 132-134: reserved */
 #define SND_SEQ_EVENT_USR_VAR0		135
 #define SND_SEQ_EVENT_USR_VAR1		136
 #define SND_SEQ_EVENT_USR_VAR2		137
@@ -211,7 +212,7 @@ typedef struct {
 #define SND_SEQ_ADDRESS_UNKNOWN		253	/* unknown source */
 #define SND_SEQ_ADDRESS_SUBSCRIBERS	254	/* send event to all subscribed ports */
 #define SND_SEQ_ADDRESS_BROADCAST	255	/* send event to all queues/clients/ports/channels */
-
+#define SND_SEQ_QUEUE_DIRECT		253	/* direct dispatch */
 
 	/* event mode flag - NOTE: only 8 bits available! */
 #define SND_SEQ_TIME_STAMP_TICK		(0<<0) /* timestamp in clock ticks */
@@ -231,10 +232,6 @@ typedef struct {
 #define SND_SEQ_PRIORITY_NORMAL		(0<<4)	/* normal priority */
 #define SND_SEQ_PRIORITY_HIGH		(1<<4)	/* event should be processed before others */
 #define SND_SEQ_PRIORITY_MASK		(1<<4)
-
-#define SND_SEQ_DEST_QUEUE		(0<<5)	/* normal destination */
-#define SND_SEQ_DEST_DIRECT		(1<<5)	/* bypass enqueueing */
-#define SND_SEQ_DEST_MASK		(1<<5)
 
 
 	/* note event */
@@ -407,6 +404,17 @@ typedef struct snd_seq_event_t {
 
 
 /*
+ * bounce event - stored as variable size data
+ */
+typedef struct snd_seq_event_bounce {
+	int err;
+	snd_seq_event_t event;
+	/* external data follows here. */
+} snd_seq_event_bounce_t;
+
+#define snd_seq_event_bounce_ext_data(ev) ((void*)((char *)(ev)->data.ext.ptr + sizeof(snd_seq_event_bounce_t)))
+
+/*
  * type check macros
  */
 /* result events: 0-4 */
@@ -434,11 +442,12 @@ typedef struct snd_seq_event_t {
 /* ipc shmem events: 140-149 */
 #define snd_seq_ev_is_varipc_type(ev)	((ev)->type >= 140 && (ev)->type < 150)
 
+/* direct dispatched events */
+#define snd_seq_ev_is_direct(ev)	((ev)->queue == SND_SEQ_QUEUE_DIRECT)
+
 /*
  * macros to check event flags
  */
-/* direct dispatched events */
-#define snd_seq_ev_is_direct(ev)	(((ev)->flags & SND_SEQ_DEST_MASK) == SND_SEQ_DEST_DIRECT)
 /* prior events */
 #define snd_seq_ev_is_prior(ev)		(((ev)->flags & SND_SEQ_PRIORITY_MASK) == SND_SEQ_PRIORITY_HIGH)
 
@@ -486,6 +495,7 @@ typedef enum {
 	/* event filter flags */
 #define SND_SEQ_FILTER_BROADCAST	(1<<0)	/* accept broadcast messages */
 #define SND_SEQ_FILTER_MULTICAST	(1<<1)	/* accept multicast messages */
+#define SND_SEQ_FILTER_BOUNCE		(1<<2)	/* accept bounce event in error */
 #define SND_SEQ_FILTER_USE_EVENT	(1<<31)	/* use event filter */
 
 typedef struct {
@@ -497,6 +507,7 @@ typedef struct {
 	unsigned char event_filter[32];	/* event filter bitmap */
 	char group[32];			/* group name */
 	int num_ports;			/* RO: number of ports */
+	int event_lost;			/* number of lost events */
 	char reserved[64];		/* for future use */
 } snd_seq_client_info_t;
 

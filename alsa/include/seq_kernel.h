@@ -54,6 +54,9 @@
 /* max delivery path length */
 #define SND_SEQ_MAX_HOPS		10
 
+/* max size of event size */
+#define SND_SEQ_MAX_EVENT_LEN		4096
+
 /* typedefs */
 struct snd_seq_stru_user_client;
 struct snd_seq_stru_kernel_client;
