@@ -47,18 +47,6 @@
 #define BX_NUM		32
 
 
-/* Number of channels */
-#define NUM_PIPES		PX_NUM
-#define NUM_PIPES_OUT		(PX_ANALOG_IN - PX_ANALOG_OUT)
-#define NUM_PIPES_IN		(PX_NUM - PX_ANALOG_IN)
-#define NUM_BUSSES_OUT		(BX_ANALOG_IN - BX_ANALOG_OUT)
-#define NUM_BUSSES_IN		(BX_NUM - BX_ANALOG_IN)
-#define NUM_ANALOG_BUSSES_OUT	(BX_DIGITAL_OUT - BX_ANALOG_OUT)
-#define NUM_ANALOG_BUSSES_IN	(BX_DIGITAL_IN - BX_ANALOG_IN)
-#define NUM_DIGITAL_BUSSES_OUT	(NUM_BUSSES_OUT - NUM_ANALOG_BUSSES_OUT)
-#define NUM_DIGITAL_BUSSES_IN	(NUM_BUSSES_IN - NUM_ANALOG_BUSSES_IN)
-
-
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/init.h>
