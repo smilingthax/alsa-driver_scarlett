@@ -135,7 +135,8 @@ int __devinit snd_ice1712_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *temp,
 	priv = kmalloc(sizeof(*priv), GFP_KERNEL);
 	if (priv == NULL)
 		return -ENOMEM;
-	snd_akm4xxx_init(ak, temp, ice->card);
+	*ak = *temp;
+	ak->card = ice->card;
 	*priv = *_priv;
         ak->private_value[0] = (unsigned long)priv;
 	ak->private_data[0] = ice;
@@ -145,6 +146,7 @@ int __devinit snd_ice1712_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *temp,
 		ak->ops.unlock = snd_ice1712_akm4xxx_unlock;
 	if (ak->ops.write == NULL)
 		ak->ops.write = snd_ice1712_akm4xxx_write;
+	snd_akm4xxx_init(ak);
 	return 0;
 }
 

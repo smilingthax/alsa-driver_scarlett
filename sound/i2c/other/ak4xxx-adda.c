@@ -102,7 +102,7 @@ void snd_akm4xxx_reset(akm4xxx_t *ak, int state)
 /*
  * initialize all the ak4xxx chips
  */
-static void snd_akm4xxx_init_chip(akm4xxx_t *ak)
+void snd_akm4xxx_init(akm4xxx_t *ak)
 {
 	static unsigned char inits_ak4524[] = {
 		0x00, 0x07, /* 0: all power up */
@@ -209,18 +209,6 @@ static void snd_akm4xxx_init_chip(akm4xxx_t *ak)
 		}
 	}
 }
-
-
-/*
- * initialize the akm4xxx_t record with the template
- */
-void snd_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *tmpl, snd_card_t *card)
-{
-	*ak = *tmpl;
-	ak->card = card;
-	snd_akm4xxx_init_chip(ak);
-}
-
 
 #define AK_GET_CHIP(val)		(((val) >> 8) & 0xff)
 #define AK_GET_ADDR(val)		((val) & 0xff)
