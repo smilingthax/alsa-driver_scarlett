@@ -584,7 +584,6 @@ struct sndrv_timer_ginfo {
 
 struct sndrv_timer_gparams {
 	struct sndrv_timer_id tid;	/* requested timer ID */
-	unsigned long period;		/* requested period duration in ns (zero = use precise representation) */
 	unsigned long period_num;	/* requested precise period duration (in seconds) - numerator */
 	unsigned long period_den;	/* requested precise period duration (in seconds) - denominator */
 	unsigned char reserved[32];

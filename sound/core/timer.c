@@ -1349,7 +1349,7 @@ static int snd_timer_user_gparams(struct file *file, snd_timer_gparams_t *_gpara
 	if (t != NULL) {
 		if (list_empty(&t->open_list_head)) {
 			if (t->hw.set_period)
-				err = t->hw.set_period(t, gparams.period, gparams.period_num, gparams.period_den);
+				err = t->hw.set_period(t, gparams.period_num, gparams.period_den);
 			else
 				err = -ENOSYS;
 		} else {
