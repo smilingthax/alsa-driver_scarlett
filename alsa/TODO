@@ -5,7 +5,7 @@ H add nonblock ioctl for rawmidi
 M add schedule call in all loop that may last more than 1 ms (search udelay/mdelay)
 M add master/divisor to timer
 M add configuration parser for OSS PCM (and perhaps mixer) emulation code
-M add the __setup code to all toplevel modules for solid (monolithic) kernels
+M add the __setup code to all modules (including midlevel ones)
 L lock, grant and revoke ioctls (not available to application I propose)
 L nonblocking async mode (with requests queue)
 L check multithread safeness wrt at least read/write
@@ -16,6 +16,7 @@ L add work_ptr (to think about)
 - lowlevel:
 M create a driver for Compaq iPAQ handheld PC (Philips UDA1341TS)
 M create an USB audio driver
+M add support for FM801's 4ch & 6ch output
 M reduce prepare path (a lot of stuff may be moved to hw_params) for faster xrun recovery
 L EMU10K1 - direct S/PDIF output using FX8010
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
