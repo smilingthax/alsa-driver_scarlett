@@ -1443,6 +1443,30 @@ if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_SAVED_CONFIG)
 fi
 
+dnl Check for acpi_register_gsi
+AC_MSG_CHECKING(for acpi_register_gsi)
+acpi_register_gsi="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/acpi.h"
+],[
+  unsigned int (*func)(u32, int, int);
+  func = acpi_register_gsi;
+],
+    AC_MSG_RESULT("yes");acpi_register_gsi="1",
+    AC_MSG_RESULT("no");acpi_register_gsi="0",
+    AC_MSG_RESULT("unknown");acpi_register_gsi="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_ACPI_REGISTER_GSI=$acpi_register_gsi
+dnl AC_SUBST(CONFIG_HAVE_ACPI_REGISTER_GSI)
+if test "$CONFIG_HAVE_ACPI_REGISTER_GSI" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_ACPI_REGISTER_GSI)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
