@@ -687,13 +687,6 @@ static int __devinit pcxhr_create(pcxhr_mgr_t *mgr, snd_card_t *card, int idx)
 		return err;
 	}
 
-	if (idx == 0) {
-		/* create a DSP loader only on first card */
-		err = pcxhr_setup_firmware(mgr);
-		if (err < 0)
-			return err;
-	}
-
 	snd_card_set_dev(card, &mgr->pci->dev);
 
 	return 0;
@@ -915,6 +908,13 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 	}
 	/* init purgebuffer */
 	memset(mgr->hostport.area, 0, size);
+
+	/* create a DSP loader */
+	err = pcxhr_setup_firmware(mgr);
+	if (err < 0) {
+		pcxhr_free(mgr);
+		return err;
+	}
 
 	pci_set_drvdata(pci, mgr);
 	dev++;

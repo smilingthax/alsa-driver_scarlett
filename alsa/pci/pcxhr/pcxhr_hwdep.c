@@ -484,6 +484,10 @@ int pcxhr_setup_firmware(pcxhr_mgr_t *mgr)
 	hw->exclusive = 1;
 	mgr->dsp_loaded = 0;
 	sprintf(hw->name, PCXHR_HWDEP_ID);
+
+	if ((err = snd_card_register(mgr->chip[0]->card)) < 0) {
+		return err;
+	}
 	return 0;
 }
 
