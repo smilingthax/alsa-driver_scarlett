@@ -194,6 +194,8 @@ struct snd_stru_trident {
 
         LPCHANNELCONTROL ChRegs;
         int ChanDwordCount;
+
+	unsigned char spdif_ctrl;
         
         unsigned int ChanMap[2];	/* allocation map for hardware channels */
         
