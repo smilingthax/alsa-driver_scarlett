@@ -12,7 +12,9 @@
   - added hw_formats to playback/record information structure
   - added playback pause ioctl
 * mixer improved
-  - added mono mute flag
+  - added join mute flag
+  - added stereo record source flags
+  - added route flags (LTOR and RTOL)
   - better support for exclusive record source
 * changes in header files (added deep checking)
 * added support for Yamaha OPL3-SA2/SA3 soundcards
