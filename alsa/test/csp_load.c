@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -17,14 +18,24 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	snd_sb_csp_microcode_t microcode;
 
-	if (argc < 3) {
-		printf("Usage: %s csp_file func_nr\n", argv[0]);
-		return ERR;
-	}
+
 	/* open CSP hw_dep device */
 	if ((fd = open(device, O_WRONLY)) == -1) {
 		printf("can't open CSP device '%s'\n", device);
 		return ERR;
+	}
+	if ((argc == 2) && !(strcmp(argv[1], "-u"))) {
+		if (ioctl(fd, SND_SB_CSP_IOCTL_UNLOAD_CODE) != 0) {
+			printf("error unloading microcode\n");
+		} else {
+		        printf("microcode unloaded\n");
+		}
+		goto __close_device_exit;
+	}
+	if (argc < 3) {
+		printf("Usage: %s csp_file func_nr\n", argv[0]);
+		printf("       %s -u\n", argv[0]);
+		goto __close_device_exit;
 	}
 	/* open csp microcode file */
 	if ((fp = fopen(argv[1], "rb")) == NULL) {

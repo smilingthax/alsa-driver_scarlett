@@ -63,6 +63,7 @@ typedef struct snd_sb_csp_start {
 #define SND_SB_CSP_ST_LOADED    0x01
 #define SND_SB_CSP_ST_RUNNING   0x02
 #define SND_SB_CSP_ST_PAUSED    0x04
+#define SND_SB_CSP_ST_AUTO      0x08
 #define SND_SB_CSP_ST_QSOUND    0x10
 
 /* CSP information */
@@ -94,14 +95,16 @@ typedef struct snd_sb_csp_qsound {
 #define SND_SB_CSP_IOCTL_INFO           _IOR('H', 0x10, snd_sb_csp_info_t)
 /* load microcode to CSP */
 #define SND_SB_CSP_IOCTL_LOAD_CODE      _IOW('H', 0x11, snd_sb_csp_microcode_t)
+/* unload microcode from CSP */
+#define SND_SB_CSP_IOCTL_UNLOAD_CODE    _IO('H', 0x12)
 /* start CSP */
-#define SND_SB_CSP_IOCTL_START          _IOW('H', 0x12, snd_sb_csp_start_t)
+#define SND_SB_CSP_IOCTL_START          _IOW('H', 0x13, snd_sb_csp_start_t)
 /* stop CSP */
-#define SND_SB_CSP_IOCTL_STOP           _IO('H', 0x13)
+#define SND_SB_CSP_IOCTL_STOP           _IO('H', 0x14)
 /* pause CSP and DMA transfer */
-#define SND_SB_CSP_IOCTL_PAUSE          _IO('H', 0x14)
+#define SND_SB_CSP_IOCTL_PAUSE          _IO('H', 0x15)
 /* restart CSP and DMA transfer */
-#define SND_SB_CSP_IOCTL_RESTART        _IO('H', 0x15)
+#define SND_SB_CSP_IOCTL_RESTART        _IO('H', 0x16)
 /* start QSound codec */
 #define SND_SB_CSP_IOCTL_QSOUND_SET_STATE _IOW('H', 0x20, int)
 /* stop QSound codec */
@@ -145,6 +148,7 @@ typedef struct snd_sb_csp {
 typedef struct {
 	int (*csp_use)(snd_sb_csp_t * p);
 	int (*csp_unuse)(snd_sb_csp_t * p);
+	int (*csp_autoload)(snd_sb_csp_t * p, int pcm_sfmt, int play_rec_mode);
 	int (*csp_start)(snd_sb_csp_t * p, int sample_width, int channels);
 	int (*csp_stop)(snd_sb_csp_t * p);
 	int (*csp_pause)(snd_sb_csp_t * p);
