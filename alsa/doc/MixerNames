@@ -66,5 +66,5 @@ PCM interface:
 
   Sample Clock Source	{ "Word", "Internal", "AutoSync" }
   Clock Sync Status	{ "Lock", "Sync", "No Lock" }
-  External Rate Sync	/* capture rate is synced with external rate */
-  External Rate Info	/* information about external rate, PCM rate is not changed */
+  External Rate		/* external capture rate */
+  Capture Rate		/* capture rate taken from external source */
