@@ -103,8 +103,11 @@ typedef union sndrv_seq_timestamp snd_seq_timestamp_t;
 /* max number of events in memory pool */
 #define SNDRV_SEQ_MAX_EVENTS		2000
 
+/* default number of events in memory chunk */
+#define SNDRV_SEQ_DEFAULT_CHUNK_EVENTS	64
+
 /* default number of events in memory pool */
-#define SNDRV_SEQ_DEFAULT_EVENTS		500
+#define SNDRV_SEQ_DEFAULT_EVENTS	500
 
 /* max number of events in memory pool for one client (outqueue) */
 #define SNDRV_SEQ_MAX_CLIENT_EVENTS	2000
