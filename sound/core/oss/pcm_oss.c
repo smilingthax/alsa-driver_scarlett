@@ -22,6 +22,9 @@
 #if 0
 #define PLUGIN_DEBUG
 #endif
+#if 0
+#define OSS_DEBUG
+#endif
 
 #include <sound/driver.h>
 #include <linux/version.h>
@@ -1188,6 +1191,10 @@ static int snd_pcm_oss_set_trigger(snd_pcm_oss_file_t *pcm_oss_file, int trigger
 	snd_pcm_runtime_t *runtime;
 	snd_pcm_substream_t *psubstream = NULL, *csubstream = NULL;
 	int err, cmd;
+
+#ifdef OSS_DEBUG
+	printk("pcm_oss: trigger = 0x%x\n", trigger);
+#endif
 	
 	psubstream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
 	csubstream = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
@@ -1727,6 +1734,9 @@ static int snd_pcm_oss_ioctl(struct inode *inode, struct file *file,
 #endif
 	if (((cmd >> 8) & 0xff) != 'P')
 		return -EINVAL;
+#ifdef OSS_DEBUG
+	printk("pcm_oss: ioctl = 0x%x\n", cmd);
+#endif
 	switch (cmd) {
 	case SNDCTL_DSP_RESET:
 		return snd_pcm_oss_reset(pcm_oss_file);
@@ -1866,7 +1876,15 @@ static ssize_t snd_pcm_oss_read(struct file *file, char *buf, size_t count, loff
 	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_CAPTURE];
 	if (substream == NULL)
 		return -ENXIO;
+#ifndef OSS_DEBUG
 	return snd_pcm_oss_read1(substream, buf, count);
+#else
+	{
+		ssize_t res = snd_pcm_oss_read1(substream, buf, count);
+		printk("pcm_oss: read %li bytes (returned %li bytes)\n", (long)count, (long)res);
+		return res;
+	}
+#endif
 }
 
 static ssize_t snd_pcm_oss_write(struct file *file, const char *buf, size_t count, loff_t *offset)
@@ -1882,6 +1900,9 @@ static ssize_t snd_pcm_oss_write(struct file *file, const char *buf, size_t coun
 	up(&file->f_dentry->d_inode->i_sem);
 	result = snd_pcm_oss_write1(substream, buf, count);
 	down(&file->f_dentry->d_inode->i_sem);
+#ifdef OSS_DEBUG
+	printk("pcm_oss: write %li bytes (wrote %li bytes)\n", (long)count, (long)result);
+#endif
 	return result;
 }
 
@@ -1945,6 +1966,9 @@ static int snd_pcm_oss_mmap(struct file *file, struct vm_area_struct *area)
 	snd_pcm_runtime_t *runtime;
 	int err;
 
+#ifdef OSS_DEBUG
+	printk("pcm_oss: mmap begin\n");
+#endif
 	pcm_oss_file = snd_magic_cast(snd_pcm_oss_file_t, file->private_data, return -ENXIO);
 	switch ((area->vm_flags & (VM_READ | VM_WRITE))) {
 	case VM_READ | VM_WRITE:
@@ -1988,6 +2012,9 @@ static int snd_pcm_oss_mmap(struct file *file, struct vm_area_struct *area)
 	if (err < 0)
 		return err;
 	runtime->oss.mmap_bytes = area->vm_end - area->vm_start;
+#ifdef OSS_DEBUG
+	printk("pcm_oss: mmap ok, bytes = 0x%x\n", runtime->oss.mmap_bytes);
+#endif
 	/* In mmap mode we never stop */
 	runtime->stop_threshold = runtime->boundary;
 
