@@ -70,7 +70,7 @@ int isapnp_reset = 0;			/* reset all PnP cards (deactivate) */
 int isapnp_skip_pci_scan = 0;		/* skip PCI resource scanning */
 int isapnp_verbose = 1;			/* verbose mode */
 int isapnp_reserve_irq[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some IRQ */
-int isapnp_reserve_dma[8] = { [0 ... 8] = -1 };		/* reserve (don't use) some DMA */
+int isapnp_reserve_dma[8] = { [0 ... 7] = -1 };		/* reserve (don't use) some DMA */
 int isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
 int isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
 #ifdef MODULE_PARM
