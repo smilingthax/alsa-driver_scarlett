@@ -479,6 +479,8 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#include <linux/moduleparam.h>
+#undef module_param
 #define SNDRV_MODULE_TYPE_int	"i"
 #define SNDRV_MODULE_TYPE_bool	"b"
 #define SNDRV_MODULE_TYPE_uint	"i"
