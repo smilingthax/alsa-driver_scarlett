@@ -9,7 +9,7 @@ Features
 ========
 
 * general
-  - modularized architecture with support for 2.0 and latest 2.1 kernels
+  - modularized architecture with support for 2.0 and latest 2.2 kernels
   - support for versioned and exported symbols
   - full proc filesystem support - /proc/asound
 * ISA soundcards
