@@ -72,6 +72,7 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_FLG_MMAP	(1<<3)
 #define SND_PCM_FLG_NONBLOCK	(1<<4)
 #define SND_PCM_FLG_OSS_MMAP	(1<<5)
+#define SND_PCM_FLG_TIME	(1<<6)
 
 #define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
 #define SND_PCM_IOCTL1_TRUE	((unsigned long *)0)
@@ -105,7 +106,7 @@ typedef struct snd_stru_pcm_runtime {
 	volatile int *status;		/* channel status */
 	int _sstatus;			/* static status location */
 	unsigned int flags;		/* run-time flags - SND_PCM_FLG_* */
-	struct timeval time;            /* time value */
+	struct timeval stime;		/* time value */
 	int start_mode;
 	int stop_mode;
 	snd_pcm_format_t format;	/* format information */
