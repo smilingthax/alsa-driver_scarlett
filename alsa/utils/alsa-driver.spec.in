@@ -20,9 +20,9 @@ BuildRequires:	initscripts
 
 %changelog
 * Mon Mar  3 2003 Ronny V. Vindenes <sublett@dc-s.com>
-- change BuildRoot from /var/tmp to _tmppath
-- use standard rpm macros for build section
-- simplify install section
+- change BuildRoot from /var/tmp to %%{_tmppath}
+- use standard rpm macros for %%build section
+- simplify %%install section
 - updated dependencies
 
 * Tue Nov 20 2001 Jaroslav Kysela <perex@suse.cz>
@@ -32,7 +32,7 @@ BuildRequires:	initscripts
 * Sun Nov 11 2001 Miroslav Benes <mbenes@tenez.cz>
 
 - dangerous command "rm -rf $RPM_BUILD_ROOT" checks $RPM_BUILD_ROOT variable
-- deleting service alsasound migrates from postun into preun script -
+- deleting service alsasound migrates from %%postun into %%preun script -
   after uninstalling chkconfig utility cannot found alsasound script
 
 
