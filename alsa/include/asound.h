@@ -375,7 +375,7 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_CLASS_MODEM		0x0010	/* software modem class */
 #define SND_PCM_CLASS_DIGITIZER		0x0011	/* digitizer class */
 
-#define SND_PCM_STREAM_PLAYBACK	0
+#define SND_PCM_STREAM_PLAYBACK		0
 #define SND_PCM_STREAM_CAPTURE		1
 
 #define SND_PCM_MODE_UNKNOWN		(-1)

@@ -139,6 +139,7 @@ case "$1" in
     ;;
   sb16)
     basic; isapnp
+    insert snd-sb-common.o
     insert snd-sb16-dsp.o
     insert snd-sb16-csp.o
     insert snd-mpu401-uart.o 
@@ -148,6 +149,7 @@ case "$1" in
     ;;
   sb)
     basic; isapnp
+    insert snd-sb-common.o
     insert snd-sb8-dsp.o
     insert snd-opl3.o
     insert snd-card-sb8.o snd_port=0x220 snd_irq=5 snd_dma8=3
@@ -155,6 +157,7 @@ case "$1" in
     ;;
   sbawe)
     basic; isapnp
+    insert snd-sb-common.o
     insert snd-sb16-dsp.o
     insert snd-sb16-csp.o
     insert snd-mpu401-uart.o 
@@ -175,6 +178,7 @@ case "$1" in
     ;;
   sb8)
     basic
+    insert snd-sb-common.o
     insert snd-sb8-dsp.o
     insert snd-opl3.o
     insert snd-card-sb8.o snd_irq=5 snd_dma8=1
@@ -282,7 +286,6 @@ case "$1" in
   fm801)
     basic
     insert snd-ac97-codec.o
-    insert snd-fm801.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
     insert snd-card-fm801.o
