@@ -375,6 +375,8 @@ struct _snd_via82xx {
 	unsigned char old_legacy;
 	unsigned char old_legacy_cfg;
 
+	unsigned char playback_volume[2]; /* for VIA8233/C/8235; default = 0 */
+
 	unsigned int intr_mask; /* SGD_SHADOW mask to check interrupts */
 
 	struct pci_dev *pci;
@@ -824,8 +826,8 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 	snd_assert((rbits & ~0xfffff) == 0, return -EINVAL);
 	snd_via82xx_channel_reset(chip, viadev);
 	snd_via82xx_set_table_ptr(chip, viadev);
-	outb(0, VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_L));
-	outb(0, VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_R));
+	outb(chip->playback_volume[0], VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_L));
+	outb(chip->playback_volume[1], VIADEV_REG(viadev, OFS_PLAYBACK_VOLUME_R));
 	outl((runtime->format == SNDRV_PCM_FORMAT_S16_LE ? VIA8233_REG_TYPE_16BIT : 0) | /* format */
 	     (runtime->channels > 1 ? VIA8233_REG_TYPE_STEREO : 0) | /* stereo */
 	     rbits | /* rate */
@@ -1333,6 +1335,48 @@ static snd_kcontrol_new_t snd_via8233_dxs3_spdif_control __devinitdata = {
 	.put = snd_via8233_dxs3_spdif_put,
 };
 
+static int snd_via8233_dxs_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 2;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 0xff;
+	return 0;
+}
+
+static int snd_via8233_dxs_volume_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = 0xff - chip->playback_volume[0];
+	ucontrol->value.integer.value[1] = 0xff - chip->playback_volume[1];
+	return 0;
+}
+
+static int snd_via8233_dxs_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	via82xx_t *chip = snd_kcontrol_chip(kcontrol);
+	unsigned char val;
+	int change;
+
+	val = 0xff - ucontrol->value.integer.value[0];
+	change = val != chip->playback_volume[0];
+	if (val)
+		chip->playback_volume[0] = val;
+	val = 0xff - ucontrol->value.integer.value[1];
+	change |= val != chip->playback_volume[1];
+	if (val)
+		chip->playback_volume[1] = val;
+	return change;
+}
+
+static snd_kcontrol_new_t snd_via8233_dxs_volume_control __devinitdata = {
+	.name = "VIA DXS Playback Volume",
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.info = snd_via8233_dxs_volume_info,
+	.get = snd_via8233_dxs_volume_get,
+	.put = snd_via8233_dxs_volume_put,
+};
+
 /*
  */
 
@@ -1429,6 +1473,9 @@ static int snd_via8233_init_misc(via82xx_t *chip, int dev)
 			return err;
 	}
 	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs3_spdif_control, chip));
+	if (err < 0)
+		return err;
+	err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_via8233_dxs_volume_control, chip));
 	if (err < 0)
 		return err;
 
