@@ -165,6 +165,27 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
 #endif /* LINUX_VERSION_CODE < 2.5.28 */
 
+#ifndef min
+/*
+ * copied from the include/linux/kernel.h file
+ * for compatibility with earlier kernels.
+ */
+#define min(x,y) ({ \
+	const typeof(x) _x = (x); \
+	const typeof(y) _y = (y); \
+	(void) (&_x == &_y); \
+	_x < _y ? _x : _y; })
+#define max(x,y) ({ \
+	const typeof(x) _x = (x);	\
+	const typeof(y) _y = (y);	\
+	(void) (&_x == &_y);		\
+	_x > _y ? _x : _y; })
+#endif
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#endif
+
 #ifdef CONFIG_DEVFS_FS
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 #include <linux/fs.h>
