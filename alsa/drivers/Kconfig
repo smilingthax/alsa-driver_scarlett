@@ -26,6 +26,7 @@ config SND_LOOPBACK
 
 config SND_PORTMAN2X4
 	tristate "Portman 2x4 driver"
-	depends on SND
+	depends on SND && PARPORT
+	select SND_RAWMIDI
 	help
 	  Say 'Y' or 'M' to include support for Portman 2x4.
