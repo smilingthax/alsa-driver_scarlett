@@ -125,35 +125,11 @@
 #define NX_ACR2_AC97_R_PRIMARY      0x48
 #define NX_ACR3_AC97_R_SECONDARY    0x4c
 
-#define AC97_RESET                  0x00
-#define AC97_MASTERVOLUME           0x02
-#define AC97_HEADPHONEVOLUME        0x04
-#define AC97_MASTERVOLUMEMONO       0x06
-#define AC97_MASTERTONE             0x08
-#define AC97_PCBEEPVOLUME           0x0A
-#define AC97_PHONEVOLUME            0x0C
-#define AC97_MICVOLUME              0x0E
-#define AC97_LINEINVOLUME           0x10
-#define AC97_CDVOLUME               0x12
-#define AC97_VIDEOVOLUME            0x14
-#define AC97_AUXVOLUME              0x16
-#define AC97_PCMOUTVOLUME           0x18
-#define AC97_RECORDSELECT           0x1A
-#define AC97_RECORDGAIN             0x1C
-#define AC97_RECORDGAINMIC          0x1E
-#define AC97_GENERALPURPOSE         0x20
-#define AC97_3DCONTROL              0x22
-#define AC97_MODEMRATE              0x24
-#define AC97_POWERDOWN              0x26
-#define AC97_EXTENDEDSTATUS         0x2A
-#define AC97_SURROUNDMASTERVOL      0x38
 #define AC97_SIGMATEL_DAC2INVERT    0x6E
 #define AC97_SIGMATEL_BIAS1         0x70
 #define AC97_SIGMATEL_BIAS2         0x72
 #define AC97_SIGMATEL_CIC1          0x76
 #define AC97_SIGMATEL_CIC2          0x78
-#define AC97_VENDORID1              0x7C
-#define AC97_VENDORID2              0x7E
 
 typedef struct tChannelControl
 {

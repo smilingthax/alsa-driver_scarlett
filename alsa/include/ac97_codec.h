@@ -53,6 +53,8 @@
 #define AC97_RESERVED		0x24	/* Reserved */
 #define AC97_POWERDOWN		0x26	/* Powerdown control / status */
 /* range 0x28-0x3a - AUDIO */
+#define AC97_EXTENDED_STATUS	0x3a	/* Extended Status */
+#define AC97_SURROUND_MASTER	0x38	/* Surround Master Volume */
 /* range 0x3c-0x58 - MODEM */
 /* range 0x5a-0x7b - Vendor Specific */
 #define AC97_VENDOR_ID1		0x7c	/* Vendor ID1 */
