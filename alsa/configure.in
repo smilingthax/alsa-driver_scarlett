@@ -221,22 +221,10 @@ msmp=""
 if test "$smp" = "auto"; then
   CPUNUM=`grep -E "^SMP.+=.+1" $SNDCFG_KERNELDIR/Makefile`
   if test "$CPUNUM""x" = "x"; then
-    CPUNUM=`cat /proc/ksyms | grep apic | wc -l`
+    CPUNUM=`cat /proc/cpuinfo | grep ^processor | wc -l`
     CPUNUM=`expr $CPUNUM + 0`
-    if test $CPUNUM -gt 0; then
+    if test $CPUNUM -gt 1; then
       msmp="1"
-    else
-      CPUNUM=`cat /proc/ksyms | grep Rsmp_ | wc -l`
-      CPUNUM=`expr $CPUNUM + 0`
-      if test $CPUNUM -gt 0; then
-        msmp="1"
-      else
-        CPUNUM=`cat /proc/cpuinfo | grep ^processor | wc -l`
-        CPUNUM=`expr $CPUNUM + 0`
-        if test $CPUNUM -gt 1; then
-          msmp="1"
-        fi
-      fi
     fi
   else
     msmp="1"
