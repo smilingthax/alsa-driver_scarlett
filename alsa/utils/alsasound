@@ -27,6 +27,19 @@
 # chkconfig: 2345 87 14
 # description: ALSA driver
 #
+# modified to visually fit into SuSE 6.0+ by Philipp Thomas <pthomas@suse.de>
+# further improvements by Bernd Kaindl, Olaf Hering and Takashi Iwai.
+# 
+#
+
+if [ -r /etc/rc.config ]; then
+  . /etc/rc.config
+  rc_warning="\033[m33m\033[1m"
+else
+  rc_done="done"
+  rc_warning=""
+  rc_reset=""
+fi
 
 config=/etc/modules.conf
 alsactl=/usr/sbin/alsactl
@@ -48,19 +61,21 @@ function start() {
     while read line; do \
       echo -n "Starting sound driver: $line "; \
       /sbin/modprobe $line; \
-      echo "done"; \
+      echo -e "$rc_done"; \
     done
   #
   # restore driver settings
   #
-  if [ -x $alsactl ]; then
-    if [ -r $asoundcfg ]; then
-      $alsactl -f $asoundcfg restore
+  if [ -d /proc/asound ]; then
+    if [ ! -r /etc/asound.conf ]; then
+      echo "No mixer config in /etc/asound.conf, you have to unmute your card!"
     else
-      echo "ERROR: alsactl can't start, $asoundcfg is not readable"
+      if [ -x $alsactl ]; then
+        $alsactl restore
+      else
+        echo -e "${rc_warning}ERROR: alsactl not found${rc_reset}"
+      fi
     fi
-  else
-    echo "ERROR: alsactl not found"
   fi
 }
 
@@ -71,7 +86,7 @@ function stop() {
   if [ -x $alsactl ]; then
     $alsactl store
   else
-    echo -n "ERROR: alsactl not found"
+    echo -n -e "${rc_warning}!!!alsactl not found!!!${rc_reset} "
   fi
   #
   # remove all sound modules
@@ -86,7 +101,7 @@ function stop() {
 # See how we were called.
 case "$1" in
   start)
-        # Start driver.
+        # Start driver if it isn't already up.
 	if [ ! -d /proc/asound ]; then
 	  start
 	  if [ -d /proc/asound ] && [ -d /var/lock/subsys ]; then
@@ -104,9 +119,7 @@ case "$1" in
 	  if [ -d /var/lock/subsys ]; then
 	    rm -f /var/lock/subsys/alsasound
 	  fi
- 	  echo "done"
-	else
-	  echo "ALSA driver isn't running."
+ 	  echo -e "$rc_done"
 	fi
         ;;
   restart)
