@@ -263,8 +263,8 @@ struct pci_driver {
 	const struct pci_device_id *id_table;	/* NULL if wants all devices */
 	int (*probe)(struct pci_dev *dev, const struct pci_device_id *id); /* New device inserted */
 	void (*remove)(struct pci_dev *dev);	/* Device removed (NULL if not a hot-plug capable driver) */
-	void (*suspend)(struct pci_dev *dev);	/* Device suspended */
-	void (*resume)(struct pci_dev *dev);	/* Device woken up */
+	int (*suspend)(struct pci_dev *dev, u32 stgate);	/* Device suspended */
+	int (*resume)(struct pci_dev *dev);	/* Device woken up */
 };
 
 /*

@@ -71,7 +71,7 @@ static int pci_compat_pm_callback(struct pm_dev *pdev, pm_request_t rqst, void *
 		pci_for_each_dev(dev) {
 			struct pci_driver *drv = snd_pci_compat_get_pci_driver(dev);
 			if (drv && drv->suspend)
-				drv->suspend(dev);
+				drv->suspend(dev, 0);
 		}
 		break;
 	case PM_RESUME:
