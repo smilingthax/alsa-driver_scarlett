@@ -103,6 +103,7 @@ extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg);
 /* allocation and releasing of external data (sysex etc.) */
 extern void *snd_seq_ext_malloc(unsigned long size, int atomic);
 extern void snd_seq_ext_free(void *obj, unsigned long size);
+extern void snd_seq_ext_ref(void *obj);
 
 /* port callback routines */
 void snd_port_init_callback(snd_seq_port_callback_t *p);
