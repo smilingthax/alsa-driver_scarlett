@@ -28,13 +28,13 @@ static inline int snd_compat_pcmcia_register_driver(struct pcmcia_driver *driver
 		printk(KERN_WARNING "%s: Card Services release does not match (%x != %x)!\n", driver->drv.name, serv.Revision, CS_RELEASE_CODE);
 		return -EIO;
 	}
-	register_pccard_driver((dev_info_t *)&driver->drv.name, driver->attach, driver->detach);
+	register_pccard_driver((dev_info_t *)driver->drv.name, driver->attach, driver->detach);
 	return 0;
 }
 
 static inline void snd_compat_pcmcia_unregister_driver(struct pcmcia_driver *driver)
 {
-	unregister_pccard_driver((dev_info_t *)&driver->drv.name);
+	unregister_pccard_driver((dev_info_t *)driver->drv.name);
 }
 
 #define pcmcia_register_driver(driver) snd_compat_pcmcia_register_driver(driver)
