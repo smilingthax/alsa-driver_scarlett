@@ -37,6 +37,8 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define IORESOURCE_IO           0x00000100      /* Resource type */
 #define IORESOURCE_MEM          0x00000200
 
+#ifdef CONFIG_PCI
+
 /* New-style probing supporting hot-pluggable devices */
 
 #define PCI_PM_CTRL		4	/* PM control and status register */
@@ -96,5 +98,7 @@ int snd_pci_compat_enable_device(struct pci_dev *dev);
 int snd_pci_compat_find_capability(struct pci_dev *dev, int cap);
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev);
 void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data);
+
+#endif /* CONFIG_PCI */
 
 #endif /* <2.3.0 */
