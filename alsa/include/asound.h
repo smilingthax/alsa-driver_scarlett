@@ -1377,8 +1377,8 @@ typedef struct snd_pcm_info {
 	unsigned char id[64];		/* ID of this PCM device (user selectable) */
 	unsigned char name[80];		/* name of this device */
 	unsigned char subname[32];	/* subdevice name */
-	unsigned short class;		/* SND_PCM_CLASS_* */
-	unsigned short subclass;	/* SND_PCM_SCLASS_* */
+	unsigned short device_class;	/* SND_PCM_CLASS_* */
+	unsigned short device_subclass;	/* SND_PCM_SCLASS_* */
 	int subdevices_count;
 	int subdevices_avail;
 	snd_pcm_sync_t sync;		/* hardware synchronization ID */
