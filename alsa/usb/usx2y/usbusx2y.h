@@ -40,8 +40,6 @@ typedef struct {
 	unsigned int		rate,
 				format;
 	int			refframes;
-	struct urb*		play_urb_waiting[2];
-	int			pipe0Aframes[NRURBS][NRPACKS];
 	snd_hwdep_t*		hwdep;
 	int			chip_status;
 	struct semaphore	open_mutex;

@@ -1,6 +1,11 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2004-07-13 Karsten Wiese
+	Version 0.7.1:
+	Don't sleep in START/STOP callbacks anymore.
+	us428 channels C/D not handled just for this version, sorry.
+
 2004-06-21 Karsten Wiese
 	Version 0.6.4:
 	Temporarely suspend midi input
@@ -108,7 +113,7 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.6.3");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.7.1");
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001)(0x8005)(0x8007) }}");
 
@@ -383,6 +388,7 @@ static void usX2Y_usb_disconnect(struct usb_device* device, void* ptr)
 		struct list_head* p;
 		if (usX2Y->chip_status == USX2Y_STAT_CHIP_HUP)	// on 2.6.1 kernel snd_usbmidi_disconnect()
 			return;					// calls us back. better leave :-) .
+		usX2Y->chip.shutdown = 1;
 		usX2Y->chip_status = USX2Y_STAT_CHIP_HUP;
 		usX2Y_unlinkSeq(&usX2Y->AS04);
 		usb_unlink_urb(usX2Y->In04urb);
