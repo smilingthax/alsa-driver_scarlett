@@ -1593,7 +1593,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	if ((err = snd_ac97_mixer(chip->card, &ac97, &x97)) < 0)
 		return err;
 	chip->ac97[0] = x97;
-	snd_ac97_tune_hardware(&chip->ac97[0], chip->pci, ac97_quirks);
+	snd_ac97_tune_hardware(chip->ac97[0], chip->pci, ac97_quirks);
 	chip->ichd[ICHD_PCMOUT].ac97 = x97;
 	chip->ichd[ICHD_PCMIN].ac97 = x97;
 	if (x97->ext_id & AC97_EI_VRM)
