@@ -119,7 +119,7 @@ typedef struct snd_switch {
 		unsigned char data8[32];	/* 8-bit data */
 		unsigned short data16[16];	/* 16-bit data */
 		unsigned int data32[8];		/* 32-bit data */
-		int item_number;		/* active list item number */
+		unsigned int item_number;	/* active list item number */
 		char item[32];			/* list item, low -> item number */
 	} value;
 	unsigned char reserved[32];
