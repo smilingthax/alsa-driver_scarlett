@@ -58,7 +58,7 @@
 #define AC97_PCM_FRONT_DAC_RATE 0x2c	/* PCM Front DAC Rate */
 #define AC97_PCM_SURR_DAC_RATE	0x2e	/* PCM Surround DAC Rate */
 #define AC97_PCM_LFE_DAC_RATE	0x30	/* PCM LFE DAC Rate */
-#define AC97_PCM_LR_DAC_RATE	0x32	/* PCM LR DAC Rate */
+#define AC97_PCM_LR_ADC_RATE	0x32	/* PCM LR DAC Rate */
 #define AC97_PCM_MIC_ADC_RATE	0x34	/* PCM MIC ADC Rate */
 #define AC97_CENTER_LFE_MASTER	0x36	/* Center + LFE Master Volume */
 #define AC97_SURROUND_MASTER	0x38	/* Surround (Rear) Master Volume */
@@ -85,6 +85,7 @@ typedef struct snd_stru_ac97 ac97_t;
 struct snd_stru_ac97 {
 	void (*write) (void *private_data, unsigned short reg, unsigned short val);
 	unsigned short (*read) (void *private_data, unsigned short reg);
+	void (*init) (void *private_data);
 	snd_info_entry_t *proc_entry;
 	void *private_data;
 	void (*private_free) (void *private_data);
