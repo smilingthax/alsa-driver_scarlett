@@ -47,7 +47,7 @@
 #define ICH_REG_PI_BDBAR		0x00	/* dword - buffer descriptor list base address */
 #define ICH_REG_PI_CIV			0x04	/* byte - current index value */
 #define ICH_REG_PI_LVI			0x05	/* byte - last valid index */
-#define   ICH_REG_LVI_MASK		0x0f
+#define   ICH_REG_LVI_MASK		0x1f
 #define ICH_REG_PI_SR			0x06	/* byte - status register */
 #define   ICH_FIFOE			0x10	/* FIFO error */
 #define   ICH_BCIS			0x08	/* buffer completion interrupt status */
@@ -56,7 +56,7 @@
 #define   ICH_DCH			0x01	/* DMA controller halted */
 #define ICH_REG_PI_PICB			0x08	/* word - position in current buffer */
 #define ICH_REG_PI_PIV			0x0a	/* byte - prefetched index value */
-#define   ICH_REG_PIV_MASK		0x0f	/* mask */
+#define   ICH_REG_PIV_MASK		0x1f	/* mask */
 #define ICH_REG_PI_CR			0x0b	/* byte - control register */
 #define   ICH_IOCE			0x10	/* interrupt on completion enable */
 #define   ICH_FEIE			0x08	/* fifo error interrupt enable */
