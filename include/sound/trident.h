@@ -448,6 +448,7 @@ struct _snd_trident {
 	snd_seq_device_t *seq_dev;
 
 	ac97_t *ac97;
+	ac97_t *ac97_sec;
 
 	unsigned int musicvol_wavevol;
 	snd_trident_pcm_mixer_t pcm_mixer[32];
