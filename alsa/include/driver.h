@@ -108,6 +108,7 @@
 #include <linux/vmalloc.h>
 #include <linux/proc_fs.h>
 #include <linux/poll.h>
+#include <linux/reboot.h>
 
 #ifdef LINUX_2_2
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
