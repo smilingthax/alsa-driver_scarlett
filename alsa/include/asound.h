@@ -229,7 +229,47 @@ typedef struct snd_hwdep_info {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 0, 0)
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 1, 0)
+
+/* channel IDs */
+#define SND_MIXER_ID_MASTER		"Master"
+#define SND_MIXER_ID_MASTER1		"Master 2nd"
+#define SND_MIXER_ID_MASTERD		"Master Digital"
+#define SND_MIXER_ID_MASTERD1		"Master Digital 2nd"
+#define SND_MIXER_ID_HEADPHONE		"Headphone"
+#define SND_MIXER_ID_MASTER_MONO	"Master Mono"
+#define SND_MIXER_ID_3D			"3D Wide"
+#define SND_MIXER_ID_3D_VOLUME		"3D Volume"
+#define SND_MIXER_ID_3D_CENTER		"3D Center"
+#define SND_MIXER_ID_3D_SPACE		"3D Space"
+#define SND_MIXER_ID_3D_DEPTH		"3D Depth"
+#define SND_MIXER_ID_BASS		"Bass"
+#define SND_MIXER_ID_TREBLE		"Treble"
+#define SND_MIXER_ID_FADER		"Fader"
+#define SND_MIXER_ID_SYNTHESIZER	"Synth"
+#define SND_MIXER_ID_SYNTHESIZER1	"Synth 2nd"
+#define SND_MIXER_ID_FM			"FM"
+#define SND_MIXER_ID_EFFECT		"Effect"
+#define SND_MIXER_ID_DSP		"DSP"
+#define SND_MIXER_ID_PCM		"PCM"
+#define SND_MIXER_ID_PCM1		"PCM 2nd"
+#define SND_MIXER_ID_LINE		"Line-In"
+#define SND_MIXER_ID_MIC		"MIC"
+#define SND_MIXER_ID_CD			"CD"
+#define SND_MIXER_ID_VIDEO		"Video"
+#define SND_MIXER_ID_PHONE		"Phone"
+#define SND_MIXER_ID_GAIN		"Record-Gain"
+#define SND_MIXER_ID_MIC_GAIN		"Mic-Gain"
+#define SND_MIXER_ID_IGAIN		"In-Gain"
+#define SND_MIXER_ID_OGAIN		"Out-Gain"
+#define SND_MIXER_ID_LOOPBACK		"Loopback"
+#define SND_MIXER_ID_SPEAKER		"PC Speaker"
+#define SND_MIXER_ID_MONO		"Mono"
+#define SND_MIXER_ID_MONO1		"Mono 2nd"
+#define SND_MIXER_ID_MONO2		"Mono 3rd"
+#define SND_MIXER_ID_AUXA		"Aux A"
+#define SND_MIXER_ID_AUXB		"Aux B"
+#define SND_MIXER_ID_AUXC		"Aux C"
 
 /* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
@@ -786,6 +826,48 @@ typedef struct snd_mixer_element {
 	} data;
 } snd_mixer_element_t;
 
+/*
+ *
+ */
+ 
+#define SND_MIXER_SPK_FRONT_LEFT	0
+#define SND_MIXER_SPK_FRONT_RIGHT	1
+#define SND_MIXER_SPK_FRONT_CENTER	2
+#define SND_MIXER_SPK_REAR_LEFT		3
+#define SND_MIXER_SPK_REAR_RIGHT	4
+
+#define SND_MIXER_SPK_MASK_FRONT_LEFT	(1<<SND_MIXER_SPK_FRONT_LEFT)
+#define SND_MIXER_SPK_MASK_FRONT_RIGHT	(1<<SND_MIXER_SPK_FRONT_RIGHT)
+#define SND_MIXER_SPK_MASK_FRONT_CENTER	(1<<SND_MIXER_SPK_FRONT_CENTER)
+#define SND_MIXER_SPK_MASK_REAR_LEFT	(1<<SND_MIXER_SPK_REAR_LEFT)
+#define SND_MIXER_SPK_MASK_REAR_RIGHT	(1<<SND_MIXER_SPK_REAR_RIGHT)
+
+#define SND_MIXER_CHNCAP_MUTE		(1<<0)
+#define SND_MIXER_CHNCAP_JOINTLY_MUTE	(1<<1)
+#define SND_MIXER_CHNCAP_RECORD		(1<<2)
+#define SND_MIXER_CHNCAP_JOINTLY_RECORD	(1<<3)
+
+typedef struct snd_mixer_channel {
+	unsigned char name[32];		/* channel name */
+	unsigned int speakers;		/* bitmap of active speakers */	
+	unsigned int mute;		/* bitmap of muted speakers */
+	unsigned int caps;		/* capabilities */
+	int record_group;		/* record group (for jointly record source) */
+	int min;			/* minimum value */
+	int max;			/* maximum value */
+	int front_left;			/* front left value */
+	int front_right;		/* front right value */
+	int front_center;		/* front center */
+	int rear_left;			/* left rear */
+	int rear_right;			/* right rear */
+	char reserved[64];		/* for the future use */
+} snd_mixer_channel_t;
+
+typedef struct snd_mixer_channels {
+	int channels_size;
+	snd_mixer_channel_t *channels;
+} snd_mixer_channels_t;
+
 /* ioctl commands */
 #define SND_MIXER_IOCTL_PVERSION	_IOR ('R', 0x00, int)
 #define SND_MIXER_IOCTL_INFO		_IOWR('R', 0x01, snd_mixer_info_t)
@@ -796,6 +878,8 @@ typedef struct snd_mixer_element {
 #define SND_MIXER_IOCTL_ELEMENT_INFO	_IOWR('R', 0x20, snd_mixer_element_info_t)
 #define SND_MIXER_IOCTL_ELEMENT_READ	_IOWR('R', 0x21, snd_mixer_element_t)
 #define SND_MIXER_IOCTL_ELEMENT_WRITE	_IOWR('R', 0x22, snd_mixer_element_t)
+#define SND_MIXER_IOCTL_CHANNEL_READ	_IOWR('R', 0x30, snd_mixer_channels_t)
+#define SND_MIXER_IOCTL_CHANNEL_WRITE	_IOWR('R', 0x31, snd_mixer_channels_t)
 
 /*
  *  Read interface.
@@ -810,12 +894,16 @@ typedef struct snd_mixer_element {
 #define SND_MIXER_READ_GROUP_CHANGE	6	/* the group was changed */
 #define SND_MIXER_READ_GROUP_ADD	7	/* the group was added */
 #define SND_MIXER_READ_GROUP_REMOVE	8	/* the group was removed */
+#define SND_MIXER_READ_CHANNEL_CHANGE	9	/* the channel was changed */
+#define SND_MIXER_READ_CHANNEL_ADD	10	/* the channel was added */
+#define SND_MIXER_READ_CHANNEL_REMOVE	11	/* the channel was removed */
 
 typedef struct snd_mixer_read {
 	unsigned int cmd;		/* command - SND_MIXER_READ_* */
 	union {
 		snd_mixer_eid_t eid;	/* element identification */
 		snd_mixer_gid_t gid;	/* group identification */
+		char channel_name[32];	/* channel name */
 		unsigned char data8[60];
 	} data;
 } snd_mixer_read_t;
