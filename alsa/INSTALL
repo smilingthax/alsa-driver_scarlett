@@ -538,6 +538,11 @@ Module parameters
     
     Module supports up to 8 cards, autoprobe and PnP.
 
+  Module snd-esssolo1.o
+  ---------------------
+
+    Module for soundcards based on ESS Solo-1 (ES1938,ES1946) chips.
+
 
 modprobe/kerneld/kmod support
 =============================
