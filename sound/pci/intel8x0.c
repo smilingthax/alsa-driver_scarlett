@@ -226,6 +226,7 @@ struct _snd_intel8x0 {
 
 	int multi4: 1,
 	    multi6: 1;
+	int in_ac97_init: 1;
 
 	ac97_t *ac97;
 	ac97_t *ac97sec;
@@ -299,8 +300,10 @@ static void snd_intel8x0_codec_write(ac97_t *ac97,
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, ac97->private_data, return);
 	
 	spin_lock(&chip->ac97_lock);
-	if (snd_intel8x0_codec_semaphore(chip, ac97->num) < 0)
-		snd_printk("codec_write %d: semaphore is not ready for register 0x%x\n", ac97->num, reg);
+	if (snd_intel8x0_codec_semaphore(chip, ac97->num) < 0) {
+		if (! chip->in_ac97_init)
+			snd_printk("codec_write %d: semaphore is not ready for register 0x%x\n", ac97->num, reg);
+	}
 	outw(val, chip->port + reg + ac97->num * 0x80);
 	spin_unlock(&chip->ac97_lock);
 }
@@ -314,14 +317,16 @@ static unsigned short snd_intel8x0_codec_read(ac97_t *ac97,
 
 	spin_lock(&chip->ac97_lock);
 	if (snd_intel8x0_codec_semaphore(chip, ac97->num) < 0) {
-		snd_printk("codec_read %d: semaphore is not ready for register 0x%x\n", ac97->num, reg);
+		if (! chip->in_ac97_init)
+			snd_printk("codec_read %d: semaphore is not ready for register 0x%x\n", ac97->num, reg);
 		res = 0xffff;
 	} else {
 		res = inw(chip->port + reg + ac97->num * 0x80);
 		if ((tmp = inl(ICHREG(chip, GLOB_STA))) & ICH_RCS) {
 			/* reset RCS and preserve other R/WC bits */
 			outl(tmp & ~(ICH_SRI|ICH_PRI|ICH_GSCI), ICHREG(chip, GLOB_STA));
-			snd_printk("codec_read %d: read timeout for register 0x%x\n", ac97->num, reg);
+			if (! chip->in_ac97_init)
+				snd_printk("codec_read %d: read timeout for register 0x%x\n", ac97->num, reg);
 			res = 0xffff;
 		}
 	}
@@ -919,6 +924,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	ac97_t ac97;
 	int err;
 
+	chip->in_ac97_init = 1;
 	memset(&ac97, 0, sizeof(ac97));
 	ac97.write = snd_intel8x0_codec_write;
 	ac97.read = snd_intel8x0_codec_read;
@@ -947,6 +953,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 		    (chip->ac97sec && (chip->ac97sec->scaps & AC97_SCAP_CENTER_LFE_DAC)))
 			chip->multi6 = 1;
 	}
+	chip->in_ac97_init = 0;
 	return 0;
 }
 
@@ -1356,7 +1363,7 @@ static struct shortname_table {
 	{ PCI_DEVICE_ID_INTEL_440MX, "Intel 440MX" },
 	{ PCI_DEVICE_ID_INTEL_ICH3, "Intel ICH3" },
 	{ PCI_DEVICE_ID_SI_7012, "SiS SI7012" },
-	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce Audio" },
+	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce" },
 	{ 0, 0 },
 };
 
