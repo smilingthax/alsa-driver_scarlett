@@ -49,6 +49,7 @@
 #define   ES_1370_XCTL1 	(1<<30)	  /* general purpose output bit */
 #define   ES_1371_JOY_ASEL(o)	(((o)&0x03)<<24) /* joystick port mapping */
 #define   ES_1371_JOY_ASELM	(0x03<<24)	 /* mask for above */
+#define   ES_1371_JOY_ASELI(i)  (((i)>>24)&0x03)
 #define   ES_1371_GPIO_IN(i)	(((i)>>20)&0x0f) /* GPIO in [3:0] pins - R/O */
 #define   ES_1370_PCLKDIVO(o)	(((o)&0x1fff)<<16) /* clock divide ratio for DAC2 */
 #define   ES_1370_PCLKDIVM	((0x1fff)<<16)   /* mask for above */

@@ -75,6 +75,7 @@ struct snd_stru_ac97 {
   char *name;			/* CODEC name */
   unsigned short caps;		/* capabilities (register 0) */
   unsigned short micgain;	/* mic gain is active */
+  snd_kmixer_channel_t *mic_channel;
   snd_spin_define( access );
 };
 
@@ -131,7 +132,9 @@ struct snd_stru_ak4531 {
   unsigned char rin_sw1;
   unsigned char lin_sw2;
   unsigned char rin_sw2;
+  unsigned short adin;
   unsigned short micgain;                                                
+  snd_kmixer_channel_t *mic_channel;
   snd_spin_define( access );
 };
 
