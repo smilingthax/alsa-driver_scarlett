@@ -1508,6 +1508,10 @@ static struct _ac97_ali_rate_regs {
 	{ ALID_SPDIFIN, { 0, 0, 0 }, -1 },
 };
 
+static struct ac97_quirk ac97_quirks[] = {
+	{ 0x1028, 0x0126, AC97_TUNE_HP_ONLY }, /* Dell Optiplex GX260 */
+	{ } /* terminator */
+};
 
 static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 {
@@ -1589,6 +1593,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	if ((err = snd_ac97_mixer(chip->card, &ac97, &x97)) < 0)
 		return err;
 	chip->ac97[0] = x97;
+	snd_ac97_tune_hardware(&chip->ac97[0], chip->pci, ac97_quirks);
 	chip->ichd[ICHD_PCMOUT].ac97 = x97;
 	chip->ichd[ICHD_PCMIN].ac97 = x97;
 	if (x97->ext_id & AC97_EI_VRM)
