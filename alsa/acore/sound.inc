@@ -31,6 +31,3 @@ EXPORT_SYMBOL(snd_compat_devfs_remove);
 EXPORT_SYMBOL(snd_compat_devfs_mk_dir);
 EXPORT_SYMBOL(snd_compat_devfs_mk_cdev);
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
-EXPORT_SYMBOL(snd_compat_vmap);
-#endif

@@ -176,13 +176,3 @@ int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
 #endif /* 2.5.67 */
 
 #endif /* CONFIG_DEVFS_FS */
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
-#include <linux/vmalloc.h>
-
-void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
-{
-	return vmap(pages, count);
-}
-
-#endif
