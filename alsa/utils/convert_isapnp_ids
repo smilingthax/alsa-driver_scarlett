@@ -81,7 +81,7 @@ function dataline(line,   a, b, idx, num)
 			print "\t{ ISAPNP_CARD_END, }"
 		} else {
 			if (match($0, "^# [0-9]+") == 0) {
-				if (match($0, "{.*}")) {
+				if (match($0, "\{.*\}")) {
 					dataline($0)
 				} else {
 					print $0
