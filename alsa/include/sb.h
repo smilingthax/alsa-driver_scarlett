@@ -231,6 +231,16 @@ typedef struct snd_stru_sbdsp sbdsp_t;
  *
  */
 
+static inline void snd_sb_ack_8bit(sbdsp_t * codec)
+{
+	inb(SBP(codec, DATA_AVAIL));
+}
+
+static inline void snd_sb_ack_16bit(sbdsp_t * codec)
+{
+	inb(SBP(codec, DATA_AVAIL_16));
+}
+
 /* sb_common.c */
 extern int snd_sbdsp_command(sbdsp_t * codec, unsigned char val);
 extern int snd_sbdsp_get_byte(sbdsp_t * codec);
