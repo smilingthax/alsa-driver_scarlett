@@ -42,7 +42,10 @@ struct _snd_i2c_bus {
 
 	spinlock_t lock;
 
-	struct list_head devices; /* attached devices */
+	snd_i2c_bus_t *master;	/* master bus when SCK/SCL is shared */
+	struct list_head buses;	/* master: slave buses sharing SCK/SCL, slave: link list */
+
+	struct list_head devices; /* attached devices to this bus */
 
 	/* Software I2C */
 	void (*i2c_setlines) (snd_i2c_bus_t * bus, int ctrl, int data);
@@ -57,8 +60,9 @@ struct _snd_i2c_bus {
 	void (*private_free)(snd_i2c_bus_t *bus);
 };
 
+#define snd_i2c_slave_bus(n) list_entry(n, snd_i2c_bus_t, buses)
 
-int snd_i2c_bus_create(snd_card_t *card, const char *name, snd_i2c_bus_t **ri2c);
+int snd_i2c_bus_create(snd_card_t *card, const char *name, snd_i2c_bus_t *master, snd_i2c_bus_t **ri2c);
 int snd_i2c_device_create(snd_i2c_bus_t *bus, const char *name, unsigned char addr, snd_i2c_device_t **rdevice);
 int snd_i2c_device_free(snd_i2c_device_t *device);
 
@@ -70,8 +74,8 @@ void snd_i2c_one(snd_i2c_bus_t *bus);
 void snd_i2c_zero(snd_i2c_bus_t *bus);
 int snd_i2c_ack(snd_i2c_bus_t *bus);
 
-static inline void snd_i2c_lock_irq(snd_i2c_bus_t *bus) { spin_lock_irq(&bus->lock); }
-static inline void snd_i2c_unlock_irq(snd_i2c_bus_t *bus) { spin_unlock_irq(&bus->lock); }
+static inline void snd_i2c_lock_irq(snd_i2c_bus_t *bus) { spin_lock_irq(&(bus->master ? bus->master->lock : bus->lock)); }
+static inline void snd_i2c_unlock_irq(snd_i2c_bus_t *bus) { spin_unlock_irq(&(bus->master ? bus->master->lock : bus->lock)); }
 
 int snd_i2c_sendbyte(snd_i2c_bus_t *bus, unsigned char data, int wait_for_ack);
 unsigned char snd_i2c_readbyte(snd_i2c_bus_t *bus, int last);
