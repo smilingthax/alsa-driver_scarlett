@@ -1,6 +1,16 @@
 menu "ISA devices"
 	depends on SND!=n && ISA
 
+config SND_PC98_CS4232
+	tristate "NEC PC9800 CS4232 driver"
+	depends on SND && X86_PC9800
+	select SND_OPL3_LIB
+	select SND_MPU401_UART
+	select SND_PCM
+	help
+	  Say 'Y' or 'M' to include support for NEC PC-9801/PC-9821 on-board
+	  soundchip based on CS4232.
+
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
 	depends on SND && X86
