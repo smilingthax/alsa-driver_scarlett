@@ -1,4 +1,4 @@
-q/*
+/*
  *  linux/include/linux/l3/uda1341.h
  *
  * Philips UDA1341 mixer device driver for ALSA
@@ -15,7 +15,7 @@ q/*
  *                           features support
  */
 
-/* $Id: uda1341.h,v 1.1 2002/04/17 07:48:53 perex Exp $ */
+/* $Id: uda1341.h,v 1.2 2002/04/17 07:53:22 perex Exp $ */
 
 #define UDA1341_ALSA_NAME "snd-uda1341"
 
