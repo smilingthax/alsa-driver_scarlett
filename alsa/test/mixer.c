@@ -2,9 +2,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include "../include/sound.h"
+#include "../include/asound.h"
 
-#define DEVICE "/dev/sndmixer00"
+#define DEVICE "/dev/snd/mixer00"
 
 void main( void )
 {

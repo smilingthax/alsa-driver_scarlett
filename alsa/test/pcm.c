@@ -2,9 +2,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include "../include/sound.h"
+#include "../include/asound.h"
 
-#define DEVICE "/dev/sndpcm00"
+#define DEVICE "/dev/snd/pcm00"
 
 static void show_playback_status( int fd )
 {
