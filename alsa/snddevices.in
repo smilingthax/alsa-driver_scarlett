@@ -3,12 +3,25 @@
 MAJOR=@SNDCFG_MAJOR@
 MAX_CARDS=4
 PERM=666
-DSP_MINOR=3
 
 function create_device () {
   rm -f $1
   echo -n "Creating $1..."
   mknod -m $PERM $1 c $MAJOR $2
+  echo " done"
+}
+
+function create_odevices () {
+  tmp=0
+  tmp1=0
+  rm -f $1 $1?
+  echo -n "Creating $1?..."
+  while [ $tmp1 -lt $MAX_CARDS ]; do
+    minor=$[ $2 + $tmp ]
+    mknod -m $PERM $1$tmp1 c $MAJOR $minor
+    tmp=$[ $tmp + 16 ]
+    tmp1=$[ $tmp1 + 1 ]
+  done
   echo " done"
 }
 
@@ -61,22 +74,24 @@ fi
 # OSS (Lite) compatible devices...
 
 if test $MAJOR -eq 14; then
-  create_device /dev/mixer		0
+  create_odevices /dev/mixer		0
   create_device /dev/sequencer		1
-  create_device /dev/midi		2
-  create_device /dev/dsp		$DSP_MINOR
-  create_device /dev/audio		4
-  create_device /dev/dsp1		5
-  create_device /dev/dsp8		3
-  create_device /dev/dsp16		5
+  create_odevices /dev/midi		2
+  create_odevices /dev/dsp		3
+  create_odevices /dev/audio		4
   create_device /dev/sndstat		6
-  create_device /dev/sequencer2		8
   create_device /dev/music		8
-  create_device /dev/dmmidi0		9
-  create_device /dev/dmfm0		10
-  create_device /dev/adsp		12	# alternate dsp
-  create_device /dev/amidi		13	# alternate midi
-  create_device /dev/admmidi0		14	# alternate direct midi
+  create_odevices /dev/dmmidi		9
+  create_odevices /dev/dmfm		10
+  create_odevices /dev/adsp		12	# alternate dsp
+  create_odevices /dev/amidi		13	# alternate midi
+  create_odevices /dev/admmidi		14	# alternate direct midi
+  # create symlinks
+  ln -svf /dev/midi0 /dev/midi
+  ln -svf /dev/dsp0 /dev/dsp
+  ln -svf /dev/music /dev/sequencer2
+  ln -svf /dev/adsp0 /dev/adsp
+  ln -svf /dev/amidi0 /dev/amidi
 fi
 
 # New devices (obsolete now)...
@@ -84,13 +99,14 @@ fi
 mv -f /dev/sndstat /dev/1sndstat
 rm -f /dev/snd*
 mv -f /dev/1sndstat /dev/sndstat
-create_device1	/dev/sndseq		136
-create_devices  /dev/sndcontrol		144
-create_devices2 /dev/sndmixer		152	2
-create_devices2 /dev/sndpcm		168	4
-create_devices2 /dev/sndmidi		200	4
-create_devices	/dev/sndfm		248
+#create_device1	/dev/sndseq		136
+#create_devices  /dev/sndcontrol	144
+#create_devices2 /dev/sndmixer		152	2
+#create_devices2 /dev/sndpcm		168	4
+#create_devices2 /dev/sndmidi		200	4
+#create_devices	/dev/sndfm		248
 
 # New dynamic sound device filesystem
 
+echo "ALSA dynamic sound device filesystem"
 ln -sfv /proc/asound/dev /dev/snd
