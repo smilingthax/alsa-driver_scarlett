@@ -181,7 +181,7 @@ if [ \"$CONFIG_SND\" != \"n\" ]; then\n\
   bool 'Sequencer support' CONFIG_SND_SEQUENCER\n\
   bool 'OSS API emulation' CONFIG_SND_OSSEMUL\n\
   bool 'Debug' CONFIG_SND_DEBUG\n\
-  if [ \"$CONFIG_SND_DEBUG\" == \"y\" ]; then \n\
+  if [ \"$CONFIG_SND_DEBUG\" = \"y\" ]; then \n\
     bool 'Debug memory' CONFIG_SND_DEBUG_MEMORY\n\
     bool 'Debug full' CONFIG_SND_DEBUG_FULL\n\
     bool 'Debug detection' CONFIG_SND_DEBUG_DETECT\n\
@@ -301,7 +301,7 @@ if [ \"$%s\" != \"n\" ]; then\n\
 			if (strcmp(dep_config, "CONFIG_SND"))
 				printf("\
   if [ \"$XX_%s\" != \"n\" ]; then\n\
-    if [ \"$XX_%s\" == \"m\" -a \"$%s\" == \"y\" ]; then\n\
+    if [ \"$XX_%s\" = \"m\" -a \"$%s\" = \"y\" ]; then\n\
       XX_%s=\"y\"\n\
     fi\n\
   else\n\
