@@ -115,10 +115,12 @@ static void vxp_reset_dsp(vx_core_t *_chip)
 
 	/* set the reset dsp bit to 1 */
 	vx_outb(chip, CDSP, chip->regCDSP | VXP_CDSP_DSP_RESET_MASK);
+	vx_inb(chip, CDSP);
 	mdelay(XX_DSP_RESET_WAIT_TIME);
 	/* reset the bit */
 	chip->regCDSP &= ~VXP_CDSP_DSP_RESET_MASK;
 	vx_outb(chip, CDSP, chip->regCDSP);
+	vx_inb(chip, CDSP);
 	mdelay(XX_DSP_RESET_WAIT_TIME);
 }
 
@@ -131,10 +133,12 @@ static void vxp_reset_codec(vx_core_t *_chip)
 
 	/* Set the reset CODEC bit to 1. */
 	vx_outb(chip, CDSP, chip->regCDSP | VXP_CDSP_CODEC_RESET_MASK);
+	vx_inb(chip, CDSP);
 	snd_vx_delay(_chip, 10);
 	/* Set the reset CODEC bit to 0. */
 	chip->regCDSP &= ~VXP_CDSP_CODEC_RESET_MASK;
 	vx_outb(chip, CDSP, chip->regCDSP);
+	vx_inb(chip, CDSP);
 	snd_vx_delay(_chip, 1);
 }
 
@@ -215,9 +219,11 @@ static int vxp_load_xilinx_binary(vx_core_t *_chip, const snd_hwdep_dsp_image_t 
 	/* Reset the Xilinx's signal enabling IO access */
 	chip->regDIALOG |= VXP_DLG_XILINX_REPROG_MASK;
 	vx_outb(chip, DIALOG, chip->regDIALOG);
+	vx_inb(chip, DIALOG);
 	snd_vx_delay(_chip, 10);
 	chip->regDIALOG &= ~VXP_DLG_XILINX_REPROG_MASK;
 	vx_outb(chip, DIALOG, chip->regDIALOG);
+	vx_inb(chip, DIALOG);
 
 	/* Reset of the Codec */
 	vxp_reset_codec(_chip);
