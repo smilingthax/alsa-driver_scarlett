@@ -77,6 +77,9 @@
 #define AC97_SIGMATEL_CIC1	0x76
 #define AC97_SIGMATEL_CIC2	0x78
 
+/* ac97->flags */
+#define AC97_HAS_PC_BEEP	(1<<0)
+
 /*
 
  */
@@ -96,9 +99,9 @@ struct _snd_ac97 {
 	spinlock_t reg_lock;
 	unsigned int num;	/* number of codec: 0 = primary, 1 = secondary */
 	unsigned int id;	/* identification of codec */
-	unsigned int test;
 	unsigned short caps;	/* capabilities (register 0) */
 	unsigned short ext_id;	/* extended feature identification */
+	unsigned int flags;	/* specific code */
 	unsigned int clock;	/* AC'97 clock (usually 48000Hz) */
 	unsigned int rates_front_dac;
 	unsigned int rates_surr_dac;
