@@ -89,7 +89,6 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 };
 
 static const ac97_codec_id_t snd_ac97_codec_ids[] = {
-{ 0x014b0502, 0xffffffff, "NM256AV",		NULL,		NULL }, // FIXME: which real one?
 { 0x414b4d00, 0xffffffff, "AK4540",		NULL,		NULL },
 { 0x414b4d01, 0xffffffff, "AK4542",		NULL,		NULL },
 { 0x414b4d02, 0xffffffff, "AK4543",		NULL,		NULL },
