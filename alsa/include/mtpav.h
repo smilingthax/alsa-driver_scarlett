@@ -1,0 +1,101 @@
+///////////////////////////////////////////////////////////////////////////
+//	MOTU Midi Timepiece ALSA Header
+//	Copyright by Michael T. Mayers 1999
+//	Thanks to John Galbraith
+///////////////////////////////////////////////////////////////////////////
+//	This program is free software; you can redistribute it and/or modify
+//	it under the terms of the GNU General Public License as published by
+//	the Free Software Foundation; either version 2 of the License, or
+//	(at your option) any later version.
+//
+//	This program is distributed in the hope that it will be useful,
+//	but WITHOUT ANY WARRANTY; without even the implied warranty of
+//	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//	GNU General Public License for more details.
+//
+//	You should have received a copy of the GNU General Public License
+//	along with this program; if not, write to the Free Software
+//	Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+///////////////////////////////////////////////////////////////////////////
+
+#include "../include/driver.h"
+#include "../include/initval.h"
+#include "../include/rawmidi.h"
+#include "../include/seq_kernel.h"
+#include "../include/seq_midi_emul.h"
+
+///////////////////////////////////////////////////////////////////
+//	defines
+
+//#define USE_FAKE_MTP //	dont actually read/write to MTP device (for debugging without an actual unit) (does not work yet)
+
+// io resources (make these module options?)
+#define MTPAV_IOBASE 0x378
+#define MTPAV_IRQ    7
+
+// parallel port usage masks
+#define SIGS_BYTE 0x08
+#define SIGS_RFD 0x80
+#define SIGS_IRQ 0x40
+#define SIGS_IN0 0x10
+#define SIGS_IN1 0x20
+
+#define SIGC_WRITE 0x04
+#define SIGC_READ 0x08
+#define SIGC_INTEN 0x10
+
+#define DREG 0
+#define SREG 1
+#define CREG 2
+	
+//
+#define MTPAV_MODE_INPUT_OPENED  0x01
+#define MTPAV_MODE_OUTPUT_OPENED  0x02
+#define MTPAV_MODE_INPUT_TRIGGERED  0x04
+
+#if 0
+#define NUMPORTS 9	// TOALL and 1..8
+#else
+/* FIXME: we have currently only 8 minor numbers */
+#define NUMPORTS 8	// TOALL and 1..7
+#endif
+			// possible hardware ports (selected by 0xf5 port message)
+			//	0x01 .. 0x08	this MTP's ports 1..8
+			//	0x09 .. 0x10	networked MTP's ports (9..16)
+			//	0x11		networked MTP's computer port
+			//	0x63		to ADAT
+					
+///////////////////////////////////////////////////////////////////
+
+#define MTPSTAT_CMD		0x00000000
+#define MTPSTAT_DATA1OF1	0x00000001
+#define MTPSTAT_DATA1OF2	0x00000002
+#define MTPSTAT_DATA2OF2	0x00000003
+#define MTPSTAT_SYSEX		0x00000004
+
+///////////////////////////////////////////////////////////////////
+//	types
+
+typedef unsigned char U8;
+typedef unsigned short int U16;
+typedef unsigned long int U32;
+typedef signed char S8;
+typedef signed short int S16;
+typedef signed long int S32;
+typedef unsigned char UBOOL;
+
+///////////////////////////////////////////////////////////////////
+
+typedef struct Smtp
+{	snd_card_t *card;
+	snd_port_t *rioport;
+	snd_rawmidi_t *rmidi[NUMPORTS];
+	snd_irq_t *irq;
+	spinlock_t spinlock;
+	U8 mode[NUMPORTS];
+} TSmtp;
+
+/////////////////////////////////////////////////////////////////////
+//	protos
+
+extern TSmtp *mtp_card;

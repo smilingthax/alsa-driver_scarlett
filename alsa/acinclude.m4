@@ -89,6 +89,7 @@ AC_DEFUN(ALSA_CARDS_INIT, [
 	CONFIG_SND_CARD_WAVEFRONT="0"
 	CONFIG_SND_CARD_HAL2="0"
 	CONFIG_SND_CARD_CMI8330="0"
+	CONFIG_SND_CARD_MTPAV="0"
 ])
 
 AC_DEFUN(ALSA_CARDS_ALL, [
@@ -264,6 +265,8 @@ AC_DEFUN(ALSA_CARDS_ALL, [
 	AC_DEFINE(CONFIG_SND_CARD_HAL2)
 	CONFIG_SND_CARD_CMI8330="1"
 	AC_DEFINE(CONFIG_SND_CARD_CMI8330)
+	CONFIG_SND_CARD_MTPAV="1"
+	AC_DEFINE(CONFIG_SND_CARD_MTPAV)
 ])
 
 AC_DEFUN(ALSA_CARDS_SELECT, [
@@ -281,7 +284,7 @@ AC_ARG_WITH(cards,
   [                        azt2320, cs4231, cs4232, cs4236, cs461x, es968, ]
   [                        dt0197h, fm801, es1938, opti92x-ad1848, ]
   [                        opti92x-cs4231, opti93x, serial, trident, ]
-  [                        sgalaxy, wavefront, hal2, cmi8330 ],
+  [                        sgalaxy, wavefront, hal2, cmi8330, mtpav ],
   cards="$withval", cards="all")
 if test "$cards" = "all"; then
   ALSA_CARDS_ALL
@@ -1357,6 +1360,14 @@ else
 		CONFIG_SND_SB16_DSP="1"
 		AC_DEFINE(CONFIG_SND_SB16_DSP)
 		;;
+	mtpav)
+		CONFIG_SND_CARD_MTPAV="1"
+		AC_DEFINE(CONFIG_SND_CARD_MTPAV)
+		CONFIG_SND_RAWMIDI="1"
+		AC_DEFINE(CONFIG_SND_RAWMIDI)
+		CONFIG_SND="1"
+		AC_DEFINE(CONFIG_SND)
+		;;
 	*)
 		echo "Unknown soundcard $card, exiting!"
 		exit 1
@@ -1451,4 +1462,5 @@ AC_SUBST(CONFIG_SND_CARD_SGALAXY)
 AC_SUBST(CONFIG_SND_CARD_WAVEFRONT)
 AC_SUBST(CONFIG_SND_CARD_HAL2)
 AC_SUBST(CONFIG_SND_CARD_CMI8330)
+AC_SUBST(CONFIG_SND_CARD_MTPAV)
 ])

@@ -71,7 +71,10 @@
 #define SND_CARD_TYPE_SHARE		0x00000025	/* share soundcard */
 #define SND_CARD_TYPE_SI_7018		0x00000026	/* SiS 7018 */
 #define SND_CARD_TYPE_OPTI93X		0x00000027	/* OPTi 93x chipset */
+#define SND_CARD_TYPE_MTPAV		0x00000028	/* MOTU MidiTimePiece AV multiport MIDI */
+#define SND_CARD_TYPE_VIRMIDI		0x00000029	/* Virtual MIDI */
+#define SND_CARD_TYPE_EMU10K1		0x0000002a	/* EMU10K1 */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000027
+#define SND_CARD_TYPE_LAST		0x0000002a
 
 #endif				/* __ASOUNDID_H */
