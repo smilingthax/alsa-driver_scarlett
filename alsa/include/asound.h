@@ -157,10 +157,10 @@ enum sndrv_pcm_format {
 	SNDRV_PCM_FORMAT_S32_BE,
 	SNDRV_PCM_FORMAT_U32_LE,
 	SNDRV_PCM_FORMAT_U32_BE,
-	SNDRV_PCM_FORMAT_FLOAT_LE,	/* 4-byte float, IEEE-754 32-bit */
-	SNDRV_PCM_FORMAT_FLOAT_BE,	/* 4-byte float, IEEE-754 32-bit */
-	SNDRV_PCM_FORMAT_FLOAT64_LE,	/* 8-byte float, IEEE-754 64-bit */
-	SNDRV_PCM_FORMAT_FLOAT64_BE,	/* 8-byte float, IEEE-754 64-bit */
+	SNDRV_PCM_FORMAT_FLOAT_LE,	/* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
+	SNDRV_PCM_FORMAT_FLOAT_BE,	/* 4-byte float, IEEE-754 32-bit, range -1.0 to 1.0 */
+	SNDRV_PCM_FORMAT_FLOAT64_LE,	/* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
+	SNDRV_PCM_FORMAT_FLOAT64_BE,	/* 8-byte float, IEEE-754 64-bit, range -1.0 to 1.0 */
 	SNDRV_PCM_FORMAT_IEC958_SUBFRAME_LE,	/* IEC-958 subframe, Little Endian */
 	SNDRV_PCM_FORMAT_IEC958_SUBFRAME_BE,	/* IEC-958 subframe, Big Endian */
 	SNDRV_PCM_FORMAT_MU_LAW,
