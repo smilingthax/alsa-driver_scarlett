@@ -82,7 +82,6 @@ struct _snd_timer {
 	void (*private_free) (snd_timer_t *timer);
 	struct _snd_timer_hardware hw;
 	spinlock_t lock;
-	atomic_t in_use;		/* don't free */
 	struct list_head device_list;
 	struct list_head open_list_head;
 	struct list_head active_list_head;
@@ -106,6 +105,7 @@ struct _snd_timer_instance {
 	struct list_head slave_list_head;
 	struct list_head slave_active_head;
 	snd_timer_instance_t *master;
+	atomic_t in_use;		/* don't free */
 };
 
 /*
