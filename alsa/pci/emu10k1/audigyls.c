@@ -933,7 +933,7 @@ static void snd_audigyls_ac97_write(ac97_t *ac97,
 static int snd_audigyls_ac97(audigyls_t *chip)
 {
 	ac97_bus_t *pbus;
-	ac97_t ac97;
+	ac97_template_t ac97;
 	int err;
 	static ac97_bus_ops_t ops = {
 		.write = snd_audigyls_ac97_write,

@@ -697,7 +697,7 @@ static void snd_emu10k1x_ac97_write(ac97_t *ac97,
 static int snd_emu10k1x_ac97(emu10k1x_t *chip)
 {
 	ac97_bus_t *pbus;
-	ac97_t ac97;
+	ac97_template_t ac97;
 	int err;
 	static ac97_bus_ops_t ops = {
 		.write = snd_emu10k1x_ac97_write,
