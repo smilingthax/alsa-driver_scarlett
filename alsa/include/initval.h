@@ -150,4 +150,30 @@ static inline int snd_legacy_dma_size(int dma, unsigned long size_kB)
 	return snd_dma_size(size_kB, PAGE_SIZE / 1024, dma < 4 ? 64 : 128);
 }
 
+#if defined(SND_GET_ID) && !defined(MODULE)
+#include <linux/ctype.h>
+static int __init get_id(char **str, char **dst)
+{
+	char *s, *d;
+
+	if (!(*str) || !(**str))
+		return 0;
+	for (s = *str; isalpha(*s) || isdigit(*s) || *s == '_'; s++);
+	if (s == *str)
+		return 0;
+	*dst = (char *)kmalloc(s - *str, GFP_KERNEL);
+	if ((d = *dst) != NULL) {
+		s = *str;
+		while (isalpha(*s) || isdigit(*s) || *s == '_')
+			*d++ = *s++;
+	}
+	*str = s;
+	if (*s == ',') {
+		(*str)++;
+		return 2;
+	}
+	return 1;
+}
+#endif
+
 #endif				/* __INITVAL_H */
