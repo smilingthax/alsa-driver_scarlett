@@ -136,6 +136,7 @@ static int snd_legacy_find_free_dma(int *dma_table)
 #if defined(SNDRV_GET_ID) && !defined(MODULE)
 #include <linux/ctype.h>
 #include <linux/init.h>
+#include <linux/bootmem.h>
 static int __init get_id(char **str, char **dst)
 {
 	char *s;
