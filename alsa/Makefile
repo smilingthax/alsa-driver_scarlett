@@ -73,9 +73,9 @@ install: compile
 	  install -m 755 utils/alsasound /sbin/init.d/alsasound; \
 	elif [ -d /etc/rc.d/init.d ]; then \
 	  install -m 755 utils/alsasound /etc/rc.d/init.d/alsasound; \
-        elif [ -d /etc/init.d ]; then \
+	elif [ -d /etc/init.d ]; then \
 	  install -m 755 utils/alsasound /etc/init.d/alsasound; \
-        fi
+	fi
 	cat WARNING
 
 clean:
@@ -97,8 +97,7 @@ cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 include/config.h include/isapnp.h
 
 pack: mrproper
-	chown -R root.root ../alsa-driver
 	chmod 755 utils/alsasound
 	mv ../alsa-driver ../alsa-driver-$(CONFIG_SND_VERSION)
-	tar --exclude=CVS -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
+	tar --exclude=CVS --owner=root --group=root -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
 	mv ../alsa-driver-$(CONFIG_SND_VERSION) ../alsa-driver
