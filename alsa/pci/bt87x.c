@@ -250,7 +250,7 @@ static void snd_bt87x_free_risc(bt87x_t *chip)
 
 static irqreturn_t snd_bt87x_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	bt87x_t *chip = snd_magic_cast(bt87x_t, dev_id, return);
+	bt87x_t *chip = snd_magic_cast(bt87x_t, dev_id, return IRQ_NONE);
 	unsigned int status;
 
 	status = snd_bt87x_readl(chip, REG_INT_STAT);
