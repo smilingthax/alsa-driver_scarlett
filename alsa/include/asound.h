@@ -551,7 +551,7 @@ struct snd_pcm_format {
 struct snd_pcm_playback_params {
 	int fragment_size;		/* requested size of fragment in bytes */
 	int fragments_max;		/* maximum number of fragments in queue for wakeup */
-	int fragments_room;		/* minumum number of fragments writeable for wakeup */
+	int fragments_room;		/* minimum number of fragments writeable for wakeup */
 	unsigned char reserved[16];	/* must be filled with zero */
 };
 
