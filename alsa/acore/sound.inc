@@ -38,3 +38,6 @@ EXPORT_SYMBOL(snd_compat_kcalloc);
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 EXPORT_SYMBOL(snd_pci_dev_present);
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) || (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 29))
+EXPORT_SYMBOL(snd_compat_msleep);
+#endif

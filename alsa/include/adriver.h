@@ -528,12 +528,9 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #endif
 
 /* msleep */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
-#define msleep(msecs) \
-	do { \
-		set_current_state(TASK_UNINTERRUPTIBLE); \
-		schedule_timeout(((msecs) * HZ + 999) / 1000);	\
-	} while (0)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) || (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 29))
+void snd_compat_msleep(unsigned int msecs);
+#define msleep snd_compat_msleep
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
