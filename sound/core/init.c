@@ -26,7 +26,7 @@
 #include <linux/slab.h>
 #include <linux/time.h>
 #include <linux/ctype.h>
-#include <linux/smp_lock.h>
+#include <linux/workqueue.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/info.h>
@@ -285,21 +285,10 @@ int snd_card_free(snd_card_t * card)
 	return 0;
 }
 
-static int snd_card_free_thread(void * __card)
+static void snd_card_free_thread(void * __card)
 {
 	snd_card_t *card = __card;
 	struct module * module;
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-	lock_kernel();
-#endif
-
-	daemonize();
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
-	reparent_to_init();
-#endif
-
-	strcpy(current->comm, "snd-free");
 
 	if (!try_inc_mod_count(module = card->module)) {
 		snd_printk(KERN_ERR "unable to lock toplevel module for card %i in free thread\n", card->number);
@@ -312,12 +301,6 @@ static int snd_card_free_thread(void * __card)
 
 	if (module)
 		__MOD_DEC_USE_COUNT(module);
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-	unlock_kernel();
-#endif
-
-	return 0;
 }
 
 /**
@@ -328,15 +311,15 @@ static int snd_card_free_thread(void * __card)
  */
 int snd_card_free_in_thread(snd_card_t * card)
 {
-	int pid;
+	DECLARE_WORK(works, snd_card_free_thread, card);
 
 	if (card->files == NULL) {
 		snd_card_free(card);
 		return 0;
 	}
-	pid = kernel_thread(snd_card_free_thread, card, 0);
-	if (pid >= 0)
+	if (schedule_work(&works))
 		return 0;
+
 	snd_printk(KERN_ERR "kernel_thread failed in snd_card_free_in_thread for card %i\n", card->number);
 	/* try to free the structure immediately */
 	snd_card_free(card);
