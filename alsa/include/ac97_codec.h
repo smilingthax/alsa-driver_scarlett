@@ -97,7 +97,8 @@ struct _snd_ac97 {
 	/* --- */
 	snd_card_t *card;
 	spinlock_t reg_lock;
-	unsigned int num;	/* number of codec: 0 = primary, 1 = secondary */
+	unsigned short num;	/* number of codec: 0 = primary, 1 = secondary */
+	unsigned short addr;	/* physical address of codec [0-3] */
 	unsigned int id;	/* identification of codec */
 	unsigned short caps;	/* capabilities (register 0) */
 	unsigned short ext_id;	/* extended feature identification */
