@@ -120,26 +120,6 @@ CONFIG_SND_MVERSION=$mversion
 AC_SUBST(CONFIG_SND_MVERSION)
 GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
-dnl Check for ISA support...
-AC_MSG_CHECKING(for ISA support in kernel)
-pcisup="0"
-AC_TRY_RUN([
-#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
-int main( void ) {
-#ifndef CONFIG_ISA
-  exit(1);
-#else
-  exit(0);
-#endif
-}
-],
-  AC_MSG_RESULT("yes");isasup="1",
-  AC_MSG_RESULT("no");isasup="0",
-  AC_MSG_RESULT("unknown");isasup="0"
-)
-CONFIG_SND_ISA=$isasup
-AC_SUBST(CONFIG_SND_ISA)
-
 dnl Check for PCI support...
 AC_MSG_CHECKING(for PCI support in kernel)
 pcisup="0"
@@ -325,6 +305,29 @@ esac
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(CONFIG_SND_PPC)
+
+dnl Check for ISA support...
+if test $kpatchlevel -ge 4 ; then
+  dnl 2.4 kernel
+  AC_MSG_CHECKING(for ISA support in kernel)
+  isasup="0"
+  AC_TRY_RUN([
+  #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+  int main( void ) {
+  #ifndef CONFIG_ISA
+    exit(1);
+  #else
+    exit(0);
+  #endif
+  }
+  ],
+    AC_MSG_RESULT("yes");isasup="1",
+    AC_MSG_RESULT("no");isasup="0",
+    AC_MSG_RESULT("unknown");isasup="0"
+  )
+  CONFIG_SND_ISA=$isasup
+fi
+AC_SUBST(CONFIG_SND_ISA)
 
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)
