@@ -35,6 +35,7 @@ typedef struct snd_stru_kcontrol_new {
 	unsigned int subdevice;		/* subdevice (substream) number */
 	unsigned char *name;		/* ASCII name of item */
 	unsigned int index;		/* index of item */
+	unsigned int access;		/* access rights */
 	snd_kcontrol_info_t *info;
 	snd_kcontrol_get_t *get;
 	snd_kcontrol_put_t *put;
@@ -42,10 +43,10 @@ typedef struct snd_stru_kcontrol_new {
 } snd_kcontrol_new_t;
 
 struct snd_stru_kcontrol {
-	struct list_head list;	/* list of controls */
+	struct list_head list;		/* list of controls */
 	snd_control_id_t id;
-	pid_t owner;		/* locked */
-	unsigned int indirect: 1;
+	pid_t owner;			/* locked */
+	unsigned int access;		/* access rights */
 	snd_kcontrol_info_t *info;
 	snd_kcontrol_get_t *get;
 	snd_kcontrol_put_t *put;

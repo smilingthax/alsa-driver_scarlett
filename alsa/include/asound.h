@@ -173,8 +173,9 @@ typedef enum {
 #define SND_CONTROL_ACCESS_READ		(1<<0)
 #define SND_CONTROL_ACCESS_WRITE	(1<<1)
 #define SND_CONTROL_ACCESS_READWRITE	(SND_CONTROL_ACCESS_READ|SND_CONTROL_ACCESS_WRITE)
-#define SND_CONTROL_ACCESS_INACTIVE	(1<<8)
+#define SND_CONTROL_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
 #define SND_CONTROL_ACCESS_LOCK		(1<<9)	/* write lock */
+#define SND_CONTROL_ACCESS_INDIRECT	(1<<31)	/* indirect access */
 
 typedef struct snd_control_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */

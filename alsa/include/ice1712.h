@@ -34,7 +34,7 @@
 #define PCI_DEVICE_ID_ICE_1712		0x1712
 #endif
 
-#define ICE1712_SUBDEVICE_SOUNDTRACK_DSP24 0x12141217
+#define ICE1712_SUBDEVICE_STDSP24	0x12141217	/* Hoontech SoundTrack Audio DSP 24 */
 #define ICE1712_SUBDEVICE_DELTA1010	0x121430d6
 #define ICE1712_SUBDEVICE_DELTADIO2496	0x121431d6
 #define ICE1712_SUBDEVICE_DELTA66	0x121432d6
@@ -212,6 +212,77 @@
 #define ICE1712_CFG_SPDIF_IN	0x02	/* S/PDIF input is present */
 #define ICE1712_CFG_SPDIF_OUT	0x01	/* S/PDIF output is present */
 
+/* MidiMan Delta GPIO definitions */
+
+#define ICE1712_DELTA_DFS	0x01	/* fast/slow sample rate mode */
+					/* (>48kHz must be 1) */
+					/* all cards */
+#define ICE1712_DELTA_SPDIF_IN_STAT 0x02
+					/* S/PDIF input status */
+					/* 0 = valid signal is present */
+					/* all except Delta44 */
+					/* look to CS8414 datasheet */
+#define ICE1712_DELTA_SPDIF_OUT_STAT_CLOCK 0x04
+					/* S/PDIF output status clock */
+					/* (writting on rising edge - 0->1) */
+					/* all except Delta44 */
+					/* look to CS8404A datasheet */
+#define ICE1712_DELTA_SPDIF_OUT_STAT_DATA 0x08
+					/* S/PDIF output status data */
+					/* all except Delta44 */
+					/* look to CS8404A datasheet */
+#define ICE1712_DELTA_SPDIF_INPUT_SELECT 0x10
+					/* coaxial (0), optical (1) */
+					/* S/PDIF input select*/
+					/* DeltaDiO only */
+#define ICE1712_DELTA_WORD_CLOCK_SELECT 0x10
+					/* 1 - clock are taken from S/PDIF input */
+					/* 0 - clock are taken from Word Clock input */
+					/* Delta1010 only (affected SPMCLKIN pin of Envy24) */
+#define ICE1712_DELTA_CODEC_SERIAL_DATA 0x10
+					/* AKM4524 serial data */
+					/* Delta66 and Delta44 */
+#define ICE1712_DELTA_WORD_CLOCK_STATUS	0x20
+					/* 0 = valid word clock signal is present */
+					/* Delta1010 only */
+#define ICE1712_DELTA_CODEC_SERIAL_CLOCK 0x20
+					/* AKM4524 serial clock */
+					/* (writting on rising edge - 0->1 */
+					/* Delta66 and Delta44 */
+#define ICE1712_DELTA_CODEC_CHIP_A	0x40
+#define ICE1712_DELTA_CODEC_CHIP_B	0x80
+					/* 1 - select chip A or B */
+					/* Delta66 and Delta44 */
+
+/* Hoontech SoundTrack Audio DSP 24 GPIO definitions */
+
+#define ICE1712_STDSP24_0_BOX(r, x)	r[0] = ((r[0] & ~3) | ((x)&3))
+#define ICE1712_STDSP24_0_DAREAR(r, x)	r[0] = ((r[0] & ~4) | (((x)&1)<<2))
+#define ICE1712_STDSP24_1_CHN1(r, x)	r[1] = ((r[1] & ~1) | ((x)&1))
+#define ICE1712_STDSP24_1_CHN2(r, x)	r[1] = ((r[1] & ~2) | (((x)&1)<<1))
+#define ICE1712_STDSP24_1_CHN3(r, x)	r[1] = ((r[1] & ~4) | (((x)&1)<<2))
+#define ICE1712_STDSP24_2_CHN4(r, x)	r[2] = ((r[2] & ~1) | ((x)&1))
+#define ICE1712_STDSP24_2_MIDIIN(r, x)	r[2] = ((r[2] & ~2) | (((x)&1)<<1))
+#define ICE1712_STDSP24_2_MIDI1(r, x)	r[2] = ((r[2] & ~4) | (((x)&2)<<2))
+#define ICE1712_STDSP24_3_MIDI2(r, x)	r[3] = ((r[3] & ~1) | ((x)&2))
+#define ICE1712_STDSP24_3_MUTE(r, x)	r[3] = ((r[3] & ~2) | (((x)&2)<<1))
+#define ICE1712_STDSP24_3_INSEL(r, x)	r[3] = ((r[3] & ~4) | (((x)&2)<<2))
+#define ICE1712_STDSP24_SET_ADDR(r, a)	r[a&3] = ((r[a&3] & ~0x18) | (((a)&3)<<3))
+#define ICE1712_STDSP24_CLOCK(r, a, c)	r[a&3] = ((r[a&3] & ~0x20) | (((c)&1)<<5))
+
+/* Hoontech SoundTrack Audio DSP 24 box configuration definitions */
+
+#define ICE1712_STDSP24_DAREAR		(1<<0)
+#define ICE1712_STDSP24_MUTE		(1<<1)
+#define ICE1712_STDSP24_INSEL		(1<<2)
+
+#define ICE1712_STDSP24_BOX_CHN1	(1<<0)	/* input channel 1 */
+#define ICE1712_STDSP24_BOX_CHN2	(1<<1)	/* input channel 2 */
+#define ICE1712_STDSP24_BOX_CHN3	(1<<2)	/* input channel 3 */
+#define ICE1712_STDSP24_BOX_CHN4	(1<<3)	/* input channel 4 */
+#define ICE1712_STDSP24_BOX_MIDI1	(1<<8)
+#define ICE1712_STDSP24_BOX_MIDI2	(1<<9)
+
 /*
  *  
  */
@@ -278,6 +349,9 @@ struct snd_stru_ice1712 {
 	unsigned int pro_volumes[20];
 	unsigned char ak4524_adc_volume[4];
 	unsigned char ak4524_dac_volume[4];
+	unsigned char hoontech_boxbits[4];
+	unsigned int hoontech_config;
+	unsigned short hoontech_boxconfig[4];
 
 	unsigned int spdif_defaults;
 };
