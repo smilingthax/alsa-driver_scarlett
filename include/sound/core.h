@@ -297,14 +297,20 @@ unsigned int snd_dma_residue(unsigned long dma);
 
 int snd_task_name(struct task_struct *task, char *name, size_t size);
 #ifdef CONFIG_SND_VERBOSE_PRINTK
-const char *snd_verbose_printk(const char *file, int line, const char *format);
+void snd_verbose_printk(const char *file, int line, const char *format, ...);
+#endif
+#if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
+void snd_verbose_printd(const char *file, int line, const char *format, ...);
+#endif
+#if defined(CONFIG_SND_DEBUG) && !defined(CONFIG_SND_VERBOSE_PRINTK)
+void snd_printd(const char *format, ...);
 #endif
 
 /* --- */
 
 #ifdef CONFIG_SND_VERBOSE_PRINTK
 #define snd_printk(format, args...) \
-	printk(snd_verbose_printk(__FILE__, __LINE__, format), ##args)
+	snd_verbose_printk(__FILE__, __LINE__, format, ##args)
 #else
 #define snd_printk(format, args...) \
 	printk(format, ##args)
@@ -314,7 +320,10 @@ const char *snd_verbose_printk(const char *file, int line, const char *format);
 
 #define __ASTRING__(x) #x
 
-#define snd_printd(format, args...) snd_printk(KERN_DEBUG format, ##args)
+#ifdef CONFIG_SND_VERBOSE_PRINTK
+#define snd_printd(format, args...) \
+	snd_verbose_printd(__FILE__, __LINE__, format, ##args)
+#endif
 #define snd_assert(expr, args...) do {\
 	if (!(expr)) {\
 		snd_printk("BUG? (%s) (called from %p)\n", __ASTRING__(expr), __builtin_return_address(0));\
