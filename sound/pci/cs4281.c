@@ -1453,7 +1453,7 @@ static int __devinit snd_cs4281_create(snd_card_t * card,
 	 *  Set the serial port timing configuration.
 	 */
 	snd_cs4281_pokeBA0(chip, BA0_SERMC,
-			   (chip->dual_codec ? BA0_SEMC_TCID(chip->dual_codec) : BA0_SERMC_TCID(1)) |
+			   (chip->dual_codec ? BA0_SERMC_TCID(chip->dual_codec) : BA0_SERMC_TCID(1)) |
 			   BA0_SERMC_PTC_AC97 | BA0_SERMC_MSPE);
 
 	/*
