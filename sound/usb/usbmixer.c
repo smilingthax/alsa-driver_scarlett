@@ -599,6 +599,8 @@ static int get_min_max(usb_mixer_elem_info_t *cval)
 			if (get_ctl_value(cval, GET_RES, (cval->control << 8) | minchn, &cval->res) < 0)
 				cval->res = last_valid_res;
 		}
+		if (cval->res == 0)
+			cval->res = 1;
 		cval->initialized = 1;
 	}
 	return 0;
