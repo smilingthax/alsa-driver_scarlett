@@ -652,7 +652,7 @@ struct snd_stru_emu10k1 {
 
 	snd_kmixer_element_t *me_vol_rear, *me_sw_rear;
 	int vol_rear[2];
-	unsigned int rear_active : 1;
+	unsigned int rear_active;
 
 	spinlock_t synth_lock;
 	void *synth;
