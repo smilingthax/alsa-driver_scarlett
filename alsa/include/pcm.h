@@ -485,6 +485,9 @@ extern int interval_rational(interval_t *i,
 			     unsigned int rats_count, rational_t *rats,
 			     unsigned long *nump, unsigned long *denp);
 
+extern int snd_pcm_hw_infoc_init(snd_pcm_substream_t *substream);
+extern int snd_pcm_hw_infoc_complete(snd_pcm_substream_t *substream);
+
 extern int snd_pcm_hw_infoc_list(snd_pcm_runtime_t *runtime, unsigned int var,
 				 snd_pcm_hw_infoc_list_t *l);
 extern int snd_pcm_hw_infoc_clocks(snd_pcm_runtime_t *runtime, 

@@ -730,8 +730,8 @@ typedef struct _snd_pcm_hw_params {
 	unsigned int access;		/* W: access mode */
 	unsigned int format;		/* W: SND_PCM_FORMAT_* */
 	unsigned int subformat;		/* W: subformat */
-	unsigned int rate;		/* W: rate in Hz */
 	unsigned int channels;		/* W: channels */
+	unsigned int rate;		/* W: rate in Hz */
 	size_t fragment_size;		/* W: fragment size */
 	unsigned int fragments;		/* W: fragments */
 	unsigned int fail_mask;		/* R: failure locations */
