@@ -93,6 +93,7 @@ typedef struct snd_stru_mixer_read {
 } snd_kmixer_read_t;
 
 struct snd_stru_mixer_file {
+	int use;
 	snd_kmixer_t *mixer;
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
@@ -101,6 +102,7 @@ struct snd_stru_mixer_file {
 	snd_kmixer_read_t *first_item;
 	snd_kmixer_read_t *last_item;
 	snd_kmixer_group_t *ignore_group;
+	unsigned int read_filter[8];
 	struct snd_stru_mixer_file *next;
 };
 
@@ -119,6 +121,7 @@ struct snd_stru_mixer {
 	snd_kmixer_group_t *groups;	/* first group */
 	snd_kswitch_list_t switches;
 	snd_kmixer_file_t *ffile;	/* first file */
+	spinlock_t ffile_lock;
 #ifdef CONFIG_SND_OSSEMUL
 	int oss_change_count;
 	int ossreg;

@@ -229,7 +229,7 @@ typedef struct snd_hwdep_info {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 1, 0)
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(2, 1, 1)
 
 /* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
@@ -834,6 +834,10 @@ typedef struct snd_mixer_element {
 	} data;
 } snd_mixer_element_t;
 
+typedef struct snd_mixer_filter {
+	unsigned int read_cmds[8];
+} snd_mixer_filter_t;
+
 /* ioctl commands */
 #define SND_MIXER_IOCTL_PVERSION	_IOR ('R', 0x00, int)
 #define SND_MIXER_IOCTL_INFO		_IOWR('R', 0x01, snd_mixer_info_t)
@@ -845,6 +849,7 @@ typedef struct snd_mixer_element {
 #define SND_MIXER_IOCTL_ELEMENT_INFO	_IOWR('R', 0x20, snd_mixer_element_info_t)
 #define SND_MIXER_IOCTL_ELEMENT_READ	_IOWR('R', 0x21, snd_mixer_element_t)
 #define SND_MIXER_IOCTL_ELEMENT_WRITE	_IOWR('R', 0x22, snd_mixer_element_t)
+#define SND_MIXER_IOCTL_READ_FILTER	_IOW ('R', 0x30, snd_mixer_filter_t)
 
 /*
  *  Read interface.
@@ -866,7 +871,6 @@ typedef struct snd_mixer_read {
 	union {
 		snd_mixer_eid_t eid;	/* element identification */
 		snd_mixer_gid_t gid;	/* group identification */
-		char channel_name[32];	/* channel name */
 		unsigned char data8[60];
 	} data;
 } snd_mixer_read_t;
