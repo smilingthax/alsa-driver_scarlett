@@ -4,7 +4,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
 AC_INIT(acore/sound.c)
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0rc8c"
+CONFIG_SND_VERSION="0.9.0rc8d"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -417,8 +417,7 @@ case "$processor" in
   i486*)
     c_opts="-march=i486"
     ;;
-  i586*)
-  mwinchip)
+  i586* | mwinchip)
     c_opts="-march=i586"
     ;;
   i686*)
