@@ -265,6 +265,11 @@ typedef struct snd_stru_sbdsp sbdsp_t;
 #define SB_IRQSETUP_IRQ7	0x04
 #define SB_IRQSETUP_IRQ10	0x08
 
+/* IRQ types */
+#define SB_IRQTYPE_8BIT		0x01
+#define SB_IRQTYPE_16BIT	0x02
+#define SB_IRQTYPE_MPUIN	0x04
+
 /* DMA setting bitmap */
 #define SB_DMASETUP_DMA0	0x01
 #define SB_DMASETUP_DMA1	0x02
