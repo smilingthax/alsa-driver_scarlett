@@ -110,8 +110,8 @@ if [ -d /dev/snd ]; then
 fi
 if [ $STATIC -gt 0 ]; then
   mkdir -p /dev/snd
-  create_device1  /dev/snd/seq		255
   create_devices  /dev/snd/control	0
+  create_device1  /dev/snd/seq		1
   create_devices2 /dev/snd/mixer	4	4
   create_devices2 /dev/snd/pcm		16	16
   create_devices2 /dev/snd/midi		8	4
