@@ -9,7 +9,7 @@ include $(TOPDIR)/Makefile.conf
 
 EXTRA_CLEAN = cs4281.c es1968.c intel8x0.c maestro3.c
 
-extra-subdir-y	:= pdplus
+extra-subdir-y	:= pdplus mixart
 extra-subdir-m	:= $(extra-subdir-y)
 
 #

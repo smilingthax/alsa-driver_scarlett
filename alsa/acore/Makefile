@@ -5,6 +5,8 @@ include $(TOPDIR)/Makefile.conf
 
 EXTRA_CLEAN = info.c pcm_native.c control.c hwdep.c init.c rawmidi.c sound.c timer.c memalloc.c
 
+obj-$(CONFIG_SND_PDPLUS) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o
+obj-$(CONFIG_SND_MIXART) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o
 obj-$(CONFIG_SND_SERIALMIDI) += snd-rawmidi.o snd.o
 obj-$(CONFIG_SND_MSND_PINNACLE) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-rawmidi.o
 
