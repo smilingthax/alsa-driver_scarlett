@@ -2928,19 +2928,10 @@ static int __devinit snd_cmipci_create(snd_card_t *card,
 
 	/* Assume TX and compatible chip set (Autodetection required for VX chip sets) */
 	switch (pci->device) {
-		struct pci_dev *cur;
-		int txvx;
 	case PCI_DEVICE_ID_CMEDIA_CM8738:
 	case PCI_DEVICE_ID_CMEDIA_CM8738B:
-		txvx = 1;
-		pci_for_each_dev(cur) {
-			if (cur->vendor != 0x8086) /* PCI_VENDOR_ID_INTEL */
-				continue;
-			if (cur->device != 0x7030) /* PCI_DEVICE_ID_INTEL_82437VX */
-				continue;
-			txvx = 0;
-		}
-		if (txvx)
+		/* PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82437VX */
+		if (! pci_find_device(0x8086, 0x7030, NULL))
 			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_TXVX);
 		break;
 	default:
