@@ -47,6 +47,7 @@ PROGRAM = sys.argv[0]
 # define working directories
 CVSROOT = '~/alsa'
 BKROOT = '~/linux/official'
+BKROOT1 = ''
 PATCH_UPDATE = '~/alsa/alsa-kernel/scripts/kchanges/update'
 
 # exclude some files or directories
@@ -94,8 +95,10 @@ def usage(code, msg=''):
 def get_cvs_root():
 	return os.path.expanduser(CVSROOT + '/alsa-kernel')
 
-def get_bk_root():
-	return os.path.expanduser(BKROOT)
+def get_bk_root(root=''):
+	if root == '':
+		root = BKROOT
+	return os.path.expanduser(root)
 
 def print_file(fp, lines):
 	for line in lines:
@@ -145,7 +148,7 @@ def update_cvs_file(file, destfile = '', params = ''):
 		print_file(fp, lines)
 		fp.close()
 
-def update_bk_file(file):
+def update_bk_file(file, root=''):
 	path, file = os.path.split(file)
 	if os.path.isdir(path):
 		os.chdir(path)
@@ -564,6 +567,98 @@ def diffall(reverse, from_cvs_time = 0, to_cvs_time = 0):
 	os.remove(get_cvs_root() + '/include/version.h')
 	update_cvs_file('include/version.h')
 
+def do_bktree_diff(oldroot, newroot, file):
+	ofile = get_bk_root(oldroot) + file;
+	nfile = get_bk_root(newroot) + file;
+	if not os.path.exists(ofile):
+		update_bk_file(ofile, root=oldroot)
+	if not os.path.exists(nfile):
+		update_bk_file(nfile, root=newroot)
+	cmd = 'diff -uN %s %s' % (ofile, nfile)
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	lines = change_diff_lines(lines, file)
+	print_file(sys.stdout, lines)
+
+def bkdiffall(reverse):
+	lsyncflag = 0
+	bdirs, bfiles = get_bk_files(get_bk_root(BKROOT), '/')
+	cdirs, cfiles = get_bk_files(get_bk_root(BKROOT1), '/')
+	print 'BKROOT = %s' % BKROOT
+	print 'BKROOT1 = %s' % BKROOT1
+	for d in KERNEL_FORCE_DIR:
+		if len(d) == 0:
+			continue
+		if bdirs.count(d) == 0:
+			bdirs.append(d)
+			if d[-1] != '/':
+				d = d + '/'
+			if d != '/':
+				bdirs1, bfiles1 = get_bk_files(get_bk_root(BKROOT), d)
+				bdirs = bdirs + bdirs1
+				bfiles = bfiles + bfiles1
+	for d in KERNEL_FORCE_DIR:
+		if len(d) == 0:
+			continue
+		if cdirs.count(d) == 0:
+			cdirs.append(d)
+			if d[-1] != '/':
+				d = d + '/'
+			if d != '/':
+				bdirs1, bfiles1 = get_bk_files(get_bk_root(BKROOT1), d)
+				cdirs = cdirs + bdirs1
+				cfiles = cfiles + bfiles1
+	bfiles = bfiles + KERNEL_FORCE
+	cfiles = cfiles + KERNEL_FORCE
+	for f in KERNEL_EXCLUDE:
+		bfiles.remove(f)
+	for f in KERNEL_EXCLUDE:
+		cfiles.remove(f)
+	first = 1
+	for d in cdirs:
+		if not bdirs.count(d):
+			if first:
+				print '# Removed directories to Kernel Tree:'
+				first = 0
+			print '#   %s' % d
+	first = 1
+	for d in bdirs:
+		if not cdirs.count(d):
+			if first:
+				print '# Added directories from Kernel Tree:'
+				first = 0
+			print '#   %s' % d
+	first = 1
+	for f in cfiles:
+		if not bfiles.count(f):
+			if first:
+				print '# Removed files to Kernel Tree:'
+				first = 0
+			print '#   %s' % f
+	first = 1
+	for f in bfiles:
+		if not cfiles.count(f):
+			if first:
+				print '# Added files from Kernel Tree:'
+				first = 0
+			print '#   %s' % f
+	print '\n'
+	for f in cfiles:
+		if not reverse:
+			do_bktree_diff(BKROOT1, BKROOT, f)
+		else:
+			do_bktree_diff(BKROOT, BKROOT1, f)
+		if bfiles.count(f):
+			bfiles.remove(f)
+	for f in bfiles:
+		if not reverse:
+			do_bktree_diff(BKROOT1, BKROOT, f)
+		else:
+			do_bktree_diff(BKROOT, BKROOT1, f)
+		if cfiles.count(f):
+			cfiles.remove(f)
+
 def get_last_lsync_time():
 	os.chdir(get_bk_root())
 	os.system('bk get -q include/sound/version.h')
@@ -636,7 +731,7 @@ def parse_time(str):
 	return t - time.timezone
 
 def main():
-	global CVSROOT, BKROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
+	global CVSROOT, BKROOT, BKROOT1, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
 	try:
 		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:',
 					   ['cvsroot=', 'bkroot=', 'help']);
@@ -672,6 +767,16 @@ def main():
 			else:
 				print 'Ignoring extra arguments %s' % args[1:]
 		diffall(reverse)
+	elif args[0] == 'bkdiff':
+		reverse=0
+		BKROOT = '~/bk/linux-sound/linux-sound'
+		BKROOT1 = '~/bk/linux-sound/work'
+		if len(args) > 1:
+			if args[1] == '-r':
+				reverse=1
+			else:
+				print 'Ignoring extra arguments %s' % args[1:]
+		bkdiffall(reverse)
 	elif args[0] == 'lsync':
 		to_cvs_time = 0
 		patch = ''
