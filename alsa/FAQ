@@ -1,4 +1,3 @@
-
 		Advanced Linux Sound Architecture - Driver
 		==========================================
 	             FAQ - Frequently Asked Questions
@@ -13,9 +12,8 @@ A: Yes. You can do 'cat /proc/asound/0/mixer0'. If this command shows words
    like 'lmute' and 'rmute' by selected channels - mute is on.
 
 Q: How can I store and restore mixer settings?
-A: Use some native mixer program (for example amixer) or you can do simply
-   'cat /proc/asound/#/mixer0 > file' where # is soundcard number. To restore
-   use opposite way 'cat file > /proc/asound/#/mixer0'.
+A: Use native alsactl program (strongly preffered) or another ALSA mixer
+   program (for example amixer).
 
 Q: Driver is working (mixer at least), but OSS programs says: Can't open
    /dev/dsp. What's wrong?
@@ -38,3 +36,7 @@ Q: I have Plug and Play soundcard, but ALSA driver doesn't detect it.
    What's wrong?
 A: Plug and Play soundcards should be initialized with isapnp utility
    at first (can be found in isapnptools package).
+
+Q: Noises in X-win?
+A: Try comment out line:
+   #Option "pci_retry"    # faster, but problematic for ISA DMA
