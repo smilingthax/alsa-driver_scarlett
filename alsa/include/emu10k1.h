@@ -288,6 +288,7 @@ struct snd_stru_emu10k1_pcm {
 	emu10k1_t *emu;
 	snd_pcm_subchn_t *subchn;
 	emu10k1_voice_t *voices[2];
+	unsigned int start_addr;
 };
 
 struct snd_stru_emu10k1 {
@@ -316,6 +317,7 @@ struct snd_stru_emu10k1 {
 
 	spinlock_t reg_lock;
 	spinlock_t emu_lock;
+	spinlock_t voice_lock;
 	struct semaphore ptb_lock;
 
 	emu10k1_voice_t voices[64];
@@ -364,6 +366,8 @@ void snd_emu10k1_voice_clear_loop_stop(emu10k1_t *emu, unsigned int voicenum);
 void snd_emu10k1_wait(emu10k1_t *emu, unsigned int wait);
 unsigned short snd_emu10k1_ac97_read(void *private_data, unsigned short reg);
 void snd_emu10k1_ac97_write(void *private_data, unsigned short reg, unsigned short data);
+unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
+unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
 int snd_emu10k1_ptb_alloc(emu10k1_t *emu, void *pages, unsigned long size);
