@@ -489,6 +489,7 @@ void snd_trident_write_voice_regs(trident_t * trident,
 #endif
 }
 
+#if 0
 /*---------------------------------------------------------------------------
    snd_trident_write_cso_reg
   
@@ -509,6 +510,30 @@ static void snd_trident_write_cso_reg(trident_t * trident, snd_trident_voice_t *
 		outw(voice->CSO, TRID_REG(trident, CH_DX_CSO_ALPHA_FMS) + 2);
 	} else {
 		outl((voice->Delta << 24) | (voice->CSO & 0x00ffffff), TRID_REG(trident, CH_NX_DELTA_CSO));
+	}
+}
+#endif
+
+/*---------------------------------------------------------------------------
+   snd_trident_write_eso_reg
+  
+   Description: This routine will write the new ESO offset
+                register to hardware.
+  
+   Paramters:   trident - pointer to target device class for 4DWave.
+                voice - synthesizer voice structure
+                ESO - new ESO value
+  
+  ---------------------------------------------------------------------------*/
+
+static void snd_trident_write_eso_reg(trident_t * trident, snd_trident_voice_t * voice, unsigned int ESO)
+{
+	voice->ESO = ESO;
+	outb(voice->number, TRID_REG(trident, T4D_LFO_GC_CIR));
+	if (trident->device != TRIDENT_DEVICE_ID_NX) {
+		outw(voice->ESO, TRID_REG(trident, CH_DX_ESO_DELTA) + 2);
+	} else {
+		outl(((voice->Delta << 16) & 0xff000000) | (voice->ESO & 0x00ffffff), TRID_REG(trident, CH_NX_DELTA_ESO));
 	}
 }
 
@@ -983,6 +1008,8 @@ static int snd_trident_capture_prepare(snd_pcm_substream_t * substream)
 	snd_trident_voice_t *voice = (snd_trident_voice_t *) runtime->private_data;
 	unsigned int val, ESO_bytes;
 
+	snd_assert(substream->dma_device.type == SNDRV_DMA_TYPE_PCI, return -EIO);
+
 	spin_lock(&trident->reg_lock);
 
 	// Initilize the channel and set channel Mode
@@ -991,13 +1018,11 @@ static int snd_trident_capture_prepare(snd_pcm_substream_t * substream)
 	// Set DMA channel operation mode register
 	outb(0x54, TRID_REG(trident, LEGACY_DMAR11));
 
-	// Set channel buffer Address
-	/* FIXME: LEGACY_DMAR0 correctly set? */
+	// Set channel buffer Address, DMAR0 expects contiguous PCI memory area	
+	voice->LBA = runtime->dma_addr;
+	outl(voice->LBA, TRID_REG(trident, LEGACY_DMAR0));
 	if (voice->memblk)
 		voice->LBA = voice->memblk->offset;
-	else
-		voice->LBA = runtime->dma_addr;
-	outl(voice->LBA, TRID_REG(trident, LEGACY_DMAR0));
 
 	// set ESO
 	ESO_bytes = snd_pcm_lib_buffer_bytes(substream) - 1;
@@ -1006,7 +1031,7 @@ static int snd_trident_capture_prepare(snd_pcm_substream_t * substream)
 	ESO_bytes++;
 
 	// Set channel sample rate, 4.12 format
-	val = ((unsigned int) 48000L << 12) / runtime->rate;
+	val = (((unsigned int) 48000L << 12) + (runtime->rate/2)) / runtime->rate;
 	outw(val, TRID_REG(trident, T4D_SBDELTA_DELTA_R));
 
 	// Set channel interrupt blk length
@@ -1033,15 +1058,13 @@ static int snd_trident_capture_prepare(snd_pcm_substream_t * substream)
 
 	voice->Delta = snd_trident_convert_rate(runtime->rate);
 	voice->spurious_threshold = snd_trident_spurious_threshold(runtime->rate, runtime->period_size);
+	voice->isync = 1;
+	voice->isync_mark = runtime->period_size;
+	voice->isync_max = runtime->buffer_size;
 
 	// Set voice parameters
 	voice->CSO = 0;
-	/* the +2 is a correction for a h/w problem. if not
-	   used, the ESO interrupt is received before the capture pointer
-	   has actually reached the ESO point. this causes errors in
-	   the mid-level code.
-	*/
-	voice->ESO = (runtime->period_size * 2) + 2 - 1;
+	voice->ESO = voice->isync_ESO = (runtime->period_size * 2) + 8 - 1;
 	voice->CTRL = snd_trident_control_mode(substream);
 	voice->FMC = 3;
 	voice->RVol = 0x7f;
@@ -1498,6 +1521,8 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 			} else {
 				what |= 1 << (evoice->number & 0x1f);
 				whati |= 1 << (evoice->number & 0x1f);
+				if (go)
+					evoice->stimer = val;
 			}
 			if (go) {
 				voice->running = 1;
@@ -1610,8 +1635,6 @@ static snd_pcm_uframes_t snd_trident_capture_pointer(snd_pcm_substream_t * subst
 		result >>= 1;
 	if (result > 0)
 		result = runtime->buffer_size - result;
-
-	// printk("capture result = 0x%x, cso = 0x%x\n", result, cso);
 
 	return result;
 }
@@ -2173,10 +2196,14 @@ int __devinit snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm
 	strcpy(pcm->name, "Trident 4DWave");
 	trident->pcm = pcm;
 
-	if (trident->tlb.entries)
-		snd_pcm_lib_preallocate_sg_pages_for_all(trident->pci, pcm, 64*1024, 128*1024);
-	else
+	if (trident->tlb.entries) {
+		snd_pcm_substream_t *substream;
+		for (substream = pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream; substream; substream = substream->next)
+			snd_pcm_lib_preallocate_sg_pages(trident->pci, substream, 64*1024, 128*1024);
+		snd_pcm_lib_preallocate_pci_pages(trident->pci, pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream, 64*1024, 128*1024);
+	} else {
 		snd_pcm_lib_preallocate_pci_pages_for_all(trident->pci, pcm, 64*1024, 128*1024);
+	}
 
 	if (rpcm)
 		*rpcm = pcm;
@@ -3676,7 +3703,7 @@ int snd_trident_free(trident_t *trident)
 static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
 	trident_t *trident = snd_magic_cast(trident_t, dev_id, return);
-	unsigned int audio_int, chn_int, stimer, channel, mask;
+	unsigned int audio_int, chn_int, stimer, channel, mask, tmp;
 	int delta;
 	snd_trident_voice_t *voice;
 
@@ -3715,16 +3742,31 @@ static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 				continue;
 			}
 			voice->stimer = stimer;
+			if (voice->isync) {
+				tmp = inw(TRID_REG(trident, T4D_SBBL_SBCL));
+				if (trident->bDMAStart & 0x40)
+					tmp >>= 1;
+				if (tmp > 0)
+					tmp = voice->isync_max - tmp;
+				if (tmp < voice->isync_mark) {
+					if (tmp > 0x20)
+						tmp = voice->isync_ESO - 9;
+					else
+						tmp = voice->isync_ESO + 2;
+					/* update ESO for IRQ voice to preserve sync */
+					snd_trident_stop_voice(trident, voice->number);
+					snd_trident_write_eso_reg(trident, voice, tmp);
+					snd_trident_start_voice(trident, voice->number);
+				}
+			}
+#if 0
 			if (voice->extra) {
 				/* update CSO for extra voice to preserve sync */
 				snd_trident_stop_voice(trident, voice->extra->number);
 				snd_trident_write_cso_reg(trident, voice->extra, 0);
 				snd_trident_start_voice(trident, voice->extra->number);
-			} else if (voice->spdif) {
-				snd_trident_stop_voice(trident, voice->number);
-				snd_trident_write_cso_reg(trident, voice, 0);
-				snd_trident_start_voice(trident, voice->number);
 			}
+#endif
 			spin_unlock(&trident->reg_lock);
 			snd_pcm_period_elapsed(voice->substream);
 			spin_lock(&trident->reg_lock);

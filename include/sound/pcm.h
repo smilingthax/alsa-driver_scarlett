@@ -351,7 +351,7 @@ struct _snd_pcm_runtime {
 	/* -- DMA -- */           
 	unsigned char *dma_area;	/* DMA area */
 	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
-	size_t dma_bytes;	/* size of DMA area */
+	size_t dma_bytes;		/* size of DMA area */
 	void *dma_private;		/* private DMA data for the memory allocator */
 
 #if defined(CONFIG_SND_PCM_OSS) || defined(CONFIG_SND_PCM_OSS_MODULE)
