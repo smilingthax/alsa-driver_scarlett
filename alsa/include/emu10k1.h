@@ -803,6 +803,7 @@ struct _snd_emu10k1 {
 	unsigned long *ptb_shadow_pages;
 	snd_util_memhdr_t *memhdr;		/* page allocation list */
 	snd_util_memblk_t *reserved_page;	/* reserved page */
+	unsigned int spdif_bits[3];		/* s/pdif out setup */
 
 	snd_emu10k1_fx8010_t fx8010;		/* FX8010 info */
 	
@@ -814,12 +815,6 @@ struct _snd_emu10k1 {
 	snd_pcm_t *pcm_mic;
 	snd_pcm_t *pcm_efx;
 	snd_pcm_t *pcm_fx8010;
-
-	unsigned char dig_vol[6][9][2];	  	/* output, input, left/right */
-	unsigned char stereo_vol[2][2];	 	 /* source (pcm,midi), left/right */
-	unsigned char tone_control[2][2];	 /* bass/treble, left/right */
-	unsigned int tone_control_active;	 /* bitmap of active tone controls */
-	snd_kcontrol_t *tone_bass, *tone_treble;
 
 	spinlock_t synth_lock;
 	void *synth;
