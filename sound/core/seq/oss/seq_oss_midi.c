@@ -372,6 +372,8 @@ snd_seq_oss_midi_open(seq_oss_devinfo_t *dp, int dev, int fmode)
 		subs.sender.client = mdev->client;
 		subs.sender.port = mdev->port;
 		subs.dest = dp->addr;
+		subs.flags = SNDRV_SEQ_PORT_SUBS_TIMESTAMP;
+		subs.queue = dp->queue;		/* queue for timestamps */
 		if (snd_seq_kernel_client_ctl(dp->cseq, SNDRV_SEQ_IOCTL_SUBSCRIBE_PORT, &subs) >= 0)
 			mdev->opened |= PERM_READ;
 	}
@@ -597,10 +599,12 @@ send_synth_event(seq_oss_devinfo_t *dp, snd_seq_event_t *ev, int dev)
 static int
 send_midi_event(seq_oss_devinfo_t *dp, snd_seq_event_t *ev, seq_oss_midi_t *mdev)
 {
-	char msg[32]; /* enough except for sysex? */
+	char msg[32];
 	int len;
 	
-	snd_seq_oss_readq_put_timestamp(dp->readq, snd_seq_oss_timer_cur_tick(dp->timer), dp->seq_mode);
+	snd_seq_oss_readq_put_timestamp(dp->readq, ev->time.tick, dp->seq_mode);
+	if (!dp->timer->running)
+		len = snd_seq_oss_timer_start(dp->timer);
 	if (ev->type == SNDRV_SEQ_EVENT_SYSEX) {
 		if ((ev->flags & SNDRV_SEQ_EVENT_LENGTH_MASK) == SNDRV_SEQ_EVENT_LENGTH_VARIABLE)
 			snd_seq_oss_readq_puts(dp->readq, mdev->seq_device,
