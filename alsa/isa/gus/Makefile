@@ -3,6 +3,8 @@ TOPDIR = ../..
 include $(TOPDIR)/toplevel.config
 include $(TOPDIR)/Makefile.conf
 
+export-objs  := gus_main.o gus_volume.o
+
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/isa/gus/Makefile
 
