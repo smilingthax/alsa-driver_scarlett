@@ -541,7 +541,11 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_printdd(args...) snd_printk(##args)
 #endif
 #else
+#ifdef NEW_MACRO_VARARGS
 #define snd_printdd(...)	/* nothing */
+#else
+#define snd_printdd(args...)	/* nothing */
+#endif
 #endif
 
 #define snd_alloc_check(function, args)  ({\
