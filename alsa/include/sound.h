@@ -39,7 +39,14 @@
  *  protocol version
  */
 
-#define SND_PROTOCOL_VERSION( major, minor, subminor ) ((major<<16)|(minor<<8)|subminor)
+#define SND_PROTOCOL_VERSION( major, minor, subminor ) (((major)<<16)|((minor)<<8)|(subminor))
+#define SND_PROTOCOL_MAJOR( version ) (((version)>>16)&0xffff)
+#define SND_PROTOCOL_MINOR( version ) (((version)>>8)&0xff)
+#define SND_PROTOCOL_SUBMINOR( version ) ((version)&0xff)
+#define SND_PROTOCOL_UNCOMPATIBLE( kversion, uversion ) \
+	( SND_PROTOCOL_MAJOR(kversion) != SND_PROTOCOL_MAJOR(uversion) || \
+	 ( SND_PROTOCOL_MAJOR(kversion) == SND_PROTOCOL_MAJOR(uversion) && \
+	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion) ) )
 
 /*
  *  number of supported soundcards in one machine
@@ -54,7 +61,7 @@
 typedef struct snd_mixer_info snd_mixer_info_t;
 typedef struct snd_mixer_channel_info snd_mixer_channel_info_t;
 typedef struct snd_mixer_channel snd_mixer_channel_t;
-typedef struct snd_mixer_special snd_mixer_special_t;
+typedef struct snd_mixer_switch snd_mixer_switch_t;
 typedef struct snd_pcm_info snd_pcm_info_t;
 typedef struct snd_pcm_playback_info snd_pcm_playback_info_t;
 typedef struct snd_pcm_record_info snd_pcm_record_info_t;
@@ -119,7 +126,7 @@ struct snd_ctl_hw_info {
  *                                                                          *
  ****************************************************************************/
  
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 0, 0 )
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION( 1, 0, 1 )
 
 					/* max 12 chars (with '\0') */
 #define SND_MIXER_ID_MASTER		"Master"
@@ -156,6 +163,16 @@ struct snd_ctl_hw_info {
 #define SND_MIXER_ID_AUXB		"Aux B"
 #define SND_MIXER_ID_AUXC		"Aux C"
 
+#define SND_MIXER_SW_TYPE_BOOLEAN	0	/* 0 or 1 */
+#define SND_MIXER_SW_TYPE_BYTE		1	/* 0 to 255 */
+#define SND_MIXER_SW_TYPE_WORD		2	/* 0 to 65535 */
+#define SND_MIXER_SW_TYPE_DWORD		3	/* 0 to 4294967296 */
+#define SND_MIXER_SW_TYPE_USER		(~0)	/* user type */
+
+					/* max 32 chars (with '\0') */
+#define SND_MIXER_SW_LOUDNESS		"Loudness"		/* bass boost */
+#define SND_MIXER_SW_MIC_AGC		"MIC Auto-Gain-Control"	/* Microphone Auto-Gain-Control */
+
 #define SND_MIXER_INFO_CAP_EXCL_RECORD	0x00000001
 
 #define SND_MIXER_CINFO_CAP_RECORD	0x00000001
@@ -163,7 +180,7 @@ struct snd_ctl_hw_info {
 #define SND_MIXER_CINFO_CAP_MUTE	0x00000004	/* always set at this moment, driver emulates mute */
 #define SND_MIXER_CINFO_CAP_HWMUTE	0x00000008	/* channel supports hardware mute */
 #define SND_MIXER_CINFO_CAP_DIGITAL	0x00000010	/* channel does digital (not analog) mixing */
-#define SND_MIXER_CINFO_CAP_INPUT	0x00000020	/* input channel */
+#define SND_MIXER_CINFO_CAP_INPUT	0x00000020	/* external input channel */
 #define SND_MIXER_CINFO_CAP_MONOMUTE	0x00000040	/* mono mute is supported only */
 
 #define SND_MIXER_FLG_RECORD		0x00000001	/* channel record source flag */
@@ -175,25 +192,14 @@ struct snd_ctl_hw_info {
 
 #define SND_MIXER_PARENT		0xffffffff	/* this is parent channel */
 
-#define SND_MIXER_S_NONE		0
-#define SND_MIXER_S_IW			1
-
-#define SND_MIXER_S_IW_SERIAL_NONE			0
-#define SND_MIXER_S_IW_SERIAL_DSP_TO_RECORD		1
-#define SND_MIXER_S_IW_SERIAL_DSP_TO_PLAYBACK		2
-#define SND_MIXER_S_IW_SERIAL_RECORD_TO_PLAYBACK	3
-#define SND_MIXER_S_IW_SERIAL_DSP_TO_EXTOUT		4
-#define SND_MIXER_S_IW_SERIAL_RECORD_TO_EXTOUT		5
-#define SND_MIXER_S_IW_SERIAL_EXTIN_TO_PLAYBACK_1	6
-#define SND_MIXER_S_IW_SERIAL_EXTIN_TO_PLAYBACK_2	7
-
 struct snd_mixer_info {
   unsigned int type;		/* type of soundcard - SND_CARD_TYPE_XXXX */
   unsigned int channels;	/* count of mixer devices */
   unsigned int caps;		/* some flags about this device (SND_MIXER_INFO_CAP_XXXX) */
   unsigned char id[32];		/* ID of this mixer */
   unsigned char name[80];	/* name of this device */
-  char reserved[32];		/* reserved for future use */
+  unsigned int switches;	/* number of switches */
+  char reserved[28];		/* reserved for future use */
 };
 
 struct snd_mixer_channel_info {
@@ -219,16 +225,16 @@ struct snd_mixer_channel {
   unsigned char reserved[16];
 };
 
-struct snd_mixer_special {
-  unsigned int what;
+struct snd_mixer_switch {
+  unsigned int switchn;		/* switch # (filled by application) */
+  unsigned char name[32];	/* identification of switch (from driver) */
+  unsigned int type;		/* look to SND_MIXER_SW_TYPE_XXXX */
   union {
-    unsigned char bytes[32];
-    unsigned short words[16];
-    unsigned int dwords[8];
-    struct {
-      unsigned char serial;
-    } interwave;
-  } data;
+    unsigned int enable;	/* 0 = off, 1 = on */
+    unsigned char data8[32];	/* 8-bit data */
+    unsigned short data16[32];	/* 16-bit data */
+    unsigned int data32[8];	/* 32-bit data */
+  } value;
   unsigned char reserved[32];
 };
 
@@ -239,8 +245,9 @@ struct snd_mixer_special {
 #define SND_MIXER_IOCTL_CHANNEL_INFO	_IOR ( 'R', 0x03, struct snd_mixer_channel_info )
 #define SND_MIXER_IOCTL_CHANNEL_READ	_IOR ( 'R', 0x04, struct snd_mixer_channel )
 #define SND_MIXER_IOCTL_CHANNEL_WRITE	_IOWR( 'R', 0x04, struct snd_mixer_channel )
-#define SND_MIXER_IOCTL_SPECIAL_READ	_IOR ( 'R', 0x05, struct snd_mixer_special )
-#define SND_MIXER_IOCTL_SPECIAL_WRITE	_IOWR( 'R', 0x05, struct snd_mixer_special )
+#define SND_MIXER_IOCTL_SWITCHES	_IOR ( 'R', 0x05, int )
+#define SND_MIXER_IOCTL_SWITCH_READ	_IOR ( 'R', 0x06, struct snd_mixer_switch )
+#define SND_MIXER_IOCTL_SWITCH_WRITE	_IOWR( 'R', 0x07, struct snd_mixer_switch )
 
 /*
  *  Obsolete interface compatible with Open Sound System API
@@ -273,6 +280,13 @@ struct snd_mixer_special {
 struct snd_oss_mixer_info {
   char id[ 16 ];
   char name[ 32 ];
+  int modify_counter;
+  int fillers[ 10 ];
+};
+
+struct snd_oss_mixer_info_obsolete {
+  char id[ 16 ];
+  char name[ 32 ];
 };
 
 #define SND_MIXER_OSS_SET_RECSRC _IOWR( 'M', 255, int )
@@ -281,7 +295,8 @@ struct snd_oss_mixer_info {
 #define SND_MIXER_OSS_RECMASK	_IOR ( 'M', 253, int )
 #define SND_MIXER_OSS_CAPS	_IOR ( 'M', 252, int )
 #define SND_MIXER_OSS_STEREODEVS _IOR ( 'M', 251, int )
-#define SND_MIXER_OSS_INFO      _IOR ( 'M', 101, struct snd_oss_mixer_info )    
+#define SND_MIXER_OSS_INFO      _IOR ( 'M', 101, struct snd_oss_mixer_info )
+#define SND_MIXER_OSS_OLD_INFO	_IOR ( 'M', 101, struct snd_oss_mixer_info_obsolete )
 #define SND_OSS_GETVERSION	_IOR ( 'M', 118, int )
 
 #endif /* __SND_OSS_COMPAT__ */
@@ -463,6 +478,10 @@ struct snd_pcm_record_status {
 #define SND_PCM_CAP_TRIGGER		0x00001000
 #define SND_PCM_CAP_MMAP		0x00002000
 
+#define SND_PCM_AFP_NORMAL		0
+#define SND_PCM_AFP_NETWORK		1
+#define SND_PCM_AFP_CPUINTENS		2
+
 struct snd_pcm_buffer_info {
   int fragments;			/* # of available fragments (partially used ones not counted) */
   int fragstotal;			/* Total # of fragments allocated */
@@ -509,6 +528,8 @@ struct snd_pcm_buffer_description {
 #define SND_PCM_IOCTL_OSS_MAPPBKBUFFER	_IOR ( 'P', 20, struct snd_pcm_buffer_description )
 #define SND_PCM_IOCTL_OSS_SYNCRO	_IO  ( 'P', 21 )
 #define SND_PCM_IOCTL_OSS_DUPLEX	_IO  ( 'P', 22 )
+#define SND_PCM_IOCTL_OSS_GETODELAY	_IOR ( 'P', 23, int )
+#define SND_PCM_IOCTL_OSS_PROFILE	_IOW ( 'P', 23, int )
 #define SND_PCM_IOCTL_OSS_MASK		_IOW ( 'X', 0, int )
 
 #endif /* __SND_OSS_COMPAT__ */
