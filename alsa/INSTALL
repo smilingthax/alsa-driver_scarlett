@@ -18,6 +18,7 @@ Quick install
 1) Run './configure' script.
    If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
    If you want sequencer support, use --with-sequencer=yes switch.
+   If you don't want OSS/Lite emulation, use --with-oss=no switch.
    If you want turn on debug mode use --with-debug=full switch.
    If you want debug soundcard detection try --with-debug=detect switch.
    Example: ./configure --with-isapnp=yes --with-debug=full
@@ -71,16 +72,6 @@ We need know these things (at minimum):
 3) all messages from /var/log/messages which should be relevant to
    ALSA driver
 4) problem description
-
-ISA Plug & Play issues
-======================
-
-If you use native ISA Plug & Play module (isapnp.o) you may need know
-that after isapnp.o module is inserted to kernel, all ISA Plug & Play
-devices (cards) are deactivated!!! This means that they aren't useable
-without driver which have build-in ISA Plug & Play support. If you
-have only one ISA Plug & Play soundcard in your machine, you don't
-worry about above information.
 
 Module parameters
 =================
@@ -426,73 +417,160 @@ Module parameters
 modprobe/kerneld/kmod support
 =============================
 
-Bellow example is for Gravis UltraSound PnP soundcard:
+The modprobe program must know where are modules for device major numbers.
+Native ALSA devices have got default number 116. Thus line like
+'alias char-major-116 snd' must be added to /etc/conf.modules. If you have 
+got compiled ALSA driver with OSS/Lite emulation code, please, follow
+these lines:
+
+The ALSA driver uses soundcore multiplexer for 2.2 kernels and OSS compatible
+devices. You should add line like 'alias char-major-14 soundcore'.
+For 2.0/2.1 kernels the ALSA driver takes control for the char major device
+14 itself, thus you may add line 'alias char-major-14 snd' to your
+modprobe configuration file.
+
+Example for 2.2 kernel (with OSS/Lite emulation turned on):
 
 ----- /etc/conf.modules
 
+# ALSA portion
+alias char-major-116 snd
+# OSS/Lite portion
+alias char-major-14 soundcore
+
+----- /etc/conf.modules
+
+Example for 2.0/2.1 kernels (with OSS/Lite emulation turned on):
+
+----- /etc/conf.modules
+
+# ALSA portion
+alias char-major-116 snd
+# OSS/Lite portion
 alias char-major-14 snd
-alias snd-minor-oss-0 snd-interwave
-alias snd-minor-oss-3 snd-pcm1-oss
-alias snd-minor-oss-4 snd-pcm1-oss
-alias snd-minor-oss-5 snd-pcm1-oss
-alias snd-minor-oss-12 snd-pcm1-oss
+
+----- /etc/conf.modules
+
+After the main multiplexer is loaded, its code requests toplevel soundcard
+module. String 'snd-card-%i' is requested for native devices where %i is
+soundcard number from zero to seven. String 'sound-slot-%i' is requested
+for native devices where %i is slot number (for ALSA owner this means soundcard
+number).
+
+----- /etc/conf.modules
+
+# ALSA portion
 alias snd-card-0 snd-interwave
-options snd snd_major=14 snd_cards_limit=1
-options snd-interwave snd_index=1 snd_id="guspnp" snd_port=0x220 snd_irq=5 snd_dma1=5 snd_dma2=6
-
------
-
-Example if you want use more soundcards in one machine (bellow configuration
-is for Sound Blaster 16 and Gravis UltraSound Classic):
+alias snd-card-1 snd-audiopci
+# OSS/Lite portion
+alias sound-slot-0 snd-card-0
+alias sound-slot-1 snd-card-1
 
 ----- /etc/conf.modules
 
-alias char-major-14 snd
-alias snd-minor-oss-0 snd-mixer
-alias snd-minor-oss-3 snd-pcm1-oss
-alias snd-minor-oss-4 snd-pcm1-oss
-alias snd-minor-oss-5 snd-pcm1-oss
-alias snd-minor-oss-12 snd-pcm1-oss
-alias snd-card-0 snd-sb16
-alias snd-card-1 snd-gusclassic
-options snd snd_major=14 snd_cards_limit=2
-options snd-sb16 snd_index=1 snd_port=0x220 snd_irq=5 snd_dma8=1 snd_dma16=5
-options snd-gusclassic snd_index=2 snd_irq=11 snd_dma1=6 snd_dma2=7
-
------
-
-Example if two Gravis UltraSound Classic soundcards are present in system:
+We are done at this point with the configuration for ALSA native devices,
+but you may also need autoloading for ALSA's add-on OSS/Lite emulation
+modules. At this time only one module doesn't depends on others, thus
+must be loaded separately - snd-pcm1-oss.o. String 'sound-service-%i-%i'
+is requested for OSS/Lite service where first %i means slot number
+(e.g. card number) and second %i means service number.
 
 ----- /etc/conf.modules
 
-alias char-major-14 snd
-alias snd-minor-oss-0 snd-mixer
-alias snd-minor-oss-3 snd-pcm1-oss
-alias snd-minor-oss-4 snd-pcm1-oss
-alias snd-minor-oss-5 snd-pcm1-oss
-alias snd-minor-oss-12 snd-pcm1-oss
+# OSS/Lite portion
+alias sound-service-1-3 snd-pcm1-oss
+alias sound-service-1-12 snd-pcm1-oss
+
+----- /etc/conf.modules
+
+Complete example for Gravis UltraSound PnP soundcard:
+
+----- /etc/conf.modules
+
+# ISA PnP support
+options isapnp isapnp_reserve_irq=9,10,11,12,13
+
+# ALSA native device support
+alias char-major-116 snd
+options snd snd_major=116 snd_cards_limit=1
+alias snd-card-0 snd-interwave
+options snd-interwave snd_index=1 snd_id="GusPnP"
+
+# OSS/Lite setup
+alias char-major-14 soundcore
+alias sound-slot-0 snd-card-0
+alias sound-service-0-3 snd-pcm1-oss
+alias sound-service-0-12 snd-pcm1-oss
+
+-----
+
+Complete example if you want use more soundcards in one machine
+(bellow configuration is for Sound Blaster 16 and Gravis UltraSound Classic):
+
+----- /etc/conf.modules
+
+# ISA PnP support
+options isapnp isapnp_reserve_irq=9,10,11,12,13
+
+# ALSA native device support
+alias char-major-116 snd
+options snd snd_major=116 snd_cards_limit=2
+alias snd-card-0 snd-gusclassic
+alias snd-card-1 snd-sb16
+options snd-gusclassic snd_index=1 snd_id="Gus" \
+        snd_port=0x220 snd_irq=5 snd_dma1=6 snd_dma2=7
+options snd-sb16 snd_index=2 snd_id="SB16"
+
+# OSS/Lite setup
+alias char-major-14 soundcore
+alias sound-slot-0 snd-card-0
+alias sound-service-0-3 snd-pcm1-oss
+alias sound-service-0-12 snd-pcm1-oss
+alias sound-slot-1 snd-card-1
+alias sound-service-1-3 snd-pcm1-oss
+alias sound-service-1-12 snd-pcm1-oss
+
+-----
+
+Complete example if two Gravis UltraSound Classic soundcards are installed
+in the system:
+
+----- /etc/conf.modules
+
+# ALSA native device support
+alias char-major-116 snd
+options snd snd_major=116 snd_cards_limit=2
 alias snd-card-0 snd-gusclassic
 alias snd-card-1 snd-gusclassic
-options snd snd_major=14 snd_cards_limit=2
-options snd-gusclassic snd_index=1,2 snd_port=0x220,0x260 snd_irq=5,11 snd_dma1=5,6 snd_dma2=7,3
+options snd-gusclassic snd_index=1,2 snd_id="Gus1","Gus2" \
+        snd_port=0x220,0x240 snd_irq=5,7 snd_dma1=1,5 snd_dma2=3,6
+
+# OSS/Lite setup
+alias char-major-14 soundcore
+alias sound-slot-0 snd-card-0
+alias sound-service-0-3 snd-pcm1-oss
+alias sound-service-0-12 snd-pcm1-oss
+alias sound-slot-1 snd-card-1
+alias sound-service-1-3 snd-pcm1-oss
+alias sound-service-1-12 snd-pcm1-oss
 
 -----
 
 ALSA PCM devices to OSS devices mapping
 =======================================
 
-/dev/snd/pcm00  -> /dev/audio0 (/dev/audio) -> minor 4
-/dev/snd/pcm00  -> /dev/dsp0 (/dev/dsp)     -> minor 3
-/dev/snd/pcm01  -> /dev/adsp0 (/dev/adsp)   -> minor 12
-/dev/snd/pcm10  -> /dev/audio1              -> minor 4+16 = 20
-/dev/snd/pcm10  -> /dev/dsp1                -> minor 3+16 = 19
-/dev/snd/pcm11  -> /dev/adsp1               -> minor 12+16 = 28
-/dev/snd/pcm20  -> /dev/audio2              -> minor 4+32 = 36
-/dev/snd/pcm20  -> /dev/dsp2                -> minor 3+32 = 39
-/dev/snd/pcm21  -> /dev/adsp2               -> minor 12+32 = 44
+/dev/snd/pcmC0D0  -> /dev/audio0 (/dev/audio) -> minor 4
+/dev/snd/pcmC0D0  -> /dev/dsp0 (/dev/dsp)     -> minor 3
+/dev/snd/pcmC0D1  -> /dev/adsp0 (/dev/adsp)   -> minor 12
+/dev/snd/pcmC1D0  -> /dev/audio1              -> minor 4+16 = 20
+/dev/snd/pcmC1D0  -> /dev/dsp1                -> minor 3+16 = 19
+/dev/snd/pcmC1D1  -> /dev/adsp1               -> minor 12+16 = 28
+/dev/snd/pcmC2D0  -> /dev/audio2              -> minor 4+32 = 36
+/dev/snd/pcmC2D0  -> /dev/dsp2                -> minor 3+32 = 39
+/dev/snd/pcmC2D1  -> /dev/adsp2               -> minor 12+32 = 44
 
-First number from /dev/snd/pcmXY means soundcard number and second means
-device number.
+The first number from /dev/snd/pcmC{X}D{Y} expression means soundcard number
+and second means device number.
 
 Proc interfaces (/proc/asound)
 ==============================

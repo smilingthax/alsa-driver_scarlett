@@ -27,7 +27,7 @@
 #define SND_CARDS		8	/* number of supported soundcards - don't change - minor numbers */
 
 #ifndef SNDCFG_MAJOR		/* standard configuration */
-#define SNDCFG_MAJOR		14
+#define SNDCFG_MAJOR		116
 #endif
 
 #if !defined( SNDCFG_DEBUG )
@@ -41,26 +41,25 @@
 #define __KERNEL__
 #define MODULE
 
-#define LinuxVersionCode( v, p, s ) (((v)<<16)|((p)<<8)|(s))
+#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
 
 #include <linux/config.h>
 #include <linux/version.h>
 
-#if 0
-#undef CONFIG_MODVERSIONS
-#endif
-
-#if LinuxVersionCode( 2, 0, 0 ) > LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 0, 0) > LINUX_VERSION_CODE
 #error "This driver is designed only for Linux 2.0.0 and highter."
 #endif
-#if LinuxVersionCode( 2, 1, 0 ) <= LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 1, 0) <= LINUX_VERSION_CODE
 #define LINUX_2_1
-#if LinuxVersionCode( 2, 1, 127 ) > LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 1, 127) > LINUX_VERSION_CODE
 #error "This driver requires Linux 2.1.127 and highter."
+#endif
+#if LinuxVersionCode(2, 2, 0) <= LINUX_VERSION_CODE
+#define LINUX_2_2
 #endif
 #endif
 
-#if defined( CONFIG_MODVERSIONS ) && !defined( __GENKSYMS__ ) && !defined( __DEPEND__ )
+#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #define MODVERSIONS
 #include <linux/modversions.h>
 #include "sndversions.h"
@@ -115,7 +114,7 @@
 #endif
 
 #undef SND_POLL
-#if LinuxVersionCode( 2, 1, 72 ) <= LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 1, 72) <= LINUX_VERSION_CODE
 #define SND_POLL
 #endif
 #ifdef __MAX_POLL_TABLE_ENTRIES	/* new kernel with poll() */
@@ -125,11 +124,11 @@
 #include <linux/poll.h>
 #endif
 
-#if LinuxVersionCode( 2, 1, 35 ) >= LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 1, 35) >= LINUX_VERSION_CODE
 #define in_interrupt() intr_count
 #endif
 
-#if LinuxVersionCode( 2, 1, 118 ) <= LINUX_VERSION_CODE
+#if LinuxVersionCode(2, 1, 118) <= LINUX_VERSION_CODE
 #define SND_FOPS_FLUSH
 #endif
 
@@ -282,7 +281,8 @@ typedef int (snd_ioctl_t) (struct file * file, unsigned int cmd, unsigned long a
 typedef int (snd_mmap_t) (struct inode * inode, struct file * file, struct vm_area_struct * vma);
 
 struct snd_stru_minor {
-	char *comment;		/* for /dev/sndinfo */
+	char *comment;			/* for /dev/sndinfo */
+	snd_info_entry_t *dev;		/* for /proc/asound/dev */
 
 	snd_unregister_t *unregister;
 
@@ -309,14 +309,31 @@ extern int snd_device_mode;
 extern int snd_device_gid;
 extern int snd_device_uid;
 
-extern int snd_register_minor(unsigned short minor, snd_minor_t * reg);
-extern int snd_unregister_minor(unsigned short minor);
+extern int snd_register_device(int type, snd_card_t * card, int dev, snd_minor_t * reg, const char *name);
+extern int snd_unregister_device(int type, snd_card_t * card, int dev);
+
+#ifdef SNDCFG_OSSEMUL
+extern int snd_register_oss_device(int type, snd_card_t * card, int dev, snd_minor_t * reg, const char *name);
+extern int snd_unregister_oss_device(int type, snd_card_t * card, int dev);
+#endif
 
 extern int snd_minor_info_init(void);
 extern int snd_minor_info_done(void);
 
 extern int snd_ioctl_in(long *addr);
 extern int snd_ioctl_out(long *addr, int value);
+
+/* sound_oss.c */
+
+#ifdef SNDCFG_OSSEMUL
+
+int snd_minor_info_oss_init(void);
+int snd_minor_info_oss_done(void);
+
+int snd_oss_init_module(void);
+void snd_oss_cleanup_module(void);
+
+#endif
 
 /* memory.c */
 

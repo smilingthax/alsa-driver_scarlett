@@ -54,6 +54,9 @@ struct snd_stru_pcm_switch {
 struct snd_stru_pcm {
 	snd_card_t *card;
 	unsigned int device;	/* device number */
+#ifdef SNDCFG_OSSEMUL
+	int ossreg;
+#endif
 	unsigned int info_flags;
 	int type;		/* PCM type */
 	char id[32];

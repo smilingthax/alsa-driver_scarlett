@@ -16,7 +16,9 @@ function basic() {
   if ! $INSMOD -m $MODDIR/snd-mixer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-pcm1.o >> $MAP; then exit 1; fi
-  if ! $INSMOD -m $MODDIR/snd-pcm1-oss.o >> $MAP; then exit 1; fi  
+  if [ -r $MODDIR/snd-pcm1-oss.o ]; then
+    if ! $INSMOD -m $MODDIR/snd-pcm1-oss.o >> $MAP; then exit 1; fi  
+  fi
   if ! $INSMOD -m $MODDIR/snd-midi.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   if ! $INSMOD -m $MODDIR/snd-synth.o >> $MAP; then exit 1; fi

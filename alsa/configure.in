@@ -28,7 +28,7 @@ dnl Major number
 AC_MSG_CHECKING(for default major number for the alsa driver)
 AC_ARG_WITH(major,
   [  --with-major=number     give the default major number for the alsa driver],
-  majornumber="$withval", majornumber="14")
+  majornumber="$withval", majornumber="116")
 AC_DEFINE_UNQUOTED(SNDCFG_MAJOR, $majornumber)
 SNDCFG_MAJOR="$majornumber"
 AC_SUBST(SNDCFG_MAJOR)
@@ -306,6 +306,23 @@ fi
 AC_SUBST(SNDCFG_SEQUENCER)
 if test "$SNDCFG_SEQUENCER" = "1"; then
   AC_DEFINE(SNDCFG_SEQUENCER)
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
+dnl Check for OSS/Lite emulation...
+AC_MSG_CHECKING(for OSS/Lite emulation)
+AC_ARG_WITH(oss,
+  [  --with-oss=no,yes       driver will (not) be compiled with OSS/Lite emulation],
+  ossemul="$withval", ossemul="yes")
+SNDCFG_OSSEMUL="0"
+if test "$ossemul" = "yes"; then
+  SNDCFG_OSSEMUL="1"
+fi
+AC_SUBST(SNDCFG_OSSEMUL)
+if test "$SNDCFG_OSSEMUL" = "1"; then
+  AC_DEFINE(SNDCFG_OSSEMUL)
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)

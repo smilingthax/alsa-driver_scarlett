@@ -21,9 +21,31 @@
  *
  */
 
+#define SND_MINOR_MASK		0x001f
+
+#define SND_MINOR_CONTROL	0	/* 0 - 0 */
+#define SND_MINOR_MIXER		4	/* 4 - 7 */
+#define SND_MINOR_MIXERS	4
+#define SND_MINOR_RAWMIDI	8	/* 8 - 15 */
+#define SND_MINOR_RAWMIDIS	8
+#define SND_MINOR_PCM		16	/* 8 - 23 */
+#define SND_MINOR_PCMS		16
+#define SND_MINOR_SEQUENCER	255
+
+#define SND_DEVICE_TYPE_CONTROL	SND_MINOR_CONTROL
+#define SND_DEVICE_TYPE_MIXER	SND_MINOR_MIXER
+#define SND_DEVICE_TYPE_RAWMIDI	SND_MINOR_RAWMIDI
+#define SND_DEVICE_TYPE_PCM	SND_MINOR_PCM
+#define SND_DEVICE_TYPE_SEQUENCER SND_MINOR_SEQUENCER
+
+#ifdef SNDCFG_OSSEMUL
+
+#define SND_MINOR_OSS_MASK	0x000f
+
 #define SND_MINOR_OSS_MIXER	0	/* /dev/mixer - OSS 3.XX compatible */
 #define SND_MINOR_OSS_SEQUENCER	1	/* /dev/sequencer - OSS 3.XX compatible */
 #define	SND_MINOR_OSS_MIDI	2	/* /dev/midi - native midi interface - OSS 3.XX compatible - UART */
+#define SND_MINOR_OSS_PCM	3	/* alias */
 #define SND_MINOR_OSS_PCM_8	3	/* /dev/dsp - 8bit PCM - OSS 3.XX compatible */
 #define SND_MINOR_OSS_AUDIO	4	/* /dev/audio - SunSparc compatible */
 #define SND_MINOR_OSS_PCM_16	5	/* /dev/dsp16 - 16bit PCM - OSS 3.XX compatible */
@@ -36,22 +58,15 @@
 #define SND_MINOR_OSS_PCM1	12	/* alternate PCM (GF-A-1) */
 #define SND_MINOR_OSS_MIDI1	13	/* alternate midi - SYNTH */
 #define SND_MINOR_OSS_DMMIDI1	14	/* alternate dmmidi - SYNTH */
+#define SND_MINOR_OSS_RESERVED15 15	/* reserved for future use */
 
-#define SND_MINOR_OSS_MASK	0x000f
+#define SND_OSS_DEVICE_TYPE_MIXER	0
+#define SND_OSS_DEVICE_TYPE_SEQUENCER	1
+#define SND_OSS_DEVICE_TYPE_PCM		2
+#define SND_OSS_DEVICE_TYPE_MIDI	3
+#define SND_OSS_DEVICE_TYPE_DMFM	4
+#define SND_OSS_DEVICE_TYPE_SNDSTAT	5
 
-#define SND_MINOR_BEGIN		128
-/* global (not per soundcard) devices */
-#define SND_MINOR_SEQUENCER	/* 136 */ (SND_MINOR_BEGIN+8)
-/* local (per soundcard) devices */
-#define SND_MINOR_CONTROL	/* 144 */ (SND_MINOR_BEGIN+16)
-#define SND_MINOR_MIXER		/* 152 */ (SND_MINOR_CONTROL+SND_CARDS)
-#define SND_MINOR_MIXERS	2
-#define SND_MINOR_PCM		/* 168 */ (SND_MINOR_MIXER+(SND_CARDS*SND_MINOR_MIXERS))
-#define SND_MINOR_PCMS		4
-#define SND_MINOR_RAWMIDI	/* 200 */ (SND_MINOR_PCM+(SND_CARDS*SND_MINOR_PCMS))
-#define SND_MINOR_RAWMIDIS	4
-#define SND_MINOR_RES1		/* 232 */ (SND_MINOR_RAWMIDI+(SND_CARDS*SND_MINOR_RAWMIDIS))
-#define SND_MINOR_RES2		/* 240 */ (SND_MINOR_RES1+SND_CARDS)
-#define SND_MINOR_FM		/* 248 */ (SND_MINOR_RES2+SND_CARDS)
+#endif
 
 #endif				/* __MINORS_H */

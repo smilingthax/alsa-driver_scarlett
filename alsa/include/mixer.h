@@ -177,6 +177,9 @@ struct snd_stru_mixer_hw {
 struct snd_stru_mixer {
 	snd_card_t *card;
 	unsigned int device;		/* device # */
+#ifdef SNDCFG_OSSEMUL
+	int ossreg;			/* flag if device is registered for OSS */
+#endif
 
 	char id[32];
 	unsigned char name[80];
@@ -197,10 +200,9 @@ struct snd_stru_mixer {
 	struct snd_stru_mixer_hw hw;	/* readonly variables */
 
 	snd_kmixer_file_t *ffile;	/* first file */
-	 snd_mutex_define(ffile);
-	 snd_spin_define(lock);
+	snd_mutex_define(ffile);
+	snd_spin_define(lock);
 
-	snd_info_entry_t *dev;
 	snd_info_entry_t *proc_entry;
 };
 

@@ -119,11 +119,16 @@ extern int snd_info_card_register(snd_card_t * card);
 extern int snd_info_card_unregister(snd_card_t * card);
 extern int snd_info_register(snd_info_entry_t * entry);
 extern int snd_info_unregister(snd_info_entry_t * entry);
+#ifdef SNDCFG_OSSEMUL
 extern int snd_info_minor_register(void);
+extern int snd_info_minor_unregister(void);
+#endif
 
 /*
  * OSS info part
  */
+
+#ifdef SNDCFG_OSSEMUL
 
 #define SND_OSS_INFO_DEV_AUDIO	0
 #define SND_OSS_INFO_DEV_SYNTH	1
@@ -133,7 +138,13 @@ extern int snd_info_minor_register(void);
 
 #define SND_OSS_INFO_DEV_COUNT	6
 
+#ifndef LINUX_2_2
 extern int snd_oss_info_register(int dev, int num, char *string);
+#else
+static inline int snd_oss_info_register(int dev, int num, char *string) { return 0; }
+#endif
 #define snd_oss_info_unregister(dev, num) snd_oss_info_register(dev, num, NULL)
+
+#endif				/* SNDCFG_OSSEMUL */
 
 #endif				/* __INFO_H */

@@ -1345,7 +1345,7 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 				     struct isapnp_resources *from,
 				     struct isapnp_resources *to)
 {
-	int tmp;
+	int tmp, tmp1;
 	struct isapnp_port *port;
 	struct isapnp_irq *irq;
 	struct isapnp_dma *dma;
@@ -1367,8 +1367,11 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 			while (port->res != to) {
 				if (!port->res->alt)
 					return -EINVAL;
-				cfg->port[tmp] = port = port->res->alt->port;
-				cfg->result.port[tmp] = 0;	/* auto */
+				port = port->res->alt->port;
+				for (tmp1 = tmp; tmp1 > 0 && port; tmp1--)
+					port = port->next;
+				cfg->port[tmp] = port;
+				cfg->result.port[tmp] = ISAPNP_AUTO_PORT;
 				if (!port)
 					return -ENOENT;
 			}
@@ -1388,8 +1391,11 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 			while (irq->res != to) {
 				if (!irq->res->alt)
 					return -EINVAL;
-				cfg->irq[tmp] = irq = irq->res->alt->irq;
-				cfg->result.irq[tmp] = 255;	/* auto */
+				irq = irq->res->alt->irq;
+				for (tmp1 = tmp; tmp1 > 0 && irq; tmp1--)
+					irq = irq->next;
+				cfg->irq[tmp] = irq;
+				cfg->result.irq[tmp] = ISAPNP_AUTO_IRQ;
 				if (!irq)
 					return -ENOENT;
 			}
@@ -1409,8 +1415,11 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 			while (dma->res != to) {
 				if (!dma->res->alt)
 					return -EINVAL;
-				cfg->dma[tmp] = dma = dma->res->alt->dma;
-				cfg->result.dma[tmp] = 255;	/* auto */
+				dma = dma->res->alt->dma;
+				for (tmp1 = tmp; tmp1 > 0 && dma; tmp1--)
+					dma = dma->next;
+				cfg->dma[tmp] = dma;
+				cfg->result.dma[tmp] = ISAPNP_AUTO_DMA;
 				if (!dma)
 					return -ENOENT;
 			}
@@ -1430,8 +1439,11 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 			while (mem->res != to) {
 				if (!mem->res->alt)
 					return -EINVAL;
-				cfg->mem[tmp] = mem = mem->res->alt->mem;
-				cfg->result.mem[tmp] = 0;	/* auto */
+				mem = mem->res->alt->mem;
+				for (tmp1 = tmp; tmp1 > 0 && mem; tmp1--)
+					mem = mem->next;
+				cfg->mem[tmp] = mem;
+				cfg->result.mem[tmp] = ISAPNP_AUTO_MEM;
 				if (!mem)
 					return -ENOENT;
 			}
@@ -1458,7 +1470,7 @@ static int isapnp_check_port(struct isapnp_cfgtmp *cfg, int port, int size, int 
 		if (tmp == ISAPNP_AUTO_PORT)
 			continue;
 		tsize = cfg->result.port_disable_size[i];
-		if (tmp + tsize >= port && tmp <= port + tsize)
+		if (tmp + tsize > port && tmp <= port + size)
 			return 1;
 	}
 	for (i = 0; i < cfg->result.port_count; i++) {

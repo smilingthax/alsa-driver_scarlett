@@ -125,6 +125,10 @@ struct snd_stru_rawmidi {
 	char id[32];
 	char name[80];
 
+#ifdef SNDCFG_OSSEMUL
+	int ossreg;
+#endif
+
 	snd_rawmidi_direction_t input;
 	snd_rawmidi_direction_t output;
 
