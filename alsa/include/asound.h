@@ -130,8 +130,9 @@
 #define SND_CARD_TYPE_FM801		0x00000037	/* FM801 */
 #define SND_CARD_TYPE_AZT2320		0x00000038	/* AZT2320 */
 #define SND_CARD_TYPE_PRODIF_PLUS	0x00000039	/* Marian/Sek'D Prodif Plus */
+#define SND_CARD_TYPE_YMFPCI		0x0000003a	/* YMF724/740/744/754 */
 
-#define SND_CARD_TYPE_LAST		0x00000039
+#define SND_CARD_TYPE_LAST		0x0000003a
 
 /*
  *  Universal switch interface
@@ -1241,13 +1242,13 @@ struct snd_oss_mixer_info_obsolete {
 
 #define SND_PCM_STREAM_INFO_MMAP		0x00000001	/* hardware supports mmap */
 #define SND_PCM_STREAM_INFO_FRAME		0x00000002	/* hardware supports frame mode */
-#define SND_PCM_STREAM_INFO_FRAGMENT	0x00000004	/* hardware supports fragment mode */
+#define SND_PCM_STREAM_INFO_FRAGMENT		0x00000004	/* hardware supports fragment mode */
 #define SND_PCM_STREAM_INFO_BATCH		0x00000010	/* double buffering */
-#define SND_PCM_STREAM_INFO_INTERLEAVE	0x00000100	/* channels are interleaved */
+#define SND_PCM_STREAM_INFO_INTERLEAVE		0x00000100	/* channels are interleaved */
 #define SND_PCM_STREAM_INFO_NONINTERLEAVE	0x00000200	/* channels are not interleaved */
 #define SND_PCM_STREAM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
-#define SND_PCM_STREAM_INFO_OVERRANGE	0x00020000	/* hardware supports ADC (capture) overrange detection */
-#define SND_PCM_STREAM_INFO_MMAP_VALID	0x00040000	/* fragment data are valid during transfer */
+#define SND_PCM_STREAM_INFO_OVERRANGE		0x00020000	/* hardware supports ADC (capture) overrange detection */
+#define SND_PCM_STREAM_INFO_MMAP_VALID		0x00040000	/* fragment data are valid during transfer */
 #define SND_PCM_STREAM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
