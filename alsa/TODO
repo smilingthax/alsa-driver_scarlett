@@ -1,6 +1,5 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
-H replace direct I/O memory access with readb/writeb etc. (Jaroslav)
 M clean endianness stuff
 M make a definitive decision about SND_PCM_CHECK_SYNC
 M add master/divisor to timer
@@ -20,6 +19,7 @@ M fix trident driver (PCM?)
 M fix es1968 driver to compute real rate at params time
 M add new MPU401 uart driver (Jaroslav)
 L ICE1712 - fix consumer part PCM/AC'97 code - Hoontech Envy24 DSP (Jaroslav)
+L Trident 2 frags problem (Jaroslav)
 L rewrite CMI8330 PCM part
 L separate chip structure from pcm device
 L get rid of snd_pcm_lib_fragment_bytes and snd_pcm_lib_buffer_bytes
