@@ -227,7 +227,8 @@ extern int snd_mixer_unregister(snd_kmixer_t * mixer);
 
 extern snd_kmixer_channel_t *snd_mixer_find_channel(snd_kmixer_t * mixer,
 						    unsigned int priority);
-extern void snd_mixer_notify_change(snd_kmixer_file_t * mfile,
-				    unsigned int channel, int force);
+extern void snd_mixer_hardware_volume(snd_kmixer_t *mixer,
+				      unsigned int priority, int recordvolume,
+				      int left, int right, unsigned short mute);
 
 #endif				/* __MIXER_H */

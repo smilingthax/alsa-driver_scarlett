@@ -3,14 +3,17 @@
 		==========================================
 			    Installation guide
 
-ALSA driver replaces OSS/Lite driver which is in current Linux kernels.
-Please, check if OSS/Lite is compiled in your kernel. Remove it before
-you are trying to install this driver.
+The ALSA driver replaces OSS/Lite driver. The OSS/Lite is present in
+current Linux kernels. If you have got 2.2+ kernel, you must compile
+kernel with sound support (you needn't select any other modules than
+sound support). If you have got 2.0 or 2.1 kernels, check if the OSS/Lite
+driver is active in your kernel. You must remove it before you are
+trying to install the ALSA driver.
 
-Before you are trying install this driver, please, read carefuly
-documentation for insmod, modprobe, kerneld/kmod and even for isapnp
-if you have ISA PnP soundcard. If you don't understand how these programs
-work, you cannot be success with installation.
+Before installation of this driver, please, you need read documentation 
+carefully for insmod, modprobe, kerneld/kmod and even for isapnp
+module if you have the ISA PnP soundcard. If you don't understand how
+are working these programs, you cannot be success with the installation.
 
 Quick install
 =============
@@ -44,13 +47,13 @@ Note: All mixer channels are muted by default. You must use some native
 Driver cannot be activated?
 ===========================
 
-1) Is OSS(/Lite) driver present? - remove it
-2) Check your soundcard setup, read carefuly this install file (module
-   parameters).
-3) If you have ISA PnP soundcard:
+1) Is the OSS(/Lite) driver present? - remove it (2.0 and 2.1 kernels only)
+2) You can check your soundcard setup again and read this install file
+   (module parameters) carefully.
+3) If you have got ISA PnP soundcard:
    - native ISA PnP support: is your setup in /proc/isapnp.conf correct?
-   - isapnptools: is isapnp.conf configuration same as for driver?
-4) Driver isn't still working: remake driver with:
+   - isapnptools: is configuration on isapnp.conf same as for the driver?
+4) The driver isn't still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
    there aren't some messages. If these messages doesn't help you, send us
@@ -64,11 +67,11 @@ Driver cannot be activated?
 Bug report
 ==========
 
-We need know these things (at minimum):
+We need know at least these things:
 
 1) driver + kernel version: 'cat /proc/asound/version'
-2) soundcard info
-   - soundcard name provided by manufacture
+2) the soundcard info
+   - the soundcard name provided by manufacture
    - list of chips which soundcard have onboard
    - contents of 'cat /proc/asound/cards'
 3) all messages from /var/log/messages which should be relevant to
@@ -78,9 +81,9 @@ We need know these things (at minimum):
 Module parameters
 =================
 
-  User can modify/set parameters at load time of module. If modules supports
-  more cards and you have more than one card of same type, simply specify more
-  values for parameter delimited with commas.
+  User can modify/set parameters at load time of module. If the module supports
+  more cards and you have got more than one card of same type, simply specify
+  more values for the parameter delimited with commas.
   
   Module snd.o
   ------------
