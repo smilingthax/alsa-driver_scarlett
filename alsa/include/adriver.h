@@ -279,6 +279,13 @@ do {									\
 	remove_wait_queue(&wq, &__wait);				\
 } while (0)
 #endif /* 2.6.0 */
+#define wait_event_interruptible_timeout(wq, condition, timeout)	\
+({									\
+	long __ret = timeout;						\
+	if (!(condition))						\
+		__wait_event_interruptible_timeout(wq, condition, __ret); \
+	__ret;								\
+})
 #endif
 
 #ifndef CONFIG_HAVE_STRLCPY
