@@ -772,8 +772,7 @@ static int snd_via8233_playback_prepare(snd_pcm_substream_t *substream)
 		return rate_changed;
 	if (rate_changed) {
 		snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, runtime->rate);
-		if (viadev->reg_offset == 0x30) /* DSX3 */
-			snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
+		snd_ac97_set_rate(chip->ac97, AC97_SPDIF, runtime->rate);
 	}
 	rbits = (0xfffff / 48000) * runtime->rate + ((0xfffff % 48000) * runtime->rate) / 48000;
 	snd_assert((rbits & ~0xfffff) == 0, return -EINVAL);
