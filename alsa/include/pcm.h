@@ -95,6 +95,30 @@ typedef struct _snd_pcm_ops {
 #define SND_PCM_TRIGGER_PAUSE_PUSH	3
 #define SND_PCM_TRIGGER_PAUSE_RELEASE	4
 
+#define SND_PCM_RATE_5512		(1<<0)		/* 5512Hz */
+#define SND_PCM_RATE_8000		(1<<1)		/* 8000Hz */
+#define SND_PCM_RATE_11025		(1<<2)		/* 11025Hz */
+#define SND_PCM_RATE_16000		(1<<3)		/* 16000Hz */
+#define SND_PCM_RATE_22050		(1<<4)		/* 22050Hz */
+#define SND_PCM_RATE_32000		(1<<5)		/* 32000Hz */
+#define SND_PCM_RATE_44100		(1<<6)		/* 44100Hz */
+#define SND_PCM_RATE_48000		(1<<7)		/* 48000Hz */
+#define SND_PCM_RATE_64000		(1<<8)		/* 64000Hz */
+#define SND_PCM_RATE_88200		(1<<9)		/* 88200Hz */
+#define SND_PCM_RATE_96000		(1<<10)		/* 96000Hz */
+#define SND_PCM_RATE_176400		(1<<11)		/* 176400Hz */
+#define SND_PCM_RATE_192000		(1<<12)		/* 192000Hz */
+#define SND_PCM_RATE_CONTINUOUS		(1<<30)		/* continuous range */
+#define SND_PCM_RATE_KNOT		(1<<31)		/* supports more non-continuos rates */
+
+#define SND_PCM_RATE_8000_44100		(SND_PCM_RATE_8000|SND_PCM_RATE_11025|\
+					 SND_PCM_RATE_16000|SND_PCM_RATE_22050|\
+					 SND_PCM_RATE_32000|SND_PCM_RATE_44100)
+#define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
+#define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_64000|\
+					 SND_PCM_RATE_88200|SND_PCM_RATE_96000)
+#define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
+					 SND_PCM_RATE_192000)
 struct _snd_pcm_file {
 	snd_pcm_substream_t * substream;
 	struct _snd_pcm_file * next;

@@ -496,31 +496,6 @@ typedef struct _snd_hwdep_info {
 
 #define SND_PCM_SUBFMTBIT_STD		(1<<SND_PCM_SUBFORMAT_STD)
 
-#define SND_PCM_RATE_CONTINUOUS		(1<<0)		/* continuous range */
-#define SND_PCM_RATE_KNOT		(1<<1)		/* supports more non-continuos rates */
-#define SND_PCM_RATE_5512		(1<<2)		/* 5512Hz */
-#define SND_PCM_RATE_8000		(1<<3)		/* 8000Hz */
-#define SND_PCM_RATE_11025		(1<<4)		/* 11025Hz */
-#define SND_PCM_RATE_16000		(1<<5)		/* 16000Hz */
-#define SND_PCM_RATE_22050		(1<<6)		/* 22050Hz */
-#define SND_PCM_RATE_32000		(1<<7)		/* 32000Hz */
-#define SND_PCM_RATE_44100		(1<<8)		/* 44100Hz */
-#define SND_PCM_RATE_48000		(1<<9)		/* 48000Hz */
-#define SND_PCM_RATE_64000		(1<<10)		/* 64000Hz */
-#define SND_PCM_RATE_88200		(1<<11)		/* 88200Hz */
-#define SND_PCM_RATE_96000		(1<<12)		/* 96000Hz */
-#define SND_PCM_RATE_176400		(1<<13)		/* 176400Hz */
-#define SND_PCM_RATE_192000		(1<<14)		/* 192000Hz */
-
-#define SND_PCM_RATE_8000_44100		(SND_PCM_RATE_8000|SND_PCM_RATE_11025|\
-					 SND_PCM_RATE_16000|SND_PCM_RATE_22050|\
-					 SND_PCM_RATE_32000|SND_PCM_RATE_44100)
-#define SND_PCM_RATE_8000_48000		(SND_PCM_RATE_8000_44100|SND_PCM_RATE_48000)
-#define SND_PCM_RATE_8000_96000		(SND_PCM_RATE_8000_48000|SND_PCM_RATE_64000|\
-					 SND_PCM_RATE_88200|SND_PCM_RATE_96000)
-#define SND_PCM_RATE_8000_192000	(SND_PCM_RATE_8000_96000|SND_PCM_RATE_176400|\
-					 SND_PCM_RATE_192000)
-
 #define SND_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
 #define SND_PCM_INFO_MMAP_VALID		0x00000002	/* fragment data are valid during transfer */
 #define SND_PCM_INFO_DOUBLE		0x00000004	/* Double buffering needed for PCM start/stop */
