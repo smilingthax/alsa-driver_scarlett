@@ -63,6 +63,7 @@ struct _snd_mpu401 {
 
 	unsigned short hardware;	/* MPU401_HW_XXXX */
 	unsigned long port;		/* base port of MPU-401 chip */
+	struct resource *res;		/* port resource */
 	int irq;			/* IRQ number of MPU-401 chip (-1 = poll) */
 	int irq_flags;
 
@@ -101,6 +102,7 @@ int snd_mpu401_uart_new(snd_card_t * card,
 			int device,
 			unsigned short hardware,
 			unsigned long port,
+			int integrated,
 			int irq,
 			int irq_flags,
 			snd_rawmidi_t ** rrawmidi);
