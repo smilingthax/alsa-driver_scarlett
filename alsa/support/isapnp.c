@@ -1940,10 +1940,12 @@ __initfunc(int isapnp_init(void))
 	struct isapnp_dev *dev;
 	struct isapnp_logdev *logdev;
 
+#ifdef ISAPNP_REGION_OK
 	if (check_region(_PIDXR, 1)) {
 		printk("isapnp: Index Register 0x%x already used\n", _PIDXR);
 		return -EBUSY;
 	}
+#endif
 	if (check_region(_PNPWRP, 1)) {
 		printk("isapnp: Write Data Register 0x%x already used\n", _PNPWRP);
 		return -EBUSY;
