@@ -171,7 +171,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 				}
 				for (i = 0; i < PNP_MAX_DEVICES; i++)
 					ninst->devs[i] = NULL;
-				for (i = 0; i < PNP_MAX_DEVICES && cid->devs[i].id; i++) {
+				for (i = 0; i < PNP_MAX_DEVICES && cid->devs[i].id[0] != '\0'; i++) {
 					if (parse_id(cid->devs[i].id, &vendor, &device) < 0) {
 						cid++;
 						goto __next_card;
@@ -222,7 +222,7 @@ int pnp_register_driver(struct pnp_driver *drv)
 	struct pnp_dev *dev;
 	struct pnp_driver_instance *ninst = NULL;
 	
-	for (did = drv->id_table; did->id; did++) {
+	for (did = drv->id_table; did->id[0] != '\0'; did++) {
 		dev = NULL;
 		if (ninst == NULL) {
 			ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
