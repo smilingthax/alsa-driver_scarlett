@@ -1882,6 +1882,7 @@ static void isapnp_free_all_resources(void)
 #ifndef LINUX_2_1
 static struct symbol_table isapnp_syms = {
 	#include <linux/symtab_begin.h>
+	X(isapnp_present),
 	X(isapnp_cfg_begin),
 	X(isapnp_cfg_end),
 	X(isapnp_cfg_get_byte),
@@ -1913,6 +1914,7 @@ static struct symbol_table isapnp_syms = {
 #endif /* !LINUX_2_1 */
 
 #ifdef LINUX_2_1
+EXPORT_SYMBOL(isapnp_present);
 EXPORT_SYMBOL(isapnp_cfg_begin);
 EXPORT_SYMBOL(isapnp_cfg_end);
 EXPORT_SYMBOL(isapnp_cfg_get_byte);
