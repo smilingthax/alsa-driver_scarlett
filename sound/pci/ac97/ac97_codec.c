@@ -84,6 +84,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 { 0x574d4c00, 0xffffff00, "Wolfson",		patch_wolfson },
 { 0x594d4800, 0xffffff00, "Yamaha",		NULL },
 { 0x83847600, 0xffffff00, "SigmaTel",		NULL },
+{ 0x45838300, 0xffffff00, "ESS Technology",	NULL },
 { 0,	      0, 	  NULL,			NULL }
 };
 
@@ -133,6 +134,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x83847609, 0xffffffff, "STAC9721/23",	patch_sigmatel_stac9721 },
 { 0x83847644, 0xffffffff, "STAC9744",		patch_sigmatel_stac9744 },
 { 0x83847656, 0xffffffff, "STAC9756/57",	patch_sigmatel_stac9756 },
+{ 0x45838308, 0xffffffff, "ESS1988",		NULL },
 { 0, 	      0,	  NULL,			NULL }
 };
 
@@ -981,8 +983,11 @@ static void snd_ac97_change_volume_params2(ac97_t * ac97, int reg, int shift, un
 static inline int printable(unsigned int x)
 {
 	x &= 0xff;
-	if (x < ' ' || x >= 0x7f)
+	if (x < ' ' || x >= 0x71) {
+		if (x <= 0x89)
+			return x - 0x71 + 'A';
 		return '?';
+	}
 	return x;
 }
 
