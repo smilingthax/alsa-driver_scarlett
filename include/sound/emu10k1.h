@@ -938,7 +938,7 @@ struct _snd_emu10k1 {
 	int max_cache_pages;			/* max memory size / PAGE_SIZE */
 	void *silent_page;			/* silent page */
 	dma_addr_t silent_page_dmaaddr;
-	volatile unsigned int *ptb_pages;	/* page table pages */
+	volatile u32 *ptb_pages;		/* page table pages */
 	dma_addr_t ptb_pages_dmaaddr;
 	snd_util_memhdr_t *memhdr;		/* page allocation list */
 	emu10k1_memblk_t *reserved_page;	/* reserved page */
