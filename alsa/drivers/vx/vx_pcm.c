@@ -368,9 +368,14 @@ static int vx_send_irqa(vx_core_t *chip)
 	return vx_send_msg_nolock(chip, &rmh); /* no lock needed for trigger */ 
 }
 
+
 #define MAX_WAIT_FOR_DSP        250
-#define CAN_START_DELAY         10
-#define WAIT_STATE_DELAY        10
+/*
+ * vx boards do not support inter-card sync, besides
+ * only 126 samples require to be prepared before a pipe can start
+ */
+#define CAN_START_DELAY         2	/* wait 2ms only before asking if the pipe is ready*/
+#define WAIT_STATE_DELAY        2	/* wait 2ms after irqA was requested and check if the pipe state toggled*/
 
 /*
  * vx_toggle_pipe - start / pause a pipe
@@ -397,6 +402,7 @@ static int vx_toggle_pipe(vx_core_t *chip, vx_pipe_t *pipe, int state)
 	if (state) {
 		int delay = CAN_START_DELAY;
 		for (i = 0 ; i < MAX_WAIT_FOR_DSP; i++) {
+			snd_vx_delay(chip, delay);
 			err = vx_pipe_can_start(chip, pipe);
 			if (err > 0)
 				break;
@@ -405,7 +411,6 @@ static int vx_toggle_pipe(vx_core_t *chip, vx_pipe_t *pipe, int state)
 			 */
 			if ((i % 4 ) == 0)
 				delay <<= 1;
-			snd_vx_delay(chip, delay);
 		}
 	}
     
@@ -421,13 +426,13 @@ static int vx_toggle_pipe(vx_core_t *chip, vx_pipe_t *pipe, int state)
 	 */
 	delay = WAIT_STATE_DELAY;
 	for (i = 0; i < MAX_WAIT_FOR_DSP; i++) {
+		snd_vx_delay(chip, delay);
 		err = vx_get_pipe_state(chip, pipe, &cur_state);
 		if (err < 0 || cur_state == state)
 			break;
 		err = -EIO;
 		if ((i % 4 ) == 0)
 			delay <<= 1;
-		snd_vx_delay(chip, delay);
 	}
 	return err < 0 ? -EIO : 0;
 }
@@ -582,7 +587,7 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	vx_core_t *chip = snd_pcm_substream_chip(subs);
-	vx_pipe_t *pipe;
+	vx_pipe_t *pipe = 0;
 	unsigned int audio;
 	int err;
 
@@ -591,9 +596,19 @@ static int vx_pcm_playback_open(snd_pcm_substream_t *subs)
 
 	audio = subs->pcm->device * 2;
 	snd_assert(audio < chip->audio_outs, return -EINVAL);
-	err = vx_alloc_pipe(chip, 0, audio, 2, &pipe); /* stereo playback */
-	if (err < 0)
-		return err;
+	
+	/* playback pipe may have been already allocated for monitoring */
+	pipe = chip->playback_pipes[audio];
+	if (! pipe) {
+		/* not allocated yet */
+		err = vx_alloc_pipe(chip, 0, audio, 2, &pipe); /* stereo playback */
+		if (err < 0)
+			return err;
+		chip->playback_pipes[audio] = pipe;
+	}
+	/* open for playback */
+	pipe->references++;
+
 	pipe->substream = subs;
 	tasklet_init(&pipe->start_tq, vx_pcm_delayed_start, (unsigned long)subs);
 	chip->playback_pipes[audio] = pipe;
@@ -615,10 +630,16 @@ static int vx_pcm_playback_close(snd_pcm_substream_t *subs)
 
 	if (! subs->runtime->private_data)
 		return -EINVAL;
+
 	pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return -EINVAL);
-	chip->playback_pipes[pipe->number] = 0;
-	vx_free_pipe(chip, pipe);
+
+	if (--pipe->references == 0) {
+		chip->playback_pipes[pipe->number] = 0;
+		vx_free_pipe(chip, pipe);
+	}
+
 	return 0;
+
 }
 
 
@@ -763,6 +784,8 @@ static void vx_pcm_delayed_start(unsigned long arg)
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return);
 	int err;
 
+	/*  printk( KERN_DEBUG "DDDD tasklet delayed start jiffies = %ld\n", jiffies);*/
+
 	if ((err = vx_start_stream(chip, pipe)) < 0) {
 		snd_printk(KERN_ERR "vx: cannot start stream\n");
 		return;
@@ -771,6 +794,7 @@ static void vx_pcm_delayed_start(unsigned long arg)
 		snd_printk(KERN_ERR "vx: cannot start pipe\n");
 		return;
 	}
+	/*   printk( KERN_DEBUG "dddd tasklet delayed start jiffies = %ld \n", jiffies);*/
 }
 
 /*
@@ -955,6 +979,7 @@ static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
+	vx_pipe_t *pipe_out_monitoring = NULL;
 	unsigned int audio;
 	int err;
 
@@ -970,6 +995,28 @@ static int vx_pcm_capture_open(snd_pcm_substream_t *subs)
 	tasklet_init(&pipe->start_tq, vx_pcm_delayed_start, (unsigned long)subs);
 	chip->capture_pipes[audio] = pipe;
 
+	/* check if monitoring is needed */
+	if (chip->audio_monitor_active[audio]) {
+		pipe_out_monitoring = chip->playback_pipes[audio];
+		if (! pipe_out_monitoring) {
+			/* allocate a pipe */
+			err = vx_alloc_pipe(chip, 0, audio, 2, &pipe_out_monitoring);
+			if (err < 0)
+				return err;
+			chip->playback_pipes[audio] = pipe_out_monitoring;
+		}
+		pipe_out_monitoring->references++;
+		/* 
+		   if an output pipe is available, it's audios still may need to be 
+		   unmuted. hence we'll have to call a mixer entry point.
+		*/
+		vx_set_monitor_level(chip, audio, chip->audio_monitor[audio], chip->audio_monitor_active[audio]);
+		/* assuming stereo */
+		vx_set_monitor_level(chip, audio+1, chip->audio_monitor[audio+1], chip->audio_monitor_active[audio+1]); 
+	}
+
+	pipe->monitoring_pipe = pipe_out_monitoring; /* default value NULL */
+
 	runtime->hw = vx_pcm_capture_hw;
 	runtime->hw.period_bytes_min = chip->ibl.size;
 	runtime->private_data = pipe;
@@ -984,11 +1031,27 @@ static int vx_pcm_capture_close(snd_pcm_substream_t *subs)
 {
 	vx_core_t *chip = snd_pcm_substream_chip(subs);
 	vx_pipe_t *pipe;
-
+	vx_pipe_t *pipe_out_monitoring;
+	
 	if (! subs->runtime->private_data)
 		return -EINVAL;
 	pipe = snd_magic_cast(vx_pipe_t, subs->runtime->private_data, return -EINVAL);
 	chip->capture_pipes[pipe->number] = 0;
+
+	pipe_out_monitoring = pipe->monitoring_pipe;
+
+	/*
+	  if an output pipe is attached to this input, 
+	  check if it needs to be released.
+	*/
+	if (pipe_out_monitoring) {
+		if (--pipe_out_monitoring->references == 0) {
+			vx_free_pipe(chip, pipe_out_monitoring);
+			chip->playback_pipes[pipe->number] = 0;
+			pipe->monitoring_pipe = 0;
+		}
+	}
+	
 	vx_free_pipe(chip, pipe);
 	return 0;
 }
