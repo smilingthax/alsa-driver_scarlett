@@ -145,7 +145,7 @@
 #define HCFG_LEGACYWRITE	0x00800000	/* 1 = write, 0 = read - DO NOT USE under Linux	*/
 #define HCFG_LEGACYWORD		0x00400000	/* 1 = word, 0 = byte - DO NOT USE under Linux	*/
 #define HCFG_LEGACYINT		0x00200000	/* 1 = legacy event captured. Write 1 to clear. DO NOT USE under Linux */
-#define HCFG_CODECFORMAT_MASK	0x000e0000	/* CODEC format					*/
+#define HCFG_CODECFORMAT_MASK	0x00070000	/* CODEC format					*/
 #define HCFG_CODECFORMAT_AC97	0x00000000	/* AC97 CODEC format -- Primary Output		*/
 #define HCFG_CODECFORMAT_I2S	0x00020000	/* I2S CODEC format -- Secondary (Rear) Output	*/
 #define HCFG_GPINPUT0		0x00004000	/* External pin112				*/
@@ -154,9 +154,9 @@
 #define HCFG_JOYENABLE		0x00000200	/* Joystick enable				*/
 #define HCFG_PHASETRACKENABLE	0x00000100	/* Phase tracking enable			*/
 #define HCFG_AC3ENABLE_MASK    	0x0x0000e0	/* AC3 async input control - Not implemented	*/
-#define HCFG_AC3ENABLE_ZVIDEO	0x00000020	/* Channels 0 and 1 replace ZVIDEO		*/
+#define HCFG_AC3ENABLE_ZVIDEO	0x00000080	/* Channels 0 and 1 replace ZVIDEO		*/
 #define HCFG_AC3ENABLE_CDSPDIF	0x00000040	/* Channels 0 and 1 replace CDSPDIF		*/
-#define HCFG_AC3ENABLE_ZVIDEO	0x00000020	/* Channels 0 and 1 replace GPSPDIF		*/
+#define HCFG_AC3ENABLE_GPSPDIF	0x00000020	/* Channels 0 and 1 replace GPSPDIF		*/
 #define HCFG_AUTOMUTE		0x00000010	/* When set, the async sample rate convertors	*/
 						/* will automatically mute their output when	*/
 						/* they are not rate-locked to the external	*/
@@ -499,8 +499,8 @@
 #define SPCS_CLKACCY_VARIABLE	0x20000000	/* Variable accuracy				*/
 #define SPCS_SAMPLERATEMASK	0x0f000000	/* Sample rate					*/
 #define SPCS_SAMPLERATE_44	0x00000000	/* 44.1kHz sample rate				*/
-#define SPCS_SAMPLERATE_48	0x04000000	/* 48kHz sample rate				*/
-#define SPCS_SAMPLERATE_32	0x0c000000	/* 32kHz sample rate				*/
+#define SPCS_SAMPLERATE_48	0x02000000	/* 48kHz sample rate				*/
+#define SPCS_SAMPLERATE_32	0x03000000	/* 32kHz sample rate				*/
 #define SPCS_CHANNELNUMMASK	0x00f00000	/* Channel number				*/
 #define SPCS_CHANNELNUM_UNSPEC	0x00000000	/* Unspecified channel number			*/
 #define SPCS_CHANNELNUM_LEFT	0x00100000	/* Left channel					*/
