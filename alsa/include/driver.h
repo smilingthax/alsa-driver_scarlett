@@ -57,6 +57,9 @@
 #if LinuxVersionCode(2, 2, 0) <= LINUX_VERSION_CODE
 #define LINUX_2_2
 #endif
+#if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
+#define LINUX_2_3
+#endif
 #endif
 
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
