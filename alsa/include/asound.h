@@ -291,7 +291,7 @@ typedef enum _snd_pcm_subclass {
 typedef enum _snd_pcm_stream {
 	SND_PCM_STREAM_PLAYBACK,
 	SND_PCM_STREAM_CAPTURE,
-	SND_PCM_STREAM_LAST,
+	SND_PCM_STREAM_LAST = SND_PCM_STREAM_CAPTURE,
 } snd_pcm_stream_t;
 
 typedef enum _snd_pcm_access {
