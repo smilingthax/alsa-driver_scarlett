@@ -109,8 +109,7 @@ static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
 		vfree(vmaddr); /* don't use wrapper */
 }
 
-int snd_free_sgbuf_pages(const struct snd_dma_device *dev,
-			 struct snd_dma_buffer *dmab)
+int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
 {
 	struct snd_sg_buf *sgbuf = dmab->private_data;
 
@@ -173,7 +172,7 @@ void *snd_malloc_sgbuf_pages(const struct snd_dma_device *dev,
 	return dmab->area;
 
  _failed:
-	snd_free_sgbuf_pages(dev, dmab); /* free the table */
+	snd_free_sgbuf_pages(dmab); /* free the table */
 	return NULL;
 }
 
