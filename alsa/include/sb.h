@@ -161,9 +161,6 @@ typedef struct snd_stru_sb sb_t;
 #define SB_DSP4_INPUT_LEFT	0x3d
 #define SB_DSP4_INPUT_RIGHT	0x3e
 
-#define SB_DSP_ESS_GET_VERSION	0xe7
-#define SB_DSP_ESS_EXTENDED	0xc6
-
 #define SB_DSP_CAPTURE_SOURCE	0x0c
 #define SB_DSP_MIXS_MIC0	0x00	/* same as MIC */
 #define SB_DSP_MIXS_CD		0x01

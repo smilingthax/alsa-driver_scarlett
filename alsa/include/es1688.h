@@ -77,10 +77,10 @@ typedef struct snd_stru_es1688 es1688_t;
 #define e_s_s_ESS1688ENABLE2	0xb
 #define e_s_s_ESS1688INIT1	0x7
 
+#define ES1688_DSP_CMD_DMAOFF	0xd0
 #define ES1688_DSP_CMD_SPKON	0xd1
 #define ES1688_DSP_CMD_SPKOFF	0xd3
-#define ES1688_DSP_CMD_DMAON	0xd0
-#define ES1688_DSP_CMD_DMAOFF	0xd4
+#define ES1688_DSP_CMD_DMAON	0xd4
 
 #define ES1688_PCM_DEV		0x14
 #define ES1688_MIC_DEV		0x1a

@@ -867,11 +867,16 @@ typedef struct {
 
 #define EMU10K1_FX8110_CODE_MAGIC	(('F'<<24)|('X'<<16)|0x8110)
 
+#define EMU10K1_GPR_TRANSLATION_NONE		0
+#define EMU10K1_GPR_TRANSLATION_TABLE100	1
+
 typedef struct {
-	unsigned char gpr;		/* GPR number */
+	unsigned int count;		/* count of GPR */
+	unsigned char gpr[16];		/* GPR number(s) */
 	snd_control_id_t id;		/* full control ID definition */
 	unsigned int min;		/* minimum range */
 	unsigned int max;		/* maximum range */
+	unsigned int translation;	/* translation type */
 } emu10k1_fx8010_control_gpr_t;
 
 typedef struct {
@@ -881,12 +886,18 @@ typedef struct {
 	unsigned int gpr_reloc[0x100/32]; /* bitmask of relocatable GPRs */
 	unsigned int gpr_valid[0x100/32]; /* bitmask of valid initializers */
 	unsigned int gpr_map[0x100];	/* initializers */
-	unsigned int grp_control_count;	/* count of exported GPR controls */
+	unsigned int gpr_control_count;	/* count of exported GPR controls */
 	emu10k1_fx8010_control_gpr_t *gpr_controls; /* GPR controls */
-	unsigned int tank_data[0x80];
-	unsigned int tank_address[0x80];
-	unsigned int tank_data_ext[0x20];
-	unsigned int tank_address_ext[0x20];
+	unsigned int tram_used[0x80/32];
+	unsigned int tram_reloc[0x80/32];
+	unsigned int tram_valid[0x80/32];
+	unsigned int tram_data_map[0x80];
+	unsigned int tram_addr_map[0x80];
+	unsigned int tram_ext_used[0x20/32];
+	unsigned int tram_ext_reloc[0x20/32];
+	unsigned int tram_ext_valid[0x20/32];
+	unsigned int tram_ext_data_map[0x80];
+	unsigned int tram_ext_addr_map[0x80];
 	unsigned int code[512][2];	/* one instruction - 64 bits */
 } emu10k1_fx8010_code_t;
 
