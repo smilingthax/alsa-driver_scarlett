@@ -1800,65 +1800,6 @@ wavefront_should_cause_interrupt (snd_wavefront_t *dev,
 	restore_flags (flags);
 }
 
-int
-snd_wavefront_detect_irq (snd_wavefront_t *dev) 
-
-{
-	int i;
-	int possible_irqs[] = { 5, 9, 12, 15, -1 };
-
-	/* Note: according to the PnP dump, 7 and 11 are possible too, but the
-	   WaveFront SDK doesn't tell us how to set the card to use them.  
-	*/
-
-	snd_printk ("autodetecting WaveFront IRQ\n");
-
-	for (i = 0; possible_irqs[i] > 0; i++) {
-		if (snd_wavefront_check_irq (dev, possible_irqs[i]) == 0) {
-			snd_printk ("autodetected IRQ %d\n", 
-				    possible_irqs[i]);
-			return possible_irqs[i];
-		}
-	}
-
-	return -1;
-}
-
-int
-snd_wavefront_check_irq (snd_wavefront_t *dev, int irq)
-
-{
-	int bits;
-	unsigned long irq_mask;
-	short reported_irq;
-
-	bits = snd_wavefront_interrupt_bits (irq);
-
-	irq_mask = probe_irq_on ();
-
-	outb (0x0, dev->control_port); 
-	outb (0x80 | 0x40 | bits, dev->data_port);	
-	wavefront_should_cause_interrupt(dev, 0x80|0x40|0x10|0x1,
-					 dev->control_port,
-					 (reset_time*HZ)/100);
-
-	reported_irq = probe_irq_off (irq_mask);
-
-	if (reported_irq == 0) {
-		snd_printk ("No unassigned interrupts detected "
-			    "after h/w reset\n");
-		return -1;
-	} else if (reported_irq < 0) {
-		snd_printk ("Multiple unassigned interrupts detected "
-			    "after h/w reset\n");
-		return -1;
-	} else if (reported_irq != irq) {
-		return -1;
-	}
-
-	return 0; /* OK */
-}
-
 static int
 wavefront_reset_to_cleanliness (snd_wavefront_t *dev)
 
@@ -2306,8 +2247,6 @@ EXPORT_SYMBOL(snd_wavefront_synth_open);
 EXPORT_SYMBOL(snd_wavefront_synth_release);
 EXPORT_SYMBOL(snd_wavefront_internal_interrupt);
 EXPORT_SYMBOL(snd_wavefront_interrupt_bits);
-EXPORT_SYMBOL(snd_wavefront_detect_irq);
-EXPORT_SYMBOL(snd_wavefront_check_irq);
 EXPORT_SYMBOL(snd_wavefront_start);
 EXPORT_SYMBOL(snd_wavefront_detect);
 EXPORT_SYMBOL(snd_wavefront_cmd);
