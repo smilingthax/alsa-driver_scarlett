@@ -1818,7 +1818,7 @@ static void snd_cs4281_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 static int __devinit snd_cs4281_probe(struct pci_dev *pci,
 				      const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	cs4281_t *chip;
 	opl3_t *opl3;

@@ -804,7 +804,7 @@ static int __devinit snd_via8233_create(snd_card_t * card,
 static int __devinit snd_via8233_probe(struct pci_dev *pci,
 				       const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	via8233_t *chip;
 	int pcm_dev = 0;

@@ -4197,7 +4197,7 @@ static int __devinit snd_ice1712_create(snd_card_t * card,
 static int __devinit snd_ice1712_probe(struct pci_dev *pci,
 				       const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	ice1712_t *ice;
 	int pcm_dev = 0, err;

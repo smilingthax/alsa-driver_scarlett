@@ -1403,7 +1403,7 @@ static struct shortname_table {
 static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 					const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	intel8x0_t *chip;
 	int pcm_dev = 0, err;
@@ -1502,7 +1502,7 @@ static struct pci_driver driver = {
 static int __devinit snd_intel8x0_joystick_probe(struct pci_dev *pci,
 						 const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
 	if (!snd_enable[dev]) {

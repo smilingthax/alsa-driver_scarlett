@@ -79,7 +79,7 @@ MODULE_DEVICE_TABLE(pci, snd_ymfpci_ids);
 static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					   const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	ymfpci_t *chip;
 	opl3_t *opl3;

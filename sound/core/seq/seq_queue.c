@@ -54,7 +54,7 @@ static void snd_seq_check_queue_in_tasklet(unsigned long private_data);
 static queue_t *queue_list[SNDRV_SEQ_MAX_QUEUES];
 static spinlock_t queue_list_lock = SPIN_LOCK_UNLOCKED;
 /* number of queues allocated */
-static int num_queues = 0;
+static int num_queues;
 
 int snd_seq_queue_get_cur_queues(void)
 {

@@ -2663,7 +2663,7 @@ static snd_kcontrol_new_t snd_es1968_control_switches[] __devinitdata = {
 static int __devinit snd_es1968_probe(struct pci_dev *pci,
 				      const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	es1968_t *chip;
 	int i, err;

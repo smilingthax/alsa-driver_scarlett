@@ -88,7 +88,7 @@ MODULE_DEVICE_TABLE(pci, snd_cs46xx_ids);
 static int __devinit snd_card_cs46xx_probe(struct pci_dev *pci,
 					   const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	cs46xx_t *chip;
 	int err;

@@ -2670,7 +2670,7 @@ MODULE_DEVICE_TABLE(pci, snd_cmipci_ids);
 static int __devinit snd_cmipci_probe(struct pci_dev *pci,
 				      const struct pci_device_id *id)
 {
-	static int dev = 0;
+	static int dev;
 	snd_card_t *card;
 	cmipci_t *cm;
 	int err;
