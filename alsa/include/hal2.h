@@ -28,7 +28,7 @@
 #include "timer.h"
 
 #include <asm/addrspace.h>
-#include <asm/sgihpc.h>
+#include <asm/sgi/sgihpc.h>
 
 /* We can possibly use the addresses in hpc_regs instead of giving the adress in
  * an absolute way. This will at least save us if someone breaks the hpc_regs

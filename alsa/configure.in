@@ -123,7 +123,7 @@ AC_SUBST(CONFIG_SND_PCI)
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
 CONFIG_SND_SGI=0
-if test -r $CONFIG_SND_KERNELDIR/include/asm/sgihpc.h; then
+if test -r $CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h; then
   CONFIG_SND_SGI=1
 fi
 AC_SUBST(CONFIG_SND_SGI)
