@@ -123,7 +123,7 @@ static int snd_apm_callback(apm_event_t ev)
 int __init pm_init(void)
 {
 	if (apm_register_callback(snd_apm_callback))
-		snd_printk("apm_register_callback failure!\n");
+		snd_printk(KERN_ERR "apm_register_callback failure!\n");
 #ifdef CONFIG_PCI
 	pci_compat_pm_dev = pm_register(PM_PCI_DEV, 0, pci_compat_pm_callback);
 #endif
@@ -234,6 +234,162 @@ static int work_caller(void *data)
 int snd_compat_schedule_work(struct work_struct *works)
 {
 	return kernel_thread(work_caller, works, 0) >= 0;
+}
+
+struct workqueue_struct {
+	spinlock_t lock;
+	const char *name;
+	struct list_head worklist;
+	int task_pid;
+	wait_queue_head_t more_work;
+	wait_queue_head_t work_done;
+	struct completion thread_exited;
+};
+
+static void run_workqueue(struct workqueue_struct *wq)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&wq->lock, flags);
+	while (!list_empty(&wq->worklist)) {
+		struct work_struct *work = list_entry(wq->worklist.next,
+						      struct work_struct, entry);
+		void (*f) (void *) = work->func;
+		void *data = work->data;
+
+		list_del_init(wq->worklist.next);
+		spin_unlock_irqrestore(&wq->lock, flags);
+		clear_bit(0, &work->pending);
+		f(data);
+		spin_lock_irqsave(&wq->lock, flags);
+		wake_up(&wq->work_done);
+	}
+	spin_unlock_irqrestore(&wq->lock, flags);
+}
+
+void snd_compat_flush_workqueue(struct workqueue_struct *wq)
+{
+	if (0 /* wq->task == current */) {
+		run_workqueue(wq);
+	} else {
+		wait_queue_t wait;
+
+		init_waitqueue_entry(&wait, current);
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		spin_lock_irq(&wq->lock);
+		add_wait_queue(&wq->work_done, &wait);
+		while (!list_empty(&wq->worklist)) {
+			spin_unlock_irq(&wq->lock);
+			schedule();
+			spin_lock_irq(&wq->lock);
+		}
+		remove_wait_queue(&wq->work_done, &wait);
+		spin_unlock_irq(&wq->lock);
+	}
+}
+
+void snd_compat_destroy_workqueue(struct workqueue_struct *wq)
+{
+	snd_compat_flush_workqueue(wq);
+	kill_proc(wq->task_pid, SIGKILL, 1);
+	if (wq->task_pid >= 0)
+		wait_for_completion(&wq->thread_exited);
+	kfree(wq);
+}
+
+static int xworker_thread(void *data)
+{
+	struct workqueue_struct *wq = data;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+	lock_kernel();
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
+	daemonize();
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 8)
+	reparent_to_init();
+#endif
+	strcpy(current->comm, wq->name); /* FIXME: different names? */
+
+	do {
+		run_workqueue(wq);
+		wait_event_interruptible(wq->more_work, !list_empty(&wq->worklist));
+	} while (!signal_pending(current));
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+	unlock_kernel();
+#endif
+	complete_and_exit(&wq->thread_exited, 0);
+}
+
+struct workqueue_struct *snd_compat_create_workqueue(const char *name)
+{
+	struct workqueue_struct *wq;
+	
+	BUG_ON(strlen(name) > 10);
+	
+	wq = kmalloc(sizeof(*wq), GFP_KERNEL);
+	if (!wq)
+		return NULL;
+	memset(wq, 0, sizeof(*wq));
+	
+	spin_lock_init(&wq->lock);
+	INIT_LIST_HEAD(&wq->worklist);
+	init_waitqueue_head(&wq->more_work);
+	init_waitqueue_head(&wq->work_done);
+	init_completion(&wq->thread_exited);
+	wq->name = name;
+	wq->task_pid = kernel_thread(xworker_thread, wq, 0);
+	if (wq->task_pid < 0) {
+		printk(KERN_ERR "snd: failed to start thread %s\n", name);
+		snd_compat_destroy_workqueue(wq);
+		wq = NULL;
+	}
+	return wq;
+}
+
+static void __x_queue_work(struct workqueue_struct *wq, struct work_struct *work)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&wq->lock, flags);
+	work->wq_data = wq;
+	list_add_tail(&work->entry, &wq->worklist);
+	wake_up(&wq->more_work);
+	spin_unlock_irqrestore(&wq->lock, flags);
+}
+
+int snd_compat_queue_work(struct workqueue_struct *wq, struct work_struct *work)
+{
+	if (!test_and_set_bit(0, &work->pending)) {
+		__x_queue_work(wq, work);
+		return 1;
+	}
+	return 0;
+}
+
+static void delayed_work_timer_fn(unsigned long __data)
+{
+	struct work_struct *work = (struct work_struct *)__data;
+	struct workqueue_struct *wq = work->wq_data;
+	
+	__x_queue_work(wq, work);
+}
+
+int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struct *work, unsigned long delay)
+{
+	struct timer_list *timer = &work->timer;
+
+	if (!test_and_set_bit(0, &work->pending)) {
+		work->wq_data = work;
+		timer->expires = jiffies + delay;
+		timer->data = (unsigned long)work;
+		timer->function = delayed_work_timer_fn;
+		add_timer(timer);
+		return 1;
+	}
+	return 0;
 }
 
 #endif

@@ -450,23 +450,40 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #include <linux/workqueue.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45) && !defined(__WORK_INITIALIZER)
+#define SND_WORKQUEUE_COMPAT
+struct workqueue_struct;
 struct work_struct {
+	unsigned long pending;
+	struct list_head entry;
 	void (*func)(void *);
 	void *data;
+	void *wq_data;
+	struct timer_list timer;
 };
 #define INIT_WORK(_work, _func, _data)			\
 	do {						\
 		(_work)->func = _func;			\
 		(_work)->data = _data;			\
+		init_timer(&(_work)->timer);		\
 	} while (0)
 #define __WORK_INITIALIZER(n, f, d) {			\
-	.func = (f),					\
-	.data = (d),					\
+		.func = (f),				\
+		.data = (d),				\
 	}
 #define DECLARE_WORK(n, f, d)				\
 	struct work_struct n = __WORK_INITIALIZER(n, f, d)
 int snd_compat_schedule_work(struct work_struct *work);
 #define schedule_work(w) snd_compat_schedule_work(w)
+struct workqueue_struct *snd_compat_create_workqueue(const char *name);
+#define create_workqueue(name) snd_compat_create_workqueue((name))
+void snd_compat_flush_workqueue(struct workqueue_struct *wq);
+#define flush_workqueue(wq) snd_compat_flush_workqueue((wq));
+void snd_compat_destroy_workqueue(struct workqueue_struct *wq);
+#define destroy_workqueue(wq) snd_compat_destroy_workqueue((wq));
+int snd_compat_queue_work(struct workqueue_struct *wq, struct work_struct *work);
+#define queue_work(wq, work) snd_compat_queue_work((wq), (work))
+int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struct *work, unsigned long delay);
+#define queue_delayed_work(wq, work, delay) snd_compat_queue_delayed_work((wq), (work), (delay))
 #endif /* < 2.5.45 */
 #endif /* < 2.6.0 */
 
