@@ -19,6 +19,7 @@ int main (void)
     fprintf (stderr, "Unable to open sound device\n");
     return 3;
   }
+  memset(buf, 0, sizeof(buf));
   write(hifi, buf, sizeof(buf));
   for (x=0;;x++) {
     //usleep (50000); // Take this out, to experiment
