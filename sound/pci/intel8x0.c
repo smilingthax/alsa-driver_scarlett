@@ -2204,6 +2204,17 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 	snd_intel8x0_proc_init(chip);
 	sprintf(chip->ac97_name, "%s - AC'97", card->shortname);
 	sprintf(chip->ctrl_name, "%s - Controller", card->shortname);
+	if (device_type == DEVICE_ALI) {
+		/* ALI5455 has no ac97 region */
+		chip->bmaddr = pci_resource_start(pci, 0);
+		if ((chip->res_bm = request_region(chip->bmaddr, 256, chip->ctrl_name)) == NULL) {
+			snd_intel8x0_free(chip);
+			snd_printk("unable to grab ports 0x%lx-0x%lx\n", chip->bmaddr, chip->bmaddr + 64 - 1);
+			return -EBUSY;
+		}
+		goto port_inited;
+	}
+
 	if (pci_resource_flags(pci, 2) & IORESOURCE_MEM) {	/* ICH4 and Nforce */
 		chip->mmio = 1;
 		chip->addr = pci_resource_start(pci, 2);
@@ -2248,6 +2259,8 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 			return -EBUSY;
 		}
 	}
+
+ port_inited:
 	if (request_irq(pci->irq, snd_intel8x0_interrupt, SA_INTERRUPT|SA_SHIRQ, card->shortname, (void *)chip)) {
 		snd_intel8x0_free(chip);
 		snd_printk("unable to grab IRQ %d\n", pci->irq);
