@@ -646,6 +646,7 @@ Module parameters
 
     Module for AC'97 motherboards from Intel.
 			* Intel i810/810E, i815, i820, i830, i840, MX440
+			* SiS 7012 (SiS 735)
 
     snd_ac97_clock	  - AC'97 codec clock base (default 48000Hz)
 
