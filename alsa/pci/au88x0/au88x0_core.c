@@ -2234,7 +2234,6 @@ int vortex_core_init(vortex_t *vortex) {
     //vortex_disable_timer_int(vortex);
 
     printk(KERN_INFO "done.\n");
-    spin_lock_init(&vortex->lock);
 
     return 0;
 }
