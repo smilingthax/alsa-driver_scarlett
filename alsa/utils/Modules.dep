@@ -11,7 +11,3 @@
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
 
-%dir linux/sound/usb
-|snd-usb-audio snd-pcm
-|snd-usb-midi @if_sequencer snd-seq-device snd-seq-midi-event
-
