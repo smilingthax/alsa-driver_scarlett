@@ -23,6 +23,7 @@
  */
 
 #include "opl3_voice.h"
+#include <linux/init.h>
 #include <sound/initval.h>
 
 EXPORT_NO_SYMBOLS;
@@ -35,6 +36,12 @@ MODULE_CLASSES("{sound}");
 int use_internal_drums = 0;
 MODULE_PARM(use_internal_drums, "i");
 MODULE_PARM_DESC(use_internal_drums, "Enable internal OPL2/3 drums.");
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 int snd_opl3_synth_use_inc(opl3_t * opl3)
 {

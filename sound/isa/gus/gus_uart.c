@@ -21,6 +21,8 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
 #include <sound/core.h>
 #include <sound/gus.h>
 

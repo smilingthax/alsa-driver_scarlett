@@ -19,9 +19,11 @@
  */
  
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/ainstr_gf1.h>
 #include <sound/initval.h>
+#include <asm/uaccess.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Advanced Linux Sound Architecture GF1 (GUS) Patch support.");

@@ -21,6 +21,7 @@
  */
 
 #include "emu8000_local.h"
+#include <linux/init.h>
 #include <sound/initval.h>
 
 EXPORT_NO_SYMBOLS;

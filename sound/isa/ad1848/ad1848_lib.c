@@ -21,6 +21,9 @@
 
 #define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <asm/dma.h>
+#include <linux/delay.h>
 #include <sound/core.h>
 #include <sound/ad1848.h>
 

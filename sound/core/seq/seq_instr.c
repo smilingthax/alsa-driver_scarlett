@@ -19,6 +19,7 @@
  */
  
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include "seq_clientmgr.h"
 #include <sound/seq_instr.h>

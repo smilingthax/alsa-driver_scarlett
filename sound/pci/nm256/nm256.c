@@ -25,6 +25,10 @@
  */
   
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/control.h>
@@ -1282,28 +1286,28 @@ static void nm256_resume(nm256_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_nm256_suspend(struct pci_dev *dev, u32 state)
 {
-	nm256_t *chip = snd_magic_cast(nm256_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+	nm256_t *chip = snd_magic_cast(nm256_t, pci_get_drvdata(dev), return -ENXIO);
 	nm256_suspend(chip, 0);
 	return 0;
 }
 static int snd_nm256_resume(struct pci_dev *dev)
 {
-	nm256_t *chip = snd_magic_cast(nm256_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+	nm256_t *chip = snd_magic_cast(nm256_t, pci_get_drvdata(dev), return -ENXIO);
 	nm256_resume(chip, 0);
 	return 0;
 }
 #else
 static void snd_nm256_suspend(struct pci_dev *dev)
 {
-	nm256_t *chip = snd_magic_cast(nm256_t, PCI_GET_DRIVER_DATA(dev), return);
+	nm256_t *chip = snd_magic_cast(nm256_t, pci_get_drvdata(dev), return);
 	nm256_suspend(chip, 0);
 }
 static void snd_nm256_resume(struct pci_dev *dev)
 {
-	nm256_t *chip = snd_magic_cast(nm256_t, PCI_GET_DRIVER_DATA(dev), return);
+	nm256_t *chip = snd_magic_cast(nm256_t, pci_get_drvdata(dev), return);
 	nm256_resume(chip, 0);
 }
 #endif
@@ -1607,17 +1611,17 @@ static int __devinit snd_nm256_probe(struct pci_dev *pci,
 		return err;
 	}
 
-	PCI_SET_DRIVER_DATA(pci, chip);
+	pci_set_drvdata(pci, chip);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_nm256_remove(struct pci_dev *pci)
 {
-	nm256_t *chip = snd_magic_cast(nm256_t, PCI_GET_DRIVER_DATA(pci), return);
+	nm256_t *chip = snd_magic_cast(nm256_t, pci_get_drvdata(pci), return);
 	if (chip)
 		snd_card_free(chip->card);
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	pci_set_drvdata(pci, NULL);
 }
 
 

@@ -45,6 +45,8 @@
  */
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/rawmidi.h>
@@ -662,15 +664,15 @@ static int __devinit snd_card_als4k_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, card);
+	pci_set_drvdata(pci, card);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_card_als4k_remove(struct pci_dev *pci)
 {
-	snd_card_free(PCI_GET_DRIVER_DATA(pci));
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	snd_card_free(pci_get_drvdata(pci));
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

@@ -42,6 +42,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/seq_kernel.h>
 #include <sound/seq_virmidi.h>

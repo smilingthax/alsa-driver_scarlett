@@ -1736,7 +1736,7 @@ void snd_pcm_period_elapsed(snd_pcm_substream_t *substream)
 	spin_unlock(&runtime->lock);
 	if (runtime->transfer_ack_end)
 		runtime->transfer_ack_end(substream);
-	snd_kill_fasync(&runtime->fasync, SIGIO, POLL_IN);
+	kill_fasync(&runtime->fasync, SIGIO, POLL_IN);
 }
 
 static int snd_pcm_lib_write_transfer(snd_pcm_substream_t *substream,

@@ -25,6 +25,7 @@
 #include <sound/control.h>
 #include <sound/pcm.h>
 #include <sound/cs8427.h>
+#include <sound/asoundef.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("IEC958 (S/PDIF) receiver & transmitter by Cirrus Logic");

@@ -36,6 +36,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/rawmidi.h>
 #include <sound/info.h>
@@ -48,6 +49,12 @@
 MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
 MODULE_DESCRIPTION("Virtual Raw MIDI client on Sequencer");
 MODULE_LICENSE("GPL");
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 /*
  * initialize an event record

@@ -20,6 +20,8 @@
  */
 
 #include <sound/driver.h>
+#include <asm/dma.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/gus.h>
 #include <sound/control.h>
@@ -31,6 +33,12 @@ MODULE_LICENSE("GPL");
 #define chip_t snd_gus_card_t
 
 static int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 int snd_gus_use_inc(snd_gus_card_t * gus)
 {

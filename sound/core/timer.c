@@ -20,6 +20,8 @@
  */
 
 #include <sound/driver.h>
+#include <linux/delay.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/timer.h>
 #include <sound/control.h>
@@ -69,6 +71,12 @@ static int snd_timer_dev_register(snd_device_t *device);
 static int snd_timer_dev_unregister(snd_device_t *device);
 
 static void snd_timer_reschedule(snd_timer_t * timer, unsigned long ticks_left);
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 /*
  * create a timer instance with the given owner string.
@@ -886,7 +894,7 @@ static int snd_timer_user_open(struct inode *inode, struct file *file)
 		return -ENOMEM;
 	}
 	file->private_data = tu;
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 	return 0;
@@ -905,7 +913,7 @@ static int snd_timer_user_release(struct inode *inode, struct file *file)
 			kfree(tu->queue);
 		snd_magic_kfree(tu);
 	}
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return 0;
@@ -1267,7 +1275,7 @@ static unsigned int snd_timer_user_poll(struct file *file, poll_table * wait)
 
 static struct file_operations snd_timer_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	read:		snd_timer_user_read,

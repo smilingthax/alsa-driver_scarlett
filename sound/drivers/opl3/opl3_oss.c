@@ -27,6 +27,20 @@ static int snd_opl3_ioctl_seq_oss(snd_seq_oss_arg_t *arg, unsigned int cmd, unsi
 static int snd_opl3_load_patch_seq_oss(snd_seq_oss_arg_t *arg, int format, const char *buf, int offs, int count);
 static int snd_opl3_reset_seq_oss(snd_seq_oss_arg_t *arg);
 
+/* */
+
+static inline mm_segment_t snd_enter_user(void)
+{
+	mm_segment_t fs = get_fs();
+	set_fs(get_ds());
+	return fs;
+}
+
+static inline void snd_leave_user(mm_segment_t fs)
+{
+	set_fs(fs);
+}
+
 /* operators */
 
 extern snd_midi_op_t opl3_ops;

@@ -21,15 +21,34 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/mm.h>
+#include <linux/file.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/info.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/minors.h>
-#include <linux/file.h>
 
 spinlock_t pcm_link_lock = SPIN_LOCK_UNLOCKED;
+
+static inline mm_segment_t snd_enter_user(void)
+{
+	mm_segment_t fs = get_fs();
+	set_fs(get_ds());
+	return fs;
+}
+
+static inline void snd_leave_user(mm_segment_t fs)
+{
+	set_fs(fs);
+}
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t *info)
 {
@@ -1670,7 +1689,7 @@ int snd_pcm_open(struct inode *inode, struct file *file)
 	snd_pcm_file_t *pcm_file;
 	wait_queue_t wait;
 
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 	snd_runtime_check(device >= SNDRV_MINOR_PCM_PLAYBACK && device < SNDRV_MINOR_DEVICES, return -ENXIO);
@@ -1715,7 +1734,7 @@ int snd_pcm_open(struct inode *inode, struct file *file)
       __error:
 	dec_mod_count(pcm->card->module);
       __error1:
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
       	MOD_DEC_USE_COUNT;
 #endif
       	return err;
@@ -1744,7 +1763,7 @@ int snd_pcm_release(struct inode *inode, struct file *file)
 	up(&pcm->open_mutex);
 	wake_up(&pcm->open_wait);
 	dec_mod_count(pcm->card->module);
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return 0;
@@ -2372,7 +2391,7 @@ unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait)
 }
 
 #ifndef VM_RESERVED
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 static int snd_pcm_mmap_swapout(struct page * page, struct file * file)
 #else
 static int snd_pcm_mmap_swapout(struct vm_area_struct * area, struct page * page)
@@ -2382,7 +2401,7 @@ static int snd_pcm_mmap_swapout(struct vm_area_struct * area, struct page * page
 }
 #endif
 
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 static struct page * snd_pcm_mmap_status_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 #else
 static unsigned long snd_pcm_mmap_status_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
@@ -2397,7 +2416,7 @@ static unsigned long snd_pcm_mmap_status_nopage(struct vm_area_struct *area, uns
 	runtime = substream->runtime;
 	page = virt_to_page(runtime->status);
 	get_page(page);
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	return page;
 #else
 	return page_address(page);
@@ -2425,7 +2444,7 @@ int snd_pcm_mmap_status(snd_pcm_substream_t *substream, struct file *file,
 	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_status_t)))
 		return -EINVAL;
 	area->vm_ops = &snd_pcm_vm_ops_status;
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	area->vm_private_data = substream;
 #else
 	area->vm_private_data = (long)substream;	
@@ -2436,7 +2455,7 @@ int snd_pcm_mmap_status(snd_pcm_substream_t *substream, struct file *file,
 	return 0;
 }
 
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 static struct page * snd_pcm_mmap_control_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 #else
 static unsigned long snd_pcm_mmap_control_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
@@ -2451,7 +2470,7 @@ static unsigned long snd_pcm_mmap_control_nopage(struct vm_area_struct *area, un
 	runtime = substream->runtime;
 	page = virt_to_page(runtime->control);
 	get_page(page);
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	return page;
 #else
 	return page_address(page);
@@ -2479,7 +2498,7 @@ static int snd_pcm_mmap_control(snd_pcm_substream_t *substream, struct file *fil
 	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_control_t)))
 		return -EINVAL;
 	area->vm_ops = &snd_pcm_vm_ops_control;
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	area->vm_private_data = substream;
 #else
 	area->vm_private_data = (long)substream;	
@@ -2504,7 +2523,7 @@ static void snd_pcm_mmap_data_close(struct vm_area_struct *area)
 	atomic_dec(&substream->runtime->mmap_count);
 }
 
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 static struct page * snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 #else
 static unsigned long snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
@@ -2531,7 +2550,7 @@ static unsigned long snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsig
 		return NOPAGE_SIGBUS;
 	page = virt_to_page(runtime->dma_area + offset);
 	get_page(page);
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	return page;
 #else
 	return page_address(page);
@@ -2585,7 +2604,7 @@ int snd_pcm_mmap_data(snd_pcm_substream_t *substream, struct file *file,
 		return -EINVAL;
 
 	area->vm_ops = &snd_pcm_vm_ops_data;
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	area->vm_private_data = substream;
 #else
 	area->vm_private_data = (long)substream;
@@ -2646,7 +2665,7 @@ static int snd_pcm_fasync(int fd, struct file * file, int on)
  */
 
 static struct file_operations snd_pcm_f_ops_playback = {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	write:		snd_pcm_write,
@@ -2662,7 +2681,7 @@ static struct file_operations snd_pcm_f_ops_playback = {
 };
 
 static struct file_operations snd_pcm_f_ops_capture = {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	read:		snd_pcm_read,

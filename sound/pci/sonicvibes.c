@@ -23,6 +23,8 @@
  */
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/info.h>
@@ -31,7 +33,7 @@
 #include <sound/opl3.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 #include <linux/gameport.h>
 #endif
 
@@ -251,7 +253,7 @@ struct _snd_sonicvibes {
 	snd_kcontrol_t *master_mute;
 	snd_kcontrol_t *master_volume;
 
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	struct gameport gameport;
 #endif
 };
@@ -1202,7 +1204,7 @@ SONICVIBES_SINGLE("Joystick Speed", 0, SV_IREG_GAME_PORT, 1, 15, 0);
 
 static int snd_sonicvibes_free(sonicvibes_t *sonic)
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	if (sonic->gameport.io)
 		gameport_unregister_port(&sonic->gameport);
 #endif
@@ -1493,7 +1495,7 @@ static int __devinit snd_sonic_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	sonic->gameport.io = sonic->game_port;
 	gameport_register_port(&sonic->gameport);
 #endif
@@ -1510,15 +1512,15 @@ static int __devinit snd_sonic_probe(struct pci_dev *pci,
 		return err;
 	}
 	
-	PCI_SET_DRIVER_DATA(pci, card);
+	pci_set_drvdata(pci, card);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_sonic_remove(struct pci_dev *pci)
 {
-	snd_card_free(PCI_GET_DRIVER_DATA(pci));
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	snd_card_free(pci_get_drvdata(pci));
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

@@ -27,6 +27,8 @@
 #include <sys/ipc.h>
 #endif
 
+#include <sound/asound.h>
+
 /** version of the sequencer */
 #define SNDRV_SEQ_VERSION SNDRV_PROTOCOL_VERSION (1, 0, 0)
 

@@ -55,6 +55,11 @@ much elements are in array.
 
 */
 
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 /* return pointer to port structure - port is locked if found */
 client_port_t *snd_seq_port_use_ptr(client_t *client, int num)

@@ -20,6 +20,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/control.h>
@@ -30,6 +31,12 @@
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Mixer OSS emulation for ALSA.");
 MODULE_LICENSE("GPL");
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 {
@@ -47,12 +54,12 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
 	fmixer->card = card;
 	fmixer->mixer = card->mixer_oss;
 	file->private_data = fmixer;
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 	if (!try_inc_mod_count(card->module)) {
 		kfree(fmixer);
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 		MOD_DEC_USE_COUNT;
 #endif
 		return -EFAULT;
@@ -67,7 +74,7 @@ static int snd_mixer_oss_release(struct inode *inode, struct file *file)
 	if (file->private_data) {
 		fmixer = (snd_mixer_oss_file_t *) file->private_data;
 		dec_mod_count(fmixer->card->module);
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 		MOD_DEC_USE_COUNT;
 #endif
 		kfree(fmixer);
@@ -375,7 +382,7 @@ int snd_mixer_oss_ioctl_card(snd_card_t *card, unsigned int cmd, unsigned long a
 
 static struct file_operations snd_mixer_oss_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	open:		snd_mixer_oss_open,

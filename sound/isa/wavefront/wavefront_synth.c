@@ -22,6 +22,9 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/interrupt.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/snd_wavefront.h>
 #include <sound/initval.h>
@@ -257,6 +260,13 @@ static wavefront_command wavefront_commands[] = {
 	{ WFC_NOOP, "the no-op command", 0, 0, NEEDS_ACK },
 	{ 0x00 }
 };
+
+static inline void
+dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 static const char *
 wavefront_errorstr (int errnum)

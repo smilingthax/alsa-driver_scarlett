@@ -59,6 +59,15 @@ static snd_midi_op_t emux_ops = {
 				 SNDRV_SEQ_PORT_TYPE_DIRECT_SAMPLE)
 
 /*
+ */
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
+
+/*
  * Initialise the EMUX Synth by creating a client and registering
  * a series of ports.
  * Each of the ports will contain the 16 midi channels.  Applications

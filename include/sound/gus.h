@@ -30,6 +30,7 @@
 #include "ainstr_iw.h"
 #include "ainstr_gf1.h"
 #include "ainstr_simple.h"
+#include <asm/io.h>
 
 #define SNDRV_SEQ_DEV_ID_GUS			"synth-gus"
 

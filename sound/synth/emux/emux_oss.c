@@ -27,8 +27,10 @@
 
 #ifdef CONFIG_SND_OSSEMUL
 
+#include <asm/uaccess.h>
 #include <sound/core.h>
 #include "emux_voice.h"
+#include <sound/asoundef.h>
 
 static int snd_emux_open_seq_oss(snd_seq_oss_arg_t *arg, void *closure);
 static int snd_emux_close_seq_oss(snd_seq_oss_arg_t *arg);

@@ -25,6 +25,7 @@
 #include <sound/minors.h>
 #include <sound/info.h>
 #include <sound/version.h>
+#include <linux/utsname.h>
 
 #ifdef CONFIG_SND_OSSEMUL
 

@@ -22,6 +22,9 @@
  *
  */
 
+#include <sound/asound.h>
+#include <linux/poll.h>
+
 typedef enum sndrv_hwdep_iface snd_hwdep_iface_t;
 typedef struct sndrv_hwdep_info snd_hwdep_info_t;
 

@@ -29,6 +29,7 @@
 #endif
 
 #include <sound/core.h>
+#include <linux/init.h>
 #include <sound/minors.h>
 #include <sound/info.h>
 #include <linux/sound.h>

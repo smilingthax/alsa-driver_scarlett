@@ -19,6 +19,7 @@
  */
 
 #include <sound/emux_synth.h>
+#include <linux/init.h>
 #include "emux_voice.h"
 
 MODULE_AUTHOR("Takashi Iwai");

@@ -22,6 +22,8 @@
  *
  */
 
+#include <sound/asound.h>
+
 typedef struct sndrv_aes_iec958 snd_aes_iec958_t;
 typedef struct sndrv_ctl_card_info snd_ctl_card_info_t;
 typedef enum sndrv_ctl_elem_type snd_ctl_elem_type_t;

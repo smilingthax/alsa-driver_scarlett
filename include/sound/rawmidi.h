@@ -22,6 +22,8 @@
  *
  */
 
+#include <sound/asound.h>
+
 #ifdef CONFIG_SND_SEQUENCER
 #include "seq_device.h"
 #endif

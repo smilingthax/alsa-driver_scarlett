@@ -21,6 +21,8 @@
 
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/init.h>
 #include <sound/version.h>
 #include "pmac.h"
 

@@ -28,6 +28,7 @@
 #include "seq_oss_readq.h"
 #include "seq_oss_timer.h"
 #include "seq_oss_event.h"
+#include <linux/init.h>
 
 /*
  * common variables
@@ -275,7 +276,7 @@ snd_seq_oss_open(struct file *file, int level)
 
 	client_table[dp->index] = dp;
 	num_clients++;
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 
@@ -434,7 +435,7 @@ snd_seq_oss_release(seq_oss_devinfo_t *dp)
 	if (dp->queue >= 0)
 		delete_seq_queue(dp);
 
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	debug_printk(("release done\n"));

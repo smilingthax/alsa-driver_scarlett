@@ -96,6 +96,11 @@
 
 #define __SND_OSS_COMPAT__
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/reboot.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/mpu401.h>
@@ -2442,28 +2447,28 @@ static void es1968_resume(es1968_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_es1968_suspend(struct pci_dev *dev, u32 state)
 {
-	es1968_t *chip = snd_magic_cast(es1968_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return -ENXIO);
 	es1968_suspend(chip, 0);
 	return 0;
 }
 static int snd_es1968_resume(struct pci_dev *dev)
 {
-	es1968_t *chip = snd_magic_cast(es1968_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return -ENXIO);
 	es1968_resume(chip, 0);
 	return 0;
 }
 #else
 static void snd_es1968_suspend(struct pci_dev *dev)
 {
-	es1968_t *chip = snd_magic_cast(es1968_t, PCI_GET_DRIVER_DATA(dev), return);
+	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return);
 	es1968_suspend(chip, 0);
 }
 static void snd_es1968_resume(struct pci_dev *dev)
 {
-	es1968_t *chip = snd_magic_cast(es1968_t, PCI_GET_DRIVER_DATA(dev), return);
+	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(dev), return);
 	es1968_resume(chip, 0);
 }
 #endif
@@ -2763,17 +2768,17 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, chip);
+	pci_set_drvdata(pci, chip);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_es1968_remove(struct pci_dev *pci)
 {
-	es1968_t *chip = snd_magic_cast(es1968_t, PCI_GET_DRIVER_DATA(pci), return);
+	es1968_t *chip = snd_magic_cast(es1968_t, pci_get_drvdata(pci), return);
 	if (chip)
 		snd_card_free(chip->card);
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

@@ -20,6 +20,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/emu10k1.h>
 #define SNDRV_GET_ID
@@ -172,15 +173,15 @@ static int __devinit snd_card_emu10k1_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, card);
+	pci_set_drvdata(pci, card);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_card_emu10k1_remove(struct pci_dev *pci)
 {
-	snd_card_free(PCI_GET_DRIVER_DATA(pci));
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	snd_card_free(pci_get_drvdata(pci));
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

@@ -21,6 +21,7 @@
 
 #define __NO_VERSION__
 #include "emu8000_local.h"
+#include <sound/asoundef.h>
 
 /*
  * prototypes

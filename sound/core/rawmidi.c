@@ -22,6 +22,7 @@
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <linux/major.h>
+#include <linux/init.h>
 #include <sound/rawmidi.h>
 #include <sound/info.h>
 #include <sound/control.h>
@@ -51,6 +52,12 @@ static int snd_rawmidi_dev_unregister(snd_device_t *device);
 snd_rawmidi_t *snd_rawmidi_devices[SNDRV_CARDS * SNDRV_RAWMIDI_DEVICES];
 
 static DECLARE_MUTEX(register_mutex);
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 static inline unsigned short snd_rawmidi_file_flags(struct file *file)
 {
@@ -174,7 +181,7 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 
 	if (rfile)
 		rfile->input = rfile->output = NULL;
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 	rmidi = snd_rawmidi_devices[(cardnum * SNDRV_RAWMIDI_DEVICES) + device];
@@ -331,7 +338,7 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 	dec_mod_count(rmidi->card->module);
 	up(&rmidi->open_mutex);
       __error1:
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return err;
@@ -482,7 +489,7 @@ int snd_rawmidi_kernel_release(snd_rawmidi_file_t * rfile)
 	}
 	up(&rmidi->open_mutex);
 	dec_mod_count(rmidi->card->module);
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return 0;
@@ -1261,7 +1268,7 @@ static void snd_rawmidi_proc_info_read(snd_info_entry_t *entry,
 
 static struct file_operations snd_rawmidi_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	read:		snd_rawmidi_read,

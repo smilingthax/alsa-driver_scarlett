@@ -22,6 +22,7 @@
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <linux/major.h>
+#include <linux/init.h>
 #include <sound/control.h>
 #include <sound/minors.h>
 #include <sound/hwdep.h>
@@ -234,7 +235,7 @@ static int snd_hwdep_control_ioctl(snd_card_t * card, snd_ctl_file_t * control,
 
 static struct file_operations snd_hwdep_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	llseek:		snd_hwdep_llseek,
