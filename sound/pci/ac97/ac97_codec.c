@@ -1398,7 +1398,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	/* it's necessary to wait awhile until registers are accessible after RESET */
 	/* because the PCM or MASTER volume registers can be modified, */
 	/* the REC_GAIN register is used for tests */
-	end_time = jiffies + (HZ / 2);
+	end_time = jiffies + HZ;
 	do {
 		/* use preliminary reads to settle the communication */
 		snd_ac97_read(ac97, AC97_RESET);
