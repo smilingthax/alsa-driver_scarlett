@@ -849,7 +849,7 @@ static snd_pcm_uframes_t snd_cs46xx_playback_indirect_pointer(snd_pcm_substream_
 	cpcm->hw_io = ptr;
 	cpcm->hw_ready -= bytes;
 	cpcm->sw_io += bytes;
-	if (cpcm->sw_io > cpcm->sw_bufsize)
+	if (cpcm->sw_io >= cpcm->sw_bufsize)
 		cpcm->sw_io -= cpcm->sw_bufsize;
 	snd_cs46xx_playback_transfer(substream, 0);
 	return cpcm->sw_io >> cpcm->shift;
@@ -874,7 +874,7 @@ static snd_pcm_uframes_t snd_cs46xx_capture_indirect_pointer(snd_pcm_substream_t
 	chip->capt.hw_io = ptr;
 	chip->capt.hw_ready += bytes;
 	chip->capt.sw_io += bytes;
-	if (chip->capt.sw_io > chip->capt.sw_bufsize)
+	if (chip->capt.sw_io >= chip->capt.sw_bufsize)
 		chip->capt.sw_io -= chip->capt.sw_bufsize;
 	snd_cs46xx_capture_transfer(substream, 0);
 	return chip->capt.sw_io >> chip->capt.shift;
