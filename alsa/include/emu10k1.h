@@ -764,6 +764,7 @@ struct snd_stru_emu10k1 {
 	snd_rawmidi_t *rmidi;
 
 	unsigned char dig_vol[6][9][2];	  /* output, input, left/right */
+	unsigned char stereo_vol[2][2];	  /* source (pcm,midi), left/right */
 	unsigned char tone_control[2][2]; /* bass/treble, left/right */
 	unsigned int tone_control_active; /* bitmap of active tone controls */
 	snd_kcontrol_t *tone_bass, *tone_treble;
@@ -937,6 +938,10 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define FXBUS_PCM_RIGHT		0x01
 #define FXBUS_PCM_LEFT_REAR	0x02
 #define FXBUS_PCM_RIGHT_REAR	0x03
+#define FXBUS_MIDI_LEFT		0x04
+#define FXBUS_MIDI_RIGHT	0x05
+#define FXBUS_MIDI_REVERB	0x0c
+#define FXBUS_MIDI_CHORUS	0x0d
 
 /* Inputs */
 #define EXTIN_AC97_L	0x00	/* AC'97 capture channel - left */
