@@ -122,7 +122,6 @@ static int snd_usX2Y_urb_capt_prepare(snd_usX2Y_substream_t *subs,
 			       struct urb *urb)
 {
 	unsigned long flags, pack;
-
 	urb->dev = subs->stream->usX2Y->chip.dev; /* we need to set this at each time */
 	spin_lock_irqsave(&subs->lock, flags);
 	for (pack = 0; pack < NRPACKS; pack++) {
@@ -131,8 +130,6 @@ static int snd_usX2Y_urb_capt_prepare(snd_usX2Y_substream_t *subs,
 	}
 	spin_unlock_irqrestore(&subs->lock, flags);
 	urb->transfer_buffer_length = subs->maxpacksize * NRPACKS; 
-	urb->interval = NRPACKS;
-
 	return 0;
 }
 /*
@@ -275,7 +272,6 @@ static int snd_usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
 	for (pack = 0; pack < NRPACKS; pack++) {
 		/* calculate the size of a packet */
 		count += (counts = usX2Y->pipe0Aframes[0][pack]);
-
 		if (counts < 43 || counts > 50) {
 			snd_printk("should not be here with counts=%i\n", counts);
 			spin_unlock_irqrestore(&subs->lock, flags);
@@ -285,10 +281,9 @@ static int snd_usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
 		usX2Y->pipe0Aframes[0][pack] = usX2Y->pipe0Aframes[1][pack];
 		usX2Y->pipe0Aframes[1][pack] = 0;
 		/* set up descriptor */
-		urb->iso_frame_desc[pack].offset = pack ? urb->iso_frame_desc[pack - 1].length : 0;
+		urb->iso_frame_desc[pack].offset = pack ? urb->iso_frame_desc[pack - 1].offset + urb->iso_frame_desc[pack - 1].length : 0;
 		urb->iso_frame_desc[pack].length = counts * usX2Y->stride;
 	}
-
 	if (subs->hwptr + count > runtime->buffer_size) {
 		/* err, the transferred area goes over buffer boundary.
 		 * copy the data to the temp buffer.
@@ -308,7 +303,6 @@ static int snd_usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
 	}
 	spin_unlock_irqrestore(&subs->lock, flags);
 	urb->transfer_buffer_length = count * usX2Y->stride;
-
 	return 0;
 }
 
@@ -484,7 +478,7 @@ static int snd_usX2Y_urb_start(snd_usX2Y_substream_t *subs)
 		for (i = 0; i < NRURBS; i++) {
 			if (0 == ep)
 				subs->dataurb[0][i]->transfer_flags = URB_ISO_ASAP;
-			else{
+			else {
 				subs->dataurb[ep][i]->transfer_flags = 0;
 				subs->dataurb[ep][i]->start_frame = subs->dataurb[0][i]->start_frame;
 			}
@@ -756,9 +750,9 @@ static int snd_usX2Y_substream_prepare(snd_usX2Y_substream_t *subs, snd_pcm_runt
 			}
 			(*purb)->dev = subs->stream->usX2Y->chip.dev;
 			(*purb)->pipe = subs->datapipe[ep];
-			(*purb)->transfer_flags = URB_ISO_ASAP | URB_ASYNC_UNLINK;
 			(*purb)->number_of_packets = NRPACKS;
 			(*purb)->context = subs;
+			(*purb)->interval = 1;
 			(*purb)->complete = is_playback ?
 				snd_usb_complete_callback(snd_usX2Y_urb_play_complete) :
 				snd_usb_complete_callback(snd_usX2Y_urb_capt_complete);
@@ -946,7 +940,6 @@ static int usX2Y_rate_set(snd_usX2Y_stream_t *usX2Y_stream, int rate)
 				usX2Y_stream->usX2Y->refframes = rate == 48000 ? 47 : 44;
 			} while (0);
 		
-			set_current_state(TASK_RUNNING);
 			remove_wait_queue(&usX2Y_stream->usX2Y->In04WaitQueue, &wait);
 		} while (0);
 
@@ -956,7 +949,7 @@ static int usX2Y_rate_set(snd_usX2Y_stream_t *usX2Y_stream, int rate)
 				usb_unlink_urb(us->urb[i]);
 				usb_free_urb(us->urb[i]);
 			}
-			usX2Y_stream->usX2Y->US04 =NULL;
+			usX2Y_stream->usX2Y->US04 = NULL;
 			kfree(usbdata);
 			kfree(us);
 		}
@@ -973,7 +966,7 @@ static int snd_usX2Y_hw_params(	snd_pcm_substream_t*	substream,
 				format = params_format(hw_params);
  	snd_usX2Y_stream_t	*usX2Y_stream = snd_pcm_substream_chip(substream);
 	if (usX2Y_stream->usX2Y->format != format) {
-		int alternate;
+		int alternate, unlink_err;
 		if (format == SNDRV_PCM_FORMAT_S24_3LE) {
 			alternate = 2;
 			usX2Y_stream->usX2Y->stride = 6;
@@ -981,9 +974,14 @@ static int snd_usX2Y_hw_params(	snd_pcm_substream_t*	substream,
 			alternate = 1;
 			usX2Y_stream->usX2Y->stride = 4;
 		}
+		unlink_err = usb_unlink_urb(usX2Y_stream->usX2Y->In04urb);
 		if ((err = usb_set_interface(usX2Y_stream->usX2Y->chip.dev, 0, alternate))) {
 			snd_printk("usb_set_interface error \n");
 			return err;
+		}
+		if (0 == unlink_err) {
+			usX2Y_stream->usX2Y->In04urb->dev = usX2Y_stream->usX2Y->chip.dev;
+			err = usb_submit_urb(usX2Y_stream->usX2Y->In04urb, GFP_KERNEL);
 		}
 		usX2Y_stream->usX2Y->format = format;
 		usX2Y_stream->usX2Y->rate = 0;

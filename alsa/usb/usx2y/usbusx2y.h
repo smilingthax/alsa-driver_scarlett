@@ -5,7 +5,7 @@
 #include "usbus428ctldefs.h" 
 
 #define NRURBS	        2	/* */
-#define NRPACKS		1	/* usb-frames/ms per urb */
+#define NRPACKS		2	/* usb-frames/ms per urb: 1 and 2 are supported. set to 1 if you want lowest possible latency */
 
 #define URBS_AsyncSeq 10
 #define URB_DataLen_AsyncSeq 32

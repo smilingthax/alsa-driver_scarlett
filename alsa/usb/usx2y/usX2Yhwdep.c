@@ -37,7 +37,9 @@ static void us428ctls_vm_close(struct vm_area_struct *area)
 {
 }
 
-#ifndef LINUX_2_2
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+static struct page * us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int *type)
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 static struct page * us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 #else
 static unsigned long us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
@@ -47,12 +49,11 @@ static unsigned long us428ctls_vm_nopage(struct vm_area_struct *area, unsigned l
 	struct page * page;
 	void *vaddr;
 
-	snd_printd("ENTER, start %lXh, ofs %lXh, pgoff %ld, addr %lXh, wr %d\n",
+	snd_printd("ENTER, start %lXh, ofs %lXh, pgoff %ld, addr %lXh\n",
 		   area->vm_start,
 		   address - area->vm_start,
 		   (address - area->vm_start) >> PAGE_SHIFT,
-		   address,
-		   no_share);
+		   address);
 	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
 	offset = area->vm_pgoff << PAGE_SHIFT;
@@ -65,6 +66,12 @@ static unsigned long us428ctls_vm_nopage(struct vm_area_struct *area, unsigned l
 	page = virt_to_page(vaddr);
 	get_page(page);
 	snd_printd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%lX\n", vaddr, page, offset);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+	if (type)
+		*type = VM_FAULT_MINOR;
+#endif
+
 #ifndef LINUX_2_2
 	return page;
 #else
@@ -303,6 +310,8 @@ static int usX2Y_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
 	}
 	if (!err  &&  1 == dsp->index)
 		do {
+			set_current_state(TASK_UNINTERRUPTIBLE);
+			schedule_timeout(HZ/4);			// give the device some time 
 			if ((err = snd_usX2Y_AsyncSeq04_init((usX2Ydev_t*)hw->private_data))) {
 				snd_printk("snd_usX2Y_AsyncSeq04_init error \n");
 				break;
