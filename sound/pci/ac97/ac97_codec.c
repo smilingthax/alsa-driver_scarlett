@@ -29,10 +29,17 @@
 #include <sound/pcm.h>
 #include <sound/ac97_codec.h>
 #include <sound/asoundef.h>
+#include <sound/initval.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Universal interface for Audio Codec '97");
 MODULE_LICENSE("GPL");
+
+static int enable_loopback = 0;
+
+MODULE_PARM(enable_loopback, "i");
+MODULE_PARM_DESC(enable_loopback, "Enable AC97 ADC/DAC Loopback Control");
+MODULE_PARM_SYNTAX(enable_loopback, SNDRV_BOOLEAN_FALSE_DESC);
 
 #define chip_t ac97_t
 
@@ -1229,7 +1236,7 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 	}
 
 	/* build ADC/DAC loopback control */
-	if (snd_ac97_try_bit(ac97, AC97_GENERAL_PURPOSE, 7)) {
+	if (enable_loopback && snd_ac97_try_bit(ac97, AC97_GENERAL_PURPOSE, 7)) {
 		if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_general[AC97_GENERAL_LOOPBACK], ac97))) < 0)
 			return err;
 	}
