@@ -437,4 +437,31 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #define snd_card_set_dev(card,dev) /* no struct device */
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+
+struct device {
+	struct {
+#ifdef CONFIG_PCI
+		struct pci_dev *pci;
+#endif
+	} d;
+	u64 *dma_mask;
+};
+
+struct device *snd_kdevice_pci(struct pci_dev *pci);
+
+void *dma_alloc_coherent(struct device *dev, size_t size,
+			 dma_addr_t *dma_handle, int flag);
+void dma_free_coherent(struct device *dev, size_t size,
+                       void *vaddr, dma_addr_t dma_handle);
+
+#else
+
+static inline struct device *snd_kdevice_pci(struct pci_dev *pci)
+{
+	return &pci->dev;
+}
+
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */

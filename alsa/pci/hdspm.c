@@ -3417,9 +3417,11 @@ static int __devinit snd_hdspm_preallocate_memory(hdspm_t * hdspm)
 	wanted = HDSPM_DMA_AREA_BYTES + 4096;	/* dont know why, but it works */
 
 	if ((err =
-	     snd_pcm_lib_preallocate_sg_pages_for_all(hdspm->pci, pcm,
-						      wanted,
-						      wanted)) < 0) {
+	     snd_pcm_lib_preallocate_pages_for_all(pcm,
+	     					   SNDRV_DMA_TYPE_PCI_SG,
+						   hdspm->pci,
+						   wanted,
+						   wanted)) < 0) {
 		snd_printdd("Could not preallocate %d  Bytes\n", wanted);
 
 		return err;

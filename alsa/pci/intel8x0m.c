@@ -260,9 +260,9 @@ struct _snd_intel8x0m {
 	spinlock_t reg_lock;
 	spinlock_t ac97_lock;
 	
+	struct snd_dma_device dma_dev;
+	struct snd_dma_buffer bdbars;
 	u32 bdbars_count;
-	u32 *bdbars;
-	dma_addr_t bdbars_addr;
 	u32 int_sta_reg;		/* interrupt status register */
 	u32 int_sta_mask;		/* interrupt status mask */
 	unsigned int pcm_pos_shift;
@@ -808,8 +808,10 @@ static int __devinit snd_intel8x0_pcm1(intel8x0_t *chip, int device, struct ich_
 		strcpy(pcm->name, chip->card->shortname);
 	chip->pcm[device] = pcm;
 
-	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, rec->prealloc_size,
-						  rec->prealloc_max_size);
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_PCI,
+					      chip->pci,
+					      rec->prealloc_size,
+					      rec->prealloc_max_size);
 
 	return 0;
 }
@@ -1060,8 +1062,8 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 	/* --- */
 	synchronize_irq(chip->irq);
       __hw_end:
-	if (chip->bdbars)
-		snd_free_pci_pages(chip->pci, chip->bdbars_count * sizeof(u32) * ICH_MAX_FRAGS * 2, chip->bdbars, chip->bdbars_addr);
+	if (chip->bdbars.area)
+		snd_dma_free_pages(&chip->dma_dev, &chip->bdbars);
 	if (chip->remap_addr)
 		iounmap((void *) chip->remap_addr);
 	if (chip->remap_bmaddr)
@@ -1319,8 +1321,10 @@ static int __devinit snd_intel8x0m_create(snd_card_t * card,
 
 	/* allocate buffer descriptor lists */
 	/* the start of each lists must be aligned to 8 bytes */
-	chip->bdbars = (u32 *)snd_malloc_pci_pages(pci, chip->bdbars_count * sizeof(u32) * ICH_MAX_FRAGS * 2, &chip->bdbars_addr);
-	if (chip->bdbars == NULL) {
+	memset(&chip->dma_dev, 0, sizeof(chip->dma_dev));
+	chip->dma_dev.type = SNDRV_DMA_TYPE_PCI;
+	chip->dma_dev.dev.pci = pci;
+	if (snd_dma_alloc_pages(&chip->dma_dev, chip->bdbars_count * sizeof(u32) * ICH_MAX_FRAGS * 2, &chip->bdbars) < 0) {
 		snd_intel8x0_free(chip);
 		return -ENOMEM;
 	}
@@ -1329,8 +1333,8 @@ static int __devinit snd_intel8x0m_create(snd_card_t * card,
 	int_sta_masks = 0;
 	for (i = 0; i < chip->bdbars_count; i++) {
 		ichdev = &chip->ichd[i];
-		ichdev->bdbar = chip->bdbars + (i * ICH_MAX_FRAGS * 2);
-		ichdev->bdbar_addr = chip->bdbars_addr + (i * sizeof(u32) * ICH_MAX_FRAGS * 2);
+		ichdev->bdbar = ((u32 *)chip->bdbars.area) + (i * ICH_MAX_FRAGS * 2);
+		ichdev->bdbar_addr = chip->bdbars.addr + (i * sizeof(u32) * ICH_MAX_FRAGS * 2);
 		int_sta_masks |= ichdev->int_sta_mask;
 	}
 	chip->int_sta_reg = ICH_REG_GLOB_STA;

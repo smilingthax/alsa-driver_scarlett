@@ -403,7 +403,8 @@ int __devinit snd_vortex_new_pcm(vortex_t *chip, int idx, int nr) {
     if (idx == VORTEX_PCM_ADB)
     	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_vortex_playback_ops);
     /* pre-allocation of buffers */
-    snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci_dev, pcm, 0x10000, 0x10000);
+    snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_PCI,
+    					  chip->pci_dev, 0x10000, 0x10000);
 
 	if (VORTEX_PCM_TYPE(pcm) == VORTEX_PCM_SPDIF) {
 		snd_kcontrol_t *kcontrol;
