@@ -334,18 +334,26 @@ void snd_oss_cleanup_module(void);
 
 /* memory.c */
 
+#ifdef CONFIG_SND_DEBUG_MEMORY
 void snd_memory_init(void);
 void snd_memory_done(void);
+int snd_memory_info_init(void);
+int snd_memory_info_done(void);
 void *snd_kmalloc(size_t size, int flags);
-void _snd_kfree(void *obj);
-#ifdef CONFIG_SND_DEBUG
+void _snd_kfree(const void *obj);
 #define snd_kfree(obj) { \
 	if (obj == NULL) \
 		snd_printk("kfree(NULL)\n"); \
 	else _snd_kfree(obj); \
 } while (0)
+void *snd_vmalloc(unsigned long size);
+void snd_vfree(void *obj);
 #else
+#define snd_kmalloc kmalloc
+#define _snd_kfree kfree
 #define snd_kfree _snd_kfree
+#define snd_vmalloc vmalloc
+#define snd_vfree vfree
 #endif
 void *snd_kcalloc(size_t size, int flags);
 char *snd_kmalloc_strdup(const char *string, int flags);
@@ -356,13 +364,6 @@ void snd_free_pages(void *ptr, unsigned long size);
 void *snd_malloc_pci_pages(struct pci_dev *pci, unsigned long size, dma_addr_t *dmaaddr);
 void *snd_malloc_pci_pages_fallback(struct pci_dev *pci, unsigned long size, dma_addr_t *dmaaddr, unsigned long *res_size);
 void snd_free_pci_pages(struct pci_dev *pci, unsigned long size, void *ptr, dma_addr_t dmaaddr);
-#endif
-void *snd_vmalloc(unsigned long size);
-void snd_vfree(void *obj);
-#ifdef CONFIG_SND_DEBUG_MEMORY
-int snd_memory_info_init(void);
-int snd_memory_info_done(void);
-void snd_memory_debug1(void);
 #endif
 
 /* vma.c */

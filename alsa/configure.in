@@ -173,7 +173,7 @@ AC_MSG_RESULT($moddir)
 dnl Debug level
 AC_MSG_CHECKING(for debug level)
 AC_ARG_WITH(debug,
-  [  --with-debug=level      give the debug level (none,basic,memory,full)],
+  [  --with-debug=level      give the debug level (none,basic,memory,full,detect)],
   debug="$withval", debug="none")
 case "$debug" in
   basic)

@@ -145,7 +145,7 @@ struct snd_stru_pcm_runtime {
 
 	int overrange;
 	snd_pcm_digital_t *dig_mask;	/* digital mask */
-	void (*dig_mask_free)(void *dig_mask);
+	void (*dig_mask_free)(const void *dig_mask);
 	snd_pcm_digital_t digital;	/* digital format information */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	size_t bits_per_frame;
@@ -170,7 +170,7 @@ struct snd_stru_pcm_runtime {
 	void (*private_free)(snd_pcm_runtime_t *runtime);
 	/* -- own hardware routines -- */
 	snd_pcm_hardware_t *hw;
-	void (*hw_free)(void *hw);
+	void (*hw_free)(const void *hw);
 	/* -- interrupt callbacks -- */
 	void (*transfer_ack_begin)(snd_pcm_substream_t *substream);
 	void (*transfer_ack_end)(snd_pcm_substream_t *substream);
