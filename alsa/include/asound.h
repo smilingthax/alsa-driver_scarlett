@@ -26,7 +26,7 @@
 
 #if defined( LINUX ) || defined( __LINUX__ ) || defined( __linux__ )
 #include <linux/ioctl.h>
-#include <bytesex.h>
+#include <endian.h>
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SND_LITTLE_ENDIAN
 #endif
