@@ -93,12 +93,14 @@ endif
 
 %.c: %.patch
 	@xtmp="$(MODCURDIR)"; \
-	if [ "$${xtmp:0:7}" = "acore" ]; then \
-		echo "coping file alsa-kernel/core/$${xtmp:6}$@"; \
-		cp $(TOPDIR)/alsa-kernel/core/$${xtmp:6}$@ $@; \
+	if [ "$${xtmp:0:5}" = "acore" ]; then \
+		xtmp1=$${xtmp:6} ; \
+		if [ ! -z "$${xtmp1}" ]; then xtmp1="$${xtmp1}/" ; fi ; \
+		echo "coping file alsa-kernel/core/$${xtmp1}$@"; \
+		cp $(TOPDIR)/alsa-kernel/core/$${xtmp1}$@ $@; \
 	else \
-		echo "Coping file alsa-kernel/core/$$(xtmp)/$@;"; \
-		cp $(TOPDIR)/alsa-kernel/$$(xtmp)/$@ $@; \
+		echo "Coping file alsa-kernel/core/$${xtmp}/$@"; \
+		cp $(TOPDIR)/alsa-kernel/$${xtmp}/$@ $@; \
 	fi
 	@patch -p0 -i $<
 

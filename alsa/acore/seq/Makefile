@@ -13,4 +13,9 @@ export-objs  := seq_device.o seq.o seq_instr.o seq_midi_emul.o \
 TOPDIR = $(MAINSRCDIR)
 include $(TOPDIR)/alsa-kernel/core/seq/Makefile
 
+EXTRA_CFLAGS = -I$(TOPDIR)/alsa-kernel/core/seq
+
 include $(TOPDIR)/Rules.make
+
+seq_clientmgr.c: seq_clientmgr.patch $(TOPDIR)/alsa-kernel/core/seq/seq_clientmgr.c
+seq_memory.c: seq_memory.patch $(TOPDIR)/alsa-kernel/core/seq/seq_memory.c
