@@ -248,8 +248,8 @@ AC_SUBST(msmp)
 
 dnl Check for ISA PnP driver...
 AC_MSG_CHECKING(for ISA PnP driver)
-AC_ARG_WITH(pnp,
-  [  --with-pnp=yes,no,auto  driver will (not) be compiled with PnP support],
+AC_ARG_WITH(isapnp,
+  [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
   pnp="$withval", pnp="auto")
 mpnp=""
 if test "$pnp" = "auto"; then
@@ -262,7 +262,7 @@ else
   fi
 fi
 if test "$mpnp" = "1"; then
-  AC_DEFINE(SNDCFG_PNP)
+  AC_DEFINE(SNDCFG_ISAPNP)
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)

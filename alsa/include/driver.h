@@ -109,7 +109,7 @@
 #include <linux/pci.h>
 #endif
 
-#ifdef SNDCFG_PNP
+#ifdef SNDCFG_ISAPNP
 #include "isapnp.h"
 #endif
 
