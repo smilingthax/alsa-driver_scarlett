@@ -327,9 +327,9 @@
 
 /* ********************************************************************** */
 
-static int   snd_index[SNDRV_CARDS]  = SNDRV_DEFAULT_IDX;     /* Index 0-MAX */
-static char *snd_id[SNDRV_CARDS]     = SNDRV_DEFAULT_STR;     /* ID for this card */
-static int   snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;  /* Enable switches */
+static int   index[SNDRV_CARDS]  = SNDRV_DEFAULT_IDX;     /* Index 0-MAX */
+static char *id[SNDRV_CARDS]     = SNDRV_DEFAULT_STR;     /* ID for this card */
+static int   enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;  /* Enable switches */
 
 EXPORT_NO_SYMBOLS;
 
@@ -339,17 +339,17 @@ MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{SMarian,Prodif Plus}}");
 
-MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_index, "Index value for Prodif Plus soundcard.");
-MODULE_PARM_SYNTAX(snd_index, SNDRV_INDEX_DESC);
+MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(index, "Index value for Prodif Plus soundcard.");
+MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 
-MODULE_PARM(snd_id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
-MODULE_PARM_DESC(snd_id, "ID string for Prodif Plus soundcard.");
-MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
+MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+MODULE_PARM_DESC(id, "ID string for Prodif Plus soundcard.");
+MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 
-MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_enable, "Enable Prodif Plus soundcard.");
-MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
+MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(enable, "Enable Prodif Plus soundcard.");
+MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 
 static int silent_exit = 0;
 MODULE_PARM(silent_exit, "i");
@@ -6125,7 +6125,7 @@ static int __init pdplus_init(
  * Try to grab the PCI device */
 static int __init pdplus_probe(
         pci_dev_t *pci,
-        pci_device_id_t const *id)
+        pci_device_id_t const *pci_id)
 {
         static int __initdata dev = 0;
         int err;
@@ -6135,12 +6135,12 @@ static int __init pdplus_probe(
         if (dev >= SNDRV_CARDS)
                 LEAVE (-ENODEV);
 
-        if (!snd_enable[dev]) {
+        if (!enable[dev]) {
                 dev++;
                 LEAVE (-ENOENT);
         }
 
-        card = snd_card_new (snd_index[dev], snd_id[dev], THIS_MODULE, sizeof(pdplus_t));
+        card = snd_card_new (index[dev], id[dev], THIS_MODULE, sizeof(pdplus_t));
         if (card == NULL)
                 LEAVE (-ENOMEM);
 
@@ -6283,7 +6283,7 @@ module_exit(alsa_card_pdplus_exit)
 
 #ifndef MODULE
 
-/* format is: snd-pdplus=snd_enable,snd_index,snd_id
+/* format is: snd-pdplus=enable,index,id
               snd-pdplus-misc=init_adat */
 
 static int __init alsa_card_pdplus_setup(char *str)
@@ -6292,9 +6292,9 @@ static int __init alsa_card_pdplus_setup(char *str)
 
 	if (nr_dev >= SNDRV_CARDS)
 		return 0;
-	(void)(get_option(&str,&snd_enable[nr_dev]) == 2 &&
-	       get_option(&str,&snd_index[nr_dev]) == 2 &&
-	       get_id(&str,&snd_id[nr_dev]) == 2);
+	(void)(get_option(&str,&enable[nr_dev]) == 2 &&
+	       get_option(&str,&index[nr_dev]) == 2 &&
+	       get_id(&str,&id[nr_dev]) == 2);
 	nr_dev++;
 	return 1;
 }

@@ -109,15 +109,15 @@ typedef struct snd_msndpinnacle_pcm {
 } snd_msndpinnacle_pcm_t;
 
 
-static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
-static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
+static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
+static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 
-MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_index, "Index value for msnd_pinnacle soundcard.");
-MODULE_PARM_SYNTAX(snd_index, SNDRV_INDEX_DESC);
-MODULE_PARM(snd_id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
-MODULE_PARM_DESC(snd_id, "ID string for msnd_pinnacle soundcard.");
-MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
+MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(index, "Index value for msnd_pinnacle soundcard.");
+MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
+MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+MODULE_PARM_DESC(id, "ID string for msnd_pinnacle soundcard.");
+MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 
 #ifndef CONFIG_MSND_WRITE_NDELAY
 #  define CONFIG_MSND_WRITE_NDELAY	1
@@ -1309,7 +1309,7 @@ static int __init snd_msnd_attach(void)
 		return err;
 	}
 
-	card = snd_card_new(snd_index[ 0/*dev*/], snd_id[0/*dev*/], THIS_MODULE, 0);
+	card = snd_card_new(index[ 0/*dev*/], id[0/*dev*/], THIS_MODULE, 0);
 	if( card == NULL){
 		snd_msnd_unregister(&dev);
 		release_region(dev.io, dev.numio);
@@ -1547,9 +1547,9 @@ MODULE_PARM			(snd_cfg, "i");
 MODULE_PARM			(snd_reset, "i");
 MODULE_PARM			(snd_mpu_io, "i");
 MODULE_PARM			(snd_mpu_irq, "i");
-MODULE_PARM			(snd_ide_io0, "i");
-MODULE_PARM			(snd_ide_io1, "i");
-MODULE_PARM			(snd_ide_irq, "i");
+MODULE_PARM			(ide_io0, "i");
+MODULE_PARM			(ide_io1, "i");
+MODULE_PARM			(ide_irq, "i");
 MODULE_PARM			(snd_joystick_io, "i");
 #endif
 
@@ -1568,9 +1568,9 @@ static int snd_cfg __initdata =		-1;
 static int snd_reset __initdata = 0;
 static int snd_mpu_io __initdata = 0;
 static int snd_mpu_irq __initdata = 0;
-static int snd_ide_io0 __initdata = 0;
-static int snd_ide_io1 __initdata = 0;
-static int snd_ide_irq __initdata = 0;
+static int ide_io0 __initdata = 0;
+static int ide_io1 __initdata = 0;
+static int ide_irq __initdata = 0;
 static int snd_joystick_io __initdata = 0;
 
 /* If we have the digital daugherboard... */
@@ -1622,17 +1622,17 @@ static int snd_mpu_irq __initdata =		CONFIG_MSNDPIN_MPU_IRQ;
 #ifndef CONFIG_MSNDPIN_IDE_IO0
 #  define CONFIG_MSNDPIN_IDE_IO0	0
 #endif
-static int snd_ide_io0 __initdata =		CONFIG_MSNDPIN_IDE_IO0;
+static int ide_io0 __initdata =		CONFIG_MSNDPIN_IDE_IO0;
 
 #ifndef CONFIG_MSNDPIN_IDE_IO1
 #  define CONFIG_MSNDPIN_IDE_IO1	0
 #endif
-static int snd_ide_io1 __initdata =		CONFIG_MSNDPIN_IDE_IO1;
+static int ide_io1 __initdata =		CONFIG_MSNDPIN_IDE_IO1;
 
 #ifndef CONFIG_MSNDPIN_IDE_IRQ
 #  define CONFIG_MSNDPIN_IDE_IRQ	0
 #endif
-static int snd_ide_irq __initdata =		CONFIG_MSNDPIN_IDE_IRQ;
+static int ide_irq __initdata =		CONFIG_MSNDPIN_IDE_IRQ;
 
 #ifndef CONFIG_MSNDPIN_JOYSTICK_IO
 #  define CONFIG_MSNDPIN_JOYSTICK_IO	0
@@ -1753,9 +1753,9 @@ static int __init snd_msnd_init(void)
 		pinnacle_devs[1].irq = snd_mpu_irq;
 
 		/* IDE */
-		pinnacle_devs[2].io0 = snd_ide_io0;
-		pinnacle_devs[2].io1 = snd_ide_io1;
-		pinnacle_devs[2].irq = snd_ide_irq;
+		pinnacle_devs[2].io0 = ide_io0;
+		pinnacle_devs[2].io1 = ide_io1;
+		pinnacle_devs[2].irq = ide_irq;
 
 		/* Joystick */
 		pinnacle_devs[3].io0 = snd_joystick_io;

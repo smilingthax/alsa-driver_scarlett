@@ -52,11 +52,11 @@ MODULE_AUTHOR("Chris Rankin");
 MODULE_DESCRIPTION("ENSONIQ SoundScape PnP driver");
 MODULE_LICENSE("GPL");
 
-static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
+static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 
-MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_index, "Index number for this soundcard");
-MODULE_PARM_SYNTAX(snd_index, SNDRV_INDEX_DESC);
+MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(index, "Index number for this soundcard");
+MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 
 static const struct isapnp_card_id sscape_pnpids[] __devinitdata = {
 	{ISAPNP_CARD_ID('E', 'N', 'S', 0x3081), .devs = {ISAPNP_DEVICE_ID('E', 'N', 'S', 0x0000)}},
@@ -1116,7 +1116,7 @@ static int __init create_sscape(unsigned port, int irq, int mpu_irq, int dma1, i
 	 * Create a new ALSA sound card entry, in anticipation
 	 * of detecting our hardware ...
 	 */
-	if ((card = snd_card_new(snd_index[sscape_count], "SoundScape", THIS_MODULE, sizeof(struct soundscape))) == NULL) {
+	if ((card = snd_card_new(index[sscape_count], "SoundScape", THIS_MODULE, sizeof(struct soundscape))) == NULL) {
 		err = -ENOMEM;
 		goto _release_dma;
 	}
