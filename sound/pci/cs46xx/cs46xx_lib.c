@@ -2505,9 +2505,6 @@ int __devinit snd_cs46xx_mixer(cs46xx_t *chip)
 	strcpy(id.name, "External Amplifier Power Down");
 	chip->eapd_switch = snd_ctl_find_id(chip->card, &id);
     
-	/* turn on amplifier */
-	chip->amplifier_ctrl(chip, 1);
-
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
 	/* do soundcard specific mixer setup */
 	if (chip->mixer_init) {
@@ -2515,6 +2512,9 @@ int __devinit snd_cs46xx_mixer(cs46xx_t *chip)
 		chip->mixer_init(chip);
 	}
 #endif
+
+ 	/* turn on amplifier */
+	chip->amplifier_ctrl(chip, 1);
     
 	return 0;
 }
