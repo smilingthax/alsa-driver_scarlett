@@ -207,6 +207,7 @@ AC_SUBST(moddir)
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
 CONFIG_SND_PPC=0
+CONFIG_SND_ISA=1
 processor=""
 rm -f processor.id
 AC_TRY_RUN([
@@ -277,6 +278,7 @@ case "$processor" in
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
+    CONFIG_SND_ISA=0
     ;;
   alpha*)
     c_opts="-fno-strength-reduce -mno-fp-regs -ffixed-8"
@@ -300,6 +302,7 @@ case "$processor" in
     ;;
   *)
     processor="unknown"
+    CONFIG_SND_ISA=0
     ;;
 esac
 c_opts="-O2 $c_opts"
