@@ -25,9 +25,9 @@
 #define __ASOUND_H
 
 #if defined( LINUX ) || defined( __LINUX__ ) || defined( __linux__ )
-#include <asm/byteorder.h>
 #include <linux/ioctl.h>
-#ifdef __LITTLE_ENDIAN
+#include <bytesex.h>
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 #define SND_LITTLE_ENDIAN
 #endif
 #endif
