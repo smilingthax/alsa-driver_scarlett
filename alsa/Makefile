@@ -30,8 +30,15 @@ CSUBDIRS += include test utils
 
 all: compile
 
-sound:
-	ln -sf include sound
+# FIXME: the alsa-kernel might be at another position
+alsa-kernel:
+	ln -sf ../alsa-kernel alsa-kernel
+
+include/sound: alsa-kernel
+	ln -sf ../alsa-kernel/include include/sound
+
+include/sound/version.h: include/sound include/version.h
+	cp -av include/version.h include/sound/version.h
 
 include/sndversions.h:
 	make dep
@@ -44,13 +51,13 @@ include/isapnp.h:
 	  cp utils/patches/byteswap.h /usr/include ; \
 	fi
 
-compile: /usr/include/byteswap.h sound include/sndversions.h include/isapnp.h cards.config
+compile: /usr/include/byteswap.h include/sound/version.h include/sndversions.h include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
 	@echo "ALSA modules were successfully compiled."
 	@echo
 
-dep: /usr/include/byteswap.h sound include/isapnp.h cards.config
+dep: /usr/include/byteswap.h include/sound/version.h include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d dep; then exit 1; fi; done
 
 cards.config: modules.config
