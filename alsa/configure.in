@@ -13,7 +13,7 @@ AC_PROG_INSTALL
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CONFIG_HEADER(include/config.h)
+AC_CONFIG_HEADER(include/config.h include/config1.h)
 AC_CHECK_HEADERS(linux/fs.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.

@@ -1,7 +1,7 @@
-#
+
 # Soundcard-Configuration for ALSA driver
 # Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>
-#
+
 
 CONFIG_SND_INTERWAVE=@CONFIG_SND_INTERWAVE@
 CONFIG_SND_INTERWAVE_STB=@CONFIG_SND_INTERWAVE_STB@
