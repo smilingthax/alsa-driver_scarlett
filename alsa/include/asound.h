@@ -792,7 +792,7 @@ typedef struct snd_pcm_setup {
 	unsigned int msbits;		/* used most significant bits */
 	unsigned int rate_master;	/* Exact rate is rate_master / */
 	unsigned int rate_divisor;	/* rate_divisor */
-	size_t fifo_size;		/* chip FIFO size */
+	size_t fifo_size;		/* chip FIFO size in samples */
 	size_t transfer_block_size;	/* bus transfer block size */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_setup_t;
