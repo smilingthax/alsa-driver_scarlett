@@ -127,15 +127,18 @@ off.  (Also don't forget to turn on "IEC958 Output Switch", too.)
 Additionally there are relevant control switches:
 
 "IEC958 Mix Analog" - Mix analog PCM playback and FM-OPL/3 streams and
-	output through SPDIF.
+	output through SPDIF.  This switch appears only on old chip
+	models (CM8738 033 and 037).
 	Note: without this control you can output PCM to SPDIF.
 	This is "mixing" of streams, so e.g. it's not for AC3 output
 	(see the next section).
-	This switch don't appear only on the recent chip models
-	since apprently this function doesn't work on them.
+
+"IEC958 In Select"  - Select SPDIF input, the internal CD-in (false)
+	and the external input (true).  This switch appears only on
+	the chip models 039 or later.
 
 "IEC958 Loop"       - SPDIF input data is loop back into SPDIF
-	output (bypass)
+	output (aka bypass)
 
 "IEC958 Copyright"  - Set the copyright bit.
 
@@ -146,6 +149,7 @@ Additionally there are relevant control switches:
 "IEC958 In Monitor" - SPDIF input is routed to DAC.
 
 "IEC958 In Phase Inverse" - Set SPDIF input format as inverse.
+	[FIXME: this doesn't work on all chips..]
 
 "IEC958 In Valid"   - Set input validity flag detection.
 
