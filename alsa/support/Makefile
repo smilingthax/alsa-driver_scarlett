@@ -10,14 +10,12 @@ include $(TOPDIR)/Makefile.conf
 
 TOPDIR = $(MAINSRCDIR)
 
-O_TARGET     := synth.o
-
 export-objs  := isapnp.o
 
 snd-isapnp-objs := isapnp.o isapnp_proc.o isapnp_quirks.o
 
 # Toplevel Module Dependency
-ifeq (n,$(CONFIG_ISAPNP_KERNEL))
+ifndef CONFIG_ISAPNP_KERNEL
 ifeq (y,$(CONFIG_ISAPNP))
 obj-m += snd-isapnp.o
 endif
