@@ -58,7 +58,7 @@ typedef struct iwffff_wave {
 	unsigned int format;		/* wave format */
 
 	struct {
-		unsigned int number;	/* some other ID for this instrument */
+		unsigned int number;	/* some other ID for this wave */
 		unsigned int memory;	/* begin of waveform in onboard memory */
 		unsigned char *ptr;	/* pointer to waveform in system memory */
 	} address;
@@ -88,7 +88,7 @@ typedef struct iwffff_lfo {
 	unsigned short freq;		/* (0-2047) 0.01Hz - 21.5Hz */
 	signed short depth;		/* volume +- (0-255) 0.48675dB/step */
 	signed short sweep;		/* 0 - 950 deciseconds */
-	unsigned char shape;		/* see to ULTRA_IW_LFO_SHAPE_XXXX */
+	unsigned char shape;		/* see to IWFFFF_LFO_SHAPE_XXXX */
 	unsigned char delay;		/* 0 - 255 deciseconds */
 } iwffff_lfo_t;
 
@@ -329,6 +329,21 @@ typedef struct {
 	__u8 description[128];
 } iwffff_rom_header_t;
 
+/*
+ *  Instrument info
+ */
+
+#define IWFFFF_INFO_LFO_VIBRATO		(1<<0)
+#define IWFFFF_INFO_LFO_VIBRATO_SHAPE	(1<<1)
+#define IWFFFF_INFO_LFO_TREMOLO		(1<<2)
+#define IWFFFF_INFO_LFO_TREMOLO_SHAPE	(1<<3)
+
+typedef struct iwffff_info {
+	unsigned int format;		/* supported format bits */
+	unsigned int effects;		/* supported effects (1 << IWFFFF_EFFECT*) */
+	unsigned int lfos;		/* LFO effects */
+} iwffff_info_t;
+
 #ifdef __KERNEL__
 
 #include "seq_instr.h"
@@ -337,6 +352,7 @@ extern char *snd_seq_iwffff_id;
 
 typedef struct {
 	void *private_data;
+	int (*info)(void *private_data, iwffff_info_t *info);
 	int (*put_sample)(void *private_data, iwffff_wave_t *wave,
 	                  char *data, long len, int atomic);
 	int (*get_sample)(void *private_data, iwffff_wave_t *wave,

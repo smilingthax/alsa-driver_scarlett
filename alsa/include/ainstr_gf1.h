@@ -182,6 +182,20 @@ typedef struct gf1_xinstrument {
 	__u8 effect2_depth;		/* 0-127 */
 } gf1_xinstrument_t;
 
+/*
+ *  Instrument info
+ */
+
+#define GF1_INFO_ENVELOPE		(1<<0)
+#define GF1_INFO_TREMOLO		(1<<1)
+#define GF1_INFO_VIBRATO		(1<<2)
+
+typedef struct gf1_info {
+	unsigned char flags;		/* supported wave flags */
+	unsigned char pad[3];
+	unsigned int features;		/* supported features */
+} gf1_info_t;
+
 #ifdef __KERNEL__
 
 #include "seq_instr.h"
@@ -190,6 +204,7 @@ extern char *snd_seq_gf1_id;
 
 typedef struct {
 	void *private_data;
+	int (*info)(void *private_data, gf1_info_t *info);
 	int (*put_sample)(void *private_data, gf1_wave_t *wave,
 	                  char *data, long len, int atomic);
 	int (*get_sample)(void *private_data, gf1_wave_t *wave,

@@ -48,13 +48,26 @@
 #define SIMPLE_WAVE_ULAW		0x0200	/* uLaw compression mode */
 
 /*
- *  Instrument
+ *  instrument effects
  */
 
 #define SIMPLE_EFFECT_NONE		0
 #define SIMPLE_EFFECT_REVERB		1
 #define SIMPLE_EFFECT_CHORUS		2
 #define SIMPLE_EFFECT_ECHO		3
+
+/*
+ *  instrument info
+ */
+
+typedef struct simple_instrument_info {
+	unsigned int format;		/* supported format bits */
+	unsigned int effects;		/* supported effects (1 << SIMPLE_EFFECT_*) */
+} simple_instrument_info_t;
+
+/*
+ *  Instrument
+ */
 
 typedef struct {
 	unsigned int share_id[4];	/* share id - zero = no sharing */
@@ -122,6 +135,7 @@ extern char *snd_seq_simple_id;
 
 typedef struct {
 	void *private_data;
+	int (*info)(void *private_data, simple_instrument_info_t *info);
 	int (*put_sample)(void *private_data, simple_instrument_t *instr,
 	                  char *data, long len, int atomic);
 	int (*get_sample)(void *private_data, simple_instrument_t *instr,

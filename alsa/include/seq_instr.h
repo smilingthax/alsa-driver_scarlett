@@ -77,6 +77,7 @@ struct snd_seq_kinstr_ops {
 	void *private_data;
 	long add_len;			/* additional length */
 	char *instr_type;
+	int (*info)(void *private_data, char *info_data, long len);
 	int (*put)(void *private_data, snd_seq_kinstr_t *kinstr,
 		   char *instr_data, long len, int atomic, int cmd);
 	int (*get)(void *private_data, snd_seq_kinstr_t *kinstr,
