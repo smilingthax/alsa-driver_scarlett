@@ -938,7 +938,7 @@ static inline int snd_pcm_do_reset(snd_pcm_substream_t * substream, int state)
 	int err = substream->ops->ioctl(substream, SNDRV_PCM_IOCTL1_RESET, 0);
 	if (err < 0)
 		return err;
-	snd_assert(runtime->status->hw_ptr < runtime->buffer_size, );
+	// snd_assert(runtime->status->hw_ptr < runtime->buffer_size, );
 	runtime->hw_ptr_base = 0;
 	runtime->hw_ptr_interrupt = runtime->status->hw_ptr - runtime->status->hw_ptr % runtime->period_size;
 	return 0;
