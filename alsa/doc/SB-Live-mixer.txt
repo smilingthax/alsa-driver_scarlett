@@ -246,11 +246,65 @@ right headphone output (useful for SB Live cards without separate center/LFE
 output).
 
 
-3) MANUALS/PATENTS:
+3) PCM stream related controls
+------------------------------
+
+name='EMU10K1 PCM Volume',index 0-31
+
+Channel volume attenuation in range 0-0xffff. The maximum value (no
+attenuation) is default. The channel mapping for three values is
+following:
+
+	0 - mono, default 0xffff (no attenuation)
+	1 - left, default 0xffff (no attenuation)
+	2 - right, default 0xffff (no attenuation)
+
+name='EMU10K1 PCM Send Routing',index 0-31
+
+This control specifies the destination - FX-bus accumulators. There are
+twelve values with this mapping:
+
+	 0 -  mono, A destination (FX-bus 0-15), default 0
+	 1 -  mono, B destination (FX-bus 0-15), default 1
+	 2 -  mono, C destination (FX-bus 0-15), default 2
+	 3 -  mono, D destination (FX-bus 0-15), default 3
+	 4 -  left, A destination (FX-bus 0-15), default 0
+	 5 -  left, B destination (FX-bus 0-15), default 1
+	 6 -  left, C destination (FX-bus 0-15), default 2
+	 7 -  left, D destination (FX-bus 0-15), default 3
+	 8 - right, A destination (FX-bus 0-15), default 0
+	 9 - right, B destination (FX-bus 0-15), default 1
+	10 - right, C destination (FX-bus 0-15), default 2
+	11 - right, D destination (FX-bus 0-15), default 3
+
+Don't forget, that it's invalid to use same FX-bus accumulators per channel
+(it means 0=0 && 1=0 is an invalid combination).
+ 
+name='EMU10K1 PCM Send Volume',index 0-31
+
+It specifies the attenuation (amount) for given destination in range 0-255.
+The channel mapping is following:
+
+	 0 -  mono, A destination attn, default 255 (no attenuation)
+	 1 -  mono, B destination attn, default 255 (no attenuation)
+	 2 -  mono, C destination attn, default 0 (mute)
+	 3 -  mono, D destination attn, default 0 (mute)
+	 4 -  left, A destination attn, default 255 (no attenuation)
+	 5 -  left, B destination attn, default 0 (mute)
+	 6 -  left, C destination attn, default 0 (mute)
+	 7 -  left, D destination attn, default 0 (mute)
+	 8 - right, A destination attn, default 0 (mute)
+	 9 - right, B destination attn, default 255 (no attenuation)
+	10 - right, C destination attn, default 0 (mute)
+	11 - right, D destination attn, default 0 (mute)
+
+
+
+4) MANUALS/PATENTS:
 -------------------
 
 ftp://opensource.creative.com/pub/doc
-------------------------------------
+-------------------------------------
 
         Files:
         LM4545.pdf      AC97 Codec
