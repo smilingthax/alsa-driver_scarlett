@@ -314,6 +314,7 @@ typedef struct {
 	unsigned char piv_saved;
 	unsigned short picb_saved;
 #endif
+	snd_info_entry_t *proc_entry;
 } ichdev_t;
 
 typedef struct _snd_intel8x0 intel8x0_t;
@@ -1735,6 +1736,8 @@ static int snd_intel8x0_chip_init(intel8x0_t *chip)
 	return 0;
 }
 
+static void snd_intel8x0_proc_done(intel8x0_t * chip);
+
 static int snd_intel8x0_free(intel8x0_t *chip)
 {
 	int i;
@@ -1750,6 +1753,7 @@ static int snd_intel8x0_free(intel8x0_t *chip)
 	/* --- */
 	synchronize_irq(chip->irq);
       __hw_end:
+	snd_intel8x0_proc_done(chip);
 	if (chip->bdbars)
 		snd_free_pci_pages(chip->pci, chip->bdbars_count * sizeof(u32) * ICH_MAX_FRAGS * 2, chip->bdbars, chip->bdbars_addr);
 	if (chip->remap_addr)
@@ -1939,6 +1943,58 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97[0]->clock);
 }
 
+static void snd_intel8x0_proc_read(snd_info_entry_t * entry,
+				   snd_info_buffer_t * buffer)
+{
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, entry->private_data, return);
+	unsigned int tmp;
+
+	snd_iprintf(buffer, "Intel8x0\n\n");
+	if (chip->device_type == DEVICE_ALI)
+		return;
+	tmp = igetdword(chip, ICHREG(GLOB_STA));
+	snd_iprintf(buffer, "Global control        : 0x%08x\n", igetdword(chip, ICHREG(GLOB_CNT)));
+	snd_iprintf(buffer, "Global status         : 0x%08x\n", tmp);
+	if (chip->device_type == DEVICE_INTEL_ICH4)
+		snd_iprintf(buffer, "SDM                   : 0x%08x\n", igetdword(chip, ICHREG(SDM)));
+	snd_iprintf(buffer, "AC'97 codecs ready    :%s%s%s%s\n",
+			tmp & ICH_PCR ? " primary" : "",
+			tmp & ICH_SCR ? " secondary" : "",
+			tmp & ICH_TCR ? " tertiary" : "",
+			(tmp & (ICH_PCR | ICH_SCR | ICH_TCR)) == 0 ? " none" : "");
+	if (chip->device_type == DEVICE_INTEL_ICH4)
+		snd_iprintf(buffer, "AC'97 codecs SDIN     : %i %i %i\n",
+			chip->ac97_sdin[0],
+			chip->ac97_sdin[1],
+			chip->ac97_sdin[2]);
+}
+
+static void __devinit snd_intel8x0_proc_init(intel8x0_t * chip)
+{
+	snd_info_entry_t *entry;
+
+	if ((entry = snd_info_create_card_entry(chip->card, "intel8x0", chip->card->proc_root)) != NULL) {
+		entry->content = SNDRV_INFO_CONTENT_TEXT;
+		entry->private_data = chip;
+		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
+		entry->c.text.read_size = 2048;
+		entry->c.text.read = snd_intel8x0_proc_read;
+		if (snd_info_register(entry) < 0) {
+			snd_info_free_entry(entry);
+			entry = NULL;
+		}
+	}
+	chip->proc_entry = entry;
+}
+
+static void snd_intel8x0_proc_done(intel8x0_t * chip)
+{
+	if (chip->proc_entry) {
+		snd_info_unregister(chip->proc_entry);
+		chip->proc_entry = NULL;
+	}
+}
+
 static int snd_intel8x0_dev_free(snd_device_t *device)
 {
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, device->device_data, return -ENXIO);
@@ -1982,6 +2038,7 @@ static int __devinit snd_intel8x0_create(snd_card_t * card,
 	chip->card = card;
 	chip->pci = pci;
 	chip->irq = -1;
+	snd_intel8x0_proc_init(chip);
 	if (pci_resource_flags(pci, 2) & IORESOURCE_MEM) {	/* ICH4 and higher */
 		chip->mmio = chip->bm_mmio = 1;
 		chip->addr = pci_resource_start(pci, 2);
