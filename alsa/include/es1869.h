@@ -31,11 +31,10 @@
 struct snd_stru_es1869 {
 	unsigned short port;		/* port of ESS chip */
 	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
+	unsigned short fm_port;		/* FM port */
 	unsigned short ctrl_port;	/* Control port of ESS chip */
 	unsigned short irq;		/* IRQ number of ESS chip */
-	unsigned short mpu_irq;		/* MPU IRQ */
 	unsigned short irqnum;		/* IRQ number (index) */
-	unsigned short mpu_irqnum;	/* MPU IRQ number (index) */
 	unsigned short dma1;		/* DMA 1 */
 	unsigned short dma1num;		/* DMA 1 index */
 	unsigned short dma2;		/* DMA 2 */
@@ -66,8 +65,8 @@ extern void snd_es1869_interrupt(es1869_t * codec);
 extern es1869_t *snd_es1869_new_device(snd_card_t * card,
 				       unsigned short port,
 				       unsigned short mpu_port,
+				       unsigned short fm_port,
 				       unsigned short irqnum,
-				       unsigned short mpu_irqnum,
 				       unsigned short dma8num,
 				       unsigned short hardware);
 extern int snd_es1869_init(es1869_t * codec, int enable);
