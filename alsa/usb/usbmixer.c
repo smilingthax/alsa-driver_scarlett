@@ -1259,7 +1259,7 @@ static int parse_audio_unit(mixer_build_t *state, int unitid)
  *
  * walk through all OUTPUT_TERMINAL descriptors to search for mixers
  */
-int snd_usb_create_mixer(snd_usb_audio_t *chip)
+int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif, unsigned char *buffer, int buflen)
 {
 	unsigned char *desc;
 	mixer_build_t state;
@@ -1269,11 +1269,11 @@ int snd_usb_create_mixer(snd_usb_audio_t *chip)
 
 	memset(&state, 0, sizeof(state));
 	state.chip = chip;
-	state.buffer = chip->desc_buffer;
-	state.buflen = chip->desc_buflen;
-	state.ctrlif = chip->ctrlif;
+	state.buffer = buffer;
+	state.buflen = buflen;
+	state.ctrlif = ctrlif;
 	desc = NULL;
-	while ((desc = snd_usb_find_csint_desc(chip, desc, OUTPUT_TERMINAL, chip->ctrlif, -1)) != NULL) {
+	while ((desc = snd_usb_find_csint_desc(buffer, buflen, desc, OUTPUT_TERMINAL, ctrlif, -1)) != NULL) {
 		if (desc[0] < 9)
 			continue; /* invalid descriptor? */
 		set_bit(desc[3], &state.unitbitmap);  /* mark terminal ID as visited */
