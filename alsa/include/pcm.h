@@ -695,15 +695,17 @@ extern int snd_pcm_hw_constraint_list(snd_pcm_runtime_t *runtime,
 				      snd_pcm_hw_param_t var,
 				      snd_pcm_hw_constraint_list_t *l);
 extern int snd_pcm_hw_constraint_ratnums(snd_pcm_runtime_t *runtime, 
-				    unsigned int cond,
-				    snd_pcm_hw_constraint_ratnums_t *r);
+					 unsigned int cond,
+					 snd_pcm_hw_param_t var,
+					 snd_pcm_hw_constraint_ratnums_t *r);
 extern int snd_pcm_hw_constraint_ratdens(snd_pcm_runtime_t *runtime, 
-				    unsigned int cond,
-				    snd_pcm_hw_constraint_ratdens_t *r);
+					 unsigned int cond,
+					 snd_pcm_hw_param_t var,
+					 snd_pcm_hw_constraint_ratdens_t *r);
 extern int snd_pcm_hw_constraint_msbits(snd_pcm_runtime_t *runtime, 
-				   unsigned int cond,
-				   unsigned int width,
-				   unsigned int msbits);
+					unsigned int cond,
+					unsigned int width,
+					unsigned int msbits);
 extern int snd_pcm_hw_constraint_step(snd_pcm_runtime_t *runtime,
 				      unsigned int cond,
 				      snd_pcm_hw_param_t var,
