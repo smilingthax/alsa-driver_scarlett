@@ -11,7 +11,7 @@ include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := intel8x0.c
 
-obj-$(CONFIG_SND) += pdplus/
+obj-$(CONFIG_SND) += pdplus/ azx/
 
 snd-hdspm-objs := hdspm.o
 
