@@ -51,10 +51,12 @@ for I in etc/rc.d/init.d usr/include/linux lib/modules/$KVERSION/%{modsubdir}; d
   mkdir -p $RPM_BUILD_ROOT/$I
 done
 
-make prefix=$RPM_BUILD_ROOT/usr \
-     moddir=$RPM_BUILD_ROOT/lib/modules/$KVERSION/%{modsubdir} \
-     install
 
+make \
+  DESTDIR=$RPM_BUILD_ROOT \ 
+  prefix=/usr \ 
+  moddir=/lib/modules/$KVERSION/%{modsubdir} \ 
+  install
 
 install -m755 utils/alsasound $RPM_BUILD_ROOT/etc/rc.d/init.d/alsasound
 
