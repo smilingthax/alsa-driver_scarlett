@@ -310,7 +310,7 @@ struct _snd_pcm_runtime {
 	/* -- DMA -- */           
 	unsigned char *dma_area;	/* DMA area */
 	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
-	unsigned long dma_size;		/* size of DMA area */
+	unsigned long dma_bytes;		/* size of DMA area */
 
 #ifdef CONFIG_SND_OSSEMUL
 	/* -- OSS things -- */
