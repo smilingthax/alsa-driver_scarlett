@@ -427,13 +427,13 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 #define snd_printd(...) snd_printk(__VA_ARGS__)
 #define snd_debug_check(expr, ...) do {\
 	if (expr) {\
-		snd_printk("BUG? (%s)\n", __STRING(expr));\
+		snd_printk("BUG? (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
 		__VA_ARGS__;\
 	}\
 } while (0)
 #define snd_error_check(expr, ...) do {\
 	if (expr) {\
-		snd_printk("ERROR (%s)\n", __STRING(expr));\
+		snd_printk("ERROR (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
 		__VA_ARGS__;\
 	}\
 } while (0)
