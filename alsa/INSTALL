@@ -694,10 +694,11 @@ Module parameters
     if you still encounter too fast playback, specify the clock
     explicitly via the module option "snd_ac97_clock=41194".
     
-  Module snd-via686a.o
+  Module snd-via82xx.o
   --------------------
 
-    Module for AC'97 motherboards based on VIA 82C686A/686B (south) bridge.
+    Module for AC'97 motherboards based on VIA 82C686A/686B, 8233
+    (south) bridge.
 
     snd_mpu_port         - 0x300,0x310,0x320,0x330, otherwise obtain BIOS setup
     snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
@@ -708,15 +709,6 @@ Module parameters
           set the SMP (or MPS) version on BIOS to 1.1 instead of
           default value 1.4.  Then the interrupt number will be
           assigned under 15. You might also upgrade your BIOS.
-    
-  Module snd-via8233.o
-  --------------------
-
-    Module for AC'97 motherboards based on VIA 8233 (south) bridge.
-
-    snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
-
-    Module supports autoprobe and multiple bus-master chips (max 8).
     
   Module snd-cmipci.o
   -------------------
