@@ -255,7 +255,7 @@ case "$processor" in
   ppc)
     ;;
   mips)
-    c_opts="-mcpu=r4600 -mips2 -fno-pic -mno-abicalls -mlong-calls"
+    c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
     ;;
   *)
