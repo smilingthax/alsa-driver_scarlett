@@ -502,7 +502,7 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 #endif /* NEW_MACRO_VARARGS */
 
-#define snd_BUG() snd_debug_check(0, )
+#define snd_BUG() snd_debug_check(1, )
 
 #define snd_alloc_check(function, args)  ({\
 	void *__ptr;\
