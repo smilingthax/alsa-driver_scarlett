@@ -125,8 +125,8 @@ Module parameters
   Module snd-interwave.o
   ----------------------
 
-    Module for Gravis UltraSound PnP, Dynasonic 3-D/Pro and other soundcards
-    based on AMD InterWave (tm) chip.
+    Module for Gravis UltraSound PnP, Dynasonic 3-D/Pro, STB Sound Rage 32
+    and other soundcards based on AMD InterWave (tm) chip.
   
     snd_port	- port # for InterWave chip (0x210,0x220,0x230,0x240,0x250,0x260)
     snd_irq	- IRQ # for InterWave chip (3,5,9,11,12,15)
