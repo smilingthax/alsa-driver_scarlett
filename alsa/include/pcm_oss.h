@@ -59,7 +59,7 @@ typedef struct snd_stru_pcm_oss_runtime {
 	char *xbuffer[2];
 	size_t xbuffer_size[2];
 	char xbuffer_lock[2];
-	unsigned int prev_frag_io;
+	unsigned int prev_byte_io_interrupt;
 } snd_pcm_oss_runtime_t;
 
 typedef struct snd_stru_pcm_oss_file {

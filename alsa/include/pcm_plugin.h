@@ -120,9 +120,9 @@ struct snd_stru_pcm_plugin {
 	int dst_width;			/* sample width in bits */
 	ssize_t (*src_samples)(snd_pcm_plugin_t *plugin, size_t dst_samples);
 	ssize_t (*dst_samples)(snd_pcm_plugin_t *plugin, size_t src_samples);
-	int (*client_voices)(snd_pcm_plugin_t *plugin,
-			     size_t samples,
-			     snd_pcm_plugin_voice_t **voices);
+	ssize_t (*client_voices)(snd_pcm_plugin_t *plugin,
+				 size_t samples,
+				 snd_pcm_plugin_voice_t **voices);
 	int (*src_voices_mask)(snd_pcm_plugin_t *plugin,
 			       bitset_t *dst_vmask,
 			       bitset_t **src_vmask);
@@ -177,11 +177,11 @@ ssize_t snd_pcm_plug_slave_size(snd_pcm_plugin_handle_t *handle, int channel, si
 #define HALF ROUTE_PLUGIN_RESOLUTION / 2
 typedef int route_ttable_entry_t;
 
-int snd_pcm_plugin_build_block(snd_pcm_plugin_handle_t *handle,
-			       int channel,
-			       snd_pcm_plugin_handle_t *slave,
-			       snd_pcm_format_t *format,
-			       snd_pcm_plugin_t **r_plugin);
+int snd_pcm_plugin_build_io(snd_pcm_plugin_handle_t *handle,
+			    int channel,
+			    snd_pcm_plugin_handle_t *slave,
+			    snd_pcm_format_t *format,
+			    snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_linear(snd_pcm_plugin_handle_t *handle,
 				int channel,
 				snd_pcm_format_t *src_format,

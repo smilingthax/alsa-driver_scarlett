@@ -120,10 +120,6 @@ struct snd_stru_pcm_runtime {
 
 	volatile int *status;		/* channel status */
 	int _sstatus;			/* static status location */
-	volatile size_t *frag_io;
-	size_t _sfrag_io;		/* static fragment io pos */
-	volatile size_t *frag_data;
-	size_t _sfrag_data;		/* static fragment app pos */
 	volatile size_t *byte_io;
 	size_t _sbyte_io;
 	volatile size_t *byte_data;
@@ -132,10 +128,9 @@ struct snd_stru_pcm_runtime {
 	size_t byte_io_interrupt;	/* Position at interrupt time*/
 	size_t frag_io_mod;		/* Fragment under I/O */
 	size_t bytes_per_second;
-	size_t bytes_align;
+	size_t bytes_per_sample;
 	size_t bytes_avail_max;
 
-	size_t frag_boundary;
 	size_t byte_boundary;
 
 	int xruns;
@@ -147,20 +142,13 @@ struct snd_stru_pcm_runtime {
 	snd_pcm_sync_t sync_group;	/* synchronization group */
 	int mixer_device;		/* mixer device */
 	snd_mixer_eid_t mixer_eid;	/* mixer element identification */	
-	union {
-		struct {
-			size_t bytes_min;	/* min available bytes for wakeup */
-			size_t bytes_align;
-			unsigned int bytes_xrun_max;
-			int fill;       /* fill mode - SND_PCM_FILL_XXXX */
-			size_t bytes_fill_max;   /* maximum silence fill in bytes */
-			size_t byte_fill;
-		} stream;
-		struct {
-			size_t frags_min;	/* min available fragments for wakeup */
-			unsigned int frags_xrun_max;
-		} block;
-	} buf;
+	size_t bytes_min;	/* min available bytes for wakeup */
+	size_t bytes_align;
+	unsigned int bytes_xrun_max;
+	int fill_mode;       /* fill mode - SND_PCM_FILL_XXXX */
+	size_t bytes_fill_max;   /* maximum silence fill in bytes */
+	size_t byte_fill;
+
 	snd_pcm_mmap_control_t *mmap_control;
 	char *mmap_data;
 	unsigned long mmap_data_user;		/* User space address */
@@ -354,8 +342,8 @@ extern int snd_pcm_lib_mmap_ctrl_ptr(snd_pcm_subchn_t *subchn, char *ptr);
 extern int snd_pcm_lib_ioctl(void *private_data, snd_pcm_subchn_t *subchn,
 			     unsigned int cmd, unsigned long *arg);                      
 extern void snd_pcm_update_byte_io(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_playback_bytes_xrun_check(snd_pcm_subchn_t *subchn);
-extern int snd_pcm_capture_bytes_xrun_check(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_playback_xrun_check(snd_pcm_subchn_t *subchn);
+extern int snd_pcm_capture_xrun_check(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_playback_ready(snd_pcm_subchn_t *subchn);
 extern int snd_pcm_capture_ready(snd_pcm_subchn_t *subchn);
 extern long snd_pcm_playback_ready_jiffies(snd_pcm_subchn_t *subchn);

@@ -14,7 +14,7 @@ if [ -d ../alsa-lib ]; then
   cd oss
   ln -fv ../../../alsa-lib/src/pcm/pcm_common.c .
   pwd
-  for f in block.c copy.c linear.c mulaw.c rate.c route.c plugin_ops.h
+  for f in io.c copy.c linear.c mulaw.c rate.c route.c plugin_ops.h
   do
     ln -fv ../../../alsa-lib/src/pcm/plugin/$f $f
   done

@@ -1450,20 +1450,11 @@ typedef struct snd_pcm_channel_params {
 	snd_pcm_sync_t sync;		/* sync group */
 	size_t buffer_size;		/* requested buffer size */
 	size_t frag_size;		/* requested size of fragment in bytes */
-	union {
-		struct {
-			size_t bytes_min;	/* min available bytes for wakeup */
-			size_t bytes_align;	/* transferred size need to be a multiple */
-			size_t bytes_xrun_max;	/* maximum size of underrun/overrun before unconditional stop */
-			int fill;		/* fill mode - SND_PCM_FILL_XXXX */
-			size_t bytes_fill_max;	/* maximum silence fill in bytes */
-		} stream;
-		struct {
-			size_t frags_min;	/* min available fragments for wakeup */
-			size_t frags_xrun_max;	/* max size of underrun/overrun before unconditional stop */
-		} block;
-		int reserved[16];
-	} buf;				/* buffer parameters */
+	size_t bytes_min;		/* min available bytes for wakeup */
+	size_t bytes_align;		/* transferred size need to be a multiple */
+	size_t bytes_xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
+	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
+	size_t bytes_fill_max;		/* maximum silence fill in bytes */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_channel_params_t;
 
@@ -1485,24 +1476,14 @@ typedef struct snd_pcm_channel_setup {
 	snd_pcm_sync_t sync;		/* sync group */
 	size_t buffer_size;		/* current buffer size in bytes */
 	size_t frag_size;		/* current fragment size in bytes */
+	size_t bytes_min;		/* min available bytes for wakeup */
+	size_t bytes_align;		/* transferred size need to be a multiple */
+	size_t bytes_xrun_max;		/* max size of underrun/overrun before unconditional stop */
+	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
+	size_t bytes_fill_max;		/* maximum silence fill in bytes */
 	size_t frags;			/* allocated fragments */
-	size_t frag_boundary;		/* fragment number wrap point */
 	size_t byte_boundary;		/* position in bytes wrap point */
 	unsigned int msbits_per_sample;		/* used most significant bits per sample */
-	union {
-		struct {
-			size_t bytes_min;	/* min available bytes for wakeup */
-			size_t bytes_align;	/* transferred size need to be a multiple */
-			size_t bytes_xrun_max;	/* max size of underrun/overrun before unconditional stop */
-			int fill;		/* fill mode - SND_PCM_FILL_XXXX */
-			size_t bytes_fill_max;	/* maximum silence fill in bytes */
-		} stream;
-		struct {
-			size_t frags_min;	/* min available frags for wakeup */
-			size_t frags_xrun_max;	/* max size of underrun/overrun before unconditional stop */
-		} block;
-		int reserved[16];
-	} buf;
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_channel_setup_t;
 
@@ -1524,14 +1505,9 @@ typedef struct snd_pcm_channel_status {
 	int status;		/* channel status - SND_PCM_STATUS_XXXX */
 	struct timeval stime;	/* time when playback/capture was started */
 	long long ust_stime;	/* UST time when playback/capture was started */
-	size_t frag_io;		/* current I/O fragment */
-	size_t frag_data;	/* current I/O fragment */
-	ssize_t frags_used;	/* Used fragments */
-	ssize_t frags_free;	/* Free fragments */
 	size_t byte_io;		/* current I/O position in bytes */
 	size_t byte_data;	/* current data position */
 	ssize_t bytes_used;	/* number of bytes in queue/buffer */
-	ssize_t bytes_free;	/* bytes in queue still free */
 	size_t bytes_avail_max;	/* max bytes available since last status */
 	unsigned int xruns;	/* count of underruns/overruns from last status */
 	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
@@ -1540,8 +1516,6 @@ typedef struct snd_pcm_channel_status {
 
 typedef struct {
 	volatile int status;	/* RO: status - SND_PCM_STATUS_XXXX */
-	size_t frag_io;		/* RO: frag under I/O operation (0 ... frag_boundary-1) */
-	size_t frag_data;	/* RW: application current frag (0 ... frag_boundary-1) */
 	size_t byte_io;		/* RO: I/O position (0 ... byte_boundary-1) updated only on status query and at interrupt time */
 	size_t byte_data;	/* RW: application position (0 ... byte_boundary-1) checked only on status query and at interrupt time */
 	int reserved[59];	/* reserved */
