@@ -15,17 +15,19 @@ work, you cannot be success with installation.
 Quick install
 =============
 
-1) Run './configure' script.
+1) If you have got 2.2 or later kernel, you must turn on sound support.
+   If you have got 2.0 kernel or 2.1 kernel, you can silently skip this step.
+2) Run './configure' script.
    If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
    If you want sequencer support, use --with-sequencer=yes switch.
    If you don't want OSS/Lite emulation, use --with-oss=no switch.
    If you want turn on debug mode use --with-debug=full switch.
    If you want debug soundcard detection try --with-debug=detect switch.
    Example: ./configure --with-isapnp=yes --with-debug=full
-2) Run 'make install'.
-3) Run './snddevices' script to create new sound devices in /dev directory.
-4) Edit your /etc/conf.modules (look to kerneld/kmod support section).
-5) Run 'modprobe snd-card' where card is name of your card.
+3) Run 'make install'.
+4) Run './snddevices' script to create new sound devices in /dev directory.
+5) Edit your /etc/conf.modules (look to kerneld/kmod support section).
+6) Run 'modprobe snd-card' where card is name of your card.
    Note: If you have ISA PnP soundcard you should need run isapnp program
          from isapnptools package at first to initialize soundcard if
 	 you don't select native ISA PnP support via --with-isapnp=yes
