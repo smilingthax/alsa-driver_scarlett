@@ -262,23 +262,22 @@ static void snd_mpu401_uart_input_trigger(snd_rawmidi_substream_t * substream, i
 static void snd_mpu401_uart_input_read(mpu401_t * mpu)
 {
 	int max = 128;
-	unsigned char byte, status;
+	unsigned char byte;
 
 	/* prevent double enter via event callback */
 	if (test_and_set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode))
 		return;
 	spin_lock(&mpu->input_lock);
 	while (max-- > 0) {
-		status = inb(MPU401C(mpu));
-		if (status & 0x80)
-			break; /* input not available */
-		else {
+		if (snd_mpu401_input_avail(mpu)) {
 			byte = inb(MPU401D(mpu));
 			if (test_bit(MPU401_MODE_BIT_INPUT_TRIGGER, &mpu->mode)) {
 				spin_unlock(&mpu->input_lock);
 				snd_rawmidi_receive(mpu->substream_input, &byte, 1);
 				spin_lock(&mpu->input_lock);
 			}
+		else {
+			break; /* input not available */
 		}
 	}
 	spin_unlock(&mpu->input_lock);
