@@ -83,10 +83,9 @@ struct resource {
 	unsigned long flags;
 	struct resource *parent, *sibling, *child;
 };
-#endif
 
-#ifndef IORESOURCE_IO
 #define IORESOURCE_IO           0x00000100      /* Resource type */
+#define IORESOURCE_MEM		0x00000200
 #endif
 
 #define snd_request_region snd_compat_request_region
