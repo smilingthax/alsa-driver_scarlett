@@ -1,4 +1,0 @@
-#!/bin/bash
-
-pnpset --set-io 0,1,0x240 --set-io 0,2,0x340 --set-io 0,3,0x34c \
-       --set-irq 0,1,5 --set-dma 0,1,6 --set-dma 0,2,7
