@@ -23,6 +23,7 @@
 
 #ifndef __KERNEL__
 #include <linux/ioctl.h>
+#include <sys/ipc.h>
 #endif
 
 /* version of the sequencer */
@@ -59,6 +60,7 @@
 #define SND_SEQ_EVENT_CONTINUE		24	/* midi Real Time Continue message */
 #define SND_SEQ_EVENT_STOP		25	/* midi Real Time Stop message */	
 #define SND_SEQ_EVENT_QFRAME		26	/* Midi time code quarter frame */
+#define SND_SEQ_EVENT_TICK		27	/* midi Real Time Tick message */
 	
 #define SND_SEQ_EVENT_TEMPO		30	/* (SMF) Tempo event */
 #define SND_SEQ_EVENT_TIMESIGN		31	/* SMF Time Signature event */
@@ -85,6 +87,29 @@
 #define SND_SEQ_EVENT_SAMPLE_VOLUME	84	/* volume and balance */
 #define SND_SEQ_EVENT_SAMPLE_LOOP	85	/* sample loop */
 #define SND_SEQ_EVENT_SAMPLE_POSITION	86	/* sample position */
+
+	/* instrument layer */
+#define SND_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
+#define SND_SEQ_EVENT_INSTR_BEGIN_RESULT 101	/* result */
+#define SND_SEQ_EVENT_INSTR_END		102	/* end of instrument management */
+#define SND_SEQ_EVENT_INSTR_END_RESULT	103	/* result */
+#define SND_SEQ_EVENT_INSTR_PUT		104	/* put instrument to port */
+#define SND_SEQ_EVENT_INSTR_PUT_RESULT	105	/* result */
+#define SND_SEQ_EVENT_INSTR_GET		106	/* get instrument from port */
+#define SND_SEQ_EVENT_INSTR_GET_RESULT	107	/* result */
+#define SND_SEQ_EVENT_INSTR_FREE	108	/* free instrument(s) */
+#define SND_SEQ_EVENT_INSTR_FREE_RESULT	109	/* result */
+#define SND_SEQ_EVENT_INSTR_LIST	110	/* instrument list */
+#define SND_SEQ_EVENT_INSTR_LIST_RESULT 111	/* result */
+#define SND_SEQ_EVENT_INSTR_RESET	112	/* reset instrument memory */
+#define SND_SEQ_EVENT_INSTR_RESET_RESULT 113	/* result */
+#define SND_SEQ_EVENT_INSTR_INFO	114	/* instrument interface info */
+#define SND_SEQ_EVENT_INSTR_INFO_RESULT 115	/* result */
+#define SND_SEQ_EVENT_INSTR_STATUS	116	/* instrument interface status */
+#define SND_SEQ_EVENT_INSTR_STATUS_RESULT 117	/* result */
+#define SND_SEQ_EVENT_INSTR_CLUSTER	118	/* cluster parameters */
+#define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 119	/* result */
+#define SND_SEQ_EVENT_INSTR_CHANGE	120	/* instrument change */
 
 	/* hardware specific events - range 192-255 */
 
@@ -115,12 +140,16 @@ typedef struct {
 
 #define SND_SEQ_EVENT_LENGTH_FIXED	(0<<2)	/* fixed event size */
 #define SND_SEQ_EVENT_LENGTH_VARIABLE	(1<<2)	/* variable event size */
-#define SND_SEQ_EVENT_LENGTH_MASK	(1<<2)
+#define SND_SEQ_EVENT_LENGTH_VARIPC	(2<<2)	/* variable event size - IPC */
+#define SND_SEQ_EVENT_LENGTH_MASK	(3<<2)
 
-#define SND_SEQ_PRIORITY_NORMAL		(0<<3)	/* normal priority */
-#define SND_SEQ_PRIORITY_HIGH		(1<<3)	/* event should be processed before others */
-#define SND_SEQ_PRIORITY_MASK		(1<<3)
+#define SND_SEQ_PRIORITY_NORMAL		(0<<4)	/* normal priority */
+#define SND_SEQ_PRIORITY_HIGH		(1<<4)	/* event should be processed before others */
+#define SND_SEQ_PRIORITY_MASK		(1<<4)
 
+#define SND_SEQ_DEST_QUEUE		(0<<5)	/* normal destonation */
+#define SND_SEQ_DEST_DIRECT		(1<<5)	/* bypass enqueing */
+#define SND_SEQ_DEST_MASK		(1<<5)
 
 	/* note event */
 typedef struct {
@@ -156,6 +185,31 @@ typedef struct {
 } snd_seq_ev_ext;
 
 
+	/* external stored data - IPC shared memory */
+typedef struct {
+	int len;		/* length of data */
+	key_t ipc;		/* IPC key */
+} snd_seq_ev_ipcshm;
+
+
+/* Instrument cluster type */
+typedef unsigned long snd_seq_instr_cluster_t;
+
+/* Instrument type */
+typedef struct {
+	snd_seq_instr_cluster_t cluster;
+	unsigned int std;
+	unsigned short bank;
+	unsigned short prg;
+} snd_seq_instr_t;
+
+
+/* INSTR_BEGIN event */
+typedef struct {
+	long timeout;	/* zero = forever, otherwise timeout in ms */
+} snd_seq_ev_instr_begin_t;
+
+
 typedef struct {
 	long int tv_sec;	/* seconds */
 	long int tv_nsec;	/* nanoseconds */
@@ -184,13 +238,16 @@ typedef struct snd_seq_event_t {
 		snd_seq_ev_note note;
 		snd_seq_ev_ctrl control;
 		snd_seq_ev_raw8 raw8;
-		snd_seq_ev_raw32 raw32;		
+		snd_seq_ev_raw32 raw32;
 		snd_seq_ev_ext ext;
+		snd_seq_ev_ipcshm ipcshm;
 		union {
 			snd_seq_tick_time_t tick;
 			snd_seq_real_time_t real;
 		} time;
 		snd_seq_addr_t addr;
+		int result;
+		snd_seq_ev_instr_begin_t instr_begin;
 	} data;
 } snd_seq_event_t;
 
@@ -269,14 +326,17 @@ typedef struct {
 	int midi_channels;		/* channels per MIDI port */
 	int synth_voices;		/* voices per SYNTH port */
 
-	int subscribers;		/* subscribers for output (this port->sequencer) */
-	int use;			/* use for input (sequencer->this port) */
+	int out_use;			/* R/O: subscribers for output (this port->sequencer) */
+	int in_use;			/* R/O: subscribers for input (sequencer->this port) */
 
 	void *kernel;			/* reserved for kernel use (must be NULL) */
 
 	char reserved[64];		/* for future use */
 } snd_seq_port_info_t;
 
+
+/* queue flags */
+#define SND_SEQ_QUEUE_FLG_SYNC_LOST	(1<<0)	/* synchronization was lost */
 
 /* queue info/status */
 typedef struct {
@@ -287,29 +347,94 @@ typedef struct {
 	snd_seq_real_time_t time;	/* current time */
 			
 	int running;			/* running state of queue */		
+
+	int flags;			/* various flags */
+
+	char reserved[64];		/* for the future */
+} snd_seq_queue_status_t;
+
+
+/* queue tempo */
+typedef struct {
+	int queue;			/* sequencer queue */
 	unsigned int tempo;		/* current tempo, us/tick */
 	int ppq;			/* time resolution, ticks/quarter */
-	
-	int flags;			/* running, sync status etc. */
-	
-	/* security settings, only owner of this queue can start/stop timer 
-	 *  etc. if the queue is locked for other clients 
+	char reserved[32];		/* for the future */
+} snd_seq_queue_tempo_t;
+
+
+/* queue owner */
+typedef struct {
+	int queue;			/* sequencer queue */
+
+	/*
+	 *  security settings, only owner of this queue can start/stop timer
+	 *  etc. if the queue is locked for other clients
 	 */
-	int owner;			/* client id for owner of the queue */
 	int locked:1;			/* timing queue locked for other queues */
+	int owner;			/* client id for owner of the queue */
 
-	int used;			
-	
-	/* sync source */
-	/* sync dest */	
+	char reserved[32];		/* for the future use */
+} snd_seq_queue_owner_t;
 
-	char reserved[64];		/* for future use */
-} snd_seq_queue_info_t;
+
+/* sequencer timer sources */
+#define SND_SEQ_TIMER_GLOBAL		0	/* global timer */
+#define SND_SEQ_TIMER_SLAVE		1	/* slave timer */
+#define SND_SEQ_TIMER_PCM		2	/* slave PCM timer */
+#define SND_SEQ_TIMER_MIDI_CLOCK	3	/* Midi Clock (CLOCK event) */
+#define SND_SEQ_TIMER_MIDI_TICK		4	/* Midi Timer Tick (TICK event) */
+
+/* queue one timer info */
+typedef struct {
+	int type;			/* timer type */
+	int slave;			/* timer slave type */
+	int number;			/* timer number/identification */
+	int resolution;			/* timer resolution in Hz */
+} snd_seq_timer_t;	
+
+/* queue timer info */
+typedef struct {
+	int queue;			/* sequencer queue */
+
+	/* source timer selection - tick queue */
+	snd_seq_timer_t tick;
+	/* source timer selection - real time queue */
+	snd_seq_timer_t real;
+
+	/* MIDI timer parameters */
+	int midi_timer_client;		/* sequencer client */
+	int midi_timer_port;		/* sequencer port */
+
+	long int sync_tick_time_resolution; /* resolution per 10ms midi tick (TICK event) (ticks * 1000000) */
+	long int sync_real_time_resolution; /* resolution per midi tick (CLOCK event) or zero (nanoseconds) */
+
+	char reserved[64];		/* for the future use */
+} snd_seq_queue_timer_t;
+
+
+/* synchronization types */
+#define SND_SEQ_SYNC_NONE		0	/* none synchronization */
+#define SND_SEQ_SYNC_MTC		1	/* Midi Time Code synchronization */
+
+typedef struct {
+	int queue;			/* sequencer queue */
+
+	/* synchronization */
+	int sync_client;		/* sequencer client */
+	int sync_port;			/* sequencer port */
+	int sync_type;			/* synchronization type */
+
+	snd_seq_tick_time_t sync_tick;	/* last synchronization tick */
+	snd_seq_real_time_t sync_time;	/* last synchronization time */
+
+	char reserved[64];		/* for the future use */
+} snd_seq_queue_sync_t;
 
 
 typedef struct {
-	int queue;
-	int client;
+	int queue;			/* sequencer queue */
+	int client;			/* sequencer client */
 	int used;			/* queue is used with this client (must be set for accepting events) */
 	/* per client watermarks */
 	int low;			/* low watermark for wakeup (minimum free events in queue) */
@@ -326,27 +451,152 @@ typedef struct {
 } snd_seq_port_subscribe_t;
 
 
-/* ioctl()s definitions */
+/*
+ *  Instrument abstraction layer
+ *     - based on events
+ */
 
-#define SND_SEQ_IOCTL_PVERSION          _IOR ('S', 0x00, int)
-#define SND_SEQ_IOCTL_CLIENT_ID		_IOR ('S', 0x01, int) 
+/* instrument types */
+#define SND_SEQ_INSTR_ATYPE_DATA	0	/* instrument data */
+#define SND_SEQ_INSTR_ATYPE_ALIAS	1	/* instrument alias */
 
+/* instrument ASCII identifiers */
+#define SND_SEQ_INSTR_ID_DLS1		"DLS1"
+#define SND_SEQ_INSTR_ID_DLS2		"DLS2"
+#define SND_SEQ_INSTR_ID_SOUNDFONT	"SoundFont"
+#define SND_SEQ_INSTR_ID_GUS_PATCH	"GUS Patch"
+#define SND_SEQ_INSTR_ID_INTERWAVE	"InterWave FFFF"
+#define SND_SEQ_INSTR_ID_OPL2		"OPL2"
+#define SND_SEQ_INSTR_ID_OPL3		"OPL3"
+#define SND_SEQ_INSTR_ID_OPL4		"OPL4"
+
+/* instrument types */
+#define SND_SEQ_INSTR_TYPE0_DLS1	(1<<0)	/* MIDI DLS v1 */
+#define SND_SEQ_INSTR_TYPE0_DLS2	(1<<1)	/* MIDI DLS v2 */
+#define SND_SEQ_INSTR_TYPE1_SOUNDFONT	(1<<0)	/* EMU SoundFont */
+#define SND_SEQ_INSTR_TYPE1_GUS_PATCH	(1<<1)	/* Gravis UltraSound Patch */
+#define SND_SEQ_INSTR_TYPE1_INTERWAVE	(1<<2)	/* InterWave FFFF */
+#define SND_SEQ_INSTR_TYPE2_OPL2	(1<<0)	/* Yamaha OPL2 */
+#define SND_SEQ_INSTR_TYPE2_OPL3	(1<<1)	/* Yamaha OPL3 */
+#define SND_SEQ_INSTR_TYPE2_OPL4	(1<<2)	/* Yamaha OPL4 */
+
+/* instrument data */
+typedef struct {
+	char name[32];			/* instrument name */
+	char reserved[16];		/* for the future use */
+	int type;			/* instrument type */
+	union {
+		char format[16];	/* format identifier */
+		snd_seq_instr_t alias;
+	} data;
+} snd_seq_instr_data_t;
+
+/* INSTR_PUT, data are stored in one block (extended or IPC), header + data */
+ 
+typedef struct {
+	snd_seq_instr_t id;		/* instrument identifier */
+	char reserved[16];		/* for the future */
+	long len;			/* real instrument data length (without header) */
+	snd_seq_instr_data_t data;	/* instrument data */
+} snd_seq_instr_put_t;
+
+/* INSTR_GET, data are stored in one block (extended or IPC), header + data */
+
+typedef struct {
+	snd_seq_instr_t id;		/* instrument identifier */
+	char reserved[16];		/* reserved for the future use */
+	long len;			/* real instrument data length (without header) */
+	snd_seq_instr_data_t data;	/* instrument data */
+} snd_seq_instr_get_t;
+
+typedef struct {
+	int result;			/* operation result */
+	snd_seq_instr_t id;		/* requested instrument identifier */
+	char reserved[16];		/* reserved for the future use */
+	long len;			/* real instrument data length (without header) */
+	snd_seq_instr_data_t data;	/* instrument data */
+} snd_seq_instr_get_result_t;
+
+/* INSTR_FREE */
+
+typedef struct {
+	char reserved[16];		/* for the future use */
+	unsigned int type;              /* SND_SEQ_INSTR_FTYPE_* */
+	union {
+		snd_seq_instr_t instr;
+		snd_seq_instr_cluster_t cluster;
+		char data8[16];
+	} data;
+} snd_seq_instr_free_t;
+
+/* INSTR_INFO */
+
+typedef struct {
+	int result;			/* operation result */
+	unsigned int formats[8];	/* bitmap of supported formats */
+	int ram_count;			/* count of RAM banks */
+	long ram_sizes[16];		/* size of RAM banks */
+	int rom_count;			/* count of ROM banks */
+	long rom_sizes[8];		/* size of ROM banks */
+	char reserved[128];
+}  snd_seq_instr_info_t;
+
+/* INSTR_STATUS */
+
+typedef struct {
+	int result;			/* operation result */
+	long free_ram[16];		/* free RAM in banks */
+	int instrument_count;		/* count of downloaded instruments */
+	char reserved[128];
+} snd_seq_instr_status_t;
+
+/* INSTR_CLUSTER_SET */
+
+typedef struct {
+	snd_seq_instr_cluster_t cluster;  /* cluster identifier */
+	char name[32];			/* cluster name */
+	int priority;			/* cluster priority */
+	char reserved[64];		/* for the future use */
+} snd_seq_instr_cluster_set_t;
+
+/* INSTR_CLUSTER_GET */
+
+typedef struct {
+	snd_seq_instr_cluster_t cluster;  /* cluster identifier */
+	char name[32];			/* cluster name */
+	int priority;			/* cluster priority */
+	char reserved[64];		/* for the future use */
+} snd_seq_instr_cluster_get_t;
+
+/*
+ *  IOCTL commands
+ */
+
+#define SND_SEQ_IOCTL_PVERSION		_IOR ('S', 0x00, int)
+#define SND_SEQ_IOCTL_CLIENT_ID		_IOR ('S', 0x01, int)
 #define SND_SEQ_IOCTL_SYSTEM_INFO	_IOWR('S', 0x02, snd_seq_system_info_t)
 
 #define SND_SEQ_IOCTL_GET_CLIENT_INFO	_IOWR('S', 0x10, snd_seq_client_info_t)
-#define SND_SEQ_IOCTL_SET_CLIENT_INFO	_IOWR('S', 0x11, snd_seq_client_info_t)
+#define SND_SEQ_IOCTL_SET_CLIENT_INFO	_IOW ('S', 0x11, snd_seq_client_info_t)
 
 #define SND_SEQ_IOCTL_CREATE_PORT	_IOWR('S', 0x20, snd_seq_port_info_t)
-#define SND_SEQ_IOCTL_DELETE_PORT	_IOWR('S', 0x21, snd_seq_port_info_t)
+#define SND_SEQ_IOCTL_DELETE_PORT	_IOW ('S', 0x21, snd_seq_port_info_t)
 #define SND_SEQ_IOCTL_GET_PORT_INFO	_IOWR('S', 0x22, snd_seq_port_info_t)
-#define SND_SEQ_IOCTL_SET_PORT_INFO	_IOWR('S', 0x23, snd_seq_port_info_t)
+#define SND_SEQ_IOCTL_SET_PORT_INFO	_IOW ('S', 0x23, snd_seq_port_info_t)
 
-#define SND_SEQ_IOCTL_SUBSCRIBE_PORT	_IOWR('S', 0x30, snd_seq_port_subscribe_t)
-#define SND_SEQ_IOCTL_UNSUBSCRIBE_PORT	_IOWR('S', 0x31, snd_seq_port_subscribe_t)
+#define SND_SEQ_IOCTL_SUBSCRIBE_PORT	_IOW ('S', 0x30, snd_seq_port_subscribe_t)
+#define SND_SEQ_IOCTL_UNSUBSCRIBE_PORT	_IOW ('S', 0x31, snd_seq_port_subscribe_t)
 
-#define SND_SEQ_IOCTL_GET_QUEUE_INFO	_IOWR('S', 0x40, snd_seq_queue_info_t)
-#define SND_SEQ_IOCTL_SET_QUEUE_INFO	_IOWR('S', 0x41, snd_seq_queue_info_t)
-#define SND_SEQ_IOCTL_GET_QUEUE_CLIENT	_IOWR('S', 0x42, snd_seq_queue_client_t)
-#define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOWR('S', 0x43, snd_seq_queue_client_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_STATUS	_IOWR('S', 0x40, snd_seq_queue_status_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_TEMPO	_IOWR('S', 0x41, snd_seq_queue_tempo_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_TEMPO	_IOW ('S', 0x42, snd_seq_queue_tempo_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_OWNER	_IOWR('S', 0x43, snd_seq_queue_owner_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_OWNER	_IOW ('S', 0x44, snd_seq_queue_owner_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_TIMER   _IOWR('S', 0x45, snd_seq_queue_timer_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_TIMER	_IOW ('S', 0x46, snd_seq_queue_timer_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_SYNC	_IOWR('S', 0x47, snd_seq_queue_sync_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_SYNC	_IOW ('S', 0x48, snd_seq_queue_sync_t)
+#define SND_SEQ_IOCTL_GET_QUEUE_CLIENT	_IOWR('S', 0x49, snd_seq_queue_client_t)
+#define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
 
 #endif /* __SND_SEQ_H */

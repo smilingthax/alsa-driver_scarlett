@@ -21,7 +21,12 @@
 
 #include "snd-deps.h"
 
-// Read the modules.config file
+
+// Globals
+dep *Cards;	// All cards
+dep *Deps;	// All other modules 
+
+
 int read_file(char *filename)
 {
 	char buffer[255];

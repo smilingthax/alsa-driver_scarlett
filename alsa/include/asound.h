@@ -49,7 +49,7 @@
 	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion) ) )
 
 /*
- *  number of supported soundcards in one machine
+ *  various limits
  */
 
 #define SND_CARDS			8
@@ -1307,9 +1307,37 @@ typedef struct snd_rawmidi_input_status {
 
 #define SND_TIMER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
 
-#define SND_TIMER_MAX			1024
-#define SND_TIMER_SYSTEM		0	/* system timer number */
+#define SND_TIMER_TYPE_GLOBAL		(0<<28)
+#define SND_TIMER_TYPE_SOUNDCARD	(1<<28)
+#define SND_TIMER_TYPE_PCM		(2<<28)
+#define SND_TIMER_TYPE_MAX		(15<<28)
 
+/* type */
+#define SND_TIMER_TYPE(tmr)		((tmr >> 28) & 0x3f)
+/* global number */
+#define SND_TIMER_GLOBAL_MAX		0x000003ff
+#define SND_TIMER_GLOBAL(tmr)		(tmr & SND_TIMER_GLOBAL_MAX)
+#define SND_TIMER_GLOBAL_SYSTEM		0	/* system timer number */
+/* soundcard number */
+#define SND_TIMER_SOUNDCARD_CARD_MAX	(SND_CARDS-1)
+#define SND_TIMER_SOUNDCARD_CARD_SHIFT	22
+#define SND_TIMER_SOUNDCARD_CARD(tmr)	((tmr >> SND_TIMER_SOUNDCARD_CARD_SHIFT) & SND_TIMER_SOUNDCARD_CARD_MAX)
+#define SND_TIMER_SOUNDCARD_DEV_MAX	0x003fffff
+#define SND_TIMER_SOUNDCARD_DEV(tmr)	(tmr & SND_TIMER_SOUNDCARD_DEV_MAX)
+/* PCM slave timer numbers */
+#if SND_CARDS > 64
+#error "There is not enough space for the timer identifier."
+#endif
+#define SND_TIMER_PCM_CARD_MAX		(SND_CARDS-1)
+#define SND_TIMER_PCM_CARD_SHIFT	22
+#define SND_TIMER_PCM_CARD(tmr)		((tmr >> SND_TIMER_PCM_CARD_SHIFT) & SND_TIMER_PCM_CARD_MAX)
+#define SND_TIMER_PCM_DEV_MAX		0x000003ff
+#define SND_TIMER_PCM_DEV_SHIFT		12
+#define SND_TIMER_PCM_DEV(tmr)		((tmr >> SND_TIMER_PCM_DEV_SHIFT) & SND_TIMER_PCM_DEV_MAX)
+#define SND_TIMER_PCM_SUBDEV_MAX	0x00000fff
+#define SND_TIMER_PCM_SUBDEV(tmr)	(tmr & SND_TIMER_PCM_SUBDEV_MAX)
+
+/* slave timer types */
 #define SND_TIMER_STYPE_NONE		0
 #define SND_TIMER_STYPE_APPLICATION	1
 #define SND_TIMER_STYPE_SEQUENCER	2

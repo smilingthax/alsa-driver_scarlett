@@ -120,6 +120,20 @@ else
   AC_MSG_RESULT("no")
 fi
 
+dnl Check for SGI/MIPS (HAL2) support...
+AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
+SNDCFG_HAL2=0
+if test -r $SNDCFG_KERNELDIR/include/asm/sgihpc.h; then
+  SNDCFG_HAL2=1
+fi
+AC_SUBST(SNDCFG_HAL2)
+if test $SNDCFG_HAL2 -eq 1; then
+  AC_MSG_RESULT("yes")
+else
+  AC_MSG_RESULT("no")
+fi
+
+
 dnl Directory for modules
 AC_MSG_CHECKING(for directory to store kernel modules)
 AC_ARG_WITH(moddir,

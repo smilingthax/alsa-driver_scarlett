@@ -9,15 +9,16 @@ include $(TOPDIR)/Makefile.conf
 
 TARGETS = export-symbols snd-deps
 
-include $(TOPDIR)/Rules.make
+.c.o:
+	$(CC) $(INCLUDE) -c -o $*.o $<
 
 all: $(TARGETS)
 
 export-symbols: .depend
-	$(CC) $(COPTS) $(INCLUDE) -o $@ $@.c
+	$(CC) $(INCLUDE) -o $@ $@.c
 
 snd-deps: snd-deps-find.o snd-deps-output.o
-	$(CC) $(COPTS) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
+	$(CC) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
 
 update-deps: snd-deps
 	./update-deps
@@ -26,7 +27,7 @@ clean:
 	rm -f core .depend *.o *.orig *~ export-symbols
 
 .depend: $(SYMFILES)
-	$(CPP) $(COPTS) $(INCLUDE) *.c > .depend
+	$(CPP) $(INCLUDE) *.c > .depend
 
 dummy:
 

@@ -52,8 +52,8 @@ typedef struct depStruct
 } dep;
 
 // Globals
-dep *Cards; // All cards
-dep *Deps; // All other modules
+extern dep *Cards; // All cards
+extern dep *Deps; // All other modules
 
 // Prototypes
 
