@@ -301,6 +301,11 @@ case "$1" in
     insert snd-card-cs4236.o
     restore cs4236.conf
     ;;
+  dummy)
+    basic
+    insert snd-card-dummy.o
+    restore dummy.conf
+    ;;
   detect)
     isapnp
     if ! $INSMOD -m $MODDIR/snd.o > $MAP; then exit 1; fi

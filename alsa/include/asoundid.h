@@ -65,6 +65,8 @@
 #define SND_CARD_TYPE_TROPEZPLUS        0x00000020      /* TB Tropez+ */
 #define SND_CARD_TYPE_MAUI              0x00000021      /* TB Maui */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000021
+#define SND_CARD_TYPE_DUMMY		0x00000022	/* dummy soundcard */
+/* --- */
+#define SND_CARD_TYPE_LAST		0x00000022
 
 #endif				/* __ASOUNDID_H */

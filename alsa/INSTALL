@@ -27,6 +27,7 @@ Quick install
    Example: ./configure --with-isapnp=yes --with-debug=full
 3) Run 'make install'.
 4) Run the './snddevices' script to create new sound devices in /dev directory.
+   Skip this step, if you have a kernel with the DEVFS support.
 5) Edit your /etc/conf.modules (look to kerneld/kmod support section).
 6) Run 'modprobe snd-card' where the card is a name of your card.
    Note: If you have a ISA PnP soundcard you should need run the isapnp
