@@ -72,13 +72,13 @@ case "$1" in
     insert snd-audiodrive1688.o snd_mpu_port=0x330
     restore es1688.conf
     ;;
-  es1869)
+  es18xx)
     basic; isapnp
-    insert snd-es1869.o
+    insert snd-es18xx.o
     insert snd-mpu401-uart.o 
     insert snd-opl3.o
-    insert snd-audiodrive1869.o
-    restore es1869.conf
+    insert snd-audiodrive18xx.o
+    restore es18xx.conf
     ;;
   sb16)
     basic; isapnp

@@ -1,8 +1,8 @@
-#ifndef __ES1869_H
-#define __ES1869_H
+#ifndef __ES18xx_H
+#define __ES18xx_H
 
 /*
- *  Header file for ES1869
+ *  Header file for ES18xx
  *  Copyright (c) by Christian Fischbach
  *  <fishbach@pool.informatik.rwth-aachen.de>
  *  Copyright (c) by Abramo Bagnara
@@ -28,10 +28,7 @@
 #include "pcm1.h"
 #include "mixer.h"
 
-/* Use a timer instead of interrupt */
-#undef TIMER
-
-struct snd_stru_es1869 {
+struct snd_stru_es18xx {
 	unsigned short port;		/* port of ESS chip */
 	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
 	unsigned short fm_port;		/* FM port */
@@ -43,15 +40,11 @@ struct snd_stru_es1869 {
 	unsigned short dma2;		/* DMA 2 */
 	snd_dma_t * dma2ptr;		/* DMA 2 pointer */
 	unsigned short version;		/* version of ESS chip */
+	int caps;			/* Chip capabilities */
 	unsigned short audio2_vol;	/* volume level of audio2 */
 
 	unsigned short open;		/* open channel mask */
 	unsigned short active;		/* active channel mask */
-#ifdef TIMER
-	struct timer_list timer;
-	int dma1_residue;
-	int dma2_residue;
-#endif
 
 	snd_card_t *card;
 	snd_pcm_t *pcm_a;
@@ -62,25 +55,34 @@ struct snd_stru_es1869 {
 	snd_spin_define(ctrl);
 };
 
-typedef struct snd_stru_es1869 es1869_t;
+#define ES18XX_PCM2 0x01	/* Has two useable PCM */
+#define ES18XX_3D 0x02		/* Has 3D Spatializer */
+#define ES18XX_RECMIX 0x04	/* Has record mixer */
+#define ES18XX_DUPLEX_MONO 0x08	/* Has mono duplex only */
+#define ES18XX_DUPLEX_SAME 0x10	/* Playback and record must share the same rate */
+#define ES18XX_NEW_RATE 0x20	/* More precise rate setting */
+#define ES18XX_AUXB 0x40	/* AuxB mixer control */
+#define ES18XX_SPEAKER 0x80	/* Speaker mixer control */
+
+typedef struct snd_stru_es18xx es18xx_t;
 
 
-extern void snd_es1869_mixer_write(es1869_t * codec, unsigned char reg, unsigned char data);
-extern unsigned char snd_es1869_mixer_read(es1869_t * codec, unsigned char reg);
+extern void snd_es18xx_mixer_write(es18xx_t * codec, unsigned char reg, unsigned char data);
+extern unsigned char snd_es18xx_mixer_read(es18xx_t * codec, unsigned char reg);
 
-extern void snd_es1869_interrupt(es1869_t * codec, unsigned char status);
+extern void snd_es18xx_interrupt(es18xx_t * codec, unsigned char status);
 
-extern es1869_t *snd_es1869_new_device(snd_card_t * card,
+extern es18xx_t *snd_es18xx_new_device(snd_card_t * card,
 				       unsigned short port,
 				       unsigned short mpu_port,
 				       unsigned short fm_port,
 				       snd_irq_t * irqnum,
 				       snd_dma_t * dma1num,
 				       snd_dma_t * dma2num);
-extern int snd_es1869_init(es1869_t * codec, int enable);
-extern snd_pcm_t *snd_es1869_pcm_a(es1869_t * codec);
-extern snd_pcm_t *snd_es1869_pcm_b(es1869_t * codec);
-extern snd_kmixer_t *snd_es1869_mixer(es1869_t * codec);
+extern int snd_es18xx_init(es18xx_t * codec, int enable);
+extern snd_pcm_t *snd_es18xx_pcm_a(es18xx_t * codec);
+extern snd_pcm_t *snd_es18xx_pcm_b(es18xx_t * codec);
+extern snd_kmixer_t *snd_es18xx_mixer(es18xx_t * codec);
 
-#endif				/* __ES1869_H */
+#endif				/* __ES18xx_H */
 

@@ -35,7 +35,7 @@
 #define MPU401_HW_OPL3SA		4	/* Yamaha OPL3-SA */
 #define MPU401_HW_SONICVIBES		5	/* S3 SonicVibes */
 #define MPU401_HW_CS4232		6	/* CS4232 */
-#define MPU401_HW_ES1869		7	/* AudioDrive ES1869 MPU-401 UART */
+#define MPU401_HW_ES18XX		7	/* AudioDrive ES18XX MPU-401 UART */
 
 #define MPU401_MODE_INPUT		1
 #define MPU401_MODE_OUTPUT		2

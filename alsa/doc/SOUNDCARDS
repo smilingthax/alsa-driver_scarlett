@@ -81,7 +81,6 @@ ID: ESS Solo-1 ES1938
 IF: MIXER,PCM
 MA: Jaromir Koutek <miri@punknet.cz>
 
-ID: ESS ES1869
+ID: ESS ES18XX
 IF: MIXER,PCM,MIDI
 MA: Abramo Bagnara <abbagnara@racine.ra.it>
-CO: Christian Fischbach <fishbach@pool.informatik.rwth-aachen.de>
