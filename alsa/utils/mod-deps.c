@@ -39,7 +39,7 @@ struct cond {
 	char *name;		/* dependency name */
 	struct dep *dep;	/* dependency pointer */
 	int left;		/* left brackets */
-	int right;		/* right brackets */
+	int right;		/* right brackets (after this condition element) */
 	int type;
 	struct cond *next;
 	struct cond *stack_prev;
@@ -64,9 +64,9 @@ struct dep {
 
 // Prototypes
 
-static int read_file(const char *filename);
-static int read_file_1(const char *filename);
-static int include_file(char *line);
+static int read_file(const char *filename, struct cond **template);
+static int read_file_1(const char *filename, struct cond **template);
+static int include_file(char *line, struct cond **template);
 static void free_cond(struct cond *cond);
 static struct cond *create_cond(char *line);
 static struct dep *alloc_mem_for_dep(void);
@@ -76,6 +76,7 @@ static void add_select(struct dep * dep, char *line);
 static char *get_word(char *line, char *word);
 static struct dep *find_dep(char *parent, char *depname);
 static void del_all_from_list(void);
+static int is_always_true(struct dep *dep);
 
 int main(int argc, char *argv[]);
 static void usage(char *programname);
@@ -91,6 +92,7 @@ static char *hiddendir = "..";
 static char *kernel_deps[] = {
 	"ARCH_SA1100",
 	"SBUS",
+	"PARISC",
 	"GAMEPORT",
 	NULL
 };
@@ -98,7 +100,7 @@ static char *kernel_deps[] = {
 /* @ -> add to output for all cards */
 /* % -> always true */
 static char *no_cards[] = {
-	"SOUND",
+	"%SOUND",
 	"SOUND_PRIME",
 	"%@SND",
 	"@SND_TIMER",
@@ -133,34 +135,33 @@ static void nomem(void)
 	exit(EXIT_FAILURE);
 }
 
-static int read_file(const char *filename)
+static int read_file(const char *filename, struct cond **template)
 {
 	char *fullfile;
 	int err;
 	
 	fullfile = malloc(strlen(basedir) + strlen(hiddendir) + 1 + strlen(filename) + 1);
 	sprintf(fullfile, "%s/%s", basedir, filename);
-	if ((err = read_file_1(fullfile)) < 0)
+	if ((err = read_file_1(fullfile, template)) < 0)
 		return err;
 	if (!strncmp(filename, "core/", 5))
 		sprintf(fullfile, "%s/acore/%s", hiddendir, filename + 5);
 	else
 		sprintf(fullfile, "%s/%s", hiddendir, filename);
 	if (access(fullfile, R_OK) == 0) {
-		if ((err = read_file_1(fullfile)) < 0)
+		if ((err = read_file_1(fullfile, template)) < 0)
 			return err;
 	}
 	return 0;
 }
 
-static int read_file_1(const char *filename)
+static int read_file_1(const char *filename, struct cond **template)
 {
 	char *buffer, *newbuf;
 	FILE *file;
 	int c, prev, idx, size, result = 0;
 	int state = READ_STATE_NONE;
 	struct dep *dep;
-	struct cond *template = NULL;
 
 	file = fopen(filename, "r");
 	if (file == NULL) {
@@ -204,12 +205,12 @@ static int read_file_1(const char *filename)
 		if (!strncmp(buffer, "endmenu", 7)) {
 			struct cond *otemplate;
 		    	state = READ_STATE_NONE;
-		    	if (template == NULL) {
+		    	if (*template == NULL) {
 		    		fprintf(stderr, "Menu level error\n");
 		    		exit(EXIT_FAILURE);
 		    	}
-		    	otemplate = template;
-		    	template = template->stack_prev;
+		    	otemplate = *template;
+		    	*template = (*template)->stack_prev;
 		    	free_cond(otemplate);
 			continue;
 		}
@@ -218,8 +219,8 @@ static int read_file_1(const char *filename)
 			state = READ_STATE_MENU;
 			strcpy(buffer, "EMPTY");
 			ntemplate = create_cond(buffer);
-			ntemplate->stack_prev = template;
-			template = ntemplate;
+			ntemplate->stack_prev = *template;
+			*template = ntemplate;
 			continue;
 		}
 		if (!strncmp(buffer, "config ", 7)) {
@@ -232,35 +233,38 @@ static int read_file_1(const char *filename)
 		}
 		if (!strncmp(buffer, "source ", 7)) {
 			state = READ_STATE_NONE;
-			result = include_file(buffer + 7);
+			result = include_file(buffer + 7, template);
 			if (result < 0)
 				goto __end;
 		}
 		switch (state) {
 		case READ_STATE_CONFIG:
 			if (!strncmp(buffer, "\tdepends on ", 12))
-				add_dep(dep, buffer + 12, template);
+				add_dep(dep, buffer + 12, *template);
 			if (!strncmp(buffer, "\tselect ", 8))
 				add_select(dep, buffer + 8);
 			continue;
 		case READ_STATE_MENU:
 			if (!strncmp(buffer, "\tdepends on ", 12)) {
 				struct cond *ntemplate;
+				if (strcmp((*template)->name, "EMPTY")) {
+					fprintf(stderr, "Menu consistency error\n");
+					exit(EXIT_FAILURE);
+				}
 				ntemplate = create_cond(buffer + 12);
-				free(template->name);
-				template->name = ntemplate->name;
-				template->dep = ntemplate->dep;
-				template->left = ntemplate->left;
-				template->right = ntemplate->right;
-				template->type = ntemplate->type;
+				free((*template)->name);
+				(*template)->name = ntemplate->name;
+				(*template)->dep = ntemplate->dep;
+				(*template)->left = ntemplate->left;
+				(*template)->right = ntemplate->right;
+				(*template)->type = ntemplate->type;
+				(*template)->next = ntemplate->next;
 				free(ntemplate);
 			}
 			continue;
 		}
 	}
       __end:
-	if (template)
-		free_cond(template);
 	free(buffer);
 	if (file != stdin)
 		fclose(file);
@@ -268,7 +272,7 @@ static int read_file_1(const char *filename)
 }
 
 // include a file
-static int include_file(char *line)
+static int include_file(char *line, struct cond **template)
 {
 	char *word = NULL, *ptr;
 	int result;
@@ -280,7 +284,7 @@ static int include_file(char *line)
 		ptr += 6;
 	if (!strncmp(ptr, "oss/", 4))
 		return 0;
-	result = read_file(ptr);
+	result = read_file(ptr, template);
 	free(word);
 	return result;
 }
@@ -385,16 +389,33 @@ static struct dep * find_or_create_dep(char *line)
 static struct cond *duplicate_cond(struct cond *cond)
 {
 	struct cond *result = NULL, *tmp, *prev = NULL;
+	int first = 1;
 	
+	if (cond == NULL)
+		return NULL;
+	if (cond->stack_prev) {
+		result = prev = duplicate_cond(cond->stack_prev);
+		while (prev && prev->next)
+			prev = prev->next;
+		if (prev)
+			prev->type = COND_AND;
+	}
+	if (!strcmp(cond->name, "EMPTY"))
+		return result;
 	while (cond) {
 		tmp = calloc(sizeof(struct cond), 1);
 		if (tmp == NULL)
 			nomem();
 		*tmp = *cond;
+		tmp->stack_prev = NULL;
 		tmp->name = strdup(cond->name);
 		if (tmp->name == NULL)
 			nomem();
 		tmp->next = NULL;
+		if (first) {
+			tmp->left++;
+			first = 0;
+		}
 		if (result == NULL)
 			result = tmp;
 		if (prev)
@@ -402,6 +423,8 @@ static struct cond *duplicate_cond(struct cond *cond)
 		prev = tmp;
 		cond = cond->next;
 	}
+	if (prev && !first)
+		prev->right++;
 	return result;
 }
 
@@ -537,6 +560,74 @@ static void resolve_dep(struct dep * parent)
 		cond = parent->cond;
 		while (cond) {
 			cond->dep = find_dep(parent->name, cond->name);
+			cond = cond->next;
+		}
+		parent = parent->next;
+	}
+}
+
+// Resolve all dependencies
+static void optimize_dep(struct dep * parent)
+{
+	struct cond *cond, *prev;
+
+	while (parent) {
+	      __restart:
+		cond = parent->cond;
+		prev = NULL;
+		while (cond) {
+			int remove_flag = 0;
+			if (cond->left > cond->right) {
+				cond->left -= cond->right;
+				cond->right = 0;
+			} else {
+				cond->right -= cond->left;
+				cond->left = 0;
+			}
+			if (cond->next &&
+			    !strcmp(cond->name, cond->next->name) &&
+			    ((cond->left == cond->right &&
+			      cond->next->left == cond->next->right) ||
+			     (cond->left == cond->right + 1 &&
+			      cond->next->left + 1 == cond->next->right)) &&
+			      cond->left == cond->next->right)
+			      	goto __remove;
+			if (!is_always_true(cond->dep))
+				goto __next;
+			if (cond->left == cond->right &&
+			    (cond->next == NULL || cond->type == COND_AND) &&
+			    (prev == NULL || prev->type == COND_AND)) {
+			    	remove_flag++;
+			} else if (cond->left + 1 == cond->right &&
+				 (prev && prev->type == COND_AND)) {
+				if (prev == NULL) {
+					fprintf(stderr, "optimize error (1)\n");
+					exit(EXIT_FAILURE);
+				}
+				prev->right++;
+				remove_flag++;
+			} else if (cond->left == cond->right + 1 &&
+				   cond->type == COND_AND) {
+				if (cond->next == NULL) {
+					fprintf(stderr, "optimize error (2)\n");
+					exit(EXIT_FAILURE);
+				}
+				cond->next->left++;
+ 				remove_flag++;
+ 			}
+			if (remove_flag) {
+			      __remove:
+			    	if (prev == NULL) {
+			    		parent->cond = cond->next;
+			    	} else {
+			    		prev->next = cond->next;
+			    	}
+			    	cond->next = NULL;
+			    	free_cond(cond);
+			    	goto __restart;
+			}
+		      __next:
+			prev = cond;
 			cond = cond->next;
 		}
 		parent = parent->next;
@@ -704,6 +795,7 @@ static void output_acinclude(void)
 	char *text;
 	struct cond *cond, *cond_prev;
 	struct sel *sel;
+	int j;
 	
 	printf("dnl ALSA soundcard configuration\n");
 	printf("dnl Find out which cards to compile driver for\n");
@@ -734,15 +826,19 @@ static void output_acinclude(void)
 		if (!is_toplevel(tempdep))
 			continue;
 		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
-			if (is_always_true(cond->dep))
-				continue;
+			//if (is_always_true(cond->dep))
+			//	continue;
 			if (!put_if)
 				printf("\tif ");
 			else {
 				printf(cond_prev->type == COND_AND ? " &&" : " ||");
 				printf("\n\t   ");
 			}
+			for (j = 0; j < cond->left; j++)
+				printf("(");
 			printf("( test \"$CONFIG_%s\" == \"y\" -o \"$CONFIG_%s\" == \"m\" )", cond->name, cond->name);
+			for (j = 0; j < cond->right; j++)
+				printf(")");
 			put_if = 1;
 			cond_prev = cond;
 		}
@@ -951,6 +1047,7 @@ int main(int argc, char *argv[])
 	int method = METHOD_ACINCLUDE;
 	int argidx = 1;
 	char *filename;
+	struct cond *template = NULL;
 
 	// Find out which method to use
 	if (argc < 2)
@@ -991,13 +1088,16 @@ int main(int argc, char *argv[])
 		filename = "Kconfig";
 
 	// Read the file into memory
-	if (read_file(filename) < 0) {
+	if (read_file(filename, &template) < 0) {
 		fprintf(stderr, "Error reading %s: %s\n",
 			filename ? filename : "stdin", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
+	if (template)
+		free_cond(template);
 	// Resolve dependencies
 	resolve_dep(all_deps);
+	optimize_dep(all_deps);
 	resolve_sel(all_deps);
 
 	// Use method
