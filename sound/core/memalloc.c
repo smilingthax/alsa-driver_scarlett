@@ -41,8 +41,11 @@ MODULE_LICENSE("GPL");
 
 
 #ifdef ENABLE_PREALLOC
-static int enable[8] = {[0 ... 7] = 1};
-MODULE_PARM(enable, "1-" __MODULE_STRING(HAMMERFALL_CARDS) "i");
+#ifndef SNDRV_CARDS
+#define SNDRV_CARDS	8
+#endif
+static int enable[8] = {[0 ... (SNDRV_CARDS-1)] = 1};
+MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(enable, "Enable cards to allocate buffers.");
 #endif
 
@@ -777,6 +780,8 @@ static void __init preallocate_cards(void)
 
 	pci_for_each_dev(pci) {
 		struct prealloc_dev *dev;
+		if (card >= SNDRV_CARDS)
+			break;
 		for (dev = prealloc_devices; dev->vendor; dev++) {
 			unsigned int i;
 			if (dev->vendor != pci->vendor || dev->device != pci->device)
