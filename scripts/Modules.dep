@@ -153,6 +153,7 @@ snd-emu8000-synth @if_sequencer snd-emux-synth
 |snd-ice1712 snd-pcm snd-cs8427 snd-ac97-codec snd-mpu401-uart
 |snd-intel8x0 snd-pcm snd-ac97-codec snd-mpu401-uart
 |snd-maestro3 snd-pcm snd-ac97-codec
+|snd-rme32 snd-pcm
 |snd-rme96 snd-pcm
 |snd-sonicvibes snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-via686 snd-pcm snd-ac97-codec snd-mpu401-uart
