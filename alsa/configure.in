@@ -44,6 +44,15 @@ AC_MSG_RESULT($kerneldir)
 
 dnl Check for kernel version...
 AC_MSG_CHECKING(for kernel version)
+if ! test -r $CONFIG_SND_KERNELDIR/include/linux/version.h; then
+  cat << EOF
+The file $CONFIG_SND_KERNELDIR/include/linux/version.h does not exist.
+Please, install the package with full kernel sources for your distribution
+or use --with-kernel=dir option to specify another directory with kernel
+sources (default is /usr/src/linux).
+EOF
+  exit 1
+fi
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
