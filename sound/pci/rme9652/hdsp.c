@@ -2310,7 +2310,8 @@ static int snd_hdsp_playback_copy(snd_pcm_substream_t *substream, int channel,
 
 	channel_buf = hdsp_channel_buffer_location (hdsp, substream->pstr->stream, channel);
 	snd_assert(channel_buf != NULL, return -EIO);
-	copy_from_user(channel_buf + pos * 4, src, count * 4);
+	if (copy_from_user(channel_buf + pos * 4, src, count * 4))
+		return -EFAULT;
 	return count;
 }
 
@@ -2324,7 +2325,8 @@ static int snd_hdsp_capture_copy(snd_pcm_substream_t *substream, int channel,
 
 	channel_buf = hdsp_channel_buffer_location (hdsp, substream->pstr->stream, channel);
 	snd_assert(channel_buf != NULL, return -EIO);
-	copy_to_user(dst, channel_buf + pos * 4, count * 4);
+	if (copy_to_user(dst, channel_buf + pos * 4, count * 4))
+		return -EFAULT;
 	return count;
 }
 
