@@ -270,6 +270,18 @@ Additional Modules
            another ALSA compliant mixer (alsamixer works).
 
 
+  Module snd-hdspm
+  ----------------
+
+    Module for RME HDSP MADI board.
+
+    precise_ptr		- Enable precise pointer, or disable.
+    line_outs_monitor	- Send playback streams to analog outs by default.
+    enable_monitor	- Enable Analog Out on Channel 63/64 by default.
+
+    See docs/hdspm.txt for details.
+
+
 Trouble Shooting
 ================
 
