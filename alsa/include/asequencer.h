@@ -497,7 +497,9 @@ struct sndrv_seq_system_info {
 	int clients;			/* maximum clients count */
 	int ports;			/* maximum ports per client */
 	int channels;			/* maximum channels per port */
-	char reserved[32];
+	int cur_clients;		/* current clients */
+	int cur_queues;			/* current queues */
+	char reserved[24];
 };
 
 
