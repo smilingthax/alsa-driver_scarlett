@@ -64,7 +64,7 @@ KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 		      '/net', '/scripts', '/security',
 		      '/sound/oss']
 # force to process
-ALSA_FORCE = ['/oss/Makefile']
+ALSA_FORCE = []
 ALSA_FORCE_DIR = ['/']
 KERNEL_FORCE = ['/sound/oss/Makefile']
 KERNEL_FORCE_DIR = ['/Documentation/sound/alsa', '/include/sound']
