@@ -332,9 +332,15 @@ start_voice(snd_emux_voice_t *vp)
 
 	/* set channel routing */
 	/* A = left(0), B = right(1), C = reverb(c), D = chorus(d) */
-	temp = (FXBUS_MIDI_LEFT << 16) | (FXBUS_MIDI_RIGHT << 20) | 
-		(FXBUS_MIDI_REVERB << 24) | (FXBUS_MIDI_CHORUS << 28);
-	snd_emu10k1_ptr_write(hw, FXRT, ch, temp);
+	if (hw->audigy) {
+		temp = FXBUS_MIDI_LEFT | (FXBUS_MIDI_RIGHT << 8) | 
+			(FXBUS_MIDI_REVERB << 16) | (FXBUS_MIDI_CHORUS << 24);
+		snd_emu10k1_ptr_write(hw, A_FXRT1, ch, temp);
+	} else {
+		temp = (FXBUS_MIDI_LEFT << 16) | (FXBUS_MIDI_RIGHT << 20) | 
+			(FXBUS_MIDI_REVERB << 24) | (FXBUS_MIDI_CHORUS << 28);
+		snd_emu10k1_ptr_write(hw, FXRT, ch, temp);
+	}
 
 	/* channel to be silent and idle */
 	snd_emu10k1_ptr_write(hw, DCYSUSV, ch, 0x0080);

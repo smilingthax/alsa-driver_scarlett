@@ -169,6 +169,61 @@ static unsigned int snd_emu10k1_capture_rate_reg(unsigned int rate)
 	}
 }
 
+static unsigned int snd_emu10k1_audigy_capture_rate_reg(unsigned int rate)
+{
+	switch (rate) {
+	case 8000:	return A_ADCCR_SAMPLERATE_8;
+	case 11025:	return A_ADCCR_SAMPLERATE_11;
+	case 12000:	return A_ADCCR_SAMPLERATE_12; /* really supported? */
+	case 16000:	return ADCCR_SAMPLERATE_16;
+	case 22050:	return ADCCR_SAMPLERATE_22;
+	case 24000:	return ADCCR_SAMPLERATE_24;
+	case 32000:	return ADCCR_SAMPLERATE_32;
+	case 44100:	return ADCCR_SAMPLERATE_44;
+	case 48000:	return ADCCR_SAMPLERATE_48;
+	default:
+			snd_BUG();
+			return A_ADCCR_SAMPLERATE_8;
+	}
+}
+
+static unsigned int emu10k1_calc_pitch_target(unsigned int rate)
+{
+	unsigned int pitch_target;
+
+	pitch_target = (rate << 8) / 375;
+	pitch_target = (pitch_target >> 1) + (pitch_target & 1);
+	return pitch_target;
+}
+
+#define PITCH_48000 0x00004000
+#define PITCH_96000 0x00008000
+#define PITCH_85000 0x00007155
+#define PITCH_80726 0x00006ba2
+#define PITCH_67882 0x00005a82
+#define PITCH_57081 0x00004c1c
+
+static unsigned int emu10k1_select_interprom(unsigned int pitch_target)
+{
+	if (pitch_target == PITCH_48000)
+		return CCCA_INTERPROM_0;
+	else if (pitch_target < PITCH_48000)
+		return CCCA_INTERPROM_1;
+	else if (pitch_target >= PITCH_96000)
+		return CCCA_INTERPROM_0;
+	else if (pitch_target >= PITCH_85000)
+		return CCCA_INTERPROM_6;
+	else if (pitch_target >= PITCH_80726)
+		return CCCA_INTERPROM_5;
+	else if (pitch_target >= PITCH_67882)
+		return CCCA_INTERPROM_4;
+	else if (pitch_target >= PITCH_57081)
+		return CCCA_INTERPROM_3;
+	else  
+		return CCCA_INTERPROM_2;
+}
+
+
 static void snd_emu10k1_pcm_init_voice(emu10k1_t *emu,
 				       int master, int extra,
 				       emu10k1_voice_t *evoice,
@@ -183,6 +238,7 @@ static void snd_emu10k1_pcm_init_voice(emu10k1_t *emu,
 	unsigned char attn, send_a, send_b, send_c, send_d;
 	unsigned short send_routing;
 	unsigned long flags;
+	unsigned int pitch_target;
 
 	voice = evoice->number;
 	stereo = runtime->channels == 2;
@@ -202,7 +258,7 @@ static void snd_emu10k1_pcm_init_voice(emu10k1_t *emu,
 	/* volume parameters */
 	if (extra) {
 		attn = 0;
-		send_routing = 0x3210;
+		send_routing = emu->audigy ? 0x03020100 : 0x3210;
 		send_a = send_b = send_c = send_d = 0x00;
 	} else {
 		tmp = stereo ? (master ? 1 : 2) : 0;
@@ -231,13 +287,21 @@ static void snd_emu10k1_pcm_init_voice(emu10k1_t *emu,
 	}
 
 	// setup routing
-	snd_emu10k1_ptr_write(emu, FXRT, voice, send_routing << 16);
+	if (emu->audigy) {
+		snd_emu10k1_ptr_write(emu, A_FXRT1, voice, send_routing);
+		snd_emu10k1_ptr_write(emu, A_SENDAMOUNTS, voice, 0); /* no effects */
+		snd_emu10k1_ptr_write(emu, A_FXRT2, voice, 0); /* channels EFGH */
+	} else
+		snd_emu10k1_ptr_write(emu, FXRT, voice, send_routing << 16);
 	// Stop CA
 	// Assumption that PT is already 0 so no harm overwriting
 	snd_emu10k1_ptr_write(emu, PTRX, voice, (send_a << 8) | send_b);
 	snd_emu10k1_ptr_write(emu, DSL, voice, end_addr | (send_d << 24));
 	snd_emu10k1_ptr_write(emu, PSST, voice, start_addr | (send_c << 24));
-	snd_emu10k1_ptr_write(emu, CCCA, voice, evoice->epcm->ccca_start_addr | CCCA_INTERPROM_0 | (w_16 ? 0 : CCCA_8BITSELECT));
+	pitch_target = emu10k1_calc_pitch_target(runtime->rate);
+	snd_emu10k1_ptr_write(emu, CCCA, voice, evoice->epcm->ccca_start_addr |
+			      emu10k1_select_interprom(pitch_target) |
+			      (w_16 ? 0 : CCCA_8BITSELECT));
 	// Clear filter delay memory
 	snd_emu10k1_ptr_write(emu, Z1, voice, 0);
 	snd_emu10k1_ptr_write(emu, Z2, voice, 0);
@@ -389,10 +453,12 @@ static int snd_emu10k1_capture_prepare(snd_pcm_substream_t * substream)
 		epcm->capture_bs_val++;
 	}
 	if (epcm->type == CAPTURE_AC97ADC) {
-		epcm->capture_cr_val = ADCCR_LCHANENABLE;
+		epcm->capture_cr_val = emu->audigy ? A_ADCCR_LCHANENABLE : ADCCR_LCHANENABLE;
 		if (runtime->channels > 1)
-			epcm->capture_cr_val |= ADCCR_RCHANENABLE;
-		epcm->capture_cr_val |= snd_emu10k1_capture_rate_reg(runtime->rate);
+			epcm->capture_cr_val |= emu->audigy ? A_ADCCR_RCHANENABLE : ADCCR_RCHANENABLE;
+		epcm->capture_cr_val |= emu->audigy ?
+			snd_emu10k1_audigy_capture_rate_reg(runtime->rate) :
+			snd_emu10k1_capture_rate_reg(runtime->rate);
 	}
 	return 0;
 }
@@ -444,8 +510,7 @@ static void snd_emu10k1_playback_trigger_voice(emu10k1_t *emu, emu10k1_voice_t *
 	mix = &emu->pcm_mixer[substream->number];
 	voice = evoice->number;
 	pitch = snd_emu10k1_rate_to_pitch(runtime->rate) >> 8;
-	pitch_target = (runtime->rate << 8) / 375;
-	pitch_target = (pitch_target >> 1) + (pitch_target & 1);
+	pitch_target = emu10k1_calc_pitch_target(runtime->rate);
 	attn = extra ? 0 : 0x00ff;
 	tmp = runtime->channels == 2 ? (master ? 1 : 2) : 0;
 	snd_emu10k1_ptr_write(emu, IFATN, voice, attn);
@@ -742,7 +807,7 @@ static int snd_emu10k1_capture_open(snd_pcm_substream_t * substream)
 	epcm->capture_inte = INTE_ADCBUFENABLE;
 	epcm->capture_ba_reg = ADCBA;
 	epcm->capture_bs_reg = ADCBS;
-	epcm->capture_idx_reg = ADCIDX;
+	epcm->capture_idx_reg = emu->audigy ? A_ADCIDX : ADCIDX;
 	runtime->private_data = epcm;
 	runtime->private_free = snd_emu10k1_pcm_free_substream;
 	runtime->hw = snd_emu10k1_capture;
@@ -878,7 +943,7 @@ static void snd_emu10k1_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
+int __devinit snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -926,7 +991,7 @@ static void snd_emu10k1_pcm_mic_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
+int __devinit snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1022,7 +1087,7 @@ static void snd_emu10k1_pcm_efx_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
+int __devinit snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;

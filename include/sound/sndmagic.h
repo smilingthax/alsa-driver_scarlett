@@ -87,6 +87,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define snd_uart16550_t_magic			0xa15a1b01
 #define emu10k1_t_magic				0xa15a1c01
 #define emu10k1_pcm_t_magic			0xa15a1c02
+#define emu10k1_midi_t_magic			0xa15a1c03
 #define snd_gus_card_t_magic			0xa15a1d01
 #define gus_pcm_private_t_magic			0xa15a1d02
 #define gus_proc_private_t_magic		0xa15a1d03

@@ -114,11 +114,19 @@ static void snd_emu10k1_proc_read(snd_info_entry_t *entry,
 	snd_iprintf(buffer, "Internal TRAM (words) : 0x%x\n", emu->fx8010.itram_size);
 	snd_iprintf(buffer, "External TRAM (words) : 0x%x\n", emu->fx8010.etram_size);
 	snd_iprintf(buffer, "\n");
-	snd_iprintf(buffer, "Effect Send Routing   : A=%i, B=%i, C=%i, D=%i\n",
-				(val & FXRT_CHANNELA) >> 16,
-				(val & FXRT_CHANNELB) >> 20,
-				(val & FXRT_CHANNELC) >> 24,
-				(val & FXRT_CHANNELD) >> 28);
+	if (emu->audigy) {
+		snd_iprintf(buffer, "Effect Send Routing   : A=%i, B=%i, C=%i, D=%i\n",
+			    val & 0x3f,
+			    (val >> 8) & 0x3f,
+			    (val >> 16) & 0x3f,
+			    (val >> 24) & 0x3f);
+	} else {
+		snd_iprintf(buffer, "Effect Send Routing   : A=%i, B=%i, C=%i, D=%i\n",
+			    (val >> 16) & 0x0f,
+			    (val >> 20) & 0x0f,
+			    (val >> 24) & 0x0f,
+			    (val >> 28) & 0x0f);
+	}
 	snd_iprintf(buffer, "\nCaptured FX Outputs   :\n");
 	for (idx = 0; idx < 32; idx++) {
 		if (emu->efx_voices_mask & (1 << idx))
@@ -210,7 +218,7 @@ static struct snd_info_entry_ops snd_emu10k1_proc_ops_fx8010 = {
 	read: snd_emu10k1_fx8010_read,
 };
 
-int snd_emu10k1_proc_init(emu10k1_t * emu)
+int __devinit snd_emu10k1_proc_init(emu10k1_t * emu)
 {
 	snd_info_entry_t *entry;
 	
