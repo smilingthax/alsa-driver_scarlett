@@ -16,14 +16,18 @@ Quick install
 =============
 
 1) Run './configure' script.
-   If you want turn on debug try './configure --with-debug=full'.
-   If you want debug soundcard detection try './configure --with-debug=detect'.
+   If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
+   If you want turn on debug mode use --with-debug=full switch.
+   If you want debug soundcard detection try --with-debug=detect switch.
+   Example: ./configure --with-isapnp=yes --with-debug=full
 2) Run 'make install'.
 3) Run './snddevices' script to create new sound devices in /dev directory.
 4) Edit your /etc/conf.modules (look to kerneld/kmod support section).
 5) Run 'modprobe snd-card' where card is name of your card.
    Note: If you have ISA PnP soundcard you should need run isapnp program
-         from isapnptools package at first to initialize soundcard.
+         from isapnptools package at first to initialize soundcard if
+	 you don't select native ISA PnP support via --with-isapnp=yes
+	 switch.
 
 You can also look to file utils/alsasound. This script is designed for
 RedHat distribution, but it should be used with other distributions which
@@ -39,15 +43,16 @@ Driver cannot be activated?
 1) Is OSS(/Lite) driver present? - remove it
 2) Check your soundcard setup, read carefuly this install file (module
    parameters).
-3) If you have ISA PnP soundcard, is your setup in isapnp.conf same as for
-   driver?
+3) If you have ISA PnP soundcard:
+   - native ISA PnP support: is your setup in /proc/isapnp.conf correct?
+   - isapnptools: is isapnp.conf configuration same as for driver?
 4) Driver isn't still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
    there aren't some messages. If these messages doesn't help you, send us
    to <alsa-devel@alsa.jcu.cz> mailing list:
 	- soundcard name + chip names present on your soundcard
-	- your isapnp.conf if you have ISA PnP soundcard
+	- your /proc/isapnp or isapnp.conf if you have ISA PnP soundcard
 	- your conf.modules or line which you activate ALSA driver
 	- all messages from /var/log/messages which should be relevant to
           ALSA driver
@@ -65,6 +70,16 @@ We need know these things (at minimum):
 3) all messages from /var/log/messages which should be relevant to
    ALSA driver
 4) problem description
+
+ISA Plug & Play issues
+======================
+
+If you use native ISA Plug & Play module (isapnp.o) you may need know
+that after isapnp.o module is inserted to kernel, all ISA Plug & Play
+devices (cards) are deactivated!!! This means that they aren't useable
+without driver which have build-in ISA Plug & Play support. If you
+have only one ISA Plug & Play soundcard in your machine, you don't
+worry about above information.
 
 Module parameters
 =================
