@@ -448,7 +448,7 @@ void snd_memory_debug1(void);
 /* vma.c */
 
 void snd_vma_add(snd_vma_t *vma);
-void snd_vma_disconnect(snd_vma_t *vma);
+void snd_vma_disconnect(void *notify_client);
 
 /* init.c */
 

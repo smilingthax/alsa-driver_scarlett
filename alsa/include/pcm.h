@@ -157,10 +157,9 @@ struct snd_stru_pcm_runtime {
 	snd_pcm_mmap_status_t *mmap_status;
 	snd_pcm_mmap_control_t *mmap_control;
 	char *mmap_data;
-	unsigned long mmap_data_user;		/* User space address */
-	snd_vma_t *mmap_status_vma;
-	snd_vma_t *mmap_control_vma;
-	snd_vma_t *mmap_data_vma;
+	int mmap_status_count;
+	int mmap_control_count;
+	int mmap_data_count;
 	/* -- locking / scheduling -- */
 	spinlock_t lock;
 	spinlock_t sleep_lock;
