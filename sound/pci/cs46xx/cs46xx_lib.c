@@ -2336,7 +2336,7 @@ static long snd_cs46xx_io_read(snd_info_entry_t *entry, void *file_private_data,
 }
 
 static struct snd_info_entry_ops snd_cs46xx_proc_io_ops = {
-	read: snd_cs46xx_io_read,
+	.read = snd_cs46xx_io_read,
 };
 
 static int __devinit snd_cs46xx_proc_init(snd_card_t * card, cs46xx_t *chip)
