@@ -405,6 +405,19 @@
 #define ADCCR_SAMPLERATE_8	0x00000007	/* 8kHz sample rate					*/
 
 #define FXWC			0x43		/* FX output write channels register			*/
+#define FXWC_DEFAULTROUTE_C	(1<<0)		/* left emu out? */
+#define FXWC_DEFAULTROUTE_B	(1<<1)
+#define FXWC_DEFAULTROUTE_A	(1<<12)		/* right emu out? */
+#define FXWC_DEFAULTROUTE_D	(1<<13)
+#define FXWC_ADCLEFT		(1<<18)
+#define FXWC_CDROMSPDIFLEFT	(1<<18)
+#define FXWC_ADCRIGHT		(1<<19)
+#define FXWC_CDROMSPDIFRIGHT	(1<<19)
+#define FXWC_MIC		(1<<20)
+#define FXWC_ZOOMLEFT		(1<<20)
+#define FXWC_ZOOMRIGHT		(1<<21)
+#define FXWC_SPDIFLEFT		(1<<22)		/* 0x00400000 */
+#define FXWC_SPDIFRIGHT		(1<<23)		/* 0x00800000 */
 
 #define TCBS			0x44		/* Tank cache buffer size register			*/
 #define TCBS_MASK		0x00000007	/* Tank cache buffer size field				*/
@@ -579,15 +592,27 @@ struct snd_stru_emu10k1_voice {
 	emu10k1_pcm_t *epcm;
 };
 
+typedef enum {
+	PLAYBACK_EMUVOICE,
+	CAPTURE_AC97ADC,
+	CAPTURE_AC97MIC,
+	CAPTURE_EFX
+} snd_emu10k1_pcm_type_t;
+
 struct snd_stru_emu10k1_pcm {
 	emu10k1_t *emu;
+	snd_emu10k1_pcm_type_t type;
 	snd_pcm_subchn_t *subchn;
 	emu10k1_voice_t *voices[2];
 	emu10k1_voice_t *extra;
 	int running;
 	unsigned int start_addr;
-	unsigned int adccr;
-	unsigned int adcbs;
+	unsigned int capture_inte;	/* interrupt enable mask */
+	unsigned int capture_ba_reg;	/* buffer address register */
+	unsigned int capture_bs_reg;	/* buffer size register */
+	unsigned int capture_idx_reg;	/* buffer index register */
+	unsigned int capture_cr_val;	/* control value */
+	unsigned int capture_bs_val;	/* buffer size value */
 };
 
 struct snd_stru_emu10k1 {
@@ -613,6 +638,8 @@ struct snd_stru_emu10k1 {
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;
+	snd_pcm_t *pcm_mic;
+	snd_pcm_t *pcm_efx;
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
 
@@ -626,17 +653,22 @@ struct snd_stru_emu10k1 {
 	void (*hwvol_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*capture_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*capture_mic_interrupt)(emu10k1_t *emu, unsigned int status);
+	void (*capture_efx_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*mpu401_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*timer_interrupt)(emu10k1_t *emu);
 	void (*spdif_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*dsp_interrupt)(emu10k1_t *emu);
 
 	snd_pcm_subchn_t *pcm_capture_subchn;
+	snd_pcm_subchn_t *pcm_capture_mic_subchn;
+	snd_pcm_subchn_t *pcm_capture_efx_subchn;
 
 	unsigned int midi_mode;
 	spinlock_t midi_input_lock;
 	spinlock_t midi_output_lock;
 	spinlock_t midi_open_lock;
+
+	unsigned int efx_voices_mask;
 
 	snd_info_entry_t *proc_entry;
 };
@@ -649,6 +681,8 @@ int snd_emu10k1_create(snd_card_t * card,
 		       emu10k1_t ** remu);
 
 int snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
+int snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
+int snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm);
 int snd_emu10k1_mixer(emu10k1_t * emu, int device, snd_pcm_t * pcm, snd_kmixer_t ** rmixer);
 
 void snd_emu10k1_interrupt(emu10k1_t *emu, unsigned int status);
@@ -682,5 +716,9 @@ int snd_emu10k1_voice_free(emu10k1_t *emu, emu10k1_voice_t *pvoice);
 
 /* MIDI uart */
 int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
+
+/* proc interface */
+int snd_emu10k1_proc_init(emu10k1_t * emu);
+int snd_emu10k1_proc_done(emu10k1_t * emu);
 
 #endif	/* __EMU10K1_H */
