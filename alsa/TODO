@@ -1,5 +1,7 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
+H replace direct I/O memory access with readb/writeb etc. (Jaroslav)
+H cmi8330 driver uses wrong IRQ spinlock inside interrupt (Jaroslav)
 M clean endianness stuff
 M make a definitive decision about SND_PCM_CHECK_SYNC
 M add master/divisor to timer
