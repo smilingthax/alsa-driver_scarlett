@@ -48,9 +48,14 @@ clean:
 	rm -f modules/*.o
 	rm -f doc/*~
 
-pack: clean
+mrproper: clean
 	rm -f config.cache config.log config.status Makefile.conf
 	rm -f utils/alsa-driver.spec
+
+cvsclean: mrproper
+	rm -f configure snddevices include/config.h
+
+pack: mrproper
 	chown -R root.root ../alsa-driver
 	tar cvz -C .. -f ../alsa-driver-$(SND_VERSION).tar.gz alsa-driver
 
