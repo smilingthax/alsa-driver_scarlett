@@ -180,6 +180,11 @@ COMMENT_MAP_DRIVER = [
 		('/pci/Kconfig'		,'PCI drivers'),
 		('/pci/Makefile'	,'PCI drivers'),
 		('/pci/ca0106/.*'	,'CA0106 driver'),
+		('/pci/hda/hda_codec.[ch]', 'HDA Codec driver'),
+		('/pci/hda/hda_patch.[ch]', 'HDA Codec driver'),
+		('/pci/hda/patch_.*'	,'HDA Codec driver'),
+		('/pci/hda/hda_intel.c'	,'HDA Intel driver'),
+		('/pci/hda/.*'		,'HDA generic driver'),
 		('/include/hdspm.h'	,'HDSPM driver'),
 		('/pci'			,'ERROR'),
 		('/ppc/Makefile'	,'PPC'),
@@ -1401,7 +1406,7 @@ def cvsps_changes(rev1, rev2):
 	os.chdir(get_cvs_root_top())
 	fullset = ['alsa-driver', 'alsa-kernel', 'alsa-lib',
 		   'alsa-utils', 'alsa-tools', 'alsa-firmware',
-		   'alsa-oss']:
+		   'alsa-oss']
 	for module in fullset:
 	#for module in ['alsa-oss']:
 		os.chdir(get_cvs_root_top() + '/' + module)
