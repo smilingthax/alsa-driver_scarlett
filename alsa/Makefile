@@ -59,17 +59,24 @@ map:
 	awk "{ if ( length( $$1 ) != 0 ) print $$1 }" snd.map | sort -o snd.map1
 	mv -f snd.map1 snd.map
 
-install: compile
-	mkdir -p $(moddir)
-	rm -f $(moddir)/snd*.o $(moddir)/persist.o $(moddir)/isapnp.o
-	cp modules/*.o $(moddir)
-	/sbin/depmod -a $(kaversion)
+install: install-modules install-headers install-scripts
+	cat WARNING
+
+install-headers:
 	install -m 755 -d $(prefix)/include/linux
 	install -m 644 include/asound.h $(prefix)/include/linux
 	install -m 644 include/asequencer.h $(prefix)/include/linux
 	for i in include/ainstr_*.h; do\
 	install -m 644 $$i $(prefix)/include/linux;\
 	done
+
+install-modules: compile
+	mkdir -p $(moddir)
+	rm -f $(moddir)/snd*.o $(moddir)/persist.o $(moddir)/isapnp.o
+	cp modules/*.o $(moddir)
+	/sbin/depmod -a $(kaversion)
+
+install-scripts:
 	if [ -d /sbin/init.d ]; then \
 	  install -m 755 utils/alsasound /sbin/init.d/alsasound; \
 	elif [ -d /etc/rc.d/init.d ]; then \
@@ -77,7 +84,6 @@ install: compile
 	elif [ -d /etc/init.d ]; then \
 	  install -m 755 utils/alsasound /etc/init.d/alsasound; \
 	fi
-	cat WARNING
 
 clean:
 	rm -f `find . -name ".depend"`
