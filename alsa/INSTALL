@@ -674,8 +674,9 @@ Module parameters
     Module for AC'97 motherboards from Intel.
 			* Intel i810/810E, i815, i820, i830, i840, MX440
 			* SiS 7012 (SiS 735)
+			* NVidia NForce
 
-    snd_ac97_clock	  - AC'97 codec clock base (default 48000Hz)
+    snd_ac97_clock	  - AC'97 codec clock base (0 = auto-detect)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
     Note: the latest driver supports auto-detection of chip clock.
