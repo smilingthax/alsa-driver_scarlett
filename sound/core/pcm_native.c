@@ -2114,7 +2114,7 @@ static int snd_pcm_playback_ioctl1(snd_pcm_substream_t *substream,
 	{
 		snd_xfern_t xfern, *_xfern = arg;
 		snd_pcm_runtime_t *runtime = substream->runtime;
-		void *bufs[128];
+		void *bufs;
 		snd_pcm_sframes_t result;
 		if (runtime->status->state == SNDRV_PCM_STATE_OPEN)
 			return -EBADFD;
@@ -2124,9 +2124,15 @@ static int snd_pcm_playback_ioctl1(snd_pcm_substream_t *substream,
 			return -EFAULT;
 		if (copy_from_user(&xfern, _xfern, sizeof(xfern)))
 			return -EFAULT;
-		if (copy_from_user(bufs, xfern.bufs, sizeof(*bufs) * runtime->channels))
+		bufs = kmalloc(sizeof(void *) * 128, GFP_KERNEL);
+		if (bufs == NULL)
+			return -ENOMEM;
+		if (copy_from_user(bufs, xfern.bufs, sizeof(*bufs) * runtime->channels)) {
+			kfree(bufs);
 			return -EFAULT;
+		}
 		result = snd_pcm_lib_writev(substream, bufs, xfern.frames);
+		kfree(bufs);
 		__put_user(result, &_xfern->result);
 		return result < 0 ? result : 0;
 	}
@@ -2183,7 +2189,7 @@ static int snd_pcm_capture_ioctl1(snd_pcm_substream_t *substream,
 	{
 		snd_xfern_t xfern, *_xfern = arg;
 		snd_pcm_runtime_t *runtime = substream->runtime;
-		void *bufs[128];
+		void *bufs;
 		snd_pcm_sframes_t result;
 		if (runtime->status->state == SNDRV_PCM_STATE_OPEN)
 			return -EBADFD;
@@ -2193,9 +2199,15 @@ static int snd_pcm_capture_ioctl1(snd_pcm_substream_t *substream,
 			return -EFAULT;
 		if (copy_from_user(&xfern, _xfern, sizeof(xfern)))
 			return -EFAULT;
-		if (copy_from_user(bufs, xfern.bufs, sizeof(*bufs) * runtime->channels))
+		bufs = kmalloc(sizeof(void *) * 128, GFP_KERNEL);
+		if (bufs == NULL)
+			return -ENOMEM;
+		if (copy_from_user(bufs, xfern.bufs, sizeof(*bufs) * runtime->channels)) {
+			kfree(bufs);
 			return -EFAULT;
+		}
 		result = snd_pcm_lib_readv(substream, bufs, xfern.frames);
+		kfree(bufs);
 		__put_user(result, &_xfern->result);
 		return result < 0 ? result : 0;
 	}
