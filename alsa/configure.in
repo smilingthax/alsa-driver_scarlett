@@ -116,7 +116,7 @@ AC_MSG_RESULT($kaversion)
 
 dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
-modversion="0"
+modversion=n
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
@@ -127,9 +127,9 @@ int main( void ) {
 #endif
 }
 ],
-  AC_MSG_RESULT("yes");mversion="1",
-  AC_MSG_RESULT("no");mversion="0",
-  AC_MSG_RESULT("unknown");mversion="0"
+  AC_MSG_RESULT("yes");mversion=y,
+  AC_MSG_RESULT("no");mversion=n,
+  AC_MSG_RESULT("unknown");mversion=n
 )
 CONFIG_SND_MVERSION=$mversion
 AC_SUBST(CONFIG_SND_MVERSION)
@@ -137,7 +137,7 @@ GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
 dnl Check for PCI support...
 AC_MSG_CHECKING(for PCI support in kernel)
-pcisup="0"
+pcisup="n"
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
@@ -148,25 +148,25 @@ int main( void ) {
 #endif
 }
 ],
-  AC_MSG_RESULT("yes");pcisup="1",
-  AC_MSG_RESULT("no");pcisup="0",
-  AC_MSG_RESULT("unknown");pcisup="0"
+  AC_MSG_RESULT("yes");pcisup="y",
+  AC_MSG_RESULT("no");pcisup="n",
+  AC_MSG_RESULT("unknown");pcisup="n"
 )
-CONFIG_SND_PCI=$pcisup
+CONFIG_SND_PCI="$pcisup"
 AC_SUBST(CONFIG_SND_PCI)
 
 dnl Check for SGI/MIPS (HAL2) support...
 AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
-CONFIG_SND_SGI=0
-if test -r $CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h; then
-  CONFIG_SND_SGI=1
+CONFIG_SND_SGI="n"
+if test -r "$CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h"; then
+  CONFIG_SND_SGI="y"
 fi
-AC_SUBST(CONFIG_SND_SGI)
-if test $CONFIG_SND_SGI -eq 1; then
+if test "$CONFIG_SND_SGI" = "y"; then
   AC_MSG_RESULT("yes")
 else
   AC_MSG_RESULT("no")
 fi
+AC_SUBST(CONFIG_SND_SGI)
 
 
 dnl Directory for modules
@@ -221,8 +221,8 @@ AC_SUBST(moddir)
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
-CONFIG_SND_PPC=0
-CONFIG_SND_ISA=1
+CONFIG_SND_PPC=n
+CONFIG_SND_ISA=y
 processor=""
 rm -f processor.id
 AC_TRY_RUN([
@@ -330,7 +330,7 @@ case "$processor" in
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
-    CONFIG_SND_ISA=0
+    CONFIG_SND_ISA=n
     ;;
   alpha*)
     c_opts="-pipe -mno-fp-regs -ffixed-8"
@@ -371,7 +371,7 @@ case "$processor" in
     ;;
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
-    CONFIG_SND_PPC=1
+    CONFIG_SND_PPC=y
     ;;
   mips)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
@@ -391,7 +391,7 @@ case "$processor" in
       c_opts="-m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
     fi
     processor="sparc";
-    CONFIG_SND_ISA=0
+    CONFIG_SND_ISA=n
     ;;
   sparc64)
     CC=gcc
@@ -413,11 +413,11 @@ case "$processor" in
       c_opts="-pipe -mno-fpu -mtune=ultrasparc -mmedlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare"
     fi
     processor="sparc64"
-    CONFIG_SND_ISA=0
+    CONFIG_SND_ISA=n
     ;;
   *)
     processor="unknown"
-    CONFIG_SND_ISA=0
+    CONFIG_SND_ISA=n
     ;;
 esac
 
@@ -462,11 +462,11 @@ AC_SUBST(msmp)
 
 dnl Check for ISA PnP driver in kernel...
 AC_MSG_CHECKING(for ISA PnP driver in kernel)
-CONFIG_ISAPNP_KERNEL="0"
+CONFIG_ISAPNP_KERNEL=n
 if test -r $CONFIG_SND_KERNELDIR/include/linux/isapnp.h; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(CONFIG_ISAPNP_KERNEL)
-  CONFIG_ISAPNP_KERNEL="1"
+  CONFIG_ISAPNP_KERNEL=y
 else
   AC_MSG_RESULT(no)  
 fi
@@ -477,18 +477,18 @@ AC_MSG_CHECKING(for ISA PnP support)
 AC_ARG_WITH(isapnp,
   [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
   pnp="$withval", pnp="yes")
-CONFIG_ISAPNP="0"
+CONFIG_ISAPNP=n
 if test "$pnp" = "auto"; then
   if test -f /proc/isapnp; then
-    CONFIG_ISAPNP="1"
+    CONFIG_ISAPNP=y
   fi
 else
   if test "$pnp" = "yes"; then
-    CONFIG_ISAPNP="1"
+    CONFIG_ISAPNP=y
   fi
 fi
 AC_SUBST(CONFIG_ISAPNP)
-if test "$CONFIG_ISAPNP" = "1"; then
+if test "$CONFIG_ISAPNP" = "y"; then
   AC_DEFINE(CONFIG_ISAPNP)
   AC_MSG_RESULT(yes)
 else
@@ -586,12 +586,12 @@ AC_MSG_CHECKING(for sequencer support)
 AC_ARG_WITH(sequencer,
   [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
   sequencer="$withval", sequencer="yes")
-CONFIG_SND_SEQUENCER="0"
+CONFIG_SND_SEQUENCER="n"
 if test "$sequencer" = "yes"; then
-  CONFIG_SND_SEQUENCER="1"
+  CONFIG_SND_SEQUENCER="m"
 fi
 AC_SUBST(CONFIG_SND_SEQUENCER)
-if test "$CONFIG_SND_SEQUENCER" = "1"; then
+if test "$CONFIG_SND_SEQUENCER" = "m"; then
   AC_DEFINE(CONFIG_SND_SEQUENCER)
   AC_MSG_RESULT(yes)
 else
@@ -603,12 +603,12 @@ AC_MSG_CHECKING(for OSS/Free emulation)
 AC_ARG_WITH(oss,
   [  --with-oss=no,yes       driver will (not) be compiled with OSS/Free emulation],
   ossemul="$withval", ossemul="yes")
-CONFIG_SND_OSSEMUL="0"
+CONFIG_SND_OSSEMUL="n"
 if test "$ossemul" = "yes"; then
-  CONFIG_SND_OSSEMUL="1"
+  CONFIG_SND_OSSEMUL="y"
 fi
 AC_SUBST(CONFIG_SND_OSSEMUL)
-if test "$CONFIG_SND_OSSEMUL" = "1"; then
+if test "$CONFIG_SND_OSSEMUL" = "y"; then
   AC_DEFINE(CONFIG_SND_OSSEMUL)
   AC_MSG_RESULT(yes)
 else
@@ -639,9 +639,9 @@ int main(void)
 }
 #endif
 ],
-  AC_MSG_RESULT("yes");rtcsup="1",
-  AC_MSG_RESULT("no");rtcsup="0",
-  AC_MSG_RESULT("unknown");rtcsup="0"
+  AC_MSG_RESULT("yes");rtcsup="m",
+  AC_MSG_RESULT("no");rtcsup="n",
+  AC_MSG_RESULT("unknown");rtcsup="n"
 )
 CFLAGS=$ac_save_CFLAGS
 CONFIG_SND_RTC=$rtcsup
@@ -651,8 +651,8 @@ if test "$CONFIG_SND_RTC" = "1"; then
 fi
 
 dnl Check for which cards to compile driver for...
-ALSA_CARDS_INIT
-ALSA_CARDS_SELECT
+ALSA_TOPLEVEL_INIT
+ALSA_TOPLEVEL_SELECT
 
 dnl Some late substitutes...
 c_opts="$c_opts -DLINUX"
@@ -665,7 +665,7 @@ AC_SUBST(m_opts)
 AC_SUBST(GENKSYMS)
 
 dnl Output files...
-AC_OUTPUT(version Makefile.conf snddevices utils/alsa-driver.spec utils/buildrpm cards.config)
+AC_OUTPUT(version Makefile.conf snddevices utils/alsa-driver.spec utils/buildrpm toplevel.config)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
