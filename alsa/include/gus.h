@@ -27,9 +27,12 @@
 #include "midi.h"
 #include "timer.h"
 #include "seq_midi_emul.h"
+#include "seq_device.h"
 #include "ainstr_iw.h"
 #include "ainstr_gf1.h"
 #include "ainstr_simple.h"
+
+#define SND_SEQ_DEV_GUS			"synth-gus"
 
 /* IO ports */
 
@@ -452,6 +455,8 @@ struct snd_stru_gus_card {
 	snd_pcm1_subchn_t *pcm_cap_subchn1;
 	snd_rawmidi_t *midi_uart;
 
+	snd_seq_device_t *seq_dev;
+
 	spinlock_t reg_lock;
 	spinlock_t voice_alloc;
 	spinlock_t active_voice_lock;
@@ -683,6 +688,8 @@ int snd_gus_detect_memory(snd_gus_card_t * gus);
 int snd_gus_init_dma_irq(snd_gus_card_t * gus, int latches);
 void snd_gus_init_control(snd_gus_card_t * gus);
 int snd_gus_check_version(snd_gus_card_t * gus);
+int snd_gus_attach_synthesizer(snd_gus_card_t *gus);
+int snd_gus_detach_synthesizer(snd_gus_card_t *gus);
 
 /* gus_irq.c */
 
@@ -707,10 +714,6 @@ int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,
 		      unsigned int addr, unsigned int size, int rom);
 
 #ifdef CONFIG_SND_SEQUENCER
-
-/* gus_synth.c */
-int snd_gus_attach_synthesizer(snd_gus_card_t * gus);
-int snd_gus_detach_synthesizer(snd_gus_card_t * gus);
 
 /* gus_sample.c */
 void snd_gus_sample_event(snd_seq_event_t *ev, snd_gus_port_t *p);
