@@ -55,7 +55,8 @@
 #define SND_CARD_TYPE_OPTI9XX		0x00000017	/* Opti 9xx chipset */
 #define SND_CARD_TYPE_SERIAL		0x00000018	/* Serial MIDI driver */
 #define SND_CARD_TYPE_AD1848		0x00000019	/* Generic AD1848 driver */
+#define SND_CARD_TYPE_ESS_ES1868        0x0000001A	/* ESS AudioDrive ES1868 */
 /* --- */
-#define SND_CARD_TYPE_LAST		0x00000017
+#define SND_CARD_TYPE_LAST		0x0000001A
   
 #endif				/* __ASOUNDID_H */
