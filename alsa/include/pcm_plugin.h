@@ -113,10 +113,9 @@ struct snd_stru_pcm_plugin {
 	int stream;
 	snd_pcm_format_t src_format;	/* source format */
 	snd_pcm_format_t dst_format;	/* destination format */
-	int src_xfer_mode;
-	int dst_xfer_mode;
 	int src_width;			/* sample width in bits */
 	int dst_width;			/* sample width in bits */
+	int xfer_mode;
 	ssize_t (*src_frames)(snd_pcm_plugin_t *plugin, size_t dst_frames);
 	ssize_t (*dst_frames)(snd_pcm_plugin_t *plugin, size_t src_frames);
 	ssize_t (*client_channels)(snd_pcm_plugin_t *plugin,
@@ -196,7 +195,7 @@ unsigned int snd_pcm_plug_formats(unsigned int formats);
 int snd_pcm_plug_format_plugins(snd_pcm_plug_t *substream,
 				snd_pcm_format_t *format,
 				snd_pcm_format_t *slave_format,
-				int xfer_mode);
+				int slave_xfer_mode);
 
 int snd_pcm_plug_slave_format(snd_pcm_format_t *format,
 			      snd_pcm_params_info_t *slave_info,
