@@ -30,6 +30,9 @@ typedef enum sndrv_timer_class snd_timer_class_t;
 typedef enum sndrv_timer_slave_class snd_timer_slave_class_t;
 typedef enum sndrv_timer_global snd_timer_global_t;
 typedef struct sndrv_timer_id snd_timer_id_t;
+typedef struct sndrv_timer_ginfo snd_timer_ginfo_t;
+typedef struct sndrv_timer_gparams snd_timer_gparams_t;
+typedef struct sndrv_timer_gstatus snd_timer_gstatus_t;
 typedef struct sndrv_timer_select snd_timer_select_t;
 typedef struct sndrv_timer_info snd_timer_info_t;
 typedef struct sndrv_timer_params snd_timer_params_t;
@@ -68,6 +71,9 @@ struct _snd_timer_hardware {
 	/* -- must be filled with low-level driver */
 	unsigned int flags;		/* various flags */
 	unsigned long resolution;	/* average timer resolution for one tick in nsec */
+	unsigned long resolution_min;	/* minimal resolution */
+	unsigned long resolution_max;	/* maximal resolution */
+	unsigned long resolution_step;	/* step for resolution */
 	unsigned long ticks;		/* max timer ticks per interrupt */
 	/* -- low-level functions -- */
 	int (*open) (snd_timer_t * timer);
@@ -75,6 +81,7 @@ struct _snd_timer_hardware {
 	unsigned long (*c_resolution) (snd_timer_t * timer);
 	int (*start) (snd_timer_t * timer);
 	int (*stop) (snd_timer_t * timer);
+	int (*set_resolution) (snd_timer_t * timer, unsigned long resolution);
 };
 
 struct _snd_timer {

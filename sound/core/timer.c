@@ -62,6 +62,7 @@ typedef struct {
 	snd_timer_tread_t *tqueue;
 	spinlock_t qlock;
 	unsigned long last_resolution;
+	unsigned int filter;
 	wait_queue_head_t qchange_sleep;
 	struct fasync_struct *fasync;
 } snd_timer_user_t;
@@ -1071,6 +1072,8 @@ static void snd_timer_user_ccallback(snd_timer_instance_t *timeri,
 	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
 	snd_timer_tread_t r1;
 
+	if ((tu->filter & (1 << event)) == 0)
+		return;
 	r1.event = event;
 	r1.tstamp = *tstamp;
 	r1.val = resolution;
@@ -1086,23 +1089,35 @@ static void snd_timer_user_tinterrupt(snd_timer_instance_t *timeri,
 	snd_timer_user_t *tu = snd_magic_cast(snd_timer_user_t, timeri->callback_data, return);
 	snd_timer_tread_t *r, r1;
 	struct timespec tstamp;
-	int prev;
+	int prev, append = 0;
 
-	snd_timestamp_now(&tstamp, 1);
+	snd_timestamp_zero(&tstamp);
 	spin_lock(&tu->qlock);
-	if (tu->last_resolution != resolution) {
+	if ((tu->filter & ((1 << SNDRV_TIMER_EVENT_RESOLUTION)|(1 << SNDRV_TIMER_EVENT_TICK))) == 0) {
+		spin_unlock(&tu->qlock);
+		return;
+	}
+	if (tu->last_resolution != resolution || ticks > 0)
+		snd_timestamp_now(&tstamp, 1);
+	if ((tu->filter & (1 << SNDRV_TIMER_EVENT_RESOLUTION)) && tu->last_resolution != resolution) {
 		r1.event = SNDRV_TIMER_EVENT_RESOLUTION;
 		r1.tstamp = tstamp;
 		r1.val = resolution;
 		snd_timer_user_append_to_tqueue(tu, &r1);
 		tu->last_resolution = resolution;
+		append++;
 	}
+	if ((tu->filter & (1 << SNDRV_TIMER_EVENT_TICK)) == 0)
+		goto __wake;
+	if (ticks == 0)
+		goto __wake;
 	if (tu->qused > 0) {
 		prev = tu->qtail == 0 ? tu->queue_size - 1 : tu->qtail - 1;
 		r = &tu->tqueue[prev];
 		if (r->event == SNDRV_TIMER_EVENT_TICK) {
 			r->tstamp = tstamp;
 			r->val += ticks;
+			append++;
 			goto __wake;
 		}
 	}
@@ -1110,8 +1125,11 @@ static void snd_timer_user_tinterrupt(snd_timer_instance_t *timeri,
 	r1.tstamp = tstamp;
 	r1.val = ticks;
 	snd_timer_user_append_to_tqueue(tu, &r1);
+	append++;
       __wake:
 	spin_unlock(&tu->qlock);
+	if (append == 0)
+		return;
 	kill_fasync(&tu->fasync, SIGIO, POLL_IN);
 	wake_up(&tu->qchange_sleep);
 }
@@ -1264,6 +1282,100 @@ static int snd_timer_user_next_device(snd_timer_id_t *_tid)
 	return 0;
 } 
 
+static int snd_timer_user_ginfo(struct file *file, snd_timer_ginfo_t *_ginfo)
+{
+	snd_timer_ginfo_t ginfo;
+	snd_timer_id_t tid;
+	snd_timer_t *t;
+	struct list_head *p;
+	int err = 0;
+
+	if (copy_from_user(&ginfo, _ginfo, sizeof(ginfo)))
+		return -EFAULT;
+	tid = ginfo.tid;
+	memset(&ginfo, 0, sizeof(ginfo));
+	ginfo.tid = tid;
+	down(&register_mutex);
+	t = snd_timer_find(&tid);
+	if (t != NULL) {
+		ginfo.card = t->card ? t->card->number : -1;
+		if (t->hw.flags & SNDRV_TIMER_HW_SLAVE)
+			ginfo.flags |= SNDRV_TIMER_FLG_SLAVE;
+		strncpy(ginfo.id, t->id, sizeof(ginfo.id)-1);
+		strncpy(ginfo.name, t->name, sizeof(ginfo.name)-1);
+		ginfo.ticks = t->hw.ticks;
+		ginfo.resolution = t->hw.resolution;
+		if (t->hw.resolution_min > 0) {
+			ginfo.resolution_min = t->hw.resolution_min;
+			ginfo.resolution_max = t->hw.resolution_max;
+			ginfo.resolution_step = t->hw.resolution_step;
+		}
+		list_for_each(p, &t->open_list_head) {
+			ginfo.instances++;
+		}
+	} else {
+		err = -ENOENT;
+	}
+	up(&register_mutex);
+	if (err >= 0 && copy_to_user(_ginfo, &ginfo, sizeof(ginfo)))
+		err = -EFAULT;
+	return err;
+}
+
+static int snd_timer_user_gparams(struct file *file, snd_timer_gparams_t *_gparams)
+{
+	snd_timer_gparams_t gparams;
+	snd_timer_t *t;
+	int err;
+
+	if (copy_from_user(&gparams, _gparams, sizeof(gparams)))
+		return -EFAULT;
+	down(&register_mutex);
+	t = snd_timer_find(&gparams.tid);
+	if (t != NULL) {
+		if (list_empty(&t->open_list_head)) {
+			if (t->hw.set_resolution)
+				err = t->hw.set_resolution(t, gparams.resolution);
+			else
+				err = -ENOSYS;
+		} else {
+			err = -EBUSY;
+		}
+	} else {
+		err = -ENOENT;
+	}
+	up(&register_mutex);
+	return err;
+}
+
+static int snd_timer_user_gstatus(struct file *file, snd_timer_gstatus_t *_gstatus)
+{
+	snd_timer_gstatus_t gstatus;
+	snd_timer_id_t tid;
+	snd_timer_t *t;
+	int err = 0;
+
+	if (copy_from_user(&gstatus, _gstatus, sizeof(gstatus)))
+		return -EFAULT;
+	tid = gstatus.tid;
+	memset(&gstatus, 0, sizeof(gstatus));
+	gstatus.tid = tid;
+	down(&register_mutex);
+	t = snd_timer_find(&tid);
+	if (t != NULL) {
+		if (t->hw.c_resolution)
+			gstatus.resolution = t->hw.c_resolution(t);
+		else
+			gstatus.resolution = t->hw.resolution;
+	} else {
+		err = -ENOENT;
+	}
+	up(&register_mutex);
+	if (err >= 0 && copy_from_user(_gstatus, &gstatus, sizeof(gstatus)))
+		err = -EFAULT;
+	return err;
+}
+
 static int snd_timer_user_tselect(struct file *file, snd_timer_select_t *_tselect)
 {
 	snd_timer_user_t *tu;
@@ -1357,6 +1469,19 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 		err = -EINVAL;
 		goto _end;
 	}
+	if (params.filter & ~((1<<SNDRV_TIMER_EVENT_RESOLUTION)|
+			      (1<<SNDRV_TIMER_EVENT_TICK)|
+			      (1<<SNDRV_TIMER_EVENT_START)|
+			      (1<<SNDRV_TIMER_EVENT_STOP)|
+			      (1<<SNDRV_TIMER_EVENT_CONTINUE)|
+			      (1<<SNDRV_TIMER_EVENT_PAUSE)|
+			      (1<<SNDRV_TIMER_EVENT_MSTART)|
+			      (1<<SNDRV_TIMER_EVENT_MSTOP)|
+			      (1<<SNDRV_TIMER_EVENT_MCONTINUE)|
+			      (1<<SNDRV_TIMER_EVENT_MPAUSE))) {
+		err = -EINVAL;
+		goto _end;
+	}
 	snd_timer_stop(tu->timeri);
 	spin_lock_irqsave(&t->lock, flags);
 	if (params.flags & SNDRV_TIMER_PSFLG_AUTO) {
@@ -1382,6 +1507,7 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 			}
 		}
 	}
+	tu->filter = params.filter;
 	tu->ticks = params.ticks;
 	err = 0;
  _end:
@@ -1466,6 +1592,12 @@ static int snd_timer_user_ioctl(struct inode *inode, struct file *file,
 		tu->tread = xarg ? 1 : 0;
 		return 0;
 	}
+	case SNDRV_TIMER_IOCTL_GINFO:
+		return snd_timer_user_ginfo(file, (snd_timer_ginfo_t *)arg);
+	case SNDRV_TIMER_IOCTL_GPARAMS:
+		return snd_timer_user_gparams(file, (snd_timer_gparams_t *)arg);
+	case SNDRV_TIMER_IOCTL_GSTATUS:
+		return snd_timer_user_gstatus(file, (snd_timer_gstatus_t *)arg);
 	case SNDRV_TIMER_IOCTL_SELECT:
 		return snd_timer_user_tselect(file, (snd_timer_select_t *)arg);
 	case SNDRV_TIMER_IOCTL_INFO:

@@ -557,6 +557,9 @@ enum sndrv_timer_slave_class {
 #define SNDRV_TIMER_GLOBAL_SYSTEM	0
 #define SNDRV_TIMER_GLOBAL_RTC		1
 
+/* info flags */
+#define SNDRV_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
+
 struct sndrv_timer_id {
 	enum sndrv_timer_class dev_class;	
 	enum sndrv_timer_slave_class dev_sclass;
@@ -565,31 +568,57 @@ struct sndrv_timer_id {
 	int subdevice;
 };
 
+struct sndrv_timer_ginfo {
+	struct sndrv_timer_id tid;	/* requested timer ID */
+	unsigned int flags;		/* timer flags - SNDRV_TIMER_FLG_* */
+	int card;			/* card number */
+	unsigned char id[64];		/* timer identification */
+	unsigned char name[80];		/* timer name */
+	unsigned long ticks;		/* maximum ticks between interrupts */
+	unsigned long resolution;	/* average resolution in ns */
+	unsigned long resolution_min;	/* minimal resolution in ns */
+	unsigned long resolution_max;	/* maximal resolution in ns */
+	unsigned long resolution_step;	/* resolution step in ns */
+	unsigned int instances;		/* active timer instances */
+	unsigned char reserved[32];
+};
+
+struct sndrv_timer_gparams {
+	struct sndrv_timer_id tid;	/* requested timer ID */
+	unsigned long resolution;	/* requested resolution in ns */
+	unsigned char reserved[32];
+};
+
+struct sndrv_timer_gstatus {
+	struct sndrv_timer_id tid;	/* requested timer ID */
+	unsigned long resolution;	/* current resolution in ns */
+	unsigned char reserved[32];
+};
+
 struct sndrv_timer_select {
 	struct sndrv_timer_id id;	/* bind to timer ID */
 	unsigned char reserved[32];	/* reserved */
 };
 
-#define SNDRV_TIMER_FLG_SLAVE		(1<<0)	/* cannot be controlled */
-
 struct sndrv_timer_info {
 	unsigned int flags;		/* timer flags - SNDRV_TIMER_FLG_* */
-	int card;			/* R: card number */
+	int card;			/* card number */
 	unsigned char id[64];		/* timer identificator */
 	unsigned char name[80];		/* timer name */
-	unsigned long ticks;		/* maximum ticks */
-	unsigned long resolution;	/* average resolution */
+	unsigned long ticks;		/* maximum ticks between interrupts */
+	unsigned long resolution;	/* average resolution in ns */
 	unsigned char reserved[64];	/* reserved */
 };
 
-#define SNDRV_TIMER_PSFLG_AUTO		(1<<0)	/* supports auto start */
+#define SNDRV_TIMER_PSFLG_AUTO		(1<<0)	/* auto start, otherwise one-shot */
 
 struct sndrv_timer_params {
 	unsigned int flags;		/* flags - SNDRV_MIXER_PSFLG_* */
 	unsigned int ticks;		/* requested resolution in ticks */
 	unsigned int queue_size;	/* total size of queue (32-1024) */
 	unsigned int reserved0;		/* reserved, was: failure locations */
-	unsigned char reserved[64];	/* reserved */
+	unsigned int filter;		/* event filter (bitmask of SNDRV_TIMER_EVENT_*) */
+	unsigned char reserved[60];	/* reserved */
 };
 
 struct sndrv_timer_status {
@@ -605,10 +634,13 @@ enum {
 	SNDRV_TIMER_IOCTL_PVERSION = _IOR('T', 0x00, int),
 	SNDRV_TIMER_IOCTL_NEXT_DEVICE = _IOWR('T', 0x01, struct sndrv_timer_id),
 	SNDRV_TIMER_IOCTL_TREAD = _IOW('T', 0x02, int),
+	SNDRV_TIMER_IOCTL_GINFO = _IOWR('T', 0x03, struct sndrv_timer_ginfo),
+	SNDRV_TIMER_IOCTL_GPARAMS = _IOW('T', 0x04, struct sndrv_timer_gparams),
+	SNDRV_TIMER_IOCTL_GSTATUS = _IOWR('T', 0x05, struct sndrv_timer_gstatus),
 	SNDRV_TIMER_IOCTL_SELECT = _IOW('T', 0x10, struct sndrv_timer_select),
 	SNDRV_TIMER_IOCTL_INFO = _IOR('T', 0x11, struct sndrv_timer_info),
 	SNDRV_TIMER_IOCTL_PARAMS = _IOW('T', 0x12, struct sndrv_timer_params),
-	SNDRV_TIMER_IOCTL_STATUS = _IOW('T', 0x14, struct sndrv_timer_status),
+	SNDRV_TIMER_IOCTL_STATUS = _IOR('T', 0x14, struct sndrv_timer_status),
 	SNDRV_TIMER_IOCTL_START = _IO('T', 0x20),
 	SNDRV_TIMER_IOCTL_STOP = _IO('T', 0x21),
 	SNDRV_TIMER_IOCTL_CONTINUE = _IO('T', 0x22),
@@ -628,10 +660,10 @@ enum sndrv_timer_event {
 	SNDRV_TIMER_EVENT_CONTINUE,		/* val = resolution in ns */
 	SNDRV_TIMER_EVENT_PAUSE,		/* val = 0 */
 	/* master timer events for slave timer instances */
-	SNDRV_TIMER_EVENT_MSTART = SNDRV_TIMER_EVENT_START + 100,
-	SNDRV_TIMER_EVENT_MSTOP = SNDRV_TIMER_EVENT_STOP + 100,
-	SNDRV_TIMER_EVENT_MCONTINUE = SNDRV_TIMER_EVENT_CONTINUE + 100,
-	SNDRV_TIMER_EVENT_MPAUSE = SNDRV_TIMER_EVENT_PAUSE + 100,
+	SNDRV_TIMER_EVENT_MSTART = SNDRV_TIMER_EVENT_START + 10,
+	SNDRV_TIMER_EVENT_MSTOP = SNDRV_TIMER_EVENT_STOP + 10,
+	SNDRV_TIMER_EVENT_MCONTINUE = SNDRV_TIMER_EVENT_CONTINUE + 10,
+	SNDRV_TIMER_EVENT_MPAUSE = SNDRV_TIMER_EVENT_PAUSE + 10,
 };
 
 struct sndrv_timer_tread {
