@@ -393,9 +393,11 @@ fi
 dnl Check for old kill_fasync...
 AC_MSG_CHECKING(for old kill_fasync)
 oldkfasync="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
+#include "linux/fs.h"
 ],[
  struct fasync_struct *fa;
  int sig;
@@ -405,6 +407,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("no");oldkfasync="0",
     AC_MSG_RESULT("unknown");oldkfasync="0"
 )
+CFLAGS=$ac_save_CFLAGS
 CONFIG_OLD_KILL_FASYNC=$oldkfasync
 AC_SUBST(CONFIG_OLD_KILL_FASYNC)
 if test "$CONFIG_OLD_KILL_FASYNC" = "1"; then
