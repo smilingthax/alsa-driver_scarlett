@@ -111,7 +111,9 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
 #include <linux/init.h>
 #endif
+#ifndef LINUX_2_3
 #include "compat_22.h"
+#endif
 #endif /* LINUX_2_2 */
 
 #ifdef LINUX_2_3
