@@ -22,11 +22,18 @@ all: compile
 include/isapnp.h:
 	ln -sf ../support/isapnp.h include/isapnp.h
 
-compile: $(PEXPORT) include/isapnp.h
+compile: $(PEXPORT) include/isapnp.h cards.config
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 	@echo
 	@echo "ALSA modules were sucessfully compiled."
 	@echo
+
+cards.config: modules.config
+	make -C utils update-deps
+	make clean
+	./cvscompile
+	@echo "You can ignore following error..."
+	exit 1
 
 map:
 	awk "{ if ( length( $$1 ) != 0 ) print $$1 }" snd.map | sort -o snd.map1

@@ -3,6 +3,7 @@ dnl
 dnl Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
 
 AC_INIT(kernel/sound.c)
+AM_CONDITIONAL(INSTALL_M4, test "x${ACLOCAL}" = "xaclocal")
 AC_PREFIX_DEFAULT(/usr)
 
 dnl Checks for programs.
@@ -310,13 +311,17 @@ else
   AC_MSG_RESULT(no)
 fi
 
+dnl Check for which cards to compile driver for...
+ALSA_CARDS_INIT
+ALSA_CARDS_SELECT
+
 dnl Some late substitutes...
 c_opts="$c_opts -DLINUX"
 AC_SUBST(c_opts)
 AC_SUBST(GENKSYMS)
 
 dnl Output files...
-AC_OUTPUT(Makefile.conf snddevices utils/alsa-driver.spec)
+AC_OUTPUT(Makefile.conf snddevices utils/alsa-driver.spec cards.config)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
