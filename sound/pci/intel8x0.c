@@ -1509,7 +1509,7 @@ static struct _ac97_ali_rate_regs {
 };
 
 static struct ac97_quirk ac97_quirks[] = {
-	{ 0x1028, 0x0126, AC97_TUNE_HP_ONLY }, /* Dell Optiplex GX260 */
+	{ 0x1028, 0x0126, "Dell Optiplex GX260", AC97_TUNE_HP_ONLY },
 	{ } /* terminator */
 };
 
