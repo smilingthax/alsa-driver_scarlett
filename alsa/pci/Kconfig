@@ -28,6 +28,7 @@ config SND_EMU10K1X
 	tristate "Emu10k1X (Dell OEM Version)"
 	depends on SND
 	select SND_AC97_CODEC
+	select SND_RAWMIDI
 	help
 	  Say Y here to include support for the Dell OEM version of the
 	  Sound Blaster Live!.
