@@ -1,11 +1,8 @@
 CC     	= gcc
 CFLAGS	= -O2 -Wall -pipe
-TARGETS = csp_load mmap_test osspcm osspcm1 ossdelay
+TARGETS = mmap_test osspcm osspcm1 ossdelay
 
 all: $(TARGETS)
-
-csp_load: csp_load.c
-	$(CC) $(CFLAGS) -o csp_load csp_load.c
 
 osspcm: osspcm.c
 	$(CC) $(CFLAGS) -o osspcm osspcm.c
