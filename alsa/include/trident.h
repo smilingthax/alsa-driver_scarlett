@@ -270,6 +270,7 @@ struct _snd_trident_voice {
 
 	/* channel parameters */
 	unsigned short Delta;		/* 16 bits */
+	unsigned short Attribute;	/* 16 bits - SiS 7018 */
 	unsigned char Vol;		/* 8 bits */
 	unsigned char Pan;		/* 7 bits */
 	unsigned char GVSel;		/* 1 bit */
