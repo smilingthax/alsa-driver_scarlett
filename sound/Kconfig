@@ -26,6 +26,8 @@ source "sound/usb/Kconfig"
 
 source "sound/sparc/Kconfig"
 
+source "sound/parisc/Kconfig"
+
 endmenu
 
 menu "Open Sound System"
