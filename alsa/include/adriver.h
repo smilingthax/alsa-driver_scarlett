@@ -166,20 +166,13 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq(); }
 #undef synchronize_irq
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 68)
-enum irqreturn {
-	IRQ_NONE,
-	IRQ_HANDLED
-};
-#define IRQ_RETVAL(val) (enum irqreturn)(val)
-typedef enum irqreturn irqreturn_t;
-#undef request_irq
-#define request_irq snd_compat_request_irq
-int snd_compat_request_irq(unsigned int,
-			   irqreturn_t (*handler)(int, void *, struct pt_regs *),
-			   unsigned long, const char *, void *);
-#endif /* LINUX_VERSION_CODE < 2.5.68 */
 #endif /* LINUX_VERSION_CODE < 2.5.28 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 68)
+#define IRQ_NONE	/*void*/
+#define IRQ_HANDLED	/*void*/
+#define IRQ_RETVAL(x)	/*void*/
+typedef void irqreturn_t;
+#endif /* LINUX_VERSION_CODE < 2.5.68 */
 
 #ifndef min
 /*

@@ -54,18 +54,3 @@ void snd_compat_devfs_remove(const char *fmt, ...)
 #endif
 
 #endif /* < 2.3.0 */
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 68)
-
-#include <linux/interrupt.h>
-
-typedef enum { IRQ_NONE } irqreturn_t;
-
-int snd_compat_request_irq(unsigned int irq,
-			   irqreturn_t (*handler)(int, void *, struct pt_regs *),
-			   unsigned long flags, const char *name, void *data)
-{
-	return request_irq(irq, (void (*)(int, void *, struct pt_regs *))handler, flags, name, data);
-}
-
-#endif
