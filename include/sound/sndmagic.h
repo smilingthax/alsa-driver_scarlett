@@ -174,6 +174,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define m3_dma_t_magic				0xa15a3202
 #define nm256_t_magic				0xa15a3301
 #define nm256_dma_t_magic			0xa15a3302
+#define sam9407_t_magic				0xa15a3401
 #define pmac_t_magic				0xa15a3501
 #define ali_t_magic				0xa15a3601
 #define mtpav_t_magic				0xa15a3701
