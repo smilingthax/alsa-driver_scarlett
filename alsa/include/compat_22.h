@@ -96,14 +96,30 @@ void snd_wrapper_kill_fasync(struct fasync_struct **, int, int);
 
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 
+#ifndef __init
 #define __init
+#endif
+#ifndef __initdata
 #define __initdata
+#endif
+#ifndef __exit
 #define __exit
+#endif
+#ifndef __exitdata
 #define __exitdata
+#endif
+#ifndef __devinit
 #define __devinit
+#endif
+#ifndef __devinitdata
 #define __devinitdata
+#endif
+#ifndef __devexit
 #define __devexit
+#endif
+#ifndef __devexitdata
 #define __devexitdata
+#endif
 
 #ifdef MODULE
   #ifndef module_init
