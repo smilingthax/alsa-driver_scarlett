@@ -143,7 +143,7 @@ void snd_rawmidi_set_ops(snd_rawmidi_t * rmidi, int stream, snd_rawmidi_ops_t * 
 /* control functions */
 
 int snd_rawmidi_control_ioctl(snd_card_t * card,
-			      snd_kctl_t * control,
+			      snd_ctl_file_t * control,
 			      unsigned int cmd,
 			      unsigned long arg);
 

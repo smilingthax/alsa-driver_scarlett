@@ -313,7 +313,7 @@ typedef struct _snd_pcm_str snd_pcm_str_t;
 typedef struct _snd_pcm_substream snd_pcm_substream_t;
 typedef struct _snd_mixer snd_kmixer_t;
 typedef struct _snd_rawmidi snd_rawmidi_t;
-typedef struct _snd_kctl snd_kctl_t;
+typedef struct _snd_ctl_file snd_ctl_file_t;
 typedef struct _snd_kcontrol snd_kcontrol_t;
 typedef struct _snd_timer snd_timer_t;
 typedef struct _snd_timer_instance snd_timer_instance_t;
@@ -348,7 +348,7 @@ struct _snd_card {
 	rwlock_t control_owner_lock;	/* control list lock */
 	int controls_count;		/* count of all controls */
 	struct list_head controls;	/* all controls for this card */
-	struct list_head control_files;	/* active control files */
+	struct list_head ctl_files;	/* active control files */
 
 	snd_info_entry_t *proc_root;	/* root for soundcard specific files */
 	snd_info_entry_t *proc_id;	/* the card id */

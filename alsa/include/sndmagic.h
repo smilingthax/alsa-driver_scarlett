@@ -74,7 +74,7 @@ static inline int _snd_magic_bad(void *obj, unsigned long magic)
 #define snd_mixer_oss_t_magic			0xa15a0106
 
 #define snd_info_private_data_t_magic		0xa15a0201
-#define snd_kctl_t_magic			0xa15a0301
+#define snd_ctl_file_t_magic			0xa15a0301
 #define snd_kcontrol_t_magic			0xa15a0302
 #define snd_rawmidi_t_magic			0xa15a0401
 #define snd_rawmidi_file_t_magic		0xa15a0402

@@ -59,12 +59,13 @@ struct _snd_kcontrol {
 
 typedef struct _snd_kctl_event {
 	struct list_head list;	/* list of events */
-	snd_ctl_event_t data;
+	snd_ctl_elem_id_t id;
+	unsigned int mask;
 } snd_kctl_event_t;
 
 #define snd_kctl_event(n) list_entry(n, snd_kctl_event_t, list)
 
-struct _snd_kctl {
+struct _snd_ctl_file {
 	struct list_head list;		/* list of all control files */
 	snd_card_t *card;
 	pid_t pid;
@@ -73,21 +74,18 @@ struct _snd_kctl {
 	wait_queue_head_t change_sleep;
 	spinlock_t read_lock;
 	struct fasync_struct *fasync;
-	int read_active;		/* read interface is activated */
-	int rebuild;			/* rebuild the structure */
+	int subscribed;			/* read interface is activated */
 	struct list_head events;	/* waiting events for read */
 };
 
-#define snd_kctl(n) list_entry(n, snd_kctl_t, list)
+#define snd_ctl_file(n) list_entry(n, snd_ctl_file_t, list)
 
 typedef int (*snd_kctl_ioctl_func_t) (snd_card_t * card,
-				 snd_kctl_t * control,
+				 snd_ctl_file_t * control,
 				 unsigned int cmd, unsigned long arg);
 
-int snd_ctl_busy(snd_kctl_t * ctl);
-void snd_ctl_notify_structure_change(snd_card_t * card, snd_ctl_event_type_t etype, snd_ctl_elem_id_t * id);
-void snd_ctl_notify_value_change(snd_kctl_t * ctl, snd_kcontrol_t * control);
-void snd_ctl_notify_value_change_forall(snd_card_t * card, snd_kcontrol_t * control);
+void snd_ctl_notify_all(snd_card_t * card, unsigned int mask, snd_ctl_elem_id_t * id);
+void snd_ctl_notify_value_change(snd_ctl_file_t * ctl, snd_kcontrol_t * control);
 
 snd_kcontrol_t *snd_ctl_new(snd_kcontrol_t * kcontrol);
 snd_kcontrol_t *snd_ctl_new1(snd_kcontrol_new_t * kcontrolnew, void * private_data);
