@@ -226,6 +226,7 @@ int snd_register_device(int type, snd_card_t * card, int dev, snd_minor_t * reg,
 	list_add_tail(&preg->list, &snd_minors_hash[SNDRV_MINOR_CARD(minor)]);
 #ifdef CONFIG_DEVFS_FS
 	if (strncmp(name, "controlC", 8)) {     /* created in sound.c */
+		char dname[32];
 		sprintf(dname, "snd/%s", name);
 		devfs_register(NULL, dname, DEVFS_FL_DEFAULT,
 			       major, minor, device_mode | S_IFCHR,
@@ -260,7 +261,7 @@ int snd_unregister_device(int type, snd_card_t * card, int dev)
 		return -EINVAL;
 	}
 #ifdef CONFIG_DEVFS_FS
-	if (strncmp(name, "controlC", 8))	/* created in sound.c */
+	if (strncmp(mptr->name, "controlC", 8))	/* created in sound.c */
 		devfs_remove("snd/%s", mptr->name);
 #endif
 	list_del(&mptr->list);
