@@ -370,7 +370,7 @@ case "$1" in
   dummy)
     basic
     insert snd-card-dummy.o
-    restore dummy.conf
+    #restore dummy.conf
     ;;
   t1)
     basic; isapnp
