@@ -2949,13 +2949,12 @@ static int __devinit snd_cmipci_create(snd_card_t *card,
 
 	/* Assume TX and compatible chip set (Autodetection required for VX chip sets) */
 	switch (pci->device) {
-		struct list_head *pos;
+		struct pci_dev *cur;
 		int txvx;
 	case PCI_DEVICE_ID_CMEDIA_CM8738:
 	case PCI_DEVICE_ID_CMEDIA_CM8738B:
 		txvx = 1;
-		pci_for_each_dev(pos) {
-			struct pci_dev * cur = list_entry(pos, struct pci_dev, global_list);
+		pci_for_each_dev(cur) {
 			if (cur->vendor != 0x8086) /* PCI_VENDOR_ID_INTEL */
 				continue;
 			if (cur->device != 0x7030) /* PCI_DEVICE_ID_INTEL_82437VX */
