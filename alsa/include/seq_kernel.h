@@ -49,9 +49,7 @@ typedef struct sndrv_seq_queue_client snd_seq_queue_client_t;
 typedef struct sndrv_seq_client_pool snd_seq_client_pool_t;
 typedef struct sndrv_seq_instr snd_seq_instr_t;
 typedef struct sndrv_seq_instr_data snd_seq_instr_data_t;
-typedef struct sndrv_seq_instr_free snd_seq_instr_free_t;
-typedef struct sndrv_seq_instr_put snd_seq_instr_put_t;
-typedef struct sndrv_seq_instr_get snd_seq_instr_get_t;
+typedef struct sndrv_seq_instr_header snd_seq_instr_header_t;
 typedef union sndrv_seq_timestamp snd_seq_timestamp_t;
 
 #define snd_seq_event_bounce_ext_data	sndrv_seq_event_bounce_ext_data 

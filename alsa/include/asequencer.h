@@ -27,55 +27,48 @@
 #include <sys/ipc.h>
 #endif
 
-/* version of the sequencer */
+/** version of the sequencer */
 #define SNDRV_SEQ_VERSION SNDRV_PROTOCOL_VERSION (1, 0, 0)
 
-/* support synchronization feature */
-/*#define SNDRV_SEQ_SYNC_SUPPORT	1*/
+/**
+ * definition of sequencer event types
+ */
 
-/*                                   	*/
-/* definition of sequencer event types 	*/
-/*                                   	*/
-
-/* 0-4: system messages
- * event data type = sndrv_seq_result_t
+/** system messages
+ * event data type = #sndrv_seq_result_t
  */
 #define SNDRV_SEQ_EVENT_SYSTEM		0
 #define SNDRV_SEQ_EVENT_RESULT		1
-/* 2-4: reserved */
 
-/* 5-9: note messages (channel specific)
- * event data type = sndrv_seq_ev_note
+/** note messages (channel specific)
+ * event data type = #sndrv_seq_ev_note
  */
 #define SNDRV_SEQ_EVENT_NOTE		5
 #define SNDRV_SEQ_EVENT_NOTEON		6
 #define SNDRV_SEQ_EVENT_NOTEOFF		7
 #define SNDRV_SEQ_EVENT_KEYPRESS	8
-/* 9-10: reserved */
 	
-/* 10-19: control messages (channel specific)
- * event data type = sndrv_seq_ev_ctrl
+/** control messages (channel specific)
+ * event data type = #sndrv_seq_ev_ctrl
  */
 #define SNDRV_SEQ_EVENT_CONTROLLER	10
 #define SNDRV_SEQ_EVENT_PGMCHANGE	11
 #define SNDRV_SEQ_EVENT_CHANPRESS	12
-#define SNDRV_SEQ_EVENT_PITCHBEND	13	/* from -8192 to 8191 */
-#define SNDRV_SEQ_EVENT_CONTROL14	14	/* 14 bit controller value */
-#define SNDRV_SEQ_EVENT_NONREGPARAM	15	/* 14 bit NRPN */
-#define SNDRV_SEQ_EVENT_REGPARAM	16	/* 14 bit RPN */
-/* 18-19: reserved */
+#define SNDRV_SEQ_EVENT_PITCHBEND	13	/**< from -8192 to 8191 */
+#define SNDRV_SEQ_EVENT_CONTROL14	14	/**< 14 bit controller value */
+#define SNDRV_SEQ_EVENT_NONREGPARAM	15	/**< 14 bit NRPN */
+#define SNDRV_SEQ_EVENT_REGPARAM	16	/**< 14 bit RPN */
 
-/* 20-29: synchronisation messages
- * event data type = sndrv_seq_ev_ctrl
+/** synchronisation messages
+ * event data type = #sndrv_seq_ev_ctrl
  */
 #define SNDRV_SEQ_EVENT_SONGPOS		20	/* Song Position Pointer with LSB and MSB values */
 #define SNDRV_SEQ_EVENT_SONGSEL		21	/* Song Select with song ID number */
 #define SNDRV_SEQ_EVENT_QFRAME		22	/* midi time code quarter frame */
 #define SNDRV_SEQ_EVENT_TIMESIGN	23	/* SMF Time Signature event */
 #define SNDRV_SEQ_EVENT_KEYSIGN		24	/* SMF Key Signature event */
-/* 25-29: reserved */
 	        
-/* 30-39: timer messages
+/** timer messages
  * event data type = sndrv_seq_ev_queue_control_t
  */
 #define SNDRV_SEQ_EVENT_START		30	/* midi Real Time Start message */
@@ -89,22 +82,20 @@
 #define SNDRV_SEQ_EVENT_SYNC		38	/* sync signal */
 #define SNDRV_SEQ_EVENT_SYNC_POS	39
 
-/* 40-49: others
+/** others
  * event data type = none
  */
 #define SNDRV_SEQ_EVENT_TUNE_REQUEST	40	/* tune request */
 #define SNDRV_SEQ_EVENT_RESET		41	/* reset to power-on state */
 #define SNDRV_SEQ_EVENT_SENSING		42	/* "active sensing" event */
-/* 43-49: reserved */
 
-/* 50-59: echo back, kernel private messages
+/** echo back, kernel private messages
  * event data type = any type
  */
 #define SNDRV_SEQ_EVENT_ECHO		50	/* echo event */
 #define SNDRV_SEQ_EVENT_OSS		51	/* OSS raw event */
-/* 52-59: reserved */
 
-/* 60-69: system status messages (broadcast for subscribers)
+/** system status messages (broadcast for subscribers)
  * event data type = sndrv_seq_addr_t
  */
 #define SNDRV_SEQ_EVENT_CLIENT_START	60	/* new client has connected */
@@ -113,12 +104,14 @@
 #define SNDRV_SEQ_EVENT_PORT_START	63	/* new port was created */
 #define SNDRV_SEQ_EVENT_PORT_EXIT	64	/* port was deleted from system */
 #define SNDRV_SEQ_EVENT_PORT_CHANGE	65	/* port status/info has changed */
-#define SNDRV_SEQ_EVENT_PORT_SUBSCRIBED	66	/* read port is subscribed */
-#define SNDRV_SEQ_EVENT_PORT_USED	67	/* write port is subscribed */
-#define SNDRV_SEQ_EVENT_PORT_UNSUBSCRIBED	68	/* read port is released */
-#define SNDRV_SEQ_EVENT_PORT_UNUSED	69	/* write port is released */
 
-/* 70-79: synthesizer events
+/** port connection changes
+ * event data type = sndrv_seq_connect_t
+ */
+#define SNDRV_SEQ_EVENT_PORT_SUBSCRIBED	66	/* ports connected */
+#define SNDRV_SEQ_EVENT_PORT_UNSUBSCRIBED	67	/* ports disconnected */
+
+/** synthesizer events
  * event data type = sndrv_seq_eve_sample_control_t
  */
 #define SNDRV_SEQ_EVENT_SAMPLE		70	/* sample select */
@@ -131,9 +124,7 @@
 #define SNDRV_SEQ_EVENT_SAMPLE_POSITION	77	/* sample position */
 #define SNDRV_SEQ_EVENT_SAMPLE_PRIVATE1	78	/* private (hardware dependent) event */
 
-/* 80-89: reserved */
-
-/* 90-99: user-defined events with fixed length
+/** user-defined events with fixed length
  * event data type = any
  */
 #define SNDRV_SEQ_EVENT_USR0		90
@@ -147,7 +138,7 @@
 #define SNDRV_SEQ_EVENT_USR8		98
 #define SNDRV_SEQ_EVENT_USR9		99
 
-/* 100-129: instrument layer
+/** instrument layer
  * variable length data can be passed directly to the driver
  */
 #define SNDRV_SEQ_EVENT_INSTR_BEGIN	100	/* begin of instrument management */
@@ -210,11 +201,18 @@
 
 typedef unsigned char sndrv_seq_event_type_t;
 
-	/* event address */
+/** event address */
 struct sndrv_seq_addr {
-	unsigned char client;	/* Client number:         0..255, 255 = broadcast to all clients */
-	unsigned char port;	/* Port within client:    0..255, 255 = broadcast to all ports */
+	unsigned char client;	/**< Client number:         0..255, 255 = broadcast to all clients */
+	unsigned char port;	/**< Port within client:    0..255, 255 = broadcast to all ports */
 };
+
+/** port connection */
+struct sndrv_seq_connect {
+	struct sndrv_seq_addr sender;
+	struct sndrv_seq_addr dest;
+};
+
 
 #define SNDRV_SEQ_ADDRESS_UNKNOWN	253	/* unknown source */
 #define SNDRV_SEQ_ADDRESS_SUBSCRIBERS	254	/* send event to all subscribed ports */
@@ -373,9 +371,7 @@ union sndrv_seq_timestamp {
 	/* queue timer control */
 struct sndrv_seq_ev_queue_control {
 	unsigned char queue;			/* affected queue */
-	unsigned char sync_format;		/* opt: sync format */
-	unsigned char sync_time_format;		/* opt: time format */
-	unsigned char pad[1];			/* reserved */
+	unsigned char pad[3];			/* reserved */
 	union {
 		signed int value;		/* affected value (e.g. tempo) */
 		union sndrv_seq_timestamp time;	/* time */
@@ -416,6 +412,7 @@ struct sndrv_seq_event {
 		struct sndrv_seq_ev_queue_control queue;
 		union sndrv_seq_timestamp time;
 		struct sndrv_seq_addr addr;
+		struct sndrv_seq_connect connect;
 		struct sndrv_seq_result result;
 		struct sndrv_seq_ev_instr_begin instr_begin;
 		struct sndrv_seq_ev_sample_control sample;
@@ -530,7 +527,6 @@ struct sndrv_seq_client_info {
 	unsigned int filter;		/* filter flags */
 	unsigned char multicast_filter[8]; /* multicast filter bitmap */
 	unsigned char event_filter[32];	/* event filter bitmap */
-	char group[32];			/* group name */
 	int num_ports;			/* RO: number of ports */
 	int event_lost;			/* number of lost events */
 	char reserved[64];		/* for future use */
@@ -550,12 +546,20 @@ struct sndrv_seq_client_pool {
 
 
 /* Remove events by specified criteria */
-struct sndrv_seq_remove_events {
-	int tick:1; 		/* True when time is in ticks */
-	int input:1; 		/* Flush input queues */
-	int output:1; 		/* Flush output queues */
 
-	int  remove_mode;	/* Flags that determine what gets removed */
+#define SNDRV_SEQ_REMOVE_INPUT		(1<<0)	/* Flush input queues */
+#define SNDRV_SEQ_REMOVE_OUTPUT		(1<<1)	/* Flush output queues */
+#define SNDRV_SEQ_REMOVE_DEST		(1<<2)	/* Restrict by destination q:client:port */
+#define SNDRV_SEQ_REMOVE_DEST_CHANNEL	(1<<3)	/* Restrict by channel */
+#define SNDRV_SEQ_REMOVE_TIME_BEFORE	(1<<4)	/* Restrict to before time */
+#define SNDRV_SEQ_REMOVE_TIME_AFTER	(1<<5)	/* Restrict to time or after */
+#define SNDRV_SEQ_REMOVE_TIME_TICK	(1<<6)	/* Time is in ticks */
+#define SNDRV_SEQ_REMOVE_EVENT_TYPE	(1<<7)	/* Restrict to event type */
+#define SNDRV_SEQ_REMOVE_IGNORE_OFF 	(1<<8)	/* Do not flush off events */
+#define SNDRV_SEQ_REMOVE_TAG_MATCH 	(1<<9)	/* Restrict to events with given tag */
+
+struct sndrv_seq_remove_events {
+	unsigned int  remove_mode;	/* Flags that determine what gets removed */
 
 	union sndrv_seq_timestamp time;
 
@@ -569,15 +573,6 @@ struct sndrv_seq_remove_events {
 	int  reserved[10];	/* To allow for future binary compatibility */
 
 };
-
-/* Flush mode flags */
-#define SNDRV_SEQ_REMOVE_DEST		(1<<0)	/* Restrict by destination q:client:port */
-#define SNDRV_SEQ_REMOVE_DEST_CHANNEL	(1<<1)	/* Restrict by channel */
-#define SNDRV_SEQ_REMOVE_TIME_BEFORE	(1<<2)	/* Restrict to before time */
-#define SNDRV_SEQ_REMOVE_TIME_AFTER	(1<<3)	/* Restrict to time or after */
-#define SNDRV_SEQ_REMOVE_EVENT_TYPE	(1<<4)	/* Restrict to event type */
-#define SNDRV_SEQ_REMOVE_IGNORE_OFF 	(1<<5)	/* Do not flush off events */
-#define SNDRV_SEQ_REMOVE_TAG_MATCH 	(1<<6)	/* Restrict to events with given tag */
 
 
 	/* known port numbers */
@@ -612,22 +607,14 @@ struct sndrv_seq_remove_events {
 /*...*/
 #define SNDRV_SEQ_PORT_TYPE_APPLICATION	(1<<20)	/* application (sequencer/editor) */
 
-/* standard group names */
-#define SNDRV_SEQ_GROUP_SYSTEM		"system"
-#define SNDRV_SEQ_GROUP_DEVICE		"device"
-#define SNDRV_SEQ_GROUP_APPLICATION	"application"
-
 /* misc. conditioning flags */
 #define SNDRV_SEQ_PORT_FLG_GIVEN_PORT	(1<<0)
 
 struct sndrv_seq_port_info {
-	int client;			/* client number */
-	int port;			/* port number */
+	struct sndrv_seq_addr addr;	/* client/port numbers */
 	char name[64];			/* port name */
-	char group[32];			/* group name (copied from client) */
 
 	unsigned int capability;	/* port capability bits */
-	unsigned int cap_group;		/* permission to group */
 	unsigned int type;		/* port type bits */
 	int midi_channels;		/* channels per MIDI port */
 	int midi_voices;		/* voices per MIDI port */
@@ -661,79 +648,6 @@ struct sndrv_seq_queue_info {
 	char reserved[60];	/* for future use */
 
 };
-
-/* alias */
-#define sndrv_seq_queue_owner sndrv_seq_queue_info
-
-/*
- * time frame
- */
-struct sndrv_seq_time_frame {
-	unsigned char hour;
-	unsigned char min;
-	unsigned char sec;
-	unsigned char frame;
-	unsigned char subframe;
-};
-
-typedef struct sndrv_seq_time_frame sndrv_seq_time_frame_t;
-
-/* queue status flag */
-#define SNDRV_SEQ_QUEUE_FLG_SYNC_LOST	1
-
-/* synchronization types */
-/* mode */
-#define SNDRV_SEQ_SYNC_TICK		0x80
-#define SNDRV_SEQ_SYNC_TIME		0x40
-#define SNDRV_SEQ_SYNC_MODE		0xc0		/* mask */
-/* private format */
-#define SNDRV_SEQ_SYNC_FMT_PRIVATE_CLOCK (SNDRV_SEQ_SYNC_TICK|0)
-#define SNDRV_SEQ_SYNC_FMT_PRIVATE_TIME	(SNDRV_SEQ_SYNC_TIME|0)
-/* pre-defined format */
-#define SNDRV_SEQ_SYNC_FMT_MIDI_CLOCK	(SNDRV_SEQ_SYNC_TICK|1)
-#define SNDRV_SEQ_SYNC_FMT_MTC		(SNDRV_SEQ_SYNC_TIME|1)
-#define SNDRV_SEQ_SYNC_FMT_DTL		(SNDRV_SEQ_SYNC_TIME|2)
-#define SNDRV_SEQ_SYNC_FMT_SMPTE	(SNDRV_SEQ_SYNC_TIME|3)
-#define SNDRV_SEQ_SYNC_FMT_MIDI_TICK	(SNDRV_SEQ_SYNC_TIME|4)
-/* time format */
-#define SNDRV_SEQ_SYNC_FPS_24		0
-#define SNDRV_SEQ_SYNC_FPS_25		1
-#define SNDRV_SEQ_SYNC_FPS_30_DP	2
-#define SNDRV_SEQ_SYNC_FPS_30_NDP	3
-
-/* MIDI clock sync */
-struct sndrv_seq_queue_tick_sync {
-	unsigned int ppq;		/* ticks per quarter-note */
-	unsigned int ticks;		/* ticks per clock */
-	/* slave stuffs */
-	int max_tick_diff, max_tick_diff2;
-	int x0, x1;
-};
-
-typedef struct sndrv_seq_queue_tick_sync sndrv_seq_queue_tick_sync_t;
-
-/* SMPTE/MTC (real-time) sync */
-struct sndrv_seq_queue_time_sync {
-	unsigned int resolution;	/* frame resolution in nsec */
-	unsigned int subframes;		/* # of subframes */
-	/* slave stuffs */
-	int max_time_diff, phase_correct_time;
-	int x0, x1;
-};
-
-typedef struct sndrv_seq_queue_time_sync sndrv_seq_queue_time_sync_t;
-
-struct sndrv_seq_queue_sync {
-	unsigned char format;		/* sync format */
-	unsigned char time_format;	/* SMPTE time format */
-	unsigned char info[6];		/* format dependent info */
-	union {
-		sndrv_seq_queue_tick_sync_t tick;
-		sndrv_seq_queue_time_sync_t time;
-	} param;
-};
-
-typedef struct sndrv_seq_queue_sync sndrv_seq_queue_sync_t;
 
 /* queue info/status */
 struct sndrv_seq_queue_status {
@@ -785,38 +699,32 @@ struct sndrv_seq_queue_client {
 };
 
 
+#define SNDRV_SEQ_PORT_SUBS_EXCLUSIVE	(1<<0)	/* exclusive connection */
+#define SNDRV_SEQ_PORT_SUBS_TIMESTAMP	(1<<1)
+#define SNDRV_SEQ_PORT_SUBS_TIME_REAL	(1<<2)
+
 struct sndrv_seq_port_subscribe {
 	struct sndrv_seq_addr sender;	/* sender address */
 	struct sndrv_seq_addr dest;	/* destination address */
+	unsigned int voices;		/* number of voices to be allocated (0 = don't care) */
+	unsigned int flags;		/* modes */
 	unsigned char queue;		/* input time-stamp queue (optional) */
-	unsigned int exclusive: 1,	/* exclusive mode */
-	    realtime: 1,		/* realtime timestamp */
-	    convert_time: 1;		/* convert timestamp */
-	unsigned int sync: 1;		/* sync */
-	int midi_channels;		/* midi channels setup, zero = do not care */
-	int midi_voices;		/* midi voices setup, zero = do not care */
-	int synth_voices;		/* synth voices setup, zero = do not care */
-	union {
-		char reserved[32];
-		struct sndrv_seq_queue_sync sync_info;
-	} opt;
+	unsigned char pad[3];		/* reserved */
+	char reserved[64];
 };
 
 /* type of query subscription */
-#define SNDRV_SEQ_QUERY_SUBS_READ		0
+#define SNDRV_SEQ_QUERY_SUBS_READ	0
 #define SNDRV_SEQ_QUERY_SUBS_WRITE	1
 
 struct sndrv_seq_query_subs {
-	int client;
-	int port;
+	struct sndrv_seq_addr root;	/* client/port id to be searched */
 	int type;		/* READ or WRITE */
 	int index;		/* 0..N-1 */
 	int num_subs;		/* R/O: number of subscriptions on this port */
 	struct sndrv_seq_addr addr;	/* R/O: result */
 	unsigned char queue;	/* R/O: result */
-	int exclusive: 1;	/* R/O: result */
-	int realtime: 1;	/* R/O: result */
-	int convert_time: 1;	/* R/O: result */
+	unsigned int flags;	/* R/O: result */
 	char reserved[64];	/* for future use */
 };
 
@@ -918,44 +826,19 @@ struct sndrv_seq_instr_data {
 	} data;
 };
 
-/* INSTR_PUT, data are stored in one block (extended or IPC), header + data */
+/* INSTR_PUT/GET, data are stored in one block (extended or IPC), header + data */
 
-struct sndrv_seq_instr_put {
-	struct sndrv_seq_instr id;	/* instrument identifier */
-	unsigned int cmd;		/* put command */
-	char reserved[16];		/* for the future */
-	unsigned int len;		/* real instrument data length (without header) */
-	struct sndrv_seq_instr_data data;	/* instrument data */
-};
-
-/* INSTR_GET, data are stored in one block (extended or IPC), header + data */
-
-struct sndrv_seq_instr_get {
-	struct sndrv_seq_instr id;	/* instrument identifier */
-	unsigned int flags;		/* query flags */
-	unsigned int cmd;		/* query command */
-	char reserved[16];		/* reserved for the future use */
-	unsigned int len;		/* real instrument data length (without header) */
-};
-
-struct sndrv_seq_instr_get_result {
-	int result;			/* operation result */
-	struct sndrv_seq_instr id;	/* requested instrument identifier */
-	char reserved[16];		/* reserved for the future use */
-	unsigned int len;		/* real instrument data length (without header) */
-	struct sndrv_seq_instr_data data;	/* instrument data */
-};
-
-/* INSTR_FREE */
-
-struct sndrv_seq_instr_free {
-	char reserved[16];		/* for the future use */
-	unsigned int cmd;               /* SNDRV_SEQ_INSTR_FREE_CMD_* */
+struct sndrv_seq_instr_header {
 	union {
 		struct sndrv_seq_instr instr;
 		sndrv_seq_instr_cluster_t cluster;
-		char data8[16];
-	} data;
+	} id;				/* instrument identifier */
+	unsigned int cmd;		/* get/put/free command */
+	unsigned int flags;		/* query flags (only for get) */
+	unsigned int len;		/* real instrument data length (without header) */
+	int result;			/* operation result */
+	char reserved[16];		/* for the future */
+	struct sndrv_seq_instr_data data;	/* instrument data (for put/get result) */
 };
 
 /* INSTR_CLUSTER_SET */
