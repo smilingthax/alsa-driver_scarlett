@@ -48,6 +48,8 @@ typedef struct snd_stru_pcm_oss_runtime {
 	int subdivision;			/* requested subdivision */
 	int fragment_size;			/* requested fragment size */
 	int fragments;				/* requested fragments */
+	int mmap_fragment_size;
+	int mmap_fragments;
 	char *buffer;				/* vmallocated fragment */
 	int buffer_used;			/* used length from buffer */
 	snd_pcm_plugin_t *plugin;
