@@ -453,6 +453,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_SFMT_U32_LE		17
 #define SND_PCM_SFMT_U32_BE		18
 #define SND_PCM_SFMT_FLOAT		19	/* 4-byte float, need specification!! */
+#define SND_PCM_SFMT_FLOAT64		20	/* 8-byte float, need specification!! */
 #define SND_PCM_SFMT_SPECIAL		31
 
 #define SND_PCM_FMT_QUERY		0
@@ -476,6 +477,7 @@ struct snd_oss_mixer_info_obsolete {
 #define SND_PCM_FMT_U32_LE		(1 << SND_PCM_SFMT_U32_LE)
 #define SND_PCM_FMT_U32_BE		(1 << SND_PCM_SFMT_U32_BE)
 #define SND_PCM_FMT_FLOAT		(1 << SND_PCM_SFMT_FLOAT)
+#define SND_PCM_FMT_FLOAT64		(1 << SND_PCM_SFMT_FLOAT64)
 #define SND_PCM_FMT_SPECIAL		(1 << SND_PCM_SFMT_SPECIAL)
 
 #define SND_PCM_INFO_CODEC		0x00000001
