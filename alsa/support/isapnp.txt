@@ -102,7 +102,7 @@ otherwise access to ISA PnP configuration functions will be blocked.
 Second way is auto-configuration
 --------------------------------
 
-These two functions gives to driver real power of ISA PnP architecture.
+These two functions gives to driver real power of ISA PnP feature.
 First function isapnp_config_init() only initialize isapnp_config structure.
 This structure after initialization contains all resources set to auto
 configuration values. Driver for ISA PnP logical device can modify (or not)
