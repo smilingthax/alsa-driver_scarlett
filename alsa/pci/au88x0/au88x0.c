@@ -257,8 +257,8 @@ snd_vortex_probe(struct pci_dev *pci, const struct pci_device_id *pci_id) {
 #endif
 
     // (5)
-    strcpy(card->driver, "Aureal Vortex");
-    strcpy(card->shortname, CARD_NAME_SHORT);
+    strcpy(card->driver, CARD_NAME_SHORT);
+    strcpy(card->shortname, "Aureal Vortex " CARD_NAME_SHORT);
     sprintf(card->longname, "%s at 0x%lx irq %i",
             card->shortname, chip->io, chip->irq);
     
