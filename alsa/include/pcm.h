@@ -52,7 +52,6 @@ typedef struct _snd_pcm_hardware {
 	size_t buffer_bytes_max;	/* max buffer size */
 	size_t period_bytes_min;	/* min period size */
 	size_t period_bytes_max;	/* max period size */
-	size_t period_bytes_step;	/* period size step */
 	unsigned int periods_min;	/* min # of periods */
 	unsigned int periods_max;	/* max # of periods */
 	size_t fifo_size;		/* fifo size in bytes */
@@ -703,6 +702,10 @@ extern int snd_pcm_hw_constraint_msbits(snd_pcm_runtime_t *runtime,
 				   unsigned int cond,
 				   unsigned int width,
 				   unsigned int msbits);
+extern int snd_pcm_hw_constraint_step(snd_pcm_runtime_t *runtime,
+				      unsigned int cond,
+				      snd_pcm_hw_param_t var,
+				      unsigned long step);
 extern int snd_pcm_hw_rule_add(snd_pcm_runtime_t *runtime,
 				unsigned int cond,
 				int var,
