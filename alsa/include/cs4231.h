@@ -241,6 +241,7 @@ struct snd_stru_cs4231 {
 	unsigned char eimage[32];	/* extended image */
 	int mce_bit;
 	int calibrate_mute;
+	int sw_3d_bit;
 
 	spinlock_t reg_lock;
 	struct semaphore mce_mutex;

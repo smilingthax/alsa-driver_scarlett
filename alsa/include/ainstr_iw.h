@@ -345,7 +345,6 @@ typedef struct {
 
 int snd_seq_iwffff_init(snd_iwffff_ops_t *ops,
 			void *private_data,
-                        unsigned int flags,
                         snd_seq_kinstr_ops_t *next);
 
 #endif

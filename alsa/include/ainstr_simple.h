@@ -129,7 +129,6 @@ typedef struct {
 
 int snd_seq_simple_init(snd_simple_ops_t *ops,
 			void *private_data,
-			unsigned int flags,
 			snd_seq_kinstr_ops_t *next);
 
 #endif

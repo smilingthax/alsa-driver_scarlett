@@ -34,6 +34,8 @@ typedef struct snd_struct_seq_kcluster {
 /* return pointer to private data */
 #define KINSTR_DATA(kinstr)	(void *)(((char *)kinstr) + sizeof(snd_seq_kinstr_t))
 
+typedef struct snd_seq_kinstr_ops snd_seq_kinstr_ops_t;
+
 /* Instrument structure */
 typedef struct snd_stru_seq_kinstr {
 	snd_seq_instr_t instr;
@@ -41,10 +43,14 @@ typedef struct snd_stru_seq_kinstr {
 	int type;			/* instrument type */
 	int use;			/* use count */
 	int add_len;			/* additional length */
+	snd_seq_kinstr_ops_t *ops;	/* operations */
 	struct snd_stru_seq_kinstr *next;
 } snd_seq_kinstr_t;
 
 #define SND_SEQ_INSTR_HASH_SIZE		32
+
+/* Instrument flags */
+#define SND_SEQ_INSTR_FLG_DIRECT	(1<<0)	/* accept only direct events */
 
 /* List of all instruments */
 typedef struct {
@@ -55,6 +61,7 @@ typedef struct {
 	int ccount;			/* count of all clusters */
 
 	int owner;			/* current owner of the instrument list */
+	unsigned int flags;
 
 	spinlock_t lock;
 	spinlock_t ops_lock;
@@ -62,12 +69,9 @@ typedef struct {
 	unsigned long ops_flags;
 } snd_seq_kinstr_list_t;
 
-/* Instrument operations - flags */
-#define SND_SEQ_INSTR_OPS_DIRECT	(1<<0)	/* accept only direct events */
 
-typedef struct snd_seq_kinstr_ops {
+struct snd_seq_kinstr_ops {
 	void *private_data;
-	unsigned int flags;
 	long add_len;			/* additional length */
 	char *instr_type;
 	int (*put)(void *private_data, snd_seq_kinstr_t *kinstr,
@@ -77,7 +81,8 @@ typedef struct snd_seq_kinstr_ops {
 	int (*get_size)(void *private_data, snd_seq_kinstr_t *kinstr, long *size);
 	int (*remove)(void *private_data, snd_seq_kinstr_t *kinstr, int atomic);
 	struct snd_seq_kinstr_ops *next;
-} snd_seq_kinstr_ops_t;
+};
+
 
 /* instrument operations */
 snd_seq_kinstr_list_t *snd_seq_instr_list_new(void);

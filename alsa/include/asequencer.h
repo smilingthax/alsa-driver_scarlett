@@ -204,6 +204,12 @@ typedef struct {
 	unsigned short prg;
 } snd_seq_ev_sample;
 
+	/* sample cluster */
+typedef struct {
+	snd_seq_instr_cluster_t cluster;
+	int private: 1;
+} snd_seq_ev_cluster;
+
 	/* sample position */
 typedef unsigned int snd_seq_position_t; /* playback position (in bytes) * 16 */
 
@@ -279,7 +285,7 @@ typedef struct snd_seq_event_t {
 		snd_seq_result_t result;
 		snd_seq_ev_instr_begin_t instr_begin;
 		snd_seq_ev_sample sample;
-		snd_seq_instr_cluster_t cluster;
+		snd_seq_ev_cluster cluster;
 		snd_seq_position_t position;
 		snd_seq_stop_mode_t stop_mode;
 		snd_seq_frequency_t frequency;
@@ -333,6 +339,18 @@ typedef struct {
 	int output_room;		/* minimum free pool size for select/blocking mode */
 	char reserved[64];
 } snd_seq_client_pool_t;
+
+
+/* reset read/write pool */
+#define SND_SEQ_RESET_POOL_NONE		0	/* do not remove events */
+#define SND_SEQ_RESET_POOL_ALL		1	/* purge all events in pool */
+
+typedef struct {
+	int reset_output;		/* purge write pool */
+	snd_seq_addr_t output_match;	/* matching client/port */
+	int reset_input;		/* purge read pool */ 
+	snd_seq_addr_t input_match;	/* matching client/port */
+} snd_seq_reset_pool_t;
 
 	/* known port numbers */
 #define SND_SEQ_PORT_SYSTEM_TIMER	0
@@ -535,6 +553,12 @@ typedef struct {
 /* query flags */
 #define SND_SEQ_INSTR_QUERY_FOLLOW_ALIAS (1<<0)
 
+/* free commands */
+#define SND_SEQ_INSTR_FREE_CMD_ALL	0
+#define SND_SEQ_INSTR_FREE_CMD_PRIVATE	1
+#define SND_SEQ_INSTR_FREE_CMD_CLUSTER	2
+#define SND_SEQ_INSTR_FREE_CMD_EXACT	3
+
 /* instrument data */
 typedef struct {
 	char name[32];			/* instrument name */
@@ -578,7 +602,7 @@ typedef struct {
 
 typedef struct {
 	char reserved[16];		/* for the future use */
-	unsigned int type;              /* SND_SEQ_INSTR_FTYPE_* */
+	unsigned int cmd;               /* SND_SEQ_INSTR_FREE_CMD_* */
 	union {
 		snd_seq_instr_t instr;
 		snd_seq_instr_cluster_t cluster;
@@ -657,5 +681,6 @@ typedef struct {
 #define SND_SEQ_IOCTL_SET_QUEUE_CLIENT	_IOW ('S', 0x4a, snd_seq_queue_client_t)
 #define SND_SEQ_IOCTL_GET_CLIENT_POOL	_IOWR('S', 0x4b, snd_seq_client_pool_t)
 #define SND_SEQ_IOCTL_SET_CLIENT_POOL	_IOW ('S', 0x4c, snd_seq_client_pool_t)
+#define SND_SEQ_IOCTL_RESET_POOL	_IOW ('S', 0x4d, snd_seq_reset_pool_t)
 
 #endif /* __SND_ASEQUENCER_H */
