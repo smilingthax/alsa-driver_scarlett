@@ -75,12 +75,12 @@
 #define   OPL3_TIMER2_START		0x02
 
 #define OPL3_REG_CONNECTION_SELECT	0x04	/* Right side */
-#define   OPL3_RIGHT_4OP_0		0x01
-#define   OPL3_RIGHT_4OP_1		0x02
-#define   OPL3_RIGHT_4OP_2		0x04
-#define   OPL3_LEFT_4OP_0		0x08
-#define   OPL3_LEFT_4OP_1		0x10
-#define   OPL3_LEFT_4OP_2		0x20
+#define   OPL3_LEFT_4OP_0		0x01
+#define   OPL3_LEFT_4OP_1		0x02
+#define   OPL3_LEFT_4OP_2		0x04
+#define   OPL3_RIGHT_4OP_0		0x08
+#define   OPL3_RIGHT_4OP_1		0x10
+#define   OPL3_RIGHT_4OP_2		0x20
 
 #define OPL3_REG_MODE			0x05	/* Right side */
 #define   OPL3_OPL3_ENABLE		0x01	/* OPL3 mode */
