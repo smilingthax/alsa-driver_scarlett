@@ -1035,7 +1035,6 @@ def cvsps_merge1(f,t=0):
 	diffs = fp.readlines()
 	fp.close()
 	files = []
-	signed = []
 	for line in diffs:
 		if line[0:3] == '+++':
 			xx1 = string.split(line, ' ')
@@ -1052,6 +1051,8 @@ def cvsps_merge1(f,t=0):
 				else:
 					file = i
 			files.append(file)
+	summary = ''
+	signed = []
 	log = []
 	members = []
 	ok = 0
@@ -1074,14 +1075,23 @@ def cvsps_merge1(f,t=0):
 		elif ok == 1:
 			if line[:14] == "Signed-off-by:":
 				signed.append(line)
+			elif line[:8] == "Summary:":
+				summary = line[8:]
+			elif line[:9] == "Summary: ":
+				summary = line[9:]
 			else:
 				log.append(line)
 		elif ok == 2:
 			if line != '\n':
 				members.append(line[1:])
-	while log[len(log)-1] == '\n':
+	while len(log) > 1 and log[0] == '\n':
+		del log[0]
+	while len(log) > 1 and log[len(log)-1] == '\n':
 		del log[len(log)-1]
-	lines = 'ALSA CVS update\n'
+	if summary != '':
+		lines = '[ALSA] ' + summary + '\n'
+	else:
+		lines = 'ALSA CVS update\n'
 	nlines = lines
 	if date != '':
 		lines = lines + 'D:' + date + '\n'
