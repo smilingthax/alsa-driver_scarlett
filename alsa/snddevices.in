@@ -97,6 +97,7 @@ if test $OSSMAJOR -eq 14; then
   create_odevice /dev/music		8
   create_odevices /dev/dmmidi		9
   create_odevices /dev/dmfm		10
+  create_odevices /dev/amixer		11	# alternate mixer
   create_odevices /dev/adsp		12	# alternate dsp
   create_odevices /dev/amidi		13	# alternate midi
   create_odevices /dev/admmidi		14	# alternate direct midi
