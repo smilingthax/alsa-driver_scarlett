@@ -229,7 +229,7 @@ typedef struct snd_hwdep_info {
  *                                                                          *
  ****************************************************************************/
 
-#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(1, 0, 0)
+#define SND_MIXER_VERSION		SND_PROTOCOL_VERSION(1, 0, 1)
 
 /* inputs */				/* max 24 chars */
 #define SND_MIXER_IN_SYNTHESIZER	"Synth"
@@ -335,7 +335,7 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_ACCU3		302
 /* simple MUX */
 #define SND_MIXER_ETYPE_MUX1		400
-/* simple MUX with one control for each voices */
+/* simple MUX for each voices */
 #define SND_MIXER_ETYPE_MUX2		401
 /* simple tone control */
 #define SND_MIXER_ETYPE_TONE_CONTROL1	500
@@ -702,8 +702,8 @@ struct snd_mixer_element_accu3 {
 /*
  *  Simple MUX
  *
- *     This mux allows selection of some (or none - optional) input.
- *     Each voices have got the separate control.
+ *     This mux allows selection of exactly one (or none - optional) source
+ *     per each voice.
  */
 
 #define SND_MIXER_MUX1_NONE		(1<<0)
@@ -713,16 +713,16 @@ struct snd_mixer_element_mux1_info {
 };
 
 struct snd_mixer_element_mux1 {
-	int output_size;
-	int output;
-	int output_over;
-	snd_mixer_eid_t *poutput;	/* input source on output */
+	int sel_size;
+	int sel;
+	int sel_over;
+	snd_mixer_eid_t *psel;		/* selected source on element output */
 };
 
 /*
  *  Simple MUX
  *
- *     This mux allows selection of exactly one (or none - optional) input.
+ *     This mux allows selection of exactly one (or none - optional) source.
  */
 
 #define SND_MIXER_MUX2_NONE		(1<<0)
@@ -732,7 +732,7 @@ struct snd_mixer_element_mux2_info {
 };
 
 struct snd_mixer_element_mux2 {
-	snd_mixer_eid_t output;		/* input source on output */
+	snd_mixer_eid_t sel;		/* selected input source on element output */
 };
 
 /*
@@ -1417,8 +1417,8 @@ typedef struct snd_pcm_voice_setup {
 	int voice;
 	snd_pcm_digital_t digital;	/* digital setup */
 	off_t addr;			/* byte offset to voice samples */
-	off_t first;			/* offset to first sample in bits */
-	off_t step;			/* samples distance in bits */
+	unsigned int first;		/* offset to first sample in bits */
+	unsigned int step;		/* samples distance in bits */
 	char reserved[64];
 } snd_pcm_voice_setup_t;
 
