@@ -25,6 +25,7 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/init.h>
+#include <linux/pci.h>
 #include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -2474,7 +2475,8 @@ static int swap_headphone(ac97_t *ac97, int remove_master)
 int snd_ac97_tune_hardware(ac97_t *ac97, struct pci_dev *pci, struct ac97_quirk *quirk)
 {
 	unsigned short vendor, device;
-	struct ac97_quirk *q;
+
+	snd_assert(quirk, return -EINVAL);
 
 	pci_read_config_word(pci, PCI_SUBSYSTEM_VENDOR_ID, &vendor);
 	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &device);
