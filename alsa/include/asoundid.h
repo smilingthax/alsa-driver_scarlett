@@ -51,9 +51,10 @@
 #define SND_CARD_TYPE_AMD_INTERWAVE_STB	0x00000013	/* AMD InterWave + TEA6330T */
 #define SND_CARD_TYPE_ESS_ES1938	0x00000014	/* ESS Solo-1 ES1938 */
 #define SND_CARD_TYPE_ESS_ES1869	0x00000015	/* ESS AudioDrive ES1869 */
-#define SND_CARD_TYPE_ENS4081		0x00000016      /* Ensoniq Vivo90 */
+#define SND_CARD_TYPE_CS4231		0x00000016      /* CS4231 */
 #define SND_CARD_TYPE_OPTI9XX		0x00000017	/* Opti 9xx chipset */
 #define SND_CARD_TYPE_SERIAL		0x00000018	/* Serial MIDI driver */
+#define SND_CARD_TYPE_AD1848		0x00000019	/* Generic AD1848 driver */
 /* --- */
 #define SND_CARD_TYPE_LAST		0x00000017
   
