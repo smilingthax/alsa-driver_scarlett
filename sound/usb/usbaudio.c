@@ -545,7 +545,7 @@ static void snd_complete_urb(struct urb *urb, struct pt_regs *regs)
 		return;
 	if (! subs->running) /* can be stopped during retire callback */
 		return;
-	if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
+	if ((err = subs->ops.prepare(subs, substream->runtime, urb)) < 0 ||
 	    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
 		snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
