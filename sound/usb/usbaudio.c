@@ -2723,11 +2723,6 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
 	if (quirk && quirk->ifnum != QUIRK_ANY_INTERFACE && ifnum != quirk->ifnum)
 		goto __err_val;
 
-	if (usb_set_configuration(dev, get_cfg_desc(config)->bConfigurationValue) < 0) {
-		snd_printk(KERN_ERR "cannot set configuration (value 0x%x)\n", get_cfg_desc(config)->bConfigurationValue);
-		goto __err_val;
-	}
-
 	/* SB Extigy needs special boot-up sequence */
 	/* if more models come, this will go to the quirk list. */
 	if (dev->descriptor.idVendor == 0x041e && dev->descriptor.idProduct == 0x3000) {
@@ -2757,6 +2752,11 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
 		/* it's a fresh one.
 		 * now look for an empty slot and create a new card instance
 		 */
+		/* first, set the current configuration for this device */
+		if (usb_set_configuration(dev, get_cfg_desc(config)->bConfigurationValue) < 0) {
+			snd_printk(KERN_ERR "cannot set configuration (value 0x%x)\n", get_cfg_desc(config)->bConfigurationValue);
+			goto __error;
+		}
 		for (i = 0; i < SNDRV_CARDS; i++)
 			if (enable[i] && ! usb_chip[i] &&
 			    (vid[i] == -1 || vid[i] == dev->descriptor.idVendor) &&
