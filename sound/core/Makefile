@@ -114,6 +114,9 @@ ifeq ($(CONFIG_SND_SB16_CSP),y)
   obj-$(CONFIG_SND_SBAWE) += snd-hwdep.o
 endif
 
+obj-y := $(sort $(obj-y))
+obj-m := $(sort $(obj-m))
+
 include $(TOPDIR)/Rules.make
 
 snd.o: $(snd-objs)
