@@ -149,6 +149,9 @@ EXPORT_SYMBOL(snd_emux_terminate_all);
 EXPORT_SYMBOL(snd_emux_lock_voice);
 EXPORT_SYMBOL(snd_emux_unlock_voice);
 
+/* soundfont.c */
+EXPORT_SYMBOL(snd_sf_linear_to_log);
+
 
 /*
  *  INIT part
