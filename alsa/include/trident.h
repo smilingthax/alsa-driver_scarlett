@@ -356,6 +356,7 @@ struct _snd_trident {
 	unsigned char spdif_pcm_ctrl;
 	unsigned int spdif_bits;
 	unsigned int spdif_pcm_bits;
+	snd_kcontrol_t *spdif_pcm_ctl;	/* S/PDIF settings */
 	unsigned int ac97_ctrl;
         
         unsigned int ChanMap[2];	/* allocation map for hardware channels */

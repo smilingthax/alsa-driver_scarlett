@@ -68,3 +68,11 @@ PCM interface:
   Clock Sync Status	{ "Lock", "Sync", "No Lock" }
   External Rate		/* external capture rate */
   Capture Rate		/* capture rate taken from external source */
+
+S/PDIF interface:
+
+  [...] IEC958 (S/PDIF) 	 	/* default or global value - read/write */
+  [...] IEC958 (S/PDIF) Mask		/* consumer and professional mask */
+  [...] IEC958 (S/PDIF) Consumer Mask	/* consumer mask */
+  [...] IEC958 (S/PDIF) Professional Mask /* professional mask */
+  [...] IEC958 (S/PDIF) Stream		/* the settings assigned to a PCM stream */

@@ -55,7 +55,6 @@ typedef struct _snd_pcm_hardware {
 	size_t fragments_min;		/* min # of fragments */
 	size_t fragments_max;		/* max # of fragments */
 	size_t fifo_size;		/* fifo size in bytes */
-	unsigned int dig_groups;	/* digital groups */
 } snd_pcm_hardware_t;
 
 typedef struct _snd_pcm_ops {
@@ -84,9 +83,7 @@ typedef struct _snd_pcm_ops {
 #define SND_PCM_IOCTL1_RESET		0
 #define SND_PCM_IOCTL1_INFO		1
 #define SND_PCM_IOCTL1_HW_PARAMS	2
-#define SND_PCM_IOCTL1_DIG_INFO		3
-#define SND_PCM_IOCTL1_DIG_PARAMS	4
-#define SND_PCM_IOCTL1_CHANNEL_INFO	5
+#define SND_PCM_IOCTL1_CHANNEL_INFO	3
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_START		1

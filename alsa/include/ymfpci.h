@@ -320,6 +320,8 @@ struct _snd_ymfpci {
 	snd_kcontrol_t *ctl_vol_recsrc;
 	snd_kcontrol_t *ctl_vol_adcrec;
 	snd_kcontrol_t *ctl_vol_spdifrec;
+	unsigned short spdif_bits, spdif_pcm_bits;
+	snd_kcontrol_t *spdif_pcm_ctl;
 
 	spinlock_t reg_lock;
 	spinlock_t voice_lock;

@@ -132,6 +132,107 @@ typedef struct timeval snd_timestamp_t;
 
 /****************************************************************************
  *                                                                          *
+ *        Digital audio interface					    *
+ *                                                                          *
+ ****************************************************************************/
+
+/* AES/IEC958 channel status bits */
+#define SND_PCM_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
+#define SND_PCM_AES0_NONAUDIO		(1<<1)	/* 0 = audio, 1 = non-audio */
+#define SND_PCM_AES0_PRO_EMPHASIS	(7<<2)	/* mask - emphasis */
+#define SND_PCM_AES0_PRO_EMPHASIS_NOTID	(0<<2)	/* emphasis not indicated */
+#define SND_PCM_AES0_PRO_EMPHASIS_NONE	(1<<2)	/* none emphasis */
+#define SND_PCM_AES0_PRO_EMPHASIS_5015	(3<<2)	/* 50/15us emphasis */
+#define SND_PCM_AES0_PRO_EMPHASIS_CCITT	(7<<2)	/* CCITT J.17 emphasis */
+#define SND_PCM_AES0_PRO_FREQ_UNLOCKED	(1<<5)	/* source sample frequency: 0 = locked, 1 = unlocked */
+#define SND_PCM_AES0_PRO_FS		(3<<6)	/* mask - sample frequency */
+#define SND_PCM_AES0_PRO_FS_NOTID	(0<<6)	/* fs not indicated */
+#define SND_PCM_AES0_PRO_FS_44100	(1<<6)	/* 44.1kHz */
+#define SND_PCM_AES0_PRO_FS_48000	(2<<6)	/* 48kHz */
+#define SND_PCM_AES0_PRO_FS_32000	(3<<6)	/* 32kHz */
+#define SND_PCM_AES0_CON_NOT_COPYRIGHT	(1<<2)	/* 0 = copyright, 1 = not copyright */
+#define SND_PCM_AES0_CON_EMPHASIS	(7<<3)	/* mask - emphasis */
+#define SND_PCM_AES0_CON_EMPHASIS_NONE	(0<<3)	/* none emphasis */
+#define SND_PCM_AES0_CON_EMPHASIS_5015	(1<<3)	/* 50/15us emphasis */
+#define SND_PCM_AES0_CON_MODE		(3<<6)	/* mask - mode */
+#define SND_PCM_AES1_PRO_MODE		(15<<0)	/* mask - channel mode */
+#define SND_PCM_AES1_PRO_MODE_NOTID	(0<<0)	/* not indicated */
+#define SND_PCM_AES1_PRO_MODE_STEREOPHONIC (2<<0) /* stereophonic - ch A is left */
+#define SND_PCM_AES1_PRO_MODE_SINGLE	(4<<0)	/* single channel */
+#define SND_PCM_AES1_PRO_MODE_TWO	(8<<0)	/* two channels */
+#define SND_PCM_AES1_PRO_MODE_PRIMARY	(12<<0)	/* primary/secondary */
+#define SND_PCM_AES1_PRO_MODE_BYTE3	(15<<0)	/* vector to byte 3 */
+#define SND_PCM_AES1_PRO_USERBITS	(15<<4)	/* mask - user bits */
+#define SND_PCM_AES1_PRO_USERBITS_NOTID	(0<<4)	/* not indicated */
+#define SND_PCM_AES1_PRO_USERBITS_192	(8<<4)	/* 192-bit structure */
+#define SND_PCM_AES1_PRO_USERBITS_UDEF	(12<<4)	/* user defined application */
+#define SND_PCM_AES1_CON_CATEGORY	0x7f
+#define SND_PCM_AES1_CON_GENERAL	0x00
+#define SND_PCM_AES1_CON_EXPERIMENTAL	0x40
+#define SND_PCM_AES1_CON_SOLIDMEM_MASK	0x0f
+#define SND_PCM_AES1_CON_SOLIDMEM_ID	0x08
+#define SND_PCM_AES1_CON_BROADCAST1_MASK 0x07
+#define SND_PCM_AES1_CON_BROADCAST1_ID	0x04
+#define SND_PCM_AES1_CON_DIGDIGCONV_MASK 0x07
+#define SND_PCM_AES1_CON_DIGDIGCONV_ID	0x02
+#define SND_PCM_AES1_CON_ADC_COPYRIGHT_MASK 0x1f
+#define SND_PCM_AES1_CON_ADC_COPYRIGHT_ID 0x06
+#define SND_PCM_AES1_CON_ADC_MASK	0x1f
+#define SND_PCM_AES1_CON_ADC_ID		0x16
+#define SND_PCM_AES1_CON_BROADCAST2_MASK 0x0f
+#define SND_PCM_AES1_CON_BROADCAST2_ID	0x0e
+#define SND_PCM_AES1_CON_LASEROPT_MASK	0x07
+#define SND_PCM_AES1_CON_LASEROPT_ID	0x01
+#define SND_PCM_AES1_CON_MUSICAL_MASK	0x07
+#define SND_PCM_AES1_CON_MUSICAL_ID	0x05
+#define SND_PCM_AES1_CON_MAGNETIC_MASK	0x07
+#define SND_PCM_AES1_CON_MAGNETIC_ID	0x03
+#define SND_PCM_AES1_CON_IEC908_CD	(SND_PCM_AES1_CON_LASEROPT_ID|0x00)
+#define SND_PCM_AES1_CON_NON_IEC908_CD	(SND_PCM_AES1_CON_LASEROPT_ID|0x08)
+#define SND_PCM_AES1_CON_PCM_CODER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x00)
+#define SND_PCM_AES1_CON_SAMPLER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x20)
+#define SND_PCM_AES1_CON_MIXER		(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x10)
+#define SND_PCM_AES1_CON_RATE_CONVERTER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x18)
+#define SND_PCM_AES1_CON_SYNTHESIZER	(SND_PCM_AES1_CON_MUSICAL_ID|0x00)
+#define SND_PCM_AES1_CON_MICROPHONE	(SND_PCM_AES1_CON_MUSICAL_ID|0x08)
+#define SND_PCM_AES1_CON_DAT		(SND_PCM_AES1_CON_MAGNETIC_ID|0x00)
+#define SND_PCM_AES1_CON_VCR		(SND_PCM_AES1_CON_MAGNETIC_ID|0x08)
+#define SND_PCM_AES1_CON_ORIGINAL	(1<<7)	/* this bits depends on the category code */
+#define SND_PCM_AES2_PRO_SBITS		(7<<0)	/* mask - sample bits */
+#define SND_PCM_AES2_PRO_SBITS_20	(2<<0)	/* 20-bit - coordination */
+#define SND_PCM_AES2_PRO_SBITS_24	(4<<0)	/* 24-bit - main audio */
+#define SND_PCM_AES2_PRO_SBITS_UDEF	(6<<0)	/* user defined application */
+#define SND_PCM_AES2_PRO_WORDLEN	(7<<3)	/* mask - source word length */
+#define SND_PCM_AES2_PRO_WORDLEN_NOTID	(0<<3)	/* not indicated */
+#define SND_PCM_AES2_PRO_WORDLEN_22_18	(2<<3)	/* 22-bit or 18-bit */
+#define SND_PCM_AES2_PRO_WORDLEN_23_19	(4<<3)	/* 23-bit or 19-bit */
+#define SND_PCM_AES2_PRO_WORDLEN_24_20	(5<<3)	/* 24-bit or 20-bit */
+#define SND_PCM_AES2_PRO_WORDLEN_20_16	(6<<3)	/* 20-bit or 16-bit */
+#define SND_PCM_AES2_CON_SOURCE		(15<<0)	/* mask - source number */
+#define SND_PCM_AES2_CON_SOURCE_UNSPEC	(0<<0)	/* unspecified */
+#define SND_PCM_AES2_CON_CHANNEL	(15<<4)	/* mask - channel number */
+#define SND_PCM_AES2_CON_CHANNEL_UNSPEC	(0<<4)	/* unspecified */
+#define SND_PCM_AES3_CON_FS		(15<<0)	/* mask - sample frequency */
+#define SND_PCM_AES3_CON_FS_44100	(0<<0)	/* 44.1kHz */
+#define SND_PCM_AES3_CON_FS_48000	(2<<0)	/* 48kHz */
+#define SND_PCM_AES3_CON_FS_32000	(3<<0)	/* 32kHz */
+#define SND_PCM_AES3_CON_CLOCK		(3<<4)	/* mask - clock accuracy */
+#define SND_PCM_AES3_CON_CLOCK_1000PPM	(0<<4)	/* 1000 ppm */
+#define SND_PCM_AES3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
+#define SND_PCM_AES3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
+
+typedef union _snd_digital_audio {
+	struct {
+		unsigned char status[24];	/* AES/IEC958 channel status bits */
+		unsigned char subcode[147];	/* AES/IEC958 subcode bits */
+		unsigned char pad;		/* nothing */
+		unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
+	} aes;
+	char reserved[256];
+} snd_digital_audio_t;
+
+/****************************************************************************
+ *                                                                          *
  *        Section for driver control interface - /dev/snd/control?          *
  *                                                                          *
  ****************************************************************************/
@@ -154,7 +255,8 @@ typedef enum _snd_control_type {
 	SND_CONTROL_TYPE_BOOLEAN,		/* boolean type */
 	SND_CONTROL_TYPE_INTEGER,		/* integer type */
 	SND_CONTROL_TYPE_ENUMERATED,		/* enumerated type */
-	SND_CONTROL_TYPE_BYTES			/* byte array */
+	SND_CONTROL_TYPE_BYTES,			/* byte array */
+	SND_CONTROL_TYPE_IEC958 = 0x1000,	/* IEC958 (S/PDIF) setup */
 } snd_control_type_t;
 
 typedef enum _snd_control_iface {
@@ -170,7 +272,7 @@ typedef enum _snd_control_iface {
 #define SND_CONTROL_ACCESS_READ		(1<<0)
 #define SND_CONTROL_ACCESS_WRITE	(1<<1)
 #define SND_CONTROL_ACCESS_READWRITE	(SND_CONTROL_ACCESS_READ|SND_CONTROL_ACCESS_WRITE)
-#define SND_CONTROL_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without notification */
+#define SND_CONTROL_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without a notification */
 #define SND_CONTROL_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
 #define SND_CONTROL_ACCESS_LOCK		(1<<9)	/* write lock */
 #define SND_CONTROL_ACCESS_INDIRECT	(1<<31)	/* indirect access */
@@ -230,6 +332,7 @@ typedef struct _snd_control_t {
 			unsigned char data[512];
 			unsigned char *data_ptr;
 		} bytes;
+		snd_digital_audio_t diga;
         } value;                /* RO */
         char reserved[128];
 } snd_control_t;
@@ -481,96 +584,6 @@ typedef struct _snd_hwdep_info {
 #define SND_PCM_MMAP_OFFSET_STATUS	0x80000000
 #define SND_PCM_MMAP_OFFSET_CONTROL	0x81000000
 
-/* digital setup types */
-#define SND_PCM_DIG_NONE		(-1)
-#define SND_PCM_DIG_AES_IEC958C		0	/* consumer mode */
-#define SND_PCM_DIG_AES_IEC958P		1	/* professional mode */
-
-/* AES/IEC958 channel status bits */
-#define SND_PCM_AES0_PROFESSIONAL	(1<<0)	/* 0 = consumer, 1 = professional */
-#define SND_PCM_AES0_NONAUDIO		(1<<1)	/* 0 = audio, 1 = non-audio */
-#define SND_PCM_AES0_PRO_EMPHASIS	(7<<2)	/* mask - emphasis */
-#define SND_PCM_AES0_PRO_EMPHASIS_NOTID	(0<<2)	/* emphasis not indicated */
-#define SND_PCM_AES0_PRO_EMPHASIS_NONE	(1<<2)	/* none emphasis */
-#define SND_PCM_AES0_PRO_EMPHASIS_5015	(3<<2)	/* 50/15us emphasis */
-#define SND_PCM_AES0_PRO_EMPHASIS_CCITT	(7<<2)	/* CCITT J.17 emphasis */
-#define SND_PCM_AES0_PRO_FREQ_UNLOCKED	(1<<5)	/* source sample frequency: 0 = locked, 1 = unlocked */
-#define SND_PCM_AES0_PRO_FS		(3<<6)	/* mask - sample frequency */
-#define SND_PCM_AES0_PRO_FS_NOTID	(0<<6)	/* fs not indicated */
-#define SND_PCM_AES0_PRO_FS_44100	(1<<6)	/* 44.1kHz */
-#define SND_PCM_AES0_PRO_FS_48000	(2<<6)	/* 48kHz */
-#define SND_PCM_AES0_PRO_FS_32000	(3<<6)	/* 32kHz */
-#define SND_PCM_AES0_CON_NOT_COPYRIGHT	(1<<2)	/* 0 = copyright, 1 = not copyright */
-#define SND_PCM_AES0_CON_EMPHASIS	(7<<3)	/* mask - emphasis */
-#define SND_PCM_AES0_CON_EMPHASIS_NONE	(0<<3)	/* none emphasis */
-#define SND_PCM_AES0_CON_EMPHASIS_5015	(1<<3)	/* 50/15us emphasis */
-#define SND_PCM_AES0_CON_MODE		(3<<6)	/* mask - mode */
-#define SND_PCM_AES1_PRO_MODE		(15<<0)	/* mask - channel mode */
-#define SND_PCM_AES1_PRO_MODE_NOTID	(0<<0)	/* not indicated */
-#define SND_PCM_AES1_PRO_MODE_STEREOPHONIC (2<<0) /* stereophonic - ch A is left */
-#define SND_PCM_AES1_PRO_MODE_SINGLE	(4<<0)	/* single channel */
-#define SND_PCM_AES1_PRO_MODE_TWO	(8<<0)	/* two channels */
-#define SND_PCM_AES1_PRO_MODE_PRIMARY	(12<<0)	/* primary/secondary */
-#define SND_PCM_AES1_PRO_MODE_BYTE3	(15<<0)	/* vector to byte 3 */
-#define SND_PCM_AES1_PRO_USERBITS	(15<<4)	/* mask - user bits */
-#define SND_PCM_AES1_PRO_USERBITS_NOTID	(0<<4)	/* not indicated */
-#define SND_PCM_AES1_PRO_USERBITS_192	(8<<4)	/* 192-bit structure */
-#define SND_PCM_AES1_PRO_USERBITS_UDEF	(12<<4)	/* user defined application */
-#define SND_PCM_AES1_CON_CATEGORY	0x7f
-#define SND_PCM_AES1_CON_GENERAL	0x00
-#define SND_PCM_AES1_CON_EXPERIMENTAL	0x40
-#define SND_PCM_AES1_CON_SOLIDMEM_MASK	0x0f
-#define SND_PCM_AES1_CON_SOLIDMEM_ID	0x08
-#define SND_PCM_AES1_CON_BROADCAST1_MASK 0x07
-#define SND_PCM_AES1_CON_BROADCAST1_ID	0x04
-#define SND_PCM_AES1_CON_DIGDIGCONV_MASK 0x07
-#define SND_PCM_AES1_CON_DIGDIGCONV_ID	0x02
-#define SND_PCM_AES1_CON_ADC_COPYRIGHT_MASK 0x1f
-#define SND_PCM_AES1_CON_ADC_COPYRIGHT_ID 0x06
-#define SND_PCM_AES1_CON_ADC_MASK	0x1f
-#define SND_PCM_AES1_CON_ADC_ID		0x16
-#define SND_PCM_AES1_CON_BROADCAST2_MASK 0x0f
-#define SND_PCM_AES1_CON_BROADCAST2_ID	0x0e
-#define SND_PCM_AES1_CON_LASEROPT_MASK	0x07
-#define SND_PCM_AES1_CON_LASEROPT_ID	0x01
-#define SND_PCM_AES1_CON_MUSICAL_MASK	0x07
-#define SND_PCM_AES1_CON_MUSICAL_ID	0x05
-#define SND_PCM_AES1_CON_MAGNETIC_MASK	0x07
-#define SND_PCM_AES1_CON_MAGNETIC_ID	0x03
-#define SND_PCM_AES1_CON_IEC908_CD	(SND_PCM_AES1_CON_LASEROPT_ID|0x00)
-#define SND_PCM_AES1_CON_NON_IEC908_CD	(SND_PCM_AES1_CON_LASEROPT_ID|0x08)
-#define SND_PCM_AES1_CON_PCM_CODER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x00)
-#define SND_PCM_AES1_CON_SAMPLER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x20)
-#define SND_PCM_AES1_CON_MIXER		(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x10)
-#define SND_PCM_AES1_CON_RATE_CONVERTER	(SND_PCM_AES1_CON_DIGDIGCONV_ID|0x18)
-#define SND_PCM_AES1_CON_SYNTHESIZER	(SND_PCM_AES1_CON_MUSICAL_ID|0x00)
-#define SND_PCM_AES1_CON_MICROPHONE	(SND_PCM_AES1_CON_MUSICAL_ID|0x08)
-#define SND_PCM_AES1_CON_DAT		(SND_PCM_AES1_CON_MAGNETIC_ID|0x00)
-#define SND_PCM_AES1_CON_VCR		(SND_PCM_AES1_CON_MAGNETIC_ID|0x08)
-#define SND_PCM_AES1_CON_ORIGINAL	(1<<7)	/* this bits depends on the category code */
-#define SND_PCM_AES2_PRO_SBITS		(7<<0)	/* mask - sample bits */
-#define SND_PCM_AES2_PRO_SBITS_20	(2<<0)	/* 20-bit - coordination */
-#define SND_PCM_AES2_PRO_SBITS_24	(4<<0)	/* 24-bit - main audio */
-#define SND_PCM_AES2_PRO_SBITS_UDEF	(6<<0)	/* user defined application */
-#define SND_PCM_AES2_PRO_WORDLEN	(7<<3)	/* mask - source word length */
-#define SND_PCM_AES2_PRO_WORDLEN_NOTID	(0<<3)	/* not indicated */
-#define SND_PCM_AES2_PRO_WORDLEN_22_18	(2<<3)	/* 22-bit or 18-bit */
-#define SND_PCM_AES2_PRO_WORDLEN_23_19	(4<<3)	/* 23-bit or 19-bit */
-#define SND_PCM_AES2_PRO_WORDLEN_24_20	(5<<3)	/* 24-bit or 20-bit */
-#define SND_PCM_AES2_PRO_WORDLEN_20_16	(6<<3)	/* 20-bit or 16-bit */
-#define SND_PCM_AES2_CON_SOURCE		(15<<0)	/* mask - source number */
-#define SND_PCM_AES2_CON_SOURCE_UNSPEC	(0<<0)	/* unspecified */
-#define SND_PCM_AES2_CON_CHANNEL	(15<<4)	/* mask - channel number */
-#define SND_PCM_AES2_CON_CHANNEL_UNSPEC	(0<<4)	/* unspecified */
-#define SND_PCM_AES3_CON_FS		(15<<0)	/* mask - sample frequency */
-#define SND_PCM_AES3_CON_FS_44100	(0<<0)	/* 44.1kHz */
-#define SND_PCM_AES3_CON_FS_48000	(2<<0)	/* 48kHz */
-#define SND_PCM_AES3_CON_FS_32000	(3<<0)	/* 32kHz */
-#define SND_PCM_AES3_CON_CLOCK		(3<<4)	/* mask - clock accuracy */
-#define SND_PCM_AES3_CON_CLOCK_1000PPM	(0<<4)	/* 1000 ppm */
-#define SND_PCM_AES3_CON_CLOCK_50PPM	(1<<4)	/* 50 ppm */
-#define SND_PCM_AES3_CON_CLOCK_VARIABLE	(2<<4)	/* variable pitch */
-
 typedef union _snd_pcm_sync_id {
 	char id[16];
 	short id16[8];
@@ -592,38 +605,6 @@ typedef struct _snd_pcm_info {
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	char reserved[64];		/* reserved for future... */
 } snd_pcm_info_t;
-
-typedef union _snd_pcm_digital {
-	struct {
-		unsigned char status[24];	/* AES/IEC958 channel status bits */
-		unsigned char subcode[147];	/* AES/IEC958 subcode bits */
-		unsigned char pad;		/* nothing */
-		unsigned char dig_subframe[4];	/* AES/IEC958 subframe bits */
-	} aes;
-	char reserved[256];
-} snd_pcm_digital_t;
-
-#define SND_PCM_DIG_PARAM_GROUP		0
-#define SND_PCM_DIG_PARAM_TYPE		1
-#define SND_PCM_DIG_PARAM_VALUE		2	/* data integrity error */
-
-typedef struct _snd_pcm_dig_info {
-	int group;			/* W : channels group */
-	unsigned int type_mask;		/* R : supported digital types */
-	int type;			/* W : digital type (none - don't handle mask/val) */
-	snd_pcm_digital_t mask;		/* R : supported bits */
-	snd_pcm_digital_t val;		/* R : actual value */
-	unsigned int fail_mask;		/* R : failure locations */
-	char reserved[64];
-} snd_pcm_dig_info_t;
-
-typedef struct _snd_pcm_dig_params {
-	int group;			/* W : channels group */
-	int type;			/* W : digital type */
-	snd_pcm_digital_t val;		/* W : values */
-	unsigned int fail_mask;		/* R : failure locations */
-	char reserved[64];
-} snd_pcm_dig_params_t;
 
 #define SND_PCM_HW_PARAM_FIRST_MASK		0
 #define SND_PCM_HW_PARAM_ACCESS			0
@@ -671,7 +652,6 @@ typedef struct _snd_pcm_hw_params {
 	unsigned int rate_num;		/* R: rate numerator */
 	unsigned int rate_den;		/* R: rate denominator */
 	size_t fifo_size;		/* R: chip FIFO size in frames */
-	unsigned int dig_groups;	/* R: number of channel groups for digital setup */
 	char reserved[64];
 } snd_pcm_hw_params_t;
 
@@ -745,8 +725,6 @@ typedef struct _snd_xfern_t {
 #define SND_PCM_IOCTL_HW_REFINE		_IOWR('A', 0x10, snd_pcm_hw_params_t)
 #define SND_PCM_IOCTL_HW_PARAMS		_IOWR('A', 0x11, snd_pcm_hw_params_t)
 #define SND_PCM_IOCTL_SW_PARAMS		_IOWR('A', 0x12, snd_pcm_sw_params_t)
-#define SND_PCM_IOCTL_DIG_INFO		_IOWR('A', 0x13, snd_pcm_dig_info_t)
-#define SND_PCM_IOCTL_DIG_PARAMS	_IOWR('A', 0x14, snd_pcm_dig_params_t)
 #define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x20, snd_pcm_status_t)
 #define SND_PCM_IOCTL_DELAY		_IOR ('A', 0x21, ssize_t)
 #define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x32, snd_pcm_hw_channel_info_t)
