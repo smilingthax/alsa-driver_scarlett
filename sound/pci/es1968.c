@@ -735,12 +735,12 @@ static void apu_data_set(es1968_t *chip, u16 data)
 static void __apu_set_register(es1968_t *chip, u16 channel, u8 reg, u16 data)
 {
 	snd_assert(channel < NR_APUS, return);
-	reg |= (channel << 4);
-	apu_index_set(chip, reg);
-	apu_data_set(chip, data);
 #ifdef CONFIG_PM
 	chip->apu_map[channel][reg] = data;
 #endif
+	reg |= (channel << 4);
+	apu_index_set(chip, reg);
+	apu_data_set(chip, data);
 }
 
 inline static void apu_set_register(es1968_t *chip, u16 channel, u8 reg, u16 data)
@@ -1034,14 +1034,16 @@ static void snd_es1968_pcm_stop(es1968_t *chip, esschan_t *es)
 
 /* set the wavecache control reg */
 static void snd_es1968_program_wavecache(es1968_t *chip, esschan_t *es,
-					 int channel, u32 addr)
+					 int channel, u32 addr, int capture)
 {
 	u32 tmpval = (addr - 0x10) & 0xFFF8;
 
-	if (!(es->fmt & ESS_FMT_16BIT))
-		tmpval |= 4;	/* 8bit */
-	if (es->fmt & ESS_FMT_STEREO)
-		tmpval |= 2;	/* stereo */
+	if (! capture) {
+		if (!(es->fmt & ESS_FMT_16BIT))
+			tmpval |= 4;	/* 8bit */
+		if (es->fmt & ESS_FMT_STEREO)
+			tmpval |= 2;	/* stereo */
+	}
 
 	/* set the wavecache control reg */
 	wave_set_register(chip, es->apu[channel] << 3, tmpval);
@@ -1070,7 +1072,7 @@ static void snd_es1968_playback_setup(es1968_t *chip, esschan_t *es,
 	for (channel = 0; channel <= high_apu; channel++) {
 		apu = es->apu[channel];
 
-		snd_es1968_program_wavecache(chip, es, channel, es->memory->addr);
+		snd_es1968_program_wavecache(chip, es, channel, es->memory->addr, 0);
 
 		/* Offset to PCMBAR */
 		pa = es->memory->addr;
@@ -1217,7 +1219,7 @@ static void snd_es1968_capture_setup(es1968_t *chip, esschan_t *es,
 		}
 
 		/* set the wavecache control reg */
-		snd_es1968_program_wavecache(chip, es, channel, pa);
+		snd_es1968_program_wavecache(chip, es, channel, pa, 1);
 
 		/* Offset to PCMBAR */
 		pa -= chip->dma_buf_addr;
@@ -1243,10 +1245,9 @@ static void snd_es1968_capture_setup(es1968_t *chip, esschan_t *es,
 		apu_set_register(chip, apu, 5, pa & 0xFFFF);
 		apu_set_register(chip, apu, 6, (pa + bsize) & 0xFFFF);
 		apu_set_register(chip, apu, 7, bsize);
-#if 1
+#if 0
 		if (es->fmt & ESS_FMT_STEREO) /* ??? really ??? */
-			apu_set_register(chip, es->apu[channel], 7,
-					 bsize - 1);
+			apu_set_register(chip, apu, 7, bsize - 1);
 #endif
 
 		/* clear effects/env.. */
@@ -1429,7 +1430,7 @@ static int calc_available_memory_size(es1968_t *chip)
 	}
 	up(&chip->memory_mutex);
 	if (max_size >= 128*1024)
-		max_size = 128*1024 - 2;
+		max_size = 127*1024;
 	return max_size;
 }
 
@@ -1512,7 +1513,7 @@ snd_es1968_init_dmabuf(es1968_t *chip)
 	esm_memory_t *chunk;
 	chip->dma_buf = snd_malloc_pci_pages_fallback(chip->pci, chip->total_bufsize,
 						      &chip->dma_buf_addr, &chip->dma_buf_size);
-	//snd_printd("es1968: allocated buffer size %ld\n", chip->dma_buf_size);
+	//snd_printd("es1968: allocated buffer size %ld at %p\n", chip->dma_buf_size, chip->dma_buf);
 	if (chip->dma_buf == NULL) {
 		snd_printk("es1968: can't allocate dma pages for size %d\n",
 			   chip->total_bufsize);
@@ -1861,7 +1862,7 @@ static void __devinit es1968_measure_clock(es1968_t *chip)
 		offset = (offset / t) * 1000 + ((offset % t) * 1000) / t;
 		if (offset < 47500 || offset > 48500)
 			chip->clock = (chip->clock * offset) / 48000;
-		snd_printd("setting clock to %d\n", chip->clock);
+		printk(KERN_INFO "es1968: clocking to %d\n", chip->clock);
 	}
 	snd_es1968_free_memory(chip, memory);
 	snd_es1968_free_apu_pair(chip, apu);
@@ -2762,7 +2763,8 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 	}
 
 	chip->clock = snd_clock[dev];
-	es1968_measure_clock(chip);
+	if (! chip->clock)
+		es1968_measure_clock(chip);
 
 	sprintf(card->longname, "%s at 0x%lx, irq %i",
 		card->shortname, chip->io_port, chip->irq);
