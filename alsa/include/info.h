@@ -46,26 +46,26 @@ struct snd_info_entry;
 struct snd_info_entry_text {
 	unsigned long read_size;
 	unsigned long write_size;
-	void (*read) (snd_info_buffer_t * buffer, void *private_data);
-	void (*write) (snd_info_buffer_t * buffer, void *private_data);
+	void (*read) (snd_info_entry_t *entry, snd_info_buffer_t * buffer);
+	void (*write) (snd_info_entry_t *entry, snd_info_buffer_t * buffer);
 };
 
 struct snd_info_entry_ops {
-	int (*open) (void *private_data, snd_info_entry_t * entry,
+	int (*open) (snd_info_entry_t *entry,
 		     unsigned short mode, void **file_private_data);
-	int (*release) (void *private_data, snd_info_entry_t * entry,
+	int (*release) (snd_info_entry_t * entry,
 			unsigned short mode, void *file_private_data);
-	long (*read) (void *private_data, void *file_private_data,
+	long (*read) (snd_info_entry_t *entry, void *file_private_data,
 		      struct file * file, char *buf, long count);
-	long (*write) (void *private_data, void *file_private_data,
+	long (*write) (snd_info_entry_t *entry, void *file_private_data,
 		       struct file * file, const char *buf, long count);
-	long long (*llseek) (void *private_data, void *file_private_data,
+	long long (*llseek) (snd_info_entry_t *entry, void *file_private_data,
 			    struct file * file, long long offset, int orig);
-	unsigned int (*poll) (void *private_data, void *file_private_data,
+	unsigned int (*poll) (snd_info_entry_t *entry, void *file_private_data,
 			      struct file * file, poll_table * wait);
-	int (*ioctl) (void *private_data, void *file_private_data,
+	int (*ioctl) (snd_info_entry_t *entry, void *file_private_data,
 		      struct file * file, unsigned int cmd, unsigned long arg);
-	int (*mmap) (void *private_data, void *file_private_data,
+	int (*mmap) (snd_info_entry_t *entry, void *file_private_data,
 		     struct inode * inode, struct file * file,
 		     struct vm_area_struct * vma);
 };
