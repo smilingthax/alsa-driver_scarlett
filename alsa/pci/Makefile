@@ -19,6 +19,11 @@ snd-intel8x0m-objs := intel8x0m.o
 obj-$(CONFIG_SND_BT87X) += snd-bt87x.o
 obj-$(CONFIG_SND_INTEL8X0M) += snd-intel8x0m.o
 
+# Hack for FM801 && TEA575x
+ifeq (m,$(CONFIG_SND_FM801))
+EXTRA_CFLAGS += -DCONFIG_SND_FM801_TEA575X
+endif
+
 #
 #
 #

@@ -5,7 +5,16 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-export-objs += ak4xxx-adda.o ak4117.o
+# Hack for FM801 && TEA575x
+ifeq (y,$(CONFIG_VIDEO_DEV))
+ifeq (m,$(CONFIG_SND_FM801))
+EXTRA_CFLAGS += -DCONFIG_SND_FM801_TEA575X
+CONFIG_SND_FM801_TEA575X=m
+endif
+endif
+
+
+export-objs += ak4xxx-adda.o ak4117.o tea575x-tuner.o
 
 snd-ak4117-objs := ak4117.o
 
