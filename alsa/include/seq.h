@@ -24,22 +24,23 @@
 #include <linux/ioctl.h>
 
 /* version of the sequencer */
-#define SND_SEQ_VERSION SND_PROTOCOL_VERSION (0, 0, 0 )
+#define SND_SEQ_VERSION SND_PROTOCOL_VERSION (0, 0, 1)
 
 
 /* maximum number of events dequeued per schedule interval */
-#define SND_SEQ_MAX_DEQUEUE	20
+#define SND_SEQ_MAX_DEQUEUE	50
 
 /* max length of a client name */
 #define SND_SEQ_MAX_CLIENT_NAME		32
 
-#define SND_SEQ_MAX_PORT_NAME	16
+/* max length of a port name */
+#define SND_SEQ_MAX_PORT_NAME	32
 
 /* maximum number of queues */
 #define SND_SEQ_MAX_QUEUES 4
 
 /* max number of concurrent clients */
-#define SND_SEQ_MAX_CLIENTS 		16
+#define SND_SEQ_MAX_CLIENTS 	64
 
 
 
@@ -105,7 +106,7 @@ typedef struct {
 #define SND_SEQ_ADDRESS_BROADCAST	255	/* send event to all queues/clients/ports/channels */
 
 
-	/* event mode flag */
+	/* event mode flag - NOTE: only 8 bits available! */
 #define SND_SEQ_TIME_STAMP_TICK	(0<<0) /* timestamp in clock ticks */
 #define SND_SEQ_TIME_STAMP_REAL	(1<<0) /* timestamp in real time */
 #define SND_SEQ_TIME_STAMP_MASK	(1<<0)
@@ -199,7 +200,7 @@ typedef struct {
 } snd_seq_client_info_t;
 
 
-	/* port capabilities */
+	/* port capabilities (32 bits) */
 #define SND_SEQ_PORT_CAP_MIDI_IN	(1<<0)
 #define SND_SEQ_PORT_CAP_MIDI_OUT	(1<<1)
 
@@ -207,9 +208,10 @@ typedef struct {
 #define SND_SEQ_PORT_CAP_SYNC_OUT	(1<<3)
 
 #define SND_SEQ_PORT_CAP_SUBSCRIPTION	(1<<4)
+#define SND_SEQ_PORT_CAP_USE            (1<<5)
 
 
-	/* port type */
+	/* port type 	FIXME: needs some betting scheme */
 #define SND_SEQ_PORT_TYPE_MIDI_GENERIC	(1<<0)	/* generic MIDI device */ 
 #define SND_SEQ_PORT_TYPE_MIDI_GM	(1<<1)	/* General MIDI compatible device */
 #define SND_SEQ_PORT_TYPE_MIDI_GS	(1<<2)	/* GS compatible device */
@@ -221,6 +223,27 @@ typedef struct {
 #define SND_SEQ_PORT_TYPE_APPLICATION	(1<<20)	/* application (sequencer/editor) */
 
 
+	/* perhaps add a device ID for a certain port, and let a userland db
+        provide details on the device capabilites (eg. available
+        controllers, patches etc., ways to program the device.) This is sort
+        of similar to the ID codes we see for PCI devices. */
+    
+/* port id's */
+#ifdef 0
+#define SND_SEQ_PORT_TYPE_BASE		(0<<30)
+#define SND_SEQ_PORT_TYPE_SYS_TIMER	1	/* ALSA Sequencer timer */
+#define SND_SEQ_PORT_TYPE_SYS_ANNOUNCE	2	/* ALSA System announcements */
+
+
+#define SND_SEQ_PORT_TYPE_APPLICATION
+#define SND_SEQ_PORT_TYPE_APPLICATION	1000	/* Generic application */
+
+#define SND_SEQ_PORT_TYPE_DEVICE	(1<<30)
+#define SND_SEQ_PORT_TYPE_DEVICE_MIDI		1 /* Generic MIDI */
+#define SND_SEQ_PORT_TYPE_DEVICE_GUS_SYNTH 	2
+#endif
+
+
 typedef struct {
 	int client;				/* client number */
 	int port;				/* port number */
@@ -230,6 +253,16 @@ typedef struct {
 	unsigned int port_type;			/* port type bits */
 			
 } snd_seq_port_info_t;
+
+
+typedef struct {
+	int client;				/* client number */
+	int port;				/* port number */
+	
+	/* FIXME:	... read/write mode */
+	/* FIXME:	... exclusive y/n */
+			
+} snd_seq_port_use_t;
 
 
 
@@ -265,17 +298,6 @@ typedef struct {
 	/*...*/
 } snd_seq_client_callback_t;
 
-/* interface for kernel client */
-extern int snd_seq_register_kernel_client(snd_seq_client_callback_t *callback, void *private_data);
-extern int snd_seq_unregister_kernel_client(int client);
-extern int snd_seq_kernel_client_enqueue(int client, snd_seq_event_t *ev);
-extern int snd_seq_kernel_client_dispatch(int client, snd_seq_event_t *ev);
-extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg );
-
-/* allocation and releasing of external data (sysex etc.) */
-extern void *snd_seq_ext_malloc(unsigned long size);
-extern void snd_seq_ext_free(void *obj, unsigned long size);
-
 
 typedef struct {
 	snd_seq_addr_t	sender;	/* sender address */
@@ -288,18 +310,33 @@ typedef struct {
 #define SND_SEQ_IOCTL_VERSION           _IOR ( 'S', 0x00, int )
 #define SND_SEQ_IOCTL_CLIENT_ID		_IOR ( 'S', 0x01, int ) 
 
-#define SND_SEQ_IOCTL_SET_CLIENT_NAME	_IOW ( 'S', 0x02, char *) 
-
-#define SND_SEQ_IOCTL_CREATE_PORT	_IOWR( 'S', 0x05, snd_seq_port_info_t )
-#define SND_SEQ_IOCTL_GET_PORT_INFO	_IOWR( 'S', 0x06, snd_seq_port_info_t )
-#define SND_SEQ_IOCTL_SET_PORT_INFO	_IOWR( 'S', 0x07, snd_seq_port_info_t )
-#define SND_SEQ_IOCTL_SUBSCRIBE_PORT	_IOWR( 'S', 0x08, snd_seq_port_subscribe_t )
-#define SND_SEQ_IOCTL_UNSUBSCRIBE_PORT	_IOWR( 'S', 0x09, snd_seq_port_subscribe_t )
-
-#define SND_SEQ_IOCTL_GET_QUEUE_INFO	_IOWR( 'S', 0x0a, snd_seq_queue_info_t )
-#define SND_SEQ_IOCTL_SET_QUEUE_INFO	_IOWR( 'S', 0x0b, snd_seq_queue_info_t )
-
 #define SND_SEQ_IOCTL_GET_CLIENT_INFO	_IOWR( 'S', 0x10, snd_seq_client_info_t )
+#define SND_SEQ_IOCTL_SET_CLIENT_INFO	_IOWR( 'S', 0x11, snd_seq_client_info_t )
 
+#define SND_SEQ_IOCTL_CREATE_PORT	_IOWR( 'S', 0x20, snd_seq_port_info_t )
+#define SND_SEQ_IOCTL_DELETE_PORT	_IOWR( 'S', 0x21, snd_seq_port_info_t )
+#define SND_SEQ_IOCTL_GET_PORT_INFO	_IOWR( 'S', 0x22, snd_seq_port_info_t )
+#define SND_SEQ_IOCTL_SET_PORT_INFO	_IOWR( 'S', 0x23, snd_seq_port_info_t )
+
+#define SND_SEQ_IOCTL_SUBSCRIBE_PORT	_IOWR( 'S', 0x30, snd_seq_port_subscribe_t )
+#define SND_SEQ_IOCTL_UNSUBSCRIBE_PORT	_IOWR( 'S', 0x31, snd_seq_port_subscribe_t )
+#define SND_SEQ_IOCTL_USE_PORT		_IOWR( 'S', 0x32, snd_seq_port_use_t )
+#define SND_SEQ_IOCTL_UNUSE_PORT	_IOWR( 'S', 0x33, snd_seq_port_use_t )
+
+#define SND_SEQ_IOCTL_GET_QUEUE_INFO	_IOWR( 'S', 0x40, snd_seq_queue_info_t )
+#define SND_SEQ_IOCTL_SET_QUEUE_INFO	_IOWR( 'S', 0x41, snd_seq_queue_info_t )
+
+
+
+/* interface for kernel client */
+extern int snd_seq_register_kernel_client(snd_seq_client_callback_t *callback, void *private_data);
+extern int snd_seq_unregister_kernel_client(int client);
+extern int snd_seq_kernel_client_enqueue(int client, snd_seq_event_t *ev);
+extern int snd_seq_kernel_client_dispatch(int client, snd_seq_event_t *ev);
+extern int snd_seq_kernel_client_ctl(int client, unsigned int cmd, void *arg );
+
+/* allocation and releasing of external data (sysex etc.) */
+extern void *snd_seq_ext_malloc(unsigned long size);
+extern void snd_seq_ext_free(void *obj, unsigned long size);
 
 #endif
