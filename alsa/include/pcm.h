@@ -27,6 +27,7 @@
 #endif
 
 typedef struct snd_stru_pcm_file snd_pcm_file_t;
+typedef struct snd_stru_pcm_runtime snd_pcm_runtime_t;
 typedef struct snd_stru_pcm_subchn snd_pcm_subchn_t;
 typedef struct snd_stru_pcm_channel snd_pcm_channel_t;
 
@@ -104,7 +105,7 @@ struct snd_stru_pcm_file {
 	void (*private_free)(void *private_data);
 };
 
-typedef struct snd_stru_pcm_runtime {
+struct snd_stru_pcm_runtime {
 	int mode;			/* channel mode */
 	volatile int *status;		/* channel status */
 	int _sstatus;			/* static status location */
@@ -178,7 +179,7 @@ typedef struct snd_stru_pcm_runtime {
 	/* -- OSS things -- */
 	snd_pcm_oss_runtime_t oss;
 #endif
-} snd_pcm_runtime_t;
+};
 
 struct snd_stru_pcm_subchn {
 	snd_pcm_t *pcm;
@@ -360,15 +361,5 @@ extern void snd_pcm_proc_write(snd_pcm_subchn_t * subchn, unsigned int pos,
 			       const void *buffer, long count, int kernel);
 extern void snd_pcm_proc_write_silence(snd_pcm_subchn_t * subchn,
 				       unsigned int pos, long count);
-
-#ifdef CONFIG_SND_OSSEMUL
-extern int snd_pcm_plugin_format(snd_pcm_runtime_t *runtime, 
-				 snd_pcm_channel_params_t *params, 
-				 snd_pcm_channel_params_t *hwparams,
-				 snd_pcm_channel_info_t *hwinfo);
-ssize_t snd_pcm_plugin_transfer_size(snd_pcm_runtime_t *runtime, int channel, size_t drv_size);
-ssize_t snd_pcm_plugin_hardware_size(snd_pcm_runtime_t *runtime, int channel, size_t trf_size);
-int snd_pcm_oss_plugin_append(snd_pcm_runtime_t *runtime, snd_pcm_plugin_t *plugin);
-#endif
 
 #endif				/* __PCM_H */
