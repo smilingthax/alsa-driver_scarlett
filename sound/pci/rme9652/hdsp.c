@@ -2717,7 +2717,7 @@ static int snd_hdsp_playback_open(snd_pcm_substream_t *substream)
 			     SNDRV_PCM_HW_PARAM_CHANNELS, -1);
 
 	hdsp->creg_spdif_stream = hdsp->creg_spdif;
-	hdsp->spdif_ctl->access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+	hdsp->spdif_ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 	snd_ctl_notify(hdsp->card, SNDRV_CTL_EVENT_MASK_VALUE |
 		       SNDRV_CTL_EVENT_MASK_INFO, &hdsp->spdif_ctl->id);
 	return 0;
@@ -2735,7 +2735,7 @@ static int snd_hdsp_playback_release(snd_pcm_substream_t *substream)
 
 	spin_unlock_irqrestore(&hdsp->lock, flags);
 
-	hdsp->spdif_ctl->access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+	hdsp->spdif_ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 	snd_ctl_notify(hdsp->card, SNDRV_CTL_EVENT_MASK_VALUE |
 		       SNDRV_CTL_EVENT_MASK_INFO, &hdsp->spdif_ctl->id);
 	return 0;
