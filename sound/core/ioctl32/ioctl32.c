@@ -359,9 +359,9 @@ static int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsign
 		err = -EFAULT;
       __end:
       	if (data32)
-      		free(data32);
+      		kfree(data32);
 	if (data)
-		free(data);
+		kfree(data);
 	return err;
 }
 

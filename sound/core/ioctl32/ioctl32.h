@@ -111,9 +111,9 @@ static int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigned long 
 	}\
       __end:\
       	if (data)\
-      		free(data);\
+      		kfree(data);\
       	if (data32)\
-      		free(data32);\
+      		kfree(data32);\
 	return err;\
 }
 

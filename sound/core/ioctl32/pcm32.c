@@ -285,7 +285,7 @@ static int _snd_ioctl32_xfern(unsigned int fd, unsigned int cmd, unsigned long a
 		if (put_user(err, &srcptr->result))
 			err = -EFAULT;
 	}
-	free(bufs);
+	kfree(bufs);
 	return 0;
 }
 
@@ -375,9 +375,9 @@ static int _snd_ioctl32_pcm_hw_params_old(unsigned int fd, unsigned int cmd, uns
 		err = -EFAULT;
       __end:
       	if (data)
-      		free(data);
+      		kfree(data);
       	if (data32)
-      		free(data32);
+      		kfree(data32);
 	return err;
 }
 
