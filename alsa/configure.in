@@ -178,19 +178,19 @@ fi
 c_opts=""
 case "$processor" in
   i386)
-    c_opts="-m386"
+    c_opts="-m386 -DCPU=386"
     AC_MSG_RESULT(i386)    
     ;;
   i486)
-    c_opts="-m486"
+    c_opts="-m486 -DCPU=486"
     AC_MSG_RESULT(i486)    
     ;;
   i586)
-    c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2"
+    c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=586"
     AC_MSG_RESULT(i586)    
     ;;
   i686)
-    c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2"
+    c_opts="-m486 -malign-loops=2 -malign-jumps=2 -malign-functions=2 -DCPU=686"
     AC_MSG_RESULT(i686)    
     ;;
   alpha|Alpha)
