@@ -49,10 +49,6 @@ typedef struct _snd_i2c_bit_ops {
 } snd_i2c_bit_ops_t;
 
 typedef struct _snd_i2c_ops {
-	union {
-		snd_i2c_bit_ops_t *bit_ops;
-		void *hw_ops;
-	} hw;
 	int (*sendbytes)(snd_i2c_device_t *device, unsigned char *bytes, int count);
 	int (*readbytes)(snd_i2c_device_t *device, unsigned char *bytes, int count);
 	int (*probeaddr)(snd_i2c_bus_t *bus, unsigned short addr);
@@ -69,7 +65,11 @@ struct _snd_i2c_bus {
 
 	struct list_head devices; /* attached devices to this bus */
 
-	snd_i2c_ops_t *ops;	/* hardware operations */
+	union {
+		snd_i2c_bit_ops_t *bit;
+		void *ops;
+	} hw_ops;		/* lowlevel operations */
+	snd_i2c_ops_t *ops;	/* midlevel operations */
 
 	unsigned long private_value;
 	void *private_data;
