@@ -1,0 +1,6 @@
+#
+# Extra dependencies
+#
+
+%dir linux/sound/pci/pdplus
+|snd-pdplus snd-pcm

@@ -233,8 +233,8 @@
 
 /*
  * Include the FPGA circuits.  One for digital, one for ADAT */
-#include "card-pdplus-pga-a.c"
-#include "card-pdplus-pga-d.c"
+#include "pdplus-pga-a.c"
+#include "pdplus-pga-d.c"
 
 /* ********************************************************************** */
 

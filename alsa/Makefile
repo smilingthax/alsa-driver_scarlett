@@ -64,14 +64,14 @@ include/sound/version.h: include/sound include/version.h
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h
 	gcc -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
 
-toplevel.config.in: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep
-	utils/mod-deps --makeconf alsa-kernel/scripts/Modules.dep > toplevel.config.in
+toplevel.config.in: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --makeconf > toplevel.config.in
 
-acinclude.m4: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep
-	utils/mod-deps --acinclude alsa-kernel/scripts/Modules.dep > acinclude.m4
+acinclude.m4: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --acinclude > acinclude.m4
 
-include/config1.h.in: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep
-	utils/mod-deps --include alsa-kernel/scripts/Modules.dep > include/config1.h.in
+include/config1.h.in: alsa-kernel utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
+	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
 
