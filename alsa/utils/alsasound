@@ -78,10 +78,12 @@ function start() {
     grep -E "^[[:space:]]*alias[[:space:]]+snd-card-[[:digit:]]" | \
     awk '{print $3}'`
   for i in $drivers; do
+    if [ "$i" != off ]; then
       echo -n "Starting sound driver: $i "
       /sbin/modprobe $i
       echo -e "$rc_done"
-    done
+    fi
+  done
   #
   # insert sequencer modules
   #
