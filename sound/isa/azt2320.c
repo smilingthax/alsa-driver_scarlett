@@ -36,6 +36,11 @@
 #include <linux/init.h>
 #include <linux/time.h>
 #include <linux/wait.h>
+#ifndef LINUX_ISAPNP_H
+#include <linux/isapnp.h>
+#define isapnp_card pci_bus
+#define isapnp_dev pci_dev
+#endif
 #include <sound/core.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>

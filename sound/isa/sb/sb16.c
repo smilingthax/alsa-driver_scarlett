@@ -23,6 +23,11 @@
 #include <asm/dma.h>
 #include <linux/init.h>
 #include <linux/slab.h>
+#ifndef LINUX_ISAPNP_H
+#include <linux/isapnp.h>
+#define isapnp_card pci_bus
+#define isapnp_dev pci_dev
+#endif
 #include <sound/core.h>
 #include <sound/sb.h>
 #include <sound/sb16_csp.h>

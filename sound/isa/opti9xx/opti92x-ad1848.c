@@ -22,12 +22,18 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
+
 #include <sound/driver.h>
 #include <asm/io.h>
 #include <asm/dma.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/slab.h>
+#ifndef LINUX_ISAPNP_H
+#include <linux/isapnp.h>
+#define isapnp_card pci_bus
+#define isapnp_dev pci_dev
+#endif
 #include <sound/core.h>
 #ifdef CS4231
 #include <sound/cs4231.h>
