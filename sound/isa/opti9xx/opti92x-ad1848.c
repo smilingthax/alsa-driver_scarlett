@@ -2202,6 +2202,9 @@ static int __init alsa_card_opti9xx_init(void)
 
 	cards = pnp_register_card_driver(&opti9xx_pnpc_driver);
 	if (cards == 0 && (error = snd_card_opti9xx_probe(NULL, NULL)) < 0) {
+#ifdef CONFIG_PNP
+		pnp_unregister_card_driver(&opti9xx_pnpc_driver);
+#endif
 #ifdef MODULE
 #ifdef OPTi93X
 		printk(KERN_ERR "no OPTi 82C93x soundcard found\n");
