@@ -1832,16 +1832,19 @@ static int snd_ice1712_pro_rate_locking_info(snd_kcontrol_t *kcontrol, snd_ctl_e
 
 static int snd_ice1712_pro_rate_locking_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	ucontrol->value.integer.value[0] = PRO_RATE_LOCKED ? 1 : 0;
+	ucontrol->value.integer.value[0] = PRO_RATE_LOCKED;
 	return 0;
 }
 
 static int snd_ice1712_pro_rate_locking_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	int change = 0;
+	int change = 0, nval;
 
-	change = PRO_RATE_LOCKED ? 1 : 0 != ucontrol->value.integer.value[0] ? 1 : 0;
-	PRO_RATE_LOCKED = ucontrol->value.integer.value[0] ? 1 : 0;
+	nval = ucontrol->value.integer.value[0] ? 1 : 0;
+	spin_lock_irq(&ice->reg_lock);
+	change = PRO_RATE_LOCKED != nval;
+	PRO_RATE_LOCKED = nval;
+	spin_unlock_irq(&ice->reg_lock);
 	return change;
 }
 
@@ -1864,16 +1867,19 @@ static int snd_ice1712_pro_rate_reset_info(snd_kcontrol_t *kcontrol, snd_ctl_ele
 
 static int snd_ice1712_pro_rate_reset_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	ucontrol->value.integer.value[0] = PRO_RATE_RESET ? 1 : 0;
+	ucontrol->value.integer.value[0] = PRO_RATE_RESET;
 	return 0;
 }
 
 static int snd_ice1712_pro_rate_reset_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	int change = 0;
+	int change = 0, nval;
 
-	change = PRO_RATE_LOCKED ? 1 : 0 != ucontrol->value.integer.value[0] ? 1 : 0;
-	PRO_RATE_RESET = ucontrol->value.integer.value[0] ? 1 : 0;
+	nval = ucontrol->value.integer.value[0] ? 1 : 0;
+	spin_lock_irq(&ice->reg_lock);
+	change = PRO_RATE_RESET != nval;
+	PRO_RATE_RESET = nval;
+	spin_unlock_irq(&ice->reg_lock);
 	return change;
 }
 
