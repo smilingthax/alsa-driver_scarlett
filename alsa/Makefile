@@ -177,8 +177,8 @@ install-scripts:
 
 .PHONY: check-snd-prefix
 check-snd-prefix:
-	@ if [ x"$(DESTDIR)" = x ]; then \
-	  if /sbin/modprobe -c | grep -s -q snd_; then \
+	@ if [ x"$(DESTDIR)" = x -a -f /etc/modules.conf ]; then \
+	  if grep -s -q snd_ /etc/modules.conf; then \
 	    echo;\
 	    echo "             ===== WARNING =====";\
 	    echo;\
