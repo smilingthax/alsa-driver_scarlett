@@ -38,6 +38,16 @@
 #define EMU8000_RAM_WRITE  1
 #define EMU8000_RAM_CLOSE  2
 
+enum {
+	EMU8000_CONTROL_BASS = 0,
+	EMU8000_CONTROL_TREBLE,
+	EMU8000_CONTROL_CHORUS_MODE,
+	EMU8000_CONTROL_REVERB_MODE,
+	EMU8000_CONTROL_FM_CHORUS_DEPTH,
+	EMU8000_CONTROL_FM_REVERB_DEPTH,
+	EMU8000_NUM_CONTROLS,
+};
+
 /*
  * Structure to hold all state information for the emu8000 driver.
  *
@@ -49,7 +59,12 @@ typedef struct snd_emu8000 {
 
 	snd_emux_t *emu;
 
-	int mem_size;
+	int index;		/* sequencer client index */
+	int seq_ports;		/* number of sequencer ports */
+	int fm_chorus_depth;	/* FM OPL3 chorus depth */
+	int fm_reverb_depth;	/* FM OPL3 reverb depth */
+
+	int mem_size;		/* memory size */
 	unsigned long port1;	/* Port usually base+0 */
 	unsigned long port2;	/* Port usually at base+0x400 */
 	unsigned long port3;	/* Port usually at base+0x800 */
@@ -68,19 +83,33 @@ typedef struct snd_emu8000 {
 	snd_util_memhdr_t *memhdr;
 
 	spinlock_t control_lock;
-	snd_kcontrol_t * control_bass;
-	snd_kcontrol_t * control_treble;
+	snd_kcontrol_t *controls[EMU8000_NUM_CONTROLS];
 
 } emu8000_t;
 
 /* sequencer device id */
 #define SND_SEQ_DEV_ID_EMU8000	"synth-emu8000"
 
-/* argument for snd_seq_device_new */
-typedef struct emu8000_arg {
-	unsigned long port;	/* base i/o port */
-	int index;		/* sequencer client index */
-	int seq_ports;		/* number of sequencer ports to be created */
-} emu8000_arg_t;
+
+/* exported functions */
+int snd_emu8000_new(snd_card_t *card, int device, long port, int seq_ports, snd_seq_device_t **ret);
+void snd_emu8000_poke(emu8000_t *emu, unsigned int port, unsigned int reg,
+		      unsigned int val);
+unsigned short snd_emu8000_peek(emu8000_t *emu, unsigned int port,
+				unsigned int reg);
+void snd_emu8000_poke_dw(emu8000_t *emu, unsigned int port, unsigned int reg,
+			 unsigned int val);
+unsigned int snd_emu8000_peek_dw(emu8000_t *emu, unsigned int port,
+				 unsigned int reg);
+void snd_emu8000_dma_chan(emu8000_t *emu, int ch, int mode);
+
+void snd_emu8000_init_fm(emu8000_t *emu);
+
+void snd_emu8000_update_chorus_mode(emu8000_t *emu);
+void snd_emu8000_update_reverb_mode(emu8000_t *emu);
+void snd_emu8000_update_equalizer(emu8000_t *emu);
+int snd_emu8000_load_chorus_fx(emu8000_t *emu, int mode, const void *buf, long len);
+int snd_emu8000_load_reverb_fx(emu8000_t *emu, int mode, const void *buf, long len);
+
 
 #endif

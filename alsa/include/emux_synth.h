@@ -59,15 +59,15 @@ typedef struct snd_emux_operators {
 	void (*free_voice)(snd_emux_voice_t *vp);
 	void (*reset)(snd_emux_t *emu, int ch);
 	/* the first parameters are snd_emux_t */
-	void (*use_inc)(void *emu);
-	void (*use_dec)(void *emu);
-	int (*sample_new)(void *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr, const void *data, long count);
-	int (*sample_free)(void *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr);
-	void (*sample_reset)(void *emu);
-	int (*load_fx)(void *emu, int type, int arg, const void *data, long count);
-	void (*sysex)(void *emu, char *buf, int len, int parsed, snd_midi_channel_set_t *chset);
+	void (*use_inc)(snd_emux_t *emu);
+	void (*use_dec)(snd_emux_t *emu);
+	int (*sample_new)(snd_emux_t *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr, const void *data, long count);
+	int (*sample_free)(snd_emux_t *emu, snd_sf_sample_t *sp, snd_util_memhdr_t *hdr);
+	void (*sample_reset)(snd_emux_t *emu);
+	int (*load_fx)(snd_emux_t *emu, int type, int arg, const void *data, long count);
+	void (*sysex)(snd_emux_t *emu, char *buf, int len, int parsed, snd_midi_channel_set_t *chset);
 #ifdef CONFIG_SND_OSSEMUL
-	int (*oss_ioctl)(void *emu, int cmd, int p1, int p2);
+	int (*oss_ioctl)(snd_emux_t *emu, int cmd, int p1, int p2);
 #endif
 } snd_emux_operators_t;
 
