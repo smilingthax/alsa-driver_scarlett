@@ -495,7 +495,7 @@ struct snd_mixer_element_io_info {
 /*
  *  PCM CAPTURE/PLAYBACK - read only
  *
- *    The element controls an capture endpoint.
+ *    The element controls a playback or capture endpoint.
  */
 
 struct snd_mixer_element_pcm_info {
