@@ -2163,8 +2163,10 @@ static int parse_audio_endpoints(snd_usb_audio_t *chip, int iface_no)
 		/* skip invalid one */
 		if ((altsd->bInterfaceClass != USB_CLASS_AUDIO &&
 		     altsd->bInterfaceClass != USB_CLASS_VENDOR_SPEC) ||
-		    altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING ||
-		    altsd->bNumEndpoints < 1)
+		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING &&
+		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
+		    altsd->bNumEndpoints < 1 ||
+		    get_endpoint(alts, 0)->wMaxPacketSize == 0)
 			continue;
 		/* must be isochronous */
 		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
