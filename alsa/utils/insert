@@ -178,6 +178,9 @@ case "$1" in
     insert snd-util-mem.o
     insert snd-emu10k1.o
     insert snd-card-emu10k1.o
+    insert snd-seq-virmidi.o
+    insert snd-synth-emux.o
+    insert snd-synth-emu10k1.o
     restore emu10k1.conf
     ;;
   sb8)
