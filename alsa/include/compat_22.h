@@ -55,7 +55,6 @@ static __inline__ void list_add_tail(struct list_head *new, struct list_head *he
 #define PCI_SET_DRIVER_DATA snd_pci_compat_set_driver_data
 
 #define pci_enable_device snd_pci_compat_enable_device
-#define pci_module_init snd_pci_compat_register_driver
 #define pci_register_driver snd_pci_compat_register_driver
 #define pci_unregister_driver snd_pci_compat_unregister_driver
 
@@ -104,6 +103,16 @@ int snd_pci_compat_enable_device(struct pci_dev *dev);
 int snd_pci_compat_find_capability(struct pci_dev *dev, int cap);
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev);
 void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data);
+
+static inline int pci_module_init(struct pci_driver *drv)
+{
+	int res = snd_pci_compat_register_driver(drv);
+	if (res < 0)
+		return res;
+	if (res == 0)
+		return -ENODEV;
+	return 0;
+}
 
 #endif /* CONFIG_PCI */
 
