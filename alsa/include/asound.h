@@ -846,13 +846,14 @@ typedef struct snd_mixer_element {
 #define SND_MIXER_CHNCAP_JOINTLY_MUTE	(1<<1)
 #define SND_MIXER_CHNCAP_RECORD		(1<<2)
 #define SND_MIXER_CHNCAP_JOINTLY_RECORD	(1<<3)
+#define SND_MIXER_CHNCAP_EXCL_RECORD	(1<<4)
 
 typedef struct snd_mixer_channel {
 	unsigned char name[32];		/* channel name */
 	unsigned int speakers;		/* bitmap of active speakers */	
 	unsigned int mute;		/* bitmap of muted speakers */
 	unsigned int caps;		/* capabilities */
-	int record_group;		/* record group (for jointly record source) */
+	int record_group;		/* record group (for exclusive record source) */
 	int min;			/* minimum value */
 	int max;			/* maximum value */
 	int front_left;			/* front left value */
