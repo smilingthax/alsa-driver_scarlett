@@ -76,7 +76,7 @@ dnl Check for modversions...
 AC_MSG_CHECKING(for kernel module symbol versions)
 modversion="0"
 AC_TRY_RUN([
-#include <linux/autoconf.h>
+#include "$SNDCFG_KERNELDIR/include/linux/autoconf.h"
 int main( void ) {
 #ifndef CONFIG_MODVERSIONS
   exit(1);
