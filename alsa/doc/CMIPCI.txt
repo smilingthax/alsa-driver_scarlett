@@ -102,8 +102,8 @@ below).
 
 Additionally there are relevant control switches:
 
-"IEC958 DAC To Out" - Mix all analog streams including PCM playback,
-	analog input loops, and FM-OPL/3, are output through SPDIF. 
+"IEC958 DAC To Out" - Mix analog PCM playback and FM-OPL/3 streams
+	and output through SPDIF.
 	Note: without this control you can output PCM to SPDIF.
 	This is "mixing" of streams, so e.g. it's not for AC3 output
 	(see the next section).
