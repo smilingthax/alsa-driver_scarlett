@@ -752,6 +752,7 @@ struct snd_stru_emu10k1 {
 	dma_addr_t silent_page_dmaaddr;
 	volatile unsigned int *ptb_pages;	/* page table pages */
 	dma_addr_t ptb_pages_dmaaddr;
+	unsigned long *ptb_shadow_pages;
 	snd_util_memhdr_t *memhdr;		/* page allocation list */
 	snd_util_memblk_t *reserved_page;	/* reserved page */
 
@@ -853,7 +854,7 @@ unsigned int snd_emu10k1_rate_to_pitch(unsigned int rate);
 unsigned char snd_emu10k1_sum_vol_attn(unsigned int value);
 
 /* memory allocation */
-snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, void *pages, unsigned long size);
+snd_util_memblk_t *snd_emu10k1_alloc_pages(emu10k1_t *emu, void *pages, dma_addr_t addr, unsigned long size);
 int snd_emu10k1_free_pages(emu10k1_t *emu, snd_util_memblk_t *blk);
 snd_util_memblk_t *snd_emu10k1_synth_alloc(emu10k1_t *emu, unsigned int size);
 int snd_emu10k1_synth_free(emu10k1_t *emu, snd_util_memblk_t *blk);
