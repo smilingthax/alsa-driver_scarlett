@@ -582,7 +582,7 @@ int snd_pcm_new_stream(snd_pcm_t *pcm, int stream, int substream_count)
 			snd_magic_kfree(substream);
 			return err;
 		}
-		substream->dma_type = SNDRV_PCM_DMA_TYPE_ISA;
+		substream->dma_type = SNDRV_PCM_DMA_TYPE_UNKNOWN;
 		substream->dma_private = NULL;
 		spin_lock_init(&substream->timer_lock);
 		prev = substream;
@@ -660,6 +660,7 @@ static int snd_pcm_free(snd_pcm_t *pcm)
 	snd_assert(pcm != NULL, return -ENXIO);
 	if (pcm->private_free)
 		pcm->private_free(pcm);
+	snd_pcm_lib_preallocate_free_for_all(pcm);
 	snd_pcm_free_stream(&pcm->streams[SNDRV_PCM_STREAM_PLAYBACK]);
 	snd_pcm_free_stream(&pcm->streams[SNDRV_PCM_STREAM_CAPTURE]);
 	snd_magic_kfree(pcm);
