@@ -50,8 +50,8 @@
 #include "isapnp.h"
 
 void *isapnp_alloc(long size);
-struct isapnp_card *isapnp_cards;
-struct isapnp_dev *isapnp_devices;
+extern struct isapnp_card *isapnp_cards;
+extern struct isapnp_dev *isapnp_devices;
 
 struct isapnp_info_buffer {
 	char *buffer;		/* pointer to begin of buffer */
