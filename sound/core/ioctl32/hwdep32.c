@@ -60,7 +60,7 @@ DEFINE_ALSA_IOCTL_ENTRY(hwdep_dsp_image, hwdep_dsp_image, SNDRV_HWDEP_IOCTL_DSP_
 
 enum {
 	SNDRV_HWDEP_IOCTL_DSP_LOAD32   = _IOW('H', 0x03, struct sndrv_hwdep_dsp_image32)
-}
+};
 
 struct ioctl32_mapper hwdep_mappers[] = {
 	MAP_COMPAT(SNDRV_HWDEP_IOCTL_PVERSION),
