@@ -25,7 +25,6 @@
 #include "pcm1.h"
 #include "mixer.h"
 #include "midi.h"
-#include "synth.h"
 #include "timer.h"
 
 #include <asm/addrspace.h>
