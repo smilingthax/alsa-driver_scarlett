@@ -18,18 +18,18 @@ typedef struct snd_stru_wavefront_midi snd_wavefront_midi_t;
 typedef struct snd_stru_wavefront_card snd_wavefront_card_t;
 typedef struct snd_stru_wavefront snd_wavefront_t;
 
-typedef enum { internal_mpu = 1, external_mpu = 2 } snd_wavefront_mpu_id;
+typedef enum { internal_mpu = 0, external_mpu = 1 } snd_wavefront_mpu_id;
 
 struct snd_stru_wavefront_midi {
         unsigned short           base;        /* I/O port address */
 	char                     isvirtual;   /* doing virtual MIDI stuff ? */
+	char			 istimer;     /* timer is used */
         snd_wavefront_mpu_id     output_mpu;  /* most-recently-used */
         snd_wavefront_mpu_id     input_mpu;   /* most-recently-used */
-        unsigned int             internal_mode;    /* MPU401_MODE_XXX */
-        unsigned int             external_mode;    /* MPU401_MODE_XXX */
+        unsigned int             mode[2];     /* MPU401_MODE_XXX */
+	snd_rawmidi_t		 *rmidi[2];
+	struct timer_list	 timer;
         spinlock_t               open;
-        spinlock_t               input;
-        spinlock_t               output;
         spinlock_t               virtual;     /* protects isvirtual */
 };
 

@@ -32,10 +32,8 @@
 
 #define SND_RAWMIDI_DEVICES	8
 
-#define SND_RAWMIDI_HW_POLL	0x00000001	/* polled mode */
-
 #define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
-#define SND_RAWMIDI_FLG_TIMER	0x00000002	/* polling timer armed */
+#define SND_RAWMIDI_FLG_FLUSH	0x00000002	/* flush */
 #define SND_RAWMIDI_FLG_OSS	0x80000000	/* OSS compatible mode */
 
 #define SND_RAWMIDI_LFLG_OUTPUT	0x00000001	/* open for output */
@@ -46,16 +44,11 @@
 typedef struct snd_stru_rawmidi_channel snd_rawmidi_channel_t;
 
 struct snd_stru_rawmidi_channel_hw {
-	unsigned int flags;	/* SND_RAWMIDI_HW_XXXX */
 	void *private_data;
 	void (*private_free) (void *private_data);
 	int (*open) (snd_rawmidi_t * rmidi);
 	int (*close) (snd_rawmidi_t * rmidi);
 	void (*trigger) (snd_rawmidi_t * rmidi, int up);
-	union {
-		void (*read) (snd_rawmidi_t * rmidi);
-		void (*write) (snd_rawmidi_t * rmidi);
-	} io;
 	void (*abort) (snd_rawmidi_t * rmidi);
 };
 
@@ -74,7 +67,6 @@ struct snd_stru_rawmidi_channel {
 	unsigned int xruns;	/* over/underruns counter */
 	/* misc */
 	unsigned int bytes;
-	struct timer_list timer;	/* poll timer */
 	spinlock_t lock;
 	wait_queue_head_t sleep;
 	/* event handler (room [output] or new bytes [input]) */
@@ -135,6 +127,7 @@ extern int snd_rawmidi_control_ioctl(snd_card_t * card,
 void snd_rawmidi_receive_reset(snd_rawmidi_t * rmidi);
 int snd_rawmidi_receive(snd_rawmidi_t * rmidi, char *buffer, int count);
 void snd_rawmidi_transmit_reset(snd_rawmidi_t * rmidi);
+int snd_rawmidi_transmit_empty(snd_rawmidi_t * rmidi);
 int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, char *buffer, int count);
 
 /* main midi functions */

@@ -123,6 +123,7 @@ struct snd_stru_sbdsp {
 	unsigned int mode8;		/* current mode of stream */
 	unsigned char speed8;		/* input speed */
 	unsigned char fmt8;		/* format */
+	struct timer_list midi_timer;
 	unsigned int p_dma_size;
 	unsigned int p_frag_size;
 	unsigned int c_dma_size;

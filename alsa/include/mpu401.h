@@ -41,10 +41,13 @@
 #define MPU401_MODE_OUTPUT		2
 #define MPU401_MODE_INPUT_TRIGGER	4
 #define MPU401_MODE_OUTPUT_TRIGGER	8
+#define MPU401_MODE_TIMER		16
 
 typedef struct snd_stru_mpu401 mpu401_t;
 
 struct snd_stru_mpu401 {
+	snd_rawmidi_t *rmidi;
+
 	unsigned short hardware;	/* MPU401_HW_XXXX */
 	unsigned short port;		/* base port of MPU-401 chip */
 	unsigned short irq;		/* IRQ number of MPU-401 chip */
@@ -60,6 +63,8 @@ struct snd_stru_mpu401 {
 	spinlock_t open_lock;
 	spinlock_t input_lock;
 	spinlock_t output_lock;
+
+	struct timer_list timer;
 };
 
 /* I/O ports */

@@ -49,9 +49,10 @@
 #define CREG 2
 
 //
-#define MTPAV_MODE_INPUT_OPENED  0x01
-#define MTPAV_MODE_OUTPUT_OPENED  0x02
-#define MTPAV_MODE_INPUT_TRIGGERED  0x04
+#define MTPAV_MODE_INPUT_OPENED		0x01
+#define MTPAV_MODE_OUTPUT_OPENED	0x02
+#define MTPAV_MODE_INPUT_TRIGGERED	0x04
+#define MTPAV_MODE_OUTPUT_TRIGGERED	0x08
 
 #if 0
 #define NUMPORTS 9		// TOALL and 1..8
@@ -88,12 +89,13 @@ typedef struct Smtp {
 	snd_irq_t *irq;
 	spinlock_t spinlock;
 	U8 mode[NUMPORTS];
+	int istimer;
+	struct timer_list timer;
 
 	U32 inmidiport;
 	U32 inmidistate;
 
 	U32 outmidiport;
-
 } TSmtp;
 
 typedef struct Smtp_rawmidi_privdata {
