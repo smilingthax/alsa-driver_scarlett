@@ -146,6 +146,9 @@
 #ifndef PCI_DEVICE_ID_DIGI96_8_PRO
 #define PCI_DEVICE_ID_DIGI96_8_PRO 0x3fc2
 #endif
+#ifndef PCI_DEVICE_ID_DIGI96_8_PAD_OR_PST
+#define PCI_DEVICE_ID_DIGI96_8_PAD_OR_PST 0x3fc3
+#endif
 
 /* this struct will have to be extended to support Digi96/8 PRO/PAD/PST */
 typedef struct snd_rme96 {
