@@ -42,7 +42,7 @@
 
 if [ -r /etc/rc.config ]; then
   . /etc/rc.config
-  rc_warning="\033[m33m\033[1m"
+  rc_warning="\033[33m\033[1m"
 else
   rc_done="done"
   rc_warning=""
