@@ -967,6 +967,10 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define FXBUS_PCM_RIGHT_REAR	0x03
 #define FXBUS_MIDI_LEFT		0x04
 #define FXBUS_MIDI_RIGHT	0x05
+#define FXBUS_PCM_CENTER	0x06
+#define FXBUS_PCM_LFE		0x07
+#define FXBUS_PCM_RAW_SPDIF_L	0x08
+#define FXBUS_PCM_RAW_SPDIF_R	0x09
 #define FXBUS_MIDI_REVERB	0x0c
 #define FXBUS_MIDI_CHORUS	0x0d
 
@@ -1031,6 +1035,7 @@ typedef struct {
 #define EMU10K1_GPR_TRANSLATION_TABLE100	1
 #define EMU10K1_GRP_TRANSLATION_BASS		2
 #define EMU10K1_GRP_TRANSLATION_TREBLE		3
+#define EMU10K1_GPR_TRANSLATION_ONOFF		4
 
 typedef struct {
 	snd_ctl_elem_id_t id;		/* full control ID definition */
