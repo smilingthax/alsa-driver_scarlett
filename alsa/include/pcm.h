@@ -92,7 +92,7 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_SYNC		11
 
 #define SND_PCM_TRIGGER_STOP		0
-#define SND_PCM_TRIGGER_GO		1
+#define SND_PCM_TRIGGER_START		1
 #define SND_PCM_TRIGGER_PAUSE_PUSH	3
 #define SND_PCM_TRIGGER_PAUSE_RELEASE	4
 
@@ -105,14 +105,16 @@ struct snd_stru_pcm_file {
 };
 
 struct snd_stru_pcm_runtime {
-	int mode;			/* stream mode */
 	unsigned int dma_ok: 1,		/* DMA is set up */
 		time: 1,		/* Status has timestamp */
 		mmap: 1;		/* mmap requested */
 	snd_pcm_substream_t *trigger_master;
 	snd_timestamp_t trigger_time;	/* start timestamp */
 	int start_mode;
+	int ready_mode;
 	int xrun_mode;
+	int xrun_act;
+	int mmap_shape;
 
 	snd_pcm_format_t format;	/* format information */
 	unsigned int rate_master;
@@ -133,6 +135,8 @@ struct snd_stru_pcm_runtime {
 	size_t hw_ptr_interrupt;	/* Position at interrupt time*/
 	int interrupt_pending;
 	size_t min_align;		/* Min alignment for the format */
+	int xfer_mode;
+	size_t xfer_min;
 	size_t xfer_align;		/* True alignment used */
 	size_t avail_max;
 
@@ -145,11 +149,7 @@ struct snd_stru_pcm_runtime {
 	snd_pcm_digital_t digital;	/* digital format information */
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
 	size_t avail_min;		/* min available frames for wakeup */
-	size_t align;			/* Requested alignment */
 	unsigned int xrun_max;
-	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t fill_max;		/* maximum silence fill in frames */
-	size_t frame_fill;
 	size_t bits_per_frame;
 	size_t bits_per_sample;
 	size_t byte_align;
@@ -295,7 +295,7 @@ extern snd_minor_t snd_pcm_reg[2];
 
 extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
 extern int snd_pcm_prepare(snd_pcm_substream_t *substream);
-extern int snd_pcm_go(snd_pcm_substream_t *substream);
+extern int snd_pcm_start(snd_pcm_substream_t *substream);
 extern int snd_pcm_stop(snd_pcm_substream_t *substream, int status);
 extern int snd_pcm_kernel_playback_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
 extern int snd_pcm_kernel_capture_ioctl(snd_pcm_substream_t *substream, unsigned int cmd, void *arg);
@@ -428,13 +428,13 @@ extern int snd_pcm_playback_empty(snd_pcm_substream_t *substream);
 extern int snd_pcm_capture_empty(snd_pcm_substream_t *substream);
 extern void snd_pcm_transfer_done(snd_pcm_substream_t *substream);
 extern ssize_t snd_pcm_lib_write(snd_pcm_substream_t *substream,
-				 const char *buf, size_t count);
+				 const void *buf, size_t frames);
 extern ssize_t snd_pcm_lib_read(snd_pcm_substream_t *substream,
-				char *buf, size_t count);
+				void *buf, size_t frames);
 extern ssize_t snd_pcm_lib_writev(snd_pcm_substream_t *substream,
-				  const struct iovec *vector, unsigned long count);
+				  void **bufs, size_t frames);
 extern ssize_t snd_pcm_lib_readv(snd_pcm_substream_t *substream,
-				 const struct iovec *vector, unsigned long count);
+				 void **bufs, size_t frames);
 
 /*
  *  Timer interface

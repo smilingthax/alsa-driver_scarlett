@@ -26,16 +26,6 @@
 #define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
 #endif
 
-#define malloc(size) snd_kmalloc(size, GFP_KERNEL)
-#define calloc(n, size) snd_kcalloc((n) * (size), GFP_KERNEL)
-#define free(ptr) snd_kfree(ptr)
-#define strdup(str) snd_kmalloc_strdup(str, GFP_KERNEL)
-#define assert(expr) snd_debug_check(!(expr), return -EINVAL)
-
-#define bswap_16(x) swab16((x))
-#define bswap_32(x) swab32((x))
-#define bswap_64(x) swab64((x))
-
 typedef unsigned int bitset_t;
 
 static inline size_t bitset_size(int nbits)
@@ -45,7 +35,7 @@ static inline size_t bitset_size(int nbits)
 
 static inline bitset_t *bitset_alloc(int nbits)
 {
-	return calloc(bitset_size(nbits), sizeof(bitset_t));
+	return snd_kcalloc(bitset_size(nbits) * sizeof(bitset_t), GFP_KERNEL);
 }
 	
 static inline void bitset_set(bitset_t *bitmap, unsigned int pos)
@@ -119,10 +109,12 @@ typedef struct snd_stru_pcm_plugin_channel {
 } snd_pcm_plugin_channel_t;
 
 struct snd_stru_pcm_plugin {
-	char *name;			/* plug-in name */
+	const char *name;		/* plug-in name */
 	int stream;
 	snd_pcm_format_t src_format;	/* source format */
 	snd_pcm_format_t dst_format;	/* destination format */
+	int src_xfer_mode;
+	int dst_xfer_mode;
 	int src_width;			/* sample width in bits */
 	int dst_width;			/* sample width in bits */
 	ssize_t (*src_frames)(snd_pcm_plugin_t *plugin, size_t dst_frames);
@@ -175,6 +167,7 @@ typedef int route_ttable_entry_t;
 
 int snd_pcm_plugin_build_io(snd_pcm_plug_t *handle,
 			    snd_pcm_format_t *format,
+			    int xfer_mode,
 			    snd_pcm_plugin_t **r_plugin);
 int snd_pcm_plugin_build_linear(snd_pcm_plug_t *handle,
 				snd_pcm_format_t *src_format,
@@ -202,11 +195,11 @@ unsigned int snd_pcm_plug_formats(unsigned int formats);
 
 int snd_pcm_plug_format_plugins(snd_pcm_plug_t *substream,
 				snd_pcm_format_t *format,
-				snd_pcm_format_t *slave_format);
+				snd_pcm_format_t *slave_format,
+				int xfer_mode);
 
 int snd_pcm_plug_slave_format(snd_pcm_format_t *format,
-			      snd_pcm_info_t *slave_info,
-			      snd_pcm_params_info_t *slave_params_info,
+			      snd_pcm_params_info_t *slave_info,
 			      snd_pcm_format_t *slave_format);
 
 int snd_pcm_plugin_append(snd_pcm_plugin_t *plugin);
@@ -214,9 +207,6 @@ int snd_pcm_plugin_append(snd_pcm_plugin_t *plugin);
 ssize_t snd_pcm_plug_write_transfer(snd_pcm_plug_t *handle, snd_pcm_plugin_channel_t *src_channels, size_t size);
 ssize_t snd_pcm_plug_read_transfer(snd_pcm_plug_t *handle, snd_pcm_plugin_channel_t *dst_channels_final, size_t size);
 
-ssize_t snd_pcm_plug_client_channels_iovec(snd_pcm_plug_t *handle,
-					   const struct iovec *vector, unsigned long count,
-					   snd_pcm_plugin_channel_t **channels);
 ssize_t snd_pcm_plug_client_channels_buf(snd_pcm_plug_t *handle,
 					 char *buf, size_t count,
 					 snd_pcm_plugin_channel_t **channels);
@@ -228,20 +218,20 @@ ssize_t snd_pcm_plugin_client_channels(snd_pcm_plugin_t *plugin,
 int snd_pcm_area_silence(const snd_pcm_channel_area_t *dst_channel, size_t dst_offset,
 			 size_t samples, int format);
 int snd_pcm_areas_silence(const snd_pcm_channel_area_t *dst_channels, size_t dst_offset,
-			  size_t vcount, size_t frames, int format);
+			  size_t channels, size_t frames, int format);
 int snd_pcm_area_copy(const snd_pcm_channel_area_t *src_channel, size_t src_offset,
 		      const snd_pcm_channel_area_t *dst_channel, size_t dst_offset,
 		      size_t samples, int format);
 int snd_pcm_areas_copy(const snd_pcm_channel_area_t *src_channels, size_t src_offset,
 		       const snd_pcm_channel_area_t *dst_channels, size_t dst_offset,
-		       size_t vcount, size_t frames, int format);
+		       size_t channels, size_t frames, int format);
 
 void *snd_pcm_plug_buf_alloc(snd_pcm_plug_t *plug, size_t size);
 void snd_pcm_plug_buf_unlock(snd_pcm_plug_t *plug, void *ptr);
 ssize_t snd_pcm_oss_write3(snd_pcm_substream_t *substream, const char *ptr, size_t size, int in_kernel);
 ssize_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, size_t size, int in_kernel);
-ssize_t snd_pcm_oss_writev3(snd_pcm_substream_t *substream, const struct iovec *vector, int count, int in_kernel);
-ssize_t snd_pcm_oss_readv3(snd_pcm_substream_t *substream, const struct iovec *vector, int count, int in_kernel);
+ssize_t snd_pcm_oss_writev3(snd_pcm_substream_t *substream, void **bufs, size_t frames, int in_kernel);
+ssize_t snd_pcm_oss_readv3(snd_pcm_substream_t *substream, void **bufs, size_t frames, int in_kernel);
 
 
 
@@ -252,8 +242,8 @@ int copy_index(int format);
 int conv_index(int src_format, int dst_format);
 
 void zero_channel(snd_pcm_plugin_t *plugin,
-		const snd_pcm_plugin_channel_t *dst_channel,
-		size_t samples);
+		  const snd_pcm_plugin_channel_t *dst_channel,
+		  size_t samples);
 
 #ifdef PLUGIN_DEBUG
 #define pdprintf( args... ) printk( "plugin: " ##args)

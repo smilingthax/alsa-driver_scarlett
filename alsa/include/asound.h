@@ -174,6 +174,7 @@ typedef enum {
 #define SND_CONTROL_ACCESS_READ		(1<<0)
 #define SND_CONTROL_ACCESS_WRITE	(1<<1)
 #define SND_CONTROL_ACCESS_READWRITE	(SND_CONTROL_ACCESS_READ|SND_CONTROL_ACCESS_WRITE)
+#define SND_CONTROL_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without notification */
 #define SND_CONTROL_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
 #define SND_CONTROL_ACCESS_LOCK		(1<<9)	/* write lock */
 #define SND_CONTROL_ACCESS_INDIRECT	(1<<31)	/* indirect access */
@@ -380,10 +381,6 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_STREAM_PLAYBACK		0
 #define SND_PCM_STREAM_CAPTURE		1
 
-#define SND_PCM_MODE_UNKNOWN		(-1)
-#define SND_PCM_MODE_FRAME		0
-#define SND_PCM_MODE_FRAGMENT		1
-
 #define SND_PCM_SFMT_S8			0
 #define SND_PCM_SFMT_U8			1
 #define SND_PCM_SFMT_S16_LE		2
@@ -508,31 +505,66 @@ typedef struct snd_hwdep_info {
 					 SND_PCM_RATE_192000)
 
 #define SND_PCM_INFO_MMAP		0x00000001	/* hardware supports mmap */
-#define SND_PCM_INFO_FRAME		0x00000002	/* hardware supports frame mode */
-#define SND_PCM_INFO_FRAGMENT		0x00000004	/* hardware supports fragment mode */
 #define SND_PCM_INFO_BATCH		0x00000010	/* double buffering */
-#define SND_PCM_INFO_INTERLEAVE		0x00000100	/* channels are interleaved */
-#define SND_PCM_INFO_NONINTERLEAVE	0x00000200	/* channels are not interleaved */
+#define SND_PCM_INFO_INTERLEAVED	0x00000100	/* channels are interleaved */
+#define SND_PCM_INFO_NONINTERLEAVED	0x00000200	/* channels are not interleaved */
+#define SND_PCM_INFO_COMPLEX		0x00000400	/* complex frame organization (mmap only) */
 #define SND_PCM_INFO_BLOCK_TRANSFER	0x00010000	/* hardware transfer block of samples */
 #define SND_PCM_INFO_OVERRANGE		0x00020000	/* hardware supports ADC (capture) overrange detection */
 #define SND_PCM_INFO_MMAP_VALID		0x00040000	/* fragment data are valid during transfer */
 #define SND_PCM_INFO_PAUSE		0x00080000	/* pause ioctl is supported */
 #define SND_PCM_INFO_HALF_DUPLEX	0x00100000	/* only half duplex */
 #define SND_PCM_INFO_JOINT_DUPLEX	0x00200000	/* playback and capture stream are somewhat correlated */
-#define SND_PCM_INFO_SYNC_GO		0x00400000	/* pcm support some kind of sync go */
+#define SND_PCM_INFO_SYNC_START		0x00400000	/* pcm support some kind of sync go */
 
+#define SND_PCM_XFER_UNSPECIFIED	0	/* don't care access type */
+#define SND_PCM_XFER_INTERLEAVED	1	/* read/write access type */
+#define SND_PCM_XFER_NONINTERLEAVED	2	/* readv/writev access type */
+#define SND_PCM_XFER_LAST		2
 
 #define SND_PCM_START_DATA		0	/* start when some data are written (playback) or requested (capture) */
-#define SND_PCM_START_FULL		1	/* start when whole queue is filled (playback) */
-#define SND_PCM_START_GO		2	/* start on the go command */
+#define SND_PCM_START_EXPLICIT		1	/* start on the go command */
+#define SND_PCM_START_LAST		1
 
-#define SND_PCM_XRUN_FLUSH		0	/* stop on xrun */
-#define SND_PCM_XRUN_DRAIN		1	/* erase and stop on xrun (capture) */
-#define SND_PCM_XRUN_RESTART		2	/* automatic prepare and go after xrun */
+#define SND_PCM_XRUN_FRAGMENT		0	/* Efficient xrun detection */
+#define SND_PCM_XRUN_ASAP		1	/* Accurate xrun detection */
+#define SND_PCM_XRUN_LAST		1
 
-#define SND_PCM_FILL_NONE		0	/* don't fill the buffer with silent samples */
-#define SND_PCM_FILL_SILENCE_WHOLE	1	/* fill the whole buffer with silence */
-#define SND_PCM_FILL_SILENCE		2	/* fill the partial buffer with silence */
+#define SND_PCM_READY_FRAGMENT		0	/* Efficient ready detection */
+#define SND_PCM_READY_ASAP		1	/* Accurate ready detection */
+#define SND_PCM_READY_LAST		1
+
+#define SND_PCM_XRUN_ACT_FLUSH		0	/* stop on xrun */
+#define SND_PCM_XRUN_ACT_DRAIN		1	/* erase and stop on xrun (capture) */
+#define SND_PCM_XRUN_ACT_RESTART	2	/* automatic prepare and go after xrun */
+#define SND_PCM_XRUN_ACT_LAST		2
+
+#define SND_PCM_MMAP_UNSPECIFIED	0	/* don't care buffer type */
+#define SND_PCM_MMAP_INTERLEAVED	1	/* simple interleaved buffer */
+#define SND_PCM_MMAP_NONINTERLEAVED	2	/* simple noninterleaved buffer */
+#define SND_PCM_MMAP_COMPLEX		3	/* complex buffer */
+#define SND_PCM_MMAP_LAST		3
+
+#define SND_PCM_PARAMS_SFMT		(1<<0)
+#define SND_PCM_PARAMS_RATE		(1<<1)
+#define SND_PCM_PARAMS_CHANNELS		(1<<2)
+#define SND_PCM_PARAMS_START_MODE	(1<<3)
+#define SND_PCM_PARAMS_READY_MODE	(1<<4)
+#define SND_PCM_PARAMS_XFER_MODE	(1<<5)
+#define SND_PCM_PARAMS_XRUN_MODE	(1<<6)
+#define SND_PCM_PARAMS_XRUN_ACT		(1<<7)
+#define SND_PCM_PARAMS_BUFFER_SIZE	(1<<8)
+#define SND_PCM_PARAMS_FRAGMENT_SIZE	(1<<9)
+#define SND_PCM_PARAMS_MMAP_SHAPE	(1<<10)
+#define SND_PCM_PARAMS_WHEN		(1<<11)
+
+#define SND_PCM_PARAMS_FAIL_NONE		0
+#define SND_PCM_PARAMS_FAIL_INVAL		1
+#define SND_PCM_PARAMS_FAIL_INT_INCOMPAT	2
+#define SND_PCM_PARAMS_FAIL_EXT_INCOMPAT	3
+
+#define SND_PCM_WHEN_IDLE		0 /* Apply only if PCM is idle */
+#define SND_PCM_WHEN_LAST		0
 
 #define SND_PCM_STATE_NOTREADY		0	/* stream is not ready */
 #define SND_PCM_STATE_READY		1	/* stream is ready for prepare call */
@@ -669,8 +701,6 @@ typedef struct snd_pcm_info {
 	unsigned int subdevices_count;
 	unsigned int subdevices_avail;
 	snd_pcm_sync_id_t sync;		/* hardware synchronization ID */
-	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
-	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
 	char reserved[64];		/* reserved for future... */
 } snd_pcm_info_t;
 
@@ -683,49 +713,32 @@ typedef struct snd_pcm_channel_info {
 } snd_pcm_channel_info_t;
 
 typedef struct snd_pcm_format {
-	unsigned int interleave: 1;	/* data are interleaved */
-	int format;			/* SND_PCM_SFMT_XXXX */
+	int sfmt;			/* SND_PCM_SFMT_XXXX */
 	unsigned int rate;		/* rate in Hz */
 	unsigned int channels;		/* channels */
 	int special;			/* special (custom) description of format */
 	char reserved[16];		/* must be filled with zero */
 } snd_pcm_format_t;
 
-#define SND_PCM_PARAMS_WHEN		(1<<0)
-#define SND_PCM_PARAMS_MODE		(1<<1)
-#define SND_PCM_PARAMS_INTERLEAVE	(1<<2)
-#define SND_PCM_PARAMS_FORMAT		(1<<3)
-#define SND_PCM_PARAMS_RATE		(1<<4)
-#define SND_PCM_PARAMS_CHANNELS		(1<<5)
-#define SND_PCM_PARAMS_START_MODE	(1<<6)
-#define SND_PCM_PARAMS_XRUN_MODE	(1<<7)
-#define SND_PCM_PARAMS_BUFFER_SIZE	(1<<8)
-#define SND_PCM_PARAMS_FRAGMENT_SIZE	(1<<9)
-
-#define SND_PCM_PARAMS_FAIL_NONE		0
-#define SND_PCM_PARAMS_FAIL_INVAL		1
-#define SND_PCM_PARAMS_FAIL_INT_INCOMPAT	2
-#define SND_PCM_PARAMS_FAIL_EXT_INCOMPAT	3
-
-#define SND_PCM_PARAMS_WHEN_IDLE        0 /* Apply only if PCM is idle */
-
 typedef struct snd_pcm_params {
-	int when;			/* Params apply time/condition */
-	snd_timestamp_t tstamp;		/* Timestamp */
-	int mode;			/* transfer mode */
-	snd_pcm_format_t format;	/* playback format */
+	snd_pcm_format_t format;	/* format */
 	snd_pcm_digital_t digital;	/* digital setup */
-	int start_mode;			/* start mode - SND_PCM_START_XXXX */
-	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
-	unsigned int time: 1;		/* timestamp switch */
+	int start_mode;			/* start mode */
+	int ready_mode;			/* ready detection mode */
+	size_t avail_min;		/* min available frames for wakeup */
+	int xfer_mode;			/* xfer mode */
+	size_t xfer_min;		/* xfer min size */
+	size_t xfer_align;		/* xfer size need to be a multiple */
+	int xrun_mode;			/* xrun detection mode */
+	int xrun_act;			/* action on xrun */
+	size_t xrun_max;		/* maximum size of xrun before stop */
+	int mmap_shape;			/* mmap buffer shape */
 	size_t buffer_size;		/* requested buffer size in frames */
 	size_t frag_size;		/* requested size of fragment in frames */
-	size_t avail_min;		/* min available frames for wakeup */
-	size_t align;			/* transferred size need to be a multiple */
-	size_t xrun_max;		/* maximum size of underrun/overrun before unconditional stop */
-	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t fill_max;		/* maximum silence fill in frames */
 	size_t boundary;		/* position in frames wrap point */
+	unsigned int time: 1;		/* timestamp switch */
+	int when;			/* Params apply time/condition */
+	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned int fail_mask;		/* failure locations */
 	int fail_reason;		/* failure reason */
 	char reserved[64];		/* must be filled with zero */
@@ -735,6 +748,8 @@ typedef struct {
 	unsigned int req_mask;		/* Requests mask */
 	snd_pcm_params_t req;		/* Requested params (only some fields 
 					   are currently relevant) */
+	unsigned int flags;		/* see to SND_PCM_INFO_XXXX */
+	snd_pcm_digital_t dig_mask;	/* AES/EBU/IEC958 supported bits, zero = no AES/EBU/IEC958 */
 	unsigned int formats;		/* supported formats */
 	unsigned int rates;		/* hardware rates */
 	unsigned int min_rate;		/* min rate (in Hz) */
@@ -756,37 +771,39 @@ typedef struct {
 } snd_pcm_params_info_t;
 
 typedef struct snd_pcm_channel_params {
-	int when;			/* Params apply time/condition */
-	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned int channel;
 	snd_pcm_digital_t digital;	/* digital setup */
+	int when;			/* Params apply time/condition */
+	snd_timestamp_t tstamp;		/* Timestamp */
 	unsigned int fail_mask;		/* failure locations */
 	int fail_reason;		/* failure reason */
 	char reserved[64];
 } snd_pcm_channel_params_t;
 
 typedef struct snd_pcm_setup {
-	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* real used format */
 	snd_pcm_digital_t digital;	/* digital setup */
-	int start_mode;			/* start mode - SND_PCM_START_XXXX */
-	int xrun_mode;			/* underrun/overrun mode - SND_PCM_XRUN_XXXX */
-	unsigned int time: 1;		/* timestamp switch */
+	int start_mode;			/* start mode */
+	int ready_mode;			/* ready detection mode */
+	size_t avail_min;		/* min available frames for wakeup */
+	int xfer_mode;			/* xfer mode */
+	size_t xfer_min;		/* xfer min size */
+	size_t xfer_align;		/* xfer size need to be a multiple */
+	int xrun_mode;			/* xrun detection mode */
+	int xrun_act;			/* action on xrun */
+	size_t xrun_max;		/* max size of underrun/overrun before unconditional stop */
+	int mmap_shape;			/* mmap buffer shape */
 	size_t buffer_size;		/* current buffer size in frames */
 	size_t frag_size;		/* current fragment size in frames */
-	size_t avail_min;		/* min available frames for wakeup */
-	size_t align;			/* transferred size need to be a multiple */
-	size_t xrun_max;		/* max size of underrun/overrun before unconditional stop */
-	int fill_mode;			/* fill mode - SND_PCM_FILL_XXXX */
-	size_t fill_max;		/* maximum silence fill in frames */
 	size_t boundary;		/* position in frames wrap point */
+	unsigned int time: 1;		/* timestamp switch */
 	size_t frags;			/* allocated fragments */
-	size_t fifo_size;		/* stream FIFO size */
-	size_t transfer_block_size;	/* bus transfer block size */
 	size_t mmap_bytes;		/* mmap data size in bytes*/
-	unsigned int msbits_per_sample;	/* used most significant bits per sample */
+	unsigned int msbits;		/* used most significant bits */
 	unsigned int rate_master;	/* Exact rate is rate_master / */
 	unsigned int rate_divisor;	/* rate_divisor */
+	size_t fifo_size;		/* chip FIFO size */
+	size_t transfer_block_size;	/* bus transfer block size */
 	char reserved[64];		/* must be filled with zero */
 } snd_pcm_setup_t;
 
@@ -807,13 +824,13 @@ typedef struct snd_pcm_status {
 	int state;		/* stream state - SND_PCM_STATE_XXXX */
 	snd_timestamp_t trigger_time;	/* time when stream was started/stopped/paused */
 	snd_timestamp_t tstamp;	/* Timestamp */
+	ssize_t delay;		/* current delay in frames */
+	size_t avail_max;	/* max frames available on hw since last status */
+	size_t xruns;		/* count of underruns/overruns from last status */
+	size_t overrange;	/* count of ADC (capture) overrange detections from last status */
 	size_t appl_ptr;	/* current application side ptr in frames */
 	size_t hw_ptr;		/* current hardware side ptr in frames */
-	size_t now_ptr;		/* current audio position in frames */
 	size_t avail;		/* number of frames available */
-	size_t avail_max;	/* max frames available since last status */
-	unsigned int xruns;	/* count of underruns/overruns from last status */
-	unsigned int overrange;	/* count of ADC (capture) overrange detections from last status */
 	char reserved[64];	/* must be filled with zero */
 } snd_pcm_status_t;
 
@@ -833,16 +850,14 @@ typedef struct {
 } snd_pcm_mmap_control_t;
 
 typedef struct {
-	snd_timestamp_t tstamp;	/* Timestamp */
-	char *buf;
-	size_t count;
-} snd_xfer_t;
+	void *buf;
+	size_t frames;
+} snd_xferi_t;
 
 typedef struct {
-	snd_timestamp_t tstamp;	/* Timestamp */
-	const struct iovec *vector;
-	unsigned long count;
-} snd_xferv_t;
+	void **bufs;
+	size_t frames;
+} snd_xfern_t;
 
 #define SND_PCM_IOCTL_PVERSION		_IOR ('A', 0x00, int)
 #define SND_PCM_IOCTL_INFO		_IOR ('A', 0x02, snd_pcm_info_t)
@@ -850,21 +865,20 @@ typedef struct {
 #define SND_PCM_IOCTL_PARAMS_INFO	_IOW ('A', 0x11, snd_pcm_params_info_t)
 #define SND_PCM_IOCTL_SETUP		_IOR ('A', 0x20, snd_pcm_setup_t)
 #define SND_PCM_IOCTL_STATUS		_IOR ('A', 0x21, snd_pcm_status_t)
-#define SND_PCM_IOCTL_HW_PTR		_IO  ('A', 0x22)
-#define SND_PCM_IOCTL_NOW_PTR		_IO  ('A', 0x23)
+#define SND_PCM_IOCTL_DELAY		_IOW ('A', 0x23, ssize_t)
 #define SND_PCM_IOCTL_APPL_PTR		_IOW ('A', 0x24, off_t)
 #define SND_PCM_IOCTL_PREPARE		_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_GO		_IO  ('A', 0x31)
+#define SND_PCM_IOCTL_START		_IO  ('A', 0x31)
 #define SND_PCM_IOCTL_FLUSH		_IO  ('A', 0x32)
-#define SND_PCM_IOCTL_DRAIN		_IO  ('A', 0x34)
+#define SND_PCM_IOCTL_STOP		_IO  ('A', 0x34)
 #define SND_PCM_IOCTL_PAUSE		_IOW ('A', 0x35, int)
 #define SND_PCM_IOCTL_CHANNEL_INFO	_IOR ('A', 0x40, snd_pcm_channel_info_t)
 #define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOW ('A', 0x41, snd_pcm_channel_params_t)
 #define SND_PCM_IOCTL_CHANNEL_SETUP	_IOR ('A', 0x42, snd_pcm_channel_setup_t)
-#define SND_PCM_IOCTL_WRITE_FRAMES	_IOW ('A', 0x50, snd_xfer_t)
-#define SND_PCM_IOCTL_READ_FRAMES	_IOR ('A', 0x51, snd_xfer_t)
-#define SND_PCM_IOCTL_WRITEV_FRAMES	_IOW ('A', 0x52, snd_xferv_t)
-#define SND_PCM_IOCTL_READV_FRAMES	_IOR ('A', 0x53, snd_xferv_t)
+#define SND_PCM_IOCTL_WRITEI_FRAMES	_IOW ('A', 0x50, snd_xferi_t)
+#define SND_PCM_IOCTL_READI_FRAMES	_IOR ('A', 0x51, snd_xferi_t)
+#define SND_PCM_IOCTL_WRITEN_FRAMES	_IOW ('A', 0x52, snd_xfern_t)
+#define SND_PCM_IOCTL_READN_FRAMES	_IOR ('A', 0x53, snd_xfern_t)
 #define SND_PCM_IOCTL_LINK		_IOW ('A', 0x61, int)
 #define SND_PCM_IOCTL_UNLINK		_IO  ('A', 0x62)
 
