@@ -166,14 +166,6 @@
 #define SND_GF1_MEM_OWNER_WAVE_GF1	0x0003
 #define SND_GF1_MEM_OWNER_WAVE_IWFFFF	0x0004
 
-/* modes */
-
-#define SND_GF1_MODE_ENGINE		0x0001
-#define SND_GF1_MODE_TIMER		0x0002
-#define SND_GF1_MODE_PCM_PLAY		0x0004
-#define SND_GF1_MODE_PCM_RECORD		0x0008
-#define SND_GF1_MODE_PCM		0x000c
-
 /* constants for interrupt handlers */
 
 #define SND_GF1_HANDLER_MIDI_OUT	0x00010000
@@ -412,7 +404,6 @@ struct snd_stru_gf1 {
 	/* pcm */
 	int pcm_voices;
 	int pcm_alloc_voices;
-	atomic_t pcm_open;
         unsigned short pcm_volume_level_left;
 	unsigned short pcm_volume_level_right;
 	unsigned short pcm_volume_level_left1;
@@ -650,8 +641,6 @@ snd_gus_voice_t *snd_gf1_alloc_voice(snd_gus_card_t * gus, int type, int client,
 void snd_gf1_free_voice(snd_gus_card_t * gus, snd_gus_voice_t *voice);
 int snd_gf1_start(snd_gus_card_t * gus);
 int snd_gf1_stop(snd_gus_card_t * gus);
-void snd_gf1_open(snd_gus_card_t * gus, unsigned short mode);
-void snd_gf1_close(snd_gus_card_t * gus, unsigned short mode);
 
 /* gus_mixer.c */
 
