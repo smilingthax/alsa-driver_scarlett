@@ -187,7 +187,7 @@ struct _snd_pcm_hw_rule {
 typedef struct _snd_pcm_hw_constraints {
 	unsigned int masks[SNDRV_PCM_HW_PARAM_LAST_MASK - 
 			   SNDRV_PCM_HW_PARAM_FIRST_MASK + 1];
-	interval_t intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
+	snd_interval_t intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
 			     SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
 	unsigned int rules_num;
 	unsigned int rules_all;
@@ -200,7 +200,7 @@ static inline unsigned int *constrs_mask(snd_pcm_hw_constraints_t *constrs,
 	return &constrs->masks[var - SNDRV_PCM_HW_PARAM_FIRST_MASK];
 }
 
-static inline interval_t *constrs_interval(snd_pcm_hw_constraints_t *constrs,
+static inline snd_interval_t *constrs_interval(snd_pcm_hw_constraints_t *constrs,
 					  snd_pcm_hw_param_t var)
 {
 	return &constrs->intervals[var - SNDRV_PCM_HW_PARAM_FIRST_INTERVAL];
@@ -610,31 +610,31 @@ static inline int hw_is_interval(int var)
 		var <= SNDRV_PCM_HW_PARAM_LAST_INTERVAL;
 }
 
-typedef unsigned int mask_t;
-#define MASK_MAX 32
+typedef unsigned int snd_mask_t;
+#define SND_MASK_MAX 32
 
-static inline mask_t *hw_param_mask(snd_pcm_hw_params_t *params,
+static inline snd_mask_t *hw_param_mask(snd_pcm_hw_params_t *params,
 				     snd_pcm_hw_param_t var)
 {
-	return (mask_t*)&params->masks[var - SNDRV_PCM_HW_PARAM_FIRST_MASK];
+	return (snd_mask_t*)&params->masks[var - SNDRV_PCM_HW_PARAM_FIRST_MASK];
 }
 
-static inline interval_t *hw_param_interval(snd_pcm_hw_params_t *params,
+static inline snd_interval_t *hw_param_interval(snd_pcm_hw_params_t *params,
 					     snd_pcm_hw_param_t var)
 {
 	return &params->intervals[var - SNDRV_PCM_HW_PARAM_FIRST_INTERVAL];
 }
 
-static inline const mask_t *hw_param_mask_c(const snd_pcm_hw_params_t *params,
+static inline const snd_mask_t *hw_param_mask_c(const snd_pcm_hw_params_t *params,
 					     snd_pcm_hw_param_t var)
 {
-	return (const mask_t *)hw_param_mask((snd_pcm_hw_params_t*) params, var);
+	return (const snd_mask_t *)hw_param_mask((snd_pcm_hw_params_t*) params, var);
 }
 
-static inline const interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *params,
+static inline const snd_interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *params,
 						     snd_pcm_hw_param_t var)
 {
-	return (const interval_t *)hw_param_interval((snd_pcm_hw_params_t*) params, var);
+	return (const snd_interval_t *)hw_param_interval((snd_pcm_hw_params_t*) params, var);
 }
 
 #define params_access(p) (ffs(*hw_param_mask((p), SNDRV_PCM_HW_PARAM_ACCESS)) - 1)
@@ -649,20 +649,20 @@ static inline const interval_t *hw_param_interval_c(const snd_pcm_hw_params_t *p
 #define params_tick_time(p) hw_param_interval((p), SNDRV_PCM_HW_PARAM_TICK_TIME)->min
 
 
-extern int interval_refine(interval_t *i, const interval_t *v);
-extern void interval_mul(const interval_t *a, const interval_t *b, interval_t *c);
-extern void interval_div(const interval_t *a, const interval_t *b, interval_t *c);
-extern void interval_muldivk(const interval_t *a, const interval_t *b, 
-			     unsigned int k, interval_t *c);
-extern void interval_mulkdiv(const interval_t *a, unsigned int k,
-			     const interval_t *b, interval_t *c);
-extern int interval_list(interval_t *i, 
+extern int snd_interval_refine(snd_interval_t *i, const snd_interval_t *v);
+extern void snd_interval_mul(const snd_interval_t *a, const snd_interval_t *b, snd_interval_t *c);
+extern void snd_interval_div(const snd_interval_t *a, const snd_interval_t *b, snd_interval_t *c);
+extern void snd_interval_muldivk(const snd_interval_t *a, const snd_interval_t *b, 
+			     unsigned int k, snd_interval_t *c);
+extern void snd_interval_mulkdiv(const snd_interval_t *a, unsigned int k,
+			     const snd_interval_t *b, snd_interval_t *c);
+extern int snd_interval_list(snd_interval_t *i, 
 			 unsigned int count, unsigned int *list, unsigned int mask);
-extern int interval_step(interval_t *i, unsigned int min, unsigned int step);
-extern int interval_ratnum(interval_t *i,
+extern int snd_interval_step(snd_interval_t *i, unsigned int min, unsigned int step);
+extern int snd_interval_ratnum(snd_interval_t *i,
 			   unsigned int rats_count, ratnum_t *rats,
 			   unsigned int *nump, unsigned int *denp);
-extern int interval_ratden(interval_t *i,
+extern int snd_interval_ratden(snd_interval_t *i,
 			   unsigned int rats_count, ratden_t *rats,
 			   unsigned int *nump, unsigned int *denp);
 

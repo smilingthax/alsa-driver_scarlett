@@ -359,7 +359,7 @@ enum sndrv_pcm_hw_param {
 
 #define SNDRV_PCM_HW_PARAMS_RUNTIME		(1<<0)
 
-struct interval {
+struct sndrv_interval {
 	unsigned int min, max;
 	unsigned int openmin:1,
 		     openmax:1,
@@ -371,8 +371,8 @@ struct sndrv_pcm_hw_params {
 	unsigned int flags;
 	unsigned int masks[SNDRV_PCM_HW_PARAM_LAST_MASK - 
 			   SNDRV_PCM_HW_PARAM_FIRST_MASK + 1];
-	struct interval intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
-				  SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
+	struct sndrv_interval intervals[SNDRV_PCM_HW_PARAM_LAST_INTERVAL -
+				       SNDRV_PCM_HW_PARAM_FIRST_INTERVAL + 1];
 	unsigned int rmask;
 	unsigned int cmask;
 	unsigned int info;		/* R: Info flags for returned setup */

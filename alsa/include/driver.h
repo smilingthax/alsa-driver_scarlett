@@ -157,7 +157,7 @@
 
 /* Name change */
 typedef struct timeval snd_timestamp_t;
-typedef struct interval interval_t;
+typedef struct sndrv_interval snd_interval_t;
 typedef enum sndrv_card_type snd_card_type;
 typedef sndrv_pcm_uframes_t snd_pcm_uframes_t;
 typedef sndrv_pcm_sframes_t snd_pcm_sframes_t;
