@@ -1,13 +1,11 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
-  if [ -r /etc/asound/driver_args ]; then
-    args="`cat /etc/asound/driver_args`"
-  else
-    args="--with-debug=full --with-isapnp=yes --with-sequencer=yes"
-  fi
-else
+if [ $# -ne 0 ]; then
   args="$@"
+elif [ -r /etc/asound/driver_args ]; then
+  args="`cat /etc/asound/driver_args`"
+else
+  args="--with-debug=full --with-isapnp=yes --with-sequencer=yes"
 fi
 
 if [ -r /usr/share/aclocal/alsa-lib.m4 ]; then

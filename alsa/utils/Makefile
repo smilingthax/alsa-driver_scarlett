@@ -9,7 +9,7 @@ ifeq ($(TOPDIR)/Makefile.conf,$(wildcard $(TOPDIR)/Makefile.conf))
 include $(TOPDIR)/Makefile.conf
 else
 CC = gcc
-INCLUDE =
+INCLUDE = ../include
 endif
 
 TARGETS = snd-deps

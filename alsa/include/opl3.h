@@ -237,10 +237,22 @@ struct snd_opl3 {
 	spinlock_t timer_lock;
 
 	spinlock_t reg_lock;
+	snd_card_t *card;		/* The card that this belongs to */
 	int used;			/* usage flag - exclusive */
 	unsigned char fm_mode;		/* OPL mode, see SND_DM_FM_MODE_XXX */
 	unsigned char rhythm;		/* percussion mode flag */
-	char voice[18];			/* 0=unavailable, 2=2 OP, 4=4 OP */
+	unsigned char max_voices;	/* max number of voices */
+#if 0
+	snd_seq_device_t *seq_dev;	/* sequencer device, WIP */
+	int seq_client;
+
+	snd_midi_channel_set_t * chset;
+
+	snd_seq_kinstr_ops_t fm_ops;
+	snd_seq_kinstr_list_t *ilist;
+
+	snd_opl3_voice_t voice[MAX_OPL3_VOICES];
+#endif
 	struct semaphore access_mutex;	/* locking */
 };
 
@@ -258,5 +270,7 @@ int snd_opl3_open(snd_hwdep_t * hw, struct file *file);
 int snd_opl3_ioctl(snd_hwdep_t * hw, struct file *file,
 		   unsigned int cmd, unsigned long arg);
 int snd_opl3_release(snd_hwdep_t * hw, struct file *file);
+
+void snd_opl3_reset(opl3_t * opl3);
 
 #endif				/* __OPL3_H */
