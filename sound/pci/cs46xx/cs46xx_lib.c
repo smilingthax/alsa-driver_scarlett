@@ -2864,10 +2864,6 @@ static int snd_cs46xx_free(cs46xx_t *chip)
 		kfree(chip->gameport);
 	}
 #endif
-#ifdef CONFIG_PM
-	if (chip->pm_dev)
-		pm_unregister(chip->pm_dev);
-#endif
 	if (chip->amplifier_ctrl)
 		chip->amplifier_ctrl(chip, -chip->amplifier); /* force to off */
 	
@@ -3381,10 +3377,10 @@ static void amp_voyetra(cs46xx_t *chip, int change)
 	oval = snd_cs46xx_codec_read(chip, AC97_POWERDOWN,
 				     CS46XX_PRIMARY_CODEC_INDEX);
 	val = oval;
-	if (chip->amplifier && !old) {
+	if (chip->amplifier) {
 		/* Turn the EAPD amp on */
 		val |= 0x8000;
-	} else if (old && !chip->amplifier) {
+	} else {
 		/* Turn the EAPD amp off */
 		val &= ~0x8000;
 	}
@@ -3519,23 +3515,23 @@ static void amp_voyetra_4294(cs46xx_t *chip, int change)
  
 static void clkrun_hack(cs46xx_t *chip, int change)
 {
-	u16 control;
-	int old;
+	u16 control, nval;
 	
 	if (chip->acpi_dev == NULL)
 		return;
 
-	old = chip->amplifier;
 	chip->amplifier += change;
 	
 	/* Read ACPI port */	
-	control = inw(chip->acpi_port + 0x10);
+	nval = control = inw(chip->acpi_port + 0x10);
 
 	/* Flip CLKRUN off while running */
-	if (! chip->amplifier && old)
-		outw(control | 0x2000, chip->acpi_port + 0x10);
-	else if (chip->amplifier && ! old)
-		outw(control & ~0x2000, chip->acpi_port + 0x10);
+	if (! chip->amplifier)
+		nval |= 0x2000;
+	else
+		nval &= ~0x2000;
+	if (nval != control)
+		outw(nval, chip->acpi_port + 0x10);
 }
 
 	
