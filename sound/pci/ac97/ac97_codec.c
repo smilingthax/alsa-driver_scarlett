@@ -87,6 +87,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 };
 
 static const ac97_codec_id_t snd_ac97_codec_ids[] = {
+{ 0x014b0502, 0xffffffff, "NM256AV",		NULL }, // FIXME: which real one?
 { 0x414b4d00, 0xffffffff, "AK4540",		NULL },
 { 0x414b4d01, 0xffffffff, "AK4542",		NULL },
 { 0x414b4d02, 0xffffffff, "AK4543",		NULL },
@@ -1252,6 +1253,10 @@ static int snd_ac97_try_volume_mix(ac97_t * ac97, int reg)
 			return 0;
 		break;
 	}
+
+	if (ac97->limited_regs && test_bit(reg, ac97->reg_accessed))
+		return 1; /* allow without check */
+
 	val = snd_ac97_read(ac97, reg);
 	if (!(val & mask)) {
 		/* nothing seems to be here - mute flag is not set */
