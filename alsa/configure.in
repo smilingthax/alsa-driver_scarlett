@@ -317,6 +317,23 @@ AC_DEFUN(CHECK_KERNEL_HEADER, [
   fi
 ])
 
+AC_DEFUN(MODIFY_KERNEL_HEADER, [
+  AC_MSG_CHECKING(to modify of kernel $1)
+  if grep $2 "$CONFIG_SND_KERNELDIR/include/$1" > /dev/null; then
+    AC_MSG_RESULT("no")
+    if test -f include/$1; then
+      echo "Removing a dummy $1."
+      rm -f include/$1
+    fi
+  else
+    AC_MSG_RESULT("yes")
+    echo "#ifndef $2" > include/$1
+    echo "#define $2" >> include/$1
+    cat "$CONFIG_SND_KERNELDIR/include/$1" >> include/$1
+    echo "#endif /* $2 */" >> include/$1
+  fi
+])
+
 dnl Check kernel configurations
 AC_DEFUN(CHECK_KERNEL_CONFIG, [
   boolvar=$1
@@ -343,6 +360,7 @@ int main( void ) {
 ])
 
 dnl Check kernel headers for 2.2
+MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
 CHECK_KERNEL_HEADER(linux/compiler.h)
 CHECK_KERNEL_HEADER(linux/pm.h)
 CHECK_KERNEL_HEADER(linux/spinlock.h)
