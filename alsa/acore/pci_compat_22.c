@@ -315,8 +315,8 @@ int snd_pci_compat_request_region(struct pci_dev *pdev, int bar, char *res_name)
 	if (flags & IORESOURCE_IO) {
 		if (check_region(pci_resource_start(pdev, bar), pci_resource_len(pdev, bar)))
 			goto err_out;
-		request_region(pci_resource_start(pdev, bar),
-			       pci_resource_len(pdev, bar), res_name);
+		snd_memory_wrapper_request_region(pci_resource_start(pdev, bar),
+						  pci_resource_len(pdev, bar), res_name);
 	}
 	return 0;
 
