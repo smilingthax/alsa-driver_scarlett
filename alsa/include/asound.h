@@ -561,9 +561,9 @@ typedef struct snd_hwdep_info {
 #define SND_PCM_WHEN_IDLE		0 /* Apply only if PCM is idle */
 #define SND_PCM_WHEN_LAST		0
 
-#define SND_PCM_STATE_NOTREADY		0	/* stream is not ready */
-#define SND_PCM_STATE_READY		1	/* stream is ready for prepare call */
-#define SND_PCM_STATE_PREPARED		2	/* stream is ready to go */
+#define SND_PCM_STATE_OPEN		0	/* stream is open */
+#define SND_PCM_STATE_SETUP		1	/* stream has a setup */
+#define SND_PCM_STATE_PREPARED		2	/* stream is ready to start */
 #define SND_PCM_STATE_RUNNING		3	/* stream is running */
 #define SND_PCM_STATE_XRUN		4	/* stream reached an xrun */
 #define SND_PCM_STATE_DRAINING		5	/* stream is draining */
