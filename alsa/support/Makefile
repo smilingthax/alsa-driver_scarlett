@@ -8,11 +8,11 @@ TOPDIR  = ..
 include $(TOPDIR)/Makefile.conf
 
 ifeq (1,$(SNDCFG_MVERSION))
-COPTS   += -DMODVERSIONS -DEXPORT_SYMTAB \
+COPTS   += -DMODVERSIONS \
 		-include $(SNDCFG_KERNELDIR)/include/linux/modversions.h \
 		-include $(TOPDIR)/include/sndversions.h
 endif
-COPTS   += -D__KERNEL__ -DMODULE
+COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB
 
 TARGETS = $(SNDVERSIONS) \
           $(TOPDIR)/modules/isapnp.o
