@@ -104,6 +104,7 @@ AC_DEFUN(ALSA_CARDS_INIT, [
 	CONFIG_SND_CARD_RME9652="0"
 	CONFIG_SND_CARD_ICE1712="0"
 	CONFIG_SND_CARD_INTEL8X0="0"
+	CONFIG_SND_CARD_VIA686A="0"
 ])
 
 AC_DEFUN(ALSA_CARDS_ALL, [
@@ -309,6 +310,8 @@ AC_DEFUN(ALSA_CARDS_ALL, [
 	AC_DEFINE(CONFIG_SND_CARD_ICE1712)
 	CONFIG_SND_CARD_INTEL8X0="1"
 	AC_DEFINE(CONFIG_SND_CARD_INTEL8X0)
+	CONFIG_SND_CARD_VIA686A="1"
+	AC_DEFINE(CONFIG_SND_CARD_VIA686A)
 ])
 
 AC_DEFUN(ALSA_CARDS_SELECT, [
@@ -327,7 +330,8 @@ AC_ARG_WITH(cards,
   [                        es968, dt0197h, fm801, es1938, es1968, ]
   [                        opti92x-ad1848, opti92x-cs4231, opti93x, serial, ]
   [                        trident, sgalaxy, wavefront, hal2, cmi8330, ]
-  [                        mtpav, rme96, rme9652, ice1712, intel8x0 ],
+  [                        mtpav, rme96, rme9652, ice1712, intel8x0, ]
+  [                        via686a ],
   cards="$withval", cards="all")
 if test "$cards" = "all"; then
   ALSA_CARDS_ALL
@@ -1537,6 +1541,20 @@ else
 		CONFIG_SND_MIXER="1"
 		AC_DEFINE(CONFIG_SND_MIXER)
 		;;
+	via686a)
+		CONFIG_SND_CARD_VIA686A="1"
+		AC_DEFINE(CONFIG_SND_CARD_VIA686A)
+		CONFIG_SND_PCM="1"
+		AC_DEFINE(CONFIG_SND_PCM)
+		CONFIG_SND_TIMER="1"
+		AC_DEFINE(CONFIG_SND_TIMER)
+		CONFIG_SND="1"
+		AC_DEFINE(CONFIG_SND)
+		CONFIG_SND_AC97_CODEC="1"
+		AC_DEFINE(CONFIG_SND_AC97_CODEC)
+		CONFIG_SND_MIXER="1"
+		AC_DEFINE(CONFIG_SND_MIXER)
+		;;
 	*)
 		echo "Unknown soundcard $card, exiting!"
 		exit 1
@@ -1646,4 +1664,5 @@ AC_SUBST(CONFIG_SND_CARD_RME96)
 AC_SUBST(CONFIG_SND_CARD_RME9652)
 AC_SUBST(CONFIG_SND_CARD_ICE1712)
 AC_SUBST(CONFIG_SND_CARD_INTEL8X0)
+AC_SUBST(CONFIG_SND_CARD_VIA686A)
 ])

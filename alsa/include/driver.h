@@ -44,27 +44,23 @@
 #define MODULE
 #endif
 
-#define LinuxVersionCode(v, p, s) (((v)<<16)|((p)<<8)|(s))
-
 #include <linux/config.h>
 #include <linux/version.h>
 
-#if LinuxVersionCode(2, 2, 3) > LINUX_VERSION_CODE
+#if KERNEL_VERSION(2, 2, 3) > LINUX_VERSION_CODE
 #error "This driver requires Linux 2.2.3 and highter."
 #endif
-#if LinuxVersionCode(2, 2, 0) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(2, 2, 0) <= LINUX_VERSION_CODE
 #define LINUX_2_2
-#define __init
-#define __exit
 #endif
-#if LinuxVersionCode(2, 3, 1) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(2, 3, 1) <= LINUX_VERSION_CODE
 #define LINUX_2_3
 #endif
-#if LinuxVersionCode(2, 3, 11) <= LINUX_VERSION_CODE
+#if KERNEL_VERSION(2, 3, 11) <= LINUX_VERSION_CODE
 #define NEW_RESOURCE
 #endif
-#if LinuxVersionCode(2, 3, 13) <= LINUX_VERSION_CODE
-#define NEW_PCI
+#if defined(LINUX_2_3) && KERNEL_VERSION(2, 3, 48) > LINUX_VERSION_CODE
+#error "This driver requires Linux 2.3.48 and highter."
 #endif
 
 #ifdef ALSA_BUILD
@@ -111,8 +107,12 @@
 #include <linux/proc_fs.h>
 #include <linux/poll.h>
 
+#ifdef LINUX_2_2
+#include "compat_22.h"
+#endif
+
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
-#if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LinuxVersionCode(2, 3, 30) <= LINUX_VERSION_CODE && !defined(ALSA_BUILD))
+#if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (KERNEL_VERSION(2, 3, 30) <= LINUX_VERSION_CODE && !defined(ALSA_BUILD))
 #include <linux/isapnp.h>
 #define isapnp_dev pci_dev
 #define isapnp_card pci_bus
@@ -143,16 +143,6 @@ static inline void snd_leave_user(mm_segment_t fs)
 {
 	set_fs(fs);
 }
-
-#ifndef LINUX_2_3
-#define init_MUTEX(x) *(x) = MUTEX
-#define DECLARE_MUTEX(x) struct semaphore x = MUTEX
-typedef struct wait_queue wait_queue_t;
-typedef struct wait_queue * wait_queue_head_t;
-#define init_waitqueue_head(x) *(x) = NULL
-#define init_waitqueue_entry(q,p) ((q)->task = (p))
-#define set_current_state(xstate) do { current->state = xstate; } while (0)
-#endif
 
 /*
  *  ==========================================================================
