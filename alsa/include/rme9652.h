@@ -150,8 +150,10 @@
    Non-prefetchable 32 bit memory at 0xfd000000 [0xfd000000].
 */
 
-#ifndef PCI_VENDOR_ID_RME
-#define PCI_VENDOR_ID_RME		0x10ee
+#ifndef PCI_VENDOR_ID_XILINX
+#define PCI_VENDOR_ID_XILINX		0x10ee
+#endif
+#ifndef PCI_DEVICE_ID_HAMMERFALL
 #define PCI_DEVICE_ID_HAMMERFALL	0x3fc4
 #endif
 
