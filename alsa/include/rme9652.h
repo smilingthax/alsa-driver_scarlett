@@ -141,26 +141,18 @@
 #define PRINTK(format, a...) 
 #endif
 
-/* for a Hammerfall, /proc/pci says:
-
-   Bus  0, device   9, function  0:
-   Multimedia audio controller: Unknown vendor Unknown device (rev 3).
-   Vendor id=10ee. Device id=3fc4.
-   Slow devsel.  IRQ 9.  Master Capable.  Latency=32.  
-   Non-prefetchable 32 bit memory at 0xfd000000 [0xfd000000].
-*/
-
 #ifndef PCI_VENDOR_ID_XILINX
 #define PCI_VENDOR_ID_XILINX		0x10ee
 #endif
-#ifndef PCI_DEVICE_ID_HAMMERFALL
-#define PCI_DEVICE_ID_HAMMERFALL	0x3fc4
+
+#ifndef PCI_DEVICE_ID_XILINX_HAMMERFALL
+#define PCI_DEVICE_ID_XILINX_HAMMERFALL	0x3fc4
 #endif
 
-#define CARD_NAME	"RME Digi9652"
+/* amount of io space we remap for register access. i'm not sure we
+   even need this much, but 1K is nice round number :)
+*/
 
-/* Registers-Space in offsets from base address with size of 16MByte-Space */
-/* #define RME9652_IO_EXTENT     16l*1024l*1024l */
 #define RME9652_IO_EXTENT     1024
 
 /* Write-only registers */
@@ -221,13 +213,6 @@
 #define rme9652_encode_sync_src(x) ((((x)&0x3)<<17)
 #define rme9652_decode_sync_src(x) (((x)>>17)&0x3)
 
-#define RME9652_PREALLOCATE_MEMORY /* via module or init/main.c hack */
-
-#ifdef RME9652_PREALLOCATE_MEMORY
-extern void *			 rme9652_rec_busmaster_memory;
-extern void *			 rme9652_play_busmaster_memory;
-#endif
-
 /* the size of a subchannel (1 mono data stream) */
 
 #define RME9652_CHANNEL_BUFFER_SAMPLES  (16*1024)
@@ -262,6 +247,8 @@ typedef struct snd_rme9652
     u32 control_register;    /* cached value */
     u32 thru_bits;           /* thru 1=on, 0=off channel 1=Bit1... channel 26= Bit26 */
 
+    char *card_name;         /* hammerfall or hammerfall light names */
+
     unsigned int  hw_offsetmask;    /* &-with status register to get real hw_offset */
     int           hw_offset;        /* effective hw-offset due to 64 byte PCI DMA */
     unsigned char hw_fragment:1;    /* which fragment the hw is using, 0 or 1 */
@@ -269,8 +256,9 @@ typedef struct snd_rme9652
 
     unsigned char nchannels;        /* different for hammerfall/hammerfall-light */
 
-    unsigned char *capture_buffer;  /* where the big chunk of memory is */
-    unsigned char *playback_buffer; /* where the big chunk of memory is */
+    void          *buffer_address[2]; /* original buffer addresses */
+    unsigned char *capture_buffer;    /* suitably aligned address */
+    unsigned char *playback_buffer;   /* suitably aligned address */
 
     unsigned int capture_open_mask;  /* which channels are open for capture */
     unsigned int playback_open_mask; /* which channels are open for playback */
@@ -297,6 +285,14 @@ typedef struct snd_rme9652
 int  snd_rme9652_create (snd_card_t *, int, rme9652_t *);
 void snd_rme9652_interrupt (int, void *, struct pt_regs *);
 int  snd_rme9652_free (rme9652_t *);
+
+#define RME9652_PREALLOCATE_MEMORY /* via module */
+
+#ifdef RME9652_PREALLOCATE_MEMORY
+extern void *			 snd_rme9652_get_buffer (void);
+extern void 			 snd_rme9652_free_buffer (void *);
+#endif
+
 
 #endif  /* KERNEL */
 #endif  /* ifdef RME9652_H */
