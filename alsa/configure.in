@@ -298,6 +298,8 @@ int main(void) {
 	fprintf(file, "alpha_ev6");
 #elif defined(CONFIG_ALPHA_NONAME) || defined(CONFIG_ALPHA)
 	fprintf(file, "alpha_noname");
+#elif defined(CONFIG_PPC64)
+	fprintf(file, "ppc64");
 #elif defined(CONFIG_PPC)
 	fprintf(file, "ppc");
 #elif defined(CONFIG_CPU_R3000) || defined(CONFIG_CPU_R6000)
@@ -401,6 +403,11 @@ case "$processor" in
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     CONFIG_SND_PPC=y
+    ;;
+  ppc64)
+    c_opts="-D__powerpc__ -fsigned-char -msoft-float -pipe -Wno-uninitialized -mminimal-toc -fno-builtin"
+    CONFIG_SND_PPC=y
+    # CONFIG_SND_ISA=n
     ;;
   mips)
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
