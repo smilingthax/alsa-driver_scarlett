@@ -796,6 +796,7 @@ struct sndrv_ctl_event {
 #define SNDRV_CTL_NAME_PLAYBACK				"Playback "
 #define SNDRV_CTL_NAME_CAPTURE				"Capture "
 
+#define SNDRV_CTL_NAME_IEC958_NONE			""
 #define SNDRV_CTL_NAME_IEC958_SWITCH			"Switch"
 #define SNDRV_CTL_NAME_IEC958_VOLUME			"Volume"
 #define SNDRV_CTL_NAME_IEC958_DEFAULT			"Default"
