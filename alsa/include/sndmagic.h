@@ -24,12 +24,12 @@
 
 
 #ifdef CONFIG_SND_DEBUG
-void *_snd_magic_kcalloc(size_t size, int flags, unsigned long magic);
-void *_snd_magic_kmalloc(size_t size, int flags, unsigned long magic);
+void *_snd_magic_kcalloc(unsigned long magic, size_t size, int flags);
+void *_snd_magic_kmalloc(unsigned long magic, size_t size, int flags);
 void _snd_magic_kfree(void *ptr);
 
-#define snd_magic_kcalloc(type, extra, flags) (type *) _snd_magic_kcalloc(sizeof(type) + extra, flags, type##_magic)
-#define snd_magic_kmalloc(type, extra, flags) (type *) _snd_magic_kmalloc(sizeof(type) + extra, flags, type##_magic)
+#define snd_magic_kcalloc(type, extra, flags) (type *) _snd_magic_kcalloc(type##_magic, sizeof(type) + extra, flags)
+#define snd_magic_kmalloc(type, extra, flags) (type *) _snd_magic_kmalloc(type##_magic, sizeof(type) + extra, flags)
 
 static inline unsigned long _snd_magic_value(void *obj)
 {
