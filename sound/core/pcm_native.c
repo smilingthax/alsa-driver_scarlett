@@ -1842,12 +1842,7 @@ int snd_pcm_release(struct inode *inode, struct file *file)
 	snd_assert(substream != NULL, return -ENXIO);
 	snd_assert(!atomic_read(&substream->runtime->mmap_count), );
 	pcm = substream->pcm;
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		if ((substream->ffile->f_flags & O_NONBLOCK) ||
-		    snd_pcm_playback_drain(substream) == -ERESTARTSYS)
-			snd_pcm_playback_drop(substream);
-	} else
-		snd_pcm_capture_drop(substream);
+	snd_pcm_capture_drop(substream);
 	fasync_helper(-1, file, 0, &substream->runtime->fasync);
 	down(&pcm->open_mutex);
 	snd_pcm_release_file(pcm_file);
