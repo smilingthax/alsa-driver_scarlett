@@ -1581,7 +1581,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 	for (i = 1; i < codecs; i++) {
 		ac97.num = i;
 		if ((err = snd_ac97_mixer(chip->card, &ac97, &x97)) < 0) {
-			snd_printk("Unable to initialize codec #%i [device = %i, GLOB_STA = 0x%x]\n", chip->device_type, glob_sta);
+			snd_printk("Unable to initialize codec #%i [device = %i, GLOB_STA = 0x%x]\n", i, chip->device_type, glob_sta);
 			codecs = i;
 			break;
 		}
