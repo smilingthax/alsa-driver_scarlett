@@ -22,6 +22,14 @@ static void __old_snd_complete_sync_urb(struct urb *urb)
 {
 	snd_complete_sync_urb(urb, NULL);
 }
+
+static int usb_reset_configuration(struct usb_device *dev)
+{
+	struct usb_host_config *config = dev->actconfig;
+
+	/* FIXME: replace with something more useful like in 2.6 code? */
+	return usb_set_configuration(dev, get_cfg_desc(config)->bConfigurationValue);
+}
 #endif
 
 /*
