@@ -269,7 +269,9 @@
 
 #define VTFT			0x03		/* Volume target and filter cutoff target register	*/
 #define VTFT_VOLUMETARGET_MASK	0xffff0000	/* Volume target of specified channel			*/
+#define VTFT_VOLUMETARGET	0x10100003
 #define VTFT_FILTERTARGET_MASK	0x0000ffff	/* Filter cutoff target of specified channel		*/
+#define VTFT_FILTERTARGET	0x10000003
 
 #define Z1			0x05		/* Filter delay memory 1 register			*/
 
@@ -672,9 +674,6 @@ struct snd_stru_emu10k1_voice {
 	    midi: 1;
 	void (*interrupt)(emu10k1_t *emu, emu10k1_voice_t *pvoice);
 
-	unsigned short send_routing;
-	unsigned char send_a, send_b, send_c, send_d;
-	unsigned char attn;
 	emu10k1_pcm_t *epcm;
 };
 
@@ -703,6 +702,16 @@ struct snd_stru_emu10k1_pcm {
 	unsigned int capture_bs_val;	/* buffer size value */
 	unsigned int capture_bufsize;	/* buffer size in bytes */
 };
+
+typedef struct {
+	unsigned short send_routing[3];
+	unsigned char send_volume[3][4];
+	unsigned short attn[3];
+	snd_kcontrol_t *ctl_send_routing;
+	snd_kcontrol_t *ctl_send_volume;
+	snd_kcontrol_t *ctl_attn;
+	emu10k1_pcm_t *epcm;
+} emu10k1_pcm_mixer_t;
 
 typedef struct snd_emu10k1_memblk_arg {
 	short first_page, last_page;
@@ -769,6 +778,7 @@ struct snd_stru_emu10k1 {
 	struct semaphore ptb_lock;
 
 	emu10k1_voice_t voices[64];
+	emu10k1_pcm_mixer_t pcm_mixer[32];
 
 	void (*hwvol_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*capture_interrupt)(emu10k1_t *emu, unsigned int status);
