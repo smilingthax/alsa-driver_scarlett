@@ -11,11 +11,7 @@
 
 .sym.c:
 	$(PEXPORT) $<
-ifeq (1,$(newkernel))
 	$(CC) $(INCLUDE) -E -D__GENKSYMS__ $*.c | $(GENKSYMS) > $(DEXPORT)/$*.ver
-else
-	$(CC) $(INCLUDE) -E -D__GENKSYMS__ $*.c | $(GENKSYMS) $(DEXPORT)
-endif
 
 .nsym.c:
 	$(PEXPORT) -n $<

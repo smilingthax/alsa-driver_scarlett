@@ -28,6 +28,9 @@ compile: $(PEXPORT) include/isapnp.h cards.config
 	@echo "ALSA modules were sucessfully compiled."
 	@echo
 
+dep: $(PEXPORT) include/isapnp.h cards.config
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d dep; then exit 1; fi; done
+
 cards.config: modules.config
 	make -C utils update-deps
 	make clean

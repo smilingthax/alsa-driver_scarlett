@@ -15,4 +15,5 @@ else
   echo "./configure $@"
   ./configure $@
 fi
+make dep
 make

@@ -3,9 +3,13 @@
 # Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
-$(TOPDIR)/include/sndversions.h: $(SYMFILES)
+$(DEXPORT)/%.ver: %.c
+	$(CC) $(INCLUDE) -E -D__GENKSYMS__ $*.c | $(GENKSYMS) > $(DEXPORT)/$*.ver
+
+$(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver)): $(TOPDIR)/include/config.h $(TOPDIR)/include/config1.h
+
+$(TOPDIR)/include/sndversions.h: $(SYMFILES) $(addprefix $(DEXPORT)/,$(EXPORTS:.o=.ver))
 	@echo updating $(TOPDIR)/include/sndversions.h
-ifeq (1,$(newkernel))
 	@(echo "#ifndef _LINUX_SNDMODVERSIONS";\
 	echo "#define _LINUX_SNDNODVERSIONS";\
 	echo "#include <linux/modsetver.h>";\
@@ -15,18 +19,13 @@ ifeq (1,$(newkernel))
         done; \
 	echo "#endif") \
 	> $(TOPDIR)/include/sndversions.h
+
+$(EXPORTS): $(TOPDIR)/include/sndversions.h $(EXPORTS:.o=.c)
+	$(CC) $(COPTS) $(INCLUDE) -DEXPORT_SYMTAB -c $(@:.o=.c)
+
+ifdef SUBDIRS
+dep fastdep: $(TOPDIR)/include/sndversions.h
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d dep; then exit 1; fi; done
 else
-	@(echo "#ifdef MODVERSIONS";\
-	echo "#undef  CONFIG_MODVERSIONS";\
-	echo "#define CONFIG_MODVERSIONS";\
-	echo "#ifndef _set_ver";\
-	echo "#define _set_ver(sym,vers) sym ## _R ## vers";\
-	echo "#endif";\
-	cd $(TOPDIR)/include/modules; \
-        for f in *.ver; do \
-          if [ -f $$f ]; then echo "#include \"modules/$${f}\""; fi; \
-        done; \
-	echo "#undef  CONFIG_MODVERSIONS";\
-	echo "#endif") \
-	> $(TOPDIR)/include/sndversions.h
+dep fastdep: $(TOPDIR)/include/sndversions.h
 endif
