@@ -43,7 +43,6 @@ struct snd_stru_es18xx {
 	int caps;			/* Chip capabilities */
 	unsigned short audio2_vol;	/* volume level of audio2 */
 
-	unsigned short open;		/* open channel mask */
 	unsigned short active;		/* active channel mask */
 
 	snd_kmixer_element_t *mix_mic;
@@ -54,8 +53,7 @@ struct snd_stru_es18xx {
 	snd_kmixer_element_t *mix_igain;
 
 	snd_card_t *card;
-	snd_pcm_t *pcm_a;
-	snd_pcm_t *pcm_b;
+	snd_pcm_t *pcm;
 	snd_pcm_subchn_t *playback_a_subchn;
 	snd_pcm1_subchn_t *playback_a_subchn1;
 	snd_pcm_subchn_t *capture_a_subchn;
@@ -103,8 +101,7 @@ extern es18xx_t *snd_es18xx_new_device(snd_card_t * card,
 				       snd_dma_t * dma1num,
 				       snd_dma_t * dma2num);
 extern int snd_es18xx_init(es18xx_t * codec, int enable);
-extern snd_pcm_t *snd_es18xx_pcm_a(es18xx_t * codec);
-extern snd_pcm_t *snd_es18xx_pcm_b(es18xx_t * codec);
+extern snd_pcm_t *snd_es18xx_pcm(es18xx_t * codec);
 extern snd_kmixer_t *snd_es18xx_mixer(es18xx_t * codec);
 
 #endif				/* __ES18xx_H */
