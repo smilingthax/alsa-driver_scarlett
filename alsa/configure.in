@@ -175,14 +175,21 @@ AC_ARG_WITH(moddir,
   [  --with-moddir=/path     give the path for the alsa driver kernel modules]
   [                        [/lib/modules/<KVER>/misc]],
   moddir="$withval", 
+  moddir_tree=n
 # Special test for RH 5.1
   if test -d /lib/modules/preferred; then
     moddir="/lib/modules/preferred/misc"
   else
-    moddir="/lib/modules/$kaversion/misc"
+    if test -d /lib/modules/$kaversion/kernel; then
+      moddir="/lib/modules/$kaversion/kernel/sound"
+      moddir_tree=y
+    else
+      moddir="/lib/modules/$kaversion/misc"
+    fi
   fi
 )
 AC_SUBST(moddir)
+AC_SUBST(moddir_tree)
 AC_MSG_RESULT($moddir)
 
 dnl Debug level

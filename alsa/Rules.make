@@ -4,6 +4,8 @@
 # It's a stripped and modified version of /usr/src/linux/Rules.make. [--jk]
 #
 
+MODCURDIR = $(subst $(TOPDIR)/,,$(shell /bin/pwd))
+
 #
 # False targets.
 #
@@ -134,8 +136,13 @@ modules: $(ALL_MOBJS) dummy \
 .PHONY: _modinst__
 _modinst__: dummy
 ifneq "$(strip $(ALL_MOBJS))" ""
+ifeq ($(moddir_tree),y)
+	mkdir -p $(DESTDIR)$(moddir)/$(MODCURDIR)
+	cp $(sort $(ALL_MOBJS)) $(DESTDIR)$(moddir)/$(MODCURDIR)
+else
 	mkdir -p $(DESTDIR)$(moddir)
-	cp $(ALL_MOBJS) $(DESTDIR)$(moddir)
+	cp $(sort $(ALL_MOBJS)) $(DESTDIR)$(moddir)
+endif
 endif
 
 .PHONY: modules_install
@@ -164,7 +171,6 @@ multi-used	:= $(filter $(list-multi), $(obj-y) $(obj-m))
 multi-objs	:= $(foreach m, $(multi-used), $($(basename $(m))-objs))
 active-objs	:= $(sort $(multi-objs) $(obj-y) $(obj-m))
 
-MODCURDIR = $(subst $(TOPDIR)/,,$(shell /bin/pwd))
 
 ifeq (y,$(CONFIG_SND_MVERSION))
 ifneq "$(strip $(export-objs))" ""
