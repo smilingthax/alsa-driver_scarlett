@@ -14,8 +14,10 @@ COPTS   += -DMODVERSIONS \
 endif
 COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB -DCONFIG_ISAPNP
 
-TARGETS = $(SNDVERSIONS) \
-          $(TOPDIR)/modules/isapnp.o
+TARGETS = $(SNDVERSIONS)
+ifeq (1,$(SNDCFG_ISAPNP))
+TARGETS+= $(TOPDIR)/modules/isapnp.o
+endif
 ISAPNP	= isapnp.o isapnp_proc.o
 ISAPNPE	= $(DEXPORT)/isapnp.ver
 SYMFILES = $(ISAPNPE)
