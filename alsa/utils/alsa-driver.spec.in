@@ -1,18 +1,29 @@
 %define version  @CONFIG_SND_VERSION@
-%define modsubdir "@modsubdir@"
+%define rel 1
 
 Summary:   ALSA driver
 Name:      alsa-driver
 Version:   %{version}
-Release:   1
-Source:    alsa-driver-%{version}.tar.bz2
+Release:   %rel
+Source:    ftp://ftp.alsa-project.org/pub/driver/%{name}-%{version}.tar.bz2
 URL:       http://www.alsa-project.org
 Copyright: GPL
 Group:     Base/Kernel
-Requires:  kernel-headers
-BuildRoot: /var/tmp/alsa-driver-%{version}-root
+Requires:  kernel >= 2.4
+Requires:  initscripts
+
+BuildRoot: %{_tmppath}/%{name}-%{version}-root
+
+BuildRequires:	kernel >= 2.4
+BuildRequires:	kernel-source >= 2.4
+BuildRequires:	initscripts
 
 %changelog
+* Mon Mar  3 2003 Ronny V. Vindenes <sublett@dc-s.com>
+- change BuildRoot from /var/tmp to %{_tmppath}
+- use standard rpm macros for %build
+- simplify %install
+- updated dependencies
 
 * Tue Nov 20 2001 Jaroslav Kysela <perex@suse.cz>
 
@@ -35,37 +46,17 @@ with OSS/Lite, but contains many enhanced features.
 %setup
 
 %build
-./configure --prefix=%_prefix ${EXTRA_ALSA_DRIVER_CONFIG_FLAGS}
+%configure
 make
 
 %install
-[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
-if [ -n "$TARGET_KERNEL" ] ; then 
-    export KVERSION=$TARGET_KERNEL
-else
-    export KVERSION=`uname -r`
-fi
+mkdir -p $RPM_BUILD_ROOT%{_includedir}/sound
+mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/rc.d/init.d
+mkdir -p $RPM_BUILD_ROOT%{_sbindir}/rc.d/init.d
 
-for I in etc/rc.d/init.d usr/include/linux lib/modules/$KVERSION/%{modsubdir}; do
-  mkdir -p $RPM_BUILD_ROOT/$I
-done
-
-
-make \
-  DESTDIR=$RPM_BUILD_ROOT \ 
-  prefix=/usr \ 
-  moddir=/lib/modules/$KVERSION/%{modsubdir} \ 
-  install
-
-install -m755 utils/alsasound $RPM_BUILD_ROOT/etc/rc.d/init.d/alsasound
-
-# files list - path for modules depends on kernel version
-echo "%attr(-,root,root) /lib/modules/$KVERSION/%{modsubdir}"			>/tmp/alsa-driver-files.lst
-# other files must be in file list too
-echo "%attr(-,root,root) %doc FAQ INSTALL README TODO snddevices doc/*" 	>>/tmp/alsa-driver-files.lst
-echo "%attr(-,root,root) %config /etc/rc.d/init.d/*"                            >>/tmp/alsa-driver-files.lst
-echo "%attr(-,root,root) /usr/include/sound/*.h"                                >>/tmp/alsa-driver-files.lst
+make DESTDIR=$RPM_BUILD_ROOT install
 
 %post
 if [ -x /sbin/chkconfig ]; then
@@ -81,7 +72,11 @@ if [ "$1" = 0 ] ; then
 fi
 
 %clean
-rm -f /tmp/alsa-driver-files.lst
-[ -n "$RPM_BUILD_ROOT" -a "$RPM_BUILD_ROOT" != / ] && rm -rf $RPM_BUILD_ROOT
+[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
-%files -f /tmp/alsa-driver-files.lst
+%files
+%defattr(-,root,root)
+%{_sysconfdir}/rc.d/init.d/*
+%{_includedir}/*
+/lib/modules/*/kernel/*
+%doc FAQ INSTALL README TODO snddevices doc/*
