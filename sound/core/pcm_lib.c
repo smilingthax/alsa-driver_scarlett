@@ -142,7 +142,10 @@ int snd_pcm_update_hw_ptr_interrupt(snd_pcm_substream_t *substream)
 		avail = snd_pcm_capture_avail(runtime);
 	if (avail > runtime->avail_max)
 		runtime->avail_max = avail;
-	if (avail >= runtime->stop_threshold) {
+	/* here we need to check both stop_threshold and buffer_size, because
+	   OSS mmap mode sets stop_threshold as maximum (boundary size). */
+	if (avail >= runtime->stop_threshold ||
+	    avail >= runtime->buffer_size) {
 		snd_pcm_stop(substream,
 			     runtime->status->state == SNDRV_PCM_STATE_DRAINING ?
 			     SNDRV_PCM_STATE_SETUP : SNDRV_PCM_STATE_XRUN);
