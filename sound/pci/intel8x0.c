@@ -267,7 +267,9 @@ enum {
 	ICH_REG_ALI_INTERRUPTSR = 0x18,	/* Interrupt  Status Register */
 	ICH_REG_ALI_FIFOCR2 = 0x1c,	/* FIFO Control Register 2   */
 	ICH_REG_ALI_CPR = 0x20,		/* Command Port Register     */
+	ICH_REG_ALI_CPR_ADDR = 0x22,	/* ac97 addr write */
 	ICH_REG_ALI_SPR = 0x24,		/* Status Port Register      */
+	ICH_REG_ALI_SPR_ADDR = 0x26,	/* ac97 addr read */
 	ICH_REG_ALI_FIFOCR3 = 0x2c,	/* FIFO Control Register 3  */
 	ICH_REG_ALI_TTSR = 0x30,	/* Transmit Tag Slot Register */
 	ICH_REG_ALI_RTSR = 0x34,	/* Receive Tag Slot  Register */
@@ -276,6 +278,12 @@ enum {
 	ICH_REG_ALI_SPDIFCSR = 0xf8,	/* spdif channel status register  */
 	ICH_REG_ALI_SPDIFICS = 0xfc	/* spdif interface control/status  */
 };
+
+#define ALI_CAS_SEM_BUSY	0x80000000
+#define ALI_CSPSR_CODEC_READY	0x08
+#define ALI_CPR_ADDR_READ	0x80
+#define ALI_CSPSR_READ_OK	0x02
+#define ALI_CSPSR_WRITE_OK	0x01
 
 /* interrupts for the whole chip by interrupt status register finish */
  
@@ -593,8 +601,8 @@ static int snd_intel8x0_ali_codec_semaphore(intel8x0_t *chip)
 {
 	int time = 100;
 	do {
-		if (igetdword(chip, ICHREG(ALI_CAS)) & 0x80000000)
-			return snd_intel8x0_ali_codec_ready(chip, 0x08);
+		if (! (igetdword(chip, ICHREG(ALI_CAS)) & ALI_CAS_SEM_BUSY))
+			return snd_intel8x0_ali_codec_ready(chip, ALI_CSPSR_CODEC_READY);
 		udelay(1);
 	} while (time--);
 	snd_printk(KERN_WARNING "intel8x0: AC97 codec semaphore timeout.\n");
@@ -609,15 +617,14 @@ static unsigned short snd_intel8x0_ali_codec_read(ac97_t *ac97, unsigned short r
 	spin_lock(&chip->ac97_lock);
 	if (snd_intel8x0_ali_codec_semaphore(chip))
 		goto __err;
-	reg |= 0x0080;
-	iputword(chip, ICHREG(ALI_CPR) + 2, reg | 0x0080);
-	if (snd_intel8x0_ali_codec_ready(chip, 0x02))
+	iputword(chip, ICHREG(ALI_CPR_ADDR), reg | ALI_CPR_ADDR_READ);
+	if (snd_intel8x0_ali_codec_ready(chip, ALI_CSPSR_READ_OK))
 		goto __err;
 	data = igetword(chip, ICHREG(ALI_SPR));
-	reg2 = igetword(chip, ICHREG(ALI_SPR) + 2);
+	reg2 = igetword(chip, ICHREG(ALI_SPR_ADDR));
 	if (reg != reg2) {
-		snd_printd(KERN_WARNING "intel8x0: AC97 read not completed?\n");
-		goto __err;
+		snd_printd(KERN_WARNING "intel8x0: AC97 read not completed? 0x%x != 0x%x\n", reg, reg2);
+		// goto __err;
 	}
 	spin_unlock(&chip->ac97_lock);
 	return data;
@@ -636,8 +643,8 @@ static void snd_intel8x0_ali_codec_write(ac97_t *ac97, unsigned short reg, unsig
 		return;
 	}
 	iputword(chip, ICHREG(ALI_CPR), val);
-	iputbyte(chip, ICHREG(ALI_CPR) + 2, reg);
-	snd_intel8x0_ali_codec_ready(chip, 0x01);
+	iputbyte(chip, ICHREG(ALI_CPR_ADDR), reg);
+	snd_intel8x0_ali_codec_ready(chip, ALI_CSPSR_WRITE_OK);
 	spin_unlock(&chip->ac97_lock);
 }
 
@@ -1321,14 +1328,14 @@ static struct ich_pcm_table nforce_pcms[] __devinitdata = {
 		.capture_ops = &snd_intel8x0_capture_mic_ops,
 		.prealloc_size = 0,
 		.prealloc_max_size = 128 * 1024,
-		.ac97_idx = ICHD_MIC,
+		.ac97_idx = NVD_MIC,
 	},
 	{
 		.suffix = "IEC958",
 		.playback_ops = &snd_intel8x0_spdif_ops,
 		.prealloc_size = 64 * 1024,
 		.prealloc_max_size = 128 * 1024,
-		.ac97_idx = NVD_MIC,
+		.ac97_idx = NVD_SPBAR,
 	},
 };
 
@@ -1344,7 +1351,7 @@ static struct ich_pcm_table ali_pcms[] __devinitdata = {
 		.capture_ops = &snd_intel8x0_ali_capture_mic_ops,
 		.prealloc_size = 0,
 		.prealloc_max_size = 128 * 1024,
-		.ac97_idx = ICHD_MIC,
+		.ac97_idx = ALID_MIC,
 	},
 	{
 		.suffix = "IEC958",
