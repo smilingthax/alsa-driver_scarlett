@@ -35,7 +35,7 @@ include/isapnp.h:
 
 /usr/include/byteswap.h:
 	if [ ! -r /usr/include/byteswap.h ]; then \
-	  cp utils/patches/byteswap.h /usr/include \
+	  cp utils/patches/byteswap.h /usr/include ; \
 	fi
 
 compile: /usr/include/byteswap.h include/sndversions.h include/isapnp.h cards.config
