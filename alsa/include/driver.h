@@ -87,6 +87,7 @@
 #include <linux/sched.h>
 #include <linux/malloc.h>
 #include <linux/delay.h>
+#include <linux/bitops.h>
 
 #include <linux/ioport.h>
 
