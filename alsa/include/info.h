@@ -140,8 +140,6 @@ static inline snd_info_entry_t *snd_info_create_device(const char *name,
 						       unsigned int number,
 						       unsigned int mode) { return NULL; }
 static inline void snd_info_free_device(snd_info_entry_t * entry) { ; }
-static inline int snd_info_store_text(snd_info_entry_t * entry) { return 0; }
-static inline int snd_info_restore_text(snd_info_entry_t * entry) { return 0; }
 
 static inline int snd_info_card_register(snd_card_t * card) { return 0; }
 static inline int snd_info_card_unregister(snd_card_t * card) { return 0; }

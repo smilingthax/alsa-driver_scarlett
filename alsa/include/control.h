@@ -61,7 +61,5 @@ extern int snd_control_switch_add(snd_card_t * card, snd_kswitch_t * ksw);
 extern int snd_control_switch_remove(snd_card_t * card, snd_kswitch_t * ksw);
 extern snd_kswitch_t *snd_control_switch_new(snd_card_t * card, snd_kswitch_t * ksw, void *private_data);
 extern int snd_control_switch_change(snd_card_t * card, snd_kswitch_t * ksw);
-extern void snd_control_store(snd_card_t *card);
-extern void snd_control_restore(snd_card_t *card);
 
 #endif				/* __CONTROL_H */

@@ -2,7 +2,6 @@
 /* Soundcard-Configuration for ALSA driver */
 /* Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no> */
 
-#undef CONFIG_PERSIST
 #undef CONFIG_SND
 #undef CONFIG_SND_MIXER
 #undef CONFIG_SND_PCM

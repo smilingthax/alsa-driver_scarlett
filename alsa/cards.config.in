@@ -2,7 +2,6 @@
 # Soundcard-Configuration for ALSA driver
 # Copyright (c) by Anders Semb Hermansen <ahermans@vf.telia.no>
 
-CONFIG_PERSIST=@CONFIG_PERSIST@
 CONFIG_SND=@CONFIG_SND@
 CONFIG_SND_MIXER=@CONFIG_SND_MIXER@
 CONFIG_SND_PCM=@CONFIG_SND_PCM@

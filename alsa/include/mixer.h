@@ -24,9 +24,6 @@
 
 #define SND_MIXER_CMD_READ	0
 #define SND_MIXER_CMD_WRITE	1
-#define SND_MIXER_CMD_STORE	2
-#define SND_MIXER_CMD_RESTORE	3
-#define SND_MIXER_CMD_SIZE	4
 
 typedef struct snd_stru_mixer_element snd_kmixer_element_t;
 typedef struct snd_stru_mixer_group snd_kmixer_group_t;
