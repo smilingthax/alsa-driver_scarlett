@@ -733,25 +733,62 @@ static void isapnp_print_resources(isapnp_info_buffer_t *buffer, char *space, st
 
 static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isapnp_logdev *logdev)
 {
-	int i;
+	int i, tmp, next;
 	char *space = "    ";
 
 	isapnp_cfg_begin(logdev->dev->csn, logdev->number);
 	isapnp_printf(buffer, "%sDevice is %sactive\n",
 			space, isapnp_cfg_get_byte(ISAPNP_CFG_ACTIVATE)?"":"not ");
-	isapnp_printf(buffer, "%sActive port ", space);
-	for (i = 0; i < 8; i++)
-		isapnp_printf(buffer, "%s0x%x", i > 0 ? "," : "", isapnp_cfg_get_word(ISAPNP_CFG_PORT + (i << 1)));
-	isapnp_printf(buffer, "\n%sActive IRQ ", space);
-	for (i = 0; i < 2; i++)
-		isapnp_printf(buffer, "%s0x%x", i > 0 ? "," : "", isapnp_cfg_get_word(ISAPNP_CFG_IRQ + (i << 1)));
-	isapnp_printf(buffer, "\n%sActive DMA ", space);
-	for (i = 0; i < 2; i++)
-		isapnp_printf(buffer, "%s0x%x", i > 0 ? "," : "", isapnp_cfg_get_word(ISAPNP_CFG_DMA + i));
-	isapnp_printf(buffer, "\n%sActive memory ", space);
-	for (i = 0; i < 4; i++)
-		isapnp_printf(buffer, "%s0x%x", i > 0 ? "," : "", isapnp_cfg_get_dword(ISAPNP_CFG_MEM + (i << 3)));
-	isapnp_printf(buffer, "\n");
+	for (i = next = 0; i < 8; i++) {
+		tmp = isapnp_cfg_get_word(ISAPNP_CFG_PORT + (i << 1));
+		if (!tmp)
+			continue;
+		if (!next) {
+			isapnp_printf(buffer, "%sActive port ", space);
+			next = 1;
+		}
+		isapnp_printf(buffer, "%s0x%x", i > 0 ? "," : "", tmp);
+	}
+	if (next)
+		isapnp_printf(buffer, "\n");
+	for (i = next = 0; i < 2; i++) {
+		tmp = isapnp_cfg_get_word(ISAPNP_CFG_IRQ + (i << 1));
+		if (!(tmp >> 8))
+			continue;
+		if (!next) {
+			isapnp_printf(buffer, "%sActive IRQ ", space);
+			next = 1;
+		}
+		isapnp_printf(buffer, "%s%i", i > 0 ? "," : "", tmp >> 8);
+		if (tmp & 0xff)
+			isapnp_printf(buffer, " [0x%x]", tmp & 0xff);
+	}
+	if (next)
+		isapnp_printf(buffer, "\n");
+	for (i = next = 0; i < 2; i++) {
+		tmp = isapnp_cfg_get_byte(ISAPNP_CFG_DMA + i);
+		if (tmp == 4)
+			continue;
+		if (!next) {
+			isapnp_printf(buffer, "%sActive DMA ", space);
+			next = 1;
+		}
+		isapnp_printf(buffer, "%s%i", i > 0 ? "," : "", tmp);
+	}
+	if (next)
+		isapnp_printf(buffer, "\n");
+	for (i = next = 0; i < 4; i++) {
+		tmp = isapnp_cfg_get_dword(ISAPNP_CFG_MEM + (i << 3));
+		if (!tmp)
+			continue;
+		if (!next) {
+			isapnp_printf(buffer, "%sActive memory ", space);
+			next = 1;
+		}
+		isapnp_printf(buffer, "%s0x%x", i > 0 ? "," : "", tmp);
+	}
+	if (next)
+		isapnp_printf(buffer, "\n");
 	isapnp_cfg_end();
 }
 
