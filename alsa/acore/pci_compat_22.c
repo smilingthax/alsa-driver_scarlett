@@ -348,8 +348,12 @@ int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name)
 	
 	for (i = 0; i < 6; i++)
 		if (pci_request_region(pdev, i, res_name))
-			return -EBUSY;
+			goto err;
 	return 0;
+ err:
+	while (--i >= 0)
+		snd_pci_compat_release_region(pdev, i);
+	return -EBUSY;
 }
 
 void snd_pci_compat_release_regions(struct pci_dev *pdev)
