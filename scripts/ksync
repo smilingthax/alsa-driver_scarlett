@@ -78,7 +78,7 @@ ALSA_MAP = {'/':'/sound',
 KERNEL_MAP = {}		# Initialized from ALSA_MAP
 
 # Comment mapping
-COMMENT_MAP = [
+COMMENT_MAP_DRIVER = [
 		('/drivers/mpu401'	,'MPU401 UART'),
 	 	('/include/asound_fm.h' ,'Raw OPL FM'),
 		('/include/opl3.h'	,'OPL3'),
@@ -133,8 +133,8 @@ COMMENT_MAP = [
 		('/isa'			,'ERROR'),
 		('/include/ak4531_codec.h','AK4531 codec'),
 		('/pci/ac97/ak4531_codec.c','AK4531 codec'),
-		('/include/ac97_codec.h','AC97 Codec Core'),
-		('/pci/ac97'		,'AC97 Codec Core'),
+		('/include/ac97_codec.h','AC97 Codec'),
+		('/pci/ac97'		,'AC97 Codec'),
 		('/pci/ali5451'		,'ALI5451 driver'),
 		('/include/emu10k1.h'	,'EMU10K1/EMU10K2 driver'),
 		('/pci/emu10k1'		,'EMU10K1/EMU10K2 driver'),
@@ -180,6 +180,7 @@ COMMENT_MAP = [
 		('/pci/Kconfig'		,'PCI drivers'),
 		('/pci/Makefile'	,'PCI drivers'),
 		('/pci/ca0106/.*'	,'CA0106 driver'),
+		('/include/hdspm.h'	,'HDSPM driver'),
 		('/pci'			,'ERROR'),
 		('/ppc/Makefile'	,'PPC'),
 		('/ppc/Kconfig'		,'PPC'),
@@ -217,7 +218,7 @@ COMMENT_MAP = [
 		('/synth/Makefile'	,'Synth'),
 		('/synth/util_mem.c'	,'Synth'),
 		('/pcmcia/vx'		,'Digigram VX Pocket driver'),
-		('/pcmcia/pdaudiocf'	,'Sound Core PDAudioCF driver'),
+		('/pcmcia/pdaudiocf'	,'PDAudioCF driver'),
 		('/pcmcia/Kconfig'	,'PCMCIA Kconfig'),
 		('/pcmcia/Makefile'	,'PCMCIA'),
 		('/pcmcia'		,'ERROR'),
@@ -254,6 +255,7 @@ COMMENT_MAP = [
 		('/core/hwdep.*'	,'HWDEP Midlevel'),
 		('/include/control.*'	,'Control Midlevel'),
 		('/core/control.*'	,'Control Midlevel'),
+		('/include/adriver.h'	,'ALSA Core'),
 		('/include/asound.h'	,'ALSA Core'),
 		('/include/driver.h'	,'ALSA Core'),
 		('/include/version.h'	,'ALSA Version'),
@@ -263,6 +265,8 @@ COMMENT_MAP = [
 		('/include/info.h'	,'ALSA Core'),
 		('/include/core.h'	,'ALSA Core'),
 		('/include/memalloc.h'  ,'ALSA Core'),
+		('/include/config.h.in' ,'ALSA Core'),
+		('/include/firmware_compat.h','ALSA Core'),
 		('/core/info.*'		,'ALSA Core'),
 		('/core/control.*'	,'ALSA Core'),
 		('/core/init.*'		,'ALSA Core'),
@@ -270,15 +274,94 @@ COMMENT_MAP = [
 		('/core/device.*'	,'ALSA Core'),
 		('/core/memory.*'	,'ALSA Core'),
 		('/core/misc.*'		,'ALSA Core'),
+		('/core/wrappers.*'	,'ALSA Core'),
 		('/core/Makefile'	,'ALSA Core'),
 		('/core'		,'ERROR'),
-		('/Documentation'	,'Documentation'),
+		('/Documentation/.*'	,'Documentation'),
+		('/doc/.*'		,'Documentation'),
 		('/include'		,'ERROR'),
 		('/sound_core.c'	,'OSS device core'),
 		('/scripts'		,'IGNORE'),
 		('/Kconfig'		,'Sound Core'),
+		('/Makefile'		,'Sound Core'),
+		('/INSTALL'		,'Sound Core'),
+		('/Rules.make'		,'Sound Core'),
+		('/configure.in'	,'Sound Core'),
 		('/'			,'ERROR')
 	       ]
+COMMENT_MAP_LIB = [
+		('/include/sound/.*'	,'Kernel Headers'),
+		('/include/local.*'	,'Core'),
+		('/include/global.*'	,'Core'),
+		('/include/control.h'	,'Control API'),
+		('/src/control/.*'	,'Control API'),
+		('/src/mixer/.*'	,'Mixer API'),
+		('/include/pcm.h'	,'PCM API'),
+		('/src/pcm/.*'		,'PCM API'),
+		('/src/rawmidi/.*'	,'RawMidi API'),
+		('/src/timer/.*'	,'Timer API'),
+		('/src/seq/.*'		,'Sequencer API'),
+		('/src/instr/.*'	,'Instrument API'),
+		('/src/input.*'		,'I/O subsystem'),
+		('/src/output.*'	,'I/O subsystem'),
+		('/src/conf.*'		,'Configuration'),
+		('/src/async.*'		,'Async helpers'),
+		('/src/error.*'		,'Error handler'),
+		('/src/socket.*'	,'Socket helpers'),
+		('/src/userfile.*'	,'Filename helpers'),
+		('/src/Versions'	,'Core'),
+		('/doc/.*'		,'Documentation'),
+		('/configure.in'	,'Core'),
+		('/NOTES'		,'Documentation'),
+		('/'			,'ERROR')
+	       ]
+COMMENT_MAP_UTILS = [
+		('/amixer/.*'		,'amixer'),
+		('/alsamixer/.*'	,'alsamixer'),
+		('/aplay/.*'		,'aplay/arecord'),
+		('/alsaconf/.*'		,'alsaconf'),
+		('/speaker-test/.*'	,'Speaker Test'),
+		('/alsactl/.*'		,'ALSA Control (alsactl)'),
+		('/configure.in'	,'Core'),
+		('/Makefile.am'		,'Core'),
+		('/Makefile.am'		,'Core'),
+		('/m4/.*'		,'IGNORE'),
+		('/'			,'ERROR')
+	       ]
+COMMENT_MAP_TOOLS = [
+		('/envy24control/.*'	,'Envy24 Control'),
+		('/rmedigicontrol/.*'	,'RME Digi Control'),
+		('/pcxhrloader/.*'	,'Digigram PCXHR Loader'),
+		('/echomixer/.*'	,'Digigram Echo Mixer'),
+		('/Makefile'		,'Core'),
+		('/'			,'ERROR')
+	       ]
+COMMENT_MAP_FIRMWARE = [
+		('/vxloader'		,'Digigram Vx Loader'),
+		('/mixartloader'	,'Digigram MixArt Loader'),
+		('/pcxhrloader'		,'Digigram PCXHR Loader'),
+		('/echoaudio'		,'Digigram Echo Audio Loader'),
+		('/hdsploader'		,'RME HDSP Loader'),
+		('/configure.in'	,'Core'),
+		('/Makefile.am'		,'Core'),
+		('/README'		,'Core'),
+		('/'			,'ERROR')
+	       ]
+COMMENT_MAP_OSS = [
+		('/alsa/pcm.c'		,'PCM Emulation'),
+		('/alsa/Makefile.am'	,'Core'),
+		('/alsa/aoss.1'		,'Manual Page'),
+		('/configure.in'	,'Core'),
+		('/'			,'ERROR')
+	       ]
+COMMENT_MAP = {
+	'alsa-driver': COMMENT_MAP_DRIVER,
+	'alsa-lib': COMMENT_MAP_LIB,
+	'alsa-utils': COMMENT_MAP_UTILS,
+	'alsa-tools': COMMENT_MAP_TOOLS,
+	'alsa-firmware': COMMENT_MAP_FIRMWARE,
+	'alsa-oss': COMMENT_MAP_OSS
+}
 
 # Global variables
 LAST_CVS_TIME = 0
@@ -299,6 +382,9 @@ def usage(code, msg=''):
 
 def get_cvs_root():
 	return os.path.expanduser(CVSROOT + '/alsa-kernel')
+
+def get_cvs_root_top():
+	return os.path.expanduser(CVSROOT)
 
 def get_bk_root(root=''):
 	if root == '':
@@ -947,7 +1033,7 @@ def parse_time(str):
 
 def cvsps(changeset):
 	os.chdir(get_cvs_root())
-	lines = my_popen("cvsps -u | grep PatchSet | tail -n 1")
+	lines = my_popen("cvsps -Z 3 -u | grep PatchSet | tail -n 1")
 	dummy, endchangeset = string.split(lines[0][0:-2], ' ')
 	changeset = int(changeset)
 	endchangeset = int(endchangeset)
@@ -959,7 +1045,7 @@ def cvsps(changeset):
 	while changeset <= endchangeset:
 		print 'ChangeSet %s' % changeset
 		fp = open(get_cvs_root() + '/scripts/changesets/%s.patch' % changeset, 'w+')
-		lines = my_popen('cvsps -g -s %s' % changeset)
+		lines = my_popen('cvsps -Z 3 -g -s %s' % changeset)
 		idx = 0
 		bkfile = ''
 		for i in lines:
@@ -987,21 +1073,30 @@ def cvsps(changeset):
 		fp.close()
 		changeset += 1				
 
-def cvsps_merge_members1(file):
+def cvsps_merge_members1(file, module):
 	global COMMENT_MAP
-	for i in COMMENT_MAP:
+	map = COMMENT_MAP[module]
+	if module == 'alsa-driver' and file[:6] == '/acore':
+		file = '/' + file[2:]
+	for i in map:
 		if re.compile("^" + i[0]).search(file):
+			if i[1] == 'ERROR':
+				break
 			return i[1]
-	return ''
+	if file[-11:] == '/.cvsignore':
+		return 'IGNORE'
+	if file[-9:] == '/Makefile':
+		return file
+	return 'ERROR'
 
-def cvsps_merge_members(members):
+def cvsps_merge_members(members, module='alsa-driver'):
 	changes = []
 	result = []
 	for member in members:
 		file, other = string.split(member, ':')
 		file = "/" + file
 		while file != '':
-			result1 = cvsps_merge_members1(file)
+			result1 = cvsps_merge_members1(file, module)
 			if result1 == 'ERROR':
 				print 'Cannot identify file "%s"' % file
 				sys.exit(1)
@@ -1184,6 +1279,178 @@ def cvsps_merge():
 				cvsps_merge1(f, t=0)
 	del l
 
+def cvsps_changes1(changes, lines, module):
+	if module == 'alsa-kernel':
+		module = 'alsa-driver'
+	idx = 0
+	delim = '---------------------\n'
+	while idx < len(lines):
+		while idx < len(lines) and lines[idx] != delim:
+			idx += 1
+		idx += 1
+		patchset = 0
+		date = ''
+		author = ''
+		log = []
+		logflag = False
+		memflag = False
+		members = []
+		while idx < len(lines) and lines[idx] != delim:
+			line = lines[idx]
+			# print line
+			if line[:8] == 'Members:':
+				logflag = False
+				memflag = True
+			elif logflag:
+				if len(line) > 1:
+					log.append(line[:-1])
+			elif memflag:
+				if len(line) > 2:
+					members.append(line[1:-1])
+			elif line[:9] == 'PatchSet ':
+				patchset = long(line[9:-1])
+				#print 'patchset: %s' % patchset
+			elif line[:6] == 'Date: ':
+				date = line[6:-1]
+				#print 'date: %s' % date
+			elif line[:8] == 'Author: ':
+				author = line[8:-1]
+				#print 'author: %s' % author
+			elif line[:4] == 'Log:':
+				logflag = True
+			idx += 1
+		a = {}
+		a['patchset'] = patchset
+		a['date'] = date
+		a['author'] = author
+		a['log'] = log
+		a['members'] = members
+		a['module'] = module
+		already = False
+		idx1 = 0
+		for change in changes:
+			if a['date'] == change['date'] and \
+			   a['author'] == change['author'] and \
+			   a['log'] == change['log']:
+				# print 'SAME!!!'
+				already = True
+				break
+			if a['date'] < change['date']:
+				changes.insert(idx1, a)
+				# print 'INSERTED!!!'
+				already = True
+				break
+			idx1 += 1
+		if not already:
+			changes.append(a)
+		del log
+		del members
+
+def cvsps_changes2(changes):
+	res = {}
+	for change in changes:
+		module = change['module']
+		if not res.has_key(module):
+			res[module] = {}
+		members = cvsps_merge_members(change['members'], module)[0]
+		mems = string.split(members, ',')
+		for mem in mems:
+			if mem == 'IGNORE':
+				continue
+			if not res[module].has_key(mem):
+				res[module][mem] = []
+			res[module][mem].append(change)
+	return res
+
+def cvsps_changes3(allitems):
+	items = []
+	idx = 0
+	for item in ['Sound Core', 'ALSA Core']:
+		items.append([item])
+		idx += 1
+	core = idx
+	items.append([])	# Core
+	midlevel = idx + 1
+	items.append([])	# Midlevel
+	all = idx + 2
+	items.append(allitems)
+	items[all].sort()
+	for item in items[all]:
+		if string.find(item, 'Core') >= 0:
+			items[core].append(item)
+		if string.find(item, 'Midlevel') >= 0:
+			items[midlevel].append(item)
+		if string.find(item, 'API') >= 0:
+			items[midlevel].append(item)
+	idx1 = core
+	while idx1 < all:
+		for item in items[idx1]:
+			items[all].remove(item)
+		idx1 += 1
+	for items1 in items[:idx]:
+		for item in items1:
+			idx1 = idx
+			while idx1 < len(items):
+				if item in items[idx1]:
+					items[idx1].remove(item)
+				idx1 += 1
+	return items
+
+def cvsps_changes(rev1, rev2):
+	changes = []
+	os.chdir(get_cvs_root_top())
+	fullset = ['alsa-driver', 'alsa-kernel', 'alsa-lib',
+		   'alsa-utils', 'alsa-tools', 'alsa-firmware',
+		   'alsa-oss']:
+	for module in fullset:
+	#for module in ['alsa-oss']:
+		os.chdir(get_cvs_root_top() + '/' + module)
+		lines = my_popen("cvsps -Z 3 -r %s -r %s" % (rev1, rev2))
+		#lines = my_popen("cvsps -Z 3 -u -r %s -r %s" % (rev1, rev2))
+		cvsps_changes1(changes, lines, module)
+	res = cvsps_changes2(changes)
+	modules1 = res.keys()
+	modules = []
+	for module in fullset:
+		if module in modules1:
+			modules.append(module)
+	print
+	print
+	print 'Changelog'
+	print '*********'
+	print
+	for module in modules:
+		print '* %s' % module
+		items = cvsps_changes3(res[module].keys())
+		for items1 in items:
+			for b in items1:
+				if not res[module].has_key(b):
+					continue
+				print '  + %s' % b
+				for a in res[module][b]:
+					log = a['log'][0]
+					if log[:9] == 'Summary: ':
+						log = log[9:]
+					print '    - %s' % log
+	print
+	print
+	print 'Detailed changelog'
+	print '******************'
+	print
+	for module in modules:
+		print '* %s' % module
+		items = cvsps_changes3(res[module].keys())
+		for items1 in items:
+			for b in items1:
+				if not res[module].has_key(b):
+					continue
+				print '  + %s' % b
+				for a in res[module][b]:
+					log = a['log']
+					first = "-"
+					for l in log:
+						print '    %s %s' % (first, l)
+						first = " "
 
 def main():
 	global CVSROOT, BKROOT, BKROOT1, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
@@ -1241,6 +1508,12 @@ def main():
 	elif args[0] == 'cvsps-merge':
 		BKROOT = '~/bk/linux-sound/work'
 		cvsps_merge()
+	elif args[0] == 'cvsps-changes':
+		if len(args) < 3:
+			print 'Please, give a start and end revision'
+			print 'Example: ksync cvsps-changes v1-0-7 v1-0-8'
+			return
+		cvsps_changes(args[1], args[2])
 	elif args[0] == 'lsync':
 		to_cvs_time = 0
 		patch = ''
