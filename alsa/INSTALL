@@ -14,6 +14,12 @@ Before installing this driver, it will be helpful to read carefully
 the documentation for insmod, modprobe, kmod and for the isapnp
 module if you have an ISA PnP soundcard.
 
+Module option name change after 0.9.0rc3
+========================================
+
+Note that module option names were changed in 0.9.0rc4. The 'snd_' prefix
+was removed. You may use script in utils directory (module-options) to
+convert your older /etc/modules.conf to newer one.
 
 Quick install
 =============
