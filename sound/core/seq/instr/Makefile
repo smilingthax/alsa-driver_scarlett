@@ -15,7 +15,7 @@ snd-ainstr-simple-objs := ainstr_simple.o
 snd-ainstr-gf1-objs := ainstr_gf1.o
 snd-ainstr-iw-objs := ainstr_iw.o
 
-# Module Dependency
+# Toplevel Module Dependency
 obj-$(CONFIG_SND_ALS100) += snd-ainstr-fm.o
 obj-$(CONFIG_SND_AZT2320) += snd-ainstr-fm.o
 obj-$(CONFIG_SND_DT0197H) += snd-ainstr-fm.o
