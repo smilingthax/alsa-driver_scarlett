@@ -80,7 +80,11 @@ install-modules: compile
 	mkdir -p $(DESTDIR)$(moddir)
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 	cp modules/*.o $(DESTDIR)$(moddir)
+ifeq ($(DESTDIR),)
+	/sbin/depmod -a
+else
 	/sbin/depmod -a -b $(DESTDIR)/
+endif
 
 install-scripts:
 	if [ -d /sbin/init.d ]; then \
