@@ -163,7 +163,7 @@ struct ak4117 {
 	ak4117_read_t * read;
 	void * private_data;
 	unsigned int init: 1;
-	spinlock_t * lock;
+	spinlock_t lock;
 	unsigned char regmap[5];
 	snd_kcontrol_t *kctls[AK4117_CONTROLS];
 	snd_pcm_substream_t *substream;
