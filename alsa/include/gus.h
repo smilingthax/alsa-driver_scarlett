@@ -380,6 +380,10 @@ struct snd_stru_gus_card {
 
 	struct snd_stru_gf1 gf1;	/* gf1 specific variables */
 	snd_pcm_t *pcm;
+	snd_pcm_subchn_t *pcm_subchn;
+	snd_pcm1_subchn_t *pcm_subchn1;
+	snd_pcm_subchn_t *pcm_cap_subchn;
+	snd_pcm1_subchn_t *pcm_cap_subchn1;
 	snd_rawmidi_t *midi_uart;
 
 	spinlock_t reg_lock;
@@ -391,8 +395,7 @@ struct snd_stru_gus_card {
 	spinlock_t neutral_lock;
 	struct semaphore dma_mutex;
 	struct semaphore register_mutex;
-	snd_sleep_define(neutral);
-	snd_sleep_define(clear);
+	wait_queue_head_t neutral_sleep;
 };
 
 /* I/O functions for GF1/InterWave chip - gus_io.c */
@@ -623,11 +626,9 @@ int snd_gus_iwffff_remove_sample(void *private_data, iwffff_wave_t *wave,
 #endif
 
 /* gus_dram.c */
-#ifdef CONFIG_SND_SEQUENCER
 int snd_gus_dram_write(snd_gus_card_t *gus, char *ptr,
 		       unsigned int addr, unsigned int size);
 int snd_gus_dram_read(snd_gus_card_t *gus, char *ptr,
 		      unsigned int addr, unsigned int size, int rom);
-#endif
 
 #endif				/* __GUS_H */

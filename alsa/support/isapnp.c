@@ -69,7 +69,6 @@ int isapnp_reserve_irq[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some IR
 int isapnp_reserve_dma[8] = { [0 ... 7] = -1 };		/* reserve (don't use) some DMA */
 int isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
 int isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
-#ifdef MODULE_PARM
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
 MODULE_PARM(isapnp_disable, "i");
@@ -90,7 +89,6 @@ MODULE_PARM(isapnp_reserve_io, "1-16i");
 MODULE_PARM_DESC(isapnp_reserve_io, "ISA Plug & Play - reserve I/O region(s) - port,size");
 MODULE_PARM(isapnp_reserve_mem, "1-16i");
 MODULE_PARM_DESC(isapnp_reserve_mem, "ISA Plug & Play - reserve memory region(s) - address,size");
-#endif
 
 #define _PIDXR		0x279
 #define _PNPWRP		0xa79

@@ -153,7 +153,6 @@ struct snd_stru_ad1848 {
 
 	spinlock_t reg_lock;
 	struct semaphore open_mutex;
-	snd_sleep_define(mce);
 };
 
 typedef struct snd_stru_ad1848 ad1848_t;

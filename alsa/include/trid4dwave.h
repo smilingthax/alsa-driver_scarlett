@@ -171,7 +171,7 @@ struct snd_stru_trident {
 	int isNX;		/* NX chip present */
 
         int enable_playback;
-        int enable_record;
+        int enable_capture;
         
         unsigned char  bDMAStart;
 
@@ -188,7 +188,6 @@ struct snd_stru_trident {
 	snd_rawmidi_t *rmidi;
 
 	spinlock_t reg_lock;
-	snd_sleep_define(codec);
 	snd_info_entry_t *proc_entry;
 };
 

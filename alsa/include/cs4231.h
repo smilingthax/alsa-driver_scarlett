@@ -228,8 +228,12 @@ struct snd_stru_cs4231 {
 	unsigned short hardware;	/* see to CS4231_HW_XXXX */
 	unsigned short single_dma:1;	/* forced single DMA mode (GUS 16-bit daughter board) or dma1 == dma2 */
 
-	snd_pcm_t *pcm;
 	snd_card_t *card;
+	snd_pcm_t *pcm;
+	snd_pcm_subchn_t *playback_subchn;
+	snd_pcm1_subchn_t *playback_subchn1;
+	snd_pcm_subchn_t *capture_subchn;
+	snd_pcm1_subchn_t *capture_subchn1;
 	snd_kmixer_t *mixer;
 	snd_timer_t *timer;
 
@@ -241,18 +245,16 @@ struct snd_stru_cs4231 {
 	spinlock_t reg_lock;
 	struct semaphore mce_mutex;
 	struct semaphore open_mutex;
-	snd_sleep_define(mce);
-	snd_sleep_define(iec958);
 
 	snd_kmixer_element_t *me_mux_mic;
 	snd_kmixer_element_t *me_mux_line;
 	snd_kmixer_element_t *me_mux_aux1;
 	snd_kmixer_element_t *me_mux_mix;
 
-	unsigned int (*set_playback_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
-	unsigned int (*set_record_rate) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned int rate);
-	void (*set_playback_format) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned char pdfr);
-	void (*set_record_format) (snd_pcm1_t * pcm1, cs4231_t * codec, unsigned char cdfr);
+	unsigned int (*set_playback_rate) (cs4231_t * codec, unsigned int rate);
+	unsigned int (*set_capture_rate) (cs4231_t * codec, unsigned int rate);
+	void (*set_playback_format) (cs4231_t * codec, unsigned char pdfr);
+	void (*set_capture_format) (cs4231_t * codec, unsigned char cdfr);
 };
 
 /* exported functions */

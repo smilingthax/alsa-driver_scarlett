@@ -98,7 +98,7 @@ typedef struct snd_emu8000 {
 
 	spinlock_t voice_lock;	/* Lock for voice access */
 	spinlock_t reg_lock;	/* Lock for chip register access */
-	snd_sleep_define(wait);	/* Lock for waits */
+	wait_queue_head_t wait;	/* Lock for waits */
 	struct semaphore register_mutex;
 	struct semaphore patch_mutex;
 

@@ -94,9 +94,8 @@ static ssize_t isapnp_info_entry_read(struct file *file, char *buffer,
 	size1 = buf->size - file->f_pos;
 	if (size1 < size)
 		size = size1;
-	if (verify_area(VERIFY_WRITE, buffer, size))
+	if (copy_to_user(buffer, buf->buffer + file->f_pos, size))
 		return -EFAULT;
-	copy_to_user(buffer, buf->buffer + file->f_pos, size);
 	file->f_pos += size;
 	return size;
 }
@@ -122,9 +121,8 @@ static ssize_t isapnp_info_entry_write(struct file *file, const char *buffer,
 	size1 = buf->len - file->f_pos;
 	if (size1 < size)
 		size = size1;
-	if (verify_area(VERIFY_READ, buffer, size))
+	if (copy_from_user(buf->buffer + file->f_pos, buffer, size))
 		return -EFAULT;
-	copy_from_user(buf->buffer + file->f_pos, buffer, size);
 	if (buf->size < file->f_pos + size)
 		buf->size = file->f_pos + size;
 	file->f_pos += size;

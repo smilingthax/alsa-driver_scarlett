@@ -85,7 +85,8 @@ typedef struct snd_stru_mixer_read {
 struct snd_stru_mixer_file {
 	snd_kmixer_t *mixer;
 	spinlock_t change_lock;
-	snd_sleep_define(change);
+	wait_queue_head_t change_sleep;
+	int change_sleep_flag;
 	spinlock_t read_lock;
 	int read_active: 1,		/* read interface is activated */
 	    rebuild: 1;			/* rebuild the mixer structure */
@@ -212,7 +213,7 @@ extern snd_kmixer_group_t *snd_mixer_lib_group(snd_kmixer_t *mixer,
 					       int index);
 
 struct snd_stru_mixer_lib_io {
-	unsigned int attribute;
+	unsigned int attrib;
 	int voices_count;
 	snd_mixer_voice_t *voices;
 };
@@ -221,19 +222,19 @@ extern snd_kmixer_element_t *snd_mixer_lib_io(snd_kmixer_t *mixer,
 					      char *name,
 					      int index,
 					      int type,
-					      unsigned int attribute,
+					      unsigned int attrib,
 					      int voices_count,
 					      snd_mixer_voice_t *voices);
 extern snd_kmixer_element_t *snd_mixer_lib_io_mono(snd_kmixer_t *mixer,
 						   char *name,
 						   int index,
 						   int type,
-						   unsigned int attribute);
+						   unsigned int attrib);
 extern snd_kmixer_element_t *snd_mixer_lib_io_stereo(snd_kmixer_t *mixer,
 						     char *name,
 						     int index,
 						     int type,
-						     unsigned int attribute);
+						     unsigned int attrib);
 
 struct snd_stru_mixer_lib_pcm {
 	int devices_count;
@@ -364,7 +365,7 @@ extern snd_kmixer_element_t *snd_mixer_lib_accu3(snd_kmixer_t *mixer,
 typedef int (snd_mixer_mux1_control_t)(int w_flag, snd_kmixer_element_t **elements, void *private_data);
 
 struct snd_stru_mixer_lib_mux1 {
-	unsigned int attribute;
+	unsigned int attrib;
 	int voices;
 	snd_mixer_mux1_control_t *control;
 	void *private_data;
@@ -374,7 +375,7 @@ struct snd_stru_mixer_lib_mux1 {
 extern snd_kmixer_element_t *snd_mixer_lib_mux1(snd_kmixer_t *mixer,
 					char *name,
 					int index,
-					unsigned int attribute,
+					unsigned int attrib,
 					int voices,
 					snd_mixer_mux1_control_t *control,
 					void *private_data);
@@ -382,7 +383,7 @@ extern snd_kmixer_element_t *snd_mixer_lib_mux1(snd_kmixer_t *mixer,
 typedef int (snd_mixer_mux2_control_t)(int w_flag, snd_kmixer_element_t **element, void *private_data);
 
 struct snd_stru_mixer_lib_mux2 {
-	unsigned int attribute;
+	unsigned int attrib;
 	snd_mixer_mux2_control_t *control;
 	void *private_data;
 	snd_kmixer_free_t *private_free;
@@ -391,7 +392,7 @@ struct snd_stru_mixer_lib_mux2 {
 extern snd_kmixer_element_t *snd_mixer_lib_mux2(snd_kmixer_t *mixer,
 					char *name,
 					int index,
-					unsigned int attribute,
+					unsigned int attrib,
 					snd_mixer_mux2_control_t *control,
 					void *private_data);
 

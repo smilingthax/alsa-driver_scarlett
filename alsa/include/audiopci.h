@@ -297,7 +297,6 @@ struct snd_stru_ensoniq {
 	snd_rawmidi_t *rmidi;
 
 	spinlock_t reg_lock;
-	snd_sleep_define(codec);
 	snd_info_entry_t *proc_entry;
 };
 
