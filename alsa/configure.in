@@ -271,6 +271,10 @@ int main(void) {
 	fprintf(file, "mips");
 #elif defined(CONFIG_CPU_R8000) || defined(CONFIG_CPU_R10000)
 	fprintf(file, "mips");
+#elif defined(CONFIG_SPARC32)
+	fprintf(file, "sparc");
+#elif defined(CONFIG_SPARC64)
+	fprintf(file, "sparc64");
 #else
 	fclose(file);
 	exit(1);
@@ -285,6 +289,7 @@ int main(void) {
 )
 rm -f processor.id
 c_opts=""
+LD=ld
 case "$processor" in
   i386*)
     c_opts="-march=i386"
@@ -339,6 +344,44 @@ case "$processor" in
     c_opts="-mcpu=r4600 -G 0 -mips2 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
     ;;
+  sparc)
+    IS_EGCS=n
+    NEW_GAS=n
+    test $CC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && IS_EGCS=y
+    test $LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    if test $NEW_GAS = y; then
+      LD="$LD -m elf32_sparc"
+    fi
+    if test $IS_EGCS = y; then
+      c_opts="-pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
+    else
+      c_opts="-m32 -pipe -mno-fpu -fcall-used-g5 -fcall-used-g7"
+    fi
+    processor="sparc";
+    CONFIG_SND_ISA=0
+    ;;
+  sparc64)
+    CC=gcc
+    test gcc -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || CC=sparc64-linux-gcc
+    NEW_GCC=n
+    NEW_GAS=n
+    CC_UNDECL=""
+    $CC -m64 -mcmodel=medlow -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && NEW_GCC=y
+    $LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    $CC -c -x assembler /dev/null -Wa,--help | grep undeclared-regs > /dev/null || CC_UNDECL="-Wa,--undeclared-regs"
+    if test $NEW_GAS != y; then
+      LD=sparc64-linux-ld
+    else
+      LD="$LD -m elf64_sparc"
+    fi
+    if test $NEW_GCC=y; then
+      c_opts="-m64 -pipe -mno-fpu -mcpu=ultrasparc -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare $CC_UNDECL"
+    else
+      c_opts="-pipe -mno-fpu -mtune=ultrasparc -mmedlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare"
+    fi
+    processor="sparc64"
+    CONFIG_SND_ISA=0
+    ;;
   *)
     processor="unknown"
     CONFIG_SND_ISA=0
@@ -356,9 +399,10 @@ esac
 
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
+AC_SUBST(LD)
 AC_SUBST(CONFIG_SND_PPC)
 AC_SUBST(CONFIG_SND_ISA)
-AC_DEFINE(CONFIG_SND_ISA)
+test $CONFIG_SND_ISA = 1 && AC_DEFINE(CONFIG_SND_ISA)
 
 dnl Check for SMP...
 AC_MSG_CHECKING(for SMP)
