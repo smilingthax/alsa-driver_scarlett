@@ -335,6 +335,16 @@ case "$processor" in
     CONFIG_SND_ISA=0
     ;;
 esac
+
+case "$processor" in
+  i?86*|k?|crusoe)
+    # ia32
+    if $(CC) -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      c_opts="-mpreferred-stack-boundary=2 $c_opts"
+    fi
+    ;;
+esac
+
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(CONFIG_SND_PPC)
