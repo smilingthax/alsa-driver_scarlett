@@ -27,6 +27,7 @@
 #define SND_TIMER_FLG_USED	0x00000001
 #define SND_TIMER_FLG_SYSTEM	0x00000002	/* system timer */
 #define SND_TIMER_FLG_RUNNING	0x00000004
+#define SND_TIMER_FLG_AUTO	0x00000008	/* auto trigger */
 
 typedef void (*snd_timer_callback_t) (snd_timer_t * timer, void *data);
 
@@ -67,6 +68,7 @@ extern snd_timer_t *snd_timer_new_device(snd_card_t * card, char *id);
 extern int snd_timer_free(snd_timer_t * timer);
 extern int snd_timer_register(snd_timer_t * timer);
 extern int snd_timer_unregister(snd_timer_t * timer);
+extern int snd_timer_change(int *last);
 
 extern snd_timer_t *snd_timer_open(char *owner, unsigned int resolution);
 extern int snd_timer_close(snd_timer_t * timer);
