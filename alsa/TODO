@@ -1,6 +1,7 @@
 - midlevel:
 H fix BOGUS use of sleep_on!!! (Jaroslav)
 M implement stream silence fill (Abramo)
+M port card-share to pcm2 (Abramo)
 M add user/kernel lock for mmap'ed control (To think)
 M loopback implementation (To think)
 L check multithread safeness wrt at least read/write
