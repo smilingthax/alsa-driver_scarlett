@@ -210,12 +210,15 @@
 #define   ES_REG_FSIZEO(o)	 (((o)&0xffff)<<0)
 #define   ES_REG_FSIZEM		 (0xffff<<0)
 #define   ES_REG_FSIZEI(i)	 (((i)>>0)&0xffff)
+#define ES_REG_PHANTOM_FRAME 0x38 /* R/W: PAGE 0x0d: phantom frame address */
+#define ES_REG_PHANTOM_COUNT 0x3c /* R/W: PAGE 0x0d: phantom frame count */
 
 #define ES_REG_UART_FIFO  0x30	/* R/W: PAGE 0x0e; UART FIFO register */
 #define   ES_REG_UF_VALID	 (1<<8)
 #define   ES_REG_UF_BYTEO(o)	 (((o)&0xff)<<0)
 #define   ES_REG_UF_BYTEM	 (0xff<<0)
 #define   ES_REG_UF_BYTEI(i)	 (((i)>>0)&0xff)
+
 
 /*
  *  Pages
