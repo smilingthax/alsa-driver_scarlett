@@ -22,6 +22,7 @@
  *
  */
 
+#include "control.h"
 #include "i2c.h"		/* generic i2c support */
 
 typedef struct {
@@ -32,17 +33,12 @@ typedef struct {
 	unsigned char mleft, mright;
 	unsigned char bass, treble;
 	unsigned char max_bass, max_treble;
-	snd_kmixer_element_t *me_vol_master;
-	snd_kmixer_element_t *me_sw_master;
-	snd_kmixer_element_t *me_tone;
 	spinlock_t reg_lock;
 } tea6330t_t;
 
 extern int snd_tea6330t_detect(struct snd_i2c_bus *bus, int equalizer);
-extern int snd_tea6330t_update_mixer(snd_kmixer_t * mixer,
+extern int snd_tea6330t_update_mixer(snd_card_t * card,
 				     struct snd_i2c_bus *bus,
-				     snd_kmixer_element_t *input,
-				     snd_kmixer_element_t *output,
 				     int equalizer, int fader);
 
 #endif				/* __TEA6330T_H */
