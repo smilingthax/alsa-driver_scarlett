@@ -3,6 +3,7 @@ H fix BOGUS use of sleep_on!!! (Jaroslav)
 M add checks for unaligned byte_data coming from user space
 M loopback implementation (To think)
 M reimplement mixer/control API (To think)
+M make xrun detection optional (Abramo)
 L implement silence fill for xrun smoothing (To think)
 L check multithread safeness wrt at least read/write
 L async notification support (To think)
