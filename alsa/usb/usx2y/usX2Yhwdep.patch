@@ -1,0 +1,79 @@
+--- ../../alsa-kernel/usb/usx2y/usX2Yhwdep.c	2004-08-02 21:52:34.447886088 +0200
++++ usX2Yhwdep.c	2004-08-02 22:25:43.480507168 +0200
+@@ -1,3 +1,14 @@
++#include <linux/config.h>
++#include <linux/version.h>
++
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,5)
++#define SND_NEED_USB_SET_INTERFACE
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
++#define SND_NEED_USB_WRAPPER
++#endif
++#define __NO_VERSION__
++#endif
++
+ /*
+  * Driver for Tascam US-X2Y USB soundcards
+  *
+@@ -32,7 +43,13 @@
+ #include "usX2Yhwdep.h"
+ 
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ static struct page * snd_us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int *type)
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
++static struct page * snd_us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
++#else
++static unsigned long snd_us428ctls_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
++#endif
+ {
+ 	unsigned long offset;
+ 	struct page * page;
+@@ -44,7 +61,11 @@
+ 		   (address - area->vm_start) >> PAGE_SHIFT,
+ 		   address);
+ 	
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
+ 	offset = area->vm_pgoff << PAGE_SHIFT;
++#else
++	offset = area->vm_offset;
++#endif
+ 	offset += address - area->vm_start;
+ 	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
+ 	vaddr = (char*)((usX2Ydev_t*)area->vm_private_data)->us428ctls_sharedmem + offset;
+@@ -52,10 +73,20 @@
+ 	get_page(page);
+ 	snd_printdd( "vaddr=%p made us428ctls_vm_nopage() return %p; offset=%lX\n", vaddr, page, offset);
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ 	if (type)
+ 		*type = VM_FAULT_MINOR;
++#endif
+ 
++#ifndef LINUX_2_2
+ 	return page;
++#else
++	/* why 2.2's kcomp.h redefines this? */
++#ifdef page_address
++#undef page_address
++#endif
++	return page_address(page);
++#endif
+ }
+ 
+ static struct vm_operations_struct us428ctls_vm_ops = {
+@@ -86,8 +117,14 @@
+ 		us428->us428ctls_sharedmem->CtlSnapShotLast = -2;
+ 	}
+ 	area->vm_ops = &us428ctls_vm_ops;
++#ifdef VM_RESERVED
+ 	area->vm_flags |= VM_RESERVED;
++#endif
++#ifndef LINUX_2_2
+ 	area->vm_private_data = hw->private_data;
++#else
++	area->vm_private_data = (long)hw->private_data;
++#endif
+ 	return 0;
+ }
+ 

@@ -8,14 +8,8 @@ include $(SND_TOPDIR)/Makefile.conf
 clean-files := usbaudio.c
 
 # for compatibility
-extra-snd-usb-audio-objs := usbcompat.o
-
-# usx2y depends on usb-audio
-obj-$(CONFIG_SND_USB_USX2Y) += snd-usb-audio.o
-
-obj-$(CONFIG_SND) += usx2y/
-
-export-objs := usbaudio.o usbmidi.o usbcompat.o
+extra-snd-usb-lib-objs := usbcompat.o
+export-objs := usbmidi.o usbcompat.o
 
 include $(SND_TOPDIR)/alsa-kernel/usb/Makefile
 
