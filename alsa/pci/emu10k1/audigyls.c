@@ -932,14 +932,15 @@ static void snd_audigyls_ac97_write(ac97_t *ac97,
 
 static int snd_audigyls_ac97(audigyls_t *chip)
 {
-	ac97_bus_t bus, *pbus;
+	ac97_bus_t *pbus;
 	ac97_t ac97;
 	int err;
+	static ac97_bus_ops_t ops = {
+		.write = snd_audigyls_ac97_write,
+		.read = snd_audigyls_ac97_read,
+	};
   
-	memset(&bus, 0, sizeof(bus));
-	bus.write = snd_audigyls_ac97_write;
-	bus.read = snd_audigyls_ac97_read;
-	if ((err = snd_ac97_bus(chip->card, &bus, &pbus)) < 0)
+	if ((err = snd_ac97_bus(chip->card, 0, &ops, NULL, &pbus)) < 0)
 		return err;
 	memset(&ac97, 0, sizeof(ac97));
 	ac97.private_data = chip;
