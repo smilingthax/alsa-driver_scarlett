@@ -129,7 +129,7 @@ struct snd_ctl_switch {
   union {
     unsigned int enable;	/* 0 = off, 1 = on */
     unsigned char data8[32];	/* 8-bit data */
-    unsigned short data16[32];	/* 16-bit data */
+    unsigned short data16[16];	/* 16-bit data */
     unsigned int data32[8];	/* 32-bit data */
   } value;
   unsigned char reserved[32];
@@ -296,7 +296,7 @@ struct snd_mixer_switch {
   union {
     unsigned int enable;	/* 0 = off, 1 = on */
     unsigned char data8[32];	/* 8-bit data */
-    unsigned short data16[32];	/* 16-bit data */
+    unsigned short data16[16];	/* 16-bit data */
     unsigned int data32[8];	/* 32-bit data */
   } value;
   unsigned char reserved[32];
@@ -486,7 +486,7 @@ struct snd_pcm_switch {
   union {
     unsigned int enable;		/* 0 = off, 1 = on */
     unsigned char data8[32];		/* 8-bit data */
-    unsigned short data16[32];		/* 16-bit data */
+    unsigned short data16[16];		/* 16-bit data */
     unsigned int data32[8];		/* 32-bit data */
   } value;
   unsigned char reserved[32];
@@ -789,7 +789,7 @@ struct snd_rawmidi_switch {
   union {
     unsigned int enable;		/* 0 = off, 1 = on */
     unsigned char data8[32];		/* 8-bit data */
-    unsigned short data16[32];		/* 16-bit data */
+    unsigned short data16[16];		/* 16-bit data */
     unsigned int data32[8];		/* 32-bit data */
   } value;
   unsigned char reserved[32];
