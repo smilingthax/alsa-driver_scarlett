@@ -3,7 +3,7 @@
 
 /*
  *  Copyright (c) 1999 by Uros Bizjak <uros@kss-loka.si>
- *                        Takashi Iwai <iwai@ww.uni-erlangen.de>
+ *                        Takashi Iwai <tiwai@suse.de>
  *
  *  SB16ASP/AWE32 CSP control
  *

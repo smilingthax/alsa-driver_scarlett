@@ -65,6 +65,7 @@ typedef struct soundfont_patch_info_t {
 typedef struct soundfont_open_parm_t {
 	unsigned short type;		/* sample type */
 #define SND_SFNT_PAT_TYPE_MISC	0
+#define SND_SFNT_PAT_TYPE_GUS	6
 #define SND_SFNT_PAT_TYPE_MAP	7
 #define SND_SFNT_PAT_LOCKED	0x100	/* lock the samples */
 #define SND_SFNT_PAT_SHARED	0x200	/* sample is shared */
@@ -102,33 +103,6 @@ typedef struct soundfont_voice_parm_t {
 	unsigned char reverb;		/* reverb send (0x00) */
 	unsigned short reserved[4];	/* not used */
 } soundfont_voice_parm_t;
-
-/* redefinition of the same structure, but using byte parameters:
- * WARNING: this definition based on little endian.
- */
-typedef struct soundfont_voice_parm_block_t {
-	unsigned short moddelay;	/* modulation delay (0x8000) */
-	unsigned char modatk, modhld;
-	unsigned char moddcy, modsus;
-	unsigned char modrel, moddummy;
-	short modkeyhold, modkeydecay;	/* envelope change per key (not used) */
-	unsigned short voldelay;	/* volume delay (0x8000) */
-	unsigned char volatk, volhld;
-	unsigned char voldcy, volsus;
-	unsigned char volrel, voldummy;
-	short volkeyhold, volkeydecay;	/* envelope change per key (not used) */
-	unsigned short lfo1delay;	/* LFO1 delay (0x8000) */
-	unsigned short lfo2delay;	/* LFO2 delay (0x8000) */
-	unsigned char env1fc, env1pit;
-	unsigned char lfo1fc, lfo1pit;
-	unsigned char lfo1freq, lfo1vol;
-	unsigned char lfo2freq, lfo2pit;
-	unsigned char cutoff;		/* initial cutoff (0xff) */
-	unsigned char filterQ;		/* initial filter Q [0-15] (0x0) */
-	unsigned char chorus;		/* chorus send (0x00) */
-	unsigned char reverb;		/* reverb send (0x00) */
-	unsigned short reserved[4];	/* not used */
-} soundfont_voice_parm_block_t;
 
 
 /* wave table parameters: 92 bytes */

@@ -4,7 +4,7 @@
  *  Defines for the emu8000 (AWE32/64)
  *
  *  Copyright (C) 1999 Steve Ratcliffe
- *  Copyright (C) 1999-2000 Takashi Iwai <iwai@ww.uni-erlangen.de>
+ *  Copyright (C) 1999-2000 Takashi Iwai <tiwai@suse.de>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

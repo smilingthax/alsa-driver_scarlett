@@ -1,7 +1,7 @@
 #ifndef __EMUX_MEM_H
 #define __EMUX_MEM_H
 /*
- *  Copyright (C) 2000 Takashi Iwai <iwai@ww.uni-erlangen.de>
+ *  Copyright (C) 2000 Takashi Iwai <tiwai@suse.de>
  *
  *  Memory management routines for control of EMU WaveTable chip
  *

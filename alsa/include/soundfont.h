@@ -2,7 +2,7 @@
  *  Soundfont defines and definitions.
  *
  *  Copyright (C) 1999 Steve Ratcliffe
- *  Copyright (c) 1999-2000 Takashi iwai <iwai@ww.uni-erlangen.de>
+ *  Copyright (c) 1999-2000 Takashi iwai <tiwai@suse.de>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

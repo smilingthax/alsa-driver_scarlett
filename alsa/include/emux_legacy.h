@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 1999-2000 Takashi Iwai <iwai@ww.uni-erlangen.de>
+ *  Copyright (c) 1999-2000 Takashi Iwai <tiwai@suse.de>
  *
  *  Definitions of OSS compatible headers for Emu8000 device informations
  *

@@ -632,6 +632,7 @@ struct snd_stru_emu10k1 {
 	    tos_link: 1;	/* tos link detected */
 	unsigned int revision;	/* chip revision */
 	unsigned int serial;	/* serial number */
+	unsigned short model;	/* subsystem id */
 	unsigned int ecard_ctrl; /* ecard control bits */
 
 	void *silent_page;	/* silent page */

@@ -3,7 +3,7 @@
 /*
  *  Defines for the Emu10k1 WaveTable synth
  *
- *  Copyright (C) 2000 Takashi Iwai <iwai@ww.uni-erlangen.de>
+ *  Copyright (C) 2000 Takashi Iwai <tiwai@suse.de>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by

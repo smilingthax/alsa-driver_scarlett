@@ -1,7 +1,7 @@
 /*
  *  MIDI byte <-> sequencer event coder
  *
- *  Copyright (C) 1998,99 Takashi Iwai <iwai@ww.uni-erlangen.de>,
+ *  Copyright (C) 1998,99 Takashi Iwai <tiwai@suse.de>,
  *                        Jaroslav Kysela <perex@suse.cz>
  *
  *   This program is free software; you can redistribute it and/or modify
