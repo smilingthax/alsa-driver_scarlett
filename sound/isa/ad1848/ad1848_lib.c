@@ -634,13 +634,13 @@ static void snd_ad1848_thinkpad_twiddle(ad1848_t *chip, int on) {
 	outb(0x1c, AD1848_THINKPAD_CTL_PORT1);
 	tmp = inb(AD1848_THINKPAD_CTL_PORT2);
 
-	switch (on) {
-		case 0:  /* turn it off */
-			tmp &= ~AD1848_THINKPAD_CS4248_ENABLE_BIT;
-		default: /* turn it on */
-			tmp |= AD1848_THINKPAD_CS4248_ENABLE_BIT;
-	}
-
+	if (on)
+		/* turn it on */
+		tmp |= AD1848_THINKPAD_CS4248_ENABLE_BIT;
+	else
+		/* turn it off */
+		tmp &= ~AD1848_THINKPAD_CS4248_ENABLE_BIT;
+	
 	outb(tmp, AD1848_THINKPAD_CTL_PORT2);
 
 }
