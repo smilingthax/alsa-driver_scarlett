@@ -82,17 +82,17 @@ snd-opl3-synth @if_sequencer snd-opl3-lib snd-seq-device \
 	       snd-seq-midi-emul snd-ainstr-fm
 
 %dir linux/sound/isa
-|snd-als100 snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
-|snd-azt2320 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-als100 @pnponly snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-azt2320 @pnponly snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-cmi8330 snd-ad1848-lib snd-sb16-dsp
-|snd-dt019x snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-dt019x @pnponly snd-sb16-dsp snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-es18xx snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-opl3sa2 snd-cs4231-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 |snd-sgalaxy snd-ad1848-lib
 
 %dir linux/sound/isa/ad1816a
 snd-ad1816a-lib snd-pcm snd-timer
-|snd-ad1816a snd-ad1816a-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+|snd-ad1816a @pnponly snd-ad1816a-lib snd-mpu401-uart snd-opl3-lib snd-opl3-synth
 
 %dir linux/sound/isa/ad1848
 snd-ad1848-lib snd-pcm
@@ -136,7 +136,7 @@ snd-sb16-csp @if_sb16_csp snd-sb-common snd-hwdep
 snd-emu8000-synth @if_sequencer snd-emux-synth
 |snd-sbawe snd-sb16-dsp snd-sb16-csp snd-mpu401-uart \
 	   snd-opl3-lib snd-opl3-synth snd-emu8000-synth
-|snd-es968 snd-sb8-dsp
+|snd-es968 @pnponly snd-sb8-dsp
 
 %dir linux/sound/isa/wavefront
 #snd-wavefront-fx snd-hwdep
