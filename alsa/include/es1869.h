@@ -28,6 +28,9 @@
 #include "pcm1.h"
 #include "mixer.h"
 
+/* Use a timer instead of interrupt */
+#undef TIMER
+
 struct snd_stru_es1869 {
 	unsigned short port;		/* port of ESS chip */
 	unsigned short mpu_port;	/* MPU-401 port of ESS chip */
@@ -42,12 +45,17 @@ struct snd_stru_es1869 {
 	unsigned short version;		/* version of ESS chip */
 	unsigned short audio2_vol;	/* volume level of audio2 */
 
-	unsigned short active;
-        unsigned short open;
+	unsigned short open;		/* open channel mask */
+	unsigned short active;		/* active channel mask */
+#ifdef TIMER
+	struct timer_list timer;
+	int dma1_residue;
+	int dma2_residue;
+#endif
 
 	snd_card_t *card;
-	snd_pcm_t *pcm;
-	snd_pcm_t *pcm2;
+	snd_pcm_t *pcm_a;
+	snd_pcm_t *pcm_b;
 
 	snd_spin_define(reg);
 	snd_spin_define(mixer);
@@ -70,8 +78,8 @@ extern es1869_t *snd_es1869_new_device(snd_card_t * card,
 				       snd_dma_t * dma1num,
 				       snd_dma_t * dma2num);
 extern int snd_es1869_init(es1869_t * codec, int enable);
-extern snd_pcm_t *snd_es1869_pcm(es1869_t * codec);
-extern snd_pcm_t *snd_es1869_pcm2(es1869_t * codec);
+extern snd_pcm_t *snd_es1869_pcm_a(es1869_t * codec);
+extern snd_pcm_t *snd_es1869_pcm_b(es1869_t * codec);
 extern snd_kmixer_t *snd_es1869_mixer(es1869_t * codec);
 
 #endif				/* __ES1869_H */
