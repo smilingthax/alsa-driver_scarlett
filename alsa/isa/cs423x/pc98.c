@@ -56,44 +56,43 @@ static int mpu_irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;	/* 9,11,12,15 */
 static int dma1[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;	/* 0,1,3,5,6,7 */
 static int dma2[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;	/* 0,1,3,5,6,7 */
 static int pc98ii[SNDRV_CARDS];				/* PC98II */
-static int boot_devs;
 
-module_param_array(index, int, boot_devs, 0444);
+module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for " IDENT " soundcard.");
 MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
-module_param_array(id, charp, boot_devs, 0444);
+module_param_array(id, charp, NULL, 0444);
 MODULE_PARM_DESC(id, "ID string for " IDENT " soundcard.");
 MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
-module_param_array(enable, bool, boot_devs, 0444);
+module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable " IDENT " soundcard.");
 MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
-module_param_array(port, long, boot_devs, 0444);
+module_param_array(port, long, NULL, 0444);
 MODULE_PARM_DESC(port, "Port # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(port, SNDRV_PORT12_DESC);
 #if 0 /* NOT USED */
-module_param_array(cport, long, boot_devs, 0444);
+module_param_array(cport, long, NULL, 0444);
 MODULE_PARM_DESC(cport, "Control port # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(cport, SNDRV_PORT12_DESC);
 #endif
-module_param_array(mpu_port, long, boot_devs, 0444);
+module_param_array(mpu_port, long, NULL, 0444);
 MODULE_PARM_DESC(mpu_port, "MPU-401 port # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(mpu_port, SNDRV_PORT12_DESC);
-module_param_array(fm_port, long, boot_devs, 0444);
+module_param_array(fm_port, long, NULL, 0444);
 MODULE_PARM_DESC(fm_port, "FM port # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(fm_port, SNDRV_PORT12_DESC);
-module_param_array(irq, int, boot_devs, 0444);
+module_param_array(irq, int, NULL, 0444);
 MODULE_PARM_DESC(irq, "IRQ # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(irq, SNDRV_IRQ_DESC);
-module_param_array(mpu_irq, int, boot_devs, 0444);
+module_param_array(mpu_irq, int, NULL, 0444);
 MODULE_PARM_DESC(mpu_irq, "MPU-401 IRQ # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(mpu_irq, SNDRV_IRQ_DESC);
-module_param_array(dma1, int, boot_devs, 0444);
+module_param_array(dma1, int, NULL, 0444);
 MODULE_PARM_DESC(dma1, "DMA1 # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(dma1, SNDRV_DMA_DESC);
-module_param_array(dma2, int, boot_devs, 0444);
+module_param_array(dma2, int, NULL, 0444);
 MODULE_PARM_DESC(dma2, "DMA2 # for " IDENT " driver.");
 MODULE_PARM_SYNTAX(dma2, SNDRV_DMA_DESC);
-module_param_array(pc98ii, bool, boot_devs, 0444);
+module_param_array(pc98ii, bool, NULL, 0444);
 MODULE_PARM_DESC(pc98ii, "Roland MPU-PC98II support.");
 MODULE_PARM_SYNTAX(pc98ii, SNDRV_BOOLEAN_FALSE_DESC);
 

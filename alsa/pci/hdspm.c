@@ -58,25 +58,23 @@ static int line_outs_monitor[SNDRV_CARDS];
 /* Enable Analog Outs on Channel 63/64 by default */
 static int enable_monitor[SNDRV_CARDS];
 
-static int boot_devs;
-
-module_param_array(index, int, boot_devs, 0444);
+module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for RME HDSPM interface.");
 
-module_param_array(id, charp, boot_devs, 0444);
+module_param_array(id, charp, NULL, 0444);
 MODULE_PARM_DESC(id, "ID string for RME HDSPM interface.");
 
-module_param_array(enable, bool, boot_devs, 0444);
+module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable/disable specific HDSPM soundcards.");
 
-module_param_array(precise_ptr, bool, boot_devs, 0444);
+module_param_array(precise_ptr, bool, NULL, 0444);
 MODULE_PARM_DESC(precise_ptr, "Enable precise pointer, or disable.");
 
-module_param_array(line_outs_monitor, bool, boot_devs, 0444);
+module_param_array(line_outs_monitor, bool, NULL, 0444);
 MODULE_PARM_DESC(line_outs_monitor,
 		 "Send playback streams to analog outs by default.");
 
-module_param_array(enable_monitor, bool, boot_devs, 0444);
+module_param_array(enable_monitor, bool, NULL, 0444);
 MODULE_PARM_DESC(enable_monitor,
 		 "Enable Analog Out on Channel 63/64 by default.");
 
