@@ -297,6 +297,20 @@ extern snd_kmixer_element_t *snd_mixer_lib_pcm2(snd_kmixer_t *mixer,
 						int device,
 						int subdevice);
 
+struct snd_stru_mixer_lib_pcm3 {
+	int device;
+	int subdevice;
+	int voice;
+};
+
+extern snd_kmixer_element_t *snd_mixer_lib_pcm3(snd_kmixer_t *mixer,
+						char *name,
+						int index,
+						int type,
+						int device,
+						int subdevice,
+						int voice);
+
 struct snd_stru_mixer_lib_converter {
 	unsigned int resolution;
 };

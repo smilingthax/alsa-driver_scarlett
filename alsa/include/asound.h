@@ -313,6 +313,10 @@ typedef struct snd_hwdep_info {
 #define SND_MIXER_ETYPE_ADC		6
 /* DAC */
 #define SND_MIXER_ETYPE_DAC		7
+/* capture subchannel/voice endpoint */
+#define SND_MIXER_ETYPE_CAPTURE3	8
+/* playback subchannel/voice endpoint */
+#define SND_MIXER_ETYPE_PLAYBACK3	9
 /* simple on/off switch */
 #define SND_MIXER_ETYPE_SWITCH1		100
 /* simple on/off switch for each voices */
@@ -532,7 +536,7 @@ struct snd_mixer_element_pcm2_info {
 struct snd_mixer_element_pcm3_info {
 	int device;			/* device index */
 	int subdevice;			/* subdevice index */
-	int voice;			/* voice index - undefined for CAPTURE2/PLAYBACK2 */
+	int voice;			/* voice index */
 };
 
 /*
