@@ -545,7 +545,7 @@ Module parameters
 
     Module for soundcards based on ESS Maestro-1/2/2E (ES1968/ES1978) chips.
 
-    snd_gesbuf		 - total buffer size in kB (1-4096kB)
+    snd_total_bufsize	 - total buffer size in kB (1-4096kB)
     snd_midi_enable	 - enable MIDI support (0 = off, 1 = on)
     snd_pcm_channels_p	 - playback channels (1-8, default=2)
     snd_pcm_channels_c	 - capture channels (1-8, default=0)
@@ -608,11 +608,13 @@ Module parameters
   --------------------------
 
     Module for AC'97 motherboards from Intel.
-			* Intel i810/810E, i820, i830, i840, MX440
+			* Intel i810/810E, i815, i820, i830, i840, MX440
 
     snd_ac97_clock	  - AC'97 codec clock base (default 48000Hz)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
+    Note: some i815 chips have different clocks.  if you encounter
+    too fast playback, add module option "snd_ac97_clock=41194".
     
   Module snd-card-via686a.o
   -------------------------
@@ -624,6 +626,11 @@ Module parameters
     snd_ac97_clock	 - AC'97 codec clock base (default 48000Hz)
 
     Module supports autoprobe and multiple bus-master chips (max 8).
+    Note: on some SMP motherboards like MSI 694D the interrupts might
+          not be generated properly.  In such a case, please try to
+          set the SMP (or MPS) version on BIOS to 1.1 instead of
+          default value 1.4.  Then the interrupt number will be
+          assigned under 15.
     
   Module snd-card-via8233.o
   -------------------------
@@ -667,6 +674,39 @@ Module parameters
 
     Module supports multiple devices (max 8).
     
+  Module snd-card-maestro3.o
+  ------------------------
+
+    Module for Allegro/Maestro3 chips
+
+    snd_external_amp     - enable external amp (enabled by default)
+
+    Module supports autoprobe and multiple chips (max 8).
+
+  Module snd-card-nm256.o
+  ------------------------
+
+    Module for NeoMagic NM256AV/ZX chips
+
+    snd_playback_bufsize - max playback frame size in kB (4-128kB)
+    snd_capture_bufsize  - max capture frame size in kB (4-128kB)
+    snd_force_ac97       - 0 or 1 (disabled by default)
+    snd_buffer_top       - specify buffer top address
+    snd_use_cache        - 0 or 1 (disabled by default)
+    snd_vaio_hack        - alias snd_buffer_top=0x25a800
+
+    Module supports autoprobe and multiple chips (max 8).
+    Note: on some notebooks the buffer address cannot be detected
+    automatically, or causes hang-up during initialization.
+    In such a case, specify the buffer top address explicity via
+    snd_buffer_top option.
+    For example,
+      Sony F250: snd_buffer_top=0x25a800
+      Sony F270: snd_buffer_top=0x272800
+    The driver supports only ac97 codec.  It's possible to force
+    to initialize/use ac97 although it's not detected.  In such a
+    case, use snd_force_ac97=1 option.
+
 
 modprobe/kmod support
 =====================

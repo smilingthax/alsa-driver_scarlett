@@ -27,7 +27,7 @@ Features
   - digital audio data for playback and record should be read back using
     proc filesystem
 * OSS/Free compatibility
-  - full mixer compatibity
+  - full mixer compatibility
   - full PCM (/dev/dsp) compatibility
 
 More information about ALSA sound driver is located in doc directory.

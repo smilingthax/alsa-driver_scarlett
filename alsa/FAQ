@@ -24,14 +24,14 @@ A: This is definitely the standard behaviour as described in many official
      others have to be intended buggy
    - we want you ask to broken applications author to fix them ;-)
 
-Q: The driver is installed and sucessfully loaded in the runtime kernel,
+Q: The driver is installed and successfully loaded in the runtime kernel,
    but it does not produce any sound. What's wrong?
 A: You should raise the volume for mixer channels and/or unmute mixer channels.
    Look for the alsa-utils package at http://www.alsa-project.org. There are
    native mixers.
 
 Q: How can I store and restore mixer settings?
-A: Use the native alsactl program (strongly preffered) or an another ALSA mixer
+A: Use the native alsactl program (strongly preferred) or an another ALSA mixer
    program.
 
 Q: The driver is loaded, but OSS programs say: Can't open /dev/mixer.
@@ -40,7 +40,7 @@ A: The OSS compatible mixer emulation comes as an add-on module which is not
    loaded by default. If you have got modified /etc/conf.module as suggested
    in the INSTALL file, it should be loaded with kerneld or kmod. Check it -
    if this method for some reason doesn't work - you need to insert
-   the 'snd-mixer-oss' module manualy.
+   the 'snd-mixer-oss' module manually.
 
 Q: The driver is loaded, but OSS programs say: Can't open /dev/dsp.
    What is wrong?
@@ -48,7 +48,7 @@ A: The OSS compatible PCM (digital audio) emulation comes as an add-on module
    which is not loaded by default. If you have got modified /etc/conf.module
    as suggested in the INSTALL file, it should be loaded with kerneld or kmod.
    Check it - if this method for some reason doesn't work - you need to insert
-   the 'snd-pcm-oss' module manualy.
+   the 'snd-pcm-oss' module manually.
 
 Q: Can I specify which DMA channel will be used for a specific direction with
    Sound Blaster 16/AWE soundcards?
