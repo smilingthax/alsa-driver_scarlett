@@ -160,7 +160,6 @@ typedef struct {
 	int (*csp_qsound_transfer) (snd_sb_csp_t * p);
 } snd_sb_csp_callback_t;
 
-#define SND_HWDEP_TYPE_SB16CSP  0x10	/* temporarily defined here */
 void snd_sb_csp_register_callbacks(snd_sb_csp_callback_t ** callbacks_ptr);
 int snd_sb_csp_new(sbdsp_t * codec, int device, snd_hwdep_t ** rhwdep);
 #endif
