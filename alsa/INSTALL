@@ -56,7 +56,7 @@ Driver cannot be activated?
 1) You can check your soundcard setup again and read this install file
    (module parameters) carefully.
 2) If you have got ISA PnP soundcard:
-   - native ISA PnP support: is your setup in /proc/isapnp.conf correct?
+   - native ISA PnP support: is your setup in /proc/isapnp correct?
    - isapnptools: is configuration on isapnp.conf same as for the driver?
 3) The driver is not still working: remake driver with:
      ./configure --with-debug=detect; make clean; make
