@@ -1517,7 +1517,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 {
 	ac97_t ac97, *x97;
 	ichdev_t *ichdev;
-	int err, i, channels = 2, codecs;
+	int err, i, num, channels = 2, codecs, _codecs;
 	unsigned int glob_sta = 0;
 
 	for (i = 0; i <= ICHD_LAST; i++) {
@@ -1613,14 +1613,14 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 		codecs = 1;
 	if (codecs < 2)
 		goto __skip_secondary;
-	for (i = 1; i < codecs; i++) {
-		ac97.num = i;
+	for (i = 1, num = 1, _codecs = codecs; num < _codecs; num++) {
+		ac97.num = num;
 		if ((err = snd_ac97_mixer(chip->card, &ac97, &x97)) < 0) {
 			snd_printk("Unable to initialize codec #%i [device = %i, GLOB_STA = 0x%x]\n", i, chip->device_type, glob_sta);
-			codecs = i;
-			break;
+			codecs--;
+			continue;
 		}
-		chip->ac97[i] = x97;
+		chip->ac97[i++] = x97;
 		if (!(x97->scaps & AC97_SCAP_AUDIO))
 			continue;
 		switch (chip->device_type) {
