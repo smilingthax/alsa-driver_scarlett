@@ -78,14 +78,14 @@ typedef struct snd_stru_pcm_hardware {
 #define SND_PCM_IOCTL1_FALSE	((unsigned long *)0)
 #define SND_PCM_IOCTL1_TRUE	((unsigned long *)1)
 
-#define SND_PCM_IOCTL1_INFO	0
-#define SND_PCM_IOCTL1_PARAMS	1
-#define SND_PCM_IOCTL1_SETUP	2
-#define SND_PCM_IOCTL1_STATUS	3
-#define SND_PCM_IOCTL1_MMAP_CTRL 4
-#define SND_PCM_IOCTL1_MMAP_SIZE 5
-#define SND_PCM_IOCTL1_MMAP_PTR	6
-#define SND_PCM_IOCTL1_PAUSE	7
+#define SND_PCM_IOCTL1_INFO		0
+#define SND_PCM_IOCTL1_PARAMS		1
+#define SND_PCM_IOCTL1_SETUP		2
+#define SND_PCM_IOCTL1_STATUS		3
+#define SND_PCM_IOCTL1_MMAP_CTRL	4
+#define SND_PCM_IOCTL1_MMAP_SIZE	5
+#define SND_PCM_IOCTL1_MMAP_PTR		6
+#define SND_PCM_IOCTL1_PAUSE		7
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_GO		1

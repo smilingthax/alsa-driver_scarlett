@@ -1359,7 +1359,9 @@ typedef struct snd_pcm_channel_setup {
 			int frags_max;  /* playback: maximum number of fragments in queue for wakeup */
 		} block;
 	} buf;
-	char reserved[64];		/* must be filled with zero */
+	short msbits_per_sample;	/* used most significant bits per sample */
+	short pad1;			/* reserved - must be filled with zero */
+	char reserved[60];		/* must be filled with zero */
 } snd_pcm_channel_setup_t;
 
 typedef struct snd_pcm_channel_status {
