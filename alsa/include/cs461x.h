@@ -1,5 +1,5 @@
-#ifndef __AUDIOPCI_H
-#define __AUDIOPCI_H
+#ifndef __CS461X_H
+#define __CS461X_H
 
 /*
  *  Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
@@ -1658,4 +1658,4 @@ snd_pcm_t *snd_cs461x_pcm(cs461x_t * codec);
 snd_kmixer_t *snd_cs461x_mixer(cs461x_t * codec, int pcm_dev);
 snd_rawmidi_t *snd_cs461x_midi(cs461x_t * codec);
 
-#endif				/* __AUDIOPCI_H */
+#endif				/* __CS461X_H */
