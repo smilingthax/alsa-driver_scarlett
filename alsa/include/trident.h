@@ -28,6 +28,17 @@
 #include "midi.h"
 #include "mpu401.h"
 #include "ac97_codec.h"
+#include "seq_midi_emul.h"
+#include "seq_device.h"
+#ifndef ALSA_BUILD
+//#include <linux/ainstr_iw.h>
+//#include <linux/ainstr_gf1.h>
+#include <linux/ainstr_simple.h>
+#else
+//#include "ainstr_iw.h"
+//#include "ainstr_gf1.h"
+#include "ainstr_simple.h"
+#endif
 
 #ifndef PCI_VENDOR_ID_TRIDENT
 #define PCI_VENDOR_ID_TRIDENT          0x1023
@@ -38,6 +49,27 @@
 #ifndef PCI_DEVICE_ID_TRIDENT_4DWAVE_NX 
 #define PCI_DEVICE_ID_TRIDENT_4DWAVE_NX 0x2001
 #endif
+
+/* Trident chipsets have 1GB memory limit */
+#ifdef __alpha__
+#define TRIDENT_DMA_TYPE        SND_DMA_TYPE_PCI_16MB
+#define TRIDENT_GFP_FLAGS	GFP_DMA
+#else
+#define TRIDENT_DMA_TYPE        SND_DMA_TYPE_PCI
+#if defined(__i386__) && !defined(CONFIG_1GB)
+#define TRIDENT_GFP_FLAGS	GFP_DMA
+#else
+#define TRIDENT_GFP_FLAGS	0
+#endif
+#endif
+
+#define SND_SEQ_DEV_TRIDENT			"synth-4dwave"
+
+#define SND_TRIDENT_VOICE_TYPE_PCM		0
+#define SND_TRIDENT_VOICE_TYPE_SYNTH		1
+#define SND_TRIDENT_VOICE_TYPE_MIDI		2
+
+#define SND_TRIDENT_VFLG_RUNNING		(1<<0)
 
 /*
  * Direct registers
@@ -170,15 +202,89 @@ typedef struct tChannelControl
 }CHANNELCONTROL, *LPCHANNELCONTROL;
 
 typedef struct snd_stru_trident trident_t;
+typedef struct snd_trident_stru_voice snd_trident_voice_t;
+
+typedef struct {
+	void (*sample_start)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_position_t position);
+	void (*sample_stop)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_stop_mode_t mode);
+	void (*sample_freq)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_frequency_t freq);
+	void (*sample_volume)(trident_t *gus, snd_trident_voice_t *voice, snd_seq_ev_volume *volume);
+	void (*sample_loop)(trident_t *card, snd_trident_voice_t *voice, snd_seq_ev_loop *loop);
+	void (*sample_pos)(trident_t *card, snd_trident_voice_t *voice, snd_seq_position_t position);
+	void (*sample_private1)(trident_t *card, snd_trident_voice_t *voice, unsigned char *data);
+} snd_trident_sample_ops_t;
 
 typedef struct {
 	trident_t *trident;
-	int channel0;	/* hardware channel number */
-	int channel1;	/* hardware channel number */
+	snd_trident_voice_t *channel0;	/* hardware channel pointer */
+	snd_trident_voice_t *channel1;	/* hardware channel pointer */
 	snd_pcm_subchn_t *subchn;
 	snd_pcm1_subchn_t *subchn1;
 	int running;
 } snd_trident_pcm_t;
+
+typedef struct {
+	snd_midi_channel_set_t * chset;
+	trident_t * trident;
+	int mode;		/* operation mode */
+	int client;		/* sequencer client number */
+	int port;		/* sequencer port number */
+	int midi_has_voices: 1;
+} snd_trident_port_t;
+
+struct snd_trident_stru_voice {
+	unsigned int number;
+	int use: 1,
+	    pcm: 1,
+	    synth:1,
+	    midi: 1;
+	unsigned int flags;
+	unsigned char client;
+	unsigned char port;
+	unsigned char index;
+
+	snd_seq_instr_t instr;
+	snd_trident_sample_ops_t *sample_ops;
+
+	/* channel parameters */
+	unsigned short Delta;		/* 16 bits */
+	unsigned char Vol;		/* 8 bits */
+	unsigned char Pan;		/* 7 bits */
+	unsigned char GVSel;		/* 1 bit */
+	unsigned char RVol;		/* 7 bits */
+	unsigned char CVol;		/* 7 bits */
+	unsigned char FMC;		/* 2 bits */
+	unsigned int LBA;		/* 30 bits */
+	unsigned char CTRL;		/* 4 bits */
+	unsigned short EC;		/* 12 bits */
+	unsigned short Alpha_FMS;	/* 16 bits */
+	unsigned int CSO;		/* 24 bits (16 on DX) */
+	unsigned int ESO;		/* 24 bits (16 on DX) */
+
+
+
+	/* --- */
+
+	void *private_data;
+	void (*private_free)(void *private_data);
+};
+
+struct snd_stru_4dwave {
+
+	int seq_client;
+
+	snd_trident_port_t seq_ports[4];
+	snd_simple_ops_t simple_ops;
+	snd_seq_kinstr_list_t *ilist;
+
+	snd_trident_voice_t voices[64];	
+
+	int ChanSynthCount;		/* number of allocated synth channels */
+	int max_size;			/* maximum synth memory size in bytes */
+	int current_size;		/* current allocated synth mem in bytes */
+
+};
+
 
 struct snd_stru_trident {
 	snd_dma_t * dma1ptr;	/* DAC Channel */
@@ -203,11 +309,17 @@ struct snd_stru_trident {
 	int ChanPCMcnt;			/* actual number of PCM channels */
 	snd_trident_pcm_t * ChanDataPCM[64];
 
+	struct snd_stru_4dwave synth;	/* synth specific variables */
+
+	spinlock_t event_lock;
+	spinlock_t voice_alloc;
+
 	struct pci_dev *pci;
 	snd_card_t *card;
 	snd_pcm_t *pcm;		/* ADC/DAC PCM */
 	snd_kmixer_t *mixer;
 	snd_rawmidi_t *rmidi;
+	snd_seq_device_t *seq_dev;
 
 	spinlock_t reg_lock;
 	snd_info_entry_t *proc_entry;
@@ -217,13 +329,28 @@ trident_t *snd_trident_create(snd_card_t * card, struct pci_dev *pci,
 			      snd_dma_t * dma1ptr,
 			      snd_dma_t * dma2ptr,
 			      snd_irq_t * irqptr,
-			      int pcm_channels);
+			      int pcm_channels,
+			      int max_wavetable_size);
 void snd_trident_free(trident_t * trident);
 void snd_trident_interrupt(trident_t * trident);
 
 snd_pcm_t *snd_trident_pcm(trident_t * trident);
 snd_kmixer_t *snd_trident_mixer(trident_t * trident);
 void snd_trident_rawmidi(trident_t * trident, mpu401_t * mpu);
+int snd_trident_attach_synthesizer(trident_t * trident);
+int snd_trident_detach_synthesizer(trident_t * trident);
+snd_trident_voice_t *snd_trident_alloc_voice(trident_t * trident, int type, int client, int port);
+void snd_trident_free_voice(trident_t * trident, snd_trident_voice_t *voice);
+int snd_trident_write_voice_regs(trident_t * trident, unsigned int Channel,
+			 unsigned int LBA, unsigned int CSO, unsigned int ESO,
+			 unsigned int DELTA, unsigned int ALPHA_FMS, unsigned int FMC_RVOL_CVOL,
+			 unsigned int GVSEL, unsigned int PAN, unsigned int VOL,
+			 unsigned int CTRL, unsigned int EC);
+void snd_trident_start_voice(trident_t * trident, unsigned int HwChannel);
+void snd_trident_stop_voice(trident_t * trident, unsigned int HwChannel);
+void snd_trident_enable_voice_irq(trident_t * trident, unsigned int HwChannel);
+void snd_trident_disable_voice_irq(trident_t * trident, unsigned int HwChannel);
+void snd_trident_clear_voices(trident_t * trident, unsigned short v_min, unsigned short v_max);
 
 #endif				/* __TRID4DWAVE_H */
 

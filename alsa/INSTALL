@@ -474,8 +474,8 @@ Module parameters
 
     Module supports up to 8 cards and autoprobe.
     
-  Module snd-card-trid4dwave.o
-  ----------------------------
+  Module snd-card-trident.o
+  -------------------------
 
     Module for Trident 4DWave DX/NX soundcards.
 			* Best Union  Miss Melody 4DWave PCI
@@ -492,6 +492,7 @@ Module parameters
     snd_dac_frame_size_nx - max dac (playback) frame size in kB (4-128kB)
     snd_adc_frame_size_nx - max adc (record) frame size in kB (4-64kB)
     snd_pcm_channels	  - max channels (voices) reserved for PCM
+    snd_wavetable_size	  - max wavetable size in kB (4-?kb)
 
     Module supports up to 8 cards and autoprobe.
 

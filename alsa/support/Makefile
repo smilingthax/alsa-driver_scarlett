@@ -35,9 +35,6 @@ ISAPNPNE= $(DEXPORT)/isapnp_new.ver
 include $(TOPDIR)/Rules.make
 
 all: $(TARGETS)
-	@echo
-	@echo "Support code were sucessfully compiled."
-	@echo
 
 include $(TOPDIR)/Rules1.make
 

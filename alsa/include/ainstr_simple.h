@@ -68,8 +68,8 @@ typedef struct {
 
 	unsigned int size;		/* size of waveform in samples */
 	unsigned int start;		/* start offset in samples * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_start;	/* bits loop start offset in samples * 16 (lowest 4 bits - fraction) */
-	unsigned int loop_end;		/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_start;	/* loop start offset in samples * 16 (lowest 4 bits - fraction) */
+	unsigned int loop_end;		/* loop end offset in samples * 16 (lowest 4 bits - fraction) */
 	unsigned short loop_repeat;	/* loop repeat - 0 = forever */
 
 	unsigned char effect1;		/* effect 1 */
