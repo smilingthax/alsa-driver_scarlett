@@ -42,6 +42,7 @@
 #include <linux/errno.h>
 #include <linux/ioport.h>
 #include <linux/string.h>
+#include <linux/list.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
 #include <linux/proc_fs.h>
@@ -82,20 +83,26 @@ MODULE_DESCRIPTION("Plug & Play 2.5 compatible layer");
 MODULE_LICENSE("GPL");
 #endif
 
+#ifndef list_for_each_safe
+#define list_for_each_safe(pos, n, head) \
+	for (pos = (head)->next, n = pos->next; pos != (head); \
+		pos = n, n = pos->next)
+#endif
+
 struct pnp_driver_instance {
 	struct pnp_dev * dev;
 	struct pnp_driver * driver;
-	struct pnp_driver_instance * next;
+	struct list_head list;
 };
 
 struct pnp_card_driver_instance {
 	struct pnp_card_link link;
 	struct pnp_dev * devs[PNP_MAX_DEVICES];
-	struct pnp_card_driver_instance * next;
+	struct list_head list;
 };
 
-static struct pnp_driver_instance * pnp_drivers = NULL;
-static struct pnp_card_driver_instance * pnp_card_drivers = NULL;
+static LIST_HEAD(pnp_drivers);
+static LIST_HEAD(pnp_card_drivers);
 
 static unsigned int from_hex(unsigned char c)
 {
@@ -172,6 +179,8 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 					ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 					if (ninst == NULL)
 						return res > 0 ? (int)res : -ENOMEM;
+					memset(ninst, 0, sizeof(*ninst));
+					INIT_LIST_HEAD(&ninst->list);
 				}
 				for (i = 0; i < PNP_MAX_DEVICES; i++)
 					ninst->devs[i] = NULL;
@@ -188,8 +197,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 				ninst->link.driver = drv;
 				ninst->link.driver_data = NULL;
 				if (drv->probe(&ninst->link, cid) >= 0) {
-					pnp_card_drivers->next = ninst;
-					pnp_card_drivers = ninst;
+					list_add_tail(&ninst->list, &pnp_card_drivers);
 					ninst = NULL;
 					res++;
 				}
@@ -201,15 +209,14 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 
 void pnp_unregister_card_driver(struct pnp_card_driver * drv)
 {
-	struct pnp_card_driver_instance *inst = NULL, *pinst = NULL;
+	struct pnp_card_driver_instance *inst;
+	struct list_head *p, *n;
 	unsigned int i;
 	
-	for (inst = pnp_card_drivers; inst; pinst = inst, inst = inst->next) {
+	list_for_each_safe(p, n, &pnp_card_drivers) {
+		inst = list_entry(p, struct pnp_card_driver_instance, list);
 		if (inst->link.driver == drv) {
-			if (pinst)
-				pinst->next = inst->next;
-			else
-				pnp_card_drivers = inst->next;
+			list_del(p);
 			drv->remove(&inst->link);
 			for (i = 0; i < PNP_MAX_DEVICES && inst->devs[i]; i++)
 				pnp_release_card_device(inst->devs[i]);
@@ -232,6 +239,8 @@ int pnp_register_driver(struct pnp_driver *drv)
 			ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 			if (ninst == NULL)
 				return res > 0 ? (int)res : -ENOMEM;
+			memset(ninst, 0, sizeof(*ninst));
+			INIT_LIST_HEAD(&ninst->list);
 		}
 		if (parse_id(did->id, &vendor, &function) < 0)
 			continue;
@@ -240,8 +249,7 @@ int pnp_register_driver(struct pnp_driver *drv)
 			continue;
 		ninst->driver = drv;
 		if (drv->probe(ninst->dev, did) >= 0) {
-			pnp_drivers->next = ninst;
-			pnp_drivers = ninst;
+			list_add_tail(&ninst->list, &pnp_drivers);
 			ninst = NULL;
 			res++;
 		}
@@ -251,20 +259,28 @@ int pnp_register_driver(struct pnp_driver *drv)
 
 void pnp_unregister_driver(struct pnp_driver *drv)
 {
-	struct pnp_driver_instance *inst = NULL, *pinst = NULL;
+	struct pnp_driver_instance *inst;
+	struct list_head *p, *n;
 	
-	for (inst = pnp_drivers; inst; pinst = inst, inst = inst->next) {
+	list_for_each_safe(p, n, &pnp_drivers) {
+		inst = list_entry(p, struct pnp_driver_instance, list);
 		if (inst->driver == drv) {
-			if (pinst)
-				pinst->next = inst->next;
-			else
-				pnp_drivers = inst->next;
+			list_del(p);
 			drv->remove(inst->dev);
 			if (inst->dev->p.active)
 				inst->dev->p.deactivate((struct isapnp_dev *)inst->dev);
 			kfree(inst);
 		}
 	}
+}
+
+static void copy_resource(struct resource *dst, const struct resource *src)
+{
+	dst->name = src->name;
+	dst->start = src->start;
+	dst->end = src->end;
+	dst->flags = (dst->flags & ~IORESOURCE_AUTO) |
+		(dst->flags & src->flags & IORESOURCE_AUTO);
 }
 
 void pnp_init_resource_table(struct pnp_resource_table *table)
@@ -301,35 +317,46 @@ int pnp_manual_config_dev(struct pnp_dev *dev, struct pnp_resource_table *res, i
 {
 	unsigned int idx;
 
-	for (idx = 0; idx < PNP_MAX_IRQ; idx++) {
-		dev->p.irq_resource[idx].name = res->irq_resource[idx].name;
-		dev->p.irq_resource[idx].start = res->irq_resource[idx].start;
-		dev->p.irq_resource[idx].end = res->irq_resource[idx].end;
-		dev->p.irq_resource[idx].flags = res->irq_resource[idx].flags;
-	}
-	for (idx = 0; idx < PNP_MAX_DMA; idx++) {
-		dev->p.dma_resource[idx].name = res->dma_resource[idx].name;
-		dev->p.dma_resource[idx].start = res->dma_resource[idx].start;
-		dev->p.dma_resource[idx].end = res->dma_resource[idx].end;
-		dev->p.dma_resource[idx].flags = res->dma_resource[idx].flags;
-	}
-	for (idx = 0; idx < PNP_MAX_PORT; idx++) {
-		dev->p.resource[idx].name = res->port_resource[idx].name;
-		dev->p.resource[idx].start = res->port_resource[idx].start;
-		dev->p.resource[idx].end = res->port_resource[idx].end;
-		dev->p.resource[idx].flags = res->port_resource[idx].flags;
-	}
-	for (idx = 0; idx < PNP_MAX_MEM; idx++) {
-		dev->p.resource[idx+8].name = res->mem_resource[idx].name;
-		dev->p.resource[idx+8].start = res->mem_resource[idx].start;
-		dev->p.resource[idx+8].end = res->mem_resource[idx].end;
-		dev->p.resource[idx+8].flags = res->mem_resource[idx].flags;
-	}
+	for (idx = 0; idx < PNP_MAX_IRQ; idx++)
+		copy_resource(&dev->p.irq_resource[idx], &res->irq_resource[idx]);
+	for (idx = 0; idx < PNP_MAX_DMA; idx++)
+		copy_resource(&dev->p.dma_resource[idx], &res->dma_resource[idx]);
+	for (idx = 0; idx < PNP_MAX_PORT; idx++)
+		copy_resource(&dev->p.resource[idx], &res->port_resource[idx]);
+	for (idx = 0; idx < PNP_MAX_MEM; idx++)
+		copy_resource(&dev->p.resource[idx+8], &res->mem_resource[idx]);
+
 	return 0;
 }
 
 int pnp_activate_dev(struct pnp_dev *dev)
 {
+	struct pnp_resource_table *tmp;
+	unsigned int idx;
+
+	if (dev->p.active)
+		return -EBUSY;
+
+	/* reserve the manual configuration */
+	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
+	if (! tmp)
+		return -ENOMEM;
+	pnp_init_resource_table(tmp);
+	for (idx = 0; idx < PNP_MAX_IRQ; idx++)
+		copy_resource(&tmp->irq_resource[idx], &dev->p.irq_resource[idx]);
+	for (idx = 0; idx < PNP_MAX_DMA; idx++)
+		copy_resource(&tmp->dma_resource[idx], &dev->p.dma_resource[idx]);
+	for (idx = 0; idx < PNP_MAX_PORT; idx++)
+		copy_resource(&tmp->port_resource[idx], &dev->p.resource[idx]);
+	for (idx = 0; idx < PNP_MAX_MEM; idx++)
+		copy_resource(&tmp->mem_resource[idx], &dev->p.resource[idx+8]);
+
+	/* prepare the isapnp to get the range of resources */
+	dev->p.prepare((struct isapnp_dev *)dev);
+	/* restore the manual configuration again */
+	pnp_manual_config_dev(dev, tmp, 0);
+	kfree(tmp);
+
 	return dev->p.activate((struct isapnp_dev *)dev);
 }
 
