@@ -26,6 +26,7 @@
 
 #ifndef __KERNEL__
 #include <asm/types.h>
+#include <asm/byteorder.h>
 #endif
 
 /*
@@ -127,8 +128,8 @@ typedef struct {
  *
  */
 
-#define GF1_STRU_WAVE		snd_htoi_32(('W'<<24)|('A'<<16)|('V'<<8)|'E')
-#define GF1_STRU_INSTR		snd_htoi_32(('I'<<24)|('N'<<16)|('S'<<8)|'T')
+#define GF1_STRU_WAVE		__cpu_to_be32(('W'<<24)|('A'<<16)|('V'<<8)|'E')
+#define GF1_STRU_INSTR		__cpu_to_be32(('I'<<24)|('N'<<16)|('S'<<8)|'T')
 
 /*
  *  Wavetable definitions

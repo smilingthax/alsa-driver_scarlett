@@ -56,15 +56,6 @@
 	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion)))
 
 /*
- *  hardware independent conversion
- */
-
-#define snd_htoi_32(val) htonl(val)
-#define snd_htoi_16(val) htons(val)
-#define snd_itoh_32(val) ntohl(val)
-#define snd_itoh_16(val) ntohs(val)
-
-/*
  *  various limits
  */
 

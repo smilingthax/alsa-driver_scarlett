@@ -26,6 +26,7 @@
 
 #ifndef __KERNEL__
 #include <asm/types.h>
+#include <asm/byteorder.h>
 #endif
 
 /*
@@ -205,11 +206,11 @@ typedef struct {
  *
  */
 
-#define IWFFFF_STRU_WAVE	snd_htoi_32(('W'<<24)|('A'<<16)|('V'<<8)|'E')
-#define IWFFFF_STRU_ENV_RECP	snd_htoi_32(('E'<<24)|('N'<<16)|('R'<<8)|'P')
-#define IWFFFF_STRU_ENV_RECV	snd_htoi_32(('E'<<24)|('N'<<16)|('R'<<8)|'V')
-#define IWFFFF_STRU_LAYER 	snd_htoi_32(('L'<<24)|('A'<<16)|('Y'<<8)|'R')
-#define IWFFFF_STRU_INSTR 	snd_htoi_32(('I'<<24)|('N'<<16)|('S'<<8)|'T')
+#define IWFFFF_STRU_WAVE	__cpu_to_be32(('W'<<24)|('A'<<16)|('V'<<8)|'E')
+#define IWFFFF_STRU_ENV_RECP	__cpu_to_be32(('E'<<24)|('N'<<16)|('R'<<8)|'P')
+#define IWFFFF_STRU_ENV_RECV	__cpu_to_be32(('E'<<24)|('N'<<16)|('R'<<8)|'V')
+#define IWFFFF_STRU_LAYER 	__cpu_to_be32(('L'<<24)|('A'<<16)|('Y'<<8)|'R')
+#define IWFFFF_STRU_INSTR 	__cpu_to_be32(('I'<<24)|('N'<<16)|('S'<<8)|'T')
 
 /*
  *  Wavetable definitions

@@ -26,6 +26,7 @@
 
 #ifndef __KERNEL__
 #include <asm/types.h>
+#include <asm/byteorder.h>
 #endif
 
 /*
@@ -105,7 +106,7 @@ typedef struct {
  *
  */
 
-#define SIMPLE_STRU_INSTR	snd_htoi_32(('I'<<24)|('N'<<16)|('S'<<8)|'T')
+#define SIMPLE_STRU_INSTR	__cpu_to_be32(('I'<<24)|('N'<<16)|('S'<<8)|'T')
 
 /*
  *  Instrument
