@@ -80,6 +80,7 @@ tags:	*.c
 clean:
 	rm -f .depend *.o *.orig snd.map snd.map? *.old *~
 	rm -f core $(SNDVERSIONS) $(SYMFILES)
+	rm -f opn2 opn3 opn4 playmidi readtime usertest1 usertest2 usertest3
 
 .depend: $(SYMFILES)
 	$(CPP) $(COPTS) $(INCLUDE) *.c > .depend
