@@ -35,6 +35,7 @@
 #endif
 #endif
 #ifndef __KERNEL__
+#include <sys/time.h>
 #include <sys/types.h>
 #include <asm/page.h>
 #endif
@@ -125,7 +126,7 @@
 
 #define SND_CARD_TYPE_LAST		0x0000003a
 
-typedef long long snd_timestamp_t;
+typedef struct timeval snd_timestamp_t;
 
 /****************************************************************************
  *                                                                          *
