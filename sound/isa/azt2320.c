@@ -244,7 +244,7 @@ static int __init snd_card_azt2320_command(unsigned long port, unsigned char val
 	unsigned long limit;
 
 	limit = jiffies + HZ / 10;
-	for (i = 50000; i && (limit - jiffies) > 0; i--)
+	for (i = 50000; i && time_after(limit, jiffies); i--)
 		if (!(inb(port + 0x0c) & 0x80)) {
 			outb(val, port + 0x0c);
 			return 0;
