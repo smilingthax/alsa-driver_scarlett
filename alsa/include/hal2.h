@@ -392,12 +392,14 @@ extern unsigned long snd_hal2_i_look32(snd_hal2_card_t *hal2, unsigned short add
 
 extern snd_pcm_t *snd_hal2_pcm_new_device(snd_hal2_card_t *hal2);
 extern void snd_hal2_dump_regs(snd_hal2_card_t *hal2);
-extern snd_hal2_card_t *snd_hal2_new_card(snd_card_t * card, snd_irq_t * irqnum,
-					  snd_dma_t *dma1ptr, snd_dma_t *dma2ptr,
-					  snd_hal2_ctl_regs_t *ctl_regs,
-					  snd_hal2_aes_regs_t *aes_regs,
-					  snd_hal2_vol_regs_t *vol_regs,
-					  snd_hal2_syn_regs_t *syn_regs);
+extern snd_pcm_t *snd_hal2_new_device(snd_card_t *card,
+				      snd_irq_t *irqnum,
+				      snd_dma_t *dma1ptr,
+				      snd_dma_t *dma2ptr,
+				      snd_hal2_ctl_regs_t *ctl_regs,
+				      snd_hal2_aes_regs_t *aes_regs,
+				      snd_hal2_vol_regs_t *vol_regs,
+				      snd_hal2_syn_regs_t *syn_regs);
 extern void snd_hal2_interrupt(snd_hal2_card_t * hal2);
 
 extern snd_pcm_t *snd_hal2_pcm(snd_hal2_card_t *hal2);
