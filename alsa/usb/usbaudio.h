@@ -1,3 +1,27 @@
+#ifndef __USBAUDIO_H
+#define __USBAUDIO_H
+/*
+ *   (Tentative) USB Audio Driver for ALSA
+ *
+ *   Copyright (c) 2002 by Takashi Iwai <tiwai@suse.de>
+ *
+ *
+ *   This program is free software; you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation; either version 2 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ */
+
+
 #include <sound/driver.h>
 
 /*
@@ -34,8 +58,6 @@
 #define MAX_CHAN			9
 #define MAX_FREQ			16
 #define MAX_IFACE			8
-#define MAX_FORMAT			8
-#define MAX_ALT				32 	/* Sorry, we need quite a few for the Philips webcams */
 
 
 /* Audio Class specific Request Codes */
@@ -129,3 +151,5 @@ int snd_usb_create_mixer(snd_usb_audio_t *chip, unsigned char *buffer, unsigned 
 #define do_usb_alloc_urb(n,flags) usb_alloc_urb(n,flags)
 #define do_usb_submit_urb(p,flags) usb_submit_urb(p,flags)
 #endif
+
+#endif /* __USBAUDIO_H */
