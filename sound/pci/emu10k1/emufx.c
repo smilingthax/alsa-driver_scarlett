@@ -2299,6 +2299,10 @@ static int snd_emu10k1_fx8010_ioctl(snd_hwdep_t * hw, struct file *file, unsigne
 		ipcm = (emu10k1_fx8010_pcm_t *)snd_kcalloc(sizeof(*ipcm), GFP_KERNEL);
 		if (ipcm == NULL)
 			return -ENOMEM;
+		if (copy_from_user(ipcm, (void *)arg, sizeof(*ipcm))) {
+			kfree(ipcm);
+			return -EFAULT;
+		}
 		res = snd_emu10k1_ipcm_peek(emu, ipcm);
 		if (res == 0 && copy_to_user((void *)arg, ipcm, sizeof(*ipcm))) {
 			kfree(ipcm);

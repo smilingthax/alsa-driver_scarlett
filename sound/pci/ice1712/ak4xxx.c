@@ -29,6 +29,11 @@
 #include <sound/core.h>
 #include "ice1712.h"
 
+MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+MODULE_DESCRIPTION("ICEnsemble ICE17xx <-> AK4xxx AD/DA chip interface");
+MODULE_LICENSE("GPL");
+MODULE_CLASSES("{sound}");
+
 static void snd_ice1712_akm4xxx_lock(akm4xxx_t *ak, int chip)
 {
 	ice1712_t *ice = ak->private_data[0];
