@@ -45,11 +45,11 @@
 #define SND_PROTOCOL_VERSION(major, minor, subminor) (((major)<<16)|((minor)<<8)|(subminor))
 #define SND_PROTOCOL_MAJOR(version) (((version)>>16)&0xffff)
 #define SND_PROTOCOL_MINOR(version) (((version)>>8)&0xff)
-#define SND_PROTOCOL_SUBMINOR(version) ((version)&0xff)
-#define SND_PROTOCOL_UNCOMPATIBLE(kversion, uversion) \
-	( SND_PROTOCOL_MAJOR(kversion) != SND_PROTOCOL_MAJOR(uversion) || \
-	 ( SND_PROTOCOL_MAJOR(kversion) == SND_PROTOCOL_MAJOR(uversion) && \
-	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion) ) )
+#define SND_PROTOCOL_MICRO(version) ((version)&0xff)
+#define SND_PROTOCOL_INCOMPATIBLE(kversion, uversion) \
+	(SND_PROTOCOL_MAJOR(kversion) != SND_PROTOCOL_MAJOR(uversion) || \
+	 (SND_PROTOCOL_MAJOR(kversion) == SND_PROTOCOL_MAJOR(uversion) && \
+	   SND_PROTOCOL_MINOR(kversion) != SND_PROTOCOL_MINOR(uversion)))
 
 /*
  *  hardware independent conversion
