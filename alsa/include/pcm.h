@@ -358,6 +358,8 @@ extern void snd_pcm_proc_done(snd_pcm_t * pcm);
 extern void snd_pcm_proc_format(snd_pcm_subchn_t * subchn);
 extern void snd_pcm_proc_write(snd_pcm_subchn_t * subchn, unsigned int pos,
 			       const void *buffer, long count, int kernel);
+extern void snd_pcm_proc_write_silence(snd_pcm_subchn_t * subchn,
+				       unsigned int pos, long count);
 
 #ifdef CONFIG_SND_OSSEMUL
 extern int snd_pcm_plugin_format(snd_pcm_runtime_t *runtime, 

@@ -1430,6 +1430,7 @@ typedef struct {
 #define SND_PCM_LB_TYPE_DATA		0	/* sample data */
 #define SND_PCM_LB_TYPE_FORMAT		1	/* format change */
 #define SND_PCM_LB_TYPE_POSITION	2	/* position change (in bytes) */
+#define SND_PCM_LB_TYPE_SILENCE		3	/* silence (no data) */
 
 typedef struct snd_pcm_loopback_header {
 	int size;			/* block size in bytes */
