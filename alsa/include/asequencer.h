@@ -415,15 +415,6 @@ typedef struct snd_seq_remove_events {
 #define SND_SEQ_PORT_CAP_SUBS_WRITE	(1<<6)	/* allow write subscription */
 #define SND_SEQ_PORT_CAP_NO_EXPORT	(1<<7)	/* routing not allowed */
 
-	/* compatibility aliases */
-#define SND_SEQ_PORT_CAP_IN		SND_SEQ_PORT_CAP_READ
-#define SND_SEQ_PORT_CAP_OUT		SND_SEQ_PORT_CAP_WRITE
-#define SND_SEQ_PORT_CAP_SYNC_IN	SND_SEQ_PORT_CAP_SYNC_READ
-#define SND_SEQ_PORT_CAP_SYNC_OUT	SND_SEQ_PORT_CAP_SYNC_WRITE
-#define SND_SEQ_PORT_CAP_SUBS_IN	SND_SEQ_PORT_CAP_SUBS_READ
-#define SND_SEQ_PORT_CAP_SUBS_OUT	SND_SEQ_PORT_CAP_SUBS_WRITE
-#define SND_SEQ_PORT_CAP_SUBSCRIPTION	(SND_SEQ_PORT_CAP_SUBS_IN|SND_SEQ_PORT_CAP_SUBS_OUT)
-
 	/* port type */
 #define SND_SEQ_PORT_TYPE_SPECIFIC	(1<<0)	/* hardware specific */
 #define SND_SEQ_PORT_TYPE_MIDI_GENERIC	(1<<1)	/* generic MIDI device */
