@@ -2,7 +2,7 @@
 #define __SONICVIBES_H
 
 /*
- *  Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *  Definitions for S3 SonicVibes chip
  *
  *

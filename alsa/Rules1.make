@@ -1,6 +1,6 @@
 #
 # Makefile for ALSA low level driver (Linux version)
-# Copyright (c) 1994-98 by Jaroslav Kysela <perex@jcu.cz>
+# Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
 $(TOPDIR)/include/sndversions.h: $(SYMFILES)

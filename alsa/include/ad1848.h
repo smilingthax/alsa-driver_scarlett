@@ -2,7 +2,7 @@
 #define __AD1848_H
 
 /*
- *  Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *  Definitions for AD1847/AD1848/CS4248 chips
  *
  *

@@ -1,5 +1,5 @@
   Advanced Linux Sound Architecture - Driver
-  Jaroslav Kysela <perex@jcu.cz>
+  Jaroslav Kysela <perex@suse.cz>
   v0.0.1, 12 May 1998
 
   This document describes, in full detail, the Advanced Linux Sound

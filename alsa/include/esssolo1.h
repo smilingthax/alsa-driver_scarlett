@@ -3,7 +3,7 @@
 
 /*
  *  Copyright (c) by Jaromir Koutek <miri@punknet.cz>,
- *                   Jaroslav Kysela <perex@jcu.cz>
+ *                   Jaroslav Kysela <perex@suse.cz>
  *  Definitions for ESS Solo-1
  *
  *

@@ -2,7 +2,7 @@
 #define __CS4231_H
 
 /*
- *  Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *  Definitions for CS4231 & InterWave chips & compatible chips
  *
  *

@@ -1,7 +1,7 @@
 
 		ALSA PCM realtime mixing interface - Draft v0.3
 		===============================================
-		        Jaroslav Kysela <perex@jcu.cz>
+		        Jaroslav Kysela <perex@suse.cz>
 
 **************************************************************************
 OK. People, I'm postponing this feature and marking as 'it will be

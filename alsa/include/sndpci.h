@@ -3,7 +3,7 @@
 
 /*
  *  PCI support
- *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@jcu.cz>
+ *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify

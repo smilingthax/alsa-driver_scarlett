@@ -2,7 +2,7 @@
  *  Advanced Linux Sound Architecture - ALSA - Driver direct FM
  *
  *  Interface file between ALSA driver & user space
- *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@jcu.cz>,
+ *  Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>,
  *                           4Front Technologies
  *
  *

@@ -2,7 +2,7 @@
 #define __AUDIOPCI_H
 
 /*
- *  Copyright (c) by Jaroslav Kysela <perex@jcu.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *  Definitions for Ensoniq ES1370/1371 chips
  *
  *
