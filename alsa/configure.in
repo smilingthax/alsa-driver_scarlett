@@ -89,6 +89,8 @@ int main( void ) {
   AC_MSG_RESULT("no");mversion="0",
   AC_MSG_RESULT("uknown");mversion="0"
 )
+SNDCFG_MVERSION=$mversion
+AC_SUBST(SNDCFG_MVERSION)
 GENKSYMS="/sbin/genksyms"
 if test "$newkernel" = "1"; then
   GENKSYMS="$GENKSYMS -k $kversion.$kpatchlevel.$ksublevel"
