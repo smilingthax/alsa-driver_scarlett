@@ -252,6 +252,8 @@ struct _snd_device {
 
 typedef struct snd_info_entry snd_info_entry_t;
 typedef struct _snd_pcm snd_pcm_t;
+typedef struct _snd_pcm_str snd_pcm_str_t;
+typedef struct _snd_pcm_substream snd_pcm_substream_t;
 typedef struct _snd_mixer snd_kmixer_t;
 typedef struct _snd_rawmidi snd_rawmidi_t;
 typedef struct _snd_kctl snd_kctl_t;
@@ -291,8 +293,8 @@ struct _snd_card {
 	struct list_head controls;	/* all controls for this card */
 	struct list_head control_files;	/* active control files */
 
-	struct proc_dir_entry *proc_dir;	/* root for soundcard specific files */
-	struct proc_dir_entry *proc_dir_link;	/* number link to real id */
+	struct proc_dir_entry *proc_root;	/* root for soundcard specific files */
+	struct proc_dir_entry *proc_root_link;	/* number link to real id */
 	struct list_head info_entries;		/* info entries */
 
 #ifdef CONFIG_SND_OSSEMUL

@@ -35,11 +35,17 @@ struct snd_info_buffer {
 
 typedef struct snd_info_buffer snd_info_buffer_t;
 
-#define SND_INFO_ENTRY_TEXT	0
-#define SND_INFO_ENTRY_DATA	1
-#define SND_INFO_ENTRY_SDEVICE  1	/* subtype */
-#define SND_INFO_ENTRY_DEVICE	2
-#define SND_INFO_ENTRY_SEQUENCER 10	/* subtype */
+#define SND_INFO_CONTENT_TEXT		0
+#define SND_INFO_CONTENT_DATA		1
+#define SND_INFO_CONTENT_DEVICE		2
+
+#define SND_INFO_ENTRY_MODULE			1
+#define SND_INFO_ENTRY_CARD			2
+#define SND_INFO_ENTRY_CHIP			3
+#define SND_INFO_ENTRY_PCM_STREAM		4
+#define SND_INFO_ENTRY_PCM_SUBSTREAM		5
+#define SND_INFO_ENTRY_CONTROL			6
+#define SND_INFO_ENTRY_SEQUENCER		10
 
 struct snd_info_entry;
 
@@ -80,17 +86,22 @@ struct snd_info_entry {
 	const char *name;
 	mode_t mode;
 	long size;
+	unsigned short content;
 	unsigned short type;
-	unsigned short subtype;
 	union {
 		struct snd_info_entry_text text;
 		struct snd_info_entry_ops *ops;
 		struct snd_info_entry_device device;
+	} c;
+	union {
+		snd_card_t *card;
+		snd_pcm_substream_t *substream;
+		snd_pcm_str_t *pstr;
+		void *obj;
 	} t;
+	struct module *module;
 	void *private_data;
 	void (*private_free)(snd_info_entry_t *entry);
-	snd_card_t *card;
-	struct module *module;
 	struct proc_dir_entry *p;
 	struct semaphore access;
 };
@@ -107,14 +118,18 @@ extern int snd_info_minor_unregister(void);
 
 #ifdef CONFIG_PROC_FS
 
-int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...);
+int snd_iprintf(snd_info_buffer_t * buffer, char *fmt,...) __attribute__ ((format (printf, 2, 3)));
 int snd_info_init(void);
 int snd_info_done(void);
 
 int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len);
 char *snd_info_get_str(char *dest, char *src, int len);
-snd_info_entry_t *snd_info_global_entry(struct module * module, const char *name);
-snd_info_entry_t *snd_info_create_entry(snd_card_t * card, const char *name);
+snd_info_entry_t *snd_info_create_module_entry(struct module * module, const char *name);
+snd_info_entry_t *snd_info_create_sequencer_entry(struct module * module, const char *name);
+snd_info_entry_t *snd_info_create_card_entry(snd_card_t * card, const char *name);
+snd_info_entry_t *snd_info_create_chip_entry(snd_card_t * card, const char *name);
+snd_info_entry_t *snd_info_create_pcm_stream_entry(snd_pcm_str_t *pstr, const char *name);
+snd_info_entry_t *snd_info_create_pcm_substream_entry(snd_pcm_substream_t *substream, const char *name);
 void snd_info_free_entry(snd_info_entry_t * entry);
 snd_info_entry_t *snd_info_create_device(const char *name,
 					 unsigned int number,
@@ -127,6 +142,10 @@ int snd_info_card_register(snd_card_t * card);
 int snd_info_card_unregister(snd_card_t * card);
 int snd_info_register(snd_info_entry_t * entry);
 int snd_info_unregister(snd_info_entry_t * entry);
+struct proc_dir_entry *snd_create_proc_entry(const char *name, mode_t mode,
+					     struct proc_dir_entry *parent);
+void snd_remove_proc_entry(struct proc_dir_entry *parent,
+			   struct proc_dir_entry *de);
 
 #else
 
@@ -136,8 +155,12 @@ static inline int snd_info_done(void) { return 0; }
 
 static inline int snd_info_get_line(snd_info_buffer_t * buffer, char *line, int len) { return 0; }
 static inline char *snd_info_get_str(char *dest, char *src, int len) { return NULL; }
-static inline snd_info_entry_t *snd_info_global_entry(struct module * module, const char *name) { return NULL; }
-static inline snd_info_entry_t *snd_info_create_entry(snd_card_t * card, const char *name) { return NULL; }
+static inline snd_info_entry_t *snd_info_create_module_entry(struct module * module, const char *name) { return NULL; }
+static inline snd_info_entry_t *snd_info_create_sequencer_entry(struct module * module, const char *name) { return NULL ; }
+static inline snd_info_entry_t *snd_info_create_card_entry(snd_card_t * card, const char *name) { return NULL; }
+static inline snd_info_entry_t *snd_info_create_chip_entry(snd_card_t * card, const char *name) { return NULL; }
+static inline snd_info_entry_t *snd_info_create_pcm_stream_entry(snd_pcm_str_t *pstr, const char *name) { return NULL; }
+static inline snd_info_entry_t *snd_info_create_pcm_substream_entry(snd_pcm_substream_t *substream, const char *name) { return NULL; }
 static inline void snd_info_free_entry(snd_info_entry_t * entry) { ; }
 static inline snd_info_entry_t *snd_info_create_device(const char *name,
 						       unsigned int number,
@@ -149,6 +172,9 @@ static inline int snd_info_card_unregister(snd_card_t * card) { return 0; }
 static inline int snd_info_register(snd_info_entry_t * entry) { return 0; }
 static inline int snd_info_unregister(snd_info_entry_t * entry) { return 0; }
 
+static inline struct proc_dir_entry *snd_create_proc_entry(const char *name, mode_t mode, struct proc_dir_entry *parent) { return 0; }
+static inline void snd_remove_proc_entry(struct proc_dir_entry *parent,
+					 struct proc_dir_entry *de) { ; }
 
 #endif
 

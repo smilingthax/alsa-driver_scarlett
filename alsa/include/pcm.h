@@ -30,8 +30,6 @@
 
 typedef struct _snd_pcm_file snd_pcm_file_t;
 typedef struct _snd_pcm_runtime snd_pcm_runtime_t;
-typedef struct _snd_pcm_substream snd_pcm_substream_t;
-typedef struct _snd_pcm_str snd_pcm_str_t;
 
 #ifdef CONFIG_SND_OSSEMUL
 #include "pcm_oss.h"
@@ -85,6 +83,7 @@ typedef struct _snd_pcm_ops {
 #define SND_PCM_IOCTL1_RESET		0
 #define SND_PCM_IOCTL1_INFO		1
 #define SND_PCM_IOCTL1_CHANNEL_INFO	2
+#define SND_PCM_IOCTL1_GSTATE		3
 
 #define SND_PCM_TRIGGER_STOP		0
 #define SND_PCM_TRIGGER_START		1
@@ -254,8 +253,8 @@ struct _snd_pcm_runtime {
 	unsigned int tick_time;		/* tick time */
 	snd_pcm_uframes_t min_align;	/* Min alignment for the format */
 	size_t byte_align;
-	unsigned int bits_per_frame;
-	unsigned int bits_per_sample;
+	unsigned int frame_bits;
+	unsigned int sample_bits;
 	unsigned int info;
 	unsigned int rate_num;
 	unsigned int rate_den;
@@ -267,9 +266,8 @@ struct _snd_pcm_runtime {
   	unsigned int period_step;
 	unsigned int sleep_min;		/* min ticks to sleep */
 	snd_pcm_uframes_t xfer_align;	/* xfer size need to be a multiple */
-	unsigned int silence_mode;	/* Silence filling mode */
 	snd_pcm_uframes_t silence_threshold; /* Silence filling happens when
-					        noise is nearest than this */
+						noise is nearest than this */
 	snd_pcm_uframes_t silence_size;	/* Silence filling size */
 	snd_pcm_uframes_t boundary;	/* pointers wrap point */
 
@@ -345,6 +343,11 @@ struct _snd_pcm_substream {
 	/* -- OSS things -- */
 	snd_pcm_oss_substream_t oss;
 #endif
+	struct proc_dir_entry *proc_root;
+	snd_info_entry_t *proc_info_entry;
+	snd_info_entry_t *proc_hw_params_entry;
+	snd_info_entry_t *proc_sw_params_entry;
+	snd_info_entry_t *proc_status_entry;
 };
 
 #ifdef CONFIG_SND_OSSEMUL
@@ -366,8 +369,9 @@ struct _snd_pcm_str {
 	snd_pcm_oss_stream_t oss;
 #endif
 	snd_pcm_file_t *files;
-	snd_info_entry_t *dev;
 	snd_minor_t *reg;
+	struct proc_dir_entry *proc_root;
+	snd_info_entry_t *proc_info_entry;
 };
 
 struct _snd_pcm {
@@ -416,7 +420,9 @@ extern snd_minor_t snd_pcm_reg[2];
  *  Native I/O
  */
 
-extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t * _info);
+extern int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
+extern int snd_pcm_info_user(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
+extern int snd_pcm_status(snd_pcm_substream_t * substream, snd_pcm_status_t *status);
 extern int snd_pcm_prepare(snd_pcm_substream_t *substream);
 extern int snd_pcm_start(snd_pcm_substream_t *substream);
 extern int snd_pcm_stop(snd_pcm_substream_t *substream, int status);
@@ -520,22 +526,22 @@ static inline int snd_pcm_running(snd_pcm_substream_t *substream)
 
 static inline ssize_t bytes_to_samples(snd_pcm_runtime_t *runtime, ssize_t size)
 {
-	return size * 8 / runtime->bits_per_sample;
+	return size * 8 / runtime->sample_bits;
 }
 
 static inline snd_pcm_sframes_t bytes_to_frames(snd_pcm_runtime_t *runtime, ssize_t size)
 {
-	return size * 8 / runtime->bits_per_frame;
+	return size * 8 / runtime->frame_bits;
 }
 
 static inline ssize_t samples_to_bytes(snd_pcm_runtime_t *runtime, ssize_t size)
 {
-	return size * runtime->bits_per_sample / 8;
+	return size * runtime->sample_bits / 8;
 }
 
 static inline ssize_t frames_to_bytes(snd_pcm_runtime_t *runtime, snd_pcm_sframes_t size)
 {
-	return size * runtime->bits_per_frame / 8;
+	return size * runtime->frame_bits / 8;
 }
 
 static inline int frame_aligned(snd_pcm_runtime_t *runtime, ssize_t bytes)

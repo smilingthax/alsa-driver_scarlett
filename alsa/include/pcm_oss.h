@@ -73,12 +73,11 @@ typedef struct _snd_pcm_oss_substream {
 typedef struct _snd_pcm_oss_stream {
 	snd_pcm_oss_setup_t *setup_list;	/* setup list */
         struct semaphore setup_mutex;
-        snd_info_entry_t *proc_entry;
+	snd_info_entry_t *proc_entry;
 } snd_pcm_oss_stream_t;
 
 typedef struct _snd_pcm_oss {
 	int reg;
-	snd_info_entry_t *proc_ctrl_entry;
 } snd_pcm_oss_t;
 
 #endif /* __PCM_OSS_H */

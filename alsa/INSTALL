@@ -860,12 +860,10 @@ Warning: These lines assume that you have the audio group in your system.
 Proc interfaces (/proc/asound)
 ==============================
 
-/proc/asound/#card#/pcm#o
+/proc/asound/card#/pcm#[cp]/oss
 -------------------------
-  String "Playback erase" - erase all additional informations about OSS applications
-  String "Playback <app_name> <fragments> <fragment_size> [<options>]"
-  String "Capture erase" - erase all additional informations about OSS applications
-  String "Capture <app_name> <fragments> <fragment_size> [<options>]"
+  String "erase" - erase all additional informations about OSS applications
+  String "<app_name> <fragments> <fragment_size> [<options>]"
 
    <app_name> - name of application with (higher priority) or without path
    <fragments> - number of fragments or zero if auto
@@ -879,6 +877,6 @@ Proc interfaces (/proc/asound)
 	  - block     force block mode (rvplayer)
 	  - non-block force non-block mode
 
-  Example: echo "Playback x11amp 128 16384" > /proc/asound/0/pcmD0o
-           echo "Capture squake 0 0 disable" > /proc/asound/0/pcmD0o
-	   echo "Playback rvplayer 0 0 block" > /proc/asound/0/pcmD0o
+  Example: echo "x11amp 128 16384" > /proc/asound/card0/pcm0p/oss
+           echo "squake 0 0 disable" > /proc/asound/card0/pcm0c/oss
+	   echo "rvplayer 0 0 block" > /proc/asound/card0/pcm0p/oss
