@@ -34,7 +34,7 @@ map:
 
 install: compile
 	mkdir -p $(moddir)
-	rm -f $(moddir)/snd*.o $(moddir)/persist.o
+	rm -f $(moddir)/snd*.o $(moddir)/persist.o $(moddir)/isapnp.o
 	cp modules/*.o $(moddir)
 	/sbin/depmod -a $(kversion).$(kpatchlevel).$(ksublevel)
 	install -m 755 -d $(prefix)/include/linux
