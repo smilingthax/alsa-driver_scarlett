@@ -401,13 +401,15 @@ static void snd_us428_urb_capt_complete(purb_t urb, struct pt_regs *regs)
 	}
 
 	if (pcm_captsubs)
-		if (pcm_captsubs->runtime->status->state == SNDRV_PCM_STATE_RUNNING)
+		if (pcm_captsubs->runtime->status->state == SNDRV_PCM_STATE_RUNNING
+		    || pcm_captsubs->runtime->status->state == SNDRV_PCM_STATE_DRAINING)
 			runtime = pcm_captsubs->runtime;
 	if (NULL == runtime){
 		snd_us428_substream_t *playsubs = captsubs->stream->substream + SNDRV_PCM_STREAM_PLAYBACK;
 		snd_pcm_substream_t *pcm_playsubs = playsubs->pcm_substream;
 		if (pcm_playsubs)
-			if (pcm_playsubs->runtime->status->state == SNDRV_PCM_STATE_RUNNING)
+			if (pcm_playsubs->runtime->status->state == SNDRV_PCM_STATE_RUNNING
+			    || pcm_playsubs->runtime->status->state == SNDRV_PCM_STATE_DRAINING)
 				runtime = pcm_playsubs->runtime;
 		
 	}
