@@ -221,7 +221,7 @@ static void *isapnp_alloc(long size)
 	void *result;
 
 	result = kmalloc(size, GFP_KERNEL);
-	if (!result)
+	if (result == NULL)
 		return NULL;
 	memset(result, 0, size);
 	return result;
@@ -460,7 +460,7 @@ static struct isapnp_dev * __init isapnp_parse_device(struct isapnp_card *card, 
 
 	isapnp_peek(tmp, size);
 	dev = isapnp_alloc(sizeof(struct isapnp_dev));
-	if (!dev)
+	if (dev == NULL)
 		return NULL;
 	dev->devfn = number;
 	dev->vendor = (tmp[1] << 8) | tmp[0];
@@ -484,7 +484,7 @@ static struct isapnp_resources * __init isapnp_build_resources(struct isapnp_dev
 	struct isapnp_resources *res, *ptr, *ptra;
 	
 	res = isapnp_alloc(sizeof(struct isapnp_resources));
-	if (!res)
+	if (res == NULL)
 		return NULL;
 	res->dev = dev;
 	ptr = (struct isapnp_resources *)dev->sysdata;
@@ -494,12 +494,12 @@ static struct isapnp_resources * __init isapnp_build_resources(struct isapnp_dev
 		ptra = ptr->alt;
 		while (ptra && ptra->alt)
 			ptra = ptra->alt;
-		if (!ptra)
+		if (ptra == NULL)
 			ptr->alt = res;
 		else
 			ptra->alt = res;
 	} else {
-		if (!ptr)
+		if (ptr == NULL)
 			dev->sysdata = res;
 		else
 			ptr->next = res;
@@ -529,7 +529,7 @@ static void __init isapnp_add_irq_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	irq = isapnp_alloc(sizeof(struct isapnp_irq));
-	if (!irq)
+	if (irq == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -566,7 +566,7 @@ static void __init isapnp_add_dma_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	dma = isapnp_alloc(sizeof(struct isapnp_dma));
-	if (!dma)
+	if (dma == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -600,7 +600,7 @@ static void __init isapnp_add_port_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	port = isapnp_alloc(sizeof(struct isapnp_port));
-	if (!port)
+	if (port == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -637,7 +637,7 @@ static void __init isapnp_add_fixed_port_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	port = isapnp_alloc(sizeof(struct isapnp_port));
-	if (!port)
+	if (port == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -673,7 +673,7 @@ static void __init isapnp_add_mem_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	mem = isapnp_alloc(sizeof(struct isapnp_mem));
-	if (!mem)
+	if (mem == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -710,7 +710,7 @@ static void __init isapnp_add_mem32_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	mem32 = isapnp_alloc(sizeof(struct isapnp_mem32));
-	if (!mem32)
+	if (mem32 == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -743,7 +743,7 @@ static void __init isapnp_add_fixed_mem32_resource(struct isapnp_dev *dev,
 
 	isapnp_peek(tmp, size);
 	mem32 = isapnp_alloc(sizeof(struct isapnp_mem32));
-	if (!mem32)
+	if (mem32 == NULL)
 		return;
 	if (*res == NULL) {
 		*res = isapnp_build_resources(dev, dependent);
@@ -1020,7 +1020,7 @@ static int __init isapnp_build_device_list(void)
 		if (isapnp_checksum_value != 0x00)
 			printk("isapnp: checksum for device %i is not valid (0x%x)\n", csn, isapnp_checksum_value);
 		card->checksum = isapnp_checksum_value;
-		if (!isapnp_cards)
+		if (isapnp_cards == NULL)
 			isapnp_cards = card;
 		else
 			prev->next = card;
@@ -1077,7 +1077,7 @@ static struct isapnp_port *isapnp_find_port(struct isapnp_dev *dev, int index)
 	struct isapnp_resources *res;
 	struct isapnp_port *port;
 	
-	if (!dev || index < 0 || index > 7)
+	if (dev == NULL || index < 0 || index > 7)
 		return NULL;
 	for (res = (struct isapnp_resources *)dev->sysdata; res; res = res->next) {
 		for (port = res->port; port; port = port->next) {
@@ -1095,7 +1095,7 @@ struct isapnp_irq *isapnp_find_irq(struct isapnp_dev *dev, int index)
 	struct isapnp_irq *irq;
 	int index1, index2, index3;
 	
-	if (!dev || index < 0 || index > 7)
+	if (dev == NULL || index < 0 || index > 7)
 		return NULL;
 	for (res = (struct isapnp_resources *)dev->sysdata; res; res = res->next) {
 		index3 = 0;
@@ -1121,7 +1121,7 @@ struct isapnp_dma *isapnp_find_dma(struct isapnp_dev *dev, int index)
 	struct isapnp_resources *res;
 	struct isapnp_dma *dma;
 	
-	if (!dev || index < 0 || index > 7)
+	if (dev == NULL || index < 0 || index > 7)
 		return NULL;
 	for (res = (struct isapnp_resources *)dev->sysdata; res; res = res->next) {
 		for (dma = res->dma; dma; dma = dma->next) {
@@ -1138,7 +1138,7 @@ struct isapnp_mem *isapnp_find_mem(struct isapnp_dev *dev, int index)
 	struct isapnp_resources *res;
 	struct isapnp_mem *mem;
 	
-	if (!dev || index < 0 || index > 7)
+	if (dev == NULL || index < 0 || index > 7)
 		return NULL;
 	for (res = (struct isapnp_resources *)dev->sysdata; res; res = res->next) {
 		for (mem = res->mem; mem; mem = mem->next) {
@@ -1155,7 +1155,7 @@ struct isapnp_mem32 *isapnp_find_mem32(struct isapnp_dev *dev, int index)
 	struct isapnp_resources *res;
 	struct isapnp_mem32 *mem32;
 	
-	if (!dev || index < 0 || index > 7)
+	if (dev == NULL || index < 0 || index > 7)
 		return NULL;
 	for (res = (struct isapnp_resources *)dev->sysdata; res; res = res->next) {
 		for (mem32 = res->mem32; mem32; mem32 = mem32->next) {
@@ -1360,27 +1360,27 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 	struct isapnp_dma *dma;
 	struct isapnp_mem *mem;
 
-	if (!cfg)
+	if (cfg == NULL)
 		return -EINVAL;
 	/* process port settings */
 	for (tmp = 0; tmp < 8; tmp++) {
 		if (!(cfg->request->resource[tmp].flags & IORESOURCE_AUTO))
 			continue;		/* don't touch */
 		port = cfg->port[tmp];
-		if (!port) {
+		if (port == NULL) {
 			cfg->port[tmp] = port = isapnp_find_port(cfg->request, tmp);
-			if (!port)
+			if (port == NULL)
 				return -EINVAL;
 		}
 		if (from && port->res == from) {
 			while (port->res != to) {
-				if (!port->res->alt)
+				if (port->res->alt == NULL)
 					return -EINVAL;
 				port = port->res->alt->port;
 				for (tmp1 = tmp; tmp1 > 0 && port; tmp1--)
 					port = port->next;
 				cfg->port[tmp] = port;
-				if (!port)
+				if (port == NULL)
 					return -ENOENT;
 				cfg->result.resource[tmp].flags = isapnp_port_resource_flags(port);
 			}
@@ -1391,20 +1391,20 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 		if (!(cfg->request->irq_resource[tmp].flags & IORESOURCE_AUTO))
 			continue;		/* don't touch */
 		irq = cfg->irq[tmp];
-		if (!irq) {
+		if (irq == NULL) {
 			cfg->irq[tmp] = irq = isapnp_find_irq(cfg->request, tmp);
-			if (!irq)
+			if (irq == NULL)
 				return -EINVAL;
 		}
 		if (from && irq->res == from) {
 			while (irq->res != to) {
-				if (!irq->res->alt)
+				if (irq->res->alt == NULL)
 					return -EINVAL;
 				irq = irq->res->alt->irq;
 				for (tmp1 = tmp; tmp1 > 0 && irq; tmp1--)
 					irq = irq->next;
 				cfg->irq[tmp] = irq;
-				if (!irq)
+				if (irq == NULL)
 					return -ENOENT;
 				cfg->result.irq_resource[tmp].flags = isapnp_irq_resource_flags(irq);
 			}
@@ -1415,20 +1415,20 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 		if (!(cfg->request->dma_resource[tmp].flags & IORESOURCE_AUTO))
 			continue;		/* don't touch */
 		dma = cfg->dma[tmp];
-		if (!dma) {
+		if (dma == NULL) {
 			cfg->dma[tmp] = dma = isapnp_find_dma(cfg->request, tmp);
-			if (!dma)
+			if (dma == NULL)
 				return -EINVAL;
 		}
 		if (from && dma->res == from) {
 			while (dma->res != to) {
-				if (!dma->res->alt)
+				if (dma->res->alt == NULL)
 					return -EINVAL;
 				dma = dma->res->alt->dma;
 				for (tmp1 = tmp; tmp1 > 0 && dma; tmp1--)
 					dma = dma->next;
 				cfg->dma[tmp] = dma;
-				if (!dma)
+				if (dma == NULL)
 					return -ENOENT;
 				cfg->result.dma_resource[tmp].flags = isapnp_dma_resource_flags(dma);
 			}
@@ -1439,20 +1439,20 @@ static int isapnp_alternative_switch(struct isapnp_cfgtmp *cfg,
 		if (!(cfg->request->resource[tmp + 8].flags & IORESOURCE_AUTO))
 			continue;		/* don't touch */
 		mem = cfg->mem[tmp];
-		if (!mem) {
+		if (mem == NULL) {
 			cfg->mem[tmp] = mem = isapnp_find_mem(cfg->request, tmp);
-			if (!mem)
+			if (mem == NULL)
 				return -EINVAL;
 		}
 		if (from && mem->res == from) {
 			while (mem->res != to) {
-				if (!mem->res->alt)
+				if (mem->res->alt == NULL)
 					return -EINVAL;
 				mem = mem->res->alt->mem;
 				for (tmp1 = tmp; tmp1 > 0 && mem; tmp1--)
 					mem = mem->next;
 				cfg->mem[tmp] = mem;
-				if (!mem)
+				if (mem == NULL)
 					return -ENOENT;
 				cfg->result.resource[tmp + 8].flags = isapnp_mem_resource_flags(mem);
 			}
@@ -1501,7 +1501,7 @@ static int isapnp_check_port(struct isapnp_cfgtmp *cfg, int port, int size, int 
 		tmp = cfg->request->resource[i].start;
 		if (flags & IORESOURCE_AUTO) {		/* auto */
 			xport = cfg->port[i];
-			if (!xport)
+			if (xport == NULL)
 				return 1;
 			if (cfg->result.resource[i].flags & IORESOURCE_AUTO)
 				continue;
@@ -1513,7 +1513,7 @@ static int isapnp_check_port(struct isapnp_cfgtmp *cfg, int port, int size, int 
 		if (port == tmp)
 			return 1;
 		xport = isapnp_find_port(cfg->request, i);
-		if (!xport)
+		if (xport == NULL)
 			return 1;
 		if (tmp + xport->size >= port && tmp <= port + xport->size)
 			return 1;
@@ -1527,13 +1527,13 @@ static int isapnp_valid_port(struct isapnp_cfgtmp *cfg, int idx)
 	unsigned long *value1, *value2;
 	struct isapnp_port *port;
 
-	if (!cfg || idx < 0 || idx > 7)
+	if (cfg == NULL || idx < 0 || idx > 7)
 		return -EINVAL;
 	if (!(cfg->result.resource[idx].flags & IORESOURCE_AUTO)) /* don't touch */
 		return 0;
       __again:
       	port = cfg->port[idx];
-      	if (!port)
+      	if (port == NULL)
       		return -EINVAL;
       	value1 = &cfg->result.resource[idx].start;
       	value2 = &cfg->result.resource[idx].end;
@@ -1607,13 +1607,13 @@ static int isapnp_valid_irq(struct isapnp_cfgtmp *cfg, int idx)
 	unsigned long *value1, *value2;
 	struct isapnp_irq *irq;
 
-	if (!cfg || idx < 0 || idx > 1)
+	if (cfg == NULL || idx < 0 || idx > 1)
 		return -EINVAL;
 	if (!(cfg->result.irq_resource[idx].flags & IORESOURCE_AUTO))
 		return 0;
       __again:
       	irq = cfg->irq[idx];
-      	if (!irq)
+      	if (irq == NULL)
       		return -EINVAL;
       	value1 = &cfg->result.irq_resource[idx].start;
       	value2 = &cfg->result.irq_resource[idx].end;
@@ -1680,13 +1680,13 @@ static int isapnp_valid_dma(struct isapnp_cfgtmp *cfg, int idx)
 	unsigned long *value1, *value2;
 	struct isapnp_dma *dma;
 
-	if (!cfg || idx < 0 || idx > 1)
+	if (cfg == NULL || idx < 0 || idx > 1)
 		return -EINVAL;
 	if (!(cfg->result.dma_resource[idx].flags & IORESOURCE_AUTO))	/* don't touch */
 		return 0;
       __again:
       	dma = cfg->dma[idx];
-      	if (!dma)
+      	if (dma == NULL)
       		return -EINVAL;
       	value1 = &cfg->result.dma_resource[idx].start;
       	value2 = &cfg->result.dma_resource[idx].end;
@@ -1756,7 +1756,7 @@ static int isapnp_check_mem(struct isapnp_cfgtmp *cfg, unsigned int addr, unsign
 		tmp = cfg->result.resource[i + 8].start;
 		if (flags & IORESOURCE_AUTO) {		/* auto */
 			xmem = cfg->mem[i];
-			if (!xmem)
+			if (xmem == NULL)
 				return 1;
 			if (cfg->result.resource[i + 8].flags & IORESOURCE_AUTO)
 				continue;
@@ -1767,7 +1767,7 @@ static int isapnp_check_mem(struct isapnp_cfgtmp *cfg, unsigned int addr, unsign
 		if (addr == tmp)
 			return 1;
 		xmem = isapnp_find_mem(cfg->request, i);
-		if (!xmem)
+		if (xmem == NULL)
 			return 1;
 		if (tmp + xmem->size >= addr && tmp <= addr + xmem->size)
 			return 1;
@@ -1781,13 +1781,13 @@ static int isapnp_valid_mem(struct isapnp_cfgtmp *cfg, int idx)
 	unsigned long *value1, *value2;
 	struct isapnp_mem *mem;
 
-	if (!cfg || idx < 0 || idx > 3)
+	if (cfg == NULL || idx < 0 || idx > 3)
 		return -EINVAL;
 	if (!(cfg->result.resource[idx + 8].flags & IORESOURCE_AUTO)) /* don't touch */
 		return 0;
       __again:
       	mem = cfg->mem[idx];
-      	if (!mem)
+      	if (mem == NULL)
       		return -EINVAL;
       	value1 = &cfg->result.resource[idx + 8].start;
       	value2 = &cfg->result.resource[idx + 8].end;
@@ -1837,7 +1837,7 @@ static int isapnp_config_activate(struct isapnp_dev *dev)
 	struct isapnp_cfgtmp cfg;
 	int tmp, fauto, err;
 	
-	if (!dev)
+	if (dev == NULL)
 		return -EINVAL;
 	if (dev->active)
 		return -EBUSY;
@@ -1914,7 +1914,7 @@ static int isapnp_config_activate(struct isapnp_dev *dev)
 
 static int isapnp_config_deactivate(struct isapnp_dev *dev)
 {
-	if (!dev || !dev->active)
+	if (dev == NULL || !dev->active)
 		return -EINVAL;
       	isapnp_cfg_begin(dev->bus->number, dev->devfn);
 	isapnp_deactivate(dev->devfn);
@@ -2142,7 +2142,7 @@ __initfunc(int isapnp_init(void))
 #ifdef ISAPNP_REGION_OK
 #ifdef NEW_RESOURCE
 	pidxr_res=request_region(_PIDXR, 1, "isapnp index");
-	if(!pidxr_res) {
+	if(pidxr_res == NULL) {
 #else
 	if (check_region(_PIDXR, 1)) {
 #endif
@@ -2152,7 +2152,7 @@ __initfunc(int isapnp_init(void))
 #endif
 #ifdef NEW_RESOURCE
 	pnpwrp_res=request_region(_PNPWRP, 1, "isapnp write");
-	if(!pnpwrp_res) {
+	if(pnpwrp_res == NULL) {
 #else
 	if (check_region(_PNPWRP, 1)) {
 #endif
@@ -2162,7 +2162,7 @@ __initfunc(int isapnp_init(void))
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff) {
 #ifdef NEW_RESOURCE
 		isapnp_rdp_res=request_region(isapnp_rdp, 1, "isapnp read");
-		if(!isapnp_rdp_res) {
+		if(isapnp_rdp_res == NULL) {
 #else
 		if (check_region(isapnp_rdp, 1)) {
 #endif

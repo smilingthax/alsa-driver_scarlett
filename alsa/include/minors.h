@@ -21,33 +21,39 @@
  *
  */
 
-#define SND_MINOR_MASK		0x001f
+#define SND_MINOR_DEVICES	32
+#define SND_MINOR_CARD(minor) ((minor) >> 5)
+#define SND_MINOR_DEVICE(minor) ((minor) & 0x001f)
+#define SND_MINOR(card, dev)	(((card) << 5) | (dev))
 
 #define SND_MINOR_CONTROL	0	/* 0 - 0 */
 #define SND_MINOR_SEQUENCER	1
 #define SND_MINOR_TIMER		(1+32)
-#define SND_MINOR_PCM_CONTROL	(1+64)
 #define SND_MINOR_HWDEP		2	/* 2 - 5 */
 #define SND_MINOR_HWDEPS	4
 #define SND_MINOR_MIXER		6	/* 6 - 7 */
 #define SND_MINOR_MIXERS	2
 #define SND_MINOR_RAWMIDI	8	/* 8 - 15 */
 #define SND_MINOR_RAWMIDIS	8
-#define SND_MINOR_PCM		16	/* 16 - 31 */
-#define SND_MINOR_PCMS		16
+#define SND_MINOR_PCM_PLAYBACK	16	/* 16 - 23 */
+#define SND_MINOR_PCM_CAPTURE	24	/* 24 - 31 */
+#define SND_MINOR_PCMS		8
 
 #define SND_DEVICE_TYPE_CONTROL	SND_MINOR_CONTROL
 #define SND_DEVICE_TYPE_HWDEP	SND_MINOR_HWDEP
 #define SND_DEVICE_TYPE_MIXER	SND_MINOR_MIXER
 #define SND_DEVICE_TYPE_RAWMIDI	SND_MINOR_RAWMIDI
-#define SND_DEVICE_TYPE_PCM	SND_MINOR_PCM
-#define SND_DEVICE_TYPE_PCM_CONTROL SND_MINOR_PCM_CONTROL
+#define SND_DEVICE_TYPE_PCM_PLAYBACK	SND_MINOR_PCM_PLAYBACK
+#define SND_DEVICE_TYPE_PCM_CAPTURE	SND_MINOR_PCM_CAPTURE
 #define SND_DEVICE_TYPE_SEQUENCER SND_MINOR_SEQUENCER
 #define SND_DEVICE_TYPE_TIMER	SND_MINOR_TIMER
 
 #ifdef CONFIG_SND_OSSEMUL
 
-#define SND_MINOR_OSS_MASK	0x000f
+#define SND_MINOR_OSS_DEVICES	16
+#define SND_MINOR_OSS_CARD(minor) ((minor) >> 4)
+#define SND_MINOR_OSS_DEVICE(minor) ((minor) & 0x000f)
+#define SND_MINOR_OSS(card, dev)	(((card) << 4) | (dev))
 
 #define SND_MINOR_OSS_MIXER	0	/* /dev/mixer - OSS 3.XX compatible */
 #define SND_MINOR_OSS_SEQUENCER	1	/* /dev/sequencer - OSS 3.XX compatible */

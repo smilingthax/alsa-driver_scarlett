@@ -22,13 +22,13 @@
  *
  */
 
-#ifdef CONFIG_SND_OSSEMUL
-#include "pcm_oss.h"
-#endif
-
 typedef struct snd_stru_pcm_file snd_pcm_file_t;
 typedef struct snd_stru_pcm_subchn snd_pcm_subchn_t;
 typedef struct snd_stru_pcm_channel snd_pcm_channel_t;
+
+#ifdef CONFIG_SND_OSSEMUL
+#include "pcm_oss.h"
+#endif
 
 /*
  *  Hardware (lowlevel) section
@@ -62,7 +62,7 @@ typedef struct snd_stru_pcm_hardware {
  *
  */
 
-#define SND_PCM_DEVICES		16
+#define SND_PCM_DEVICES		8
 
 #define SND_PCM_DEFAULT_RATE	8000
 
@@ -95,8 +95,7 @@ typedef struct snd_stru_pcm_hardware {
 	((channel)->time.tv_sec = (channel)->time.tv_usec = 0)
 
 struct snd_stru_pcm_file {
-	snd_pcm_t *pcm;
-	snd_pcm_subchn_t * chn[2];
+	snd_pcm_subchn_t * subchn;
 	struct snd_stru_pcm_file * next;
 	/* -- private section */
 	void *private_data;
@@ -202,6 +201,13 @@ struct snd_stru_pcm_subchn {
 #endif
 };
 
+#ifdef CONFIG_SND_OSSEMUL
+#define SUBCHN_BUSY(subchn) ((subchn)->file != NULL || ((subchn)->oss.file != NULL))
+#else
+#define SUBCHN_BUSY(subchn) ((subchn)->file != NULL)
+#endif
+
+
 struct snd_stru_pcm_channel {
 	int channel;				/* channel (direction) */
 	snd_pcm_t *pcm;
@@ -220,6 +226,10 @@ struct snd_stru_pcm_channel {
 	/* -- OSS things -- */
 	snd_pcm_oss_channel_t oss;
 #endif
+	int open_prefer_subchn;
+	snd_pcm_file_t *files;
+	snd_info_entry_t *dev;
+	snd_minor_t *reg;
 };
 
 struct snd_stru_pcm {
@@ -230,12 +240,8 @@ struct snd_stru_pcm {
 	char id[64];
 	char name[80];
 	snd_pcm_channel_t chn[2];
-	snd_pcm_file_t *files;
-	snd_minor_t *reg;
-	snd_info_entry_t *dev;
 	struct semaphore open_mutex;
 	wait_queue_head_t open_wait;
-	int open_prefer_subchn;
 	void *private_data;
 	void (*private_free) (void *private_data);
 #ifdef CONFIG_SND_OSSEMUL
@@ -262,18 +268,12 @@ extern int snd_pcm_new(snd_card_t * card, char *id, int device,
 
 extern int snd_pcm_notify(struct snd_stru_pcm_notify *notify, int nfree);
 
-extern int snd_pcm_open(snd_pcm_t * pcm,
-			int playback, int capture,
-			snd_pcm_file_t ** pcm_file);
-extern int snd_pcm_release(snd_pcm_file_t *pcm_file);
-
 extern int snd_pcm_switch_add(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 extern int snd_pcm_switch_remove(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 extern snd_kswitch_t *snd_pcm_switch_new(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw, void *private_data);
 extern int snd_pcm_switch_change(snd_pcm_channel_t * pchn, snd_kswitch_t * ksw);
 
-extern snd_minor_t snd_pcm_reg;
-extern snd_minor_t snd_pcm_control_reg;
+extern snd_minor_t snd_pcm_reg[2];
 
 /*
  *  Native I/O
@@ -281,12 +281,18 @@ extern snd_minor_t snd_pcm_control_reg;
 
 extern int snd_pcm_info(snd_pcm_t * pcm, snd_pcm_info_t * _info);
 extern int snd_pcm_channel_info(snd_pcm_subchn_t * subchn, snd_pcm_channel_info_t * _info);
+extern int snd_pcm_channel_go(snd_pcm_subchn_t *subchn, int cmd);
 extern int snd_pcm_channel_go_pre(snd_pcm_subchn_t *subchn, int cmd);
-extern int snd_pcm_channel_go_post(snd_pcm_subchn_t *go, int cmd, int err);
-extern int snd_pcm_kernel_ioctl(snd_pcm_file_t * pcm_file, unsigned int cmd, unsigned long arg);
-extern int snd_pcm_open_device(unsigned short minor, int cardnum, int device, struct file *file);
-extern int snd_pcm_release_device(unsigned short minor, int cardnum, int device, struct file *file);
-extern unsigned int snd_pcm_poll(struct file *file, poll_table * wait);
+extern int snd_pcm_channel_go_post(snd_pcm_subchn_t *subchn, int cmd, int err);
+extern int snd_pcm_kernel_playback_ioctl(snd_pcm_subchn_t *subchn, unsigned int cmd, unsigned long arg);
+extern int snd_pcm_kernel_capture_ioctl(snd_pcm_subchn_t *subchn, unsigned int cmd, unsigned long arg);
+extern int snd_pcm_kernel_ioctl(snd_pcm_subchn_t *subchn, unsigned int cmd, unsigned long arg);
+extern int snd_pcm_open(unsigned short minor, int cardnum, int device, struct file *file, int channel);
+extern int snd_pcm_release(unsigned short minor, int cardnum, int device, struct file *file);
+extern unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait);
+extern unsigned int snd_pcm_capture_poll(struct file *file, poll_table * wait);
+extern int snd_pcm_open_subchn(snd_pcm_t *pcm, int channel, snd_pcm_subchn_t **rsubchn);
+extern void snd_pcm_release_subchn(snd_pcm_subchn_t *subchn);
                            
 /*
  *  PCM library

@@ -149,16 +149,14 @@ typedef struct snd_ctl_hw_info {
 #define SND_CTL_IOCTL_MIXER_SWITCH_READ	_IOWR('U', 0x19, snd_switch_t)
 #define SND_CTL_IOCTL_MIXER_SWITCH_WRITE _IOWR('U', 0x1a, snd_switch_t)
 #define SND_CTL_IOCTL_PCM_DEVICE	_IOWR('U', 0x20, int)
-#define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOWR('U', 0x21, int)
-#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOWR('U', 0x22, int)
-#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x23, snd_pcm_info_t)
-#define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x24, snd_pcm_channel_info_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_LIST	_IOWR('U', 0x28, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_READ  _IOWR('U', 0x29, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_PSWITCH_WRITE _IOWR('U', 0x2a, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_CSWITCH_LIST	_IOWR('U', 0x2b, snd_switch_list_t)
-#define SND_CTL_IOCTL_PCM_CSWITCH_READ  _IOWR('U', 0x2c, snd_switch_t)
-#define SND_CTL_IOCTL_PCM_CSWITCH_WRITE _IOWR('U', 0x2d, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_CHANNEL	_IOWR('U', 0x21, int)
+#define SND_CTL_IOCTL_PCM_SUBDEVICE	_IOWR('U', 0x22, int)
+#define SND_CTL_IOCTL_PCM_PREFER_SUBDEVICE _IOWR('U', 0x23, int)
+#define SND_CTL_IOCTL_PCM_INFO		_IOR ('U', 0x24, snd_pcm_info_t)
+#define SND_CTL_IOCTL_PCM_CHANNEL_INFO	_IOR ('U', 0x25, snd_pcm_channel_info_t)
+#define SND_CTL_IOCTL_PCM_SWITCH_LIST	_IOWR('U', 0x26, snd_switch_list_t)
+#define SND_CTL_IOCTL_PCM_SWITCH_READ  _IOWR('U', 0x27, snd_switch_t)
+#define SND_CTL_IOCTL_PCM_SWITCH_WRITE _IOWR('U', 0x28, snd_switch_t)
 #define SND_CTL_IOCTL_RAWMIDI_DEVICE	_IOWR('U', 0x30, int)
 #define SND_CTL_IOCTL_RAWMIDI_INFO	_IOR ('U', 0x31, snd_rawmidi_info_t)
 #define SND_CTL_IOCTL_RAWMIDI_OSWITCH_LIST _IOWR('U', 0x38, snd_switch_list_t)
@@ -1224,7 +1222,7 @@ typedef struct snd_pcm_format {
 } snd_pcm_format_t;
 
 typedef struct snd_pcm_channel_params {
-	int channel;			/* channel information */
+	int channel;			/* channel information (IGNORED in kernel space) */
 	int mode;			/* transfer mode */
 	snd_pcm_format_t format;	/* playback format */
 	snd_pcm_digital_t digital;	/* digital setup */
@@ -1315,29 +1313,12 @@ typedef struct {
 #define SND_PCM_IOCTL_CHANNEL_PARAMS	_IOWR('A', 0x10, snd_pcm_channel_params_t)
 #define SND_PCM_IOCTL_CHANNEL_SETUP	_IOWR('A', 0x20, snd_pcm_channel_setup_t)
 #define SND_PCM_IOCTL_CHANNEL_STATUS	_IOWR('A', 0x21, snd_pcm_channel_status_t)
-#define SND_PCM_IOCTL_PLAYBACK_PREPARE	_IO  ('A', 0x30)
-#define SND_PCM_IOCTL_CAPTURE_PREPARE	_IO  ('A', 0x31)
-#define SND_PCM_IOCTL_PLAYBACK_GO	_IO  ('A', 0x32)
-#define SND_PCM_IOCTL_CAPTURE_GO	_IO  ('A', 0x33)
-#define SND_PCM_IOCTL_SYNC_GO		_IOWR('A', 0x34, snd_pcm_sync_t)
-#define SND_PCM_IOCTL_DRAIN_PLAYBACK	_IO  ('A', 0x40)
-#define SND_PCM_IOCTL_FLUSH_PLAYBACK	_IO  ('A', 0x41)
-#define SND_PCM_IOCTL_FLUSH_CAPTURE	_IO  ('A', 0x42)
-#define SND_PCM_IOCTL_PLAYBACK_PAUSE	_IOWR('A', 0x50, int)
-
-/*
- *  Control interface
- */
-
-typedef struct {
-	int card;
-	int device;
-	int subdevice;
-	int channel;
-} snd_pcm_mmap_select_t;
-
-#define SND_PCM_CTRL_IOCTL_PVERSION	_IOR ('A', 0x00, int)
-#define SND_PCM_CTRL_IOCTL_SELECT	_IOWR('A', 0xa0, snd_pcm_mmap_select_t)
+#define SND_PCM_IOCTL_CHANNEL_PREPARE	_IO  ('A', 0x30)
+#define SND_PCM_IOCTL_CHANNEL_GO	_IO  ('A', 0x31)
+#define SND_PCM_IOCTL_CHANNEL_FLUSH	_IO  ('A', 0x32)
+#define SND_PCM_IOCTL_SYNC_GO		_IOWR('A', 0x33, snd_pcm_sync_t)
+#define SND_PCM_IOCTL_CHANNEL_DRAIN	_IO  ('A', 0x34)
+#define SND_PCM_IOCTL_CHANNEL_PAUSE	_IOWR('A', 0x35, int)
 
 /*
  *  Loopback interface

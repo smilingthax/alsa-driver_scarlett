@@ -465,8 +465,15 @@ extern int snd_task_name(struct task_struct *task, char *name, int size);
 #define snd_printk( args... ) printk( "snd: " ##args )
 #ifdef CONFIG_SND_DEBUG
 #define snd_printd( args... ) snd_printk( ##args )
+#define snd_debug_check(expr, retval) do { \
+	if (expr) {\
+		snd_printk("Bug? {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		return retval;\
+	}\
+} while (0)
 #else
 #define snd_printd( args... )	/* nothing */
+#define snd_debug_check(expr, retval)	/* nothing */
 #endif
 
 #ifdef CONFIG_SND_DEBUG_DETECT

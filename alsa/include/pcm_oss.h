@@ -28,7 +28,7 @@ typedef struct snd_stru_pcm_oss_setup snd_pcm_oss_setup_t;
 
 struct snd_stru_pcm_oss_setup {
 	char *task_name;
-	unsigned int playback_only:1,
+	unsigned int disable:1,
 		     block:1,
 		     nonblock:1;
 	unsigned int fragments;
@@ -59,9 +59,14 @@ typedef struct snd_stru_pcm_oss_runtime {
 	char xbuffer_lock[2];
 } snd_pcm_oss_runtime_t;
 
+typedef struct snd_stru_pcm_oss_file {
+	snd_pcm_subchn_t *chn[2];
+} snd_pcm_oss_file_t;
+
 typedef struct snd_stru_pcm_oss_subchn {
 	int oss: 1;				/* oss mode */
 	snd_pcm_oss_setup_t *setup;		/* active setup */
+	snd_pcm_oss_file_t *file;
 } snd_pcm_oss_subchn_t;
 
 typedef struct snd_stru_pcm_oss_channel {

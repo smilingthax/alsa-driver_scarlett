@@ -87,7 +87,7 @@ static ssize_t isapnp_info_entry_read(struct file *file, char *buffer,
 	if (mode != O_RDONLY)
 		return -EINVAL;
 	buf = (isapnp_info_buffer_t *) file->private_data;
-	if (!buf)
+	if (buf == NULL)
 		return -EIO;
 	if (file->f_pos >= buf->size)
 		return 0;
@@ -112,7 +112,7 @@ static ssize_t isapnp_info_entry_write(struct file *file, const char *buffer,
 	if (mode != O_WRONLY)
 		return -EINVAL;
 	buf = (isapnp_info_buffer_t *) file->private_data;
-	if (!buf)
+	if (buf == NULL)
 		return -EIO;
 	if (file->f_pos < 0)
 		return -EINVAL;
@@ -140,11 +140,11 @@ static int isapnp_info_entry_open(struct inode *inode, struct file *file)
 		return -EINVAL;
 	buffer = (isapnp_info_buffer_t *)
 				isapnp_alloc(sizeof(isapnp_info_buffer_t));
-	if (!buffer)
+	if (buffer == NULL)
 		return -ENOMEM;
 	buffer->len = 4 * PAGE_SIZE;
 	buffer->buffer = vmalloc(buffer->len);
-	if (!buffer->buffer) {
+	if (buffer->buffer == NULL) {
 		kfree(buffer);
 		return -ENOMEM;
 	}
@@ -174,7 +174,7 @@ static int isapnp_info_entry_release(struct inode *inode, struct file *file)
 
 static unsigned int isapnp_info_entry_poll(struct file *file, poll_table * wait)
 {
-	if (!file->private_data)
+	if (file->private_data == NULL)
 		return 0;
 	return POLLIN | POLLRDNORM;
 }
@@ -236,7 +236,7 @@ __initfunc(static int isapnp_proc_init(void))
 
 	isapnp_proc_entry = NULL;
 	p = create_proc_entry("isapnp", S_IFREG | S_IRUGO | S_IWUSR, &proc_root);
-	if (!p)
+	if (p == NULL)
 		return -ENOMEM;
 	p->ops = &isapnp_info_entry_inode_operations;
 	isapnp_proc_entry = p;
@@ -520,7 +520,7 @@ static void isapnp_print_device(isapnp_info_buffer_t *buffer, struct isapnp_dev 
 	char *space = "    ";
 	struct isapnp_resources *res, *resa;
 
-	if (!dev)
+	if (dev == NULL)
 		return;
 	isapnp_printf(buffer, "  Logical device %i '", dev->devfn);
 	isapnp_print_devid(buffer, dev->vendor, dev->device);
@@ -873,13 +873,13 @@ static int isapnp_decode_line(char *line)
 		return isapnp_set_card(line);
 	if (!strcmp(cmd, "csn"))
 		return isapnp_select_csn(line);
-	if (!isapnp_info_card) {
+	if (isapnp_info_card == NULL) {
 		printk("isapnp: card is not selected\n");
 		return 1;
 	}
 	if (!strncmp(cmd, "dev", 3))
 		return isapnp_set_device(line);
-	if (!isapnp_info_device) {
+	if (isapnp_info_device == NULL) {
 		printk("isapnp: device is not selected\n");
 		return 1;
 	}

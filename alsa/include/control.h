@@ -32,6 +32,7 @@ struct snd_stru_control {
 	int hwdep_device;
 	int mixer_device;
 	int pcm_device;
+	int pcm_channel;
 	int pcm_subdevice;
 	int rawmidi_device;
 	wait_queue_head_t change_sleep;
