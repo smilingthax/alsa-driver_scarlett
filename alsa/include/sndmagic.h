@@ -72,7 +72,7 @@ static inline int _snd_magic_bad(void *obj, unsigned int magic)
 
 
 #define snd_card_share_pcm_t_magic		0xa15a1001
-#define snd_card_share_pcm_open_t_magic		0xa15a1002
+#define snd_card_share_slave_t_magic		0xa15a1002
 #define snd_card_share_mixer_group_t_magic	0xa15a1003
 #define snd_card_share_mixer_element_t_magic	0xa15a1004
 
