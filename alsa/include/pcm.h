@@ -322,10 +322,10 @@ struct _snd_pcm_substream {
 	char name[32];			/* substream name */
 	int stream;			/* stream (direction) */
 	size_t buffer_bytes_max;	/* limit ring buffer size */
-	snd_kcontrol_t *kctl_buffer_bytes_max;
 	void *dma_area;
 	dma_addr_t dma_addr;
 	size_t dma_bytes;
+	size_t dma_max;
 	void *dma_private;
 	/* -- hardware operations -- */
 	snd_pcm_ops_t *ops;
@@ -412,9 +412,6 @@ extern int snd_pcm_new(snd_card_t * card, char *id, int device,
 		       int playback_count, int capture_count, snd_pcm_t **rpcm);
 
 extern int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
-
-extern int snd_pcm_add_buffer_bytes_control(snd_pcm_substream_t *substream);
-extern int snd_pcm_add_buffer_bytes_controls(snd_pcm_t *pcm);
 
 extern snd_minor_t snd_pcm_reg[2];
 
@@ -788,9 +785,10 @@ extern void snd_pcm_timer_done(snd_pcm_substream_t * substream);
  */
 
 extern int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
-					 size_t size, unsigned int flags);
+					 size_t size, size_t max,
+					 unsigned int flags);
 extern int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
-						 size_t size,
+						 size_t size, size_t max,
 						 unsigned int flags);
 extern void snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
 extern void snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
@@ -802,10 +800,11 @@ extern void snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
 #ifdef CONFIG_PCI
 extern int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
 					     snd_pcm_substream_t *substream,
-					     size_t size);
+					     size_t size, size_t max);
 extern int snd_pcm_lib_preallocate_pci_pages_for_all(struct pci_dev *pci,
 						     snd_pcm_t *pcm,
-						     size_t size);
+						     size_t size,
+						     size_t max);
 extern void snd_pcm_lib_preallocate_pci_free(struct pci_dev *pci,
 					     snd_pcm_substream_t *substream);
 extern void snd_pcm_lib_preallocate_pci_free_for_all(struct pci_dev *pci,
