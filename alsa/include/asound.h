@@ -655,7 +655,7 @@ enum sndrv_ctl_elem_type {
 	SNDRV_CTL_ELEM_TYPE_NONE,		/* invalid */
 	SNDRV_CTL_ELEM_TYPE_BOOLEAN,		/* boolean type */
 	SNDRV_CTL_ELEM_TYPE_INTEGER,		/* integer type */
-	SNDRV_CTL_ELEM_TYPE_ENUMERATED,	/* enumerated type */
+	SNDRV_CTL_ELEM_TYPE_ENUMERATED,		/* enumerated type */
 	SNDRV_CTL_ELEM_TYPE_BYTES,		/* byte array */
 	SNDRV_CTL_ELEM_TYPE_IEC958,		/* IEC958 (S/PDIF) setup */
 	SNDRV_CTL_ELEM_TYPE_LAST = SNDRV_CTL_ELEM_TYPE_IEC958,
@@ -666,19 +666,20 @@ enum sndrv_ctl_elem_iface {
 	SNDRV_CTL_ELEM_IFACE_HWDEP,		/* hardware dependent device */
 	SNDRV_CTL_ELEM_IFACE_MIXER,		/* virtual mixer device */
 	SNDRV_CTL_ELEM_IFACE_PCM,		/* PCM device */
-	SNDRV_CTL_ELEM_IFACE_RAWMIDI,	/* RawMidi device */
+	SNDRV_CTL_ELEM_IFACE_RAWMIDI,		/* RawMidi device */
 	SNDRV_CTL_ELEM_IFACE_TIMER,		/* timer device */
-	SNDRV_CTL_ELEM_IFACE_SEQUENCER,	/* sequencer client */
+	SNDRV_CTL_ELEM_IFACE_SEQUENCER,		/* sequencer client */
 	SNDRV_CTL_ELEM_IFACE_LAST = SNDRV_CTL_ELEM_IFACE_SEQUENCER,
 };
 
 #define SNDRV_CTL_ELEM_ACCESS_READ		(1<<0)
 #define SNDRV_CTL_ELEM_ACCESS_WRITE		(1<<1)
-#define SNDRV_CTL_ELEM_ACCESS_READWRITE	(SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE)
-#define SNDRV_CTL_ELEM_ACCESS_VOLATILE	(1<<2)	/* control value may be changed without a notification */
-#define SNDRV_CTL_ELEM_ACCESS_INACTIVE	(1<<8)	/* control does actually nothing, but may be updated */
+#define SNDRV_CTL_ELEM_ACCESS_READWRITE		(SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE)
+#define SNDRV_CTL_ELEM_ACCESS_VOLATILE		(1<<2)	/* control value may be changed without a notification */
+#define SNDRV_CTL_ELEM_ACCESS_INACTIVE		(1<<8)	/* control does actually nothing, but may be updated */
 #define SNDRV_CTL_ELEM_ACCESS_LOCK		(1<<9)	/* write lock */
-#define SNDRV_CTL_ELEM_ACCESS_INDIRECT	(1<<31)	/* indirect access */
+#define SNDRV_CTL_ELEM_ACCESS_OWNER		(1<<10)	/* write lock owner */
+#define SNDRV_CTL_ELEM_ACCESS_INDIRECT		(1<<31)	/* indirect access */
 
 struct sndrv_ctl_elem_id {
 	unsigned int numid;		/* numeric identifier, zero = invalid */
@@ -700,9 +701,10 @@ struct sndrv_ctl_elem_list {
 
 struct sndrv_ctl_elem_info {
 	struct sndrv_ctl_elem_id id;	/* W: element ID */
-	enum sndrv_ctl_elem_type type; /* R: value type - SNDRV_CTL_ELEM_TYPE_* */
+	enum sndrv_ctl_elem_type type;	/* R: value type - SNDRV_CTL_ELEM_TYPE_* */
 	unsigned int access;		/* R: value access (bitmask) - SNDRV_CTL_ELEM_ACCESS_* */
 	unsigned int count;		/* count of values */
+	pid_t owner;			/* owner's PID of this control */
 	union {
 		struct {
 			long min;		/* R: minimum value */

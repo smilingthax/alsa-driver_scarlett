@@ -46,6 +46,7 @@ struct _snd_kcontrol {
 	struct list_head list;		/* list of controls */
 	snd_ctl_elem_id_t id;
 	snd_ctl_file_t *owner;		/* locked */
+	pid_t owner_pid;
 	unsigned int access;		/* access rights */
 	snd_kcontrol_info_t *info;
 	snd_kcontrol_get_t *get;
