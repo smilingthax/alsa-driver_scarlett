@@ -387,9 +387,9 @@ CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
 CHECK_KERNEL_HEADER(linux/highmem.h)
 CHECK_KERNEL_HEADER(linux/workqueue.h)
 if test ! -f include/linux/workqueue.h; then
-  if test "$kversion.$kpatchlevel" = "2.4"; then
+  if test "x$kversion.$kpatchlevel" = "x2.4"; then
     CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [redhat kernel])
-    if test $RED_HAT_LINUX_KERNEL = y; then
+    if test "x$RED_HAT_LINUX_KERNEL" = "xy"; then
       echo "It looks like you're using a RedHat 9 kernel."
       echo "Disabling their incomplete workqueue.h modification."
       mkdir -p include/linux
