@@ -255,8 +255,6 @@ void zero_channel(snd_pcm_plugin_t *plugin,
 		const snd_pcm_plugin_channel_t *dst_channel,
 		size_t samples);
 
-#define UNUSED __attribute__ ((unused))
-
 #ifdef PLUGIN_DEBUG
 #define pdprintf( args... ) printk( "plugin: " ##args)
 #else
