@@ -69,8 +69,10 @@
 #define SND_SEQ_EVENT_KEYSIGN		32	/* SMF Key Signature event */
 	        
 #define SND_SEQ_EVENT_SYSEX		40	/* system exclusive data (variable length) */
+#define SND_SEQ_EVENT_TUNE_REQUEST	41	/* tune request */
+#define SND_SEQ_EVENT_RESET		42	/* reset to power-on state */
 
-#define SND_SEQ_EVENT_HEARTBEAT		50	/* "active sensing" event */
+#define SND_SEQ_EVENT_SENSING		50	/* "active sensing" event */
 #define SND_SEQ_EVENT_ECHO		51	/* echo event */
 
 	/* system status messages */
@@ -120,7 +122,10 @@
 #define SND_SEQ_EVENT_INSTR_CLUSTER_RESULT 116	/* result */
 #define SND_SEQ_EVENT_INSTR_CHANGE	117	/* instrument change */
 
-	/* hardware specific events - range 192-255 */
+	/* hardware specific events - range 192-254 */
+
+	/* special event */
+#define SND_SEQ_EVENT_NONE		255
 
 typedef unsigned char snd_seq_event_type;
 

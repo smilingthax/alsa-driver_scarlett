@@ -22,7 +22,7 @@
  *
  */
 
-#include "midi.h"
+#include "rawmidi.h"
 
 #define MPU401_HW_MPU401		1	/* native MPU401 */
 #define MPU401_HW_SB			2	/* SoundBlaster MPU-401 UART */

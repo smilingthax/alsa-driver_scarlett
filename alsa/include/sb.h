@@ -24,7 +24,7 @@
 
 #include "pcm.h"
 #include "mixer.h"
-#include "midi.h"
+#include "rawmidi.h"
 
 #define SB_HW_AUTO		0
 #define SB_HW_10		1

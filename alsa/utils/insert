@@ -53,6 +53,10 @@ function basic() {
   if [ -r $MODDIR/snd-seq.o ]; then
     banner "snd-seq"
     if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer=256 >> $MAP; then exit 1; fi
+    if [ -r $MODDIR/snd-seq-midi-event.o ]; then
+      banner "snd-seq-midi-event"
+      if ! $INSMOD -m $MODDIR/snd-seq-midi-event.o >> $MAP; then exit 1; fi
+    fi
     if [ -r $MODDIR/snd-seq-midi.o ]; then
       banner "snd-seq-midi"
       if ! $INSMOD -m $MODDIR/snd-seq-midi.o >> $MAP; then exit 1; fi

@@ -5,7 +5,7 @@
 #include "cs4231.h"
 #include "mpu401.h"
 #include "hwdep.h"
-#include "midi.h"
+#include "rawmidi.h"
 #include "wavefront.h"  /* generic OSS/ALSA/user-level wavefront header */
 
 /* MIDI interface */

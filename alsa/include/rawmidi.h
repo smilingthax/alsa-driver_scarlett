@@ -34,9 +34,6 @@
 
 #define SND_RAWMIDI_HW_POLL	0x00000001	/* polled mode */
 
-#define SND_RAWMIDI_MODE_STREAM	0x00000000	/* stream mode */
-#define SND_RAWMIDI_MODE_SEQ	0x00000001	/* sequencer mode */
-
 #define SND_RAWMIDI_FLG_TRIGGER	0x00000001	/* trigger in progress */
 #define SND_RAWMIDI_FLG_TIMER	0x00000002	/* polling timer armed */
 #define SND_RAWMIDI_FLG_OSS	0x80000000	/* OSS compatible mode */
@@ -44,6 +41,7 @@
 #define SND_RAWMIDI_LFLG_OUTPUT	0x00000001	/* open for output */
 #define SND_RAWMIDI_LFLG_INPUT	0x00000002	/* open for input */
 #define SND_RAWMIDI_LFLG_OPEN	0x00000003	/* open */
+#define SND_RAWMIDI_LFLG_APPEND	0x00000004	/* append flag for output */
 
 typedef struct snd_stru_rawmidi_direction snd_rawmidi_direction_t;
 
@@ -62,41 +60,25 @@ struct snd_stru_rawmidi_direction_hw {
 };
 
 struct snd_stru_rawmidi_direction {
-	unsigned int mode;	/* SND_RAWMIDI_MODE_XXXX */
 	unsigned int flags;	/* SND_RAWMIDI_FLG_XXXX */
-	struct {
-		struct {
-			/* midi stream buffer */
-			unsigned char *buffer;	/* buffer for MIDI data */
-			unsigned int size;	/* size of buffer */
-			unsigned int head;	/* buffer head index */
-			unsigned int tail;	/* buffer tail index */
-			unsigned int used;	/* buffer used index */
-			unsigned int used_max;	/* max used buffer for wakeup */
-			unsigned int used_room;	/* min room in buffer for wakeup */
-			unsigned int used_min;	/* min used buffer for wakeup */
-			unsigned int xruns;	/* over/underruns counter */
-		} s;
-		struct {
-			/* upper layer - parses MIDI v1.0 data */
-			unsigned char *cbuffer;	/* command buffer */
-			unsigned int csize;	/* command buffer size */
-			unsigned int cused;	/* command buffer used */
-			unsigned int cleft;	/* command buffer left */
-			unsigned char cprev;	/* previous command */
-			void *cmd_private_data;	/* private data for command */
-			void (*command) (snd_rawmidi_t * rmidi,
-					 void *cmd_private_data,
-					 unsigned char *command,
-					 int count);
-		} p;
-	} u;
+	int use_count;		/* use counter (for output) */
+	/* midi stream buffer */
+	unsigned char *buffer;	/* buffer for MIDI data */
+	unsigned int size;	/* size of buffer */
+	unsigned int head;	/* buffer head index */
+	unsigned int tail;	/* buffer tail index */
+	unsigned int used;	/* buffer used counter */
+	unsigned int used_max;	/* max used buffer for wakeup */
+	unsigned int used_room;	/* min room in buffer for wakeup */
+	unsigned int used_min;	/* min used buffer for wakeup */
+	unsigned int xruns;	/* over/underruns counter */
 	/* misc */
 	unsigned int bytes;
 	struct timer_list timer;	/* poll timer */
-	/* callback */
-	int (*reset) (snd_rawmidi_t * rmidi);	/* reset MIDI command!!! */
-	int (*data) (snd_rawmidi_t * rmidi, char *buffer, int count);
+	/* event handler (room [output] or new bytes [input]) */
+	void (*event)(snd_rawmidi_t *rmidi);
+	void *private_data;
+	void (*private_free)(void *private_data);
 	/* switches */
 	snd_kswitch_list_t switches;
 	/* hardware layer */
@@ -150,15 +132,22 @@ extern int snd_rawmidi_control_ioctl(snd_card_t * card,
 				     unsigned int cmd,
 				     unsigned long arg);
 
+/* callbacks */
+
+void snd_rawmidi_receive_reset(snd_rawmidi_t * rmidi);
+int snd_rawmidi_receive(snd_rawmidi_t * rmidi, char *buffer, int count);
+void snd_rawmidi_transmit_reset(snd_rawmidi_t * rmidi);
+int snd_rawmidi_transmit(snd_rawmidi_t * rmidi, char *buffer, int count);
+
 /* main midi functions */
 
-extern int snd_midi_info(int cardnum, int device, snd_rawmidi_info_t *info);
-extern int snd_midi_open(int cardnum, int device, int mode, snd_rawmidi_t ** out);
-extern int snd_midi_close(int cardnum, int device, int mode);
-extern int snd_midi_drain_output(snd_rawmidi_t * rmidi);
-extern int snd_midi_flush_output(snd_rawmidi_t * rmidi);
-extern int snd_midi_stop_input(snd_rawmidi_t * rmidi);
-extern int snd_midi_start_input(snd_rawmidi_t * rmidi);
-extern int snd_midi_transmit(snd_rawmidi_t * rmidi, char *buf, int count);
+extern int snd_rawmidi_kernel_info(int cardnum, int device, snd_rawmidi_info_t *info);
+extern int snd_rawmidi_kernel_open(int cardnum, int device, int mode, snd_rawmidi_t ** out);
+extern int snd_rawmidi_kernel_release(snd_rawmidi_t * rmidi, int mode);
+extern int snd_rawmidi_drain_output(snd_rawmidi_t * rmidi);
+extern int snd_rawmidi_flush_output(snd_rawmidi_t * rmidi);
+extern int snd_rawmidi_flush_input(snd_rawmidi_t * rmidi);
+extern long snd_rawmidi_kernel_read(snd_rawmidi_t * rmidi, char *buf, long count);
+extern long snd_rawmidi_kernel_write(snd_rawmidi_t * rmidi, const char *buf, long count);
 
 #endif				/* __MIDI_H */

@@ -25,7 +25,7 @@
 
 #include "pcm.h"
 #include "mixer.h"
-#include "midi.h"
+#include "rawmidi.h"
 #include "mpu401.h"
 #include "ess_common.h"
 

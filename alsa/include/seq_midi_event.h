@@ -1,7 +1,8 @@
 /*
- *  Defines for seq_event_midi.c
+ *  MIDI byte <-> sequencer event coder
  *
- *  Copyright (C) 1999 Steve Ratcliffe
+ *  Copyright (C) 1998,99 Takashi Iwai <iwai@ww.uni-erlangen.de>,
+ *                        Jaroslav Kysela <perex@suse.cz>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,15 +17,40 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
  */
 
-#ifndef __SEQ_MIDI_EVENT_H
-#define __SEQ_MIDI_EVENT_H
+#ifndef __MIDI_CODER_H
+#define __MIDI_CODER_H
 
-/* Prototypes for seq_midi_event.c */
-int snd_seq_event_port_attach(int client, snd_seq_port_callback_t *pcbp,
-	 int cap, int type, char *portname);
-int snd_seq_event_port_detach(int client, int port);
+#ifndef ALSA_BUILD
+#include <linux/asequencer.h>
+#else
+#include "asequencer.h"
+#endif
 
-#endif /* __SEQ_MIDI_EVENT_H */
+#define MAX_MIDI_EVENT_BUF	256
+
+typedef struct snd_midi_event_t snd_midi_event_t;
+
+/* midi status */
+struct snd_midi_event_t {
+	int qlen;	/* queue length */
+	int read;	/* chars read */
+	int status;	/* running status */
+	int type;	/* current event type */
+	unsigned char lastcmd;
+	unsigned char buf[MAX_MIDI_EVENT_BUF];	/* input buffer */
+};
+
+int snd_midi_event_new(snd_midi_event_t **rdev);
+void snd_midi_event_free(snd_midi_event_t *dev);
+void snd_midi_event_init(snd_midi_event_t *dev);
+void snd_midi_event_reset_encode(snd_midi_event_t *dev);
+void snd_midi_event_reset_decode(snd_midi_event_t *dev);
+/* encode from byte stream - return number of written bytes if success */
+long snd_midi_event_encode(snd_midi_event_t *dev, char *buf, long count, snd_seq_event_t *ev);
+int snd_midi_event_encode_byte(snd_midi_event_t *dev, int c, snd_seq_event_t *ev);
+/* decode from event to bytes - return number of written bytes if success */
+long snd_midi_event_decode(snd_midi_event_t *dev, char *buf, long count, snd_seq_event_t *ev);
+
+#endif

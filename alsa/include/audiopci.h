@@ -24,7 +24,7 @@
 
 #include "pcm.h"
 #include "mixer.h"
-#include "midi.h"
+#include "rawmidi.h"
 #include "ak4531_codec.h"
 #include "ac97_codec.h"
 

@@ -24,7 +24,7 @@
 
 #include "pcm.h"
 #include "mixer.h"
-#include "midi.h"
+#include "rawmidi.h"
 #include "timer.h"
 #include "seq_midi_emul.h"
 #include "seq_device.h"

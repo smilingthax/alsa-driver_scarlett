@@ -25,7 +25,6 @@
 
 #include "pcm.h"
 #include "mixer.h"
-#include "midi.h"
 #include "mpu401.h"
 #include "ac97_codec.h"
 #include "seq_midi_emul.h"
