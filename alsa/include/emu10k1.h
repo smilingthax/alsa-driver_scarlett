@@ -814,6 +814,13 @@ struct snd_stru_emu10k1 {
 	snd_info_entry_t *proc_entry_fx8010_iblocks;
 };
 
+/* I/O macros */
+#define outl_le(v,a) outl(cpu_to_le32(v),a)
+#define outw_le(v,a) outw(cpu_to_le16(v),a)
+#define inl_le(a) le32_to_cpu(inl(a))
+#define inw_le(a) le16_to_cpu(inw(a))
+
+/* base */
 int snd_emu10k1_create(snd_card_t * card,
 		       struct pci_dev *pci,
 		       unsigned long dma1size,
