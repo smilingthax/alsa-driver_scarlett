@@ -114,10 +114,10 @@ struct snd_stru_wavefront_card {
         snd_wavefront_t wavefront;
 
 #ifdef CONFIG_ISAPNP
-	struct isapnp_logdev *wss;
-	struct isapnp_logdev *ctrl;
-	struct isapnp_logdev *mpu;
-	struct isapnp_logdev *synth;
+	struct isapnp_dev *wss;
+	struct isapnp_dev *ctrl;
+	struct isapnp_dev *mpu;
+	struct isapnp_dev *synth;
 #endif CONFIG_ISAPNP
 };
 

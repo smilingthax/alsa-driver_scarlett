@@ -17,20 +17,11 @@ COPTS   += -D__KERNEL__ -DMODULE -DEXPORT_SYMTAB -DCONFIG_ISAPNP -DALSA_BUILD
 TARGETS = $(SNDVERSIONS)
 ifeq (1,$(CONFIG_ISAPNP))
 ifeq (0,$(CONFIG_ISAPNP_KERNEL))
-ifeq (0,$(CONFIG_ISAPNP_NEW))
 TARGETS+= $(TOPDIR)/modules/isapnp.o
-endif
 endif
 endif
 ISAPNP	= isapnp.o
 ISAPNPE	= $(DEXPORT)/isapnp.ver
-
-ifeq (1,$(CONFIG_ISAPNP_NEW))
-TARGETS+= $(TOPDIR)/modules/isapnp_new.o
-TARGETS+= $(TOPDIR)/modules/isapnp_test.o
-endif
-ISAPNPN = isapnp_new.o
-ISAPNPNE= $(DEXPORT)/isapnp_new.ver
 
 include $(TOPDIR)/Rules.make
 

@@ -112,6 +112,8 @@
 #ifdef CONFIG_ISAPNP
 #ifdef CONFIG_ISAPNP_KERNEL
 #include <linux/isapnp.h>
+#define isapnp_dev pci_dev
+#define isapnp_card pci_bus
 #else
 #include "isapnp.h"
 #endif

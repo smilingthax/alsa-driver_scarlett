@@ -49,7 +49,7 @@
 #ifndef ALSA_BUILD
 #include <linux/isapnp.h>
 #else
-#include "isapnp_new.h"
+#include "isapnp.h"
 #endif
 
 #define USER_PORT_AUTO_VALUE	(~0)

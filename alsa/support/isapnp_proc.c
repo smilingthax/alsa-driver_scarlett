@@ -20,6 +20,7 @@
  */
 
 static void *isapnp_alloc(long size);
+struct isapnp_card *isapnp_cards;
 struct isapnp_dev *isapnp_devices;
 
 struct isapnp_info_buffer {
@@ -160,10 +161,8 @@ static int isapnp_info_entry_release(struct inode *inode, struct file *file)
 	isapnp_info_buffer_t *buffer;
 	int mode;
 
-	if ((buffer = (isapnp_info_buffer_t *) file->private_data) == NULL) {
-		MOD_DEC_USE_COUNT;
+	if ((buffer = (isapnp_info_buffer_t *) file->private_data) == NULL)
 		return -EINVAL;
-	}
 	mode = file->f_flags & O_ACCMODE;
 	if (mode == O_WRONLY)
 		isapnp_info_write(buffer);
@@ -272,13 +271,18 @@ static void isapnp_print_devid(isapnp_info_buffer_t *buffer, unsigned short vend
 	isapnp_printf(buffer, tmp);
 }
 
-static void isapnp_print_compatible(isapnp_info_buffer_t *buffer, struct isapnp_compatid *compat)
+static void isapnp_print_compatible(isapnp_info_buffer_t *buffer, struct isapnp_dev *dev)
 {
-	while (compat) {
+	int idx;
+
+	for (idx = 0; idx < DEVICE_COUNT_COMPATIBLE; idx++) {
+		if (dev->vendor_compatible[idx] == 0)
+			continue;
 		isapnp_printf(buffer, "    Compatible device ");
-		isapnp_print_devid(buffer, compat->vendor, compat->function);
+		isapnp_print_devid(buffer,
+				   dev->vendor_compatible[idx],
+				   dev->device_compatible[idx]);
 		isapnp_printf(buffer, "\n");
-		compat = compat->next;
 	}
 }
 
@@ -308,13 +312,13 @@ static void isapnp_print_irq(isapnp_info_buffer_t *buffer, char *space, struct i
 		}
 	if (!irq->map)
 		isapnp_printf(buffer, "<none>");
-	if (irq->flags & ISAPNP_IRQ_FLAG_HIGHEDGE)
+	if (irq->flags & DEVICE_IRQ_FLAG_HIGHEDGE)
 		isapnp_printf(buffer, " High-Edge");
-	if (irq->flags & ISAPNP_IRQ_FLAG_LOWEDGE)
+	if (irq->flags & DEVICE_IRQ_FLAG_LOWEDGE)
 		isapnp_printf(buffer, " Low-Edge");
-	if (irq->flags & ISAPNP_IRQ_FLAG_HIGHLEVEL)
+	if (irq->flags & DEVICE_IRQ_FLAG_HIGHLEVEL)
 		isapnp_printf(buffer, " High-Level");
-	if (irq->flags & ISAPNP_IRQ_FLAG_LOWLEVEL)
+	if (irq->flags & DEVICE_IRQ_FLAG_LOWLEVEL)
 		isapnp_printf(buffer, " Low-Level");
 	isapnp_printf(buffer, "\n");
 }
@@ -337,30 +341,30 @@ static void isapnp_print_dma(isapnp_info_buffer_t *buffer, char *space, struct i
 	if (!dma->map)
 		isapnp_printf(buffer, "<none>");
 	switch (dma->type) {
-	case ISAPNP_DMA_TYPE_8BIT:
+	case DEVICE_DMA_TYPE_8BIT:
 		s = "8-bit";
 		break;
-	case ISAPNP_DMA_TYPE_8AND16BIT:
+	case DEVICE_DMA_TYPE_8AND16BIT:
 		s = "8-bit&16-bit";
 		break;
 	default:
 		s = "16-bit";
 	}
 	isapnp_printf(buffer, " %s", s);
-	if (dma->flags & ISAPNP_DMA_FLAG_MASTER)
+	if (dma->flags & DEVICE_DMA_FLAG_MASTER)
 		isapnp_printf(buffer, " master");
-	if (dma->flags & ISAPNP_DMA_FLAG_BYTE)
+	if (dma->flags & DEVICE_DMA_FLAG_BYTE)
 		isapnp_printf(buffer, " byte-count");
-	if (dma->flags & ISAPNP_DMA_FLAG_WORD)
+	if (dma->flags & DEVICE_DMA_FLAG_WORD)
 		isapnp_printf(buffer, " word-count");
 	switch (dma->speed) {
-	case ISAPNP_DMA_SPEED_TYPEA:
+	case DEVICE_DMA_SPEED_TYPEA:
 		s = "type-A";
 		break;
-	case ISAPNP_DMA_SPEED_TYPEB:
+	case DEVICE_DMA_SPEED_TYPEB:
 		s = "type-B";
 		break;
-	case ISAPNP_DMA_SPEED_TYPEF:
+	case DEVICE_DMA_SPEED_TYPEF:
 		s = "type-F";
 		break;
 	default:
@@ -376,21 +380,21 @@ static void isapnp_print_mem(isapnp_info_buffer_t *buffer, char *space, struct i
 
 	isapnp_printf(buffer, "%sMemory 0x%x-0x%x, align 0x%x, size 0x%x",
 			space, mem->min, mem->max, mem->align, mem->size);
-	if (mem->flags & ISAPNP_MEM_FLAG_WRITEABLE)
+	if (mem->flags & DEVICE_IO_FLAG_WRITEABLE)
 		isapnp_printf(buffer, ", writeable");
-	if (mem->flags & ISAPNP_MEM_FLAG_CACHEABLE)
+	if (mem->flags & DEVICE_IO_FLAG_CACHEABLE)
 		isapnp_printf(buffer, ", cacheable");
-	if (mem->flags & ISAPNP_MEM_FLAG_RANGELENGTH)
+	if (mem->flags & DEVICE_IO_FLAG_RANGELENGTH)
 		isapnp_printf(buffer, ", range-length");
-	if (mem->flags & ISAPNP_MEM_FLAG_SHADOWABLE)
+	if (mem->flags & DEVICE_IO_FLAG_SHADOWABLE)
 		isapnp_printf(buffer, ", shadowable");
-	if (mem->flags & ISAPNP_MEM_FLAG_EXPANSIONROM)
+	if (mem->flags & DEVICE_IO_FLAG_EXPANSIONROM)
 		isapnp_printf(buffer, ", expansion ROM");
 	switch (mem->type) {
-	case ISAPNP_MEM_TYPE_8BIT:
+	case DEVICE_IO_TYPE_8BIT:
 		s = "8-bit";
 		break;
-	case ISAPNP_MEM_TYPE_8AND16BIT:
+	case DEVICE_IO_TYPE_8AND16BIT:
 		s = "8-bit&16-bit";
 		break;
 	default:
@@ -449,16 +453,16 @@ static void isapnp_print_resources(isapnp_info_buffer_t *buffer, char *space, st
 		isapnp_print_mem32(buffer, space, mem32);
 }
 
-static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isapnp_logdev *logdev)
+static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isapnp_dev *dev)
 {
 	int i, tmp, next;
 	char *space = "    ";
 
-	isapnp_cfg_begin(logdev->dev->csn, logdev->number);
+	isapnp_cfg_begin(dev->bus->number, dev->devfn);
 	isapnp_printf(buffer, "%sDevice is %sactive\n",
-			space, isapnp_cfg_get_byte(ISAPNP_CFG_ACTIVATE)?"":"not ");
+			space, isapnp_read_byte(ISAPNP_CFG_ACTIVATE)?"":"not ");
 	for (i = next = 0; i < 8; i++) {
-		tmp = isapnp_cfg_get_word(ISAPNP_CFG_PORT + (i << 1));
+		tmp = isapnp_read_word(ISAPNP_CFG_PORT + (i << 1));
 		if (!tmp)
 			continue;
 		if (!next) {
@@ -470,7 +474,7 @@ static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isap
 	if (next)
 		isapnp_printf(buffer, "\n");
 	for (i = next = 0; i < 2; i++) {
-		tmp = isapnp_cfg_get_word(ISAPNP_CFG_IRQ + (i << 1));
+		tmp = isapnp_read_word(ISAPNP_CFG_IRQ + (i << 1));
 		if (!(tmp >> 8))
 			continue;
 		if (!next) {
@@ -484,7 +488,7 @@ static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isap
 	if (next)
 		isapnp_printf(buffer, "\n");
 	for (i = next = 0; i < 2; i++) {
-		tmp = isapnp_cfg_get_byte(ISAPNP_CFG_DMA + i);
+		tmp = isapnp_read_byte(ISAPNP_CFG_DMA + i);
 		if (tmp == 4)
 			continue;
 		if (!next) {
@@ -496,7 +500,7 @@ static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isap
 	if (next)
 		isapnp_printf(buffer, "\n");
 	for (i = next = 0; i < 4; i++) {
-		tmp = isapnp_cfg_get_dword(ISAPNP_CFG_MEM + (i << 3));
+		tmp = isapnp_read_dword(ISAPNP_CFG_MEM + (i << 3));
 		if (!tmp)
 			continue;
 		if (!next) {
@@ -510,32 +514,32 @@ static void isapnp_print_configuration(isapnp_info_buffer_t *buffer, struct isap
 	isapnp_cfg_end();
 }
 
-static void isapnp_print_logdev(isapnp_info_buffer_t *buffer, struct isapnp_logdev *logdev)
+static void isapnp_print_device(isapnp_info_buffer_t *buffer, struct isapnp_dev *dev)
 {
 	int block, block1;
 	char *space = "    ";
 	struct isapnp_resources *res, *resa;
 
-	if (!logdev)
+	if (!dev)
 		return;
-	isapnp_printf(buffer, "  Logical device %i '", logdev->number);
-	isapnp_print_devid(buffer, logdev->vendor, logdev->function);
-	isapnp_printf(buffer, ":%s'", logdev->identifier?logdev->identifier:"Unknown");
+	isapnp_printf(buffer, "  Logical device %i '", dev->devfn);
+	isapnp_print_devid(buffer, dev->vendor, dev->device);
+	isapnp_printf(buffer, ":%s'", dev->name[0]?dev->name:"Unknown");
 	isapnp_printf(buffer, "\n");
 #if 0
-	isapnp_cfg_begin(logdev->dev->csn, logdev->number);
+	isapnp_cfg_begin(dev->bus->number, dev->devfn);
 	for (block = 0; block < 128; block++)
 		if ((block % 16) == 15)
-			isapnp_printf(buffer, "%02x\n", isapnp_cfg_get_byte(block));
+			isapnp_printf(buffer, "%02x\n", isapnp_read_byte(block));
 		else
-			isapnp_printf(buffer, "%02x:", isapnp_cfg_get_byte(block));
+			isapnp_printf(buffer, "%02x:", isapnp_read_byte(block));
 	isapnp_cfg_end();
 #endif
-	if (logdev->regs)
-		isapnp_printf(buffer, "%sSupported registers 0x%x\n", space, logdev->regs);
-	isapnp_print_compatible(buffer, logdev->compat);
-	isapnp_print_configuration(buffer, logdev);
-	for (res = logdev->res, block = 0; res; res = res->next, block++) {
+	if (dev->regs)
+		isapnp_printf(buffer, "%sSupported registers 0x%x\n", space, dev->regs);
+	isapnp_print_compatible(buffer, dev);
+	isapnp_print_configuration(buffer, dev);
+	for (res = (struct isapnp_resources *)dev->sysdata, block = 0; res; res = res->next, block++) {
 		isapnp_printf(buffer, "%sResources %i\n", space, block);
 		isapnp_print_resources(buffer, "      ", res);
 		for (resa = res->alt, block1 = 1; resa; resa = resa->alt, block1++) {
@@ -551,20 +555,20 @@ static void isapnp_print_logdev(isapnp_info_buffer_t *buffer, struct isapnp_logd
  
 static void isapnp_info_read(isapnp_info_buffer_t *buffer)
 {
+	struct isapnp_card *card;
 	struct isapnp_dev *dev;
-	struct isapnp_logdev *logdev;
 	
-	for (dev = isapnp_devices; dev; dev = dev->next) {
-		isapnp_printf(buffer, "Device %i '", dev->csn);
-		isapnp_print_devid(buffer, dev->vendor, dev->device);
-		isapnp_printf(buffer, ":%s'", dev->identifier?dev->identifier:"Unknown");
-		if (dev->pnpver)
-			isapnp_printf(buffer, " PnP version %x.%x", dev->pnpver >> 4, dev->pnpver & 0x0f);
-		if (dev->productver)
-			isapnp_printf(buffer, " Product version %x.%x", dev->productver >> 4, dev->productver & 0x0f);
+	for (card = isapnp_cards; card; card = card->next) {
+		isapnp_printf(buffer, "Card %i '", card->number);
+		isapnp_print_devid(buffer, card->vendor, card->device);
+		isapnp_printf(buffer, ":%s'", card->name[0]?card->name:"Unknown");
+		if (card->pnpver)
+			isapnp_printf(buffer, " PnP version %x.%x", card->pnpver >> 4, card->pnpver & 0x0f);
+		if (card->productver)
+			isapnp_printf(buffer, " Product version %x.%x", card->productver >> 4, card->productver & 0x0f);
 		isapnp_printf(buffer,"\n");
-		for (logdev = dev->logdev; logdev; logdev = logdev->next)
-			isapnp_print_logdev(buffer, logdev);
+		for (dev = card->devices; dev; dev = dev->sibling)
+			isapnp_print_device(buffer, dev);
 	}
 }
 
@@ -572,8 +576,8 @@ static void isapnp_info_read(isapnp_info_buffer_t *buffer)
  *
  */
 
-static struct isapnp_dev *isapnp_info_dev;
-static struct isapnp_logdev *isapnp_info_logdev;
+static struct isapnp_card *isapnp_info_card;
+static struct isapnp_dev *isapnp_info_device;
 
 static char *isapnp_get_str(char *dest, char *src, int len)
 {
@@ -623,25 +627,27 @@ static unsigned int isapnp_parse_id(const char *id)
 			(isapnp_get_hex(id[6])<<8);
 }
 
-static int isapnp_set_device(char *line)
+static int isapnp_set_card(char *line)
 {
-	int idx;
+	int idx, idx1;
 	unsigned int id;
 	char index[16], value[32];
 
-	isapnp_info_logdev = NULL;
+	isapnp_info_card = NULL;
 	line = isapnp_get_str(index, line, sizeof(index));
 	isapnp_get_str(value, line, sizeof(value));
-	idx = simple_strtoul(index, NULL, 0);
+	idx = idx1 = simple_strtoul(index, NULL, 0);
 	id = isapnp_parse_id(value);
-	isapnp_info_dev = isapnp_find_device(id >> 16, id & 0xffff, idx);
-	if (!isapnp_info_dev) {
-		printk("isapnp: device '%s' order %i not found\n", value, idx);
+	isapnp_info_card = isapnp_find_card(id >> 16, id & 0xffff, NULL);
+	while (isapnp_info_card && idx1-- > 0)
+		isapnp_info_card = isapnp_find_card(id >> 16, id & 0xffff, isapnp_info_card);
+	if (isapnp_info_card == NULL) {
+		printk("isapnp: card '%s' order %i not found\n", value, idx);
 		return 1;
 	}
-	if (isapnp_cfg_begin(isapnp_info_dev->csn, -1)<0) {
+	if (isapnp_cfg_begin(isapnp_info_card->number, -1)<0) {
 		printk("isapnp: configuration start sequence for device '%s' failed\n", value);
-		isapnp_info_dev = NULL;
+		isapnp_info_card = NULL;
 		return 1;
 	}
 	return 0;
@@ -652,53 +658,59 @@ static int isapnp_select_csn(char *line)
 	int csn;
 	char index[16], value[32];
 
-	isapnp_info_logdev = NULL;
+	isapnp_info_device = NULL;
 	isapnp_get_str(index, line, sizeof(index));
 	csn = simple_strtoul(index, NULL, 0);
-	for (isapnp_info_dev = isapnp_devices; isapnp_info_dev; isapnp_info_dev = isapnp_info_dev->next)
-		if (isapnp_info_dev->csn == csn)
+	for (isapnp_info_card = isapnp_cards; isapnp_info_card; isapnp_info_card = isapnp_info_card->next)
+		if (isapnp_info_card->number == csn)
 			break;
-	if (!isapnp_info_dev) {
+	if (isapnp_info_card == NULL) {
 		printk("isapnp: cannot find CSN %i\n", csn);
 		return 1;
 	}
-	if (isapnp_cfg_begin(isapnp_info_dev->csn, -1)<0) {
+	if (isapnp_cfg_begin(isapnp_info_card->number, -1)<0) {
 		printk("isapnp: configuration start sequence for device '%s' failed\n", value);
-		isapnp_info_dev = NULL;
+		isapnp_info_card = NULL;
 		return 1;
 	}
 	return 0;
 }
 
-static int isapnp_set_logdev(char *line)
+static int isapnp_set_device(char *line)
 {
-	int idx;
+	int idx, idx1;
 	unsigned int id;
 	char index[16], value[32];
 
 	line = isapnp_get_str(index, line, sizeof(index));
 	isapnp_get_str(value, line, sizeof(value));
-	idx = simple_strtoul(index, NULL, 0);
+	idx = idx1 = simple_strtoul(index, NULL, 0);
 	id = isapnp_parse_id(value);
-	isapnp_info_logdev = isapnp_find_logdev(isapnp_info_dev, id >> 16, id & 0xffff, idx);
-	if (!isapnp_info_logdev) {
-		printk("isapnp: logical device '%s' order %i not found\n", value, idx);
+	isapnp_info_device = isapnp_find_dev(isapnp_info_card, id >> 16, id & 0xffff, NULL);
+	while (isapnp_info_device && idx-- > 0)
+		isapnp_info_device = isapnp_find_dev(isapnp_info_card, id >> 16, id & 0xffff, isapnp_info_device);
+	if (isapnp_info_device == NULL) {
+		printk("isapnp: device '%s' order %i not found\n", value, idx);
 		return 1;
 	}
-	isapnp_logdev(isapnp_info_logdev->number);
+	isapnp_device(isapnp_info_device->devfn);
 	return 0;
 }
 
 static int isapnp_autoconfigure(void)
 {
-	struct isapnp_config cfg;
-
-	if (isapnp_config_init(&cfg, isapnp_info_logdev)<0) {
-		printk("isapnp: auto-configuration initialization failed, skipping\n");
+	if (isapnp_info_device == NULL) {
+		printk("isapnp: device is not set\n");
 		return 0;
 	}
-	if (isapnp_configure(&cfg)<0) {
-		printk("isapnp: auto-configuration failed (out of resources?), skipping\n");
+	if (isapnp_info_device->active)
+		isapnp_info_device->deactivate(isapnp_info_device);
+	if (isapnp_info_device->prepare(isapnp_info_device) < 0) {
+		printk("isapnp: cannot prepare device for the activation");
+		return 0;
+	}
+	if (isapnp_info_device->activate(isapnp_info_device) < 0) {
+		printk("isapnp: cannot activate device");
 		return 0;
 	}
 	return 0;
@@ -721,7 +733,17 @@ static int isapnp_set_port(char *line)
 		printk("isapnp: wrong port value 0x%x\n", port);
 		return 1;
 	}
-	isapnp_cfg_set_word(ISAPNP_CFG_PORT + (idx << 1), port);
+	isapnp_write_word(ISAPNP_CFG_PORT + (idx << 1), port);
+	if (isapnp_info_device->resource[idx].start == DEVICE_IO_NOTSET)
+		return 0;
+	if (isapnp_info_device->resource[idx].start == DEVICE_IO_AUTO) {
+		isapnp_info_device->resource[idx].start = port;
+		isapnp_info_device->resource[idx].end += port - 1;
+	} else {
+		isapnp_info_device->resource[idx].end -= isapnp_info_device->resource[idx].start;
+		isapnp_info_device->resource[idx].start = port;
+		isapnp_info_device->resource[idx].end += port;
+	}
 	return 0;
 }
  
@@ -744,7 +766,16 @@ static int isapnp_set_irq(char *line)
 		printk("isapnp: wrong IRQ value %i\n", irq);
 		return 1;
 	}
-	isapnp_cfg_set_byte(ISAPNP_CFG_IRQ + (idx << 1), irq);
+	isapnp_write_byte(ISAPNP_CFG_IRQ + (idx << 1), irq);
+	if (idx == 0) {
+		 if (isapnp_info_device->irq == DEVICE_IRQ_NOTSET)
+		 	return 0;
+		 isapnp_info_device->irq = irq;
+	} else {
+		 if (isapnp_info_device->irq2 == DEVICE_IRQ_NOTSET)
+		 	return 0;
+		 isapnp_info_device->irq2 = irq;	
+	}
 	return 0;
 }
  
@@ -765,7 +796,10 @@ static int isapnp_set_dma(char *line)
 		printk("isapnp: wrong DMA value %i\n", dma);
 		return 1;
 	}
-	isapnp_cfg_set_byte(ISAPNP_CFG_DMA + idx, dma);
+	isapnp_write_byte(ISAPNP_CFG_DMA + idx, dma);
+	if (isapnp_info_device->dma[idx] == DEVICE_DMA_NOTSET)
+		return 0;
+	isapnp_info_device->dma[idx] = dma;
 	return 0;
 }
  
@@ -784,7 +818,17 @@ static int isapnp_set_mem(char *line)
 		return 1;
 	}
 	mem >>= 8;
-	isapnp_cfg_set_word(ISAPNP_CFG_MEM + (idx<<2), mem & 0xffff);
+	isapnp_write_word(ISAPNP_CFG_MEM + (idx<<2), mem & 0xffff);
+	if (isapnp_info_device->resource[idx + 8].start == DEVICE_IO_NOTSET)
+		return 0;
+	if (isapnp_info_device->resource[idx + 8].start == DEVICE_IO_AUTO) {
+		isapnp_info_device->resource[idx + 8].start = mem & ~0x00ffff00;
+		isapnp_info_device->resource[idx + 8].end += (mem & ~0x00ffff00) - 1;
+	} else {
+		isapnp_info_device->resource[idx + 8].end -= isapnp_info_device->resource[idx + 8].start;
+		isapnp_info_device->resource[idx + 8].start = mem & ~0x00ffff00;
+		isapnp_info_device->resource[idx + 8].end += mem & ~0x00ffff00;
+	}
 	return 0;
 }
  
@@ -804,13 +848,13 @@ static int isapnp_poke(char *line, int what)
 	}
 	switch (what) {
 	case 1:
-		isapnp_cfg_set_word(reg, val);
+		isapnp_write_word(reg, val);
 		break;
 	case 2:
-		isapnp_cfg_set_dword(reg, val);
+		isapnp_write_dword(reg, val);
 		break;
 	default:
-		isapnp_cfg_set_byte(reg, val);
+		isapnp_write_byte(reg, val);
 		break;
 	}
 	return 0;
@@ -821,28 +865,30 @@ static int isapnp_decode_line(char *line)
 	char cmd[32];
 
 	line = isapnp_get_str(cmd, line, sizeof(cmd));
-	if (!strcmp(cmd, "dev") || !strcmp(cmd, "device"))
-		return isapnp_set_device(line);
+	if (!strcmp(cmd, "card"))
+		return isapnp_set_card(line);
 	if (!strcmp(cmd, "csn"))
 		return isapnp_select_csn(line);
-	if (!isapnp_info_dev) {
-		printk("isapnp: device isn't selected\n");
+	if (!isapnp_info_card) {
+		printk("isapnp: card is not selected\n");
 		return 1;
 	}
-	if (!strcmp(cmd, "logdev") || !strcmp(cmd, "logical"))
-		return isapnp_set_logdev(line);
-	if (!isapnp_info_logdev) {
-		printk("isapnp: logical device isn't selected\n");
+	if (!strncmp(cmd, "dev", 3))
+		return isapnp_set_device(line);
+	if (!isapnp_info_device) {
+		printk("isapnp: device is not selected\n");
 		return 1;
 	}
-	if (!strcmp(cmd, "auto") || !strcmp(cmd, "autoconfigure"))
+	if (!strncmp(cmd, "auto", 4))
 		return isapnp_autoconfigure();
-	if (!strcmp(cmd, "act") || !strcmp(cmd, "activate")) {
-		isapnp_activate(isapnp_info_logdev->number);
+	if (!strncmp(cmd, "act", 3)) {
+		isapnp_activate(isapnp_info_device->devfn);
+		isapnp_info_device->active = 1;
 		return 0;
 	}
-	if (!strcmp(cmd, "deact") || !strcmp(cmd, "deactivate")) {
-		isapnp_deactivate(isapnp_info_logdev->number);
+	if (!strncmp(cmd, "deact", 5)) {
+		isapnp_deactivate(isapnp_info_device->devfn);
+		isapnp_info_device->active = 0;
 		return 0;
 	}
 	if (!strcmp(cmd, "port"))
@@ -851,7 +897,7 @@ static int isapnp_decode_line(char *line)
 		return isapnp_set_irq(line);
 	if (!strcmp(cmd, "dma"))
 		return isapnp_set_dma(line);
-	if (!strcmp(cmd, "mem") || !strcmp(cmd, "memory"))
+	if (!strncmp(cmd, "mem", 3))
 		return isapnp_set_mem(line);
 	if (!strcmp(cmd, "poke"))
 		return isapnp_poke(line, 0);
@@ -874,8 +920,8 @@ static void isapnp_info_write(isapnp_info_buffer_t *buffer)
 
 	if (buffer->size <= 0)
 		return;
-	isapnp_info_dev = NULL;
-	isapnp_info_logdev = NULL;
+	isapnp_info_card = NULL;
+	isapnp_info_device = NULL;
 	for (idx = 0; idx < buffer->size; idx++) {
 		c = buffer->buffer[idx];
 		if (c == '\n') {
@@ -894,6 +940,6 @@ static void isapnp_info_write(isapnp_info_buffer_t *buffer)
 		line[idx1++] = c;
 	}
       __end:
-	if (isapnp_info_dev)
+	if (isapnp_info_card)
 		isapnp_cfg_end();
 }
