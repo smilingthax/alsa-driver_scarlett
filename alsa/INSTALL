@@ -589,6 +589,22 @@ Module parameters
 
     Module for soundcards based on ESS Solo-1 (ES1938,ES1946) chips.
 
+    Module supports up to 8 cards and autoprobe.
+
+  Module snd-card-es1968.o
+  ------------------------
+
+    Module for soundcards based on ESS Maestro-1/2/2E (ES1968/ES1978) chips.
+
+    snd_dac_frame_size  - max dac (playback) frame size in kB (4-64kB)
+    snd_adc_frame_size  - max adc (record) frame size in kB (4-64kB)
+    snd_gesbuf		- total buffer size in kB (1-4096kB)
+    snd_midi_enable	- enable MIDI support (0 = off, 1 = on)
+    snd_pcm_channels_p	- playback channels (1-8, default=2)
+    snd_pcm_channels_c	- capture channels (1-8, default=0)
+
+    Module supports up to 8 cards and autoprobe.
+
   Module snd-card-cmi8330.o
   -------------------------
 
@@ -605,7 +621,7 @@ Module parameters
     snd_sbdma16 - 16bit DMA # for CMI8330 chip (SB16)
     snd_sbdma16_size - max 16bit DMA size in kB (SB16)
 
-    Module supports up to 8 cards.
+    Module supports up to 8 cards and autoprobe.
 
   Module snd-card-emu10k1.o
   -------------------------
