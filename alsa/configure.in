@@ -36,7 +36,13 @@ AC_MSG_CHECKING(for directory with kernel source)
 AC_ARG_WITH(kernel,
   [  --with-kernel=dir       give the directory with kernel sources]
   [                        [/usr/src/linux]],
-  kerneldir="$withval", kerneldir="/usr/src/linux")
+  kerneldir="$withval",
+  if test -d "/lib/modules/`uname -r`/build" -o -L "/lib/modules/`uname -r`/build"; then
+    kerneldir="/lib/modules/`uname -r`/build"
+  else
+    kerneldir="/usr/src/linux"
+  fi
+)
 AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$kerneldir")
 CONFIG_SND_KERNELDIR="$kerneldir"
 AC_SUBST(CONFIG_SND_KERNELDIR)
