@@ -59,8 +59,8 @@ kaversion="",
 kaversion="")])
 kversion=`echo $kaversion | cut -d . -f 1`
 kpatchlevel=`echo $kaversion | cut -d . -f 2`
-ksublevel=`echo $kaversion | sed -e 's/.*\.//' -e 's/\([[0-9]][[0-9]]*\).*/\1/'`
-kextraversion=`echo $kaversion | sed -e 's/.*\.//' -e 's/.*\.//' -e 's/^[[0-9]][[0-9]]*//'`
+ksublevel=`echo $kaversion | sed -e 's/.*\.//' -e 's/\([[:digit:]][[:digit:]]*\).*/\1/'`
+kextraversion=`echo $kaversion | sed -e 's/.*\.//' -e 's/.*\.//' -e 's/^[[:digit:]][[:digit:]]*//'`
 if test "$kextraversion" = "$ksublevel"; then
   kextraversion=""
 fi
