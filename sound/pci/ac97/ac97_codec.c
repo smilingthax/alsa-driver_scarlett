@@ -63,6 +63,7 @@ static int patch_cirrus_cs4299(ac97_t * ac97);
 static int patch_cirrus_cs4205(ac97_t * ac97);
 static int patch_ad1819(ac97_t * ac97);
 static int patch_ad1881(ac97_t * ac97);
+static int patch_ad1886(ac97_t * ac97);
 
 typedef struct {
 	unsigned int id;
@@ -101,7 +102,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x41445340, 0xffffffff, "AD1881",		patch_ad1881 },
 { 0x41445348, 0xffffffff, "AD1881A",		patch_ad1881 },
 { 0x41445360, 0xffffffff, "AD1885",		patch_ad1881 },
-{ 0x41445361, 0xffffffff, "AD1886",		patch_ad1881 },
+{ 0x41445361, 0xffffffff, "AD1886",		patch_ad1886 },
 { 0x41445362, 0xffffffff, "AD1887",		patch_ad1881 },
 { 0x414c4300, 0xfffffff0, "RL5306",	 	NULL },
 { 0x414c4310, 0xfffffff0, "RL5382", 		NULL },
@@ -2040,6 +2041,14 @@ static int patch_ad1881(ac97_t * ac97)
 		ac97->id |= ac97->spec.ad18xx.id[0];
 	}
 	return 0;
+}
+
+static int patch_ad1886(ac97_t * ac97)
+{
+	patch_ad1881(ac97);
+	/* Presario700 workaround */
+	/* for Jack Sense/SPDIF Register misetting causing */
+	snd_ac97_write_cache(ac97, AC97_AD_JACK_SPDIF, 0x0010);
 }
 
 /*
