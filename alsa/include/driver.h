@@ -151,6 +151,7 @@ typedef struct wait_queue wait_queue_t;
 typedef struct wait_queue * wait_queue_head_t;
 #define init_waitqueue_head(x) *(x) = NULL
 #define init_waitqueue_entry(q,p) ((q)->task = (p))
+#define set_current_state(xstate) do { current->state = xstate; } while (0)
 #endif
 
 /*
