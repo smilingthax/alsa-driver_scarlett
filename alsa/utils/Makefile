@@ -17,6 +17,9 @@ all: $(TARGETS)
 snd-deps: snd-deps-find.o snd-deps-output.o
 	$(CC) $(INCLUDE) snd-deps-find.o snd-deps-output.o -o $@ 
 
+kredirect: kredirect.o
+	$(CC) $(INCLUDE) kredirect.o -o $@
+
 update-deps: snd-deps ../modules.config
 	./snd-deps --acinclude > ../acinclude.m4
 	./snd-deps --makefile > ../cards.config.in
