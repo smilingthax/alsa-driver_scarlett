@@ -251,17 +251,18 @@ AC_MSG_CHECKING(for ISA PnP driver)
 AC_ARG_WITH(isapnp,
   [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
   pnp="$withval", pnp="auto")
-mpnp=""
+SNDCFG_ISAPNP="0"
 if test "$pnp" = "auto"; then
   if test -f /proc/isapnp; then
-    mpnp="1"
+    SNDCFG_ISAPNP="1"
   fi
 else
   if test "$pnp" = "yes"; then
-    mpnp="1"
+    SNDCFG_ISAPNP="1"
   fi
 fi
-if test "$mpnp" = "1"; then
+AC_SUBST(SNDCFG_ISAPNP)
+if test "$SNDCFG_ISAPNP" = "1"; then
   AC_DEFINE(SNDCFG_ISAPNP)
   AC_MSG_RESULT(yes)
 else

@@ -140,6 +140,8 @@
 #define mm_segment_t unsigned int
 #define copy_from_user memcpy_fromfs
 #define copy_to_user memcpy_tofs
+#define test_and_set_bit set_bit
+#define test_and_clear_bit clear_bit
 #endif
 
 #ifndef DMA_MODE_AUTOINIT
