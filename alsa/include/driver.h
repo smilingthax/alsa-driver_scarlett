@@ -489,10 +489,16 @@ extern int snd_task_name(struct task_struct *task, char *name, size_t size);
 		return retval;\
 	}\
 } while (0)
-
+#define snd_error_check(expr, retval) do { \
+	if (expr) {\
+		snd_printk("ERROR {%s} %s: %i [%s]\n", __STRING(expr), __FILE__, __LINE__, __PRETTY_FUNCTION__);\
+		return retval;\
+	}\
+} while (0)
 #else
 #define snd_printd( args... )	/* nothing */
 #define snd_debug_check(expr, retval)	/* nothing */
+#define snd_error_check(expr, retval) do { if (expr) return retval; } while (0)
 #endif
 
 #ifdef CONFIG_SND_DEBUG_DETECT
