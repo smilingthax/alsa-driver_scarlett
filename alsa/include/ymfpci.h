@@ -265,7 +265,6 @@ struct _snd_ymfpci_pcm {
 	u32 buffer_size;		/* cached from runtime->buffer_size */
 	u32 period_pos;
 	u32 last_pos;
-	u32 shift_offset;
 	u32 capture_bank_number;
 };
 
