@@ -1,45 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <HTML>
 <HEAD>
-<TITLE>Advanced Linux Sound Architecture - Driver: PCM - Digital Audio</TITLE>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.7">
+ <TITLE>Advanced Linux Sound Architecture - Driver: PCM - Digital Audio</TITLE>
+ <LINK HREF="coding-4.html" REL=previous>
+ <LINK HREF="coding.html#toc5" REL=contents>
 </HEAD>
 <BODY>
-<A HREF="coding-4.html">Previous</A>
 Next
-<A HREF="coding.html#toc5">Table of Contents</A>
+<A HREF="coding-4.html">Previous</A>
+<A HREF="coding.html#toc5">Contents</A>
 <HR>
 <H2><A NAME="s5">5. PCM - Digital Audio</A></H2>
 
-<P>Digital Audio related structures and function is in <I>include/pcm.h</I>
-header file.</P>
+<P>Digital Audio related structures and functions are in <I>include/pcm.h</I>
+header file.
+<P>
+<H2><A NAME="ss5.1">5.1 Variables and functions</A>
+</H2>
 
-<H2><A NAME="ss5.1">5.1 Variables and functions</A></H2>
-
-<P>Variables from <I>snd_pcm_t</I> structure which must be filled:</P>
+<P>Variables from <I>snd_pcm_t</I> structure which must be filled:
 <P>
 <UL>
-<LI><B>info_flags</B> look to <B>SND_PCM_INFO_*</B> </LI>
+<LI><B>info_flags</B> look in <B>SND_PCM_INFO_*</B> </LI>
 <LI><B>name</B> of pcm device (for example 'CS4231')</LI>
 <LI><B>playback</B> variables for playback direction</LI>
 <LI><B>record</B> variables for record direction</LI>
 </UL>
-</P>
-
-<P>Variables from <I>snd_pcm_t</I> structure which should be filled:</P>
+<P>
+<P>Variables from <I>snd_pcm_t</I> structure which should be filled:
 <P>
 <UL>
-<LI><B>private_data</B> should contains pointer to private data</LI>
-<LI><B>private_free</B> should free private data</LI>
+<LI><B>private_data</B> should contain pointer to private data</LI>
+<LI><B>private_free</B> should free private data when called</LI>
 </UL>
-</P>
-
-<P>Variables from <I>struct snd_stru_pcm_hardware</I> which must be filled:</P>
+<P>
+<P>Variables from <I>struct snd_stru_pcm_hardware</I> which must be filled:
 <P>
 <UL>
 <LI><B>flags</B>
 <UL>
 <LI><B>SND_PCM_HW_BATCH</B> - hardware does double buffering</LI>
-<LI><B>SND_PCM_HW_8BITONLY</B> - hardware supports only 8-bit data (be careful - look to sb16.c)</LI>
-<LI><B>SND_PCM_HW_16BITONLY</B> - hardware supports only 16-bit data (be careful - look to sb16.c)</LI>
+<LI><B>SND_PCM_HW_8BITONLY</B> - hardware supports only 8-bit data (be careful - look at sb16.c)</LI>
+<LI><B>SND_PCM_HW_16BITONLY</B> - hardware supports only 16-bit data (be careful - look at sb16.c)</LI>
 <LI><B>SND_PCM_HW_AUTODMA</B> - hardware supports auto init dma transfer (unterminated loop)</LI>
 </UL>
 </LI>
@@ -128,17 +131,15 @@ header file.</P>
 </UL>
 </LI>
 </UL>
-</P>
-
-<P>Variables from <I>struct snd_stru_pcm_hardware</I> which should be filled:</P>
+<P>
+<P>Variables from <I>struct snd_stru_pcm_hardware</I> which should be filled:
 <P>
 <UL>
 <LI><B>private_data</B> should contains pointer to private data for specified direction</LI>
 <LI><B>private_free</B> should free private data</LI>
 </UL>
-</P>
-
-<P>Functions list:</P>
+<P>
+<P>Functions list:
 <P>
 <UL>
 <LI><B>void snd_pcm_playback_dma( snd_pcm_t *pcm,
@@ -188,9 +189,8 @@ unsigned int count )</B>
 </UL>
 </LI>
 </UL>
-</P>
-
-<P>Functions for dma allocation:</P>
+<P>
+<P>Functions for dma allocation:
 <P>
 <UL>
 <LI><B>int snd_pcm_dma_alloc( snd_pcm_t *pcm, int direction, int dmanum, char *ident )</B>
@@ -211,9 +211,8 @@ unsigned int count )</B>
 </UL>
 </LI>
 </UL>
-</P>
-
-<P>Functions for allocation and registering:</P>
+<P>
+<P>Functions for allocation and registering:
 <P>
 <UL>
 <LI><B>snd_pcm_t *snd_pcm_new_device( snd_card_t *card, char *id )</B>
@@ -242,12 +241,11 @@ unsigned int count )</B>
 </UL>
 </LI>
 </UL>
-</P>
+<P>
+<H2><A NAME="ss5.2">5.2 Examples</A>
+</H2>
 
-
-<H2><A NAME="ss5.2">5.2 Examples</A></H2>
-
-
+<P>
 <P>
 <BLOCKQUOTE><CODE>
 <HR>
@@ -310,32 +308,32 @@ snd_pcm_t *snd_es1688_new_device( snd_card_t *card,
   snd_pcm_t *pcm;
   es1688_t *codec;
 
-  pcm = snd_pcm_new_device( card, &quot;ESx688&quot; );
+  pcm = snd_pcm_new_device( card, "ESx688" );
   if ( !pcm ) return NULL;
   codec = (es1688_t *)snd_malloc( sizeof( es1688_t ) );
   if ( !codec ) return NULL;
   memset( codec, 0, sizeof( es1688_t ) );
   snd_spin_prepare( codec, reg );
   snd_spin_prepare( codec, mixer );
-  codec -&gt; pcm = pcm;
-  codec -&gt; card = pcm -&gt; card;
-  codec -&gt; port = port;
-  codec -&gt; mpu_port = mpu_port;
-  codec -&gt; irqnum = irqnum;
-  codec -&gt; irq = pcm -&gt; card -&gt; irqs[ irqnum ] -&gt; irq;
-  codec -&gt; mpu_irqnum = mpu_irqnum;
+  codec -> pcm = pcm;
+  codec -> card = pcm -> card;
+  codec -> port = port;
+  codec -> mpu_port = mpu_port;
+  codec -> irqnum = irqnum;
+  codec -> irq = pcm -> card -> irqs[ irqnum ] -> irq;
+  codec -> mpu_irqnum = mpu_irqnum;
   if ( mpu_irqnum != SND_IRQ_DISABLE )
-    codec -&gt; mpu_irq = pcm -&gt; card -&gt; irqs[ mpu_irqnum ] -&gt; irq;
-  codec -&gt; dma8num = dma8num;
-  codec -&gt; dma8 = pcm -&gt; card -&gt; dmas[ dma8num ] -&gt; dma;
-  codec -&gt; hardware = hardware;
-  memcpy( &amp;pcm -&gt; playback.hw, &amp;snd_es1688_playback, sizeof( snd_es1688_playback ) );
-  memcpy( &amp;pcm -&gt; record.hw, &amp;snd_es1688_record, sizeof( snd_es1688_record ) );
-  pcm -&gt; private_data = codec;
-  pcm -&gt; private_free = snd_es1688_free;
-  pcm -&gt; info_flags = SND_PCM_INFO_CODEC | SND_PCM_INFO_MMAP |
+    codec -> mpu_irq = pcm -> card -> irqs[ mpu_irqnum ] -> irq;
+  codec -> dma8num = dma8num;
+  codec -> dma8 = pcm -> card -> dmas[ dma8num ] -> dma;
+  codec -> hardware = hardware;
+  memcpy( &amp;pcm -> playback.hw, &amp;snd_es1688_playback, sizeof( snd_es1688_playback ) );
+  memcpy( &amp;pcm -> record.hw, &amp;snd_es1688_record, sizeof( snd_es1688_record ) );
+  pcm -> private_data = codec;
+  pcm -> private_free = snd_es1688_free;
+  pcm -> info_flags = SND_PCM_INFO_CODEC | SND_PCM_INFO_MMAP |
                       SND_PCM_INFO_PLAYBACK | SND_PCM_INFO_RECORD;
-  sprintf( pcm -&gt; name, &quot;ES%s688 rev %i&quot;, codec -&gt; hardware == ES1688_HW_688 ?&quot;&quot; : &quot;1&quot;, codec -&gt; version & 0x0f );
+  sprintf( pcm -> name, "ES%s688 rev %i", codec -> hardware == ES1688_HW_688 ?"" : "1", codec -> version &amp; 0x0f );
   if ( snd_es1688_probe( pcm ) &lt; 0 ) {
     snd_pcm_free( pcm );
     return NULL;
@@ -345,8 +343,7 @@ snd_pcm_t *snd_es1688_new_device( snd_card_t *card,
 </PRE>
 <HR>
 </CODE></BLOCKQUOTE>
-</P>
-<P>PCM device registering:</P>
+<P>PCM device registering:
 <P>
 <BLOCKQUOTE><CODE>
 <HR>
@@ -368,12 +365,10 @@ snd_pcm_t *snd_es1688_new_device( snd_card_t *card,
 </PRE>
 <HR>
 </CODE></BLOCKQUOTE>
-</P>
-
-
+<P>
 <HR>
-<A HREF="coding-4.html">Previous</A>
 Next
-<A HREF="coding.html#toc5">Table of Contents</A>
+<A HREF="coding-4.html">Previous</A>
+<A HREF="coding.html#toc5">Contents</A>
 </BODY>
 </HTML>

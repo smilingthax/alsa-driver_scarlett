@@ -6,59 +6,46 @@
   Architecture driver.
   ______________________________________________________________________
 
-  Table of Contents:
+  Table of Contents
 
-  1.      Introduction
 
-  1.1.    Source files
+  1. Introduction
 
-  1.2.    Devices
+     1.1 Source files
+     1.2 Devices
+     1.3 Memory allocation
+     1.4 Basic coding
+     1.5 Upper level (/cards)
+     1.6 Private data/values
+     1.7 CLI/STI & spin locking
+     1.8 Examples
 
-  1.3.    Memory allocation
+  2. Soundcard
 
-  1.4.    Basic coding
+     2.1 Variables and functions
+        2.1.1 Examples
+     2.2 Resources
+        2.2.1 Examples
+     2.3 ISA DMA
+     2.4 PCI bus
+        2.4.1 Examples
 
-  1.5.    Upper level (/cards)
+  3. File operations
 
-  1.6.    Private data/values
+     3.1 Variables and functions
+     3.2 Examples
 
-  1.7.    CLI/STI & spin locking
+  4. Mixer
 
-  1.8.    Examples
+     4.1 Variables and functions
+     4.2 Exaples
 
-  2.      Soundcard
+  5. PCM - Digital Audio
 
-  2.1.    Variables and functions
+     5.1 Variables and functions
+     5.2 Examples
 
-  2.1.1.  Examples
 
-  2.2.    Resources
-
-  2.2.1.  Examples
-
-  2.3.    ISA DMA
-
-  2.4.    PCI bus
-
-  2.4.1.  Examples
-
-  3.      File operations
-
-  3.1.    Variables and functions
-
-  3.2.    Examples
-
-  4.      Mixer
-
-  4.1.    Variables and functions
-
-  4.2.    Exaples
-
-  5.      PCM - Digital Audio
-
-  5.1.    Variables and functions
-
-  5.2.    Examples
   ______________________________________________________________________
 
   11..  IInnttrroodduuccttiioonn
@@ -70,6 +57,8 @@
   simpler and better looking. In addition, some of the some
   fixes/compatibility code in, may be placed in the library code instead
   of the kernel driver.
+
+
 
   11..11..  SSoouurrccee ffiilleess
 
@@ -93,6 +82,7 @@
         Detection layer (_/_p_r_o_c_/_a_s_o_u_n_d_/_d_e_t_e_c_t - to make installation
         easy).
 
+
   11..22..  DDeevviicceess
 
   Devices should use abstract code from sound kernel, but it should use
@@ -100,7 +90,9 @@
   snd_minor_unregister functions). This method totaly bypass all
   abstract code, so code for these soundcards must handle all things.
 
+
   11..33..  MMeemmoorryy aallllooccaattiioonn
+
 
   +o  vvooiidd **ssnndd__mmaalllloocc(( uunnssiiggnneedd lloonngg ssiizzee ))
 
@@ -110,51 +102,60 @@
 
   +o  vvooiidd ssnndd__ffrreeee__ssttrr(( cchhaarr **ssttrriinngg ))
 
-  Routines uses it's own memory allocation algoritm. It should be
-  removed in future and replaced with kmalloc and kfree calls, but I
-  need trace all allocation problems to make code clean...
+  These routines use their own memory allocation algoritm. It should be
+  removed in the future and replaced with kmalloc and kfree calls, but
+  for now I need to trace all allocation problems to make code clean...
 
-  Note: ALSA driver heavy uses dynamic allocation for most things.
+  Note: ALSA driver heavily uses dynamic allocation for most things.
 
   For debugging you should use command './configure --with-debug=full'
   for configuration. This enables trace of allocated memory with above
   functions and this makes debugging a little bit easier.
 
+
   11..44..  BBaassiicc ccooddiinngg
 
-  All things are made as object (which encapsulates data and functions)
-  and are referenced in this way. I don't preferr pass index to some
-  array of structure or something this. Pointer to object which contains
-  data and functions should be passed rather (like C++).
+  All things are made as objects (which encapsulates data and functions)
+  and are referenced in this way. I don't prefer to pass index to some
+  array of structure or something like this. Objects contain both data
+  and functions.  Pointers to these objects are passed around (like
+  C++).
 
   All main structures should have snd_xxxx_new, snd_xxxx_free,
   snd_xxxx_register, snd_xxxx_unregister functions.
 
-  +o  ssnndd__ccaarrdd__tt is basic structure which contains info about soundcard,
-     index and resource tracking variables. You should look to
+
+  +o  ssnndd__ccaarrdd__tt is a basic structure which contains info about a
+     soundcard, index and resource tracking variables. Look at
      _i_n_c_l_u_d_e_/_d_r_i_v_e_r_._h for all things related to this structure.
 
-  +o  ssnndd__ppccmm__tt is basic structure for PCM device.
 
-  +o  ssnndd__ppccmm__cchhaannnneell__tt is basic structure for PCM channel (direction).
+  +o  ssnndd__ppccmm__tt is a basic structure for a PCM device.
 
-  +o  ssttrruucctt ssnndd__ssttrruu__ppccmm__hhaarrddwwaarree is structure which must be filled by
-     lowlevel code. You should look to _i_n_c_l_u_d_e_/_p_c_m_._h for all things
+  +o  ssnndd__ppccmm__cchhaannnneell__tt is a basic structure for a PCM channel
+     (direction).
+
+  +o  ssttrruucctt ssnndd__ssttrruu__ppccmm__hhaarrddwwaarree is a structure which must be filled by
+     lowlevel code. Look at _i_n_c_l_u_d_e_/_p_c_m_._h for all things related to
+     these structures.
+
+
+  +o  ssnndd__kkmmiixxeerr__tt is a basic structure for a MIXER device.
+
+  +o  ssnndd__kkmmiixxeerr__cchhaannnneell__tt is a basic structure for a MIXER channel.
+
+  +o  ssttrruucctt ssnndd__ssttrruu__mmiixxeerr__cchhaannnneell__hhww is a structure which must be
+     filled by lowlevel code. Look at _i_n_c_l_u_d_e_/_m_i_x_e_r_._h for all things
      related to these structures.
 
-  +o  ssnndd__kkmmiixxeerr__tt is basic structure for MIXER device.
-
-  +o  ssnndd__kkmmiixxeerr__cchhaannnneell__tt is basic structure for MIXER channel.
-
-  +o  ssttrruucctt ssnndd__ssttrruu__mmiixxeerr__cchhaannnneell__hhww is structure which must be filled
-     by lowlevel code. You should look to _i_n_c_l_u_d_e_/_m_i_x_e_r_._h for all things
-     related to these structures.
 
   11..55..  UUppppeerr lleevveell ((//ccaarrddss))
 
   Code for soundcards should contain these things:
 
-  1. Support for more same soundcards (up to SND_CARDS)...
+
+  1. Support for more than one of the same soundcard (up to
+     SND_CARDS)...
 
   +o  it isn't really possible due to HW limitations
 
@@ -205,25 +206,30 @@
 
   +o  snd_card_register
 
-  +o  snd_card_unregister (doesn't calls snd_card_free)
+  +o  snd_card_unregister (doesn't call snd_card_free)
 
   NNoottee:: Due to module dependency you should separate code for soundcards
-  from same manufacture which have slightly different hardware.
-  Example: GUS Extreme have ESS ES-1688 chip. This chip isn't in GUS
-  Classic. For GUS Classic isn't generic code in snd-es1688.o module
-  needed, so there is two upper level modules (snd-gusextreme.o and snd-
-  gusclassic.o).
+  from the same manufacture which have slightly different hardware.
+  Example: The GUS Extreme has an ESS ES-1688 chip. This chip isn't in
+  the GUS Classic. For GUS Classic, the generic code in the snd-es1688.o
+  module isn't needed. So there are two upper level modules (snd-
+  gusextreme.o and snd-gusclassic.o).
+
 
   11..66..  PPrriivvaattee ddaattaa//vvaalluueess
 
-  Some structures have pointers on private data and values. These
-  variables aren't used with abstract layers and use is intended for
-  low-level code.
+  Some structures have pointers to private data and values. These
+  variables aren't used with the abstract layers and are intended for
+  low-level code use only.
+
 
   ______________________________________________________________________
   snd_card_t -> private_data
   snd_card_t -> private_free (called from snd_card_free if not NULL)
   ______________________________________________________________________
+
+
+
 
   ______________________________________________________________________
   struct snd_stru_pcm_hardware -> private_data
@@ -231,6 +237,9 @@
   snd_pcm_t -> private_data
   snd_pcm_t -> private_free (called from snd_pcm_free if not NULL)
   ______________________________________________________________________
+
+
+
 
   ______________________________________________________________________
   struct snd_stru_mixer_channel_hw -> private_value
@@ -241,39 +250,48 @@
   snd_kmixer_t -> private_free (called from snd_mixer_free if not NULL)
   ______________________________________________________________________
 
+
+
+
   11..77..  CCLLII//SSTTII && ssppiinn lloocckkiinngg
 
-  Good code shouldn't contains _s_n_d___c_l_i_(_)/_s_n_d___s_t_i_(_) calls.  Use rather
-  spin locks _s_n_d___s_p_i_n___l_o_c_k_(_)/_s_n_d___s_p_i_n___u_n_l_o_c_k_(_) for locking some code.
-  This code is much better for SMP machines.
+  Good code shouldn't contain _s_n_d___c_l_i_(_)/_s_n_d___s_t_i_(_) calls.  Instead use
+  spin locks _s_n_d___s_p_i_n___l_o_c_k_(_)/_s_n_d___s_p_i_n___u_n_l_o_c_k_(_) for locking code. This
+  method is much better for SMP machines.
 
-  NNoottee:: Debugging code is available and it should be enabled in
-  _s_n_d_s_p_i_n_l_o_c_k_._h.
+  NNoottee:: Debugging code is available for locking.  Look in _s_n_d_s_p_i_n_l_o_c_k_._h
+  to enable it.
 
   11..88..  EExxaammpplleess
 
-  You should look to code for GUS soundcards how can be things done...
+  You should look at the code for GUS soundcards to see how can be
+  things done...
 
   NNoottee:: Code should be compiled cleanly under 2.0.X kernels and under
   latest 2.1.X kernels...
+
+
+
 
   22..  SSoouunnddccaarrdd
 
   Soundcard related structures and functions are in _i_n_c_l_u_d_e_/_d_r_i_v_e_r_._h
   header file. Structure _s_n_d___c_a_r_d___t must be allocated by _s_n_d___c_a_r_d___n_e_w
-  function and freed by _s_n_d___c_a_r_d___f_r_e_e function (whis isn't called from
+  function and freed by _s_n_d___c_a_r_d___f_r_e_e function (which isn't called from
   _s_n_d___c_a_r_d___u_n_r_e_g_i_s_t_e_r).
+
 
   22..11..  VVaarriiaabblleess aanndd ffuunnccttiioonnss
 
   Functions list:
+
 
   +o  ssnndd__ccaarrdd__tt **ssnndd__ccaarrdd__nneeww(( iinntt iiddxx,, cchhaarr **iidd,, vvooiidd ((**uussee__iinncc))((
      ssnndd__ccaarrdd__tt ** )),, vvooiidd ((**uussee__ddeecc))(( ssnndd__ccaarrdd__tt **)) ))
 
   +o  iiddxx soundcard index (order), 1-8 or -1 = first free
 
-  +o  iidd soundcard id, if NULL or ' ' -> default (card#)
+  +o  iidd soundcard id, if NULL or '\0' -> default (card#)
 
   +o  iinncc__uussee increment use of last soundcard module (to avoid remove)
 
@@ -298,69 +316,83 @@
 
   +o  iinntt ssnndd__ccaarrdd__uunnrreeggiisstteerr(( ssnndd__ccaarrdd__tt **ccaarrdd ))
 
-  +o  ccaarrdd pointer to soundcard structure to unregister; applications
-     aren't able from this point use soundcard
+  +o  ccaarrdd pointer to soundcard structure to unregister; After this is
+     called, applications no longer can use this soundcard.
 
   +o  doesn't call _s_n_d___c_a_r_d___f_r_e_e
 
-  +o  returns negative value when error
+  +o  returns negative value when error occurs
+
 
   Variables from _s_n_d___c_a_r_d___t structure which must be filled:
 
-  +o  ttyyppee is type identification from _i_n_c_l_u_d_e_/_a_s_o_u_n_d_i_d_._h.
 
-  +o  aabbbbrreevviiaattiioonn is abbreviation for soundcard (for example 'GUS').
 
-  +o  sshhoorrttnnaammee is shortname for soundcard (for example 'Gravis
+  +o  ttyyppee is a type identification from _i_n_c_l_u_d_e_/_a_s_o_u_n_d_i_d_._h.
+
+  +o  aabbbbrreevviiaattiioonn is an abbreviation for soundcard (for example 'GUS').
+
+  +o  sshhoorrttnnaammee is a shortname for soundcard (for example 'Gravis
      UltraSound MAX').
 
-  +o  lloonnggnnaammee is full identification for soundcard (for example 'Gravis
-     UltraSound MAX at 0x220, irq 5, dma 1&5').
+  +o  lloonnggnnaammee is a full identification for soundcard (for example
+     'Gravis UltraSound MAX at 0x220, irq 5, dma 1&5').
+
 
   Variables from _s_n_d___c_a_r_d___t structure which should be filled:
+
 
   +o  pprriivvaattee__ddaattaa should be used by soundcard driver for private data.
 
   +o  pprriivvaattee__ffrreeee is called when _p_r_i_v_a_t_e___d_a_t_a should be freed.
 
+
   22..11..11..  EExxaammpplleess
 
-  ______________________________________________________________________
-  static void snd_soundcard_use_inc( snd_card_t *card )
-  {
-    MOD_INC_USE_COUNT;
-  }
 
-  static void snd_soundcard_use_dec( snd_card_t *card )
-  {
-    MOD_DEC_USE_COUNT;
-  }
 
-  int snd_soundcard_init( void )
-  {
-    snd_card_t *card;
+       ______________________________________________________________________
+       static void snd_soundcard_use_inc( snd_card_t *card )
+       {
+         MOD_INC_USE_COUNT;
+       }
 
-    card = snd_card_new( -1, NULL, snd_soundcard_use_inc, snd_soundcard_dec_inc );
-    if ( !card ) return -ENOMEM;
-    card -> type = SND_CARD_TYPE_SOUNDCARD;       /* can be changed later */
+       static void snd_soundcard_use_dec( snd_card_t *card )
+       {
+         MOD_DEC_USE_COUNT;
+       }
 
-    ... resource initialization, detection, device creation and registration ...
+       int snd_soundcard_init( void )
+       {
+         snd_card_t *card;
 
-    strcpy( card -> abbreviation, "SoundCard" );
-    strcpy( card -> shortname, "3-D SoundCard" );
-    strcpy( card -> longname, "3-D SoundCard at 0x500, irq 5, dma 5&6" );
+         card = snd_card_new( -1, NULL, snd_soundcard_use_inc, snd_soundcard_dec_inc );
+         if ( !card ) return -ENOMEM;
+         card -> type = SND_CARD_TYPE_SOUNDCARD;       /* can be changed later */
 
-    if ( !snd_card_register( card ) )
-      return 0;
-    snd_card_free( card );
+         ... resource initialization, detection, device creation and registration ...
 
-    return -ENXIO;
-  }
-  ______________________________________________________________________
+         strcpy( card -> abbreviation, "SoundCard" );
+         strcpy( card -> shortname, "3-D SoundCard" );
+         strcpy( card -> longname, "3-D SoundCard at 0x500, irq 5, dma 5&6" );
+
+         if ( !snd_card_register( card ) )
+           return 0;
+         snd_card_free( card );
+
+         return -ENXIO;
+       }
+       ______________________________________________________________________
+
+
+
+
 
   22..22..  RReessoouurrcceess
 
   Functions list:
+
+
 
   +o  iinntt ssnndd__rreeggiisstteerr__iiooppoorrtt(( ssnndd__ccaarrdd__tt **ccaarrdd,, iinntt ppoorrtt,, iinntt ssiizzee,, cchhaarr
      **nnaammee ))
@@ -432,7 +464,7 @@
 
   +o  ddeevv__iidd pointer to some private structure for interrupt handler
 
-  +o  ppoossssiibbllee__nnuummbbeerrss pointer to int arrays which contains all possible
+  +o  ppoossssiibbllee__nnuummbbeerrss pointer to int arrays which contain all possible
      dma numbers for this channel terminated by -1; function uses these
      values for verification of valid input from user or if SSNNDD__AAUUTTOO__IIRRQQ
      is specified to detect first useable interrupt line
@@ -464,12 +496,35 @@
   _s_n_d___d_m_a___m_a_l_l_o_c and _s_n_d___d_m_a___f_r_e_e when some device is opened/closed.
 
   NNoottee 22:: routines for interrupt line and dma channel registering
-  returns index do _s_n_d___c_a_r_d___t _-_> _i_r_q_s and _s_n_d___c_a_r_d___t _-_> _d_m_a_s arrays.
+  returns index to _s_n_d___c_a_r_d___t _-_> _i_r_q_s and _s_n_d___c_a_r_d___t _-_> _d_m_a_s arrays.
   This value isn't equal to interrupt number or dma channel number, but
   in driver _i_r_q_n_u_m or _d_m_a_n_u_m means irq or dma index (internal driver
   resource identification) and _i_r_q or _d_m_a means real irq or dma number.
 
+
   22..22..11..  EExxaammpplleess
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   ______________________________________________________________________
   int snd_irq = SND_DEFAULT_IRQ1;
@@ -517,9 +572,14 @@
   }
   ______________________________________________________________________
 
+
+
+
+
   22..33..  IISSAA DDMMAA
 
   Functions list:
+
 
   +o  vvooiidd ssnndd__ddmmaa__pprrooggrraamm(( iinntt ddmmaa,, ccoonnsstt vvooiidd **bbuuff,, uunnssiiggnneedd iinntt ssiizzee,,
      uunnssiiggnneedd cchhaarr mmooddee ))
@@ -546,20 +606,23 @@
 
   +o  returns residue value for specified dma channel
 
+
   22..44..  PPCCII bbuuss
 
   PCI bus related structures and functions are in _i_n_c_l_u_d_e_/_s_n_d_p_c_i_._h
   header file. Functions are designated for use with both type of
   kernels (2.0 and 2.1).
 
+
   Read-only variables from _s_t_r_u_c_t _s_n_d___p_c_i___d_e_v structure which should be
   used:
 
+
   +o  ddeevvffnn encoded device & function index
 
-  +o  vveennddoorr - see to PPCCII__VVEENNDDOORR__IIDD__**
+  +o  vveennddoorr - see PPCCII__VVEENNDDOORR__IIDD__**
 
-  +o  ddeevviiccee - see to PPCCII__DDEEVVIICCEE__IIDD__**
+  +o  ddeevviiccee - see PPCCII__DDEEVVIICCEE__IIDD__**
 
   +o  ccllaassss - 3 bytes (base, sub, prog-if)
 
@@ -569,14 +632,16 @@
 
   +o  bbaassee__aaddddrreessss - base registers for this device (remaped if needed)
 
+
   Functions list:
+
 
   +o  iinntt ssnndd__ppccii__ffiinndd__ddeevviiccee(( uunnssiiggnneedd iinntt vveennddoorr,, uunnssiiggnneedd iinntt ddeevviiccee,,
      uunnssiiggnneedd iinntt iinnddeexx,, ssttrruucctt ssnndd__ppccii__ddeevv **ddeevv ));;
 
-  +o  vveennddoorr identification (see to PPCCII__VVEENNDDOORR__IIDD__**)
+  +o  vveennddoorr identification (see PPCCII__VVEENNDDOORR__IIDD__**)
 
-  +o  ddeevviiccee identification (see to PPCCII__DDEEVVIICCEE__IIDD__**)
+  +o  ddeevviiccee identification (see PPCCII__DDEEVVIICCEE__IIDD__**)
 
   +o  iinnddeexx device index (0-X) for which is information requested
 
@@ -604,7 +669,10 @@
 
   +o  write byte/word/dword to PCI configuration registers
 
+
   22..44..11..  EExxaammpplleess
+
+
 
        ______________________________________________________________________
          struct snd_pci_dev pci_dev;   /* use heap for this variable */
@@ -624,16 +692,23 @@
          snd_pci_write_config_word( &pci_dev, PCI_COMMAND, cmd );
        ______________________________________________________________________
 
+
+
+
+
+
   33..  FFiillee ooppeerraattiioonnss
 
-  File operations related structures and function is in _i_n_c_l_u_d_e_/_d_r_i_v_e_r_._h
-  header file. Basic structure for registering fileoperations for minor
-  number is _s_n_d___m_i_n_o_r___t. Minor constants are in _i_n_c_l_u_d_e_/_m_i_n_o_r_s_._h header
-  file.
+  File operations related structures and functions are in
+  _i_n_c_l_u_d_e_/_d_r_i_v_e_r_._h header file. Basic structure for registering file
+  operations for minor number is _s_n_d___m_i_n_o_r___t. Minor constants are in
+  _i_n_c_l_u_d_e_/_m_i_n_o_r_s_._h header file.
+
 
   33..11..  VVaarriiaabblleess aanndd ffuunnccttiioonnss
 
   Functions list:
+
 
   +o  iinntt ssnndd__rreeggiisstteerr__mmiinnoorr(( uunnssiiggnneedd sshhoorrtt mmiinnoorr,, ssnndd__mmiinnoorr__tt **rreegg ))
 
@@ -653,7 +728,11 @@
   in the system. It isn't preffered do some pre-registration from some
   middle-level code for each possible devices per interface.
 
+
   33..22..  EExxaammpplleess
+
+
+
 
        ______________________________________________________________________
        static snd_minor_t snd_pcm_reg = {
@@ -675,65 +754,87 @@
          NULL,                         /* mmap */
        };
 
+       ...
          if ( (err = snd_register_minor( SND_MINOR_PCM + device, &snd_pcm_reg )) < 0 )
            return err;
+       ...
          snd_unregister_minor( SND_MINOR_PCM + device );
        ______________________________________________________________________
+
+
+
+
+
+
 
   44..  MMiixxeerr
 
   Mixer related structures and function is in _i_n_c_l_u_d_e_/_m_i_x_e_r_._h header
   file.
 
+
   44..11..  VVaarriiaabblleess aanndd ffuunnccttiioonnss
 
   Variables from _s_n_d___k_m_i_x_e_r___t structure which must be filled:
+
 
   +o  nnaammee is name of mixer (for example 'AD1848').
 
   +o  hhww read-only variables dependend on hardware.
 
+
   Variables from _s_n_d___k_m_i_x_e_r___t structure which should be filled:
 
-  +o  pprriivvaattee__ddaattaa should contains private data for mixer.
 
-  +o  pprriivvaattee__ffrreeee should free private data.
+  +o  pprriivvaattee__ddaattaa pointer to private data for mixer.
+
+  +o  pprriivvaattee__ffrreeee should free private_data when called.
 
   Variables from _s_t_r_u_c_t _s_n_d___s_t_r_u___m_i_x_e_r___h_w structure which must be
   filled:
 
+
   +o  ccaappss mixer capabilities (see to SSNNDD__SSNNDD__MMIIXXEERR__IINNFFOO__CCAAPP__**).
+
 
   Variables from _s_t_r_u_c_t _s_n_d___s_t_r_u___m_i_x_e_r___h_w structure which should be
   filled:
+
 
   +o  ggeett__ssppeecciiaall
 
   +o  sseett__ssppeecciiaall
 
+
   Variables from _s_n_d___k_m_i_x_e_r___c_h_a_n_n_e_l___t structure which must be filled:
+
 
   +o  hhww read-only variables dependend on hardware.
 
+
   Variables from _s_n_d___k_m_i_x_e_r___c_h_a_n_n_e_l___t structure which should be filled:
+
 
   +o  pprriivvaattee__vvaalluuee is _u_n_s_i_g_n_e_d _i_n_t variable which isn't used by middle-
      level code.
 
   +o  pprriivvaattee__ddaattaa is pointer to some private data associated with
-     appropriate channel. These data aren't freed by middle-level code.
+     appropriate channel. This data isn't freed by middle-level code.
+     NOTE - Where should it be freed from then?
+
 
   Variables from _s_t_r_u_c_t _s_n_d___s_t_r_u___m_i_x_e_r___c_h_a_n_n_e_l___h_w structure which must
   be filled:
 
-  +o  pprriioorriittyy priority (identificator) - see to SSNNDD__MMIIXXEERR__PPRRII__**
+
+  +o  pprriioorriittyy priority (identificator) - see SSNNDD__MMIIXXEERR__PPRRII__**
 
   +o  ppaarreenntt__pprriioorriittyy parent mixer channel priority or
      SSNNDD__MMIIXXEERR__PPRRII__PPAARREENNTT
 
-  +o  nnaammee name of this mixer channel - see to SSNNDD__MMIIXXEERR__IIDD__**
+  +o  nnaammee name of this mixer channel - see SSNNDD__MMIIXXEERR__IIDD__**
 
-  +o  oossssddeevv OSS (Open Sound System) device - see to SSNNDD__MMIIXXEERR__OOSSSS__**
+  +o  oossssddeevv OSS (Open Sound System) device - see SSNNDD__MMIIXXEERR__OOSSSS__**
 
   +o  mmuuttee if hardware mute is supported
 
@@ -753,6 +854,7 @@
      ssnndd__kkmmiixxeerr__cchhaannnneell__tt **cchhaannnneell,, iinntt eennaabbllee ))
 
   +o  mmiixxeerr pointer to mixer structure
+
 
   +o  cchhaannnneell pointer to channel structure
 
@@ -784,8 +886,10 @@
 
   +o  handler which sets volume level for this channel
 
+
   Variables from _s_t_r_u_c_t _s_n_d___s_t_r_u___m_i_x_e_r___c_h_a_n_n_e_l___h_w structure which should
   be filled:
+
 
   +o  iinntt ((**ccoommppuuttee__lliinneeaarr))(( ssnndd__kkmmiixxeerr__tt **mmiixxeerr,, ssnndd__kkmmiixxeerr__cchhaannnneell__tt
      **cchhaannnneell,, iinntt ddBB ))
@@ -797,7 +901,9 @@
 
   +o  input = min...max (linear volume), output = dB to application
 
+
   Functions list:
+
 
   +o  vvooiidd ssnndd__mmiixxeerr__sseett__kkeerrnneell__mmuuttee(( ssnndd__kkmmiixxeerr__tt **mmiixxeerr,, uunnssiiggnneedd iinntt
      pprriioorriittyy,, uunnssiiggnneedd sshhoorrtt mmuuttee ))
@@ -810,7 +916,7 @@
 
   +o  should be use as mute control from kernel
 
-  +o  this settings is never overriden by application
+  +o  this settings are never overriden by application
 
   +o  ssnndd__kkmmiixxeerr__tt **ssnndd__mmiixxeerr__nneeww(( ssnndd__ccaarrdd__tt **ccaarrdd,, cchhaarr **iidd ))
 
@@ -856,7 +962,31 @@
 
   +o  unregisters and ffrreeeess specified mixer
 
+
   44..22..  EExxaapplleess
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   ______________________________________________________________________
   #define CS4231_MIXS (sizeof(snd_cs4231_mixs)/sizeof(struct snd_stru_mixer_channel_hw))
@@ -908,7 +1038,21 @@
   }
   ______________________________________________________________________
 
+
+
+
+
   Do you need modify some default mixer channel assignment?
+
+
+
+
+
+
+
+
+
+
 
   ______________________________________________________________________
     snd_kmixer_channel_t *channel;
@@ -927,7 +1071,13 @@
     snd_mixer_reorder_channel( mixer, channel );
   ______________________________________________________________________
 
+
+
+
+
   Do you need add some mixer channel to generic mixer?
+
+
 
        ______________________________________________________________________
          static struct snd_stru_mixer_channel_hw master = {
@@ -961,7 +1111,14 @@
          if ( !channel ) return -ENOMEM;
        ______________________________________________________________________
 
+
+
+
   Mixer device registering:
+
+
+
+
 
   ______________________________________________________________________
     snd_card_t *card;
@@ -987,16 +1144,23 @@
     snd_mixer_unregister( mixer );
   ______________________________________________________________________
 
+
+
+
+
+
   55..  PPCCMM -- DDiiggiittaall AAuuddiioo
 
-  Digital Audio related structures and function is in _i_n_c_l_u_d_e_/_p_c_m_._h
+  Digital Audio related structures and functions are in _i_n_c_l_u_d_e_/_p_c_m_._h
   header file.
+
 
   55..11..  VVaarriiaabblleess aanndd ffuunnccttiioonnss
 
   Variables from _s_n_d___p_c_m___t structure which must be filled:
 
-  +o  iinnffoo__ffllaaggss look to SSNNDD__PPCCMM__IINNFFOO__**
+
+  +o  iinnffoo__ffllaaggss look in SSNNDD__PPCCMM__IINNFFOO__**
 
   +o  nnaammee of pcm device (for example 'CS4231')
 
@@ -1004,22 +1168,26 @@
 
   +o  rreeccoorrdd variables for record direction
 
+
   Variables from _s_n_d___p_c_m___t structure which should be filled:
 
-  +o  pprriivvaattee__ddaattaa should contains pointer to private data
 
-  +o  pprriivvaattee__ffrreeee should free private data
+  +o  pprriivvaattee__ddaattaa should contain pointer to private data
+
+  +o  pprriivvaattee__ffrreeee should free private data when called
+
 
   Variables from _s_t_r_u_c_t _s_n_d___s_t_r_u___p_c_m___h_a_r_d_w_a_r_e which must be filled:
+
 
   +o  ffllaaggss
 
   +o  SSNNDD__PPCCMM__HHWW__BBAATTCCHH - hardware does double buffering
 
   +o  SSNNDD__PPCCMM__HHWW__88BBIITTOONNLLYY - hardware supports only 8-bit data (be careful
-     - look to sb16.c)
+     - look at sb16.c)
   +o  SSNNDD__PPCCMM__HHWW__1166BBIITTOONNLLYY - hardware supports only 16-bit data (be
-     careful - look to sb16.c)
+     careful - look at sb16.c)
 
   +o  SSNNDD__PPCCMM__HHWW__AAUUTTOODDMMAA - hardware supports auto init dma transfer
      (unterminated loop)
@@ -1135,14 +1303,18 @@
 
   +o  fills specified area of dma buffer with neutral byte
 
+
   Variables from _s_t_r_u_c_t _s_n_d___s_t_r_u___p_c_m___h_a_r_d_w_a_r_e which should be filled:
+
 
   +o  pprriivvaattee__ddaattaa should contains pointer to private data for specified
      direction
 
   +o  pprriivvaattee__ffrreeee should free private data
 
+
   Functions list:
+
 
   +o  vvooiidd ssnndd__ppccmm__ppllaayybbaacckk__ddmmaa(( ssnndd__ppccmm__tt **ppccmm,, uunnssiiggnneedd cchhaarr **bbuuffffeerr,,
      uunnssiiggnneedd iinntt ooffffsseett,, uunnssiiggnneedd cchhaarr **uusseerr,, uunnssiiggnneedd iinntt ccoouunntt ))
@@ -1179,7 +1351,9 @@
 
   +o  standard function for snd_pcm_channel_t -> hw.dma_move
 
+
   Functions for dma allocation:
+
 
   +o  iinntt ssnndd__ppccmm__ddmmaa__aalllloocc(( ssnndd__ppccmm__tt **ppccmm,, iinntt ddiirreeccttiioonn,, iinntt ddmmaannuumm,,
      cchhaarr **iiddeenntt ))
@@ -1204,7 +1378,9 @@
 
   +o  frees pcm dma buffer
 
+
   Functions for allocation and registering:
+
 
   +o  ssnndd__ppccmm__tt **ssnndd__ppccmm__nneeww__ddeevviiccee(( ssnndd__ccaarrdd__tt **ccaarrdd,, cchhaarr **iidd ))
 
@@ -1232,7 +1408,47 @@
 
   +o  unregisters and frees pcm structure
 
+
   55..22..  EExxaammpplleess
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   ______________________________________________________________________
   static struct snd_stru_pcm_hardware snd_es1688_playback = {
@@ -1327,7 +1543,12 @@
   }
   ______________________________________________________________________
 
+
+
+
   PCM device registering:
+
+
 
        ______________________________________________________________________
          snd_card_t *card;
@@ -1345,4 +1566,19 @@
          ...
          snd_pcm_unregister( pcm );
        ______________________________________________________________________
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

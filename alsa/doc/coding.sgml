@@ -69,11 +69,11 @@ code, so code for these soundcards must handle all things.
 <item><bf>void snd_free_str( char *string )</bf>
 </itemize>
 <p>
-Routines uses it's own memory allocation algoritm. It should be removed
-in future and replaced with kmalloc and kfree calls, but I need trace
-all allocation problems to make code clean...
+These routines use their own memory allocation algoritm. It should be 
+removed in the future and replaced with kmalloc and kfree calls, but
+for now I need to trace all allocation problems to make code clean...
 <p>
-Note: ALSA driver heavy uses dynamic allocation for most things.
+Note: ALSA driver heavily uses dynamic allocation for most things.
 <p>
 For debugging you should use command './configure --with-debug=full' for
 configuration. This enables trace of allocated memory with above functions
@@ -82,34 +82,34 @@ and this makes debugging a little bit easier.
 <sect1>Basic coding
 
 <p>
-All things are made as object (which encapsulates data and functions) and are
-referenced in this way. I don't preferr pass index to some array of structure
-or something this. Pointer to object which contains data and functions should
-be passed rather (like C++).
+All things are made as objects (which encapsulates data and functions) and are
+referenced in this way. I don't prefer to pass index to some array of structure
+or something like this. Objects contain both data and functions.  Pointers to these
+objects are passed around (like C++).
 <p>
 All main structures should have snd_xxxx_new, snd_xxxx_free, snd_xxxx_register,
 snd_xxxx_unregister functions.
 <p>
 <itemize>
 <item>
-<bf>snd_card_t</bf> is basic structure which contains info about soundcard,
-index and resource tracking variables. You should look to <it>include/driver.h</it>
+<bf>snd_card_t</bf> is a basic structure which contains info about a soundcard,
+index and resource tracking variables. Look at <it>include/driver.h</it>
 for all things related to this structure.
 </itemize>
 <p>
 <itemize>
-<item><bf>snd_pcm_t</bf> is basic structure for PCM device.
-<item><bf>snd_pcm_channel_t</bf> is basic structure for PCM channel (direction).
-<item><bf>struct snd_stru_pcm_hardware</bf> is structure which must be filled
-by lowlevel code. You should look to <it>include/pcm.h</it> for all things
+<item><bf>snd_pcm_t</bf> is a basic structure for a PCM device.
+<item><bf>snd_pcm_channel_t</bf> is a basic structure for a PCM channel (direction).
+<item><bf>struct snd_stru_pcm_hardware</bf> is a structure which must be filled
+by lowlevel code. Look at <it>include/pcm.h</it> for all things
 related to these structures.
 </itemize>
 <p>
 <itemize>
-<item><bf>snd_kmixer_t</bf> is basic structure for MIXER device.
-<item><bf>snd_kmixer_channel_t</bf> is basic structure for MIXER channel.
-<item><bf>struct snd_stru_mixer_channel_hw</bf> is structure which must be filled
-by lowlevel code. You should look to <it>include/mixer.h</it> for all things
+<item><bf>snd_kmixer_t</bf> is a basic structure for a MIXER device.
+<item><bf>snd_kmixer_channel_t</bf> is a basic structure for a MIXER channel.
+<item><bf>struct snd_stru_mixer_channel_hw</bf> is a structure which must be filled
+by lowlevel code. Look at <it>include/mixer.h</it> for all things
 related to these structures.
 </itemize>
 
@@ -119,7 +119,7 @@ related to these structures.
 Code for soundcards should contain these things:
 
 <enum>
-<item>Support for more same soundcards (up to SND_CARDS)...
+<item>Support for more than one of the same soundcard (up to SND_CARDS)...
   <itemize>
      <item>it isn't really possible due to HW limitations
   </itemize>
@@ -155,23 +155,24 @@ Code for soundcards should contain these things:
 <item>Register soundcard
   <itemize>
     <item>snd_card_register
-    <item>snd_card_unregister (doesn't calls snd_card_free)
+    <item>snd_card_unregister (doesn't call snd_card_free)
   </itemize>
 </enum>
 
 <bf>Note:</bf>
 Due to module dependency you should separate code for soundcards
-from same manufacture which have slightly different hardware.
-Example: GUS Extreme have ESS ES-1688 chip. This chip isn't in GUS
-Classic. For GUS Classic isn't generic code in snd-es1688.o module
-needed, so there is two upper level modules (snd-gusextreme.o and
+from the same manufacture which have slightly different hardware.
+Example: The GUS Extreme has an ESS ES-1688 chip. This chip isn't in the GUS
+Classic. For GUS Classic, the generic code in the snd-es1688.o module isn't
+needed. So there are two upper level modules (snd-gusextreme.o and
 snd-gusclassic.o).
 
 <sect1>Private data/values
 
 <p>
-Some structures have pointers on private data and values. These variables
-aren't used with abstract layers and use is intended for low-level code. 
+Some structures have pointers to private data and values. These variables
+aren't used with the abstract layers and are intended for low-level code
+use only. 
 
 <code>
 snd_card_t -> private_data
@@ -197,17 +198,17 @@ snd_kmixer_t -> private_free (called from snd_mixer_free if not NULL)
 <sect1>CLI/STI & spin locking
 
 <p>
-Good code shouldn't contains <it>snd_cli()</it>/<it>snd_sti()</it> calls.
-Use rather spin locks <it>snd_spin_lock()</it>/<it>snd_spin_unlock()</it>
-for locking some code. This code is much better for SMP machines.
+Good code shouldn't contain <it>snd_cli()</it>/<it>snd_sti()</it> calls.
+Instead use spin locks <it>snd_spin_lock()</it>/<it>snd_spin_unlock()</it>
+for locking code. This method is much better for SMP machines.
 <p>
-<bf>Note:</bf> Debugging code is available and it should be enabled in
-<it>sndspinlock.h</it>.
+<bf>Note:</bf> Debugging code is available for locking.  Look in 
+<it>sndspinlock.h</it> to enable it.
 
 <sect1>Examples
 
 <p>
-You should look to code for GUS soundcards how can be things done...
+You should look at the code for GUS soundcards to see how can be things done...
 
 <bf>Note:</bf> Code should be compiled cleanly under 2.0.X kernels and under
       latest 2.1.X kernels...
@@ -223,7 +224,7 @@ You should look to code for GUS soundcards how can be things done...
 Soundcard related structures and functions are in <it>include/driver.h</it>
 header file. Structure <it>snd_card_t</it> must be allocated by
 <it>snd_card_new</it> function and freed by <it>snd_card_free</it>
-function (whis isn't called from <it>snd_card_unregister</it>).
+function (which isn't called from <it>snd_card_unregister</it>).
 
 <sect1>Variables and functions
 
@@ -253,10 +254,10 @@ Functions list:
   </itemize>
 <item><bf>int snd_card_unregister( snd_card_t *card )</bf>
   <itemize>
-  <item><bf>card</bf> pointer to soundcard structure to unregister; applications
-        aren't able from this point use soundcard
+  <item><bf>card</bf> pointer to soundcard structure to unregister; After this
+        is called, applications no longer can use this soundcard.
   <item>doesn't call <it>snd_card_free</it>
-  <item>returns negative value when error
+  <item>returns negative value when error occurs
   </itemize>
 </itemize>
 
@@ -264,10 +265,10 @@ Functions list:
 Variables from <it>snd_card_t</it> structure which must be filled:
 
 <itemize>
-<item><bf>type</bf> is type identification from <it>include/asoundid.h</it>.
-<item><bf>abbreviation</bf> is abbreviation for soundcard (for example 'GUS').
-<item><bf>shortname</bf> is shortname for soundcard (for example 'Gravis UltraSound MAX').
-<item><bf>longname</bf> is full identification for soundcard (for example 'Gravis UltraSound MAX at 0x220, irq 5, dma 1&5').
+<item><bf>type</bf> is a type identification from <it>include/asoundid.h</it>.
+<item><bf>abbreviation</bf> is an abbreviation for soundcard (for example 'GUS').
+<item><bf>shortname</bf> is a shortname for soundcard (for example 'Gravis UltraSound MAX').
+<item><bf>longname</bf> is a full identification for soundcard (for example 'Gravis UltraSound MAX at 0x220, irq 5, dma 1&5').
 </itemize>
 
 <p>
@@ -370,7 +371,7 @@ Functions list:
       </itemize>
     <item><bf>handler</bf> pointer to interrupt handler
     <item><bf>dev_id</bf> pointer to some private structure for interrupt handler
-    <item><bf>possible_numbers</bf> pointer to int arrays which contains all
+    <item><bf>possible_numbers</bf> pointer to int arrays which contain all
           possible dma numbers for this channel terminated by -1; function
           uses these values for verification of valid input from user or
           if <bf>SND_AUTO_IRQ</bf> is specified to detect first useable
@@ -401,7 +402,7 @@ register time. Buffer is managed with functions <it>snd_dma_malloc</it>
 and <it>snd_dma_free</it> when some device is opened/closed.
 
 <bf>Note 2:</bf> routines for interrupt line and dma channel registering
-returns index do <it>snd_card_t -> irqs</it> and <it>snd_card_t -> dmas</it>
+returns index to <it>snd_card_t -> irqs</it> and <it>snd_card_t -> dmas</it>
 arrays. This value isn't equal to interrupt number or dma channel number,
 but in driver <it>irqnum</it> or <it>dmanum</it> means irq or dma index 
 (internal driver resource identification) and <it>irq</it> or <it>dma</it>
@@ -494,8 +495,8 @@ be used:
 
 <itemize>
   <item><bf>devfn</bf> encoded device & function index
-  <item><bf>vendor</bf> - see to <bf>PCI_VENDOR_ID_*</bf>
-  <item><bf>device</bf> - see to <bf>PCI_DEVICE_ID_*</bf>
+  <item><bf>vendor</bf> - see <bf>PCI_VENDOR_ID_*</bf>
+  <item><bf>device</bf> - see <bf>PCI_DEVICE_ID_*</bf>
   <item><bf>class</bf> - 3 bytes (base, sub, prog-if)
   <item><bf>master</bf> - set if device is master capable
   <item><bf>irq</bf> - irq generated by this device (remaped if needed)
@@ -508,8 +509,8 @@ Functions list:
 <itemize>
   <item><bf>int snd_pci_find_device( unsigned int vendor, unsigned int device, unsigned int index, struct snd_pci_dev *dev );</bf>
   <itemize>
-    <item><bf>vendor</bf> identification (see to <bf>PCI_VENDOR_ID_*</bf>)
-    <item><bf>device</bf> identification (see to <bf>PCI_DEVICE_ID_*</bf>)
+    <item><bf>vendor</bf> identification (see <bf>PCI_VENDOR_ID_*</bf>)
+    <item><bf>device</bf> identification (see <bf>PCI_DEVICE_ID_*</bf>)
     <item><bf>index</bf> device index (0-X) for which is information requested
     <item><bf>dev</bf> pointer to PCI device structure (not same as in kernel)
   </itemize>
@@ -555,8 +556,8 @@ Functions list:
 <sect>File operations
 
 <p>
-File operations related structures and function is in <it>include/driver.h</it>
-header file. Basic structure for registering fileoperations for minor number
+File operations related structures and functions are in <it>include/driver.h</it>
+header file. Basic structure for registering file operations for minor number
 is <it>snd_minor_t</it>. Minor constants are in <it>include/minors.h</it>
 header file.
 
@@ -639,8 +640,8 @@ Variables from <it>snd_kmixer_t</it> structure which must be filled:
 Variables from <it>snd_kmixer_t</it> structure which should be filled:
 
 <itemize>
-<item><bf>private_data</bf> should contains private data for mixer.
-<item><bf>private_free</bf> should free private data.
+<item><bf>private_data</bf> pointer to private data for mixer.
+<item><bf>private_free</bf> should free private_data when called.
 </itemize>
 
 <p>
@@ -672,7 +673,8 @@ Variables from <it>snd_kmixer_channel_t</it> structure which should be filled:
 <item><bf>private_value</bf> is <it>unsigned int</it> variable which isn't used 
       by middle-level code.
 <item><bf>private_data</bf> is pointer to some private data associated with
-      appropriate channel. These data aren't freed by middle-level code.
+      appropriate channel. This data isn't freed by middle-level code.
+      NOTE - Where should it be freed from then?
 </itemize>
 
 <p>
@@ -680,10 +682,10 @@ Variables from <it>struct snd_stru_mixer_channel_hw</it> structure which must
 be filled:
 
 <itemize>
-<item><bf>priority</bf> priority (identificator) - see to <bf>SND_MIXER_PRI_*</bf>
+<item><bf>priority</bf> priority (identificator) - see <bf>SND_MIXER_PRI_*</bf>
 <item><bf>parent_priority</bf> parent mixer channel priority or <bf>SND_MIXER_PRI_PARENT</bf>
-<item><bf>name</bf> name of this mixer channel - see to <bf>SND_MIXER_ID_*</bf>
-<item><bf>ossdev</bf> OSS (Open Sound System) device - see to <bf>SND_MIXER_OSS_*</bf>
+<item><bf>name</bf> name of this mixer channel - see <bf>SND_MIXER_ID_*</bf>
+<item><bf>ossdev</bf> OSS (Open Sound System) device - see <bf>SND_MIXER_OSS_*</bf>
 <item><bf>mute</bf> if hardware mute is supported
 <item><bf>stereo</bf> if stereo is supported
 <item><bf>record</bf> is recording is possible from this channel
@@ -740,7 +742,7 @@ Functions list:
     <item><bf>priority</bf> specifies mixer channel
     <item><bf>mute</bf> zero or <bf>SND_MIX_MUTE*</bf>
     <item>should be use as mute control from kernel
-    <item>this settings is never overriden by application
+    <item>this settings are never overriden by application
   </itemize>
   <item><bf>snd_kmixer_t *snd_mixer_new( snd_card_t *card, char *id )</bf>
     <itemize>
@@ -920,7 +922,7 @@ Mixer device registering:
 <sect>PCM - Digital Audio
 
 <p>
-Digital Audio related structures and function is in <it>include/pcm.h</it>
+Digital Audio related structures and functions are in <it>include/pcm.h</it>
 header file.
 
 <sect1>Variables and functions
@@ -929,7 +931,7 @@ header file.
 Variables from <it>snd_pcm_t</it> structure which must be filled:
 
 <itemize>
-<item><bf>info_flags</bf> look to <bf>SND_PCM_INFO_*</bf> 
+<item><bf>info_flags</bf> look in <bf>SND_PCM_INFO_*</bf> 
 <item><bf>name</bf> of pcm device (for example 'CS4231')
 <item><bf>playback</bf> variables for playback direction
 <item><bf>record</bf> variables for record direction
@@ -939,8 +941,8 @@ Variables from <it>snd_pcm_t</it> structure which must be filled:
 Variables from <it>snd_pcm_t</it> structure which should be filled:
 
 <itemize>
-<item><bf>private_data</bf> should contains pointer to private data
-<item><bf>private_free</bf> should free private data
+<item><bf>private_data</bf> should contain pointer to private data
+<item><bf>private_free</bf> should free private data when called
 </itemize>
 
 <p>
@@ -950,8 +952,8 @@ Variables from <it>struct snd_stru_pcm_hardware</it> which must be filled:
 <item><bf>flags</bf>
   <itemize>
   <item><bf>SND_PCM_HW_BATCH</bf> - hardware does double buffering
-  <item><bf>SND_PCM_HW_8BITONLY</bf> - hardware supports only 8-bit data (be careful - look to sb16.c)
-  <item><bf>SND_PCM_HW_16BITONLY</bf> - hardware supports only 16-bit data (be careful - look to sb16.c)
+  <item><bf>SND_PCM_HW_8BITONLY</bf> - hardware supports only 8-bit data (be careful - look at sb16.c)
+  <item><bf>SND_PCM_HW_16BITONLY</bf> - hardware supports only 16-bit data (be careful - look at sb16.c)
   <item><bf>SND_PCM_HW_AUTODMA</bf> - hardware supports auto init dma transfer (unterminated loop)
   </itemize>
 <item><bf>formats</bf> list of supported formats <bf>SND_PCM_FMT_*</bf>
@@ -1248,3 +1250,7 @@ PCM device registering:
 </code></tscreen>
 
 </article>
+
+
+
+

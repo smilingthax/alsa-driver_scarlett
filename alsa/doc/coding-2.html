@@ -1,22 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <HTML>
 <HEAD>
-<TITLE>Advanced Linux Sound Architecture - Driver: Soundcard</TITLE>
+ <META NAME="GENERATOR" CONTENT="SGML-Tools 1.0.7">
+ <TITLE>Advanced Linux Sound Architecture - Driver: Soundcard</TITLE>
+ <LINK HREF="coding-3.html" REL=next>
+ <LINK HREF="coding-1.html" REL=previous>
+ <LINK HREF="coding.html#toc2" REL=contents>
 </HEAD>
 <BODY>
-<A HREF="coding-1.html">Previous</A>
 <A HREF="coding-3.html">Next</A>
-<A HREF="coding.html#toc2">Table of Contents</A>
+<A HREF="coding-1.html">Previous</A>
+<A HREF="coding.html#toc2">Contents</A>
 <HR>
 <H2><A NAME="s2">2. Soundcard</A></H2>
 
 <P>Soundcard related structures and functions are in <I>include/driver.h</I>
 header file. Structure <I>snd_card_t</I> must be allocated by
 <I>snd_card_new</I> function and freed by <I>snd_card_free</I>
-function (whis isn't called from <I>snd_card_unregister</I>).</P>
+function (which isn't called from <I>snd_card_unregister</I>).
+<P>
+<H2><A NAME="ss2.1">2.1 Variables and functions</A>
+</H2>
 
-<H2><A NAME="ss2.1">2.1 Variables and functions</A></H2>
-
-<P>Functions list:</P>
+<P>Functions list:
 <P>
 <UL>
 <LI><B>snd_card_t *snd_card_new( int idx, char *id, void (*use_inc)( snd_card_t * ), void (*use_dec)( snd_card_t *) )</B>
@@ -44,33 +50,30 @@ should from this point use soundcard</LI>
 </LI>
 <LI><B>int snd_card_unregister( snd_card_t *card )</B>
 <UL>
-<LI><B>card</B> pointer to soundcard structure to unregister; applications
-aren't able from this point use soundcard</LI>
+<LI><B>card</B> pointer to soundcard structure to unregister; After this
+is called, applications no longer can use this soundcard.</LI>
 <LI>doesn't call <I>snd_card_free</I></LI>
-<LI>returns negative value when error</LI>
+<LI>returns negative value when error occurs</LI>
 </UL>
 </LI>
 </UL>
-</P>
-
-<P>Variables from <I>snd_card_t</I> structure which must be filled:</P>
+<P>
+<P>Variables from <I>snd_card_t</I> structure which must be filled:
 <P>
 <UL>
-<LI><B>type</B> is type identification from <I>include/asoundid.h</I>.</LI>
-<LI><B>abbreviation</B> is abbreviation for soundcard (for example 'GUS').</LI>
-<LI><B>shortname</B> is shortname for soundcard (for example 'Gravis UltraSound MAX').</LI>
-<LI><B>longname</B> is full identification for soundcard (for example 'Gravis UltraSound MAX at 0x220, irq 5, dma 1&5').</LI>
+<LI><B>type</B> is a type identification from <I>include/asoundid.h</I>.</LI>
+<LI><B>abbreviation</B> is an abbreviation for soundcard (for example 'GUS').</LI>
+<LI><B>shortname</B> is a shortname for soundcard (for example 'Gravis UltraSound MAX').</LI>
+<LI><B>longname</B> is a full identification for soundcard (for example 'Gravis UltraSound MAX at 0x220, irq 5, dma 1&amp;5').</LI>
 </UL>
-</P>
-
-<P>Variables from <I>snd_card_t</I> structure which should be filled:</P>
+<P>
+<P>Variables from <I>snd_card_t</I> structure which should be filled:
 <P>
 <UL>
 <LI><B>private_data</B> should be used by soundcard driver for private data.</LI>
 <LI><B>private_free</B> is called when <I>private_data</I> should be freed.</LI>
 </UL>
-</P>
-
+<P>
 <H3>Examples</H3>
 
 <P>
@@ -93,13 +96,13 @@ int snd_soundcard_init( void )
 
   card = snd_card_new( -1, NULL, snd_soundcard_use_inc, snd_soundcard_dec_inc );
   if ( !card ) return -ENOMEM;
-  card -&gt; type = SND_CARD_TYPE_SOUNDCARD;       /* can be changed later */
+  card -> type = SND_CARD_TYPE_SOUNDCARD;       /* can be changed later */
 
   ... resource initialization, detection, device creation and registration ...
 
-  strcpy( card -&gt; abbreviation, &quot;SoundCard&quot; );
-  strcpy( card -&gt; shortname, &quot;3-D SoundCard&quot; );
-  strcpy( card -&gt; longname, &quot;3-D SoundCard at 0x500, irq 5, dma 5&6&quot; );
+  strcpy( card -> abbreviation, "SoundCard" );
+  strcpy( card -> shortname, "3-D SoundCard" );
+  strcpy( card -> longname, "3-D SoundCard at 0x500, irq 5, dma 5&amp;6" );
 
   if ( !snd_card_register( card ) )
     return 0;
@@ -110,12 +113,11 @@ int snd_soundcard_init( void )
 </PRE>
 <HR>
 </CODE></BLOCKQUOTE>
-</P>
+<P>
+<H2><A NAME="ss2.2">2.2 Resources</A>
+</H2>
 
-
-<H2><A NAME="ss2.2">2.2 Resources</A></H2>
-
-<P>Functions list:</P>
+<P>Functions list:
 <P>
 <UL>
 <LI><B>int snd_register_ioport( snd_card_t *card, int port, int size, char *name )</B>
@@ -174,7 +176,7 @@ dma channel</LI>
 </LI>
 <LI><B>handler</B> pointer to interrupt handler</LI>
 <LI><B>dev_id</B> pointer to some private structure for interrupt handler</LI>
-<LI><B>possible_numbers</B> pointer to int arrays which contains all
+<LI><B>possible_numbers</B> pointer to int arrays which contain all
 possible dma numbers for this channel terminated by -1; function
 uses these values for verification of valid input from user or
 if <B>SND_AUTO_IRQ</B> is specified to detect first useable
@@ -201,19 +203,18 @@ interrupt line</LI>
 </UL>
 </LI>
 </UL>
-</P>
 <P><B>Note 1:</B> dma buffer must be assigned for all (PCI and other than ISA)
 soundcards, too. ALSA kernel and OSS PCM midlevel code contains mechanism
 for correct free when mmaped access was used. Buffer isn't allocated at
 register time. Buffer is managed with functions <I>snd_dma_malloc</I>
-and <I>snd_dma_free</I> when some device is opened/closed.</P>
+and <I>snd_dma_free</I> when some device is opened/closed.
 <P><B>Note 2:</B> routines for interrupt line and dma channel registering
-returns index do <I>snd_card_t -> irqs</I> and <I>snd_card_t -> dmas</I>
+returns index to <I>snd_card_t -> irqs</I> and <I>snd_card_t -> dmas</I>
 arrays. This value isn't equal to interrupt number or dma channel number,
 but in driver <I>irqnum</I> or <I>dmanum</I> means irq or dma index 
 (internal driver resource identification) and <I>irq</I> or <I>dma</I>
-means real irq or dma number.</P>
-
+means real irq or dma number.
+<P>
 <H3>Examples</H3>
 
 <P>
@@ -238,23 +239,23 @@ void snd_soundcard_init_resources( void )
   static int possible_irqs[] = { 9, 10, 11, 7, -1 };
   static int possible_dmas[] = { 1, 3, 0, -1 };
  
-  if ( (snd_irqnum = snd_register_interrupt( snd_card, &quot;SoundCard&quot;, snd_irq, SND_IRQ_TYPE_ISA, snd_soundcard_interrupt, NULL, possible_irqs )) &lt; 0 )
+  if ( (snd_irqnum = snd_register_interrupt( snd_card, "SoundCard", snd_irq, SND_IRQ_TYPE_ISA, snd_soundcard_interrupt, NULL, possible_irqs )) &lt; 0 )
     return snd_irqnum;
-  if ( (snd_dma1num = snd_register_dma_channel( snd_card, &quot;SoundCard&quot;, snd_dma1, SND_DMA_TYPE_ISA, snd_dma1_size, possible_dmas )) &lt; 0 )
+  if ( (snd_dma1num = snd_register_dma_channel( snd_card, "SoundCard", snd_dma1, SND_DMA_TYPE_ISA, snd_dma1_size, possible_dmas )) &lt; 0 )
     return snd_dma1num;
 #else /* EXAMPLE_FOR_PCI_BUS */
-  if ( (snd_irqnum = snd_register_interrupt( snd_card, &quot;SoundCard&quot;, snd_irq, SND_IRQ_TYPE_PCI, snd_soundcard_interrupt, NULL, NULL )) &lt; 0 )
+  if ( (snd_irqnum = snd_register_interrupt( snd_card, "SoundCard", snd_irq, SND_IRQ_TYPE_PCI, snd_soundcard_interrupt, NULL, NULL )) &lt; 0 )
     return snd_irqnum;
-  if ( (snd_dma1num = snd_register_dma_channel( snd_card, &quot;SoundCard&quot;, snd_dma1, SND_DMA_TYPE_PCI, snd_dma1_size, NULL )) &lt; 0 )
+  if ( (snd_dma1num = snd_register_dma_channel( snd_card, "SoundCard", snd_dma1, SND_DMA_TYPE_PCI, snd_dma1_size, NULL )) &lt; 0 )
     return snd_dma1num;
 #endif
 }
 
 int snd_soundcard_probe( unsigned short port )
 {
-  if ( snd_register_ioport( snd_card, port, 8, &quot;SoundCard - Codec&quot; ) &lt; 0 )
+  if ( snd_register_ioport( snd_card, port, 8, "SoundCard - Codec" ) &lt; 0 )
     return -EBUSY;
-  if ( snd_register_ioport( snd_card, port + 0x100, 16, &quot;SoundCard - Synthesizer&quot; ) &lt; 0 ) {
+  if ( snd_register_ioport( snd_card, port + 0x100, 16, "SoundCard - Synthesizer" ) &lt; 0 ) {
     snd_unregister_ioports( snd_card );
     return -EBUSY;
   }
@@ -266,12 +267,11 @@ int snd_soundcard_probe( unsigned short port )
 </PRE>
 <HR>
 </CODE></BLOCKQUOTE>
-</P>
+<P>
+<H2><A NAME="ss2.3">2.3 ISA DMA</A>
+</H2>
 
-
-<H2><A NAME="ss2.3">2.3 ISA DMA</A></H2>
-
-<P>Functions list:</P>
+<P>Functions list:
 <P>
 <UL>
 <LI><B>void snd_dma_program( int dma, const void *buf, unsigned int size, unsigned char mode )</B>
@@ -296,36 +296,34 @@ int snd_soundcard_probe( unsigned short port )
 </UL>
 </LI>
 </UL>
-</P>
-
-
-<H2><A NAME="ss2.4">2.4 PCI bus</A></H2>
+<P>
+<H2><A NAME="ss2.4">2.4 PCI bus</A>
+</H2>
 
 <P>PCI bus related structures and functions are in <I>include/sndpci.h</I>
 header file. Functions are designated for use with both type of kernels
-(2.0 and 2.1).</P>
-
+(2.0 and 2.1).
+<P>
 <P>Read-only variables from <I>struct snd_pci_dev</I> structure which should
-be used:</P>
+be used:
 <P>
 <UL>
-<LI><B>devfn</B> encoded device & function index</LI>
-<LI><B>vendor</B> - see to <B>PCI_VENDOR_ID_*</B></LI>
-<LI><B>device</B> - see to <B>PCI_DEVICE_ID_*</B></LI>
+<LI><B>devfn</B> encoded device &amp; function index</LI>
+<LI><B>vendor</B> - see <B>PCI_VENDOR_ID_*</B></LI>
+<LI><B>device</B> - see <B>PCI_DEVICE_ID_*</B></LI>
 <LI><B>class</B> - 3 bytes (base, sub, prog-if)</LI>
 <LI><B>master</B> - set if device is master capable</LI>
 <LI><B>irq</B> - irq generated by this device (remaped if needed)</LI>
 <LI><B>base_address</B> - base registers for this device (remaped if needed)</LI>
 </UL>
-</P>
-
-<P>Functions list:</P>
+<P>
+<P>Functions list:
 <P>
 <UL>
 <LI><B>int snd_pci_find_device( unsigned int vendor, unsigned int device, unsigned int index, struct snd_pci_dev *dev );</B>
 <UL>
-<LI><B>vendor</B> identification (see to <B>PCI_VENDOR_ID_*</B>)</LI>
-<LI><B>device</B> identification (see to <B>PCI_DEVICE_ID_*</B>)</LI>
+<LI><B>vendor</B> identification (see <B>PCI_VENDOR_ID_*</B>)</LI>
+<LI><B>device</B> identification (see <B>PCI_DEVICE_ID_*</B>)</LI>
 <LI><B>index</B> device index (0-X) for which is information requested</LI>
 <LI><B>dev</B> pointer to PCI device structure (not same as in kernel)</LI>
 </UL>
@@ -345,8 +343,7 @@ be used:</P>
 </UL>
 </LI>
 </UL>
-</P>
-
+<P>
 <H3>Examples</H3>
 
 <P>
@@ -361,23 +358,21 @@ be used:</P>
                             0,
                             &amp;pci_dev ) &lt; 0 )
     return -ENODEV;
-  snd_printk( &quot;First Ensoniq PCI soundcard found at 0x%x and irq %i\n&quot;,
-                pci_dev -&gt; base_address[ 0 ] & ~3,
-                pci_dev -&gt; irq );
-  snd_printk( &quot;enabling Master..\n&quot; );
+  snd_printk( "First Ensoniq PCI soundcard found at 0x%x and irq %i\n",
+                pci_dev -> base_address[ 0 ] &amp; ~3,
+                pci_dev -> irq );
+  snd_printk( "enabling Master..\n" );
   snd_pci_read_config_word( &amp;pci_dev, PCI_COMMAND, &amp;cmd );
   cmd |= PCI_COMMAND_IO | PCI_COMMAND_MASTER;
   snd_pci_write_config_word( &amp;pci_dev, PCI_COMMAND, cmd );
 </PRE>
 <HR>
 </CODE></BLOCKQUOTE>
-</P>
-
-
-
+<P>
+<P>
 <HR>
-<A HREF="coding-1.html">Previous</A>
 <A HREF="coding-3.html">Next</A>
-<A HREF="coding.html#toc2">Table of Contents</A>
+<A HREF="coding-1.html">Previous</A>
+<A HREF="coding.html#toc2">Contents</A>
 </BODY>
 </HTML>
