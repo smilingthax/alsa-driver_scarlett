@@ -57,7 +57,7 @@ Driver cannot be activated?
      ./configure --with-debug=detect; make clean; make
    Reinsert new driver modules to kernel and look to /var/log/messages if
    there are not some messages. If these messages do not help you, send us
-   to <devel@alsa-project.org> mailing list:
+   to <alsa-devel@alsa-project.org> mailing list:
 	- soundcard name + chip names present on your soundcard
 	- your /proc/isapnp or isapnp.conf if you have ISA PnP soundcard
 	- your conf.modules or commands which you are using to activate
