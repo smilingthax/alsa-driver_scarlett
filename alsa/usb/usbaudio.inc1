@@ -98,7 +98,7 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 				   interface, NULL, 0, HZ * 5)) < 0)
 		return ret;
 
-	iface->act_altsetting = alternate;
+	iface->act_altsetting = i;
 	for (i = 0; i < iface_as->bNumEndpoints; i++) {
 		u8 ep = iface_as->endpoint[i].bEndpointAddress;
 		usb_settoggle(dev, ep&USB_ENDPOINT_NUMBER_MASK, usb_endpoint_out(ep), 0);
