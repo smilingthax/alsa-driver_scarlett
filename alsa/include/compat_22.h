@@ -7,9 +7,31 @@
 typedef unsigned long dma_addr_t;
 #endif
 
-#ifndef CONFIG_ISA	/* FIXME: Is it required for all supported archs? --jk */
+/*
+ */
+
+#ifndef CONFIG_ISA
+
+/* i386 */
+#if defined(CONFIG_M386) || defined(CONFIG_M486) || defined(CONFIG_M586) ||\
+ defined(CONFIG_M586TSG) || defined(CONFIG_M686)
 #define CONFIG_ISA
+
+/* alpha */
+#elif defined(CONFIG_EV4) || defined(CONFIG_ALPHA_EV4) ||\
+ defined(CONFIG_EV5) || defined(CONFIG_ALPHA_EV5) ||\
+ defined(CONFIG_EV6) || defined(CONFIG_ALPHA_EV6) ||\
+ defined(CONFIG_ALPHA_GENERIC) || defined(CONFIG_ALPHA_NONAME)
+#define CONFIG_ISA
+
+/* ppc */
+#elif defined(CONFIG_PPC)
+#define CONFIG_ISA
+
 #endif
+
+#endif /* CONFIG_ISA */
+
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,2,18)
 #define init_MUTEX(x) *(x) = MUTEX
