@@ -91,7 +91,7 @@ MODULE_DEVICES("{{RME,Digi32}," "{RME,Digi32/8}," "{RME,Digi32 PRO}}");
 #define RME32_WCR_RESET     (1 << 8)
 #define RME32_WCR_MUTE      (1 << 9)
 #define RME32_WCR_PRO       (1 << 10)
-#define RME32_WCR_DS_BM     (1 << 11)	/* only PRO-Version */
+#define RME32_WCR_DS_BM     (1 << 11)	/* only PRO/Adat-Version */
 #define RME32_WCR_ADAT      (1 << 12)	/* only Adat-Version */
 #define RME32_WCR_AUTOSYNC  (1 << 13)
 #define RME32_WCR_PD        (1 << 14)	/* only PRO-Version */
@@ -282,10 +282,13 @@ static int snd_rme32_capture_copy(snd_pcm_substream_t * substream, int channel,	
 static snd_pcm_hardware_t snd_rme32_playback_spdif_info = {
 	info:		(SNDRV_PCM_INFO_MMAP |
 			 SNDRV_PCM_INFO_MMAP_VALID |
-			 SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_PAUSE),
-	formats:	(SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE),
+			 SNDRV_PCM_INFO_INTERLEAVED | 
+			 SNDRV_PCM_INFO_PAUSE),
+	formats:	(SNDRV_PCM_FMTBIT_S16_LE | 
+			 SNDRV_PCM_FMTBIT_S32_LE),
 	rates:		(SNDRV_PCM_RATE_32000 |
-			 SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000),
+			 SNDRV_PCM_RATE_44100 | 
+			 SNDRV_PCM_RATE_48000),
 	rate_min:	32000,
 	rate_max:	48000,
 	channels_min:	2,
@@ -416,23 +419,27 @@ static int snd_rme32_playback_setrate(rme32_t * rme32, int rate)
 		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | 
 			RME32_WCR_FREQ_1;
 		break;
-#ifdef PCI_DEVICE_ID_DIGI32_PRO
 	case 64000:
+		if (rme32->pci->device != PCI_DEVICE_ID_DIGI32_PRO)
+			return -EINVAL;
 		rme32->wcreg |= RME32_WCR_DS_BM;
 		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) & 
 			~RME32_WCR_FREQ_1;
 		break;
 	case 88200:
+		if (rme32->pci->device != PCI_DEVICE_ID_DIGI32_PRO)
+			return -EINVAL;
 		rme32->wcreg |= RME32_WCR_DS_BM;
 		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_1) & 
 			~RME32_WCR_FREQ_0;
 		break;
 	case 96000:
+		if (rme32->pci->device != PCI_DEVICE_ID_DIGI32_PRO)
+			return -EINVAL;
 		rme32->wcreg |= RME32_WCR_DS_BM;
 		rme32->wcreg = (rme32->wcreg | RME32_WCR_FREQ_0) | 
 			RME32_WCR_FREQ_1;
 		break;
-#endif
 	default:
 		return -EINVAL;
 	}
@@ -733,6 +740,10 @@ static int snd_rme32_playback_spdif_open(snd_pcm_substream_t * substream)
 	spin_unlock_irqrestore(&rme32->lock, flags);
 
 	runtime->hw = snd_rme32_playback_spdif_info;
+	if (rme32->pci->device == PCI_DEVICE_ID_DIGI32_PRO) {
+		runtime->hw.rates |= SNDRV_PCM_RATE_64000 | SNDRV_PCM_RATE_88200 | SNDRV_PCM_RATE_96000;
+		runtime->hw.rate_max = 96000;
+	}
 
 	snd_pcm_hw_constraint_minmax(runtime,
 				     SNDRV_PCM_HW_PARAM_BUFFER_BYTES,
