@@ -566,7 +566,9 @@ static inline size_t snd_pcm_lib_period_bytes(snd_pcm_substream_t *substream)
 static inline snd_pcm_uframes_t snd_pcm_playback_avail(snd_pcm_runtime_t *runtime)
 {
 	snd_pcm_sframes_t avail = runtime->status->hw_ptr + runtime->buffer_size - runtime->control->appl_ptr;
-	if (avail < 0)
+	if (avail >= runtime->boundary)
+		avail -= runtime->boundary;
+	else if (avail < 0)
 		avail += runtime->boundary;
 	return avail;
 }
