@@ -265,6 +265,7 @@ alias snd-minor-oss-0 snd-mixer
 alias snd-minor-oss-3 snd-pcm1-oss
 alias snd-minor-oss-4 snd-pcm1-oss
 alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
 alias snd-card-0 snd-sb16
 alias snd-card-1 snd-gusclassic
 options snd snd_major=14 snd_cards_limit=2
@@ -282,6 +283,7 @@ alias snd-minor-oss-0 snd-mixer
 alias snd-minor-oss-3 snd-pcm1-oss
 alias snd-minor-oss-4 snd-pcm1-oss
 alias snd-minor-oss-5 snd-pcm1-oss
+alias snd-minor-oss-12 snd-pcm1-oss
 alias snd-card-0 snd-gusclassic
 alias snd-card-1 snd-gusclassic
 options snd snd_major=14 snd_cards_limit=2
