@@ -132,7 +132,7 @@ function terminate() {
   ossdevs="/dev/admmidi? /dev/adsp? /dev/amidi? /dev/audio* /dev/dmfm* \
      /dev/dmmidi? /dev/dsp* /dev/dspW* /dev/midi0? /dev/mixer? /dev/music \
      /dev/patmgr? /dev/sequencer* /dev/sndstat"
-  alsadevs="/proc/asound/dev/*"
+  alsadevs="/dev/snd/*"
   fuser -k $ossdevs $alsadevs 2> /dev/null 1>/dev/null
   #
   # remove all sequencer connections if any
