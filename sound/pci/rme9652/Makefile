@@ -5,12 +5,14 @@
 
 O_TARGET     := _rme9652.o
 
-export-objs  := rme9652_mem.o
+export-objs  := hammerfall_mem.o
 
-snd-rme9652-mem-objs := rme9652_mem.o
+snd-hammerfall-mem-objs := hammerfall_mem.o
 snd-rme9652-objs := rme9652.o
+snd-hdsp-objs := hdsp.o
 
 # Toplevel Module Dependency
-obj-$(CONFIG_SND_RME9652) += snd-rme9652.o snd-rme9652-mem.o
+obj-$(CONFIG_SND_RME9652) += snd-rme9652.o snd-hammerfall-mem.o
+obj-$(CONFIG_SND_HDSP) += snd-hdsp.o snd-hammerfall-mem.o
 
 include $(TOPDIR)/Rules.make
