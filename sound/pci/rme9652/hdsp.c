@@ -76,8 +76,8 @@ MODULE_DEVICES("{{RME Hammerfall-DSP},"
 #define DIGIFACE_DS_CHANNELS     14
 #define MULTIFACE_SS_CHANNELS    18
 #define MULTIFACE_DS_CHANNELS    14
-#define H9652_DS_CHANNELS        24
-#define H9652_SS_CHANNELS        24
+#define H9652_DS_CHANNELS        26
+#define H9652_SS_CHANNELS        14
 
 /* Write registers. These are defined as byte-offsets from the iobase value.
  */
@@ -528,15 +528,15 @@ static inline unsigned int hdsp_read(hdsp_t *hdsp, int reg)
 
 static inline int hdsp_check_for_iobox (hdsp_t *hdsp)
 {
-	return 0;
-#if 0
+
+	if (hdsp->io_type == H9652) return 0;
 	if (hdsp_read (hdsp, HDSP_statusRegister) & HDSP_ConfigError) {
 		snd_printk ("Hammerfall-DSP: no Digiface or Multiface connected!\n");
 		hdsp->state &= ~HDSP_FirmwareLoaded;
 		return -EIO;
 	}
 	return 0;
-#endif
+
 }
 
 static int snd_hdsp_load_firmware_from_cache(hdsp_t *hdsp) {
@@ -866,6 +866,11 @@ static int hdsp_set_rate(hdsp_t *hdsp, int rate, int called_internally)
 	int current_rate;
 	int rate_bits;
 
+	/* ASSUMPTION: hdsp->lock is either help, or
+	   there is no need for it (e.g. during module
+	   initialization).
+	*/
+	
 	if (!(hdsp->control_register & HDSP_ClockModeMaster)) {	
 		if (called_internally) {
 			/* request from ctl or card initialization */
@@ -896,8 +901,6 @@ static int hdsp_set_rate(hdsp_t *hdsp, int rate, int called_internally)
 	   Note that a similar but essentially insoluble problem
 	   exists for externally-driven rate changes. All we can do
 	   is to flag rate changes in the read/write routines.  */
-
-	spin_lock_irq(&hdsp->lock);
 
 	switch (rate) {
 	case 32000:
@@ -937,7 +940,6 @@ static int hdsp_set_rate(hdsp_t *hdsp, int rate, int called_internally)
 		rate_bits = HDSP_Frequency96KHz;
 		break;
 	default:
-		spin_unlock_irq(&hdsp->lock);
 		return -EINVAL;
 	}
 
@@ -945,7 +947,6 @@ static int hdsp_set_rate(hdsp_t *hdsp, int rate, int called_internally)
 		snd_printk ("cannot change between single- and double-speed mode (capture PID = %d, playback PID = %d)\n",
 			    hdsp->capture_pid,
 			    hdsp->playback_pid);
-		spin_unlock_irq(&hdsp->lock);
 		return -EBUSY;
 	}
 
@@ -976,7 +977,6 @@ static int hdsp_set_rate(hdsp_t *hdsp, int rate, int called_internally)
 		hdsp_update_simple_mixer_controls (hdsp);
 	}
 
-	spin_unlock_irq(&hdsp->lock);
 	return 0;
 }
 
@@ -3354,9 +3354,13 @@ static int snd_hdsp_hw_params(snd_pcm_substream_t *substream,
 	/* how to make sure that the rate matches an externally-set one ?
 	 */
 
+	spin_lock_irq(&hdsp->lock);
 	if ((err = hdsp_set_rate(hdsp, params_rate(params), 0)) < 0) {
+		spin_unlock_irq(&hdsp->lock);
 		_snd_pcm_hw_param_setempty(params, SNDRV_PCM_HW_PARAM_RATE);
 		return err;
+	} else {
+		spin_unlock_irq(&hdsp->lock);
 	}
 
 	if ((err = hdsp_set_interrupt_interval(hdsp, params_period_size(params))) < 0) {
