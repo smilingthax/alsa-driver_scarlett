@@ -104,4 +104,5 @@ copy_dir lowlevel/gus
 copy_dir lowlevel/sb
 copy_dir lowlevel/emu10k1
 copy_dir cards
+copy_dir cards/ppc
 popd > /dev/null
