@@ -242,6 +242,8 @@ struct snd_stru_cs4231 {
 	int sw_3d_bit;
 	unsigned int p_dma_size;
 	unsigned int c_dma_size;
+	unsigned int playback_count;
+	unsigned int capture_count;
 
 	spinlock_t reg_lock;
 	struct semaphore mce_mutex;
