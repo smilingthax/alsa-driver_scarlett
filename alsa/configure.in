@@ -753,11 +753,13 @@ vmalloc_to_page="0"
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
 AC_TRY_COMPILE([
+#define __KERNEL__
 #include <linux/config.h>
 #include <linux/time.h>
 #include <linux/slab.h>
 ],[
- vmalloc_to_page(NULL);
+  struct page * (*func)(void*);
+  func = vmalloc_to_page;
 ],
     AC_MSG_RESULT("yes");vmalloc_to_page="1",
     AC_MSG_RESULT("no");vmalloc_to_page="0",
