@@ -1204,7 +1204,7 @@ static int snd_pcm_oss_get_odelay(snd_pcm_oss_file_t *pcm_oss_file)
 		return 0;
 	err = snd_pcm_kernel_playback_ioctl(substream, SNDRV_PCM_IOCTL_DELAY, &delay);
 	if (err == -EPIPE)
-		delay = 0;	/* hack for broken OSS applications 
+		delay = 0;	/* hack for broken OSS applications */
 	else if (err < 0)
 		return err;
 	return snd_pcm_oss_bytes(substream, delay);
