@@ -5516,19 +5516,23 @@ static void pdplus_proc_read (
         int rate;
         int i;
         pdplus_t *scard = (pdplus_t*)entry->private_data;
-        pdplus_t  lcard; /* only _llr function may be called with &lcard!! */
+        pdplus_t *lcard; /* only _llr function may be called with &lcard!! */
         PDPLUS_LOCAL_VADDR (scard);
 
         snd_assert (scard != NULL, return);
         snd_assert (scard->card != NULL, return);
         snd_assert (scard->card->longname != NULL, return);
 
+	lcard = kmalloc(sizeof(*lcard), GFP_KERNEL);
+	if (! lcard)
+		return;
+
         read_lock_irqsave (&scard->lock, flags);
 
         snd_iprintf (buffer, scard->card->longname);
         snd_iprintf (buffer, " (index #%d)\n", scard->card->number + 1);
         dco_rate = pdplus_dco_scan_rate_lli (scard);
-        lcard = *scard;
+        *lcard = *scard;
 
         read_unlock_irqrestore (&scard->lock, flags);
 
@@ -5537,7 +5541,7 @@ static void pdplus_proc_read (
         snd_iprintf (buffer, "Compiled: "COMPILE_DATE"\n");
 #endif
 
-        ticker = lcard.ticker;
+        ticker = lcard->ticker;
 	i = (int)(ticker % PDPLUS_INTERRUPTS_PER_SEC);
 	i = (i * 100) / PDPLUS_INTERRUPTS_PER_SEC;
         ticker_100sec = (ticker / PDPLUS_INTERRUPTS_PER_SEC) * 100;
@@ -5557,7 +5561,7 @@ static void pdplus_proc_read (
                 "Fixed Frequency Generator\n"
                 "\tProgrammed rate: ");
 
-        rate = pdplus_get_ffg_rate_llr (&lcard);
+        rate = pdplus_get_ffg_rate_llr (lcard);
         if (rate == 0)
                 snd_iprintf (buffer, "no clock\n");
         else
@@ -5573,10 +5577,10 @@ static void pdplus_proc_read (
                 "DCO Frequency Generator\n"
                 "\tProgrammed rate: ");
 
-        if (lcard.dco_target_rate == PDPLUS_ADAT_RATE)
+        if (lcard->dco_target_rate == PDPLUS_ADAT_RATE)
                 snd_iprintf (buffer, "ADAT input clock\n");
         else
-                snd_iprintf (buffer, "%d Hz\n", lcard.dco_target_rate);
+                snd_iprintf (buffer, "%d Hz\n", lcard->dco_target_rate);
 
         snd_iprintf (
                 buffer,
@@ -5593,7 +5597,7 @@ static void pdplus_proc_read (
                 "\n"
                 "Clocks of Devices\n"
                 "\tAnalog  In/Out: ");
-        i = pdplus_a_clock_rate_llr (&lcard);
+        i = pdplus_a_clock_rate_llr (lcard);
         if (i == 0)
                 snd_iprintf (buffer, "invalid\n");
         else
@@ -5605,7 +5609,7 @@ static void pdplus_proc_read (
         snd_iprintf (
                 buffer,
                 "\tDigital Input:  ");
-        i = pdplus_d_capt_rate_llr (&lcard);
+        i = pdplus_d_capt_rate_llr (lcard);
         if (i == 0)
                 snd_iprintf (buffer, "invalid\n");
         else
@@ -5617,7 +5621,7 @@ static void pdplus_proc_read (
         snd_iprintf (
                 buffer,
                 "\tDigital Output: ");
-        i = pdplus_d_clock_rate_llr (&lcard);
+        i = pdplus_d_clock_rate_llr (lcard);
         if (i == 0)
                 snd_iprintf (buffer, "invalid\n");
         else
@@ -5631,16 +5635,16 @@ static void pdplus_proc_read (
                 buffer,
                 "\nDigital Output Settings\n"
                 "\tFormat: %s\n",
-                PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, PRO1)
+                PDPLUS_EXTRACT_CACHE (lcard, HW, WR, PRO1)
                         ? "AES/EBU (Professional)"
                         : "IEC958, S/PDIF (Consumer)");
 
-        if (PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, PRO1)) {
+        if (PDPLUS_EXTRACT_CACHE (lcard, HW, WR, PRO1)) {
                 snd_iprintf (buffer,
                         "\tNon-Audio: %d\n"
                         "\tRate Indication: ",
-                        PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, PRO_NON_AUDIO));
-                switch (PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, PRO_FS) &
+                        PDPLUS_EXTRACT_CACHE (lcard, HW, WR, PRO_NON_AUDIO));
+                switch (PDPLUS_EXTRACT_CACHE (lcard, HW, WR, PRO_FS) &
                         PDPLUS_HW_REG_WR_PRO_FS_MASK)
                 {
                 case PDPLUS_HW_REG_WR_PRO_FS_NOT_INDICATED: snd_iprintf (buffer, "none"); break;
@@ -5654,9 +5658,9 @@ static void pdplus_proc_read (
                         "\tCopy Inhibit: %d\n"
                         "\tPre-Emphasis: %d\n"
                         "\tRate Indication: ",
-                        PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, CON_COPY_INHIBIT),
-                        PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, CON_PRE_EMPHASIS));
-                switch (PDPLUS_EXTRACT_CACHE (&lcard, HW, WR, CON_FS)) {
+                        PDPLUS_EXTRACT_CACHE (lcard, HW, WR, CON_COPY_INHIBIT),
+                        PDPLUS_EXTRACT_CACHE (lcard, HW, WR, CON_PRE_EMPHASIS));
+                switch (PDPLUS_EXTRACT_CACHE (lcard, HW, WR, CON_FS)) {
                 case PDPLUS_HW_REG_WR_CON_FS_32000:   snd_iprintf (buffer, "32000"); break;
                 case PDPLUS_HW_REG_WR_CON_FS_44100:   snd_iprintf (buffer, "44100"); break;
                 case PDPLUS_HW_REG_WR_CON_FS_48000:   snd_iprintf (buffer, "48000"); break;
@@ -5666,24 +5670,24 @@ static void pdplus_proc_read (
         snd_iprintf (buffer, "\n");
 
         /* Display output route settings. */
-        i = pdplus_xlat_a_route (pdplus_get_a_route_llr (&lcard));
+        i = pdplus_xlat_a_route (pdplus_get_a_route_llr (lcard));
         snd_iprintf (
                 buffer,
                 "\n"
                 "Output Route Settings\n"
                 "\tAnalog  Output: %s",
                 pdplus_route_str (i));  
-        if (i != lcard.a_out_route)
-                snd_iprintf (buffer, " (selected: %s)", pdplus_route_str (lcard.a_out_route));
+        if (i != lcard->a_out_route)
+                snd_iprintf (buffer, " (selected: %s)", pdplus_route_str (lcard->a_out_route));
 
-        i = pdplus_xlat_d_route (PDPLUS_EXTRACT_CACHE (&lcard, FPGA, CTRL, D_ROUTE));
+        i = pdplus_xlat_d_route (PDPLUS_EXTRACT_CACHE (lcard, FPGA, CTRL, D_ROUTE));
         snd_iprintf (
                 buffer,
                 "\n"
                 "\tDigital Output: %s",
                 pdplus_route_str (i));
-        if (i != lcard.d_out_route)
-                snd_iprintf (buffer, " (selected: %s)", pdplus_route_str (lcard.d_out_route));
+        if (i != lcard->d_out_route)
+                snd_iprintf (buffer, " (selected: %s)", pdplus_route_str (lcard->d_out_route));
         snd_iprintf (buffer, "\n");
 
 
@@ -5692,13 +5696,13 @@ static void pdplus_proc_read (
                 buffer,
                 "\n"
                 "Running devices:");
-        if (PDPLUS_EXTRACT_CACHE (&lcard, FPGA, CTRL, A_PLAY_ENABLE))
+        if (PDPLUS_EXTRACT_CACHE (lcard, FPGA, CTRL, A_PLAY_ENABLE))
                 snd_iprintf (buffer, " a_play");
-        if (PDPLUS_EXTRACT_CACHE (&lcard, FPGA, CTRL, A_CAPT_ENABLE))
+        if (PDPLUS_EXTRACT_CACHE (lcard, FPGA, CTRL, A_CAPT_ENABLE))
                 snd_iprintf (buffer, " a_capt");
-        if (PDPLUS_EXTRACT_CACHE (&lcard, FPGA, CTRL, D_PLAY_ENABLE))
+        if (PDPLUS_EXTRACT_CACHE (lcard, FPGA, CTRL, D_PLAY_ENABLE))
                 snd_iprintf (buffer, " d_play");
-        if (PDPLUS_EXTRACT_CACHE (&lcard, FPGA, CTRL, D_CAPT_ENABLE))
+        if (PDPLUS_EXTRACT_CACHE (lcard, FPGA, CTRL, D_CAPT_ENABLE))
                 snd_iprintf (buffer, " d_capt");
         snd_iprintf (buffer, "\n");
 
@@ -5727,10 +5731,10 @@ static void pdplus_proc_read (
                 "\tFPGA frequency scan: 0x%08x\n"
                 "\tFPGA status:         0x%08x\n"
                 "\tHW/RD:               0x%08x\n",
-                PDPLUS_READ_HW (&lcard, FPGA, CNT),
-                PDPLUS_READ_HW (&lcard, FPGA, FREQ_SCAN),
-                PDPLUS_READ_HW (&lcard, FPGA, STATUS),
-                PDPLUS_READ_HW (&lcard, HW,   RD));
+                PDPLUS_READ_HW (lcard, FPGA, CNT),
+                PDPLUS_READ_HW (lcard, FPGA, FREQ_SCAN),
+                PDPLUS_READ_HW (lcard, FPGA, STATUS),
+                PDPLUS_READ_HW (lcard, HW,   RD));
 
         snd_iprintf (
                 buffer,
@@ -5747,17 +5751,17 @@ static void pdplus_proc_read (
                 "\tCS4222 right atten:  0x%08x\n"
                 "\tCS4222 dsp mode:     0x%08x\n"
                 "\tHW/WR:               0x%08x\n",
-                PDPLUS_READ_CACHE (&lcard, FPGA,   CTRL),
-                PDPLUS_READ_CACHE (&lcard, FPGA,   FFG),
-                PDPLUS_READ_CACHE (&lcard, FPGA,   DCO),
-                PDPLUS_READ_CACHE (&lcard, FPGA,   DIG_SRC),
-                PDPLUS_READ_CACHE (&lcard, FPGA,   ADAT),
-                PDPLUS_READ_CACHE (&lcard, CS4222, ADC_CTRL),
-                PDPLUS_READ_CACHE (&lcard, CS4222, DAC_CTRL),
-                PDPLUS_READ_CACHE (&lcard, CS4222, ATT_LEFT),
-                PDPLUS_READ_CACHE (&lcard, CS4222, ATT_RIGHT),
-                PDPLUS_READ_CACHE (&lcard, CS4222, DSP),
-                PDPLUS_READ_CACHE (&lcard, HW,     WR));
+                PDPLUS_READ_CACHE (lcard, FPGA,   CTRL),
+                PDPLUS_READ_CACHE (lcard, FPGA,   FFG),
+                PDPLUS_READ_CACHE (lcard, FPGA,   DCO),
+                PDPLUS_READ_CACHE (lcard, FPGA,   DIG_SRC),
+                PDPLUS_READ_CACHE (lcard, FPGA,   ADAT),
+                PDPLUS_READ_CACHE (lcard, CS4222, ADC_CTRL),
+                PDPLUS_READ_CACHE (lcard, CS4222, DAC_CTRL),
+                PDPLUS_READ_CACHE (lcard, CS4222, ATT_LEFT),
+                PDPLUS_READ_CACHE (lcard, CS4222, ATT_RIGHT),
+                PDPLUS_READ_CACHE (lcard, CS4222, DSP),
+                PDPLUS_READ_CACHE (lcard, HW,     WR));
 
 
         read_lock_irqsave (&scard->lock, flags);
@@ -5774,6 +5778,7 @@ static void pdplus_proc_read (
 #endif
 
         read_unlock_irqrestore (&scard->lock, flags);
+	kfree(lcard);
 #endif
 }
 
