@@ -1214,7 +1214,7 @@ static struct pci_driver driver = {
 
 static int __init pcxhr_module_init(void)
 {
-	return pci_module_init(&driver);
+	return pci_register_driver(&driver);
 }
 
 static void __exit pcxhr_module_exit(void)

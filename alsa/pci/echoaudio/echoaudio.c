@@ -2019,15 +2019,7 @@ static struct pci_driver driver = {
 /* initialization of the module */
 static int __init alsa_card_echo_init(void)
 {
-	int err;
-
-	if ((err = pci_module_init(&driver)) < 0) {
-#ifdef MODULE
-		snd_printk(KERN_WARNING "Echoaudio soundcard not found or device busy\n");
-#endif
-		return err;
-	}
-	return 0;
+	return pci_register_driver(&driver);
 }
 
 
