@@ -51,7 +51,7 @@ cleanup:
 	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d cleanup; fi; \
 	done
 
-else
+else # ! NEW_KBUILD
 
 TOPDIR = $(MAINSRCDIR)
 
@@ -195,7 +195,7 @@ $(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
 #
 fastdep: $(patsubst %,_sfdep_%,$(ALL_SUB_DIRS)) update-sndversions $(depend-files)
 ifneq "$(strip $(depend-files))" ""
-		$(CC) -M -D__KERNEL__ -D__isapnp_now__ $(CFLAGS) $(EXTRA_CFLAGS) $(depend-files) > .depend
+		$(CC) -M -D__KERNEL__ -D__isapnp_now__ $(CPPFLAGS) $(EXTRA_CFLAGS) $(depend-files) > .depend
 endif
 
 ifneq "$(strip $(ALL_SUB_DIRS))" ""
@@ -290,9 +290,9 @@ endif
 $(MODINCL)/$(MODPREFIX)%.ver: %.c
 	@if [ ! -r $(MODINCL)/$(MODPREFIX)$*.stamp -o $(MODINCL)/$(MODPREFIX)$*.stamp -ot $< ]; then \
 		if [ ! -f $(CONFIG_SND_KERNELDIR)/include/linux/modules/$*.stamp ]; then \
-		echo '$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $<'; \
+		echo '$(CC) -D__KERNEL__ $(CPPFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $<'; \
 		echo '| $(GENKSYMS) $(genksyms_smp_prefix) > $@.tmp'; \
-		$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $< \
+		$(CC) -D__KERNEL__ $(CPPFLAGS) $(EXTRA_CFLAGS) -E -D__GENKSYMS__ $< \
 		| $(GENKSYMS) $(genksyms_smp_prefix) > $@.tmp; \
 		if [ -r $@ ] && cmp -s $@ $@.tmp; then echo $@ is unchanged; rm -f $@.tmp; \
 		else echo mv $@.tmp $@; mv -f $@.tmp $@; fi; \
@@ -397,4 +397,4 @@ ifneq ($(wildcard $(TOPDIR)/.hdepend),)
 include $(TOPDIR)/.hdepend
 endif
 
-endif	# NEW_BUILD
+endif	# NEW_KBUILD
