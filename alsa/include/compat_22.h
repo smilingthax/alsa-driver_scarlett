@@ -320,15 +320,7 @@ void snd_pci_compat_release_regions(struct pci_dev *pdev);
 void snd_pci_compat_save_state(struct pci_dev *pdev, u32 *buf);
 void snd_pci_compat_restore_state(struct pci_dev *pdev, u32 *buf);
 
-static inline int pci_module_init(struct pci_driver *drv)
-{
-	int res = snd_pci_compat_register_driver(drv);
-	if (res < 0)
-		return res;
-	if (res == 0)
-		return -ENODEV;
-	return 0;
-}
+#define pci_module_init	snd_pci_compat_register_driver
 
 #endif /* CONFIG_PCI */
 
