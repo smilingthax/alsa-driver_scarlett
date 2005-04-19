@@ -402,7 +402,7 @@ static int pcm_digital_out_open(snd_pcm_substream_t *substream)
 		chip->can_set_rate=0;
 dout_exit:
 	up(&chip->mode_mutex);
-	return 0;
+	return err;
 }
 
 #endif /* !ECHOCARD_HAS_VMIXER */
