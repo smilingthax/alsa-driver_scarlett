@@ -545,8 +545,9 @@ static int load_firmware(echoaudio_t *chip)
 	if (err < 0)
 		return err;
 
-	/* Load the ASIC if the DSP load succeeded */
-	if ((err = load_asic(chip)) < 0)
+	/* Load the ASIC if the DSP load succeeded. >0 means it did not fail
+	but we cannot continue (eg. we loaded the wrong firmware) */
+	if ((err = load_asic(chip)) != 0)
 		return err;
 
 	return restore_dsp_rettings(chip);
@@ -565,7 +566,7 @@ static int load_firmware(echoaudio_t *chip)
 /* Set the nominal level for an input or output bus (true = -10dBV, false = +4dBu) */
 static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer)
 {
-	snd_assert(index < NUM_BUSSES_OUT + NUM_BUSSES_IN, return -EINVAL);
+	snd_assert(index < num_busses_out(chip) + num_busses_in(chip), return -EINVAL);
 
 	/* Wait for the handshake (OK even if ASIC is not loaded) */
 	if (wait_handshake(chip))
@@ -589,7 +590,7 @@ static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer)
 ECHOGAIN_MINOUT <= gain <= ECHOGAIN_MAXOUT) */
 static int set_output_gain(echoaudio_t *chip, u16 channel, signed short gain)
 {
-	snd_assert(channel < NUM_BUSSES_OUT, return -EINVAL);
+	snd_assert(channel < num_busses_out(chip), return -EINVAL);
 
 	if (wait_handshake(chip))
 		return -EIO;
@@ -607,13 +608,13 @@ static int set_output_gain(echoaudio_t *chip, u16 channel, signed short gain)
 ECHOGAIN_MINOUT <= gain <= ECHOGAIN_MAXOUT) */
 static int set_monitor_gain(echoaudio_t *chip, u16 output, u16 input, signed short gain)
 {
-	snd_assert(output < NUM_BUSSES_OUT && input < NUM_BUSSES_IN, return -EINVAL);
+	snd_assert(output < num_busses_out(chip) && input < num_busses_in(chip), return -EINVAL);
 
 	if (wait_handshake(chip))
 		return -EIO;
 
 	chip->monitor_gain[output][input] = gain;
-	chip->comm_page->monitors[MONITOR_INDEX(output, input)] = gain;
+	chip->comm_page->monitors[monitor_index(chip, output, input)] = gain;
 	return 0;
 }
 #endif /* ECHOCARD_HAS_MONITOR */
@@ -679,14 +680,14 @@ static void get_audio_meters(echoaudio_t *chip, long *meters)
 
 	m = 0;
 	n = 0;
-	for (i = 0; i < NUM_BUSSES_OUT; i++, m++) {
+	for (i = 0; i < num_busses_out(chip); i++, m++) {
 		meters[n++] = chip->comm_page->vu_meter[m];
 		meters[n++] = chip->comm_page->peak_meter[m];
 	}
 	for (; n < 32; n++)
 		meters[n] = 0;
 
-	for (i = 0; i < NUM_BUSSES_IN; i++, m++) {
+	for (i = 0; i < num_busses_in(chip); i++, m++) {
 		meters[n++] = chip->comm_page->vu_meter[m];
 		meters[n++] = chip->comm_page->peak_meter[m];
 	}
@@ -694,7 +695,7 @@ static void get_audio_meters(echoaudio_t *chip, long *meters)
 		meters[n] = 0;
 
 #ifdef ECHOCARD_HAS_VMIXER
-	for (i = 0; i < NUM_PIPES_OUT; i++, m++) {
+	for (i = 0; i < num_pipes_out(chip); i++, m++) {
 		meters[n++] = chip->comm_page->vu_meter[m];
 		meters[n++] = chip->comm_page->peak_meter[m];
 	}
@@ -984,6 +985,7 @@ static int init_dsp_comm_page(echoaudio_t *chip)
 	}
 
 	/* Init all the basic stuff */
+	chip->card_name = ECHOCARD_NAME;
 	chip->bad_board = TRUE;	/* Set TRUE until DSP loaded */
 	chip->dsp_code = NULL;	/* Current DSP code not loaded */
 	chip->digital_mode = DIGITAL_MODE_NONE;
@@ -1024,7 +1026,7 @@ static int init_line_levels(echoaudio_t *chip)
 	DE_INIT(("init_line_levels\n"));
 
 	/* Mute output busses */
-	for (i = 0; i < NUM_BUSSES_OUT; i++)
+	for (i = 0; i < num_busses_out(chip); i++)
 		if ((st = set_output_gain(chip, i, ECHOGAIN_MUTED)))
 			return st;
 	if ((st = update_output_line_level(chip)))
@@ -1032,8 +1034,8 @@ static int init_line_levels(echoaudio_t *chip)
 
 #ifdef ECHOCARD_HAS_VMIXER
 	/* Mute the Vmixer */
-	for (i = 0; i < NUM_PIPES_OUT; i++)
-		for (o = 0; o < NUM_BUSSES_OUT; o++)
+	for (i = 0; i < num_pipes_out(chip); i++)
+		for (o = 0; o < num_busses_out(chip); o++)
 			if ((st = set_vmixer_gain(chip, o, i, ECHOGAIN_MUTED)))
 				return st;
 	if ((st = update_vmixer_level(chip)))
@@ -1042,8 +1044,8 @@ static int init_line_levels(echoaudio_t *chip)
 
 #ifdef ECHOCARD_HAS_MONITOR
 	/* Mute the monitor mixer */
-	for (o = 0; o < NUM_BUSSES_OUT; o++)
-		for (i = 0; i < NUM_BUSSES_IN; i++)
+	for (o = 0; o < num_busses_out(chip); o++)
+		for (i = 0; i < num_busses_in(chip); i++)
 			if ((st = set_monitor_gain(chip, o, i, ECHOGAIN_MUTED)))
 				return st;
 	if ((st = update_output_line_level(chip)))
@@ -1051,7 +1053,7 @@ static int init_line_levels(echoaudio_t *chip)
 #endif /* ECHOCARD_HAS_MONITOR */
 
 #ifdef ECHOCARD_HAS_INPUT_GAIN
-	for (i = 0; i < NUM_BUSSES_IN; i++)
+	for (i = 0; i < num_busses_in(chip); i++)
 		if ((st = set_input_gain(chip, i, ECHOGAIN_MUTED)))
 			return st;
 	if ((st = update_input_line_level(chip)))

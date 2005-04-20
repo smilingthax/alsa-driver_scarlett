@@ -292,7 +292,7 @@ static int pcm_analog_in_open(snd_pcm_substream_t *substream)
 	int err;
 
 	DE_ACT(("pcm_analog_in_open\n"));
-	if ((err = pcm_open(substream, NUM_ANALOG_BUSSES_IN - substream->number, 0)) < 0)
+	if ((err = pcm_open(substream, num_analog_busses_in(chip) - substream->number, 0)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 					hw_rule_capture_channels_by_format, NULL, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
@@ -315,9 +315,9 @@ static int pcm_analog_out_open(snd_pcm_substream_t *substream)
 	int max_channels, err;
 
 #ifdef ECHOCARD_HAS_VMIXER
-	max_channels = NUM_PIPES_OUT;
+	max_channels = num_pipes_out(chip);
 #else
-	max_channels = NUM_ANALOG_BUSSES_OUT;
+	max_channels = num_analog_busses_out(chip);
 #endif
 	DE_ACT(("pcm_analog_out_open\n"));
 	if ((err = pcm_open(substream, max_channels - substream->number, 0)) < 0)
@@ -345,7 +345,7 @@ static int pcm_digital_in_open(snd_pcm_substream_t *substream)
 	int err, max_channels;
 
 	DE_ACT(("pcm_digital_in_open\n"));
-	max_channels = NUM_DIGITAL_BUSSES_IN - substream->number;
+	max_channels = num_digital_busses_in(chip) - substream->number;
 	down(&chip->mode_mutex);
 	if (chip->digital_mode == DIGITAL_MODE_ADAT)
 		err = pcm_open(substream, max_channels, 1);
@@ -381,7 +381,7 @@ static int pcm_digital_out_open(snd_pcm_substream_t *substream)
 	int err, max_channels;
 
 	DE_ACT(("pcm_digital_out_open\n"));
-	max_channels = NUM_DIGITAL_BUSSES_OUT - substream->number;
+	max_channels = num_digital_busses_out(chip) - substream->number;
 	down(&chip->mode_mutex);
 	if (chip->digital_mode == DIGITAL_MODE_ADAT)
 		err = pcm_open(substream, max_channels, 1);
@@ -522,7 +522,10 @@ static int init_engine(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_p
 
 static int pcm_analog_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
 {
-	return init_engine(substream, hw_params, PX_ANALOG_IN + substream->number, params_channels(hw_params));
+	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+
+	return init_engine(substream, hw_params, px_analog_in(chip) +
+			substream->number, params_channels(hw_params));
 }
 
 
@@ -539,7 +542,10 @@ static int pcm_analog_out_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_p
 
 static int pcm_digital_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
 {
-	return init_engine(substream, hw_params, PX_DIGITAL_IN + substream->number, params_channels(hw_params));
+	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+
+	return init_engine(substream, hw_params, px_digital_in(chip) +
+			substream->number, params_channels(hw_params));
 }
 
 
@@ -547,7 +553,10 @@ static int pcm_digital_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_p
 #ifndef ECHOCARD_HAS_VMIXER	/* See the note in snd_echo_new_pcm() */
 static int pcm_digital_out_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
 {
-	return init_engine(substream, hw_params, PX_DIGITAL_OUT + substream->number, params_channels(hw_params));
+	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+
+	return init_engine(substream, hw_params, px_digital_out(chip) +
+			substream->number, params_channels(hw_params));
 }
 #endif /* !ECHOCARD_HAS_VMIXER */
 
@@ -610,7 +619,7 @@ static int pcm_prepare(snd_pcm_substream_t *substream)
 		return -EINVAL;
 	}
 
-	snd_assert(pipe_index < NUM_PIPES, return -EINVAL);
+	snd_assert(pipe_index < px_num(chip), return -EINVAL);
 	snd_assert(is_pipe_allocated(chip, pipe_index), return -EINVAL);
 	set_audio_format(chip, pipe_index, &format);
 	return 0;
@@ -794,8 +803,8 @@ static int __devinit snd_echo_new_pcm(echoaudio_t *chip)
 	separated */
 
 	/* PCM#0 Virtual outputs and analog inputs */
-	if ((err = snd_pcm_new(chip->card, "PCM", 0, NUM_PIPES_OUT,
-				NUM_ANALOG_BUSSES_IN, &pcm)) < 0)
+	if ((err = snd_pcm_new(chip->card, "PCM", 0, num_pipes_out(chip),
+				num_analog_busses_in(chip), &pcm)) < 0)
 		return err;
 	pcm->private_data = chip;
 	chip->analog_pcm = pcm;
@@ -808,7 +817,7 @@ static int __devinit snd_echo_new_pcm(echoaudio_t *chip)
 
 #ifdef ECHOCARD_HAS_DIGITAL_IO
 	/* PCM#1 Digital inputs, no outputs */
-	if ((err = snd_pcm_new(chip->card, "Digital PCM", 1, 0, NUM_DIGITAL_BUSSES_IN, &pcm)) < 0)
+	if ((err = snd_pcm_new(chip->card, "Digital PCM", 1, 0, num_digital_busses_in(chip), &pcm)) < 0)
 		return err;
 	pcm->private_data = chip;
 	chip->digital_pcm = pcm;
@@ -828,7 +837,7 @@ static int __devinit snd_echo_new_pcm(echoaudio_t *chip)
 
 	/* PCM#0 Analog i/o */
 	if ((err = snd_pcm_new(chip->card, "Analog PCM", 0,
-				 NUM_ANALOG_BUSSES_OUT, NUM_ANALOG_BUSSES_IN, &pcm)) < 0)
+				 num_analog_busses_out(chip), num_analog_busses_in(chip), &pcm)) < 0)
 		return err;
 	pcm->private_data = chip;
 	chip->analog_pcm = pcm;
@@ -842,7 +851,7 @@ static int __devinit snd_echo_new_pcm(echoaudio_t *chip)
 #ifdef ECHOCARD_HAS_DIGITAL_IO
 	/* PCM#1 Digital i/o */
 	if ((err = snd_pcm_new(chip->card, "Digital PCM", 1,
-				NUM_DIGITAL_BUSSES_OUT, NUM_DIGITAL_BUSSES_IN, &pcm)) < 0)
+				num_digital_busses_out(chip), num_digital_busses_in(chip), &pcm)) < 0)
 		return err;
 	pcm->private_data = chip;
 	chip->digital_pcm = pcm;
@@ -873,7 +882,7 @@ static int snd_echo_output_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = NUM_BUSSES_OUT;
+	uinfo->count = num_busses_out(chip);
 	uinfo->value.integer.min = ECHOGAIN_MINOUT;
 	uinfo->value.integer.max = ECHOGAIN_MAXOUT;
 	return 0;
@@ -885,7 +894,7 @@ static int snd_echo_output_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
-	for (c = 0; c < NUM_BUSSES_OUT; c++)
+	for (c = 0; c < num_busses_out(chip); c++)
 		ucontrol->value.integer.value[c] = chip->output_gain[c];
 	return 0;
 }
@@ -898,7 +907,7 @@ static int snd_echo_output_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	changed = 0;
 	chip = snd_kcontrol_chip(kcontrol);
 	spin_lock_irq(&chip->lock);
-	for (c = 0; c < NUM_BUSSES_OUT; c++) {
+	for (c = 0; c < num_busses_out(chip); c++) {
 		gain = ucontrol->value.integer.value[c];
 		/* Ignore out of range values */
 		if (gain < ECHOGAIN_MINOUT || gain > ECHOGAIN_MAXOUT)
@@ -944,7 +953,7 @@ static int snd_echo_input_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = NUM_ANALOG_BUSSES_IN;
+	uinfo->count = num_analog_busses_in(chip);
 	uinfo->value.integer.min = ECHOGAIN_MININP;
 	uinfo->value.integer.max = ECHOGAIN_MAXINP;
 	return 0;
@@ -956,7 +965,7 @@ static int snd_echo_input_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
-	for (c = 0; c < NUM_ANALOG_BUSSES_IN; c++)
+	for (c = 0; c < num_analog_busses_in(chip); c++)
 		ucontrol->value.integer.value[c] = chip->input_gain[c];
 	return 0;
 }
@@ -969,7 +978,7 @@ static int snd_echo_input_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	changed = 0;
 	chip = snd_kcontrol_chip(kcontrol);
 	spin_lock_irq(&chip->lock);
-	for (c = 0; c < NUM_ANALOG_BUSSES_IN; c++) {
+	for (c = 0; c < num_analog_busses_in(chip); c++) {
 		gain = ucontrol->value.integer.value[c];
 		/* Ignore aout of range values */
 		if (gain < ECHOGAIN_MININP || gain > ECHOGAIN_MAXINP)
@@ -1006,7 +1015,7 @@ static int snd_echo_output_nominal_info (snd_kcontrol_t *kcontrol, snd_ctl_elem_
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-	uinfo->count = NUM_ANALOG_BUSSES_OUT;
+	uinfo->count = num_analog_busses_out(chip);
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 1;
 	return 0;
@@ -1018,7 +1027,7 @@ static int snd_echo_output_nominal_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_va
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
-	for (c = 0; c < NUM_ANALOG_BUSSES_OUT; c++)
+	for (c = 0; c < num_analog_busses_out(chip); c++)
 		ucontrol->value.integer.value[c] = chip->nominal_level[c];
 	return 0;
 }
@@ -1031,7 +1040,7 @@ static int snd_echo_output_nominal_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_va
 	changed = 0;
 	chip = snd_kcontrol_chip(kcontrol);
 	spin_lock_irq(&chip->lock);
-	for (c = 0; c < NUM_ANALOG_BUSSES_OUT; c++) {
+	for (c = 0; c < num_analog_busses_out(chip); c++) {
 		if (chip->nominal_level[c] != ucontrol->value.integer.value[c]) {
 			set_nominal_level(chip, c, ucontrol->value.integer.value[c]);
 			changed = 1;
@@ -1064,7 +1073,7 @@ static int snd_echo_input_nominal_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
-	uinfo->count = NUM_ANALOG_BUSSES_IN;
+	uinfo->count = num_analog_busses_in(chip);
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 1;
 	return 0;
@@ -1076,8 +1085,8 @@ static int snd_echo_input_nominal_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
-	for (c = 0; c < NUM_ANALOG_BUSSES_IN; c++)
-		ucontrol->value.integer.value[c] = chip->nominal_level[BX_ANALOG_IN + c];
+	for (c = 0; c < num_analog_busses_in(chip); c++)
+		ucontrol->value.integer.value[c] = chip->nominal_level[bx_analog_in(chip) + c];
 	return 0;
 }
 
@@ -1089,9 +1098,9 @@ static int snd_echo_input_nominal_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	changed = 0;
 	chip = snd_kcontrol_chip(kcontrol);
 	spin_lock_irq(&chip->lock);
-	for (c = 0; c < NUM_ANALOG_BUSSES_IN; c++) {
-		if (chip->nominal_level[BX_ANALOG_IN + c] != ucontrol->value.integer.value[c]) {
-			set_nominal_level(chip, BX_ANALOG_IN + c, ucontrol->value.integer.value[c]);
+	for (c = 0; c < num_analog_busses_in(chip); c++) {
+		if (chip->nominal_level[bx_analog_in(chip) + c] != ucontrol->value.integer.value[c]) {
+			set_nominal_level(chip, bx_analog_in(chip) + c, ucontrol->value.integer.value[c]);
 			changed = 1;
 		}
 	}
@@ -1125,8 +1134,8 @@ static int snd_echo_mixer_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *ui
 	uinfo->count = 1;
 	uinfo->value.integer.min = ECHOGAIN_MINOUT;
 	uinfo->value.integer.max = ECHOGAIN_MAXOUT;
-	uinfo->dimen.d[0] = NUM_BUSSES_OUT;
-	uinfo->dimen.d[1] = NUM_BUSSES_IN;
+	uinfo->dimen.d[0] = num_busses_out(chip);
+	uinfo->dimen.d[1] = num_busses_in(chip);
 	return 0;
 }
 
@@ -1136,8 +1145,8 @@ static int snd_echo_mixer_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uc
 
 	chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->monitor_gain
-					[ucontrol->id.index / NUM_BUSSES_IN]
-					[ucontrol->id.index % NUM_BUSSES_IN];
+					[ucontrol->id.index / num_busses_in(chip)]
+					[ucontrol->id.index % num_busses_in(chip)];
 	return 0;
 }
 
@@ -1149,8 +1158,8 @@ static int snd_echo_mixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uc
 
 	changed = 0;
 	chip = snd_kcontrol_chip(kcontrol);
-	out = ucontrol->id.index / NUM_BUSSES_IN;
-	in = ucontrol->id.index % NUM_BUSSES_IN;
+	out = ucontrol->id.index / num_busses_in(chip);
+	in = ucontrol->id.index % num_busses_in(chip);
 	gain = ucontrol->value.integer.value[0];
 	if (gain < ECHOGAIN_MINOUT || gain > ECHOGAIN_MAXOUT)
 		return -EINVAL;
@@ -1167,7 +1176,6 @@ static int snd_echo_mixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uc
 static snd_kcontrol_new_t snd_echo_monitor_mixer __devinitdata = {
 	.name = "Monitor Mixer Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.count = NUM_BUSSES_IN * NUM_BUSSES_OUT,
 	.info = snd_echo_mixer_info,
 	.get = snd_echo_mixer_get,
 	.put = snd_echo_mixer_put,
@@ -1189,8 +1197,8 @@ static int snd_echo_vmixer_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *u
 	uinfo->count = 1;
 	uinfo->value.integer.min = ECHOGAIN_MINOUT;
 	uinfo->value.integer.max = ECHOGAIN_MAXOUT;
-	uinfo->dimen.d[0] = NUM_BUSSES_OUT;
-	uinfo->dimen.d[1] = NUM_PIPES_OUT;
+	uinfo->dimen.d[0] = num_busses_out(chip);
+	uinfo->dimen.d[1] = num_pipes_out(chip);
 	return 0;
 }
 
@@ -1200,8 +1208,8 @@ static int snd_echo_vmixer_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 
 	chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->vmixer_gain
-					[ucontrol->id.index / NUM_PIPES_OUT]
-					[ucontrol->id.index % NUM_PIPES_OUT];
+					[ucontrol->id.index / num_pipes_out(chip)]
+					[ucontrol->id.index % num_pipes_out(chip)];
 	return 0;
 }
 
@@ -1213,8 +1221,8 @@ static int snd_echo_vmixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 
 	changed = 0;
 	chip = snd_kcontrol_chip(kcontrol);
-	out = ucontrol->id.index / NUM_PIPES_OUT;
-	vch = ucontrol->id.index % NUM_PIPES_OUT;
+	out = ucontrol->id.index / num_pipes_out(chip);
+	vch = ucontrol->id.index % num_pipes_out(chip);
 	gain = ucontrol->value.integer.value[0];
 	if (gain < ECHOGAIN_MINOUT || gain > ECHOGAIN_MAXOUT)
 		return -EINVAL;
@@ -1231,7 +1239,6 @@ static int snd_echo_vmixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 static snd_kcontrol_new_t snd_echo_vmixer __devinitdata = {
 	.name = "VMixer Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-	.count = NUM_PIPES_OUT * NUM_BUSSES_OUT,
 	.info = snd_echo_vmixer_info,
 	.get = snd_echo_vmixer_get,
 	.put = snd_echo_vmixer_put,
@@ -1638,11 +1645,11 @@ static int snd_echo_channels_info_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	int detected, clocks, bit, src;
 
 	chip = snd_kcontrol_chip(kcontrol);
-	ucontrol->value.integer.value[0] = NUM_BUSSES_IN;
-	ucontrol->value.integer.value[1] = NUM_ANALOG_BUSSES_IN;
-	ucontrol->value.integer.value[2] = NUM_BUSSES_OUT;
-	ucontrol->value.integer.value[3] = NUM_ANALOG_BUSSES_OUT;
-	ucontrol->value.integer.value[4] = NUM_PIPES_OUT;
+	ucontrol->value.integer.value[0] = num_busses_in(chip);
+	ucontrol->value.integer.value[1] = num_analog_busses_in(chip);
+	ucontrol->value.integer.value[2] = num_busses_out(chip);
+	ucontrol->value.integer.value[3] = num_analog_busses_out(chip);
+	ucontrol->value.integer.value[4] = num_pipes_out(chip);
 
 	/* Compute the bitmask of the currently valid input clocks */
 	detected = detect_input_clocks(chip);
@@ -1868,7 +1875,7 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 	}
 
 	strcpy(card->driver, "Echoaudio " ECHOCARD_NAME);
-	strcpy(card->shortname, ECHOCARD_NAME);
+	strcpy(card->shortname, chip->card_name);
 
 	dsp = "56301";
 	if (pci_id->device == 0x3410)
@@ -1894,6 +1901,7 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 #endif
 
 #ifdef ECHOCARD_HAS_VMIXER
+	snd_echo_vmixer.count = num_pipes_out(chip) * num_busses_out(chip);
 	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_line_output_gain, chip))) < 0)
 		goto ctl_error;
 	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_vmixer, chip))) < 0)
@@ -1925,6 +1933,7 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 		goto ctl_error;
 
 #ifdef ECHOCARD_HAS_MONITOR
+	snd_echo_monitor_mixer.count = num_busses_in(chip) * num_busses_out(chip);
 	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_monitor_mixer, chip))) < 0)
 		goto ctl_error;
 #endif
@@ -1968,8 +1977,9 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 #endif
 
 #ifdef ECHOCARD_HAS_PHANTOM_POWER
-	if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_phantom_power_switch, chip))) < 0)
-		goto ctl_error;
+	if (chip->has_phantom_power)
+		if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&snd_echo_phantom_power_switch, chip))) < 0)
+			goto ctl_error;
 #endif
 
 	if ((err = snd_card_register(card)) < 0) {
@@ -2035,4 +2045,3 @@ static void __exit alsa_card_echo_exit(void)
 module_init(alsa_card_echo_init)
 module_exit(alsa_card_echo_exit)
 EXPORT_NO_SYMBOLS;
-

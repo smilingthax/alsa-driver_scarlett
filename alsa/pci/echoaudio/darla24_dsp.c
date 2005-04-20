@@ -63,7 +63,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 		return err;
 
 	/* Set professional nominal levels. This card has no digital i/o, so analog pipes are contiguous */
-	for (i = 0; i < NUM_BUSSES_OUT + NUM_BUSSES_IN; i++)
+	for (i = 0; i < num_busses_out(chip) + num_busses_in(chip); i++)
 		err = set_nominal_level(chip, i, FALSE);	/* FALSE is +4dBu here */
 
 	DE_INIT(("init_hw done\n"));

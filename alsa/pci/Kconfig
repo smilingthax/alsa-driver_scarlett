@@ -134,29 +134,17 @@ config SND_MIA
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-mia
 
-config SND_GINA3G
-	tristate "(Echoaudio) Gina3G"
+config SND_ECHO3G
+	tristate "(Echoaudio) 3G cards"
 	depends on SND
 	depends on FW_LOADER
 	select SND_RAWMIDI
 	select SND_PCM
 	help
-	  Say 'Y' or 'M' to include support for Echoaudio Gina3G.
+	  Say 'Y' or 'M' to include support for Echoaudio Gina3G and Layla3G.
 
 	  To compile this driver as a module, choose M here: the module
-	  will be called snd-gina3g
-
-config SND_LAYLA3G
-	tristate "(Echoaudio) Layla3G"
-	depends on SND
-	depends on FW_LOADER
-	select SND_RAWMIDI
-	select SND_PCM
-	help
-	  Say 'Y' or 'M' to include support for Echoaudio Layla3G.
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-layla3g
+	  will be called snd-echo3g
 
 config SND_INDIGO
 	tristate "(Echoaudio) Indigo"

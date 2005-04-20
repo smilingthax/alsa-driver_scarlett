@@ -560,8 +560,8 @@ SET_LAYLA24_FREQUENCY_REG command.
 #define E3G_FREQ_REG_MAX		0xffff
 
 // 3G external box types
-#define E3G_GINA3G			0x00
-#define E3G_LAYLA3G			0x10
+#define E3G_GINA3G_BOX_TYPE		0x00
+#define E3G_LAYLA3G_BOX_TYPE		0x10
 #define E3G_ASIC_NOT_LOADED		0xffff
 #define E3G_BOX_TYPE_MASK		0xf0
 
@@ -602,11 +602,6 @@ SET_LAYLA24_FREQUENCY_REG command.
 #define MAX_PLAY_TAPS		168
 #define MAX_REC_TAPS		192
 #define DSP_MIDI_OUT_FIFO_SIZE	64
-
-
-// The monitor array is a one-dimensional array; compute the offset into the array
-#define MONITOR_INDEX(Out, In)  (Out * NUM_BUSSES_IN + In)
-
 
 
 /* sg_entry is a single entry for the scatter-gather list.  The array of struct

@@ -214,7 +214,7 @@ static int set_input_clock(echoaudio_t *chip, u16 clock)
    where ECHOGAIN_MININP <= gain <= ECHOGAIN_MAXINP) */
 static int set_input_gain(echoaudio_t *chip, u16 input, int gain)
 {
-	snd_assert(input < NUM_BUSSES_IN, return -EINVAL);
+	snd_assert(input < num_busses_in(chip), return -EINVAL);
 
 	if (wait_handshake(chip))
 		return -EIO;

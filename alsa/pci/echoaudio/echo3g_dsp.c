@@ -43,7 +43,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 {
 	int err, i;
 
-	DE_INIT(("init_hw() - Gina3G\n"));
+	DE_INIT(("init_hw() - Echo3G\n"));
 	snd_assert((subdevice_id & 0xfff0) == ECHO3G, return -ENODEV);
 
 	/* This part is common to all the cards */
@@ -57,20 +57,54 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 	chip->subdevice_id = subdevice_id;
 	chip->bad_board = TRUE;
 	chip->has_midi = TRUE;
-	chip->dsp_code_to_load = &card_fw[FW_GINA3G_DSP];
+	chip->dsp_code_to_load = &card_fw[FW_ECHO3G_DSP];
 	chip->input_clock_types =	ECHO_CLOCK_BIT_INTERNAL |
 					ECHO_CLOCK_BIT_SPDIF |
-					ECHO_CLOCK_BIT_ADAT;
+					ECHO_CLOCK_BIT_ADAT |
+					ECHO_CLOCK_BIT_WORD;
 	chip->digital_modes =	ECHOCAPS_HAS_DIGITAL_MODE_SPDIF_RCA |
 				ECHOCAPS_HAS_DIGITAL_MODE_SPDIF_OPTICAL |
 				ECHOCAPS_HAS_DIGITAL_MODE_ADAT;
+	chip->e3g_box_type = E3G_LAYLA3G_BOX_TYPE;
+	chip->card_name = "Layla3G";
+	chip->px_digital_out = chip->bx_digital_out = 8;
+	chip->px_analog_in = chip->bx_analog_in = 16;
+	chip->px_digital_in = chip->bx_digital_in = 24;
+	chip->px_num = chip->bx_num = 32;
+
 	chip->digital_mode = DIGITAL_MODE_SPDIF_RCA;
 	chip->professional_spdif = FALSE;
 	chip->non_audio_spdif = FALSE;
 
-	/* Load the DSP and the ASIC on the PCI card */
-	if ((err = load_firmware(chip)) < 0)
+	/* Load the DSP and the ASIC on the PCI card and check what
+	type of external box is attached */
+	err = load_firmware(chip);
+
+	if (err < 0) {
 		return err;
+	} else if (err == E3G_GINA3G_BOX_TYPE + 1) {
+		/* The card was initialized successfully, but we loaded the wrong
+		firmware because this is a Gina3G. Let's load the right one. */
+
+		chip->dsp_code_to_load = &card_fw[FW_GINA3G_DSP];
+		chip->input_clock_types =	ECHO_CLOCK_BIT_INTERNAL |
+						ECHO_CLOCK_BIT_SPDIF |
+						ECHO_CLOCK_BIT_ADAT;
+		chip->e3g_box_type = E3G_GINA3G_BOX_TYPE;
+		chip->card_name = "Gina3G";
+		chip->px_digital_out = chip->bx_digital_out = 6;
+		chip->px_analog_in = chip->bx_analog_in = 14;
+		chip->px_digital_in = chip->bx_digital_in = 16;
+		chip->px_num = chip->bx_num = 24;
+		chip->has_phantom_power = 1;
+
+		/* Re-load the DSP and the ASIC codes */
+		chip->dsp_code = 0;
+		if ((err = load_firmware(chip)) < 0)
+			return err;             /* Something went wrong */
+	} else if (err > 0) {
+		return -ENODEV;                 /* Unknown external box */
+	}
 
 	chip->bad_board = FALSE;
 
@@ -78,11 +112,11 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 	err = init_line_levels(chip);
 
 	/* Set professional nominal levels (FALSE is +4dBu) */
-	for (i = 0; i < NUM_ANALOG_BUSSES_OUT; i++)
+	for (i = 0; i < num_analog_busses_out(chip); i++)
 		err = set_nominal_level(chip, i, FALSE);
 
-	for (i = 0; i < NUM_ANALOG_BUSSES_IN; i++)
-		err = set_nominal_level(chip, BX_ANALOG_IN + i, FALSE);
+	for (i = 0; i < num_analog_busses_in(chip); i++)
+		err = set_nominal_level(chip, bx_analog_in(chip) + i, FALSE);
 
 	/* Set the digital mode to S/PDIF RCA */
 	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
@@ -109,4 +143,3 @@ static int set_phantom_power(echoaudio_t *chip, char on)
 	chip->phantom_power = on;
 	return write_control_reg(chip, control_reg, le32_to_cpu(chip->comm_page->e3g_frq_register), 0);
 }
-

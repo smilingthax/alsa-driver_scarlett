@@ -340,18 +340,10 @@ Information about Additional Modules
     Module supports up to 8 cards.
     The driver requires the firmware loader support on kernel.
 
-  Module snd-gina3g
+  Module snd-echo3g
   -----------------
 
-    Module for Echoaudio Gina3G
-
-    Module supports up to 8 cards.
-    The driver requires the firmware loader support on kernel.
-
-  Module snd-layla3g
-  ------------------
-
-    Module for Echoaudio Layla3G
+    Module for Echoaudio 3G cards (Gina3G/Layla3G)
 
     Module supports up to 8 cards.
     The driver requires the firmware loader support on kernel.
