@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/usbmixer.c	2005-01-28 15:03:33.000000000 +0100
-+++ usbmixer.c	2005-01-28 15:09:18.000000000 +0100
+--- ../alsa-kernel/usb/usbmixer.c	2005-04-29 11:58:03.000000000 +0200
++++ usbmixer.c	2005-04-29 12:00:50.000000000 +0200
 @@ -1,3 +1,11 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -12,10 +12,10 @@
  /*
   *   (Tentative) USB Audio Driver for ALSA
   *
-@@ -1514,8 +1522,13 @@
+@@ -1566,8 +1574,13 @@
+ 	state.mixer = mixer;
  	state.buffer = hostif->extra;
  	state.buflen = hostif->extralen;
- 	state.ctrlif = ctrlif;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
  	state.vendor = le16_to_cpu(dev->idVendor);
  	state.product = le16_to_cpu(dev->idProduct);
