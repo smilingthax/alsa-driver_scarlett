@@ -2,11 +2,6 @@
 #include <linux/config.h>
 #include <linux/version.h>
 
-#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#define MODVERSIONS
-#include <linux/modversions.h>
-#endif
-
 #include <linux/module.h>
 #include <linux/usb.h>
 

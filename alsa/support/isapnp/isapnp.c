@@ -35,8 +35,6 @@
 
 #ifdef ALSA_BUILD
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#define MODVERSIONS
-#include <linux/modversions.h>
 #include "sndversions.h"
 #endif
 #endif
