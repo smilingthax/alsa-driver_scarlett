@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/usbaudio.c	2005-04-27 11:27:09.000000000 +0200
-+++ usbaudio.c	2005-04-27 11:29:05.000000000 +0200
+--- ../alsa-kernel/usb/usbaudio.c	2005-04-29 23:54:04.000000000 +0200
++++ usbaudio.c	2005-04-29 23:56:20.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
@@ -61,63 +61,7 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -2187,13 +2205,25 @@
- static int is_big_endian_format(struct usb_device *dev, struct audioformat *fp)
- {
- 	/* M-Audio */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	if (le16_to_cpu(dev->descriptor.idVendor) == 0x0763) {
-+#else
-+	if (dev->descriptor.idVendor == 0x0763) {
-+#endif
- 		/* Quattro: captured data only */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if (le16_to_cpu(dev->descriptor.idProduct) == 0x2001 &&
-+#else
-+		if (dev->descriptor.idProduct == 0x2001 &&
-+#endif
- 		    fp->endpoint & USB_DIR_IN)
- 			return 1;
- 		/* Audiophile USB */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if (le16_to_cpu(dev->descriptor.idProduct) == 0x2003)
-+#else
-+		if (dev->descriptor.idProduct == 0x2003)
-+#endif
- 			return 1;
- 	}
- 	return 0;
-@@ -2257,8 +2287,13 @@
- 		break;
- 	case USB_AUDIO_FORMAT_PCM8:
- 		/* Dallas DS4201 workaround */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if (le16_to_cpu(dev->descriptor.idVendor) == 0x04fa &&
- 		    le16_to_cpu(dev->descriptor.idProduct) == 0x4201)
-+#else
-+		if (dev->descriptor.idVendor == 0x04fa &&
-+		    dev->descriptor.idProduct == 0x4201)
-+#endif
- 			pcm_format = SNDRV_PCM_FORMAT_S8;
- 		else
- 			pcm_format = SNDRV_PCM_FORMAT_U8;
-@@ -2426,9 +2461,15 @@
- 	/* extigy apparently supports sample rates other than 48k
- 	 * but not in ordinary way.  so we enable only 48k atm.
- 	 */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	if (le16_to_cpu(dev->descriptor.idVendor) == 0x041e && 
- 	    (le16_to_cpu(dev->descriptor.idProduct) == 0x3000 ||
- 	     le16_to_cpu(dev->descriptor.idProduct) == 0x3020)) {
-+#else
-+	if (dev->descriptor.idVendor == 0x041e && 
-+	    (dev->descriptor.idProduct == 0x3000 ||
-+	     dev->descriptor.idProduct == 0x3020)) {
-+#endif
- 		if (fmt[3] == USB_FORMAT_TYPE_I &&
- 		    stream == SNDRV_PCM_STREAM_PLAYBACK &&
- 		    fp->rates != SNDRV_PCM_RATE_48000 &&
-@@ -2463,7 +2504,11 @@
+@@ -2460,7 +2478,11 @@
  		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING &&
  		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
  		    altsd->bNumEndpoints < 1 ||
@@ -129,7 +73,7 @@
  			continue;
  		/* must be isochronous */
  		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
-@@ -2526,14 +2571,23 @@
+@@ -2523,7 +2545,11 @@
  		fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  		fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  		/* FIXME: decode wMaxPacketSize of high bandwith endpoints */
@@ -141,64 +85,7 @@
  		fp->attributes = csep[3];
  
  		/* some quirks for attributes here */
- 
- 		/* workaround for AudioTrak Optoplay */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if (le16_to_cpu(dev->descriptor.idVendor) == 0x0a92 &&
- 		    le16_to_cpu(dev->descriptor.idProduct) == 0x0053) {
-+#else
-+		if (dev->descriptor.idVendor == 0x0a92 &&
-+		    dev->descriptor.idProduct == 0x0053) {
-+#endif
- 			/* Optoplay sets the sample rate attribute although
- 			 * it seems not supporting it in fact.
- 			 */
-@@ -2541,8 +2595,13 @@
- 		}
- 
- 		/* workaround for M-Audio Audiophile USB */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if (le16_to_cpu(dev->descriptor.idVendor) == 0x0763 &&
- 		    le16_to_cpu(dev->descriptor.idProduct) == 0x2003) {
-+#else
-+		if (dev->descriptor.idVendor == 0x0763 &&
-+		    dev->descriptor.idProduct == 0x2003) {
-+#endif
- 			/* doesn't set the sample rate attribute, but supports it */
- 			fp->attributes |= EP_CS_ATTR_SAMPLE_RATE;
- 		}
-@@ -2551,11 +2610,18 @@
- 		 * plantronics headset and Griffin iMic have set adaptive-in
- 		 * although it's really not...
- 		 */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if ((le16_to_cpu(dev->descriptor.idVendor) == 0x047f &&
- 		     le16_to_cpu(dev->descriptor.idProduct) == 0x0ca1) ||
- 		    /* Griffin iMic (note that there is an older model 77d:223) */
- 		    (le16_to_cpu(dev->descriptor.idVendor) == 0x077d &&
- 		     le16_to_cpu(dev->descriptor.idProduct) == 0x07af)) {
-+#else
-+		if ((dev->descriptor.idVendor == 0x047f &&
-+		     dev->descriptor.idProduct == 0x0ca1) ||
-+		    (dev->descriptor.idVendor == 0x077d &&
-+		     dev->descriptor.idProduct == 0x07af)) {
-+#endif
- 			fp->ep_attr &= ~EP_ATTR_MASK;
- 			if (stream == SNDRV_PCM_STREAM_PLAYBACK)
- 				fp->ep_attr |= EP_ATTR_ADAPTIVE;
-@@ -2799,7 +2865,11 @@
- 			.type = QUIRK_MIDI_FIXED_ENDPOINT,
- 			.data = &ua25_ep
- 		};
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		if (le16_to_cpu(chip->dev->descriptor.idProduct) == 0x002b)
-+#else
-+		if (chip->dev->descriptor.idProduct == 0x002b)
-+#endif
- 			return snd_usb_create_midi_interface(chip, iface,
- 							     &ua700_quirk);
- 		else
-@@ -2818,7 +2888,11 @@
+@@ -2811,7 +2837,11 @@
  	fp->iface = altsd->bInterfaceNumber;
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -210,7 +97,7 @@
  
  	switch (fp->maxpacksize) {
  	case 0x120:
-@@ -2884,7 +2958,11 @@
+@@ -2877,7 +2907,11 @@
  	fp->iface = altsd->bInterfaceNumber;
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -222,7 +109,7 @@
  	fp->rate_max = fp->rate_min = combine_triple(&alts->extra[8]);
  
  	stream = (fp->endpoint & USB_DIR_IN)
-@@ -2942,8 +3020,13 @@
+@@ -2935,8 +2969,13 @@
  	struct usb_host_config *config = dev->actconfig;
  	int err;
  
@@ -236,7 +123,7 @@
  		snd_printdd("sending Extigy boot sequence...\n");
  		/* Send message to force it to reconnect with full interface. */
  		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
-@@ -2955,8 +3038,13 @@
+@@ -2948,8 +2987,13 @@
  		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
  		err = usb_reset_configuration(dev);
  		if (err < 0) snd_printdd("error usb_reset_configuration: %d\n", err);
@@ -250,77 +137,34 @@
  		return -ENODEV; /* quit this anyway */
  	}
  	return 0;
-@@ -3018,8 +3106,13 @@
- 	snd_usb_audio_t *chip = entry->private_data;
- 	if (! chip->shutdown)
- 		snd_iprintf(buffer, "%04x:%04x\n", 
+@@ -3082,8 +3126,13 @@
+ 	chip->index = idx;
+ 	chip->dev = dev;
+ 	chip->card = card;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 			    le16_to_cpu(chip->dev->descriptor.idVendor),
- 			    le16_to_cpu(chip->dev->descriptor.idProduct));
+ 	chip->usb_id = USB_ID(le16_to_cpu(dev->descriptor.idVendor),
+ 			      le16_to_cpu(dev->descriptor.idProduct));
 +#else
-+			    chip->dev->descriptor.idVendor,
-+			    chip->dev->descriptor.idProduct);
++	chip->usb_id = USB_ID(dev->descriptor.idVendor,
++			      dev->descriptor.idProduct);
 +#endif
- }
+ 	INIT_LIST_HEAD(&chip->pcm_list);
+ 	INIT_LIST_HEAD(&chip->midi_list);
+ 	INIT_LIST_HEAD(&chip->mixer_list);
+@@ -3171,8 +3220,12 @@
  
- static void snd_usb_audio_create_proc(snd_usb_audio_t *chip)
-@@ -3100,8 +3193,13 @@
- 
- 	strcpy(card->driver, "USB-Audio");
- 	sprintf(component, "USB%04x:%04x",
+ 	alts = &intf->altsetting[0];
+ 	ifnum = get_iface_desc(alts)->bInterfaceNumber;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		le16_to_cpu(dev->descriptor.idVendor),
- 		le16_to_cpu(dev->descriptor.idProduct));
+ 	id = USB_ID(le16_to_cpu(dev->descriptor.idVendor),
+ 		    le16_to_cpu(dev->descriptor.idProduct));
 +#else
-+		dev->descriptor.idVendor,
-+		dev->descriptor.idProduct);
++	id = USB_ID(dev->descriptor.idVendor, dev->descriptor.idProduct);
 +#endif
- 	snd_component_add(card, component);
  
- 	/* retrieve the device string as shortname */
-@@ -3113,8 +3211,13 @@
-       			       card->shortname, sizeof(card->shortname)) <= 0) {
- 			/* no name available from anywhere, so use ID */
- 			sprintf(card->shortname, "USB Device %#04x:%#04x",
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 				le16_to_cpu(dev->descriptor.idVendor),
- 				le16_to_cpu(dev->descriptor.idProduct));
-+#else
-+				dev->descriptor.idVendor,
-+				dev->descriptor.idProduct);
-+#endif
- 		}
- 	}
- 
-@@ -3181,8 +3284,13 @@
- 
- 	/* SB Extigy needs special boot-up sequence */
- 	/* if more models come, this will go to the quirk list. */
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	if (le16_to_cpu(dev->descriptor.idVendor) == 0x041e && 
- 	    le16_to_cpu(dev->descriptor.idProduct) == 0x3000) {
-+#else
-+	if (dev->descriptor.idVendor == 0x041e && 
-+	    dev->descriptor.idProduct == 0x3000) {
-+#endif
- 		if (snd_usb_extigy_boot_quirk(dev, intf) < 0)
- 			goto __err_val;
- 		config = dev->actconfig;
-@@ -3216,8 +3324,13 @@
- 		}
- 		for (i = 0; i < SNDRV_CARDS; i++)
- 			if (enable[i] && ! usb_chip[i] &&
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 			    (vid[i] == -1 || vid[i] == le16_to_cpu(dev->descriptor.idVendor)) &&
- 			    (pid[i] == -1 || pid[i] == le16_to_cpu(dev->descriptor.idProduct))) {
-+#else
-+			    (vid[i] == -1 || vid[i] == dev->descriptor.idVendor) &&
-+			    (pid[i] == -1 || pid[i] == dev->descriptor.idProduct)) {
-+#endif
- 				if (snd_usb_audio_create(dev, i, quirk, &chip) < 0) {
- 					goto __error;
- 				}
-@@ -3292,12 +3405,17 @@
+ 	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
+ 		goto __err_val;
+@@ -3293,12 +3346,17 @@
  		}
  		usb_chip[chip->index] = NULL;
  		up(&register_mutex);
@@ -338,7 +182,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -3318,6 +3436,8 @@
+@@ -3319,6 +3377,8 @@
  	snd_usb_audio_disconnect(interface_to_usbdev(intf),
  				 dev_get_drvdata(&intf->dev));
  }
@@ -347,7 +191,7 @@
  
  
  static int __init snd_usb_audio_init(void)
-@@ -3338,3 +3458,5 @@
+@@ -3339,3 +3399,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);

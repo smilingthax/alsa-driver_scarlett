@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/usbmixer.c	2005-04-29 13:36:07.000000000 +0200
-+++ usbmixer.c	2005-04-29 16:01:00.000000000 +0200
+--- ../alsa-kernel/usb/usbmixer.c	2005-04-30 00:14:37.000000000 +0200
++++ usbmixer.c	2005-04-30 00:14:39.000000000 +0200
 @@ -1,3 +1,11 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -12,21 +12,7 @@
  /*
   *   (Tentative) USB Audio Driver for ALSA
   *
-@@ -1583,8 +1591,13 @@
- 	state.mixer = mixer;
- 	state.buffer = hostif->extra;
- 	state.buflen = hostif->extralen;
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	state.vendor = le16_to_cpu(dev->idVendor);
- 	state.product = le16_to_cpu(dev->idProduct);
-+#else
-+	state.vendor = dev->idVendor;
-+	state.product = dev->idProduct;
-+#endif
- 
- 	/* check the mapping table */
- 	for (map = usbmix_ctl_maps; map->vendor; map++) {
-@@ -1677,7 +1690,11 @@
+@@ -1677,7 +1685,11 @@
  		return 0;
  
  	epnum = ep->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
@@ -38,27 +24,3 @@
  	transfer_buffer = kmalloc(buffer_length, GFP_KERNEL);
  	if (!transfer_buffer)
  		return -ENOMEM;
-@@ -1766,7 +1783,11 @@
- 	snd_hwdep_t *hwdep;
- 	int err, len;
- 
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	switch (le16_to_cpu(mixer->chip->dev->descriptor.idProduct)) {
-+#else
-+	switch (mixer->chip->dev->descriptor.idProduct) {
-+#endif
- 	case 0x3000:
- 		mixer->rc_type = RC_EXTIGY;
- 		len = 2;
-@@ -1844,7 +1865,11 @@
- 		return err;
- 	}
- 
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 	if (le16_to_cpu(chip->dev->descriptor.idVendor) == 0x041e) {
-+#else
-+	if (chip->dev->descriptor.idVendor == 0x041e) {
-+#endif
- 		if ((err = snd_usb_soundblaster_remote_init(mixer)) < 0) {
- 			snd_usb_mixer_free(mixer);
- 			return err;
