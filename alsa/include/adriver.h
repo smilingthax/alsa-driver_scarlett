@@ -456,6 +456,7 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #define URB_ASYNC_UNLINK	USB_ASYNC_UNLINK
 #define usb_fill_int_urb	FILL_INT_URB
 #define usb_fill_bulk_urb	FILL_BULK_URB
+#define usb_fill_control_urb	FILL_CONTROL_URB
 #define usb_host_config		usb_config_descriptor
 #define usb_host_interface	usb_interface_descriptor
 #define usb_host_endpoint	usb_endpoint_descriptor
