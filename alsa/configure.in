@@ -965,6 +965,8 @@ EOF
     ARCH=ppc
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     CONFIG_PPC=y
+    dnl FIXME: it should be checked?
+    CONFIG_PPC_PMAC=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
