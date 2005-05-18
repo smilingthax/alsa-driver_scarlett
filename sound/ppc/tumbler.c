@@ -99,6 +99,7 @@ typedef struct pmac_tumbler_t {
 	pmac_gpio_t hp_detect;
 	int headphone_irq;
 	int lineout_irq;
+	unsigned int save_master_vol[2];
 	unsigned int master_vol[2];
 	unsigned int save_master_switch[2];
 	unsigned int master_switch[2];
@@ -932,7 +933,7 @@ static void device_change_handler(void *self)
 
 	headphone = tumbler_detect_headphone(chip);
 	lineout = tumbler_detect_lineout(chip);
- 
+
 	DBG("headphone: %d, lineout: %d\n", headphone, lineout);
 
 	if (headphone || lineout) {
@@ -1139,6 +1140,8 @@ static void tumbler_suspend(pmac_t *chip)
 		disable_irq(mix->lineout_irq);
 	mix->save_master_switch[0] = mix->master_switch[0];
 	mix->save_master_switch[1] = mix->master_switch[1];
+	mix->save_master_vol[0] = mix->master_vol[0];
+	mix->save_master_vol[1] = mix->master_vol[1];
 	mix->master_switch[0] = mix->master_switch[1] = 0;
 	tumbler_set_master_volume(mix);
 	if (!mix->anded_reset) {
@@ -1166,6 +1169,8 @@ static void tumbler_resume(pmac_t *chip)
 	mix->acs &= ~1;
 	mix->master_switch[0] = mix->save_master_switch[0];
 	mix->master_switch[1] = mix->save_master_switch[1];
+	mix->master_vol[0] = mix->save_master_vol[0];
+	mix->master_vol[1] = mix->save_master_vol[1];
 	tumbler_reset_audio(chip);
 	if (mix->i2c.client && mix->i2c.init_client) {
 		if (mix->i2c.init_client(&mix->i2c) < 0)
@@ -1242,7 +1247,7 @@ static int __init tumbler_init(pmac_t *chip)
 		irq = tumbler_find_device("line-output-detect",
 					  NULL, &mix->line_detect, 1);
 	mix->lineout_irq = irq;
-  
+
 	tumbler_reset_audio(chip);
   
 	return 0;
@@ -1275,7 +1280,7 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 	u32 *paddr;
 	struct device_node *tas_node, *np;
 	char *chipname;
-	
+
 #ifdef CONFIG_KMOD
 	if (current->fs->root)
 		request_module("i2c-keywest");
@@ -1300,7 +1305,7 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 				mix->reset_on_sleep = 0;
 			break;
 		}
-	}  
+	}
 	if ((err = tumbler_init(chip)) < 0)
 		return err;
 
@@ -1333,7 +1338,7 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 
 	if ((err = snd_pmac_keywest_init(&mix->i2c)) < 0)
 		return err;
-	
+
 	/*
 	 * build mixers
 	 */
