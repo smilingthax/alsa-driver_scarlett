@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/pcm_native.c	2005-05-18 18:43:53.000000000 +0200
-+++ pcm_native.c	2005-05-18 18:56:50.000000000 +0200
+--- ../alsa-kernel/core/pcm_native.c	2005-05-18 22:44:22.000000000 +0200
++++ pcm_native.c	2005-05-22 14:41:29.000000000 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
@@ -245,12 +245,12 @@
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
 +#define io_remap_page_range remap_page_range
 +#endif
-+#ifdef CONFIG_HAVE_REMAP_PFN_RANGE
++#ifdef CONFIG_HAVE_IO_REMAP_PFN_RANGE
  	if (io_remap_pfn_range(area, area->vm_start,
  				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
  				size, area->vm_page_prot))
  		return -EAGAIN;
-+#elif defined(CONFIG_OLD_REMAP_PAGE_RANGE)
++#elif defined(CONFIG_OLD_IO_REMAP_PAGE_RANGE)
 +	if (io_remap_page_range(area->vm_start,
 +				substream->runtime->dma_addr + offset,
 +				size, area->vm_page_prot))
