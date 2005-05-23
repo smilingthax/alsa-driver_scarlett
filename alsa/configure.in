@@ -1191,6 +1191,8 @@ else
 fi
 AC_SUBST(msmp)
 
+KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+
 dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
 if test $kpatchlevel -gt 2; then
 CHECK_KERNEL_CONFIG(CONFIG_VIDEO_DEV, [Video device support in kernel])
@@ -1272,7 +1274,7 @@ AC_MSG_CHECKING(for strlcpy)
 strlcpy="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1300,7 +1302,7 @@ AC_MSG_CHECKING(for snprintf)
 snprintf="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1327,7 +1329,7 @@ AC_MSG_CHECKING(for vsnprintf)
 vsnprintf="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1361,7 +1363,7 @@ AC_MSG_CHECKING(for scnprintf)
 scnprintf="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1388,7 +1390,7 @@ AC_MSG_CHECKING(for sscanf)
 sscanf="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1415,7 +1417,7 @@ AC_MSG_CHECKING(for vmalloc_to_page)
 vmalloc_to_page="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1443,7 +1445,7 @@ AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1469,7 +1471,7 @@ AC_MSG_CHECKING(for PDE)
 pde_defined="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1497,7 +1499,7 @@ AC_MSG_CHECKING(for pci_set_consistent_dma_mask)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1523,7 +1525,7 @@ AC_MSG_CHECKING(for pci_dev_present)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1549,7 +1551,7 @@ AC_MSG_CHECKING(for msleep)
 msleep="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1577,7 +1579,7 @@ AC_MSG_CHECKING(for msleep_interrupt)
 msleep_interrupt="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1605,7 +1607,7 @@ AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1632,7 +1634,7 @@ AC_MSG_CHECKING(for video_get_drvdata)
 video_get_drvdata="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1660,7 +1662,7 @@ AC_MSG_CHECKING(for io_remap_pfn_range)
 io_remap_pfn_range="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Werror-implicit-function-declaration $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror-implicit-function-declaration"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1685,7 +1687,7 @@ AC_MSG_CHECKING(for new io_remap_page_range)
 new_io_remap="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="-Werror-implicit-function-declaration $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror-implicit-function-declaration"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1711,7 +1713,7 @@ AC_MSG_CHECKING(for kcalloc)
 kcalloc="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1738,7 +1740,7 @@ AC_MSG_CHECKING(for saved_config_space in pci_dev)
 pci_saved_config="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1766,7 +1768,7 @@ AC_MSG_CHECKING(for new pci_save_state)
 new_pci_save_state="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1958,7 +1960,7 @@ AC_MSG_CHECKING(for RTC callback support in kernel)
 rtcsup="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC=$CC
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -2011,7 +2013,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   new_ioctl="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
-  CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+  CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
