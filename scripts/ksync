@@ -94,6 +94,8 @@ COMMENT_MAP_DRIVER = [
 		('/arm/devdma.[ch]'	,'ARM DMA routines'),
 		('/arm/aaci.[ch]'	,'ARM AACI PL041 driver'),
 		('/arm/sa11xx-uda1341.c','SA11xx UDA1341 driver'),
+		('/arm/pxa2xx.*'	,'ARM PXA2XX driver'),
+		('/arm/s3c24xx-iis.[ch]','ARM S3C24XX IIS driver'),
 		('/arm'			,'ERROR'),
 		('/isa/Kconfig'		,'ISA'),
 		('/isa/ad1816a'		,'AD1816A driver'),
@@ -122,6 +124,7 @@ COMMENT_MAP_DRIVER = [
 		('/isa/sb/sb16.*'	,'SB16/AWE driver'),
 		('/isa/sb/sb8.*'	,'SB8 driver'),
 		('/isa/sb'		,'SB drivers'),
+		('/isa/msnd'		,'MSND driver'),
 		('/isa/opti9xx'		,'Opti9xx drivers'),
 		('/include/yss225.h'	,'Wavefront drivers'),
 		('/include/snd_wavefront.h', 'Wavefront drivers'),
@@ -220,13 +223,16 @@ COMMENT_MAP_DRIVER = [
 		('/i2c/cs8427.c'	,'I2C cs8427'),
 		('/i2c/tea6330t.c'	,'I2C tea6330t'),
 		('/i2c'			,'ERROR'),
-		('/parisc/harmony.c'	,'PARISC Harmony driver'),
+		('/parisc/harmony.[ch]'	,'PARISC Harmony driver'),
 		('/parisc/Kconfig'	,'PARISC'),
 		('/parisc'		,'ERROR'),
 		('/sparc/amd7930.c'	,'SPARC AMD7930 driver'),
 		('/sparc/cs4231.c'	,'SPARC cs4231 driver'),
 		('/sparc/Kconfig'	,'SPARC'),
 		('/sparc'		,'ERROR'),
+		('/mips/au1x00.[ch]'	,'MIPS AU1x00 driver'),
+		('/mips/Kconfig'	,'MIPS'),
+		('/mips'		,'ERROR'),
 		('/include/emux_synth.h','Common EMU synth'),
 		('/synth/emux'		,'Common EMU synth'),
 		('/include/soundmem.h'  ,'Synth'),
@@ -263,6 +269,7 @@ COMMENT_MAP_DRIVER = [
 		('/core/memalloc.*'	,'Memalloc module'),
 		('/core/sgbuf.*'	,'Memalloc module'),
 		('/core/rtctimer.*'	,'RTC timer driver'),
+		('/core/hpetimer.*'	,'HPE timer driver'),
 		('/include/timer.h'	,'Timer Midlevel'),
 		('/core/timer.*'	,'Timer Midlevel'),
 		('/include/rawmidi.*'	,'RawMidi Midlevel'),
@@ -286,6 +293,8 @@ COMMENT_MAP_DRIVER = [
 		('/include/memalloc.h'  ,'ALSA Core'),
 		('/include/config.h.in' ,'ALSA Core'),
 		('/include/firmware_compat.h','ALSA Core'),
+		('/include/compat_22.h'	,'ALSA Core'),
+		('/include/autoconf.*'	,'ALSA Core'),
 		('/core/info.*'		,'ALSA Core'),
 		('/core/control.*'	,'ALSA Core'),
 		('/core/init.*'		,'ALSA Core'),
@@ -294,6 +303,7 @@ COMMENT_MAP_DRIVER = [
 		('/core/memory.*'	,'ALSA Core'),
 		('/core/misc.*'		,'ALSA Core'),
 		('/core/wrappers.*'	,'ALSA Core'),
+		('/core/pci_compat_22.c','ALSA Core'),
 		('/core/Makefile'	,'ALSA Core'),
 		('/core'		,'ERROR'),
 		('/Documentation/.*'	,'Documentation'),
@@ -310,17 +320,39 @@ COMMENT_MAP_DRIVER = [
 	       ]
 COMMENT_MAP_LIB = [
 		('/include/sound/.*'	,'Kernel Headers'),
+		('/include/asound.*'	,'Core'),
 		('/include/local.*'	,'Core'),
 		('/include/global.*'	,'Core'),
+		('/include/conv.h'	,'Core'),
+		('/include/error.h'	,'Core'),
+		('/include/conf.h'	,'Config API'),
 		('/include/control.h'	,'Control API'),
+		('/include/hwdep.h'	,'HWDEP API'),
+		('/include/(input|output).h' ,'I/O API'),
+		('/include/instr.h'	,'Instrument API'),
+		('/include/mixer.h'	,'Mixer API'),
+		('/include/mixer_ordinary.h' ,'Mixer Ordinary API'),
+		('/include/rawmidi.h'	,'Rawmidi API'),
+		('/include/timer.h'	,'Timer API'),
+		('/include/seq.*'	,'Sequencer API'),
+		('/include/pcm.h'	,'PCM API'),
+		('/include/pcm_old.h'	,'PCM API'),
+		('/include/pcm_ordinary.h' ,'PCM Ordinary API'),
+		('/include/pcm_plugin.h' ,'PCM Plugin API'),
+		('/include/pcm_external.h' ,'External PCM Plugin SDK'),
+		('/include/pcm_ioplug.h' ,'External PCM I/O Plugin SDK'),
+		('/include/pcm_extplug.h','External PCM Filter Plugin SDK'),
+		('/include/alsa-symbols.h','Core'),
 		('/src/control/.*'	,'Control API'),
 		('/src/mixer/.*'	,'Mixer API'),
 		('/include/pcm.h'	,'PCM API'),
+		('/src/alisp/.*'	,'ALSA Lisp'),
 		('/src/pcm/.*'		,'PCM API'),
 		('/src/rawmidi/.*'	,'RawMidi API'),
 		('/src/timer/.*'	,'Timer API'),
 		('/src/seq/.*'		,'Sequencer API'),
 		('/src/instr/.*'	,'Instrument API'),
+		('/src/hwdep/.*'	,'HWDEP API'),
 		('/src/input.*'		,'I/O subsystem'),
 		('/src/output.*'	,'I/O subsystem'),
 		('/src/conf.*'		,'Configuration'),
@@ -328,9 +360,15 @@ COMMENT_MAP_LIB = [
 		('/src/error.*'		,'Error handler'),
 		('/src/socket.*'	,'Socket helpers'),
 		('/src/userfile.*'	,'Filename helpers'),
+		('/src/dlmisc.*'	,'Dynamic Loader helpers'),
+		('/src/names.*'		,'Device Name API'),
+		('/src/shmarea.*'	,'SHM helpers'),
 		('/src/Versions'	,'Core'),
 		('/doc/.*'		,'Documentation'),
+		('/utils/.*'		,'Utils'),
+		('/test/.*'		,'Test/Example code'),
 		('/configure.in'	,'Core'),
+		('/INSTALL'		,'Documentation'),
 		('/NOTES'		,'Documentation'),
 		('/'			,'ERROR')
 	       ]
@@ -341,6 +379,11 @@ COMMENT_MAP_UTILS = [
 		('/alsaconf/.*'		,'alsaconf'),
 		('/speaker-test/.*'	,'Speaker Test'),
 		('/alsactl/.*'		,'ALSA Control (alsactl)'),
+		('/amidi/.*'		,'ALSA RawMidi Utility (amidi)'),
+		('/seq/aplaymidi/.*'	,'aplaymidi/arecordmidi'),
+		('/seq/aseqdump/.*'	,'aseqdump'),
+		('/seq/aconnect/.*'	,'aconnect'),
+		('/iecset/.*'		,'iecset'),
 		('/configure.in'	,'Core'),
 		('/Makefile.am'		,'Core'),
 		('/Makefile.am'		,'Core'),
@@ -351,16 +394,21 @@ COMMENT_MAP_TOOLS = [
 		('/envy24control/.*'	,'Envy24 Control'),
 		('/rmedigicontrol/.*'	,'RME Digi Control'),
 		('/pcxhrloader/.*'	,'Digigram PCXHR Loader'),
+		('/hdsploader/.*'	,'RME HDSP Loader'),
 		('/echomixer/.*'	,'Digigram Echo Mixer'),
+		('/as10k1/.*'		,'as10k1 (EMU10K1+ DSP Assembler)'),
+		('/ld10k1/.*'		,'ld10k1 (EMU10K1+ DSP Code Loader)'),
+		('/qlo10k1/.*'		,'qlo10k1'),
 		('/Makefile'		,'Core'),
 		('/'			,'ERROR')
 	       ]
 COMMENT_MAP_FIRMWARE = [
-		('/vxloader'		,'Digigram Vx Loader'),
-		('/mixartloader'	,'Digigram MixArt Loader'),
-		('/pcxhrloader'		,'Digigram PCXHR Loader'),
-		('/echoaudio'		,'Digigram Echo Audio Loader'),
-		('/hdsploader'		,'RME HDSP Loader'),
+		('/vxloader'		,'Digigram Vx Firmware'),
+		('/mixartloader'	,'Digigram MixArt Firmware'),
+		('/pcxhrloader'		,'Digigram PCXHR Firmware'),
+		('/echoaudio'		,'Digigram Echo Audio Firmware'),
+		('/hdsploader'		,'RME HDSP Firmware'),
+		('/usx2yloader'		,'Tescam USX2Y Firmware'),
 		('/configure.in'	,'Core'),
 		('/Makefile.am'		,'Core'),
 		('/README'		,'Core'),
@@ -368,6 +416,9 @@ COMMENT_MAP_FIRMWARE = [
 	       ]
 COMMENT_MAP_OSS = [
 		('/alsa/pcm.c'		,'PCM Emulation'),
+		('/alsa/pcm.c'		,'Mixer Emulation'),
+		('/alsa/stdioemu.c'	,'Core'),
+		('/alsa/alsa-oss.c'	,'Core'),
 		('/alsa/Makefile.am'	,'Core'),
 		('/alsa/aoss.1'		,'Manual Page'),
 		('/configure.in'	,'Core'),
@@ -385,6 +436,7 @@ COMMENT_MAP = {
 # Global variables
 LAST_CVS_TIME = 0
 FATAL_LSYNC_ERROR = 0
+GERRORS = 0
 
 # Translation tables for CVS user IDs
 CVS_USER = {'perex':'Jaroslav Kysela <perex@suse.cz>',
@@ -972,11 +1024,15 @@ def cvsps_merge_members1(file, module):
 			return i[1]
 	if file[-11:] == '/.cvsignore':
 		return 'IGNORE'
+	if file[-12:] == '/Makefile.am':
+		return file
 	if file[-9:] == '/Makefile':
 		return file
 	return 'ERROR'
 
 def cvsps_merge_members(members, module='alsa-driver'):
+	global GERRORS
+
 	changes = []
 	result = []
 	for member in members:
@@ -985,8 +1041,13 @@ def cvsps_merge_members(members, module='alsa-driver'):
 		while file != '':
 			result1 = cvsps_merge_members1(file, module)
 			if result1 == 'ERROR':
-				print 'Cannot identify file "%s"' % file
-				sys.exit(1)
+				GERRORS += 1
+				str = 'Cannot identify file "%s" from module %s' % (file, module)
+				fp = open("/tmp/cvsps-changes.txt", "a+")
+				fp.write(str)
+				fp.close()
+				print str, ' {see /tmp/cvsps-changes.txt file}'
+				result1 = ''
 			if result1 != '':
 				file = ''
 				changes.append(result1)
@@ -1302,12 +1363,21 @@ def cvsps_changes1(changes, lines, module):
 		del members
 
 def cvsps_changes2(changes):
+	global GERRORS
+
 	res = {}
+	try:
+		os.remove("/tmp/cvsps-changes.txt")
+	except OSError:
+		pass
 	for change in changes:
 		module = change['module']
 		if not res.has_key(module):
 			res[module] = {}
-		members = cvsps_merge_members(change['members'], module)[0]
+		members = cvsps_merge_members(change['members'], module)
+		if len(members) == 0:
+			continue
+		members = members[0]
 		mems = string.split(members, ',')
 		for mem in mems:
 			if mem == 'IGNORE':
@@ -1315,6 +1385,9 @@ def cvsps_changes2(changes):
 			if not res[module].has_key(mem):
 				res[module][mem] = []
 			res[module][mem].append(change)
+	if GERRORS > 0:
+		print 'Bailing out...'
+		sys.exit(1);
 	return res
 
 def cvsps_changes3(allitems):
@@ -1351,7 +1424,19 @@ def cvsps_changes3(allitems):
 				idx1 += 1
 	return items
 
-def cvsps_changes(rev1, rev2):
+def rev_to_dot(rev):
+	major, minor, subminor = string.split(rev, '-')
+	major = major[1:]
+	return "%s.%s.%s" % (major, minor, subminor)
+
+def print_underline(c, str):
+	i = 0
+	while i < len(str):
+		sys.stdout.write(c)
+		i += 1
+	print
+
+def cvsps_changes(rev1, rev2, update=False):
 	changes = []
 	os.chdir(get_cvs_root_top())
 	fullset = ['alsa-driver', 'alsa-kernel', 'alsa-lib',
@@ -1360,6 +1445,8 @@ def cvsps_changes(rev1, rev2):
 	for module in fullset:
 	#for module in ['alsa-oss']:
 		os.chdir(get_cvs_root_top() + '/' + module)
+		if update:
+			os.system("cvsps -Z 3 -u > /dev/null 2> /dev/null")
 		lines = my_popen("cvsps -Z 3 -r %s -r %s" % (rev1, rev2))
 		#lines = my_popen("cvsps -Z 3 -u -r %s -r %s" % (rev1, rev2))
 		cvsps_changes1(changes, lines, module)
@@ -1371,8 +1458,9 @@ def cvsps_changes(rev1, rev2):
 			modules.append(module)
 	print
 	print
-	print 'Changelog'
-	print '*********'
+	str = 'Changelog between %s and %s releases' % (rev_to_dot(rev1), rev_to_dot(rev2))
+	print str
+	print_underline('*', str)
 	print
 	for module in modules:
 		print '* %s' % module
@@ -1391,8 +1479,9 @@ def cvsps_changes(rev1, rev2):
 					print '    - %s' % log
 	print
 	print
-	print 'Detailed changelog'
-	print '******************'
+	str = 'Detailed changelog between %s and %s releases' % (rev_to_dot(rev1), rev_to_dot(rev2))
+	print str
+	print_underline('*', str)
 	print
 	for module in modules:
 		print '* %s' % module
