@@ -1,0 +1,42 @@
+--- ../../alsa-kernel/pci/hda/hda_codec.c	2005-05-23 16:19:31.000000000 +0200
++++ hda_codec.c	2005-05-27 12:20:13.000000000 +0200
+@@ -225,6 +225,8 @@
+ }
+ 
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
++
+ /**
+  * snd_hda_queue_unsol_event - add an unsolicited event to queue
+  * @bus: the BUS
+@@ -304,6 +306,20 @@
+ 	return 0;
+ }
+ 
++#else
++/* 2.4 kernels seem to have a problem with workq wrapper... */
++int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex)
++{
++	reutrn 0;
++}
++
++static int init_unsol_queue(struct hda_bus *bus)
++{
++	return 0;
++}
++#endif
++
++
+ /*
+  * destructor
+  */
+@@ -316,7 +332,9 @@
+ 	if (! bus)
+ 		return 0;
+ 	if (bus->unsol) {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ 		destroy_workqueue(bus->unsol->workq);
++#endif
+ 		kfree(bus->unsol);
+ 	}
+ 	list_for_each_safe(p, n, &bus->codec_list) {

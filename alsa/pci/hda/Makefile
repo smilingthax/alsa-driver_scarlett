@@ -7,6 +7,10 @@ include $(SND_TOPDIR)/Makefile.conf
 
 export-objs  := hda_codec.o
 
+EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/pci/hda
+
 include $(SND_TOPDIR)/alsa-kernel/pci/hda/Makefile
 
 include $(SND_TOPDIR)/Rules.make
+
+hda_codec.c: hda_codec.patch $(SND_TOPDIR)/alsa-kernel/pci/hda/hda_codec.c
