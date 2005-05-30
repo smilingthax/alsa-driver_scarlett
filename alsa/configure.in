@@ -2007,6 +2007,34 @@ if test "$CONFIG_USB" != "y"; then
 fi
 AC_SUBST(CONFIG_USB)
 
+dnl class_simple for old 2.6 kernels
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for class_simple)
+  class_simple="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/device.h>
+],[
+  struct class_simple *(*foo)(struct module *, char *) = class_simple_create;
+  foo(NULL,NULL);
+],
+    AC_MSG_RESULT("yes");class_simple="1",
+    AC_MSG_RESULT("no");class_simple="0",
+    AC_MSG_RESULT("unknown");class_simple="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAVE_CLASS_SIMPLE=$class_simple
+  dnl AC_SUBST(CONFIG_SND_HAVE_CLASS_SIMPLE)
+  if test "$CONFIG_SND_HAVE_CLASS_SIMPLE" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAVE_CLASS_SIMPLE)
+  fi
+fi
+
 dnl New unlocked/compat_ioctl
 if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_MSG_CHECKING(for new unlocked/compat_ioctl)
