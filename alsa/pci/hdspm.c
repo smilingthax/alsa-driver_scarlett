@@ -1,6 +1,6 @@
 /*   -*- linux-c -*-
  *
- *   ALSA driver for RME Hammerfall DSP audio interface(s)
+ *   ALSA driver for RME Hammerfall DSP MADI audio interface(s)
  *
  *      Copyright (c) 2003 Winfried Ritsch (IEM)
  *      code based on hdsp.c   Paul Davis
@@ -3732,7 +3732,7 @@ static void __devexit snd_hdspm_remove(struct pci_dev *pci)
 }
 
 static struct pci_driver driver = {
-	.name = "RME Hammerfall DSP",
+	.name = "RME Hammerfall DSP MADI",
 	.id_table = snd_hdspm_ids,
 	.probe = snd_hdspm_probe,
 	.remove = __devexit_p(snd_hdspm_remove),
@@ -3746,7 +3746,7 @@ static int __init alsa_card_hdspm_init(void)
 		return 0;
 	}
 #ifdef MODULE
-	printk(KERN_ERR "RME Hammerfall-DSP: no HDSPM\n");
+	printk(KERN_ERR "RME Hammerfall-DSP MADI: no HDSPM\n");
 #endif
 	return -ENODEV;
 }
@@ -3755,7 +3755,7 @@ static void __exit alsa_card_hdspm_exit(void)
 {
 	pci_unregister_driver(&driver);
 #ifdef MODULE
-	snd_printdd("RME Hammerfall-DSP: HDSPM unloaded\n");
+	snd_printdd("RME Hammerfall-DSP MADI: HDSPM unloaded\n");
 #endif
 
 }
