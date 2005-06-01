@@ -386,7 +386,6 @@ struct _hdspm {
 	int dev;		/* Hardware vars... */
 	int irq;
 	unsigned long port;
-	struct resource *res_port;
 	void __iomem *iobase;
 
 	int irq_count;		/* for debug */
@@ -469,8 +468,8 @@ static inline void snd_hdspm_initialize_midi_flush(hdspm_t * hdspm);
 static int hdspm_update_simple_mixer_controls(hdspm_t * hdspm);
 static int hdspm_autosync_ref(hdspm_t * hdspm);
 static int snd_hdspm_set_defaults(hdspm_t * hdspm);
-void hdspm_set_sgbuf(hdspm_t * hdspm, struct snd_sg_buf *sgbuf,
-		     unsigned int reg, int channels);
+static void hdspm_set_sgbuf(hdspm_t * hdspm, struct snd_sg_buf *sgbuf,
+			     unsigned int reg, int channels);
 
 /* Write/read to/from HDSPM with Adresses in Bytes
    not words but only 32Bit writes are allowed */
@@ -874,54 +873,48 @@ static void all_in_all_mixer(hdspm_t * hdspm, int sgain)
 static inline unsigned char snd_hdspm_midi_read_byte (hdspm_t *hdspm, int id)
 {
 	/* the hardware already does the relevant bit-mask with 0xff */
-	if (id) {
+	if (id)
 		return hdspm_read(hdspm, HDSPM_midiDataIn1);
-	} else {
+	else
 		return hdspm_read(hdspm, HDSPM_midiDataIn0);
-	}
 }
 
 static inline void snd_hdspm_midi_write_byte (hdspm_t *hdspm, int id, int val)
 {
 	/* the hardware already does the relevant bit-mask with 0xff */
-	if (id) {
+	if (id)
 		return hdspm_write(hdspm, HDSPM_midiDataOut1, val);
-	} else {
+	else
 		return hdspm_write(hdspm, HDSPM_midiDataOut0, val);
-	}
 }
 
 static inline int snd_hdspm_midi_input_available (hdspm_t *hdspm, int id)
 {
-	if (id) {
+	if (id)
 		return (hdspm_read(hdspm, HDSPM_midiStatusIn1) & 0xff);
-	} else {
+	else
 		return (hdspm_read(hdspm, HDSPM_midiStatusIn0) & 0xff);
-	}
 }
 
 static inline int snd_hdspm_midi_output_possible (hdspm_t *hdspm, int id)
 {
 	int fifo_bytes_used;
 
-	if (id) {
+	if (id)
 		fifo_bytes_used = hdspm_read(hdspm, HDSPM_midiStatusOut1) & 0xff;
-	} else {
+	else
 		fifo_bytes_used = hdspm_read(hdspm, HDSPM_midiStatusOut0) & 0xff;
-	}
 
-	if (fifo_bytes_used < 128) {
+	if (fifo_bytes_used < 128)
 		return  128 - fifo_bytes_used;
-	} else {
+	else
 		return 0;
-	}
 }
 
 static inline void snd_hdspm_flush_midi_input (hdspm_t *hdspm, int id)
 {
-	while (snd_hdspm_midi_input_available (hdspm, id)) {
+	while (snd_hdspm_midi_input_available (hdspm, id))
 		snd_hdspm_midi_read_byte (hdspm, id);
-	}
 }
 
 static int snd_hdspm_midi_output_write (hdspm_midi_t *hmidi)
@@ -1064,13 +1057,12 @@ static void snd_hdspm_midi_output_trigger(snd_rawmidi_substream_t * substream, i
 static int snd_hdspm_midi_input_open(snd_rawmidi_substream_t * substream)
 {
 	hdspm_midi_t *hmidi;
-	unsigned long flags;
 
 	hmidi = (hdspm_midi_t *) substream->rmidi->private_data;
-	spin_lock_irqsave (&hmidi->lock, flags);
+	spin_lock_irq (&hmidi->lock);
 	snd_hdspm_flush_midi_input (hmidi->hdspm, hmidi->id);
 	hmidi->input = substream;
-	spin_unlock_irqrestore (&hmidi->lock, flags);
+	spin_unlock_irq (&hmidi->lock);
 
 	return 0;
 }
@@ -1078,12 +1070,11 @@ static int snd_hdspm_midi_input_open(snd_rawmidi_substream_t * substream)
 static int snd_hdspm_midi_output_open(snd_rawmidi_substream_t * substream)
 {
 	hdspm_midi_t *hmidi;
-	unsigned long flags;
 
 	hmidi = (hdspm_midi_t *) substream->rmidi->private_data;
-	spin_lock_irqsave (&hmidi->lock, flags);
+	spin_lock_irq (&hmidi->lock);
 	hmidi->output = substream;
-	spin_unlock_irqrestore (&hmidi->lock, flags);
+	spin_unlock_irq (&hmidi->lock);
 
 	return 0;
 }
@@ -1091,14 +1082,13 @@ static int snd_hdspm_midi_output_open(snd_rawmidi_substream_t * substream)
 static int snd_hdspm_midi_input_close(snd_rawmidi_substream_t * substream)
 {
 	hdspm_midi_t *hmidi;
-	unsigned long flags;
 
 	snd_hdspm_midi_input_trigger (substream, 0);
 
 	hmidi = (hdspm_midi_t *) substream->rmidi->private_data;
-	spin_lock_irqsave (&hmidi->lock, flags);
+	spin_lock_irq (&hmidi->lock);
 	hmidi->input = NULL;
-	spin_unlock_irqrestore (&hmidi->lock, flags);
+	spin_unlock_irq (&hmidi->lock);
 
 	return 0;
 }
@@ -1106,14 +1096,13 @@ static int snd_hdspm_midi_input_close(snd_rawmidi_substream_t * substream)
 static int snd_hdspm_midi_output_close(snd_rawmidi_substream_t * substream)
 {
 	hdspm_midi_t *hmidi;
-	unsigned long flags;
 
 	snd_hdspm_midi_output_trigger (substream, 0);
 
 	hmidi = (hdspm_midi_t *) substream->rmidi->private_data;
-	spin_lock_irqsave (&hmidi->lock, flags);
+	spin_lock_irq (&hmidi->lock);
 	hmidi->output = NULL;
-	spin_unlock_irqrestore (&hmidi->lock, flags);
+	spin_unlock_irq (&hmidi->lock);
 
 	return 0;
 }
@@ -1134,6 +1123,7 @@ snd_rawmidi_ops_t snd_hdspm_midi_input =
 
 static int __devinit snd_hdspm_create_midi (snd_card_t *card, hdspm_t *hdspm, int id)
 {
+	int err;
 	char buf[32];
 
 	hdspm->midi[id].id = id;
@@ -1146,9 +1136,8 @@ static int __devinit snd_hdspm_create_midi (snd_card_t *card, hdspm_t *hdspm, in
 	spin_lock_init (&hdspm->midi[id].lock);
 
 	sprintf (buf, "%s MIDI %d", card->shortname, id+1);
-	if (snd_rawmidi_new (card, buf, id, 1, 1, &hdspm->midi[id].rmidi) < 0) {
-		return -1;
-	}
+	if ((err = snd_rawmidi_new (card, buf, id, 1, 1, &hdspm->midi[id].rmidi)) < 0)
+		return err;
 
 	sprintf (hdspm->midi[id].rmidi->name, "%s MIDI %d", card->id, id+1);
 	hdspm->midi[id].rmidi->private_data = &hdspm->midi[id];
@@ -1164,16 +1153,14 @@ static int __devinit snd_hdspm_create_midi (snd_card_t *card, hdspm_t *hdspm, in
 }
 
 
-void hdspm_midi_tasklet(unsigned long arg)
+static void hdspm_midi_tasklet(unsigned long arg)
 {
 	hdspm_t *hdspm = (hdspm_t *)arg;
 	
-	if (hdspm->midi[0].pending) {
+	if (hdspm->midi[0].pending)
 		snd_hdspm_midi_input_read (&hdspm->midi[0]);
-	}
-	if (hdspm->midi[1].pending) {
+	if (hdspm->midi[1].pending)
 		snd_hdspm_midi_input_read (&hdspm->midi[1]);
-	}
 } 
 
 
@@ -1294,9 +1281,8 @@ static int hdspm_system_clock_mode(hdspm_t * hdspm)
 {
         /* Always reflect the hardware info, rme is never wrong !!!! */
 
-	if (hdspm->control_register & HDSPM_ClockModeMaster) {
+	if (hdspm->control_register & HDSPM_ClockModeMaster)
 		return 0;
-	}
 	return 1;
 }
 
@@ -1454,7 +1440,6 @@ static int snd_hdspm_put_clock_source(snd_kcontrol_t * kcontrol,
 				      snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	int val;
 
@@ -1465,13 +1450,12 @@ static int snd_hdspm_put_clock_source(snd_kcontrol_t * kcontrol,
 		val = 0;
 	if (val > 6)
 		val = 6;
-	spin_lock_irqsave(&hdspm->lock, flags);
-	if (val != hdspm_clock_source(hdspm)) {
+	spin_lock_irq(&hdspm->lock);
+	if (val != hdspm_clock_source(hdspm))
 		change = (hdspm_set_clock_source(hdspm, val) == 0) ? 1 : 0;
-	} else {
+	else
 		change = 0;
-	}
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1548,7 +1532,6 @@ static int snd_hdspm_put_pref_sync_ref(snd_kcontrol_t * kcontrol,
 				       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change, max;
 	unsigned int val;
 
@@ -1559,10 +1542,10 @@ static int snd_hdspm_put_pref_sync_ref(snd_kcontrol_t * kcontrol,
 
 	val = ucontrol->value.enumerated.item[0] % max;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change = (int) val != hdspm_pref_sync_ref(hdspm);
 	hdspm_set_pref_sync_ref(hdspm, val);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1640,11 +1623,10 @@ static int hdspm_line_out(hdspm_t * hdspm)
 
 static int hdspm_set_line_output(hdspm_t * hdspm, int out)
 {
-	if (out) {
+	if (out)
 		hdspm->control_register |= HDSPM_LineOut;
-	} else {
+	else
 		hdspm->control_register &= ~HDSPM_LineOut;
-	}
 	hdspm_write(hdspm, HDSPM_controlRegister, hdspm->control_register);
 
 	return 0;
@@ -1664,11 +1646,10 @@ static int snd_hdspm_get_line_out(snd_kcontrol_t * kcontrol,
 				  snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	ucontrol->value.integer.value[0] = hdspm_line_out(hdspm);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return 0;
 }
 
@@ -1676,17 +1657,16 @@ static int snd_hdspm_put_line_out(snd_kcontrol_t * kcontrol,
 				  snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	unsigned int val;
 
 	if (!snd_hdspm_use_is_exclusive(hdspm))
 		return -EBUSY;
 	val = ucontrol->value.integer.value[0] & 1;
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change = (int) val != hdspm_line_out(hdspm);
 	hdspm_set_line_output(hdspm, val);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1706,11 +1686,10 @@ static int hdspm_tx_64(hdspm_t * hdspm)
 
 static int hdspm_set_tx_64(hdspm_t * hdspm, int out)
 {
-	if (out) {
+	if (out)
 		hdspm->control_register |= HDSPM_TX_64ch;
-	} else {
+	else
 		hdspm->control_register &= ~HDSPM_TX_64ch;
-	}
 	hdspm_write(hdspm, HDSPM_controlRegister, hdspm->control_register);
 
 	return 0;
@@ -1730,11 +1709,10 @@ static int snd_hdspm_get_tx_64(snd_kcontrol_t * kcontrol,
 			       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	ucontrol->value.integer.value[0] = hdspm_tx_64(hdspm);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return 0;
 }
 
@@ -1742,17 +1720,16 @@ static int snd_hdspm_put_tx_64(snd_kcontrol_t * kcontrol,
 			       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	unsigned int val;
 
 	if (!snd_hdspm_use_is_exclusive(hdspm))
 		return -EBUSY;
 	val = ucontrol->value.integer.value[0] & 1;
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change = (int) val != hdspm_tx_64(hdspm);
 	hdspm_set_tx_64(hdspm, val);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1772,11 +1749,10 @@ static int hdspm_c_tms(hdspm_t * hdspm)
 
 static int hdspm_set_c_tms(hdspm_t * hdspm, int out)
 {
-	if (out) {
+	if (out)
 		hdspm->control_register |= HDSPM_clr_tms;
-	} else {
+	else
 		hdspm->control_register &= ~HDSPM_clr_tms;
-	}
 	hdspm_write(hdspm, HDSPM_controlRegister, hdspm->control_register);
 
 	return 0;
@@ -1796,11 +1772,10 @@ static int snd_hdspm_get_c_tms(snd_kcontrol_t * kcontrol,
 			       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	ucontrol->value.integer.value[0] = hdspm_c_tms(hdspm);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return 0;
 }
 
@@ -1808,17 +1783,16 @@ static int snd_hdspm_put_c_tms(snd_kcontrol_t * kcontrol,
 			       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	unsigned int val;
 
 	if (!snd_hdspm_use_is_exclusive(hdspm))
 		return -EBUSY;
 	val = ucontrol->value.integer.value[0] & 1;
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change = (int) val != hdspm_c_tms(hdspm);
 	hdspm_set_c_tms(hdspm, val);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1838,11 +1812,10 @@ static int hdspm_safe_mode(hdspm_t * hdspm)
 
 static int hdspm_set_safe_mode(hdspm_t * hdspm, int out)
 {
-	if (out) {
+	if (out)
 		hdspm->control_register |= HDSPM_AutoInp;
-	} else {
+	else
 		hdspm->control_register &= ~HDSPM_AutoInp;
-	}
 	hdspm_write(hdspm, HDSPM_controlRegister, hdspm->control_register);
 
 	return 0;
@@ -1862,11 +1835,10 @@ static int snd_hdspm_get_safe_mode(snd_kcontrol_t * kcontrol,
 				   snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	ucontrol->value.integer.value[0] = hdspm_safe_mode(hdspm);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return 0;
 }
 
@@ -1874,17 +1846,16 @@ static int snd_hdspm_put_safe_mode(snd_kcontrol_t * kcontrol,
 				   snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	unsigned int val;
 
 	if (!snd_hdspm_use_is_exclusive(hdspm))
 		return -EBUSY;
 	val = ucontrol->value.integer.value[0] & 1;
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change = (int) val != hdspm_safe_mode(hdspm);
 	hdspm_set_safe_mode(hdspm, val);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1904,11 +1875,10 @@ static int hdspm_input_select(hdspm_t * hdspm)
 
 static int hdspm_set_input_select(hdspm_t * hdspm, int out)
 {
-	if (out) {
+	if (out)
 		hdspm->control_register |= HDSPM_InputSelect0;
-	} else {
+	else
 		hdspm->control_register &= ~HDSPM_InputSelect0;
-	}
 	hdspm_write(hdspm, HDSPM_controlRegister, hdspm->control_register);
 
 	return 0;
@@ -1936,11 +1906,10 @@ static int snd_hdspm_get_input_select(snd_kcontrol_t * kcontrol,
 				      snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	ucontrol->value.enumerated.item[0] = hdspm_input_select(hdspm);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return 0;
 }
 
@@ -1948,17 +1917,16 @@ static int snd_hdspm_put_input_select(snd_kcontrol_t * kcontrol,
 				      snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	unsigned int val;
 
 	if (!snd_hdspm_use_is_exclusive(hdspm))
 		return -EBUSY;
 	val = ucontrol->value.integer.value[0] & 1;
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change = (int) val != hdspm_input_select(hdspm);
 	hdspm_set_input_select(hdspm, val);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -1998,7 +1966,6 @@ static int snd_hdspm_get_mixer(snd_kcontrol_t * kcontrol,
 			       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int source;
 	int destination;
 
@@ -2014,7 +1981,7 @@ static int snd_hdspm_get_mixer(snd_kcontrol_t * kcontrol,
 	else if (destination >= HDSPM_MAX_CHANNELS)
 		destination = HDSPM_MAX_CHANNELS - 1;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	if (source >= HDSPM_MAX_CHANNELS)
 		ucontrol->value.integer.value[2] =
 		    hdspm_read_pb_gain(hdspm, destination,
@@ -2023,7 +1990,7 @@ static int snd_hdspm_get_mixer(snd_kcontrol_t * kcontrol,
 		ucontrol->value.integer.value[2] =
 		    hdspm_read_in_gain(hdspm, destination, source);
 
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 
 	return 0;
 }
@@ -2032,7 +1999,6 @@ static int snd_hdspm_put_mixer(snd_kcontrol_t * kcontrol,
 			       snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	int source;
 	int destination;
@@ -2051,7 +2017,7 @@ static int snd_hdspm_put_mixer(snd_kcontrol_t * kcontrol,
 
 	gain = ucontrol->value.integer.value[2];
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 
 	if (source >= HDSPM_MAX_CHANNELS)
 		change = gain != hdspm_read_pb_gain(hdspm, destination,
@@ -2070,7 +2036,7 @@ static int snd_hdspm_put_mixer(snd_kcontrol_t * kcontrol,
 			hdspm_write_in_gain(hdspm, destination, source,
 					    gain);
 	}
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 
 	return change;
 }
@@ -2104,7 +2070,6 @@ static int snd_hdspm_get_playback_mixer(snd_kcontrol_t * kcontrol,
 					snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int channel;
 	int mapped_channel;
 
@@ -2113,14 +2078,13 @@ static int snd_hdspm_get_playback_mixer(snd_kcontrol_t * kcontrol,
 	snd_assert(channel >= 0
 		   || channel < HDSPM_MAX_CHANNELS, return -EINVAL);
 
-	if ((mapped_channel = hdspm->channel_map[channel]) < 0) {
+	if ((mapped_channel = hdspm->channel_map[channel]) < 0)
 		return -EINVAL;
-	}
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	ucontrol->value.integer.value[0] =
 	    hdspm_read_pb_gain(hdspm, mapped_channel, mapped_channel);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 
 	/*    snd_printdd("get pb mixer index %d, channel %d, mapped_channel %d, value %d\n",
 	   ucontrol->id.index,        channel, mapped_channel,  ucontrol->value.integer.value[0]); 
@@ -2133,7 +2097,6 @@ static int snd_hdspm_put_playback_mixer(snd_kcontrol_t * kcontrol,
 					snd_ctl_elem_value_t * ucontrol)
 {
 	hdspm_t *hdspm = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int change;
 	int channel;
 	int mapped_channel;
@@ -2147,20 +2110,19 @@ static int snd_hdspm_put_playback_mixer(snd_kcontrol_t * kcontrol,
 	snd_assert(channel >= 0
 		   || channel < HDSPM_MAX_CHANNELS, return -EINVAL);
 
-	if ((mapped_channel = hdspm->channel_map[channel]) < 0) {
+	if ((mapped_channel = hdspm->channel_map[channel]) < 0)
 		return -EINVAL;
-	}
 
 	gain = ucontrol->value.integer.value[0];
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	change =
 	    gain != hdspm_read_pb_gain(hdspm, mapped_channel,
 				       mapped_channel);
 	if (change)
 		hdspm_write_pb_gain(hdspm, mapped_channel, mapped_channel,
 				    gain);
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return change;
 }
 
@@ -2192,13 +2154,10 @@ static int hdspm_wc_sync_check(hdspm_t * hdspm)
 {
 	int status2 = hdspm_read(hdspm, HDSPM_statusRegister2);
 	if (status2 & HDSPM_wcLock) {
-		if (status2 & HDSPM_wcSync) {
+		if (status2 & HDSPM_wcSync)
 			return 2;
-		} else {
+		else
 			return 1;
-		}
-	} else {
-		return 0;
 	}
 	return 0;
 }
@@ -2226,14 +2185,12 @@ static int hdspm_madisync_sync_check(hdspm_t * hdspm)
 {
 	int status = hdspm_read(hdspm, HDSPM_statusRegister);
 	if (status & HDSPM_madiLock) {
-		if (status & HDSPM_madiSync) {
+		if (status & HDSPM_madiSync)
 			return 2;
-		} else {
+		else
 			return 1;
-		}
-	} else {
-		return 0;
 	}
+	return 0;
 }
 
 static int snd_hdspm_get_madisync_sync_check(snd_kcontrol_t * kcontrol,
@@ -2298,7 +2255,7 @@ static int hdspm_update_simple_mixer_controls(hdspm_t * hdspm)
 }
 
 
-int snd_hdspm_create_controls(snd_card_t * card, hdspm_t * hdspm)
+static int snd_hdspm_create_controls(snd_card_t * card, hdspm_t * hdspm)
 {
 	unsigned int idx, limit;
 	int err;
@@ -2599,9 +2556,8 @@ static int snd_hdspm_set_defaults(hdspm_t * hdspm)
 		snd_printk(KERN_INFO "HDSPM: sending all playback streams to line outs.\n");
 
 		for (i = 0; i < HDSPM_MIXER_CHANNELS; i++) {
-			if (hdspm_write_pb_gain(hdspm, i, i, UNITY_GAIN)) {
+			if (hdspm_write_pb_gain(hdspm, i, i, UNITY_GAIN))
 				return -EIO;
-			}
 		}
 	}
 
@@ -2635,9 +2591,8 @@ static irqreturn_t snd_hdspm_interrupt(int irq, void *dev_id,
 	midi0 = status & HDSPM_midi0IRQPending;
 	midi1 = status & HDSPM_midi1IRQPending;
 
-	if (!audio && !midi0 && !midi1) {
+	if (!audio && !midi0 && !midi1)
 		return IRQ_NONE;
-	}
 
 	hdspm_write(hdspm, HDSPM_interruptConfirmation, 0);
 	hdspm->irq_count++;
@@ -2647,19 +2602,17 @@ static irqreturn_t snd_hdspm_interrupt(int irq, void *dev_id,
 
 	if (audio) {
 
-		if (hdspm->capture_substream) {
+		if (hdspm->capture_substream)
 			snd_pcm_period_elapsed(hdspm->pcm->
 					       streams
 					       [SNDRV_PCM_STREAM_CAPTURE].
 					       substream);
-		}
 
-		if (hdspm->playback_substream) {
+		if (hdspm->playback_substream)
 			snd_pcm_period_elapsed(hdspm->pcm->
 					       streams
 					       [SNDRV_PCM_STREAM_PLAYBACK].
 					       substream);
-		}
 	}
 
 	if (midi0 && midi0status) {
@@ -2703,9 +2656,8 @@ static char *hdspm_channel_buffer_location(hdspm_t * hdspm,
 	snd_assert(channel >= 0
 		   || channel < HDSPM_MAX_CHANNELS, return NULL);
 
-	if ((mapped_channel = hdspm->channel_map[channel]) < 0) {
+	if ((mapped_channel = hdspm->channel_map[channel]) < 0)
 		return NULL;
-	}
 
 	if (stream == SNDRV_PCM_STREAM_CAPTURE) {
 		return hdspm->capture_buffer +
@@ -2842,11 +2794,9 @@ static int snd_hdspm_hw_params(snd_pcm_substream_t * substream,
 			return -EBUSY;
 		}
 
-		/* We're fine. */
-		spin_unlock_irq(&hdspm->lock);
-	} else {
-		spin_unlock_irq(&hdspm->lock);
 	}
+	/* We're fine. */
+	spin_unlock_irq(&hdspm->lock);
 
 	/* how to make sure that the rate matches an externally-set one ?   */
 
@@ -2856,9 +2806,8 @@ static int snd_hdspm_hw_params(snd_pcm_substream_t * substream,
 		_snd_pcm_hw_param_setempty(params,
 					   SNDRV_PCM_HW_PARAM_RATE);
 		return err;
-	} else {
-		spin_unlock_irq(&hdspm->lock);
 	}
+	spin_unlock_irq(&hdspm->lock);
 
 	if ((err =
 	     hdspm_set_interrupt_interval(hdspm,
@@ -2938,9 +2887,8 @@ static int snd_hdspm_channel_info(snd_pcm_substream_t * substream,
 
 	snd_assert(info->channel < HDSPM_MAX_CHANNELS, return -EINVAL);
 
-	if ((mapped_channel = hdspm->channel_map[info->channel]) < 0) {
+	if ((mapped_channel = hdspm->channel_map[info->channel]) < 0)
 		return -EINVAL;
-	}
 
 	info->offset = mapped_channel * HDSPM_CHANNEL_BUFFER_BYTES;
 	info->first = 0;
@@ -3036,12 +2984,7 @@ static int snd_hdspm_trigger(snd_pcm_substream_t * substream, int cmd)
 
 static int snd_hdspm_prepare(snd_pcm_substream_t * substream)
 {
-	hdspm_t *hdspm = snd_pcm_substream_chip(substream);
-	int result = 0;
-
-	spin_lock_irq(&hdspm->lock);
-	spin_unlock_irq(&hdspm->lock);
-	return result;
+	return 0;
 }
 
 static unsigned int period_sizes[] =
@@ -3160,26 +3103,23 @@ static int snd_hdspm_hw_rule_rate_channels(snd_pcm_hw_params_t * params,
 static int snd_hdspm_playback_open(snd_pcm_substream_t * substream)
 {
 	hdspm_t *hdspm = snd_pcm_substream_chip(substream);
-	unsigned long flags;
 	snd_pcm_runtime_t *runtime = substream->runtime;
-
 
 	snd_printdd("Open device substream %d\n", substream->stream);
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 
 	snd_pcm_set_sync(substream);
 
 	runtime->hw = snd_hdspm_playback_subinfo;
 
-	if (hdspm->capture_substream == NULL) {
+	if (hdspm->capture_substream == NULL)
 		hdspm_stop_audio(hdspm);
-	}
 
 	hdspm->playback_pid = current->pid;
 	hdspm->playback_substream = substream;
 
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 
 	snd_pcm_hw_constraint_msbits(runtime, 0, 32, 24);
 
@@ -3201,14 +3141,13 @@ static int snd_hdspm_playback_open(snd_pcm_substream_t * substream)
 static int snd_hdspm_playback_release(snd_pcm_substream_t * substream)
 {
 	hdspm_t *hdspm = snd_pcm_substream_chip(substream);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 
 	hdspm->playback_pid = -1;
 	hdspm->playback_substream = NULL;
 
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 
 	return 0;
 }
@@ -3217,21 +3156,19 @@ static int snd_hdspm_playback_release(snd_pcm_substream_t * substream)
 static int snd_hdspm_capture_open(snd_pcm_substream_t * substream)
 {
 	hdspm_t *hdspm = snd_pcm_substream_chip(substream);
-	unsigned long flags;
 	snd_pcm_runtime_t *runtime = substream->runtime;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 	snd_pcm_set_sync(substream);
 	runtime->hw = snd_hdspm_capture_subinfo;
 
-	if (hdspm->playback_substream == NULL) {
+	if (hdspm->playback_substream == NULL)
 		hdspm_stop_audio(hdspm);
-	}
 
 	hdspm->capture_pid = current->pid;
 	hdspm->capture_substream = substream;
 
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 
 	snd_pcm_hw_constraint_msbits(runtime, 0, 32, 24);
 	snd_pcm_hw_constraint_list(runtime, 0,
@@ -3251,14 +3188,13 @@ static int snd_hdspm_capture_open(snd_pcm_substream_t * substream)
 static int snd_hdspm_capture_release(snd_pcm_substream_t * substream)
 {
 	hdspm_t *hdspm = snd_pcm_substream_chip(substream);
-	unsigned long flags;
 
-	spin_lock_irqsave(&hdspm->lock, flags);
+	spin_lock_irq(&hdspm->lock);
 
 	hdspm->capture_pid = -1;
 	hdspm->capture_substream = NULL;
 
-	spin_unlock_irqrestore(&hdspm->lock, flags);
+	spin_unlock_irq(&hdspm->lock);
 	return 0;
 }
 
@@ -3276,8 +3212,6 @@ static int snd_hdspm_hwdep_ioctl(snd_hwdep_t * hw, struct file *file,
 	struct sndrv_hdspm_mixer_ioctl mixer;
 	hdspm_config_info_t info;
 	hdspm_version_t hdspm_version;
-	int err;
-	unsigned long flags;
 	struct sndrv_hdspm_peak_rms_ioctl rms;
 
 	switch (cmd) {
@@ -3297,7 +3231,7 @@ static int snd_hdspm_hwdep_ioctl(snd_hwdep_t * hw, struct file *file,
 
 	case SNDRV_HDSPM_IOCTL_GET_CONFIG_INFO:
 
-		spin_lock_irqsave(&hdspm->lock, flags);
+		spin_lock_irq(&hdspm->lock);
 		info.pref_sync_ref =
 		    (unsigned char) hdspm_pref_sync_ref(hdspm);
 		info.wordclock_sync_check =
@@ -3314,18 +3248,16 @@ static int snd_hdspm_hwdep_ioctl(snd_hwdep_t * hw, struct file *file,
 		    (unsigned char) hdspm_autosync_ref(hdspm);
 		info.line_out = (unsigned char) hdspm_line_out(hdspm);
 		info.passthru = 0;
-		spin_unlock_irqrestore(&hdspm->lock, flags);
+		spin_unlock_irq(&hdspm->lock);
 		if (copy_to_user((void __user *) arg, &info, sizeof(info)))
 			return -EFAULT;
 		break;
 
 	case SNDRV_HDSPM_IOCTL_GET_VERSION:
 		hdspm_version.firmware_rev = hdspm->firmware_rev;
-		if ((err =
-		     copy_to_user((void __user *) arg, &hdspm_version,
-				  sizeof(hdspm_version)))) {
+		if (copy_to_user((void __user *) arg, &hdspm_version,
+				 sizeof(hdspm_version)))
 			return -EFAULT;
-		}
 		break;
 
 	case SNDRV_HDSPM_IOCTL_GET_MIXER:
@@ -3427,8 +3359,8 @@ static int snd_hdspm_memory_free(hdspm_t * hdspm)
 }
 
 
-void hdspm_set_sgbuf(hdspm_t * hdspm, struct snd_sg_buf *sgbuf,
-		     unsigned int reg, int channels)
+static void hdspm_set_sgbuf(hdspm_t * hdspm, struct snd_sg_buf *sgbuf,
+			     unsigned int reg, int channels)
 {
 	int i;
 	for (i = 0; i < (channels * 16); i++)
@@ -3458,9 +3390,8 @@ static int __devinit snd_hdspm_create_pcm(snd_card_t * card,
 
 	pcm->info_flags = SNDRV_PCM_INFO_JOINT_DUPLEX;
 
-	if ((err = snd_hdspm_preallocate_memory(hdspm)) < 0) {
+	if ((err = snd_hdspm_preallocate_memory(hdspm)) < 0)
 		return err;
-	}
 
 	return 0;
 }
@@ -3477,25 +3408,20 @@ static int __devinit snd_hdspm_create_alsa_devices(snd_card_t * card,
 	int err;
 
 	snd_printdd("Create card...\n");
-	if ((err = snd_hdspm_create_pcm(card, hdspm)) < 0) {
+	if ((err = snd_hdspm_create_pcm(card, hdspm)) < 0)
 		return err;
-	}
 
-	if ((err = snd_hdspm_create_midi(card, hdspm, 0)) < 0) {
+	if ((err = snd_hdspm_create_midi(card, hdspm, 0)) < 0)
 		return err;
-	}
 
-	if ((err = snd_hdspm_create_midi(card, hdspm, 1)) < 0) {
+	if ((err = snd_hdspm_create_midi(card, hdspm, 1)) < 0)
 		return err;
-	}
 
-	if ((err = snd_hdspm_create_controls(card, hdspm)) < 0) {
+	if ((err = snd_hdspm_create_controls(card, hdspm)) < 0)
 		return err;
-	}
 
-	if ((err = snd_hdspm_create_hwdep(card, hdspm)) < 0) {
+	if ((err = snd_hdspm_create_hwdep(card, hdspm)) < 0)
 		return err;
-	}
 
 	snd_printdd("proc init...\n");
 	snd_hdspm_proc_init(hdspm);
@@ -3509,9 +3435,8 @@ static int __devinit snd_hdspm_create_alsa_devices(snd_card_t * card,
 	hdspm->playback_substream = NULL;
 
 	snd_printdd("Set defaults...\n");
-	if ((err = snd_hdspm_set_defaults(hdspm)) < 0) {
+	if ((err = snd_hdspm_set_defaults(hdspm)) < 0)
 		return err;
-	}
 
 	snd_printdd("Update mixer controls...\n");
 	hdspm_update_simple_mixer_controls(hdspm);
@@ -3555,9 +3480,8 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	hdspm->playback_buffer = NULL;
 	hdspm->capture_buffer = NULL;
 
-	for (i = 0; i < HDSPM_MAX_CHANNELS; ++i) {
+	for (i = 0; i < HDSPM_MAX_CHANNELS; ++i)
 		hdspm->playback_mixer_ctls[i] = NULL;
-	}
 	hdspm->mixer = NULL;
 
 	hdspm->card = card;
@@ -3574,9 +3498,8 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	strcpy(card->mixername, "Xilinx FPGA");
 	hdspm->card_name = "RME HDSPM MADI";
 
-	if ((err = pci_enable_device(pci)) < 0) {
+	if ((err = pci_enable_device(pci)) < 0)
 		return err;
-	}
 
 	pci_set_master(hdspm->pci);
 
@@ -3586,9 +3509,8 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	hdspm->port = pci_resource_start(pci, 0);
 	io_extent = pci_resource_len(pci, 0);
 
-	snd_printdd("grabbed memory region (%p) 0x%lx-0x%lx\n",
-		   hdspm->res_port, hdspm->port,
-		   hdspm->port + io_extent - 1);
+	snd_printdd("grabbed memory region 0x%lx-0x%lx\n",
+		   hdspm->port, hdspm->port + io_extent - 1);
 
 
 	if ((hdspm->iobase = ioremap_nocache(hdspm->port, io_extent)) == NULL) {
@@ -3629,9 +3551,8 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	hdspm->qs_channels = MADI_QS_CHANNELS;
 
 	snd_printdd("create alsa devices.\n");
-	if ((err = snd_hdspm_create_alsa_devices(card, hdspm)) < 0) {
+	if ((err = snd_hdspm_create_alsa_devices(card, hdspm)) < 0)
 		return err;
-	}
 
 	snd_hdspm_initialize_midi_flush(hdspm);
 
@@ -3741,23 +3662,12 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_hdspm_init(void)
 {
-	if (pci_register_driver(&driver) >= 0) {
-		snd_printdd("RME HDSPM: HDSPM card found\n");
-		return 0;
-	}
-#ifdef MODULE
-	printk(KERN_ERR "RME Hammerfall-DSP MADI: no HDSPM\n");
-#endif
-	return -ENODEV;
+	return pci_register_driver(&driver);
 }
 
 static void __exit alsa_card_hdspm_exit(void)
 {
 	pci_unregister_driver(&driver);
-#ifdef MODULE
-	snd_printdd("RME Hammerfall-DSP MADI: HDSPM unloaded\n");
-#endif
-
 }
 
 module_init(alsa_card_hdspm_init)
