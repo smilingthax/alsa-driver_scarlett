@@ -410,8 +410,8 @@ static int pcxhr_update_r_buffer(pcxhr_stream_t *stream)
 	is_capture = (subs->stream == SNDRV_PCM_STREAM_CAPTURE);
 	stream_num = is_capture ? 0 : subs->number;
 
-	snd_printdd("pcxhr_hw_params(pcm%c0) : addr(%x) bytes(%x) subs(%d)\n", is_capture?'c':'p',
-		    subs->runtime->dma_addr, subs->runtime->dma_bytes, subs->number);
+	snd_printdd("pcxhr_hw_params(pcm%c0) : addr(%lx) bytes(%lx) subs(%u)\n", is_capture?'c':'p',
+		    (unsigned long)subs->runtime->dma_addr, subs->runtime->dma_bytes, subs->number);
 
 	pcxhr_init_rmh(&rmh, CMD_UPDATE_R_BUFFERS);
 	pcxhr_set_pipe_cmd_params(&rmh, is_capture, stream->pipe->first_audio, stream_num, 0);
