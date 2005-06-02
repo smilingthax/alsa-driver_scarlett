@@ -1532,6 +1532,10 @@ def cvsps_changes(rev1, rev2, update=False):
 					log = a['log']
 					first = "-"
 					for l in log:
+						if l[:13] == "Patch-level: ":
+							continue
+						if l[:13] == "Patch-Level: ":
+							continue
 						print '    %s %s' % (first, l)
 						first = " "
 
@@ -1588,7 +1592,10 @@ def main():
 			print 'Please, give a start and end revision'
 			print 'Example: ksync cvsps-changes v1-0-7 v1-0-8'
 			return
-		cvsps_changes(args[1], args[2])
+		update = False
+		if len(args) > 3:
+			update = True
+		cvsps_changes(args[1], args[2], update)
 	elif args[0] == 'lsync':
 		to_cvs_time = 0
 		patch = ''
