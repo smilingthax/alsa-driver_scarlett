@@ -1131,7 +1131,7 @@ def cvsps_merge1(f,t=0):
 	author = ''
 	date = ''
 	level = 'Devel'
-	from = ''
+	xfrom = ''
 	for line in diffs:
 		if line[:-1] == 'Log:':
 			ok = 1
@@ -1165,7 +1165,7 @@ def cvsps_merge1(f,t=0):
 			elif line[:13] == "Patch-Level: ":
 				level = line[13:-1]
 			elif line[:6] == "From: ":
-				from = line[6:-1]
+				xfrom = line[6:-1]
 			else:
 				log.append(line)
 		elif ok == 2:
@@ -1207,7 +1207,7 @@ def cvsps_merge1(f,t=0):
 		real_author = author
 	for i in signed:
 		if not signed_flag:
-			if from == '':
+			if xfrom == '':
 				real_author = i[15:]
 			nlines = nlines + '\n'
 			signed_flag = 1
