@@ -1201,8 +1201,8 @@ def cvsps_merge1(f,t=0):
 		lines = lines + 'L:' + i
 		nlines = nlines + i
 	signed_flag = 0
-	if from != '':
-		real_author = from
+	if xfrom != '':
+		real_author = xfrom
 	else:
 		real_author = author
 	for i in signed:
