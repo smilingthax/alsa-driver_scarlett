@@ -13,10 +13,8 @@ clean-files := bt87x.c intel8x0.c maestro3.c
 
 obj-$(CONFIG_SND) += pdplus/ pcxhr/ echoaudio/
 
-snd-hdspm-objs := hdspm.o
 snd-asihpi-objs := asihpi.o
 
-obj-$(CONFIG_SND_HDSPM) +=snd-hdspm.o
 obj-$(CONFIG_SND_ASIHPI) += snd-asihpi.o
 
 #
