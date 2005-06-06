@@ -80,7 +80,7 @@ Quick install
    using a DEVFS or udev.
 
 7) Edit your kernel module config (either /etc/modprobe.conf or
-  /etc/modules.conf, depending on the kernel version).
+   /etc/modules.conf, depending on the kernel version).
 
 8) Run 'modprobe snd-xxxx' where xxxx is the name of your card.
    Note: All ALSA ISA drivers support ISA PnP natively, so you don't need
@@ -384,7 +384,7 @@ Unresolved symbol with RedHat 9
 -------------------------------
 
 Run depmod -ae and check which symbol is missing.
-If the unresolved symbol is "schedule_work", tihis is because RedHat
+If the unresolved symbol is "schedule_work", this is because RedHat
 shipped the kernel with incomplete implementation of workqueue.
 For solving this problem, run the following on the top of alsa-driver
 directory:
