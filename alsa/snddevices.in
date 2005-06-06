@@ -1,162 +1,274 @@
 #!/bin/bash
 
+# 20050524 Thomas Hood: Cleaned up; added --dev-dir option
+
+DEV_DIR="/dev"
 MAJOR=116
 OSSMAJOR=14
+DSP_MINOR=""
 MAX_CARDS=4
-PERM=666
 OWNER=root.root
+PERM=666
 DIR_PERM=755
-DIR_OWNER=root.root
+WIPE_OLD=yes
 
 if [ "`grep -w -E "^audio" /etc/group`x" != x ]; then
-  PERM=660
   OWNER=root.audio
-  DIR_PERM=750
-  DIR_OWNER=root.audio
 fi
 
-function create_odevice () {
-  rm -f $1
-  echo -n "Creating $1..."
-  mknod -m $PERM $1 c $OSSMAJOR $2
-  chown $OWNER $1
-  echo " done"
+function echo_usage () {
+  echo "Usage: snddevices [-h|--help] [max] [--no-wipe] [--dev-dir=PATHNAME] [--owner=USER:GROUP]"
 }
 
-function create_odevices () {
+function report_error () {
+  echo "${0}: Error: $*" >&2
+}
+
+while [ "$1" ] ; do
+  case "$1" in 
+    "-?"|-h|--help) echo_usage ; exit 0 ;;
+    max) DSP_MINOR=19 ;;
+    --no-wipe) WIPE_OLD="" ;;
+    --dev-dir) DEV_DIR="$2" ; shift ;;
+    --dev-dir=*) DEV_DIR="${1#--dev-dir=}" ;;
+    --owner) OWNER="$2" ; shift ;;
+    --owner=*) OWNER="${1#--owner=}" ;;
+    *) echo_usage >&2 ; exit 1 ;;
+  esac
+  shift
+done
+
+if [ "$OWNER" = "root.audio" ] ; then
+  PERM=660
+  DIR_PERM=750
+fi
+
+# Meant to be called from assert_*_args only
+function report_args_error () {
+  report_error "Incorrect function call: ${FUNCNAME[2]}() takes $* arguments"
+}
+
+function assert_one_arg () {
+  { [ "$1" ] && [ -z "$2" ] ; } || { report_args_error "one" ; exit 99 ; }
+}
+
+function assert_two_args () {
+  { [ "$2" ] && [ -z "$3" ] ; } || { report_args_error "two" ; exit 99 ; }
+}
+
+function assert_three_args () {
+  { [ "$3" ] && [ -z "$4" ] ; } || { report_args_error "three" ; exit 99 ; }
+}
+
+function assert_three_or_four_args () {
+  { [ "$3" ] && [ -z "$5" ] ; } || { report_args_error "three or four" ; exit 99 ; }
+}
+
+# $1 destination-relative pathname of source
+# $2 DEV_DIR-relative pathname of destination
+function link_file () {
+  assert_two_args "$@"
+  ln -svf "$1" "$DEV_DIR/$2"
+}
+
+# $1 DEV_DIR-relative pathname of source
+# $2 DEV_DIR-relative pathname of destination
+function move_file () {
+  assert_two_args "$@"
+  mv -f "$DEV_DIR/$1" "$DEV_DIR/$2"
+}
+
+# $1 DEV_DIR-relative shell glob pattern of files to delete
+function del_file_pattern () {
+  assert_one_arg "$@"
+  eval rm -f "$DEV_DIR/$1"
+}
+
+# $1 DEV_DIR-relative pathname to make
+function make_dir () {
+  assert_one_arg "$@"
+  mkdir -p "$DEV_DIR/$1"
+}
+
+# $1 DEV_DIR-relative pathname to delete
+function del_dir () {
+  assert_one_arg "$@"
+  rmdir "$DEV_DIR/$1"
+}
+
+# $1 DEV_DIR-relative pathname to test
+function is_dir () {
+  assert_one_arg "$@"
+  [ -d "$DEV_DIR/$1" ]
+}
+
+# $1 owner:group
+# $2 DEV_DIR-relative pathname whose owner will be changed
+function change_owner () {
+  assert_two_args "$@"
+  chown "$1" "$DEV_DIR/$2"
+}
+
+# $1 perms
+# $2 DEV_DIR-relative pathname whose perms will be changed
+function change_perms () {
+  assert_two_args "$@"
+  chmod "$1" "$DEV_DIR/$2"
+}
+
+# $1 DEV_DIR-relative pathname of node to make
+# $2 major
+# $3 minor
+function make_char_node () {
+  assert_three_args "$@"
+  rm -f "$DEV_DIR/$1"
+  mknod "$DEV_DIR/$1" c "$2" "$3"
+}
+
+
+# $1 DEV_DIR-relative pathname of device to create
+# $2 minor number of device to create
+function create_oss_dev () {
+  assert_two_args "$@"
+  del_file_pattern "$1"
+  echo -n "Creating $1..."
+  make_char_node "$1" "$OSSMAJOR" "$2"
+  change_owner "$OWNER" "$1"
+  change_perms "$PERM"  "$1"
+  echo "done."
+}
+
+# $1 DEV_DIR-relative base pathname of devices to create
+# $2 minor number offset of devices to create
+function create_oss_dev_range () {
+  assert_two_args "$@"
   tmp=0
   tmp1=0
-  rm -f $1 $1?
+  del_file_pattern "$1"
+  del_file_pattern "${1}?"
   echo -n "Creating $1?..."
-  while [ $tmp1 -lt $MAX_CARDS ]; do
+  while [ "$tmp1" -lt "$MAX_CARDS" ]; do
     minor=$[ $2 + $tmp ]
-    mknod -m $PERM $1$tmp1 c $OSSMAJOR $minor
-    chown $OWNER $1$tmp1
+    make_char_node "$1$tmp1" "$OSSMAJOR" "$minor"
+    change_owner "$OWNER" "$1$tmp1"
+    change_perms "$PERM"  "$1$tmp1"
     tmp=$[ $tmp + 16 ]
     tmp1=$[ $tmp1 + 1 ]
   done
-  echo " done"
+  echo "done."
 }
 
-function create_device1 () {
-  rm -f $1
-  minor=$2
+# $1 DEV_DIR-relative pathname of device to create
+# $2 minor number of device to create
+function create_single_dev () {
+  assert_two_args "$@"
+  del_file_pattern "$1"
   echo -n "Creating $1..."
-  mknod -m $PERM $1 c $MAJOR $minor
-  chown $OWNER $1
-  echo " done"
+  make_char_node "$1" "$MAJOR" "$2"
+  change_owner "$OWNER" "$1"
+  change_perms "$PERM"  "$1"
+  echo "done."
 }
 
-function create_devices () {
+# $1 DEV_DIR-relative base pathname of devices to create
+# $2 minor number offset of devices to create
+function create_card_dev_range () {
+  assert_two_args "$@"
   tmp=0
-  rm -f $1 $1?
+  del_file_pattern "$1"
+  del_file_pattern "${1}?"
   echo -n "Creating $1?..."
-  while [ $tmp -lt $MAX_CARDS ]; do
+  while [ "$tmp" -lt "$MAX_CARDS" ]; do
     minor=$[ $tmp * 32 ]
     minor=$[ $2 + $minor ]
-    mknod -m $PERM "${1}C${tmp}" c $MAJOR $minor
-    chown $OWNER "${1}C${tmp}"
+    make_char_node "${1}C${tmp}" "$MAJOR" "$minor"
+    change_owner "$OWNER" "${1}C${tmp}"
+    change_perms "$PERM"  "${1}C${tmp}"
     tmp=$[ $tmp + 1 ]
   done
-  echo " done"
+  echo "done."
 }
 
-function create_devices2 () {
+# $1 DEV_DIR-relative base pathname of devices to create
+# $2 minor number offset of devices to create
+# $3 number of devices to create
+# [$4 device name suffix]
+function create_device_dev_range () {
+  assert_three_or_four_args "$@"
   tmp=0
-  rm -f $1 $1?
-  echo -n "Creating $1??..."
-  while [ $tmp -lt $MAX_CARDS ]; do
-    tmp1=0
-    while [ $tmp1 -lt $3 ]; do
-      minor=$[ $tmp * 32 ]
-      minor=$[ $2 + $minor + $tmp1 ]
-      mknod -m $PERM "${1}C${tmp}D${tmp1}" c $MAJOR $minor
-      chown $OWNER "${1}C${tmp}D${tmp1}"
-      tmp1=$[ $tmp1 + 1 ]
-    done
-    tmp=$[ $tmp + 1 ]
-  done
-  echo " done"
-}
-
-function create_devices3 () {
-  tmp=0
-  rm -f $1 $1?
+  del_file_pattern "$1"
+  del_file_pattern "${1}?"
   echo -n "Creating $1??$4..."
-  while [ $tmp -lt $MAX_CARDS ]; do
+  while [ "$tmp" -lt "$MAX_CARDS" ]; do
     tmp1=0
-    while [ $tmp1 -lt $3 ]; do
+    while [ "$tmp1" -lt "$3" ]; do
       minor=$[ $tmp * 32 ]
       minor=$[ $2 + $minor + $tmp1 ]
-      mknod -m $PERM "${1}C${tmp}D${tmp1}${4}" c $MAJOR $minor
-      chown $OWNER "${1}C${tmp}D${tmp1}${4}"
+      make_char_node "${1}C${tmp}D${tmp1}${4}" "$MAJOR" "$minor"
+      change_owner "$OWNER" "${1}C${tmp}D${tmp1}${4}"
+      change_perms "$PERM"  "${1}C${tmp}D${tmp1}${4}"
       tmp1=$[ $tmp1 + 1 ]
     done
     tmp=$[ $tmp + 1 ]
   done
-  echo " done"
+  echo "done."
 }
-
-if test "$1" = "-?" || test "$1" = "-h" || test "$1" = "--help"; then
-  echo "Usage: snddevices [max]"
-  exit
-fi
-
-if test "$1" = "max"; then
-  DSP_MINOR=19
-fi
 
 # OSS (Lite) compatible devices...
 
-if test $OSSMAJOR -eq 14; then
-  create_odevices /dev/mixer		0
-  create_odevice /dev/sequencer		1
-  create_odevices /dev/midi0		2	# /dev/midi is for tclmidi
-  create_odevices /dev/dsp		3
-  create_odevices /dev/audio		4
-  create_odevice /dev/sndstat		6
-  create_odevice /dev/music		8
-  create_odevices /dev/dmmidi		9
-  create_odevices /dev/dmfm		10
-  create_odevices /dev/amixer		11	# alternate mixer
-  create_odevices /dev/adsp		12	# alternate dsp
-  create_odevices /dev/amidi		13	# alternate midi
-  create_odevices /dev/admmidi		14	# alternate direct midi
+if test "$OSSMAJOR" -eq 14; then
+  create_oss_dev_range mixer            0
+  create_oss_dev       sequencer        1
+  create_oss_dev_range midi0            2	# /dev/midi is for tclmidi
+  create_oss_dev_range dsp              3
+  create_oss_dev_range audio            4
+  create_oss_dev       sndstat          6
+  create_oss_dev       music            8
+  create_oss_dev_range dmmidi           9
+  create_oss_dev_range dmfm             10
+  create_oss_dev_range amixer           11	# alternate mixer
+  create_oss_dev_range adsp             12	# alternate dsp
+  create_oss_dev_range amidi            13	# alternate midi
+  create_oss_dev_range admmidi          14	# alternate direct midi
   # create symlinks
-  ln -svf /dev/mixer0 /dev/mixer
-  ln -svf /dev/midi00 /dev/midi			# /dev/midi0 is for tclmidi
-  ln -svf /dev/dsp0 /dev/dsp
-  ln -svf /dev/audio0 /dev/audio
-  ln -svf /dev/music /dev/sequencer2
-  ln -svf /dev/adsp0 /dev/adsp
-  ln -svf /dev/amidi0 /dev/amidi
+  link_file mixer0 mixer
+  link_file midi00 midi		# /dev/midi0 is for tclmidi
+  link_file dsp0   dsp
+  link_file audio0 audio
+  link_file music  sequencer2
+  link_file adsp0  adsp
+  link_file amidi0 amidi
 fi
 
 # Remove old devices
 
-mv -f /dev/sndstat /dev/1sndstat
-rm -f /dev/snd*
-mv -f /dev/1sndstat /dev/sndstat
-if [ -d /dev/snd ]; then
-  rm -f /dev/snd/*
-  rmdir /dev/snd
+if [ "$WIPE_OLD" = yes ] ; then
+  move_file sndstat 1sndstat 
+  del_file_pattern 'snd*'
+  move_file 1sndstat sndstat
+
+  if is_dir snd ; then
+    del_file_pattern 'snd/*'
+    del_dir snd
+  fi
 fi
 
 # Create new ones
 
-mkdir -m $DIR_PERM -p /dev/snd
-chown $DIR_OWNER /dev/snd
-create_devices  /dev/snd/control	0
-create_device1  /dev/snd/seq		1
-create_device1  /dev/snd/timer		33
-create_devices2 /dev/snd/hw		4	4
-create_devices2 /dev/snd/midi		8	8
-create_devices3 /dev/snd/pcm		16	8	p
-create_devices3 /dev/snd/pcm		24	8	c
+make_dir snd
+change_owner "$OWNER"    snd
+change_perms "$DIR_PERM" snd
+create_card_dev_range   snd/control     0
+create_single_dev       snd/seq         1
+create_single_dev       snd/timer       33
+create_device_dev_range snd/hw          4	4
+create_device_dev_range snd/midi        8	8
+create_device_dev_range snd/pcm         16	8	p
+create_device_dev_range snd/pcm         24	8	c
 
-# Loader devices
+# Create loader devices
 
-echo "ALSA loader devices"
-rm -f /dev/aload*
-create_devices  /dev/aload		0
-create_device1  /dev/aloadSEQ		1
+del_file_pattern 'aload*'
+create_card_dev_range   aload       0
+create_single_dev       aloadSEQ    1
+
