@@ -1161,7 +1161,16 @@ if test "$CONFIG_MIPS" = "y"; then
 fi
 AC_SUBST(CONFIG_SGI)
 
+dnl Check options for warnings
+if $KCC -Wdeclaration-after-statement -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+  c_opts="$c_opts -Wdeclaration-after-statement"
+fi
+if $KCC -Wno-pointer-sign -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+  c_opts="$c_opts -Wno-pointer-sign"
+fi
+
 c_opts="-O2 $c_opts"
+
 AC_SUBST(processor)
 AC_SUBST(ARCH)
 AC_SUBST(KLD)
