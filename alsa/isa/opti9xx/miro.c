@@ -613,6 +613,68 @@ static snd_kcontrol_new_t snd_miro_capture_control[] = {
 	.put = snd_miro_put_capture,
 }};
 
+static unsigned char aci_init_values[][2] __initdata = {
+	{ ACI_SET_MUTE, 0x00 },
+	{ ACI_SET_POWERAMP, 0x00 },
+	{ ACI_SET_PREAMP, 0x00 },
+	{ ACI_SET_SOLOMODE, 0x00 },
+	{ ACI_SET_MIC + 0, 0x20 },
+	{ ACI_SET_MIC + 8, 0x20 },
+	{ ACI_SET_LINE + 0, 0x20 },
+	{ ACI_SET_LINE + 8, 0x20 },
+	{ ACI_SET_CD + 0, 0x20 },
+	{ ACI_SET_CD + 8, 0x20 },
+	{ ACI_SET_PCM + 0, 0x20 },
+	{ ACI_SET_PCM + 8, 0x20 },
+	{ ACI_SET_LINE1 + 0, 0x20 },
+	{ ACI_SET_LINE1 + 8, 0x20 },
+	{ ACI_SET_LINE2 + 0, 0x20 },
+	{ ACI_SET_LINE2 + 8, 0x20 },
+	{ ACI_SET_SYNTH + 0, 0x20 },
+	{ ACI_SET_SYNTH + 8, 0x20 },
+	{ ACI_SET_MASTER + 0, 0x20 },
+	{ ACI_SET_MASTER + 1, 0x20 },
+};
+
+static int __devinit snd_set_aci_init_values(miro_t *miro)
+{
+	int idx, error;
+
+	/* enable WSS on PCM1 */
+
+	if ((miro->aci_product == 'A') && wss) {
+		if ((error = aci_setvalue(miro, ACI_SET_WSS, wss)) < 0) {
+			snd_printk("enabling WSS mode failed\n");
+			return error;
+		}
+	}
+
+	/* enable IDE port */
+
+	if (ide) {
+		if ((error = aci_setvalue(miro, ACI_SET_IDE, ide)) < 0) {
+			snd_printk("enabling IDE port failed\n");
+			return error;
+		}
+	}
+
+	/* set common aci values */
+
+	for (idx = 0; idx < ARRAY_SIZE(aci_init_values); idx++)
+                if ((error = aci_setvalue(miro, aci_init_values[idx][0], 
+					  aci_init_values[idx][1])) < 0) {
+                        snd_printk("aci_setvalue(%d) failed: %d\n", 
+				   aci_init_values[idx][0], error);
+                        return error;
+                }
+
+	miro->aci_amp = 0;
+	miro->aci_preamp = 0;
+	miro->aci_solomode = 1;
+
+	return 0;
+}
+
 static int snd_miro_mixer(miro_t *miro)
 {
 	snd_card_t *card;
@@ -1332,60 +1394,9 @@ static int __devinit snd_card_miro_probe(void)
 				&rmidi)))
 			snd_printk("no MPU-401 device at 0x%lx?\n", miro->mpu_port);
 
-	/* the aci mixer is muted after reset */
-
-	if (aci_cmd(miro, ACI_SET_MUTE, 0x00, -1) < 0) {
-		snd_printk("unset aci muting failed\n");
+	if ((error = snd_set_aci_init_values(miro)) < 0) {
 		snd_card_free(card);
-		return -EBUSY;
-	}
-
-	/* enable WSS on PCM1 */
-
-	if ((miro->aci_product == 'A') && wss) {
-		if ((error = aci_cmd(miro, ACI_SET_WSS, wss, -1)) < 0) {
-			snd_printk("jumping into WSS mode failed\n");
-			snd_card_free(card);
-			return -EIO;
-		}
-	}
-
-	/* enable IDE port */
-
-	if (ide) {
-		if ((error = aci_cmd(miro, ACI_SET_IDE, ide, -1)) < 0) {
-			snd_printk("enabling IDE port failed\n");
-			snd_card_free(card);
-			return -EIO;
-		}
-	}
-
-	/* disable aci preamp and poweramp */
-
-	if ((error = aci_setvalue(miro, ACI_SET_POWERAMP, 0)) < 0) {
-		snd_printk("unset aci power-amp failed\n");
-		snd_card_free(card);
-		return -EIO;
-	} else {
-		miro->aci_amp = 0;
-	}
-
-	if ((error = aci_setvalue(miro, ACI_SET_PREAMP, 0)) < 0) {
-		snd_printk("unset aci pre-amp failed\n");
-		snd_card_free(card);
-		return -EIO;
-	} else {
-		miro->aci_preamp = 0;
-	}
-
-	/* solo mode init */
-
-	if ((error = aci_setvalue(miro, ACI_SET_SOLOMODE, 0)) < 0) {
-		snd_printk("unset solomode failed\n");
-		snd_card_free(card);
-		return -EIO;
-	} else {
-		miro->aci_solomode = 1;
+                return error;
 	}
 
 	if ((error = snd_card_register(card))) {
