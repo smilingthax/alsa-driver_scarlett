@@ -1330,6 +1330,7 @@ static int __devinit snd_card_miro_probe(void)
 		if ((error = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
 				miro->mpu_port, 0, miro->mpu_irq, SA_INTERRUPT,
 				&rmidi)))
+			snd_printk("no MPU-401 device at 0x%lx?\n", miro->mpu_port);
 
 	/* the aci mixer is muted after reset */
 
