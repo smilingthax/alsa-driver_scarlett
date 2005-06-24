@@ -835,8 +835,16 @@ static void snd_miro_proc_read(snd_info_entry_t * entry,
 
 	if ((miro->hardware == OPTi9XX_HW_82C924) &&
 	    (miro->aci_vendor == 'm') && 
-	    (miro->aci_product == 'C')) 
-		model = "miroSOUND PCM20 radio";
+	    (miro->aci_product == 'C')) {
+		switch(miro->aci_version) {
+		case 7:
+			model = "miroSOUND PCM20 radio (Rev. E)";
+			break;
+		default:
+			model = "miroSOUND PCM20 radio";
+			break;
+		}
+	}
 
 	snd_iprintf(buffer, "\nGeneral information:\n");
 	snd_iprintf(buffer, "  model   : %s\n", model);
