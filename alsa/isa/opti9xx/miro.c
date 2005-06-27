@@ -983,14 +983,14 @@ static int __devinit snd_miro_configure(miro_t *chip)
 	case OPTi9XX_HW_82C924:
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(6), 0x02, 0x02);
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(1), 0x80, 0x80);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x00, 0x20);
+		snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x20, 0x20); /* OPL4 */
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(3), 0xf0, 0xff);
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(5), 0x02, 0x02);
 		break;
 	case OPTi9XX_HW_82C929:
 		/* untested init commands for OPTi929 */
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(1), 0x80, 0x80);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x00, 0x20);
+		snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x20, 0x20); /* OPL4 */
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(4), 0x00, 0x0c);
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(5), 0x02, 0x02);
 		break;
@@ -1393,6 +1393,14 @@ static int __devinit snd_card_miro_probe(void)
 				miro->mpu_port, 0, miro->mpu_irq, SA_INTERRUPT,
 				&rmidi)))
 			snd_printk("no MPU-401 device at 0x%lx?\n", miro->mpu_port);
+
+	if (miro->fm_port > 0 && miro->fm_port != SNDRV_AUTO_PORT) {
+		opl3_t *opl3 = NULL;
+		opl4_t *opl4;
+		if (snd_opl4_create(card, miro->fm_port, miro->fm_port - 8, 
+				    2, &opl3, &opl4) < 0)
+			snd_printk("no OPL4 device at 0x%lx\n", miro->fm_port);
+	}
 
 	if ((error = snd_set_aci_init_values(miro)) < 0) {
 		snd_card_free(card);
