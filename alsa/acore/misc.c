@@ -459,3 +459,15 @@ void *snd_compat_kcalloc(size_t n, size_t size, int flags)
 }
 #endif
 #endif
+
+
+#ifdef CONFIG_CREATE_WORKQUEUE_FLAGS
+
+#include <linux/workqueue.h>
+
+struct workqueue_struct *snd_compat_create_workqueue2(const char *name)
+{
+	return create_workqueue(name, 0);
+}
+
+#endif

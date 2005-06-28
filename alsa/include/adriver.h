@@ -549,6 +549,13 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struc
 #endif /* < 2.5.45 */
 #endif /* < 2.6.0 */
 
+#ifdef CONFIG_CREATE_WORKQUEUE_FLAGS
+#include <linux/workqueue.h>
+#undef create_workqueue
+struct workqueue_struct *snd_compat_create_workqueue2(const char *name);
+#define create_workqueue(name) snd_compat_create_workqueue2(name)
+#endif
+
 /* 2.5 new modules */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #define try_module_get(x) try_inc_mod_count(x)

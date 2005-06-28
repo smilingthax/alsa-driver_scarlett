@@ -1744,6 +1744,32 @@ if test "$CONFIG_HAVE_KCALLOC" = "1"; then
   AC_DEFINE(CONFIG_HAVE_KCALLOC)
 fi
 
+dnl Check for create_workqueue() with flags
+AC_MSG_CHECKING(for create_workqueue with flags)
+kcalloc="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/workqueue.h>
+],[
+    create_workqueue("abcd", 0);
+],
+    AC_MSG_RESULT("yes");workqueue2="1",
+    AC_MSG_RESULT("no");workqueue2="0",
+    AC_MSG_RESULT("unknown");workqueue2="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_CREATE_WORKQUEUE_FLAGS=$workqueue2
+dnl AC_SUBST(CONFIG_CREATE_WORKQUEUE_FLAGS)
+if test "$CONFIG_CREATE_WORKQUEUE_FLAGS" = "1"; then
+  AC_DEFINE(CONFIG_CREATE_WORKQUEUE_FLAGS)
+fi
+
 dnl Check for saved_config_space in pci_dev
 AC_MSG_CHECKING(for saved_config_space in pci_dev)
 pci_saved_config="0"
