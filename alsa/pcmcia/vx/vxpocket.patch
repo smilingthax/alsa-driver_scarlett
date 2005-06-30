@@ -1,6 +1,6 @@
---- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2004-11-08 12:48:27.000000000 +0100
-+++ vxpocket.c	2004-11-17 14:48:22.458415985 +0100
-@@ -35,6 +35,7 @@
+--- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2005-06-30 12:13:27.000000000 +0200
++++ vxpocket.c	2005-06-30 12:13:26.000000000 +0200
+@@ -24,6 +24,7 @@
  #include <linux/moduleparam.h>
  #include <sound/core.h>
  #include <pcmcia/version.h>
@@ -8,7 +8,31 @@
  #include "vxpocket.h"
  #include <sound/initval.h>
  
-@@ -170,3 +175,5 @@
+@@ -129,11 +130,13 @@
+  * Module entry points
+  */
+ 
++#ifdef PCMCIA_DEVICE_MANF_CARD
+ static struct pcmcia_device_id vxp_ids[] = {
+ 	PCMCIA_DEVICE_MANF_CARD(0x01f1, 0x0100),
+ 	PCMCIA_DEVICE_NULL
+ };
+ MODULE_DEVICE_TABLE(pcmcia, vxp_ids);
++#endif
+ 
+ static struct pcmcia_driver vxp_cs_driver = {
+ 	.owner		= THIS_MODULE,
+@@ -142,7 +145,9 @@
+ 	},
+ 	.attach		= vxp_attach,
+ 	.detach		= vxp_detach,
++#ifdef PCMCIA_DEVICE_MANF_CARD
+ 	.id_table	= vxp_ids,
++#endif
+ };
+ 
+ static int __init init_vxpocket(void)
+@@ -158,3 +163,5 @@
  
  module_init(init_vxpocket);
  module_exit(exit_vxpocket);
