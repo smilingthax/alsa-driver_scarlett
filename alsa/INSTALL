@@ -363,13 +363,6 @@ Information about Additional Modules
     Module supports up to 8 cards.
     The driver requires the firmware loader support on kernel.
 
-  Module snd-pxa2xx-ac97
-  ----------------------
-
-    Module for AC97 driver for the Intel PXA2xx chip
-
-    For ARM architecture only.
-
   Module snd-pcsp
   ---------------
 
