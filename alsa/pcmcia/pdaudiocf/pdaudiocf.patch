@@ -1,6 +1,6 @@
---- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2005-06-30 12:11:58.000000000 +0200
-+++ pdaudiocf.c	2005-06-30 12:11:57.000000000 +0200
-@@ -18,6 +18,10 @@
+--- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2005-07-08 14:28:50.000000000 +0200
++++ pdaudiocf.c	2005-07-08 14:41:11.000000000 +0200
+@@ -18,12 +18,18 @@
   *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
   */
  
@@ -11,15 +11,15 @@
  #include <sound/driver.h>
  #include <sound/core.h>
  #include <linux/slab.h>
-@@ -25,6 +29,7 @@
- #include <pcmcia/version.h>
+ #include <linux/moduleparam.h>
++#include <pcmcia/version.h>
  #include <pcmcia/ciscode.h>
  #include <pcmcia/cisreg.h>
 +#include "compat_cs.h"	/* remove from 2.5 tree */
  #include "pdaudiocf.h"
  #include <sound/initval.h>
  #include <linux/init.h>
-@@ -64,6 +69,17 @@
+@@ -63,6 +69,17 @@
  static int pdacf_event(event_t event, int priority, event_callback_args_t *args);
  static void snd_pdacf_detach(dev_link_t *link);
  
@@ -37,7 +37,7 @@
  static void pdacf_release(dev_link_t *link)
  {
  	if (link->state & DEV_CONFIG) {
-@@ -160,6 +176,10 @@
+@@ -159,6 +176,10 @@
  	link->irq.IRQInfo1 = 0 /* | IRQ_LEVEL_ID */;
  	link->irq.Handler = pdacf_interrupt;
  	link->irq.Instance = pdacf;
@@ -48,7 +48,24 @@
  	link->conf.Attributes = CONF_ENABLE_IRQ;
  	link->conf.IntType = INT_MEMORY_AND_IO;
  	link->conf.ConfigIndex = 1;
-@@ -242,6 +262,9 @@
+@@ -170,6 +191,16 @@
+ 
+ 	/* Register with Card Services */
+ 	client_reg.dev_info = &dev_info;
++#ifndef PCMCIA_DEVICE_MANF_CARD
++	client_reg.EventMask = 
++		CS_EVENT_CARD_INSERTION | CS_EVENT_CARD_REMOVAL
++#ifdef CONFIG_PM
++		| CS_EVENT_RESET_PHYSICAL | CS_EVENT_CARD_RESET
++		| CS_EVENT_PM_SUSPEND | CS_EVENT_PM_RESUME
++#endif
++		;
++	client_reg.event_handler = &pdacf_event;
++#endif
+ 	client_reg.Version = 0x0210;
+ 	client_reg.event_callback_args.client_data = link;
+ 
+@@ -233,6 +264,9 @@
  {
  	pdacf_t *chip = link->priv;
  
@@ -58,7 +75,7 @@
  	snd_printdd(KERN_DEBUG "pdacf_detach called\n");
  	/* Remove the interface data from the linked list */
  	{
-@@ -334,6 +357,9 @@
+@@ -325,6 +359,9 @@
  		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
  		link->state &= ~DEV_PRESENT;
  		if (link->state & DEV_CONFIG) {
@@ -68,7 +85,7 @@
  			chip->chip_status |= PDAUDIOCF_STAT_IS_STALE;
  		}
  		break;
-@@ -380,11 +406,13 @@
+@@ -371,21 +408,27 @@
  /*
   * Module entry points
   */
@@ -81,18 +98,24 @@
 +#endif
  
  static struct pcmcia_driver pdacf_cs_driver = {
- 	.owner          = THIS_MODULE,
-@@ -393,7 +421,9 @@
+ 	.owner		= THIS_MODULE,
+ 	.drv		= {
+ 		.name	= "snd-pdaudiocf",
  	},
- 	.attach         = snd_pdacf_attach,
- 	.detach         = snd_pdacf_detach,
+-	.attach		= snd_pdacf_attach,
++	.attach         = snd_pdacf_attach,
++#ifdef PCMCIA_DEVICE_MANF_CARD
+ 	.event		= pdacf_event,
+-	.detach		= snd_pdacf_detach,
++#endif
++	.detach         = snd_pdacf_detach
 +#ifdef PCMCIA_DEVICE_MANF_CARD
  	.id_table	= snd_pdacf_ids,
 +#endif
  };
  
  static int __init init_pdacf(void)
-@@ -409,3 +439,6 @@
+@@ -401,3 +444,6 @@
  
  module_init(init_pdacf);
  module_exit(exit_pdacf);
