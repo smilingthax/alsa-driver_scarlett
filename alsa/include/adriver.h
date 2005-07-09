@@ -628,6 +628,20 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 #endif
 #endif
 
+/* msecs_to_jiffies */
+#ifndef CONFIG_HAVE_MSECS_TO_JIFFIES
+#include <linux/jiffies.h>
+static inline unsigned int jiffies_to_msecs(const unsigned long j)
+{
+	if (HZ <= 1000 && !(1000 % HZ))
+		return (1000 / HZ) * j;
+	else if (HZ > 1000 && !(HZ % 1000))
+		return (j + (HZ / 1000) - 1)/(HZ / 1000);
+	else
+		return (j * 1000) / HZ;
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #define snd_card_set_dev(card,dev) /* no struct device */
 #endif
