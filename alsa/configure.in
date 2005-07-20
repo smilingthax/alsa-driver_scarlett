@@ -91,19 +91,27 @@ AC_ARG_WITH(build,
 CONFIG_SND_KERNELBUILD="$kernelbuild"
 AC_MSG_RESULT($kernelbuild)
 
-dnl Check for kernel version...
-AC_MSG_CHECKING(for kernel version)
-if ! test -r $CONFIG_SND_KERNELDIR/include/linux/version.h; then
-  if test -z "$kernelbuild" -o ! -f $kernelbuild/include/linux/version.h; then
-  cat << EOF
-The file $CONFIG_SND_KERNELDIR/include/linux/version.h does not exist.
-Please, install the package with full kernel sources for your distribution
+AC_DEFUN([CHECK_REQUIRED_KERNEL_HEADER], [
+  AC_MSG_CHECKING(for kernel $1)
+  if ! test -r $CONFIG_SND_KERNELDIR/include/$1; then
+    if test -z "$kernelbuild" -o ! -f $kernelbuild/include/$1; then
+      AC_MSG_RESULT(no)
+      cat << EOF
+The file $CONFIG_SND_KERNELDIR/include/$1 does not exist.
+Please install the package with full kernel sources for your distribution
 or use --with-kernel=dir option to specify another directory with kernel
 sources (default is $DEFAULT_KERNEL_DIR).
 EOF
-  exit 1
+      exit 1
+    fi
   fi
-fi
+  AC_MSG_RESULT(yes)
+])
+CHECK_REQUIRED_KERNEL_HEADER([linux/version.h])
+CHECK_REQUIRED_KERNEL_HEADER([linux/autoconf.h])
+
+dnl Check for kernel version...
+AC_MSG_CHECKING(for kernel version)
 KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
 MAKE_ADDS=""
 if test -n "$kernelbuild"; then
