@@ -13,6 +13,12 @@
 #include <linux/kmod.h>
 #include <linux/devfs_fs_kernel.h>
 
+/* defined in adriver.h but we don't include it... */
+#include <linux/compiler.h>
+#ifndef __nocast
+#define __nocast
+#endif
+
 #include "../alsa-kernel/core/wrappers.c"
 
 #ifndef CONFIG_HAVE_STRLCPY

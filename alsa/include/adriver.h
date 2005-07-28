@@ -841,4 +841,9 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #endif
 #endif
 
+/* __nocast prefix (defined in compiler.h in the recent 2.6.x) */
+#ifndef __nocast
+#define __nocast
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
