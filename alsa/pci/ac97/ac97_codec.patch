@@ -1,0 +1,34 @@
+--- ../../alsa-kernel/pci/ac97/ac97_codec.c	2005-07-29 15:59:19.000000000 +0200
++++ ac97_codec.c	2005-07-29 16:06:49.000000000 +0200
+@@ -33,9 +33,9 @@
+ #include <sound/ac97_codec.h>
+ #include <sound/asoundef.h>
+ #include <sound/initval.h>
+-#include "ac97_local.h"
+-#include "ac97_id.h"
+-#include "ac97_patch.h"
++#include "../../alsa-kernel/pci/ac97/ac97_local.h"
++#include "../../alsa-kernel/pci/ac97/ac97_id.h"
++#include "../../alsa-kernel/pci/ac97/ac97_patch.h"
+ 
+ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_DESCRIPTION("Universal interface for Audio Codec '97");
+@@ -1813,6 +1813,7 @@
+ 	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ /* stop no dev release warning */
+ static void ac97_device_release(struct device * dev)
+ {
+@@ -1845,6 +1846,10 @@
+ 		device_unregister(&ac97->dev);
+ 	return snd_ac97_free(ac97);
+ }
++#else /* <= 2.6.0 */
++#define snd_ac97_dev_register	NULL
++#define snd_ac97_dev_unregister	NULL
++#endif
+ 
+ /* build_ops to do nothing */
+ static struct snd_ac97_build_ops null_build_ops;
