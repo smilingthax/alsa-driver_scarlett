@@ -604,7 +604,14 @@ if test ! -f include/linux/workqueue.h; then
 fi
 CHECK_KERNEL_HEADER(linux/dma-mapping.h)
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
-CHECK_KERNEL_HEADER(linux/device.h)
+CHECK_KERNEL_HEADER(linux/device.h, [#ifndef _LINUX_DEVICE_H
+#define _LINUX_DEVICE_H
+struct device {
+};
+struct bus_type {
+};
+#endif
+])
 CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
 #include <linux/delay.h>
 ])
