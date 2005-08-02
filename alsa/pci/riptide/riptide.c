@@ -970,7 +970,12 @@ static int riptide_reset(cmdif_t * cif, riptide_t * chip)
 	    && (rptr.retwords[2] == 0) && (rptr.retwords[3] == 0)) {
 		snd_printd("Writing Firmware\n");
 		if ((err = request_firmware(&fw_entry, "riptide.hex",
-					    &chip->pci->dev)) != 0) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+					    &chip->pci->dev
+#else
+					    "riptide"
+#endif
+					    )) != 0) {
 			snd_printk("Riptide: Firmware not available %d\n", err);
 			return -EIO;
 		}
