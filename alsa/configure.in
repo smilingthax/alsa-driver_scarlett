@@ -1048,6 +1048,7 @@ EOF
     fi
     processor="sparc64"
     CONFIG_SND_BIT32_EMUL=m
+    CFLAGS="$CFLAGS -ffixed-g4"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   x86_64)
