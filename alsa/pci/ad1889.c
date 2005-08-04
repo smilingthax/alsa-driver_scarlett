@@ -52,10 +52,17 @@
 
 #define	AD1889_DRVVER	"$Revision: 1.31 $"
 
+/* for 2.2.x kernels */
+#ifndef PCI_VENDOR_ID_ANALOG_DEVICES
+#define PCI_VENDOR_ID_ANALOG_DEVICES	0x11d4
+#endif
+#ifndef PCI_DEVICE_ID_AD1889JS
+#define PCI_DEVICE_ID_AD1889JS		0x1889
+#endif
+
 MODULE_AUTHOR("Kyle McMartin <kyle@parisc-linux.org>, Thibaut Varene <t-bone@parisc-linux.org>");
 MODULE_DESCRIPTION("Analog Devices AD1889 ALSA sound driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION(AD1889_DRVVER);
 MODULE_SUPPORTED_DEVICE("{{Analog Devices,AD1889}}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
@@ -104,7 +111,6 @@ struct snd_ad1889 {
 	snd_pcm_t *pcm;
 	snd_info_entry_t *proc;
 
-	struct snd_dma_device dma;
 	snd_pcm_substream_t *psubs;
 	snd_pcm_substream_t *csubs;
 
@@ -125,25 +131,25 @@ struct snd_ad1889 {
 static inline u16
 ad1889_readw(struct snd_ad1889 *chip, unsigned reg)
 {
-	return ioread16(chip->iobase + reg);
+	return readw(chip->iobase + reg);
 }
 
 static inline void
 ad1889_writew(struct snd_ad1889 *chip, unsigned reg, u16 val)
 {
-	iowrite16(val, chip->iobase + reg);
+	writew(val, chip->iobase + reg);
 }
 
 static inline u32
 ad1889_readl(struct snd_ad1889 *chip, unsigned reg)
 {
-	return ioread32(chip->iobase + reg);
+	return readl(chip->iobase + reg);
 }
 
 static inline void
 ad1889_writel(struct snd_ad1889 *chip, unsigned reg, u32 val)
 {
-	iowrite32(val, chip->iobase + reg);
+	writel(val, chip->iobase + reg);
 }
 
 static inline void
@@ -732,9 +738,6 @@ snd_ad1889_pcm_init(struct snd_ad1889 *chip, int device, snd_pcm_t **rpcm)
 	chip->pcm = pcm;
 	chip->psubs = NULL;
 	chip->csubs = NULL;
-
-	chip->dma.dev = &chip->pci->dev;
-	chip->dma.type = SNDRV_DMA_TYPE_DEV;
 
 	err = snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 						snd_dma_pci_data(chip->pci),
