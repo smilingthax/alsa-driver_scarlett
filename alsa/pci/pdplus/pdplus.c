@@ -1732,7 +1732,7 @@ static u_char *pdplus_get_channel_status (pdplus_t *scard)
 /*
  * Set the rate on the CS8404 chip.  It depends in the mode how this is done, since the
  * bits have different meanings. */
-void pdplus_cs8404_prepare_registers_ll (pdplus_t *scard, int rate)
+static void pdplus_cs8404_prepare_registers_ll (pdplus_t *scard, int rate)
 {
         u_char *cs;
         int profi;
