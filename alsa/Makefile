@@ -141,6 +141,7 @@ include/sndversions.h:
 compile: include/sound/version.h include/sndversions.h
 ifdef NEW_KBUILD
 	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) modules
+	utils/link-modules $(SND_TOPDIR)
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 endif
@@ -232,16 +233,14 @@ check-snd-prefix:
 clean1:
 	rm -f .depend *.o snd.map*
 	rm -f $(DEXPORT)/*.ver
-	rm -f modules/*.o
+	rm -f modules/*.o modules/*.ko
 
 .PHONY: clean
 clean: clean1
 ifdef NEW_KBUILD
 	rm -rf .tmp_versions
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d cleanup; then exit 1; fi; done
-else
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 endif
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 
 .PHONY: mrproper
