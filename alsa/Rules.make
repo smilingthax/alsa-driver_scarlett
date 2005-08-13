@@ -13,18 +13,6 @@ ifdef KBUILD_MODULES
 # clean obsolete definitions
 export-objs :=
 
-ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))
-ALL_MOBJS := $(filter-out %/, $(ALL_MOBJS))
-modules_install:
-ifneq "$(strip $(ALL_MOBJS))" ""
-	mkdir -p $(DESTDIR)$(moddir)/$(MODCURDIR)
-	cp $(sort $(ALL_MOBJS:.o=.ko)) $(DESTDIR)$(moddir)/$(MODCURDIR)
-endif
-	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
-	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
-	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install; fi; \
-	done
-
 # apply patches beforehand
 .PHONY: cleanup
 cleanup:
@@ -54,6 +42,18 @@ modules:
 	$(MAKE) prepare
 	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) SND_TOPDIR=$(MAINSRCDIR) modules
 	$(SND_TOPDIR)/utils/link-modules $(MODCURDIR)
+
+ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))
+ALL_MOBJS := $(filter-out %/, $(ALL_MOBJS))
+modules_install:
+ifneq "$(strip $(ALL_MOBJS))" ""
+	mkdir -p $(DESTDIR)$(moddir)/$(MODCURDIR)
+	cp $(sort $(ALL_MOBJS:.o=.ko)) $(DESTDIR)$(moddir)/$(MODCURDIR)
+endif
+	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
+	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install; fi; \
+	done
 
 endif # KBUILD_MODULES
 
