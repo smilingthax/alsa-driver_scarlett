@@ -50,8 +50,7 @@ ifneq "$(strip $(ALL_MOBJS))" ""
 	mkdir -p $(DESTDIR)$(moddir)/$(MODCURDIR)
 	cp $(sort $(ALL_MOBJS:.o=.ko)) $(DESTDIR)$(moddir)/$(MODCURDIR)
 endif
-	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
-	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
+	@for d in $(ALL_SUB_DIRS) DUMMY; do \
 	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install; fi; \
 	done
 
