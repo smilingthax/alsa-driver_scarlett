@@ -488,6 +488,13 @@ enum {
 #define usb_kill_urb(urb) usb_unlink_urb(urb)
 #endif
 
+#ifndef HAVE_USB_BUFFERS /* defined in usb.h */
+#define usb_buffer_alloc(dev, size, flags, dma) kmalloc(size, flags)
+#define usb_buffer_free(dev, size, addr, dma) kfree(addr)
+#undef URB_NO_TRANSFER_DMA_MAP
+#define URB_NO_TRANSFER_DMA_MAP 0
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 24) \
