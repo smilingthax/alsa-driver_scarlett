@@ -98,6 +98,7 @@ COMMENT_MAP_DRIVER = [
 		('/arm/s3c24xx-iis.[ch]','ARM S3C24XX IIS driver'),
 		('/arm'			,'ERROR'),
 		('/isa/Kconfig'		,'ISA'),
+		('/include/ad1816a.h'	,'AD1816A driver'),
 		('/isa/ad1816a'		,'AD1816A driver'),
 		('/include/ad1848.h'	,'AD1848 driver'),
 		('/isa/ad1848'		,'AD1848 driver'),
@@ -1311,6 +1312,8 @@ def cvsps_merge(start):
 			if y < start:
 				continue
 			cvsps_merge1(f, t=0)
+		print 'Is this ok? Press Ctrl-C to abort...'
+		sys.stdin.readline()
 	del l
 
 def git_version_patch():
