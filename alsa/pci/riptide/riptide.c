@@ -1354,9 +1354,8 @@ static int snd_riptide_capture_close(snd_pcm_substream_t * substream)
 {
 	riptide_t *chip = snd_pcm_substream_chip(substream);
 	pcmhw_t *data = get_pcmhwdev(substream);
-	int index = substream->number;
 
-	snd_printd("hw close capture %d\n", index);
+	snd_printd("hw close capture %d\n", substream->number);
 	kfree(data);
 	substream->runtime->private_data = NULL;
 	chip->capture_substream = NULL;
