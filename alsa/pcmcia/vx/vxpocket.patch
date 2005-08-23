@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2005-08-23 16:44:12.000000000 +0200
-+++ vxpocket.c	2005-08-23 16:45:47.000000000 +0200
+--- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2005-08-23 20:19:39.000000000 +0200
++++ vxpocket.c	2005-08-23 20:25:29.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "vx_entry.inc"
  /*
@@ -57,19 +57,20 @@
  	link->conf.Attributes = CONF_ENABLE_IRQ;
  	link->conf.Vcc = 50;
  	link->conf.IntType = INT_MEMORY_AND_IO;
-@@ -296,7 +321,11 @@
+@@ -296,8 +321,12 @@
  	CS_CHECK(RequestIRQ, pcmcia_request_irq(link->handle, &link->irq));
  	CS_CHECK(RequestConfiguration, pcmcia_request_configuration(link->handle, &link->conf));
  
 +#ifdef SND_VX_FW_LOADER
 +#ifdef handle_to_dev
  	chip->dev = &handle_to_dev(link->handle);
+ 	snd_card_set_dev(chip->card, chip->dev);
 +#endif
 +#endif
  
  	if (snd_vxpocket_assign_resources(chip, link->io.BasePort1, link->irq.AssignedIRQ) < 0)
  		goto failed;
-@@ -329,8 +358,12 @@
+@@ -330,8 +359,12 @@
  	case CS_EVENT_CARD_REMOVAL:
  		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
  		link->state &= ~DEV_PRESENT;
@@ -83,7 +84,7 @@
  		break;
  	case CS_EVENT_CARD_INSERTION:
  		snd_printdd(KERN_DEBUG "CARD_INSERTION..\n");
-@@ -437,6 +470,10 @@
+@@ -438,6 +471,10 @@
  			break;
  		}
  
@@ -94,7 +95,7 @@
  	chip->chip_status |= VX_STAT_IS_STALE; /* to be sure */
  	snd_card_disconnect(chip->card);
  	vxpocket_release(link);
-@@ -447,11 +484,13 @@
+@@ -448,11 +485,13 @@
   * Module entry points
   */
  
@@ -108,7 +109,7 @@
  
  static struct pcmcia_driver vxp_cs_driver = {
  	.owner		= THIS_MODULE,
-@@ -460,8 +499,10 @@
+@@ -461,8 +500,10 @@
  	},
  	.attach		= vxpocket_attach,
  	.detach		= vxpocket_detach,
@@ -119,7 +120,7 @@
  };
  
  static int __init init_vxpocket(void)
-@@ -477,3 +518,7 @@
+@@ -478,3 +519,7 @@
  
  module_init(init_vxpocket);
  module_exit(exit_vxpocket);
