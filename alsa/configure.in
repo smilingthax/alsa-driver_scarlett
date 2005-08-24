@@ -1149,6 +1149,15 @@ esac
 dnl ia32 and alpha
 test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
 
+if test "$CONFIG_ISA" = "y"; then
+  dnl 2.6.12 or newer
+  if test "$kpatchlevel" = 6 -a "$ksublevel" -ge 12; then
+    CHECK_KERNEL_CONFIG(CONFIG_ISA_DMA_API, [ISA DMA API])
+  else
+    CONFIG_ISA_DMA_API=y
+  fi
+fi
+
 dnl Check for SBUS support for sparc...
 if test -n "$CONFIG_SPARC32" -o -n "$CONFIG_SPARC64"; then
   CHECK_KERNEL_CONFIG(CONFIG_SBUS, [SBUS support in kernel])
@@ -1203,6 +1212,7 @@ AC_SUBST(CONFIG_SPARC64)
 AC_SUBST(CONFIG_SBUS)
 AC_SUBST(CONFIG_MIPS)
 AC_SUBST(CONFIG_ISA)
+AC_SUBST(CONFIG_ISA_DMA_API)
 AC_SUBST(CONFIG_PARISC)
 test "$CONFIG_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)
 
