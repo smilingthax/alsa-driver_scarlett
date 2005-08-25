@@ -27,6 +27,7 @@
 #define ASI_STYLE_NAMES 1
 #endif
 
+#include <linux/pci.h>
 #include <sound/driver.h>
 #include <linux/version.h>
 #include <linux/init.h>
@@ -110,7 +111,9 @@ typedef struct snd_card_asihpi_pcm {
 } snd_card_asihpi_pcm_t;
 
 static HPI_HSUBSYS *phSubSys;	/* handle to HPI audio subsystem */
-static snd_card_t *snd_asihpi_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
+
+void HPI_AdapterIndex( const HPI_HSUBSYS *phSubSys, struct pci_dev *pci_dev,
+					const struct pci_device_id *pci_id, short * wAdapterIndex );
 
 static void _HandleError(HW16 err, int line, char *filename)
 {
@@ -821,7 +824,7 @@ static snd_pcm_ops_t snd_card_asihpi_capture_ops = {
 	.copy = snd_card_asihpi_capture_copy
 };
 
-static int __init snd_card_asihpi_pcm(snd_card_asihpi_t * asihpi,
+static int __devinit snd_card_asihpi_pcm(snd_card_asihpi_t * asihpi,
 				      int device, int substreams)
 {
 	snd_pcm_t *pcm;
@@ -1032,7 +1035,7 @@ static int snd_asihpi_volume_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static void __init snd_asihpi_volume_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_volume_new(hpi_control_t * asihpi_control,
 					 snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_volume_info;
@@ -1107,7 +1110,7 @@ static int snd_asihpi_level_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static void __init snd_asihpi_level_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_level_new(hpi_control_t * asihpi_control,
 					snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_level_info;
@@ -1285,7 +1288,7 @@ static int snd_asihpi_aesebu_tx_clocksource_put(snd_kcontrol_t * kcontrol,
 
 /* AESEBU control group initializers  */
 
-static int __init snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
+static int __devinit snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
 					snd_kcontrol_new_t * snd_control)
 {
 
@@ -1306,7 +1309,7 @@ static int __init snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi, hpi_contr
 	return 0;
 }
 
-static int __init snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
+static int __devinit snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
 					snd_kcontrol_new_t * snd_control)
 {
 
@@ -1559,7 +1562,7 @@ static int snd_asihpi_tuner_freq_put(snd_kcontrol_t * kcontrol,
 
 /* Tuner control group initializer  */
 
-static int __init snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
+static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
 					snd_kcontrol_new_t * snd_control)
 {
 
@@ -1650,7 +1653,7 @@ static int snd_asihpi_meter_get(snd_kcontrol_t * kcontrol,
 }
 
 
-static void __init snd_asihpi_meter_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_meter_new(hpi_control_t * asihpi_control,
 					snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_meter_info;
@@ -1768,7 +1771,7 @@ static int snd_asihpi_mux_put(snd_kcontrol_t * kcontrol,
 }
 
 
-static void __init snd_asihpi_mux_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_mux_new(hpi_control_t * asihpi_control,
 				      snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_mux_info;
@@ -1846,7 +1849,7 @@ static int snd_asihpi_cmode_put(snd_kcontrol_t * kcontrol,
 }
 
 
-static void __init snd_asihpi_cmode_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_cmode_new(hpi_control_t * asihpi_control,
 					snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_cmode_info;
@@ -1922,7 +1925,7 @@ static int snd_asihpi_clksrc_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static void __init snd_asihpi_clksrc_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_clksrc_new(hpi_control_t * asihpi_control,
 					 snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_clksrc_info;
@@ -1992,7 +1995,7 @@ static int snd_asihpi_clkrate_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static void __init snd_asihpi_clkrate_new(hpi_control_t * asihpi_control,
+static void __devinit snd_asihpi_clkrate_new(hpi_control_t * asihpi_control,
 					  snd_kcontrol_new_t * snd_control)
 {
 	snd_control->info = snd_asihpi_clkrate_info;
@@ -2016,7 +2019,7 @@ static void __init snd_asihpi_clkrate_new(hpi_control_t * asihpi_control,
    Mixer
  ------------------------------------------------------------*/
 
-static int __init snd_card_asihpi_new_mixer(snd_card_asihpi_t * asihpi)
+static int __devinit snd_card_asihpi_new_mixer(snd_card_asihpi_t * asihpi)
 {
 	snd_card_t *card = asihpi->card;
 	unsigned int idx = 0;
@@ -2207,27 +2210,51 @@ static void __devinit snd_asihpi_proc_init(snd_card_asihpi_t * asihpi)
 /*------------------------------------------------------------
    CARD
  ------------------------------------------------------------*/
-static int __init snd_card_asihpi_probe(int dev)
+static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
+				       const struct pci_device_id *pci_id)
 {
+	int idx, err;
+
+	short dev_idx;
+	HW32 dwVersion;
+
 	HW16 wVersion;
 	int pcm_substreams;
 
 	snd_card_t *card;
 	struct snd_card_asihpi *asihpi;
-	int idx, err;
 
 	HPI_HCONTROL hControl;
 
-	//  if (!enable[dev])
-	//return -ENODEV;
-	err = HPI_AdapterOpen(phSubSys, dev);
+	snd_printd(KERN_INFO "ASIHPI driver start\n");
 
+	phSubSys = HPI_SubSysCreate();
+	if (phSubSys == NULL) {
+		snd_printd(KERN_ERR
+			   "phSubSys==NULL, ASI HPI driver not loaded?\n");
+		return 0;
+	}
+
+	err = HPI_SubSysGetVersion(phSubSys, &dwVersion);
 	HPI_HandleError(err);
-	if (err)
+	snd_printd(KERN_INFO "HPI_SubSysGetVersion=%lx\n", dwVersion);
+
+	HPI_AdapterIndex( phSubSys, pci_dev, pci_id, &dev_idx );
+	snd_printd(KERN_INFO "PCI device (%04x:%04x,%04x:%04x,%04x) is HPI index # %d\n", 
+		pci_dev->vendor, pci_dev->device, pci_dev->subsystem_vendor, 
+		pci_dev->subsystem_device, pci_dev->devfn, dev_idx );
+
+	if ( dev_idx >= 0 ) {
+		err = HPI_AdapterOpen( phSubSys, (HW16)dev_idx );
+		HPI_HandleError( err );
+		if ( err )
+			return -ENODEV;
+	} else {
 		return -ENODEV;
+	}
 
 	// first try to give the card the same index as its hardware index
-	card = snd_card_new(dev, SNDRV_DEFAULT_STR1, THIS_MODULE,
+	card = snd_card_new(dev_idx, SNDRV_DEFAULT_STR1, THIS_MODULE,
 			    sizeof(struct snd_card_asihpi));
 	if (card == NULL) {
 		// if that fails, try the default index==next available
@@ -2239,12 +2266,12 @@ static int __init snd_card_asihpi_probe(int dev)
 			return -ENOMEM;
 		snd_printk(KERN_WARNING
 			   "**** WARNING **** Adapter index %d->ALSA index %d\n",
-			   dev, card->number);
+			   dev_idx, card->number);
 	}
 
 	asihpi = (struct snd_card_asihpi *) card->private_data;
 	asihpi->card = card;
-	asihpi->wAdapterIndex = dev;
+	asihpi->wAdapterIndex = dev_idx;
 	err = HPI_AdapterGetInfo(phSubSys,
 				 asihpi->wAdapterIndex,
 				 &asihpi->wNumOutStreams,
@@ -2272,80 +2299,58 @@ static int __init snd_card_asihpi_probe(int dev)
 				  HPI_CONTROL_SAMPLECLOCK, &hControl);
 
 	if (!err)
-			err = HPI_SampleClock_SetSampleRate(phSubSys, hControl, adapter_fs);
+		err = HPI_SampleClock_SetSampleRate(phSubSys, hControl, adapter_fs);
 
 	snd_asihpi_proc_init(asihpi);
 
 	strcpy(card->driver, "ASIHPI");
 	sprintf(card->shortname, "AudioScience ASI%4X", asihpi->wType);
-	sprintf(card->longname, "%s %i", card->shortname, dev + 1);
+	sprintf(card->longname, "%s %i", card->shortname, dev_idx + 1);
 	if ((err = snd_card_register(card)) == 0) {
-		snd_asihpi_cards[dev] = card;
+		pci_set_drvdata( pci_dev, card );
 		return 0;
 	}
       __nodev:
 	snd_card_free(card);
 	return err;
+
 }
 
+static void __devexit snd_asihpi_remove(struct pci_dev *pci_dev)
+{
+	snd_card_free( pci_get_drvdata( pci_dev ) );
+	pci_set_drvdata( pci_dev, NULL );
+}
+
+static struct pci_device_id  asihpi_pci_tbl[] = {
+    {HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_DSP6205,HPI_PCI_VENDOR_ID_AUDIOSCIENCE,PCI_ANY_ID,0,0,0, },
+    {HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_PCI2040,HPI_PCI_VENDOR_ID_AUDIOSCIENCE,PCI_ANY_ID,0,0,0, },
+    {HPI_PCI_VENDOR_ID_MOTOROLA,HPI_ADAPTER_DSP56301,HPI_PCI_VENDOR_ID_AUDIOSCIENCE,PCI_ANY_ID,0,0,0, },
+    {HPI_PCI_VENDOR_ID_MOTOROLA,HPI_ADAPTER_DSP56301,HPI_PCI_VENDOR_ID_AUDIOSCIENCE,PCI_ANY_ID,0,0,0, },
+     // look for ASI cards that have 0x12cf sub-vendor ID, like the 4300 and 4601
+    {HPI_PCI_VENDOR_ID_MOTOROLA,HPI_ADAPTER_DSP56301,0x12CF                        ,PCI_ANY_ID,0,0,0, },
+    // look for ASI cards that have sub-vendor-ID = 0, like the 4501, 4113 and 4215 revC and below
+    {HPI_PCI_VENDOR_ID_MOTOROLA,HPI_ADAPTER_DSP56301,0                             ,PCI_ANY_ID,0,0,0, },
+    {0,}
+};
+
+MODULE_DEVICE_TABLE(pci, asihpi_pci_tbl);
+
+static struct pci_driver asihpi_pci_driver = {
+        .name     = "asihpi",
+        .id_table = asihpi_pci_tbl,
+        .probe    = snd_asihpi_probe,
+        .remove   = __devexit_p(snd_asihpi_remove),
+};
 
 static int __init alsa_card_asihpi_init(void)
 {
-	int dev, cards;
-
-	HW16 err = 0;		// HPI error
-	HW16 wNumAdapters = 0;
-	HW16 awAdapterList[HPI_MAX_ADAPTERS];
-	HW16 wListLength = HPI_MAX_ADAPTERS;
-	HW32 dwVersion;
-
-	snd_printd(KERN_INFO "ASIHPI driver start\n");
-
-	phSubSys = HPI_SubSysCreate();
-	if (phSubSys == NULL) {
-		snd_printd(KERN_ERR
-			   "phSubSys==NULL, ASI HPI driver not loaded?\n");
-		return 0;
-	}
-
-	err = HPI_SubSysGetVersion(phSubSys, &dwVersion);
-	HPI_HandleError(err);
-	snd_printd(KERN_INFO "HPI_SubSysGetVersion=%lx\n", dwVersion);
-
-	err = HPI_SubSysFindAdapters(phSubSys,
-				     &wNumAdapters,
-				     awAdapterList, wListLength);
-	HPI_HandleError(err);
-	snd_printd(KERN_INFO "HPI_SubSysFindAdapters NumberAdapters=%d \n",
-		   wNumAdapters);
-
-	for (dev = cards = 0; dev < HPI_MAX_ADAPTERS; dev++) {
-		if (awAdapterList[dev] && snd_card_asihpi_probe(dev) < 0) {
-#ifdef MODULE
-			snd_printk(KERN_ERR
-				   "Asihpi soundcard #%i not found or device busy\n",
-				   dev + 1);
-#endif
-			break;
-		}
-		cards++;
-	}
-	if (!cards) {
-#ifdef MODULE
-		snd_printk(KERN_ERR
-			   "Asihpi soundcard not found or device busy\n");
-#endif
-		return -ENODEV;
-	}
-	return 0;
+	return pci_register_driver(&asihpi_pci_driver);
 }
 
 static void __exit alsa_card_asihpi_exit(void)
 {
-	int idx;
-
-	for (idx = 0; idx < SNDRV_CARDS; idx++)
-		snd_card_free(snd_asihpi_cards[idx]);
+	pci_unregister_driver(&asihpi_pci_driver);
 }
 
 module_init(alsa_card_asihpi_init)
