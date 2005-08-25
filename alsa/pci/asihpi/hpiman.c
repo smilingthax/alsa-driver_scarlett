@@ -21,43 +21,13 @@ Hardware Programming Interface (HPI) Manager
 This module contains the main HPI entry point HPI_Message
 
 ******************************************************************************/
-#include <hpi.h>
-#include <hpios.h>
-
-#ifdef HPI_OS_WDM_MUTEX
-HANDLE hAdapterMutex[HPI_MAX_ADAPTERS];
-
-void HPI_AdapterMutexName(TCHAR *szMutex, int n)
-{
-    sprintf(szMutex,"AsiAdapterMutex%d",n);
-}
-#endif
-
-#ifdef HPI_INCLUDE_WDMBOLTON
-KMUTEX kMutex;
-int kMutexInit = FALSE;
-#endif
-#ifdef HPI_WDM_MONOLITHIC
-KSPIN_LOCK	spinLock;
-int spinLockInit = FALSE;
-#endif
+#include "hpi.h"
+#include "hpios.h"
 
 ////////////////////////////////////////////////////////////////////////////
-#ifdef HPI_OS_LINUX
 // Allow a wrapper called HPI_Message around this function
 void hpi_message( const HPI_HSUBSYS *phSubSys, HPI_MESSAGE *phm, HPI_RESPONSE *phr )
-#else
-void HPI_Message( const HPI_HSUBSYS *phSubSys, HPI_MESSAGE *phm, HPI_RESPONSE *phr )
-#endif
 {
-#ifdef HPI_OS_WDM_MUTEX
-    TCHAR szMutex[32];
-    HANDLE hMutex;
-#endif
-#ifdef HPI_WDM_MONOLITHIC
-	KIRQL oldLevel;
-	PMDL pMdl = NULL;
-#endif
     // All HPI messages come here 1st, before being sent to individual HPI
     // modules
     (void)phSubSys;	//get rid of warning
@@ -85,40 +55,6 @@ void HPI_Message( const HPI_HSUBSYS *phSubSys, HPI_MESSAGE *phm, HPI_RESPONSE *p
             // subsys open - init the debug function
         case HPI_SUBSYS_OPEN:
             HPIOS_DEBUG_STRING(" HPI_SUBSYS_OPEN\n");
-#ifdef HPI_OS_WDM_MUTEX
-            {
-                int i;
-                for(i=0;i<HPI_MAX_ADAPTERS;i++)
-                {
-                    PSECURITY_DESCRIPTOR    pSD;
-                    SECURITY_ATTRIBUTES     sa;
-                    TCHAR szMutex[32];
-
-                    HPI_AdapterMutexName(szMutex, i);
-
-                    /* security stuff copied from WINNT SDK */
-
-                    pSD = (PSECURITY_DESCRIPTOR) LocalAlloc( LPTR,
-                            SECURITY_DESCRIPTOR_MIN_LENGTH);
-                    if (pSD == NULL)
-                        break;
-                    if (!InitializeSecurityDescriptor(pSD, SECURITY_DESCRIPTOR_REVISION))
-                        break;
-                    // Add a NULL DACL to the security descriptor..
-                    if (!SetSecurityDescriptorDacl(pSD, TRUE, (PACL) NULL, FALSE))
-                        break;
-                    sa.nLength = sizeof(sa);
-                    sa.lpSecurityDescriptor = pSD;
-                    sa.bInheritHandle = TRUE;
-                    // create Mutex
-                    hAdapterMutex[i] = CreateMutex(
-                                           &sa,				// custom security
-                                           FALSE,				// not owned
-                                           szMutex);
-                    LocalFree((HLOCAL)pSD);
-                }
-            }
-#endif
             break;		// continue to HPIs...
 
         case HPI_SUBSYS_FIND_ADAPTERS:
@@ -127,13 +63,6 @@ void HPI_Message( const HPI_HSUBSYS *phSubSys, HPI_MESSAGE *phm, HPI_RESPONSE *p
 
         case HPI_SUBSYS_CLOSE:
             HPIOS_DEBUG_STRING(" HPI_SUBSYS_CLOSE\n");
-#ifdef HPI_OS_WDM_MUTEX
-            {
-                int i;
-                for(i=0;i<HPI_MAX_ADAPTERS;i++)
-                    CloseHandle( hAdapterMutex[i] );
-            }
-#endif
             break;		// continue to HPIs...
 
             // version message - if so then leave
@@ -158,80 +87,6 @@ void HPI_Message( const HPI_HSUBSYS *phSubSys, HPI_MESSAGE *phm, HPI_RESPONSE *p
             break;
         }
     }
-#ifdef HPI_OS_WDM_MUTEX
-    {
-        int nAdapter = phm->wAdapterIndex;
-
-        /*
-        	It is probably wasteful to open the mutex each time.
-        	How much overhead does an open like this use ?
-        	The "hMutex" handle has to be owned by the thread that is
-        	running here, so can't directly access the hAdapterMutex[] array -
-        	at least I don't think you can.
-
-        	If we open mutexes in the WDM portion of the driver (where we
-        	know more about threads), how would we pass them down to this
-        	layer ?
-        */
-        HPI_AdapterMutexName(szMutex, nAdapterIndex);
-        hMutex = OpenMutex(
-                     MUTEX_ALL_ACCESS,	// no security
-                     FALSE,				// not owned
-                     szMutex);
-        WaitForSingleObject( hMutex, INFINITE );
-    }
-#endif
-
-#ifdef HPI_INCLUDE_WDMBOLTON
-	if (!kMutexInit)
-	{
-		KeInitializeMutex(&kMutex,1);
-		kMutexInit = TRUE;
-	}
-	KeWaitForSingleObject(&kMutex,Executive,KernelMode,FALSE,NULL);
-#endif
-#ifdef HPI_WDM_MONOLITHIC
-	if (!spinLockInit)
-	{
-		KeInitializeSpinLock(&spinLock);
-		spinLockInit = TRUE;
-	}
-	if( phm->wFunction == HPI_OSTREAM_WRITE ||
-		phm->wFunction == HPI_ISTREAM_READ )
-	{
-		pMdl = IoAllocateMdl((PVOID)phm->u.d.u.Data.dwpbData,phm->u.d.u.Data.dwDataSize,FALSE,FALSE,NULL);
-
-		if( !pMdl )
-		{
-			phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
-			phr->wSize = HPI_RESPONSE_FIXED_SIZE;
-			return;
-		}
-
-		// Probe and lock pages
-		__try
-		{
-			MmProbeAndLockPages(pMdl, KernelMode, phm->wFunction==HPI_OSTREAM_WRITE?IoReadAccess:IoWriteAccess);
-		}
-		__except(EXCEPTION_EXECUTE_HANDLER)
-		{
-			DbgPrint("HPI_Message() - MmProbeAndLockPages() failed.\n");
-			phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
-			phr->wSize = HPI_RESPONSE_FIXED_SIZE;
-			IoFreeMdl(pMdl);
-			return;
-		}
-
-	}
-	if( phm->wFunction != HPI_SUBSYS_CREATE_ADAPTER    &&
-		phm->wFunction != HPI_OSTREAM_HOSTBUFFER_ALLOC &&
-		phm->wFunction != HPI_OSTREAM_HOSTBUFFER_FREE  &&
-		phm->wFunction != HPI_ISTREAM_HOSTBUFFER_ALLOC &&
-		phm->wFunction != HPI_ISTREAM_HOSTBUFFER_FREE     )
-	{
-		KeAcquireSpinLock(&spinLock,&oldLevel);
-	}
-#endif
 
     // call each HPI in turn
 #ifdef HPI_INCLUDE_8400
@@ -272,31 +127,6 @@ defined( HPI_INCLUDE_8700 ))
         phr->wSize = HPI_RESPONSE_FIXED_SIZE;
     }
 
-#ifdef HPI_WDM_MONOLITHIC
-	if( phm->wFunction != HPI_SUBSYS_CREATE_ADAPTER    &&
-		phm->wFunction != HPI_OSTREAM_HOSTBUFFER_ALLOC &&
-		phm->wFunction != HPI_OSTREAM_HOSTBUFFER_FREE  &&
-		phm->wFunction != HPI_ISTREAM_HOSTBUFFER_ALLOC &&
-		phm->wFunction != HPI_ISTREAM_HOSTBUFFER_FREE     )
-	{
-		KeReleaseSpinLock(&spinLock,oldLevel);
-	}
-
-	if( pMdl)
-	{
-		MmUnlockPages(pMdl);
-		IoFreeMdl(pMdl);
-	}
-#endif
-#ifdef HPI_INCLUDE_WDMBOLTON
-	KeReleaseMutex(&kMutex,FALSE);
-#endif
-#ifdef HPI_OS_WDM_MUTEX
-    {
-        ReleaseMutex( hMutex, INFINITE );
-        CloseHandle( hMutex );
-    }
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

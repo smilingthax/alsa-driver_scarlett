@@ -25,11 +25,11 @@
   void HPI_4000( HPI_MESSAGE *phm, HPI_RESPONSE *phr )
 ******************************************************************************/
 
-#include <hpi.h>
-#include <hpios.h>  // for debug
-#include <hpidebug.h>  // for debug
-#include <hpipci.h>
-#include <hpi56301.h>
+#include "hpi.h"
+#include "hpios.h"  // for debug
+#include "hpidebug.h"  // for debug
+#include "hpipci.h"
+#include "hpi56301.h"
 
 ////////////////////////////////////////////////////////////////////////////
 // local defines
@@ -335,20 +335,6 @@ void H400_SubSysFindAdapters(HPI_RESPONSE *phr)
         break;	// did not find any cards we recognise
 
 FoundAdapter:
-#ifdef HPI_OS_DOS ////////////////////////////// DOS ONLY!
-        // for real mode DOS only - move the adapter base
-        // address to 0xD0000-0xDFFFF (occupies 64K)
-        // by changing the base address register in config space
-        HpiPci_WriteConfig( &ao.Pci, HPIPCI_CBMA , 0xD0000L );
-
-        // re-find the device to get the correct memory address
-        if(HpiPci_FindDevice( &ao.Pci, nIndex, HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301))
-        {
-				phr->wError = HPI_ERROR_DOS_MEMORY_ALLOC;
-            return;
-        }
-#endif ///////////////////////////////////////// DOS ONLY!
-
         HPIOS_DEBUG_STRING("Found DSP56301 based PCI adapter\n");
 
         // turn on the adapters memory address decoding (in PCI config space)
@@ -482,11 +468,6 @@ void H400_AdapterClose(H400_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESPONSE *phr
     HPIOS_DEBUG_STRING( " HPI4000_AdapterClose\n" );
 
 	 Hpi56301_Message( pao->Pci.dwMemBase[0], phm,phr);
-
-#ifdef HPI_OS_DOS
-    // disable PCI interface so other apps can't access 56301
-    HpiPci_WriteConfig( &pao->Pci, HPIPCI_CCMR, 0 );
-#endif
 
     pao->wOpen = 0;         // adapter is now closed
 }

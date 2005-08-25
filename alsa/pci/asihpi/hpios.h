@@ -29,7 +29,7 @@ HPI Operating System function declarations
 #ifndef _HPIOS_H_
 #define _HPIOS_H_
 
-#include <hpi.h>
+#include "hpi.h"
 
 
 /////////////////////////// MACROS ///////////////////////////////////////
@@ -43,49 +43,7 @@ HPI Operating System function declarations
 	#define HPIOS_DEBUG_DWORD(d)
 #endif
 
-#ifndef __GNUC__
-#define HUGE huge
-#else
-#undef HUGE
-#define HUGE
-#endif
-
-#ifdef HPI_OS_DOS
-#include <hpiosdos.h>
-#endif
-
-#ifdef HPI_OS_DSP_C6000
-#include <hpios_c6000.h>
-#endif
-
-#ifdef HPI_OS_LINUX
-#include <hpios_linux.h>
-#endif
-
-#ifdef HPI_OS_WDM
-#include <hpios_wdm.h>
-#endif
-
-#ifdef HPI_OS_WIN16
-#include <hpiosw16.h>
-#endif
-
-#ifdef HPI_OS_WIN32_USER
-#include <hpios_win32_user.h>
-#endif
-
-#ifdef HPI_OS_WIN95_KERN
-#include <hpios_win95_kern.h>
-#endif
-
-#ifdef HPI_OS_WINNT_KERN
-#include <hpios_winnt_kern.h>
-#endif
-
-#ifdef HPI_OS_DSP_563XX
-// no OS specific header file
-#endif
-
+#include "hpios_linux.h"
 
 
 /////////////////////////// PROTOTYPES ///////////////////////////////////
@@ -96,16 +54,14 @@ void HpiOs_DebugString( char *pszString );	// print a string to the monochrome d
 void HpiOs_DebugDword( HW32 dwDword );
 
 // memory allocation
-HW16 HpiOs_AllocLockedMemory( HW32 dwSize, void HFAR **ppvLinear, HW32 *pPhysical );
-HW16 HpiOs_FreeLockedMemory( void HFAR *pvLinear );
+HW16 HpiOs_AllocLockedMemory( HW32 dwSize, void **ppvLinear, HW32 *pPhysical );
+HW16 HpiOs_FreeLockedMemory( void *pvLinear );
 
 // physical memory allocation
-#ifndef NO_HPIOS_LOCKEDMEM_OPS
 HW16 HpiOs_LockedMem_Alloc( HpiOs_LockedMem_Handle *pLockedMemHandle, HW32 dwSize, void *pOsReference );
 HW16 HpiOs_LockedMem_Free( HpiOs_LockedMem_Handle LockedMemHandle );
 HW16 HpiOs_LockedMem_GetPhysAddr( HpiOs_LockedMem_Handle LockedMemHandle, HW32 *pPhysicalAddr );
-HW16 HpiOs_LockedMem_GetVirtAddr( HpiOs_LockedMem_Handle LockedMemHandle, void HFAR **ppvVirtualAddr );
-#endif
+HW16 HpiOs_LockedMem_GetVirtAddr( HpiOs_LockedMem_Handle LockedMemHandle, void **ppvVirtualAddr );
 
 // memory read/write
 HW32 HpiOs_MemRead32( HW32 dwAddress );
@@ -117,16 +73,8 @@ void HpiOs_OutBuf8( HW16 wDataPort, void *pbBuffer, HW16 wLength );
 // timing/delay
 void HpiOs_DelayMicroSeconds( HW32 dwNumMicroSec );
 
-#ifndef NO_HPIOS_FILE_OPS
-#ifndef HpiOs_fopen_rb // functions not implemented as macros in OS.h files
-HpiOs_FILE HpiOs_fopen_rb(const char *filename);
-int HpiOs_fseek(HpiOs_FILE stream, long offset, int origin);
-int HpiOs_fread( void *buffer, size_t size, size_t count, HpiOs_FILE stream );
-int HpiOs_fclose( HpiOs_FILE stream );
-#endif
-
 char *HpiOs_GetDspCodePath(void);
-#endif
+
 #endif //_HPIOS_H_
 
 ///////////////////////////////////////////////////////////////////////////

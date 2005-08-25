@@ -28,7 +28,6 @@ HPI Operating System Specific macros for Linux
 ******************************************************************************/
 
 #include <linux/ioctl.h>
-#define HFAR
 
 struct hpi_ioctl_linux
 {
@@ -48,8 +47,6 @@ typedef void *  HpiOs_LockedMem_Handle;
 
 
 /****************** KERNEL ***************/
-#ifdef __KERNEL__
-
 #include <asm/io.h>
 
 #ifndef SEEK_SET
@@ -57,7 +54,6 @@ typedef void *  HpiOs_LockedMem_Handle;
 #define SEEK_CUR 1
 #endif
 
-#define HPI_DEBUG_STRING printk
 /* I/O read/write.  */
 #define HOUT8(a,d)       outb(a,d)
 #define HINP8(a)         inb(a)
@@ -67,23 +63,14 @@ typedef void *  HpiOs_LockedMem_Handle;
 #define HPIOS_MEMWRITE32(a,d)       writel((d),(HW32 *)(a))
 #define HPIOS_MEMREAD32(a)          ((volatile HW32)readl((HW32 *)(a)))
 #define HPIOS_MEMWRITEBLK32(f,t,n) HpiOs_MemWriteBlk32(f,t,n)
-/* based on linux/string.h */
-static inline void HpiOs_MemWriteBlk32( const HW32 * from, HW32 * to, size_t n)
-{
-int	d0, d1, d2;
-
-__asm__ __volatile__ (
-	"rep \n\t movsl"
-	:"=&c" (d0), "=&D" (d1), "=&S" (d2)
-	:"0" (n), "1" ((long) to), "2" ((long) from)
-	:"memory");
-}
-/****************** USER ***************/
-#else
-
-#include <stdio.h>
-#define HPI_DEBUG_STRING printf
-#endif
-
+#define HpiOs_MemWriteBlk32(from,to,n) memcpy_fromio(to,from,(n)*4)
 
 ///////////////////////////////////////////////////////////////////////////
+
+#define HPI_INCLUDE_4100
+#define HPI_INCLUDE_4300
+#define HPI_INCLUDE_4500
+#define HPI_INCLUDE_5000
+#define HPI_INCLUDE_6000
+#define HPI_INCLUDE_6400
+#define HPI_INCLUDE_8700

@@ -22,9 +22,9 @@ HPI Operating System function implementation for Linux
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
 
-#include <hpios.h>
-#include <hpipci.h>
-#include <hpidebug.h>
+#include "hpios.h"
+#include "hpipci.h"
+#include "hpidebug.h"
 
 #include <linux/delay.h>
 #include <linux/sched.h>
@@ -32,17 +32,10 @@ HPI Operating System function implementation for Linux
 #include <linux/version.h>
 #include <linux/pci.h>
 #include <asm/io.h>
-#define __KERNEL_SYSCALLS__
-#include <linux/fs.h>
 #include <linux/unistd.h>
 #include <linux/mm.h>
 #include <asm/uaccess.h>
 #include <linux/interrupt.h>
-
-#ifndef SEEK_SET
-#define SEEK_SET 0
-#define SEEK_CUR 1
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // convert a dword to a string and print it
@@ -74,69 +67,6 @@ void HpiOs_DebugString( char *pszString )
 }
 
 ///////////////////////////////////////
-
-#if DSPCODE_FILE
-static int errno;	// kernel doesn't have this symbol
-
-/* Now implemented directly in hpidspcd.c - needs to know code type
-char *HpiOs_GetDspCodePath(void)
-*/
-
-void HpiOs_DebugInit(void)
-{
-}
-
-
-HpiOs_FILE HpiOs_fopen_rb(const char *filename)
-{
-    HpiOs_FILE hFile;
-    mm_segment_t fs;
-    fs= get_fs();
-    set_fs(get_ds());
-
-    hFile = open(filename,O_RDONLY,0);
-
-    set_fs(fs);
-
-    return hFile;
-}
-// int fseek( FILE *stream, long offset, int origin );
-int HpiOs_fseek(HpiOs_FILE stream, long offset, int origin)
-{
-    int retval;
-    mm_segment_t fs;
-    fs= get_fs();
-    set_fs(get_ds());
-    retval =lseek(stream,offset,origin);
-    set_fs(fs);
-    return (retval);
-
-}
-//size_t fread( void *buffer, size_t size, size_t count, FILE *stream );
-int HpiOs_fread( void *buffer, size_t size, size_t count, HpiOs_FILE stream )
-{
-    int nBytes;
-    mm_segment_t fs;
-    fs= get_fs();
-    set_fs(get_ds());
-    nBytes = read(stream,buffer,(size*count));
-    set_fs(fs);
-    return (nBytes/size);
-}
-
-// int fclose( FILE *stream );
-int HpiOs_fclose( HpiOs_FILE stream )
-{
-    int retval;
-    mm_segment_t fs;
-    fs= get_fs();
-    set_fs(get_ds());
-    retval=close(stream);
-    set_fs(fs);
-    return (retval);
-}
-
-#endif
 
 #ifndef set_current_state
 #define __set_current_state(state_value)	do { current->state = state_value; } while (0)

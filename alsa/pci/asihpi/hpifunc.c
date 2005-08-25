@@ -27,21 +27,9 @@ AudioScience, Inc. <support@audioscience.com>
  (C) Copyright AudioScience Inc. 1996,1997, 1998
 *******************************************************************************/
 
-#include <hpi.h>
-
-#ifndef HPI_KERNEL_MODE
-#include <stdio.h>
-#include <stdlib.h>
-#include <memory.h>
-#include <math.h>   // for log10 in meter get level
-#endif
+#include "hpi.h"
 
 // local prototypes
-#ifdef HPI_WDM_MONOLITHIC
-void HPIMSGX_MessageEx(const HPI_HSUBSYS *phSubSys,HPI_MESSAGE *phm,HPI_RESPONSE *phr,PLONG hOwner);
-#define HPI_Message( a, b, c ) HPIMSGX_MessageEx((a),(b),(c),(PLONG)NULL)
-#endif
-
 void HPI_InitMessage( HPI_MESSAGE *phm, HW16 wObject, HW16 wFunction );
 HW32 HPI_IndexesToHandle( const char cObject, const HW16 wIndex1, const HW16 wIndex2 );
 void HPI_HandleToIndexes( const HW32 dwHandle, HW16 *pwIndex1, HW16 *pwIndex2 );
@@ -73,10 +61,6 @@ HPI_HSUBSYS* HPI_SubSysCreate( void )
     HPI_RESPONSE    hr;
 
 	memset(&ghSubSys,0,sizeof(HPI_HSUBSYS));
-#ifndef HPI_KERNEL_MODE //----------------- not Win95,WinNT,WDM kernel
-
-    if (HPI_DriverOpen(&ghSubSys))
-#endif
 
     {
 		  HPI_InitMessage(
@@ -87,11 +71,6 @@ HPI_HSUBSYS* HPI_SubSysCreate( void )
 
         if (hr.wError==0)
             return( &ghSubSys );
-#ifndef HPI_KERNEL_MODE //----------------- not Win95,WinNT,WDM kernel
-
-        else
-            HPI_DriverClose(&ghSubSys);
-#endif
 
     }
     return(NULL);
@@ -111,11 +90,6 @@ void HPI_SubSysFree(
         HPI_SUBSYS_CLOSE
     );
     HPI_Message( phSubSys, &hm, &hr );
-
-#ifndef HPI_KERNEL_MODE // not Win95,WinNT,WDM kernel
-
-    HPI_DriverClose(phSubSys);
-#endif
 }
 
 
@@ -2227,9 +2201,6 @@ HW16 HPI_MeterGetPeak(
 	 short   anPeakdB[HPI_MAX_CHANNELS]  ///< [out] meter peaks
 )
 {
-#ifndef HPI_KERNEL_MODE
-	 short nLinear=0;
-#endif
 	 short  i=0;
 
 	 HPI_MESSAGE hm;
@@ -2247,25 +2218,6 @@ HW16 HPI_MeterGetPeak(
 		  // If return value is -ve (-1 to -32767) then treat as Log(peak)
 		  // range of log values will be -1 to -20000 (-0.01 to -200.00 dB)
 		  // 0 will never be returned for log (-1 = -0.01dB is max)
-
-#ifndef HPI_KERNEL_MODE 
-		 /// \bug Kernel mode cant do floating point log.  +ve linear value is returned instead.
-		 
-		  // convert 0..32767 level to 0.01dB (20log10), 0 is -100.00dB
-		  for(i=0; i<HPI_MAX_CHANNELS; i++)
-		  {
-				nLinear = hr.u.c.anLogValue[i];
-				// don't have to touch the LogValue when it is -ve since it is already a log value
-				if(nLinear>=0)
-				{
-					 if(nLinear==0)
-						  hr.u.c.anLogValue[i] = -100*100;  	// units are 0.01dB
-					 else
-						  hr.u.c.anLogValue[i] = (short)((float)(20*log10((float)nLinear/32767.0))*100.0);   // units are 0.01dB
-				}
-		  }
-#endif
-
 		  memcpy( anPeakdB, hr.u.c.anLogValue, sizeof(short)*HPI_MAX_CHANNELS);
 	 }
 	 else
@@ -2282,9 +2234,6 @@ HW16 HPI_MeterGetRms(
 	 short   anRmsdB[HPI_MAX_CHANNELS]
 )
 {
-#ifndef HPI_KERNEL_MODE
-	 short nLinear=0;
-#endif
 	 short  i=0;
 
 	 HPI_MESSAGE hm;
@@ -2298,22 +2247,6 @@ HW16 HPI_MeterGetRms(
 
 	 if(!hr.wError)
 	 {
-#ifndef HPI_KERNEL_MODE
-		 /// \bug Kernel mode cant do floating point log.  +ve linear value is returned instead.
-		  // convert 0..32767 level to 0.01dB (20log10), 0 is -100.00dB
-		  for(i=0; i<HPI_MAX_CHANNELS; i++)
-		  {
-				nLinear = hr.u.c.anLogValue[i];
-				// don't have to touch the LogValue when it is -ve since it is already a log value
-				if(nLinear>=0)
-				{
-					 if(nLinear==0)
-						  hr.u.c.anLogValue[i] = -100*100;  	// units are 0.01dB
-					 else
-						  hr.u.c.anLogValue[i] = (short)((float)(20*log10((float)nLinear/32767.0))*100.0);   // units are 0.01dB
-				}
-		  }
-#endif
 		  memcpy( anRmsdB, hr.u.c.anLogValue, sizeof(short)*HPI_MAX_CHANNELS);
 	 }
 	 else
@@ -3107,35 +3040,7 @@ HW16 HPI_VoxSetThreshold(
     HPI_HANDLETOINDEXES( hControlHandle, &hm.wAdapterIndex, &hm.u.c.wControlIndex );
     hm.u.c.wAttribute = HPI_VOX_THRESHOLD;
 
-#ifndef HPI_KERNEL_MODE 
-    /// \bug Requires floating point operations, not usable in kernel mode. Kernel mode uses raw linear value instead.
-
-	// convert db range 0..-100 dB , 0.01dB (20log10) to 0..32767 (-96 dB = 0 )
-    {
-        /*
-                fDB = 20 * log10( fLinear/32767 )
-
-                fLinear = 10^(fDB/20) * 32767
-
-                Want to avoid using pow() routine, because math libraries in the past
-                have not handled it well.
-
-                Re-arrange to us log()/exp() (natural log) routines.
-
-                Re-write 10^(fDB/20) using natural logs.
-
-                fLinear = exp( log(10.0) * fDB/20.0 ) * 32767.0;
-
-          */
-        float fDB=(float)anGain0_01dB/100.0f;          // units are 0.01dB
-        float fLinear=0.0;
-		  fLinear = (float)(exp( log(10.0) * fDB/20.0 ) * 32767.0);
-        hm.u.c.anLogValue[0] = (short)(fLinear);     // only use the first index (LEFT)
-    }
-#else
-
     hm.u.c.anLogValue[0] = anGain0_01dB;     // only use the first index (LEFT)
-#endif
 
     HPI_Message( phSubSysHandle, &hm, &hr );
 
@@ -3158,44 +3063,7 @@ HW16 HPI_VoxGetThreshold(
 
     HPI_Message( phSubSysHandle, &hm, &hr );
 
-#ifndef HPI_KERNEL_MODE 
-    /// \bug Requires floating point operations, not usable in kernel mode
-	
-    // convert db range 0..-100 dB , 0.01dB (20log10) to 0..32767 (-96 dB = 0 )
-    {
-        /*
-                fDB = 20 * log10( fLinear/32767 )
-
-                fLinear = 10^(fDB/20) * 32767
-
-                Want to avoid using pow() routine, because math libraries in the past
-                have not handled it well.
-
-                Re-arrange to us log()/exp() (natural log) routines.
-
-                Re-write 10^(fDB/20) using natural logs.
-
-                fLinear = exp( log(10.0) * fDB/20.0 ) * 32767.0;
-
-          */
-        float fDB,fLinear;
-
-		if(hr.u.c.anLogValue[0]==0)
-		{
-			fDB = -100.0;
-		}
-		else
-		{
-			fLinear = (float)hr.u.c.anLogValue[0];
-			fDB = (float)(log(fLinear/32767.0)*20.0/log(10.0));
-		}
-
-        *anGain0_01dB = (short)(fDB*100.0);     // only use the first index (LEFT)
-    }
-#else
-
 	*anGain0_01dB = hr.u.c.anLogValue[0];     // only use the first index (LEFT)
-#endif
 
     return(hr.wError);
 }
@@ -4188,14 +4056,7 @@ void HPI_GetLastErrorDetail(HW16 wError, char *pszErrorText,  HW32 **padwSpecifi
 void HPI_GetErrorText( HW16 wError, char *pszErrorText)
 {
     strcpy(pszErrorText," ");
-#ifndef HPI_OS_WIN95_KERN
-	#ifndef HPI_OS_WINNT_KERN
-	#ifndef HPI_OS_WDM
-
     sprintf(pszErrorText, "#%3d - ", wError);
-#endif
-	#endif
-	#endif
 
     switch(wError)
 	 {
@@ -4445,184 +4306,6 @@ HW16 HPI_FormatCreate(
 
     return(wError);
 }
-
-#if defined(HPI_OS_WIN16) || defined(HPI_OS_WIN32_USER)  || defined(INCLUDE_WINDOWS_ON_LINUX)
-static unsigned char PcmSubformatGUID[16] = { 1,0,0,0,0,0,0x10,0,0x80,0,0,0xAA,0,0x38,0x9B,0x71 };
-
-HW16 HPI_WaveFormatToHpiFormat(
-		const WAVEFORMATEX *lpFormatEx,
-		HPI_FORMAT *pHpiFormat
-)
-{
-	HW16 wError = 0;
-
-	switch(lpFormatEx->wFormatTag)
-	{
-#if defined( WAVE_FORMAT_EXTENSIBLE ) && defined( _WAVEFORMATEXTENSIBLE_ )
-	case WAVE_FORMAT_EXTENSIBLE:
-		// Make sure the subformat is PCM
-		if(memcmp(&((PWAVEFORMATEXTENSIBLE)lpFormatEx)->SubFormat,PcmSubformatGUID,16)!=0)
-		{
-			wError = HPI_ERROR_INVALID_FORMAT;
-			break;
-		}
-		// else fallthrough
-#endif
-	case WAVE_FORMAT_PCM:
-		//DBGPRINTF0(DEBUG_MASK_WOD_CUSTOM,TEXT("PCM"));
-		if(lpFormatEx->wBitsPerSample == 16)
-			pHpiFormat->wFormat = HPI_FORMAT_PCM16_SIGNED;
-		else if (lpFormatEx->wBitsPerSample == 8)
-			pHpiFormat->wFormat = HPI_FORMAT_PCM8_UNSIGNED;
-		else if (lpFormatEx->wBitsPerSample == 24)
-			pHpiFormat->wFormat = HPI_FORMAT_PCM24_SIGNED;
-		else if (lpFormatEx->wBitsPerSample == 32)
-			pHpiFormat->wFormat = HPI_FORMAT_PCM32_SIGNED;
-		else
-		{
-			pHpiFormat->wFormat = 0;
-			wError = HPI_ERROR_INVALID_FORMAT;
-		}
-		break;
-	case WAVE_FORMAT_IEEE_FLOAT:
-		if(lpFormatEx->wBitsPerSample == 32)
-			pHpiFormat->wFormat = HPI_FORMAT_PCM32_FLOAT;
-		else
-		{
-			pHpiFormat->wFormat = 0;
-			wError = HPI_ERROR_INVALID_FORMAT;
-		}
-		break;
-
-	case WAVE_FORMAT_DOLBY_AC2:
-		//DBGPRINTF0(DEBUG_MASK_WOD_CUSTOM,TEXT("AC2"));
-		pHpiFormat->wFormat = HPI_FORMAT_DOLBY_AC2;
-		break;
-
-	case WAVE_FORMAT_MPEG:
-		switch(((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadLayer)
-		{
-		case ACM_MPEG_LAYER1: pHpiFormat->wFormat = HPI_FORMAT_MPEG_L1; break;
-		case ACM_MPEG_LAYER2: pHpiFormat->wFormat = HPI_FORMAT_MPEG_L2; break;
-		case ACM_MPEG_LAYER3: pHpiFormat->wFormat = HPI_FORMAT_MPEG_L3; break;
-		default:
-			pHpiFormat->wFormat = HPI_FORMAT_MPEG_L2; break;   // really should be error
-		}
-		pHpiFormat->dwBitRate = ((MPEG1WAVEFORMAT*)lpFormatEx)->dwHeadBitrate;
-		if(pHpiFormat->dwBitRate==0)
-			pHpiFormat->dwBitRate= 256000L;		// must have a default
-		pHpiFormat->wMode = 0; //((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadMode;
-		break;
-	case WAVE_FORMAT_MPEGLAYER3:
-		pHpiFormat->wFormat = HPI_FORMAT_MPEG_L3;
-		pHpiFormat->dwBitRate = ((MPEGLAYER3WAVEFORMAT*)lpFormatEx)->wfx.nAvgBytesPerSec * 8;
-		if(pHpiFormat->dwBitRate==0)
-			pHpiFormat->dwBitRate = 256000L;	// must have a default
-		pHpiFormat->wMode = 0; //((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadMode;
-		break;
-
-	default:
-		wError = HPI_ERROR_INVALID_FORMAT;
-	}
-	pHpiFormat->wChannels = lpFormatEx->nChannels;
-	pHpiFormat->dwSampleRate = lpFormatEx->nSamplesPerSec;
-	pHpiFormat->wMode = 0;
-	pHpiFormat->dwAttributes=0;
-
-	return(wError);
-}
-
-HW16 HPI_HpiFormatToWaveFormat(
-		const HPI_FORMAT *pHpiFormat,
-		WAVEFORMATEX *lpFormatEx
-)
-{
-	HW16 wError = 0;
-
-    lpFormatEx->cbSize = 0;
-
-    lpFormatEx->nChannels		= pHpiFormat->wChannels;
-    lpFormatEx->nSamplesPerSec	= pHpiFormat->dwSampleRate;
-
-    switch(pHpiFormat->wFormat)
-    {
-    case HPI_FORMAT_PCM8_UNSIGNED:
-        lpFormatEx->nAvgBytesPerSec	= pHpiFormat->wChannels*pHpiFormat->dwSampleRate;
-        lpFormatEx->nBlockAlign		= pHpiFormat->wChannels;
-        lpFormatEx->wBitsPerSample	= 8;
-        lpFormatEx->wFormatTag = WAVE_FORMAT_PCM;
-        break;
-    case HPI_FORMAT_PCM16_SIGNED:
-        lpFormatEx->nAvgBytesPerSec	= 2*pHpiFormat->wChannels*pHpiFormat->dwSampleRate;
-        lpFormatEx->nBlockAlign		= 2*pHpiFormat->wChannels;
-        lpFormatEx->wBitsPerSample	= 16;
-        lpFormatEx->wFormatTag = WAVE_FORMAT_PCM;
-        break;
-	case HPI_FORMAT_PCM24_SIGNED:
-		lpFormatEx->nAvgBytesPerSec	= 3*pHpiFormat->wChannels*pHpiFormat->dwSampleRate;
-		lpFormatEx->nBlockAlign		= 3*pHpiFormat->wChannels;
-		lpFormatEx->wBitsPerSample	= 24;
-		lpFormatEx->wFormatTag = WAVE_FORMAT_PCM;
-		break;
-
-    case HPI_FORMAT_PCM32_SIGNED:
-        lpFormatEx->nAvgBytesPerSec	= 4*pHpiFormat->wChannels*pHpiFormat->dwSampleRate;
-        lpFormatEx->nBlockAlign		= 4*pHpiFormat->wChannels;
-        lpFormatEx->wBitsPerSample	= 32;
-        lpFormatEx->wFormatTag = WAVE_FORMAT_PCM;
-        break;
-
-    case HPI_FORMAT_PCM32_FLOAT:
-        lpFormatEx->nAvgBytesPerSec	= 4*pHpiFormat->wChannels*pHpiFormat->dwSampleRate;
-        lpFormatEx->nBlockAlign		= 4*pHpiFormat->wChannels;
-        lpFormatEx->wBitsPerSample	= 32;
-        lpFormatEx->wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-        break;
-
-    case HPI_FORMAT_AA_TAGIT1_HITS:
-		  lpFormatEx->nAvgBytesPerSec	= 2*pHpiFormat->wChannels*pHpiFormat->dwSampleRate;
-        lpFormatEx->nBlockAlign		= 2*pHpiFormat->wChannels;
-        lpFormatEx->wBitsPerSample	= 16;
-        lpFormatEx->wFormatTag = WAVE_FORMAT_DEVELOPMENT;
-        break;
-
-
-        //this is setup as MPEG layer 2
-    case HPI_FORMAT_MPEG_L2:
-    case HPI_FORMAT_MPEG_L3:
-        lpFormatEx->wFormatTag = WAVE_FORMAT_MPEG;
-        lpFormatEx->wBitsPerSample	= 0;
-        // this is for 44.1kHz, stereo, 256kbs
-        lpFormatEx->nBlockAlign
-        = (unsigned short)((144*pHpiFormat->dwBitRate)/pHpiFormat->dwSampleRate);
-        lpFormatEx->nAvgBytesPerSec	= pHpiFormat->dwBitRate/8;
-        lpFormatEx->cbSize = 22;
-        if(pHpiFormat->wFormat==HPI_FORMAT_MPEG_L2)
-            ((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadLayer = ACM_MPEG_LAYER2;
-        else
-            ((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadLayer = ACM_MPEG_LAYER3;
-        //this makes the desired rather than actual
-		((MPEG1WAVEFORMAT*)lpFormatEx)->dwHeadBitrate = pHpiFormat->dwBitRate;
-        if(pHpiFormat->wChannels==2)
-				((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadMode = ACM_MPEG_JOINTSTEREO;
-        else
-            ((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadMode = ACM_MPEG_SINGLECHANNEL;
-
-        ((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadModeExt = 0; //0x000F;   //??
-        ((MPEG1WAVEFORMAT*)lpFormatEx)->wHeadEmphasis = 0;
-        ((MPEG1WAVEFORMAT*)lpFormatEx)->fwHeadFlags = 0; //ACM_MPEG_ID_MPEG1;
-        ((MPEG1WAVEFORMAT*)lpFormatEx)->dwPTSLow = 0;
-        ((MPEG1WAVEFORMAT*)lpFormatEx)->dwPTSHigh = 0;
-        break;
-
-    default:
-		wError = HPI_ERROR_INVALID_FORMAT;
-    }
-
-	return(wError);
-}
-
-#endif /* defined(HPI_OS_WIN16) || defined(HPI_OS_WIN32_USER) */
 
 /// Initialize a HPI_DATA structure
 HW16 HPI_DataCreate(

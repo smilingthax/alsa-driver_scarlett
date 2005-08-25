@@ -21,17 +21,13 @@ Extended Message Function With Response Cacheing
 
 (C) Copyright AudioScience Inc. 2002
 *****************************************************************************/
-#include <hpimsgx.h>
-#include <hpidebug.h>
+#include "hpimsgx.h"
+#include "hpidebug.h"
 
-#ifdef HPI_OS_LINUX
 void hpi_message (const HPI_HSUBSYS *psubsys, HPI_MESSAGE *phm, HPI_RESPONSE *phr);
 #define HPI_Message hpi_message
-#ifndef TRUE
 #define TRUE 1
 #define FALSE 0
-#endif
-#endif
 
 HW32 HPI_IndexesToHandle( const char cObject, const HW16 wIndex1, const HW16 wIndex2 );
 HW32 HPI_IndexesToHandle3( const char cObject,const HW16 wIndex1, const HW16 wIndex2, const HW16 wIndex0 );

@@ -31,12 +31,12 @@
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
 
-#include <hpi.h>
-#include <hpios.h>  // for debug
-#include <hpipci.h>
-#include <hpi6000.h>
+#include "hpi.h"
+#include "hpios.h"  // for debug
+#include "hpipci.h"
+#include "hpi6000.h"
 
-#include <hpidspcd.h>
+#include "hpidspcd.h"
 
 ////////////////////////////////////////////////////////////////////////////
 // local defines
@@ -389,68 +389,6 @@ void H600_SubSysFindAdapters(HPI_RESPONSE *phr)
             if( HpiPci_FindDeviceEx( &Adap.Pci, nIndex, HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_PCI2040,HPI_PCI_VENDOR_ID_AUDIOSCIENCE ) )
                 break; // no adapter found!
 
-#ifdef HPI_OS_DOS ////////////////////////////// DOS ONLY, ASI6000 ONLY, NO ASI8800 SUPPORT!
-        // for real mode DOS only - move the PCI addresses to 0xD0000-0xDFFFF (64K)
-        // by changing the base address register in PCI config space
-        // The PCI2040 has two blocks, BAR0=4K and BAR1=32K
-        // Move the 4K block to 0xD0000 and the 32K block to 0xD8000
-        HpiPci_WriteConfig( &Adap.Pci, HPIPCI_CBMA,     0xD0000L );
-        HpiPci_WriteConfig( &Adap.Pci, HPIPCI_CBMA+0x4, 0xD8000L );
-        if( HpiPci_FindDeviceEx( &Adap.Pci, nIndex, HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_PCI2040,HPI_PCI_VENDOR_ID_AUDIOSCIENCE ) )
-        {
-            phr->wError = HPI_ERROR_DOS_MEMORY_ALLOC;
-            return;
-        }
-        // get subsys dev id, to figure out if 6100 or 6200
-        {
-            HW32 dwSubDev=0;
-
-            // fill in the same stuff as the PnP subsystem
-            HpiPci_ReadConfig( &Adap.Pci, HPIPCI_CSUB, &dwSubDev );
-            Adap.Pci.wVendorId = HPI_PCI_VENDOR_ID_TI;
-            Adap.Pci.wDeviceId = HPI_ADAPTER_PCI2040;
-            Adap.Pci.wSubSysVendorId = dwSubDev&0xffff;
-            Adap.Pci.wSubSysDeviceId = dwSubDev>>16;
-        }
-#endif
-
-        // under WIN16, get the subsys device ID, if present
-        // find out if we have a 8801 present
-        // because it uses different DSP code than the 6200 series
-#ifdef HPI_OS_WIN16
-        {
-            HW32 dwSubDev=0;
-
-            // fill in the same stuff as the PnP subsystem
-            HpiPci_ReadConfig( &Adap.Pci, HPIPCI_CSUB, &dwSubDev );
-
-            Adap.Pci.wVendorId = HPI_PCI_VENDOR_ID_TI;
-            Adap.Pci.wDeviceId = HPI_ADAPTER_PCI2040;
-            Adap.Pci.wSubSysVendorId = dwSubDev&0xffff;
-            Adap.Pci.wSubSysDeviceId = dwSubDev>>16;
-
-            switch(Adap.Pci.wSubSysDeviceId)
-            {
-                //case 0x0000:	//prototypes.
-            case 0x5100:
-            case 0x6100:
-            case 0x6200:
-            case 0x8800:
-                break;	// valid values of Subdevice Id
-            default:
-                phr->wError = 920;
-                gadwHpiSpecificError[0] = dwSubDev;
-                return;  // Error - did not find a valid subsys device ID
-            }
-        }
-#endif
-        /*  Note NT kernel implementation of HpiPci_FindDeviceEx() fills in
-              	Adap.Pci.wVendorId
-              	Adap.Pci.wDeviceId;
-              	Adap.Pci.wSubSysVendorId
-              	Adap.Pci.wSubSysDeviceId
-        */
-
         // create the adapter object based on the resource information inside Adap.PCI
         nError = H600_CreateAdapterObj( &Adap);                // adapter obj
         if(nError)
@@ -664,11 +602,6 @@ void H600_AdapterClose(H600_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESPONSE *phr
     HPI_PRINT_VERBOSE( " HPI6000_AdapterClose\n" );
 
     Hpi6000_Message( pao, phm,phr);
-
-#ifdef HPI_OS_DOS
-    // disable PCI interface so other apps can't access 6701
-    HpiPci_WriteConfig( &pao->Pci, HPIPCI_CCMR, 0 );
-#endif
 
     pao->wOpen = 0;         // adapter is now closed
 }
@@ -1086,9 +1019,7 @@ static short Hpi6000_AdapterBootLoadDsp( H600_ADAPTER_OBJ *pao)
             ///////////////////////////////////////////////////////////
             // write the DSP code down into the DSPs memory
             //HpiDspCode_Open(nBootLoadFamily,&DspCode);
-#if defined DSPCODE_FIRMWARE
 	    DspCode.psDev = pao->Pci.pOsData;
-#endif
 
             if ((nError=HpiDspCode_Open(nBootLoadFamily,&DspCode))!= 0)
                 return( nError);
@@ -1103,17 +1034,6 @@ static short Hpi6000_AdapterBootLoadDsp( H600_ADAPTER_OBJ *pao)
                     break;
                 if (dwLength == 0xFFFFFFFF)
                     break; // end of code
-
-#ifdef DSPCODE_ARRAY
-                // check for end of array with continuation to another one
-                if (dwLength == 0xFFFFFFFEL )
-                {
-                    DspCode.nArrayNum++;
-                    DspCode.dwOffset = 0;
-                    if ((nError = HpiDspCode_ReadWord(&DspCode,&dwLength))!= 0)
-                        break;
-                }
-#endif
 
                 if ((nError=HpiDspCode_ReadWord(&DspCode,&dwAddress))!= 0)
                     break;
@@ -1146,16 +1066,6 @@ static short Hpi6000_AdapterBootLoadDsp( H600_ADAPTER_OBJ *pao)
                 HpiDspCode_ReadWord(&DspCode,&dwLength);
                 if (dwLength == 0xFFFFFFFF)
                     break; // end of code
-
-#ifdef DSPCODE_ARRAY
-                // check for end of array with continuation to another one
-                if (dwLength == 0xFFFFFFFEL )
-                {
-                    DspCode.nArrayNum++;
-                    DspCode.dwOffset = 0;
-                    HpiDspCode_ReadWord(&DspCode,&dwLength);
-                }
-#endif
 
                 HpiDspCode_ReadWord(&DspCode,&dwAddress);
                 HpiDspCode_ReadWord(&DspCode,&dwType);
@@ -1366,7 +1276,6 @@ static void HpiReadBlock( H600_DSP_OBJ *pdo, HW32 dwAddress, HW32 *pdwData, HW32
         return;
     HPIOS_MEMWRITE32(pdo->dwHPIAddress, dwAddress);
 
-#if ((defined HPIOS_MEMWRITEBLK32) && (defined HPI_OS_LINUX))
     {
         HW32 *pdwSource = (HW32 *)pdo->dwHPIDataAutoInc;
         HW16 wLength = dwLength-1;
@@ -1375,17 +1284,6 @@ static void HpiReadBlock( H600_DSP_OBJ *pdo, HW32 dwAddress, HW32 *pdwData, HW32
         // take care of errata in revB DSP (2.0.1)
         *(pdwData+dwLength-1) = HPIOS_MEMREAD32(pdo->dwHPIData);  // must end with non auto-inc
     }
-#else	 // use C copy
-    //#warning HPIOS_MEMWRITEBLK32 is not defined for this OS
-    {
-        HW32 i=0;
-        for(i=0; i<dwLength-1; i++)
-            *pdwData++ = HPIOS_MEMREAD32(pdo->dwHPIDataAutoInc);
-
-        // take care of errata in revB DSP (2.0.1)
-        *pdwData = HPIOS_MEMREAD32(pdo->dwHPIData);  // must end with non auto-inc
-    }
-#endif
 }
 
 
@@ -1617,7 +1515,7 @@ static short Hpi6000_SendData( H600_ADAPTER_OBJ *pao,
     HW32				dwDataSent=0;
     HW16				wAck;
     HW32				dwLength,dwAddress;
-    HW32 HUGE *pData =	(HW32 HUGE *)phm->u.d.u.Data.dwpbData;
+    HW32 *pData =	(HW32 *)phm->u.d.u.Data.dwpbData;
     HW16				wTimeOut=8;
 
     while( (dwDataSent < (phm->u.d.u.Data.dwDataSize & ~3L)) && --wTimeOut )  // round dwDataSize down to nearest 4 bytes
@@ -1679,7 +1577,7 @@ static short Hpi6000_GetData( H600_ADAPTER_OBJ *pao, HW16 wDspIndex, HPI_MESSAGE
     HW32	dwDataGot=0;
     HW16	wAck;
     HW32	dwLength,dwAddress;
-    HW32  HUGE *pData =	(HW32 HUGE *)phm->u.d.u.Data.dwpbData;
+    HW32  *pData =	(HW32 *)phm->u.d.u.Data.dwpbData;
 
     while( dwDataGot < (phm->u.d.u.Data.dwDataSize & ~3L) )  // round dwDataSize down to nearest 4 bytes
     {

@@ -46,7 +46,6 @@
 #include <sound/info.h>
 #include <sound/initval.h>
 
-#define HPI_OS_LINUX
 #include "hpi.h"
 
 static int mixer_dump;
@@ -2178,7 +2177,7 @@ snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 
 	wVersion = asihpi->wVersion;
 	snd_iprintf(buffer,
-		    "Serial#=%ld\nHw Version %c%d\nDSP code version %03d\n",
+		    "Serial#=%d\nHw Version %c%d\nDSP code version %03d\n",
 		    asihpi->dwSerialNumber, ((wVersion >> 3) & 0xf) + 'A',
 		    wVersion & 0x7,
 		    ((wVersion >> 13) * 100) + ((wVersion >> 7) & 0x3f));
@@ -2192,7 +2191,7 @@ snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 			err += HPI_SampleClock_GetSource(phSubSys, hControl, &wSource);
 
 			if (!err)
-					snd_iprintf(buffer, "SampleClock=%ldHz, source %s\n", dwRate,
+					snd_iprintf(buffer, "SampleClock=%dHz, source %s\n", dwRate,
 								sampleclock_sources[wSource]);
 	} 
 
@@ -2237,7 +2236,7 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 
 	err = HPI_SubSysGetVersion(phSubSys, &dwVersion);
 	HPI_HandleError(err);
-	snd_printd(KERN_INFO "HPI_SubSysGetVersion=%lx\n", dwVersion);
+	snd_printd(KERN_INFO "HPI_SubSysGetVersion=%x\n", dwVersion);
 
 	HPI_AdapterIndex( phSubSys, pci_dev, pci_id, &dev_idx );
 	snd_printd(KERN_INFO "PCI device (%04x:%04x,%04x:%04x,%04x) is HPI index # %d\n", 
@@ -2280,7 +2279,7 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 				 &asihpi->dwSerialNumber, &asihpi->wType);
 	HPI_HandleError(err);
 	wVersion = asihpi->wVersion;
-	snd_printk(KERN_INFO "Adapter ID=%4X Index=%d NumOutStreams=%d NumInStreams=%d S/N=%ld\n" "Hw Version %c%d DSP code version %03d\n", asihpi->wType, asihpi->wAdapterIndex, asihpi->wNumOutStreams, asihpi->wNumInStreams, asihpi->dwSerialNumber, ((wVersion >> 3) & 0xf) + 'A',	// Hw version major
+	snd_printk(KERN_INFO "Adapter ID=%4X Index=%d NumOutStreams=%d NumInStreams=%d S/N=%d\n" "Hw Version %c%d DSP code version %03d\n", asihpi->wType, asihpi->wAdapterIndex, asihpi->wNumOutStreams, asihpi->wNumInStreams, asihpi->dwSerialNumber, ((wVersion >> 3) & 0xf) + 'A',	// Hw version major
 		   wVersion & 0x7,	// Hw version minor
 		   ((wVersion >> 13) * 100) + ((wVersion >> 7) & 0x3f)	// DSP code version
 	    );

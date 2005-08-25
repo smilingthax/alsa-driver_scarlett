@@ -31,17 +31,11 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 #ifndef _HPIDSPLD_H_
 #define _HPIDSPLD_H_
 
-//#include <stdio.h>
-#include <hpi.h>
-#include <hpios.h>
+#include "hpi.h"
+#include "hpios.h"
 
-#ifdef DSPCODE_FIRMWARE
-#if defined(HPI_OS_LINUX)
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0))
-#    include <linux/device.h>
-#endif
-
+#include <linux/device.h>
 #include <linux/firmware.h>
 
 /** Descriptor for dspcode from firmware loader */
@@ -53,9 +47,6 @@ struct DSP_CODE_FIRMWARE
     long int dwWordCount;     //!< Number of words read so far
     HW32 dwVersion; //<! Version read from dsp code file
 };
-
-#endif // LINUX
-#endif // DSPCODE_FIRMWARE
 
 /** Descriptor used when dsp code read from a file */
 struct DSP_CODE_FILE
@@ -73,55 +64,16 @@ struct DSP_CODE_ARRAY
 	 short nArrayNum;             //!< Index of array currently in use
 	 int nDspCode_ArrayCount;     //!< Total number of code arrays for this DSP
 	 HW32 dwOffset;               //!< Current read position within code array
-	 HW32 HFAR * * apaCodeArrays; //!< pointer to array of pointers to code arrays
-	 HW32 HFAR * adwDspCodeArray; //!< pointer to current code array
+	 HW32 * * apaCodeArrays; //!< pointer to array of pointers to code arrays
+	 HW32 * adwDspCodeArray; //!< pointer to current code array
 };
 
 
 /* Determine which format of dsp code to use */
 
-#if defined (DSPCODE_FIRMWARE)
 /* DSP CODE IS LOADED FROM FILE DSPnnnn.BIN */
 typedef struct DSP_CODE_FIRMWARE DSP_CODE;
-#endif
 
-#if defined (USE_ASIDSP) || defined (DSPCODE_FILE)
-#ifndef DSPCODE_FILE
-#define DSPCODE_FILE
-#endif
-/* DSP CODE IS LOADED FROM FILE ASIDSP.BIN */
-typedef struct DSP_CODE_FILE DSP_CODE;
-#endif
-
-#if ! defined (DSPCODE_FILE) && ! defined (DSPCODE_FIRMWARE)
-# ifndef DSPCODE_ARRAY
-#   define DSPCODE_ARRAY
-# endif
-/* DSP CODE IN ARRAYS IS LINKED INTO APPLICATION */
-typedef struct DSP_CODE_ARRAY DSP_CODE;
-
-#endif //
-
-
-#if defined(HPI_OS_DOS) && defined(_MSC_VER)
-
-// special MSCV case since 0x8600 overflows signed short that it uses to store enums
-
-#define		Load2200 0x2200
-#define		Load4100 0x4100
-#define		Load4300 0x4300
-#define		Load4400 0x4400
-#define		Load4500 0x4500
-#define		Load4600 0x4600
-#define		Load5000 0x5000
-#define		Load6200 0x6200
-#define		Load6413 0x6413
-#define		Load8600 0x8600
-#define		Load6205 0x6205
-#define		Load8713 0x8713
-#define		Load8800 0x8800
-
-#else
 enum BootLoadFamily {
 	Load2200=0x2200,
 	Load4100=0x4100,
@@ -137,7 +89,6 @@ enum BootLoadFamily {
 	Load8713=0x8713,
 	Load8800=0x8800
 };
-#endif
 
 /*! Prepare *psDspCode to refer to the requuested adapter.
 	 Searches the file, or selects the appropriate linked array

@@ -26,7 +26,7 @@ Copyright AudioScience, Inc., 2003
 #ifndef _HPI6205_H_
 #define _HPI6205_H_
 
-#include <hpi.h>
+#include "hpi.h"
 
 /***********************************************************
 	Defines used for basic messaging

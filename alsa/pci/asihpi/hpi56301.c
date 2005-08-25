@@ -33,33 +33,20 @@ USE_ASIDSP load dsp code from external file "asidsp.bin".  Hex files no longer
 //#define USE_ASM_DATA
 //#define USE_ASM_MSG
 //#define TIMING_DEBUG  // writes to I/O port 0x182!
-#include <hpidspcd.h>
+#include "hpidspcd.h"
 
-#ifdef HPI_OS_DOS
-#include <stdio.h>  /* for //HPIOS_DEBUG_STRING */
-#include <stdlib.h> /* for exit() */
-#include <dos.h> //for delay()
-#endif
-
-#include <hpi.h>
-#include <hpidebug.h>
-#include <hpios.h>
-#include <hpipci.h>
-#include <hpi56301.h>
-#include <dpi56301.h>
-
-#ifdef ASI_DRV_DEBUG
-#include "asidrv.h"
-#endif
+#include "hpi.h"
+#include "hpidebug.h"
+#include "hpios.h"
+#include "hpipci.h"
+#include "hpi56301.h"
+#include "dpi56301.h"
 
 //////////////////////////////////////////////////////////////////////////
 // DSP56301 Pci Boot code (multi-segment)
 // The following code came from boot4000.asm, via makeboot.bat
 ///////////////////////////////////////////////////////////////////////
-#ifndef __linux__
-#pragma hdrstop   // allow headers above here to be precompiled
-#endif
-#include <boot4ka.h>
+#include "boot4ka.h"
 
 
 // DSP56301 PCI HOST registers (these are the offset from the base address)
@@ -83,11 +70,6 @@ USE_ASIDSP load dsp code from external file "asidsp.bin".  Hex files no longer
 
 #define TIMEOUT             100000L   // # of times to retry operations
 
-// printfs do weird thing under Win16
-//#ifdef HPI_OS_WIN16
-//#define //HPIOS_DEBUG_STRING(a)
-//#endif
-
 #define DPI_DATA_SIZE   16
 typedef struct
 {
@@ -103,15 +85,15 @@ static short    Dpi_Command(HW32 dw56301Base, HW32 Cmd);
 static void     Dpi_SetFlags(HW32 dw56301Base, short Flagval);
 static short    Dpi_WaitFlags(HW32 dw56301Base, short Flagval);
 static short    Dpi_GetFlags(HW32 dw56301Base);
-static short    DpiData_Read16(HW32 dwBase, HW16 HUGE *pwData);
-static short    DpiData_Read32(HW32 dwBase, HW32 HUGE *pdwData);
-static short    DpiData_Write32(HW32 dwBase, HW32 HUGE *pdwData);
-static short 	DpiData_WriteBlock16(HW32 dwBase, HW16 HUGE *pwData, HW32 dwLength);
+static short    DpiData_Read16(HW32 dwBase, HW16 *pwData);
+static short    DpiData_Read32(HW32 dwBase, HW32 *pdwData);
+static short    DpiData_Write32(HW32 dwBase, HW32 *pdwData);
+static short 	DpiData_WriteBlock16(HW32 dwBase, HW16 *pwData, HW32 dwLength);
 #ifdef WANT_UNUSED_FUNCTION_DECLARED
 static short    DpiData_ReadBlock32(HW32 dwBase, HW32 *pdwData, HW32 dwLength);
-static short    DpiData_WriteBlock32(HW32 dwBase, HW32 HUGE *pdwData, HW32 dwLength);
+static short    DpiData_WriteBlock32(HW32 dwBase, HW32 *pdwData, HW32 dwLength);
 #endif
-static short 	DpiData_Write24(HW32 dwBase, HW32 HUGE *pdwData);
+static short 	DpiData_Write24(HW32 dwBase, HW32 *pdwData);
 
 
 /**************************** EXPORTED FUNCTIONS ************************/
@@ -171,7 +153,7 @@ short Hpi56301_CheckAdapterPresent( HW32 dwMemBase )
 }
 
 /************************************************************************/
-//short Hpi56301_BootLoadDsp( HW32 dwMemBase, HW32 HFAR * apaDspCodeArrays[] ) old
+//short Hpi56301_BootLoadDsp( HW32 dwMemBase, HW32 * apaDspCodeArrays[] ) old
 
 short Hpi56301_BootLoadDsp( H400_ADAPTER_OBJ * pao )
 {
@@ -182,7 +164,7 @@ short Hpi56301_BootLoadDsp( H400_ADAPTER_OBJ * pao )
     HW32 dwDspCodeLength = adwDspCode_Boot4000a[0];
     HW32 dwDspCodeAddr = adwDspCode_Boot4000a[1];
     HW32 dwDspCodeType = 0;
-    //HW32 HFAR * adwDspCodeArray;
+    //HW32 * adwDspCodeArray;
     //	 short nArrayNum;
     short bFlags;
     HW32 dwHSTR;
@@ -297,9 +279,7 @@ short Hpi56301_BootLoadDsp( H400_ADAPTER_OBJ * pao )
 
 	 HPI_PRINT_VERBOSE("(Family = %x) \n", nLoadFamily);
 
-#if defined DSPCODE_FIRMWARE
 	 DspCode.psDev = pao->Pci.pOsData;
-#endif
 	 nError=HpiDspCode_Open(nLoadFamily,&DspCode);
 	 if (nError)
 		  goto exit;
@@ -313,16 +293,6 @@ short Hpi56301_BootLoadDsp( H400_ADAPTER_OBJ * pao )
 		  // write length, starting address and segment type (P,X or Y)
 		  if ((nError = HpiDspCode_ReadWord(&DspCode,&dwDspCodeLength))!=0)
 				goto exit;
-#ifdef DSPCODE_ARRAY
-		  // check for end of array with continuation to another one
-		  if (dwDspCodeLength == 0xFFFFFFFEL )
-		  {
-				DspCode.nArrayNum++;
-				DspCode.dwOffset = 0;
-				if ((nError= HpiDspCode_ReadWord(&DspCode,&dwDspCodeLength))!=0)
-                goto exit;
-        }
-#endif
         if (DpiData_Write24(dwMemBase, &dwDspCodeLength))
         {
             nError= (DPI_ERROR_DOWNLOAD+6);
@@ -446,12 +416,12 @@ static HW16 Hpi56301_Resync(HW32 dwBase)
 
 /************************************************************************/
 static short Hpi56301_Send(HW32 dw56301Base,
-                    HW16 HUGE *pData,
+                    HW16 *pData,
                     HW32 dwLengthInWords,
                     short wDataType )
 {
-    //HW32 HUGE * pdwData=(HW32 HUGE *)pData;
-    HW16 HUGE * pwData = pData;
+    //HW32 * pdwData=(HW32 *)pData;
+    HW16 * pwData = pData;
     HW16 nErrorIndex=0;
     HW16 wError;
     //HW32 dwCount;
@@ -465,9 +435,6 @@ static short Hpi56301_Send(HW32 dw56301Base,
     wError=Dpi_WaitFlags(dw56301Base,HF_DSP_STATE_IDLE);
     if (wError)
     {
-#ifdef ASI_DRV_DEBUG
-        //DBGPRINTF1( TEXT("!Dpi_WaitFlags %d!"),wError);
-#endif
         nErrorIndex=1;
         goto ErrorExit;		// error 911
     }
@@ -533,7 +500,7 @@ static short Hpi56301_Send(HW32 dw56301Base,
             nErrorIndex=8;
             goto ErrorExit;
         }	// error 918
-        //		pdwData=(HW32 HUGE *)(pData+ dwLength);
+        //		pdwData=(HW32 *)(pData+ dwLength);
         pwData=(pData+ dwLength);
         /* round up limit.  Buffer must have extra word if odd length is requested.
         	Buffers must be allocated in 32bit multiples
@@ -596,13 +563,13 @@ ErrorExit:
 
 /************************************************************************/
 static short Hpi56301_Get(HW32 dw56301Base,
-                   HW16 HUGE *pData,
+                   HW16 *pData,
                    HW32 *pdwLengthInWords,
                    short wDataType)
 {
     HW32 dwLength1,dwLength2;
-    //  HW32 HUGE * pdwData = (HW32 HUGE *) pData;
-    HW16 HUGE * pwData =  pData;
+    //  HW32 * pdwData = (HW32 *) pData;
+    HW16 * pwData =  pData;
     HW16 nErrorIndex=0;
     HW32 dwCount;
     HW32 dwBeforeWrap,dwAfterWrap;
@@ -789,7 +756,7 @@ void Hpi56301_Message( HW32 dwMemBase, HPI_MESSAGE *phm, HPI_RESPONSE *phr)
     	still may be an error in the message, so dont assign directly */
 
     nError=Hpi56301_Send(dwMemBase,
-                         (HW16 HUGE *)phm,
+                         (HW16 *)phm,
                          (phm->wSize/sizeof(HW32))*sizeof(HW16),
                          CMD_SEND_MSG);
     if(nError)
@@ -800,7 +767,7 @@ void Hpi56301_Message( HW32 dwMemBase, HPI_MESSAGE *phm, HPI_RESPONSE *phr)
 
     HPIOS_DEBUG_STRING("B");   // *************** debug
     nError=Hpi56301_Get(dwMemBase,
-                        (HW16 HUGE *)phr,
+                        (HW16 *)phr,
                         &dwSize,
                         CMD_GET_RESP);
     if(nError)
@@ -820,7 +787,7 @@ void Hpi56301_Message( HW32 dwMemBase, HPI_MESSAGE *phm, HPI_RESPONSE *phr)
         HPIOS_DEBUG_STRING("C");   // *************** debug
         // note - this transfers the entire packet in one go!
         nError=Hpi56301_Send(dwMemBase,
-                             (HW16 HUGE *)phm->u.d.u.Data.dwpbData,
+                             (HW16 *)phm->u.d.u.Data.dwpbData,
                              (phm->u.d.u.Data.dwDataSize/sizeof(HW16)),
                              CMD_SEND_DATA);
         if (nError)
@@ -835,7 +802,7 @@ void Hpi56301_Message( HW32 dwMemBase, HPI_MESSAGE *phm, HPI_RESPONSE *phr)
         HPIOS_DEBUG_STRING("D");   // *************** debug
         // note - this transfers the entire packet in one go!
         nError=Hpi56301_Get(dwMemBase,
-                            (HW16 HUGE *)phm->u.d.u.Data.dwpbData,
+                            (HW16 *)phm->u.d.u.Data.dwpbData,
                             &dwSize,
                             CMD_GET_DATA);
         if(nError)
@@ -860,7 +827,7 @@ void Hpi56301_Message( HW32 dwMemBase, HPI_MESSAGE *phm, HPI_RESPONSE *phr)
             HPIOS_DEBUG_STRING("E");   // *************** debug
             // note - this transfers the entire packet in one go!
             nError=Hpi56301_Send(dwMemBase,
-                                 (HW16 HUGE *)phm->u.cx.u.aes18tx_send_message.dwpbMessage,
+                                 (HW16 *)phm->u.cx.u.aes18tx_send_message.dwpbMessage,
                                  (phm->u.cx.u.aes18tx_send_message.wMessageLength/sizeof(HW16)),
                                  CMD_SEND_DATA);
             if(nError)
@@ -875,7 +842,7 @@ void Hpi56301_Message( HW32 dwMemBase, HPI_MESSAGE *phm, HPI_RESPONSE *phr)
             HPIOS_DEBUG_STRING("F");   // *************** debug
             // note - this transfers the entire packet in one go!
             nError=Hpi56301_Get(dwMemBase,
-                                (HW16 HUGE *)phm->u.cx.u.aes18rx_get_message.dwpbMessage,
+                                (HW16 *)phm->u.cx.u.aes18rx_get_message.dwpbMessage,
                                 &dwSize,
                                 CMD_GET_DATA);
             if(nError)
@@ -993,7 +960,7 @@ short Dpi_Command(HW32 dw56301Base, HW32 Cmd)
 /************************************************************************/
 // Reading the FIFO, protected against FIFO empty
 // Returns DPI_ERROR if FIFO stays empty for TIMEOUT loops
-short DpiData_Read32(HW32 dwBase, HW32 HUGE *pdwData)
+short DpiData_Read32(HW32 dwBase, HW32 *pdwData)
 {
     HW32 dwTimeout;
     HW32 dwHSTR;
@@ -1045,7 +1012,7 @@ short DpiData_Read32(HW32 dwBase, HW32 HUGE *pdwData)
     return (0);
 }
 
-short DpiData_Read16(HW32 dwBase, HW16 HUGE *pwData)
+short DpiData_Read16(HW32 dwBase, HW16 *pwData)
 {
     HW32 dwTimeout;
     HW32 dwHSTR;
@@ -1078,7 +1045,7 @@ short DpiData_Read16(HW32 dwBase, HW16 HUGE *pwData)
 /************************************************************************/
 // Writing the FIFO, protected against FIFO full
 // Returns error if FIFO stays full
-short DpiData_Write32(HW32 dwBase, HW32 HUGE *pdwData)
+short DpiData_Write32(HW32 dwBase, HW32 *pdwData)
 {
     HW32 dwTimeout;
     HW32 dwD1,dwD2;
@@ -1138,7 +1105,7 @@ short DpiData_Write32(HW32 dwBase, HW32 HUGE *pdwData)
 /************************************************************************/
 // Writing the FIFO, protected against FIFO full
 // Returns error if FIFO stays full
-short DpiData_Write24(HW32 dwBase, HW32 HUGE *pdwData)
+short DpiData_Write24(HW32 dwBase, HW32 *pdwData)
 {
     HW32 dwTimeout = TIMEOUT;
 
@@ -1163,7 +1130,7 @@ short DpiData_Write24(HW32 dwBase, HW32 HUGE *pdwData)
 /************************************************************************/
 // Writing the FIFO, protected against FIFO full
 // Returns error if FIFO stays full
-short DpiData_Write16(HW32 dwBase, HW16 HUGE *pwData)
+short DpiData_Write16(HW32 dwBase, HW16 *pwData)
 {
     HW32 dwTimeout = TIMEOUT;
     HW32 dwHSTR;
@@ -1223,7 +1190,7 @@ short DpiData_ReadBlock32(HW32 dwBase, HW32 *pdwData, HW32 dwLength)
 /************************************************************************/
 // Writing a block to the FIFO as 24bit words (only 16 used),
 // protected against FIFO full. Returns error if FIFO stays full
-short DpiData_WriteBlock32(HW32 dwBase, HW32 HUGE *pdwData, HW32 dwLength)
+short DpiData_WriteBlock32(HW32 dwBase, HW32 *pdwData, HW32 dwLength)
 {
     HW32 dwTimeout = TIMEOUT;
     HW32 dwAddrFifoStatus = dwBase+REG56301_HSTR;
@@ -1274,7 +1241,7 @@ short DpiData_WriteBlock32(HW32 dwBase, HW32 HUGE *pdwData, HW32 dwLength)
 }
 #endif
 
-short DpiData_WriteBlock16(HW32 dwBase, HW16 HUGE *pwData, HW32 dwLength)
+short DpiData_WriteBlock16(HW32 dwBase, HW16 *pwData, HW32 dwLength)
 {
     HW32 dwTimeout = TIMEOUT;
     HW32 dwAddrFifoStatus = dwBase+REG56301_HSTR;

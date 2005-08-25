@@ -24,18 +24,11 @@
 #ifndef _HPIMSGX_H_
 #define _HPIMSGX_H_
 
-#include <hpi.h>
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+#include "hpi.h"
 
 #define HPIMSGX_ALLADAPTERS	(0xFFFF)
 
-#ifdef HPI_OS_LINUX
-    typedef long * PLONG;
-#endif
+typedef int * PLONG;
 
     void HPIMSGX_MessageExAdapterReset(
         HW16 wAdapterIndex
@@ -59,10 +52,6 @@ extern "C"
         HW16 wAdapterIndex,
         PLONG hOwner
     );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _HPIMSGX_H_ */
 

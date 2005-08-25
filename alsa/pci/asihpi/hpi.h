@@ -26,17 +26,6 @@ AudioScience, Inc. <support@audioscience.com>
  The HPI is a low-level hardware abstraction layer to all
  AudioScience digital audio adapters
 
- You must define one operating systems that the HPI is to be compiled under
- HPI_OS_DOS           16bit real-mode DOS
- HPI_OS_WIN16         16bit Windows
- HPI_OS_WIN32_USER    32bit Windows
- HPI_OS_WINNT_KERN    WinNT kernel driver
- HPI_OS_WIN95_KERN    Win95 VXD kernel driver
- HPI_OS_DSP_563XX     DSP563XX environment
- HPI_OS_DSP_C6000     DSP TI C6000 environment
- HPI_OS_WDM           Windows WDM kernel driver
- HPI_OS_LINUX         Linux kernel driver
-
 (C) Copyright AudioScience Inc. 1998-2003
 ******************************************************************************/
 
@@ -45,198 +34,17 @@ AudioScience, Inc. <support@audioscience.com>
 
 #define HPI_VER     0x000295L
 
-/* ///////////////////////////////////////////////////////////////////////// */
-/* OS DEPENDENT STUFF */
-/* use compiler ID to indentify OS */
-#ifdef __DSP563C__
-#define HPI_OS_DSP_563XX
-#endif
-
-#ifdef _C56
-#define HPI_OS_DSP_563XX
-#endif
-
-#if defined(_TMS320C6X)
-#define HPI_OS_DSP_C6000
-#endif
-
-/* //////////////////////////////////////////////////////// */
-/* Win32 User mode (AGE 8/29/97 moved here for C++ Builder) */
-#ifdef HPI_OS_WIN32_USER
-#define HPI_OS_DEFINED
-
-#include <windows.h>
-#include <TCHAR.H>
-
-#define STR_SIZE(a) (a)
-#define huge
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-/* ///////////////////////////////////////////////////////////////////////// */
-/* OS DEPENDENT STUFF */
-
-#ifndef HPI_OS_DSP_563XX
-#ifndef __GNUC__
-#ifndef HPI_OS_DSP_C6000
-#pragma pack(1)       /* tell compilers to use byte alignment for items in a structure */
-#endif
-#endif
-#endif
-
-/* ////////////////////////////////////////////////////// */
-/*16bit realmode DOS - Borland C/C++ 3.1 or MSVC*/
-#ifdef HPI_OS_DOS
-#define HPI_OS_DEFINED
-#ifdef __BORLANDC__
-#include <mem.h>
-#endif
-#include <dos.h>
-#include <string.h>
-#define STR_SIZE(a) (a)
-#define huge far
-#endif
-
-/* /////////////////////////////////////////////////// */
-/* 16bit Windows - Borland C/C++ 4.X or Microsoft Visual C 1.52*/
-#ifdef HPI_OS_WIN16
-#define HPI_OS_DEFINED
-
-#ifdef __BORLANDC__
-     #include <mem.h>
-     #include <dos.h>
-     #include <string.h>
-     #include <windows.h>
-#else
-     #include <dos.h>
-     #include <string.h>
-     #include <windows.h>
-#endif
-
-#define STR_SIZE(a) (a)
-// UNICODE defines
-#define TCHAR char
-#define TEXT(a) a
-#define _stprintf sprintf
-#define _tcscpy strcpy
-#define _tcsstr strstr
-#define _tcsclen strlen
-#define _stscanf sscanf
-#define _tcstok strtok
-#define _tcscat strcat
-#define _tcscmp strcmp
-#endif
-
-/* //////////////////////////////////////////////////// */
-/* kernel mode in WinNT - Microsoft Visual C/C++ 4.X */
-#ifdef HPI_OS_WINNT_KERN
-#define HPI_OS_DEFINED
-#define HPI_KERNEL_MODE
-
-#include <ntddk.h>
-#include <winerror.h>
-#include <string.h>
-#include <memory.h>
-#include <windef.h>
-#include <mmsystem.h>
-
-#pragma intrinsic(memcmp,memcpy,memset,strcat,strcmp,strcpy,strlen)
-#pragma pack(1)
-#define STR_SIZE(a) (a)
-#define huge
-#endif
-
-/* ///////////////////////////////////////////////////// */
-/* Win95 kernal mode(VXD)  - Microsoft Visual C/C++ 4.X */
-#ifdef HPI_OS_WIN95_KERN
-#define HPI_OS_DEFINED
-#define HPI_KERNEL_MODE
-
-#define WANTVXDWRAPS
-#include <basedef.h>
-#include <vmm.h>
-#include <debug.h>
-#include <vmmreg.h>
-#include <vxdwraps.h>
-#include <configmg.h>
-#include <regstr.h>
-#include <vwin32.h>
-#include <winerror.h>
-#include <string.h>
-#include <pci.h>
-
-#pragma intrinsic(memcmp,memcpy,memset,strcat,strcmp,strcpy,strlen)
-
-#define STR_SIZE(a) (a)
-#define huge
-#endif
-
-/* /////////////////////////////////////////////// */
-/* Motorola 563XX DSP environment - ?? C compiler */
-#ifdef HPI_OS_DSP_563XX
-#define HPI_OS_DEFINED
-#define STR_SIZE(a) (a/2)
-#endif
-
-/* /////////////////////////////////////////////// */
-/*     TI C6000 DSP environment - ?? C compiler */
-#ifdef HPI_OS_DSP_C6000
-#define HPI_OS_DEFINED
-#define STR_SIZE(a) (a)
-#endif
-
-/* /////////////////////////////////////////////// */
-/* Windows WDM kernel driver - Visual C 4.XX/5.XX */
-#ifdef HPI_OS_WDM
-#define HPI_OS_DEFINED
-#define HPI_KERNEL_MODE
-#include <wdm.h>
-#include <string.h>
-
-#pragma intrinsic(memcmp,memcpy,memset,strcat,strcmp,strcpy,strlen)
-#define STR_SIZE(a) (a)
-
-#pragma intrinsic(memcmp,memcpy,memset,strcat,strcmp,strcpy,strlen)
-#pragma pack(1)
-
-#define STR_SIZE(a) (a)
-#define huge
-#endif
-/* /////////////////////////////////////////////// */
-/* Linux 2.2 kernel driver - GNU C compiler.  */
-#ifdef linux
-#define HPI_OS_LINUX
-#define HPI_OS_DEFINED
-
 #if __GNUC__ >= 3
 #define DEPRECATED __attribute__((deprecated))
 #endif
 
-#ifdef __KERNEL__
 #define HPI_KERNEL_MODE
 
-#ifdef MODVERSIONS
-#include <linux/modversions.h>
-#endif
 #include <linux/kernel.h>
 #include <linux/string.h>
-#endif
 
 #define STR_SIZE(a) (a)
 #define __pack__ __attribute__ ((packed))
-#endif
-
-/* /////////////////////////////////////////////// */
-/* No OS defined!                                  */
-#ifndef HPI_OS_DEFINED
-#error "Define one of the HPI_OS_xxxx constants in your make file."
-#endif
-
-#ifndef DEPRECATED
-#define DEPRECATED
-#endif
 
 /******************************************************************************/
 /******************************************************************************/
@@ -248,17 +56,9 @@ extern "C" {
 /* BASIC TYPES */
 
 /* unsigned word types */
-typedef unsigned char   HW8;    /**< 8 bit word = byte */
-#ifndef HPI_OS_DSP_563XX
-typedef unsigned short HW16;
-#else
-typedef unsigned int    HW16;   /**< 563XX DSP produces better code with 24bit ints */
-#endif
-#ifdef HPI_OS_DSP_C6000
-typedef unsigned int    HW32;   /**< 32 bit word (can't use long here!) */
-#else
-typedef unsigned long   HW32;
-#endif
+typedef u8  HW8;    /**< 8 bit word = byte */
+typedef u16 HW16;
+typedef u32 HW32;
 
 /* ////////////////////////////////////////////////////////////////////// */
 /** \addtogroup hpi_defines HPI constant definitions
@@ -455,10 +255,8 @@ typedef unsigned long   HW32;
 
 /******************************************* CONTROL ATTRIBUTES */
 /* This allows for 255 control types, 255 unique attributes each */
-#ifndef HPI_OS_DSP_563XX
 #define HPI_CONTROL_SPACING (0x100)
 #define HPI_MAKE_ATTRIBUTE(obj,index) (obj*HPI_CONTROL_SPACING+index)
-#endif
 
 /* Volume Control attributes */
 #define HPI_VOLUME_GAIN             1
@@ -684,7 +482,6 @@ enum HPI_FILTER_TYPE {
    This is so that host side processing can easily identify a Cobranet control and
    apply additional host side operations (like copying data) as required.
 */
-#ifndef HPI_OS_DSP_563XX
 #define HPI_COBRANET_SET         HPI_MAKE_ATTRIBUTE(HPI_CONTROL_COBRANET,1)
 #define HPI_COBRANET_GET         HPI_MAKE_ATTRIBUTE(HPI_CONTROL_COBRANET,2)
 #define HPI_COBRANET_SET_DATA    HPI_MAKE_ATTRIBUTE(HPI_CONTROL_COBRANET,3)
@@ -693,7 +490,6 @@ enum HPI_FILTER_TYPE {
 #define HPI_COBRANET_SEND_PACKET HPI_MAKE_ATTRIBUTE(HPI_CONTROL_COBRANET,6)
 #define HPI_COBRANET_GET_PACKET  HPI_MAKE_ATTRIBUTE(HPI_CONTROL_COBRANET,7)
 #define HPI_COBRANET_MODE        HPI_MAKE_ATTRIBUTE(HPI_CONTROL_COBRANET,8)
-#endif
 
 /*------------------------------------------------------------
  Cobranet mode options
@@ -950,11 +746,7 @@ typedef struct
 	HW16	wDeviceNumber;
 	HW32	dwMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
 	HW32	wInterrupt;
-#if defined HPI_OS_LINUX
 	 struct pci_dev * pOsData;
-#else
-	 void * pOsData;   /* might be specific type for other OSes? */
-#endif
 } HPI_PCI;
 
 /* USB bus type resource */
@@ -1001,17 +793,11 @@ typedef HW32 HPI_HWATCHDOG;
 typedef HW32 HPI_HCLOCK;
 typedef HW32 HPI_HPROFILE;
 
-#ifndef HPI_OS_DSP_C6000
-#ifndef HPI_OS_DSP_563XX
 /* skip host side function declarations for DSP compile and documentation extraction */
 
 /* handles to various objects */
 typedef struct
 {
-		  #ifdef HPI_OS_WIN32_USER
-		  HANDLE  hKernDriver;
-		  #endif
-
 		  short nOs;          /* Operating System = Win95,WinNT */
 		  HW32  dwIoctlCode;
 		  short nHandle;
@@ -2258,41 +2044,12 @@ HW16 HPI_ResourceCreateIsaPnp(
                 HW16    wInterrupt
                 );
 
-/* Until it's verified, this function is for Windows OSs only */
-#if defined(HPI_OS_WIN16) || defined(HPI_OS_WIN32_USER) || defined(INCLUDE_WINDOWS_ON_LINUX)
-
-/*?EWB these functions dont belong here?
-  put them in hpihelper.c/h
-*/
-
-#if defined(INCLUDE_WINDOWS_ON_LINUX)
-#include <windows.h>
-#include <mmsystem.h>
-#endif
-
-#include <mmreg.h>
-
-HW16 HPI_WaveFormatToHpiFormat(
-				const WAVEFORMATEX *lpFormatEx,
-				HPI_FORMAT *pHpiFormat
-				);
-
-HW16 HPI_HpiFormatToWaveFormat(
-				const HPI_FORMAT *pHpiFormat,
-				WAVEFORMATEX *lpFormatEx
-				);
-
-#endif /* defined(HPI_OS_WIN16) || defined(HPI_OS_WIN32_USER) */
-
-#endif /* ndef HPI_OS_DSP_563XX */
-#endif /* ndef HPI_OS_DSP_C6000 */
 /******************************************************************************/
 /******************************************************************************/
 /********                     HPI LOW LEVEL MESSAGES                  *********/
 /******************************************************************************/
 /******************************************************************************/
 
-#ifndef HPI_EXCLUDE_IMPLEMENTATION
 /******************************************* message types */
 #define HPI_TYPE_MESSAGE                1
 #define HPI_TYPE_RESPONSE               2
@@ -2884,50 +2641,6 @@ typedef struct
 }
 
 
-/* Test message size */
-#ifdef HPI_OS_WIN16     /* only check this when compiling Win95/98 drivers */
-#if ( sizeof(HPI_MESSAGE)/sizeof(HW32)) > 11
-#error HPI_MESSAGE structure size has changed
-#endif
-#if ( sizeof(HPI_SUBSYS_MSG)%4) != 0
-#error HPI_SUBSYS_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_ADAPTERX_MSG)%4) != 0
-#error HPI_ADAPTER_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_STREAM_MSG)%4) != 0
-#error HPI_STREAM_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_MIXER_MSG)%4) != 0
-#error HPI_MIXER_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_CONTROL_MSG)%4) != 0
-#error HPI_CONTROL_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_CONTROLX_MSG)%4) != 0
-#error HPI_CONTROLX_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_NVMEMORY_MSG)%4) != 0
-#error HPI_NVMEMORY_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_GPIO_MSG)%4) != 0
-#error HPI_GPIO_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_WATCHDOG_MSG)%4) != 0
-#error HPI_WATCHDOG_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_CLOCK_MSG)%4) != 0
-#error HPI_CLOCK_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_PROFILE_MSG)%4) != 0
-#error HPI_PROFILE_MSG is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_MESSAGE)%4) != 0
-#error HPI_MESSAGE is not a multiple of 4 bytes
-#endif
-
-#endif
-
 /* the size of the part of the response outside the union.  MUST update if more elements are added */
 #define HPI_RESPONSE_FIXED_SIZE (6 * sizeof(HW16))
 typedef struct
@@ -2974,51 +2687,6 @@ typedef struct
 	HPI_RESPONSE_FIXED_SIZE + sizeof(HPI_CONTROLX_RES)\
 }
 
-
-/* Test response size */
-#ifdef HPI_OS_WIN16     /* only check this when compiling Win95/98 drivers */
-#if (sizeof(HPI_RESPONSE)/sizeof(HW32)) > 16
-#error HPI_RESPONSE structure size has changed
-#endif
-#if ( sizeof(HPI_SUBSYS_RES)%4) != 0
-#error HPI_SUBSYS_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_ADAPTERX_RES)%4) != 0
-#error HPI_ADAPTER_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_STREAM_RES)%4) != 0
-#error HPI_STREAM_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_MIXER_RES)%4) != 0
-#error HPI_MIXER_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_CONTROL_RES)%4) != 0
-#error HPI_CONTROL_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_CONTROLX_RES)%4) != 0
-#error HPI_CONTROLX_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_NVMEMORY_RES)%4) != 0
-#error HPI_NVMEMORY_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_GPIO_RES)%4) != 0
-#error HPI_GPIO_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_WATCHDOG_RES)%4) != 0
-#error HPI_WATCHDOG_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_CLOCK_RES)%4) != 0
-#error HPI_CLOCK_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_PROFILE_RES)%4) != 0
-#error HPI_PROFILE_RES is not a multiple of 4 bytes
-#endif
-#if ( sizeof(HPI_RESPONSE)%4) != 0
-#error HPI_RESPONSE is not a multiple of 4 bytes
-#endif
-
-
-#endif
 
 /*////////////////////////////////////////////////////////////////////////// */
 /* declarations for compact control calls                                    */
@@ -3077,31 +2745,11 @@ typedef struct {
 	tHPIControlCacheSingle	c;
 } tHPIControlCacheValue;
 
-#endif // ifndef HPI_EXCLUDE_IMPLEMENTATION
-
-#ifndef HPI_OS_DSP_C6000
-#ifndef HPI_OS_DSP_563XX
 /* skip host side function declarations for DSP compile and documentation extraction */
-
 
 void HPI_InitMessage( HPI_MESSAGE *phm, HW16 wObject, HW16 wFunction );
 void HPI_InitResponse( HPI_RESPONSE *phr, HW16 wObject, HW16 wFunction, HW16 wError);
 
-
-/*////////////////////////////////////////////////////////////////////////// */
-/* HPI IOCTL definitions */
-#define HPI_IOCTL_WINNT      CTL_CODE(50000,0xA00,METHOD_BUFFERED,FILE_ANY_ACCESS)
-#define HPI_IOCTL_WIN95      0x101
-
-#if defined(HPI_OS_WINNT_KERN)
-//#define HPI_DRIVER_NAME "\\\\.\\WaveOut0"
-#define ASIKD_WIN32NAME         L"\\DosDevices\\WaveOut0"
-#define ASIKD_OBJECTNAME        L"\\Device\\WaveOut0"
-
-#elif defined(HPI_OS_WIN95_KERN)
-#define HPI_DRIVER_VERSION   0x100
-
-#endif
 
 /*////////////////////////////////////////////////////////////////////////// */
 /* main HPI entry point */
@@ -3120,27 +2768,4 @@ void HPI_Usb( HPI_MESSAGE *phm, HPI_RESPONSE *phr );
 void HPI_6205( HPI_MESSAGE *phm, HPI_RESPONSE *phr ); /* ASI5000, TI C6205 based */
 
 
-
-/* added so that some Win32 programs can restore 4byte packing if they desire */
-#ifdef HPI_RESTORE_PACK4
-#pragma pack(4)
-#endif
-
-/* added so that some Win32 programs can restore 8byte packing if they desire */
-#ifdef HPI_RESTORE_PACK8
-#pragma pack(8)
-#endif
-
-#endif /* ndef HPI_OS_DSP_563XX */
-#endif /* ndef HPI_OS_DSP_C6000 */
-
-#ifdef __cplusplus
-}
-#endif
 #endif  /*_H_HPI_ */
-
-/*
-///////////////////////////////////////////////////////////////////////////////
-// See CVS for history.  Last complete set in rev 1.146
-////////////////////////////////////////////////////////////////////////////////
-*/

@@ -35,12 +35,12 @@
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
 
-#include <hpi.h>
-#include <hpios.h>  // for debug
-#include <hpipci.h>
-#include <hpi6205.h>
+#include "hpi.h"
+#include "hpios.h"  // for debug
+#include "hpipci.h"
+#include "hpi6205.h"
 
-#include <hpidspcd.h>
+#include "hpidspcd.h"
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -113,10 +113,6 @@ typedef struct
 
 
 	 //	 tHPI6000ControlCacheSingle aControlCache[HPI_NMIXER_CONTROLS];
-#ifdef HPI_OS_WIN16
-	HW16 awBar0Selectors[0x400000L/0x10000L];	// 4 Mbytes of 64k selectors
-	HW16 awBar1Selectors[0x800000L/0x10000L];	// 8 Mbytes of 64k selectors
-#endif
 	HW32 dwDspPage;
 
 	HpiOs_LockedMem_Handle hLockedMem;
@@ -134,13 +130,8 @@ H620_ADAPTER_OBJ;
 ////////////////////////////////////////////////////////////////////////////
 // local prototypes
 
-#ifdef HPI_OS_WIN16
-void Hpi6205_Abstract_MEMWRITE32(H620_ADAPTER_OBJ *pao, HW32 dwAddress, HW32 dwData);
-HW32 Hpi6205_Abstract_MEMREAD32(H620_ADAPTER_OBJ *pao, HW32 dwAddress);
-#else
 #define Hpi6205_Abstract_MEMWRITE32(a,b,c)	HPIOS_MEMWRITE32((b),(c))
 #define Hpi6205_Abstract_MEMREAD32(a,b)		HPIOS_MEMREAD32((b))
-#endif
 
 
 //HW16 Hpi6205_DspBlockWrite32( H620_ADAPTER_OBJ *pao, HW16 wDspIndex, HW32 dwHpiAddress, HW32 dwSource, HW32 dwCount);
@@ -461,15 +452,6 @@ void H620_SubSysFindAdapters(HPI_RESPONSE *phr)
 
 	 HPI_PRINT_VERBOSE( "HPI6205_SubSysFindAdapters\n" );
 
-#ifdef HPI_OS_DOS
-	// This HPI does not currently support DOS.
-	// can't work in DOS mode because
-	// BAR0 is 4Mbytes
-	// BAR1 is 8Mbytes
-	// BAR2 is 4 16bit I/O registers
-	return;
-#endif
-
 	// Cycle through all the PCI bus slots looking for this adapters
 	// vendor and device ID
 	//
@@ -621,7 +603,6 @@ void H620_SubSysDeleteAdapter(HPI_MESSAGE *phm, HPI_RESPONSE *phr)
 			pao->OutStreamHostBuffers[i] = 0;
 			pao->OutStreamHostBufferSize[i] = 0;
 
-#ifdef HPI_OS_LINUX
 	for(i=0; i<HPI_MAX_ADAPTER_MEM_SPACES; i++) {
 		if ( pao->Pci.dwMemBase[i] ) {
 			HPI_PRINT_DEBUG("unmapping pci memory (%lx)\n",pao->Pci.dwMemBase[i]);
@@ -629,12 +610,6 @@ void H620_SubSysDeleteAdapter(HPI_MESSAGE *phm, HPI_RESPONSE *phr)
 			pao->Pci.dwMemBase[i] = 0;
 		}
 	}
-#endif
-
-#ifdef HPI_OS_WIN16
-	HpiPci_FreeSelectors(&(pao->awBar0Selectors), 0x400000L/0x10000L);
-	HpiPci_FreeSelectors(&(pao->awBar1Selectors), 0x800000L/0x10000L);
-#endif
 
 	gwNum60Adapters--;
 	memset( pao, 0, sizeof(H620_ADAPTER_OBJ) );
@@ -657,13 +632,6 @@ short H620_CreateAdapterObj( H620_ADAPTER_OBJ *pao )
 	for(i=0;i<H620_MAX_OSTREAMS;i++)
 		pao->flagOStreamJustReset[i]=1;
 
-#ifdef HPI_OS_WIN16
-	HpiPci_TranslateAddressRange(&(pao->Pci),0,&(pao->awBar0Selectors), 0x400000L/0x10000L);
-	HpiPci_TranslateAddressRange(&(pao->Pci),1,&(pao->awBar1Selectors), 0x800000L/0x10000L);
-	pao->Pci.dwMemBase[0] = 0;				// under Win16 use artifical memory addresses as they are only used to
-	pao->Pci.dwMemBase[1] = 0x4000000;		// lookup up selector indices.
-#endif
-
 	// The C6205 has the following address map
 	// BAR0 - 4Mbyte window into DSP memory
 	// BAR1 - 8Mbyte window into DSP registers
@@ -675,15 +643,7 @@ short H620_CreateAdapterObj( H620_ADAPTER_OBJ *pao )
 
 	if( HpiOs_LockedMem_Alloc(	&pao->hLockedMem,
 								sizeof(tBusMasteringInterfaceBuffer),
-#ifdef HPI_OS_WDM
-								(void *)&pao->Pci.dwMemBase[0]
-#else
-#ifdef HPI_OS_LINUX
 								(void *)pao->Pci.pOsData
-#else
-								NULL
-#endif
-#endif
 							   ) )
 		pao->pInterfaceBuffer = 0;
 	else
@@ -826,11 +786,6 @@ void H620_AdapterClose(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESPONSE *phr
 
 	Hpi6205_Message( pao, phm,phr);
 
-#ifdef HPI_OS_DOS
-    // disable PCI interface so other apps can't access 6701
-    HpiPci_WriteConfig( &pao->Pci, HPIPCI_CCMR, 0 );
-#endif
-
 	pao->wOpen = 0;         // adapter is now closed
 }
 
@@ -866,15 +821,7 @@ static void H620_OutStreamHostBufferAllocate(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *
 		dwError = HpiOs_LockedMem_Alloc(
 						&pao->OutStreamHostBuffers[phm->u.d.wOStreamIndex],
 						phm->u.d.u.Data.dwDataSize,
-#ifdef HPI_OS_WDM
-						(void *)&pao->Pci.dwMemBase[0]
-#else
-#ifdef HPI_OS_LINUX
 						(void *)pao->Pci.pOsData
-#else
-						NULL
-#endif
-#endif
 						);
 
 		if(dwError)
@@ -940,10 +887,10 @@ static void H620_OutStreamWrite(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESP
 	tBusMasteringInterfaceBuffer *interface=pao->pInterfaceBuffer;
 	H620_HOSTBUFFER_STATUS *status;
 	long dwSpaceAvailable;
-	HW8 HUGE * pBBMData;
+	HW8 * pBBMData;
 	long lFirstWrite;
 	long lSecondWrite;
-	HW8 HUGE *pAppData = (HW8 HUGE *)phm->u.d.u.Data.dwpbData;
+	HW8 *pAppData = (HW8 *)phm->u.d.u.Data.dwpbData;
 	if( !pao->OutStreamHostBuffers[phm->u.d.wOStreamIndex])
 	{
 		Hpi6205_Message( pao, phm, phr);
@@ -1055,15 +1002,7 @@ static void H620_InStreamHostBufferAllocate(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *p
 		dwError = HpiOs_LockedMem_Alloc(
 						&pao->InStreamHostBuffers[phm->u.d.wIStreamIndex],
 						phm->u.d.u.Data.dwDataSize,
-#ifdef HPI_OS_WDM
-						(void *)&pao->Pci.dwMemBase[0]
-#else
-#ifdef HPI_OS_LINUX
 						(void *)pao->Pci.pOsData
-#else
-						NULL
-#endif
-#endif
 						);
 
 		if(dwError)
@@ -1122,7 +1061,7 @@ static void H620_InStreamStart(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESPO
 	if( pao->InStreamHostBuffers[phm->u.d.wIStreamIndex] )	// preset the buffer values
 	{
 		int i;
-		short HUGE *pData;
+		short *pData;
 		H620_HOSTBUFFER_STATUS *buffer;
 
 		if(HpiOs_LockedMem_GetVirtAddr( pao->InStreamHostBuffers[phm->u.d.wIStreamIndex], (void *)&buffer ))
@@ -1130,7 +1069,7 @@ static void H620_InStreamStart(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESPO
 			phr->wError = HPI_ERROR_INVALID_OPERATION;
 			return;
 		}
-		pData = ((short HUGE *)buffer) + sizeof(H620_HOSTBUFFER_STATUS)/sizeof(short);
+		pData = ((short *)buffer) + sizeof(H620_HOSTBUFFER_STATUS)/sizeof(short);
 		for(i=0;i<buffer->dwSizeInBytes/2/sizeof(short);i++)
 		{
 			*pData++ = nValue;
@@ -1160,10 +1099,10 @@ static void H620_InStreamRead(H620_ADAPTER_OBJ *pao,HPI_MESSAGE *phm, HPI_RESPON
 	tBusMasteringInterfaceBuffer *interface=pao->pInterfaceBuffer;
 	H620_HOSTBUFFER_STATUS *status;
 	long dwDataAvailable;
-	HW8 HUGE * pBBMData;
+	HW8 * pBBMData;
 	long lFirstRead;
 	long lSecondRead;
-	HW8 HUGE *pAppData = (HW8 HUGE *)phm->u.d.u.Data.dwpbData;
+	HW8 *pAppData = (HW8 *)phm->u.d.u.Data.dwpbData;
 	/* DEBUG
 	int i;
 	long *pTest;
@@ -1407,9 +1346,7 @@ short Hpi6205_AdapterBootLoadDsp( H620_ADAPTER_OBJ *pao)
 
 		///////////////////////////////////////////////////////////
 		// write the DSP code down into the DSPs memory
-#if defined DSPCODE_FIRMWARE
 	    DspCode.psDev = pao->Pci.pOsData;
-#endif
 		if ((wError=HpiDspCode_Open(anBootLoadFamily[nDsp],&DspCode))!= 0)
 			return( wError );
 		while (1)
@@ -1424,16 +1361,6 @@ short Hpi6205_AdapterBootLoadDsp( H620_ADAPTER_OBJ *pao)
 			if (dwLength == 0xFFFFFFFF)
 				break; // end of code
 
-#ifdef DSPCODE_ARRAY
-			// check for end of array with continuation to another one
-			if (dwLength == 0xFFFFFFFEL )
-			{
-				DspCode.nArrayNum++;
-				DspCode.dwOffset = 0;
-				if ((wError = HpiDspCode_ReadWord(&DspCode,&dwLength))!= 0)
-					break;
-			}
-#endif
 			if ((wError=HpiDspCode_ReadWord(&DspCode,&dwAddress))!= 0)
 				break;
 			if ((wError=HpiDspCode_ReadWord(&DspCode,&dwType))!= 0)
@@ -1474,16 +1401,6 @@ short Hpi6205_AdapterBootLoadDsp( H620_ADAPTER_OBJ *pao)
 			HpiDspCode_ReadWord(&DspCode,&dwLength);
 			if (dwLength == 0xFFFFFFFF)
 					break; // end of code
-
-#ifdef DSPCODE_ARRAY
-			// check for end of array with continuation to another one
-			if (dwLength == 0xFFFFFFFEL )
-			{
-                    DspCode.nArrayNum++;
-						  DspCode.dwOffset = 0;
-						  HpiDspCode_ReadWord(&DspCode,&dwLength);
-			}
-#endif
 
 			HpiDspCode_ReadWord(&DspCode,&dwAddress);
 			HpiDspCode_ReadWord(&DspCode,&dwType);
@@ -2003,12 +1920,12 @@ HW16 BootLoader_TestPld(H620_ADAPTER_OBJ *pao, int nDSPIndex)
 
 
 static short Hpi6205_TransferData( H620_ADAPTER_OBJ *pao,
-				   HW8 HUGE *pData,
+				   HW8 *pData,
 				   HW32 dwDataSize,
 				   int nOperation)		// H620_HIF_SEND_DATA or H620_HIF_GET_DATA
 {
   HW32				dwDataTransfered=0;
-  //	HW8 HUGE *pData =	(HW8 HUGE *)phm->u.d.u.Data.dwpbData;
+  //	HW8 *pData =	(HW8 *)phm->u.d.u.Data.dwpbData;
 	//	HW16				wTimeOut=8;
 	HW16				wError=0;
 	HW32				dwTimeOut,dwTemp1,dwTemp2;
@@ -2075,9 +1992,6 @@ static short Hpi6205_TransferData( H620_ADAPTER_OBJ *pao,
 // need to handle this differently...
 		else {
 
-#ifdef  HPI_OS_WDM
-			DbgPrint("HPI6205.C - Interrupt from HIF <data> module BAD\n");
-#endif
 			wError=HPI_ERROR_DSP_HARDWARE;
 		}
 
@@ -2180,12 +2094,6 @@ static short Hpi6205_MessageResponseSequence(
 
 
 	}
-// need to handle this differently...
-#ifdef  HPI_OS_WDM
-	else
-		DbgPrint("HPI6205.C - Interrupt from HIF module BAD (wFunction %x)\n",phm->wFunction);
-#endif
-
 
 	// reset the interrupt from the DSP
 	Hpi6205_Abstract_MEMWRITE32(pao,pao->dwHSR,C6205_HSR_INTSRC);
@@ -2338,57 +2246,6 @@ void  Hpi6205_Message( H620_ADAPTER_OBJ *pao, HPI_MESSAGE *phm, HPI_RESPONSE *ph
 	 phr->wError = nError;
 	 return;
 }
-
-/*
-	Win16 code to map to various 64k memory spaces.
-*/
-
-#ifdef HPI_OS_WIN16
-HW32 Hpi6205_Abstract_ComputeAddress(H620_ADAPTER_OBJ *pao, HW32 dwAddress)
-{
-	HW32 dwBarSize[2]={0x400000,0x800000};
-	HW16 *BarSelectors[2];
-	int i;
-	HW32 dwVirtualAddr=0;
-
-	BarSelectors[0] = &(pao->awBar0Selectors[0]);
-	BarSelectors[1] = &(pao->awBar1Selectors[0]);
-	for(i=0;i<2;i++)
-	{
-		if( dwAddress >= pao->Pci.dwMemBase[i] )
-		if( dwAddress < pao->Pci.dwMemBase[i] + dwBarSize[i] )
-		{
-			HW32 dwOffset = dwAddress - pao->Pci.dwMemBase[i];
-			if(dwOffset < dwBarSize[i])
-			{
-				HW16 wSelectorIndex = (HW16)(dwOffset/0x10000L);
-				dwVirtualAddr = MAKELONG(0,BarSelectors[i][wSelectorIndex]) ;
-				dwVirtualAddr += (dwOffset & 0xFFFFL);
-				return(dwVirtualAddr);
-			}
-		}
-	}
-	return 0;
-}
-void Hpi6205_Abstract_MEMWRITE32(H620_ADAPTER_OBJ *pao, HW32 dwAddress, HW32 dwData)
-{
-	HW32 dwVirAddr = Hpi6205_Abstract_ComputeAddress(pao,dwAddress);
-	if(dwVirAddr)
-		HPIOS_MEMWRITE32(dwVirAddr,dwData);
-}
-
-HW32 Hpi6205_Abstract_MEMREAD32(H620_ADAPTER_OBJ *pao, HW32 dwAddress)
-{
-	HW32 dwVirAddr = Hpi6205_Abstract_ComputeAddress(pao,dwAddress);
-	if(dwVirAddr)
-	{
-		HW32 dwReturn = HPIOS_MEMREAD32(dwVirAddr);
-		return dwReturn;
-	}
-	else
-		return 0;
-}
-#endif
 
 HW16 Hpi6205_Error( int nDspIndex, int nError )
 {

@@ -30,6 +30,7 @@ Debug macro translation.
 #include "hpios.h"
 #include "hpidebug.h"
 
+#ifdef HPI_DEBUG
 
 /* Debug level; 0 quiet; 1 informative, 2 debug, 3 verbose debug.  */
 int hpiDebugLevel = HPI_DEBUG_LEVEL_DEFAULT;
@@ -43,23 +44,6 @@ int HPI_DebugLevelSet(int level)
   return old_level;
 }
 
-
-#ifdef HPI_DEBUG_STRING_REQD
-#include <stdarg.h>
-
-void
-hpi_debug_string(char *fmt, ...)
-{
-    va_list arglist;
-    char buffer[256];
-
-    va_start (arglist, fmt);
-    vswprintf(buffer,fmt,arglist);
-    if (buffer[0])
-		HPIOS_DEBUG_STRING(buffer);
-    va_end (ap);
-}
-#endif
 
 static char *hpi_obj_strings[] = HPI_OBJ_STRINGS;
 
@@ -164,7 +148,7 @@ hpi_debug_response(HPI_RESPONSE *phr)
 
 
 void
-hpi_debug_data(HW16 HUGE *pdata, HW32 len)
+hpi_debug_data(HW16 *pdata, HW32 len)
 {
     int i;
     int j;
@@ -188,3 +172,4 @@ hpi_debug_data(HW16 HUGE *pdata, HW32 len)
     }
 }
 
+#endif

@@ -25,8 +25,8 @@ HPI PCI interface function definitions
 #ifndef _HPIPCI_H_
 #define _HPIPCI_H_
 
-#include <hpi.h>
-#include <hpidebug.h>
+#include "hpi.h"
+#include "hpidebug.h"
 
 // PCI config reg defines
 #define HPIPCI_CDID 0x0     // Vendor/Device Id
@@ -47,9 +47,6 @@ HPI PCI interface function definitions
 #define HPIPCI_CCMR_MSE 		0x00000002
 #define HPIPCI_CCMR_BM 			0x00000004
 #define HPIPCI_CCMR_PERR 		0x0000040
-
-//#if defined HPI_OS_LINUX
-//#include <linux/pci.h>
 
 #define HPIPCI_MATCH_RESOURCE( idx, iterMax, wAdapterIndex, adapterObjectsArray, hpiResource ) \
 	(wAdapterIndex) = -1;\
@@ -82,29 +79,6 @@ HPI PCI interface function definitions
 		}\
 		HPI_PRINT_VERBOSE(" no\n");\
 	}
-
-//#endif
-
-#if (0)
-// structure for HPI PCI bus object
-typedef struct
-{
-	HW16 	wVendorId;
-	HW16 	wDeviceId;
-    HW16   wSubSysVendorId;
-    HW16   wSubSysDeviceId;
-	HW16	wBusNumber;
-	HW16	wDeviceNumber;
-	HW32	dwMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
-	HW32	dwPortBase;
-	HW32	wInterrupt;
-#if defined HPI_OS_LINUX
-    struct pci_dev * pOsData;
-#else
-    void * pOsData;
-#endif
-} HPI_PCI;
-#endif
 
 //DWORD MapPhysicalToLinear(DWORD dwPhysical,DWORD dwLength);
 

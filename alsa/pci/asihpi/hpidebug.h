@@ -29,16 +29,13 @@ Debug macros.
 #ifndef _HPIDEBUG_H
 #define _HPIDEBUG_H
 
-#include <hpi.h>
-#include <hpios.h>
+#include "hpi.h"
+#include "hpios.h"
+
+#ifdef HPI_DEBUG
 
 #ifndef TEXT
 #define TEXT(s) s
-#endif
-
-#ifdef HPI_OS_LINUX
-#include <linux/ioctl.h>
-#define HPI_IOCTL_HARDRESET _IO('H', 2)
 #endif
 
 /* Define debugging levels.  */
@@ -46,6 +43,8 @@ enum {HPI_DEBUG_LEVEL_OFF,
       HPI_DEBUG_LEVEL_INFO,
       HPI_DEBUG_LEVEL_DEBUG,
       HPI_DEBUG_LEVEL_VERBOSE};
+
+#define HPI_DEBUG_LEVEL_DEFAULT HPI_DEBUG_LEVEL_INFO
 
 extern int hpiDebugLevel;
 
@@ -60,90 +59,49 @@ hpi_debug_response(HPI_RESPONSE *phr);
 extern void
 hpi_debug_string(char *fmt, ...);
 
-#ifdef HPI_OS_LINUX
 extern void
 hpi_debug_data(HW16 *pdata, HW32 len);
-#else
-extern void
-hpi_debug_data(HW16 HUGE *pdata, HW32 len);
-#endif
 
-#ifndef HPI_DEBUG_STRING
-#define HPI_DEBUG_STRING hpi_debug_string
-#define HPI_DEBUG_STRING_REQD
-#endif
+#define HPI_DEBUG_STRING printk
 
 /* Be careful with these macros.  Ensure that they are used within a block.  */
 
-#ifndef HPI_DEBUG_DATA
-#define HPI_DEBUG_DATA \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) hpi_debug_data
-#endif
+#define HPI_DEBUG_DATA(pdata,len) \
+	if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) hpi_debug_data(pdata,len)
 
-#ifndef HPI_DEBUG_MESSAGE
-#define HPI_DEBUG_MESSAGE \
+#define HPI_DEBUG_MESSAGE(x)		    \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
     HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-    hpi_debug_message
-#endif
+	hpi_debug_message(x)
 
-#ifndef HPI_DEBUG_RESPONSE
-#define HPI_DEBUG_RESPONSE \
+#define HPI_DEBUG_RESPONSE(x)	    \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
     HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-    hpi_debug_response
-#endif
+	hpi_debug_response(x)
 
-#define HPI_PRINT_ERROR \
+#define HPI_PRINT_ERROR(fmt, args...)  \
 HPI_DEBUG_STRING("%s,%d: ERROR ",__FILE__,__LINE__); \
-HPI_DEBUG_STRING
+	HPI_DEBUG_STRING(fmt, ##args)
 
-#define HPI_PRINT_INFO \
+#define HPI_PRINT_INFO(fmt, args...)  \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_INFO) \
     HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_INFO) \
-    HPI_DEBUG_STRING
+	HPI_DEBUG_STRING(fmt, ##args)
 
-#define HPI_PRINT_DEBUG \
+#define HPI_PRINT_DEBUG(fmt, args...) \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
     HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-    HPI_DEBUG_STRING
+	HPI_DEBUG_STRING(fmt, ##args)
 
-#define HPI_PRINT_VERBOSE \
+#define HPI_PRINT_VERBOSE(fmt, args...) \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
     HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
-    HPI_DEBUG_STRING
-
-
-#if !defined(HPI_DEBUG) || defined(HPI_OS_WDM)
-#undef HPI_DEBUG_DATA
-#undef HPI_DEBUG_MESSAGE
-#undef HPI_DEBUG_RESPONSE
-#undef HPI_DEBUG_STRING
-#undef HPI_PRINT_ERROR
-#undef HPI_PRINT_INFO
-#undef HPI_PRINT_DEBUG
-#undef HPI_PRINT_VERBOSE
-
-#define HPI_DEBUG_DATA
-#define HPI_DEBUG_MESSAGE
-#define HPI_DEBUG_RESPONSE
-#define HPI_DEBUG_STRING
-#define HPI_PRINT_ERROR
-#define HPI_PRINT_INFO
-#define HPI_PRINT_DEBUG
-#define HPI_PRINT_VERBOSE
-
-
-#endif
-
-#ifndef HPI_DEBUG_LEVEL_DEFAULT
-#define HPI_DEBUG_LEVEL_DEFAULT HPI_DEBUG_LEVEL_INFO
-#endif
+	HPI_DEBUG_STRING(fmt, ##args)
 
 /* These strings should be generated using a macro which defines
    the corresponding symbol values.  */
@@ -369,5 +327,19 @@ if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
 	TEXT("HPI_CHANNEL_MODE_RIGHT_ONLY") \
 }
 
-#endif /* _HPIDEBUG_H  */
+#else /* ! HPI_DEBUG */
 
+#define HPI_DEBUG_DATA(p,l)
+#define HPI_DEBUG_MESSAGE(x)
+#define HPI_DEBUG_RESPONSE(x)
+#define HPI_DEBUG_STRING(fmt,...)
+#define HPI_PRINT_ERROR(fmt,...)
+#define HPI_PRINT_INFO(fmt,...)
+#define HPI_PRINT_DEBUG(fmt,...)
+#define HPI_PRINT_VERBOSE(fmt,...)
+
+#define HPI_DebugLevelSet(level)
+
+#endif
+
+#endif /* _HPIDEBUG_H  */
