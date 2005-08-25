@@ -1149,11 +1149,11 @@ esac
 dnl ia32 and alpha
 test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
 
-if test "$CONFIG_ISA" = "y"; then
-  dnl 2.6.12 or newer
-  if test "$kpatchlevel" = 6 -a "$ksublevel" -ge 12; then
-    CHECK_KERNEL_CONFIG(CONFIG_ISA_DMA_API, [ISA DMA API])
-  else
+dnl 2.6.12 or newer
+if test "$kpatchlevel" = 6 -a "$ksublevel" -ge 12; then
+  CHECK_KERNEL_CONFIG(CONFIG_ISA_DMA_API, [ISA DMA API])
+else
+  if test "$CONFIG_ISA" = "y"; then
     CONFIG_ISA_DMA_API=y
   fi
 fi
