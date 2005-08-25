@@ -1,4 +1,4 @@
-/*   -*- linux-c -*-
+/*
  *  Asihpi soundcard
  *  Copyright (c) by AudioScience Inc <alsa@audioscience.com>
  *
