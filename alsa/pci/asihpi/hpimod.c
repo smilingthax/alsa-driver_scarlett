@@ -216,19 +216,6 @@ hpi_ioctl(struct inode *inode, struct file *file,
 	suseconds_t copy_usec = 0;
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0))
-	if ((cmd == HPI_IOCTL_HARDRESET) /*&& (debug > 0) */ ) {
-		/* reset the counter to 1, to allow unloading in case
-		   of problems. Use 1, not 0, because the invoking
-		   process has the device open.
-		*/
-		while (MOD_IN_USE)
-			MOD_DEC_USE_COUNT;
-		MOD_INC_USE_COUNT;
-		return 0;
-	}
-#endif
-
 	if (cmd != HPI_IOCTL_LINUX)
 		return -EINVAL;
 
@@ -436,8 +423,8 @@ void H400_AdapterIndex( HPI_RESOURCE * res, short * wAdapterIndex );
 void H600_AdapterIndex( HPI_RESOURCE * res, short * wAdapterIndex );
 void H620_AdapterIndex( HPI_RESOURCE * res, short * wAdapterIndex );
 
-static void HPI_AdapterIndex( const HPI_HSUBSYS *phSubSys, struct pci_dev *pci_dev,
-					const struct pci_device_id *pci_id, short * wAdapterIndex )
+void HPI_AdapterIndex(const HPI_HSUBSYS *phSubSys, struct pci_dev *pci_dev,
+		      const struct pci_device_id *pci_id, short *wAdapterIndex)
 {
 	HPI_RESOURCE hResource;
 	int idx;
