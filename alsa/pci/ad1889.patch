@@ -1,0 +1,17 @@
+--- ../alsa-kernel/pci/ad1889.c	2005-09-01 07:28:38.000000000 +0200
++++ ad1889.c	2005-09-01 07:26:57.000000000 +0200
+@@ -52,6 +52,14 @@
+ 
+ #define	AD1889_DRVVER	"$Revision: 1.1 $"
+ 
++/* for 2.2.x kernels */
++#ifndef PCI_VENDOR_ID_ANALOG_DEVICES
++#define PCI_VENDOR_ID_ANALOG_DEVICES	0x11d4
++#endif
++#ifndef PCI_DEVICE_ID_AD1889JS
++#define PCI_DEVICE_ID_AD1889JS		0x1889
++#endif
++
+ MODULE_AUTHOR("Kyle McMartin <kyle@parisc-linux.org>, Thibaut Varene <t-bone@parisc-linux.org>");
+ MODULE_DESCRIPTION("Analog Devices AD1889 ALSA sound driver");
+ MODULE_LICENSE("GPL");

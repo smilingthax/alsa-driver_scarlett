@@ -181,17 +181,5 @@ config SND_RIPTIDE
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-riptide
 
-config SND_AD1889
-	tristate "Analog Devices AD1889"
-	depends on SND
-	select SND_AC97_CODEC
-	help
-	  Say Y here to include support for the integrated AC97 sound
-	  device found in particular on the Hewlett-Packard [BCJ]-xxx0
-	  class PA-RISC workstations, using the AD1819 codec.
-
-	  To compile this as a module, choose M here: the module
-	  will be called snd-ad1889.
-
 endmenu
 
