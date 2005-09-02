@@ -176,6 +176,10 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 
 #endif /* < 2.6.0 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 13)
+#define CONFIG_ISA_DMA_API 1
+#endif
+
 #include <linux/types.h>
 #ifndef __bitwise
 typedef __u16 __le16;
