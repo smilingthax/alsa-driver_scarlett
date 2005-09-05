@@ -183,7 +183,7 @@ static int snd_echo_midi_input_close(snd_rawmidi_substream_t *substream)
 {
 	echoaudio_t *chip = substream->rmidi->private_data;
 
-	chip->midi_in = 0;
+	chip->midi_in = NULL;
 	DE_MID(("rawmidi_iclose\n"));
 	return 0;
 }
@@ -281,7 +281,7 @@ static int snd_echo_midi_output_close(snd_rawmidi_substream_t *substream)
 {
 	echoaudio_t *chip = substream->rmidi->private_data;
 
-	chip->midi_out = 0;
+	chip->midi_out = NULL;
 	DE_MID(("rawmidi_oclose\n"));
 	return 0;
 }
