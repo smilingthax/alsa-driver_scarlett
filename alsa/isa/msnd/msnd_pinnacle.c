@@ -1048,7 +1048,7 @@ static int snd_msnd_playback_trigger( snd_pcm_substream_t * substream, int cmd)
 		clear_bit( F_WRITING, &dev.flags);
 		snd_msnd_send_dsp_cmd(&dev, HDEX_PLAY_STOP);
 	} else {
-		snd_printd( "snd_msnd_playback_trigger( \?\?\?\?\?)\n");
+		snd_printd( "snd_msnd_playback_trigger( ?????)\n");
 		result = -EINVAL;
 	}
 	InTrigger = 0;             // interrupt diagnostic, comment this out later
