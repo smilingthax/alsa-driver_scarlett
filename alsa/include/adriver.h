@@ -884,4 +884,10 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #define __nocast
 #endif
 
+/* pci_get_device() and pci_dev_put() wrappers */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#define pci_get_device	pci_find_device
+#define pci_dev_put(x)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
