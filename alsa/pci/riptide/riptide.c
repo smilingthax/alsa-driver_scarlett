@@ -627,7 +627,7 @@ static int sendcmd(cmdif_t * cif, u32 flags, u32 cmd, u32 parm, cmdret_t * ret)
 		(cif->errcnt)++;
 		snd_printd("send cmd %d hw: 0x%x flag: 0x%x cmd: 0x%x parm: 0x%x ret: 0x%x 0x%x failed %d\n",
 			   cif->cmdcnt,
-			   (void *)&(cmdport->stat) - (void *)hwport, flags,
+			   (int)((void *)&(cmdport->stat) - (void *)hwport), flags,
 			   cmd, parm, ret ? ret->retlongs[0] : 0,
 			   ret ? ret->retlongs[1] : 0, err);
 	}
@@ -1251,8 +1251,8 @@ snd_riptide_hw_params(snd_pcm_substream_t * substream,
 	struct snd_dma_buffer *sgdlist = &data->sgdlist;
 	int err = -EINVAL;
 
-	snd_printd("hw params id %d (sgdlist: 0x%p 0x%x %d)\n", data->id,
-		   sgdlist->area, sgdlist->addr, sgdlist->bytes);
+	snd_printd("hw params id %d (sgdlist: 0x%p 0x%lx %d)\n", data->id,
+		   sgdlist->area, (unsigned long)sgdlist->addr, (int)sgdlist->bytes);
 	if (sgdlist->area)
 		snd_dma_free_pages(sgdlist);
 	if ((err =
@@ -1261,7 +1261,7 @@ snd_riptide_hw_params(snd_pcm_substream_t * substream,
 				 sizeof(sgd_t) * (DESC_MAX_MASK + 1),
 				 sgdlist)) < 0) {
 		snd_printd("failed to alloc %d dma bytes\n",
-			   sizeof(sgd_t) * (DESC_MAX_MASK + 1));
+			   (int)sizeof(sgd_t) * (DESC_MAX_MASK + 1));
 		return err;
 	}
 	if ((err = snd_pcm_lib_malloc_pages(substream,
@@ -1633,7 +1633,7 @@ snd_riptide_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 	cmdif_t *cif = NULL;
 	cmdret_t rptr = { {(u32) 0, (u32) 0} };
 	unsigned char p[256];
-	unsigned short rval, lval;
+	unsigned short rval = 0, lval = 0;
 	unsigned int rate;
 
 	if (chip) {
