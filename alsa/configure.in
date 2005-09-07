@@ -2291,7 +2291,8 @@ AC_SUBST(KERNEL_INC)
 dnl Output files...
 AC_OUTPUT(version Makefile.conf snddevices \
 	  utils/alsa-driver.spec utils/buildrpm toplevel.config \
-	  utils/alsasound utils/alsasound.posix)
+	  utils/alsasound utils/alsasound.posix \
+	  include/linux/pci_ids.h)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
