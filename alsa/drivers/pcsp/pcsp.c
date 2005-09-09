@@ -250,7 +250,7 @@ static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
 	int div, min_div, order;
 	int pcsp_enabled = 1;
 
-	chip = kcalloc(1, sizeof(pcsp_t), GFP_KERNEL);
+	chip = kzalloc(sizeof(pcsp_t), GFP_KERNEL);
 	if (chip == NULL)
 		return -ENOMEM;
 	spin_lock_init(&chip->lock);

@@ -223,7 +223,7 @@ static int snd_card_loopback_pcm_open(snd_pcm_substream_t * substream)
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_card_loopback_pcm_t *dpcm;
 
-	dpcm = kcalloc(1, sizeof(*dpcm), GFP_KERNEL);
+	dpcm = kzalloc(sizeof(*dpcm), GFP_KERNEL);
 	if (dpcm == NULL)
 		return -ENOMEM;
 	init_timer(&dpcm->timer);

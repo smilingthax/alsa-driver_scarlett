@@ -1797,7 +1797,7 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 	pci_set_master(pci);
 
 	/* allocate a chip-specific data */
-	chip = kcalloc(1, sizeof(echoaudio_t), GFP_KERNEL);
+	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
 	if (!chip) {
 		pci_disable_device(pci);
 		return -ENOMEM;

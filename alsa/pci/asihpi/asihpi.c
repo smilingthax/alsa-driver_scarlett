@@ -443,7 +443,7 @@ static int snd_card_asihpi_playback_open(snd_pcm_substream_t * substream)
 	snd_card_asihpi_t *asihpi = snd_pcm_substream_chip(substream);
 	HW16 err;
 
-	dpcm = kcalloc(1, sizeof(*dpcm), GFP_KERNEL);
+	dpcm = kzalloc(sizeof(*dpcm), GFP_KERNEL);
 	if (dpcm == NULL)
 		return -ENOMEM;
 
@@ -742,7 +742,7 @@ static int snd_card_asihpi_capture_open(snd_pcm_substream_t * substream)
 	snd_card_asihpi_t *asihpi = snd_pcm_substream_chip(substream);
 	HW16 err;
 
-	dpcm = kcalloc(1, sizeof(*dpcm), GFP_KERNEL);
+	dpcm = kzalloc(sizeof(*dpcm), GFP_KERNEL);
 	if (dpcm == NULL)
 		return -ENOMEM;
 

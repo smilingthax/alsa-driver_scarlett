@@ -901,7 +901,7 @@ static int __devinit pcxhr_create(pcxhr_mgr_t *mgr, snd_card_t *card, int idx)
 		.dev_free = pcxhr_chip_dev_free,
 	};
 
-	mgr->chip[idx] = chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
+	mgr->chip[idx] = chip = kzalloc(sizeof(*chip), GFP_KERNEL);
 	if (! chip) {
 		snd_printk(KERN_ERR "cannot allocate chip\n");
 		return -ENOMEM;
@@ -1087,7 +1087,7 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 	}
 
 	/* alloc card manager */
-	mgr = kcalloc(1, sizeof(*mgr), GFP_KERNEL);
+	mgr = kzalloc(sizeof(*mgr), GFP_KERNEL);
 	if (! mgr) {
 		pci_disable_device(pci);
 		return -ENOMEM;
