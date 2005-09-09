@@ -1124,11 +1124,10 @@ static void riptide_handleirq(unsigned long dev_id)
 }
 
 #ifdef CONFIG_PM
-static void riptide_suspend(riptide_t * chip)
+static int riptide_suspend(snd_card_t *card, pm_message_t state)
 {
-	snd_card_t *card;
+	riptide_t *chip = card->pm_private_data;
 
-	card = chip->card;
 	chip->in_suspend = 1;
 	if (chip->pcm)
 		snd_pcm_suspend_all(chip->pcm);
@@ -1136,13 +1135,13 @@ static void riptide_suspend(riptide_t * chip)
 		snd_ac97_suspend(chip->ac97);
 	pci_set_power_state(chip->pci, PCI_D3hot);
 	pci_disable_device(chip->pci);
+	return 0;
 }
 
-static void riptide_resume(riptide_t * chip)
+static int riptide_resume(snd_card_t *card)
 {
-	snd_card_t *card;
+	riptide_t *chip = card->pm_private_data;
 
-	card = chip->card;
 	pci_enable_device(chip->pci);
 	pci_set_power_state(chip->pci, PCI_D0);
 	pci_set_master(chip->pci);
@@ -1151,6 +1150,7 @@ static void riptide_resume(riptide_t * chip)
 	if (chip->ac97)
 		snd_ac97_resume(chip->ac97);
 	chip->in_suspend = 0;
+	return 0;
 }
 #endif
 
@@ -1724,26 +1724,6 @@ static unsigned short snd_riptide_codec_read(ac97_t * ac97, unsigned short reg)
 	return rptr.retwords[1];
 }
 
-#ifdef CONFIG_PM
-static int snd_riptide_suspend(snd_card_t * card, pm_message_t state)
-{
-	riptide_t *chip = card->pm_private_data;
-
-	snd_assert(chip, return 0);
-	riptide_suspend(chip);
-	return 0;
-}
-static int snd_riptide_resume(snd_card_t * card)
-{
-	riptide_t *chip = card->pm_private_data;
-
-	snd_assert(chip, return 0);
-	riptide_resume(chip);
-	return 0;
-}
-
-#endif
-
 static int snd_riptide_initialize(riptide_t * chip)
 {
 	cmdif_t *cif;
@@ -1860,7 +1840,7 @@ snd_riptide_create(snd_card_t * card, struct pci_dev *pci, riptide_t ** rchip)
 		return err;
 	}
 
-	snd_card_set_pm_callback(card, snd_riptide_suspend, snd_riptide_resume, chip);
+	snd_card_set_pm_callback(card, riptide_suspend, riptide_resume, chip);
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
 		snd_riptide_free(chip);
@@ -2124,6 +2104,7 @@ static struct pci_driver driver = {
 	.id_table = snd_riptide_ids,
 	.probe = snd_card_riptide_probe,
 	.remove = __devexit_p(snd_card_riptide_remove),
+	SND_PCI_PM_CALLBACKS
 };
 
 #ifdef SUPPORT_JOYSTICK
