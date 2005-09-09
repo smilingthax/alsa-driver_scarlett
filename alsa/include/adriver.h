@@ -789,6 +789,14 @@ char *snd_compat_kstrdup(const char *s, unsigned int __nocast gfp_flags);
 #endif
 #endif
 
+/* kcalloc */
+#ifndef CONFIG_HAVE_KZALLOC
+#ifndef CONFIG_SND_DEBUG_MEMORY
+void *snd_compat_kzalloc(size_t n, unsigned int __nocast gfp_flags);
+#define kzalloc(s,f) snd_compat_kzalloc(s,f)
+#endif
+#endif
+
 /* DEFINE_SPIN/RWLOCK (up to 2.6.11-rc2) */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 11)
 #include <linux/spinlock.h>
