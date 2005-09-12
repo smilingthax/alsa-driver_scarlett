@@ -76,6 +76,9 @@ void snd_compat_request_module(const char *name, ...);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 /* for compat layer */
 #include <linux/pci.h>
+#ifdef LINUX_2_2
+#include <linux/pci_ids.h>
+#endif
 
 #ifdef LINUX_2_2
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
