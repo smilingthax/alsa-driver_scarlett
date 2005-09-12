@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2005-06-30 14:10:46.000000000 +0200
-+++ sound.c	2005-06-30 12:46:16.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2005-09-05 19:10:30.000000000 +0200
++++ sound.c	2005-09-10 19:15:57.000000000 +0200
 @@ -64,7 +64,15 @@
  
  static DECLARE_MUTEX(sound_mutex);
@@ -50,7 +50,16 @@
  
  	list_del(&mptr->list);
  	up(&sound_mutex);
-@@ -359,6 +377,9 @@
+@@ -359,13 +377,18 @@
+ 	}
+ 	snd_info_minor_register();
+ #ifdef CONFIG_SND_GENERIC_DRIVER
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ 	driver_register(&snd_generic_driver);
+ #endif
++#endif
+ 	for (controlnum = 0; controlnum < cards_limit; controlnum++)
+ 		devfs_mk_cdev(MKDEV(major, controlnum<<5), S_IFCHR | device_mode, "snd/controlC%d", controlnum);
  #ifndef MODULE
  	printk(KERN_INFO "Advanced Linux Sound Architecture Driver Version " CONFIG_SND_VERSION CONFIG_SND_DATE ".\n");
  #endif
@@ -60,8 +69,14 @@
  	return 0;
  }
  
-@@ -371,6 +392,9 @@
+@@ -377,10 +400,15 @@
+ 		devfs_remove("snd/controlC%d", controlnum);
  
+ #ifdef CONFIG_SND_GENERIC_DRIVER
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ 	driver_unregister(&snd_generic_driver);
+ #endif
++#endif
  	snd_info_minor_unregister();
  	snd_info_done();
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_APM)
@@ -70,7 +85,7 @@
  	snd_memory_done();
  	if (unregister_chrdev(major, "alsa") != 0)
  		snd_printk(KERN_ERR "unable to unregister major device number %d\n", major);
-@@ -488,3 +512,5 @@
+@@ -501,3 +529,5 @@
  EXPORT_SYMBOL(snd_wrapper_vmalloc);
  EXPORT_SYMBOL(snd_wrapper_vfree);
  #endif
