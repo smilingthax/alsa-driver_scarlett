@@ -290,6 +290,7 @@ struct pci_driver {
 	struct list_head node;
 	struct pci_dev *dev;
 	char *name;
+	void *owner;
 	const struct pci_device_id *id_table;	/* NULL if wants all devices */
 	int (*probe)(struct pci_dev *dev, const struct pci_device_id *id); /* New device inserted */
 	void (*remove)(struct pci_dev *dev);	/* Device removed (NULL if not a hot-plug capable driver) */

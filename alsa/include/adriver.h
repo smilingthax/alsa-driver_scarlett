@@ -893,8 +893,40 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
+
+/* wrapper for struct pci_driver with a dummy owner field */
+struct snd_compat_pci_driver {
+	struct pci_driver real_driver;
+	char *name;
+	void *owner;
+	const struct pci_device_id *id_table;
+	int (*probe)(struct pci_dev *dev, const struct pci_device_id *id);
+	void (*remove)(struct pci_dev *dev);
+	int (*suspend)(struct pci_dev *dev, u32 state);
+	int (*resume)(struct pci_dev *dev);
+};
+
+static inline int snd_pci_compat_register_driver(struct snd_compat_pci_driver *driver)
+{
+	driver->real_driver.name = driver->name;
+	driver->real_driver.id_table = driver->id_table;
+	driver->real_driver.probe = driver->probe;
+	driver->real_driver.remove = driver->remove;
+	driver->real_driver.suspend = driver->suspend;
+	driver->real_driver.resume = driver->resume;
+	return pci_module_init(&driver->real_driver);
+}
+
+static inline void snd_pci_compat_unregister_driver(struct snd_compat_pci_driver *driver)
+{
+	pci_unregister_driver(&driver->real_driver);
+}
+
+#define pci_driver snd_compat_pci_driver
 #undef pci_register_driver
-#define pci_register_driver	pci_module_init
+#define pci_register_driver snd_pci_compat_register_driver
+#undef pci_unregister_driver
+#define pci_unregister_driver snd_pci_compat_unregister_driver
 #endif
 #endif
 

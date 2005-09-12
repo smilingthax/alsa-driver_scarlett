@@ -2337,6 +2337,7 @@ MODULE_DEVICE_TABLE(pci, asihpi_pci_tbl);
 
 static struct pci_driver asihpi_pci_driver = {
         .name     = "asihpi",
+	.owner    = THIS_MODULE,
         .id_table = asihpi_pci_tbl,
         .probe    = snd_asihpi_probe,
         .remove   = __devexit_p(snd_asihpi_remove),

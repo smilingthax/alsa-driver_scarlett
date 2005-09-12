@@ -2101,6 +2101,7 @@ static void __devexit snd_card_riptide_remove(struct pci_dev *pci)
 
 static struct pci_driver driver = {
 	.name = "RIPTIDE",
+	.owner = THIS_MODULE,
 	.id_table = snd_riptide_ids,
 	.probe = snd_card_riptide_probe,
 	.remove = __devexit_p(snd_card_riptide_remove),
@@ -2110,6 +2111,7 @@ static struct pci_driver driver = {
 #ifdef SUPPORT_JOYSTICK
 static struct pci_driver joystick_driver = {
 	.name = "Riptide Joystick",
+	.owner = THIS_MODULE,
 	.id_table = snd_riptide_joystick_ids,
 	.probe = snd_riptide_joystick_probe,
 	.remove = __devexit_p(snd_riptide_joystick_remove),
