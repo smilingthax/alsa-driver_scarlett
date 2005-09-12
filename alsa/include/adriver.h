@@ -193,7 +193,9 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 13)
 #ifdef CONFIG_SND_ISA
+#ifndef CONFIG_ISA_DMA_API
 #define CONFIG_ISA_DMA_API
+#endif
 #endif
 #endif
 
