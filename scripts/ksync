@@ -56,7 +56,7 @@ GIT_COMMITTER_EMAIL = 'perex@suse.cz'
 ALSA_EXCLUDE = ['/include/version.h']
 ALSA_EXCLUDE_DIR = ['/scripts', '/oss', '/kbuild']
 KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
-		  '/MAINTAINERS','/Makefile',
+		  '/MAINTAINERS','/Makefile','/Kbuild',
 		  '/README','/REPORTING-BUGS',
 		  '/include/sound/version.h']
 KERNEL_EXCLUDE_DIR = ['/BitKeeper',
@@ -194,6 +194,7 @@ COMMENT_MAP_DRIVER = [
 		('/pci/hda/patch_.*'	,'HDA Codec driver'),
 		('/pci/hda/hda_intel.c'	,'HDA Intel driver'),
 		('/pci/hda/.*'		,'HDA generic driver'),
+		('/pci/ad1889.*'	,'AD1889 driver'),
 		('/include/hdspm.h'	,'HDSPM driver'),
 		('/pci'			,'ERROR'),
 		('/ppc/Makefile'	,'PPC'),
@@ -229,6 +230,7 @@ COMMENT_MAP_DRIVER = [
 		('/parisc'		,'ERROR'),
 		('/sparc/amd7930.c'	,'SPARC AMD7930 driver'),
 		('/sparc/cs4231.c'	,'SPARC cs4231 driver'),
+		('/sparc/dbri.c'	,'SPARC DBRI driver'),
 		('/sparc/Kconfig'	,'SPARC'),
 		('/sparc'		,'ERROR'),
 		('/mips/au1x00.[ch]'	,'MIPS AU1x00 driver'),
@@ -317,6 +319,8 @@ COMMENT_MAP_DRIVER = [
 		('/INSTALL'		,'Sound Core'),
 		('/Rules.make'		,'Sound Core'),
 		('/configure.in'	,'Sound Core'),
+		('/cvscompile'		,'cvscompile script'),
+		('/snddevices.in'	,'snddevices script'),
 		('/'			,'ERROR')
 	       ]
 COMMENT_MAP_LIB = [
@@ -328,10 +332,12 @@ COMMENT_MAP_LIB = [
 		('/include/error.h'	,'Core'),
 		('/include/conf.h'	,'Config API'),
 		('/include/control.h'	,'Control API'),
+		('/include/control_external.h','External Control Plugin SDK'),
 		('/include/hwdep.h'	,'HWDEP API'),
 		('/include/(input|output).h' ,'I/O API'),
 		('/include/instr.h'	,'Instrument API'),
 		('/include/mixer.h'	,'Mixer API'),
+		('/include/mixer_abst.h','Mixer Abstraction API'),
 		('/include/mixer_ordinary.h' ,'Mixer Ordinary API'),
 		('/include/rawmidi.h'	,'Rawmidi API'),
 		('/include/timer.h'	,'Timer API'),
@@ -354,6 +360,8 @@ COMMENT_MAP_LIB = [
 		('/src/seq/.*'		,'Sequencer API'),
 		('/src/instr/.*'	,'Instrument API'),
 		('/src/hwdep/.*'	,'HWDEP API'),
+		('/src/ordinary_mixer/.*' ,'Mixer Ordinary API'),
+		('/src/ordinary_pcm/.*' ,'PCM Ordinary API'),
 		('/src/input.*'		,'I/O subsystem'),
 		('/src/output.*'	,'I/O subsystem'),
 		('/src/conf.*'		,'Configuration'),
@@ -384,11 +392,17 @@ COMMENT_MAP_UTILS = [
 		('/seq/aplaymidi/.*'	,'aplaymidi/arecordmidi'),
 		('/seq/aseqdump/.*'	,'aseqdump'),
 		('/seq/aconnect/.*'	,'aconnect'),
+		('/seq/aseqnet/.*'	,'aseqnet'),
 		('/iecset/.*'		,'iecset'),
 		('/configure.in'	,'Core'),
 		('/Makefile.am'		,'Core'),
 		('/Makefile.am'		,'Core'),
+		('/INSTALL'		,'Core'),
+		('/include/gettext.h'	,'IGNORE'),
+		('/po/.*'		,'IGNORE'),
 		('/m4/.*'		,'IGNORE'),
+		('/cvscompile'		,'cvscompile'),
+		('/ChangeLog'		,'IGNORE'),
 		('/'			,'ERROR')
 	       ]
 COMMENT_MAP_TOOLS = [
@@ -400,6 +414,8 @@ COMMENT_MAP_TOOLS = [
 		('/as10k1/.*'		,'as10k1 (EMU10K1+ DSP Assembler)'),
 		('/ld10k1/.*'		,'ld10k1 (EMU10K1+ DSP Code Loader)'),
 		('/qlo10k1/.*'		,'qlo10k1'),
+		('/hdspconf/.*'		,'hdspconf'),
+		('/hdspmixer/.*'	,'hdspmixer'),
 		('/Makefile'		,'Core'),
 		('/'			,'ERROR')
 	       ]
@@ -417,7 +433,7 @@ COMMENT_MAP_FIRMWARE = [
 	       ]
 COMMENT_MAP_OSS = [
 		('/alsa/pcm.c'		,'PCM Emulation'),
-		('/alsa/pcm.c'		,'Mixer Emulation'),
+		('/alsa/mixer.c'	,'Mixer Emulation'),
 		('/alsa/stdioemu.c'	,'Core'),
 		('/alsa/alsa-oss.c'	,'Core'),
 		('/alsa/Makefile.am'	,'Core'),
@@ -1059,7 +1075,7 @@ def cvsps_merge_members(members, module='alsa-driver'):
 				GERRORS += 1
 				str = 'Cannot identify file "%s" from module %s' % (file, module)
 				fp = open("/tmp/cvsps-changes.txt", "a+")
-				fp.write(str)
+				fp.write(str + "\n")
 				fp.close()
 				print str, ' {see /tmp/cvsps-changes.txt file}'
 				result1 = ''
@@ -1364,7 +1380,7 @@ def cvsps_changes1(changes, lines, module):
 				if len(line) > 2:
 					members.append(line[1:-1])
 			elif line[:9] == 'PatchSet ':
-				patchset = long(line[9:-1])
+				patchset = long(string.replace(line[9:-1], " FNK_SHOW_ALL", ""))
 				#print 'patchset: %s' % patchset
 			elif line[:6] == 'Date: ':
 				date = line[6:-1]
@@ -1487,7 +1503,20 @@ def cvsps_changes(rev1, rev2, update=False):
 		os.chdir(get_cvs_root_top() + '/' + module)
 		if update:
 			os.system("cvsps -Z 3 -u > /dev/null 2> /dev/null")
-		lines = my_popen("cvsps -Z 3 -r %s -r %s" % (rev1, rev2))
+		xrev = rev1
+		while True:
+			#print "%s: cvsps -Z 3 -r %s -r %s" % (module, xrev, rev2)
+			lines = my_popen("cvsps -Z 3 -r %s -r %s" % (xrev, rev2))
+			if len(lines) == 0:
+				if ord(xrev[-1:]) > ord('a'):
+					last = chr(ord(xrev[-1:]) - 1)
+					xrev = xrev[:-1] + last
+				elif xrev[-1:] == "a":
+					xrev = xrev[:-1]
+				else:
+					break
+			else:
+				break
 		#lines = my_popen("cvsps -Z 3 -u -r %s -r %s" % (rev1, rev2))
 		cvsps_changes1(changes, lines, module)
 	res = cvsps_changes2(changes)
