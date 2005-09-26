@@ -1,15 +1,3 @@
-#ifdef OLD_USB
-static void __old_snd_usbmidi_in_urb_complete(struct urb* urb)
-{
-	snd_usbmidi_in_urb_complete(urb, NULL);
-}
-
-static void __old_snd_usbmidi_out_urb_complete(struct urb* urb)
-{
-	snd_usbmidi_out_urb_complete(urb, NULL);
-}
-#endif
-
 /*
  * workarounds / hacks for the older kernels follow below
  */
