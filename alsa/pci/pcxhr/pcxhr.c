@@ -41,7 +41,7 @@
 #define DRIVER_NAME "pcxhr"
 
 MODULE_AUTHOR("Markus Bollinger <bollinger@digigram.com>");
-MODULE_DESCRIPTION("Digigram " DRIVER_NAME);
+MODULE_DESCRIPTION("Digigram " DRIVER_NAME " " PCXHR_DRIVER_VERSION_STRING);
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{Digigram," DRIVER_NAME "}}");
 
@@ -322,15 +322,19 @@ static int pcxhr_set_stream_state(pcxhr_stream_t *stream)
 	if(stream->status == PCXHR_STREAM_STATUS_SCHEDULE_RUN) {
 		start = 1;
 	} else {
-		if(stream->status != PCXHR_STREAM_STATUS_SCHEDULE_STOP) return -EINVAL;
+		if(stream->status != PCXHR_STREAM_STATUS_SCHEDULE_STOP) {
+			snd_printk(KERN_ERR "ERROR pcxhr_set_stream_state CANNOT be stopped\n");
+			return -EINVAL;
+		}
 		start = 0;
 	}
 	if(!stream->substream)
 		return -EINVAL;
 
-	stream->timer_elapsed = 0;
-	stream->timer_abs_samples = 0;            /* reset theoretical stream pos */
-	stream->timer_abs_adjusted = 0;
+	stream->timer_abs_periods = 0;
+	stream->timer_period_frag = 0;            /* reset theoretical stream pos */
+	stream->timer_buf_periods = 0;
+	stream->timer_is_synced = 0;
 
 	stream_mask = stream->pipe->is_capture ? 1 : 1<<stream->substream->number;
 
@@ -343,7 +347,7 @@ static int pcxhr_set_stream_state(pcxhr_stream_t *stream)
 	if(err) {
 		snd_printk(KERN_ERR "ERROR pcxhr_set_stream_state err=%x;\n", err);
 	}
-	stream->status = start ? PCXHR_STREAM_STATUS_RUNNING : PCXHR_STREAM_STATUS_STOPPED;
+	stream->status = start ? PCXHR_STREAM_STATUS_STARTED : PCXHR_STREAM_STATUS_STOPPED;
 	return err;
 }
 
@@ -410,8 +414,8 @@ static int pcxhr_update_r_buffer(pcxhr_stream_t *stream)
 	is_capture = (subs->stream == SNDRV_PCM_STREAM_CAPTURE);
 	stream_num = is_capture ? 0 : subs->number;
 
-	snd_printdd("pcxhr_hw_params(pcm%c0) : addr(%lx) bytes(%lx) subs(%u)\n", is_capture?'c':'p',
-		    (unsigned long)subs->runtime->dma_addr, subs->runtime->dma_bytes, subs->number);
+	snd_printdd("pcxhr_update_r_buffer(pcm%c%d) : addr(%p) bytes(%x) subs(%d)\n", is_capture?'c':'p',
+		    chip->chip_idx, (void*)subs->runtime->dma_addr, subs->runtime->dma_bytes, subs->number);
 
 	pcxhr_init_rmh(&rmh, CMD_UPDATE_R_BUFFERS);
 	pcxhr_set_pipe_cmd_params(&rmh, is_capture, stream->pipe->first_audio, stream_num, 0);
@@ -459,12 +463,13 @@ inline int pcxhr_stream_scheduled_get_pipe(pcxhr_stream_t *stream,  pcxhr_pipe_t
 
 static void pcxhr_trigger_tasklet(unsigned long arg)
 {
+	unsigned long flags;
 	int i, j, err;
 	pcxhr_pipe_t *pipe;
-	pcxhr_pipe_t *pipe_array[PCXHR_MAX_CARDS*3]; /* max 3 pipes per card */
 	pcxhr_t *chip;
 	pcxhr_mgr_t *mgr = ( pcxhr_mgr_t*)(arg);
-	int size = 0;
+	int capture_mask = 0;
+	int playback_mask = 0;
 
 #ifdef CONFIG_SND_DEBUG_DETECT
 	struct timeval my_tv1, my_tv2;
@@ -477,29 +482,29 @@ static void pcxhr_trigger_tasklet(unsigned long arg)
 		chip = mgr->chip[i];
 		for(j=0; j<chip->nb_streams_capt; j++) {
 			if(pcxhr_stream_scheduled_get_pipe(&chip->capture_stream[j], &pipe)) {
-				pipe_array[size++] = pipe;
+				capture_mask |= (1 << pipe->first_audio);
 			}
 		}
 		for(j=0; j<chip->nb_streams_play; j++) {
 			if(pcxhr_stream_scheduled_get_pipe(&chip->playback_stream[j], &pipe)) {
-				pipe_array[size++] = pipe;
-				break;	/* add only once, as the playback streams use all the same pipe */
+				playback_mask |= (1 << pipe->first_audio);
+				break;	/* add only once, as all playback streams of one chip use the same pipe */
 			}
 		}
 	}
-	if(size == 0) {
+	if((capture_mask == 0) && (playback_mask == 0)) {
 		up(&mgr->setup_mutex);
 		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : no pipes\n");
 		return;
 	}
 
-	snd_printdd("pcxhr_trigger_tasklet : %d pipes\n", size);
+	snd_printdd("pcxhr_trigger_tasklet : playback_mask=%x capture_mask=%x\n", playback_mask, capture_mask);
 
 	/* synchronous stop of all the pipes concerned */
-	err = pcxhr_set_pipe_state(mgr, pipe_array, size, 0);
+	err = pcxhr_set_pipe_state(mgr,  playback_mask, capture_mask, 0);
 	if(err) {
 		up(&mgr->setup_mutex);
-		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : error stop %d pipes\n", size);
+		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : error stop pipes (P%x C%x)\n", playback_mask, capture_mask);
 		return;
 	}
 
@@ -541,13 +546,40 @@ static void pcxhr_trigger_tasklet(unsigned long arg)
 	}
 
 	/* synchronous start of all the pipes concerned */
-	err = pcxhr_set_pipe_state(mgr, pipe_array, size, 1);
+	err = pcxhr_set_pipe_state(mgr, playback_mask, capture_mask, 1);
+	if(err) {
+		up(&mgr->setup_mutex);
+		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : error start pipes (P%x C%x)\n", playback_mask, capture_mask);
+		return;
+	}
+
+	/* put the streams into the running state now (increment pointer by interrupt) */
+	spin_lock_irqsave(&mgr->lock, flags);
+	for(i=0; i<mgr->num_cards; i++) {
+		pcxhr_stream_t *stream;
+		chip = mgr->chip[i];
+		for(j=0; j<chip->nb_streams_capt; j++) {
+			stream = &chip->capture_stream[j];
+			if(stream->status == PCXHR_STREAM_STATUS_STARTED) {
+				stream->status = PCXHR_STREAM_STATUS_RUNNING;
+			}
+		}
+		for(j=0; j<chip->nb_streams_play; j++) {
+			stream = &chip->playback_stream[j];
+			if(stream->status == PCXHR_STREAM_STATUS_STARTED) {
+				/* playback will already have advanced ! */
+				stream->timer_period_frag += PCXHR_GRANULARITY;
+				stream->status = PCXHR_STREAM_STATUS_RUNNING;
+			}
+		}
+	}
+	spin_unlock_irqrestore(&mgr->lock, flags);
 
 	up(&mgr->setup_mutex);
 
 #ifdef CONFIG_SND_DEBUG_DETECT
 	do_gettimeofday(&my_tv2);
-	snd_printdd("***TRIGGER*** TIME = %ld (err = %x)\n", my_tv2.tv_usec - my_tv1.tv_usec, err);
+	snd_printdd("***TRIGGER TASKLET*** TIME = %ld (err = %x)\n", my_tv2.tv_usec - my_tv1.tv_usec, err);
 #endif
 }
 
@@ -574,8 +606,14 @@ static int pcxhr_trigger(snd_pcm_substream_t *subs, int cmd)
 		}
 		if(i==1) {
 			snd_printdd("Only one Substream %c %d\n", stream->pipe->is_capture?'C':'P', stream->pipe->first_audio);
+			if(pcxhr_set_format(stream))
+				return -EINVAL;
+			if(pcxhr_update_r_buffer(stream))
+				return -EINVAL;
+
 			if( pcxhr_set_stream_state(stream) )
 				return -EINVAL;
+			stream->status = PCXHR_STREAM_STATUS_RUNNING;
 		}else {
 			pcxhr_t *chip = snd_pcm_substream_chip(subs);
 			tasklet_hi_schedule(&chip->mgr->trigger_taskq);
@@ -608,7 +646,7 @@ static int pcxhr_hardware_timer(pcxhr_mgr_t *mgr, int start)
 	int err;
 	pcxhr_init_rmh(&rmh, CMD_SET_TIMER_INTERRUPT);
 	if(start) {
-		mgr->timer_toggle = 0;	/* reset the toggle value */
+		mgr->dsp_time_last = PCXHR_DSP_TIME_INVALID;	/* last dsp time invalid */
 		rmh.cmd[0] |= PCXHR_GRANULARITY;
 	}
 	err = pcxhr_send_msg(mgr, &rmh);
@@ -625,22 +663,33 @@ static int pcxhr_prepare(snd_pcm_substream_t *subs)
 {
 	pcxhr_t *chip = snd_pcm_substream_chip(subs);
 	pcxhr_mgr_t *mgr = chip->mgr;
+	/*
 	pcxhr_stream_t *stream = (pcxhr_stream_t*)subs->runtime->private_data;
+	*/
 	int err = 0;
 
 	snd_printdd("pcxhr_prepare : period_size(%lx) periods(%x) buffer_size(%lx)\n",
 		    subs->runtime->period_size, subs->runtime->periods, subs->runtime->buffer_size);
 
+	/*
+	if(subs->runtime->period_size <= PCXHR_GRANULARITY) {
+		snd_printk(KERN_ERR "pcxhr_prepare : error period_size too small (%x)\n", (unsigned int)subs->runtime->period_size);
+		return -EINVAL;
+	}
+	*/
+
 	down(&mgr->setup_mutex);
 
 	do {
 		/* if the stream was stopped before, format and buffer were reset */
+		/*
 		if(stream->status == PCXHR_STREAM_STATUS_STOPPED) {
 			err = pcxhr_set_format(stream);
 			if(err) break;
 			err = pcxhr_update_r_buffer(stream);
 			if(err) break;
 		}
+		*/
 
 		/* only the first stream can choose the sample rate */
 		/* the further opened streams will be limited to its frequency (see open) */
@@ -685,18 +734,21 @@ static int pcxhr_hw_params(snd_pcm_substream_t *subs,
 	stream->format = format;
 
 	/* set the format to the board */
+	/*
 	err = pcxhr_set_format(stream);
 	if(err) {
 		up(&mgr->setup_mutex);
 		return err;
 	}
-
+	*/
 	/* allocate buffer */
 	err = snd_pcm_lib_malloc_pages(subs, params_buffer_bytes(hw));
 
+	/*
 	if (err > 0) {
 		err = pcxhr_update_r_buffer(stream);
 	}
+	*/
 	up(&mgr->setup_mutex);
 
 	return err;
@@ -727,7 +779,7 @@ static snd_pcm_hardware_t pcxhr_caps =
 	.channels_min     = 1,
 	.channels_max     = 2,
 	.buffer_bytes_max = (32*1024),
-	.period_bytes_min = PCXHR_GRANULARITY,	/* 1 byte == 1 frame U8 mono (PCXHR_GRANULARITY is frames!) */
+	.period_bytes_min = (2*PCXHR_GRANULARITY),	/* 1 byte == 1 frame U8 mono (PCXHR_GRANULARITY is frames!) */
 	.period_bytes_max = (16*1024),
 	.periods_min      = 2,
 	.periods_max      = (32*1024/PCXHR_GRANULARITY),
@@ -824,19 +876,24 @@ static int pcxhr_close(snd_pcm_substream_t *subs)
 
 static snd_pcm_uframes_t pcxhr_stream_pointer(snd_pcm_substream_t * subs)
 {
-	snd_pcm_uframes_t sample_count;
+	unsigned long flags;
+	u_int32_t timer_period_frag;
+	int timer_buf_periods;
 	pcxhr_t *chip = snd_pcm_substream_chip(subs);
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	pcxhr_stream_t *stream  = (pcxhr_stream_t*)runtime->private_data;
 
-	spin_lock(&chip->mgr->lock);
-	/* get the absolute timer position */
-	sample_count = stream->timer_abs_samples;
+	spin_lock_irqsave(&chip->mgr->lock, flags);
 
-	spin_unlock(&chip->mgr->lock);
+	/* get the period fragment and the nb of periods in the buffer */
+	timer_period_frag = stream->timer_period_frag;
+	timer_buf_periods = stream->timer_buf_periods;
 
-	return sample_count % runtime->buffer_size;
+	spin_unlock_irqrestore(&chip->mgr->lock, flags);
+
+	return (snd_pcm_uframes_t)((timer_buf_periods * runtime->period_size) + timer_period_frag);
 }
+
 
 static snd_pcm_ops_t pcxhr_ops = {
 	.open      = pcxhr_open,
@@ -943,6 +1000,7 @@ static void pcxhr_proc_info(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 		short ver_maj = (mgr->dsp_version>>16)&0xff;
 		short ver_min = (mgr->dsp_version>>8)&0xff;
 		short ver_build = mgr->dsp_version&0xff;
+		snd_iprintf(buffer, "module version %s\n", PCXHR_DRIVER_VERSION_STRING);
 		snd_iprintf(buffer, "dsp version %d.%d.%d\n", ver_maj, ver_min, ver_build);
 		if(mgr->board_has_analog)
 			snd_iprintf(buffer, "analog io available\n");
@@ -965,7 +1023,10 @@ static void pcxhr_proc_info(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 			}
 		}
 		snd_iprintf(buffer, "dma granularity : %d\n", PCXHR_GRANULARITY);
-		snd_iprintf(buffer, "timer interrupt errors : %d\n", mgr->timer_err);
+		snd_iprintf(buffer, "dsp time errors : %d\n", mgr->dsp_time_err);
+		snd_iprintf(buffer, "dsp async pipe xrun errors : %d\n", mgr->async_err_pipe_xrun);
+		snd_iprintf(buffer, "dsp async stream xrun errors : %d\n", mgr->async_err_stream_xrun);
+		snd_iprintf(buffer, "dsp async last other error : %x\n", mgr->async_err_other_last);
 		/* debug zone dsp */
 		rmh.cmd[0] = 0x4200 + PCXHR_SIZE_MAX_STATUS;
 		rmh.cmd_len = 1;
@@ -975,7 +1036,7 @@ static void pcxhr_proc_info(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 		if( ! pcxhr_send_msg(mgr, &rmh) ) {
 			int i;
 			for(i=0; i<rmh.stat_len; i++) {
-				snd_iprintf(buffer, "debug[%02d] = %06x\n", i,  rmh.stat[0]);
+				snd_iprintf(buffer, "debug[%02d] = %06x\n", i,  rmh.stat[i]);
 			}
 		}
 	} else {
@@ -1215,7 +1276,7 @@ static struct pci_driver driver = {
 
 static int __init pcxhr_module_init(void)
 {
-	return pci_register_driver(&driver);
+	return pci_module_init(&driver);
 }
 
 static void __exit pcxhr_module_exit(void)

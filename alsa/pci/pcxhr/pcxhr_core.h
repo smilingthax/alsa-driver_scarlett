@@ -34,17 +34,22 @@ int pcxhr_load_eeprom_binary(pcxhr_mgr_t *mgr, const struct firmware *eeprom);
 int pcxhr_load_boot_binary(pcxhr_mgr_t *mgr, const struct firmware *boot);
 int pcxhr_load_dsp_binary(pcxhr_mgr_t *mgr, const struct firmware *dsp);
 
+/* DSP time available on MailBox4 register : 24 bit time samples() */
+#define PCXHR_DSP_TIME_MASK		0x00ffffff
+#define PCXHR_DSP_TIME_INVALID		0x10000000
+
 
 #define PCXHR_SIZE_MAX_CMD		8
 #define PCXHR_SIZE_MAX_STATUS		16
+#define PCXHR_SIZE_MAX_LONG_STATUS	256
 
 struct pcxhr_rmh {
-	u32	cmd[PCXHR_SIZE_MAX_CMD];
-	u32	stat[PCXHR_SIZE_MAX_STATUS];
 	u16	cmd_len;		/* length of the command to send (WORDs) */
 	u16	stat_len;		/* length of the status received (WORDs) */
 	u16	dsp_stat;		/* status type, RMP_SSIZE_XXX */
 	u16	cmd_idx;		/* index of the command */
+	u32	cmd[PCXHR_SIZE_MAX_CMD];
+	u32	stat[PCXHR_SIZE_MAX_STATUS];
 };
 typedef struct pcxhr_rmh pcxhr_rmh_t;
 
@@ -56,7 +61,8 @@ enum {
 	CMD_ACCESS_IO_WRITE,		/* cmd_len >= 1	stat_len >= 1 */
 	CMD_ACCESS_IO_READ,		/* cmd_len >= 1	stat_len >= 1 */
 	CMD_ASYNC,			/* cmd_len = 1	stat_len = 1 */
-	CMD_MODIFY_CLOCK,		/* cmd_len = 2	stat_len = 0 */
+	CMD_MODIFY_CLOCK,		/* cmd_len = 3	stat_len = 0 */
+	CMD_RESYNC_AUDIO_INPUTS,	/* cmd_len = 1	stat_len = 0 */
 	CMD_GET_DSP_RESOURCES,		/* cmd_len = 1	stat_len = 4 */
 	CMD_SET_TIMER_INTERRUPT,	/* cmd_len = 1	stat_len = 0 */
 	CMD_RES_PIPE,			/* cmd_len = 2	stat_len = 0 */
@@ -136,8 +142,8 @@ int pcxhr_send_msg(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh);
 #define REG_STATUS_SYNC_176400		0x07
 #define REG_STATUS_SYNC_192000		0x08
 
-void pcxhr_delay(int xmsec);
-int pcxhr_is_pipe_running(pcxhr_mgr_t *mgr, int is_capture, int audio);
+int pcxhr_set_pipe_state(pcxhr_mgr_t *mgr, int playback_mask, int capture_mask, int start);
+
 int pcxhr_write_io_num_reg_cont(pcxhr_mgr_t *mgr, unsigned int mask, unsigned int value, int *changed);
 
 /* codec parameters */
