@@ -1066,6 +1066,27 @@ YAMAHA_DEVICE(0x7010, "UB99"),
 	/* TODO: add Edirol UM-3 support */
 	/* TODO: add Edirol MD-P1 support */
 
+/* Guillemot devices */
+{
+	/*
+	 * This is for the "Windows Edition" where the external MIDI ports are
+	 * the only MIDI ports; the control data is reported through HID
+	 * interfaces.  The "Macintosh Edition" has ID 0xd002 and uses standard
+	 * compliant USB MIDI ports for external MIDI and controls.
+	 */
+	USB_DEVICE_VENDOR_SPEC(0x06f8, 0xb000),
+	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
+		.vendor_name = "Hercules",
+		.product_name = "DJ Console (WE)",
+		.ifnum = 4,
+		.type = QUIRK_MIDI_FIXED_ENDPOINT,
+		.data = & (const snd_usb_midi_endpoint_info_t) {
+			.out_cables = 0x0001,
+			.in_cables = 0x0001
+		}
+	}
+},
+
 /* Midiman/M-Audio devices */
 {
 	USB_DEVICE_VENDOR_SPEC(0x0763, 0x1002),
