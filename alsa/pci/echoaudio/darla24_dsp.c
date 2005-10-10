@@ -33,7 +33,7 @@ static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer);
 
 static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 {
-	int err, i;
+	int err;
 
 	DE_INIT(("init_hw() - Darla24\n"));
 	snd_assert((subdevice_id & 0xfff0) == DARLA24, return -ENODEV);

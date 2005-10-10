@@ -41,7 +41,7 @@ static int write_control_reg(echoaudio_t *chip, u32 ctl, u32 frq, char force);
 
 static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 {
-	int err, i;
+	int err;
 
 	DE_INIT(("init_hw() - Echo3G\n"));
 	snd_assert((subdevice_id & 0xfff0) == ECHO3G, return -ENODEV);
