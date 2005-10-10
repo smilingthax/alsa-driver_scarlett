@@ -4,6 +4,19 @@
 #include <linux/version.h>
 #include <linux/config.h>
 
+#ifdef CONFIG_SND_DEBUG_MEMORY
+#include <linux/slab.h>
+void *snd_wrapper_kmalloc(size_t size, unsigned int flags)
+{
+	return kmalloc(size, flags);
+}
+
+void snd_wrapper_kfree(const void *obj)
+{
+	kfree(obj);
+}
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #include "sndversions.h"
@@ -18,8 +31,6 @@
 #ifndef __nocast
 #define __nocast
 #endif
-
-#include "../alsa-kernel/core/wrappers.c"
 
 #ifndef CONFIG_HAVE_STRLCPY
 #define strlcat snd_compat_strlcat

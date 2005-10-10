@@ -778,29 +778,50 @@ void snd_card_pci_resume(struct pci_dev *dev);
 #endif
 #endif
 
-/* kcalloc */
+/*
+ * memory allocator wrappers
+ */
+#ifdef CONFIG_SND_DEBUG_MEMORY
+
+void *snd_hidden_kmalloc(size_t size, unsigned int __nocast flags);
+void *snd_hidden_kzalloc(size_t size, unsigned int __nocast flags);
+void *snd_hidden_kcalloc(size_t n, size_t size, unsigned int __nocast flags);
+char *snd_hidden_kstrdup(const char *s, unsigned int __nocast flags);
+void snd_hidden_kfree(const void *obj);
+
+void *snd_wrapper_kmalloc(size_t size, unsigned int flags);
+void snd_wrapper_kfree(const void *obj);
+
+#define kmalloc(size, flags) snd_hidden_kmalloc(size, flags)
+#define kzalloc(size, flags) snd_hidden_kzalloc(size, flags)
+#define kcalloc(n, size, flags) snd_hidden_kcalloc(n, size, flags)
+#define kstrdup(s, flags)  snd_hidden_kstrdup(s, flags)
+#define kfree(obj) snd_hidden_kfree(obj)
+
+#define kmalloc_nocheck(size, flags) snd_wrapper_kmalloc(size, flags)
+#define kfree_nocheck(obj) snd_wrapper_kfree(obj)
+
+#else /* ! CONFIG_SND_DEBUG_MEMORY */
+
+#define kmalloc_nocheck(size, flags) kmalloc(size, flags)
+#define kfree_nocheck(obj) kfree(obj)
+
 #ifndef CONFIG_HAVE_KCALLOC
-#ifndef CONFIG_SND_DEBUG_MEMORY
 void *snd_compat_kcalloc(size_t n, size_t size, unsigned int __nocast gfp_flags);
 #define kcalloc(n,s,f) snd_compat_kcalloc(n,s,f)
 #endif
-#endif
 
-/* kstrdup */
 #ifndef CONFIG_HAVE_KSTRDUP
-#ifndef CONFIG_SND_DEBUG_MEMORY
 char *snd_compat_kstrdup(const char *s, unsigned int __nocast gfp_flags);
 #define kstrdup(s,f) snd_compat_kstrdup(s,f)
 #endif
-#endif
 
-/* kcalloc */
 #ifndef CONFIG_HAVE_KZALLOC
-#ifndef CONFIG_SND_DEBUG_MEMORY
 void *snd_compat_kzalloc(size_t n, unsigned int __nocast gfp_flags);
 #define kzalloc(s,f) snd_compat_kzalloc(s,f)
 #endif
-#endif
+
+#endif /* CONFIG_SND_DEBUG_MEMORY */
 
 /* DEFINE_SPIN/RWLOCK (up to 2.6.11-rc2) */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 11)
