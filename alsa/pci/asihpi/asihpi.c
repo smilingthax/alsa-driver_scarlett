@@ -1198,7 +1198,8 @@ static int snd_asihpi_aesebu_format_put(snd_kcontrol_t * kcontrol,
 	if ( ucontrol->value.enumerated.item[0] == 2 )
 		source = HPI_AESEBU_SOURCE_AESEBU;
 
-	snd_runtime_check( func(phSubSys, hControl, source) == 0, return -EINVAL );
+	if ( func(phSubSys, hControl, source) != 0 )
+		return -EINVAL;
 
 	return 1;
 }
@@ -1279,7 +1280,8 @@ static int snd_asihpi_aesebu_tx_clocksource_put(snd_kcontrol_t * kcontrol,
 	if ( ucontrol->value.enumerated.item[0] == 1 )
 		sync = HPI_AESEBU_CLOCKSOURCE_AESEBU_SYNC;
 
-	snd_runtime_check( HPI_AESEBU_Transmitter_SetClockSource(phSubSys, hControl, sync) == 0, return -EINVAL );
+	if ( HPI_AESEBU_Transmitter_SetClockSource(phSubSys, hControl, sync) != 0 )
+		return -EINVAL;
 
 	return 1;
 }
@@ -1303,7 +1305,8 @@ static int __devinit snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi, hpi_co
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Source");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) >= 0, return -EINVAL );
+	if ( ctl_add( card, snd_control, asihpi ) < 0 )
+		return -EINVAL;
 
 	return 0;
 }
@@ -1324,7 +1327,8 @@ static int __devinit snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi, hpi_co
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Format");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) >= 0, return -EINVAL );
+	if ( ctl_add( card, snd_control, asihpi ) < 0 )
+		return -EINVAL;
 
 /* TX Sample rate source*/
 
@@ -1336,7 +1340,8 @@ static int __devinit snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi, hpi_co
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Clock Source");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) >= 0, return -EINVAL );
+	if ( ctl_add( card, snd_control, asihpi ) < 0 )
+		return -EINVAL;
 
 	return 0;
 }
@@ -1459,8 +1464,6 @@ static int snd_asihpi_tuner_band_get(snd_kcontrol_t * kcontrol,
 			break;
 		}
 
-	snd_runtime_check( ucontrol->value.enumerated.item[0] >= 0, return -EINVAL );
-
 	return 0;
 }
 
@@ -1577,7 +1580,8 @@ static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_contro
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Gain");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) == 0, return -EINVAL );
+	if ( ctl_add( card, snd_control, asihpi ) < 0 )
+		return -EINVAL;
 
 /* Band ctl */
 
@@ -1589,7 +1593,8 @@ static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_contro
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Band");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) == 0, return -EINVAL );
+	if ( ctl_add( card, snd_control, asihpi ) < 0 )
+		return -EINVAL;
 
 /* Freq ctl */
 
@@ -1601,7 +1606,8 @@ static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_contro
 	asihpi_ctl_name_prefix( snd_control, asihpi_control );
 	strcat(snd_control->name, " Freq");
 
-	snd_runtime_check( ctl_add( card, snd_control, asihpi ) == 0, return -EINVAL );
+	if ( ctl_add( card, snd_control, asihpi ) < 0 )
+		return -EINVAL;
 
 /* Level meter */
 
@@ -2107,16 +2113,19 @@ static int __devinit snd_card_asihpi_new_mixer(snd_card_asihpi_t * asihpi)
 		case HPI_CONTROL_CONNECTION:	// ignore these
 			continue;
 		case HPI_CONTROL_TUNER:
-			snd_runtime_check( snd_asihpi_tuner_new(asihpi, &asihpi_control,
-					     &snd_control) >= 0, return -EINVAL );
+			if ( snd_asihpi_tuner_new(asihpi, &asihpi_control,
+						  &snd_control) < 0 )
+				return -EINVAL;
 			continue;
 		case HPI_CONTROL_AESEBU_TRANSMITTER:
-			snd_runtime_check( snd_asihpi_aesebu_tx_new(asihpi, &asihpi_control,
-					     &snd_control) >= 0, return -EINVAL );
+			if ( snd_asihpi_aesebu_tx_new(asihpi, &asihpi_control,
+						      &snd_control) < 0 )
+				return -EINVAL;
 			continue;
 		case HPI_CONTROL_AESEBU_RECEIVER:
-			snd_runtime_check( snd_asihpi_aesebu_rx_new(asihpi, &asihpi_control,
-					     &snd_control) >= 0, return -EINVAL );
+			if ( snd_asihpi_aesebu_rx_new(asihpi, &asihpi_control,
+						      &snd_control) < 0 )
+				return -EINVAL;
 			continue;
 		case HPI_CONTROL_MUTE:
 		case HPI_CONTROL_ONOFFSWITCH:
