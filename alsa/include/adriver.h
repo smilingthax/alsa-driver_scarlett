@@ -664,10 +664,12 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs);
 /* msecs_to_jiffies */
 #ifndef CONFIG_HAVE_MSECS_TO_JIFFIES
 #include <linux/jiffies.h>
+#if defined(CONFIG_SUSE_KERNEL) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#define HAVE_VARIABLE_HZ	/* HZ is a variable */
+#endif
 static inline unsigned int jiffies_to_msecs(const unsigned long j)
 {
-/* this will be false if HZ isn't a preprocessor constant: */
-#if HZ > 0
+#ifndef HAVE_VARIABLE_HZ
 	#if HZ <= 1000 && !(1000 % HZ)
 		return (1000 / HZ) * j;
 	#elif HZ > 1000 && !(HZ % 1000)
@@ -688,7 +690,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 {
 	if (m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
 		return MAX_JIFFY_OFFSET;
-#if HZ > 0
+#ifndef HAVE_VARIABLE_HZ
 	#if HZ <= 1000 && !(1000 % HZ)
 		return (m + (1000 / HZ) - 1) / (1000 / HZ);
 	#elif HZ > 1000 && !(HZ % 1000)
