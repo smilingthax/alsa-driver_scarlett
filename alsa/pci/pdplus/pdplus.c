@@ -5869,7 +5869,8 @@ static int __devinit pdplus_register_iomem (
         snd_assert (piomem != NULL, return -ENXIO);
         
         if ((piomem->resource = request_mem_region(start, size, name)) == NULL) {
-        	snd_printk("unable to grab memory region 0x%lx-0x%lx\n", start, start + size - 1);
+		snd_printk(KERN_ERR "unable to grab memory region 0x%lx-0x%lx\n",
+			   start, start + size - 1);
 		LEAVE(-EBUSY);
 	}
 

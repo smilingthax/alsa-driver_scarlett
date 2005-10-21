@@ -181,7 +181,7 @@ static int aci_busy_wait(miro_t * miro)
 			}
 		}
 	}
-	snd_printk("aci_busy_wait() time out\n");
+	snd_printk(KERN_ERR "aci_busy_wait() time out\n");
 	return -EBUSY;
 }
 
@@ -191,7 +191,7 @@ static inline int aci_write(miro_t * miro, unsigned char byte)
 		outb(byte, miro->aci_port + ACI_REG_COMMAND);
 		return 0;
 	} else {
-		snd_printk("aci busy, aci_write(0x%x) stopped.\n", byte);
+		snd_printk(KERN_ERR "aci busy, aci_write(0x%x) stopped.\n", byte);
 		return -EBUSY;
 	}
 }
@@ -204,7 +204,7 @@ static inline int aci_read(miro_t * miro)
 		byte=inb(miro->aci_port + ACI_REG_STATUS);
 		return byte;
 	} else {
-		snd_printk("aci busy, aci_read() stopped.\n");
+		snd_printk(KERN_ERR "aci busy, aci_read() stopped.\n");
 		return -EBUSY;
 	}
 }
@@ -263,7 +263,7 @@ static int snd_miro_get_capture(snd_kcontrol_t * kcontrol,
 	int value;
 
 	if ((value = aci_getvalue(miro, ACI_S_GENERAL)) < 0) {
-		snd_printk("snd_miro_get_capture() failed: %d\n", value);
+		snd_printk(KERN_ERR "snd_miro_get_capture() failed: %d\n", value);
 		return value;
 	}
 
@@ -281,7 +281,7 @@ static int snd_miro_put_capture(snd_kcontrol_t * kcontrol,
 	value = !(ucontrol->value.integer.value[0]);
 
 	if ((error = aci_setvalue(miro, ACI_SET_SOLOMODE, value)) < 0) {
-		snd_printk("snd_miro_put_capture() failed: %d\n", error);
+		snd_printk(KERN_ERR "snd_miro_put_capture() failed: %d\n", error);
 		return error;
 	}
 
@@ -321,7 +321,7 @@ static int snd_miro_get_preamp(snd_kcontrol_t * kcontrol,
 	}
 
 	if ((value = aci_getvalue(miro, ACI_GET_PREAMP)) < 0) {
-		snd_printk("snd_miro_get_preamp() failed: %d\n", value);
+		snd_printk(KERN_ERR "snd_miro_get_preamp() failed: %d\n", value);
 		return value;
 	}
 	
@@ -339,7 +339,7 @@ static int snd_miro_put_preamp(snd_kcontrol_t * kcontrol,
 	value = ucontrol->value.integer.value[0];
 
 	if ((error = aci_setvalue(miro, ACI_SET_PREAMP, value)) < 0) {
-		snd_printk("snd_miro_put_preamp() failed: %d\n", error);
+		snd_printk(KERN_ERR "snd_miro_put_preamp() failed: %d\n", error);
 		return error;
 	}
 
@@ -376,7 +376,7 @@ static int snd_miro_put_amp(snd_kcontrol_t * kcontrol,
 	value = ucontrol->value.integer.value[0];
 
 	if ((error = aci_setvalue(miro, ACI_SET_POWERAMP, value)) < 0) {
-		snd_printk("snd_miro_put_amp() to %d failed: %d\n", value, error);
+		snd_printk(KERN_ERR "snd_miro_put_amp() to %d failed: %d\n", value, error);
 		return error;
 	}
 
@@ -431,12 +431,12 @@ static int snd_miro_get_double(snd_kcontrol_t *kcontrol,
 	int left_reg = right_reg + 1;
 
 	if ((right_val = aci_getvalue(miro, right_reg)) < 0) {
-		snd_printk("aci_getvalue(%d) failed: %d\n", right_reg, right_val);
+		snd_printk(KERN_ERR "aci_getvalue(%d) failed: %d\n", right_reg, right_val);
 		return right_val;
 	}
 
 	if ((left_val = aci_getvalue(miro, left_reg)) < 0) {
-		snd_printk("aci_getvalue(%d) failed: %d\n", left_reg, left_val);
+		snd_printk(KERN_ERR "aci_getvalue(%d) failed: %d\n", left_reg, left_val);
 		return left_val;
 	}
 
@@ -489,12 +489,12 @@ static int snd_miro_put_double(snd_kcontrol_t *kcontrol,
 	getreg_left = getreg_right + 1;
 
 	if ((left_old = aci_getvalue(miro, getreg_left)) < 0) {
-		snd_printk("aci_getvalue(%d) failed: %d\n", getreg_left, left_old);
+		snd_printk(KERN_ERR "aci_getvalue(%d) failed: %d\n", getreg_left, left_old);
 		return left_old;
 	}
 
 	if ((right_old = aci_getvalue(miro, getreg_right)) < 0) {
-		snd_printk("aci_getvalue(%d) failed: %d\n", getreg_right, right_old);
+		snd_printk(KERN_ERR "aci_getvalue(%d) failed: %d\n", getreg_right, right_old);
 		return right_old;
 	}
 
@@ -509,24 +509,28 @@ static int snd_miro_put_double(snd_kcontrol_t *kcontrol,
 
 		if (left >= 0) {
 			if ((error = aci_setvalue(miro, setreg_left, left)) < 0) {
-				snd_printk("aci_setvalue(%d) failed: %d\n", left, error);
+				snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n",
+					   left, error);
 				return error;
 			}
 		} else {
 			if ((error = aci_setvalue(miro, setreg_left, 0x80 - left)) < 0) {
-				snd_printk("aci_setvalue(%d) failed: %d\n", 0x80 - left, error);
+				snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n",
+					   0x80 - left, error);
 				return error;
 			}
 		}
 
 		if (right >= 0) {
 			if ((error = aci_setvalue(miro, setreg_right, right)) < 0) {
-				snd_printk("aci_setvalue(%d) failed: %d\n", right, error);
+				snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n",
+					   right, error);
 				return error;
 			}
 		} else {
 			if ((error = aci_setvalue(miro, setreg_right, 0x80 - right)) < 0) {
-				snd_printk("aci_setvalue(%d) failed: %d\n", 0x80 - right, error);
+				snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n",
+					   0x80 - right, error);
 				return error;
 			}
 		}
@@ -539,11 +543,13 @@ static int snd_miro_put_double(snd_kcontrol_t *kcontrol,
 		right_old = 0x20 - right_old;
 
 		if ((error = aci_setvalue(miro, setreg_left, 0x20 - left)) < 0) {
-			snd_printk("aci_setvalue(%d) failed: %d\n", 0x20 - left, error);
+			snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n",
+				   0x20 - left, error);
 			return error;
 		}
 		if ((error = aci_setvalue(miro, setreg_right, 0x20 - right)) < 0) {
-			snd_printk("aci_setvalue(%d) failed: %d\n", 0x20 - right, error);
+			snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n",
+				   0x20 - right, error);
 			return error;
 		}
 	}
@@ -644,7 +650,7 @@ static int __devinit snd_set_aci_init_values(miro_t *miro)
 
 	if ((miro->aci_product == 'A') && wss) {
 		if ((error = aci_setvalue(miro, ACI_SET_WSS, wss)) < 0) {
-			snd_printk("enabling WSS mode failed\n");
+			snd_printk(KERN_ERR "enabling WSS mode failed\n");
 			return error;
 		}
 	}
@@ -653,7 +659,7 @@ static int __devinit snd_set_aci_init_values(miro_t *miro)
 
 	if (ide) {
 		if ((error = aci_setvalue(miro, ACI_SET_IDE, ide)) < 0) {
-			snd_printk("enabling IDE port failed\n");
+			snd_printk(KERN_ERR "enabling IDE port failed\n");
 			return error;
 		}
 	}
@@ -663,7 +669,7 @@ static int __devinit snd_set_aci_init_values(miro_t *miro)
 	for (idx = 0; idx < ARRAY_SIZE(aci_init_values); idx++)
                 if ((error = aci_setvalue(miro, aci_init_values[idx][0], 
 					  aci_init_values[idx][1])) < 0) {
-                        snd_printk("aci_setvalue(%d) failed: %d\n", 
+			snd_printk(KERN_ERR "aci_setvalue(%d) failed: %d\n", 
 				   aci_init_values[idx][0], error);
                         return error;
                 }
@@ -780,7 +786,7 @@ static int __devinit snd_miro_init(miro_t *chip, unsigned short hardware)
 		break;
 
 	default:
-		snd_printk("sorry, no support for %d\n", hardware);
+		snd_printk(KERN_ERR "sorry, no support for %d\n", hardware);
 		return -ENODEV;
 	}
 
@@ -810,7 +816,7 @@ static unsigned char snd_miro_read(miro_t *chip,
 		break;
 
 	default:
-		snd_printk("sorry, no support for %d\n", chip->hardware);
+		snd_printk(KERN_ERR "sorry, no support for %d\n", chip->hardware);
 	}
 
 	spin_unlock_irqrestore(&chip->lock, flags);
@@ -839,7 +845,7 @@ static void snd_miro_write(miro_t *chip, unsigned char reg,
 		break;
 
 	default:
-		snd_printk("sorry, no support for %d\n", chip->hardware);
+		snd_printk(KERN_ERR "sorry, no support for %d\n", chip->hardware);
 	}
 
 	spin_unlock_irqrestore(&chip->lock, flags);
@@ -995,7 +1001,7 @@ static int __devinit snd_miro_configure(miro_t *chip)
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(5), 0x02, 0x02);
 		break;
 	default:
-		snd_printk("chip %d not supported\n", chip->hardware);
+		snd_printk(KERN_ERR "chip %d not supported\n", chip->hardware);
 		return -EINVAL;
 	}
 
@@ -1013,7 +1019,7 @@ static int __devinit snd_miro_configure(miro_t *chip)
 		wss_base_bits = 0x02;
 		break;
 	default:
-		snd_printk("WSS port 0x%lx not valid\n", chip->wss_base);
+		snd_printk(KERN_ERR "WSS port 0x%lx not valid\n", chip->wss_base);
 		goto __skip_base;
 	}
 	snd_miro_write_mask(chip, OPTi9XX_MC_REG(1), wss_base_bits << 4, 0x30);
@@ -1036,7 +1042,7 @@ __skip_base:
 		irq_bits = 0x04;
 		break;
 	default:
-		snd_printk("WSS irq # %d not valid\n", chip->irq);
+		snd_printk(KERN_ERR "WSS irq # %d not valid\n", chip->irq);
 		goto __skip_resources;
 	}
 
@@ -1051,12 +1057,12 @@ __skip_base:
 		dma_bits = 0x03;
 		break;
 	default:
-		snd_printk("WSS dma1 # %d not valid\n", chip->dma1);
+		snd_printk(KERN_ERR "WSS dma1 # %d not valid\n", chip->dma1);
 		goto __skip_resources;
 	}
 
 	if (chip->dma1 == chip->dma2) {
-		snd_printk("don't want to share dmas\n");
+		snd_printk(KERN_ERR "don't want to share dmas\n");
 		return -EBUSY;
 	}
 
@@ -1065,7 +1071,7 @@ __skip_base:
 	case 1:
 		break;
 	default:
-		snd_printk("WSS dma2 # %d not valid\n", chip->dma2);
+		snd_printk(KERN_ERR "WSS dma2 # %d not valid\n", chip->dma2);
 		goto __skip_resources;
 	}
 	dma_bits |= 0x04;
@@ -1093,8 +1099,8 @@ __skip_resources:
 			mpu_port_bits = 0x00;
 			break;
 		default:
-			snd_printk("MPU-401 port 0x%lx not valid\n",
-				chip->mpu_port);
+			snd_printk(KERN_ERR "MPU-401 port 0x%lx not valid\n",
+				   chip->mpu_port);
 			goto __skip_mpu;
 		}
 
@@ -1112,8 +1118,8 @@ __skip_resources:
 			mpu_irq_bits = 0x01;
 			break;
 		default:
-			snd_printk("MPU-401 irq # %d not valid\n",
-				chip->mpu_irq);
+			snd_printk(KERN_ERR "MPU-401 irq # %d not valid\n",
+				   chip->mpu_irq);
 			goto __skip_mpu;
 		}
 
@@ -1168,38 +1174,38 @@ static int __devinit snd_card_miro_aci_detect(snd_card_t *card, miro_t * miro)
 	miro->aci_port = (regval & 0x10) ? 0x344: 0x354;
 
 	if ((miro->res_aci_port = request_region(miro->aci_port, 3, "miro aci")) == NULL) {
-		snd_printk("aci i/o area 0x%lx-0x%lx already used.\n", 
+		snd_printk(KERN_ERR "aci i/o area 0x%lx-0x%lx already used.\n", 
 			   miro->aci_port, miro->aci_port+2);
 		return -ENOMEM;
 	}
 
         /* force ACI into a known state */
-	for (i=0; i<3; i++)
+	for (i = 0; i < 3; i++)
 		if (aci_cmd(miro, ACI_ERROR_OP, -1, -1) < 0) {
 			snd_card_free(card);
-			snd_printk("can't force aci into known state.\n");
-			return -EFAULT;
-	}
+			snd_printk(KERN_ERR "can't force aci into known state.\n");
+			return -ENXIO;
+		}
 
 	if ((miro->aci_vendor=aci_cmd(miro, ACI_READ_IDCODE, -1, -1)) < 0 ||
 	    (miro->aci_product=aci_cmd(miro, ACI_READ_IDCODE, -1, -1)) < 0) {
 		snd_card_free(card);
-		snd_printk("can't read aci id on 0x%lx.\n", miro->aci_port);
-		return -EFAULT;
+		snd_printk(KERN_ERR "can't read aci id on 0x%lx.\n", miro->aci_port);
+		return -ENXIO;
 	}
 
 	if ((miro->aci_version=aci_cmd(miro, ACI_READ_VERSION, -1, -1)) < 0) {
 		snd_card_free(card);
-		snd_printk("can't read aci version on 0x%lx.\n", 
+		snd_printk(KERN_ERR "can't read aci version on 0x%lx.\n", 
 			   miro->aci_port);
-		return -EFAULT;
+		return -ENXIO;
 	}
 
-	if (aci_cmd(miro, ACI_INIT, -1, -1)<0 ||
-	    aci_cmd(miro, ACI_ERROR_OP, ACI_ERROR_OP, ACI_ERROR_OP)<0 ||
-	    aci_cmd(miro, ACI_ERROR_OP, ACI_ERROR_OP, ACI_ERROR_OP)<0) {
-		snd_printk("can't initialize aci.\n"); 
-		return -EFAULT;
+	if (aci_cmd(miro, ACI_INIT, -1, -1) < 0 ||
+	    aci_cmd(miro, ACI_ERROR_OP, ACI_ERROR_OP, ACI_ERROR_OP) < 0 ||
+	    aci_cmd(miro, ACI_ERROR_OP, ACI_ERROR_OP, ACI_ERROR_OP) < 0) {
+		snd_printk(KERN_ERR "can't initialize aci.\n"); 
+		return -ENXIO;
 	}
 
 	return 0;
@@ -1250,7 +1256,7 @@ static int __devinit snd_card_miro_probe(void)
 
 	if ((error = snd_card_miro_aci_detect(card, miro)) < 0) {
 		snd_card_free(card);
-		snd_printk("unable to detect aci chip\n");
+		snd_printk(KERN_ERR "unable to detect aci chip\n");
 		return -ENODEV;
 	}
 
@@ -1259,14 +1265,15 @@ static int __devinit snd_card_miro_probe(void)
 
 	if ((error = snd_card_miro_detect(card, miro)) < 0) {
 		snd_card_free(card);
-		snd_printk("unable to detect OPTi9xx chip\n");
+		snd_printk(KERN_ERR "unable to detect OPTi9xx chip\n");
 		return -ENODEV;
 	}
 
 	if (! miro->res_mc_base &&
-	    (miro->res_mc_base = request_region(miro->mc_base, miro->mc_base_size, "miro (OPTi9xx MC)")) == NULL) {
+	    (miro->res_mc_base = request_region(miro->mc_base, miro->mc_base_size,
+						"miro (OPTi9xx MC)")) == NULL) {
 		snd_card_free(card);
-		snd_printk("request for OPTI9xx MC failed\n");
+		snd_printk(KERN_ERR "request for OPTI9xx MC failed\n");
 		return -ENOMEM;
 	}
 
@@ -1281,7 +1288,7 @@ static int __devinit snd_card_miro_probe(void)
 	if (miro->wss_base == SNDRV_AUTO_PORT) {
 		if ((miro->wss_base = snd_legacy_find_free_ioport(possible_ports, 4)) < 0) {
 			snd_card_free(card);
-			snd_printk("unable to find a free WSS port\n");
+			snd_printk(KERN_ERR "unable to find a free WSS port\n");
 			return -EBUSY;
 		}
 	}
@@ -1289,35 +1296,35 @@ static int __devinit snd_card_miro_probe(void)
 	if (miro->mpu_port == SNDRV_AUTO_PORT) {
 		if ((miro->mpu_port = snd_legacy_find_free_ioport(possible_mpu_ports, 2)) < 0) {
 			snd_card_free(card);
-			snd_printk("unable to find a free MPU401 port\n");
+			snd_printk(KERN_ERR "unable to find a free MPU401 port\n");
 			return -EBUSY;
 		}
 	}
 	if (miro->irq == SNDRV_AUTO_IRQ) {
 		if ((miro->irq = snd_legacy_find_free_irq(possible_irqs)) < 0) {
 			snd_card_free(card);
-			snd_printk("unable to find a free IRQ\n");
+			snd_printk(KERN_ERR "unable to find a free IRQ\n");
 			return -EBUSY;
 		}
 	}
 	if (miro->mpu_irq == SNDRV_AUTO_IRQ) {
 		if ((miro->mpu_irq = snd_legacy_find_free_irq(possible_mpu_irqs)) < 0) {
 			snd_card_free(card);
-			snd_printk("unable to find a free MPU401 IRQ\n");
+			snd_printk(KERN_ERR "unable to find a free MPU401 IRQ\n");
 			return -EBUSY;
 		}
 	}
 	if (miro->dma1 == SNDRV_AUTO_DMA) {
 		if ((miro->dma1 = snd_legacy_find_free_dma(possible_dma1s)) < 0) {
 			snd_card_free(card);
-			snd_printk("unable to find a free DMA1\n");
+			snd_printk(KERN_ERR "unable to find a free DMA1\n");
 			return -EBUSY;
 		}
 	}
 	if (miro->dma2 == SNDRV_AUTO_DMA) {
 		if ((miro->dma2 = snd_legacy_find_free_dma(possible_dma2s[miro->dma1 % 4])) < 0) {
 			snd_card_free(card);
-			snd_printk("unable to find a free DMA2\n");
+			snd_printk(KERN_ERR "unable to find a free DMA2\n");
 			return -EBUSY;
 		}
 	}
@@ -1374,10 +1381,11 @@ static int __devinit snd_card_miro_probe(void)
 		default:
 			sprintf(card->shortname, 
 				"unknown miro");
-			snd_printk("unknown miro aci id\n");
+			snd_printk(KERN_INFO "unknown miro aci id\n");
+			break;
 		}
 	} else {
-		snd_printk("found unsupported aci card\n");
+		snd_printk(KERN_INFO "found unsupported aci card\n");
 		sprintf(card->shortname, "unknown Cardinal Technologies");
 	}
 
@@ -1392,14 +1400,14 @@ static int __devinit snd_card_miro_probe(void)
 		if ((error = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
 				miro->mpu_port, 0, miro->mpu_irq, SA_INTERRUPT,
 				&rmidi)))
-			snd_printk("no MPU-401 device at 0x%lx?\n", miro->mpu_port);
+			snd_printk(KERN_WARNING "no MPU-401 device at 0x%lx?\n", miro->mpu_port);
 
 	if (miro->fm_port > 0 && miro->fm_port != SNDRV_AUTO_PORT) {
 		opl3_t *opl3 = NULL;
 		opl4_t *opl4;
 		if (snd_opl4_create(card, miro->fm_port, miro->fm_port - 8, 
 				    2, &opl3, &opl4) < 0)
-			snd_printk("no OPL4 device at 0x%lx\n", miro->fm_port);
+			snd_printk(KERN_WARNING "no OPL4 device at 0x%lx\n", miro->fm_port);
 	}
 
 	if ((error = snd_set_aci_init_values(miro)) < 0) {

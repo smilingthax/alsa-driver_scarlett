@@ -179,7 +179,7 @@ static int read_sn(echoaudio_t *chip)
 
 	for (i = 0; i < 5; i++) {
 		if (read_dsp(chip, &sn[i])) {
-			snd_printk((KERN_ERR "Failed to read serial number\n"));
+			snd_printk(KERN_ERR "Failed to read serial number\n");
 			return -EIO;
 		}
 	}
