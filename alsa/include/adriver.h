@@ -976,4 +976,11 @@ static inline void snd_pci_compat_unregister_driver(struct snd_compat_pci_driver
 } while (0)
 #endif
 
+/* schedule_timeout_[un]interruptible() wrappers */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+#include <linux/sched.h>
+#define schedule_timeout_interruptible(x) ({set_current_state(TASK_INTERRUPTIBLE); schedule_timeout(x);})
+#define schedule_timeout_uninterruptible(x) ({set_current_state(TASK_UNINTERRUPTIBLE); schedule_timeout(x);})
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
