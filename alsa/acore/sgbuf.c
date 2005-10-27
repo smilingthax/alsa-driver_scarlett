@@ -9,6 +9,7 @@
 #endif
 
 #include "config.h"
+#undef CONFIG_SND_DEBUG_MEMORY
 #include "adriver.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
