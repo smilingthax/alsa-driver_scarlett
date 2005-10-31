@@ -2204,6 +2204,34 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
+dnl simplified suspend/resume for 2.6.14+
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for old driver suspend/resume callbacks)
+  old_driver_suspend="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/device.h>
+],[
+  static struct device_driver driver;
+  driver.resume(NULL, 0);
+],
+    AC_MSG_RESULT("yes");old_driver_suspend="1",
+    AC_MSG_RESULT("no");old_driver_suspend="0",
+    AC_MSG_RESULT("unknown");old_driver_suspend="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_OLD_DRIVER_SUSPEND=$old_driver_suspend
+  dnl AC_SUBST(CONFIG_SND_OLD_DRIVER_SUSPEND)
+  if test "$CONFIG_SND_OLD_DRIVER_SUSPEND" = "1"; then
+    AC_DEFINE(CONFIG_SND_OLD_DRIVER_SUSPEND)
+  fi
+fi
+
 dnl nested class_device for 2.6.14+
 if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_MSG_CHECKING(for nested class_device)

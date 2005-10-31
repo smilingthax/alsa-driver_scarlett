@@ -1,0 +1,32 @@
+--- ../../alsa-kernel/pci/ac97/ac97_bus.c	2005-10-31 13:57:30.000000000 +0100
++++ ac97_bus.c	2005-10-31 14:08:32.000000000 +0100
+@@ -1,3 +1,4 @@
++#include <sound/driver.h>
+ /*
+  * Linux driver model AC97 bus interface
+  *
+@@ -31,8 +32,11 @@
+ 	int ret = 0;
+ 
+ 	if (dev->driver && dev->driver->suspend)
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++		ret = dev->driver->suspend(dev, state, SUSPEND_POWER_DOWN);
++#else
+ 		ret = dev->driver->suspend(dev, state);
+-
++#endif
+ 	return ret;
+ }
+ 
+@@ -41,7 +45,11 @@
+ 	int ret = 0;
+ 
+ 	if (dev->driver && dev->driver->resume)
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++		ret = dev->driver->resume(dev, RESUME_POWER_ON);
++#else
+ 		ret = dev->driver->resume(dev);
++#endif
+ 
+ 	return ret;
+ }

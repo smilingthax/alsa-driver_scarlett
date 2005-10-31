@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/init.c	2005-09-05 00:12:28.000000000 +0200
-+++ init.c	2005-09-05 00:12:36.000000000 +0200
+--- ../alsa-kernel/core/init.c	2005-10-31 13:57:30.000000000 +0100
++++ init.c	2005-10-31 14:05:14.000000000 +0100
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
@@ -15,7 +15,7 @@
  		f_ops->release = file->f_op->release;
  		f_ops->poll = snd_disconnect_poll;
  
-@@ -662,6 +665,7 @@
+@@ -663,6 +666,7 @@
  }
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
@@ -23,7 +23,22 @@
  /*
   * generic device without a proper bus using platform_device
   * (e.g. ISA)
-@@ -749,6 +753,24 @@
+@@ -677,9 +681,14 @@
+ #define SND_GENERIC_NAME	"snd_generic"
+ 
+ #ifdef CONFIG_PM
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++static int snd_generic_suspend(struct device *dev, pm_message_t state, u32 level);
++static int snd_generic_resume(struct device *dev, u32 level);
++#else
+ static int snd_generic_suspend(struct device *dev, pm_message_t state);
+ static int snd_generic_resume(struct device *dev);
+ #endif
++#endif
+ 
+ /* initialized in sound.c */
+ struct device_driver snd_generic_driver = {
+@@ -750,6 +759,24 @@
  		snd_card_set_dev(card, &card->generic_dev->pdev.dev);
  	return 0;
  }
@@ -48,15 +63,47 @@
  #endif /* CONFIG_SND_GENERIC_DRIVER */
  
  #ifdef CONFIG_PM
-@@ -817,6 +838,7 @@
+@@ -818,11 +845,20 @@
  }
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  /* suspend/resume callbacks for snd_generic platform device */
- static int snd_generic_suspend(struct device *dev, pm_message_t state, u32 level)
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++static int snd_generic_suspend(struct device *dev, pm_message_t state, u32 level)
++#else
+ static int snd_generic_suspend(struct device *dev, pm_message_t state)
++#endif
  {
-@@ -869,9 +891,83 @@
+ 	snd_card_t *card;
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++	if (level != SUSPEND_DISABLE)
++		return 0;
++#endif
+ 	card = get_snd_generic_card(dev);
+ 	if (card->power_state == SNDRV_CTL_POWER_D3hot)
+ 		return 0;
+@@ -832,10 +868,18 @@
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++static int snd_generic_resume(struct device *dev, u32 level)
++#else
+ static int snd_generic_resume(struct device *dev)
++#endif
+ {
+ 	snd_card_t *card;
+ 
++#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
++	if (level != RESUME_ENABLE)
++		return 0;
++#endif
+ 	card = get_snd_generic_card(dev);
+ 	if (card->power_state == SNDRV_CTL_POWER_D0)
+ 		return 0;
+@@ -866,9 +910,83 @@
  		return err;
  	return snd_card_set_pm_callback(card, suspend, resume, private_data);
  }
@@ -140,7 +187,7 @@
  int snd_card_pci_suspend(struct pci_dev *dev, pm_message_t state)
  {
  	snd_card_t *card = pci_get_drvdata(dev);
-@@ -881,7 +977,11 @@
+@@ -878,7 +996,11 @@
  	if (card->power_state == SNDRV_CTL_POWER_D3hot)
  		return 0;
  	err = card->pm_suspend(card, PMSG_SUSPEND);
@@ -152,7 +199,7 @@
  	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
  	return err;
  }
-@@ -894,11 +994,19 @@
+@@ -891,11 +1013,19 @@
  	if (card->power_state == SNDRV_CTL_POWER_D0)
  		return 0;
  	/* restore the PCI config space */
