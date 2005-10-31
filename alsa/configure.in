@@ -2204,6 +2204,34 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
+dnl nested class_device for 2.6.14+
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for nested class_device)
+  nested_class_device="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/device.h>
+],[
+  struct class_device dev;
+  dev.parent = 0;
+],
+    AC_MSG_RESULT("yes");nested_class_device="1",
+    AC_MSG_RESULT("no");nested_class_device="0",
+    AC_MSG_RESULT("unknown");nested_class_device="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_NESTED_CLASS_DEVICE=$nested_class_device
+  dnl AC_SUBST(CONFIG_SND_NESTED_CLASS_DEVICE)
+  if test "$CONFIG_SND_NESTED_CLASS_DEVICE" = "1"; then
+    AC_DEFINE(CONFIG_SND_NESTED_CLASS_DEVICE)
+  fi
+fi
+
 dnl New unlocked/compat_ioctl
 if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_MSG_CHECKING(for new unlocked/compat_ioctl)
