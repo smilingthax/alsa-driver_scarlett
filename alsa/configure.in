@@ -612,6 +612,8 @@ struct bus_type {
 };
 #endif
 ])
+CHECK_KERNEL_HEADER(linux/platform_device.h, [#include <linux/device.h>
+])
 CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
 #include <linux/delay.h>
 ])
