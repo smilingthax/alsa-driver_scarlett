@@ -581,6 +581,10 @@ AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$CONFIG_SND_KERNELDIR")
 AC_SUBST(CONFIG_SND_KERNELDIR)
 AC_SUBST(MAKE_ADDS)
 
+dnl Remove header hacks
+rm -f include/linux/*.h
+rm -f include/asm/*.h
+
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
 CHECK_KERNEL_HEADER(linux/compiler.h)
@@ -2408,10 +2412,13 @@ dnl Output files...
 AC_OUTPUT(version Makefile.conf snddevices \
 	  utils/alsa-driver.spec utils/buildrpm toplevel.config \
 	  utils/alsasound utils/alsasound.posix \
-	  include/linux/pci_ids.h)
+	  include/pci_ids_compat.h)
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
+
+dnl Hack pci_ids.h if necessary
+ln -sf ../pci_ids_compat.h include/linux/pci_ids.h
 
 dnl Hack autoconf.h if necessary
 if test "$CONFIG_SND_MODULE" = y; then
