@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2005-10-31 12:28:33.000000000 +0100
-+++ sound.c	2005-10-31 12:28:52.000000000 +0100
+--- ../alsa-kernel/core/sound.c	2005-11-14 15:12:41.000000000 +0100
++++ sound.c	2005-11-14 15:33:15.000000000 +0100
 @@ -64,7 +64,15 @@
  
  static DECLARE_MUTEX(sound_mutex);
@@ -38,7 +38,7 @@
  
  	up(&sound_mutex);
  	return 0;
-@@ -263,7 +281,11 @@
+@@ -263,7 +277,11 @@
  
  	if (strncmp(mptr->name, "controlC", 8) || card->number >= cards_limit) /* created in sound.c */
  		devfs_remove("snd/%s", mptr->name);
@@ -50,7 +50,7 @@
  
  	list_del(&mptr->list);
  	up(&sound_mutex);
-@@ -328,6 +350,19 @@
+@@ -328,9 +346,24 @@
   *  INIT PART
   */
  
@@ -68,9 +68,14 @@
 +#endif
 +
  #ifdef CONFIG_SND_GENERIC_DRIVER
- extern struct device_driver snd_generic_driver;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+ extern struct platform_driver snd_generic_driver;
  #endif
-@@ -353,17 +388,24 @@
++#endif
+ 
+ static int __init alsa_sound_init(void)
+ {
+@@ -353,17 +386,24 @@
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
  		devfs_remove("snd");
@@ -81,7 +86,7 @@
  	snd_info_minor_register();
  #ifdef CONFIG_SND_GENERIC_DRIVER
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	driver_register(&snd_generic_driver);
+ 	platform_driver_register(&snd_generic_driver);
  #endif
 +#endif
  	for (controlnum = 0; controlnum < cards_limit; controlnum++)
@@ -95,12 +100,12 @@
  	return 0;
  }
  
-@@ -375,13 +417,20 @@
+@@ -375,13 +415,20 @@
  		devfs_remove("snd/controlC%d", controlnum);
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	driver_unregister(&snd_generic_driver);
+ 	platform_driver_unregister(&snd_generic_driver);
  #endif
 +#endif
  	snd_info_minor_unregister();
@@ -116,7 +121,7 @@
  }
  
  module_init(alsa_sound_init)
-@@ -483,3 +532,5 @@
+@@ -483,3 +530,5 @@
  #if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
  EXPORT_SYMBOL(snd_verbose_printd);
  #endif
