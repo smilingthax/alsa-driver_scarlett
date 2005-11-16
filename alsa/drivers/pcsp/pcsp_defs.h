@@ -73,18 +73,18 @@ typedef struct pcsp_struct {
 	int max_treble;
 	int treble;
 	int bass;
+	int enable;
 	unsigned char vl_tab[256];
 } pcsp_t;
 
-extern void pcsp_set_irq(chip_t * chip, int (*func) (chip_t * chip));
-extern void pcsp_release_irq(chip_t * chip);
+extern int pcsp_set_timer_hook(chip_t * chip, int (*func) (chip_t * chip));
+extern void pcsp_release_timer_hook(chip_t * chip);
+extern void pcsp_lock_input(int lock);
 
 extern int snd_pcsp_new_pcm(pcsp_t * chip);
 extern int snd_pcsp_new_mixer(pcsp_t * chip);
 extern void pcsp_start_timer(pcsp_t * chip);
 extern void pcsp_stop_timer(pcsp_t * chip);
 extern void pcsp_calc_voltab(pcsp_t * chip);
-
-extern spinlock_t i8253_lock;
 
 #endif
