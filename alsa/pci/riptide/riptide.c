@@ -1634,14 +1634,6 @@ static snd_pcm_ops_t snd_riptide_capture_ops = {
 	.pointer = snd_riptide_pointer,
 };
 
-static void snd_riptide_pcm_free(snd_pcm_t * pcm)
-{
-	riptide_t *chip = pcm->private_data;
-
-	chip->pcm = NULL;
-	snd_pcm_lib_preallocate_free_for_all(pcm);
-}
-
 static int __devinit
 snd_riptide_pcm(riptide_t * chip, int device, snd_pcm_t ** rpcm)
 {
@@ -1658,7 +1650,6 @@ snd_riptide_pcm(riptide_t * chip, int device, snd_pcm_t ** rpcm)
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
 			&snd_riptide_capture_ops);
 	pcm->private_data = chip;
-	pcm->private_free = snd_riptide_pcm_free;
 	pcm->info_flags = 0;
 	strcpy(pcm->name, "RIPTIDE");
 	chip->pcm = pcm;
