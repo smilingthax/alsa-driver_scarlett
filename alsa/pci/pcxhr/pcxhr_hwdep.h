@@ -34,7 +34,7 @@
 
 
 /* exported */
-int  pcxhr_setup_firmware(pcxhr_mgr_t *mgr);
-void pcxhr_reset_board(pcxhr_mgr_t *mgr);
+int  pcxhr_setup_firmware(struct pcxhr_mgr *mgr);
+void pcxhr_reset_board(struct pcxhr_mgr *mgr);
 
 #endif /* __SOUND_PCXHR_HWDEP_H */

@@ -36,11 +36,11 @@
 #define PCXHR_GRANULARITY		96	/* transfer granularity (should be min 96 and multiple of 48) */
 #define PCXHR_GRANULARITY_MIN		96	/* transfer granularity of pipes and the dsp time (MBOX4) */
 
-typedef struct snd_pcxhr pcxhr_t;
-typedef struct snd_pcxhr_mgr pcxhr_mgr_t;
+struct snd_pcxhr;
+struct pcxhr_mgr;
 
-typedef struct snd_pcxhr_stream pcxhr_stream_t;
-typedef struct snd_pcxhr_pipe pcxhr_pipe_t;
+struct pcxhr_stream;
+struct pcxhr_pipe;
 
 enum pcxhr_clock_type {
 	PCXHR_CLOCK_TYPE_INTERNAL = 0,
@@ -52,9 +52,9 @@ enum pcxhr_clock_type {
 	PCXHR_CLOCK_TYPE_AES_4,
 };
 
-struct snd_pcxhr_mgr {
+struct pcxhr_mgr {
 	unsigned int num_cards;
-	pcxhr_t *chip[PCXHR_MAX_CARDS];
+	struct snd_pcxhr *chip[PCXHR_MAX_CARDS];
 
 	struct pci_dev *pci;
 
@@ -69,6 +69,7 @@ struct snd_pcxhr_mgr {
 
 	/* message tasklet */
 	struct tasklet_struct msg_taskq;
+	struct pcxhr_rmh *prmh;
 	/* trigger tasklet */
 	struct tasklet_struct trigger_taskq;
 
@@ -118,10 +119,10 @@ enum pcxhr_stream_status {
 	PCXHR_STREAM_STATUS_PAUSED
 };
 
-struct snd_pcxhr_stream {
-	snd_pcm_substream_t *substream;
+struct pcxhr_stream {
+	struct snd_pcm_substream *substream;
 	snd_pcm_format_t format;
-	pcxhr_pipe_t *pipe;
+	struct pcxhr_pipe *pipe;
 
 	enum pcxhr_stream_status status;	/* free, open, running, draining, pause */
 
@@ -139,7 +140,7 @@ enum pcxhr_pipe_status {
 	PCXHR_PIPE_DEFINED
 };
 
-struct snd_pcxhr_pipe {
+struct pcxhr_pipe {
 	enum pcxhr_pipe_status status;
 	int is_capture;		/* this is a capture pipe */
 	int first_audio;	/* first audio num */
@@ -147,17 +148,17 @@ struct snd_pcxhr_pipe {
 
 
 struct snd_pcxhr {
-	snd_card_t *card;
-	pcxhr_mgr_t *mgr;
+	struct snd_card *card;
+	struct pcxhr_mgr *mgr;
 	int chip_idx;		/* zero based */
 
-	snd_pcm_t *pcm;		/* PCM */
+	struct snd_pcm *pcm;		/* PCM */
 
-	pcxhr_pipe_t playback_pipe;		/* 1 stereo pipe only */
-	pcxhr_pipe_t capture_pipe[2];		/* 1 stereo pipe or 2 mono pipes */
+	struct pcxhr_pipe playback_pipe;		/* 1 stereo pipe only */
+	struct pcxhr_pipe capture_pipe[2];		/* 1 stereo pipe or 2 mono pipes */
 
-	pcxhr_stream_t playback_stream[PCXHR_PLAYBACK_STREAMS];
-	pcxhr_stream_t capture_stream[2];	/* 1 stereo stream or 2 mono streams */
+	struct pcxhr_stream playback_stream[PCXHR_PLAYBACK_STREAMS];
+	struct pcxhr_stream capture_stream[2];	/* 1 stereo stream or 2 mono streams */
 	int nb_streams_play;
 	int nb_streams_capt;
 
@@ -180,8 +181,8 @@ struct pcxhr_hostport
 };
 
 /* exported */
-int pcxhr_create_pcm(pcxhr_t* chip);
-int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate);
-int pcxhr_get_external_clock(pcxhr_mgr_t *mgr, enum pcxhr_clock_type clock_type, int *sample_rate);
+int pcxhr_create_pcm(struct snd_pcxhr *chip);
+int pcxhr_set_clock(struct pcxhr_mgr *mgr, unsigned int rate);
+int pcxhr_get_external_clock(struct pcxhr_mgr *mgr, enum pcxhr_clock_type clock_type, int *sample_rate);
 
 #endif /* __SOUND_PCXHR_H */
