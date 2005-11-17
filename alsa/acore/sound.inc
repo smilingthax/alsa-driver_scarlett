@@ -1,4 +1,10 @@
 /* misc.c */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+EXPORT_SYMBOL(snd_comat_driver_register);
+EXPORT_SYMBOL(snd_comat_driver_unregister);
+EXPORT_SYMBOL(snd_platform_device_register_simple);
+EXPORT_SYMBOL(snd_platform_bus_type);
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 EXPORT_SYMBOL(try_inc_mod_count);
 EXPORT_SYMBOL(snd_compat_request_region);
@@ -8,6 +14,14 @@ EXPORT_SYMBOL(snd_compat_release_resource);
 EXPORT_SYMBOL(pm_register);
 EXPORT_SYMBOL(pm_unregister);
 EXPORT_SYMBOL(pm_send);
+#endif
+#if defined(CONFIG_PNP) && defined(CONFIG_PM)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#ifndef CONFIG_HAVE_PNP_SUSPEND
+EXPORT_SYMBOL(snd_pnp_register_driver);
+EXPORT_SYMBOL(snd_pnp_register_card_driver);
+#endif
+#endif
 #endif
   /* wrappers */
 #ifndef CONFIG_HAVE_STRLCPY
@@ -46,7 +60,11 @@ EXPORT_SYMBOL(snd_compat_kzalloc);
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 EXPORT_SYMBOL(snd_pci_dev_present);
 #endif
+#ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
+EXPORT_SYMBOL(snd_pci_compat_save_state);
+EXPORT_SYMBOL(snd_pci_compat_restore_state);
 #endif
+#endif /* CONFIG_PCI */
 #ifndef CONFIG_HAVE_MSLEEP
 EXPORT_SYMBOL(snd_compat_msleep);
 #endif

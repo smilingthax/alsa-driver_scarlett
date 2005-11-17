@@ -778,16 +778,6 @@ int snd_pci_dev_present(const struct pci_device_id *ids);
 #endif
 #endif
 
-/* power management compatibility layer */
-#ifdef CONFIG_PM
-#ifdef PCI_OLD_SUSPEND
-void snd_card_pci_suspend(struct pci_dev *dev);
-void snd_card_pci_resume(struct pci_dev *dev);
-#define SND_PCI_PM_CALLBACKS \
-	.suspend = snd_card_pci_suspend,  .resume = snd_card_pci_resume
-#endif
-#endif
-
 /*
  * memory allocator wrappers
  */
@@ -931,6 +921,60 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
 
+/* power management compatibility layer */
+#if defined(CONFIG_PM) && defined(PCI_OLD_SUSPEND)
+struct snd_compat_pci_driver {
+	struct pci_driver real_driver;
+	char *name;
+	const struct pci_device_id *id_table;
+	int (*probe)(struct pci_dev *dev, const struct pci_device_id *id);
+	void (*remove)(struct pci_dev *dev);
+	int (*suspend)(struct pci_dev *dev, u32 state);
+	int (*resume)(struct pci_dev *dev);
+};
+
+static inline void snd_pci_old_suspend(sturct pci_dev *pci)
+{
+	struct snd_compat_pci_driver *driver = (struct snd_compat_pci_driver *)pci->driver;
+	if (driver->suspend)
+		driver->suspend(pci, PMSG_SUSPEND);
+}
+static inline void snd_pci_old_resume(struct pci_dev *pci)
+{
+	struct snd_compat_pci_driver *driver = (struct snd_compat_pci_driver *)pci->driver;
+	if (driver->resume)
+		driver->resume(pci);
+}
+
+static inline int snd_pci_compat_register_driver(struct snd_compat_pci_driver *driver)
+{
+	driver->real_driver.name = driver->name;
+	driver->real_driver.id_table = driver->id_table;
+	driver->real_driver.probe = driver->probe;
+	driver->real_driver.remove = driver->remove;
+	if (driver->suspend || driver->resume) {
+		driver->real_driver.suspend = snd_pci_old_suspend;
+		driver->real_driver.resume = snd_pci_old_resume;
+	} else {
+		driver->real_driver.suspend = driver->suspend;
+		driver->real_driver.resume = driver->resume;
+	}
+	return pci_module_init(&driver->real_driver);
+}
+
+static inline void snd_pci_compat_unregister_driver(struct snd_compat_pci_driver *driver)
+{
+	pci_unregister_driver(&driver->real_driver);
+}
+
+#define pci_driver snd_compat_pci_driver
+#undef pci_register_driver
+#define pci_register_driver snd_pci_compat_register_driver
+#undef pci_unregister_driver
+#define pci_unregister_driver snd_pci_compat_unregister_driver
+
+#else
+
 static inline int snd_pci_compat_register_driver(struct pci_driver *driver)
 {
 	return pci_module_init(driver);
@@ -938,13 +982,39 @@ static inline int snd_pci_compat_register_driver(struct pci_driver *driver)
 
 #undef pci_register_driver
 #define pci_register_driver snd_pci_compat_register_driver
-#endif
-#endif
+
+#endif /* CONFIG_PM && PCI_OLD_SUSPEND */
+#endif /* CONFIG_PCI */
+#endif /* 2.4 */
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+#ifdef CONFIG_PCI
+#ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
+void snd_pci_compat_save_state(struct pci_dev *pci);
+void snd_pci_compat_restore_state(struct pci_dev *pci);
+static inline void snd_pci_orig_save_state(struct pci_dev *pci)
+{
+	pci_save_state(pci);
+}
+static inline void snd_pci_orig_restore_state(struct pci_dev *pci)
+{
+	pci_restore_state(pci);
+}
+
+#undef pci_save_state
+#define pci_save_state		snd_pci_compat_save_state
+#undef pci_restore_state
+#define pci_restore_state	snd_pci_compat_restore_state
+#endif /* !CONFIG_HAVE_NEW_PCI_SAVE_STATE */
+#endif /* CONFIG_PCI */
+#endif /* >= 2.4.0 */
 
 /* pci_get_device() and pci_dev_put() wrappers */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#ifdef CONFIG_PCI
 #define pci_get_device	pci_find_device
 #define pci_dev_put(x)
+#endif
 #endif
 
 /* wrapper for getnstimeofday()
@@ -965,5 +1035,59 @@ static inline int snd_pci_compat_register_driver(struct pci_driver *driver)
 #define schedule_timeout_interruptible(x) ({set_current_state(TASK_INTERRUPTIBLE); schedule_timeout(x);})
 #define schedule_timeout_uninterruptible(x) ({set_current_state(TASK_UNINTERRUPTIBLE); schedule_timeout(x);})
 #endif
+
+#if defined(CONFIG_PNP) && defined(CONFIG_PM)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#ifndef CONFIG_HAVE_PNP_SUSPEND
+#include <linux/pnp.h>
+struct snd_pnp_driver {
+	struct pnp_driver real_driver;
+	char *name;
+	const struct pnp_device_id *id_table;
+	unsigned int flags;
+	int  (*probe)  (struct pnp_dev *dev, const struct pnp_device_id *dev_id);
+	void (*remove) (struct pnp_dev *dev);
+	int (*suspend) (struct pnp_dev *dev, pm_message_t state);
+	int (*resume) (struct pnp_dev *dev);
+};	
+
+int snd_pnp_register_driver(struct snd_pnp_driver *driver);
+static inline void snd_pnp_unregister_driver(struct snd_pnp_driver *driver)
+{
+	pnp_unregister_driver(&driver->real_driver);
+}
+
+#define pnp_driver	snd_pnp_driver
+#undef pnp_register_driver
+#define pnp_register_driver	snd_pnp_register_driver
+#undef pnp_unregister_driver
+#define pnp_unregister_driver	snd_pnp_unregister_driver
+
+struct snd_pnp_card_driver {
+	struct pnp_card_driver real_driver;
+	char * name;
+	const struct pnp_card_device_id *id_table;
+	unsigned int flags;
+	int  (*probe)  (struct pnp_card_link *card, const struct pnp_card_device_id *card_id);
+	void (*remove) (struct pnp_card_link *card);
+	int (*suspend) (struct pnp_card_link *dev, pm_message_t state);
+	int (*resume) (struct pnp_card_link *dev);
+};
+
+int snd_pnp_register_card_driver(struct snd_pnp_card_driver *driver);
+static inline void snd_pnp_unregister_card_driver(struct snd_pnp_card_driver *driver)
+{
+	pnp_unregister_card_driver(&driver->real_driver);
+}
+
+#define pnp_card_driver		snd_pnp_card_driver
+#undef pnp_register_card_driver
+#define pnp_register_card_driver	snd_pnp_register_card_driver
+#undef pnp_unregister_card_driver
+#define pnp_unregister_card_driver	snd_pnp_unregister_card_driver
+
+#endif /* ! CONFIG_HAVE_PNP_SUSPEND */
+#endif /* 2.6 */
+#endif /* CONFIG_PNP && CONFIG_PM */
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

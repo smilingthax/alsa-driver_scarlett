@@ -11,6 +11,7 @@ struct pci_driver_mapping {
 	struct pci_driver *drv;
 	unsigned long dma_mask;
 	void *driver_data;
+	u32 saved_config[16];
 };
 
 #define PCI_MAX_MAPPINGS 64
@@ -365,18 +366,28 @@ void snd_pci_compat_release_regions(struct pci_dev *pdev)
 		snd_pci_compat_release_region(pdev, i);
 }
 
-void snd_pci_compat_save_state(struct pci_dev *pdev, u32 *buffer)
+void snd_pci_compat_save_state(struct pci_dev *pdev)
 {
-	int i;
-	for (i = 0; i < 16; i++)
-		pci_read_config_dword(pdev, i * 4, &buffer[i]);
+	struct pci_driver_mapping *map = get_pci_driver_mapping(pdev);
+
+	if (map) {
+		int i;
+		u32 *buffer = map->saved_config;
+		for (i = 0; i < 16; i++, buffer++)
+			pci_read_config_dword(pdev, i * 4, buffer);
+	}
 }
 
-void snd_pci_compat_restore_state(struct pci_dev *pdev, u32 *buffer)
+void snd_pci_compat_restore_state(struct pci_dev *pdev)
 {
-	int i;
-	for (i = 0; i < 16; i++)
-		pci_write_config_dword(pdev, i * 4, buffer[i]);
+	struct pci_driver_mapping *map = get_pci_driver_mapping(pdev);
+
+	if (map) {
+		int i;
+		u32 *buffer = map->saved_config;
+		for (i = 0; i < 16; i++, buffer++)
+			pci_write_config_dword(pdev, i * 4, buffer);
+	}
 }
 
 #endif /* CONFIG_PCI */
