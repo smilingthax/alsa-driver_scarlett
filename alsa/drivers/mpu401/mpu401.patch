@@ -30,7 +30,7 @@
 +MODULE_PARM_DESC(pc98ii, "Roland MPU-PC98II support.");
 +#endif
  
- static snd_card_t *snd_mpu401_legacy_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
+ static struct snd_card *snd_mpu401_legacy_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
  
 @@ -136,6 +147,9 @@
  	}
