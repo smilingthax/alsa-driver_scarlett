@@ -1,11 +1,11 @@
---- ../alsa-kernel/core/init.c	2005-11-14 15:12:37.000000000 +0100
-+++ init.c	2005-11-14 15:22:00.000000000 +0100
+--- ../alsa-kernel/core/init.c	2005-11-14 15:43:24.000000000 +0100
++++ init.c	2005-11-14 15:49:47.000000000 +0100
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
   *  Initialization routines
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -195,7 +196,9 @@
+@@ -196,7 +197,9 @@
  		f_ops = &s_f_ops->f_ops;
  
  		memset(f_ops, 0, sizeof(*f_ops));
@@ -15,7 +15,7 @@
  		f_ops->release = file->f_op->release;
  		f_ops->poll = snd_disconnect_poll;
  
-@@ -665,6 +668,7 @@
+@@ -667,6 +670,7 @@
  }
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
@@ -23,18 +23,18 @@
  /*
   * generic device without a proper bus using platform_device
   * (e.g. ISA)
-@@ -753,6 +757,24 @@
+@@ -755,6 +759,24 @@
  		snd_card_set_dev(card, &card->generic_dev->pdev.dev);
  	return 0;
  }
 +#else /* < 2.6.0 */
 +
-+int snd_card_set_generic_dev(snd_card_t *card)
++int snd_card_set_generic_dev(struct snd_card *card)
 +{
 +	return 0;
 +}
 +
-+static void snd_generic_device_unregister(snd_card_t *card)
++static void snd_generic_device_unregister(struct snd_card *card)
 +{
 +#ifdef CONFIG_PM
 +	if (card->generic_dev) {
@@ -48,7 +48,7 @@
  #endif /* CONFIG_SND_GENERIC_DRIVER */
  
  #ifdef CONFIG_PM
-@@ -821,6 +843,7 @@
+@@ -823,6 +845,7 @@
  }
  
  #ifdef CONFIG_SND_GENERIC_DRIVER
@@ -56,7 +56,7 @@
  /* suspend/resume callbacks for snd_generic platform device */
  static int snd_generic_suspend(struct platform_device *dev, pm_message_t state)
  {
-@@ -869,9 +892,83 @@
+@@ -871,9 +894,83 @@
  		return err;
  	return snd_card_set_pm_callback(card, suspend, resume, private_data);
  }
@@ -65,7 +65,7 @@
 +
 +static int snd_generic_pm_callback(struct pm_dev *dev, pm_request_t rqst, void *data)
 +{
-+	snd_card_t *card = dev->data;
++	struct snd_card *card = dev->data;
 +	switch (rqst) {
 +	case PM_SUSPEND:
 +		if (card->power_state == SNDRV_CTL_POWER_D3hot)
@@ -85,9 +85,9 @@
 +	return 0;
 +}
 +
-+int snd_card_set_generic_pm_callback(snd_card_t *card,
-+				 int (*suspend)(snd_card_t *, pm_message_t),
-+				 int (*resume)(snd_card_t *),
++int snd_card_set_generic_pm_callback(struct snd_card *card,
++				 int (*suspend)(struct snd_card *, pm_message_t),
++				 int (*resume)(struct snd_card *),
 +				 void *private_data)
 +{
 +	struct pm_dev *pm_dev;
@@ -110,7 +110,7 @@
 +#ifdef PCI_OLD_SUSPEND
 +void snd_card_pci_suspend(struct pci_dev *dev)
 +{
-+	snd_card_t *card = pci_get_drvdata(dev);
++	struct snd_card *card = pci_get_drvdata(dev);
 +	if (! card || ! card->pm_suspend)
 +		return;
 +	if (card->power_state == SNDRV_CTL_POWER_D3hot)
@@ -123,7 +123,7 @@
 +
 +void snd_card_pci_resume(struct pci_dev *dev)
 +{
-+	snd_card_t *card = pci_get_drvdata(dev);
++	struct snd_card *card = pci_get_drvdata(dev);
 +	if (! card || ! card->pm_resume)
 +		return;
 +	if (card->power_state == SNDRV_CTL_POWER_D0)
@@ -139,8 +139,8 @@
 +
  int snd_card_pci_suspend(struct pci_dev *dev, pm_message_t state)
  {
- 	snd_card_t *card = pci_get_drvdata(dev);
-@@ -881,7 +978,11 @@
+ 	struct snd_card *card = pci_get_drvdata(dev);
+@@ -883,7 +980,11 @@
  	if (card->power_state == SNDRV_CTL_POWER_D3hot)
  		return 0;
  	err = card->pm_suspend(card, PMSG_SUSPEND);
@@ -152,7 +152,7 @@
  	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
  	return err;
  }
-@@ -894,11 +995,19 @@
+@@ -896,11 +997,19 @@
  	if (card->power_state == SNDRV_CTL_POWER_D0)
  		return 0;
  	/* restore the PCI config space */
