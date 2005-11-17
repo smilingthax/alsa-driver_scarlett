@@ -27,7 +27,7 @@
 #include <asm/uaccess.h>
 #include "ioctl32_old.h"
 
-struct sndrv_timer_info32 {
+struct snd_timer_info32 {
 	u32 flags;
 	s32 card;
 	unsigned char id[64];
@@ -37,7 +37,7 @@ struct sndrv_timer_info32 {
 	unsigned char reserved[64];
 };
 
-#define CVT_sndrv_timer_info()\
+#define CVT_snd_timer_info()\
 {\
 	COPY(flags);\
 	COPY(card);\
@@ -46,7 +46,7 @@ struct sndrv_timer_info32 {
 	COPY(resolution);\
 }
 
-struct sndrv_timer_status32 {
+struct snd_timer_status32 {
 	struct compat_timespec tstamp;
 	u32 resolution;
 	u32 lost;
@@ -55,7 +55,7 @@ struct sndrv_timer_status32 {
 	unsigned char reserved[64];
 };
 
-#define CVT_sndrv_timer_status()\
+#define CVT_snd_timer_status()\
 {\
 	COPY(tstamp.tv_sec);\
 	COPY(tstamp.tv_nsec);\
@@ -77,8 +77,8 @@ DEFINE_ALSA_IOCTL_ENTRY(timer_status, timer_status, SNDRV_TIMER_IOCTL_STATUS);
 #define AP(x) snd_ioctl32_##x
 
 enum {
-	SNDRV_TIMER_IOCTL_INFO32 = _IOR('T', 0x11, struct sndrv_timer_info32),
-	SNDRV_TIMER_IOCTL_STATUS32 = _IOW('T', 0x14, struct sndrv_timer_status32),
+	SNDRV_TIMER_IOCTL_INFO32 = _IOR('T', 0x11, struct snd_timer_info32),
+	SNDRV_TIMER_IOCTL_STATUS32 = _IOW('T', 0x14, struct snd_timer_status32),
 };
 
 struct ioctl32_mapper timer_mappers[] = {

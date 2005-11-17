@@ -33,24 +33,24 @@
 
 #define convert_from_32(type, dstp, srcp)\
 {\
-	struct sndrv_##type *dst = dstp;\
-	struct sndrv_##type##32 *src = srcp;\
-	CVT_##sndrv_##type();\
+	struct snd_##type *dst = dstp;\
+	struct snd_##type##32 *src = srcp;\
+	CVT_##snd_##type();\
 }
 
 #define convert_to_32(type, dstp, srcp)\
 {\
-	struct sndrv_##type *src = srcp;\
-	struct sndrv_##type##32 *dst = dstp;\
-	CVT_##sndrv_##type();\
+	struct snd_##type *src = srcp;\
+	struct snd_##type##32 *dst = dstp;\
+	CVT_##snd_##type();\
 }
 
 
 #define DEFINE_ALSA_IOCTL(type) \
 static inline int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)\
 {\
-	struct sndrv_##type##32 data32;\
-	struct sndrv_##type data;\
+	struct snd_##type##32 data32;\
+	struct snd_##type data;\
 	mm_segment_t oldseg;\
 	int err;\
 	if (copy_from_user(&data32, (void __user *)arg, sizeof(data32)))\
@@ -74,8 +74,8 @@ static inline int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigne
 #define DEFINE_ALSA_IOCTL_BIG(type) \
 static inline int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)\
 {\
-	struct sndrv_##type##32 *data32;\
-	struct sndrv_##type *data;\
+	struct snd_##type##32 *data32;\
+	struct snd_##type *data;\
 	mm_segment_t oldseg;\
 	int err;\
 	data32 = kmalloc(sizeof(*data32), GFP_KERNEL); \

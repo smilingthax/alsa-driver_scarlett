@@ -26,7 +26,7 @@
 #include <asm/uaccess.h>
 #include "ioctl32_old.h"
 
-struct sndrv_hwdep_dsp_image32 {
+struct snd_hwdep_dsp_image32 {
 	u32 index;
 	unsigned char name[64];
 	u32 image;	/* pointer */
@@ -36,8 +36,8 @@ struct sndrv_hwdep_dsp_image32 {
 
 static inline int _snd_ioctl32_hwdep_dsp_image(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)
 {
-	struct sndrv_hwdep_dsp_image data;
-	struct sndrv_hwdep_dsp_image32 data32;
+	struct snd_hwdep_dsp_image data;
+	struct snd_hwdep_dsp_image32 data32;
 	mm_segment_t oldseg;
 	int err;
 
@@ -61,7 +61,7 @@ DEFINE_ALSA_IOCTL_ENTRY(hwdep_dsp_image, hwdep_dsp_image, SNDRV_HWDEP_IOCTL_DSP_
 #define AP(x) snd_ioctl32_##x
 
 enum {
-	SNDRV_HWDEP_IOCTL_DSP_LOAD32   = _IOW('H', 0x03, struct sndrv_hwdep_dsp_image32)
+	SNDRV_HWDEP_IOCTL_DSP_LOAD32   = _IOW('H', 0x03, struct snd_hwdep_dsp_image32)
 };
 
 struct ioctl32_mapper hwdep_mappers[] = {

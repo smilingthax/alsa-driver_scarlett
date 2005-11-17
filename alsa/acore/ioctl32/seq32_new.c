@@ -27,8 +27,8 @@
 #include <sound/asequencer.h>
 #include "ioctl32.h"
 
-struct sndrv_seq_port_info32 {
-	struct sndrv_seq_addr addr;	/* client/port numbers */
+struct snd_seq_port_info32 {
+	struct snd_seq_addr addr;	/* client/port numbers */
 	char name[64];			/* port name */
 
 	u32 capability;	/* port capability bits */
@@ -46,7 +46,7 @@ struct sndrv_seq_port_info32 {
 	char reserved[59];		/* for future use */
 };
 
-#define CVT_sndrv_seq_port_info()\
+#define CVT_snd_seq_port_info()\
 {\
 	COPY(addr);\
 	COPY_ARRAY(name);\
@@ -74,11 +74,11 @@ DEFINE_ALSA_IOCTL_ENTRY(query_next_port, seq_port_info, SNDRV_SEQ_IOCTL_QUERY_NE
 #define AP(x) snd_ioctl32_##x
 
 enum {
-  SNDRV_SEQ_IOCTL_CREATE_PORT32 = _IOWR('S', 0x20, struct sndrv_seq_port_info32),
-  SNDRV_SEQ_IOCTL_DELETE_PORT32 = _IOW ('S', 0x21, struct sndrv_seq_port_info32),
-  SNDRV_SEQ_IOCTL_GET_PORT_INFO32 = _IOWR('S', 0x22, struct sndrv_seq_port_info32),
-  SNDRV_SEQ_IOCTL_SET_PORT_INFO32 = _IOW ('S', 0x23, struct sndrv_seq_port_info32),
-  SNDRV_SEQ_IOCTL_QUERY_NEXT_PORT32 = _IOWR('S', 0x52, struct sndrv_seq_port_info32),
+  SNDRV_SEQ_IOCTL_CREATE_PORT32 = _IOWR('S', 0x20, struct snd_seq_port_info32),
+  SNDRV_SEQ_IOCTL_DELETE_PORT32 = _IOW ('S', 0x21, struct snd_seq_port_info32),
+  SNDRV_SEQ_IOCTL_GET_PORT_INFO32 = _IOWR('S', 0x22, struct snd_seq_port_info32),
+  SNDRV_SEQ_IOCTL_SET_PORT_INFO32 = _IOW ('S', 0x23, struct snd_seq_port_info32),
+  SNDRV_SEQ_IOCTL_QUERY_NEXT_PORT32 = _IOWR('S', 0x52, struct snd_seq_port_info32),
 };
 
 struct ioctl32_mapper seq_mappers[] = {
