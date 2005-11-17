@@ -1308,7 +1308,7 @@ typedef struct pdplus_ring_ptr_stru {
 typedef struct pdplus_stru {
         /* Parents */
         pci_dev_t   *pci;
-        snd_card_t  *card;
+        struct snd_card *card;
 
         /* Locks */
         /* For writing struct data or hardware registers the following lock is
@@ -1337,17 +1337,17 @@ typedef struct pdplus_stru {
         /*
          * Devices and channels.  Note that t_* and d_* cannot be used at the
          * same time.  Another circuit needs to be uploaded. */
-        snd_pcm_t        *analog;
-        snd_pcm_substream_t *a_play;
-        snd_pcm_substream_t *a_capt;
+        struct snd_pcm *analog;
+        struct snd_pcm_substream *a_play;
+        struct snd_pcm_substream *a_capt;
 
-        snd_pcm_t        *digital;
-        snd_pcm_substream_t *d_play;
-        snd_pcm_substream_t *d_capt;
+        struct snd_pcm *digital;
+        struct snd_pcm_substream *d_play;
+        struct snd_pcm_substream *d_capt;
 
-        snd_pcm_t        *adat;
-        snd_pcm_substream_t *t_play;
-        snd_pcm_substream_t *t_capt;
+        struct snd_pcm *adat;
+        struct snd_pcm_substream *t_play;
+        struct snd_pcm_substream *t_capt;
 
         /*
          * HW Pointer positions where we currently are (generate interrupt when HW pointer
@@ -1357,10 +1357,6 @@ typedef struct pdplus_stru {
         pdplus_ring_ptr_t a_capt_ring_ptr;
         pdplus_ring_ptr_t d_play_ring_ptr;
         pdplus_ring_ptr_t d_capt_ring_ptr;
-
-        /*
-         * Mixer */
-        snd_kmixer_t *mixer;
 
         /* Values of registers */
         u32 PLX_CTRL_val;
@@ -1391,7 +1387,7 @@ typedef struct pdplus_stru {
 
         /* These may be changable by the user some time.  Currently, they are ignored
          * dig_valid is encountered. */
-	snd_aes_iec958_t	dig_setup;
+	struct snd_aes_iec958	dig_setup;
         u_int  auto_profi_mode  : 1; /* BOOL */
         u_int  profi_mode       : 1; /* BOOL mode to choose if auto_profi_mode == 0*/
         u_int  auto_cd_mode     : 1; /* BOOL */
@@ -1406,23 +1402,23 @@ typedef struct pdplus_stru {
 
 /* ********************************************************************** */
 
-static void  pdplus_sweep (snd_card_t *) __exit;
+static void  pdplus_sweep (struct snd_card *) __exit;
 
-static int   pdplus_a_play_prepare (snd_pcm_substream_t *);
-static int   pdplus_a_play_trigger (snd_pcm_substream_t *, int);
-static snd_pcm_uframes_t pdplus_a_play_pointer (snd_pcm_substream_t *);
+static int   pdplus_a_play_prepare (struct snd_pcm_substream *);
+static int   pdplus_a_play_trigger (struct snd_pcm_substream *, int);
+static snd_pcm_uframes_t pdplus_a_play_pointer (struct snd_pcm_substream *);
 
-static int   pdplus_d_play_prepare (snd_pcm_substream_t *);
-static int   pdplus_d_play_trigger (snd_pcm_substream_t *, int);
-static snd_pcm_uframes_t pdplus_d_play_pointer (snd_pcm_substream_t *);
+static int   pdplus_d_play_prepare (struct snd_pcm_substream *);
+static int   pdplus_d_play_trigger (struct snd_pcm_substream *, int);
+static snd_pcm_uframes_t pdplus_d_play_pointer (struct snd_pcm_substream *);
 
-static int   pdplus_a_capt_prepare (snd_pcm_substream_t *);
-static int   pdplus_a_capt_trigger (snd_pcm_substream_t *, int);
-static snd_pcm_uframes_t pdplus_a_capt_pointer (snd_pcm_substream_t *);
+static int   pdplus_a_capt_prepare (struct snd_pcm_substream *);
+static int   pdplus_a_capt_trigger (struct snd_pcm_substream *, int);
+static snd_pcm_uframes_t pdplus_a_capt_pointer (struct snd_pcm_substream *);
 
-static int   pdplus_d_capt_prepare (snd_pcm_substream_t *);
-static int   pdplus_d_capt_trigger (snd_pcm_substream_t *, int);
-static snd_pcm_uframes_t pdplus_d_capt_pointer (snd_pcm_substream_t *);
+static int   pdplus_d_capt_prepare (struct snd_pcm_substream *);
+static int   pdplus_d_capt_trigger (struct snd_pcm_substream *, int);
+static snd_pcm_uframes_t pdplus_d_capt_pointer (struct snd_pcm_substream *);
 
 static BOOL pdplus_switch_circuit (pdplus_t *scard, int mode);
 static int  pdplus_set_mode (pdplus_t *scard, int mode);
@@ -2021,7 +2017,7 @@ static void pdplus_write_silence_ll (
 /*
  * Copy data from user space to device's analog play memory */
 static int pdplus_a_play_copy_ll (
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
         void __user *src,
@@ -2048,7 +2044,7 @@ static int pdplus_a_play_copy_ll (
 /*
  * Fill analog play memory with zero. */
 static int pdplus_a_play_silence_ll (
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
         snd_pcm_uframes_t ucount
@@ -2073,7 +2069,7 @@ static int pdplus_a_play_silence_ll (
 /*
  * Copy data to user space from device's analog capt memory */
 static int pdplus_a_capt_copy_ll (
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
         void __user *dst,
@@ -2099,7 +2095,7 @@ static int pdplus_a_capt_copy_ll (
 /*
  * Copy data from user space to device's digital play memory */
 static int pdplus_d_play_copy_ll (
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
         void __user *src,
@@ -2124,7 +2120,7 @@ static int pdplus_d_play_copy_ll (
 /*
  * Fill analog play memory with zero. */
 static int pdplus_d_play_silence_ll (
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
         snd_pcm_uframes_t ucount
@@ -2171,7 +2167,7 @@ static unsigned int pdplus_d_capt_rate_llr (pdplus_t *scard)
 /*
  * Copy data to user space from device's digital capt memory */
 static int pdplus_d_capt_copy_ll (
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int channel, /* not used (interleaved data) */
         snd_pcm_uframes_t upos,
         void __user *dst,
@@ -3014,11 +3010,11 @@ static irqreturn_t pdplus_interrupt (
 /*
  * Hardware constraints for period size
  */
-static int pdplus_hw_rule_period_size(snd_pcm_hw_params_t *hw,
-				      snd_pcm_hw_rule_t *rule)
+static int pdplus_hw_rule_period_size(struct snd_pcm_hw_params *hw,
+				      struct snd_pcm_hw_rule *rule)
 {
-	snd_interval_t *psize, *rate;
-	snd_interval_t newi;
+	struct snd_interval *psize, *rate;
+	struct snd_interval newi;
 
 	psize = hw_param_interval(hw, SNDRV_PCM_HW_PARAM_PERIOD_SIZE);
 	rate = hw_param_interval(hw, SNDRV_PCM_HW_PARAM_RATE);
@@ -3034,8 +3030,8 @@ static int pdplus_hw_rule_period_size(snd_pcm_hw_params_t *hw,
 /*
  * hw constraint for rate on the digital playback
  */
-static int pdplus_d_play_hw_rule_rate(snd_pcm_hw_params_t *hw,
-				      snd_pcm_hw_rule_t *rule)
+static int pdplus_d_play_hw_rule_rate(struct snd_pcm_hw_params *hw,
+				      struct snd_pcm_hw_rule *rule)
 {
 #if IEC958_ALLOW_HIGH_FREQ
 	int const profi = 1;
@@ -3055,13 +3051,13 @@ static int pdplus_d_play_hw_rule_rate(snd_pcm_hw_params_t *hw,
 /*
  * hw constraint for rate on the digital capture
  */
-static int pdplus_d_capt_hw_rule_rate(snd_pcm_hw_params_t *hw,
-				      snd_pcm_hw_rule_t *rule)
+static int pdplus_d_capt_hw_rule_rate(struct snd_pcm_hw_params *hw,
+				      struct snd_pcm_hw_rule *rule)
 {
 	pdplus_t *scard = rule->private;
 	int rate;
 	unsigned long flags;
-	snd_interval_t newi;
+	struct snd_interval newi;
 
 	/* Force synchronised rate */
 	read_lock_irqsave (&scard->lock, flags);
@@ -3078,7 +3074,7 @@ static int pdplus_d_capt_hw_rule_rate(snd_pcm_hw_params_t *hw,
 
 /*
  * Get the buffer pointer for analog playback */
-static snd_pcm_uframes_t pdplus_a_play_pointer (snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t pdplus_a_play_pointer (struct snd_pcm_substream *substream)
 {
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
@@ -3089,7 +3085,7 @@ static snd_pcm_uframes_t pdplus_a_play_pointer (snd_pcm_substream_t *substream)
 
 /*
  * Get the buffer pointer for analog capture */
-static snd_pcm_uframes_t pdplus_a_capt_pointer (snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t pdplus_a_capt_pointer (struct snd_pcm_substream *substream)
 {
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
@@ -3099,7 +3095,7 @@ static snd_pcm_uframes_t pdplus_a_capt_pointer (snd_pcm_substream_t *substream)
 
 /*
  * Get buffer pointer for digital playback. */
-static snd_pcm_uframes_t pdplus_d_play_pointer (snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t pdplus_d_play_pointer (struct snd_pcm_substream *substream)
 {
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
@@ -3109,7 +3105,7 @@ static snd_pcm_uframes_t pdplus_d_play_pointer (snd_pcm_substream_t *substream)
 
 /*
  * Get buffer pointer for digital capture. */
-static snd_pcm_uframes_t pdplus_d_capt_pointer (snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t pdplus_d_capt_pointer (struct snd_pcm_substream *substream)
 {
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
@@ -3120,7 +3116,7 @@ static snd_pcm_uframes_t pdplus_d_capt_pointer (snd_pcm_substream_t *substream)
 
 /*
  * Trigger playback of analog playback device. */
-static int pdplus_a_play_trigger (snd_pcm_substream_t *substream, int cmd)
+static int pdplus_a_play_trigger (struct snd_pcm_substream *substream, int cmd)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -3171,7 +3167,7 @@ static int pdplus_a_play_trigger (snd_pcm_substream_t *substream, int cmd)
 
 /*
  * Trigger playback of analog capture device. */
-static int pdplus_a_capt_trigger (snd_pcm_substream_t *substream, int cmd)
+static int pdplus_a_capt_trigger (struct snd_pcm_substream *substream, int cmd)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -3221,7 +3217,7 @@ static int pdplus_a_capt_trigger (snd_pcm_substream_t *substream, int cmd)
 
 /*
  * Trigger playback of digital device. */
-static int pdplus_d_play_trigger (snd_pcm_substream_t *substream, int cmd)
+static int pdplus_d_play_trigger (struct snd_pcm_substream *substream, int cmd)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -3272,7 +3268,7 @@ static int pdplus_d_play_trigger (snd_pcm_substream_t *substream, int cmd)
 
 /*
  * Trigger playback of digital capture device. */
-static int pdplus_d_capt_trigger (snd_pcm_substream_t *substream, int cmd)
+static int pdplus_d_capt_trigger (struct snd_pcm_substream *substream, int cmd)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -3331,7 +3327,7 @@ static int pdplus_d_capt_trigger (snd_pcm_substream_t *substream, int cmd)
  * will be switched. */
 static int pdplus_analog_find_and_programme_clock_ll (
         pdplus_t *scard,
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int rate)
 {
         int  fixclock;
@@ -3414,7 +3410,7 @@ static int pdplus_analog_find_and_programme_clock_ll (
  * The same as pdplus_analog_... for digital devices. */
 static int pdplus_digital_find_and_programme_clock_ll (
         pdplus_t *scard,
-        snd_pcm_substream_t *substream,
+        struct snd_pcm_substream *substream,
         int rate)
 {
         int  fixclock;
@@ -3536,7 +3532,7 @@ static void pdplus_init_ring_ptr (
 
 /*
  * Prepare analog play device by configuring the device settings. */
-static int pdplus_a_play_prepare (snd_pcm_substream_t *substream)
+static int pdplus_a_play_prepare (struct snd_pcm_substream *substream)
 {
         int err = -ENXIO; /* default error */
         u_long flags;
@@ -3600,7 +3596,7 @@ raus:
 
 /*
  * Prepare analog capture device by configuring the device settings. */
-static int pdplus_a_capt_prepare (snd_pcm_substream_t *substream)
+static int pdplus_a_capt_prepare (struct snd_pcm_substream *substream)
 {
         int err = -ENXIO; /* default error */
         u_long flags;
@@ -3664,7 +3660,7 @@ raus:
 /*
  * Prepare digital play device by configuring the device settings.
  * This is quite similar to pdplus_a_play_prepare. */
-static int pdplus_d_play_prepare (snd_pcm_substream_t *substream)
+static int pdplus_d_play_prepare (struct snd_pcm_substream *substream)
 {
         int err = -ENXIO; /* default error */
         u_long flags;
@@ -3711,7 +3707,7 @@ raus:
 
 /*
  * Prepare digital capture device by configuring the device settings. */
-static int pdplus_d_capt_prepare (snd_pcm_substream_t *substream)
+static int pdplus_d_capt_prepare (struct snd_pcm_substream *substream)
 {
         u_long flags;
         int rate;
@@ -3747,7 +3743,7 @@ static int pdplus_d_capt_prepare (snd_pcm_substream_t *substream)
 
 /* ********************************************************************** */
 
-static snd_pcm_hardware_t pdplus_a_play_info =
+static struct snd_pcm_hardware pdplus_a_play_info =
 {
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
@@ -3785,7 +3781,7 @@ static snd_pcm_hardware_t pdplus_a_play_info =
 
 /* ********************************************************************** */
 
-static snd_pcm_hardware_t pdplus_a_capt_info =
+static struct snd_pcm_hardware pdplus_a_capt_info =
 {
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
@@ -3823,7 +3819,7 @@ static snd_pcm_hardware_t pdplus_a_capt_info =
 
 /* ********************************************************************** */
 
-static snd_pcm_hardware_t pdplus_d_play_info =
+static struct snd_pcm_hardware pdplus_d_play_info =
 {
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
@@ -3859,7 +3855,7 @@ static snd_pcm_hardware_t pdplus_d_play_info =
 
 /* ********************************************************************** */
 
-static snd_pcm_hardware_t pdplus_d_capt_info =
+static struct snd_pcm_hardware pdplus_d_capt_info =
 {
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
@@ -3899,7 +3895,7 @@ static snd_pcm_hardware_t pdplus_d_capt_info =
 
 /*
  * Open the analog play device */
-static int pdplus_a_play_open (snd_pcm_substream_t *substream)
+static int pdplus_a_play_open (struct snd_pcm_substream *substream)
 {
         u_long flags;
 	int err;
@@ -3933,7 +3929,7 @@ static int pdplus_a_play_open (snd_pcm_substream_t *substream)
 
 /*
  * Close the analog play device */
-static int pdplus_a_play_close (snd_pcm_substream_t *substream)
+static int pdplus_a_play_close (struct snd_pcm_substream *substream)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -3956,7 +3952,7 @@ static int pdplus_a_play_close (snd_pcm_substream_t *substream)
 
 /*
  * Open the analog capture device */
-static int pdplus_a_capt_open (snd_pcm_substream_t *substream)
+static int pdplus_a_capt_open (struct snd_pcm_substream *substream)
 {
         u_long flags;
 	int err;
@@ -3990,7 +3986,7 @@ static int pdplus_a_capt_open (snd_pcm_substream_t *substream)
 
 /*
  * Close the analog capture device */
-static int pdplus_a_capt_close (snd_pcm_substream_t *substream)
+static int pdplus_a_capt_close (struct snd_pcm_substream *substream)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -4034,7 +4030,7 @@ static int pdplus_set_mode (pdplus_t *scard, int mode)
 
 /*
  * Functions for digital playback */
-static int pdplus_d_play_open (snd_pcm_substream_t *substream)
+static int pdplus_d_play_open (struct snd_pcm_substream *substream)
 {
         u_long flags;
         int err;
@@ -4075,7 +4071,7 @@ static int pdplus_d_play_open (snd_pcm_substream_t *substream)
         LEAVE (0);
 }
 
-static int pdplus_d_play_close (snd_pcm_substream_t *substream)
+static int pdplus_d_play_close (struct snd_pcm_substream *substream)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -4097,7 +4093,7 @@ static int pdplus_d_play_close (snd_pcm_substream_t *substream)
 
 /*
  * Functions for digital capture */
-static int pdplus_d_capt_open (snd_pcm_substream_t *substream)
+static int pdplus_d_capt_open (struct snd_pcm_substream *substream)
 {
         u_long flags;
         int err;
@@ -4138,7 +4134,7 @@ static int pdplus_d_capt_open (snd_pcm_substream_t *substream)
         LEAVE (0);
 }
 
-static int pdplus_d_capt_close (snd_pcm_substream_t *substream)
+static int pdplus_d_capt_close (struct snd_pcm_substream *substream)
 {
         u_long flags;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
@@ -4160,7 +4156,7 @@ static int pdplus_d_capt_close (snd_pcm_substream_t *substream)
 
 /* ********************************************************************** */
 
-static snd_pcm_ops_t pdplus_a_play_ops = {
+static struct snd_pcm_ops pdplus_a_play_ops = {
 	.open =	   pdplus_a_play_open,
 	.close =   pdplus_a_play_close,
         .ioctl =   snd_pcm_lib_ioctl,
@@ -4171,7 +4167,7 @@ static snd_pcm_ops_t pdplus_a_play_ops = {
 	.silence = pdplus_a_play_silence_ll,
 };
 
-static snd_pcm_ops_t pdplus_a_capt_ops = {
+static struct snd_pcm_ops pdplus_a_capt_ops = {
 	.open =	   pdplus_a_capt_open,
 	.close =   pdplus_a_capt_close,
         .ioctl =   snd_pcm_lib_ioctl,
@@ -4181,7 +4177,7 @@ static snd_pcm_ops_t pdplus_a_capt_ops = {
 	.copy =    pdplus_a_capt_copy_ll,
 };
 
-static snd_pcm_ops_t pdplus_d_play_ops = {
+static struct snd_pcm_ops pdplus_d_play_ops = {
 	.open =    pdplus_d_play_open,
 	.close =   pdplus_d_play_close,
         .ioctl =   snd_pcm_lib_ioctl,
@@ -4192,7 +4188,7 @@ static snd_pcm_ops_t pdplus_d_play_ops = {
 	.silence = pdplus_d_play_silence_ll,
 };
 
-static snd_pcm_ops_t pdplus_d_capt_ops = {
+static struct snd_pcm_ops pdplus_d_capt_ops = {
 	.open =    pdplus_d_capt_open,
 	.close =   pdplus_d_capt_close,
         .ioctl =   snd_pcm_lib_ioctl,
@@ -4204,13 +4200,13 @@ static snd_pcm_ops_t pdplus_d_capt_ops = {
 
 /* ********************************************************************** */
 
-static void pdplus_a_pcm_free (snd_pcm_t *pcm)
+static void pdplus_a_pcm_free (struct snd_pcm *pcm)
 {
         pdplus_t *scard = pcm->private_data;
         scard->analog = NULL;
 }
 
-static void pdplus_d_pcm_free (snd_pcm_t *pcm)
+static void pdplus_d_pcm_free (struct snd_pcm *pcm)
 {
         pdplus_t *scard = pcm->private_data;
         scard->digital = NULL;
@@ -4219,11 +4215,11 @@ static void pdplus_d_pcm_free (snd_pcm_t *pcm)
 /* ********************************************************************** */
 
 static __devinit int pdplus_a_pcm_new (
-        snd_card_t *card,
+        struct snd_card *card,
         pdplus_t *scard,
         int device)
 {
-        snd_pcm_t *pcm;
+        struct snd_pcm *pcm;
         int err;
         ENTER;
 
@@ -4252,11 +4248,11 @@ static __devinit int pdplus_a_pcm_new (
 }
 
 static __devinit int pdplus_d_pcm_new (
-        snd_card_t *card,
+        struct snd_card *card,
         pdplus_t *scard,
         int device)
 {
-        snd_pcm_t *pcm;
+        struct snd_pcm *pcm;
         int err;
         ENTER;
 
@@ -4323,7 +4319,7 @@ inline static void pdplus_adda_set_volume_right_ll (pdplus_t *scard, int value)
                 .put =   pdplus_dac_volume_set    \
         }
 
-static int pdplus_dac_volume_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
+static int pdplus_dac_volume_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *uinfo)
 {
         uinfo->type=   SNDRV_CTL_ELEM_TYPE_INTEGER;
         uinfo->count= 2;
@@ -4332,7 +4328,7 @@ static int pdplus_dac_volume_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo
         return 0;
 }
 
-static int pdplus_dac_volume_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_dac_volume_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4345,7 +4341,7 @@ static int pdplus_dac_volume_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_dac_volume_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_dac_volume_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int change= 0;
@@ -4378,7 +4374,7 @@ static int pdplus_dac_volume_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
                 .put =   pdplus_dac_switch_set    \
         }
 
-static int pdplus_dac_switch_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
+static int pdplus_dac_switch_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4394,7 +4390,7 @@ static int pdplus_dac_switch_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
         return 0;
 }
 
-static int pdplus_dac_switch_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
+static int pdplus_dac_switch_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4428,7 +4424,7 @@ static int pdplus_dac_switch_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
                 .put =   pdplus_adc_switch_set    \
         }
 
-static int pdplus_adc_switch_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
+static int pdplus_adc_switch_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4444,7 +4440,7 @@ static int pdplus_adc_switch_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
         return 0;
 }
 
-static int pdplus_adc_switch_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
+static int pdplus_adc_switch_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4478,7 +4474,7 @@ static int pdplus_adc_switch_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
                 .put =   pdplus_adc_high_pass_set           \
         }
 
-static int pdplus_boolean2_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
+static int pdplus_boolean2_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *uinfo)
 {
         uinfo->type=   SNDRV_CTL_ELEM_TYPE_BOOLEAN;
         uinfo->count= 2;
@@ -4487,7 +4483,7 @@ static int pdplus_boolean2_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
         return 0;
 }
 
-static int pdplus_adc_high_pass_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
+static int pdplus_adc_high_pass_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4503,7 +4499,7 @@ static int pdplus_adc_high_pass_get (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u
         return 0;
 }
 
-static int pdplus_adc_high_pass_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u)
+static int pdplus_adc_high_pass_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4537,7 +4533,7 @@ static int pdplus_adc_high_pass_set (snd_kcontrol_t *k, snd_ctl_elem_value_t  *u
                 .put =   pdplus_dac_auto_mute_512_set  \
         }
 
-static int pdplus_boolean1_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
+static int pdplus_boolean1_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *uinfo)
 {
         uinfo->type=   SNDRV_CTL_ELEM_TYPE_BOOLEAN;
         uinfo->count= 1;
@@ -4546,7 +4542,7 @@ static int pdplus_boolean1_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
         return 0;
 }
 
-static int pdplus_dac_auto_mute_512_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_dac_auto_mute_512_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4558,7 +4554,7 @@ static int pdplus_dac_auto_mute_512_get (snd_kcontrol_t *k, snd_ctl_elem_value_t
         return 0;
 }
 
-static int pdplus_dac_auto_mute_512_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_dac_auto_mute_512_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int current_value= 0;
@@ -4589,7 +4585,7 @@ static int pdplus_dac_auto_mute_512_set (snd_kcontrol_t *k, snd_ctl_elem_value_t
         }
 
 static void pdplus_info_enumerated (
-        snd_ctl_elem_info_t *u,
+        struct snd_ctl_elem_info *u,
         int count,
         char const *const *text,
         unsigned int max)
@@ -4616,13 +4612,13 @@ static char const *pdplus_out_mux_text[4]= {
         [PDPLUS_ROUTE_D_CAPT] = "Digital Capture"
 };
 
-static int pdplus_out_mux_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
+static int pdplus_out_mux_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *u)
 {
         pdplus_info_enumerated (u, 1, pdplus_out_mux_text, 4);
         return 0;
 }
 
-static int pdplus_a_out_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_a_out_mux_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4634,7 +4630,7 @@ static int pdplus_a_out_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_a_out_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_a_out_mux_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4663,7 +4659,7 @@ static int pdplus_a_out_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
                 .put =   pdplus_d_out_mux_set     \
         }
 
-static int pdplus_d_out_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_d_out_mux_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4675,7 +4671,7 @@ static int pdplus_d_out_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_d_out_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_d_out_mux_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4710,14 +4706,14 @@ static char const *pdplus_in_mux_text[3]= {
         [PDPLUS_FPGA_REG_DIG_SRC_SRC_COAXIAL] = "Coaxial"
 };
 
-static int pdplus_in_mux_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
+static int pdplus_in_mux_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *u)
 {
         pdplus_info_enumerated (u, 1, pdplus_in_mux_text, 3);
         return 0;
 }
 
 
-static int pdplus_d_in_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_d_in_mux_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4729,7 +4725,7 @@ static int pdplus_d_in_mux_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_d_in_mux_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_d_in_mux_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4766,14 +4762,14 @@ static char const *pdplus_de_emph_text[4]= {
         [PDPLUS_CS4222_REG_DSP_DE_EMPHASIS_DISABLED-1] = "Disabled"
 };
 
-static int pdplus_de_emph_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
+static int pdplus_de_emph_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *u)
 {
         pdplus_info_enumerated (u, 1, pdplus_de_emph_text, 4);
         return 0;
 }
 
 
-static int pdplus_de_emph_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_de_emph_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4785,7 +4781,7 @@ static int pdplus_de_emph_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_de_emph_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_de_emph_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4826,7 +4822,7 @@ static char const *pdplus_soft_ramp_text[5]= {
         [PDPLUS_CS4222_REG_DAC_CTRL_SOFT_STEP_32_LRCKS] = "During 32 Frames"
 };
 
-static int pdplus_soft_ramp_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
+static int pdplus_soft_ramp_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *u)
 {
         pdplus_info_enumerated (u, 1, pdplus_soft_ramp_text, 5);
         return 0;
@@ -4841,7 +4837,7 @@ static unsigned int pdplus_soft_ramp_get_raw_llr (pdplus_t *scard)
                 return PDPLUS_SOFT_RAMP_OFF;
 }
 
-static int pdplus_soft_ramp_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_soft_ramp_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4853,7 +4849,7 @@ static int pdplus_soft_ramp_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_soft_ramp_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_soft_ramp_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -4892,7 +4888,7 @@ static int pdplus_soft_ramp_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
                 .put = NULL                     \
         }
 
-static int pdplus_d_capt_rate_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinfo)
+static int pdplus_d_capt_rate_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *uinfo)
 {
         uinfo->type=   SNDRV_CTL_ELEM_TYPE_INTEGER;
         uinfo->count= 1;
@@ -4901,7 +4897,7 @@ static int pdplus_d_capt_rate_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *uinf
         return 0;
 }
 
-static int pdplus_d_capt_rate_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_d_capt_rate_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4923,7 +4919,7 @@ static int pdplus_d_capt_rate_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
                 .put =   pdplus_def_profi_mode_set,  \
         }
 
-static int pdplus_def_profi_mode_info (snd_kcontrol_t *k, snd_ctl_elem_info_t *u)
+static int pdplus_def_profi_mode_info (struct snd_kcontrol *k, struct snd_ctl_elem_info *u)
 {
         char const *text[3]= {
                 "S/PDIF (Consumer)",
@@ -4945,7 +4941,7 @@ static int pdplus_def_profi_mode_get_raw_llr (pdplus_t *scard)
                 return 0;
 }
 
-static int pdplus_def_profi_mode_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_profi_mode_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -4957,7 +4953,7 @@ static int pdplus_def_profi_mode_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u
         return 0;
 }
 
-static int pdplus_def_profi_mode_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_profi_mode_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -5000,7 +4996,7 @@ static int pdplus_def_profi_mode_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u
                 .put =   pdplus_def_copy_inhibit_set  \
         }
 
-static int pdplus_def_copy_inhibit_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_copy_inhibit_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -5012,7 +5008,7 @@ static int pdplus_def_copy_inhibit_get (snd_kcontrol_t *k, snd_ctl_elem_value_t 
         return 0;
 }
 
-static int pdplus_def_copy_inhibit_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_copy_inhibit_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -5036,7 +5032,7 @@ static int pdplus_def_copy_inhibit_set (snd_kcontrol_t *k, snd_ctl_elem_value_t 
                 .put =   pdplus_def_non_audio_set  \
         }
 
-static int pdplus_def_non_audio_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_non_audio_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -5048,7 +5044,7 @@ static int pdplus_def_non_audio_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
         return 0;
 }
 
-static int pdplus_def_non_audio_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_non_audio_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -5072,7 +5068,7 @@ static int pdplus_def_non_audio_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
                 .put =   pdplus_def_pre_emphasis_set  \
         }
 
-static int pdplus_def_pre_emphasis_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_pre_emphasis_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -5084,7 +5080,7 @@ static int pdplus_def_pre_emphasis_get (snd_kcontrol_t *k, snd_ctl_elem_value_t 
         return 0;
 }
 
-static int pdplus_def_pre_emphasis_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_pre_emphasis_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -5108,7 +5104,7 @@ static int pdplus_def_pre_emphasis_set (snd_kcontrol_t *k, snd_ctl_elem_value_t 
                 .put =   pdplus_def_auto_cd_mode_set  \
         }
 
-static int pdplus_def_auto_cd_mode_get (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_auto_cd_mode_get (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         pdplus_t *scard= snd_kcontrol_chip(k);
@@ -5120,7 +5116,7 @@ static int pdplus_def_auto_cd_mode_get (snd_kcontrol_t *k, snd_ctl_elem_value_t 
         return 0;
 }
 
-static int pdplus_def_auto_cd_mode_set (snd_kcontrol_t *k, snd_ctl_elem_value_t *u)
+static int pdplus_def_auto_cd_mode_set (struct snd_kcontrol *k, struct snd_ctl_elem_value *u)
 {
         u_long flags;
         int result= 0;
@@ -5137,14 +5133,14 @@ static int pdplus_def_auto_cd_mode_set (snd_kcontrol_t *k, snd_ctl_elem_value_t 
 /*
  * S/PDIF set up
  */
-static int pdplus_spdif_mask_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+static int pdplus_spdif_mask_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_IEC958;
 	uinfo->count = 1;
 	return 0;
 }
                         
-static int pdplus_spdif_cmask_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int pdplus_spdif_cmask_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.iec958.status[0] = IEC958_AES0_PROFESSIONAL |
 		IEC958_AES0_NONAUDIO |
@@ -5155,7 +5151,7 @@ static int pdplus_spdif_cmask_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t
 	return 0;
 }
                         
-static int pdplus_spdif_pmask_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int pdplus_spdif_pmask_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	ucontrol->value.iec958.status[0] = IEC958_AES0_PROFESSIONAL |
 		IEC958_AES0_NONAUDIO |
@@ -5164,7 +5160,7 @@ static int pdplus_spdif_pmask_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t
 	return 0;
 }
 
-static int pdplus_spdif_default_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int pdplus_spdif_default_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pdplus_t *scard = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -5175,7 +5171,7 @@ static int pdplus_spdif_default_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	return 0;
 }
                         
-static int pdplus_spdif_default_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int pdplus_spdif_default_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	pdplus_t *scard = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -5195,7 +5191,7 @@ static int pdplus_spdif_default_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 /*
  * entries
  */
-static snd_kcontrol_new_t pdplus_control[] __devinitdata = {
+static struct snd_kcontrol_new pdplus_control[] __devinitdata = {
         PDPLUS_CONTROL_DAC_VOLUME,
         PDPLUS_CONTROL_DAC_SWITCH,
         PDPLUS_CONTROL_DAC_AUTO_MUTE_512,
@@ -5242,8 +5238,8 @@ static snd_kcontrol_new_t pdplus_control[] __devinitdata = {
 /* New mixer */
 static int __devinit pdplus_mixer_new (pdplus_t *scard)
 {
-        snd_card_t *card;
-        snd_kcontrol_t *k;
+        struct snd_card *card;
+        struct snd_kcontrol *k;
         unsigned int i;
         int err= 0;
 
@@ -5429,7 +5425,7 @@ static BOOL pdplus_switch_circuit (pdplus_t *scard, int mode)
 
 #if DEBUG
 static void pdplus_print_iomem_ll (
-        snd_info_buffer_t *buffer,
+        struct snd_info_buffer *buffer,
         snd_iomem_t *iomem)
 {
         void __iomem *lauf;
@@ -5500,8 +5496,8 @@ static char const *pdplus_route_str (int route)
 /* Handle /proc reading
  * FIXME: This should lock correctly!  But it does so much... */
 static void pdplus_proc_read (
-        snd_info_entry_t *entry,
-	snd_info_buffer_t *buffer)
+        struct snd_info_entry *entry,
+	struct snd_info_buffer *buffer)
 {
         u_long flags;
         u_long ticker;
@@ -5781,7 +5777,7 @@ static void pdplus_proc_read (
  * Register the /proc entry */
 static void __devinit pdplus_register_proc (pdplus_t *scard)
 {
-        snd_info_entry_t *entry;
+        struct snd_info_entry *entry;
 
         snd_assert (scard != NULL, return);
         snd_assert (scard->card != NULL, return);
@@ -5855,7 +5851,7 @@ static int __devinit pdplus_check_resources (pci_dev_t *pci)
 /*
  * Register memory area */
 static int __devinit pdplus_register_iomem (
-        snd_card_t *card,
+        struct snd_card *card,
         pci_dev_t *pci,
         int num,
         u_long size,
@@ -5937,7 +5933,7 @@ static int __devinit pdplus_check_consistency_ll (pdplus_t *scard)
  */
 static int __devinit pdplus_init(
         pci_dev_t  *pci,
-        snd_card_t *card)
+        struct snd_card *card)
 {
         int err;
         u_long start;
@@ -6082,7 +6078,7 @@ static int __devinit pdplus_probe(
 {
 	static int dev = 0;
         int err;
-        snd_card_t *card;
+        struct snd_card *card;
         ENTER;
 
         if (dev >= SNDRV_CARDS)
@@ -6127,7 +6123,7 @@ static void pdplus_unregister_iomem(snd_iomem_t *iomem)
 
 /*
  * Release resources */
-static void pdplus_sweep(snd_card_t *card)
+static void pdplus_sweep(struct snd_card *card)
 {
         pdplus_t *scard;
         u_long flags;
@@ -6168,7 +6164,7 @@ static void pdplus_sweep(snd_card_t *card)
  * Release the PCI device */
 static void __devexit pdplus_remove(pci_dev_t *pci)
 {
-        snd_card_t *card;
+        struct snd_card *card;
         ENTER;
 
         Vprintk ("MMIO 0= 0x%lx\n", pci_resource_start (pci, 0));
