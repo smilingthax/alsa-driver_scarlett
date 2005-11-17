@@ -71,16 +71,16 @@ portman_t *portman = NULL;
 struct _snd_portman {
 	spinlock_t reg_lock;
 
-	snd_card_t *card;
+	struct snd_card *card;
 	int irq;
 	unsigned long port;
 
 	unsigned char midi_input_mode[2];
 	unsigned char midi_output_mode[4];
 
-	snd_rawmidi_t *rmidi;
-	snd_rawmidi_substream_t *midi_input[2];
-	snd_rawmidi_substream_t *midi_output[4];
+	struct snd_rawmidi *rmidi;
+	struct snd_rawmidi_substream *midi_input[2];
+	struct snd_rawmidi_substream *midi_output[4];
 };
 
 /* Definitions for portman driver */
@@ -848,7 +848,7 @@ static struct parport_driver portman_driver = {
 	.detach = portman_detach,
 };
 
-static int snd_portman_midi_input_open(snd_rawmidi_substream_t * substream)
+static int snd_portman_midi_input_open(struct snd_rawmidi_substream *substream)
 {
 	unsigned long flags;
 
@@ -860,7 +860,7 @@ static int snd_portman_midi_input_open(snd_rawmidi_substream_t * substream)
 	return 0;
 }
 
-static int snd_portman_midi_input_close(snd_rawmidi_substream_t *
+static int snd_portman_midi_input_close(struct snd_rawmidi_substream *
 					substream)
 {
 	unsigned long flags;
@@ -873,7 +873,7 @@ static int snd_portman_midi_input_close(snd_rawmidi_substream_t *
 	return 0;
 }
 
-static int snd_portman_midi_output_open(snd_rawmidi_substream_t *
+static int snd_portman_midi_output_open(struct snd_rawmidi_substream *
 					substream)
 {
 	unsigned long flags;
@@ -886,7 +886,7 @@ static int snd_portman_midi_output_open(snd_rawmidi_substream_t *
 	return 0;
 }
 
-static int snd_portman_midi_output_close(snd_rawmidi_substream_t *
+static int snd_portman_midi_output_close(struct snd_rawmidi_substream *
 					 substream)
 {
 	unsigned long flags;
@@ -899,7 +899,7 @@ static int snd_portman_midi_output_close(snd_rawmidi_substream_t *
 	return 0;
 }
 
-static void snd_portman_midi_input_trigger(snd_rawmidi_substream_t *
+static void snd_portman_midi_input_trigger(struct snd_rawmidi_substream *
 					   substream, int up)
 {
 	unsigned long flags;
@@ -915,7 +915,7 @@ static void snd_portman_midi_input_trigger(snd_rawmidi_substream_t *
 	spin_unlock_irqrestore(&portman->reg_lock, flags);
 }
 
-static void snd_portman_midi_output_trigger(snd_rawmidi_substream_t *
+static void snd_portman_midi_output_trigger(struct snd_rawmidi_substream *
 					    substream, int up)
 {
 	unsigned long flags;
@@ -929,22 +929,22 @@ static void snd_portman_midi_output_trigger(snd_rawmidi_substream_t *
 	spin_unlock_irqrestore(&portman->reg_lock, flags);
 }
 
-static snd_rawmidi_ops_t snd_portman_midi_output = {
+static struct snd_rawmidi_ops snd_portman_midi_output = {
 	.open =		snd_portman_midi_output_open,
 	.close =	snd_portman_midi_output_close,
 	.trigger =	snd_portman_midi_output_trigger,
 };
 
-static snd_rawmidi_ops_t snd_portman_midi_input = {
+static struct snd_rawmidi_ops snd_portman_midi_input = {
 	.open =		snd_portman_midi_input_open,
 	.close =	snd_portman_midi_input_close,
 	.trigger =	snd_portman_midi_input_trigger,
 };
 
 static int __init snd_portman_midi(portman_t * portman, int device,
-				   snd_rawmidi_t ** rrawmidi)
+				   struct snd_rawmidi ** rrawmidi)
 {
-	snd_rawmidi_t *rmidi;
+	struct snd_rawmidi *rmidi;
 	int err;
 
 	if (rrawmidi)
@@ -977,7 +977,7 @@ static int __init alsa_card_portman2x4_init(void)
 {
 	/* LOCAL VARIABLES */
 	static int dev = 0;
-	snd_card_t *card;
+	struct snd_card *card;
 	int err;
 	int result = 0;
 
