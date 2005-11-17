@@ -608,13 +608,7 @@ if test ! -f include/linux/workqueue.h; then
 fi
 CHECK_KERNEL_HEADER(linux/dma-mapping.h)
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
-CHECK_KERNEL_HEADER(linux/device.h, [#ifndef _LINUX_DEVICE_H
-#define _LINUX_DEVICE_H
-struct device {
-};
-struct bus_type {
-};
-#endif
+CHECK_KERNEL_HEADER(linux/device.h, [#include \"device_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/platform_device.h, [#include \"platform_device_compat.h\"
 ])
@@ -634,6 +628,8 @@ CHECK_KERNEL_HEADER(linux/moduleparam.h)
 CHECK_KERNEL_HEADER(linux/syscalls.h, [#include \"syscalls_26.h\"
 ])
 CHECK_KERNEL_HEADER(linux/firmware.h, [#include \"firmware_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/err.h, [#include \"err_compat.h\"
 ])
 
 dnl Check for dump_stack
@@ -2309,6 +2305,36 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
     AC_DEFINE(CONFIG_SND_NESTED_CLASS_DEVICE)
   fi
 fi
+
+dnl PnP supports suspend/resume?
+if test "$CONFIG_PNP_KERNEL" = "y"; then
+  AC_MSG_CHECKING(for PnP suspend/resume)
+  pnp_suspend="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/pnp.h>
+],[
+  struct pnp_driver pnp;
+  pnp.suspend = 0;
+],
+    AC_MSG_RESULT("yes");pnp_suspend="1",
+    AC_MSG_RESULT("no");pnp_suspend="0",
+    AC_MSG_RESULT("unknown");pnp_suspend="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_HAVE_PNP_SUSPEND=$pnp_suspend
+  dnl AC_SUBST(CONFIG_HAVE_PNP_SUSPEND)
+  if test "$CONFIG_HAVE_PNP_SUSPEND" = "1"; then
+    AC_DEFINE(CONFIG_HAVE_PNP_SUSPEND)
+  fi
+fi
+
 
 dnl New unlocked/compat_ioctl
 if test "$kversion.$kpatchlevel" = "2.6"; then
