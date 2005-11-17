@@ -64,16 +64,13 @@ endif
 export KBUILD_VERBOSE KBUILD_CHECKSRC
 endif
 
-SUBDIRS  = acore i2c drivers isa synth
+SUBDIRS  = acore i2c drivers isa synth pci
 CSUBDIRS =
 
 ifndef NEW_KBUILD
 SUBDIRS += support
 endif
 
-ifeq (y,$(CONFIG_PCI))
-SUBDIRS  += pci
-endif
 ifeq (y,$(CONFIG_ARM))
 SUBDIRS  += arm
 endif
