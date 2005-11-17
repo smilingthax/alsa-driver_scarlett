@@ -364,12 +364,12 @@ struct _snd_hal2 {
 /* main structure for HAL2 card */
 
 struct _snd_hal2_card {
-	snd_card_t *card;
-	snd_pcm_t *pcm;
-	snd_rawmidi_t *midi_uart;
+	struct snd_card *card;
+	struct snd_pcm *pcm;
+	struct snd_rawmidi *midi_uart;
 
-	snd_pcm_substream_t *playback_substream;
-	snd_pcm_substream_t *capture_substream;
+	struct snd_pcm_substream *playback_substream;
+	struct snd_pcm_substream *capture_substream;
 	snd_pcm1_substream_t *playback_substream1;
 	snd_pcm1_substream_t *capture_substream1;
 
@@ -388,9 +388,9 @@ extern void snd_hal2_i_write32(snd_hal2_card_t *hal2, unsigned short addr, unsig
 extern unsigned short snd_hal2_i_look16(snd_hal2_card_t *hal2, unsigned short addr);
 extern unsigned long snd_hal2_i_look32(snd_hal2_card_t *hal2, unsigned short addr);
 
-extern snd_pcm_t *snd_hal2_pcm_new_device(snd_hal2_card_t *hal2);
+extern struct snd_pcm *snd_hal2_pcm_new_device(snd_hal2_card_t *hal2);
 extern void snd_hal2_dump_regs(snd_hal2_card_t *hal2);
-extern snd_pcm_t *snd_hal2_new_device(snd_card_t *card,
+extern struct snd_pcm *snd_hal2_new_device(struct snd_card *card,
 				      snd_irq_t *irqnum,
 				      snd_dma_t *dma1ptr,
 				      snd_dma_t *dma2ptr,
@@ -400,6 +400,6 @@ extern snd_pcm_t *snd_hal2_new_device(snd_card_t *card,
 				      snd_hal2_syn_regs_t *syn_regs);
 extern void snd_hal2_interrupt(snd_hal2_card_t * hal2);
 
-extern snd_pcm_t *snd_hal2_pcm(snd_hal2_card_t *hal2);
+extern struct snd_pcm *snd_hal2_pcm(snd_hal2_card_t *hal2);
 
 #endif /* __SOUND_HAL2_H */
