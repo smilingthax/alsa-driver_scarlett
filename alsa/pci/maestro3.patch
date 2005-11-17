@@ -5,7 +5,7 @@
  	struct m3_quirk *quirk;
  	struct m3_hv_quirk *hv_quirk;
 +	u16 subsystem_vendor, subsystem_device;
- 	static snd_device_ops_t ops = {
+ 	static struct snd_device_ops ops = {
  		.dev_free =	snd_m3_dev_free,
  	};
 @@ -2696,6 +2697,14 @@

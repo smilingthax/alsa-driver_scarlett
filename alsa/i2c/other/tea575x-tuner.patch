@@ -1,5 +1,5 @@
---- tea575x-tuner.c.old	2005-02-15 11:12:28.000000000 +0100
-+++ tea575x-tuner.c	2005-03-13 12:35:39.000000000 +0100
+--- ../../alsa-kernel/i2c/other/tea575x-tuner.c	2005-11-10 12:47:46.000000000 +0100
++++ tea575x-tuner.c	2005-11-10 12:55:30.000000000 +0100
 @@ -54,6 +54,19 @@
  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
  #define TEA575X_BIT_FREQ_MASK	0x7fff
@@ -46,7 +46,7 @@
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
  	struct video_device *dev = video_devdata(file);
 +#endif
- 	tea575x_t *tea = video_get_drvdata(dev);
+ 	struct snd_tea575x *tea = video_get_drvdata(dev);
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
  	void __user *arg = (void __user *)data;
 +#endif
