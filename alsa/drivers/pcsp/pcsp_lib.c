@@ -20,10 +20,10 @@
 #define DMIX_WANTS_S16		1
 
 /* the timer-int for playing thru PC-Speaker */
-static int pcsp_do_timer(pcsp_t *chip)
+static int pcsp_do_timer(struct snd_pcsp *chip)
 {
-	snd_pcm_substream_t *substream = chip->playback_substream;
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_substream *substream = chip->playback_substream;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	if (chip->reset_timer) {
 		outb_p(0x34, 0x43);	/* binary, mode 2, LSB/MSB, ch 0 */
@@ -65,7 +65,7 @@ static int pcsp_do_timer(pcsp_t *chip)
 	return 1;
 }
 
-void pcsp_start_timer(pcsp_t *chip)
+void pcsp_start_timer(struct snd_pcsp *chip)
 {
 	unsigned long flags;
 
@@ -95,7 +95,7 @@ void pcsp_start_timer(pcsp_t *chip)
 }
 
 /* reset the timer to 100 Hz and reset old timer-int */
-void pcsp_stop_timer(pcsp_t *chip)
+void pcsp_stop_timer(struct snd_pcsp *chip)
 {
 	unsigned long flags;
 	if (!chip->timer_active)
@@ -121,9 +121,9 @@ void pcsp_stop_timer(pcsp_t *chip)
 	spin_unlock_irqrestore(&i8253_lock, flags);
 }
 
-static int snd_pcsp_playback_close(snd_pcm_substream_t * substream)
+static int snd_pcsp_playback_close(struct snd_pcm_substream * substream)
 {
-	pcsp_t *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
 	printk("close called\n");
 #endif
@@ -134,8 +134,8 @@ static int snd_pcsp_playback_close(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_pcsp_playback_hw_params(snd_pcm_substream_t * substream,
-					 snd_pcm_hw_params_t * hw_params)
+static int snd_pcsp_playback_hw_params(struct snd_pcm_substream * substream,
+				       struct snd_pcm_hw_params * hw_params)
 {
 	int err;
 	if ((err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))) < 0)
@@ -143,7 +143,7 @@ static int snd_pcsp_playback_hw_params(snd_pcm_substream_t * substream,
 	return 0;
 }
 
-static int snd_pcsp_playback_hw_free(snd_pcm_substream_t * substream)
+static int snd_pcsp_playback_hw_free(struct snd_pcm_substream * substream)
 {
 #if PCSP_DEBUG
 	printk("hw_free called\n");
@@ -151,9 +151,9 @@ static int snd_pcsp_playback_hw_free(snd_pcm_substream_t * substream)
 	return snd_pcm_lib_free_pages(substream);
 }
 
-static int snd_pcsp_playback_prepare(snd_pcm_substream_t *substream)
+static int snd_pcsp_playback_prepare(struct snd_pcm_substream *substream)
 {
-	pcsp_t *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
 	printk("prepare called, size=%i psize=%i f=%i f1=%i\n",
 		snd_pcm_lib_buffer_bytes(substream),
@@ -167,9 +167,9 @@ static int snd_pcsp_playback_prepare(snd_pcm_substream_t *substream)
 	return 0;
 }
 
-static int snd_pcsp_trigger(snd_pcm_substream_t *substream, int cmd)
+static int snd_pcsp_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	pcsp_t *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
 	printk("trigger called\n");
 #endif
@@ -188,9 +188,9 @@ static int snd_pcsp_trigger(snd_pcm_substream_t *substream, int cmd)
 	return 0;
 }
 
-static snd_pcm_uframes_t snd_pcsp_playback_pointer(snd_pcm_substream_t * substream)
+static snd_pcm_uframes_t snd_pcsp_playback_pointer(struct snd_pcm_substream * substream)
 {
-	pcsp_t *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 	size_t ptr;
 	ptr = chip->cur_buf * snd_pcm_lib_period_bytes(substream) + chip->index;
 #if PCSP_DEBUG
@@ -199,7 +199,7 @@ static snd_pcm_uframes_t snd_pcsp_playback_pointer(snd_pcm_substream_t * substre
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
-static snd_pcm_hardware_t snd_pcsp_playback =
+static struct snd_pcm_hardware snd_pcsp_playback =
 {
 	.info =			(SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_HALF_DUPLEX |
@@ -223,10 +223,10 @@ static snd_pcm_hardware_t snd_pcsp_playback =
 	.fifo_size =		0,
 };
 
-static int snd_pcsp_playback_open(snd_pcm_substream_t * substream)
+static int snd_pcsp_playback_open(struct snd_pcm_substream * substream)
 {
-	pcsp_t *chip = snd_pcm_substream_chip(substream);
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
 #if PCSP_DEBUG
 	printk("open called\n");
 #endif
@@ -239,7 +239,7 @@ static int snd_pcsp_playback_open(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static snd_pcm_ops_t snd_pcsp_playback_ops = {
+static struct snd_pcm_ops snd_pcsp_playback_ops = {
 	.open =		snd_pcsp_playback_open,
 	.close =	snd_pcsp_playback_close,
 	.ioctl =	snd_pcm_lib_ioctl,
@@ -250,9 +250,9 @@ static snd_pcm_ops_t snd_pcsp_playback_ops = {
 	.pointer =	snd_pcsp_playback_pointer,
 };
 
-int __init snd_pcsp_new_pcm(pcsp_t *chip)
+int __init snd_pcsp_new_pcm(struct snd_pcsp *chip)
 {
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 	int err;
 
 	if ((err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &pcm)) < 0)
