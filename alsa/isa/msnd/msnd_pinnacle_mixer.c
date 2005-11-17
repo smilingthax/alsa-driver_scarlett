@@ -56,7 +56,7 @@
 
 
 
-static int snd_msndmix_info_mux(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+static int snd_msndmix_info_mux(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	static char *texts[3] = {
 		"Analog", "SPDIF", "MASS"
@@ -71,7 +71,7 @@ static int snd_msndmix_info_mux(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * 
 	return 0;
 }
 
-static int snd_msndmix_get_mux(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int snd_msndmix_get_mux(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	multisound_dev_t *	msnd =	snd_kcontrol_chip(kcontrol);
 	ucontrol->value.enumerated.item[0] = 0;
@@ -122,14 +122,14 @@ static int snd_msndmix_set_mux( multisound_dev_t * msnd, int val)
 }
 
 
-static int snd_msndmix_put_mux(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int snd_msndmix_put_mux(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	multisound_dev_t *	msnd =	snd_kcontrol_chip( kcontrol);
 	return snd_msndmix_set_mux( msnd, ucontrol->value.enumerated.item[ 0]);
 }
 
 
-static int snd_msndmix_volume_info(snd_kcontrol_t * kcontrol, snd_ctl_elem_info_t * uinfo)
+static int snd_msndmix_volume_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
@@ -138,7 +138,7 @@ static int snd_msndmix_volume_info(snd_kcontrol_t * kcontrol, snd_ctl_elem_info_
 	return 0;
 }
 
-static int snd_msndmix_volume_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int snd_msndmix_volume_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	multisound_dev_t *	msnd =	snd_kcontrol_chip(kcontrol);
 	int			addr =	kcontrol->private_value;
@@ -250,7 +250,7 @@ static int snd_msndmix_set( multisound_dev_t * dev, int d, int left, int right)
 }
 
 
-static int snd_msndmix_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+static int snd_msndmix_volume_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	multisound_dev_t *msnd = snd_kcontrol_chip(kcontrol);
 	int change, addr = kcontrol->private_value;
@@ -276,7 +276,7 @@ static int snd_msndmix_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
   .private_value = addr }
 
 
-static snd_kcontrol_new_t snd_msnd_controls[] = {
+static struct snd_kcontrol_new snd_msnd_controls[] = {
 DUMMY_VOLUME(	"Master Volume",0, MSND_MIXER_VOLUME),
 DUMMY_VOLUME(	"PCM Volume",	0, MSND_MIXER_PCM),
 DUMMY_VOLUME(	"Aux Volume",	0, MSND_MIXER_AUX),
@@ -296,7 +296,7 @@ DUMMY_VOLUME(	"Monitor",	0, MSND_MIXER_IMIX),
 
 int __init snd_msndmix_new( multisound_dev_t * msnd)
 {
-	snd_card_t *card = msnd->card;
+	struct snd_card *card = msnd->card;
 	unsigned int idx;
 	int err;
 
