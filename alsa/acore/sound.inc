@@ -20,9 +20,6 @@ EXPORT_SYMBOL(snd_compat_vsscanf);
 #ifdef CONFIG_HAVE_OLD_REQUEST_MODULE
 EXPORT_SYMBOL(snd_compat_request_module);
 #endif
-#ifdef CONFIG_OLD_KILL_FASYNC
-EXPORT_SYMBOL(snd_wrapper_kill_fasync);
-#endif
 #if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 EXPORT_SYMBOL(snd_compat_devfs_remove);
 #endif
@@ -73,6 +70,4 @@ EXPORT_SYMBOL(snd_hidden_kzalloc);
 EXPORT_SYMBOL(snd_hidden_kcalloc);
 EXPORT_SYMBOL(snd_hidden_kfree);
 EXPORT_SYMBOL(snd_hidden_kstrdup);
-EXPORT_SYMBOL(snd_wrapper_kmalloc);
-EXPORT_SYMBOL(snd_wrapper_kfree);
 #endif

@@ -5,19 +5,6 @@
 #include <linux/config.h>
 #include <linux/string.h>
 
-#ifdef CONFIG_SND_DEBUG_MEMORY
-#include <linux/slab.h>
-void *snd_wrapper_kmalloc(size_t size, unsigned int flags)
-{
-	return kmalloc(size, flags);
-}
-
-void snd_wrapper_kfree(const void *obj)
-{
-	kfree(obj);
-}
-#endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
 #include "sndversions.h"
@@ -129,24 +116,6 @@ void snd_compat_request_module(const char *fmt, ...)
 	va_end(args);
 }
 #endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-
-#include <linux/ioport.h>
-
-void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name)
-{
-	return request_region(from, extent, name);
-}
-
-#ifdef CONFIG_OLD_KILL_FASYNC
-void snd_wrapper_kill_fasync(struct fasync_struct **fp, int sig, int band)
-{
-	kill_fasync(*(fp), sig);
-}
-#endif
-
-#endif /* < 2.3.0 */
 
 #if defined(CONFIG_DEVFS_FS)
 

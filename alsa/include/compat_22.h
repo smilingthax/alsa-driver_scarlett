@@ -96,9 +96,12 @@ static __inline__ void list_del_init(struct list_head *entry)
 /* Some distributions use modified kill_fasync */
 #ifdef CONFIG_OLD_KILL_FASYNC
 #include <linux/fs.h>
+static inline void snd_compat_kill_fasync(struct fasync_struct **fp, int sig, int band)
+{
+	kill_fasync(*(fp), sig);
+}
 #undef kill_fasync
-#define kill_fasync(fp, sig, band) snd_wrapper_kill_fasync(fp, sig, band)
-void snd_wrapper_kill_fasync(struct fasync_struct **, int, int);
+#define kill_fasync(fp, sig, band) snd_compat_kill_fasync(fp, sig, band)
 #endif
 
 /* this is identical with tq_struct but the "routine" field is renamed to "func" */
@@ -205,7 +208,11 @@ struct resource {
 #define IORESOURCE_MEM		0x00000200
 #endif
 
-void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name);
+static inline void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name)
+{
+	request_region(from, extent, name);
+}
+
 #undef request_region
 #define request_region(start,size,name) snd_compat_request_region(start,size,name,0)
 #define request_mem_region(start,size,name) snd_compat_request_region(start,size,name,1)
