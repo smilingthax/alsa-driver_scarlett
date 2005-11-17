@@ -78,7 +78,7 @@ MODULE_SUPPORTED_DEVICE("{{AudioScience,HPI soundcard}}");
 #define TIMER_JIFFIES 15
 
 typedef struct snd_card_asihpi {
-	snd_card_t *card;
+	struct snd_card *card;
 	spinlock_t mixer_lock;
 	// ASI 
 	HW16 wAdapterIndex;
@@ -102,7 +102,7 @@ typedef struct snd_card_asihpi_pcm {
 	unsigned int pcm_jiffie_per_period;
 	unsigned int pcm_irq_pos;	/* IRQ position */
 	unsigned int pcm_buf_pos;	/* position in buffer */
-	snd_pcm_substream_t *substream;
+	struct snd_pcm_substream *substream;
 	HPI_HOSTREAM hStream;
 	HPI_DATA Data;
 	unsigned int pcm_hpi_pos;	/* position in buffer */
@@ -126,10 +126,10 @@ static void _HandleError(HW16 err, int line, char *filename)
 
 #define HPI_HandleError(x)  _HandleError(x,__LINE__,__FILE__)
 /***************************** GENERAL PCM ****************/
-static int snd_card_asihpi_pcm_hw_params(snd_pcm_substream_t * substream,
-					 snd_pcm_hw_params_t * params)
+static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
+					 struct snd_pcm_hw_params *params)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	unsigned int bps;
 
@@ -148,25 +148,25 @@ static int snd_card_asihpi_pcm_hw_params(snd_pcm_substream_t * substream,
 	return 0;
 }
 
-static void snd_card_asihpi_pcm_timer_start(snd_pcm_substream_t *
+static void snd_card_asihpi_pcm_timer_start(struct snd_pcm_substream *
 					    substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
 	dpcm->timer.expires = dpcm->pcm_jiffie_per_period + jiffies;
 	add_timer(&dpcm->timer);
 }
 
-static void snd_card_asihpi_pcm_timer_stop(snd_pcm_substream_t * substream)
+static void snd_card_asihpi_pcm_timer_stop(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
 	del_timer(&dpcm->timer);
 }
 
-static void snd_card_asihpi_runtime_free(snd_pcm_runtime_t * runtime)
+static void snd_card_asihpi_runtime_free(struct snd_pcm_runtime *runtime)
 {
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	kfree(dpcm);
@@ -216,7 +216,7 @@ static int snd_card_asihpi_format_alsa2hpi(snd_pcm_format_t alsaFormat,
 static void snd_card_asihpi_playback_timer_function(unsigned long data)
 {
 	snd_card_asihpi_pcm_t *dpcm = (snd_card_asihpi_pcm_t *)data;
-	snd_pcm_runtime_t *runtime = dpcm->substream->runtime;
+	struct snd_pcm_runtime *runtime = dpcm->substream->runtime;
 
 	unsigned int pos;
 	int delta;
@@ -257,17 +257,17 @@ static void snd_card_asihpi_playback_timer_function(unsigned long data)
 	spin_unlock_irq(&dpcm->lock);
 }
 
-static int snd_card_asihpi_playback_ioctl(snd_pcm_substream_t * substream,
+static int snd_card_asihpi_playback_ioctl(struct snd_pcm_substream *substream,
 					  unsigned int cmd, void *arg)
 {
 	snd_printd(KERN_INFO "playback ioctl %d\n", cmd);
 	return snd_pcm_lib_ioctl(substream, cmd, arg);
 }
 
-static int snd_card_asihpi_playback_trigger(snd_pcm_substream_t *
+static int snd_card_asihpi_playback_trigger(struct snd_pcm_substream *
 					    substream, int cmd)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	HW16 err;
 
@@ -304,11 +304,11 @@ static int snd_card_asihpi_playback_trigger(snd_pcm_substream_t *
 	return 0;
 }
 
-static int snd_card_asihpi_playback_hw_params(snd_pcm_substream_t *
+static int snd_card_asihpi_playback_hw_params(struct snd_pcm_substream *
 					      substream,
-					      snd_pcm_hw_params_t * params)
+					      struct snd_pcm_hw_params *params)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	int err;
 	HW16 wFormat;
@@ -362,9 +362,9 @@ static int snd_card_asihpi_playback_hw_params(snd_pcm_substream_t *
 }
 
 static int
-snd_card_asihpi_playback_hw_free(snd_pcm_substream_t * substream)
+snd_card_asihpi_playback_hw_free(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	if ( dpcm->hpi_out_buffer_allocated ) {
 		HPI_OutStreamHostBufferFree( phSubSys, dpcm->hStream );
@@ -375,10 +375,10 @@ snd_card_asihpi_playback_hw_free(snd_pcm_substream_t * substream)
 }
 
 
-static int snd_card_asihpi_playback_prepare(snd_pcm_substream_t *
+static int snd_card_asihpi_playback_prepare(struct snd_pcm_substream *
 					    substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	int err;
 
@@ -393,15 +393,15 @@ static int snd_card_asihpi_playback_prepare(snd_pcm_substream_t *
 }
 
 static snd_pcm_uframes_t
-snd_card_asihpi_playback_pointer(snd_pcm_substream_t * substream)
+snd_card_asihpi_playback_pointer(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
 	return bytes_to_frames(runtime, dpcm->pcm_buf_pos);
 }
 
-static snd_pcm_hardware_t snd_card_asihpi_playback = {
+static struct snd_pcm_hardware snd_card_asihpi_playback = {
 	.info = SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_PAUSE,
 	.rates = SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_48000,
 	.rate_min = 5500,
@@ -436,9 +436,9 @@ static void snd_card_asihpi_playback_format(HPI_HOSTREAM hStream,
 	}
 }
 
-static int snd_card_asihpi_playback_open(snd_pcm_substream_t * substream)
+static int snd_card_asihpi_playback_open(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm;
 	snd_card_asihpi_t *asihpi = snd_pcm_substream_chip(substream);
 	HW16 err;
@@ -475,9 +475,9 @@ static int snd_card_asihpi_playback_open(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_card_asihpi_playback_close(snd_pcm_substream_t * substream)
+static int snd_card_asihpi_playback_close(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	HW16 err;
 
@@ -489,12 +489,12 @@ static int snd_card_asihpi_playback_close(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_card_asihpi_playback_copy(snd_pcm_substream_t * substream,
+static int snd_card_asihpi_playback_copy(struct snd_pcm_substream *substream,
 					 int channel,
 					 snd_pcm_uframes_t pos, void *src,
 					 snd_pcm_uframes_t count)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	HW16 err;
 	unsigned int len;
@@ -515,14 +515,14 @@ static int snd_card_asihpi_playback_copy(snd_pcm_substream_t * substream,
 	return 0;
 }
 
-static int snd_card_asihpi_playback_silence(snd_pcm_substream_t *
+static int snd_card_asihpi_playback_silence(struct snd_pcm_substream *
 					    substream, int channel,
 					    snd_pcm_uframes_t pos,
 					    snd_pcm_uframes_t count)
 {
 	unsigned int len;
 	HW16 err;
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
 	len = frames_to_bytes(runtime, count);
@@ -534,7 +534,7 @@ static int snd_card_asihpi_playback_silence(snd_pcm_substream_t *
 	return 0;
 }
 
-static snd_pcm_ops_t snd_card_asihpi_playback_ops = {
+static struct snd_pcm_ops snd_card_asihpi_playback_ops = {
 	.open = snd_card_asihpi_playback_open,
 	.close = snd_card_asihpi_playback_close,
 	.ioctl = snd_card_asihpi_playback_ioctl,
@@ -574,15 +574,15 @@ static void snd_card_asihpi_capture_timer_function(unsigned long data)
 	spin_unlock_irq(&dpcm->lock);
 }
 
-static int snd_card_asihpi_capture_ioctl(snd_pcm_substream_t * substream,
+static int snd_card_asihpi_capture_ioctl(struct snd_pcm_substream *substream,
 					 unsigned int cmd, void *arg)
 {
 	return snd_pcm_lib_ioctl(substream, cmd, arg);
 }
 
-static int snd_card_asihpi_capture_prepare(snd_pcm_substream_t * substream)
+static int snd_card_asihpi_capture_prepare(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	int err;
 
@@ -596,11 +596,11 @@ static int snd_card_asihpi_capture_prepare(snd_pcm_substream_t * substream)
 }
 
 
-static int snd_card_asihpi_capture_hw_params(snd_pcm_substream_t *
+static int snd_card_asihpi_capture_hw_params(struct snd_pcm_substream *
 					     substream,
-					     snd_pcm_hw_params_t * params)
+					     struct snd_pcm_hw_params *params)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	int err;
 	HW16 wFormat;
@@ -658,9 +658,9 @@ static int snd_card_asihpi_capture_hw_params(snd_pcm_substream_t *
 	return snd_card_asihpi_pcm_hw_params(substream, params);
 }
 
-static int snd_card_asihpi_capture_hw_free(snd_pcm_substream_t * substream)
+static int snd_card_asihpi_capture_hw_free(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	if ( dpcm->hpi_in_buffer_allocated ) {
 		HPI_InStreamHostBufferFree( phSubSys, dpcm->hStream );
@@ -670,10 +670,10 @@ static int snd_card_asihpi_capture_hw_free(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_card_asihpi_capture_trigger(snd_pcm_substream_t * substream,
+static int snd_card_asihpi_capture_trigger(struct snd_pcm_substream *substream,
 					   int cmd)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	HW16 err;
 
@@ -692,16 +692,16 @@ static int snd_card_asihpi_capture_trigger(snd_pcm_substream_t * substream,
 }
 
 static snd_pcm_uframes_t
-snd_card_asihpi_capture_pointer(snd_pcm_substream_t * substream)
+snd_card_asihpi_capture_pointer(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
 	//snd_printd("Capture pointer %d\n",dpcm->pcm_buf_pos);
 	return bytes_to_frames(runtime, dpcm->pcm_buf_pos);
 }
 
-static snd_pcm_hardware_t snd_card_asihpi_capture = {
+static struct snd_pcm_hardware snd_card_asihpi_capture = {
 	.info = SNDRV_PCM_INFO_INTERLEAVED,
 	.formats = SNDRV_PCM_FMTBIT_S16,
 	.rates = SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_48000,
@@ -735,9 +735,9 @@ static void snd_card_asihpi_capture_format(HPI_HOSTREAM hStream,
 	}
 }
 
-static int snd_card_asihpi_capture_open(snd_pcm_substream_t * substream)
+static int snd_card_asihpi_capture_open(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm;
 	snd_card_asihpi_t *asihpi = snd_pcm_substream_chip(substream);
 	HW16 err;
@@ -774,9 +774,9 @@ static int snd_card_asihpi_capture_open(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_card_asihpi_capture_close(snd_pcm_substream_t * substream)
+static int snd_card_asihpi_capture_close(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	HW16 err;
 
@@ -786,11 +786,11 @@ static int snd_card_asihpi_capture_close(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_card_asihpi_capture_copy(snd_pcm_substream_t * substream,
+static int snd_card_asihpi_capture_copy(struct snd_pcm_substream *substream,
 					int channel, snd_pcm_uframes_t pos,
 					void *dst, snd_pcm_uframes_t count)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 	HW16 err;
 
@@ -811,7 +811,7 @@ static int snd_card_asihpi_capture_copy(snd_pcm_substream_t * substream,
 	return 0;
 }
 
-static snd_pcm_ops_t snd_card_asihpi_capture_ops = {
+static struct snd_pcm_ops snd_card_asihpi_capture_ops = {
 	.open = snd_card_asihpi_capture_open,
 	.close = snd_card_asihpi_capture_close,
 	.ioctl = snd_card_asihpi_capture_ioctl,
@@ -826,7 +826,7 @@ static snd_pcm_ops_t snd_card_asihpi_capture_ops = {
 static int __devinit snd_card_asihpi_pcm(snd_card_asihpi_t * asihpi,
 				      int device, int substreams)
 {
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 	int err;
 
 	if ((err =
@@ -938,7 +938,7 @@ static char *asihpi_src_names[] = ASIHPI_SOURCENODE_STRINGS;
 static char *asihpi_dst_names[] = ASIHPI_DESTNODE_STRINGS;
 static char *asihpi_tuner_band_names[] = ASIHPI_TUNER_BAND_STRINGS;
 
-static inline int ctl_add( snd_card_t * card, snd_kcontrol_new_t * ctl, snd_card_asihpi_t * asihpi ) {
+static inline int ctl_add( struct snd_card *card, struct snd_kcontrol_new * ctl, snd_card_asihpi_t * asihpi ) {
 	int err;
 
 	if ((err = snd_ctl_add(card, snd_ctl_new1(ctl, asihpi))) < 0) {
@@ -949,7 +949,7 @@ static inline int ctl_add( snd_card_t * card, snd_kcontrol_new_t * ctl, snd_card
 	return 0;
 }
 
-static void asihpi_ctl_name_prefix( snd_kcontrol_new_t * snd_control, hpi_control_t * asihpi_control) {
+static void asihpi_ctl_name_prefix( struct snd_kcontrol_new * snd_control, hpi_control_t * asihpi_control) {
 
 	if (asihpi_control->wDstNodeType)
 		sprintf(snd_control->name, "%s %s%d",
@@ -966,8 +966,8 @@ static void asihpi_ctl_name_prefix( snd_kcontrol_new_t * snd_control, hpi_contro
 /*------------------------------------------------------------
    Volume controls
  ------------------------------------------------------------*/
-static int snd_asihpi_volume_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_volume_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 err;
@@ -993,8 +993,8 @@ static int snd_asihpi_volume_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_volume_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_volume_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1010,8 +1010,8 @@ static int snd_asihpi_volume_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_volume_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_volume_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1035,7 +1035,7 @@ static int snd_asihpi_volume_put(snd_kcontrol_t * kcontrol,
 }
 
 static void __devinit snd_asihpi_volume_new(hpi_control_t * asihpi_control,
-					 snd_kcontrol_new_t * snd_control)
+					 struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_volume_info;
 	snd_control->get = snd_asihpi_volume_get;
@@ -1057,8 +1057,8 @@ static void __devinit snd_asihpi_volume_new(hpi_control_t * asihpi_control,
 /*------------------------------------------------------------
    Level controls
  ------------------------------------------------------------*/
-static int snd_asihpi_level_info(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_level_info(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
@@ -1067,8 +1067,8 @@ static int snd_asihpi_level_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_level_get(snd_kcontrol_t * kcontrol,
-				snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_level_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1086,8 +1086,8 @@ static int snd_asihpi_level_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_level_put(snd_kcontrol_t * kcontrol,
-				snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_level_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1110,7 +1110,7 @@ static int snd_asihpi_level_put(snd_kcontrol_t * kcontrol,
 }
 
 static void __devinit snd_asihpi_level_new(hpi_control_t * asihpi_control,
-					snd_kcontrol_new_t * snd_control)
+					struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_level_info;
 	snd_control->get = snd_asihpi_level_get;
@@ -1150,8 +1150,8 @@ static void __devinit snd_asihpi_level_new(hpi_control_t * asihpi_control,
 
 static char *asihpi_aesebu_format_names[] = ASIHPI_AESEBU_FORMAT_STRINGS;
 
-static int snd_asihpi_aesebu_format_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_aesebu_format_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
@@ -1166,8 +1166,8 @@ static int snd_asihpi_aesebu_format_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_aesebu_format_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol,
+static int snd_asihpi_aesebu_format_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol,
 				 HW16 (*func)( HPI_HSUBSYS*, HPI_HCONTROL, HW16* ) )
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
@@ -1185,8 +1185,8 @@ static int snd_asihpi_aesebu_format_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_aesebu_format_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol,
+static int snd_asihpi_aesebu_format_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol,
 				 HW16 (*func)( HPI_HSUBSYS*, HPI_HCONTROL, HW16 ) )
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
@@ -1204,23 +1204,23 @@ static int snd_asihpi_aesebu_format_put(snd_kcontrol_t * kcontrol,
 	return 1;
 }
 
-static int snd_asihpi_aesebu_rx_source_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol) {
+static int snd_asihpi_aesebu_rx_source_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol) {
 	return snd_asihpi_aesebu_format_get( kcontrol, ucontrol, HPI_AESEBU_Receiver_GetSource );
 }
 
-static int snd_asihpi_aesebu_rx_source_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol) {
+static int snd_asihpi_aesebu_rx_source_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol) {
 	return snd_asihpi_aesebu_format_put( kcontrol, ucontrol, HPI_AESEBU_Receiver_SetSource );
 }
 
-static int snd_asihpi_aesebu_tx_format_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol) {
+static int snd_asihpi_aesebu_tx_format_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol) {
 	return snd_asihpi_aesebu_format_get( kcontrol, ucontrol, HPI_AESEBU_Transmitter_GetFormat );
 }
 
-static int snd_asihpi_aesebu_tx_format_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol) {
+static int snd_asihpi_aesebu_tx_format_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol) {
 	return snd_asihpi_aesebu_format_put( kcontrol, ucontrol, HPI_AESEBU_Transmitter_SetFormat );
 }
 
@@ -1234,8 +1234,8 @@ static int snd_asihpi_aesebu_tx_format_put(snd_kcontrol_t * kcontrol,
 
 static char *asihpi_aesebu_clocksource_names[] = ASIHPI_AESEBU_CLOCKSOURCE_STRINGS;
 
-static int snd_asihpi_aesebu_tx_clocksource_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_aesebu_tx_clocksource_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
@@ -1250,8 +1250,8 @@ static int snd_asihpi_aesebu_tx_clocksource_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_aesebu_tx_clocksource_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol )
+static int snd_asihpi_aesebu_tx_clocksource_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol )
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 sync;
@@ -1268,8 +1268,8 @@ static int snd_asihpi_aesebu_tx_clocksource_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_aesebu_tx_clocksource_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol )
+static int snd_asihpi_aesebu_tx_clocksource_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol )
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	/* default to AES/EBU sync */
@@ -1290,10 +1290,10 @@ static int snd_asihpi_aesebu_tx_clocksource_put(snd_kcontrol_t * kcontrol,
 /* AESEBU control group initializers  */
 
 static int __devinit snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
-					snd_kcontrol_new_t * snd_control)
+					struct snd_kcontrol_new * snd_control)
 {
 
-	snd_card_t *card = asihpi->card;
+	struct snd_card *card = asihpi->card;
 
 /* RX source */
 
@@ -1312,10 +1312,10 @@ static int __devinit snd_asihpi_aesebu_rx_new(snd_card_asihpi_t * asihpi, hpi_co
 }
 
 static int __devinit snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
-					snd_kcontrol_new_t * snd_control)
+					struct snd_kcontrol_new * snd_control)
 {
 
-	snd_card_t *card = asihpi->card;
+	struct snd_card *card = asihpi->card;
 
 /* TX Format */
 
@@ -1352,8 +1352,8 @@ static int __devinit snd_asihpi_aesebu_tx_new(snd_card_asihpi_t * asihpi, hpi_co
 
 /* Gain */
 
-static int snd_asihpi_tuner_gain_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_tuner_gain_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 err;
@@ -1373,8 +1373,8 @@ static int snd_asihpi_tuner_gain_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_tuner_gain_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_tuner_gain_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	/*
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
@@ -1389,8 +1389,8 @@ static int snd_asihpi_tuner_gain_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_tuner_gain_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_tuner_gain_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	/*
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
@@ -1407,7 +1407,7 @@ static int snd_asihpi_tuner_gain_put(snd_kcontrol_t * kcontrol,
 
 /* Band  */
 
-static int asihpi_tuner_band_query( snd_kcontrol_t * kcontrol, HW32 * bandList, HW32 len ) {
+static int asihpi_tuner_band_query( struct snd_kcontrol *kcontrol, HW32 * bandList, HW32 len ) {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 err;
 	HW32 idx;
@@ -1420,8 +1420,8 @@ static int asihpi_tuner_band_query( snd_kcontrol_t * kcontrol, HW32 * bandList, 
 	return idx;
 }
 
-static int snd_asihpi_tuner_band_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_tuner_band_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
         HW32 tunerBands[HPI_TUNER_BAND_LAST];
 	HW32 numBands = 0;
@@ -1441,8 +1441,8 @@ static int snd_asihpi_tuner_band_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_tuner_band_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_tuner_band_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	/*
@@ -1467,8 +1467,8 @@ static int snd_asihpi_tuner_band_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_tuner_band_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_tuner_band_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	/*
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
@@ -1489,8 +1489,8 @@ static int snd_asihpi_tuner_band_put(snd_kcontrol_t * kcontrol,
 
 /* Freq */
 
-static int snd_asihpi_tuner_freq_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_tuner_freq_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
 	HPI_HCONTROL hControl = kcontrol->private_value;
 	HW16 err;
@@ -1530,8 +1530,8 @@ static int snd_asihpi_tuner_freq_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_tuner_freq_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_tuner_freq_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1546,8 +1546,8 @@ static int snd_asihpi_tuner_freq_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_tuner_freq_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_tuner_freq_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1565,10 +1565,10 @@ static int snd_asihpi_tuner_freq_put(snd_kcontrol_t * kcontrol,
 /* Tuner control group initializer  */
 
 static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_control_t * asihpi_control,
-					snd_kcontrol_new_t * snd_control)
+					struct snd_kcontrol_new * snd_control)
 {
 
-	snd_card_t *card = asihpi->card;
+	struct snd_card *card = asihpi->card;
 
 /* Gain ctl */
 
@@ -1618,8 +1618,8 @@ static int __devinit snd_asihpi_tuner_new(snd_card_asihpi_t * asihpi, hpi_contro
 /*------------------------------------------------------------
    Meter controls
  ------------------------------------------------------------*/
-static int snd_asihpi_meter_info(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_meter_info(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
@@ -1628,8 +1628,8 @@ static int snd_asihpi_meter_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_meter_get(snd_kcontrol_t * kcontrol,
-				snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_meter_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1659,7 +1659,7 @@ static int snd_asihpi_meter_get(snd_kcontrol_t * kcontrol,
 
 
 static void __devinit snd_asihpi_meter_new(hpi_control_t * asihpi_control,
-					snd_kcontrol_new_t * snd_control)
+					struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_meter_info;
 	snd_control->get = snd_asihpi_meter_get;
@@ -1682,7 +1682,7 @@ static void __devinit snd_asihpi_meter_new(hpi_control_t * asihpi_control,
 /*------------------------------------------------------------
    Multiplexer controls
  ------------------------------------------------------------*/
-static int snd_card_asihpi_mux_count_sources(snd_kcontrol_t * snd_control)
+static int snd_card_asihpi_mux_count_sources(struct snd_kcontrol *snd_control)
 {
 	HPI_HCONTROL hControl = snd_control->private_value;
 	hpi_control_t asihpi_control;
@@ -1699,8 +1699,8 @@ static int snd_card_asihpi_mux_count_sources(snd_kcontrol_t * snd_control)
 	return (s);
 }
 
-static int snd_asihpi_mux_info(snd_kcontrol_t * kcontrol,
-			       snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_mux_info(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_info *uinfo)
 {
 	int err;
 	HW16 wSrcNodeType, wSrcNodeIndex;
@@ -1726,8 +1726,8 @@ static int snd_asihpi_mux_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_mux_get(snd_kcontrol_t * kcontrol,
-			      snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_mux_get(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1755,8 +1755,8 @@ static int snd_asihpi_mux_get(snd_kcontrol_t * kcontrol,
 	return -EINVAL;
 }
 
-static int snd_asihpi_mux_put(snd_kcontrol_t * kcontrol,
-			      snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_mux_put(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1777,7 +1777,7 @@ static int snd_asihpi_mux_put(snd_kcontrol_t * kcontrol,
 
 
 static void __devinit snd_asihpi_mux_new(hpi_control_t * asihpi_control,
-				      snd_kcontrol_new_t * snd_control)
+				      struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_mux_info;
 	snd_control->get = snd_asihpi_mux_get;
@@ -1801,8 +1801,8 @@ static void __devinit snd_asihpi_mux_new(hpi_control_t * asihpi_control,
 /*------------------------------------------------------------
    Channel mode controls
  ------------------------------------------------------------*/
-static int snd_asihpi_cmode_info(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_cmode_info(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_info *uinfo)
 {
 	static char *texts[4] = { "Normal", "Swap", "ToLeft", "ToRight" };
 
@@ -1818,8 +1818,8 @@ static int snd_asihpi_cmode_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_cmode_get(snd_kcontrol_t * kcontrol,
-				snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_cmode_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1837,8 +1837,8 @@ static int snd_asihpi_cmode_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_cmode_put(snd_kcontrol_t * kcontrol,
-				snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_cmode_put(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1855,7 +1855,7 @@ static int snd_asihpi_cmode_put(snd_kcontrol_t * kcontrol,
 
 
 static void __devinit snd_asihpi_cmode_new(hpi_control_t * asihpi_control,
-					snd_kcontrol_new_t * snd_control)
+					struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_cmode_info;
 	snd_control->get = snd_asihpi_cmode_get;
@@ -1879,8 +1879,8 @@ static char *sampleclock_sources[] =
     { "bad", "Adapter", "AES/EBU", "Word External", "Word Header",
 "SMPTE" };
 
-static int snd_asihpi_clksrc_info(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_clksrc_info(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_info *uinfo)
 {
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
@@ -1895,8 +1895,8 @@ static int snd_asihpi_clksrc_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_clksrc_get(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_clksrc_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1914,8 +1914,8 @@ static int snd_asihpi_clksrc_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_clksrc_put(snd_kcontrol_t * kcontrol,
-				 snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_clksrc_put(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1931,7 +1931,7 @@ static int snd_asihpi_clksrc_put(snd_kcontrol_t * kcontrol,
 }
 
 static void __devinit snd_asihpi_clksrc_new(hpi_control_t * asihpi_control,
-					 snd_kcontrol_new_t * snd_control)
+					 struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_clksrc_info;
 	snd_control->get = snd_asihpi_clksrc_get;
@@ -1951,8 +1951,8 @@ static void __devinit snd_asihpi_clksrc_new(hpi_control_t * asihpi_control,
 /*------------------------------------------------------------
    Clkrate controls
  ------------------------------------------------------------*/
-static int snd_asihpi_clkrate_info(snd_kcontrol_t * kcontrol,
-				   snd_ctl_elem_info_t * uinfo)
+static int snd_asihpi_clkrate_info(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_info *uinfo)
 {
 	//HPI_HCONTROL hControl= kcontrol->private_value;
 	//HW16 err;
@@ -1966,8 +1966,8 @@ static int snd_asihpi_clkrate_info(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_clkrate_get(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_clkrate_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -1981,8 +1981,8 @@ static int snd_asihpi_clkrate_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_clkrate_put(snd_kcontrol_t * kcontrol,
-				  snd_ctl_elem_value_t * ucontrol)
+static int snd_asihpi_clkrate_put(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
 {
 	snd_card_asihpi_t *asihpi = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
@@ -2001,7 +2001,7 @@ static int snd_asihpi_clkrate_put(snd_kcontrol_t * kcontrol,
 }
 
 static void __devinit snd_asihpi_clkrate_new(hpi_control_t * asihpi_control,
-					  snd_kcontrol_new_t * snd_control)
+					  struct snd_kcontrol_new * snd_control)
 {
 	snd_control->info = snd_asihpi_clkrate_info;
 	snd_control->get = snd_asihpi_clkrate_get;
@@ -2026,11 +2026,11 @@ static void __devinit snd_asihpi_clkrate_new(hpi_control_t * asihpi_control,
 
 static int __devinit snd_card_asihpi_new_mixer(snd_card_asihpi_t * asihpi)
 {
-	snd_card_t *card = asihpi->card;
+	struct snd_card *card = asihpi->card;
 	unsigned int idx = 0;
 	int err;
 	HPI_HCONTROL hControl;
-	snd_kcontrol_new_t snd_control;
+	struct snd_kcontrol_new snd_control;
 	char snd_control_name[44];	// asound.h line 745 unsigned char name[44];
 	hpi_control_t asihpi_control;
 
@@ -2169,7 +2169,7 @@ static int __devinit snd_card_asihpi_new_mixer(snd_card_asihpi_t * asihpi)
  ------------------------------------------------------------*/
 
 static void
-snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
+snd_asihpi_proc_read(struct snd_info_entry * entry, struct snd_info_buffer *buffer)
 {
 	snd_card_asihpi_t *asihpi = entry->private_data;
 	HW16 wVersion;
@@ -2209,7 +2209,7 @@ snd_asihpi_proc_read(snd_info_entry_t * entry, snd_info_buffer_t * buffer)
 
 static void __devinit snd_asihpi_proc_init(snd_card_asihpi_t * asihpi)
 {
-	snd_info_entry_t *entry;
+	struct snd_info_entry *entry;
 
 	if (!snd_card_proc_new(asihpi->card, "info", &entry))
 		snd_info_set_text_ops(entry, asihpi, 1024, snd_asihpi_proc_read);
@@ -2229,7 +2229,7 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 	HW16 wVersion;
 	int pcm_substreams;
 
-	snd_card_t *card;
+	struct snd_card *card;
 	struct snd_card_asihpi *asihpi;
 
 	HPI_HCONTROL hControl;
