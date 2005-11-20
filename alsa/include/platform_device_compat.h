@@ -14,7 +14,7 @@ struct platform_device {
 
 #define to_platform_device(dev)	((struct platform_device *)(dev))
 
-/* extern struct bus_type snd_platform_bus_type; */
+extern struct bus_type snd_platform_bus_type;
 #define platform_device_register_simple	snd_platform_device_register_simple
 #define platform_bus_type	snd_platform_bus_type
 

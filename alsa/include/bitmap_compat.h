@@ -3,6 +3,10 @@
 
 #include <linux/types.h>
 
+#ifndef BITS_TO_LONGS
+#define BITS_TO_LONGS(bits) (((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
+#endif
+
 #define BITMAP_LAST_WORD_MASK(nbits)					\
 (									\
 	((nbits) % BITS_PER_LONG) ?					\
