@@ -71,6 +71,14 @@ void snd_compat_request_module(const char *name, ...);
 #ifndef __safe
 #define __safe
 #endif
+#include <linux/types.h>
+#ifndef __bitwise
+#define __bitwise
+typedef __u16 __le16;
+typedef __u16 __be16;
+typedef __u32 __le32;
+typedef __u32 __be32;
+#endif
 #endif /* < 2.6.9 */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
@@ -199,13 +207,6 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #endif
 #endif
 
-#include <linux/types.h>
-#ifndef __bitwise
-typedef __u16 __le16;
-typedef __u16 __be16;
-typedef __u32 __le32;
-typedef __u32 __be32;
-#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
 typedef unsigned __nocast gfp_t;
 #endif
@@ -843,7 +844,7 @@ void *snd_compat_kzalloc(size_t n, gfp_t gfp_flags);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 11)
 #include <linux/pm.h>
 #ifndef PMSG_FREEZE
-typedef u32 /*__bitwise*/ pm_message_t;
+typedef u32 __bitwise pm_message_t;
 #define PMSG_FREEZE	3
 #define PMSG_SUSPEND	3
 #define PMSG_ON		0
