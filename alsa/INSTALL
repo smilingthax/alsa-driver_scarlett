@@ -42,6 +42,8 @@ Quick install
    If you do not want ISA PnP support, use --with-isapnp=no switch.
    If you do not want sequencer support, use --with-sequencer=no switch.
    If you do not want OSS/Free emulation, use --with-oss=no switch.
+   If you have udev or devfs and want to use more than eight cards, use
+   --enable-dynamic-minors switch.
    If you want to turn on debug mode, use --with-debug=full switch.
    If you want to debug soundcard detection, try --with-debug=detect switch.
 
@@ -226,7 +228,7 @@ Information about Additional Modules
     silent_exit	- Do not reset when driver is unloaded.
     init_adat	- Initialise the card in ADAT mode (instead of in digital stereo).
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
 
   Module snd-serialmidi
   ---------------------
@@ -247,14 +249,14 @@ Information about Additional Modules
 		  each device.
     handshake	- Enable/disable handshaking (default = 1)	
 
-    Module supports up to 8 cards.
+    This module supports multiple devices.
 
   Module snd-asihpi
   -----------------
 
     Module for AudioScience ASI soundcards
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-pcxhr
@@ -262,14 +264,14 @@ Information about Additional Modules
 
     Module for Digigram PCXHR boards
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
 
   Module snd-darla20
   ------------------
 
     Module for Echoaudio Darla20
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-gina20
@@ -277,7 +279,7 @@ Information about Additional Modules
 
     Module for Echoaudio Gina20
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-layla20
@@ -285,7 +287,7 @@ Information about Additional Modules
 
     Module for Echoaudio Layla20
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-darla24
@@ -293,7 +295,7 @@ Information about Additional Modules
 
     Module for Echoaudio Darla24
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-gina24
@@ -301,7 +303,7 @@ Information about Additional Modules
 
     Module for Echoaudio Gina24
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-layla24
@@ -309,7 +311,7 @@ Information about Additional Modules
 
     Module for Echoaudio Layla24
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-mona
@@ -317,7 +319,7 @@ Information about Additional Modules
 
     Module for Echoaudio Mona
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-mia
@@ -325,7 +327,7 @@ Information about Additional Modules
 
     Module for Echoaudio Mia
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-echo3g
@@ -333,7 +335,7 @@ Information about Additional Modules
 
     Module for Echoaudio 3G cards (Gina3G/Layla3G)
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-indigo
@@ -341,7 +343,7 @@ Information about Additional Modules
 
     Module for Echoaudio Indigo
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-indigoio
@@ -349,7 +351,7 @@ Information about Additional Modules
 
     Module for Echoaudio Indigo IO
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-indigodj
@@ -357,7 +359,7 @@ Information about Additional Modules
 
     Module for Echoaudio Indigo DJ
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
   Module snd-pcsp
@@ -394,7 +396,7 @@ Information about Additional Modules
       mpu_port		- MPU401 port # (default: 0x330)
       opl3_port		- OPL3 port # (default: 0x388)
 
-    Module supports up to 8 cards.
+    This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
     You need to install the firmware file "riptide.hex" to the standard
     firmware path (e.g. /lib/firmware).
