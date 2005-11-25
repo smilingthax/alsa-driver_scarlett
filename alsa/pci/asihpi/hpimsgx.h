@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
- HPI Extended Message Handler Functions
+HPI Extended Message Handler Functions
 
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
@@ -26,33 +26,27 @@
 
 #include "hpi.h"
 
-#define HPIMSGX_ALLADAPTERS	(0xFFFF)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef int * PLONG;
+#define HPIMSGX_ALLADAPTERS     (0xFFFF)
 
-    void HPIMSGX_MessageExAdapterReset(
-        HW16 wAdapterIndex
-    );
+	void HPIMSGX_MessageExAdapterReset(u16 wAdapterIndex);
 
-    HW16 HPIMSGX_MessageExAdapterInit(
-        const HPI_HSUBSYS *phSubSysHandle,
-        HPI_MESSAGE *phm,		// HPI_SUBSYS_CREATE_ADAPTER structure with
-        // resource list or NULL=find all
-        HPI_RESPONSE *phr		// response from HPI_ADAPTER_GET_INFO
-    );
+	u16 HPIMSGX_MessageExAdapterInit(const HPI_HSUBSYS * phSubSysHandle, HPI_MESSAGE * phm,	// HPI_SUBSYS_CREATE_ADAPTER structure with
+// resource list or NULL=find all
+					 HPI_RESPONSE * phr	// response from HPI_ADAPTER_GET_INFO
+	    );
 
-    void HPIMSGX_MessageEx(
-        const HPI_HSUBSYS *phSubSys,
-        HPI_MESSAGE *phm,
-        HPI_RESPONSE *phr,
-        PLONG hOwner
-    );
+	void HPIMSGX_MessageEx(const HPI_HSUBSYS * phSubSys,
+			       HPI_MESSAGE * phm,
+			       HPI_RESPONSE * phr, void *hOwner);
 
-    void HPIMSGX_MessageExAdapterCleanup(
-        HW16 wAdapterIndex,
-        PLONG hOwner
-    );
+	void HPIMSGX_MessageExAdapterCleanup(u16 wAdapterIndex, void *hOwner);
 
-#endif /* _HPIMSGX_H_ */
-
+#ifdef __cplusplus
+}
+#endif
+#endif				/* _HPIMSGX_H_ */
 ///////////////////////////////////////////////////////////////////////////
