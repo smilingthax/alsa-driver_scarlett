@@ -27,9 +27,4 @@ static inline struct proc_dir_entry *create_proc_read_entry(const char *name,
 }
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#define __GFP_NOWARN	0
-#define __GFP_NORETRY	0
-#endif
-
 // vim: ft=c

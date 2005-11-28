@@ -864,6 +864,20 @@ typedef u32 __bitwise pm_message_t;
 #endif
 #endif
 
+/* __GFP_XXX */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
+/* #incldue <linux/gfp.h> */
+#ifndef __GFP_COMP
+#define __GFP_COMP	0
+#endif
+#ifndef __GFP_NOWARN
+#define __GFP_NOWARN	0
+#endif
+#ifndef __GFP_NORETRY
+#define __GFP_NORETRY	0
+#endif
+#endif
+
 /* vprintk */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
 #include <linux/kernel.h>
