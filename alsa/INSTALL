@@ -259,13 +259,6 @@ Information about Additional Modules
     This module supports multiple cards.
     The driver requires the firmware loader support on kernel.
 
-  Module snd-pcxhr
-  ----------------
-
-    Module for Digigram PCXHR boards
-
-    This module supports multiple cards.
-
   Module snd-darla20
   ------------------
 
