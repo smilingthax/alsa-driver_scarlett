@@ -87,8 +87,10 @@ static inline int platform_driver_register(struct platform_driver *drv)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 	drv->driver.bus = &platform_bus_type;
 #endif
-	drv->driver.probe = snd_platform_driver_probe;
-	drv->driver.remove = snd_platform_driver_remove;
+	if (drv->probe)
+		drv->driver.probe = snd_platform_driver_probe;
+	if (drv->remove)
+		drv->driver.remove = snd_platform_driver_remove;
 	if (drv->suspend)
 		drv->driver.suspend = snd_platform_driver_suspend;
 	if (drv->resume)
