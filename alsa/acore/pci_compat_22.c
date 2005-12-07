@@ -386,7 +386,7 @@ void snd_pci_compat_restore_state(struct pci_dev *pdev)
 		int i;
 		u32 *buffer = map->saved_config;
 		for (i = 0; i < 16; i++, buffer++)
-			pci_write_config_dword(pdev, i * 4, buffer);
+			pci_write_config_dword(pdev, i * 4, *buffer);
 	}
 }
 
