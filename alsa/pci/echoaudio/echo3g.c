@@ -68,13 +68,11 @@
 #include "echoaudio.h"
 
 #define FW_361_LOADER	0
-#define FW_GINA3G_DSP	1
-#define FW_ECHO3G_DSP	2
-#define FW_3G_ASIC	3
+#define FW_ECHO3G_DSP	1
+#define FW_3G_ASIC	2
 
 static const struct firmware card_fw[] = {
 	{0, "loader_dsp.fw"},
-	{0, "gina3g_dsp.fw"},
 	{0, "echo3g_dsp.fw"},
 	{0, "3g_asic.fw"}
 };

@@ -204,6 +204,7 @@
 #define ECHO_MAXAUDIOINPUTS	32	// Max audio input channels
 #define ECHO_MAXAUDIOOUTPUTS	32	// Max audio output channels
 #define ECHO_MAXAUDIOPIPES	32	// Max number of input and output pipes
+#define E3G_MAX_OUTPUTS		16
 #define ECHO_MAXMIDIJACKS	1	// Max MIDI ports
 #define ECHO_MIDI_QUEUE_SZ 	512	// Max MIDI input queue entries
 #define ECHO_MTC_QUEUE_SZ	32	// Max MIDI time code input queue entries
@@ -378,7 +379,6 @@ struct echoaudio_chip {
 	u8 clock_state;				/* Gina20, Darla20, Darla24 - only */
 	u8 input_clock;				/* Currently selected sample clock source */
 	u8 output_clock;			/* Layla20 only */
-	u8 e3g_box_type;			/* The loaded fw supports this box type */
 
 	char meters_enabled;			/* VU-meters status */
 	char asic_loaded;			/* Set TRUE when ASIC loaded */

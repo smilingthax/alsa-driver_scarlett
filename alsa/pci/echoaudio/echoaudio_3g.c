@@ -35,7 +35,6 @@
 static int check_asic_status(echoaudio_t *chip)
 {
 	u32 box_status;
-	u8 box_type;
 
 	if (wait_handshake(chip))
 		return -EIO;
@@ -51,21 +50,13 @@ static int check_asic_status(echoaudio_t *chip)
 		return -EIO;
 	}
 
-	/* What box type was set? */
 	box_status = le32_to_cpu(chip->comm_page->ext_box_status);
-	if (box_status == E3G_ASIC_NOT_LOADED) {
-		DE_INIT(("box not conected\n"));
+	DE_INIT(("box_status=%x\n", box_status));
+	if (box_status == E3G_ASIC_NOT_LOADED)
 		return -ENODEV;
-	}
-
-	box_type = box_status & E3G_BOX_TYPE_MASK;
-	if (box_type != chip->e3g_box_type) {
-		DE_INIT(("wrong box type: %x\n", box_type));
-		return box_type + 1;
-	}
 
 	chip->asic_loaded = TRUE;
-	return 0;
+	return box_status & E3G_BOX_TYPE_MASK;
 }
 
 
@@ -113,9 +104,6 @@ static int set_digital_mode(echoaudio_t *chip, u8 mode)
 {
 	u8 previous_mode;
 	int err, i, o;
-
-	if (chip->bad_board)
-		return -EIO;
 
 	/* All audio channels must be closed before changing the digital mode */
 	snd_assert(!chip->pipe_alloc_mask, return -EAGAIN);
@@ -240,8 +228,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 
 static int load_asic(echoaudio_t *chip)
 {
-	u32 control_reg;
-	int err;
+	int box_type, err;
 
 	if (chip->asic_loaded)
 		return 0;
@@ -258,15 +245,16 @@ static int load_asic(echoaudio_t *chip)
 	/* Now give the new ASIC a little time to set up */
 	mdelay(2);
 	/* See if it worked */
-	err = check_asic_status(chip);
+	box_type = check_asic_status(chip);
 
 	/* Set up the control register if the load succeeded - 48 kHz, internal clock, S/PDIF RCA mode */
-	if (!err) {
-		control_reg = E3G_48KHZ;
-		err = write_control_reg(chip, control_reg, E3G_FREQ_REG_DEFAULT, TRUE);	// TRUE == force write
+	if (box_type >= 0) {
+		err = write_control_reg(chip, E3G_48KHZ, E3G_FREQ_REG_DEFAULT, TRUE);
+		if (err < 0)
+			return err;
 	}
-	DE_INIT(("load_asic() err=%d\n", err));
-	return err;
+
+	return box_type;
 }
 
 
