@@ -668,7 +668,15 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name)
 #ifndef CONFIG_HAVE_PNP_SUSPEND
 
 #include <linux/pm.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 15)
+#include <linux/pm_legacy.h>
+#endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 15) || defined(CONFIG_PM_LEGACY)
+#define SUPPORT_PM
+#endif
+
+#ifdef SUPPORT_PM
 struct snd_pnp_pm_devs {
 	void *dev;
 	void *driver;
@@ -743,6 +751,7 @@ static void snd_pnp_dev_remove(struct pnp_dev *dev)
 	unregister_pnp_pm_callback(dev);
 	driver->remove(dev);
 }
+#endif /* SUPPORT_PM */
 
 #undef pnp_register_driver
 
@@ -751,16 +760,20 @@ int snd_pnp_register_driver(struct snd_pnp_driver *driver)
 	driver->real_driver.name = driver->name;
 	driver->real_driver.id_table = driver->id_table;
 	driver->real_driver.flags = driver->flags;
+#ifdef SUPPORT_PM
 	if (driver->suspend || driver->resume) {
 		driver->real_driver.probe = snd_pnp_dev_probe;
 		driver->real_driver.remove = snd_pnp_dev_remove;
-	} else {
+	} else
+#endif
+	{
 		driver->real_driver.probe = driver->probe;
 		driver->real_driver.remove = driver->remove;
 	}
 	return pnp_register_driver(&driver->real_driver);
 }
 
+#ifdef SUPPORT_PM
 /*
  * for card
  */
@@ -796,6 +809,7 @@ static void snd_pnp_card_remove(struct pnp_card_link *dev)
 	unregister_pnp_pm_callback(dev);
 	driver->remove(dev);
 }
+#endif /* SUPPORT_PM */
 
 #undef pnp_register_card_driver
 
@@ -804,16 +818,19 @@ int snd_pnp_register_card_driver(struct snd_pnp_card_driver *driver)
 	driver->real_driver.name = driver->name;
 	driver->real_driver.id_table = driver->id_table;
 	driver->real_driver.flags = driver->flags;
+#ifdef SUPPORT_PM
 	if (driver->suspend || driver->resume) {
 		driver->real_driver.probe = snd_pnp_card_probe;
 		driver->real_driver.remove = snd_pnp_card_remove;
-	} else {
+	} else
+#endif
+	{
 		driver->real_driver.probe = driver->probe;
 		driver->real_driver.remove = driver->remove;
 	}
 	return pnp_register_card_driver(&driver->real_driver);
 }
 
-#endif
-#endif
-#endif
+#endif /* ! CONFIG_HAVE_PNP_SUSPEND */
+#endif /* 2.6 */
+#endif /* PNP && PM */
