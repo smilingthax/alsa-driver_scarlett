@@ -28,10 +28,7 @@
 // ****************************************************************************
 
 
-static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer);
-
-
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
@@ -81,7 +78,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 //
 //===========================================================================
 
-static u32 detect_input_clocks(const echoaudio_t *chip)
+static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	u32 clocks_from_dsp, clock_bits;
 
@@ -99,7 +96,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 
 
 /* The Darla24 has no ASIC. Just do nothing */
-static int load_asic(echoaudio_t *chip)
+static int load_asic(struct echoaudio *chip)
 {
 	return 0;
 }
@@ -115,7 +112,7 @@ static int load_asic(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int set_sample_rate(echoaudio_t *chip, u32 rate)
+static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u8 clock;
 
@@ -179,7 +176,7 @@ static int set_sample_rate(echoaudio_t *chip, u32 rate)
 //
 //===========================================================================
 
-static int set_input_clock(echoaudio_t *chip, u16 clock)
+static int set_input_clock(struct echoaudio *chip, u16 clock)
 {
 	snd_assert(clock == ECHO_CLOCK_INTERNAL || clock == ECHO_CLOCK_ESYNC, return -EINVAL);
 	chip->input_clock = clock;

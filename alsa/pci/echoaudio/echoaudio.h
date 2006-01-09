@@ -319,39 +319,39 @@
 #endif
 
 
-typedef struct subsdata {
+struct audiopipe {
 	volatile u32 *dma_counter;	/* Commpage register that contains the current dma position (lower 32 bits only) */
 	u32 last_counter;		/* The last position, which is used to compute... */
 	u32 position;			/* ...the number of bytes tranferred by the DMA engine, modulo the buffer size */
 	short pipe_index;		/* Index of the first channel or <0 if hw is not configured yet */
 	short interleave;
 	struct snd_dma_buffer sgpage;	/* Room for the scatter-gather list */
-	snd_pcm_hardware_t hw;
-	snd_pcm_hw_constraint_list_t constr;
+	struct snd_pcm_hardware hw;
+	struct snd_pcm_hw_constraint_list constr;
 	short sglist_head;
 	char state;			/* pipe state */
-} audiopipe_t;
+};
 
 
-typedef struct {
+struct audioformat {
 	u8 interleave;			/* How the data is arranged in memory: mono = 1, stereo = 2, ... */
 	u8 bits_per_sample;		/* 8, 16, 24, 32 (24 bits left aligned) */
 	char mono_to_stereo;		/* Only used if interleave is 1 and if this is an output pipe. */
 	char data_are_bigendian;	/* 1 = big endian, 0 = little endian */
-} audioformat_t;
+};
 
 
-struct echoaudio_chip {
+struct echoaudio {
 	spinlock_t lock;
-	snd_pcm_substream_t *substream[DSP_MAXPIPES];
+	struct snd_pcm_substream *substream[DSP_MAXPIPES];
 	int last_period[DSP_MAXPIPES];
 	struct semaphore mode_mutex;
 	u16 num_digital_modes, digital_mode_list[6];
 	u16 num_clock_sources, clock_source_list[10];
 	atomic_t opencount;
-	snd_kcontrol_t *clock_src_ctl;
-	snd_pcm_t *analog_pcm, *digital_pcm;
-	snd_card_t *card;
+	struct snd_kcontrol *clock_src_ctl;
+	struct snd_pcm *analog_pcm, *digital_pcm;
+	struct snd_card *card;
 	const char *card_name;
 	struct pci_dev *pci;
 	unsigned long dsp_registers_phys;
@@ -359,8 +359,8 @@ struct echoaudio_chip {
 	struct snd_dma_buffer commpage_dma_buf;
 	int irq;
 #ifdef ECHOCARD_HAS_MIDI
-	snd_rawmidi_t *rmidi;
-	snd_rawmidi_substream_t *midi_in, *midi_out;
+	struct snd_rawmidi *rmidi;
+	struct snd_rawmidi_substream *midi_in, *midi_out;
 #endif
 	struct timer_list timer;
 	char tinuse;				/* Timer in use */
@@ -369,7 +369,7 @@ struct echoaudio_chip {
 	char rate_set;
 
 	/* This stuff is used mainly by the lowlevel code */
-	comm_page_t *comm_page;			/* Virtual address of the memory seen by DSP */
+	struct comm_page *comm_page;		/* Virtual address of the memory seen by DSP */
 
 	u32 pipe_alloc_mask;			/* Bitmask of allocated pipes */
 	u32 pipe_cyclic_mask;			/* Bitmask of pipes with cyclic buffers */
@@ -420,37 +420,34 @@ struct echoaudio_chip {
 #endif
 };
 
-typedef struct echoaudio_chip echoaudio_t;
 
-
-
-static int init_dsp_comm_page(echoaudio_t *chip);
-static int init_line_levels(echoaudio_t *chip);
-static int free_pipes(echoaudio_t *chip, audiopipe_t *audiopipe);
-static int load_firmware(echoaudio_t *chip);
-static int wait_handshake(echoaudio_t *chip);
-static int send_vector(echoaudio_t *chip, u32 command);
-static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, echoaudio_t *chip);
+static int init_dsp_comm_page(struct echoaudio *chip);
+static int init_line_levels(struct echoaudio *chip);
+static int free_pipes(struct echoaudio *chip, struct audiopipe *pipe);
+static int load_firmware(struct echoaudio *chip);
+static int wait_handshake(struct echoaudio *chip);
+static int send_vector(struct echoaudio *chip, u32 command);
+static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, struct echoaudio *chip);
 static void free_firmware(const struct firmware *fw_entry);
 
 #ifdef ECHOCARD_HAS_MIDI
-static int enable_midi_input(echoaudio_t *chip, char enable);
-static int midi_service_irq(echoaudio_t *chip);
-static int __devinit snd_echo_midi_create(snd_card_t *card, echoaudio_t *chip);
+static int enable_midi_input(struct echoaudio *chip, char enable);
+static int midi_service_irq(struct echoaudio *chip);
+static int __devinit snd_echo_midi_create(struct snd_card *card, struct echoaudio *chip);
 #endif
 
 
-static inline void clear_handshake(echoaudio_t *chip)
+static inline void clear_handshake(struct echoaudio *chip)
 {
 	chip->comm_page->handshake = 0;
 }
 
-static inline u32 get_dsp_register(echoaudio_t *chip, u32 index)
+static inline u32 get_dsp_register(struct echoaudio *chip, u32 index)
 {
 	return readl(&chip->dsp_registers[index]);
 }
 
-static inline void set_dsp_register(echoaudio_t *chip, u32 index, u32 value)
+static inline void set_dsp_register(struct echoaudio *chip, u32 index, u32 value)
 {
 	writel(value, &chip->dsp_registers[index]);
 }
@@ -461,90 +458,90 @@ for 3G cards because they depend on the external box. They are integer
 constants for all other cards.
 Never use those defines directly, use the following functions instead. */
 
-static inline int px_digital_out(const echoaudio_t *chip)
+static inline int px_digital_out(const struct echoaudio *chip)
 {
 	return PX_DIGITAL_OUT;
 }
 
-static inline int px_analog_in(const echoaudio_t *chip)
+static inline int px_analog_in(const struct echoaudio *chip)
 {
 	return PX_ANALOG_IN;
 }
 
-static inline int px_digital_in(const echoaudio_t *chip)
+static inline int px_digital_in(const struct echoaudio *chip)
 {
 	return PX_DIGITAL_IN;
 }
 
-static inline int px_num(const echoaudio_t *chip)
+static inline int px_num(const struct echoaudio *chip)
 {
 	return PX_NUM;
 }
 
-static inline int bx_digital_out(const echoaudio_t *chip)
+static inline int bx_digital_out(const struct echoaudio *chip)
 {
 	return BX_DIGITAL_OUT;
 }
 
-static inline int bx_analog_in(const echoaudio_t *chip)
+static inline int bx_analog_in(const struct echoaudio *chip)
 {
 	return BX_ANALOG_IN;
 }
 
-static inline int bx_digital_in(const echoaudio_t *chip)
+static inline int bx_digital_in(const struct echoaudio *chip)
 {
 	return BX_DIGITAL_IN;
 }
 
-static inline int bx_num(const echoaudio_t *chip)
+static inline int bx_num(const struct echoaudio *chip)
 {
 	return BX_NUM;
 }
 
-static inline int num_pipes_out(const echoaudio_t *chip)
+static inline int num_pipes_out(const struct echoaudio *chip)
 {
 	return px_analog_in(chip);
 }
 
-static inline int num_pipes_in(const echoaudio_t *chip)
+static inline int num_pipes_in(const struct echoaudio *chip)
 {
 	return px_num(chip) - px_analog_in(chip);
 }
 
-static inline int num_busses_out(const echoaudio_t *chip)
+static inline int num_busses_out(const struct echoaudio *chip)
 {
 	return bx_analog_in(chip);
 }
 
-static inline int num_busses_in(const echoaudio_t *chip)
+static inline int num_busses_in(const struct echoaudio *chip)
 {
 	return bx_num(chip) - bx_analog_in(chip);
 }
 
-static inline int num_analog_busses_out(const echoaudio_t *chip)
+static inline int num_analog_busses_out(const struct echoaudio *chip)
 {
 	return bx_digital_out(chip);
 }
 
-static inline int num_analog_busses_in(const echoaudio_t *chip)
+static inline int num_analog_busses_in(const struct echoaudio *chip)
 {
 	return bx_digital_in(chip) - bx_analog_in(chip);
 }
 
-static inline int num_digital_busses_out(const echoaudio_t *chip)
+static inline int num_digital_busses_out(const struct echoaudio *chip)
 {
 	return num_busses_out(chip) - num_analog_busses_out(chip);
 }
 
-static inline int num_digital_busses_in(const echoaudio_t *chip)
+static inline int num_digital_busses_in(const struct echoaudio *chip)
 {
 	return num_busses_in(chip) - num_analog_busses_in(chip);
 }
 
-// The monitor array is a one-dimensional array; compute the offset into the array
-static inline int monitor_index(const echoaudio_t *chip, int out, int in)
+/* The monitor array is a one-dimensional array; compute the offset into the array */
+static inline int monitor_index(const struct echoaudio *chip, int out, int in)
 {
-        return out * num_busses_in(chip) + in;
+	return out * num_busses_in(chip) + in;
 }
 
 

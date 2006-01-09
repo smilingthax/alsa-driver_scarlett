@@ -28,15 +28,14 @@
 // ****************************************************************************
 
 
-static int read_dsp(echoaudio_t *chip, u32 *data);
-static int set_professional_spdif(echoaudio_t *chip, char prof);
-static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer);
-static int load_asic_generic(echoaudio_t *chip, u32 cmd, const struct firmware *asic);
-static int check_asic_status(echoaudio_t *chip);
-static int update_flags(echoaudio_t *chip);
+static int read_dsp(struct echoaudio *chip, u32 *data);
+static int set_professional_spdif(struct echoaudio *chip, char prof);
+static int load_asic_generic(struct echoaudio *chip, u32 cmd, const struct firmware *asic);
+static int check_asic_status(struct echoaudio *chip);
+static int update_flags(struct echoaudio *chip);
 
 
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
@@ -90,7 +89,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 //
 //===========================================================================
 
-static u32 detect_input_clocks(const echoaudio_t *chip)
+static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	u32 clocks_from_dsp, clock_bits;
 
@@ -134,7 +133,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 //
 //===========================================================================
 
-static int check_asic_status(echoaudio_t *chip)
+static int check_asic_status(struct echoaudio *chip)
 {
 	u32 asic_status;
 	int goodcnt, i;
@@ -167,7 +166,7 @@ static int check_asic_status(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int load_asic(echoaudio_t *chip)
+static int load_asic(struct echoaudio *chip)
 {
 	int err;
 
@@ -194,7 +193,7 @@ static int load_asic(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int set_sample_rate(echoaudio_t *chip, u32 rate)
+static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	snd_assert(rate >= 8000 && rate <= 50000, return -EINVAL);
 
@@ -224,7 +223,7 @@ static int set_sample_rate(echoaudio_t *chip, u32 rate)
 //
 //===========================================================================
 
-static int set_input_clock(echoaudio_t *chip, u16 clock_source)
+static int set_input_clock(struct echoaudio *chip, u16 clock_source)
 {
 	u16 clock;
 	u32 rate;
@@ -274,7 +273,7 @@ static int set_input_clock(echoaudio_t *chip, u16 clock_source)
 //
 //===========================================================================
 
-static int set_output_clock(echoaudio_t *chip, u16 clock)
+static int set_output_clock(struct echoaudio *chip, u16 clock)
 {
 	DE_ACT(("set_output_clock: %d\n", clock));
 	switch (clock) {
@@ -302,7 +301,7 @@ static int set_output_clock(echoaudio_t *chip, u16 clock)
 
 /* Set input bus gain (one unit is 0.5dB !)
    where ECHOGAIN_MININP <= gain <= ECHOGAIN_MAXINP) */
-static int set_input_gain(echoaudio_t *chip, u16 input, int gain)
+static int set_input_gain(struct echoaudio *chip, u16 input, int gain)
 {
 	snd_assert(input < num_busses_in(chip), return -EINVAL);
 
@@ -320,7 +319,7 @@ static int set_input_gain(echoaudio_t *chip, u16 input, int gain)
 
 
 /* Tell the DSP to reread the flags from the comm page */
-static int update_flags(echoaudio_t *chip)
+static int update_flags(struct echoaudio *chip)
 {
 	if (wait_handshake(chip))
 		return -EIO;
@@ -330,7 +329,7 @@ static int update_flags(echoaudio_t *chip)
 
 
 
-static int set_professional_spdif(echoaudio_t *chip, char prof)
+static int set_professional_spdif(struct echoaudio *chip, char prof)
 {
 	DE_ACT(("set_professional_spdif %d\n", prof));
 	if (prof)

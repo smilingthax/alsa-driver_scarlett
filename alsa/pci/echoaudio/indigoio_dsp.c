@@ -28,11 +28,11 @@
 // ****************************************************************************
 
 
-static int set_vmixer_gain(echoaudio_t *chip, u16 output, u16 pipe, int gain);
-static int update_vmixer_level(echoaudio_t *chip);
+static int set_vmixer_gain(struct echoaudio *chip, u16 output, u16 pipe, int gain);
+static int update_vmixer_level(struct echoaudio *chip);
 
 
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
@@ -81,7 +81,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 
 
 
-static u32 detect_input_clocks(const echoaudio_t *chip)
+static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	return ECHO_CLOCK_BIT_INTERNAL;
 }
@@ -89,7 +89,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 
 
 /* The Mia has no ASIC. Just do nothing */
-static int load_asic(echoaudio_t *chip)
+static int load_asic(struct echoaudio *chip)
 {
 	return 0;
 }
@@ -110,7 +110,7 @@ static int load_asic(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int set_sample_rate(echoaudio_t *chip, u32 rate)
+static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	if (wait_handshake(chip))
 		return -EIO;
@@ -124,7 +124,7 @@ static int set_sample_rate(echoaudio_t *chip, u32 rate)
 
 
 /* This function routes the sound from a virtual channel to a real output */
-static int set_vmixer_gain(echoaudio_t *chip, u16 output, u16 pipe, int gain)
+static int set_vmixer_gain(struct echoaudio *chip, u16 output, u16 pipe, int gain)
 {
 	int index;
 
@@ -144,7 +144,7 @@ static int set_vmixer_gain(echoaudio_t *chip, u16 output, u16 pipe, int gain)
 
 
 /* Tell the DSP to read and update virtual mixer levels in comm page. */
-static int update_vmixer_level(echoaudio_t *chip)
+static int update_vmixer_level(struct echoaudio *chip)
 {
 	if (wait_handshake(chip))
 		return -EIO;

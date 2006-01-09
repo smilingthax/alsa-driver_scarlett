@@ -31,7 +31,7 @@
 #error PAGE_SIZE is < 4k
 #endif
 
-static int restore_dsp_rettings(echoaudio_t *chip);
+static int restore_dsp_rettings(struct echoaudio *chip);
 
 
 //===========================================================================
@@ -44,7 +44,7 @@ static int restore_dsp_rettings(echoaudio_t *chip);
 //
 //===========================================================================
 
-static int wait_handshake(echoaudio_t *chip)
+static int wait_handshake(struct echoaudio *chip)
 {
 	int i;
 
@@ -76,7 +76,7 @@ static int wait_handshake(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int send_vector(echoaudio_t *chip, u32 command)
+static int send_vector(struct echoaudio *chip, u32 command)
 {
 	int i;
 
@@ -105,7 +105,7 @@ static int send_vector(echoaudio_t *chip, u32 command)
 //
 //===========================================================================
 
-static int write_dsp(echoaudio_t *chip, u32 data)
+static int write_dsp(struct echoaudio *chip, u32 data)
 {
 	u32 status, i;
 
@@ -134,7 +134,7 @@ static int write_dsp(echoaudio_t *chip, u32 data)
 //
 //===========================================================================
 
-static int read_dsp(echoaudio_t *chip, u32 *data)
+static int read_dsp(struct echoaudio *chip, u32 *data)
 {
 	u32 status, i;
 
@@ -172,7 +172,7 @@ static int read_dsp(echoaudio_t *chip, u32 *data)
 //
 //===========================================================================
 
-static int read_sn(echoaudio_t *chip)
+static int read_sn(struct echoaudio *chip)
 {
 	int i;
 	u32 sn[6];
@@ -191,7 +191,7 @@ static int read_sn(echoaudio_t *chip)
 
 #ifndef ECHOCARD_HAS_ASIC
 /* This card has no ASIC, just return ok */
-static inline int check_asic_status(echoaudio_t *chip)
+static inline int check_asic_status(struct echoaudio *chip)
 {
 	chip->asic_loaded = TRUE;
 	return 0;
@@ -204,7 +204,7 @@ static inline int check_asic_status(echoaudio_t *chip)
 #ifdef ECHOCARD_HAS_ASIC
 
 // Load ASIC code - done after the DSP is loaded
-static int load_asic_generic(echoaudio_t *chip, u32 cmd, const struct firmware *asic)
+static int load_asic_generic(struct echoaudio *chip, u32 cmd, const struct firmware *asic)
 {
 	const struct firmware *fw;
 	int err;
@@ -260,7 +260,7 @@ la_error:
 
 #ifdef DSP_56361
 
-static int install_resident_loader(echoaudio_t *chip)
+static int install_resident_loader(struct echoaudio *chip)
 {
 	u32 address;
 	int index, words, i;
@@ -377,7 +377,7 @@ irl_error:
 //
 //===========================================================================
 
-static int load_dsp(echoaudio_t *chip, u16 *code)
+static int load_dsp(struct echoaudio *chip, u16 *code)
 {
 	u32 address, data;
 	int index, words, i;
@@ -523,7 +523,7 @@ static int load_dsp(echoaudio_t *chip, u16 *code)
 //
 //===========================================================================
 
-static int load_firmware(echoaudio_t *chip)
+static int load_firmware(struct echoaudio *chip)
 {
 	const struct firmware *fw;
 	int box_type, err;
@@ -565,7 +565,7 @@ static int load_firmware(echoaudio_t *chip)
 #if defined(ECHOCARD_HAS_INPUT_NOMINAL_LEVEL) || defined(ECHOCARD_HAS_OUTPUT_NOMINAL_LEVEL)
 
 /* Set the nominal level for an input or output bus (true = -10dBV, false = +4dBu) */
-static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer)
+static int set_nominal_level(struct echoaudio *chip, u16 index, char consumer)
 {
 	snd_assert(index < num_busses_out(chip) + num_busses_in(chip), return -EINVAL);
 
@@ -589,7 +589,7 @@ static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer)
 
 /* Set the gain for a single physical output channel (dB).
 ECHOGAIN_MINOUT <= gain <= ECHOGAIN_MAXOUT) */
-static int set_output_gain(echoaudio_t *chip, u16 channel, signed short gain)
+static int set_output_gain(struct echoaudio *chip, u16 channel, s8 gain)
 {
 	snd_assert(channel < num_busses_out(chip), return -EINVAL);
 
@@ -607,7 +607,7 @@ static int set_output_gain(echoaudio_t *chip, u16 channel, signed short gain)
 #ifdef ECHOCARD_HAS_MONITOR
 /* Set the monitor level from an input bus to an output bus.
 ECHOGAIN_MINOUT <= gain <= ECHOGAIN_MAXOUT) */
-static int set_monitor_gain(echoaudio_t *chip, u16 output, u16 input, signed short gain)
+static int set_monitor_gain(struct echoaudio *chip, u16 output, u16 input, s8 gain)
 {
 	snd_assert(output < num_busses_out(chip) && input < num_busses_in(chip), return -EINVAL);
 
@@ -622,7 +622,7 @@ static int set_monitor_gain(echoaudio_t *chip, u16 output, u16 input, signed sho
 
 
 /* Tell the DSP to read and update output, nominal & monitor levels in comm page. */
-static int update_output_line_level(echoaudio_t *chip)
+static int update_output_line_level(struct echoaudio *chip)
 {
 	if (wait_handshake(chip))
 		return -EIO;
@@ -633,7 +633,7 @@ static int update_output_line_level(echoaudio_t *chip)
 
 
 /* Tell the DSP to read and update input levels in comm page */
-static int update_input_line_level(echoaudio_t *chip)
+static int update_input_line_level(struct echoaudio *chip)
 {
 	if (wait_handshake(chip))
 		return -EIO;
@@ -645,7 +645,7 @@ static int update_input_line_level(echoaudio_t *chip)
 
 /* set_meters_on turns the meters on or off.  If meters are turned on, the DSP
 will write the meter and clock detect values to the comm page at about 30Hz */
-static void set_meters_on(echoaudio_t *chip, char on)
+static void set_meters_on(struct echoaudio *chip, char on)
 {
 	if (on && !chip->meters_enabled) {
 		send_vector(chip, DSP_VC_METERS_ON);
@@ -675,7 +675,7 @@ static void set_meters_on(echoaudio_t *chip, char on)
 // have so many channels. Meters is an array [3][16][2])
 //
 //===========================================================================
-static void get_audio_meters(echoaudio_t *chip, long *meters)
+static void get_audio_meters(struct echoaudio *chip, long *meters)
 {
 	int i, m, n;
 
@@ -717,7 +717,7 @@ static void get_audio_meters(echoaudio_t *chip, long *meters)
 //
 //===========================================================================
 
-static int restore_dsp_rettings(echoaudio_t *chip)
+static int restore_dsp_rettings(struct echoaudio *chip)
 {
 	int err;
 	DE_INIT(("restore_dsp_settings\n"));
@@ -777,7 +777,7 @@ static int restore_dsp_rettings(echoaudio_t *chip)
 /* set_audio_format() sets the format of the audio data in host memory for
 this pipe.  Note that _MS_ (mono-to-stereo) playback modes are not used by ALSA
 but they are here because they are just mono while capturing */
-static void set_audio_format(echoaudio_t *chip, u16 pipe_index, const audioformat_t *format)
+static void set_audio_format(struct echoaudio *chip, u16 pipe_index, const struct audioformat *format)
 {
 	u16 dsp_format;
 
@@ -851,7 +851,7 @@ static void set_audio_format(echoaudio_t *chip, u16 pipe_index, const audioforma
 /* start_transport starts transport for a set of pipes.
    The bits 1 in channel_mask specify what pipes to start. Only the bit of the
    first channel must be set, regardless its interleave. Same for Pause and Stop. */
-static int start_transport(echoaudio_t *chip, u32 channel_mask, u32 cyclic_mask)
+static int start_transport(struct echoaudio *chip, u32 channel_mask, u32 cyclic_mask)
 {
 	DE_ACT(("start_transport %x\n", channel_mask));
 
@@ -881,7 +881,7 @@ static int start_transport(echoaudio_t *chip, u32 channel_mask, u32 cyclic_mask)
 
 
 /* pause_transport pauses transport for a set of pipes */
-static int pause_transport(echoaudio_t *chip, u32 channel_mask)
+static int pause_transport(struct echoaudio *chip, u32 channel_mask)
 {
 	DE_ACT(("pause_transport %x\n", channel_mask));
 
@@ -913,7 +913,7 @@ static int pause_transport(echoaudio_t *chip, u32 channel_mask)
 
 
 /* stop_transport resets transport for a set of pipes */
-static int stop_transport(echoaudio_t *chip, u32 channel_mask)
+static int stop_transport(struct echoaudio *chip, u32 channel_mask)
 {
 	DE_ACT(("stop_transport %x\n", channel_mask));
 
@@ -944,7 +944,7 @@ static int stop_transport(echoaudio_t *chip, u32 channel_mask)
 
 
 
-static inline int is_pipe_allocated(echoaudio_t *chip, u16 pipe_index)
+static inline int is_pipe_allocated(struct echoaudio *chip, u16 pipe_index)
 {
 	return (chip->pipe_alloc_mask & (1 << pipe_index));
 }
@@ -953,7 +953,7 @@ static inline int is_pipe_allocated(echoaudio_t *chip, u16 pipe_index)
 
 /* Stops everything and turns off the DSP. All pipes should be already
    stopped and unallocated. */
-static int rest_in_peace(echoaudio_t *chip)
+static int rest_in_peace(struct echoaudio *chip)
 {
 	DE_ACT(("rest_in_peace() open=%x\n", chip->pipe_alloc_mask));
 
@@ -979,11 +979,11 @@ static int rest_in_peace(echoaudio_t *chip)
 
 
 /* Fills the comm page with default values */
-static int init_dsp_comm_page(echoaudio_t *chip)
+static int init_dsp_comm_page(struct echoaudio *chip)
 {
 	/* Check if the compiler added extra padding inside the structure */
-	if (offsetof(comm_page_t, midi_output) != 0xbe0) {
-		DE_INIT(("init_dsp_comm_page() - Invalid comm_page_t structure\n"));
+	if (offsetof(struct comm_page, midi_output) != 0xbe0) {
+		DE_INIT(("init_dsp_comm_page() - Invalid struct comm_page structure\n"));
 		return -EPERM;
 	}
 
@@ -995,10 +995,10 @@ static int init_dsp_comm_page(echoaudio_t *chip)
 	chip->input_clock = ECHO_CLOCK_INTERNAL;
 	chip->output_clock = ECHO_CLOCK_WORD;
 	chip->asic_loaded = FALSE;
-	memset(chip->comm_page, 0, sizeof(comm_page_t));
+	memset(chip->comm_page, 0, sizeof(struct comm_page));
 
 	/* Init the comm page */
-	chip->comm_page->comm_size = __constant_cpu_to_le32(sizeof(comm_page_t));
+	chip->comm_page->comm_size = __constant_cpu_to_le32(sizeof(struct comm_page));
 	chip->comm_page->handshake = 0xffffffff;
 	chip->comm_page->midi_out_free_count = __constant_cpu_to_le32(DSP_MIDI_OUT_FIFO_SIZE);
 	chip->comm_page->sample_rate = __constant_cpu_to_le32(44100);
@@ -1020,7 +1020,7 @@ static int init_dsp_comm_page(echoaudio_t *chip)
 //
 ===========================================================================*/
 
-static int init_line_levels(echoaudio_t *chip)
+static int init_line_levels(struct echoaudio *chip)
 {
 	int st, i, o;
 
@@ -1075,7 +1075,7 @@ static int init_line_levels(echoaudio_t *chip)
 //
 ===========================================================================*/
 
-static int service_irq(echoaudio_t *chip)
+static int service_irq(struct echoaudio *chip)
 {
 	int st;
 
@@ -1111,7 +1111,7 @@ static int service_irq(echoaudio_t *chip)
 //
 ===========================================================================*/
 
-static int allocate_pipes(echoaudio_t *chip, audiopipe_t *audiopipe, u16 pipe_index, u16 interleave)
+static int allocate_pipes(struct echoaudio *chip, struct audiopipe *pipe, int pipe_index, int interleave)
 {
 	int i;
 	u32 channel_mask;
@@ -1137,15 +1137,15 @@ static int allocate_pipes(echoaudio_t *chip, audiopipe_t *audiopipe, u16 pipe_in
 	chip->pipe_alloc_mask |= channel_mask;
 	if (is_cyclic)
 		chip->pipe_cyclic_mask |= channel_mask;
-	audiopipe->pipe_index = pipe_index;
-	audiopipe->interleave = interleave;
-	audiopipe->state = PIPE_STATE_STOPPED;
+	pipe->pipe_index = pipe_index;
+	pipe->interleave = interleave;
+	pipe->state = PIPE_STATE_STOPPED;
 
 	/* The counter register is where the DSP writes the 32 bit DMA
 	position for a pipe.  The DSP is constantly updating this value as
 	it moves data. The DMA counter is in units of bytes, not samples. */
-	audiopipe->dma_counter = &chip->comm_page->position[pipe_index];
-	*audiopipe->dma_counter = 0;
+	pipe->dma_counter = &chip->comm_page->position[pipe_index];
+	*pipe->dma_counter = 0;
 	DE_ACT(("allocate_pipes: ok\n"));
 	return pipe_index;
 }
@@ -1158,20 +1158,20 @@ static int allocate_pipes(echoaudio_t *chip, audiopipe_t *audiopipe, u16 pipe_in
 //
 ===========================================================================*/
 
-static int free_pipes(echoaudio_t *chip, audiopipe_t *audiopipe)
+static int free_pipes(struct echoaudio *chip, struct audiopipe *pipe)
 {
 	u32 channel_mask;
 	int i;
 
-	DE_ACT(("free_pipes: Pipe %d\n", audiopipe->pipe_index));
-	snd_assert(is_pipe_allocated(chip, audiopipe->pipe_index), return -EINVAL);
+	DE_ACT(("free_pipes: Pipe %d\n", pipe->pipe_index));
+	snd_assert(is_pipe_allocated(chip, pipe->pipe_index), return -EINVAL);
 
 	/* Compute channel mask for this substream */
-	for (channel_mask = i = 0; i < audiopipe->interleave; i++)
-		channel_mask |= 1 << (audiopipe->pipe_index + i);
+	for (channel_mask = i = 0; i < pipe->interleave; i++)
+		channel_mask |= 1 << (pipe->pipe_index + i);
 
 	/* Audio should be already stopped here */
-	snd_assert(audiopipe->state == PIPE_STATE_STOPPED, return -EINVAL);
+	snd_assert(pipe->state == PIPE_STATE_STOPPED, return -EINVAL);
 
 	chip->pipe_alloc_mask &= ~channel_mask;
 	chip->pipe_cyclic_mask &= ~channel_mask;
@@ -1186,25 +1186,26 @@ static int free_pipes(echoaudio_t *chip, audiopipe_t *audiopipe)
 
 ******************************************************************************/
 
-static int sglist_init(echoaudio_t *chip, audiopipe_t *audiopipe)
+static int sglist_init(struct echoaudio *chip, struct audiopipe *pipe)
 {
-	audiopipe->sglist_head = 0;
-	memset(audiopipe->sgpage.area, 0, PAGE_SIZE);
-	chip->comm_page->sglist_addr[audiopipe->pipe_index].addr = cpu_to_le32(audiopipe->sgpage.addr);
+	pipe->sglist_head = 0;
+	memset(pipe->sgpage.area, 0, PAGE_SIZE);
+	chip->comm_page->sglist_addr[pipe->pipe_index].addr = cpu_to_le32(pipe->sgpage.addr);
 	return 0;
 }
 
 
 
-static int sglist_add_mapping(echoaudio_t *chip, audiopipe_t *audiopipe, dma_addr_t address, size_t length)
+static int sglist_add_mapping(struct echoaudio *chip, struct audiopipe *pipe,
+				dma_addr_t address, size_t length)
 {
-	int head = audiopipe->sglist_head;
-	sg_entry_t *list = (sg_entry_t *)audiopipe->sgpage.area;
+	int head = pipe->sglist_head;
+	struct sg_entry *list = (struct sg_entry *)pipe->sgpage.area;
 
 	if (head < MAX_SGLIST_ENTRIES - 1) {
 		list[head].addr = cpu_to_le32(address);
 		list[head].size = cpu_to_le32(length);
-		audiopipe->sglist_head++;
+		pipe->sglist_head++;
 	} else {
 		DE_ACT(("SGlist: too many fragments\n"));
 		return -ENOMEM;
@@ -1214,14 +1215,14 @@ static int sglist_add_mapping(echoaudio_t *chip, audiopipe_t *audiopipe, dma_add
 
 
 
-static inline int sglist_add_irq(echoaudio_t *chip, audiopipe_t *audiopipe)
+static inline int sglist_add_irq(struct echoaudio *chip, struct audiopipe *pipe)
 {
-	return sglist_add_mapping(chip, audiopipe, 0, 0);
+	return sglist_add_mapping(chip, pipe, 0, 0);
 }
 
 
 
-static inline int sglist_wrap(echoaudio_t *chip, audiopipe_t *audiopipe)
+static inline int sglist_wrap(struct echoaudio *chip, struct audiopipe *pipe)
 {
-	return sglist_add_mapping(chip, audiopipe, audiopipe->sgpage.addr, 0);
+	return sglist_add_mapping(chip, pipe, pipe->sgpage.addr, 0);
 }

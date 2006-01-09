@@ -609,10 +609,10 @@ sg_entry struct is read by the DSP, so all values must be little-endian. */
 
 #define MAX_SGLIST_ENTRIES 512
 
-typedef struct {
+struct sg_entry {
 	u32 addr;
 	u32 size;
-} sg_entry_t;
+};
 
 
 /****************************************************************************
@@ -625,7 +625,7 @@ typedef struct {
 
  ****************************************************************************/
 
-typedef struct {					//					Base	Length
+struct comm_page {					//					Base	Length
 	u32 comm_size;					// size of this object			0x000	4
 	u32 flags;					// See Appendix A below			0x004	4
 	u32 unused;					// Unused entry				0x008	4
@@ -635,7 +635,7 @@ typedef struct {					//					Base	Length
 	u32 cmd_stop;					// Chs. to stop mask			0x018	4
 	u32 cmd_reset;					// Chs. to reset mask			0x01c	4
 	u16 audio_format[DSP_MAXPIPES];			// Chs. audio format			0x020	32*2
-	sg_entry_t sglist_addr[DSP_MAXPIPES];		// Chs. Physical sglist addrs		0x060	32*8
+	struct sg_entry sglist_addr[DSP_MAXPIPES];		// Chs. Physical sglist addrs		0x060	32*8
 	volatile u32 position[DSP_MAXPIPES];		// Positions for ea. ch.		0x160	32*4
 	volatile s8 vu_meter[DSP_MAXPIPES];		// VU meters				0x1e0	32*1
 	volatile s8 peak_meter[DSP_MAXPIPES];		// Peak meters				0x200	32*1
@@ -662,6 +662,6 @@ typedef struct {					//					Base	Length
 	u8 filler[24];					// filler				0xb88	24*1
 	s8 vmixer[VMIXER_ARRAY_SIZE];			// Vmixer levels			0xba0	64*1
 	u8 midi_output[MIDI_OUT_BUFFER_SIZE];		// MIDI output data			0xbe0	32*1
-} comm_page_t;
+};
 
 #endif // _ECHO_DSP_

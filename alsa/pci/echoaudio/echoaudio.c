@@ -31,7 +31,7 @@ static unsigned int channels_list[10] = {1, 2, 4, 6, 8, 10, 12, 14, 16, 999999};
 
 
 
-static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, echoaudio_t *chip)
+static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, struct echoaudio *chip)
 {
 	int err;
 	char name[30];
@@ -54,9 +54,9 @@ static void free_firmware(const struct firmware *fw_entry)
 *** PCM interface
 ***************************************************************************************************/
 
-static void ssdata_free(snd_pcm_runtime_t *runtime)
+static void ssdata_free(struct snd_pcm_runtime *runtime)
 {
-	struct subsdata *ssdata = runtime->private_data;
+	struct audiopipe *ssdata = runtime->private_data;
 
 	if (ssdata->sgpage.area)
 		snd_dma_free_pages(&ssdata->sgpage);
@@ -65,11 +65,11 @@ static void ssdata_free(snd_pcm_runtime_t *runtime)
 
 
 
-static int hw_rule_capture_format_by_channels(snd_pcm_hw_params_t *params, snd_pcm_hw_rule_t *rule)
+static int hw_rule_capture_format_by_channels(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
-	snd_interval_t *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
-	snd_mask_t *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
-	snd_mask_t fmt;
+	struct snd_interval *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
+	struct snd_mask *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+	struct snd_mask fmt;
 
 	snd_mask_any(&fmt);
 
@@ -91,11 +91,11 @@ static int hw_rule_capture_format_by_channels(snd_pcm_hw_params_t *params, snd_p
 
 
 
-static int hw_rule_capture_channels_by_format(snd_pcm_hw_params_t *params, snd_pcm_hw_rule_t *rule)
+static int hw_rule_capture_channels_by_format(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
-	snd_interval_t *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
-	snd_mask_t *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
-	snd_interval_t ch;
+	struct snd_interval *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
+	struct snd_mask *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+	struct snd_interval ch;
 
 	snd_interval_any(&ch);
 
@@ -123,11 +123,11 @@ static int hw_rule_capture_channels_by_format(snd_pcm_hw_params_t *params, snd_p
 
 
 
-static int hw_rule_playback_format_by_channels(snd_pcm_hw_params_t *params, snd_pcm_hw_rule_t *rule)
+static int hw_rule_playback_format_by_channels(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
-	snd_interval_t *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
-	snd_mask_t *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
-	snd_mask_t fmt;
+	struct snd_interval *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
+	struct snd_mask *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+	struct snd_mask fmt;
 	u64 fmask;
 	snd_mask_any(&fmt);
 
@@ -157,11 +157,11 @@ static int hw_rule_playback_format_by_channels(snd_pcm_hw_params_t *params, snd_
 
 
 
-static int hw_rule_playback_channels_by_format(snd_pcm_hw_params_t *params, snd_pcm_hw_rule_t *rule)
+static int hw_rule_playback_channels_by_format(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
-	snd_interval_t *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
-	snd_mask_t *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
-	snd_interval_t ch;
+	struct snd_interval *c = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
+	struct snd_mask *f = hw_param_mask(params, SNDRV_PCM_HW_PARAM_FORMAT);
+	struct snd_interval ch;
 	u64 fmask;
 
 	snd_interval_any(&ch);
@@ -195,11 +195,11 @@ static int hw_rule_playback_channels_by_format(snd_pcm_hw_params_t *params, snd_
   Since the sample rate is a global setting, do allow the user to change the sample
   rate only if there is only one pcm device open.
 */
-static int hw_rule_sample_rate(snd_pcm_hw_params_t *params, snd_pcm_hw_rule_t *rule)
+static int hw_rule_sample_rate(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
-	snd_interval_t *rate = hw_param_interval(params, SNDRV_PCM_HW_PARAM_RATE);
-	echoaudio_t *chip = rule->private;
-	snd_interval_t fixed;
+	struct snd_interval *rate = hw_param_interval(params, SNDRV_PCM_HW_PARAM_RATE);
+	struct echoaudio *chip = rule->private;
+	struct snd_interval fixed;
 
 	if (!chip->can_set_rate) {
 		snd_interval_any(&fixed);
@@ -211,11 +211,11 @@ static int hw_rule_sample_rate(snd_pcm_hw_params_t *params, snd_pcm_hw_rule_t *r
 
 
 
-static int pcm_open(snd_pcm_substream_t *substream, signed char max_channels, char adat)
+static int pcm_open(struct snd_pcm_substream *substream, signed char max_channels, char adat)
 {
-	echoaudio_t *chip;
-	snd_pcm_runtime_t *runtime;
-	struct subsdata *ssdata;
+	struct echoaudio *chip;
+	struct snd_pcm_runtime *runtime;
+	struct audiopipe *ssdata;
 	int err, i;
 
 	if (max_channels <= 0)
@@ -231,13 +231,13 @@ static int pcm_open(snd_pcm_substream_t *substream, signed char max_channels, ch
 	chip = snd_pcm_substream_chip(substream);
 	runtime = substream->runtime;
 
-	if (!(ssdata = kmalloc(sizeof(struct subsdata), GFP_KERNEL)))
+	if (!(ssdata = kmalloc(sizeof(struct audiopipe), GFP_KERNEL)))
 		return -ENOMEM;
-	memset(ssdata, 0, sizeof(struct subsdata));
+	memset(ssdata, 0, sizeof(struct audiopipe));
 	ssdata->pipe_index = -1;		/* Not configured yet */
 
 	/* Set up hw capabilities and contraints */
-	memcpy(&ssdata->hw, &pcm_hardware_skel, sizeof(snd_pcm_hardware_t));
+	memcpy(&ssdata->hw, &pcm_hardware_skel, sizeof(struct snd_pcm_hardware));
 	DE_HWP(("max_channels=%d\n", max_channels));
 	ssdata->constr.list = channels_list;
 	ssdata->constr.mask = 0;
@@ -276,7 +276,8 @@ static int pcm_open(snd_pcm_substream_t *substream, signed char max_channels, ch
 		return err;
 
 	/* Finally allocate a page for the scatter-gather list */
-	if ((err = snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(chip->pci), PAGE_SIZE, &ssdata->sgpage)) < 0) {
+	if ((err = snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(chip->pci),
+					PAGE_SIZE, &ssdata->sgpage)) < 0) {
 		DE_HWP(("s-g list allocation failed\n"));
 		return err;
 	}
@@ -286,19 +287,21 @@ static int pcm_open(snd_pcm_substream_t *substream, signed char max_channels, ch
 
 
 
-static int pcm_analog_in_open(snd_pcm_substream_t *substream)
+static int pcm_analog_in_open(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 	int err;
 
 	DE_ACT(("pcm_analog_in_open\n"));
 	if ((err = pcm_open(substream, num_analog_busses_in(chip) - substream->number, 0)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
-					hw_rule_capture_channels_by_format, NULL, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
+					hw_rule_capture_channels_by_format, NULL,
+					SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
-					hw_rule_capture_format_by_channels, NULL, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
+					hw_rule_capture_format_by_channels, NULL,
+					SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
 		return err;
 	atomic_inc(&chip->opencount);
 	if (atomic_read(&chip->opencount) > 1 && chip->rate_set)
@@ -309,9 +312,9 @@ static int pcm_analog_in_open(snd_pcm_substream_t *substream)
 
 
 
-static int pcm_analog_out_open(snd_pcm_substream_t *substream)
+static int pcm_analog_out_open(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 	int max_channels, err;
 
 #ifdef ECHOCARD_HAS_VMIXER
@@ -323,10 +326,12 @@ static int pcm_analog_out_open(snd_pcm_substream_t *substream)
 	if ((err = pcm_open(substream, max_channels - substream->number, 0)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
-					hw_rule_playback_channels_by_format, NULL, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
+					hw_rule_playback_channels_by_format, NULL,
+					SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
-					hw_rule_playback_format_by_channels, NULL, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
+					hw_rule_playback_format_by_channels, NULL,
+					SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
 		return err;
 	atomic_inc(&chip->opencount);
 	if (atomic_read(&chip->opencount) > 1 && chip->rate_set)
@@ -339,9 +344,9 @@ static int pcm_analog_out_open(snd_pcm_substream_t *substream)
 
 #ifdef ECHOCARD_HAS_DIGITAL_IO
 
-static int pcm_digital_in_open(snd_pcm_substream_t *substream)
+static int pcm_digital_in_open(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 	int err, max_channels;
 
 	DE_ACT(("pcm_digital_in_open\n"));
@@ -357,15 +362,13 @@ static int pcm_digital_in_open(snd_pcm_substream_t *substream)
 
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0,
 				       SNDRV_PCM_HW_PARAM_CHANNELS,
-				       hw_rule_capture_channels_by_format,
-				       NULL, SNDRV_PCM_HW_PARAM_FORMAT,
-				       -1)) < 0)
+				       hw_rule_capture_channels_by_format, NULL,
+				       SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
 		goto din_exit;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0,
 				       SNDRV_PCM_HW_PARAM_FORMAT,
-				       hw_rule_capture_format_by_channels,
-				       NULL, SNDRV_PCM_HW_PARAM_CHANNELS,
-				       -1)) < 0)
+				       hw_rule_capture_format_by_channels, NULL,
+				       SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
 		goto din_exit;
 
 	atomic_inc(&chip->opencount);
@@ -381,9 +384,9 @@ din_exit:
 
 #ifndef ECHOCARD_HAS_VMIXER	/* See the note in snd_echo_new_pcm() */
 
-static int pcm_digital_out_open(snd_pcm_substream_t *substream)
+static int pcm_digital_out_open(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 	int err, max_channels;
 
 	DE_ACT(("pcm_digital_out_open\n"));
@@ -423,9 +426,9 @@ dout_exit:
 
 
 
-static int pcm_close(snd_pcm_substream_t *substream)
+static int pcm_close(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 	int oc;
 
 	/* Nothing to do here. Audio is already off and ssdata will be freed by its callback */
@@ -446,15 +449,16 @@ static int pcm_close(snd_pcm_substream_t *substream)
 
 
 /* Channel allocation and scatter-gather list setup */
-static int init_engine(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params, u16 pipe_index, u16 Interleave)
+static int init_engine(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params,
+			int pipe_index, int interleave)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int err, per, rest, page, edge, offs;
 	struct snd_sg_buf *sgbuf;
-	struct subsdata *ssdata;
+	struct audiopipe *ssdata;
 
 	chip = snd_pcm_substream_chip(substream);
-	ssdata = (struct subsdata *) substream->runtime->private_data;
+	ssdata = (struct audiopipe *) substream->runtime->private_data;
 
 	/* Sets up che hardware. If it's already initialized, reset and redo with the new parameters */
 	spin_lock_irq(&chip->lock);
@@ -465,7 +469,7 @@ static int init_engine(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_p
 		chip->substream[ssdata->pipe_index] = NULL;
 	}
 
-	err = allocate_pipes(chip, ssdata, pipe_index, Interleave);
+	err = allocate_pipes(chip, ssdata, pipe_index, interleave);
 	if (err < 0) {
 		spin_unlock_irq(&chip->lock);
 		DE_ACT((KERN_NOTICE "allocate_pipes(%d) err=%d\n", pipe_index, err));
@@ -532,9 +536,9 @@ static int init_engine(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_p
 
 
 
-static int pcm_analog_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
+static int pcm_analog_in_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 
 	return init_engine(substream, hw_params, px_analog_in(chip) +
 			substream->number, params_channels(hw_params));
@@ -542,8 +546,7 @@ static int pcm_analog_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_pa
 
 
 
-
-static int pcm_analog_out_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
+static int pcm_analog_out_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
 {
 	return init_engine(substream, hw_params, substream->number, params_channels(hw_params));
 }
@@ -552,9 +555,9 @@ static int pcm_analog_out_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_p
 
 #ifdef ECHOCARD_HAS_DIGITAL_IO
 
-static int pcm_digital_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
+static int pcm_digital_in_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 
 	return init_engine(substream, hw_params, px_digital_in(chip) +
 			substream->number, params_channels(hw_params));
@@ -563,9 +566,9 @@ static int pcm_digital_in_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_p
 
 
 #ifndef ECHOCARD_HAS_VMIXER	/* See the note in snd_echo_new_pcm() */
-static int pcm_digital_out_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_params)
+static int pcm_digital_out_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
 
 	return init_engine(substream, hw_params, px_digital_out(chip) +
 			substream->number, params_channels(hw_params));
@@ -576,13 +579,13 @@ static int pcm_digital_out_hw_params(snd_pcm_substream_t *substream, snd_pcm_hw_
 
 
 
-static int pcm_hw_free(snd_pcm_substream_t *substream)
+static int pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip;
-	struct subsdata *ssdata;
+	struct echoaudio *chip;
+	struct audiopipe *ssdata;
 
 	chip = snd_pcm_substream_chip(substream);
-	ssdata = (struct subsdata *) substream->runtime->private_data;
+	ssdata = (struct audiopipe *) substream->runtime->private_data;
 
 	spin_lock_irq(&chip->lock);
 	if (ssdata->pipe_index >= 0) {
@@ -600,12 +603,12 @@ static int pcm_hw_free(snd_pcm_substream_t *substream)
 
 
 
-static int pcm_prepare(snd_pcm_substream_t *substream)
+static int pcm_prepare(struct snd_pcm_substream *substream)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
-	snd_pcm_runtime_t *runtime = substream->runtime;
-	audioformat_t format;
-	int pipe_index = ((struct subsdata *)runtime->private_data)->pipe_index;
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct audioformat format;
+	int pipe_index = ((struct audiopipe *)runtime->private_data)->pipe_index;
 
 	DE_HWP(("Prepare rate=%d format=%d channels=%d\n", runtime->rate, runtime->format, runtime->channels));
 	format.interleave = runtime->channels;
@@ -639,15 +642,15 @@ static int pcm_prepare(snd_pcm_substream_t *substream)
 
 
 
-static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
+static int pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	echoaudio_t *chip = snd_pcm_substream_chip(substream);
-	snd_pcm_runtime_t *runtime = substream->runtime;
-	struct subsdata *ssdata = runtime->private_data;
+	struct echoaudio *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct audiopipe *ssdata = runtime->private_data;
 	int i, err;
 	u32 channelmask = 0;
 	struct list_head *pos;
-	snd_pcm_substream_t *s;
+	struct snd_pcm_substream *s;
 
 	snd_pcm_group_for_each(pos, substream) {
 		s = snd_pcm_group_substream_entry(pos);
@@ -712,10 +715,10 @@ static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 
 
 
-static snd_pcm_uframes_t pcm_pointer(snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t pcm_pointer(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
-	struct subsdata *ssdata = runtime->private_data;
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct audiopipe *ssdata = runtime->private_data;
 	size_t cnt, bufsize, pos;
 
 	cnt = le32_to_cpu(*ssdata->dma_counter);
@@ -734,7 +737,7 @@ static snd_pcm_uframes_t pcm_pointer(snd_pcm_substream_t *substream)
 
 
 /* pcm *_ops structures */
-static snd_pcm_ops_t analog_playback_ops = {
+static struct snd_pcm_ops analog_playback_ops = {
 	.open = pcm_analog_out_open,
 	.close = pcm_close,
 	.ioctl = snd_pcm_lib_ioctl,
@@ -745,7 +748,7 @@ static snd_pcm_ops_t analog_playback_ops = {
 	.pointer = pcm_pointer,
 	.page = snd_pcm_sgbuf_ops_page,
 };
-static snd_pcm_ops_t analog_capture_ops = {
+static struct snd_pcm_ops analog_capture_ops = {
 	.open = pcm_analog_in_open,
 	.close = pcm_close,
 	.ioctl = snd_pcm_lib_ioctl,
@@ -758,7 +761,7 @@ static snd_pcm_ops_t analog_capture_ops = {
 };
 #ifdef ECHOCARD_HAS_DIGITAL_IO
 #ifndef ECHOCARD_HAS_VMIXER
-static snd_pcm_ops_t digital_playback_ops = {
+static struct snd_pcm_ops digital_playback_ops = {
 	.open = pcm_digital_out_open,
 	.close = pcm_close,
 	.ioctl = snd_pcm_lib_ioctl,
@@ -770,7 +773,7 @@ static snd_pcm_ops_t digital_playback_ops = {
 	.page = snd_pcm_sgbuf_ops_page,
 };
 #endif /* !ECHOCARD_HAS_VMIXER */
-static snd_pcm_ops_t digital_capture_ops = {
+static struct snd_pcm_ops digital_capture_ops = {
 	.open = pcm_digital_in_open,
 	.close = pcm_close,
 	.ioctl = snd_pcm_lib_ioctl,
@@ -786,9 +789,9 @@ static snd_pcm_ops_t digital_capture_ops = {
 
 
 /* Preallocate memory only for the first substream because it's the most used one */
-static int snd_echo_preallocate_pages(snd_pcm_t *pcm, struct device *data)
+static int snd_echo_preallocate_pages(struct snd_pcm *pcm, struct device *data)
 {
-	snd_pcm_substream_t *substream;
+	struct snd_pcm_substream *substream;
 	int stream, err;
 
 	for (stream = 0; stream < 2; stream++)
@@ -802,9 +805,9 @@ static int snd_echo_preallocate_pages(snd_pcm_t *pcm, struct device *data)
 
 
 /*<--snd_echo_probe() */
-static int __devinit snd_echo_new_pcm(echoaudio_t *chip)
+static int __devinit snd_echo_new_pcm(struct echoaudio *chip)
 {
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 	int err;
 
 #ifdef ECHOCARD_HAS_VMIXER
@@ -888,9 +891,9 @@ static int __devinit snd_echo_new_pcm(echoaudio_t *chip)
 ***************************************************************************************************/
 
 /******************* PCM output volume *******************/
-static int snd_echo_output_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_output_gain_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -900,9 +903,9 @@ static int snd_echo_output_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info
 	return 0;
 }
 
-static int snd_echo_output_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_output_gain_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -911,9 +914,9 @@ static int snd_echo_output_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 	return 0;
 }
 
-static int snd_echo_output_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_output_gain_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c, changed, gain;
 
 	changed = 0;
@@ -937,7 +940,7 @@ static int snd_echo_output_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value
 
 #ifdef ECHOCARD_HAS_VMIXER
 /* On Vmixer cards this one controls the line-out volume */
-static snd_kcontrol_new_t snd_echo_line_output_gain __devinitdata = {
+static struct snd_kcontrol_new snd_echo_line_output_gain __devinitdata = {
 	.name = "Line Playback Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_output_gain_info,
@@ -945,7 +948,7 @@ static snd_kcontrol_new_t snd_echo_line_output_gain __devinitdata = {
 	.put = snd_echo_output_gain_put,
 };
 #else
-static snd_kcontrol_new_t snd_echo_pcm_output_gain __devinitdata = {
+static struct snd_kcontrol_new snd_echo_pcm_output_gain __devinitdata = {
 	.name = "PCM Playback Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_output_gain_info,
@@ -959,9 +962,9 @@ static snd_kcontrol_new_t snd_echo_pcm_output_gain __devinitdata = {
 #ifdef ECHOCARD_HAS_INPUT_GAIN
 
 /******************* Analog input volume *******************/
-static int snd_echo_input_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_input_gain_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -971,9 +974,9 @@ static int snd_echo_input_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_
 	return 0;
 }
 
-static int snd_echo_input_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_input_gain_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -982,9 +985,9 @@ static int snd_echo_input_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	return 0;
 }
 
-static int snd_echo_input_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_input_gain_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c, gain, changed;
 
 	changed = 0;
@@ -1006,7 +1009,7 @@ static int snd_echo_input_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_line_input_gain __devinitdata = {
+static struct snd_kcontrol_new snd_echo_line_input_gain __devinitdata = {
 	.name = "Line Capture Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_input_gain_info,
@@ -1021,9 +1024,9 @@ static snd_kcontrol_new_t snd_echo_line_input_gain __devinitdata = {
 #ifdef ECHOCARD_HAS_OUTPUT_NOMINAL_LEVEL
 
 /******************* Analog output nominal level (+4dBu / -10dBV) *******************/
-static int snd_echo_output_nominal_info (snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_output_nominal_info (struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
@@ -1033,9 +1036,9 @@ static int snd_echo_output_nominal_info (snd_kcontrol_t *kcontrol, snd_ctl_elem_
 	return 0;
 }
 
-static int snd_echo_output_nominal_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_output_nominal_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -1044,9 +1047,9 @@ static int snd_echo_output_nominal_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_va
 	return 0;
 }
 
-static int snd_echo_output_nominal_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_output_nominal_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c, changed;
 
 	changed = 0;
@@ -1064,7 +1067,7 @@ static int snd_echo_output_nominal_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_va
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_output_nominal_level __devinitdata = {
+static struct snd_kcontrol_new snd_echo_output_nominal_level __devinitdata = {
 	.name = "Line Playback Switch (-10dBV)",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_output_nominal_info,
@@ -1079,9 +1082,9 @@ static snd_kcontrol_new_t snd_echo_output_nominal_level __devinitdata = {
 #ifdef ECHOCARD_HAS_INPUT_NOMINAL_LEVEL
 
 /******************* Analog input nominal level (+4dBu / -10dBV) *******************/
-static int snd_echo_input_nominal_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_input_nominal_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
@@ -1091,9 +1094,9 @@ static int snd_echo_input_nominal_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
 	return 0;
 }
 
-static int snd_echo_input_nominal_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_input_nominal_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -1102,9 +1105,9 @@ static int snd_echo_input_nominal_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	return 0;
 }
 
-static int snd_echo_input_nominal_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_input_nominal_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int c, changed;
 
 	changed = 0;
@@ -1122,7 +1125,7 @@ static int snd_echo_input_nominal_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_intput_nominal_level __devinitdata = {
+static struct snd_kcontrol_new snd_echo_intput_nominal_level __devinitdata = {
 	.name = "Line Capture Switch (-10dBV)",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_input_nominal_info,
@@ -1137,9 +1140,9 @@ static snd_kcontrol_new_t snd_echo_intput_nominal_level __devinitdata = {
 #ifdef ECHOCARD_HAS_MONITOR
 
 /******************* Monitor mixer *******************/
-static int snd_echo_mixer_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_mixer_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1151,9 +1154,9 @@ static int snd_echo_mixer_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *ui
 	return 0;
 }
 
-static int snd_echo_mixer_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_mixer_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->monitor_gain
@@ -1162,9 +1165,9 @@ static int snd_echo_mixer_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uc
 	return 0;
 }
 
-static int snd_echo_mixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_mixer_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int changed,  gain;
 	short out, in;
 
@@ -1185,7 +1188,7 @@ static int snd_echo_mixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *uc
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_monitor_mixer __devinitdata = {
+static struct snd_kcontrol_new snd_echo_monitor_mixer __devinitdata = {
 	.name = "Monitor Mixer Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_mixer_info,
@@ -1200,9 +1203,9 @@ static snd_kcontrol_new_t snd_echo_monitor_mixer __devinitdata = {
 #ifdef ECHOCARD_HAS_VMIXER
 
 /******************* Vmixer *******************/
-static int snd_echo_vmixer_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_vmixer_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1214,9 +1217,9 @@ static int snd_echo_vmixer_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *u
 	return 0;
 }
 
-static int snd_echo_vmixer_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_vmixer_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->vmixer_gain
@@ -1225,9 +1228,9 @@ static int snd_echo_vmixer_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 	return 0;
 }
 
-static int snd_echo_vmixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_vmixer_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int gain, changed;
 	short vch, out;
 
@@ -1248,7 +1251,7 @@ static int snd_echo_vmixer_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *u
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_vmixer __devinitdata = {
+static struct snd_kcontrol_new snd_echo_vmixer __devinitdata = {
 	.name = "VMixer Volume",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.info = snd_echo_vmixer_info,
@@ -1263,10 +1266,10 @@ static snd_kcontrol_new_t snd_echo_vmixer __devinitdata = {
 #ifdef ECHOCARD_HAS_DIGITAL_MODE_SWITCH
 
 /******************* Digital mode switch *******************/
-static int snd_echo_digital_mode_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_digital_mode_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	static char *names[4] = {"S/PDIF Coaxial", "S/PDIF Optical", "ADAT Optical", "S/PDIF Cdrom"};
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
@@ -1278,9 +1281,9 @@ static int snd_echo_digital_mode_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_inf
 	return 0;
 }
 
-static int snd_echo_digital_mode_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_digital_mode_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int i, mode;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -1293,9 +1296,9 @@ static int snd_echo_digital_mode_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 	return 0;
 }
 
-static int snd_echo_digital_mode_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_digital_mode_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int changed;
 	unsigned short emode, dmode;
 
@@ -1321,7 +1324,8 @@ static int snd_echo_digital_mode_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 			changed = set_digital_mode(chip, dmode);
 			/* If we had to change the clock source, report it */
 			if (changed > 0 && chip->clock_src_ctl) {
-				snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE, &chip->clock_src_ctl->id);
+				snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
+						&chip->clock_src_ctl->id);
 				DE_ACT(("SDM() =%d\n", changed));
 			}
 			if (changed >= 0)
@@ -1332,7 +1336,7 @@ static int snd_echo_digital_mode_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_digital_mode_switch __devinitdata = {
+static struct snd_kcontrol_new snd_echo_digital_mode_switch __devinitdata = {
 	.name = "Digital mode Switch",
 	.iface = SNDRV_CTL_ELEM_IFACE_CARD,
 	.info = snd_echo_digital_mode_info,
@@ -1347,7 +1351,7 @@ static snd_kcontrol_new_t snd_echo_digital_mode_switch __devinitdata = {
 #ifdef ECHOCARD_HAS_DIGITAL_IO
 
 /******************* S/PDIF mode switch *******************/
-static int snd_echo_spdif_mode_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_spdif_mode_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	static char *names[2] = {"Consumer", "Professional"};
 
@@ -1360,18 +1364,18 @@ static int snd_echo_spdif_mode_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_
 	return 0;
 }
 
-static int snd_echo_spdif_mode_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_spdif_mode_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.enumerated.item[0] = !!chip->professional_spdif;
 	return 0;
 }
 
-static int snd_echo_spdif_mode_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_spdif_mode_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int mode;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -1385,7 +1389,7 @@ static int snd_echo_spdif_mode_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_echo_spdif_mode_switch __devinitdata = {
+static struct snd_kcontrol_new snd_echo_spdif_mode_switch __devinitdata = {
 	.name = "S/PDIF mode Switch",
 	.iface = SNDRV_CTL_ELEM_IFACE_CARD,
 	.info = snd_echo_spdif_mode_info,
@@ -1400,10 +1404,10 @@ static snd_kcontrol_new_t snd_echo_spdif_mode_switch __devinitdata = {
 #ifdef ECHOCARD_HAS_EXTERNAL_CLOCK
 
 /******************* Select input clock source *******************/
-static int snd_echo_clock_source_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_clock_source_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	static char *names[8] = {"Internal", "Word", "Super", "S/PDIF", "ADAT", "ESync", "ESync96", "MTC"};
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
@@ -1415,9 +1419,9 @@ static int snd_echo_clock_source_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_inf
 	return 0;
 }
 
-static int snd_echo_clock_source_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_clock_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int i, clock;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -1430,9 +1434,9 @@ static int snd_echo_clock_source_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 	return 0;
 }
 
-static int snd_echo_clock_source_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_clock_source_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int changed;
 	unsigned int eclock, dclock;
 
@@ -1457,7 +1461,7 @@ static int snd_echo_clock_source_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_valu
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_clock_source_switch __devinitdata = {
+static struct snd_kcontrol_new snd_echo_clock_source_switch __devinitdata = {
 	.name = "Sample Clock Source",
 	.iface = SNDRV_CTL_ELEM_IFACE_PCM,
 	.info = snd_echo_clock_source_info,
@@ -1472,7 +1476,7 @@ static snd_kcontrol_new_t snd_echo_clock_source_switch __devinitdata = {
 #ifdef ECHOCARD_HAS_PHANTOM_POWER
 
 /******************* Phantom power switch *******************/
-static int snd_echo_phantom_power_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_phantom_power_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	uinfo->count = 1;
@@ -1481,17 +1485,17 @@ static int snd_echo_phantom_power_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
 	return 0;
 }
 
-static int snd_echo_phantom_power_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_phantom_power_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	struct echoaudio *chip = snd_kcontrol_chip(kcontrol);
 
 	ucontrol->value.integer.value[0] = chip->phantom_power;
 	return 0;
 }
 
-static int snd_echo_phantom_power_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_phantom_power_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	struct echoaudio *chip = snd_kcontrol_chip(kcontrol);
 	int power, changed = 0;
 
 	power = !!ucontrol->value.integer.value[0];
@@ -1505,7 +1509,7 @@ static int snd_echo_phantom_power_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_phantom_power_switch __devinitdata = {
+static struct snd_kcontrol_new snd_echo_phantom_power_switch __devinitdata = {
 	.name = "Phantom power Switch",
 	.iface = SNDRV_CTL_ELEM_IFACE_CARD,
 	.info = snd_echo_phantom_power_info,
@@ -1520,7 +1524,7 @@ static snd_kcontrol_new_t snd_echo_phantom_power_switch __devinitdata = {
 #ifdef ECHOCARD_HAS_DIGITAL_IN_AUTOMUTE
 
 /******************* Digital input automute switch *******************/
-static int snd_echo_automute_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_automute_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	uinfo->count = 1;
@@ -1529,17 +1533,17 @@ static int snd_echo_automute_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t 
 	return 0;
 }
 
-static int snd_echo_automute_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_automute_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	struct echoaudio *chip = snd_kcontrol_chip(kcontrol);
 
 	ucontrol->value.integer.value[0] = chip->digital_in_automute;
 	return 0;
 }
 
-static int snd_echo_automute_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_automute_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip = snd_kcontrol_chip(kcontrol);
+	struct echoaudio *chip = snd_kcontrol_chip(kcontrol);
 	int automute, changed = 0;
 
 	automute = !!ucontrol->value.integer.value[0];
@@ -1553,7 +1557,7 @@ static int snd_echo_automute_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t 
 	return changed;
 }
 
-static snd_kcontrol_new_t snd_echo_automute_switch __devinitdata = {
+static struct snd_kcontrol_new snd_echo_automute_switch __devinitdata = {
 	.name = "Digital Capture Switch (automute)",
 	.iface = SNDRV_CTL_ELEM_IFACE_CARD,
 	.info = snd_echo_automute_info,
@@ -1566,9 +1570,9 @@ static snd_kcontrol_new_t snd_echo_automute_switch __devinitdata = {
 
 
 /******************* VU-meters switch *******************/
-static int snd_echo_vumeters_switch_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_vumeters_switch_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
@@ -1578,9 +1582,9 @@ static int snd_echo_vumeters_switch_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_
 	return 0;
 }
 
-static int snd_echo_vumeters_switch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_vumeters_switch_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	spin_lock_irq(&chip->lock);
@@ -1589,7 +1593,7 @@ static int snd_echo_vumeters_switch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_v
 	return 1;
 }
 
-static snd_kcontrol_new_t snd_echo_vumeters_switch __devinitdata = {
+static struct snd_kcontrol_new snd_echo_vumeters_switch __devinitdata = {
 	.name = "VU-meters Switch",
 	.iface = SNDRV_CTL_ELEM_IFACE_CARD,
 	.access = SNDRV_CTL_ELEM_ACCESS_WRITE,
@@ -1600,9 +1604,9 @@ static snd_kcontrol_new_t snd_echo_vumeters_switch __devinitdata = {
 
 
 /******************* Read VU-meters (input, output, analog and digital together) *******************/
-static int snd_echo_vumeters_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_vumeters_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1619,16 +1623,16 @@ static int snd_echo_vumeters_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t 
 	return 0;
 }
 
-static int snd_echo_vumeters_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_vumeters_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	get_audio_meters(chip, ucontrol->value.integer.value);
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_echo_vumeters __devinitdata = {
+static struct snd_kcontrol_new snd_echo_vumeters __devinitdata = {
 	.name = "VU-meters",
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
@@ -1639,9 +1643,9 @@ static snd_kcontrol_new_t snd_echo_vumeters __devinitdata = {
 
 
 /******************* Channels info - it exports informations about the number of channels *******************/
-static int snd_echo_channels_info_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int snd_echo_channels_info_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1651,9 +1655,9 @@ static int snd_echo_channels_info_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_in
 	return 0;
 }
 
-static int snd_echo_channels_info_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_echo_channels_info_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int detected, clocks, bit, src;
 
 	chip = snd_kcontrol_chip(kcontrol);
@@ -1679,7 +1683,7 @@ static int snd_echo_channels_info_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_val
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_echo_channels_info __devinitdata = {
+static struct snd_kcontrol_new snd_echo_channels_info __devinitdata = {
 	.name = "Channels info",
 	.iface = SNDRV_CTL_ELEM_IFACE_HWDEP,
 	.access = SNDRV_CTL_ELEM_ACCESS_READ | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
@@ -1696,8 +1700,8 @@ static snd_kcontrol_new_t snd_echo_channels_info __devinitdata = {
 
 static irqreturn_t snd_echo_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	echoaudio_t *chip = dev_id;
-	snd_pcm_substream_t *substream;
+	struct echoaudio *chip = dev_id;
+	struct snd_pcm_substream *substream;
 	int period, ss, st;
 
 	spin_lock(&chip->lock);
@@ -1737,7 +1741,7 @@ static irqreturn_t snd_echo_interrupt(int irq, void *dev_id, struct pt_regs *reg
 *** Module construction / destruction
 ***************************************************************************************************/
 
-static int snd_echo_free(echoaudio_t *chip)
+static int snd_echo_free(struct echoaudio *chip)
 {
 	DE_INIT(("Stop DSP...\n"));
 	if (chip->comm_page) {
@@ -1768,9 +1772,9 @@ static int snd_echo_free(echoaudio_t *chip)
 
 
 
-static int snd_echo_dev_free(snd_device_t *device)
+static int snd_echo_dev_free(struct snd_device *device)
 {
-	echoaudio_t *chip = device->device_data;
+	struct echoaudio *chip = device->device_data;
 
 	DE_INIT(("snd_echo_dev_free()...\n"));
 	return snd_echo_free(chip);
@@ -1779,12 +1783,12 @@ static int snd_echo_dev_free(snd_device_t *device)
 
 
 /* <--snd_echo_probe() */
-static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echoaudio_t **rchip)
+static __devinit int snd_echo_create(struct snd_card *card, struct pci_dev *pci, struct echoaudio **rchip)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 	int err;
 	size_t sz;
-	static snd_device_ops_t ops = {
+	static struct snd_device_ops ops = {
 		.dev_free = snd_echo_dev_free,
 	};
 
@@ -1833,13 +1837,13 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 	/* Create the DSP comm page - this is the area of memory used for most
 	of the communication with the DSP, which accesses it via bus mastering */
 	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(chip->pci),
-				sizeof(comm_page_t), &chip->commpage_dma_buf) < 0) {
+				sizeof(struct comm_page), &chip->commpage_dma_buf) < 0) {
 		snd_echo_free(chip);
 		snd_printk(KERN_ERR "cannot allocate the comm page\n");
 		return -ENOMEM;
 	}
 	chip->comm_page_phys = chip->commpage_dma_buf.addr;
-	chip->comm_page = (comm_page_t *)chip->commpage_dma_buf.area;
+	chip->comm_page = (struct comm_page *)chip->commpage_dma_buf.area;
 
 	err = init_hw(chip, chip->pci->device, chip->pci->subsystem_device);
 	if (err) {
@@ -1867,8 +1871,8 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 {
 	static int dev;
-	snd_card_t *card;
-	echoaudio_t *chip;
+	struct snd_card *card;
+	struct echoaudio *chip;
 	char *dsp;
 	int i, err;
 
@@ -2018,7 +2022,7 @@ ctl_error:
 
 static void __devexit snd_echo_remove(struct pci_dev *pci)
 {
-	echoaudio_t *chip;
+	struct echoaudio *chip;
 
 	chip = pci_get_drvdata(pci);
 	if (chip)
