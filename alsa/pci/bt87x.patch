@@ -11,7 +11,7 @@
 +#else
 +	supported = pci_match_device(snd_bt87x_ids, pci);
 +#endif
- 	if (supported)
+ 	if (supported && supported->driver_data > 0)
  		return supported->driver_data;
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 0)
