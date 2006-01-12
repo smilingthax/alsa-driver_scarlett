@@ -39,7 +39,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Gina20\n"));
 	snd_assert((subdevice_id & 0xfff0) == GINA20, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -55,17 +54,13 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->asic_loaded = TRUE;
 	chip->input_clock_types = ECHO_CLOCK_BIT_INTERNAL | ECHO_CLOCK_BIT_SPDIF;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
-	/* Set the S/PDIF output format to "professional" */
 	err = set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));
@@ -73,19 +68,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 }
 
 
-
-//===========================================================================
-//
-// detect_input_clocks returns a bitmask consisting of all the input
-// clocks currently connected to the hardware; this changes as the user
-// connects and disconnects clock inputs.
-//
-// You should use this information to determine which clocks the user is
-// allowed to select.
-//
-// Gina20 only supports S/PDIF input clock.
-//
-//===========================================================================
 
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
@@ -111,20 +93,6 @@ static int load_asic(struct echoaudio *chip)
 }
 
 
-
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for Gina20/Darla20
-//
-// For Gina and Darla, three parameters need to be set: the resampler state,
-// the clock state, and the S/PDIF output status state.  The idea is that
-// these parameters are changed as infrequently as possible.
-//
-// Resampling is no longer supported.
-//
-//===========================================================================
 
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
@@ -153,7 +121,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 	if (spdif_status == chip->spdif_status)
 		spdif_status = GD_SPDIF_STATUS_NOCHANGE;
 
-	/* Write the audio state to the comm page */
 	chip->comm_page->sample_rate = cpu_to_le32(rate);
 	chip->comm_page->gd_clock_state = clock_state;
 	chip->comm_page->gd_spdif_status = spdif_status;
@@ -166,18 +133,11 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 		chip->spdif_status = spdif_status;
 	chip->sample_rate = rate;
 
-	/* Send command to DSP */
 	clear_handshake(chip);
 	return send_vector(chip, DSP_VC_SET_GD_AUDIO_STATE);
 }
 
 
-
-//===========================================================================
-//
-// Set the input clock to internal, S/PDIF, ADAT
-//
-//===========================================================================
 
 static int set_input_clock(struct echoaudio *chip, u16 clock)
 {
@@ -210,8 +170,7 @@ static int set_input_clock(struct echoaudio *chip, u16 clock)
 
 
 
-/* Set input bus gain (one unit is 0.5dB !)
-   where ECHOGAIN_MININP <= gain <= ECHOGAIN_MAXINP) */
+/* Set input bus gain (one unit is 0.5dB !) */
 static int set_input_gain(struct echoaudio *chip, u16 input, int gain)
 {
 	snd_assert(input < num_busses_in(chip), return -EINVAL);
@@ -219,7 +178,6 @@ static int set_input_gain(struct echoaudio *chip, u16 input, int gain)
 	if (wait_handshake(chip))
 		return -EIO;
 
-	/* Save the new value */
 	chip->input_gain[input] = gain;
 	gain += GL20_INPUT_GAIN_MAGIC_NUMBER;
 	chip->comm_page->line_in_level[input] = gain;

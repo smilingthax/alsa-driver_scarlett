@@ -43,7 +43,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Gina24\n"));
 	snd_assert((subdevice_id & 0xfff0) == GINA24, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -73,19 +72,12 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 					ECHOCAPS_HAS_DIGITAL_MODE_SPDIF_CDROM;
 	}
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	err = init_line_levels(chip);
-
-	/* Set the digital mode to S/PDIF RCA */
 	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
-
-	/* Set the S/PDIF output format to "professional" */
 	err = set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));
@@ -93,19 +85,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 }
 
 
-
-//===========================================================================
-//
-// detect_input_clocks returns a bitmask consisting of all the input
-// clocks currently connected to the hardware; this changes as the user
-// connects and disconnects clock inputs.
-//
-// You should use this information to determine which clocks the user is
-// allowed to select.
-//
-// Gina24 supports S/PDIF, Esync, and ADAT input clocks.
-//
-//===========================================================================
 
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
@@ -130,19 +109,8 @@ static u32 detect_input_clocks(const struct echoaudio *chip)
 
 
 
-/****************************************************************************
-
-  Hardware setup and config
-
- ****************************************************************************/
-
-//===========================================================================
-//
-// Gina24 has an ASIC on the PCI card which must be loaded for anything
-// interesting to happen.
-//
-//===========================================================================
-
+/* Gina24 has an ASIC on the PCI card which must be loaded for anything
+interesting to happen. */
 static int load_asic(struct echoaudio *chip)
 {
 	u32 control_reg;
@@ -182,12 +150,6 @@ static int load_asic(struct echoaudio *chip)
 
 
 
-//===========================================================================
-//
-// Set the audio sample rate for Gina24
-//
-//===========================================================================
-
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u32 control_reg, clock;
@@ -203,7 +165,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 		return 0;
 	}
 
-	/* Set the sample rate */
 	clock = 0;
 
 	control_reg = le32_to_cpu(chip->comm_page->control_register);
@@ -256,12 +217,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 
 
 
-//===========================================================================
-//
-// Set the input clock to internal, S/PDIF, ADAT
-//
-//===========================================================================
-
 static int set_input_clock(struct echoaudio *chip, u16 clock)
 {
 	u32 control_reg, clocks_from_dsp;
@@ -313,12 +268,6 @@ static int set_input_clock(struct echoaudio *chip, u16 clock)
 }
 
 
-
-//===========================================================================
-//
-// set_digital_mode
-//
-//===========================================================================
 
 static int dsp_set_digital_mode(struct echoaudio *chip, u8 mode)
 {

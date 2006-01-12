@@ -28,10 +28,9 @@
 // ****************************************************************************
 
 
-/***************************************************************************************************
-*** MIDI lowlevel code
-***************************************************************************************************/
-
+/******************************************************************************
+	MIDI lowlevel code
+******************************************************************************/
 
 /* Start and stop Midi input */
 static int enable_midi_input(struct echoaudio *chip, char enable)
@@ -53,10 +52,8 @@ static int enable_midi_input(struct echoaudio *chip, char enable)
 
 
 
-/*
-Send a buffer full of MIDI data to the DSP
-Returns how many actually written or < 0 on error
-*/
+/* Send a buffer full of MIDI data to the DSP
+Returns how many actually written or < 0 on error */
 static int write_midi(struct echoaudio *chip, u8 *data, int bytes)
 {
 	snd_assert(bytes > 0 && bytes < MIDI_OUT_BUFFER_SIZE, return -EINVAL);
@@ -80,14 +77,12 @@ static int write_midi(struct echoaudio *chip, u8 *data, int bytes)
 
 
 /* Run the state machine for MIDI input data
-
 MIDI time code sync isn't supported by this code right now, but you still need
 this state machine to parse the incoming MIDI data stream.  Every time the DSP
 sees a 0xF1 byte come in, it adds the DSP sample position to the MIDI data
 stream. The DSP sample position is represented as a 32 bit unsigned value,
 with the high 16 bits first, followed by the low 16 bits. Since these aren't
-real MIDI bytes, the following logic is needed to skip them.
-*/
+real MIDI bytes, the following logic is needed to skip them. */
 static inline int mtc_process_data(struct echoaudio *chip, short midi_byte)
 {
 	switch (chip->mtc_state) {
@@ -112,10 +107,8 @@ static inline int mtc_process_data(struct echoaudio *chip, short midi_byte)
 
 
 
-/*
-This function is called from the IRQ handler and it reads the midi data
-from the DSP's buffer.  It returns the number of bytes received.
-*/
+/* This function is called from the IRQ handler and it reads the midi data
+from the DSP's buffer.  It returns the number of bytes received. */
 static int midi_service_irq(struct echoaudio *chip)
 {
 	short int count, midi_byte, i, received;
@@ -150,9 +143,9 @@ static int midi_service_irq(struct echoaudio *chip)
 
 
 
-/***************************************************************************************************
-*** MIDI interface
-***************************************************************************************************/
+/******************************************************************************
+	MIDI interface
+******************************************************************************/
 
 static int snd_echo_midi_input_open(struct snd_rawmidi_substream *substream)
 {

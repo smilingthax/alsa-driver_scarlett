@@ -49,9 +49,9 @@ static void free_firmware(const struct firmware *fw_entry)
 
 
 
-/***************************************************************************************************
-*** PCM interface
-***************************************************************************************************/
+/******************************************************************************
+	PCM interface
+******************************************************************************/
 
 static void audiopipe_free(struct snd_pcm_runtime *runtime)
 {
@@ -190,10 +190,8 @@ static int hw_rule_playback_channels_by_format(struct snd_pcm_hw_params *params,
 
 
 
-/*
-  Since the sample rate is a global setting, do allow the user to change the sample
-  rate only if there is only one pcm device open.
-*/
+/* Since the sample rate is a global setting, do allow the user to change the
+sample rate only if there is only one pcm device open. */
 static int hw_rule_sample_rate(struct snd_pcm_hw_params *params, struct snd_pcm_hw_rule *rule)
 {
 	struct snd_interval *rate = hw_param_interval(params, SNDRV_PCM_HW_PARAM_RATE);
@@ -887,9 +885,9 @@ static int __devinit snd_echo_new_pcm(struct echoaudio *chip)
 
 
 
-/***************************************************************************************************
-*** Control interface
-***************************************************************************************************/
+/******************************************************************************
+	Control interface
+******************************************************************************/
 
 /******************* PCM output volume *******************/
 static int snd_echo_output_gain_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
@@ -996,7 +994,7 @@ static int snd_echo_input_gain_put(struct snd_kcontrol *kcontrol, struct snd_ctl
 	spin_lock_irq(&chip->lock);
 	for (c = 0; c < num_analog_busses_in(chip); c++) {
 		gain = ucontrol->value.integer.value[c];
-		/* Ignore aout of range values */
+		/* Ignore out of range values */
 		if (gain < ECHOGAIN_MININP || gain > ECHOGAIN_MAXINP)
 			continue;
 		if (chip->input_gain[c] != gain) {
@@ -1697,9 +1695,9 @@ static struct snd_kcontrol_new snd_echo_channels_info __devinitdata = {
 
 
 
-/***************************************************************************************************
-*** IRQ Handler
-***************************************************************************************************/
+/******************************************************************************
+	IRQ Handler
+******************************************************************************/
 
 static irqreturn_t snd_echo_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
@@ -1740,9 +1738,9 @@ static irqreturn_t snd_echo_interrupt(int irq, void *dev_id, struct pt_regs *reg
 
 
 
-/***************************************************************************************************
-*** Module construction / destruction
-***************************************************************************************************/
+/******************************************************************************
+	Module construction / destruction
+******************************************************************************/
 
 static int snd_echo_free(struct echoaudio *chip)
 {
@@ -2036,9 +2034,9 @@ static void __devexit snd_echo_remove(struct pci_dev *pci)
 
 
 
-/***************************************************************************************************
-*** Everything starts and ends here
-***************************************************************************************************/
+/******************************************************************************
+	Everything starts and ends here
+******************************************************************************/
 
 /* pci_driver definition */
 static struct pci_driver driver = {

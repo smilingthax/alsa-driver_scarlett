@@ -42,7 +42,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Mia\n"));
 	snd_assert((subdevice_id & 0xfff0) == MIA, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -58,13 +57,10 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 		chip->has_midi = TRUE;
 	chip->input_clock_types = ECHO_CLOCK_BIT_INTERNAL | ECHO_CLOCK_BIT_SPDIF;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)))
 		return err;
 
@@ -85,19 +81,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 }
 
 
-
-//===========================================================================
-//
-// detect_input_clocks returns a bitmask consisting of all the input
-// clocks currently connected to the hardware; this changes as the user
-// connects and disconnects clock inputs.
-//
-// You should use this information to determine which clocks the user is
-// allowed to select.
-//
-// Mia supports S/PDIF input clock.
-//
-//===========================================================================
 
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
@@ -123,20 +106,6 @@ static int load_asic(struct echoaudio *chip)
 }
 
 
-
-/****************************************************************************
-
-	Hardware setup and config
-
- ****************************************************************************/
-
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for Mia
-//
-//===========================================================================
 
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
@@ -172,11 +141,10 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 		if (wait_handshake(chip))
 			return -EIO;
 
-		/* Set the values in the comm page */
 		chip->comm_page->sample_rate = cpu_to_le32(rate);	/* ignored by the DSP */
 		chip->comm_page->control_register = cpu_to_le32(control_reg);
 		chip->sample_rate = rate;
-		/* Poke the DSP */
+
 		clear_handshake(chip);
 		return send_vector(chip, DSP_VC_UPDATE_CLOCKS);
 	}
@@ -184,12 +152,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 }
 
 
-
-//===========================================================================
-//
-//      Set the input clock
-//
-//===========================================================================
 
 static int set_input_clock(struct echoaudio *chip, u16 clock)
 {

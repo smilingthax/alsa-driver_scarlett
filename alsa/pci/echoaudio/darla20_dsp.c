@@ -35,7 +35,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Darla20\n"));
 	snd_assert((subdevice_id & 0xfff0) == DARLA20, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -51,13 +50,10 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->asic_loaded = TRUE;
 	chip->input_clock_types = ECHO_CLOCK_BIT_INTERNAL;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
@@ -83,20 +79,6 @@ static int load_asic(struct echoaudio *chip)
 
 
 
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for Gina20/Darla20
-//
-// For Gina and Darla, three parameters need to be set: the resampler state,
-// the clock state, and the S/PDIF output status state.  The idea is that
-// these parameters are changed as infrequently as possible.
-//
-// Resampling is no longer supported.
-//
-//===========================================================================
-
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u8 clock_state, spdif_status;
@@ -104,7 +86,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 	if (wait_handshake(chip))
 		return -EIO;
 
-	/* @@ Darla20 has no S/PDIF, can I remove spdif_status ? */
 	switch (rate) {
 	case 44100:
 		clock_state = GD_CLOCK_44;
@@ -125,7 +106,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 	if (spdif_status == chip->spdif_status)
 		spdif_status = GD_SPDIF_STATUS_NOCHANGE;
 
-	/* Write the audio state to the comm page */
 	chip->comm_page->sample_rate = cpu_to_le32(rate);
 	chip->comm_page->gd_clock_state = clock_state;
 	chip->comm_page->gd_spdif_status = spdif_status;
@@ -138,7 +118,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 		chip->spdif_status = spdif_status;
 	chip->sample_rate = rate;
 
-	/* Send command to DSP */
 	clear_handshake(chip);
 	return send_vector(chip, DSP_VC_SET_GD_AUDIO_STATE);
 }
