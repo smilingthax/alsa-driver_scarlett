@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usbusx2y.c	2005-11-13 15:21:59.000000000 +0100
-+++ usbusx2y.c	2005-11-13 19:06:09.000000000 +0100
+--- ../../alsa-kernel/usb/usx2y/usbusx2y.c	2006-01-13 16:53:53.000000000 +0100
++++ usbusx2y.c	2006-01-13 16:54:12.000000000 +0100
 @@ -1,3 +1,13 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -109,7 +109,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -404,14 +443,33 @@
+@@ -404,13 +443,33 @@
  	usX2Y_usb_disconnect(interface_to_usbdev(intf),
  				 dev_get_drvdata(&intf->dev));
  }
@@ -130,8 +130,8 @@
  
  MODULE_DEVICE_TABLE(usb, snd_usX2Y_usb_id_table);
  static struct usb_driver snd_usX2Y_usb_driver = {
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 70)	/* FIXME: find right number */
-  	.owner =	THIS_MODULE,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 70) && LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,15)	/* FIXME: find right number */
++ 	.owner =	THIS_MODULE,
 +#endif
  	.name =		"snd-usb-usx2y",
  	.probe =	snd_usX2Y_probe,
@@ -143,7 +143,7 @@
  };
  
  static void snd_usX2Y_card_private_free(struct snd_card *card)
-@@ -444,7 +502,11 @@
+@@ -443,7 +502,11 @@
  		}
  		if (usX2Y->us428ctls_sharedmem) 
  			wake_up(&usX2Y->us428ctls_wait_queue_head);
@@ -156,7 +156,7 @@
  	}
  }
  
-@@ -460,3 +522,5 @@
+@@ -459,3 +522,5 @@
  
  module_init(snd_usX2Y_module_init)
  module_exit(snd_usX2Y_module_exit)
