@@ -117,6 +117,7 @@ function insert() {
 }
 
 function restore() {
+  sleep 1
   if [ -r /etc/asound/$1 ]; then
     /usr/sbin/alsactl -f /etc/asound/$1 restore
   fi
