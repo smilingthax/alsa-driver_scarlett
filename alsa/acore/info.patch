@@ -60,7 +60,7 @@
 +{
 +	int err;
 +	unlock_kernel();
-+	err = snd_info_entry_ioctl_old(file, cmd, arg);
++	err = snd_info_entry_ioctl(file, cmd, arg);
 +	lock_kernel();
 +	return err;
 +}
