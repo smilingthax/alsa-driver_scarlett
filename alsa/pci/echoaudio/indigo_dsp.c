@@ -117,10 +117,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 		return -EINVAL;
 	}
 
-	/* Override the clock setting if this Mia is set to S/PDIF clock */
-	if (chip->input_clock == ECHO_CLOCK_SPDIF)
-		control_reg |= MIA_SPDIF;
-
 	/* Set the control register if it has changed */
 	if (control_reg != le32_to_cpu(chip->comm_page->control_register)) {
 		if (wait_handshake(chip))
