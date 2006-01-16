@@ -84,7 +84,7 @@ static u32 detect_input_clocks(const struct echoaudio *chip)
 
 
 
-/* The Mia has no ASIC. Just do nothing */
+/* The IndigoIO has no ASIC. Just do nothing */
 static int load_asic(struct echoaudio *chip)
 {
 	return 0;
