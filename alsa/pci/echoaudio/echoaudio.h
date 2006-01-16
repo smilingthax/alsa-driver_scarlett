@@ -387,6 +387,7 @@ struct echoaudio {
 	char non_audio_spdif;			/* 3G - only */
 	char digital_in_automute;		/* Gina24, Layla24, Mona - only */
 	char has_phantom_power;
+	char hasnt_input_nominal_level;		/* Gina3G */
 	char phantom_power;			/* Gina3G - only */
 	char has_midi;
 	char midi_input_enabled;

@@ -74,7 +74,8 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 		chip->px_analog_in = chip->bx_analog_in = 14;
 		chip->px_digital_in = chip->bx_digital_in = 16;
 		chip->px_num = chip->bx_num = 24;
-		chip->has_phantom_power = 1;
+		chip->has_phantom_power = TRUE;
+		chip->hasnt_input_nominal_level = TRUE;
 	} else if (err == E3G_LAYLA3G_BOX_TYPE) {
 		chip->input_clock_types =	ECHO_CLOCK_BIT_INTERNAL |
 						ECHO_CLOCK_BIT_SPDIF |
