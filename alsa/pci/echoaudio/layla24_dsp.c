@@ -69,7 +69,8 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
-	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
+	err = set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
+	snd_assert(err >= 0, return err);
 	err = set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));

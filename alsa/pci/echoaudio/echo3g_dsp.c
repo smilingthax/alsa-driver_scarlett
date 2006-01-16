@@ -98,10 +98,13 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->non_audio_spdif = FALSE;
 	chip->bad_board = FALSE;
 
-	err = init_line_levels(chip);
-	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
-	set_phantom_power(chip, 0);
-	set_professional_spdif(chip, TRUE);
+	if ((err = init_line_levels(chip)) < 0)
+		return err;
+	err = set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
+	snd_assert(err >= 0, return err);
+	err = set_phantom_power(chip, 0);
+	snd_assert(err >= 0, return err);
+	err = set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));
 	return err;

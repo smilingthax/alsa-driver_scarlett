@@ -69,7 +69,7 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	set_vmixer_gain(chip, 1, 5, 0);
 	set_vmixer_gain(chip, 0, 6, 0);
 	set_vmixer_gain(chip, 1, 7, 0);
-	update_vmixer_level(chip);
+	err = update_vmixer_level(chip);
 
 	DE_INIT(("init_hw done\n"));
 	return err;
