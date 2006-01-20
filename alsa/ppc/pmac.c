@@ -3,7 +3,7 @@
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,16)
-#include "keywest_old.c"
+#include "pmac_old.c"
 #else
-#include "../alsa-kernel/ppc/keywest.c"
+#include "../alsa-kernel/ppc/pmac.c"
 #endif
