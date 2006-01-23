@@ -98,7 +98,7 @@ typedef struct _snd_serialmidi {
 	struct snd_rawmidi_substream *substream_output;
 	struct file *file;
 	struct tty_struct *tty;
-	struct semaphore open_lock;
+	struct mutex open_lock;
 	void (*old_receive_buf)(struct tty_struct *, const unsigned char *cp, char *fp, int count);
 	void (*old_write_wakeup)(struct tty_struct *);
 	int old_exclusive;
@@ -135,7 +135,7 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 	struct tty_driver *driver;
 	int ldisc, speed, cflag;
 
-	down(&serial->open_lock);
+	mutex_lock(&serial->open_lock);
 	if (serial->tty) {
 		set_bit(mode, &serial->mode);
 		goto __end;
@@ -253,7 +253,7 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
       			serial->file = NULL;
       		}
       	}
-	up(&serial->open_lock);
+	mutex_unlock(&serial->open_lock);
 	return retval;
 }
 
@@ -263,7 +263,7 @@ static int close_tty(serialmidi_t *serial, unsigned int mode)
 			SERIAL_MODE_BIT_OUTPUT : SERIAL_MODE_BIT_INPUT;
 	struct tty_struct *tty;
 
-	down(&serial->open_lock);
+	mutex_lock(&serial->open_lock);
 	clear_bit(mode, &serial->mode);
 	if (test_bit(imode, &serial->mode))
 		goto __end;
@@ -282,7 +282,7 @@ static int close_tty(serialmidi_t *serial, unsigned int mode)
 	serial->tty = NULL;
 	serial->file = NULL;
       __end:
-	up(&serial->open_lock);
+	mutex_unlock(&serial->open_lock);
 	return 0;
 }
 
@@ -488,7 +488,7 @@ static int __init snd_serialmidi_create(struct snd_card *card, const char *sdev,
 	if ((serial = kzalloc(sizeof(*serial), GFP_KERNEL)) == NULL)
 		return -ENOMEM;
 
-	init_MUTEX(&serial->open_lock);
+	mutex_init(&serial->open_lock);
 	serial->card = card;
 	serial->dev_idx = idx;
 	serial->sdev = kstrdup(sdev, GFP_KERNEL);

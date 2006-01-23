@@ -132,7 +132,7 @@ struct snd_miro {
 	int aci_preamp;
 	int aci_solomode;
 
-	struct semaphore aci_mutex;
+	struct mutex aci_mutex;
 };
 
 static void snd_miro_proc_init(struct snd_miro * miro);
@@ -213,7 +213,7 @@ static int aci_cmd(struct snd_miro * miro, int write1, int write2, int write3)
 	int write[] = {write1, write2, write3};
 	int value, i;
 
-	if (down_interruptible(&miro->aci_mutex))
+	if (mutex_lock_interruptible(&miro->aci_mutex))
 		return -EINTR;
 
 	for (i=0; i<3; i++) {
@@ -228,7 +228,7 @@ static int aci_cmd(struct snd_miro * miro, int write1, int write2, int write3)
 
 	value = aci_read(miro);
 
-out:	up(&miro->aci_mutex);
+out:	mutex_unlock(&miro->aci_mutex);
 	return value;
 }
 
@@ -1164,7 +1164,7 @@ static int __init snd_card_miro_aci_detect(struct snd_card *card, struct snd_mir
 	unsigned char regval;
 	int i;
 
-	init_MUTEX(&miro->aci_mutex);
+	mutex_init(&miro->aci_mutex);
 
 	/* get ACI port from OPTi9xx MC 4 */
 
