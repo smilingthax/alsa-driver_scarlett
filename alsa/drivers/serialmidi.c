@@ -325,7 +325,7 @@ static void tx_loop(serialmidi_t *serial)
 		count = snd_rawmidi_transmit_peek(serial->substream_output, buf, count);
 		if (count > 0) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 10)
-			count = driver->write(tty, buf, count);
+			driver->write(tty, buf, count);
 #else
 			count = driver->write(tty, 0, buf, count);
 #endif
