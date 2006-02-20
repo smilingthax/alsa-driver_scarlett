@@ -28,6 +28,7 @@
 #include <linux/slab.h>
 #include <linux/tty.h>
 #include <linux/moduleparam.h>
+#include <linux/platform_device.h>
 #include <asm/uaccess.h>
 #include <sound/core.h>
 #include <sound/rawmidi.h>
@@ -107,7 +108,7 @@ typedef struct _snd_serialmidi {
 	unsigned char tx_buf[TX_BUF_SIZE];
 } serialmidi_t;
 
-static struct snd_card *snd_serialmidi_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
+static struct platform_device *devptrs[SNDRV_CARDS];
 
 static void ldisc_receive_buf(struct tty_struct *, const unsigned char *cp, char *fp, int count);
 static void ldisc_write_wakeup(struct tty_struct *);
@@ -456,8 +457,7 @@ static int __init snd_serialmidi_rmidi(serialmidi_t *serial)
 
 static int __init snd_serialmidi_create(struct snd_card *card, const char *sdev,
 					unsigned int speed, unsigned int adaptor,
-					unsigned int outs, int idx, int hshake,
-					serialmidi_t **rserial)
+					unsigned int outs, int idx, int hshake)
 {
 	static struct snd_device_ops ops = {
 		.dev_free =	snd_serialmidi_dev_free,
@@ -482,7 +482,7 @@ static int __init snd_serialmidi_create(struct snd_card *card, const char *sdev,
 	}
 	if (outs < 1)
 		outs = 1;
-	if (outs > 16)
+	else if (outs > 16)
 		outs = 16;
 
 	if ((serial = kzalloc(sizeof(*serial), GFP_KERNEL)) == NULL)
@@ -513,16 +513,14 @@ static int __init snd_serialmidi_create(struct snd_card *card, const char *sdev,
 		return err;
 	}
 	
-	if (rserial)
-		*rserial = serial;
 	return 0;
 }
 
-static int __init snd_card_serialmidi_probe(int dev)
+static int __init snd_serial_probe(struct platform_device *devptr)
 {
 	struct snd_card *card;
-	serialmidi_t *serial;
 	int err;
+	int dev = devptr->id;
 
 	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
 	if (card == NULL)
@@ -562,7 +560,7 @@ static int __init snd_card_serialmidi_probe(int dev)
 			sprintf(devname2, "%s%d", devname, start_dev + i);
 			if ((err = snd_serialmidi_create(card, devname2, speed[dev],
 							 adaptor[dev], outs[dev], i,
-							 handshake[dev], &serial)) < 0) {
+							 handshake[dev])) < 0) {
 				snd_card_free(card);
 				return err;
 			}
@@ -570,7 +568,7 @@ static int __init snd_card_serialmidi_probe(int dev)
 	} else {
 		if ((err = snd_serialmidi_create(card, sdev[dev], speed[dev],
 						 adaptor[dev], outs[dev], 0,
-						 handshake[dev], &serial)) < 0) {
+						 handshake[dev])) < 0) {
 			snd_card_free(card);
 			return err;
 		}
@@ -578,39 +576,81 @@ static int __init snd_card_serialmidi_probe(int dev)
 
 	sprintf(card->longname, "%s at %s", card->shortname, sdev[dev]);
 
+	snd_card_set_dev(card, &devptr->dev);
+
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
 		return err;
 	}
-	snd_serialmidi_cards[dev] = card;
+
+	platform_set_drvdata(devptr, card);
 	return 0;
+}
+
+static int snd_serial_remove(struct platform_device *devptr)
+{
+	snd_card_free(platform_get_drvdata(devptr));
+	platform_set_drvdata(devptr, NULL);
+	return 0;
+}
+
+#define SND_SERIAL_DRIVER	"snd_serial"
+
+static struct platform_driver snd_serial_driver = {
+	.probe		= snd_serial_probe,
+	.remove		= snd_serial_remove,
+	.driver		= {
+		.name	= SND_SERIAL_DRIVER
+	},
+};
+
+static void __init_or_module snd_serial_unregister_all(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(devices); ++i)
+		platform_device_unregister(devptrs[i]);
+	platform_driver_unregister(&snd_serial_driver);
 }
 
 static int __init alsa_card_serialmidi_init(void)
 {
-	int dev, cards = 0;
+	int i, cards, err;
 
-	for (dev = 0; dev < SNDRV_CARDS; dev++) {
-		if (!enable[dev])
+	if ((err = platform_driver_register(&snd_serial_driver)) < 0)
+		return err;
+
+	cards = 0;
+	for (i = 0; i < SNDRV_CARDS; i++) {
+		struct platform_device *device;
+		if (! enable[i])
 			continue;
-		if (snd_card_serialmidi_probe(dev) >= 0)
-			cards++;
+		device = platform_device_register_simple(SND_SERIAL_DRIVER,
+							 i, NULL, 0);
+		if (IS_ERR(device)) {
+			err = PTR_ERR(device);
+			goto errout;
+		}
+		devptrs[i] = device;
+		cards++;
 	}
 	if (!cards) {
 #ifdef MODULE
 		printk(KERN_ERR "serial MIDI device not found or device busy\n");
 #endif
-		return -ENODEV;
+		err = -ENODEV;
+		goto errout;
 	}
 	return 0;
+
+ errout:
+	snd_serial_unregister_all();
+	return err;
 }
 
 static void __exit alsa_card_serialmidi_exit(void)
 {
-	int idx;
-
-	for (idx = 0; idx < SNDRV_CARDS; idx++)
-		snd_card_free(snd_serialmidi_cards[idx]);
+	snd_serial_unregister_all();
 }
 
 module_init(alsa_card_serialmidi_init)
