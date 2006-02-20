@@ -533,12 +533,14 @@ static int snd_als300_trigger(struct snd_pcm_substream *substream, int cmd)
 	spin_lock(&chip->reg_lock);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
 		tmp = snd_als300_gcr_read(chip->port, reg);
 		data->period_flipflop = 1;
 		snd_als300_gcr_write(chip->port, reg, tmp | TRANSFER_START);
 		snd_als300_dbgplay("TRIGGER START\n");
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
 		tmp = snd_als300_gcr_read(chip->port, reg);
 		snd_als300_gcr_write(chip->port, reg, tmp & ~TRANSFER_START);
 		snd_als300_dbgplay("TRIGGER STOP\n");
@@ -757,6 +759,40 @@ static int __devinit snd_als300_create(snd_card_t *card,
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int snd_als300_suspend(struct pci_dev *pci, pm_message_t state)
+{
+	struct snd_card *card = pci_get_drvdata(pci);
+	struct snd_als300 *chip = card->private_data;
+
+	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
+	snd_pcm_suspend_all(chip->pcm);
+	snd_ac97_suspend(chip->ac97);
+
+	pci_set_power_state(pci, PCI_D3hot);
+	pci_disable_device(pci);
+	pci_save_state(pci);
+	return 0;
+}
+
+static int snd_als300_resume(struct pci_dev *pci)
+{
+	struct snd_card *card = pci_get_drvdata(pci);
+	struct snd_als300 *chip = card->private_data;
+
+	pci_restore_state(pci);
+	pci_enable_device(pci);
+	pci_set_power_state(pci, PCI_D0);
+	pci_set_master(pci);
+
+	snd_als300_init(chip);
+	snd_ac97_resume(chip->ac97);
+
+	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
+	return 0;
+}
+#endif
+
 static int __devinit snd_als300_probe(struct pci_dev *pci,
                              const struct pci_device_id *pci_id)
 {
@@ -783,6 +819,7 @@ static int __devinit snd_als300_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
+	card->private_data = chip;
 
 	strcpy(card->driver, "ALS300");
 	if (chip->chip_type == DEVICE_ALS300_PLUS)
@@ -809,6 +846,10 @@ static struct pci_driver driver = {
 	.id_table = snd_als300_ids,
 	.probe = snd_als300_probe,
 	.remove = __devexit_p(snd_als300_remove),
+#ifdef CONFIG_PM
+	.suspend = snd_als300_suspend,
+	.resume = snd_als300_resume,
+#endif
 };
 
 static int __init alsa_card_als300_init(void)
