@@ -208,7 +208,7 @@ static int hw_rule_sample_rate(struct snd_pcm_hw_params *params, struct snd_pcm_
 
 
 
-static int pcm_open(struct snd_pcm_substream *substream, signed char max_channels, char adat)
+static int pcm_open(struct snd_pcm_substream *substream, signed char max_channels)
 {
 	struct echoaudio *chip;
 	struct snd_pcm_runtime *runtime;
@@ -217,14 +217,7 @@ static int pcm_open(struct snd_pcm_substream *substream, signed char max_channel
 
 	if (max_channels <= 0)
 		return -EAGAIN;
-/*
-	if (check_asic_status(chip) < 0) {
-		DE_HWP(("HW error. Trying to reload the firmware...\n"));
-		err = load_firmware(chip);
-		if (err || chip->bad_board)
-			return -EIO;
-	}
-*/
+
 	chip = snd_pcm_substream_chip(substream);
 	runtime = substream->runtime;
 
@@ -242,7 +235,7 @@ static int pcm_open(struct snd_pcm_substream *substream, signed char max_channel
 	pipe->constr.count = i;
 	if (pipe->hw.channels_max > max_channels)
 		pipe->hw.channels_max = max_channels;
-	if (adat) {
+	if (chip->digital_mode == DIGITAL_MODE_ADAT) {
 		pipe->hw.rate_max = 48000;
 		pipe->hw.rates &= SNDRV_PCM_RATE_8000_48000;
 	}
@@ -290,7 +283,7 @@ static int pcm_analog_in_open(struct snd_pcm_substream *substream)
 	int err;
 
 	DE_ACT(("pcm_analog_in_open\n"));
-	if ((err = pcm_open(substream, num_analog_busses_in(chip) - substream->number, 0)) < 0)
+	if ((err = pcm_open(substream, num_analog_busses_in(chip) - substream->number)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 					hw_rule_capture_channels_by_format, NULL,
@@ -320,7 +313,7 @@ static int pcm_analog_out_open(struct snd_pcm_substream *substream)
 	max_channels = num_analog_busses_out(chip);
 #endif
 	DE_ACT(("pcm_analog_out_open\n"));
-	if ((err = pcm_open(substream, max_channels - substream->number, 0)) < 0)
+	if ((err = pcm_open(substream, max_channels - substream->number)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
 					hw_rule_playback_channels_by_format, NULL,
@@ -350,9 +343,9 @@ static int pcm_digital_in_open(struct snd_pcm_substream *substream)
 	max_channels = num_digital_busses_in(chip) - substream->number;
 	down(&chip->mode_mutex);
 	if (chip->digital_mode == DIGITAL_MODE_ADAT)
-		err = pcm_open(substream, max_channels, 1);
+		err = pcm_open(substream, max_channels);
 	else	/* If the card has ADAT, subtract the 6 channels that S/PDIF doesn't have */
-		err = pcm_open(substream, max_channels - ECHOCARD_HAS_ADAT, 0);
+		err = pcm_open(substream, max_channels - ECHOCARD_HAS_ADAT);
 
 	if (err < 0)
 		goto din_exit;
@@ -390,9 +383,9 @@ static int pcm_digital_out_open(struct snd_pcm_substream *substream)
 	max_channels = num_digital_busses_out(chip) - substream->number;
 	down(&chip->mode_mutex);
 	if (chip->digital_mode == DIGITAL_MODE_ADAT)
-		err = pcm_open(substream, max_channels, 1);
+		err = pcm_open(substream, max_channels);
 	else	/* If the card has ADAT, subtract the 6 channels that S/PDIF doesn't have */
-		err = pcm_open(substream, max_channels - ECHOCARD_HAS_ADAT, 0);
+		err = pcm_open(substream, max_channels - ECHOCARD_HAS_ADAT);
 
 	if (err < 0)
 		goto dout_exit;
