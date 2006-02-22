@@ -211,6 +211,10 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
+#define in_atomic()	in_interrupt()
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
 typedef unsigned __nocast gfp_t;
 #endif
