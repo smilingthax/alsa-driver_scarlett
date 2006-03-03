@@ -1,11 +1,31 @@
---- ../alsa-kernel/core/init.c	2005-10-30 19:21:09.000000000 +0100
-+++ init.c	2005-10-30 19:21:48.000000000 +0100
+--- ../alsa-kernel/core/init.c	2006-03-01 22:40:52.000000000 +0100
++++ init.c	2006-03-02 22:35:27.000000000 +0100
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
   *  Initialization routines
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -193,7 +194,9 @@
+@@ -191,11 +192,19 @@
+ 	return POLLERR | POLLNVAL;
+ }
+ 
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ static long snd_disconnect_ioctl(struct file *file,
+ 				 unsigned int cmd, unsigned long arg)
+ {
+ 	return -ENODEV;
+ }
++#else
++static int snd_disconnect_ioctl_old(struct inode *inode, struct file *file,
++				    unsigned int cmd, unsigned long arg)
++{
++	return -ENODEV;
++}
++#endif
+ 
+ static int snd_disconnect_mmap(struct file *file, struct vm_area_struct *vma)
+ {
+@@ -255,16 +264,22 @@
  		f_ops = &s_f_ops->f_ops;
  
  		memset(f_ops, 0, sizeof(*f_ops));
@@ -13,5 +33,18 @@
  		f_ops->owner = file->f_op->owner;
 +#endif
  		f_ops->release = file->f_op->release;
+ 		f_ops->llseek = snd_disconnect_llseek;
+ 		f_ops->read = snd_disconnect_read;
+ 		f_ops->write = snd_disconnect_write;
  		f_ops->poll = snd_disconnect_poll;
++#ifdef CONFIG_SND_HAVE_NEW_IOCTL
+ 		f_ops->unlocked_ioctl = snd_disconnect_ioctl;
+ #ifdef CONFIG_COMPAT
+ 		f_ops->compat_ioctl = snd_disconnect_ioctl;
+ #endif
++#else
++		f_ops->ioctl = snd_disconnect_ioctl_old;
++#endif
+ 		f_ops->mmap = snd_disconnect_mmap;
+ 		f_ops->fasync = snd_disconnect_fasync;
  
