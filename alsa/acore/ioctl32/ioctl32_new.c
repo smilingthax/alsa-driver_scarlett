@@ -243,7 +243,11 @@ static int get_ctl_type(struct snd_card *card, struct snd_ctl_elem_id *id)
 		return -ENXIO;
 	}
 	info.id = *id;
-	err = kctl->info(kctl, &info);
+	snd_power_lock(card);
+	err = snd_power_wait(card, SNDRV_CTL_POWER_D0, NULL);
+	if (err >= 0)
+		err = kctl->info(kctl, &info);
+	snd_power_unlock(card);
 	up_read(&card->controls_rwsem);
 	if (err >= 0)
 		err = info.type;
@@ -255,6 +259,7 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 	struct snd_ctl_elem_value *data;
 	struct snd_ctl_elem_value32 __user *data32;
 	struct snd_ctl_file *ctl;
+	struct snd_card *card;
 	int err, i, indirect;
 	int type;
 
@@ -285,7 +290,8 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 		err = -EINVAL;
 		goto __end;
 	}
-	type = get_ctl_type(ctl->card, &data->id);
+	card = ctl->card;
+	type = get_ctl_type(card, &data->id);
 	if (type < 0) {
 		err = type;
 		goto __end;
@@ -320,10 +326,15 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 		goto __end;
 	}
 
-	if (native_ctl == SNDRV_CTL_IOCTL_ELEM_READ)
-		err = snd_ctl_elem_read(ctl->card, data);
-	else
-		err = snd_ctl_elem_write(ctl->card, ctl, data);
+	snd_power_lock(card);
+	err = snd_power_wait(card, SNDRV_CTL_POWER_D0, NULL);
+	if (err >= 0) {
+		if (native_ctl == SNDRV_CTL_IOCTL_ELEM_READ)
+			err = snd_ctl_elem_read(card, data);
+		else
+			err = snd_ctl_elem_write(card, ctl, data);
+	}
+	snd_power_unlock(card);
 	if (err < 0)
 		goto __end;
 	/* restore info to 32bit */
@@ -346,7 +357,6 @@ static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd,
 			err = -EFAULT;
 			goto __end;
 		}
-		break;
 		break;
 	}
 	err = 0;
