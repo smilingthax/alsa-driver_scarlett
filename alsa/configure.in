@@ -2544,8 +2544,9 @@ EOF
   else
     grep -v CONFIG_SND_ $CONFIG_SND_KERNELDIR/include/linux/autoconf.h > include/linux/autoconf.h
   fi
-  cat include/autoconf-extra.h >> include/linux/autoconf.h
-  cat include/config1.h >> include/linux/autoconf.h
+  sed -e's@/\* #undef \([A-Za-z0-9_]\+\) .*$@#undef \1@g' \
+    include/autoconf-extra.h \
+    include/config1.h >> include/linux/autoconf.h
 else
   rm -f include/linux/autoconf.h
 fi
