@@ -2488,6 +2488,7 @@ fi
 AC_SUBST(CONFIG_PARPORT)
 
 dnl Check for which cards to compile driver for...
+CONFIG_SOUND=m
 ALSA_TOPLEVEL_SELECT
 
 dnl OSS emulations
