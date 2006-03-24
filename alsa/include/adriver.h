@@ -738,6 +738,11 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#include <linux/dma-mapping.h>
+#define DMA_28BIT_MASK	0x000000000fffffffULL
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #include <linux/moduleparam.h>
 #undef module_param
