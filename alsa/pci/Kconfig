@@ -157,19 +157,6 @@ config SND_INDIGODJ
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-indigodj
 
-config SND_RIPTIDE
-	tristate "Conexant Riptide"
-	depends on SND
-	depends on FW_LOADER
-	select SND_OPL3_LIB
-	select SND_MPU401_UART
-	select SND_AC97_CODEC
-	help
-	  Say 'Y' or 'M' to include support for Conexant Riptide chip.
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-riptide
-
 config SND_ALS300
         tristate "Avance Logic ALS300/ALS300+"
         depends on SND
