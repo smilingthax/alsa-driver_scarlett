@@ -14,20 +14,6 @@ config SND_PC98_CS4232
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-pc98-cs4232.
 
-config SND_MIRO
-	tristate "Miro miroSOUND PCM1pro/PCM12/PCM20radio driver"
-	depends on SND
-	select SND_OPL4_LIB
-	select SND_CS4231_LIB
-	select SND_MPU401_UART
-	select SND_PCM
-	help
-	  Say 'Y' or 'M' to include support for Miro miroSOUND PCM1 pro, 
-	  miroSOUND PCM12 and miroSOUND PCM20 Radio soundcards.
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-miro.
-
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
 	depends on SND && X86
