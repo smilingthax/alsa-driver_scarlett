@@ -583,4 +583,8 @@ static inline int abs(int val)
 	return (val < 0) ? -val : val;
 }
 
+#ifndef cpu_relax
+#define cpu_relax()
+#endif
+
 #endif /* <2.3.0 */
