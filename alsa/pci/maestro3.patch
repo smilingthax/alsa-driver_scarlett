@@ -1,14 +1,14 @@
---- ../alsa-kernel/pci/maestro3.c	2005-05-24 13:58:28.000000000 +0200
-+++ maestro3.c	2005-05-24 14:23:49.000000000 +0200
-@@ -2673,6 +2673,7 @@
+--- ../alsa-kernel/pci/maestro3.c	2006-03-28 12:50:56.000000000 +0200
++++ maestro3.c	2006-03-28 12:52:12.000000000 +0200
+@@ -2665,6 +2665,7 @@
  	int i, err;
- 	struct m3_quirk *quirk;
- 	struct m3_hv_quirk *hv_quirk;
+ 	const struct m3_quirk *quirk;
+ 	const struct m3_hv_quirk *hv_quirk;
 +	u16 subsystem_vendor, subsystem_device;
  	static struct snd_device_ops ops = {
  		.dev_free =	snd_m3_dev_free,
  	};
-@@ -2696,6 +2697,14 @@
+@@ -2688,6 +2689,14 @@
  		return -ENOMEM;
  	}
  
@@ -21,9 +21,9 @@
 +#endif
 +
  	spin_lock_init(&chip->reg_lock);
- 	switch (pci->device) {
- 	case PCI_DEVICE_ID_ESS_ALLEGRO:
-@@ -2711,8 +2720,8 @@
+ 	spin_lock_init(&chip->ac97_lock);
+ 
+@@ -2705,8 +2714,8 @@
  	chip->irq = -1;
  
  	for (quirk = m3_quirk_list; quirk->vendor; quirk++) {
@@ -34,7 +34,7 @@
  			printk(KERN_INFO "maestro3: enabled hack for '%s'\n", quirk->name);
  			chip->quirk = quirk;
  			break;
-@@ -2722,8 +2731,8 @@
+@@ -2716,8 +2725,8 @@
  	for (hv_quirk = m3_hv_quirk_list; hv_quirk->vendor; hv_quirk++) {
  		if (pci->vendor == hv_quirk->vendor &&
  		    pci->device == hv_quirk->device &&
@@ -45,7 +45,7 @@
  			chip->hv_quirk = hv_quirk;
  			break;
  		}
-@@ -2908,3 +2917,5 @@
+@@ -2901,3 +2910,5 @@
  
  module_init(alsa_card_m3_init)
  module_exit(alsa_card_m3_exit)
