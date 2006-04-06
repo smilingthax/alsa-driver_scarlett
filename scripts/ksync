@@ -135,6 +135,7 @@ COMMENT_MAP_DRIVER = [
 		('/isa/msnd'		,'MSND driver'),
 		('/isa/opti9xx'		,'Opti9xx drivers'),
 		('/include/yss225.h'	,'Wavefront drivers'),
+		('/include/wavefront.h', 'Wavefront drivers'),
 		('/include/snd_wavefront.h', 'Wavefront drivers'),
 		('/isa/wavefront'	,'Wavefront drivers'),
 		('/isa/als100.c' 	,'ALS100 driver'),
