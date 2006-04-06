@@ -1071,6 +1071,7 @@ static inline void snd_pci_orig_restore_state(struct pci_dev *pci, u32 *buffer)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 #ifndef CONFIG_HAVE_PNP_SUSPEND
 #include <linux/pnp.h>
+#define HAVE_PNP_PM_HACK
 struct snd_pnp_driver {
 	struct pnp_driver real_driver;
 	char *name;
@@ -1120,5 +1121,37 @@ static inline void snd_pnp_unregister_card_driver(struct snd_pnp_card_driver *dr
 #endif /* ! CONFIG_HAVE_PNP_SUSPEND */
 #endif /* 2.6 */
 #endif /* CONFIG_PNP && CONFIG_PM */
+
+/*
+ * Another wrappers for pnp_register_*driver()
+ * They shouldn't return positive values in the new API
+ */
+#ifdef CONFIG_PNP
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && \
+	LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#ifndef HAVE_PNP_PM_HACK
+#include <linux/pnp.h>
+static inline int snd_pnp_register_driver(struct pnp_driver *driver)
+{
+	int err = pnp_register_driver(driver);
+	return err < 0 ? err : 0;
+}
+#define pnp_register_driver	snd_pnp_register_driver
+
+static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
+{
+	int err = pnp_register_card_driver(drv);
+	return err < 0 ? err : 0;
+}
+#define pnp_register_card_driver	snd_pnp_register_card_driver
+
+#endif /* HAVE_PNP_PM_HACK */
+#endif /* < 2.6.17 */
+#endif /* PNP */
+
+/*
+ * old defines
+ */
+#define OPL3_HW_OPL3_PC98	0x0305	/* PC9800 */
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

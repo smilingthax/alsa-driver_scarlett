@@ -200,7 +200,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 			if (ninst == NULL) {
 				ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 				if (ninst == NULL)
-					return res > 0 ? (int)res : -ENOMEM;
+					return -ENOMEM;
 				memset(ninst, 0, sizeof(*ninst));
 				INIT_LIST_HEAD(&ninst->list);
 			}
@@ -245,7 +245,7 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 	if (ninst != NULL)
 		kfree(ninst);
  
-	return res;
+	return 0;
 }
 
 void pnp_unregister_card_driver(struct pnp_card_driver * drv)
@@ -277,7 +277,7 @@ int pnp_register_driver(struct pnp_driver *drv)
 		if (ninst == NULL) {
 			ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
 			if (ninst == NULL)
-				return res > 0 ? (int)res : -ENOMEM;
+				return -ENOMEM;
 			memset(ninst, 0, sizeof(*ninst));
 			INIT_LIST_HEAD(&ninst->list);
 		}
@@ -293,7 +293,7 @@ int pnp_register_driver(struct pnp_driver *drv)
 			res++;
 		}
 	}
-	return res;
+	return 0;
 }
 
 void pnp_unregister_driver(struct pnp_driver *drv)
