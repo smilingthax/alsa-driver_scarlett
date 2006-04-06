@@ -1825,6 +1825,7 @@ static int snd_asihpi_mux_put(struct snd_kcontrol *kcontrol,
 				    &wSourceType, &wSourceIndex);
 	HPI_Multiplexer_SetSource(phSubSys, hControl, wSourceType,
 				  wSourceIndex);
+	spin_unlock_irqrestore(&asihpi->mixer_lock, flags);
 	return change;
 }
 
@@ -1902,6 +1903,7 @@ static int snd_asihpi_cmode_put(struct snd_kcontrol *kcontrol,
 
 	HPI_ChannelModeSet(phSubSys, hControl,
 			   ucontrol->value.enumerated.item[0] + 1);
+	spin_unlock_irqrestore(&asihpi->mixer_lock, flags);
 	return change;
 }
 
@@ -1979,6 +1981,7 @@ static int snd_asihpi_clksrc_put(struct snd_kcontrol *kcontrol,
 
 	HPI_SampleClock_SetSource(phSubSys, hControl,
 				  ucontrol->value.enumerated.item[0] + 1);
+	spin_unlock_irqrestore(&asihpi->mixer_lock, flags);
 	return change;
 }
 
