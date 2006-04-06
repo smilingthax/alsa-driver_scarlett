@@ -5,7 +5,9 @@ syntax: glob
 *.orig
 *.o
 *.ko
+*.mod.c
 .*.d
+.*.cmd
 
 acinclude.m4
 aclocal.m4
@@ -18,6 +20,7 @@ snddevices
 toplevel.config
 toplevel.config.in
 version
+Modules.symvers
 .tmp_versions/*
 
 acore/control.c
