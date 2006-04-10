@@ -530,6 +530,16 @@ enum {
 #define URB_NO_TRANSFER_DMA_MAP 0
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 20)
+struct usb_ctrlrequest {
+	__u8 bRequestType;
+	__u8 bRequest;
+	__u16 wValue;
+	__u16 wIndex;
+	__u16 wLength;
+} __attribute__ ((packed));
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 24) \
