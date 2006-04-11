@@ -1162,7 +1162,7 @@ def cvsps_changes(rev1, rev2, update=False):
 	os.chdir(get_cvs_root_top())
 	fullset = ['alsa-driver', 'alsa-kernel', 'alsa-lib',
 		   'alsa-utils', 'alsa-tools', 'alsa-firmware',
-		   'alsa-oss']
+		   'alsa-oss', 'alsa-plugins']
 	for module in fullset:
 	#for module in ['alsa-oss']:
 		os.chdir(get_cvs_root_top() + '/' + module)
