@@ -26,9 +26,14 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
 
+module_param_array(index, int, NULL, 0444);
+MODULE_PARM_DESC(index, "Index value for " ECHOCARD_NAME " soundcard.");
+module_param_array(id, charp, NULL, 0444);
+MODULE_PARM_DESC(id, "ID string for " ECHOCARD_NAME " soundcard.");
+module_param_array(enable, bool, NULL, 0444);
+MODULE_PARM_DESC(enable, "Enable " ECHOCARD_NAME " soundcard.");
+
 static unsigned int channels_list[10] = {1, 2, 4, 6, 8, 10, 12, 14, 16, 999999};
-
-
 
 static int get_firmware(const struct firmware **fw_entry, const struct firmware *frm, struct echoaudio *chip)
 {
