@@ -92,21 +92,20 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("AudioScience <support@audioscience.com>");
 MODULE_DESCRIPTION("AudioScience HPI");
 
-MODULE_PARM(major, "i");
-MODULE_PARM_DESC(major, "Device major number");
-MODULE_PARM(debug, "0-3i");
-MODULE_PARM_DESC(debug, "Debug level for Audioscience HPI 0=none 3=verbose");
-
-#if COPY_TO_LOCAL
-MODULE_PARM(bufsize, "i");
-MODULE_PARM_DESC(bufsize,
-		 "Buffer size to allocate for data transfer from HPI ioctl ");
-#endif
-
 static int major = 0;
 static int debug = 0;
 #if COPY_TO_LOCAL
 static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;
+#endif
+
+module_param(major, int, 0444);
+MODULE_PARM_DESC(major, "Device major number");
+module_param(debug, int, 0444);
+MODULE_PARM_DESC(debug, "Debug level for Audioscience HPI 0=none 3=verbose");
+#if COPY_TO_LOCAL
+module_param(bufsize, int, 0444);
+MODULE_PARM_DESC(bufsize,
+		 "Buffer size to allocate for data transfer from HPI ioctl ");
 #endif
 
 static int hpi_init(void);
@@ -430,10 +429,10 @@ static struct file_operations hpi_fops = {
 };
 #else
 static struct file_operations hpi_fops = {
-      owner:THIS_MODULE,
-      ioctl:hpi_ioctl,
-      open:hpi_open,
-      release:hpi_release
+	.owner = THIS_MODULE,
+	.ioctl = hpi_ioctl,
+	.open = hpi_open,
+	.release = hpi_release
 };
 #endif
 
