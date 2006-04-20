@@ -2,6 +2,7 @@
 
 config SND_SERIALMIDI
 	tristate "Generic driver for serial MIDI adapters"
+	depends on BROKEN
 	depends on SND
 	select SND_RAWMIDI
 	help
