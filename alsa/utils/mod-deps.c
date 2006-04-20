@@ -523,6 +523,8 @@ static struct cond *join_cond(struct cond *cond1, struct cond *cond2)
 static void add_dep(struct dep * dep, char *line, struct cond *template)
 {
 	template = duplicate_cond(template);
+	if (dep->cond)
+		template = join_cond(dep->cond, template);
 	dep->cond = join_cond(template, create_cond(line));
 }
 
