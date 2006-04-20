@@ -195,9 +195,11 @@ static int read_file(const char *filename, struct cond **template)
 	
 	fullfile = malloc(strlen(basedir) + strlen(hiddendir) + 1 + strlen(filename) + 1);
 	sprintf(fullfile, "%s/%s", basedir, filename);
-	if ((err = read_file_1(fullfile, template)) < 0) {
-		free(fullfile);
-		return err;
+	if (access(fullfile, R_OK) == 0) {
+		if ((err = read_file_1(fullfile, template)) < 0) {
+			free(fullfile);
+			return err;
+		}
 	}
 	if (!strncmp(filename, "core/", 5))
 		sprintf(fullfile, "%s/acore/%s", hiddendir, filename + 5);
