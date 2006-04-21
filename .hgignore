@@ -2,3 +2,7 @@ syntax: glob
 
 scripts/*.o
 scripts/docproc
+*~
+.*~
+*.orig
+*.rej
