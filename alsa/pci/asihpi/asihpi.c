@@ -2260,7 +2260,7 @@ static void __devinit snd_asihpi_proc_init(snd_card_asihpi_t * asihpi)
 	struct snd_info_entry *entry;
 
 	if (!snd_card_proc_new(asihpi->card, "info", &entry))
-		snd_info_set_text_ops(entry, asihpi, 1024,
+		snd_info_set_text_ops(entry, asihpi,
 				      snd_asihpi_proc_read);
 }
 

@@ -5783,7 +5783,7 @@ static void __devinit pdplus_register_proc (pdplus_t *scard)
         snd_assert (scard->card != NULL, return);
 
         if (! snd_card_proc_new (scard->card, "prodif_plus", &entry))
-		snd_info_set_text_ops(entry, scard, 1024, pdplus_proc_read);
+		snd_info_set_text_ops(entry, scard, pdplus_proc_read);
 }
 
 
