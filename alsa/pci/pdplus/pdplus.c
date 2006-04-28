@@ -5517,13 +5517,12 @@ static void pdplus_proc_read (
 	if (! lcard)
 		return;
 
-        read_lock_irqsave (&scard->lock, flags);
-
         snd_iprintf (buffer, scard->card->longname);
         snd_iprintf (buffer, " (index #%d)\n", scard->card->number + 1);
+
+        read_lock_irqsave (&scard->lock, flags);
         dco_rate = pdplus_dco_scan_rate_lli (scard);
         *lcard = *scard;
-
         read_unlock_irqrestore (&scard->lock, flags);
 
 
@@ -5753,9 +5752,6 @@ static void pdplus_proc_read (
                 PDPLUS_READ_CACHE (lcard, CS4222, DSP),
                 PDPLUS_READ_CACHE (lcard, HW,     WR));
 
-
-        read_lock_irqsave (&scard->lock, flags);
-
         snd_iprintf (buffer, "\nPLX Regs\n");
         pdplus_print_iomem_ll (buffer, &scard->PLX_iomem);
 
@@ -5767,7 +5763,6 @@ static void pdplus_proc_read (
         pdplus_print_iomem (buffer, &scard->HW_iomem);
 #endif
 
-        read_unlock_irqrestore (&scard->lock, flags);
 	kfree(lcard);
 #endif
 }
