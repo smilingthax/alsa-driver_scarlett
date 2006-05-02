@@ -43,3 +43,16 @@ config SND_PCSP
 	  You can compile this as a module, which will be called snd-pcsp.
 
 	  You don't need this driver if you only want your computer to beep.
+
+config SND_MTS64
+	tristate "ESI Miditerminal 4140 driver"
+	depends on SND && PARPORT
+	select SND_RAWMIDI
+	help
+	  The ESI Miditerminal 4140 is a 4 In 4 Out MIDI Interface with 
+          additional SMPTE Timecode capabilities for the parallel port.
+
+	  Say 'Y' to include support for this device.
+
+	  To compile this driver as a module, chose 'M' here: the module 
+          will be called snd-mts64.
