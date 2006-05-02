@@ -114,9 +114,9 @@ typedef struct snd_msndpinnacle_pcm {
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 
-MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+module_param_array(index, int, NULL, S_IRUGO);
 MODULE_PARM_DESC(index, "Index value for msnd_pinnacle soundcard.");
-MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
+module_param_array(id, charp, NULL, S_IRUGO);
 MODULE_PARM_DESC(id, "ID string for msnd_pinnacle soundcard.");
 
 #ifndef CONFIG_MSND_WRITE_NDELAY
@@ -1535,24 +1535,6 @@ MODULE_AUTHOR			("Karsten Wiese <annabellesgarden@yahoo.de>");
 MODULE_DESCRIPTION		("Turtle Beach " LONGNAME " Linux Driver");
 MODULE_LICENSE("GPL");
 
-
-MODULE_PARM			(io, "i");
-MODULE_PARM			(irq, "i");
-MODULE_PARM			(mem, "i");
-MODULE_PARM			(write_ndelay, "i");
-MODULE_PARM			(calibrate_signal, "i");
-#ifndef MSND_CLASSIC
-MODULE_PARM			(digital, "i");
-MODULE_PARM			(cfg, "i");
-MODULE_PARM			(reset, "i");
-MODULE_PARM			(mpu_io, "i");
-MODULE_PARM			(mpu_irq, "i");
-MODULE_PARM			(ide_io0, "i");
-MODULE_PARM			(ide_io1, "i");
-MODULE_PARM			(ide_irq, "i");
-MODULE_PARM			(joystick_io, "i");
-#endif
-
 static int io __initdata =		-1;
 static int irq __initdata =		-1;
 static int mem __initdata =		-1;
@@ -1578,6 +1560,24 @@ static int digital __initdata = 0;
 #endif
 
 static int calibrate_signal __initdata = 0;
+
+module_param(io, int, S_IRUGO);
+module_param(irq, int, S_IRUGO);
+module_param(mem, int, S_IRUGO);
+module_param(write_ndelay, int, S_IRUGO);
+module_param(calibrate_signal, int, S_IRUGO);
+#ifndef MSND_CLASSIC
+module_param(digital, int, S_IRUGO);
+module_param(cfg, int, S_IRUGO);
+module_param(reset, int, S_IRUGO);
+module_param(mpu_io, int, S_IRUGO);
+module_param(mpu_irq, int, S_IRUGO);
+module_param(ide_io0, int, S_IRUGO);
+module_param(ide_io1, int, S_IRUGO);
+module_param(ide_irq, int, S_IRUGO);
+module_param(joystick_io, int, S_IRUGO);
+
+#endif
 
 #else /* not a module */
 
