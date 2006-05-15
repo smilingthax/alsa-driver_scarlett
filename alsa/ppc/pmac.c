@@ -11,5 +11,7 @@ static int _machine_is(void);
 #define machine_is(x)	_machine_is()
 #endif
 #include "../alsa-kernel/ppc/pmac.c"
+#if LINUX_VERSION_CODE == KERNEL_VERSION(2,6,16)
 static int _machine_is(void) { return _machine == _MACH_Pmac; }
+#endif
 #endif
