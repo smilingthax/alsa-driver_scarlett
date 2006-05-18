@@ -2535,6 +2535,7 @@ dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
 
 dnl Hack pci_ids.h if necessary
+mkdir -p include/linux
 ln -sf ../pci_ids_compat.h include/linux/pci_ids.h
 
 dnl Hack autoconf.h if necessary
