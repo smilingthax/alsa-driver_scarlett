@@ -33,14 +33,12 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 
 //#include <stdio.h>
 #include "hpi.h"
-#include "hpios.h"
 
-#include <linux/version.h>
-#if ( LINUX_VERSION_CODE >= KERNEL_VERSION ( 2 , 5 , 0 ) )
-#include <linux/device.h>
+#ifndef DISABLE_PRAGMA_PACK1
+#pragma pack(push,1)
 #endif
 
-#include <linux/firmware.h>
+#ifdef DSPCODE_FIRMWARE
 
 /** Descriptor for dspcode from firmware loader */
 struct DSP_CODE_FIRMWARE {
@@ -49,11 +47,78 @@ struct DSP_CODE_FIRMWARE {
 	long int dwBlockLength;	//!< Expected number of words in the whole dsp code,INCL header
 	long int dwWordCount;	//!< Number of words read so far
 	u32 dwVersion;		//<! Version read from dsp code file
+	u32 dwCrc;		//<! CRC read from dsp code file
 };
 
+#endif				// DSPCODE_FIRMWARE
+
+/** Descriptor used when dsp code read from a file */
+struct DSP_CODE_FILE {
+	HpiOs_FILE pDspCodeFile;	//!< File descriptor for dsp code file
+	long int dwBlockLength;	//!< Expected number of words in the whole dsp code, from header
+	long int dwWordCount;	//!< Number of words read so far
+	u32 nAdapter;		//!< Adapter type
+	u32 dwVersion;		//<! Version read from dsp code file
+	u32 dwCrc;		//<! CRC read from dsp code file
+};
+
+/*! Descriptor used when dsp code arrays are linked in */
+struct DSP_CODE_ARRAY {
+	short nArrayNum;	//!< Index of array currently in use
+	int nDspCode_ArrayCount;	//!< Total number of code arrays for this DSP
+	u32 dwOffset;		//!< Current read position within code array
+	u32 **apaCodeArrays;	//!< pointer to array of pointers to code arrays
+	u32 *adwDspCodeArray;	//!< pointer to current code array
+};
+
+#ifndef DISABLE_PRAGMA_PACK1
+#pragma pack(pop)
+#endif
+
+/* Determine which format of dsp code to use */
+
+#if defined ( DSPCODE_FIRMWARE )
 /* DSP CODE IS LOADED FROM FILE DSPnnnn.BIN */
 typedef struct DSP_CODE_FIRMWARE DSP_CODE;
+#endif
 
+#if defined ( USE_ASIDSP ) || defined ( DSPCODE_FILE )
+#ifndef DSPCODE_FILE
+#define DSPCODE_FILE
+#endif
+/* DSP CODE IS LOADED FROM FILE ASIDSP.BIN */
+typedef struct DSP_CODE_FILE DSP_CODE;
+#endif
+
+#if ! defined ( DSPCODE_FILE ) && ! defined ( DSPCODE_FIRMWARE )
+# ifndef DSPCODE_ARRAY
+#   define DSPCODE_ARRAY
+# endif
+/* DSP CODE IN ARRAYS IS LINKED INTO APPLICATION */
+typedef struct DSP_CODE_ARRAY DSP_CODE;
+
+#endif				//
+
+#if defined ( HPI_OS_DOS ) && defined ( _MSC_VER )
+
+// special MSCV case since 0x8600 overflows signed short that it uses to store enums
+
+#define         Load2200 0x2200
+#define         Load4100 0x4100
+#define         Load4300 0x4300
+#define         Load4400 0x4400
+#define         Load4500 0x4500
+#define         Load4600 0x4600
+#define         Load5000 0x5000
+#define         Load6200 0x6200
+#define         Load6413 0x6413
+#define         Load6600 0x6600
+#define         Load8600 0x8600
+#define         Load6205 0x6205
+#define         Load8713 0x8713
+#define         Load8800 0x8800
+
+#else
 enum BootLoadFamily {
 	Load2200 = 0x2200,
 	Load4100 = 0x4100,
@@ -64,11 +129,13 @@ enum BootLoadFamily {
 	Load5000 = 0x5000,
 	Load6200 = 0x6200,
 	Load6413 = 0x6413,
+	Load6600 = 0x6600,
 	Load8600 = 0x8600,
 	Load6205 = 0x6205,
 	Load8713 = 0x8713,
 	Load8800 = 0x8800
 };
+#endif
 
 /*! Prepare *psDspCode to refer to the requuested adapter.
 Searches the file, or selects the appropriate linked array
@@ -76,7 +143,8 @@ Searches the file, or selects the appropriate linked array
 \return 0 for success, or error code if requested code is not available
 */
 short HpiDspCode_Open(u32 nAdapter,	//!< Adapter family
-		      DSP_CODE * psDspCode	//!< Pointer to DSP code control structure
+		      DSP_CODE * psDspCode,	//!< Pointer to DSP code control structure
+		      u32 * pdwOsErrorCode	//!< Pointer to dword to receive OS specific error code
     );
 
 /*! Close the DSP code file */

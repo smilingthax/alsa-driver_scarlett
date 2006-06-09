@@ -91,9 +91,22 @@ typedef struct {
 #define HPI6000_ERROR_SEND_DATA_ACK                     912
 #define HPI6000_ERROR_SEND_DATA_ADR                     913
 #define HPI6000_ERROR_SEND_DATA_TIMEOUT                 914
+#define HPI6000_ERROR_SEND_DATA_CMD                             915
+#define HPI6000_ERROR_SEND_DATA_WRITE                   916
+#define HPI6000_ERROR_SEND_DATA_IDLECMD                 917
 
 #define HPI6000_ERROR_GET_DATA_IDLE_TIMEOUT     921
 #define HPI6000_ERROR_GET_DATA_ACK                              922
+#define HPI6000_ERROR_GET_DATA_CMD                              923
+#define HPI6000_ERROR_GET_DATA_READ                             924
+#define HPI6000_ERROR_GET_DATA_IDLECMD                  925
+
+#define HPI6000_ERROR_CONTROL_CACHE_ADDRLEN             931
+#define HPI6000_ERROR_CONTROL_CACHE_READ                932
+#define HPI6000_ERROR_CONTROL_CACHE_FLUSH               933
+
+#define HPI6000_ERROR_MSG_RESP_GETRESPCMD               941
+#define HPI6000_ERROR_MSG_RESP_IDLECMD                  942
 
 // adapter init errors
 // 931 - can't access PCI2040

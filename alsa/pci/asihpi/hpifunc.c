@@ -21,6 +21,7 @@ Hardware Programming Interface (HPI) functions
 (C) Copyright AudioScience Inc. 1996,1997, 1998
 *******************************************************************************/
 
+#define HPI_GENERATE_FUNCTIONS 1
 #include "hpi.h"
 
 #ifndef HPI_KERNEL_MODE
@@ -31,6 +32,8 @@ Hardware Programming Interface (HPI) functions
 #endif
 
 // local prototypes
+
+#define UNUSED(param) (void)param
 
 void HPI_InitMessage(HPI_MESSAGE * phm, u16 wObject, u16 wFunction);
 u32 HPI_IndexesToHandle(const char cObject, const u16 wIndex1,
@@ -49,16 +52,11 @@ void Aes18_Init(void);
 #define HPI_HANDLETOINDEXES(h,i1,i2) if (h==0) return HPI_ERROR_INVALID_OBJ; else HPI_HandleToIndexes(h,i1,i2)
 #define HPI_HANDLETOINDEXES3(h,i1,i2,i0) if (h==0) return HPI_ERROR_INVALID_OBJ; else HPI_HandleToIndexes3(h,i1,i2,i0)
 
-/// global to store specifc errors for use by HPI_GetLastErrorDetail
-// u16 gwHpiLastError=0;
-u32 gadwHpiSpecificError[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
 ///////////////////////////////////////////////////////////////////////////
 /**\defgroup subsys HPI Subsystem
 \{
 */
-
-static HPI_HSUBSYS ghSubSys;	//global!!!!!!!!!!!!!!!!!!!
+static HPI_HSUBSYS ghSubSys;	// not really used
 
 HPI_HSUBSYS *HPI_SubSysCreate(void)
 {
@@ -67,18 +65,20 @@ HPI_HSUBSYS *HPI_SubSysCreate(void)
 
 	memset(&ghSubSys, 0, sizeof(HPI_HSUBSYS));
 #ifndef HPI_KERNEL_MODE		//----------------- not Win95,WinNT,WDM kernel
-	if (HPI_DriverOpen(&ghSubSys))
+
+	if (HPI_DriverOpen())
 #endif
 
 	{
 		HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_OPEN);
-		HPI_Message(&ghSubSys, &hm, &hr);
+		HPI_Message(&hm, &hr);
 
 		if (hr.wError == 0)
 			return (&ghSubSys);
 #ifndef HPI_KERNEL_MODE		//----------------- not Win95,WinNT,WDM kernel
+
 		else
-			HPI_DriverClose(&ghSubSys);
+			HPI_DriverClose();
 #endif
 
 	}
@@ -92,11 +92,11 @@ void HPI_SubSysFree(HPI_HSUBSYS * phSubSys)
 
 // tell HPI to shutdown
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CLOSE);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 #ifndef HPI_KERNEL_MODE		// not Win95,WinNT,WDM kernel
 
-	HPI_DriverClose(phSubSys);
+	HPI_DriverClose();
 #endif
 }
 
@@ -105,8 +105,10 @@ u16 HPI_SubSysGetVersion(HPI_HSUBSYS * phSubSys, u32 * pdwVersion)
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 
+	UNUSED(phSubSys);
+
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_VERSION);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	*pdwVersion = hr.u.s.dwVersion;
 	return (hr.wError);
 }
@@ -117,9 +119,10 @@ u16 HPI_SubSysGetInfo(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_INFO);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pdwVersion = hr.u.s.dwVersion;
 	if (wListLength > HPI_MAX_ADAPTERS)
@@ -135,10 +138,12 @@ u16 HPI_SubSysCreateAdapter(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
+
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
 	memcpy(&hm.u.s.Resource, pResource, sizeof(HPI_RESOURCE));
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwAdapterIndex = hr.u.s.wAdapterIndex;
 	return (hr.wError);
@@ -148,9 +153,10 @@ u16 HPI_SubSysDeleteAdapter(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DELETE_ADAPTER);
 	hm.wAdapterIndex = wAdapterIndex;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -160,9 +166,10 @@ u16 HPI_SubSysFindAdapters(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_FIND_ADAPTERS);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (wListLength > HPI_MAX_ADAPTERS) {
 		memcpy(awAdapterList, &hr.u.s.awAdapterList,
@@ -182,10 +189,11 @@ u16 HPI_SubSysReadPort8(HPI_HSUBSYS * phSubSys, u16 wAddress, u16 * pwData)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_READ_PORT_8);
 	hm.u.s.Resource.r.PortIO.dwAddress = (u32) wAddress;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwData = (u16) hr.u.s.dwData;
 	return (hr.wError);
@@ -195,11 +203,12 @@ u16 HPI_SubSysWritePort8(HPI_HSUBSYS * phSubSys, u16 wAddress, u16 wData)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_WRITE_PORT_8);
 	hm.u.s.Resource.r.PortIO.dwAddress = (u32) wAddress;
 	hm.u.s.Resource.r.PortIO.dwData = (u32) wData;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -210,14 +219,16 @@ u16 HPI_SubSysWritePort8(HPI_HSUBSYS * phSubSys, u16 wAddress, u16 wData)
 
 @{
 */
+
 u16 HPI_AdapterOpen(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 
@@ -227,10 +238,11 @@ u16 HPI_AdapterClose(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_CLOSE);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -250,6 +262,7 @@ u16 HPI_AdapterFindObject(const HPI_HSUBSYS * phSubSys, u16 wAdapterIndex,	//< I
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_FIND_OBJECT);
@@ -257,7 +270,7 @@ u16 HPI_AdapterFindObject(const HPI_HSUBSYS * phSubSys, u16 wAdapterIndex,	//< I
 	hm.u.a.wAssertId = wObjectIndex;
 	hm.u.a.wObjectType = wObjectType;
 
-	HPI_Message(phSubSys, &hm, &hr);	// Find out where the object is
+	HPI_Message(&hm, &hr);	// Find out where the object is
 /* HPIs that serve only a single DSP can process this message on the PC, returning
 0 in wDspIndex */
 
@@ -288,7 +301,7 @@ u16 HPI_AdapterSetModeEx(HPI_HSUBSYS * phSubSys,
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.dwAdapterMode = dwAdapterMode;
 	hm.u.a.wAssertId = wQueryOrSet;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -297,9 +310,10 @@ u16 HPI_AdapterGetMode(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_MODE);
 	hm.wAdapterIndex = wAdapterIndex;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pdwAdapterMode)
 		*pdwAdapterMode = hr.u.a.dwSerialNumber;
 	return (hr.wError);
@@ -315,10 +329,11 @@ u16 HPI_AdapterGetInfo(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_INFO);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwAdapterType = hr.u.a.wAdapterType;
 	*pwNumOutStreams = hr.u.a.wNumOStreams;
@@ -345,16 +360,17 @@ u32    *pdwValue
 }
 */
 
-u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSys,
 			 u16 wAdapterIndex,
 			 u16 * wAssertPresent,
 			 char *pszAssert, u16 * pwLineNumber)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 // no assert
 	*wAssertPresent = 0;
@@ -388,7 +404,7 @@ adds 32 bit 'line number' and dsp index to standard assert
 
 \return u16 error code HPI_ERROR_*
 */
-u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle
+u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
 			   u16 wAdapterIndex,	///<  Adapter to query
 			   u16 * wAssertPresent,	///< OUT* The number of asserts waiting including this one
 			   char *pszAssert,	///< OUT* Assert message, traditionally file name
@@ -398,10 +414,11 @@ u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem hand
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*wAssertPresent = 0;
 
@@ -428,47 +445,52 @@ u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem hand
 					break;
 			}
 
+		} else {
+			*pszAssert = 0;
 		}
 	}
 	return (hr.wError);
 }
 
-u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSys,
 			  u16 wAdapterIndex, u16 wAssertId)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_TEST_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.wAssertId = wAssertId;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
-u16 HPI_AdapterEnableCapability(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_AdapterEnableCapability(HPI_HSUBSYS * phSubSys,
 				u16 wAdapterIndex, u16 wCapability, u32 dwKey)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_ENABLE_CAPABILITY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.wAssertId = wCapability;
 	hm.u.a.dwAdapterMode = dwKey;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
-u16 HPI_AdapterSelfTest(HPI_HSUBSYS * phSubSysHandle, u16 wAdapterIndex)
+u16 HPI_AdapterSelfTest(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SELFTEST);
 	hm.wAdapterIndex = wAdapterIndex;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -481,7 +503,7 @@ applies to Line Out 0 and bit1 applies to Line Out 1 etc. dwParamter2 is unused 
 and should be set to 0.
 \return HPI_ERROR_*
 */
-u16 HPI_AdapterSetProperty(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle.
+u16 HPI_AdapterSetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 			   u16 wAdapterIndex,	///< Adapter index.
 			   u16 wProperty,	///< Adapter property to set. One of HPI_ADAPTER_PROPERTY_*.
 			   u16 wParameter1,	///< Adapter property parameter 1.
@@ -490,13 +512,14 @@ u16 HPI_AdapterSetProperty(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem hand
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SET_PROPERTY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.property_set.wProperty = wProperty;
 	hm.u.ax.property_set.wParameter1 = wParameter1;
 	hm.u.ax.property_set.wParameter2 = wParameter2;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -510,7 +533,7 @@ i.e. bit0 applies to Line Out 0 and bit1 applies to Line Out 1 etc. pdwParamter2
 property and should be set to 0.
 \return HPI_ERROR_*
 */
-u16 HPI_AdapterGetProperty(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle.
+u16 HPI_AdapterGetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 			   u16 wAdapterIndex,	///< Adapter index.
 			   u16 wProperty,	///< Adapter property to set. One of HPI_ADAPTER_PROPERTY_*.
 			   u16 * pwParameter1,	///< Returned adapter property parameter 1.
@@ -519,11 +542,12 @@ u16 HPI_AdapterGetProperty(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem hand
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_PROPERTY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.property_set.wProperty = wProperty;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (!hr.wError) {
 		if (pwParameter1)
 			*pwParameter1 = hr.u.ax.property_get.wParameter1;
@@ -540,7 +564,7 @@ This function allows an application to determine what property a particular adap
 the settings for a particular propery can also be established.
 \return HPI_ERROR_*
 */
-u16 HPI_AdapterEnumerateProperty(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle.
+u16 HPI_AdapterEnumerateProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 				 u16 wAdapterIndex,	///< Adapter index.
 				 u16 wIndex,	///< Adapter property # to return.
 				 u16 wWhatToEnumerate,	///< Either HPI_ADAPTER_PROPERTY_ENUMERATE_PROPERTIES or HPI_ADAPTER_PROPERTY_ENUMERATE_SETTINGS
@@ -564,21 +588,24 @@ u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pF,
 // compute bytes per second
 	u32 dwBytesPerSecond;
 	u32 dwSize;
+	u16 wChannels;
+
+	wChannels = pF->wChannels;
 
 	switch (pF->wFormat) {
 	case HPI_FORMAT_PCM16_BIGENDIAN:
 	case HPI_FORMAT_PCM16_SIGNED:
-		dwBytesPerSecond = pF->dwSampleRate * 2L * pF->wChannels;
+		dwBytesPerSecond = pF->dwSampleRate * 2L * wChannels;
 		break;
 	case HPI_FORMAT_PCM24_SIGNED:
-		dwBytesPerSecond = pF->dwSampleRate * 3L * pF->wChannels;
+		dwBytesPerSecond = pF->dwSampleRate * 3L * wChannels;
 		break;
 	case HPI_FORMAT_PCM32_SIGNED:
 	case HPI_FORMAT_PCM32_FLOAT:
-		dwBytesPerSecond = pF->dwSampleRate * 4L * pF->wChannels;
+		dwBytesPerSecond = pF->dwSampleRate * 4L * wChannels;
 		break;
 	case HPI_FORMAT_PCM8_UNSIGNED:
-		dwBytesPerSecond = pF->dwSampleRate * 1L * pF->wChannels;
+		dwBytesPerSecond = pF->dwSampleRate * 1L * wChannels;
 		break;
 	case HPI_FORMAT_MPEG_L1:
 	case HPI_FORMAT_MPEG_L2:
@@ -609,11 +636,12 @@ u16 HPI_OutStreamOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.d.wOStreamIndex = wOutStreamIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		*phOutStream =
@@ -627,16 +655,17 @@ u16 HPI_OutStreamClose(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_CLOSE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -668,11 +697,12 @@ u16 HPI_OutStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GET_INFO);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 // only send back data if valid pointers supplied!!
 	if (pwState)
@@ -693,12 +723,13 @@ u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_WRITE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 	memcpy(&hm.u.d.u.Data, pData, sizeof(HPI_DATA));
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -707,11 +738,12 @@ u16 HPI_OutStreamStart(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_START);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -720,11 +752,12 @@ u16 HPI_OutStreamStop(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_STOP);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -733,11 +766,12 @@ u16 HPI_OutStreamSinegen(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SINEGEN);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -746,11 +780,12 @@ u16 HPI_OutStreamReset(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_RESET);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -760,13 +795,14 @@ u16 HPI_OutStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_QUERY_FORMAT);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 	memcpy(&hm.u.d.u.Data.Format, pFormat, sizeof(HPI_FORMAT));
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -777,13 +813,14 @@ u16 HPI_OutStreamSetVelocity(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_VELOCITY);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 	hm.u.d.u.wVelocity = nVelocity;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -802,7 +839,7 @@ u16 HPI_OutStreamSetPunchInOut(HPI_HSUBSYS * phSubSys,
 	hm.u.d.u.Pio.dwPunchInSample = dwPunchInSample;
 	hm.u.d.u.Pio.dwPunchOutSample = dwPunchOutSample;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -812,12 +849,17 @@ u16 HPI_OutStreamAncillaryReset(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_RESET);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
+#ifdef HPI_64BIT
+	hm.u.d.u.Data.Format.wChannels = wMode;
+#else
 	hm.u.d.u.Data.Format.wMode = wMode;
-	HPI_Message(phSubSys, &hm, &hr);
+#endif
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -827,11 +869,12 @@ u16 HPI_OutStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_GET_INFO);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (hr.wError == 0) {
 		if (pdwFramesAvailable)
 			*pdwFramesAvailable =
@@ -851,11 +894,11 @@ u16 HPI_OutStreamAncillaryRead(HPI_HSUBSYS * phSubSys,
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_READ);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
-	hm.u.d.u.Data.dwpbData = (u32) pAncFrameBuffer;
+	hm.u.d.u.Data.dwpbData = (PTR_AS_NUMBER) pAncFrameBuffer;
 	hm.u.d.u.Data.dwDataSize =
 	    dwNumberOfAncillaryFramesToRead * sizeof(HPI_ANC_FRAME);
 	if (hm.u.d.u.Data.dwDataSize <= dwAncFrameBufferSizeInBytes)
-		HPI_Message(phSubSys, &hm, &hr);
+		HPI_Message(&hm, &hr);
 	else
 		hr.wError = HPI_ERROR_INVALID_DATA_TRANSFER;
 	return (hr.wError);
@@ -873,7 +916,7 @@ u16 HPI_OutStreamSetTimeScale(HPI_HSUBSYS * phSubSys,
 
 	hm.u.d.u.dwTimeScale = dwTimeScale;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -883,12 +926,13 @@ u16 HPI_OutStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_ALLOC);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
 	hm.u.d.u.Data.dwDataSize = dwSizeInBytes;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -896,11 +940,12 @@ u16 HPI_OutStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE);
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wOStreamIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -917,6 +962,7 @@ u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 	u16 wDspIndex;
+	UNUSED(phSubSys);
 
 // only need to make this call for objects that can be distributed
 	hr.wError = HPI_AdapterFindObject(phSubSys, wAdapterIndex,
@@ -929,7 +975,7 @@ u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
 		hm.wAdapterIndex = wAdapterIndex;
 		hm.u.d.wIStreamIndex = wInStreamIndex;
 
-		HPI_Message(phSubSys, &hm, &hr);
+		HPI_Message(&hm, &hr);
 
 // construct a global (to the audio subsystem) handle from the adapter,DSP
 // and stream index
@@ -949,16 +995,17 @@ u16 HPI_InStreamClose(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_CLOSE);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -968,6 +1015,7 @@ u16 HPI_InStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_QUERY_FORMAT);
@@ -975,7 +1023,7 @@ u16 HPI_InStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 	memcpy(&hm.u.d.u.Data.Format, pFormat, sizeof(HPI_FORMAT));
 
-	HPI_Message(phSubSys, &hm, &hr);	// send the message to all the HPIs
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
@@ -985,6 +1033,7 @@ u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_SET_FORMAT);
@@ -992,7 +1041,7 @@ u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 	memcpy(&hm.u.d.u.Data.Format, pFormat, sizeof(HPI_FORMAT));
 
-	HPI_Message(phSubSys, &hm, &hr);	// send the message to all the HPIs
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
@@ -1002,6 +1051,7 @@ u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_READ);
@@ -1009,7 +1059,7 @@ u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 	memcpy(&hm.u.d.u.Data, pData, sizeof(HPI_DATA));
 
-	HPI_Message(phSubSys, &hm, &hr);	// send the message to all the HPIs
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 // get the return parameters from the HPI response
 	memcpy(pData, &hm.u.d.u.Data, sizeof(HPI_DATA));
@@ -1020,13 +1070,14 @@ u16 HPI_InStreamStart(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_START);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);	// send the message to all the HPIs
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
@@ -1035,13 +1086,14 @@ u16 HPI_InStreamStop(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_STOP);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);	// send the message to all the HPIs
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
@@ -1050,13 +1102,14 @@ u16 HPI_InStreamReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 // contruct the HPI message from the function parameters
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_RESET);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);	// send the message to all the HPIs
+	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
@@ -1087,11 +1140,12 @@ u16 HPI_InStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GET_INFO);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 // only send back data if valid pointers supplied!!
 	if (pwState)
@@ -1112,6 +1166,7 @@ u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream, u
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_RESET);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
@@ -1123,8 +1178,12 @@ u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream, u
 */
 	hm.u.d.u.Data.Format.dwAttributes = wBytesPerFrame;
 	hm.u.d.u.Data.Format.wFormat = (wMode << 8) | (wAlignment & 0xff);
+#ifdef HPI_64BIT
+	hm.u.d.u.Data.Format.wChannels = wIdleBit;
+#else
 	hm.u.d.u.Data.Format.wMode = wIdleBit;
-	HPI_Message(phSubSys, &hm, &hr);
+#endif
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -1133,10 +1192,11 @@ u16 HPI_InStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_GET_INFO);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pdwFrameSpace)
 		*pdwFrameSpace =
 		    (hr.u.d.dwBufferSize -
@@ -1152,15 +1212,16 @@ u16 HPI_InStreamAncillaryWrite(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_WRITE);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	hm.u.d.u.Data.dwpbData = (u32) pAncFrameBuffer;
+	hm.u.d.u.Data.dwpbData = (PTR_AS_NUMBER) pAncFrameBuffer;
 	hm.u.d.u.Data.dwDataSize =
 	    dwNumberOfAncillaryFramesToWrite * sizeof(HPI_ANC_FRAME);
 	if (hm.u.d.u.Data.dwDataSize <= dwAncFrameBufferSizeInBytes)
-		HPI_Message(phSubSys, &hm, &hr);
+		HPI_Message(&hm, &hr);
 	else
 		hr.wError = HPI_ERROR_INVALID_DATA_TRANSFER;
 	return (hr.wError);
@@ -1171,12 +1232,13 @@ u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_ALLOC);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
 	hm.u.d.u.Data.dwDataSize = dwSizeInBytes;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -1184,11 +1246,12 @@ u16 HPI_InStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex,
 			     &hm.u.d.wIStreamIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
@@ -1201,15 +1264,16 @@ u16 HPI_InStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 @{
 */
 
-u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSys,
 		  u16 wAdapterIndex, HPI_HMIXER * phMixerHandle)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		*phMixerHandle = HPI_IndexesToHandle('M', wAdapterIndex, 0);
@@ -1218,23 +1282,23 @@ u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSysHandle,
 	return (hr.wError);
 }
 
-u16 HPI_MixerClose(HPI_HSUBSYS * phSubSysHandle, HPI_HMIXER hMixerHandle)
+u16 HPI_MixerClose(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_CLOSE);
 	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
-
-	HPI_Message(phSubSysHandle, &hm, &hr);
-
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
-u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSysHandle, HPI_HMIXER hMixerHandle, u16 wSrcNodeType, u16 wSrcNodeTypeIndex, u16 wDstNodeType, u16 wDstNodeTypeIndex, u16 wControlType,	// HPI_CONTROL_METER, _VOLUME etc
+u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle, u16 wSrcNodeType, u16 wSrcNodeTypeIndex, u16 wDstNodeType, u16 wDstNodeTypeIndex, u16 wControlType,	// HPI_CONTROL_METER, _VOLUME etc
 			HPI_HCONTROL * phControlHandle)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_GET_CONTROL);
 	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
 	hm.u.m.wNodeType1 = wSrcNodeType;
@@ -1243,7 +1307,7 @@ u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSysHandle, HPI_HMIXER hMixerHandle, u
 	hm.u.m.wNodeIndex2 = wDstNodeTypeIndex;
 	hm.u.m.wControlType = wControlType;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 // each control in an adapter/mixer has a unique index.
 	if (hr.wError == 0)
@@ -1265,7 +1329,7 @@ either source or destination node type is zero.
 \return HPI_ERROR_*
 \retval HPI_ERROR_INVALID_OBJ_INDEX when wControlIndex > number of mixer controls
 */
-u16 HPI_MixerGetControlByIndex(HPI_HSUBSYS * phSubSysHandle,	///<  HPI subsystem handle
+u16 HPI_MixerGetControlByIndex(HPI_HSUBSYS * phSubSys,	///<  HPI subsystem handle
 			       HPI_HMIXER hMixerHandle,	///<  Mixer Handle
 			       u16 wControlIndex,	///<  Control Index to query
 			       u16 * pwSrcNodeType,	///< [out] Source node type
@@ -1278,10 +1342,11 @@ u16 HPI_MixerGetControlByIndex(HPI_HSUBSYS * phSubSysHandle,	///<  HPI subsystem
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_GET_CONTROL_BY_INDEX);
 	HPI_HANDLETOINDEXES(hMixerHandle, &hm.wAdapterIndex, NULL);
 	hm.u.m.wControlIndex = wControlIndex;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (pwSrcNodeType) {	/* return all or none of info fields */
 		*pwSrcNodeType = hr.u.m.wSrcNodeType + HPI_SOURCENODE_BASE;
@@ -1307,7 +1372,7 @@ u16 HPI_MixerGetControlByIndex(HPI_HSUBSYS * phSubSysHandle,	///<  HPI subsystem
 /** General function for setting common control parameters
 Still need specific code to set analog values
 */
-u16 HPI_ControlParamSet(const HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_ControlParamSet(const HPI_HSUBSYS * phSubSys,
 			const HPI_HCONTROL hControlHandle,
 			const u16 wAttrib,
 			const u32 dwParam1, const u32 dwParam2)
@@ -1320,14 +1385,13 @@ u16 HPI_ControlParamSet(const HPI_HSUBSYS * phSubSysHandle,
 	hm.u.c.wAttribute = wAttrib;
 	hm.u.c.dwParam1 = dwParam1;
 	hm.u.c.dwParam2 = dwParam2;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
-
-u16 HPI_ControlExParamSet(const HPI_HSUBSYS * phSubSysHandle,
-			  const HPI_HCONTROL hControlHandle,
-			  const u16 wAttrib,
-			  const u32 dwParam1, const u32 dwParam2)
+static u16 HPI_ControlExParamSet(const HPI_HSUBSYS * phSubSys,
+				 const HPI_HCONTROL hControlHandle,
+				 const u16 wAttrib,
+				 const u32 dwParam1, const u32 dwParam2)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1337,13 +1401,13 @@ u16 HPI_ControlExParamSet(const HPI_HSUBSYS * phSubSysHandle,
 	hm.u.cx.wAttribute = wAttrib;
 	hm.u.cx.u.generic.dwParam1 = dwParam1;
 	hm.u.cx.u.generic.dwParam2 = dwParam2;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	return (hr.wError);
 }
 
 /** General function for getting up to 2 u32 return values
 */
-u16 HPI_ControlParamGet(const HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_ControlParamGet(const HPI_HSUBSYS * phSubSys,
 			const HPI_HCONTROL hControlHandle,
 			const u16 wAttrib,
 			u32 dwParam1,
@@ -1357,7 +1421,7 @@ u16 HPI_ControlParamGet(const HPI_HSUBSYS * phSubSysHandle,
 	hm.u.c.wAttribute = wAttrib;
 	hm.u.c.dwParam1 = dwParam1;
 	hm.u.c.dwParam2 = dwParam2;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pdwParam1)
 		*pdwParam1 = hr.u.c.dwParam1;
 	if (pdwParam2)
@@ -1365,12 +1429,11 @@ u16 HPI_ControlParamGet(const HPI_HSUBSYS * phSubSysHandle,
 
 	return (hr.wError);
 }
-
-u16 HPI_ControlExParamGet(const HPI_HSUBSYS * phSubSysHandle,
-			  const HPI_HCONTROL hControlHandle,
-			  const u16 wAttrib,
-			  u32 dwParam1,
-			  u32 dwParam2, u32 * pdwParam1, u32 * pdwParam2)
+static u16 HPI_ControlExParamGet(const HPI_HSUBSYS * phSubSys,
+				 const HPI_HCONTROL hControlHandle,
+				 const u16 wAttrib,
+				 u32 dwParam1,
+				 u32 dwParam2, u32 * pdwParam1, u32 * pdwParam2)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1380,7 +1443,7 @@ u16 HPI_ControlExParamGet(const HPI_HSUBSYS * phSubSysHandle,
 	hm.u.cx.wAttribute = wAttrib;
 	hm.u.cx.u.generic.dwParam1 = dwParam1;
 	hm.u.cx.u.generic.dwParam2 = dwParam2;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pdwParam1)
 		*pdwParam1 = hr.u.cx.u.generic.dwParam1;
 	if (pdwParam2)
@@ -1390,25 +1453,25 @@ u16 HPI_ControlExParamGet(const HPI_HSUBSYS * phSubSysHandle,
 }
 
 #if 1
-#define HPI_ControlParam1Get(s,h,a,p1) HPI_ControlParamGet(s,h,a,0,0,p1,0)
+#define HPI_ControlParam1Get(s,h,a,p1) HPI_ControlParamGet(s,h,a,0,0,p1,NULL)
 #define HPI_ControlParam2Get(s,h,a,p1,p2) HPI_ControlParamGet(s,h,a,0,0,p1,p2)
-#define HPI_ControlExParam1Get(s,h,a,p1) HPI_ControlExParamGet(s,h,a,0,0,p1,0)
+#define HPI_ControlExParam1Get(s,h,a,p1) HPI_ControlExParamGet(s,h,a,0,0,p1,NULL)
 #define HPI_ControlExParam2Get(s,h,a,p1,p2) HPI_ControlExParamGet(s,h,a,0,0,p1,p2)
 #else
-u16 HPI_ControlParam2Get(const HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_ControlParam2Get(const HPI_HSUBSYS * phSubSys,
 			 const HPI_HCONTROL hControlHandle,
 			 const u16 wAttrib, u32 * pdwParam1, u32 * pdwParam2)
 {
-	return HPI_ControlParamGet(phSubSysHandle, hControlHandle, wAttrib, 0,
-				   0, pdwParam1, pdwParam2);
+	return HPI_ControlParamGet(phSubSys, hControlHandle, wAttrib, 0, 0,
+				   pdwParam1, pdwParam2);
 }
 
-u16 HPI_ControlParam1Get(const HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_ControlParam1Get(const HPI_HSUBSYS * phSubSys,
 			 const HPI_HCONTROL hControlHandle,
 			 const u16 wAttrib, u32 * pdwParam1)
 {
-	return HPI_ControlParamGet(phSubSysHandle, hControlHandle, wAttrib, 0,
-				   0, pdwParam1, 0L);
+	return HPI_ControlParamGet(phSubSys, hControlHandle, wAttrib, 0, 0,
+				   pdwParam1, 0L);
 }
 #endif
 
@@ -1446,9 +1509,8 @@ wErr= HPI_ControlQuery(phSS,hC, HPI_TUNER_FREQ, 2, HPI_TUNER_BAND_AM , pdwFreqSt
 <tr><td>HPI_SampleClock_SetSourceIndex()</td><td>HPI_SAMPLECLOCK_SOURCE_INDEX</td><td>HPI_SAMPLECLOCK_SOURCE_*</td><td>a source index</td></tr>
 <tr><td>HPI_SampleClock_SetSampleRate() </td><td>HPI_SAMPLECLOCK_SAMPLERATE</td>  <td>0</td>                  <td> List or range of frequencies in Hz</td></tr>
 </table>
-
 */
-u16 HPI_ControlQuery(const HPI_HSUBSYS * phSubSysHandle, const HPI_HCONTROL hControlHandle, const u16 wAttrib,	///< A control attribute
+u16 HPI_ControlQuery(const HPI_HSUBSYS * phSubSys, const HPI_HCONTROL hControlHandle, const u16 wAttrib,	///< A control attribute
 		     const u32 dwIndex,	///< Index for possible attribute values
 		     const u32 dwParam,	///< Supplementary parameter
 		     u32 * pdwSetting	///< [out] One of N possible settings for the control attribute, specified by dwIndex=0..N-1(and possibly depending on the value of the supplementary parameter)
@@ -1464,7 +1526,7 @@ u16 HPI_ControlQuery(const HPI_HSUBSYS * phSubSysHandle, const HPI_HCONTROL hCon
 	hm.u.c.dwParam1 = dwIndex;
 	hm.u.c.dwParam2 = dwParam;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pdwSetting)
 		*pdwSetting = hr.u.c.dwParam1;
 
@@ -1479,15 +1541,15 @@ u16 HPI_ControlQuery(const HPI_HSUBSYS * phSubSysHandle, const HPI_HCONTROL hCon
 /** set whether to input from the professional AES/EBU input
 or the consumer S/PDIF input
 */
-u16 HPI_AESEBU_Receiver_SetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wSource	//  HPI_AESEBU_SOURCE_AESEBU
+u16 HPI_AESEBU_Receiver_SetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wSource	//  HPI_AESEBU_SOURCE_AESEBU
 //  HPI_AESEBU_SOURCE_SPDIF
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
-				   HPI_AESEBU_SOURCE, wSource, 0);
+	return HPI_ControlParamSet(phSubSys, hControlHandle, HPI_AESEBU_SOURCE,
+				   wSource, 0);
 }
 
-u16 HPI_AESEBU_Receiver_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * pwSource	//  HPI_AESEBU_SOURCE_AESEBU
+u16 HPI_AESEBU_Receiver_GetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * pwSource	//  HPI_AESEBU_SOURCE_AESEBU
 //  HPI_AESEBU_SOURCE_SPDIF
     )
 {
@@ -1495,8 +1557,8 @@ u16 HPI_AESEBU_Receiver_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hCo
 	u32 dwParam;
 
 	wErr =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
-				 HPI_AESEBU_SOURCE, &dwParam);
+	    HPI_ControlParam1Get(phSubSys, hControlHandle, HPI_AESEBU_SOURCE,
+				 &dwParam);
 	if (!wErr && pwSource)
 		*pwSource = (u16) dwParam;
 
@@ -1504,27 +1566,28 @@ u16 HPI_AESEBU_Receiver_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hCo
 }
 
 /// get the sample rate of the current AES/EBU input
-u16 HPI_AESEBU_Receiver_GetSampleRate(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u32 * pdwSampleRate	//0, 32000,44100 or 48000 returned
+u16 HPI_AESEBU_Receiver_GetSampleRate(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u32 * pdwSampleRate	//0, 32000,44100 or 48000 returned
     )
 {
-	return HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	return HPI_ControlParam1Get(phSubSys, hControlHandle,
 				    HPI_AESEBU_SAMPLERATE, pdwSampleRate);
 }
 
 /// get a byte of user data from the AES/EBU stream
-u16 HPI_AESEBU_Receiver_GetUserData(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..3
+u16 HPI_AESEBU_Receiver_GetUserData(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..3
 				    u16 * pwData	// returned user data
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_AESEBU_USERDATA;
 	hm.u.c.dwParam1 = wIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (pwData)
 		*pwData = (u16) hr.u.c.dwParam2;
@@ -1532,19 +1595,20 @@ u16 HPI_AESEBU_Receiver_GetUserData(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL h
 }
 
 ///get a byte of channel status from the AES/EBU stream
-u16 HPI_AESEBU_Receiver_GetChannelStatus(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..23
+u16 HPI_AESEBU_Receiver_GetChannelStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..23
 					 u16 * pwData	// returned channel status data
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_AESEBU_CHANNELSTATUS;
 	hm.u.c.dwParam1 = wIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (pwData)
 		*pwData = (u16) hr.u.c.dwParam2;
@@ -1560,14 +1624,14 @@ bit3: 1 when there is a bi-phase coding violation
 bit4: 1 whne the validity bit is high
 */
 
-u16 HPI_AESEBU_Receiver_GetErrorStatus(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * pwErrorData	///< returned error data
+u16 HPI_AESEBU_Receiver_GetErrorStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * pwErrorData	///< returned error data
     )
 {
 	u32 dwErrorData = 0;
 	u16 wError = 0;
 
 	wError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_AESEBU_ERRORSTATUS, &dwErrorData);
 	if (pwErrorData)
 		*pwErrorData = (u16) dwErrorData;
@@ -1584,47 +1648,48 @@ this is only valid if the source is the analog mixer
 if the source is an outstream, then the samplerate will
 be that of the outstream.
 */
-u16 HPI_AESEBU_Transmitter_SetSampleRate(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u32 dwSampleRate	//32000,44100 or 48000
+u16 HPI_AESEBU_Transmitter_SetSampleRate(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u32 dwSampleRate	//32000,44100 or 48000
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_AESEBU_SAMPLERATE, dwSampleRate, 0);
 }
 
-u16 HPI_AESEBU_Transmitter_SetUserData(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..3
+u16 HPI_AESEBU_Transmitter_SetUserData(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..3
 				       u16 wData	// user data to set
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_AESEBU_USERDATA, wIndex, wData);
 }
 
 /// set a byte of channel status in the AES/EBU stream
-u16 HPI_AESEBU_Transmitter_SetChannelStatus(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..23
+u16 HPI_AESEBU_Transmitter_SetChannelStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..23
 					    u16 wData	// channel status data to write
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_AESEBU_CHANNELSTATUS, wIndex, wData);
 }
 
 /** get a byte of channel status in the AES/EBU stream
 \warning Currently disabled pending debug of DSP code
 */
-u16 HPI_AESEBU_Transmitter_GetChannelStatus(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..23
+u16 HPI_AESEBU_Transmitter_GetChannelStatus(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wIndex,	// ranges from 0..23
 					    u16 * pwData	// channel status data to write
     )
 {
 #if 0
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_AESEBU_CHANNELSTATUS;
 	hm.u.c.dwParam1 = wIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (!hr.wError && pwData)
 		*pwData = (u16) hr.u.c.dwParam2;
@@ -1637,21 +1702,21 @@ u16 HPI_AESEBU_Transmitter_GetChannelStatus(HPI_HSUBSYS * phSubSysHandle, HPI_HC
 
 /** sets the AES3 Transmitter clock source to be say the adapter or external sync
 */
-u16 HPI_AESEBU_Transmitter_SetClockSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wClockSource	/* SYNC, ADAPTER */
+u16 HPI_AESEBU_Transmitter_SetClockSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wClockSource	/* SYNC, ADAPTER */
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_AESEBU_CLOCKSOURCE, wClockSource, 0);
 }
 
-u16 HPI_AESEBU_Transmitter_GetClockSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * pwClockSource	/* SYNC, ADAPTER */
+u16 HPI_AESEBU_Transmitter_GetClockSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * pwClockSource	/* SYNC, ADAPTER */
     )
 {
 	u16 wErr;
 	u32 dwParam;
 
 	wErr =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_AESEBU_CLOCKSOURCE, &dwParam);
 	if (!wErr && pwClockSource)
 		*pwClockSource = (u16) dwParam;
@@ -1659,15 +1724,15 @@ u16 HPI_AESEBU_Transmitter_GetClockSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCON
 	return wErr;
 }
 
-u16 HPI_AESEBU_Transmitter_SetFormat(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wOutputFormat	/* HPI_AESEBU_SOURCE_AESEBU, _SPDIF */
+u16 HPI_AESEBU_Transmitter_SetFormat(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wOutputFormat	/* HPI_AESEBU_SOURCE_AESEBU, _SPDIF */
     )
 {
 // we use the HPI_AESEBU_SOURCE attribute, because thats used on the receiver side - _FORMAT would be a better descriptor
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
-				   HPI_AESEBU_SOURCE, wOutputFormat, 0);
+	return HPI_ControlParamSet(phSubSys, hControlHandle, HPI_AESEBU_SOURCE,
+				   wOutputFormat, 0);
 }
 
-u16 HPI_AESEBU_Transmitter_GetFormat(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * pwOutputFormat	/* HPI_AESEBU_SOURCE_AESEBU, _SPDIF */
+u16 HPI_AESEBU_Transmitter_GetFormat(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * pwOutputFormat	/* HPI_AESEBU_SOURCE_AESEBU, _SPDIF */
     )
 {
 	u16 wErr;
@@ -1675,8 +1740,8 @@ u16 HPI_AESEBU_Transmitter_GetFormat(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL 
 
 // we use the HPI_AESEBU_SOURCE attribute, because thats used on the receiver side - _FORMAT would be a better descriptor
 	wErr =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
-				 HPI_AESEBU_SOURCE, &dwParam);
+	    HPI_ControlParam1Get(phSubSys, hControlHandle, HPI_AESEBU_SOURCE,
+				 &dwParam);
 	if (!wErr && pwOutputFormat)
 		*pwOutputFormat = (u16) dwParam;
 
@@ -1689,31 +1754,32 @@ u16 HPI_AESEBU_Transmitter_GetFormat(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL 
 Control synchronous bitstream I/O
 \{
 */
-u16 HPI_Bitstream_SetClockEdge(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Bitstream_SetClockEdge(HPI_HSUBSYS * phSubSys,
 			       HPI_HCONTROL hControlHandle, u16 wEdgeType)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_BITSTREAM_CLOCK_EDGE, wEdgeType, 0);
 }
 
-u16 HPI_Bitstream_SetDataPolarity(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Bitstream_SetDataPolarity(HPI_HSUBSYS * phSubSys,
 				  HPI_HCONTROL hControlHandle, u16 wPolarity)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_BITSTREAM_DATA_POLARITY, wPolarity, 0);
 }
 
-u16 HPI_Bitstream_GetActivity(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Bitstream_GetActivity(HPI_HSUBSYS * phSubSys,
 			      HPI_HCONTROL hControlHandle,
 			      u16 * pwClkActivity, u16 * pwDataActivity)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_BITSTREAM_ACTIVITY;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pwClkActivity)
 		*pwClkActivity = (u16) hr.u.c.dwParam1;
 	if (pwDataActivity)
@@ -1727,19 +1793,19 @@ u16 HPI_Bitstream_GetActivity(HPI_HSUBSYS * phSubSysHandle,
 /**\defgroup channelmode Channel Mode control
 \{
 */
-u16 HPI_ChannelModeSet(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_ChannelModeSet(HPI_HSUBSYS * phSubSys,
 		       HPI_HCONTROL hControlHandle, u16 wMode)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_MULTIPLEXER_SOURCE, wMode, 0);
 }
 
-u16 HPI_ChannelModeGet(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_ChannelModeGet(HPI_HSUBSYS * phSubSys,
 		       HPI_HCONTROL hControlHandle, u16 * wMode)
 {
 	u32 dwMode = 0;
 	u16 wError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_MULTIPLEXER_SOURCE, &dwMode);
 	if (wMode)
 		*wMode = (u16) dwMode;
@@ -1764,7 +1830,7 @@ The cobranet control allows reading and writing of the cobranet HMI variables
 \retval HPI_ERROR_INVALID_DATASIZE if requested size is greater than the HMI variable size
 */
 
-u16 HPI_Cobranet_HmiWrite(HPI_HSUBSYS * phSubSysHandle,	///<Subsystem handle
+u16 HPI_Cobranet_HmiWrite(HPI_HSUBSYS * phSubSys,	///<Subsystem handle
 			  HPI_HCONTROL hControlHandle,	///<Handle of a cobranet control
 			  u32 dwHmiAddress,	/// dwHmiAddress HMI address
 			  u32 dwByteCount,	///<Number of bytes to send to the control
@@ -1788,7 +1854,7 @@ u16 HPI_Cobranet_HmiWrite(HPI_HSUBSYS * phSubSysHandle,	///<Subsystem handle
 		hm.u.cx.wAttribute = HPI_COBRANET_SET_DATA;
 	}
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -1801,7 +1867,7 @@ The amount of data returned will be the minimum of the input dwMaxByteCount and 
 size of the variable reported by the HMI
 */
 
-u16 HPI_Cobranet_HmiRead(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_Cobranet_HmiRead(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			 HPI_HCONTROL hControlHandle,	///< Handle of a cobranet control
 			 u32 dwHmiAddress,	///<HMI address
 			 u32 dwMaxByteCount,	///<maximum number of bytes to return (<= buffer size of pbData)
@@ -1825,7 +1891,7 @@ u16 HPI_Cobranet_HmiRead(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
 		hm.u.cx.wAttribute = HPI_COBRANET_GET_DATA;
 	}
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (!hr.wError && pbData) {
 
 		*pdwByteCount = hr.u.cx.u.cobranet_data.dwByteCount;
@@ -1846,7 +1912,7 @@ u16 HPI_Cobranet_HmiRead(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
 
 /** Get the status of the last cobranet operation
 */
-u16 HPI_Cobranet_HmiGetStatus(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_Cobranet_HmiGetStatus(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			      HPI_HCONTROL hControlHandle,	///< Handle of a cobranet control
 			      u32 * pdwStatus,	///<[out]the raw status word from the HMI
 			      u32 * pdwReadableSize,	///<[out] the reported readable size from the last variable access
@@ -1861,7 +1927,7 @@ u16 HPI_Cobranet_HmiGetStatus(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handl
 
 	hm.u.cx.wAttribute = HPI_COBRANET_GET_STATUS;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (!hr.wError) {
 		if (pdwStatus)
 			*pdwStatus = hr.u.cx.u.cobranet_status.dwStatus;
@@ -1883,13 +1949,13 @@ Allows the user to set the mode of CobraNet operation. This changes the way that
 work together. A reload of the DSP code is required for the new setting to take effect. In Windows
 this requires a reboot of the computer. In Linux this requires that driver be unloaded and reloaded.
 */
-u16 HPI_Cobranet_SetMode(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_Cobranet_SetMode(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			 HPI_HCONTROL hControlHandle,	///< Handle of a CobraNet control
 			 u32 dwMode,	///< Mode should be one of HPI_COBRANET_MODE_NETWORK, HPI_COBRANET_MODE_TETHERED
 			 u32 dwSetOrQuery	///< Use HPI_COBRANET_MODE_QUERY to query or HPI_COBRANET_MODE_SET to set
     )
 {
-	return HPI_ControlExParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlExParamSet(phSubSys, hControlHandle,
 				     HPI_COBRANET_MODE, dwMode, dwSetOrQuery);
 }
 
@@ -1900,7 +1966,7 @@ u16 HPI_Cobranet_SetMode(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
 Allows the user to get the mode of CobraNet operation. This changes the way that a ASI6416 and ASI2416
 work together.
 */
-u16 HPI_Cobranet_GetMode(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_Cobranet_GetMode(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			 HPI_HCONTROL hControlHandle,	///< Handle of a CobraNet control
 			 u32 * pdwMode	///< Returns HPI_COBRANET_MODE_NETWORK or HPI_COBRANET_MODE_TETHERED
     )
@@ -1908,8 +1974,8 @@ u16 HPI_Cobranet_GetMode(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
 	u16 nError = 0;
 	u32 dwMode = 0;
 	nError =
-	    HPI_ControlExParam1Get(phSubSysHandle, hControlHandle,
-				   HPI_COBRANET_MODE, &dwMode);
+	    HPI_ControlExParam1Get(phSubSys, hControlHandle, HPI_COBRANET_MODE,
+				   &dwMode);
 	if (pdwMode)
 		*pdwMode = (u16) dwMode;
 	return (nError);
@@ -1921,7 +1987,7 @@ u16 HPI_Cobranet_GetMode(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
 
 Allows the user to get the IP address of the CobraNet node.
 */
-u16 HPI_Cobranet_GetIPaddress(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_Cobranet_GetIPaddress(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			      HPI_HCONTROL hControlHandle,	///< Handle of a cobranet control
 			      u32 * pdwIPaddress	///< OUT: the IP address
     )
@@ -1929,7 +1995,7 @@ u16 HPI_Cobranet_GetIPaddress(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handl
 	u32 dwByteCount;
 	u32 dwIP;
 	u16 wError;
-	wError = HPI_Cobranet_HmiRead(phSubSysHandle, hControlHandle,
+	wError = HPI_Cobranet_HmiRead(phSubSys, hControlHandle,
 				      HPI_COBRANET_HMI_cobraIpMonCurrentIP,
 				      4, &dwByteCount, (u8 *) & dwIP);
 // byte swap the IP address
@@ -1948,7 +2014,7 @@ u16 HPI_Cobranet_GetIPaddress(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handl
 
 Allows the user to get the MAC address of the CobraNet node.
 */
-u16 HPI_Cobranet_GetMACaddress(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_Cobranet_GetMACaddress(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			       HPI_HCONTROL hControlHandle,	///< Handle of a cobranet control
 			       u32 * pdwMAC_MSBs,	///< OUT: the first 4 bytes of the MAC address.
 			       u32 * pdwMAC_LSBs	///< OUT: the last 2 bytes of the MAC address returned in the upper 2 bytes.
@@ -1957,14 +2023,14 @@ u16 HPI_Cobranet_GetMACaddress(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem hand
 	u32 dwByteCount;
 	u16 wError;
 	u32 dwMAC;
-	wError = HPI_Cobranet_HmiRead(phSubSysHandle, hControlHandle,
+	wError = HPI_Cobranet_HmiRead(phSubSys, hControlHandle,
 				      HPI_COBRANET_HMI_cobraIfPhyAddress,
 				      4, &dwByteCount, (u8 *) & dwMAC);
 	*pdwMAC_MSBs =
 	    ((dwMAC & 0xff000000) >> 8) |
 	    ((dwMAC & 0x00ff0000) << 8) |
 	    ((dwMAC & 0x0000ff00) >> 8) | ((dwMAC & 0x000000ff) << 8);
-	wError += HPI_Cobranet_HmiRead(phSubSysHandle, hControlHandle,
+	wError += HPI_Cobranet_HmiRead(phSubSys, hControlHandle,
 				       HPI_COBRANET_HMI_cobraIfPhyAddress + 1,
 				       4, &dwByteCount, (u8 *) & dwMAC);
 	*pdwMAC_LSBs =
@@ -1978,12 +2044,14 @@ u16 HPI_Cobranet_GetMACaddress(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem hand
 	  /** @} */// group cobranet
 /////////////////////////////////////////////////////////////////////////////////
 /**\defgroup compand  Compressor Expander control
-///\{
+\{
+The compander multiplies its input signal by a factor that is dependent on the
+amplitude of that signal.
 */
 /*! Set up a compressor expander
 \return HPI_ERROR_*
 */
-u16 HPI_Compander_Set(HPI_HSUBSYS * phSubSysHandle,	//!<HPI subsystem handle
+u16 HPI_Compander_Set(HPI_HSUBSYS * phSubSys,	//!<HPI subsystem handle
 		      HPI_HCONTROL hControlHandle,	//!<Equalizer control handle
 		      u16 wAttack,	//!<attack time in milliseconds
 		      u16 wDecay,	//!<decay time in milliseconds
@@ -2004,7 +2072,7 @@ u16 HPI_Compander_Set(HPI_HSUBSYS * phSubSysHandle,	//!<HPI subsystem handle
 	hm.u.c.anLogValue[1] = nMakeupGain0_01dB;
 	hm.u.c.wAttribute = 0;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -2012,7 +2080,7 @@ u16 HPI_Compander_Set(HPI_HSUBSYS * phSubSysHandle,	//!<HPI subsystem handle
 /*! Get the settings of a compressor expander
 \return HPI_ERROR_*
 */
-u16 HPI_Compander_Get(HPI_HSUBSYS * phSubSysHandle,	//!<HPI subsystem handle
+u16 HPI_Compander_Get(HPI_HSUBSYS * phSubSys,	//!<HPI subsystem handle
 		      HPI_HCONTROL hControlHandle,	//!<Equalizer control handle
 		      u16 * pwAttack,	//!<[out] attack time in milliseconds
 		      u16 * pwDecay,	//!<[out] decay time in milliseconds
@@ -2028,7 +2096,7 @@ u16 HPI_Compander_Get(HPI_HSUBSYS * phSubSysHandle,	//!<HPI subsystem handle
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = 0;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (pwAttack)
 		*pwAttack = (short)(hr.u.c.dwParam1 & 0xFFFF);
@@ -2053,7 +2121,7 @@ The level is in units of 0.01dBu (0dBu = 0.775 VRMS)
 \{
 */
 
-u16 HPI_LevelSetGain(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_LevelSetGain(HPI_HSUBSYS * phSubSys,
 		     HPI_HCONTROL hControlHandle,
 		     short anGain0_01dB[HPI_MAX_CHANNELS]
     )
@@ -2065,26 +2133,27 @@ u16 HPI_LevelSetGain(HPI_HSUBSYS * phSubSysHandle,
 			    &hm.u.c.wControlIndex);
 	memcpy(hm.u.c.anLogValue, anGain0_01dB,
 	       sizeof(short) * HPI_MAX_CHANNELS);
-	hm.u.c.wAttribute = HPI_VOLUME_GAIN;	// should be HPI_LEVEL_GAIN !!
+	hm.u.c.wAttribute = HPI_LEVEL_GAIN;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
-u16 HPI_LevelGetGain(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_LevelGetGain(HPI_HSUBSYS * phSubSys,
 		     HPI_HCONTROL hControlHandle,
 		     short anGain0_01dB[HPI_MAX_CHANNELS]
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
-	hm.u.c.wAttribute = HPI_VOLUME_GAIN;	// should be HPI_LEVEL_GAIN !!
+	hm.u.c.wAttribute = HPI_LEVEL_GAIN;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	memcpy(anGain0_01dB, hr.u.c.anLogValue,
 	       sizeof(short) * HPI_MAX_CHANNELS);
@@ -2109,7 +2178,7 @@ Readings are in units of 0.01dB
 
 /** Get the meter peak reading
 */
-u16 HPI_MeterGetPeak(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle
+u16 HPI_MeterGetPeak(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
 		     HPI_HCONTROL hControlHandle,	///< meter control handle
 		     short anPeakdB[HPI_MAX_CHANNELS]	///< [out] meter peaks
     )
@@ -2127,7 +2196,7 @@ u16 HPI_MeterGetPeak(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_METER_PEAK;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (!hr.wError) {
 // Method to return meter values from DSP
@@ -2141,11 +2210,14 @@ u16 HPI_MeterGetPeak(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle
 // convert 0..32767 level to 0.01dB (20log10), 0 is -100.00dB
 		for (i = 0; i < HPI_MAX_CHANNELS; i++) {
 			nLinear = hr.u.c.anLogValue[i];
-			if (nLinear == 0)
-				hr.u.c.anLogValue[i] = HPI_METER_MINIMUM;
-			else if (nLinear > 0)
-				hr.u.c.anLogValue[i] = (short)((float)(20 * log10((float)nLinear / 32767.0)) * 100.0);	// units are 0.01dB
-// else don't have to touch the LogValue when it is -ve since it is already a log value
+// don't have to touch the LogValue when it is -ve since it is already a log value
+			if (nLinear >= 0) {
+				if (nLinear == 0)
+					hr.u.c.anLogValue[i] =
+					    HPI_METER_MINIMUM;
+				else
+					hr.u.c.anLogValue[i] = (short)((float)(20 * log10((float)nLinear / 32767.0)) * 100.0);	// units are 0.01dB
+			}
 		}
 #endif
 
@@ -2153,13 +2225,13 @@ u16 HPI_MeterGetPeak(HPI_HSUBSYS * phSubSysHandle,	///< HPI subsystem handle
 		       sizeof(short) * HPI_MAX_CHANNELS);
 	} else
 		for (i = 0; i < HPI_MAX_CHANNELS; i++)
-			anPeakdB[i] = HPI_METER_MINIMUM;	// in case function is not supported.
+			anPeakdB[i] = HPI_METER_MINIMUM;
 	return (hr.wError);
 }
 
 /** Get the meter RMS reading in 100ths of a dB
 */
-u16 HPI_MeterGetRms(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_MeterGetRms(HPI_HSUBSYS * phSubSys,
 		    HPI_HCONTROL hControlHandle, short anRmsdB[HPI_MAX_CHANNELS]
     )
 {
@@ -2176,7 +2248,7 @@ u16 HPI_MeterGetRms(HPI_HSUBSYS * phSubSysHandle,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_METER_RMS;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (!hr.wError) {
 #ifndef HPI_KERNEL_MODE
@@ -2184,20 +2256,21 @@ u16 HPI_MeterGetRms(HPI_HSUBSYS * phSubSysHandle,
 // convert 0..32767 level to 0.01dB (20log10), 0 is -100.00dB
 		for (i = 0; i < HPI_MAX_CHANNELS; i++) {
 			nLinear = hr.u.c.anLogValue[i];
-
-			if (nLinear == 0)
-				hr.u.c.anLogValue[i] = HPI_METER_MINIMUM;
-			else if (nLinear > 0)
-				hr.u.c.anLogValue[i] = (short)((float)(20 * log10((float)nLinear / 32767.0)) * 100.0);	// units are 0.01dB
-// else don't have to touch the LogValue when it is -ve since it is already a log value
-
+// don't have to touch the LogValue when it is -ve since it is already a log value
+			if (nLinear >= 0) {
+				if (nLinear == 0)
+					hr.u.c.anLogValue[i] =
+					    HPI_METER_MINIMUM;
+				else
+					hr.u.c.anLogValue[i] = (short)((float)(20 * log10((float)nLinear / 32767.0)) * 100.0);	// units are 0.01dB
+			}
 		}
 #endif
 		memcpy(anRmsdB, hr.u.c.anLogValue,
 		       sizeof(short) * HPI_MAX_CHANNELS);
 	} else
 		for (i = 0; i < HPI_MAX_CHANNELS; i++)
-			anRmsdB[i] = HPI_METER_MINIMUM;	//  in case function is not supported.
+			anRmsdB[i] = HPI_METER_MINIMUM;	// return -100dB in case function is not supported.
 
 	return (hr.wError);
 }
@@ -2212,17 +2285,17 @@ Setting nDecay to a value smaller than a few times your  meter polling interval 
 The meter will appear to read something approaching the instantaneous value at the time of polling
 rather than the maximum peak since the previous reading.
 */
-u16 HPI_MeterSetRmsBallistics(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, unsigned short nAttack,	///< Attack timeconstant in milliseconds
+u16 HPI_MeterSetRmsBallistics(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, unsigned short nAttack,	///< Attack timeconstant in milliseconds
 			      unsigned short nDecay	///< Decay timeconstant in milliseconds
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_METER_RMS_BALLISTICS, nAttack, nDecay);
 }
 
 /** Get the ballistics settings of the RMS part of a meter.
 */
-u16 HPI_MeterGetRmsBallistics(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, unsigned short *pnAttack,	///< Attack timeconstant in milliseconds
+u16 HPI_MeterGetRmsBallistics(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, unsigned short *pnAttack,	///< Attack timeconstant in milliseconds
 			      unsigned short *pnDecay	///< Decay timeconstant in milliseconds
     )
 {
@@ -2231,7 +2304,7 @@ u16 HPI_MeterGetRmsBallistics(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hContro
 	u16 nError;
 
 	nError =
-	    HPI_ControlParam2Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam2Get(phSubSys, hControlHandle,
 				 HPI_METER_RMS_BALLISTICS, &dwAttack, &dwDecay);
 
 	if (pnAttack)
@@ -2244,17 +2317,17 @@ u16 HPI_MeterGetRmsBallistics(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hContro
 
 /** Set the ballistics of the Peak part of a meter.
 */
-u16 HPI_MeterSetPeakBallistics(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_MeterSetPeakBallistics(HPI_HSUBSYS * phSubSys,
 			       HPI_HCONTROL hControlHandle,
 			       unsigned short nAttack, unsigned short nDecay)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_METER_PEAK_BALLISTICS, nAttack, nDecay);
 }
 
 /** Get the ballistics settings of the Peak part of a meter.
 */
-u16 HPI_MeterGetPeakBallistics(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_MeterGetPeakBallistics(HPI_HSUBSYS * phSubSys,
 			       HPI_HCONTROL hControlHandle,
 			       unsigned short *pnAttack,
 			       unsigned short *pnDecay)
@@ -2264,7 +2337,7 @@ u16 HPI_MeterGetPeakBallistics(HPI_HSUBSYS * phSubSysHandle,
 	u16 nError;
 
 	nError =
-	    HPI_ControlParam2Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam2Get(phSubSys, hControlHandle,
 				 HPI_METER_PEAK_BALLISTICS, &dwAttack,
 				 &dwDecay);
 
@@ -2327,21 +2400,21 @@ return (double)lAcc / pow(2.0,24.0);
 /**\defgroup mic Microphone control
 \{
 */
-u16 HPI_Microphone_SetPhantomPower(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Microphone_SetPhantomPower(HPI_HSUBSYS * phSubSys,
 				   HPI_HCONTROL hControlHandle, u16 wOnOff)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_MICROPHONE_PHANTOM_POWER, (u32) wOnOff,
 				   0);
 }
 
-u16 HPI_Microphone_GetPhantomPower(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Microphone_GetPhantomPower(HPI_HSUBSYS * phSubSys,
 				   HPI_HCONTROL hControlHandle, u16 * pwOnOff)
 {
 	u16 nError = 0;
 	u32 dwOnOff = 0;
 	nError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_MICROPHONE_PHANTOM_POWER, &dwOnOff);
 	if (pwOnOff)
 		*pwOnOff = (u16) dwOnOff;
@@ -2357,22 +2430,22 @@ or on the linein to select analog or digital input.
 \{
 */
 
-u16 HPI_Multiplexer_SetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wSourceNodeType,	// any source node
+u16 HPI_Multiplexer_SetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wSourceNodeType,	// any source node
 			      u16 wSourceNodeIndex	// any source node
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_MULTIPLEXER_SOURCE, wSourceNodeType,
 				   wSourceNodeIndex);
 }
 
-u16 HPI_Multiplexer_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * wSourceNodeType,	/* any source node */
+u16 HPI_Multiplexer_GetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * wSourceNodeType,	/* any source node */
 			      u16 * wSourceNodeIndex	/* any source node  */
     )
 {
 	u32 dwNode, dwIndex;
 	u16 wError =
-	    HPI_ControlParam2Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam2Get(phSubSys, hControlHandle,
 				 HPI_MULTIPLEXER_SOURCE, &dwNode, &dwIndex);
 	if (wSourceNodeType)
 		*wSourceNodeType = (u16) dwNode;
@@ -2381,19 +2454,20 @@ u16 HPI_Multiplexer_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hContro
 	return wError;
 }
 
-u16 HPI_Multiplexer_QuerySource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wIndex, u16 * wSourceNodeType,	/* any source node */
+u16 HPI_Multiplexer_QuerySource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wIndex, u16 * wSourceNodeType,	/* any source node */
 				u16 * wSourceNodeIndex	/* any source node  */
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_MULTIPLEXER_QUERYSOURCE;
 	hm.u.c.dwParam1 = wIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (wSourceNodeType)
 		*wSourceNodeType = (u16) hr.u.c.dwParam1;
@@ -2409,19 +2483,19 @@ This control allows make/break connections to be supported.
 \{
 */
 
-u16 HPI_OnOffSwitch_SetState(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wState	/* 1=on, 0=off */
+u16 HPI_OnOffSwitch_SetState(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wState	/* 1=on, 0=off */
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_ONOFFSWITCH_STATE, wState, 0);
 }
 
-u16 HPI_OnOffSwitch_GetState(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * wState	/* 1=on, 0=off */
+u16 HPI_OnOffSwitch_GetState(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * wState	/* 1=on, 0=off */
     )
 {
 	u32 dwState = 0;
 	u16 wError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_ONOFFSWITCH_STATE, &dwState);
 	if (wState)
 		*wState = (u16) dwState;
@@ -2440,7 +2514,7 @@ and whether it is enabled or not
 
 \return HPI_ERROR_*
 */
-u16 HPI_ParametricEQ_GetInfo(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem handle
+u16 HPI_ParametricEQ_GetInfo(HPI_HSUBSYS * phSubSys,	//!<  HPI subsystem handle
 			     HPI_HCONTROL hControlHandle,	//!<  Equalizer control handle
 			     u16 * pwNumberOfBands,	//!< [out] number of bands available
 			     u16 * pwOnOff	//!< [out] enabled status
@@ -2451,7 +2525,7 @@ u16 HPI_ParametricEQ_GetInfo(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem h
 	u16 nError = 0;
 
 	nError =
-	    HPI_ControlParam2Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam2Get(phSubSys, hControlHandle,
 				 HPI_EQUALIZER_NUM_FILTERS, &dwOO, &dwNOB);
 	if (pwNumberOfBands)
 		*pwNumberOfBands = (u16) dwNOB;
@@ -2465,12 +2539,12 @@ Turn a parametric equalizer on or off
 
 \return HPI_ERROR_*
 */
-u16 HPI_ParametricEQ_SetState(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem handle
+u16 HPI_ParametricEQ_SetState(HPI_HSUBSYS * phSubSys,	//!<  HPI subsystem handle
 			      HPI_HCONTROL hControlHandle,	//!<  Equalizer control handle
 			      u16 wOnOff	//!<  1=on, 0=off
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle,
+	return HPI_ControlParamSet(phSubSys,
 				   hControlHandle,
 				   HPI_EQUALIZER_NUM_FILTERS, wOnOff, 0);
 }
@@ -2478,7 +2552,7 @@ u16 HPI_ParametricEQ_SetState(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem 
 /*! Set up one of the filters in a parametric equalizer
 \return HPI_ERROR_*
 */
-u16 HPI_ParametricEQ_SetBand(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem handle
+u16 HPI_ParametricEQ_SetBand(HPI_HSUBSYS * phSubSys,	//!<  HPI subsystem handle
 			     HPI_HCONTROL hControlHandle,	//!<  Equalizer control handle
 			     u16 wIndex,	//!<  index of band to set
 			     u16 nType,	//!<  band type, One of the \ref eq_filter_types
@@ -2499,7 +2573,7 @@ u16 HPI_ParametricEQ_SetBand(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem h
 	hm.u.c.anLogValue[1] = nQ100;
 	hm.u.c.wAttribute = HPI_EQUALIZER_FILTER;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -2507,7 +2581,7 @@ u16 HPI_ParametricEQ_SetBand(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem h
 /*! Get the settings of one of the filters in a parametric equalizer
 \return HPI_ERROR_*
 */
-u16 HPI_ParametricEQ_GetBand(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem handle
+u16 HPI_ParametricEQ_GetBand(HPI_HSUBSYS * phSubSys,	//!<  HPI subsystem handle
 			     HPI_HCONTROL hControlHandle,	//!<  Equalizer control handle
 			     u16 wIndex,	//!<  index of band to Get
 			     u16 * pnType,	//!< [out] band type
@@ -2524,7 +2598,7 @@ u16 HPI_ParametricEQ_GetBand(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem h
 	hm.u.c.wAttribute = HPI_EQUALIZER_FILTER;
 	hm.u.c.dwParam2 = wIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (pdwFrequencyHz)
 		*pdwFrequencyHz = hr.u.c.dwParam1;
@@ -2538,9 +2612,9 @@ u16 HPI_ParametricEQ_GetBand(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem h
 	return (hr.wError);
 }
 
-/*! Retrieve the calculated filter coefficients (scaled by 1000 into integers)
+/** Retrieve the calculated filter coefficients (scaled by 1000 into integers)
 */
-u16 HPI_ParametricEQ_GetCoeffs(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem handle
+u16 HPI_ParametricEQ_GetCoeffs(HPI_HSUBSYS * phSubSys,	//!<  HPI subsystem handle
 			       HPI_HCONTROL hControlHandle,	//!<  Equalizer control handle
 			       u16 wIndex,	//!<  index of band to Get
 			       short coeffs[5]	//!< [out] filter coefficients * 1000 a1,a2,b0,b1,b2 (a0==0)
@@ -2554,7 +2628,7 @@ u16 HPI_ParametricEQ_GetCoeffs(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem
 	hm.u.c.wAttribute = HPI_EQUALIZER_COEFFICIENTS;
 	hm.u.c.dwParam2 = wIndex;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	coeffs[0] = (short)hr.u.c.anLogValue[0];
 	coeffs[1] = (short)hr.u.c.anLogValue[1];
@@ -2570,28 +2644,28 @@ u16 HPI_ParametricEQ_GetCoeffs(HPI_HSUBSYS * phSubSysHandle,	//!<  HPI subsystem
 /**\defgroup sampleclock SampleClock control
 \{
 */
-u16 HPI_SampleClock_SetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wSource	// HPI_SAMPLECLOCK_SOURCE_ADAPTER, _AESEBU etc
+u16 HPI_SampleClock_SetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wSource	// HPI_SAMPLECLOCK_SOURCE_ADAPTER, _AESEBU etc
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_SAMPLECLOCK_SOURCE, wSource, 0);
 }
 
-u16 HPI_SampleClock_SetSourceIndex(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wSourceIndex	// index of the source to use
+u16 HPI_SampleClock_SetSourceIndex(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wSourceIndex	// index of the source to use
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_SAMPLECLOCK_SOURCE_INDEX, wSourceIndex,
 				   0);
 }
 
-u16 HPI_SampleClock_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 * pwSource	// HPI_SAMPLECLOCK_SOURCE_ADAPTER, _AESEBU etc
+u16 HPI_SampleClock_GetSource(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 * pwSource	// HPI_SAMPLECLOCK_SOURCE_ADAPTER, _AESEBU etc
     )
 {
 	u16 wError = 0;
 	u32 dwSource = 0;
 	wError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_SAMPLECLOCK_SOURCE, &dwSource);
 	if (!wError)
 		if (pwSource)
@@ -2599,14 +2673,14 @@ u16 HPI_SampleClock_GetSource(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hContro
 	return (wError);
 }
 
-u16 HPI_SampleClock_GetSourceIndex(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_SampleClock_GetSourceIndex(HPI_HSUBSYS * phSubSys,
 				   HPI_HCONTROL hControlHandle,
 				   u16 * pwSourceIndex)
 {
 	u16 wError = 0;
 	u32 dwSourceIndex = 0;
 	wError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_SAMPLECLOCK_SOURCE_INDEX, &dwSourceIndex);
 	if (!wError)
 		if (pwSourceIndex)
@@ -2614,21 +2688,21 @@ u16 HPI_SampleClock_GetSourceIndex(HPI_HSUBSYS * phSubSysHandle,
 	return (wError);
 }
 
-u16 HPI_SampleClock_SetSampleRate(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_SampleClock_SetSampleRate(HPI_HSUBSYS * phSubSys,
 				  HPI_HCONTROL hControlHandle, u32 dwSampleRate)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
+	return HPI_ControlParamSet(phSubSys, hControlHandle,
 				   HPI_SAMPLECLOCK_SAMPLERATE, dwSampleRate, 0);
 }
 
-u16 HPI_SampleClock_GetSampleRate(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_SampleClock_GetSampleRate(HPI_HSUBSYS * phSubSys,
 				  HPI_HCONTROL hControlHandle,
 				  u32 * pdwSampleRate)
 {
 	u16 wError = 0;
 	u32 dwSampleRate = 0;
 	wError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_SAMPLECLOCK_SAMPLERATE, &dwSampleRate);
 	if (!wError)
 		if (pdwSampleRate)
@@ -2637,6 +2711,28 @@ u16 HPI_SampleClock_GetSampleRate(HPI_HSUBSYS * phSubSysHandle,
 }
 
 ///\}
+
+/////////////////////////////////////////////////////////////////////////////////
+/**\defgroup tonedetector Tone Detector control
+\{
+The tone detector monitors its inputs for the presence of any of a number of tones.
+
+Currently 25Hz and 35Hz tones can be detected independently on left and right channels.
+The result of the detection is reflected in the controls state, and optionally by sending an
+async event with the new sate.
+*/
+
+u16 HPI_ToneDetector_GetFrequency(HPI_HSUBSYS * phSubSys,
+				  HPI_HCONTROL hControl,
+				  u32 nIndex, u32 * dwFrequency)
+{
+	return HPI_ControlParamGet(phSubSys, hControl,
+				   HPI_TONEDETECTOR_FREQUENCY, nIndex, 0,
+				   dwFrequency, NULL);
+}
+
+///\}
+
 ///////////////////////////////////////////////////////////////////////////////
 /** \defgroup tuner Tuner Controls
 
@@ -2655,66 +2751,66 @@ the tuner frequency must subsequently be set using HPI_Tuner_SetFrequency().
 
 \sa HPI_ControlQuery() for details on determining the bands supported by a particular tuner.
 */
-u16 HPI_Tuner_SetBand(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, u16 wBand
+u16 HPI_Tuner_SetBand(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wBand
 		       /**< one of the \ref tuner_bands */
     )
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
-				   HPI_TUNER_BAND, wBand, 0);
+	return HPI_ControlParamSet(phSubSys, hControlHandle, HPI_TUNER_BAND,
+				   wBand, 0);
 }
 
 /** Set the RF gain of the tuner front end.
 */
-u16 HPI_Tuner_SetGain(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_SetGain(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle, short nGain)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
-				   HPI_TUNER_GAIN, nGain, 0);
+	return HPI_ControlParamSet(phSubSys, hControlHandle, HPI_TUNER_GAIN,
+				   nGain, 0);
 }
 
-u16 HPI_Tuner_SetFrequency(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_SetFrequency(HPI_HSUBSYS * phSubSys,
 			   HPI_HCONTROL hControlHandle, u32 wFreqInkHz)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
-				   HPI_TUNER_FREQ, wFreqInkHz, 0);
+	return HPI_ControlParamSet(phSubSys, hControlHandle, HPI_TUNER_FREQ,
+				   wFreqInkHz, 0);
 }
 
-u16 HPI_Tuner_GetBand(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetBand(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle, u16 * pwBand)
 {
 	u32 dwBand = 0;
 	u16 nError = 0;
 
 	nError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle, HPI_TUNER_BAND,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle, HPI_TUNER_BAND,
 				 &dwBand);
 	if (pwBand)
 		*pwBand = (u16) dwBand;
 	return nError;
 }
 
-u16 HPI_Tuner_GetGain(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetGain(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle, short *pnGain)
 {
 	u32 dwGain = 0;
 	u16 nError = 0;
 
 	nError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle, HPI_TUNER_GAIN,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle, HPI_TUNER_GAIN,
 				 &dwGain);
 	if (pnGain)
 		*pnGain = (u16) dwGain;
 	return nError;
 }
 
-u16 HPI_Tuner_GetFrequency(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetFrequency(HPI_HSUBSYS * phSubSys,
 			   HPI_HCONTROL hControlHandle, u32 * pwFreqInkHz)
 {
-	return HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
-				    HPI_TUNER_FREQ, pwFreqInkHz);
+	return HPI_ControlParam1Get(phSubSys, hControlHandle, HPI_TUNER_FREQ,
+				    pwFreqInkHz);
 }
 
-u16 HPI_Tuner_GetRFLevel(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetRFLevel(HPI_HSUBSYS * phSubSys,
 			 HPI_HCONTROL hControlHandle, short *pwLevel)
 {
 	HPI_MESSAGE hm;
@@ -2724,13 +2820,13 @@ u16 HPI_Tuner_GetRFLevel(HPI_HSUBSYS * phSubSysHandle,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_TUNER_LEVEL;
 	hm.u.c.dwParam1 = HPI_TUNER_LEVEL_AVERAGE;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pwLevel)
 		*pwLevel = (short)hr.u.c.dwParam1;
 	return (hr.wError);
 }
 
-u16 HPI_Tuner_GetRawRFLevel(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetRawRFLevel(HPI_HSUBSYS * phSubSys,
 			    HPI_HCONTROL hControlHandle, short *pwLevel)
 {
 	HPI_MESSAGE hm;
@@ -2740,7 +2836,7 @@ u16 HPI_Tuner_GetRawRFLevel(HPI_HSUBSYS * phSubSysHandle,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_TUNER_LEVEL;
 	hm.u.c.dwParam1 = HPI_TUNER_LEVEL_RAW;
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pwLevel)
 		*pwLevel = (short)hr.u.c.dwParam1;
 	return (hr.wError);
@@ -2749,21 +2845,21 @@ u16 HPI_Tuner_GetRawRFLevel(HPI_HSUBSYS * phSubSysHandle,
 /**
 \deprecated This function has been superceded by HPI_Tuner_GetStatus()
 */
-u16 HPI_Tuner_GetVideoStatus(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetVideoStatus(HPI_HSUBSYS * phSubSys,
 			     HPI_HCONTROL hControlHandle, u16 * pwStatus)
 {
 	u32 dwStatus = 0;
 	u16 nError = 0;
 
 	nError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
+	    HPI_ControlParam1Get(phSubSys, hControlHandle,
 				 HPI_TUNER_VIDEO_STATUS, &dwStatus);
 	if (pwStatus)
 		*pwStatus = (u16) dwStatus;
 	return nError;
 }
 
-u16 HPI_Tuner_GetStatus(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetStatus(HPI_HSUBSYS * phSubSys,
 			HPI_HCONTROL hControlHandle,
 			u16 * pwStatusMask, u16 * pwStatus)
 {
@@ -2772,8 +2868,8 @@ u16 HPI_Tuner_GetStatus(HPI_HSUBSYS * phSubSysHandle,
 
 // wStatusmask is in high 16bit word, wStatus is in low 16bit word
 	nError =
-	    HPI_ControlParam1Get(phSubSysHandle, hControlHandle,
-				 HPI_TUNER_STATUS, &dwStatus);
+	    HPI_ControlParam1Get(phSubSys, hControlHandle, HPI_TUNER_STATUS,
+				 &dwStatus);
 	if (pwStatus) {
 		if (!nError) {
 			*pwStatusMask = (u16) (dwStatus >> 16);
@@ -2786,18 +2882,18 @@ u16 HPI_Tuner_GetStatus(HPI_HSUBSYS * phSubSysHandle,
 	return nError;
 }
 
-u16 HPI_Tuner_SetMode(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_SetMode(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle, u32 nMode, u32 nValue)
 {
-	return HPI_ControlParamSet(phSubSysHandle, hControlHandle,
-				   HPI_TUNER_MODE, nMode, nValue);
+	return HPI_ControlParamSet(phSubSys, hControlHandle, HPI_TUNER_MODE,
+				   nMode, nValue);
 }
 
-u16 HPI_Tuner_GetMode(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_Tuner_GetMode(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle, u32 nMode, u32 * pnValue)
 {
-	return HPI_ControlParamGet(phSubSysHandle, hControlHandle,
-				   HPI_TUNER_MODE, nMode, 0, pnValue, 0);
+	return HPI_ControlParamGet(phSubSys, hControlHandle, HPI_TUNER_MODE,
+				   nMode, 0, pnValue, NULL);
 }
 
 /**\}*/
@@ -2805,25 +2901,26 @@ u16 HPI_Tuner_GetMode(HPI_HSUBSYS * phSubSysHandle,
 /** \defgroup volume Volume Control
 \{
 */
-u16 HPI_VolumeSetGain(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_VolumeSetGain(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle,
 		      short anLogGain[HPI_MAX_CHANNELS]
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	memcpy(hm.u.c.anLogValue, anLogGain, sizeof(short) * HPI_MAX_CHANNELS);
 	hm.u.c.wAttribute = HPI_VOLUME_GAIN;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
-u16 HPI_VolumeGetGain(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_VolumeGetGain(HPI_HSUBSYS * phSubSys,
 		      HPI_HCONTROL hControlHandle,
 		      short anLogGain[HPI_MAX_CHANNELS]
     )
@@ -2835,13 +2932,13 @@ u16 HPI_VolumeGetGain(HPI_HSUBSYS * phSubSysHandle,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_VOLUME_GAIN;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	memcpy(anLogGain, hr.u.c.anLogValue, sizeof(short) * HPI_MAX_CHANNELS);
 	return (hr.wError);
 }
 
-u16 HPI_VolumeQueryRange(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_VolumeQueryRange(HPI_HSUBSYS * phSubSys,
 			 HPI_HCONTROL hControlHandle,
 			 short *nMinGain_01dB,
 			 short *nMaxGain_01dB, short *nStepGain_01dB)
@@ -2853,7 +2950,7 @@ u16 HPI_VolumeQueryRange(HPI_HSUBSYS * phSubSysHandle,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_VOLUME_RANGE;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (hr.wError) {
 		hr.u.c.anLogValue[0] = hr.u.c.anLogValue[1] = 0;
 		hr.u.c.dwParam1 = (u32) 0;
@@ -2872,7 +2969,7 @@ the specified setting over the specified duration (in milliseconds )
 The profile can be either log or linear
 */
 
-u16 HPI_VolumeAutoFadeProfile(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hControlHandle, short anStopGain0_01dB[HPI_MAX_CHANNELS], u32 dwDurationMs, u16 wProfile	/* HPI_VOLUME_AUTOFADE_??? */
+u16 HPI_VolumeAutoFadeProfile(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, short anStopGain0_01dB[HPI_MAX_CHANNELS], u32 dwDurationMs, u16 wProfile	/* HPI_VOLUME_AUTOFADE_??? */
     )
 {
 	HPI_MESSAGE hm;
@@ -2889,17 +2986,17 @@ u16 HPI_VolumeAutoFadeProfile(HPI_HSUBSYS * phSubSysHandle, HPI_HCONTROL hContro
 	hm.u.c.wAttribute = wProfile;
 	hm.u.c.dwParam1 = dwDurationMs;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
-u16 HPI_VolumeAutoFade(HPI_HSUBSYS * phSubSysHandle,
+u16 HPI_VolumeAutoFade(HPI_HSUBSYS * phSubSys,
 		       HPI_HCONTROL hControlHandle,
 		       short anStopGain0_01dB[HPI_MAX_CHANNELS],
 		       u32 dwDurationMs)
 {
-	return HPI_VolumeAutoFadeProfile(phSubSysHandle,
+	return HPI_VolumeAutoFadeProfile(phSubSys,
 					 hControlHandle,
 					 anStopGain0_01dB,
 					 dwDurationMs, HPI_VOLUME_AUTOFADE);
@@ -2926,13 +3023,14 @@ The threshold will typically range between 0 and -100dB.
 On startup the VOX control is set to -100 dB.
 */
 
-u16 HPI_VoxSetThreshold(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_VoxSetThreshold(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			HPI_HCONTROL hControlHandle,	///< Handle of a vox control
 			short anGain0_01dB	///<  Trigger level in 100ths of a dB
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
@@ -2968,26 +3066,27 @@ fLinear = exp( log(10.0) * fDB/20.0 ) * 32767.0;
 	hm.u.c.anLogValue[0] = anGain0_01dB;	// only use the first index (LEFT)
 #endif
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
 /** Get the current threshold setting of a vox control
 */
-u16 HPI_VoxGetThreshold(HPI_HSUBSYS * phSubSysHandle,	///< Subsystem handle
+u16 HPI_VoxGetThreshold(HPI_HSUBSYS * phSubSys,	///< Subsystem handle
 			HPI_HCONTROL hControlHandle,	///< Handle of a vox contrl
 			short *anGain0_01dB	///<  [out] Trigger level in 100ths of a dB
     )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.c.wControlIndex);
 	hm.u.c.wAttribute = HPI_VOX_THRESHOLD;
 
-	HPI_Message(phSubSysHandle, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 #ifndef HPI_KERNEL_MODE
 /// \bug Requires floating point operations, not usable in kernel mode
@@ -3044,15 +3143,27 @@ u16 HPI_ClockOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CLOCK, HPI_CLOCK_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
+#ifdef TRY_NEW_HANDLE_STRUCT
+	if (hr.wError == 0) {
+		phClock->adapterIndex = wAdapterIndex;
+		phClock->dspIndex = 0;
+		phClock->objIndex = 0;
+		phClock->valid = 1;
+	} else
+		phClock->valid = 0;
+#else
 	if (hr.wError == 0)
 		*phClock = HPI_IndexesToHandle('T', wAdapterIndex, 0);	// only 1 clock obj per adapter
 	else
 		*phClock = 0;
+#endif
+
 	return (hr.wError);
 }
 
@@ -3063,13 +3174,20 @@ u16 HPI_ClockSetTime(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CLOCK, HPI_CLOCK_SET_TIME);
+#ifdef TRY_NEW_HANDLE_STRUCT
+	if (!hClock.valid)
+		return HPI_ERROR_OBJ_NOT_OPEN;
+	hm.wAdapterIndex = hClock.adapterIndex;
+#else
 	HPI_HANDLETOINDEXES(hClock, &hm.wAdapterIndex, NULL);
+#endif
 	hm.u.t.wMilliSeconds = wMilliSeconds;
 	hm.u.t.wSeconds = wSecond;
 	hm.u.t.wMinutes = wMinute;
 	hm.u.t.wHours = wHour;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3082,9 +3200,16 @@ u16 HPI_ClockGetTime(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CLOCK, HPI_CLOCK_GET_TIME);
+#ifdef TRY_NEW_HANDLE_STRUCT
+	if (!hClock.valid)
+		return HPI_ERROR_OBJ_NOT_OPEN;
+	hm.wAdapterIndex = hClock.adapterIndex;
+#else
 	HPI_HANDLETOINDEXES(hClock, &hm.wAdapterIndex, NULL);
-	HPI_Message(phSubSys, &hm, &hr);
+#endif
+	HPI_Message(&hm, &hr);
 	if (pwMilliSecond)
 		*pwMilliSecond = hr.u.t.wMilliSeconds;
 	if (pwSecond)
@@ -3115,10 +3240,11 @@ u16 HPI_GpioOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
 		*phGpio = HPI_IndexesToHandle('L', wAdapterIndex, 0);	// only 1 digital i/o obj per adapter
@@ -3137,11 +3263,12 @@ u16 HPI_GpioReadBit(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_READ_BIT);
 	HPI_HANDLETOINDEXES(hGpio, &hm.wAdapterIndex, NULL);	// only one dig i/o obj per adapter
 	hm.u.l.wBitIndex = wBitIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwBitData = hr.u.l.wBitData;
 	return (hr.wError);
@@ -3153,10 +3280,11 @@ u16 HPI_GpioReadAllBits(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_READ_ALL);
 	HPI_HANDLETOINDEXES(hGpio, &hm.wAdapterIndex, NULL);	// only one dig i/o obj per adapter
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwBitData = hr.u.l.wBitData;
 	return (hr.wError);
@@ -3168,12 +3296,13 @@ u16 HPI_GpioWriteBit(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_WRITE_BIT);
 	HPI_HANDLETOINDEXES(hGpio, &hm.wAdapterIndex, NULL);	// only one dig i/o obj per adapter
 	hm.u.l.wBitIndex = wBitIndex;
 	hm.u.l.wBitData = wBitData;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3245,10 +3374,11 @@ u16 HPI_AsyncEventOpen(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
 		*phAsync = HPI_IndexesToHandle('E', wAdapterIndex, 0);	// only 1 nv-memory obj per adapter
@@ -3267,10 +3397,11 @@ u16 HPI_AsyncEventClose(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_OPEN);
 	HPI_HANDLETOINDEXES(hAsync, &hm.wAdapterIndex, NULL);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3301,10 +3432,11 @@ u16 HPI_AsyncEventGetCount(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_GETCOUNT);
 	HPI_HANDLETOINDEXES(hAsync, &hm.wAdapterIndex, NULL);
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		if (pwCount)
@@ -3325,7 +3457,19 @@ u16 HPI_AsyncEventGet(HPI_HSUBSYS * phSubSys,	///< Subsystem handle.
 		      u16 * pwNumberReturned	///< Number events returned.
     )
 {
-	return (0);
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
+	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_GET);
+	HPI_HANDLETOINDEXES(hAsync, &hm.wAdapterIndex, NULL);
+
+	HPI_Message(&hm, &hr);
+	if (!hr.wError) {
+		memcpy(pEvents, &hr.u.as.u.event, sizeof(HPI_ASYNC_EVENT));
+		*pwNumberReturned = 1;
+	}
+
+	return (hr.wError);
 }
 
 ///\}
@@ -3347,10 +3491,11 @@ u16 HPI_NvMemoryOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
 		*phNvMemory = HPI_IndexesToHandle('N', wAdapterIndex, 0);	// only 1 nv-memory obj per adapter
@@ -3366,11 +3511,12 @@ u16 HPI_NvMemoryReadByte(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_READ_BYTE);
 	HPI_HANDLETOINDEXES(hNvMemory, &hm.wAdapterIndex, NULL);	// only one NvMem obj per adapter
 	hm.u.n.wIndex = wIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwData = hr.u.n.wData;
 	return (hr.wError);
@@ -3381,12 +3527,13 @@ u16 HPI_NvMemoryWriteByte(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_WRITE_BYTE);
 	HPI_HANDLETOINDEXES(hNvMemory, &hm.wAdapterIndex, NULL);	// only one NvMem obj per adapter
 	hm.u.n.wIndex = wIndex;
 	hm.u.n.wData = wData;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3417,10 +3564,11 @@ u16 HPI_ProfileOpenAll(HPI_HSUBSYS * phSubSys,	///<[in] HPI subsystem handle
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_OPEN_ALL);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.wDspIndex = wProfileIndex;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	*pwMaxProfiles = hr.u.p.u.o.wMaxProfiles;
 	if (hr.wError == 0)
@@ -3441,10 +3589,11 @@ u16 HPI_ProfileGet(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	hm.u.p.wIndex = wIndex;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (pwSeconds)
 		*pwSeconds = hr.u.p.u.t.wSeconds;
 	if (pdwMicroSeconds)
@@ -3467,10 +3616,11 @@ u16 HPI_ProfileGetIdleCount(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_IDLECOUNT);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	hm.u.p.wIndex = wIndex;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (hr.wError) {
 		if (pdwIdleCycles)
 			*pdwIdleCycles = 0;
@@ -3494,9 +3644,10 @@ u16 HPI_ProfileGetUtilization(HPI_HSUBSYS * phSubSys,	///<[in] HPI subsystem han
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_UTILIZATION);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (hr.wError) {
 		if (pdwUtilization)
 			*pdwUtilization = 0;
@@ -3509,14 +3660,15 @@ u16 HPI_ProfileGetUtilization(HPI_HSUBSYS * phSubSys,	///<[in] HPI subsystem han
 
 u16 HPI_ProfileGetName(HPI_HSUBSYS * phSubSys,
 		       HPI_HPROFILE hProfile,
-		       u16 wIndex, u8 * szName, u16 nNameLength)
+		       u16 wIndex, char *szName, u16 nNameLength)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_NAME);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
 	hm.u.p.wIndex = wIndex;
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 	if (hr.wError) {
 		if (szName)
 			strcpy(szName, "??");
@@ -3531,9 +3683,10 @@ u16 HPI_ProfileStartAll(HPI_HSUBSYS * phSubSys, HPI_HPROFILE hProfile)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_START_ALL);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3542,9 +3695,10 @@ u16 HPI_ProfileStopAll(HPI_HSUBSYS * phSubSys, HPI_HPROFILE hProfile)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_STOP_ALL);
 	HPI_HANDLETOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3562,10 +3716,11 @@ u16 HPI_WatchdogOpen(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		*phWatchdog = HPI_IndexesToHandle('W', wAdapterIndex, 0);	// only 1 watchdog obj per adapter
@@ -3582,11 +3737,12 @@ u16 HPI_WatchdogSetTime(HPI_HSUBSYS * phSubSys,
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_SET_TIME);
 	HPI_HANDLETOINDEXES(hWatchdog, &hm.wAdapterIndex, NULL);	// only one watchdog obj per adapter
 	hm.u.w.dwTimeMs = dwTimeMillisec;
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3596,10 +3752,11 @@ u16 HPI_WatchdogPing(HPI_HSUBSYS * phSubSys, HPI_HWATCHDOG hWatchdog)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_PING);
 	HPI_HANDLETOINDEXES(hWatchdog, &hm.wAdapterIndex, NULL);	// only one watchdog obj per adapter
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
@@ -3638,6 +3795,9 @@ u16 HPI_AES18BGSetConfiguration(HPI_HSUBSYS * phSubSys,
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_MSG_AES18BG *pAes18BGSetConfiguration = &hm.u.cx.u.aes18bg;
+
+	UNUSED(phSubSys);
+
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -3685,7 +3845,7 @@ u16 HPI_AES18BGSetConfiguration(HPI_HSUBSYS * phSubSys,
 
 #ifndef HAS_AES18_ON_HOST
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_BLOCKGENERATOR, &hm, &hr);
@@ -3704,6 +3864,9 @@ u16 HPI_AES18RxSetAddress(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_MSG_AES18RX_ADDRESS *pAes18RxSetAddress =
 	    &hm.u.cx.u.aes18rx_address;
+
+	UNUSED(phSubSys);
+
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -3722,7 +3885,7 @@ return(HPI_ERROR_AES18_INVALID_ADDRESS);
 		pAes18RxSetAddress->wAddress[i] = awDecoderAddress[i];
 	}
 #ifndef HAS_AES18_ON_HOST
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_RECEIVER, &hm, &hr);
@@ -3753,6 +3916,8 @@ u16 HPI_AES18RxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18RX_BUFFER_STATE *pAes18RxGetIBState =
 	    &hr.u.cx.u.aes18rx_internal_buffer_state;
+	UNUSED(phSubSys);
+
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -3760,7 +3925,7 @@ u16 HPI_AES18RxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
 
 #ifndef HAS_AES18_ON_HOST
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_RECEIVER, &hm, &hr);
@@ -3818,6 +3983,8 @@ u16 HPI_AES18RxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18RX_BUFFER_SIZE *pAes18RxGetIBSize =
 	    &hr.u.cx.u.aes18rx_internal_buffer_size;
+
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -3825,7 +3992,7 @@ u16 HPI_AES18RxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
 
 #ifndef HAS_AES18_ON_HOST
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_RECEIVER, &hm, &hr);
@@ -3843,8 +4010,7 @@ u16 HPI_AES18RxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
 }
 
 u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u16 wChannel, u16 wPriority, u16 wQueueSize,	// In bytes
-			  u32 dwpbMessage,	// Actually a pointer to bytes
-			  u16 * pwMessageLength	// in bytes
+			  u8 * pbMessage, u16 * pwMessageLength	// in bytes
     )
 {
 	HPI_MESSAGE hm;
@@ -3853,6 +4019,8 @@ u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u
 	    &hr.u.cx.u.aes18rx_get_message;
 	HPI_CONTROLX_MSG_AES18RX_GET_MESSAGE *pAes18MsgRxGetMessage =
 	    &hm.u.cx.u.aes18rx_get_message;
+
+	UNUSED(phSubSys);
 
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
@@ -3869,11 +4037,11 @@ u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u
 	pAes18MsgRxGetMessage->wChannel = wChannel;
 	pAes18MsgRxGetMessage->wPriority = wPriority;
 	pAes18MsgRxGetMessage->wQueueSize = wQueueSize;
-	pAes18MsgRxGetMessage->dwpbMessage = dwpbMessage;
+	pAes18MsgRxGetMessage->dwpbMessage = (PTR32) pbMessage;
 
 #ifndef HAS_AES18_ON_HOST
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_RECEIVER, &hm, &hr);
@@ -3888,7 +4056,7 @@ u16 HPI_AES18RxGetMessage(HPI_HSUBSYS * phSubSys, HPI_HCONTROL hControlHandle, u
 u16 HPI_AES18TxSendMessage(HPI_HSUBSYS * phSubSys,
 			   HPI_HCONTROL hControlHandle,
 			   u16 wChannel,
-			   u32 dwpbMessage,
+			   u8 * pbMessage,
 			   u16 wMessageLength,
 			   u16 wDestinationAddress,
 			   u16 wPriorityIndex, u16 wRepetitionIndex)
@@ -3898,6 +4066,7 @@ u16 HPI_AES18TxSendMessage(HPI_HSUBSYS * phSubSys,
 	HPI_CONTROLX_MSG_AES18TX_SEND_MESSAGE *pAes18SendMsg =
 	    &hm.u.cx.u.aes18tx_send_message;
 
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -3920,15 +4089,14 @@ return(HPI_ERROR_AES18_INVALID_ADDRESS);
 		return (HPI_ERROR_AES18_INVALID_REPETITION);
 
 	pAes18SendMsg->wChannel = wChannel;
-	pAes18SendMsg->dwpbMessage = dwpbMessage;
+	pAes18SendMsg->dwpbMessage = (PTR_AS_NUMBER) pbMessage;
 	pAes18SendMsg->wMessageLength = wMessageLength;
 	pAes18SendMsg->wDestinationAddress = wDestinationAddress;
 	pAes18SendMsg->wPriorityIndex = wPriorityIndex;
 	pAes18SendMsg->wRepetitionIndex = wRepetitionIndex;
 
 #ifndef HAS_AES18_ON_HOST
-
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_TRANSMITTER, &hm, &hr);
@@ -3950,6 +4118,8 @@ u16 HPI_AES18TxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18TX_BUFFER_STATE *pAes18TxGetIBState =
 	    &hr.u.cx.u.aes18tx_internal_buffer_state;
+	UNUSED(phSubSys);
+
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
@@ -3959,7 +4129,7 @@ u16 HPI_AES18TxGetInternalBufferState(HPI_HSUBSYS * phSubSys,
 
 #ifndef HAS_AES18_ON_HOST
 
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
 
 	AES18_Message(HPI_CONTROL_AES18_TRANSMITTER, &hm, &hr);
@@ -3995,16 +4165,15 @@ u16 HPI_AES18TxGetInternalBufferSize(HPI_HSUBSYS * phSubSys,
 	HPI_RESPONSE hr;
 	HPI_CONTROLX_RES_AES18TX_BUFFER_SIZE *pAes18TxGetIBSize =
 	    &hr.u.cx.u.aes18tx_internal_buffer_size;
+	UNUSED(phSubSys);
 	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
 	HPI_HANDLETOINDEXES(hControlHandle, &hm.wAdapterIndex,
 			    &hm.u.cx.wControlIndex);
 	hm.u.cx.wAttribute = HPI_AES18_INTERNAL_BUFFER_SIZE;
 
 #ifndef HAS_AES18_ON_HOST
-
-	HPI_Message(phSubSys, &hm, &hr);
+	HPI_Message(&hm, &hr);
 #else
-
 	AES18_Message(HPI_CONTROL_AES18_TRANSMITTER, &hm, &hr);
 #endif
 
@@ -4079,17 +4248,23 @@ void AES18_Message(int wControlType, HPI_MESSAGE * pHm, HPI_RESPONSE * pHr)
 @{
 */
 
+#if 0
+/// global to store specifc errors for use by HPI_GetLastErrorDetail
+u32 gadwHpiSpecificError[4] = { 0, 0, 0, 0 };
+
 /// Get HW specific errors
 void HPI_GetLastErrorDetail(u16 wError, char *pszErrorText,
 			    u32 ** padwSpecificError)
 {
+/* Need to get this via HPI message interface */
 	*padwSpecificError = &gadwHpiSpecificError[0];	// send back pointer to array of errors
 	HPI_GetErrorText(wError, pszErrorText);
 }
+#endif
 
 /**
-\deprecated  This function was marked obsolete - don't know why?
 */
+
 void HPI_GetErrorText(u16 wError, char *pszErrorText)
 {
 	strcpy(pszErrorText, " ");
@@ -4135,6 +4310,12 @@ void HPI_GetErrorText(u16 wError, char *pszErrorText)
 	case HPI_ERROR_NETWORK_TIMEOUT:	//110
 		strcat(pszErrorText, "Network timeout waiting for response");
 		break;
+	case HPI_ERROR_INVALID_HANDLE:	//111
+		strcat(pszErrorText, "Invalid HPI handle (uninitialised?)");
+		break;
+	case HPI_ERROR_UNIMPLEMENTED:	//1112
+		strcat(pszErrorText, "Functionality not yet implemented");
+		break;
 
 	case HPI_ERROR_TOO_MANY_ADAPTERS:	//200
 		strcat(pszErrorText, "Too many adapters");
@@ -4157,12 +4338,65 @@ void HPI_GetErrorText(u16 wError, char *pszErrorText)
 	case HPI_ERROR_DSP_FILE_NOT_FOUND:	//206
 		strcat(pszErrorText, "Failed to find/open DSP code file");
 		break;
+	case HPI_ERROR_DSP_HARDWARE:	//207
+		strcat(pszErrorText, "internal DSP hardware error");
+		break;
+	case HPI_ERROR_DOS_MEMORY_ALLOC:	//208
+		strcat(pszErrorText, "could not allocate memory in DOS");
+		break;
 	case HPI_ERROR_PLD_LOAD:	//209
 		strcat(pszErrorText, "PLD could not be configured");
 		break;
 	case HPI_ERROR_DSP_FILE_FORMAT:	//210
 		strcat(pszErrorText,
 		       "Invalid DSP code file format (corrupt file?)");
+		break;
+
+	case HPI_ERROR_DSP_FILE_ACCESS_DENIED:	//211
+		strcat(pszErrorText, "Found but could not open DSP code file");
+		break;
+	case HPI_ERROR_DSP_FILE_NO_HEADER:	//212
+		strcat(pszErrorText,
+		       "First DSP code section header not found in DSP file");
+		break;
+	case HPI_ERROR_DSP_FILE_READ_ERROR:	//213
+		strcat(pszErrorText,
+		       "File read operation on DSP code file failed");
+		break;
+	case HPI_ERROR_DSP_SECTION_NOT_FOUND:	//214
+		strcat(pszErrorText, "DSP code for adapter family not found");
+		break;
+	case HPI_ERROR_DSP_FILE_OTHER_ERROR:	//215
+		strcat(pszErrorText,
+		       "Other OS specific error opening DSP file");
+		break;
+	case HPI_ERROR_DSP_FILE_SHARING_VIOLATION:	//216
+		strcat(pszErrorText, "Sharing violation opening DSP code file");
+		break;
+
+	case HPI_ERROR_BAD_CHECKSUM:	//221
+		strcat(pszErrorText,
+		       "Flash - could not determine a valid checksum");
+		break;
+	case HPI_ERROR_BAD_SEQUENCE:	//222
+		strcat(pszErrorText,
+		       "Flash - bad packet sequence number during flash programming");
+		break;
+	case HPI_ERROR_FLASH_ERASE:	//223
+		strcat(pszErrorText, "Flash - erase failed");
+		break;
+	case HPI_ERROR_FLASH_PROGRAM:	//224
+		strcat(pszErrorText, "Flash - programming failed");
+		break;
+	case HPI_ERROR_FLASH_VERIFY:	//225
+		strcat(pszErrorText, "Flash - verification failed");
+		break;
+	case HPI_ERROR_FLASH_TYPE:	//226
+		strcat(pszErrorText, "Flash - wrong type of flash on hardware");
+		break;
+	case HPI_ERROR_FLASH_START:	//227
+		strcat(pszErrorText,
+		       "Flash - command to start programming sequence failed");
 		break;
 
 	case HPI_ERROR_INVALID_STREAM:	//300
@@ -4261,6 +4495,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 		wChannels = 1;
 	if (wChannels > 8)
 		wChannels = 8;
+
 	pFormat->wChannels = wChannels;
 
 // make sure we have a valid audio format
@@ -4346,7 +4581,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 static unsigned char PcmSubformatGUID[16] =
     { 1, 0, 0, 0, 0, 0, 0x10, 0, 0x80, 0, 0, 0xAA, 0, 0x38, 0x9B, 0x71 };
 
-u16 HPI_WaveFormatToHpiFormat(const WAVEFORMATEX * lpFormatEx,
+u16 HPI_WaveFormatToHpiFormat(const PWAVEFORMATEX lpFormatEx,
 			      HPI_FORMAT * pHpiFormat)
 {
 	u16 wError = 0;
@@ -4435,7 +4670,7 @@ u16 HPI_WaveFormatToHpiFormat(const WAVEFORMATEX * lpFormatEx,
 }
 
 u16 HPI_HpiFormatToWaveFormat(const HPI_FORMAT * pHpiFormat,
-			      WAVEFORMATEX * lpFormatEx)
+			      PWAVEFORMATEX lpFormatEx)
 {
 	u16 wError = 0;
 
@@ -4543,7 +4778,7 @@ u16 HPI_DataCreate(HPI_DATA * pData,	///<[inout] Structure to be initialised
     )
 {
 	memcpy(&pData->Format, pFormat, sizeof(HPI_FORMAT));
-	pData->dwpbData = (u32) pbData;
+	pData->dwpbData = (PTR_AS_NUMBER) pbData;
 	pData->dwDataSize = dwDataSize;
 	return (0);
 }
