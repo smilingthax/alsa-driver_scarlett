@@ -10,6 +10,14 @@
 #include <sound/driver.h>
 #include <linux/usb.h>
 
+#ifndef USB_DT_CS_DEVICE
+#define USB_DT_CS_DEVICE		0x21
+#define USB_DT_CS_CONFIG		0x22
+#define USB_DT_CS_STRING		0x23
+#define USB_DT_CS_INTERFACE		0x24
+#define USB_DT_CS_ENDPOINT		0x25
+#endif
+
 #ifdef OLD_USB
 static void * usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
                               const struct usb_device_id *id);
