@@ -412,15 +412,21 @@ static struct cond * create_cond(char *line)
 			nomem();
 		if (strcmp(cond->name, "EMPTY"))
 			find_or_create_dep(word);
-		if (get_word(line, word)) {
+		while (get_word(line, word)) {
 			if (!strcmp(word, "&&"))
 				cond->type = COND_AND;
 			else if (!strcmp(word, "||"))
 				cond->type = COND_OR;
+			else if (!strcmp(word, "!=")) {
+				get_word(line, word);
+				continue;
+			} else if (!strcmp(word, "!=n"))
+				continue;
 			else {
 				fprintf(stderr, "Wrong condition %s\n", word);
 				exit(EXIT_FAILURE);
 			}
+			break;
 		}
 	}
 	free(word);
