@@ -220,7 +220,7 @@ static void snd_pdacf_detach(struct pcmcia_device *p_dev)
 		snd_pdacf_powerdown(chip);
 	chip->chip_status |= PDAUDIOCF_STAT_IS_STALE; /* to be sure */
 	snd_card_disconnect(chip->card);
-	snd_card_free_in_thread(chip->card);
+	snd_card_free_when_closed(chip->card);
 }
 
 /*
