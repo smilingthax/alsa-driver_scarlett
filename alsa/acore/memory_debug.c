@@ -169,7 +169,6 @@ int __init snd_memory_info_init(void)
 
 void __exit snd_memory_info_done(void)
 {
-	if (snd_memory_info_entry)
-		snd_info_unregister(snd_memory_info_entry);
+	snd_info_free_entry(snd_memory_info_entry);
 }
 #endif
