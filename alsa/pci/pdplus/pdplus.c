@@ -6175,14 +6175,11 @@ static void __devexit pdplus_remove(pci_dev_t *pci)
 }
 
 static struct pci_device_id pdplus_ids[] = {
-        {
-                PCI_VENDOR_ID_MARIAN,
-                PCI_DEVICE_ID_MARIAN_PRODIF_PLUS,
-                PCI_ANY_ID, PCI_ANY_ID,
-                0, 0, 0,
-        },
+        { PCI_DEVICE(PCI_VENDOR_ID_MARIAN, PCI_DEVICE_ID_MARIAN_PRODIF_PLUS) },
         { 0, }
 };
+
+MODULE_DEVICE_TABLE(pci, pdplus_ids);
 
 /* ********************************************************************** */
 
