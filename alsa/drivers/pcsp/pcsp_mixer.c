@@ -8,7 +8,7 @@
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/control.h>
-#include "pcsp_defs.h"
+#include "pcsp.h"
 #include "pcsp_tabs.h"
 
 /*
@@ -165,6 +165,37 @@ static int pcsp_treble_put(struct snd_kcontrol *kcontrol,
 	return changed;
 }
 
+static int pcsp_pcspkr_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int pcsp_pcspkr_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = chip->pcspkr;
+	return 0;
+}
+
+static int pcsp_pcspkr_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
+	int changed = 0;
+	int spkr = ucontrol->value.integer.value[0];
+	if (spkr != chip->pcspkr) {
+		chip->pcspkr = spkr;
+		changed = 1;
+	}
+	return changed;
+}
+
 #define PCSP_MIXER_CONTROL(ctl_type, ctl_name) \
 { \
 	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER, \
@@ -179,6 +210,7 @@ static struct snd_kcontrol_new __initdata snd_pcsp_controls[] = {
 	PCSP_MIXER_CONTROL(enable, "Master Playback Switch"),
 	PCSP_MIXER_CONTROL(gain, "PCM Playback Volume"),
 	PCSP_MIXER_CONTROL(treble, "BaseFRQ Playback Volume"),
+	PCSP_MIXER_CONTROL(pcspkr, "PC Speaker Playback Switch"),
 };
 
 int __init snd_pcsp_new_mixer(struct snd_pcsp *chip)

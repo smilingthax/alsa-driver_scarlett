@@ -131,8 +131,8 @@ const unsigned int pcsp_max_gain = (ARRAY_SIZE(pcsp_tabs) - 1);
 #include <math.h>
 
 int main(int argc, char *argv[]) {
-int i, j, amp;
-double val;
+  int i, j, amp;
+  double val;
   if (argc==2)
     amp=atoi(argv[1]);
   else
