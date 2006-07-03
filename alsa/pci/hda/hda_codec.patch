@@ -1,6 +1,6 @@
---- ../../alsa-kernel/pci/hda/hda_codec.c	2005-05-23 16:19:31.000000000 +0200
-+++ hda_codec.c	2005-05-27 12:20:13.000000000 +0200
-@@ -225,6 +225,8 @@
+--- ../../alsa-kernel/pci/hda/hda_codec.c	2006-07-01 16:43:21.000000000 +0200
++++ hda_codec.c	2006-07-01 18:38:41.000000000 +0200
+@@ -232,6 +232,8 @@
  }
  
  
@@ -9,7 +9,7 @@
  /**
   * snd_hda_queue_unsol_event - add an unsolicited event to queue
   * @bus: the BUS
-@@ -304,6 +306,20 @@
+@@ -316,6 +318,22 @@
  	return 0;
  }
  
@@ -19,6 +19,8 @@
 +{
 +	return 0;
 +}
++
++EXPORT_SYMBOL(snd_hda_queue_unsol_event);
 +
 +static int init_unsol_queue(struct hda_bus *bus)
 +{
@@ -30,7 +32,7 @@
  /*
   * destructor
   */
-@@ -316,7 +332,9 @@
+@@ -328,7 +346,9 @@
  	if (! bus)
  		return 0;
  	if (bus->unsol) {
