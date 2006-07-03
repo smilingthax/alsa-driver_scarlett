@@ -1425,7 +1425,7 @@ static int  pdplus_set_mode (pdplus_t *scard, int mode);
 
 /* ********************************************************************** */
 
-static vm_offset_t __init pdplus_remap_pci_mem (u_long base, u_long size)
+static vm_offset_t __devinit pdplus_remap_pci_mem (u_long base, u_long size)
 {
         u_long page_base    = ((u_long) base) & PAGE_MASK;
         u_long page_offs    = ((u_long) base) - page_base;
@@ -1439,7 +1439,7 @@ static vm_offset_t __init pdplus_remap_pci_mem (u_long base, u_long size)
         return (vm_offset_t) (page_remapped ? (page_remapped + page_offs) : NULL);
 }
 
-static void __exit pdplus_unmap_pci_mem (snd_iomem_t *mem)
+static void pdplus_unmap_pci_mem (snd_iomem_t *mem)
 {
         if (mem) {
         	if (mem->vaddr)
@@ -1905,7 +1905,7 @@ static void pdplus_init_circuit_ll (pdplus_t *scard)
 
 /*
  * Shutdown the card via a local reset */
-static void __exit pdplus_shutdown_ll (pdplus_t *scard)
+static void pdplus_shutdown_ll (pdplus_t *scard)
 {
         if ((scard->PLX_iomem.vaddr) == 0)
                 return;
