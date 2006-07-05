@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2006-07-03 15:44:42.000000000 +0200
-+++ sound.c	2006-07-03 15:50:40.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2006-07-04 22:28:05.000000000 +0200
++++ sound.c	2006-07-04 22:30:46.000000000 +0200
 @@ -41,6 +41,9 @@
  EXPORT_SYMBOL(snd_major);
  
@@ -47,7 +47,29 @@
  	.open =		snd_open
  };
  
-@@ -267,9 +284,18 @@
+@@ -244,7 +261,11 @@
+ 	struct device *device = NULL;
+ 
+ 	snd_assert(name, return -EINVAL);
++#ifdef CONFIG_DEVFS_FS
++	preg = kmalloc(sizeof(*preg) + strlen(name) + 1, GFP_KERNEL);
++#else
+ 	preg = kmalloc(sizeof *preg, GFP_KERNEL);
++#endif
+ 	if (preg == NULL)
+ 		return -ENOMEM;
+ 	preg->type = type;
+@@ -252,6 +273,9 @@
+ 	preg->device = dev;
+ 	preg->f_ops = f_ops;
+ 	preg->private_data = private_data;
++#ifdef CONFIG_DEVFS_FS
++	strcpy((char *)(preg + 1), name);
++#endif
+ 	mutex_lock(&sound_mutex);
+ #ifdef CONFIG_SND_DYNAMIC_MINORS
+ 	minor = snd_find_free_minor();
+@@ -266,9 +290,18 @@
  		return minor;
  	}
  	snd_minors[minor] = preg;
@@ -66,14 +88,14 @@
  
  	mutex_unlock(&sound_mutex);
  	return 0;
-@@ -306,7 +332,17 @@
+@@ -305,7 +338,17 @@
  		return -EINVAL;
  	}
  
 +#ifdef CONFIG_DEVFS_FS
 +	if (mptr->type != SNDRV_DEVICE_TYPE_CONTROL ||
 +	    mptr->card >= cards_limit) /* created in sound.c */
-+		devfs_remove("snd/%s", mptr->name);
++		devfs_remove("snd/%s", (char *)(mptr + 1));
 +#endif
 +
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
@@ -84,7 +106,7 @@
  
  	snd_minors[minor] = NULL;
  	mutex_unlock(&sound_mutex);
-@@ -397,32 +433,81 @@
+@@ -396,32 +439,81 @@
   *  INIT PART
   */
  
