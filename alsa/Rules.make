@@ -85,13 +85,13 @@ endif
 #
 
 %.s: %.c
-	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) -S $< -o $@
+	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR($(subst $(comma),_,$(subst -,_,$(*F))))" $(CFLAGS_$@) -S $< -o $@
 
 %.i: %.c
-	$(CPP) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< > $@
+	$(CPP) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR($(subst $(comma),_,$(subst -,_,$(*F))))" $(CFLAGS_$@) $(CFLAGS_$@) $< > $@
 
 %.o: %.c
-	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) -c -o $@ $<
+	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR($(subst $(comma),_,$(subst -,_,$(*F))))" $(CFLAGS_$@) $(CFLAGS_$@) -c -o $@ $<
 
 %.o: %.s
 	$(AS) -D__KERNEL__ $(AFLAGS) $(EXTRA_CFLAGS) -o $@ $<
@@ -118,7 +118,7 @@ endif
 
 %.isapnp: %.c
 ifeq (y,$(CONFIG_ISAPNP))
-	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< | awk -f $(TOPDIR)/utils/convert_isapnp_ids > $@
+	$(CPP) -C -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -D__isapnp_now__ -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR($(subst $(comma),_,$(subst -,_,$(*F))))" $(CFLAGS_$@) $(CFLAGS_$@) $< | awk -f $(TOPDIR)/utils/convert_isapnp_ids > $@
 else
 	rm -f $@
 	touch $@
