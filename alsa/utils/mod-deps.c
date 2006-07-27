@@ -175,6 +175,7 @@ static const char *kernel26_opts[] = {
 	"SND_AC97_BUS",
 	"SND_PXA2XX_PCM",
 	"SND_AOA",
+	"SND_MTS64",
 	NULL,
 };
 

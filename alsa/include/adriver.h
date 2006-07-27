@@ -98,9 +98,19 @@ typedef __u32 __be32;
 #endif /* LINUX_2_2 */
 
 #ifdef LINUX_2_4__donotuse
+#include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/pm.h>
+#include <linux/list.h>
+#include <asm/processor.h>
 #include <asm/page.h>
+#ifndef likely
+#define likely(x)	x
+#define unlikely(x)	x
+#endif
+#ifndef cpu_relax
+#define cpu_relax()
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)
 #define pci_set_dma_mask(pci, mask) (pci->dma_mask = mask, 0)
 #endif
@@ -114,6 +124,9 @@ typedef __u32 __be32;
 #ifndef rwlock_init
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 9)
+#define prefetch(x)	x
+#endif
 #ifndef list_for_each_safe
 #define list_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
@@ -126,6 +139,7 @@ typedef __u32 __be32;
              pos = list_entry(pos->member.next, typeof(*pos), member),  \
                      prefetch(pos->member.next))
 #endif
+static inline int might_sleep(void)	{ return 0; }
 #endif /* LINUX_2_4__donotuse */
 
 #ifndef __devexit_p
