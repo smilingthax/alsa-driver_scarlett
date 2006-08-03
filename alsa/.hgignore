@@ -58,6 +58,9 @@ pci/hda/hda_codec.c
 pci/intel8x0.c
 pci/maestro3.c
 pci/riptide/riptide.c
+ppc/awacs.c
+ppc/beep.c
+ppc/tumbler.c
 usb/usbaudio.c
 usb/usbmidi.c
 usb/usbmixer.c
