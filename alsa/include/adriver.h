@@ -959,10 +959,6 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #define printk_ratelimit()	1
 #endif
 
-#ifndef might_sleep
-#define might_sleep() do { } while (0)
-#endif
-
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 #define wait_ms gameport_wait_ms
 #include <linux/gameport.h>
