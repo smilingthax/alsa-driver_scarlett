@@ -137,7 +137,11 @@ AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "$KERNDIR/include/linux/version.h"
+#ifndef UTS_RELEASE
+#include "$KERNDIR/include/linux/utsrelease.h"
+#endif
 int main()
 {
  FILE *f;
@@ -598,6 +602,7 @@ rm -f include/asm/*.h
 
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
+CHECK_KERNEL_HEADER(linux/utsrelease.h)
 CHECK_KERNEL_HEADER(linux/compiler.h)
 CHECK_KERNEL_HEADER(linux/pm.h)
 CHECK_KERNEL_HEADER(linux/spinlock.h)
@@ -1763,6 +1768,7 @@ AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/videodev.h>
+#include <media/v4l2-dev.h>
 ],[
   void *(*func)(struct video_device *);
   func = video_get_drvdata;
@@ -2296,6 +2302,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#include <linux/config.h>
 #include <linux/device.h>
 ],[
   struct class_simple *(*foo)(struct module *, char *) = class_simple_create;
@@ -2324,6 +2331,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#include <linux/config.h>
 #include <linux/device.h>
 ],[
   static struct device_driver driver;
@@ -2379,6 +2387,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#include <linux/config.h>
 #include <linux/device.h>
 ],[
   struct class_device dev;
