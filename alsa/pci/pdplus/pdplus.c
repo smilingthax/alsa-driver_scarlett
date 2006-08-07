@@ -6039,10 +6039,10 @@ static int __devinit pdplus_init(
         strcpy (card->driver, DEVICE_NAME);
         strcpy (card->shortname, FULL_NAME);
         sprintf(card->longname, FULL_NAME" at 0x%lx,0x%lx,0x%lx,0x%lx, irq %d",
-                pci_resource_start (scard->pci, 0),
-                pci_resource_start (scard->pci, 2),
-                pci_resource_start (scard->pci, 3),
-                pci_resource_start (scard->pci, 4),
+                (unsigned long)pci_resource_start (scard->pci, 0),
+                (unsigned long)pci_resource_start (scard->pci, 2),
+                (unsigned long)pci_resource_start (scard->pci, 3),
+                (unsigned long)pci_resource_start (scard->pci, 4),
                 scard->irq);
 
         if ((err = snd_card_register(card)) >= 0) {
