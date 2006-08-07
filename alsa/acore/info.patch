@@ -1,27 +1,28 @@
---- ../alsa-kernel/core/info.c	2006-01-09 17:52:50.000000000 +0100
-+++ info.c	2006-01-09 17:55:41.000000000 +0100
+--- ../alsa-kernel/core/info.c	2006-08-04 19:08:04.000000000 +0200
++++ info.c	2006-08-07 18:25:02.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "info.inc"
  /*
   *  Information interface for ALSA driver
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -20,6 +21,7 @@
+@@ -20,6 +21,8 @@
   */
  
  #include <sound/driver.h>
 +#include <linux/version.h>
++#include <linux/utsrelease.h>
  #include <linux/init.h>
- #include <linux/vmalloc.h>
  #include <linux/time.h>
-@@ -120,6 +122,7 @@
- struct snd_info_entry *snd_oss_root = NULL;
+ #include <linux/smp_lock.h>
+@@ -151,6 +154,7 @@
+ struct snd_info_entry *snd_oss_root;
  #endif
  
 +#ifndef LINUX_2_2
  static inline void snd_info_entry_prepare(struct proc_dir_entry *de)
  {
  	de->owner = THIS_MODULE;
-@@ -131,6 +134,7 @@
+@@ -162,6 +166,7 @@
  	if (de)
  		remove_proc_entry(de->name, parent);
  }
@@ -29,7 +30,7 @@
  
  static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
  {
-@@ -140,7 +144,9 @@
+@@ -171,7 +176,9 @@
  
  	data = file->private_data;
  	entry = data->entry;
@@ -39,7 +40,7 @@
  	switch (entry->content) {
  	case SNDRV_INFO_CONTENT_TEXT:
  		switch (orig) {
-@@ -169,7 +175,9 @@
+@@ -200,7 +207,9 @@
  	}
  	ret = -ENXIO;
  out:
@@ -49,7 +50,7 @@
  	return ret;
  }
  
-@@ -465,6 +473,19 @@
+@@ -483,6 +492,19 @@
  	return -ENOTTY;
  }
  
@@ -69,7 +70,7 @@
  static int snd_info_entry_mmap(struct file *file, struct vm_area_struct *vma)
  {
  	struct inode *inode = file->f_dentry->d_inode;
-@@ -488,17 +509,30 @@
+@@ -506,17 +528,30 @@
  
  static struct file_operations snd_info_entry_operations =
  {
@@ -100,8 +101,8 @@
  /**
   * snd_create_proc_entry - create a procfs entry
   * @name: the name of the proc file
-@@ -902,9 +936,16 @@
- 		up(&info_mutex);
+@@ -952,9 +987,16 @@
+ 		mutex_unlock(&info_mutex);
  		return -ENOMEM;
  	}
 +#ifndef LINUX_2_2
@@ -118,7 +119,7 @@
  	p->size = entry->size;
  	p->data = entry;
  	entry->p = p;
-@@ -944,9 +985,19 @@
+@@ -974,9 +1016,19 @@
  
  static void snd_info_version_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
  {
