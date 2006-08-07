@@ -1762,13 +1762,13 @@ AC_MSG_CHECKING(for video_get_drvdata)
 video_get_drvdata="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Iinclude"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/videodev.h>
-#include <media/v4l2-dev.h>
+#include "media/v4l2-dev.h"
 ],[
   void *(*func)(struct video_device *);
   func = video_get_drvdata;
