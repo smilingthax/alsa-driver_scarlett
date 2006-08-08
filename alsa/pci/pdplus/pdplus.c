@@ -6162,7 +6162,7 @@ static void __devexit pdplus_remove(pci_dev_t *pci)
         struct snd_card *card;
         ENTER;
 
-        Vprintk ("MMIO 0= 0x%lx\n", pci_resource_start (pci, 0));
+        Vprintk ("MMIO 0= 0x%lx\n", (unsigned long)pci_resource_start (pci, 0));
         card = pci_get_drvdata (pci);
 
         if (card == 0)
