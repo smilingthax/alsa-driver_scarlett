@@ -1,11 +1,3 @@
-menu "Codecs on the I2C bus"
-	depends on SND && I2C
-
 config SND_UDA1380
-	tristate "Codec Philips UDA1380"
 	depends on SND && I2C
-	help
-	  Support for codec Philips UDA1380 on the I2C bus.
-	  Automatically selected by glue code.
-
-endmenu
+	tristate
