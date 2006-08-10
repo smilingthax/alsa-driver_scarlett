@@ -1523,6 +1523,7 @@ AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/time.h>
+#include <linux/interrupt.h>
 #include <linux/mm.h>
 ],[
   struct page * (*func)(void*);
