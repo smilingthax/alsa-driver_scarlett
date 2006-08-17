@@ -1010,6 +1010,18 @@ static void output_acinclude(void)
 			put_if = 1;
 			cond_prev = cond;
 		}
+		text = convert_to_config_uppercase("", tempdep->name);
+		if (is_kernel26(text)) {
+			if (!put_if)
+				printf("    if ");
+			else {
+				printf(cond_prev->type == COND_AND ? " &&" : " ||");
+				printf("\n      ");
+			}
+			printf("( test $kpatchlevel = 6 )");
+			put_if = 1;
+		}
+		free(text);
 		if (put_if)
 			printf("; then\n");
 
