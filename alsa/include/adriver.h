@@ -145,7 +145,7 @@ typedef __u32 __be32;
         	pos = pos->prev)
 #endif
 #ifndef might_sleep
-static inline int might_sleep(void)	{ return 0; }
+#define might_sleep() do { } while (0)
 #endif
 #endif /* LINUX_2_4__donotuse */
 
