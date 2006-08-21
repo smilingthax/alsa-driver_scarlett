@@ -773,9 +773,6 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #define snd_dma_isa_data()	NULL
 #define snd_dma_sbus_data(sbus)	((struct device *)(sbus))
 #define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
-#ifndef DMA_32BIT_MASK
-#define DMA_32BIT_MASK 0xffffffff
-#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
@@ -785,6 +782,10 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #include <asm/scatterlist.h>
 #endif
 #include <linux/dma-mapping.h>
+
+#ifndef DMA_32BIT_MASK
+#define DMA_32BIT_MASK 0xffffffff
+#endif
 #ifndef DMA_31BIT_MASK
 #define DMA_31BIT_MASK	0x000000007fffffffULL
 #endif
