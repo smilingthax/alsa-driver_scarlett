@@ -1127,6 +1127,9 @@ static void output_acinclude(void)
 
 	printf("AC_MSG_RESULT($SELECTED_CARDS)\n\n");
 	printf("CONFIG_SND=\"m\"\n");
+	printf("])\n\n");
+
+	printf("AC_DEFUN([ALSA_TOPLEVEL_DEFINES], [\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
 		if (!output_ac_define(tempdep))
 			continue;
