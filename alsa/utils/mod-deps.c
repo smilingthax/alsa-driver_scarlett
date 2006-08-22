@@ -128,6 +128,7 @@ static char *kernel_deps[] = {
 	"RTC",
 	"GAMEPORT",
 	"VIDEO_DEV",
+	"VIDEO_V4L1",
 	"FW_LOADER",
 	/* some flags */
 	"EXPERIMENTAL",
