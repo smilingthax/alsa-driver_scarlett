@@ -1,5 +1,6 @@
 syntax: glob
 
+include/version.h
 scripts/*.o
 scripts/docproc
 *~
