@@ -19,7 +19,9 @@
 /* include linux/usb.h at first since it defines another compatibility layers, which
  * conflicts with ours...
  */
+#define device compat_net_device
 #include <linux/usb.h>
+#undef device
 #undef IORESOURCE_IO
 #endif
 
