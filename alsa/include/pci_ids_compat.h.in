@@ -392,3 +392,8 @@
 #define PCI_DEVICE_ID_MARIAN_PRODIF_PLUS 0x2048
 #endif
 
+/* hda-intel */
+#ifndef PCI_VENDOR_ID_DELL
+#define PCI_VENDOR_ID_DELL		0x1028
+#endif
+
