@@ -20,7 +20,7 @@ snddevices
 toplevel.config
 toplevel.config.in
 version
-Modules.symvers
+Module*.symvers
 .tmp_versions/*
 
 acore/control.c
