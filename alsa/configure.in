@@ -652,6 +652,8 @@ CHECK_KERNEL_HEADER(linux/bitmap.h, [#include \"bitmap_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/mutex.h, [#include \"mutex_compat.h\"
 ])
+CHECK_KERNEL_HEADER(linux/latency.h, [#include \"latency_compat.h\"
+])
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
