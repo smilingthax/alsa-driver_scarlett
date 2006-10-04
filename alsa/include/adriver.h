@@ -1286,4 +1286,18 @@ static inline int snd_pci_enable_msi(struct pci_dev *dev) { return -1; }
 #define SEEK_END	2
 #endif
 
+/* kmemdup() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#include <linux/string.h>
+static inline void *snd_kmemdup(const void *src, size_t len, gfp_t gfp)
+{
+	void *dst = kmalloc(len, gfp);
+	if (!dst)
+		return NULL;
+	memcpy(dst, src, len);
+	return dst;
+}
+#define kmemdup	snd_kmemdup
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
