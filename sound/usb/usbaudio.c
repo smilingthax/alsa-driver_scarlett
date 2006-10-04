@@ -1510,21 +1510,7 @@ static int snd_usb_pcm_prepare(struct snd_pcm_substream *substream)
 		return 0;
 }
 
-static struct snd_pcm_hardware snd_usb_playback =
-{
-	.info =			SNDRV_PCM_INFO_MMAP |
-				SNDRV_PCM_INFO_MMAP_VALID |
-				SNDRV_PCM_INFO_BATCH |
-				SNDRV_PCM_INFO_INTERLEAVED |
-				SNDRV_PCM_INFO_BLOCK_TRANSFER,
-	.buffer_bytes_max =	1024 * 1024,
-	.period_bytes_min =	64,
-	.period_bytes_max =	512 * 1024,
-	.periods_min =		2,
-	.periods_max =		1024,
-};
-
-static struct snd_pcm_hardware snd_usb_capture =
+static struct snd_pcm_hardware snd_usb_hardware =
 {
 	.info =			SNDRV_PCM_INFO_MMAP |
 				SNDRV_PCM_INFO_MMAP_VALID |
@@ -1903,8 +1889,7 @@ static int setup_hw_info(struct snd_pcm_runtime *runtime, struct snd_usb_substre
 	return 0;
 }
 
-static int snd_usb_pcm_open(struct snd_pcm_substream *substream, int direction,
-			    struct snd_pcm_hardware *hw)
+static int snd_usb_pcm_open(struct snd_pcm_substream *substream, int direction)
 {
 	struct snd_usb_stream *as = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -1912,7 +1897,7 @@ static int snd_usb_pcm_open(struct snd_pcm_substream *substream, int direction,
 
 	subs->interface = -1;
 	subs->format = 0;
-	runtime->hw = *hw;
+	runtime->hw = snd_usb_hardware;
 	runtime->private_data = subs;
 	subs->pcm_substream = substream;
 	return setup_hw_info(runtime, subs);
@@ -1933,7 +1918,7 @@ static int snd_usb_pcm_close(struct snd_pcm_substream *substream, int direction)
 
 static int snd_usb_playback_open(struct snd_pcm_substream *substream)
 {
-	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_PLAYBACK, &snd_usb_playback);
+	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_PLAYBACK);
 }
 
 static int snd_usb_playback_close(struct snd_pcm_substream *substream)
@@ -1943,7 +1928,7 @@ static int snd_usb_playback_close(struct snd_pcm_substream *substream)
 
 static int snd_usb_capture_open(struct snd_pcm_substream *substream)
 {
-	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_CAPTURE, &snd_usb_capture);
+	return snd_usb_pcm_open(substream, SNDRV_PCM_STREAM_CAPTURE);
 }
 
 static int snd_usb_capture_close(struct snd_pcm_substream *substream)
