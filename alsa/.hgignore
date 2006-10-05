@@ -49,6 +49,7 @@ include/config1.h.in
 include/linux/*
 include/media/*
 include/pci_ids_compat.h
+include/i2c-id_compat.h
 include/version.h
 pci/ac97/ac97_bus.c
 pci/ac97/ac97_codec.c
