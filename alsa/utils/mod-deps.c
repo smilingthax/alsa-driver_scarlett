@@ -167,6 +167,11 @@ static char *no_cards[] = {
 	"#SND_GUS_SYNTH",
 	"#SND_AC97_BUS",
 	"#SND_AC97_CODEC",
+	"#SND_AT91_SOC_I2S",
+	"#SND_SOC_AC97_CODEC",
+	"#SND_SOC_WM8731",
+	"#SND_SOC_WM8750",
+	"#SND_SOC_WM9712",
 	"#SND_PXA2XX_PCM",
 	"#SND_GENERIC_PM",
 	NULL
@@ -176,6 +181,7 @@ static const char *kernel26_opts[] = {
 	"SND_AC97_BUS",
 	"SND_PXA2XX_PCM",
 	"SND_AOA",
+	"SND_SOC",
 	"SND_MTS64",
 	NULL,
 };
