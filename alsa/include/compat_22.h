@@ -131,6 +131,7 @@ static inline void list_move_tail(struct list_head *list,
 	do { __save_flags(flags); __cli(); } while (0)
 #define local_irq_restore(flags) \
 	do { __restore_flags(flags); } while (0)
+#define local_irq_enable() __sti()
 
 /* Some distributions use modified kill_fasync */
 #ifdef CONFIG_OLD_KILL_FASYNC
