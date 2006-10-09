@@ -2571,6 +2571,11 @@ else
   CONFIG_SND_FM801_TEA575X_BOOL=""
 fi
 
+dnl HPI driver doesn't support 2.2
+if test "$kversion.$kpatchlevel" = "2.2"; then
+  CONFIG_SND_ASIHPI=""
+fi
+
 dnl Define our config symbols
 ALSA_TOPLEVEL_DEFINES
 
