@@ -1,0 +1,19 @@
+--- ../../alsa-kernel/pci/emu10k1/emu10k1_main.c	2006-10-05 21:38:13.000000000 +0200
++++ emu10k1_main.c	2006-10-07 23:24:00.000000000 +0200
+@@ -1,3 +1,4 @@
++#define __NO_VERSION__
+ /*
+  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *                   Creative Labs, Inc.
+@@ -611,7 +612,11 @@
+ 	int value;
+ 	const struct firmware *fw_entry;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+ 	if ((err = request_firmware(&fw_entry, filename, &emu->pci->dev)) != 0) {
++#else
++	if ((err = request_firmware(&fw_entry, filename, pci_name(emu->pci))) != 0) {
++#endif
+ 		snd_printk(KERN_ERR "firmware: %s not found. Err=%d\n",filename, err);
+ 		return err;
+ 	}
