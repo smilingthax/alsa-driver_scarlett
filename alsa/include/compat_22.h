@@ -248,6 +248,7 @@ struct resource {
 
 #define IORESOURCE_IO           0x00000100      /* Resource type */
 #define IORESOURCE_MEM		0x00000200
+#define IORESOURCE_CACHEABLE	0x00004000
 #endif
 
 static inline void snd_wrapper_request_region(unsigned long from, unsigned long extent, const char *name)
