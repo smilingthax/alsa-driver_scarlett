@@ -15,7 +15,7 @@ config SND_PDPLUS
 config SND_ASIHPI
 	tristate "AudioScience ASIxxxx"
 	depends on SND && X86 && !X86_64
-	depends on FW_LOADER
+	select FW_LOADER
 	select SND_PCM
 	help
 	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
