@@ -169,6 +169,10 @@ struct tasklet_struct {
 
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 
+#ifndef fastcall
+#define fastcall
+#endif
+
 #ifndef __init
 #define __init
 #endif
