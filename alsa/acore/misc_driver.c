@@ -836,3 +836,50 @@ int snd_pnp_register_card_driver(struct snd_pnp_card_driver *driver)
 #endif /* ! CONFIG_HAVE_PNP_SUSPEND */
 #endif /* 2.6 */
 #endif /* PNP && PM */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#include <linux/firmware.h>
+#ifdef NEEDS_COMPAT_FW_LOADER
+
+extern int mod_firmware_load(const char *fn, char **fp);
+
+static int snd_try_load_firmware(const char *path, const char *name,
+				 struct firmware *firmware)
+{
+	char filename[30 + FIRMWARE_NAME_MAX];
+
+	sprintf(filename, "%s/%s", path, name);
+	firmware->size = mod_firmware_load(filename, (char **)&firmware->data);
+	if (firmware->size)
+		printk(KERN_INFO "Loaded '%s'.", filename);
+	return firmware->size;
+}
+
+int snd_compat_request_firmware(const struct firmware **fw, const char *name)
+{
+	struct firmware *firmware;
+
+	*fw = NULL;
+	firmware = kmalloc(sizeof *firmware, GFP_KERNEL);
+	if (!firmware)
+		return -ENOMEM;
+	if (!snd_try_load_firmware("/lib/firmware", name, firmware) &&
+	    !snd_try_load_firmware("/lib/hotplug/firmware", name, firmware) &&
+	    !snd_try_load_firmware("/usr/lib/hotplug/firmware", name, firmware)) {
+		kfree(firmware);
+		return -EIO;
+	}
+	*fw = firmware;
+	return 0;
+}
+
+void snd_compat_release_firmware(const struct firmware *fw)
+{
+	if (fw) {
+		vfree(fw->data);
+		kfree(fw);
+	}
+}
+
+#endif /* NEEDS_COMPAT_FW_LOADER */
+#endif /* !2.6 */
