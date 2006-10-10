@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usbusx2y.c	2006-01-13 16:53:53.000000000 +0100
-+++ usbusx2y.c	2006-01-13 16:54:12.000000000 +0100
+--- ../../alsa-kernel/usb/usx2y/usbusx2y.c	2006-10-10 15:35:36.000000000 +0200
++++ usbusx2y.c	2006-10-10 16:38:37.000000000 +0200
 @@ -1,3 +1,13 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -18,10 +18,10 @@
  /* 
   * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
   */
-+#ifndef OLD_USB
- static void i_usX2Y_Out04Int(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_Out04Int(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_Out04Int(struct urb *urb)
+ static void i_usX2Y_Out04Int(struct urb *urb)
 +#endif
  {
  #ifdef CONFIG_SND_DEBUG
@@ -30,10 +30,10 @@
  #endif
  }
  
-+#ifndef OLD_USB
- static void i_usX2Y_In04Int(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_In04Int(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_In04Int(struct urb *urb)
+ static void i_usX2Y_In04Int(struct urb *urb)
 +#endif
  {
  	int			err = 0;

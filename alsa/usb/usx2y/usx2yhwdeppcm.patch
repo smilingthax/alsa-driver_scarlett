@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2006-10-05 21:38:13.000000000 +0200
-+++ usx2yhwdeppcm.c	2006-10-07 22:59:08.000000000 +0200
+--- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2006-10-10 15:35:36.000000000 +0200
++++ usx2yhwdeppcm.c	2006-10-10 15:54:46.000000000 +0200
 @@ -1,3 +1,21 @@
 +#include <linux/config.h>
 +#include <linux/version.h>
@@ -38,10 +38,10 @@
  }
  
  
-+#ifndef OLD_USB
- static void i_usX2Y_usbpcm_urb_complete(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_usbpcm_urb_complete(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_usbpcm_urb_complete(struct urb *urb)
+ static void i_usX2Y_usbpcm_urb_complete(struct urb *urb)
 +#endif
  {
  	struct snd_usX2Y_substream *subs = urb->context;
@@ -78,10 +78,10 @@
  	usX2Y->prepare_subs = NULL;
  }
  
-+#ifndef OLD_USB
- static void i_usX2Y_usbpcm_subs_startup(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_usbpcm_subs_startup(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_usbpcm_subs_startup(struct urb *urb)
+ static void i_usX2Y_usbpcm_subs_startup(struct urb *urb)
 +#endif
  {
  	struct snd_usX2Y_substream *subs = urb->context;
@@ -90,10 +90,10 @@
  		wake_up(&usX2Y->prepare_wait_queue);
  	}
  
-+#ifndef OLD_USB
- 	i_usX2Y_usbpcm_urb_complete(urb, regs);
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++	i_usX2Y_usbpcm_urb_complete(urb, regs);
 +#else
-+	i_usX2Y_usbpcm_urb_complete(urb);
+ 	i_usX2Y_usbpcm_urb_complete(urb);
 +#endif
  }
  

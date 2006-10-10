@@ -493,7 +493,7 @@ static __inline__ void snd_msnd_eval_dsp_msg(register WORD wMessage)
 }
 
 //static int InInterrupt = 0;
-irqreturn_t snd_msnd_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+irqreturn_t snd_msnd_interrupt(int irq, void *dev_id)
 {
 	/*if( InInterrupt){
 		printk(  "INTERRUPT in InInterrupt\n");

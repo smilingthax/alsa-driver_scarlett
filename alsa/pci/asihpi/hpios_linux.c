@@ -158,14 +158,10 @@ u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle)
 
 void HpiOs_LockedMem_FreeAll(void)
 {
-	int err;
-
 	if (!memAreaCache)
 		return;
 
-	err = kmem_cache_destroy(memAreaCache);
-	if (err)
-		HPI_DEBUG_LOG1(ERROR, "memAreaCache destroy error %d\n", err);
+	kmem_cache_destroy(memAreaCache);
 }
 
 u16 HpiOs_LockedMem_GetPhysAddr(HpiOs_LockedMem_Handle LockedMemHandle,

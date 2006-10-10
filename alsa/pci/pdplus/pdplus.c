@@ -2906,8 +2906,7 @@ BOOL pdplus_is_next_period (
 
 static irqreturn_t pdplus_interrupt (
         int irq,
-        void *dev_id,
-        struct pt_regs *regs)
+        void *dev_id)
 {
         /*
          * Use checking cast, although this might generate thousands of printk
