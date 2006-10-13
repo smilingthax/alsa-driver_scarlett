@@ -609,7 +609,9 @@ rm -f include/asm/*.h
 dnl Check linux/config.h
 CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
 #define _LINUX_CONFIG_H
+#ifndef AUTOCONF_INCLUDED
 #include <linux/autoconf.h>
+#endif
 #endif
 ])
 
