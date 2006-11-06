@@ -652,6 +652,9 @@ int snd_compat_queue_work(struct workqueue_struct *wq, struct work_struct *work)
 #define queue_work(wq, work) snd_compat_queue_work((wq), (work))
 int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struct *work, unsigned long delay);
 #define queue_delayed_work(wq, work, delay) snd_compat_queue_delayed_work((wq), (work), (delay))
+#define schedule_delayed_work(work, delay) snd_compat_queue_delayed_work(NULL, (work), (delay))
+int snd_compat_cancel_delayed_work(struct work_struct *work);
+#define cancel_delayed_work(work) snd_compat_cancel_delayed_work(work)
 #endif /* < 2.5.45 */
 #endif /* < 2.6.0 */
 
