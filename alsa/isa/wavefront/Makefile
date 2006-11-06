@@ -7,7 +7,11 @@ include $(SND_TOPDIR)/Makefile.conf
 
 isapnp-files = wavefront.isapnp
 
+clean-files := wavefront_fx.c
+
 SND_TOPDIR = $(MAINSRCDIR)
 include $(SND_TOPDIR)/alsa-kernel/isa/wavefront/Makefile
 
 include $(SND_TOPDIR)/Rules.make
+
+wavefront_fx.c: wavefront_fx.patch $(SND_TOPDIR)/alsa-kernel/isa/wavefront/wavefront_fx.c
