@@ -5,7 +5,7 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-export-objs  := memory.o voice.o io.c
+export-objs  := memory.o voice.o io.o
 
 clean-files := emu10k1_main.c
 
