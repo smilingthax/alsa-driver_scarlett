@@ -450,6 +450,10 @@ typedef void irqreturn_t;
 #define BUG_ON(x) /* nothing */
 #endif
 
+#ifndef BUILD_BUG_ON
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #include <linux/devfs_fs_kernel.h>
 #ifdef CONFIG_DEVFS_FS
