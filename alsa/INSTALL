@@ -203,6 +203,29 @@ If you want to autoclean your modules, you should put below line to your
 You may also want to extend the soundcard list to follow your requirements.
 
 
+DEVFS support
+=============
+
+The ALSA driver fully supports the devfs extension.
+You should add lines below to your devfsd.conf file:
+
+LOOKUP snd MODLOAD ACTION snd
+REGISTER ^sound/.* PERMISSIONS root.audio 660
+REGISTER ^snd/.* PERMISSIONS root.audio 660
+
+Warning: These lines assume that you have the audio group in your system.
+         Otherwise replace audio word with another group name (root for
+         example).
+
+When DEVFS is enabled, snd module has the following option:
+
+    device_mode
+		- permission mask for dynamic sound device filesystem
+		- This is available only when DEVFS is enabled
+		- Default: 0666
+		- E.g.: device_mode=0660
+
+
 Information about Additional Modules
 ====================================
 
