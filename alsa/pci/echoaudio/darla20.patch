@@ -11,7 +11,7 @@
  /*
   *  ALSA driver for Echoaudio soundcards.
   *  Copyright (C) 2003-2004 Giuliano Pochini <pochini@shiny.it>
-@@ -97,3 +104,5 @@
+@@ -98,3 +105,5 @@
  #include "darla20_dsp.c"
  #include "echoaudio_dsp.c"
  #include "echoaudio.c"

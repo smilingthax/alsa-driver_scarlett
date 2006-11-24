@@ -1,6 +1,6 @@
 --- ../../alsa-kernel/pci/echoaudio/echoaudio.c	2006-08-05 14:41:12.000000000 +0200
 +++ echoaudio.c	2006-10-07 20:30:53.000000000 +0200
-@@ -1911,6 +1911,7 @@
+@@ -1926,6 +1926,7 @@
  	struct echoaudio *chip;
  	int err;
  	size_t sz;
@@ -8,7 +8,7 @@
  	static struct snd_device_ops ops = {
  		.dev_free = snd_echo_dev_free,
  	};
-@@ -1973,7 +1974,12 @@
+@@ -1988,7 +1989,12 @@
  	chip->comm_page_phys = chip->commpage_dma_buf.addr;
  	chip->comm_page = (struct comm_page *)chip->commpage_dma_buf.area;
  
