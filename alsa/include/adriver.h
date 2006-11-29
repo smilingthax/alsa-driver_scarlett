@@ -1342,4 +1342,12 @@ extern struct pt_regs *snd_irq_regs;
 #define get_irq_regs()	snd_irq_regs
 #endif /* !CONFIG_SND_NEW_IRQ_HANDLER */
 
+/* pci_intx() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 14)
+#ifdef CONFIG_PCI
+#undef pci_intx
+#define pci_intx(pci,x)
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
