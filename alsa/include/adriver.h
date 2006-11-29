@@ -23,6 +23,9 @@
  */
 
 #include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 18)
+#include <linux/autoconf.h>
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 3)
 #error "This driver requires Linux 2.2.3 or higher."
