@@ -115,7 +115,7 @@ include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
 	  ln -sf ../alsa-kernel/include include/sound ; \
 	fi
-	cp -auvf include/version.h include/sound/version.h
+	cp -puvf include/version.h include/sound/version.h
 
 utils/mod-deps: utils/mod-deps.c
 	gcc utils/mod-deps.c -o utils/mod-deps
@@ -160,7 +160,7 @@ map:
 	mv -f snd.map1 snd.map
 
 .PHONY: install
-install: install-modules install-headers install-scripts check-snd-prefix
+install: install-headers install-modules install-scripts check-snd-prefix
 	@if [ -L /dev/snd ]; then \
 		echo "The ALSA devices were removed from /proc/asound/dev directory." ; \
 		echo "Creating static device entries in /dev/snd." ; \
@@ -196,7 +196,14 @@ endif
 ifeq ($(DESTDIR),)
 	-/sbin/depmod -a $(kaversion) $(SYSTEM_MAP_OPT)
 else
-	-/sbin/depmod -a -b $(DESTDIR)/ $(SYSTEM_MAP_OPT) $(kaversion)
+	@echo "*** This is a \`staged' install using the prefix"
+	@echo "***	\"$(DESTDIR)\"."
+	@echo "***"
+	@echo "*** Once the modules have been moved to their final destination you must run the command"
+	@echo "***	\"/sbin/depmod -a $(kaversion) $(SYSTEM_MAP_OPT)\"."
+	@echo "***"
+	@echo "*** Alternatively, if you build a package (e.g. rpm), include the"
+	@echo "*** depmode command above in the post-(un)install procedure."
 endif
 
 .PHONY: install-scripts

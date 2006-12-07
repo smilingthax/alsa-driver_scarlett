@@ -280,7 +280,7 @@ AC_DEFUN([CHECK_COMPILER], [
         ac_compiler_type=gcc
       fi
       if test -z "$ac_compiler_version"; then
-        ac_compiler_version=`echo $i | sed -e 's/^.*gcc-\([0-9.]\+\).*$/\1/'`
+        ac_compiler_version=`echo $i | sed -e 's/^.*gcc-\([[0-9.]]\+\).*$/\1/'`
       fi
       ;;
     *gcc*|*GCC*)
