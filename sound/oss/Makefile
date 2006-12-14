@@ -85,7 +85,6 @@ ifeq ($(CONFIG_MIDI_EMU10K1),y)
 endif
 
 obj-$(CONFIG_SOUND_EMU10K1)	+= emu10k1/
-obj-$(CONFIG_SOUND_CS4281)	+= cs4281/
 obj-$(CONFIG_DMASOUND)		+= dmasound/
 
 # Declare multi-part drivers.
@@ -115,21 +114,6 @@ clean-files := maui_boot.h msndperm.c msndinit.c pndsperm.c pndspini.c \
 # of what name was used to build them.  If the name changes, they
 # will be forced to be remade.
 #
-
-# Turtle Beach Maui / Tropez
-
-$(obj)/maui.o: $(obj)/maui_boot.h
-
-ifeq ($(CONFIG_MAUI_HAVE_BOOT),y)
-    $(obj)/maui_boot.h: $(patsubst "%", %, $(CONFIG_MAUI_BOOT_FILE)) $(obj)/bin2hex
-	$(obj)/bin2hex -i maui_os < $< > $@
-else
-    $(obj)/maui_boot.h:
-	(							\
-	    echo 'static unsigned char * maui_os = NULL;';	\
-	    echo 'static int maui_osLen = 0;';			\
-	) > $@
-endif
 
 # Turtle Beach MultiSound
 
