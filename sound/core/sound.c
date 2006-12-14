@@ -61,9 +61,6 @@ EXPORT_SYMBOL(snd_ecards_limit);
 static struct snd_minor *snd_minors[SNDRV_OS_MINORS];
 static DEFINE_MUTEX(sound_mutex);
 
-extern struct class *sound_class;
-
-
 #ifdef CONFIG_KMOD
 
 /**
@@ -319,7 +316,7 @@ int snd_unregister_device(int type, struct snd_card *card, int dev)
 		return -EINVAL;
 	}
 
-	class_device_destroy(sound_class, MKDEV(major, minor));
+	device_destroy(sound_class, MKDEV(major, minor));
 
 	kfree(snd_minors[minor]);
 	snd_minors[minor] = NULL;
@@ -330,15 +327,15 @@ int snd_unregister_device(int type, struct snd_card *card, int dev)
 EXPORT_SYMBOL(snd_unregister_device);
 
 int snd_add_device_sysfs_file(int type, struct snd_card *card, int dev,
-			      const struct class_device_attribute *attr)
+			      struct device_attribute *attr)
 {
 	int minor, ret = -EINVAL;
-	struct class_device *cdev;
+	struct device *d;
 
 	mutex_lock(&sound_mutex);
 	minor = find_snd_minor(type, card, dev);
-	if (minor >= 0 && (cdev = snd_minors[minor]->class_dev) != NULL)
-		ret = class_device_create_file(cdev, attr);
+	if (minor >= 0 && (d = snd_minors[minor]->dev) != NULL)
+		ret = device_create_file(d, attr);
 	mutex_unlock(&sound_mutex);
 	return ret;
 
