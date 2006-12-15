@@ -675,6 +675,11 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name);
 #define create_workqueue(name) snd_compat_create_workqueue2(name)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
+#define delayed_work work_struct
+#define INIT_DELAYED_WORK(_work, _func)	INIT_WORK(_work, _func, _work)
+#endif
+
 /* 2.5 new modules */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #define try_module_get(x) try_inc_mod_count(x)

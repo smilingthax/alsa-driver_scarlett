@@ -1,6 +1,6 @@
---- ../../alsa-kernel/pci/hda/hda_codec.c	2006-07-27 12:53:14.000000000 +0200
-+++ hda_codec.c	2006-07-27 15:43:15.000000000 +0200
-@@ -260,7 +260,10 @@
+--- ../../alsa-kernel/pci/hda/hda_codec.c	2006-12-14 11:51:23.000000000 +0100
++++ hda_codec.c	2006-12-15 16:12:24.000000000 +0100
+@@ -263,7 +263,10 @@
  	unsol->queue[wp] = res;
  	unsol->queue[wp + 1] = res_ex;
  
@@ -11,7 +11,19 @@
  
  	return 0;
  }
-@@ -296,6 +299,7 @@
+@@ -276,7 +279,11 @@
+ static void process_unsol_events(struct work_struct *work)
+ {
+ 	struct hda_bus_unsolicited *unsol =
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
+ 		container_of(work, struct hda_bus_unsolicited, work);
++#else
++		container_of(work, struct hda_bus_unsolicited, work.data);
++#endif
+ 	struct hda_bus *bus = unsol->bus;
+ 	struct hda_codec *codec;
+ 	unsigned int rp, caddr, res;
+@@ -300,6 +307,7 @@
   */
  static int init_unsol_queue(struct hda_bus *bus)
  {
@@ -19,15 +31,22 @@
  	struct hda_bus_unsolicited *unsol;
  
  	if (bus->unsol) /* already initialized */
-@@ -314,6 +318,7 @@
+@@ -316,9 +324,14 @@
+ 		kfree(unsol);
+ 		return -ENOMEM;
  	}
- 	INIT_WORK(&unsol->work, process_unsol_events, bus);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
+ 	INIT_WORK(&unsol->work, process_unsol_events);
++#else
++	INIT_WORK(&unsol->work, process_unsol_events, &unsol->work);
++#endif
+ 	unsol->bus = bus;
  	bus->unsol = unsol;
 +#endif
  	return 0;
  }
  
-@@ -329,7 +334,9 @@
+@@ -334,7 +347,9 @@
  	if (! bus)
  		return 0;
  	if (bus->unsol) {
