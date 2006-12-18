@@ -64,7 +64,7 @@ endif
 export KBUILD_VERBOSE KBUILD_CHECKSRC
 endif
 
-SUBDIRS  = acore i2c drivers isa synth pci aoa
+SUBDIRS  = acore i2c drivers isa synth pci aoa soc
 CSUBDIRS =
 
 ifndef NEW_KBUILD
