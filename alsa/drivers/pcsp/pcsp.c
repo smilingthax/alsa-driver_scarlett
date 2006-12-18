@@ -5,7 +5,6 @@
  * Copyright (C) 2001-2004  Stas Sergeev
  */
 
-#include <linux/config.h>
 #include <sound/driver.h>
 #include <linux/init.h>
 #include <linux/moduleparam.h>
@@ -55,7 +54,7 @@ void *pcsp_timer_hook;
 /*
  * this is the PCSP IRQ handler
  */
-static int pcsp_timer(struct pt_regs *regs)
+static int pcsp_timer(void)
 {
 	if (pcsp_timer_func)
 		return pcsp_timer_func(snd_pcsp_chip);
