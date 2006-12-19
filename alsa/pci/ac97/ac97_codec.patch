@@ -32,15 +32,3 @@
  
  /* build_ops to do nothing */
  static struct snd_ac97_build_ops null_build_ops;
-@@ -1936,7 +1941,11 @@
- static void do_update_power(struct work_struct *work)
- {
- 	update_power_regs(
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
- 		container_of(work, struct snd_ac97, power_work.work));
-+#else
-+		container_of(work, struct snd_ac97, power_work.data));
-+#endif
- }
- #endif
- 
