@@ -6,7 +6,7 @@
 ifneq ($(KERNELRELEASE),)
 # call from 2.6 kernel build system
 
-obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/ aoa/ soc/
+obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/ aoa/ soc/ misc/
 
 else
 
@@ -99,6 +99,9 @@ endif
 ifeq (y,$(CONFIG_PARISC))
 SUBDIRS  += parisc
 endif
+ifeq (m,$(CONFIG_AC97_BUS))
+SUBDIRS  += misc
+endif
 CSUBDIRS += include test utils
 
 KCONFIG_FILES = $(shell find $(SND_TOPDIR) -name Kconfig) $(shell find $(SND_TOPDIR)/alsa-kernel/ -name Kconfig)
@@ -189,6 +192,7 @@ endif
 install-modules:
 ifeq ($(moddir_tree),y)
 	find $(DESTDIR)$(moddir) -name 'snd*.*o' | xargs rm -f
+	find $(DESTDIR)$(moddir) -name 'ac97_bus.*o' | xargs rm -f
 else
 	rm -f $(DESTDIR)$(moddir)/snd*.*o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 endif
