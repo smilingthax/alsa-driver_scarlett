@@ -1,12 +1,12 @@
---- ../../alsa-kernel/pci/hda/hda_codec.c	2006-12-18 10:46:14.000000000 +0100
-+++ hda_codec.c	2006-12-19 13:00:39.000000000 +0100
+--- ../../alsa-kernel/pci/hda/hda_codec.c	2006-12-19 17:00:25.000000000 +0100
++++ hda_codec.c	2006-12-19 17:04:25.000000000 +0100
 @@ -263,7 +263,10 @@
  	unsol->queue[wp] = res;
  	unsol->queue[wp + 1] = res_ex;
  
 +/* 2.4 kernels seem to have a problem with workq wrapper... */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	queue_work(unsol->workq, &unsol->work);
+ 	schedule_work(&unsol->work);
 +#endif
  
  	return 0;
@@ -19,7 +19,7 @@
  	struct hda_bus_unsolicited *unsol;
  
  	if (bus->unsol) /* already initialized */
-@@ -319,6 +323,7 @@
+@@ -313,6 +317,7 @@
  	INIT_WORK(&unsol->work, process_unsol_events);
  	unsol->bus = bus;
  	bus->unsol = unsol;
@@ -27,12 +27,12 @@
  	return 0;
  }
  
-@@ -334,7 +339,9 @@
+@@ -328,7 +333,9 @@
  	if (! bus)
  		return 0;
  	if (bus->unsol) {
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 		destroy_workqueue(bus->unsol->workq);
+ 		flush_scheduled_work();
 +#endif
  		kfree(bus->unsol);
  	}
