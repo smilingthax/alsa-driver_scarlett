@@ -16,6 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
 Public declarations for DSP Proramming Interface to PCI-based 56301 DSP
 
 **************************************************************************** */
@@ -23,25 +24,23 @@ Public declarations for DSP Proramming Interface to PCI-based 56301 DSP
 #ifndef _HPI56301_H_
 #define _HPI56301_H_
 
-typedef struct {
-	u32 dwMemBase;
-	u32 dwHCTR;
-	u32 dwHCVR;
-} HPI_56301_INFO_OBJ;
+typedef struct{
+	__iomem HW32 * pMemBase;
+	HW32 dwHCTR;
+	HW32 dwHCVR;
+}HPI_56301_INFO_OBJ;
 
-short Hpi56301_CheckAdapterPresent(HPI_56301_INFO_OBJ * pio);
-short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
-			   u32 * pdwOsErrorCode);
+short Hpi56301_CheckAdapterPresent( HPI_56301_INFO_OBJ * pio );
+short Hpi56301_BootLoadDsp( HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio, HW32 *pdwOsErrorCode );
 //short Hpi56301_SelfTest( HPI_56301_INFO_OBJ * pio );
 
-void Hpi56301_Message(HPI_56301_INFO_OBJ * pio, HPI_MESSAGE * phm,
-		      HPI_RESPONSE * phr);
+void  Hpi56301_Message( HPI_56301_INFO_OBJ * pio, HPI_MESSAGE *phm, HPI_RESPONSE *phr);
 
-#define DPI_ERROR           900	/* non-specific error */
+#define DPI_ERROR           900 /* non-specific error */
 #define DPI_ERROR_SEND      910
 #define DPI_ERROR_GET       950
 #define DPI_ERROR_DOWNLOAD  930
 
-#endif				// _HPI56301_H_
+#endif // _HPI56301_H_
 
 ////////////////////////////////////////////////////////////

@@ -19,33 +19,34 @@
 */
 
 typedef struct {
-	HPI_PCI Pci;		// PCI info - bus#,dev#,address etc
-	u16 wAdapterType;	// ASI6701 etc
-	u16 wIndex;		//
-	u16 wOpen;		// =1 when adapter open
-	u16 wMixerOpen;
+	HPI_PCI Pci;        // PCI info - bus#,dev#,address etc
+	HW16    wAdapterType;   // ASI6701 etc
+	HW16    wIndex;     //
+	HW16    wOpen;      // =1 when adapter open
+	HW16    wMixerOpen;
 
 #ifdef HPI_LOCKING
 	HPIOS_SPINLOCK dspLock;
 #endif
 
-	u16 wDspCrashed;
-	u16 wHasControlCache;
-	void *priv;
+	HW16    wDspCrashed;
+	HW16    wHasControlCache;
+	void    *priv;
 } HPI_ADAPTER_OBJ;
 
 typedef struct {
 	HPI_ADAPTER_OBJ adapter[HPI_MAX_ADAPTERS];
-	u16 gwNumAdapters;	// total number of adapters created in this HPI
+	HW16 gwNumAdapters; // total number of adapters created in this HPI
 } HPI_ADAPTERS_LIST;
 
-HPI_ADAPTER_OBJ *FindAdapter(HPI_ADAPTERS_LIST * adaptersList,
-			     u16 wAdapterIndex);
+HPI_ADAPTER_OBJ* FindAdapter(HPI_ADAPTERS_LIST *adaptersList, HW16 wAdapterIndex);
 
-void WipeAdapterList(HPI_ADAPTERS_LIST * adaptersList);
-void SubSysGetAdapters(HPI_ADAPTERS_LIST * adaptersList, HPI_RESPONSE * phr);
-short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
-			HPI_RESPONSE * phr);
+void WipeAdapterList(HPI_ADAPTERS_LIST *adaptersList);
+void SubSysGetAdapters(HPI_ADAPTERS_LIST *adaptersList, HPI_RESPONSE *phr);
+short CheckControlCache( volatile tHPIControlCacheSingle *pC, HPI_MESSAGE *phm, HPI_RESPONSE *phr);
+void SyncControlCache( volatile tHPIControlCacheSingle *pC, HPI_MESSAGE *phm, HPI_RESPONSE *phr);
+HW16 HpiValidateResponse( HPI_MESSAGE *phm, HPI_RESPONSE *phr);
+
 
 /*
 */
