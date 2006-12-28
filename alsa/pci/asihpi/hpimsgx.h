@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
- HPI Extended Message Handler Functions
+HPI Extended Message Handler Functions
 
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
@@ -27,22 +27,15 @@
 #include "hpi.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-#define HPIMSGX_ALLADAPTERS	(0xFFFF)
+#define HPIMSGX_ALLADAPTERS     (0xFFFF)
 
-    void HPI_MessageEx(
-        HPI_MESSAGE *phm,
-        HPI_RESPONSE *phr,
-        void * hOwner
-    );
+	void HPI_MessageEx(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _HPIMSGX_H_ */
-
+#endif				/* _HPIMSGX_H_ */
 ///////////////////////////////////////////////////////////////////////////

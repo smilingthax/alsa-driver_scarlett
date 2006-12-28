@@ -16,7 +16,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 HPI Operating System Specific macros for Linux
 
 (C) Copyright AudioScience Inc. 1997-2003
@@ -37,7 +36,7 @@ HPI Operating System Specific macros for Linux
 #include <linux/firmware.h>
 #include <linux/interrupt.h>
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0))
+#if ( LINUX_VERSION_CODE >= KERNEL_VERSION ( 2 , 5 , 0 ) )
 #    include <linux/device.h>
 #endif
 
@@ -63,39 +62,20 @@ HPI Operating System Specific macros for Linux
 #define HPI_64BIT
 #endif
 /* //////////////////////////////////////////////////////////////////////// */
-#ifdef HPI_OS_LINUX //delete
-/* leave the above line exactly as is, 
-  between it and the matching endif gets deleted for the ALSA release 
-*/
-  
-/* BASIC TYPES */
-/* unsigned word types */
-#define HFAR 
-#undef HUGE 
-#define HUGE
-
-#define HPI_API
-
-typedef unsigned char HW8;    /**< 8 bit word = byte */
-typedef unsigned short HW16;
-typedef unsigned int HW32;
-
-#endif /* matches //delete above */
-struct hpi_ioctl_linux
-{
-  void __user *phm;
-  void __user *phr;
+struct hpi_ioctl_linux {
+	void __user *phm;
+	void __user *phr;
 };
 
 #define HPI_IOCTL_LINUX _IOWR('H', 1, struct hpi_ioctl_linux)
 
-typedef int	HpiOs_FILE;
+typedef int HpiOs_FILE;
 /* return value from fopen */
 #define NO_FILE -1
 
 // Needs to be something that is valid for both user and kernel compilation
 // Cast to *HpiOs_LockedMem_Area in hpios_linux.c
-typedef void *  HpiOs_LockedMem_Handle;
+typedef void *HpiOs_LockedMem_Handle;
 
 #define HPIOS_DEBUG_PRINTF printk
 
@@ -104,7 +84,7 @@ typedef void *  HpiOs_LockedMem_Handle;
 #define HPI_DEBUG_FLAG_NOTICE  KERN_NOTICE
 #define HPI_DEBUG_FLAG_INFO    KERN_INFO
 #define HPI_DEBUG_FLAG_DEBUG   KERN_DEBUG
-#define HPI_DEBUG_FLAG_VERBOSE KERN_DEBUG /* kernel has no verbose */
+#define HPI_DEBUG_FLAG_VERBOSE KERN_DEBUG	/* kernel has no verbose */
 
 /* I/O read/write.  */
 #define HOUT8(a,d)       outb(a,d)
@@ -131,8 +111,8 @@ typedef void *  HpiOs_LockedMem_Handle;
 #define IN_LOCK_IRQ 0
 
 typedef struct {
-    DSPLOCK_TYPE lock;
-    int lock_context;
+	DSPLOCK_TYPE lock;
+	int lock_context;
 } HPIOS_SPINLOCK;
 
 // macro to access wrapping struct fields
@@ -145,13 +125,13 @@ typedef struct {
 // the lock will be the function's only parameter
 #define GEN_LOCK_INIT( macro_name, lock_type, init_op )\
 static inline void _##macro_name( lock_type* l ) {\
-        init_op(&l->lock);\
+init_op(&l->lock);\
 }
 #endif
 
 /** Generic macro to grab a lock, parameters are:
- macro_name: target macro name
- lock_type: type of the lock parame#define HpiOs_Msgxlock_Init( obj ) _DSP_LOCK_INIT( obj )
+macro_name: target macro name
+lock_type: type of the lock parame#define HpiOs_Msgxlock_Init( obj ) _DSP_LOCK_INIT( obj )
 #define HpiOs_Msgxlock_Lock( obj ) _DSP_LOCK( obj )
 #define HpiOs_Msgxlock_UnLock( obj ) _DSP_UNLOCK( obj )
 
@@ -159,60 +139,61 @@ static inline void _##macro_name( lock_type* l ) {\
 #define HpiOs_Dsplock_Lock( obj ) _DSP_LOCK( &(obj)->dspLock )
 #define HpiOs_Dsplock_UnLock( obj ) _DSP_UNLOCK( &(obj)->dspLock )
 ter the macro will accept
- lock_op: locking function that will be applied to (&param->lock)
+lock_op: locking function that will be applied to (&param->lock)
 */
 
 #define GEN_LOCK( macro_name, lock_type, lock_op )\
 static inline void _##macro_name( lock_type* l ) {\
-        lock_op(&l->lock);\
+lock_op(&l->lock);\
 }
 
 #define GEN_UNLOCK( macro_name, lock_type, unlock_op )\
 static inline void _##macro_name( lock_type* l ) {\
-        unlock_op(&l->lock);\
+unlock_op(&l->lock);\
 }
 
 /** Same as above but we pass an unsigned long flags arg to save cpu's irq flags */
 
 #define GEN_LOCK_FLAGS( macro_name, lock_type, lock_op )\
 static inline void _##macro_name( lock_type* l, unsigned long *flags ) {\
-	unsigned long f;\
-        lock_op(&l->lock, f);\
-	*flags = f;\
+unsigned long f;\
+lock_op(&l->lock, f);\
+*flags = f;\
 }
 
 #define GEN_UNLOCK_FLAGS( macro_name, lock_type, unlock_op )\
 static inline void _##macro_name( lock_type* l, unsigned long *flags ) {\
-	unsigned long f;\
-	f = *flags;\
-        unlock_op(&l->lock, f);\
+unsigned long f;\
+f = *flags;\
+unlock_op(&l->lock, f);\
 }
 
-GEN_LOCK_INIT( HPI_LOCK_INIT, HPIOS_SPINLOCK, spin_lock_init )
+GEN_LOCK_INIT(HPI_LOCK_INIT, HPIOS_SPINLOCK, spin_lock_init)
 
-GEN_LOCK( HPI_LOCK, HPIOS_SPINLOCK, spin_lock )
-GEN_UNLOCK( HPI_UNLOCK, HPIOS_SPINLOCK, spin_unlock )
+    GEN_LOCK(HPI_LOCK, HPIOS_SPINLOCK, spin_lock)
+    GEN_UNLOCK(HPI_UNLOCK, HPIOS_SPINLOCK, spin_unlock)
 
-GEN_LOCK( HPI_LOCK_BH, HPIOS_SPINLOCK, spin_lock_bh )
-GEN_UNLOCK( HPI_UNLOCK_BH, HPIOS_SPINLOCK, spin_unlock_bh )
+    GEN_LOCK(HPI_LOCK_BH, HPIOS_SPINLOCK, spin_lock_bh)
+    GEN_UNLOCK(HPI_UNLOCK_BH, HPIOS_SPINLOCK, spin_unlock_bh)
 
-GEN_LOCK_FLAGS( HPI_LOCK_IRQ, HPIOS_SPINLOCK, spin_lock_irqsave )
-GEN_UNLOCK_FLAGS( HPI_UNLOCK_IRQ, HPIOS_SPINLOCK, spin_unlock_irqrestore )
-
+    GEN_LOCK_FLAGS(HPI_LOCK_IRQ, HPIOS_SPINLOCK, spin_lock_irqsave)
+    GEN_UNLOCK_FLAGS(HPI_UNLOCK_IRQ, HPIOS_SPINLOCK, spin_unlock_irqrestore)
 #ifdef ALSA_BUILD
-static inline void cond_lock( HPIOS_SPINLOCK *l ) {
+static inline void cond_lock(HPIOS_SPINLOCK * l)
+{
 	if (irqs_disabled()) {
-	// NO bh or isr can execute on this processor, so ordinary lock will do
-		_HPI_LOCK( l );
-		l->lock_context=IN_LOCK_IRQ;
+// NO bh or isr can execute on this processor, so ordinary lock will do
+		_HPI_LOCK(l);
+		l->lock_context = IN_LOCK_IRQ;
 	} else {
 		_HPI_LOCK_BH(l);
-		l->lock_context=IN_LOCK_BH;
+		l->lock_context = IN_LOCK_BH;
 	}
 }
 
-static inline void cond_unlock( HPIOS_SPINLOCK *l ) {
-	if (l->lock_context==IN_LOCK_BH) {
+static inline void cond_unlock(HPIOS_SPINLOCK * l)
+{
+	if (l->lock_context == IN_LOCK_BH) {
 		_HPI_UNLOCK_BH(l);
 	} else {
 		_HPI_UNLOCK(l);
@@ -227,39 +208,34 @@ static inline void cond_unlock( HPIOS_SPINLOCK *l ) {
 #define HpiOs_Dsplock_Lock( obj, f ) cond_lock( &(obj)->dspLock )
 #define HpiOs_Dsplock_UnLock( obj, f ) cond_unlock( &(obj)->dspLock )
 
-#define HPIOS_LOCK_FLAGS(name) 
+#define HPIOS_LOCK_FLAGS(name)
 
-#else // not ALSA_BUILD
-
+#else				// not ALSA_BUILD
 #define HpiOs_Msgxlock_Init( obj ) _HPI_LOCK_INIT( obj )
 #define HpiOs_Msgxlock_Lock( obj, f ) _HPI_LOCK( obj )
 #define HpiOs_Msgxlock_UnLock( obj, f ) _HPI_UNLOCK( obj )
-
 #define HpiOs_Dsplock_Init( obj ) _HPI_LOCK_INIT( &(obj)->dspLock )
 #define HpiOs_Dsplock_Lock( obj, f ) _HPI_LOCK( &(obj)->dspLock )
 #define HpiOs_Dsplock_UnLock( obj, f ) _HPI_UNLOCK( &(obj)->dspLock )
 #define HPIOS_LOCK_FLAGS(name)
-
-#endif // not ALSA_BUILD
-
-#endif //1 locking enabled
-
+#endif				// not ALSA_BUILD
+#endif				//1 locking enabled
 typedef struct {
 
-	/* Spinlock prevent contention for one card between multiple user programs (via ioctl) */
+/* Spinlock prevent contention for one card between multiple user programs (via ioctl) */
 	spinlock_t spinlock;
 	unsigned long flags;
 
-	/* Semaphores prevent contention for one card between multiple user programs (via ioctl) */
+/* Semaphores prevent contention for one card between multiple user programs (via ioctl) */
 	struct semaphore sem;
-	HW16 wAdapterIndex;
-	HW16 type;
+	u16 wAdapterIndex;
+	u16 type;
 
-	/* ALSA card structure */
+/* ALSA card structure */
 	void *snd_card_asihpi;
 
 	char *pBuffer;
-	void __iomem * apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
+	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
 
 } adapter_t;
 
