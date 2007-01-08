@@ -3293,6 +3293,7 @@ static void snd_usb_audio_create_proc(struct snd_usb_audio *chip)
 
 static int snd_usb_audio_free(struct snd_usb_audio *chip)
 {
+	usb_chip[chip->index] = NULL;
 	kfree(chip);
 	return 0;
 }
@@ -3554,7 +3555,6 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 		list_for_each(p, &chip->mixer_list) {
 			snd_usb_mixer_disconnect(p);
 		}
-		usb_chip[chip->index] = NULL;
 		mutex_unlock(&register_mutex);
 		snd_card_free_when_closed(card);
 	} else {
