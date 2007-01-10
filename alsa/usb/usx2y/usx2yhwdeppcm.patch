@@ -46,15 +46,6 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -243,7 +269,7 @@
- 		usX2Y_error_urb_status(usX2Y, subs, urb);
- 		return;
- 	}
--	if (likely(urb->start_frame == usX2Y->wait_iso_frame))
-+	if (likely((urb->start_frame & USX2Y_URB_FRAME_MASK) == usX2Y->wait_iso_frame))
- 		subs->completed_urb = urb;
- 	else {
- 		usX2Y_error_sequence(usX2Y, subs, urb);
 @@ -256,9 +282,15 @@
  	if (capsubs->completed_urb && atomic_read(&capsubs->state) >= state_PREPARED &&
  	    (NULL == capsubs2 || capsubs2->completed_urb) &&
