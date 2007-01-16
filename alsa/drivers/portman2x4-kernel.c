@@ -531,7 +531,11 @@ static void cleanup(void)
  * @param  struct pt_regs*  Pointer to pt_regs
  */
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+static void portman_handler_irq(int irq, void *userdata)
+#else
 static void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
+#endif
 {
 	unsigned long flags;
 	/* Test if output gets written if interrupts are disabled! */

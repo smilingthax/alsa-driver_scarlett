@@ -291,7 +291,11 @@ static int snd_pxa2xx_i2sound_ngn_set_rate(unsigned int rate)
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+static void snd_pxa2xx_i2sound_ngn_dma_irq(int ch, void *data)
+#else
 static void snd_pxa2xx_i2sound_ngn_dma_irq(int ch, void *data, struct pt_regs *regs)
+#endif
 {
 	struct snd_pxa2xx_i2sound_stream *s = (struct snd_pxa2xx_i2sound_stream*) data;
 	u32 dcsr;
