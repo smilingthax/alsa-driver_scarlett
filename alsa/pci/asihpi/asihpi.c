@@ -281,7 +281,8 @@ static void snd_card_asihpi_playback_timer_function(unsigned long data)
 	HPI_HandleError(err);
 #if REALLY_VERBOSE_LOGGING
 	snd_printd(KERN_DEBUG
-		   "Playback timer state=%d, played=%d, left=%d\n", wState,
+		   "Playback timer%d state=%d, played=%d, left=%d\n",
+		   dpcm->substream->number, wState,
 		   (int)dwSamplesPlayed, (int)dwDataToPlay);
 #endif
 
@@ -574,8 +575,9 @@ static int snd_card_asihpi_playback_copy(struct snd_pcm_substream *substream,
 	if (copy_from_user(runtime->dma_area, src, len))
 		return -EFAULT;
 
-#if REALLY_VERBOSE_LOGGING
-	snd_printd(KERN_DEBUG "playback_copy %u bytes\n", len);
+#if REALLY_VERBOSE_LOGGING > 1
+	snd_printd(KERN_DEBUG "Playback copy%d %u bytes\n", substream->number,
+		   len);
 #endif
 
 	err =
@@ -624,19 +626,20 @@ static void snd_card_asihpi_capture_timer_function(unsigned long data)
 {
 	snd_card_asihpi_pcm_t *dpcm = (snd_card_asihpi_pcm_t *) data;
 	u16 wState, err;
-	u32 dwBufferSize, dwDataToPlay, dwSamplesPlayed;
+	u32 dwBufferSize, dwDataToPlay, dwSamplesPlayed, dwAux;
 
 	err =
 	    HPI_InStreamGetInfoEx(phSubSys, dpcm->hStream, &wState,
 				  &dwBufferSize, &dwDataToPlay,
-				  &dwSamplesPlayed, NULL);
+				  &dwSamplesPlayed, &dwAux);
 	HPI_HandleError(err);
 
 	/* Used by capture_pointer */
 	dpcm->pcm_buf_pos = (dpcm->pcm_irq_pos + dwDataToPlay) % dpcm->pcm_size;
 #if REALLY_VERBOSE_LOGGING
-	snd_printd("Capture timer %d samples, %d left, pos %d\n",
-		   (int)dwSamplesPlayed, (int)dwDataToPlay, dpcm->pcm_buf_pos);
+	snd_printd("Capture timer%d %d samples, %d left, pos %d, aux %d\n",
+		   dpcm->substream->number, (int)dwSamplesPlayed,
+		   (int)dwDataToPlay, dpcm->pcm_buf_pos, dwAux);
 #endif
 
 	/* Future: if data will be left over, make timer expire sooner ? */
@@ -714,8 +717,8 @@ static int snd_card_asihpi_capture_hw_params(struct snd_pcm_substream
 			   "InStreamHostBuffer estimated size: %d bytes\n",
 			   (int)minBufSize);
 
-		if (minBufSize < params_buffer_bytes(params))	/* paranoia check */
-			minBufSize = params_buffer_bytes(params);
+		if (minBufSize < params_buffer_bytes(params) * 2)	/* paranoia check */
+			minBufSize = params_buffer_bytes(params) * 2;
 
 		if (err == 0) {
 			err =
@@ -799,8 +802,9 @@ snd_card_asihpi_capture_pointer(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_asihpi_pcm_t *dpcm = runtime->private_data;
 
-#if REALLY_VERBOSE_LOGGING
-	snd_printd("Capture pointer %d\n", dpcm->pcm_buf_pos);
+#if REALLY_VERBOSE_LOGGING > 2
+	snd_printd("Capture pointer%d %d\n", substream->number,
+		   dpcm->pcm_buf_pos);
 #endif
 	return bytes_to_frames(runtime, dpcm->pcm_buf_pos);
 }
@@ -813,9 +817,9 @@ static struct snd_pcm_hardware snd_card_asihpi_capture = {
 	.rate_max = 192000,
 	.channels_min = 1,
 	.channels_max = 2,
-	.buffer_bytes_max = MAX_BUFFER_SIZE,
+	.buffer_bytes_max = MAX_BUFFER_SIZE / 2,
 	.period_bytes_min = MAX_BUFFER_SIZE / 64,
-	.period_bytes_max = MAX_BUFFER_SIZE / 4,
+	.period_bytes_max = MAX_BUFFER_SIZE / 8,
 	.periods_min = 2,
 	.periods_max = 64,
 	.fifo_size = 0,
@@ -913,8 +917,8 @@ static int snd_card_asihpi_capture_copy(struct snd_pcm_substream *substream,
 
 	dwDataSize = frames_to_bytes(runtime, count);
 
-#if REALLY_VERBOSE_LOGGING
-	snd_printd("Capture copy %d bytes\n", dwDataSize);
+#if REALLY_VERBOSE_LOGGING > 1
+	snd_printd("Capture copy%d %d bytes\n", substream->number, dwDataSize);
 #endif
 	err =
 	    HPI_InStreamReadBuf(phSubSys, dpcm->hStream, runtime->dma_area,

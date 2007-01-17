@@ -52,6 +52,9 @@ struct DSP_CODE_FIRMWARE {
 
 #endif				// DSPCODE_FIRMWARE
 
+/* must match or be greater than the same constant in S2BIN.C */
+#define BLOCK_LIMIT_DWORD 2048L
+
 /** Descriptor used when dsp code read from a file */
 struct DSP_CODE_FILE {
 	HpiOs_FILE pDspCodeFile;	//!< File descriptor for dsp code file
@@ -60,6 +63,7 @@ struct DSP_CODE_FILE {
 	u32 nAdapter;		//!< Adapter type
 	u32 dwVersion;		//<! Version read from dsp code file
 	u32 dwCrc;		//<! CRC read from dsp code file
+	u32 *aCodeBuffer;
 };
 
 /*! Descriptor used when dsp code arrays are linked in */

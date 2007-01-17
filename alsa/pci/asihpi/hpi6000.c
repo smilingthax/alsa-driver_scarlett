@@ -1235,7 +1235,7 @@ static void HpiWriteBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 	}
 #else
 	{
-		int i;
+		u32 i;
 		for (i = 0; i < dwLength - 1; i++)
 			HPIOS_MEMWRITE32(pdo->prHPIDataAutoInc, *pdwData++);
 // take care of errata in revB DSP (2.0.1)
@@ -1265,7 +1265,7 @@ static void HpiReadBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 	}
 #else
 	{
-		int i;
+		u32 i;
 		for (i = 0; i < dwLength - 1; i++)
 			*pdwData++ = HPIOS_MEMREAD32(pdo->prHPIDataAutoInc);
 

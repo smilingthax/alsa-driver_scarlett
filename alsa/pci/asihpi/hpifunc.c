@@ -56,7 +56,7 @@ char HPI_HandleObject(const HPI_HANDLE dwHandle);
 #define HPI_HANDLETOINDEXES3(h,i1,i2,i0) if (h==0) return HPI_ERROR_INVALID_OBJ; else HPI_HandleToIndexes3(h,i1,i2,i0)
 
 /* Note: Can't use memcpy or typecast because some fields have different offsets */
-static void HPI_FORMAT_TO_MSG(HPI_MSG_FORMAT * pMF, HPI_FORMAT * pF)
+void HPI_FormatToMsg(HPI_MSG_FORMAT * pMF, HPI_FORMAT * pF)
 {
 	pMF->dwSampleRate = pF->dwSampleRate;
 	pMF->dwBitRate = pF->dwBitRate;
@@ -65,14 +65,15 @@ static void HPI_FORMAT_TO_MSG(HPI_MSG_FORMAT * pMF, HPI_FORMAT * pF)
 	pMF->wFormat = pF->wFormat;
 }
 
-static void HPI_MSG_TO_FORMAT(HPI_FORMAT * pF, HPI_MSG_FORMAT * pMF)
+static void HPI_MsgToFormat(HPI_FORMAT * pF, HPI_MSG_FORMAT * pMF)
 {
 	pF->dwSampleRate = pMF->dwSampleRate;
 	pF->dwBitRate = pMF->dwBitRate;
 	pF->dwAttributes = pMF->dwAttributes;
 	pF->wChannels = pMF->wChannels;
 	pF->wFormat = pMF->wFormat;
-	pF->dwPadTo5 = 0;
+	pF->wModeLegacy = 0;
+	pF->wUnused = 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -585,6 +586,7 @@ u32    *pdwValue
 * that are conditionally generated as the DSP code is running. This API
 * provides a mechanism for the host to read any asserts pending in the
 * queue.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 			 u16 wAdapterIndex,	///< Adpater index to read assert from.
@@ -631,7 +633,7 @@ u16 HPI_AdapterGetAssert(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem h
 * The extened assert interface adds 32 bit 'line number' and dsp 
 * index to standard assert API.
 * \todo Review whether this is actually implemented anywhere ?
-* \return u16 error code HPI_ERROR_*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 			   u16 wAdapterIndex,	///<  Adapter to query.
@@ -685,7 +687,7 @@ u16 HPI_AdapterGetAssertEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 * The message processing code on the target adapter generates an assert when this
 * function is called and that assert can then be read back using the HPI_AdapterGetAssert()
 * function.
-* \return u16 error code HPI_ERROR_*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 			  u16 wAdapterIndex,	///< Index of adapter to generate the test assert.
@@ -706,6 +708,7 @@ u16 HPI_AdapterTestAssert(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem 
 
 /** Turn on a particular adapter capability.
 *
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterEnableCapability(HPI_HSUBSYS * phSubSys,
 				u16 wAdapterIndex, u16 wCapability, u32 dwKey)
@@ -741,7 +744,7 @@ HPI_ADAPTER_PROPERTY_ERRATA_1 supports correcting the CS4224 single sample delay
 independently. The sample delay for each stereo line out is bitmapped into dwParamter1, i.e. bit0
 applies to Line Out 0 and bit1 applies to Line Out 1 etc. dwParamter2 is unused for this property
 and should be set to 0.
-\return HPI_ERROR_*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterSetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 			   u16 wAdapterIndex,	///< Adapter index.
@@ -771,7 +774,7 @@ HPI_ADAPTER_PROPERTY_ERRATA_1 supports correcting the CS4224 single sample delay
 independently. The sample delay for each stereo line out is bitmapped into the returned pdwParamter1,
 i.e. bit0 applies to Line Out 0 and bit1 applies to Line Out 1 etc. pdwParamter2 is unused for this
 property and should be set to 0.
-\return HPI_ERROR_*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterGetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 			   u16 wAdapterIndex,	///< Adapter index.
@@ -802,7 +805,7 @@ u16 HPI_AdapterGetProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 
 This function allows an application to determine what property a particular adapter supports. Furthermore
 the settings for a particular propery can also be established.
-\return HPI_ERROR_*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
 u16 HPI_AdapterEnumerateProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 				 u16 wAdapterIndex,	///< Adapter index.
@@ -821,9 +824,29 @@ u16 HPI_AdapterEnumerateProperty(HPI_HSUBSYS * phSubSys,	///< HPI subsystem hand
 Perform audio I/O and format conversion
 @{
 */
-u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pFormat,
-				 u32 dwHostPollingRateInMilliSeconds,
-				 u32 * dwRecommendedBufferSize)
+
+/** Given a format and rate that the buffer is processed, return the correct buffer
+* size to support ping-pong buffering of audio.
+*
+* Calculate the minimum buffer size for a stream given the audio format that the stream 
+* will be set to use and the rate at which the host polls the stream state and reads or 
+* writes data. The buffer size returned by this function should be used as the minimum 
+* value passed to HPI_OutStreamHostBufferAllocate() or HPI_InStreamHostBufferAllocate().
+* If different formats and samplerates will be used on the stream, buffer size should be 
+* calculated for the highest datarate format, or the buffer should be freed and allocated 
+* again for each format change.
+*
+* Enabling background bus mastering (BBM) places some additional constraints on your application.
+* In order to allow the BBM to catch up if the host app has got behind, it must be possible 
+* to transfer data faster than it is being acquired.  This means that the buffer needs to 
+* be bigger than minimum.  Recommended size is at least 2x minimum.  A buffer size of 
+* Nx4096 makes the best use of memory.
+*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pFormat,	///< The format of the stream.
+				 u32 dwHostPollingRateInMilliSeconds,	///< The polling rate of the host tread that fills or empties the buffer.
+				 u32 * dwRecommendedBufferSize)	///< The recommended buffer size in milliseconds.
 {
 // compute bytes per second
 	u32 dwBytesPerSecond;
@@ -867,13 +890,89 @@ u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pFormat,
 }
 
 ////////////////////////////////////////////////////////////////////////////
-/** \defgroup outstream Ouput Stream
+/** \defgroup outstream Output Stream
+
+The following section describes the states a stream uses.
+
+\image html outstream_states.png
+
+The state HPI_STATE_DRAINED indicates that the stream has run out of decoded data.
+
+This can happen for two reasons:<br>
+Intentionally, when the end of the currently playing audio is reached.<br>
+A transient error condition when the adapter DSP was unable to decode audio fast enough.
+
+The dwDataToPlay count returned from HPI_OutStreamGetInfoEx() measures the amount of encoded data (MPEG, PCM etc) in the stream's 
+buffer.  When there is less than a whole frame of encoded data left, it cannot be decoded 
+for mixing and output. It is possible that HPI_OutStreamGetInfoEx() indicates that there is still a small amount 
+of data to play, but the stream enters the DRAINED state, and the amount of data to play
+and never gets to zero.
+
+The size of a frame varies depends on the audio format.
+Compressed formats such as MPEG require whole frames of data in order to decode audio.  The 
+size of the input frame depends on the samplerate and bitrate 
+(e.g. MPEG frame_bytes = bitrate/8 * 1152/samplerate).  
+
+AudioScience's implementation of PCM decoding also requires a minimum amount of input data. 
+ASI4xxx adapters require 4608 bytes, whereas ASI6xxx adapters require 1536 bytes for stereo, 
+half this for mono.
+
+Conservative conditions to detect end of play<br>
+Have done the final OutStreamWrite<br>
+Stream state is HPI_STATE_DRAINED<br>
+dwDataToPlay < 4608
+
+Input data requirements for different algorithms.
+
+<table border=1 cellspacing=0 cellpadding=5>
+<tr>
+<td><p><b>Bytes</b></p></td>
+<td><p><b>PCM-16</b></p></td>
+<td><p><b>MP1</b></p></td>
+<td><p><b>MP2</b></p></td>
+<td><p><b>MP3</b></p></td>
+<td><p><b>AC-2</b></p></td>
+</tr>
+<tr>
+<td>AX</td>
+<td>4608</td>
+<td><3456</td>
+<td><3456</td>
+<td>-</td>
+<td>380</td>
+</tr>
+<tr>
+<td>AX4</td>
+<td>4608</td>
+<td><3456</td>
+<td><3456</td>
+<td>3456</td>
+<td>-</td>
+</tr>
+<tr>
+<td>AX6</td>
+<td>1536</td>
+<td><=700</td>
+<td><=700</td>
+<td>1100</td>
+<td>380</td>
+</tr>
+</table>
 
 @{
 */
-u16 HPI_OutStreamOpen(HPI_HSUBSYS * phSubSys,
-		      u16 wAdapterIndex,
-		      u16 wOutStreamIndex, HPI_HOSTREAM * phOutStream)
+
+/** Open and initializes an output stream.  An Adapter index and OutStream index are 
+* passed in and an OutStream handle is passed returned.  The handle is used for all 
+* future calls to that OutStream. An output stream may only be open by only one 
+* application at a time. 
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamOpen(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		      u16 wAdapterIndex,	///< Index of adapter to be opened. Ranges from 0 to 15 and corresponds to the Adapter Index set on the adapter hardware.
+		      u16 wOutStreamIndex,	///< Index of the OutStream to be opened. Ranges from 0 to wNumOutStreams-1 (returned by HPI_AdapterGetInfo()).
+		      HPI_HOSTREAM * phOutStream	///< Returned Handle to the OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -893,7 +992,12 @@ u16 HPI_OutStreamOpen(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamClose(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
+/** Closes an output stream and deallocates host buffers if they are being used.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamClose(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		       HPI_HOSTREAM hOutStream	///< Handle of the OutStream to close.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -928,14 +1032,29 @@ u16 HPI_OutStreamGetInfo(HPI_HSUBSYS * phSubSys,
 	    );
 }
 
-/** Get information about attributes and state of output stream
+/** Get information about attributes and state of output stream.
+* This is similar to HPI_OutStreamGetInfo but returns extended information 
+* including the size of the streams buffer in pdwBufferSize. 
+* It also returns whether the stream is currently playing (the state) and the amount 
+* of audio data left to play.
+*
+* \param pdwSamplesPlayed The SamplesPlayed parameter returns the number of samples 
+* played since the last HPI_OutStreamReset command was issued.  It reflects the number 
+* of stereo samples for a stereo stream and the number of mono samples for a mono stream. 
+* This means that if a 44.1kHz stereo and mono stream were both playing they would both 
+* return SamplesPlayed=44100 after 1 second.
+*
+* \param pdwAuxiliaryDataToPlay AuxiliaryDataToPlay is only relevant when BBM is active 
+* (see HPI_OutStreamHostBufferAllocate).  In this case DataToPlay refers to the host 
+* side buffer state while AuxiliaryDataToPlay refers to the data remaining in the card's 
+* own buffers.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
-
-u16 HPI_OutStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
-			   HPI_HOSTREAM hOutStream,
-			   u16 * pwState,
-			   u32 * pdwBufferSize,
-			   u32 * pdwDataToPlay,
+u16 HPI_OutStreamGetInfoEx(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			   HPI_HOSTREAM hOutStream,	///< Handle to opened OutStream.
+			   u16 * pwState,	///< State of stream = HPI_STATE_STOPPED,HPI_STATE_PLAYING or HPI_STATE_DRAINED.
+			   u32 * pdwBufferSize,	///< Size (in bytes) of stream data buffer.
+			   u32 * pdwDataToPlay,	///< Amount of data (in bytes) left in the buffer to play.
 			   u32 * pdwSamplesPlayed, u32 * pdwAuxiliaryDataToPlay)
 {
 	HPI_MESSAGE hm;
@@ -962,14 +1081,42 @@ u16 HPI_OutStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-/** Write data of a given format from a buffer to an OutStream
+/** Writes a block of audio data to the specified output stream.
+* The data to write is specified by pData. pData also contains the format of the data 
+* (channels, compression, sampleRate).  The HPI_OutStreamWriteBuf() call copies the data in pbData array to the 
+* output stream hardware.  Once the data has been written to the stream. i.e. after the HPI_OutStreamWriteBuf() call, 
+* the memory used to hold that data may be reused.  
+*
+* \deprecated Use HPI_OutStreamWriteBuf() instead. This function may disappear from a 
+* future version.
+*
+* A different format will only be accepted in the first write after the stream is opened 
+* or reset.
+*
+* The size of the data block that may be written is limited to half the size of the 
+* streams internal data buffer (specified by dwBufferSize returned by HPI_OutStreamGetInfo()).
+*
+* \image html outstream_buf.png
+\code
+wHE = HPI_FormatCreate(
+&hpiFormat,
+2,                 // stereo channel
+HPI_FORMAT_MPEG_L2,// MPEG Layer II
+44100L,            //sample rate
+128000L,           //128k bits/sec
+0                  // no attributes
+);
 
+wHE = HPI_DataCreate( &Data, &hpiFormat, gabBuffer, BLOCK_SIZE );
+wHE = HPI_OutStreamWriteBuf( phSubSys, hOutStream, &aData, dwBytes, &hpiFormat);
+\endcode
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
-u16 HPI_OutStreamWriteBuf(HPI_HSUBSYS * phSubSys,	///< subystem handle
-			  HPI_HOSTREAM hOutStream,	///< stream handle
-			  u8 * pbData,	///< Pointer to buffer containing data
-			  u32 dwBytesToWrite,	///< Number of bytes to write, must be <= space available
-			  HPI_FORMAT * pFormat	///< Format structure describing the format of the data
+u16 HPI_OutStreamWriteBuf(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			  HPI_HOSTREAM hOutStream,	///< Handle to opened OutStream.
+			  u8 * pbData,	///< Pointer to buffer containing data to be written to the playback buffer.
+			  u32 dwBytesToWrite,	///< Number of bytes to write, must be <= space available.
+			  HPI_FORMAT * pFormat	///< Format structure describing the format of the data.
     )
 {
 	HPI_MESSAGE hm;
@@ -981,7 +1128,7 @@ u16 HPI_OutStreamWriteBuf(HPI_HSUBSYS * phSubSys,	///< subystem handle
 	hm.u.d.u.Data.pbData = pbData;
 	hm.u.d.u.Data.dwDataSize = dwBytesToWrite;
 
-	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
+	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
@@ -989,12 +1136,41 @@ u16 HPI_OutStreamWriteBuf(HPI_HSUBSYS * phSubSys,	///< subystem handle
 }
 
 #ifndef HPI_WITHOUT_HPI_DATA
-/** Write data described by HPI_DATA to an OutStream
+/** Writes a block of audio data to the specified output stream.
+* The data to write is specified by pData. pData also contains the format of the data 
+* (channels, compression, sampleRate).  The HPI_OutStreamWrite() call copies the data in pData to the 
+* output stream hardware.  Once the data has been written to the stream, the memory used to 
+* hold that data may be reused.  
+*
+* \deprecated Use HPI_OutStreamWriteBuf() instead. This function may disappear from a 
+* future version.
+*
+* A different format will only be accepted in the first write after the stream is opened 
+* or reset.
+*
+* The size of the data block that may be written is limited to half the size of the 
+* streams internal data buffer (specified by dwBufferSize returned by HPI_OutStreamGetInfo()).
+*
+* \image html outstream_buf.png
+\code
+wHE = HPI_FormatCreate(
+&hpiFormat,
+2,                 // stereo channel
+HPI_FORMAT_MPEG_L2,// MPEG Layer II
+44100L,            //sample rate
+128000L,           //128k bits/sec
+0                  // no attributes
+);
 
-\deprecated Use HPI_OutStreamWriteBuf() instead. This function may disappear from a future version.
+wHE = HPI_DataCreate( &Data, &hpiFormat, gabBuffer, BLOCK_SIZE );
+wHE = HPI_OutStreamWrite( phSubSys, hOutStream, &Data);
+\endcode
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
 */
-u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
-		       HPI_HOSTREAM hOutStream, HPI_DATA * pData)
+u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		       HPI_HOSTREAM hOutStream,	///< Handle to opened OutStream.
+		       HPI_DATA * pData	///< Pointer to an HPI_DATA structure containing a description of the audio data to be written to the OutStream and played.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1010,7 +1186,15 @@ u16 HPI_OutStreamWrite(HPI_HSUBSYS * phSubSys,
 }
 #endif
 
-u16 HPI_OutStreamStart(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
+/** Starts an output stream playing audio data.  
+* Data is taken from the circular buffer on the adapter hardware that has already been 
+* partially filled by HPI_OutStreamWrite commands.  Audio is played from the current 
+* position in the buffer (which may be reset using HPI_OutStreamReset).
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamStart(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		       HPI_HOSTREAM hOutStream	///< Handle to OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1024,7 +1208,14 @@ u16 HPI_OutStreamStart(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamStop(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
+/** Stops an output stream playing audio data.
+* The audio data buffer is not cleared, so a subsequent OutStreamStart will resume playing 
+* at the position in the buffer where the playback had been stopped.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamStop(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		      HPI_HOSTREAM hOutStream	///< Handle to OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1038,7 +1229,12 @@ u16 HPI_OutStreamStop(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamSinegen(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
+/** Generate a sinewave output on the specified stream.
+* \note This function is unimplemented.
+*/
+u16 HPI_OutStreamSinegen(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			 HPI_HOSTREAM hOutStream	///< Handle to OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1052,7 +1248,13 @@ u16 HPI_OutStreamSinegen(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamReset(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
+/** Clears the audio data buffer of an output stream.  
+* If the stream was playing at the time, it will be stopped.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamReset(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		       HPI_HOSTREAM hOutStream	///< Handle to OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1066,8 +1268,15 @@ u16 HPI_OutStreamReset(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamQueryFormat(HPI_HSUBSYS * phSubSys,
-			     HPI_HOSTREAM hOutStream, HPI_FORMAT * pFormat)
+/** Queries an OutStream to see whether it supports a certain audio format, 
+* described in pFormat.  The result, returned in the error code, is 0 if 
+* supported and HPI_ERROR_INVALID_FORMAT if not supported.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamQueryFormat(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			     HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+			     HPI_FORMAT * pFormat	///< Format structure containing the format to query.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1077,16 +1286,70 @@ u16 HPI_OutStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 	HPI_HANDLETOINDEXES(hOutStream, &hm.wAdapterIndex,
 			    &hm.u.d.wStreamIndex);
 
-	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
+	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
 	return (hr.wError);
 }
 
-// SGT feb-26-99
-u16 HPI_OutStreamSetVelocity(HPI_HSUBSYS * phSubSys,
-			     HPI_HOSTREAM hOutStream, short nVelocity)
+/** Sets the playback velocity for scrubbing. Velocity range is +/- 4.0. 
+* nVelocity in set by
+\code
+nVelocity = (u16)(fVelocity * HPI_VELOCITY_UNITS);
+\endcode
+* where fVelocity in a floating point number in the range of -4.0 to +4.0.
+* This call puts the stream in "scrub" mode. The first call to HPI_OutStreamSetVelocity() 
+* should be made while the stream is reset so that scrubbing can be performed after 
+* starting playback.
+*
+*\note <b>This functionality is only available on the ASI4300 series adapters.</b>
+*
+* <b>Call sequence</b>
+*
+* A typical playback call sequence without scrubbing is:
+\verbatim
+Write
+Write
+Start
+Write
+.....
+
+Stop
+\endverbatim
+A typical playback sequence with scrubbing is:
+\verbatim
+Write
+Write
+SetVelocity
+Start
+Write
+SetVelocity
+.....
+\endverbatim
+*
+* Stop - automatically turns of velocity/scrub mode.
+*
+* <b>Data flow</b>
+*
+* The scrubbing approach taken here is to decode audio to a "scrub buffer" that contains 
+* many seconds of PCM that can be traversed in at a variable rate.
+* \image html outstream_scrub.png
+* Forward scrubbing does not have any limitations what-so-ever, apart from the maximum speed, 
+* as specified by HPI_OutStreamSetVelocity(). 
+*
+* Reverse scrubbing operates under the following constraints:<br>
+* 1) The user may not scrub on audio prior to the HPI_OutStreamStart( ) data point.<br>
+* 2) The user may not reverse scrub further than -10 seconds from the forward most scrub position.<br>
+* If either of these constraints is broken, the stream state will return HPI_STATE_DRAINED 
+* and audio playback will cease. The user can then forward scrub again after this error 
+* condition.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamSetVelocity(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			     HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+			     short nVelocity	///< The velocity in units HPI_VELOCITY_UNITS.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1102,8 +1365,11 @@ u16 HPI_OutStreamSetVelocity(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamSetPunchInOut(HPI_HSUBSYS * phSubSys,
-			       HPI_HOSTREAM hOutStream,
+/** Set punch in and out points in a buffer.
+* \note Currently unimplemented.
+*/
+u16 HPI_OutStreamSetPunchInOut(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			       HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
 			       u32 dwPunchInSample, u32 dwPunchOutSample)
 {
 	HPI_MESSAGE hm;
@@ -1121,8 +1387,24 @@ u16 HPI_OutStreamSetPunchInOut(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamAncillaryReset(HPI_HSUBSYS * phSubSys,
-				HPI_HOSTREAM hOutStream, u16 wMode)
+/** Resets MPEG ancillary data extraction.
+* Initializes the MPEG Layer II / III Ancillary data channel to support the extraction 
+* of wBytesPerFrame bytes from the MPEG bitstream. 
+*
+* \note This call must be made after HPI_OutStreamOpen()
+* or HPI_OutStreamReset and before the first HPI_OutStreamWrite() call.
+*
+* \param wMode The mode for the ancillary data extraction to operate in. Valid settings 
+* are HPI_MPEG_ANC_RAW and HPI_MPEG_ANC_HASENERGY. The "RAW" mode indicates that the 
+* entire ancillary data field is taken up by data from the Anc data buffer. The "HASENERGY" 
+* option tells the decoder that the MPEG frames have energy information stored in them 
+* (5 bytes per stereo frame, 3 per mono). 
+*
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamAncillaryReset(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+				HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+				u16 wMode)
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1136,9 +1418,13 @@ u16 HPI_OutStreamAncillaryReset(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
-				  HPI_HOSTREAM hOutStream,
-				  u32 * pdwFramesAvailable)
+/** Returns information about the Ancillary stream. 
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+				  HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+				  u32 * pdwFramesAvailable	///< Number of HPI_ANC_FRAMEs in the hardware buffer available for reading.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1157,11 +1443,33 @@ u16 HPI_OutStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamAncillaryRead(HPI_HSUBSYS * phSubSys,
-			       HPI_HOSTREAM hOutStream,
-			       HPI_ANC_FRAME * pAncFrameBuffer,
-			       u32 dwAncFrameBufferSizeInBytes,
-			       u32 dwNumberOfAncillaryFramesToRead)
+/** Reads frames of ancillary data from a stream's ancillary data buffer to pdwBuffer. 
+* Note that in the situation where energy level information is embedded in the ancillary 
+* data stream along with ancillary data, only the ancillary data will be returned in the 
+* ancillary data buffer.
+*
+* Bytes are filled in the bData[] array of the HPI_ANC_FRAME structures in the following 
+* order.
+* 
+* The first bit of ancillary information that follows the valid audio data is placed in 
+* bit 7 of  bData[0]. The first 8 bits of ancillary information following valid audio 
+* data are all placed in bData[0]. In the case where there are 6 bytes total of ancillary 
+* information (48 bits) the last byte filled is bData[5].
+* 
+* \note If OutStreamAncillaryReset() was called with mode=HPI_MPEG_ANC_RAW, the ancillary 
+* data in its entirety is placed in the AncFrameBuffer, so if the file was recorded with 
+* energy information in the ancillary data field, the energy information will be included 
+* in the extracted ancillary data.
+* \note If OutStreamAncillaryReset() was called with mode=HPI_MPEG_ANC_HASENERGY, the 
+* ancillary data minus the energy information is placed in the AncFrameBuffer.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamAncillaryRead(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			       HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+			       HPI_ANC_FRAME * pAncFrameBuffer,	///< A pointer to a buffer where the read Ancillary data frames should be placed.
+			       u32 dwAncFrameBufferSizeInBytes,	///< The size of the Ancillary data buffer in bytes (used for a sanity check).
+			       u32 dwNumberOfAncillaryFramesToRead	///< How many frames to read.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1178,8 +1486,28 @@ u16 HPI_OutStreamAncillaryRead(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamSetTimeScale(HPI_HSUBSYS * phSubSys,
-			      HPI_HOSTREAM hOutStream, u32 dwTimeScale)
+/** Sets the playback time scale with pitch and content preservation. 
+* Range is 0.8-1.2 (80% to 120%) of original time.<br>
+* dwTimeScale in set by:<br>
+\code
+dwTimeScale = (u16)(fTimeScale * HPI_OSTREAM_TIMESCALE_UNITS);
+\endcode
+* where fTimeScale in a floating point number in the range of 0.8 < fTimeScale  < 1.2.
+* The actual granularity of this setting is 1 / 2048  or approximately 0.05% 
+* (approx 5 HPI_OSTREAM_TIMESCALE_UNITS).
+*
+* The first call to HPI_OutStreamSetTimeScale should be made while the stream is reset 
+* so that time scaling can be performed after starting playback.  Subsequent calls to 
+* HPI_OutStreamSetTimeScale can be made when the stream is playing to modify the 
+* timescale factor.
+*
+* \note This functionality is only available on ASI6000 series adapters.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamSetTimeScale(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			      HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+			      u32 dwTimeScale	///< The time scale in units of HPI_OSTREAM_TIMESCALE_UNITS.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1195,8 +1523,33 @@ u16 HPI_OutStreamSetTimeScale(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
-				    HPI_HOSTREAM hOutStream, u32 dwSizeInBytes)
+/** Allocates a buffer inside the driver for bus mastering transfers.
+* Once the buffer is allocated, OutStream data will be transferred from it in the 
+* background (rather than the application having to wait for the transfer).
+*
+* This function is provided so that the application can match the size of its transfers 
+* to the size of the buffer.
+*
+* After a call to HPI_OutStreamHostBufferAllocate(), HPI_OutStreamGetInfoEx()  returns 
+* the size and data available in host buffer rather than the buffers on the adapter. 
+* However, while there is space in the adapter buffers, data will be quickly transferred 
+* to the adapter, providing additional buffering against delays in sending more audio data.
+*
+* \note There is a minimum buffer size that will work with a given audio format and 
+* polling rate. An appropriate size for the buffer can be calculated using HPI_StreamEstimateHostBufferSize().
+*
+* If an error occurs or the adapter doesn't support host buffering then no buffer is 
+* allocated. Stream transfers still take place using foreground transfers (all drivers pre 2004).
+* Performance will be relatively worse.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*     Special cases include HPI_ERROR_INVALID_DATASIZE if memory can't be 
+* allocated (retrying the call with a smaller size may succeed) and HPI_ERROR_INVALID_OPERATION
+* if virtual address of the allocated buffer can't be found.
+*/
+u16 HPI_OutStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+				    HPI_HOSTREAM hOutStream,	///< Handle to OutStream.
+				    u32 dwSizeInBytes	///< Size of bus mastering buffer to allocate.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1210,7 +1563,13 @@ u16 HPI_OutStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
+/** Free any buffers allocated by HPI_OutStreamHostBufferAllocate().
+* \return 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamHostBufferFree(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+				HPI_HOSTREAM hOutStream	///< Handle to OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1223,9 +1582,25 @@ u16 HPI_OutStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HOSTREAM hOutStream)
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamGroupAdd(HPI_HSUBSYS * phSubSys,
-			  HPI_HOSTREAM hOutStreamHandle,
-			  HPI_HSTREAM hStreamHandle)
+/** This function adds a stream to a group of streams. Stream groups are
+* used to synchronise starting and stopping of multiple streams at once.
+* The application of this is to support playing (or recording) multiple
+* streams at once so as to support multi-channel recording and playback.
+*
+* When using the "Group" functions all streams that are to be grouped
+* together should be opened. One of the streams should be selected to
+* be the master stream and the other streams should be added to it's group.
+* Both in streams and out streams can be added to the same group.
+* Once a group has been formed, HPI_OutStreamStart() called on the master
+* will cause all streams to start at once.
+*
+* \note This function is only supported on on ASI6000 and ASI5000 adapters.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamGroupAdd(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			  HPI_HOSTREAM hOutStreamHandle,	///< Handle to OutStream.
+			  HPI_HSTREAM hStreamHandle	///< Handle to either an in stream or an out stream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1262,8 +1637,18 @@ u16 HPI_OutStreamGroupAdd(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamGroupGetMap(HPI_HSUBSYS * phSubSys,
-			     HPI_HOSTREAM hOutStreamHandle,
+/** This function returns information about the streams that form a group.
+* Given an out stream handle, it returns a bit mapped representation of which
+* streams belong to the group.
+* \param pdwOutStreamMap Bitmapped representation of out streams grouped with this 
+* output stream. b0 represents outstream 0, b1 outstream 1, b2 outstream 2 etc.
+* \param pdwInStreamMap Bitmapped representation of in streams grouped with this 
+* output stream. b0 represents instream 0, b1 instream 1, b2 instream 2 etc.
+* \note This function is only supported on on ASI6000 and ASI5000 adapters.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamGroupGetMap(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			     HPI_HOSTREAM hOutStreamHandle,	///< Handle to OutStream.
 			     u32 * pdwOutStreamMap, u32 * pdwInStreamMap)
 {
 	HPI_MESSAGE hm;
@@ -1283,8 +1668,13 @@ u16 HPI_OutStreamGroupGetMap(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_OutStreamGroupReset(HPI_HSUBSYS * phSubSys,
-			    HPI_HOSTREAM hOutStreamHandle)
+/** Resets stream grouping information for a given out stream.
+* \note This function is only supported on on ASI6000 and ASI5000 adapters.
+* \return 0 upon success, HPI_ERROR_XXX code if an error occurs.
+*/
+u16 HPI_OutStreamGroupReset(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+			    HPI_HOSTREAM hOutStreamHandle	///< Handle to OutStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1300,12 +1690,28 @@ u16 HPI_OutStreamGroupReset(HPI_HSUBSYS * phSubSys,
 	  /** @} */// outstream
 ///////////////////////////////////////////////////////////////////////////
 /** \defgroup instream Input Stream
-
 @{
 */
-u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
-		     u16 wAdapterIndex,
-		     u16 wInStreamIndex, HPI_HISTREAM * phInStream)
+/** Open and initializes an input stream.
+* 
+* An Adapter index and InStream index are passed in
+* and an InStream handle is passed back.  The handle is used for all future calls to
+* that InStream.  A particular input stream may only be open by one application at a time.
+*
+* \note A side effect of HPI_InStreamOpen() is that the following default ancillary data settings are made:
+*     - Ancillary Bytes Per Frame = 0
+*     - Ancillary Mode = HPI_MPEG_ANC_HASENERGY
+*     - Ancillary Alignment = HPI_MPEG_ANC_ALIGN_RIGHT
+*
+* \return Error 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
+		     u16 wAdapterIndex,	///< Index of adapter to be accessed.  Ranges from 0 to 15 and corresponds to the Adapter Index set on the adapter hardware.
+		     u16 wInStreamIndex,	///< Index of the InStream to be opened.  Ranges from 0 to wNumInStreams-1 (returned by HPI_AdapterGetInfo())
+		     HPI_HISTREAM * phInStream	///< Returned handle to the opened InStream.
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1339,7 +1745,15 @@ u16 HPI_InStreamOpen(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_InStreamClose(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
+/**
+* Closes an input stream. Deallocates allocated host buffer.
+*
+* \return Error 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+u16 HPI_InStreamClose(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+		      HPI_HISTREAM hInStream	///< Handle to the InStream to close
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1359,8 +1773,17 @@ u16 HPI_InStreamClose(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 	return (hr.wError);
 }
 
-u16 HPI_InStreamQueryFormat(HPI_HSUBSYS * phSubSys,
-			    HPI_HISTREAM hInStream, HPI_FORMAT * pFormat)
+/**
+* Queries an input stream to see whether it supports a certain audio format, described in pFormat.
+* 
+* \return Error 0 if supported\n
+* HPI_ERROR_INVALID_FORMAT if not supported.
+*/
+
+u16 HPI_InStreamQueryFormat(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+			    HPI_HISTREAM hInStream,	///< Handle to the InStream to close
+			    HPI_FORMAT * pFormat	///< Not listed in 3.7.12 of Spchpi.doc
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1370,12 +1793,25 @@ u16 HPI_InStreamQueryFormat(HPI_HSUBSYS * phSubSys,
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_QUERY_FORMAT);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
 			     &hm.wDspIndex);
-	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
+	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
 	return (hr.wError);
 }
+
+/**
+* Sets the recording format for an input stream.
+*
+* The format to set is described by pFormat.
+*
+* \return Error code 0 if supported\n
+*HPI_ERROR_INVALID_FORMAT if not supported.
+*
+* \note Code example in Spchpi.doc.  Need to figure out how to format.
+* Also need to add 3.7.13.1.
+* Also need to add 3.7.14.
+*/
 
 u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 			  HPI_HISTREAM hInStream, HPI_FORMAT * pFormat)
@@ -1388,7 +1824,7 @@ u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_SET_FORMAT);
 	HPI_HANDLETOINDEXES3(hInStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex,
 			     &hm.wDspIndex);
-	HPI_FORMAT_TO_MSG(&hm.u.d.u.Data.Format, pFormat);
+	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);	// send the message to all the HPIs
 
@@ -1396,6 +1832,24 @@ u16 HPI_InStreamSetFormat(HPI_HSUBSYS * phSubSys,
 }
 
 /** Read data from an InStream into a buffer
+*/
+/**
+* Reads a block of audio data from the specified InStream. The memory data buffer to read into is specified by pData. 
+* The HPI will copy the data in the InStream hardware buffer to memory buffer pointed to by pData->pbData.
+*
+* The size of the data block that may be read may be any size up to the amount of data available in the hardware buffer
+* specified by dwDataAvailable returned by HPI_InStreamGetInfo() ).
+* \par Diagram
+* Need to add diagram
+*
+* \param *phSubSys Pointer to HPI subsystem handle.
+* \param hInStream Handle to the InStream to close
+* \param pbData Pointer to an HPI_DATA structure containing a description of the audio data to be read from the InStream. 
+* \param dwBytesToRead Number of bytes to read, must be <= number available
+*
+* \return Error 0 upon success\n
+*      HPI_ERROR_XXX code if an error occurs
+*
 */
 u16 HPI_InStreamReadBuf(HPI_HSUBSYS * phSubSys,	///< subsystem handle
 			HPI_HISTREAM hInStream,	///< InStream handle
@@ -1427,8 +1881,23 @@ Note that the format part of HPI_DATA is ignored.
 \deprecated Use HPI_InStreamReadBuf() instead. This function may disappear from a future version.
 */
 
-u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
-		     HPI_HISTREAM hInStream, HPI_DATA * pData)
+/**
+* Reads a block of audio data from the specified InStream. The memory data buffer to read into is specified by pData.
+* The HPI will copy the data in the InStream hardware buffer to memory buffer pointed to by pData->pbData. 
+*
+* The size of the data block that may be read may be any size up to the amount of data available in the hardware
+* buffer (specified by dwDataAvailable returned by HPI_InStreamGetInfo()).
+*
+* \par Diagram
+* Need to add diagram
+*
+* \return Error        0 upon success\n
+*      HPI_ERROR_XXX code if an error occurs
+*/
+u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,	///< subsystem handle
+		     HPI_HISTREAM hInStream,	///< InStream handle
+		     HPI_DATA * pData	///< Pointer to buffer for read data
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1446,7 +1915,17 @@ u16 HPI_InStreamRead(HPI_HSUBSYS * phSubSys,
 }
 #endif
 
-u16 HPI_InStreamStart(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
+/**
+* Starts an input stream recording audio data.  Audio data is written into the adapters hardware buffer using the currently selected audio format
+*(channels, sample rate, compression format etc.).  Data is then read from the buffer using HPI_InStreamRead().
+*
+* \return Error 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_InStreamStart(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+		      HPI_HISTREAM hInStream	///< InStream handle
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1462,7 +1941,18 @@ u16 HPI_InStreamStart(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 	return (hr.wError);
 }
 
-u16 HPI_InStreamStop(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
+/**
+* Stops an input stream recording audio data.  The audio data buffers is not cleaared, so a subsequent InStreamStart will resume recording at the
+* position in the buffer where the record had been stopped.
+* Second paragraph
+*
+* \return Error 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_InStreamStop(HPI_HSUBSYS * phSubSys,	///< subsystem handle
+		     HPI_HISTREAM hInStream	///< InStream handle
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1478,7 +1968,16 @@ u16 HPI_InStreamStop(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 	return (hr.wError);
 }
 
-u16 HPI_InStreamReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
+/**
+* Clears the audio data buffer of an input stream.  If the stream was recording at the time, it will be stopped.
+*
+* \return  Error 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_InStreamReset(HPI_HSUBSYS * phSubSys,	///< subsystem handle
+		      HPI_HISTREAM hInStream	///< InStream handle
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1497,10 +1996,22 @@ u16 HPI_InStreamReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
 /**
 \deprecated This function has been superseded by HPI_InStreamGetInfoEx()
 */
-u16 HPI_InStreamGetInfo(HPI_HSUBSYS * phSubSys,
-			HPI_HOSTREAM hOutStream,
-			u16 * pwState,
-			u32 * pdwBufferSize, u32 * pdwDataRecorded)
+
+/**
+\deprecated This function has been superseded by HPI_InStreamGetInfoEx()
+*
+* Returns information about the input stream.
+*
+*This includes the size of the stream’s hardware buffer returned in pdwBufferSize. 
+* Also includes whether the stream is currently recording (the state) and the amount of audio data currently contained in the buffer.
+*/
+
+u16 HPI_InStreamGetInfo(HPI_HSUBSYS * phSubSys,	///< subsystem handle
+			HPI_HOSTREAM hOutStream,	///< InStream handle
+			u16 * pwState,	///< State of stream = HPI_STATE_STOPPED or HPI_STATE_RECORDING
+			u32 * pdwBufferSize,	///< Size (in bytes) of stream data buffer
+			u32 * pdwDataRecorded	///< Amount of data (in bytes) contained in the hardware buffer.
+    )
 {
 	return (HPI_InStreamGetInfoEx(phSubSys,
 				      hOutStream,
@@ -1510,13 +2021,33 @@ u16 HPI_InStreamGetInfo(HPI_HSUBSYS * phSubSys,
 	    );
 }
 
-u16 HPI_InStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
-			  HPI_HISTREAM hInStream,
-			  u16 * pwState,
-			  u32 * pdwBufferSize,
-			  u32 * pdwDataRecorded,
-			  u32 * pdwSamplesRecorded,
-			  u32 * pdwAuxiliaryDataRecorded)
+/** Returns extended information about the input stream.
+*
+* This includes the size of the stream’s hardware buffer returned in pdwBufferSize.  Also includes whether the
+* stream is currently recording (the state), the amount of audio data currently contained in the buffer and how many samples have been recorded.
+*
+* \param pdwSamplesRecorded The SamplesRecorded parameter returns the number of samples recorded since the
+* last HPI_InStreamReset command was issued.  It reflects the number of stereo samples for a stereo stream and the
+* number of mono samples for a mono stream.  This means that if a 44.1kHz stereo and mono stream were both recording
+* they would both return SamplesRecorded=44100 after 1 second.
+*
+* \param pdwDataRecorded DataRecorded returns the amount of data available to be read back in the next
+* HPI_InStreamRead call. When BBM is active this is the data in the host buffer, otherwise it is the amount in the on-card buffer.
+*
+* \param pdwAuxiliaryDataRecorded AuxiliaryDataRecorded is only valid when BBM is being used (see HPI_InStreamHostBufferAllocate).
+In BBM mode it returns the amount of data left in the on-card buffers.  This can be used to determine if a record overrun has occurred
+*  (both BBM and card buffers full), or at the end of recording to ensure that all recorded data has been read.
+
+*/
+
+u16 HPI_InStreamGetInfoEx(HPI_HSUBSYS * phSubSys,	///< subsystem handle
+			  HPI_HISTREAM hInStream,	///< InStream handle
+			  u16 * pwState,	///< State of stream = HPI_STATE_STOPPED or HPI_STATE_RECORDING
+			  u32 * pdwBufferSize,	///< Sixe (in bytes) of stream data buffer
+			  u32 * pdwDataRecorded,	///< Amount of data (in bytes) contained in the hardware buffer.
+			  u32 * pdwSamplesRecorded,	///< Number of samples recorded since an HPI_InStreamReset was last issued
+			  u32 * pdwAuxiliaryDataRecorded	///< Amount of data in on-card buffers when BBM is active
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1542,7 +2073,36 @@ u16 HPI_InStreamGetInfoEx(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream, u16 wBytesPerFrame, u16 wMode,	// = HPI_MPEG_ANC_XXX
+/**
+* Initializes the MPEG Layer II / III Ancillary data channel to support the embedding of wBytesPerFrame bytes into the MPEG bitstream.
+*
+* See the below table for the relationship between wBytesPerFrame and the datarate on the ancillary data channel.
+*
+* \note Need to add diagram, ancillary data table, and Notes1-3.
+*
+* \param wBytesPerFrame This variable specifies the rate at which data is inserted into the Ancillary data channel.
+* Note that when (wMode== HPI_MPEG_ANC_HASENERGY, see below) an additional 5 bytes per frame are
+* automatically allocated for energy information.
+* \param wMode The mode for the ancillary data extraction to operate in. Valid settings are HPI_MPEG_ANC_RAW and
+* HPI_MPEG_ANC_HASENERGY. The “RAW” mode indicates that the entire ancillary data field is taken up by data from the
+* Anc data buffer. The “HASENERGY” option tells the encoder that the MPEG frames have energy information stored in them
+* (5 bytes per stereo frame, 3 per mono). The encoder will insert the energy bytes before filling the remainder of the
+* ancillary data space with data from the ancillary data buffer.
+* \param wAlignment HPI_MPEG_ANC_ALIGN_LEFT – the wBytesPerFrame data immediately follow the audio data.
+* Spare space is left at the end of the frame.
+* HPI_MPEG_ANC_ALIGN_RIGHT – the wBytesPerFrame data is packed against the end of the frame. Spare space is left at the start of the frame.
+* HPI_MPEG_ANC_ALIGN_FILL – all ancillary data space in the frame is used. wBytesPerFrame or more data is written per frame. There is no spare space.
+*This parameter is ignored for MP3 encoding, effectively it is fixed at HPI_MPEG_ANC_ALIGN_FILL  (See Note 2)
+* \param wIdleBit This field tells the encoder what to set all the bits of the ancillary data field to in the case where there is no data waiting to be inserted.
+* Valid values are 0 or 1.  This parameter is ignored for MP3 encoding, if no data is available, no data will be inserted  (See Note 2)
+* 
+* \return Error 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+			       HPI_HISTREAM hInStream,	///< Handle for InStream
+			       u16 wBytesPerFrame, u16 wMode,	// = HPI_MPEG_ANC_XXX
 			       u16 wAlignment, u16 wIdleBit)
 {
 	HPI_MESSAGE hm;
@@ -1564,8 +2124,13 @@ u16 HPI_InStreamAncillaryReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream, u
 	return (hr.wError);
 }
 
-u16 HPI_InStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
-				 HPI_HISTREAM hInStream, u32 * pdwFrameSpace)
+/**
+* Returns information about the ancillary data stream. 
+*/
+
+u16 HPI_InStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle
+				 HPI_HISTREAM hInStream,	///< Handle to the InStream
+				 u32 * pdwFrameSpace)	///< Maximum number of ancillary data frames that can be written to the anc frame buffer
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1581,6 +2146,13 @@ u16 HPI_InStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,
 		    sizeof(HPI_ANC_FRAME);
 	return (hr.wError);
 }
+
+/**
+* Writes dwNumberOfAncDataFramesToWrite frames from pAncFrameBuffer to the stream’s ancillary data buffer.
+*
+*The first bit of ancillary information that follows the valid audio data is bit 7 of  bData[0]. The first 8 bits of ancillary information following
+* valid audio data are from bData[0]. In the case where there are 6 bytes total of ancillary information (48 bits) the last byte inserted in the frame is bData[5].
+*/
 
 u16 HPI_InStreamAncillaryWrite(HPI_HSUBSYS * phSubSys,
 			       HPI_HISTREAM hInStream,
@@ -1605,8 +2177,25 @@ u16 HPI_InStreamAncillaryWrite(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
-				   HPI_HISTREAM hInStream, u32 dwSizeInBytes)
+/**
+* Assuming no error:
+* Allocates a buffer on the host PC for bus mastering transfers.  Once the buffer is allocated, InStream data will be transferred
+* to it in the background. (rather than the application having to wait for the transfer)
+* This function is provided so that the application can match the size of its transfers to the size of the buffer.
+*
+* From now on, HPI_InStreamGetInfoEx() will return the size and data available in host buffer rather than the buffers on the adapter.
+* However, if the host buffer is allowed to fill up, the adapter buffers will then begin to fill up. In other words you still have the benefit
+* of the larger adapter buffers
+* \note There is a minimum buffer size that will work with a given audio format and polling rate. An appropriate size
+* for the buffer can be calculated using HPI_StreamEstimateHostBufferSize()
+*
+* \return Error 0 upon success\n
+* HPI_ERROR_INVALID_DATASIZE if memory can’t be allocated (retrying the call with a smaller size may succeed)\n
+* HPI_ERROR_INVALID_OPERATION if virtual address of buffer can’t be found.
+*/
+u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle
+				   HPI_HISTREAM hInStream,	///< Handle of the InStream
+				   u32 dwSizeInBytes)	///< Size of bus mastering buffer to allocate
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1620,7 +2209,14 @@ u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_InStreamHostBufferFree(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStream)
+/**
+* Free any buffers allocated by HPI_InStreamHostBufferAllocate
+*
+* \return Error 0 upon success\n
+*      HPI_ERROR_INVALID_FUNC if the function is not implemented
+*/
+u16 HPI_InStreamHostBufferFree(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle
+			       HPI_HISTREAM hInStream)	///< Handle of the InStream
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1715,8 +2311,20 @@ u16 HPI_InStreamGroupReset(HPI_HSUBSYS * phSubSys, HPI_HISTREAM hInStreamHandle)
 @{
 */
 
-u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSys,
-		  u16 wAdapterIndex, HPI_HMIXER * phMixerHandle)
+/**
+*Open and initializes an adapters mixer. 
+*
+* An Adapter index is passed in and a Mixer handle is passed back.  The handle is used for all future calls to that Mixer.
+* A particular mixer may only be open by one application at one time.
+*
+* \return 0 upon success\n
+*HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+		  u16 wAdapterIndex,	///< Index of adapter to be opened.  Ranges from 0 to 15 and corresponds to the Adapter Index set on the adapter hardware.
+		  HPI_HMIXER * phMixerHandle	///< Handle to the Mixer
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1734,7 +2342,16 @@ u16 HPI_MixerOpen(HPI_HSUBSYS * phSubSys,
 	return (hr.wError);
 }
 
-u16 HPI_MixerClose(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle)
+/**
+* Closes a mixer.
+*
+* \return 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_MixerClose(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+		   HPI_HMIXER hMixerHandle	///< Handle to the adapter mixer to close
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -1745,8 +2362,42 @@ u16 HPI_MixerClose(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle)
 	return (hr.wError);
 }
 
-u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSys, HPI_HMIXER hMixerHandle, u16 wSrcNodeType, u16 wSrcNodeTypeIndex, u16 wDstNodeType, u16 wDstNodeTypeIndex, u16 wControlType,	// HPI_CONTROL_METER, _VOLUME etc
-			HPI_HCONTROL * phControlHandle)
+/**
+* Gets a mixer control.
+* The control maybe located in one of three places:\n
+* 1 - On a connection between a source node and a destination node.
+* You specify both source and destination nodes (via type and type index).
+* 2 - On a source node.
+*You specify the source node and leave the destination node type and index as 0.
+*3 - On a destination node.
+*You specify the destination node and leave the source node type and index as 0.
+*
+* \note Not all adapters have controls at all nodes, or between all nodes.  Consult the Mixer Map for your particular
+*adapter to find out the location and type of controls in its mixer.
+* \example Say you have an audio adapter with a mixer that has the following layout: 
+* (Need to add diagram.)
+* You can see that the mixer has two meter controls, located on each of the Outstream source nodes, two volume controls, located between
+* the OutStream sources and the LineOut destination nodes and one level control located on the LineOut destination node.
+*
+* You would use the following code to obtain a handle to the volume control that lies on the connection between OutStream#1 and LineOut#0:
+* (Need to add code block.)
+*
+* You would use the following code to obtain a handle to the level control that lies on the LineOut#0 node:
+* (Need to add code block.)
+*
+*\return 0 upon success\n
+* HPI_ERROR_XXX code if an error occurs
+*/
+
+u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
+			HPI_HMIXER hMixerHandle,	///< Mixer handle
+			u16 wSrcNodeType,	///< Source node type i.e. HPI_SOURCENODE_OSTREAM
+			u16 wSrcNodeTypeIndex,	///< Index of particular source node type i.e. the 2nd HPI_SOURCENODE_OSTREAM would be specified as index=1
+			u16 wDstNodeType,	///< Destination node type i.e. HPI_DESTNODE_LINEOUT
+			u16 wDstNodeTypeIndex,	///< Index of particular source node type i.e. the 3rd HPI_DESTNODE_LINEOUT would be specified as index=2
+			u16 wControlType,	// HPI_CONTROL_METER, _VOLUME etc///< Type of mixer control i.e. HPI_CONTROL_METER,  VOLUME, METER or LEVEL. See additional HPI_CONTROL_xxxx types defined in HPI.H
+			HPI_HCONTROL * phControlHandle	///< Handle to the particular control
+    )
 {
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
@@ -5174,7 +5825,7 @@ u16 HPI_FormatCreate(HPI_FORMAT * pFormat,	///< [out] Format structure to be ini
 		Format.dwAttributes = dwAttributes;
 	}
 
-	HPI_MSG_TO_FORMAT(pFormat, &Format);
+	HPI_MsgToFormat(pFormat, &Format);
 	return (wError);
 }
 
@@ -5263,7 +5914,8 @@ u16 HPI_WaveFormatToHpiFormat(const PWAVEFORMATEX lpFormatEx,
 	pHpiFormat->wChannels = lpFormatEx->nChannels;
 	pHpiFormat->dwSampleRate = lpFormatEx->nSamplesPerSec;
 	pHpiFormat->dwAttributes = 0;
-	pHpiFormat->dwPadTo5 = 0;
+	pHpiFormat->wModeLegacy = 0;
+	pHpiFormat->wUnused = 0;
 
 	return (wError);
 }
@@ -5382,7 +6034,7 @@ u16 HPI_DataCreate(HPI_DATA * pData,	///<[inout] Structure to be initialised
 {
 	HPI_MSG_DATA *pMD = (HPI_MSG_DATA *) pData;
 
-	HPI_FORMAT_TO_MSG(&pMD->Format, pFormat);
+	HPI_FormatToMsg(&pMD->Format, pFormat);
 
 	pMD->pbData = pbData;
 	pMD->dwDataSize = dwDataSize;
@@ -5489,18 +6141,18 @@ void HPI_HandleToIndexes3(const HPI_HANDLE dwHandle,	///< The handle to decode
 	handle.w = dwHandle;
 
 	if (pwDspIndex)
-		*pwDspIndex = handle.h.dspIndex;
+		*pwDspIndex = (u16) handle.h.dspIndex;
 	if (pwAdapterIndex)
-		*pwAdapterIndex = handle.h.adapterIndex;
+		*pwAdapterIndex = (u16) handle.h.adapterIndex;
 	if (pwObjectIndex)
-		*pwObjectIndex = handle.h.objIndex;
+		*pwObjectIndex = (u16) handle.h.objIndex;
 }
 
 char HPI_HandleObject(const HPI_HANDLE dwHandle)
 {
 	tHANDLE handle;
 	handle.w = dwHandle;
-	return handle.h.objType;
+	return (char)handle.h.objType;
 }
 
 ///////////////////////////////////////////////////////////////////////////

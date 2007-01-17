@@ -79,7 +79,7 @@ The printf functionality then provided by hpidebug.c::hpi_debug_printf
 #undef HPI_DEBUG
 #undef HPI_DEBUG_VERBOSE
 #ifdef _MSC_VER
-#pragma message "Warning: Can't debug with this build because no debug print functions defined"
+#pragma message ("Warning: Can't debug with this build because no debug print functions defined")
 #endif
 #endif
 
@@ -153,6 +153,9 @@ HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p
 #define HPI_DEBUG_LOG2(level,fmt,p1,p2)
 #define HPI_DEBUG_LOG3(level,fmt,p1,p2,p3)
 #define HPI_DEBUG_LOG4(level,fmt,p1,p2,p3,p4)
+#ifdef HPIOS_DEBUG_STRING
+#undef HPIOS_DEBUG_STRING
+#endif
 #define HPIOS_DEBUG_STRING(s)
 #endif
 

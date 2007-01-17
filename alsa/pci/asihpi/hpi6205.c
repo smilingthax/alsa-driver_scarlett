@@ -762,7 +762,7 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-	dwSizeToAllocate = phm->u.d.u.Data.dwDataSize;
+	dwSizeToAllocate = phm->u.d.u.Buffer.dwBufferSize;
 	phr->u.d.u.stream_info.dwDataAvailable =
 	    pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex];
 	phr->u.d.u.stream_info.dwBufferSize = dwSizeToAllocate;
@@ -786,7 +786,8 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 			    HpiOs_LockedMem_Alloc(&pHw6205->
 						  OutStreamHostBuffers[phm->u.d.
 								       wStreamIndex],
-						  phm->u.d.u.Data.dwDataSize,
+						  phm->u.d.u.Buffer.
+						  dwBufferSize,
 						  (void *)pao->Pci.pOsData);
 
 			if (wError) {
@@ -819,7 +820,7 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 		status->dwStreamState = HPI_STATE_STOPPED;
 		status->dwDSPIndex = 0;
 		status->dwHostIndex = 0;
-		status->dwSizeInBytes = phm->u.d.u.Data.dwDataSize;
+		status->dwSizeInBytes = phm->u.d.u.Buffer.dwBufferSize;
 		wError =
 		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
 						OutStreamHostBuffers[phm->u.d.
@@ -1026,7 +1027,7 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-	dwSizeToAllocate = phm->u.d.u.Data.dwDataSize;
+	dwSizeToAllocate = phm->u.d.u.Buffer.dwBufferSize;
 	phr->u.d.u.stream_info.dwDataAvailable =
 	    pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex];
 	phr->u.d.u.stream_info.dwBufferSize = dwSizeToAllocate;
@@ -1049,7 +1050,8 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			    HpiOs_LockedMem_Alloc(&pHw6205->
 						  InStreamHostBuffers[phm->u.d.
 								      wStreamIndex],
-						  phm->u.d.u.Data.dwDataSize,
+						  phm->u.d.u.Buffer.
+						  dwBufferSize,
 						  (void *)pao->Pci.pOsData);
 
 			if (wError) {
@@ -1081,7 +1083,7 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 		status->dwStreamState = HPI_STATE_STOPPED;
 		status->dwDSPIndex = 0;
 		status->dwHostIndex = 0;
-		status->dwSizeInBytes = phm->u.d.u.Data.dwDataSize;
+		status->dwSizeInBytes = phm->u.d.u.Buffer.dwBufferSize;
 		wError =
 		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
 						InStreamHostBuffers[phm->u.d.

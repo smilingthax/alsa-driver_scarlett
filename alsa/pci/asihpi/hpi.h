@@ -41,11 +41,13 @@ If HPI_VER_MINOR is odd then its a development release not intended for the publ
 If HPI_VER_MINOR is even then is a release version
 i.e 3.05.02 is a development version
 */
-#define HPI_VER 0x30506
+#define HPI_VERSION_CONSTRUCTOR(maj,min,rel)  (((maj) <<16 ) + ((min) << 8) + (rel))
 
 #define HPI_VER_MAJOR(v) ((v)>>16)
 #define HPI_VER_MINOR(v) (((v)>>8) & 0xFF )
 #define HPI_VER_RELEASE(v) ((v) & 0xFF )
+
+#define HPI_VER HPI_VERSION_CONSTRUCTOR( 3, 05, 07 )
 
 /** Define HPI_WITHOUT_HPI_DATA to remove public definition and use of HPI_DATA struct */
 /* #define HPI_WITHOUT_HPI_DATA */
@@ -921,8 +923,10 @@ end group hpi_defines
 		       /**< for MPEG */
 		u32 dwAttributes;
 		       /**< Stereo/JointStereo/Mono */
-		u32 dwPadTo5;
-		       /**< wMode, wSize removed*/
+		u16 wModeLegacy;
+			     /**< Legacy ancillary mode or idle bit  */
+		u16 wUnused;
+			 /**< Unused */
 		u16 wChannels;
 		       /**< 1,2..., (or ancillary mode or idle bit */
 		u16 wFormat;
@@ -986,7 +990,7 @@ HPI_DATA.
 
 /*////////////////////////////////////////////////////////////////////////// */
 /* HPI FUNCTIONS */
-
+	typedef u16 HPI_ERR;
 	typedef u16 HPI_BOOL;
 	typedef u32 HPI_HANDLE;
 
@@ -2141,20 +2145,29 @@ GET_INFO, GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used 
 Must be kept 7 * 32 bits to match public HPI_DATA struct */
 	typedef struct sHPI_MSG_DATA {
 		HPI_MSG_FORMAT Format;
-		u32 dwDataSize;
 		u8 *pbData;
 #ifndef HPI_64BIT
 		u32 dwPadding;
 #endif
+		u32 dwDataSize;
 	} HPI_MSG_DATA;
+
+#ifndef HPI_64BIT
+/** HPI_DATA structure used up to 3.04 driver */
+	typedef struct {
+		HPI_FORMAT Format;
+		u8 *pbData;
+		u32 dwDataSize;
+	} HPI_DATA_LEGACY32;
+#endif
 
 #ifdef HPI_64BIT
 /* Compatibility version of HPI_DATA */
 	typedef struct {
 		HPI_MSG_FORMAT Format;
-		u32 dwDataSize;
 		u32 pbData;
 		u32 dwPadding;
+		u32 dwDataSize;
 	} HPI_DATA_COMPAT32;
 #endif
 
@@ -2243,16 +2256,17 @@ Must be kept 7 * 32 bits to match public HPI_DATA struct */
 	} HPI_ADAPTERX_RES;
 
 	typedef struct {
-		u16 wStreamIndex;
-		u16 wSpare;
 		union {
 			HPI_MSG_DATA Data;
+			HPI_DATA_LEGACY32 Data32;
 			u16 wVelocity;
 			HPI_PUNCHINOUT Pio;
 			u32 dwTimeScale;
 			HPI_BUFFER Buffer;
 			HPI_STREAMID Stream;
 		} u;
+		u16 wStreamIndex;
+		u16 wIStreamIndex;
 	} HPI_STREAM_MSG;
 
 	typedef struct {
@@ -2314,11 +2328,11 @@ Must be kept 7 * 32 bits to match public HPI_DATA struct */
 	} HPI_MIXERX_RES;
 
 	typedef struct {
-		u16 wControlIndex;
-		u16 wAttribute;	/* control attribute or property */
 		u32 dwParam1;	/* generic parameter 1 */
 		u32 dwParam2;	/* generic parameter 2 */
 		short anLogValue[HPI_MAX_CHANNELS];
+		u16 wAttribute;	/* control attribute or property */
+		u16 wControlIndex;
 	} HPI_CONTROL_MSG;
 
 	typedef struct {
@@ -2360,14 +2374,14 @@ Must be kept 7 * 32 bits to match public HPI_DATA struct */
 	} HPI_CONTROLX_MSG_GENERIC;
 
 	typedef struct {
-		u16 wControlIndex;
-		u16 wAttribute;	/* control attribute or property */
 		union {
 			HPI_CONTROLX_MSG_COBRANET_DATA cobranet_data;
 			HPI_CONTROLX_MSG_COBRANET_BIGDATA cobranet_bigdata;
 			HPI_CONTROLX_MSG_GENERIC generic;
 /* nothing extra to send for status read */
 		} u;
+		u16 wControlIndex;
+		u16 wAttribute;	/* control attribute or property */
 	} HPI_CONTROLX_MSG;
 
 /* Response */
@@ -2726,6 +2740,8 @@ Used for efficient transfer of the control state between DSP and host or across 
 				    u16 * pwAdapterIndex);
 
 	u16 HPI_SubSysDeleteAdapter(HPI_HSUBSYS * phSubSys, u16 wAdapterIndex);
+
+	void HPI_FormatToMsg(HPI_MSG_FORMAT * pMF, HPI_FORMAT * pF);
 
 /*////////////////////////////////////////////////////////////////////////// */
 /* declarations for individual HPI entry points */
