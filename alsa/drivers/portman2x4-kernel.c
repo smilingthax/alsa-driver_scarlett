@@ -508,6 +508,15 @@ static int portman_device_init(struct portman *pm)
 /*********************************************************************
  * Rawmidi
  *********************************************************************/
+static int snd_portman_midi_open(struct snd_rawmidi_substream *substream)
+{
+	return 0;
+}
+
+static int snd_portman_midi_close(struct snd_rawmidi_substream *substream)
+{
+	return 0;
+}
 
 static void snd_portman_midi_input_trigger(struct snd_rawmidi_substream *substream,
 					   int up)
@@ -539,14 +548,14 @@ static void snd_portman_midi_output_trigger(struct snd_rawmidi_substream *substr
 }
 
 static struct snd_rawmidi_ops snd_portman_midi_output = {
-	.open =		NULL,
-	.close =	NULL,
+	.open =		snd_portman_midi_open,
+	.close =	snd_portman_midi_close,
 	.trigger =	snd_portman_midi_output_trigger,
 };
 
 static struct snd_rawmidi_ops snd_portman_midi_input = {
-	.open =		NULL,
-	.close =	NULL,
+	.open =		snd_portman_midi_open,
+	.close =	snd_portman_midi_close,
 	.trigger =	snd_portman_midi_input_trigger,
 };
 
