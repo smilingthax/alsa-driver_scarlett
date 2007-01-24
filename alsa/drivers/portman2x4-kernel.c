@@ -18,74 +18,108 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * ChangeLog
- * Feb 20 2004 Tobias Gehrig <tobias@gehrig.tk>
- *      - ported from alsa 0.5 to 1.0
- * Mar 17 2004 Tobias Gehrig <tobias@gehrig.tk>
- *      - added checks for opened input device in interrupt handler
- * Mar 18 2004 Tobias Gehrig <tobias@gehrig.tk>
- *      - added parport_unregister_driver to the startup routine if the driver fails to detect a portman
- *      - added support for all 4 output ports in portman_putmidi
- * Mar 24 2004 Tobias Gehrig <tobias@gehrig.tk>
- *      - added 2.6 kernel support
+ * Jan 24 2007 Matthias Koenig <mkoenig@suse.de>
+ *      - cleanup and rewrite
+ * Sep 30 2004 Tobias Gehrig <tobias@gehrig.tk>
+ *      - source code cleanup
  * Sep 03 2004 Tobias Gehrig <tobias@gehrig.tk>
  *      - fixed compilation problem with alsa 1.0.6a (removed MODULE_CLASSES,
  *        MODULE_PARM_SYNTAX and changed MODULE_DEVICES to
  *        MODULE_SUPPORTED_DEVICE)
- * Sep 30 2004 Tobias Gehrig <tobias@gehrig.tk>
- *      - source code cleanup
+ * Mar 24 2004 Tobias Gehrig <tobias@gehrig.tk>
+ *      - added 2.6 kernel support
+ * Mar 18 2004 Tobias Gehrig <tobias@gehrig.tk>
+ *      - added parport_unregister_driver to the startup routine if the driver fails to detect a portman
+ *      - added support for all 4 output ports in portman_putmidi
+ * Mar 17 2004 Tobias Gehrig <tobias@gehrig.tk>
+ *      - added checks for opened input device in interrupt handler
+ * Feb 20 2004 Tobias Gehrig <tobias@gehrig.tk>
+ *      - ported from alsa 0.5 to 1.0
  */
 
 #include <sound/driver.h>
 #include <linux/init.h>
-#include <linux/moduleparam.h>
-#include <sound/core.h>
-#include <sound/control.h>
-#include <sound/rawmidi.h>
-#include <sound/initval.h>
+#include <linux/platform_device.h>
 #include <linux/parport.h>
+#include <linux/spinlock.h>
 #include <linux/delay.h>
-#include <sound/memalloc.h>
+#include <sound/core.h>
+#include <sound/initval.h>
+#include <sound/rawmidi.h>
+#include <sound/control.h>
 
-#define chip_t portman_t
+#define CARD_NAME "Portman 2x4"
+#define DRIVER_NAME "portman"
+#define PLATFORM_DRIVER "snd_portman2x4"
+
+static int index[SNDRV_CARDS]  = SNDRV_DEFAULT_IDX;
+static char *id[SNDRV_CARDS]   = SNDRV_DEFAULT_STR;
+static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
+
+static struct platform_device *platform_devices[SNDRV_CARDS]; 
+static int device_count;
+
+module_param_array(index, int, NULL, S_IRUGO);
+MODULE_PARM_DESC(index, "Index value for " CARD_NAME " soundcard.");
+module_param_array(id, charp, NULL, S_IRUGO);
+MODULE_PARM_DESC(id, "ID string for " CARD_NAME " soundcard.");
+module_param_array(enable, bool, NULL, S_IRUGO);
+MODULE_PARM_DESC(enable, "Enable " CARD_NAME " soundcard.");
 
 MODULE_AUTHOR("Levent Gündogdu, Tobias Gehrig");
 MODULE_DESCRIPTION("Midiman Portman2x4");
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{Midiman,Portman2x4}}");
 
-static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
-static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
-static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;	/* Enable switches */
+/*********************************************************************
+ * Chip specific
+ *********************************************************************/
+#define PORTMAN_NUM_INPUT_PORTS 2
+#define PORTMAN_NUM_OUTPUT_PORTS 4
 
-module_param_array(index, int, NULL, 0444);
-MODULE_PARM_DESC(index, "Index value for Portman2x4 midi interface.");
-module_param_array(id, charp, NULL, 0444);
-MODULE_PARM_DESC(id, "ID string for Portman2x4 midi interface.");
-module_param_array(enable, bool, NULL, 0444);
-MODULE_PARM_DESC(enable, "Enable Portman2x4 midi interface.");
-
-typedef struct _snd_portman portman_t;
-
-static portman_t *portman;
-
-struct _snd_portman {
+struct portman {
 	spinlock_t reg_lock;
-
 	struct snd_card *card;
-	int irq;
-	unsigned long port;
-
-	unsigned char midi_input_mode[2];
-	unsigned char midi_output_mode[4];
-
 	struct snd_rawmidi *rmidi;
-	struct snd_rawmidi_substream *midi_input[2];
-	struct snd_rawmidi_substream *midi_output[4];
+	struct pardevice *pardev;
+	int pardev_claimed;
+
+	int open_count;
+	int mode[PORTMAN_NUM_INPUT_PORTS];
+	struct snd_rawmidi_substream *midi_input[PORTMAN_NUM_INPUT_PORTS];
 };
 
-/* Definitions for portman driver */
-#define	BYTE           unsigned char
-#define WORD           unsigned int
+static int portman_free(struct portman *pm)
+{
+	kfree(pm);
+	return 0;
+}
+
+static int __devinit portman_create(struct snd_card *card, 
+				    struct pardevice *pardev, 
+				    struct portman **rchip)
+{
+	struct portman *pm;
+
+	*rchip = NULL;
+
+	pm = kzalloc(sizeof(struct portman), GFP_KERNEL);
+	if (pm == NULL) 
+		return -ENOMEM;
+
+	/* Init chip specific data */
+	spin_lock_init(&pm->reg_lock);
+	pm->card = card;
+	pm->pardev = pardev;
+
+	*rchip = pm;
+
+	return 0;
+}
+
+/*********************************************************************
+ * HW related constants
+ *********************************************************************/
 
 /* Standard PC parallel port status register equates. */
 #define	PP_STAT_BSY   	0x80	/* Busy status.  Inverted. */
@@ -153,66 +187,40 @@ struct _snd_portman {
 #define	A1_ECHO         PP_STAT_BSY	/* Address 1 Echo.            1 1 0 */
 #define	A2_ECHO         PP_STAT_BSY	/* Address 2 Echo.            1 1 1 */
 
-#define PORTMAN2X4_MODE_INPUT_OPENED	 0x01
-#define PORTMAN2X4_MODE_OUTPUT_OPENED	 0x02
-#define PORTMAN2X4_MODE_INPUT_TRIGGERED	 0x04
-#define PORTMAN2X4_MODE_OUTPUT_TRIGGERED 0x08
+#define PORTMAN2X4_MODE_INPUT_TRIGGERED	 0x01
 
-
-/* Pointer to parallel port which we actually use */
-static struct parport *myPort = NULL;
-
-/* Pointer to pardevice after registration */
-static struct pardevice *myParDevice = NULL;
-
-/* static struct parport_operations *myParPortOps = NULL; */
-static int portowned = 0;
-static int portman_found = 0;
-
-/* Delay settings */
-static int gwAddressDelay = 0;
-static int gwDataDelay = 0;
-
-/* Useful information */
-static char *sDeviceName = "portman2x4";
-static char *sVersion = "0.1";
-
-/* State+Cleanup variables */
-static unsigned char SAVE_PORTCOMMAND = 0;
-static unsigned char SAVE_PORTDATA = 0;
-static unsigned char SAVE_PORTVALID = 0;
-
-/* parallel port access mappers */
-
-static inline void portman_writeCommand(unsigned char value)
+/*********************************************************************
+ * Hardware specific functions
+ *********************************************************************/
+static inline void portman_write_command(struct portman *pm, u8 value)
 {
-	parport_write_control(myPort, value);
+	parport_write_control(pm->pardev->port, value);
 }
 
-static inline unsigned char portman_readCommand(void)
+static inline u8 portman_read_command(struct portman *pm)
 {
-	return parport_read_control(myPort);
+	return parport_read_control(pm->pardev->port);
 }
 
-static inline unsigned char portman_readStatus(void)
+static inline u8 portman_read_status(struct portman *pm)
 {
-	return parport_read_status(myPort);
+	return parport_read_status(pm->pardev->port);
 }
 
-static inline unsigned char portman_readData(void)
+static inline u8 portman_read_data(struct portman *pm)
 {
-	return parport_read_data(myPort);
+	return parport_read_data(pm->pardev->port);
 }
 
-static inline void portman_writeData(unsigned char value)
+static inline void portman_write_data(struct portman *pm, u8 value)
 {
-	parport_write_data(myPort, value);
+	parport_write_data(pm->pardev->port, value);
 }
 
-static void portman_putmidi(int port, unsigned char mididata)
+static void portman_write_midi(struct portman *pm, 
+			       int port, u8 mididata)
 {
 	int command = ((port + 4) << 1);
-	unsigned long flags;
 
 	/* Get entering data byte and port number in BL and BH respectively.
 	 * Set up Tx Channel address field for use with PP Cmd Register.
@@ -230,185 +238,154 @@ static void portman_putmidi(int port, unsigned char mididata)
 	 * PP Command Reg.  Do not set the Strobe signal yet.
 	 */
 
-      hbpTxWait:
-	local_irq_save(flags);
-	portman_writeCommand(command);
-	udelay(gwAddressDelay);
+	do {
+		portman_write_command(pm, command);
 
-	/* While the address lines settle, write parallel output data to 
-	 * PP Data Reg.  This has no effect until Strobe signal is asserted.
-	 */
+		/* While the address lines settle, write parallel output data to 
+		 * PP Data Reg.  This has no effect until Strobe signal is asserted.
+		 */
 
-	portman_writeData(mididata);
-
-	udelay(gwDataDelay);
-
-	/* If PCP channel's TxEmpty is set (TxEmpty is read through the PP
-	 * Status Register), then go write data.  Else go back and wait.
-	 */
-
-	if ((portman_readStatus() & TXEMPTY) == TXEMPTY) /* Is channel's TxEmpty set? */
-		goto hpbEmpty;	                         /* Y: Go write data then. */
-
-	local_irq_restore(flags);                        /* Allow small window for ints. */
-	goto hbpTxWait;
+		portman_write_data(pm, mididata);
+		
+		/* If PCP channel's TxEmpty is set (TxEmpty is read through the PP
+		 * Status Register), then go write data.  Else go back and wait.
+		 */
+	} while ((portman_read_status(pm) & TXEMPTY) != TXEMPTY);
 
 	/* TxEmpty is set.  Maintain PC/P destination address and assert
 	 * Strobe through the PP Command Reg.  This will Strobe data into
 	 * the PC/P transmitter and set the PC/P BUSY signal.
 	 */
 
-      hpbEmpty:
-	portman_writeCommand(command | STROBE);
-	udelay(gwAddressDelay);
+	portman_write_command(pm, command | STROBE);
 
 	/* Wait for strobe line to settle and echo back through hardware.
 	 * Once it has echoed back, assume that the address and data lines
 	 * have settled!
 	 */
 
-	while ((portman_readStatus() & ESTB) == 0);
+	while ((portman_read_status(pm) & ESTB) == 0)
+		cpu_relax();
 
 	/* Release strobe and immediately re-allow interrupts. */
-	portman_writeCommand(command);
-	udelay(gwAddressDelay);
-	local_irq_restore(flags);
+	portman_write_command(pm, command);
 
-	while ((portman_readStatus() & ESTB) == ESTB);
+	while ((portman_read_status(pm) & ESTB) == ESTB)
+		cpu_relax();
 
 	/* PC/P BUSY is now set.  We must wait until BUSY resets itself.
 	 * We'll reenable ints while we're waiting.
 	 */
 
-	while ((portman_readStatus() & BUSY) == BUSY);
+	while ((portman_read_status(pm) & BUSY) == BUSY)
+		cpu_relax();
 
 	/* Data sent. */
 }
 
 
-static unsigned char portman_readmidi(int port)
+/*
+ *  Read MIDI byte from port
+ *  Attempt to read input byte from specified hardware input port (0..).
+ *  Return -1 if no data
+ */
+static int portman_read_midi(struct portman *pm, int port)
 {
-  /***************************************************************************
-   * Attempt to read input byte from specified hardware input port (0..).
-   * Return -1 if no data.
-   ***************************************************************************/
-
-	unsigned char midiValue = 0;
+	unsigned char midi_data = 0;
 	unsigned char cmdout;	/* Saved address+IE bit. */
 
 	/* Make sure clocking edge is down before starting... */
-	portman_writeData(0);	/* Make sure edge is down. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Make sure edge is down. */
 
 	/* Set destination address to PCP. */
 	cmdout = (port << 1) | INT_EN;	/* Address + IE + No Strobe. */
-	portman_writeCommand(cmdout);
-	udelay(gwAddressDelay);	/* Address settle. */
+	portman_write_command(pm, cmdout);
 
-	while ((portman_readStatus() & ESTB) == ESTB);	/* Wait for strobe echo. */
+	while ((portman_read_status(pm) & ESTB) == ESTB)
+		cpu_relax();	/* Wait for strobe echo. */
 
 	/* After the address lines settle, check multiplexed RxAvail signal.
 	 * If data is available, read it.
 	 */
-	if ((portman_readStatus() & RXAVAIL) == 0)
+	if ((portman_read_status(pm) & RXAVAIL) == 0)
 		return -1;	/* No data. */
 
 	/* Set the Strobe signal to enable the Rx clocking circuitry. */
-	portman_writeCommand(cmdout | STROBE);	/* Write address+IE+Strobe. */
-	udelay(gwAddressDelay);	/* Strobe settle. */
+	portman_write_command(pm, cmdout | STROBE);	/* Write address+IE+Strobe. */
 
-	while ((portman_readStatus() & ESTB) == 0); /* Wait for strobe echo. */
+	while ((portman_read_status(pm) & ESTB) == 0)
+		cpu_relax(); /* Wait for strobe echo. */
 
 	/* The first data bit (msb) is already sitting on the input line. */
-	midiValue = (portman_readStatus() & 128);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
-
+	midi_data = (portman_read_status(pm) & 128);
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 6. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 1) & 64);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 1) & 64;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 5. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 2) & 32);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 2) & 32;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 4. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 3) & 16);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 3) & 16;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 3. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 4) & 8);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 4) & 8;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 2. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 5) & 4);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 5) & 4;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 1. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 6) & 2);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 6) & 2;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
 
 	/* Data bit 0. */
-	portman_writeData(0);	/* Cause falling edge while data settles. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	midiValue = midiValue | ((portman_readStatus() >> 7) & 1);
-	portman_writeData(1);	/* Cause rising edge, which shifts data. */
-	udelay(gwDataDelay);	/* Settle clock. */
-	portman_writeData(0);	/* Return data clock low. */
-	udelay(gwDataDelay);	/* Settle clock. */
+	portman_write_data(pm, 0);	/* Cause falling edge while data settles. */
+	midi_data |= (portman_read_status(pm) >> 7) & 1;
+	portman_write_data(pm, 1);	/* Cause rising edge, which shifts data. */
+	portman_write_data(pm, 0);	/* Return data clock low. */
 
 
 	/* De-assert Strobe and return data. */
-	portman_writeCommand(cmdout);	/* Output saved address+IE. */
-	udelay(gwAddressDelay);	/* Settle clock. */
+	portman_write_command(pm, cmdout);	/* Output saved address+IE. */
 
 	/* Wait for strobe echo. */
-	while ((portman_readStatus() & ESTB) == ESTB);
+	while ((portman_read_status(pm) & ESTB) == ESTB)
+		cpu_relax();
 
-	return (midiValue & 255);	/* Shift back and return value. */
+	return (midi_data & 255);	/* Shift back and return value. */
 }
 
 /*
  *  Checks if any input data on the given channel is available
  *  Checks RxAvail 
  */
-
-static int portman_dataavail(int channel)
+static int portman_data_avail(struct portman *pm, int channel)
 {
 	int command = INT_EN;
 	switch (channel) {
 	case 0:
-		command = command | RXDATA0;
+		command |= RXDATA0;
 		break;
 	case 1:
-		command = command | RXDATA1;
+		command |= RXDATA1;
 		break;
 	}
 	/* Write hardware (assumme STROBE=0) */
-	portman_writeCommand(command);
-	/* Allow settling. */
-	udelay(gwAddressDelay);
+	portman_write_command(pm, command);
 	/* Check multiplexed RxAvail signal */
-	if ((portman_readStatus() & RXAVAIL) == RXAVAIL)
+	if ((portman_read_status(pm) & RXAVAIL) == RXAVAIL)
 		return 1;	/* Data available */
 
 	/* No Data available */
@@ -419,11 +396,10 @@ static int portman_dataavail(int channel)
 /*
  *  Flushes any input
  */
-
-static void portman_flushInput(unsigned char port)
+static void portman_flush_input(struct portman *pm, unsigned char port)
 {
 	/* Local variable for counting things */
-	unsigned int iCounter = 0;
+	unsigned int i = 0;
 	unsigned char command = 0;
 
 	switch (port) {
@@ -434,171 +410,46 @@ static void portman_flushInput(unsigned char port)
 		command = RXDATA1;
 		break;
 	default:
-		snd_printk("portman_flushInput() Won't flush port %i\n",
+		snd_printk(KERN_WARNING
+			   "portman_flush_input() Won't flush port %i\n",
 			   port);
 		return;
 	}
 
 	/* Set address for specified channel in port and allow to settle. */
-	portman_writeCommand(command);
-	udelay(gwAddressDelay);
+	portman_write_command(pm, command);
 
 	/* Assert the Strobe and wait for echo back. */
-	portman_writeCommand(command | STROBE);
+	portman_write_command(pm, command | STROBE);
 
 	/* Wait for ESTB */
-	while ((portman_readStatus() & ESTB) == 0)
-	  udelay(gwAddressDelay);
-
-
+	while ((portman_read_status(pm) & ESTB) == 0)
+		cpu_relax();
 
 	/* Output clock cycles to the Rx circuitry. */
-	portman_writeData(0);
-	udelay(gwDataDelay);
+	portman_write_data(pm, 0);
 
 	/* Flush 250 bits... */
-	for (iCounter = 0; iCounter < 250; iCounter++) {
-		udelay(gwDataDelay);
-		portman_writeData(1);
-		udelay(gwDataDelay);
-		portman_writeData(0);
+	for (i = 0; i < 250; i++) {
+		portman_write_data(pm, 1);
+		portman_write_data(pm, 0);
 	}
 
 	/* Deassert the Strobe signal of the port and wait for it to settle. */
-	portman_writeCommand(command | INT_EN);
+	portman_write_command(pm, command | INT_EN);
 
 	/* Wait for settling */
-	while ((portman_readStatus() & ESTB) == ESTB)
-	  udelay(gwAddressDelay);
+	while ((portman_read_status(pm) & ESTB) == ESTB)
+		cpu_relax();
 }
 
-
-/* clean up code */
-
-static void cleanup(void)
+static int portman_probe(struct parport *p)
 {
-	/* local data */
-	unsigned long flags;
-
-	/* ====================
-	 * CLEANUP PARALLELPORT
-	 * ====================
-	 */
-
-	/* check if port was owned by this driver */
-	if (portowned == 1) {
-		/* restore port state */
-
-		/* Disable interrupt while giving up port */
-		local_irq_save(flags);
-
-		/* Restore parallel port status */
-		if (SAVE_PORTVALID == 1) {
-
-			portman_writeCommand(SAVE_PORTCOMMAND);
-			portman_writeData(SAVE_PORTDATA);
-		}
-
-		parport_release(myParDevice);
-		portowned = 0;
-
-		/* Reenable interrupts */
-		local_irq_restore(flags);
-	}
-
-	if (myParDevice != NULL) {
-		parport_unregister_device(myParDevice);
-		myParDevice = NULL;
-	}
-
-	/* ===========================================
-	 * CLEANUP KERNEL MEMORY & DEVICE REGISTRATION
-	 * ===========================================
-	 */
-
-	kfree(portman);
-	portman = NULL;
-}
-
-/* irq handler */
-
-
-/*
- * IRQ-HANDLER
- *
- * @param  int              Number of IRQ
- * @param  void*            User data (struct parport* related to this interrupt)
- * @param  struct pt_regs*  Pointer to pt_regs
- */
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
-static void portman_handler_irq(int irq, void *userdata)
-#else
-static void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
-#endif
-{
-	unsigned long flags;
-	/* Test if output gets written if interrupts are disabled! */
-	unsigned char midivalue = 0;
-
-	/* Disable interrupts (we must not be disturbed while processing here...) */
-	local_irq_save(flags);
-
-	/* While any input data is waiting */
-	while ((portman_readStatus() & INT_REQ) == INT_REQ) {
-		/* If data available on channel 0, read it and stuff it into the queue. */
-		if (portman_dataavail(0)) {
-			/* Read Midi */
-			midivalue = portman_readmidi(0);
-			/* put midi into queue... */
-			if (portman->
-			    midi_input_mode[0] &
-			    PORTMAN2X4_MODE_INPUT_TRIGGERED)
-				snd_rawmidi_receive(portman->midi_input[0],
-						    &midivalue, 1);
-
-		}
-		/* If data available on channel 1, read it and stuff it into the queue. */
-		if (portman_dataavail(1)) {
-			/* Read Midi */
-			midivalue = portman_readmidi(1);
-			/* put midi into queue... */
-			if (portman->
-			    midi_input_mode[1] &
-			    PORTMAN2X4_MODE_INPUT_TRIGGERED)
-				snd_rawmidi_receive(portman->midi_input[1],
-						    &midivalue, 1);
-		}
-
-	}
-
-	/* Reenable interrupts */
-	local_irq_restore(flags);
-}
-
-/* portman detection function */
-
-/****************************************************************************
- *  Initialize the MIDI driver software and port hardware.
- *
- *  Inputs:     BASE = Base I/O address of port.
- *              IRQ  = IRQ number.
- *
- *  Returns:    0  if successful.
- *	       1     Strobe echo failure.
- *	       2     Transmitter stuck.
- ****************************************************************************/
-
-static int hwOpen(void)
-{
-	int delay = gwAddressDelay;
-
 	/* Initialize the parallel port data register.  Will set Rx clocks
 	 * low in case we happen to be addressing the Rx ports at this time.
 	 */
 	/* 1 */
-	portman_writeData(0);
-	udelay(delay);
+	parport_write_data(p, 0);
 
 	/* Initialize the parallel port command register, thus initializing
 	 * hardware handshake lines to midi box:
@@ -607,406 +458,415 @@ static int hwOpen(void)
 	 *                                  Interrupt Enable = 0            
 	 */
 	/* 2 */
-	portman_writeCommand(0);
-	udelay(delay);
+	parport_write_control(p, 0);
 
 	/* Check if Portman PC/P 2x4 is out there. */
 	/* 3 */
-	portman_writeCommand(RXDATA0);	/* Write Strobe=0 to command reg. */
-	udelay(delay);
+	parport_write_control(p, RXDATA0);	/* Write Strobe=0 to command reg. */
 
 	/* Check for ESTB to be clear */
 	/* 4 */
-	if ((portman_readStatus() & ESTB) == ESTB)
+	if ((parport_read_status(p) & ESTB) == ESTB)
 		return 1;	/* CODE 1 - Strobe Failure. */
 
 	/* Set for RXDATA0 where no damage will be done. */
 	/* 5 */
-	portman_writeCommand(RXDATA0 + STROBE);	/* Write Strobe=1 to command reg. */
-	udelay(delay);
+	parport_write_control(p, RXDATA0 + STROBE);	/* Write Strobe=1 to command reg. */
 
 	/* 6 */
-	if ((portman_readStatus() & ESTB) != ESTB)
+	if ((parport_read_status(p) & ESTB) != ESTB)
 		return 1;	/* CODE 1 - Strobe Failure. */
 
 	/* 7 */
-	portman_writeCommand(0);	/* Reset Strobe=0. */
-	udelay(delay);
-
+	parport_write_control(p, 0);	/* Reset Strobe=0. */
 
 	/* Check if Tx circuitry is functioning properly.  If initialized 
 	 * unit TxEmpty is false, send out char and see if if goes true.
 	 */
 	/* 8 */
-	portman_writeCommand(TXDATA0);	/* Tx channel 0, strobe off. */
-	udelay(delay);
+	parport_write_control(p, TXDATA0);	/* Tx channel 0, strobe off. */
 
 	/* If PCP channel's TxEmpty is set (TxEmpty is read through the PP
 	 * Status Register), then go write data.  Else go back and wait.
 	 */
 	/* 9 */
-	if ((portman_readStatus() & TXEMPTY) == 0)
+	if ((parport_read_status(p) & TXEMPTY) == 0)
 		return 2;
 
 	/* Return OK status. */
 	return 0;
 }
 
-/* test */
-static void portman_testInterrupts(void)
+static int portman_device_init(struct portman *pm)
 {
-	int i;
+	portman_flush_input(pm, 0);
+	portman_flush_input(pm, 1);
 
-	for (i = 0; i < 5; i++) {
-		if ((portman_readCommand() & INT_EN) == INT_EN) {
-			snd_printk(">>> Interrupts enabled :)\n");
-			return;
-		}
-
-		snd_printk("portman2x4: %i\n", portman_readCommand());
-		snd_printk("portman2x4: %i\n", INT_EN);
-		snd_printk(">>> Interrupts are not enabled!");
-
-		udelay(gwAddressDelay);
-
-		snd_printk(">>> Trying to enable IRQ...\n");
-		myPort->ops->enable_irq(myPort);
-		udelay(gwAddressDelay);
-	}
-}
-
-
-/* parport handler functions */
-
-static void portman_attach(struct parport *port)
-{
-	unsigned long flags;
-	/* local data */
-	int result = 0;
-
-	/* output information on used port */
-	if (port != NULL)
-		snd_printk("Using port at 0x%lx, IRQ %i.\n", port->base,
-			   port->irq);
-	else {
-		snd_printk("Ooops! port is NULL\n");
-		return;
-	}
-
-	/* Test if device supports irq. Abort initialization of not. */
-	if (port->irq == -1) {
-		snd_printk
-		    ("Error. Parallel port does not support IRQ. \n");
-		cleanup();
-		return;
-	}
-
-	/* keep pointer to port */
-	myPort = port;
-
-	/* Now register device with IRQ enabled */
-	myParDevice = (struct pardevice *) parport_register_device(port,	/* ptr to port to register at */
-								   sDeviceName,	/* ptr to device name */
-								   NULL,	/* ptr to preemption handler */
-								   NULL,	/* ptr to wakeup handler */
-								   portman_handler_irq,	/* ptr to irq handler */
-								   0,	/* no flags */
-								   NULL);	/* no handle */
-	/* Check if device registration was successful */
-	if (myParDevice == NULL) {
-		snd_printk("Error. Pardevice could not be registered.\n");
-		cleanup();
-		return;
-	}
-
-	/* Claim parport device */
-
-	/* Disable interrupts (we must not be disturbed while processing here...) */
-	local_irq_save(flags);
-
-	/* Claim the device */
-	if (parport_claim(myParDevice) != 0) {
-		local_irq_restore(flags);
-		snd_printk("Device is busy.\n");
-		cleanup();
-		return;
-	}
-
-	portowned = 1;
-
-	/* Save current port status... */
-	SAVE_PORTCOMMAND = portman_readCommand();
-	SAVE_PORTDATA = portman_readData();
-	SAVE_PORTVALID = 1;
-
-	/* check for portman existence */
-	result = 0;
-	result = hwOpen();
-
-	/* Reenable interrupts */
-	local_irq_restore(flags);
-
-	switch (result) {
-	case 0:
-		snd_printk("Portman found.\n");
-		portman_found = 1;
-		break;
-	case 1:
-		snd_printk("Probe error. Portman not found.\n");
-		cleanup();
-		return;
-		break;
-	case 2:
-		snd_printk("TX Error. Hardware test fail.\n");
-		cleanup();
-		return;
-		break;
-	}
-
-	/* Module initialization complete... */
-
-	/* Later: flushAllInputs()  (number of ports variable - possible compatibility with PortMan 4x4 (untested)) */
-	/* save flags, disable interrupts */
-	/* Flush inputs 0 and 1 */
-	portman_flushInput(0);
-	portman_flushInput(1);
-	/* restore flags */
-
-	/* Test if interrupts are enabled. */
-
-	portman_testInterrupts();
-
-	return;
-}
-
-static void portman_detach(struct parport *port)
-{
-}
-
-static struct parport_driver portman_driver = {
-	.name = "portman2x4",
-	.attach = portman_attach,
-	.detach = portman_detach,
-};
-
-static int snd_portman_midi_input_open(struct snd_rawmidi_substream *substream)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&portman->reg_lock, flags);
-	portman->midi_input_mode[substream->number] |=
-	    PORTMAN2X4_MODE_INPUT_OPENED;
-	portman->midi_input[substream->number] = substream;
-	spin_unlock_irqrestore(&portman->reg_lock, flags);
 	return 0;
 }
 
-static int snd_portman_midi_input_close(struct snd_rawmidi_substream *
-					substream)
+/*********************************************************************
+ * Rawmidi
+ *********************************************************************/
+
+static void snd_portman_midi_input_trigger(struct snd_rawmidi_substream *substream,
+					   int up)
 {
+	struct portman *pm = substream->rmidi->private_data;
 	unsigned long flags;
 
-	spin_lock_irqsave(&portman->reg_lock, flags);
-	portman->midi_input_mode[substream->number] &=
-	    (~PORTMAN2X4_MODE_INPUT_OPENED);
-	portman->midi_input[substream->number] = NULL;
-	spin_unlock_irqrestore(&portman->reg_lock, flags);
-	return 0;
+	spin_lock_irqsave(&pm->reg_lock, flags);
+	if (up)
+		pm->mode[substream->number] |= PORTMAN2X4_MODE_INPUT_TRIGGERED;
+	else
+		pm->mode[substream->number] &= ~PORTMAN2X4_MODE_INPUT_TRIGGERED;
+	spin_unlock_irqrestore(&pm->reg_lock, flags);
 }
 
-static int snd_portman_midi_output_open(struct snd_rawmidi_substream *
-					substream)
+static void snd_portman_midi_output_trigger(struct snd_rawmidi_substream *substream,
+					    int up)
 {
+	struct portman *pm = substream->rmidi->private_data;
 	unsigned long flags;
+	unsigned char byte;
 
-	spin_lock_irqsave(&portman->reg_lock, flags);
-	portman->midi_output_mode[substream->number] |=
-	    PORTMAN2X4_MODE_OUTPUT_OPENED;
-	portman->midi_output[substream->number] = substream;
-	spin_unlock_irqrestore(&portman->reg_lock, flags);
-	return 0;
-}
-
-static int snd_portman_midi_output_close(struct snd_rawmidi_substream *
-					 substream)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&portman->reg_lock, flags);
-	portman->midi_output_mode[substream->number] &=
-	    ~PORTMAN2X4_MODE_OUTPUT_OPENED;
-	portman->midi_output[substream->number] = NULL;
-	spin_unlock_irqrestore(&portman->reg_lock, flags);
-	return 0;
-}
-
-static void snd_portman_midi_input_trigger(struct snd_rawmidi_substream *
-					   substream, int up)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&portman->reg_lock, flags);
-	if (up) {
-		portman->midi_input_mode[substream->number] |=
-		    PORTMAN2X4_MODE_INPUT_TRIGGERED;
-	} else {
-		portman->midi_input_mode[substream->number] &=
-		    ~PORTMAN2X4_MODE_INPUT_TRIGGERED;
-	}
-	spin_unlock_irqrestore(&portman->reg_lock, flags);
-}
-
-static void snd_portman_midi_output_trigger(struct snd_rawmidi_substream *
-					    substream, int up)
-{
-	unsigned long flags;
-	unsigned char byte = 0;
-
-	spin_lock_irqsave(&portman->reg_lock, flags);
+	spin_lock_irqsave(&pm->reg_lock, flags);
 	if (up) {
 		while ((snd_rawmidi_transmit(substream, &byte, 1) == 1))
-		  portman_putmidi(substream->number, byte);
+			portman_write_midi(pm, substream->number, byte);
 	}
-	spin_unlock_irqrestore(&portman->reg_lock, flags);
+	spin_unlock_irqrestore(&pm->reg_lock, flags);
 }
 
 static struct snd_rawmidi_ops snd_portman_midi_output = {
-	.open =		snd_portman_midi_output_open,
-	.close =	snd_portman_midi_output_close,
+	.open =		NULL,
+	.close =	NULL,
 	.trigger =	snd_portman_midi_output_trigger,
 };
 
 static struct snd_rawmidi_ops snd_portman_midi_input = {
-	.open =		snd_portman_midi_input_open,
-	.close =	snd_portman_midi_input_close,
+	.open =		NULL,
+	.close =	NULL,
 	.trigger =	snd_portman_midi_input_trigger,
 };
 
-static int __init snd_portman_midi(portman_t * portman, int device,
-				   struct snd_rawmidi ** rrawmidi)
+/* Create and initialize the rawmidi component */
+static int __devinit snd_portman_rawmidi_create(struct snd_card *card)
 {
+	struct portman *pm = card->private_data;
 	struct snd_rawmidi *rmidi;
+	struct snd_rawmidi_substream *substream;
 	int err;
-
-	if (rrawmidi)
-		*rrawmidi = NULL;
-
-	if ((err =
-	     snd_rawmidi_new(portman->card, "Portman2x4", device, 4, 2,
-			     &rmidi)) < 0)
+	
+	err = snd_rawmidi_new(card, CARD_NAME, 0, 
+			      PORTMAN_NUM_OUTPUT_PORTS, 
+			      PORTMAN_NUM_INPUT_PORTS, 
+			      &rmidi);
+	if (err < 0) 
 		return err;
 
-	strcpy(rmidi->name, "Portman2x4");
-	snd_rawmidi_set_ops(rmidi, SNDRV_RAWMIDI_STREAM_OUTPUT,
+	rmidi->private_data = pm;
+	strcpy(rmidi->name, CARD_NAME);
+	rmidi->info_flags = SNDRV_RAWMIDI_INFO_OUTPUT |
+		            SNDRV_RAWMIDI_INFO_INPUT |
+                            SNDRV_RAWMIDI_INFO_DUPLEX;
+
+	pm->rmidi = rmidi;
+
+	/* register rawmidi ops */
+	snd_rawmidi_set_ops(rmidi, SNDRV_RAWMIDI_STREAM_OUTPUT, 
 			    &snd_portman_midi_output);
-	snd_rawmidi_set_ops(rmidi, SNDRV_RAWMIDI_STREAM_INPUT,
+	snd_rawmidi_set_ops(rmidi, SNDRV_RAWMIDI_STREAM_INPUT, 
 			    &snd_portman_midi_input);
-	rmidi->info_flags |=
-	    SNDRV_RAWMIDI_INFO_OUTPUT | SNDRV_RAWMIDI_INFO_INPUT |
-	    SNDRV_RAWMIDI_INFO_DUPLEX;
-	rmidi->private_data = portman;
-	portman->rmidi = rmidi;
-	if (rrawmidi)
-		*rrawmidi = rmidi;
+
+	/* name substreams */
+	/* output */
+	list_for_each_entry(substream,
+			    &rmidi->streams[SNDRV_RAWMIDI_STREAM_OUTPUT].substreams,
+			    list) {
+		sprintf(substream->name,
+			"Portman2x4 %d", substream->number+1);
+	}
+	/* input */
+	list_for_each_entry(substream,
+			    &rmidi->streams[SNDRV_RAWMIDI_STREAM_INPUT].substreams,
+			    list) {
+		pm->midi_input[substream->number] = substream;
+		sprintf(substream->name,
+			"Portman2x4 %d", substream->number+1);
+	}
+
+	return err;
+}
+
+/*********************************************************************
+ * parport stuff
+ *********************************************************************/
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+static void snd_portman_interrupt(int irq, void *userdata)
+#else
+static void snd_portman_interrupt(int irq, void *userdata, struct pt_regs *regs)
+#endif
+{
+	unsigned long flags;
+	unsigned char midivalue = 0;
+	struct portman *pm = ((struct snd_card*)userdata)->private_data;
+
+	spin_lock_irqsave(&pm->reg_lock, flags);
+
+	/* While any input data is waiting */
+	while ((portman_read_status(pm) & INT_REQ) == INT_REQ) {
+		/* If data available on channel 0, 
+		   read it and stuff it into the queue. */
+		if (portman_data_avail(pm, 0)) {
+			/* Read Midi */
+			midivalue = portman_read_midi(pm, 0);
+			/* put midi into queue... */
+			if (pm->mode[0] & PORTMAN2X4_MODE_INPUT_TRIGGERED)
+				snd_rawmidi_receive(pm->midi_input[0],
+						    &midivalue, 1);
+
+		}
+		/* If data available on channel 1, 
+		   read it and stuff it into the queue. */
+		if (portman_data_avail(pm, 1)) {
+			/* Read Midi */
+			midivalue = portman_read_midi(pm, 1);
+			/* put midi into queue... */
+			if (pm->mode[1] & PORTMAN2X4_MODE_INPUT_TRIGGERED)
+				snd_rawmidi_receive(pm->midi_input[1],
+						    &midivalue, 1);
+		}
+
+	}
+
+	spin_unlock_irqrestore(&pm->reg_lock, flags);
+}
+
+static int __devinit snd_portman_probe_port(struct parport *p)
+{
+	struct pardevice *pardev;
+	int res;
+
+	pardev = parport_register_device(p, DRIVER_NAME,
+					 NULL, NULL, NULL,
+					 0, NULL);
+	if (!pardev)
+		return -EIO;
+	
+	if (parport_claim(pardev)) {
+		parport_unregister_device(pardev);
+		return -EIO;
+	}
+
+	res = portman_probe(p);
+
+	parport_release(pardev);
+	parport_unregister_device(pardev);
+
+	return res;
+}
+
+static void __devinit snd_portman_attach(struct parport *p)
+{
+	struct platform_device *device;
+
+	device = platform_device_alloc(PLATFORM_DRIVER, device_count);
+	if (!device) 
+		return;
+
+	/* Temporary assignment to forward the parport */
+	platform_set_drvdata(device, p);
+
+	if (platform_device_register(device) < 0) {
+		platform_device_put(device);
+		return;
+	}
+
+	/* Since we dont get the return value of probe
+	 * We need to check if device probing succeeded or not */
+	if (!platform_get_drvdata(device)) {
+		platform_device_unregister(device);
+		return;
+	}
+
+	/* register device in global table */
+	platform_devices[device_count] = device;
+	device_count++;
+}
+
+static void snd_portman_detach(struct parport *p)
+{
+	/* nothing to do here */
+}
+
+static struct parport_driver portman_parport_driver = {
+	.name   = "portman2x4",
+	.attach = snd_portman_attach,
+	.detach = snd_portman_detach
+};
+
+/*********************************************************************
+ * platform stuff
+ *********************************************************************/
+static void snd_portman_card_private_free(struct snd_card *card)
+{
+	struct portman *pm = card->private_data;
+	struct pardevice *pardev = pm->pardev;
+
+	if (pardev) {
+		if (pm->pardev_claimed)
+			parport_release(pardev);
+		parport_unregister_device(pardev);
+	}
+
+	portman_free(pm);
+}
+
+static int __devinit snd_portman_probe(struct platform_device *pdev)
+{
+	struct pardevice *pardev;
+	struct parport *p;
+	int dev = pdev->id;
+	struct snd_card *card = NULL;
+	struct portman *pm = NULL;
+	int err;
+
+	p = platform_get_drvdata(pdev);
+	platform_set_drvdata(pdev, NULL);
+
+	if (dev >= SNDRV_CARDS)
+		return -ENODEV;
+	if (!enable[dev]) 
+		return -ENOENT;
+
+	if ((err = snd_portman_probe_port(p)) < 0)
+		return err;
+
+	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
+	if (card == NULL) {
+		snd_printd("Cannot create card\n");
+		return -ENOMEM;
+	}
+	strcpy(card->driver, DRIVER_NAME);
+	strcpy(card->shortname, CARD_NAME);
+	sprintf(card->longname,  "%s at 0x%lx, irq %i", 
+		card->shortname, p->base, p->irq);
+
+	pardev = parport_register_device(p,                     /* port */
+					 DRIVER_NAME,           /* name */
+					 NULL,                  /* preempt */
+					 NULL,                  /* wakeup */
+					 snd_portman_interrupt, /* ISR */
+					 PARPORT_DEV_EXCL,      /* flags */
+					 (void *)card);         /* private */
+	if (pardev == NULL) {
+		snd_printd("Cannot register pardevice\n");
+		err = -EIO;
+		goto __err;
+	}
+
+	if ((err = portman_create(card, pardev, &pm)) < 0) {
+		snd_printd("Cannot create main component\n");
+		parport_unregister_device(pardev);
+		goto __err;
+	}
+	card->private_data = pm;
+	card->private_free = snd_portman_card_private_free;
+	
+	if ((err = snd_portman_rawmidi_create(card)) < 0) {
+		snd_printd("Creating Rawmidi component failed\n");
+		goto __err;
+	}
+
+	/* claim parport */
+	if (parport_claim(pardev)) {
+		snd_printd("Cannot claim parport 0x%lx\n", pardev->port->base);
+		err = -EIO;
+		goto __err;
+	}
+	pm->pardev_claimed = 1;
+
+	/* init device */
+	if ((err = portman_device_init(pm)) < 0)
+		goto __err;
+
+	platform_set_drvdata(pdev, card);
+
+	/* At this point card will be usable */
+	if ((err = snd_card_register(card)) < 0) {
+		snd_printd("Cannot register card\n");
+		goto __err;
+	}
+
+	snd_printk(KERN_INFO "Portman 2x4 on 0x%lx\n", p->base);
+	return 0;
+
+__err:
+	snd_card_free(card);
+	return err;
+}
+
+static int snd_portman_remove(struct platform_device *pdev)
+{
+	struct snd_card *card = platform_get_drvdata(pdev);
+
+	if (card)
+		snd_card_free(card);
+
 	return 0;
 }
 
 
-/* init midiman portman */
+static struct platform_driver snd_portman_driver = {
+	.probe  = snd_portman_probe,
+	.remove = snd_portman_remove,
+	.driver = {
+		.name = PLATFORM_DRIVER
+	}
+};
 
-static int __init alsa_card_portman2x4_init(void)
+/*********************************************************************
+ * module init stuff
+ *********************************************************************/
+static void snd_portman_unregister_all(void)
 {
-	/* LOCAL VARIABLES */
-	static int dev = 0;
-	struct snd_card *card;
-	int err;
-	int result = 0;
+	int i;
 
-	/* Display copyright notice and driver version */
-	snd_printk("Driverversion is: %s\n", sVersion);
-
-	portman = kzalloc(sizeof(portman_t), GFP_KERNEL);
-	if (portman == NULL) {
-		snd_printk
-		    ("Error allocating memory for portman. Exiting.\n");
-		return 1;
-	}
-
-	spin_lock_init(&portman->reg_lock);
-
-	portman->midi_input_mode[0] = 0;
-	portman->midi_input_mode[1] = 0;
-	portman->midi_output_mode[0] = 0;
-	portman->midi_output_mode[1] = 0;
-	portman->midi_output_mode[2] = 0;
-	portman->midi_output_mode[3] = 0;
-
-	/* Initialize parport */
-	/* Register a new high-level driver. */
-	result = parport_register_driver(&portman_driver);
-
-	/* Test if there is a portman available. Exit if not. */
-	if (portman_found == 0) {
-		snd_printk("Portman not found. Exiting.\n");
-		parport_unregister_driver(&portman_driver);
-		return 1;
-	}
-
-	for (; dev < SNDRV_CARDS; dev++) {
-		if (!enable[dev]) {
-			dev++;
-			snd_printk("Could not enable card. Exiting.\n");
-			cleanup();
-			return -ENOENT;
+	for (i = 0; i < SNDRV_CARDS; ++i) {
+		if (platform_devices[i]) {
+			platform_device_unregister(platform_devices[i]);
+			platform_devices[i] = NULL;
 		}
-		break;
+	}		
+	platform_driver_unregister(&snd_portman_driver);
+	parport_unregister_driver(&portman_parport_driver);
+}
+
+static int __init snd_portman_module_init(void)
+{
+	int err;
+
+	if ((err = platform_driver_register(&snd_portman_driver)) < 0)
+		return err;
+
+	if (parport_register_driver(&portman_parport_driver) != 0) {
+		platform_driver_unregister(&snd_portman_driver);
+		return -EIO;
 	}
 
-	if (dev >= SNDRV_CARDS) {
-		snd_printk("Could not enable card. Exiting.\n");
-		cleanup();
+	if (device_count == 0) {
+		snd_portman_unregister_all();
 		return -ENODEV;
 	}
 
-	/* alsa: create new sound card */
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
-	if (card == NULL) {
-		snd_printk
-		    ("Fatal. Cannot allocate memory for sound card. Exiting.\n");
-		cleanup();
-		return -ENOMEM;
-	}
-
-	portman->card = card;
-
-	/* register midi functions */
-	if ((err = snd_portman_midi(portman, 0, NULL)) < 0) {
-		snd_card_free(card);
-		return err;
-	}
-	strcpy(card->driver, "Portman");
-	strcpy(card->shortname, "Portman2x4");
-	sprintf(card->longname, "%s %s at 0x%lx, irq %i",
-		card->shortname, "2x4", portman->port, portman->irq);
-
-	if ((err = snd_card_register(card)) < 0) {
-		snd_card_free(card);
-		return err;
-	}
-
-	dev++;
 	return 0;
 }
 
-static void __exit alsa_card_portman2x4_exit(void)
+static void __exit snd_portman_module_exit(void)
 {
-	if (portman == NULL)
-		return;
-	if (portman->card)
-		snd_card_free(portman->card);
-	cleanup();
-	parport_unregister_driver(&portman_driver);
+	snd_portman_unregister_all();
 }
 
-module_init(alsa_card_portman2x4_init)
-module_exit(alsa_card_portman2x4_exit)
+module_init(snd_portman_module_init);
+module_exit(snd_portman_module_exit);
