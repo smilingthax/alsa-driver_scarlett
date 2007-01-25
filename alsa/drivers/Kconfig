@@ -25,13 +25,6 @@ config SND_LOOPBACK
 	help
 	  Say 'Y' or 'M' to include support for the PCM loopback device.
 
-config SND_PORTMAN2X4
-	tristate "Portman 2x4 driver"
-	depends on SND && PARPORT
-	select SND_RAWMIDI
-	help
-	  Say 'Y' or 'M' to include support for Portman 2x4.
-
 config SND_PCSP
 	tristate "Internal PC speaker support"
 	depends on SND && X86 && HAVE_PCSP_HOOK

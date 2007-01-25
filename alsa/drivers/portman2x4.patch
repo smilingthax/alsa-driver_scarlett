@@ -1,0 +1,20 @@
+--- ../alsa-kernel/drivers/portman2x4.c	2007-01-25 12:57:50.000000000 +0100
++++ portman2x4.c	2007-01-25 13:04:22.000000000 +0100
+@@ -611,7 +611,11 @@
+ /*********************************************************************
+  * parport stuff
+  *********************************************************************/
++#ifndef CONFIG_SND_NEW_IRQ_HANDLER
++static void snd_portman_interrupt(int irq, void *userdata, struct pt_regs *reg)
++#else
+ static void snd_portman_interrupt(int irq, void *userdata)
++#endif
+ {
+ 	unsigned char midivalue = 0;
+ 	struct portman *pm = ((struct snd_card*)userdata)->private_data;
+@@ -874,3 +878,5 @@
+ 
+ module_init(snd_portman_module_init);
+ module_exit(snd_portman_module_exit);
++
++EXPORT_NO_SYMBOLS;
