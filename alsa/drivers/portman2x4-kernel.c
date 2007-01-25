@@ -617,11 +617,10 @@ static void snd_portman_interrupt(int irq, void *userdata)
 static void snd_portman_interrupt(int irq, void *userdata, struct pt_regs *regs)
 #endif
 {
-	unsigned long flags;
 	unsigned char midivalue = 0;
 	struct portman *pm = ((struct snd_card*)userdata)->private_data;
 
-	spin_lock_irqsave(&pm->reg_lock, flags);
+	spin_lock(&pm->reg_lock);
 
 	/* While any input data is waiting */
 	while ((portman_read_status(pm) & INT_REQ) == INT_REQ) {
@@ -649,7 +648,7 @@ static void snd_portman_interrupt(int irq, void *userdata, struct pt_regs *regs)
 
 	}
 
-	spin_unlock_irqrestore(&pm->reg_lock, flags);
+	spin_unlock(&pm->reg_lock);
 }
 
 static int __devinit snd_portman_probe_port(struct parport *p)
