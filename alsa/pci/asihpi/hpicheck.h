@@ -60,7 +60,7 @@ compile_time_size_check(HPI_MESSAGE, 44);
 
 compile_time_size_check(HPI_RESPONSE, 64);
 
-compile_time_obj_check(HPI_SUBSYS, 8, 52);
+compile_time_obj_check(HPI_SUBSYS, 12, 52);
 compile_time_obj_check(HPI_ADAPTER, 8, 32);
 compile_time_obj_check(HPI_ADAPTERX, 12, 32);
 compile_time_obj_check(HPI_STREAM, 32, 20);
@@ -83,7 +83,9 @@ compile_time_assert((sizeof(HPI_MSG_FORMAT) <= sizeof(HPI_FORMAT)), format_fit);
 /* API HPI_FORMAT must have fixed size */
 compile_time_size_check(HPI_DATA, 7 * 4);
 compile_time_size_check(HPI_BUFFER, 7 * 4);
+#ifndef HPI_64BIT
 compile_time_size_check(HPI_DATA_LEGACY32, 7 * 4);
+#endif
 
 /* Message DATA must fit inside API data */
 compile_time_assert((sizeof(HPI_MSG_DATA) <= sizeof(HPI_DATA)), data_fit);

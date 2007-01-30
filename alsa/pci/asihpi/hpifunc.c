@@ -2002,7 +2002,7 @@ u16 HPI_InStreamReset(HPI_HSUBSYS * phSubSys,	///< subsystem handle
 *
 * Returns information about the input stream.
 *
-*This includes the size of the stream’s hardware buffer returned in pdwBufferSize. 
+*This includes the size of the streams hardware buffer returned in pdwBufferSize. 
 * Also includes whether the stream is currently recording (the state) and the amount of audio data currently contained in the buffer.
 */
 
@@ -2023,7 +2023,7 @@ u16 HPI_InStreamGetInfo(HPI_HSUBSYS * phSubSys,	///< subsystem handle
 
 /** Returns extended information about the input stream.
 *
-* This includes the size of the stream’s hardware buffer returned in pdwBufferSize.  Also includes whether the
+* This includes the size of the streams hardware buffer returned in pdwBufferSize.  Also includes whether the
 * stream is currently recording (the state), the amount of audio data currently contained in the buffer and how many samples have been recorded.
 *
 * \param pdwSamplesRecorded The SamplesRecorded parameter returns the number of samples recorded since the
@@ -2084,14 +2084,14 @@ u16 HPI_InStreamGetInfoEx(HPI_HSUBSYS * phSubSys,	///< subsystem handle
 * Note that when (wMode== HPI_MPEG_ANC_HASENERGY, see below) an additional 5 bytes per frame are
 * automatically allocated for energy information.
 * \param wMode The mode for the ancillary data extraction to operate in. Valid settings are HPI_MPEG_ANC_RAW and
-* HPI_MPEG_ANC_HASENERGY. The “RAW” mode indicates that the entire ancillary data field is taken up by data from the
-* Anc data buffer. The “HASENERGY” option tells the encoder that the MPEG frames have energy information stored in them
+* HPI_MPEG_ANC_HASENERGY. The RAW mode indicates that the entire ancillary data field is taken up by data from the
+* Anc data buffer. The HASENERGY option tells the encoder that the MPEG frames have energy information stored in them
 * (5 bytes per stereo frame, 3 per mono). The encoder will insert the energy bytes before filling the remainder of the
 * ancillary data space with data from the ancillary data buffer.
-* \param wAlignment HPI_MPEG_ANC_ALIGN_LEFT – the wBytesPerFrame data immediately follow the audio data.
+* \param wAlignment HPI_MPEG_ANC_ALIGN_LEFT  the wBytesPerFrame data immediately follow the audio data.
 * Spare space is left at the end of the frame.
-* HPI_MPEG_ANC_ALIGN_RIGHT – the wBytesPerFrame data is packed against the end of the frame. Spare space is left at the start of the frame.
-* HPI_MPEG_ANC_ALIGN_FILL – all ancillary data space in the frame is used. wBytesPerFrame or more data is written per frame. There is no spare space.
+* HPI_MPEG_ANC_ALIGN_RIGHT  the wBytesPerFrame data is packed against the end of the frame. Spare space is left at the start of the frame.
+* HPI_MPEG_ANC_ALIGN_FILL  all ancillary data space in the frame is used. wBytesPerFrame or more data is written per frame. There is no spare space.
 *This parameter is ignored for MP3 encoding, effectively it is fixed at HPI_MPEG_ANC_ALIGN_FILL  (See Note 2)
 * \param wIdleBit This field tells the encoder what to set all the bits of the ancillary data field to in the case where there is no data waiting to be inserted.
 * Valid values are 0 or 1.  This parameter is ignored for MP3 encoding, if no data is available, no data will be inserted  (See Note 2)
@@ -2148,7 +2148,7 @@ u16 HPI_InStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI sub
 }
 
 /**
-* Writes dwNumberOfAncDataFramesToWrite frames from pAncFrameBuffer to the stream’s ancillary data buffer.
+* Writes dwNumberOfAncDataFramesToWrite frames from pAncFrameBuffer to the streams ancillary data buffer.
 *
 *The first bit of ancillary information that follows the valid audio data is bit 7 of  bData[0]. The first 8 bits of ancillary information following
 * valid audio data are from bData[0]. In the case where there are 6 bytes total of ancillary information (48 bits) the last byte inserted in the frame is bData[5].
@@ -2190,8 +2190,8 @@ u16 HPI_InStreamAncillaryWrite(HPI_HSUBSYS * phSubSys,
 * for the buffer can be calculated using HPI_StreamEstimateHostBufferSize()
 *
 * \return Error 0 upon success\n
-* HPI_ERROR_INVALID_DATASIZE if memory can’t be allocated (retrying the call with a smaller size may succeed)\n
-* HPI_ERROR_INVALID_OPERATION if virtual address of buffer can’t be found.
+* HPI_ERROR_INVALID_DATASIZE if memory cant be allocated (retrying the call with a smaller size may succeed)\n
+* HPI_ERROR_INVALID_OPERATION if virtual address of buffer cant be found.
 */
 u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle
 				   HPI_HISTREAM hInStream,	///< Handle of the InStream
@@ -2374,7 +2374,8 @@ u16 HPI_MixerClose(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
 *
 * \note Not all adapters have controls at all nodes, or between all nodes.  Consult the Mixer Map for your particular
 *adapter to find out the location and type of controls in its mixer.
-* \example Say you have an audio adapter with a mixer that has the following layout: 
+*
+* Say you have an audio adapter with a mixer that has the following layout: 
 * (Need to add diagram.)
 * You can see that the mixer has two meter controls, located on each of the Outstream source nodes, two volume controls, located between
 * the OutStream sources and the LineOut destination nodes and one level control located on the LineOut destination node.
@@ -2395,7 +2396,7 @@ u16 HPI_MixerGetControl(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
 			u16 wSrcNodeTypeIndex,	///< Index of particular source node type i.e. the 2nd HPI_SOURCENODE_OSTREAM would be specified as index=1
 			u16 wDstNodeType,	///< Destination node type i.e. HPI_DESTNODE_LINEOUT
 			u16 wDstNodeTypeIndex,	///< Index of particular source node type i.e. the 3rd HPI_DESTNODE_LINEOUT would be specified as index=2
-			u16 wControlType,	// HPI_CONTROL_METER, _VOLUME etc///< Type of mixer control i.e. HPI_CONTROL_METER,  VOLUME, METER or LEVEL. See additional HPI_CONTROL_xxxx types defined in HPI.H
+			u16 wControlType,	///< Type of mixer control i.e. HPI_CONTROL_METER,  VOLUME, METER or LEVEL. See additional HPI_CONTROL_xxxx types defined in HPI.H
 			HPI_HCONTROL * phControlHandle	///< Handle to the particular control
     )
 {

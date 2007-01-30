@@ -73,8 +73,12 @@ typedef struct {
 /* /////////////////////////// PROTOTYPES /////////////////////////////////// */
 
 /* memory allocation */
+#ifndef HpiOs_MemAlloc
 void *HpiOs_MemAlloc(u32 dwSize);
+#endif
+#ifndef HpiOs_MemFree
 void HpiOs_MemFree(void *ptr);
+#endif
 
 /* physical memory allocation */
 #ifndef NO_HPIOS_LOCKEDMEM_OPS
@@ -105,14 +109,14 @@ u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle);
 
 /** Get the physical PCI address of memory represented by LockedMemHandle.
 
-If handle is NULL *pPhysicalAddr is set to zero and return 1 
+If handle is NULL *pPhysicalAddr is set to zero and return 1
 */
 u16 HpiOs_LockedMem_GetPhysAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 				u32 * pPhysicalAddr);
 
 /** Get the CPU address of of memory represented by LockedMemHandle.
 
-If handle is NULL *ppvVirtualAddr is set to NULL and return 1 
+If handle is NULL *ppvVirtualAddr is set to NULL and return 1
 */
 u16 HpiOs_LockedMem_GetVirtAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 				void **ppvVirtualAddr);
