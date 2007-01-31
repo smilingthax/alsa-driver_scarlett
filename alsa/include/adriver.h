@@ -666,6 +666,7 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct delayed_wo
 #define schedule_delayed_work(work, delay) snd_compat_queue_delayed_work(NULL, (work), (delay))
 int snd_compat_cancel_delayed_work(struct delayed_work *work);
 #define cancel_delayed_work(work) snd_compat_cancel_delayed_work(work)
+#define flush_scheduled_work()
 #endif /* < 2.5.45 */
 #endif /* < 2.6.0 */
 
