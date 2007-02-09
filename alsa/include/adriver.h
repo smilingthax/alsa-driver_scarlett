@@ -442,6 +442,12 @@ typedef void irqreturn_t;
 	({ type __x = (x); type __y = (y); __x > __y ? __x: __y; })
 #endif
 
+#ifndef container_of
+#define container_of(ptr, type, member) ({			\
+	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
+	(type *)( (char *)__mptr - offsetof(type,member) );})
+#endif
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
