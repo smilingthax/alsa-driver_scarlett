@@ -23,6 +23,9 @@ struct device_driver {
 	struct list_head device_list;
 };
 
+struct device_attribute {
+};
+
 int snd_compat_driver_register(struct device_driver *driver);
 void snd_compat_driver_unregister(struct device_driver *driver);
 
