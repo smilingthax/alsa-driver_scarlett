@@ -67,6 +67,7 @@
 #include <linux/smp_lock.h>
 #include <linux/vmalloc.h>
 #include <linux/ioport.h>
+#include <linux/firmware.h>
 #include <asm/irq.h>
 #include <asm/io.h>
 
@@ -90,8 +91,6 @@
 #  include "msnd_pinnacle.h"
 #  define LOGNAME			"snd_msnd_pinnacle"
 #endif
-
-extern int mod_firmware_load(const char *fn, char **fp);
 
 
 #define chip_t snd_msndpinnacle_pcm_t
@@ -702,37 +701,48 @@ static int __init snd_msnd_calibrate_adc( WORD srate)
 
 static int upload_dsp_code(void)
 {
+#ifndef HAVE_DSPCODEH
+	const struct firmware *init_fw, *perm_fw;
+#endif
+	int err;
+
 	outb(HPBLKSEL_0, dev.io + HP_BLKS);
 #ifndef HAVE_DSPCODEH
-	INITCODESIZE = mod_firmware_load(INITCODEFILE, &INITCODE);
-	if (!INITCODE) {
+	err = request_firmware(&init_fw, INITCODEFILE, dev.card->dev);
+	if (err < 0) {
 		printk(KERN_ERR LOGNAME ": Error loading " INITCODEFILE);
-		return -EBUSY;
+		goto cleanup1;
 	}
-
-	PERMCODESIZE = mod_firmware_load(PERMCODEFILE, &PERMCODE);
-	if (!PERMCODE) {
+	err = request_firmware(&perm_fw, PERMCODEFILE, dev.card->dev);
+	if (err < 0) {
 		printk(KERN_ERR LOGNAME ": Error loading " PERMCODEFILE);
-		vfree(INITCODE);
-		return -EBUSY;
+		goto cleanup;
 	}
+	INITCODE = init_fw->data;
+	INITCODESIZE = init_fw->size;
+	PERMCODE = perm_fw->data;
+	PERMCODESIZE = perm_fw->size;
 #endif
 	isa_memcpy_toio(dev.base, PERMCODE, PERMCODESIZE);
 	if (snd_msnd_upload_host(&dev, INITCODE, INITCODESIZE) < 0) {
 		printk(KERN_WARNING LOGNAME ": Error uploading to DSP\n");
-		return -ENODEV;
+		err = -ENODEV;
+		goto cleanup;
 	}
 #ifdef HAVE_DSPCODEH
 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded (resident)\n");
 #else
 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded\n");
 #endif
+	err = 0;
 
+cleanup:
 #ifndef HAVE_DSPCODEH
-	vfree(INITCODE);
-	vfree(PERMCODE);
+	release_firmware(perm_fw);
+cleanup1:
+	release_firmware(init_fw);
 #endif
-	return 0;
+	return err;
 }
 
 #ifdef MSND_CLASSIC
