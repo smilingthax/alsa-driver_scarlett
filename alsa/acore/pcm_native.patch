@@ -419,7 +419,7 @@
   */
 @@ -3426,26 +3606,46 @@
  
- struct file_operations snd_pcm_f_ops[2] = {
+ const struct file_operations snd_pcm_f_ops[2] = {
  	{
 +#ifndef LINUX_2_2
  		.owner =		THIS_MODULE,
