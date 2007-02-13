@@ -644,6 +644,8 @@ CHECK_KERNEL_HEADER(linux/device.h, [#include \"device_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/platform_device.h, [#include \"platform_device_compat.h\"
 ])
+CHECK_KERNEL_HEADER(linux/isa.h, [#include \"isa_compat.h\"
+])
 CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
 #include <linux/delay.h>
 ])

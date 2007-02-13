@@ -5,6 +5,7 @@ struct device {
 	void *private_data;
 	struct device_driver *driver;
 	struct pm_dev *pm_dev;
+	char	bus_id[20];
 };
 
 struct bus_type {

@@ -43,6 +43,7 @@ size_t snd_compat_strlcat(char *dest, const char *src, size_t count)
 	dest[len] = 0;
 	return res;
 }
+EXPORT_SYMBOL(snd_compat_strlcat);
 #endif
 
 #ifndef CONFIG_HAVE_VSNPRINTF
@@ -90,6 +91,7 @@ int snd_compat_vsscanf(const char *buf, const char *fmt, va_list args)
 	}
 	return num;
 }
+EXPORT_SYMBOL(snd_compat_vsscanf);
 
 int snd_compat_sscanf(const char *buf, const char *fmt, ...)
 {
@@ -101,6 +103,7 @@ int snd_compat_sscanf(const char *buf, const char *fmt, ...)
 	va_end(args);
 	return res;
 }
+EXPORT_SYMBOL(snd_compat_sscanf);
 #endif
 
 #ifdef CONFIG_HAVE_OLD_REQUEST_MODULE
@@ -116,6 +119,7 @@ void snd_compat_request_module(const char *fmt, ...)
 		request_module(buf);
 	va_end(args);
 }
+EXPORT_SYMBOL(snd_compat_request_module);
 #endif
 
 #if defined(CONFIG_DEVFS_FS)
@@ -137,6 +141,7 @@ void snd_compat_devfs_remove(const char *fmt, ...)
 	}
 	va_end(args);
 }
+EXPORT_SYMBOL(snd_compat_devfs_remove);
 
 #endif /* 2.5.29 */
 
@@ -160,6 +165,7 @@ int snd_compat_devfs_mk_dir(const char *dir, ...)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(snd_compat_devfs_mk_dir);
 
 extern struct file_operations snd_fops;
 int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
@@ -178,6 +184,7 @@ int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(snd_compat_devfs_mk_cdev);
 
 #endif /* 2.5.67 */
 
@@ -198,6 +205,7 @@ int snd_pci_dev_present(const struct pci_device_id *ids)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(snd_pci_dev_present);
 #endif
 
 /*
@@ -214,6 +222,7 @@ void snd_compat_msleep(unsigned int msecs)
 		timeout = schedule_timeout(timeout);
 	}
 }
+EXPORT_SYMBOL(snd_compat_msleep);
 #endif
 
 #ifndef CONFIG_HAVE_MSLEEP_INTERRUPTIBLE
@@ -228,6 +237,7 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs)
 	}
 	return (timeout * 1000) / HZ;
 }
+EXPORT_SYMBOL(snd_compat_msleep_interruptible);
 #endif /* < 2.6.6 */
 
 /* wrapper for new irq handler type */
@@ -243,6 +253,7 @@ struct irq_list {
 };
 	
 struct pt_regs *snd_irq_regs;
+EXPORT_SYMBOL(snd_irq_regs);
 
 #if defined(IRQ_NONE) && LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 static irqreturn_t irq_redirect(int irq, void *data, struct pt_regs *reg)
@@ -287,6 +298,7 @@ int snd_request_irq(unsigned int irq, snd_irq_handler_t handler,
 	mutex_unlock(&irq_list_mutex);
 	return 0;
 }
+EXPORT_SYMBOL(snd_request_irq);
 
 void snd_free_irq(unsigned int irq, void *data)
 {
@@ -304,5 +316,6 @@ void snd_free_irq(unsigned int irq, void *data)
 	}
 	mutex_unlock(&irq_list_mutex);
 }
+EXPORT_SYMBOL(snd_free_irq);
 #endif /* !CONFIG_SND_NEW_IRQ_HANDLER */
 
