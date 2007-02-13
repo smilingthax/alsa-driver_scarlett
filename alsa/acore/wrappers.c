@@ -12,6 +12,7 @@
 #endif
 #endif
 
+#include <linux/module.h>
 #include <linux/kmod.h>
 #include <linux/devfs_fs_kernel.h>
 
