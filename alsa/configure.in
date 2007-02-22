@@ -1321,7 +1321,7 @@ AC_SUBST(msmp)
 
 KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -Iinclude -nostdinc -iwithprefix include"
 if test "$NEW_KBUILD" = "y"; then
-  KERNEL_CHECK_CFLAGS="$KERNEL_CHECK_CFLAGS -DKBUILD_STR(s)=#s -DKBUILD_BASENAME=KBUILD_STR(dummy)"
+  KERNEL_CHECK_CFLAGS="$KERNEL_CHECK_CFLAGS -DKBUILD_STR(s)=#s -DKBUILD_BASENAME=KBUILD_STR(dummy) -DKBUILD_MODNAME=KBUILD_BASENAME"
 fi
 
 dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
