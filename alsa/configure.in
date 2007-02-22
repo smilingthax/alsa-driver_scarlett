@@ -651,6 +651,8 @@ CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
 ])
 CHECK_KERNEL_HEADER(linux/compat.h, [#include \"compat_64.h\"
 ])
+CHECK_KERNEL_HEADER(linux/log2.h, [#include \"log2_compat.h\"
+])
 dnl PPC headers (for 2.2 kernels)
 CHECK_KERNEL_HEADER(linux/adb.h, [#include <asm/adb.h>
 ])
