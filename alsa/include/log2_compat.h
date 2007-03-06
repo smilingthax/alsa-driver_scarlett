@@ -4,6 +4,10 @@
 #include <linux/types.h>
 #include <linux/bitops.h>
 
+#ifndef bool
+#define bool int
+#endif
+
 static inline __attribute__((const))
 bool is_power_of_2(unsigned long n)
 {
