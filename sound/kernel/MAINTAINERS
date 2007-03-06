@@ -247,6 +247,13 @@ L:	linux-acpi@vger.kernel.org
 W:	http://acpi.sourceforge.net/
 S:	Supported
 
+ACPI VIDEO DRIVER
+P:	Luming Yu
+M:	luming.yu@intel.com
+L:	linux-acpi@vger.kernel.org
+W:	http://acpi.sourceforge.net/
+S:	Supported
+
 AD1816 SOUND DRIVER
 P:	Thorsten Knabe
 M:	Thorsten Knabe <linux@thorsten-knabe.de>
@@ -265,6 +272,12 @@ S:	Maintained
 ADM1025 HARDWARE MONITOR DRIVER
 P:	Jean Delvare
 M:	khali@linux-fr.org
+L:	lm-sensors@lm-sensors.org
+S:	Maintained
+
+ADM1029 HARDWARE MONITOR DRIVER
+P:	Corentin Labbe
+M:	corentin.labbe@geomatys.fr
 L:	lm-sensors@lm-sensors.org
 S:	Maintained
 
@@ -620,6 +633,11 @@ P:	Haavard Skinnemoen
 M:	hskinnemoen@atmel.com
 S:	Supported
 
+ATMEL SPI DRIVER
+P:	Haavard Skinnemoen
+M:	hskinnemoen@atmel.com
+S:	Supported
+
 ATMEL WIRELESS DRIVER
 P:	Simon Kelley
 M:	simon@thekelleys.org.uk
@@ -659,6 +677,11 @@ P:	Ralf Baechle
 M:	ralf@linux-mips.org
 L:	linux-hams@vger.kernel.org
 W:	http://www.linux-ax25.org/
+S:	Maintained
+
+BACKLIGHT CLASS/SUBSYSTEM
+P:	Richard Purdie
+M:	rpurdie@rpsys.net
 S:	Maintained
 
 BAYCOM/HDLCDRV DRIVERS FOR AX.25
@@ -1283,7 +1306,7 @@ S:	Maintained
 ETHERNET BRIDGE
 P:	Stephen Hemminger
 M:	shemminger@linux-foundation.org
-L:	bridge@osdl.org
+L:	bridge@lists.osdl.org
 W:	http://bridge.sourceforge.net/
 S:	Maintained
 
@@ -1298,13 +1321,13 @@ S:	Maintained
 
 EXT3 FILE SYSTEM
 P:	Stephen Tweedie, Andrew Morton
-M:	sct@redhat.com, akpm@osdl.org, adilger@clusterfs.com
+M:	sct@redhat.com, akpm@linux-foundation.org, adilger@clusterfs.com
 L:	linux-ext4@vger.kernel.org
 S:	Maintained
 
 EXT4 FILE SYSTEM
 P:	Stephen Tweedie, Andrew Morton
-M:	sct@redhat.com, akpm@osdl.org, adilger@clusterfs.com
+M:	sct@redhat.com, akpm@linux-foundation.org, adilger@clusterfs.com
 L:	linux-ext4@vger.kernel.org
 S:	Maintained
 
@@ -1322,7 +1345,7 @@ S:	Supported
 
 FRAMEBUFFER LAYER
 P:	Antonino Daplas
-M:	adaplas@pol.net
+M:	adaplas@gmail.com
 L:	linux-fbdev-devel@lists.sourceforge.net (subscribers-only)
 W:	http://linux-fbdev.sourceforge.net/
 S:	Maintained
@@ -1469,6 +1492,13 @@ HID CORE LAYER
 P:	Jiri Kosina
 M:	jkosina@suse.cz
 L:	linux-input@atrey.karlin.mff.cuni.cz
+T:	git kernel.org:/pub/scm/linux/kernel/git/jikos/hid.git
+S:	Maintained
+
+HIGH-RESOLUTION TIMERS, CLOCKEVENTS, DYNTICKS
+P:	Thomas Gleixner
+M:	tglx@linutronix.de
+L:	linux-kernel@vger.kernel.org
 S:	Maintained
 
 HIGH-SPEED SCC DRIVER FOR AX.25
@@ -1727,7 +1757,7 @@ S:	Maintained
 
 INTEL 810/815 FRAMEBUFFER DRIVER
 P:	Antonino Daplas
-M:	adaplas@pol.net
+M:	adaplas@gmail.com
 L:	linux-fbdev-devel@lists.sourceforge.net (subscribers-only)
 S:	Maintained
 
@@ -1877,13 +1907,6 @@ L:	isdn4linux@listserv.isdn4linux.de
 W:	http://www.melware.de
 S:	Maintained
 
-JOURNALLING FLASH FILE SYSTEM (JFFS)
-P:	Axis Communications AB
-M:	jffs-dev@axis.com
-L:	jffs-dev@axis.com
-W:	http://www.developer.axis.com/software/jffs/
-S:	Maintained
-
 JOURNALLING FLASH FILE SYSTEM V2 (JFFS2)
 P:	David Woodhouse
 M:	dwmw2@infradead.org
@@ -1901,7 +1924,7 @@ S:	Supported
 
 JOURNALLING LAYER FOR BLOCK DEVICES (JBD)
 P:	Stephen Tweedie, Andrew Morton
-M:	sct@redhat.com, akpm@osdl.org
+M:	sct@redhat.com, akpm@linux-foundation.org
 L:	linux-ext4@vger.kernel.org
 S:	Maintained
 
@@ -1972,7 +1995,7 @@ P:	Eric Biederman
 M:	ebiederm@xmission.com
 W:	http://www.xmission.com/~ebiederm/files/kexec/
 L:	linux-kernel@vger.kernel.org
-L:	fastboot@osdl.org
+L:	fastboot@lists.osdl.org
 S:	Maintained
 
 KPROBES
@@ -2310,7 +2333,7 @@ S:	Maintained
 NETEM NETWORK EMULATOR
 P:	Stephen Hemminger
 M:	shemminger@linux-foundation.org
-L:	netem@osdl.org
+L:	netem@lists.osdl.org
 S:	Maintained
 
 NETFILTER/IPTABLES/IPCHAINS
@@ -2349,7 +2372,7 @@ S:	Maintained
 
 NETWORK DEVICE DRIVERS
 P:	Andrew Morton
-M:	akpm@osdl.org
+M:	akpm@linux-foundation.org
 P:	Jeff Garzik
 M:	jgarzik@pobox.com
 L:	netdev@vger.kernel.org
@@ -2449,7 +2472,7 @@ S:	Maintained
 
 NVIDIA (rivafb and nvidiafb) FRAMEBUFFER DRIVER
 P:	Antonino Daplas
-M:	adaplas@pol.net
+M:	adaplas@gmail.com
 L:	linux-fbdev-devel@lists.sourceforge.net (subscribers-only)
 S:	Maintained
 
@@ -2523,17 +2546,15 @@ M:	olof@lixom.net
 L:	netdev@vger.kernel.org
 S:	Maintained
 
-PARALLEL PORT SUPPORT
-P:	Phil Blundell
-M:	philb@gnu.org
-P:	Tim Waugh
-M:	tim@cyberelk.net
-P:	David Campbell
-P:	Andrea Arcangeli
-M:	andrea@suse.de
-L:	linux-parport@lists.infradead.org
-W:	http://people.redhat.com/twaugh/parport/
+PA SEMI SMBUS DRIVER
+P:	Olof Johansson
+M:	olof@lixom.net
+L:	i2c@lm-sensors.org
 S:	Maintained
+
+PARALLEL PORT SUPPORT
+L:	linux-parport@lists.infradead.org
+S:	Orphan
 
 PARIDE DRIVERS FOR PARALLEL PORT IDE DEVICES
 P:	Tim Waugh
@@ -2612,8 +2633,8 @@ T:	git kernel.org:/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git
 S:	Maintained
 
 PCNET32 NETWORK DRIVER
-P:	Thomas Bogendörfer
-M:	tsbogend@alpha.franken.de
+P:	Don Fry
+M:	pcnet32@verizon.net
 L:	netdev@vger.kernel.org
 S:	Maintained
 
@@ -2719,7 +2740,7 @@ S:	Supported
 PVRUSB2 VIDEO4LINUX DRIVER
 P:	Mike Isely
 M:	isely@pobox.com
-L:	pvrusb2@isely.net
+L:	pvrusb2@isely.net	(subscribers-only)
 L:	video4linux-list@redhat.com
 W:	http://www.isely.net/pvrusb2/
 S:	Maintained
@@ -2827,7 +2848,7 @@ S:	Orphan
 
 S3 SAVAGE FRAMEBUFFER DRIVER
 P:	Antonino Daplas
-M:	adaplas@pol.net
+M:	adaplas@gmail.com
 L:	linux-fbdev-devel@lists.sourceforge.net (subscribers-only)
 S:	Maintained
 
@@ -3038,7 +3059,7 @@ S:	Supported
 SOFTWARE SUSPEND:
 P:	Pavel Machek
 M:	pavel@suse.cz
-L:	linux-pm@osdl.org
+L:	linux-pm@lists.osdl.org
 S:	Maintained
 
 SONIC NETWORK DRIVER
@@ -3050,6 +3071,8 @@ S:	Maintained
 SONY VAIO CONTROL DEVICE DRIVER
 P:	Stelian Pop
 M:	stelian@popies.net
+P:	Mattia Dongili
+M:	malattia@linux.it
 W:	http://popies.net/sonypi/
 S:	Maintained
 
@@ -3147,8 +3170,8 @@ L:	linux-kernel@vger.kernel.org ?
 S:	Supported
 
 SPIDERNET NETWORK DRIVER for CELL
-P:	Jim Lewis
-M:	jim@jklewis.com
+P:	Linas Vepstas
+M:	linas@austin.ibm.com
 L:	netdev@vger.kernel.org
 S:	Supported
 
@@ -3361,6 +3384,13 @@ L:	linux-usb-devel@lists.sourceforge.net
 S:	Maintained
 W:	http://www.kroah.com/linux-usb/
 
+USB DAVICOM DM9601 DRIVER
+P:	Peter Korsgaard
+M:	jacmet@sunsite.dk
+L:	linux-usb-devel@lists.sourceforge.net
+W:	http://www.linux-usb.org/usbnet
+S:	Maintained
+
 USB EHCI DRIVER
 P:	David Brownell
 M:	dbrownell@users.sourceforge.net
@@ -3386,6 +3416,7 @@ USB HID/HIDBP DRIVERS
 P:	Jiri Kosina
 M:	jkosina@suse.cz
 L:	linux-usb-devel@lists.sourceforge.net
+T:	git kernel.org:/pub/scm/linux/kernel/git/jikos/hid.git
 S:	Maintained
 
 USB HUB DRIVER
@@ -3768,6 +3799,7 @@ P:	Andi Kleen
 M:	ak@suse.de
 L:	discuss@x86-64.org
 W:	http://www.x86-64.org
+T:	quilt ftp://ftp.firstfloor.org/pub/ak/x86_64/quilt-current
 S:	Maintained
 
 YAM DRIVER FOR AX.25
