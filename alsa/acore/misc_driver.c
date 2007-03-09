@@ -107,10 +107,12 @@ void snd_pci_compat_save_state(struct pci_dev *pci)
 {
 	snd_pci_orig_save_state(pci, pci->saved_config_space);
 }
+EXPORT_SYMBOL(snd_pci_compat_save_state);
 void snd_pci_compat_restore_state(struct pci_dev *pci)
 {
 	snd_pci_orig_restore_state(pci, pci->saved_config_space);
 }
+EXPORT_SYMBOL(snd_pci_compat_restore_state);
 #else /* !CONFIG_HAVE_PCI_SAVED_CONFIG */
 struct saved_config_tbl {
 	struct pci_dev *pci;
