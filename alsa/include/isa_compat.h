@@ -5,7 +5,7 @@
 #ifndef __LINUX_ISA_H
 #define __LINUX_ISA_H
 
-struct device;
+#include <linux/device.h>
 
 struct isa_driver {
 	int (*match)(struct device *, unsigned int);
