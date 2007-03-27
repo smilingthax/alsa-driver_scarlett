@@ -124,13 +124,13 @@ utils/mod-deps: utils/mod-deps.c
 	gcc utils/mod-deps.c -o utils/mod-deps
 
 toplevel.config.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
-	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --makeconf > toplevel.config.in
+	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --makeconf > toplevel.config.in
 
 acinclude.m4: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
-	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --acinclude > acinclude.m4
+	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --acinclude > acinclude.m4
 
 include/config1.h.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps
-	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --include > include/config1.h.in
+	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
 

@@ -183,15 +183,6 @@ static char *no_cards[] = {
 	NULL
 };
 
-static const char *kernel26_opts[] = {
-	"AC97_BUS",
-	"SND_PXA2XX_PCM",
-	"SND_AOA",
-	"SND_SOC",
-	"SND_MTS64",
-	NULL,
-};
-
 #define READ_STATE_NONE		0
 #define READ_STATE_CONFIG	1
 #define READ_STATE_MENU		2
@@ -940,21 +931,103 @@ static void sel_remove_hitflags(void)
 	}
 }
 
-// is 2.6-only config option
-static int is_kernel26(const char *name)
+struct kconfig_verdep {
+	const char *name;
+	const char *version;
+	struct kconfig_verdep *next;
+};
+
+static struct kconfig_verdep *version_deps;
+
+static char *get_token(char **pp, int need_space)
 {
-	const char **p;
-	for (p = kernel26_opts; *p; p++)
-		if (! strcmp(name, *p))
-			return 1;
+	char *token;
+	char *p = *pp;
+
+	for (; isspace(*p); p++)
+		if (!*p)
+			return NULL;
+	if (*p == '#' || *p == '%')
+		return NULL;
+	token = p;
+	for (; !isspace(*p); p++)
+		if (!*p) {
+			if (need_space)
+				return NULL;
+			*pp = p;
+			return token;
+		}
+	*p++ = 0;
+	*pp = p;
+	return token;
+}
+
+static int read_version_deps(const char *fname)
+{
+	FILE *fp;
+	char buf[128], *p, *name, *val;
+	struct kconfig_verdep *ver;
+
+	fp = fopen(fname, "r");
+	if (!fp) {
+		fprintf(stderr, "cannot open %s\n", fname);
+		return -ENODEV;
+	}
+	while (fgets(buf, sizeof(buf), fp)) {
+		p = buf;
+		name = get_token(&p, 1);
+		if (!name)
+			continue;
+		val = get_token(&p, 0);
+		if (!val)
+			continue;
+		ver = malloc(sizeof(*ver));
+		if (!ver)
+			return -ENOMEM;
+		ver->name = strdup(name);
+		ver->version = strdup(val);
+		ver->next = version_deps;
+		version_deps = ver;
+	}
+	fclose(fp);
 	return 0;
 }
 
+static const char *get_version_dep(const char *name)
+{
+	const struct kconfig_verdep *p;
+	for (p = version_deps; p; p = p->next)
+		if (! strcmp(name, p->name))
+			return p->version;
+	return NULL;
+}
+
+static void print_version_dep(const char *ver)
+{
+	const char *p;
+	printf("test \"$kversion.$kpatchlevel\" = \"");
+	for (p = ver; *p; p++) {
+		putchar(*p);
+		if (*p == '.') {
+			p++;
+			break;
+		}
+	}
+	for (; *p && *p != '.'; p++)
+		putchar(*p);
+	putchar('"');
+	if (*p) {
+		printf(" -a $ksublevel -ge ");
+		for (p++; *p && *p != '.'; p++)
+			putchar(*p);
+	}
+}
 
 static void sel_print_acinclude(struct sel *sel)
 {
 	struct dep * dep;
 	struct sel * nsel;
+	const char *ver;
 
 	dep = sel->dep;
 	if (dep == NULL)
@@ -969,8 +1042,11 @@ static void sel_print_acinclude(struct sel *sel)
 		if (!nsel->dep->hitflag) {
 			nsel->dep->hitflag = 1;
 			printf("      ");
-			if (is_kernel26(nsel->name))
-				printf("test $kpatchlevel = 6 && ");
+			ver = get_version_dep(nsel->name);
+			if (ver) {
+				print_version_dep(ver);
+				printf(" && ");
+			}
 			printf("CONFIG_%s=\"%c\"\n", nsel->name,
 				(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
 		}
@@ -984,6 +1060,7 @@ static void output_acinclude(void)
 	char *text;
 	struct cond *cond, *cond_prev;
 	struct sel *sel;
+	const char *ver;
 	int j;
 	
 	printf("dnl ALSA soundcard configuration\n");
@@ -1042,14 +1119,17 @@ static void output_acinclude(void)
 			cond_prev = cond;
 		}
 		text = convert_to_config_uppercase("", tempdep->name);
-		if (is_kernel26(text)) {
+		ver = get_version_dep(text);
+		if (ver) {
 			if (!put_if)
 				printf("    if ");
 			else {
 				printf(cond_prev->type == COND_AND ? " &&" : " ||");
 				printf("\n      ");
 			}
-			printf("( test $kpatchlevel = 6 )");
+			printf("( ");
+			print_version_dep(ver);
+			printf(" )");
 			put_if = 1;
 		}
 		free(text);
@@ -1063,8 +1143,11 @@ static void output_acinclude(void)
 			if (is_always_true(sel->dep))
 				continue;
 			printf("      ");
-			if (is_kernel26(sel->name))
-				printf("test $kpatchlevel = 6 && ");
+			ver = get_version_dep(sel->name);
+			if (ver) {
+				print_version_dep(ver);
+				printf(" && ");
+			}
 			printf("CONFIG_%s=\"%c\"\n", sel->name,
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
@@ -1134,8 +1217,11 @@ static void output_acinclude(void)
 			if (is_always_true(sel->dep))
 				continue;
 			printf("      ");
-			if (is_kernel26(sel->name))
-				printf("test $kpatchlevel = 6 && ");
+			ver = get_version_dep(sel->name);
+			if (ver) {
+				print_version_dep(ver);
+				printf(" && ");
+			}
 			printf("CONFIG_%s=\"%c\"\n", sel->name,
 			       (sel->dep && sel->dep->is_bool) ? 'y' : 'm');
 		}
@@ -1338,6 +1424,12 @@ int main(int argc, char *argv[])
 			hiddendir = strdup(argv[argidx + 1]);
 			if (hiddendir == NULL)
 				nomem();
+			argidx += 2;
+			continue;
+		}
+		if (strcmp(argv[argidx], "--versiondep") == 0) {
+			if (read_version_deps(argv[argidx + 1]) < 0)
+				exit(EXIT_FAILURE);
 			argidx += 2;
 			continue;
 		}
