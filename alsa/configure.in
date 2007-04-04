@@ -2502,6 +2502,33 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
+dnl Check for gfp_t...
+AC_MSG_CHECKING(for gfp_t)
+gfp_t="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/types.h>
+#include <linux/gfp.h>
+],[
+  gfp_t flags = 0;
+],
+    AC_MSG_RESULT(yes);gfp_t="1",
+    AC_MSG_RESULT(no);gfp_t="0",
+    AC_MSG_RESULT(unknown);gfp_t="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_GFP_T=$gfp_t
+dnl AC_SUBST(CONFIG_HAVE_GFP_T)
+if test "$CONFIG_HAVE_GFP_T" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_GFP_T)
+fi
+
 dnl PnP supports suspend/resume?
 if test "$CONFIG_PNP_KERNEL" = "y"; then
   AC_MSG_CHECKING(for PnP suspend/resume)
