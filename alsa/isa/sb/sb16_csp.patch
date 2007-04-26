@@ -1,15 +1,16 @@
---- ../../alsa-kernel/isa/sb/sb16_csp.c	2006-10-31 17:07:37.000000000 +0100
-+++ sb16_csp.c	2006-10-31 22:59:28.000000000 +0100
-@@ -719,8 +719,12 @@
- 	BUILD_BUG_ON(ARRAY_SIZE(names) != CSP_PROGRAM_COUNT);
- 	program = p->csp_programs[index];
- 	if (!program) {
+--- ../../alsa-kernel/isa/sb/sb16_csp.c	2007-04-26 14:02:53.000000000 +0200
++++ sb16_csp.c	2007-04-26 14:02:54.000000000 +0200
+@@ -723,8 +723,12 @@
+ #ifdef CONFIG_SND_SB16_CSP_FIRMWARE_IN_KERNEL
+ 		program = &snd_sb_csp_static_programs[index];
+ #else
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
- 		err = request_firmware(&program, names[index],
- 				       p->chip->card->dev);
+ 		int err = request_firmware(&program, names[index],
+-				       p->chip->card->dev);
++					   p->chip->card->dev);
 +#else
-+		err = request_firmware(&program, names[index], "sb16_csp");
++		int err = request_firmware(&program, names[index], "sb16_csp");
 +#endif
- 		if (err >= 0)
- 			p->csp_programs[index] = program;
- 		else {
+ 		if (err < 0)
+ 			return err;
+ #endif
