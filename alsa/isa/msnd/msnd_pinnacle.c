@@ -1544,6 +1544,10 @@ static int __init snd_msnd_pinnacle_cfg_devices(int cfg, int reset, msnd_pinnacl
 MODULE_AUTHOR			("Karsten Wiese <annabellesgarden@yahoo.de>");
 MODULE_DESCRIPTION		("Turtle Beach " LONGNAME " Linux Driver");
 MODULE_LICENSE("GPL");
+#ifndef HAVE_DSPCODEH
+MODULE_FIRMWARE(INITCODEFILE);
+MODULE_FIRMWARE(PERMCODEFILE);
+#endif
 
 static int io __initdata =		-1;
 static int irq __initdata =		-1;
