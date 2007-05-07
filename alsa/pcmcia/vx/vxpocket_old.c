@@ -423,7 +423,7 @@ static dev_link_t *vxpocket_attach(void)
 
 	/* find an empty slot from the card list */
 	for (i = 0; i < SNDRV_CARDS; i++) {
-		if (! card_alloc & (1 << i))
+		if (!(card_alloc & (1 << i)))
 			break;
 	}
 	if (i >= SNDRV_CARDS) {
