@@ -6,7 +6,7 @@
 ifneq ($(KERNELRELEASE),)
 # call from 2.6 kernel build system
 
-obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/ aoa/ soc/ misc/
+obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ sh/ pcmcia/ aoa/ soc/ misc/
 
 else
 
@@ -98,6 +98,9 @@ SUBDIRS  += pcmcia
 endif
 ifeq (y,$(CONFIG_PARISC))
 SUBDIRS  += parisc
+endif
+ifeq (y,$(CONFIG_SUPERH))
+SUBDIRS  += sh
 endif
 ifeq (m,$(CONFIG_AC97_BUS))
 SUBDIRS  += misc
