@@ -46,26 +46,23 @@ compile_time_assert((sizeof(sym)%(unit))==0,unitchk##sym)
 compile_time_unit_check(obj##_MSG,4); \
 compile_time_unit_check(obj##_RES,4); \
 compile_time_size_check(obj##_MSG,msgsize); \
-compile_time_size_check(obj##_RES,ressize); \
+compile_time_size_check(obj##_RES,ressize)
 
 /* Perform the checks */
 compile_time_size_check(u8, 1);
 compile_time_size_check(u16, 2);
 compile_time_size_check(u32, 4);
-#ifdef HPI_MESSAGE_FORCE_SIZE
-compile_time_size_check(HPI_MESSAGE, HPI_MESSAGE_FORCE_SIZE);
-#else
 compile_time_size_check(HPI_MESSAGE, 44);
-#endif
 
 compile_time_size_check(HPI_RESPONSE, 64);
 
 compile_time_obj_check(HPI_SUBSYS, 12, 52);
 compile_time_obj_check(HPI_ADAPTER, 8, 32);
 compile_time_obj_check(HPI_ADAPTERX, 12, 32);
-compile_time_obj_check(HPI_STREAM, 32, 20);
+compile_time_obj_check(HPI_STREAM, 32, 24);
 compile_time_obj_check(HPI_MIXER, 16, 12);
 compile_time_obj_check(HPI_CONTROL, 16, 12);
+compile_time_obj_check(HPI_CONTROL_UNION, 16, 12);
 compile_time_obj_check(HPI_CONTROLX, 20, 12);
 compile_time_obj_check(HPI_NVMEMORY, 4, 4);
 compile_time_obj_check(HPI_GPIO, 4, 8);
@@ -78,15 +75,3 @@ compile_time_size_check(HPI_FORMAT, 5 * 4);
 
 /* Message FORMAT must fit inside API format */
 compile_time_assert((sizeof(HPI_MSG_FORMAT) <= sizeof(HPI_FORMAT)), format_fit);
-
-#ifndef HPI_WITHOUT_HPI_DATA
-/* API HPI_FORMAT must have fixed size */
-compile_time_size_check(HPI_DATA, 7 * 4);
-compile_time_size_check(HPI_BUFFER, 7 * 4);
-#ifndef HPI_64BIT
-compile_time_size_check(HPI_DATA_LEGACY32, 7 * 4);
-#endif
-
-/* Message DATA must fit inside API data */
-compile_time_assert((sizeof(HPI_MSG_DATA) <= sizeof(HPI_DATA)), data_fit);
-#endif

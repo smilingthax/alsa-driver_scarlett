@@ -29,8 +29,6 @@ HPI Operating System function declarations
 #define HPI_OS_LINUX
 #endif
 
-/* include os specific header file */
-
 #define HPI_OS_DEFINED
 #ifdef __KERNEL__
 #include "hpios_linux_kernel.h"
@@ -49,27 +47,6 @@ HPI Operating System function declarations
 #define __iomem
 #endif
 
-#ifndef HPI_LOCKING
-
-#define HPIOS_LOCK_FLAGS(name)
-
-#define DSPLOCK_TYPE int
-#define OSTYPE_VALIDFLAG int
-
-typedef struct {
-	DSPLOCK_TYPE lock;
-} HPIOS_SPINLOCK;
-
-#define HpiOs_Msgxlock_Init( obj )
-#define HpiOs_Msgxlock_Lock( obj, flags )
-#define HpiOs_Msgxlock_UnLock( obj, flags )
-
-#define HpiOs_Dsplock_Init( obj )
-#define HpiOs_Dsplock_Lock( obj, flags )
-#define HpiOs_Dsplock_UnLock( obj, flags )
-
-#endif
-
 /* /////////////////////////// PROTOTYPES /////////////////////////////////// */
 
 /* memory allocation */
@@ -84,6 +61,8 @@ void HpiOs_MemFree(void *ptr);
 #ifndef NO_HPIOS_LOCKEDMEM_OPS
 void HpiOs_LockedMem_Init(void);
 void HpiOs_LockedMem_FreeAll(void);
+#define HpiOs_LockedMem_Prepare( a, b, c, d );
+#define HpiOs_LockedMem_Unprepare( a )
 
 /** Allocate and map an area of locked memory for bus master DMA operations.
 
@@ -97,8 +76,8 @@ u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle,
 					  /**< memory handle */
 			  u32 dwSize,
 	     /**< Size in bytes to allocate */
-			  void *pOsReference
-		   /**< OS specific data required for memory allocation */
+			  struct pci_dev *pOsReference
+			      /**< OS specific data required for memory allocation */
     );
 
 /** Free mapping and memory represented by LockedMemHandle

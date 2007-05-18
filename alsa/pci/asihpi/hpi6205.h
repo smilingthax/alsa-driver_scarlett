@@ -27,6 +27,11 @@ Copyright AudioScience, Inc., 2003
 
 #include "hpi.h"
 
+/** Enable buffering using buffers restricted to power of 2 length.
+Simplifies R/W pointer wrap logic. Allows buffers to be completely filled
+*/
+#define HPI6205_POW2BUFFERING
+
 /***********************************************************
 Defines used for basic messaging
 ************************************************************/

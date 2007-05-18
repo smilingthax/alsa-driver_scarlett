@@ -25,9 +25,7 @@ typedef struct {
 	u16 wOpen;		// =1 when adapter open
 	u16 wMixerOpen;
 
-#ifdef HPI_LOCKING
 	HPIOS_SPINLOCK dspLock;
-#endif
 
 	u16 wDspCrashed;
 	u16 wHasControlCache;
@@ -35,15 +33,17 @@ typedef struct {
 } HPI_ADAPTER_OBJ;
 
 typedef struct {
+	HPIOS_SPINLOCK aListLock;
 	HPI_ADAPTER_OBJ adapter[HPI_MAX_ADAPTERS];
 	u16 gwNumAdapters;	// total number of adapters created in this HPI
 } HPI_ADAPTERS_LIST;
 
-HPI_ADAPTER_OBJ *FindAdapter(HPI_ADAPTERS_LIST * adaptersList,
-			     u16 wAdapterIndex);
+HPI_ADAPTER_OBJ *FindAdapter(u16 wAdapterIndex);
+void WipeAdapterList(void);
+void SubSysGetAdapters(HPI_RESPONSE * phr);
+u16 AddAdapter(HPI_ADAPTER_OBJ * pao);
+void DeleteAdapter(HPI_ADAPTER_OBJ * pao);
 
-void WipeAdapterList(HPI_ADAPTERS_LIST * adaptersList);
-void SubSysGetAdapters(HPI_ADAPTERS_LIST * adaptersList, HPI_RESPONSE * phr);
 short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
 			HPI_RESPONSE * phr);
 void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
