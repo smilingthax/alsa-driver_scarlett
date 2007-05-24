@@ -728,11 +728,6 @@ static void AdapterGetAsserts(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	return;
 }
 
-#ifdef HPI6205_POW2BUFFERING
-/* Helper functions for power of 2 buffering */
-
-#endif
-
 //////////////////////////////////////////////////////////////////////
 //                                              OutStream Host buffer functions
 //////////////////////////////////////////////////////////////////////
@@ -747,11 +742,7 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-#ifdef HPI6205_POW2BUFFERING
 	dwSizeToAllocate = roundup_pow_of_two(phm->u.d.u.Buffer.dwBufferSize);
-#else
-	dwSizeToAllocate = phm->u.d.u.Buffer.dwBufferSize;
-#endif
 	phr->u.d.u.stream_info.dwDataAvailable =
 	    pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex];
 	phr->u.d.u.stream_info.dwBufferSize = dwSizeToAllocate;
@@ -775,8 +766,7 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 			    HpiOs_LockedMem_Alloc(&pHw6205->
 						  OutStreamHostBuffers[phm->u.d.
 								       wStreamIndex],
-						  phm->u.d.u.Buffer.
-						  dwBufferSize,
+						  dwSizeToAllocate,
 						  pao->Pci.pOsData);
 
 			if (wError) {
@@ -809,7 +799,7 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 		status->dwStreamState = HPI_STATE_STOPPED;
 		status->dwDSPIndex = 0;
 		status->dwHostIndex = status->dwDSPIndex;
-		status->dwSizeInBytes = phm->u.d.u.Buffer.dwBufferSize;
+		status->dwSizeInBytes = dwSizeToAllocate;
 		wError =
 		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
 						OutStreamHostBuffers[phm->u.d.
@@ -866,26 +856,11 @@ HPI_InitResponse( phr, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE,  HPI_ERROR_
 */
 }
 
-#ifdef HPI6205_POW2BUFFERING
 static long OutStreamGetSpaceAvailable(H620_HOSTBUFFER_STATUS * status)
 {
 	return status->dwSizeInBytes - ((long)(status->dwHostIndex) -
 					(long)(status->dwDSPIndex));
 }
-#else
-static long OutStreamGetSpaceAvailable(H620_HOSTBUFFER_STATUS * status)
-{
-	long nDiff;
-
-// When dwDSPindex==dwHostIndex the buffer is empty
-// Need to add code to the HOST to make sure that the buffer is never filled
-// to the point that dwDSPindex==dwHostIndex.
-	nDiff = (long)(status->dwDSPIndex) - (long)(status->dwHostIndex) - 4;	// - 4 bytes at end so we don't overfill
-	if (nDiff < 0)
-		nDiff += status->dwSizeInBytes;
-	return nDiff;
-}
-#endif
 
 static void OutStreamWrite(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			   HPI_RESPONSE * phr)
@@ -925,7 +900,7 @@ static void OutStreamWrite(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 		phr->wError = HPI_ERROR_INVALID_DATASIZE;
 		return;
 	}
-#ifdef HPI6205_POW2BUFFERING
+
 /* either all data, or enough to fit from current to end of BBM buffer */
 	lFirstWrite = min(phm->u.d.u.Data.dwDataSize,
 			  status->dwSizeInBytes -
@@ -938,31 +913,6 @@ static void OutStreamWrite(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	       phm->u.d.u.Data.dwDataSize - lFirstWrite);
 
 	status->dwHostIndex += phm->u.d.u.Data.dwDataSize;
-#else
-	lFirstWrite = status->dwSizeInBytes - status->dwHostIndex;
-	if (lFirstWrite > (long)phm->u.d.u.Data.dwDataSize)
-		lFirstWrite = (long)phm->u.d.u.Data.dwDataSize;
-
-	{
-		u32 dwHostIndex = status->dwHostIndex;
-		long lSecondWrite =
-		    (long)phm->u.d.u.Data.dwDataSize - lFirstWrite;;
-
-		CheckBeforeBBMCopy(status, pBBMData, lFirstWrite, lSecondWrite);
-		memcpy(&pBBMData[dwHostIndex], &pAppData[0], lFirstWrite);
-		dwHostIndex += (u32) lFirstWrite;
-		if (dwHostIndex >= status->dwSizeInBytes)
-			dwHostIndex -= status->dwSizeInBytes;
-		if (lSecondWrite) {
-			memcpy(&pBBMData[dwHostIndex], &pAppData[lFirstWrite],
-			       lSecondWrite);
-			dwHostIndex += (u32) lSecondWrite;
-			if (dwHostIndex >= status->dwSizeInBytes)
-				dwHostIndex -= status->dwSizeInBytes;
-		}
-		status->dwHostIndex = dwHostIndex;
-	}
-#endif
 }
 
 static void OutStreamGetInfo(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
@@ -1022,11 +972,7 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-#ifdef HPI6205_POW2BUFFERING
 	dwSizeToAllocate = roundup_pow_of_two(phm->u.d.u.Buffer.dwBufferSize);
-#else
-	dwSizeToAllocate = phm->u.d.u.Buffer.dwBufferSize;
-#endif
 	phr->u.d.u.stream_info.dwDataAvailable =
 	    pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex];
 	phr->u.d.u.stream_info.dwBufferSize = dwSizeToAllocate;
@@ -1049,8 +995,7 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			    HpiOs_LockedMem_Alloc(&pHw6205->
 						  InStreamHostBuffers[phm->u.d.
 								      wStreamIndex],
-						  phm->u.d.u.Buffer.
-						  dwBufferSize,
+						  dwSizeToAllocate,
 						  pao->Pci.pOsData);
 
 			if (wError) {
@@ -1082,7 +1027,7 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 		status->dwStreamState = HPI_STATE_STOPPED;
 		status->dwDSPIndex = 0;
 		status->dwHostIndex = status->dwDSPIndex;
-		status->dwSizeInBytes = phm->u.d.u.Buffer.dwBufferSize;
+		status->dwSizeInBytes = dwSizeToAllocate;
 		wError =
 		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
 						InStreamHostBuffers[phm->u.d.
@@ -1163,25 +1108,10 @@ nValue = (nValue+1) & 0x7fff;
 	HW_Message(pao, phm, phr);
 }
 
-#ifdef HPI6205_POW2BUFFERING
 static long InStreamGetBytesAvailable(H620_HOSTBUFFER_STATUS * status)
 {
 	return (long)(status->dwDSPIndex) - (long)(status->dwHostIndex);
 }
-#else
-static long InStreamGetBytesAvailable(H620_HOSTBUFFER_STATUS * status)
-{
-	long nDiff;
-
-// When dwDSPindex==dwHostIndex the buffer is empty
-// Need to add code to the DSP to make sure that the buffer is never fulled
-// to the point that dwDSPindex==dwHostIndex.
-	nDiff = (long)(status->dwDSPIndex) - (long)(status->dwHostIndex);
-	if (nDiff < 0)
-		nDiff += status->dwSizeInBytes;
-	return nDiff;
-}
-#endif
 
 static void InStreamRead(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			 HPI_RESPONSE * phr)
@@ -1216,7 +1146,7 @@ long *pTest;
 		phr->wError = HPI_ERROR_INVALID_DATASIZE;
 		return;
 	}
-#ifdef HPI6205_POW2BUFFERING
+
 /* either all data, or enough to fit from current to end of BBM buffer */
 	lFirstRead = min(phm->u.d.u.Data.dwDataSize,
 			 status->dwSizeInBytes -
@@ -1231,45 +1161,6 @@ long *pTest;
 	       phm->u.d.u.Data.dwDataSize - lFirstRead);
 
 	status->dwHostIndex += phm->u.d.u.Data.dwDataSize;
-#else
-	lFirstRead = status->dwSizeInBytes - status->dwHostIndex;
-	if (lFirstRead > (long)phm->u.d.u.Data.dwDataSize)
-		lFirstRead = (long)phm->u.d.u.Data.dwDataSize;
-
-	{			// avoid having status->dwHostIndex invalid, even momentarily
-		u32 dwHostIndex = status->dwHostIndex;
-		long lSecondRead =
-		    (long)phm->u.d.u.Data.dwDataSize - lFirstRead;
-
-		memcpy(&pAppData[0], &pBBMData[dwHostIndex], lFirstRead);
-		dwHostIndex += (u32) lFirstRead;
-		if (dwHostIndex >= status->dwSizeInBytes)
-			dwHostIndex -= status->dwSizeInBytes;
-		if (lSecondRead) {
-			memcpy(&pAppData[lFirstRead], &pBBMData[dwHostIndex],
-			       lSecondRead);
-			dwHostIndex += (u32) lSecondRead;
-			if (dwHostIndex >= status->dwSizeInBytes)
-				dwHostIndex -= status->dwSizeInBytes;
-		}
-		status->dwHostIndex = dwHostIndex;
-	}
-#endif
-/* DBEUG */
-/*
-pTest = (long *)phm->u.d.u.Data.dwpbData;
-for(i=0;i<phm->u.d.u.Data.dwDataSize/sizeof(long);i++)
-{
-if(pTest[i])
-pTest[i]--;
-}
-pTest = (long *)((char *)buffer) + sizeof(H620_HOSTBUFFER_STATUS);
-for(i=0;i<buffer->dwSizeInBytes/sizeof(long);i++)
-{
-if(pTest[i])
-pTest[i]--;
-}
-*/
 }
 
 static void InStreamGetInfo(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
