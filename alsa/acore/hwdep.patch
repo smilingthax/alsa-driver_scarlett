@@ -1,6 +1,14 @@
---- ../alsa-kernel/core/hwdep.c	2005-01-20 16:21:56.028228436 +0100
-+++ hwdep.c	2005-01-20 16:45:56.583956809 +0100
-@@ -303,27 +303,46 @@
+--- ../alsa-kernel/core/hwdep.c	2007-05-17 08:15:24.000000000 +0200
++++ hwdep.c	2007-05-24 21:27:59.000000000 +0200
+@@ -22,6 +22,7 @@
+ #include <sound/driver.h>
+ #include <linux/major.h>
+ #include <linux/init.h>
++#include <linux/smp_lock.h>
+ #include <linux/slab.h>
+ #include <linux/time.h>
+ #include <linux/mutex.h>
+@@ -306,27 +307,46 @@
  	return -ENOIOCTLCMD;
  }
  

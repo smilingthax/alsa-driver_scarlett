@@ -1,6 +1,14 @@
---- ../../alsa-kernel/core/oss/pcm_oss.c	2006-04-24 12:26:41.000000000 +0200
-+++ pcm_oss.c	2006-04-24 12:31:46.000000000 +0200
-@@ -2526,13 +2526,26 @@
+--- ../../alsa-kernel/core/oss/pcm_oss.c	2007-05-17 08:15:24.000000000 +0200
++++ pcm_oss.c	2007-05-24 21:31:15.000000000 +0200
+@@ -28,6 +28,7 @@
+ 
+ #include <sound/driver.h>
+ #include <linux/init.h>
++#include <linux/smp_lock.h>
+ #include <linux/slab.h>
+ #include <linux/time.h>
+ #include <linux/vmalloc.h>
+@@ -2556,13 +2557,26 @@
  	return -EINVAL;
  }
  
@@ -28,7 +36,7 @@
  static ssize_t snd_pcm_oss_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
  {
  	struct snd_pcm_oss_file *pcm_oss_file;
-@@ -2564,8 +2577,14 @@
+@@ -2594,8 +2608,14 @@
  	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
  	if (substream == NULL)
  		return -ENXIO;
@@ -43,7 +51,7 @@
  #ifdef OSS_DEBUG
  	printk("pcm_oss: write %li bytes (wrote %li bytes)\n", (long)count, (long)result);
  #endif
-@@ -2681,7 +2700,11 @@
+@@ -2711,7 +2731,11 @@
  		return -EIO;
  #endif
  
@@ -55,9 +63,9 @@
  		return -EINVAL;
  
  	err = snd_pcm_mmap_data(substream, file, area);
-@@ -2862,14 +2885,20 @@
+@@ -2890,14 +2914,20 @@
  
- static struct file_operations snd_pcm_oss_f_reg =
+ static const struct file_operations snd_pcm_oss_f_reg =
  {
 +#ifndef LINUX_2_2
  	.owner =	THIS_MODULE,
@@ -76,7 +84,7 @@
  	.mmap =		snd_pcm_oss_mmap,
  };
  
-@@ -2985,3 +3014,5 @@
+@@ -3011,3 +3041,5 @@
  
  module_init(alsa_pcm_oss_init)
  module_exit(alsa_pcm_oss_exit)

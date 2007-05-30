@@ -1,6 +1,14 @@
---- ../../../alsa-kernel/core/seq/oss/seq_oss.c	2005-01-20 16:21:56.113212624 +0100
-+++ seq_oss.c	2005-01-20 17:07:37.445453736 +0100
-@@ -186,12 +186,25 @@
+--- ../../../alsa-kernel/core/seq/oss/seq_oss.c	2007-05-17 08:15:24.000000000 +0200
++++ seq_oss.c	2007-05-24 21:36:31.000000000 +0200
+@@ -22,6 +22,7 @@
+ 
+ #include <sound/driver.h>
+ #include <linux/init.h>
++#include <linux/smp_lock.h>
+ #include <linux/moduleparam.h>
+ #include <linux/mutex.h>
+ #include <sound/core.h>
+@@ -188,12 +189,25 @@
  	return snd_seq_oss_ioctl(dp, cmd, arg);
  }
  
@@ -27,9 +35,9 @@
  static unsigned int
  odev_poll(struct file *file, poll_table * wait)
  {
-@@ -207,14 +220,20 @@
+@@ -209,14 +223,20 @@
  
- static struct file_operations seq_oss_f_ops =
+ static const struct file_operations seq_oss_f_ops =
  {
 +#ifndef LINUX_2_2
  	.owner =	THIS_MODULE,
@@ -47,8 +55,8 @@
 +#endif
  };
  
- static struct snd_minor seq_oss_reg = {
-@@ -315,3 +334,5 @@
+ static int __init
+@@ -306,3 +326,5 @@
  	info_entry = NULL;
  }
  #endif /* CONFIG_PROC_FS */
