@@ -17,11 +17,9 @@
 #include <linux/init.h>
 #include <linux/input.h>
 #include <linux/platform_device.h>
-#include <asm/8253pit.h>
 #include <asm/i8253.h>
 #include <asm/io.h>
 #include "pcsp.h"
-
 
 static void pcspkr_do_sound(unsigned int count)
 {
@@ -46,11 +44,11 @@ static void pcspkr_do_sound(unsigned int count)
 }
 
 static int pcspkr_input_event(struct input_dev *dev, unsigned int type,
-		unsigned int code, int value)
+			      unsigned int code, int value)
 {
 	unsigned int count = 0;
 
-	if (snd_pcsp_chip->timer_active || !snd_pcsp_chip->pcspkr)
+	if (pcsp_chip.timer_active || !pcsp_chip.pcspkr)
 		return 0;
 
 	switch (type) {
@@ -78,42 +76,42 @@ static int pcspkr_input_event(struct input_dev *dev, unsigned int type,
 	return 0;
 }
 
-int pcspkr_input_init(struct snd_pcsp *chip)
+int __init pcspkr_input_init(struct input_dev **dev)
 {
 	int err;
 
-	chip->input_dev = input_allocate_device();
-	if (!chip->input_dev)
+	struct input_dev *input_dev = input_allocate_device();
+	if (!input_dev)
 		return -ENOMEM;
 
-	chip->input_dev->name = "PC Speaker";
-	chip->input_dev->phys = "isa0061/input0";
-	chip->input_dev->id.bustype = BUS_ISA;
-	chip->input_dev->id.vendor = 0x001f;
-	chip->input_dev->id.product = 0x0001;
-	chip->input_dev->id.version = 0x0100;
+	input_dev->name = "PC Speaker";
+	input_dev->phys = "isa0061/input0";
+	input_dev->id.bustype = BUS_ISA;
+	input_dev->id.vendor = 0x001f;
+	input_dev->id.product = 0x0001;
+	input_dev->id.version = 0x0100;
 
-	chip->input_dev->evbit[0] = BIT(EV_SND);
-	chip->input_dev->sndbit[0] = BIT(SND_BELL) | BIT(SND_TONE);
-	chip->input_dev->event = pcspkr_input_event;
+	input_dev->evbit[0] = BIT(EV_SND);
+	input_dev->sndbit[0] = BIT(SND_BELL) | BIT(SND_TONE);
+	input_dev->event = pcspkr_input_event;
 
-	err = input_register_device(chip->input_dev);
+	err = input_register_device(input_dev);
 	if (err) {
-		input_free_device(chip->input_dev);
-		chip->input_dev = NULL;
+		input_free_device(input_dev);
 		return err;
 	}
 
+	*dev = input_dev;
 	return 0;
 }
 
-int pcspkr_input_remove(struct snd_pcsp *chip)
+int __exit pcspkr_input_remove(struct input_dev *dev)
 {
-	if (!chip->input_dev)
+	if (!dev)
 		return 0;
-    	/* turn off the speaker */
-    	pcspkr_do_sound(0);
-	input_unregister_device(chip->input_dev);
+	/* turn off the speaker */
+	pcspkr_do_sound(0);
+	input_unregister_device(dev);	// this also does kfree()
 
 	return 0;
 }

@@ -3,146 +3,195 @@
  *
  * Copyright (C) 1993-1997  Michael Beck
  * Copyright (C) 1997-2001  David Woodhouse
- * Copyright (C) 2001-2004  Stas Sergeev
+ * Copyright (C) 2001-2007  Stas Sergeev
  */
 
-#include <sound/driver.h>
-#include <asm/io.h>
-#include <linux/interrupt.h>
-#include <sound/core.h>
-#include <sound/initval.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
+#include <linux/interrupt.h>
+#include <asm/io.h>
 #include <asm/i8253.h>
-#include "pcsp.h"
 #include "pcsp_tabs.h"
+#include "pcsp.h"
 
-#define DMIX_WANTS_S16		1
+#define DMIX_WANTS_S16	1
 
-/* the timer-int for playing thru PC-Speaker */
-static int pcsp_do_timer(struct snd_pcsp *chip)
+static void pcsp_start_timer(unsigned long dummy)
 {
-	struct snd_pcm_substream *substream = chip->playback_substream;
-	struct snd_pcm_runtime *runtime = substream->runtime;
+	hrtimer_start(&pcsp_chip.timer, ktime_set(0, 0), HRTIMER_MODE_REL);
+}
 
-	if (chip->reset_timer) {
-		outb_p(0x34, 0x43);	/* binary, mode 2, LSB/MSB, ch 0 */
-		outb_p(PIT_COUNTER, 0x40);
-		outb(PIT_COUNTER >> 8, 0x40);
-		chip->timer_latch = PIT_COUNTER;
-		chip->reset_timer = 0;
-		printk(KERN_INFO "PCSP: rate set to %i\n",
-			CLOCK_TICK_RATE / PIT_COUNTER);
+/*
+ * We need the hrtimer_start as a tasklet to avoid
+ * the nasty locking problem. :(
+ * The problem:
+ * - The timer handler is called with the cpu_base->lock
+ *   already held by hrtimer code.
+ * - snd_pcm_period_elapsed() takes the
+ *   substream->self_group.lock.
+ * So far so good.
+ * But the snd_pcsp_trigger() is called with the
+ * substream->self_group.lock held, and it calls
+ * hrtimer_start(), which takes the cpu_base->lock.
+ * You see the problem. We have the code pathes
+ * which take two locks in a reverse order. This
+ * can deadlock and the lock validator complains.
+ * The only solution I could find was to move the
+ * hrtimer_start() into a tasklet. -stsp
+ */
+DECLARE_TASKLET(pcsp_start_timer_tasklet, pcsp_start_timer, 0);
+
+enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
+{
+	unsigned long flags;
+	unsigned char timer_cnt, val;
+	int fmt_size, periods_elapsed;
+	size_t period_bytes, buffer_bytes;
+	struct snd_pcm_substream *substream;
+	struct snd_pcm_runtime *runtime;
+	struct snd_pcsp *chip = container_of(handle, struct snd_pcsp, timer);
+
+	/* hrtimer calls us from both hardirq and softirq contexts,
+	 * so irqsave :( */
+	spin_lock_irqsave(&chip->substream_lock, flags);
+	/* Takashi Iwai says regarding this extra lock:
+
+	If the irq handler handles some data on the DMA buffer, it should
+	do snd_pcm_stream_lock().
+	That protects basically against all races among PCM callbacks, yes.
+	However, there are two remaining issues:
+	1. The substream pointer you try to lock isn't protected _before_
+	  this lock yet.
+	2. snd_pcm_period_elapsed() itself acquires the lock.
+	The requirement of another lock is because of 1.  When you get
+	chip->playback_substream, it's not protected.
+	Keeping this lock while snd_pcm_period_elapsed() assures the substream
+	is still protected (at least, not released).  And the other status is
+	handled properly inside snd_pcm_stream_lock() in
+	snd_pcm_period_elapsed().
+
+	*/
+	if (!chip->playback_substream)
+		goto exit_nr_unlock1;
+	substream = chip->playback_substream;
+	snd_pcm_stream_lock(substream);
+	if (!chip->timer_active)
+		goto exit_nr_unlock2;
+
+	runtime = substream->runtime;
+	fmt_size = snd_pcm_format_physical_width(runtime->format) >> 3;
+	/* assume it is mono! */
+	val = runtime->dma_area[chip->playback_ptr + fmt_size - 1];
+	if (snd_pcm_format_signed(runtime->format))
+		val ^= 0x80;
+
+	/* ... but vl_tab[] is changed by mixer, not PCM.
+	 * And therefore, presumably, is not protected by
+	 * the snd_pcm_stream_lock(). */
+	spin_lock(&chip->vl_lock);
+	timer_cnt = chip->vl_tab[val];
+	spin_unlock(&chip->vl_lock);
+
+	if (timer_cnt && chip->enable) {
+		outb_p(chip->val61, 0x61);
+		outb_p(timer_cnt, 0x42);
+		outb(chip->val61 ^ 1, 0x61);
 	}
-	if (chip->index < snd_pcm_lib_period_bytes(substream)) {
-		unsigned char timer_cnt, val;
-		int fmt_size = snd_pcm_format_physical_width(runtime->format) >> 3;
-		/* assume it is mono! */
-		val = PCSP_CUR_BUF[chip->index + fmt_size - 1];
-		if (snd_pcm_format_signed(runtime->format))
-			val ^= 0x80;
-		timer_cnt = chip->vl_tab[val];
-		if (timer_cnt && chip->enable) {
-			outb_p(chip->e, 0x61);
-			outb_p(timer_cnt, 0x42);
-			outb(chip->e ^ 1, 0x61);
-		}
-		chip->index += PCSP_INDEX_INC * fmt_size;
+
+	period_bytes = snd_pcm_lib_period_bytes(substream);
+	buffer_bytes = snd_pcm_lib_buffer_bytes(substream);
+	chip->playback_ptr += PCSP_INDEX_INC * fmt_size;
+	periods_elapsed = chip->playback_ptr - chip->period_ptr;
+	if (periods_elapsed < 0) {
+		printk(KERN_WARNING "PCSP: playback_ptr inconsistent (%i %i %i)\n",
+			chip->playback_ptr, period_bytes, buffer_bytes);
+		periods_elapsed += buffer_bytes;
 	}
-	if (chip->index >= snd_pcm_lib_period_bytes(substream)) {
-		chip->cur_buf = ((chip->cur_buf + 1) % runtime->periods);
-		chip->index -= snd_pcm_lib_period_bytes(substream);
-		write_sequnlock(&xtime_lock);	// avoid recursive locking
+	periods_elapsed /= period_bytes;
+	/* wrap the pointer _before_ calling snd_pcm_period_elapsed(),
+	 * or ALSA will BUG on us. */
+	chip->playback_ptr %= buffer_bytes;
+
+	snd_pcm_stream_unlock(substream);
+
+	if (periods_elapsed) {
 		snd_pcm_period_elapsed(substream);
-		write_seqlock(&xtime_lock);
+		chip->period_ptr += periods_elapsed * period_bytes;
+		chip->period_ptr %= buffer_bytes;
 	}
 
-	chip->clockticks -= chip->timer_latch;
-	pit_counter0_offset = chip->clockticks - chip->timer_latch;
-	if (chip->clockticks < 0) {
-		chip->clockticks += LATCH;
-		pit_counter0_offset += LATCH;
-		return 0;
-	}
-	return 1;
+	spin_unlock_irqrestore(&chip->substream_lock, flags);
+
+	if (!chip->timer_active)
+		return HRTIMER_NORESTART;
+	hrtimer_forward(&chip->timer, chip->timer.expires,
+			ktime_set(0, PCSP_PERIOD_NS));
+	return HRTIMER_RESTART;
+
+exit_nr_unlock2:
+	snd_pcm_stream_unlock(substream);
+exit_nr_unlock1:
+	spin_unlock_irqrestore(&chip->substream_lock, flags);
+	return HRTIMER_NORESTART;
 }
 
-void pcsp_start_timer(struct snd_pcsp *chip)
+static void pcsp_start_playing(struct snd_pcsp *chip)
 {
-	unsigned long flags;
-
 	if (chip->timer_active) {
-		printk(KERN_INFO "PCSP: Timer already active\n");
+		printk(KERN_ERR "PCSP: Timer already active\n");
 		return;
 	}
 
-	spin_lock_irqsave(&i8253_lock, flags);
-	if (pcsp_set_timer_hook(chip, pcsp_do_timer)) {
-		spin_unlock_irqrestore(&i8253_lock, flags);
-		return;
-	}
-	chip->e = inb(0x61) | 0x03;
+	spin_lock(&i8253_lock);
+	chip->val61 = inb(0x61) | 0x03;
 	outb_p(0x92, 0x43);	/* binary, mode 1, LSB only, ch 2 */
-	outb_p(0x34, 0x43);	/* binary, mode 2, LSB/MSB, ch 0 */
-	outb_p(PIT_COUNTER, 0x40);
-	outb(PIT_COUNTER >> 8, 0x40);
-	chip->timer_latch = PIT_COUNTER;
-	chip->clockticks = chip->last_clocks;
-	chip->reset_timer = 0;
-
+	spin_unlock(&i8253_lock);
 	chip->timer_active = 1;
-	spin_unlock_irqrestore(&i8253_lock, flags);
+
+	tasklet_schedule(&pcsp_start_timer_tasklet);
 }
 
-/* reset the timer to 100 Hz and reset old timer-int */
-void pcsp_stop_timer(struct snd_pcsp *chip)
+static void pcsp_stop_playing(struct snd_pcsp *chip)
 {
-	unsigned long flags;
 	if (!chip->timer_active)
 		return;
 
-	spin_lock_irqsave(&i8253_lock, flags);
-	/* restore the timer */
-	outb_p(0x34, 0x43);		/* binary, mode 2, LSB/MSB, ch 0 */
-	outb_p(0xb6, 0x43);		/* binary, mode 3, LSB/MSB, ch 2 */
-	outb_p(LATCH & 0xff, 0x40);	/* LSB */
-	outb(LATCH >> 8, 0x40);		/* MSB */
-	outb(chip->e & 0xFC, 0x61);
-
-	/* clear clock tick counter */
-	chip->last_clocks = chip->clockticks;
-	chip->timer_latch = chip->clockticks = LATCH;
-	pit_counter0_offset = 0;
-
-	pcsp_release_timer_hook(chip);
-
 	chip->timer_active = 0;
-	spin_unlock_irqrestore(&i8253_lock, flags);
+	spin_lock(&i8253_lock);
+	/* restore the timer */
+	outb_p(0xb6, 0x43);	/* binary, mode 3, LSB/MSB, ch 2 */
+	outb(chip->val61 & 0xFC, 0x61);
+	spin_unlock(&i8253_lock);
 }
 
-static int snd_pcsp_playback_close(struct snd_pcm_substream * substream)
+static int snd_pcsp_playback_close(struct snd_pcm_substream *substream)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
 	printk("close called\n");
 #endif
-	chip->playback_substream = NULL;
 	if (chip->timer_active) {
-		printk(KERN_INFO "PCSP: timer still active\n");
+		printk(KERN_ERR "PCSP: timer still active\n");
+		pcsp_stop_playing(chip);
 	}
+	spin_lock_irq(&chip->substream_lock);
+	chip->playback_substream = NULL;
+	spin_unlock_irq(&chip->substream_lock);
 	return 0;
 }
 
-static int snd_pcsp_playback_hw_params(struct snd_pcm_substream * substream,
-				       struct snd_pcm_hw_params * hw_params)
+static int snd_pcsp_playback_hw_params(struct snd_pcm_substream *substream,
+				       struct snd_pcm_hw_params *hw_params)
 {
 	int err;
-	if ((err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params))) < 0)
+	err = snd_pcm_lib_malloc_pages(substream,
+				      params_buffer_bytes(hw_params));
+	if (err < 0)
 		return err;
 	return 0;
 }
 
-static int snd_pcsp_playback_hw_free(struct snd_pcm_substream * substream)
+static int snd_pcsp_playback_hw_free(struct snd_pcm_substream *substream)
 {
 #if PCSP_DEBUG
 	printk("hw_free called\n");
@@ -155,13 +204,14 @@ static int snd_pcsp_playback_prepare(struct snd_pcm_substream *substream)
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
 	printk("prepare called, size=%i psize=%i f=%i f1=%i\n",
-		snd_pcm_lib_buffer_bytes(substream),
-		snd_pcm_lib_period_bytes(substream),
-		snd_pcm_lib_buffer_bytes(substream)/
-		snd_pcm_lib_period_bytes(substream),
-		substream->runtime->periods);
+	       snd_pcm_lib_buffer_bytes(substream),
+	       snd_pcm_lib_period_bytes(substream),
+	       snd_pcm_lib_buffer_bytes(substream) /
+	       snd_pcm_lib_period_bytes(substream),
+	       substream->runtime->periods);
 #endif
-	chip->cur_buf = chip->index = 0;
+	chip->playback_ptr = 0;
+	chip->period_ptr = 0;
 	pcsp_calc_voltab(chip);
 	return 0;
 }
@@ -173,56 +223,50 @@ static int snd_pcsp_trigger(struct snd_pcm_substream *substream, int cmd)
 	printk("trigger called\n");
 #endif
 	switch (cmd) {
-		case SNDRV_PCM_TRIGGER_START:
-		case SNDRV_PCM_TRIGGER_RESUME:
-			pcsp_start_timer(chip);
-			break;
-		case SNDRV_PCM_TRIGGER_STOP:
-		case SNDRV_PCM_TRIGGER_SUSPEND:
-			pcsp_stop_timer(chip);
-			break;
-		default:
-			return -EINVAL;
+	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+		pcsp_start_playing(chip);
+		break;
+	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+		pcsp_stop_playing(chip);
+		break;
+	default:
+		return -EINVAL;
 	}
 	return 0;
 }
 
-static snd_pcm_uframes_t snd_pcsp_playback_pointer(struct snd_pcm_substream * substream)
+static snd_pcm_uframes_t snd_pcsp_playback_pointer(struct snd_pcm_substream
+						   *substream)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
-	size_t ptr;
-	ptr = chip->cur_buf * snd_pcm_lib_period_bytes(substream) + chip->index;
-#if PCSP_DEBUG
-	printk("pointer %i\n", ptr);
-#endif
-	return bytes_to_frames(substream->runtime, ptr);
+	return bytes_to_frames(substream->runtime, chip->playback_ptr);
 }
 
-static struct snd_pcm_hardware snd_pcsp_playback =
-{
-	.info =			(SNDRV_PCM_INFO_INTERLEAVED |
-				 SNDRV_PCM_INFO_HALF_DUPLEX |
-				 SNDRV_PCM_INFO_MMAP |
-				 SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =		(SNDRV_PCM_FMTBIT_U8
+static struct snd_pcm_hardware snd_pcsp_playback = {
+	.info = (SNDRV_PCM_INFO_INTERLEAVED |
+		 SNDRV_PCM_INFO_HALF_DUPLEX |
+		 SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID),
+	.formats = (SNDRV_PCM_FMTBIT_U8
 #if DMIX_WANTS_S16
-				| SNDRV_PCM_FMTBIT_S16_LE
+		    | SNDRV_PCM_FMTBIT_S16_LE
 #endif
-				),
-	.rates =		SNDRV_PCM_RATE_KNOT,
-	.rate_min =		PCSP_DEFAULT_RATE,
-	.rate_max =		PCSP_DEFAULT_RATE,
-	.channels_min =		1,
-	.channels_max =		1,
-	.buffer_bytes_max =	PCSP_BUFFER_SIZE,
-	.period_bytes_min =	64,
-	.period_bytes_max =	PCSP_MAX_PERIOD_SIZE,
-	.periods_min =		2,
-	.periods_max =		PCSP_MAX_PERIODS,
-	.fifo_size =		0,
+	    ),
+	.rates = SNDRV_PCM_RATE_KNOT,
+	.rate_min = PCSP_DEFAULT_SRATE,
+	.rate_max = PCSP_DEFAULT_SRATE,
+	.channels_min = 1,
+	.channels_max = 1,
+	.buffer_bytes_max = PCSP_BUFFER_SIZE,
+	.period_bytes_min = 64,
+	.period_bytes_max = PCSP_MAX_PERIOD_SIZE,
+	.periods_min = 2,
+	.periods_max = PCSP_MAX_PERIODS,
+	.fifo_size = 0,
 };
 
-static int snd_pcsp_playback_open(struct snd_pcm_substream * substream)
+static int snd_pcsp_playback_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -230,8 +274,8 @@ static int snd_pcsp_playback_open(struct snd_pcm_substream * substream)
 	printk("open called\n");
 #endif
 	if (chip->timer_active) {
-		printk(KERN_INFO "PCSP: timer still active!!\n");
-		pcsp_stop_timer(chip);
+		printk(KERN_ERR "PCSP: still active!!\n");
+		return -EBUSY;
 	}
 	runtime->hw = snd_pcsp_playback;
 	chip->playback_substream = substream;
@@ -239,14 +283,14 @@ static int snd_pcsp_playback_open(struct snd_pcm_substream * substream)
 }
 
 static struct snd_pcm_ops snd_pcsp_playback_ops = {
-	.open =		snd_pcsp_playback_open,
-	.close =	snd_pcsp_playback_close,
-	.ioctl =	snd_pcm_lib_ioctl,
-	.hw_params =	snd_pcsp_playback_hw_params,
-	.hw_free =	snd_pcsp_playback_hw_free,
-	.prepare =	snd_pcsp_playback_prepare,
-	.trigger =	snd_pcsp_trigger,
-	.pointer =	snd_pcsp_playback_pointer,
+	.open = snd_pcsp_playback_open,
+	.close = snd_pcsp_playback_close,
+	.ioctl = snd_pcm_lib_ioctl,
+	.hw_params = snd_pcsp_playback_hw_params,
+	.hw_free = snd_pcsp_playback_hw_free,
+	.prepare = snd_pcsp_playback_prepare,
+	.trigger = snd_pcsp_trigger,
+	.pointer = snd_pcsp_playback_pointer,
 };
 
 int __init snd_pcsp_new_pcm(struct snd_pcsp *chip)
@@ -254,7 +298,8 @@ int __init snd_pcsp_new_pcm(struct snd_pcsp *chip)
 	struct snd_pcm *pcm;
 	int err;
 
-	if ((err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &pcm)) < 0)
+	err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &pcm);
+	if (err < 0)
 		return err;
 
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_pcsp_playback_ops);
@@ -264,9 +309,9 @@ int __init snd_pcsp_new_pcm(struct snd_pcsp *chip)
 	strcpy(pcm->name, "pcsp");
 
 	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_CONTINUOUS,
-				      snd_dma_continuous_data(GFP_KERNEL),
-				      PCSP_BUFFER_SIZE, PCSP_BUFFER_SIZE);
+					      snd_dma_continuous_data
+					      (GFP_KERNEL), PCSP_BUFFER_SIZE,
+					      PCSP_BUFFER_SIZE);
 
-	chip->pcm = pcm;
 	return 0;
 }
