@@ -457,10 +457,10 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 
 	// fill in HPI_PCI information from kernel provided information
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
-		HPI_DEBUG_LOG4(DEBUG, "Resource %d %s %x-%x\n", idx,
+		HPI_DEBUG_LOG4(DEBUG, "Resource %d %s %llx-%llx\n", idx,
 			       pci_dev->resource[idx].name,
-			       pci_resource_start(pci_dev, idx),
-			       pci_resource_end(pci_dev, idx));
+			       (unsigned long long)pci_resource_start(pci_dev, idx),
+			       (unsigned long long)pci_resource_end(pci_dev, idx));
 
 		memlen = pci_resource_len(pci_dev, idx);
 		if (memlen) {
