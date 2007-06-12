@@ -1362,7 +1362,7 @@ static inline int snd_pci_enable_msi(struct pci_dev *dev) { return -1; }
 #endif
 
 /* kmemdup() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19) || defined(CONFIG_SND_DEBUG_MEMORY)
 #include <linux/string.h>
 static inline void *snd_kmemdup(const void *src, size_t len, gfp_t gfp)
 {
