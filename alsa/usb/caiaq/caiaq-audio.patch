@@ -1,0 +1,26 @@
+--- ../../alsa-kernel/usb/caiaq/caiaq-audio.c	2007-06-11 16:29:28 +0400
++++ caiaq-audio.c	2007-06-11 19:17:38 +0400
+@@ -464,7 +464,11 @@ static void fill_out_urb(struct snd_usb_
+ 	check_for_elapsed_periods(dev, dev->sub_playback);
+ }
+ 
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void read_completed(struct urb *urb, struct pt_regs *regs)
++#else
+ static void read_completed(struct urb *urb)
++#endif
+ {
+ 	struct snd_usb_caiaq_cb_info *info = urb->context; 
+ 	struct snd_usb_caiaqdev *dev;
+@@ -518,7 +522,11 @@ static void read_completed(struct urb *u
+ 	usb_submit_urb(urb, GFP_ATOMIC);
+ }
+ 
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void write_completed(struct urb *urb, struct pt_regs *regs)
++#else
+ static void write_completed(struct urb *urb)
++#endif
+ {
+ 	struct snd_usb_caiaq_cb_info *info = urb->context;
+ 	struct snd_usb_caiaqdev *dev = info->dev;
