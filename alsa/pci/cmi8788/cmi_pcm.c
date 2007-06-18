@@ -291,7 +291,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
-	u32 val32 = 0;
 	u8 fmt = 0;
 	u16 I2SFmt = 0;
 	u8 RecDmaMode;
@@ -369,81 +368,36 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	switch (chip->capture_source) {
 	case CAPTURE_AC97_MIC:
 		/* set Mic Volume Register 0x0Eh umute */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x0E << 16; /* Register 0x0E */
-		val32 |= 0x0808; /* 0x0808 : 0dB */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x0e, 0x0808); /* 0x0808 : 0dB */
 
 		/* set Line in Volume Register 0x10h mute */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x10 << 16; /* Register 0x10 */
-		val32 |= 0x8808; /* 0x0808 : 0dB */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x10, 0x8808); /* 0x0808 : 0dB */
 
 		/* slect record source */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x1A << 16; /* Register 0x1A */
-		val32 |= 0x0000; /* 0000 : Mic in */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
+		snd_cmi_send_ac97_cmd(chip, 0x1a, 0x0000); /* 0000 : Mic in */
 
-		val32 = 0x00720001; /* Record throug Mic */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x72, 0x0001); /* Record throug Mic */
 		break;
 	case CAPTURE_AC97_LINEIN:
 		/* set Mic Volume Register 0x0Eh mute */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x0E << 16; /* Register 0x0E */
-		val32 |= 0x8808; /* 0x0808 : 0dB */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x0e, 0x8808); /* 0x0808 : 0dB */
 
 		/* set Line in Volume Register 0x10h umute */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x10 << 16; /* Register 0x10 */
-		val32 |= 0x0808; /* 0x0808 : 0dB */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x10, 0x0808); /* 0x0808 : 0dB */
 
 		/* slect record source */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x1A << 16; /* Register 0x1A */
-		val32 |= 0x0000; /* 0404 : Ac97 Line in */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
+		snd_cmi_send_ac97_cmd(chip, 0x1a, 0x0000); /* 0404 : Ac97 Line in */
 
-		val32 = 0x00720001; /* Record throug AC97 Line in */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x72, 0x0001); /* Record throug AC97 Line in */
 		break;
 	case CAPTURE_DIRECT_LINE_IN:
 		/* set Mic Volume Register 0x0Eh mute */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x0E << 16;/* Register 0x0E */
-		val32 |= 0x80808; /* 0x0808 : 0dB */
-		/* FIXME: value should be 0x8808? */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x0e, 0x8808); /* 0x0808 : 0dB */
 
 		/* set Line in Volume Register 0x10h mute */
-		val32 = 0; /* Bit 31-24 */
-		val32 &= 0xff000000; /* Bit-23: 0 write */
-		val32 |= 0x10 << 16; /* Register 0x10 */
-		val32 |= 0x8808; /* 0x0808 : 0dB */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x10, 0x8808); /* 0x0808 : 0dB */
 
-		val32 = 0x00720000; /* Record throug Line in */
-		snd_cmipci_write(chip, val32, AC97InChanCfg2);
-		udelay(150);
+		snd_cmi_send_ac97_cmd(chip, 0x72, 0x0000); /* Record throug Line in */
 		break;
 	}
 

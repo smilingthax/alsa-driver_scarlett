@@ -102,7 +102,7 @@ static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 	reg_data |= r_volume;
 	reg_data |= l_volume << 8;
 
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	return 0;
 }
@@ -145,19 +145,19 @@ static int cmi9780_init(struct cmi_codec *codec)
 #if 0
 	u8 reg_addr = 2; /* master volume */
 	u16 reg_data = 0x1f1f; /* left right channel 46.5dB Attenuation */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	reg_addr = 0xe; /* Mic volume */
 	reg_data = 0x0000; /* left right channel +12dB Attenuation */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	reg_addr = 0x1a; /* record select */
 	reg_data = 0x00; /* default Mic in */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	reg_addr = 0x1c; /* Record Gain Registers */
 	reg_data = 0x0f0f; /* left right channel 22.5 dB gain */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 #endif
 	codec->left_vol  = 8;
 	codec->right_vol = 8;

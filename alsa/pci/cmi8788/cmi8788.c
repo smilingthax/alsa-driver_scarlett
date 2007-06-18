@@ -188,102 +188,42 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 	val32 = 0x00F00000;
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
+	/* FIXME: this is a read? */
 
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x70 << 16; /* Register 0x70 */
-	val32 |= 0x0100; /* Bit-8 set 1: record by MIC */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x70, 0x0100); /* Bit-8 set 1: record by MIC */
 
 	/* LI2LI,MIC2MIC; let them always on, FOE on, ROE/BKOE/CBOE off */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x62 << 16; /* Register 0x62 */
-	val32 |= 0x1808; /* 0x180f */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x62, 0x1808); /* 0x180f */
 
 	/* unmute Master Volume */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /*Bit-23: 0 write */
-	val32 |= 0x02 << 16; /* Register 0x02 */
-	val32 |= 0x0000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x02, 0x0000);
 
 	/* change PCBeep path, set Mix2FR on, option for quality issue */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x64 << 16; /* Register 0x64 */
-	val32 |= 0x8040;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x64, 0x8040);
 
 	/* mute PCBeep, option for quality issue */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x0A << 16; /* Register 0x0A */
-	val32 |= 0x8000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x0a, 0x8000);
 
 	/* Record Select Control Register (Index 1Ah) */
-#if 1
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x1A << 16; /* Register 0x1A */
-	val32 |= 0x0000; /* 0000 : Mic in */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x1a, 0x0000); /* 0000 : Mic in */
 
 	/* set Mic Volume Register 0x0Eh umute */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x0E << 16; /* Register 0x0E */
-	val32 |= 0x0808; /* 0x0808 : 0dB */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x0e, 0x0808); /* 0x0808 : 0dB */
 
 	/* set CD Volume Register 0x12h mute */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x12 << 16; /* Register 0x12 */
-	val32 |= 0x8808; /* 0x0808 : 0dB */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x12, 0x8808); /* 0x0808 : 0dB */
 
 	/* set Line in Volume Register 0x10h mute */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x10 << 16; /* Register 0x10 */
-	val32 |= 0x8808; /* 0x0808 : 0dB */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x10, 0x8808); /* 0x0808 : 0dB */
 
 	/* set AUX Volume Register 0x10h mute */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x16 << 16;/* Register 0x16 */
-	val32 |= 0x8808; /* 0x0808 : 0dB */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x16, 0x8808); /* 0x0808 : 0dB */
 
-	/* */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= 0x72 << 16; /* Register 0x72 */
-	val32 |= 0x0000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
+	snd_cmi_send_ac97_cmd(chip, 0x72, 0x0000);
 
-	val32 = 0x00720001; /* Record throug Mic */
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
-
-	val32 = 0x00720000; /* Record throug Line in */
-	/* snd_cmipci_write(chip, val32, AC97InChanCfg2); */
-	/* udelay(150); */
+	snd_cmi_send_ac97_cmd(chip, 0x72, 0x0001); /* Record throug Mic */
+#if 0
+	snd_cmi_send_ac97_cmd(chip, 0x72, 0x0000); /* Record throug Line in */
 #endif
 	return 0;
 }
@@ -372,27 +312,16 @@ static int snd_cmi_send_2wire_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_
 /*
  * send AC'97 command, control AC'97 CODEC register
  */
-int snd_cmi_send_AC97_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data)
+void snd_cmi_send_ac97_cmd(struct cmi8788 *chip, u8 reg, u16 value)
 {
-	struct cmi8788 *chip;
-	u32 val32 = 0;
-
-	chip = codec->chip;
-
 	/* 31:25 Reserved */
 	/* 24    R/W  Codec Command Select 1: Front-Panel Codec 0: On-Card Codec */
 	/* 23    R/W  Read/Write Select 1:Read 0:Write */
 	/* 22:16 R/W  CODEC Register Address */
 	/* 15:0  R/W  CODEC Register Data This is the data that is written to the selected CODEC register */
 	/*            when the write operation is selected. Reading this field will return the last value received from CODEC. */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= reg_addr << 16; /* register address */
-	val32 |= reg_data;
-
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
+	snd_cmipci_write(chip, (reg << 16) | value, AC97InChanCfg2);
 	udelay(150);
-
-	return 0;
 }
 
 /* receive a response */

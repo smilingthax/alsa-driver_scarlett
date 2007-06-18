@@ -245,7 +245,7 @@ unsigned short snd_cmipci_read_w(struct cmi8788 *chip, unsigned int cmd);
 void snd_cmipci_write_b(struct cmi8788 *chip, unsigned char data, unsigned int cmd);
 unsigned char snd_cmipci_read_b(struct cmi8788 *chip, unsigned int cmd);
 int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data);
-int snd_cmi_send_AC97_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data);
+void snd_cmi_send_ac97_cmd(struct cmi8788 *chip, u8 reg, u16 value);
 
 int snd_cmi8788_pcm_create(struct cmi8788 *chip);
 void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs);

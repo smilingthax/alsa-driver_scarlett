@@ -62,7 +62,7 @@ static int put_volume(struct cmi_codec *codec, int l_vol, int r_vols)
 	reg_data = volume | 0x3f;
 	reg_data = reg_data << 8;
 	reg_data = l_volume | 0x3f;
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	return 0;
 }
@@ -100,19 +100,19 @@ static int alc203_init(struct cmi_codec *codec)
 
 	reg_addr = 2; /* master volume */
 	reg_data = 0x3f3f; /* left right channel 94.5dB Attenuation */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	reg_addr = 0xe; /* Mic volume */
 	reg_data = 0x0000; /* left right channel +12dB Attenuation */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	reg_addr = 0x1a; /* record select */
 	reg_data = 0x00; /* default Mic in */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	reg_addr = 0x1c; /* Record Gain Registers */
 	reg_data = 0x0f0f; /* left right channel 22.5 dB gain */
-	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
 
 	return 0;
 }
