@@ -276,11 +276,6 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 	l_vol = ucontrol->value.integer.value[0];
 	r_vol = ucontrol->value.integer.value[1];
 
-	if (chip->first_set_playback_volume) {
-		chip->first_set_playback_volume = 0;
-		/*     return change; */
-	}
-
 	if (change) {
 		if (!setall) {
 			if (codec && codec->mixer_ops.set_volume && chip->playback_volume_init) {
@@ -433,11 +428,6 @@ static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct 
 
 	l_vol = ucontrol->value.integer.value[0];
 	r_vol = ucontrol->value.integer.value[1];
-
-	if (chip->first_set_capture_volume) {
-		chip->first_set_capture_volume = 0;
-		/*    return change; */
-	}
 
 	if (change) {
 		if (codec && codec->mixer_ops.set_volume && chip->capture_volume_init) {

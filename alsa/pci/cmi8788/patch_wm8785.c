@@ -42,88 +42,6 @@
 
 
 /*
- * Analog playback callbacks
- */
-static int wm8785_playback_pcm_open(void                *hinfo,
-				    cmi_codec           *codec,
-				    struct snd_pcm_substream *substream )
-{
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int wm8785_playback_pcm_prepare(void                *hinfo,
-				       cmi_codec           *codec,
-				       struct snd_pcm_substream *substream )
-{
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int wm8785_playback_pcm_cleanup(void                *hinfo,
-				       cmi_codec           *codec,
-				       struct snd_pcm_substream *substream )
-{
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-/*
- * Analog capture
- */
-static int wm8785_capture_pcm_prepare(void                *hinfo,
-				      cmi_codec           *codec,
-				      struct snd_pcm_substream *substream )
-{
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int wm8785_capture_pcm_cleanup(void                *hinfo,
-				      cmi_codec           *codec,
-				      struct snd_pcm_substream *substream )
-{
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-
-static cmi8788_pcm_stream wm8785_pcm_analog_playback = {
-	.channels = 2,
-	.ops = {
-		.open    = wm8785_playback_pcm_open,
-		.prepare = wm8785_playback_pcm_prepare,
-		.cleanup = wm8785_playback_pcm_cleanup
-	},
-};
-
-static cmi8788_pcm_stream wm8785_pcm_analog_capture = {
-	.channels = 2,
-
-
-	.ops = {
-		.prepare = wm8785_capture_pcm_prepare,
-		.cleanup = wm8785_capture_pcm_cleanup
-	},
-};
-
-
-static int wm8785_build_pcms(cmi_codec *codec)
-{
-	cmi8788_pcm_stream  *pcm_substream = codec->pcm_substream;
-
-	pcm_substream[0] = wm8785_pcm_analog_playback;
-	pcm_substream[1] = wm8785_pcm_analog_capture;
-
-	return 0;
-}
-
-/*
  * mixer
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
@@ -205,27 +123,7 @@ static int wm8785_init(cmi_codec *codec)
 	return 0;
 }
 
-static void wm8785_free(cmi_codec *codec)
-{
-}
-
-static cmi_codec_ops wm8785_patch_ops = {
+cmi_codec_ops wm8785_patch_ops = {
 	.build_controls = NULL, /* wm8785_build_controls, */
-	.build_pcms     = wm8785_build_pcms,
 	.init           = wm8785_init,
-	.free           = wm8785_free,
-};
-
-static int patch_wm8785(cmi_codec *codec)
-{
-	codec->patch_ops = wm8785_patch_ops;
-	return 0;
-}
-
-/*
- * patch entries
- */
-codec_preset snd_preset_wm8785[] = {
-	{ .id = 0xFFFFFFFF, .name = "WM8785", .patch = patch_wm8785 },
-	{ } /* terminator */
 };

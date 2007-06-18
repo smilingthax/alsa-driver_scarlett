@@ -119,8 +119,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 
 	chip->playback_volume_init = 0;
 	chip->capture_volume_init = 0;
-	chip->first_set_playback_volume = 1;
-	chip->first_set_capture_volume = 1;
 
 	chip->capture_source = CAPTURE_AC97_MIC;
 	chip->CMI8788IC_revision = CMI8788IC_Revision1;
@@ -455,39 +453,21 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 }
 
 
-static int snd_cmi8788_codec_new(snd_cmi8788 *chip, cmi_codec *codec, u32 addr, codec_preset *preset)
+static int snd_cmi8788_codec_new(snd_cmi8788 *chip, cmi_codec *codec, u32 addr, cmi_codec_ops *ops)
 {
-	int err;
-
 	snd_assert(chip, return -EINVAL);
 
 	codec->chip = chip;
 
-	/* 可以不需要下面的这些信息,具体要在对应的 CODEC 里面重新赋值 */
-	codec->vendor_id    = 0xFFFF;
-	codec->subsystem_id = 0XFFFF;
-	codec->revision_id  = 0XFFFF;
-
 	codec->addr   = addr;
-	codec->preset = preset;
-
-	if (codec->preset && codec->preset->patch)
-		err = codec->preset->patch(codec);
-	else
-		err = -1;
-
-	if (err < 0) {
-		if (codec && codec->patch_ops.free)
-			codec->patch_ops.free(codec);
-		return err;
-	}
+	codec->patch_ops = *ops;
 
 	return 0;
 }
 
-extern codec_preset snd_preset_ak4396[];
-extern codec_preset snd_preset_wm8785[];
-extern codec_preset snd_preset_cmi9780[];
+extern cmi_codec_ops ak4396_patch_ops;
+extern cmi_codec_ops wm8785_patch_ops;
+extern cmi_codec_ops cmi9780_patch_ops;
 
 static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
 {
@@ -495,14 +475,14 @@ static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
 		return 0;
 
 	/* 沤媒脥锚脡脝拢卢脨猫脪陋脠路露拧虏禄脥卢碌脛 CODEC 碌梅脫脙 snd_cmi8788_codec_new 脢卤脪陋沤芦碌脻脢虏脙沤虏脦脢媒 */
-	snd_cmi8788_codec_new(chip, &chip->codec_list[0], 0, snd_preset_ak4396); /* DAC */
-	snd_cmi8788_codec_new(chip, &chip->codec_list[1], 1, snd_preset_ak4396); /* DAC */
-	snd_cmi8788_codec_new(chip, &chip->codec_list[2], 2, snd_preset_ak4396); /* DAC */
-	snd_cmi8788_codec_new(chip, &chip->codec_list[3], 4, snd_preset_ak4396); /* 脪脭潞贸脪陋脫脙 snd_preset_akm4620); // DAC+ADC */
-	snd_cmi8788_codec_new(chip, &chip->codec_list[4], 3, snd_preset_wm8785); /* ADC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[0], 0, &ak4396_patch_ops); /* DAC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[1], 1, &ak4396_patch_ops); /* DAC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[2], 2, &ak4396_patch_ops); /* DAC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[3], 4, &ak4396_patch_ops); /* 脪脭潞贸脪陋脫脙 akm4620_patch_ops); // DAC+ADC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[4], 3, &wm8785_patch_ops); /* ADC */
 
 	/* for CMI9780 AC97 */
-	snd_cmi8788_codec_new(chip, &chip->ac97_codec_list[0], 0, snd_preset_cmi9780); /* CMI9780 AC97 */
+	snd_cmi8788_codec_new(chip, &chip->ac97_codec_list[0], 0, &cmi9780_patch_ops); /* CMI9780 AC97 */
 
 	/* initialize chip */
 	cmi8788_init_controller_chip(chip);

@@ -145,58 +145,18 @@ typedef struct stru_snd_cmi8788 snd_cmi8788;
 struct stru_cmi_codec;
 typedef struct stru_cmi_codec cmi_codec;
 
-struct stru_codec_preset;
-typedef struct stru_codec_preset codec_preset;
-
 struct stru_cmi_codec_ops;
 typedef struct stru_cmi_codec_ops cmi_codec_ops;
-
-struct  stru_cmi8788_pcm_stream_ops;
-typedef struct stru_cmi8788_pcm_stream_ops cmi8788_pcm_stream_ops;
 
 struct stru_cmi8788_mixer_ops;
 typedef struct stru_cmi8788_mixer_ops  cmi8788_mixer_ops;
 
-struct stru_cmi8788_pcm_stream;
-typedef struct stru_cmi8788_pcm_stream cmi8788_pcm_stream;
-
 struct stru_ac97_volume;
 typedef struct stru_ac97_volume ac97_volume;
 
-/*
- * codec preset
- *
- * Known codecs have the patch to build and set up the controls/PCMs
- * better than the generic parser.
- */
-struct stru_codec_preset {
-	unsigned    int id;
-	const char *name;
-	unsigned    int mask;
-	unsigned    int subs;
-	unsigned    int subs_mask;
-	unsigned    int rev;
-	int (*patch)(cmi_codec *codec);
-};
-
-/* ops set by the preset patch */
 struct stru_cmi_codec_ops {
 	int  (*build_controls)(cmi_codec *codec);
-	int  (*build_pcms)    (cmi_codec *codec);
 	int  (*init)          (cmi_codec *codec);
-	void (*free)          (cmi_codec *codec);
-};
-
-/* PCM callbacks */
-struct stru_cmi8788_pcm_stream_ops {
-	int (*open)   (void *info, cmi_codec *codec,
-		       struct snd_pcm_substream *substream);
-	int (*close)  (void *info, cmi_codec *codec,
-		       struct snd_pcm_substream *substream);
-	int (*prepare)(void *info, cmi_codec *codec,
-		       struct snd_pcm_substream *substream);
-	int (*cleanup)(void *info, cmi_codec *codec,
-		       struct snd_pcm_substream *substream);
 };
 
 /* Mixer callbacks */
@@ -204,15 +164,6 @@ struct stru_cmi8788_mixer_ops {
 	int (*get_info)   (cmi_codec *codec, int *min_vol, int *max_vol);
 	int (*get_volume) (cmi_codec *codec, int *l_vol, int *r_vol);
 	int (*set_volume) (cmi_codec *codec, int  l_vol, int  r_vol);
-};
-
-/* for PCM creation */
-struct stru_cmi8788_pcm_stream {
-	unsigned int channels;     /* number of channels */
-	u32          rates;        /* supported rates */
-	u64          formats;      /* supported formats (SNDRV_PCM_FMTBIT_) */
-	unsigned int maxbps;       /* supported max. bit per sample */
-	cmi8788_pcm_stream_ops ops;
 };
 
 /* for AC97 CODEC volume */
@@ -225,24 +176,12 @@ struct stru_cmi_codec {
 	snd_cmi8788 *chip;
 
 	unsigned int addr;         /* codec addr*/
-	int          valid_flag;   /* 0 invalid ,1 valid*/
-
-	/* ids */
-	u16 vendor_id;
-	u16 subsystem_id;
-	u16 revision_id;
 
 	/* register length flag */
 	u8  reg_len_flag; /* 0 : 2bytes; 1: 3bytes */
 
-	/* detected preset */
-	const codec_preset *preset;
-
 	/* set by patch */
 	cmi_codec_ops patch_ops;
-
-	/* PCM to create, set by patch_ops.build_pcms callback */
-	cmi8788_pcm_stream  pcm_substream[2]; /* 0 playback ;1 capture */
 
 	/* Mixer */
 	cmi8788_mixer_ops  mixer_ops;
@@ -257,16 +196,6 @@ struct stru_cmi_codec {
 typedef struct stru_cmi_substream {
 	struct snd_pcm_substream *substream;
 	int running;      /* dac/adc running? */
-
-	u32 dma_area;     /* virtual address of the dma buffer */
-	u32 dma_addr;     /* physical address of the dma buffer */
-	u32 dma_bytes;    /* size of dma buffer */
-	u32 fragsize;     /* in Byte */
-
-	u32 rate;         /* sample rate */
-	u16 channels;     /* channel number */
-	u8  frame_bits;   /* sample size */
-	u8  sample_bits;  /* */
 
 	int DMA_sta_mask;  /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte*/
 	int DMA_chan_reset;/* PCI 42: PCI DMA Channel Reset            1Byte*/
@@ -313,11 +242,8 @@ struct stru_snd_cmi8788 {
 	cmi_codec ac97_codec_list[MAX_AC97_CODEC_NUM];
 	struct semaphore codec_mutex;
 
-	u16 codec_mask;
 	u8  playback_volume_init;
 	u8  capture_volume_init;
-	u8  first_set_playback_volume;
-	u8  first_set_capture_volume;
 
 	u8  capture_source; /* 0-AC97 Mic; 1-Direct Line in; 2-AC97 Line In; */
 

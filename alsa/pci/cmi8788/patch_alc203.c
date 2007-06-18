@@ -36,91 +36,6 @@
 
 
 /*
- * Analog playback callbacks
- */
-static int alc203_playback_pcm_open(void                *hinfo,
-				    cmi_codec           *codec,
-				    struct snd_pcm_substream *substream )
-{
-	/* 待完善 需要设置相关的寄存器 */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int alc203_playback_pcm_prepare(void                *hinfo,
-				       cmi_codec           *codec,
-				       struct snd_pcm_substream *substream )
-{
-	/* 待完善 需要设置相关的寄存器 */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int alc203_playback_pcm_cleanup(void                *hinfo,
-				       cmi_codec           *codec,
-				       struct snd_pcm_substream *substream )
-{
-	/* 待完善 需要设置相关的寄存器 */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-/*
- * Analog capture
- */
-static int alc203_capture_pcm_prepare(void                *hinfo,
-				      cmi_codec           *codec,
-				      struct snd_pcm_substream *substream )
-{
-	/* 待完善 需要设置相关的寄存器 */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int alc203_capture_pcm_cleanup(void                *hinfo,
-				      cmi_codec           *codec,
-				      struct snd_pcm_substream *substream )
-{
-	/* 待完善 需要设置相关的寄存器 */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-
-static cmi8788_pcm_stream alc203_pcm_analog_playback = {
-	.channels = 2,
-	.ops = {
-		.open    = alc203_playback_pcm_open,
-		.prepare = alc203_playback_pcm_prepare,
-		.cleanup = alc203_playback_pcm_cleanup
-	},
-};
-
-static cmi8788_pcm_stream alc203_pcm_analog_capture = {
-	.channels = 2,
-	.ops = {
-		.prepare = alc203_capture_pcm_prepare,
-		.cleanup = alc203_capture_pcm_cleanup
-	},
-};
-
-
-static int alc203_build_pcms(cmi_codec *codec)
-{
-	cmi8788_pcm_stream *pcm_substream = codec->pcm_substream;
-
-	pcm_substream[0] = alc203_pcm_analog_playback;
-	pcm_substream[1] = alc203_pcm_analog_capture;
-
-	return 0;
-}
-
-/*
  * mixer
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vols)
@@ -211,29 +126,7 @@ static int alc203_init(cmi_codec *codec)
 	return 0;
 }
 
-static void alc203_free(cmi_codec *codec)
-{
-	/* 待完善 */
-
-}
-
-static cmi_codec_ops alc203_patch_ops = {
+cmi_codec_ops alc203_patch_ops = {
 	.build_controls = alc203_build_controls,
-	.build_pcms     = alc203_build_pcms,
 	.init           = alc203_init,
-	.free           = alc203_free,
-};
-
-static int patch_alc203(cmi_codec *codec)
-{
-	codec->patch_ops = alc203_patch_ops;
-	return 0;
-}
-
-/*
- * patch entries
- */
-codec_preset snd_preset_alc203[] = {
-	{ .id = 0xFFFFFFFF, .name = "ALC203", .patch = patch_alc203 },
-	{ } /* terminator */
 };

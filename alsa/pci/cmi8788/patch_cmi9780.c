@@ -35,92 +35,6 @@
 #include "cmi8788.h"
 
 
-/*
- * Analog playback callbacks
- */
-static int cmi9780_playback_pcm_open(void                *hinfo,
-				     cmi_codec           *codec,
-				     struct snd_pcm_substream *substream )
-{
-	/* ŽýÍêÉÆ ÐèÒªÉèÖÃÏà¹ØµÄŒÄŽæÆ÷ */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int cmi9780_playback_pcm_prepare(void                *hinfo,
-					cmi_codec           *codec,
-					struct snd_pcm_substream *substream )
-{
-	/* ŽýÍêÉÆ ÐèÒªÉèÖÃÏà¹ØµÄŒÄŽæÆ÷ */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int cmi9780_playback_pcm_cleanup(void                *hinfo,
-					cmi_codec           *codec,
-					struct snd_pcm_substream *substream )
-{
-	/* ŽýÍêÉÆ ÐèÒªÉèÖÃÏà¹ØµÄŒÄŽæÆ÷ */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-/*
- * Analog capture
- */
-static int cmi9780_capture_pcm_prepare(void                *hinfo,
-				       cmi_codec           *codec,
-				       struct snd_pcm_substream *substream )
-{
-	/* ŽýÍêÉÆ ÐèÒªÉèÖÃÏà¹ØµÄŒÄŽæÆ÷ */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-static int cmi9780_capture_pcm_cleanup(void                *hinfo,
-				       cmi_codec           *codec,
-				       struct snd_pcm_substream *substream )
-{
-	/* ŽýÍêÉÆ ÐèÒªÉèÖÃÏà¹ØµÄŒÄŽæÆ÷ */
-	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-
-	return 0;
-}
-
-
-static cmi8788_pcm_stream cmi9780_pcm_analog_playback = {
-	.channels = 2,
-	.ops = {
-		.open    = cmi9780_playback_pcm_open,
-		.prepare = cmi9780_playback_pcm_prepare,
-		.cleanup = cmi9780_playback_pcm_cleanup
-	},
-};
-
-static cmi8788_pcm_stream cmi9780_pcm_analog_capture = {
-	.channels = 2,
-	.ops = {
-		.prepare = cmi9780_capture_pcm_prepare,
-		.cleanup = cmi9780_capture_pcm_cleanup
-	},
-};
-
-
-static int cmi9780_build_pcms(cmi_codec *codec)
-{
-	cmi8788_pcm_stream  *pcm_substream = codec->pcm_substream;
-
-	pcm_substream[0] = cmi9780_pcm_analog_playback;
-	pcm_substream[1] = cmi9780_pcm_analog_capture;
-
-	return 0;
-}
-
-
 /* ac97 volumes slider to register address */
 static u8 volume_reg_addr[MAX_VOL_SLIDER] = {
 	0x02, /* MASTER_VOL_SLIDER */
@@ -273,29 +187,7 @@ static int cmi9780_init(cmi_codec *codec)
 	return 0;
 }
 
-static void cmi9780_free(cmi_codec *codec)
-{
-	/* ŽýÍêÉÆ */
-
-}
-
-static cmi_codec_ops cmi9780_patch_ops = {
+cmi_codec_ops cmi9780_patch_ops = {
 	.build_controls = cmi9780_build_controls,
-	.build_pcms     = cmi9780_build_pcms,
 	.init           = cmi9780_init,
-	.free           = cmi9780_free,
-};
-
-static int patch_cmi9780(cmi_codec *codec)
-{
-	codec->patch_ops = cmi9780_patch_ops;
-	return 0;
-}
-
-/*
- * patch entries
- */
-codec_preset snd_preset_cmi9780[] = {
-	{ .id = 0xFFFFFFFF, .name = "CMI9780", .patch = patch_cmi9780 },
-	{ } /* terminator */
 };
