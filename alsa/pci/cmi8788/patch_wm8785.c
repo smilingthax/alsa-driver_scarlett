@@ -44,7 +44,7 @@
 /*
  * mixer
  */
-static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
+static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
 	if (!codec)
 		return -1;
@@ -55,12 +55,12 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 /*
  * The ak4396 does not support read command.
  */
-static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
+static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
 	return -1;
 }
 
-static cmi8788_mixer_ops  wm8785_mixer_ops =
+static struct cmi8788_mixer_ops wm8785_mixer_ops =
 {
 	.get_volume = NULL, /* get_volume, */
 	.set_volume = NULL, /* put_volume, */
@@ -69,7 +69,7 @@ static cmi8788_mixer_ops  wm8785_mixer_ops =
 /*
  * create mixer
  */
-static int wm8785_build_controls(cmi_codec *codec)
+static int wm8785_build_controls(struct cmi_codec *codec)
 {
 	if (!codec)
 		return -1;
@@ -79,7 +79,7 @@ static int wm8785_build_controls(cmi_codec *codec)
 }
 
 /* use SPI */
-static int wm8785_init(cmi_codec *codec)
+static int wm8785_init(struct cmi_codec *codec)
 {
 	u8 data[3];
 
@@ -123,7 +123,7 @@ static int wm8785_init(cmi_codec *codec)
 	return 0;
 }
 
-cmi_codec_ops wm8785_patch_ops = {
+struct cmi_codec_ops wm8785_patch_ops = {
 	.build_controls = NULL, /* wm8785_build_controls, */
 	.init           = wm8785_init,
 };

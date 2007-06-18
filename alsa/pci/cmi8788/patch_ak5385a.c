@@ -41,7 +41,7 @@
 /*
  * mixer
  */
-static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
+static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
 	if (!codec)
 		return -1;
@@ -52,12 +52,12 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 /*
  * The ak5385a does not support read command.
  */
-static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
+static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
 	return -1;
 }
 
-static cmi8788_mixer_ops  ak5385a_mixer_ops =
+static struct cmi8788_mixer_ops ak5385a_mixer_ops =
 {
 	/* .get_volume = get_volume, */
 	.set_volume = put_volume,
@@ -66,7 +66,7 @@ static cmi8788_mixer_ops  ak5385a_mixer_ops =
 /*
  * create mixer
  */
-static int ak5385a_build_controls(cmi_codec *codec)
+static int ak5385a_build_controls(struct cmi_codec *codec)
 {
 	if (!codec)
 		return -1;
@@ -76,7 +76,7 @@ static int ak5385a_build_controls(cmi_codec *codec)
 	return 0;
 }
 
-static int ak5385a_init(cmi_codec *codec)
+static int ak5385a_init(struct cmi_codec *codec)
 {
 	if (!codec)
 		return -1;
@@ -87,7 +87,7 @@ static int ak5385a_init(cmi_codec *codec)
 	return 0;
 }
 
-cmi_codec_ops ak5385a_patch_ops = {
+struct cmi_codec_ops ak5385a_patch_ops = {
 	.build_controls = NULL, /* ak5385a_build_controls, */
 	.init           = NULL, /* ak5385a_init, */
 };

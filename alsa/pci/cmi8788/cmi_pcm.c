@@ -86,9 +86,9 @@ static struct snd_pcm_hardware snd_cmi_pcm_capture_hw = {
  */
 static int cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
+	struct cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
 
 	cmi_subs->substream = substream;
 
@@ -136,8 +136,8 @@ static int cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int
 
 static int cmi_pcm_close(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
-	cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
 
 	cmi_subs->substream    = NULL;
 
@@ -197,7 +197,7 @@ static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 
 static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
 	u16 val16 = 0;
@@ -288,7 +288,7 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 
 static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
 	u32 val32 = 0;
@@ -452,7 +452,7 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 
 static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
 	u16 val16 = 0;
@@ -479,8 +479,8 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 
 static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no, int cmd)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
-	cmi_substream *cmi_subs= &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi_substream *cmi_subs= &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
 
 	int err = 0;
 	u8 reset = 0;
@@ -553,7 +553,7 @@ static int snd_cmi_pcm_ac97_playback_trigger(struct snd_pcm_substream *substream
 
 static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *substream)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	u32 addr = 0, pos = 0;
 
 	addr = snd_cmipci_read(chip, PCI_DMAPlay_MULTI_BaseAddr);
@@ -563,7 +563,7 @@ static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *
 
 static snd_pcm_uframes_t snd_cmi_pcm_capture_pointer(struct snd_pcm_substream *substream)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	u32 addr = 0, pos = 0;
 
 	addr = snd_cmipci_read(chip, PCI_DMARec_A_BaseAddr);
@@ -573,7 +573,7 @@ static snd_pcm_uframes_t snd_cmi_pcm_capture_pointer(struct snd_pcm_substream *s
 
 static snd_pcm_uframes_t snd_cmi_pcm_ac97_playback_pointer(struct snd_pcm_substream *substream)
 {
-	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	u32 addr = 0, pos = 0;
 
 	addr = snd_cmipci_read(chip, PCI_DMAPlay_Front_BaseAddr);
@@ -620,7 +620,7 @@ static void snd_cmi_pcm_free(struct snd_pcm *pcm)
 }
 
 
-void snd_cmi_pcm_interrupt(snd_cmi8788 *chip, cmi_substream *cmi_subs)
+void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs)
 {
 	u16 old_int_val, int_val;
 
@@ -642,7 +642,7 @@ void snd_cmi_pcm_interrupt(snd_cmi8788 *chip, cmi_substream *cmi_subs)
 /*
  * create pcm DAC/ADC, SPDIF
  */
-int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
+int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 {
 	struct snd_pcm *pcm = NULL;
 	int err = 0, pcm_dev = 0;

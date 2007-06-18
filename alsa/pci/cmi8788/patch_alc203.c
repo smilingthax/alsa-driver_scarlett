@@ -38,7 +38,7 @@
 /*
  * mixer
  */
-static int put_volume(cmi_codec *codec, int l_vol, int r_vols)
+static int put_volume(struct cmi_codec *codec, int l_vol, int r_vols)
 {
 	u8 l_volume = 0, r_volume = 0;
 	u8 reg_addr;
@@ -73,12 +73,12 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vols)
 /*
  * The ak4396 does not support read command.
  */
-static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
+static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
 	return -1;
 }
 
-static cmi8788_mixer_ops  alc203_mixer_ops =
+static struct cmi8788_mixer_ops alc203_mixer_ops =
 {
 	/* .get_volume = get_volume, */
 	.set_volume = put_volume,
@@ -87,7 +87,7 @@ static cmi8788_mixer_ops  alc203_mixer_ops =
 /*
  * create mixer
  */
-static int alc203_build_controls(cmi_codec *codec)
+static int alc203_build_controls(struct cmi_codec *codec)
 {
 	if (!codec)
 		return -1;
@@ -96,7 +96,7 @@ static int alc203_build_controls(cmi_codec *codec)
 	return 0;
 }
 
-static int alc203_init(cmi_codec *codec)
+static int alc203_init(struct cmi_codec *codec)
 {
 	u8 reg_addr;
 	u16 reg_data;
@@ -126,7 +126,7 @@ static int alc203_init(cmi_codec *codec)
 	return 0;
 }
 
-cmi_codec_ops alc203_patch_ops = {
+struct cmi_codec_ops alc203_patch_ops = {
 	.build_controls = alc203_build_controls,
 	.init           = alc203_init,
 };

@@ -42,7 +42,7 @@
 #define AK4396_RchATTCtl   0x04
 
 
-static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
+static int get_info(struct cmi_codec *codec, int *min_vol, int *max_vol)
 {
 	if (!codec || !min_vol || !max_vol)
 		return -1;
@@ -60,9 +60,9 @@ static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
  *   Register address(MSB first, 5bits) and Control data(MSB first,8bits).
  *   C1 C0 R/W A4 A3 A2 A1 A0 D7 D6 D5 D4 D3 D2 D1 D0
  */
-static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
+static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
-	snd_cmi8788 *chip;
+	struct cmi8788 *chip;
 	u8 data[2];
 	int l_volume = 0, r_volume = 0;
 
@@ -104,7 +104,7 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 /*
  * The ak4396 does not support read command.
  */
-static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
+static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
 	if (!codec || !l_vol || !r_vol)
 		return -1;
@@ -115,7 +115,7 @@ static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
 	return 0;
 }
 
-static cmi8788_mixer_ops  ak_4396_mixer_ops =
+static struct cmi8788_mixer_ops ak_4396_mixer_ops =
 {
 	.get_info   = get_info,
 	.get_volume = get_volume,
@@ -125,7 +125,7 @@ static cmi8788_mixer_ops  ak_4396_mixer_ops =
 /*
  * create mixer
  */
-static int ak4396_build_controls(cmi_codec *codec)
+static int ak4396_build_controls(struct cmi_codec *codec)
 {
 	if (!codec)
 		return -1;
@@ -135,7 +135,7 @@ static int ak4396_build_controls(cmi_codec *codec)
 	return 0;
 }
 
-static int ak4396_init(cmi_codec *codec)
+static int ak4396_init(struct cmi_codec *codec)
 {
 	u8 data[2];
 
@@ -171,7 +171,7 @@ static int ak4396_init(cmi_codec *codec)
 	return 0;
 }
 
-cmi_codec_ops ak4396_patch_ops = {
+struct cmi_codec_ops ak4396_patch_ops = {
 	.build_controls = ak4396_build_controls,
 	.init           = ak4396_init,
 };

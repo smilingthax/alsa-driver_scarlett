@@ -60,8 +60,8 @@ static struct cmi8788_input_mux cmi8788_basic_input = {
 
 static int snd_cmi8788_capture_source_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 
 	if (!kcontrol || !uinfo)
@@ -83,8 +83,8 @@ static int snd_cmi8788_capture_source_info(struct snd_kcontrol *kcontrol, struct
 
 static int snd_cmi8788_capture_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 
 	if (!kcontrol || !ucontrol)
@@ -103,8 +103,8 @@ static int snd_cmi8788_capture_source_get(struct snd_kcontrol *kcontrol, struct 
 
 static int snd_cmi8788_capture_source_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 	int val;
 
@@ -133,8 +133,8 @@ static int snd_cmi8788_capture_source_put(struct snd_kcontrol *kcontrol, struct 
 
 static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 
 	if (!kcontrol || !uinfo)
@@ -182,8 +182,8 @@ static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_c
 
 static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 
 	if (!kcontrol || !ucontrol)
@@ -226,8 +226,8 @@ static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct
 
 static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 	int                 codec_num = 0;
 	unsigned int idx;
@@ -297,8 +297,8 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 
 static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 
 	if (!kcontrol || !uinfo)
@@ -342,8 +342,8 @@ static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ct
 
 static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 	int l_vol = 0, r_vol = 0;
 
@@ -385,8 +385,8 @@ static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct 
 
 static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	snd_cmi8788        *chip       = NULL;
-	cmi_codec          *codec      = NULL;
+	struct cmi8788 *chip = NULL;
+	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 	int                 codec_num = 0;
 	int l_vol = 0, r_vol = 0;
@@ -485,12 +485,12 @@ static struct snd_kcontrol_new snd_cmi8788_playback_mixers[] __devinitdata={
 /*
  * constructor
  */
-int __devinit snd_cmi8788_mixer_create(snd_cmi8788 *chip)
+int __devinit snd_cmi8788_mixer_create(struct cmi8788 *chip)
 {
 	unsigned int idx;
 	struct snd_card *card = NULL;
 	int i, codec_num;
-	cmi_codec *codec = NULL;
+	struct cmi_codec *codec = NULL;
 	int err;
 
 	if (!chip)

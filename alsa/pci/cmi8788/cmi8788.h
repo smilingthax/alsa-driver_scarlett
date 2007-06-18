@@ -138,42 +138,29 @@
 #define MAX_AC97_CODEC_NUM 2
 
 struct snd_pcm_substream;
+struct cmi8788;
+struct cmi_codec;
 
-struct stru_snd_cmi8788;
-typedef struct stru_snd_cmi8788 snd_cmi8788;
-
-struct stru_cmi_codec;
-typedef struct stru_cmi_codec cmi_codec;
-
-struct stru_cmi_codec_ops;
-typedef struct stru_cmi_codec_ops cmi_codec_ops;
-
-struct stru_cmi8788_mixer_ops;
-typedef struct stru_cmi8788_mixer_ops  cmi8788_mixer_ops;
-
-struct stru_ac97_volume;
-typedef struct stru_ac97_volume ac97_volume;
-
-struct stru_cmi_codec_ops {
-	int  (*build_controls)(cmi_codec *codec);
-	int  (*init)          (cmi_codec *codec);
+struct cmi_codec_ops {
+	int  (*build_controls)(struct cmi_codec *codec);
+	int  (*init)          (struct cmi_codec *codec);
 };
 
 /* Mixer callbacks */
-struct stru_cmi8788_mixer_ops {
-	int (*get_info)   (cmi_codec *codec, int *min_vol, int *max_vol);
-	int (*get_volume) (cmi_codec *codec, int *l_vol, int *r_vol);
-	int (*set_volume) (cmi_codec *codec, int  l_vol, int  r_vol);
+struct cmi8788_mixer_ops {
+	int (*get_info)   (struct cmi_codec *codec, int *min_vol, int *max_vol);
+	int (*get_volume) (struct cmi_codec *codec, int *l_vol, int *r_vol);
+	int (*set_volume) (struct cmi_codec *codec, int  l_vol, int  r_vol);
 };
 
 /* for AC97 CODEC volume */
-struct stru_ac97_volume {
+struct ac97_volume {
 	s16  left_vol;
 	s16  right_vol;
 };
 
-struct stru_cmi_codec {
-	snd_cmi8788 *chip;
+struct cmi_codec {
+	struct cmi8788 *chip;
 
 	unsigned int addr;         /* codec addr*/
 
@@ -181,19 +168,19 @@ struct stru_cmi_codec {
 	u8  reg_len_flag; /* 0 : 2bytes; 1: 3bytes */
 
 	/* set by patch */
-	cmi_codec_ops patch_ops;
+	struct cmi_codec_ops patch_ops;
 
 	/* Mixer */
-	cmi8788_mixer_ops  mixer_ops;
+	struct cmi8788_mixer_ops  mixer_ops;
 	s16  left_vol;
 	s16  right_vol;
 
 	/* for AC97 CODEC */
 	u8  volume_opera_source;
-	ac97_volume volume[MAX_VOL_SLIDER];
+	struct ac97_volume volume[MAX_VOL_SLIDER];
 };
 
-typedef struct stru_cmi_substream {
+struct cmi_substream {
 	struct snd_pcm_substream *substream;
 	int running;      /* dac/adc running? */
 
@@ -201,11 +188,11 @@ typedef struct stru_cmi_substream {
 	int DMA_chan_reset;/* PCI 42: PCI DMA Channel Reset            1Byte*/
 	int int_mask;      /* PCI 44: Interrupt Mask Register          2Byte*/
 	int int_sta_mask;  /* PCI 46: interrupt status mask            2Byte*/
-} cmi_substream;
+};
 
-typedef struct snd_stru_cmipci_pcm {
-	cmi_substream  cmi_subs[2]; /* 0 playback; 1 record; */
-} cmipci_pcm_t;
+struct cmipci_pcm {
+	struct cmi_substream cmi_subs[2]; /* 0 playback; 1 record; */
+};
 
 /* for record */
 #define CMI8788_MAX_NUM_INPUTS	4
@@ -219,7 +206,7 @@ struct cmi8788_input_mux {
 	struct cmi8788_input_mux_item items[CMI8788_MAX_NUM_INPUTS];
 };
 
-struct stru_snd_cmi8788 {
+struct cmi8788 {
 	struct snd_card *card;
 	struct pci_dev *pci;
 
@@ -234,12 +221,12 @@ struct stru_snd_cmi8788 {
 	/* PCM */
 	int PCM_Count;
 	struct snd_pcm *pcm[CMI8788_MAX_PCMS];
-	cmipci_pcm_t  cmi_pcm[CMI8788_MAX_PCMS];
+	struct cmipci_pcm cmi_pcm[CMI8788_MAX_PCMS];
 
 	int num_codecs;		/* Eµ¼EÉI CODEC µÄ,öEy */
-	cmi_codec codec_list[MAX_CODEC_NUM];
+	struct cmi_codec codec_list[MAX_CODEC_NUM];
 	int num_ac97_codecs;
-	cmi_codec ac97_codec_list[MAX_AC97_CODEC_NUM];
+	struct cmi_codec ac97_codec_list[MAX_AC97_CODEC_NUM];
 	struct semaphore codec_mutex;
 
 	u8  playback_volume_init;
@@ -251,22 +238,22 @@ struct stru_snd_cmi8788 {
 	u8  CMI8788IC_revision;
 };
 
-void snd_cmipci_write(snd_cmi8788 *chip, unsigned int data, unsigned int cmd);
-unsigned int snd_cmipci_read(snd_cmi8788 *chip, unsigned int cmd);
-void snd_cmipci_write_w(snd_cmi8788 *chip, unsigned short data, unsigned int cmd);
-unsigned short snd_cmipci_read_w(snd_cmi8788 *chip, unsigned int cmd);
-void snd_cmipci_write_b(snd_cmi8788 *chip, unsigned char data, unsigned int cmd);
-unsigned char snd_cmipci_read_b(snd_cmi8788 *chip, unsigned int cmd);
-int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data);
-int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data);
+void snd_cmipci_write(struct cmi8788 *chip, unsigned int data, unsigned int cmd);
+unsigned int snd_cmipci_read(struct cmi8788 *chip, unsigned int cmd);
+void snd_cmipci_write_w(struct cmi8788 *chip, unsigned short data, unsigned int cmd);
+unsigned short snd_cmipci_read_w(struct cmi8788 *chip, unsigned int cmd);
+void snd_cmipci_write_b(struct cmi8788 *chip, unsigned char data, unsigned int cmd);
+unsigned char snd_cmipci_read_b(struct cmi8788 *chip, unsigned int cmd);
+int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data);
+int snd_cmi_send_AC97_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data);
 
-int snd_cmi8788_pcm_create(snd_cmi8788 *chip);
-void snd_cmi_pcm_interrupt(snd_cmi8788 *chip, cmi_substream *cmi_subs);
+int snd_cmi8788_pcm_create(struct cmi8788 *chip);
+void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs);
 
-int snd_cmi8788_mixer_create(snd_cmi8788 *chip);
+int snd_cmi8788_mixer_create(struct cmi8788 *chip);
 
-extern cmi_codec_ops ak4396_patch_ops;
-extern cmi_codec_ops wm8785_patch_ops;
-extern cmi_codec_ops cmi9780_patch_ops;
+extern struct cmi_codec_ops ak4396_patch_ops;
+extern struct cmi_codec_ops wm8785_patch_ops;
+extern struct cmi_codec_ops cmi9780_patch_ops;
 
 #endif

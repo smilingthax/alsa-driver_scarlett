@@ -67,34 +67,34 @@ MODULE_PARM_DESC(enable, "Enable C-Media PCI soundcard.");
 
 
 /* read/write operations for dword register */
-void snd_cmipci_write(snd_cmi8788 *chip, unsigned int data, unsigned int cmd)
+void snd_cmipci_write(struct cmi8788 *chip, unsigned int data, unsigned int cmd)
 {
 	outl(data, chip->addr + cmd);
 }
 
-unsigned int snd_cmipci_read(snd_cmi8788 *chip, unsigned int cmd)
+unsigned int snd_cmipci_read(struct cmi8788 *chip, unsigned int cmd)
 {
 	return inl(chip->addr + cmd);
 }
 
 /* read/write operations for word register */
-void snd_cmipci_write_w(snd_cmi8788 *chip, unsigned short data, unsigned int cmd)
+void snd_cmipci_write_w(struct cmi8788 *chip, unsigned short data, unsigned int cmd)
 {
 	outw(data, chip->addr + cmd);
 }
 
-unsigned short snd_cmipci_read_w(snd_cmi8788 *chip, unsigned int cmd)
+unsigned short snd_cmipci_read_w(struct cmi8788 *chip, unsigned int cmd)
 {
 	return inw(chip->addr + cmd);
 }
 
 /* read/write operations for byte register */
-void snd_cmipci_write_b(snd_cmi8788 *chip, unsigned char data, unsigned int cmd)
+void snd_cmipci_write_b(struct cmi8788 *chip, unsigned char data, unsigned int cmd)
 {
 	outb(data, chip->addr + cmd);
 }
 
-unsigned char snd_cmipci_read_b(snd_cmi8788 *chip, unsigned int cmd)
+unsigned char snd_cmipci_read_b(struct cmi8788 *chip, unsigned int cmd)
 {
 	return inb(chip->addr + cmd);
 }
@@ -103,10 +103,10 @@ unsigned char snd_cmipci_read_b(snd_cmi8788 *chip, unsigned int cmd)
 /*
  * initialize the CMI8788 controller chip
  */
-static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
+static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 {
 	int i, codec_num;
-	cmi_codec *codec = NULL;
+	struct cmi_codec *codec = NULL;
 	u32 val32 = 0;
 	u16 val16 = 0;
 	u8 val8  = 0;
@@ -299,9 +299,9 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
  * The data (which include address, r/w, and data bits) written to or read from the codec.
  * The bits in this register should be interpreted according to the individual codec.
  */
-int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
+int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data)
 {
-	snd_cmi8788 *chip;
+	struct cmi8788 *chip;
 	u8 ctrl = 0;
 
 	if (!codec || !data)
@@ -348,9 +348,9 @@ int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
 /*
  * send a command by 2-wire interface
  */
-static int snd_cmi_send_2wire_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
+static int snd_cmi_send_2wire_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data)
 {
-	snd_cmi8788 *chip;
+	struct cmi8788 *chip;
 	u8 Status = 0;
 	u8 reg = 0, slave_addr = 0;
 
@@ -381,9 +381,9 @@ static int snd_cmi_send_2wire_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
 /*
  * send AC'97 command, control AC'97 CODEC register
  */
-int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
+int snd_cmi_send_AC97_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data)
 {
-	snd_cmi8788 *chip;
+	struct cmi8788 *chip;
 	u32 val32 = 0;
 
 	if (!codec)
@@ -408,7 +408,7 @@ int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
 }
 
 /* receive a response */
-static unsigned int snd_cmi_get_response(cmi_codec *codec)
+static unsigned int snd_cmi_get_response(struct cmi_codec *codec)
 {
 	/* ŽýÍêÉÆ */
 	return 0;
@@ -420,7 +420,7 @@ static unsigned int snd_cmi_get_response(cmi_codec *codec)
  */
 static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 {
-	snd_cmi8788 *chip = dev_id;
+	struct cmi8788 *chip = dev_id;
 	int i;
 	u16 status;
 
@@ -430,7 +430,7 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	for (i = 0; i < chip->PCM_Count; i++) {
-		cmi_substream *cmi_subs = NULL;
+		struct cmi_substream *cmi_subs = NULL;
 
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
@@ -451,7 +451,7 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 }
 
 
-static int snd_cmi8788_codec_new(snd_cmi8788 *chip, cmi_codec *codec, u32 addr, cmi_codec_ops *ops)
+static int snd_cmi8788_codec_new(struct cmi8788 *chip, struct cmi_codec *codec, u32 addr, struct cmi_codec_ops *ops)
 {
 	snd_assert(chip, return -EINVAL);
 
@@ -463,7 +463,7 @@ static int snd_cmi8788_codec_new(snd_cmi8788 *chip, cmi_codec *codec, u32 addr, 
 	return 0;
 }
 
-static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
+static int __devinit snd_cmi8788_codec_create(struct cmi8788 *chip)
 {
 	if (!chip)
 		return 0;
@@ -489,7 +489,7 @@ static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
  */
 static void snd_cmi8788_card_free(struct snd_card *card)
 {
-	snd_cmi8788 *chip = card->private_data;
+	struct cmi8788 *chip = card->private_data;
 
 	if (chip->irq >= 0)
 		free_irq(chip->irq, chip);
@@ -505,7 +505,7 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 {
 	static int dev = 0;
 	struct snd_card *card = NULL;
-	snd_cmi8788 *chip = NULL;
+	struct cmi8788 *chip = NULL;
 	int err = 0;
 
 	if (dev >= SNDRV_CARDS)

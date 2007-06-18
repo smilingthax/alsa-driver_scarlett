@@ -49,7 +49,7 @@ static u8 volume_reg_addr[MAX_VOL_SLIDER] = {
 /*
  * mixer , volume
  */
-static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
+static int get_info(struct cmi_codec *codec, int *min_vol, int *max_vol)
 {
 	if (!codec || !min_vol || !max_vol)
 		return -1;
@@ -60,7 +60,7 @@ static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
 	return 0;
 }
 
-static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
+static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
 	int l_volume = 0, r_volume = 0;
 	u32 val32 = 0;
@@ -114,7 +114,7 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 	return 0;
 }
 
-static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
+static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
 	int opera_source = MIC_VOL_SLIDER;
 
@@ -129,7 +129,7 @@ static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
 	return 0;
 }
 
-static cmi8788_mixer_ops  cmi9780_mixer_ops =
+static struct cmi8788_mixer_ops cmi9780_mixer_ops =
 {
 	.get_info   = get_info,
 	.get_volume = get_volume,
@@ -139,7 +139,7 @@ static cmi8788_mixer_ops  cmi9780_mixer_ops =
 /*
  * create mixer
  */
-static int cmi9780_build_controls(cmi_codec *codec)
+static int cmi9780_build_controls(struct cmi_codec *codec)
 {
 	if (!codec)
 		return -1;
@@ -148,7 +148,7 @@ static int cmi9780_build_controls(cmi_codec *codec)
 	return 0;
 }
 
-static int cmi9780_init(cmi_codec *codec)
+static int cmi9780_init(struct cmi_codec *codec)
 {
 	int i = 0;
 
@@ -187,7 +187,7 @@ static int cmi9780_init(cmi_codec *codec)
 	return 0;
 }
 
-cmi_codec_ops cmi9780_patch_ops = {
+struct cmi_codec_ops cmi9780_patch_ops = {
 	.build_controls = cmi9780_build_controls,
 	.init           = cmi9780_init,
 };
