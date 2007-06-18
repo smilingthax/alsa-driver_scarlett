@@ -36,10 +36,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/control.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 
 MODULE_AUTHOR("weifeng sui <weifengsui@163.com>");
@@ -178,11 +175,11 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	snd_cmipci_write_b(chip, val32, AC97InChanCfg1);
 
 	/* initialize CODEC */
-	codec_num = chip->controller->codec_num;
+	codec_num = chip->num_codecs;
 
 	/* codec callback routine */
 	for (i = 0; i < codec_num; i++) {
-		codec = &(chip->controller->codec_list[i]);
+		codec = &chip->codec_list[i];
 		if (!codec->patch_ops.init)
 			continue;
 		err = codec->patch_ops.init(codec);
@@ -191,7 +188,7 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	}
 
 	/* for AC97 codec */
-	codec = &(chip->controller->ac97_codec_list[0]);
+	codec = &chip->ac97_codec_list[0];
 	if (codec->patch_ops.init)
 		err = codec->patch_ops.init(codec);
 
@@ -308,7 +305,7 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
  * The data (which include address, r/w, and data bits) written to or read from the codec.
  * The bits in this register should be interpreted according to the individual codec.
  */
-static int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
+int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
 {
 	snd_cmi8788 *chip;
 	u8 ctrl = 0;
@@ -316,7 +313,7 @@ static int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
 	if (!codec || !data)
 		return -1;
 
-	chip = codec->controller->private_data;
+	chip = codec->chip;
 
 	switch (codec->reg_len_flag) {
 	case 0: /* 2bytes */
@@ -366,7 +363,7 @@ static int snd_cmi_send_2wire_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
 	if (!codec)
 		return -1;
 
-	chip = codec->controller->private_data;
+	chip = codec->chip;
 
 	Status = snd_cmipci_read_b(chip, BusCtrlStatus);
 	if ((Status & 0x01) == 1) /* busy */
@@ -390,7 +387,7 @@ static int snd_cmi_send_2wire_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
 /*
  * send AC'97 command, control AC'97 CODEC register
  */
-static int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
+int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
 {
 	snd_cmi8788 *chip;
 	u32 val32 = 0;
@@ -398,7 +395,7 @@ static int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data)
 	if (!codec)
 		return -1;
 
-	chip = codec->controller->private_data;
+	chip = codec->chip;
 
 	/* 31:25 Reserved */
 	/* 24    R/W  Codec Command Select 1: Front-Panel Codec 0: On-Card Codec */
@@ -585,8 +582,7 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	snd_cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	cmi_substream *cmi_subs = &(chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_PLAYBACK]);
-	cmi8788_controller *controller = chip->controller;
-	cmi_codec *codec = controller->codec_list;
+	cmi_codec *codec = chip->codec_list;
 	u16 val16 = 0;
 	u8 fmt;
 	u16 I2SFmt;
@@ -1112,16 +1108,11 @@ static int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
 {
 	struct snd_pcm *pcm = NULL;
 	int err = 0, pcm_dev = 0;
-	cmi8788_controller *controller = NULL;
 	int i = 0, codec_num =0;
 	cmi_codec *codec = NULL;
 	int iRet = 0;
 
 	if (!chip)
-		return 0;
-
-	controller = chip->controller;
-	if (!controller)
 		return 0;
 
 #if 1 /* swf 2005-04-25 */
@@ -1133,25 +1124,24 @@ static int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
 
 	pcm = chip->pcm[pcm_dev];
 
-	codec_num = chip->controller->codec_num;
+	codec_num = chip->num_codecs;
 	codec = NULL;
 
 	/* ³õÊŒ»¯Ò»Ð© callback routine */
 	for (i = 0; i < codec_num; i++) {
-		codec = &controller->codec_list[i];
+		codec = &chip->codec_list[i];
 		if (!codec->patch_ops.build_pcms)
 			continue;
-
 		err = codec->patch_ops.build_pcms(codec);
 		if (err < 0)
 			return err;
 	}
 
 	/* for AC97 codec */
-	codec_num = chip->controller->ac97_cocde_num;
+	codec_num = chip->num_ac97_codecs;
 	codec = NULL;
 	for (i = 0; i < codec_num; i++) {
-		codec = &controller->ac97_codec_list[i];
+		codec = &chip->ac97_codec_list[i];
 		if (!codec->patch_ops.build_pcms)
 			continue;
 
@@ -1189,7 +1179,7 @@ static int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
 		return err;
 
 	pcm = chip->pcm[pcm_dev];
-	codec = &controller->ac97_codec_list[0];
+	codec = &chip->ac97_codec_list[0];
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_cmi_pcm_ac97_playback_ops);
 
 	pcm->private_data = chip;
@@ -1211,57 +1201,57 @@ static int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
 	return 0;
 }
 
+static int snd_cmi8788_codec_new(snd_cmi8788 *chip, cmi_codec *codec, u32 addr, codec_preset *preset)
+{
+	int err;
+
+	snd_assert(chip, return -EINVAL);
+
+	codec->chip = chip;
+
+	/* ���Բ���Ҫ�������Щ��Ϣ,����Ҫ�ڶ�Ӧ�� CODEC �������¸�ֵ */
+	codec->vendor_id    = 0xFFFF;
+	codec->subsystem_id = 0XFFFF;
+	codec->revision_id  = 0XFFFF;
+
+	codec->addr   = addr;
+	codec->preset = preset;
+
+	if (codec->preset && codec->preset->patch)
+		err = codec->preset->patch(codec);
+	else
+		err = -1;
+
+	if (err < 0) {
+		if (codec && codec->patch_ops.free)
+			codec->patch_ops.free(codec);
+		return err;
+	}
+
+	return 0;
+}
+
 extern codec_preset snd_preset_ak4396[];
 extern codec_preset snd_preset_wm8785[];
 extern codec_preset snd_preset_cmi9780[];
 
 static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
 {
-	cmi8788_controller *controller;
-
 	if (!chip)
 		return 0;
 
-	controller = chip->controller;
-
 	/* ŽýÍêÉÆ£¬ÐèÒªÈ·¶š²»Í¬µÄ CODEC µ÷ÓÃ snd_cmi8788_codec_new Ê±ÒªŽ«µÝÊ²ÃŽ²ÎÊý */
-	snd_cmi8788_codec_new(controller, &controller->codec_list[0], 0, snd_preset_ak4396); /* DAC */
-	snd_cmi8788_codec_new(controller, &controller->codec_list[1], 1, snd_preset_ak4396); /* DAC */
-	snd_cmi8788_codec_new(controller, &controller->codec_list[2], 2, snd_preset_ak4396); /* DAC */
-	snd_cmi8788_codec_new(controller, &controller->codec_list[3], 4, snd_preset_ak4396); /* ÒÔºóÒªÓÃ snd_preset_akm4620); // DAC+ADC */
-	snd_cmi8788_codec_new(controller, &controller->codec_list[4], 3, snd_preset_wm8785); /* ADC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[0], 0, snd_preset_ak4396); /* DAC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[1], 1, snd_preset_ak4396); /* DAC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[2], 2, snd_preset_ak4396); /* DAC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[3], 4, snd_preset_ak4396); /* ÒÔºóÒªÓÃ snd_preset_akm4620); // DAC+ADC */
+	snd_cmi8788_codec_new(chip, &chip->codec_list[4], 3, snd_preset_wm8785); /* ADC */
 
 	/* for CMI9780 AC97 */
-	snd_cmi8788_codec_new(controller, &controller->ac97_codec_list[0], 0, snd_preset_cmi9780); /* CMI9780 AC97 */
+	snd_cmi8788_codec_new(chip, &chip->ac97_codec_list[0], 0, snd_preset_cmi9780); /* CMI9780 AC97 */
 
 	/* initialize chip */
 	cmi8788_init_controller_chip(chip);
-
-	return 0;
-}
-
-static int __devinit snd_cmi8788_controller_create(snd_cmi8788 *chip)
-{
-	cmi_bus_template bus_temp;
-	int err;
-
-	if (!chip)
-		return 0;
-
-	memset(&bus_temp, 0, sizeof(bus_temp));
-	bus_temp.private_data     = chip;
-	bus_temp.pci              = chip->pci;
-	bus_temp.ops.spi_cmd      = snd_cmi_send_spi_cmd;
-	bus_temp.ops.twowire_cmd  = snd_cmi_send_2wire_cmd;
-	bus_temp.ops.ac97_cmd     = snd_cmi_send_AC97_cmd;
-	bus_temp.ops.get_response = snd_cmi_get_response;
-
-	if ((err = snd_cmi8788_controller_new(chip, &bus_temp, &chip->controller)) < 0)
-		return err;
-
-	/* ŽýÍêÉÆ£¬³õÊŒ»¯ CODEC µÄžöÊý */
-	chip->controller->codec_num = 5; /* */
-	chip->controller->ac97_cocde_num = 1;
 
 	return 0;
 }
@@ -1275,8 +1265,6 @@ static void snd_cmi8788_card_free(struct snd_card *card)
 
 	if (chip->irq >= 0)
 		free_irq(chip->irq, chip);
-
-	kfree(chip->controller);
 
 	pci_release_regions(chip->pci);
 	pci_disable_device(chip->pci);
@@ -1346,11 +1334,11 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	sprintf(card->longname, "%s at 0x%lx, irq %i",
 		card->shortname, chip->addr, chip->irq);
 
-	/* create cmi8788 controller instances */
-	if ((err = snd_cmi8788_controller_create(chip)) < 0) {
-		snd_card_free(card);
-		return err;
-	}
+	/* init_MUTEX(&chip->codec_mutex); */
+
+	/* ŽýÍêÉÆ£¬³õÊŒ»¯ CODEC µÄžöÊý */
+	chip->num_codecs = 5;
+	chip->num_ac97_codecs = 1;
 
 	/* create codec instances */
 	if ((err = snd_cmi8788_codec_create(chip)) < 0) {

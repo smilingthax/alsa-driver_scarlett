@@ -36,10 +36,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/control.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 
 /* record switch */
@@ -57,17 +54,13 @@ static struct cmi8788_input_mux cmi8788_basic_input = {
 	if (!chip)					\
 		return -1;				\
 	private_value = pkcontrol->private_value;	\
-	controller = chip->controller;			\
-	if (!controller)				\
-		return -1;				\
-	codec = controller->codec_list;			\
+	codec = chip->codec_list;			\
 	if (!codec)					\
 		return -1;
 
 static int snd_cmi8788_capture_source_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 
@@ -91,7 +84,6 @@ static int snd_cmi8788_capture_source_info(struct snd_kcontrol *kcontrol, struct
 static int snd_cmi8788_capture_source_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 
@@ -112,7 +104,6 @@ static int snd_cmi8788_capture_source_get(struct snd_kcontrol *kcontrol, struct 
 static int snd_cmi8788_capture_source_put(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 	int val;
@@ -143,7 +134,6 @@ static int snd_cmi8788_capture_source_put(struct snd_kcontrol *kcontrol, struct 
 static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 
@@ -154,22 +144,22 @@ static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_c
 
 	switch (private_value) {
 	case PLAYBACK_MASTER_VOL:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	case PLAYBACK_FRONT_VOL:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	case PLAYBACK_SIDE_VOL:
-		codec = &controller->codec_list[1];
+		codec = &chip->codec_list[1];
 		break;
 	case PLAYBACK_CENTER_VOL:
-		codec = &controller->codec_list[2];
+		codec = &chip->codec_list[2];
 		break;
 	case PLAYBACK_BACK_VOL:
-		codec = &controller->codec_list[3];
+		codec = &chip->codec_list[3];
 		break;
 	default:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	}
 
@@ -193,7 +183,6 @@ static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_c
 static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 
@@ -204,22 +193,22 @@ static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct
 
 	switch (private_value) {
 	case PLAYBACK_MASTER_VOL:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	case PLAYBACK_FRONT_VOL:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	case PLAYBACK_SIDE_VOL:
-		codec = &controller->codec_list[1];
+		codec = &chip->codec_list[1];
 		break;
 	case PLAYBACK_CENTER_VOL:
-		codec = &controller->codec_list[2];
+		codec = &chip->codec_list[2];
 		break;
 	case PLAYBACK_BACK_VOL:
-		codec = &controller->codec_list[3];
+		codec = &chip->codec_list[3];
 		break;
 	default:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	}
 
@@ -238,7 +227,6 @@ static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct
 static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 	int                 codec_num = 0;
@@ -251,7 +239,7 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 
 	GET_POINTER(kcontrol);
 
-	codec_num = chip->controller->codec_num;
+	codec_num = chip->num_codecs;
 	idx  = snd_ctl_get_ioff(kcontrol, &ucontrol->id);
 
 	/* set CODEC register */
@@ -259,22 +247,22 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 	switch (private_value) {
 	case PLAYBACK_MASTER_VOL:
 		setall = 1;
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	case PLAYBACK_FRONT_VOL:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	case PLAYBACK_SIDE_VOL:
-		codec = &controller->codec_list[1];
+		codec = &chip->codec_list[1];
 		break;
 	case PLAYBACK_CENTER_VOL:
-		codec = &controller->codec_list[2];
+		codec = &chip->codec_list[2];
 		break;
 	case PLAYBACK_BACK_VOL:
-		codec = &controller->codec_list[3];
+		codec = &chip->codec_list[3];
 		break;
 	default:
-		codec = &controller->codec_list[0];
+		codec = &chip->codec_list[0];
 		break;
 	}
 
@@ -299,7 +287,7 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 				codec->mixer_ops.set_volume(codec, l_vol, r_vol);
 			}
 		} else {
-			codec = controller->codec_list;
+			codec = chip->codec_list;
 			for (i = 0; i < codec_num; i++) {
 				if (codec && codec->mixer_ops.set_volume && chip->playback_volume_init) {
 					codec->mixer_ops.set_volume(codec, l_vol, r_vol);
@@ -315,7 +303,6 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 
@@ -326,18 +313,18 @@ static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ct
 
 	switch (private_value) {
 	case CAPTURE_MIC_VOL:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = MIC_VOL_SLIDER;
 		break;
 	case CAPTURE_LINEIN_VOL:
-		codec = &controller->codec_list[4];
+		codec = &chip->codec_list[4];
 		break;
 	case CAPTURE_AC97LINE_VOL:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = LINEIN_VOL_SLIDER;
 		break;
 	default:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = MIC_VOL_SLIDER;
 		break;
 	}
@@ -361,7 +348,6 @@ static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ct
 static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 	int l_vol = 0, r_vol = 0;
@@ -373,18 +359,18 @@ static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct 
 
 	switch (private_value) {
 	case CAPTURE_MIC_VOL:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = MIC_VOL_SLIDER;
 		break;
 	case CAPTURE_LINEIN_VOL:
-		codec = &controller->codec_list[4];
+		codec = &chip->codec_list[4];
 		break;
 	case CAPTURE_AC97LINE_VOL:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = LINEIN_VOL_SLIDER;
 		break;
 	default:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = MIC_VOL_SLIDER;
 		break;
 	}
@@ -405,7 +391,6 @@ static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct 
 static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
 	snd_cmi8788        *chip       = NULL;
-	cmi8788_controller *controller = NULL;
 	cmi_codec          *codec      = NULL;
 	unsigned long       private_value = 0;
 	int                 codec_num = 0;
@@ -417,23 +402,23 @@ static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct 
 
 	GET_POINTER(kcontrol);
 
-	codec_num = chip->controller->codec_num;
+	codec_num = chip->num_codecs;
 
 	/* set CODEC register */
 	switch(private_value) {
 	case CAPTURE_MIC_VOL:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = MIC_VOL_SLIDER;
 		break;
 	case CAPTURE_LINEIN_VOL:
-		codec = &controller->codec_list[4];
+		codec = &chip->codec_list[4];
 		break;
 	case CAPTURE_AC97LINE_VOL:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = LINEIN_VOL_SLIDER;
 		break;
 	default:
-		codec = &controller->ac97_codec_list[0];
+		codec = &chip->ac97_codec_list[0];
 		codec->volume_opera_source = MIC_VOL_SLIDER;
 		break;
 	}
@@ -525,9 +510,9 @@ int __devinit snd_cmi8788_mixer_create(snd_cmi8788 *chip)
 	strcpy(card->mixername, "C-Media PCI8788");
 
 	/* for playback and capture CODEC */
-	codec_num = chip->controller->codec_num;
+	codec_num = chip->num_codecs;
 	for (i = 0; i < codec_num; i++) {
-		codec = &(chip->controller->codec_list[i]);
+		codec = &chip->codec_list[i];
 		if (!codec->patch_ops.build_controls)
 			continue;
 
@@ -537,10 +522,10 @@ int __devinit snd_cmi8788_mixer_create(snd_cmi8788 *chip)
 	}
 
 	/* for AC97 CODEC */
-	codec_num = chip->controller->ac97_cocde_num;
+	codec_num = chip->num_ac97_codecs;
 	codec = NULL;
 	for (i = 0; i < codec_num; i++) {
-		codec = &(chip->controller->ac97_codec_list[i]);
+		codec = &chip->ac97_codec_list[i];
 		if (!codec->patch_ops.build_controls)
 			continue;
 

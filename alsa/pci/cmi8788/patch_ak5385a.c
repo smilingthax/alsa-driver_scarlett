@@ -32,10 +32,7 @@
 #include <linux/slab.h>
 #include <linux/pci.h>
 #include <sound/core.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 /*
  * 没有寄存器，不用专门的控制，只需要设置 CMI8788 就可以了
@@ -131,13 +128,7 @@ static int ak5385a_build_pcms(cmi_codec *codec)
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 {
-	cmi8788_controller *controller;
-
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	return 0;
@@ -172,13 +163,7 @@ static int ak5385a_build_controls(cmi_codec *codec)
 
 static int ak5385a_init(cmi_codec *codec)
 {
-	cmi8788_controller *controller;
-
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	codec->addr = CODEC_ADR_AK5385A; /* 0 */

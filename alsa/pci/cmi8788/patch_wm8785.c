@@ -32,10 +32,7 @@
 #include <linux/slab.h>
 #include <linux/pci.h>
 #include <sound/core.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 
 #define WM8785_R0        0x00
@@ -131,13 +128,7 @@ static int wm8785_build_pcms(cmi_codec *codec)
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 {
-	cmi8788_controller *controller;
-
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	return 0;
@@ -172,14 +163,9 @@ static int wm8785_build_controls(cmi_codec *codec)
 /* use SPI */
 static int wm8785_init(cmi_codec *codec)
 {
-	cmi8788_controller *controller;
 	u8 data[3];
 
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	/* 3 bytes */
@@ -193,28 +179,28 @@ static int wm8785_init(cmi_codec *codec)
 	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x01;
 	data[1] = 0x0E;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x03;
 	data[1] = (WM8785_R0 < 1) | 0x00; /* Data Bit-8: 0 */
 	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x20;
 	data[1] = 0x00;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x0A;
 	data[1] = (WM8785_R1 < 1) | 0x00; /* Data Bit-8: 0 */
 	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x00;
 	data[1] = 0x02;
-	controller->ops.spi_cmd(codec, data);
-
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x03;
 	data[1] = (WM8785_R2 < 1) | 0x00; /* Data Bit-8: 0 */
 	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x04;
 	data[1] = 0x03;
+	snd_cmi_send_spi_cmd(codec, data);
 
 	return 0;
 }

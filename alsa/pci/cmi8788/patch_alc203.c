@@ -32,10 +32,7 @@
 #include <linux/slab.h>
 #include <linux/pci.h>
 #include <sound/core.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 
 /*
@@ -128,16 +125,11 @@ static int alc203_build_pcms(cmi_codec *codec)
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vols)
 {
-	cmi8788_controller *controller;
 	u8 l_volume = 0, r_volume = 0;
 	u8 reg_addr;
 	u16 reg_data;
 
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	/* bit5-0  0-3f */
@@ -158,7 +150,7 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vols)
 	reg_data = volume | 0x3f;
 	reg_data = reg_data << 8;
 	reg_data = l_volume | 0x3f;
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	return 0;
 }
@@ -191,15 +183,10 @@ static int alc203_build_controls(cmi_codec *codec)
 
 static int alc203_init(cmi_codec *codec)
 {
-	cmi8788_controller *controller;
 	u8 reg_addr;
 	u16 reg_data;
 
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	codec->addr = 0;
@@ -207,19 +194,19 @@ static int alc203_init(cmi_codec *codec)
 
 	reg_addr = 2; /* master volume */
 	reg_data = 0x3f3f; /* left right channel 94.5dB Attenuation */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	reg_addr = 0xe; /* Mic volume */
 	reg_data = 0x0000; /* left right channel +12dB Attenuation */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	reg_addr = 0x1a; /* record select */
 	reg_data = 0x00; /* default Mic in */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	reg_addr = 0x1c; /* Record Gain Registers */
 	reg_data = 0x0f0f; /* left right channel 22.5 dB gain */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	return 0;
 }

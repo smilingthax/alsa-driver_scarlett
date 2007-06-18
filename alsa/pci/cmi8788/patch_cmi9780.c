@@ -32,10 +32,7 @@
 #include <linux/slab.h>
 #include <linux/pci.h>
 #include <sound/core.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 
 /*
@@ -151,7 +148,6 @@ static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
 
 static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 {
-	cmi8788_controller *controller;
 	int l_volume = 0, r_volume = 0;
 	u32 val32 = 0;
 	u8 reg_addr = 0x0E; /* Mic volume */
@@ -159,9 +155,6 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 	int opera_source = MIC_VOL_SLIDER;
 
 	if (!codec)
-		return -1;
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	/* bit4-0  0-1f */
@@ -202,7 +195,7 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 	reg_data |= r_volume;
 	reg_data |= l_volume << 8;
 
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	return 0;
 }
@@ -243,14 +236,9 @@ static int cmi9780_build_controls(cmi_codec *codec)
 
 static int cmi9780_init(cmi_codec *codec)
 {
-	cmi8788_controller *controller;
 	int i = 0;
 
 	if (!codec)
-		return -1;
-
-	controller = codec->controller;
-	if (!controller)
 		return -1;
 
 	codec->addr = 0;
@@ -259,19 +247,19 @@ static int cmi9780_init(cmi_codec *codec)
 #if 0
 	u8 reg_addr = 2; /* master volume */
 	u16 reg_data = 0x1f1f; /* left right channel 46.5dB Attenuation */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	reg_addr = 0xe; /* Mic volume */
 	reg_data = 0x0000; /* left right channel +12dB Attenuation */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	reg_addr = 0x1a; /* record select */
 	reg_data = 0x00; /* default Mic in */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 
 	reg_addr = 0x1c; /* Record Gain Registers */
 	reg_data = 0x0f0f; /* left right channel 22.5 dB gain */
-	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
+	snd_cmi_send_AC97_cmd(codec, reg_addr, reg_data);
 #endif
 	codec->left_vol  = 8;
 	codec->right_vol = 8;

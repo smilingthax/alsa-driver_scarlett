@@ -32,10 +32,7 @@
 #include <linux/slab.h>
 #include <linux/pci.h>
 #include <sound/core.h>
-
 #include "cmi8788.h"
-#include "codec.h"
-#include "cmi_controller.h"
 
 
 #define AK4396_CTL1        0x00
@@ -145,15 +142,15 @@ static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 {
+	snd_cmi8788 *chip;
 	u8 data[2];
 	int l_volume = 0, r_volume = 0;
-	cmi8788_controller *controller;
 
 	if (!codec)
 		return -1;
 
-	controller = codec->controller;
-	if (!controller)
+	chip = codec->chip;
+	if (!chip)
 		return -1;
 
 	l_volume = l_vol;
@@ -170,12 +167,12 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 	data[0] = (u8)l_volume;
 	/* 001xxxxx Binary */
 	data[1] = AK4396_LchATTCtl | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 	/* udelay(10); */
 
 	data[0] = (u8)r_volume;
 	data[1] = AK4396_RchATTCtl | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 	/* udelay(10); */
 
 	codec->left_vol  = l_volume;
@@ -220,40 +217,35 @@ static int ak4396_build_controls(cmi_codec *codec)
 
 static int ak4396_init(cmi_codec *codec)
 {
-	cmi8788_controller *controller;
 	u8 data[2];
 
 	if (!codec)
 		return -1;
 
 #if 1
-	controller = codec->controller;
-	if (!controller)
-		return -1;
-
 	codec->reg_len_flag = 0;
 	codec->left_vol  = 255;
 	codec->right_vol = 255;
 
 	data[0] = 0x05; /* DIF2 DIF1 DIF0: 010 24Bit MSB justified */
 	data[1] = AK4396_CTL1 | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x02; /* DEM1 DEM0 : 01 off */
 	data[1] = AK4396_CTL2 | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x00; /* default */
 	data[1] = AK4396_CTL3 | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = (u8)codec->left_vol;
 	data[1] = AK4396_LchATTCtl | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = (u8)codec->right_vol;
 	data[1] = AK4396_RchATTCtl | 0x20;
-	controller->ops.spi_cmd(codec, data);
+	snd_cmi_send_spi_cmd(codec, data);
 #endif
 
 	return 0;
