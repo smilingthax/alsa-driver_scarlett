@@ -119,8 +119,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	u8 val8  = 0;
 	int err;
 
-	cmi_printk((">> cmi8788_init_controller_chip chip 0x%0x\n", chip));
-
 	if (!chip)
 		return 0;
 
@@ -146,23 +144,13 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	/* Function Register */
 	/* reset CODEC */
 	val8 = snd_cmipci_read_b(chip, PCI_Fun);
-	cmi_printk(("  PCI_Fun Read-1 Reg 0x%0x = 0x%0x\n", PCI_Fun, val8));
 	val8 = val8 | 0x02; /* Bit1 set 1, RST_CODEC */
 	val8 = val8 | 0x80; /* Bit7 set 1, The function switch of pins, 1: select SPI chip 4, 5 enable function */
-
-	cmi_printk(("  PCI_Fun Write  Reg 0x%0x = 0x%0x\n", PCI_Fun, val8));
 	snd_cmipci_write_b(chip, val8, PCI_Fun);
-	val8 = snd_cmipci_read_b(chip, PCI_Fun);
-	cmi_printk(("  PCI_Fun Read-2 Reg 0x%0x = 0x%0x\n", PCI_Fun, val8));
 
 	/* initialize registers */
-	val16 = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt);
-	cmi_printk(("  I2S_Multi_DAC_Fmt Read-1 Reg 0x%0x = 0x%0x\n", I2S_Multi_DAC_Fmt, val16));
 	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
 	snd_cmipci_write_w(chip, val16, I2S_Multi_DAC_Fmt);
-	val16 = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt);
-	cmi_printk(("  I2S_Multi_DAC_Fmt Read-2 Reg 0x%0x = 0x%0x\n", I2S_Multi_DAC_Fmt, val16));
-
 	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
 	snd_cmipci_write_w(chip, val16, I2S_ADC1_Fmt);
 	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
@@ -172,46 +160,22 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 
 	/* Digital Routing and Monitoring Registers */
 	/* Playback Routing Register C0 */
-	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	cmi_printk(("  Mixer_PlayRouting Read-1 Reg 0x%0x = 0x%0x\n", Mixer_PlayRouting, val16));
 	val16 = 0xE400;
 	snd_cmipci_write_w(chip, val16, Mixer_PlayRouting);
-	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	cmi_printk(("  Mixer_PlayRouting Read-2 Reg 0x%0x = 0x%0x\n", Mixer_PlayRouting, val16));
 
 	/* Recording Routing Register C2 */
-	val8 = snd_cmipci_read_b(chip, Mixer_RecRouting);
-	cmi_printk(("  Mixer_RecRouting Read-1 Reg 0x%0x = 0x%0x\n", Mixer_RecRouting, val8));
 	val8 = 0x00;
 	snd_cmipci_write_b(chip, val8, Mixer_RecRouting);
-	val8 = snd_cmipci_read_b(chip, Mixer_RecRouting);
-	cmi_printk(("  Mixer_RecRouting Read-2 Reg 0x%0x = 0x%0x\n", Mixer_RecRouting, val8));
 	/* ADC Monitoring Control Register C3 */
-	val8 = snd_cmipci_read_b(chip, Mixer_ADCMonitorCtrl);
-	cmi_printk(("  Mixer_ADCMonitorCtrl Read-1 Reg 0x%0x = 0x%0x\n", Mixer_ADCMonitorCtrl, val8));
 	val8 = 0x00;
 	snd_cmipci_write_b(chip, val8, Mixer_ADCMonitorCtrl);
-	val8 = snd_cmipci_read_b(chip, Mixer_ADCMonitorCtrl);
-	cmi_printk(("  Mixer_ADCMonitorCtrl Read-2 Reg 0x%0x = 0x%0x\n", Mixer_ADCMonitorCtrl, val8));
 	/* Routing of Monitoring of Recording Channel A Register C4 */
-	val8 = snd_cmipci_read_b(chip, Mixer_RoutOfRecMoniter);
-	cmi_printk(("  Mixer_RoutOfRecMoniter Read-1 Reg 0x%0x = 0x%0x\n", Mixer_RoutOfRecMoniter, val8));
 	val8 = 0xe4;
 	snd_cmipci_write_b(chip, val8, Mixer_RoutOfRecMoniter);
-	val8 = snd_cmipci_read_b(chip, Mixer_RoutOfRecMoniter);
-	cmi_printk(("  Mixer_RoutOfRecMoniter Read-2 Reg 0x%0x = 0x%0x\n", Mixer_RoutOfRecMoniter, val8));
 
 	/* AC97 */
-	val8 = snd_cmipci_read(chip, AC97StatuCtrl);
-	cmi_printk(("  AC97StatuCtrl Read-1 Reg 0x%0x = 0x%0x\n", AC97StatuCtrl, val8));
-	val32 = snd_cmipci_read(chip, AC97OutChanCfg);
-	cmi_printk(("  AC97OutChanCfg Read-1 Reg 0x%0x = 0x%0x\n", AC97OutChanCfg, val32));
-	val32 = snd_cmipci_read(chip, AC97InChanCfg1);
-	cmi_printk(("  AC97InChanCfg1 Read-1 Reg 0x%0x = 0x%0x\n", AC97InChanCfg1, val32));
 	val32 = 0x00000000;
 	snd_cmipci_write_b(chip, val32, AC97InChanCfg1);
-	val32 = snd_cmipci_read(chip, AC97InChanCfg1);
-	cmi_printk(("  AC97InChanCfg1 Read-2 Reg 0x%0x = 0x%0x\n", AC97InChanCfg1, val32));
 
 	/* initialize CODEC */
 	codec_num = chip->controller->codec_num;
@@ -219,11 +183,8 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	/* codec callback routine */
 	for (i = 0; i < codec_num; i++) {
 		codec = &(chip->controller->codec_list[i]);
-		cmi_printk(("codec_list[%d] addr 0x%0x\n", i, codec));
-
 		if (!codec->patch_ops.init)
 			continue;
-
 		err = codec->patch_ops.init(codec);
 		if (err < 0)
 			return err;
@@ -239,37 +200,12 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 = 0x00F00000;
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
-	val32 = snd_cmipci_read(chip, AC97InChanCfg2);
-	cmi_printk(("  AC97InChanCfg2 Read  Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
-	udelay(150);
 
 	val32 = 0; /* Bit 31-24 */
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x70 << 16; /* Register 0x70 */
 	val32 |= 0x0100; /* Bit-8 set 1: record by MIC */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	udelay(150);
-
-	/* read 70H */
-	val32 = 0x00F00000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	val32 = snd_cmipci_read(chip, AC97InChanCfg2);
-	cmi_printk(("  AC97InChanCfg2 Read  Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
-	udelay(150);
-
-	/* read 7CH */
-	val32 = 0x00FC0000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	val32 = snd_cmipci_read(chip, AC97InChanCfg2);
-	cmi_printk(("  AC97InChanCfg2 Read  Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
-	udelay(150);
-
-	/* read 7EH */
-	val32 = 0x00FE0000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
-	val32 = snd_cmipci_read(chip, AC97InChanCfg2);
-	cmi_printk(("  AC97InChanCfg2 Read  Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	udelay(150);
 
 	/* LI2LI,MIC2MIC; let them always on, FOE on, ROE/BKOE/CBOE off */
@@ -277,7 +213,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x62 << 16; /* Register 0x62 */
 	val32 |= 0x1808; /* 0x180f */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -286,7 +221,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /*Bit-23: 0 write */
 	val32 |= 0x02 << 16; /* Register 0x02 */
 	val32 |= 0x0000;
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -295,7 +229,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x64 << 16; /* Register 0x64 */
 	val32 |= 0x8040;
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -304,7 +237,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x0A << 16; /* Register 0x0A */
 	val32 |= 0x8000;
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -314,7 +246,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x1A << 16; /* Register 0x1A */
 	val32 |= 0x0000; /* 0000 : Mic in */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -323,7 +254,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x0E << 16; /* Register 0x0E */
 	val32 |= 0x0808; /* 0x0808 : 0dB */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -332,7 +262,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x12 << 16; /* Register 0x12 */
 	val32 |= 0x8808; /* 0x0808 : 0dB */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -341,7 +270,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x10 << 16; /* Register 0x10 */
 	val32 |= 0x8808; /* 0x0808 : 0dB */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -350,7 +278,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x16 << 16;/* Register 0x16 */
 	val32 |= 0x8808; /* 0x0808 : 0dB */
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -359,7 +286,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	val32 &= 0xff000000; /* Bit-23: 0 write */
 	val32 |= 0x72 << 16; /* Register 0x72 */
 	val32 |= 0x0000;
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	snd_cmipci_write(chip, val32, AC97InChanCfg2);
 	udelay(150);
 
@@ -371,9 +297,6 @@ static int cmi8788_init_controller_chip(snd_cmi8788 *chip)
 	/* snd_cmipci_write(chip, val32, AC97InChanCfg2); */
 	/* udelay(150); */
 #endif
-
-	cmi_printk(("<< cmi8788_init_controller_chip\n"));
-
 	return 0;
 }
 
@@ -393,14 +316,10 @@ static int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
 	if (!codec || !data)
 		return -1;
 
-	cmi_printk(("  >>snd_cmi_send_spi_cmd\n"));
 	chip = codec->controller->private_data;
 
 	switch (codec->reg_len_flag) {
 	case 0: /* 2bytes */
-		cmi_printk(("   SPI_Data Reg:0x%0x, Val: 0x%0x\n", SPI_Data+0, data[0]));
-		cmi_printk(("   SPI_Data Reg:0x%0x, Val: 0x%0x\n", SPI_Data+1, data[1]));
-
 		snd_cmipci_write_b(chip, data[0], SPI_Data + 0); /* byte */
 		snd_cmipci_write_b(chip, data[1], SPI_Data + 1); /* byte */
 		break;
@@ -429,13 +348,9 @@ static int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data)
 	ctrl &= 0xfe;
 	ctrl |= 0x01;
 
-	cmi_printk(("   SPI_Ctrl Reg:0x%0x, Val: 0x%0x\n", SPI_Ctrl, ctrl));
 	snd_cmipci_write_b(chip, ctrl, SPI_Ctrl);
 
 	udelay(50);
-
-	cmi_printk(("  <<snd_cmi_send_spi_cmd\n\n"));
-
 	return 0;
 }
 
@@ -621,92 +536,48 @@ static int cmi_pcm_close(struct snd_pcm_substream *substream, int cmi_pcm_no, in
 
 static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
 {
-	cmi_printk((">> snd_cmi_pcm_playback_open\n"));
-
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_PLAYBACK);
-
-	cmi_printk(("<< snd_cmi_pcm_playback_open\n"));
-
 	return 0;
 }
 
 static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 {
-	cmi_printk((">> snd_cmi_pcm_capture_open\n"));
-
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_CAPTURE);
-
-	cmi_printk(("<< snd_cmi_pcm_capture_open\n"));
-
 	return 0;
 }
 
 static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 {
-	cmi_printk((">> snd_cmi_pcm_ac97_playback_open\n"));
-
 	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
-
-	cmi_printk(("<< snd_cmi_pcm_ac97_playback_open\n"));
 	return 0;
 }
 
 static int snd_cmi_pcm_playback_close(struct snd_pcm_substream *substream)
 {
-	cmi_printk((">> snd_cmi_pcm_playback_close\n"));
-
 	cmi_pcm_close(substream, NORMAL_PCMS, CMI_PLAYBACK);
-
-	cmi_printk(("<< snd_cmi_pcm_playback_close\n"));
-
 	return 0;
 }
 
 static int snd_cmi_pcm_capture_close(struct snd_pcm_substream *substream)
 {
-	cmi_printk(("<< snd_cmi_pcm_capture_close\n"));
-
 	cmi_pcm_close(substream, NORMAL_PCMS, CMI_CAPTURE);
-
-	cmi_printk(("<< snd_cmi_pcm_capture_close\n"));
-
 	return 0;
 }
 
 static int snd_cmi_pcm_ac97_playback_close(struct snd_pcm_substream *substream)
 {
-	cmi_printk((">> snd_cmi_pcm_ac97_playback_close\n"));
-
 	cmi_pcm_close(substream, AC97_PCMS, CMI_PLAYBACK);
-
-	cmi_printk(("<< snd_cmi_pcm_ac97_playback_close\n"));
-
 	return 0;
 }
 
 static int snd_cmi_pcm_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
 {
-	int iRet = 0;
-
-	cmi_printk((">> snd_cmi_pcm_hw_params\n"));
-
-	iRet = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
-
-	cmi_printk(("<< snd_cmi_pcm_hw_params(iRet %d)\n", iRet));
-
-	return iRet;
+	return snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 }
 
 static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	int iRet = 0;
-	cmi_printk((">> snd_cmi_pcm_hw_free\n"));
-
-	iRet = snd_pcm_lib_free_pages(substream);
-
-	cmi_printk(("<< snd_cmi_pcm_hw_free(iRet %d)\n",iRet));
-
-	return iRet;
+	return snd_pcm_lib_free_pages(substream);
 }
 
 static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
@@ -721,8 +592,6 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	u16 I2SFmt;
 	u8 PlyDmaMode;
 
-	cmi_printk((">> snd_cmi_pcm_playback_prepare\n"));
-
 	cmi_subs->dma_area  = (u32)runtime->dma_area;
 	cmi_subs->dma_addr  = runtime->dma_addr;
 	cmi_subs->dma_bytes = runtime->dma_bytes;
@@ -733,21 +602,10 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	cmi_subs->frame_bits= runtime->frame_bits;
 	cmi_subs->sample_bits=runtime->sample_bits;
 
-	cmi_printk(("  channel %d, rate %d, frame_bits %d,sample_bits %d, width %d\n",
-		    runtime->channels, runtime->rate,
-		    runtime->frame_bits, runtime->sample_bits,
-		    snd_pcm_format_width(runtime->format)) );
-
-	cmi_printk(("  runtime: dma_bytes=0x%x, fragsize=0x%x\n",
-		    runtime->dma_bytes, cmi_subs->fragsize));
-
 	/* Digital Routing and Monitoring Registers */
 	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	cmi_printk(("  Mixer_PlayRouting Read-1 Reg 0x%0x = 0x%0x\n", Mixer_PlayRouting, val16));
 	val16 &= ~0x0010; /* Bit4 clear 0 */
 	snd_cmipci_write_w(chip, val16, Mixer_PlayRouting);
-	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	cmi_printk(("  Mixer_PlayRouting Read-2 Reg 0x%0x = 0x%0x\n", Mixer_PlayRouting, val16));
 
 	/* set DMA Multi-Channel Playback DMA buffer addr length and fragsize */
 	snd_cmipci_write(chip, cmi_subs->dma_addr , PCI_DMAPlay_MULTI_BaseAddr);
@@ -761,8 +619,6 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt);
 	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt);
 
-	cmi_printk(("  PCI_PlaySampleFmCvt Reg0x%0x, Read-1 0x%0x\n", PCI_PlaySampleFmCvt, fmt));
-	cmi_printk(("  I2S_Multi_DAC_Fmt   Reg0x%0x, Read-1 0x%0x\n", I2S_Multi_DAC_Fmt, I2SFmt));
 	switch (cmi_subs->sample_bits) {
 	case 16:
 		fmt &= 0xf3;
@@ -791,21 +647,10 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 
 	snd_cmipci_write_w(chip, I2SFmt, I2S_Multi_DAC_Fmt);
 
-	/* for debug */
-	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt);
-	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt);
-	cmi_printk(("  PCI_PlaySampleFmCvt Reg0x%0x, Read-2 0x%0x\n", PCI_PlaySampleFmCvt, fmt));
-	cmi_printk(("  I2S_Multi_DAC_Fmt   Reg0x%0x, Read-2 0x%0x\n", I2S_Multi_DAC_Fmt, I2SFmt));
-	/* end for debug */
-
 	/* set I2S sample rate */
 
 	/* Multi-Channel DMA Mode */
 	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE);
-	cmi_printk(("  PCI_MULTI_DMA_MODE Reg0x%0x, Read-1 0x%0x\n", PCI_MULTI_DMA_MODE, PlyDmaMode));
-	if (codec)
-		cmi_printk((" codec[0].pcm_substream[0].ops.prepare 0x%0x\n", codec[0].pcm_substream[0].ops.prepare) );
-
 	switch (cmi_subs->channels) {
 	case 2:
 		/* Bit 1:0  00 */
@@ -842,13 +687,6 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	}
 	snd_cmipci_write_b(chip, PlyDmaMode, PCI_MULTI_DMA_MODE);
 
-	/* for debug */
-	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE);
-	cmi_printk(("  PCI_MULTI_DMA_MODE Reg0x%0x, Read-2 0x%0x\n", PCI_MULTI_DMA_MODE, PlyDmaMode));
-	/* end for debug */
-
-	cmi_printk(("<< snd_cmi_pcm_playback_prepare\n"));
-
 	return 0;
 }
 
@@ -863,8 +701,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	u16 I2SFmt = 0;
 	u8 RecDmaMode;
 
-	cmi_printk((">> snd_cmi_pcm_capture_prepare\n"));
-
 	cmi_subs->dma_area  = (u32)runtime->dma_area;
 	cmi_subs->dma_addr  = runtime->dma_addr;
 	cmi_subs->dma_bytes = runtime->dma_bytes;
@@ -875,27 +711,16 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	cmi_subs->frame_bits= runtime->frame_bits;
 	cmi_subs->sample_bits=runtime->sample_bits;
 
-	cmi_printk(("  channel %d, rate %d, frame_bits %d,sample_bits %d, width %d\n",
-		    runtime->channels, runtime->rate,
-		    runtime->frame_bits, runtime->sample_bits,
-		    snd_pcm_format_width(runtime->format)) );
-
-	cmi_printk(("  bufsize=0x%x, fragsize=0x%x\n", runtime->dma_bytes, cmi_subs->fragsize));
-
 	/* set DMA Recording Channel A DMA buffer addr length and fragsize */
 	snd_cmipci_write(chip, cmi_subs->dma_addr, PCI_DMARec_A_BaseAddr);
 	snd_cmipci_write_w(chip, cmi_subs->dma_bytes / 4 - 1, PCI_DMARec_A_BaseCount); /* d-word units */
 	snd_cmipci_write_w(chip, cmi_subs->fragsize / 4 - 1, PCI_DMARec_A_BaseTCount); /* d-word units old */
 	/* snd_cmipci_write_w(chip, cmi_subs->dma_bytes / 8 - 1, PCI_DMARec_A_BaseTCount); // d-word units */
 
-	cmi_printk(("  write_1 PCI_DMARec_A_BaseCount (Reg 0x%x) Val 0x%x\n",PCI_DMARec_A_BaseCount, (cmi_subs->dma_bytes/4)-1));
-	cmi_printk(("  write_1 PCI_DMARec_A_BaseTCount(Reg 0x%x) Val 0x%x\n",PCI_DMARec_A_BaseTCount, (cmi_subs->fragsize/4)-1));
-
 	/* Sample Format Convert for Recording Channels */
 	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt);
 	/* I2S ADC 1 Format Register */
 	I2SFmt = snd_cmipci_read_w(chip, I2S_ADC1_Fmt);
-	cmi_printk(("  read_1 PCI_RecSampleFmtCvt(Reg 0x%x) Val 0x%x; I2S_ADC1_Fmt(Reg 0x%x) Val 0x%x\n",PCI_RecSampleFmtCvt, fmt,I2S_ADC1_Fmt, I2SFmt));
 
 	switch (cmi_subs->sample_bits) {
 	case 16:
@@ -924,13 +749,10 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 
 	snd_cmipci_write_b(chip, fmt,PCI_RecSampleFmtCvt);
 	snd_cmipci_write_w(chip, I2SFmt,I2S_ADC1_Fmt);
-	cmi_printk(("  write_1 PCI_RecSampleFmtCvt(Reg 0x%x) Val 0x%x; I2S_ADC1_Fmt(Reg 0x%x) Val 0x%x\n",PCI_RecSampleFmtCvt, fmt,I2S_ADC1_Fmt, I2SFmt));
 
 	/* set I2S sample rate */
 
 	RecDmaMode = snd_cmipci_read_b(chip, PCI_RecDMA_Mode);
-	cmi_printk(("  read_1 PCI_RecDMA_Mode(Reg 0x%x) Val 0x%x\n",PCI_RecDMA_Mode, RecDmaMode));
-
 	switch (cmi_subs->channels) {
 	case 2:
 		/* Bit 2:0 000 */
@@ -955,9 +777,7 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	default:
 		break;
 	}
-
 	snd_cmipci_write_b(chip, RecDmaMode, PCI_RecDMA_Mode);
-	cmi_printk(("  write_1 PCI_RecDMA_Mode(Reg 0x%x) Val 0x%x\n",PCI_RecDMA_Mode, RecDmaMode));
 
 	switch (chip->capture_source) {
 	case CAPTURE_AC97_MIC:
@@ -966,7 +786,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x0E << 16; /* Register 0x0E */
 		val32 |= 0x0808; /* 0x0808 : 0dB */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 		udelay(150);
 
@@ -975,7 +794,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x10 << 16; /* Register 0x10 */
 		val32 |= 0x8808; /* 0x0808 : 0dB */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 		udelay(150);
 
@@ -984,7 +802,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x1A << 16; /* Register 0x1A */
 		val32 |= 0x0000; /* 0000 : Mic in */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 
 		val32 = 0x00720001; /* Record throug Mic */
@@ -997,7 +814,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x0E << 16; /* Register 0x0E */
 		val32 |= 0x8808; /* 0x0808 : 0dB */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 		udelay(150);
 
@@ -1006,7 +822,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x10 << 16; /* Register 0x10 */
 		val32 |= 0x0808; /* 0x0808 : 0dB */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 		udelay(150);
 
@@ -1015,7 +830,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x1A << 16; /* Register 0x1A */
 		val32 |= 0x0000; /* 0404 : Ac97 Line in */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 
 		val32 = 0x00720001; /* Record throug AC97 Line in */
@@ -1029,7 +843,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 |= 0x0E << 16;/* Register 0x0E */
 		val32 |= 0x80808; /* 0x0808 : 0dB */
 		/* FIXME: value should be 0x8808? */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 		udelay(150);
 
@@ -1038,7 +851,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		val32 &= 0xff000000; /* Bit-23: 0 write */
 		val32 |= 0x10 << 16; /* Register 0x10 */
 		val32 |= 0x8808; /* 0x0808 : 0dB */
-		cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 		snd_cmipci_write(chip, val32, AC97InChanCfg2);
 		udelay(150);
 
@@ -1047,8 +859,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		udelay(150);
 		break;
 	}
-
-	cmi_printk(("<< snd_cmi_pcm_capture_prepare\n"));
 
 	return 0;
 }
@@ -1061,8 +871,6 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	u16 val16 = 0;
 	u32 val32 = 0;
 
-	cmi_printk((">> snd_cmi_pcm_ac97_playback_prepare\n"));
-
 	cmi_subs->dma_area  = (u32)runtime->dma_area;
 	cmi_subs->dma_addr  = runtime->dma_addr;
 	cmi_subs->dma_bytes = runtime->dma_bytes;
@@ -1073,20 +881,10 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	cmi_subs->frame_bits= runtime->frame_bits;
 	cmi_subs->sample_bits=runtime->sample_bits;
 
-	cmi_printk(("  channel %d, rate %d, frame_bits %d,sample_bits %d, width %d\n",
-		    runtime->channels, runtime->rate,
-		    runtime->frame_bits, runtime->sample_bits,
-		    snd_pcm_format_width(runtime->format)) );
-
-	cmi_printk(("  bufsize=0x%x, fragsize=0x%x\n", runtime->dma_bytes, cmi_subs->fragsize));
-
 	/* Digital Routing and Monitoring Registers */
 	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	cmi_printk(("  Mixer_PlayRouting Read-1 Reg 0x%0x = 0x%0x\n", Mixer_PlayRouting, val16));
 	val16 |= 0x0010; /* Bit4 set 1 */
 	snd_cmipci_write_w(chip, val16, Mixer_PlayRouting);
-	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	cmi_printk(("  Mixer_PlayRouting Read-2 Reg 0x%0x = 0x%0x\n", Mixer_PlayRouting, val16));
 
 	/* AC'97 Output Channel Configuration Register */
 	val32 = snd_cmipci_read(chip, AC97OutChanCfg);
@@ -1097,11 +895,6 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	snd_cmipci_write(chip, cmi_subs->dma_addr , PCI_DMAPlay_Front_BaseAddr);
 	snd_cmipci_write_w(chip, cmi_subs->dma_bytes / 4 - 1, PCI_DMAPlay_Front_BaseCount); /* d-word units */
 	snd_cmipci_write_w(chip, cmi_subs->fragsize / 4 - 1, PCI_DMAPlay_Front_BaseTCount); /* d-word units */
-
-	cmi_printk(("  write_1 PCI_DMAPlay_Front_BaseCount (Reg 0x%x) Val 0x%x\n",PCI_DMAPlay_Front_BaseCount, (cmi_subs->dma_bytes/4)-1));
-	cmi_printk(("  write_1 PCI_DMAPlay_Front_BaseTCount(Reg 0x%x) Val 0x%x\n",PCI_DMAPlay_Front_BaseTCount, (cmi_subs->fragsize/4)-1));
-
-	cmi_printk(("<< snd_cmi_pcm_ac97_playback_prepare\n"));
 	return 0;
 }
 
@@ -1119,10 +912,6 @@ static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, 
 	int_val = snd_cmipci_read_w(chip, PCI_IntMask);
 	int_stat = snd_cmipci_read_w(chip, PCI_DMA_SetStatus);
 
-	int_val = snd_cmipci_read_w(chip, PCI_IntMask);
-	int_stat = snd_cmipci_read_w(chip, PCI_DMA_SetStatus);
-	cmi_printk(("  read_1 PCI_IntMask(Reg 0x%x) Val 0x%x; PCI_DMA_SetStatus(Reg 0x%x) Val 0x%x\n",PCI_IntMask, int_val, PCI_DMA_SetStatus, int_stat));
-
 	if (chip->CMI8788IC_revision == CMI8788IC_Revision1)
 		DMARestRegister = PCI_DMA_Reset;
 	if (chip->CMI8788IC_revision == CMI8788IC_Revision2)
@@ -1136,22 +925,17 @@ static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, 
 
 		/* Reset DMA Channel*/
 		reset = snd_cmipci_read_b(chip, DMARestRegister);
-		cmi_printk(("  read_1 PCI_DMA_Reset(Reg 0x%x) Val 0x%x\n",DMARestRegister, reset));
 		reset |= cmi_subs->DMA_chan_reset; /* set bit */
-		cmi_printk(("  write_1 PCI_DMA_Reset(Reg 0x%x) Val 0x%x\n",DMARestRegister, reset));
 		snd_cmipci_write_b(chip, reset, DMARestRegister);
 		reset &= ~cmi_subs->DMA_chan_reset; /*clear bit */
-		cmi_printk(("  write_2 PCI_DMA_Reset(Reg 0x%x) Val 0x%x\n",DMARestRegister, reset));
 		snd_cmipci_write_b(chip, reset, DMARestRegister);
 
 		/* enable Interrupt */
 		int_val |= cmi_subs->int_mask; /* Set Bit-1 Interrupt for Recording DMA Channel A is enabled */
-		cmi_printk(("  write_1 PCI_IntMask(Reg 0x%x) Val 0x%x\n",PCI_IntMask, int_val));
 		snd_cmipci_write_w(chip, int_val, PCI_IntMask);
 
 		/* Set PCI DMA Channel state -- Start*/
 		int_stat |= cmi_subs->DMA_sta_mask; /* PCI DMA Channel Start/Pause/Stop Bit-0 set 1 */
-		cmi_printk(("  write_1 PCI_DMA_SetStatus(Reg 0x%x) Val 0x%x\n",PCI_DMA_SetStatus, int_stat));
 		snd_cmipci_write_w(chip, int_stat, PCI_DMA_SetStatus);
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
@@ -1161,12 +945,10 @@ static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, 
 		/* Set PCI DMA Channel state -- Stop*/
 		int_stat &= ~cmi_subs->DMA_sta_mask; /* PCI DMA Channel Start/Pause/Stop Bit-0 clear */
 		snd_cmipci_write_w(chip, int_stat, PCI_DMA_SetStatus);
-		cmi_printk(("  write_1 PCI_DMA_SetStatus(Reg 0x%x) Val 0x%x\n",PCI_DMA_SetStatus, int_stat));
 
 		/* disable interrupt */
 		int_val &= ~cmi_subs->int_mask; /* Clear Interrupt for Recording DMA Channel A is disabled */
 		snd_cmipci_write_w(chip, int_val, PCI_IntMask);
-		cmi_printk(("  write_1 PCI_IntMask(Reg 0x%x) Val 0x%x\n",PCI_IntMask, int_val));
 		break;
 	default:
 		err = -EINVAL;
@@ -1177,38 +959,17 @@ static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, 
 
 static int snd_cmi_pcm_playback_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	int err = 0;
-	cmi_printk((">> snd_cmi_pcm_playback_trigger\n"));
-
-	err = cmi_pcm_trigger(substream, NORMAL_PCMS, CMI_PLAYBACK, cmd);
-
-	cmi_printk(("<< snd_cmi_pcm_playback_trigger\n"));
-
-	return err;
+	return cmi_pcm_trigger(substream, NORMAL_PCMS, CMI_PLAYBACK, cmd);
 }
 
 static int snd_cmi_pcm_capture_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	int err = 0;
-	cmi_printk((">> snd_cmi_pcm_capture_trigger\n"));
-
-	err = cmi_pcm_trigger(substream, NORMAL_PCMS, CMI_CAPTURE, cmd);
-
-	cmi_printk(("<< snd_cmi_pcm_capture_trigger\n"));
-
-	return err;
+	return cmi_pcm_trigger(substream, NORMAL_PCMS, CMI_CAPTURE, cmd);
 }
 
 static int snd_cmi_pcm_ac97_playback_trigger(struct snd_pcm_substream *substream, int cmd)
 {
-	int err = 0;
-	cmi_printk((">> snd_cmi_pcm_ac97_playback_trigger\n"));
-
-	err = cmi_pcm_trigger(substream, AC97_PCMS, CMI_PLAYBACK, cmd);
-
-	cmi_printk(("<< snd_cmi_pcm_ac97_playback_trigger\n"));
-
-	return err;
+	return cmi_pcm_trigger(substream, AC97_PCMS, CMI_PLAYBACK, cmd);
 }
 
 static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *substream)
@@ -1279,11 +1040,7 @@ static struct snd_pcm_ops snd_cmi_pcm_ac97_playback_ops = {
 
 static void snd_cmi_pcm_free(struct snd_pcm *pcm)
 {
-	cmi_printk((">> snd_cmi_pcm_free\n"));
-
 	snd_pcm_lib_preallocate_free_for_all(pcm);
-
-	cmi_printk(("<< snd_cmi_pcm_free\n"));
 }
 
 
@@ -1362,8 +1119,6 @@ static int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
 
 	if (!chip)
 		return 0;
-
-	cmi_printk((">> snd_cmi8788_pcm_create\n"));
 
 	controller = chip->controller;
 	if (!controller)
@@ -1453,8 +1208,6 @@ static int __devinit snd_cmi8788_pcm_create(snd_cmi8788 *chip)
 
 	chip->PCM_Count = pcm_dev;
 
-	cmi_printk(("<< snd_cmi8788_pcm_create(iRet %d)\n", iRet));
-
 	return 0;
 }
 
@@ -1468,8 +1221,6 @@ static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
 
 	if (!chip)
 		return 0;
-
-	cmi_printk((">> snd_cmi8788_codec_create\n"));
 
 	controller = chip->controller;
 
@@ -1486,8 +1237,6 @@ static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
 	/* initialize chip */
 	cmi8788_init_controller_chip(chip);
 
-	cmi_printk(("<< snd_cmi8788_codec_create\n"));
-
 	return 0;
 }
 
@@ -1498,8 +1247,6 @@ static int __devinit snd_cmi8788_controller_create(snd_cmi8788 *chip)
 
 	if (!chip)
 		return 0;
-
-	cmi_printk((">> snd_cmi8788_controller_create\n"));
 
 	memset(&bus_temp, 0, sizeof(bus_temp));
 	bus_temp.private_data     = chip;
@@ -1516,8 +1263,6 @@ static int __devinit snd_cmi8788_controller_create(snd_cmi8788 *chip)
 	chip->controller->codec_num = 5; /* */
 	chip->controller->ac97_cocde_num = 1;
 
-	cmi_printk(("<< snd_cmi8788_controller_create\n"));
-
 	return 0;
 }
 
@@ -1526,18 +1271,13 @@ static int __devinit snd_cmi8788_controller_create(snd_cmi8788 *chip)
  */
 static int snd_cmi8788_free(snd_cmi8788 *chip)
 {
-	cmi_printk((">> snd_cmi8788_free\n"));
-
 	if (!chip)
 		return 0;
 
 	if (chip->irq >= 0)
 		free_irq(chip->irq, chip);
 
-	if (chip->controller) {
-		cmi_printk(("  free controller 0x%0x\n", chip->controller));
-		kfree(chip->controller);
-	}
+	kfree(chip->controller);
 	chip->controller = NULL;
 
 	pci_release_regions(chip->pci);
@@ -1545,21 +1285,12 @@ static int snd_cmi8788_free(snd_cmi8788 *chip)
 
 	kfree(chip);
 
-	cmi_printk(("<< snd_cmi8788_free\n"));
-
 	return 0;
 }
 
 static int snd_cmi8788_device_free(struct snd_device *device)
 {
-	int iRet = 0;
-	cmi_printk((">> snd_cmi8788_device_free\n"));
-
-	iRet = snd_cmi8788_free(device->device_data);
-
-	cmi_printk(("<< snd_cmi8788_device_free(iRet 0x%x)\n", iRet));
-
-	return iRet;
+	return snd_cmi8788_free(device->device_data);
 }
 
 /*
@@ -1596,7 +1327,6 @@ static int __devinit snd_cmi8788_create(struct snd_card *card, struct pci_dev *p
 	}
 
 	chip->addr = pci_resource_start(pci, 0);
-	cmi_printk(("cmi8788(chip 0x%0x ,chip->addr 0x%0x)\n", chip, chip->addr));
 
 	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, chip->card->driver, chip)) {
 		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
@@ -1625,8 +1355,6 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	struct snd_card *card = NULL;
 	snd_cmi8788 *chip = NULL;
 	int err = 0;
-
-	cmi_printk((">> snd_cmi8788_probe\n"));
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
@@ -1691,20 +1419,13 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	dev++;
 
 errout:
-	cmi_printk(("<< snd_cmi8788_probe\n"));
-
 	return err;
 }
 
 static void __devexit snd_cmi8788_remove(struct pci_dev *pci)
-
 {
-	cmi_printk((">>snd_cmi8788_remove\n"));
-
 	snd_card_free(pci_get_drvdata(pci));
 	pci_set_drvdata(pci, NULL);
-
-	cmi_printk((">>snd_cmi8788_remove\n"));
 }
 
 static struct pci_device_id snd_cmi8788_ids[] = {
@@ -1729,15 +1450,11 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_cmi8788_init(void)
 {
-	cmi_printk((" alsa_card_cmi8788_init\n"));
-
 	return pci_module_init(&driver);
 }
 
 static void __exit alsa_card_cmi8788_exit(void)
 {
-	cmi_printk((" alsa_card_cmi8788_exit\n"));
-
 	pci_unregister_driver(&driver);
 }
 

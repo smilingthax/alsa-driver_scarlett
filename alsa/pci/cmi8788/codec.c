@@ -52,8 +52,6 @@ int snd_cmi8788_codec_new(cmi8788_controller *controller, cmi_codec *codec, u32 
 {
 	int err;
 
-	cmi_printk(("  >> snd_cmi8788_codec_new\n"));
-
 	snd_assert(controller, return -EINVAL);
 
 	codec->controller = controller;
@@ -76,8 +74,6 @@ int snd_cmi8788_codec_new(cmi8788_controller *controller, cmi_codec *codec, u32 
 			codec->patch_ops.free(codec);
 		return err;
 	}
-
-	cmi_printk(("  << snd_cmi8788_codec_new\n"));
 
 	return 0;
 }

@@ -38,8 +38,6 @@ static int snd_cmi8788_bus_free(cmi8788_controller *bus)
 	int i, codec_num;
 	cmi_codec *codec = NULL;
 
-	cmi_printk((">> snd_cmi8788_bus_free\n"));
-
 	if (!bus)
 		return 0;
 
@@ -56,23 +54,12 @@ static int snd_cmi8788_bus_free(cmi8788_controller *bus)
 
 	kfree(bus);
 
-	cmi_printk(("<< snd_cmi8788_bus_free\n"));
-
 	return 0;
 }
 
 static int snd_cmi8788_bus_dev_free(struct snd_device *device)
 {
-	cmi8788_controller *bus = device->device_data;
-	int iRet = 0;
-
-	cmi_printk((">> snd_cmi8788_bus_dev_free\n"));
-
-	iRet = snd_cmi8788_bus_free(bus);
-
-	cmi_printk(("<< snd_cmi8788_bus_dev_free(iRet 0x%x)\n", iRet));
-
-	return iRet;
+	return snd_cmi8788_bus_free(device->device_data);
 }
 
 /**
@@ -91,8 +78,6 @@ int snd_cmi8788_controller_new(snd_cmi8788 *chip, const cmi_bus_template *temp, 
 	cmi8788_controller *bus = NULL;
 	int err;
 
-	cmi_printk(("  >> snd_cmi8788_controller_new\n"));
-
 	snd_assert(temp, return -EINVAL);
 	snd_assert(temp->ops.get_response, return -EINVAL);
 
@@ -100,10 +85,8 @@ int snd_cmi8788_controller_new(snd_cmi8788 *chip, const cmi_bus_template *temp, 
 		*busp = NULL;
 
 	bus = kzalloc(sizeof(cmi8788_controller), GFP_KERNEL);
-	if (!bus) {
-		cmi_printk((KERN_ERR "can't allocate struct cmi8788_controller\n"));
+	if (!bus)
 		return -ENOMEM;
-	}
 
 	bus->card         = chip->card;
 	bus->private_data = temp->private_data;
@@ -114,8 +97,6 @@ int snd_cmi8788_controller_new(snd_cmi8788 *chip, const cmi_bus_template *temp, 
 
 	if (busp)
 		*busp = bus;
-
-	cmi_printk(("  << snd_cmi8788_controller_new\n"));
 
 	return 0;
 }

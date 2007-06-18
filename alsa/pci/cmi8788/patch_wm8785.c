@@ -175,8 +175,6 @@ static int wm8785_init(cmi_codec *codec)
 	cmi8788_controller *controller;
 	u8 data[3];
 
-	cmi_printk(("  >> wm8785_init\n"));
-
 	if (!codec)
 		return -1;
 
@@ -217,8 +215,6 @@ static int wm8785_init(cmi_codec *codec)
 	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x04;
 	data[1] = 0x03;
-
-	cmi_printk(("  << wm8785_init\n"));
 
 	return 0;
 }

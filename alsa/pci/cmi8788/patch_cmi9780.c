@@ -146,8 +146,6 @@ static int get_info(cmi_codec *codec, int *min_vol, int *max_vol)
 	*min_vol = 0;  /* mute */
 	*max_vol = 32; /* 1-32 */
 
-	cmi_printk(("   cmi9780 get_info(min %d, max %d)\n", *min_vol, *max_vol));
-
 	return 0;
 }
 
@@ -204,7 +202,6 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 	reg_data |= r_volume;
 	reg_data |= l_volume << 8;
 
-	cmi_printk(("  AC97InChanCfg2 Write Reg 0x%0x = 0x%08x\n", AC97InChanCfg2, val32));
 	controller->ops.ac97_cmd(codec, reg_addr, reg_data);
 
 	return 0;
@@ -218,8 +215,6 @@ static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
 		return -1;
 
 	opera_source = codec->volume_opera_source;
-
-	cmi_printk(("   cmi9780 get_volume(opera_source %d, l_vol 0x%0x, r_vol 0x%0x)\n",opera_source,l_vol,r_vol));
 
 	*l_vol = (int)(codec->volume[opera_source].left_vol);
 	*r_vol = (int)(codec->volume[opera_source].right_vol);
@@ -250,8 +245,6 @@ static int cmi9780_init(cmi_codec *codec)
 {
 	cmi8788_controller *controller;
 	int i = 0;
-
-	cmi_printk(("  >> cmi9780_init\n"));
 
 	if (!codec)
 		return -1;
@@ -288,8 +281,6 @@ static int cmi9780_init(cmi_codec *codec)
 		codec->volume[i].left_vol = 8;
 		codec->volume[i].right_vol = 8;
 	}
-
-	cmi_printk(("  << cmi9780_init\n"));
 
 	return 0;
 }

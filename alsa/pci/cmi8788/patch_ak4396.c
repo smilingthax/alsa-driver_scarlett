@@ -223,8 +223,6 @@ static int ak4396_init(cmi_codec *codec)
 	cmi8788_controller *controller;
 	u8 data[2];
 
-	cmi_printk(("  >> ak4396_init\n"));
-
 	if (!codec)
 		return -1;
 
@@ -257,8 +255,6 @@ static int ak4396_init(cmi_codec *codec)
 	data[1] = AK4396_RchATTCtl | 0x20;
 	controller->ops.spi_cmd(codec, data);
 #endif
-
-	cmi_printk(("  << ak4396_init\n"));
 
 	return 0;
 }

@@ -1,15 +1,6 @@
 #ifndef __SND_CMI8788__H__
 #define __SND_CMI8788__H__
 
-/* #define  CMI_DEBUG */
-
-#ifdef CMI_DEBUG
-#define  cmi_printk(_x_)  printk _x_
-#else
-#define  cmi_printk(_x_)
-#endif
-
-
 /* max number of PCM devics per card */
 #define CMI8788_MAX_PCMS 4
 
