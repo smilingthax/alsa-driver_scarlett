@@ -1320,7 +1320,6 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 				int_val = old_int_val | cmi_subs->int_mask; /*  Set Bit-4 Interrupt for Multi-Channel Playback DMA is enabled */
 				snd_cmipci_write_w(chip, int_val, PCI_IntMask);
 
-				chip->old_jiffies = jiffies;
 				snd_pcm_period_elapsed(cmi_subs->substream);
 			}
 		}

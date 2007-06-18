@@ -9,10 +9,6 @@
 #define  cmi_printk(_x_)
 #endif
 
-/* PCI configuration */
-#define HDCTL            0x40
-#define TCSEL            0x44
-
 
 /* max number of PCM devics per card */
 #define CMI8788_MAX_PCMS 4
@@ -58,27 +54,6 @@
 #define CMI8788IC_Revision2     2
 
 /* register map */
-
-/* PCI Configuration Register Map */
-#define  CFG00_VID             0x00   /* Vendor Identification       00-01h*/
-#define  CFG00_DevID           0x02   /* Device Identification       02-03h*/
-#define  CFG04_PCICmd          0x04   /* PCI Command                 04-05h*/
-#define  CFG06_PCIStatus       0x06   /* PCI Status                  06-07h*/
-#define  CFG08_RevID           0x08   /* Revision Identification     08-09h*/
-#define  CFG0A_ClassCode       0x0A   /* Class Code                  0A-0Bh*/
-#define  CFG0C_CacheSize       0x0C   /* Cache Size                  0C-0Ch*/
-#define  CFG0D_LatencyTimer    0x0D   /* Latency Timer               0D-0Dh*/
-#define  CFG0E_HeaderType      0x0E   /* Header Type                 0E-0Eh*/
-#define  CFG0F_BIST            0x0F   /* BIST                        0F-0Fh*/
-#define  CFG10_TargeIOBA       0x10   /* Target I/O Base Address     10-10h*/
-#define  CFG2C_SubVID          0x2C   /* Sub-Vendor Identification   2C-2Fh*/
-#define  CFG34_CapPointer      0x34   /* Capability Pointer          34-34h*/
-#define  CFG3C_IntPinLine      0x3C   /* Interrupt Pin and Line      3C-3Dh*/
-#define  CFG3E_LatencyGrant    0x3E   /* Latency and Grant           3E-3Fh*/
-#define  CFGC0_CapID           0xC0   /* Capability ID               C0-C0h*/
-#define  CFGC1_NIP             0xC1   /* Next Item Pointer           C1-C1h*/
-#define  CFGC2_PMCAP           0xC2   /* Power Management Capability C2-C3h*/
-#define  CFGC4_PMSR            0xC4   /* Power Management Control and Status C4-C5h*/
 
 /* PCI Application Register Map */
 
@@ -167,27 +142,6 @@
 
 /* MPU401 Interface */
 
-/*
- * channels for playback / capture
- */
-#define CMI_CH_PLAY	  0
-#define CMI_CH_CAPT	  1
-
-/*
- * flags to check device open/close
- */
-#define CMI_OPEN_NONE       0
-#define CMI_OPEN_CH_MASK    0x01
-#define CMI_OPEN_DAC        0x10
-
-#define CMI_OPEN_ADC        0x20
-#define CMI_OPEN_SPDIF      0x40
-#define CMI_OPEN_MCHAN      0x80
-#define CMI_OPEN_PLAYBACK       (CMI_CH_PLAY | CMI_OPEN_DAC)
-#define CMI_OPEN_CAPTURE        (CMI_CH_CAPT | CMI_OPEN_ADC)
-#define CMI_OPEN_PLAYBACK_MULTI (CMI_CH_PLAY | CMI_OPEN_DAC | CMI_OPEN_MCHAN)
-#define CMI_OPEN_SPDIF_PLAYBACK (CMI_CH_PLAY | CMI_OPEN_DAC | CMI_OPEN_SPDIF)
-#define CMI_OPEN_SPDIF_CAPTURE  (CMI_CH_CAPT | CMI_OPEN_ADC | CMI_OPEN_SPDIF)
 
 struct stru_cmi8788_controller;
 typedef struct stru_cmi8788_controller cmi8788_controller;
@@ -250,9 +204,6 @@ typedef struct stru_snd_cmi8788 {
 	/* CMI8788 controller */
 	cmi8788_controller *controller;
 
-	u8  hdctl;    /* high definition control */
-	u8  tcsel;    /* traffic class select */
-
 	u16 codec_mask;
 	u8  playback_volume_init;
 	u8  capture_volume_init;
@@ -263,9 +214,6 @@ typedef struct stru_snd_cmi8788 {
 
 	/* CMI8788 IC revision*/
 	u8  CMI8788IC_revision;
-
-	/* for test */
-	s64  old_jiffies;
 } snd_cmi8788;
 
 #endif
