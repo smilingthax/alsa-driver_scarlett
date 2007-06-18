@@ -1269,88 +1269,24 @@ static int __devinit snd_cmi8788_controller_create(snd_cmi8788 *chip)
 /*
  * destructor
  */
-static int snd_cmi8788_free(snd_cmi8788 *chip)
+static void snd_cmi8788_card_free(struct snd_card *card)
 {
-	if (!chip)
-		return 0;
+	snd_cmi8788 *chip = card->private_data;
 
 	if (chip->irq >= 0)
 		free_irq(chip->irq, chip);
 
 	kfree(chip->controller);
-	chip->controller = NULL;
 
 	pci_release_regions(chip->pci);
 	pci_disable_device(chip->pci);
-
-	kfree(chip);
-
-	return 0;
-}
-
-static int snd_cmi8788_device_free(struct snd_device *device)
-{
-	return snd_cmi8788_free(device->device_data);
 }
 
 /*
  * constructor
  */
-static int __devinit snd_cmi8788_create(struct snd_card *card, struct pci_dev *pci, snd_cmi8788 **rchip)
-{
-	snd_cmi8788 *chip = NULL;
-	int err = 0;
-
-	*rchip = NULL;
-
-	if ((err = pci_enable_device(pci)) < 0)
-		return err;
-
-	chip = kzalloc(sizeof(snd_cmi8788), GFP_KERNEL);
-	if (!chip) {
-		snd_printk(KERN_ERR "cmi8788: cannot allocate chip\n");
-		pci_disable_device(pci);
-		return -ENOMEM;
-	}
-
-	/* spin_lock_init(&chip->reg_lock); */
-	/* init_MUTEX(&chip->open_mutex); */
-
-	chip->card = card;
-	chip->pci = pci;
-	chip->irq = -1;
-
-	if ((err = pci_request_regions(pci, chip->card->driver)) < 0) {
-		kfree(chip);
-		pci_disable_device(pci);
-		return err;
-	}
-
-	chip->addr = pci_resource_start(pci, 0);
-
-	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, chip->card->driver, chip)) {
-		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
-		err = -EBUSY;
-		goto errout;
-	}
-	chip->irq = pci->irq;
-
-	pci_set_master(pci);
-	synchronize_irq(chip->irq);
-
-	*rchip = chip;
-	return 0;
-
-errout:
-	snd_cmi8788_free(chip);
-	return err;
-}
-
 static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 {
-	static struct snd_device_ops ops = {
-		.dev_free = snd_cmi8788_device_free,
-	};
 	static int dev = 0;
 	struct snd_card *card = NULL;
 	snd_cmi8788 *chip = NULL;
@@ -1363,18 +1299,49 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 		return -ENOENT;
 	}
 
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
+	card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof *chip);
 	if (NULL == card) {
 		printk(KERN_ERR "cmi8788: Error creating card!\n");
 		return -ENOMEM;
 	}
+	chip = card->private_data;
 
 	strcpy(card->driver, "CMI8788");
 
-	if ((err = snd_cmi8788_create(card, pci, &chip)) < 0) {
+	err = pci_enable_device(pci);
+	if (err < 0) {
 		snd_card_free(card);
 		return err;
 	}
+
+	/* spin_lock_init(&chip->reg_lock); */
+	/* init_MUTEX(&chip->open_mutex); */
+
+	chip->card = card;
+	chip->pci = pci;
+	chip->irq = -1;
+
+	if ((err = pci_request_regions(pci, chip->card->driver)) < 0) {
+		pci_disable_device(pci);
+		snd_card_free(card);
+		return err;
+	}
+
+	card->private_free = snd_cmi8788_card_free;
+
+	chip->addr = pci_resource_start(pci, 0);
+
+	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, card->driver, chip)) {
+		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
+		snd_card_free(card);
+		return -EBUSY;
+	}
+	chip->irq = pci->irq;
+
+	pci_set_master(pci);
+	snd_card_set_dev(card, &pci->dev);
+	synchronize_irq(chip->irq);
+
 	sprintf(card->shortname, "C-Media PCI %s", card->driver);
 	sprintf(card->longname, "%s at 0x%lx, irq %i",
 		card->shortname, chip->addr, chip->irq);
@@ -1391,12 +1358,6 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 		return err;
 	}
 
-	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) <0) {
-		printk(KERN_ERR "Error creating device [card]!\n");
-		snd_cmi8788_free(chip);
-		goto errout;
-	}
-
 	/* create PCM streams */
 	if ((err = snd_cmi8788_pcm_create(chip)) < 0) {
 		snd_card_free(card);
@@ -1408,7 +1369,6 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 		snd_card_free(card);
 		return err;
 	}
-	snd_card_set_dev(card, &pci->dev);
 
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
@@ -1418,8 +1378,7 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	pci_set_drvdata(pci, card);
 	dev++;
 
-errout:
-	return err;
+	return 0;
 }
 
 static void __devexit snd_cmi8788_remove(struct pci_dev *pci)
