@@ -105,12 +105,10 @@ unsigned char snd_cmipci_read_b(struct cmi8788 *chip, unsigned int cmd)
  */
 static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 {
-	int i, codec_num;
-	struct cmi_codec *codec = NULL;
-	u32 val32 = 0;
-	u16 val16 = 0;
-	u8 val8  = 0;
+	struct cmi_codec *codec;
+	int i;
 	int err;
+	u8 tmp;
 
 	chip->playback_volume_init = 0;
 	chip->capture_volume_init = 0;
@@ -119,74 +117,64 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 	chip->CMI8788IC_revision = CMI8788IC_Revision1;
 
 	/* CMI878 IC Revision */
-	val16 = snd_cmipci_read_w(chip, PCI_RevisionRegister);
-	if (val16 & 0x0008)
+	if (snd_cmipci_read_w(chip, PCI_RevisionRegister) & 0x0008)
 		chip->CMI8788IC_revision = CMI8788IC_Revision2;
 
 	if (chip->CMI8788IC_revision == CMI8788IC_Revision1) {
-		val8 = snd_cmipci_read_b(chip, PCI_Misc);
-		val8 = val8 | 0x20;
-		snd_cmipci_write_b(chip, val8, PCI_Misc);
+		tmp = snd_cmipci_read_b(chip, PCI_Misc);
+		snd_cmipci_write_b(chip, tmp | 0x20, PCI_Misc);
 	}
 
 	/* Function Register */
 	/* reset CODEC */
-	val8 = snd_cmipci_read_b(chip, PCI_Fun);
-	val8 = val8 | 0x02; /* Bit1 set 1, RST_CODEC */
-	val8 = val8 | 0x80; /* Bit7 set 1, The function switch of pins, 1: select SPI chip 4, 5 enable function */
-	snd_cmipci_write_b(chip, val8, PCI_Fun);
+	tmp = snd_cmipci_read_b(chip, PCI_Fun);
+	/* Bit1 set 1, RST_CODEC */
+	/* Bit7 set 1, The function switch of pins, 1: select SPI chip 4, 5 enable function */
+	snd_cmipci_write_b(chip, tmp | 0x82, PCI_Fun);
 
 	/* initialize registers */
-	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
-	snd_cmipci_write_w(chip, val16, I2S_Multi_DAC_Fmt);
-	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
-	snd_cmipci_write_w(chip, val16, I2S_ADC1_Fmt);
-	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
-	snd_cmipci_write_w(chip, val16, I2S_ADC2_Fmt);
-	val16 = 0x010A; /* I2S PCM Resolution 16 Bit 48k */
-	snd_cmipci_write_w(chip, val16, I2S_ADC3_Fmt);
+	/* I2S PCM Resolution 16 Bit 48k */
+	snd_cmipci_write_w(chip, 0x010a, I2S_Multi_DAC_Fmt);
+	snd_cmipci_write_w(chip, 0x010a, I2S_ADC1_Fmt);
+	snd_cmipci_write_w(chip, 0x010a, I2S_ADC2_Fmt);
+	snd_cmipci_write_w(chip, 0x010a, I2S_ADC3_Fmt);
 
 	/* Digital Routing and Monitoring Registers */
 	/* Playback Routing Register C0 */
-	val16 = 0xE400;
-	snd_cmipci_write_w(chip, val16, Mixer_PlayRouting);
+	snd_cmipci_write_w(chip, 0xe400, Mixer_PlayRouting);
 
 	/* Recording Routing Register C2 */
-	val8 = 0x00;
-	snd_cmipci_write_b(chip, val8, Mixer_RecRouting);
+	snd_cmipci_write_b(chip, 0x00, Mixer_RecRouting);
 	/* ADC Monitoring Control Register C3 */
-	val8 = 0x00;
-	snd_cmipci_write_b(chip, val8, Mixer_ADCMonitorCtrl);
+	snd_cmipci_write_b(chip, 0x00, Mixer_ADCMonitorCtrl);
 	/* Routing of Monitoring of Recording Channel A Register C4 */
-	val8 = 0xe4;
-	snd_cmipci_write_b(chip, val8, Mixer_RoutOfRecMoniter);
+	snd_cmipci_write_b(chip, 0xe4, Mixer_RoutOfRecMoniter);
 
 	/* AC97 */
-	val32 = 0x00000000;
-	snd_cmipci_write_b(chip, val32, AC97InChanCfg1);
+	snd_cmipci_write_b(chip, 0x00000000, AC97InChanCfg1);
 
 	/* initialize CODEC */
-	codec_num = chip->num_codecs;
-
 	/* codec callback routine */
-	for (i = 0; i < codec_num; i++) {
+	for (i = 0; i < chip->num_codecs; i++) {
 		codec = &chip->codec_list[i];
-		if (!codec->patch_ops.init)
-			continue;
+		if (codec->patch_ops.init) {
+			err = codec->patch_ops.init(codec);
+			if (err < 0)
+				return err;
+		}
+	}
+
+	/* for AC97 codec */
+	codec = &chip->ac97_codec_list[0];
+	if (codec->patch_ops.init) {
 		err = codec->patch_ops.init(codec);
 		if (err < 0)
 			return err;
 	}
 
-	/* for AC97 codec */
-	codec = &chip->ac97_codec_list[0];
-	if (codec->patch_ops.init)
-		err = codec->patch_ops.init(codec);
-
 	/* record route, AC97InChanCfg2 */
 	/* Gpio #0 programmed as output, set CMI9780 Reg0x70 */
-	val32 = 0x00F00000;
-	snd_cmipci_write(chip, val32, AC97InChanCfg2);
+	snd_cmipci_write(chip, 0x00f00000, AC97InChanCfg2);
 	udelay(150);
 	/* FIXME: this is a read? */
 
@@ -238,24 +226,13 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
  */
 int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data)
 {
-	struct cmi8788 *chip;
-	u8 ctrl = 0;
+	struct cmi8788 *chip = codec->chip;
+	u8 ctrl;
 
-	chip = codec->chip;
-
-	switch (codec->reg_len_flag) {
-	case 0: /* 2bytes */
-		snd_cmipci_write_b(chip, data[0], SPI_Data + 0); /* byte */
-		snd_cmipci_write_b(chip, data[1], SPI_Data + 1); /* byte */
-		break;
-	case 1: /* 3bytes */
-		snd_cmipci_write_b(chip, data[0], SPI_Data + 0); /* byte */
-		snd_cmipci_write_b(chip, data[1], SPI_Data + 1); /* byte */
-		snd_cmipci_write_b(chip, data[2], SPI_Data + 2); /* byte */
-		break;
-	default:
-		return -1;
-	}
+	snd_cmipci_write_b(chip, data[0], SPI_Data + 0);
+	snd_cmipci_write_b(chip, data[1], SPI_Data + 1);
+	if (codec->reg_len_flag) /* 3bytes */
+		snd_cmipci_write_b(chip, data[2], SPI_Data + 2);
 
 	ctrl = snd_cmipci_read_b(chip, SPI_Ctrl);
 
@@ -266,48 +243,40 @@ int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data)
 	/* SPI clock period */
 	/* The data length of read/write */
 	ctrl &= 0xfd; /* 1101 Bit-2 */
-	if (1 == codec->reg_len_flag) /* 3Byte */
+	if (codec->reg_len_flag) /* 3Byte */
 		ctrl |= 0x02;
 
 	/* Bit 0 Write 1 to trigger read/write operation */
-	ctrl &= 0xfe;
 	ctrl |= 0x01;
 
 	snd_cmipci_write_b(chip, ctrl, SPI_Ctrl);
-
 	udelay(50);
 	return 0;
 }
 
+#if 0
 /*
  * send a command by 2-wire interface
  */
 static int snd_cmi_send_2wire_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data)
 {
-	struct cmi8788 *chip;
+	struct cmi8788 *chip = codec->chip;
 	u8 Status = 0;
-	u8 reg = 0, slave_addr = 0;
-
-	chip = codec->chip;
 
 	Status = snd_cmipci_read_b(chip, BusCtrlStatus);
 	if ((Status & 0x01) == 1) /* busy */
 		return -1;
 
-	slave_addr = codec->addr;
-	reg = reg_addr;
-
 	snd_cmipci_write_b(chip, reg_addr, MAPReg);
 	snd_cmipci_write_w(chip, reg_data, DataReg);
 
-	slave_addr = slave_addr << 1; /* bit7-1 The target slave device address */
-	slave_addr = slave_addr & 0xfe; /* bit0 1: read, 0: write */
-
-	snd_cmipci_write_b(chip, slave_addr, SlaveAddrCtrl);
+	/* bit7-1 The target slave device address */
+	/* bit0 1: read, 0: write */
+	snd_cmipci_write_b(chip, codec->addr << 1, SlaveAddrCtrl);
 
 	return 0;
 }
-
+#endif
 
 /*
  * send AC'97 command, control AC'97 CODEC register
@@ -324,12 +293,14 @@ void snd_cmi_send_ac97_cmd(struct cmi8788 *chip, u8 reg, u16 value)
 	udelay(150);
 }
 
+#if 0
 /* receive a response */
 static unsigned int snd_cmi_get_response(struct cmi_codec *codec)
 {
 	/* ŽýÍêÉÆ */
 	return 0;
 }
+#endif
 
 
 /*
@@ -347,7 +318,7 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	for (i = 0; i < chip->PCM_Count; i++) {
-		struct cmi_substream *cmi_subs = NULL;
+		struct cmi_substream *cmi_subs;
 
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
@@ -368,12 +339,13 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 }
 
 
-static int snd_cmi8788_codec_new(struct cmi8788 *chip, struct cmi_codec *codec, u32 addr, struct cmi_codec_ops *ops)
+static inline void snd_cmi8788_codec_new(struct cmi8788 *chip,
+					 struct cmi_codec *codec, u32 addr,
+					 struct cmi_codec_ops *ops)
 {
 	codec->chip = chip;
-	codec->addr   = addr;
+	codec->addr = addr;
 	codec->patch_ops = *ops;
-	return 0;
 }
 
 static int __devinit snd_cmi8788_codec_create(struct cmi8788 *chip)
@@ -414,9 +386,9 @@ static void snd_cmi8788_card_free(struct snd_card *card)
 static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 {
 	static int dev = 0;
-	struct snd_card *card = NULL;
-	struct cmi8788 *chip = NULL;
-	int err = 0;
+	struct snd_card *card;
+	struct cmi8788 *chip;
+	int err;
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
@@ -426,7 +398,7 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	}
 
 	card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof *chip);
-	if (NULL == card) {
+	if (!card) {
 		printk(KERN_ERR "cmi8788: Error creating card!\n");
 		return -ENOMEM;
 	}
