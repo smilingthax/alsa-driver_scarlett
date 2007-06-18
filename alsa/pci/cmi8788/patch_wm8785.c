@@ -46,9 +46,6 @@
  */
 static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
-	if (!codec)
-		return -1;
-
 	return 0;
 }
 
@@ -71,9 +68,6 @@ static struct cmi8788_mixer_ops wm8785_mixer_ops =
  */
 static int wm8785_build_controls(struct cmi_codec *codec)
 {
-	if (!codec)
-		return -1;
-
 	codec->mixer_ops = wm8785_mixer_ops;
 	return 0;
 }
@@ -82,9 +76,6 @@ static int wm8785_build_controls(struct cmi_codec *codec)
 static int wm8785_init(struct cmi_codec *codec)
 {
 	u8 data[3];
-
-	if (!codec)
-		return -1;
 
 	/* 3 bytes */
 	/*    7Bit     + 1Bit +    7Bit       +             1Bit           +            8Bit */

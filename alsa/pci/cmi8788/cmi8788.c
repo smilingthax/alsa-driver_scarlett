@@ -112,9 +112,6 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 	u8 val8  = 0;
 	int err;
 
-	if (!chip)
-		return 0;
-
 	chip->playback_volume_init = 0;
 	chip->capture_volume_init = 0;
 
@@ -304,9 +301,6 @@ int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data)
 	struct cmi8788 *chip;
 	u8 ctrl = 0;
 
-	if (!codec || !data)
-		return -1;
-
 	chip = codec->chip;
 
 	switch (codec->reg_len_flag) {
@@ -354,9 +348,6 @@ static int snd_cmi_send_2wire_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_
 	u8 Status = 0;
 	u8 reg = 0, slave_addr = 0;
 
-	if (!codec)
-		return -1;
-
 	chip = codec->chip;
 
 	Status = snd_cmipci_read_b(chip, BusCtrlStatus);
@@ -385,9 +376,6 @@ int snd_cmi_send_AC97_cmd(struct cmi_codec *codec, u8 reg_addr, u16 reg_data)
 {
 	struct cmi8788 *chip;
 	u32 val32 = 0;
-
-	if (!codec)
-		return -1;
 
 	chip = codec->chip;
 
@@ -453,21 +441,14 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 
 static int snd_cmi8788_codec_new(struct cmi8788 *chip, struct cmi_codec *codec, u32 addr, struct cmi_codec_ops *ops)
 {
-	snd_assert(chip, return -EINVAL);
-
 	codec->chip = chip;
-
 	codec->addr   = addr;
 	codec->patch_ops = *ops;
-
 	return 0;
 }
 
 static int __devinit snd_cmi8788_codec_create(struct cmi8788 *chip)
 {
-	if (!chip)
-		return 0;
-
 	/* ŽýÍêÉÆ£¬ÐèÒªÈ·¶š²»Í¬µÄ CODEC µ÷ÓÃ snd_cmi8788_codec_new Ê±ÒªŽ«µÝÊ²ÃŽ²ÎÊý */
 	snd_cmi8788_codec_new(chip, &chip->codec_list[0], 0, &ak4396_patch_ops); /* DAC */
 	snd_cmi8788_codec_new(chip, &chip->codec_list[1], 1, &ak4396_patch_ops); /* DAC */

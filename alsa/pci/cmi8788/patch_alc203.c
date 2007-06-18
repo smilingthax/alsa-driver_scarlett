@@ -44,9 +44,6 @@ static int put_volume(struct cmi_codec *codec, int l_vol, int r_vols)
 	u8 reg_addr;
 	u16 reg_data;
 
-	if (!codec)
-		return -1;
-
 	/* bit5-0  0-3f */
 	l_volume = l_vol;
 	if (l_vol >= 0x3f)
@@ -89,9 +86,6 @@ static struct cmi8788_mixer_ops alc203_mixer_ops =
  */
 static int alc203_build_controls(struct cmi_codec *codec)
 {
-	if (!codec)
-		return -1;
-
 	codec->mixer_ops = alc203_mixer_ops;
 	return 0;
 }
@@ -100,9 +94,6 @@ static int alc203_init(struct cmi_codec *codec)
 {
 	u8 reg_addr;
 	u16 reg_data;
-
-	if (!codec)
-		return -1;
 
 	codec->addr = 0;
 	codec->reg_len_flag = 0;

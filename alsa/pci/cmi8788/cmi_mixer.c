@@ -51,21 +51,14 @@ static struct cmi8788_input_mux cmi8788_basic_input = {
 
 #define GET_POINTER(pkcontrol)				\
 	chip = snd_kcontrol_chip(pkcontrol);		\
-	if (!chip)					\
-		return -1;				\
 	private_value = pkcontrol->private_value;	\
-	codec = chip->codec_list;			\
-	if (!codec)					\
-		return -1;
+	codec = chip->codec_list;
 
 static int snd_cmi8788_capture_source_info(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_info *uinfo)
 {
 	struct cmi8788 *chip = NULL;
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
-
-	if (!kcontrol || !uinfo)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -87,9 +80,6 @@ static int snd_cmi8788_capture_source_get(struct snd_kcontrol *kcontrol, struct 
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 
-	if (!kcontrol || !ucontrol)
-		return -1;
-
 	GET_POINTER(kcontrol);
 
 	if (chip->capture_source >= CAPTURE_MAX_SOURCE)
@@ -107,9 +97,6 @@ static int snd_cmi8788_capture_source_put(struct snd_kcontrol *kcontrol, struct 
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 	int val;
-
-	if (!kcontrol || !ucontrol)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -136,9 +123,6 @@ static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_c
 	struct cmi8788 *chip = NULL;
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
-
-	if (!kcontrol || !uinfo)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -168,7 +152,7 @@ static int snd_cmi8788_playback_info(struct snd_kcontrol *kcontrol, struct snd_c
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 255;
 
-	if (codec && codec->mixer_ops.get_info) {
+	if (codec->mixer_ops.get_info) {
 		int min_vol = 0, max_vol = 255;
 		if (0 == codec->mixer_ops.get_info(codec, &min_vol, &max_vol)) {
 			uinfo->value.integer.min = min_vol;
@@ -185,9 +169,6 @@ static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct
 	struct cmi8788 *chip = NULL;
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
-
-	if (!kcontrol || !ucontrol)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -212,7 +193,7 @@ static int snd_cmi8788_playback_get_volume(struct snd_kcontrol *kcontrol, struct
 		break;
 	}
 
-	if (codec && codec->mixer_ops.get_volume) {
+	if (codec->mixer_ops.get_volume) {
 		int l_vol = 0, r_vol = 0;
 
 		codec->mixer_ops.get_volume(codec, &l_vol, &r_vol);
@@ -233,9 +214,6 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 	unsigned int idx;
 	int l_vol = 0, r_vol = 0;
 	int i = 0, setall = 0, change = 0;
-
-	if (!kcontrol || !ucontrol)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -266,7 +244,7 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 		break;
 	}
 
-	if (codec && codec->mixer_ops.get_volume)
+	if (codec->mixer_ops.get_volume)
 		codec->mixer_ops.get_volume(codec, &l_vol, &r_vol);
 	if (l_vol == ucontrol->value.integer.value[0] && r_vol == ucontrol->value.integer.value[1])
 		change = 0;
@@ -278,13 +256,13 @@ static int snd_cmi8788_playback_put_volume(struct snd_kcontrol *kcontrol, struct
 
 	if (change) {
 		if (!setall) {
-			if (codec && codec->mixer_ops.set_volume && chip->playback_volume_init) {
+			if (codec->mixer_ops.set_volume && chip->playback_volume_init) {
 				codec->mixer_ops.set_volume(codec, l_vol, r_vol);
 			}
 		} else {
 			codec = chip->codec_list;
 			for (i = 0; i < codec_num; i++) {
-				if (codec && codec->mixer_ops.set_volume && chip->playback_volume_init) {
+				if (codec->mixer_ops.set_volume && chip->playback_volume_init) {
 					codec->mixer_ops.set_volume(codec, l_vol, r_vol);
 					codec++;
 				}
@@ -300,9 +278,6 @@ static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ct
 	struct cmi8788 *chip = NULL;
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
-
-	if (!kcontrol || !uinfo)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -329,7 +304,7 @@ static int snd_cmi8788_capture_info(struct snd_kcontrol *kcontrol, struct snd_ct
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 255;
 
-	if (codec && codec->mixer_ops.get_info) {
+	if (codec->mixer_ops.get_info) {
 		int min_vol = 0, max_vol = 255;
 		if (0 == codec->mixer_ops.get_info(codec, &min_vol, &max_vol)) {
 			uinfo->value.integer.min = min_vol;
@@ -346,9 +321,6 @@ static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct 
 	struct cmi_codec *codec = NULL;
 	unsigned long       private_value = 0;
 	int l_vol = 0, r_vol = 0;
-
-	if (!kcontrol || !ucontrol)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -372,12 +344,10 @@ static int snd_cmi8788_capture_get_volume(struct snd_kcontrol *kcontrol, struct 
 
 	ucontrol->value.integer.value[0] = l_vol;
 	ucontrol->value.integer.value[1] = r_vol;
-	if (codec && codec->mixer_ops.get_volume) {
+	if (codec->mixer_ops.get_volume) {
 		codec->mixer_ops.get_volume(codec, &l_vol, &r_vol);
-		if (ucontrol) {
-			ucontrol->value.integer.value[0] = l_vol;
-			ucontrol->value.integer.value[1] = r_vol;
-		}
+		ucontrol->value.integer.value[0] = l_vol;
+		ucontrol->value.integer.value[1] = r_vol;
 	}
 
 	return 0;
@@ -391,9 +361,6 @@ static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct 
 	int                 codec_num = 0;
 	int l_vol = 0, r_vol = 0;
 	int change = 0;
-
-	if (!kcontrol || !ucontrol)
-		return -1;
 
 	GET_POINTER(kcontrol);
 
@@ -418,7 +385,7 @@ static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct 
 		break;
 	}
 
-	if (codec && codec->mixer_ops.get_volume)
+	if (codec->mixer_ops.get_volume)
 		codec->mixer_ops.get_volume(codec, &l_vol, &r_vol);
 
 	if (l_vol == ucontrol->value.integer.value[0] && r_vol == ucontrol->value.integer.value[1])
@@ -430,7 +397,7 @@ static int snd_cmi8788_capture_put_volume(struct snd_kcontrol *kcontrol, struct 
 	r_vol = ucontrol->value.integer.value[1];
 
 	if (change) {
-		if (codec && codec->mixer_ops.set_volume && chip->capture_volume_init) {
+		if (codec->mixer_ops.set_volume && chip->capture_volume_init) {
 			codec->mixer_ops.set_volume(codec, l_vol, r_vol);
 		}
 	}
@@ -492,9 +459,6 @@ int __devinit snd_cmi8788_mixer_create(struct cmi8788 *chip)
 	int i, codec_num;
 	struct cmi_codec *codec = NULL;
 	int err;
-
-	if (!chip)
-		return 0;
 
 	card = chip->card;
 	strcpy(card->mixername, "C-Media PCI8788");

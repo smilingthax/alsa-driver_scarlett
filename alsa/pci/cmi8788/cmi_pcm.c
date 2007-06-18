@@ -648,9 +648,6 @@ int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 	int err = 0, pcm_dev = 0;
 	int iRet = 0;
 
-	if (!chip)
-		return 0;
-
 #if 1 /* swf 2005-04-25 */
 	/* 1 create normal PCM */
 	err = snd_pcm_new(chip->card, "C-Media PCI8788 DAC/ADC",

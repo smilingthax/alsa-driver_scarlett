@@ -43,9 +43,6 @@
  */
 static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
-	if (!codec)
-		return -1;
-
 	return 0;
 }
 
@@ -68,22 +65,14 @@ static struct cmi8788_mixer_ops ak5385a_mixer_ops =
  */
 static int ak5385a_build_controls(struct cmi_codec *codec)
 {
-	if (!codec)
-		return -1;
-
 	codec->mixer_ops = ak5385a_mixer_ops;
-
 	return 0;
 }
 
 static int ak5385a_init(struct cmi_codec *codec)
 {
-	if (!codec)
-		return -1;
-
 	codec->addr = CODEC_ADR_AK5385A; /* 0 */
 	codec->reg_len_flag = 0;
-
 	return 0;
 }
 

@@ -51,12 +51,8 @@ static u8 volume_reg_addr[MAX_VOL_SLIDER] = {
  */
 static int get_info(struct cmi_codec *codec, int *min_vol, int *max_vol)
 {
-	if (!codec || !min_vol || !max_vol)
-		return -1;
-
 	*min_vol = 0;  /* mute */
 	*max_vol = 32; /* 1-32 */
-
 	return 0;
 }
 
@@ -67,9 +63,6 @@ static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 	u8 reg_addr = 0x0E; /* Mic volume */
 	u16 reg_data = 0x0808;
 	int opera_source = MIC_VOL_SLIDER;
-
-	if (!codec)
-		return -1;
 
 	/* bit4-0  0-1f */
 	l_volume = l_vol;
@@ -118,9 +111,6 @@ static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
 	int opera_source = MIC_VOL_SLIDER;
 
-	if (!codec || !l_vol || !r_vol)
-		return -1;
-
 	opera_source = codec->volume_opera_source;
 
 	*l_vol = (int)(codec->volume[opera_source].left_vol);
@@ -141,9 +131,6 @@ static struct cmi8788_mixer_ops cmi9780_mixer_ops =
  */
 static int cmi9780_build_controls(struct cmi_codec *codec)
 {
-	if (!codec)
-		return -1;
-
 	codec->mixer_ops = cmi9780_mixer_ops;
 	return 0;
 }
@@ -151,9 +138,6 @@ static int cmi9780_build_controls(struct cmi_codec *codec)
 static int cmi9780_init(struct cmi_codec *codec)
 {
 	int i = 0;
-
-	if (!codec)
-		return -1;
 
 	codec->addr = 0;
 	codec->reg_len_flag = 0;

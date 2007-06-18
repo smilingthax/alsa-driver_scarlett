@@ -44,12 +44,8 @@
 
 static int get_info(struct cmi_codec *codec, int *min_vol, int *max_vol)
 {
-	if (!codec || !min_vol || !max_vol)
-		return -1;
-
 	*min_vol = 0;
 	*max_vol = 255;
-
 	return 0;
 }
 
@@ -66,12 +62,7 @@ static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 	u8 data[2];
 	int l_volume = 0, r_volume = 0;
 
-	if (!codec)
-		return -1;
-
 	chip = codec->chip;
-	if (!chip)
-		return -1;
 
 	l_volume = l_vol;
 	if (l_vol >= 255)
@@ -106,12 +97,8 @@ static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
  */
 static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
-	if (!codec || !l_vol || !r_vol)
-		return -1;
-
 	*l_vol = codec->left_vol;
 	*r_vol = codec->right_vol;
-
 	return 0;
 }
 
@@ -127,20 +114,13 @@ static struct cmi8788_mixer_ops ak_4396_mixer_ops =
  */
 static int ak4396_build_controls(struct cmi_codec *codec)
 {
-	if (!codec)
-		return -1;
-
 	codec->mixer_ops = ak_4396_mixer_ops;
-
 	return 0;
 }
 
 static int ak4396_init(struct cmi_codec *codec)
 {
 	u8 data[2];
-
-	if (!codec)
-		return -1;
 
 #if 1
 	codec->reg_len_flag = 0;
