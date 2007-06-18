@@ -16,7 +16,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
- * 
+ *
  *  Revision history
  *
  *    Weifeng Sui <weifengsui@163.com>
@@ -29,52 +29,50 @@
 #include <linux/pci.h>
 #include <sound/core.h>
 
-
 #include "cmi8788.h"
 #include "codec.h"
 #include "cmi_controller.h"
 
 static int snd_cmi8788_bus_free(cmi8788_controller *bus)
 {
-    cmi_printk((">> snd_cmi8788_bus_free\n")); 
+	int i, codec_num;
+	cmi_codec *codec = NULL;
 
-    if (!bus)
-        return 0;
-    //
-    int i,codec_num = bus->codec_num;
-    cmi_codec *codec = NULL;
+	cmi_printk((">> snd_cmi8788_bus_free\n"));
 
-    for(i = 0; i<codec_num; i++)
-    {
-        codec = &bus->codec_list[i];
-        // codec_list
-        if(codec)
-            snd_cmi8788_codec_free(codec);
-    }
+	if (!bus)
+		return 0;
 
-    //
-    if(bus->ops.private_free)
-        bus->ops.private_free(bus);
+	codec_num = bus->codec_num;
 
-    kfree(bus);
+	for (i = 0; i < codec_num; i++) {
+		codec = &bus->codec_list[i];
+		if (codec)
+			snd_cmi8788_codec_free(codec);
+	}
 
-    cmi_printk(("<< snd_cmi8788_bus_free\n")); 
+	if (bus->ops.private_free)
+		bus->ops.private_free(bus);
 
-    return 0;
+	kfree(bus);
+
+	cmi_printk(("<< snd_cmi8788_bus_free\n"));
+
+	return 0;
 }
 
 static int snd_cmi8788_bus_dev_free(struct snd_device *device)
 {
-    int iRet = 0;
-    cmi_printk((">> snd_cmi8788_bus_dev_free\n")); 
+	cmi8788_controller *bus = device->device_data;
+	int iRet = 0;
 
-    cmi8788_controller *bus = device->device_data;
+	cmi_printk((">> snd_cmi8788_bus_dev_free\n"));
 
-    iRet = snd_cmi8788_bus_free(bus);
+	iRet = snd_cmi8788_bus_free(bus);
 
-    cmi_printk(("<< snd_cmi8788_bus_dev_free(iRet 0x%x)\n", iRet));
-    
-    return iRet;
+	cmi_printk(("<< snd_cmi8788_bus_dev_free(iRet 0x%x)\n", iRet));
+
+	return iRet;
 }
 
 /**
@@ -85,45 +83,39 @@ static int snd_cmi8788_bus_dev_free(struct snd_device *device)
  *
  * Returns 0 if successful, or a negative error code.
  */
-int snd_cmi8788_controller_new(snd_cmi8788 *chip, const cmi_bus_template *temp, cmi8788_controller **busp )
+int snd_cmi8788_controller_new(snd_cmi8788 *chip, const cmi_bus_template *temp, cmi8788_controller **busp)
 {
-    cmi8788_controller *bus = NULL;
-    int err;
-    static struct snd_device_ops dev_ops = {
-        .dev_free = snd_cmi8788_bus_dev_free,
-    };
+	static struct snd_device_ops dev_ops = {
+		.dev_free = snd_cmi8788_bus_dev_free,
+	};
+	cmi8788_controller *bus = NULL;
+	int err;
 
-    cmi_printk(("  >> snd_cmi8788_controller_new\n"));
+	cmi_printk(("  >> snd_cmi8788_controller_new\n"));
 
-    snd_assert(temp, return -EINVAL);
-    snd_assert(temp->ops.get_response, return -EINVAL);
+	snd_assert(temp, return -EINVAL);
+	snd_assert(temp->ops.get_response, return -EINVAL);
 
-    if (busp)
-        *busp = NULL;
+	if (busp)
+		*busp = NULL;
 
-    bus = kcalloc(1, sizeof(cmi8788_controller), GFP_KERNEL);
-    if (bus == NULL)
-    {
-        cmi_printk((KERN_ERR "can't allocate struct cmi8788_controller\n"));
-        return -ENOMEM;
-    }
+	bus = kzalloc(sizeof(cmi8788_controller), GFP_KERNEL);
+	if (!bus) {
+		cmi_printk((KERN_ERR "can't allocate struct cmi8788_controller\n"));
+		return -ENOMEM;
+	}
 
-    bus->card         = chip->card;
-    bus->private_data = temp->private_data;
-    bus->pci          = temp->pci;
-    bus->ops          = temp->ops;
+	bus->card         = chip->card;
+	bus->private_data = temp->private_data;
+	bus->pci          = temp->pci;
+	bus->ops          = temp->ops;
 
-//    init_MUTEX(&bus->cmd_mutex);
+	/* init_MUTEX(&bus->cmd_mutex); */
 
-    if (busp)
-        *busp = bus;
+	if (busp)
+		*busp = bus;
 
-    cmi_printk(("  << snd_cmi8788_controller_new\n"));
- 
-    return 0;
+	cmi_printk(("  << snd_cmi8788_controller_new\n"));
+
+	return 0;
 }
-
-/*
- * symbols exported for controller modules
- */
-EXPORT_SYMBOL(snd_cmi8788_controller_new);

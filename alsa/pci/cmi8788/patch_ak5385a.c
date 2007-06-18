@@ -16,7 +16,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
- * 
+ *
  *  Revision history
  *
  *    Weifeng Sui <weifengsui@163.com>
@@ -45,86 +45,85 @@
  * Analog playback callbacks
  */
 static int ak5385a_playback_pcm_open(void                *hinfo,
-                                     cmi_codec           *codec,
-                                     struct snd_pcm_substream *substream )
+				     cmi_codec           *codec,
+				     struct snd_pcm_substream *substream )
 {
-    // 待完善 需要设置相关的寄存器
-    cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-        
-    return 0;
+	/* 待完善 需要设置相关的寄存器 */
+	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
+
+	return 0;
 }
 
 static int ak5385a_playback_pcm_prepare(void                *hinfo,
-                                        cmi_codec           *codec,
-                                        struct snd_pcm_substream *substream )
+					cmi_codec           *codec,
+					struct snd_pcm_substream *substream )
 {
-    // 待完善 需要设置相关的寄存器
-    cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-    
-    return 0;
+	/* 待完善 需要设置相关的寄存器 */
+	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
+
+	return 0;
 }
 
 static int ak5385a_playback_pcm_cleanup(void                *hinfo,
-                                        cmi_codec           *codec,
-                                        struct snd_pcm_substream *substream )
+					cmi_codec           *codec,
+					struct snd_pcm_substream *substream )
 {
-    // 待完善 需要设置相关的寄存器
-    cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-    
-    return 0;
+	/* 待完善 需要设置相关的寄存器 */
+	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
+
+	return 0;
 }
 
 /*
  * Analog capture
  */
 static int ak5385a_capture_pcm_prepare(void                *hinfo,
-                                       cmi_codec           *codec,
-                                       struct snd_pcm_substream *substream )
+				       cmi_codec           *codec,
+				       struct snd_pcm_substream *substream )
 {
-    // 待完善 需要设置相关的寄存器
-    cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-    
-    return 0;
+	/* 待完善 需要设置相关的寄存器 */
+	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
+
+	return 0;
 }
 
 static int ak5385a_capture_pcm_cleanup(void                *hinfo,
-                                       cmi_codec           *codec,
-                                       struct snd_pcm_substream *substream )
+				       cmi_codec           *codec,
+				       struct snd_pcm_substream *substream )
 {
-    // 待完善 需要设置相关的寄存器
-    cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
-    
-    return 0;
+	/* 待完善 需要设置相关的寄存器 */
+	cmi8788_pcm_stream  *pcm_stream = (cmi8788_pcm_stream  *)hinfo;
+
+	return 0;
 }
 
-/*
- */
+
 static cmi8788_pcm_stream ak5385a_pcm_analog_playback = {
-    .channels = 2,
-    .ops = {
-        .open    = ak5385a_playback_pcm_open,
-        .prepare = ak5385a_playback_pcm_prepare,
-        .cleanup = ak5385a_playback_pcm_cleanup
-    },
+	.channels = 2,
+	.ops = {
+		.open    = ak5385a_playback_pcm_open,
+		.prepare = ak5385a_playback_pcm_prepare,
+		.cleanup = ak5385a_playback_pcm_cleanup
+	},
 };
 
 static cmi8788_pcm_stream ak5385a_pcm_analog_capture = {
-    .channels = 2,
-    .ops = {
-        .prepare = ak5385a_capture_pcm_prepare,
-        .cleanup = ak5385a_capture_pcm_cleanup
-    },
+	.channels = 2,
+	.ops = {
+		.prepare = ak5385a_capture_pcm_prepare,
+		.cleanup = ak5385a_capture_pcm_cleanup
+	},
 };
 
 
 static int ak5385a_build_pcms(cmi_codec *codec)
 {
-    cmi8788_pcm_stream  *pcm_substream = codec->pcm_substream;
+	cmi8788_pcm_stream  *pcm_substream = codec->pcm_substream;
 
-    pcm_substream[0] = ak5385a_pcm_analog_playback;
-    pcm_substream[1] = ak5385a_pcm_analog_capture;
+	pcm_substream[0] = ak5385a_pcm_analog_playback;
+	pcm_substream[1] = ak5385a_pcm_analog_capture;
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -132,17 +131,16 @@ static int ak5385a_build_pcms(cmi_codec *codec)
  */
 static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
 {
-    u8 data[2]={0,0};
-    u8 volume = 0;
+	cmi8788_controller *controller;
 
-    if(!codec)
-        return -1;
+	if (!codec)
+		return -1;
 
-    cmi8788_controller *controller = codec->controller;
-    if(!controller)
-        return -1;
+	controller = codec->controller;
+	if (!controller)
+		return -1;
 
-    return 0;
+	return 0;
 }
 
 /*
@@ -150,13 +148,13 @@ static int put_volume(cmi_codec *codec, int l_vol, int r_vol)
  */
 static int get_volume(cmi_codec *codec, int *l_vol, int *r_vol)
 {
-    return -1;
+	return -1;
 }
 
-static cmi8788_mixer_ops  ak5385a_mixer_ops = 
+static cmi8788_mixer_ops  ak5385a_mixer_ops =
 {
-//  .get_volume = get_volume,
-    .set_volume = put_volume,
+	/* .get_volume = get_volume, */
+	.set_volume = put_volume,
 };
 
 /*
@@ -164,55 +162,53 @@ static cmi8788_mixer_ops  ak5385a_mixer_ops =
  */
 static int ak5385a_build_controls(cmi_codec *codec)
 {
-    //
-    if(!codec)
-        return -1;
+	if (!codec)
+		return -1;
 
-    codec->mixer_ops = ak5385a_mixer_ops;
+	codec->mixer_ops = ak5385a_mixer_ops;
 
-    return 0;
+	return 0;
 }
 
 static int ak5385a_init(cmi_codec *codec)
 {
-    //
-    u8 data[2]={0,0};
-    if(!codec)
-        return -1;
+	cmi8788_controller *controller;
 
-    cmi8788_controller *controller = codec->controller;
-    if(!controller)
-        return -1;
+	if (!codec)
+		return -1;
 
-    codec->addr = CODEC_ADR_AK5385A; // 0
-    codec->reg_len_flag = 0;   
+	controller = codec->controller;
+	if (!controller)
+		return -1;
 
-    return 0;
+	codec->addr = CODEC_ADR_AK5385A; /* 0 */
+	codec->reg_len_flag = 0;
+
+	return 0;
 }
 
 static void ak5385a_free(cmi_codec *codec)
 {
-    // 待完善
+	/* 待完善 */
 }
 
 static cmi_codec_ops ak5385a_patch_ops = {
-    .build_controls = NULL, // ak5385a_build_controls,
-    .build_pcms     = NULL, // ak5385a_build_pcms,
-    .init           = NULL, // ak5385a_init,
-    .free           = NULL, // ak5385a_free,
+	.build_controls = NULL, /* ak5385a_build_controls, */
+	.build_pcms     = NULL, /* ak5385a_build_pcms, */
+	.init           = NULL, /* ak5385a_init, */
+	.free           = NULL, /* ak5385a_free, */
 };
 
 static int patch_ak5385a(cmi_codec *codec)
 {
-    codec->patch_ops = ak5385a_patch_ops;
-
-    return 0;
+	codec->patch_ops = ak5385a_patch_ops;
+	return 0;
 }
 
 /*
  * patch entries
  */
 codec_preset snd_preset_ak5385a[] = {
-    { .id = 0xFFFFFFFF, .name = "AK5385A", .patch = patch_ak5385a },
-    {0,}, /* terminator */
+	{ .id = 0xFFFFFFFF, .name = "AK5385A", .patch = patch_ak5385a },
+	{ } /* terminator */
 };

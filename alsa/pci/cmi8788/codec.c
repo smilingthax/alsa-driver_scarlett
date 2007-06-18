@@ -16,7 +16,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
- * 
+ *
  *  Revision history
  *
  *    Weifeng Sui <weifengsui@163.com>
@@ -29,19 +29,19 @@
 #include <linux/pci.h>
 #include <sound/core.h>
 
-
 #include "cmi8788.h"
 #include "codec.h"
 #include "cmi_controller.h"
 
+
 void snd_cmi8788_codec_free(cmi_codec *codec)
 {
-    if (! codec)
-        return;
+	if (!codec)
+		return;
 
-    // 释放 codec 内部申请的资源, codec 在外部释放, 在 controller 中释放
-    if (codec && codec->patch_ops.free)
-        codec->patch_ops.free(codec);
+	/* 释放 codec 内部申请的资源, codec 在外部释放, 在 controller 中释放 */
+	if (codec && codec->patch_ops.free)
+		codec->patch_ops.free(codec);
 }
 
 /**
@@ -50,43 +50,34 @@ void snd_cmi8788_codec_free(cmi_codec *codec)
  */
 int snd_cmi8788_codec_new(cmi8788_controller *controller, cmi_codec *codec, u32 addr, codec_preset *preset)
 {
-    int err;
+	int err;
 
-    cmi_printk(("  >> snd_cmi8788_codec_new\n"));
+	cmi_printk(("  >> snd_cmi8788_codec_new\n"));
 
-    snd_assert(controller, return -EINVAL);
+	snd_assert(controller, return -EINVAL);
 
-    codec->controller = controller;
+	codec->controller = controller;
 
-    // 可以不需要下面的这些信息,具体要在对应的 CODEC 里面重新赋值
-    codec->vendor_id    = 0xFFFF;
-    codec->subsystem_id = 0XFFFF;
-    codec->revision_id  = 0XFFFF;
+	/* 可以不需要下面的这些信息,具体要在对应的 CODEC 里面重新赋值 */
+	codec->vendor_id    = 0xFFFF;
+	codec->subsystem_id = 0XFFFF;
+	codec->revision_id  = 0XFFFF;
 
-    codec->addr   = addr;
-    codec->preset = preset;
+	codec->addr   = addr;
+	codec->preset = preset;
 
-    if (codec->preset && codec->preset->patch)
-        err = codec->preset->patch(codec);
-    else
-        err = -1;
-    
-    if (err < 0)
-    {
-        if(codec && codec->patch_ops.free)
-            codec->patch_ops.free(codec);
+	if (codec->preset && codec->preset->patch)
+		err = codec->preset->patch(codec);
+	else
+		err = -1;
 
-        return err;
-    }
+	if (err < 0) {
+		if (codec && codec->patch_ops.free)
+			codec->patch_ops.free(codec);
+		return err;
+	}
 
-    cmi_printk(("  << snd_cmi8788_codec_new\n"));
+	cmi_printk(("  << snd_cmi8788_codec_new\n"));
 
-    return 0;
+	return 0;
 }
-
-
-/*
- * symbols exported for controller modules
- */
-EXPORT_SYMBOL(snd_cmi8788_codec_free);
-EXPORT_SYMBOL(snd_cmi8788_codec_new);

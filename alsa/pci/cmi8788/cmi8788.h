@@ -1,8 +1,7 @@
-
 #ifndef __SND_CMI8788__H__
 #define __SND_CMI8788__H__
 
-//#define  CMI_DEBUG
+/* #define  CMI_DEBUG */
 
 #ifdef CMI_DEBUG
 #define  cmi_printk(_x_)  printk _x_
@@ -26,7 +25,7 @@
 #define CMI_CAPTURE      1
 
 /* playback volume */
-#define PLAYBACK_MASTER_VOL    0 
+#define PLAYBACK_MASTER_VOL    0
 #define PLAYBACK_FRONT_VOL     1
 #define PLAYBACK_SIDE_VOL      2
 #define PLAYBACK_CENTER_VOL    3
@@ -41,7 +40,7 @@
 #define CAPTURE_AC97_MIC        0
 #define CAPTURE_DIRECT_LINE_IN  1
 #define CAPTURE_AC97_LINEIN     2
-#define CAPTURE_MAX_SOURCE      2 //old 3
+#define CAPTURE_MAX_SOURCE      2 /* old 3 */
 
 /* ac97 volumes */
 #define MASTER_VOL_SLIDER     0
@@ -108,9 +107,9 @@
 #define PCI_DMAPlay_Front_BaseCount  0x34 /* PCI DMA Front Panel layback Base/Current Count Register           2Byte*/
 #define PCI_DMAPlay_Front_BaseTCount 0x36 /* PCI DMA Front Panel Playback Base/Current Terminal Count Register 2Byte*/
 
-#define PCI_DMA_SetStatus    0x40   /* PCI DMA Channel Start/Pause/Stop  2Byte*/ // ÉèÖÃ 6žö DMA Channel µÄ×ŽÌ¬
-#define PCI_DMA_Reset        0x42   /* PCI DMA Channel Reset 1Byte*/ // reset 6žö DMA Channel µÄ×ŽÌ¬
-#define PCI_MULTI_DMA_MODE   0x43   /* Multi-Channel DMA Mode 1Byte*/ // set Multi DMA n(2-8) Channel mode
+#define PCI_DMA_SetStatus    0x40   /* PCI DMA Channel Start/Pause/Stop  2Byte  ÉèÖÃ 6žö DMA Channel µÄ×ŽÌ¬ */
+#define PCI_DMA_Reset        0x42   /* PCI DMA Channel Reset 1Byte  reset 6žö DMA Channel µÄ×ŽÌ¬ */
+#define PCI_MULTI_DMA_MODE   0x43   /* Multi-Channel DMA Mode 1Byte  set Multi DMA n(2-8) Channel mode */
 
 #define PCI_IntMask          0x44   /* Interrupt Mask Register 2Byte*/
 #define PCI_IntStatus        0x46   /* Interrupt Status Register 2Byte*/
@@ -119,7 +118,7 @@
 
 #define PCI_RecSampleFmtCvt  0x4A   /* Sample Format Convert for Recording Channels (A,B,C) 1Byte*/
 #define PCI_PlaySampleFmCvt  0x4B   /* Sample Format Convert for Playback Channels(Multi and SPDIF) 1Byte*/
-#define PCI_RecDMA_Mode      0x4C   /* Recording Channels(A,B,C) DMA Mode 1Byte*/ // Set Recording Channels(A,B,C) DMA 6-2 Channels
+#define PCI_RecDMA_Mode      0x4C   /* Recording Channels(A,B,C) DMA Mode 1Byte  Set Recording Channels(A,B,C) DMA 6-2 Channels */
 
 #define PCI_Fun              0x50   /* Function Register 1Byte*/
 
@@ -143,7 +142,7 @@
 
 
 /* Mixer */
-#define Mixer_PlayRouting      0xC0   /* Playback Routing Register 2Byte*/ 
+#define Mixer_PlayRouting      0xC0   /* Playback Routing Register 2Byte*/
 #define Mixer_RecRouting       0xC2   /* Recording Routing Register 2Byte*/
 #define Mixer_ADCMonitorCtrl   0xC3   /* ADC Monitoring Control Register 1 Byte*/
 #define Mixer_RoutOfRecMoniter 0xC4   /* Routing of Monitoring of Recording Channel A Register 1Byte*/
@@ -160,10 +159,10 @@
 #define PCI_DMA_FLUSH        0xE1   /* 1Byte*/
 #define PCI_RevisionRegister 0xE6   /* PCI E6: Revision Register 2Byte*/
 
-#define CODEC_ADR_AK4396     0x00  // Žý¶š
-#define CODEC_ADR_WM8776     0x34  // or 0x36
+#define CODEC_ADR_AK4396     0x00  /* Žý¶š */
+#define CODEC_ADR_WM8776     0x34  /* or 0x36 */
 #define CODEC_ADR_WM8785     0x1A
-#define CODEC_ADR_AK5385A    0x00  // Žý¶š
+#define CODEC_ADR_AK5385A    0x00  /* Žý¶š */
 
 
 /* MPU401 Interface */
@@ -193,33 +192,31 @@
 struct stru_cmi8788_controller;
 typedef struct stru_cmi8788_controller cmi8788_controller;
 
-typedef struct stru_cmi_substream
-{
-    struct snd_pcm_substream *substream;
-    int running;      /* dac/adc running? */
+typedef struct stru_cmi_substream {
+	struct snd_pcm_substream *substream;
+	int running;      /* dac/adc running? */
 
-    u32 dma_area;     /* virtual address of the dma buffer */
-    u32 dma_addr;     /* physical address of the dma buffer */
-    u32 dma_bytes;    /* size of dma buffer */
-    u32 fragsize;     /* in Byte */
-    
-    u32 rate;         /* sample rate */
-    u16 channels;     /* channel number */
-    u8  frame_bits;   /* sample size */
-    u8  sample_bits;  /* */
+	u32 dma_area;     /* virtual address of the dma buffer */
+	u32 dma_addr;     /* physical address of the dma buffer */
+	u32 dma_bytes;    /* size of dma buffer */
+	u32 fragsize;     /* in Byte */
 
-    int DMA_sta_mask;  /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte*/
-    int DMA_chan_reset;/* PCI 42: PCI DMA Channel Reset            1Byte*/
-    int int_mask;      /* PCI 44: Interrupt Mask Register          2Byte*/
-    int int_sta_mask;  /* PCI 46: interrupt status mask            2Byte*/
-}cmi_substream;
+	u32 rate;         /* sample rate */
+	u16 channels;     /* channel number */
+	u8  frame_bits;   /* sample size */
+	u8  sample_bits;  /* */
 
-typedef struct snd_stru_cmipci_pcm
-{
-    cmi_substream  cmi_subs[2]; // 0 playback; 1 record;
+	int DMA_sta_mask;  /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte*/
+	int DMA_chan_reset;/* PCI 42: PCI DMA Channel Reset            1Byte*/
+	int int_mask;      /* PCI 44: Interrupt Mask Register          2Byte*/
+	int int_sta_mask;  /* PCI 46: interrupt status mask            2Byte*/
+} cmi_substream;
+
+typedef struct snd_stru_cmipci_pcm {
+	cmi_substream  cmi_subs[2]; /* 0 playback; 1 record; */
 } cmipci_pcm_t;
 
-// for record 
+/* for record */
 #define CMI8788_MAX_NUM_INPUTS	4
 struct cmi8788_input_mux_item {
 	const char *label;
@@ -231,49 +228,45 @@ struct cmi8788_input_mux {
 	struct cmi8788_input_mux_item items[CMI8788_MAX_NUM_INPUTS];
 };
 
-
 typedef struct stru_snd_cmi8788 {
-    struct snd_card *card;
-    struct pci_dev *pci;
+	struct snd_card *card;
+	struct pci_dev *pci;
 
-    // pci resources
+	/* pci resources */
+	unsigned long   addr;
+	unsigned long   remap_addr;
+	int             irq;
 
-    unsigned long   addr;
-    unsigned long   remap_addr;
-    int             irq;
+	/* locks */
+	spinlock_t reg_lock;
+	struct semaphore open_mutex;
 
-    /* locks */
-    spinlock_t reg_lock;
-    struct semaphore open_mutex;
-
-    /* PCM */
-    int PCM_Count;
-    struct snd_pcm *pcm[CMI8788_MAX_PCMS];
-    cmipci_pcm_t  cmi_pcm[CMI8788_MAX_PCMS];
+	/* PCM */
+	int PCM_Count;
+	struct snd_pcm *pcm[CMI8788_MAX_PCMS];
+	cmipci_pcm_t  cmi_pcm[CMI8788_MAX_PCMS];
 
 
-    /* CMI8788 controller */
-    cmi8788_controller *controller;
+	/* CMI8788 controller */
+	cmi8788_controller *controller;
 
-    u8  hdctl;    // high definition control
-    u8  tcsel;    // traffic class select
+	u8  hdctl;    /* high definition control */
+	u8  tcsel;    /* traffic class select */
 
-    u16 codec_mask;
-    u8  playback_volume_init;
-    u8  capture_volume_init;
-    u8  first_set_playback_volume;
-    u8  first_set_capture_volume;
+	u16 codec_mask;
+	u8  playback_volume_init;
+	u8  capture_volume_init;
+	u8  first_set_playback_volume;
+	u8  first_set_capture_volume;
 
-    u8  capture_source; // 0-AC97 Mic; 1-Direct Line in; 2-AC97 Line In;
+	u8  capture_source; /* 0-AC97 Mic; 1-Direct Line in; 2-AC97 Line In; */
 
-    /* CMI8788 IC revision*/
-    u8  CMI8788IC_revision;
+	/* CMI8788 IC revision*/
+	u8  CMI8788IC_revision;
 
-    // for test
-    s64  old_jiffies;
-
+	/* for test */
+	s64  old_jiffies;
 } snd_cmi8788;
-
 
 #endif
 
