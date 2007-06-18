@@ -325,7 +325,16 @@ struct stru_snd_cmi8788 {
 	u8  CMI8788IC_revision;
 };
 
+void snd_cmipci_write(snd_cmi8788 *chip, unsigned int data, unsigned int cmd);
+unsigned int snd_cmipci_read(snd_cmi8788 *chip, unsigned int cmd);
+void snd_cmipci_write_w(snd_cmi8788 *chip, unsigned short data, unsigned int cmd);
+unsigned short snd_cmipci_read_w(snd_cmi8788 *chip, unsigned int cmd);
+void snd_cmipci_write_b(snd_cmi8788 *chip, unsigned char data, unsigned int cmd);
+unsigned char snd_cmipci_read_b(snd_cmi8788 *chip, unsigned int cmd);
 int snd_cmi_send_spi_cmd(cmi_codec *codec, u8 *data);
 int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data);
+
+int snd_cmi8788_pcm_create(snd_cmi8788 *chip);
+void snd_cmi_pcm_interrupt(snd_cmi8788 *chip, cmi_substream *cmi_subs);
 
 #endif
