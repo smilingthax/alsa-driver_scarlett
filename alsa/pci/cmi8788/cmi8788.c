@@ -1531,13 +1531,6 @@ static int snd_cmi8788_free(snd_cmi8788 *chip)
 	if (!chip)
 		return 0;
 
-	if (chip->remap_addr) {
-		/* disable interrupts */ /* ŽýÍêÉÆ */
-		/* wait a little for interrupts to finish */
-		msleep(1);
-		iounmap(chip->remap_addr);
-	}
-
 	if (chip->irq >= 0)
 		free_irq(chip->irq, chip);
 
@@ -1604,14 +1597,7 @@ static int __devinit snd_cmi8788_create(struct snd_card *card, struct pci_dev *p
 
 	chip->addr = pci_resource_start(pci, 0);
 	cmi_printk(("cmi8788(chip 0x%0x ,chip->addr 0x%0x)\n", chip, chip->addr));
-#if 0
-	chip->remap_addr = (unsigned long)ioremap_nocache(chip->addr, pci_resource_len(pci, 0));
-	if (0 == chip->remap_addr) {
-		snd_printk(KERN_ERR "cmi8788(chip->addr 0x%0x): ioremap error\n", chip->addr);
-		err = -ENXIO;
-		goto errout;
-	}
-#endif
+
 	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, chip->card->driver, chip)) {
 		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
 		err = -EBUSY;

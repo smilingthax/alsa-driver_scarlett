@@ -188,7 +188,6 @@ typedef struct stru_snd_cmi8788 {
 
 	/* pci resources */
 	unsigned long   addr;
-	unsigned long   remap_addr;
 	int             irq;
 
 	/* locks */
@@ -217,4 +216,3 @@ typedef struct stru_snd_cmi8788 {
 } snd_cmi8788;
 
 #endif
-
