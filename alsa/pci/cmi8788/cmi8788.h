@@ -263,4 +263,10 @@ int snd_cmi_send_AC97_cmd(cmi_codec *codec, u8 reg_addr, u16 reg_data);
 int snd_cmi8788_pcm_create(snd_cmi8788 *chip);
 void snd_cmi_pcm_interrupt(snd_cmi8788 *chip, cmi_substream *cmi_subs);
 
+int snd_cmi8788_mixer_create(snd_cmi8788 *chip);
+
+extern cmi_codec_ops ak4396_patch_ops;
+extern cmi_codec_ops wm8785_patch_ops;
+extern cmi_codec_ops cmi9780_patch_ops;
+
 #endif

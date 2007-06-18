@@ -66,8 +66,6 @@ MODULE_PARM_DESC(enable, "Enable C-Media PCI soundcard.");
 #endif
 
 
-extern int __devinit snd_cmi8788_mixer_create(snd_cmi8788 *chip);
-
 /* read/write operations for dword register */
 void snd_cmipci_write(snd_cmi8788 *chip, unsigned int data, unsigned int cmd)
 {
@@ -464,10 +462,6 @@ static int snd_cmi8788_codec_new(snd_cmi8788 *chip, cmi_codec *codec, u32 addr, 
 
 	return 0;
 }
-
-extern cmi_codec_ops ak4396_patch_ops;
-extern cmi_codec_ops wm8785_patch_ops;
-extern cmi_codec_ops cmi9780_patch_ops;
 
 static int __devinit snd_cmi8788_codec_create(snd_cmi8788 *chip)
 {
