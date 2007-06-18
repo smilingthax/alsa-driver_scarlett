@@ -428,7 +428,7 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 
 	status = snd_cmipci_read_w(chip, PCI_IntStatus);
 
-	if (0 == PCI_IntStatus)
+	if (0 == status)
 		return IRQ_NONE;
 
 	for (i = 0; i < chip->PCM_Count; i++) {
