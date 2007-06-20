@@ -38,40 +38,62 @@
 #include "cmi8788.h"
 
 
+/*
+ * TODO:
+ * - spdif
+ * - second ac97
+ * - sync start
+ * - suspend/resume
+ */
+
 static struct snd_pcm_hardware snd_cmi_pcm_playback_hw = {
-	.info =	SNDRV_PCM_INFO_MMAP |
-		SNDRV_PCM_INFO_INTERLEAVED |
-		SNDRV_PCM_INFO_BLOCK_TRANSFER |
+	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
+		SNDRV_PCM_INFO_INTERLEAVED |
 		SNDRV_PCM_INFO_PAUSE,
-	.formats = SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE,
-	.rates = SNDRV_PCM_RATE_5512 | SNDRV_PCM_RATE_8000_48000,
-	.rate_min = 5512,
-	.rate_max = 48000,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		   SNDRV_PCM_FMTBIT_S32_LE,
+	.rates = SNDRV_PCM_RATE_32000 |
+		 SNDRV_PCM_RATE_44100 |
+		 SNDRV_PCM_RATE_48000 |
+		 SNDRV_PCM_RATE_44100 |
+		 SNDRV_PCM_RATE_64000 |
+		 SNDRV_PCM_RATE_88200 |
+		 SNDRV_PCM_RATE_176400 |
+		 SNDRV_PCM_RATE_192000,
+	.rate_min = 32000,
+	.rate_max = 192000,
 	.channels_min = 2,
 	.channels_max = 8,
-	.buffer_bytes_max = 128 * 1024,
+	.buffer_bytes_max = 1024 * 1024,
 	.period_bytes_min = 128,
-	.period_bytes_max = 128 * 1024,
+	.period_bytes_max = 256 * 1024,
 	.periods_min = 2,
 	.periods_max = 1024,
 };
 
 static struct snd_pcm_hardware snd_cmi_pcm_capture_hw = {
-	.info =	SNDRV_PCM_INFO_MMAP |
+	.info = SNDRV_PCM_INFO_MMAP |
+		SNDRV_PCM_INFO_MMAP_VALID |
 		SNDRV_PCM_INFO_INTERLEAVED |
-		SNDRV_PCM_INFO_BLOCK_TRANSFER |
-		SNDRV_PCM_INFO_MMAP_VALID  |
 		SNDRV_PCM_INFO_PAUSE,
-	.formats =     SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE,
-	.rates = SNDRV_PCM_RATE_5512 | SNDRV_PCM_RATE_8000_48000,
-	.rate_min = 5512,
-	.rate_max = 48000,
-	.channels_min = 1,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		   SNDRV_PCM_FMTBIT_S32_LE,
+	.rates = SNDRV_PCM_RATE_32000 |
+		 SNDRV_PCM_RATE_44100 |
+		 SNDRV_PCM_RATE_48000 |
+		 SNDRV_PCM_RATE_44100 |
+		 SNDRV_PCM_RATE_64000 |
+		 SNDRV_PCM_RATE_88200 |
+		 SNDRV_PCM_RATE_176400 |
+		 SNDRV_PCM_RATE_192000,
+	.rate_min = 32000,
+	.rate_max = 192000,
+	.channels_min = 2,
 	.channels_max = 2,
-	.buffer_bytes_max = 128 * 1024,
+	.buffer_bytes_max = 1024 * 1024,
 	.period_bytes_min = 128,
-	.period_bytes_max = 128 * 1024,
+	.period_bytes_max = 256 * 1024,
 	.periods_min = 2,
 	.periods_max = 1024,
 };
