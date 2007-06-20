@@ -38,37 +38,6 @@
  * 没有寄存器，不用专门的控制，只需要设置 CMI8788 就可以了
  */
 
-/*
- * mixer
- */
-static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
-{
-	return 0;
-}
-
-/*
- * The ak5385a does not support read command.
- */
-static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
-{
-	return -1;
-}
-
-static struct cmi8788_mixer_ops ak5385a_mixer_ops =
-{
-	/* .get_volume = get_volume, */
-	.set_volume = put_volume,
-};
-
-/*
- * create mixer
- */
-static int ak5385a_build_controls(struct cmi_codec *codec)
-{
-	codec->mixer_ops = ak5385a_mixer_ops;
-	return 0;
-}
-
 static int ak5385a_init(struct cmi_codec *codec)
 {
 	codec->addr = CODEC_ADR_AK5385A; /* 0 */
@@ -77,6 +46,6 @@ static int ak5385a_init(struct cmi_codec *codec)
 }
 
 struct cmi_codec_ops ak5385a_patch_ops = {
-	.build_controls = NULL, /* ak5385a_build_controls, */
+	.build_controls = NULL,
 	.init           = NULL, /* ak5385a_init, */
 };

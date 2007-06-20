@@ -38,41 +38,13 @@
 /*
  * mixer
  */
-static int put_volume(struct cmi_codec *codec, int l_vol, int r_vols)
+static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
-	u8 l_volume = 0, r_volume = 0;
-	u8 reg_addr;
 	u16 reg_data;
 
-	/* bit5-0  0-3f */
-	l_volume = l_vol;
-	if (l_vol >= 0x3f)
-		l_volume = 0x3f;
-	if (l_vol <= 0)
-		l_volume = 0;
-	r_volume = r_vol;
-	if (r_vol >= 0x3f)
-		r_volume = 0x3f;
-	if (r_vol <= 0)
-		r_volume = 0;
-
-	/* left volume == right volume */
-	reg_addr = 2; /* master volume */
-	reg_data = 0x3f3f;
-	reg_data = volume | 0x3f;
-	reg_data = reg_data << 8;
-	reg_data = l_volume | 0x3f;
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
-
+	reg_data = ((r_vol & 0x3f) << 8) | (l_vol & 0x3f);
+	snd_cmi_send_ac97_cmd(codec->chip, 2, reg_data);
 	return 0;
-}
-
-/*
- * The ak4396 does not support read command.
- */
-static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
-{
-	return -1;
 }
 
 static struct cmi8788_mixer_ops alc203_mixer_ops =
@@ -92,28 +64,17 @@ static int alc203_build_controls(struct cmi_codec *codec)
 
 static int alc203_init(struct cmi_codec *codec)
 {
-	u8 reg_addr;
-	u16 reg_data;
+	/* master volume: left right channel 94.5dB Attenuation */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x02, 0x3f3f);
 
-	codec->addr = 0;
-	codec->reg_len_flag = 0;
+	/* Mic volume: left right channel +12dB Attenuation */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x0e, 0x0000);
 
-	reg_addr = 2; /* master volume */
-	reg_data = 0x3f3f; /* left right channel 94.5dB Attenuation */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
+	/* record select: default Mic in */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x1a, 0x0000);
 
-	reg_addr = 0xe; /* Mic volume */
-	reg_data = 0x0000; /* left right channel +12dB Attenuation */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
-
-	reg_addr = 0x1a; /* record select */
-	reg_data = 0x00; /* default Mic in */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
-
-	reg_addr = 0x1c; /* Record Gain Registers */
-	reg_data = 0x0f0f; /* left right channel 22.5 dB gain */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
-
+	/* Record Gain Registers: left right channel 22.5 dB gain */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x1c, 0x0f0f);
 	return 0;
 }
 

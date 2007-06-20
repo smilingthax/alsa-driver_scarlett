@@ -129,8 +129,6 @@ static int cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int
 	}
 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x10000);
 
-	runtime->private_data = chip;
-
 	return 0;
 }
 
@@ -200,81 +198,67 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
-	u16 val16 = 0;
-	u8 fmt;
+	u16 play_routing;
 	u16 I2SFmt;
+	u8 fmt;
 	u8 PlyDmaMode;
 
 	period_bytes = snd_pcm_lib_period_bytes(substream);
 
 	/* Digital Routing and Monitoring Registers */
-	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	val16 &= ~0x0010; /* Bit4 clear 0 */
-	snd_cmipci_write_w(chip, val16, Mixer_PlayRouting);
+	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
+	snd_cmipci_write_w(chip, play_routing & ~0x10, Mixer_PlayRouting);
 
 	/* set DMA Multi-Channel Playback DMA buffer addr length and fragsize */
-	snd_cmipci_write(chip, (u32)runtime->dma_addr , PCI_DMAPlay_MULTI_BaseAddr);
+	snd_cmipci_write(chip, (u32)runtime->dma_addr, PCI_DMAPlay_MULTI_BaseAddr);
 	snd_cmipci_write(chip, runtime->dma_bytes / 4 - 1, PCI_DMAPlay_MULTI_BaseCount); /* d-word units */
 	/* snd_cmipci_write(chip, period_bytes / 4 - 1 , PCI_DMAPlay_MUTLI_BaseTCount);// d-word units */
 	snd_cmipci_write(chip, runtime->dma_bytes / 8 - 1 , PCI_DMAPlay_MUTLI_BaseTCount);/* d-word units */
 
 	/* Sample Format Convert for Playback Channels */
 	/* I2S Multi-Channel DAC Format Register */
-	val16 = 0;
-	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt);
-	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt);
+	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt) & ~0x0c;
+	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt) & ~0x00c0;
 
 	switch (runtime->sample_bits) {
 	case 16:
-		fmt &= 0xf3;
 		fmt |= 0x00; /* Bit 3:2 00 */
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x0000; /* Bit 7:6  00 */
 		break;
 	case 20:
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x0040; /* Bit 7:6  01 */
 		break;
 	case 24:
-		fmt &= 0xf3;
 		fmt |= 0xf4; /* Bit 3:2 01 */
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x0080; /* Bit 7:6  10 */
 		break;
 	case 32:
-		fmt &= 0xf3;
 		fmt |= 0xf8; /* Bit 3:2 10 */
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x00c0; /* Bit 7:6  11 */
 		break;
 	}
 	snd_cmipci_write_b(chip, fmt, PCI_PlaySampleFmCvt);
-
 	snd_cmipci_write_w(chip, I2SFmt, I2S_Multi_DAC_Fmt);
 
 	/* set I2S sample rate */
 
 	/* Multi-Channel DMA Mode */
-	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE);
+	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE) & ~0x03;
 	switch (runtime->channels) {
 	case 2:
 		/* Bit 1:0  00 */
-		PlyDmaMode &= 0xfc;
 		PlyDmaMode |= 0x00;
 		break;
 	case 4:
 		/* Bit 1:0  01 */
-		PlyDmaMode &= 0xfc;
 		PlyDmaMode |= 0x01;
 		break;
 	case 6:
 		/* Bit 1:0  10 */
-		PlyDmaMode &= 0xfc;
 		PlyDmaMode |= 0x02;
 		break;
 	case 8:
 		/* Bit 1:0  11 */
-		PlyDmaMode &= 0xfc;
 		PlyDmaMode |= 0x03;
 		break;
 	default:
@@ -291,8 +275,8 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
-	u8 fmt = 0;
-	u16 I2SFmt = 0;
+	u8 fmt;
+	u16 I2SFmt;
 	u8 RecDmaMode;
 
 	period_bytes = snd_pcm_lib_period_bytes(substream);
@@ -304,60 +288,48 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	/* snd_cmipci_write_w(chip, runtime->dma_bytes / 8 - 1, PCI_DMARec_A_BaseTCount); // d-word units */
 
 	/* Sample Format Convert for Recording Channels */
-	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt);
+	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt) & ~0x03;
 	/* I2S ADC 1 Format Register */
-	I2SFmt = snd_cmipci_read_w(chip, I2S_ADC1_Fmt);
+	I2SFmt = snd_cmipci_read_w(chip, I2S_ADC1_Fmt) & ~0x00c0;
 
 	switch (runtime->sample_bits) {
 	case 16:
-		fmt &= 0xfc;
 		fmt |= 0x00; /* Bit 1:0 00 */
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x0000; /* Bit 7:6 00 */
 		break;
 	case 20:
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x0040; /* Bit 7:6 01 */
 		break;
 	case 24:
-		fmt &= 0xfc;
 		fmt |= 0x01; /* Bit 1:0 01 */
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x0080; /* Bit 7:6 10 */
 		break;
 	case 32:
-		fmt &= 0xfc;
 		fmt |= 0x02; /* Bit 1:0 10 */
-		I2SFmt &= 0xff3f;
 		I2SFmt |= 0x00c0; /* Bit 7:6 11 */
 		break;
 	}
-
-	snd_cmipci_write_b(chip, fmt,PCI_RecSampleFmtCvt);
-	snd_cmipci_write_w(chip, I2SFmt,I2S_ADC1_Fmt);
+	snd_cmipci_write_b(chip, fmt, PCI_RecSampleFmtCvt);
+	snd_cmipci_write_w(chip, I2SFmt, I2S_ADC1_Fmt);
 
 	/* set I2S sample rate */
 
-	RecDmaMode = snd_cmipci_read_b(chip, PCI_RecDMA_Mode);
+	RecDmaMode = snd_cmipci_read_b(chip, PCI_RecDMA_Mode) & ~0x07;
 	switch (runtime->channels) {
 	case 2:
 		/* Bit 2:0 000 */
-		RecDmaMode &= 0xf8;
 		RecDmaMode |= 0x00;
 		break;
 	case 4:
 		/* Bit 2:0 001 */
-		RecDmaMode &= 0xf8;
 		RecDmaMode |= 0x01;
 		break;
 	case 6:
 		/* Bit 2:0 011 */
-		RecDmaMode &= 0xf8;
 		RecDmaMode |= 0x03; /* or 0x02 */
 		break;
 	case 8:
 		/* Bit 2:0 100 */
-		RecDmaMode &= 0xf8;
 		RecDmaMode |= 0x04;
 		break;
 	default:
@@ -409,20 +381,18 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u32 period_bytes;
-	u16 val16 = 0;
-	u32 val32 = 0;
+	u16 play_routing;
+	u32 ch_cfg;
 
 	period_bytes = snd_pcm_lib_period_bytes(substream);
 
 	/* Digital Routing and Monitoring Registers */
-	val16 = snd_cmipci_read_w(chip, Mixer_PlayRouting);
-	val16 |= 0x0010; /* Bit4 set 1 */
-	snd_cmipci_write_w(chip, val16, Mixer_PlayRouting);
+	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
+	snd_cmipci_write_w(chip, play_routing | 0x10, Mixer_PlayRouting);
 
 	/* AC'97 Output Channel Configuration Register */
-	val32 = snd_cmipci_read(chip, AC97OutChanCfg);
-	val32 |= 0x0000ff00; /* Bit15-8 set 1 */
-	snd_cmipci_write(chip, val32, AC97OutChanCfg);
+	ch_cfg = snd_cmipci_read(chip, AC97OutChanCfg);
+	snd_cmipci_write(chip, ch_cfg | 0x0000ff00, AC97OutChanCfg);
 
 	/* set DMA Front Panel Playback */
 	snd_cmipci_write(chip, (u32)runtime->dma_addr , PCI_DMAPlay_Front_BaseAddr);
@@ -435,19 +405,18 @@ static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, 
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct cmi_substream *cmi_subs= &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
-
 	int err = 0;
-	u8 reset = 0;
-	u16 int_val = 0;
-	u16 int_stat= 0;
-	int DMARestRegister = PCI_DMA_Reset;
+	u8 reset;
+	u16 int_val;
+	u16 int_stat;
+	int DMARestRegister;
 
 	int_val = snd_cmipci_read_w(chip, PCI_IntMask);
 	int_stat = snd_cmipci_read_w(chip, PCI_DMA_SetStatus);
 
 	if (chip->CMI8788IC_revision == CMI8788IC_Revision1)
 		DMARestRegister = PCI_DMA_Reset;
-	if (chip->CMI8788IC_revision == CMI8788IC_Revision2)
+	else
 		DMARestRegister = PCI_DMA_FLUSH;
 
 	switch (cmd) {
@@ -508,7 +477,7 @@ static int snd_cmi_pcm_ac97_playback_trigger(struct snd_pcm_substream *substream
 static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	u32 addr = 0, pos = 0;
+	u32 addr, pos;
 
 	addr = snd_cmipci_read(chip, PCI_DMAPlay_MULTI_BaseAddr);
 	pos = addr - (u32)substream->runtime->dma_addr;
@@ -518,7 +487,7 @@ static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *
 static snd_pcm_uframes_t snd_cmi_pcm_capture_pointer(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	u32 addr = 0, pos = 0;
+	u32 addr, pos;
 
 	addr = snd_cmipci_read(chip, PCI_DMARec_A_BaseAddr);
 	pos = addr - (u32)substream->runtime->dma_addr;
@@ -528,7 +497,7 @@ static snd_pcm_uframes_t snd_cmi_pcm_capture_pointer(struct snd_pcm_substream *s
 static snd_pcm_uframes_t snd_cmi_pcm_ac97_playback_pointer(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	u32 addr = 0, pos = 0;
+	u32 addr, pos;
 
 	addr = snd_cmipci_read(chip, PCI_DMAPlay_Front_BaseAddr);
 	pos = addr - (u32)substream->runtime->dma_addr;
@@ -576,18 +545,13 @@ static void snd_cmi_pcm_free(struct snd_pcm *pcm)
 
 void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs)
 {
-	u16 old_int_val, int_val;
+	u16 int_mask;
 
-	/*  Set Bit-4 Interrupt for Multi-Channel Playback DMA is enabled */
-	old_int_val = snd_cmipci_read_w(chip, PCI_IntMask);
-
+	int_mask = snd_cmipci_read_w(chip, PCI_IntMask);
 	/* disable interrupt */
-	int_val = old_int_val & ~cmi_subs->int_mask;
-	snd_cmipci_write_w(chip, int_val, PCI_IntMask);
-
+	snd_cmipci_write_w(chip, int_mask & ~cmi_subs->int_mask, PCI_IntMask);
 	/* enable interrupt */
-	int_val = old_int_val | cmi_subs->int_mask; /* Set Bit-4 Interrupt for Multi-Channel Playback DMA is enabled */
-	snd_cmipci_write_w(chip, int_val, PCI_IntMask);
+	snd_cmipci_write_w(chip, int_mask | cmi_subs->int_mask, PCI_IntMask);
 
 	snd_pcm_period_elapsed(cmi_subs->substream);
 }
@@ -598,9 +562,8 @@ void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs)
  */
 int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 {
-	struct snd_pcm *pcm = NULL;
-	int err = 0, pcm_dev = 0;
-	int iRet = 0;
+	struct snd_pcm *pcm;
+	int err, pcm_dev = 0;
 
 #if 1 /* swf 2005-04-25 */
 	/* 1 create normal PCM */
@@ -623,9 +586,9 @@ int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 
 	strcpy(pcm->name, "C-Media PCI8788 DAC/ADC");
 
-	iRet = snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
-						     snd_dma_pci_data(chip->pci),
-						     1024 * 64, 1024 * 128     );
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+					      snd_dma_pci_data(chip->pci),
+					      1024 * 64, 1024 * 128);
 
 	pcm_dev++;
 
@@ -649,9 +612,9 @@ int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 
 	strcpy(pcm->name, "C-Media PCI8788 AC97 DAC/ADC");
 
-	iRet = snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
-						     snd_dma_pci_data(chip->pci),
-						     1024 * 64, 1024 * 128     );
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+					      snd_dma_pci_data(chip->pci),
+					      1024 * 64, 1024 * 128);
 	pcm_dev++;
 
 #endif
