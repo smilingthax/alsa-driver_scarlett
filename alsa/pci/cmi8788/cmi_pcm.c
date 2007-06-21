@@ -188,6 +188,37 @@ static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 	return snd_pcm_lib_free_pages(substream);
 }
 
+static inline u32 cmi_sample_format(unsigned int sample_bits)
+{
+	return (sample_bits - 16) >> 3;
+}
+
+static u32 i2s_sample_format(unsigned int sample_bits)
+{
+	switch (sample_bits) {
+	default: /* 16 */
+		return 0;
+	case 24:
+		return 2;
+	case 32:
+		return 3;
+	}
+}
+
+static u32 cmi_channel_bits(unsigned int channels)
+{
+	switch (channels) {
+	default: /* 2 */
+		return 0;
+	case 4:
+		return 1;
+	case 6:
+		return 2;
+	case 8:
+		return 3;
+	}
+}
+
 static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
@@ -213,49 +244,18 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	/* Sample Format Convert for Playback Channels */
 	/* I2S Multi-Channel DAC Format Register */
 	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt) & ~0x0c;
-	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt) & ~0x00c0;
-
-	switch (runtime->sample_bits) {
-	case 16:
-		fmt |= 0x00;
-		I2SFmt |= 0x0000; /* Bit 7:6  00 */
-		break;
-	case 24:
-		fmt |= 0x04;
-		I2SFmt |= 0x0080; /* Bit 7:6  10 */
-		break;
-	case 32:
-		fmt |= 0x08;
-		I2SFmt |= 0x00c0; /* Bit 7:6  11 */
-		break;
-	}
+	fmt |= cmi_sample_format(runtime->sample_bits) << 2;
 	snd_cmipci_write_b(chip, fmt, PCI_PlaySampleFmCvt);
+
+	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt) & ~0x00c0;
+	I2SFmt |= i2s_sample_format(runtime->sample_bits) << 6;
 	snd_cmipci_write_w(chip, I2SFmt, I2S_Multi_DAC_Fmt);
 
 	/* set I2S sample rate */
 
 	/* Multi-Channel DMA Mode */
 	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE) & ~0x03;
-	switch (runtime->channels) {
-	case 2:
-		/* Bit 1:0  00 */
-		PlyDmaMode |= 0x00;
-		break;
-	case 4:
-		/* Bit 1:0  01 */
-		PlyDmaMode |= 0x01;
-		break;
-	case 6:
-		/* Bit 1:0  10 */
-		PlyDmaMode |= 0x02;
-		break;
-	case 8:
-		/* Bit 1:0  11 */
-		PlyDmaMode |= 0x03;
-		break;
-	default:
-		break;
-	}
+	PlyDmaMode |= cmi_channel_bits(runtime->channels);
 	snd_cmipci_write_b(chip, PlyDmaMode, PCI_MULTI_DMA_MODE);
 
 	return 0;
@@ -281,37 +281,17 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 
 	/* Sample Format Convert for Recording Channels */
 	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt) & ~0x03;
+	fmt |= cmi_sample_format(runtime->sample_bits);
+	snd_cmipci_write_b(chip, fmt, PCI_RecSampleFmtCvt);
 	/* I2S ADC 1 Format Register */
 	I2SFmt = snd_cmipci_read_w(chip, I2S_ADC1_Fmt) & ~0x00c0;
-
-	switch (runtime->sample_bits) {
-	case 16:
-		fmt |= 0x00;
-		I2SFmt |= 0x0000; /* Bit 7:6 00 */
-		break;
-	case 24:
-		fmt |= 0x01;
-		I2SFmt |= 0x0080; /* Bit 7:6 10 */
-		break;
-	case 32:
-		fmt |= 0x02;
-		I2SFmt |= 0x00c0; /* Bit 7:6 11 */
-		break;
-	}
-	snd_cmipci_write_b(chip, fmt, PCI_RecSampleFmtCvt);
+	I2SFmt |= i2s_sample_format(runtime->sample_bits) << 6;
 	snd_cmipci_write_w(chip, I2SFmt, I2S_ADC1_Fmt);
 
 	/* set I2S sample rate */
 
 	RecDmaMode = snd_cmipci_read_b(chip, PCI_RecDMA_Mode) & ~0x07;
-	switch (runtime->channels) {
-	case 2:
-		/* Bit 2:0 000 */
-		RecDmaMode |= 0x00;
-		break;
-	default:
-		break;
-	}
+	RecDmaMode |= cmi_channel_bits(runtime->channels);
 	snd_cmipci_write_b(chip, RecDmaMode, PCI_RecDMA_Mode);
 
 	switch (chip->capture_source) {
