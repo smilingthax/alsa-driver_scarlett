@@ -106,52 +106,61 @@ static struct snd_pcm_hardware snd_cmi_pcm_capture_hw = {
  * int subs_no : CMI_PLAYBACK 0; CMI_CAPTURE 1
  *
  */
-static int cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no)
+static void cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
 
 	cmi_subs->substream = substream;
-	runtime->private_data = cmi_subs;
+	substream->runtime->private_data = cmi_subs;
+}
 
-	switch(cmi_pcm_no) {
-	case NORMAL_PCMS:
-		switch(subs_no) {
-		case CMI_PLAYBACK:
-			chip->playback_volume_init = 1;
-			cmi_subs->DMA_sta_mask   = 0x0010; /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte -- 1 start*/
-			cmi_subs->DMA_chan_reset = 0x0010; /* PCI 42: PCI DMA Channel Reset 1Byte --1 Reset*/
-			cmi_subs->int_mask       = 0x0010; /* PCI 44: Interrupt Mask Register  2Byte -- 1 is enable*/
-			cmi_subs->int_sta_mask   = 0x0010; /* PCI 46: interrupt status mask    2Byte-- Bit 4  Interrupt for Multi-Channel Playback DMA is pending*/
-			runtime->hw = snd_cmi_pcm_playback_hw;
-			break;
-		case CMI_CAPTURE:
-			chip->capture_volume_init = 1;
-			cmi_subs->DMA_sta_mask   = 0x0001; /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte -- 1 start*/
-			cmi_subs->DMA_chan_reset = 0x0001; /* PCI 42: PCI DMA Channel Reset 1Byte --1 Reset*/
-			cmi_subs->int_mask       = 0x0001; /* PCI 44: Interrupt Mask Register  2Byte -- 1 is enable*/
-			cmi_subs->int_sta_mask   = 0x0001; /* PCI 46: interrupt status mask 2Byte -- Bit 0 Interrupt for Recording Channel A DMA is pending*/
-			runtime->hw = snd_cmi_pcm_capture_hw;
-			break;
-		}
-		break;
-	case AC97_PCMS:
-		switch(subs_no) {
-		case CMI_PLAYBACK:
-			cmi_subs->DMA_sta_mask   = 0x0020; /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte -- 1 start*/
-			cmi_subs->DMA_chan_reset = 0x0020; /* PCI 42: PCI DMA Channel Reset 1Byte --1 Reset*/
-			cmi_subs->int_mask       = 0x4020; /* PCI 44: Interrupt Mask Register  2Byte -- 1 is enable*/
-			cmi_subs->int_sta_mask   = 0x4020; /* PCI 46: interrupt status mask    2Byte-- Bit 4  Interrupt for Multi-Channel Playback DMA is pending*/
-			runtime->hw = snd_cmi_pcm_playback_hw;
-			break;
-		}
-		break;
-	case SPDIF_PCMS:
-		break;
-	}
-	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x10000);
+static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
+{
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct cmi_substream *cmi_subs;
 
+	cmi_pcm_open(substream, NORMAL_PCMS, CMI_PLAYBACK);
+	chip->playback_volume_init = 1;
+	cmi_subs = runtime->private_data;
+	cmi_subs->DMA_sta_mask   = 0x0010;
+	cmi_subs->DMA_chan_reset = 0x0010;
+	cmi_subs->int_mask       = 0x0010;
+	cmi_subs->int_sta_mask   = 0x0010;
+	runtime->hw = snd_cmi_pcm_playback_hw;
+	return 0;
+}
+
+static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
+{
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct cmi_substream *cmi_subs;
+
+	cmi_pcm_open(substream, NORMAL_PCMS, CMI_CAPTURE);
+	chip->capture_volume_init = 1;
+	cmi_subs = runtime->private_data;
+	cmi_subs->DMA_sta_mask   = 0x0001;
+	cmi_subs->DMA_chan_reset = 0x0001;
+	cmi_subs->int_mask       = 0x0001;
+	cmi_subs->int_sta_mask   = 0x0001;
+	runtime->hw = snd_cmi_pcm_capture_hw;
+	return 0;
+}
+
+static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct cmi_substream *cmi_subs;
+
+	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
+	cmi_subs = runtime->private_data;
+	cmi_subs->DMA_sta_mask   = 0x0020;
+	cmi_subs->DMA_chan_reset = 0x0020;
+	cmi_subs->int_mask       = 0x4020;
+	cmi_subs->int_sta_mask   = 0x4020;
+	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
 
@@ -166,24 +175,6 @@ static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 	cmi_subs->int_mask       = 0x0000;
 	cmi_subs->int_sta_mask   = 0x0000;
 
-	return 0;
-}
-
-static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
-{
-	cmi_pcm_open(substream, NORMAL_PCMS, CMI_PLAYBACK);
-	return 0;
-}
-
-static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
-{
-	cmi_pcm_open(substream, NORMAL_PCMS, CMI_CAPTURE);
-	return 0;
-}
-
-static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
-{
-	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
 	return 0;
 }
 
