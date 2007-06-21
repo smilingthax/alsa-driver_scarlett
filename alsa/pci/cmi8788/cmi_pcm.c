@@ -219,6 +219,28 @@ static u32 cmi_channel_bits(unsigned int channels)
 	}
 }
 
+static u32 i2s_rate_bits(unsigned int rate)
+{
+	switch (rate) {
+	case 32000:
+		return 0;
+	case 44100:
+		return 1;
+	default: /* 48000 */
+		return 2;
+	case 64000:
+		return 3;
+	case 88200:
+		return 4;
+	case 96000:
+		return 5;
+	case 176400:
+		return 6;
+	case 192000:
+		return 7;
+	}
+}
+
 static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
@@ -242,16 +264,15 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	snd_cmipci_write(chip, runtime->dma_bytes / 8 - 1 , PCI_DMAPlay_MUTLI_BaseTCount);/* d-word units */
 
 	/* Sample Format Convert for Playback Channels */
-	/* I2S Multi-Channel DAC Format Register */
 	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt) & ~0x0c;
 	fmt |= cmi_sample_format(runtime->sample_bits) << 2;
 	snd_cmipci_write_b(chip, fmt, PCI_PlaySampleFmCvt);
 
-	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt) & ~0x00c0;
+	/* I2S Multi-Channel DAC Format Register */
+	I2SFmt = snd_cmipci_read_w(chip, I2S_Multi_DAC_Fmt) & ~0x00c7;
 	I2SFmt |= i2s_sample_format(runtime->sample_bits) << 6;
+	I2SFmt |= i2s_rate_bits(runtime->rate);
 	snd_cmipci_write_w(chip, I2SFmt, I2S_Multi_DAC_Fmt);
-
-	/* set I2S sample rate */
 
 	/* Multi-Channel DMA Mode */
 	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE) & ~0x03;
@@ -283,12 +304,12 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt) & ~0x03;
 	fmt |= cmi_sample_format(runtime->sample_bits);
 	snd_cmipci_write_b(chip, fmt, PCI_RecSampleFmtCvt);
-	/* I2S ADC 1 Format Register */
-	I2SFmt = snd_cmipci_read_w(chip, I2S_ADC1_Fmt) & ~0x00c0;
-	I2SFmt |= i2s_sample_format(runtime->sample_bits) << 6;
-	snd_cmipci_write_w(chip, I2SFmt, I2S_ADC1_Fmt);
 
-	/* set I2S sample rate */
+	/* I2S ADC 1 Format Register */
+	I2SFmt = snd_cmipci_read_w(chip, I2S_ADC1_Fmt) & ~0x00c7;
+	I2SFmt |= i2s_sample_format(runtime->sample_bits) << 6;
+	I2SFmt |= i2s_rate_bits(runtime->rate);
+	snd_cmipci_write_w(chip, I2SFmt, I2S_ADC1_Fmt);
 
 	RecDmaMode = snd_cmipci_read_b(chip, PCI_RecDMA_Mode) & ~0x07;
 	RecDmaMode |= cmi_channel_bits(runtime->channels);
