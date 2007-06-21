@@ -220,9 +220,6 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 		fmt |= 0x00; /* Bit 3:2 00 */
 		I2SFmt |= 0x0000; /* Bit 7:6  00 */
 		break;
-	case 20:
-		I2SFmt |= 0x0040; /* Bit 7:6  01 */
-		break;
 	case 24:
 		fmt |= 0xf4; /* Bit 3:2 01 */
 		I2SFmt |= 0x0080; /* Bit 7:6  10 */
@@ -292,9 +289,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		fmt |= 0x00; /* Bit 1:0 00 */
 		I2SFmt |= 0x0000; /* Bit 7:6 00 */
 		break;
-	case 20:
-		I2SFmt |= 0x0040; /* Bit 7:6 01 */
-		break;
 	case 24:
 		fmt |= 0x01; /* Bit 1:0 01 */
 		I2SFmt |= 0x0080; /* Bit 7:6 10 */
@@ -314,18 +308,6 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 	case 2:
 		/* Bit 2:0 000 */
 		RecDmaMode |= 0x00;
-		break;
-	case 4:
-		/* Bit 2:0 001 */
-		RecDmaMode |= 0x01;
-		break;
-	case 6:
-		/* Bit 2:0 011 */
-		RecDmaMode |= 0x03; /* or 0x02 */
-		break;
-	case 8:
-		/* Bit 2:0 100 */
-		RecDmaMode |= 0x04;
 		break;
 	default:
 		break;
