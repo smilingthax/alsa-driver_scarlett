@@ -217,15 +217,15 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 
 	switch (runtime->sample_bits) {
 	case 16:
-		fmt |= 0x00; /* Bit 3:2 00 */
+		fmt |= 0x00;
 		I2SFmt |= 0x0000; /* Bit 7:6  00 */
 		break;
 	case 24:
-		fmt |= 0xf4; /* Bit 3:2 01 */
+		fmt |= 0x04;
 		I2SFmt |= 0x0080; /* Bit 7:6  10 */
 		break;
 	case 32:
-		fmt |= 0xf8; /* Bit 3:2 10 */
+		fmt |= 0x08;
 		I2SFmt |= 0x00c0; /* Bit 7:6  11 */
 		break;
 	}
@@ -286,15 +286,15 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 
 	switch (runtime->sample_bits) {
 	case 16:
-		fmt |= 0x00; /* Bit 1:0 00 */
+		fmt |= 0x00;
 		I2SFmt |= 0x0000; /* Bit 7:6 00 */
 		break;
 	case 24:
-		fmt |= 0x01; /* Bit 1:0 01 */
+		fmt |= 0x01;
 		I2SFmt |= 0x0080; /* Bit 7:6 10 */
 		break;
 	case 32:
-		fmt |= 0x02; /* Bit 1:0 10 */
+		fmt |= 0x02;
 		I2SFmt |= 0x00c0; /* Bit 7:6 11 */
 		break;
 	}
