@@ -113,6 +113,7 @@ static int cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int
 	struct cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
 
 	cmi_subs->substream = substream;
+	runtime->private_data = cmi_subs;
 
 	switch(cmi_pcm_no) {
 	case NORMAL_PCMS:
@@ -154,10 +155,9 @@ static int cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, int
 	return 0;
 }
 
-static int cmi_pcm_close(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no)
+static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 {
-	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	struct cmi_substream *cmi_subs = &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
+	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 
 	cmi_subs->substream    = NULL;
 
@@ -184,24 +184,6 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 {
 	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
-	return 0;
-}
-
-static int snd_cmi_pcm_playback_close(struct snd_pcm_substream *substream)
-{
-	cmi_pcm_close(substream, NORMAL_PCMS, CMI_PLAYBACK);
-	return 0;
-}
-
-static int snd_cmi_pcm_capture_close(struct snd_pcm_substream *substream)
-{
-	cmi_pcm_close(substream, NORMAL_PCMS, CMI_CAPTURE);
-	return 0;
-}
-
-static int snd_cmi_pcm_ac97_playback_close(struct snd_pcm_substream *substream)
-{
-	cmi_pcm_close(substream, AC97_PCMS, CMI_PLAYBACK);
 	return 0;
 }
 
@@ -423,10 +405,10 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	return 0;
 }
 
-static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, int subs_no, int cmd)
+static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	struct cmi_substream *cmi_subs= &chip->cmi_pcm[cmi_pcm_no].cmi_subs[subs_no];
+	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 	int err = 0;
 	u8 reset;
 	u16 int_val;
@@ -481,21 +463,6 @@ static int cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmi_pcm_no, 
 	return err;
 }
 
-static int snd_cmi_pcm_playback_trigger(struct snd_pcm_substream *substream, int cmd)
-{
-	return cmi_pcm_trigger(substream, NORMAL_PCMS, CMI_PLAYBACK, cmd);
-}
-
-static int snd_cmi_pcm_capture_trigger(struct snd_pcm_substream *substream, int cmd)
-{
-	return cmi_pcm_trigger(substream, NORMAL_PCMS, CMI_CAPTURE, cmd);
-}
-
-static int snd_cmi_pcm_ac97_playback_trigger(struct snd_pcm_substream *substream, int cmd)
-{
-	return cmi_pcm_trigger(substream, AC97_PCMS, CMI_PLAYBACK, cmd);
-}
-
 static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
@@ -528,34 +495,34 @@ static snd_pcm_uframes_t snd_cmi_pcm_ac97_playback_pointer(struct snd_pcm_substr
 
 static struct snd_pcm_ops snd_cmi_pcm_playback_ops = {
 	.open      = snd_cmi_pcm_playback_open,
-	.close     = snd_cmi_pcm_playback_close,
+	.close     = snd_cmi_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
 	.hw_params = snd_cmi_pcm_hw_params,
 	.hw_free   = snd_cmi_pcm_hw_free,
 	.prepare   = snd_cmi_pcm_playback_prepare,
-	.trigger   = snd_cmi_pcm_playback_trigger,
+	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_playback_pointer,
 };
 
 static struct snd_pcm_ops snd_cmi_pcm_capture_ops = {
 	.open      = snd_cmi_pcm_capture_open,
-	.close     = snd_cmi_pcm_capture_close,
+	.close     = snd_cmi_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
 	.hw_params = snd_cmi_pcm_hw_params,
 	.hw_free   = snd_cmi_pcm_hw_free,
 	.prepare   = snd_cmi_pcm_capture_prepare,
-	.trigger   = snd_cmi_pcm_capture_trigger,
+	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_capture_pointer,
 };
 
 static struct snd_pcm_ops snd_cmi_pcm_ac97_playback_ops = {
 	.open      = snd_cmi_pcm_ac97_playback_open,
-	.close     = snd_cmi_pcm_ac97_playback_close,
+	.close     = snd_cmi_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
 	.hw_params = snd_cmi_pcm_hw_params,
 	.hw_free   = snd_cmi_pcm_hw_free,
 	.prepare   = snd_cmi_pcm_ac97_playback_prepare,
-	.trigger   = snd_cmi_pcm_ac97_playback_trigger,
+	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_ac97_playback_pointer,
 };
 
