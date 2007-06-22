@@ -437,34 +437,29 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	return err;
 }
 
-static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *substream)
+static snd_pcm_uframes_t cmi_pcm_pointer(struct snd_pcm_substream *substream,
+					 unsigned int reg)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	u32 addr, pos;
+	u32 pos;
 
-	addr = snd_cmipci_read(chip, PCI_DMAPlay_MULTI_BaseAddr);
-	pos = addr - (u32)substream->runtime->dma_addr;
+	pos = snd_cmipci_read(chip, reg) - (u32)substream->runtime->dma_addr;
 	return bytes_to_frames(substream->runtime, pos);
+}
+
+static snd_pcm_uframes_t snd_cmi_pcm_playback_pointer(struct snd_pcm_substream *substream)
+{
+	return cmi_pcm_pointer(substream, PCI_DMAPlay_MULTI_BaseAddr);
 }
 
 static snd_pcm_uframes_t snd_cmi_pcm_capture_pointer(struct snd_pcm_substream *substream)
 {
-	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	u32 addr, pos;
-
-	addr = snd_cmipci_read(chip, PCI_DMARec_A_BaseAddr);
-	pos = addr - (u32)substream->runtime->dma_addr;
-	return bytes_to_frames(substream->runtime, pos);
+	return cmi_pcm_pointer(substream, PCI_DMARec_A_BaseAddr);
 }
 
 static snd_pcm_uframes_t snd_cmi_pcm_ac97_playback_pointer(struct snd_pcm_substream *substream)
 {
-	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	u32 addr, pos;
-
-	addr = snd_cmipci_read(chip, PCI_DMAPlay_Front_BaseAddr);
-	pos = addr - (u32)substream->runtime->dma_addr;
-	return bytes_to_frames(substream->runtime, pos);
+	return cmi_pcm_pointer(substream, PCI_DMAPlay_Front_BaseAddr);
 }
 
 static struct snd_pcm_ops snd_cmi_pcm_playback_ops = {
