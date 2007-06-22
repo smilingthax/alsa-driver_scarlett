@@ -389,6 +389,22 @@ static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 
 static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
 {
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi_substream *cmi_subs = substream->runtime->private_data;
+	unsigned int DMARestRegister;
+	u8 reset;
+
+	if (chip->CMI8788IC_revision == CMI8788IC_Revision1)
+		DMARestRegister = PCI_DMA_Reset;
+	else
+		DMARestRegister = PCI_DMA_FLUSH;
+
+	/* Reset DMA Channel*/
+	reset = snd_cmipci_read_b(chip, DMARestRegister);
+	reset |= cmi_subs->DMA_chan_reset; /* set bit */
+	snd_cmipci_write_b(chip, reset, DMARestRegister);
+	reset &= ~cmi_subs->DMA_chan_reset; /* clear bit */
+	snd_cmipci_write_b(chip, reset, DMARestRegister);
 	return 0;
 }
 
@@ -397,56 +413,40 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 	int err = 0;
-	u8 reset;
 	u16 int_val;
 	u16 int_stat;
-	int DMARestRegister;
 
 	int_val = snd_cmipci_read_w(chip, PCI_IntMask);
 	int_stat = snd_cmipci_read_w(chip, PCI_DMA_SetStatus);
 
-	if (chip->CMI8788IC_revision == CMI8788IC_Revision1)
-		DMARestRegister = PCI_DMA_Reset;
-	else
-		DMARestRegister = PCI_DMA_FLUSH;
-
 	switch (cmd) {
-	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		cmi_subs->running = 1;
 
-		/* Reset DMA Channel*/
-		reset = snd_cmipci_read_b(chip, DMARestRegister);
-		reset |= cmi_subs->DMA_chan_reset; /* set bit */
-		snd_cmipci_write_b(chip, reset, DMARestRegister);
-		reset &= ~cmi_subs->DMA_chan_reset; /*clear bit */
-		snd_cmipci_write_b(chip, reset, DMARestRegister);
-
 		/* enable Interrupt */
-		int_val |= cmi_subs->int_mask; /* Set Bit-1 Interrupt for Recording DMA Channel A is enabled */
+		int_val |= cmi_subs->int_mask;
 		snd_cmipci_write_w(chip, int_val, PCI_IntMask);
 
-		/* Set PCI DMA Channel state -- Start*/
-		int_stat |= cmi_subs->DMA_sta_mask; /* PCI DMA Channel Start/Pause/Stop Bit-0 set 1 */
+		/* Set PCI DMA Channel state -- Start */
+		int_stat |= cmi_subs->DMA_sta_mask;
 		snd_cmipci_write_w(chip, int_stat, PCI_DMA_SetStatus);
 		break;
-	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		cmi_subs->running = 0;
 
-		/* Set PCI DMA Channel state -- Stop*/
-		int_stat &= ~cmi_subs->DMA_sta_mask; /* PCI DMA Channel Start/Pause/Stop Bit-0 clear */
+		/* Set PCI DMA Channel state -- Stop */
+		int_stat &= ~cmi_subs->DMA_sta_mask;
 		snd_cmipci_write_w(chip, int_stat, PCI_DMA_SetStatus);
 
 		/* disable interrupt */
-		int_val &= ~cmi_subs->int_mask; /* Clear Interrupt for Recording DMA Channel A is disabled */
+		int_val &= ~cmi_subs->int_mask;
 		snd_cmipci_write_w(chip, int_val, PCI_IntMask);
 		break;
 	default:
 		err = -EINVAL;
 	}
-
 	return err;
 }
 
