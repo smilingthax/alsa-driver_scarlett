@@ -178,16 +178,6 @@ static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static int snd_cmi_pcm_hw_params(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params)
-{
-	return snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
-}
-
-static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
-{
-	return snd_pcm_lib_free_pages(substream);
-}
-
 static inline u32 cmi_sample_format(unsigned int sample_bits)
 {
 	return (sample_bits - 16) >> 3;
@@ -241,7 +231,8 @@ static u32 i2s_rate_bits(unsigned int rate)
 	}
 }
 
-static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
+static int snd_cmi_pcm_playback_hw_params(struct snd_pcm_substream *substream,
+					  struct snd_pcm_hw_params *hw_params)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
@@ -249,15 +240,23 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	u16 I2SFmt;
 	u8 fmt;
 	u8 PlyDmaMode;
+	int err;
+
+	err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
+	if (err < 0)
+		return err;
 
 	/* Digital Routing and Monitoring Registers */
 	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
 	snd_cmipci_write_w(chip, play_routing & ~0x10, Mixer_PlayRouting);
 
 	/* set DMA Multi-Channel Playback DMA buffer addr length and fragsize */
-	snd_cmipci_write(chip, (u32)runtime->dma_addr, PCI_DMAPlay_MULTI_BaseAddr);
-	snd_cmipci_write(chip, runtime->dma_bytes / 4 - 1, PCI_DMAPlay_MULTI_BaseCount); /* d-word units */
-	snd_cmipci_write(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1, PCI_DMAPlay_MUTLI_BaseTCount); /* 32-bit units */
+	snd_cmipci_write(chip, (u32)runtime->dma_addr,
+			 PCI_DMAPlay_MULTI_BaseAddr);
+	snd_cmipci_write(chip, runtime->dma_bytes / 4 - 1,
+			 PCI_DMAPlay_MULTI_BaseCount); /* 32-bit units */
+	snd_cmipci_write(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1,
+			 PCI_DMAPlay_MUTLI_BaseTCount); /* 32-bit units */
 
 	/* Sample Format Convert for Playback Channels */
 	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt) & ~0x0c;
@@ -274,23 +273,30 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	PlyDmaMode = snd_cmipci_read_b(chip, PCI_MULTI_DMA_MODE) & ~0x03;
 	PlyDmaMode |= cmi_channel_bits(runtime->channels);
 	snd_cmipci_write_b(chip, PlyDmaMode, PCI_MULTI_DMA_MODE);
-
 	return 0;
 }
 
-
-static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
+static int snd_cmi_pcm_capture_hw_params(struct snd_pcm_substream *substream,
+					 struct snd_pcm_hw_params *hw_params)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u8 fmt;
 	u16 I2SFmt;
 	u8 RecDmaMode;
+	int err;
+
+	err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
+	if (err < 0)
+		return err;
 
 	/* set DMA Recording Channel A DMA buffer addr length and fragsize */
-	snd_cmipci_write(chip, (u32)runtime->dma_addr, PCI_DMARec_A_BaseAddr);
-	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1, PCI_DMARec_A_BaseCount); /* d-word units */
-	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1, PCI_DMARec_A_BaseTCount);
+	snd_cmipci_write(chip, (u32)runtime->dma_addr,
+			 PCI_DMARec_A_BaseAddr);
+	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1,
+			   PCI_DMARec_A_BaseCount); /* 32-bit units */
+	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1,
+			   PCI_DMARec_A_BaseTCount); /* 32-bit units */
 
 	/* Sample Format Convert for Recording Channels */
 	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt) & ~0x03;
@@ -342,16 +348,21 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 		snd_cmi_send_ac97_cmd(chip, 0x72, 0x0000); /* Record throug Line in */
 		break;
 	}
-
 	return 0;
 }
 
-static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream)
+static int snd_cmi_pcm_ac97_playback_hw_params(struct snd_pcm_substream *substream,
+					       struct snd_pcm_hw_params *hw_params)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	u16 play_routing;
 	u32 ch_cfg;
+	int err;
+
+	err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
+	if (err < 0)
+		return err;
 
 	/* Digital Routing and Monitoring Registers */
 	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
@@ -362,9 +373,22 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	snd_cmipci_write(chip, ch_cfg | 0x0000ff00, AC97OutChanCfg);
 
 	/* set DMA Front Panel Playback */
-	snd_cmipci_write(chip, (u32)runtime->dma_addr , PCI_DMAPlay_Front_BaseAddr);
-	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1, PCI_DMAPlay_Front_BaseCount); /* d-word units */
-	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1, PCI_DMAPlay_Front_BaseTCount);
+	snd_cmipci_write(chip, (u32)runtime->dma_addr,
+			 PCI_DMAPlay_Front_BaseAddr);
+	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1,
+			   PCI_DMAPlay_Front_BaseCount); /* 32-bit units */
+	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1,
+			   PCI_DMAPlay_Front_BaseTCount); /* 32-bit units */
+	return 0;
+}
+
+static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
+{
+	return snd_pcm_lib_free_pages(substream);
+}
+
+static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
+{
 	return 0;
 }
 
@@ -455,9 +479,9 @@ static struct snd_pcm_ops snd_cmi_pcm_playback_ops = {
 	.open      = snd_cmi_pcm_playback_open,
 	.close     = snd_cmi_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
-	.hw_params = snd_cmi_pcm_hw_params,
+	.hw_params = snd_cmi_pcm_playback_hw_params,
 	.hw_free   = snd_cmi_pcm_hw_free,
-	.prepare   = snd_cmi_pcm_playback_prepare,
+	.prepare   = snd_cmi_pcm_prepare,
 	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_playback_pointer,
 };
@@ -466,9 +490,9 @@ static struct snd_pcm_ops snd_cmi_pcm_capture_ops = {
 	.open      = snd_cmi_pcm_capture_open,
 	.close     = snd_cmi_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
-	.hw_params = snd_cmi_pcm_hw_params,
+	.hw_params = snd_cmi_pcm_capture_hw_params,
 	.hw_free   = snd_cmi_pcm_hw_free,
-	.prepare   = snd_cmi_pcm_capture_prepare,
+	.prepare   = snd_cmi_pcm_prepare,
 	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_capture_pointer,
 };
@@ -477,9 +501,9 @@ static struct snd_pcm_ops snd_cmi_pcm_ac97_playback_ops = {
 	.open      = snd_cmi_pcm_ac97_playback_open,
 	.close     = snd_cmi_pcm_close,
 	.ioctl     = snd_pcm_lib_ioctl,
-	.hw_params = snd_cmi_pcm_hw_params,
+	.hw_params = snd_cmi_pcm_ac97_playback_hw_params,
 	.hw_free   = snd_cmi_pcm_hw_free,
-	.prepare   = snd_cmi_pcm_ac97_playback_prepare,
+	.prepare   = snd_cmi_pcm_prepare,
 	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_ac97_playback_pointer,
 };
