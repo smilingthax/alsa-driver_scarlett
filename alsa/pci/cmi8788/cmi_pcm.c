@@ -245,13 +245,10 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	u32 period_bytes;
 	u16 play_routing;
 	u16 I2SFmt;
 	u8 fmt;
 	u8 PlyDmaMode;
-
-	period_bytes = snd_pcm_lib_period_bytes(substream);
 
 	/* Digital Routing and Monitoring Registers */
 	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
@@ -260,8 +257,7 @@ static int snd_cmi_pcm_playback_prepare(struct snd_pcm_substream *substream)
 	/* set DMA Multi-Channel Playback DMA buffer addr length and fragsize */
 	snd_cmipci_write(chip, (u32)runtime->dma_addr, PCI_DMAPlay_MULTI_BaseAddr);
 	snd_cmipci_write(chip, runtime->dma_bytes / 4 - 1, PCI_DMAPlay_MULTI_BaseCount); /* d-word units */
-	/* snd_cmipci_write(chip, period_bytes / 4 - 1 , PCI_DMAPlay_MUTLI_BaseTCount);// d-word units */
-	snd_cmipci_write(chip, runtime->dma_bytes / 8 - 1 , PCI_DMAPlay_MUTLI_BaseTCount);/* d-word units */
+	snd_cmipci_write(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1, PCI_DMAPlay_MUTLI_BaseTCount); /* 32-bit units */
 
 	/* Sample Format Convert for Playback Channels */
 	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt) & ~0x0c;
@@ -287,18 +283,14 @@ static int snd_cmi_pcm_capture_prepare(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	u32 period_bytes;
 	u8 fmt;
 	u16 I2SFmt;
 	u8 RecDmaMode;
 
-	period_bytes = snd_pcm_lib_period_bytes(substream);
-
 	/* set DMA Recording Channel A DMA buffer addr length and fragsize */
 	snd_cmipci_write(chip, (u32)runtime->dma_addr, PCI_DMARec_A_BaseAddr);
 	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1, PCI_DMARec_A_BaseCount); /* d-word units */
-	snd_cmipci_write_w(chip, period_bytes / 4 - 1, PCI_DMARec_A_BaseTCount); /* d-word units old */
-	/* snd_cmipci_write_w(chip, runtime->dma_bytes / 8 - 1, PCI_DMARec_A_BaseTCount); // d-word units */
+	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1, PCI_DMARec_A_BaseTCount);
 
 	/* Sample Format Convert for Recording Channels */
 	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt) & ~0x03;
@@ -358,11 +350,8 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	u32 period_bytes;
 	u16 play_routing;
 	u32 ch_cfg;
-
-	period_bytes = snd_pcm_lib_period_bytes(substream);
 
 	/* Digital Routing and Monitoring Registers */
 	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
@@ -375,7 +364,7 @@ static int snd_cmi_pcm_ac97_playback_prepare(struct snd_pcm_substream *substream
 	/* set DMA Front Panel Playback */
 	snd_cmipci_write(chip, (u32)runtime->dma_addr , PCI_DMAPlay_Front_BaseAddr);
 	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1, PCI_DMAPlay_Front_BaseCount); /* d-word units */
-	snd_cmipci_write_w(chip, period_bytes / 4 - 1, PCI_DMAPlay_Front_BaseTCount); /* d-word units */
+	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1, PCI_DMAPlay_Front_BaseTCount);
 	return 0;
 }
 
