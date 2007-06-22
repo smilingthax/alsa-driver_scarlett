@@ -246,7 +246,6 @@ int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data);
 void snd_cmi_send_ac97_cmd(struct cmi8788 *chip, u8 reg, u16 value);
 
 int snd_cmi8788_pcm_create(struct cmi8788 *chip);
-void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs);
 
 int snd_cmi8788_mixer_create(struct cmi8788 *chip);
 

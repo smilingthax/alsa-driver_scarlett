@@ -508,20 +508,6 @@ static void snd_cmi_pcm_free(struct snd_pcm *pcm)
 }
 
 
-void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs)
-{
-	u16 int_mask;
-
-	int_mask = snd_cmipci_read_w(chip, PCI_IntMask);
-	/* disable interrupt */
-	snd_cmipci_write_w(chip, int_mask & ~cmi_subs->int_mask, PCI_IntMask);
-	/* enable interrupt */
-	snd_cmipci_write_w(chip, int_mask | cmi_subs->int_mask, PCI_IntMask);
-
-	snd_pcm_period_elapsed(cmi_subs->substream);
-}
-
-
 /*
  * create pcm devices
  */

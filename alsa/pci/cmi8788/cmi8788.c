@@ -34,6 +34,7 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/control.h>
+#include <sound/pcm.h>
 #include "cmi8788.h"
 
 
@@ -310,7 +311,8 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 {
 	struct cmi8788 *chip = dev_id;
 	int i;
-	u16 status;
+	u16 status, int_mask;
+	u16 enable_ints = 0, disable_ints = 0;
 
 	status = snd_cmipci_read_w(chip, PCI_IntStatus);
 
@@ -322,18 +324,27 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
-		if (cmi_subs->running) {
-			if (status & cmi_subs->int_mask)
-				snd_cmi_pcm_interrupt(chip, cmi_subs);
+		if (cmi_subs->running && (status & cmi_subs->int_mask)) {
+			snd_pcm_period_elapsed(cmi_subs->substream);
+			disable_ints |= cmi_subs->int_mask;
+			if (cmi_subs->running)
+				enable_ints |= cmi_subs->int_mask;
 		}
 
 		/* capture */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_CAPTURE];
-		if (cmi_subs->running) {
-			if (status & cmi_subs->int_mask)
-				snd_cmi_pcm_interrupt(chip, cmi_subs);
+		if (cmi_subs->running && (status & cmi_subs->int_mask)) {
+			snd_pcm_period_elapsed(cmi_subs->substream);
+			disable_ints |= cmi_subs->int_mask;
+			if (cmi_subs->running)
+				enable_ints |= cmi_subs->int_mask;
 		}
 	}
+
+	/* ack interrupts by disabling and enabling them */
+	int_mask = snd_cmipci_read_w(chip, PCI_IntMask);
+	snd_cmipci_write_w(chip, int_mask & ~disable_ints, PCI_IntMask);
+	snd_cmipci_write_w(chip, int_mask | enable_ints, PCI_IntMask);
 
 	return IRQ_HANDLED;
 }
