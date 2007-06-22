@@ -127,7 +127,6 @@ static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
 	cmi_subs->DMA_sta_mask   = 0x0010;
 	cmi_subs->DMA_chan_reset = 0x0010;
 	cmi_subs->int_mask       = 0x0010;
-	cmi_subs->int_sta_mask   = 0x0010;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -144,7 +143,6 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 	cmi_subs->DMA_sta_mask   = 0x0001;
 	cmi_subs->DMA_chan_reset = 0x0001;
 	cmi_subs->int_mask       = 0x0001;
-	cmi_subs->int_sta_mask   = 0x0001;
 	runtime->hw = snd_cmi_pcm_capture_hw;
 	return 0;
 }
@@ -159,7 +157,6 @@ static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 	cmi_subs->DMA_sta_mask   = 0x0020;
 	cmi_subs->DMA_chan_reset = 0x0020;
 	cmi_subs->int_mask       = 0x4020;
-	cmi_subs->int_sta_mask   = 0x4020;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -169,12 +166,9 @@ static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 
 	cmi_subs->substream    = NULL;
-
 	cmi_subs->DMA_sta_mask   = 0x0000;
 	cmi_subs->DMA_chan_reset = 0x00;
 	cmi_subs->int_mask       = 0x0000;
-	cmi_subs->int_sta_mask   = 0x0000;
-
 	return 0;
 }
 

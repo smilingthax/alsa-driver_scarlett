@@ -323,14 +323,14 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
 		if (cmi_subs->running) {
-			if (status & cmi_subs->int_sta_mask)
+			if (status & cmi_subs->int_mask)
 				snd_cmi_pcm_interrupt(chip, cmi_subs);
 		}
 
 		/* capture */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_CAPTURE];
 		if (cmi_subs->running) {
-			if (status & cmi_subs->int_sta_mask)
+			if (status & cmi_subs->int_mask)
 				snd_cmi_pcm_interrupt(chip, cmi_subs);
 		}
 	}

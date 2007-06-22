@@ -186,8 +186,7 @@ struct cmi_substream {
 
 	int DMA_sta_mask;  /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte*/
 	int DMA_chan_reset;/* PCI 42: PCI DMA Channel Reset            1Byte*/
-	int int_mask;      /* PCI 44: Interrupt Mask Register          2Byte*/
-	int int_sta_mask;  /* PCI 46: interrupt status mask            2Byte*/
+	int int_mask;      /* PCI 44,46: Interrupt Status/Mask         2Byte */
 };
 
 struct cmipci_pcm {
