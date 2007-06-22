@@ -529,70 +529,51 @@ void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs)
 
 
 /*
- * create pcm DAC/ADC, SPDIF
+ * create pcm devices
  */
 int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 {
 	struct snd_pcm *pcm;
-	int err, pcm_dev = 0;
+	int err;
 
-#if 1 /* swf 2005-04-25 */
 	/* 1 create normal PCM */
-	err = snd_pcm_new(chip->card, "C-Media PCI8788 DAC/ADC",
-			  pcm_dev, 1, 1, &chip->pcm[pcm_dev]);
+	err = snd_pcm_new(chip->card, "CMI8788", 0, 1, 1, &pcm);
 	if (err < 0)
 		return err;
 
-	pcm = chip->pcm[pcm_dev];
-
-	/* create pcm stream by controller supported */
-	/* The PCM use Multi-Channel Playback DMA for playback and */
-	/*         use Recording Channel A DMA for record */
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_cmi_pcm_playback_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,  &snd_cmi_pcm_capture_ops);
 
 	pcm->private_data = chip;
 	pcm->private_free = snd_cmi_pcm_free;
-	pcm->info_flags = 0;
 
-	strcpy(pcm->name, "C-Media PCI8788 DAC/ADC");
+	strcpy(pcm->name, "C-Media PCI8788 Multichannel");
 
 	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 					      snd_dma_pci_data(chip->pci),
-					      1024 * 64, 1024 * 128);
-
-	pcm_dev++;
-
-#endif /* swf 2005-04-25 */
+					      1024 * 256, 1024 * 1024);
 
 #if 0
-	/* create the other pcm stream. AC97 SPDIF */
 	/* 2 create AC97 PCM */
-	err = snd_pcm_new(chip->card, "C-Media PCI8788 DAC/ADC",
-			  pcm_dev, 1, 0, &chip->pcm[pcm_dev]);
+	err = snd_pcm_new(chip->card, "CMI8788 FP", 2, 1, 0, &pcm);
 	if (err < 0)
 		return err;
 
-	pcm = chip->pcm[pcm_dev];
-	codec = &chip->ac97_codec_list[0];
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_cmi_pcm_ac97_playback_ops);
 
 	pcm->private_data = chip;
 	pcm->private_free = snd_cmi_pcm_free;
-	pcm->info_flags = 0;
 
-	strcpy(pcm->name, "C-Media PCI8788 AC97 DAC/ADC");
+	strcpy(pcm->name, "C-Media PCI8788 Front Panel");
 
 	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 					      snd_dma_pci_data(chip->pci),
 					      1024 * 64, 1024 * 128);
-	pcm_dev++;
-
 #endif
+
 	/* 3 create SPDIF PCM */
 
-	chip->PCM_Count = pcm_dev;
-
+	chip->PCM_Count = 3;
 	return 0;
 }
 

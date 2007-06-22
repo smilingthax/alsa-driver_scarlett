@@ -220,7 +220,6 @@ struct cmi8788 {
 
 	/* PCM */
 	int PCM_Count;
-	struct snd_pcm *pcm[CMI8788_MAX_PCMS];
 	struct cmipci_pcm cmi_pcm[CMI8788_MAX_PCMS];
 
 	int num_codecs;		/* Eµ¼EÉI CODEC µÄ,öEy */
