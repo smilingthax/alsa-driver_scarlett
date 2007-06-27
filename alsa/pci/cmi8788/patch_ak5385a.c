@@ -27,10 +27,6 @@
  */
 
 #include <sound/driver.h>
-#include <linux/init.h>
-#include <linux/delay.h>
-#include <linux/slab.h>
-#include <linux/pci.h>
 #include <sound/core.h>
 #include "cmi8788.h"
 
