@@ -213,9 +213,6 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 #if 0
 	snd_cmi_send_ac97_cmd(chip, 0x72, 0x0000); /* Record throug Line in */
 #endif
-
-	chip->int_mask_reg = snd_cmipci_read_w(chip, PCI_IntMask);
-	chip->dma_status_reg = snd_cmipci_read_w(chip, PCI_DMA_SetStatus);
 	return 0;
 }
 
@@ -442,6 +439,9 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	card->private_free = snd_cmi8788_card_free;
 
 	chip->addr = pci_resource_start(pci, 0);
+
+	snd_cmipci_write_w(chip, 0x0000, PCI_IntMask);
+	snd_cmipci_write_w(chip, 0x0000, PCI_DMA_SetStatus);
 
 	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, card->driver, chip)) {
 		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
