@@ -311,7 +311,7 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 	struct cmi8788 *chip = dev_id;
 	int i;
 	u16 status;
-	u16 enable_ints = 0, disable_ints = 0;
+	u16 enable_ints;
 
 	status = snd_cmipci_read_w(chip, PCI_IntStatus);
 
@@ -323,25 +323,18 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
-		if (cmi_subs->running && (status & cmi_subs->int_mask)) {
+		if (cmi_subs->running && (status & cmi_subs->int_mask))
 			snd_pcm_period_elapsed(cmi_subs->substream);
-			disable_ints |= cmi_subs->int_mask;
-			if (cmi_subs->running)
-				enable_ints |= cmi_subs->int_mask;
-		}
 
 		/* capture */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_CAPTURE];
-		if (cmi_subs->running && (status & cmi_subs->int_mask)) {
+		if (cmi_subs->running && (status & cmi_subs->int_mask))
 			snd_pcm_period_elapsed(cmi_subs->substream);
-			disable_ints |= cmi_subs->int_mask;
-			if (cmi_subs->running)
-				enable_ints |= cmi_subs->int_mask;
-		}
 	}
 
 	/* ack interrupts by disabling and enabling them */
-	chip->int_mask_reg &= ~disable_ints;
+	enable_ints = status & chip->int_mask_reg;
+	chip->int_mask_reg &= ~status;
 	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 	chip->int_mask_reg |= enable_ints;
 	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
