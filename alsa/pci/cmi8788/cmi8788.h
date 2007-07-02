@@ -212,6 +212,10 @@ struct cmi8788 {
 	unsigned long   addr;
 	int             irq;
 
+	/* cached register values */
+	u32 int_mask_reg;
+	u32 dma_status_reg;
+
 	/* locks */
 	spinlock_t reg_lock;
 	struct semaphore open_mutex;

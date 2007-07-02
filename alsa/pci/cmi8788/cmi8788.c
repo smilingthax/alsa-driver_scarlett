@@ -213,6 +213,9 @@ static int cmi8788_init_controller_chip(struct cmi8788 *chip)
 #if 0
 	snd_cmi_send_ac97_cmd(chip, 0x72, 0x0000); /* Record throug Line in */
 #endif
+
+	chip->int_mask_reg = snd_cmipci_read_w(chip, PCI_IntMask);
+	chip->dma_status_reg = snd_cmipci_read_w(chip, PCI_DMA_SetStatus);
 	return 0;
 }
 
@@ -310,7 +313,7 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 {
 	struct cmi8788 *chip = dev_id;
 	int i;
-	u16 status, int_mask;
+	u16 status;
 	u16 enable_ints = 0, disable_ints = 0;
 
 	status = snd_cmipci_read_w(chip, PCI_IntStatus);
@@ -341,9 +344,10 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 	}
 
 	/* ack interrupts by disabling and enabling them */
-	int_mask = snd_cmipci_read_w(chip, PCI_IntMask);
-	snd_cmipci_write_w(chip, int_mask & ~disable_ints, PCI_IntMask);
-	snd_cmipci_write_w(chip, int_mask | enable_ints, PCI_IntMask);
+	chip->int_mask_reg &= ~disable_ints;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
+	chip->int_mask_reg |= enable_ints;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 
 	return IRQ_HANDLED;
 }
