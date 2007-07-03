@@ -31,7 +31,6 @@
 
 /*
  * TODO:
- * - spdif
  * - second ac97
  * - sync start
  * - suspend/resume
@@ -68,7 +67,7 @@ static struct snd_pcm_hardware snd_cmi_pcm_playback_hw = {
  * 2^16 32-bit dword units for buffer/period size
  */
 
-static struct snd_pcm_hardware snd_cmi_pcm_capture_hw = {
+static struct snd_pcm_hardware snd_cmi_stereo_hw = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
 		SNDRV_PCM_INFO_INTERLEAVED |
@@ -137,7 +136,7 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 	cmi_subs = runtime->private_data;
 	cmi_subs->dma_mask = 0x0001;
 	cmi_subs->int_mask = 0x0001;
-	runtime->hw = snd_cmi_pcm_capture_hw;
+	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
 
@@ -151,6 +150,32 @@ static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 	cmi_subs->dma_mask = 0x0020;
 	cmi_subs->int_mask = 0x4020;
 	runtime->hw = snd_cmi_pcm_playback_hw;
+	return 0;
+}
+
+static int snd_cmi_spdif_playback_open(struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct cmi_substream *cmi_subs;
+
+	cmi_pcm_open(substream, SPDIF_PCMS, CMI_PLAYBACK);
+	cmi_subs = runtime->private_data;
+	cmi_subs->dma_mask = 0x0008;
+	cmi_subs->int_mask = 0x0008;
+	runtime->hw = snd_cmi_stereo_hw;
+	return 0;
+}
+
+static int snd_cmi_spdif_capture_open(struct snd_pcm_substream *substream)
+{
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct cmi_substream *cmi_subs;
+
+	cmi_pcm_open(substream, SPDIF_PCMS, CMI_CAPTURE);
+	cmi_subs = runtime->private_data;
+	cmi_subs->dma_mask = 0x0004;
+	cmi_subs->int_mask = 0x0004;
+	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
 
@@ -368,6 +393,73 @@ static int snd_cmi_pcm_ac97_playback_hw_params(struct snd_pcm_substream *substre
 	return 0;
 }
 
+static int snd_cmi_spdif_playback_hw_params(struct snd_pcm_substream *substream,
+					    struct snd_pcm_hw_params *hw_params)
+{
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	u16 play_routing;
+	u8 spdif;
+	u8 fmt;
+	int err;
+
+	err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
+	if (err < 0)
+		return err;
+
+	/* Digital Routing and Monitoring Registers */
+	play_routing = snd_cmipci_read_w(chip, Mixer_PlayRouting);
+	snd_cmipci_write_w(chip, play_routing & ~0xe0, Mixer_PlayRouting);
+
+	spdif = snd_cmipci_read_b(chip, SPDIF_Ctrl0);
+	snd_cmipci_write_b(chip, SPDIF_Ctrl0, spdif | 0x02);
+
+	/* set DMA Multi-Channel Playback DMA buffer addr length and fragsize */
+	snd_cmipci_write(chip, (u32)runtime->dma_addr,
+			 PCI_DMAPlay_SPDIF_BaseAddr);
+	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1,
+			   PCI_DMAPlay_SPDIF_BaseCount); /* 32-bit units */
+	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1,
+			   PCI_DMAPlay_SPDIF_BaseTCount); /* 32-bit units */
+
+	/* Sample Format Convert for Playback Channels */
+	fmt = snd_cmipci_read_b(chip, PCI_PlaySampleFmCvt) & ~0x03;
+	fmt |= cmi_sample_format(runtime->sample_bits);
+	snd_cmipci_write_b(chip, fmt, PCI_PlaySampleFmCvt);
+
+	spdif = snd_cmipci_read_b(chip, SPDIF_Ctrl3) & ~0x07;
+	spdif |= i2s_rate_bits(runtime->rate);
+	snd_cmipci_write_b(chip, SPDIF_Ctrl3, spdif);
+	return 0;
+}
+
+static int snd_cmi_spdif_capture_hw_params(struct snd_pcm_substream *substream,
+					   struct snd_pcm_hw_params *hw_params)
+{
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct snd_pcm_runtime *runtime = substream->runtime;
+	u8 fmt;
+	int err;
+
+	err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
+	if (err < 0)
+		return err;
+
+	/* set DMA Recording Channel C DMA buffer addr length and fragsize */
+	snd_cmipci_write(chip, (u32)runtime->dma_addr,
+			 PCI_DMARec_C_BaseAddr);
+	snd_cmipci_write_w(chip, runtime->dma_bytes / 4 - 1,
+			   PCI_DMARec_C_BaseCount); /* 32-bit units */
+	snd_cmipci_write_w(chip, snd_pcm_lib_period_bytes(substream) / 4 - 1,
+			   PCI_DMARec_C_BaseTCount); /* 32-bit units */
+
+	/* Sample Format Convert for Recording Channels */
+	fmt = snd_cmipci_read_b(chip, PCI_RecSampleFmtCvt) & ~0x30;
+	fmt |= cmi_sample_format(runtime->sample_bits) << 4;
+	snd_cmipci_write_b(chip, fmt, PCI_RecSampleFmtCvt);
+	return 0;
+}
+
 static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	return snd_pcm_lib_free_pages(substream);
@@ -456,6 +548,16 @@ static snd_pcm_uframes_t snd_cmi_pcm_ac97_playback_pointer(struct snd_pcm_substr
 	return cmi_pcm_pointer(substream, PCI_DMAPlay_Front_BaseAddr);
 }
 
+static snd_pcm_uframes_t snd_cmi_spdif_playback_pointer(struct snd_pcm_substream *substream)
+{
+	return cmi_pcm_pointer(substream, PCI_DMAPlay_SPDIF_BaseAddr);
+}
+
+static snd_pcm_uframes_t snd_cmi_spdif_capture_pointer(struct snd_pcm_substream *substream)
+{
+	return cmi_pcm_pointer(substream, PCI_DMARec_C_BaseAddr);
+}
+
 static struct snd_pcm_ops snd_cmi_pcm_playback_ops = {
 	.open      = snd_cmi_pcm_playback_open,
 	.close     = snd_cmi_pcm_close,
@@ -487,6 +589,28 @@ static struct snd_pcm_ops snd_cmi_pcm_ac97_playback_ops = {
 	.prepare   = snd_cmi_pcm_prepare,
 	.trigger   = snd_cmi_pcm_trigger,
 	.pointer   = snd_cmi_pcm_ac97_playback_pointer,
+};
+
+static struct snd_pcm_ops snd_cmi_spdif_playback_ops = {
+	.open      = snd_cmi_spdif_playback_open,
+	.close     = snd_cmi_pcm_close,
+	.ioctl     = snd_pcm_lib_ioctl,
+	.hw_params = snd_cmi_spdif_playback_hw_params,
+	.hw_free   = snd_cmi_pcm_hw_free,
+	.prepare   = snd_cmi_pcm_prepare,
+	.trigger   = snd_cmi_pcm_trigger,
+	.pointer   = snd_cmi_spdif_playback_pointer,
+};
+
+static struct snd_pcm_ops snd_cmi_spdif_capture_ops = {
+	.open      = snd_cmi_spdif_capture_open,
+	.close     = snd_cmi_pcm_close,
+	.ioctl     = snd_pcm_lib_ioctl,
+	.hw_params = snd_cmi_spdif_capture_hw_params,
+	.hw_free   = snd_cmi_pcm_hw_free,
+	.prepare   = snd_cmi_pcm_prepare,
+	.trigger   = snd_cmi_pcm_trigger,
+	.pointer   = snd_cmi_spdif_capture_pointer,
 };
 
 static void snd_cmi_pcm_free(struct snd_pcm *pcm)
@@ -544,6 +668,17 @@ int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 #endif
 
 	/* 3 create SPDIF PCM */
+	err = snd_pcm_new(chip->card, "CMI8788 SPDIF", 1, 1, 1, &pcm);
+	if (err < 0)
+		return err;
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_cmi_spdif_playback_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,  &snd_cmi_spdif_capture_ops);
+	pcm->private_data = chip;
+	pcm->private_free = snd_cmi_pcm_free;
+	strcpy(pcm->name, "C-Media PCI8788 SPDIF");
+	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+					      snd_dma_pci_data(chip->pci),
+					      128 * 1024, 256 * 1024);
 
 	chip->PCM_Count = 3;
 	return 0;

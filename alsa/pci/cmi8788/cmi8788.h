@@ -94,6 +94,13 @@
 #define I2S_ADC2_Fmt         0x64   /* I2S ADC 2 Format Register 2Byte*/
 #define I2S_ADC3_Fmt         0x66   /* I2S ADC 3 Format Register 2Byte*/
 
+#define SPDIF_Ctrl0          0x70
+#define SPDIF_Ctrl1          0x71
+#define SPDIF_Ctrl2          0x72
+#define SPDIF_Ctrl3          0x73
+#define SPDIF_OutputBits     0x74
+#define SPDIF_InputBits      0x78
+
 /* 2-Wire Master Serial Bus for Codec */
 #define SlaveAddrCtrl        0x90   /* Slave Device Address and Read/Write Control Register 1Byte*/
 #define MAPReg               0x91   /* Memory Address Pointer (MAP) of Slave Device 1Byte*/
