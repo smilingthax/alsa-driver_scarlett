@@ -63,6 +63,11 @@ static struct snd_pcm_hardware snd_cmi_pcm_playback_hw = {
 	.periods_max = 1024,
 };
 
+/*
+ * all DMAs except multichannel playback have a hardware limit of
+ * 2^16 32-bit dword units for buffer/period size
+ */
+
 static struct snd_pcm_hardware snd_cmi_pcm_capture_hw = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
@@ -82,9 +87,9 @@ static struct snd_pcm_hardware snd_cmi_pcm_capture_hw = {
 	.rate_max = 192000,
 	.channels_min = 2,
 	.channels_max = 2,
-	.buffer_bytes_max = 1024 * 1024,
+	.buffer_bytes_max = 256 * 1024,
 	.period_bytes_min = 128,
-	.period_bytes_max = 256 * 1024,
+	.period_bytes_max = 128 * 1024,
 	.periods_min = 2,
 	.periods_max = 1024,
 };
@@ -511,9 +516,14 @@ int __devinit snd_cmi8788_pcm_create(struct cmi8788 *chip)
 
 	strcpy(pcm->name, "C-Media PCI8788 Multichannel");
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
-					      snd_dma_pci_data(chip->pci),
-					      1024 * 256, 1024 * 1024);
+	snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream,
+				      SNDRV_DMA_TYPE_DEV,
+				      snd_dma_pci_data(chip->pci),
+				      256 * 1024, 1024 * 1024);
+	snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream,
+				      SNDRV_DMA_TYPE_DEV,
+				      snd_dma_pci_data(chip->pci),
+				      64 * 1024, 128 * 1024);
 
 #if 0
 	/* 2 create AC97 PCM */
