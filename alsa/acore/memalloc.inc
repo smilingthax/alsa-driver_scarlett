@@ -9,7 +9,7 @@
 
 #include <linux/pci.h>
 #include "config.h"
-#undef CONFIG_SND_DEBUG_MEMORY
+#define SKIP_HIDDEN_MALLOCS
 #include "adriver.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_PROC_FS)
