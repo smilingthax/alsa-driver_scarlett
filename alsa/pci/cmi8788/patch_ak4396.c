@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  *  patch_ak4396.c - Driver for C-Media CMI8788 PCI soundcards.
  *

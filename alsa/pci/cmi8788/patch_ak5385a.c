@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  *  patch_ak5385.c - Driver for C-Media CMI8788 PCI soundcards.
  *

@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 /*
  *  patch_alc203.c - Driver for C-Media CMI8788 PCI soundcards.
  *
