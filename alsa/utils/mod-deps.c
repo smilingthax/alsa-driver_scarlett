@@ -147,6 +147,7 @@ static char *kernel_deps[] = {
 /* # -> define */
 static char *no_cards[] = {
 	"%#SOUND",
+	"%HAS_IOMEM",
 	"SOUND_PRIME",
 	"%SND",
 	"#SND_TIMER",
