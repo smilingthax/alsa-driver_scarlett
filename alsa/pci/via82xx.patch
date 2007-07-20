@@ -1,0 +1,61 @@
+--- ../alsa-kernel/pci/via82xx.c	2007-07-19 16:36:26.000000000 +0200
++++ via82xx.c	2007-07-20 12:18:02.000000000 +0200
+@@ -2434,6 +2434,7 @@
+ 	int chip_type = 0, card_type;
+ 	unsigned int i;
+ 	int err;
++	unsigned char revision = snd_pci_revision(pci);
+ 
+ 	card = snd_card_new(index, id, THIS_MODULE, 0);
+ 	if (card == NULL)
+@@ -2443,14 +2444,14 @@
+ 	switch (card_type) {
+ 	case TYPE_CARD_VIA686:
+ 		strcpy(card->driver, "VIA686A");
+-		sprintf(card->shortname, "VIA 82C686A/B rev%x", pci->revision);
++		sprintf(card->shortname, "VIA 82C686A/B rev%x", revision);
+ 		chip_type = TYPE_VIA686;
+ 		break;
+ 	case TYPE_CARD_VIA8233:
+ 		chip_type = TYPE_VIA8233;
+-		sprintf(card->shortname, "VIA 823x rev%x", pci->revision);
++		sprintf(card->shortname, "VIA 823x rev%x", revision);
+ 		for (i = 0; i < ARRAY_SIZE(via823x_cards); i++) {
+-			if (pci->revision == via823x_cards[i].revision) {
++			if (revision == via823x_cards[i].revision) {
+ 				chip_type = via823x_cards[i].type;
+ 				strcpy(card->shortname, via823x_cards[i].name);
+ 				break;
+@@ -2458,7 +2459,7 @@
+ 		}
+ 		if (chip_type != TYPE_VIA8233A) {
+ 			if (dxs_support == VIA_DXS_AUTO)
+-				dxs_support = check_dxs_list(pci, pci->revision);
++				dxs_support = check_dxs_list(pci, revision);
+ 			/* force to use VIA8233 or 8233A model according to
+ 			 * dxs_support module option
+ 			 */
+@@ -2469,7 +2470,7 @@
+ 		}
+ 		if (chip_type == TYPE_VIA8233A)
+ 			strcpy(card->driver, "VIA8233A");
+-		else if (pci->revision >= VIA_REV_8237)
++		else if (revision >= VIA_REV_8237)
+ 			strcpy(card->driver, "VIA8237"); /* no slog assignment */
+ 		else
+ 			strcpy(card->driver, "VIA8233");
+@@ -2480,7 +2481,7 @@
+ 		goto __error;
+ 	}
+ 		
+-	if ((err = snd_via82xx_create(card, pci, chip_type, pci->revision,
++	if ((err = snd_via82xx_create(card, pci, chip_type, revision,
+ 				      ac97_clock, &chip)) < 0)
+ 		goto __error;
+ 	card->private_data = chip;
+@@ -2563,3 +2564,5 @@
+ 
+ module_init(alsa_card_via82xx_init)
+ module_exit(alsa_card_via82xx_exit)
++
++EXPORT_NO_SYMBOLS;
