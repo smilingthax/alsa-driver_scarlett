@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2007-02-13 14:53:03.000000000 +0100
-+++ sound.c	2007-03-08 17:21:01.000000000 +0100
+--- ../alsa-kernel/core/sound.c	2007-07-20 11:47:27.000000000 +0200
++++ sound.c	2007-07-20 11:50:23.000000000 +0200
 @@ -41,6 +41,9 @@
  EXPORT_SYMBOL(snd_major);
  
@@ -141,7 +141,7 @@
  }
  
  EXPORT_SYMBOL(snd_add_device_sysfs_file);
-@@ -423,32 +483,81 @@
+@@ -423,31 +483,80 @@
   *  INIT PART
   */
  
@@ -200,9 +200,9 @@
  static void __exit alsa_sound_exit(void)
  {
 +#ifdef CONFIG_DEVFS_FS
-+      short controlnum;
-+      for (controlnum = 0; controlnum < cards_limit; controlnum++)
-+              devfs_remove("snd/controlC%d", controlnum);
++	short controlnum;
++	for (controlnum = 0; controlnum < cards_limit; controlnum++)
++		devfs_remove("snd/controlC%d", controlnum);
 +#endif
 +
  	snd_info_minor_unregister();
@@ -211,8 +211,7 @@
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_APM)
 +	pm_done();
 +#endif
- 	if (unregister_chrdev(major, "alsa") != 0)
- 		snd_printk(KERN_ERR "unable to unregister major device number %d\n", major);
+ 	unregister_chrdev(major, "alsa");
 +	snd_memory_done();
 +#ifdef CONFIG_DEVFS_FS
 +	devfs_remove("snd");
