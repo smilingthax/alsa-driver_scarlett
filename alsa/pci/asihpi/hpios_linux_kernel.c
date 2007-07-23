@@ -65,9 +65,15 @@ static struct kmem_cache *memAreaCache = NULL;
 
 void HpiOs_LockedMem_Init(void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+	memAreaCache = kmem_cache_create("asihpi_mem_area",
+					 sizeof(HpiOs_LockedMem_Area), 0,
+					 SLAB_HWCACHE_ALIGN, NULL);
+#else
 	memAreaCache = kmem_cache_create("asihpi_mem_area",
 					 sizeof(HpiOs_LockedMem_Area), 0,
 					 SLAB_HWCACHE_ALIGN, NULL, NULL);
+#endif
 	if (memAreaCache == NULL)
 		HPI_DEBUG_LOG0(ERROR, "Mem area cache\n");
 }
