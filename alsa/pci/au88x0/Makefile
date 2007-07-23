@@ -11,4 +11,6 @@ include $(SND_TOPDIR)/alsa-kernel/pci/au88x0/Makefile
 
 include $(SND_TOPDIR)/Rules.make
 
+au8810.c au8820.c au8830.c: au88x0.c
+
 au88x0.c: au88x0.patch $(SND_TOPDIR)/alsa-kernel/pci/au88x0/au88x0.c
