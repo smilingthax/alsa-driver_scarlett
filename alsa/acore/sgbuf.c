@@ -13,6 +13,9 @@
 #include "adriver.h"
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
+#define CONFIG_HAS_DMA
+#endif
 #include "../alsa-kernel/core/sgbuf.c"
 #else
 
