@@ -45,18 +45,18 @@ i.e 3.05.02 is a development version
 #define HPI_VER_RELEASE(v) ((v) & 0xFF )
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR( 3L, 7, 4 )
+#define HPI_VER HPI_VERSION_CONSTRUCTOR( 3L, 7, 13 )
 
 #ifdef _DOX_ONLY_
 /*****************************************************************************/
-/** \defgroup compile_time_defines HPI compile time defines.
+/** \defgroup compile_time_defines HPI compile time defines
 
 This section descibes the usage of HPI defines to set the target compile environment.
 The definitions are used in the build environment to control how HPI is built.
 They are NOT predefined in hpi.h!
 \{
 */
-/** \defgroup os_type_defines HPI_OS_XXX build environment defines.
+/** \defgroup os_type_defines HPI_OS_XXX build environment defines
 
 Define exactly one of these depending on which OS you are compiling for.
 Should we also include DSP_53XXX, C6000, WDM etc?
@@ -80,7 +80,7 @@ Define this when building a 64 bit application. When not defined a 32 bit enviro
 Use this to reveal where the deprecated functionality is used
 */
 #define HPI_EXCLUDE_DEPRECATED
-/** \defgroup hpi_dll_defines HPI DLL function attributes.
+/** \defgroup hpi_dll_defines HPI DLL function attributes
 DLL environment defines.
 \{
 */
@@ -300,7 +300,7 @@ extern "C" {
 #define HPI_FORMAT_PCM8_UNSIGNED        1	/**< 8-bit unsigned PCM. Windows equivalent is WAVE_FORMAT_PCM. */
 #define HPI_FORMAT_PCM16_SIGNED         2   /**< 16-bit signed PCM. Windows equivalent is WAVE_FORMAT_PCM. */
 #define HPI_FORMAT_MPEG_L1              3   /**< MPEG-1 Layer-1. */
-/** MPEG-1 Layer-2. 
+/** MPEG-1 Layer-2.
 
 Windows equivalent is WAVE_FORMAT_MPEG.
 
@@ -369,21 +369,21 @@ The following table shows what combinations of mode and bitrate are possible:
 #define HPI_FORMAT_PCM16_BIGENDIAN      8   /**< 16-bit PCM big-endian. */
 #define HPI_FORMAT_AA_TAGIT1_HITS       9   /**< TAGIT-1 algorithm - hits. */
 #define HPI_FORMAT_AA_TAGIT1_INSERTS    10  /**< TAGIT-1 algorithm - inserts. */
-/** 32-bit signed PCM. Windows equivalent is WAVE_FORMAT_PCM. Each sample is a 32bit word.  
-The most significant 24 bits contain a 24-bit sample and the least significant 8 bits are 
+/** 32-bit signed PCM. Windows equivalent is WAVE_FORMAT_PCM. Each sample is a 32bit word.
+The most significant 24 bits contain a 24-bit sample and the least significant 8 bits are
 set to 0.
 */
 #define HPI_FORMAT_PCM32_SIGNED         11
 #define HPI_FORMAT_RAW_BITSTREAM        12  /**< Raw bitstream - unknown format. */
 #define HPI_FORMAT_AA_TAGIT1_HITS_EX1   13  /**< TAGIT-1 algorithm hits - extended. */
-/** 32-bit PCM as an IEEE float. Windows equivalent is WAVE_FORMAT_IEEE_FLOAT. Each sample is 
-a 32bit word in IEEE754 floating point format. The range is +1.0 to -1.0, which corresponds 
+/** 32-bit PCM as an IEEE float. Windows equivalent is WAVE_FORMAT_IEEE_FLOAT. Each sample is
+a 32bit word in IEEE754 floating point format. The range is +1.0 to -1.0, which corresponds
 to digital fullscale.
 */
-#define HPI_FORMAT_PCM32_FLOAT                  14
+#define HPI_FORMAT_PCM32_FLOAT          14
 #define HPI_FORMAT_PCM24_SIGNED         15  /**< 24-bit PCM signed. Windows equivalent is WAVE_FORMAT_PCM. */
-#define HPI_FORMAT_OEM1                         16  /**< OEM format 1 - private. */
-#define HPI_FORMAT_OEM2                         17  /**< OEM format 2 - private. */
+#define HPI_FORMAT_OEM1                 16  /**< OEM format 1 - private. */
+#define HPI_FORMAT_OEM2                 17  /**< OEM format 2 - private. */
 #define HPI_FORMAT_UNDEFINED            (0xffff)  /**< Undefined format. */
 /**\}*/
 
@@ -554,6 +554,7 @@ These are used by HPI_AdapterSetModeEx()
 /** 8 outstream mode.
 - ASI6114: 8 instreams
 - ASI6118: 8 instreams
+- ASI6585: 8 instreams
 */
 #define HPI_ADAPTER_MODE_8OSTREAM (3)
 
@@ -809,11 +810,11 @@ Used for HPI_Tuner_SetBand(),HPI_Tuner_GetBand()
 Used for HPI_ChannelModeSet/Get()
 \{
 */
-#define HPI_CHANNEL_MODE_NORMAL                 1   /**< Left channel out = left channel in, Right channel out = right channel in */
-#define HPI_CHANNEL_MODE_SWAP                   2	/**< Left channel out = right channel in, Right channel out = left channel in */
-#define HPI_CHANNEL_MODE_LEFT_TO_STEREO         3	/**< Left channel out = left channel in, Right channel out = left channel in */
-#define HPI_CHANNEL_MODE_RIGHT_TO_STEREO        4	/**< Left channel out = right channel in, Right channel out = right channel in */
-#define HPI_CHANNEL_MODE_STEREO_TO_LEFT         5	/**< Left channel out = (left channel in + right channel in)/2, Right channel out = mute */
+#define HPI_CHANNEL_MODE_NORMAL                 1   /**< Left channel out = left channel in, Right channel out = right channel in. */
+#define HPI_CHANNEL_MODE_SWAP                   2	/**< Left channel out = right channel in, Right channel out = left channel in. */
+#define HPI_CHANNEL_MODE_LEFT_TO_STEREO         3	/**< Left channel out = left channel in, Right channel out = left channel in. */
+#define HPI_CHANNEL_MODE_RIGHT_TO_STEREO        4	/**< Left channel out = right channel in, Right channel out = right channel in. */
+#define HPI_CHANNEL_MODE_STEREO_TO_LEFT         5	/**< Left channel out = (left channel in + right channel in)/2, Right channel out = mute. */
 #define HPI_CHANNEL_MODE_STEREO_TO_RIGHT        6	/**< Left channel out = mute, Right channel out = (right channel in + left channel in)/2. */
 #define HPI_CHANNEL_MODE_LAST                           6
 /** \} */
@@ -1015,6 +1016,7 @@ Error codes can be converted to a descriptive string using HPI_GetErrorText()
 #define HPI_ERROR_DSP_FILE_NOT_FOUND    206    /**< Couldn't find or open the DSP code file. */
 #define HPI_ERROR_DSP_HARDWARE          207    /**< Internal DSP hardware error. */
 #define HPI_ERROR_DOS_MEMORY_ALLOC      208    /**< Could not allocate memory in DOS. */
+#define HPI_ERROR_MEMORY_ALLOC          208    /**< Could not allocate memory */
 #define HPI_ERROR_PLD_LOAD              209    /**< Failed to correctly load/config PLD .*/
 #define HPI_ERROR_DSP_FILE_FORMAT               210    /**< Unexpected end of file, block length too big etc. */
 
@@ -1646,23 +1648,19 @@ Null pointers allowed for return values
 
 	u16 HPI_MeterSetPeakBallistics(HPI_HSUBSYS * phSubSys,
 				       HPI_HCONTROL hControlHandle,
-				       unsigned short nAttack,
-				       unsigned short nDecay);
+				       u16 nAttack, u16 nDecay);
 
 	u16 HPI_MeterSetRmsBallistics(HPI_HSUBSYS * phSubSys,
 				      HPI_HCONTROL hControlHandle,
-				      unsigned short nAttack,
-				      unsigned short nDecay);
+				      u16 nAttack, u16 nDecay);
 
 	u16 HPI_MeterGetPeakBallistics(HPI_HSUBSYS * phSubSys,
 				       HPI_HCONTROL hControlHandle,
-				       unsigned short *nAttack,
-				       unsigned short *nDecay);
+				       u16 * nAttack, u16 * nDecay);
 
 	u16 HPI_MeterGetRmsBallistics(HPI_HSUBSYS * phSubSys,
 				      HPI_HCONTROL hControlHandle,
-				      unsigned short *nAttack,
-				      unsigned short *nDecay);
+				      u16 * nAttack, u16 * nDecay);
 
 /*************************/
 /* channel mode control  */
@@ -2290,14 +2288,12 @@ Must be kept 7 * 32 bits to match public HPI_DATA struct */
 		u32 dwDataSize;
 	} HPI_MSG_DATA;
 
-#ifndef HPI64BIT
 /** HPI_DATA structure used up to 3.04 driver */
 	typedef struct {
 		HPI_FORMAT Format;
-		u8 *pbData;
+		u32 pbData;
 		u32 dwDataSize;
 	} HPI_DATA_LEGACY32;
-#endif
 
 #ifdef HPI64BIT
 /* Compatibility version of HPI_DATA */
@@ -2396,9 +2392,7 @@ Must be kept 7 * 32 bits to match public HPI_DATA struct */
 	typedef struct {
 		union {
 			HPI_MSG_DATA Data;
-#ifndef HPI64BIT
 			HPI_DATA_LEGACY32 Data32;
-#endif
 			u16 wVelocity;
 			HPI_PUNCHINOUT Pio;
 			u32 dwTimeScale;

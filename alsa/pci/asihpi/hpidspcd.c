@@ -29,8 +29,6 @@ DSPCODE_ARRAY is defined.
 HPI_INCLUDE_**** must be defined
 and the appropriate hzz?????.c or hex?????.c linked in
 
-If USE_ZLIB is defined, hpizlib.c must also be linked
-
 */
 /***********************************************************************/
 #define SOURCEFILE_NAME "hpidspcd.c"

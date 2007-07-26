@@ -246,6 +246,52 @@ static void SubSysMessage(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 		memcpy(phr, &gRESP_HPI_SUBSYS_FIND_ADAPTERS,
 		       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
 		break;
+	case HPI_SUBSYS_GET_NUM_ADAPTERS:
+		memcpy(phr, &gRESP_HPI_SUBSYS_FIND_ADAPTERS,
+		       sizeof(gRESP_HPI_SUBSYS_FIND_ADAPTERS));
+		phr->wFunction = HPI_SUBSYS_GET_NUM_ADAPTERS;
+		break;
+	case HPI_SUBSYS_GET_ADAPTER:
+		{
+			int nCount = phm->wAdapterIndex;
+			int nIndex = 0;
+			HPI_InitResponse(phr, HPI_OBJ_SUBSYSTEM,
+					 HPI_SUBSYS_GET_ADAPTER, 0);
+
+// This is complicated by the fact that we want to "skip" 0's in the adapter list.
+// First, make sure we are pointing to a non-zero adapter type.
+			while (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
+			       awAdapterList[nIndex] == 0) {
+				nIndex++;
+				if (nIndex >= HPI_MAX_ADAPTERS)
+					break;
+			}
+			while (nCount) {
+// move on to the next adapter
+				nIndex++;
+				if (nIndex >= HPI_MAX_ADAPTERS)
+					break;
+				while (gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
+				       awAdapterList[nIndex] == 0) {
+					nIndex++;
+					if (nIndex >= HPI_MAX_ADAPTERS)
+						break;
+				}
+				nCount--;
+			}
+
+			if (nIndex < HPI_MAX_ADAPTERS) {
+				phr->u.s.wAdapterIndex = (u16) nIndex;
+				phr->u.s.awAdapterList[0] =
+				    gRESP_HPI_SUBSYS_FIND_ADAPTERS.s.
+				    awAdapterList[nIndex];
+			} else {
+				phr->u.s.wAdapterIndex = 0;
+				phr->u.s.awAdapterList[0] = 0;
+				phr->wError = HPI_ERROR_BAD_ADAPTER_NUMBER;
+			}
+		}
+		break;
 	case HPI_SUBSYS_CREATE_ADAPTER:
 		HPIMSGX_Init(phm, phr);
 		break;
@@ -514,7 +560,7 @@ static void InStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	if (hOwner ==
 	    aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 	    hOwner) {
-/* HPI_DEBUG_LOG3(INFO,"closing adapter %d instream %d owned by %p\n", 
+/* HPI_DEBUG_LOG3(INFO,"closing adapter %d instream %d owned by %p\n",
 phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
 		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		    hOwner = NULL;
@@ -618,7 +664,7 @@ static void OutStreamClose(HPI_MESSAGE * phm, HPI_RESPONSE * phr, void *hOwner)
 	if (hOwner ==
 	    aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 	    hOwner) {
-/* HPI_DEBUG_LOG3(INFO,"closing adapter %d outstream %d owned by %p\n", 
+/* HPI_DEBUG_LOG3(INFO,"closing adapter %d outstream %d owned by %p\n",
 phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
 		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		    hOwner = NULL;

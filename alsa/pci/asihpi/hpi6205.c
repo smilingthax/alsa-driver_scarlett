@@ -90,8 +90,10 @@ typedef struct {
 	tBusMasteringInterfaceBuffer *pInterfaceBuffer;
 
 	u16 flagOStreamJustReset[HPI_MAX_STREAMS];
+/* a non-NULL handle means there is an HPI allocated buffer */
 	HpiOs_LockedMem_Handle InStreamHostBuffers[HPI_MAX_STREAMS];
 	HpiOs_LockedMem_Handle OutStreamHostBuffers[HPI_MAX_STREAMS];
+/* non-zero size means a buffer exists, may be external */
 	u32 InStreamHostBufferSize[HPI_MAX_STREAMS];
 	u32 OutStreamHostBufferSize[HPI_MAX_STREAMS];
 
@@ -683,8 +685,6 @@ static void DeleteAdapterObj(HPI_ADAPTER_OBJ * pao)
 
 	pHw6205 = pao->priv;
 
-	HpiOs_LockedMem_Unprepare(pao->Pci.pOsData);
-
 	if (pHw6205->hAsyncEventBuffer) {
 		HpiOs_LockedMem_Free(pHw6205->hAsyncEventBuffer);
 		pHw6205->pAsyncEventBuffer = NULL;
@@ -714,6 +714,8 @@ static void DeleteAdapterObj(HPI_ADAPTER_OBJ * pao)
 			pHw6205->OutStreamHostBufferSize[i] = 0;
 		}
 
+	HpiOs_LockedMem_Unprepare(pao->Pci.pOsData);
+
 	DeleteAdapter(pao);
 	HpiOs_MemFree(pHw6205);
 }
@@ -735,63 +737,87 @@ static void AdapterGetAsserts(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 					HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
-	u16 wError;
-	u32 dwSizeToAllocate;
+	u16 wError = 0;
+//u32 dwSizeToAllocate;
 	u32 dwCommand = phm->u.d.u.Buffer.dwCommand;
 	HPI_HW_OBJ *pHw6205 = pao->priv;
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-	dwSizeToAllocate = roundup_pow_of_two(phm->u.d.u.Buffer.dwBufferSize);
-	phr->u.d.u.stream_info.dwDataAvailable =
-	    pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex];
-	phr->u.d.u.stream_info.dwBufferSize = dwSizeToAllocate;
 
-	if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
-	    dwCommand == HPI_BUFFER_CMD_INTERNAL_ALLOC) {
-		if (pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex] ==
-		    dwSizeToAllocate) {
-// Same size, no action required, use dwError to skip Hpi6205_Message() section
-// below but return success
-			wError = 1;
-		} else {
-			if (pHw6205->
-			    OutStreamHostBuffers[phm->u.d.wStreamIndex])
-				HpiOs_LockedMem_Free(pHw6205->
-						     OutStreamHostBuffers[phm->
-									  u.d.
-									  wStreamIndex]);
+	if (dwCommand == HPI_BUFFER_CMD_EXTERNAL || dwCommand == HPI_BUFFER_CMD_INTERNAL_ALLOC) {	/* ALLOC phase, allocate a buffer with power of 2 size,
+													   get its bus address for PCI bus mastering
+													 */
+		phm->u.d.u.Buffer.dwBufferSize =
+		    roundup_pow_of_two(phm->u.d.u.Buffer.dwBufferSize);
+/* return old size and allocated size, so caller can detect change */
+		phr->u.d.u.stream_info.dwDataAvailable =
+		    pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex];
+		phr->u.d.u.stream_info.dwBufferSize =
+		    phm->u.d.u.Buffer.dwBufferSize;
 
-			wError =
-			    HpiOs_LockedMem_Alloc(&pHw6205->
-						  OutStreamHostBuffers[phm->u.d.
-								       wStreamIndex],
-						  dwSizeToAllocate,
-						  pao->Pci.pOsData);
-
-			if (wError) {
-				phr->wSize =
-				    HPI_RESPONSE_FIXED_SIZE +
-				    sizeof(HPI_STREAM_RES);
-				phr->wError = HPI_ERROR_INVALID_DATASIZE;
-				pHw6205->OutStreamHostBufferSize[phm->u.d.
-								 wStreamIndex] =
-				    0;
-			} else {
-				pHw6205->OutStreamHostBufferSize[phm->u.d.
-								 wStreamIndex] =
-				    dwSizeToAllocate;
-			}
+		if (pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex] == phm->u.d.u.Buffer.dwBufferSize) {	/* Same size, no action required */
+			return;
 		}
-	} else {
-		wError = 0;	/*hush the compiler's warning about dwError being used uninitialized */
+
+		if (pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex])
+			HpiOs_LockedMem_Free(pHw6205->
+					     OutStreamHostBuffers[phm->u.d.
+								  wStreamIndex]);
+
+		wError =
+		    HpiOs_LockedMem_Alloc(&pHw6205->
+					  OutStreamHostBuffers[phm->u.d.
+							       wStreamIndex],
+					  phm->u.d.u.Buffer.dwBufferSize,
+					  pao->Pci.pOsData);
+
+		if (wError) {
+			phr->wError = HPI_ERROR_INVALID_DATASIZE;
+			pHw6205->OutStreamHostBufferSize[phm->u.d.
+							 wStreamIndex] = 0;
+			return;
+		}
+
+		wError =
+		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
+						OutStreamHostBuffers[phm->u.d.
+								     wStreamIndex],
+						&phm->u.d.u.Buffer.
+						dwPciAddress);
+/* get the phys addr into msg for single call alloc */
+/* caller needs to do this for split alloc (or use the same message) */
+/* return the phy address for split alloc in the respose too */
+		phr->u.d.u.stream_info.dwAuxiliaryDataAvailable =
+		    phm->u.d.u.Buffer.dwPciAddress;
+		if (wError) {
+			HpiOs_LockedMem_Free(pHw6205->
+					     OutStreamHostBuffers[phm->u.d.
+								  wStreamIndex]);
+			pHw6205->OutStreamHostBufferSize[phm->u.d.
+							 wStreamIndex] = 0;
+			pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex] =
+			    NULL;
+			phr->wError = HPI_ERROR_MEMORY_ALLOC;
+			return;
+		}
 	}
 
-	if ((dwCommand == HPI_BUFFER_CMD_EXTERNAL && wError == 0) ||
-	    dwCommand == HPI_BUFFER_CMD_INTERNAL_GRANTADAPTER) {
+	if (dwCommand == HPI_BUFFER_CMD_EXTERNAL || dwCommand == HPI_BUFFER_CMD_INTERNAL_GRANTADAPTER) {	/* GRANT phase.  Set up the BBM status, tell the DSP about the buffer
+														   so it can start using BBM.
+														 */
 		H620_HOSTBUFFER_STATUS *status;
-		u32 dwPhysicalPCIaddress;
 
+		if (phm->u.d.u.Buffer.
+		    dwBufferSize & (phm->u.d.u.Buffer.dwBufferSize - 1)) {
+			HPI_DEBUG_LOG1(ERROR,
+				       "Buffer size must be 2^N not %d\n",
+				       phm->u.d.u.Buffer.dwBufferSize);
+			phr->wError = HPI_ERROR_INVALID_DATASIZE;
+			return;
+		}
+		pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex] =
+		    phm->u.d.u.Buffer.dwBufferSize;
 		status =
 		    &interface->aOutStreamHostBufferStatus[phm->u.d.
 							   wStreamIndex];
@@ -799,46 +825,12 @@ static void OutStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao,
 		status->dwStreamState = HPI_STATE_STOPPED;
 		status->dwDSPIndex = 0;
 		status->dwHostIndex = status->dwDSPIndex;
-		status->dwSizeInBytes = dwSizeToAllocate;
-		wError =
-		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
-						OutStreamHostBuffers[phm->u.d.
-								     wStreamIndex],
-						&dwPhysicalPCIaddress);
-		if (wError) {
-			phr->wError = HPI_ERROR_DOS_MEMORY_ALLOC;
-		} else {
-			phm->u.d.u.Buffer.dwPciAddress = dwPhysicalPCIaddress;
-			HW_Message(pao, phm, phr);
-			if (phr->wError && dwCommand == HPI_BUFFER_CMD_EXTERNAL) {
-// free the buffer
-				HpiOs_LockedMem_Free(pHw6205->
-						     OutStreamHostBuffers[phm->
-									  u.d.
-									  wStreamIndex]);
-				pHw6205->OutStreamHostBufferSize[phm->u.d.
-								 wStreamIndex] =
-				    0;
-				pHw6205->OutStreamHostBuffers[phm->u.d.
-							      wStreamIndex] =
-				    NULL;
-			}
-		}
-	}
-}
-static void OutStreamHostBufferFree(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-				    HPI_RESPONSE * phr)
-{
-	HPI_HW_OBJ *pHw6205 = pao->priv;
-	u32 dwCommand = phm->u.d.u.Buffer.dwCommand;
+		status->dwSizeInBytes = phm->u.d.u.Buffer.dwBufferSize;
 
-	if (pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex]) {
-		if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
-		    dwCommand == HPI_BUFFER_CMD_INTERNAL_REVOKEADAPTER) {
-			HW_Message(pao, phm, phr);	// Tell adapter to stop using the host buffer.
-		}
-		if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
-		    dwCommand == HPI_BUFFER_CMD_INTERNAL_FREE) {
+		HW_Message(pao, phm, phr);
+
+		if (phr->wError
+		    && pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex]) {
 			HpiOs_LockedMem_Free(pHw6205->
 					     OutStreamHostBuffers[phm->u.d.
 								  wStreamIndex]);
@@ -848,12 +840,37 @@ static void OutStreamHostBufferFree(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			    NULL;
 		}
 	}
-/* Should an error be returned if no host buffer is allocated?
-else {
-HPI_InitResponse( phr, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE,  HPI_ERROR_INVALID_OPERATION );
-
 }
-*/
+static void OutStreamHostBufferFree(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+				    HPI_RESPONSE * phr)
+{
+	HPI_HW_OBJ *pHw6205 = pao->priv;
+	u32 dwCommand = phm->u.d.u.Buffer.dwCommand;
+
+	if (pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex]) {
+		if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
+		    dwCommand == HPI_BUFFER_CMD_INTERNAL_REVOKEADAPTER) {
+			pHw6205->OutStreamHostBufferSize[phm->u.d.
+							 wStreamIndex] = 0;
+			HW_Message(pao, phm, phr);	// Tell adapter to stop using the host buffer.
+		}
+		if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
+		    dwCommand == HPI_BUFFER_CMD_INTERNAL_FREE) {
+			HpiOs_LockedMem_Free(pHw6205->
+					     OutStreamHostBuffers[phm->u.d.
+								  wStreamIndex]);
+			pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex] =
+			    NULL;
+		}
+	}
+/* Should an error be returned if no host buffer is allocated? */
+	else {
+		HPI_InitResponse(phr, HPI_OBJ_OSTREAM,
+				 HPI_OSTREAM_HOSTBUFFER_FREE,
+				 0 /*HPI_ERROR_INVALID_OPERATION */ );
+
+	}
+
 }
 
 static long OutStreamGetSpaceAvailable(H620_HOSTBUFFER_STATUS * status)
@@ -869,27 +886,20 @@ static void OutStreamWrite(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 	H620_HOSTBUFFER_STATUS *status;
 	long dwSpaceAvailable;
-	u8 *pBBMData;
-	long lFirstWrite;
-
-	u8 *pAppData = (u8 *) phm->u.d.u.Data.pbData;
-	if (!pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex]) {
+/* HostBufferSize is used as a flag to indicate that there is a BBM buffer */
+	if (!pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex]) {
 		HW_Message(pao, phm, phr);
 		return;
 	}
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
 
-	if (HpiOs_LockedMem_GetVirtAddr
-	    (pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex],
-	     (void *)&pBBMData)) {
-		phr->wError = HPI_ERROR_INVALID_OPERATION;
-		return;
-	}
 // check whether we need to send the format to the DSP
 	if (pHw6205->flagOStreamJustReset[phm->u.d.wStreamIndex]) {
+		u16 wFunction = phm->wFunction;
 		pHw6205->flagOStreamJustReset[phm->u.d.wStreamIndex] = 0;
 		phm->wFunction = HPI_OSTREAM_SET_FORMAT;
 		HW_Message(pao, phm, phr);	// send the format to the DSP
+		phm->wFunction = wFunction;
 		if (phr->wError)
 			return;
 	}
@@ -901,17 +911,33 @@ static void OutStreamWrite(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 		return;
 	}
 
+/* HostBuffers is used to indicate host buffer is internally allocated.
+otherwise, assumed external, data written externally */
+	if (pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex]) {
+		u8 *pBBMData;
+		long lFirstWrite;
+		u8 *pAppData = (u8 *) phm->u.d.u.Data.pbData;
+
+		if (HpiOs_LockedMem_GetVirtAddr
+		    (pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex],
+		     (void *)&pBBMData)) {
+			phr->wError = HPI_ERROR_INVALID_OPERATION;
+			return;
+		}
+
 /* either all data, or enough to fit from current to end of BBM buffer */
-	lFirstWrite = min(phm->u.d.u.Data.dwDataSize,
-			  status->dwSizeInBytes -
-			  (status->dwHostIndex & (status->dwSizeInBytes - 1)));
+		lFirstWrite = min(phm->u.d.u.Data.dwDataSize,
+				  status->dwSizeInBytes -
+				  (status->
+				   dwHostIndex & (status->dwSizeInBytes - 1)));
 
-	memcpy(pBBMData + (status->dwHostIndex & (status->dwSizeInBytes - 1)),
-	       pAppData, lFirstWrite);
+		memcpy(pBBMData +
+		       (status->dwHostIndex & (status->dwSizeInBytes - 1)),
+		       pAppData, lFirstWrite);
 /* remaining data if any */
-	memcpy(pBBMData, pAppData + lFirstWrite,
-	       phm->u.d.u.Data.dwDataSize - lFirstWrite);
-
+		memcpy(pBBMData, pAppData + lFirstWrite,
+		       phm->u.d.u.Data.dwDataSize - lFirstWrite);
+	}
 	status->dwHostIndex += phm->u.d.u.Data.dwDataSize;
 }
 
@@ -922,7 +948,7 @@ static void OutStreamGetInfo(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 	H620_HOSTBUFFER_STATUS *status;
 
-	if (!pHw6205->OutStreamHostBuffers[phm->u.d.wStreamIndex]) {
+	if (!pHw6205->OutStreamHostBufferSize[phm->u.d.wStreamIndex]) {
 		HW_Message(pao, phm, phr);
 		return;
 	}
@@ -965,61 +991,84 @@ static void OutStreamOpen(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 				       HPI_RESPONSE * phr)
 {
-	u16 wError;
-	u32 dwSizeToAllocate;
+	u16 wError = 0;
 	u32 dwCommand = phm->u.d.u.Buffer.dwCommand;
 	HPI_HW_OBJ *pHw6205 = pao->priv;
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-	dwSizeToAllocate = roundup_pow_of_two(phm->u.d.u.Buffer.dwBufferSize);
-	phr->u.d.u.stream_info.dwDataAvailable =
-	    pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex];
-	phr->u.d.u.stream_info.dwBufferSize = dwSizeToAllocate;
 
 	if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
 	    dwCommand == HPI_BUFFER_CMD_INTERNAL_ALLOC) {
-		if (pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] ==
-		    dwSizeToAllocate) {
-// Same size, no action required, use dwError to skip Hpi6205_Message() section
+		phm->u.d.u.Buffer.dwBufferSize =
+		    roundup_pow_of_two(phm->u.d.u.Buffer.dwBufferSize);
+		phr->u.d.u.stream_info.dwDataAvailable =
+		    pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex];
+		phr->u.d.u.stream_info.dwBufferSize =
+		    phm->u.d.u.Buffer.dwBufferSize;
+
+		if (pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] == phm->u.d.u.Buffer.dwBufferSize) {	// Same size, no action required, use dwError to skip Hpi6205_Message() section
 // below but return success
-			wError = 1;
-		} else {
-			if (pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex])
-				HpiOs_LockedMem_Free(pHw6205->
-						     InStreamHostBuffers[phm->u.
-									 d.
-									 wStreamIndex]);
-
-			wError =
-			    HpiOs_LockedMem_Alloc(&pHw6205->
-						  InStreamHostBuffers[phm->u.d.
-								      wStreamIndex],
-						  dwSizeToAllocate,
-						  pao->Pci.pOsData);
-
-			if (wError) {
-				phr->wError = HPI_ERROR_INVALID_DATASIZE;
-				pHw6205->InStreamHostBufferSize[phm->u.d.
-								wStreamIndex] =
-				    0;
-			} else {
-				pHw6205->InStreamHostBufferSize[phm->u.d.
-								wStreamIndex] =
-				    dwSizeToAllocate;
-			}
+			return;
 		}
-	} else {
-		wError = 0;	/*hush the compiler's warning about dwError being used uninitialized */
+
+		if (pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex])
+			HpiOs_LockedMem_Free(pHw6205->
+					     InStreamHostBuffers[phm->u.d.
+								 wStreamIndex]);
+
+		wError =
+		    HpiOs_LockedMem_Alloc(&pHw6205->
+					  InStreamHostBuffers[phm->u.d.
+							      wStreamIndex],
+					  phm->u.d.u.Buffer.dwBufferSize,
+					  pao->Pci.pOsData);
+
+		if (wError) {
+			phr->wError = HPI_ERROR_INVALID_DATASIZE;
+			pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] =
+			    0;
+			return;
+		}
+
+		wError =
+		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
+						InStreamHostBuffers[phm->u.d.
+								    wStreamIndex],
+						&phm->u.d.u.Buffer.
+						dwPciAddress);
+/* get the phys addr into msg for single call alloc */
+/* caller needs to do this for split alloc so return the phy address */
+		phr->u.d.u.stream_info.dwAuxiliaryDataAvailable =
+		    phm->u.d.u.Buffer.dwPciAddress;
+		if (wError) {
+			HpiOs_LockedMem_Free(pHw6205->
+					     InStreamHostBuffers[phm->u.d.
+								 wStreamIndex]);
+			pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] =
+			    0;
+			pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex] =
+			    NULL;
+			phr->wError = HPI_ERROR_MEMORY_ALLOC;
+			return;
+		}
 	}
 
-	if ((dwCommand == HPI_BUFFER_CMD_EXTERNAL && wError == 0) ||
+	if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
 	    dwCommand == HPI_BUFFER_CMD_INTERNAL_GRANTADAPTER) {
 		H620_HOSTBUFFER_STATUS *status;
-		u32 dwPhysicalPCIaddress;
 
-// Why doesn't this work ?? - causes strange behaviour under Win16
-//memset(buffer,0,sizeof(H620_HOSTBUFFER_STATUS) + phm->u.d.u.Data.dwDataSize);
+		if (phm->u.d.u.Buffer.
+		    dwBufferSize & (phm->u.d.u.Buffer.dwBufferSize - 1)) {
+			HPI_DEBUG_LOG1(ERROR,
+				       "Buffer size must be 2^N not %d\n",
+				       phm->u.d.u.Buffer.dwBufferSize);
+			phr->wError = HPI_ERROR_INVALID_DATASIZE;
+			return;
+		}
+
+		pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] =
+		    phm->u.d.u.Buffer.dwBufferSize;
 		status =
 		    &interface->aInStreamHostBufferStatus[phm->u.d.
 							  wStreamIndex];
@@ -1027,30 +1076,17 @@ static void InStreamHostBufferAllocate(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 		status->dwStreamState = HPI_STATE_STOPPED;
 		status->dwDSPIndex = 0;
 		status->dwHostIndex = status->dwDSPIndex;
-		status->dwSizeInBytes = dwSizeToAllocate;
-		wError =
-		    HpiOs_LockedMem_GetPhysAddr(pHw6205->
-						InStreamHostBuffers[phm->u.d.
-								    wStreamIndex],
-						&dwPhysicalPCIaddress);
-		if (wError) {
-			phr->wError = HPI_ERROR_DOS_MEMORY_ALLOC;
-		} else {
-			phm->u.d.u.Buffer.dwPciAddress = dwPhysicalPCIaddress;
-			HW_Message(pao, phm, phr);
-			if (phr->wError && dwCommand == HPI_BUFFER_CMD_EXTERNAL) {
-// free the buffer
-				HpiOs_LockedMem_Free(pHw6205->
-						     InStreamHostBuffers[phm->u.
-									 d.
-									 wStreamIndex]);
-				pHw6205->InStreamHostBufferSize[phm->u.d.
-								wStreamIndex] =
-				    0;
-				pHw6205->InStreamHostBuffers[phm->u.d.
-							     wStreamIndex] =
-				    NULL;
-			}
+		status->dwSizeInBytes = phm->u.d.u.Buffer.dwBufferSize;
+		HW_Message(pao, phm, phr);
+		if (phr->wError
+		    && pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex]) {
+			HpiOs_LockedMem_Free(pHw6205->
+					     InStreamHostBuffers[phm->u.d.
+								 wStreamIndex]);
+			pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] =
+			    0;
+			pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex] =
+			    NULL;
 		}
 	}
 }
@@ -1061,9 +1097,11 @@ static void InStreamHostBufferFree(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	HPI_HW_OBJ *pHw6205 = pao->priv;
 	u32 dwCommand = phm->u.d.u.Buffer.dwCommand;
 
-	if (pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex]) {
+	if (pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex]) {
 		if (dwCommand == HPI_BUFFER_CMD_EXTERNAL ||
 		    dwCommand == HPI_BUFFER_CMD_INTERNAL_REVOKEADAPTER) {
+			pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] =
+			    0;
 			HW_Message(pao, phm, phr);
 		}
 
@@ -1072,12 +1110,17 @@ static void InStreamHostBufferFree(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			HpiOs_LockedMem_Free(pHw6205->
 					     InStreamHostBuffers[phm->u.d.
 								 wStreamIndex]);
-			pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex] =
-			    0;
 			pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex] =
 			    NULL;
 		}
+/* Should an error be returned if no host buffer is allocated? */
+	} else {
+		HPI_InitResponse(phr, HPI_OBJ_ISTREAM,
+				 HPI_ISTREAM_HOSTBUFFER_FREE,
+				 0 /*HPI_ERROR_INVALID_OPERATION */ );
+
 	}
+
 }
 
 //short nValue=0;
@@ -1127,18 +1170,11 @@ static void InStreamRead(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 int i;
 long *pTest;
 */
-	if (!pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex]) {
+	if (!pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex]) {
 		HW_Message(pao, phm, phr);
 		return;
 	}
 	HPI_InitResponse(phr, phm->wObject, phm->wFunction, 0);
-
-	if (HpiOs_LockedMem_GetVirtAddr
-	    (pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex],
-	     (void *)&pBBMData)) {
-		phr->wError = HPI_ERROR_INVALID_OPERATION;
-		return;
-	}
 
 	status = &interface->aInStreamHostBufferStatus[phm->u.d.wStreamIndex];
 	dwDataAvailable = InStreamGetBytesAvailable(status);
@@ -1147,19 +1183,29 @@ long *pTest;
 		return;
 	}
 
+	if (pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex]) {
+		if (HpiOs_LockedMem_GetVirtAddr
+		    (pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex],
+		     (void *)&pBBMData)) {
+			phr->wError = HPI_ERROR_INVALID_OPERATION;
+			return;
+		}
+
 /* either all data, or enough to fit from current to end of BBM buffer */
-	lFirstRead = min(phm->u.d.u.Data.dwDataSize,
-			 status->dwSizeInBytes -
-			 (status->dwHostIndex & (status->dwSizeInBytes - 1))
-	    );
+		lFirstRead = min(phm->u.d.u.Data.dwDataSize,
+				 status->dwSizeInBytes -
+				 (status->
+				  dwHostIndex & (status->dwSizeInBytes - 1))
+		    );
 
-	memcpy(pAppData,
-	       pBBMData + (status->dwHostIndex & (status->dwSizeInBytes - 1)),
-	       lFirstRead);
+		memcpy(pAppData,
+		       pBBMData +
+		       (status->dwHostIndex & (status->dwSizeInBytes - 1)),
+		       lFirstRead);
 /* remaining data if any */
-	memcpy(pAppData + lFirstRead, pBBMData,
-	       phm->u.d.u.Data.dwDataSize - lFirstRead);
-
+		memcpy(pAppData + lFirstRead,
+		       pBBMData, phm->u.d.u.Data.dwDataSize - lFirstRead);
+	}
 	status->dwHostIndex += phm->u.d.u.Data.dwDataSize;
 }
 
@@ -1169,7 +1215,7 @@ static void InStreamGetInfo(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	HPI_HW_OBJ *pHw6205 = pao->priv;
 	tBusMasteringInterfaceBuffer *interface = pHw6205->pInterfaceBuffer;
 	H620_HOSTBUFFER_STATUS *status;
-	if (!pHw6205->InStreamHostBuffers[phm->u.d.wStreamIndex]) {
+	if (!pHw6205->InStreamHostBufferSize[phm->u.d.wStreamIndex]) {
 		HW_Message(pao, phm, phr);
 		return;
 	}

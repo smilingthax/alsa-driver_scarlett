@@ -912,7 +912,7 @@ u16 HPI_StreamEstimateBufferSize(HPI_FORMAT * pFormat,	///< The format of the st
 	}
 	dwSize =
 	    (dwBytesPerSecond * dwHostPollingRateInMilliSeconds * 2) / 1000L;
-	*dwRecommendedBufferSize = (dwSize + 4095L) & ~4095L;	// round up to nearest 4 K bounday.
+	*dwRecommendedBufferSize = roundup_pow_of_two(((dwSize + 4095L) & ~4095L));	// round up to nearest 4 K bounday, then round up to power of 2
 	return 0;
 }
 
@@ -929,13 +929,13 @@ This can happen for two reasons:<br>
 Intentionally, when the end of the currently playing audio is reached.<br>
 A transient error condition when the adapter DSP was unable to decode audio fast enough.
 
-The dwDataToPlay count returned from HPI_OutStreamGetInfoEx() measures the amount of encoded data (MPEG, PCM etc) in the stream's
+The dwDataToPlay count returned from HPI_OutStreamGetInfoEx() measures the amount of encoded data (MPEG, PCM, etc.) in the stream's
 buffer.  When there is less than a whole frame of encoded data left, it cannot be decoded
 for mixing and output. It is possible that HPI_OutStreamGetInfoEx() indicates that there is still a small amount
 of data to play, but the stream enters the DRAINED state, and the amount of data to play
-and never gets to zero.
+never gets to zero.
 
-The size of a frame varies depends on the audio format.
+The size of a frame varies depending on the audio format.
 Compressed formats such as MPEG require whole frames of data in order to decode audio.  The
 size of the input frame depends on the samplerate and bitrate
 (e.g. MPEG frame_bytes = bitrate/8 * 1152/samplerate).
@@ -944,10 +944,10 @@ AudioScience's implementation of PCM decoding also requires a minimum amount of 
 ASI4xxx adapters require 4608 bytes, whereas ASI6xxx adapters require 1536 bytes for stereo,
 half this for mono.
 
-Conservative conditions to detect end of play<br>
-Have done the final OutStreamWrite<br>
-Stream state is HPI_STATE_DRAINED<br>
-dwDataToPlay < 4608
+Conservative conditions to detect end of play:<br>
+- Have done the final OutStreamWrite<br>
+- Stream state is HPI_STATE_DRAINED<br>
+- dwDataToPlay < 4608
 
 Input data requirements for different algorithms.
 
@@ -1256,11 +1256,11 @@ u16 HPI_OutStreamQueryFormat(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 }
 
 /** Sets the playback velocity for scrubbing. Velocity range is +/- 4.0.
-* nVelocity in set by
+* nVelocity is set by
 \code
 nVelocity = (u16)(fVelocity * HPI_VELOCITY_UNITS);
 \endcode
-* where fVelocity in a floating point number in the range of -4.0 to +4.0.
+* where fVelocity is a floating point number in the range of -4.0 to +4.0.
 * This call puts the stream in "scrub" mode. The first call to HPI_OutStreamSetVelocity()
 * should be made while the stream is reset so that scrubbing can be performed after
 * starting playback.
@@ -1297,7 +1297,7 @@ SetVelocity
 * The scrubbing approach taken here is to decode audio to a "scrub buffer" that contains
 * many seconds of PCM that can be traversed in at a variable rate.
 * \image html outstream_scrub.png
-* Forward scrubbing does not have any limitations what-so-ever, apart from the maximum speed,
+* Forward scrubbing does not have any limitations whatsoever, apart from the maximum speed,
 * as specified by HPI_OutStreamSetVelocity().
 *
 * Reverse scrubbing operates under the following constraints:<br>
@@ -1412,7 +1412,7 @@ u16 HPI_OutStreamAncillaryGetInfo(HPI_HSUBSYS * phSubSys,	///< HPI subsystem han
 * ancillary data buffer.
 *
 * Bytes are filled in the bData[] array of the HPI_ANC_FRAME structures in the following
-* order.
+* order:
 *
 * The first bit of ancillary information that follows the valid audio data is placed in
 * bit 7 of  bData[0]. The first 8 bits of ancillary information following valid audio
@@ -1449,8 +1449,9 @@ u16 HPI_OutStreamAncillaryRead(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle
 	return (hr.wError);
 }
 
-/** Sets the playback time scale with pitch and content preservation.
-* Range is 0.8-1.2 (80% to 120%) of original time.<br>
+/** Sets the playback timescale with pitch and content preservation.
+* Range is 0.8-1.2 (
+to 120%) of original time.<br>
 * dwTimeScale in set by:<br>
 \code
 dwTimeScale = (u16)(fTimeScale * HPI_OSTREAM_TIMESCALE_UNITS);
@@ -2224,7 +2225,7 @@ u16 HPI_InStreamAncillaryWrite(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsy
 * \return_hpierr
 * \retval HPI_ERROR_INVALID_DATASIZE memory can't be allocated
 *(retrying the call with a smaller size may succeed)
-* \retval HPI_ERROR_DOS_MEMORY_ALLOC !? virtual address of the allocated buffer can't be found.
+* \retval HPI_ERROR_MEMORY_ALLOC virtual address of the allocated buffer can't be found.
 * \retval HPI_ERROR_INVALID_FUNC the adapter doesn't support busmastering
 */
 u16 HPI_InStreamHostBufferAllocate(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
@@ -3751,7 +3752,7 @@ A Microphone control of type HPI_CONTROL_MICROPHONE is always located on a sourc
 HPI_SOURCE_NODE_MICROPHONE.
 This node type receives an audio signal from a microphone. If the microphone has adjustable
 gain, then a VOLUME control will also be present on the node. Currently the Microphone
-control is only used to turn on/off the microphone�s phantom power.
+control is only used to turn on/off the microphone's phantom power.
 \{
 */
 
@@ -3865,12 +3866,12 @@ u16 HPI_Multiplexer_QuerySource(HPI_HSUBSYS * phSubSys,	///< subsystem handle
 /////////////////////////////////////////////////////////////////////////////////
 /**\addtogroup parmeq  Parametric Equalizer control
 
-The parametric equalizer control consists of a series of filters that are applied 
-successively to the signal. The number of filters available is obtained by calling 
-HPI_ParametricEQ_GetInfo(), then the characteristics of each filter are configured 
+The parametric equalizer control consists of a series of filters that are applied
+successively to the signal. The number of filters available is obtained by calling
+HPI_ParametricEQ_GetInfo(), then the characteristics of each filter are configured
 using HPI_ParametricEQ_SetBand().
 
-The equalizer as a whole can be turned on and off using HPI_ParametricEQ_SetState().  
+The equalizer as a whole can be turned on and off using HPI_ParametricEQ_SetState().
 Filters can still be set up when the equalizer is switched off.
 
 Equalizers are typically located on a LineIn input node or an OutStream node.
@@ -3879,7 +3880,7 @@ Obtain a control handle to an equalizer like this:
 
 \code
 wHE = HPI_MixerGetControl(
-phSubSys, 
+phSubSys,
 hMixer,
 HPI_SOURCENODE_LINEIN, 0,
 0,0,  // No destination node
@@ -3962,7 +3963,7 @@ u16 HPI_ParametricEQ_GetBand(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsyst
 }
 
 /** Set up one of the filters in a parametric equalizer.
-Set the parameters for one equalizer filter. 
+Set the parameters for one equalizer filter.
 The overall equalizer response will be a product of all its filter responses.
 
 \return_hpierr
@@ -3972,49 +3973,49 @@ The overall equalizer response will be a product of all its filter responses.
 \param wIndex Index of band to set.
 \param nType The kind of filter that the band will implement has many different options.
 In the following descriptions, low and high frequencies mean relative to dwBandFrequency.
-"Elsewhere" means at frequencies different from dwBandFrequency, how different depends on 
+"Elsewhere" means at frequencies different from dwBandFrequency, how different depends on
 Q (look at the following figures)
 - HPI_FILTER_TYPE_BYPASS\n
 The filter is bypassed (turned off). Other parameters are ignored
 - HPI_FILTER_TYPE_LOWPASS\n
 Has unity gain at low frequencies, and attenuation tending towards infinite at high frequencies
 nGain0_01dB parameter is ignored.
-See "lp" in the following diagrams.  
+See "lp" in the following diagrams.
 - HPI_FILTER_TYPE_HIGHPASS\n
 Has unity gain at high frequencies, and attenuation tending towards infinite at low frequencies
-nGain0_01dB parameter is ignored. 
+nGain0_01dB parameter is ignored.
 (Not illustrated, basically the opposite of lowpass)
 - HPI_FILTER_TYPE_BANDPASS\n
 Has unity gain at dwFrequencyHz and tends towards infinite attenuation elsewhere
 nGain0_01dB parameter is ignored.
-See "bp" in the following diagrams.  
+See "bp" in the following diagrams.
 - HPI_FILTER_TYPE_BANDSTOP\n
-Maximum attenuation at dwFrequencyHz, tends towards unity gain elsewhere. 
+Maximum attenuation at dwFrequencyHz, tends towards unity gain elsewhere.
 nGain0_01dB parameter is ignored.
-See "bs" in the following diagrams.  
+See "bs" in the following diagrams.
 - HPI_FILTER_TYPE_LOWSHELF\n
-Has gain of nGain0_01dB at low frequencies and unity gain at high frequencies. 
-See "ls" in the following diagrams.  
+Has gain of nGain0_01dB at low frequencies and unity gain at high frequencies.
+See "ls" in the following diagrams.
 - HPI_FILTER_TYPE_HIGHSHELF\n
 Has gain of nGain0_01dB at high frequencies and unity gain at low frequencies.
-See "hs" in the following diagrams.  
+See "hs" in the following diagrams.
 - HPI_FILTER_TYPE_EQ_BAND \n
 Has gain of nGain0_01dB at dwFrequencyHz and unity gain elsewhere.
-See "eq" in the following diagrams.  
+See "eq" in the following diagrams.
 
-\param dwFrequencyHz is the defining frequency of the filter.  It is the center frequency of types 
+\param dwFrequencyHz is the defining frequency of the filter.  It is the center frequency of types
 HPI_FILTER_TYPE_ BANDPASS, HPI_FILTER_TYPE_BANDSTOP, HPI_FILTER_TYPE_EQ_BAND.
-It is the -3dB frequency of HPI_FILTER_TYPE_LOWPASS, HPI_FILTER_TYPE_HIGHPASS when Q=1 or resonant 
+It is the -3dB frequency of HPI_FILTER_TYPE_LOWPASS, HPI_FILTER_TYPE_HIGHPASS when Q=1 or resonant
 frequency when Q>1 and it is the half gain frequency of HPI_FILTER_TYPE_LOWSHELF, HPI_FILTER_TYPE_HIGHSHELF.
-The maximum allowable value is half the current adapter samplerate i.e. Fs/2.   When the adapter samplerate 
-is changed, the equalizer filters will be recalculated.  If this results in the band frequency being greater 
+The maximum allowable value is half the current adapter samplerate i.e. Fs/2.   When the adapter samplerate
+is changed, the equalizer filters will be recalculated.  If this results in the band frequency being greater
 than Fs/2, then the filter will be turned off.
 
 \param nQ100 controls filter sharpness. To allow the use of an integer parameter, Filter Q = dwQ100/100.\n
-In the following figure, gain is 20dB (10x) (nGain0_01dB=2000) and sampling frequency is normalized to 
+In the following figure, gain is 20dB (10x) (nGain0_01dB=2000) and sampling frequency is normalized to
 1Hz (10^0) and nFrequency is 0.1 x sampling frequency. Q=[0.2 0.5 1 2 4 8].\n
 Q can also be thought of as affecting bandwidth or shelf slope of some of these filters.\n
-Bandwidth is measured in octaves (between -3 dB frequencies for BPF and notch or between midpoint (dBgain/2) 
+Bandwidth is measured in octaves (between -3 dB frequencies for BPF and notch or between midpoint (dBgain/2)
 gain frequencies for peaking EQ).\n
 The relationship between bandwidth and Q is:
 \code
@@ -4022,31 +4023,31 @@ The relationship between bandwidth and Q is:
 or      1/Q = 2*sinh[ln(2)/2*bandwidth])           (analog filter prototype)
 Where omega = 2*pi*frequency/sampleRate
 \endcode
-Shelf slope S, a "shelf slope" parameter (for shelving EQ only).  When S = 1, the shelf slope is as steep 
-as it can be and remain monotonically increasing or decreasing gain with frequency.  The shelf slope, in  
+Shelf slope S, a "shelf slope" parameter (for shelving EQ only).  When S = 1, the shelf slope is as steep
+as it can be and remain monotonically increasing or decreasing gain with frequency.  The shelf slope, in
 dB/octave, remains proportional to S for all other values.\n
 The relationship between shelf slope and Q is 1/Q = sqrt[(A + 1/A)*(1/S - 1) + 2]\n
-where A  = 10^(dBgain/40)\n             
+where A  = 10^(dBgain/40)\n
 Effect of Q on EQ filters \image html EQ_effect_of_Q.png
 
 \param nGain0_01dB The gain is expressed in milliBels (100ths of a decibel).
 Allowable range is -1000 to +1000 mB. Usable range will likely be less than this.
-This parameter is only applicable to the equalizer filter types HPI_FILTER_TYPE_LOWSHELF, 
+This parameter is only applicable to the equalizer filter types HPI_FILTER_TYPE_LOWSHELF,
 HPI_FILTER_TYPE_HIGHSHELF and HPI_FILTER_TYPE_EQ_BAND.Other filters always have unity gain in the passband.\n
-In the following figure, Q=1.0 and sampling frequency is normalized to 1Hz (10^0) and nFrequency is 0.1 x sampling frequency. 
+In the following figure, Q=1.0 and sampling frequency is normalized to 1Hz (10^0) and nFrequency is 0.1 x sampling frequency.
 dBgain=[-20 -10 0 10 20]\n
 For example, to produce the upper (red) curve in the "Filtertype_eq_band" graph:
 \code
 wHE= HPI_ParametricEQ_SetBand(
 phSubsys,
-hMicrophoneControl, 
+hMicrophoneControl,
 HPI_FILTER_TYPE_EQ_BAND,
 4410    // 4.41khz
 100                     // Q=1
 20*100, // 20dB
 );
 \endcode
-Effect of gain on EQ filters \image html EQ_effect_of_gain.png  
+Effect of gain on EQ filters \image html EQ_effect_of_gain.png
 */
 u16 HPI_ParametricEQ_SetBand(HPI_HSUBSYS * phSubSys,
 			     HPI_HCONTROL hControlHandle,
@@ -4103,7 +4104,8 @@ u16 HPI_ParametricEQ_GetCoeffs(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsy
 /////////////////////////////////////////////////////////////////////////////////
 /**\defgroup sampleclock SampleClock control
 The SampleClock control is used to control the clock source for the adapter.
-The SampleClock control is always attached to a node of type HPI_SOURCENODE_CLOCK_SOURCE
+The SampleClock control is always attached to a node of type HPI_SOURCENODE_CLOCK_SOURCE. To query supported
+sample rates, see HPI_ControlQuery().
 
 @{
 */
@@ -4690,6 +4692,7 @@ u16 HPI_Tuner_GetMode(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 * \b ASI87xx - Does not support this function.<br>
 * <b> ASI89xx with ASI1711 tuner </b> - Does support this function.
 * \return_hpierr
+* \retval HPI_ERROR_BUFFER_EMPTY if the RDS buffer is now empty.
 */
 u16 HPI_Tuner_GetRDS(HPI_HSUBSYS * phSubSys,	///< HPI subsystem handle.
 		     HPI_HCONTROL hControlHandle,	///< Handle to tuner control.
@@ -4736,7 +4739,11 @@ supports gain.
 \{
 */
 /** Set the gain of a volume control.
-* \return_hpierr
+
+Setting the gain of a volume control has the side effect that any autofades currently underway
+are terminated. The volume would become that of the current Set command.
+
+\return_hpierr
 */
 u16 HPI_VolumeSetGain(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 		      HPI_HCONTROL hControlHandle,	///< Handle to volume control.
@@ -5371,8 +5378,8 @@ u16 HPI_ProfileOpenAll(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem han
 }
 
 /** Reads a single profile from the DSP's profile store.
-The input is a handle to the profiles (hProfiles - returned from HPI_ProfileOpenAll() ) 
-and an index that addresses one of the profiles (wIndex).  The index may range from 0 to 
+The input is a handle to the profiles (hProfiles - returned from HPI_ProfileOpenAll() )
+and an index that addresses one of the profiles (wIndex).  The index may range from 0 to
 wMaxProfiles  (returned by HPI_ProfileOpenAll() ). The return parameters describe the execution of
 the profiled section of DSP code.
 
@@ -5411,7 +5418,7 @@ u16 HPI_ProfileGet(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 /** Get the DSP utilization in 1/100 of a percent.
 \return_hpierr
 */
-u16 HPI_ProfileGetUtilization(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle. 
+u16 HPI_ProfileGetUtilization(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 			      HPI_HPROFILE hProfile,	///<  Handle of profile object.
 			      u32 * pdwUtilization	///< Returned DSP utilization in 100ths of a percent.
     )
@@ -5438,7 +5445,7 @@ This function allows an application (or GUI) to read the names of the
 profiles from the DSP so as to correctly label the returned timing information.
 \return_hpierr
 */
-u16 HPI_ProfileGetName(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle. 
+u16 HPI_ProfileGetName(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 		       HPI_HPROFILE hProfile,	///< Handle of profile object.
 		       u16 wIndex,	///< Index of the profile to retrieve the name of.
 		       char *szName,	///< Pointer to a string that will have the name returned in it.
@@ -5467,7 +5474,7 @@ This starts profile counters and timers running. It is up to the user
 to periodically call HPI_ProfileGet() to retrieve timing information.
 \return_hpierr
 */
-u16 HPI_ProfileStartAll(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle. 
+u16 HPI_ProfileStartAll(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 			HPI_HPROFILE hProfile	///<  Handle of profile object.
     )
 {
@@ -5485,7 +5492,7 @@ u16 HPI_ProfileStartAll(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem ha
 When profiling is stopped counters are no longer updated.
 \return_hpierr
 */
-u16 HPI_ProfileStopAll(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle. 
+u16 HPI_ProfileStopAll(HPI_HSUBSYS * phSubSys,	///< Pointer to HPI subsystem handle.
 		       HPI_HPROFILE hProfile	///<  Handle of profile object.
     )
 {
@@ -5646,8 +5653,8 @@ void HPI_GetErrorText(u16 wError, char *pszErrorText)
 	case HPI_ERROR_DSP_HARDWARE:	//207
 		strcat(pszErrorText, "internal DSP hardware error");
 		break;
-	case HPI_ERROR_DOS_MEMORY_ALLOC:	//208
-		strcat(pszErrorText, "could not allocate memory in DOS");
+	case HPI_ERROR_MEMORY_ALLOC:	//208
+		strcat(pszErrorText, "could not allocate memory");
 		break;
 	case HPI_ERROR_PLD_LOAD:	//209
 		strcat(pszErrorText, "PLD could not be configured");

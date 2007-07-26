@@ -54,24 +54,24 @@ typedef unsigned char BOOLEAN;
 /** Details of a memory area allocated with  pci_alloc_consistent
 Need all info for parameters to pci_free_consistent
 */
-typedef struct {
+struct consistent_dma_area {
 	struct pci_dev *pdev;
 	dma_addr_t dma_addr;
 	void *cpu_addr;
 	size_t size;
-} HpiOs_LockedMem_Area;
+};
 
 static struct kmem_cache *memAreaCache = NULL;
 
 void HpiOs_LockedMem_Init(void)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION ( 2 , 6 , 23 )
 	memAreaCache = kmem_cache_create("asihpi_mem_area",
-					 sizeof(HpiOs_LockedMem_Area), 0,
+					 sizeof(struct consistent_dma_area), 0,
 					 SLAB_HWCACHE_ALIGN, NULL);
 #else
 	memAreaCache = kmem_cache_create("asihpi_mem_area",
-					 sizeof(HpiOs_LockedMem_Area), 0,
+					 sizeof(struct consistent_dma_area), 0,
 					 SLAB_HWCACHE_ALIGN, NULL, NULL);
 #endif
 	if (memAreaCache == NULL)
@@ -85,7 +85,7 @@ On error, return -ENOMEM, and *pLockedMemHandle=NULL
 u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 			  struct pci_dev *pdev)
 {
-	HpiOs_LockedMem_Area *pMemArea;
+	struct consistent_dma_area *pMemArea;
 
 	*pLockedMemHandle = NULL;
 	if (!memAreaCache)
@@ -122,8 +122,8 @@ u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 
 u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle)
 {
-	HpiOs_LockedMem_Area *pMemArea =
-	    (HpiOs_LockedMem_Area *) LockedMemHandle;
+	struct consistent_dma_area *pMemArea =
+	    (struct consistent_dma_area *)LockedMemHandle;
 
 	if (!LockedMemHandle)
 		return 1;
@@ -131,7 +131,7 @@ u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle)
 	if (pMemArea->size) {
 		pci_free_consistent(pMemArea->pdev, pMemArea->size,
 				    pMemArea->cpu_addr, pMemArea->dma_addr);
-		HPI_DEBUG_LOG3(DEBUG, "Freed %lu bytes, dma 0x%x vma %p\n",
+		HPI_DEBUG_LOG3(INFO, "Freed %lu bytes, dma 0x%x vma %p\n",
 			       (unsigned long)pMemArea->size,
 			       (unsigned int)pMemArea->dma_addr,
 			       pMemArea->cpu_addr);
@@ -156,7 +156,8 @@ u16 HpiOs_LockedMem_GetPhysAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 		*pPhysicalAddr = 0;
 		return 1;
 	}
-	*pPhysicalAddr = ((HpiOs_LockedMem_Area *) LockedMemHandle)->dma_addr;
+	*pPhysicalAddr =
+	    ((struct consistent_dma_area *)LockedMemHandle)->dma_addr;
 	return (0);
 }
 
@@ -168,18 +169,9 @@ u16 HpiOs_LockedMem_GetVirtAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 		return 1;
 	}
 
-	*ppvVirtualAddr = ((HpiOs_LockedMem_Area *) LockedMemHandle)->cpu_addr;
+	*ppvVirtualAddr =
+	    ((struct consistent_dma_area *)LockedMemHandle)->cpu_addr;
 	return 0;
-}
-
-void *HpiOs_MemAlloc(u32 dwSize)
-{
-	return kmalloc(dwSize, GFP_KERNEL);
-}
-
-void HpiOs_MemFree(void *ptr)
-{
-	kfree(ptr);
 }
 
 /////////////////////////////////////////////////////////////

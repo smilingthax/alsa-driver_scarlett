@@ -21,7 +21,6 @@ adapters.  These PCI bus adapters are based on the Motorola DSP56301
 DSP with on-chip PCI I/F.
 
 #defines:
-USE_ZLIB use zlib compressed dsp code files. Expects to be linked with hzz4?00?.c
 USE_ASIDSP load dsp code from external file "asidsp.bin".  Hex files no longer
 need to be linked in
 
