@@ -455,8 +455,12 @@ static int snd_card_asihpi_trigger(struct snd_pcm_substream *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		snd_pcm_group_for_each_entry(s, substream) {
-			struct snd_card_asihpi_pcm *ds =
-			    s->runtime->private_data;
+			struct snd_card_asihpi_pcm *ds;
+
+			if (snd_pcm_substream_chip(s) != card)
+				continue;
+
+			ds = s->runtime->private_data;
 
 			snd_card_asihpi_pcm_timer_start(s);
 
@@ -488,6 +492,8 @@ static int snd_card_asihpi_trigger(struct snd_pcm_substream *substream, int cmd)
 
 	case SNDRV_PCM_TRIGGER_STOP:
 		snd_pcm_group_for_each_entry(s, substream) {
+			if (snd_pcm_substream_chip(s) != card)
+				continue;
 			snd_card_asihpi_pcm_timer_stop(s);
 			/*? workaround linked streams don't transition to SETUP 20070706 */
 			s->runtime->status->state = SNDRV_PCM_STATE_SETUP;
