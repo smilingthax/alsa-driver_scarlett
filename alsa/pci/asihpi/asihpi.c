@@ -228,11 +228,11 @@ static inline u16 HPI_StreamGetInfoEx(HPI_HSUBSYS * hS,
 				      u32 * pdwAuxiliaryData)
 {
 	if (HPI_HandleObject(hStream) == HPI_OBJ_OSTREAM)
-		return HPI_InStreamGetInfoEx(hS, hStream, pwState,
+		return HPI_OutStreamGetInfoEx(hS, hStream, pwState,
 					     pdwBufferSize, pdwDataInBuffer,
 					     pdwSampleCount, pdwAuxiliaryData);
 	else
-		return HPI_OutStreamGetInfoEx(hS, hStream, pwState,
+		return HPI_InStreamGetInfoEx(hS, hStream, pwState,
 					      pdwBufferSize, pdwDataInBuffer,
 					      pdwSampleCount, pdwAuxiliaryData);
 }
@@ -1207,7 +1207,7 @@ struct hpi_control {
 #define ASIHPI_SOURCENODE_STRINGS \
 { \
 	TEXT("no source"), \
-	TEXT("PCM playback"), \
+	TEXT("PCM Playback"), \
 	TEXT("Line in"), \
 	TEXT("Digital in"), \
 	TEXT("Tuner"), \
@@ -1236,7 +1236,7 @@ struct hpi_control {
 #define ASIHPI_DESTNODE_STRINGS \
 { \
 	TEXT("no destination"), \
-	TEXT("PCM capture"), \
+	TEXT("PCM Capture"), \
 	TEXT("Line out"), \
 	TEXT("Digital out"), \
 	TEXT("RF"), \
