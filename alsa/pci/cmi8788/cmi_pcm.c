@@ -33,7 +33,6 @@
 /*
  * TODO:
  * - second ac97
- * - sync start
  * - suspend/resume
  */
 
@@ -41,7 +40,8 @@ static struct snd_pcm_hardware snd_cmi_pcm_playback_hw = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
 		SNDRV_PCM_INFO_INTERLEAVED |
-		SNDRV_PCM_INFO_PAUSE,
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
 	.formats = SNDRV_PCM_FMTBIT_S16_LE |
 		   SNDRV_PCM_FMTBIT_S32_LE,
 	.rates = SNDRV_PCM_RATE_32000 |
@@ -72,7 +72,8 @@ static struct snd_pcm_hardware snd_cmi_stereo_hw = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
 		SNDRV_PCM_INFO_INTERLEAVED |
-		SNDRV_PCM_INFO_PAUSE,
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
 	.formats = SNDRV_PCM_FMTBIT_S16_LE |
 		   SNDRV_PCM_FMTBIT_S32_LE,
 	.rates = SNDRV_PCM_RATE_32000 |
@@ -490,38 +491,53 @@ static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
 static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	struct cmi_substream *cmi_subs = substream->runtime->private_data;
-	int err = 0;
+	struct snd_pcm_substream *s;
+	u32 int_mask = 0, dma_mask = 0;
+	int running;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		cmi_subs->running = 1;
-
-		/* enable Interrupt */
-		chip->int_mask_reg |= cmi_subs->int_mask;
-		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
-
-		/* Set PCI DMA Channel state -- Start */
-		chip->dma_status_reg |= cmi_subs->dma_mask;
-		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
+		running = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		cmi_subs->running = 0;
+		running = 0;
+		break;
+	default:
+		return -EINVAL;
+	}
 
+	snd_pcm_group_for_each_entry(s, substream) {
+		if (snd_pcm_substream_chip(s) == chip) {
+			struct cmi_substream *cmi_subs;
+
+			cmi_subs = s->runtime->private_data;
+			int_mask |= cmi_subs->int_mask;
+			dma_mask |= cmi_subs->dma_mask;
+			cmi_subs->running = running;
+			snd_pcm_trigger_done(s, substream);
+		}
+	}
+
+	if (running) {
+		/* enable Interrupt */
+		chip->int_mask_reg |= int_mask;
+		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
+
+		/* Set PCI DMA Channel state -- Start */
+		chip->dma_status_reg |= dma_mask;
+		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
+	} else {
 		/* Set PCI DMA Channel state -- Stop */
-		chip->dma_status_reg &= ~cmi_subs->dma_mask;
+		chip->dma_status_reg &= ~dma_mask;
 		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
 
 		/* disable interrupt */
-		chip->int_mask_reg &= ~cmi_subs->int_mask;
+		chip->int_mask_reg &= ~int_mask;
 		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
-		break;
-	default:
-		err = -EINVAL;
 	}
-	return err;
+	return 0;
 }
 
 static snd_pcm_uframes_t cmi_pcm_pointer(struct snd_pcm_substream *substream,
