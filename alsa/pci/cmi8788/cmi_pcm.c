@@ -116,13 +116,9 @@ static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_PLAYBACK);
 	chip->playback_volume_init = 1;
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0010;
-	cmi_subs->int_mask = 0x0010;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -131,13 +127,9 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_CAPTURE);
 	chip->capture_volume_init = 1;
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0001;
-	cmi_subs->int_mask = 0x0001;
 	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
@@ -145,12 +137,8 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0020;
-	cmi_subs->int_mask = 0x4020;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -158,12 +146,8 @@ static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 static int snd_cmi_spdif_playback_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, SPDIF_PCMS, CMI_PLAYBACK);
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0008;
-	cmi_subs->int_mask = 0x0008;
 	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
@@ -171,12 +155,8 @@ static int snd_cmi_spdif_playback_open(struct snd_pcm_substream *substream)
 static int snd_cmi_spdif_capture_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, SPDIF_PCMS, CMI_CAPTURE);
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0004;
-	cmi_subs->int_mask = 0x0004;
 	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
@@ -186,8 +166,6 @@ static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 
 	cmi_subs->substream = NULL;
-	cmi_subs->dma_mask = 0x0000;
-	cmi_subs->int_mask = 0x0000;
 	return 0;
 }
 
