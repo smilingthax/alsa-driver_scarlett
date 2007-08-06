@@ -464,7 +464,7 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_CAPTURE].dma_mask = 0x0001;
 	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_CAPTURE].int_mask = 0x0001;
 	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_PLAYBACK].dma_mask = 0x0020;
-	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_PLAYBACK].int_mask = 0x4020;
+	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_PLAYBACK].int_mask = 0x0020;
 	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_CAPTURE].dma_mask = 0x0002;
 	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_CAPTURE].int_mask = 0x0002;
 	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_PLAYBACK].dma_mask = 0x0008;
