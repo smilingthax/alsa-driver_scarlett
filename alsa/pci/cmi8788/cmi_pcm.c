@@ -446,7 +446,7 @@ static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 
 	/* disable interrupt */
-	chip->int_mask_reg &= ~cmi_subs->int_mask;
+	chip->int_mask_reg &= ~cmi_subs->mask;
 	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 
 	return snd_pcm_lib_free_pages(substream);
@@ -466,13 +466,13 @@ static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
 
 	/* Reset DMA Channel*/
 	reset = snd_cmipci_read_b(chip, DMARestRegister);
-	reset |= cmi_subs->dma_mask; /* set bit */
+	reset |= cmi_subs->mask; /* set bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
-	reset &= ~cmi_subs->dma_mask; /* clear bit */
+	reset &= ~cmi_subs->mask; /* clear bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
 
 	/* enable Interrupt */
-	chip->int_mask_reg |= cmi_subs->int_mask;
+	chip->int_mask_reg |= cmi_subs->mask;
 	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 	return 0;
 }
@@ -502,7 +502,7 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 			struct cmi_substream *cmi_subs;
 
 			cmi_subs = s->runtime->private_data;
-			dma_mask |= cmi_subs->dma_mask;
+			dma_mask |= cmi_subs->mask;
 			cmi_subs->running = running;
 			snd_pcm_trigger_done(s, substream);
 		}

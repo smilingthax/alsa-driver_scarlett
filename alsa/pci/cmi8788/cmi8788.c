@@ -318,12 +318,12 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
-		if (cmi_subs->running && (status & cmi_subs->int_mask))
+		if (cmi_subs->running && (status & cmi_subs->mask))
 			snd_pcm_period_elapsed(cmi_subs->substream);
 
 		/* capture */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_CAPTURE];
-		if (cmi_subs->running && (status & cmi_subs->int_mask))
+		if (cmi_subs->running && (status & cmi_subs->mask))
 			snd_pcm_period_elapsed(cmi_subs->substream);
 	}
 
@@ -459,18 +459,12 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	chip->num_ac97_codecs = 1;
 
 	/* initialize PCM stream mask bits */
-	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_PLAYBACK].dma_mask = 0x0010;
-	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_PLAYBACK].int_mask = 0x0010;
-	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_CAPTURE].dma_mask = 0x0001;
-	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_CAPTURE].int_mask = 0x0001;
-	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_PLAYBACK].dma_mask = 0x0020;
-	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_PLAYBACK].int_mask = 0x0020;
-	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_CAPTURE].dma_mask = 0x0002;
-	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_CAPTURE].int_mask = 0x0002;
-	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_PLAYBACK].dma_mask = 0x0008;
-	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_PLAYBACK].int_mask = 0x0008;
-	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_CAPTURE].dma_mask = 0x0004;
-	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_CAPTURE].int_mask = 0x0004;
+	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_PLAYBACK].mask = 0x0010;
+	chip->cmi_pcm[NORMAL_PCMS].cmi_subs[CMI_CAPTURE].mask = 0x0001;
+	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_PLAYBACK].mask = 0x0020;
+	chip->cmi_pcm[AC97_PCMS].cmi_subs[CMI_CAPTURE].mask = 0x0002;
+	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_PLAYBACK].mask = 0x0008;
+	chip->cmi_pcm[SPDIF_PCMS].cmi_subs[CMI_CAPTURE].mask = 0x0004;
 
 	/* create codec instances */
 	if ((err = snd_cmi8788_codec_create(chip)) < 0) {
