@@ -464,6 +464,13 @@ static int snd_cmi_spdif_capture_hw_params(struct snd_pcm_substream *substream,
 
 static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 {
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi_substream *cmi_subs = substream->runtime->private_data;
+
+	/* disable interrupt */
+	chip->int_mask_reg &= ~cmi_subs->int_mask;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
+
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -485,6 +492,10 @@ static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
 	reset &= ~cmi_subs->dma_mask; /* clear bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
+
+	/* enable Interrupt */
+	chip->int_mask_reg |= cmi_subs->int_mask;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 	return 0;
 }
 
@@ -492,7 +503,7 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_substream *s;
-	u32 int_mask = 0, dma_mask = 0;
+	u32 dma_mask = 0;
 	int running;
 
 	switch (cmd) {
@@ -513,30 +524,19 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 			struct cmi_substream *cmi_subs;
 
 			cmi_subs = s->runtime->private_data;
-			int_mask |= cmi_subs->int_mask;
 			dma_mask |= cmi_subs->dma_mask;
 			cmi_subs->running = running;
 			snd_pcm_trigger_done(s, substream);
 		}
 	}
 
-	if (running) {
-		/* enable Interrupt */
-		chip->int_mask_reg |= int_mask;
-		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
-
+	if (running)
 		/* Set PCI DMA Channel state -- Start */
 		chip->dma_status_reg |= dma_mask;
-		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
-	} else {
+	else
 		/* Set PCI DMA Channel state -- Stop */
 		chip->dma_status_reg &= ~dma_mask;
-		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
-
-		/* disable interrupt */
-		chip->int_mask_reg &= ~int_mask;
-		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
-	}
+	snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
 	return 0;
 }
 
