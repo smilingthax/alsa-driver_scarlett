@@ -8,7 +8,7 @@
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,23)
-#define CONFIG_HAS_DMA
+#define CONFIG_HAS_DMA 1
 #endif
 
 #include <linux/pci.h>
