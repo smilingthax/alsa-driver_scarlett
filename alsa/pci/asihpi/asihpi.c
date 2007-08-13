@@ -862,6 +862,8 @@ static int snd_card_asihpi_playback_open(struct snd_pcm_substream *substream)
 					SNDRV_PCM_HW_PARAM_BUFFER_SIZE)) < 0)
 		return err;
 
+	snd_pcm_set_sync(substream);
+
 	snd_printd(KERN_INFO "Playback open\n");
 
 	return 0;
@@ -1069,6 +1071,8 @@ static int snd_card_asihpi_capture_open(struct snd_pcm_substream *substream)
 	     snd_pcm_hw_constraint_pow2(runtime, 0,
 					SNDRV_PCM_HW_PARAM_BUFFER_SIZE)) < 0)
 		return err;
+
+	snd_pcm_set_sync(substream);
 
 	return 0;
 }

@@ -110,6 +110,7 @@ static void cmi_pcm_open(struct snd_pcm_substream *substream, int cmi_pcm_no, in
 
 	cmi_subs->substream = substream;
 	substream->runtime->private_data = cmi_subs;
+	snd_pcm_set_sync(substream);
 }
 
 static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
