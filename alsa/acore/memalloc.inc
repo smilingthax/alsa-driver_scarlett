@@ -13,7 +13,7 @@
 
 #include <linux/pci.h>
 #include "config.h"
-#define SKIP_HIDDEN_MALLOCS
+#define SKIP_HIDDEN_MALLOCS 1
 #include "adriver.h"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_PROC_FS)
