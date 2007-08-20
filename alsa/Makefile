@@ -195,9 +195,12 @@ endif
 install-modules:
 ifeq ($(moddir_tree),y)
 	find $(DESTDIR)$(moddir) -name 'snd*.*o' | xargs rm -f
+	find $(DESTDIR)$(moddir) -name 'snd*.*o.gz' | xargs rm -f
 	find $(DESTDIR)$(moddir) -name 'ac97_bus.*o' | xargs rm -f
+	find $(DESTDIR)$(moddir) -name 'ac97_bus.*o.gz' | xargs rm -f
 else
 	rm -f $(DESTDIR)$(moddir)/snd*.*o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
+	rm -f $(DESTDIR)$(moddir)/snd*.*o.gz $(DESTDIR)$(moddir)/persist.o.gz $(DESTDIR)$(moddir)/isapnp.o.gz
 endif
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
