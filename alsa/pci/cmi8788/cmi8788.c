@@ -327,7 +327,7 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	chip->CMI8788IC_revision =
 		rev & 0x08 ? CMI8788IC_Revision2 : CMI8788IC_Revision1;
 
-	sprintf(card->shortname, "C-Media PCI %d", 8787 + (rev != 0x14));
+	sprintf(card->shortname, "C-Media CMI%d", 8787 + (rev != 0x14));
 	sprintf(card->longname, "%s rev %u at 0x%lx, irq %i", card->shortname,
 		chip->CMI8788IC_revision, chip->addr, chip->irq);
 
