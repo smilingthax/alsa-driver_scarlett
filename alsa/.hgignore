@@ -66,6 +66,7 @@ pci/atiixp_modem.c
 pci/au88x0/au88x0.c
 pci/bt87x.c
 pci/ca0106/ca0106_main.c
+pci/cmipci.c
 pci/ens1370.c
 pci/echoaudio/darla20.c
 pci/echoaudio/darla24.c
