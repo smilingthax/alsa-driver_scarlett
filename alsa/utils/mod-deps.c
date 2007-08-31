@@ -169,6 +169,8 @@ static char *no_cards[] = {
 	"SND_VERBOSE_PROCFS",
 	"SND_VERBOSE_PRINTK",
 	"SND_BIT32_EMUL",
+	"#SND_AD1848_LIB",
+	"#SND_CS4231_LIB",
 	"#SND_SB_COMMON",
 	"#SND_SB8_DSP",
 	"#SND_SB16_DSP",
