@@ -38,8 +38,7 @@ number of jiffies remaining, if the task state is INTERRUPTIBLE,
 and the task receives a signal.
 Setting the state to UNINTERRUPTIBLE stops it from returning early.
 */
-		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout((HZ * dwNumMicroSec + (HZ - 1)) / 1000000);
+		schedule_timeout_uninterruptible(usecs_to_jiffies(dwNumMicroSec));
 	} else if (dwNumMicroSec <= 2000)
 		udelay(dwNumMicroSec);
 	else
