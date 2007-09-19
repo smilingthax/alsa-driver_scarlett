@@ -11,7 +11,6 @@
 #include <linux/interrupt.h>
 #include <asm/io.h>
 #include <asm/i8253.h>
-#include "pcsp_tabs.h"
 #include "pcsp.h"
 
 #define DMIX_WANTS_S16	1
@@ -84,23 +83,19 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 	val = runtime->dma_area[chip->playback_ptr + fmt_size - 1];
 	if (snd_pcm_format_signed(runtime->format))
 		val ^= 0x80;
-
-	/* ... but vl_tab[] is changed by mixer, not PCM.
-	 * And therefore, presumably, is not protected by
-	 * the snd_pcm_stream_lock(). */
-	spin_lock(&chip->vl_lock);
-	timer_cnt = chip->vl_tab[val];
-	spin_unlock(&chip->vl_lock);
+	timer_cnt = val * CUR_DIV() / 256;
 
 	if (timer_cnt && chip->enable) {
+		spin_lock(&i8253_lock);
 		outb_p(chip->val61, 0x61);
 		outb_p(timer_cnt, 0x42);
 		outb(chip->val61 ^ 1, 0x61);
+		spin_unlock(&i8253_lock);
 	}
 
 	period_bytes = snd_pcm_lib_period_bytes(substream);
 	buffer_bytes = snd_pcm_lib_buffer_bytes(substream);
-	chip->playback_ptr += PCSP_INDEX_INC * fmt_size;
+	chip->playback_ptr += PCSP_INDEX_INC() * fmt_size;
 	periods_elapsed = chip->playback_ptr - chip->period_ptr;
 	if (periods_elapsed < 0) {
 		printk(KERN_WARNING "PCSP: playback_ptr inconsistent (%i %i %i)\n",
@@ -125,7 +120,7 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 	if (!chip->timer_active)
 		return HRTIMER_NORESTART;
 	hrtimer_forward(&chip->timer, chip->timer.expires,
-			ktime_set(0, PCSP_PERIOD_NS));
+			ktime_set(0, PCSP_PERIOD_NS()));
 	return HRTIMER_RESTART;
 
 exit_nr_unlock2:
@@ -212,7 +207,6 @@ static int snd_pcsp_playback_prepare(struct snd_pcm_substream *substream)
 #endif
 	chip->playback_ptr = 0;
 	chip->period_ptr = 0;
-	pcsp_calc_voltab(chip);
 	return 0;
 }
 

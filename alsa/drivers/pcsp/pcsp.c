@@ -65,16 +65,13 @@ static int __init snd_pcsp_create(struct snd_card *card)
 
 	pcsp_chip.max_treble = min(order, PCSP_MAX_TREBLE);
 	pcsp_chip.treble = min(pcsp_chip.max_treble, PCSP_DEFAULT_TREBLE);
-	pcsp_chip.gain = PCSP_DEFAULT_GAIN;
 	pcsp_chip.playback_ptr = 0;
 	pcsp_chip.period_ptr = 0;
 	pcsp_chip.timer_active = 0;
-	pcsp_chip.volume = PCSP_MAX_VOLUME;
 	pcsp_chip.enable = 1;
 	pcsp_chip.pcspkr = 1;
 
 	spin_lock_init(&pcsp_chip.substream_lock);
-	spin_lock_init(&pcsp_chip.vl_lock);
 
 	pcsp_chip.card = card;
 	pcsp_chip.port = 0x61;
@@ -155,10 +152,7 @@ static int __init alsa_card_pcsp_init(void)
 			cards++;
 	}
 	if (!cards) {
-#ifdef MODULE
-		printk(KERN_ERR
-		       "PC-Speaker initialization failed.\n");
-#endif
+		printk(KERN_ERR "PC-Speaker initialization failed.\n");
 		return -ENODEV;
 	}
 
