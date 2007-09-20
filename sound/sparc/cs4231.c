@@ -1089,10 +1089,6 @@ static int __init snd_cs4231_probe(struct snd_cs4231 *chip)
 
 	spin_lock_irqsave(&chip->lock, flags);
 
-
-	/* Reset DMA engine (sbus only).  */
-	chip->p_dma.reset(chip);
-
 	/* clear any pendings IRQ */
 	__cs4231_readb(chip, CS4231U(chip, STATUS));
 	__cs4231_writeb(chip, 0, CS4231U(chip, STATUS));
