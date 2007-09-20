@@ -45,6 +45,7 @@ MODULE_SUPPORTED_DEVICE("{{C-Media,CMI8788}}");
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
+static int testing = 0;
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for C-Media PCI soundcard.");
@@ -52,6 +53,8 @@ module_param_array(id, charp, NULL, 0444);
 MODULE_PARM_DESC(id, "ID string for C-Media PCI soundcard.");
 module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable C-Media PCI soundcard.");
+module_param(testing, int, 0644);
+MODULE_PARM_DESC(testing, "Allow this buggy driver to load.");
 
 /* #define RECORD_LINE_IN */
 
@@ -268,6 +271,13 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	struct cmi8788 *chip;
 	int err;
 	u8 rev;
+
+	printk(KERN_WARNING "cmi8788: this driver is buggy and may hang the computer\n");
+	if (!testing) {
+		printk(KERN_ERR "cmi8788: if you really want to test this driver,\n");
+		printk(KERN_ERR "cmi8788: add the module parameter testing=1\n");
+		return -ENODEV;
+	}
 
 	if (dev >= SNDRV_CARDS)
 		return -ENODEV;
