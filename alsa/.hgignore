@@ -48,6 +48,7 @@ drivers/opl3/opl3_lib.c
 i2c/other/tea575x-tuner.c
 isa/sb/sb16_csp.c
 isa/wavefront/wavefront_fx.c
+isa/wavefront/wavefront_synth.c
 include/autoconf-extra.h
 include/config.h
 include/config1.h
