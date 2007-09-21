@@ -366,7 +366,7 @@ void snd_pci_compat_release_regions(struct pci_dev *pdev)
 		snd_pci_compat_release_region(pdev, i);
 }
 
-void snd_pci_compat_save_state(struct pci_dev *pdev)
+int snd_pci_compat_save_state(struct pci_dev *pdev)
 {
 	struct pci_driver_mapping *map = get_pci_driver_mapping(pdev);
 
@@ -376,9 +376,10 @@ void snd_pci_compat_save_state(struct pci_dev *pdev)
 		for (i = 0; i < 16; i++, buffer++)
 			pci_read_config_dword(pdev, i * 4, buffer);
 	}
+	return 0;
 }
 
-void snd_pci_compat_restore_state(struct pci_dev *pdev)
+int snd_pci_compat_restore_state(struct pci_dev *pdev)
 {
 	struct pci_driver_mapping *map = get_pci_driver_mapping(pdev);
 
@@ -388,6 +389,7 @@ void snd_pci_compat_restore_state(struct pci_dev *pdev)
 		for (i = 0; i < 16; i++, buffer++)
 			pci_write_config_dword(pdev, i * 4, *buffer);
 	}
+	return 0;
 }
 
 #endif /* CONFIG_PCI */
