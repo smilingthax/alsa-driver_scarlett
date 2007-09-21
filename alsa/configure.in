@@ -672,6 +672,8 @@ CHECK_KERNEL_HEADER(linux/mutex.h, [#include \"mutex_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/latency.h, [#include \"latency_compat.h\"
 ])
+CHECK_KERNEL_HEADER(linux/kthread.h, [#include \"kthread_compat.h\"
+])
 CHECK_KERNEL_HEADER(asm/irq_regs.h)
 
 dnl Check for dump_stack
