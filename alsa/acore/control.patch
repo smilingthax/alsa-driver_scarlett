@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/control.c	2007-05-17 08:15:24.000000000 +0200
-+++ control.c	2007-05-24 21:25:20.000000000 +0200
+--- ../alsa-kernel/core/control.c	2007-09-10 23:07:42.000000000 +0200
++++ control.c	2007-10-09 12:21:54.000000000 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
@@ -13,7 +13,29 @@
  #include <linux/slab.h>
  #include <linux/vmalloc.h>
  #include <linux/time.h>
-@@ -1387,25 +1389,44 @@
+@@ -716,6 +718,10 @@
+ 	return result;
+ }
+ 
++#ifdef CONFIG_SND_BIT32_EMUL_MODULE
++EXPORT_SYMBOL(snd_ctl_elem_read);
++#endif
++
+ static int snd_ctl_elem_read_user(struct snd_card *card,
+ 				  struct snd_ctl_elem_value __user *_control)
+ {
+@@ -779,6 +785,10 @@
+ 	return result;
+ }
+ 
++#ifdef CONFIG_SND_BIT32_EMUL_MODULE
++EXPORT_SYMBOL(snd_ctl_elem_read);
++#endif
++
+ static int snd_ctl_elem_write_user(struct snd_ctl_file *file,
+ 				   struct snd_ctl_elem_value __user *_control)
+ {
+@@ -1383,25 +1393,44 @@
  /*
   * ioctl32 compat
   */
