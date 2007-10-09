@@ -29,7 +29,7 @@
  }
  
 +#ifdef CONFIG_SND_BIT32_EMUL_MODULE
-+EXPORT_SYMBOL(snd_ctl_elem_read);
++EXPORT_SYMBOL(snd_ctl_elem_write);
 +#endif
 +
  static int snd_ctl_elem_write_user(struct snd_ctl_file *file,
