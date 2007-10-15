@@ -1029,8 +1029,8 @@ static void snd_cs4231_capture_callback(struct snd_cs4231 *chip)
 	}
 }
 
-static snd_pcm_uframes_t snd_cs4231_playback_pointer
-					(struct snd_pcm_substream *substream)
+static snd_pcm_uframes_t snd_cs4231_playback_pointer(
+					struct snd_pcm_substream *substream)
 {
 	struct snd_cs4231 *chip = snd_pcm_substream_chip(substream);
 	struct cs4231_dma_control *dma_cont = &chip->p_dma;
@@ -1045,8 +1045,8 @@ static snd_pcm_uframes_t snd_cs4231_playback_pointer
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
-static snd_pcm_uframes_t snd_cs4231_capture_pointer
-					(struct snd_pcm_substream *substream)
+static snd_pcm_uframes_t snd_cs4231_capture_pointer(
+					struct snd_pcm_substream *substream)
 {
 	struct snd_cs4231 *chip = snd_pcm_substream_chip(substream);
 	struct cs4231_dma_control *dma_cont = &chip->c_dma;
