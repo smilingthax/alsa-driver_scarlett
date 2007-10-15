@@ -10,7 +10,7 @@
 -#include "ac97_patch.c"
 +#include "../../alsa-kernel/pci/ac97/ac97_patch.c"
  
- MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+ MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
  MODULE_DESCRIPTION("Universal interface for Audio Codec '97");
 @@ -1904,6 +1904,7 @@
  

@@ -4,7 +4,7 @@
 +#include "info.inc"
  /*
   *  Information interface for ALSA driver
-  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
 @@ -20,6 +21,8 @@
   */
  

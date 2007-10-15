@@ -1,6 +1,6 @@
 /*
  *  ISA Plug & Play support
- *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+ *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -90,7 +90,7 @@ int isapnp_reserve_irq[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some IR
 int isapnp_reserve_dma[8] = { [0 ... 7] = -1 };		/* reserve (don't use) some DMA */
 long isapnp_reserve_io[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some I/O region */
 long isapnp_reserve_mem[16] = { [0 ... 15] = -1 };	/* reserve (don't use) some memory region */
-MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
+MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Generic ISA Plug & Play support");
 MODULE_PARM(isapnp_disable, "i");
 MODULE_PARM_DESC(isapnp_disable, "ISA Plug & Play disable");

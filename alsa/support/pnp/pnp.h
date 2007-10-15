@@ -3,7 +3,7 @@
  * Copyright by Adam Belay <ambx1@neo.rr.com>
  *
  * Reduced and backported for compatibility reasons for 2.2 and
- * 2.4 kernels by Jaroslav Kysela <perex@suse.cz>
+ * 2.4 kernels by Jaroslav Kysela <perex@perex.cz>
  *
  */
 

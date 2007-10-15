@@ -4,7 +4,7 @@
 +#define __NO_VERSION__
  /*
   *  Routines for driver control interface
-  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
 @@ -22,6 +23,7 @@
  #include <sound/driver.h>
  #include <linux/threads.h>

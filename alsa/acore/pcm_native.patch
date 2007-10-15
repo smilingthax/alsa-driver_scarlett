@@ -4,7 +4,7 @@
 +#define __NO_VERSION__
  /*
   *  Digital Audio (PCM) abstract layer
-  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
 @@ -21,6 +22,7 @@
  
  #include <sound/driver.h>

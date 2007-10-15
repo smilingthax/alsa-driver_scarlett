@@ -1,4 +1,4 @@
-ISA Plug & Play support by Jaroslav Kysela <perex@suse.cz>
+ISA Plug & Play support by Jaroslav Kysela <perex@perex.cz>
 =========================================================
 
 Interface /proc/isapnp

@@ -1,6 +1,6 @@
 #
 # Makefile for ALSA driver
-# Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
+# Copyright (c) 1994-98 by Jaroslav Kysela <perex@perex.cz>
 #
 
 ifneq ($(KERNELRELEASE),)
