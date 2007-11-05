@@ -1353,14 +1353,6 @@ static struct snd_emu_chip_details emu_chip_details[] = {
 	 .spi_dac = 1,
 	 .i2c_adc = 1,
 	 .spk71 = 1} ,
-	/* Tested by James@superbug.co.uk 20-3-2007. */
-	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x40021102,
-	 .driver = "Audigy2", .name = "E-mu 0404 [4002]",
-	 .id = "EMU0404",
-	 .emu10k2_chip = 1,
-	 .ca0102_chip = 1,
-	 .spk71 = 1,
-	 .emu_model = 4} , /* EMU 0404 */
 	/* Tested by James@superbug.co.uk 4th Nov 2007. */
 	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x42011102,
 	 .driver = "Audigy2", .name = "E-mu 1010 Notebook [MAEM8950]", 
@@ -1386,6 +1378,14 @@ static struct snd_emu_chip_details emu_chip_details[] = {
 	 .ca0102_chip = 1,
 	 .spk71 = 1,
 	 .emu_model = 1} , /* Emu 1010 */
+	/* Tested by James@superbug.co.uk 20-3-2007. */
+	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x40021102,
+	 .driver = "Audigy2", .name = "E-mu 0404 [4002]",
+	 .id = "EMU0404",
+	 .emu10k2_chip = 1,
+	 .ca0102_chip = 1,
+	 .spk71 = 1,
+	 .emu_model = 4} , /* EMU 0404 */
 	/* Audigy4 (Not PRO) SB0610 */
 	{.vendor = 0x1102, .device = 0x0008, 
 	 .driver = "Audigy2", .name = "Audigy 2 Value [Unknown]", 
