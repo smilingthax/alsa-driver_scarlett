@@ -691,11 +691,11 @@ inline static u32 inl_trace (u_long addr)
  * If the user values are inverted, the definitions are triples: (bitnum, bitwidth, xorvalue).
  */
 #define BIT_VAL(BITCNT)       (1U << (BITCNT))
-#define BIT_MASK(BITCNT)      (BIT_VAL (BITCNT) - 1)
+#define PD_BIT_MASK(BITCNT)      (BIT_VAL (BITCNT) - 1)
 
 #define GET_SHIFT_AUX(X,Y,Z...) X
 #define GET_BIT_AUX(X,Y,Z...)   BIT_VAL(X)
-#define GET_MASK_AUX(X,Y,Z...)  BIT_MASK(Y)
+#define GET_MASK_AUX(X,Y,Z...)  PD_BIT_MASK(Y)
 
 #define GET_SHIFT(X)          (GET_SHIFT_AUX X)
 #define GET_MASK(X)           (GET_MASK_AUX X)
