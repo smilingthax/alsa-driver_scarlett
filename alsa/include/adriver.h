@@ -1426,4 +1426,21 @@ static inline unsigned char snd_pci_revision(struct pci_dev *pci)
 #endif
 #endif /* PCI */
 
+/* BIT* macros */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
+#include <linux/bitops.h>
+#ifndef BIT
+#define BIT(nr)			(1UL << (nr))
+#endif
+#ifndef BIT_MASK
+#define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
+#endif
+#ifndef BIT_WORD
+#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
+#endif
+#ifndef BITS_PER_BYTE
+#define BITS_PER_BYTE		8
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
