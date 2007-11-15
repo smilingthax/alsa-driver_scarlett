@@ -178,8 +178,11 @@ static void set_ak4396_params(struct oxygen *chip,
 	else
 		value |= AK4396_DFS_QUAD;
 	chip->ak4396_reg1 = value;
-	for (i = 0; i < 4; ++i)
+	for (i = 0; i < 4; ++i) {
+		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB);
 		ak4396_write(chip, i, 1, value);
+		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB | AK4396_RSTN);
+	}
 }
 
 static void update_ak4396_volume(struct oxygen *chip)
