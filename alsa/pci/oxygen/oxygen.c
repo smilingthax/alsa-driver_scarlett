@@ -134,18 +134,30 @@ static void ak4396_init(struct oxygen *chip)
 	snd_component_add(chip->card, "AK4396");
 }
 
+static void ak5385_init(struct oxygen *chip)
+{
+	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x0003);
+	snd_component_add(chip->card, "AK5385");
+}
+
+static void wm8785_init(struct oxygen *chip)
+{
+	wm8785_write(chip, 7, 0);
+	wm8785_write(chip, 0, WM8785_FORMAT_LJUST | WM8785_OSR_SINGLE);
+	wm8785_write(chip, 1, WM8785_WL_24);
+	snd_component_add(chip->card, "WM8785");
+}
+
 static void generic_init(struct oxygen *chip)
 {
 	ak4396_init(chip);
-	// TODO: init wm8785
-	snd_component_add(chip->card, "WM8785");
+	wm8785_init(chip);
 }
 
 static void meridian_init(struct oxygen *chip)
 {
 	ak4396_init(chip);
-	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x0003);
-	snd_component_add(chip->card, "AK5385");
+	ak5385_init(chip);
 }
 
 static void generic_cleanup(struct oxygen *chip)
