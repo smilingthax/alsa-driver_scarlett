@@ -125,7 +125,7 @@ static void ak4396_init(struct oxygen *chip)
 
 	chip->model_data = AK4396_DEM_OFF | AK4396_DFS_NORMAL;
 	for (i = 0; i < 4; ++i) {
-		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB);
+		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB | AK4396_RSTN);
 		ak4396_write(chip, i, 1, chip->model_data);
 		ak4396_write(chip, i, 2, 0);
 		ak4396_write(chip, i, 3, 0xff);
