@@ -54,18 +54,18 @@ module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "enable card");
 
 static struct pci_device_id oxygen_ids[] __devinitdata = {
-	{ OXYGEN_PCI_ID(0x10b0, 0x0216) },
-	{ OXYGEN_PCI_ID(0x10b0, 0x0218) },
-	{ OXYGEN_PCI_ID(0x10b0, 0x0219) },
-	{ OXYGEN_PCI_ID(0x13f6, 0x0001) },
-	{ OXYGEN_PCI_ID(0x13f6, 0x0010) },
-	{ OXYGEN_PCI_ID(0x13f6, 0x8788) },
-	{ OXYGEN_PCI_ID(0x147a, 0xa017) },
-	{ OXYGEN_PCI_ID(0x14c3, 0x1710) },
-	{ OXYGEN_PCI_ID(0x14c3, 0x1711) },
-	{ OXYGEN_PCI_ID(0x1a58, 0x0910) },
-	{ OXYGEN_PCI_ID(0x415a, 0x5431), .driver_data = 1 },
-	{ OXYGEN_PCI_ID(0x7284, 0x9761) },
+	{ OXYGEN_PCI_SUBID(0x10b0, 0x0216) },
+	{ OXYGEN_PCI_SUBID(0x10b0, 0x0218) },
+	{ OXYGEN_PCI_SUBID(0x10b0, 0x0219) },
+	{ OXYGEN_PCI_SUBID(0x13f6, 0x0001) },
+	{ OXYGEN_PCI_SUBID(0x13f6, 0x0010) },
+	{ OXYGEN_PCI_SUBID(0x13f6, 0x8788) },
+	{ OXYGEN_PCI_SUBID(0x147a, 0xa017) },
+	{ OXYGEN_PCI_SUBID(0x14c3, 0x1710) },
+	{ OXYGEN_PCI_SUBID(0x14c3, 0x1711) },
+	{ OXYGEN_PCI_SUBID(0x1a58, 0x0910) },
+	{ OXYGEN_PCI_SUBID(0x415a, 0x5431), .driver_data = 1 },
+	{ OXYGEN_PCI_SUBID(0x7284, 0x9761) },
 	{ }
 };
 MODULE_DEVICE_TABLE(pci, oxygen_ids);

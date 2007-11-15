@@ -13,7 +13,7 @@
 #define PCM_AC97	5
 #define PCM_COUNT	6
 
-#define OXYGEN_PCI_ID(sv, sd) \
+#define OXYGEN_PCI_SUBID(sv, sd) \
 	.vendor = PCI_VENDOR_ID_CMEDIA, \
 	.device = 0x8788, \
 	.subvendor = sv, \
