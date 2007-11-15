@@ -123,10 +123,10 @@ static void ak4396_init(struct oxygen *chip)
 {
 	unsigned int i;
 
-	chip->model_data = AK4396_DEM_OFF | AK4396_DFS_NORMAL;
+	chip->ak4396_reg1 = AK4396_DEM_OFF | AK4396_DFS_NORMAL;
 	for (i = 0; i < 4; ++i) {
 		ak4396_write(chip, i, 0, AK4396_DIF_24_MSB | AK4396_RSTN);
-		ak4396_write(chip, i, 1, chip->model_data);
+		ak4396_write(chip, i, 1, chip->ak4396_reg1);
 		ak4396_write(chip, i, 2, 0);
 		ak4396_write(chip, i, 3, 0xff);
 		ak4396_write(chip, i, 4, 0xff);
@@ -170,14 +170,14 @@ static void set_ak4396_params(struct oxygen *chip,
 	unsigned int i;
 	u8 value;
 
-	value = chip->model_data & ~AK4396_DFS_MASK;
+	value = chip->ak4396_reg1 & ~AK4396_DFS_MASK;
 	if (params_rate(params) <= 54000)
 		value |= AK4396_DFS_NORMAL;
 	else if (params_rate(params) < 120000)
 		value |= AK4396_DFS_DOUBLE;
 	else
 		value |= AK4396_DFS_QUAD;
-	chip->model_data = value;
+	chip->ak4396_reg1 = value;
 	for (i = 0; i < 4; ++i)
 		ak4396_write(chip, i, 1, value);
 }
@@ -197,7 +197,7 @@ static void update_ak4396_mute(struct oxygen *chip)
 	unsigned int i;
 	u8 value;
 
-	value = chip->model_data & ~AK4396_SMUTE;
+	value = chip->ak4396_reg1 & ~AK4396_SMUTE;
 	if (chip->dac_mute)
 		value |= AK4396_SMUTE;
 	for (i = 0; i < 4; ++i)
