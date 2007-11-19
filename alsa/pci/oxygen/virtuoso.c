@@ -62,9 +62,6 @@ static struct pci_device_id xonar_ids[] __devinitdata = {
 };
 MODULE_DEVICE_TABLE(pci, xonar_ids);
 
-/* maps ALSA channel pair number to actual codec number */
-#define CH_CODEC(i) (-(i) & 3)
-
 /* register 0x12 */
 #define PCM1796_MUTE		0x01
 #define PCM1796_FMT_24_MSB	0x30
@@ -77,8 +74,9 @@ MODULE_DEVICE_TABLE(pci, xonar_ids);
 static void pcm1796_write(struct oxygen *chip, unsigned int codec,
 			  u8 reg, u8 value)
 {
+	/* maps ALSA channel pair number to SPI output */
 	static const u8 codec_map[4] = {
-		0, 1, 2, 4
+		0, 4, 2, 1
 	};
 	oxygen_write_spi(chip, OXYGEN_SPI_TRIGGER_WRITE |
 			 OXYGEN_SPI_DATA_LENGTH_2 |
@@ -138,10 +136,8 @@ static void update_pcm1796_volume(struct oxygen *chip)
 	unsigned int i;
 
 	for (i = 0; i < 4; ++i) {
-		pcm1796_write(chip, CH_CODEC(i), 0x10,
-			      chip->dac_volume[i * 2]);
-		pcm1796_write(chip, CH_CODEC(i), 0x11,
-			      chip->dac_volume[i * 2 + 1]);
+		pcm1796_write(chip, i, 0x10, chip->dac_volume[i * 2]);
+		pcm1796_write(chip, i, 0x11, chip->dac_volume[i * 2 + 1]);
 	}
 }
 
