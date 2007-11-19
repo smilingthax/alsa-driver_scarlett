@@ -93,6 +93,14 @@ static void oxygen_proc_read(struct snd_info_entry *entry,
 			snd_iprintf(buffer, " %02x", oxygen_read8(chip, i + j));
 		snd_iprintf(buffer, "\n");
 	}
+	snd_iprintf(buffer, "\nAC97\n");
+	for (i = 0; i < 0x80; i += 0x10) {
+		snd_iprintf(buffer, "%02x:", i);
+		for (j = 0; j < 0x10; j += 2)
+			snd_iprintf(buffer, " %04x",
+				    oxygen_read_ac97(chip, 0, i + j));
+		snd_iprintf(buffer, "\n");
+	}
 }
 
 static void __devinit oxygen_proc_init(struct oxygen *chip)
