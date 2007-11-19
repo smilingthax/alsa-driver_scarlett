@@ -19,7 +19,9 @@
  */
 
 #include <sound/driver.h>
+#include <sound/ac97_codec.h>
 #include <sound/control.h>
+#include <sound/tlv.h>
 #include "oxygen.h"
 
 static int dac_volume_info(struct snd_kcontrol *ctl,
@@ -143,6 +145,112 @@ static int upmix_put(struct snd_kcontrol *ctl, struct snd_ctl_elem_value *value)
 	return changed;
 }
 
+static int ac97_switch_get(struct snd_kcontrol *ctl,
+			   struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	unsigned int index = ctl->private_value & 0xff;
+	unsigned int bitnr = (ctl->private_value >> 8) & 0xff;
+	int invert = ctl->private_value & (1 << 16);
+	u16 reg;
+
+	reg = oxygen_read_ac97(chip, 0, index);
+	if (!(reg & (1 << bitnr)) ^ !invert)
+		value->value.integer.value[0] = 1;
+	else
+		value->value.integer.value[0] = 0;
+	return 0;
+}
+
+static int ac97_switch_put(struct snd_kcontrol *ctl,
+			   struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	unsigned int index = ctl->private_value & 0xff;
+	unsigned int bitnr = (ctl->private_value >> 8) & 0xff;
+	int invert = ctl->private_value & (1 << 16);
+	u16 oldreg, newreg;
+	int change;
+
+	oldreg = oxygen_read_ac97(chip, 0, index);
+	newreg = oldreg;
+	if (!value->value.integer.value[0] ^ !invert)
+		newreg |= 1 << bitnr;
+	else
+		newreg &= ~(1 << bitnr);
+	change = newreg != oldreg;
+	if (change) {
+		oxygen_write_ac97(chip, 0, index, newreg);
+		if (index == AC97_LINE)
+			oxygen_write_ac97_masked(chip, 0, 0x72,
+						 !!(newreg & 0x8000), 0x0001);
+	}
+	return change;
+}
+
+static int ac97_volume_info(struct snd_kcontrol *ctl,
+			    struct snd_ctl_elem_info *info)
+{
+	info->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	info->count = 2;
+	info->value.integer.min = 0;
+	info->value.integer.max = 0x1f;
+	return 0;
+}
+
+static int ac97_volume_get(struct snd_kcontrol *ctl,
+			   struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	unsigned int index = ctl->private_value;
+	u16 reg;
+
+	reg = oxygen_read_ac97(chip, 0, index);
+	value->value.integer.value[0] = 31 - (reg & 0x1f);
+	value->value.integer.value[1] = 31 - ((reg >> 8) & 0x1f);
+	return 0;
+}
+
+static int ac97_volume_put(struct snd_kcontrol *ctl,
+			   struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	unsigned int index = ctl->private_value;
+	u16 oldreg, newreg;
+	int change;
+
+	oldreg = oxygen_read_ac97(chip, 0, index);
+	newreg = oldreg;
+	newreg = (newreg & ~0x1f) |
+		(31 - (value->value.integer.value[0] & 0x1f));
+	newreg = (newreg & ~0x1f00) |
+		((31 - (value->value.integer.value[0] & 0x1f)) << 8);
+	change = newreg != oldreg;
+	if (change)
+		oxygen_write_ac97(chip, 0, index, newreg);
+	return change;
+}
+
+#define AC97_SWITCH(xname, index, bitnr, invert) { \
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+		.name = xname, \
+		.info = snd_ctl_boolean_mono_info, \
+		.get = ac97_switch_get, \
+		.put = ac97_switch_put, \
+		.private_value = ((invert) << 16) | ((bitnr) << 8) | (index), \
+	}
+#define AC97_VOLUME(xname, index) { \
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
+		.name = xname, \
+		.info = ac97_volume_info, \
+		.get = ac97_volume_get, \
+		.put = ac97_volume_put, \
+		.tlv.p = ac97_db_scale, \
+		.private_value = (index), \
+	}
+
+static DECLARE_TLV_DB_SCALE(ac97_db_scale, -3450, 150, 0);
+
 static const struct snd_kcontrol_new controls[] = {
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
@@ -168,6 +276,14 @@ static const struct snd_kcontrol_new controls[] = {
 		.get = upmix_get,
 		.put = upmix_put,
 	},
+	AC97_VOLUME("Mic Capture Volume", AC97_MIC),
+	AC97_SWITCH("Mic Capture Switch", AC97_MIC, 15, 1),
+	AC97_SWITCH("Mic Boost (+20dB)", AC97_MIC, 6, 0),
+	AC97_SWITCH("Line Capture Switch", AC97_LINE, 15, 1),
+	AC97_VOLUME("CD Capture Volume", AC97_CD),
+	AC97_SWITCH("CD Capture Switch", AC97_CD, 15, 1),
+	AC97_VOLUME("Aux Capture Volume", AC97_AUX),
+	AC97_SWITCH("Aux Capture Switch", AC97_AUX, 15, 1),
 };
 
 int oxygen_mixer_init(struct oxygen *chip)
@@ -180,8 +296,11 @@ int oxygen_mixer_init(struct oxygen *chip)
 		ctl = snd_ctl_new1(&controls[i], chip);
 		if (!ctl)
 			return -ENOMEM;
-		if (i == 0)
+		if (!strcmp(ctl->id.name, "PCM Playback Volume"))
 			ctl->tlv.p = chip->model->dac_tlv;
+		else if (chip->model->cd_in_from_video_in &&
+			 !strncmp(ctl->id.name, "CD Capture ", 11))
+			ctl->private_value ^= AC97_CD ^ AC97_VIDEO;
 		err = snd_ctl_add(chip->card, ctl);
 		if (err < 0)
 			return err;

@@ -181,6 +181,7 @@ const struct oxygen_model model_xonar = {
 	.update_dac_mute = update_pcm1796_mute,
 	.dac_tlv = pcm1796_db_scale,
 	.record_from_dma_b = 1,
+	.cd_in_from_video_in = 1,
 	.dac_minimum_volume = 15,
 };
 

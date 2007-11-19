@@ -157,8 +157,7 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	oxygen_ac97_set_bits(chip, 0, 0x62, 0x180f);
 	oxygen_write_ac97(chip, 0, AC97_MASTER, 0x0000);
 	oxygen_write_ac97(chip, 0, AC97_PC_BEEP, 0x8000);
-	/* TODO: mixer controls for these: */
-	oxygen_write_ac97(chip, 0, AC97_MIC, 0x8008);
+	oxygen_write_ac97(chip, 0, AC97_MIC, 0x8808);
 	oxygen_write_ac97(chip, 0, AC97_LINE, 0x0808);
 	oxygen_write_ac97(chip, 0, AC97_CD, 0x8808);
 	oxygen_write_ac97(chip, 0, AC97_VIDEO, 0x8808);
@@ -166,6 +165,7 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	oxygen_write_ac97(chip, 0, AC97_REC_GAIN, 0x8000);
 	oxygen_write_ac97(chip, 0, AC97_CENTER_LFE_MASTER, 0x8080);
 	oxygen_write_ac97(chip, 0, AC97_SURROUND_MASTER, 0x8080);
+	oxygen_ac97_clear_bits(chip, 0, 0x72, 0x0001);
 	/* power down unused ADCs and DACs */
 	oxygen_ac97_set_bits(chip, 0, AC97_POWERDOWN,
 			     AC97_PD_PR0 | AC97_PD_PR1);
