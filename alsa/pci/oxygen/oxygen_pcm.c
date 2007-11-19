@@ -173,6 +173,14 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 
 	runtime->private_data = (void *)channel;
 	runtime->hw = oxygen_hardware[channel];
+	err = snd_pcm_hw_constraint_step(runtime, 0,
+					 SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 32);
+	if (err < 0)
+		return err;
+	err = snd_pcm_hw_constraint_step(runtime, 0,
+					 SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 32);
+	if (err < 0)
+		return err;
 	if (runtime->hw.formats & SNDRV_PCM_FMTBIT_S32_LE) {
 		err = snd_pcm_hw_constraint_msbits(runtime, 0, 32, 24);
 		if (err < 0)
