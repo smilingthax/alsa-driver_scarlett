@@ -286,6 +286,28 @@ static unsigned int oxygen_play_channels(struct snd_pcm_hw_params *hw_params)
 	}
 }
 
+static unsigned int oxygen_spdif_rate(struct snd_pcm_hw_params *hw_params)
+{
+	switch (params_rate(hw_params)) {
+	case 32000:
+		return 0x00003000;
+	case 44100:
+		return 0x00000000;
+	default: /* 48000 */
+		return 0x00002000;
+	case 64000:
+		return 0x0000b000;
+	case 88200:
+		return 0x00008000;
+	case 96000:
+		return 0x0000a000;
+	case 176400:
+		return 0x0000c000;
+	case 192000:
+		return 0x0000e000;
+	}
+}
+
 static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *hw_params)
 {
@@ -398,13 +420,19 @@ static int oxygen_spdif_hw_params(struct snd_pcm_substream *substream,
 	oxygen_write16(chip, OXYGEN_DMA_SPDIF_TCOUNT,
 		       params_period_bytes(hw_params) / 4 - 1);
 	spin_lock_irq(&chip->reg_lock);
+	oxygen_clear_bits32(chip, OXYGEN_SPDIF_CONTROL,
+			    OXYGEN_SPDIF_OUT_ENABLE);
 	oxygen_write8_masked(chip, OXYGEN_PLAY_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_SPDIF_FORMAT_SHIFT,
 			     OXYGEN_SPDIF_FORMAT_MASK);
 	oxygen_write32_masked(chip, OXYGEN_SPDIF_CONTROL,
 			      oxygen_rate(hw_params) << OXYGEN_SPDIF_OUT_RATE_SHIFT,
 			      OXYGEN_SPDIF_OUT_RATE_MASK);
+	oxygen_write32_masked(chip, OXYGEN_SPDIF_OUTPUT_BITS,
+			      oxygen_spdif_rate(hw_params),
+			      OXYGEN_SPDIF_OUTPUT_RATE_MASK);
 	oxygen_clear_bits16(chip, OXYGEN_PLAY_ROUTING, 0x00e0);
+	oxygen_set_bits32(chip, OXYGEN_SPDIF_CONTROL, OXYGEN_SPDIF_OUT_ENABLE);
 	spin_unlock_irq(&chip->reg_lock);
 	return 0;
 }
@@ -484,6 +512,17 @@ static int oxygen_hw_free(struct snd_pcm_substream *substream)
 	spin_unlock_irq(&chip->reg_lock);
 
 	return snd_pcm_lib_free_pages(substream);
+}
+
+static int oxygen_spdif_hw_free(struct snd_pcm_substream *substream)
+{
+	struct oxygen *chip = snd_pcm_substream_chip(substream);
+
+	spin_lock_irq(&chip->reg_lock);
+	oxygen_clear_bits32(chip, OXYGEN_SPDIF_CONTROL,
+			    OXYGEN_SPDIF_OUT_ENABLE);
+	spin_unlock_irq(&chip->reg_lock);
+	return oxygen_hw_free(substream);
 }
 
 static int oxygen_prepare(struct snd_pcm_substream *substream)
@@ -597,7 +636,7 @@ static struct snd_pcm_ops oxygen_spdif_ops = {
 	.close     = oxygen_close,
 	.ioctl     = snd_pcm_lib_ioctl,
 	.hw_params = oxygen_spdif_hw_params,
-	.hw_free   = oxygen_hw_free,
+	.hw_free   = oxygen_spdif_hw_free,
 	.prepare   = oxygen_prepare,
 	.trigger   = oxygen_trigger,
 	.pointer   = oxygen_pointer,

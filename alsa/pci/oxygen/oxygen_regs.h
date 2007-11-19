@@ -136,6 +136,7 @@
 /* bit 2: copy */
 /* bit 3: preemph */
 /* bits 12-15: 0:44,2:48,3:32,8:88,a:96,b:64,c:176,e:192 */
+#define  OXYGEN_SPDIF_OUTPUT_RATE_MASK	0x0000f000
 /* bit 16: v */
 
 #define OXYGEN_SPDIF_INPUT_BITS		0x78
