@@ -150,17 +150,27 @@ static void __devinit oxygen_init(struct oxygen *chip)
 			    OXYGEN_AC97_OUT_MAGIC3);
 	oxygen_set_bits16(chip, OXYGEN_AC97_IN_CONFIG,
 			  OXYGEN_AC97_IN_MAGIC3);
-	oxygen_write_ac97(chip, 0, 0x70, 0x0300);
-	oxygen_write_ac97(chip, 0, 0x64, 0x8043);
-	oxygen_write_ac97(chip, 0, 0x62, 0x180f);
-	oxygen_write_ac97(chip, 0, AC97_MASTER, 0x0808);
+	oxygen_write_ac97(chip, 0, AC97_RESET, 0);
+	msleep(1);
+	oxygen_ac97_set_bits(chip, 0, 0x70, 0x0300);
+	oxygen_ac97_set_bits(chip, 0, 0x64, 0x8043);
+	oxygen_ac97_set_bits(chip, 0, 0x62, 0x180f);
+	oxygen_write_ac97(chip, 0, AC97_MASTER, 0x0000);
 	oxygen_write_ac97(chip, 0, AC97_PC_BEEP, 0x8000);
 	/* TODO: mixer controls for these: */
-	oxygen_write_ac97(chip, 0, AC97_MIC, 0x0808);
+	oxygen_write_ac97(chip, 0, AC97_MIC, 0x8008);
 	oxygen_write_ac97(chip, 0, AC97_LINE, 0x0808);
-	oxygen_write_ac97(chip, 0, AC97_CD, 0x0808);
-	oxygen_write_ac97(chip, 0, AC97_VIDEO, 0x0808);
-	oxygen_write_ac97(chip, 0, AC97_AUX, 0x0808);
+	oxygen_write_ac97(chip, 0, AC97_CD, 0x8808);
+	oxygen_write_ac97(chip, 0, AC97_VIDEO, 0x8808);
+	oxygen_write_ac97(chip, 0, AC97_AUX, 0x8808);
+	oxygen_write_ac97(chip, 0, AC97_REC_GAIN, 0x8000);
+	oxygen_write_ac97(chip, 0, AC97_CENTER_LFE_MASTER, 0x8080);
+	oxygen_write_ac97(chip, 0, AC97_SURROUND_MASTER, 0x8080);
+	/* power down unused ADCs and DACs */
+	oxygen_ac97_set_bits(chip, 0, AC97_POWERDOWN,
+			     AC97_PD_PR0 | AC97_PD_PR1);
+	oxygen_ac97_set_bits(chip, 0, AC97_EXTENDED_STATUS,
+			     AC97_EA_PRI | AC97_EA_PRJ | AC97_EA_PRK);
 }
 
 static void oxygen_card_free(struct snd_card *card)

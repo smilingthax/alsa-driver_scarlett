@@ -93,10 +93,12 @@ void oxygen_write16_masked(struct oxygen *chip, unsigned int reg,
 void oxygen_write32_masked(struct oxygen *chip, unsigned int reg,
 			   u32 value, u32 mask);
 
-void oxygen_write_ac97(struct oxygen *chip, unsigned int codec,
-		       unsigned int index, u16 data);
 u16 oxygen_read_ac97(struct oxygen *chip, unsigned int codec,
 		     unsigned int index);
+void oxygen_write_ac97(struct oxygen *chip, unsigned int codec,
+		       unsigned int index, u16 data);
+void oxygen_write_ac97_masked(struct oxygen *chip, unsigned int codec,
+			      unsigned int index, u16 data, u16 mask);
 
 void oxygen_write_spi(struct oxygen *chip, u8 control, unsigned int data);
 
@@ -134,6 +136,19 @@ static inline void oxygen_clear_bits32(struct oxygen *chip,
 				       unsigned int reg, u32 value)
 {
 	oxygen_write32_masked(chip, reg, 0, value);
+}
+
+static inline void oxygen_ac97_set_bits(struct oxygen *chip, unsigned int codec,
+					unsigned int index, u16 value)
+{
+	oxygen_write_ac97_masked(chip, codec, index, value, value);
+}
+
+static inline void oxygen_ac97_clear_bits(struct oxygen *chip,
+					  unsigned int codec,
+					  unsigned int index, u16 value)
+{
+	oxygen_write_ac97_masked(chip, codec, index, 0, value);
 }
 
 #endif

@@ -106,7 +106,7 @@ static void xonar_init(struct oxygen *chip)
 	oxygen_clear_bits16(chip, OXYGEN_I2S_MULTICH_FORMAT,
 			    OXYGEN_I2S_MAGIC1_MASK);
 #endif
-	oxygen_write_ac97(chip, 0, 0x62, 0x188f);
+	oxygen_ac97_set_bits(chip, 0, 0x62, 0x0080);
 	msleep(300);
 	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x100);
 	oxygen_set_bits16(chip, OXYGEN_GPIO_DATA, 0x100);
