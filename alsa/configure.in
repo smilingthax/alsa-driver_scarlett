@@ -1090,9 +1090,17 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
-    ARCH=ppc64
+    if test "$kversion.$kpatchlevel" = "2.6"; then
+	if test $ksublevel -gt 14; then
+	    ARCH=powerpc
+	else
+	    ARCH=ppc64
+	fi
+    fi
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
     CONFIG_SND_BIT32_EMUL=m
+    CONFIG_PPC=y
+    CHECK_KERNEL_CONFIG(CONFIG_PPC_PMAC, [PPC PowerMac])
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   mips*)
@@ -1114,6 +1122,7 @@ EOF
     ;;
   sparc)
     ARCH=sparc
+    CONFIG_SPARC=y
     CONFIG_SPARC32=y
     IS_EGCS=n
     NEW_GAS=n
@@ -1132,6 +1141,7 @@ EOF
     ;;
   sparc64)
     ARCH=sparc64
+    CONFIG_SPARC=y
     CONFIG_SPARC64=y
     $KCC -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || KCC=sparc64-linux-gcc
     NEW_GCC=n
