@@ -453,6 +453,12 @@ static struct cond * create_cond(char *line)
 					word[i] = '\0';
 					break;
 				}
+				if (word[i] == '=') {
+					fprintf(stderr, "can't handle word %s properly, supposing it's OK\n",
+						word);
+					word[i] = '\0';
+					break;
+				}
 				fprintf(stderr, "Unknown suffix '%s'\n", word + i);
 				exit(EXIT_FAILURE);
 			}
