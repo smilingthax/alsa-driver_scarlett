@@ -135,6 +135,7 @@ static void ak4396_init(struct oxygen *chip)
 static void ak5385_init(struct oxygen *chip)
 {
 	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x0003);
+	oxygen_clear_bits16(chip, OXYGEN_GPIO_DATA, 0x0003);
 	snd_component_add(chip->card, "AK5385");
 }
 
