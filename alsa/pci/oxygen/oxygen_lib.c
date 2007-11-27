@@ -149,6 +149,7 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	oxygen_write16(chip, OXYGEN_INTERRUPT_MASK, 0);
 	oxygen_write16(chip, OXYGEN_DMA_STATUS, 0);
 
+	oxygen_write8(chip, OXYGEN_AC97_INTERRUPT_MASK, 0x00);
 	oxygen_clear_bits16(chip, OXYGEN_AC97_OUT_CONFIG,
 			    OXYGEN_AC97_OUT_MAGIC3);
 	oxygen_set_bits16(chip, OXYGEN_AC97_IN_CONFIG,
