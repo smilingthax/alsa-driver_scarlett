@@ -37,6 +37,7 @@ struct oxygen {
 	unsigned int interrupt_mask;
 	u8 dac_volume[8];
 	u8 dac_mute;
+	u8 pcm_active;
 	u8 pcm_running;
 	u8 dac_routing;
 	u8 ak4396_reg1;

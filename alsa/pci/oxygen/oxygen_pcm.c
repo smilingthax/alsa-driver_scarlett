@@ -195,6 +195,8 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 	}
 	snd_pcm_set_sync(substream);
 	chip->streams[channel] = substream;
+	chip->pcm_active |= 1 << channel;
+
 	return 0;
 }
 
@@ -233,6 +235,7 @@ static int oxygen_close(struct snd_pcm_substream *substream)
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
 	unsigned int channel = (unsigned int)substream->runtime->private_data;
 
+	chip->pcm_active &= ~(1 << channel);
 	chip->streams[channel] = NULL;
 	return 0;
 }
