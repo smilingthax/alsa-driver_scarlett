@@ -42,6 +42,7 @@ struct oxygen {
 	u8 pcm_active;
 	u8 pcm_running;
 	u8 dac_routing;
+	u8 spdif_playback_enable;
 	u8 ak4396_reg1;
 	u8 revision;
 	u8 has_2nd_ac97_codec;
@@ -77,6 +78,7 @@ void oxygen_pci_remove(struct pci_dev *pci);
 
 int oxygen_mixer_init(struct oxygen *chip);
 void oxygen_update_dac_routing(struct oxygen *chip);
+void oxygen_update_spdif_source(struct oxygen *chip);
 
 /* oxygen_pcm.c */
 

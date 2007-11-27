@@ -124,6 +124,7 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	chip->dac_routing = 1;
 	for (i = 0; i < 8; ++i)
 		chip->dac_volume[i] = 0xff;
+	chip->spdif_playback_enable = 1;
 
 	if (oxygen_read8(chip, OXYGEN_REVISION) & OXYGEN_REVISION_2)
 		chip->revision = 2;
