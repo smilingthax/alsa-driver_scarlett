@@ -195,7 +195,10 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 	}
 	snd_pcm_set_sync(substream);
 	chip->streams[channel] = substream;
+
+	mutex_lock(&chip->mutex);
 	chip->pcm_active |= 1 << channel;
+	mutex_unlock(&chip->mutex);
 
 	return 0;
 }
@@ -235,7 +238,10 @@ static int oxygen_close(struct snd_pcm_substream *substream)
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
 	unsigned int channel = (unsigned int)substream->runtime->private_data;
 
+	mutex_lock(&chip->mutex);
 	chip->pcm_active &= ~(1 << channel);
+	mutex_unlock(&chip->mutex);
+
 	chip->streams[channel] = NULL;
 	return 0;
 }
@@ -380,7 +386,9 @@ static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x08);
 	spin_unlock_irq(&chip->reg_lock);
 
+	mutex_lock(&chip->mutex);
 	chip->model->set_adc_params(chip, hw_params);
+	mutex_unlock(&chip->mutex);
 	return 0;
 }
 
@@ -408,7 +416,9 @@ static int oxygen_rec_b_hw_params(struct snd_pcm_substream *substream,
 	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x10);
 	spin_unlock_irq(&chip->reg_lock);
 
+	mutex_lock(&chip->mutex);
 	chip->model->set_adc_params(chip, hw_params);
+	mutex_unlock(&chip->mutex);
 	return 0;
 }
 
@@ -483,7 +493,9 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 	oxygen_update_dac_routing(chip);
 	spin_unlock_irq(&chip->reg_lock);
 
+	mutex_lock(&chip->mutex);
 	chip->model->set_dac_params(chip, hw_params);
+	mutex_unlock(&chip->mutex);
 	return 0;
 }
 

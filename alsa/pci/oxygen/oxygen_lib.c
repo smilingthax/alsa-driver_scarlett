@@ -93,6 +93,8 @@ static void oxygen_proc_read(struct snd_info_entry *entry,
 			snd_iprintf(buffer, " %02x", oxygen_read8(chip, i + j));
 		snd_iprintf(buffer, "\n");
 	}
+	if (mutex_lock_interruptible(&chip->mutex) < 0)
+		return;
 	snd_iprintf(buffer, "\nAC97\n");
 	for (i = 0; i < 0x80; i += 0x10) {
 		snd_iprintf(buffer, "%02x:", i);
@@ -101,6 +103,7 @@ static void oxygen_proc_read(struct snd_info_entry *entry,
 				    oxygen_read_ac97(chip, 0, i + j));
 		snd_iprintf(buffer, "\n");
 	}
+	mutex_unlock(&chip->mutex);
 }
 
 static void __devinit oxygen_proc_init(struct oxygen *chip)
@@ -188,6 +191,7 @@ static void oxygen_card_free(struct snd_card *card)
 		synchronize_irq(chip->irq);
 	}
 	chip->model->cleanup(chip);
+	mutex_destroy(&chip->mutex);
 	pci_release_regions(chip->pci);
 	pci_disable_device(chip->pci);
 }
@@ -209,6 +213,7 @@ int __devinit oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
 	chip->irq = -1;
 	chip->model = model;
 	spin_lock_init(&chip->reg_lock);
+	mutex_init(&chip->mutex);
 
 	err = pci_enable_device(pci);
 	if (err < 0)

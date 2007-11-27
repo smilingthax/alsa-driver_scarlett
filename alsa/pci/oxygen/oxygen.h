@@ -1,6 +1,7 @@
 #ifndef OXYGEN_H_INCLUDED
 #define OXYGEN_H_INCLUDED
 
+#include <linux/mutex.h>
 #include <linux/spinlock.h>
 #include "oxygen_regs.h"
 
@@ -29,6 +30,7 @@ struct oxygen_model;
 struct oxygen {
 	unsigned long addr;
 	spinlock_t reg_lock;
+	struct mutex mutex;
 	struct snd_card *card;
 	struct pci_dev *pci;
 	struct snd_rawmidi *midi;
