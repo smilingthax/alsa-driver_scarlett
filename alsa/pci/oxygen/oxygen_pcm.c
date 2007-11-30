@@ -20,6 +20,7 @@
 
 #include <sound/driver.h>
 #include <linux/pci.h>
+#include <sound/control.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -202,6 +203,14 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 
 	mutex_lock(&chip->mutex);
 	chip->pcm_active |= 1 << channel;
+	if (channel == PCM_SPDIF) {
+		chip->spdif_pcm_bits = chip->spdif_bits;
+		chip->spdif_pcm_ctl->vd[0].access &=
+			~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE |
+			       SNDRV_CTL_EVENT_MASK_INFO,
+			       &chip->spdif_pcm_ctl->id);
+	}
 	mutex_unlock(&chip->mutex);
 
 	return 0;
@@ -244,6 +253,13 @@ static int oxygen_close(struct snd_pcm_substream *substream)
 
 	mutex_lock(&chip->mutex);
 	chip->pcm_active &= ~(1 << channel);
+	if (channel == PCM_SPDIF) {
+		chip->spdif_pcm_ctl->vd[0].access |=
+			SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE |
+			       SNDRV_CTL_EVENT_MASK_INFO,
+			       &chip->spdif_pcm_ctl->id);
+	}
 	if (channel == PCM_SPDIF || channel == PCM_MULTICH)
 		oxygen_update_spdif_source(chip);
 	mutex_unlock(&chip->mutex);
