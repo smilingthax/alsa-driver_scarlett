@@ -5,6 +5,8 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
+export-objs := oxygen_io.o oxygen_lib.o
+
 snd-oxygen-lib-objs := oxygen_io.o oxygen_lib.o oxygen_mixer.o oxygen_pcm.o
 snd-oxygen-objs := oxygen.o
 snd-virtuoso-objs := virtuoso.o

@@ -20,6 +20,7 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#include <linux/mutex.h>
 #include <linux/pci.h>
 #include <sound/ac97_codec.h>
 #include <sound/asoundef.h>
