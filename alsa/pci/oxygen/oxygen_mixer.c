@@ -204,12 +204,15 @@ void oxygen_update_spdif_source(struct oxygen *chip)
 		new_routing = (old_routing & ~0x00e0) | 0x0000;
 		oxygen_rate = (old_control >> OXYGEN_SPDIF_OUT_RATE_SHIFT)
 			& OXYGEN_I2S_RATE_MASK;
+		/* S/PDIF rate was already set by the caller */
 	} else if ((chip->pcm_active & (1 << PCM_MULTICH)) &&
 		   chip->spdif_playback_enable) {
-		new_control = old_control | OXYGEN_SPDIF_OUT_ENABLE;
 		new_routing = (old_routing & ~0x00e0) | 0x0020;
 		oxygen_rate = oxygen_read16(chip, OXYGEN_I2S_MULTICH_FORMAT)
 			& OXYGEN_I2S_RATE_MASK;
+		new_control = (old_control & ~OXYGEN_SPDIF_OUT_RATE_MASK) |
+			(oxygen_rate << OXYGEN_SPDIF_OUT_RATE_SHIFT) |
+			OXYGEN_SPDIF_OUT_ENABLE;
 	} else {
 		new_control = old_control & ~OXYGEN_SPDIF_OUT_ENABLE;
 		new_routing = old_routing;
