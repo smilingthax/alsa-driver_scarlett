@@ -1445,4 +1445,10 @@ static inline unsigned char snd_pci_revision(struct pci_dev *pci)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#ifndef uninitialized_var
+#define uninitialized_var(x) x = x
+#endif
+#endif /* <2.6.0 */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
