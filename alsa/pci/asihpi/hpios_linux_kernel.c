@@ -23,66 +23,76 @@ HPI Operating System function implementation for Linux
 #define SOURCEFILE_NAME "hpios_linux_kernel.c"
 #include "hpidebug.h"
 #include <linux/delay.h>
-#include <linux/pci.h>
-#include <linux/interrupt.h>
 
-////////////////////////////////////////////////////////////////////////////////
-// Delay a set number of microseconds
-void HpiOs_DelayMicroSeconds(u32 dwNumMicroSec)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 14)
+void HpiOs_DelayMicroSeconds(
+	u32 dwNumMicroSec
+)
 {
-	if ((dwNumMicroSec / 1000 >= 1000000 / HZ) && !in_interrupt()) {
+	if ((usecs_to_jiffies(dwNumMicroSec) > 1) && !in_interrupt()) {
 /* MUST NOT SCHEDULE IN INTERRUPT CONTEXT! */
-/* See  http://kernelnewbies.org/documents/kdoc/kernel-api/linuxkernelapi.html
+/* See  http:kernelnewbies.org/documents/kdoc/kernel-api/linuxkernelapi.html
 schedule_timeout() can return early, with a return value of the
 number of jiffies remaining, if the task state is INTERRUPTIBLE,
 and the task receives a signal.
 Setting the state to UNINTERRUPTIBLE stops it from returning early.
 */
-		schedule_timeout_uninterruptible(usecs_to_jiffies(dwNumMicroSec));
+		schedule_timeout_uninterruptible(usecs_to_jiffies
+			(dwNumMicroSec));
 	} else if (dwNumMicroSec <= 2000)
 		udelay(dwNumMicroSec);
 	else
 		mdelay(dwNumMicroSec / 1000);
 
 }
+#else
+void HpiOs_DelayMicroSeconds(
+	u32 dwNumMicroSec
+)
+{
+	if ((dwNumMicroSec / 1000 >= 1000000 / HZ) && !in_interrupt()) {
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout((HZ * dwNumMicroSec + (HZ - 1)) / 1000000);
+	} else if (dwNumMicroSec <= 2000)
+		udelay(dwNumMicroSec);
+	else
+		mdelay(dwNumMicroSec / 1000);
 
-#ifndef BOOLEAN
-typedef unsigned char BOOLEAN;
+}
 #endif
 
-/** Details of a memory area allocated with  pci_alloc_consistent
-Need all info for parameters to pci_free_consistent
-*/
-struct consistent_dma_area {
-	struct pci_dev *pdev;
-	dma_addr_t dma_addr;
-	void *cpu_addr;
-	size_t size;
-};
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 14)
+static struct kmem_cache *memAreaCache;
+#else
+static struct kmem_cache_s *memAreaCache;
+#endif
 
-static struct kmem_cache *memAreaCache = NULL;
-
-void HpiOs_LockedMem_Init(void)
+void HpiOs_LockedMem_Init(
+	void
+)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION ( 2 , 6 , 23 )
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 23)
 	memAreaCache = kmem_cache_create("asihpi_mem_area",
-					 sizeof(struct consistent_dma_area), 0,
-					 SLAB_HWCACHE_ALIGN, NULL);
+		sizeof(struct consistent_dma_area),
+		0, SLAB_HWCACHE_ALIGN, NULL);
 #else
 	memAreaCache = kmem_cache_create("asihpi_mem_area",
-					 sizeof(struct consistent_dma_area), 0,
-					 SLAB_HWCACHE_ALIGN, NULL, NULL);
+		sizeof(struct consistent_dma_area),
+		0, SLAB_HWCACHE_ALIGN, NULL, NULL);
 #endif
 	if (memAreaCache == NULL)
-		HPI_DEBUG_LOG0(ERROR, "Mem area cache\n");
+		HPI_DEBUG_LOG(ERROR, "Mem area cache\n");
 }
 
 /** Allocated an area of locked memory for bus master DMA operations.
 
 On error, return -ENOMEM, and *pLockedMemHandle=NULL
 */
-u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
-			  struct pci_dev *pdev)
+u16 HpiOs_LockedMem_Alloc(
+	struct consistent_dma_area **pLockedMemHandle,
+	u32 dwSize,
+	struct pci_dev *pdev
+)
 {
 	struct consistent_dma_area *pMemArea;
 
@@ -93,54 +103,56 @@ u16 HpiOs_LockedMem_Alloc(HpiOs_LockedMem_Handle * pLockedMemHandle, u32 dwSize,
 	pMemArea = kmem_cache_alloc(memAreaCache, GFP_KERNEL);
 
 	if (pMemArea == NULL) {
-		HPI_DEBUG_LOG0(WARNING,
-			       "Couldn't allocate mem control struct\n");
+		HPI_DEBUG_LOG(WARNING,
+			"Couldn't allocate mem control struct\n");
 		return -ENOMEM;
 	}
 
 	pMemArea->cpu_addr =
-	    pci_alloc_consistent(pdev, dwSize, &pMemArea->dma_addr);
+		pci_alloc_consistent(pdev, dwSize, &pMemArea->dma_addr);
 
 	if (pMemArea->cpu_addr) {
-		HPI_DEBUG_LOG3(INFO, "Allocated %d bytes, dma 0x%x vma %p\n",
-			       dwSize,
-			       (unsigned int)pMemArea->dma_addr,
-			       pMemArea->cpu_addr);
+		HPI_DEBUG_LOG(INFO, "Allocated %d bytes, dma 0x%x vma %p\n",
+			dwSize,
+			(unsigned int)pMemArea->dma_addr, pMemArea->cpu_addr);
 		pMemArea->pdev = pdev;
 		pMemArea->size = dwSize;
 		*pLockedMemHandle = pMemArea;
 		return 0;
 	} else {
-		HPI_DEBUG_LOG1(WARNING,
-			       "Failed to allocate %d bytes locked memory\n",
-			       dwSize);
+		HPI_DEBUG_LOG(WARNING,
+			"Failed to allocate %d bytes locked memory\n",
+			dwSize);
 		kmem_cache_free(memAreaCache, pMemArea);
 		return -ENOMEM;
 	}
 }
 
-u16 HpiOs_LockedMem_Free(HpiOs_LockedMem_Handle LockedMemHandle)
+u16 HpiOs_LockedMem_Free(
+	struct consistent_dma_area *LockedMemHandle
+)
 {
 	struct consistent_dma_area *pMemArea =
-	    (struct consistent_dma_area *)LockedMemHandle;
+		(struct consistent_dma_area *)LockedMemHandle;
 
 	if (!LockedMemHandle)
 		return 1;
 
 	if (pMemArea->size) {
 		pci_free_consistent(pMemArea->pdev, pMemArea->size,
-				    pMemArea->cpu_addr, pMemArea->dma_addr);
-		HPI_DEBUG_LOG3(INFO, "Freed %lu bytes, dma 0x%x vma %p\n",
-			       (unsigned long)pMemArea->size,
-			       (unsigned int)pMemArea->dma_addr,
-			       pMemArea->cpu_addr);
+			pMemArea->cpu_addr, pMemArea->dma_addr);
+		HPI_DEBUG_LOG(INFO, "Freed %lu bytes, dma 0x%x vma %p\n",
+			(unsigned long)pMemArea->size,
+			(unsigned int)pMemArea->dma_addr, pMemArea->cpu_addr);
 		pMemArea->size = 0;
 	}
 	kmem_cache_free(memAreaCache, pMemArea);
 	return 0;
 }
 
-void HpiOs_LockedMem_FreeAll(void)
+void HpiOs_LockedMem_FreeAll(
+	void
+)
 {
 	if (!memAreaCache)
 		return;
@@ -148,20 +160,24 @@ void HpiOs_LockedMem_FreeAll(void)
 	kmem_cache_destroy(memAreaCache);
 }
 
-u16 HpiOs_LockedMem_GetPhysAddr(HpiOs_LockedMem_Handle LockedMemHandle,
-				u32 * pPhysicalAddr)
+u16 HpiOs_LockedMem_GetPhysAddr(
+	struct consistent_dma_area *LockedMemHandle,
+	u32 *pPhysicalAddr
+)
 {
 	if (!LockedMemHandle) {
 		*pPhysicalAddr = 0;
 		return 1;
 	}
 	*pPhysicalAddr =
-	    ((struct consistent_dma_area *)LockedMemHandle)->dma_addr;
+		((struct consistent_dma_area *)LockedMemHandle)->dma_addr;
 	return (0);
 }
 
-u16 HpiOs_LockedMem_GetVirtAddr(HpiOs_LockedMem_Handle LockedMemHandle,
-				void **ppvVirtualAddr)
+u16 HpiOs_LockedMem_GetVirtAddr(
+	struct consistent_dma_area *LockedMemHandle,
+	void **ppvVirtualAddr
+)
 {
 	if (!LockedMemHandle) {
 		*ppvVirtualAddr = NULL;
@@ -169,8 +185,6 @@ u16 HpiOs_LockedMem_GetVirtAddr(HpiOs_LockedMem_Handle LockedMemHandle,
 	}
 
 	*ppvVirtualAddr =
-	    ((struct consistent_dma_area *)LockedMemHandle)->cpu_addr;
+		((struct consistent_dma_area *)LockedMemHandle)->cpu_addr;
 	return 0;
 }
-
-/////////////////////////////////////////////////////////////

@@ -21,32 +21,28 @@ Array initializer for PCI card IDs
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
 
-//NOTE: when adding new lines to this header file they MUST be grouped by HPI entry point.
-//      (see how we propagate DRIVER_(UN)LOAD messages in hpimsgx.c)
+/*NOTE: when adding new lines to this header file
+they MUST be grouped by HPI entry point.
+*/
 
 {
 HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_DSP6205,
-	    HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0, HPI_6205}
-, {
+		HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0,
+		(unsigned long)HPI_6205}, {
 HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_PCI2040,
-	    HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0, HPI_6000}
-, {
+		HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0,
+		(unsigned long)HPI_6000}, {
 HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301,
-	    HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0, HPI_4000}
-,
-// look for ASI cards that have 0x12cf sub-vendor ID, like the 4300 and 4601
+		HPI_PCI_VENDOR_ID_AUDIOSCIENCE, PCI_ANY_ID, 0, 0,
+		(unsigned long)HPI_4000},
+/* look for ASI cards that have 0x12cf sub-vendor ID,
+like the 4300 and 4601 */
 {
-HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301, 0x12CF, PCI_ANY_ID, 0,
-	    0, HPI_4000}
-,
-// look for ASI cards that have sub-vendor-ID = 0, like the 4501, 4113 and 4215 revC and below
+HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301, 0x12CF, PCI_ANY_ID,
+		0, 0, (unsigned long)HPI_4000},
+/* look for ASI cards that have sub-vendor-ID = 0,
+like the 4501, 4113 and 4215 revC and below */
 {
 HPI_PCI_VENDOR_ID_MOTOROLA, HPI_ADAPTER_DSP56301, 0, PCI_ANY_ID, 0, 0,
-	    HPI_4000}
-, {
-1, 0, 0, 0, 0, 0, HPI_COMMON}
-
-, {
+		(unsigned long)HPI_4000}, {
 0,}
-
-///////////////////////////////////////////////////////////////////////////

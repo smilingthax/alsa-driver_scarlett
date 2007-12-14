@@ -31,82 +31,75 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 #ifndef _HPIDSPLD_H_
 #define _HPIDSPLD_H_
 
-//#include <stdio.h>
+/*#include <stdio.h> */
 #include "hpi.h"
 
 #ifndef DISABLE_PRAGMA_PACK1
-#pragma pack(push,1)
+#pragma pack(push, 1)
 #endif
 
 /** Descriptor for dspcode from firmware loader */
-struct DSP_CODE_FIRMWARE {
-	const struct firmware *psFirmware;	// Firmware descriptor
+struct dsp_code {
+/**  Firmware descriptor */
+	const struct firmware *psFirmware;
 	struct pci_dev *psDev;
-	long int dwBlockLength;	//!< Expected number of words in the whole dsp code,INCL header
-	long int dwWordCount;	//!< Number of words read so far
-	u32 dwVersion;		//<! Version read from dsp code file
-	u32 dwCrc;		//<! CRC read from dsp code file
+/** Expected number of words in the whole dsp code,INCL header */
+	long int dwBlockLength;
+/** Number of words read so far */
+	long int dwWordCount;
+/** Version read from dsp code file */
+	u32 dwVersion;
+/** CRC read from dsp code file */
+	u32 dwCrc;
 };
-
-/* DSP CODE IS LOADED FROM FILE DSPnnnn.BIN */
-typedef struct DSP_CODE_FIRMWARE DSP_CODE;
 
 #ifndef DISABLE_PRAGMA_PACK1
 #pragma pack(pop)
 #endif
 
-enum BootLoadFamily {
-	Load2200 = 0x2200,
-	Load4100 = 0x4100,
-	Load4300 = 0x4300,
-	Load4400 = 0x4400,
-	Load4500 = 0x4500,
-	Load4600 = 0x4600,
-	Load5000 = 0x5000,
-	Load6200 = 0x6200,
-	Load6413 = 0x6413,
-	Load6600 = 0x6600,
-	Load8600 = 0x8600,
-	Load6205 = 0x6205,
-	Load8713 = 0x8713,
-	Load8800 = 0x8800,
-	Load8900 = 0x8900
-};
-
-/*! Prepare *psDspCode to refer to the requuested adapter.
+/** Prepare *psDspCode to refer to the requuested adapter.
 Searches the file, or selects the appropriate linked array
 
 \return 0 for success, or error code if requested code is not available
 */
-short HpiDspCode_Open(u32 nAdapter,	//!< Adapter family
-		      DSP_CODE * psDspCode,	//!< Pointer to DSP code control structure
-		      u32 * pdwOsErrorCode	//!< Pointer to dword to receive OS specific error code
-    );
+short HpiDspCode_Open(
+	u32 nAdapter,		/*!< Adapter family */
+/*!< Pointer to DSP code control structure */
+	struct dsp_code *psDspCode,
+/*!< Pointer to dword to receive OS specific error code */
+	u32 *pdwOsErrorCode
+);
 
 /*! Close the DSP code file */
-void HpiDspCode_Close(DSP_CODE * psDspCode	//!< Pointer to DSP code control structure
-    );
+void HpiDspCode_Close(
+	struct dsp_code *psDspCode
+);
 
 /*! Rewind to the beginning of the DSP code file (for verify) */
-void HpiDspCode_Rewind(DSP_CODE * psDspCode	//!< Pointer to DSP code control structure
-    );
+void HpiDspCode_Rewind(
+	struct dsp_code *psDspCode
+);
 
 /*! Read one word from the dsp code file
 \return 0 for success, or error code if eof, or block length exceeded
 */
-short HpiDspCode_ReadWord(DSP_CODE * psDspCode,	//!< Pointer to DSP code control structure
-			  u32 * pdwWord	//!< Where to store the read word
-    );
+short HpiDspCode_ReadWord(
+	struct dsp_code *psDspCode,
+/*!< Where to store the read word */
+	u32 *pdwWord
+);
 
-/*! Get a block of dsp code into an internal buffer, and provide a pointer to
-that buffer. (If dsp code is already an array in memory, it is referenced, not copied.)
+/** Get a block of dsp code into an internal buffer, and provide a pointer to
+that buffer. (If dsp code is already an array in memory, it is referenced,
+not copied.)
+
 \return Error if requested number of words are not available
 */
-short HpiDspCode_ReadBlock(size_t nWordsRequested,	//!< Number of words
-			   DSP_CODE * psDspCode,	//!< Pointer to DSP code control structure
-			   u32 * *ppdwBlock	//!< Pointer to store (Pointer to code buffer)
-    );
+short HpiDspCode_ReadBlock(
+	size_t nWordsRequested,
+	struct dsp_code *psDspCode,
+/* Pointer to store (Pointer to code buffer) */
+	u32 **ppdwBlock
+);
 
 #endif
-
-////////////////////////////////////////////////////////////////

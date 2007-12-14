@@ -18,37 +18,47 @@
 
 */
 
-typedef struct {
-	HPI_PCI Pci;		// PCI info - bus#,dev#,address etc
-	u16 wAdapterType;	// ASI6701 etc
-	u16 wIndex;		//
-	u16 wOpen;		// =1 when adapter open
+struct hpi_adapter_obj {
+	struct hpi_pci Pci;	/* PCI info - bus#,dev#,address etc */
+	u16 wAdapterType;	/* ASI6701 etc */
+	u16 wIndex;		/* */
+	u16 wOpen;		/* =1 when adapter open */
 	u16 wMixerOpen;
 
-	HPIOS_SPINLOCK dspLock;
+	struct hpios_spinlock dspLock;
 
 	u16 wDspCrashed;
 	u16 wHasControlCache;
 	void *priv;
-} HPI_ADAPTER_OBJ;
+};
 
-typedef struct {
-	HPIOS_SPINLOCK aListLock;
-	HPI_ADAPTER_OBJ adapter[HPI_MAX_ADAPTERS];
-	u16 gwNumAdapters;	// total number of adapters created in this HPI
-} HPI_ADAPTERS_LIST;
+struct hpi_adapter_obj *FindAdapter(
+	u16 wAdapterIndex
+);
+void WipeAdapterList(
+	void
+);
+void SubSysGetAdapters(
+	struct hpi_response *phr
+);
+u16 AddAdapter(
+	struct hpi_adapter_obj *pao
+);
+void DeleteAdapter(
+	struct hpi_adapter_obj *pao
+);
 
-HPI_ADAPTER_OBJ *FindAdapter(u16 wAdapterIndex);
-void WipeAdapterList(void);
-void SubSysGetAdapters(HPI_RESPONSE * phr);
-u16 AddAdapter(HPI_ADAPTER_OBJ * pao);
-void DeleteAdapter(HPI_ADAPTER_OBJ * pao);
-
-short CheckControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
-			HPI_RESPONSE * phr);
-void SyncControlCache(volatile tHPIControlCacheSingle * pC, HPI_MESSAGE * phm,
-		      HPI_RESPONSE * phr);
-u16 HpiValidateResponse(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-
-/*
-*/
+short CheckControlCache(
+	volatile struct hpi_control_cache_single *pC,
+	struct hpi_message *phm,
+	struct hpi_response *phr
+);
+void SyncControlCache(
+	volatile struct hpi_control_cache_single *pC,
+	struct hpi_message *phm,
+	struct hpi_response *phr
+);
+u16 HpiValidateResponse(
+	struct hpi_message *phm,
+	struct hpi_response *phr
+);
