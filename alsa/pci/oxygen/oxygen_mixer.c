@@ -359,6 +359,30 @@ static int spdif_pcm_put(struct snd_kcontrol *ctl,
 	return changed;
 }
 
+static int spdif_input_mask_get(struct snd_kcontrol *ctl,
+				struct snd_ctl_elem_value *value)
+{
+	value->value.iec958.status[0] = 0xff;
+	value->value.iec958.status[1] = 0xff;
+	value->value.iec958.status[2] = 0xff;
+	value->value.iec958.status[3] = 0xff;
+	return 0;
+}
+
+static int spdif_input_default_get(struct snd_kcontrol *ctl,
+				   struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	u32 bits;
+
+	bits = oxygen_read32(chip, OXYGEN_SPDIF_INPUT_BITS);
+	value->value.iec958.status[0] = bits;
+	value->value.iec958.status[1] = bits >> 8;
+	value->value.iec958.status[2] = bits >> 16;
+	value->value.iec958.status[3] = bits >> 24;
+	return 0;
+}
+
 static int ac97_switch_get(struct snd_kcontrol *ctl,
 			   struct snd_ctl_elem_value *value)
 {
@@ -533,6 +557,22 @@ static const struct snd_kcontrol_new controls[] = {
 		.get = spdif_pcm_get,
 		.put = spdif_pcm_put,
 	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
+		.device = 1,
+		.name = SNDRV_CTL_NAME_IEC958("", CAPTURE, MASK),
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.info = spdif_info,
+		.get = spdif_input_mask_get,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
+		.device = 1,
+		.name = SNDRV_CTL_NAME_IEC958("", CAPTURE, DEFAULT),
+		.access = SNDRV_CTL_ELEM_ACCESS_READ,
+		.info = spdif_info,
+		.get = spdif_input_default_get,
+	},
 	AC97_VOLUME("Mic Capture Volume", AC97_MIC),
 	AC97_SWITCH("Mic Capture Switch", AC97_MIC, 15, 1),
 	AC97_SWITCH("Mic Boost (+20dB)", AC97_MIC, 6, 0),
@@ -542,6 +582,15 @@ static const struct snd_kcontrol_new controls[] = {
 	AC97_VOLUME("Aux Capture Volume", AC97_AUX),
 	AC97_SWITCH("Aux Capture Switch", AC97_AUX, 15, 1),
 };
+
+static void oxygen_any_ctl_free(struct snd_kcontrol *ctl)
+{
+	struct oxygen *chip = ctl->private_data;
+
+	/* I'm too lazy to write a function for each control :-) */
+	chip->spdif_pcm_ctl = NULL;
+	chip->spdif_input_bits_ctl = NULL;
+}
 
 int oxygen_mixer_init(struct oxygen *chip)
 {
@@ -562,8 +611,14 @@ int oxygen_mixer_init(struct oxygen *chip)
 		if (err < 0)
 			return err;
 		if (!strcmp(ctl->id.name,
-			    SNDRV_CTL_NAME_IEC958("", PLAYBACK, PCM_STREAM)))
+			    SNDRV_CTL_NAME_IEC958("", PLAYBACK, PCM_STREAM))) {
 			chip->spdif_pcm_ctl = ctl;
+			ctl->private_free = oxygen_any_ctl_free;
+		} else if (!strcmp(ctl->id.name,
+				 SNDRV_CTL_NAME_IEC958("", CAPTURE, DEFAULT))) {
+			chip->spdif_input_bits_ctl = ctl;
+			ctl->private_free = oxygen_any_ctl_free;
+		}
 	}
 	return 0;
 }
