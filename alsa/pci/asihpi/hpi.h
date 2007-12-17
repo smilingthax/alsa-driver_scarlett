@@ -3116,16 +3116,6 @@ struct hpi_data_legacy32 {
 	u32 dwDataSize;
 };
 
-#ifdef HPI64BIT
-/* Compatibility version of struct hpi_data HPI_DATA*/
-struct hpi_data_compat32 {
-	HPI_MSG_FORMAT Format;
-	u32 pbData;
-	u32 dwPadding;
-	u32 dwDataSize;
-};
-#endif
-
 struct hpi_buffer {
 /** placehoder for backward compatability (see dwBufferSize) */
 	struct hpi_msg_format reserved;
