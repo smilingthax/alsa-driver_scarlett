@@ -1230,7 +1230,7 @@ esac
 
 dnl set ia32 (X86)
 case "$processor" in
-  i?86*|k?|crusoe|mcyrixiii|mwinchip|viac3_2|mcore2|geodegx*)
+  i?86*|k?|crusoe|mcyrixiii|mwinchip|viac3_2|mcore2|geodegx*|x86_32)
     if $KCC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
