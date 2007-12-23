@@ -27,13 +27,14 @@
  * GPIO 2 -> M0 of CS5381
  * GPIO 3 -> M1 of CS5381
  * GPIO 5 <- ? (D2X only)
- * GPIO 7 -> ? (ALT?)
+ * GPIO 7 -> ALT
  * GPIO 8 -> ? (amps enable?)
  */
 
 #include <sound/driver.h>
 #include <linux/pci.h>
 #include <linux/delay.h>
+#include <sound/control.h>
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/pcm.h>
@@ -100,7 +101,7 @@ static void xonar_init(struct oxygen *chip)
 	}
 
 	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, 0x8c);
-	oxygen_write16_masked(chip, OXYGEN_GPIO_DATA, 0x00, 0x0c);
+	oxygen_write16_masked(chip, OXYGEN_GPIO_DATA, 0x00, 0x8c);
 #if 0
 	oxygen_clear_bits16(chip, OXYGEN_I2S_MULTICH_FORMAT,
 			    OXYGEN_I2S_MAGIC1_MASK);
@@ -168,13 +169,57 @@ static void set_cs5381_params(struct oxygen *chip,
 	oxygen_write16_masked(chip, OXYGEN_GPIO_DATA, value, 0x000c);
 }
 
+static int alt_switch_get(struct snd_kcontrol *ctl,
+			  struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+
+	value->value.integer.value[0] =
+		!!(oxygen_read16(chip, OXYGEN_GPIO_DATA) & 0x80);
+	return 0;
+}
+
+static int alt_switch_put(struct snd_kcontrol *ctl,
+			  struct snd_ctl_elem_value *value)
+{
+	struct oxygen *chip = ctl->private_data;
+	u16 old_bits, new_bits;
+	int changed;
+
+	spin_lock_irq(&chip->reg_lock);
+	old_bits = oxygen_read16(chip, OXYGEN_GPIO_DATA);
+	if (value->value.integer.value[0])
+		new_bits = old_bits | 0x80;
+	else
+		new_bits = old_bits & ~0x80;
+	changed = new_bits != old_bits;
+	if (changed)
+		oxygen_write16(chip, OXYGEN_GPIO_DATA, new_bits);
+	spin_unlock_irq(&chip->reg_lock);
+	return changed;
+}
+
+static const struct snd_kcontrol_new alt_switch = {
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "Analog Loopback Switch",
+	.info = snd_ctl_boolean_mono_info,
+	.get = alt_switch_get,
+	.put = alt_switch_put,
+};
+
 const DECLARE_TLV_DB_SCALE(pcm1796_db_scale, -12000, 50, 0);
+
+static int xonar_mixer_init(struct oxygen *chip)
+{
+	return snd_ctl_add(chip->card, snd_ctl_new1(&alt_switch, chip));
+}
 
 const struct oxygen_model model_xonar = {
 	.shortname = "Asus AV200",
 	.longname = "Asus Virtuoso 200",
 	.chip = "AV200",
 	.init = xonar_init,
+	.mixer_init = xonar_mixer_init,
 	.cleanup = xonar_cleanup,
 	.set_dac_params = set_pcm1796_params,
 	.set_adc_params = set_cs5381_params,

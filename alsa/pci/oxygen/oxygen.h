@@ -61,6 +61,7 @@ struct oxygen_model {
 	const char *chip;
 	struct module *owner;
 	void (*init)(struct oxygen *chip);
+	int (*mixer_init)(struct oxygen *chip);
 	void (*cleanup)(struct oxygen *chip);
 	void (*set_dac_params)(struct oxygen *chip,
 			       struct snd_pcm_hw_params *params);

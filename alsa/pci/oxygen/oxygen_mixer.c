@@ -620,5 +620,5 @@ int oxygen_mixer_init(struct oxygen *chip)
 			ctl->private_free = oxygen_any_ctl_free;
 		}
 	}
-	return 0;
+	return chip->model->mixer_init ? chip->model->mixer_init(chip) : 0;
 }
