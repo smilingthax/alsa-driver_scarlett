@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/memalloc.c	2007-09-17 17:49:40.000000000 +0200
-+++ memalloc.c	2007-09-17 17:50:01.000000000 +0200
+--- ../alsa-kernel/core/memalloc.c	2007-11-28 21:06:56.000000000 +0100
++++ memalloc.c	2008-01-06 15:40:11.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "memalloc.inc"
  /*
@@ -201,7 +201,7 @@
  #endif /* CONFIG_PROC_FS */
  
  /*
-@@ -629,10 +725,12 @@
+@@ -629,16 +725,20 @@
  static int __init snd_mem_init(void)
  {
  #ifdef CONFIG_PROC_FS
@@ -214,7 +214,15 @@
  	return 0;
  }
  
-@@ -661,3 +759,5 @@
+ static void __exit snd_mem_exit(void)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+ 	remove_proc_entry(SND_MEM_PROC_FILE, NULL);
++#endif
+ 	free_all_reserved_pages();
+ 	if (snd_allocated_pages > 0)
+ 		printk(KERN_ERR "snd-malloc: Memory leak?  pages not freed = %li\n", snd_allocated_pages);
+@@ -661,3 +761,5 @@
  
  EXPORT_SYMBOL(snd_malloc_pages);
  EXPORT_SYMBOL(snd_free_pages);
