@@ -1,5 +1,4 @@
-#include <linux/version.h>
-
+#include "adriver.h"
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #define isapnp_dev pci_dev

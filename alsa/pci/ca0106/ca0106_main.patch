@@ -1,6 +1,11 @@
---- ../../alsa-kernel/pci/ca0106/ca0106_main.c	2007-07-19 16:36:25.000000000 +0200
-+++ ca0106_main.c	2007-07-20 12:46:22.000000000 +0200
-@@ -165,7 +165,7 @@
+--- ../../alsa-kernel/pci/ca0106/ca0106_main.c	2007-12-20 11:47:36.000000000 +0100
++++ ca0106_main.c	2007-12-20 12:00:52.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *  Copyright (c) 2004 James Courtier-Dutton <James@superbug.demon.co.uk>
+  *  Driver CA0106 chips. e.g. Sound Blaster Audigy LS and Live 24bit
+@@ -168,7 +169,7 @@
  module_param_array(subsystem, uint, NULL, 0444);
  MODULE_PARM_DESC(subsystem, "Force card subsystem model.");
  
@@ -9,7 +14,7 @@
  
  static struct snd_ca0106_details ca0106_chip_details[] = {
  	 /* Sound Blaster X-Fi Extreme Audio. This does not have an AC97. 53SB079000000 */
-@@ -1317,7 +1317,7 @@
+@@ -1352,7 +1353,7 @@
  	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &chip->model);
  #if 1
  	printk(KERN_INFO "snd-ca0106: Model %04x Rev %08x Serial %08x\n", chip->model,
@@ -18,7 +23,7 @@
  #endif
  	strcpy(card->driver, "CA0106");
  	strcpy(card->shortname, "CA0106");
-@@ -1681,3 +1681,5 @@
+@@ -1721,3 +1722,5 @@
  
  module_init(alsa_card_ca0106_init)
  module_exit(alsa_card_ca0106_exit)

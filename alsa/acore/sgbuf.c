@@ -8,7 +8,6 @@
 #endif
 #endif
 
-#include "config.h"
 #define SKIP_HIDDEN_MALLOCS
 #include "adriver.h"
 

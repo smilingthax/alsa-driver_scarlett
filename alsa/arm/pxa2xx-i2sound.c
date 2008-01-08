@@ -15,7 +15,7 @@
  * 2005-10	Some finishing -- Giorgio Padrin
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 
 #include <linux/module.h>
 #include <linux/init.h>

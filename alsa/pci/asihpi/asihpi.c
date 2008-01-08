@@ -47,8 +47,8 @@
 #define ASI_STYLE_NAMES 1
 #endif
 
+#include "adriver.h"
 #include <linux/pci.h>
-#include <sound/driver.h>
 #include <linux/version.h>
 #include <linux/init.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)

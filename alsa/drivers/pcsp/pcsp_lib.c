@@ -1,3 +1,4 @@
+#include "adriver.h"
 /*
  * PC-Speaker driver for Linux
  *

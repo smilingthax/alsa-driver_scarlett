@@ -1,9 +1,8 @@
---- ../alsa-kernel/ppc/beep.c	2007-07-19 16:36:26.000000000 +0200
-+++ beep.c	2007-07-19 16:48:31.000000000 +0200
-@@ -1,3 +1,11 @@
+--- ../alsa-kernel/ppc/beep.c	2007-12-20 11:47:37.000000000 +0100
++++ beep.c	2007-12-20 12:23:31.000000000 +0100
+@@ -1,3 +1,10 @@
 +#define __NO_VERSION__
-+#include <linux/config.h>
-+#include <linux/version.h>
++#include "adriver.h"
 +
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 +#include "beep_old.c"
@@ -12,7 +11,7 @@
  /*
   * Beep using pcm
   *
-@@ -224,7 +232,11 @@
+@@ -226,7 +233,11 @@
  		return -ENOMEM;
  	dmabuf = dma_alloc_coherent(&chip->pdev->dev, BEEP_BUFLEN * 4,
  				    &beep->addr, GFP_KERNEL);
@@ -24,9 +23,9 @@
  	if (! dmabuf || ! input_dev)
  		goto fail1;
  
-@@ -239,8 +251,15 @@
- 	input_dev->evbit[0] = BIT(EV_SND);
- 	input_dev->sndbit[0] = BIT(SND_BELL) | BIT(SND_TONE);
+@@ -241,8 +252,15 @@
+ 	input_dev->evbit[0] = BIT_MASK(EV_SND);
+ 	input_dev->sndbit[0] = BIT_MASK(SND_BELL) | BIT_MASK(SND_TONE);
  	input_dev->event = snd_pmac_beep_event;
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
  	input_dev->dev.parent = &chip->pdev->dev;
@@ -40,7 +39,7 @@
  
  	beep->dev = input_dev;
  	beep->buf = dmabuf;
-@@ -261,7 +280,12 @@
+@@ -263,7 +281,12 @@
   	return 0;
   
   fail2:	snd_ctl_remove(chip->card, beep_ctl);
@@ -54,7 +53,7 @@
  	if (dmabuf)
  		dma_free_coherent(&chip->pdev->dev, BEEP_BUFLEN * 4,
  				  dmabuf, beep->addr);
-@@ -273,9 +297,15 @@
+@@ -275,9 +298,15 @@
  {
  	if (chip->beep) {
  		input_unregister_device(chip->beep->dev);

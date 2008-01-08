@@ -8,7 +8,7 @@
  * Copyright (c) 2005 Giorgio Padrin <giorgio@mandarinlogiq.org>
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
  
 #include <linux/module.h>
 #include <linux/init.h>

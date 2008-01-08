@@ -24,7 +24,7 @@
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#include <sound/driver.h>
+#include "adriver.h"
 #endif /* KERNEL < 2.6.0 */
 
 #include "../alsa-kernel/core/memory.c"

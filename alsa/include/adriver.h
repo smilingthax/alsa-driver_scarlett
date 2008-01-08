@@ -22,6 +22,16 @@
  *
  */
 
+#include "config.h"
+#include <linux/module.h>
+
+/* number of supported soundcards */
+#ifdef CONFIG_SND_DYNAMIC_MINORS
+#define SNDRV_CARDS 32
+#else
+#define SNDRV_CARDS 8		/* don't change - minor numbers */
+#endif
+
 #include <linux/version.h>
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 18)
 #include <linux/autoconf.h>
@@ -1476,5 +1486,8 @@ typedef unsigned long uintptr_t;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #define do_posix_clock_monotonic_gettime getnstimeofday
 #endif
+
+/* undefine SNDRV_CARDS again - it'll be re-defined in sound/core.h */
+#undef SNDRV_CARDS
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

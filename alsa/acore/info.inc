@@ -1,9 +1,10 @@
 #define __NO_VERSION__
+#include "adriver.h"
 #include <linux/config.h>
 #include <linux/version.h>
+#include <linux/utsrelease.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/version.h>

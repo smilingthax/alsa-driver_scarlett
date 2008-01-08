@@ -6,5 +6,6 @@
 #define vmalloc_32(x) vmalloc_nocheck(x)
 #endif
 
+#include "adriver.h"
 #include "../../alsa-kernel/drivers/vx/vx_pcm.c"
 

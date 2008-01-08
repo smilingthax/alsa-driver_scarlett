@@ -1,6 +1,11 @@
---- ../../alsa-kernel/usb/caiaq/caiaq-device.c	2007-06-11 16:29:28 +0400
-+++ caiaq-device.c	2007-06-11 19:54:46 +0400
-@@ -100,7 +100,11 @@ static struct usb_device_id snd_usb_id_t
+--- ../../alsa-kernel/usb/caiaq/caiaq-device.c	2007-12-20 11:47:37.000000000 +0100
++++ caiaq-device.c	2007-12-20 12:31:32.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  * caiaq.c: ALSA driver for caiaq/NativeInstruments devices
+  *
+@@ -113,7 +114,11 @@
  	{ /* terminator */ }
  };
  
@@ -12,7 +17,7 @@
  {
  	int ret;
  	struct snd_usb_caiaqdev *dev = urb->context;
-@@ -295,6 +299,16 @@ static struct snd_card* create_card(stru
+@@ -359,6 +364,16 @@
  	return card;
  }
  

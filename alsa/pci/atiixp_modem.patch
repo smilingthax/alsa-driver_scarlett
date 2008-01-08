@@ -1,6 +1,11 @@
---- ../alsa-kernel/pci/atiixp_modem.c	2007-07-19 16:36:25.000000000 +0200
-+++ atiixp_modem.c	2007-07-20 12:16:45.000000000 +0200
-@@ -1309,7 +1309,7 @@
+--- ../alsa-kernel/pci/atiixp_modem.c	2007-12-20 11:47:36.000000000 +0100
++++ atiixp_modem.c	2007-12-20 11:59:28.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *   ALSA driver for ATI IXP 150/200/250 AC97 modem controllers
+  *
+@@ -1306,7 +1307,7 @@
  	snd_atiixp_chip_start(chip);
  
  	sprintf(card->longname, "%s rev %x at 0x%lx, irq %i",
@@ -9,7 +14,7 @@
  
  	if ((err = snd_card_register(card)) < 0)
  		goto __error;
-@@ -1352,3 +1352,5 @@
+@@ -1349,3 +1350,5 @@
  
  module_init(alsa_card_atiixp_init)
  module_exit(alsa_card_atiixp_exit)

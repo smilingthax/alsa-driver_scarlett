@@ -5,7 +5,7 @@
  * Copyright (C) 2001-2007  Stas Sergeev
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <sound/core.h>
 #include <sound/control.h>
 #include "pcsp.h"

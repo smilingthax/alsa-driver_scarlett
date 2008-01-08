@@ -1,3 +1,4 @@
+#include "adriver.h"
 #include "../../alsa-kernel/pci/au88x0/au8810.h"
 #include "../../alsa-kernel/pci/au88x0/au88x0.h"
 static struct pci_device_id snd_vortex_ids[] = {

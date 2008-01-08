@@ -18,7 +18,7 @@
  *
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/time.h>
 #include <linux/slab.h>
 #include <linux/compat.h>

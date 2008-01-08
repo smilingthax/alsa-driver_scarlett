@@ -1,6 +1,11 @@
---- ../../alsa-kernel/pci/korg1212/korg1212.c	2007-04-26 13:51:47.000000000 +0200
-+++ korg1212.c	2007-04-26 14:08:42.000000000 +0200
-@@ -2343,7 +2343,11 @@
+--- ../../alsa-kernel/pci/korg1212/korg1212.c	2007-12-20 11:47:37.000000000 +0100
++++ korg1212.c	2007-12-20 12:13:42.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *   Driver for the Korg 1212 IO PCI card
+  *
+@@ -2348,7 +2349,11 @@
  #ifdef CONFIG_SND_KORG1212_FIRMWARE_IN_KERNEL
  	dsp_code = &static_dsp_code;
  #else
@@ -12,7 +17,7 @@
  	if (err < 0) {
  		release_firmware(dsp_code);
  		snd_printk(KERN_ERR "firmware not available\n");
-@@ -2500,3 +2504,4 @@
+@@ -2505,3 +2510,4 @@
  
  module_init(alsa_card_korg1212_init)
  module_exit(alsa_card_korg1212_exit)

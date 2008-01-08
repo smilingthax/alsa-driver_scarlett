@@ -23,7 +23,7 @@
  *	0 - Roland SoundCanvas (use outs paratemer to specify count of output ports)
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/tty.h>

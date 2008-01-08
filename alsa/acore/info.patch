@@ -5,15 +5,6 @@
  /*
   *  Information interface for ALSA driver
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -20,6 +21,8 @@
-  */
- 
- #include <sound/driver.h>
-+#include <linux/version.h>
-+#include <linux/utsrelease.h>
- #include <linux/init.h>
- #include <linux/time.h>
- #include <linux/smp_lock.h>
 @@ -154,6 +157,7 @@
  struct snd_info_entry *snd_oss_root;
  #endif

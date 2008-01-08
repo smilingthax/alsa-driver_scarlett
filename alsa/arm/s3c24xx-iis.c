@@ -25,8 +25,7 @@
  *   or the lines need to have external pull-up or pull-downs.
 */
 
-#include <linux/config.h>
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -43,7 +42,6 @@
 
 #include <asm/hardware/clock.h>
 
-#include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/initval.h>

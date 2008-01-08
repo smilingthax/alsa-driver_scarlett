@@ -1,14 +1,19 @@
---- ../../alsa-kernel/core/oss/mixer_oss.c	2007-05-17 08:15:24.000000000 +0200
-+++ mixer_oss.c	2007-05-24 21:29:36.000000000 +0200
-@@ -21,6 +21,7 @@
+--- ../../alsa-kernel/core/oss/mixer_oss.c	2007-12-20 10:19:01.000000000 +0100
++++ mixer_oss.c	2007-12-20 10:45:48.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *  OSS emulation layer for the mixer interface
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
+@@ -20,6 +21,7 @@
+  */
  
- #include <sound/driver.h>
  #include <linux/init.h>
 +#include <linux/smp_lock.h>
  #include <linux/slab.h>
  #include <linux/time.h>
  #include <linux/string.h>
-@@ -378,24 +379,43 @@
+@@ -377,24 +379,43 @@
  	return snd_mixer_oss_ioctl1(&fmixer, cmd, arg);
  }
  
