@@ -1,6 +1,6 @@
 #define __NO_VERSION__
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#ifdef CONFIG_HAVE_INIT_UTSNAME
 #define init_utsname()	(&system_utsname)
 #endif
 #include "adriver.h"
