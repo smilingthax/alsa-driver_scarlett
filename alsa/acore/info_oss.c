@@ -1,6 +1,6 @@
 #define __NO_VERSION__
 #include <linux/version.h>
-#ifdef CONFIG_HAVE_INIT_UTSNAME
+#ifndef CONFIG_HAVE_INIT_UTSNAME
 #define init_utsname()	(&system_utsname)
 #endif
 #include "adriver.h"
