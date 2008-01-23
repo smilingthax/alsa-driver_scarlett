@@ -2571,7 +2571,7 @@ AC_MSG_CHECKING(for init_utsname)
 init_utsname="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Werror=implicit-function-declaration"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
