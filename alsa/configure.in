@@ -2567,13 +2567,16 @@ if test "$CONFIG_HAVE_GFP_T" = "1"; then
 fi
 
 dnl Check for init_utsname...
+if test "$kversion.$kpatchlevel" = "2.6" -a $ksublevel -ge 19; then
+  CONFIG_HAVE_INIT_UTSNAME=1
+else
 AC_MSG_CHECKING(for init_utsname)
-init_utsname="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS -Werror=implicit-function-declaration"
-CC=$KCC
-AC_TRY_COMPILE([
+  init_utsname="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
+  CC=$KCC
+  AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
 #include <linux/utsname.h>
@@ -2585,9 +2588,10 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT(no);init_utsname="0",
     AC_MSG_RESULT(unknown);init_utsname="0"
 )
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_INIT_UTSNAME=$init_utsname
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_HAVE_INIT_UTSNAME=$init_utsname
+fi
 dnl AC_SUBST(CONFIG_HAVE_INIT_UTSNAME)
 if test "$CONFIG_HAVE_INIT_UTSNAME" = "1"; then
   AC_DEFINE(CONFIG_HAVE_INIT_UTSNAME)
