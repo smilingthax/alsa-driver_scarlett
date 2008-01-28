@@ -89,6 +89,7 @@ pci/hda/hda_codec.c
 pci/intel8x0.c
 pci/korg1212/korg1212.c
 pci/maestro3.c
+pci/oxygen/virtuoso.c
 pci/riptide/riptide.c
 pci/ymfpci/ymfpci_main.c
 pci/via82xx.c
