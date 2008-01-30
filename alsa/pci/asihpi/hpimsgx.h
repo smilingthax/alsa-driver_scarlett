@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-HPI Extended Message Handler Functions
+ HPI Extended Message Handler Functions
 
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
@@ -32,7 +32,7 @@ extern "C" {
 /* *INDENT-ON* */
 #endif
 
-#define HPIMSGX_ALLADAPTERS     (0xFFFF)
+#define HPIMSGX_ALLADAPTERS	(0xFFFF)
 
 void HPI_MessageEx(
 	struct hpi_message *phm,

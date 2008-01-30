@@ -39,9 +39,9 @@ HPI PCI interface function definitions
 #define HPIPCI_CILP 0x00FC
 
 /* bits in command register */
-#define HPIPCI_CCMR_MSE                 0x00000002
-#define HPIPCI_CCMR_BM                  0x00000004
-#define HPIPCI_CCMR_PERR                0x0000040
+#define HPIPCI_CCMR_MSE			0x00000002
+#define HPIPCI_CCMR_BM			0x00000004
+#define HPIPCI_CCMR_PERR		0x0000040
 
 /* NOTE : HpiPci function defintions moved to hpios.h */
 #endif				/* _HPIPCI_H_ */

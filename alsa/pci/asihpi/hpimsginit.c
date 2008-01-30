@@ -16,9 +16,9 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-Hardware Programming Interface (HPI) Utility functions.
+ Hardware Programming Interface (HPI) Utility functions.
 
-(C) Copyright AudioScience Inc. 2007
+ (C) Copyright AudioScience Inc. 2007
 *******************************************************************************/
 
 #include "hpi.h"
@@ -32,11 +32,11 @@ static u16 aResSize[HPI_OBJ_MAXINDEX + 1] = HPI_RESPONSE_SIZE_BY_OBJECT;
 static u16 gwSSX2Bypass = 0;
 
 /** \internal
-* Used by ASIO driver to disable SSX2 for a single process
-* \param phSubSys Pointer to HPI subsystem handle.
-* \param wBypass New bypass setting 0 = off, nonzero = on
-* \return Previous bypass setting.
-*/
+  * Used by ASIO driver to disable SSX2 for a single process
+  * \param phSubSys Pointer to HPI subsystem handle.
+  * \param wBypass New bypass setting 0 = off, nonzero = on
+  * \return Previous bypass setting.
+  */
 u16 HPI_SubSysSsx2Bypass(
 	struct hpi_hsubsys *phSubSys,
 	u16 wBypass
@@ -50,8 +50,8 @@ u16 HPI_SubSysSsx2Bypass(
 }
 
 /** \internal
-* initialize the HPI message structure
-*/
+  * initialize the HPI message structure
+  */
 void HPI_InitMessage(
 	struct hpi_message *phm,
 	u16 wObject,
@@ -68,7 +68,7 @@ void HPI_InitMessage(
 		phm->wObject = wObject;
 		phm->wFunction = wFunction;
 		phm->wDspIndex = 0;
-/* Expect adapter index to be set by caller */
+		/* Expect adapter index to be set by caller */
 	} else {
 		phm->wType = 0;
 		phm->wSize = 0;
@@ -76,8 +76,8 @@ void HPI_InitMessage(
 }
 
 /** \internal
-* initialize the HPI response structure
-*/
+  * initialize the HPI response structure
+  */
 void HPI_InitResponse(
 	struct hpi_response *phr,
 	u16 wObject,

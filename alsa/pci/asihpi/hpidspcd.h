@@ -40,16 +40,16 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 
 /** Descriptor for dspcode from firmware loader */
 struct dsp_code {
-/**  Firmware descriptor */
+	/**  Firmware descriptor */
 	const struct firmware *psFirmware;
 	struct pci_dev *psDev;
-/** Expected number of words in the whole dsp code,INCL header */
+	/** Expected number of words in the whole dsp code,INCL header */
 	long int dwBlockLength;
-/** Number of words read so far */
+	/** Number of words read so far */
 	long int dwWordCount;
-/** Version read from dsp code file */
+	/** Version read from dsp code file */
 	u32 dwVersion;
-/** CRC read from dsp code file */
+	/** CRC read from dsp code file */
 	u32 dwCrc;
 };
 
@@ -58,15 +58,15 @@ struct dsp_code {
 #endif
 
 /** Prepare *psDspCode to refer to the requuested adapter.
-Searches the file, or selects the appropriate linked array
+ Searches the file, or selects the appropriate linked array
 
 \return 0 for success, or error code if requested code is not available
 */
 short HpiDspCode_Open(
 	u32 nAdapter,		/*!< Adapter family */
-/*!< Pointer to DSP code control structure */
+	/*!< Pointer to DSP code control structure */
 	struct dsp_code *psDspCode,
-/*!< Pointer to dword to receive OS specific error code */
+	/*!< Pointer to dword to receive OS specific error code */
 	u32 *pdwOsErrorCode
 );
 
@@ -81,11 +81,11 @@ void HpiDspCode_Rewind(
 );
 
 /*! Read one word from the dsp code file
-\return 0 for success, or error code if eof, or block length exceeded
+	\return 0 for success, or error code if eof, or block length exceeded
 */
 short HpiDspCode_ReadWord(
 	struct dsp_code *psDspCode,
-/*!< Where to store the read word */
+	/*!< Where to store the read word */
 	u32 *pdwWord
 );
 
@@ -98,7 +98,7 @@ not copied.)
 short HpiDspCode_ReadBlock(
 	size_t nWordsRequested,
 	struct dsp_code *psDspCode,
-/* Pointer to store (Pointer to code buffer) */
+	/* Pointer to store (Pointer to code buffer) */
 	u32 **ppdwBlock
 );
 
