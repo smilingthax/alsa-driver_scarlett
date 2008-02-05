@@ -2512,7 +2512,7 @@ static void __devinit snd_asihpi_proc_init(struct snd_card_asihpi *asihpi)
 /*------------------------------------------------------------
    CARD
  ------------------------------------------------------------*/
-int snd_asihpi_bind(struct hpi_adapter *hpi_card)
+int __devinit snd_asihpi_bind(struct hpi_adapter *hpi_card)
 {
 	int err;
 
