@@ -1,7 +1,7 @@
 /*
  * PC-Speaker driver for Linux
  *
- * Copyright (C) 2001-2007  Stas Sergeev
+ * Copyright (C) 2001-2008  Stas Sergeev
  */
 
 #ifndef __PCSP_INPUT_H__
