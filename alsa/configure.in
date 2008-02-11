@@ -670,7 +670,7 @@ CHECK_KERNEL_HEADER(linux/bitmap.h, [#include \"bitmap_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/mutex.h, [#include \"mutex_compat.h\"
 ])
-CHECK_KERNEL_HEADER(linux/latency.h, [#include \"latency_compat.h\"
+CHECK_KERNEL_HEADER(linux/pm_qos_params.h, [#include \"pm_qos_params_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/kthread.h, [#include \"kthread_compat.h\"
 ])
