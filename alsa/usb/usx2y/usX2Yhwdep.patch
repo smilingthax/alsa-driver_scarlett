@@ -90,7 +90,7 @@
  	}
  	area->vm_ops = &us428ctls_vm_ops;
 +#ifdef VM_RESERVED
- 	area->vm_flags |= VM_RESERVED;
+ 	area->vm_flags |= VM_RESERVED | VM_DONTEXPAND;
 +#endif
 +#ifndef LINUX_2_2
  	area->vm_private_data = hw->private_data;
