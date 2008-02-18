@@ -49,7 +49,7 @@ static int pcspkr_input_event(struct input_dev *dev, unsigned int type,
 {
 	unsigned int count = 0;
 
-	if (pcsp_chip.timer_active || !pcsp_chip.pcspkr)
+	if (atomic_read(&pcsp_chip.timer_active) || !pcsp_chip.pcspkr)
 		return 0;
 
 	switch (type) {
@@ -112,7 +112,7 @@ int __exit pcspkr_input_remove(struct input_dev *dev)
 		return 0;
 	/* turn off the speaker */
 	pcspkr_do_sound(0);
-	input_unregister_device(dev);	// this also does kfree()
+	input_unregister_device(dev);	/* this also does kfree() */
 
 	return 0;
 }

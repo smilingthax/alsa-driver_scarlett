@@ -15,16 +15,6 @@
 #define PCSP_SOUND_VERSION 0x400	/* read 4.00 */
 #define PCSP_DEBUG 0
 
-#if PCSP_DEBUG
-#define assert(expr) \
-        if(!(expr)) { \
-        printk( "Assertion failed! %s, %s, %s, line=%d\n", \
-        #expr,__FILE__,__FUNCTION__,__LINE__); \
-        }
-#else
-#define assert(expr)
-#endif
-
 /* default timer freq for PC-Speaker: 18643 Hz */
 #define DIV_18KHZ 64
 #define MAX_DIV DIV_18KHZ
@@ -50,7 +40,8 @@
 #define PCSP_PERIOD_NS() (1000000000ULL * PCSP_RATE__1)
 #else
 /* and now - without using __udivdi3 :( */
-#define PCSP_PERIOD_NS() (chip->treble ? PCSP_MIN_PERIOD_NS : PCSP_MAX_PERIOD_NS)
+#define PCSP_PERIOD_NS() (chip->treble ? PCSP_MIN_PERIOD_NS : \
+		PCSP_MAX_PERIOD_NS)
 #endif
 
 #define PCSP_MAX_PERIOD_SIZE	(64*1024)
@@ -64,14 +55,13 @@ struct snd_pcsp {
 	unsigned short port, irq, dma;
 	spinlock_t substream_lock;
 	struct snd_pcm_substream *playback_substream;
-	volatile size_t playback_ptr;
-	volatile size_t period_ptr;
-	volatile int timer_active;
+	size_t playback_ptr;
+	size_t period_ptr;
+	atomic_t timer_active;
 	unsigned char val61;
 	int enable;
 	int max_treble;
 	int treble;
-//      int bass;
 	int pcspkr;
 };
 

@@ -75,7 +75,7 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 		goto exit_nr_unlock1;
 	substream = chip->playback_substream;
 	snd_pcm_stream_lock(substream);
-	if (!chip->timer_active)
+	if (!atomic_read(&chip->timer_active))
 		goto exit_nr_unlock2;
 
 	runtime = substream->runtime;
@@ -99,7 +99,8 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 	chip->playback_ptr += PCSP_INDEX_INC() * fmt_size;
 	periods_elapsed = chip->playback_ptr - chip->period_ptr;
 	if (periods_elapsed < 0) {
-		printk(KERN_WARNING "PCSP: playback_ptr inconsistent (%zi %zi %zi)\n",
+		printk(KERN_WARNING "PCSP: playback_ptr inconsistent "
+			"(%zi %zi %zi)\n",
 			chip->playback_ptr, period_bytes, buffer_bytes);
 		periods_elapsed += buffer_bytes;
 	}
@@ -118,7 +119,7 @@ enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle)
 
 	spin_unlock_irqrestore(&chip->substream_lock, flags);
 
-	if (!chip->timer_active)
+	if (!atomic_read(&chip->timer_active))
 		return HRTIMER_NORESTART;
 	hrtimer_forward(&chip->timer, chip->timer.expires,
 			ktime_set(0, PCSP_PERIOD_NS()));
@@ -133,7 +134,7 @@ exit_nr_unlock1:
 
 static void pcsp_start_playing(struct snd_pcsp *chip)
 {
-	if (chip->timer_active) {
+	if (atomic_read(&chip->timer_active)) {
 		printk(KERN_ERR "PCSP: Timer already active\n");
 		return;
 	}
@@ -142,17 +143,17 @@ static void pcsp_start_playing(struct snd_pcsp *chip)
 	chip->val61 = inb(0x61) | 0x03;
 	outb_p(0x92, 0x43);	/* binary, mode 1, LSB only, ch 2 */
 	spin_unlock(&i8253_lock);
-	chip->timer_active = 1;
+	atomic_set(&chip->timer_active, 1);
 
 	tasklet_schedule(&pcsp_start_timer_tasklet);
 }
 
 static void pcsp_stop_playing(struct snd_pcsp *chip)
 {
-	if (!chip->timer_active)
+	if (!atomic_read(&chip->timer_active))
 		return;
 
-	chip->timer_active = 0;
+	atomic_set(&chip->timer_active, 0);
 	spin_lock(&i8253_lock);
 	/* restore the timer */
 	outb_p(0xb6, 0x43);	/* binary, mode 3, LSB/MSB, ch 2 */
@@ -164,9 +165,9 @@ static int snd_pcsp_playback_close(struct snd_pcm_substream *substream)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
-	printk("close called\n");
+	printk(KERN_INFO "PCSP: close called\n");
 #endif
-	if (chip->timer_active) {
+	if (atomic_read(&chip->timer_active)) {
 		printk(KERN_ERR "PCSP: timer still active\n");
 		pcsp_stop_playing(chip);
 	}
@@ -190,7 +191,7 @@ static int snd_pcsp_playback_hw_params(struct snd_pcm_substream *substream,
 static int snd_pcsp_playback_hw_free(struct snd_pcm_substream *substream)
 {
 #if PCSP_DEBUG
-	printk("hw_free called\n");
+	printk(KERN_INFO "PCSP: hw_free called\n");
 #endif
 	return snd_pcm_lib_free_pages(substream);
 }
@@ -199,12 +200,13 @@ static int snd_pcsp_playback_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
-	printk("prepare called, size=%zi psize=%zi f=%zi f1=%i\n",
-	       snd_pcm_lib_buffer_bytes(substream),
-	       snd_pcm_lib_period_bytes(substream),
-	       snd_pcm_lib_buffer_bytes(substream) /
-	       snd_pcm_lib_period_bytes(substream),
-	       substream->runtime->periods);
+	printk(KERN_INFO "PCSP: prepare called, "
+			"size=%zi psize=%zi f=%zi f1=%i\n",
+			snd_pcm_lib_buffer_bytes(substream),
+			snd_pcm_lib_period_bytes(substream),
+			snd_pcm_lib_buffer_bytes(substream) /
+			snd_pcm_lib_period_bytes(substream),
+			substream->runtime->periods);
 #endif
 	chip->playback_ptr = 0;
 	chip->period_ptr = 0;
@@ -215,7 +217,7 @@ static int snd_pcsp_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 #if PCSP_DEBUG
-	printk("trigger called\n");
+	printk(KERN_INFO "PCSP: trigger called\n");
 #endif
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -266,9 +268,9 @@ static int snd_pcsp_playback_open(struct snd_pcm_substream *substream)
 	struct snd_pcsp *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
 #if PCSP_DEBUG
-	printk("open called\n");
+	printk(KERN_INFO "PCSP: open called\n");
 #endif
-	if (chip->timer_active) {
+	if (atomic_read(&chip->timer_active)) {
 		printk(KERN_ERR "PCSP: still active!!\n");
 		return -EBUSY;
 	}

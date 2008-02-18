@@ -36,7 +36,6 @@ MODULE_PARM_DESC(enable, "dummy");
 
 struct snd_pcsp pcsp_chip;
 
-
 static int __init snd_pcsp_create(struct snd_card *card)
 {
 	static struct snd_device_ops ops = { };
@@ -47,9 +46,9 @@ static int __init snd_pcsp_create(struct snd_card *card)
 	hrtimer_get_res(CLOCK_MONOTONIC, &tp);
 	if (tp.tv_sec || tp.tv_nsec > PCSP_MAX_PERIOD_NS) {
 		printk(KERN_ERR "PCSP: Timer resolution is not sufficient "
-			"(%linS)\n", tp.tv_nsec);
+		       "(%linS)\n", tp.tv_nsec);
 		printk(KERN_ERR "PCSP: Make sure you have HPET and ACPI "
-			"enabled.\n");
+		       "enabled.\n");
 		return -EIO;
 	}
 
@@ -59,7 +58,7 @@ static int __init snd_pcsp_create(struct snd_card *card)
 		min_div = MAX_DIV;
 #if PCSP_DEBUG
 	printk("PCSP: lpj=%li, min_div=%i, res=%li\n",
-		loops_per_jiffy, min_div, tp.tv_nsec);
+	       loops_per_jiffy, min_div, tp.tv_nsec);
 #endif
 
 	div = MAX_DIV / min_div;
@@ -69,7 +68,7 @@ static int __init snd_pcsp_create(struct snd_card *card)
 	pcsp_chip.treble = min(pcsp_chip.max_treble, PCSP_DEFAULT_TREBLE);
 	pcsp_chip.playback_ptr = 0;
 	pcsp_chip.period_ptr = 0;
-	pcsp_chip.timer_active = 0;
+	atomic_set(&pcsp_chip.timer_active, 0);
 	pcsp_chip.enable = 1;
 	pcsp_chip.pcspkr = 1;
 
@@ -144,9 +143,10 @@ static int __init alsa_card_pcsp_init(void)
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
 	printk(KERN_WARNING
 	       "PCSP: Warning, CONFIG_DEBUG_PAGEALLOC is enabled!\n"
-	       "You have to disable it if you want to use the PC-Speaker driver.\n"
-	       "Unless it is disabled, enjoy the horrible, distorted and crackling "
-	       "noise.\n");
+	       "You have to disable it if you want to use the PC-Speaker "
+	       "driver.\n"
+	       "Unless it is disabled, enjoy the horrible, distorted "
+	       "and crackling noise.\n");
 #endif
 
 	if (enable) {
