@@ -205,6 +205,7 @@ static char *no_cards[] = {
 	"#SND_AT91_SOC_I2S",
 	"#SND_SOC_SH4_HAC",
 	"#SND_SOC_SH4_SSI",
+	"#SND_DAVINCI_SOC_I2S",
 	NULL
 };
 
