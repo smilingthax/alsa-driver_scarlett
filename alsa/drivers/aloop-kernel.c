@@ -86,7 +86,6 @@ typedef struct snd_card_loopback_pcm {
 	unsigned int pcm_bps;		/* bytes per second */
 	unsigned int pcm_hz;		/* HZ */
 	unsigned int pcm_irq_pos;	/* IRQ position */
-	unsigned int pcm_buf_pos;	/* position in buffer */
 	unsigned int pcm_period_pos;	/* period aligned pos in buffer */
 	struct snd_pcm_substream *substream;
 	struct snd_card_loopback_cable *cable;
@@ -165,7 +164,6 @@ static int snd_card_loopback_prepare(struct snd_pcm_substream *substream)
 	dpcm->pcm_size = frames_to_bytes(runtime, runtime->buffer_size);
 	dpcm->pcm_count = frames_to_bytes(runtime, runtime->period_size);
 	dpcm->pcm_irq_pos = 0;
-	dpcm->pcm_buf_pos = 0;
 	dpcm->pcm_period_pos = 0;
 
 	cable->hw.formats = (1ULL << runtime->format);
@@ -216,8 +214,6 @@ static void snd_card_loopback_timer_function(unsigned long data)
 	spin_lock_irq(&dpcm->lock);
 
 	dpcm->pcm_irq_pos += dpcm->pcm_bps;
-	dpcm->pcm_buf_pos += dpcm->pcm_bps;
-	dpcm->pcm_buf_pos %= dpcm->pcm_size * dpcm->pcm_hz;
 	if (dpcm->pcm_irq_pos >= dpcm->pcm_count * dpcm->pcm_hz) {
 		dpcm->pcm_irq_pos %= dpcm->pcm_count * dpcm->pcm_hz;
 		dpcm->pcm_period_pos += dpcm->pcm_count;
