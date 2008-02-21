@@ -130,7 +130,11 @@ static int __init snd_card_pcsp_probe(int dev)
 		return err;
 	}
 
-	pcspkr_input_init(&pcsp_chip.input_dev);
+	err = pcspkr_input_init(&pcsp_chip.input_dev);
+	if (err < 0) {
+		snd_card_free(card);
+		return err;
+	}
 
 	return 0;
 }
