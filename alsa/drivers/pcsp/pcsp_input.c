@@ -13,12 +13,8 @@
  * the Free Software Foundation
  */
 
-#include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/init.h>
 #include <linux/input.h>
-#include <linux/platform_device.h>
-#include <asm/i8253.h>
 #include <asm/io.h>
 #include "pcsp.h"
 
@@ -42,6 +38,11 @@ static void pcspkr_do_sound(unsigned int count)
 	}
 
 	spin_unlock_irqrestore(&i8253_lock, flags);
+}
+
+void pcspkr_stop_sound(void)
+{
+	pcspkr_do_sound(0);
 }
 
 static int pcspkr_input_event(struct input_dev *dev, unsigned int type,
@@ -77,7 +78,7 @@ static int pcspkr_input_event(struct input_dev *dev, unsigned int type,
 	return 0;
 }
 
-int __init pcspkr_input_init(struct input_dev **dev)
+int __devinit pcspkr_input_init(struct input_dev **rdev, struct device *dev)
 {
 	int err;
 
@@ -91,6 +92,7 @@ int __init pcspkr_input_init(struct input_dev **dev)
 	input_dev->id.vendor = 0x001f;
 	input_dev->id.product = 0x0001;
 	input_dev->id.version = 0x0100;
+	input_dev->dev.parent = dev;
 
 	input_dev->evbit[0] = BIT(EV_SND);
 	input_dev->sndbit[0] = BIT(SND_BELL) | BIT(SND_TONE);
@@ -102,16 +104,13 @@ int __init pcspkr_input_init(struct input_dev **dev)
 		return err;
 	}
 
-	*dev = input_dev;
+	*rdev = input_dev;
 	return 0;
 }
 
-int __exit pcspkr_input_remove(struct input_dev *dev)
+int pcspkr_input_remove(struct input_dev *dev)
 {
-	if (!dev)
-		return 0;
-	/* turn off the speaker */
-	pcspkr_do_sound(0);
+	pcspkr_stop_sound();
 	input_unregister_device(dev);	/* this also does kfree() */
 
 	return 0;

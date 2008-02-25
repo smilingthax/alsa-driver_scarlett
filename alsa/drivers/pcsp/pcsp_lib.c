@@ -134,6 +134,9 @@ exit_nr_unlock1:
 
 static void pcsp_start_playing(struct snd_pcsp *chip)
 {
+#if PCSP_DEBUG
+	printk(KERN_INFO "PCSP: start_playing called\n");
+#endif
 	if (atomic_read(&chip->timer_active)) {
 		printk(KERN_ERR "PCSP: Timer already active\n");
 		return;
@@ -150,6 +153,9 @@ static void pcsp_start_playing(struct snd_pcsp *chip)
 
 static void pcsp_stop_playing(struct snd_pcsp *chip)
 {
+#if PCSP_DEBUG
+	printk(KERN_INFO "PCSP: stop_playing called\n");
+#endif
 	if (!atomic_read(&chip->timer_active))
 		return;
 
@@ -290,22 +296,23 @@ static struct snd_pcm_ops snd_pcsp_playback_ops = {
 	.pointer = snd_pcsp_playback_pointer,
 };
 
-int __init snd_pcsp_new_pcm(struct snd_pcsp *chip)
+int __devinit snd_pcsp_new_pcm(struct snd_pcsp *chip)
 {
-	struct snd_pcm *pcm;
 	int err;
 
-	err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &pcm);
+	err = snd_pcm_new(chip->card, "pcspeaker", 0, 1, 0, &chip->pcm);
 	if (err < 0)
 		return err;
 
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_pcsp_playback_ops);
+	snd_pcm_set_ops(chip->pcm, SNDRV_PCM_STREAM_PLAYBACK,
+			&snd_pcsp_playback_ops);
 
-	pcm->private_data = chip;
-	pcm->info_flags = SNDRV_PCM_INFO_HALF_DUPLEX;
-	strcpy(pcm->name, "pcsp");
+	chip->pcm->private_data = chip;
+	chip->pcm->info_flags = SNDRV_PCM_INFO_HALF_DUPLEX;
+	strcpy(chip->pcm->name, "pcsp");
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_CONTINUOUS,
+	snd_pcm_lib_preallocate_pages_for_all(chip->pcm,
+					      SNDRV_DMA_TYPE_CONTINUOUS,
 					      snd_dma_continuous_data
 					      (GFP_KERNEL), PCSP_BUFFER_SIZE,
 					      PCSP_BUFFER_SIZE);

@@ -10,7 +10,13 @@
 #define __PCSP_H__
 
 #include <linux/hrtimer.h>
+#if defined(CONFIG_MIPS) || defined(CONFIG_X86)
+/* Use the global PIT lock ! */
 #include <asm/i8253.h>
+#else
+#include <asm/8253pit.h>
+static DEFINE_SPINLOCK(i8253_lock);
+#endif
 
 #define PCSP_SOUND_VERSION 0x400	/* read 4.00 */
 #define PCSP_DEBUG 0
@@ -50,6 +56,7 @@
 
 struct snd_pcsp {
 	struct snd_card *card;
+	struct snd_pcm *pcm;
 	struct input_dev *input_dev;
 	struct hrtimer timer;
 	unsigned short port, irq, dma;
