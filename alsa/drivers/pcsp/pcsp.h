@@ -41,14 +41,12 @@ static DEFINE_SPINLOCK(i8253_lock);
 #define PCSP_MAX_RATE__1 MIN_DIV/PIT_TICK_RATE
 #define PCSP_MAX_PERIOD_NS (1000000000ULL * PCSP_MIN_RATE__1)
 #define PCSP_MIN_PERIOD_NS (1000000000ULL * PCSP_MAX_RATE__1)
-#if 0
-#define PCSP_RATE__1 CUR_DIV/PIT_TICK_RATE
-#define PCSP_PERIOD_NS() (1000000000ULL * PCSP_RATE__1)
-#else
-/* and now - without using __udivdi3 :( */
-#define PCSP_PERIOD_NS() (chip->treble ? PCSP_MIN_PERIOD_NS : \
-		PCSP_MAX_PERIOD_NS)
-#endif
+#define PCSP_CALC_NS(div) ({ \
+	u64 __val = 1000000000ULL * (div); \
+	do_div(__val, PIT_TICK_RATE); \
+	__val; \
+})
+#define PCSP_PERIOD_NS() PCSP_CALC_NS(CUR_DIV())
 
 #define PCSP_MAX_PERIOD_SIZE	(64*1024)
 #define PCSP_MAX_PERIODS	512
@@ -65,6 +63,8 @@ struct snd_pcsp {
 	size_t playback_ptr;
 	size_t period_ptr;
 	atomic_t timer_active;
+	int thalf;
+	u64 ns_rem;
 	unsigned char val61;
 	int enable;
 	int max_treble;
