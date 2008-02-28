@@ -11,6 +11,11 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+if [ ! -d acore ]; then
+    echo "Run this script on alsa-driver directory"
+    exit 1
+fi
+
 kern="$1"
 alsa=$(pwd)
 rm -f $alsa/linux
