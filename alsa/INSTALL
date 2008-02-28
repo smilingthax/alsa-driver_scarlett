@@ -156,6 +156,26 @@ Note: Some automake packages have missing aclocal program. Use newer version
       in the case.
 
 
+Compilation from Linux kernel tree
+==================================
+
+If you have the linux kernel tree containing the corresponding ALSA
+kernel codes (the version must match), you can build with that instead
+of a separate alsa-kernel tree.  In this case, run
+utils/setup-alsa-kernel script on alsa-driver directory:
+
+	utils/setup-alsa-kernel YOUR-LINUX-KERNEL-TREE-PATH
+
+Then this script will create alsa-kernel sub-directory and make
+necessary symlinks automatically.  If you would like to copy the files
+instead of symlinks (e.g. make an alsa-driver tarball), pass -c option
+to setup-alsa-kernel
+
+	utils/setup-alsa-kernel -c YOUR-LINUX-KERNEL-TREE-PATH
+
+After that, run hgcompile script.
+
+
 Cross-compiling
 ===============
 
