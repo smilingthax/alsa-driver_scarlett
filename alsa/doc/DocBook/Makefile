@@ -25,11 +25,11 @@ htmldocs: $(HTML) $(DOCPROC)
 ###
 # non-standard rules below to simplify...
 
-KERNELDOC=$(TOPDIR)/scripts/kernel-doc
-DOCPROC=$(TOPDIR)/scripts/docproc
+KERNELDOC=$(TOPDIR)/utils/kernel-doc
+DOCPROC=$(TOPDIR)/utils/docproc
 
 $(DOCPROC):
-	$(MAKE) -C $(TOPDIR)/scripts docproc
+	$(MAKE) -C $(TOPDIR)/utils docproc
 
 %.tmpl:
 	ln -s $(TOPDIR)/alsa-kernel/Documentation/DocBook/$@
@@ -57,7 +57,7 @@ mrproper: clean
 	rm -f $(PS) $(PDF)
 	rm -f -r $(HTML)
 	rm -f .depend
-	rm -f $(TOPDIR)/scripts/mkdep-docbook
+#	rm -f $(TOPDIR)/scripts/mkdep-docbook
 	rm -rf DBTOHTML_OUTPUT*
 
 

@@ -115,7 +115,6 @@ all: compile
 alsa-kernel/sound_core.c:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 	ln -sf alsa-kernel sound
-	ln -sf alsa-kernel/scripts scripts
 
 include/sound/version.h: include/version.h
 	if [ ! -d include/sound -a ! -L include/sound ]; then \
@@ -276,7 +275,7 @@ mrproper: clean1
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
 	  include/config1.h.in toplevel.config toplevel.config.in \
-	  alsa-kernel sound scripts include/sound
+	  alsa-kernel sound include/sound
 	rm -rf include/linux
 hgclean: cvsclean
 

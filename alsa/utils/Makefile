@@ -28,8 +28,11 @@ mod-deps: mod-deps.o
 kredirect: kredirect.o
 	$(CC) $(INCLUDE) kredirect.o -o $@
 
+docproc: docproc.o
+	$(CC) $(INCLUDE) $< -o $@ 
+
 clean:
-	rm -f core .depend *.o kredirect mod-deps
+	rm -f core .depend *.o kredirect mod-deps docproc
 
 mrproper:
 	rm -f *.orig *.rej *~ .#*
