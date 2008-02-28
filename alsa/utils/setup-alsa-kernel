@@ -13,22 +13,16 @@ fi
 
 kern="$1"
 alsa=$(pwd)
-case $kern in
-/*)
-    ;;
-*)
-    cd $kern
-    kern=$(pwd)
-    cd $alsa
-    ;;
-esac
+rm -f $alsa/linux
+ln -s $kern linux
+
 rm -rf alsa-kernel
 mkdir alsa-kernel
 cd $kern/sound
 for i in *; do
-   ln -s $kern/sound/$i $alsa/alsa-kernel
+   ln -s ../linux/sound/$i $alsa/alsa-kernel/$i
 done
-ln -s $kern/include/sound $alsa/alsa-kernel/include
-ln -s $kern/Documentation/sound/alsa $alsa/alsa-kernel/Documentation
-ln -s $kern/scripts $alsa/alsa-kernel/scripts
+ln -s ../linux/include/sound $alsa/alsa-kernel/include
+ln -s ../linux/Documentation/sound/alsa $alsa/alsa-kernel/Documentation
+ln -s ../linux/scripts $alsa/alsa-kernel/scripts
 exit 0
