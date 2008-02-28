@@ -48,12 +48,14 @@ for i in *; do
 	ln -s ../linux/sound/$i $alsa/alsa-kernel/$i
     fi
 done
+
+cd $alsa
 if [ -n "$copy_tree" ]; then
-    cd $alsa
     cp -al $kern/include/sound alsa-kernel/include
     cp -al $kern/Documentation/sound/alsa alsa-kernel/Documentation
 else
-    ln -s ../linux/include/sound $alsa/alsa-kernel/include
-    ln -s ../linux/Documentation/sound/alsa $alsa/alsa-kernel/Documentation
+    ln -s ../linux/include/sound alsa-kernel/include
+    ln -s ../linux/Documentation/sound/alsa alsa-kernel/Documentation
 fi
+ln -sf alsa-kernel sound
 exit 0
