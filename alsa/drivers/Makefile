@@ -12,8 +12,6 @@ clean-files := mts64.c portman2x4.c
 snd-serialmidi-objs := serialmidi.o
 snd-aloop-objs := aloop.o
 
-obj-$(CONFIG_SND) += pcsp/
-
 obj-$(CONFIG_SND_SERIALMIDI) += snd-serialmidi.o
 obj-$(CONFIG_SND_LOOPBACK) += snd-aloop.o
 
