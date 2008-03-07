@@ -39,9 +39,7 @@ MODULE_SUPPORTED_DEVICE("{{ALSA,Loopback soundcard}}");
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 0};
-static int pcm_devs[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 1};
 static int pcm_substreams[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 8};
-/* static int midi_devs[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 2}; */
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for loopback soundcard.");
@@ -49,12 +47,8 @@ module_param_array(id, charp, NULL, 0444);
 MODULE_PARM_DESC(id, "ID string for loopback soundcard.");
 module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable this loopback soundcard.");
-module_param_array(pcm_devs, int, NULL, 0444);
-MODULE_PARM_DESC(pcm_devs, "PCM devices # (0-4) for loopback driver.");
 module_param_array(pcm_substreams, int, NULL, 0444);
 MODULE_PARM_DESC(pcm_substreams, "PCM substreams # (1-8) for loopback driver.");
-/* module_param_array(midi_devs, int, NULL, 0444);
- * MODULE_PARM_DESC(midi_devs, "MIDI devices # (0-2) for loopback driver."); */
 
 typedef struct snd_card_loopback_cable {
 	struct snd_pcm_substream *playback;
@@ -220,7 +214,8 @@ static struct snd_pcm_hardware snd_card_loopback_info =
 {
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	.formats =		(SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE),
+	.formats =		(SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE |
+				 SNDRV_PCM_FMTBIT_S32_LE | SNDRV_PCM_FMTBIT_FLOAT_LE),
 	.rates =		(SNDRV_PCM_RATE_CONTINUOUS | SNDRV_PCM_RATE_8000_192000),
 	.rate_min =		8000,
 	.rate_max =		192000,
@@ -395,17 +390,11 @@ static int __init snd_card_loopback_pcm(snd_card_loopback_t *loopback, int devic
 	struct snd_pcm *pcm;
 	int err;
 
-	if (0 == device) {
-		if ((err = snd_pcm_new(loopback->card, "Loopback PCM", device, substreams, substreams, &pcm)) < 0)
-			return err;
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_card_loopback_playback_ops);
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_card_loopback_capture_ops);
-	} else {
-		if ((err = snd_pcm_new(loopback->card, "Loopback PCM", device, substreams, substreams, &pcm)) < 0)
-			return err;
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_card_loopback_playback_ops);
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_card_loopback_capture_ops);
-	}
+	if ((err = snd_pcm_new(loopback->card, "Loopback PCM", device, substreams, substreams, &pcm)) < 0)
+		return err;
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_card_loopback_playback_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_card_loopback_capture_ops);
+
 	pcm->private_data = loopback;
 	pcm->info_flags = 0;
 	strcpy(pcm->name, "Loopback PCM");
@@ -435,6 +424,11 @@ static int __init snd_card_loopback_probe(int dev)
 		return -ENOMEM;
 	loopback = (struct snd_card_loopback *)card->private_data;
 
+	if (pcm_substreams[dev] < 1)
+		pcm_substreams[dev] = 1;
+	if (pcm_substreams[dev] > MAX_PCM_SUBSTREAMS)
+		pcm_substreams[dev] = MAX_PCM_SUBSTREAMS;
+
 	for (subdev = 0; subdev < pcm_substreams[dev]; subdev++) {
 		for (half = 0; half < 2; half++) {
 			loopback->cables[subdev][half].playback = NULL;
@@ -450,10 +444,6 @@ static int __init snd_card_loopback_probe(int dev)
 	}
 	
 	loopback->card = card;
-	if (pcm_substreams[dev] < 1)
-		pcm_substreams[dev] = 1;
-	if (pcm_substreams[dev] > MAX_PCM_SUBSTREAMS)
-		pcm_substreams[dev] = MAX_PCM_SUBSTREAMS;
 	if ((err = snd_card_loopback_pcm(loopback, 0, pcm_substreams[dev])) < 0)
 		goto __nodev;
 	if ((err = snd_card_loopback_pcm(loopback, 1, pcm_substreams[dev])) < 0)
