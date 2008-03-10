@@ -923,15 +923,15 @@ static short Hpi6000_AdapterBootLoadDsp(
 		   0 -
 		   1 -
 		   2 -
-		   3 CLK2EN=1	CLKOUT2 enabled
-		   4 CLK1EN=0	CLKOUT1 disabled
-		   5 EKEN=1 <----------------!! C6713 specific, enables ECLKOUT
+		   3 CLK2EN = 1   CLKOUT2 enabled
+		   4 CLK1EN = 0   CLKOUT1 disabled
+		   5 EKEN = 1 <--!! C6713 specific, enables ECLKOUT
 		   6 -
-		   7 NOHOLD=1	external HOLD disabled
-		   8 HOLDA=0	HOLDA output is low
-		   9 HOLD=0		HOLD input is low
-		   10 ARDY=1	ARDY input is high
-		   11 BUSREQ=0	 BUSREQ output is low
+		   7 NOHOLD = 1   external HOLD disabled
+		   8 HOLDA = 0	  HOLDA output is low
+		   9 HOLD = 0		  HOLD input is low
+		   10 ARDY = 1	  ARDY input is high
+		   11 BUSREQ = 0   BUSREQ output is low
 		   12,13 Reserved = 1
 		 */
 		HpiWriteWord(pdo, 0x01800000, 0x34A8);
@@ -952,12 +952,12 @@ static short Hpi6000_AdapterBootLoadDsp(
 		/* EMIF SDRAM Extension
 		   31-21	0
 		   20		WR2RD = 0
-		   19-18	WR2DEAC=1
-		   17		WR2WR=0
-		   16-15	R2WDQM=2
-		   14-12	RD2WR=4
-		   11-10	RD2DEAC=1
-		   9		RD2RD= 1
+		   19-18	WR2DEAC = 1
+		   17		WR2WR = 0
+		   16-15	R2WDQM = 2
+		   14-12	RD2WR = 4
+		   11-10	RD2DEAC = 1
+		   9		RD2RD = 1
 		   8-7		THZP = 10b
 		   6-5		TWR  = 2-1 = 01b (tWR = 10ns)
 		   4		TRRD = 0b = 2 ECLK (tRRD = 14ns)

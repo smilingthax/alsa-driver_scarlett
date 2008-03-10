@@ -29,7 +29,7 @@ static u16 aMsgSize[HPI_OBJ_MAXINDEX + 1] = HPI_MESSAGE_SIZE_BY_OBJECT;
 /* The actual response size for each object type */
 static u16 aResSize[HPI_OBJ_MAXINDEX + 1] = HPI_RESPONSE_SIZE_BY_OBJECT;
 /* Flag to enable alternate message type for SSX2 bypass. */
-static u16 gwSSX2Bypass = 0;
+static u16 gwSSX2Bypass;
 
 /** \internal
   * Used by ASIO driver to disable SSX2 for a single process
