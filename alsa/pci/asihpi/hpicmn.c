@@ -148,7 +148,7 @@ static void SubSysGetAdapters(
 
 	/* input:  NONE */
 	/* output: wNumAdapters */
-	/*		   awAdapter[] */
+	/*                 awAdapter[] */
 	/* */
 
 	short i;
@@ -178,7 +178,7 @@ static void SubSysGetAdapters(
 * It returns nonzero if a cache hit occurred, zero otherwise.
 */
 short HpiCheckControlCache(
-	volatile struct hpi_control_cache_single *pC,
+	struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
@@ -301,7 +301,7 @@ Volume and Level return the limited values in the response, so use these
 Multiplexer does so use sent values
 */
 void HpiSyncControlCache(
-	volatile struct hpi_control_cache_single *pC,
+	struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
