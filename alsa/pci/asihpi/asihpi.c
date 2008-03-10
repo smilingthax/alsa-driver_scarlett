@@ -24,6 +24,9 @@
 /* >0: print Hw params, timer vars. >1: print stream write/copy sizes  */
 #define REALLY_VERBOSE_LOGGING 0
 
+/* Experimental HPI hwdep interface */
+#define EXPERIMENTAL_HWDEP 0
+
 #if REALLY_VERBOSE_LOGGING
 #define VPRINTK1 printk
 #else
@@ -66,19 +69,28 @@
 #include <sound/info.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <sound/hwdep.h>
 
 #include "hpi.h"
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
+static int enable_hpi_hwdep;
 
-module_param_array(index, int, NULL, 0444);
+module_param_array(index, int, NULL, S_IRUGO);
 MODULE_PARM_DESC(index, "ALSA Index value for AudioScience soundcard.");
-module_param_array(id, charp, NULL, 0444);
+
+module_param_array(id, charp, NULL, S_IRUGO);
 MODULE_PARM_DESC(id, "ALSA ID string for AudioScience soundcard.");
-module_param_array(enable, bool, NULL, 0444);
+
+module_param_array(enable, bool, NULL, S_IRUGO);
 MODULE_PARM_DESC(enable, "ALSA Enable AudioScience soundcard.");
+
+module_param(enable_hpi_hwdep, bool, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(enable_hpi_hwdep,
+		"ALSA Enable HPI hwdep for AudioScience soundcard "
+		"(experimental)");
 
 /* used by hpimod.c, stop sparse from complaining */
 int snd_asihpi_bind(struct hpi_adapter *hpi_card);
@@ -114,6 +126,7 @@ struct clk_source {
 
 struct clk_cache {
 	int count;
+	int has_local;
 	struct clk_source s[MAX_CLOCKSOURCES];
 };
 
@@ -1602,7 +1615,6 @@ static int __devinit snd_asihpi_aesebu_tx_new(struct snd_card_asihpi *asihpi,
 	snd_control->info = snd_asihpi_aesebu_format_info;
 	snd_control->get = snd_asihpi_aesebu_tx_format_get;
 	snd_control->put = snd_asihpi_aesebu_tx_format_put;
-	snd_control->index = asihpi_control->wDstNodeIndex + ixb;
 
 	asihpi_ctl_name(snd_control, asihpi_control, "Format");
 
@@ -1909,9 +1921,9 @@ static int log2lin[] = {
 	  6790940,
 	  2147484, /* -60dB */
 	   679094,
-	   214748,
+	   214748, /* -80 */
 	    67909,
-	    21475,
+	    21475, /* -100 */
 	     6791,
 	     2147,
 	      679,
@@ -2153,8 +2165,9 @@ static void __devinit snd_asihpi_cmode_new(struct hpi_control *asihpi_control,
  ------------------------------------------------------------*/
 
 static char *sampleclock_sources[MAX_CLOCKSOURCES] =
-    { "N/A", "Adapter", "AES/EBU Sync", "Word External", "Word Header",
-	  "SMPTE", "AES/EBU In1", "Auto", "Cobranet",
+    { "N/A", "Local PLL", "AES/EBU Sync", "Word External", "Word Header",
+	  "SMPTE", "AES/EBU In1", "Auto", "Network", "Invalid",
+	  "Prev Module",
 	  "AES/EBU In2", "AES/EBU In3", "AES/EBU In4", "AES/EBU In5",
 	  "AES/EBU In6", "AES/EBU In7", "AES/EBU In8"};
 
@@ -2239,7 +2252,9 @@ static void __devinit snd_asihpi_clksrc_new(struct snd_card_asihpi *asihpi,
 	snd_control->info = snd_asihpi_clksrc_info;
 	snd_control->get = snd_asihpi_clksrc_get;
 	snd_control->put = snd_asihpi_clksrc_put;
-	asihpi_ctl_name(snd_control, asihpi_control, "ClockSource");
+	asihpi_ctl_name(snd_control, asihpi_control, "Source");
+
+	clkcache->has_local = 0;
 
 	for (i = 0; i <= HPI_SAMPLECLOCK_SOURCE_LAST; i++) {
 		if  (HPI_ControlQuery(phSubSys, hSC,
@@ -2250,6 +2265,8 @@ static void __devinit snd_asihpi_clksrc_new(struct snd_card_asihpi *asihpi,
 		clkcache->s[i].name = sampleclock_sources[wSource];
 		if (wSource == HPI_SAMPLECLOCK_SOURCE_AESEBU_INPUT)
 			hasAesIn = 1;
+		if (wSource == HPI_SAMPLECLOCK_SOURCE_LOCAL)
+			clkcache->has_local = 1;
 	}
 	if (hasAesIn)
 		/* already will have picked up index 0 above */
@@ -2271,6 +2288,55 @@ static void __devinit snd_asihpi_clksrc_new(struct snd_card_asihpi *asihpi,
 /*------------------------------------------------------------
    Clkrate controls
  ------------------------------------------------------------*/
+static int snd_asihpi_clklocal_info(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 8000;
+	uinfo->value.integer.max = 192000;
+	uinfo->value.integer.step = 100;
+
+	return 0;
+}
+
+static int snd_asihpi_clklocal_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	u32 hControl = kcontrol->private_value;
+	u32 dwRate;
+
+	HPI_SampleClock_GetSampleRate(phSubSys, hControl, &dwRate);
+	ucontrol->value.integer.value[0] = dwRate;
+	return 0;
+}
+
+static int snd_asihpi_clklocal_put(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	int change;
+	u32 hControl = kcontrol->private_value;
+
+	/*  change = asihpi->mixer_clkrate[addr][0] != left ||
+	   asihpi->mixer_clkrate[addr][1] != right;
+	 */
+	change = 1;
+	HPI_SampleClock_SetLocalRate(phSubSys, hControl,
+				      ucontrol->value.integer.value[0]);
+	return change;
+}
+
+static void __devinit snd_asihpi_clklocal_new(
+					struct hpi_control *asihpi_control,
+					struct snd_kcontrol_new *snd_control)
+{
+	snd_control->info = snd_asihpi_clklocal_info;
+	snd_control->get = snd_asihpi_clklocal_get;
+	snd_control->put = snd_asihpi_clklocal_put;
+
+	asihpi_ctl_name(snd_control, asihpi_control, "LocalRate");
+}
+
 static int snd_asihpi_clkrate_info(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_info *uinfo)
 {
@@ -2294,31 +2360,16 @@ static int snd_asihpi_clkrate_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int snd_asihpi_clkrate_put(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol)
-{
-	int change;
-	u32 hControl = kcontrol->private_value;
-
-	/*  change = asihpi->mixer_clkrate[addr][0] != left ||
-	   asihpi->mixer_clkrate[addr][1] != right;
-	 */
-	change = 1;
-	HPI_SampleClock_SetLocalRate(phSubSys, hControl,
-				      ucontrol->value.integer.value[0]);
-	return change;
-}
-
 static void __devinit snd_asihpi_clkrate_new(struct hpi_control *asihpi_control,
 					  struct snd_kcontrol_new *snd_control)
 {
 	snd_control->info = snd_asihpi_clkrate_info;
 	snd_control->get = snd_asihpi_clkrate_get;
-	snd_control->put = snd_asihpi_clkrate_put;
+	snd_control->access =
+	    SNDRV_CTL_ELEM_ACCESS_VOLATILE | SNDRV_CTL_ELEM_ACCESS_READ;
 
 	asihpi_ctl_name(snd_control, asihpi_control, "Rate");
 }
-
 /*------------------------------------------------------------
    Mixer
  ------------------------------------------------------------*/
@@ -2404,6 +2455,14 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 				return err;
 			snd_asihpi_clkrate_new(&asihpi_control,
 					       &snd_control);
+			err = snd_ctl_add(card,
+					snd_ctl_new1(&snd_control, asihpi));
+			if (err < 0)
+				return err;
+			if (asihpi->cc.has_local)
+				snd_asihpi_clklocal_new(&asihpi_control,
+					       &snd_control);
+
 			break;
 		case HPI_CONTROL_CONNECTION:	/* ignore these */
 			continue;
@@ -2510,6 +2569,55 @@ static void __devinit snd_asihpi_proc_init(struct snd_card_asihpi *asihpi)
 }
 
 /*------------------------------------------------------------
+   HWDEP
+ ------------------------------------------------------------*/
+
+static int snd_asihpi_hpi_open(struct snd_hwdep *hw, struct file *file)
+{
+	return 0;
+}
+
+static int snd_asihpi_hpi_release(struct snd_hwdep *hw, struct file *file)
+{
+	return 0;
+}
+
+long asihpi_hpi_ioctl(struct file *file,
+	  unsigned int cmd, unsigned long arg);
+
+static int snd_asihpi_hpi_ioctl(struct snd_hwdep *hw, struct file *file,
+				unsigned int cmd, unsigned long arg)
+{
+	return asihpi_hpi_ioctl(file, cmd, arg);
+}
+
+
+/* results in /dev/snd/hwC#D0 file for each card with index #
+   also /proc/asound/hwdep will contain '#-00: asihpi (HPI) for each card'
+*/
+int __devinit snd_asihpi_hpi_new(struct snd_card_asihpi *asihpi, int device,
+				struct snd_hwdep **rhwdep)
+{
+	struct snd_hwdep *hw;
+	int err;
+
+	if (rhwdep)
+		*rhwdep = NULL;
+	err = snd_hwdep_new(asihpi->card, "HPI", device, &hw);
+	if (err < 0)
+		return err;
+	strcpy(hw->name, "asihpi (HPI)");
+	hw->iface = SNDRV_HWDEP_IFACE_LAST;
+	hw->ops.open = snd_asihpi_hpi_open;
+	hw->ops.ioctl = snd_asihpi_hpi_ioctl;
+	hw->ops.release = snd_asihpi_hpi_release;
+	hw->private_data = asihpi;
+	if (rhwdep)
+		*rhwdep = hw;
+	return 0;
+}
+
+/*------------------------------------------------------------
    CARD
  ------------------------------------------------------------*/
 int __devinit snd_asihpi_bind(struct hpi_adapter *hpi_card)
@@ -2606,6 +2714,9 @@ int __devinit snd_asihpi_bind(struct hpi_adapter *hpi_card)
 				hControl, adapter_fs);
 
 	snd_asihpi_proc_init(asihpi);
+
+	if (enable_hpi_hwdep)
+		snd_asihpi_hpi_new(asihpi, 0, NULL);
 
 	if (asihpi->support_mmap)
 		strcpy(card->driver, "ASIHPI-MMAP");
