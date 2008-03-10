@@ -3825,7 +3825,6 @@ void HPI_StreamResponseToLegacy(
 
 /*////////////////////////////////////////////////////////////////////////// */
 /* declarations for individual HPI entry points */
-HPI_HandlerFunc HPI_4000;
 HPI_HandlerFunc HPI_6000;
 HPI_HandlerFunc HPI_6205;
 HPI_HandlerFunc HPI_COMMON;
