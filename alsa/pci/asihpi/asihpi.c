@@ -2304,7 +2304,7 @@ static int snd_asihpi_clkrate_put(struct snd_kcontrol *kcontrol,
 	   asihpi->mixer_clkrate[addr][1] != right;
 	 */
 	change = 1;
-	HPI_SampleClock_SetSampleRate(phSubSys, hControl,
+	HPI_SampleClock_SetLocalRate(phSubSys, hControl,
 				      ucontrol->value.integer.value[0]);
 	return change;
 }
@@ -2602,7 +2602,7 @@ int __devinit snd_asihpi_bind(struct hpi_adapter *hpi_card)
 				  HPI_CONTROL_SAMPLECLOCK, &hControl);
 
 	if (!err)
-		err = HPI_SampleClock_SetSampleRate(phSubSys,
+		err = HPI_SampleClock_SetLocalRate(phSubSys,
 				hControl, adapter_fs);
 
 	snd_asihpi_proc_init(asihpi);

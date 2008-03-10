@@ -2635,14 +2635,30 @@ u16 HPI_SampleClock_GetSourceIndex(
 	return (wError);
 }
 
-u16 HPI_SampleClock_SetSampleRate(
+u16 HPI_SampleClock_SetLocalRate(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
 	u32 dwSampleRate
 )
 {
 	return HPI_ControlParamSet(phSubSys, hControl,
-		HPI_SAMPLECLOCK_SAMPLERATE, dwSampleRate, 0);
+		HPI_SAMPLECLOCK_LOCAL_SAMPLERATE, dwSampleRate, 0);
+}
+
+u16 HPI_SampleClock_GetLocalRate(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwSampleRate
+)
+{
+	u16 wError = 0;
+	u32 dwSampleRate = 0;
+	wError = HPI_ControlParam1Get(phSubSys, hControl,
+		HPI_SAMPLECLOCK_LOCAL_SAMPLERATE, &dwSampleRate);
+	if (!wError)
+		if (pdwSampleRate)
+			*pdwSampleRate = dwSampleRate;
+	return (wError);
 }
 
 u16 HPI_SampleClock_GetSampleRate(
@@ -2938,6 +2954,26 @@ u16 HPI_Tuner_GetRawRFLevel(
 	if (pwLevel)
 		*pwLevel = (short)hr.u.c.dwParam1;
 	return (hr.wError);
+}
+
+u16 HPI_Tuner_SetDeemphasis(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 dwDeemphasis
+)
+{
+	return HPI_ControlParamSet(phSubSys, hControl, HPI_TUNER_DEEMPHASIS,
+		dwDeemphasis, 0);
+}
+
+u16 HPI_Tuner_GetDeemphasis(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwDeemphasis
+)
+{
+	return HPI_ControlParam1Get(phSubSys, hControl, HPI_TUNER_DEEMPHASIS,
+		pdwDeemphasis);
 }
 
 u16 HPI_Tuner_GetStatus(
