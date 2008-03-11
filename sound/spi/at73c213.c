@@ -356,6 +356,7 @@ static irqreturn_t snd_at73c213_interrupt(int irq, void *dev_id)
 	u32 status;
 	int offset;
 	int block_size;
+	int size;
 	int next_period;
 	int retval = IRQ_NONE;
 
@@ -373,11 +374,14 @@ static irqreturn_t snd_at73c213_interrupt(int irq, void *dev_id)
 			next_period = 0;
 
 		offset = block_size * next_period;
+		size = runtime->period_size * runtime->channels;
+		if (next_period == runtime->periods - 1)
+			size += (runtime->buffer_size % runtime->period_size)
+				* runtime->channels;
 
 		ssc_writel(chip->ssc->regs, PDC_TNPR,
 				(long)runtime->dma_addr + offset);
-		ssc_writel(chip->ssc->regs, PDC_TNCR,
-				runtime->period_size * runtime->channels);
+		ssc_writel(chip->ssc->regs, PDC_TNCR, size);
 		retval = IRQ_HANDLED;
 	}
 
