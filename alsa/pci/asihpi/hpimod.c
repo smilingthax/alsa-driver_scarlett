@@ -75,7 +75,7 @@ module_param(bufsize, int,
 	S_IRUGO
 );
 /* Allow the debug level to be changed after module load.
- E.g.	echo 2 > /sys/module/asihpi/parameters/hpiDebugLevel
+ E.g.   echo 2 > /sys/module/asihpi/parameters/hpiDebugLevel
 */
 module_param(hpiDebugLevel, int,
 	S_IRUGO | S_IWUSR
@@ -194,7 +194,7 @@ static int asihpi_hpi_ioctl(
 	get_user(phm, &phpi_ioctl_data->phm);
 	get_user(phr, &phpi_ioctl_data->phr);
 
-	/* Now read the message size and data from user space.	*/
+	/* Now read the message size and data from user space.  */
 	/* get_user(hm.wSize, (u16 __user *)phm); */
 	uncopied_bytes = copy_from_user(&hm, phm, sizeof(hm));
 	if (uncopied_bytes)
@@ -588,7 +588,7 @@ static int __init hpimod_init(
 		return -EIO;
 	}
 
-	if (!major)		/* Use dynamically allocated major number. */
+	if (!major)	/* Use dynamically allocated major number. */
 		major = chrdev_registered;
 
 	/* would like to create device in "sound" class

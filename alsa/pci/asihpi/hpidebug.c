@@ -31,7 +31,7 @@ void HPI_DebugInit(
 	void
 )
 {
-	printk(DBG_TEXT("Debug Start\n"));
+	printk(KERN_INFO "Debug Start\n");
 }
 
 int HPI_DebugLevelSet(
@@ -57,12 +57,12 @@ int HPI_DebugLevelGet(
 #include <stdarg.h>
 
 void hpi_debug_printf(
-	DBG_CHAR * fmt,
+	char *fmt,
 	...
 )
 {
 	va_list arglist;
-	DBG_CHAR buffer[128];
+	char buffer[128];
 
 	va_start(arglist, fmt);
 
@@ -84,7 +84,7 @@ static struct treenode nodename = { \
 	ARRAY_SIZE(tmp_strarray_##nodename) \
 };
 
-#define get_treenode_elem(node_ptr, idx, type)	\
+#define get_treenode_elem(node_ptr, idx, type)  \
 	(&(*((type *)(node_ptr)->array)[idx]))
 
 make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
@@ -94,7 +94,7 @@ make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
 	make_treenode_from_array(hpi_mixer_strings, HPI_MIXER_STRINGS)
 	make_treenode_from_array(hpi_node_strings,
 	{
-	DBG_TEXT("NODE is invalid object")})
+	"NODE is invalid object"})
 
 	make_treenode_from_array(hpi_control_strings, HPI_CONTROL_STRINGS)
 	make_treenode_from_array(hpi_nvmemory_strings, HPI_OBJ_STRINGS)
@@ -124,7 +124,7 @@ make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
 
 	compile_time_assert(HPI_OBJ_MAXINDEX == 14, obj_list_doesnt_match);
 
-static DBG_CHAR *hpi_function_string(
+static char *hpi_function_string(
 	unsigned int function
 )
 {
@@ -136,20 +136,20 @@ static DBG_CHAR *hpi_function_string(
 
 	if (object == 0 || object == HPI_OBJ_NODE
 		|| object > hpi_function_strings.numElements)
-		return DBG_TEXT("Invalid object");
+		return "Invalid object";
 
 	tmp = get_treenode_elem(&hpi_function_strings, object - 1,
 		struct treenode *);
 
 	if (function == 0 || function > tmp->numElements)
-		return DBG_TEXT("Invalid function");
+		return "Invalid function";
 
-	return get_treenode_elem(tmp, function - 1, DBG_CHAR *);
+	return get_treenode_elem(tmp, function - 1, char *);
 }
 
 void hpi_debug_message(
 	struct hpi_message *phm,
-	DBG_CHAR * szFileline
+	char *szFileline
 )
 {
 	if (phm) {
@@ -185,20 +185,17 @@ void hpi_debug_message(
 			default:
 				break;
 			}
-			printk(DBG_TEXT
-				("%s Adapter %d %s param x%08x \n"),
+			printk("%s Adapter %d %s param x%08x \n",
 				szFileline, phm->wAdapterIndex,
 				hpi_function_string(phm->
 					wFunction), (wAttrib << 16) + wIndex);
 		} else {
-			printk(DBG_TEXT
-				("Adap=%d, Invalid Obj=%d, Func=%d\n"),
+			printk("Adap=%d, Invalid Obj=%d, Func=%d\n",
 				phm->wAdapterIndex, phm->wObject,
 				phm->wFunction);
 		}
 	} else
-		printk(DBG_TEXT
-			("NULL message pointer to hpi_debug_message!\n"));
+		printk("NULL message pointer to hpi_debug_message!\n");
 }
 
 void hpi_debug_data(
@@ -217,12 +214,11 @@ void hpi_debug_data(
 		lines = 8;
 
 	for (i = 0, j = 0; j < lines; j++) {
-		printk(DBG_TEXT("%p:"), (pdata + i));
+		printk(KERN_DEBUG "%p:", (pdata + i));
 
 		for (k = 0; k < cols && i < len; i++, k++)
-			printk(DBG_TEXT("%s%04x"),
-				k == 0 ? "" : " ", pdata[i]);
+			printk("%s%04x", k == 0 ? "" : " ", pdata[i]);
 
-		printk(DBG_TEXT("\n"));
+		printk("\n");
 	}
 }

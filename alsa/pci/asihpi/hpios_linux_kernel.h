@@ -72,7 +72,7 @@ struct consistent_dma_area {
 
 static inline u16 HpiOs_LockedMem_GetPhysAddr(
 	struct consistent_dma_area *LockedMemHandle,
-	uint32_t * pPhysicalAddr
+	u32 *pPhysicalAddr
 )
 {
 	*pPhysicalAddr = LockedMemHandle->dma_handle;

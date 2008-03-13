@@ -46,7 +46,7 @@ i.e 3.05.02 is a development version
 #define HPI_VER_RELEASE(v) (v & 0xFF)
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 9, 14)
+#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 9, 15)
 
 #ifdef _DOX_ONLY_
 /*****************************************************************************/
@@ -187,6 +187,8 @@ extern "C" {
 #define HPI_ADAPTER_ASI1711             0x1711
 /** ASI1721 - Quad AM/FM+RDS tuner module */
 #define HPI_ADAPTER_ASI1721             0x1721
+/** ASI1722 - Quad FM+RDS tuner module (based on ASI1721 h/w) */
+#define HPI_ADAPTER_ASI1722             0x1722
 /** ASI1731 - Quad TV tuner module */
 #define HPI_ADAPTER_ASI1731             0x1731
 /*ASI2214 - USB 2.0 1xanalog in, 4 x analog out, 1 x AES in/out */
@@ -406,8 +408,10 @@ OBSOLETE - OEM 4 play PCM, MPEG*/
 #define HPI_ADAPTER_ASI8801             0x8801
 
 #define HPI_ADAPTER_FAMILY_ASI8900      0x8900
-/** 2 module tuner card */
+/** OEM FM+RDS, 2 module tuner card */
 #define HPI_ADAPTER_ASI8920             0x8920
+/** 2 module tuner card */
+#define HPI_ADAPTER_ASI8921             0x8921
 
 /** Used in DLL to indicate device not present */
 #define HPI_ADAPTER_ILLEGAL             0xFFFF

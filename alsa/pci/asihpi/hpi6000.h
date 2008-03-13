@@ -57,13 +57,13 @@ struct hpi_hif_6000 {
 		(adapterinfo & 0xff)
 
 /* Command/status exchanged between host and DSP */
-#define HPI_HIF_IDLE		0
-#define HPI_HIF_SEND_MSG	1
-#define HPI_HIF_GET_RESP	2
-#define HPI_HIF_DATA_MASK	0x10
-#define HPI_HIF_SEND_DATA	0x13
-#define HPI_HIF_GET_DATA	0x14
-#define HPI_HIF_SEND_DONE	5
-#define HPI_HIF_RESET		9
+#define HPI_HIF_IDLE            0
+#define HPI_HIF_SEND_MSG        1
+#define HPI_HIF_GET_RESP        2
+#define HPI_HIF_DATA_MASK       0x10
+#define HPI_HIF_SEND_DATA       0x13
+#define HPI_HIF_GET_DATA        0x14
+#define HPI_HIF_SEND_DONE       5
+#define HPI_HIF_RESET           9
 
 #endif				/* _HPI6000_H_ */

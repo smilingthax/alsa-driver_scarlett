@@ -73,7 +73,7 @@ static inline void HW_EntryPoint(
 	if (phm->wAdapterIndex < HPI_MAX_ADAPTERS) {
 		ep = (HPI_HandlerFunc *) hpi_entry_points[phm->wAdapterIndex];
 		if (ep) {
-			HPI_DEBUG_MESSAGE(phm);
+			HPI_DEBUG_MESSAGE(DEBUG, phm);
 			ep(phm, phr);
 			HPI_DEBUG_RESPONSE(phr);
 			return;
@@ -419,7 +419,7 @@ void HPI_MessageEx(
 	void *hOwner
 )
 {
-	HPI_DEBUG_MESSAGE(phm);
+	HPI_DEBUG_MESSAGE(DEBUG, phm);
 
 	if (phm->wType != HPI_TYPE_MESSAGE) {
 		HPI_InitResponse(phr, phm->wObject, phm->wFunction,
@@ -465,8 +465,7 @@ void HPI_MessageEx(
 		void *ep = NULL;
 		char *ep_name;
 
-		hpi_debug_message(phm, HPI_DEBUG_FLAG_DEBUG
-			FILE_LINE DBG_TEXT("DEBUG "));
+		HPI_DEBUG_MESSAGE(ERROR, phm);
 
 		ep = hpi_entry_points[phm->wAdapterIndex];
 
@@ -480,7 +479,7 @@ void HPI_MessageEx(
 			ep_name = "unknown";
 
 		HPI_DEBUG_LOG(ERROR,
-			DBG_TEXT("HPI %s Response - error# %d\n"),
+			"HPI %s Response - error# %d\n",
 			ep_name, phr->wError);
 
 		if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE)
@@ -898,7 +897,7 @@ static u16 HPIMSGX_Init(
 		HPI_LookupEntryPointFunction(phm->u.s.Resource.r.Pci);
 
 	if (entry_point_func) {
-		HPI_DEBUG_MESSAGE(phm);
+		HPI_DEBUG_MESSAGE(DEBUG, phm);
 		entry_point_func(phm, &hr);
 	} else {
 		phr->wError = HPI_ERROR_PROCESSING_MESSAGE;

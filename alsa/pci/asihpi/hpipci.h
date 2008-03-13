@@ -25,7 +25,7 @@ HPI PCI interface function definitions
 #define _HPIPCI_H_
 
 /* PCI config reg defines */
-#define HPIPCI_CDID 0x0		/* Vendor/Device Id */
+#define HPIPCI_CDID 0x0	/* Vendor/Device Id */
 #define HPIPCI_CSTR 0x0004
 #define HPIPCI_CCMR 0x0004
 #define HPIPCI_CCCR 0x0008
@@ -39,9 +39,9 @@ HPI PCI interface function definitions
 #define HPIPCI_CILP 0x00FC
 
 /* bits in command register */
-#define HPIPCI_CCMR_MSE			0x00000002
-#define HPIPCI_CCMR_BM			0x00000004
-#define HPIPCI_CCMR_PERR		0x0000040
+#define HPIPCI_CCMR_MSE                 0x00000002
+#define HPIPCI_CCMR_BM                  0x00000004
+#define HPIPCI_CCMR_PERR                0x0000040
 
 /* NOTE : HpiPci function defintions moved to hpios.h */
 #endif				/* _HPIPCI_H_ */

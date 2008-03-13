@@ -1,4 +1,3 @@
-
 /******************************************************************************
 
     AudioScience HPI driver
@@ -1673,7 +1672,8 @@ static u32 BootLoader_ReadMem32(
 	u32 dwData = 0;
 	__iomem u32 *pData;
 
-	if (nDSPIndex == 0) {	/* DSP 0 is always C6205 */
+	if (nDSPIndex == 0) {
+		/* DSP 0 is always C6205 */
 		if ((dwAddress >= 0x01800000) & (dwAddress < 0x02000000)) {
 			/* BAR1 register access */
 			pData = pao->Pci.apMemBase[1] +
@@ -1694,7 +1694,8 @@ static u32 BootLoader_ReadMem32(
 				dwAddress / sizeof(u32);
 		}
 		dwData = ioread32(pData);
-	} else if (nDSPIndex == 1) {	/* DSP 1 is a C6713 */
+	} else if (nDSPIndex == 1) {
+		/* DSP 1 is a C6713 */
 		u32 dwLsb;
 		BootLoader_WriteMem32(pao, 0, HPIAL_ADDR, dwAddress);
 		BootLoader_WriteMem32(pao, 0, HPIAH_ADDR, dwAddress >> 16);
@@ -1739,7 +1740,8 @@ static u16 BootLoader_WriteMem32(
 				dwAddress / sizeof(u32);
 		}
 		iowrite32(dwData, pData);
-	} else if (nDSPIndex == 1) {	/* DSP 1 is a C6713 */
+	} else if (nDSPIndex == 1) {
+		/* DSP 1 is a C6713 */
 		BootLoader_WriteMem32(pao, 0, HPIAL_ADDR, dwAddress);
 		BootLoader_WriteMem32(pao, 0, HPIAH_ADDR, dwAddress >> 16);
 
@@ -1970,7 +1972,7 @@ static u16 BootLoader_TestMemory(
 	/*for(i=0; i<dwLength; i++) */
 	i = 0;
 	{
-		dwTestAddr = dwStartAddress + (u32)i *4;
+		dwTestAddr = dwStartAddress + i * 4;
 		dwTestData = 0x00000001;
 		for (j = 0; j < 32; j++) {
 			BootLoader_WriteMem32(pao, nDSPIndex, dwTestAddr,
@@ -1993,7 +1995,7 @@ static u16 BootLoader_TestMemory(
 	/* write a zero to the next word in memory before we read */
 	/* the previous write to make sure every memory location is unique */
 	for (i = 0; i < 100; i++) {
-		dwTestAddr = dwStartAddress + (u32)i *4;
+		dwTestAddr = dwStartAddress + i * 4;
 		dwTestData = 0xA5A55A5A;
 		BootLoader_WriteMem32(pao, nDSPIndex, dwTestAddr, dwTestData);
 		BootLoader_WriteMem32(pao, nDSPIndex, dwTestAddr + 4, 0);
@@ -2011,7 +2013,7 @@ static u16 BootLoader_TestMemory(
 
 	/* zero out entire memory block */
 	for (i = 0; i < dwLength; i++) {
-		dwTestAddr = dwStartAddress + (u32)i *4;
+		dwTestAddr = dwStartAddress + i * 4;
 		BootLoader_WriteMem32(pao, nDSPIndex, dwTestAddr, 0x0);
 	}
 	return (0);	/*success! */
