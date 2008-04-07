@@ -19,7 +19,7 @@ cleanup:
 	rm -f *.[oas] *.ko .*.cmd .*.d .*.tmp *.mod.c $(clean-files)
 	@for d in $(patsubst %/,%,$(filter %/, $(obj-y))) \
 	          $(patsubst %/,%,$(filter %/, $(obj-m))) DUMMY; do \
-	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d cleanup; fi; \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d cleanup || exit 1; fi; \
 	done
 
 else # ! KBUILD_MODULES
@@ -35,7 +35,7 @@ include $(MAINSRCDIR)/Rules.make1
 .PHONY: prepare
 prepare: $(clean-files)
 	@for d in $(ALL_SUB_DIRS) DUMMY; do \
-	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare; fi; \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d prepare || exit 1; fi; \
 	done
 
 modules:
@@ -51,7 +51,7 @@ ifneq "$(strip $(ALL_MOBJS))" ""
 	cp $(sort $(ALL_MOBJS:.o=.ko)) $(DESTDIR)$(moddir)/$(MODCURDIR)
 endif
 	@for d in $(ALL_SUB_DIRS) DUMMY; do \
-	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install; fi; \
+	 if [ $$d != DUMMY ]; then $(MAKE) -C $$d modules_install || exit 1; fi; \
 	done
 
 endif # KBUILD_MODULES
@@ -114,7 +114,7 @@ endif
 	@xtmp=`echo $(MODCURDIR) | sed -e 's/^acore/core/'`/$@;\
 	echo "copying file alsa-kernel/$$xtmp";\
 	cp "$(TOPDIR)/alsa-kernel/$$xtmp" $@;\
-	patch -p0 -i $<
+	patch -p0 -i $< || { rm $@; exit 1; }
 
 %.isapnp: %.c
 ifeq (y,$(CONFIG_ISAPNP))
