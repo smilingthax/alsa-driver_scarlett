@@ -1012,31 +1012,27 @@ snd_pmac_awacs_init(struct snd_pmac *chip)
 			return err;
 	}
 
-	if (beige) {
-		if ((err = build_mixers(chip,
+	if (beige)
+		err = build_mixers(chip,
 				ARRAY_SIZE(snd_pmac_screamer_mic_boost_beige),
-				snd_pmac_screamer_mic_boost_beige)) < 0)
-			return err;
-	} else if (imac) {
-		if ((err = build_mixers(chip,
+				snd_pmac_screamer_mic_boost_beige);
+	else if (imac)
+		err = build_mixers(chip,
 				ARRAY_SIZE(snd_pmac_screamer_mic_boost_imac),
-				snd_pmac_screamer_mic_boost_imac)) < 0)
-			return err;
-	} else if (chip->model == PMAC_SCREAMER) {
-		if ((err = build_mixers(chip,
+				snd_pmac_screamer_mic_boost_imac);
+	else if (chip->model == PMAC_SCREAMER)
+		err = build_mixers(chip,
 				ARRAY_SIZE(snd_pmac_screamer_mic_boost),
-				snd_pmac_screamer_mic_boost)) < 0)
-			return err;
-	} else if (pm7500) {
-		if ((err = build_mixers(chip,
+				snd_pmac_screamer_mic_boost);
+	else if (pm7500)
+		err = build_mixers(chip,
 				ARRAY_SIZE(snd_pmac_awacs_mic_boost_pmac7500),
-				snd_pmac_awacs_mic_boost_pmac7500)) < 0)
-			return err;
-	} else {
-		if ((err = build_mixers(chip, ARRAY_SIZE(snd_pmac_awacs_mic_boost),
-					snd_pmac_awacs_mic_boost)) < 0)
-			return err;
-	}
+				snd_pmac_awacs_mic_boost_pmac7500);
+	else
+		err = build_mixers(chip, ARRAY_SIZE(snd_pmac_awacs_mic_boost),
+				snd_pmac_awacs_mic_boost);
+	if (err < 0)
+		return err;
 
 	/*
 	 * set lowlevel callbacks
