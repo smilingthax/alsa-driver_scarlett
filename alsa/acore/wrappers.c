@@ -250,6 +250,7 @@ EXPORT_SYMBOL(snd_compat_msleep_interruptible);
 typedef int (*snd_irq_handler_t)(int, void *);
 struct irq_list {
 	snd_irq_handler_t handler;
+	int irq;
 	void *data;
 	struct list_head list;
 };
@@ -289,6 +290,7 @@ int snd_request_irq(unsigned int irq, snd_irq_handler_t handler,
 	if (!list)
 		return -ENOMEM;
 	list->handler = handler;
+	list->irq = irq;
 	list->data = data;
 	err = request_irq(irq, irq_redirect, irq_flags, str, list);
 	if (err) {
@@ -309,7 +311,7 @@ void snd_free_irq(unsigned int irq, void *data)
 	mutex_lock(&irq_list_mutex);
 	list_for_each(p, &irq_list_head) {
 		struct irq_list *list = list_entry(p, struct irq_list, list);
-		if (list->data == data) {
+		if (list->irq == irq && list->data == data) {
 			free_irq(irq, list);
 			list_del(p);
 			kfree(list);
