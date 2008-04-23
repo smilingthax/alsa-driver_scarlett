@@ -722,6 +722,7 @@ if test $kpatchlevel -le 2; then
 CONFIG_INPUT="y"
 else
 CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT_PCSPKR, [pc-speaker input subsystem in kernel])
 fi
 AC_SUBST(CONFIG_INPUT)
 
