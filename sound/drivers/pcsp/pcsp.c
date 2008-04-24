@@ -147,8 +147,8 @@ static int __devinit alsa_card_pcsp_init(struct device *dev)
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
-	printk(KERN_WARNING "PCSP: CONFIG_DEBUG_PAGEALLOC is enabled,\n"
-	       KERN_WARNING "which may make the sound noisy.\n");
+	printk(KERN_WARNING "PCSP: CONFIG_DEBUG_PAGEALLOC is enabled, "
+	       "which may make the sound noisy.\n");
 #endif
 
 	return 0;
