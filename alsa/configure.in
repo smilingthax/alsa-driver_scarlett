@@ -1231,6 +1231,7 @@ EOF
 esac
 
 dnl set ia32 (X86)
+mach_dir=""
 case "$processor" in
   i?86*|k?|crusoe|mcyrixiii|mwinchip|viac3_2|mcore2|geodegx*|x86_32)
     if $KCC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
@@ -1238,7 +1239,6 @@ case "$processor" in
       CONFIG_X86=y
       CONFIG_X86_32=y
     fi
-    mach_dir=""
     for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386; do
       if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
@@ -1249,8 +1249,69 @@ case "$processor" in
 	break
       fi  
     done
-    if test -n "$mach_dir"; then
-	AC_MSG_CHECKING(for i386 machine type)
+    ;;
+  x86_64)
+    for i in include/asm-x86 include2/asm-x86; do
+      if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
+        mach_dir="$CONFIG_SND_KERNELDIR/$i"
+	break
+      fi  
+      if test -n "$kernelbuild" -a -d $kernelbuild/$i/mach-default; then
+	mach_dir="$kernelbuild/$i"
+	break
+      fi  
+    done
+    ;;
+esac
+
+if test -n "$mach_dir"; then
+  AC_MSG_CHECKING(for i386 machine type)
+  machine="default"
+  ac_save_CFLAGS="$CFLAGS"
+  CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+  rm -f machine.id
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+    KERNDIR=$kernelbuild
+  else
+    KERNDIR=$CONFIG_SND_KERNELDIR
+  fi
+  AC_TRY_RUN([
+#include <stdio.h>
+#include "$KERNDIR/include/linux/autoconf.h"
+int main(void) {
+	FILE *file = fopen("machine.id", "w+");
+	if (file == NULL)
+		exit(1);
+#if defined(CONFIG_X86_VOYAGER)
+	fprintf(file, "voyager");
+#elif defined(CONFIG_X86_VISWS)
+	fprintf(file, "visws");
+#elif defined(CONFIG_X86_NUMAQ)
+	fprintf(file, "numaq");
+#elif defined(CONFIG_X86_BIGSMP)
+	fprintf(file, "bigsmp");
+#elif defined(CONFIG_X86_SUMMIT)
+	fprintf(file, "summit");
+#elif defined(CONFIG_X86_ES7000)
+	fprintf(file, "es7000");
+#elif defined(CONFIG_X86_PC9800)
+	fprintf(file, "pc9800");
+#else
+	fprintf(file, "default");
+#endif
+	fclose(file);
+	exit(0);
+}
+],      
+	machine=`cat machine.id`;AC_MSG_RESULT($machine))
+	CFLAGS="$ac_save_CFLAGS"
+	rm -f machine.id
+	KERNEL_INC="$KERNEL_INC -I$mach_dir/mach-$machine"
+    fi
+
+if test "$processor" == "x86_64"; then
+  if test -n "$mach_dir"; then
+AC_MSG_CHECKING(for i386 machine type)
 	machine="default"
 	ac_save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
@@ -1277,6 +1338,10 @@ int main(void) {
 	fprintf(file, "bigsmp");
 #elif defined(CONFIG_X86_SUMMIT)
 	fprintf(file, "summit");
+#elif defined(CONFIG_X86_ES7000)
+	fprintf(file, "es7000");
+#elif defined(CONFIG_X86_RDC321X)
+	fprintf(file, "rdc321x");
 #elif defined(CONFIG_X86_PC9800)
 	fprintf(file, "pc9800");
 #else
@@ -1289,10 +1354,14 @@ int main(void) {
 	machine=`cat machine.id`;AC_MSG_RESULT($machine))
 	CFLAGS="$ac_save_CFLAGS"
 	rm -f machine.id
-	KERNEL_INC="$KERNEL_INC -I$mach_dir/mach-$machine"
+	if test -d $mach_dir/mach-$machine; then
+	  KERNEL_INC="$KERNEL_INC -I$mach_dir/mach-$machine"
+	else
+	  KERNEL_INC="$KERNEL_INC -I$mach_dir/mach-default"
+	fi
     fi
-    ;;
-esac
+
+fi
 
 dnl ia32 and alpha
 test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
