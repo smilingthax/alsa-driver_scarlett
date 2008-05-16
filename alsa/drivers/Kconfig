@@ -1,9 +1,10 @@
 # ALSA generic drivers
 
+if SND_DRIVERS
+
 config SND_SERIALMIDI
 	tristate "Generic driver for serial MIDI adapters"
 	depends on BROKEN
-	depends on SND
 	select SND_RAWMIDI
 	help
 	  If you want to use MIDI adapters connected to a standard
@@ -20,7 +21,8 @@ config SND_SERIALMIDI
 
 config SND_LOOPBACK
 	tristate "Generic loopback driver (PCM)"
-	depends on SND
 	select SND_PCM
 	help
 	  Say 'Y' or 'M' to include support for the PCM loopback device.
+
+endif	# SND_DRIVERS
