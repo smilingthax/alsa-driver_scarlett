@@ -2333,107 +2333,6 @@ AC_DEFINE_UNQUOTED(CONFIG_SND_DATE, "$CONFIG_SND_DATE")
 AC_SUBST(CONFIG_SND_DATE)
 AC_MSG_RESULT($CONFIG_SND_VERSION)
 
-dnl Check for sequencer support...
-AC_MSG_CHECKING(for sequencer support)
-AC_ARG_WITH(sequencer,
-  [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
-  sequencer="$withval", sequencer="yes")
-CONFIG_SND_SEQUENCER=""
-if test "$sequencer" = "yes"; then
-  CONFIG_SND_SEQUENCER="m"
-fi
-AC_SUBST(CONFIG_SND_SEQUENCER)
-if test "$CONFIG_SND_SEQUENCER" = "m"; then
-  AC_DEFINE(CONFIG_SND_SEQUENCER_MODULE)
-  AC_DEFINE(CONFIG_SND_SEQ_DUMMY_MODULE)
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
-
-dnl Check for OSS/Free emulation...
-AC_MSG_CHECKING(for OSS/Free emulation)
-AC_ARG_WITH(oss,
-  [  --with-oss=no,yes       driver will (not) be compiled with OSS/Free emulation],
-  ossemul="$withval", ossemul="yes")
-CONFIG_SND_OSSEMUL=""
-if test "$ossemul" = "yes"; then
-  CONFIG_SND_OSSEMUL="y"
-fi
-if test "$CONFIG_SND_OSSEMUL" = "y"; then
-  AC_DEFINE(CONFIG_SND_OSSEMUL)
-  AC_DEFINE(CONFIG_SND_MIXER_OSS_MODULE)
-  AC_DEFINE(CONFIG_SND_PCM_OSS_MODULE)
-  if test "$CONFIG_SND_SEQUENCER" = "m"; then
-    AC_DEFINE(CONFIG_SND_SEQUENCER_OSS)
-  fi
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
-
-if test "$CONFIG_SND_OSSEMUL" = "y"; then
-
-dnl Check for OSS PCM plugin system inclusion...
-AC_MSG_CHECKING(for OSS PCM plugin system inclusion)
-AC_ARG_WITH(pcm-oss-plugins,
-  [  --with-pcm-oss-plugins=no,yes       driver will (not) be compiled with OSS PCM plugins],
-  ossemulplugins="$withval", ossemulplugins="yes")
-CONFIG_SND_PCM_OSS_PLUGINS=""
-if test "$ossemulplugins" = "yes"; then
-  CONFIG_SND_PCM_OSS_PLUGINS="y"
-fi
-if test "$CONFIG_SND_PCM_OSS_PLUGINS" = "y"; then
-  AC_DEFINE(CONFIG_SND_PCM_OSS_PLUGINS)
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
-
-fi
-
-dnl Check for RTC timer support...
-AC_MSG_CHECKING(for RTC callback support in kernel)
-rtcsup=""
-if test "$kversion.$kpatchlevel" = "2.6" -a "$ksublevel" -ge 15; then
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC=$CC
-CFLAGS="$KERNEL_CHECK_CFLAGS"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#include <linux/config.h>
-#include <linux/version.h>
-#include <linux/rtc.h>
-#include <linux/mc146818rtc.h>
-],[
-#ifdef RTC_IRQ
-  rtc_task_t *cb = 0;
-#else
-#error
-#endif
-],
-  AC_MSG_RESULT(yes);rtcsup="m",
-  AC_MSG_RESULT(no);rtcsup="",
-  AC_MSG_RESULT(unknown);rtcsup=""
-)
-CFLAGS="$ac_save_CFLAGS"
-CC=$ac_save_CC
-else
-AC_MSG_RESULT([may be buggy, skipped])
-fi
-CONFIG_SND_RTCTIMER=$rtcsup
-AC_SUBST(CONFIG_SND_RTCTIMER)
-test "$CONFIG_SND_RTCTIMER" = "m" && AC_DEFINE(CONFIG_SND_RTCTIMER_MODULE)
-CONFIG_RTC=$CONFIG_SND_RTCTIMER
-AC_SUBST(CONFIG_RTC)
-
-dnl Check for HPET support
-CHECK_KERNEL_CONFIG(CONFIG_HPET, [HPET support])
-CONFIG_SND_HPET=""
-AC_SUBST(CONFIG_SND_HPET)
-AC_SUBST(CONFIG_HPET)
-
 dnl Check for dynamic minors...
 AC_MSG_CHECKING(for dynamic minor numbers)
 AC_ARG_ENABLE(dynamic-minors,
@@ -2448,18 +2347,60 @@ else
   AC_MSG_RESULT(no)
 fi
 
-dnl Check for support of old API...
-AC_MSG_CHECKING(for support of old API)
-AC_ARG_ENABLE(old-api,
-  AS_HELP_STRING([--disable-old-api],
-		 [Disable the support old ALSA PCM API (ver.0.9.0rc3 or older)]),
-  [support_old_api="$enableval"], [support_old_api="yes"])
-if test "$support_old_api" = "yes"; then
-  AC_DEFINE(CONFIG_SND_SUPPORT_OLD_API)
+dnl Check for sequencer support...
+AC_MSG_CHECKING(for sequencer support)
+AC_ARG_WITH(sequencer,
+  [  --with-sequencer=yes,no  driver will (not) be compiled with sequencer support],
+  sequencer="$withval", sequencer="yes")
+if test "$sequencer" = "yes"; then
+  CONFIG_SND_SEQUENCER="m"
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no)
 fi
+
+dnl Check for OSS/Free emulation...
+AC_MSG_CHECKING(for OSS/Free emulation)
+AC_ARG_WITH(oss,
+  [  --with-oss=no,yes       driver will (not) be compiled with OSS/Free emulation],
+  ossemul="$withval", ossemul="yes")
+if test "$ossemul" = "yes"; then
+  CONFIG_SND_OSSEMUL="y"
+  CONFIG_SND_MIXER_OSS="m"
+  CONFIG_SND_PCM_OSS="m"
+  CONFIG_SND_PCM="m"
+  CONFIG_SND_TIMER="m"
+  if test "$CONFIG_SND_SEQUENCER" = "m"; then
+    CONFIG_SND_SEQUENCER_OSS="y"
+  fi
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
+if test "$CONFIG_SND_OSSEMUL" = "y"; then
+
+dnl Check for OSS PCM plugin system inclusion...
+AC_MSG_CHECKING(for OSS PCM plugin system inclusion)
+AC_ARG_WITH(pcm-oss-plugins,
+  [  --with-pcm-oss-plugins=no,yes       driver will (not) be compiled with OSS PCM plugins],
+  ossemulplugins="$withval", ossemulplugins="yes")
+if test "$ossemulplugins" = "yes"; then
+  CONFIG_SND_PCM_OSS_PLUGINS="y"
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
+fi
+
+dnl Check for RTC timer support...
+CHECK_KERNEL_CONFIG(CONFIG_RTC, [RTC support])
+AC_SUBST(CONFIG_RTC)
+
+dnl Check for HPET support
+CHECK_KERNEL_CONFIG(CONFIG_HPET, [HPET support])
+AC_SUBST(CONFIG_HPET)
 
 dnl Check for procfs
 CHECK_KERNEL_CONFIG(CONFIG_PROC_FS, [Procfs support])
@@ -2844,19 +2785,8 @@ dnl Check for which cards to compile driver for...
 CONFIG_SOUND=m
 ALSA_TOPLEVEL_SELECT
 
-dnl Workaround for a module -> option dependency that isn't correctly
-dnl handled by ALSA_TOPLEVEL_SELECT
-if ( test "$CONFIG_SND_FM801_TEA575X_BOOL" = "y" ) &&
-   ( test "$CONFIG_VIDEO_V4L1" = "y" ); then
-  CONFIG_SND_FM801_TEA575X="m"
-else
-  CONFIG_SND_FM801_TEA575X_BOOL=""
-fi
-
-dnl HPI driver doesn't support 2.2
-if test "$kversion.$kpatchlevel" = "2.2"; then
-  CONFIG_SND_ASIHPI=""
-fi
+dnl Parse Kconfigs
+ALSA_PARSE_KCONFIG
 
 dnl Define our config symbols
 ALSA_TOPLEVEL_DEFINES

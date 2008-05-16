@@ -44,6 +44,7 @@ struct cond {
 	int type;
 	struct cond *next;
 	struct cond *stack_prev;
+	int state_prev;
 };
 
 struct sel {
@@ -68,6 +69,9 @@ struct dep {
 	int int_val;
 	// hitflag?
 	int hitflag;
+	int own_config;
+	int selectable;
+	int processed;
 };
 
 // Prototypes
@@ -79,8 +83,9 @@ static void free_cond(struct cond *cond);
 static struct cond *create_cond(char *line);
 static struct dep *alloc_mem_for_dep(void);
 static struct dep *find_or_create_dep(char *line);
-static void add_dep(struct dep * dep, char *line, struct cond *template);
-static void add_select(struct dep * dep, char *line, struct cond *template);
+static void add_template(struct dep *dep, struct cond *template);
+static void add_dep(struct dep * dep, char *line);
+static void add_select(struct dep * dep, char *line);
 static char *get_word(char *line, char *word);
 static struct dep *find_dep(char *parent, char *depname);
 static void del_all_from_list(void);
@@ -126,10 +131,12 @@ static char *kernel_deps[] = {
 	"SUPERH64",
 	"IA32_EMULATION",
 	/* architecture specific */
-	"ARCH_SA1100",
-	"ARCH_PXA",
+	"ARCH_*",
 	"X86_PC9800",
-	"SH_DREAMCAST",
+	"SH_*",
+	"GSC",
+	"MACH_*",
+	"PXA_*",
 	/* other drivers */
 	"RTC",
 	"GAMEPORT",
@@ -139,73 +146,46 @@ static char *kernel_deps[] = {
 	/* some flags/capabilities */
 	"HAS_IOPORT",
 	"EXPERIMENTAL",
+	"BROKEN",
 	/* sound common */
 	"AC97_BUS",
 	NULL
 };
 
 /* % -> always true */
-/* # -> define */
+/* # -> menuconfig */
 static char *no_cards[] = {
-	"%#SOUND",
+	"%SOUND",
 	"%HAS_IOMEM",
 	"SOUND_PRIME",
 	"%SND",
-	"#SND_TIMER",
-	"#SND_HWDEP",
-	"#SND_RAWMIDI",
-	"#SND_PCM",
-	"SND_SEQUENCER",
-	"SND_MIXER_OSS",
-	"SND_PCM_OSS",
-	"SND_PCM_OSS_PLUGINS",
-	"SND_SEQUENCER_OSS",
-	"SND_OSSEMUL",
-	"SND_RTCTIMER",
-	"SND_HPET",
+	/* options given as configure options */
 	"SND_DYNAMIC_MINORS",
 	"SND_DEBUG",
 	"SND_DEBUG_MEMORY",
 	"SND_DEBUG_DETECT",
-	"SND_VERBOSE_PROCFS",
-	"SND_VERBOSE_PRINTK",
-	"SND_BIT32_EMUL",
-	"#SND_AD1848_LIB",
-	"#SND_CS4231_LIB",
-	"#SND_SB_COMMON",
-	"#SND_SB8_DSP",
-	"#SND_SB16_DSP",
-	"#SND_OPL3_LIB",
-	"#SND_OPL4_LIB",
-	"#SND_VX_LIB",
-	"#SND_MPU401_UART",
-	"#SND_GUS_SYNTH",
-	"#AC97_BUS",
-	"#SND_AC97_CODEC",
-	"#SND_OXYGEN_LIB",
-	"#SND_AT91_SOC_SSC",
-	"#SND_SOC_AC97_CODEC",
-	"#SND_SOC_WM8731",
-	"#SND_SOC_WM8750",
-	"#SND_SOC_WM8753",
-	"#SND_SOC_WM9712",
-	"#SND_SOC_WM9713",
-	"#SND_SOC_CS4270",
-	"#SND_SOC_TLV320AIC3X",
-	"#SND_PXA2XX_PCM",
-	"#SND_PXA2XX_AC97",
-	"#SND_PXA2XX_SOC_AC97",
-	"#SND_PXA2XX_SOC_I2S",
-	"#SND_S3C24XX_SOC_I2S",
-	"#SND_S3C2412_SOC_I2S",
-	"#SND_S3C2443_SOC_AC97",
-	"#SND_S3C24XX_SOC_NEO1973_WM8753",
-	"#SND_S3C24XX_SOC_SMDK2443_WM9710",
-	"#SND_S3C24XX_SOC_LN2440SBC_ALC650",
-	"#SND_AT91_SOC_I2S",
-	"#SND_SOC_SH4_HAC",
-	"#SND_SOC_SH4_SSI",
-	"#SND_DAVINCI_SOC_I2S",
+	"SND_SEQUENCER",
+	"SND_OSSEMUL",
+	"SND_PCM_OSS",
+	"SND_MIXER_OSS",
+	"SND_PCM_OSS_PLUGINS",
+	"SND_SEQUENCER_OSS",
+	/* menuconfig with default yes (not appearing in configure options) */
+	/* these options don't create any modules by themselves but work only
+	 * as primary dependencies.
+	 */
+	"#SND_ISA",
+	"#SND_PCI",
+	"#SND_DRIVERS",
+	"#SND_USB",
+	"#SND_PCMCIA",
+	"#SND_ARM",
+	"#SND_MIPS",
+	"#SND_GSC",
+	"#SND_PPC",
+	"#SND_SUPERH",
+	"#SND_SPARC",
+	"#SND_SPI",
 	NULL
 };
 
@@ -299,58 +279,84 @@ static int read_file_1(const char *filename, struct cond **template)
 			for (idx = 8; idx <= strlen(buffer); idx++)
 				buffer[idx-7] = buffer[idx];
 		}
-		if (!strncmp(buffer, "endmenu", 7)) {
+		if (!strncmp(buffer, "endmenu", 7) ||
+		    !strncmp(buffer, "endif", 5)) {
 			struct cond *otemplate;
-		    	state = READ_STATE_NONE;
 		    	if (*template == NULL) {
 		    		fprintf(stderr, "Menu level error\n");
 		    		exit(EXIT_FAILURE);
 		    	}
 		    	otemplate = *template;
+		    	state = (*template)->state_prev;
 		    	*template = (*template)->stack_prev;
 		    	free_cond(otemplate);
 			continue;
-		}
-		if (!strncmp(buffer, "menu", 4)) {
-			struct cond *ntemplate;
+		} else if (!strncmp(buffer, "menuconfig ", 10)) {
+			state = READ_STATE_CONFIG;
+			dep = find_or_create_dep(buffer + 10);
+			if (dep == NULL) {
+				result = -ENOMEM;
+				goto __end;
+			}
+			add_template(dep, *template);
+			dep->own_config = 1;
+			continue;
+		} else if (!strncmp(buffer, "if ", 3)) {
+			struct cond *ntemp;
+			ntemp = create_cond(buffer + 3);
+			ntemp->stack_prev = *template;
+			ntemp->state_prev = state;
+			*template= ntemp;
 			state = READ_STATE_MENU;
+			continue;
+		} else if (!strncmp(buffer, "menu", 4)) {
+			struct cond *ntemplate;
 			strcpy(buffer, "EMPTY");
 			ntemplate = create_cond(buffer);
 			ntemplate->stack_prev = *template;
+			ntemplate->state_prev = state;
 			*template = ntemplate;
+			state = READ_STATE_MENU;
 			continue;
-		}
-		if (!strncmp(buffer, "config ", 7)) {
+		} else if (!strncmp(buffer, "config ", 7)) {
 			state = READ_STATE_CONFIG;
 			dep = find_or_create_dep(buffer + 7);
 			if (dep == NULL) {
 				result = -ENOMEM;
 				goto __end;
 			}
-		}
-		if (!strncmp(buffer, "source ", 7)) {
+			add_template(dep, *template);
+			dep->own_config = 1;
+			continue;
+		} else if (!strncmp(buffer, "source ", 7)) {
 			state = READ_STATE_NONE;
 			result = include_file(buffer + 7, template);
 			if (result < 0)
 				goto __end;
-		}
-		if (!strncmp(buffer, "comment", 7)) {
+			continue;
+		} else if (!strncmp(buffer, "comment", 7)) {
 			state = READ_STATE_COMMENT;
+			continue;
 		}
 		switch (state) {
 		case READ_STATE_CONFIG:
-			if (!strncmp(buffer, "\ttristate", 9))
+			if (!strncmp(buffer, "\ttristate", 9)) {
 				dep->type = TYPE_TRISTATE;
-			else if (!strncmp(buffer, "\tbool", 5))
+				if (buffer[9])
+					dep->selectable = 1;
+			} else if (!strncmp(buffer, "\tbool", 5)) {
 				dep->type = TYPE_BOOL;
-			else if (!strncmp(buffer, "\tdepends on ", 12))
-				add_dep(dep, buffer + 12, *template);
-			else if (!strncmp(buffer, "\tdepends ", 9))
-				add_dep(dep, buffer + 9, *template);
-			else if (!strncmp(buffer, "\tselect ", 8))
-				add_select(dep, buffer + 8, *template);
-			else if (!strncmp(buffer, "\tint ", 5))
+				if (buffer[5])
+					dep->selectable = 1;
+			} else if (!strncmp(buffer, "\tint ", 5)) {
 				dep->type = TYPE_INT;
+				/*dep->selectable = 1;*/ /* exception */
+			} else if (!strncmp(buffer, "\tdepends on ", 12))
+				add_dep(dep, buffer + 12);
+			else if (!strncmp(buffer, "\tdepends ", 9))
+				add_dep(dep, buffer + 9);
+			else if (!strncmp(buffer, "\tselect ", 8))
+				add_select(dep, buffer + 8);
 			if (!strncmp(buffer, "\tdefault ", 9)) {
 				if (dep->type == TYPE_INT) {
 					char *p = buffer + 9;
@@ -415,6 +421,9 @@ static struct cond * create_cond(char *line)
 	struct cond *first = NULL, *cond, *prev = NULL;
 	char *word = NULL;
 	int i;
+
+	if (!line)
+		return NULL;
 
 	word = malloc(strlen(line) + 1);
 	if (word == NULL)
@@ -596,12 +605,15 @@ static struct cond *join_cond(struct cond *cond1, struct cond *cond2)
 }
 
 // Add a new dependency to the current one
-static void add_dep(struct dep * dep, char *line, struct cond *template)
+static void add_template(struct dep *dep, struct cond *template)
 {
 	template = duplicate_cond(template);
-	if (dep->cond)
-		template = join_cond(dep->cond, template);
-	dep->cond = join_cond(template, create_cond(line));
+	dep->cond = join_cond(dep->cond, template);
+}
+
+static void add_dep(struct dep * dep, char *line)
+{
+	dep->cond = join_cond(dep->cond, create_cond(line));
 }
 
 /* Is the selected item ALSA-specific? */
@@ -622,7 +634,7 @@ static int is_alsa_item(const char *word)
 }
 
 // Add a new forced (selected) dependency to the current one
-static void add_select(struct dep * dep, char *line, struct cond *template)
+static void add_select(struct dep * dep, char *line)
 {
 	char *word = NULL;
 	struct sel *sel, *nsel;
@@ -632,7 +644,7 @@ static void add_select(struct dep * dep, char *line, struct cond *template)
 		nomem();
 	get_word(line, word);
 	if (!is_alsa_item(word)) {
-		add_dep(dep, word, template);
+		add_dep(dep, word);
 		free(word);
 		return;
 	}
@@ -706,6 +718,23 @@ static char *get_word(char *line, char *word)
 	return word;
 }
 
+static int is_kernel_deps(const char *name)
+{
+	char **p;
+	char *q;
+
+	for (p = kernel_deps; *p; p++) {
+		if (!strcmp(*p, name))
+			return 1;
+		q = strchr(*p, '*');
+		if (!q)
+			continue;
+		if (!strncmp(*p, name, q - *p))
+			return 1;
+	}
+	return 0;
+}
+
 // Find the dependency named "depname"
 static struct dep *find_dep(char *parent, char *depname)
 {
@@ -718,11 +747,8 @@ static struct dep *find_dep(char *parent, char *depname)
 			return temp_dep;
 		temp_dep = temp_dep->next;
 	}
-	for (idx = 0; kernel_deps[idx]; idx++) {
-		//fprintf(stderr, "kdepname = '%s', name = '%s'\n", depname, kernel_deps[idx]);
-		if (!strcmp(kernel_deps[idx], depname))
-			return NULL;
-	}
+	if (is_kernel_deps(depname))
+		return NULL;
 	if (strcmp(parent, "<root>"))
 		fprintf(stderr, "Warning: Unsatisfied dep for %s: %s\n", parent, depname);
 	return NULL;
@@ -875,68 +901,46 @@ static int is_toplevel(struct dep *dep)
 	
 	if (dep == NULL)
 		return 0;
-	for (idx = 0; kernel_deps[idx]; idx++) {
-		if (!strcmp(kernel_deps[idx], dep->name))
-			return 0;
-	}
-	for (idx = 0; no_cards[idx]; idx++) {
-		str = no_cards[idx];
-		if (*str == '%' || *str == '#')
-			str++;
-		if (!strcmp(str, dep->name))
-			return 0;
-	}
-	return 1;
-}
-
-// whether to output AC_DEFINE() for this variable
-static int output_ac_define(struct dep *dep)
-{
-	int idx;
-	char *str;
-	
-	if (dep == NULL)
+	if (is_kernel_deps(dep->name))
 		return 0;
-	for (idx = 0; kernel_deps[idx]; idx++) {
-		if (!strcmp(kernel_deps[idx], dep->name))
-			return 0;
-	}
 	for (idx = 0; no_cards[idx]; idx++) {
-		int def = 0;
 		str = no_cards[idx];
 		if (*str == '%')
 			str++;
-		if (*str == '#') {
-			def = 1;
-			str++;
-		}
 		if (!strcmp(str, dep->name))
-			return def;
+			return 0;
 	}
 	return 1;
 }
 
-// is CONFIG_ variable is always true
-static int is_always_true(struct dep *dep)
+static int check_in_no_cards(struct dep *dep, char flag)
 {
-	int idx;
-	char *str;
+	char **p;
 
-	if (dep == NULL)
+	if (!dep)
 		return 0;
-	for (idx = 0; no_cards[idx]; idx++) {
-		str = no_cards[idx];
-		if (*str != '%')
+	for (p = no_cards; *p; p++) {
+		if (**p != flag)
 			continue;
-		str++;
-		if (!strcmp(str, dep->name))
+		if (!strcmp(*p + 1, dep->name))
 			return 1;
 	}
 	return 0;
 }
+// is CONFIG_ variable is always true
+static int is_always_true(struct dep *dep)
+{
+	return check_in_no_cards(dep, '%');
+}
+
+/* is menuconfig that doesn't create modules and as default true */
+static int is_menu_default_yes(struct dep *dep)
+{
+	return check_in_no_cards(dep, '#');
+}
 
 // Print out ALL deps for firstdep (Cards, Deps)
-static void output_card_list(struct dep *firstdep, int space, int size, int type)
+static void output_card_list(struct dep *firstdep, int space, int size)
 {
 	struct dep *temp_dep=firstdep;
 	char *card_name;
@@ -946,9 +950,9 @@ static void output_card_list(struct dep *firstdep, int space, int size, int type
 	for (idx = 0; idx < space; idx++)
 		printf(" ");
 	while(temp_dep) {
-		if (!is_toplevel(temp_dep))
+		if (!temp_dep->selectable || !is_toplevel(temp_dep))
 			goto __skip;
-		if (temp_dep->type != type)
+		if (is_menu_default_yes(temp_dep))
 			goto __skip;
 		card_name=get_card_name(temp_dep->name);
 		if (card_name) {
@@ -1002,7 +1006,7 @@ static char *get_token(char **pp, int need_space)
 	for (; isspace(*p); p++)
 		if (!*p)
 			return NULL;
-	if (*p == '#' || *p == '%')
+	if (*p == '%')
 		return NULL;
 	token = p;
 	for (; !isspace(*p); p++)
@@ -1108,15 +1112,139 @@ static void sel_print_acinclude(struct sel *sel)
 	}
 }
 
+static void process_dep_acinclude(struct dep *tempdep, int slave)
+{
+	struct cond *cond, *cond_prev;
+	int put_topif, put_define, put_if;
+	int j;
+	char *text;
+	const char *ver;
+	struct sel *sel;
+
+	if (!tempdep->selectable) {
+		if (tempdep->type != TYPE_INT && !slave)
+			return;
+	}
+	if (!is_toplevel(tempdep) || tempdep->processed)
+		return;
+#if 0 /* debug */
+	if (tempdep->cond) {
+		fprintf(stderr, "xxx DEP %s\n", tempdep->name);
+		for (cond = tempdep->cond; cond; cond = cond->next)
+			fprintf(stderr, "xxx   -> %s\n", cond->name);
+	}
+#endif
+	if (tempdep->processed)
+		return;
+
+	if (tempdep->cond) {
+		for (cond = tempdep->cond; cond; cond = cond->next) {
+			struct dep *dep;
+			dep = find_dep("<root>", cond->name);
+			if (dep)
+				process_dep_acinclude(dep, 1);
+		}
+	}
+	if (tempdep->processed)
+		return;
+
+	put_topif = 0;
+	put_define = 0;
+	if (tempdep->selectable && !is_always_true(tempdep)) {
+		text = get_card_name(tempdep->name);
+		if (!text)
+			return;
+		if (!is_menu_default_yes(tempdep)) {
+			printf("  if alsa_check_kconfig \"%s\"; then\n", text);
+			put_topif = 1;
+		}
+		put_define = 1;
+		free(text);
+	} else if (tempdep->type == TYPE_INT) {
+		put_define = 1;
+	} else {
+		if (!tempdep->sel)
+			return;
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		if (!text)
+			return;
+		printf("  if test \"$CONFIG_%s\" = \"m\" -o \"$CONFIG_%s\" = \"y\"; then\n", text, text);
+		free(text);
+		put_topif = 1;
+	}
+	put_if = 0;
+	for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
+		if (!put_if)
+			printf("    if ");
+		else {
+			printf(cond_prev->type == COND_AND ? " &&" : " ||");
+			printf("\n      ");
+		}
+		if (cond->not)
+			printf(" ! ");
+		for (j = 0; j < cond->left; j++)
+			printf("( ");
+		printf("( test \"$CONFIG_%s\" = \"y\" -o \"$CONFIG_%s\" = \"m\" )", cond->name, cond->name);
+		for (j = 0; j < cond->right; j++)
+			printf(" )");
+		put_if = 1;
+		cond_prev = cond;
+	}
+	text = convert_to_config_uppercase("", tempdep->name);
+	ver = get_version_dep(text);
+	if (ver) {
+		if (!put_if)
+			printf("    if ");
+		else {
+			printf(cond_prev->type == COND_AND ? " &&" : " ||");
+			printf("\n      ");
+		}
+		printf("( ");
+		print_version_dep(ver);
+		printf(" )");
+		put_if = 1;
+	}
+	free(text);
+	if (put_if)
+		printf("; then\n");
+
+	sel_remove_hitflags();
+	for (sel = tempdep->sel; sel; sel = sel->next)
+		sel_print_acinclude(sel);			
+	for (sel = tempdep->sel; sel; sel = sel->next) {
+		if (sel->dep->type == TYPE_INT)
+			continue;
+		if (is_always_true(sel->dep))
+			continue;
+		printf("      ");
+		ver = get_version_dep(sel->name);
+		if (ver) {
+			print_version_dep(ver);
+			printf(" && ");
+		}
+		printf("CONFIG_%s=\"%c\"\n", sel->name,
+		       (sel->dep && sel->dep->type == TYPE_BOOL) ? 'y' : 'm');
+	}
+	if (put_define) {
+		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
+		if (tempdep->type == TYPE_INT)
+			printf("      %s=\"%d\"\n", text, tempdep->int_val);
+		else
+			printf("      %s=\"%c\"\n", text, tempdep->type == TYPE_BOOL ? 'y' : 'm');
+		free(text);
+	}
+	if (put_if)
+		printf("    fi\n");
+	if (put_topif)
+		printf("  fi\n");
+	tempdep->processed = 1;
+}
+
 // Output in acinlude.m4
 static void output_acinclude(void)
 {
 	struct dep *tempdep;
 	char *text;
-	struct cond *cond, *cond_prev;
-	struct sel *sel;
-	const char *ver;
-	int j;
 	
 	printf("dnl ALSA soundcard configuration\n");
 	printf("dnl Find out which cards to compile driver for\n");
@@ -1133,185 +1261,53 @@ static void output_acinclude(void)
 
 	printf("AC_DEFUN([ALSA_TOPLEVEL_SELECT], [\n");
 	printf("dnl Check for which cards to compile driver for...\n");
-	printf("AC_MSG_CHECKING(for which soundcards to compile driver for)\n");
-	printf("AC_ARG_WITH(cards,\n"
-	       "  [  --with-cards=<list>     compile driver for cards in <list>; ]\n"
+	printf("AC_MSG_CHECKING(for kconfigs to compile driver for)\n");
+	printf("AC_ARG_WITH(kconfig,\n"
+	       "  [  --with-kconfig=<list> compile driver for cards and options in <list>; ]\n"
 	       "  [                        cards may be separated with commas; ]\n"
 	       "  [                        'all' compiles all drivers; ]\n"
 	       "  [                        Possible cards are: ]\n");
-	output_card_list(all_deps, 26, 50, TYPE_TRISTATE);
+	output_card_list(all_deps, 26, 50);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
-	printf("SELECTED_CARDS=`echo $cards | sed 's/,/ /g'`\n");
-	/* check cards */
-	printf("for card in $SELECTED_CARDS; do\n"
-	       "  probed=\n");
+	printf("SELECTED_KCONFIGS=`echo $cards | sed 's/,/ /g'`\n");
+	printf("AC_MSG_RESULT($SELECTED_KCONFIGS)\n");
+	printf("AC_MSG_CHECKING(for kconfigs to exclude)\n");
+	printf("AC_ARG_WITH(exclude,\n"
+	       "  [  --with-exclude=<list> exclude the given kconfigs ],\n"
+	       "  excludes=\"$withval\", excludes=\"\")\n");
+	printf("EXCLUDED_KCONFIGS=`echo $excludes | sed 's/,/ /g'`\n");
+	printf("AC_MSG_RESULT($EXCLUDED_KCONFIGS)\n");
+	printf("])\n\n");
+
+	/* parse down the tree */
+	printf("AC_DEFUN([ALSA_PARSE_KCONFIG], [\n"
+	       "alsa_check_kconfig () {\n"
+	       "  for i in $EXCLUDED_KCONFIGS; do\n"
+	       "    if test x\"$i\" = x\"${1}\"; then\n"
+	       "      echo Excluding $i\n"
+	       "      return 1\n"
+	       "    fi\n"
+	       "  done\n"
+	       "  for i in $SELECTED_KCONFIGS; do\n"
+	       "    if test x\"$i\" = x\"${1}\" -o x\"$i\" = xall; then\n"
+	       "      return 0\n"
+	       "    fi\n"
+	       "  done\n"
+	       "  return 1\n"
+	       "}\n"
+	       "  CONFIG_SND=\"m\"\n"
+	       );
+
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		int put_if;
-		if (!is_toplevel(tempdep) || tempdep->type != TYPE_TRISTATE)
-			continue;
-		text = get_card_name(tempdep->name);
-		if (! text)
-			continue;
-		printf("  if test \"$card\" = \"all\" -o \"$card\" = \"%s\"; then\n", text);
-		free(text);
-		put_if = 0;
-		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
-			if (!put_if)
-				printf("    if ");
-			else {
-				printf(cond_prev->type == COND_AND ? " &&" : " ||");
-				printf("\n      ");
-			}
-			if (cond->not)
-				printf(" ! ");
-			for (j = 0; j < cond->left; j++)
-				printf("( ");
-			printf("( test \"$CONFIG_%s\" = \"y\" -o \"$CONFIG_%s\" = \"m\" )", cond->name, cond->name);
-			for (j = 0; j < cond->right; j++)
-				printf(" )");
-			put_if = 1;
-			cond_prev = cond;
-		}
-		text = convert_to_config_uppercase("", tempdep->name);
-		ver = get_version_dep(text);
-		if (ver) {
-			if (!put_if)
-				printf("    if ");
-			else {
-				printf(cond_prev->type == COND_AND ? " &&" : " ||");
-				printf("\n      ");
-			}
-			printf("( ");
-			print_version_dep(ver);
-			printf(" )");
-			put_if = 1;
-		}
-		free(text);
-		if (put_if)
-			printf("; then\n");
-
-		sel_remove_hitflags();
-		for (sel = tempdep->sel; sel; sel = sel->next)
-			sel_print_acinclude(sel);			
-		for (sel = tempdep->sel; sel; sel = sel->next) {
-			if (is_always_true(sel->dep))
-				continue;
-			printf("      ");
-			ver = get_version_dep(sel->name);
-			if (ver) {
-				print_version_dep(ver);
-				printf(" && ");
-			}
-			printf("CONFIG_%s=\"%c\"\n", sel->name,
-			       (sel->dep && sel->dep->type == TYPE_BOOL) ? 'y' : 'm');
-		}
-		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		if (tempdep->type == TYPE_INT)
-			printf("      %s=\"%d\"\n", text, tempdep->int_val);
-		else
-			printf("      %s=\"%c\"\n", text, tempdep->type == TYPE_BOOL ? 'y' : 'm');
-		free(text);
-		printf("      probed=1\n");
-		if (put_if)
-			printf("    elif test -z \"$probed\"; then\n"
-			       "      probed=0\n"
-			       "    fi\n");
-		printf("  fi\n");
+		process_dep_acinclude(tempdep, 0);
 	}
-	printf("  if test -z \"$probed\"; then\n"
-	       "    AC_MSG_ERROR(Unknown soundcard $card)\n"
-	       "  elif test \"$probed\" = \"0\"; then\n"
-	       "    AC_MSG_ERROR(Unsupported soundcard $card)\n"
-	       "  fi\n"
-	       "done\n\n");
-	/* options */
-	printf("AC_ARG_WITH(card_options,\n"
-	       "  [  --with-card-options=<list> enable driver options in <list>; ]\n"
-	       "  [                        options may be separated with commas; ]\n"
-	       "  [                        'all' enables all options; ]\n"
-	       "  [                        Possible options are: ]\n");
-	output_card_list(all_deps, 26, 50, TYPE_BOOL);
-	printf(" ],\n");
-	printf("  cards=\"$withval\", cards=\"all\")\n");
-	printf("SELECTED_OPTIONS=`echo $cards | sed 's/,/ /g'`\n");
-	/* check cards */
-	printf("for card in $SELECTED_OPTIONS; do\n"
-	       "  probed=\n");
-	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		int put_if;
-		if (!is_toplevel(tempdep) || tempdep->type == TYPE_TRISTATE)
-			continue;
-		text = get_card_name(tempdep->name);
-		if (! text)
-			continue;
-		printf("  if test \"$card\" = \"all\" -o \"$card\" = \"%s\"; then\n", text);
-		free(text);
-		put_if = 0;
-		for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
-			if (!put_if)
-				printf("    if ");
-			else {
-				printf(cond_prev->type == COND_AND ? " &&" : " ||");
-				printf("\n      ");
-			}
-			if (cond->not)
-				printf(" ! ");
-			for (j = 0; j < cond->left; j++)
-				printf("( ");
-			printf("( test \"$CONFIG_%s\" = \"y\" -o \"$CONFIG_%s\" = \"m\" )", cond->name, cond->name);
-			for (j = 0; j < cond->right; j++)
-				printf(" )");
-			put_if = 1;
-			cond_prev = cond;
-		}
-		if (put_if)
-			printf("; then\n");
 
-		sel_remove_hitflags();
-		for (sel = tempdep->sel; sel; sel = sel->next)
-			sel_print_acinclude(sel);			
-		for (sel = tempdep->sel; sel; sel = sel->next) {
-			if (sel->dep->type == TYPE_INT)
-				continue;
-			if (is_always_true(sel->dep))
-				continue;
-			printf("      ");
-			ver = get_version_dep(sel->name);
-			if (ver) {
-				print_version_dep(ver);
-				printf(" && ");
-			}
-			printf("CONFIG_%s=\"%c\"\n", sel->name,
-			       (sel->dep && sel->dep->type == TYPE_BOOL) ? 'y' : 'm');
-		}
-		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		if (tempdep->type == TYPE_INT)
-			printf("      %s=\"%d\"\n", text, tempdep->int_val);
-		else
-			printf("      %s=\"y\"\n", text);
-		free(text);
-		printf("      probed=1\n");
-		if (put_if)
-			printf("    elif test -z \"$probed\"; then\n"
-			       "      probed=0\n"
-			       "    fi\n");
-		printf("  fi\n");
-	}
-	printf("  if test -z \"$probed\"; then\n"
-	       "    AC_MSG_ERROR(Unknown option $card)\n"
-	       "  elif test \"$probed\" = \"0\" -a \"$card\" != \"all\"; then\n"
-	       "    AC_MSG_ERROR(Unsupported option $card)\n"
-	       "  fi\n"
-	       "done\n\n");
-
-	printf("AC_MSG_RESULT($SELECTED_CARDS)\n\n");
-	printf("CONFIG_SND=\"m\"\n");
 	printf("])\n\n");
 
 	printf("AC_DEFUN([ALSA_TOPLEVEL_DEFINES], [\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		if (!output_ac_define(tempdep))
+		if (!tempdep->own_config)
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("if test -n \"$%s\"; then\n", text);

@@ -56,19 +56,23 @@ Quick install
    --with-build=<kernel_build_dir> option additionally, too.
 
  * Drivers to Compile
-   The card drivers to be compiled can be selected via --with-cards option.
+   The card drivers to be compiled can be selected via --with-kconfig option.
    Pass the card driver name without "snd-" prefix.  To specify
    multiple drivers, list names with comma (,).
    Passing "all" will compile all possible drivers (and this is the
    default choice).
-   Some drivers have compile options.  They can be passed via
-   --with-card-options option.  Multiple options can be passed with comma,
-   too.  The default is "all".
-   For available cards and options, see ./configure --help.
+   Some drivers have compile options.  They can be passed via --with-kconfig
+   option, too.
+
+   The configure option --with-exclude=<list> is similar like --with-kconfig
+   but here you pass the card or option to disable.
+   Note that you have to pass all cards/options to --with-kconfig if you
+   don't pass "all".  If you want to reset only some values but enable all
+   others, keep all to --with-kconfig but pass the optoin to --with-exclude.
 
  * Example
       ./configure --with-debug=full
-      ./configure --with-cards=sb16,emu10k1 --with-card-options=sb16-csp
+      ./configure --with-kconfig=sb16,emu10k1,sb16-csp
 
 4) Run 'make'.
 
