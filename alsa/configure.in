@@ -789,7 +789,7 @@ esac
 dnl Debug level
 AC_MSG_CHECKING(for debug level)
 AC_ARG_WITH(debug,
-  [  --with-debug=level      give the debug level (none,basic,full,detect)],
+  [  --with-debug=level      give the debug level (none,basic,full,verbose)],
   debug="$withval", debug="none")
 case "$debug" in
   basic)
@@ -804,14 +804,14 @@ case "$debug" in
     CONFIG_SND_DEBUG_MEMORY=y
     AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
     ;;
-  detect)
-    AC_MSG_RESULT(detect)
+  detect|verbose)
+    AC_MSG_RESULT(verbose)
     CONFIG_SND_DEBUG=y
     AC_DEFINE(CONFIG_SND_DEBUG)
     CONFIG_SND_DEBUG_MEMORY=y
     AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
-    CONFIG_SND_DEBUG_DETECT=y
-    AC_DEFINE(CONFIG_SND_DEBUG_DETECT)
+    CONFIG_SND_DEBUG_VERBOSE=y
+    AC_DEFINE(CONFIG_SND_DEBUG_VERBOSE)
     ;;
   *)
     AC_MSG_RESULT(none)
