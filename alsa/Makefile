@@ -10,7 +10,7 @@ obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ sh/
 
 else
 
-ALSAKERNELDIR = ../alsa-kernel
+ALSAKERNELDIR = ../alsa-kmirror
 
 ifndef IGROUP
 IGROUP = root
