@@ -28,7 +28,9 @@ fi
 #fi
 
 # check for alsa-kmirror directory
-if [ -d alsa-kmirror -a -f alsa-kmirror/last.c ]; then
+if [ -d alsa-kernel -a -f alsa-kernel/last.c ]; then
+  ALSAKERNELDIR="alsa-kernel"
+elif [ -d alsa-kmirror -a -f alsa-kmirror/last.c ]; then
   ALSAKERNELDIR="alsa-kmirror"
 else
   test -z $ALSAKERNELDIR && ALSAKERNELDIR=../alsa-kmirror
