@@ -2676,6 +2676,33 @@ if test "$CONFIG_PNP_KERNEL" = "y"; then
   fi
 fi
 
+dnl device_create_drvdata
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for device_create_drvdata)
+  device_create_drvdata="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/device.h>
+],[
+  struct device *(*foo)() = device_create_drvdata;
+],
+    AC_MSG_RESULT(yes);device_create_drvdata="1",
+    AC_MSG_RESULT(no);device_create_drvdata="0",
+    AC_MSG_RESULT(unknown);device_create_drvdata="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA=$device_create_drvdata
+  if test "$CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA)
+  fi
+fi
+
 
 dnl New unlocked/compat_ioctl
 if test "$kversion.$kpatchlevel" = "2.6"; then
