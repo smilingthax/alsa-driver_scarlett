@@ -25,6 +25,7 @@ Module*.symvers
 
 alsa-kernel
 scripts
+linux
 sound
 include/sound
 
@@ -117,4 +118,5 @@ utils/alsa-driver.spec
 utils/alsasound
 utils/alsasound.posix
 utils/buildrpm
+utils/docproc
 utils/mod-deps
