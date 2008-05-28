@@ -1531,4 +1531,13 @@ static inline void put_unaligned_be64(u64 val, void *p)
 }
 #endif
 
+/* list_first_entry */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
+#include <linux/list.h>
+#ifndef list_first_entry
+#define list_first_entry(ptr, type, member) \
+	list_entry((ptr)->next, type, member)
+#endif
+#endif /* < 2.6.22 */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
