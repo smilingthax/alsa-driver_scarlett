@@ -287,10 +287,10 @@ pack: mrproper
 	{ \
 		cd .. ; \
 		rm -f alsa-driver/alsa-kernel ; \
-		mv alsa-kernel alsa-driver ; \
+		mv alsa-kmirror alsa-driver ; \
 		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
 		tar --exclude=CVS --exclude=kchanges --exclude=.cvsignore \
-                    --exclude='.hg*' \
+                    --exclude='.hg*' --exclude=.gitignore \
                     --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 -p \
                     -f alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION) ; \
 		mv alsa-driver-$(CONFIG_SND_VERSION) alsa-driver ; \
