@@ -287,7 +287,7 @@ pack: mrproper
 	{ \
 		cd .. ; \
 		rm -f alsa-driver/alsa-kernel ; \
-		mv alsa-kmirror alsa-driver ; \
+		mv alsa-kmirror alsa-driver/alsa-kernel ; \
 		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
 		tar --exclude=CVS --exclude=kchanges --exclude=.cvsignore \
                     --exclude='.hg*' --exclude=.gitignore \
