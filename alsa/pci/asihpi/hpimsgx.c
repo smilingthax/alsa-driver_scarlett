@@ -25,7 +25,9 @@ Extended Message Function With Response Cacheing
 #include "hpimsgx.h"
 #include "hpidebug.h"
 
-extern struct pci_device_id asihpi_pci_tbl[];	/* hpimod.c mod device tbl */
+static struct pci_device_id asihpi_pci_tbl[] = {
+#include "hpipcida.h"
+};
 
 static struct hpios_spinlock msgxLock;
 
