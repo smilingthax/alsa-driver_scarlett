@@ -21,6 +21,7 @@
 (C) Copyright AudioScience Inc. 1998-2003
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpicmn.c"
+
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpicmn.h"
@@ -106,12 +107,16 @@ struct hpi_adapter_obj *HpiFindAdapter(
 
 	pao = &adapters.adapter[wAdapterIndex];
 	if (pao->wAdapterType != 0) {
-		HPI_DEBUG_LOG(VERBOSE, "Found adapter index %d\n",
-			wAdapterIndex);
+		/*
+		   HPI_DEBUG_LOG(VERBOSE, "Found adapter index %d\n",
+		   wAdapterIndex);
+		 */
 		return (pao);
 	} else {
-		HPI_DEBUG_LOG(VERBOSE, "No adapter index %d\n",
-			wAdapterIndex);
+		/*
+		   HPI_DEBUG_LOG(VERBOSE, "No adapter index %d\n",
+		   wAdapterIndex);
+		 */
 		return (NULL);
 	}
 }
@@ -171,25 +176,141 @@ static void SubSysGetAdapters(
 	phr->wError = 0;	/* the function completed OK; */
 }
 
-/**
-* CheckControlCache checks if a given struct hpi_control_cache_single control
-* value is in the cache and fills the struct hpi_response accordingly.
-* It returns nonzero if a cache hit occurred, zero otherwise.
+static unsigned int ControlCacheAllocCheck(
+	struct hpi_control_cache *pC
+)
+{
+	unsigned int i;
+	int nCached = 0;
+	if (!pC)
+		return 0;
+	if ((!pC->dwInit) &&
+		(pC->pCache != NULL) &&
+		(pC->dwControlCount) && (pC->dwCacheSizeInBytes)
+		) {
+		u32 *pMasterCache;
+		pC->dwInit = 1;
+
+		pMasterCache = (u32 *)pC->pCache;
+		for (i = 0; i < pC->dwControlCount; i++) {
+			struct hpi_control_cache_info *info =
+				(struct hpi_control_cache_info *)pMasterCache;
+
+			if (info->ControlType) {
+				pC->pInfo[i] = info;
+				nCached++;
+			} else
+				pC->pInfo[i] = NULL;
+
+			if (info->nSizeIn32bitWords)
+				pMasterCache += info->nSizeIn32bitWords;
+			else
+				pMasterCache +=
+					sizeof(struct
+					hpi_control_cache_single) /
+					sizeof(u32);
+
+		}
+		/*
+		   We didn't find anything to cache, so try again later !
+		 */
+		if (!nCached)
+			pC->dwInit = 0;
+	}
+	return pC->dwInit;
+}
+
+/** Find a control.
+*/
+static short FindControl(
+	struct hpi_message *phm,
+	struct hpi_control_cache *pCache,
+	struct hpi_control_cache_info **pI,
+	u16 *pwControlIndex
+)
+{
+	if (phm->wObject == HPI_OBJ_CONTROL) {
+		*pwControlIndex = phm->u.c.wControlIndex;
+	} else {	/* controlex */
+		*pwControlIndex = phm->u.cx.wControlIndex;
+		HPI_DEBUG_LOG(VERBOSE,
+			"HpiCheckControlCache() ControlEx %d\n",
+			*pwControlIndex);
+	}
+
+	if (!ControlCacheAllocCheck(pCache)) {
+		HPI_DEBUG_LOG(VERBOSE,
+			"ControlCacheAllocCheck() failed. adap%d ci%d\n",
+			phm->wAdapterIndex, *pwControlIndex);
+		return 0;
+	}
+
+	*pI = pCache->pInfo[*pwControlIndex];
+	if (!*pI) {
+		HPI_DEBUG_LOG(VERBOSE,
+			"Uncached Adap %d, Control %d\n",
+			phm->wAdapterIndex, *pwControlIndex);
+		return 0;
+	} else {
+		HPI_DEBUG_LOG(VERBOSE,
+			"HpiCheckControlCache() Type %d\n",
+			(*pI)->ControlType);
+	}
+	return 1;
+}
+
+/** Used by the kernel driver to figure out if a buffer needs mapping.
+ */
+short HpiCheckBufferMapping(
+	struct hpi_control_cache *pCache,
+	struct hpi_message *phm,
+	void **p,
+	unsigned int *pN
+)
+{
+	*pN = 0;
+	*p = NULL;
+	if ((phm->wFunction == HPI_CONTROL_GET_STATE) &&
+		(phm->wObject == HPI_OBJ_CONTROLEX)
+		) {
+		u16 wControlIndex;
+		struct hpi_control_cache_info *pI;
+
+		if (!FindControl(phm, pCache, &pI, &wControlIndex))
+			return 0;
+	}
+	return 0;
+}
+
+/** CheckControlCache checks the cache and fills the struct hpi_response
+* accordingly. It returns one if a cache hit occurred, zero otherwise.
 */
 short HpiCheckControlCache(
-	struct hpi_control_cache_single *pC,
+	struct hpi_control_cache *pCache,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
 {
 	short found = 1;
-	/* if the control type in the cache is non-zero then */
-	/* we have cached control information to process */
+	u16 wControlIndex;
+	struct hpi_control_cache_info *pI;
+	struct hpi_control_cache_single *pC;
+
+	if (!FindControl(phm, pCache, &pI, &wControlIndex))
+		return 0;
+
 	phr->wSize =
 		sizeof(struct hpi_response_header) +
 		sizeof(struct hpi_control_res);
 	phr->wError = 0;
-	switch (pC->ControlType) {
+
+	/* pC is the default cached control strucure. May be cast to
+	   something else in the following switch statement.
+	 */
+	pC = (struct hpi_control_cache_single *)pI;
+
+	switch (pI->ControlType) {
+
 	case HPI_CONTROL_METER:
 		if (phm->u.c.wAttribute == HPI_METER_PEAK) {
 			phr->u.c.anLogValue[0] = pC->u.p.anLogPeak[0];
@@ -198,45 +319,50 @@ short HpiCheckControlCache(
 			phr->u.c.anLogValue[0] = pC->u.p.anLogRMS[0];
 			phr->u.c.anLogValue[1] = pC->u.p.anLogRMS[1];
 		} else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_VOLUME:
 		if (phm->u.c.wAttribute == HPI_VOLUME_GAIN) {
 			phr->u.c.anLogValue[0] = pC->u.v.anLog[0];
 			phr->u.c.anLogValue[1] = pC->u.v.anLog[1];
 		} else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_MULTIPLEXER:
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
 			phr->u.c.dwParam1 = pC->u.x.wSourceNodeType;
 			phr->u.c.dwParam2 = pC->u.x.wSourceNodeIndex;
 		} else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
 		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
 			phr->u.c.dwParam1 = pC->u.m.wMode;
 		else
-			found = 0;	/* signal that message was not cached */
-
+			found = 0;
+		break;
 	case HPI_CONTROL_LEVEL:
 		if (phm->u.c.wAttribute == HPI_LEVEL_GAIN) {
 			phr->u.c.anLogValue[0] = pC->u.l.anLog[0];
 			phr->u.c.anLogValue[1] = pC->u.l.anLog[1];
 		} else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_TUNER:
-		if (phm->u.c.wAttribute == HPI_TUNER_FREQ)
-			phr->u.c.dwParam1 = pC->u.t.dwFreqInkHz;
-		else if (phm->u.c.wAttribute == HPI_TUNER_BAND)
-			phr->u.c.dwParam1 = pC->u.t.wBand;
-		else if ((phm->u.c.wAttribute == HPI_TUNER_LEVEL) &&
-			(phm->u.c.dwParam1 == HPI_TUNER_LEVEL_AVERAGE))
-			phr->u.c.dwParam1 = pC->u.t.wLevel;
-		else
-			found = 0;	/* signal that message was not cached */
+		{
+			struct hpi_control_cache_single *pCT =
+				(struct hpi_control_cache_single *)pI;
+			if (phm->u.c.wAttribute == HPI_TUNER_FREQ)
+				phr->u.c.dwParam1 = pCT->u.t.dwFreqInkHz;
+			else if (phm->u.c.wAttribute == HPI_TUNER_BAND)
+				phr->u.c.dwParam1 = pCT->u.t.wBand;
+			else if ((phm->u.c.wAttribute == HPI_TUNER_LEVEL) &&
+				(phm->u.c.dwParam1 ==
+					HPI_TUNER_LEVEL_AVERAGE))
+				phr->u.c.dwParam1 = pCT->u.t.wLevel;
+			else
+				found = 0;
+		}
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
 		if (phm->u.c.wAttribute == HPI_AESEBURX_ERRORSTATUS)
@@ -244,26 +370,26 @@ short HpiCheckControlCache(
 		else if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
 			phr->u.c.dwParam1 = pC->u.aes3rx.dwSource;
 		else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
 		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
 			phr->u.c.dwParam1 = pC->u.aes3tx.dwFormat;
 		else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_TONEDETECTOR:
 		if (phm->u.c.wAttribute == HPI_TONEDETECTOR_STATE)
 			phr->u.c.dwParam1 = pC->u.tone.wState;
 		else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_SILENCEDETECTOR:
 		if (phm->u.c.wAttribute == HPI_SILENCEDETECTOR_STATE) {
 			phr->u.c.dwParam1 = pC->u.silence.dwState;
 			phr->u.c.dwParam2 = pC->u.silence.dwCount;
 		} else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
 	case HPI_CONTROL_SAMPLECLOCK:
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
@@ -278,17 +404,105 @@ short HpiCheckControlCache(
 		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
 			phr->u.c.dwParam1 = pC->u.clk.dwSampleRate;
 		else
-			found = 0;	/* signal that message was not cached */
+			found = 0;
 		break;
+#ifndef HPI_OS_WIN16	/* SGT - below does not compile in Borland C */
+	case HPI_CONTROL_PAD:
+		{
+			struct hpi_control_cache_pad *pPad =
+				(struct hpi_control_cache_pad *)pC;
+
+			if (!(pPad->dwFieldValidFlags &
+					(1 << HPI_CTL_ATTR_INDEX(phm->u.c.
+							wAttribute)))) {
+				/* attribute not supported */
+				phr->wError =
+					HPI_ERROR_INVALID_CONTROL_ATTRIBUTE;
+				break;
+			}
+
+			if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_ID)
+				phr->u.c.dwParam1 = pPad->dwPI;
+			else if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_TYPE)
+				phr->u.c.dwParam1 = pPad->dwPTY;
+			else {
+				struct attribs {
+					u8 *pData;
+					unsigned int nSize;
+				};
+				struct attribs aDesc[] = {
+					{NULL, 0},
+					/* HPI_PAD_CHANNEL_NAME */
+					{pPad->cChannel, sizeof(pPad->
+								cChannel)}
+					,
+					/* HPI_PAD_ARTIST */
+					{pPad->cArtist, sizeof(pPad->cArtist)}
+					,
+					/* HPI_PAD_TITLE */
+					{pPad->cTitle, sizeof(pPad->cTitle)}
+					,
+					/* HPI_PAD_COMMENT */
+					{pPad->cComment, sizeof(pPad->
+								cComment)}
+					,
+				};
+
+				const u32 dwAttribute = phm->u.c.wAttribute;
+				const u32 dwIndex =
+					HPI_CTL_ATTR_INDEX(dwAttribute);
+				const u32 dwOffset = phm->u.c.dwParam1;
+				int nStringLength = 0;
+				int nRemainingChars = 0;
+
+				HPI_DEBUG_LOG(VERBOSE, "PADS control\n");
+
+				/* check the field type */
+				HPI_DEBUG_LOG(VERBOSE,
+					"PADS HPI_PADS_ %d\n", dwAttribute);
+
+				switch (dwAttribute) {
+				case HPI_PAD_CHANNEL_NAME:
+				case HPI_PAD_ARTIST:
+				case HPI_PAD_TITLE:
+				case HPI_PAD_COMMENT:
+					break;
+				default:
+					phr->wError = HPI_ERROR_INVALID_FUNC;
+				}
+				if (phr->wError)
+					break;
+
+				nStringLength = strlen(aDesc[dwIndex].pData);
+				if (dwOffset > (unsigned)nStringLength) {
+					phr->wError =
+						HPI_ERROR_INVALID_CONTROL_VALUE;
+					break;
+				}
+				HPI_DEBUG_LOG(VERBOSE,
+					"PADS memcpy (%d), offset %d \n",
+					8, dwOffset);
+				memcpy(&phr->u.cu.chars8.szData[0],
+					&aDesc[dwIndex].pData[dwOffset], 8);
+				nRemainingChars =
+					nStringLength - dwOffset - 8;
+				if (nRemainingChars < 0)
+					nRemainingChars = 0;
+				phr->u.cu.chars8.dwRemainingChars =
+					nRemainingChars;
+			}
+		}
+		break;
+#endif
 	default:
-		found = 0;	/* signal that message was not cached */
+		found = 0;
 		break;
 	}
-	if (found == 0)
-		HPI_DEBUG_LOG(VERBOSE, "Adap %d, Control %d, "
-			"Control type %d, Cached %d\n",
-			phm->wAdapterIndex, pC->ControlIndex,
-			pC->ControlType, found);
+	if (pI->ControlType && !found)
+		HPI_DEBUG_LOG(VERBOSE,
+			"Uncached Adap %d, Control %d, Control type %d\n",
+			phm->wAdapterIndex, pI->ControlIndex,
+			pI->ControlType);
 
 	return found;
 }
@@ -300,15 +514,24 @@ Volume and Level return the limited values in the response, so use these
 Multiplexer does so use sent values
 */
 void HpiSyncControlCache(
-	struct hpi_control_cache_single *pC,
+	struct hpi_control_cache *pCache,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
 {
-	if (phr->wError)
+	u16 wControlIndex;
+	struct hpi_control_cache_single *pC;
+	struct hpi_control_cache_info *pI;
+
+	if (!FindControl(phm, pCache, &pI, &wControlIndex))
 		return;
 
-	switch (pC->ControlType) {
+	/* pC is the default cached control strucure.
+	   May be cast to something else in the following switch statement.
+	 */
+	pC = (struct hpi_control_cache_single *)pI;
+
+	switch (pI->ControlType) {
 	case HPI_CONTROL_VOLUME:
 		if (phm->u.c.wAttribute == HPI_VOLUME_GAIN) {
 			pC->u.v.anLog[0] = phr->u.c.anLogValue[0];
@@ -323,8 +546,8 @@ void HpiSyncControlCache(
 		}
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
-		/* mux does not return its setting on Set command. */
-		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE)
+		/* mode does not return its setting on Set command. */
+		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
 			pC->u.m.wMode = (u16)phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_LEVEL:
@@ -340,6 +563,7 @@ void HpiSyncControlCache(
 	case HPI_CONTROL_AESEBU_RECEIVER:
 		if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
 			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
+		break;
 	case HPI_CONTROL_SAMPLECLOCK:
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
 			pC->u.clk.wSource = (u16)phm->u.c.dwParam1;
@@ -356,6 +580,35 @@ void HpiSyncControlCache(
 		break;
 	default:
 		break;
+	}
+}
+struct hpi_control_cache *HpiAllocControlCache(
+	const u32 dwNumberOfControls,
+	const u32 dwSizeInBytes,
+	struct hpi_control_cache_info *pDSPControlBuffer
+)
+{
+	struct hpi_control_cache *pCache =
+		kmalloc(sizeof(*pCache), GFP_KERNEL);
+	pCache->dwCacheSizeInBytes = dwSizeInBytes;
+	pCache->dwControlCount = dwNumberOfControls;
+	pCache->pCache = (struct hpi_control_cache_single *)pDSPControlBuffer;
+	pCache->dwInit = 0;
+	pCache->pInfo =
+		kmalloc(sizeof(*pCache->pInfo) * pCache->dwControlCount,
+		GFP_KERNEL);
+	return pCache;
+}
+
+void HpiFreeControlCache(
+	struct hpi_control_cache *pCache
+)
+{
+	if ((pCache->dwInit) && (pCache->pInfo)) {
+		kfree(pCache->pInfo);
+		pCache->pInfo = NULL;
+		pCache->dwInit = 0;
+		kfree(pCache);
 	}
 }
 

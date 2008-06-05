@@ -67,7 +67,7 @@ This is used for dynamic control cache allocation
 struct controlcache_6205 {
 	u32 dwNumberOfControls;
 	u32 dwPhysicalPCI32address;
-	u32 dwSpare;
+	u32 dwSizeInBytes;
 };
 
 /*********************************************************************

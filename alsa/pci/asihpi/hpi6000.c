@@ -158,6 +158,7 @@ struct hpi_hw_obj {
 	u16 wDspCrashed;	/* when '1' DSP has crashed/died/OTL */
 
 	struct hpi_control_cache_single aControlCache[HPI_NMIXER_CONTROLS];
+	struct hpi_control_cache *pCache;
 };
 
 static u16 Hpi6000_DspBlockWrite32(
@@ -319,8 +320,7 @@ static void ControlMessage(
 			}
 
 			if (HpiCheckControlCache
-				(&((struct hpi_hw_obj *)pao->priv)->
-					aControlCache[phm->u.c.wControlIndex],
+				(((struct hpi_hw_obj *)pao->priv)->pCache,
 					phm, phr))
 				break;
 		}
@@ -331,8 +331,8 @@ static void ControlMessage(
 		break;
 	case HPI_CONTROL_SET_STATE:
 		HW_Message(pao, phm, phr);
-		HpiSyncControlCache(&((struct hpi_hw_obj *)pao->priv)->
-			aControlCache[phm->u.c.wControlIndex], phm, phr);
+		HpiSyncControlCache(
+			((struct hpi_hw_obj *)pao->priv)->pCache, phm, phr);
 		break;
 	default:
 		phr->wError = HPI_ERROR_INVALID_FUNC;
@@ -431,7 +431,7 @@ void HPI_6000(
 	/* subsytem messages get executed by every HPI. */
 	/* All other messages are ignored unless the adapter index matches */
 	/* an adapter in the HPI */
-	HPI_DEBUG_LOG(DEBUG, "O %d,F %d\n", phm->wObject, phm->wFunction);
+	HPI_DEBUG_LOG(DEBUG, "O %d,F %x\n", phm->wObject, phm->wFunction);
 
 	/* if Dsp has crashed then do not communicate with it any more */
 	if (phm->wObject != HPI_OBJ_SUBSYSTEM) {
@@ -573,15 +573,19 @@ static void SubSysDeleteAdapter(
 )
 {
 	struct hpi_adapter_obj *pao = NULL;
-	void *priv;
+	struct hpi_hw_obj *phw;
 
 	pao = HpiFindAdapter(phm->wAdapterIndex);
 	if (!pao)
 		return;
 
-	priv = pao->priv;
+	phw = (struct hpi_hw_obj *)pao->priv;
+
+	if (pao->wHasControlCache)
+		HpiFreeControlCache(phw->pCache);
+
 	HpiDeleteAdapter(pao);
-	kfree(priv);
+	kfree(phw);
 
 	phr->wError = 0;
 }
@@ -594,6 +598,8 @@ static short CreateAdapterObj(
 {
 	short nBootError = 0;
 	u32 dwDspIndex = 0;
+	u32 dwControlCacheSize = 0;
+	u32 dwControlCacheCount = 0;
 	struct hpi_hw_obj *phw = (struct hpi_hw_obj *)pao->priv;
 
 	/* init error reporting */
@@ -693,10 +699,18 @@ static short CreateAdapterObj(
 		sizeof(struct hpi_control_cache_single) *
 		HPI_NMIXER_CONTROLS);
 	/* Read the control cache length to figure out if it is turned on */
-	if (HpiReadWord
-		(&phw->ado[0], HPI_HIF_ADDR(dwControlCacheSizeInBytes)))
+	dwControlCacheSize = HpiReadWord(&phw->ado[0],
+		HPI_HIF_ADDR(dwControlCacheSizeInBytes));
+	if (dwControlCacheSize) {
+		dwControlCacheCount = HpiReadWord(&phw->ado[0],
+			HPI_HIF_ADDR(dwControlCacheCount));
 		pao->wHasControlCache = 1;
-	else
+
+		phw->pCache = HpiAllocControlCache(dwControlCacheCount,
+			dwControlCacheSize, (struct hpi_control_cache_info *)
+			&phw->aControlCache[0]
+			);
+	} else
 		pao->wHasControlCache = 0;
 
 	HPI_DEBUG_LOG(DEBUG, "Get adapter info ASI%04X index %d\n",
