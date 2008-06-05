@@ -56,6 +56,9 @@ struct code_header {
 #pragma pack(pop)
 #endif
 
+#define HPI_VER_DECIMAL ((int)(HPI_VER_MAJOR(HPI_VER) * 10000 + \
+	    HPI_VER_MINOR(HPI_VER) * 100 + HPI_VER_RELEASE(HPI_VER)))
+
 /***********************************************************************/
 #include "linux/pci.h"
 /*-------------------------------------------------------------------*/
@@ -98,6 +101,13 @@ short HpiDspCode_Open(
 		HPI_DEBUG_LOG(ERROR, "Code size wrong  %d != %ld\n",
 			header.size, (unsigned long)psFirmware->size);
 		goto error2;
+	}
+
+	if (header.version != HPI_VER_DECIMAL) {
+		HPI_DEBUG_LOG(WARNING,
+			"Version mismatch  DSP image %d != Driver %d\n",
+			header.version, HPI_VER_DECIMAL);
+		/* goto error2;  still allow driver to load */
 	}
 
 	HPI_DEBUG_LOG(INFO, "Dsp code %s opened\n", fw_name);
