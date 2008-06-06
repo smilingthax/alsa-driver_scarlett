@@ -1,4 +1,3 @@
-/* -*- linux-c -*- */
 /*******************************************************************************
 
     AudioScience HPI driver
@@ -17,13 +16,14 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-Linux HPI driver module
+Common Linux HPI ioctl and module probe/remove functions
 *******************************************************************************/
-#define SOURCEFILE_NAME "hpimod.c"
+#define SOURCEFILE_NAME "hpioctl.c"
 
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
+#include "hpioctl.h"
 
 #include <linux/fs.h>
 #include <linux/slab.h>
@@ -31,24 +31,11 @@ Linux HPI driver module
 #include <asm/uaccess.h>
 #include <linux/stringify.h>
 
-int snd_asihpi_bind(
-	struct hpi_adapter *hpi_card
-);
-void snd_asihpi_unbind(
-	struct hpi_adapter *hpi_card
-);
-
 #ifndef HPIMOD_DEFAULT_BUF_SIZE
 #   define HPIMOD_DEFAULT_BUF_SIZE 192000
 #endif
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("AudioScience <support@audioscience.com>");
-MODULE_DESCRIPTION("AudioScience HPI");
-
 #ifdef MODULE_FIRMWARE
-MODULE_FIRMWARE("asihpi/dsp4100.bin");
-MODULE_FIRMWARE("asihpi/dsp4300.bin");
 MODULE_FIRMWARE("asihpi/dsp5000.bin");
 MODULE_FIRMWARE("asihpi/dsp6200.bin");
 MODULE_FIRMWARE("asihpi/dsp6205.bin");
@@ -58,19 +45,7 @@ MODULE_FIRMWARE("asihpi/dsp8700.bin");
 MODULE_FIRMWARE("asihpi/dsp8900.bin");
 #endif
 
-static int major;
 static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0))
-/* old style parameters */
-MODULE_PARM(major, "i");
-MODULE_PARM(hpiDebugLevel, "0-6i");
-MODULE_PARM(bufsize, "i");
-
-#else				/* new style params */
-module_param(major, int,
-	S_IRUGO
-);
 module_param(bufsize, int,
 	S_IRUGO
 );
@@ -80,16 +55,8 @@ module_param(bufsize, int,
 module_param(hpiDebugLevel, int,
 	S_IRUGO | S_IWUSR
 );
-#endif
-
-MODULE_PARM_DESC(major, "Device major number");
-MODULE_PARM_DESC(hpiDebugLevel,
-	"Debug level for Audioscience HPI 0=none 6=verbose");
-MODULE_PARM_DESC(bufsize,
-	"Buffer size to allocate for data transfer from HPI ioctl ");
 
 /* List of adapters found */
-static int adapter_count;
 static struct hpi_adapter adapters[HPI_MAX_ADAPTERS];
 
 /* Wrapper function to HPI_Message to enable dumping of the
@@ -110,14 +77,6 @@ static void HPI_MessageF(
 		HPI_MessageEx(phm, phr, file);
 }
 
-/*
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0))
-#define EXPORT_SYMBOL(x)
-#endif
-*/
-
-#define HOWNER_KERNEL ((void *)-1)
-
 /* This is called from hpifunc.c functions, called by ALSA
  * (or other kernel process) In this case there is no file descriptor
  * available for the message cache code
@@ -133,22 +92,7 @@ void HPI_Message(
 EXPORT_SYMBOL(HPI_Message);
 /* export HPI_Message for radio-asihpi */
 
-static int hpi_open(
-	struct inode *inode,
-	struct file *file
-)
-{
-	unsigned int minor = MINOR(inode->i_rdev);
-
-	if (minor > 0)
-		return -ENODEV;
-
-/* HPI_DEBUG_LOG(INFO,"hpi_open file %p, pid %d\n", file, current->pid); */
-	return 0;
-}
-
-static int hpi_release(
-	struct inode *inode,
+int asihpi_hpi_release(
 	struct file *file
 )
 {
@@ -169,7 +113,7 @@ long asihpi_hpi_ioctl(
 	unsigned long arg
 )
 #else
-static int asihpi_hpi_ioctl(
+int asihpi_hpi_ioctl(
 	struct inode *inode,
 	struct file *file,
 	unsigned int cmd,
@@ -314,18 +258,7 @@ static int asihpi_hpi_ioctl(
 	return 0;
 }
 
-static struct file_operations hpi_fops = {
-	.owner = THIS_MODULE,
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 11)
-	.unlocked_ioctl = asihpi_hpi_ioctl,
-#else
-	.ioctl = asihpi_hpi_ioctl,
-#endif
-	.open = hpi_open,
-	.release = hpi_release
-};
-
-static int __devinit adapter_probe(
+int __devinit asihpi_adapter_probe(
 	struct pci_dev *pci_dev,
 	const struct pci_device_id *pci_id
 )
@@ -342,11 +275,6 @@ static int __devinit adapter_probe(
 	printk(KERN_DEBUG "Probe PCI device (%04x:%04x,%04x:%04x,%04x)\n",
 		pci_dev->vendor, pci_dev->device, pci_dev->subsystem_vendor,
 		pci_dev->subsystem_device, pci_dev->devfn);
-
-	if (HPI_SubSysCreate() == NULL) {
-		printk(KERN_ERR "SubSysCreate failed.\n");
-		goto err;
-	}
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
 	HPI_InitResponse(&hr, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER,
@@ -414,27 +342,18 @@ static int __devinit adapter_probe(
 		goto err;
 
 	adapter.snd_card_asihpi = NULL;
-	/* WARNING can't init sem in 'adapter'
+	/* WARNING can't init mutex in 'adapter'
 	 * and then copy it to adapters[] ?!?!
 	 */
 	adapters[hr.u.s.wAdapterIndex] = adapter;
 	mutex_init(&adapters[adapter.index].mutex);
-#ifdef ALSA_BUILD
-	if (snd_asihpi_bind(&adapters[adapter.index])) {
-		HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
-			HPI_SUBSYS_DELETE_ADAPTER);
-		hm.wAdapterIndex = adapter.index;
-		HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
-		goto err;
-	}
-#endif
-
 	pci_set_drvdata(pci_dev, &adapters[adapter.index]);
-	adapter_count++;
 
-	printk(KERN_INFO
-		"Probe found adapter ASI%04X HPI index #%d.\n",
-		adapter.type, adapter.index);
+	/* printk(KERN_INFO
+	   "Probe found adapter ASI%04X HPI index #%d.\n",
+	   adapter.type,
+	   adapter.index);
+	 */
 	return 0;
 
 err:
@@ -452,7 +371,7 @@ err:
 	return -ENODEV;
 }
 
-static void __devexit adapter_remove(
+void __devexit asihpi_adapter_remove(
 	struct pci_dev *pci_dev
 )
 {
@@ -461,11 +380,6 @@ static void __devexit adapter_remove(
 	struct hpi_response hr;
 	struct hpi_adapter *pa;
 	pa = (struct hpi_adapter *)pci_get_drvdata(pci_dev);
-
-#ifdef ALSA_BUILD
-	if (pa->snd_card_asihpi)
-		snd_asihpi_unbind(pa);
-#endif
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DELETE_ADAPTER);
 	hm.wAdapterIndex = pa->index;
@@ -483,141 +397,44 @@ static void __devexit adapter_remove(
 		vfree(pa->pBuffer);
 
 	pci_set_drvdata(pci_dev, NULL);
-	printk(KERN_INFO "PCI device (%04x:%04x,%04x:%04x,%04x),"
-		" HPI index # %d, removed.\n",
-		pci_dev->vendor, pci_dev->device,
-		pci_dev->subsystem_vendor,
-		pci_dev->subsystem_device, pci_dev->devfn, pa->index);
+	/*
+	   printk(KERN_INFO "PCI device (%04x:%04x,%04x:%04x,%04x),"
+	   " HPI index # %d, removed.\n",
+	   pci_dev->vendor, pci_dev->device,
+	   pci_dev->subsystem_vendor,
+	   pci_dev->subsystem_device, pci_dev->devfn,
+	   pa->index);
+	 */
 }
 
-/* also used by hpimsgx.c for message routing based on pci id */
-struct pci_device_id asihpi_pci_tbl[] = {
-#include "hpipcida.h"
-};
-
-MODULE_DEVICE_TABLE(pci, asihpi_pci_tbl);
-
-static struct pci_driver asihpi_pci_driver = {
-	.name = "asihpi",
-	.id_table = asihpi_pci_tbl,
-	.probe = adapter_probe,
-	.remove = __devexit_p(adapter_remove),
-};
-
-static struct class *asihpi_class;
-static int chrdev_registered;
-static int pci_driver_registered;
-
-static void hpimod_cleanup(
-	void
-)
-{
-
-	struct hpi_message hm;
-	struct hpi_response hr;
-
-	HPI_DEBUG_LOG(DEBUG, "cleanup_module\n");
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
-	if (asihpi_class) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
-		device_destroy(asihpi_class, MKDEV(major, 0));
-#else
-		class_device_destroy(asihpi_class, MKDEV(major, 0));
-#endif
-		class_destroy(asihpi_class);
-	}
-#endif
-	if (chrdev_registered >= 0)
-		unregister_chrdev(major, "asihpi");
-	if (pci_driver_registered >= 0)
-		pci_unregister_driver(&asihpi_pci_driver);
-
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_UNLOAD);
-	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
-}
-
-static void __exit hpimod_exit(
-	void
-)
-{
-	hpimod_cleanup();
-}
-
-static int __init hpimod_init(
+void __init asihpi_init(
 	void
 )
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	u32 dwVersion = 0;
 
 	memset(adapters, 0, sizeof(adapters));
 
 	/* HPI_DebugLevelSet(debug); now set directly as module param */
-	printk(KERN_INFO "ASIHPI driver %s debug=%d \n",
-		__stringify(DRIVER_VERSION), hpiDebugLevel);
-	HPI_SubSysGetVersionEx(NULL, &dwVersion);
-	printk(KERN_INFO "SubSys Version=%d.%02d.%02d\n",
-		HPI_VER_MAJOR(dwVersion),
-		HPI_VER_MINOR(dwVersion), HPI_VER_RELEASE(dwVersion));
+	printk(KERN_INFO "ASIHPI driver %d.%02d.%02d\n",
+		HPI_VER_MAJOR(HPI_VER),
+		HPI_VER_MINOR(HPI_VER), HPI_VER_RELEASE(HPI_VER));
 
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_LOAD);
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
-
-	/* old version of below fn returned +ve number of devices, -ve error */
-	pci_driver_registered = pci_register_driver(&asihpi_pci_driver);
-	if (pci_driver_registered < 0) {
-		HPI_DEBUG_LOG(ERROR,
-			"HPI: pci_register_driver returned %d\n",
-			pci_driver_registered);
-		hpimod_cleanup();
-		return pci_driver_registered;
-	}
-
-	/* note need to remove this if we want driver to stay
-	 * loaded with no devices and devices can be hotplugged later
-	 */
-	if (!adapter_count) {
-		HPI_DEBUG_LOG(INFO, "No adapters found\n");
-		hpimod_cleanup();
-		return -ENODEV;
-	}
-	chrdev_registered = register_chrdev(major, "asihpi", &hpi_fops);
-	if (chrdev_registered < 0) {
-		printk(KERN_ERR
-			"HPI: failed with error %d for major number %d\n",
-			-chrdev_registered, major);
-		hpimod_cleanup();
-		return -EIO;
-	}
-
-	if (!major)	/* Use dynamically allocated major number. */
-		major = chrdev_registered;
-
-	/* would like to create device in "sound" class
-	 * (usually created by alsa) but don't know how
-	 */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 14)
-	asihpi_class = class_create(THIS_MODULE, "asihpi");
-	if (IS_ERR(asihpi_class)) {
-		printk(KERN_ERR "Error creating asihpi class.\n");
-		hpimod_cleanup();
-	} else {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
-		device_create(asihpi_class, NULL, MKDEV(major, 0), "asihpi");
-#else
-		class_device_create(asihpi_class, NULL, MKDEV(major, 0), NULL,
-			"asihpi");
-#endif
-	}
-#endif
-	return 0;
-
 }
 
-module_init(hpimod_init)
-	module_exit(hpimod_exit)
+void asihpi_exit(
+	void
+)
+{
+	struct hpi_message hm;
+	struct hpi_response hr;
+
+	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_UNLOAD);
+	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
+}
 
 /***********************************************************
 */
