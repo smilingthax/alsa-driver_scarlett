@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.46
-CHANGELOG="http://git.alsa-project.org/?p=alsa-driver.git;a=history;f=utils/alsa-info.sh"
+SCRIPT_VERSION=0.4.47
+CHANGELOG="http://www.alsa-project.org/alsa-info.sh"
 
 #################################################################################
 #Copyright (C) 2007 Free Software Foundation.
