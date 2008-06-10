@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.47
-CHANGELOG="http://www.alsa-project.org/alsa-info.sh"
+SCRIPT_VERSION=0.4.48
+CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
 #Copyright (C) 2007 Free Software Foundation.
@@ -37,7 +37,7 @@ pbcheck(){
 }
 
 update() {
-	wget -O /tmp/alsa-info.sh "http://git.alsa-project.org/?p=alsa-driver.git;a=blob_plain;f=utils/alsa-info.sh" >/dev/null 2>&1
+	wget -O /tmp/alsa-info.sh "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
 	REMOTE_VERSION=`grep SCRIPT_VERSION /tmp/alsa-info.sh |head -n1 |sed 's/.*=//'`
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
 		if [[ -n $DIALOG ]]
