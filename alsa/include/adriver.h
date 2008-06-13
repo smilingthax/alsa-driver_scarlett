@@ -1544,4 +1544,8 @@ static inline void put_unaligned_be64(u64 val, void *p)
 #endif
 #endif /* < 2.6.22 */
 
+#ifndef upper_32_bits
+#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
