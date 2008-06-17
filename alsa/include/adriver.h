@@ -1548,4 +1548,8 @@ static inline void put_unaligned_be64(u64 val, void *p)
 #define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 #endif
 
+#ifndef CONFIG_HAVE_PAGE_TO_PFN
+#define page_to_pfn(page)       (page_to_phys(page) >> PAGE_SHIFT)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
