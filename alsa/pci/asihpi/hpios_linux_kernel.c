@@ -74,7 +74,7 @@ u16 HpiOs_LockedMem_Alloc(
 	/*?? any benefit in using managed dmam_alloc_coherent? */
 	pMemArea->vaddr =
 		dma_alloc_coherent(&pdev->dev, size,
-		&pMemArea->dma_handle, GFP_DMA32);
+		&pMemArea->dma_handle, GFP_DMA32 | GFP_KERNEL);
 
 	if (pMemArea->vaddr) {
 		HPI_DEBUG_LOG(DEBUG, "Allocated %d bytes, dma 0x%x vma %p\n",
