@@ -275,7 +275,7 @@ typedef unsigned __nocast gfp_t;
 #endif
 
 #ifndef CONFIG_HAVE_GFP_DMA32
-#define GFP_DMA32 GFP_DMA
+#define GFP_DMA32 0		/* driver must check for 32-bit address */
 #endif
 
 #include <linux/wait.h>
