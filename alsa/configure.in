@@ -2612,6 +2612,33 @@ if test "$CONFIG_HAVE_GFP_T" = "1"; then
   AC_DEFINE(CONFIG_HAVE_GFP_T)
 fi
 
+dnl Check for GFP_DMA32...
+AC_MSG_CHECKING(for GFP_DMA32)
+gfp_dma32="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/types.h>
+#include <linux/gfp.h>
+],[
+   int flags = GFP_DMA32;
+],
+    AC_MSG_RESULT(yes);gfp_dma32="1",
+    AC_MSG_RESULT(no);gfp_dma32="0",
+    AC_MSG_RESULT(unknown);gfp_dma32="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_GFP_DMA32=$gfp_dma32
+dnl AC_SUBST(CONFIG_HAVE_GFP_DMA32)
+if test "$CONFIG_HAVE_GFP_DMA32" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_GFP_DMA32)
+fi
+
 dnl Check for init_utsname...
 if test "$kversion.$kpatchlevel" = "2.6" -a $ksublevel -ge 19; then
   CONFIG_HAVE_INIT_UTSNAME=1

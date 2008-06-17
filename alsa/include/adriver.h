@@ -274,6 +274,10 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 typedef unsigned __nocast gfp_t;
 #endif
 
+#ifndef CONFIG_HAVE_GFP_DMA32
+#define GFP_DMA32 GFP_DMA
+#endif
+
 #include <linux/wait.h>
 #ifndef wait_event_timeout
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
