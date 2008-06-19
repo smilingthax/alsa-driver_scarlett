@@ -130,6 +130,7 @@ static char *kernel_deps[] = {
 	"SUPERH",
 	"SUPERH64",
 	"IA32_EMULATION",
+	"M68K",
 	/* architecture specific */
 	"ARCH_*",
 	"X86_PC9800",
@@ -601,6 +602,10 @@ static struct cond *join_cond(struct cond *cond1, struct cond *cond2)
 	while (cond1->next)
 		cond1 = cond1->next;
 	cond1->next = cond2;
+	cond2->left += 1;
+	while (cond2->next)
+		cond2 = cond2->next;
+	cond2->right += 1;
 	return orig;
 }
 
