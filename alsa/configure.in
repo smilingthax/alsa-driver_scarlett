@@ -1114,6 +1114,7 @@ EOF
       KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/ppc/include"
     fi
     CONFIG_PPC=y
+    CONFIG_PPC32=y
     dnl FIXME: it should be checked?
     CONFIG_PPC_PMAC=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
@@ -1129,6 +1130,7 @@ EOF
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
     CONFIG_SND_BIT32_EMUL=m
     CONFIG_PPC=y
+    CONFIG_PPC64=y
     CHECK_KERNEL_CONFIG(CONFIG_PPC_PMAC, [PPC PowerMac])
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;

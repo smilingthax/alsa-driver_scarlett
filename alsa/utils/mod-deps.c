@@ -793,13 +793,18 @@ static void optimize_dep(struct dep * parent)
 				cond->left = 0;
 			}
 			if (cond->next &&
-			    !strcmp(cond->name, cond->next->name) &&
-			    ((cond->left == cond->right &&
-			      cond->next->left == cond->next->right) ||
-			     (cond->left == cond->right + 1 &&
-			      cond->next->left + 1 == cond->next->right)) &&
-			      cond->left == cond->next->right)
-			      	goto __remove;
+			    !strcmp(cond->name, cond->next->name)) {
+			    	if (cond->left == cond->right &&
+			            cond->next->left == cond->next->right &&
+			            cond->left == cond->next->right)
+			            	goto __remove;
+				if (cond->left == cond->right + 1 &&
+				    cond->next->left + 1 == cond->next->right &&
+				    cond->left == cond->next->right) {
+					cond->next->right--;
+				      	goto __remove;
+			      	}
+			}
 			if (!is_always_true(cond->dep))
 				goto __next;
 			if (cond->left == cond->right &&
