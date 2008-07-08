@@ -41,12 +41,12 @@ i.e 3.05.02 is a development version
 #define HPI_VERSION_CONSTRUCTOR(maj, min, rel) \
 	((maj << 16) + (min << 8) + rel)
 
-#define HPI_VER_MAJOR(v) (int)(v >> 16)
-#define HPI_VER_MINOR(v) (int)((v >> 8) & 0xFF)
-#define HPI_VER_RELEASE(v) (int)(v & 0xFF)
+#define HPI_VER_MAJOR(v) ((int)(v >> 16))
+#define HPI_VER_MINOR(v) ((int)((v >> 8) & 0xFF))
+#define HPI_VER_RELEASE(v) ((int)(v & 0xFF))
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 10, 0)
+#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 10, 1)
 
 #ifdef _DOX_ONLY_
 /*****************************************************************************/
@@ -1052,6 +1052,13 @@ Contains either 1 or 0. */
 Contains either 1 or 0. */
 #define HPI_PAD_TA_ACTIVE               HPI_CTL_ATTR(PAD, 8)
 
+/** Data types for PTY string translation.
+  */
+enum eHPI_RDS_type {
+	HPI_RDS_DATATYPE_RDS = 0,	/**< RDS bitstream. */
+	HPI_RDS_DATATYPE_RDBS = 1,	/**< RDBS bitstream. */
+	HPI_RDS_DATATYPE_FUTURE = 2	/**< Future bitstream. */
+};
 /** \} */
 
 /** \defgroup tuner_bands Tuner bands
