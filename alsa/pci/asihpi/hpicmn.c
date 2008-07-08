@@ -283,8 +283,8 @@ short HpiCheckBufferMapping(
 }
 
 /** CheckControlCache checks the cache and fills the struct hpi_response
-* accordingly. It returns one if a cache hit occurred, zero otherwise.
-*/
+ * accordingly. It returns one if a cache hit occurred, zero otherwise.
+ */
 short HpiCheckControlCache(
 	struct hpi_control_cache *pCache,
 	struct hpi_message *phm,
@@ -304,8 +304,8 @@ short HpiCheckControlCache(
 		sizeof(struct hpi_control_res);
 	phr->wError = 0;
 
-	/* pC is the default cached control strucure. May be cast to
-	   something else in the following switch statement.
+	/* pC is the default cached control strucure.
+	   May be cast to something else in the following switch statement.
 	 */
 	pC = (struct hpi_control_cache_single *)pI;
 

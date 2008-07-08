@@ -46,7 +46,7 @@ i.e 3.05.02 is a development version
 #define HPI_VER_RELEASE(v) ((int)(v & 0xFF))
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 10, 1)
+#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 10, 3)
 
 #ifdef _DOX_ONLY_
 /*****************************************************************************/
