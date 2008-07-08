@@ -106,20 +106,11 @@ int asihpi_hpi_release(
 	return 0;
 }
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 11)
 long asihpi_hpi_ioctl(
 	struct file *file,
 	unsigned int cmd,
 	unsigned long arg
 )
-#else
-int asihpi_hpi_ioctl(
-	struct inode *inode,
-	struct file *file,
-	unsigned int cmd,
-	unsigned long arg
-)
-#endif
 {
 	struct hpi_ioctl_linux __user *phpi_ioctl_data;
 	void __user *phm;
@@ -127,7 +118,7 @@ int asihpi_hpi_ioctl(
 	struct hpi_message hm;
 	struct hpi_response hr;
 	u32 uncopied_bytes;
-	struct hpi_adapter *pa;
+	struct hpi_adapter *pa = NULL;
 
 	if (cmd != HPI_IOCTL_LINUX)
 		return -EINVAL;
@@ -145,27 +136,29 @@ int asihpi_hpi_ioctl(
 		return -EFAULT;
 
 	pa = &adapters[hm.wAdapterIndex];
-
-	if ((hm.wAdapterIndex > HPI_MAX_ADAPTERS) || (!pa->type)) {
-		HPI_InitResponse(&hr, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN,
-			HPI_ERROR_BAD_ADAPTER_NUMBER);
-
-		uncopied_bytes = copy_to_user(phr, &hr, sizeof(hr));
-		if (uncopied_bytes)
-			return -EFAULT;
-		return 0;
-	}
-
 	hr.wSize = 0;
-	/* Response filled either copy from cache, or by HPI_Message() */
-	{
-		/* Dig out any pointers embedded in the message.  */
+	if (hm.wObject == HPI_OBJ_SUBSYSTEM) {
+		HPI_MessageF(&hm, &hr, file);
+	} else {
 		u16 __user *ptr = NULL;
 		u32 size = 0;
 
 		/* -1=no data 0=read from user mem, 1=write to user mem */
 		int wrflag = -1;
 		u32 nAdapter = hm.wAdapterIndex;
+
+		if ((hm.wAdapterIndex > HPI_MAX_ADAPTERS) || (!pa->type)) {
+			HPI_InitResponse(&hr, HPI_OBJ_ADAPTER,
+				HPI_ADAPTER_OPEN,
+				HPI_ERROR_BAD_ADAPTER_NUMBER);
+
+			uncopied_bytes = copy_to_user(phr, &hr, sizeof(hr));
+			if (uncopied_bytes)
+				return -EFAULT;
+			return 0;
+		}
+
+		/* Dig out any pointers embedded in the message.  */
 		switch (hm.wFunction) {
 		case HPI_SUBSYS_CREATE_ADAPTER:
 		case HPI_SUBSYS_DELETE_ADAPTER:
