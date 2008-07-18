@@ -22,7 +22,7 @@
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpicmn.c"
 
-#include "hpi.h"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 #include "hpicmn.h"
 
@@ -304,8 +304,8 @@ short HpiCheckControlCache(
 		sizeof(struct hpi_control_res);
 	phr->wError = 0;
 
-	/* pC is the default cached control strucure.
-	   May be cast to something else in the following switch statement.
+	/* pC is the default cached control strucure. May be cast to
+	   something else in the following switch statement.
 	 */
 	pC = (struct hpi_control_cache_single *)pI;
 
@@ -406,7 +406,6 @@ short HpiCheckControlCache(
 		else
 			found = 0;
 		break;
-#ifndef HPI_OS_WIN16	/* SGT - below does not compile in Borland C */
 	case HPI_CONTROL_PAD:
 		{
 			struct hpi_control_cache_pad *pPad =
@@ -474,6 +473,8 @@ short HpiCheckControlCache(
 					break;
 
 				nStringLength = strlen(aDesc[dwIndex].pData);
+				if (nStringLength > (int)aDesc[dwIndex].nSize)
+					nStringLength = aDesc[dwIndex].nSize;
 				if (dwOffset > (unsigned)nStringLength) {
 					phr->wError =
 						HPI_ERROR_INVALID_CONTROL_VALUE;
@@ -486,14 +487,16 @@ short HpiCheckControlCache(
 					&aDesc[dwIndex].pData[dwOffset], 8);
 				nRemainingChars =
 					nStringLength - dwOffset - 8;
-				if (nRemainingChars < 0)
+				if (nRemainingChars < 0) {
 					nRemainingChars = 0;
+					phr->u.cu.chars8.szData[8 +
+						nRemainingChars] = 0;
+				}
 				phr->u.cu.chars8.dwRemainingChars =
 					nRemainingChars;
 			}
 		}
 		break;
-#endif
 	default:
 		found = 0;
 		break;
@@ -540,6 +543,8 @@ void HpiSyncControlCache(
 		break;
 	case HPI_CONTROL_MULTIPLEXER:
 		/* mux does not return its setting on Set command. */
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
 			pC->u.x.wSourceNodeType = (u16)phm->u.c.dwParam1;
 			pC->u.x.wSourceNodeIndex = (u16)phm->u.c.dwParam2;
@@ -547,6 +552,8 @@ void HpiSyncControlCache(
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
 		/* mode does not return its setting on Set command. */
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
 			pC->u.m.wMode = (u16)phm->u.c.dwParam1;
 		break;
@@ -557,14 +564,20 @@ void HpiSyncControlCache(
 		}
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
 			pC->u.aes3tx.dwFormat = phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
 			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_SAMPLECLOCK:
+		if (phr->wError)
+			return;
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
 			pC->u.clk.wSource = (u16)phm->u.c.dwParam1;
 		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
