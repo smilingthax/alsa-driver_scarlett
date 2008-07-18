@@ -23,8 +23,7 @@ Debug macros.
 #ifndef _HPIDEBUG_H
 #define _HPIDEBUG_H
 
-#include "hpi.h"
-#include "hpios.h"
+#include "hpi_internal.h"
 
 #ifdef __cplusplus
 /* *INDENT-OFF* */
@@ -262,9 +261,10 @@ function_count_check(HPI_NVMEMORY, 3);
   "HPI_GPIO_OPEN",            \
   "HPI_GPIO_READ_BIT",        \
   "HPI_GPIO_WRITE_BIT",       \
-  "HPI_GPIO_READ_ALL"\
+  "HPI_GPIO_READ_ALL",                \
+  "HPI_GPIO_WRITE_STATUS"\
 }
-function_count_check(HPI_GPIO, 4);
+function_count_check(HPI_GPIO, 5);
 
 #define HPI_WATCHDOG_STRINGS    \
 {                               \
@@ -346,11 +346,12 @@ compile_time_assert((HPI_CONTROL_LAST_INDEX + 1) == (25),
 	"HPI_SOURCENODE_CLOCK_SOURCE", \
 	"HPI_SOURCENODE_RAW_BITSTREAM", \
 	"HPI_SOURCENODE_MICROPHONE", \
-	"HPI_SOURCENODE_COBRANET" \
+	"HPI_SOURCENODE_COBRANET", \
+	"HPI_SOURCENODE_ANALOG" \
 }
 
 compile_time_assert((HPI_SOURCENODE_LAST_INDEX - HPI_SOURCENODE_BASE + 1) ==
-	(10), sourcenode_strings_dont_match_defs);
+	(11), sourcenode_strings_dont_match_defs);
 
 #define HPI_DESTNODE_STRINGS \
 { \
@@ -360,9 +361,10 @@ compile_time_assert((HPI_SOURCENODE_LAST_INDEX - HPI_SOURCENODE_BASE + 1) ==
 	"HPI_DESTNODE_AESEBU_OUT", \
 	"HPI_DESTNODE_RF", \
 	"HPI_DESTNODE_SPEAKER", \
-	"HPI_DESTNODE_COBRANET" \
+	"HPI_DESTNODE_COBRANET", \
+	"HPI_DESTNODE_ANALOG" \
 }
-compile_time_assert((HPI_DESTNODE_LAST_INDEX - HPI_DESTNODE_BASE + 1) == (7),
+compile_time_assert((HPI_DESTNODE_LAST_INDEX - HPI_DESTNODE_BASE + 1) == (8),
 	destnode_strings_dont_match_defs);
 
 #define HPI_CONTROL_CHANNEL_MODE_STRINGS \

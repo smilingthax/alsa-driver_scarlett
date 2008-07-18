@@ -21,7 +21,7 @@
  (C) Copyright AudioScience Inc. 2007
 *******************************************************************************/
 
-#include "hpi.h"
+#include "hpi_internal.h"
 #include "hpimsginit.h"
 
 /* The actual message size for each object type */

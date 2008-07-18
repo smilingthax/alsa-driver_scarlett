@@ -20,8 +20,7 @@ Debug macro translation.
 
 ************************************************************************/
 
-#include "hpi.h"
-#include "hpios.h"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 
 /* Debug level; 0 quiet; 1 informative, 2 debug, 3 verbose debug.  */

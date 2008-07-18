@@ -33,10 +33,10 @@ HPI Operating System Specific macros for Linux
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/version.h>
+#include <linux/device.h>
 #include <linux/firmware.h>
 #include <linux/interrupt.h>
 #include <linux/pci.h>
-#include <linux/device.h>
 
 #define INLINE inline
 

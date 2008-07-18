@@ -20,7 +20,7 @@ Common Linux HPI ioctl and module probe/remove functions
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpioctl.c"
 
-#include "hpi.h"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
 #include "hpioctl.h"
@@ -342,11 +342,10 @@ int __devinit asihpi_adapter_probe(
 	mutex_init(&adapters[adapter.index].mutex);
 	pci_set_drvdata(pci_dev, &adapters[adapter.index]);
 
-	/* printk(KERN_INFO
-	   "Probe found adapter ASI%04X HPI index #%d.\n",
-	   adapter.type,
-	   adapter.index);
-	 */
+	printk(KERN_INFO
+		"Probe found adapter ASI%04X HPI index #%d.\n",
+		adapter.type, adapter.index);
+
 	return 0;
 
 err:

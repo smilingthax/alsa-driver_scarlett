@@ -30,7 +30,7 @@
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpi6000.c"
 
-#include "hpi.h"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 #include "hpi6000.h"
 #include "hpidspcd.h"
@@ -1318,20 +1318,19 @@ static void HpiWriteBlock(
 	u32 dwLength
 )
 {
+	u16 wLength = dwLength - 1;
+
 	if (dwLength == 0)
 		return;
 
 	if (HpiSetAddress(pdo, dwAddress))
 		return;
 
-	{
-		u16 wLength = dwLength - 1;
-		iowrite32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
+	iowrite32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
 
-		/* take care of errata in revB DSP (2.0.1) */
-		/* must end with non auto-inc */
-		iowrite32(*(pdwData + dwLength - 1), pdo->prHPIData);
-	}
+	/* take care of errata in revB DSP (2.0.1) */
+	/* must end with non auto-inc */
+	iowrite32(*(pdwData + dwLength - 1), pdo->prHPIData);
 }
 
 /** read a block of 32bit words from the DSP HPI port using auto-inc mode
@@ -1343,20 +1342,19 @@ static void HpiReadBlock(
 	u32 dwLength
 )
 {
+	u16 wLength = dwLength - 1;
+
 	if (dwLength == 0)
 		return;
 
 	if (HpiSetAddress(pdo, dwAddress))
 		return;
 
-	{
-		u16 wLength = dwLength - 1;
-		ioread32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
+	ioread32_rep(pdo->prHPIDataAutoInc, pdwData, wLength);
 
-		/* take care of errata in revB DSP (2.0.1) */
-		/* must end with non auto-inc */
-		*(pdwData + dwLength - 1) = ioread32(pdo->prHPIData);
-	}
+	/* take care of errata in revB DSP (2.0.1) */
+	/* must end with non auto-inc */
+	*(pdwData + dwLength - 1) = ioread32(pdo->prHPIData);
 }
 
 static u16 Hpi6000_DspBlockWrite32(

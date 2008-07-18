@@ -25,10 +25,6 @@ HPI Operating System function declarations
 
 #include "hpios_linux_kernel.h"
 
-#ifndef STR_SIZE
-#define STR_SIZE(a) (a)
-#endif
-
 /* physical memory allocation */
 void HpiOs_LockedMem_Init(
 	void

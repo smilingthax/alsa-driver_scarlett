@@ -27,7 +27,7 @@
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpi6205.c"
 
-#include "hpi.h"
+#include "hpi_internal.h"
 #include "hpidebug.h"
 #include "hpi6205.h"
 #include "hpidspcd.h"
@@ -618,6 +618,7 @@ static u16 CreateAdapterObj(
 	pHw6205->prDSPP =
 		pao->Pci.apMemBase[1] +
 		C6205_BAR1_DSPP / sizeof(*pao->Pci.apMemBase[1]);
+
 	pao->wHasControlCache = 0;
 
 	if (HpiOs_LockedMem_Alloc(&pHw6205->hLockedMem,
@@ -2108,7 +2109,7 @@ static short Hpi6205_TransferData(
 {
 	struct hpi_hw_obj *pHw6205 = pao->priv;
 	u32 dwDataTransferred = 0;
-	/*u8  *pData =(u8  *)phm->u.d.u.Data.dwpbData; */
+	/*u8 *pData =(u8 *)phm->u.d.u.Data.dwpbData; */
 	/*u16 wTimeOut=8; */
 	u16 err = 0;
 	u32 dwTimeOut, dwTemp2;
