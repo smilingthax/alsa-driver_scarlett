@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/init.c	2008-05-28 17:33:05.000000000 +0200
-+++ init.c	2008-07-12 19:48:37.000000000 +0200
+--- ../alsa-kernel/core/init.c	2008-07-28 14:49:05.000000000 +0200
++++ init.c	2008-07-28 18:47:03.000000000 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -49,20 +49,19 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -548,8 +564,16 @@
+@@ -548,9 +564,16 @@
  	snd_assert(card != NULL, return -EINVAL);
  #ifndef CONFIG_SYSFS_DEPRECATED
  	if (!card->card_dev) {
--		card->card_dev = device_create(sound_class, card->dev, 0,
 +#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 26) || \
 +	defined(CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA)
-+		card->card_dev = device_create_drvdata(sound_class, card->dev,
-+						       MKDEV(0, 0), NULL,
-+						       "card%i", card->number);
+ 		card->card_dev = device_create_drvdata(sound_class, card->dev,
+ 						       MKDEV(0, 0), NULL,
+ 						       "card%i", card->number);
 +#else
 +		card->card_dev = device_create(sound_class, card->dev,
 +					       MKDEV(0, 0),
- 					       "card%i", card->number);
++					       "card%i", card->number);
 +#endif
  		if (IS_ERR(card->card_dev))
  			card->card_dev = NULL;
