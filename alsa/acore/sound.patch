@@ -1,11 +1,11 @@
---- ../alsa-kernel/core/sound.c	2008-05-23 16:26:33.000000000 +0200
-+++ sound.c	2008-05-23 16:39:46.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2008-07-15 15:23:39.000000000 +0200
++++ sound.c	2008-07-30 11:44:42.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   *  Advanced Linux Sound Architecture
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -40,6 +41,9 @@
+@@ -41,6 +42,9 @@
  EXPORT_SYMBOL(snd_major);
  
  static int cards_limit = 1;
@@ -15,7 +15,7 @@
  
  MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
  MODULE_DESCRIPTION("Advanced Linux Sound Architecture driver for soundcards.");
-@@ -48,6 +52,10 @@
+@@ -49,6 +53,10 @@
  MODULE_PARM_DESC(major, "Major # for sound driver.");
  module_param(cards_limit, int, 0444);
  MODULE_PARM_DESC(cards_limit, "Count of auto-loadable soundcards.");
@@ -26,7 +26,7 @@
  MODULE_ALIAS_CHARDEV_MAJOR(CONFIG_SND_MAJOR);
  
  /* this one holds the actual max. card number currently available.
-@@ -165,7 +173,9 @@
+@@ -178,7 +186,9 @@
  
  static const struct file_operations snd_fops =
  {
@@ -36,7 +36,7 @@
  	.open =		snd_open
  };
  
-@@ -237,7 +247,11 @@
+@@ -250,7 +260,11 @@
  	struct snd_minor *preg;
  
  	snd_assert(name, return -EINVAL);
@@ -48,7 +48,7 @@
  	if (preg == NULL)
  		return -ENOMEM;
  	preg->type = type;
-@@ -245,6 +259,9 @@
+@@ -258,6 +272,9 @@
  	preg->device = dev;
  	preg->f_ops = f_ops;
  	preg->private_data = private_data;
@@ -58,7 +58,7 @@
  	mutex_lock(&sound_mutex);
  #ifdef CONFIG_SND_DYNAMIC_MINORS
  	minor = snd_find_free_minor();
-@@ -259,9 +276,21 @@
+@@ -272,9 +289,23 @@
  		return minor;
  	}
  	snd_minors[minor] = preg;
@@ -68,19 +68,21 @@
 +			      "snd/%s", name);
 +#endif
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
-+#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 26) || \
-+	defined(CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA)
++#ifdef CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA
  	preg->dev = device_create_drvdata(sound_class, device,
  					  MKDEV(major, minor),
  					  private_data, "%s", name);
++#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
++	preg->dev = device_create(sound_class, device, MKDEV(major, minor),
++				  private_data, "%s", name);
 +#else
 +  	preg->dev = device_create(sound_class, device, MKDEV(major, minor),
 +  				  "%s", name);
-+#endif /* >2.6.26 || SND_HAS_DEVICE_CREATE_DRVDATA */
++#endif /* SND_HAS_DEVICE_CREATE_DRVDATA */
  	if (IS_ERR(preg->dev)) {
  		snd_minors[minor] = NULL;
  		mutex_unlock(&sound_mutex);
-@@ -269,6 +298,22 @@
+@@ -282,6 +313,22 @@
  		kfree(preg);
  		return minor;
  	}
@@ -99,11 +101,11 @@
 +						         device, "%s", name);
 +	if (preg->dev)
 +		class_set_devdata((struct class_device *)preg->dev, private_data);
-+#endif
++#endif /* 2.6.20 */
  
  	mutex_unlock(&sound_mutex);
  	return 0;
-@@ -308,6 +353,9 @@
+@@ -321,6 +368,9 @@
  int snd_unregister_device(int type, struct snd_card *card, int dev)
  {
  	int minor;
@@ -113,7 +115,7 @@
  
  	mutex_lock(&sound_mutex);
  	minor = find_snd_minor(type, card, dev);
-@@ -316,7 +364,20 @@
+@@ -329,7 +379,20 @@
  		return -EINVAL;
  	}
  
@@ -134,7 +136,7 @@
  
  	kfree(snd_minors[minor]);
  	snd_minors[minor] = NULL;
-@@ -329,16 +390,28 @@
+@@ -342,16 +405,28 @@
  int snd_add_device_sysfs_file(int type, struct snd_card *card, int dev,
  			      struct device_attribute *attr)
  {
@@ -164,7 +166,7 @@
  }
  
  EXPORT_SYMBOL(snd_add_device_sysfs_file);
-@@ -424,31 +497,80 @@
+@@ -437,31 +512,80 @@
   *  INIT PART
   */
  
