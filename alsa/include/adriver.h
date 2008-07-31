@@ -803,10 +803,6 @@ static inline void *class_get_devdata(struct class_device *dev) { return NULL; }
 #endif /* < 2.6.8 */
 #endif
 
-#ifndef CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA
-#define device_create_drvdata(c,d,m,p,s,n) device_create((c),(d),(m),(s),(n))
-#endif
-
 /* msleep */
 #ifndef CONFIG_HAVE_MSLEEP
 void snd_compat_msleep(unsigned int msecs);
