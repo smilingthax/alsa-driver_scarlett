@@ -693,6 +693,30 @@ EXPORT_SYMBOL(snd_compat_kstrdup);
 #endif
 #endif
 
+#ifndef CONFIG_HAVE_KSTRNDUP
+#ifndef CONFIG_SND_DEBUG_MEMORY
+char *snd_compat_kstrndup(const char *s, size_t maxlen,
+			  unsigned int __nocast gfp_flags)
+{
+	int len;
+	char *buf;
+
+	if (!s) return NULL;
+
+	len = strlen(s);
+	if (len >= maxlen)
+		len = maxlen;
+	buf = kmalloc(len + 1, gfp_flags);
+	if (buf) {
+		memcpy(buf, s, len);
+		buf[len] = 0;
+	}
+	return buf;
+}
+EXPORT_SYMBOL(snd_compat_kstrndup);
+#endif
+#endif
+
 #ifdef CONFIG_CREATE_WORKQUEUE_FLAGS
 
 #include <linux/workqueue.h>

@@ -962,6 +962,7 @@ void *snd_hidden_kmalloc(size_t size, gfp_t flags);
 void *snd_hidden_kzalloc(size_t size, gfp_t flags);
 void *snd_hidden_kcalloc(size_t n, size_t size, gfp_t flags);
 char *snd_hidden_kstrdup(const char *s, gfp_t flags);
+char *snd_hidden_kstrndup(const char *s, size_t len, gfp_t flags);
 void snd_hidden_kfree(const void *obj);
 
 static inline void *snd_wrapper_kmalloc(size_t size, gfp_t flags)
@@ -977,6 +978,7 @@ static inline void snd_wrapper_kfree(const void *obj)
 #define kzalloc(size, flags) snd_hidden_kzalloc(size, flags)
 #define kcalloc(n, size, flags) snd_hidden_kcalloc(n, size, flags)
 #define kstrdup(s, flags)  snd_hidden_kstrdup(s, flags)
+#define kstrndup(s, len, flags)  snd_hidden_kstrndup(s, len, flags)
 #define kfree(obj) snd_hidden_kfree(obj)
 
 #define kmalloc_nocheck(size, flags) snd_wrapper_kmalloc(size, flags)
@@ -995,6 +997,11 @@ void *snd_compat_kcalloc(size_t n, size_t size, gfp_t gfp_flags);
 #ifndef CONFIG_HAVE_KSTRDUP
 char *snd_compat_kstrdup(const char *s, gfp_t gfp_flags);
 #define kstrdup(s,f) snd_compat_kstrdup(s,f)
+#endif
+
+#ifndef CONFIG_HAVE_KSTRNDUP
+char *snd_compat_kstrndup(const char *s, size_t len, gfp_t gfp_flags);
+#define kstrndup(s,l,f) snd_compat_kstrndup(s,l,f)
 #endif
 
 #ifndef CONFIG_HAVE_KZALLOC
