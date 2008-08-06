@@ -1601,6 +1601,24 @@ static inline int __strict_strtoul(const char *cp, unsigned int base,
 	printk(KERN_NOTICE fmt, ##arg)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 26) && \
+    LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+static inline const char *dev_name(struct device *dev)
+{
+	return dev->bus_id;
+}
+
+static inline int dev_set_name(struct device *dev, const char *fmt, ...)
+			__attribute__((format(printf, 2, 3)))
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(dev->bus_id, sizeof(dev->bus_id), fmt, ap);
+	va_end(ap);
+	return 0;
+}
+#endif /* < 2.6.26 */
+
 #ifndef WARN
 #define WARN(condition, arg...) ({ \
 	int __ret_warn_on = !!(condition);				\
