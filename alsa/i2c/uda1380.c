@@ -107,9 +107,12 @@ static int snd_uda1380_hwsync(struct snd_uda1380 *uda, int read,
 	u8 buf[11];
 	int ret;
 
-	snd_assert(count * 2 <= sizeof(buf) - 1, return -EINVAL);
-	snd_assert(start_reg < ARRAY_SIZE(uda->regs), return -EINVAL);
-	snd_assert(start_reg + count <= ARRAY_SIZE(uda->regs), return -EINVAL);
+	if (snd_BUG_ON(count * 2 >= sizeof(buf)))
+		return -EINVAL;
+	if (snd_BUG_ON(start_reg >= ARRAY_SIZE(uda->regs)))
+		return -EINVAL;
+	if (snd_BUG_ON(start_reg + count > ARRAY_SIZE(uda->regs)))
+		return -EINVAL;
 
 	/* setup i2c msgs */
 	msgs[0].addr = uda->i2c_client.addr;

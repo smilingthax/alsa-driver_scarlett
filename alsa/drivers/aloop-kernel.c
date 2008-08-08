@@ -405,7 +405,8 @@ static int __init snd_card_loopback_new_mixer(snd_card_loopback_t *loopback)
 {
 	struct snd_card *card = loopback->card;
 
-	snd_assert(loopback != NULL, return -EINVAL);
+	if (snd_BUG_ON(!loopback))
+		return -EINVAL;
 	strcpy(card->mixername, "Loopback Mixer");
 	return 0;
 }

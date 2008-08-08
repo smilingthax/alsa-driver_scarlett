@@ -300,7 +300,8 @@ int __init snd_msndmix_new( multisound_dev_t * msnd)
 	unsigned int idx;
 	int err;
 
-	snd_assert(msnd != NULL, return -EINVAL);
+	if (snd_BUG_ON(!msnd))
+		return -EINVAL;
 	// spin_lock_init(&msnd->mixer_lock);
 	strcpy(card->mixername, "MSND Pinnacle Mixer");
 
