@@ -1601,6 +1601,12 @@ static inline int __strict_strtoul(const char *cp, unsigned int base,
 	unlikely(__ret_warn_on);					\
 })
 #endif
+
+/* force to redefine WARN_ON() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#undef WARN_ON
+#endif
+
 #ifndef WARN_ON
 #define WARN_ON(condition) ({						\
 	int __ret_warn_on = !!(condition);				\
