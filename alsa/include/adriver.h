@@ -1589,4 +1589,28 @@ static inline int __strict_strtoul(const char *cp, unsigned int base,
 	printk(KERN_NOTICE fmt, ##arg)
 #endif
 
+#ifndef WARN
+#define WARN(condition, arg...) ({ \
+	int __ret_warn_on = !!(condition);				\
+	if (unlikely(__ret_warn_on)) {					\
+		printk("WARNING: at %s:%d %s()\n",			\
+			__FILE__, __LINE__, __func__);			\
+		printk(arg);						\
+		dump_stack();						\
+	}								\
+	unlikely(__ret_warn_on);					\
+})
+#endif
+#ifndef WARN_ON
+#define WARN_ON(condition) ({						\
+	int __ret_warn_on = !!(condition);				\
+	if (unlikely(__ret_warn_on)) {					\
+		printk("WARNING: at %s:%d %s()\n",			\
+			__FILE__, __LINE__, __func__);			\
+		dump_stack();						\
+	}								\
+	unlikely(__ret_warn_on);					\
+})
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
