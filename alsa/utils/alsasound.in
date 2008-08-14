@@ -73,7 +73,7 @@ if [ -x /sbin/lsmod ]; then
 else
   lsmod=lsmod
 fi
-failedfile=/var/run/alsactl.init.failed
+statefile=/var/run/alsactl.init
 
 # modprobe returns 255 when failed..
 function probe_module () {
@@ -87,7 +87,7 @@ function start() {
   # insert all sound modules
   #
 
-  rm -f $failedfile
+  rm -f $statefile
   module_loaded=0
   drivers=`/sbin/modprobe -c | \
     grep -E "^[[:space:]]*alias[[:space:]]+snd-card-[[:digit:]]" | \
@@ -113,18 +113,13 @@ function start() {
   # restore driver settings
   #
   if [ -d /proc/asound ]; then
-    if [ ! -r $asoundcfg ]; then
-      $alsactl init
-      if [ $? -ne 0 ]; then
-        echo "No mixer config in $asoundcfg, you have to unmute your card!"
-        touch $failedfile
+    if [ -x $alsactl ]; then
+      $alsactl -F -f $asoundcfg -r $statefile restore
+      if [ -s $statefile ]; then
+        echo "Mixer configuration failed! You have to unmute your card(s)!"
       fi
     else
-      if [ -x $alsactl ]; then
-        $alsactl -F -f $asoundcfg restore
-      else
-        echo -e "${rc_warning}ERROR: alsactl not found${rc_reset}"
-      fi
+      echo -e "${rc_warning}ERROR: alsactl not found${rc_reset}"
     fi
   fi
   #
@@ -195,7 +190,7 @@ function stop() {
   if [ -d /var/lock/subsys ] ; then
     rm -f /var/lock/subsys/alsasound
   fi
-  rm -f $failedfile
+  rm -f $statefile
 }
 
 # See how we were called.
