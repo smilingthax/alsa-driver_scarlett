@@ -28,6 +28,7 @@ atiixp_modem.c: atiixp_modem.patch $(SND_TOPDIR)/alsa-kernel/pci/atiixp_modem.c
 bt87x.c: bt87x.patch $(SND_TOPDIR)/alsa-kernel/pci/bt87x.c
 cmipci.c: cmipci.patch $(SND_TOPDIR)/alsa-kernel/pci/cmipci.c
 ens1370.c: ens1370.patch $(SND_TOPDIR)/alsa-kernel/pci/ens1370.c
+ens1371.c: ens1370.c
 fm801.c: fm801.patch $(SND_TOPDIR)/alsa-kernel/pci/fm801.c
 intel8x0.c: intel8x0.patch $(SND_TOPDIR)/alsa-kernel/pci/intel8x0.c
 maestro3.c: maestro3.patch $(SND_TOPDIR)/alsa-kernel/pci/maestro3.c
