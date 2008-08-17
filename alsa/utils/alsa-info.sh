@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.49
+SCRIPT_VERSION=0.4.50
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -434,6 +434,14 @@ then
 	do
 	case "$1" in
 		--pastebin)
+		        update
+        		withdevices
+        		withconfigs
+        		withaplay
+        		withamixer
+        		withalsactl
+        		withlsmod
+        		pbcheck
 			;;
 		--update)
 			update
