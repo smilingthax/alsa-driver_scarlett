@@ -22,6 +22,7 @@ Extended Message Function With Response Cacheing
 *****************************************************************************/
 #define SOURCEFILE_NAME "hpimsgx.c"
 #include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpimsgx.h"
 #include "hpidebug.h"
 
