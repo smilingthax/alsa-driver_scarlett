@@ -43,7 +43,7 @@ i.e 3.05.02 is a development version
 #define HPI_VER_RELEASE(v) ((int)(v & 0xFF))
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 11, 9)
+#define HPI_VER HPI_VERSION_CONSTRUCTOR(3L, 11, 13)
 
 /* Library version as documented in hpi-api-versions.txt */
 #define HPI_LIB_VER  HPI_VERSION_CONSTRUCTOR(3, 3, 0)
@@ -90,10 +90,12 @@ extern "C" {
 #define HPI_ADAPTER_FAMILY_ASI1700      0x1700
 /** ASI1711 - Quad FM+RDS tuner module */
 #define HPI_ADAPTER_ASI1711             0x1711
-/** ASI1721 - Quad AM/FM+RDS tuner module */
+/** ASI1721 - Quad AM/FM+RDS tuner module with MCX external antenna jacks*/
 #define HPI_ADAPTER_ASI1721             0x1721
 /** ASI1722 - Quad FM+RDS tuner module (based on ASI1721 h/w) */
 #define HPI_ADAPTER_ASI1722             0x1722
+/** ASI1723 - Quad AM/FM+RDS tuner module (no MCX jacks) */
+#define HPI_ADAPTER_ASI1723             0x1723
 /** ASI1731 - Quad TV tuner module */
 #define HPI_ADAPTER_ASI1731             0x1731
 /** ASI1741 - Quad HDRadio "pseudo" module */
@@ -315,7 +317,7 @@ OBSOLETE - OEM 4 play PCM, MPEG*/
 #define HPI_ADAPTER_ASI8801             0x8801
 
 #define HPI_ADAPTER_FAMILY_ASI8900      0x8900
-/** 4 channel AM/FM HD-Radio */
+/** 4 channel AM/FM HD Radio */
 #define HPI_ADAPTER_ASI8914             0x8914
 /** OEM FM+RDS, 2 module tuner card */
 #define HPI_ADAPTER_ASI8920             0x8920
@@ -625,7 +627,13 @@ Property 1 returns the 1st two (left most) digits, i.e "00"
 in the example above, the upper byte being the left most digit.
 Property 2 returns the 2nd two digits, i.e "22" in the example above*/
 #define HPI_ADAPTER_PROPERTY_EXTENDED_ADAPTER_TYPE \
-(HPI_ADAPTER_PROPERTY_READONLYBASE+6)
+	(HPI_ADAPTER_PROPERTY_READONLYBASE+6)
+
+/** Readonly debug log buffer information */
+#define HPI_ADAPTER_PROPERTY_LOGTABLEN \
+	(HPI_ADAPTER_PROPERTY_READONLYBASE+7)
+#define HPI_ADAPTER_PROPERTY_LOGTABBEG \
+	(HPI_ADAPTER_PROPERTY_READONLYBASE+8)
 /**\}*/
 
 /** Used in wQueryOrSet field of HPI_AdapterSetModeEx(). */
@@ -830,6 +838,8 @@ enum HPI_MIXER_STORE_COMMAND {
 #define HPI_PAD_TITLE_LEN               64
 /** The text string containing the comment. */
 #define HPI_PAD_COMMENT_LEN             256
+/** The PTY when the tuner has not recieved any PTY. */
+#define HPI_PAD_PROGRAM_TYPE_INVALID    0xffff
 
 /** Data types for PTY string translation.
   */
@@ -2111,29 +2121,29 @@ u16 HPI_Tuner_GetHdRadioSignalQuality(
 u16 HPI_PAD_GetChannelName(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	char *pszData,
-	const u32 dwDataLength
+	char *pszString,
+	const u32 dwStringLength
 );
 
 u16 HPI_PAD_GetArtist(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	char *pszData,
-	const u32 dwDataLength
+	char *pszString,
+	const u32 dwStringLength
 );
 
 u16 HPI_PAD_GetTitle(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	char *pszData,
-	const u32 dwDataLength
+	char *pszString,
+	const u32 dwStringLength
 );
 
 u16 HPI_PAD_GetComment(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	char *pszData,
-	const u32 dwDataLength
+	char *pszString,
+	const u32 dwStringLength
 );
 
 u16 HPI_PAD_GetProgramType(
@@ -2153,8 +2163,8 @@ u16 HPI_PAD_GetProgramTypeString(
 	u32 hControl,
 	const u32 dwDataType,
 	const u32 nPTY,
-	char *pszData,
-	const u32 dwDataLength
+	char *pszString,
+	const u32 dwStringLength
 );
 
 /****************************/
