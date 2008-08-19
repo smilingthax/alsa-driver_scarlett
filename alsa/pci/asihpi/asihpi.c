@@ -48,6 +48,7 @@
 #endif
 
 #include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpioctl.h"
 
 #ifndef KERNEL_ALSA_BUILD
@@ -1831,7 +1832,7 @@ static int snd_asihpi_tuner_gain_put(struct snd_kcontrol *kcontrol,
 static int asihpi_tuner_band_query(struct snd_kcontrol *kcontrol,
 					u16 *bandList, u32 len) {
 	u32 hControl = kcontrol->private_value;
-	u16 err;
+	u16 err = 0;
 	u32 i;
 
 	for (i = 0; i < len; i++) {
@@ -1840,6 +1841,9 @@ static int asihpi_tuner_band_query(struct snd_kcontrol *kcontrol,
 			break;
 	}
 
+	if (err && (err != HPI_ERROR_INVALID_OBJ_INDEX))
+		return -EIO;
+
 	return i;
 }
 
@@ -1847,23 +1851,29 @@ static int snd_asihpi_tuner_band_info(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_info *uinfo)
 {
 	u16 tunerBands[HPI_TUNER_BAND_LAST];
-	u32 numBands = 0;
+	int numBands = 0;
 
 	numBands = asihpi_tuner_band_query(kcontrol, tunerBands,
 				HPI_TUNER_BAND_LAST);
+
+	if (numBands < 0)
+		return numBands;
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
 	uinfo->value.enumerated.items = numBands;
 
-	if (uinfo->value.enumerated.item >= uinfo->value.enumerated.items)
-		uinfo->value.enumerated.item =
-			uinfo->value.enumerated.items - 1;
+	if (numBands > 0) {
+		if (uinfo->value.enumerated.item >=
+					uinfo->value.enumerated.items)
+			uinfo->value.enumerated.item =
+				uinfo->value.enumerated.items - 1;
 
-	strcpy(uinfo->value.enumerated.name,
-		asihpi_tuner_band_names[
-				tunerBands[uinfo->value.enumerated.item]]);
+		strcpy(uinfo->value.enumerated.name,
+			asihpi_tuner_band_names[
+					tunerBands[uinfo->value.enumerated.item]]);
 
+	}
 	return 0;
 }
 
