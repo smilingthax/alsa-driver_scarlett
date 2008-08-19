@@ -1726,7 +1726,7 @@ u16 HPI_ControlQuery(
 
 static u16 HPI_Control_GetString(
 	const struct hpi_hsubsys *phSubSys,
-	const u32 hControlHandle,
+	const u32 hControl,
 	const u16 wAttribute,
 	char *pszString,
 	const u32 wStringLength
@@ -1745,7 +1745,7 @@ static u16 HPI_Control_GetString(
 		struct hpi_response hr;
 
 		HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-		u32TOINDEXES(hControlHandle, &hm.wAdapterIndex,
+		u32TOINDEXES(hControl, &hm.wAdapterIndex,
 			&hm.u.c.wControlIndex);
 		hm.u.c.wAttribute = wAttribute;
 		hm.u.c.dwParam1 = subStringIndex;
