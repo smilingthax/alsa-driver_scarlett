@@ -183,6 +183,7 @@ struct hpi_adapter {
 	void *snd_card_asihpi;
 
 	char *pBuffer;
+	size_t buffer_size;
 	struct pci_dev *pci;
 	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
 };
