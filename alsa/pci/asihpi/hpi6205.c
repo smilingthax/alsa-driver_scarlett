@@ -28,6 +28,7 @@
 #define SOURCEFILE_NAME "hpi6205.c"
 
 #include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpidebug.h"
 #include "hpi6205.h"
 #include "hpidspcd.h"
@@ -129,7 +130,6 @@ struct hpi_hw_obj {
 /*      struct hpi_control_cache_single *pControlCache; */
 	struct hpi_async_event *pAsyncEventBuffer;
 	struct hpi_control_cache *pCache;
-
 };
 
 /*****************************************************************************/
@@ -463,7 +463,9 @@ void HPI_6205(
 			return;
 		}
 
-		if (pao->wDspCrashed) {
+		if ((pao->wDspCrashed >= 10) &&
+			(phm->wFunction != HPI_ADAPTER_DEBUG_READ)) {
+			/* allow last resort debug read even after crash */
 			HPI_InitResponse(phr, phm->wObject, phm->wFunction,
 				HPI_ERROR_DSP_HARDWARE);
 			HPI_DEBUG_LOG(WARNING, " %d,%d dsp crashed.\n",
@@ -577,11 +579,20 @@ static void SubSysDeleteAdapter(
 	struct hpi_response *phr
 )
 {
-	struct hpi_adapter_obj *pao = NULL;
+	struct hpi_adapter_obj *pao;
+	struct hpi_hw_obj *phw;
 
 	pao = HpiFindAdapter(phm->wAdapterIndex);
-	if (!pao)
+	if (!pao) {
+		phr->wError = HPI_ERROR_INVALID_OBJ_INDEX;
 		return;
+	}
+	phw = (struct hpi_hw_obj *)pao->priv;
+	/* reset adapter h/w */
+	/* Reset C6713 #1 */
+	BootLoader_WriteMem32(pao, 0, C6205_BAR0_TIMER1_CTL, 0);
+	/* reset C6205 */
+	iowrite32(C6205_HDCR_WARMRESET, phw->prHDCR);
 
 	DeleteAdapterObj(pao);
 	phr->wError = 0;
@@ -2338,10 +2349,14 @@ static void HW_Message(
 	if (err) {
 		/* something failed in the HPI/DSP interface */
 		phr->wError = err;
+		pao->wDspCrashed++;
+
 		/* just the header of the response is valid */
 		phr->wSize = sizeof(struct hpi_response_header);
 		goto err;
-	}
+	} else
+		pao->wDspCrashed = 0;
+
 	if (phr->wError != 0)	/* something failed in the DSP */
 		goto err;
 

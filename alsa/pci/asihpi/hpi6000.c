@@ -31,6 +31,7 @@
 #define SOURCEFILE_NAME "hpi6000.c"
 
 #include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpidebug.h"
 #include "hpi6000.h"
 #include "hpidspcd.h"
@@ -152,10 +153,6 @@ struct hpi_hw_obj {
 	u32 dwMessageBufferAddressOnDSP;
 	u32 dwResponseBufferAddressOnDSP;
 	u32 dwPCI2040HPIErrorCount;
-
-	/* counts consecutive communications errors reported from DSP  */
-	u16 wNumErrors;
-	u16 wDspCrashed;	/* when '1' DSP has crashed/died/OTL */
 
 	struct hpi_control_cache_single aControlCache[HPI_NMIXER_CONTROLS];
 	struct hpi_control_cache *pCache;
@@ -443,7 +440,7 @@ void HPI_6000(
 			return;
 		}
 
-		if (pao->wDspCrashed) {
+		if (pao->wDspCrashed >= 10) {
 			HPI_InitResponse(phr, phm->wObject, phm->wFunction,
 				HPI_ERROR_DSP_HARDWARE);
 			HPI_DEBUG_LOG(DEBUG, " %d,%d dsp crashed.\n",
@@ -603,7 +600,6 @@ static short CreateAdapterObj(
 	struct hpi_hw_obj *phw = (struct hpi_hw_obj *)pao->priv;
 
 	/* init error reporting */
-	phw->wNumErrors = 0;
 	pao->wDspCrashed = 0;
 
 	/* The PCI2040 has the following address map */
@@ -1468,12 +1464,10 @@ static short Hpi6000_MessageResponseSequence(
 
 	wAck = Hpi6000_WaitDspAck(pao, wDspIndex, HPI_HIF_IDLE);
 	if (wAck & HPI_HIF_ERROR_MASK) {
-		phw->wNumErrors++;
-		if (phw->wNumErrors == 10)
-			pao->wDspCrashed = 1;
+		pao->wDspCrashed++;
 		return HPI6000_ERROR_MSG_RESP_IDLE_TIMEOUT;
 	}
-	phw->wNumErrors = 0;
+	pao->wDspCrashed = 0;
 
 	/* send the message */
 
