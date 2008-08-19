@@ -127,13 +127,13 @@ extern "C" {
 #define HPI_TUNER_RDS                   HPI_CTL_ATTR0(TUNER, 9)
 /** Audio pre-emphasis. */
 #define HPI_TUNER_DEEMPHASIS            HPI_CTL_ATTR(TUNER, 10)
-/** HD-Radio tuner program control. */
+/** HD Radio tuner program control. */
 #define HPI_TUNER_PROGRAM               HPI_CTL_ATTR(TUNER, 11)
-/** HD-Radio tuner digital signal quality. */
+/** HD Radio tuner digital signal quality. */
 #define HPI_TUNER_HDRADIO_SIGNAL_QUALITY        HPI_CTL_ATTR(TUNER, 12)
-/** HD-Radio SDK firmware version. */
+/** HD Radio SDK firmware version. */
 #define HPI_TUNER_HDRADIO_SDK_VERSION   HPI_CTL_ATTR(TUNER, 13)
-/** HD-Radio DSP firmware version. */
+/** HD Radio DSP firmware version. */
 #define HPI_TUNER_HDRADIO_DSP_VERSION   HPI_CTL_ATTR(TUNER, 14)
 
 /** \} */
@@ -924,7 +924,6 @@ struct hpi_controlx_msg {
 };
 
 /* Response */
-
 /**
 */
 struct hpi_controlx_res_cobranet_data {
@@ -1269,18 +1268,6 @@ struct hpi_fifo_buffer {
 
 /* skip host side function declarations for DSP
    compile and documentation extraction */
-void HPI_InitMessage(
-	struct hpi_message *phm,
-	u16 wObject,
-	u16 wFunction
-);
-
-void HPI_InitResponse(
-	struct hpi_response *phr,
-	u16 wObject,
-	u16 wFunction,
-	u16 wError
-);
 
 char HPI_HandleObject(
 	const u32 dwHandle
