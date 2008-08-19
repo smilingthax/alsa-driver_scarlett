@@ -177,8 +177,9 @@ long asihpi_hpi_ioctl(
 			ptr = (u16 __user *)hm.u.d.u.Data.pbData;
 			size = hm.u.d.u.Data.dwDataSize;
 
-			/* allocate buffer according to what applications are requesting.
-			   or would it be OK just to alloc for the duration of the transaction?
+			/* Allocate buffer according to application request.
+			   ?Is it better to alloc/free for the duration
+			   of the transaction?
 			 */
 			if (pa->buffer_size < size) {
 				HPI_DEBUG_LOG(DEBUG,
@@ -417,7 +418,6 @@ void __init asihpi_init(
 
 	memset(adapters, 0, sizeof(adapters));
 
-	/* HPI_DebugLevelSet(debug); now set directly as module param */
 	printk(KERN_INFO "ASIHPI driver %d.%02d.%02d\n",
 		HPI_VER_MAJOR(HPI_VER),
 		HPI_VER_MINOR(HPI_VER), HPI_VER_RELEASE(HPI_VER));

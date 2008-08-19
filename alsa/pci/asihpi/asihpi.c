@@ -1871,7 +1871,7 @@ static int snd_asihpi_tuner_band_info(struct snd_kcontrol *kcontrol,
 
 		strcpy(uinfo->value.enumerated.name,
 			asihpi_tuner_band_names[
-					tunerBands[uinfo->value.enumerated.item]]);
+				tunerBands[uinfo->value.enumerated.item]]);
 
 	}
 	return 0;

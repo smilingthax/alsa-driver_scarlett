@@ -283,9 +283,9 @@ short HpiCheckBufferMapping(
 }
 
 /* allow unified treatment of several string fields within struct */
-#define HPICMN_PAD_OFS_AND_SIZE(m) \
+#define HPICMN_PAD_OFS_AND_SIZE(m)  {\
 	offsetof(struct hpi_control_cache_pad, m), \
-	sizeof(((struct hpi_control_cache_pad *)(NULL))->m)
+	sizeof(((struct hpi_control_cache_pad *)(NULL))->m) }
 
 struct pad_ofs_size {
 	size_t offset;
@@ -293,10 +293,10 @@ struct pad_ofs_size {
 };
 
 static struct pad_ofs_size aPadDesc[] = {
-	{HPICMN_PAD_OFS_AND_SIZE(cChannel)},	/* HPI_PAD_CHANNEL_NAME */
-	{HPICMN_PAD_OFS_AND_SIZE(cArtist)},	/* HPI_PAD_ARTIST */
-	{HPICMN_PAD_OFS_AND_SIZE(cTitle)},	/* HPI_PAD_TITLE */
-	{HPICMN_PAD_OFS_AND_SIZE(cComment)},	/* HPI_PAD_COMMENT */
+	HPICMN_PAD_OFS_AND_SIZE(cChannel),	/* HPI_PAD_CHANNEL_NAME */
+	HPICMN_PAD_OFS_AND_SIZE(cArtist),	/* HPI_PAD_ARTIST */
+	HPICMN_PAD_OFS_AND_SIZE(cTitle),	/* HPI_PAD_TITLE */
+	HPICMN_PAD_OFS_AND_SIZE(cComment),	/* HPI_PAD_COMMENT */
 };
 
 /** CheckControlCache checks the cache and fills the struct hpi_response
@@ -457,7 +457,8 @@ short HpiCheckControlCache(
 
 			pad_string = ((char *)pPad) + aPadDesc[index].offset;
 			field_size = aPadDesc[index].field_size;
-			pad_string[field_size - 1] = 0;	/* ensure null terminator */
+			/* Ensure null terminator */
+			pad_string[field_size - 1] = 0;
 
 			pad_string_len = strlen(pad_string) + 1;
 
