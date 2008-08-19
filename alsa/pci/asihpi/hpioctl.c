@@ -21,6 +21,7 @@ Common Linux HPI ioctl and module probe/remove functions
 #define SOURCEFILE_NAME "hpioctl.c"
 
 #include "hpi_internal.h"
+#include "hpimsginit.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
 #include "hpioctl.h"
@@ -30,10 +31,6 @@ Common Linux HPI ioctl and module probe/remove functions
 #include <linux/moduleparam.h>
 #include <asm/uaccess.h>
 #include <linux/stringify.h>
-
-#ifndef HPIMOD_DEFAULT_BUF_SIZE
-#   define HPIMOD_DEFAULT_BUF_SIZE 192000
-#endif
 
 #ifdef MODULE_FIRMWARE
 MODULE_FIRMWARE("asihpi/dsp5000.bin");
@@ -45,16 +42,20 @@ MODULE_FIRMWARE("asihpi/dsp8700.bin");
 MODULE_FIRMWARE("asihpi/dsp8900.bin");
 #endif
 
-static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;
-module_param(bufsize, int,
+static int prealloc_stream_buf;
+module_param(prealloc_stream_buf, int,
 	S_IRUGO
 );
+MODULE_PARM_DESC(prealloc_stream_buf,
+	"Preallocate size for per-adapter stream buffer");
+
 /* Allow the debug level to be changed after module load.
  E.g.   echo 2 > /sys/module/asihpi/parameters/hpiDebugLevel
 */
 module_param(hpiDebugLevel, int,
 	S_IRUGO | S_IWUSR
 );
+MODULE_PARM_DESC(hpiDebugLevel, "Debug verbosity 0..5");
 
 /* List of adapters found */
 static struct hpi_adapter adapters[HPI_MAX_ADAPTERS];
@@ -176,14 +177,33 @@ long asihpi_hpi_ioctl(
 			ptr = (u16 __user *)hm.u.d.u.Data.pbData;
 			size = hm.u.d.u.Data.dwDataSize;
 
-			hm.u.d.u.Data.pbData = pa->pBuffer;
-			/*
-			   if (size > bufsize) {
-			   size = bufsize;
-			   hm.u.d.u.Data.dwDataSize = size;
-			   }
+			/* allocate buffer according to what applications are requesting.
+			   or would it be OK just to alloc for the duration of the transaction?
 			 */
+			if (pa->buffer_size < size) {
+				HPI_DEBUG_LOG(DEBUG,
+					"Realloc adapter %d stream buffer "
+					"from %d to %d\n",
+					hm.wAdapterIndex,
+					pa->buffer_size, size);
+				if (pa->pBuffer) {
+					pa->buffer_size = 0;
+					vfree(pa->pBuffer);
+				}
+				pa->pBuffer = vmalloc(size);
+				if (pa->pBuffer)
+					pa->buffer_size = size;
+				else {
+					HPI_DEBUG_LOG(ERROR,
+						"HPI could not allocate "
+						"stream buffer size %d\n",
+						size);
+					return -EINVAL;
+				}
 
+			}
+
+			hm.u.d.u.Data.pbData = pa->pBuffer;
 			if (hm.wFunction == HPI_ISTREAM_READ)
 				/* from card, WRITE to user mem */
 				wrflag = 1;
@@ -199,15 +219,6 @@ long asihpi_hpi_ioctl(
 			return -EINTR;
 
 		if (wrflag == 0) {
-			if (size > bufsize) {
-				mutex_unlock(&adapters[nAdapter].mutex);
-				HPI_DEBUG_LOG(ERROR,
-					"Requested transfer of %d "
-					"bytes, max buffer size "
-					"is %d bytes.\n", size, bufsize);
-				return -EINVAL;
-			}
-
 			uncopied_bytes =
 				copy_from_user(pa->pBuffer, ptr, size);
 			if (uncopied_bytes)
@@ -220,15 +231,6 @@ long asihpi_hpi_ioctl(
 		HPI_MessageF(&hm, &hr, file);
 
 		if (wrflag == 1) {
-			if (size > bufsize) {
-				mutex_unlock(&adapters[nAdapter].mutex);
-				HPI_DEBUG_LOG(ERROR,
-					"Requested transfer of %d "
-					"bytes, max buffer size is "
-					"%d bytes.\n", size, bufsize);
-				return -EINVAL;
-			}
-
 			uncopied_bytes = copy_to_user(ptr, pa->pBuffer, size);
 			if (uncopied_bytes)
 				HPI_DEBUG_LOG(WARNING,
@@ -318,12 +320,15 @@ int __devinit asihpi_adapter_probe(
 	if (hr.wError)
 		goto err;
 
-	adapter.pBuffer = vmalloc(bufsize);
-	if (adapter.pBuffer == NULL) {
-		HPI_DEBUG_LOG(ERROR,
-			"HPI could not allocate kernel buffer size %d\n",
-			bufsize);
-		goto err;
+	if (prealloc_stream_buf) {
+		adapter.pBuffer = vmalloc(prealloc_stream_buf);
+		if (!adapter.pBuffer) {
+			HPI_DEBUG_LOG(ERROR,
+				"HPI could not allocate "
+				"kernel buffer size %d\n",
+				prealloc_stream_buf);
+			goto err;
+		}
 	}
 
 	adapter.index = hr.u.s.wAdapterIndex;
@@ -356,8 +361,10 @@ err:
 		}
 	}
 
-	if (adapter.pBuffer)
+	if (adapter.pBuffer) {
+		adapter.buffer_size = 0;
 		vfree(adapter.pBuffer);
+	}
 
 	HPI_DEBUG_LOG(ERROR, "adapter_probe failed\n");
 	return -ENODEV;
@@ -385,8 +392,10 @@ void __devexit asihpi_adapter_remove(
 		}
 	}
 
-	if (pa->pBuffer)
+	if (pa->pBuffer) {
+		pa->buffer_size = 0;
 		vfree(pa->pBuffer);
+	}
 
 	pci_set_drvdata(pci_dev, NULL);
 	/*
