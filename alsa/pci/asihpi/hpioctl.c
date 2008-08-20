@@ -184,7 +184,7 @@ long asihpi_hpi_ioctl(
 			if (pa->buffer_size < size) {
 				HPI_DEBUG_LOG(DEBUG,
 					"Realloc adapter %d stream buffer "
-					"from %d to %d\n",
+					"from %zd to %d\n",
 					hm.wAdapterIndex,
 					pa->buffer_size, size);
 				if (pa->pBuffer) {

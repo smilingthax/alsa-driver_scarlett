@@ -472,7 +472,7 @@ short HpiCheckControlCache(
 				tocopy = sizeof(phr->u.cu.chars8.szData);
 
 			HPI_DEBUG_LOG(VERBOSE,
-				"PADS memcpy(%d), offset %d \n", tocopy,
+				"PADS memcpy(%zd), offset %zd \n", tocopy,
 				offset);
 			memcpy(phr->u.cu.chars8.szData, &pad_string[offset],
 				tocopy);
