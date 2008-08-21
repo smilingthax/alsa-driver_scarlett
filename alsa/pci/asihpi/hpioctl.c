@@ -159,6 +159,9 @@ long asihpi_hpi_ioctl(
 			return 0;
 		}
 
+		if (mutex_lock_interruptible(&adapters[nAdapter].mutex))
+			return -EINTR;
+
 		/* Dig out any pointers embedded in the message.  */
 		switch (hm.wFunction) {
 		case HPI_SUBSYS_CREATE_ADAPTER:
@@ -216,9 +219,6 @@ long asihpi_hpi_ioctl(
 			break;
 		}
 
-		if (mutex_lock_interruptible(&adapters[nAdapter].mutex))
-			return -EINTR;
-
 		if (wrflag == 0) {
 			uncopied_bytes =
 				copy_from_user(pa->pBuffer, ptr, size);
@@ -246,11 +246,10 @@ long asihpi_hpi_ioctl(
 	/* on return response size must be set */
 	if (!hr.wSize)
 		return -EFAULT;
-
-	/* Copy the response back to user space.  */
 	uncopied_bytes = copy_to_user(phr, &hr, sizeof(hr));
 	if (uncopied_bytes)
 		return -EFAULT;
+
 	return 0;
 }
 
