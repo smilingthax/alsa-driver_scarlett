@@ -1272,7 +1272,7 @@ case "$processor" in
       CONFIG_X86=y
       CONFIG_X86_32=y
     fi
-    for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386; do
+    for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386 arch/x86/include/asm; do
       if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
 	break
@@ -1284,7 +1284,7 @@ case "$processor" in
     done
     ;;
   x86_64)
-    for i in include/asm-x86 include2/asm-x86; do
+    for i in include/asm-x86 include2/asm-x86 arch/x86/include/asm; do
       if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
 	break
@@ -1296,6 +1296,21 @@ case "$processor" in
     done
     ;;
 esac
+
+dnl Additional include directories
+if test "$kpatchlevel" = 6 -a "$ksublevel" -ge 27; then
+    case "$ARCH" in
+    i386|x86_64)
+	checkarch="x86"
+	;;
+    *)
+	checkarch="$ARCH"
+	;;
+    esac
+    if test -d $CONFIG_SND_KERNELDIR/arch/$checkarch/include; then
+	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$checkarch/include"
+    fi
+fi
 
 if test -n "$mach_dir"; then
   AC_MSG_CHECKING(for i386 machine type)
