@@ -1109,6 +1109,11 @@ EOF
     ;;
   ppc)
     ARCH=ppc
+    if test "$kversion.$kpatchlevel" = "2.6"; then
+	if test $ksublevel -gt 26; then
+	    ARCH=powerpc
+	fi
+    fi
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     if test -d $CONFIG_SND_KERNELDIR/arch/ppc/include; then
       KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/ppc/include"
@@ -1120,11 +1125,10 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
+    ARCH=ppc64
     if test "$kversion.$kpatchlevel" = "2.6"; then
 	if test $ksublevel -gt 14; then
 	    ARCH=powerpc
-	else
-	    ARCH=ppc64
 	fi
     fi
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
