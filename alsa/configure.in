@@ -2335,11 +2335,15 @@ CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#ifdef __alpha__ /* it's required (at least for 2.2.18) */
-#include "$CONFIG_SND_KERNELDIR/include/asm/current.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
 #endif
-#include "$CONFIG_SND_KERNELDIR/include/linux/fs.h"
+#ifdef __alpha__ /* it's required (at least for 2.2.18) */
+#include <asm/current.h>
+#endif
+#include <linux/fs.h>
 ],[
  struct fasync_struct *fa;
  int sig;
@@ -2366,8 +2370,12 @@ CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/asm/types.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
+#endif
+#include <asm/types.h>
 ],[
  dma_addr_t addr;
 ],
@@ -2392,8 +2400,12 @@ CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
-#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
-#include "$CONFIG_SND_KERNELDIR/include/asm/semaphore.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
+#endif
+#include <asm/semaphore.h>
 ],[
 #ifndef init_MUTEX
 #error not defined
