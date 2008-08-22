@@ -22,7 +22,7 @@
  *  for any purpose including commercial applications.
  */
 /* >0: print Hw params, timer vars. >1: print stream write/copy sizes  */
-#define REALLY_VERBOSE_LOGGING 2
+#define REALLY_VERBOSE_LOGGING 0
 
 #if REALLY_VERBOSE_LOGGING
 #define VPRINTK1 printk
