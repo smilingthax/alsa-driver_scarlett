@@ -174,7 +174,8 @@ static void *snd_malloc_sbus_pages(struct device *dev, size_t size,
 	if (WARN_ON(!dma_addr))
 		return NULL;
 	pg = get_order(size);
-	res = sbus_alloc_consistent(sdev, PAGE_SIZE * (1 << pg), dma_addr);
+	res = sbus_alloc_consistent(&sdev->ofdev.dev, PAGE_SIZE * (1 << pg),
+				    dma_addr);
 	if (res != NULL)
 		inc_snd_pages(pg);
 	return res;
@@ -190,7 +191,8 @@ static void snd_free_sbus_pages(struct device *dev, size_t size,
 		return;
 	pg = get_order(size);
 	dec_snd_pages(pg);
-	sbus_free_consistent(sdev, PAGE_SIZE * (1 << pg), ptr, dma_addr);
+	sbus_free_consistent(&sdev->ofdev.dev, PAGE_SIZE * (1 << pg),
+			     ptr, dma_addr);
 }
 
 #endif /* CONFIG_SBUS */
