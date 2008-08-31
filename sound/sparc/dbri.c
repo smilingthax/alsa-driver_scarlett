@@ -2670,7 +2670,7 @@ static int __devexit dbri_remove(struct of_device *op)
 	return 0;
 }
 
-static struct of_device_id dbri_match[] = {
+static const struct of_device_id dbri_match[] = {
 	{
 		.name = "SUNW,DBRIe",
 	},
