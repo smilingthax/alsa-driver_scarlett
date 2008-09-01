@@ -1645,4 +1645,13 @@ static inline int __strict_strtoul(const char *cp, unsigned int base,
 #endif
 #endif /* < 2.6.0 */
 
+/*
+ * wrapper for older SPARC codes with SBUS/EBUS specific bus
+ */
+#if defined(CONFIG_SBUS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 28)
+struct sbus_dev;
+#define snd_dma_sbus_data(sbus)        ((struct device *)(sbus))
+#define SNDRV_DMA_TYPE_SBUS            4       /* SBUS continuous */
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
