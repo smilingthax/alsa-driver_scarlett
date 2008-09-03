@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/pcm_native.c	2008-08-08 15:23:46.000000000 +0200
-+++ pcm_native.c	2008-08-08 17:23:14.000000000 +0200
+--- ../alsa-kernel/core/pcm_native.c	2008-09-03 10:59:04.000000000 +0200
++++ pcm_native.c	2008-09-03 11:02:46.000000000 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -506,7 +506,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3398,26 +3672,46 @@
+@@ -3409,29 +3683,53 @@
  
  const struct file_operations snd_pcm_f_ops[2] = {
  	{
@@ -530,6 +530,9 @@
 +#endif
  		.mmap =			snd_pcm_mmap,
  		.fasync =		snd_pcm_fasync,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)
+ 		.get_unmapped_area =	dummy_get_unmapped_area,
++#endif
  	},
  	{
 +#ifndef LINUX_2_2
@@ -552,4 +555,8 @@
 +#endif
  		.mmap =			snd_pcm_mmap,
  		.fasync =		snd_pcm_fasync,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)
+ 		.get_unmapped_area =	dummy_get_unmapped_area,
++#endif
  	}
+ };
