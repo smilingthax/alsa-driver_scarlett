@@ -956,6 +956,25 @@ EXPORT_SYMBOL(snd_compat_release_firmware);
 #endif /* NEEDS_COMPAT_FW_LOADER */
 #endif /* !2.6 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
+void snd_compat_print_hex_dump_bytes(const char *prefix_str, int prefix_type,
+				     const void *buf, size_t len)
+{
+	size_t off;
+	unsigned int i;
+
+	for (off = 0; off < len; off += 16) {
+		printk(KERN_DEBUG "%s", prefix_str);
+		if (prefix_type == DUMP_PREFIX_OFFSET)
+			printk(" %.4x:", off);
+		for (i = 0; i < 16 && off + i < len; ++i)
+			printk(" %02x", ((const u8*)buf)[off + i]);
+		printk("\n");
+	}
+}
+EXPORT_SYMBOL(snd_compat_print_hex_dump_bytes);
+#endif
+
 /* ISA drivers */
 #ifdef CONFIG_ISA
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18)

@@ -1661,4 +1661,12 @@ struct sbus_dev;
 #define SNDRV_DMA_TYPE_SBUS            4       /* SBUS continuous */
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
+#define DUMP_PREFIX_NONE	0
+#define DUMP_PREFIX_OFFSET	1
+void snd_compat_print_hex_dump_bytes(const char *prefix_str, int prefix_type,
+				     const void *buf, size_t len);
+#define print_hex_dump_bytes(a,b,c,d) snd_compat_print_hex_dump_bytes(a,b,c,d)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
