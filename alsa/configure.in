@@ -2277,6 +2277,37 @@ if test "$CONFIG_CREATE_WORKQUEUE_FLAGS" = "1"; then
 fi
 fi
 
+dnl Check for pci_ioremap_bar
+AC_MSG_CHECKING(for pci_ioremap_bar)
+pci_ioremap_bar="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/pci.h>
+],[
+  void (*func)(struct pci_dev *, int);
+  func = pci_ioremap_bar;
+],
+    AC_MSG_RESULT(yes);pci_ioremap_bar="1",
+    AC_MSG_RESULT(no);pci_ioremap_bar="0",
+    AC_MSG_RESULT(unknown);pci_ioremap_bar="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_PCI_IOREMAP_BAR=$pci_ioremap_bar
+dnl AC_SUBST(CONFIG_HAVE_PCI_IOREMAP_BAR)
+if test "$CONFIG_HAVE_PCI_IOREMAP_BAR" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PCI_IOREMAP_BAR)
+fi
+
 dnl Check for saved_config_space in pci_dev
 AC_MSG_CHECKING(for saved_config_space in pci_dev)
 pci_saved_config="0"
