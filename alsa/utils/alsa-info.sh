@@ -373,7 +373,7 @@ echo "" >> $FILE
 echo "" >> $FILE
 fi
 
-if [ -d $SYSFS ]
+if [ -d "$SYSFS" ]
 then
 echo "!!Loaded sound module options" >> $FILE
 echo "!!--------------------------" >> $FILE
