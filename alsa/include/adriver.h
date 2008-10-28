@@ -1688,4 +1688,13 @@ static inline void *pci_ioremap_bar(struct pci_dev *pdev, int bar)
 #endif
 #endif
 
+/* pci_name() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 23)
+#ifdef CONFIG_PCI
+#undef pci_name
+#define pci_name(pci)	((pci)->slot_name)
+#endif
+#endif
+
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
