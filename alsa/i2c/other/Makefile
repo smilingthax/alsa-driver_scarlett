@@ -11,3 +11,5 @@ clean-files += tea575x-tuner.c
 include $(SND_TOPDIR)/alsa-kernel/i2c/other/Makefile
 
 include $(SND_TOPDIR)/Rules.make
+
+tea575x-tuner.c: tea575x-tuner.patch $(SND_TOPDIR)/alsa-kernel/i2c/other/tea575x-tuner.c
