@@ -506,9 +506,9 @@ static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
 			params_buffer_bytes(params),  runtime->dma_addr);
 		if (err == 0) {
 			snd_printd(KERN_INFO
-					"StreamHostBufferAttach succeeded %u %u\n",
-						params_buffer_bytes(params),
-						runtime->dma_addr);
+				   "StreamHostBufferAttach succeeded %u %lu\n",
+				   params_buffer_bytes(params),
+				   (unsigned long)runtime->dma_addr);
 		} else {
 			snd_printd(KERN_INFO
 					"StreamHostBufferAttach error %d\n",
