@@ -1609,7 +1609,6 @@ static inline const char *dev_name(struct device *dev)
 }
 
 static inline int dev_set_name(struct device *dev, const char *fmt, ...)
-			__attribute__((format(printf, 2, 3)))
 {
 	va_list ap;
 	va_start(ap, fmt);
