@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.51
+SCRIPT_VERSION=0.4.52
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -46,26 +46,45 @@ update() {
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
 		if [[ -n $DIALOG ]]
 		then
-			dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to install it?" 0 0
+			if [ -w $0 ]; then
+				dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to install it?" 0 0
+			else
+				dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to download it?" 0 0
+			fi
 			DIALOG_EXIT_CODE=$?
 			if [[ $DIALOG_EXIT_CODE = 0 ]]
 			then
-				cp /tmp/alsa-info.sh $0
-				echo "ALSA-Info script has been updated to v $REMOTE_VERSION"
+				echo "Newer version detected: $REMOTE_VERSION"
 				echo "To view the ChangeLog, please visit $CHANGELOG"
-				echo "Please re-run the script"
+				if [ -w $0 ]; then
+					cp /tmp/alsa-info.sh $0
+					echo "ALSA-Info script has been updated to v $REMOTE_VERSION"
+					echo "Please re-run the script"
+					rm /tmp/alsa-info.sh 2>/dev/null
+				else
+					echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
+					echo "Please re-run the script from new location."
+				fi
 				exit
+			else
+				rm /tmp/alsa-info.sh 2>/dev/null
 			fi
 		else
-			cp /tmp/alsa-info.sh $0
 			echo "Newer version detected: $REMOTE_VERSION"
 			echo "To view the ChangeLog, please visit $CHANGELOG"
-			echo "ALSA-Info script has been updated. Please re-run it."
-
+			if [ -w $0 ]; then
+				cp /tmp/alsa-info.sh $0
+				echo "ALSA-Info script has been updated. Please re-run it."
+				rm /tmp/alsa-info.sh 2>/dev/null
+			else
+				echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
+				echo "Please, re-run it from new location."
+			fi
 			exit
 		fi
+	else
+		rm /tmp/alsa-info.sh 2>/dev/null
 	fi
-	rm /tmp/alsa-info.sh 2>/dev/null
 }
 
 cleanup() {
