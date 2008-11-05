@@ -133,8 +133,7 @@ if test -n "$kernelbuild" -a -f $kernelbuild/include/linux/version.h; then
 else
   KERNDIR=$CONFIG_SND_KERNELDIR
 fi
-AC_CACHE_VAL(kaversion,
-[AC_TRY_RUN([
+AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -178,7 +177,7 @@ int main()
 #endif
 }],kaversion=`cat conftestdata`,
 kaversion="",
-kaversion="")])
+kaversion="")
 CFLAGS="$ac_save_CFLAGS"
 kversion=`echo $kaversion | cut -d : -f 1`
 kpatchlevel=`echo $kaversion | cut -d : -f 2`
@@ -208,8 +207,8 @@ if test -n "$kernelbuild" -a -f $kernelbuild/include/linux/compile.h; then
 else
   KERNDIR=$CONFIG_SND_KERNELDIR
 fi
-AC_CACHE_VAL(kernel_gcc,
-[AC_TRY_RUN([
+
+AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
@@ -246,7 +245,7 @@ int main()
 #endif
 }],kernel_compiler=`cat conftestdata`,
 kernel_compiler="",
-kernel_compiler="")])
+kernel_compiler="")
 CFLAGS="$ac_save_CFLAGS"
 my_compiler=`$CROSS_COMPILE$CC --version | head -n 1`
 dnl
