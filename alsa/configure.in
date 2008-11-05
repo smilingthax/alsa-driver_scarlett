@@ -350,7 +350,7 @@ dnl compiler version check
 
 AC_DEFUN([CHECK_KERNEL_HEADER], [
   AC_MSG_CHECKING(for kernel $1)
-  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
+  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" -o -f "$kernelbuild/arch/$ARCHDIR/include/$1" \) ; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
@@ -358,7 +358,7 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
   if test -n "$3"; then
     eval $3=""
   fi
-  if test -f "$KERNDIR/include/$1" -o -f "$KERNDIR/include2/$1"; then
+  if test -f "$KERNDIR/include/$1" -o -f "$KERNDIR/include2/$1" -o -f "$KERNDIR/arch/$ARCHDIR/include/$1"; then
     AC_MSG_RESULT(yes)
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -385,12 +385,12 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
 
 AC_DEFUN([MODIFY_KERNEL_HEADER], [
   AC_MSG_CHECKING(to modify of kernel $1)
-  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
+  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" -o -f "$kernelbuild/arch/$ARCHDIR/include/$1" \) ; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
-  if grep -q $2 "$KERNDIR/include/$1" "$KERNDIR/include2/$1" > /dev/null 2>&1; then
+  if grep -q $2 "$KERNDIR/include/$1" "$KERNDIR/include2/$1" "$KERNDIR/arch/$ARCHDIR/include/$1" > /dev/null 2>&1; then
     AC_MSG_RESULT(no)
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -612,149 +612,6 @@ AC_SUBST(CONFIG_EXPERIMENTAL)
 dnl Remove header hacks
 rm -f include/linux/*.h
 rm -f include/asm/*.h
-
-dnl Check linux/config.h
-CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
-#define _LINUX_CONFIG_H
-#ifndef AUTOCONF_INCLUDED
-#include <linux/autoconf.h>
-#endif
-#endif
-])
-
-dnl Check for deprecated linux/config.h
-AC_MSG_CHECKING(for deprecated linux/config.h)
-if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
-  KERNDIR=$kernelbuild
-else
-  KERNDIR=$CONFIG_SND_KERNELDIR
-fi
-deprecated_config_h="0"
-if test -r $KERNDIR/include/linux/config.h ; then
-  if grep "Including config.h is deprecated." $KERNDIR/include/linux/config.h > /dev/null; then
-    deprecated_config_h="1"
-  fi
-else
-  deprecated_config_h="1"
-fi
-CONFIG_HAVE_DEPRECATED_CONFIG_H=$deprecated_config_h
-if test "$CONFIG_HAVE_DEPRECATED_CONFIG_H" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_DEPRECATED_CONFIG_H)
-fi
-
-dnl Check kernel headers for 2.2
-MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
-CHECK_KERNEL_HEADER(linux/utsrelease.h)
-CHECK_KERNEL_HEADER(linux/compiler.h)
-CHECK_KERNEL_HEADER(linux/pm.h)
-CHECK_KERNEL_HEADER(linux/spinlock.h)
-CHECK_KERNEL_HEADER(linux/irq.h)
-CHECK_KERNEL_HEADER(linux/threads.h)
-CHECK_KERNEL_HEADER(linux/rwsem.h)
-CHECK_KERNEL_HEADER(linux/gameport.h)
-CHECK_KERNEL_HEADER(media/v4l2-dev.h)
-CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
-CHECK_KERNEL_HEADER(linux/highmem.h)
-CHECK_KERNEL_HEADER(linux/workqueue.h)
-if test ! -f include/linux/workqueue.h; then
-  if test "x$kversion.$kpatchlevel" = "x2.4" -a \
-          "x$RED_HAT_LINUX_KERNEL" = "xy"; then
-    echo "It looks like you're using a RedHat 9 kernel."
-    echo "Disabling their incomplete workqueue.h modification."
-    mkdir -p include/linux
-    touch include/linux/workqueue.h
-  fi
-fi
-CHECK_KERNEL_HEADER(linux/dma-mapping.h)
-CHECK_KERNEL_HEADER(asm/hw_irq.h)
-CHECK_KERNEL_HEADER(linux/device.h, [#include \"device_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/platform_device.h, [#include \"platform_device_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/isa.h, [#include \"isa_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
-#include <linux/delay.h>
-])
-CHECK_KERNEL_HEADER(linux/compat.h, [#include \"compat_64.h\"
-])
-CHECK_KERNEL_HEADER(linux/log2.h)
-dnl PPC headers (for 2.2 kernels)
-CHECK_KERNEL_HEADER(linux/adb.h, [#include <asm/adb.h>
-])
-CHECK_KERNEL_HEADER(linux/cuda.h, [#include <asm/cuda.h>
-])
-CHECK_KERNEL_HEADER(linux/pmu.h, [#include <asm/pmu.h>
-])
-CHECK_KERNEL_HEADER(linux/io.h, [#include <asm/io.h>
-])
-CHECK_KERNEL_HEADER(linux/moduleparam.h)
-CHECK_KERNEL_HEADER(linux/syscalls.h, [#include \"syscalls_26.h\"
-])
-CHECK_KERNEL_HEADER(linux/firmware.h, [#include \"firmware_compat.h\"
-], HAVE_FIRMWARE_H)
-CHECK_KERNEL_HEADER(linux/err.h, [#include \"err_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/bitmap.h, [#include \"bitmap_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/mutex.h, [#include \"mutex_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/pm_qos_params.h, [#include \"pm_qos_params_compat.h\"
-])
-CHECK_KERNEL_HEADER(linux/kthread.h, [#include \"kthread_compat.h\"
-])
-CHECK_KERNEL_HEADER(asm/irq_regs.h)
-CHECK_KERNEL_HEADER(linux/seq_file.h)
-CHECK_KERNEL_HEADER(linux/debugfs.h)
-
-dnl Check for dump_stack
-if test "$kversion.$kpatchlevel" = "2.6"; then
-  AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
-else
-  CHECK_EXPORTED(CONFIG_HAVE_DUMP_STACK, dump_stack)
-fi
-
-dnl Check for modversions...
-CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
-CONFIG_SND_MVERSION=$CONFIG_MODVERSIONS
-AC_SUBST(CONFIG_SND_MVERSION)
-GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
-
-dnl Check for ioport support...
-CHECK_KERNEL_CONFIG(CONFIG_HAS_IOPORT, [has ioport support])
-test "$CONFIG_HAS_IOPORT" = "y" && AC_DEFINE(CONFIG_HAS_IOPORT)
-
-dnl Check for PCI support...
-CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
-AC_SUBST(CONFIG_PCI)
-
-dnl Check for I2C drivers...
-CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C, [I2C driver in kernel])
-AC_SUBST(CONFIG_I2C)
-
-if test "$CONFIG_I2C" != ""; then
-CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C_POWERMAC, [I2C_POWERMAC in kernel])
-# AC_SUBST(CONFIG_I2C_POWERMAC)
-fi
-
-dnl Check for firmware loader...
-if test -n "$HAVE_FIRMWARE_H"; then
-  CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_FW_LOADER, [firmware loader])
-else
-  AC_MSG_CHECKING(for firmware loader)
-  CONFIG_FW_LOADER="y"
-  AC_MSG_RESULT(emulated)
-fi
-AC_SUBST(CONFIG_FW_LOADER)
-
-dnl Check for input subsystem...
-if test $kpatchlevel -le 2; then
-CONFIG_INPUT="y"
-else
-CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
-CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT_PCSPKR, [pc-speaker input subsystem in kernel])
-fi
-AC_SUBST(CONFIG_INPUT)
 
 
 dnl Directory for modules
@@ -1266,6 +1123,20 @@ EOF
     ;;
 esac
 
+if test -n "$ARCH"; then
+   case "$ARCH" in
+   i?86|x86_64)
+      ARCHDIR=x86
+      ;;
+   *)
+      ARCHDIR=$ARCH
+      ;;
+   esac
+   if test -d $CONFIG_SND_KERNELDIR/arch/$ARCHDIR/include; then
+      KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$ARCHDIR/include"
+   fi
+fi
+
 dnl set ia32 (X86)
 mach_dir=""
 case "$processor" in
@@ -1487,6 +1358,150 @@ AC_SUBST(CONFIG_PARISC)
 AC_SUBST(CONFIG_SUPERH)
 AC_SUBST(CONFIG_SUPERH64)
 test "$CONFIG_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)
+
+dnl Check linux/config.h
+CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
+#define _LINUX_CONFIG_H
+#ifndef AUTOCONF_INCLUDED
+#include <linux/autoconf.h>
+#endif
+#endif
+])
+
+dnl Check for deprecated linux/config.h
+AC_MSG_CHECKING(for deprecated linux/config.h)
+if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
+  KERNDIR=$kernelbuild
+else
+  KERNDIR=$CONFIG_SND_KERNELDIR
+fi
+deprecated_config_h="0"
+if test -r $KERNDIR/include/linux/config.h ; then
+  if grep "Including config.h is deprecated." $KERNDIR/include/linux/config.h > /dev/null; then
+    deprecated_config_h="1"
+  fi
+else
+  deprecated_config_h="1"
+fi
+CONFIG_HAVE_DEPRECATED_CONFIG_H=$deprecated_config_h
+if test "$CONFIG_HAVE_DEPRECATED_CONFIG_H" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_DEPRECATED_CONFIG_H)
+fi
+
+dnl Check kernel headers for 2.2
+MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
+CHECK_KERNEL_HEADER(linux/utsrelease.h)
+CHECK_KERNEL_HEADER(linux/compiler.h)
+CHECK_KERNEL_HEADER(linux/pm.h)
+CHECK_KERNEL_HEADER(linux/spinlock.h)
+CHECK_KERNEL_HEADER(linux/irq.h)
+CHECK_KERNEL_HEADER(linux/threads.h)
+CHECK_KERNEL_HEADER(linux/rwsem.h)
+CHECK_KERNEL_HEADER(linux/gameport.h)
+CHECK_KERNEL_HEADER(media/v4l2-dev.h)
+CHECK_KERNEL_HEADER(linux/devfs_fs_kernel.h)
+CHECK_KERNEL_HEADER(linux/highmem.h)
+CHECK_KERNEL_HEADER(linux/workqueue.h)
+if test ! -f include/linux/workqueue.h; then
+  if test "x$kversion.$kpatchlevel" = "x2.4" -a \
+          "x$RED_HAT_LINUX_KERNEL" = "xy"; then
+    echo "It looks like you're using a RedHat 9 kernel."
+    echo "Disabling their incomplete workqueue.h modification."
+    mkdir -p include/linux
+    touch include/linux/workqueue.h
+  fi
+fi
+CHECK_KERNEL_HEADER(linux/dma-mapping.h)
+CHECK_KERNEL_HEADER(asm/hw_irq.h)
+CHECK_KERNEL_HEADER(linux/device.h, [#include \"device_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/platform_device.h, [#include \"platform_device_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/isa.h, [#include \"isa_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
+#include <linux/delay.h>
+])
+CHECK_KERNEL_HEADER(linux/compat.h, [#include \"compat_64.h\"
+])
+CHECK_KERNEL_HEADER(linux/log2.h)
+dnl PPC headers (for 2.2 kernels)
+CHECK_KERNEL_HEADER(linux/adb.h, [#include <asm/adb.h>
+])
+CHECK_KERNEL_HEADER(linux/cuda.h, [#include <asm/cuda.h>
+])
+CHECK_KERNEL_HEADER(linux/pmu.h, [#include <asm/pmu.h>
+])
+CHECK_KERNEL_HEADER(linux/io.h, [#include <asm/io.h>
+])
+CHECK_KERNEL_HEADER(linux/moduleparam.h)
+CHECK_KERNEL_HEADER(linux/syscalls.h, [#include \"syscalls_26.h\"
+])
+CHECK_KERNEL_HEADER(linux/firmware.h, [#include \"firmware_compat.h\"
+], HAVE_FIRMWARE_H)
+CHECK_KERNEL_HEADER(linux/err.h, [#include \"err_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/bitmap.h, [#include \"bitmap_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/mutex.h, [#include \"mutex_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/pm_qos_params.h, [#include \"pm_qos_params_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/kthread.h, [#include \"kthread_compat.h\"
+])
+CHECK_KERNEL_HEADER(asm/irq_regs.h)
+CHECK_KERNEL_HEADER(linux/seq_file.h)
+CHECK_KERNEL_HEADER(linux/debugfs.h)
+
+dnl Check for dump_stack
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
+else
+  CHECK_EXPORTED(CONFIG_HAVE_DUMP_STACK, dump_stack)
+fi
+
+dnl Check for modversions...
+CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
+CONFIG_SND_MVERSION=$CONFIG_MODVERSIONS
+AC_SUBST(CONFIG_SND_MVERSION)
+GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
+
+dnl Check for ioport support...
+CHECK_KERNEL_CONFIG(CONFIG_HAS_IOPORT, [has ioport support])
+test "$CONFIG_HAS_IOPORT" = "y" && AC_DEFINE(CONFIG_HAS_IOPORT)
+
+dnl Check for PCI support...
+CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
+AC_SUBST(CONFIG_PCI)
+
+dnl Check for I2C drivers...
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C, [I2C driver in kernel])
+AC_SUBST(CONFIG_I2C)
+
+if test "$CONFIG_I2C" != ""; then
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C_POWERMAC, [I2C_POWERMAC in kernel])
+# AC_SUBST(CONFIG_I2C_POWERMAC)
+fi
+
+dnl Check for firmware loader...
+if test -n "$HAVE_FIRMWARE_H"; then
+  CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_FW_LOADER, [firmware loader])
+else
+  AC_MSG_CHECKING(for firmware loader)
+  CONFIG_FW_LOADER="y"
+  AC_MSG_RESULT(emulated)
+fi
+AC_SUBST(CONFIG_FW_LOADER)
+
+dnl Check for input subsystem...
+if test $kpatchlevel -le 2; then
+CONFIG_INPUT="y"
+else
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT_PCSPKR, [pc-speaker input subsystem in kernel])
+fi
+AC_SUBST(CONFIG_INPUT)
+
 
 dnl Check for SMP...
 CHECK_KERNEL_CONFIG(CONFIG_SMP, [SMP])
