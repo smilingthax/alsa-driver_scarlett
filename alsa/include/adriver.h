@@ -1544,6 +1544,41 @@ static inline void put_unaligned_be64(u64 val, void *p)
 	val = cpu_to_be64(val);
 	put_unaligned(val, (u64 *)p);
 }
+
+static inline u16 get_unaligned_le16(void *p)
+{
+	u16 val = get_unaligned((u16 *)p);
+	return cpu_to_le16(val);
+}
+
+static inline u32 get_unaligned_le32(void *p)
+{
+	u32 val = get_unaligned((u32 *)p);
+	return cpu_to_le32(val);
+}
+
+static inline u64 get_unaligned_le64(void *p)
+{
+	u64 val = get_unaligned((u64 *)p);
+	return cpu_to_le64(val);
+}
+static inline u16 get_unaligned_be16(void *p)
+{
+	u16 val = get_unaligned((u16 *)p);
+	return cpu_to_be16(val);
+}
+
+static inline u32 get_unaligned_be32(void *p)
+{
+	u32 val = get_unaligned((u32 *)p);
+	return cpu_to_be32(val);
+}
+
+static inline u64 get_unaligned_be64(void *p)
+{
+	u64 val = get_unaligned((u64 *)p);
+	return cpu_to_be64(val);
+}
 #endif
 
 /* list_first_entry */
