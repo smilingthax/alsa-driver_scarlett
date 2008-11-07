@@ -72,6 +72,7 @@ struct dep {
 	int own_config;
 	int selectable;
 	int processed;
+	int pending;
 };
 
 // Prototypes
@@ -90,6 +91,7 @@ static char *get_word(char *line, char *word);
 static struct dep *find_dep(char *parent, char *depname);
 static void del_all_from_list(void);
 static int is_always_true(struct dep *dep);
+static int is_always_false(struct dep *dep);
 
 int main(int argc, char *argv[]);
 static void usage(char *programname);
@@ -107,6 +109,7 @@ static char *kernel_deps[] = {
 	"ISA",
 	"ISA_DMA_API",
 	"ISAPNP",
+	"PNP",
 	"EISA",
 	"PCI",
 	"SBUS",
@@ -115,22 +118,20 @@ static char *kernel_deps[] = {
 	"L3",
 	"USB",
 	"PCMCIA",
+	"SPI",
+	"I2C*",
 	/* architectures */
-	"ARM",
+	"ARM*",
 	"PARISC",
-	"SPARC32",
-	"SPARC64",
-	"PPC",
-	"PPC64",
-	"PPC_PMAC",
-	"X86_64",
-	"X86",
-	"MIPS",
-	"MIPS64",
-	"SUPERH",
-	"SUPERH64",
+	"SPARC*",
+	"PPC*",
+	"X86*",
+	"MIPS*",
+	"SUPERH*",
 	"IA32_EMULATION",
 	"M68K",
+	"ALPHA*",
+	"BLACKFIN*",
 	/* architecture specific */
 	"ARCH_*",
 	"X86_PC9800",
@@ -138,13 +139,27 @@ static char *kernel_deps[] = {
 	"GSC",
 	"MACH_*",
 	"PXA_*",
+	"PS3*",
+	"SGI*",
+	"BOARD_*",
+	"ATMEL_*",
+	"AVR*",
+	"MPC*",
+	"MFD*",
+	"CPU_*",
+	"SOC_*",
 	/* other drivers */
 	"RTC",
+	"HPET",
+	"PARPORT",
+	"XILINX_VIRTEX",
 	"GAMEPORT",
-	"VIDEO_DEV",
-	"VIDEO_V4L1",
+	"VIDEO_*",
 	"FW_LOADER",
+	"PCSPKR_PLATFORM",
 	/* some flags/capabilities */
+	"PROC_FS",
+	"HIGH_RES_TIMERS",
 	"HAS_IOPORT",
 	"EXPERIMENTAL",
 	"BROKEN",
@@ -156,12 +171,14 @@ static char *kernel_deps[] = {
 };
 
 /* % -> always true */
+/* ! -> always false */
 /* # -> menuconfig */
 static char *no_cards[] = {
 	"%SOUND",
 	"%HAS_IOMEM",
 	"SOUND_PRIME",
 	"%SND",
+	"!M68K",
 	/* options given as configure options */
 	"SND_DYNAMIC_MINORS",
 	"SND_DEBUG",
@@ -807,7 +824,8 @@ static void optimize_dep(struct dep * parent)
 				      	goto __remove;
 			      	}
 			}
-			if (!is_always_true(cond->dep))
+			if (!(is_always_true(cond->dep) ||
+			      (is_always_false(cond->dep) && cond->not)))
 				goto __next;
 			if (cond->left == cond->right &&
 			    (cond->next == NULL || cond->type == COND_AND) &&
@@ -943,6 +961,12 @@ static int check_in_no_cards(struct dep *dep, char flag)
 static int is_always_true(struct dep *dep)
 {
 	return check_in_no_cards(dep, '%');
+}
+
+// is CONFIG_ variable is always false
+static int is_always_false(struct dep *dep)
+{
+	return check_in_no_cards(dep, '!');
 }
 
 /* is menuconfig that doesn't create modules and as default true */
@@ -1125,7 +1149,20 @@ static void sel_print_acinclude(struct sel *sel)
 	}
 }
 
-static void process_dep_acinclude(struct dep *tempdep, int slave)
+				    
+static int to_be_pending(struct dep *dep)
+{
+	if (dep->pending)
+		return 1;
+	return (!dep->processed && !dep->selectable &&
+		!is_kernel_deps(dep->name) &&
+		!is_menu_default_yes(dep) &&
+		!is_always_true(dep) &&
+		!is_always_false(dep));
+}
+
+static void process_dep_acinclude(struct dep *tempdep, int slave,
+				  int process_pending)
 {
 	struct cond *cond, *cond_prev;
 	int put_topif, put_define, put_if;
@@ -1154,8 +1191,18 @@ static void process_dep_acinclude(struct dep *tempdep, int slave)
 		for (cond = tempdep->cond; cond; cond = cond->next) {
 			struct dep *dep;
 			dep = find_dep("<root>", cond->name);
-			if (dep)
-				process_dep_acinclude(dep, 1);
+			if (dep) {
+				/* depends on a reverse-selected item? */
+				if (!process_pending && to_be_pending(dep)) {
+#if 0
+					fprintf(stderr, "pending %s (dep %s)\n",
+						tempdep->name, dep->name);
+#endif
+					tempdep->pending = 1;
+					return; /* pending */
+				}
+				process_dep_acinclude(dep, 1, process_pending);
+			}
 		}
 	}
 	if (tempdep->processed)
@@ -1189,7 +1236,8 @@ static void process_dep_acinclude(struct dep *tempdep, int slave)
 		put_topif = 1;
 	}
 	put_if = 0;
-	for (cond = tempdep->cond, cond_prev = NULL; cond; cond = cond->next) {
+	for (cond = tempdep->cond, cond_prev = NULL; cond;
+	     cond_prev = cond, cond = cond->next) {
 		if (!put_if)
 			printf("    if ");
 		else {
@@ -1204,7 +1252,6 @@ static void process_dep_acinclude(struct dep *tempdep, int slave)
 		for (j = 0; j < cond->right; j++)
 			printf(" )");
 		put_if = 1;
-		cond_prev = cond;
 	}
 	text = convert_to_config_uppercase("", tempdep->name);
 	ver = get_version_dep(text);
@@ -1334,7 +1381,11 @@ static void output_acinclude(void)
 	printf("  CONFIG_SND=\"m\"\n");
 
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		process_dep_acinclude(tempdep, 0);
+		process_dep_acinclude(tempdep, 0, 0);
+	}
+	/* process pending items */
+	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		process_dep_acinclude(tempdep, 0, 1);
 	}
 
 	printf("])\n\n");
