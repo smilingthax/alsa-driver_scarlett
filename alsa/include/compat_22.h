@@ -152,10 +152,12 @@ struct tasklet_struct {
 	void *data;			/* argument to function */
 };
 
-#define tasklet_hi_schedule(t)	do { \
+#define tasklet_schedule(t)	do { \
 	queue_task((struct tq_struct *)(t), &tq_immediate);\
 	mark_bh(IMMEDIATE_BH); \
 } while (0)
+
+#define tasklet_hi_schedule(t)	tasklet_schedule(t)
 
 #define tasklet_init(t,f,d)	do { \
 	(t)->next = NULL; \
