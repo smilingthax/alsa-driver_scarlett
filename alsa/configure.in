@@ -1199,10 +1199,12 @@ if test -n "$mach_dir"; then
   AC_TRY_RUN([
 #include <stdio.h>
 #include "$KERNDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/linux/version.h"
 int main(void) {
 	FILE *file = fopen("machine.id", "w+");
 	if (file == NULL)
 		exit(1);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 26)
 #if defined(CONFIG_X86_VOYAGER)
 	fprintf(file, "voyager");
 #elif defined(CONFIG_X86_VISWS)
@@ -1217,6 +1219,9 @@ int main(void) {
 	fprintf(file, "es7000");
 #elif defined(CONFIG_X86_PC9800)
 	fprintf(file, "pc9800");
+#else
+	fprintf(file, "default");
+#endif
 #else
 	fprintf(file, "default");
 #endif
