@@ -3870,10 +3870,14 @@ static void stac92xx_power_down(struct hda_codec *codec)
 					AC_VERB_SET_POWER_STATE, AC_PWRST_D3);
 }
 
+static void stac_toggle_power_map(struct hda_codec *codec, hda_nid_t nid,
+				  int enable);
+
 static int stac92xx_init(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
 	struct auto_pin_cfg *cfg = &spec->autocfg;
+	unsigned int gpio;
 	int i;
 
 	snd_hda_sequence_write(codec, spec->init);
@@ -3884,6 +3888,16 @@ static int stac92xx_init(struct hda_codec *codec)
 			snd_hda_codec_write_cache(codec,
 				spec->adc_nids[i], 0,
 				AC_VERB_SET_POWER_STATE, AC_PWRST_D3);
+
+	/* set up GPIO */
+	gpio = spec->gpio_data;
+	/* turn on EAPD statically when spec->eapd_switch isn't set.
+	 * otherwise, unsol event will turn it on/off dynamically
+	 */
+	if (!spec->eapd_switch)
+		gpio |= spec->eapd_mask;
+	stac_gpio_set(codec, spec->gpio_mask, spec->gpio_dir, gpio);
+
 	/* set up pins */
 	if (spec->hp_detect) {
 		/* Enable unsolicited responses on the HP widget */
@@ -3925,6 +3939,12 @@ static int stac92xx_init(struct hda_codec *codec)
 	for (i = 0; i < spec->num_dmics; i++)
 		stac92xx_auto_set_pinctl(codec, spec->dmic_nids[i],
 					AC_PINCTL_IN_EN);
+	if (cfg->dig_out_pin)
+		stac92xx_auto_set_pinctl(codec, cfg->dig_out_pin,
+					 AC_PINCTL_OUT_EN);
+	if (cfg->dig_in_pin)
+		stac92xx_auto_set_pinctl(codec, cfg->dig_in_pin,
+					 AC_PINCTL_IN_EN);
 	for (i = 0; i < spec->num_pwrs; i++)  {
 		hda_nid_t nid = spec->pwr_nids[i];
 		int pinctl, def_conf;
@@ -3940,25 +3960,21 @@ static int stac92xx_init(struct hda_codec *codec)
 		 */
 		if (pinctl & AC_PINCTL_IN_EN)
 			continue;
+		def_conf = snd_hda_codec_read(codec, nid, 0,
+					      AC_VERB_GET_CONFIG_DEFAULT, 0);
+		def_conf = get_defcfg_connect(def_conf);
 		/* skip any ports that don't have jacks since presence
  		 * detection is useless */
-		if (def_conf && def_conf != AC_JACK_PORT_FIXED)
+		if (def_conf != AC_JACK_PORT_COMPLEX) {
+			if (def_conf != AC_JACK_PORT_NONE)
+				stac_toggle_power_map(codec, nid, 1);
 			continue;
+		}
 		enable_pin_detect(codec, nid, STAC_PWR_EVENT);
 		stac_issue_unsol_event(codec, nid, STAC_PWR_EVENT);
 	}
 	if (spec->dac_list)
 		stac92xx_power_down(codec);
-	if (cfg->dig_out_pin)
-		stac92xx_auto_set_pinctl(codec, cfg->dig_out_pin,
-					 AC_PINCTL_OUT_EN);
-	if (cfg->dig_in_pin)
-		stac92xx_auto_set_pinctl(codec, cfg->dig_in_pin,
-					 AC_PINCTL_IN_EN);
-
-	stac_gpio_set(codec, spec->gpio_mask,
-					spec->gpio_dir, spec->gpio_data);
-
 	return 0;
 }
 
@@ -4145,14 +4161,18 @@ static void stac92xx_hp_detect(struct hda_codec *codec)
 	}
 } 
 
-static void stac92xx_pin_sense(struct hda_codec *codec, int idx)
+static void stac_toggle_power_map(struct hda_codec *codec, hda_nid_t nid,
+				  int enable)
 {
 	struct sigmatel_spec *spec = codec->spec;
-	hda_nid_t nid = spec->pwr_nids[idx];
-	int presence, val;
-	val = snd_hda_codec_read(codec, codec->afg, 0, 0x0fec, 0x0)
-							& 0x000000ff;
-	presence = get_hp_pin_presence(codec, nid);
+	unsigned int idx, val;
+
+	for (idx = 0; idx < spec->num_pwrs; idx++) {
+		if (spec->pwr_nids[idx] == nid)
+			break;
+	}
+	if (idx >= spec->num_pwrs)
+		return;
 
 	/* several codecs have two power down bits */
 	if (spec->pwr_mapping)
@@ -4160,13 +4180,19 @@ static void stac92xx_pin_sense(struct hda_codec *codec, int idx)
 	else
 		idx = 1 << idx;
 
-	if (presence)
+	val = snd_hda_codec_read(codec, codec->afg, 0, 0x0fec, 0x0) & 0xff;
+	if (enable)
 		val &= ~idx;
 	else
 		val |= idx;
 
 	/* power down unused output ports */
 	snd_hda_codec_write(codec, codec->afg, 0, 0x7ec, val);
+}
+
+static void stac92xx_pin_sense(struct hda_codec *codec, hda_nid_t nid)
+{
+	stac_toggle_power_map(codec, nid, get_hp_pin_presence(codec, nid));
 }
 
 static void stac92xx_report_jack(struct hda_codec *codec, hda_nid_t nid)
