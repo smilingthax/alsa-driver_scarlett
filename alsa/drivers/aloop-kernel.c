@@ -69,7 +69,6 @@ struct loopback {
 
 struct loopback_pcm {
 	struct loopback *loopback;
-	spinlock_t lock;
 	struct timer_list timer;
 	unsigned int pcm_buffer_size;
 	unsigned int pcm_period_size;
@@ -194,17 +193,13 @@ static void loopback_timer_function(unsigned long data)
 	
 	dpcm->timer.expires = 1 + jiffies;
 	add_timer(&dpcm->timer);
-	spin_lock_irq(&dpcm->lock);
 
 	dpcm->pcm_irq_pos += dpcm->pcm_bps;
 	dpcm->pcm_buf_pos += dpcm->pcm_bps;
 	dpcm->pcm_buf_pos %= dpcm->pcm_buffer_size * dpcm->pcm_hz;
 	if (dpcm->pcm_irq_pos >= dpcm->pcm_period_size * dpcm->pcm_hz) {
 		dpcm->pcm_irq_pos %= dpcm->pcm_period_size * dpcm->pcm_hz;
-		spin_unlock_irq(&dpcm->lock);	
 		snd_pcm_period_elapsed(dpcm->substream);
-	} else {
-		spin_unlock_irq(&dpcm->lock);
 	}
 }
 
@@ -319,7 +314,6 @@ static int loopback_open(struct snd_pcm_substream *substream)
 	if (!dpcm)
 		return -ENOMEM;
 	init_timer(&dpcm->timer);
-	spin_lock_init(&dpcm->lock);
 	dpcm->substream = substream;
 	dpcm->loopback = loopback;
 	dpcm->timer.data = (unsigned long)dpcm;
