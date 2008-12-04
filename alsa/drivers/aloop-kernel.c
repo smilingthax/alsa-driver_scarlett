@@ -24,6 +24,7 @@
 #include <linux/time.h>
 #include <linux/wait.h>
 #include <linux/moduleparam.h>
+#include <linux/platform_device.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
@@ -50,7 +51,7 @@ MODULE_PARM_DESC(enable, "Enable this loopback soundcard.");
 module_param_array(pcm_substreams, int, NULL, 0444);
 MODULE_PARM_DESC(pcm_substreams, "PCM substreams # (1-8) for loopback driver.");
 
-struct snd_card_loopback_cable {
+struct loopback_cable {
 	struct snd_pcm_substream *playback;
 	struct snd_pcm_substream *capture;
 	struct snd_dma_buffer *dma_buffer;
@@ -61,13 +62,13 @@ struct snd_card_loopback_cable {
 	int capture_running;
 };
 
-struct snd_card_loopback {
+struct loopback {
 	struct snd_card *card;
-	struct snd_card_loopback_cable cables[MAX_PCM_SUBSTREAMS][2];
+	struct loopback_cable cables[MAX_PCM_SUBSTREAMS][2];
 };
 
-struct snd_card_loopback_pcm {
-	struct snd_card_loopback *loopback;
+struct loopback_pcm {
+	struct loopback *loopback;
 	spinlock_t lock;
 	struct timer_list timer;
 	unsigned int pcm_buffer_size;
@@ -77,40 +78,40 @@ struct snd_card_loopback_pcm {
 	unsigned int pcm_irq_pos;	/* IRQ position */
 	unsigned int pcm_buf_pos;	/* position in buffer */
 	struct snd_pcm_substream *substream;
-	struct snd_card_loopback_cable *cable;
+	struct loopback_cable *cable;
 };
 
-static struct snd_card *snd_loopback_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
+static struct platform_device *devices[SNDRV_CARDS];
 
-static void snd_card_loopback_timer_start(struct snd_pcm_substream *substream)
+static void loopback_timer_start(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 
 	dpcm->timer.expires = 1 + jiffies;
 	add_timer(&dpcm->timer);
 }
 
-static void snd_card_loopback_timer_stop(struct snd_pcm_substream *substream)
+static void loopback_timer_stop(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 
 	del_timer(&dpcm->timer);
 }
 
-static int snd_card_loopback_playback_trigger(struct snd_pcm_substream *substream,
-					   int cmd)
+static int loopback_playback_trigger(struct snd_pcm_substream *substream,
+				     int cmd)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 
 	if (cmd == SNDRV_PCM_TRIGGER_START) {
 		dpcm->cable->playback_running = 1;
-		snd_card_loopback_timer_start(substream);
+		loopback_timer_start(substream);
 	} else if (cmd == SNDRV_PCM_TRIGGER_STOP) {
 		dpcm->cable->playback_running = 0;
-		snd_card_loopback_timer_stop(substream);
+		loopback_timer_stop(substream);
 		snd_pcm_format_set_silence(runtime->format, runtime->dma_area,
 				bytes_to_samples(runtime, runtime->dma_bytes));
 
@@ -120,29 +121,29 @@ static int snd_card_loopback_playback_trigger(struct snd_pcm_substream *substrea
 	return 0;
 }
 
-static int snd_card_loopback_capture_trigger(struct snd_pcm_substream *substream,
-					  int cmd)
+static int loopback_capture_trigger(struct snd_pcm_substream *substream,
+				    int cmd)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 
 	if (cmd == SNDRV_PCM_TRIGGER_START) {
 		dpcm->cable->capture_running = 1;
-		snd_card_loopback_timer_start(substream);
+		loopback_timer_start(substream);
 	} else if (cmd == SNDRV_PCM_TRIGGER_STOP) {
 		dpcm->cable->capture_running = 0;
-		snd_card_loopback_timer_stop(substream);
+		loopback_timer_stop(substream);
 	} else {
 		return -EINVAL;
 	}
 	return 0;
 }
 
-static int snd_card_loopback_prepare(struct snd_pcm_substream *substream)
+static int loopback_prepare(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
-	struct snd_card_loopback_cable *cable = dpcm->cable;
+	struct loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_cable *cable = dpcm->cable;
 	unsigned int bps;
 
 	bps = runtime->rate * runtime->channels;
@@ -187,10 +188,9 @@ static int snd_card_loopback_prepare(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static void snd_card_loopback_timer_function(unsigned long data)
+static void loopback_timer_function(unsigned long data)
 {
-	struct snd_card_loopback_pcm *dpcm =
-		(struct snd_card_loopback_pcm *)data;
+	struct loopback_pcm *dpcm = (struct loopback_pcm *)data;
 	
 	dpcm->timer.expires = 1 + jiffies;
 	add_timer(&dpcm->timer);
@@ -208,14 +208,14 @@ static void snd_card_loopback_timer_function(unsigned long data)
 	}
 }
 
-static snd_pcm_uframes_t snd_card_loopback_pointer(struct snd_pcm_substream *substream)
+static snd_pcm_uframes_t loopback_pointer(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 	return bytes_to_frames(runtime, dpcm->pcm_buf_pos / dpcm->pcm_hz);
 }
 
-static struct snd_pcm_hardware snd_card_loopback_info =
+static struct snd_pcm_hardware loopback_pcm_hardware =
 {
 	.info =		(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 			 SNDRV_PCM_INFO_MMAP_VALID),
@@ -234,17 +234,17 @@ static struct snd_pcm_hardware snd_card_loopback_info =
 	.fifo_size =		0,
 };
 
-static void snd_card_loopback_runtime_free(struct snd_pcm_runtime *runtime)
+static void loopback_runtime_free(struct snd_pcm_runtime *runtime)
 {
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 	kfree(dpcm);
 }
 
-static int snd_card_loopback_hw_params(struct snd_pcm_substream *substream,
-				    struct snd_pcm_hw_params *hw_params)
+static int loopback_hw_params(struct snd_pcm_substream *substream,
+			      struct snd_pcm_hw_params *hw_params)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 	struct snd_dma_buffer *dmab;
 
 	if (!dpcm->cable->dma_buffer) {
@@ -265,11 +265,11 @@ static int snd_card_loopback_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int snd_card_loopback_hw_free(struct snd_pcm_substream *substream)
+static int loopback_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
-	struct snd_card_loopback_cable *cable = dpcm->cable;
+	struct loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_cable *cable = dpcm->cable;
 
 	snd_pcm_set_runtime_buffer(substream, NULL);
 
@@ -290,11 +290,11 @@ static int snd_card_loopback_hw_free(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static int snd_card_loopback_open(struct snd_pcm_substream *substream)
+static int loopback_open(struct snd_pcm_substream *substream)
 {
 	int half;
-	struct snd_card_loopback_pcm *dpcm;
-	struct snd_card_loopback *loopback = substream->private_data;
+	struct loopback_pcm *dpcm;
+	struct loopback *loopback = substream->private_data;
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	if (!substream->pcm->device) {
@@ -323,11 +323,11 @@ static int snd_card_loopback_open(struct snd_pcm_substream *substream)
 	dpcm->substream = substream;
 	dpcm->loopback = loopback;
 	dpcm->timer.data = (unsigned long)dpcm;
-	dpcm->timer.function = snd_card_loopback_timer_function;
+	dpcm->timer.function = loopback_timer_function;
 	dpcm->cable = &loopback->cables[substream->number][half];
 	runtime->private_data = dpcm;
-	runtime->private_free = snd_card_loopback_runtime_free;
-	runtime->hw = snd_card_loopback_info;
+	runtime->private_free = loopback_runtime_free;
+	runtime->hw = loopback_pcm_hardware;
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == substream->stream) {
 		dpcm->cable->playback = substream;
@@ -336,7 +336,7 @@ static int snd_card_loopback_open(struct snd_pcm_substream *substream)
 		if (dpcm->cable->capture_valid)
 			runtime->hw = dpcm->cable->hw;
 		else
-			dpcm->cable->hw = snd_card_loopback_info;
+			dpcm->cable->hw = loopback_pcm_hardware;
 	} else {
 		dpcm->cable->capture = substream;
 		dpcm->cable->capture_valid = 0;
@@ -344,15 +344,15 @@ static int snd_card_loopback_open(struct snd_pcm_substream *substream)
 		if (dpcm->cable->playback_valid)
 			runtime->hw = dpcm->cable->hw;
 		else
-			dpcm->cable->hw = snd_card_loopback_info;
+			dpcm->cable->hw = loopback_pcm_hardware;
 	}
 	return 0;
 }
 
-static int snd_card_loopback_close(struct snd_pcm_substream *substream)
+static int loopback_close(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_card_loopback_pcm *dpcm = runtime->private_data;
+	struct loopback_pcm *dpcm = runtime->private_data;
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == substream->stream) {
 		dpcm->cable->playback_valid = 0;
@@ -366,30 +366,30 @@ static int snd_card_loopback_close(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static struct snd_pcm_ops snd_card_loopback_playback_ops = {
-	.open =			snd_card_loopback_open,
-	.close =		snd_card_loopback_close,
+static struct snd_pcm_ops loopback_playback_ops = {
+	.open =			loopback_open,
+	.close =		loopback_close,
 	.ioctl =		snd_pcm_lib_ioctl,
-	.hw_params =		snd_card_loopback_hw_params,
-	.hw_free =		snd_card_loopback_hw_free,
-	.prepare =		snd_card_loopback_prepare,
-	.trigger =		snd_card_loopback_playback_trigger,
-	.pointer =		snd_card_loopback_pointer,
+	.hw_params =		loopback_hw_params,
+	.hw_free =		loopback_hw_free,
+	.prepare =		loopback_prepare,
+	.trigger =		loopback_playback_trigger,
+	.pointer =		loopback_pointer,
 };
 
-static struct snd_pcm_ops snd_card_loopback_capture_ops = {
-	.open =			snd_card_loopback_open,
-	.close =		snd_card_loopback_close,
+static struct snd_pcm_ops loopback_capture_ops = {
+	.open =			loopback_open,
+	.close =		loopback_close,
 	.ioctl =		snd_pcm_lib_ioctl,
-	.hw_params =		snd_card_loopback_hw_params,
-	.hw_free =		snd_card_loopback_hw_free,
-	.prepare =		snd_card_loopback_prepare,
-	.trigger =		snd_card_loopback_capture_trigger,
-	.pointer =		snd_card_loopback_pointer,
+	.hw_params =		loopback_hw_params,
+	.hw_free =		loopback_hw_free,
+	.prepare =		loopback_prepare,
+	.trigger =		loopback_capture_trigger,
+	.pointer =		loopback_pointer,
 };
 
-static int __init snd_card_loopback_pcm(struct snd_card_loopback *loopback,
-					int device, int substreams)
+static int __devinit loopback_pcm_new(struct loopback *loopback,
+				      int device, int substreams)
 {
 	struct snd_pcm *pcm;
 	int err;
@@ -398,10 +398,8 @@ static int __init snd_card_loopback_pcm(struct snd_card_loopback *loopback,
 			  substreams, substreams, &pcm);
 	if (err < 0)
 		return err;
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK,
-			&snd_card_loopback_playback_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
-			&snd_card_loopback_capture_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &loopback_playback_ops);
+	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &loopback_capture_ops);
 
 	pcm->private_data = loopback;
 	pcm->info_flags = 0;
@@ -409,8 +407,7 @@ static int __init snd_card_loopback_pcm(struct snd_card_loopback *loopback,
 	return 0;
 }
 
-static int __init
-snd_card_loopback_new_mixer(struct snd_card_loopback *loopback)
+static int __devinit loopback_mixer_new(struct loopback *loopback)
 {
 	struct snd_card *card = loopback->card;
 
@@ -418,19 +415,18 @@ snd_card_loopback_new_mixer(struct snd_card_loopback *loopback)
 	return 0;
 }
 
-static int __init snd_card_loopback_probe(int dev)
+static int __devinit loopback_probe(struct platform_device *devptr)
 {
 	struct snd_card *card;
-	struct snd_card_loopback *loopback;
+	struct loopback *loopback;
+	int dev = devptr->id;
 	int err;
 
-	if (!enable[dev])
-		return -ENODEV;
 	card = snd_card_new(index[dev], id[dev], THIS_MODULE,
-			    sizeof(struct snd_card_loopback));
+			    sizeof(struct loopback));
 	if (!card)
 		return -ENOMEM;
-	loopback = (struct snd_card_loopback *)card->private_data;
+	loopback = card->private_data;
 
 	if (pcm_substreams[dev] < 1)
 		pcm_substreams[dev] = 1;
@@ -438,13 +434,13 @@ static int __init snd_card_loopback_probe(int dev)
 		pcm_substreams[dev] = MAX_PCM_SUBSTREAMS;
 	
 	loopback->card = card;
-	err = snd_card_loopback_pcm(loopback, 0, pcm_substreams[dev]);
+	err = loopback_pcm_new(loopback, 0, pcm_substreams[dev]);
 	if (err < 0)
 		goto __nodev;
-	err = snd_card_loopback_pcm(loopback, 1, pcm_substreams[dev]);
+	err = loopback_pcm_new(loopback, 1, pcm_substreams[dev]);
 	if (err < 0)
 		goto __nodev;
-	err = snd_card_loopback_new_mixer(loopback);
+	err = loopback_mixer_new(loopback);
 	if (err < 0)
 		goto __nodev;
 	strcpy(card->driver, "Loopback");
@@ -452,7 +448,7 @@ static int __init snd_card_loopback_probe(int dev)
 	sprintf(card->longname, "Loopback %i", dev + 1);
 	err = snd_card_register(card);
 	if (!err) {
-		snd_loopback_cards[dev] = card;
+		platform_set_drvdata(devptr, card);
 		return 0;
 	}
       __nodev:
@@ -460,23 +456,94 @@ static int __init snd_card_loopback_probe(int dev)
 	return err;
 }
 
+static int __devexit loopback_remove(struct platform_device *devptr)
+{
+	snd_card_free(platform_get_drvdata(devptr));
+	platform_set_drvdata(devptr, NULL);
+	return 0;
+}
+
+#ifdef CONFIG_PM
+static int loopback_suspend(struct platform_device *pdev,
+				pm_message_t state)
+{
+	struct snd_card *card = platform_get_drvdata(pdev);
+	struct loopback *loopback = card->private_data;
+	int i, s;
+
+	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
+
+	for (i = 0; i < MAX_PCM_SUBSTREAMS; i++) {
+		for (s = 0; s < 2; s++) {
+			snd_pcm_suspend(loopback->cables[i][s].playback);
+			snd_pcm_suspend(loopback->cables[i][s].capture);
+		}
+	}
+	return 0;
+}
+	
+static int loopback_resume(struct platform_device *pdev)
+{
+	struct snd_card *card = platform_get_drvdata(pdev);
+
+	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
+	return 0;
+}
+#endif
+
+#define SND_LOOPBACK_DRIVER	"snd_aloop"
+
+static struct platform_driver loopback_driver = {
+	.probe		= loopback_probe,
+	.remove		= __devexit_p(loopback_remove),
+#ifdef CONFIG_PM
+	.suspend	= loopback_suspend,
+	.resume		= loopback_resume,
+#endif
+	.driver		= {
+		.name	= SND_LOOPBACK_DRIVER
+	},
+};
+
+static void loopback_unregister_all(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(devices); ++i)
+		platform_device_unregister(devices[i]);
+	platform_driver_unregister(&loopback_driver);
+}
+
 static int __init alsa_card_loopback_init(void)
 {
-	int dev, cards;
+	int i, err, cards;
 
-	for (dev = cards = 0; dev < SNDRV_CARDS && enable[dev]; dev++) {
-		if (snd_card_loopback_probe(dev) < 0) {
-#ifdef MODULE
-			printk(KERN_ERR "Loopback soundcard #%i not found or device busy\n", dev + 1);
-#endif
-			break;
+	err = platform_driver_register(&loopback_driver);
+	if (err < 0)
+		return err;
+
+
+	cards = 0;
+	for (i = 0; i < SNDRV_CARDS; i++) {
+		struct platform_device *device;
+		if (!enable[i])
+			continue;
+		device = platform_device_register_simple(SND_LOOPBACK_DRIVER,
+							 i, NULL, 0);
+		if (IS_ERR(device))
+			continue;
+		if (!platform_get_drvdata(device)) {
+			platform_device_unregister(device);
+			continue;
 		}
+		devices[i] = device;
 		cards++;
 	}
 	if (!cards) {
 #ifdef MODULE
-		printk(KERN_ERR "Loopback soundcard not found or device busy\n");
+		printk(KERN_ERR "aloop: No loopback enabled\n");
 #endif
+		loopback_unregister_all();
 		return -ENODEV;
 	}
 	return 0;
@@ -484,10 +551,7 @@ static int __init alsa_card_loopback_init(void)
 
 static void __exit alsa_card_loopback_exit(void)
 {
-	int idx;
-
-	for (idx = 0; idx < SNDRV_CARDS; idx++)
-		snd_card_free(snd_loopback_cards[idx]);
+	loopback_unregister_all();
 }
 
 module_init(alsa_card_loopback_init)
