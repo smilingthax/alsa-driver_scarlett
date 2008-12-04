@@ -59,8 +59,6 @@ struct snd_card_loopback_cable {
 	int capture_valid;
 	int playback_running;
 	int capture_running;
-	int playback_busy;
-	int capture_busy;
 };
 
 struct snd_card_loopback {
@@ -272,10 +270,10 @@ static int snd_card_loopback_hw_free(struct snd_pcm_substream *substream)
 	snd_pcm_set_runtime_buffer(substream, NULL);
 
 	if (SNDRV_PCM_STREAM_PLAYBACK == substream->stream) {
-		if (cable->capture_busy)
+		if (cable->capture)
 			return 0;
 	} else {
-		if (cable->playback_busy)
+		if (cable->playback)
 			return 0;
 	}
 
@@ -307,10 +305,10 @@ static int snd_card_loopback_open(struct snd_pcm_substream *substream)
 			half = 1;
 	}
 	if (SNDRV_PCM_STREAM_PLAYBACK == substream->stream) {
-		if (loopback->cables[substream->number][half].playback_busy)
+		if (loopback->cables[substream->number][half].playback)
 			return -EBUSY;
 	} else {
-		if (loopback->cables[substream->number][half].capture_busy)
+		if (loopback->cables[substream->number][half].capture)
 			return -EBUSY;
 	}
 	dpcm = kzalloc(sizeof(*dpcm), GFP_KERNEL);
@@ -331,7 +329,6 @@ static int snd_card_loopback_open(struct snd_pcm_substream *substream)
 		dpcm->cable->playback = substream;
 		dpcm->cable->playback_valid = 0;
 		dpcm->cable->playback_running = 0;
-		dpcm->cable->playback_busy = 1;
 		if (dpcm->cable->capture_valid)
 			runtime->hw = dpcm->cable->hw;
 		else
@@ -340,7 +337,6 @@ static int snd_card_loopback_open(struct snd_pcm_substream *substream)
 		dpcm->cable->capture = substream;
 		dpcm->cable->capture_valid = 0;
 		dpcm->cable->capture_running = 0;
-		dpcm->cable->capture_busy = 1;
 		if (dpcm->cable->playback_valid)
 			runtime->hw = dpcm->cable->hw;
 		else
@@ -357,12 +353,10 @@ static int snd_card_loopback_close(struct snd_pcm_substream *substream)
 	if (SNDRV_PCM_STREAM_PLAYBACK == substream->stream) {
 		dpcm->cable->playback_valid = 0;
 		dpcm->cable->playback_running = 0;
-		dpcm->cable->playback_busy = 0;
 		dpcm->cable->playback = NULL;
 	} else {
 		dpcm->cable->capture_valid = 0;
 		dpcm->cable->capture_running = 0;
-		dpcm->cable->capture_busy = 0;
 		dpcm->cable->capture = NULL;
 	}
 	return 0;
@@ -412,8 +406,6 @@ snd_card_loopback_new_mixer(struct snd_card_loopback *loopback)
 {
 	struct snd_card *card = loopback->card;
 
-	if (snd_BUG_ON(!loopback))
-		return -EINVAL;
 	strcpy(card->mixername, "Loopback Mixer");
 	return 0;
 }
@@ -422,7 +414,7 @@ static int __init snd_card_loopback_probe(int dev)
 {
 	struct snd_card *card;
 	struct snd_card_loopback *loopback;
-	int subdev, half, err;
+	int subdev, err;
 
 	if (!enable[dev])
 		return -ENODEV;
@@ -436,20 +428,6 @@ static int __init snd_card_loopback_probe(int dev)
 		pcm_substreams[dev] = 1;
 	if (pcm_substreams[dev] > MAX_PCM_SUBSTREAMS)
 		pcm_substreams[dev] = MAX_PCM_SUBSTREAMS;
-
-	for (subdev = 0; subdev < pcm_substreams[dev]; subdev++) {
-		for (half = 0; half < 2; half++) {
-			loopback->cables[subdev][half].playback = NULL;
-			loopback->cables[subdev][half].capture = NULL;
-			loopback->cables[subdev][half].dma_buffer = NULL;
-			loopback->cables[subdev][half].playback_valid = 0;
-			loopback->cables[subdev][half].capture_valid = 0;
-			loopback->cables[subdev][half].playback_running = 0;
-			loopback->cables[subdev][half].capture_running = 0;
-			loopback->cables[subdev][half].playback_busy = 0;
-			loopback->cables[subdev][half].capture_busy = 0;
-		}
-	}
 	
 	loopback->card = card;
 	if ((err = snd_card_loopback_pcm(loopback, 0, pcm_substreams[dev])) < 0)
