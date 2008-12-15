@@ -1,0 +1,39 @@
+--- ../../alsa-kernel/pci/hda/hda_intel.c	2008-12-15 14:37:48.000000000 +0100
++++ hda_intel.c	2008-12-15 14:41:46.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *
+  *  hda_intel.c - Implementation of primary alsa driver code base
+@@ -1943,16 +1944,21 @@
+ 	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+ static int azx_resume_early(struct pci_dev *pci)
+ {
+ 	return pci_restore_state(pci);
+ }
++#endif
+ 
+ static int azx_resume(struct pci_dev *pci)
+ {
+ 	struct snd_card *card = pci_get_drvdata(pci);
+ 	struct azx *chip = card->private_data;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
++	pci_restore_state(pci);
++#endif
+ 	if (pci_enable_device(pci) < 0) {
+ 		printk(KERN_ERR "hda-intel: pci_enable_device failed, "
+ 		       "disabling device\n");
+@@ -2463,7 +2469,9 @@
+ 	.remove = __devexit_p(azx_remove),
+ #ifdef CONFIG_PM
+ 	.suspend = azx_suspend,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+ 	.resume_early = azx_resume_early,
++#endif
+ 	.resume = azx_resume,
+ #endif
+ };
