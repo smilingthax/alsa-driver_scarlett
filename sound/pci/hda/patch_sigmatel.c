@@ -127,6 +127,7 @@ enum {
 };
 
 enum {
+	STAC_D965_REF_NO_JD, /* no jack-detection */
 	STAC_D965_REF,
 	STAC_D965_3ST,
 	STAC_D965_5ST,
@@ -2080,6 +2081,7 @@ static unsigned int dell_3st_pin_configs[14] = {
 };
 
 static unsigned int *stac927x_brd_tbl[STAC_927X_MODELS] = {
+	[STAC_D965_REF_NO_JD] = ref927x_pin_configs,
 	[STAC_D965_REF]  = ref927x_pin_configs,
 	[STAC_D965_3ST]  = d965_3st_pin_configs,
 	[STAC_D965_5ST]  = d965_5st_pin_configs,
@@ -2088,6 +2090,7 @@ static unsigned int *stac927x_brd_tbl[STAC_927X_MODELS] = {
 };
 
 static const char *stac927x_models[STAC_927X_MODELS] = {
+	[STAC_D965_REF_NO_JD]	= "ref-no-jd",
 	[STAC_D965_REF]		= "ref",
 	[STAC_D965_3ST]		= "3stack",
 	[STAC_D965_5ST]		= "5stack",
@@ -5137,6 +5140,10 @@ static int patch_stac927x(struct hda_codec *codec)
 	 * in hda_intel.c).
 	 */
 	codec->bus->needs_damn_long_delay = 1;
+
+	/* no jack detecion for ref-no-jd model */
+	if (spec->board_config == STAC_D965_REF_NO_JD)
+		spec->hp_detect = 0;
 
 	return 0;
 }
