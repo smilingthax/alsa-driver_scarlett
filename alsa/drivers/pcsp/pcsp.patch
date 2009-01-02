@@ -1,0 +1,17 @@
+--- ../../alsa-kernel/drivers/pcsp/pcsp.c	2009-01-02 12:03:26.000000000 +0100
++++ pcsp.c	2009-01-02 18:17:34.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  * PC-Speaker driver for Linux
+  *
+@@ -96,6 +97,9 @@
+ 		return -EINVAL;
+ 
+ 	hrtimer_init(&pcsp_chip.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
++	pcsp_chip.timer.cb_mode = HRTIMER_CB_IRQSAFE_UNLOCKED;
++#endif
+ 	pcsp_chip.timer.function = pcsp_do_timer;
+ 
+ 	card = snd_card_new(index, id, THIS_MODULE, 0);

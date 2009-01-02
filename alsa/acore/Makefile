@@ -6,7 +6,7 @@ include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := info.c pcm.c pcm_native.c control.c hwdep.c init.c rawmidi.c \
-	       sound.c timer.c memalloc.c misc.c
+	       sound.c timer.c memalloc.c misc.c hrtimer.c
 
 export-objs := control.o device.o info.o info_oss.o init.o isadma.o memory.o \
 	misc.o misc_driver.o sound.o sound_oss.o \
@@ -38,3 +38,4 @@ sound.c: sound.patch $(SND_TOPDIR)/alsa-kernel/core/sound.c
 timer.c: timer.patch $(SND_TOPDIR)/alsa-kernel/core/timer.c
 memalloc.c: memalloc.patch memalloc.inc memalloc.inc1 $(SND_TOPDIR)/alsa-kernel/core/memalloc.c
 misc.c: misc.patch $(SND_TOPDIR)/alsa-kernel/core/misc.c
+hrtimer.c: hrtimer.patch $(SND_TOPDIR)/alsa-kernel/core/hrtimer.c

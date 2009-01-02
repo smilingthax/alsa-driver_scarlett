@@ -29,6 +29,7 @@ linux
 include/sound
 
 acore/control.c
+acore/hrtimer.c
 acore/hwdep.c
 acore/info.c
 acore/init.c
@@ -48,6 +49,7 @@ acore/timer.c
 arm/sa11xx-uda1341.c
 drivers/mpu401/mpu401.c
 drivers/mts64.c
+drivers/pcsp/pcsp.c
 drivers/portman2x4.c
 drivers/opl3/opl3_lib.c
 i2c/other/tea575x-tuner.c
