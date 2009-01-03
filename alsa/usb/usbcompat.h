@@ -1,5 +1,4 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
-
 #include <linux/usb.h>
 
 static inline int usb_endpoint_num(const struct usb_endpoint_descriptor *epd)
@@ -11,7 +10,9 @@ static inline int usb_endpoint_type(const struct usb_endpoint_descriptor *epd)
 {
 	return epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
 }
+#endif /* < 2.6.24 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 static inline int usb_endpoint_dir_in(const struct usb_endpoint_descriptor *epd)
 {
 	return ((epd->bEndpointAddress & USB_ENDPOINT_DIR_MASK) == USB_DIR_IN);
@@ -28,13 +29,6 @@ static inline int usb_endpoint_xfer_bulk(
 {
 	return ((epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) ==
 		USB_ENDPOINT_XFER_BULK);
-}
-
-static inline int usb_endpoint_xfer_control(
-				const struct usb_endpoint_descriptor *epd)
-{
-	return ((epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) ==
-		USB_ENDPOINT_XFER_CONTROL);
 }
 
 static inline int usb_endpoint_xfer_int(
@@ -86,15 +80,13 @@ static inline int usb_endpoint_is_isoc_out(
 {
 	return (usb_endpoint_xfer_isoc(epd) && usb_endpoint_dir_out(epd));
 }
+#endif /* < 2.6.19 */
 
-static inline void *usb_get_intfdata(struct usb_interface *intf)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 21)
+static inline int usb_endpoint_xfer_control(
+				const struct usb_endpoint_descriptor *epd)
 {
-	return dev_get_drvdata(&intf->dev);
+	return ((epd->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) ==
+		USB_ENDPOINT_XFER_CONTROL);
 }
-
-static inline void usb_set_intfdata(struct usb_interface *intf, void *data)
-{
-	dev_set_drvdata(&intf->dev, data);
-}
-
-#endif /* < 2.6.24 */
+#endif /* < 2.6.21 */
