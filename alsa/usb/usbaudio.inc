@@ -13,6 +13,7 @@
 #define SND_NEED_USB_WRAPPER
 // #endif
 #include "adriver.h"
+#include "usbcompat.h"
 #include <linux/usb.h>
 
 #ifndef USB_DT_CS_DEVICE

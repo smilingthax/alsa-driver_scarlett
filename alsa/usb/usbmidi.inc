@@ -13,5 +13,6 @@
 #define SND_NEED_USB_WRAPPER
 // #endif
 #include "adriver.h"
+#include "usbcompat.h"
 
 // vim: ft=c

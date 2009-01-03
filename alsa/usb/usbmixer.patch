@@ -1,6 +1,6 @@
 --- ../alsa-kernel/usb/usbmixer.c	2009-01-02 12:03:27.000000000 +0100
-+++ usbmixer.c	2009-01-02 12:12:14.000000000 +0100
-@@ -1,3 +1,17 @@
++++ usbmixer.c	2009-01-03 11:36:23.000000000 +0100
+@@ -1,3 +1,18 @@
 +#include "config.h"
 +#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
 +#include <linux/autoconf.h>
@@ -14,11 +14,12 @@
 +#define __NO_VERSION__
 +#endif
 +#include "adriver.h"
++#include "usbcompat.h"
 +
  /*
   *   (Tentative) USB Audio Driver for ALSA
   *
-@@ -40,6 +54,14 @@
+@@ -40,6 +55,14 @@
  
  #include "usbaudio.h"
  
@@ -33,7 +34,7 @@
  /*
   */
  
-@@ -1715,7 +1737,11 @@
+@@ -1715,7 +1738,11 @@
  	}
  }
  
@@ -45,7 +46,7 @@
  {
  	struct usb_mixer_interface *mixer = urb->context;
  
-@@ -1760,7 +1786,11 @@
+@@ -1760,7 +1787,11 @@
  		return 0;
  
  	epnum = usb_endpoint_num(ep);
@@ -57,7 +58,7 @@
  	transfer_buffer = kmalloc(buffer_length, GFP_KERNEL);
  	if (!transfer_buffer)
  		return -ENOMEM;
-@@ -1777,7 +1807,12 @@
+@@ -1777,7 +1808,12 @@
  	return 0;
  }
  
