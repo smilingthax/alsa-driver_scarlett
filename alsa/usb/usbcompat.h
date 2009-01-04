@@ -1,3 +1,6 @@
+#ifndef __ALSA_USBCOMPAT_H
+#define __ALSA_USBCOMPAT_H
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
 #include <linux/usb.h>
 
@@ -90,3 +93,5 @@ static inline int usb_endpoint_xfer_control(
 		USB_ENDPOINT_XFER_CONTROL);
 }
 #endif /* < 2.6.21 */
+
+#endif /* __ALSA_USBCOMPAT_H */
