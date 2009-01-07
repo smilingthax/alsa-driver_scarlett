@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.52
+SCRIPT_VERSION=0.4.53
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -25,6 +25,9 @@ CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 #The script was written for 2 main reasons:
 # 1. Remove the need for the devs/helpers to ask several questions before we can easily help the user.
 # 2. Allow newer/inexperienced ALSA users to give us all the info we need to help them.
+
+#Set the locale (this may or may not be a good idea.. let me know)
+export LC_ALL=C
 
 #Change the PATH variable, so we can run lspci (needed for some distros)
 PATH=$PATH:/bin:/sbin:/usr/bin:/usr/sbin
@@ -309,6 +312,11 @@ ALSA_UTILS_VERSION=`amixer -v |awk {'print $3'}`
 VENDOR_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $3}'|awk {'print substr($0, 2);}' >/tmp/alsainfo/vendor_id.tmp`
 DEVICE_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $4}'|awk {'print $1'} >/tmp/alsainfo/device_id.tmp`
 LAST_CARD=$((`grep "]: " /proc/asound/cards | wc -l` - 1 ))
+
+ESDINST=$(which esd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+PAINST=$(which pulseaudio 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+ARTSINST=$(which artsd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+
 cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>/tmp/alsainfo/alsamodules.tmp
 cat /proc/asound/cards >/tmp/alsainfo/alsacards.tmp
 lspci |grep -i "multi\|audio">/tmp/alsainfo/lspci.tmp
@@ -330,7 +338,7 @@ echo "!!################################" >> $FILE
 echo "!!ALSA Information Script v $SCRIPT_VERSION" >> $FILE
 echo "!!################################" >> $FILE
 echo "" >> $FILE
-echo "!!Script ran on: `LANG=C date`" >> $FILE
+echo "!!Script ran on: `LANG=C TZ=UTC date`" >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Linux Distribution" >> $FILE
@@ -362,6 +370,35 @@ echo "!!-------------------" >> $FILE
 echo "" >> $FILE
 cat /tmp/alsainfo/alsamodules.tmp >> $FILE
 echo "" >> $FILE
+echo "" >> $FILE
+echo "!!Sound Servers on this system" >> $FILE
+echo "!!----------------------------" >> $FILE
+echo "" >> $FILE
+if [[ -n $PAINST ]];then
+[[ `pgrep $PAINST` ]] && PARUNNING="Yes" || PARUNNING="No"
+echo "Pulseaudio:" >> $FILE
+echo "      Installed - Yes ($PAINST)" >> $FILE
+echo "      Running - $PARUNNING" >> $FILE
+echo "" >> $FILE
+fi
+if [[ -n $ESDINST ]];then
+[[ `pgrep $ESDINST` ]] && ESDRUNNING="Yes" || ESDRUNNING="No"
+echo "ESound Daemon:" >> $FILE
+echo "      Installed - Yes ($ESDINST)" >> $FILE
+echo "      Running - $ESDRUNNING" >> $FILE
+echo "" >> $FILE
+fi
+if [[ -n $ARTSINST ]];then
+[[ `pgrep $ARTSINST` ]] && ARTSRUNNING="Yes" || ARTSRUNNING="No"
+echo "aRts:" >> $FILE
+echo "      Installed - Yes ($ARTSINST)" >> $FILE
+echo "      Running - $ARTSRUNNING" >> $FILE
+echo "" >> $FILE
+fi
+if [[ -z "$PAINST" && -z "$ESDINST" && -z "$ARTSINST" ]];then
+echo "No sound servers found." >> $FILE
+echo "" >> $FILE
+fi
 echo "" >> $FILE
 echo "!!Soundcards recognised by ALSA" >> $FILE
 echo "!!-----------------------------" >> $FILE
