@@ -7,4 +7,7 @@
 #ifndef SW_JACK_PHYSICAL_INSERT
 #define SW_JACK_PHYSICAL_INSERT 0x07  /* set = mechanical switch set */
 #endif
+#ifndef SW_VIDEO_INSERT
+#define SW_VIDEO_INSERT		0x08  /* set = inserted */
+#endif
 #include "../alsa-kernel/core/jack.c"
