@@ -1742,5 +1742,13 @@ static inline void *pci_ioremap_bar(struct pci_dev *pdev, int bar)
 #endif
 #endif
 
+/*
+ * definition of type 'bool'
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#ifndef bool	/* just to be sure */
+typedef _Bool bool;
+#endif
+#endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
