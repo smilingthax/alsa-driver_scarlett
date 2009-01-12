@@ -2823,17 +2823,19 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 	hpi_card = pci_get_drvdata(pci_dev);
 
 	/* first try to give the card the same index as its hardware index */
-	card = snd_card_new(hpi_card->index,
-			id[hpi_card->index], THIS_MODULE,
-			sizeof(struct snd_card_asihpi));
-	if (card == NULL) {
+	err = snd_card_create(hpi_card->index,
+			      id[hpi_card->index], THIS_MODULE,
+			      sizeof(struct snd_card_asihpi),
+			      &card);
+	if (err < 0) {
 		/* if that fails, try the default index==next available */
-		card =
-		    snd_card_new(index[dev], id[dev],
-				THIS_MODULE,
-				sizeof(struct snd_card_asihpi));
-		if (card == NULL)
-			return -ENOMEM;
+		err =
+		    snd_card_create(index[dev], id[dev],
+				    THIS_MODULE,
+				    sizeof(struct snd_card_asihpi),
+				    &card);
+		if (err < 0)
+			return err;
 		snd_printk(KERN_WARNING
 			"**** WARNING **** Adapter index %d->ALSA index %d\n",
 			hpi_card->index, card->number);

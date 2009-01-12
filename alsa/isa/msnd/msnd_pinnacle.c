@@ -1324,12 +1324,13 @@ static int __init snd_msnd_attach(void)
 		return err;
 	}
 
-	card = snd_card_new(index[ 0/*dev*/], id[0/*dev*/], THIS_MODULE, 0);
-	if( card == NULL){
+	err = snd_card_create(index[ 0/*dev*/], id[0/*dev*/], THIS_MODULE, 0,
+			      &card);
+	if (err < 0) {
 		snd_msnd_unregister(&dev);
 		release_region(dev.io, dev.numio);
 		free_irq(dev.irq, &dev);
-		return -ENOMEM;
+		return err;
 	}
 
 	strcpy( card->shortname, "TB Pinnacle");

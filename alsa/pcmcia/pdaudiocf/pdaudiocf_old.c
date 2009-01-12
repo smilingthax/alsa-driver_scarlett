@@ -145,8 +145,8 @@ static dev_link_t *snd_pdacf_attach(void)
 		return NULL; /* disabled explicitly */
 
 	/* ok, create a card instance */
-	card = snd_card_new(index[i], id[i], THIS_MODULE, 0);
-	if (card == NULL) {
+	ret = snd_card_create(index[i], id[i], THIS_MODULE, 0, &card);
+	if (ret < 0) {
 		snd_printk(KERN_ERR "pdacf: cannot create a card instance\n");
 		return NULL;
 	}

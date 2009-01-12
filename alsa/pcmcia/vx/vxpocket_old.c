@@ -419,7 +419,7 @@ static dev_link_t *vxpocket_attach(void)
 {
 	struct snd_card *card;
 	struct snd_vxpocket *vxp;
-	int i;
+	int i, err;
 
 	/* find an empty slot from the card list */
 	for (i = 0; i < SNDRV_CARDS; i++) {
@@ -434,8 +434,8 @@ static dev_link_t *vxpocket_attach(void)
 		return NULL; /* disabled explicitly */
 
 	/* ok, create a card instance */
-	card = snd_card_new(index[i], id[i], THIS_MODULE, 0);
-	if (card == NULL) {
+	err = snd_card_create(index[i], id[i], THIS_MODULE, 0, &card);
+	if (err < 0) {
 		snd_printk(KERN_ERR "vxpocket: cannot create a card instance\n");
 		return NULL;
 	}

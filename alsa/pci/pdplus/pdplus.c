@@ -6092,9 +6092,9 @@ static int __devinit pdplus_probe(
                 LEAVE (-ENOENT);
         }
 
-        card = snd_card_new (index[dev], id[dev], THIS_MODULE, 0);
-        if (card == NULL)
-                LEAVE (-ENOMEM);
+	err = snd_card_create(index[dev], id[dev], THIS_MODULE, 0, &card);
+	if (err < 0)
+                LEAVE (err);
 
 	card->private_data = kzalloc(sizeof(pdplus_t), GFP_KERNEL);
 	if (card->private_data == NULL) {

@@ -860,11 +860,10 @@ int snd_pxa2xx_i2sound_card_activate(struct snd_pxa2xx_i2sound_board *board)
 	if ((ret = snd_pxa2xx_i2sound_board_activate()) < 0) goto failed_activate_board;
 
 	/* new ALSA card */
-	if ((card.acard = snd_card_new(-1, card.board->acard_id, THIS_MODULE, 0)) == NULL) {
-		card.acard = NULL;
-		ret = -ENOMEM;
+	ret = snd_card_create(-1, card.board->acard_id, THIS_MODULE, 0,
+			      &card.acard);
+	if (ret < 0)
 		goto failed_new_acard;
-	}
 
 	strlcpy(card.acard->driver, card.board->acard_id, sizeof(card.acard->driver));
 	strlcpy(card.acard->shortname, card.name, sizeof(card.acard->shortname));

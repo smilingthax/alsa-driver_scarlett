@@ -522,9 +522,9 @@ static int __init snd_serial_probe(struct platform_device *devptr)
 	int err;
 	int dev = devptr->id;
 
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
-	if (card == NULL)
-		return -ENOMEM;
+	err = snd_card_create(index[dev], id[dev], THIS_MODULE, 0, &card);
+	if (err < 0)
+		return err;
 	strcpy(card->driver, "Serial MIDI");
 	if (id[dev] && *id[dev])
 		snprintf(card->shortname, sizeof(card->shortname), "%s", id[dev]);

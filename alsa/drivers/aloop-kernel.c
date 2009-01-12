@@ -498,10 +498,10 @@ static int __devinit loopback_probe(struct platform_device *devptr)
 	int dev = devptr->id;
 	int err;
 
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE,
-			    sizeof(struct loopback));
-	if (!card)
-		return -ENOMEM;
+	err = snd_card_create(index[dev], id[dev], THIS_MODULE,
+			      sizeof(struct loopback), &card);
+	if (err < 0)
+		return err;
 	loopback = card->private_data;
 
 	if (pcm_substreams[dev] < 1)

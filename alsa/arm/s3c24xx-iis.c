@@ -1039,16 +1039,15 @@ s3c24xx_card_t *s3c24xx_iis_probe(struct device *dev)
 
 	dev_info(dev, "probe called\n");
 
-	card = snd_card_new(-1, 0, THIS_MODULE, sizeof(s3c24xx_card_t));
-
-	our_card = (s3c24xx_card_t *)card->private_data;
-
-	if (card == NULL) {
-		printk(KERN_ERR "snd_card_new() failed\n");
-		err = -EINVAL;
+	err = snd_card_create(-1, 0, THIS_MODULE, sizeof(s3c24xx_card_t),
+			      &card);
+	if (err < 0) {
+		printk(KERN_ERR "snd_card_create() failed\n");
 		goto exit_err;
 	}
 	
+	our_card = (s3c24xx_card_t *)card->private_data;
+
 	our_card->card     = card;
 	our_card->device   = dev;
 	our_card->base_ops = (pdata) ? pdata->ops : NULL;
