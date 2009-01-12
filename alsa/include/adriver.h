@@ -1677,6 +1677,18 @@ static inline const char *dev_name(struct device *dev)
 })
 #endif
 
+#ifndef WARN_ON_ONCE
+#define WARN_ON_ONCE(condition) ({                              \
+        static int __warned;                                    \
+        int __ret_warn_once = !!(condition);                    \
+                                                                \
+        if (unlikely(__ret_warn_once))                          \
+                if (WARN_ON(!__warned))                         \
+                        __warned = 1;                           \
+        unlikely(__ret_warn_once);                              \
+})
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #define dev_printk(level, dev, format, arg...)	\
 	printk(level format, ##arg)
