@@ -91,6 +91,9 @@ typedef __u16 __be16;
 typedef __u32 __le32;
 typedef __u32 __be32;
 #endif
+#ifndef __deprecated
+# define __deprecated           /* unimplemented */
+#endif
 #endif /* < 2.6.9 */
 
 /* other missing types */
