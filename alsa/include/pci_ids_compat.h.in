@@ -396,4 +396,6 @@
 #ifndef PCI_VENDOR_ID_DELL
 #define PCI_VENDOR_ID_DELL		0x1028
 #endif
-
+#ifndef PCI_VENDOR_ID_DFI
+#define PCI_VENDOR_ID_DFI		0x15bd
+#endif
