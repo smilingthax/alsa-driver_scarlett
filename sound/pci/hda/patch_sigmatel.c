@@ -5082,7 +5082,7 @@ again:
 			spec->num_dmics -
 				(ARRAY_SIZE(stac92hd71bxx_dmic_nids) - 1);
 
-	err = stac92xx_parse_auto_config(codec, 0x21, 0x23);
+	err = stac92xx_parse_auto_config(codec, 0x21, 0);
 	if (!err) {
 		if (spec->board_config < 0) {
 			printk(KERN_WARNING "hda_codec: No auto-config is "
