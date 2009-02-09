@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.53
+SCRIPT_VERSION=0.4.54
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -44,49 +44,60 @@ pbcheck(){
 }
 
 update() {
-	wget -O /tmp/alsa-info.sh "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
-	REMOTE_VERSION=`grep SCRIPT_VERSION /tmp/alsa-info.sh |head -n1 |sed 's/.*=//'`
+	SHFILE=`mktemp -p /tmp alsa-info.XXXXXXXXXX`
+	wget -O $SHFILE "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
+	REMOTE_VERSION=`grep SCRIPT_VERSION $SHFILE |head -n1 |sed 's/.*=//'`
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
 		if [[ -n $DIALOG ]]
 		then
+			OVERWRITE=
 			if [ -w $0 ]; then
-				dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to install it?" 0 0
-			else
-				dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to download it?" 0 0
+				dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to install it?\nNOTICE: The original file $0 will be overwritten!" 0 0
+				DIALOG_EXIT_CODE=$?
+				if [[ $DIALOG_EXIT_CODE = 0 ]]; then
+				  OVERWRITE=yes
+				fi
 			fi
-			DIALOG_EXIT_CODE=$?
+			if [ -z "$OVERWRITE" ]; then
+				dialog --yesno "Newer version of ALSA-Info has been found\n\nDo you wish to download it?" 0 0
+				DIALOG_EXIT_CODE=$?
+			fi
 			if [[ $DIALOG_EXIT_CODE = 0 ]]
 			then
 				echo "Newer version detected: $REMOTE_VERSION"
 				echo "To view the ChangeLog, please visit $CHANGELOG"
-				if [ -w $0 ]; then
-					cp /tmp/alsa-info.sh $0
+				if [ "$OVERWRITE" = "yes" ]; then
+					cp $SHFILE $0
 					echo "ALSA-Info script has been updated to v $REMOTE_VERSION"
 					echo "Please re-run the script"
-					rm /tmp/alsa-info.sh 2>/dev/null
+					rm $SHFILE 2>/dev/null
 				else
+					mv $SHFILE /tmp/alsa-info.sh || exit 1
 					echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
 					echo "Please re-run the script from new location."
 				fi
 				exit
 			else
-				rm /tmp/alsa-info.sh 2>/dev/null
+				rm $SHFILE 2>/dev/null
 			fi
 		else
 			echo "Newer version detected: $REMOTE_VERSION"
 			echo "To view the ChangeLog, please visit $CHANGELOG"
 			if [ -w $0 ]; then
-				cp /tmp/alsa-info.sh $0
+				echo "The original file $0 will be overwritten!"
+				echo -n "If you do not like to proceed, press Ctrl-C now.." ; read inp
+				cp $SHFILE $0
 				echo "ALSA-Info script has been updated. Please re-run it."
-				rm /tmp/alsa-info.sh 2>/dev/null
+				rm $SHFILE 2>/dev/null
 			else
+				mv $SHFILE /tmp/alsa-info.sh || exit 1
 				echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
 				echo "Please, re-run it from new location."
 			fi
 			exit
 		fi
 	else
-		rm /tmp/alsa-info.sh 2>/dev/null
+		rm $SHFILE 2>/dev/null
 	fi
 }
 
@@ -123,7 +134,7 @@ withamixer() {
         echo "!!-------------" >> $FILE
         echo "" >> $FILE
 	for i in `grep "]: " /proc/asound/cards | awk -F ' ' '{ print $1} '` ; do
-	CARD_NAME=`grep "^ *$i " /tmp/alsainfo/alsacards.tmp|awk {'print $2'}`
+	CARD_NAME=`grep "^ *$i " $TEMPDIR/alsacards.tmp|awk {'print $2'}`
 	echo "!!-------Mixer controls for card $i $CARD_NAME]" >> $FILE
 	echo "" >>$FILE
 	amixer -c$i info>> $FILE 2>&1
@@ -147,9 +158,9 @@ withalsactl() {
         if [ -z "$exe" ]; then
         	exe=`whereis alsactl | cut -d ' ' -f 2`
         fi
-	$exe -f /tmp/alsainfo/alsactl.tmp store
+	$exe -f $TEMPDIR/alsactl.tmp store
 	echo "--startcollapse--" >> $FILE
-	cat /tmp/alsainfo/alsactl.tmp >> $FILE
+	cat $TEMPDIR/alsactl.tmp >> $FILE
 	echo "--endcollapse--" >> $FILE
 	echo "" >> $FILE
 	echo "" >> $FILE
@@ -285,8 +296,9 @@ fi
 fi # question
 
 #Set the output file
-TEMPDIR="/tmp/alsainfo/"
-FILE="/tmp/alsa-info.txt"
+TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX`
+FILE="$TEMPDIR/alsa-info.txt"
+NFILE="/tmp/alsa-info.txt"
 
 if [ "$PROCEED" = "yes" ]; then
 
@@ -309,24 +321,24 @@ KERNEL_OS=`uname -o`
 ALSA_DRIVER_VERSION=`cat /proc/asound/version |head -n1|awk {'print $7'} |sed 's/\.$//'`
 ALSA_LIB_VERSION=`grep VERSION_STR /usr/include/alsa/version.h 2>/dev/null|awk {'print $3'}|sed 's/"//g'`
 ALSA_UTILS_VERSION=`amixer -v |awk {'print $3'}`
-VENDOR_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $3}'|awk {'print substr($0, 2);}' >/tmp/alsainfo/vendor_id.tmp`
-DEVICE_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $4}'|awk {'print $1'} >/tmp/alsainfo/device_id.tmp`
+VENDOR_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $3}'|awk {'print substr($0, 2);}' >$TEMPDIR/vendor_id.tmp`
+DEVICE_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $4}'|awk {'print $1'} >$TEMPDIR/device_id.tmp`
 LAST_CARD=$((`grep "]: " /proc/asound/cards | wc -l` - 1 ))
 
 ESDINST=$(which esd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 PAINST=$(which pulseaudio 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 ARTSINST=$(which artsd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 
-cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>/tmp/alsainfo/alsamodules.tmp
-cat /proc/asound/cards >/tmp/alsainfo/alsacards.tmp
-lspci |grep -i "multi\|audio">/tmp/alsainfo/lspci.tmp
+cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>$TEMPDIR/alsamodules.tmp
+cat /proc/asound/cards >$TEMPDIR/alsacards.tmp
+lspci |grep -i "multi\|audio">$TEMPDIR/lspci.tmp
 
 #Check for HDA-Intel cards codec#*
-cat /proc/asound/card*/codec\#* > /tmp/alsainfo/alsa-hda-intel.tmp 2> /dev/null
+cat /proc/asound/card*/codec\#* > $TEMPDIR/alsa-hda-intel.tmp 2> /dev/null
 
 #Check for AC97 cards codec
-cat /proc/asound/card*/codec97\#0/ac97\#0-0 > /tmp/alsainfo/alsa-ac97.tmp 2> /dev/null
-cat /proc/asound/card*/codec97\#0/ac97\#0-0+regs > /tmp/alsainfo/alsa-ac97-regs.tmp 2> /dev/null
+cat /proc/asound/card*/codec97\#0/ac97\#0-0 > $TEMPDIR/alsa-ac97.tmp 2> /dev/null
+cat /proc/asound/card*/codec97\#0/ac97\#0-0+regs > $TEMPDIR/alsa-ac97-regs.tmp 2> /dev/null
 
 #Fetch the info, and put it in $FILE in a nice readable format.
 if [[ -z $PASTEBIN ]]; then
@@ -368,7 +380,7 @@ echo "" >> $FILE
 echo "!!Loaded ALSA modules" >> $FILE
 echo "!!-------------------" >> $FILE
 echo "" >> $FILE
-cat /tmp/alsainfo/alsamodules.tmp >> $FILE
+cat $TEMPDIR/alsamodules.tmp >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Sound Servers on this system" >> $FILE
@@ -403,13 +415,13 @@ echo "" >> $FILE
 echo "!!Soundcards recognised by ALSA" >> $FILE
 echo "!!-----------------------------" >> $FILE
 echo "" >> $FILE
-cat /tmp/alsainfo/alsacards.tmp >> $FILE
+cat $TEMPDIR/alsacards.tmp >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!PCI Soundcards installed in the system" >> $FILE
 echo "!!--------------------------------------" >> $FILE
 echo "" >> $FILE
-cat /tmp/alsainfo/lspci.tmp >> $FILE
+cat $TEMPDIR/lspci.tmp >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Advanced information - PCI Vendor/Device/Susbsystem ID's" >> $FILE
@@ -442,27 +454,27 @@ done
 echo "" >> $FILE
 fi
 
-if [ -s "/tmp/alsainfo/alsa-hda-intel.tmp" ] 
+if [ -s "$TEMPDIR/alsa-hda-intel.tmp" ] 
 then
 	echo "!!HDA-Intel Codec information" >> $FILE
 	echo "!!---------------------------" >> $FILE
 	echo "--startcollapse--" >> $FILE
 	echo "" >> $FILE
-	cat /tmp/alsainfo/alsa-hda-intel.tmp >> $FILE
+	cat $TEMPDIR/alsa-hda-intel.tmp >> $FILE
 	echo "--endcollapse--" >> $FILE
 	echo "" >> $FILE
 	echo "" >> $FILE
 fi
 
-if [ -s "/tmp/alsainfo/alsa-ac97.tmp" ]
+if [ -s "$TEMPDIR/alsa-ac97.tmp" ]
 then
         echo "!!AC97 Codec information" >> $FILE
         echo "!!---------------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
         echo "" >> $FILE
-        cat /tmp/alsainfo/alsa-ac97.tmp >> $FILE
+        cat $TEMPDIR/alsa-ac97.tmp >> $FILE
         echo "" >> $FILE
-        cat /tmp/alsainfo/alsa-ac97-regs.tmp >> $FILE
+        cat $TEMPDIR/alsa-ac97-regs.tmp >> $FILE
         echo "--endcollapse--" >> $FILE
 	echo "" >> $FILE
 	echo "" >> $FILE
@@ -620,14 +632,14 @@ if [[ -n "$DIALOG" ]]
 then
 	if [[ -z $NOUPLOAD ]]; then
 	if [[ -z $PASTEBIN ]]; then
-	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt "http://www.alsa-project.org/cardinfo-db/" &>/tmp/alsainfo/wget.tmp || echo "Upload failed; exit"
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE "http://www.alsa-project.org/cardinfo-db/" &>$TEMPDIR/wget.tmp || echo "Upload failed; exit"
 	{ for i in 10 20 30 40 50 60 70 80 90; do
 		echo $i
 		sleep 0.2
 	done
 	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.alsa-project.org ..." 6 70 0
 	else
-	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt "http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY&encrypt=t&encryptpw=blahblah" &>/tmp/alsainfo/wget.tmp || echo "Upload failed; exit"
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE "http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY&encrypt=t&encryptpw=blahblah" &>$TEMPDIR/wget.tmp || echo "Upload failed; exit"
 	{ for i in 10 20 30 40 50 60 70 80 90; do
 		echo $i
 		sleep 0.2
@@ -640,10 +652,10 @@ else
 	if [[ -z $NOUPLOAD ]]; then
 	if [[ -z $PASTEBIN ]]; then
 	echo -n "Uploading information to www.alsa-project.org ... " 
-	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt http://www.alsa-project.org/cardinfo-db/ &>/tmp/alsainfo/wget.tmp &
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE http://www.alsa-project.org/cardinfo-db/ &>$TEMPDIR/wget.tmp &
 	else
 	echo -n "Uploading information to www.pastebin.ca ... " 
-	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY &>/tmp/alsainfo/wget.tmp &
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY &>$TEMPDIR/wget.tmp &
 	fi
 	fi
 fi
@@ -664,15 +676,15 @@ if [[ -z $NOUPLOAD ]]; then
 	if [[ -n "$TPUT" ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
-			FINAL_URL=`tput setaf 1; grep "SUCCESS:" /tmp/alsainfo/wget.tmp | cut -d ' ' -f 2 ; tput sgr0`
+			FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2 ; tput sgr0`
 		else
-			FINAL_URL=`tput setaf 1; grep "SUCCESS:" /tmp/alsainfo/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
+			FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
 		fi
 	else
 		if [[ -z $PASTEBIN ]]; then
-			FINAL_URL=`grep "SUCCESS:" /tmp/alsainfo/wget.tmp | cut -d ' ' -f 2`
+			FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2`
 		else
-			FINAL_URL=`grep "SUCCESS:" /tmp/alsainfo/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
+			FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
 		fi
 	fi
 fi
@@ -690,31 +702,33 @@ fi
 if [[ -n $DIALOG ]]
 then
 	if [[ -n $NOUPLOAD ]]; then
+		mv $FILE $NFILE || exit 1
 		if [[ -n $PBERROR ]]; then
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $FILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
 		else
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the $WWWSERVICE\n\nYour ALSA information can be seen by looking in $FILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the $WWWSERVICE\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
 		fi
 	else
 		dialog --backtitle "$BGTITLE" --title "Information uploaded" --yesno "Would you like to see the uploaded information?" 5 100 
 		DIALOG_EXIT_CODE=$?
-	if [ $DIALOG_EXIT_CODE = 0 ]; then
-		grep -v "alsa-info.txt" /tmp/alsa-info.txt >/tmp/alsainfo/uploaded.txt
-		dialog --backtitle "$BGTITLE" --textbox /tmp/alsainfo/uploaded.txt 0 0
-	fi
+		if [ $DIALOG_EXIT_CODE = 0 ]; then
+			grep -v "alsa-info.txt" $FILE >$TEMPDIR/uploaded.txt
+			dialog --backtitle "$BGTITLE" --textbox $TEMPDIR/uploaded.txt 0 0
+		fi
 	fi
 fi 
 clear
 if [[ -n $NOUPLOAD ]]; then
+	mv $FILE $NFILE || exit 1
 	if [[ -n $PBERROR ]]; then
 		echo "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
 		echo ""
-		echo "Your ALSA information can be seen by looking in $FILE"
+		echo "Your ALSA information can be seen by looking in $NFILE"
 		echo ""
 	else
 		echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
 		echo ""
-		echo "Your ALSA information can be seen by looking in $FILE"
+		echo "Your ALSA information can be seen by looking in $NFILE"
 		echo ""
 	fi
 fi
@@ -731,6 +745,7 @@ fi
 
 #We couldnt find a suitable wget, so tell the user to upload manually.
 else
+	mv $FILE $NFILE || exit 1
 	if [[ -z $DIALOG ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
@@ -740,7 +755,7 @@ else
 		echo "    1. Couldnt find 'wget' in your PATH"
 		echo "    2. Your version of wget is less than 1.8.2"
 		echo ""
-		echo "Please manually upload $FILE to http://www.alsa-project.org/cardinfo-db/ and submit your post."
+		echo "Please manually upload $NFILE to http://www.alsa-project.org/cardinfo-db/ and submit your post."
 		echo ""
 		else
 		echo ""
@@ -749,16 +764,16 @@ else
 		echo "    1. Couldnt find 'wget' in your PATH"
 		echo "    2. Your version of wget is less than 1.8.2"
 		echo ""
-		echo "Please manually upload $FILE to http://www.pastebin.ca/upload.php and submit your post."
+		echo "Please manually upload $NFILE to http://www.pastebin.ca/upload.php and submit your post."
 		echo ""
 		fi
 	fi
 	if [[ -n $DIALOG ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
-			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.alsa-project.org.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $FILE to http://www.alsa-project,org/cardinfo-db/ and submit your post." 25 100
+			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.alsa-project.org.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $NFILE to http://www.alsa-project,org/cardinfo-db/ and submit your post." 25 100
 		else
-			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.pastebin.ca.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $FILE to http://www.pastebin.ca/upload.php and submit your post." 25 100
+			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.pastebin.ca.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $NFILE to http://www.pastebin.ca/upload.php and submit your post." 25 100
 		fi
 	fi
 fi
