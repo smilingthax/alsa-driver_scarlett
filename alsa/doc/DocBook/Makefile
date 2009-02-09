@@ -1,6 +1,6 @@
 TOPDIR=../..
 
-DOCBOOKS := alsa-driver-api.sgml writing-an-alsa-driver.sgml
+DOCBOOKS := alsa-driver-api.xml writing-an-alsa-driver.xml
 
 include $(TOPDIR)/Makefile.conf
 
@@ -8,18 +8,18 @@ TOPDIR = $(MAINSRCDIR)
 CURDIR = $(subst $(MAINSRCDIR)/,,$(shell /bin/pwd))
 
 # The targets that may be used.
-.PHONY:	depend sgmldocs psdocs pdfdocs htmldocs clean mrproper
+.PHONY:	depend xmldocs psdocs pdfdocs htmldocs clean mrproper
 
 BOOKS := $(DOCBOOKS)
-sgmldocs: $(BOOKS)
+xmldocs: $(BOOKS)
 
-PS := $(patsubst %.sgml, %.ps, $(BOOKS))
+PS := $(patsubst %.xml, %.ps, $(BOOKS))
 psdocs: $(PS) $(DOCPROC)
 
-PDF := $(patsubst %.sgml, %.pdf, $(BOOKS))
+PDF := $(patsubst %.xml, %.pdf, $(BOOKS))
 pdfdocs: $(PDF) $(DOCPROC)
 
-HTML := $(patsubst %.sgml, %, $(BOOKS))
+HTML := $(patsubst %.xml, %, $(BOOKS))
 htmldocs: $(HTML) $(DOCPROC)
 
 ###
@@ -34,22 +34,23 @@ $(DOCPROC):
 %.tmpl:
 	ln -s $(TOPDIR)/alsa-kernel/Documentation/DocBook/$@
 
-%.sgml: %.tmpl
+%.xml: %.tmpl
 	(cd $(TOPDIR);\
 	 $(DOCPROC) doc $(CURDIR)/$< > $(CURDIR)/$@)
 
 ###
 
-DVI	:=	$(patsubst %.sgml, %.dvi, $(BOOKS))
-AUX	:=	$(patsubst %.sgml, %.aux, $(BOOKS))
-TEX	:=	$(patsubst %.sgml, %.tex, $(BOOKS))
-LOG	:=	$(patsubst %.sgml, %.log, $(BOOKS))
-OUT	:=	$(patsubst %.sgml, %.out, $(BOOKS))
+DVI	:=	$(patsubst %.xml, %.dvi, $(BOOKS))
+AUX	:=	$(patsubst %.xml, %.aux, $(BOOKS))
+TEX	:=	$(patsubst %.xml, %.tex, $(BOOKS))
+LOG	:=	$(patsubst %.xml, %.log, $(BOOKS))
+OUT	:=	$(patsubst %.xml, %.out, $(BOOKS))
 
 clean:
 	rm -f core *~
-	rm -f $(BOOKS) $(patsubst %.sgml, %.tmpl, $(BOOKS))
+	rm -f $(BOOKS) $(patsubst %.xml, %.tmpl, $(BOOKS))
 	rm -f $(DVI) $(AUX) $(TEX) $(LOG) $(OUT)
+	rm -f $(patsubst %.fo, %.tmpl, $(BOOKS))
 	rm -f $(PNG-parportbook) $(EPS-parportbook)
 	rm -f $(C-procfs-example)
 
@@ -60,39 +61,23 @@ mrproper: clean
 #	rm -f $(TOPDIR)/scripts/mkdep-docbook
 	rm -rf DBTOHTML_OUTPUT*
 
+XMLTOFLAGS = -m $(TOPDIR)/alsa-kernel/Documentation/DocBook/stylesheet.xsl
 
-JADE     = openjade
-JADETEX  = jadetex
-PDFJADETEX  = pdfjadetex
-DVIPS	 = dvips
+%.html: %.xml
+	xmlto xhtml $(XMLTOFLAGS) $<
 
-DSLBASE  = /usr/share/sgml
-JADECTL  = $(DSLBASE)/openjade/catalog
-DOCBKCTL = $(DSLBASE)/CATALOG.docbook_4
-DOCBKPRN = $(DSLBASE)/docbook/dsssl-stylesheets/print/docbook.dsl
-DOCBKHTM = $(DSLBASE)/docbook/dsssl-stylesheets/html/docbook.dsl
-JADEX    = $(JADE) -c $(DOCBKCTL) -c $(JADECTL)
+# %.pdf: %.xml
+# 	xmlto $(XMLTOFLAGS) pdf $<
 
-%.html: %.sgml
-	$(JADEX) -d $(DOCBKHTM) -t sgml $<
+%.fo: %.xml
+	xmlto $(XMLTOFLAGS) fo $<
+%.pdf: %.fo
+	fop $< $@
 
-%.tex: %.sgml
-	$(JADEX) -d $(DOCBKPRN) -t tex $<
+%.ps: %.xml
+	xmlto ps $(XMLTOFLAGS) $<
 
-%.css: %.sgml
-	$(JADEX) -d $(DOCBKHTM) -t html -o $@ $<
-
-%.dvi: %.tex
-	$(JADETEX) $< && $(JADETEX) $< && $(JADETEX) $<
-
-%.pdf: %.tex
-	$(PDFJADETEX) $< && $(PDFJADETEX) $< && $(PDFJADETEX) $<
-
-%.ps: %.dvi
-	$(DVIPS) $<
-
-%: %.sgml
+%: %.xml
 	rm -rf $@
 	mkdir $@
-	(cd $@;\
-	$(JADEX) -d $(DOCBKHTM) -t sgml ../$<)
+	(cd $@; xmlto xhtml $(XMLTOFLAGS) ../$<)
