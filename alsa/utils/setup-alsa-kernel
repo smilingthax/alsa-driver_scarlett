@@ -56,6 +56,7 @@ if [ -n "$copy_tree" ]; then
 else
     ln -s ../linux/include/sound alsa-kernel/include
     ln -s ../linux/Documentation/sound/alsa alsa-kernel/Documentation
+    ln -s ../linux/scripts scripts
 fi
 ln -sf alsa-kernel sound
 exit 0
