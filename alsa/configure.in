@@ -3297,6 +3297,6 @@ else
 fi
 
 dnl avoid changing include/sound/version.h
-if test "$update_versoin" != "yes"; then
+if test "$update_version" != "yes"; then
   touch alsa-kernel/include/version.h
 fi
