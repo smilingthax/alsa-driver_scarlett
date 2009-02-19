@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.54
+SCRIPT_VERSION=0.4.55
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -328,6 +328,7 @@ LAST_CARD=$((`grep "]: " /proc/asound/cards | wc -l` - 1 ))
 ESDINST=$(which esd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 PAINST=$(which pulseaudio 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 ARTSINST=$(which artsd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
+JACKINST=$(which jackd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 
 cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>$TEMPDIR/alsamodules.tmp
 cat /proc/asound/cards >$TEMPDIR/alsacards.tmp
@@ -387,27 +388,34 @@ echo "!!Sound Servers on this system" >> $FILE
 echo "!!----------------------------" >> $FILE
 echo "" >> $FILE
 if [[ -n $PAINST ]];then
-[[ `pgrep $PAINST` ]] && PARUNNING="Yes" || PARUNNING="No"
+[[ `pgrep '^(.*/)?pulseaudio$'` ]] && PARUNNING="Yes" || PARUNNING="No"
 echo "Pulseaudio:" >> $FILE
 echo "      Installed - Yes ($PAINST)" >> $FILE
 echo "      Running - $PARUNNING" >> $FILE
 echo "" >> $FILE
 fi
 if [[ -n $ESDINST ]];then
-[[ `pgrep $ESDINST` ]] && ESDRUNNING="Yes" || ESDRUNNING="No"
+[[ `pgrep '^(.*/)?esd$'` ]] && ESDRUNNING="Yes" || ESDRUNNING="No"
 echo "ESound Daemon:" >> $FILE
 echo "      Installed - Yes ($ESDINST)" >> $FILE
 echo "      Running - $ESDRUNNING" >> $FILE
 echo "" >> $FILE
 fi
 if [[ -n $ARTSINST ]];then
-[[ `pgrep $ARTSINST` ]] && ARTSRUNNING="Yes" || ARTSRUNNING="No"
+[[ `pgrep '^(.*/)?artsd$'` ]] && ARTSRUNNING="Yes" || ARTSRUNNING="No"
 echo "aRts:" >> $FILE
 echo "      Installed - Yes ($ARTSINST)" >> $FILE
 echo "      Running - $ARTSRUNNING" >> $FILE
 echo "" >> $FILE
 fi
-if [[ -z "$PAINST" && -z "$ESDINST" && -z "$ARTSINST" ]];then
+if [[ -n $JACKINST ]];then
+[[ `pgrep '^(.*/)?jackd$'` ]] && JACKRUNNING="Yes" || JACKRUNNING="No"
+echo "Jack:" >> $FILE
+echo "      Installed - Yes ($JACKINST)" >> $FILE
+echo "      Running - $JACKRUNNING" >> $FILE
+echo "" >> $FILE
+fi
+if [[ -z "$PAINST" && -z "$ESDINST" && -z "$ARTSINST" && -z "$JACKINST" ]];then
 echo "No sound servers found." >> $FILE
 echo "" >> $FILE
 fi
@@ -784,3 +792,4 @@ then
 fi
 
 fi # proceed
+
