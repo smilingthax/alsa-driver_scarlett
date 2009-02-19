@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.55
+SCRIPT_VERSION=0.4.56
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -102,7 +102,9 @@ update() {
 }
 
 cleanup() {
-	rm -r $TEMPDIR 2>/dev/null
+	if [ -n "$TEMPDIR" -a "$KEEP_FILES" != "yes" ]; then
+		rm -r "$TEMPDIR" 2>/dev/null
+	fi
 }
 
 
@@ -300,12 +302,14 @@ TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX`
 FILE="$TEMPDIR/alsa-info.txt"
 NFILE="/tmp/alsa-info.txt"
 
+trap cleanup 0
+
 if [ "$PROCEED" = "yes" ]; then
 
 if [[ -z "$LSPCI" ]] 
-	then
+then
 	echo "This script requires lspci. Please install it, and re-run this script."
-exit 0
+	exit 0
 fi
 
 #Create the temporary work dir.
@@ -526,7 +530,6 @@ then
 			;;
 		--no-upload)
 			NOUPLOAD="yes"
-			KEEP_FILES="yes"
 			withdevices
 			withconfigs
 			withaplay
@@ -601,7 +604,6 @@ then
 			echo "	gnubien - Various script ideas / Testing"
 			echo "	GrueMaster - HDA Intel specific items / Testing"
 			echo "	olegfink - Script update function"
-			cleanup
 			exit 0
 			;;
 		*)
@@ -622,7 +624,6 @@ then
 			echo "	--about (show some information about the script)"
 			echo "	--debug (will run the script as normal, but will not"
 			echo "	     delete $FILE)"
-			cleanup
 			exit 0
 			;;
 	esac
@@ -630,126 +631,119 @@ then
 	done
 fi
 
-if [ "$PROCEED" = "yes" ]; then
-
-#Test that wget is installed, and supports --post-file. Upload $FILE if it does, and prompt user to upload file if it doesnt. 
-if
-WGET=$(which wget 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null); [[ -n "${WGET}" ]] && [[ -x "${WGET}" ]] && [[ `wget --help |grep post-file` ]]
-then
-if [[ -n "$DIALOG" ]]
-then
-	if [[ -z $NOUPLOAD ]]; then
-	if [[ -z $PASTEBIN ]]; then
-	wget -O - --tries=5 --timeout=60 --post-file=$FILE "http://www.alsa-project.org/cardinfo-db/" &>$TEMPDIR/wget.tmp || echo "Upload failed; exit"
-	{ for i in 10 20 30 40 50 60 70 80 90; do
-		echo $i
-		sleep 0.2
-	done
-	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.alsa-project.org ..." 6 70 0
-	else
-	wget -O - --tries=5 --timeout=60 --post-file=$FILE "http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY&encrypt=t&encryptpw=blahblah" &>$TEMPDIR/wget.tmp || echo "Upload failed; exit"
-	{ for i in 10 20 30 40 50 60 70 80 90; do
-		echo $i
-		sleep 0.2
-	done
-	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.pastebin.ca ..." 6 70 0
-	fi
-	fi
-else
-
-	if [[ -z $NOUPLOAD ]]; then
-	if [[ -z $PASTEBIN ]]; then
-	echo -n "Uploading information to www.alsa-project.org ... " 
-	wget -O - --tries=5 --timeout=60 --post-file=$FILE http://www.alsa-project.org/cardinfo-db/ &>$TEMPDIR/wget.tmp &
-	else
-	echo -n "Uploading information to www.pastebin.ca ... " 
-	wget -O - --tries=5 --timeout=60 --post-file=$FILE http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY &>$TEMPDIR/wget.tmp &
-	fi
-	fi
-fi
-#Progess spinner for wget transfer.
-if [[ -z "$DIALOG" ]]	
-then
-	i=1
-	sp="/-\|"
-	echo -n ' '
-	while pgrep wget &>/dev/null
-	do
-	echo -en "\b${sp:i++%${#sp}:1}"
-	done
+if [ "$PROCEED" = "no" ]; then
+	exit 1
 fi
 
-#See if tput is available, and use it if it is.	
-if [[ -z $NOUPLOAD ]]; then
-	if [[ -n "$TPUT" ]]
+if [ -n "$NOUPLOAD" ]; then
+
+	mv $FILE $NFILE || exit 1
+
+	if [[ -n $DIALOG ]]
 	then
-		if [[ -z $PASTEBIN ]]; then
-			FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2 ; tput sgr0`
-		else
-			FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
-		fi
-	else
-		if [[ -z $PASTEBIN ]]; then
-			FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2`
-		else
-			FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
-		fi
-	fi
-fi
-#Output the URL of the uploaded file.	
-if [[ -z $DIALOG ]]
-then
-	echo -e "\b Done!"
-	echo ""
-	if [[ -z $NOUPLOAD ]]; then
-		echo "Your ALSA information is located at $FINAL_URL"
-		echo "Please inform the person helping you."
-		echo ""
-	fi
-fi
-if [[ -n $DIALOG ]]
-then
-	if [[ -n $NOUPLOAD ]]; then
-		mv $FILE $NFILE || exit 1
 		if [[ -n $PBERROR ]]; then
 			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
 		else
 			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the $WWWSERVICE\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
 		fi
 	else
-		dialog --backtitle "$BGTITLE" --title "Information uploaded" --yesno "Would you like to see the uploaded information?" 5 100 
-		DIALOG_EXIT_CODE=$?
-		if [ $DIALOG_EXIT_CODE = 0 ]; then
-			grep -v "alsa-info.txt" $FILE >$TEMPDIR/uploaded.txt
-			dialog --backtitle "$BGTITLE" --textbox $TEMPDIR/uploaded.txt 0 0
+		echo
+
+		if [[ -n $PBERROR ]]; then
+			echo "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
+			echo ""
+			echo "Your ALSA information can be seen by looking in $NFILE"
+			echo ""
+		else
+			echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
+			echo ""
+			echo "Your ALSA information can be seen by looking in $NFILE"
+			echo ""
 		fi
 	fi
-fi 
+
+	exit
+
+fi # noupload
+
+#Test that wget is installed, and supports --post-file. Upload $FILE if it does, and prompt user to upload file if it doesnt. 
+if
+WGET=$(which wget 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null); [[ -n "${WGET}" ]] && [[ -x "${WGET}" ]] && [[ `wget --help |grep post-file` ]]
+then
+
+if [[ -n $DIALOG ]]
+then
+
+if [[ -z $PASTEBIN ]]; then
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE "http://www.alsa-project.org/cardinfo-db/" &>$TEMPDIR/wget.tmp || echo "Upload failed; exit"
+	{ for i in 10 20 30 40 50 60 70 80 90; do
+		echo $i
+		sleep 0.2
+	done
+	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.alsa-project.org ..." 6 70 0
+else
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE "http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY&encrypt=t&encryptpw=blahblah" &>$TEMPDIR/wget.tmp || echo "Upload failed; exit"
+	{ for i in 10 20 30 40 50 60 70 80 90; do
+		echo $i
+		sleep 0.2
+	done
+	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.pastebin.ca ..." 6 70 0
+fi
+
+dialog --backtitle "$BGTITLE" --title "Information uploaded" --yesno "Would you like to see the uploaded information?" 5 100 
+DIALOG_EXIT_CODE=$?
+if [ $DIALOG_EXIT_CODE = 0 ]; then
+	grep -v "alsa-info.txt" $FILE >$TEMPDIR/uploaded.txt
+	dialog --backtitle "$BGTITLE" --textbox $TEMPDIR/uploaded.txt 0 0
+fi
+
 clear
-if [[ -n $NOUPLOAD ]]; then
-	mv $FILE $NFILE || exit 1
-	if [[ -n $PBERROR ]]; then
-		echo "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
-		echo ""
-		echo "Your ALSA information can be seen by looking in $NFILE"
-		echo ""
+
+# no dialog
+else
+
+if [[ -z $PASTEBIN ]]; then
+	echo -n "Uploading information to www.alsa-project.org ... " 
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE http://www.alsa-project.org/cardinfo-db/ &>$TEMPDIR/wget.tmp &
+else
+	echo -n "Uploading information to www.pastebin.ca ... " 
+	wget -O - --tries=5 --timeout=60 --post-file=$FILE http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY &>$TEMPDIR/wget.tmp &
+fi
+
+#Progess spinner for wget transfer.
+i=1
+sp="/-\|"
+echo -n ' '
+while pgrep wget &>/dev/null
+do
+	echo -en "\b${sp:i++%${#sp}:1}"
+done
+
+echo -e "\b Done!"
+echo ""
+
+fi #dialog
+
+#See if tput is available, and use it if it is.	
+if [[ -n "$TPUT" ]]
+then
+	if [[ -z $PASTEBIN ]]; then
+		FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2 ; tput sgr0`
 	else
-		echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
-		echo ""
-		echo "Your ALSA information can be seen by looking in $NFILE"
-		echo ""
+		FINAL_URL=`tput setaf 1; grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
+	fi
+else
+	if [[ -z $PASTEBIN ]]; then
+		FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp | cut -d ' ' -f 2`
+	else
+		FINAL_URL=`grep "SUCCESS:" $TEMPDIR/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
 	fi
 fi
-if [[ -z $NOUPLOAD ]]; then
+
+#Output the URL of the uploaded file.	
 echo "Your ALSA information is located at $FINAL_URL"
 echo "Please inform the person helping you."
 echo ""
-fi
-	#We posted the file , so we dont need it anymore. delete it.
-	if [ -z $KEEP_FILES ]
-	then
-		rm $FILE 
-	fi
 
 #We couldnt find a suitable wget, so tell the user to upload manually.
 else
@@ -775,9 +769,7 @@ else
 		echo "Please manually upload $NFILE to http://www.pastebin.ca/upload.php and submit your post."
 		echo ""
 		fi
-	fi
-	if [[ -n $DIALOG ]]
-	then
+	else
 		if [[ -z $PASTEBIN ]]; then
 			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.alsa-project.org.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $NFILE to http://www.alsa-project,org/cardinfo-db/ and submit your post." 25 100
 		else
@@ -785,11 +777,5 @@ else
 		fi
 	fi
 fi
-#Clean up the temp files
-if [ -z $KEEP_FILES ]
-then
-	cleanup
-fi
 
-fi # proceed
 
