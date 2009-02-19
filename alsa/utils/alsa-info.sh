@@ -712,7 +712,7 @@ then
 	if [[ -n $NOUPLOAD ]]; then
 		mv $FILE $NFILE || exit 1
 		if [[ -n $PBERROR ]]; then
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
 		else
 			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the $WWWSERVICE\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
 		fi
@@ -729,7 +729,7 @@ clear
 if [[ -n $NOUPLOAD ]]; then
 	mv $FILE $NFILE || exit 1
 	if [[ -n $PBERROR ]]; then
-		echo "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
+		echo "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
 		echo ""
 		echo "Your ALSA information can be seen by looking in $NFILE"
 		echo ""
