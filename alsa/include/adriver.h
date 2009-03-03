@@ -1767,6 +1767,9 @@ static inline void *pci_ioremap_bar(struct pci_dev *pdev, int bar)
 /*
  * definition of type 'bool'
  */
+#ifndef CONFIG_SND_HAS_BUILTIN_BOOL
+typedef int _Bool;
+#endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 #ifndef bool	/* just to be sure */
 typedef _Bool bool;
