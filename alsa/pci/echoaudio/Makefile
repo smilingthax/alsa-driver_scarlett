@@ -11,7 +11,8 @@ include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := echoaudio.c darla20.c darla24.c echo3g.c gina20.c gina24.c \
-		indigo.c indigodj.c indigoio.c layla20.c layla24.c mia.c mona.c
+		indigo.c indigodj.c indigoio.c indigodjx.c indigoiox.c \
+		layla20.c layla24.c mia.c mona.c
 
 include $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/Makefile
 
@@ -26,6 +27,8 @@ gina24.c: gina24.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/gina24.c echoaudi
 indigo.c: indigo.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/indigo.c echoaudio.c
 indigodj.c: indigodj.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/indigodj.c echoaudio.c
 indigoio.c: indigoio.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/indigoio.c echoaudio.c
+indigodjx.c: indigodjx.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/indigodjx.c echoaudio.c
+indigoiox.c: indigoiox.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/indigoiox.c echoaudio.c
 layla20.c: layla20.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/layla20.c echoaudio.c
 layla24.c: layla24.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/layla24.c echoaudio.c
 mia.c: mia.patch $(SND_TOPDIR)/alsa-kernel/pci/echoaudio/mia.c echoaudio.c
