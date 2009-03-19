@@ -84,7 +84,9 @@ pci/echoaudio/gina20.c
 pci/echoaudio/gina24.c
 pci/echoaudio/indigo.c
 pci/echoaudio/indigodj.c
+pci/echoaudio/indigodjx.c
 pci/echoaudio/indigoio.c
+pci/echoaudio/indigoiox.c
 pci/echoaudio/layla20.c
 pci/echoaudio/layla24.c
 pci/echoaudio/mia.c
