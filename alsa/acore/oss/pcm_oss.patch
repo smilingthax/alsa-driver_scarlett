@@ -1,5 +1,5 @@
---- ../../alsa-kernel/core/oss/pcm_oss.c	2007-12-20 10:19:07.000000000 +0100
-+++ pcm_oss.c	2007-12-20 10:46:23.000000000 +0100
+--- ../../../alsa-kmirror/core/oss/pcm_oss.c	2009-04-08 12:30:58.000000000 +0200
++++ pcm_oss.c	2009-04-08 16:08:18.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
@@ -13,7 +13,21 @@
  #include <linux/slab.h>
  #include <linux/time.h>
  #include <linux/vmalloc.h>
-@@ -2588,13 +2590,26 @@
+@@ -1903,9 +1905,13 @@ static int snd_pcm_oss_set_fragment(stru
+ 
+ static int snd_pcm_oss_nonblock(struct file * file)
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 30)
+ 	spin_lock(&file->f_lock);
++#endif
+ 	file->f_flags |= O_NONBLOCK;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 30)
+ 	spin_unlock(&file->f_lock);
++#endif
+ 	return 0;
+ }
+ 
+@@ -2617,13 +2623,26 @@ static long snd_pcm_oss_ioctl(struct fil
  	return -EINVAL;
  }
  
@@ -41,7 +55,7 @@
  static ssize_t snd_pcm_oss_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
  {
  	struct snd_pcm_oss_file *pcm_oss_file;
-@@ -2626,8 +2641,14 @@
+@@ -2656,8 +2675,14 @@ static ssize_t snd_pcm_oss_write(struct
  	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
  	if (substream == NULL)
  		return -ENXIO;
@@ -54,9 +68,9 @@
 +	down(&file->f_dentry->d_inode->i_sem);
 +#endif
  #ifdef OSS_DEBUG
- 	printk("pcm_oss: write %li bytes (wrote %li bytes)\n", (long)count, (long)result);
- #endif
-@@ -2743,7 +2764,11 @@
+ 	printk(KERN_DEBUG "pcm_oss: write %li bytes (wrote %li bytes)\n",
+ 	       (long)count, (long)result);
+@@ -2774,7 +2799,11 @@ static int snd_pcm_oss_mmap(struct file
  		return -EIO;
  #endif
  
@@ -68,7 +82,7 @@
  		return -EINVAL;
  
  	err = snd_pcm_mmap_data(substream, file, area);
-@@ -2922,14 +2947,20 @@
+@@ -2954,14 +2983,20 @@ static void snd_pcm_oss_proc_done(struct
  
  static const struct file_operations snd_pcm_oss_f_reg =
  {
@@ -89,7 +103,7 @@
  	.mmap =		snd_pcm_oss_mmap,
  };
  
-@@ -3043,3 +3074,5 @@
+@@ -3075,3 +3110,5 @@ static void __exit alsa_pcm_oss_exit(voi
  
  module_init(alsa_pcm_oss_init)
  module_exit(alsa_pcm_oss_exit)
