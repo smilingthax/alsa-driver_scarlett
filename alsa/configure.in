@@ -2122,6 +2122,15 @@ CONFIG_VIDEO_V4L1="y"
 fi
 fi
 
+dnl Check for CONFIG_VIDEO_V4L2
+if test "$CONFIG_VIDEO_DEV" = "y"; then
+if test "$kversion.$kpatchlevel" = "2.6" -a "$ksublevel" -gt 17; then
+CHECK_KERNEL_CONFIG(CONFIG_VIDEO_V4L2, [V4L2 layer])
+else
+CONFIG_VIDEO_V4L2="y"
+fi
+fi
+
 dnl Check for old io_remap_page_range()
 AC_MSG_CHECKING(for io_remap_pfn_range)
 io_remap_pfn_range="0"
