@@ -1,27 +1,25 @@
---- ../alsa-kernel/core/info.c	2008-08-08 15:10:19.000000000 +0200
-+++ info.c	2008-08-08 15:10:26.000000000 +0200
+--- ../../alsa-kmirror/core/info.c	2009-04-08 12:30:58.000000000 +0200
++++ info.c	2009-04-08 15:59:10.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "info.inc"
  /*
   *  Information interface for ALSA driver
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -154,6 +155,7 @@
+@@ -154,13 +155,6 @@
  struct snd_info_entry *snd_oss_root;
  #endif
  
-+#ifndef LINUX_2_2
- static inline void snd_info_entry_prepare(struct proc_dir_entry *de)
- {
- 	de->owner = THIS_MODULE;
-@@ -165,6 +167,7 @@
- 	if (de)
- 		remove_proc_entry(de->name, parent);
- }
-+#endif
- 
+-static void snd_remove_proc_entry(struct proc_dir_entry *parent,
+-				  struct proc_dir_entry *de)
+-{
+-	if (de)
+-		remove_proc_entry(de->name, parent);
+-}
+-
  static loff_t snd_info_entry_llseek(struct file *file, loff_t offset, int orig)
  {
-@@ -174,7 +177,9 @@
+ 	struct snd_info_private_data *data;
+@@ -169,7 +163,9 @@
  
  	data = file->private_data;
  	entry = data->entry;
@@ -31,7 +29,7 @@
  	switch (entry->content) {
  	case SNDRV_INFO_CONTENT_TEXT:
  		switch (orig) {
-@@ -203,7 +208,9 @@
+@@ -198,7 +194,9 @@
  	}
  	ret = -ENXIO;
  out:
@@ -41,7 +39,7 @@
  	return ret;
  }
  
-@@ -488,9 +495,26 @@
+@@ -483,9 +481,26 @@
  	return -ENOTTY;
  }
  
@@ -68,7 +66,7 @@
  	struct snd_info_private_data *data;
  	struct snd_info_entry *entry;
  
-@@ -511,17 +535,30 @@
+@@ -506,22 +521,35 @@
  
  static const struct file_operations snd_info_entry_operations =
  {
@@ -92,20 +90,40 @@
 +#ifdef LINUX_2_2
 +static struct inode_operations snd_info_entry_inode_operations =
 +{
-+	&snd_info_entry_operations,     /* default sound info directory file-ops */
-+};
++	&snd_info_entry_operations,	/* default sound info directory file-ops */
++}
 +#endif
 +
+ int __init snd_info_init(void)
+ {
+ 	struct proc_dir_entry *p;
+ 
+-	p = create_proc_entry("asound", S_IFDIR | S_IRUGO | S_IXUGO, NULL);
++	p = snd_create_proc_entry("asound", S_IFDIR | S_IRUGO | S_IXUGO, NULL);
+ 	if (p == NULL)
+ 		return -ENOMEM;
+ 	snd_proc_root = p;
+@@ -909,6 +937,7 @@
+ 
+ EXPORT_SYMBOL(snd_card_proc_new);
+ 
++
  /**
-  * snd_create_proc_entry - create a procfs entry
-  * @name: the name of the proc file
-@@ -962,9 +999,16 @@
+  * snd_info_free_entry - release the info entry
+  * @entry: the info entry
+@@ -948,13 +977,21 @@
+ 		return -ENXIO;
+ 	root = entry->parent == NULL ? snd_proc_root : entry->parent->p;
+ 	mutex_lock(&info_mutex);
+-	p = create_proc_entry(entry->name, entry->mode, root);
++	p = snd_create_proc_entry(entry->name, entry->mode, root);
+ 	if (!p) {
  		mutex_unlock(&info_mutex);
  		return -ENOMEM;
  	}
-+#ifndef LINUX_2_2
- 	p->owner = entry->module;
 -	if (!S_ISDIR(entry->mode))
++#if defined(HAVE_PROCFS_OWNER) && defined(LINUX_2_2)
++	p->owner = entry->module;
 +#endif
 +	if (!S_ISDIR(entry->mode)) {
 +#ifndef LINUX_2_2
@@ -117,7 +135,7 @@
  	p->size = entry->size;
  	p->data = entry;
  	entry->p = p;
-@@ -984,9 +1028,19 @@
+@@ -974,9 +1011,19 @@
  
  static void snd_info_version_read(struct snd_info_entry *entry, struct snd_info_buffer *buffer)
  {

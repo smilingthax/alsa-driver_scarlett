@@ -7,12 +7,12 @@
 #endif
 #include <linux/version.h>
 #include <linux/utsrelease.h>
+#include <linux/proc_fs.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/version.h>
-#include <linux/proc_fs.h>
 
 static int snd_info_card_readlink(struct dentry *dentry,
 				  char *buffer, int buflen)
@@ -94,4 +94,55 @@ void snd_remove_proc_entry(struct proc_dir_entry *parent,
 	}
 }
 
-#endif /* LINUX_VERSION_CODE < 2.4.0 */
+#else /* LINUX_VERSION_CODE < 2.4.0 */
+
+static void snd_remove_proc_entry(struct proc_dir_entry *parent,
+                                  struct proc_dir_entry *de)
+{
+	if (de)
+		remove_proc_entry(de->name, parent);
+}
+
+#endif
+
+#ifdef HAVE_PROCFS_OWNER
+static inline void snd_info_entry_prepare(struct proc_dir_entry *de)
+{
+	de->owner = THIS_MODULE;
+}
+
+/**
+ * snd_create_proc_entry - create a procfs entry
+ * @name: the name of the proc file
+ * @mode: the file permission bits, S_Ixxx
+ * @parent: the parent proc-directory entry
+ *
+ * Creates a new proc file entry with the given name and permission
+ * on the given directory.
+ *
+ * Returns the pointer of new instance or NULL on failure.
+ */
+static struct proc_dir_entry *
+	snd_create_proc_entry(const char *name, mode_t mode,
+			      struct proc_dir_entry *parent)
+{
+	struct proc_dir_entry *p;
+	p = create_proc_entry(name, mode, parent);
+	if (p)
+		snd_info_entry_prepare(p);
+	return p;
+}
+static void snd_remove_proc_entry(struct proc_dir_entry *parent,
+                                  struct proc_dir_entry *de)
+{
+        if (de)
+                remove_proc_entry(de->name, parent);
+}
+#else
+static inline struct proc_dir_entry *
+	snd_create_proc_entry(const char *name, mode_t mode,
+			      struct proc_dir_entry *parent)
+{
+	return create_proc_entry(name, mode, parent);
+}
+#endif /* HAVE_PROCFS_OWNER */
