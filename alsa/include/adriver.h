@@ -914,6 +914,9 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #ifndef DMA_24BIT_MASK
 #define DMA_24BIT_MASK	0x0000000000ffffffULL
 #endif
+#ifndef DMA_BIT_MASK
+#define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
