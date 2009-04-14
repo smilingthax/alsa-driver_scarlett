@@ -1606,6 +1606,9 @@ static inline u64 get_unaligned_be64(void *p)
 #ifndef upper_32_bits
 #define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 #endif
+#ifndef lower_32_bits
+#define lower_32_bits(n) ((u32)(n))
+#endif
 
 #ifndef CONFIG_HAVE_PAGE_TO_PFN
 #define page_to_pfn(page)       (page_to_phys(page) >> PAGE_SHIFT)
@@ -1794,12 +1797,6 @@ static inline void *memdup_user(void __user *src, size_t len)
 	}
 	return p;
 }
-#endif
-
-/* {upper,lower}_32_bits() macros */
-#ifndef upper_32_bits
-#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
-#define lower_32_bits(n) ((u32)(n))
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
