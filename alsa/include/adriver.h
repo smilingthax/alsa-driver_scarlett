@@ -891,7 +891,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
 #include <linux/mm.h>
 #include <asm/io.h>
