@@ -1779,4 +1779,21 @@ typedef _Bool bool;
 #endif
 #endif
 
+/* memdup_user() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
+#include <linux/err.h>
+#include <asm/uaccess.h>
+static inline void *memdup_user(void __user *src, size_t len)
+{
+	void *p = kmalloc(len, GFP_KERNEL);
+	if (!p)
+		return ERR_PTR(-ENOMEM);
+	if (copy_from_user(p, src, len)) {
+		kfree(p);
+		return ERR_PTR(-EFAULT);
+	}
+	return p;
+}
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
