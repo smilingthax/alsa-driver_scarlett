@@ -1782,7 +1782,7 @@ int snd_soc_info_volsw_ext(struct snd_kcontrol *kcontrol,
 {
 	int max = kcontrol->private_value;
 
-	if (max == 1)
+	if (max == 1 && !strstr(kcontrol->id.name, " Volume"))
 		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	else
 		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1812,7 +1812,7 @@ int snd_soc_info_volsw(struct snd_kcontrol *kcontrol,
 	unsigned int shift = mc->shift;
 	unsigned int rshift = mc->rshift;
 
-	if (max == 1)
+	if (max == 1 && !strstr(kcontrol->id.name, " Volume"))
 		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	else
 		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1919,7 +1919,7 @@ int snd_soc_info_volsw_2r(struct snd_kcontrol *kcontrol,
 		(struct soc_mixer_control *)kcontrol->private_value;
 	int max = mc->max;
 
-	if (max == 1)
+	if (max == 1 && !strstr(kcontrol->id.name, " Volume"))
 		uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	else
 		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
