@@ -277,6 +277,12 @@ case "$1" in
 		REPEAT=""
 		shift
 		;;
+	--stdout)
+		DIALOG=""
+		NOUPLOAD="yes"
+		QUESTION="no"
+		TOSTDOUT="yes"
+		;;
 esac
 done
 		
@@ -627,6 +633,17 @@ then
 				fi
 			fi
 			;;
+		--stdout)
+			NOUPLOAD="yes"
+			withdevices
+			withconfigs
+			withaplay
+			withamixer
+			withalsactl
+			withlsmod
+			cat $FILE
+			rm $FILE
+			;;
 		--about)
 			echo "Written/Tested by the following users of #alsa on irc.freenode.net:"
 			echo ""
@@ -635,6 +652,7 @@ then
 			echo "	gnubien - Various script ideas / Testing"
 			echo "	GrueMaster - HDA Intel specific items / Testing"
 			echo "	olegfink - Script update function"
+			echo "  TheMuso - display to stdout functionality"
 			exit 0
 			;;
 		*)
@@ -652,6 +670,8 @@ then
 			echo "	--no-upload (do not upload contents to remote server)"
 			echo "	--pastebin (use http://pastebin.ca) as remote server"
 			echo "	    instead www.alsa-project.org"
+			echo "  --stdout (print alsa information to standard output"
+			echo "      instead of a file)"
 			echo "	--about (show some information about the script)"
 			echo "	--debug (will run the script as normal, but will not"
 			echo "	     delete $FILE)"
@@ -668,7 +688,9 @@ fi
 
 if [ -n "$NOUPLOAD" ]; then
 
-	mv $FILE $NFILE || exit 1
+	if [ -z "$TOSTDOUT" ]; then
+		mv $FILE $NFILE || exit 1
+	fi
 
 	if [[ -n $DIALOG ]]
 	then
@@ -686,10 +708,12 @@ if [ -n "$NOUPLOAD" ]; then
 			echo "Your ALSA information can be seen by looking in $NFILE"
 			echo ""
 		else
-			echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
-			echo ""
-			echo "Your ALSA information can be seen by looking in $NFILE"
-			echo ""
+			if [ -z "$TOSTDOUT" ]; then
+				echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
+				echo ""
+				echo "Your ALSA information can be seen by looking in $NFILE"
+				echo ""
+			fi
 		fi
 	fi
 
