@@ -251,6 +251,25 @@ static int read_file(const char *filename, struct cond **template)
 	return 0;
 }
 
+static void parse_default_value(struct dep *dep, char *buffer)
+{
+	switch (*buffer) {
+	case 'y':
+	case 'm':
+		dep->def_val = 1;
+		break;
+	case 'n':
+		dep->def_val = 0;
+		break;
+	default:
+		fprintf(stderr, "can't handle 'default %s', translating as depends on\n",
+			buffer);
+		dep->def_val = 1;
+		add_dep(dep, buffer);
+		break;
+	}
+}
+
 static int read_file_1(const char *filename, struct cond **template)
 {
 	char *buffer, *newbuf;
@@ -385,8 +404,10 @@ static int read_file_1(const char *filename, struct cond **template)
 					dep->selectable = 1;
 			} else if (!strncmp(buffer, "\tdef_bool ", 10)) {
 				dep->type = TYPE_BOOL;
-				if (buffer[10] == 'y')
-					dep->def_val = 1;
+				parse_default_value(dep, buffer + 10);
+			} else if (!strncmp(buffer, "\tdef_tristate ", 14)) {
+				dep->type = TYPE_TRISTATE;
+				parse_default_value(dep, buffer + 14);
 			} else if (!strncmp(buffer, "\tint ", 5)) {
 				dep->type = TYPE_INT;
 				/*dep->selectable = 1;*/ /* exception */
@@ -403,21 +424,7 @@ static int read_file_1(const char *filename, struct cond **template)
 						;
 					dep->int_val = strtol(p, NULL, 0);
 				} else {
-					switch (buffer[9]) {
-					case 'y':
-					case 'm':
-						dep->def_val = 1;
-						break;
-					case 'n':
-						dep->def_val = 0;
-						break;
-					default:
-						fprintf(stderr, "can't handle 'default %s', translating as depends on\n",
-							buffer + 9);
-						dep->def_val = 1;
-						add_dep(dep, buffer + 9);
-						break;
-					}
+					parse_default_value(dep, buffer + 9);
 				}
 			}
 			continue;
