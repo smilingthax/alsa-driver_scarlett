@@ -1786,7 +1786,7 @@ typedef _Bool bool;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
 #include <linux/err.h>
 #include <asm/uaccess.h>
-static inline void *memdup_user(void __user *src, size_t len)
+static inline void *memdup_user(const void __user *src, size_t len)
 {
 	void *p = kmalloc(len, GFP_KERNEL);
 	if (!p)
