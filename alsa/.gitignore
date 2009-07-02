@@ -113,9 +113,9 @@ sparc/dbri.c
 usb/usbaudio.c
 usb/usbmidi.c
 usb/usbmixer.c
-usb/caiaq/caiaq-audio.c
-usb/caiaq/caiaq-device.c
-usb/caiaq/caiaq-input.c
+usb/caiaq/audio.c
+usb/caiaq/device.c
+usb/caiaq/input.c
 usb/usx2y/usX2Yhwdep.c
 usb/usx2y/usbusx2y.c
 usb/usx2y/usbusx2yaudio.c
