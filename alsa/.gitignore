@@ -106,6 +106,7 @@ pci/via82xx_modem.c
 ppc/awacs.c
 ppc/beep.c
 ppc/tumbler.c
+soc/soc-core.c
 sparc/amd7930.c
 sparc/cs4231.c
 sparc/dbri.c
