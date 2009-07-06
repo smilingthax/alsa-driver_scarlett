@@ -1783,10 +1783,10 @@ typedef _Bool bool;
 #endif
 
 /* memdup_user() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30) || defined(CONFIG_SND_DEBUG_MEMORY)
 #include <linux/err.h>
 #include <asm/uaccess.h>
-static inline void *memdup_user(const void __user *src, size_t len)
+static inline void *snd_memdup_user(const void __user *src, size_t len)
 {
 	void *p = kmalloc(len, GFP_KERNEL);
 	if (!p)
@@ -1797,6 +1797,7 @@ static inline void *memdup_user(const void __user *src, size_t len)
 	}
 	return p;
 }
+#define memdup_user snd_memdup_user
 #endif
 
 /* PCI_VEDEVICE() */
