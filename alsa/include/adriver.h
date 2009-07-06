@@ -1783,7 +1783,8 @@ typedef _Bool bool;
 #endif
 
 /* memdup_user() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30) || defined(CONFIG_SND_DEBUG_MEMORY)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30) || \
+	defined(CONFIG_SND_DEBUG_MEMORY)
 #include <linux/err.h>
 #include <asm/uaccess.h>
 static inline void *snd_memdup_user(const void __user *src, size_t len)
