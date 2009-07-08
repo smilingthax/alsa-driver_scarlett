@@ -243,6 +243,16 @@ withsysfs() {
     fi
 }
 
+withall() {
+	withdevices
+	withconfigs
+	withaplay
+	withamixer
+	withalsactl
+	withlsmod
+	withsysfs
+}
+
 get_alsa_library_version() {
 	ALSA_LIB_VERSION=`grep VERSION_STR /usr/include/alsa/version.h 2>/dev/null|awk {'print $3'}|sed 's/"//g'`
 
@@ -559,12 +569,7 @@ fi
 if [[ -z "$1" ]]
 then
 	update
-	withdevices
-	withconfigs
-	withaplay
-	withamixer
-	withalsactl
-	withlsmod
+	withall
 	pbcheck	
 fi
 
@@ -578,13 +583,7 @@ then
 	case "$1" in
 		--pastebin)
 		        update
-        		withdevices
-        		withconfigs
-        		withaplay
-        		withamixer
-        		withalsactl
-        		withlsmod
-			withsysfs
+			withall
         		pbcheck
 			;;
 		--update)
@@ -593,44 +592,20 @@ then
 			;;
 		--upload)
 			UPLOAD="yes"
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			withall
 			;;
 		--no-upload)
 			UPLOAD="no"
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			withall
 			;;
 		--debug)
 			echo "Debugging enabled. $FILE and $TEMPDIR will not be deleted"
 			KEEP_FILES="yes"
 			echo ""
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			withall
 			;;
 		--with-all)
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			withall
 			;;
 		--with-aplay)
 			withaplay
@@ -674,12 +649,7 @@ then
 			;;
 		--stdout)
 			UPLOAD="no"
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
+			withall
 			cat $FILE
 			rm $FILE
 			;;
