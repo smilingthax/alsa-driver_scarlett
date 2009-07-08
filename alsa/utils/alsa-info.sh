@@ -519,7 +519,10 @@ echo "!!--------------------------" >> $FILE
 echo "" >> $FILE
 for mod in `cat /proc/asound/modules|awk {'print $2'}`;do
 echo "!!Module: $mod" >> $FILE
-for params in `ls $SYSFS/module/$mod/parameters/*`; do /bin/echo -ne "\t";/bin/echo "$params : `cat $params`"|sed 's:.*/::' >> $FILE;done
+for params in `echo $SYSFS/module/$mod/parameters/*`; do
+	echo -ne "\t";
+	echo "$params : `cat $params`" | sed 's:.*/::';
+done >> $FILE
 echo "" >> $FILE
 done
 echo "" >> $FILE
