@@ -74,7 +74,7 @@ update() {
 					echo "Please re-run the script"
 					rm $SHFILE 2>/dev/null
 				else
-					mv $SHFILE /tmp/alsa-info.sh || exit 1
+					mv -f $SHFILE /tmp/alsa-info.sh || exit 1
 					echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
 					echo "Please re-run the script from new location."
 				fi
@@ -92,7 +92,7 @@ update() {
 				echo "ALSA-Info script has been updated. Please re-run it."
 				rm $SHFILE 2>/dev/null
 			else
-				mv $SHFILE /tmp/alsa-info.sh || exit 1
+				mv -f $SHFILE /tmp/alsa-info.sh || exit 1
 				echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
 				echo "Please, re-run it from new location."
 			fi
@@ -750,7 +750,7 @@ fi
 if [ "$UPLOAD" = "no" ]; then
 
 	if [ -z "$TOSTDOUT" ]; then
-		mv $FILE $NFILE || exit 1
+		mv -f $FILE $NFILE || exit 1
 	fi
 
 	if [[ -n $DIALOG ]]
@@ -863,7 +863,7 @@ echo ""
 
 #We couldnt find a suitable wget, so tell the user to upload manually.
 else
-	mv $FILE $NFILE || exit 1
+	mv -f $FILE $NFILE || exit 1
 	if [[ -z $DIALOG ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
