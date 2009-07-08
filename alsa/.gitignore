@@ -95,6 +95,7 @@ pci/emu10k1/emu10k1_main.c
 pci/emu10k1/emu10k1x.c
 pci/fm801.c
 pci/hda/hda_beep.c
+pci/hda/hda_intel.c
 pci/intel8x0.c
 pci/korg1212/korg1212.c
 pci/maestro3.c
