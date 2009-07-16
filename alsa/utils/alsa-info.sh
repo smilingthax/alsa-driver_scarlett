@@ -243,6 +243,15 @@ withsysfs() {
     fi
 }
 
+withdmesg() {
+	echo "!!ALSA/HDA dmesg" >> $FILE
+	echo "!!------------------" >> $FILE
+	echo "" >> $FILE
+	dmesg | grep -E 'ALSA|HDA|HDMI|sound|hda.codec|hda.intel' >> $FILE
+	echo "" >> $FILE
+	echo "" >> $FILE
+}
+
 withall() {
 	withdevices
 	withconfigs
@@ -251,6 +260,7 @@ withall() {
 	withalsactl
 	withlsmod
 	withsysfs
+	withdmesg
 }
 
 get_alsa_library_version() {
@@ -341,15 +351,31 @@ done
 
 #Script header output.
 if [ "$WELCOME" = "yes" ]; then
-if [[ -n "$DIALOG" ]]; then
-	dialog --backtitle "$BGTITLE" --title "ALSA-Info script v $SCRIPT_VERSION" --msgbox "\nThis script visits the following commands/files to collect diagnostic information about your ALSA installation and sound related hardware.\n\n  lspci\n  lsmod\n  aplay\n  amixer\n  alsactl\n  /proc/asound/\n  /sys/class/sound/\n  ~/.asoundrc (etc.)\n\nSee '$0 --help' for command line options.\n" 20 80
-else
+greeting_message="\
 
-echo "ALSA Information Script v $SCRIPT_VERSION"
-echo "--------------------------------"
-echo ""
-echo "This script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem."
-echo ""
+This script visits the following commands/files to collect diagnostic
+information about your ALSA installation and sound related hardware.
+
+  dmesg
+  lspci
+  lsmod
+  aplay
+  amixer
+  alsactl
+  /proc/asound/
+  /sys/class/sound/
+  ~/.asoundrc (etc.)
+
+See '$0 --help' for command line options.
+"
+if [[ -n "$DIALOG" ]]; then
+	dialog  --backtitle "$BGTITLE" \
+		--title "ALSA-Info script v $SCRIPT_VERSION" \
+		--msgbox "$greeting_message" 20 80
+else
+	echo "ALSA Information Script v $SCRIPT_VERSION"
+	echo "--------------------------------"
+	echo "$greeting_message"
 fi # dialog
 fi # WELCOME
 
@@ -619,6 +645,9 @@ then
 		--with-devices)
 			withdevices
 			;;
+		--with-dmesg)
+			withdmesg
+			;;
 		--with-configs)
 			if [[ -e $HOME/.asoundrc ]] || [[ -e /etc/asound.conf ]]
 			then
@@ -674,6 +703,7 @@ then
 			echo "	--with-configs (includes the output of ~/.asoundrc and"
 			echo "	    /etc/asound.conf if they exist)" 
 			echo "	--with-devices (shows the device nodes in /dev/snd/)"
+			echo "	--with-dmesg (shows the ALSA/HDA kernel messages)"
 			echo ""
 			echo "	--update (check server for script updates)"
 			echo "	--upload (upload contents to remote server)"
