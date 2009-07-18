@@ -247,7 +247,7 @@ withdmesg() {
 	echo "!!ALSA/HDA dmesg" >> $FILE
 	echo "!!------------------" >> $FILE
 	echo "" >> $FILE
-	dmesg | grep -E 'ALSA|HDA|HDMI|sound|hda.codec|hda.intel' >> $FILE
+	dmesg | grep -C1 -E 'ALSA|HDA|HDMI|sound|hda.codec|hda.intel' >> $FILE
 	echo "" >> $FILE
 	echo "" >> $FILE
 }
