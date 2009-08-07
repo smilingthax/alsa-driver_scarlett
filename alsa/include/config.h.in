@@ -88,8 +88,3 @@
 #undef CONFIG_HAVE_GFP_DMA32
 #undef CONFIG_HAVE_PAGE_TO_PFN
 #undef CONFIG_HAVE_VIDEO_DRVDATA
-
-/* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
-#ifndef CONFIG_SND_JACK
-#undef CONFIG_SND_HDA_INPUT_JACK
-#endif
