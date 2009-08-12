@@ -417,7 +417,12 @@ ARTSINST=$(which artsd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 JACKINST=$(which jackd 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 DMIDECODE=$(which dmidecode 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null)
 
-if [ -x $DMIDECODE ]; then
+#Check for DMI data
+if [ -d /sys/class/dmi/id ]; then
+    # No root privileges are required when using sysfs method
+    DMI_SYSTEM_MANUFACTURER=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)
+    DMI_SYSTEM_PRODUCT_NAME=$(cat /sys/class/dmi/id/product_name 2>/dev/null)
+elif [ -x $DMIDECODE ]; then
     DMI_SYSTEM_MANUFACTURER=$($DMIDECODE -s system-manufacturer 2>/dev/null)
     DMI_SYSTEM_PRODUCT_NAME=$($DMIDECODE -s system-product-name 2>/dev/null)
 fi
