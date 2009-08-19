@@ -372,10 +372,12 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
         mkdir -p include/linux include/asm include/media
+	mkdir -p include/linux/regulator
         touch include/$1
       else
         echo "Creating <$1>..."
         mkdir -p include/linux include/asm include/media
+	mkdir -p include/linux/regulator
         echo "$2" > include/$1
       fi
     fi
@@ -1467,6 +1469,8 @@ CHECK_KERNEL_HEADER(linux/debugfs.h)
 CHECK_KERNEL_HEADER(linux/gpio.h)
 CHECK_KERNEL_HEADER(linux/bug.h)
 CHECK_KERNEL_HEADER(linux/math64.h, [#include \"math64_compat.h\"
+])
+CHECK_KERNEL_HEADER(linux/regulator/consumer.h, [#include \"regulator_consumer_compat.h\"
 ])
 
 dnl Check for dump_stack
