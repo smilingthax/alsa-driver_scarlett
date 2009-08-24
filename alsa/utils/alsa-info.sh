@@ -46,7 +46,7 @@ pbcheck(){
 }
 
 update() {
-	SHFILE=$TEMPDIR/alsa-info.sh
+	SHFILE=`mktemp -p /tmp alsa-info.XXXXXXXXXX`
 	wget -O $SHFILE "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
 	REMOTE_VERSION=`grep SCRIPT_VERSION $SHFILE |head -n1 |sed 's/.*=//'`
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
@@ -74,8 +74,8 @@ update() {
 					echo "Please re-run the script"
 					rm $SHFILE 2>/dev/null
 				else
-					# run the new script
-					/bin/bash $SHFILE $*
+					echo "ALSA-Info script has been downloaded as $SHFILE."
+					echo "Please re-run the script from new location."
 				fi
 				exit
 			else
@@ -91,8 +91,8 @@ update() {
 				echo "ALSA-Info script has been updated. Please re-run it."
 				rm $SHFILE 2>/dev/null
 			else
-				# run the new script
-				/bin/bash $SHFILE $*
+				echo "ALSA-Info script has been downloaded $SHFILE."
+				echo "Please, re-run it from new location."
 			fi
 			exit
 		fi
