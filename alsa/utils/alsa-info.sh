@@ -46,7 +46,7 @@ pbcheck(){
 }
 
 update() {
-	SHFILE=`mktemp -p /tmp alsa-info.XXXXXXXXXX`
+	SHFILE=`mktemp -p /tmp alsa-info.XXXXXXXXXX` || exit 1
 	wget -O $SHFILE "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
 	REMOTE_VERSION=`grep SCRIPT_VERSION $SHFILE |head -n1 |sed 's/.*=//'`
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
@@ -382,10 +382,10 @@ fi # dialog
 fi # WELCOME
 
 #Set the output file
-TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX`
+TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX` || exit 1
 FILE="$TEMPDIR/alsa-info.txt"
 if [ -z "$NFILE" ]; then
-	NFILE=`mktemp -p /tmp alsa-info.txt.XXXXXXXXXX`
+	NFILE=`mktemp -p /tmp alsa-info.txt.XXXXXXXXXX` || exit 1
 fi
 
 trap cleanup 0
@@ -397,9 +397,6 @@ then
 	echo "This script requires lspci. Please install it, and re-run this script."
 	exit 0
 fi
-
-#Create the temporary work dir.
-mkdir $TEMPDIR 2>/dev/null
 
 #Fetch the info and store in temp files/variables
 DISTRO=`grep -ihs "buntu\|SUSE\|Fedora\|PCLinuxOS\|MEPIS\|Mandriva\|Debian\|Damn\|Sabayon\|Slackware\|KNOPPIX\|Gentoo\|Zenwalk\|Mint\|Kubuntu\|FreeBSD\|Puppy\|Freespire\|Vector\|Dreamlinux\|CentOS\|Arch\|Xandros\|Elive\|SLAX\|Red\|BSD\|KANOTIX\|Nexenta\|Foresight\|GeeXboX\|Frugalware\|64\|SystemRescue\|Novell\|Solaris\|BackTrack\|KateOS\|Pardus" /etc/{issue,*release,*version}`
