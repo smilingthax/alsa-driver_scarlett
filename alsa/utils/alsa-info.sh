@@ -46,7 +46,7 @@ pbcheck(){
 }
 
 update() {
-	SHFILE=`mktemp -p /tmp alsa-info.XXXXXXXXXX` || exit 1
+	SHFILE=`mktemp -t alsa-info.XXXXXXXXXX` || exit 1
 	wget -O $SHFILE "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
 	REMOTE_VERSION=`grep SCRIPT_VERSION $SHFILE |head -n1 |sed 's/.*=//'`
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
@@ -382,10 +382,10 @@ fi # dialog
 fi # WELCOME
 
 #Set the output file
-TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX` || exit 1
+TEMPDIR=`mktemp -t -d alsa-info.XXXXXXXXXX` || exit 1
 FILE="$TEMPDIR/alsa-info.txt"
 if [ -z "$NFILE" ]; then
-	NFILE=`mktemp -p /tmp alsa-info.txt.XXXXXXXXXX` || exit 1
+	NFILE=`mktemp -t alsa-info.txt.XXXXXXXXXX` || exit 1
 fi
 
 trap cleanup 0
