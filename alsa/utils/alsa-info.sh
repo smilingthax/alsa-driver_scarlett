@@ -103,8 +103,9 @@ update() {
 
 cleanup() {
 	if [ -n "$TEMPDIR" -a "$KEEP_FILES" != "yes" ]; then
-		rm -r "$TEMPDIR" 2>/dev/null
+		rm -rf "$TEMPDIR" 2>/dev/null
 	fi
+	test -n "$KEEP_OUTPUT" || rm -f "$NFILE"
 }
 
 
@@ -307,6 +308,9 @@ SYSFS=$(mount |grep sysfs|awk {'print $3'});
 #Check modprobe config files for sound related options
 SNDOPTIONS=$(modprobe -c|sed -n 's/^options \(snd[-_][^ ]*\)/\1:/p')
 
+KEEP_OUTPUT=
+NFILE=""
+
 PASTEBIN=""
 WWWSERVICE="www.alsa-project.org"
 WELCOME="yes"
@@ -380,7 +384,9 @@ fi # WELCOME
 #Set the output file
 TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX`
 FILE="$TEMPDIR/alsa-info.txt"
-NFILE="/tmp/alsa-info.txt"
+if [ -z "$NFILE" ]; then
+	NFILE=`mktemp -p /tmp alsa-info.txt.XXXXXXXXXX`
+fi
 
 trap cleanup 0
 
@@ -627,6 +633,11 @@ then
 			UPLOAD="no"
 			withall
 			;;
+		--output)
+			shift
+			NFILE="$1"
+			KEEP_OUTPUT="yes"
+			;;
 		--debug)
 			echo "Debugging enabled. $FILE and $TEMPDIR will not be deleted"
 			KEEP_FILES="yes"
@@ -708,6 +719,7 @@ then
 			echo "	--with-devices (shows the device nodes in /dev/snd/)"
 			echo "	--with-dmesg (shows the ALSA/HDA kernel messages)"
 			echo ""
+			echo "	--output FILE (specify the file to output for no-upload mode)"
 			echo "	--update (check server for script updates)"
 			echo "	--upload (upload contents to remote server)"
 			echo "	--no-upload (do not upload contents to remote server)"
@@ -754,6 +766,7 @@ if [ "$UPLOAD" = "no" ]; then
 
 	if [ -z "$TOSTDOUT" ]; then
 		mv -f $FILE $NFILE || exit 1
+		KEEP_OUTPUT="yes"
 	fi
 
 	if [[ -n $DIALOG ]]
@@ -867,6 +880,7 @@ echo ""
 #We couldnt find a suitable wget, so tell the user to upload manually.
 else
 	mv -f $FILE $NFILE || exit 1
+	KEEP_OUTPUT="yes"
 	if [[ -z $DIALOG ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
