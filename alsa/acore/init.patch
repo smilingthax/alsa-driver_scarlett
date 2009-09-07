@@ -1,12 +1,12 @@
---- ../alsa-kernel/core/init.c	2008-11-12 16:00:04.000000000 +0100
-+++ init.c	2008-11-12 16:13:12.000000000 +0100
+--- ../alsa-kernel/core/init.c	2009-09-07 15:59:08.000000000 +0200
++++ init.c	2009-09-07 16:04:43.000000000 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
  /*
   *  Initialization routines
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -278,11 +280,19 @@
+@@ -296,11 +298,19 @@
  	return POLLERR | POLLNVAL;
  }
  
@@ -26,7 +26,7 @@
  
  static int snd_disconnect_mmap(struct file *file, struct vm_area_struct *vma)
  {
-@@ -296,16 +306,22 @@
+@@ -314,16 +324,22 @@
  
  static const struct file_operations snd_shutdown_f_ops =
  {
@@ -49,7 +49,7 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -610,9 +626,21 @@
+@@ -651,9 +667,21 @@
  		return -EINVAL;
  #ifndef CONFIG_SYSFS_DEPRECATED
  	if (!card->card_dev) {
@@ -71,3 +71,20 @@
  		if (IS_ERR(card->card_dev))
  			card->card_dev = NULL;
  	}
+@@ -945,3 +973,16 @@
+ 
+ EXPORT_SYMBOL(snd_power_wait);
+ #endif /* CONFIG_PM */
++
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
++/* just for old ABI compatibility */
++struct snd_card *snd_card_new(int idx, const char *id,
++			      struct module *module, int extra_size)
++{
++	struct snd_card *card;
++	if (snd_card_create(idx, id, module, extra_size, &card) < 0)
++		return NULL;
++	return card;
++}
++EXPORT_SYMBOL(snd_card_new);
++#endif
