@@ -6,10 +6,15 @@
 include ../Makefile.conf
 
 all: $(TARGETS)
-	@echo "What's?" 
+
+prepare:
+	$(MAKE) -C sound prepare
+
+fastdep: prepare
 
 clean:
 	rm -f .depend core *.o sndversions.h modules/*.ver modules/*.stamp
+	$(MAKE) -C sound clean
 
 mrproper: clean
 	rm -f *.orig *.rej *~ .#*

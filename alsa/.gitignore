@@ -26,7 +26,6 @@ Module*.symvers
 alsa-kernel
 scripts
 linux
-include/sound
 
 acore/control.c
 acore/hrtimer.c
