@@ -966,7 +966,7 @@ void snd_compat_print_hex_dump_bytes(const char *prefix_str, int prefix_type,
 	for (off = 0; off < len; off += 16) {
 		printk(KERN_DEBUG "%s", prefix_str);
 		if (prefix_type == DUMP_PREFIX_OFFSET)
-			printk(" %.4x:", off);
+			printk(" %.4x:", (unsigned int)off);
 		for (i = 0; i < 16 && off + i < len; ++i)
 			printk(" %02x", ((const u8*)buf)[off + i]);
 		printk("\n");
