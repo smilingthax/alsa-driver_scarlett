@@ -28,7 +28,7 @@
  		chip->msi = !!enable_msi;
  		return;
  	}
-+#if AZX_ENABLE_MSI_DEFAULT
++#ifdef AZX_ENABLE_MSI_DEFAULT
  	chip->msi = 1;	/* enable MSI as default */
 +#else
 +	chip->msi = 0;	/* disable MSI unless we have in the white list */
