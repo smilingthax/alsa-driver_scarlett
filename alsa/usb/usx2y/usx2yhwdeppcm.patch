@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2008-12-11 10:28:00.000000000 +0100
-+++ usx2yhwdeppcm.c	2009-01-03 11:41:20.000000000 +0100
+--- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2009-09-28 12:02:26.000000000 +0200
++++ usx2yhwdeppcm.c	2009-09-28 12:13:07.000000000 +0200
 @@ -1,3 +1,29 @@
 +#include "config.h"
 +#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
@@ -127,17 +127,20 @@
  static int snd_usX2Y_hwdep_pcm_vm_fault(struct vm_area_struct *area,
  					struct vm_fault *vmf)
  {
-@@ -695,12 +751,56 @@
+@@ -695,7 +751,51 @@
  	get_page(vmf->page);
  	return 0;
  }
 +#else /* 2.6.24 */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
-+static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int *type)
++static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area,
++					unsigned long address, int *type)
 +#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
-+static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
++static struct page * snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area,
++					unsigned long address, int no_share)
 +#else
-+static unsigned long snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
++static unsigned long snd_usX2Y_hwdep_pcm_vm_nopage(struct vm_area_struct *area,
++					unsigned long address, int no_share)
 +#endif
 +{
 +	unsigned long offset;
@@ -152,7 +155,8 @@
 +	offset += address - area->vm_start;
 +	if (snd_BUG_ON(offset % PAGE_SIZE))
 +		return NOPAGE_OOM;
-+	vaddr = (char*)((struct usX2Ydev *)area->vm_private_data)->hwdep_pcm_shm + offset;
++	vaddr = (char*)((struct usX2Ydev *)
++			area->vm_private_data)->hwdep_pcm_shm + offset;
 +	page = virt_to_page(vaddr);
 +#ifndef CONFIG_SND_REMOVE_PAGE_RESERVE
 +	if (!PageReserved(page))
@@ -173,17 +177,8 @@
 +}
 +#endif /* >= 2.6.24 */
  
- static struct vm_operations_struct snd_usX2Y_hwdep_pcm_vm_ops = {
+ static const struct vm_operations_struct snd_usX2Y_hwdep_pcm_vm_ops = {
  	.open = snd_usX2Y_hwdep_pcm_vm_open,
- 	.close = snd_usX2Y_hwdep_pcm_vm_close,
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
- 	.fault = snd_usX2Y_hwdep_pcm_vm_fault,
-+#else
-+	.nopage = snd_usX2Y_hwdep_pcm_vm_nopage,
-+#endif
- };
- 
- 
 @@ -722,8 +822,14 @@
  		return -ENODEV;
  	}
