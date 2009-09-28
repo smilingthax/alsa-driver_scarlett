@@ -7,6 +7,6 @@ include $(SND_TOPDIR)/Makefile.conf
 
 include $(SND_TOPDIR)/alsa-kernel/pci/oxygen/Makefile
 
-export-objs := oxygen_io.o oxygen_lib.o
+export-objs := oxygen_io.o oxygen_lib.o oxygen_pcm.o
 
 include $(SND_TOPDIR)/Rules.make
