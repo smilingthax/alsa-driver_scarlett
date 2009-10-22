@@ -23,6 +23,7 @@ HPI Operating System function implementation for Linux
 #define SOURCEFILE_NAME "hpios_linux_kernel.c"
 #include "hpidebug.h"
 #include <linux/delay.h>
+#include <linux/sched.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 14)
 void HpiOs_DelayMicroSeconds(
