@@ -1831,4 +1831,35 @@ static inline int snd_strict_strtoull(const char *str, unsigned int base,
 #define strict_strtoull	snd_strict_strtoull
 #endif /* < 2.6.25 */
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 17)
+#define CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
+#define CONFIG_SND_HAS_TASK_PID
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
+#define CONFIG_SND_HAS_PID_VNR
+#endif
+#ifndef CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID
+/* use nr as pointer */
+struct pid;
+#define get_pid(p) (p)
+#define put_pid(p)
+#define task_pid(t) ((struct pid *)((t)->pid))
+#define pid_vnr(p) ((pid_t)(p))
+#else
+#ifndef CONFIG_SND_HAS_TASK_PID
+static inline struct pid *task_pid(struct task_struct *task)
+{
+	return task->pids[PIDTYPE_PID].pid;
+}
+#endif
+#ifndef CONFIG_SND_HAS_PID_VNR
+static inline pid_t pid_vnr(struct pid *pid)
+{
+	return pid ? pid->nr : 0;
+}
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
