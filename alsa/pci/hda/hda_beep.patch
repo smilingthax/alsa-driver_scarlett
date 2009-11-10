@@ -1,12 +1,12 @@
---- ../../alsa-kernel/pci/hda/hda_beep.c	2009-10-21 13:30:55.000000000 +0200
-+++ hda_beep.c	2009-10-21 13:32:47.000000000 +0200
+--- ../../alsa-kernel/pci/hda/hda_beep.c	2009-11-04 14:33:48.000000000 +0100
++++ hda_beep.c	2009-11-10 13:25:36.000000000 +0100
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
  /*
   * Digital Beep Input Interface for HD-audio codec
   *
-@@ -92,7 +94,11 @@
+@@ -92,7 +94,11 @@ static int beep_standard_tone(struct hda
  static int snd_hda_beep_event(struct input_dev *dev, unsigned int type,
  				unsigned int code, int hz)
  {
@@ -18,7 +18,7 @@
  
  	switch (code) {
  	case SND_BELL:
-@@ -116,8 +122,13 @@
+@@ -116,8 +122,13 @@ static int snd_hda_beep_event(struct inp
  static void snd_hda_do_detach(struct hda_beep *beep)
  {
  	input_unregister_device(beep->dev);
@@ -32,7 +32,7 @@
  	/* turn off beep for sure */
  	snd_hda_codec_write_cache(beep->codec, beep->nid, 0,
  				  AC_VERB_SET_BEEP_CONTROL, 0);
-@@ -129,7 +140,11 @@
+@@ -129,7 +140,11 @@ static int snd_hda_do_attach(struct hda_
  	struct hda_codec *codec = beep->codec;
  	int err;
  
@@ -44,7 +44,7 @@
  	if (!input_dev) {
  		printk(KERN_INFO "hda_beep: unable to allocate input device\n");
  		return -ENOMEM;
-@@ -147,15 +162,26 @@
+@@ -147,15 +162,26 @@ static int snd_hda_do_attach(struct hda_
  	input_dev->evbit[0] = BIT_MASK(EV_SND);
  	input_dev->sndbit[0] = BIT_MASK(SND_BELL) | BIT_MASK(SND_TONE);
  	input_dev->event = snd_hda_beep_event;
@@ -71,13 +71,13 @@
  	beep->dev = input_dev;
  	return 0;
  }
-@@ -226,7 +252,9 @@
+@@ -238,7 +264,9 @@ void snd_hda_detach_beep_device(struct h
  {
  	struct hda_beep *beep = codec->beep;
  	if (beep) {
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
  		cancel_work_sync(&beep->register_work);
 +#endif
+ 		cancel_delayed_work(&beep->unregister_work);
  		if (beep->enabled)
  			snd_hda_do_detach(beep);
- 		codec->beep = NULL;
