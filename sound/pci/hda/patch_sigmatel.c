@@ -2669,7 +2669,8 @@ static struct snd_kcontrol_new stac92xx_control_templates[] = {
 static struct snd_kcontrol_new *
 stac_control_new(struct sigmatel_spec *spec,
 		 struct snd_kcontrol_new *ktemp,
-		 const char *name)
+		 const char *name,
+		 hda_nid_t nid)
 {
 	struct snd_kcontrol_new *knew;
 
@@ -2685,6 +2686,8 @@ stac_control_new(struct sigmatel_spec *spec,
 		spec->kctls.alloced--;
 		return NULL;
 	}
+	if (nid)
+		knew->subdevice = (1<<31)|nid;
 	return knew;
 }
 
@@ -2693,7 +2696,8 @@ static int stac92xx_add_control_temp(struct sigmatel_spec *spec,
 				     int idx, const char *name,
 				     unsigned long val)
 {
-	struct snd_kcontrol_new *knew = stac_control_new(spec, ktemp, name);
+	struct snd_kcontrol_new *knew = stac_control_new(spec, ktemp, name,
+							 get_amp_nid_(val));
 	if (!knew)
 		return -ENOMEM;
 	knew->index = idx;
@@ -2764,7 +2768,7 @@ static int stac92xx_add_input_source(struct sigmatel_spec *spec)
 	if (!spec->num_adcs || imux->num_items <= 1)
 		return 0; /* no need for input source control */
 	knew = stac_control_new(spec, &stac_input_src_temp,
-				stac_input_src_temp.name);
+				stac_input_src_temp.name, 0);
 	if (!knew)
 		return -ENOMEM;
 	knew->count = spec->num_adcs;
