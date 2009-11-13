@@ -169,6 +169,8 @@ static char *kernel_deps[] = {
 	"AC97_BUS",
 	/* workaround */
 	"SND_SOC_ALL_CODECS",
+	/* this is used only in i2c/cs8427.c, and we have a wrapper there */
+	"%BITREVERSE",
 	NULL
 };
 
