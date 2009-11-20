@@ -76,7 +76,7 @@ int ____ilog2_NaN(void);
 		(n) & (1ULL <<  0) ?  0 :	\
 		____ilog2_NaN()			\
 				   ) :		\
-	__ilog2_NaN()	/* error */		\
+	____ilog2_NaN()	/* error */		\
  )
 #endif
 #endif
