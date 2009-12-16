@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/usbaudio.c	2009-12-14 18:05:48.000000000 +0100
-+++ usbaudio.c	2009-12-15 22:14:44.000000000 +0100
+--- ../alsa-kernel/usb/usbaudio.c	2009-12-14 15:40:14.000000000 +0100
++++ usbaudio.c	2009-12-16 19:25:04.000000000 +0100
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
@@ -152,7 +152,7 @@
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
  		    le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize) ==
 +#else
-+		    get_endpoint(alts, 0)->wMaxPacketSize) ==
++		    get_endpoint(alts, 0)->wMaxPacketSize ==
 +#endif
  							fp->maxpacksize * 2)
  			continue;
