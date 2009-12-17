@@ -10,8 +10,6 @@ obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ sh/
 
 else
 
-ALSAKERNELDIR = ../alsa-kmirror
-
 ifndef IGROUP
 IGROUP = root
 endif
@@ -113,8 +111,30 @@ KCONFIG_FILES = $(shell find $(SND_TOPDIR) -name Kconfig) $(shell find $(SND_TOP
 all: compile
 
 alsa-kernel/sound_core.c:
-	ln -sf $(ALSAKERNELDIR) alsa-kernel
-	ln -sf alsa-kernel sound
+	{ \
+		if [ -f $(ALSAKERNELDIR)/kernel/sched.c ]; then \
+			# whole linux kernel source tree \
+			mkdir alsa-kernel; \
+			for i in $(ALSAKERNELDIR)/sound/* ; do \
+				ln -sf $$i alsa-kernel ; \
+			done ; \
+			ln -sf $(ALSAKERNELDIR)/include/sound \
+						alsa-kernel/include ; \
+			ln -sf $(ALSAKERNELDIR)/Documentation/sound/alsa \
+						alsa-kernel/Documentation ; \
+		else \
+			# alsa-kmirror tree \
+			ln -sf $(ALSAKERNELDIR) alsa-kernel ; \
+			ln -sf alsa-kernel sound ; \
+		fi \
+	}
+
+# to use newalsakernel target:
+# ALSAKERNELDIR=yourlinuxtree_or_kmirrortree make newalsakernel
+.PHONY: newalsakernel
+newalsakernel: clean
+	rm -rf alsa-kernel
+	$(MAKE) alsa-kernel/sound_core.c
 
 utils/mod-deps: utils/mod-deps.c
 	gcc utils/mod-deps.c -o utils/mod-deps
@@ -239,7 +259,9 @@ check-snd-prefix:
 .PHONY: clean1
 clean1:
 	rm -f .depend *.o snd.map*
+ifdef DEXPORT
 	rm -f $(DEXPORT)/*.ver
+endif
 	rm -f modules/*.o modules/*.ko
 
 .PHONY: clean
@@ -256,22 +278,23 @@ mrproper: clean1
 	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d mrproper; then exit 1; fi; done
 	rm -f *~ out.txt *.orig *.rej .#* .gdb_history
 	rm -f doc/*~
-	rm -f config.cache config.log config.status Makefile.conf
+	-rm -f config.cache config.log config.status Makefile.conf
 	rm -f utils/alsa-driver.spec
-	rm -f `find ../alsa-kernel -name "*~"`
-	rm -f `find ../alsa-kernel -name "*.orig"`
-	rm -f `find ../alsa-kernel -name "*.rej"`
-	rm -f `find ../alsa-kernel -name ".#*"`
-	rm -f `find ../alsa-kernel -name "out.txt"`
+	rm -f `find alsa-kernel -name "*~"`
+	rm -f `find alsa-kernel -name "*.orig"`
+	rm -f `find alsa-kernel -name "*.rej"`
+	rm -f `find alsa-kernel -name ".#*"`
+	rm -f `find alsa-kernel -name "out.txt"`
 	rm -rf autom4te.cache
 
-.PHONY: cvsclean hgclean
-cvsclean: mrproper
+.PHONY: cvsclean hgclean gitclean
+gitclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
 	  include/config1.h.in toplevel.config toplevel.config.in \
-	  alsa-kernel sound
-	rm -rf include/linux
-hgclean: cvsclean
+	  sound
+	rm -rf include/linux alsa-kernel
+hgclean: gitclean
+cvsclean: gitclean
 
 .PHONY: pack
 pack: mrproper
@@ -280,7 +303,7 @@ pack: mrproper
 	# it seems that some older tar has wrong getopt list
 	{ \
 		cd .. ; \
-		rm -f alsa-driver/alsa-kernel ; \
+		rm -rf alsa-driver/alsa-kernel ; \
 		mv alsa-kmirror alsa-driver/alsa-kernel ; \
 		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
 		tar --exclude=CVS --exclude=kchanges --exclude=.cvsignore \
@@ -288,7 +311,6 @@ pack: mrproper
                     --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 -p \
                     -f alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION) ; \
 		mv alsa-driver-$(CONFIG_SND_VERSION) alsa-driver ; \
-		mv alsa-driver/alsa-kernel alsa-kmirror ; \
 	}
 
 .PHONY: uninstall
@@ -311,4 +333,5 @@ endif
 TAGS:
 	find . -name '*.[ch]' | etags -
 
-endif
+endif # call from 2.6 kernel build system
+

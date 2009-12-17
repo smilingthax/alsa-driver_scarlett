@@ -61,6 +61,18 @@ echo $CPP | grep ' ' >/dev/null && CPP_save=`echo "$CPP" | cut -d' ' -f2-`
 CPP="`basename $CPP` $CPP_save"
 fi
 
+dnl Check for directory with current ALSA linux kernel sources...
+AC_MSG_CHECKING(for directory with ALSA kernel sources)
+AC_ARG_WITH(alsakernel,
+  [  --with-alsakernel=dir   give the directory with ALSA kernel sources]
+  [                        [[../alsa-kmirror]]],
+  [alsakerneldir="$withval"],
+  [alsakerneldir="../alsa-kmirror"]
+)
+ALSAKERNELDIR=$(cd "$alsakerneldir" && pwd)
+AC_MSG_RESULT($alsakerneldir)
+AC_SUBST(ALSAKERNELDIR)
+
 dnl Check for directory with kernel source...
 AC_MSG_CHECKING(for directory with kernel source)
 if test -d "/lib/modules/`uname -r`/source" -o -L "/lib/modules/`uname -r`/source"; then
