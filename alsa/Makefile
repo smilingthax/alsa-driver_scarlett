@@ -114,7 +114,7 @@ all: compile
 $(ALSAKERNELFILE):
 	{ \
 	rm -rf alsa-kernel ; \
-	if [ ! -z "$ALSAKERNELDIR" ]; then ; \
+	if [ ! -z "$(ALSAKERNELDIR)" ]; then \
 		if [ -f $(ALSAKERNELDIR)/kernel/sched.c ]; then \
 			# whole linux kernel source tree \
 			mkdir alsa-kernel; \
