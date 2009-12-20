@@ -16,6 +16,7 @@ endif
 ifndef IUSER
 IUSER = root
 endif
+ALSAKERNELFILE = alsa-kernel/sound_core.c
 
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
@@ -110,9 +111,10 @@ KCONFIG_FILES = $(shell find $(SND_TOPDIR) -name Kconfig) $(shell find $(SND_TOP
 .PHONY: all
 all: compile
 
-alsa-kernel/sound_core.c:
+$(ALSAKERNELFILE):
 	{ \
-		rm -rf alsa-kernel ; \
+	rm -rf alsa-kernel ; \
+	if [ ! -z "$ALSAKERNELDIR" ]; then ; \
 		if [ -f $(ALSAKERNELDIR)/kernel/sched.c ]; then \
 			# whole linux kernel source tree \
 			mkdir alsa-kernel; \
@@ -127,7 +129,8 @@ alsa-kernel/sound_core.c:
 			# alsa-kmirror tree \
 			ln -sf $(ALSAKERNELDIR) alsa-kernel ; \
 			ln -sf alsa-kernel sound ; \
-		fi \
+		fi; \
+	fi \
 	}
 
 # to use newalsakernel target:
@@ -135,18 +138,18 @@ alsa-kernel/sound_core.c:
 .PHONY: newalsakernel
 newalsakernel: clean
 	rm -rf alsa-kernel
-	$(MAKE) alsa-kernel/sound_core.c
+	$(MAKE) $(ALSAKERNELFILE)
 
 utils/mod-deps: utils/mod-deps.c
 	gcc utils/mod-deps.c -o utils/mod-deps
 
-toplevel.config.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps kconfig-vers
+toplevel.config.in: $(KCONFIG_FILES) $(ALSAKERNELFILE) utils/mod-deps kconfig-vers
 	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --makeconf > toplevel.config.in
 
-acinclude.m4: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps kconfig-vers
+acinclude.m4: $(KCONFIG_FILES) $(ALSAKERNELFILE) utils/mod-deps kconfig-vers
 	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --acinclude > acinclude.m4
 
-include/config1.h.in: $(KCONFIG_FILES) alsa-kernel/sound_core.c utils/mod-deps kconfig-vers
+include/config1.h.in: $(KCONFIG_FILES) $(ALSAKERNELFILE) utils/mod-deps kconfig-vers
 	utils/mod-deps --basedir $(SND_TOPDIR)/alsa-kernel --hiddendir $(SND_TOPDIR) --versiondep $(SND_TOPDIR)/kconfig-vers --include > include/config1.h.in
 
 all-deps: toplevel.config.in acinclude.m4 include/config1.h.in
@@ -298,7 +301,7 @@ hgclean: gitclean
 cvsclean: gitclean
 
 .PHONY: pack
-pack: mrproper
+pack: mrproper $(ALSAKERNELFILE)
 	chmod 755 utils/alsasound
 	# big note: use always '--bzip2 -p' where -p is fake argument
 	# it seems that some older tar has wrong getopt list
