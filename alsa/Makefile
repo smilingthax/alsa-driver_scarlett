@@ -112,6 +112,7 @@ all: compile
 
 alsa-kernel/sound_core.c:
 	{ \
+		rm -rf alsa-kernel ; \
 		if [ -f $(ALSAKERNELDIR)/kernel/sched.c ]; then \
 			# whole linux kernel source tree \
 			mkdir alsa-kernel; \
