@@ -136,7 +136,7 @@ $(ALSAKERNELFILE):
 # to use newalsakernel target:
 # ALSAKERNELDIR=yourlinuxtree_or_kmirrortree make newalsakernel
 .PHONY: newalsakernel
-newalsakernel: clean
+newalsakernel: $(ALSAKERNELFILE) clean
 	rm -rf alsa-kernel
 	$(MAKE) $(ALSAKERNELFILE)
 
@@ -301,7 +301,7 @@ hgclean: gitclean
 cvsclean: gitclean
 
 .PHONY: pack
-pack: mrproper $(ALSAKERNELFILE)
+pack: $(ALSAKERNELFILE) mrproper
 	chmod 755 utils/alsasound
 	# big note: use always '--bzip2 -p' where -p is fake argument
 	# it seems that some older tar has wrong getopt list
