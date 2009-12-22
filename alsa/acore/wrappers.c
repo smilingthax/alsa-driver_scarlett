@@ -338,3 +338,21 @@ char *compat_skip_spaces(const char *str)
 }
 EXPORT_SYMBOL(compat_skip_spaces);
 #endif /* < 2.6.33 */
+
+#ifndef CONFIG_GCD
+/* Greatest common divisor */
+unsigned long gcd(unsigned long a, unsigned long b)
+{
+	unsigned long r;
+	if (a < b) {
+		r = a;
+		a = b;
+		b = r;
+	}
+	while ((r = a % b) != 0) {
+		a = b;
+		b = r;
+	}
+	return b;
+}
+#endif /* !CONFIG_GCD */
