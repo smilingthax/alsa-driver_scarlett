@@ -355,4 +355,5 @@ unsigned long gcd(unsigned long a, unsigned long b)
 	}
 	return b;
 }
+EXPORT_SYMBOL(gcd);
 #endif /* !CONFIG_GCD */
