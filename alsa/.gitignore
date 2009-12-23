@@ -38,6 +38,7 @@ acore/pcm.c
 acore/oss/mixer_oss.c
 acore/oss/pcm_oss.c
 acore/pcm_native.c
+acore/pcm_memory.c
 acore/rawmidi.c
 acore/seq/oss/seq_oss.c
 acore/seq/seq.c
