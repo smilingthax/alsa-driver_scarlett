@@ -340,6 +340,8 @@ EXPORT_SYMBOL(compat_skip_spaces);
 #endif /* < 2.6.33 */
 
 #ifndef CONFIG_GCD
+#include <linux/gcd.h>
+#ifdef CONFIG_SND_COMPAT_GCD
 /* Greatest common divisor */
 unsigned long gcd(unsigned long a, unsigned long b)
 {
@@ -356,4 +358,5 @@ unsigned long gcd(unsigned long a, unsigned long b)
 	return b;
 }
 EXPORT_SYMBOL(gcd);
+#endif /* CONFIG_SND_COMPAT_GCD */
 #endif /* !CONFIG_GCD */
