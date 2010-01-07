@@ -263,8 +263,8 @@ static void xrun_log_show(struct snd_pcm_substream *substream)
 
 #endif
 
-static int snd_pcm_update_hw_ptr_post(struct snd_pcm_substream *substream,
-				      struct snd_pcm_runtime *runtime)
+int snd_pcm_update_state(struct snd_pcm_substream *substream,
+			 struct snd_pcm_runtime *runtime)
 {
 	snd_pcm_uframes_t avail;
 
@@ -285,7 +285,7 @@ static int snd_pcm_update_hw_ptr_post(struct snd_pcm_substream *substream,
 			return -EPIPE;
 		}
 	}
-	if (avail >= runtime->control->avail_min)
+	if (!runtime->nowake && avail >= runtime->control->avail_min)
 		wake_up(&runtime->sleep);
 	return 0;
 }
@@ -441,7 +441,7 @@ static int snd_pcm_update_hw_ptr0(struct snd_pcm_substream *substream,
 	if (runtime->tstamp_mode == SNDRV_PCM_TSTAMP_ENABLE)
 		snd_pcm_gettime(runtime, (struct timespec *)&runtime->status->tstamp);
 
-	return snd_pcm_update_hw_ptr_post(substream, runtime);
+	return snd_pcm_update_state(substream, runtime);
 }
 
 /* CAUTION: call it with irq disabled */
@@ -1806,6 +1806,7 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(struct snd_pcm_substream *substream,
 		goto _end_unlock;
 	}
 
+	runtime->nowake = 1;
 	while (size > 0) {
 		snd_pcm_uframes_t frames, appl_ptr, appl_ofs;
 		snd_pcm_uframes_t avail;
@@ -1827,15 +1828,17 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(struct snd_pcm_substream *substream,
 		if (frames > cont)
 			frames = cont;
 		if (snd_BUG_ON(!frames)) {
+			runtime->nowake = 0;
 			snd_pcm_stream_unlock_irq(substream);
 			return -EINVAL;
 		}
 		appl_ptr = runtime->control->appl_ptr;
 		appl_ofs = appl_ptr % runtime->buffer_size;
 		snd_pcm_stream_unlock_irq(substream);
-		if ((err = transfer(substream, appl_ofs, data, offset, frames)) < 0)
-			goto _end;
+		err = transfer(substream, appl_ofs, data, offset, frames);
 		snd_pcm_stream_lock_irq(substream);
+		if (err < 0)
+			goto _end_unlock;
 		switch (runtime->status->state) {
 		case SNDRV_PCM_STATE_XRUN:
 			err = -EPIPE;
@@ -1864,8 +1867,10 @@ static snd_pcm_sframes_t snd_pcm_lib_write1(struct snd_pcm_substream *substream,
 		}
 	}
  _end_unlock:
+	runtime->nowake = 0;
+	if (xfer > 0 && err >= 0)
+		snd_pcm_update_state(substream, runtime);
 	snd_pcm_stream_unlock_irq(substream);
- _end:
 	return xfer > 0 ? (snd_pcm_sframes_t)xfer : err;
 }
 
@@ -2023,6 +2028,7 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(struct snd_pcm_substream *substream,
 		goto _end_unlock;
 	}
 
+	runtime->nowake = 1;
 	while (size > 0) {
 		snd_pcm_uframes_t frames, appl_ptr, appl_ofs;
 		snd_pcm_uframes_t avail;
@@ -2051,15 +2057,17 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(struct snd_pcm_substream *substream,
 		if (frames > cont)
 			frames = cont;
 		if (snd_BUG_ON(!frames)) {
+			runtime->nowake = 0;
 			snd_pcm_stream_unlock_irq(substream);
 			return -EINVAL;
 		}
 		appl_ptr = runtime->control->appl_ptr;
 		appl_ofs = appl_ptr % runtime->buffer_size;
 		snd_pcm_stream_unlock_irq(substream);
-		if ((err = transfer(substream, appl_ofs, data, offset, frames)) < 0)
-			goto _end;
+		err = transfer(substream, appl_ofs, data, offset, frames);
 		snd_pcm_stream_lock_irq(substream);
+		if (err < 0)
+			goto _end_unlock;
 		switch (runtime->status->state) {
 		case SNDRV_PCM_STATE_XRUN:
 			err = -EPIPE;
@@ -2082,8 +2090,10 @@ static snd_pcm_sframes_t snd_pcm_lib_read1(struct snd_pcm_substream *substream,
 		xfer += frames;
 	}
  _end_unlock:
+	runtime->nowake = 0;
+	if (xfer > 0 && err >= 0)
+		snd_pcm_update_state(substream, runtime);
 	snd_pcm_stream_unlock_irq(substream);
- _end:
 	return xfer > 0 ? (snd_pcm_sframes_t)xfer : err;
 }
 
