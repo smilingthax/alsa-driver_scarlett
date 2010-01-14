@@ -1895,4 +1895,12 @@ char *compat_skip_spaces(const char *);
 #define skip_spaces	compat_skip_spaces
 #endif
 
+/* subsys_initcall() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#include <linux/init.h>
+#ifndef subsys_initcall
+#define subsys_initcall(x) module_init(x)
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
