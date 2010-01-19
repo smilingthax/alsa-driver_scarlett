@@ -1076,6 +1076,16 @@ static void alc889_coef_init(struct hda_codec *codec)
 	snd_hda_codec_write(codec, 0x20, 0, AC_VERB_SET_PROC_COEF, tmp|0x2010);
 }
 
+/* turn on/off EAPD control (only if available) */
+static void set_eapd(struct hda_codec *codec, hda_nid_t nid, int on)
+{
+	if (get_wcaps_type(get_wcaps(codec, nid)) != AC_WID_PIN)
+		return;
+	if (snd_hda_query_pin_caps(codec, nid) & AC_PINCAP_EAPD)
+		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_EAPD_BTLENABLE,
+				    on ? 2 : 0);
+}
+
 static void alc_auto_init_amp(struct hda_codec *codec, int type)
 {
 	unsigned int tmp;
@@ -1093,25 +1103,22 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
 	case ALC_INIT_DEFAULT:
 		switch (codec->vendor_id) {
 		case 0x10ec0260:
-			snd_hda_codec_write(codec, 0x0f, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
-			snd_hda_codec_write(codec, 0x10, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
+			set_eapd(codec, 0x0f, 1);
+			set_eapd(codec, 0x10, 1);
 			break;
 		case 0x10ec0262:
 		case 0x10ec0267:
 		case 0x10ec0268:
 		case 0x10ec0269:
+		case 0x10ec0270:
 		case 0x10ec0272:
 		case 0x10ec0660:
 		case 0x10ec0662:
 		case 0x10ec0663:
 		case 0x10ec0862:
 		case 0x10ec0889:
-			snd_hda_codec_write(codec, 0x14, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
-			snd_hda_codec_write(codec, 0x15, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
+			set_eapd(codec, 0x14, 1);
+			set_eapd(codec, 0x15, 1);
 			break;
 		}
 		switch (codec->vendor_id) {
