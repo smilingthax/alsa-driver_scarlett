@@ -3710,25 +3710,22 @@ static void alc_power_eapd(struct hda_codec *codec)
 	/* We currently only handle front, HP */
 	switch (codec->vendor_id) {
 	case 0x10ec0260:
-		snd_hda_codec_write(codec, 0x0f, 0,
-				    AC_VERB_SET_EAPD_BTLENABLE, 0x00);
-		snd_hda_codec_write(codec, 0x10, 0,
-				    AC_VERB_SET_EAPD_BTLENABLE, 0x00);
+		set_eapd(codec, 0x0f, 0);
+		set_eapd(codec, 0x10, 0);
 		break;
 	case 0x10ec0262:
 	case 0x10ec0267:
 	case 0x10ec0268:
 	case 0x10ec0269:
+	case 0x10ec0270:
 	case 0x10ec0272:
 	case 0x10ec0660:
 	case 0x10ec0662:
 	case 0x10ec0663:
 	case 0x10ec0862:
 	case 0x10ec0889:
-		snd_hda_codec_write(codec, 0x14, 0,
-				    AC_VERB_SET_EAPD_BTLENABLE, 0x00);
-		snd_hda_codec_write(codec, 0x15, 0,
-				    AC_VERB_SET_EAPD_BTLENABLE, 0x00);
+		set_eapd(codec, 0x14, 0);
+		set_eapd(codec, 0x15, 0);
 		break;
 	}
 }
