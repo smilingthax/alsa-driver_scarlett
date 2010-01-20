@@ -105,7 +105,9 @@ typedef __u32 __be32;
 
 /* other missing types */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 28)
+#if !defined(RHEL_RELEASE_VERSION) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
 typedef unsigned int fmode_t;
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
@@ -1791,7 +1793,9 @@ typedef int _Bool;
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 #ifndef bool	/* just to be sure */
+#if !defined(RHEL_RELEASE_VERSION) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
 typedef _Bool bool;
+#endif
 #define true	1
 #define false	0
 #endif

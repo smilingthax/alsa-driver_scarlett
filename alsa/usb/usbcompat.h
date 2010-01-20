@@ -15,6 +15,7 @@ static inline int usb_endpoint_type(const struct usb_endpoint_descriptor *epd)
 }
 #endif /* < 2.6.24 */
 
+#if !defined(RHEL_RELEASE_VERSION) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 static inline int usb_endpoint_dir_in(const struct usb_endpoint_descriptor *epd)
 {
@@ -93,5 +94,6 @@ static inline int usb_endpoint_xfer_control(
 		USB_ENDPOINT_XFER_CONTROL);
 }
 #endif /* < 2.6.21 */
+#endif
 
 #endif /* __ALSA_USBCOMPAT_H */
