@@ -104,23 +104,71 @@ CONFIG_SND_KERNELBUILD="$kernelbuild"
 AC_MSG_RESULT($kernelbuild)
 
 AC_DEFUN([CHECK_REQUIRED_KERNEL_HEADER], [
-  AC_MSG_CHECKING(for kernel $1)
-  if ! test -r $CONFIG_SND_KERNELDIR/include/$1; then
-    if test -z "$kernelbuild" -o ! -f $kernelbuild/include/$1; then
-      AC_MSG_RESULT(no)
-      cat << EOF
+  $1="$2"
+  AC_MSG_CHECKING(for kernel $2 $3)
+  if ! test -r $CONFIG_SND_KERNELDIR/include/$2; then
+    if test -z "$kernelbuild" -o ! -f $kernelbuild/include/$2; then
+      if test -n "$3"; then
+	$1="$3"
+	if ! test -r $CONFIG_SND_KERNELDIR/include/$3; then
+	  if test -z "$kernelbuild" -o ! -f $kernelbuild/include/$3; then
+	    AC_MSG_RESULT(no)
+	    cat << EOF
+The file $CONFIG_SND_KERNELDIR/include/$2 does not exist.
+The file $CONFIG_SND_KERNELDIR/include/$3 does not exist.
+Please install the package with full kernel sources for your distribution
+or use --with-kernel=dir option to specify another directory with kernel
+sources (default is $DEFAULT_KERNEL_DIR).
+EOF
+	    exit 1
+	  fi
+	fi
+      else
+        AC_MSG_RESULT(no)
+        cat << EOF
 The file $CONFIG_SND_KERNELDIR/include/$1 does not exist.
 Please install the package with full kernel sources for your distribution
 or use --with-kernel=dir option to specify another directory with kernel
 sources (default is $DEFAULT_KERNEL_DIR).
 EOF
-      exit 1
+        exit 1
+      fi
     fi
   fi
-  AC_MSG_RESULT(yes)
+  AC_MSG_RESULT($$1)
 ])
-CHECK_REQUIRED_KERNEL_HEADER([linux/version.h])
-CHECK_REQUIRED_KERNEL_HEADER([linux/autoconf.h])
+CHECK_REQUIRED_KERNEL_HEADER([INCLUDE_VERSION_H], [linux/version.h])
+CHECK_REQUIRED_KERNEL_HEADER([INCLUDE_AUTOCONF_H], [linux/autoconf.h],
+			     [generated/autoconf.h])
+
+AC_DEFUN([CHECK_POSSIBLE_KERNEL_HEADER], [
+  $1=""
+  AC_MSG_CHECKING(for kernel $2 $3)
+  if test -r $CONFIG_SND_KERNELDIR/include/$2; then
+    $1="$2"
+  else
+    if test -n "$kernelbuild" -a -f $kernelbuild/include/$2; then
+      $1="$2"
+    else
+      if test -n "$3"; then
+	if test -r $CONFIG_SND_KERNELDIR/include/$3; then
+	  $1="$3"
+        else
+	  if test -n "$kernelbuild" -a -f $kernelbuild/include/$3; then
+	    $1="$3"
+	  fi
+	fi
+      fi
+    fi
+  fi
+  if ! test -z "$$1"; then
+    AC_MSG_RESULT($$1)
+  else
+    AC_MSG_RESULT(no)
+  fi
+])
+CHECK_POSSIBLE_KERNEL_HEADER([INCLUDE_UTSRELEASE_H], [linux/utsrelease.h],
+			     [generated/utsrelease.h])
 
 dnl Check for kernel version...
 AC_MSG_CHECKING(for kernel version)
@@ -140,7 +188,7 @@ fi
 HACK_KERNEL_INC=""
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-if test -n "$kernelbuild" -a -f $kernelbuild/include/linux/version.h; then
+if test -n "$kernelbuild" -a -f $kernelbuild/include/$INCLUDE_VERSION_H; then
   KERNDIR=$kernelbuild
 else
   KERNDIR=$CONFIG_SND_KERNELDIR
@@ -149,9 +197,9 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include "$KERNDIR/include/linux/version.h"
+#include "$KERNDIR/include/$INCLUDE_VERSION_H"
 #ifndef UTS_RELEASE
-#include "$KERNDIR/include/linux/utsrelease.h"
+#include "$KERNDIR/include/$INCLUDE_UTSRELEASE_H"
 #endif
 int main()
 {
@@ -198,8 +246,11 @@ kextraversion=`echo $kaversion | cut -d : -f 4`
 kversion=`expr $kversion + 0`
 kpatchlevel=`expr $kpatchlevel + 0`
 ksublevel=`expr $ksublevel + 0`
-if test -z "$kversion" || test -z "$kpatchlevel" || test -z "$ksublevel"; then
-  echo "failed (probably missing $CONFIG_SND_KERNELDIR/include/linux/version.h)"
+if test "$kversion" = "0" -a "$kpatchlevel" = "0" -a "$ksublevel" = "0"; then
+  AC_MSG_RESULT(failed)
+  echo "  (probably missing $CONFIG_SND_KERNELDIR/include/linux/version.h or"
+  echo "                    $CONFIG_SND_KERNELDIR/include/linux/utsrelease.h or"
+  echo "                    $CONFIG_SND_KERNELDIR/include/generated/utsrelease.h)"
   exit 1
 fi
 kaversion="$kversion.$kpatchlevel.$ksublevel$kextraversion"
@@ -425,14 +476,14 @@ AC_DEFUN([CHECK_KERNEL_CONFIG_BUILTIN], [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$INCLUDE_AUTOCONF_H"; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
   boolchk=""
   AC_TRY_RUN([
-#include "$KERNDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/$INCLUDE_AUTOCONF_H"
 int main( void ) {
 #ifndef $boolvar
   exit(1);
@@ -456,14 +507,14 @@ AC_DEFUN([CHECK_KERNEL_CONFIG], [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$INCLUDE_AUTOCONF_H"; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
   boolchk=""
   AC_TRY_RUN([
-#include "$KERNDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/$INCLUDE_AUTOCONF_H"
 int main( void ) {
 #if !defined($boolvar) && !defined($boolvar1)
   exit(1);
@@ -487,14 +538,14 @@ AC_DEFUN([CHECK_KERNEL_TRISTATE_CONFIG], [
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$INCLUDE_AUTOCONF_H"; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
   tristatechk=""
   AC_TRY_RUN([
-#include "$KERNDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/$INCLUDE_AUTOCONF_H"
 #include <stdio.h>
 int main(void) {
 	FILE *file = fopen("tristate.result", "w+");
@@ -752,14 +803,14 @@ KCC=$CROSS_COMPILE$CC
 rm -f processor.id
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+if test -n "$kernelbuild" -a -f "$kernelbuild/include/$INCLUDE_AUTOCONF_H"; then
   KERNDIR=$kernelbuild
 else
   KERNDIR=$CONFIG_SND_KERNELDIR
 fi
 AC_TRY_RUN([
 #include <stdio.h>
-#include "$KERNDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/$INCLUDE_AUTOCONF_H"
 int main(void) {
 	FILE *file = fopen("processor.id", "w+");
 	if (file == NULL)
@@ -1213,15 +1264,15 @@ if test -n "$mach_dir"; then
   ac_save_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
   rm -f machine.id
-  if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$INCLUDE_AUTOCONF_H"; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
   AC_TRY_RUN([
 #include <stdio.h>
-#include "$KERNDIR/include/linux/autoconf.h"
-#include "$KERNDIR/include/linux/version.h"
+#include "$KERNDIR/include/$INCLUDE_AUTOCONF_H"
+#include "$KERNDIR/include/$INCLUDE_VERSION_H"
 int main(void) {
 	FILE *file = fopen("machine.id", "w+");
 	if (file == NULL)
@@ -1264,14 +1315,14 @@ AC_MSG_CHECKING(for i386 machine type)
 	ac_save_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 	rm -f machine.id
-	if test -n "$kernelbuild" -a -f "$kernelbuild/include/linux/autoconf.h"; then
+	if test -n "$kernelbuild" -a -f "$kernelbuild/include/$INCLUDE_AUTOCONF_H"; then
 	  KERNDIR=$kernelbuild
 	else
 	  KERNDIR=$CONFIG_SND_KERNELDIR
 	fi
 	AC_TRY_RUN([
 #include <stdio.h>
-#include "$KERNDIR/include/linux/autoconf.h"
+#include "$KERNDIR/include/$INCLUDE_AUTOCONF_H"
 int main(void) {
 	FILE *file = fopen("machine.id", "w+");
 	if (file == NULL)
@@ -1389,7 +1440,7 @@ dnl Check linux/config.h
 CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
 #define _LINUX_CONFIG_H
 #ifndef AUTOCONF_INCLUDED
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #endif
 #endif
 ])
@@ -1643,7 +1694,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1675,7 +1726,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1706,7 +1757,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1744,7 +1795,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1775,7 +1826,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1806,7 +1857,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1840,7 +1891,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1870,7 +1921,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1902,7 +1953,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1932,7 +1983,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1962,7 +2013,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -1994,7 +2045,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2026,7 +2077,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2058,7 +2109,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2089,7 +2140,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2123,7 +2174,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2174,7 +2225,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2203,7 +2254,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2233,7 +2284,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2264,7 +2315,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2322,7 +2373,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2354,7 +2405,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2385,7 +2436,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2416,7 +2467,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2448,7 +2499,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2478,7 +2529,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2512,7 +2563,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2547,7 +2598,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2577,7 +2628,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2738,7 +2789,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2771,7 +2822,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2804,7 +2855,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2836,7 +2887,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2869,7 +2920,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2901,7 +2952,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2932,7 +2983,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -2963,7 +3014,7 @@ CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3002,7 +3053,7 @@ AC_MSG_CHECKING(for init_utsname)
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3037,7 +3088,7 @@ AC_MSG_CHECKING(for is_power_of_2)
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3072,7 +3123,7 @@ else
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3105,7 +3156,7 @@ if test "$CONFIG_PNP_KERNEL" = "y"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3138,7 +3189,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3170,7 +3221,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_TRY_COMPILE([
 #define __KERNEL__
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <linux/autoconf.h>
+#include <$INCLUDE_AUTOCONF_H>
 #else
 #include <linux/config.h>
 #endif
@@ -3340,25 +3391,25 @@ ln -sf ../i2c-id_compat.h include/linux/i2c-id.h
 dnl Hack autoconf.h if necessary
 if test "$CONFIG_SND_MODULE" = y; then
   echo "Hacking autoconf.h..."
-  rm -f include/linux/autoconf.h
-  mkdir -p include/linux
-  if test -n "$kernelbuild" -a -r $kernelbuild/include/linux/autoconf.h ; then
-    kernconf="$kernelbuild/include/linux/autoconf.h"
-  elif test -r  $CONFIG_SND_KERNELDIR/include/linux/autoconf.h ; then
-    kernconf="$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+  rm -f include/linux/autoconf.h include/generated/autoconf.h
+  mkdir -p include/linux include/generated
+  if test -n "$kernelbuild" -a -r $kernelbuild/include/$INCLUDE_AUTOCONF_H ; then
+    kernconf="$kernelbuild/include/$INCLUDE_AUTOCONF_H"
+  elif test -r  $CONFIG_SND_KERNELDIR/include/$INCLUDE_AUTOCONF_H ; then
+    kernconf="$CONFIG_SND_KERNELDIR/include/$INCLUDE_AUTOCONF_H"
   else
       cat << EOF
-File include/linux/autoconf.h does not exist in kernel tree.
+File include/$INCLUDE_AUTOCONF_H does not exist in kernel tree.
 Fatal error - aborting...
 EOF
       exit 1
   fi
-  grep -v CONFIG_SND_ $kernconf > include/linux/autoconf.h
+  grep -v CONFIG_SND_ $kernconf > include/$INCLUDE_AUTOCONF_H
   cat include/autoconf-extra.h include/config1.h | grep CONFIG_SND \
     | sed -e's@/\* #undef \([A-Za-z0-9_]\+\) .*$@#undef \1@g' \
-      >> include/linux/autoconf.h
+      >> include/$INCLUDE_AUTOCONF_H
 else
-  rm -f include/linux/autoconf.h
+  rm -f include/$INCLUDE_AUTOCONF_H
 fi
 
 dnl avoid changing include/sound/version.h

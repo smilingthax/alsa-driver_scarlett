@@ -1,5 +1,4 @@
 #include "config.h"
-/* to be in alsa-driver-specfici code */
 #include <linux/version.h>
 #ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,33)
@@ -10,10 +9,13 @@
 #else
 #include <linux/config.h>
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
-#define spin_lock_bh spin_lock
-#define spin_unlock_bh spin_unlock
-#endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,5)
+#define SND_NEED_USB_SET_INTERFACE
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#define SND_NEED_USB_WRAPPER
+#endif
+#define __NO_VERSION__
+#endif
 #include "adriver.h"
-#include "../../alsa-kernel/drivers/vx/vx_core.c"
+#include "../usbcompat.h"
