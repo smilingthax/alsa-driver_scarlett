@@ -61,6 +61,10 @@
 #endif
 #endif /* ALSA_BUILD && KERNEL < 2.6.0 */
 
+#ifndef RHEL_RELEASE_VERSION
+#define RHEL_RELEASE_VERSION(a, b) (((a) << 8) | (b))
+#endif
+
 #include <linux/module.h>
 
 #ifdef CONFIG_HAVE_OLD_REQUEST_MODULE
@@ -105,7 +109,7 @@ typedef __u32 __be32;
 
 /* other missing types */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 28)
-#if !defined(RHEL_RELEASE_VERSION) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
+#if !defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
 typedef unsigned int fmode_t;
 #endif
 #endif
@@ -1793,7 +1797,7 @@ typedef int _Bool;
 #endif
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 #ifndef bool	/* just to be sure */
-#if !defined(RHEL_RELEASE_VERSION) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
+#if !defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(5, 4)
 typedef _Bool bool;
 #endif
 #define true	1
@@ -1841,7 +1845,8 @@ static inline int snd_strict_strtoull(const char *str, unsigned int base,
 #define strict_strtoull	snd_strict_strtoull
 #endif /* < 2.6.25 */
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 17)
+/* put_pid() function was not exported before 2.6.19 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
 #define CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
