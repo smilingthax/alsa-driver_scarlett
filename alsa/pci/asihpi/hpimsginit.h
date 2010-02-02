@@ -20,15 +20,38 @@
 
  (C) Copyright AudioScience Inc. 2007
 *******************************************************************************/
+/* Initialise response headers, or msg/response pairs.
+Note that it is valid to just init a response e.g. when a lower level is preparing
+a response to a message.
+However, when sending a message, a matching response buffer always must be prepared
+*/
 
-void HPI_InitMessage(
-	struct hpi_message *phm,
-	u16 wObject,
-	u16 wFunction
-);
 void HPI_InitResponse(
 	struct hpi_response *phr,
 	u16 wObject,
 	u16 wFunction,
 	u16 wError
+);
+
+void HPI_InitMessageResponse(
+	struct hpi_message *phm,
+	struct hpi_response *phr,
+	u16 wObject,
+	u16 wFunction
+);
+
+void HPI_InitResponseV1(
+	struct hpi_response_header *phr,
+	u16 wSize,
+	u16 wObject,
+	u16 wFunction
+);
+
+void HPI_InitMessageResponseV1(
+	struct hpi_message_header *phm,
+	u16 wMsgSize,
+	struct hpi_response_header *phr,
+	u16 wResSize,
+	u16 wObject,
+	u16 wFunction
 );

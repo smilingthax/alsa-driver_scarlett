@@ -52,27 +52,26 @@ u16 HPI_SubSysSsx2Bypass(
 /** \internal
   * initialize the HPI message structure
   */
-void HPI_InitMessage(
+static void HPI_InitMessage(
 	struct hpi_message *phm,
 	u16 wObject,
 	u16 wFunction
 )
 {
 	memset(phm, 0, sizeof(*phm));
-	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX)) {
-		if (gwSSX2Bypass)
-			phm->wType = HPI_TYPE_SSX2BYPASS_MESSAGE;
-		else
-			phm->wType = HPI_TYPE_MESSAGE;
+	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX))
 		phm->wSize = aMsgSize[wObject];
-		phm->wObject = wObject;
-		phm->wFunction = wFunction;
-		phm->wDspIndex = 0;
-		/* Expect adapter index to be set by caller */
-	} else {
-		phm->wType = 0;
-		phm->wSize = 0;
-	}
+	else
+		phm->wSize = sizeof(*phm);
+
+	if (gwSSX2Bypass)
+		phm->wType = HPI_TYPE_SSX2BYPASS_MESSAGE;
+	else
+		phm->wType = HPI_TYPE_MESSAGE;
+	phm->wObject = wObject;
+	phm->wFunction = wFunction;
+	phm->version = 0;
+	/* Expect adapter index to be set by caller */
 }
 
 /** \internal
@@ -87,9 +86,72 @@ void HPI_InitResponse(
 {
 	memset(phr, 0, sizeof(*phr));
 	phr->wType = HPI_TYPE_RESPONSE;
-	phr->wSize = aResSize[wObject];
+	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX))
+		phr->wSize = aResSize[wObject];
+	else
+		phr->wSize = sizeof(*phr);
 	phr->wObject = wObject;
 	phr->wFunction = wFunction;
 	phr->wError = wError;
 	phr->wSpecificError = 0;
+	phr->version = 0;
+}
+
+void HPI_InitMessageResponse(
+	struct hpi_message *phm,
+	struct hpi_response *phr,
+	u16 wObject,
+	u16 wFunction
+)
+{
+	HPI_InitMessage(phm, wObject, wFunction);
+	/* default error return if the response is
+	   not filled in by the callee */
+	HPI_InitResponse(phr, wObject, wFunction,
+		HPI_ERROR_PROCESSING_MESSAGE);
+}
+
+static void HPI_InitMessageV1(
+	struct hpi_message_header *phm,
+	u16 wSize,
+	u16 wObject,
+	u16 wFunction
+)
+{
+	memset(phm, 0, sizeof(*phm));
+	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX)) {
+		phm->wSize = wSize;
+		phm->wType = HPI_TYPE_MESSAGE;
+		phm->wObject = wObject;
+		phm->wFunction = wFunction;
+		phm->version = 1;
+		/* Expect adapter index to be set by caller */
+	}
+}
+
+void HPI_InitResponseV1(
+	struct hpi_response_header *phr,
+	u16 wSize,
+	u16 wObject,
+	u16 wFunction
+)
+{
+	memset(phr, 0, sizeof(*phr));
+	phr->wSize = wSize;
+	phr->version = 1;
+	phr->wType = HPI_TYPE_RESPONSE;
+	phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
+}
+
+void HPI_InitMessageResponseV1(
+	struct hpi_message_header *phm,
+	u16 wMsgSize,
+	struct hpi_response_header *phr,
+	u16 wResSize,
+	u16 wObject,
+	u16 wFunction
+)
+{
+	HPI_InitMessageV1(phm, wMsgSize, wObject, wFunction);
+	HPI_InitResponseV1(phr, wResSize, wObject, wFunction);
 }

@@ -2,11 +2,13 @@
 #include "hpi_internal.h"
 #include "hpimsginit.h"
 
+#include "hpidebug.h"
+
 struct hpi_handle {
 	unsigned int objIndex:12;
 	unsigned int objType:4;
 	unsigned int adapterIndex:14;
-	unsigned int dspIndex:1;
+	unsigned int spare:1;
 	unsigned int readOnly:1;
 };
 
@@ -18,14 +20,13 @@ union handle_word {
 u32 HPI_IndexesToHandle(
 	const char cObject,
 	const u16 wAdapterIndex,
-	const u16 wObjectIndex,
-	const u16 wDspIndex
+	const u16 wObjectIndex
 )
 {
 	union handle_word handle;
 
 	handle.h.adapterIndex = wAdapterIndex;
-	handle.h.dspIndex = wDspIndex;
+	handle.h.spare = 0;
 	handle.h.readOnly = 0;
 	handle.h.objType = cObject;
 	handle.h.objIndex = wObjectIndex;
@@ -35,15 +36,12 @@ u32 HPI_IndexesToHandle(
 void HPI_HandleToIndexes(
 	const u32 dwHandle,
 	u16 *pwAdapterIndex,
-	u16 *pwObjectIndex,
-	u16 *pwDspIndex
+	u16 *pwObjectIndex
 )
 {
 	union handle_word handle;
 	handle.w = dwHandle;
 
-	if (pwDspIndex)
-		*pwDspIndex = (u16)handle.h.dspIndex;
 	if (pwAdapterIndex)
 		*pwAdapterIndex = (u16)handle.h.adapterIndex;
 	if (pwObjectIndex)
@@ -64,7 +62,7 @@ do {\
 	if (h == 0) \
 		return HPI_ERROR_INVALID_OBJ; \
 	else \
-		HPI_HandleToIndexes(h, i1, NULL, NULL); \
+		HPI_HandleToIndexes(h, i1, NULL); \
 } while (0)
 
 #define u32TOINDEXES(h, i1, i2) \
@@ -72,15 +70,7 @@ do {\
 	if (h == 0) \
 		return HPI_ERROR_INVALID_OBJ; \
 	else \
-		HPI_HandleToIndexes(h, i1, i2, NULL);\
-} while (0)
-
-#define u32TOINDEXES3(h, i1, i2, i0) \
-do {\
-	if (h == 0) \
-		return HPI_ERROR_INVALID_OBJ; \
-	else \
-		HPI_HandleToIndexes(h, i1, i2, i0); \
+		HPI_HandleToIndexes(h, i1, i2);\
 } while (0)
 
 void HPI_FormatToMsg(
@@ -130,7 +120,8 @@ struct hpi_hsubsys *HPI_SubSysCreate(
 	memset(&ghSubSys, 0, sizeof(struct hpi_hsubsys));
 
 	{
-		HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_OPEN);
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+			HPI_SUBSYS_OPEN);
 		HPI_Message(&hm, &hr);
 
 		if (hr.wError == 0)
@@ -147,7 +138,8 @@ void HPI_SubSysFree(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CLOSE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_CLOSE);
 	HPI_Message(&hm, &hr);
 
 }
@@ -160,10 +152,11 @@ u16 HPI_SubSysGetVersion(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_VERSION);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_GET_VERSION);
 	HPI_Message(&hm, &hr);
 	*pdwVersion = hr.u.s.dwVersion;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysGetVersionEx(
@@ -174,10 +167,11 @@ u16 HPI_SubSysGetVersionEx(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_VERSION);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_GET_VERSION);
 	HPI_Message(&hm, &hr);
 	*pdwVersionEx = hr.u.s.dwData;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysGetInfo(
@@ -190,7 +184,8 @@ u16 HPI_SubSysGetInfo(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_INFO);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_GET_INFO);
 
 	HPI_Message(&hm, &hr);
 
@@ -201,7 +196,7 @@ u16 HPI_SubSysGetInfo(
 	else
 		memcpy(awAdapterList, &hr.u.s.awAdapterList, wListLength);
 	*pwNumAdapters = hr.u.s.wNumAdapters;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysFindAdapters(
@@ -213,7 +208,8 @@ u16 HPI_SubSysFindAdapters(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_FIND_ADAPTERS);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_FIND_ADAPTERS);
 
 	HPI_Message(&hm, &hr);
 
@@ -227,7 +223,7 @@ u16 HPI_SubSysFindAdapters(
 			wListLength * sizeof(u16));
 	*pwNumAdapters = hr.u.s.wNumAdapters;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysCreateAdapter(
@@ -239,13 +235,14 @@ u16 HPI_SubSysCreateAdapter(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_CREATE_ADAPTER);
 	hm.u.s.Resource = *pResource;
 
 	HPI_Message(&hm, &hr);
 
 	*pwAdapterIndex = hr.u.s.wAdapterIndex;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysDeleteAdapter(
@@ -255,10 +252,11 @@ u16 HPI_SubSysDeleteAdapter(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DELETE_ADAPTER);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_DELETE_ADAPTER);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysGetNumAdapters(
@@ -268,10 +266,11 @@ u16 HPI_SubSysGetNumAdapters(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_NUM_ADAPTERS);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_GET_NUM_ADAPTERS);
 	HPI_Message(&hm, &hr);
 	*pnNumAdapters = (int)hr.u.s.wNumAdapters;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysGetAdapter(
@@ -283,12 +282,13 @@ u16 HPI_SubSysGetAdapter(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_GET_ADAPTER);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+		HPI_SUBSYS_GET_ADAPTER);
 	hm.wAdapterIndex = (u16)nIterator;
 	HPI_Message(&hm, &hr);
 	*pdwAdapterIndex = (int)hr.u.s.wAdapterIndex;
 	*pwAdapterType = hr.u.s.awAdapterList[0];
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SubSysSetHostNetworkInterface(
@@ -298,13 +298,13 @@ u16 HPI_SubSysSetHostNetworkInterface(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_SUBSYSTEM,
 		HPI_SUBSYS_SET_NETWORK_INTERFACE);
 	if (szInterface == NULL)
 		return HPI_ERROR_INVALID_RESOURCE;
 	hm.u.s.Resource.r.net_if = szInterface;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterOpen(
@@ -314,12 +314,12 @@ u16 HPI_AdapterOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER, HPI_ADAPTER_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 
 }
 
@@ -330,12 +330,12 @@ u16 HPI_AdapterClose(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_CLOSE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER, HPI_ADAPTER_CLOSE);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterFindObject(
@@ -346,25 +346,7 @@ u16 HPI_AdapterFindObject(
 	u16 *pDspIndex
 )
 {
-	struct hpi_message hm;
-	struct hpi_response hr;
-
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_FIND_OBJECT);
-	hm.wAdapterIndex = wAdapterIndex;
-	hm.u.a.wAssertId = wObjectIndex;
-	hm.u.a.wObjectType = wObjectType;
-
-	HPI_Message(&hm, &hr);
-
-	if (hr.wError == 0)
-		*pDspIndex = hr.u.a.wAdapterIndex;
-	else if (hr.wError == HPI_ERROR_INVALID_FUNC) {
-
-		*pDspIndex = 0;
-		hr.wError = 0;
-	}
-
-	return hr.wError;
+	return HPI_ERROR_UNIMPLEMENTED;
 }
 
 u16 HPI_AdapterSetMode(
@@ -386,12 +368,13 @@ u16 HPI_AdapterSetModeEx(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SET_MODE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_SET_MODE);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.dwAdapterMode = dwAdapterMode;
 	hm.u.a.wAssertId = wQueryOrSet;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterGetMode(
@@ -402,12 +385,13 @@ u16 HPI_AdapterGetMode(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_MODE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_GET_MODE);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
 	if (pdwAdapterMode)
 		*pdwAdapterMode = hr.u.a.dwSerialNumber;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterGetInfo(
@@ -422,7 +406,8 @@ u16 HPI_AdapterGetInfo(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_INFO);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_GET_INFO);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
@@ -432,7 +417,7 @@ u16 HPI_AdapterGetInfo(
 	*pwNumInStreams = hr.u.a.wNumIStreams;
 	*pwVersion = hr.u.a.wVersion;
 	*pdwSerialNumber = hr.u.a.dwSerialNumber;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterGetModuleByIndex(
@@ -450,7 +435,8 @@ u16 HPI_AdapterGetModuleByIndex(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_MODULE_INFO);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_MODULE_INFO);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.module_info.index = wModuleIndex;
 
@@ -463,7 +449,7 @@ u16 HPI_AdapterGetModuleByIndex(
 	*pdwSerialNumber = hr.u.a.dwSerialNumber;
 	*phModule = 0;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterGetAssert(
@@ -476,7 +462,8 @@ u16 HPI_AdapterGetAssert(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_ASSERT);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_GET_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
 
@@ -503,7 +490,7 @@ u16 HPI_AdapterGetAssert(
 
 		}
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterGetAssertEx(
@@ -517,7 +504,8 @@ u16 HPI_AdapterGetAssertEx(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_ASSERT);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_GET_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
@@ -554,7 +542,7 @@ u16 HPI_AdapterGetAssertEx(
 			*pszAssert = 0;
 		}
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterTestAssert(
@@ -565,13 +553,14 @@ u16 HPI_AdapterTestAssert(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_TEST_ASSERT);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_TEST_ASSERT);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.wAssertId = wAssertId;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterEnableCapability(
@@ -583,14 +572,15 @@ u16 HPI_AdapterEnableCapability(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_ENABLE_CAPABILITY);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_ENABLE_CAPABILITY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.a.wAssertId = wCapability;
 	hm.u.a.dwAdapterMode = dwKey;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterSelfTest(
@@ -600,10 +590,11 @@ u16 HPI_AdapterSelfTest(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SELFTEST);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_SELFTEST);
 	hm.wAdapterIndex = wAdapterIndex;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterDebugRead(
@@ -616,7 +607,11 @@ u16 HPI_AdapterDebugRead(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_DEBUG_READ);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_DEBUG_READ);
+
+	hr.wSize = sizeof(hr);
+
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.debug_read.dwDspAddress = dwDspAddress;
 
@@ -632,7 +627,7 @@ u16 HPI_AdapterDebugRead(
 		memcpy(pBuffer, &hr.u.bytes, *dwCountBytes);
 	} else
 		*dwCountBytes = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterSetProperty(
@@ -645,7 +640,8 @@ u16 HPI_AdapterSetProperty(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_SET_PROPERTY);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_SET_PROPERTY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.property_set.wProperty = wProperty;
 	hm.u.ax.property_set.wParameter1 = wParameter1;
@@ -653,7 +649,7 @@ u16 HPI_AdapterSetProperty(
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterGetProperty(
@@ -666,7 +662,8 @@ u16 HPI_AdapterGetProperty(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ADAPTER, HPI_ADAPTER_GET_PROPERTY);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ADAPTER,
+		HPI_ADAPTER_GET_PROPERTY);
 	hm.wAdapterIndex = wAdapterIndex;
 	hm.u.ax.property_set.wProperty = wProperty;
 
@@ -678,7 +675,7 @@ u16 HPI_AdapterGetProperty(
 			*pwParameter2 = hr.u.ax.property_get.wParameter2;
 	}
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AdapterEnumerateProperty(
@@ -691,6 +688,100 @@ u16 HPI_AdapterEnumerateProperty(
 )
 {
 	return 0;
+}
+
+u16 HPI_FormatCreate(
+	struct hpi_format *pFormat,
+	u16 wChannels,
+	u16 wFormat,
+	u32 dwSampleRate,
+	u32 dwBitRate,
+	u32 dwAttributes
+)
+{
+	u16 wError = 0;
+	struct hpi_msg_format Format;
+
+	if (wChannels < 1)
+		wChannels = 1;
+	if (wChannels > 8)
+		wChannels = 8;
+
+	Format.wChannels = wChannels;
+
+	switch (wFormat) {
+	case HPI_FORMAT_PCM16_SIGNED:
+	case HPI_FORMAT_PCM24_SIGNED:
+	case HPI_FORMAT_PCM32_SIGNED:
+	case HPI_FORMAT_PCM32_FLOAT:
+	case HPI_FORMAT_PCM16_BIGENDIAN:
+	case HPI_FORMAT_PCM8_UNSIGNED:
+	case HPI_FORMAT_MPEG_L1:
+	case HPI_FORMAT_MPEG_L2:
+	case HPI_FORMAT_MPEG_L3:
+	case HPI_FORMAT_DOLBY_AC2:
+	case HPI_FORMAT_AA_TAGIT1_HITS:
+	case HPI_FORMAT_AA_TAGIT1_INSERTS:
+	case HPI_FORMAT_RAW_BITSTREAM:
+	case HPI_FORMAT_AA_TAGIT1_HITS_EX1:
+	case HPI_FORMAT_OEM1:
+	case HPI_FORMAT_OEM2:
+		break;
+	default:
+		wError = HPI_ERROR_INVALID_FORMAT;
+		return wError;
+	}
+	Format.wFormat = wFormat;
+
+	if (dwSampleRate < 8000L) {
+		wError = HPI_ERROR_INCOMPATIBLE_SAMPLERATE;
+		dwSampleRate = 8000L;
+	}
+	if (dwSampleRate > 200000L) {
+		wError = HPI_ERROR_INCOMPATIBLE_SAMPLERATE;
+		dwSampleRate = 200000L;
+	}
+	Format.dwSampleRate = dwSampleRate;
+
+	switch (wFormat) {
+	case HPI_FORMAT_MPEG_L1:
+	case HPI_FORMAT_MPEG_L2:
+	case HPI_FORMAT_MPEG_L3:
+		Format.dwBitRate = dwBitRate;
+		break;
+	case HPI_FORMAT_PCM16_SIGNED:
+	case HPI_FORMAT_PCM16_BIGENDIAN:
+		Format.dwBitRate = wChannels * dwSampleRate * 2;
+		break;
+	case HPI_FORMAT_PCM32_SIGNED:
+	case HPI_FORMAT_PCM32_FLOAT:
+		Format.dwBitRate = wChannels * dwSampleRate * 4;
+		break;
+	case HPI_FORMAT_PCM8_UNSIGNED:
+		Format.dwBitRate = wChannels * dwSampleRate;
+		break;
+	default:
+		Format.dwBitRate = 0;
+	}
+
+	switch (wFormat) {
+	case HPI_FORMAT_MPEG_L2:
+		if ((wChannels == 1)
+			&& (dwAttributes != HPI_MPEG_MODE_DEFAULT)) {
+			dwAttributes = HPI_MPEG_MODE_DEFAULT;
+			wError = HPI_ERROR_INVALID_FORMAT;
+		} else if (dwAttributes > HPI_MPEG_MODE_DUALCHANNEL) {
+			dwAttributes = HPI_MPEG_MODE_DEFAULT;
+			wError = HPI_ERROR_INVALID_FORMAT;
+		}
+		Format.dwAttributes = dwAttributes;
+		break;
+	default:
+		Format.dwAttributes = dwAttributes;
+	}
+
+	HPI_MsgToFormat(pFormat, &Format);
+	return wError;
 }
 
 u16 HPI_StreamEstimateBufferSize(
@@ -751,19 +842,19 @@ u16 HPI_OutStreamOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM, HPI_OSTREAM_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
-	hm.u.d.wStreamIndex = wOutStreamIndex;
+	hm.wObjIndex = wOutStreamIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		*phOutStream =
 			HPI_IndexesToHandle(HPI_OBJ_OSTREAM, wAdapterIndex,
-			wOutStreamIndex, 0);
+			wOutStreamIndex);
 	else
 		*phOutStream = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamClose(
@@ -774,8 +865,9 @@ u16 HPI_OutStreamClose(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_HOSTBUFFER_FREE);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 
 	hm.wFunction = HPI_OSTREAM_GROUP_RESET;
@@ -784,7 +876,7 @@ u16 HPI_OutStreamClose(
 	hm.wFunction = HPI_OSTREAM_CLOSE;
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamGetInfoEx(
@@ -799,8 +891,9 @@ u16 HPI_OutStreamGetInfoEx(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GET_INFO);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_GET_INFO);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
@@ -815,7 +908,7 @@ u16 HPI_OutStreamGetInfoEx(
 	if (pdwAuxiliaryDataToPlay)
 		*pdwAuxiliaryDataToPlay =
 			hr.u.d.u.stream_info.dwAuxiliaryDataAvailable;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamWriteBuf(
@@ -828,8 +921,8 @@ u16 HPI_OutStreamWriteBuf(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_WRITE);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM, HPI_OSTREAM_WRITE);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.pbData = pbData;
 	hm.u.d.u.Data.dwDataSize = dwBytesToWrite;
 
@@ -837,7 +930,7 @@ u16 HPI_OutStreamWriteBuf(
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamStart(
@@ -847,12 +940,12 @@ u16 HPI_OutStreamStart(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_START);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM, HPI_OSTREAM_START);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamStop(
@@ -862,12 +955,12 @@ u16 HPI_OutStreamStop(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_STOP);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM, HPI_OSTREAM_STOP);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamSinegen(
@@ -877,12 +970,13 @@ u16 HPI_OutStreamSinegen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SINEGEN);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_SINEGEN);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamReset(
@@ -892,12 +986,12 @@ u16 HPI_OutStreamReset(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_RESET);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM, HPI_OSTREAM_RESET);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamQueryFormat(
@@ -909,14 +1003,35 @@ u16 HPI_OutStreamQueryFormat(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_QUERY_FORMAT);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_QUERY_FORMAT);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
+}
+
+u16 HPI_OutStreamSetFormat(
+	struct hpi_hsubsys *phSubSys,
+	u32 hOutStream,
+	struct hpi_format *pFormat
+)
+{
+	struct hpi_message hm;
+	struct hpi_response hr;
+
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_SET_FORMAT);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
+
+	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
+
+	HPI_Message(&hm, &hr);
+
+	return hr.wError;
 }
 
 u16 HPI_OutStreamSetVelocity(
@@ -928,13 +1043,14 @@ u16 HPI_OutStreamSetVelocity(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_VELOCITY);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_SET_VELOCITY);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.wVelocity = nVelocity;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamSetPunchInOut(
@@ -947,15 +1063,16 @@ u16 HPI_OutStreamSetPunchInOut(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_PUNCHINOUT);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_SET_PUNCHINOUT);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.d.u.Pio.dwPunchInSample = dwPunchInSample;
 	hm.u.d.u.Pio.dwPunchOutSample = dwPunchOutSample;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamAncillaryReset(
@@ -967,11 +1084,12 @@ u16 HPI_OutStreamAncillaryReset(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_RESET);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_ANC_RESET);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.Format.wChannels = wMode;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamAncillaryGetInfo(
@@ -983,8 +1101,9 @@ u16 HPI_OutStreamAncillaryGetInfo(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_GET_INFO);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_ANC_GET_INFO);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 	if (hr.wError == 0) {
 		if (pdwFramesAvailable)
@@ -992,7 +1111,7 @@ u16 HPI_OutStreamAncillaryGetInfo(
 				hr.u.d.u.stream_info.dwDataAvailable /
 				sizeof(struct hpi_anc_frame);
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamAncillaryRead(
@@ -1005,8 +1124,9 @@ u16 HPI_OutStreamAncillaryRead(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_ANC_READ);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_ANC_READ);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.pbData = (u8 *)pAncFrameBuffer;
 	hm.u.d.u.Data.dwDataSize =
 		dwNumberOfAncillaryFramesToRead *
@@ -1015,7 +1135,7 @@ u16 HPI_OutStreamAncillaryRead(
 		HPI_Message(&hm, &hr);
 	else
 		hr.wError = HPI_ERROR_INVALID_DATA_TRANSFER;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamSetTimeScale(
@@ -1027,14 +1147,15 @@ u16 HPI_OutStreamSetTimeScale(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_SET_TIMESCALE);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_SET_TIMESCALE);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.d.u.dwTimeScale = dwTimeScale;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamHostBufferAllocate(
@@ -1046,11 +1167,36 @@ u16 HPI_OutStreamHostBufferAllocate(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_ALLOC);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_HOSTBUFFER_ALLOC);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.dwDataSize = dwSizeInBytes;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
+}
+
+u16 HPI_OutStreamHostBufferGetInfo(
+	struct hpi_hsubsys *phSubSys,
+	u32 hOutStream,
+	u8 **ppBuffer,
+	struct hpi_hostbuffer_status **ppStatus
+)
+{
+	struct hpi_message hm;
+	struct hpi_response hr;
+
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_HOSTBUFFER_GET_INFO);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
+	HPI_Message(&hm, &hr);
+
+	if (hr.wError == 0) {
+		if (ppBuffer)
+			*ppBuffer = hr.u.d.u.hostbuffer_info.pBuffer;
+		if (ppStatus)
+			*ppStatus = hr.u.d.u.hostbuffer_info.pStatus;
+	}
+	return hr.wError;
 }
 
 u16 HPI_OutStreamHostBufferFree(
@@ -1061,10 +1207,11 @@ u16 HPI_OutStreamHostBufferFree(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_HOSTBUFFER_FREE);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_HOSTBUFFER_FREE);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamGroupAdd(
@@ -1076,12 +1223,12 @@ u16 HPI_OutStreamGroupAdd(
 	struct hpi_message hm;
 	struct hpi_response hr;
 	u16 wAdapter;
-	u16 wDspIndex;
 	char cObjType;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GROUP_ADD);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_GROUP_ADD);
 	hr.wError = 0;
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	cObjType = HPI_HandleObject(hStream);
 	switch (cObjType) {
 	case HPI_OBJ_OSTREAM:
@@ -1091,10 +1238,8 @@ u16 HPI_OutStreamGroupAdd(
 		break;
 	case HPI_OBJ_ISTREAM:
 		hm.u.d.u.Stream.wObjectType = HPI_OBJ_ISTREAM;
-		u32TOINDEXES3(hStream, &wAdapter,
-			&hm.u.d.u.Stream.wStreamIndex, &wDspIndex);
-		if (wDspIndex != 0)
-			return HPI_ERROR_NO_INTERDSP_GROUPS;
+		u32TOINDEXES(hStream, &wAdapter,
+			&hm.u.d.u.Stream.wStreamIndex);
 		break;
 	default:
 		return HPI_ERROR_INVALID_STREAM;
@@ -1103,7 +1248,7 @@ u16 HPI_OutStreamGroupAdd(
 		return HPI_ERROR_NO_INTERADAPTER_GROUPS;
 
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamGroupGetMap(
@@ -1116,8 +1261,9 @@ u16 HPI_OutStreamGroupGetMap(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GROUP_GETMAP);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_GROUP_GETMAP);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 
 	if (pdwOutStreamMap)
@@ -1125,7 +1271,7 @@ u16 HPI_OutStreamGroupGetMap(
 	if (pdwInStreamMap)
 		*pdwInStreamMap = hr.u.d.u.group_info.dwInStreamGroupMap;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_OutStreamGroupReset(
@@ -1136,10 +1282,11 @@ u16 HPI_OutStreamGroupReset(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_OSTREAM, HPI_OSTREAM_GROUP_RESET);
-	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.u.d.wStreamIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+		HPI_OSTREAM_GROUP_RESET);
+	u32TOINDEXES(hOutStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamOpen(
@@ -1151,29 +1298,21 @@ u16 HPI_InStreamOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	u16 wDspIndex;
 
-	hr.wError = HPI_AdapterFindObject(phSubSys, wAdapterIndex,
-		HPI_OBJ_ISTREAM, wInStreamIndex, &wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM, HPI_ISTREAM_OPEN);
+	hm.wAdapterIndex = wAdapterIndex;
+	hm.wObjIndex = wInStreamIndex;
 
-	if (hr.wError == 0) {
-		HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_OPEN);
-		hm.wDspIndex = wDspIndex;
-		hm.wAdapterIndex = wAdapterIndex;
-		hm.u.d.wStreamIndex = wInStreamIndex;
+	HPI_Message(&hm, &hr);
 
-		HPI_Message(&hm, &hr);
-
-		if (hr.wError == 0)
-			*phInStream =
-				HPI_IndexesToHandle(HPI_OBJ_ISTREAM,
-				wAdapterIndex, wInStreamIndex, wDspIndex);
-		else
-			*phInStream = 0;
-	} else {
+	if (hr.wError == 0)
+		*phInStream =
+			HPI_IndexesToHandle(HPI_OBJ_ISTREAM,
+			wAdapterIndex, wInStreamIndex);
+	else
 		*phInStream = 0;
-	}
-	return (hr.wError);
+
+	return hr.wError;
 }
 
 u16 HPI_InStreamClose(
@@ -1184,9 +1323,9 @@ u16 HPI_InStreamClose(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_HOSTBUFFER_FREE);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 
 	hm.wFunction = HPI_ISTREAM_GROUP_RESET;
@@ -1195,7 +1334,7 @@ u16 HPI_InStreamClose(
 	hm.wFunction = HPI_ISTREAM_CLOSE;
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamQueryFormat(
@@ -1207,14 +1346,14 @@ u16 HPI_InStreamQueryFormat(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_QUERY_FORMAT);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_QUERY_FORMAT);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamSetFormat(
@@ -1226,14 +1365,14 @@ u16 HPI_InStreamSetFormat(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_SET_FORMAT);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_SET_FORMAT);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_FormatToMsg(&hm.u.d.u.Data.Format, pFormat);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamReadBuf(
@@ -1246,15 +1385,14 @@ u16 HPI_InStreamReadBuf(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_READ);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM, HPI_ISTREAM_READ);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.dwDataSize = dwBytesToRead;
 	hm.u.d.u.Data.pbData = pbData;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamStart(
@@ -1265,13 +1403,12 @@ u16 HPI_InStreamStart(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_START);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM, HPI_ISTREAM_START);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamStop(
@@ -1282,13 +1419,12 @@ u16 HPI_InStreamStop(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_STOP);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM, HPI_ISTREAM_STOP);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamReset(
@@ -1299,13 +1435,12 @@ u16 HPI_InStreamReset(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_RESET);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM, HPI_ISTREAM_RESET);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamGetInfoEx(
@@ -1320,9 +1455,9 @@ u16 HPI_InStreamGetInfoEx(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GET_INFO);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_GET_INFO);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	HPI_Message(&hm, &hr);
 
@@ -1338,7 +1473,7 @@ u16 HPI_InStreamGetInfoEx(
 	if (pdwAuxiliaryDataRecorded)
 		*pdwAuxiliaryDataRecorded =
 			hr.u.d.u.stream_info.dwAuxiliaryDataAvailable;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamAncillaryReset(
@@ -1352,14 +1487,14 @@ u16 HPI_InStreamAncillaryReset(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_RESET);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_ANC_RESET);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.Format.dwAttributes = wBytesPerFrame;
 	hm.u.d.u.Data.Format.wFormat = (wMode << 8) | (wAlignment & 0xff);
 	hm.u.d.u.Data.Format.wChannels = wIdleBit;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamAncillaryGetInfo(
@@ -1370,16 +1505,16 @@ u16 HPI_InStreamAncillaryGetInfo(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_GET_INFO);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_ANC_GET_INFO);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 	if (pdwFrameSpace)
 		*pdwFrameSpace =
 			(hr.u.d.u.stream_info.dwBufferSize -
 			hr.u.d.u.stream_info.dwDataAvailable) /
 			sizeof(struct hpi_anc_frame);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamAncillaryWrite(
@@ -1393,9 +1528,9 @@ u16 HPI_InStreamAncillaryWrite(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_ANC_WRITE);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_ANC_WRITE);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.pbData = (u8 *)pAncFrameBuffer;
 	hm.u.d.u.Data.dwDataSize =
 		dwNumberOfAncillaryFramesToWrite *
@@ -1404,7 +1539,7 @@ u16 HPI_InStreamAncillaryWrite(
 		HPI_Message(&hm, &hr);
 	else
 		hr.wError = HPI_ERROR_INVALID_DATA_TRANSFER;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamHostBufferAllocate(
@@ -1417,12 +1552,36 @@ u16 HPI_InStreamHostBufferAllocate(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_ALLOC);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_HOSTBUFFER_ALLOC);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.d.u.Data.dwDataSize = dwSizeInBytes;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
+}
+
+u16 HPI_InStreamHostBufferGetInfo(
+	struct hpi_hsubsys *phSubSys,
+	u32 hInStream,
+	u8 **ppBuffer,
+	struct hpi_hostbuffer_status **ppStatus
+)
+{
+	struct hpi_message hm;
+	struct hpi_response hr;
+
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_HOSTBUFFER_GET_INFO);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
+	HPI_Message(&hm, &hr);
+
+	if (hr.wError == 0) {
+		if (ppBuffer)
+			*ppBuffer = hr.u.d.u.hostbuffer_info.pBuffer;
+		if (ppStatus)
+			*ppStatus = hr.u.d.u.hostbuffer_info.pStatus;
+	}
+	return hr.wError;
 }
 
 u16 HPI_InStreamHostBufferFree(
@@ -1434,11 +1593,11 @@ u16 HPI_InStreamHostBufferFree(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_HOSTBUFFER_FREE);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamGroupAdd(
@@ -1450,13 +1609,12 @@ u16 HPI_InStreamGroupAdd(
 	struct hpi_message hm;
 	struct hpi_response hr;
 	u16 wAdapter;
-	u16 wDspIndex;
 	char cObjType;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GROUP_ADD);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_GROUP_ADD);
 	hr.wError = 0;
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	cObjType = HPI_HandleObject(hStream);
 
 	switch (cObjType) {
@@ -1467,10 +1625,8 @@ u16 HPI_InStreamGroupAdd(
 		break;
 	case HPI_OBJ_ISTREAM:
 		hm.u.d.u.Stream.wObjectType = HPI_OBJ_ISTREAM;
-		u32TOINDEXES3(hStream, &wAdapter,
-			&hm.u.d.u.Stream.wStreamIndex, &wDspIndex);
-		if (wDspIndex != hm.wDspIndex)
-			return HPI_ERROR_NO_INTERDSP_GROUPS;
+		u32TOINDEXES(hStream, &wAdapter,
+			&hm.u.d.u.Stream.wStreamIndex);
 		break;
 	default:
 		return HPI_ERROR_INVALID_STREAM;
@@ -1493,9 +1649,9 @@ u16 HPI_InStreamGroupGetMap(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_HOSTBUFFER_FREE);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_HOSTBUFFER_FREE);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 
 	if (pdwOutStreamMap)
@@ -1503,7 +1659,7 @@ u16 HPI_InStreamGroupGetMap(
 	if (pdwInStreamMap)
 		*pdwInStreamMap = hr.u.d.u.group_info.dwInStreamGroupMap;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_InStreamGroupReset(
@@ -1514,11 +1670,11 @@ u16 HPI_InStreamGroupReset(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_ISTREAM, HPI_ISTREAM_GROUP_RESET);
-	u32TOINDEXES3(hInStream, &hm.wAdapterIndex,
-		&hm.u.d.wStreamIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+		HPI_ISTREAM_GROUP_RESET);
+	u32TOINDEXES(hInStream, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MixerOpen(
@@ -1529,18 +1685,17 @@ u16 HPI_MixerOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_MIXER, HPI_MIXER_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0)
 		*phMixer =
-			HPI_IndexesToHandle(HPI_OBJ_MIXER, wAdapterIndex, 0,
-			0);
+			HPI_IndexesToHandle(HPI_OBJ_MIXER, wAdapterIndex, 0);
 	else
 		*phMixer = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MixerClose(
@@ -1550,10 +1705,10 @@ u16 HPI_MixerClose(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_CLOSE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_MIXER, HPI_MIXER_CLOSE);
 	u32TOINDEX(hMixer, &hm.wAdapterIndex);
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MixerGetControl(
@@ -1569,7 +1724,8 @@ u16 HPI_MixerGetControl(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_GET_CONTROL);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_MIXER,
+		HPI_MIXER_GET_CONTROL);
 	u32TOINDEX(hMixer, &hm.wAdapterIndex);
 	hm.u.m.wNodeType1 = wSrcNodeType;
 	hm.u.m.wNodeIndex1 = wSrcNodeTypeIndex;
@@ -1582,10 +1738,10 @@ u16 HPI_MixerGetControl(
 	if (hr.wError == 0)
 		*phControl =
 			HPI_IndexesToHandle(HPI_OBJ_CONTROL, hm.wAdapterIndex,
-			hr.u.m.wControlIndex, 0);
+			hr.u.m.wControlIndex);
 	else
 		*phControl = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MixerGetControlByIndex(
@@ -1602,28 +1758,30 @@ u16 HPI_MixerGetControlByIndex(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_GET_CONTROL_BY_INDEX);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_MIXER,
+		HPI_MIXER_GET_CONTROL_BY_INDEX);
 	u32TOINDEX(hMixer, &hm.wAdapterIndex);
 	hm.u.m.wControlIndex = wControlIndex;
 	HPI_Message(&hm, &hr);
 
 	if (pwSrcNodeType) {
-		*pwSrcNodeType = hr.u.m.wSrcNodeType + HPI_SOURCENODE_BASE;
+		*pwSrcNodeType = hr.u.m.wSrcNodeType + HPI_SOURCENODE_NONE;
 		*pwSrcNodeIndex = hr.u.m.wSrcNodeIndex;
-		*pwDstNodeType = hr.u.m.wDstNodeType + HPI_DESTNODE_BASE;
+		*pwDstNodeType = hr.u.m.wDstNodeType + HPI_DESTNODE_NONE;
 		*pwDstNodeIndex = hr.u.m.wDstNodeIndex;
-		*pwControlType = hr.u.m.wControlIndex;
 	}
+	if (pwControlType)
+		*pwControlType = hr.u.m.wControlIndex;
 
 	if (phControl) {
 		if (hr.wError == 0)
 			*phControl =
 				HPI_IndexesToHandle(HPI_OBJ_CONTROL,
-				hm.wAdapterIndex, wControlIndex, 0);
+				hm.wAdapterIndex, wControlIndex);
 		else
 			*phControl = 0;
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MixerStore(
@@ -1635,12 +1793,12 @@ u16 HPI_MixerStore(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_MIXER, HPI_MIXER_STORE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_MIXER, HPI_MIXER_STORE);
 	u32TOINDEX(hMixer, &hm.wAdapterIndex);
 	hm.u.mx.store.wCommand = command;
 	hm.u.mx.store.wIndex = wIndex;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 static
@@ -1654,13 +1812,14 @@ u16 HPI_ControlParamSet(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = wAttrib;
 	hm.u.c.dwParam1 = dwParam1;
 	hm.u.c.dwParam2 = dwParam2;
 	HPI_Message(&hm, &hr);
-	return (hr.wError);
+	return hr.wError;
 }
 
 static
@@ -1676,8 +1835,9 @@ u16 HPI_ControlParamGet(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = wAttrib;
 	hm.u.c.dwParam1 = dwParam1;
 	hm.u.c.dwParam2 = dwParam2;
@@ -1687,7 +1847,7 @@ u16 HPI_ControlParamGet(
 	if (pdwParam2)
 		*pdwParam2 = hr.u.c.dwParam2;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 #define HPI_ControlParam1Get(s, h, a, p1) \
@@ -1711,8 +1871,9 @@ u16 HPI_ControlQuery(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_INFO);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_INFO);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.c.wAttribute = wAttrib;
 	hm.u.c.dwParam1 = dwIndex;
@@ -1721,7 +1882,7 @@ u16 HPI_ControlQuery(
 	HPI_Message(&hm, &hr);
 	*pdwSetting = hr.u.c.dwParam1;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 static u16 HPI_Control_GetString(
@@ -1744,9 +1905,9 @@ static u16 HPI_Control_GetString(
 		struct hpi_message hm;
 		struct hpi_response hr;
 
-		HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-		u32TOINDEXES(hControl, &hm.wAdapterIndex,
-			&hm.u.c.wControlIndex);
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+			HPI_CONTROL_GET_STATE);
+		u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 		hm.u.c.wAttribute = wAttribute;
 		hm.u.c.dwParam1 = subStringIndex;
 		hm.u.c.dwParam2 = 0;
@@ -1847,8 +2008,9 @@ u16 HPI_AESEBU_Receiver_GetUserData(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_AESEBURX_USERDATA;
 	hm.u.c.dwParam1 = wIndex;
 
@@ -1856,7 +2018,7 @@ u16 HPI_AESEBU_Receiver_GetUserData(
 
 	if (pwData)
 		*pwData = (u16)hr.u.c.dwParam2;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AESEBU_Receiver_GetChannelStatus(
@@ -1868,8 +2030,9 @@ u16 HPI_AESEBU_Receiver_GetChannelStatus(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_AESEBURX_CHANNELSTATUS;
 	hm.u.c.dwParam1 = wIndex;
 
@@ -1877,7 +2040,7 @@ u16 HPI_AESEBU_Receiver_GetChannelStatus(
 
 	if (pwData)
 		*pwData = (u16)hr.u.c.dwParam2;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AESEBU_Receiver_GetErrorStatus(
@@ -1893,7 +2056,7 @@ u16 HPI_AESEBU_Receiver_GetErrorStatus(
 		HPI_AESEBURX_ERRORSTATUS, &dwErrorData);
 	if (pwErrorData)
 		*pwErrorData = (u16)dwErrorData;
-	return (wError);
+	return wError;
 }
 
 u16 HPI_AESEBU_Transmitter_SetSampleRate(
@@ -2010,15 +2173,16 @@ u16 HPI_Bitstream_GetActivity(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_BITSTREAM_ACTIVITY;
 	HPI_Message(&hm, &hr);
 	if (pwClkActivity)
 		*pwClkActivity = (u16)hr.u.c.dwParam1;
 	if (pwDataActivity)
 		*pwDataActivity = (u16)hr.u.c.dwParam2;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ChannelMode_QueryMode(
@@ -2058,7 +2222,7 @@ u16 HPI_ChannelModeGet(
 		HPI_CHANNEL_MODE_MODE, &dwMode);
 	if (wMode)
 		*wMode = (u16)dwMode;
-	return (wError);
+	return wError;
 }
 
 u16 HPI_Cobranet_HmiWrite(
@@ -2071,8 +2235,9 @@ u16 HPI_Cobranet_HmiWrite(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.cx.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROLEX,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.cx.u.cobranet_data.dwByteCount = dwByteCount;
 	hm.u.cx.u.cobranet_data.dwHmiAddress = dwHmiAddress;
@@ -2087,7 +2252,7 @@ u16 HPI_Cobranet_HmiWrite(
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Cobranet_HmiRead(
@@ -2101,8 +2266,9 @@ u16 HPI_Cobranet_HmiRead(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.cx.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROLEX,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.cx.u.cobranet_data.dwByteCount = dwMaxByteCount;
 	hm.u.cx.u.cobranet_data.dwHmiAddress = dwHmiAddress;
@@ -2130,7 +2296,7 @@ u16 HPI_Cobranet_HmiRead(
 		}
 
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Cobranet_HmiGetStatus(
@@ -2143,8 +2309,9 @@ u16 HPI_Cobranet_HmiGetStatus(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROLEX, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.cx.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROLEX,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.cx.wAttribute = HPI_COBRANET_GET_STATUS;
 
@@ -2159,7 +2326,7 @@ u16 HPI_Cobranet_HmiGetStatus(
 			*pdwWriteableSize =
 				hr.u.cx.u.cobranet_status.dwWriteableSize;
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Cobranet_GetIPaddress(
@@ -2299,8 +2466,9 @@ u16 HPI_Compander_Set(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.c.dwParam1 = wAttack + ((u32)wRatio100 << 16);
 	hm.u.c.dwParam2 = (wDecay & 0xFFFFL);
@@ -2310,7 +2478,7 @@ u16 HPI_Compander_Set(
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Compander_Get(
@@ -2325,8 +2493,9 @@ u16 HPI_Compander_Get(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_COMPANDER_PARAMS;
 
 	HPI_Message(&hm, &hr);
@@ -2343,7 +2512,7 @@ u16 HPI_Compander_Get(
 	if (pnMakeupGain0_01dB)
 		*pnMakeupGain0_01dB = hr.u.c.anLogValue[1];
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_LevelQueryRange(
@@ -2356,8 +2525,9 @@ u16 HPI_LevelQueryRange(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_LEVEL_RANGE;
 
 	HPI_Message(&hm, &hr);
@@ -2372,7 +2542,7 @@ u16 HPI_LevelQueryRange(
 		*nMaxGain_01dB = hr.u.c.anLogValue[1];
 	if (nStepGain_01dB)
 		*nStepGain_01dB = (short)hr.u.c.dwParam1;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_LevelSetGain(
@@ -2384,15 +2554,16 @@ u16 HPI_LevelSetGain(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	memcpy(hm.u.c.anLogValue, anGain0_01dB,
 		sizeof(short) * HPI_MAX_CHANNELS);
 	hm.u.c.wAttribute = HPI_LEVEL_GAIN;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_LevelGetGain(
@@ -2403,15 +2574,16 @@ u16 HPI_LevelGetGain(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_LEVEL_GAIN;
 
 	HPI_Message(&hm, &hr);
 
 	memcpy(anGain0_01dB, hr.u.c.anLogValue,
 		sizeof(short) * HPI_MAX_CHANNELS);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Meter_QueryChannels(
@@ -2435,8 +2607,10 @@ u16 HPI_MeterGetPeak(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
+	hm.wObjIndex = hm.wObjIndex;
 	hm.u.c.wAttribute = HPI_METER_PEAK;
 
 	HPI_Message(&hm, &hr);
@@ -2447,7 +2621,7 @@ u16 HPI_MeterGetPeak(
 	else
 		for (i = 0; i < HPI_MAX_CHANNELS; i++)
 			anPeakdB[i] = HPI_METER_MINIMUM;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MeterGetRms(
@@ -2461,8 +2635,9 @@ u16 HPI_MeterGetRms(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_METER_RMS;
 
 	HPI_Message(&hm, &hr);
@@ -2474,14 +2649,14 @@ u16 HPI_MeterGetRms(
 		for (i = 0; i < HPI_MAX_CHANNELS; i++)
 			anRmsdB[i] = HPI_METER_MINIMUM;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_MeterSetRmsBallistics(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	unsigned short nAttack,
-	unsigned short nDecay
+	u16 nAttack,
+	u16 nDecay
 )
 {
 	return HPI_ControlParamSet(phSubSys, hControl,
@@ -2491,8 +2666,8 @@ u16 HPI_MeterSetRmsBallistics(
 u16 HPI_MeterGetRmsBallistics(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	unsigned short *pnAttack,
-	unsigned short *pnDecay
+	u16 *pnAttack,
+	u16 *pnDecay
 )
 {
 	u32 dwAttack;
@@ -2513,8 +2688,8 @@ u16 HPI_MeterGetRmsBallistics(
 u16 HPI_MeterSetPeakBallistics(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	unsigned short nAttack,
-	unsigned short nDecay
+	u16 nAttack,
+	u16 nDecay
 )
 {
 	return HPI_ControlParamSet(phSubSys, hControl,
@@ -2524,8 +2699,8 @@ u16 HPI_MeterSetPeakBallistics(
 u16 HPI_MeterGetPeakBallistics(
 	struct hpi_hsubsys *phSubSys,
 	u32 hControl,
-	unsigned short *pnAttack,
-	unsigned short *pnDecay
+	u16 *pnAttack,
+	u16 *pnDecay
 )
 {
 	u32 dwAttack;
@@ -2607,8 +2782,9 @@ u16 HPI_Multiplexer_QuerySource(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_MULTIPLEXER_QUERYSOURCE;
 	hm.u.c.dwParam1 = wIndex;
 
@@ -2618,7 +2794,7 @@ u16 HPI_Multiplexer_QuerySource(
 		*wSourceNodeType = (u16)hr.u.c.dwParam1;
 	if (wSourceNodeIndex)
 		*wSourceNodeIndex = (u16)hr.u.c.dwParam2;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ParametricEQ_GetInfo(
@@ -2663,8 +2839,9 @@ u16 HPI_ParametricEQ_GetBand(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_EQUALIZER_FILTER;
 	hm.u.c.dwParam2 = wIndex;
 
@@ -2679,7 +2856,7 @@ u16 HPI_ParametricEQ_GetBand(
 	if (pnGain0_01dB)
 		*pnGain0_01dB = hr.u.c.anLogValue[0];
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ParametricEQ_SetBand(
@@ -2694,8 +2871,9 @@ u16 HPI_ParametricEQ_SetBand(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	hm.u.c.dwParam1 = dwFrequencyHz;
 	hm.u.c.dwParam2 = (wIndex & 0xFFFFL) + ((u32)nType << 16);
@@ -2705,7 +2883,7 @@ u16 HPI_ParametricEQ_SetBand(
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ParametricEQ_GetCoeffs(
@@ -2717,8 +2895,9 @@ u16 HPI_ParametricEQ_GetCoeffs(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_EQUALIZER_COEFFICIENTS;
 	hm.u.c.dwParam2 = wIndex;
 
@@ -2730,7 +2909,7 @@ u16 HPI_ParametricEQ_GetCoeffs(
 	coeffs[3] = (short)(hr.u.c.dwParam1 >> 16);
 	coeffs[4] = (short)hr.u.c.dwParam2;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_SampleClock_QuerySource(
@@ -2772,7 +2951,7 @@ u16 HPI_SampleClock_GetSource(
 	if (!wError)
 		if (pwSource)
 			*pwSource = (u16)dwSource;
-	return (wError);
+	return wError;
 }
 
 u16 HPI_SampleClock_QuerySourceIndex(
@@ -2815,7 +2994,7 @@ u16 HPI_SampleClock_GetSourceIndex(
 	if (!wError)
 		if (pwSourceIndex)
 			*pwSourceIndex = (u16)dwSourceIndex;
-	return (wError);
+	return wError;
 }
 
 u16 HPI_SampleClock_QueryLocalRate(
@@ -2855,7 +3034,7 @@ u16 HPI_SampleClock_GetLocalRate(
 	if (!wError)
 		if (pdwSampleRate)
 			*pdwSampleRate = dwSampleRate;
-	return (wError);
+	return wError;
 }
 
 u16 HPI_SampleClock_GetSampleRate(
@@ -2871,7 +3050,7 @@ u16 HPI_SampleClock_GetSampleRate(
 	if (!wError)
 		if (pdwSampleRate)
 			*pdwSampleRate = dwSampleRate;
-	return (wError);
+	return wError;
 }
 
 u16 HPI_SampleClock_SetAuto(
@@ -2892,6 +3071,26 @@ u16 HPI_SampleClock_GetAuto(
 {
 	return HPI_ControlParam1Get(phSubSys, hControl,
 		HPI_SAMPLECLOCK_AUTO, pdwAuto);
+}
+
+u16 HPI_SampleClock_SetLocalRateLock(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 dwLock
+)
+{
+	return HPI_ControlParamSet(phSubSys, hControl,
+		HPI_SAMPLECLOCK_LOCAL_LOCK, dwLock, 0);
+}
+
+u16 HPI_SampleClock_GetLocalRateLock(
+	struct hpi_hsubsys *phSubSys,
+	u32 hControl,
+	u32 *pdwLock
+)
+{
+	return HPI_ControlParam1Get(phSubSys, hControl,
+		HPI_SAMPLECLOCK_LOCAL_LOCK, pdwLock);
 }
 
 u16 HPI_ToneDetector_GetFrequency(
@@ -3189,14 +3388,15 @@ u16 HPI_Tuner_GetRFLevel(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_TUNER_LEVEL;
 	hm.u.c.dwParam1 = HPI_TUNER_LEVEL_AVERAGE;
 	HPI_Message(&hm, &hr);
 	if (pwLevel)
 		*pwLevel = (short)hr.u.c.dwParam1;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Tuner_GetRawRFLevel(
@@ -3207,14 +3407,15 @@ u16 HPI_Tuner_GetRawRFLevel(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_TUNER_LEVEL;
 	hm.u.c.dwParam1 = HPI_TUNER_LEVEL_RAW;
 	HPI_Message(&hm, &hr);
 	if (pwLevel)
 		*pwLevel = (short)hr.u.c.dwParam1;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_Tuner_QueryDeemphasis(
@@ -3367,8 +3568,9 @@ u16 HPI_Tuner_GetRDS(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_TUNER_RDS;
 	HPI_Message(&hm, &hr);
 	if (pData) {
@@ -3376,7 +3578,7 @@ u16 HPI_Tuner_GetRDS(
 		*(u32 *)&pData[4] = hr.u.cu.tuner.rds.dwData[1];
 		*(u32 *)&pData[8] = hr.u.cu.tuner.rds.dwBLER;
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_PAD_GetChannelName(
@@ -3461,15 +3663,16 @@ u16 HPI_VolumeSetGain(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	memcpy(hm.u.c.anLogValue, anLogGain,
 		sizeof(short) * HPI_MAX_CHANNELS);
 	hm.u.c.wAttribute = HPI_VOLUME_GAIN;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_VolumeGetGain(
@@ -3480,15 +3683,16 @@ u16 HPI_VolumeGetGain(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_VOLUME_GAIN;
 
 	HPI_Message(&hm, &hr);
 
 	memcpy(anLogGain, hr.u.c.anLogValue,
 		sizeof(short) * HPI_MAX_CHANNELS);
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_VolumeQueryRange(
@@ -3501,8 +3705,9 @@ u16 HPI_VolumeQueryRange(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_VOLUME_RANGE;
 
 	HPI_Message(&hm, &hr);
@@ -3517,7 +3722,7 @@ u16 HPI_VolumeQueryRange(
 		*nMaxGain_01dB = hr.u.c.anLogValue[1];
 	if (nStepGain_01dB)
 		*nStepGain_01dB = (short)hr.u.c.dwParam1;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_VolumeAutoFadeProfile(
@@ -3530,8 +3735,9 @@ u16 HPI_VolumeAutoFadeProfile(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 
 	memcpy(hm.u.c.anLogValue, anStopGain0_01dB,
 		sizeof(short) * HPI_MAX_CHANNELS);
@@ -3542,7 +3748,7 @@ u16 HPI_VolumeAutoFadeProfile(
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_VolumeAutoFade(
@@ -3554,7 +3760,7 @@ u16 HPI_VolumeAutoFade(
 {
 	return HPI_VolumeAutoFadeProfile(phSubSys,
 		hControl,
-		anStopGain0_01dB, dwDurationMs, HPI_VOLUME_AUTOFADE_LINEAR);
+		anStopGain0_01dB, dwDurationMs, HPI_VOLUME_AUTOFADE_LOG);
 }
 
 u16 HPI_VoxSetThreshold(
@@ -3565,15 +3771,16 @@ u16 HPI_VoxSetThreshold(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_VOX_THRESHOLD;
 
 	hm.u.c.anLogValue[0] = anGain0_01dB;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_VoxGetThreshold(
@@ -3584,15 +3791,405 @@ u16 HPI_VoxGetThreshold(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_CONTROL, HPI_CONTROL_GET_STATE);
-	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.u.c.wControlIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_CONTROL,
+		HPI_CONTROL_GET_STATE);
+	u32TOINDEXES(hControl, &hm.wAdapterIndex, &hm.wObjIndex);
 	hm.u.c.wAttribute = HPI_VOX_THRESHOLD;
 
 	HPI_Message(&hm, &hr);
 
 	*anGain0_01dB = hr.u.c.anLogValue[0];
 
-	return (hr.wError);
+	return hr.wError;
+}
+
+static size_t strv_packet_size = MIN_STRV_PACKET_SIZE;
+
+static size_t entity_type_to_size[LAST_ENTITY_TYPE] = {
+	0,
+	sizeof(struct hpi_entity),
+	sizeof(void *),
+
+	sizeof(int),
+	sizeof(float),
+	sizeof(double),
+
+	sizeof(char),
+	sizeof(char),
+
+	4 * sizeof(char),
+	16 * sizeof(char),
+	6 * sizeof(char),
+};
+
+inline size_t hpi_entity_size(
+	struct hpi_entity *entity_ptr
+)
+{
+	return entity_ptr->header.size;
+}
+
+inline size_t hpi_entity_header_size(
+	struct hpi_entity *entity_ptr
+)
+{
+	return sizeof(entity_ptr->header);
+}
+
+inline size_t hpi_entity_value_size(
+	struct hpi_entity *entity_ptr
+)
+{
+	return hpi_entity_size(entity_ptr) -
+		hpi_entity_header_size(entity_ptr);
+}
+
+inline size_t hpi_entity_item_count(
+	struct hpi_entity *entity_ptr
+)
+{
+	return hpi_entity_value_size(entity_ptr) /
+		entity_type_to_size[entity_ptr->header.type];
+}
+
+inline struct hpi_entity *hpi_entity_ptr_to_next(
+	struct hpi_entity *entity_ptr
+)
+{
+	return (void *)(((uint8_t *) entity_ptr) +
+		hpi_entity_size(entity_ptr));
+}
+
+inline u16 hpi_entity_check_type(
+	const enum e_entity_type t
+)
+{
+	if (t >= 0 && t < STR_TYPE_FIELD_MAX)
+		return 0;
+	return HPI_ERROR_ENTITY_TYPE_INVALID;
+}
+
+inline u16 hpi_entity_check_role(
+	const enum e_entity_role r
+)
+{
+	if (r >= 0 && r < STR_ROLE_FIELD_MAX)
+		return 0;
+	return HPI_ERROR_ENTITY_ROLE_INVALID;
+}
+
+static u16 HPI_Entity_GetNext(
+	struct hpi_entity *entity,
+	int recursive_flag,
+	void *guard_p,
+	struct hpi_entity **next
+)
+{
+	HPI_DEBUG_ASSERT(entity != NULL);
+	HPI_DEBUG_ASSERT(next != NULL);
+	HPI_DEBUG_ASSERT(hpi_entity_size(entity) != 0);
+
+	if (guard_p <= (void *)entity) {
+		*next = NULL;
+		return 0;
+	}
+
+	if (recursive_flag && entity->header.type == entity_type_sequence)
+		*next = (struct hpi_entity *)entity->value;
+	else
+		*next = (struct hpi_entity *)hpi_entity_ptr_to_next(entity);
+
+	if (guard_p <= (void *)*next) {
+		*next = NULL;
+		return 0;
+	}
+
+	HPI_DEBUG_ASSERT(guard_p >= (void *)hpi_entity_ptr_to_next(*next));
+	return 0;
+}
+
+u16 HPI_Entity_FindNext(
+	struct hpi_entity *container_entity,
+	enum e_entity_type type,
+	enum e_entity_role role,
+	int recursive_flag,
+	struct hpi_entity **current_match
+)
+{
+	struct hpi_entity *tmp = NULL;
+	void *guard_p = NULL;
+
+	HPI_DEBUG_ASSERT(container_entity != NULL);
+	guard_p = hpi_entity_ptr_to_next(container_entity);
+
+	if (*current_match != NULL)
+		HPI_Entity_GetNext(*current_match, recursive_flag, guard_p,
+			&tmp);
+	else
+		HPI_Entity_GetNext(container_entity, 1, guard_p, &tmp);
+
+	while (tmp) {
+		u16 err;
+
+		HPI_DEBUG_ASSERT((void *)tmp >= (void *)container_entity);
+
+		if ((!type || tmp->header.type == type) && (!role
+				|| tmp->header.role == role)) {
+			*current_match = tmp;
+			return 0;
+		}
+
+		err = HPI_Entity_GetNext(tmp, recursive_flag, guard_p,
+			current_match);
+		if (err)
+			return err;
+
+		tmp = *current_match;
+	}
+
+	*current_match = NULL;
+	return 0;
+}
+
+void HPI_Entity_Free(
+	struct hpi_entity *entity
+)
+{
+	if (entity != NULL)
+		kfree(entity);
+}
+
+u16 HPI_Entity_AllocAndCopy(
+	struct hpi_entity *src,
+	struct hpi_entity **dst
+)
+{
+	size_t buf_size;
+	HPI_DEBUG_ASSERT(dst != NULL);
+	HPI_DEBUG_ASSERT(src != NULL);
+
+	buf_size = hpi_entity_size(src);
+	*dst = kmalloc(buf_size, GFP_KERNEL);
+	if (dst == NULL)
+		return HPI_ERROR_MEMORY_ALLOC;
+	memcpy(*dst, src, buf_size);
+	return 0;
+}
+
+u16 HPI_Universal_Info(
+	struct hpi_hsubsys *phSubSys,
+	u32 hC,
+	struct hpi_entity **info
+)
+{
+	struct hpi_msg_strv hm;
+	struct hpi_res_strv *phr;
+	u16 hpi_err;
+	int remaining_attempts = 2;
+	size_t resp_packet_size = 1024;
+
+	*info = NULL;
+
+	while (remaining_attempts--) {
+		phr = kmalloc(resp_packet_size, GFP_KERNEL);
+		HPI_DEBUG_ASSERT(phr != NULL);
+
+		HPI_InitMessageResponseV1(&hm.h, (u16)sizeof(hm), &phr->h,
+			(u16)resp_packet_size, HPI_OBJ_CONTROL,
+			HPI_CONTROL_GET_INFO);
+		u32TOINDEXES(hC, &hm.h.wAdapterIndex, &hm.h.wObjIndex);
+
+		hm.strv.header.size = sizeof(hm.strv);
+		phr->strv.header.size = resp_packet_size - sizeof(phr->h);
+
+		HPI_Message((struct hpi_message *)&hm.h,
+			(struct hpi_response *)&phr->h);
+		if (phr->h.wError == HPI_ERROR_RESPONSE_BUFFER_TOO_SMALL) {
+
+			HPI_DEBUG_ASSERT(phr->h.wSpecificError >
+				MIN_STRV_PACKET_SIZE
+				&& phr->h.wSpecificError < 1500);
+			resp_packet_size = phr->h.wSpecificError;
+		} else {
+			remaining_attempts = 0;
+			if (!phr->h.wError)
+				HPI_Entity_AllocAndCopy(&phr->strv, info);
+		}
+
+		hpi_err = phr->h.wError;
+		kfree(phr);
+	}
+
+	return hpi_err;
+}
+
+u16 HPI_Universal_Get(
+	struct hpi_hsubsys *phSubSys,
+	u32 hC,
+	struct hpi_entity **value
+)
+{
+	struct hpi_msg_strv hm;
+	struct hpi_res_strv *phr;
+	u16 hpi_err;
+	int remaining_attempts = 2;
+
+	*value = NULL;
+
+	while (remaining_attempts--) {
+		phr = kmalloc(strv_packet_size, GFP_KERNEL);
+		if (!phr)
+			return HPI_ERROR_MEMORY_ALLOC;
+
+		HPI_InitMessageResponseV1(&hm.h, (u16)sizeof(hm), &phr->h,
+			(u16)strv_packet_size, HPI_OBJ_CONTROL,
+			HPI_CONTROL_GET_STATE);
+		u32TOINDEXES(hC, &hm.h.wAdapterIndex, &hm.h.wObjIndex);
+
+		hm.strv.header.size = sizeof(hm.strv);
+		phr->strv.header.size = strv_packet_size - sizeof(phr->h);
+
+		HPI_Message((struct hpi_message *)&hm.h,
+			(struct hpi_response *)&phr->h);
+		if (phr->h.wError == HPI_ERROR_RESPONSE_BUFFER_TOO_SMALL) {
+
+			HPI_DEBUG_ASSERT(phr->h.wSpecificError >
+				MIN_STRV_PACKET_SIZE
+				&& phr->h.wSpecificError < 1000);
+			strv_packet_size = phr->h.wSpecificError;
+		} else {
+			remaining_attempts = 0;
+			if (!phr->h.wError)
+				HPI_Entity_AllocAndCopy(&phr->strv, value);
+		}
+
+		hpi_err = phr->h.wError;
+		kfree(phr);
+	}
+
+	return hpi_err;
+}
+
+u16 HPI_Universal_Set(
+	struct hpi_hsubsys *phSubSys,
+	u32 hC,
+	struct hpi_entity *value
+)
+{
+	struct hpi_msg_strv *phm;
+	struct hpi_res_strv hr;
+
+	phm = kmalloc(sizeof(phm->h) + value->header.size, GFP_KERNEL);
+	HPI_DEBUG_ASSERT(phm != NULL);
+
+	HPI_InitMessageResponseV1(&phm->h,
+		sizeof(phm->h) + value->header.size, &hr.h, sizeof(hr),
+		HPI_OBJ_CONTROL, HPI_CONTROL_SET_STATE);
+	u32TOINDEXES(hC, &phm->h.wAdapterIndex, &phm->h.wObjIndex);
+	hr.strv.header.size = sizeof(hr.strv);
+
+	memcpy(&phm->strv, value, value->header.size);
+	HPI_Message((struct hpi_message *)&phm->h,
+		(struct hpi_response *)&hr.h);
+
+	return hr.h.wError;
+}
+
+u16 HPI_Entity_AllocAndPack(
+	const enum e_entity_type type,
+	const size_t item_count,
+	const enum e_entity_role role,
+	void *value,
+	struct hpi_entity **entity
+)
+{
+	size_t bytes_to_copy, total_size;
+	u16 wHE = 0;
+	*entity = 0;
+
+	wHE = hpi_entity_check_type(type);
+	if (wHE)
+		return wHE;
+
+	HPI_DEBUG_ASSERT(role > entity_role_null && type < LAST_ENTITY_ROLE);
+
+	bytes_to_copy = entity_type_to_size[type] * item_count;
+	total_size = hpi_entity_header_size(*entity) + bytes_to_copy;
+
+	HPI_DEBUG_ASSERT(total_size >= hpi_entity_header_size(*entity)
+		&& total_size < STR_SIZE_FIELD_MAX);
+
+	*entity = kmalloc(total_size, GFP_KERNEL);
+	if (*entity == NULL)
+		return HPI_ERROR_MEMORY_ALLOC;
+	memcpy((*entity)->value, value, bytes_to_copy);
+	(*entity)->header.size =
+		hpi_entity_header_size(*entity) + bytes_to_copy;
+	(*entity)->header.type = type;
+	(*entity)->header.role = role;
+	return 0;
+}
+
+u16 HPI_Entity_CopyValueFrom(
+	struct hpi_entity *entity,
+	enum e_entity_type type,
+	size_t item_count,
+	void *value_dst_p
+)
+{
+	size_t bytes_to_copy;
+
+	if (entity->header.type != type)
+		return HPI_ERROR_ENTITY_TYPE_MISMATCH;
+
+	if (hpi_entity_item_count(entity) != item_count)
+		return HPI_ERROR_ENTITY_ITEM_COUNT;
+
+	bytes_to_copy = entity_type_to_size[type] * item_count;
+	memcpy(value_dst_p, entity->value, bytes_to_copy);
+	return 0;
+}
+
+u16 HPI_Entity_Unpack(
+	struct hpi_entity *entity,
+	enum e_entity_type *type,
+	size_t *item_count,
+	enum e_entity_role *role,
+	void **value
+)
+{
+	u16 err = 0;
+	HPI_DEBUG_ASSERT(entity != NULL);
+
+	if (type)
+		*type = entity->header.type;
+
+	if (role)
+		*role = entity->header.role;
+
+	if (value)
+		*value = entity->value;
+
+	if (item_count != NULL) {
+		if (entity->header.type == entity_type_sequence) {
+			void *guard_p = hpi_entity_ptr_to_next(entity);
+			struct hpi_entity *next = NULL;
+			void *contents = entity->value;
+
+			*item_count = 0;
+			while (contents < guard_p) {
+				(*item_count)++;
+				err = HPI_Entity_GetNext(contents, 0, guard_p,
+					&next);
+				if (next == NULL || err)
+					break;
+				contents = next;
+			}
+		} else {
+			*item_count = hpi_entity_item_count(entity);
+		}
+	}
+	return err;
 }
 
 u16 HPI_GpioOpen(
@@ -3605,22 +4202,20 @@ u16 HPI_GpioOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_GPIO, HPI_GPIO_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
 
 	if (hr.wError == 0) {
-		*phGpio =
-			HPI_IndexesToHandle(HPI_OBJ_GPIO, wAdapterIndex, 0,
-			0);
+		*phGpio = HPI_IndexesToHandle(HPI_OBJ_GPIO, wAdapterIndex, 0);
 		if (pwNumberInputBits)
 			*pwNumberInputBits = hr.u.l.wNumberInputBits;
 		if (pwNumberOutputBits)
 			*pwNumberOutputBits = hr.u.l.wNumberOutputBits;
 	} else
 		*phGpio = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_GpioReadBit(
@@ -3632,36 +4227,36 @@ u16 HPI_GpioReadBit(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_READ_BIT);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_GPIO, HPI_GPIO_READ_BIT);
 	u32TOINDEX(hGpio, &hm.wAdapterIndex);
 	hm.u.l.wBitIndex = wBitIndex;
 
 	HPI_Message(&hm, &hr);
 
 	*pwBitData = hr.u.l.wBitData[0];
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_GpioReadAllBits(
 	struct hpi_hsubsys *phSubSys,
 	u32 hGpio,
-	u16 *pwBitData
+	u16 awAllBitData[4]
 )
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_READ_ALL);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_GPIO, HPI_GPIO_READ_ALL);
 	u32TOINDEX(hGpio, &hm.wAdapterIndex);
 
 	HPI_Message(&hm, &hr);
 
-	if (pwBitData) {
-		pwBitData[0] = hr.u.l.wBitData[0];
-		pwBitData[1] = hr.u.l.wBitData[1];
-		pwBitData[2] = hr.u.l.wBitData[2];
-		pwBitData[3] = hr.u.l.wBitData[3];
+	if (awAllBitData) {
+		awAllBitData[0] = hr.u.l.wBitData[0];
+		awAllBitData[1] = hr.u.l.wBitData[1];
+		awAllBitData[2] = hr.u.l.wBitData[2];
+		awAllBitData[3] = hr.u.l.wBitData[3];
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_GpioWriteBit(
@@ -3673,36 +4268,37 @@ u16 HPI_GpioWriteBit(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_WRITE_BIT);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_GPIO, HPI_GPIO_WRITE_BIT);
 	u32TOINDEX(hGpio, &hm.wAdapterIndex);
 	hm.u.l.wBitIndex = wBitIndex;
 	hm.u.l.wBitData = wBitData;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_GpioWriteStatus(
 	struct hpi_hsubsys *phSubSys,
 	u32 hGpio,
-	u16 *pwBitData
+	u16 awAllBitData[4]
 )
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_GPIO, HPI_GPIO_WRITE_STATUS);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_GPIO,
+		HPI_GPIO_WRITE_STATUS);
 	u32TOINDEX(hGpio, &hm.wAdapterIndex);
 
 	HPI_Message(&hm, &hr);
 
-	if (pwBitData) {
-		pwBitData[0] = hr.u.l.wBitData[0];
-		pwBitData[1] = hr.u.l.wBitData[1];
-		pwBitData[2] = hr.u.l.wBitData[2];
-		pwBitData[3] = hr.u.l.wBitData[3];
+	if (awAllBitData) {
+		awAllBitData[0] = hr.u.l.wBitData[0];
+		awAllBitData[1] = hr.u.l.wBitData[1];
+		awAllBitData[2] = hr.u.l.wBitData[2];
+		awAllBitData[3] = hr.u.l.wBitData[3];
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AsyncEventOpen(
@@ -3713,7 +4309,8 @@ u16 HPI_AsyncEventOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ASYNCEVENT,
+		HPI_ASYNCEVENT_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
@@ -3722,10 +4319,10 @@ u16 HPI_AsyncEventOpen(
 
 		*phAsync =
 			HPI_IndexesToHandle(HPI_OBJ_ASYNCEVENT, wAdapterIndex,
-			0, 0);
+			0);
 	else
 		*phAsync = 0;
-	return (hr.wError);
+	return hr.wError;
 
 }
 
@@ -3736,12 +4333,13 @@ u16 HPI_AsyncEventClose(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ASYNCEVENT,
+		HPI_ASYNCEVENT_OPEN);
 	u32TOINDEX(hAsync, &hm.wAdapterIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AsyncEventWait(
@@ -3763,7 +4361,8 @@ u16 HPI_AsyncEventGetCount(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_GETCOUNT);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ASYNCEVENT,
+		HPI_ASYNCEVENT_GETCOUNT);
 	u32TOINDEX(hAsync, &hm.wAdapterIndex);
 
 	HPI_Message(&hm, &hr);
@@ -3772,7 +4371,7 @@ u16 HPI_AsyncEventGetCount(
 		if (pwCount)
 			*pwCount = hr.u.as.u.count.wCount;
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_AsyncEventGet(
@@ -3785,7 +4384,8 @@ u16 HPI_AsyncEventGet(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_ASYNCEVENT, HPI_ASYNCEVENT_GET);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ASYNCEVENT,
+		HPI_ASYNCEVENT_GET);
 	u32TOINDEX(hAsync, &hm.wAdapterIndex);
 
 	HPI_Message(&hm, &hr);
@@ -3795,7 +4395,7 @@ u16 HPI_AsyncEventGet(
 		*pwNumberReturned = 1;
 	}
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_NvMemoryOpen(
@@ -3807,7 +4407,8 @@ u16 HPI_NvMemoryOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_NVMEMORY,
+		HPI_NVMEMORY_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
@@ -3815,12 +4416,12 @@ u16 HPI_NvMemoryOpen(
 	if (hr.wError == 0) {
 		*phNvMemory =
 			HPI_IndexesToHandle(HPI_OBJ_NVMEMORY, wAdapterIndex,
-			0, 0);
+			0);
 		if (pwSizeInBytes)
 			*pwSizeInBytes = hr.u.n.wSizeInBytes;
 	} else
 		*phNvMemory = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_NvMemoryReadByte(
@@ -3832,14 +4433,15 @@ u16 HPI_NvMemoryReadByte(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_READ_BYTE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_NVMEMORY,
+		HPI_NVMEMORY_READ_BYTE);
 	u32TOINDEX(hNvMemory, &hm.wAdapterIndex);
-	hm.u.n.wIndex = wIndex;
+	hm.u.n.wAddress = wIndex;
 
 	HPI_Message(&hm, &hr);
 
 	*pwData = hr.u.n.wData;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_NvMemoryWriteByte(
@@ -3851,14 +4453,15 @@ u16 HPI_NvMemoryWriteByte(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_NVMEMORY, HPI_NVMEMORY_WRITE_BYTE);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_NVMEMORY,
+		HPI_NVMEMORY_WRITE_BYTE);
 	u32TOINDEX(hNvMemory, &hm.wAdapterIndex);
-	hm.u.n.wIndex = wIndex;
+	hm.u.n.wAddress = wIndex;
 	hm.u.n.wData = wData;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ProfileOpenAll(
@@ -3871,25 +4474,26 @@ u16 HPI_ProfileOpenAll(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_OPEN_ALL);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_PROFILE,
+		HPI_PROFILE_OPEN_ALL);
 	hm.wAdapterIndex = wAdapterIndex;
-	hm.wDspIndex = wProfileIndex;
+	hm.wObjIndex = wProfileIndex;
 	HPI_Message(&hm, &hr);
 
 	*pwMaxProfiles = hr.u.p.u.o.wMaxProfiles;
 	if (hr.wError == 0)
 		*phProfile =
 			HPI_IndexesToHandle(HPI_OBJ_PROFILE, wAdapterIndex,
-			wProfileIndex, 0);
+			wProfileIndex);
 	else
 		*phProfile = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ProfileGet(
 	struct hpi_hsubsys *phSubSys,
 	u32 hProfile,
-	u16 wIndex,
+	u16 wBinIndex,
 	u16 *pwSeconds,
 	u32 *pdwMicroSeconds,
 	u32 *pdwCallCount,
@@ -3899,9 +4503,9 @@ u16 HPI_ProfileGet(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET);
-	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
-	hm.u.p.wIndex = wIndex;
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_PROFILE, HPI_PROFILE_GET);
+	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wObjIndex);
+	hm.u.p.wBinIndex = wBinIndex;
 	HPI_Message(&hm, &hr);
 	if (pwSeconds)
 		*pwSeconds = hr.u.p.u.t.wSeconds;
@@ -3913,7 +4517,7 @@ u16 HPI_ProfileGet(
 		*pdwMaxMicroSeconds = hr.u.p.u.t.dwMaxMicroSeconds;
 	if (pdwMinMicroSeconds)
 		*pdwMinMicroSeconds = hr.u.p.u.t.dwMinMicroSeconds;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ProfileGetUtilization(
@@ -3924,8 +4528,9 @@ u16 HPI_ProfileGetUtilization(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_UTILIZATION);
-	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_PROFILE,
+		HPI_PROFILE_GET_UTILIZATION);
+	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 	if (hr.wError) {
 		if (pdwUtilization)
@@ -3934,22 +4539,23 @@ u16 HPI_ProfileGetUtilization(
 		if (pdwUtilization)
 			*pdwUtilization = hr.u.p.u.t.dwCallCount;
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ProfileGetName(
 	struct hpi_hsubsys *phSubSys,
 	u32 hProfile,
-	u16 wIndex,
+	u16 wBinIndex,
 	char *szName,
 	u16 nNameLength
 )
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_GET_NAME);
-	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
-	hm.u.p.wIndex = wIndex;
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_PROFILE,
+		HPI_PROFILE_GET_NAME);
+	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wObjIndex);
+	hm.u.p.wBinIndex = wBinIndex;
 	HPI_Message(&hm, &hr);
 	if (hr.wError) {
 		if (szName)
@@ -3959,7 +4565,7 @@ u16 HPI_ProfileGetName(
 			memcpy(szName, (char *)hr.u.p.u.n.szName,
 				nNameLength);
 	}
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ProfileStartAll(
@@ -3969,11 +4575,12 @@ u16 HPI_ProfileStartAll(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_START_ALL);
-	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_PROFILE,
+		HPI_PROFILE_START_ALL);
+	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_ProfileStopAll(
@@ -3983,11 +4590,12 @@ u16 HPI_ProfileStopAll(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_PROFILE, HPI_PROFILE_STOP_ALL);
-	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wDspIndex);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_PROFILE,
+		HPI_PROFILE_STOP_ALL);
+	u32TOINDEXES(hProfile, &hm.wAdapterIndex, &hm.wObjIndex);
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_WatchdogOpen(
@@ -3998,7 +4606,8 @@ u16 HPI_WatchdogOpen(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_OPEN);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_WATCHDOG,
+		HPI_WATCHDOG_OPEN);
 	hm.wAdapterIndex = wAdapterIndex;
 
 	HPI_Message(&hm, &hr);
@@ -4006,10 +4615,10 @@ u16 HPI_WatchdogOpen(
 	if (hr.wError == 0)
 		*phWatchdog =
 			HPI_IndexesToHandle(HPI_OBJ_WATCHDOG, wAdapterIndex,
-			0, 0);
+			0);
 	else
 		*phWatchdog = 0;
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_WatchdogSetTime(
@@ -4020,13 +4629,14 @@ u16 HPI_WatchdogSetTime(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_SET_TIME);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_WATCHDOG,
+		HPI_WATCHDOG_SET_TIME);
 	u32TOINDEX(hWatchdog, &hm.wAdapterIndex);
 	hm.u.w.dwTimeMs = dwTimeMillisec;
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
+	return hr.wError;
 }
 
 u16 HPI_WatchdogPing(
@@ -4036,104 +4646,11 @@ u16 HPI_WatchdogPing(
 {
 	struct hpi_message hm;
 	struct hpi_response hr;
-	HPI_InitMessage(&hm, HPI_OBJ_WATCHDOG, HPI_WATCHDOG_PING);
+	HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_WATCHDOG,
+		HPI_WATCHDOG_PING);
 	u32TOINDEX(hWatchdog, &hm.wAdapterIndex);
 
 	HPI_Message(&hm, &hr);
 
-	return (hr.wError);
-}
-
-u16 HPI_FormatCreate(
-	struct hpi_format *pFormat,
-	u16 wChannels,
-	u16 wFormat,
-	u32 dwSampleRate,
-	u32 dwBitRate,
-	u32 dwAttributes
-)
-{
-	u16 wError = 0;
-	struct hpi_msg_format Format;
-
-	if (wChannels < 1)
-		wChannels = 1;
-	if (wChannels > 8)
-		wChannels = 8;
-
-	Format.wChannels = wChannels;
-
-	switch (wFormat) {
-	case HPI_FORMAT_PCM16_SIGNED:
-	case HPI_FORMAT_PCM24_SIGNED:
-	case HPI_FORMAT_PCM32_SIGNED:
-	case HPI_FORMAT_PCM32_FLOAT:
-	case HPI_FORMAT_PCM16_BIGENDIAN:
-	case HPI_FORMAT_PCM8_UNSIGNED:
-	case HPI_FORMAT_MPEG_L1:
-	case HPI_FORMAT_MPEG_L2:
-	case HPI_FORMAT_MPEG_L3:
-	case HPI_FORMAT_DOLBY_AC2:
-	case HPI_FORMAT_AA_TAGIT1_HITS:
-	case HPI_FORMAT_AA_TAGIT1_INSERTS:
-	case HPI_FORMAT_RAW_BITSTREAM:
-	case HPI_FORMAT_AA_TAGIT1_HITS_EX1:
-	case HPI_FORMAT_OEM1:
-	case HPI_FORMAT_OEM2:
-		break;
-	default:
-		wError = HPI_ERROR_INVALID_FORMAT;
-		return (wError);
-	}
-	Format.wFormat = wFormat;
-
-	if (dwSampleRate < 8000L) {
-		wError = HPI_ERROR_INCOMPATIBLE_SAMPLERATE;
-		dwSampleRate = 8000L;
-	}
-	if (dwSampleRate > 200000L) {
-		wError = HPI_ERROR_INCOMPATIBLE_SAMPLERATE;
-		dwSampleRate = 200000L;
-	}
-	Format.dwSampleRate = dwSampleRate;
-
-	switch (wFormat) {
-	case HPI_FORMAT_MPEG_L1:
-	case HPI_FORMAT_MPEG_L2:
-	case HPI_FORMAT_MPEG_L3:
-		Format.dwBitRate = dwBitRate;
-		break;
-	case HPI_FORMAT_PCM16_SIGNED:
-	case HPI_FORMAT_PCM16_BIGENDIAN:
-		Format.dwBitRate = wChannels * dwSampleRate * 2;
-		break;
-	case HPI_FORMAT_PCM32_SIGNED:
-	case HPI_FORMAT_PCM32_FLOAT:
-		Format.dwBitRate = wChannels * dwSampleRate * 4;
-		break;
-	case HPI_FORMAT_PCM8_UNSIGNED:
-		Format.dwBitRate = wChannels * dwSampleRate;
-		break;
-	default:
-		Format.dwBitRate = 0;
-	}
-
-	switch (wFormat) {
-	case HPI_FORMAT_MPEG_L2:
-		if ((wChannels == 1)
-			&& (dwAttributes != HPI_MPEG_MODE_DEFAULT)) {
-			dwAttributes = HPI_MPEG_MODE_DEFAULT;
-			wError = HPI_ERROR_INVALID_FORMAT;
-		} else if (dwAttributes > HPI_MPEG_MODE_DUALCHANNEL) {
-			dwAttributes = HPI_MPEG_MODE_DEFAULT;
-			wError = HPI_ERROR_INVALID_FORMAT;
-		}
-		Format.dwAttributes = dwAttributes;
-		break;
-	default:
-		Format.dwAttributes = dwAttributes;
-	}
-
-	HPI_MsgToFormat(pFormat, &Format);
-	return (wError);
+	return hr.wError;
 }

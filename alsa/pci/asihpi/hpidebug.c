@@ -86,7 +86,9 @@ static struct treenode nodename = { \
 #define get_treenode_elem(node_ptr, idx, type)  \
 	(&(*((type *)(node_ptr)->array)[idx]))
 
-make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
+make_treenode_from_array(hpi_control_type_strings, HPI_CONTROL_TYPE_STRINGS)
+
+	make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
 	make_treenode_from_array(hpi_adapter_strings, HPI_ADAPTER_STRINGS)
 	make_treenode_from_array(hpi_istream_strings, HPI_ISTREAM_STRINGS)
 	make_treenode_from_array(hpi_ostream_strings, HPI_OSTREAM_STRINGS)
@@ -155,7 +157,9 @@ void hpi_debug_message(
 		if ((phm->wObject <= HPI_OBJ_MAXINDEX) && phm->wObject) {
 			u16 wIndex = 0;
 			u16 wAttrib = 0;
+			int isControl = 0;
 
+			wIndex = phm->wObjIndex;
 			switch (phm->wObject) {
 			case HPI_OBJ_ADAPTER:
 			case HPI_OBJ_PROFILE:
@@ -167,29 +171,33 @@ void hpi_debug_message(
 				break;
 			case HPI_OBJ_OSTREAM:
 			case HPI_OBJ_ISTREAM:
-				wIndex = phm->u.d.wStreamIndex;
 				break;
+
 			case HPI_OBJ_CONTROLEX:
-				if (phm->wFunction == HPI_CONTROL_GET_INFO)
-					wIndex = phm->u.c.wControlIndex;
-				else {
-					wIndex = phm->u.cx.wControlIndex;
-					wAttrib = phm->u.cx.wAttribute;
-				}
-				break;
 			case HPI_OBJ_CONTROL:
-				wIndex = phm->u.c.wControlIndex;
-				wAttrib = phm->u.c.wAttribute;
+				if (phm->version == 1)
+					wAttrib = HPI_CTL_ATTR(UNIVERSAL, 1);
+				else
+					wAttrib = phm->u.c.wAttribute;
+				isControl = 1;
 				break;
 			default:
 				break;
 			}
-			printk("%s Adapter %d %s param x%08x \n",
-				szFileline, phm->wAdapterIndex,
-				hpi_function_string(phm->
-					wFunction), (wAttrib << 16) + wIndex);
+
+			if (isControl && (wAttrib & 0xFF00)) {
+				int controlType = (wAttrib & 0xFF00) >> 8;
+				int attrIndex = HPI_CTL_ATTR_INDEX(wAttrib);
+				/* note the KERN facility level
+				   is in szFileline already */
+				printk("%s Adapter %d %s ctrl_index x%04x %s %d\n", szFileline, phm->wAdapterIndex, hpi_function_string(phm->wFunction), wIndex, get_treenode_elem(&hpi_control_type_strings, controlType, char *),
+					attrIndex
+				);
+
+			} else
+				printk("%s Adapter %d %s idx x%04x attr x%04x \n", szFileline, phm->wAdapterIndex, hpi_function_string(phm->wFunction), wIndex, wAttrib);
 		} else {
-			printk("Adap=%d, Invalid Obj=%d, Func=%d\n",
+			printk("Adap=%d, Invalid Obj=%d, Func=0x%x\n",
 				phm->wAdapterIndex, phm->wObject,
 				phm->wFunction);
 		}

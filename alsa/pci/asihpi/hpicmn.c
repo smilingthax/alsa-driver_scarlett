@@ -16,6 +16,8 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+\file hpicmn.c
+
  Common functions used by hpixxxx.c modules
 
 (C) Copyright AudioScience Inc. 1998-2003
@@ -65,14 +67,20 @@ u16 HpiAddAdapter(
 
 	if (pao->wIndex >= HPI_MAX_ADAPTERS) {
 		retval = HPI_ERROR_BAD_ADAPTER_NUMBER;
-	} else if (adapters.adapter[pao->wIndex].wAdapterType != 0) {
-		retval = HPI_DUPLICATE_ADAPTER_NUMBER;
-	} else {
-		adapters.adapter[pao->wIndex] = *pao;
-		HpiOs_Dsplock_Init(&adapters.adapter[pao->wIndex]);
-		adapters.gwNumAdapters++;
+		goto unlock;
 	}
 
+	if (adapters.adapter[pao->wIndex].wAdapterType) {
+		{
+			retval = HPI_DUPLICATE_ADAPTER_NUMBER;
+			goto unlock;
+		}
+	}
+	adapters.adapter[pao->wIndex] = *pao;
+	HpiOs_Dsplock_Init(&adapters.adapter[pao->wIndex]);
+	adapters.gwNumAdapters++;
+
+unlock:
 	HpiOs_Alistlock_UnLock(&adapters);
 	return retval;
 }
@@ -192,6 +200,8 @@ static unsigned int ControlCacheAllocCheck(
 		pC->dwInit = 1;
 
 		pMasterCache = (u32 *)pC->pCache;
+		HPI_DEBUG_LOG(VERBOSE, "check %d controls\n",
+			pC->dwControlCount);
 		for (i = 0; i < pC->dwControlCount; i++) {
 			struct hpi_control_cache_info *info =
 				(struct hpi_control_cache_info *)pMasterCache;
@@ -210,6 +220,10 @@ static unsigned int ControlCacheAllocCheck(
 					hpi_control_cache_single) /
 					sizeof(u32);
 
+			HPI_DEBUG_LOG(VERBOSE,
+				"nCached %d, pinfo %p index %d type %d\n",
+				nCached, pC->pInfo[i], info->ControlIndex,
+				info->ControlType);
 		}
 		/*
 		   We didn't find anything to cache, so try again later !
@@ -229,14 +243,7 @@ static short FindControl(
 	u16 *pwControlIndex
 )
 {
-	if (phm->wObject == HPI_OBJ_CONTROL) {
-		*pwControlIndex = phm->u.c.wControlIndex;
-	} else {	/* controlex */
-		*pwControlIndex = phm->u.cx.wControlIndex;
-		HPI_DEBUG_LOG(VERBOSE,
-			"HpiCheckControlCache() ControlEx %d\n",
-			*pwControlIndex);
-	}
+	*pwControlIndex = phm->wObjIndex;
 
 	if (!ControlCacheAllocCheck(pCache)) {
 		HPI_DEBUG_LOG(VERBOSE,
@@ -253,8 +260,7 @@ static short FindControl(
 		return 0;
 	} else {
 		HPI_DEBUG_LOG(VERBOSE,
-			"HpiCheckControlCache() Type %d\n",
-			(*pI)->ControlType);
+			"FindControl() Type %d\n", (*pI)->ControlType);
 	}
 	return 1;
 }
@@ -317,9 +323,6 @@ short HpiCheckControlCache(
 	if (!FindControl(phm, pCache, &pI, &wControlIndex))
 		return 0;
 
-	phr->wSize =
-		sizeof(struct hpi_response_header) +
-		sizeof(struct hpi_control_res);
 	phr->wError = 0;
 
 	/* pC is the default cached control strucure. May be cast to
@@ -351,8 +354,9 @@ short HpiCheckControlCache(
 		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
 			phr->u.c.dwParam1 = pC->u.x.wSourceNodeType;
 			phr->u.c.dwParam2 = pC->u.x.wSourceNodeIndex;
-		} else
+		} else {
 			found = 0;
+		}
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
 		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
@@ -485,11 +489,22 @@ short HpiCheckControlCache(
 		found = 0;
 		break;
 	}
-	if (pI->ControlType && !found)
+
+	if (found)
 		HPI_DEBUG_LOG(VERBOSE,
-			"Uncached Adap %d, Control %d, Control type %d\n",
+			"Cached Adap %d, Ctl %d, Type %d, Attr %d\n",
+			phm->wAdapterIndex, pI->ControlIndex,
+			pI->ControlType, phm->u.c.wAttribute);
+	else
+		HPI_DEBUG_LOG(VERBOSE,
+			"Uncached Adap %d, Ctl %d, Ctl type %d\n",
 			phm->wAdapterIndex, pI->ControlIndex,
 			pI->ControlType);
+
+	if (found)
+		phr->wSize =
+			sizeof(struct hpi_response_header) +
+			sizeof(struct hpi_control_res);
 
 	return found;
 }
@@ -565,13 +580,7 @@ void HpiSyncControlCache(
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
 			pC->u.clk.wSource = (u16)phm->u.c.dwParam1;
 		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
-			if (pC->u.clk.wSourceIndex ==
-				HPI_ERROR_ILLEGAL_CACHE_VALUE) {
-				phr->u.c.dwParam1 = 0;
-				phr->wError = HPI_ERROR_INVALID_OPERATION;
-			} else
-				pC->u.clk.wSourceIndex =
-					(u16)phm->u.c.dwParam1;
+			pC->u.clk.wSourceIndex = (u16)phm->u.c.dwParam1;
 		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
 			pC->u.clk.dwSampleRate = phm->u.c.dwParam1;
 		break;
@@ -579,6 +588,7 @@ void HpiSyncControlCache(
 		break;
 	}
 }
+
 struct hpi_control_cache *HpiAllocControlCache(
 	const u32 dwNumberOfControls,
 	const u32 dwSizeInBytes,

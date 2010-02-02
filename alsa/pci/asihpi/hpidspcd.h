@@ -1,5 +1,5 @@
 /***********************************************************************/
-/*!
+/**
 
     AudioScience HPI driver
     Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
@@ -19,13 +19,20 @@
 
 \file
 Functions for reading DSP code to load into DSP
-USE_ZLIB is forced to be undefined.
 
-If it is not defined, code is read from linked arrays.
-HPI_INCLUDE_**** must be defined
-and the appropriate hzz?????.c or hex?????.c linked in
+ hpi_dspcode_defines HPI DSP code loading method
+Define exactly one of these to select how the DSP code is supplied to
+the adapter.
 
-If USE_ZLIB is defined, hpizlib.c must also be linked
+End users writing applications that use the HPI interface do not have to
+use any of the below defines; they are only necessary for building drivers
+
+HPI_DSPCODE_FILE:
+DSP code is supplied as a file that is opened and read from by the driver.
+
+HPI_DSPCODE_FIRMWARE:
+DSP code is read using the hotplug firmware loader module.
+     Only valid when compiling the HPI kernel driver under Linux.
 */
 /***********************************************************************/
 #ifndef _HPIDSPCD_H_
@@ -62,30 +69,30 @@ struct dsp_code {
 \return 0 for success, or error code if requested code is not available
 */
 short HpiDspCode_Open(
-	u32 nAdapter,		/*!< Adapter family */
-	/*!< Pointer to DSP code control structure */
+	/** Code identifier, usually adapter family */
+	u32 nAdapter,
+	/** Pointer to DSP code control structure */
 	struct dsp_code *psDspCode,
-	/*!< Pointer to dword to receive OS specific error code */
+	/** Pointer to dword to receive OS specific error code */
 	u32 *pdwOsErrorCode
 );
 
-/*! Close the DSP code file */
+/** Close the DSP code file */
 void HpiDspCode_Close(
 	struct dsp_code *psDspCode
 );
 
-/*! Rewind to the beginning of the DSP code file (for verify) */
+/** Rewind to the beginning of the DSP code file (for verify) */
 void HpiDspCode_Rewind(
 	struct dsp_code *psDspCode
 );
 
-/*! Read one word from the dsp code file
+/** Read one word from the dsp code file
 	\return 0 for success, or error code if eof, or block length exceeded
 */
 short HpiDspCode_ReadWord(
-	struct dsp_code *psDspCode,
-	/*!< Where to store the read word */
-	u32 *pdwWord
+	struct dsp_code *psDspCode, /**< DSP code descriptor */
+	u32 *pdwWord /**< Where to store the read word */
 );
 
 /** Get a block of dsp code into an internal buffer, and provide a pointer to

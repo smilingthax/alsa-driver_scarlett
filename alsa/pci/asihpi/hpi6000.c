@@ -37,10 +37,6 @@
 #include "hpidspcd.h"
 #include "hpicmn.h"
 
-#ifndef offsetof
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
-#endif
-
 #define HPI_HIF_BASE (0x00000200)	/* start of C67xx internal RAM */
 #define HPI_HIF_ADDR(member) \
 	(HPI_HIF_BASE + offsetof(struct hpi_hif_6000, member))
@@ -190,6 +186,7 @@ static short Hpi6000_UpdateControlCache(
 );
 static short Hpi6000_MessageResponseSequence(
 	struct hpi_adapter_obj *pao,
+	u16 wDspIndex,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
@@ -214,11 +211,13 @@ static void Hpi6000_SendDspInterrupt(
 );
 static short Hpi6000_SendData(
 	struct hpi_adapter_obj *pao,
+	u16 wDspIndex,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
 static short Hpi6000_GetData(
 	struct hpi_adapter_obj *pao,
+	u16 wDspIndex,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
@@ -520,7 +519,7 @@ static void SubSysCreateAdapter(
 		return;
 	if (phm->u.s.Resource.r.Pci->wVendorId != HPI_PCI_VENDOR_ID_TI)
 		return;
-	if (phm->u.s.Resource.r.Pci->wDeviceId != HPI_ADAPTER_PCI2040)
+	if (phm->u.s.Resource.r.Pci->wDeviceId != HPI_PCI_DEV_ID_PCI2040)
 		return;
 
 	ao.priv = kmalloc(sizeof(struct hpi_hw_obj), GFP_KERNEL);
@@ -668,21 +667,19 @@ static short CreateAdapterObj(
 		hM.wObject = HPI_OBJ_ADAPTER;
 		hM.wFunction = HPI_ADAPTER_GET_INFO;
 		hM.wAdapterIndex = 0;
-		hM.wDspIndex = 0;
 		memset(&hR0, 0, sizeof(hR0));
 		memset(&hR1, 0, sizeof(hR1));
 		hR0.wSize = sizeof(hR0);
 		hR1.wSize = sizeof(hR1);
 
-		wError = Hpi6000_MessageResponseSequence(pao, &hM, &hR0);
+		wError = Hpi6000_MessageResponseSequence(pao, 0, &hM, &hR0);
 		if (hR0.wError) {
 			HPI_DEBUG_LOG(DEBUG, "message error %d\n",
 				hR0.wError);
 			return (hR0.wError);	/*error */
 		}
 		if (phw->wNumDsp == 2) {
-			hM.wDspIndex = 1;
-			wError = Hpi6000_MessageResponseSequence(pao, &hM,
+			wError = Hpi6000_MessageResponseSequence(pao, 1, &hM,
 				&hR1);
 			if (wError)
 				return wError;
@@ -775,10 +772,10 @@ static short Hpi6000_AdapterBootLoadDsp(
 	case 0x5110:	/* ASI5100 revB or higher with C6711D */
 	case 0x6100:
 	case 0x6200:
-		nBootLoadFamily = HPI_ADAPTER_FAMILY_ASI6200;
+		nBootLoadFamily = HPI_ADAPTER_FAMILY_ASI(0x6200);
 		break;
 	case 0x8800:
-		nBootLoadFamily = HPI_ADAPTER_FAMILY_ASI8800;
+		nBootLoadFamily = HPI_ADAPTER_FAMILY_ASI(0x8800);
 		break;
 	default:
 		return (HPI6000_ERROR_UNHANDLED_SUBSYS_ID);
@@ -1207,10 +1204,10 @@ static short Hpi6000_AdapterBootLoadDsp(
 
 			dwAdapterInfo =
 				HpiReadWord(pdo, HPI_HIF_ADDR(dwAdapterInfo));
-			if ((HPI_HIF_ADAPTER_INFO_EXTRACT_ADAPTER
-					(dwAdapterInfo)
-					& HPI_ADAPTER_FAMILY_MASK) ==
-				HPI_ADAPTER_ASI6200)
+			if (HPI_ADAPTER_FAMILY_ASI
+				(HPI_HIF_ADAPTER_INFO_EXTRACT_ADAPTER
+					(dwAdapterInfo)) ==
+				HPI_ADAPTER_FAMILY_ASI(0x6200))
 				/* all 6200 cards have this many DSPs */
 				phw->wNumDsp = 2;
 
@@ -1219,16 +1216,17 @@ static short Hpi6000_AdapterBootLoadDsp(
 #define PLD_BASE_ADDRESS 0x90000000L	/*for ASI6100/6200/8800 */
 
 			switch (nBootLoadFamily) {
-			case HPI_ADAPTER_FAMILY_ASI6200:
+			case HPI_ADAPTER_FAMILY_ASI(0x6200):
 				/* ASI6100/6200 has 24bit path to FPGA */
 				dwMask = 0xFFFFFF00L;
 				/* ASI5100 uses AX6 code, */
 				/* but has no PLD r/w register to test */
-				if ((pao->Pci.wSubSysDeviceId & 0xFF00) ==
-					0x5100)
+				if (HPI_ADAPTER_FAMILY_ASI(pao->Pci.
+						wSubSysDeviceId) ==
+					HPI_ADAPTER_FAMILY_ASI(0x5100))
 					dwMask = 0x00000000L;
 				break;
-			case HPI_ADAPTER_FAMILY_ASI8800:
+			case HPI_ADAPTER_FAMILY_ASI(0x8800):
 				/* ASI8800 has 16bit path to FPGA */
 				dwMask = 0xFFFF0000L;
 				break;
@@ -1444,11 +1442,11 @@ static u16 Hpi6000_DspBlockRead32(
 
 static short Hpi6000_MessageResponseSequence(
 	struct hpi_adapter_obj *pao,
+	u16 wDspIndex,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
 {
-	u16 wDspIndex = phm->wDspIndex;
 	struct hpi_hw_obj *phw = (struct hpi_hw_obj *)pao->priv;
 	struct dsp_obj *pdo = &phw->ado[wDspIndex];
 	u32 dwTimeout;
@@ -1574,11 +1572,11 @@ static short Hpi6000_SendData_CheckAdr(
 
 static short Hpi6000_SendData(
 	struct hpi_adapter_obj *pao,
+	u16 wDspIndex,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
 {
-	u16 wDspIndex = phm->wDspIndex;
 	struct dsp_obj *pdo =
 		&(*(struct hpi_hw_obj *)pao->priv).ado[wDspIndex];
 	u32 dwDataSent = 0;
@@ -1652,11 +1650,11 @@ static short Hpi6000_SendData(
 
 static short Hpi6000_GetData(
 	struct hpi_adapter_obj *pao,
+	u16 wDspIndex,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 )
 {
-	u16 wDspIndex = phm->wDspIndex;
 	struct dsp_obj *pdo =
 		&(*(struct hpi_hw_obj *)pao->priv).ado[wDspIndex];
 	u32 dwDataGot = 0;
@@ -1822,7 +1820,7 @@ static short Hpi6000_UpdateControlCache(
 	struct hpi_message *phm
 )
 {
-	const u16 wDspIndex = phm->wDspIndex;
+	const u16 wDspIndex = 0;
 	struct hpi_hw_obj *phw = (struct hpi_hw_obj *)pao->priv;
 	struct dsp_obj *pdo = &phw->ado[wDspIndex];
 	u32 dwTimeout;
@@ -1899,6 +1897,31 @@ unlock:
 	return err;
 }
 
+/** Get dsp index for multi DSP adapters only */
+static u16 GetDspIndex(
+	struct hpi_adapter_obj *pao,
+	struct hpi_message *phm
+)
+{
+	u16 ret = 0;
+	switch (phm->wObject) {
+	case HPI_OBJ_ISTREAM:
+		if (phm->wObjIndex < 2)
+			ret = 1;
+		break;
+	case HPI_OBJ_PROFILE:
+		ret = phm->wObjIndex;
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
+/** Complete transaction with DSP
+
+Send message, get response, send or get stream data if any.
+*/
 static void HW_Message(
 	struct hpi_adapter_obj *pao,
 	struct hpi_message *phm,
@@ -1906,10 +1929,30 @@ static void HW_Message(
 )
 {
 	u16 nError = 0;
-
+	u16 wDspIndex = 0;
+	u16 numDsp = ((struct hpi_hw_obj *)pao->priv)->wNumDsp;
 	HpiOs_Dsplock_Lock(pao);
 
-	nError = Hpi6000_MessageResponseSequence(pao, phm, phr);
+	if (numDsp < 2)
+		wDspIndex = 0;
+	else {
+		wDspIndex = GetDspIndex(pao, phm);
+
+		/* is this  checked on the DSP anyway? */
+		if ((phm->wFunction == HPI_ISTREAM_GROUP_ADD) ||
+			(phm->wFunction == HPI_OSTREAM_GROUP_ADD)) {
+			struct hpi_message hm;
+			u16 wAddIndex;
+			hm.wObjIndex = phm->u.d.u.Stream.wStreamIndex;
+			hm.wObject = phm->u.d.u.Stream.wObjectType;
+			wAddIndex = GetDspIndex(pao, &hm);
+			if (wAddIndex != wDspIndex) {
+				phr->wError = HPI_ERROR_NO_INTERDSP_GROUPS;
+				return;
+			}
+		}
+	}
+	nError = Hpi6000_MessageResponseSequence(pao, wDspIndex, phm, phr);
 
 	/* maybe an error response */
 	if (nError) {
@@ -1926,20 +1969,19 @@ static void HW_Message(
 	switch (phm->wFunction) {
 	case HPI_OSTREAM_WRITE:
 	case HPI_ISTREAM_ANC_WRITE:
-		nError = Hpi6000_SendData(pao, phm, phr);
+		nError = Hpi6000_SendData(pao, wDspIndex, phm, phr);
 		break;
 	case HPI_ISTREAM_READ:
 	case HPI_OSTREAM_ANC_READ:
-		nError = Hpi6000_GetData(pao, phm, phr);
+		nError = Hpi6000_GetData(pao, wDspIndex, phm, phr);
 		break;
 	case HPI_ADAPTER_GET_ASSERT:
 		phr->u.a.wAdapterIndex = 0;	/* dsp 0 default */
-		if (((struct hpi_hw_obj *)pao->priv)->wNumDsp == 2) {
+		if (numDsp == 2) {
 			if (!phr->u.a.wAdapterType) {
 				/* no assert from dsp 0, check dsp 1 */
-				phm->wDspIndex = 1;
 				nError = Hpi6000_MessageResponseSequence(pao,
-					phm, phr);
+					1, phm, phr);
 				phr->u.a.wAdapterIndex = 1;
 			}
 		}
