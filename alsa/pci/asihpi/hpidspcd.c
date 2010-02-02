@@ -103,6 +103,13 @@ short HpiDspCode_Open(
 		goto error2;
 	}
 
+	if (header.version / 10000 != HPI_VER_DECIMAL / 10000) {
+		HPI_DEBUG_LOG(ERROR,
+			"Firmware Major Version mismatch  DSP image %d != Driver %d\n",
+			header.version, HPI_VER_DECIMAL);
+		goto error2;
+	}
+
 	if (header.version != HPI_VER_DECIMAL) {
 		HPI_DEBUG_LOG(WARNING,
 			"Version mismatch  DSP image %d != Driver %d\n",
