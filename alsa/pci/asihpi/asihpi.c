@@ -2187,7 +2187,7 @@ static int snd_asihpi_mux_get(struct snd_kcontrol *kcontrol,
 	HPI_HandleError(HPI_Multiplexer_GetSource(phSubSys, hControl,
 				&wSourceType, &wSourceIndex));
 	/* Should cache this search result! */
-	for (s = 0; s < 16; s++) {
+	for (s = 0; s < 256; s++) {
 		if (HPI_Multiplexer_QuerySource(phSubSys, hControl, s,
 					    &wSrcNodeType, &wSrcNodeIndex))
 			break;
@@ -2198,7 +2198,10 @@ static int snd_asihpi_mux_get(struct snd_kcontrol *kcontrol,
 			return 0;
 		}
 	}
-	return -EINVAL;
+	snd_printd(KERN_WARNING "Control %x failed to match mux source %hu %hu\n",
+			hControl, wSourceType, wSourceIndex);
+	ucontrol->value.enumerated.item[0] = 0;
+	return 0;
 }
 
 static int snd_asihpi_mux_put(struct snd_kcontrol *kcontrol,
