@@ -1914,4 +1914,17 @@ char *compat_skip_spaces(const char *);
 #endif
 #endif
 
+/* DEFINE_PCI_DEVICE_TABLE() */
+#ifdef CONFIG_PCI
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
+#ifndef DEFINE_PCI_DEVICE_TABLE
+/* originally it's __devinitconst but we use __devinitdata to be compatible
+ * with older kernels
+ */
+#define DEFINE_PCI_DEVICE_TABLE(_table) \
+	const struct pci_device_id _table[] __devinitdata
+#endif
+#endif /* < 2.6.25 */
+#endif /* CONFIG_PCI */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
