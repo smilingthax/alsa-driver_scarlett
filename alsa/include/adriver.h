@@ -1727,7 +1727,7 @@ static inline const char *dev_name(struct device *dev)
 #endif
 
 #ifndef WARN_ONCE
-#define WARN_ONCE(condition) ({					\
+#define WARN_ONCE(condition, format...)	({			\
 	static int __warned;					\
 	int __ret_warn_once = !!(condition);			\
 								\
