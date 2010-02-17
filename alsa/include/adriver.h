@@ -1698,6 +1698,8 @@ static inline const char *dev_name(struct device *dev)
 /* force to redefine WARN_ON() */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 #undef WARN_ON
+#undef WARN_ON_ONCE
+#undef WARN_ONCE
 #endif
 
 #ifndef WARN_ON
