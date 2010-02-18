@@ -1654,8 +1654,6 @@ XXX_DEFINE_STRTO(ull, unsigned long long);
 #define strict_strtoull	__strict_strtoull
 #endif /* < 2.6.25 */
 
-#endif /* < 2.6.25 */
-
 /* pr_xxx() macros */
 #ifndef pr_emerg
 #define pr_emerg(fmt, arg...) \
