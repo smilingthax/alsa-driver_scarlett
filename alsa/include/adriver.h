@@ -645,6 +645,10 @@ struct usb_ctrlrequest {
 } __attribute__ ((packed));
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18)
+#define usb_interrupt_msg	usb_bulk_msg
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 24) \
