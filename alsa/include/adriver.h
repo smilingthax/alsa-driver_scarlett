@@ -1633,15 +1633,27 @@ static inline u64 get_unaligned_be64(void *p)
 #define page_to_pfn(page)       (page_to_phys(page) >> PAGE_SHIFT)
 #endif
 
+/* strto*() wrappers */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
 /* lazy wrapper - always returns 0 */
-static inline int __strict_strtoul(const char *cp, unsigned int base,
-				 unsigned long *valp)
-{
-	*valp = simple_strtoul(cp, NULL, base);
-	return 0;
+#define XXX_DEFINE_STRTO(name, type) \
+static inline int __strict_strto##name(const char *cp, unsigned int base, \
+				       type *valp) \
+{ \
+	*valp = simple_strto##name(cp, NULL, base); \
+	return 0; \
 }
-#define strict_strtoul __strict_strtoul
+XXX_DEFINE_STRTO(l, long);
+XXX_DEFINE_STRTO(ul, unsigned long);
+XXX_DEFINE_STRTO(ll, long long);
+XXX_DEFINE_STRTO(ull, unsigned long long);
+#undef XXX_DEFINE_STRTO
+#define strict_strtol	__strict_strtol
+#define strict_strtoll	__strict_strtoll
+#define strict_strtoul	__strict_strtoul
+#define strict_strtoull	__strict_strtoull
+#endif /* < 2.6.25 */
+
 #endif /* < 2.6.25 */
 
 /* pr_xxx() macros */
@@ -1847,17 +1859,6 @@ static inline void *snd_memdup_user(const void __user *src, size_t len)
 	PCI_ANY_ID, PCI_ANY_ID, 0, 0
 #endif
 #endif /* < 2.6.20 */
-
-/* strict_strtoull() */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
-static inline int snd_strict_strtoull(const char *str, unsigned int base,
-				      unsigned long long *val)
-{
-	*val = simple_strtoull(str, NULL, base);
-	return 0;
-}
-#define strict_strtoull	snd_strict_strtoull
-#endif /* < 2.6.25 */
 
 /* put_pid() function was not exported before 2.6.19 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
