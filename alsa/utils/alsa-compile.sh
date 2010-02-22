@@ -1,15 +1,16 @@
 #!/bin/sh
 
+version=0.1.0
 protocol=
 distrib=unknown
-distribver="0.0"
+distribver=0.0
 tmpdir=$TMPDIR
 if test -z "$tmpdir"; then
 	tmpdir="/tmp"
 fi
 tmpdir=$tmpdir/alsa-compile-script
 baseurl="http://www.alsa-project.org/snapshot/?package="
-package="alsa-driver"
+package=alsa-driver
 packagedefault=true
 url=
 urldefault=
@@ -30,10 +31,12 @@ usage() {
 	echo "Usage: $0 [OPTION]..."
 	cat <<EOF
 
-This is a script doing ALSA code compilation and installation.
+This is a script version $version doing ALSA code compilation and installation.
+Report any problems to <alsa-devel@alsa-project.org> mailing list.
 
 Operation modes:
   -h, --help		print this help, then exit
+  -e, --examples	print text with examples, then exit
   -q, --quiet		quiet mode
   -y, --yes		do not ask any questions - answer is always yes
   -c, --clean[=package]	do overall clean, do package clean
@@ -41,10 +44,10 @@ Operation modes:
   --git=giturl		work with git tree
   --compile		force compilation
   --install		install binaries and headers
-  --tmpdir=dir		set temporary directory
+  --tmpdir=dir		set temporary directory (overrides TMPDIR envval)
   --kmodules[=mods]	reinstall kernel modules or install specified modules
   --kmodlist		list ALSA toplevel kernel modules
-  --run			run a program using fresh alsa-lib
+  --run program [args]  run a program using fresh alsa-lib
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -56,11 +59,48 @@ Package selection:
 EOF
 }
 
+examples() {
+	cat <<EOF
+$0 examples:
+
+  Install latest ALSA driver snapshot to system:
+
+	alsa-compile.sh --driver --install
+
+  Try new ALSA driver snapshot without installing it to system. The existing
+  ALSA kernel modules are replaced with fresh ones:
+
+	alsa-compile.sh --driver --kmodules
+
+  Do both (installation and modules replacement):
+  
+  	alsa-compile.sh --driver --install --kmodules
+
+  Install latest ALSA library snapshot to system:
+  
+  	alsa-compile.sh --lib --install
+
+  Run application using latest ALSA library snapshot. The new alsa-lib is not
+  installed to system:
+  
+  	alsa-compile.sh --run <your_program_including_arguments>
+
+  Do not want to fetch sources? Use file: protocol to specify current or
+  explicit directory containing sources:
+  
+  	alsa-compile.sh --driver --url=file:///home/alsa/alsa-driver
+EOF
+}
+
 while :
 do
 	case "$1" in
 	-h|--help)
 		usage
+		exit 0
+		;;
+	-e|--examples)
+		examples
 		exit 0
 		;;
 	-q|--quiet)
@@ -802,6 +842,7 @@ git_clone() {
 	do_cmd git clone "$1$2.git" "$2"
 }
 
+rundir=$(pwd)
 export LANG=C
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment $protocol
@@ -825,7 +866,7 @@ if test -n "$kernelmodules" -a -z "$compile"; then
 	exit 0
 fi
 case "$protocol" in
-http|https)
+http|https|file)
 	packagedir="$package.dir"
 	check_compilation_environment $protocol
 	if test -r $packagedir; then
@@ -835,13 +876,36 @@ http|https)
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
 	else
 		snapshot="snapshot.tar.bz2"
-		download_http_file $url $snapshot
-		do_cmd tar xjf $snapshot
-		rm $snapshot
-		tree=$(ls | grep $package)
+		if test "$protocol" = "file"; then
+			tree=$(echo $url | cut -d ':' -f 2)
+			if test "${tree:0:1}" = "/"; then
+				tree=${tree:1}
+			fi
+			if test "${tree:0:1}" = "/"; then
+				tree=${tree:1}
+			fi
+			if test -r "$rundir/$tree/gitcompile"; then
+				tree="$rundir/$tree"
+			elif test -r "$rundir/$tree/../gitcompile"; then
+				tree="$rundir/$tree/.."
+			elif test -r "$rundir/$tree/../$package/gitcompile"; then
+				tree="$rundir/$tree/../$package"
+			fi
+			if test -d "$tree"; then
+				tree=$(cd "$tree" && pwd)
+			else
+				echo >&2 "Fatal: $package tree '$tree' not found"
+				exit 1
+			fi
+		else
+			download_http_file $url $snapshot
+			do_cmd tar xjf $snapshot
+			rm $snapshot
+			tree=$(ls | grep $package)
+		fi
 	fi
 	if ! test -x $tree/gitcompile ; then
-		echo >&2 "Fatal: $package tree not found"
+		echo >&2 "Fatal: $package tree '$tree' not found"
 		exit 1
 	fi
 	echo "Sources unpacked to $tree"
