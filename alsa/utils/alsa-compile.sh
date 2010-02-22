@@ -549,10 +549,10 @@ kill_audio_apps() {
 parse_modules() {	
 	if ! test -s ../modules.dep; then
 		rel=$(uname -r)
-		dst="xxxx/lib/modules/$rel"
-		mkdir -p $dst/modules || exit 1
+		pdst="xxxx/lib/modules/$rel"
+		mkdir -p $pdst/modules || exit 1
 		for i in modules/*.*o; do
-			ln -sf ../../../../../$i $dst/$i || exit 1
+			ln -sf ../../../../../$i $pdst/$i || exit 1
 		done
 		p=$(pwd)
 		if ! $depmodbin -b $p/xxxx ; then
@@ -560,7 +560,7 @@ parse_modules() {
 			exit 1
 		fi
 		
-		if ! cp $dst/modules.dep ../modules.dep ; then
+		if ! cp $pdst/modules.dep ../modules.dep ; then
 			echo >&2 "cp problem."
 			exit 1
 		fi
