@@ -144,9 +144,11 @@ do
 		install=true
 		;;
 	--driver|--lib|--utils|--plugins|--firmware|--oss)
-		package="alsa-$1"
+		pkg="$1"
+		pkg=${pkg:2}
+		package="alsa-$pkg"
 		packagedefault=
-		test -z "$url" || url="$basedir$package"
+		test -z "$url" && url="$baseurl$package"
 		;;
 	--tmpdir*)
 		case "$#,$1" in
@@ -182,7 +184,6 @@ do
 	shift
 done
 if test -z "$url"; then
-	package="alsa-driver"
 	url="$baseurl$package"
 	urldefault=true
 fi
@@ -314,7 +315,6 @@ check_environment() {
 		if test "$urldefault" != "true"; then
 			url="$ourl"
 		fi
-		echo "XXX $url $package"
 	fi
 }
 
@@ -384,7 +384,13 @@ download_http_file() {
 		;;
 	esac
 	size=$(stat -c%s $2)
-	echo "  success ($size bytes)"
+	if test -z "$size" -o $size -le 0; then
+		echo "  failed ($size)"
+		echo >&2 "Unable to download file '$1'."
+		exit 1
+	else
+		echo "  success ($size bytes)"
+	fi
 }
 
 do_compile() {
