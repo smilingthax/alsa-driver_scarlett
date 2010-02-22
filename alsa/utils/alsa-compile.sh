@@ -11,7 +11,8 @@ tmpdir=$tmpdir/alsa-compile-script
 baseurl="http://www.alsa-project.org/snapshot/?package="
 package="alsa-driver"
 url=
-gittree="git://git.alsa-project.org"
+urldefault=
+gittree="git://git.alsa-project.org/"
 usegit=false
 httpdownloader=
 compile=
@@ -68,26 +69,40 @@ do
 		esac
 		if test -z $rmpkg; then
 			echo -n "Removing tree $tmpdir:"
-			if test -d $tmpdir && rm -rf $tmpdir; then
-				echo " failed"
-				exit 1
-			else
-				echo " success"
-			fi
-		else
-			echo -n "Removing package $package:"
-			packagedir="$tmpdir/$package.dir"
-			if test -r $packagedir; then
-				tree=$(cat $packagedir)
-				if test -d $tmpdir/$tree && rm -rf $tmpdir/$tree; then
+			if test -d $tmpdir; then
+				if ! rm -rf $tmpdir; then
 					echo " failed"
 					exit 1
-				else
-					rm -f $packagedir
-					echo " success"
 				fi
 			fi
 			echo " success"
+		else
+			echo -n "Removing package $package:"
+			rm $tmpdir/environment.* 2> /dev/null
+			packagedir="$tmpdir/$package.dir"
+			if test "$package" = "alsa-driver"; then
+				rm -rf $tmpdir/modules.*
+				rm -rf $tmpdir/run.awk
+			fi
+			if test -r $packagedir; then
+				tree=$(cat $packagedir)
+				if test -d $tmpdir/$tree; then
+					if ! rm -rf $tmpdir/$tree; then
+						echo " failed"
+						exit 1
+					fi
+				fi
+				rm -f $packagedir
+				echo " success"
+			elif test -d $package; then
+				rm -rf $package
+				if test "$package" = "alsa-driver"; then
+					rm -rf alsa-kmirror 2> /dev/null
+				fi
+				echo " success"
+			else
+				echo " success"
+			fi
 		fi
 		exit 0
 		;;
@@ -103,14 +118,13 @@ do
 		esac
 		;;
 	--git*)
-		usegit="true"
 		case "$#,$1" in
 		*,*=*)
-			gittree=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			url=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
 		1,*)
-			;;
+			url="$gittree" ;;
 		*)
-			gittree="$2"
+			url="$2"
 			shift ;;
 		esac
 		;;
@@ -161,6 +175,7 @@ done
 if test -z "$url"; then
 	package="alsa-driver"
 	url="$baseurl$package"
+	urldefault=true
 fi
 
 question_bool() {
@@ -246,50 +261,86 @@ check_kernel_source() {
 }
 
 check_environment() {
-	if ! test -d $tmpdir ; then
-		mkdir -p $tmpdir
-		if ! test -d $tmpdir; then
-			echo >&2 "Unable to create directory $tmpdir"
-			exit 1
+	env="$tmpdir/environment.base"
+	if ! test -s $env; then
+		if ! test -d $tmpdir ; then
+			mkdir -p $tmpdir
+			if ! test -d $tmpdir; then
+				echo >&2 "Unable to create directory $tmpdir"
+				exit 1
+			fi
+		fi
+		echo "Using temporary tree $tmpdir"
+		check_distribution
+		echo "protocol=$protocol" >> $env
+		echo "distrib=\"$distrib\"" >> $env
+		echo "distribver=\"$distribver\"" >> $env
+		echo "url=\"$url\"" >> $env
+		echo "package=\"$package\"" >> $env
+		b=$(basename $env)
+		echo "File $b has been created."
+	else
+		b=$(basename $env)
+		echo "File $b is cached."
+		opackage="$package"
+		ourl="$url"
+		. $env
+		package="$opackage"
+		if test "$urldefault" = "true"; then
+			url="$ourl"
 		fi
 	fi
-	echo "Using temporary tree $tmpdir"
-	check_distribution
 }
 
 check_compilation_environment() {
-	a=$(wget --version | head -1 | cut -d ' ' -f 2)
-	if test "$a" = "Wget"; then
-		httpdownloader="wget"
-	else
-		a=$(curl --version | head -1 | cut -d ' ' -f 1 )
-		if test "$a" = "curl"; then
-			httpdownloader="curl"
+	env="environment.compile"
+	if ! test -s $env; then
+		a=$(wget --version | head -1 | cut -d ' ' -f 2)
+		if test "$a" = "Wget"; then
+			httpdownloader="wget"
+		else
+			a=$(curl --version | head -1 | cut -d ' ' -f 1 )
+			if test "$a" = "curl"; then
+				httpdownloader="curl"
+			fi
 		fi
-	fi
-	if test -z "$httpdownloader"; then
-		echo >&2 "Unable to determine HTTP downloader."
-		exit 1
-	fi
-	a=$(git --version | head -1 | cut -d ' ' -f 1)
-	if test "$a" != "git"; then
-		install_package git
+		if test -z "$httpdownloader"; then
+			echo >&2 "Unable to determine HTTP downloader."
+			exit 1
+		fi
+		a=$(git --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "git"; then
+			install_package git
+		else
+			echo "Program git found."
+		fi
+		a=$(autoconf --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "autoconf"; then
+			install_package autoconf
+		else
+			echo "Program autoconf found."
+		fi
+		a=$(gcc --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "gcc" ; then
+			install_package gcc
+		else
+			echo "Program gcc found."
+		fi
+		if test "$protocol" = "git"; then
+			a=$(git --version | head -1 | cut -d ' ' -f 1)
+			if test "$a" != "git"; then
+				install_package git
+			else
+				echo "Program git found."
+			fi
+		fi
+		check_kernel_source
+		echo "httpdownloader=$httpdownloader" >> $env
+		echo "File $env has been created."
 	else
-		echo "Program git found."
+		echo "File $env is cached."
+		. $env
 	fi
-	a=$(autoconf --version | head -1 | cut -d ' ' -f 1)
-	if test "$a" != "autoconf"; then
-		install_package autoconf
-	else
-		echo "Program autoconf found."
-	fi
-	a=$(gcc --version | head -1 | cut -d ' ' -f 1)
-	if test "$a" != "gcc" ; then
-		install_package gcc
-	else
-		echo "Program gcc found."
-	fi
-	check_kernel_source
 }
 
 download_http_file() {
@@ -615,7 +666,9 @@ END     {
 				if (mod != atopmods[d])
 					continue
 				for (b in acurmods) {
-					if (mod != acurmods[b])
+					mod1 = acurmods[b]
+					v = gsub("_", "-", mod1)
+					if (mod != acurmods[b] && mod != mod1)
 						continue
 					addtopmodule(mod)
 					break
@@ -684,6 +737,10 @@ kernel_modules() {
 	fi
 }
 
+git_clone() {
+	do_cmd git clone "$1$2.git" "$2"
+}
+
 export LANG=C
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment $protocol
@@ -700,13 +757,13 @@ fi
 case "$protocol" in
 http|https)
 	packagedir="$package.dir"
+	check_compilation_environment $protocol
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 		echo "$package tree $tree is present."
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
 	else
-		check_compilation_environment $protocol
 		snapshot="snapshot.tar.bz2"
 		download_http_file $url $snapshot
 		do_cmd tar xjf $snapshot
@@ -727,10 +784,27 @@ http|https)
 		echo "ALSA package $package was successfully built."
 		echo "Binaries are in $tmpdir/$tree directory."
 	fi
-	do_cmd cd $tmpdir
 	;;
 git)
-	do_git $url
+	check_compilation_environment $protocol
+	if test -d $package ; then
+		echo "$package tree $package is present."
+		echo "Reusing it."
+		echo "Use '$0 --clean=$package' command to refetch and rebuild."
+	else
+		if test "$package" = "alsa-driver"; then
+			git_clone $url "alsa-kmirror"
+		fi
+		git_clone $url $package
+	fi
+	do_cmd cd alsa-driver
+	do_compile
+	if test "$install" = "true"; then
+		do_install
+	else
+		echo "ALSA package $package was successfully built."
+		echo "Binaries are in $tmpdir/$package directory."
+	fi
 	;;
 *)
 	echo >&2 "Unknown protocol '$protocol'."
@@ -738,6 +812,7 @@ git)
 esac
 
 if test -n "$kernelmodules"; then
+	do_cmd cd $tmpdir
 	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $package.dir)
