@@ -23,6 +23,7 @@ quiet=
 yes=
 kernelmodules=
 kmodlist=
+kmodremove=
 depmodbin=
 modinfobin=
 runargs=
@@ -47,6 +48,7 @@ Operation modes:
   --tmpdir=dir		set temporary directory (overrides TMPDIR envval)
   --kmodules[=mods]	reinstall kernel modules or install specified modules
   --kmodlist		list ALSA toplevel kernel modules
+  --kmodremove		remove ALSA kernel modules
   --run program [args]  run a program using fresh alsa-lib
 
 Package selection:
@@ -225,6 +227,9 @@ do
 		;;
 	--kmodlist)
 		kmodlist=true
+		;;
+	--kmodremove)
+		kmodremove=true
 		;;
 	*)
 		test -n "$1" && echo "Unknown parameter '$1'"
@@ -838,6 +843,21 @@ kernel_modules_list() {
 	done
 }
 
+kernel_modules_remove() {
+	if test "$package" != "alsa-driver"; then
+		echo >&2 "--kmodremove works only for alsa-driver package."
+		exit 1
+	fi
+	curmods=$(current_modules)
+	if test -z "$curmods"; then
+		echo "No ALSA kernel modules to remove."
+		exit 0
+	fi
+	kill_audio_apps
+	my_rmmod $curmods
+	echo "ALSA kernel modules removed."
+}
+
 git_clone() {
 	do_cmd git clone "$1$2.git" "$2"
 }
@@ -847,6 +867,10 @@ export LANG=C
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment $protocol
 do_cmd cd $tmpdir
+if test "$kmodremove" = "true"; then
+	kernel_modules_remove
+	exit 0
+fi
 if test "$kmodlist" = "true" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
