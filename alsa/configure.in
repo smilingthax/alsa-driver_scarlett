@@ -2810,6 +2810,8 @@ if test -n "$CONFIG_USB"; then
     echo "Creating <linux/usb/audio.h>..."
     echo "#include \"usb_audio_compat.h\"" > include/linux/usb/audio.h
   fi
+
+  CHECK_KERNEL_HEADER(linux/usb/ch9.h)
 fi
 
 dnl class_simple for old 2.6 kernels
