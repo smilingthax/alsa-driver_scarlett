@@ -1,5 +1,5 @@
 --- ../alsa-kernel/usb/usbaudio.c	2010-02-23 17:02:35.027536460 +0100
-+++ usbaudio.c	2010-02-23 17:05:42.283461464 +0100
++++ usbaudio.c	2010-02-23 18:02:36.063036430 +0100
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
@@ -169,7 +169,20 @@
  		/* num_channels is only set for v2 interfaces */
  		fp->channels = num_channels;
  		if (snd_usb_get_speed(dev) == USB_SPEED_HIGH)
-@@ -3261,7 +3310,11 @@
+@@ -3178,8 +3227,11 @@
+ 	case UAC_VERSION_2: {
+ 		struct uac_clock_source_descriptor *cs;
+ 		struct usb_interface_assoc_descriptor *assoc =
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
+ 			usb_ifnum_to_if(dev, ctrlif)->intf_assoc;
+-
++#else
++			NULL;
++#endif
+ 		if (!assoc) {
+ 			snd_printk(KERN_ERR "Audio class v2 interfaces need an interface association\n");
+ 			return -EINVAL;
+@@ -3261,7 +3313,11 @@
  	}
  	alts = &iface->altsetting[fp->altset_idx];
  	fp->datainterval = parse_datainterval(chip, alts);
@@ -181,7 +194,7 @@
  	usb_set_interface(chip->dev, fp->iface, 0);
  	init_usb_pitch(chip->dev, fp->iface, alts, fp);
  	init_usb_sample_rate(chip->dev, fp->iface, alts, fp, fp->rate_max);
-@@ -3355,7 +3408,11 @@
+@@ -3355,7 +3411,11 @@
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  	fp->datainterval = 0;
@@ -193,7 +206,7 @@
  
  	switch (fp->maxpacksize) {
  	case 0x120:
-@@ -3423,7 +3480,11 @@
+@@ -3423,7 +3483,11 @@
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
  	fp->datainterval = parse_datainterval(chip, alts);
@@ -205,7 +218,7 @@
  	fp->rate_max = fp->rate_min = combine_triple(&alts->extra[8]);
  
  	stream = (fp->endpoint & USB_DIR_IN)
-@@ -3500,8 +3561,13 @@
+@@ -3500,8 +3564,13 @@
  	struct usb_host_config *config = dev->actconfig;
  	int err;
  
@@ -219,7 +232,7 @@
  		snd_printdd("sending Extigy boot sequence...\n");
  		/* Send message to force it to reconnect with full interface. */
  		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
-@@ -3513,8 +3579,13 @@
+@@ -3513,8 +3582,13 @@
  		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
  		err = usb_reset_configuration(dev);
  		if (err < 0) snd_printdd("error usb_reset_configuration: %d\n", err);
@@ -233,7 +246,7 @@
  		return -ENODEV; /* quit this anyway */
  	}
  	return 0;
-@@ -3522,6 +3593,8 @@
+@@ -3522,6 +3596,8 @@
  
  static int snd_usb_audigy2nx_boot_quirk(struct usb_device *dev)
  {
@@ -242,7 +255,7 @@
  	u8 buf = 1;
  
  	snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), 0x2a,
-@@ -3533,6 +3606,7 @@
+@@ -3533,6 +3609,7 @@
  				1, 2000, NULL, 0, 1000);
  		return -ENODEV;
  	}
@@ -250,7 +263,7 @@
  	return 0;
  }
  
-@@ -3787,8 +3861,13 @@
+@@ -3787,8 +3864,13 @@
  	chip->index = idx;
  	chip->dev = dev;
  	chip->card = card;
@@ -264,7 +277,7 @@
  	INIT_LIST_HEAD(&chip->pcm_list);
  	INIT_LIST_HEAD(&chip->midi_list);
  	INIT_LIST_HEAD(&chip->mixer_list);
-@@ -3875,8 +3954,12 @@
+@@ -3875,8 +3957,12 @@
  
  	alts = &intf->altsetting[0];
  	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -277,7 +290,7 @@
  	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
  		goto __err_val;
  
-@@ -4021,6 +4104,7 @@
+@@ -4021,6 +4107,7 @@
  	}
  }
  
@@ -285,7 +298,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -4081,6 +4165,7 @@
+@@ -4081,6 +4168,7 @@
  	return 0;
  }
  #endif		/* CONFIG_PM */
@@ -293,7 +306,7 @@
  
  static int __init snd_usb_audio_init(void)
  {
-@@ -4099,3 +4184,5 @@
+@@ -4099,3 +4187,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);
