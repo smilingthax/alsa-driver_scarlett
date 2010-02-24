@@ -978,7 +978,7 @@ fi
 if test "$kmodlist" = "true" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
@@ -987,7 +987,7 @@ fi
 if test -n "$kernelmodules" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules
@@ -1078,7 +1078,7 @@ esac
 if test "$kmodlist" = "true"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
@@ -1087,7 +1087,7 @@ if test -n "$kernelmodules"; then
 	do_cmd cd $tmpdir
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules
@@ -1096,7 +1096,7 @@ fi
 if test -n "$runargs"; then
 	packagedir="alsa-lib.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	f="$tmpdir/$tree/src/.libs/libasound.so.2.0.0"
 	if test -r $f; then
