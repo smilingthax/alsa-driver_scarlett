@@ -320,6 +320,10 @@ install_package() {
 		echo >&2 "install_package: Unsupported distribution $distrib"
 		exit 1
 	esac
+	if test $(is_rpm_installed $1) = "false" ; then
+		echo "Package '$1' was not installed."
+		exit 1
+	fi
 	echo "  installed"
 }
 
