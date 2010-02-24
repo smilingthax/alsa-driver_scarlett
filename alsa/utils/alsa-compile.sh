@@ -27,6 +27,8 @@ kmodremove=
 depmodbin=
 modinfobin=
 runargs=
+patches=
+kmodmesg=
 
 usage() {
 	echo "Usage: $0 [OPTION]..."
@@ -45,10 +47,12 @@ Operation modes:
   --git=giturl		work with git tree
   --compile		force compilation
   --install		install binaries and headers
+  --patch=patch		apply code patch (can be used multiple times)
   --tmpdir=dir		set temporary directory (overrides TMPDIR envval)
   --kmodules[=mods]	reinstall kernel modules or install specified modules
   --kmodlist		list ALSA toplevel kernel modules
   --kmodremove		remove ALSA kernel modules
+  --kmodmesg		show ALSA kernel related messages
   --run program [args]  run a program using fresh alsa-lib
 
 Package selection:
@@ -187,6 +191,18 @@ do
 	--install)
 		install=true
 		;;
+	--patch)
+		case "$#,$1" in
+		*,*=*)
+			patch=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			patch="$2"
+			shift ;;
+		esac
+		patches="$patches $patch"
+		;;
 	--driver|--lib|--utils|--plugins|--firmware|--oss)
 		pkg="$1"
 		pkg=${pkg:2}
@@ -230,6 +246,9 @@ do
 		;;
 	--kmodremove)
 		kmodremove=true
+		;;
+	--kmodmesg)
+		kmodmesg=true
 		;;
 	*)
 		test -n "$1" && echo "Unknown parameter '$1'"
@@ -407,6 +426,18 @@ check_compilation_environment() {
 		else
 			echo "Program gcc found."
 		fi
+		a=$(patch --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "patch" ; then
+			install_package patch
+		else
+			echo "Program patch found."
+		fi
+		a=$(diff --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "diff" ; then
+			install_package diffutils
+		else
+			echo "Program diff found."
+		fi
 		if test "$protocol" = "git"; then
 			a=$(git --version | head -1 | cut -d ' ' -f 1)
 			if test "$a" != "git"; then
@@ -450,14 +481,31 @@ download_http_file() {
 
 do_compile() {
 	cmd="./gitcompile"
-	case "$package" in
-	alsa-driver)
-		test -r acore/hwdep.o && cmd="make"
-		;;
-	alsa-lib)
-		test -r src/.libs/libasound.so.2.0.0 && cmd="make"
-		;;
-	esac
+	if test -z "$patches"; then
+		case "$package" in
+		alsa-driver)
+			test -r acore/hwdep.o && cmd="make"
+			;;
+		alsa-lib)
+			test -r src/.libs/libasound.so.2.0.0 && cmd="make"
+			;;
+		esac
+	else
+		for patch in $patches; do
+			pstrip=1
+			if ! test patch -s -p$pstrip -N --dry-run < $patch; then
+				pstrip=0
+				if ! test patch -s -p$pstrip -N --dry-run < $patch; then
+					echo >&2 "Cannot apply patch $patch"
+					exit 1
+				fi
+			fi
+			echo "Applying patch $patch: "
+			if ! test patch -p$pstrip -N < $patch; then
+				exit 1
+			fi
+		done
+	fi
 	echo "Running $cmd:"
 	if ! $cmd; then
 		a=$(pwd)
@@ -549,6 +597,12 @@ kill_audio_apps() {
 parse_modules() {	
 	if ! test -s ../modules.dep; then
 		rel=$(uname -r)
+		cd modules
+		for i in snd-dummy.*; do
+			i1=$(echo $i | sed -e 's/dummy/dummy1/g')
+			ln -sf $i $i1 || exit 1
+		done
+		cd ..
 		pdst="xxxx/lib/modules/$rel"
 		mkdir -p $pdst/modules || exit 1
 		for i in modules/*.*o; do
@@ -572,6 +626,8 @@ parse_modules() {
 
 	if ! test -s ../modules.top ; then
 		for i in modules/*.*o; do
+			pwd
+			echo "$i"
 			if test -r $i; then
 				a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
@@ -613,28 +669,59 @@ my_rmmod() {
 
 my_insmod() {
 	while test -n "$1"; do
-		if test -r modules/$1.ko; then
-			mod=modules/$1.ko
-			echo "> insmod $1.ko"
-			if ! insmod modules/$1.ko ; then
-				echo >&2 "Unable to insert kernel module $1.ko"
+		xmod=
+		args=
+		nofail=
+		for x in $1; do
+			if test -z "$xmod"; then
+				xmod=$x
+			else
+				args="$args $x"
+			fi
+		done
+		if test "$xmod" = "snd-dummy1"; then
+			args="index=999"
+			nofail=true
+		fi
+		if test -r modules/$xmod.ko; then
+			mod=modules/$xmod.ko
+			echo "> insmod $mod.ko $args"
+			if test -n "$nofail"; then
+				insmod $mod $args 2> /dev/null
+			elif ! insmod $mod $args; then
+				echo >&2 "Unable to insert kernel module $xmod.ko"
 				exit 1
 			fi
 		else
-			if test -r modules/$1.o; then
-				mod=modules/$1.o
-				echo "> insmod $1.o"
-				if ! insmod modules/$1.o ; then
-					echo >&2 "Unable to insert kernel module $1.o"
+			if test -r modules/$xmod.o; then
+				mod=modules/$xmod.o
+				echo "> insmod $mod.o $args"
+				if test -n "$nofail"; then
+					insmod $mod.o $args
+				elif ! insmod $mod.o $args; then
+					echo >&2 "Unable to insert kernel module $xmod.o"
 					exit 1
 				fi
 			else
-				echo >&2 "Unable to find kernel module $1"
+				echo >&2 "Unable to find kernel module $xmod"
 				exit 1
 			fi
 		fi
 		shift
 	done
+}
+
+show_kernel_messages() {
+	cat > $tmpdir/run.awk <<EOF
+/Dummy soundcard not found or device busy/ { delete lines }
+	{ lines[length(lines)+1] = \$0 }
+END	{
+		for (x = 3; x <= length(lines); x++)
+			print prefix lines[x]
+	}
+EOF
+	dmesg | awk -f $tmpdir/run.awk -v prefix="$1"
+	rm $tmpdir/run.awk || exit 1
 }
 
 do_kernel_modules() {
@@ -751,6 +838,7 @@ BEGIN   {
 	}
 END     {
 		addmodule("snd-page-alloc")
+		addmodule("snd-dummy1")
 
 		# all direct toplevel modules dependencies
 		for (mod in deps) {
@@ -807,6 +895,7 @@ EOF
 	fi
 	kill_audio_apps
 	my_rmmod $curmods
+	dmesg > ../dmesg.txt.1
 	my_insmod $(cat $dst)
 	echo "Kernel modules ready:"
 	cat /proc/asound/cards
@@ -815,6 +904,8 @@ EOF
 	else
 		echo "Use a mixer application (like alsamixer) to set reasonable volume levels."
 	fi
+	dmesg > ../dmesg.txt.2
+	show_kernel_messages " [kmsg] "
 }
 
 kernel_modules() {
@@ -864,6 +955,10 @@ git_clone() {
 
 rundir=$(pwd)
 export LANG=C
+if test "$kmodmesg" = "true"; then
+	show_kernel_messages
+	exit 0
+fi
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment $protocol
 do_cmd cd $tmpdir
