@@ -336,8 +336,13 @@ check_kernel_source() {
 		fi
 		;;
 	Fedora)
-		if test $(is_rpm_installed kernel-devel) = "false" ; then
-			install_package kernel-devel
+		if test $(uname --kernel-release | grep -q '\.PAE$'); then
+			kernel_devel=kernel-PAE-devel
+		else
+			kernel_devel=kernel-devel
+		fi
+		if test $(is_rpm_installed $kernel_devel) = "false" ; then
+			install_package $kernel_devel
 		fi
 		;;
 	*)
