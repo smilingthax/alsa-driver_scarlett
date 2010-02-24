@@ -24,11 +24,13 @@ yes=
 kernelmodules=
 kmodlist=
 kmodremove=
+kmodclean=
 depmodbin=
 modinfobin=
 runargs=
 patches=
 kmodmesg=
+withdebug=
 
 usage() {
 	echo "Usage: $0 [OPTION]..."
@@ -49,11 +51,14 @@ Operation modes:
   --install		install binaries and headers
   --patch=patch		apply code patch (can be used multiple times)
   --tmpdir=dir		set temporary directory (overrides TMPDIR envval)
-  --kmodules[=mods]	reinstall kernel modules or install specified modules
+  --kmodules[=mods]	reinsert kernel modules or insert specified modules
+  			to current kernel
   --kmodlist		list ALSA toplevel kernel modules
-  --kmodremove		remove ALSA kernel modules
+  --kmodremove		remove ALSA kernel modules from kernel
+  --kmodclean		remove installed ALSA kernel modules from /lib/modules
   --kmodmesg		show ALSA kernel related messages
   --run program [args]  run a program using fresh alsa-lib
+  --with-debug=dbgopt	set debug options to dbgopt (for alsa-driver)
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -185,6 +190,17 @@ do
 			shift ;;
 		esac
 		;;
+	--with-debug*)
+		case "$#,$1" in
+		*,*=*)
+			withdebug=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			withdebug="$2"
+			shift ;;
+		esac
+		;;
 	--compile)
 		compile=true
 		;;
@@ -246,6 +262,18 @@ do
 		;;
 	--kmodremove)
 		kmodremove=true
+		;;
+	--kmodclean)
+		dir="/lib/modules/`uname -r`/alsa/updates"
+		echo "Removing kernel modules in $dir:"
+		if test -d $dir; then
+			if ! rm -rf $dir; then
+				echo >&2 "Cannot remove tree $dir"
+				exit 1
+			fi
+		fi
+		echo "  success"
+		exit 0
 		;;
 	--kmodmesg)
 		kmodmesg=true
@@ -490,6 +518,13 @@ download_http_file() {
 
 do_compile() {
 	cmd="./gitcompile"
+	case "$package"  in
+	alsa-driver)
+		dbgopt="$withdebug"
+		test -z "$dbgopt" && dbgopt="full"
+		cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
+		;;
+	esac
 	if test -z "$patches"; then
 		case "$package" in
 		alsa-driver)
@@ -535,9 +570,9 @@ do_install() {
 	case "$package" in
 	alsa-driver)
 		cat <<EOF
-WARNING! You chose to install new ALSA kernel modules. The current ALSA
-kernel modules will be removed from your system pernamently. In case of
-problems, reinstall your kernel package.
+WARNING! You chose to install new ALSA kernel modules. To reuse the ALSA
+kernel modules provided by the kernel package, invoke command:
+  $0 --kmodclean
 EOF
 		if test $(question_bool "Really continue (Ctrl-C to abort)?") = "true"; then
 			cmd="make install-modules"
