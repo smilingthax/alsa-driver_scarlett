@@ -323,7 +323,7 @@ check_distribution() {
 is_rpm_installed() {
 	a=$(rpm -qi $1 | head -1 | cut -d ' ' -f 1)
 	if test "$a" = "Name"; then
-		echo "frue"
+		echo "true"
 	else
 		echo "false"
 	fi
@@ -364,7 +364,7 @@ check_kernel_source() {
 		fi
 		;;
 	Fedora)
-		if test $(uname --kernel-release | grep -q '\.PAE$'); then
+		if uname --kernel-release | grep -q '\.PAE$'; then
 			kernel_devel=kernel-PAE-devel
 		else
 			kernel_devel=kernel-devel
@@ -996,13 +996,14 @@ git_clone() {
 }
 
 rundir=$(pwd)
-export LANG=C
+export LC_ALL=C
+export LANGUAGE=C
 if test "$kmodmesg" = "true"; then
 	show_kernel_messages
 	exit 0
 fi
 protocol=$(echo $url | cut -d ':' -f 1)
-check_environment $protocol
+check_environment
 do_cmd cd $tmpdir
 if test "$kmodremove" = "true"; then
 	kernel_modules_remove
@@ -1029,7 +1030,7 @@ fi
 case "$protocol" in
 http|https|file)
 	packagedir="$package.dir"
-	check_compilation_environment $protocol
+	check_compilation_environment
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 		echo "$package tree $tree is present."
@@ -1082,7 +1083,7 @@ http|https|file)
 	;;
 git)
 	packagedir="$package.dir"
-	check_compilation_environment $protocol
+	check_compilation_environment
 	if test -r $packagedir ; then
 		echo "$package tree $package is present."
 		echo "Reusing it."
