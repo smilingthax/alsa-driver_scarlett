@@ -268,7 +268,7 @@ do
 		echo "Removing kernel modules in $dir:"
 		if test -d $dir; then
 			if ! rm -rf $dir; then
-				echo >&2 "Cannot remove tree $dir"
+				echo >&2 "Cannot remove tree $dir."
 				exit 1
 			fi
 		fi
@@ -290,6 +290,8 @@ if test -z "$url"; then
 	urldefault=true
 fi
 
+# Echo "true" or "false", depending on $yes and user response to prompt
+# $1 is prompt message
 question_bool() {
 	if test "$yes" = "yes"; then
 		echo "true"
@@ -305,21 +307,24 @@ question_bool() {
 	fi
 }	
 
+# Set $distrib and $distribver
 check_distribution() {
 	distrib=$(lsb_release -ds 2> /dev/null | cut -d ' ' -f 1)
 	distrib=${distrib:1}
 	distribver=$(lsb_release -rs 2> /dev/null)
 	if test -z "$distrib"; then
-		echo >&2 "Unable to determine Linux distribution!"
+		echo >&2 "Unable to determine Linux distribution."
 		exit 1
 	fi
 	if test -z "$distribver"; then
-		echo >&2 "Unable to determine Linux distribution version!"
+		echo >&2 "Unable to determine Linux distribution version."
 		exit 1
 	fi
 	echo "Detected Linux distribution '$distrib $distribver'."
 }
 
+# Echo "true" if rpm installed, else "false"
+# $1 is rpm name
 is_rpm_installed() {
 	a=$(rpm -qi $1 | head -1 | cut -d ' ' -f 1)
 	if test "$a" = "Name"; then
@@ -329,32 +334,35 @@ is_rpm_installed() {
 	fi
 }
 
+# Install package
+# $1 is package name
 install_package() {
 	echo "Trying to install package '$1':"
 	case "$distrib" in
 	openSUSE)
 		if zypper install $1; then
-			echo "Cannot install package '$1'."
+			echo >&2 "Cannot install package '$1'."
 			exit 1
 		fi
 		;;
 	Fedora)
 		if yum install $1; then
-			echo "Cannot install package '$1'."
+			echo >&2 "Cannot install package '$1'."
 			exit 1
 		fi
 		;;
 	*)
-		echo >&2 "install_package: Unsupported distribution $distrib"
+		echo >&2 "Cannot install $1 for unsupported distribution $distrib."
 		exit 1
 	esac
 	if test $(is_rpm_installed $1) = "false" ; then
-		echo "Package '$1' was not installed."
+		echo >&2 "Package '$1' was not installed."
 		exit 1
 	fi
 	echo "  installed"
 }
 
+# Ensure the relevant kernel header sources for $distrib are installed
 check_kernel_source() {
 	echo "Checking kernel build environment:"
 	case "$distrib" in
@@ -374,35 +382,36 @@ check_kernel_source() {
 		fi
 		;;
 	*)
-		echo >&2 "check_kernel_source: Unsupported distribution $distrib"
+		echo >&2 "Cannot install kernel sources for unsupported distribution $distrib."
 		exit 1
 		;;
 	esac
 	echo "  passed"
 }
 
+# Cache or restore $protocol and $url and $package in $tmpdir
 check_environment() {
 	env="$tmpdir/environment.base"
 	if ! test -s $env; then
 		if ! test -d $tmpdir ; then
 			mkdir -p $tmpdir
 			if ! test -d $tmpdir; then
-				echo >&2 "Unable to create directory $tmpdir"
+				echo >&2 "Unable to create directory $tmpdir."
 				exit 1
 			fi
 		fi
-		echo "Using temporary tree $tmpdir"
+		echo "Using temporary tree $tmpdir."
 		check_distribution
 		test -x /bin/depmod && depmodbin=/bin/depmod
 		test -x /sbin/depmod && depmodbin=/sbin/depmod
 		if test -z "$depmodbin"; then
-			echo >&2 "Unable to find depmod utility"
+			echo >&2 "Unable to find depmod utility."
 			exit 1
 		fi	
 		test -x /bin/modinfo && modinfobin=/bin/modinfo
 		test -x /sbin/modinfo && modinfobin=/sbin/modinfo
 		if test -z "$modinfobin"; then
-			echo >&2 "Unable to find modinfo utility"
+			echo >&2 "Unable to find modinfo utility."
 			exit 1
 		fi	
 		echo "protocol=$protocol" >> $env
@@ -429,6 +438,7 @@ check_environment() {
 	fi
 }
 
+# Read/set $httpdownloader from CWD(!) and ensure tools available
 check_compilation_environment() {
 	env="environment.compile"
 	if ! test -s $env; then
@@ -492,14 +502,23 @@ check_compilation_environment() {
 	fi
 }
 
+# Log and execute $@ and check success
+do_cmd() {
+	echo "> $@"
+	$@ || exit 1
+}
+
+# Download file with $httpdownloader and check size
+# $1 is url
+# $2 is destination filename
 download_http_file() {
 	echo "Downloading '$1':"
 	case "$httpdownloader" in
 	wget)
-		wget -q -O $2 $1
+		do_cmd wget -q -O $2 $1
 		;;
 	curl)
-		curl -s -o $2 $1
+		do_cmd curl -s -o $2 $1
 		;;
 	*)
 		echo >&2 "Unknown httpdownloader '$httpdownloader'."
@@ -516,6 +535,14 @@ download_http_file() {
 	fi
 }
 
+# Create git clone
+# $1 is git url prefix
+# $2 is project name and destination dirname
+git_clone() {
+	do_cmd git clone "$1$2.git" "$2"
+}
+
+# Compile $package, applying $patches
 do_compile() {
 	cmd="./gitcompile"
 	case "$package"  in
@@ -540,7 +567,7 @@ do_compile() {
 			if ! test patch -s -p$pstrip -N --dry-run < $patch; then
 				pstrip=0
 				if ! test patch -s -p$pstrip -N --dry-run < $patch; then
-					echo >&2 "Cannot apply patch $patch"
+					echo >&2 "Cannot apply patch $patch."
 					exit 1
 				fi
 			fi
@@ -553,13 +580,14 @@ do_compile() {
 	echo "Running $cmd:"
 	if ! $cmd; then
 		a=$(pwd)
-		echo >&2 "Working directory $a"
-		echo >&2 "Compilation of $package tree failed."
+		echo >&2 "Working directory $a."
+		echo >&2 "Compilation of $package failed."
 		echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
 		exit 1
 	fi
 }
 
+# Install $package as root
 do_install() {
 	if ! test "$UID" -eq 0 ; then
 		echo >&2 "Root priviledges required for installation."
@@ -579,18 +607,10 @@ EOF
 		fi
 		;;
 	esac
-	$cmd || exit 1
+	do_cmd $cmd
 }
 
-do_git() {
-	echo "do git"
-}
-
-do_cmd() {
-	echo "> $@"
-	$@ || exit 1
-}
-
+# Kill processes currently accessing the audio devices
 kill_audio_apps() {
 	pids0=$(fuser /dev/snd/* 2> /dev/null)
 	pids1=$(fuser /dev/mixer* 2> /dev/null)
@@ -632,12 +652,14 @@ kill_audio_apps() {
 				done
 			fi
 		else
-			echo >&2 "Terminated by user."
+			echo >&2 "Cannot continue with running audio applications."
 			exit 1
 		fi
 	fi
 }
 
+# List available modules
+# $CWD(!) (= $tmpdir?) with ./modules/ and caching in ../modules.dep
 parse_modules() {	
 	if ! test -s ../modules.dep; then
 		rel=$(uname -r)
@@ -677,7 +699,7 @@ parse_modules() {
 					echo $a >> ../modules.top
 				fi
 			else
-				echo >&2 "permissions $tmpdir/$i problem"
+				echo >&2 "permissions $tmpdir/$i problem."
 				exit 1
 			fi
 		done
@@ -687,10 +709,13 @@ parse_modules() {
 	fi
 }
 
+# Echo the list of loaded sound modules
 current_modules() {
 	lsmod | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$)"
 }
 
+# Remove kernel modules, using two phases
+# $@ is module names
 my_rmmod() {
 	while test -n "$1"; do
 		if ! rmmod $1 2> /dev/null > /dev/null; then
@@ -703,12 +728,13 @@ my_rmmod() {
 	for mod in $phase2; do
 		echo "> rmmod $mod"
 		if ! rmmod $mod ; then
-			echo >&2 "Unable to remove kernel module $mod"
+			echo >&2 "Unable to remove kernel module $mod."
 			exit 1
 		fi
 	done
 }
 
+# Insert kernel modules with arguments
 my_insmod() {
 	while test -n "$1"; do
 		xmod=
@@ -727,25 +753,25 @@ my_insmod() {
 		fi
 		if test -r modules/$xmod.ko; then
 			mod=modules/$xmod.ko
-			echo "> insmod $mod.ko $args"
+			echo "> insmod $mod $args"
 			if test -n "$nofail"; then
 				insmod $mod $args 2> /dev/null
 			elif ! insmod $mod $args; then
-				echo >&2 "Unable to insert kernel module $xmod.ko"
+				echo >&2 "Unable to insert kernel module $xmod.ko."
 				exit 1
 			fi
 		else
 			if test -r modules/$xmod.o; then
 				mod=modules/$xmod.o
-				echo "> insmod $mod.o $args"
+				echo "> insmod $mod $args"
 				if test -n "$nofail"; then
 					insmod $mod.o $args
 				elif ! insmod $mod.o $args; then
-					echo >&2 "Unable to insert kernel module $xmod.o"
+					echo >&2 "Unable to insert kernel module $xmod.o."
 					exit 1
 				fi
 			else
-				echo >&2 "Unable to find kernel module $xmod"
+				echo >&2 "Unable to find kernel module $xmod."
 				exit 1
 			fi
 		fi
@@ -753,6 +779,8 @@ my_insmod() {
 	done
 }
 
+# List latest kernel messages
+# $1 is prefix
 show_kernel_messages() {
 	cat > $tmpdir/run.awk <<EOF
 /Dummy soundcard not found or device busy/ { delete lines }
@@ -766,6 +794,8 @@ EOF
 	rm $tmpdir/run.awk || exit 1
 }
 
+# Reload kernel modules
+# $@ is list of kernel modules, default is current modules
 do_kernel_modules() {
 	usermods="$@"
 	curmods=$(current_modules)
@@ -950,6 +980,7 @@ EOF
 	show_kernel_messages " [kmsg] "
 }
 
+# If $package is alsa-driver then reinstall $kernelmodules
 kernel_modules() {
 	if test "$package" != "alsa-driver"; then
 		echo >&2 "--kernel-modules works only for alsa-driver package."
@@ -963,6 +994,7 @@ kernel_modules() {
 	fi
 }
 
+# If $package is alsa-driver then list available modules
 kernel_modules_list() {
 	if test "$package" != "alsa-driver"; then
 		echo >&2 "--kmodlist works only for alsa-driver package."
@@ -976,6 +1008,7 @@ kernel_modules_list() {
 	done
 }
 
+# If $package is alsa-driver then remove current modules
 kernel_modules_remove() {
 	if test "$package" != "alsa-driver"; then
 		echo >&2 "--kmodremove works only for alsa-driver package."
@@ -989,10 +1022,6 @@ kernel_modules_remove() {
 	kill_audio_apps
 	my_rmmod $curmods
 	echo "ALSA kernel modules removed."
-}
-
-git_clone() {
-	do_cmd git clone "$1$2.git" "$2"
 }
 
 rundir=$(pwd)
@@ -1056,7 +1085,7 @@ http|https|file)
 			if test -d "$tree"; then
 				tree=$(cd "$tree" && pwd)
 			else
-				echo >&2 "Fatal: $package tree '$tree' not found"
+				echo >&2 "Fatal: $package tree '$tree' not found."
 				exit 1
 			fi
 		else
@@ -1067,7 +1096,7 @@ http|https|file)
 		fi
 	fi
 	if ! test -x $tree/gitcompile ; then
-		echo >&2 "Fatal: $package tree '$tree' not found"
+		echo >&2 "Fatal: $package tree '$tree' not found."
 		exit 1
 	fi
 	echo "Sources unpacked to $tree"
@@ -1138,7 +1167,7 @@ if test -n "$runargs"; then
 		do_cmd "export ALSA_CONFIG_PATH=\"$tmpdir/$tree/src/conf/alsa.conf\""
 		do_cmd $runargs
 	else
-		echo >&2 "Unable to find alsa-lib.so"
+		echo >&2 "Unable to find alsa-lib.so."
 		exit 1
 	fi
 fi
