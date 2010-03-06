@@ -1042,19 +1042,19 @@ if test "$kmodlist" = "true" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
+		do_cmd cd $tree
+		kernel_modules_list
+		exit 0
 	fi
-	do_cmd cd $tree
-	kernel_modules_list
-	exit 0
 fi
 if test -n "$kernelmodules" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
+		do_cmd cd $tree
+		kernel_modules
+		exit 0
 	fi
-	do_cmd cd $tree
-	kernel_modules
-	exit 0
 fi
 case "$protocol" in
 http|https|file)
