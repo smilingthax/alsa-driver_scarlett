@@ -17,6 +17,7 @@ urldefault=
 gittree="git://git.alsa-project.org/"
 usegit=false
 httpdownloader=
+clean=
 compile=
 install=
 quiet=
@@ -119,55 +120,7 @@ do
 	-y|--yes)
 		yes=true ;;
 	-c*|--clean*)
-		rmpkg=
-		case "$#,$1" in
-		*,*=*)
-			rmpkg=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
-		1,*)
-			;;
-		*)
-			rmpkg="$2"
-			shift ;;
-		esac
-		if test -z $rmpkg; then
-			echo -n "Removing tree $tmpdir:"
-			if test -d $tmpdir; then
-				if ! rm -rf $tmpdir; then
-					echo " failed"
-					exit 1
-				fi
-			fi
-			echo " success"
-		else
-			echo -n "Removing package $package:"
-			rm $tmpdir/environment.* 2> /dev/null
-			packagedir="$tmpdir/$package.dir"
-			if test "$package" = "alsa-driver"; then
-				rm -rf $tmpdir/modules.*
-				rm -rf $tmpdir/run.awk
-			fi
-			if test -r $packagedir; then
-				tree=$(cat $packagedir)
-				if test -d $tmpdir/$tree; then
-					if ! rm -rf $tmpdir/$tree; then
-						echo " failed"
-						exit 1
-					fi
-				fi
-				rm -f $packagedir
-				echo " success"
-			elif test -d $package; then
-				rm -rf $package
-				if test "$package" = "alsa-driver"; then
-					rm -rf alsa-kmirror 2> /dev/null
-				fi
-				echo " success"
-			else
-				echo " success"
-			fi
-		fi
-		exit 0
-		;;
+		clean=true ;;
 	--url*)
 		case "$#,$1" in
 		*,*=*)
@@ -1027,17 +980,72 @@ kernel_modules_remove() {
 rundir=$(pwd)
 export LC_ALL=C
 export LANGUAGE=C
+
 if test "$kmodmesg" = "true"; then
 	show_kernel_messages
 	exit 0
 fi
+
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment
 do_cmd cd $tmpdir
+
+if test "$clean" = "true"; then
+	rmpkg=
+	case "$#,$1" in
+	*,*=*)
+		rmpkg=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+	1,*)
+		;;
+	*)
+		rmpkg="$2"
+		shift ;;
+	esac
+	if test -z $rmpkg; then
+		echo -n "Removing tree $tmpdir:"
+		if test -d $tmpdir; then
+			if ! rm -rf $tmpdir; then
+				echo " failed"
+				exit 1
+			fi
+		fi
+		echo " success"
+	else
+		echo -n "Removing package $package:"
+		rm $tmpdir/environment.* 2> /dev/null
+		packagedir="$tmpdir/$package.dir"
+		if test "$package" = "alsa-driver"; then
+			rm -rf $tmpdir/modules.*
+			rm -rf $tmpdir/run.awk
+		fi
+		if test -r $packagedir; then
+			tree=$(cat $packagedir)
+			if test -d $tmpdir/$tree; then
+				if ! rm -rf $tmpdir/$tree; then
+					echo " failed"
+					exit 1
+				fi
+			fi
+			rm -f $packagedir
+			echo " success"
+		elif test -d $package; then
+			rm -rf $package
+			if test "$package" = "alsa-driver"; then
+				rm -rf alsa-kmirror 2> /dev/null
+			fi
+			echo " success"
+		else
+			echo " success"
+		fi
+	fi
+	exit 0
+fi
+
 if test "$kmodremove" = "true"; then
 	kernel_modules_remove
 	exit 0
 fi
+
 if test "$kmodlist" = "true" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
@@ -1047,6 +1055,7 @@ if test "$kmodlist" = "true" -a -z "$compile"; then
 		exit 0
 	fi
 fi
+
 if test -n "$kernelmodules" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
@@ -1056,6 +1065,7 @@ if test -n "$kernelmodules" -a -z "$compile"; then
 		exit 0
 	fi
 fi
+
 case "$protocol" in
 http|https|file)
 	packagedir="$package.dir"
@@ -1146,6 +1156,7 @@ if test "$kmodlist" = "true"; then
 	do_cmd cd $tree
 	kernel_modules_list
 fi
+
 if test -n "$kernelmodules"; then
 	do_cmd cd $tmpdir
 	packagedir="$package.dir"
@@ -1156,6 +1167,7 @@ if test -n "$kernelmodules"; then
 	kernel_modules
 	exit 0
 fi
+
 if test -n "$runargs"; then
 	packagedir="alsa-lib.dir"
 	if test -r $packagedir; then
