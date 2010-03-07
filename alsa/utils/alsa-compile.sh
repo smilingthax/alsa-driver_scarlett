@@ -989,6 +989,7 @@ fi
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment
 do_cmd cd $tmpdir
+packagedir="$tmpdir/$package.dir"
 
 if test "$clean" = "true"; then
 	rmpkg=
@@ -1013,7 +1014,6 @@ if test "$clean" = "true"; then
 	else
 		echo -n "Removing package $package:"
 		rm $tmpdir/environment.* 2> /dev/null
-		packagedir="$tmpdir/$package.dir"
 		if test "$package" = "alsa-driver"; then
 			rm -rf $tmpdir/modules.*
 			rm -rf $tmpdir/run.awk
@@ -1047,7 +1047,6 @@ if test "$kmodremove" = "true"; then
 fi
 
 if test "$kmodlist" = "true" -a -z "$compile"; then
-	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 		do_cmd cd $tree
@@ -1057,7 +1056,6 @@ if test "$kmodlist" = "true" -a -z "$compile"; then
 fi
 
 if test -n "$kernelmodules" -a -z "$compile"; then
-	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 		do_cmd cd $tree
@@ -1068,7 +1066,6 @@ fi
 
 case "$protocol" in
 http|https|file)
-	packagedir="$package.dir"
 	check_compilation_environment
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
@@ -1121,7 +1118,6 @@ http|https|file)
 	fi
 	;;
 git)
-	packagedir="$package.dir"
 	check_compilation_environment
 	if test -r $packagedir ; then
 		echo "$package tree $package is present."
@@ -1149,17 +1145,16 @@ git)
 esac
 
 if test "$kmodlist" = "true"; then
-	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
+	exit 0
 fi
 
 if test -n "$kernelmodules"; then
 	do_cmd cd $tmpdir
-	packagedir="$package.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 	fi
@@ -1169,7 +1164,6 @@ if test -n "$kernelmodules"; then
 fi
 
 if test -n "$runargs"; then
-	packagedir="alsa-lib.dir"
 	if test -r $packagedir; then
 		tree=$(cat $packagedir)
 	fi
