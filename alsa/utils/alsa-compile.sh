@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.1.2
+version=0.1.3
 protocol=
 distrib=unknown
 distribver=0.0
