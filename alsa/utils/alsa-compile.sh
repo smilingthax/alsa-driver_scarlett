@@ -120,7 +120,17 @@ do
 	-y|--yes)
 		yes=true ;;
 	-c*|--clean*)
-		clean=true ;;
+		clean=
+		case "$#,$1" in
+		*,*=*)
+			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			;;
+		*)
+			clean="$2"
+			shift ;;
+		esac
+		;;
 	--url*)
 		case "$#,$1" in
 		*,*=*)
@@ -978,6 +988,19 @@ kernel_modules_remove() {
 	echo "ALSA kernel modules removed."
 }
 
+package_switch() {
+	packagedir="$tmpdir/$package.dir"
+	packagestatus="$tmpdir/$package.status"
+	tree=
+	status=
+	if test -r $packagedir; then
+		tree=$(cat $packagedir)
+	fi
+	if test -r $packagestatus; then
+		status=$(cat $packagestatus)
+	fi
+}
+
 rundir=$(pwd)
 export LC_ALL=C
 export LANGUAGE=C
@@ -990,29 +1013,10 @@ fi
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment
 do_cmd cd $tmpdir
-packagedir="$tmpdir/$package.dir"
-packagestatus="$tmpdir/$package.status"
-tree=
-status=
-if test -r $packagedir; then
-  tree=$(cat $packagedir)
-fi
-if test -r $packagestatus; then
-  status=$(cat $packagestatus)
-fi
+package_switch $package
 
-if test "$clean" = "true"; then
-	rmpkg=
-	case "$#,$1" in
-	*,*=*)
-		rmpkg=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
-	1,*)
-		;;
-	*)
-		rmpkg="$2"
-		shift ;;
-	esac
-	if test -z $rmpkg; then
+if test -n "$clean"; then
+	if test -z $clean; then
 		echo -n "Removing tree $tmpdir:"
 		if test -d $tmpdir; then
 			if ! rm -rf $tmpdir; then
@@ -1022,14 +1026,14 @@ if test "$clean" = "true"; then
 		fi
 		echo " success"
 	else
+		package_switch $clean
 		echo -n "Removing package $package:"
 		rm $tmpdir/environment.* 2> /dev/null
 		if test "$package" = "alsa-driver"; then
 			rm -rf $tmpdir/modules.*
 			rm -rf $tmpdir/run.awk
 		fi
-		if test -r $packagedir; then
-			tree=$(cat $packagedir)
+		if test -n "$tree"; then
 			if test -d $tmpdir/$tree; then
 				if ! rm -rf $tmpdir/$tree; then
 					echo " failed"
