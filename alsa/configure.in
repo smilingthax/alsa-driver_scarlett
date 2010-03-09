@@ -1460,6 +1460,10 @@ if test -r $KERNDIR/include/linux/config.h ; then
 else
   deprecated_config_h="1"
 fi
+if test -r $KERNDIR/include/generated/autoconf.h ; then
+  deprecated_config_h="0"
+  AC_DEFINE(CONFIG_HAVE_GENERATED_AUTOCONF_H)
+fi
 CONFIG_HAVE_DEPRECATED_CONFIG_H=$deprecated_config_h
 if test "$CONFIG_HAVE_DEPRECATED_CONFIG_H" = "1"; then
   AC_DEFINE(CONFIG_HAVE_DEPRECATED_CONFIG_H)
