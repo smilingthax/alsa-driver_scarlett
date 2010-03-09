@@ -991,6 +991,15 @@ protocol=$(echo $url | cut -d ':' -f 1)
 check_environment
 do_cmd cd $tmpdir
 packagedir="$tmpdir/$package.dir"
+packagestatus="$tmpdir/$package.status"
+tree=
+status=
+if test -r $packagedir; then
+  tree=$(cat $packagedir)
+fi
+if test -r $packagestatus; then
+  status=$(cat $packagestatus)
+fi
 
 if test "$clean" = "true"; then
 	rmpkg=
@@ -1047,29 +1056,22 @@ if test "$kmodremove" = "true"; then
 	exit 0
 fi
 
-if test "$kmodlist" = "true" -a -z "$compile"; then
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
-		do_cmd cd $tree
-		kernel_modules_list
-		exit 0
-	fi
+if test "$kmodlist" = "true" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
+	do_cmd cd $tree
+	kernel_modules_list
+	exit 0
 fi
 
-if test -n "$kernelmodules" -a -z "$compile"; then
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
-		do_cmd cd $tree
-		kernel_modules
-		exit 0
-	fi
+if test -n "$kernelmodules" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
+	do_cmd cd $tree
+	kernel_modules
+	exit 0
 fi
 
 case "$protocol" in
 http|https|file)
 	check_compilation_environment
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test -n "$tree"; then
 		echo "$package tree $tree is present."
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
@@ -1111,6 +1113,8 @@ http|https|file)
 	echo $tree > $packagedir
 	do_cmd cd $tree
 	do_compile
+	status="compile"
+	echo $status > $packagestatus
 	if test "$install" = "true"; then
 		do_install
 	else
@@ -1120,7 +1124,7 @@ http|https|file)
 	;;
 git)
 	check_compilation_environment
-	if test -r $packagedir ; then
+	if test -n "$tree" ; then
 		echo "$package tree $package is present."
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
@@ -1133,6 +1137,8 @@ git)
 	fi
 	do_cmd cd alsa-driver
 	do_compile
+	status="compile"
+	echo $status > $packagestatus
 	if test "$install" = "true"; then
 		do_install
 	else
@@ -1146,8 +1152,10 @@ git)
 esac
 
 if test "$kmodlist" = "true"; then
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test -z "$tree" -o -z "$status"; then
+		echo >&2 "Package $package is not compiled."
+		echo >&2 "Cannot list kernel modules."
+		exit 1
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
@@ -1155,9 +1163,10 @@ if test "$kmodlist" = "true"; then
 fi
 
 if test -n "$kernelmodules"; then
-	do_cmd cd $tmpdir
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test -z "$tree" -o -z "$status"; then
+		echo >&2 "Package $package is not compiled."
+		echo >&2 "Cannot insert kernel modules."
+		exit 1
 	fi
 	do_cmd cd $tree
 	kernel_modules
@@ -1165,13 +1174,28 @@ if test -n "$kernelmodules"; then
 fi
 
 if test -n "$runargs"; then
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test "$package" != "alsa-lib"; then
+		libtree=
+		libstatus=
+		if test -r "$tmpdir/alsa-lib.dir"; then
+			libtree=$(cat $tmpdir/alsa-lib.dir)
+		fi
+		if test -r "$tmpdir/alsa-lib.status"; then
+			libstatus=$(cat $tmpdir/alsa-lib.status)
+		fi
+	else
+		libtree=$tree
+		libstatus=$status
 	fi
-	f="$tmpdir/$tree/src/.libs/libasound.so.2.0.0"
+	if test -z "$libtree" -o -z "$libstatus"; then
+		echo >&2 "Package $package is not compiled."
+		echo >&2 "Cannot use alsa-lib."
+		exit 1
+	fi
+	f="$tmpdir/$libtree/src/.libs/libasound.so.2.0.0"
 	if test -r $f; then
 		do_cmd "export LD_PRELOAD=$f"
-		do_cmd "export ALSA_CONFIG_PATH=\"$tmpdir/$tree/src/conf/alsa.conf\""
+		do_cmd "export ALSA_CONFIG_PATH=\"$tmpdir/$libtree/src/conf/alsa.conf\""
 		do_cmd $runargs
 	else
 		echo >&2 "Unable to find alsa-lib.so."
