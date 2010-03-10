@@ -1,3 +1,4 @@
+#include "adriver.h"
 #include "alsa-autoconf.h"
 #define __NO_VERSION__
 
