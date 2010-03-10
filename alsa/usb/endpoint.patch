@@ -1,0 +1,44 @@
+--- ../alsa-kernel/usb/endpoint.c	2010-03-10 09:22:24.488022926 +0100
++++ endpoint.c	2010-03-10 10:07:52.316022217 +0100
+@@ -1,3 +1,5 @@
++#define __NO_VERSION__
++#include "usbaudio.inc"
+ /*
+  *   This program is free software; you can redistribute it and/or modify
+  *   it under the terms of the GNU General Public License as published by
+@@ -183,7 +185,11 @@
+ 		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIOSTREAMING &&
+ 		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
+ 		    altsd->bNumEndpoints < 1 ||
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 		    le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize) == 0)
++#else
++		    get_endpoint(alts, 0)->wMaxPacketSize == 0)
++#endif
+ 			continue;
+ 		/* must be isochronous */
+ 		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
+@@ -270,7 +276,11 @@
+ 		    fp && fp->altsetting == 1 && fp->channels == 1 &&
+ 		    fp->formats == SNDRV_PCM_FMTBIT_S16_LE &&
+ 		    protocol == UAC_VERSION_1 &&
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 		    le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize) ==
++#else
++		    get_endpoint(alts, 0)->wMaxPacketSize ==
++#endif
+ 							fp->maxpacksize * 2)
+ 			continue;
+ 
+@@ -297,7 +307,11 @@
+ 		fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
+ 		fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
+ 		fp->datainterval = snd_usb_parse_datainterval(chip, alts);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
+ 		fp->maxpacksize = le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize);
++#else
++		fp->maxpacksize = get_endpoint(alts, 0)->wMaxPacketSize;
++#endif
+ 		/* num_channels is only set for v2 interfaces */
+ 		fp->channels = num_channels;
+ 		if (snd_usb_get_speed(dev) == USB_SPEED_HIGH)

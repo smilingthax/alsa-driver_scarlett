@@ -114,9 +114,13 @@ soc/soc-core.c
 sparc/amd7930.c
 sparc/cs4231.c
 sparc/dbri.c
-usb/usbaudio.c
-usb/usbmidi.c
+usb/card.c
+usb/endpoint.c
+usb/helper.c
+usb/midi.c
 usb/usbmixer.c
+usb/urb.c
+usb/quirks.c
 usb/caiaq/audio.c
 usb/caiaq/device.c
 usb/caiaq/input.c
