@@ -887,7 +887,7 @@ static void build_feature_ctl(struct mixer_build *state, unsigned char *desc,
 
 	control++; /* change from zero-based to 1-based value */
 
-	if (control == USB_FEATURE_GEQ) {
+	if (control == UAC_GRAPHIC_EQUALIZER_CONTROL) {
 		/* FIXME: not supported yet */
 		return;
 	}
@@ -934,8 +934,8 @@ static void build_feature_ctl(struct mixer_build *state, unsigned char *desc,
 				kctl->id.name, sizeof(kctl->id.name));
 
 	switch (control) {
-	case USB_FEATURE_MUTE:
-	case USB_FEATURE_VOLUME:
+	case UAC_MUTE_CONTROL:
+	case UAC_VOLUME_CONTROL:
 		/* determine the control name.  the rule is:
 		 * - if a name id is given in descriptor, use it.
 		 * - if the connected input can be determined, then use the name
@@ -962,9 +962,9 @@ static void build_feature_ctl(struct mixer_build *state, unsigned char *desc,
 				len = append_ctl_name(kctl, " Playback");
 			}
 		}
-		append_ctl_name(kctl, control == USB_FEATURE_MUTE ?
+		append_ctl_name(kctl, control == UAC_MUTE_CONTROL ?
 				" Switch" : " Volume");
-		if (control == USB_FEATURE_VOLUME) {
+		if (control == UAC_VOLUME_CONTROL) {
 			kctl->tlv.c = mixer_vol_tlv;
 			kctl->vd[0].access |= 
 				SNDRV_CTL_ELEM_ACCESS_TLV_READ |
@@ -1053,7 +1053,7 @@ static int parse_audio_feature_unit(struct mixer_build *state, int unitid, void 
 		snd_printk(KERN_INFO
 			   "usbmixer: master volume quirk for PCM2702 chip\n");
 		/* disable non-functional volume control */
-		master_bits &= ~(1 << (USB_FEATURE_VOLUME - 1));
+		master_bits &= ~UAC_FU_VOLUME;
 		break;
 	}
 	if (channels > 0)
