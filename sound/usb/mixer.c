@@ -41,7 +41,7 @@
 #include <sound/tlv.h>
 
 #include "usbaudio.h"
-#include "usbmixer.h"
+#include "mixer.h"
 #include "helper.h"
 #include "mixer_quirks.h"
 
@@ -66,20 +66,6 @@ struct mixer_build {
 	struct usb_audio_term oterm;
 	const struct usbmix_name_map *map;
 	const struct usbmix_selector_map *selector_map;
-};
-
-enum {
-	USB_FEATURE_NONE = 0,
-	USB_FEATURE_MUTE = 1,
-	USB_FEATURE_VOLUME,
-	USB_FEATURE_BASS,
-	USB_FEATURE_MID,
-	USB_FEATURE_TREBLE,
-	USB_FEATURE_GEQ,
-	USB_FEATURE_AGC,
-	USB_FEATURE_DELAY,
-	USB_FEATURE_BASSBOOST,
-	USB_FEATURE_LOUDNESS
 };
 
 enum {
@@ -146,7 +132,7 @@ enum {
  * if the mixer topology is too complicated and the parsed names are
  * ambiguous, add the entries in usbmixer_maps.c.
  */
-#include "usbmixer_maps.c"
+#include "mixer_maps.c"
 
 static const struct usbmix_name_map *
 find_map(struct mixer_build *state, int unitid, int control)
