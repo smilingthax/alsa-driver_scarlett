@@ -2783,9 +2783,11 @@ fi
 AC_SUBST(CONFIG_USB)
 
 if test -n "$CONFIG_USB"; then
+  CHECK_KERNEL_HEADER(linux/usb/audio-v2.h, [#include \"usb_audio_v2_compat.h\"
+  ])
   CHECK_KERNEL_HEADER(linux/usb/audio.h, [#include \"usb_audio_compat.h\"
   ])
-  AC_MSG_CHECKING([for valid linux/usb/audio.h])
+  AC_MSG_CHECKING([for valid v1 in linux/usb/audio.h])
   usb_audio_valid="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
@@ -2800,13 +2802,32 @@ if test -n "$CONFIG_USB"; then
 #endif
 #include <linux/usb/audio.h>
 ],[
-  struct uac_as_header_descriptor_v2 tmp;
+  struct uac_as_header_descriptor_v1 tmp;
   tmp.bLength = 0;
 ],
    AC_MSG_RESULT(yes);usb_audio_valid="1",
    AC_MSG_RESULT(no);usb_audio_valid="0",
    AC_MSG_RESULT(unknown);usb_audio_valid="0"
 )
+  if test "$usb_audio_valid" = "1"; then
+    AC_MSG_CHECKING([for invalid v2 in linux/usb/audio.h])
+    AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/usb/audio.h>
+],[
+  struct uac_as_header_descriptor_v2 tmp;
+  tmp.bLength = 0;
+],
+   AC_MSG_RESULT(yes);usb_audio_valid="0",
+   AC_MSG_RESULT(no);usb_audio_valid="1",
+   AC_MSG_RESULT(unknown);usb_audio_valid="0"
+)
+  fi
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
   if test "$usb_audio_valid" != "1"; then

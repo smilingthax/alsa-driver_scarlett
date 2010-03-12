@@ -5,7 +5,8 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := card.c endpoint.c helper.c quirks.c urb.c midi.c usbmixer.c
+clean-files := card.c endpoint.c helper.c quirks.c urb.c midi.c \
+	mixer.c mixer_quirks.c
 
 # for compatibility
 extra-snd-usb-lib-objs := usbcompat.o
@@ -23,4 +24,5 @@ helper.c: helper.patch usbaudio.inc $(SND_TOPDIR)/alsa-kernel/usb/helper.c
 quirks.c: quirks.patch usbaudio.inc $(SND_TOPDIR)/alsa-kernel/usb/quirks.c
 urb.c: urb.patch usbaudio.inc $(SND_TOPDIR)/alsa-kernel/usb/urb.c
 midi.c: midi.patch midi.inc midi.inc1 $(SND_TOPDIR)/alsa-kernel/usb/midi.c
-usbmixer.c: usbmixer.patch $(SND_TOPDIR)/alsa-kernel/usb/usbmixer.c
+mixer.c: mixer.patch $(SND_TOPDIR)/alsa-kernel/usb/mixer.c
+mixer_quirks.c: mixer_quirks.patch $(SND_TOPDIR)/alsa-kernel/usb/mixer_quirks.c

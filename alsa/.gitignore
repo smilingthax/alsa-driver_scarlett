@@ -118,7 +118,8 @@ usb/card.c
 usb/endpoint.c
 usb/helper.c
 usb/midi.c
-usb/usbmixer.c
+usb/mixer.c
+usb/mixer_quirks.c
 usb/urb.c
 usb/quirks.c
 usb/caiaq/audio.c
