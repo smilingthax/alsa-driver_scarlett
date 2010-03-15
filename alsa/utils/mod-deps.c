@@ -221,6 +221,7 @@ static char *no_cards[] = {
 #define READ_STATE_CONFIG	1
 #define READ_STATE_MENU		2
 #define READ_STATE_COMMENT	3
+#define READ_STATE_CHOICE	4
 
 static void nomem(void)
 {
@@ -394,6 +395,13 @@ static int read_file_1(const char *filename, struct cond **template)
 			continue;
 		} else if (!strncmp(buffer, "comment", 7)) {
 			state = READ_STATE_COMMENT;
+			continue;
+		} else if (!strncmp(buffer, "choice", 6)) {
+			state = READ_STATE_CHOICE;
+			/* FXIME: what to do? */
+			continue;
+		} else if (!strncmp(buffer, "endchoice", 9)) {
+			state = READ_STATE_NONE;
 			continue;
 		}
 		switch (state) {
