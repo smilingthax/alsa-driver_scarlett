@@ -19,7 +19,7 @@ static unsigned int snd_soc_4_12_read(struct snd_soc_codec *codec,
 				     unsigned int reg)
 {
 	u16 *cache = codec->reg_cache;
-	if (reg >= codec->reg_cache_size)
+	if (reg >= codec->driver->reg_cache_size)
 		return -1;
 	return cache[reg];
 }
@@ -31,12 +31,12 @@ static int snd_soc_4_12_write(struct snd_soc_codec *codec, unsigned int reg,
 	u8 data[2];
 	int ret;
 
-	BUG_ON(codec->volatile_register);
+	BUG_ON(codec->driver->volatile_register);
 
 	data[0] = (reg << 4) | ((value >> 8) & 0x000f);
 	data[1] = value & 0x00ff;
 
-	if (reg < codec->reg_cache_size)
+	if (reg < codec->driver->reg_cache_size)
 		cache[reg] = value;
 
 	if (codec->cache_only) {
@@ -89,7 +89,7 @@ static unsigned int snd_soc_7_9_read(struct snd_soc_codec *codec,
 				     unsigned int reg)
 {
 	u16 *cache = codec->reg_cache;
-	if (reg >= codec->reg_cache_size)
+	if (reg >= codec->driver->reg_cache_size)
 		return -1;
 	return cache[reg];
 }
@@ -101,12 +101,12 @@ static int snd_soc_7_9_write(struct snd_soc_codec *codec, unsigned int reg,
 	u8 data[2];
 	int ret;
 
-	BUG_ON(codec->volatile_register);
+	BUG_ON(codec->driver->volatile_register);
 
 	data[0] = (reg << 1) | ((value >> 8) & 0x0001);
 	data[1] = value & 0x00ff;
 
-	if (reg < codec->reg_cache_size)
+	if (reg < codec->driver->reg_cache_size)
 		cache[reg] = value;
 
 	if (codec->cache_only) {
@@ -161,13 +161,13 @@ static int snd_soc_8_8_write(struct snd_soc_codec *codec, unsigned int reg,
 	u8 *cache = codec->reg_cache;
 	u8 data[2];
 
-	BUG_ON(codec->volatile_register);
+	BUG_ON(codec->driver->volatile_register);
 
 	reg &= 0xff;
 	data[0] = reg;
 	data[1] = value & 0xff;
 
-	if (reg < codec->reg_cache_size)
+	if (reg < codec->driver->reg_cache_size)
 		cache[reg] = value;
 
 	if (codec->cache_only) {
@@ -188,7 +188,7 @@ static unsigned int snd_soc_8_8_read(struct snd_soc_codec *codec,
 {
 	u8 *cache = codec->reg_cache;
 	reg &= 0xff;
-	if (reg >= codec->reg_cache_size)
+	if (reg >= codec->driver->reg_cache_size)
 		return -1;
 	return cache[reg];
 }
@@ -225,7 +225,7 @@ static unsigned int snd_soc_8_16_read(struct snd_soc_codec *codec,
 {
 	u16 *cache = codec->reg_cache;
 
-	if (reg >= codec->reg_cache_size ||
+	if (reg >= codec->driver->reg_cache_size ||
 	    snd_soc_codec_volatile_register(codec, reg)) {
 		if (codec->cache_only)
 			return -EINVAL;
@@ -344,7 +344,7 @@ static unsigned int snd_soc_16_8_read(struct snd_soc_codec *codec,
 	u8 *cache = codec->reg_cache;
 
 	reg &= 0xff;
-	if (reg >= codec->reg_cache_size)
+	if (reg >= codec->driver->reg_cache_size)
 		return -1;
 	return cache[reg];
 }
@@ -356,14 +356,14 @@ static int snd_soc_16_8_write(struct snd_soc_codec *codec, unsigned int reg,
 	u8 data[3];
 	int ret;
 
-	BUG_ON(codec->volatile_register);
+	BUG_ON(codec->driver->volatile_register);
 
 	data[0] = (reg >> 8) & 0xff;
 	data[1] = reg & 0xff;
 	data[2] = value;
 
 	reg &= 0xff;
-	if (reg < codec->reg_cache_size)
+	if (reg < codec->driver->reg_cache_size)
 		cache[reg] = value;
 
 	if (codec->cache_only) {
@@ -452,7 +452,7 @@ static unsigned int snd_soc_16_16_read(struct snd_soc_codec *codec,
 {
 	u16 *cache = codec->reg_cache;
 
-	if (reg >= codec->reg_cache_size ||
+	if (reg >= codec->driver->reg_cache_size ||
 	    snd_soc_codec_volatile_register(codec, reg)) {
 		if (codec->cache_only)
 			return -EINVAL;
@@ -475,7 +475,7 @@ static int snd_soc_16_16_write(struct snd_soc_codec *codec, unsigned int reg,
 	data[2] = (value >> 8) & 0xff;
 	data[3] = value & 0xff;
 
-	if (reg < codec->reg_cache_size)
+	if (reg < codec->driver->reg_cache_size)
 		cache[reg] = value;
 
 	if (codec->cache_only) {
@@ -572,8 +572,8 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
 		return -EINVAL;
 	}
 
-	codec->write = io_types[i].write;
-	codec->read = io_types[i].read;
+	codec->driver->write = io_types[i].write;
+	codec->driver->read = io_types[i].read;
 
 	switch (control) {
 	case SND_SOC_CUSTOM:
