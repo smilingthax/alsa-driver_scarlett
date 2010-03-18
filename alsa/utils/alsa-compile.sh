@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.1.3
+version=0.2.0
 protocol=
 distrib=unknown
 distribver=0.0
@@ -53,7 +53,8 @@ Operation modes:
   --patch=patch		apply code patch (can be used multiple times)
   --tmpdir=dir		set temporary directory (overrides TMPDIR envval)
   --kmodules[=mods]	reinsert kernel modules or insert specified modules
-  			to current kernel
+  			to current kernel; more modules can be delimited
+  			with ',' and arguments can be delimited with ':'
   --kmodlist		list ALSA toplevel kernel modules
   --kmodremove		remove ALSA kernel modules from kernel
   --kmodclean		remove installed ALSA kernel modules from /lib/modules
@@ -120,7 +121,7 @@ do
 	-y|--yes)
 		yes=true ;;
 	-c*|--clean*)
-		clean=
+		clean="full"
 		case "$#,$1" in
 		*,*=*)
 			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
@@ -212,7 +213,8 @@ do
 	--kmodules*)
 		case "$#,$1" in
 		*,*=*)
-			kernelmodules=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			kernelmodules=`expr "z$1" : 'z-[^=]*=\(.*\)'`
+			;;
 		1,*)
 			kernelmodules="reinstall" ;;
 		*)
@@ -621,10 +623,9 @@ kill_audio_apps() {
 	fi
 }
 
-# List available modules
-# $CWD(!) (= $tmpdir?) with ./modules/ and caching in ../modules.dep
+# List available modules, cwd==source-tree
 parse_modules() {	
-	if ! test -s ../modules.dep; then
+	if ! test -s "$tmpdir/modules.dep"; then
 		local rel=$(uname -r)
 		cd modules
 		for i in snd-dummy.*; do
@@ -643,7 +644,7 @@ parse_modules() {
 			exit 1
 		fi
 		
-		if ! cp $pdst/modules.dep ../modules.dep ; then
+		if ! cp $pdst/modules.dep "$tmpdir/modules.dep" ; then
 			echo >&2 "cp problem."
 			exit 1
 		fi
@@ -653,13 +654,13 @@ parse_modules() {
 		echo "File modules.dep is cached."
 	fi
 
-	if ! test -s ../modules.top ; then
+	if ! test -s "$tmpdir/modules.top" ; then
 		for i in modules/*.*o; do
 			if test -r $i; then
 				local a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
 					local a=$(basename $i | cut -d . -f 1)
-					echo $a >> ../modules.top
+					echo $a >> "$tmpdir/modules.top"
 				fi
 			else
 				echo >&2 "permissions $tmpdir/$i problem."
@@ -712,8 +713,14 @@ my_insmod() {
 			fi
 		done
 		if test "$xmod" = "snd-dummy1"; then
-			local args="index=999"
-			local nofail=true
+			args="index=999"
+			nofail=true
+		fi
+		local xmod1=$(echo $xmod | cut -d ':' -f 1)
+		if test "$xmod1" != "$xmod"; then
+			local args1=$(echo $xmod | cut -d ':' -f 2-)
+			args="$args $args1"
+			xmod="$xmod1"
 		fi
 		if test -r modules/$xmod.ko; then
 			local mod=modules/$xmod.ko
@@ -750,7 +757,7 @@ show_kernel_messages() {
 /Dummy soundcard not found or device busy/ { delete lines }
 	{ lines[length(lines)+1] = \$0 }
 END	{
-		for (x = 3; x <= length(lines); x++)
+		for (x = 2; x <= length(lines); x++)
 			print prefix lines[x]
 	}
 EOF
@@ -763,38 +770,44 @@ EOF
 do_kernel_modules() {
 	local usermods="$@"
 	local curmods=$(current_modules)
+	local dst=
 	if test -z "$curmods" -a -z "$usermods"; then
 		echo >&2 "Unable to determine current ALSA kernel modules."
 		exit 1
 	fi
 	if test -n "$usermods"; then
-		local loadmods="$usermods"
-		local dst="../modules.user"
+		dst="$tmpdir/modules.user"
 		rm -f $dst || exit 1
 	else
-		local loadmods="$curmods"
-		local dst="../modules.insmod"
+		dst="$tmpdir/modules.insmod"
 	fi
 	parse_modules
 	if ! test -s $dst; then
-		local topmods=$(cat ../modules.top)
-		cat > run.awk <<EOF
+		local topmods=$(cat "$tmpdir/modules.top")
+		cat > "$tmpdir/run.awk" <<EOF
 function basename(name) {
 	split(name, y, "[/.]")
 	return y[length(y)-1]
 }
-function skipempty(dst, src, delim,   x) {
-	split(src, y, delim)
-	for (x in y) {
-		if (length(y[x]) > 0)
-			dst[x] = y[x]
-	}
-}
-function skipemptyuser(dst, src, delim,   x, m) {
+function skipempty(dst, src, delim,    x, y) {
 	split(src, y, delim)
 	for (x in y) {
 		if (length(y[x]) > 0) {
-			m = y[x]
+			dst[x] = y[x]
+		}
+	}
+}
+function skipemptyuser(dst, src, delim,   x, y, z, m) {
+	split(src, y, delim)
+	for (x in y) {
+		if (length(y[x]) > 0) {
+			z = index(y[x], ":")
+			if (z > 1) {
+				m = substr(y[x], 0, z - 1)
+				modargs[m] = substr(y[x], z)
+			} else {
+				m = y[x]
+			}
 			if (substr(m, 0, 4) != "snd-")
 				m = "snd-" m
 			dst[x] = m
@@ -840,7 +853,6 @@ function addtopmodule(mod,   v, j, k, z)
 	addslavemodules(mod)
 }
 BEGIN   {
-		skipempty(akmods, kmods, ",")
 		if (length(usermods) > 0)
 			skipemptyuser(acurmods, usermods, " ")
 		else
@@ -902,17 +914,23 @@ END     {
 
 		for (b = 1; b <= length(modules); b++) {
 			mod = modules[b]
-			if (length(mod) > 0)
-				print mod
+			if (length(mod) > 0) {
+				arg = ""
+				for (d in modargs) {
+					if (d == mod)
+						arg = modargs[d]
+				}
+				print mod arg
+			}
 		}
 	}
 EOF
-		awk -f run.awk -v kmods="$kernelmodules" \
+		awk -f "$tmpdir/run.awk" \
 		       -v curmods="$curmods" \
 		       -v usermods="$usermods" \
 		       -v topmods="$topmods" \
-				../modules.dep > $dst || exit 1
-		rm run.awk || exit 1
+				"$tmpdir/modules.dep" > $dst || exit 1
+		rm "$tmpdir/run.awk" || exit 1
 		if ! test -s $dst; then
 			if test -n "$usermods"; then
 				echo >&2 "Unable to determine specified ALSA kernel modules."
@@ -965,7 +983,7 @@ kernel_modules_list() {
 		exit 1
 	fi
 	parse_modules
-	local topmods=$(cat ../modules.top)
+	local topmods=$(cat "$tmpdir/modules.top")
 	for mod in $topmods; do
 		local desc=$($modinfobin -F description modules/$mod.*o)
 		echo "$mod: $desc"
@@ -1010,16 +1028,11 @@ if test "$kmodmesg" = "true"; then
 	exit 0
 fi
 
-protocol=$(echo $url | cut -d ':' -f 1)
-check_environment
-do_cmd cd $tmpdir
-package_switch $package
-
 if test -n "$clean"; then
-	if test -z $clean; then
+	if test "$clean" = "full"; then
 		echo -n "Removing tree $tmpdir:"
-		if test -d $tmpdir; then
-			if ! rm -rf $tmpdir; then
+		if test -d "$tmpdir"; then
+			if ! rm -rf "$tmpdir"; then
 				echo " failed"
 				exit 1
 			fi
@@ -1028,19 +1041,19 @@ if test -n "$clean"; then
 	else
 		package_switch $clean
 		echo -n "Removing package $package:"
-		rm $tmpdir/environment.* 2> /dev/null
+		rm "$tmpdir/environment.*" 2> /dev/null
 		if test "$package" = "alsa-driver"; then
-			rm -rf $tmpdir/modules.*
-			rm -rf $tmpdir/run.awk
+			rm -rf "$tmpdir/modules.*"
+			rm -rf "$tmpdir/run.awk"
 		fi
 		if test -n "$tree"; then
-			if test -d $tmpdir/$tree; then
-				if ! rm -rf $tmpdir/$tree; then
+			if test -d "$tmpdir/$tree"; then
+				if ! rm -rf "$tmpdir/$tree"; then
 					echo " failed"
 					exit 1
 				fi
 			fi
-			rm -f $packagedir
+			rm -f "$packagedir"
 			echo " success"
 		elif test -d $package; then
 			rm -rf $package
@@ -1054,6 +1067,11 @@ if test -n "$clean"; then
 	fi
 	exit 0
 fi
+
+protocol=$(echo $url | cut -d ':' -f 1)
+check_environment
+do_cmd cd $tmpdir
+package_switch $package
 
 if test "$kmodremove" = "true"; then
 	kernel_modules_remove
