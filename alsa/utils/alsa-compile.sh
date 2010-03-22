@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.0
+version=0.2.1
 protocol=
 distrib=unknown
 distribver=0.0
@@ -229,7 +229,7 @@ do
 		kmodremove=true
 		;;
 	--kmodclean)
-		dir="/lib/modules/`uname -r`/alsa/updates"
+		dir="/lib/modules/`uname -r`/updates/alsa"
 		echo "Removing kernel modules in $dir:"
 		if test -d $dir; then
 			if ! rm -rf $dir; then
