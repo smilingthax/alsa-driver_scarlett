@@ -1,5 +1,5 @@
 --- ../../alsa-kernel/usb/caiaq/input.c	2010-03-22 16:10:59.103773419 +0100
-+++ input.c	2010-03-22 16:12:45.419731229 +0100
++++ input.c	2010-03-22 17:39:57.279522335 +0100
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -37,7 +37,31 @@
  static unsigned short keycode_ak1[] =  { KEY_C, KEY_B, KEY_A };
  static unsigned short keycode_rk2[] =  { KEY_1, KEY_2, KEY_3, KEY_4,
  					 KEY_5, KEY_6, KEY_7 };
-@@ -346,7 +365,11 @@
+@@ -281,7 +300,11 @@
+ 
+ static int snd_usb_caiaq_input_open(struct input_dev *idev)
+ {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
++	struct snd_usb_caiaqdev *dev = idev->private;
++#else
+ 	struct snd_usb_caiaqdev *dev = input_get_drvdata(idev);
++#endif
+ 
+ 	if (!dev)
+ 		return -EINVAL;
+@@ -336,7 +359,11 @@
+ 	struct input_dev *input;
+ 	int i, ret = 0;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 15)
+ 	input = input_allocate_device();
++#else
++	input = kzalloc(sizeof(*input), GFP_KERNEL);
++#endif
+ 	if (!input)
+ 		return -ENOMEM;
+ 
+@@ -346,9 +373,17 @@
  	input->name = dev->product_name;
  	input->phys = dev->phys;
  	usb_to_input_id(usb_dev, &input->id);
@@ -47,5 +71,25 @@
 +	input->cdev.dev = &usb_dev->dev;
 +#endif
  
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
  	input_set_drvdata(input, dev);
++#else
++	input->private = dev;
++#endif
  
+ 	switch (dev->chip.usb_id) {
+ 	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
+@@ -467,9 +502,13 @@
+ 	for (i = 0; i < input->keycodemax; i++)
+ 		__set_bit(dev->keycode[i], input->keybit);
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 15)
+ 	ret = input_register_device(input);
+ 	if (ret < 0)
+ 		goto exit_free_idev;
++#else
++	input_register_device(input);
++#endif
+ 
+ 	dev->input_dev = input;
+ 	return 0;
