@@ -35,7 +35,7 @@ static struct hpios_spinlock msgxLock;
 static HPI_HandlerFunc *hpi_entry_points[HPI_MAX_ADAPTERS];
 
 static HPI_HandlerFunc *HPI_LookupEntryPointFunction(
-	struct hpi_pci *PciInfo
+	const struct hpi_pci *PciInfo
 )
 {
 
@@ -555,8 +555,10 @@ static void InStreamOpen(
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 
 		/* issue a reset */
-		memcpy(&hm, phm, sizeof(hm));
-		hm.wFunction = HPI_ISTREAM_RESET;
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+			HPI_ISTREAM_RESET);
+		hm.wAdapterIndex = phm->wAdapterIndex;
+		hm.wObjIndex = phm->wObjIndex;
 		HW_EntryPoint(&hm, &hr);
 
 		HpiOs_Msgxlock_Lock(&msgxLock);
@@ -600,8 +602,10 @@ static void InStreamClose(
 			NULL;
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 		/* issue a reset */
-		memcpy(&hm, phm, sizeof(hm));
-		hm.wFunction = HPI_ISTREAM_RESET;
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_ISTREAM,
+			HPI_ISTREAM_RESET);
+		hm.wAdapterIndex = phm->wAdapterIndex;
+		hm.wObjIndex = phm->wObjIndex;
 		HW_EntryPoint(&hm, &hr);
 		HpiOs_Msgxlock_Lock(&msgxLock);
 		if (hr.wError) {
@@ -654,8 +658,10 @@ static void OutStreamOpen(
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 
 		/* issue a reset */
-		memcpy(&hm, phm, sizeof(hm));
-		hm.wFunction = HPI_OSTREAM_RESET;
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+			HPI_OSTREAM_RESET);
+		hm.wAdapterIndex = phm->wAdapterIndex;
+		hm.wObjIndex = phm->wObjIndex;
 		HW_EntryPoint(&hm, &hr);
 
 		HpiOs_Msgxlock_Lock(&msgxLock);
@@ -700,8 +706,10 @@ static void OutStreamClose(
 			NULL;
 		HpiOs_Msgxlock_UnLock(&msgxLock);
 		/* issue a reset */
-		memcpy(&hm, phm, sizeof(hm));
-		hm.wFunction = HPI_OSTREAM_RESET;
+		HPI_InitMessageResponse(&hm, &hr, HPI_OBJ_OSTREAM,
+			HPI_OSTREAM_RESET);
+		hm.wAdapterIndex = phm->wAdapterIndex;
+		hm.wObjIndex = phm->wObjIndex;
 		HW_EntryPoint(&hm, &hr);
 		HpiOs_Msgxlock_Lock(&msgxLock);
 		if (hr.wError) {
