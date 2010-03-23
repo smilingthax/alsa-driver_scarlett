@@ -607,7 +607,8 @@ Threshold is a -ve number in units of dB/100,
 #define HPI_OSTREAM_GROUP_GETMAP        HPI_MAKE_INDEX(HPI_OBJ_OSTREAM, 21)
 #define HPI_OSTREAM_GROUP_RESET         HPI_MAKE_INDEX(HPI_OBJ_OSTREAM, 22)
 #define HPI_OSTREAM_HOSTBUFFER_GET_INFO HPI_MAKE_INDEX(HPI_OBJ_OSTREAM, 23)
-#define HPI_OSTREAM_FUNCTION_COUNT              23
+#define HPI_OSTREAM_WAIT_START          HPI_MAKE_INDEX(HPI_OBJ_OSTREAM, 24)
+#define HPI_OSTREAM_FUNCTION_COUNT              24
 /* INPUT STREAM */
 #define HPI_ISTREAM_OPEN                HPI_MAKE_INDEX(HPI_OBJ_ISTREAM, 1)
 #define HPI_ISTREAM_CLOSE               HPI_MAKE_INDEX(HPI_OBJ_ISTREAM, 2)
@@ -627,7 +628,8 @@ Threshold is a -ve number in units of dB/100,
 #define HPI_ISTREAM_GROUP_GETMAP        HPI_MAKE_INDEX(HPI_OBJ_ISTREAM, 16)
 #define HPI_ISTREAM_GROUP_RESET         HPI_MAKE_INDEX(HPI_OBJ_ISTREAM, 17)
 #define HPI_ISTREAM_HOSTBUFFER_GET_INFO HPI_MAKE_INDEX(HPI_OBJ_ISTREAM, 18)
-#define HPI_ISTREAM_FUNCTION_COUNT              18
+#define HPI_ISTREAM_WAIT_START          HPI_MAKE_INDEX(HPI_OBJ_ISTREAM, 19)
+#define HPI_ISTREAM_FUNCTION_COUNT              19
 /* MIXER */
 /* NOTE:
    GET_NODE_INFO, SET_CONNECTION, GET_CONNECTIONS are not currently used */
@@ -713,8 +715,8 @@ struct hpi_pci {
 
 struct hpi_resource {
 	union {
-		struct hpi_pci *Pci;
-		char *net_if;
+		const struct hpi_pci *Pci;
+		const char *net_if;
 	} r;
 #ifndef HPI64BIT		/* keep structure size constant */
 	u32 dwPadTo64;
@@ -1646,25 +1648,25 @@ void HPI_MessageUDP(
 
 /* used in PnP OS/driver */
 u16 HPI_SubSysCreateAdapter(
-	struct hpi_hsubsys *phSubSys,
-	struct hpi_resource *pResource,
+	const struct hpi_hsubsys *phSubSys,
+	const struct hpi_resource *pResource,
 	u16 *pwAdapterIndex
 );
 
 u16 HPI_SubSysDeleteAdapter(
-	struct hpi_hsubsys *phSubSys,
+	const struct hpi_hsubsys *phSubSys,
 	u16 wAdapterIndex
 );
 
 u16 HPI_OutStreamHostBufferGetInfo(
-	struct hpi_hsubsys *phSubSys,
+	const struct hpi_hsubsys *phSubSys,
 	u32 hOutStream,
 	u8 **ppBuffer,
 	struct hpi_hostbuffer_status **ppStatus
 );
 
 u16 HPI_InStreamHostBufferGetInfo(
-	struct hpi_hsubsys *phSubSys,
+	const struct hpi_hsubsys *phSubSys,
 	u32 hInStream,
 	u8 **ppBuffer,
 	struct hpi_hostbuffer_status **ppStatus
@@ -1683,7 +1685,7 @@ compatibility.
 
 void HPI_FormatToMsg(
 	struct hpi_msg_format *pMF,
-	struct hpi_format *pF
+	const struct hpi_format *pF
 );
 void HPI_StreamResponseToLegacy(
 	struct hpi_stream_res *pSR

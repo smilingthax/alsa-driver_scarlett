@@ -38,7 +38,7 @@ static u16 gwSSX2Bypass;
   * \return Previous bypass setting.
   */
 u16 HPI_SubSysSsx2Bypass(
-	struct hpi_hsubsys *phSubSys,
+	const struct hpi_hsubsys *phSubSys,
 	u16 wBypass
 )
 {

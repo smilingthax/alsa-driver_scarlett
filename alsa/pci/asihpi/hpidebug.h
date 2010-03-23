@@ -217,8 +217,9 @@ function_count_check(HPI_ADAPTER, 18);
   "HPI_OSTREAM_GROUP_GETMAP", \
   "HPI_OSTREAM_GROUP_RESET", \
   "HPI_OSTREAM_HOSTBUFFER_GET_INFO", \
+  "HPI_OSTREAM_WAIT_START", \
 }
-function_count_check(HPI_OSTREAM, 23);
+function_count_check(HPI_OSTREAM, 24);
 
 #define HPI_ISTREAM_STRINGS     \
 {                               \
@@ -240,8 +241,9 @@ function_count_check(HPI_OSTREAM, 23);
   "HPI_ISTREAM_GROUP_GETMAP", \
   "HPI_ISTREAM_GROUP_RESET", \
   "HPI_ISTREAM_HOSTBUFFER_GET_INFO", \
+  "HPI_ISTREAM_WAIT_START", \
 }
-function_count_check(HPI_ISTREAM, 18);
+function_count_check(HPI_ISTREAM, 19);
 
 #define HPI_MIXER_STRINGS       \
 {                               \
