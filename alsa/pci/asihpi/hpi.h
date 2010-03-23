@@ -52,7 +52,7 @@ i.e 3.05.02 is a development version
 #define HPI_VER HPI_VERSION_CONSTRUCTOR(4L, 3, 10)
 
 /* Library version as documented in hpi-api-versions.txt */
-#define HPI_LIB_VER  HPI_VERSION_CONSTRUCTOR(3, 5, 0)
+#define HPI_LIB_VER  HPI_VERSION_CONSTRUCTOR(9, 0, 0)
 
 #ifdef __cplusplus
 /* *INDENT-OFF* */
