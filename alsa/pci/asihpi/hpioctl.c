@@ -320,9 +320,6 @@ int __devinit asihpi_adapter_probe(
 	adapter.pci = pci_dev;
 
 	nm = HPI_MAX_ADAPTER_MEM_SPACES;
-	/* temporary for DM648, handled in hpi1000 */
-	if (pci_dev->device == 0xB003)
-		nm = 0;	/* don't map any for this device */
 
 	for (idx = 0; idx < nm; idx++) {
 		HPI_DEBUG_LOG(INFO, "Resource %d %s %08llx-%08llx %04llx\n",
