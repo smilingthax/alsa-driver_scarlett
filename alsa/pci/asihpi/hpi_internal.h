@@ -174,6 +174,14 @@ struct hpi_entity {
 #pragma warning(pop)
 #endif
 
+/******************************************* bus types */
+enum HPI_BUSES {
+	HPI_BUS_ISAPNP = 1,
+	HPI_BUS_PCI = 2,
+	HPI_BUS_USB = 3,
+	HPI_BUS_NET = 4
+};
+
 /******************************************* CONTROL ATTRIBUTES ****/
 /* (in order of control type ID */
 
@@ -1583,6 +1591,9 @@ struct hpi_control_cache_single {
 			u16 wSourceIndex;
 			u32 dwSampleRate;
 		} clk;
+		struct {	/* microphone control */
+			u16 wState;
+		} phantom_power;
 		struct {	/* generic control */
 			u32 dw1;
 			u32 dw2;

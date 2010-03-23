@@ -414,6 +414,12 @@ short HpiCheckControlCache(
 		} else
 			found = 0;
 		break;
+	case HPI_CONTROL_MICROPHONE:
+		if (phm->u.c.wAttribute == HPI_MICROPHONE_PHANTOM_POWER) {
+			phr->u.c.dwParam1 = pC->u.phantom_power.wState;
+		} else
+			found = 0;
+		break;
 	case HPI_CONTROL_SAMPLECLOCK:
 		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
 			phr->u.c.dwParam1 = pC->u.clk.wSource;
@@ -561,6 +567,10 @@ void HpiSyncControlCache(
 			pC->u.v.anLog[0] = phr->u.c.anLogValue[0];
 			pC->u.v.anLog[1] = phr->u.c.anLogValue[1];
 		}
+		break;
+	case HPI_CONTROL_MICROPHONE:
+		if (phm->u.c.wAttribute == HPI_MICROPHONE_PHANTOM_POWER)
+			pC->u.phantom_power.wState = (u16)phm->u.c.dwParam1;
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
 		if (phr->wError)

@@ -49,7 +49,7 @@ i.e 3.05.02 is a development version
 #define HPI_VER_RELEASE(v) ((int)(v & 0xFF))
 
 /* Use single digits for versions less that 10 to avoid octal. */
-#define HPI_VER HPI_VERSION_CONSTRUCTOR(4L, 3, 10)
+#define HPI_VER HPI_VERSION_CONSTRUCTOR(4L, 3, 13)
 
 /* Library version as documented in hpi-api-versions.txt */
 #define HPI_LIB_VER  HPI_VERSION_CONSTRUCTOR(9, 0, 0)
@@ -178,12 +178,6 @@ The range is +1.0 to -1.0, which corresponds to digital fullscale.
 	HPI_FORMAT_UNDEFINED = 0xffff
 };
 
-/******************************************* bus types */
-enum HPI_BUSES {
-	HPI_BUS_ISAPNP = 1,
-	HPI_BUS_PCI = 2,
-	HPI_BUS_USB = 3
-};
 /******************************************* in/out Stream states */
 /*******************************************/
 /** Stream States
