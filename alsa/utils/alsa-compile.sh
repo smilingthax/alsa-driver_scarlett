@@ -438,6 +438,12 @@ check_compilation_environment() {
 		else
 			echo "Program autoconf found."
 		fi
+		local a=$(aclocal --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "aclocal"; then
+			install_package automake
+		else
+			echo "Program aclocal found."
+		fi
 		local a=$(gcc --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "gcc" ; then
 			install_package gcc
