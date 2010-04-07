@@ -1993,4 +1993,11 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 #endif /* BLOCKING_INIT_NOTIFIER_HEAD */
 #endif /* <2.6.17 */
 
+/* pgprot_noncached - 2.4 has different defines */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#ifndef pgprot_noncached
+#define pgprot_noncached(x) (x)
+#endif
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
