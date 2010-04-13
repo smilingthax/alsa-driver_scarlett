@@ -1,5 +1,5 @@
---- ../../alsa-kernel/core/seq/seq_clientmgr.c	2007-12-20 10:19:43.000000000 +0100
-+++ seq_clientmgr.c	2007-12-20 10:51:34.000000000 +0100
+--- ../../alsa-kernel/core/seq/seq_clientmgr.c	2010-04-13 12:01:49.084966034 +0200
++++ seq_clientmgr.c	2010-04-13 13:11:27.005575952 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -14,7 +14,7 @@
  #include <linux/slab.h>
  #include <sound/core.h>
  #include <sound/minors.h>
-@@ -2200,12 +2203,25 @@
+@@ -2211,12 +2214,25 @@
  	return snd_seq_do_ioctl(client, cmd, (void __user *) arg);
  }
  
@@ -41,7 +41,7 @@
  /* -------------------------------------------------------- */
  
  
-@@ -2535,14 +2551,20 @@
+@@ -2550,15 +2566,21 @@
  
  static const struct file_operations snd_seq_f_ops =
  {
@@ -52,6 +52,7 @@
  	.write =	snd_seq_write,
  	.open =		snd_seq_open,
  	.release =	snd_seq_release,
+ 	.llseek =	no_llseek,
  	.poll =		snd_seq_poll,
 +#ifdef CONFIG_SND_HAVE_NEW_IOCTL
  	.unlocked_ioctl =	snd_seq_ioctl,
