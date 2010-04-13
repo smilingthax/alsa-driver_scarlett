@@ -2001,4 +2001,14 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 #endif
 #endif
 
+/* no_llseek() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
+#define no_llseek	NULL
+#endif
+
+/* nonseekable_open() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
+#define nonseekable_open(i,f) 0
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
