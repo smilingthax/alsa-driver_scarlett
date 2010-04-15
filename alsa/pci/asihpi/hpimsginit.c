@@ -25,11 +25,11 @@
 #include "hpimsginit.h"
 
 /* The actual message size for each object type */
-static u16 aMsgSize[HPI_OBJ_MAXINDEX + 1] = HPI_MESSAGE_SIZE_BY_OBJECT;
+static u16 msg_size[HPI_OBJ_MAXINDEX + 1] = HPI_MESSAGE_SIZE_BY_OBJECT;
 /* The actual response size for each object type */
-static u16 aResSize[HPI_OBJ_MAXINDEX + 1] = HPI_RESPONSE_SIZE_BY_OBJECT;
+static u16 res_size[HPI_OBJ_MAXINDEX + 1] = HPI_RESPONSE_SIZE_BY_OBJECT;
 /* Flag to enable alternate message type for SSX2 bypass. */
-static u16 gwSSX2Bypass;
+static u16 gwSSX2_bypass;
 
 /** \internal
   * Used by ASIO driver to disable SSX2 for a single process
@@ -37,39 +37,33 @@ static u16 gwSSX2Bypass;
   * \param wBypass New bypass setting 0 = off, nonzero = on
   * \return Previous bypass setting.
   */
-u16 HPI_SubSysSsx2Bypass(
-	const struct hpi_hsubsys *phSubSys,
-	u16 wBypass
-)
+u16 hpi_subsys_ssx2_bypass(const struct hpi_hsubsys *ph_subsys, u16 bypass)
 {
-	u16 oldValue = gwSSX2Bypass;
+	u16 old_value = gwSSX2_bypass;
 
-	gwSSX2Bypass = wBypass;
+	gwSSX2_bypass = bypass;
 
-	return oldValue;
+	return old_value;
 }
 
 /** \internal
   * initialize the HPI message structure
   */
-static void HPI_InitMessage(
-	struct hpi_message *phm,
-	u16 wObject,
-	u16 wFunction
-)
+static void hpi_init_message(struct hpi_message *phm, u16 object,
+	u16 function)
 {
 	memset(phm, 0, sizeof(*phm));
-	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX))
-		phm->wSize = aMsgSize[wObject];
+	if ((object > 0) && (object <= HPI_OBJ_MAXINDEX))
+		phm->size = msg_size[object];
 	else
-		phm->wSize = sizeof(*phm);
+		phm->size = sizeof(*phm);
 
-	if (gwSSX2Bypass)
-		phm->wType = HPI_TYPE_SSX2BYPASS_MESSAGE;
+	if (gwSSX2_bypass)
+		phm->type = HPI_TYPE_SSX2BYPASS_MESSAGE;
 	else
-		phm->wType = HPI_TYPE_MESSAGE;
-	phm->wObject = wObject;
-	phm->wFunction = wFunction;
+		phm->type = HPI_TYPE_MESSAGE;
+	phm->object = object;
+	phm->function = function;
 	phm->version = 0;
 	/* Expect adapter index to be set by caller */
 }
@@ -77,81 +71,60 @@ static void HPI_InitMessage(
 /** \internal
   * initialize the HPI response structure
   */
-void HPI_InitResponse(
-	struct hpi_response *phr,
-	u16 wObject,
-	u16 wFunction,
-	u16 wError
-)
+void hpi_init_response(struct hpi_response *phr, u16 object, u16 function,
+	u16 error)
 {
 	memset(phr, 0, sizeof(*phr));
-	phr->wType = HPI_TYPE_RESPONSE;
-	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX))
-		phr->wSize = aResSize[wObject];
+	phr->type = HPI_TYPE_RESPONSE;
+	if ((object > 0) && (object <= HPI_OBJ_MAXINDEX))
+		phr->size = res_size[object];
 	else
-		phr->wSize = sizeof(*phr);
-	phr->wObject = wObject;
-	phr->wFunction = wFunction;
-	phr->wError = wError;
-	phr->wSpecificError = 0;
+		phr->size = sizeof(*phr);
+	phr->object = object;
+	phr->function = function;
+	phr->error = error;
+	phr->specific_error = 0;
 	phr->version = 0;
 }
 
-void HPI_InitMessageResponse(
-	struct hpi_message *phm,
-	struct hpi_response *phr,
-	u16 wObject,
-	u16 wFunction
-)
+void hpi_init_message_response(struct hpi_message *phm,
+	struct hpi_response *phr, u16 object, u16 function)
 {
-	HPI_InitMessage(phm, wObject, wFunction);
+	hpi_init_message(phm, object, function);
 	/* default error return if the response is
 	   not filled in by the callee */
-	HPI_InitResponse(phr, wObject, wFunction,
+	hpi_init_response(phr, object, function,
 		HPI_ERROR_PROCESSING_MESSAGE);
 }
 
-static void HPI_InitMessageV1(
-	struct hpi_message_header *phm,
-	u16 wSize,
-	u16 wObject,
-	u16 wFunction
-)
+static void hpi_init_messageV1(struct hpi_message_header *phm, u16 size,
+	u16 object, u16 function)
 {
 	memset(phm, 0, sizeof(*phm));
-	if ((wObject > 0) && (wObject <= HPI_OBJ_MAXINDEX)) {
-		phm->wSize = wSize;
-		phm->wType = HPI_TYPE_MESSAGE;
-		phm->wObject = wObject;
-		phm->wFunction = wFunction;
+	if ((object > 0) && (object <= HPI_OBJ_MAXINDEX)) {
+		phm->size = size;
+		phm->type = HPI_TYPE_MESSAGE;
+		phm->object = object;
+		phm->function = function;
 		phm->version = 1;
 		/* Expect adapter index to be set by caller */
 	}
 }
 
-void HPI_InitResponseV1(
-	struct hpi_response_header *phr,
-	u16 wSize,
-	u16 wObject,
-	u16 wFunction
-)
+void hpi_init_responseV1(struct hpi_response_header *phr, u16 size,
+	u16 object, u16 function)
 {
 	memset(phr, 0, sizeof(*phr));
-	phr->wSize = wSize;
+	phr->size = size;
 	phr->version = 1;
-	phr->wType = HPI_TYPE_RESPONSE;
-	phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
+	phr->type = HPI_TYPE_RESPONSE;
+	phr->error = HPI_ERROR_PROCESSING_MESSAGE;
 }
 
-void HPI_InitMessageResponseV1(
-	struct hpi_message_header *phm,
-	u16 wMsgSize,
-	struct hpi_response_header *phr,
-	u16 wResSize,
-	u16 wObject,
-	u16 wFunction
-)
+void hpi_init_message_responseV1(struct hpi_message_header *phm, u16 msg_size,
+	struct hpi_response_header *phr, u16 res_size, u16 object,
+	u16 function)
 {
-	HPI_InitMessageV1(phm, wMsgSize, wObject, wFunction);
-	HPI_InitResponseV1(phr, wResSize, wObject, wFunction);
+	hpi_init_messageV1(phm, msg_size, object, function);
+	hpi_init_responseV1(phr, res_size, object, function);
 }

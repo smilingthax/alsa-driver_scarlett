@@ -34,13 +34,10 @@ extern "C" {
 
 #define HPIMSGX_ALLADAPTERS     (0xFFFF)
 
-void HPI_MessageEx(
-	struct hpi_message *phm,
-	struct hpi_response *phr,
-	void *hOwner
-);
+void hpi_send_recv_ex(struct hpi_message *phm, struct hpi_response *phr,
+	void *h_owner);
 
-#define HPI_MESSAGE_LOWER_LAYER HPI_MessageEx
+#define HPI_MESSAGE_LOWER_LAYER hpi_send_recv_ex
 
 #ifdef __cplusplus
 /* *INDENT-OFF* */

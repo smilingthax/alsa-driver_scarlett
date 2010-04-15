@@ -26,32 +26,15 @@ a response to a message.
 However, when sending a message, a matching response buffer always must be prepared
 */
 
-void HPI_InitResponse(
-	struct hpi_response *phr,
-	u16 wObject,
-	u16 wFunction,
-	u16 wError
-);
+void hpi_init_response(struct hpi_response *phr, u16 object, u16 function,
+	u16 error);
 
-void HPI_InitMessageResponse(
-	struct hpi_message *phm,
-	struct hpi_response *phr,
-	u16 wObject,
-	u16 wFunction
-);
+void hpi_init_message_response(struct hpi_message *phm,
+	struct hpi_response *phr, u16 object, u16 function);
 
-void HPI_InitResponseV1(
-	struct hpi_response_header *phr,
-	u16 wSize,
-	u16 wObject,
-	u16 wFunction
-);
+void hpi_init_responseV1(struct hpi_response_header *phr, u16 size,
+	u16 object, u16 function);
 
-void HPI_InitMessageResponseV1(
-	struct hpi_message_header *phm,
-	u16 wMsgSize,
-	struct hpi_response_header *phr,
-	u16 wResSize,
-	u16 wObject,
-	u16 wFunction
-);
+void hpi_init_message_responseV1(struct hpi_message_header *phm, u16 msg_size,
+	struct hpi_response_header *phr, u16 res_size, u16 object,
+	u16 function);
