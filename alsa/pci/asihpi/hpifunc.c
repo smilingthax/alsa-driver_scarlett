@@ -110,10 +110,10 @@ struct hpi_hsubsys *hpi_subsys_create(void
 		hpi_send_recv(&hm, &hr);
 
 		if (hr.error == 0)
-			return (&gh_subsys);
+			return &gh_subsys;
 
 	}
-	return (NULL);
+	return NULL;
 }
 
 void hpi_subsys_free(const struct hpi_hsubsys *ph_subsys)
@@ -2346,7 +2346,7 @@ u16 hpi_microphone_get_phantom_power(const struct hpi_hsubsys *ph_subsys,
 		HPI_MICROPHONE_PHANTOM_POWER, &on_off);
 	if (pw_on_off)
 		*pw_on_off = (u16)on_off;
-	return (error);
+	return error;
 }
 
 u16 hpi_multiplexer_set_source(const struct hpi_hsubsys *ph_subsys,
@@ -3617,7 +3617,7 @@ u16 hpi_async_event_wait(const struct hpi_hsubsys *ph_subsys, u32 h_async,
 	u16 maximum_events, struct hpi_async_event *p_events,
 	u16 *pw_number_returned)
 {
-	return (0);
+	return 0;
 }
 
 u16 hpi_async_event_get_count(const struct hpi_hsubsys *ph_subsys,

@@ -1,7 +1,7 @@
 /************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -42,7 +42,7 @@ int hpi_debug_level_set(int level)
 
 int hpi_debug_level_get(void)
 {
-	return (hpi_debug_level);
+	return hpi_debug_level;
 }
 
 #ifdef HPIOS_DEBUG_PRINT

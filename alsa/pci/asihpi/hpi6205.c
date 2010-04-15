@@ -1,7 +1,7 @@
 /******************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -585,13 +585,13 @@ static u16 create_adapter_obj(struct hpi_adapter_obj *pao,
 	if (err)
 		/* no need to clean up as SubSysCreateAdapter */
 		/* calls DeleteAdapter on error. */
-		return (err);
+		return err;
 
 	HPI_DEBUG_LOG(INFO, "load DSP code OK\n");
 
 	/* allow boot load even if mem alloc wont work */
 	if (!phw->p_interface_buffer)
-		return (hpi6205_error(0, HPI_ERROR_MEMORY_ALLOC));
+		return hpi6205_error(0, HPI_ERROR_MEMORY_ALLOC);
 
 	interface = phw->p_interface_buffer;
 
@@ -609,7 +609,7 @@ static u16 create_adapter_obj(struct hpi_adapter_obj *pao,
 		HPI_DEBUG_LOG(ERROR,
 			"timed out waiting for interrupt "
 			"confirming DSP code running\n");
-		return (hpi6205_error(0, HPI6205_ERROR_6205_NO_IRQ));
+		return hpi6205_error(0, HPI6205_ERROR_6205_NO_IRQ);
 	}
 
 	/* reset the interrupt */
@@ -619,7 +619,7 @@ static u16 create_adapter_obj(struct hpi_adapter_obj *pao,
 	/* make sure the DSP has started ok */
 	if (!wait_dsp_ack(phw, H620_HIF_RESET, HPI6205_TIMEOUT * 10)) {
 		HPI_DEBUG_LOG(ERROR, "timed out waiting reset state \n");
-		return (hpi6205_error(0, HPI6205_ERROR_6205_INIT_FAILED));
+		return hpi6205_error(0, HPI6205_ERROR_6205_INIT_FAILED);
 	}
 	/* Note that *pao, *phw are zeroed after allocation,
 	 * so pointers and flags are NULL by default.
@@ -709,10 +709,10 @@ static u16 create_adapter_obj(struct hpi_adapter_obj *pao,
 		if (err) {
 			HPI_DEBUG_LOG(ERROR, "message transport error %d\n",
 				err);
-			return (err);
+			return err;
 		}
 		if (hR.error)
-			return (hR.error);
+			return hR.error;
 
 		pao->adapter_type = hR.u.a.adapter_type;
 		pao->index = hR.u.a.adapter_index;
@@ -731,7 +731,7 @@ static u16 create_adapter_obj(struct hpi_adapter_obj *pao,
 	pao->open = 0;	/* upon creation the adapter is closed */
 
 	HPI_DEBUG_LOG(INFO, "bootload DSP OK\n");
-	return (0);
+	return 0;
 }
 
 /** Free memory areas allocated by adapter
@@ -1440,26 +1440,26 @@ static u16 adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 
 		err = boot_loader_config_emif(pao, dsp);
 		if (err)
-			return (err);
+			return err;
 
 		err = boot_loader_test_internal_memory(pao, dsp);
 		if (err)
-			return (err);
+			return err;
 
 		err = boot_loader_test_external_memory(pao, dsp);
 		if (err)
-			return (err);
+			return err;
 
 		err = boot_loader_test_pld(pao, dsp);
 		if (err)
-			return (err);
+			return err;
 
 		/* write the DSP code down into the DSPs memory */
 		dsp_code.ps_dev = pao->pci.p_os_data;
 		err = hpi_dsp_code_open(boot_code_id[dsp], &dsp_code,
 			pos_error_code);
 		if (err)
-			return (err);
+			return err;
 
 		while (1) {
 			u32 length;
@@ -1500,7 +1500,7 @@ static u16 adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 		}
 		if (err) {
 			hpi_dsp_code_close(&dsp_code);
-			return (err);
+			return err;
 		}
 
 		/* verify code */
@@ -1535,7 +1535,7 @@ static u16 adapter_boot_load_dsp(struct hpi_adapter_obj *pao,
 		}
 		hpi_dsp_code_close(&dsp_code);
 		if (err)
-			return (err);
+			return err;
 	}
 
 	/* After bootloading all DSPs, start DSP0 running
@@ -1899,7 +1899,7 @@ static u16 boot_loader_test_memory(struct hpi_adapter_obj *pao, int dsp_index,
 					"memtest error details  "
 					"%08x %08x %08x %i\n", test_addr,
 					test_data, data, dsp_index);
-				return (1);	/* error */
+				return 1;	/* error */
 			}
 			test_data = test_data << 1;
 		}	/* for(j) */
@@ -1919,7 +1919,7 @@ static u16 boot_loader_test_memory(struct hpi_adapter_obj *pao, int dsp_index,
 				"memtest error details  "
 				"%08x %08x %08x %i\n", test_addr, test_data,
 				data, dsp_index);
-			return (1);	/* error */
+			return 1;	/* error */
 		}
 		/* leave location as zero */
 		boot_loader_write_mem32(pao, dsp_index, test_addr, 0x0);
@@ -1930,7 +1930,7 @@ static u16 boot_loader_test_memory(struct hpi_adapter_obj *pao, int dsp_index,
 		test_addr = start_address + i * 4;
 		boot_loader_write_mem32(pao, dsp_index, test_addr, 0x0);
 	}
-	return (0);	/*success! */
+	return 0;
 }
 
 static u16 boot_loader_test_internal_memory(struct hpi_adapter_obj *pao,
@@ -1959,7 +1959,7 @@ static u16 boot_loader_test_internal_memory(struct hpi_adapter_obj *pao,
 		return hpi6205_error(dsp_index, HPI6205_ERROR_BAD_DSPINDEX);
 
 	if (err)
-		return (hpi6205_error(dsp_index, HPI6205_ERROR_DSP_INTMEM));
+		return hpi6205_error(dsp_index, HPI6205_ERROR_DSP_INTMEM);
 	else
 		return 0;
 }
@@ -1978,7 +1978,7 @@ static u16 boot_loader_test_external_memory(struct hpi_adapter_obj *pao,
 			dRAM_size = 0x200000;
 			/*dwDRAMinc=1024; */
 		} else
-			return (0);
+			return 0;
 	} else if ((dsp_index == 1) || (dsp_index == 2)) {
 		/* DSP 1 is a C6713 */
 		dRAM_start_address = 0x80000000;
@@ -1989,7 +1989,7 @@ static u16 boot_loader_test_external_memory(struct hpi_adapter_obj *pao,
 
 	if (boot_loader_test_memory(pao, dsp_index, dRAM_start_address,
 			dRAM_size))
-		return (hpi6205_error(dsp_index, HPI6205_ERROR_DSP_EXTMEM));
+		return hpi6205_error(dsp_index, HPI6205_ERROR_DSP_EXTMEM);
 	return 0;
 }
 
@@ -2003,13 +2003,13 @@ static u16 boot_loader_test_pld(struct hpi_adapter_obj *pao, int dsp_index)
 			data = boot_loader_read_mem32(pao, dsp_index,
 				0x03000008);
 			if ((data & 0xF) != 0x5)
-				return (hpi6205_error(dsp_index,
-						HPI6205_ERROR_DSP_PLD));
+				return hpi6205_error(dsp_index,
+					HPI6205_ERROR_DSP_PLD);
 			data = boot_loader_read_mem32(pao, dsp_index,
 				0x0300000C);
 			if ((data & 0xF) != 0xA)
-				return (hpi6205_error(dsp_index,
-						HPI6205_ERROR_DSP_PLD));
+				return hpi6205_error(dsp_index,
+					HPI6205_ERROR_DSP_PLD);
 		}
 	} else if (dsp_index == 1) {
 		/* DSP 1 is a C6713 */
@@ -2018,14 +2018,14 @@ static u16 boot_loader_test_pld(struct hpi_adapter_obj *pao, int dsp_index)
 			data = boot_loader_read_mem32(pao, dsp_index,
 				0x90000010);
 			if ((data & 0xFF) != 0xAA)
-				return (hpi6205_error(dsp_index,
-						HPI6205_ERROR_DSP_PLD));
+				return hpi6205_error(dsp_index,
+					HPI6205_ERROR_DSP_PLD);
 			/* 8713 - LED on */
 			boot_loader_write_mem32(pao, dsp_index, 0x90000000,
 				0x02);
 		}
 	}
-	return (0);
+	return 0;
 }
 
 /** Transfer data to or from DSP
@@ -2188,8 +2188,7 @@ static u16 message_response_sequence(struct hpi_adapter_obj *pao,
 
 	if (!wait_dsp_ack(phw, H620_HIF_IDLE, HPI6205_TIMEOUT)) {
 		HPI_DEBUG_LOG(DEBUG, "timeout waiting for idle\n");
-		return (hpi6205_error(0,
-				HPI6205_ERROR_MSG_RESP_IDLE_TIMEOUT));
+		return hpi6205_error(0, HPI6205_ERROR_MSG_RESP_IDLE_TIMEOUT);
 	}
 	interface->u.message_buffer = *phm;
 	/* signal we want a response */
@@ -2259,8 +2258,8 @@ static u16 message_response_sequence(struct hpi_adapter_obj *pao,
 			HPI_DEBUG_LOG(DEBUG,
 				"timeout waiting for idle "
 				"(on adapter_close)\n");
-			return (hpi6205_error(0,
-					HPI6205_ERROR_MSG_RESP_IDLE_TIMEOUT));
+			return hpi6205_error(0,
+				HPI6205_ERROR_MSG_RESP_IDLE_TIMEOUT);
 		}
 	}
 	err = hpi_validate_response(phm, phr);

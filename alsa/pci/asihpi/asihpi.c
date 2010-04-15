@@ -199,7 +199,7 @@ static u16 hpi_stream_host_buffer_attach(
 	hm.u.d.u.buffer.pci_address = pci_address;
 	hm.u.d.u.buffer.command = HPI_BUFFER_CMD_INTERNAL_GRANTADAPTER;
 	hpi_send_recv(&hm, &hr);
-	return(hr.error);
+	return hr.error;
 }
 
 static u16 hpi_stream_host_buffer_detach(
@@ -223,7 +223,7 @@ static u16 hpi_stream_host_buffer_detach(
 				&hm.obj_index);
 	hm.u.d.u.buffer.command = HPI_BUFFER_CMD_INTERNAL_REVOKEADAPTER;
 	hpi_send_recv(&hm, &hr);
-	return(hr.error);
+	return hr.error;
 }
 
 static inline u16 hpi_stream_start(struct hpi_hsubsys *hS, u32 h_stream)
@@ -1539,7 +1539,7 @@ static int __devinit snd_asihpi_volume_add(struct snd_card_asihpi *asihpi,
 	snd_control.put = snd_asihpi_volume_put;
 	snd_control.tlv.p = db_scale_100;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	return ctl_add(card, &snd_control, asihpi);
 }
 
 /*------------------------------------------------------------
@@ -1622,7 +1622,7 @@ static int __devinit snd_asihpi_level_add(struct snd_card_asihpi *asihpi,
 	snd_control.put = snd_asihpi_level_put;
 	snd_control.tlv.p = db_scale_level;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	return ctl_add(card, &snd_control, asihpi);
 }
 
 /*------------------------------------------------------------
@@ -2043,7 +2043,7 @@ static int __devinit snd_asihpi_tuner_add(struct snd_card_asihpi *asihpi,
 	snd_control.get = snd_asihpi_tuner_freq_get;
 	snd_control.put = snd_asihpi_tuner_freq_put;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	return ctl_add(card, &snd_control, asihpi);
 }
 
 /*------------------------------------------------------------
@@ -2142,7 +2142,7 @@ static int snd_card_asihpi_mux_count_sources(struct snd_kcontrol *snd_control)
 		if (err)
 			break;
 	}
-	return (s);
+	return s;
 }
 
 static int snd_asihpi_mux_info(struct snd_kcontrol *kcontrol,
@@ -2236,7 +2236,7 @@ static int  __devinit snd_asihpi_mux_add(struct snd_card_asihpi *asihpi,
 	snd_control.get = snd_asihpi_mux_get;
 	snd_control.put = snd_asihpi_mux_put;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	return ctl_add(card, &snd_control, asihpi);
 
 }
 
@@ -2314,7 +2314,7 @@ static int __devinit snd_asihpi_cmode_add(struct snd_card_asihpi *asihpi,
 	snd_control.get = snd_asihpi_cmode_get;
 	snd_control.put = snd_asihpi_cmode_put;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	return ctl_add(card, &snd_control, asihpi);
 }
 
 /*------------------------------------------------------------
@@ -2544,7 +2544,7 @@ static int __devinit snd_asihpi_sampleclock_add(struct snd_card_asihpi *asihpi,
 	snd_control.info = snd_asihpi_clkrate_info;
 	snd_control.get = snd_asihpi_clkrate_get;
 
-	return (ctl_add(card, &snd_control, asihpi));
+	return ctl_add(card, &snd_control, asihpi);
 }
 /*------------------------------------------------------------
    Mixer

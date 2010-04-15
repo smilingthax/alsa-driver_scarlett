@@ -1,7 +1,7 @@
 /******************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -110,13 +110,13 @@ struct hpi_adapter_obj *hpi_find_adapter(u16 adapter_index)
 		   HPI_DEBUG_LOG(VERBOSE, "Found adapter index %d\n",
 		   wAdapterIndex);
 		 */
-		return (pao);
+		return pao;
 	} else {
 		/*
 		   HPI_DEBUG_LOG(VERBOSE, "No adapter index %d\n",
 		   wAdapterIndex);
 		 */
-		return (NULL);
+		return NULL;
 	}
 }
 
