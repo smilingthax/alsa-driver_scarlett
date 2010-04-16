@@ -2373,7 +2373,7 @@ static int snd_asihpi_clksrc_get(struct snd_kcontrol *kcontrol,
 			(struct snd_card_asihpi *)(kcontrol->private_data);
 	struct clk_cache *clkcache = &asihpi->cc;
 	u32 h_control = kcontrol->private_value;
-	u16 source, index = 0;
+	u16 source, srcindex = 0;
 	int i;
 
 	ucontrol->value.enumerated.item[0] = 0;
@@ -2381,12 +2381,12 @@ static int snd_asihpi_clksrc_get(struct snd_kcontrol *kcontrol,
 		source = 0;
 
 	if (source == HPI_SAMPLECLOCK_SOURCE_AESEBU_INPUT)
-		if (hpi_sample_clock_get_source_index(ss, h_control, &index))
-			index = 0;
+		if (hpi_sample_clock_get_source_index(ss, h_control, &srcindex))
+			srcindex = 0;
 
 	for (i = 0; i < clkcache->count; i++)
 		if ((clkcache->s[i].source == source) &&
-			(clkcache->s[i].index == index))
+			(clkcache->s[i].index == srcindex))
 			break;
 
 	ucontrol->value.enumerated.item[0] = i;

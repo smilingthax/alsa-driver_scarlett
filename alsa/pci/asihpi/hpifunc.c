@@ -290,13 +290,6 @@ u16 hpi_adapter_close(const struct hpi_hsubsys *ph_subsys, u16 adapter_index)
 	return hr.error;
 }
 
-u16 hpi_adapter_find_object(const struct hpi_hsubsys *ph_subsys,
-	u16 adapter_index, u16 object_type, u16 object_index,
-	u16 *p_dsp_index)
-{
-	return HPI_ERROR_UNIMPLEMENTED;
-}
-
 u16 hpi_adapter_set_mode(const struct hpi_hsubsys *ph_subsys,
 	u16 adapter_index, u32 adapter_mode)
 {
@@ -3277,7 +3270,8 @@ void hpi_entity_free(struct hpi_entity *entity)
 		kfree(entity);
 }
 
-u16 hpi_entity_alloc_and_copy(struct hpi_entity *src, struct hpi_entity **dst)
+static u16 hpi_entity_alloc_and_copy(struct hpi_entity *src,
+	struct hpi_entity **dst)
 {
 	size_t buf_size;
 	HPI_DEBUG_ASSERT(dst != NULL);
@@ -3407,7 +3401,7 @@ u16 hpi_entity_alloc_and_pack(const enum e_entity_type type,
 {
 	size_t bytes_to_copy, total_size;
 	u16 hE = 0;
-	*entity = 0;
+	*entity = NULL;
 
 	hE = hpi_entity_check_type(type);
 	if (hE)

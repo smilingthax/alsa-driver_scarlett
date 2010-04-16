@@ -1655,8 +1655,8 @@ static short hpi6000_wait_dsp_ack(struct hpi_adapter_obj *pao, u16 dsp_index,
 		ack = hpi_read_word(pdo, HPI_HIF_ADDR(dsp_ack));
 		if (ack == ack_value)
 			break;
-		if ((ack & HPI_HIF_ERROR_MASK) &
-			!hpi6000_check_PCI2040_error_flag(pao, H6READ))
+		if ((ack & HPI_HIF_ERROR_MASK)
+			&& !hpi6000_check_PCI2040_error_flag(pao, H6READ))
 			break;
 		/*for (i=0;i<1000;i++) */
 		/*      dwPause=i+1; */
