@@ -561,9 +561,9 @@ void hpi_sync_control_cache(struct hpi_control_cache *p_cache,
 			return;
 		if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE)
 			pC->u.clk.source = (u16)phm->u.c.param1;
-		else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
+		else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE_INDEX)
 			pC->u.clk.source_index = (u16)phm->u.c.param1;
-		} else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SAMPLERATE)
+		else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SAMPLERATE)
 			pC->u.clk.sample_rate = phm->u.c.param1;
 		break;
 	default:

@@ -18,7 +18,8 @@
 
  Hardware Programming Interface (HPI) for AudioScience
  ASI50xx, AS51xx, ASI6xxx, ASI87xx ASI89xx series adapters.
- These PCI and PCIe bus adapters are based on a TMS320C6205 PCI bus mastering DSP,
+ These PCI and PCIe bus adapters are based on a
+ TMS320C6205 PCI bus mastering DSP,
  and (except ASI50xx) TI TMS320C6xxx floating point DSP
 
  Exported function:

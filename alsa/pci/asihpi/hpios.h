@@ -1,7 +1,7 @@
 /******************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -186,7 +186,7 @@ struct hpi_adapter {
 	void __iomem *ap_remapped_mem_base[HPI_MAX_ADAPTER_MEM_SPACES];
 };
 
-static inline void hpios_unmap_io(volatile void __iomem * addr,
+static inline void hpios_unmap_io(void __iomem *addr,
 	unsigned long size)
 {
 	iounmap(addr);

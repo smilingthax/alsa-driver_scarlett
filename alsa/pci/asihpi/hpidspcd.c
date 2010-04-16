@@ -103,8 +103,9 @@ short hpi_dsp_code_open(u32 adapter, struct dsp_code *ps_dsp_code,
 
 	if (header.version / 10000 != HPI_VER_DECIMAL / 10000) {
 		HPI_DEBUG_LOG(ERROR,
-			"firmware major version mismatch  DSP image %d != driver %d\n",
-			header.version, HPI_VER_DECIMAL);
+			"firmware major version mismatch "
+			"DSP image %d != driver %d\n", header.version,
+			HPI_VER_DECIMAL);
 		goto error2;
 	}
 

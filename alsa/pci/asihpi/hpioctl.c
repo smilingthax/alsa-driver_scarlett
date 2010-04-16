@@ -1,7 +1,7 @@
 /*******************************************************************************
 
     AudioScience HPI driver
-    Copyright (C) 1997-2003  AudioScience Inc. <support@audioscience.com>
+    Copyright (C) 1997-2010  AudioScience Inc. <support@audioscience.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of version 2 of the GNU General Public License as
@@ -79,9 +79,8 @@ void hpi_send_recv(struct hpi_message *phm, struct hpi_response *phr)
 {
 	hpi_send_recvF(phm, phr, HOWNER_KERNEL);
 }
-
 EXPORT_SYMBOL(hpi_send_recv);
-/* export HPI_Message for radio-asihpi */
+/* for radio-asihpi */
 
 int asihpi_hpi_release(struct file *file)
 {
@@ -190,8 +189,8 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				 */
 				if (pa->buffer_size < size) {
 					HPI_DEBUG_LOG(DEBUG,
-						"realloc adapter %d stream buffer "
-						"from %zd to %d\n",
+						"realloc adapter %d stream "
+						"buffer from %zd to %d\n",
 						hm.h.adapter_index,
 						pa->buffer_size, size);
 					if (pa->p_buffer) {
