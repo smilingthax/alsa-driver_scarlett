@@ -100,14 +100,22 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct hpi_ioctl_linux __user *phpi_ioctl_data;
 	void __user *puhm;
 	void __user *puhr;
-	union hpi_message_buffer_v1 hm;
-	union hpi_response_buffer_v1 hr;
+	union hpi_message_buffer_v1 *hm;
+	union hpi_response_buffer_v1 *hr;
 	u16 res_max_size;
 	u32 uncopied_bytes;
 	struct hpi_adapter *pa = NULL;
+	int err = 0;
 
 	if (cmd != HPI_IOCTL_LINUX)
 		return -EINVAL;
+
+	hm = kmalloc(sizeof(*hm), GFP_KERNEL);
+	hr = kmalloc(sizeof(*hr), GFP_KERNEL);
+	if (!hm || !hr) {
+		err = -ENOMEM;
+		goto out;
+	}
 
 	phpi_ioctl_data = (struct hpi_ioctl_linux __user *)arg;
 
@@ -116,41 +124,45 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	get_user(puhr, &phpi_ioctl_data->phr);
 
 	/* Now read the message size and data from user space.  */
-	get_user(hm.h.size, (u16 __user *)puhm);
-	if (hm.h.size > sizeof(hm))
-		hm.h.size = sizeof(hm);
+	get_user(hm->h.size, (u16 __user *)puhm);
+	if (hm->h.size > sizeof(hm))
+		hm->h.size = sizeof(hm);
 
-	/*printk(KERN_INFO "message size %d\n", hm.h.wSize); */
+	/*printk(KERN_INFO "message size %d\n", hm->h.wSize); */
 
-	uncopied_bytes = copy_from_user(&hm, puhm, hm.h.size);
+	uncopied_bytes = copy_from_user(hm, puhm, hm->h.size);
 	if (uncopied_bytes) {
 		HPI_DEBUG_LOG(ERROR, "uncopied bytes %d\n", uncopied_bytes);
-		return -EFAULT;
+		err = -EFAULT;
+		goto out;
 	}
 
 	get_user(res_max_size, (u16 __user *)puhr);
 	/* printk(KERN_INFO "user response size %d\n", res_max_size); */
 	if (res_max_size < sizeof(struct hpi_response_header)) {
 		HPI_DEBUG_LOG(WARNING, "small res size %d\n", res_max_size);
-		return -EFAULT;
+		err = -EFAULT;
+		goto out;
 	}
 
-	pa = &adapters[hm.h.adapter_index];
-	hr.h.size = 0;
-	if (hm.h.object == HPI_OBJ_SUBSYSTEM) {
-		switch (hm.h.function) {
+	pa = &adapters[hm->h.adapter_index];
+	hr->h.size = 0;
+	if (hm->h.object == HPI_OBJ_SUBSYSTEM) {
+		switch (hm->h.function) {
 		case HPI_SUBSYS_CREATE_ADAPTER:
 		case HPI_SUBSYS_DELETE_ADAPTER:
 			/* Application must not use these functions! */
-			hr.h.size = sizeof(hr.h);
-			hr.h.error = HPI_ERROR_INVALID_OPERATION;
-			hr.h.function = hm.h.function;
-			uncopied_bytes = copy_to_user(puhr, &hr, hr.h.size);
+			hr->h.size = sizeof(hr->h);
+			hr->h.error = HPI_ERROR_INVALID_OPERATION;
+			hr->h.function = hm->h.function;
+			uncopied_bytes = copy_to_user(puhr, hr, hr->h.size);
 			if (uncopied_bytes)
-				return -EFAULT;
-			return 0;
+				err = -EFAULT;
+			else
+				err = 0;
+			goto out;
 		default:
-			hpi_send_recvF(&hm.m0, &hr.r0, file);
+			hpi_send_recvF(&hm->m0, &hr->r0, file);
 		}
 	} else {
 		u16 __user *ptr = NULL;
@@ -158,30 +170,34 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		/* -1=no data 0=read from user mem, 1=write to user mem */
 		int wrflag = -1;
-		u32 adapter = hm.h.adapter_index;
+		u32 adapter = hm->h.adapter_index;
 
-		if ((hm.h.adapter_index > HPI_MAX_ADAPTERS) || (!pa->type)) {
-			hpi_init_response(&hr.r0, HPI_OBJ_ADAPTER,
+		if ((hm->h.adapter_index > HPI_MAX_ADAPTERS) || (!pa->type)) {
+			hpi_init_response(&hr->r0, HPI_OBJ_ADAPTER,
 				HPI_ADAPTER_OPEN,
 				HPI_ERROR_BAD_ADAPTER_NUMBER);
 
 			uncopied_bytes =
-				copy_to_user(puhr, &hr, sizeof(hr.h));
+				copy_to_user(puhr, hr, sizeof(hr->h));
 			if (uncopied_bytes)
-				return -EFAULT;
-			return 0;
+				err = -EFAULT;
+			else
+				err = 0;
+			goto out;
 		}
 
-		if (mutex_lock_interruptible(&adapters[adapter].mutex))
-			return -EINTR;
+		if (mutex_lock_interruptible(&adapters[adapter].mutex)) {
+			err = -EINTR;
+			goto out;
+		}
 
 		/* Dig out any pointers embedded in the message.  */
-		switch (hm.h.function) {
+		switch (hm->h.function) {
 		case HPI_OSTREAM_WRITE:
 		case HPI_ISTREAM_READ:{
 				/* Yes, sparse, this is correct. */
-				ptr = (u16 __user *)hm.m0.u.d.u.data.pb_data;
-				size = hm.m0.u.d.u.data.data_size;
+				ptr = (u16 __user *)hm->m0.u.d.u.data.pb_data;
+				size = hm->m0.u.d.u.data.data_size;
 
 				/* Allocate buffer according to application request.
 				   ?Is it better to alloc/free for the duration
@@ -191,7 +207,7 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					HPI_DEBUG_LOG(DEBUG,
 						"realloc adapter %d stream "
 						"buffer from %zd to %d\n",
-						hm.h.adapter_index,
+						hm->h.adapter_index,
 						pa->buffer_size, size);
 					if (pa->p_buffer) {
 						pa->buffer_size = 0;
@@ -208,12 +224,13 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 						mutex_unlock(&adapters
 							[adapter].mutex);
-						return -EINVAL;
+						err = -EINVAL;
+						goto out;
 					}
 				}
 
-				hm.m0.u.d.u.data.pb_data = pa->p_buffer;
-				if (hm.h.function == HPI_ISTREAM_READ)
+				hm->m0.u.d.u.data.pb_data = pa->p_buffer;
+				if (hm->h.function == HPI_ISTREAM_READ)
 					/* from card, WRITE to user mem */
 					wrflag = 1;
 				else
@@ -236,7 +253,7 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					size);
 		}
 
-		hpi_send_recvF(&hm.m0, &hr.r0, file);
+		hpi_send_recvF(&hm->m0, &hr->r0, file);
 
 		if (size && (wrflag == 1)) {
 			uncopied_bytes =
@@ -251,27 +268,32 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 	/* on return response size must be set */
-	/*printk(KERN_INFO "response size %d\n", hr.h.wSize); */
+	/*printk(KERN_INFO "response size %d\n", hr->h.wSize); */
 
-	if (!hr.h.size) {
+	if (!hr->h.size) {
 		HPI_DEBUG_LOG(ERROR, "response zero size\n");
-		return -EFAULT;
+		err = -EFAULT;
+		goto out;
 	}
 
-	if (hr.h.size > res_max_size) {
-		HPI_DEBUG_LOG(ERROR, "response too big %d %d\n", hr.h.size,
+	if (hr->h.size > res_max_size) {
+		HPI_DEBUG_LOG(ERROR, "response too big %d %d\n", hr->h.size,
 			res_max_size);
-		/*HPI_DEBUG_MESSAGE(ERROR, &hm); */
-		return -EFAULT;
+		/*HPI_DEBUG_MESSAGE(ERROR, hm); */
+		err = -EFAULT;
+		goto out;
 	}
 
-	uncopied_bytes = copy_to_user(puhr, &hr, hr.h.size);
+	uncopied_bytes = copy_to_user(puhr, hr, hr->h.size);
 	if (uncopied_bytes) {
 		HPI_DEBUG_LOG(ERROR, "uncopied bytes %d\n", uncopied_bytes);
-		return -EFAULT;
+		err = -EFAULT;
 	}
 
-	return 0;
+ out:
+	kfree(hm);
+	kfree(hr);
+	return err;
 }
 
 int __devinit asihpi_adapter_probe(struct pci_dev *pci_dev,
