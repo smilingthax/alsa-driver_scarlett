@@ -55,12 +55,6 @@ i.e 3.05.02 is a development version
 /* Library version as documented in hpi-api-versions.txt */
 #define HPI_LIB_VER  HPI_VERSION_CONSTRUCTOR(9, 0, 0)
 
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-extern "C" {
-/* *INDENT-ON* */
-#endif
-
 #include <linux/types.h>
 #define HPI_EXCLUDE_DEPRECATED
 
@@ -1999,11 +1993,6 @@ u16 hpi_format_create(struct hpi_format *p_format, u16 channels, u16 format,
 
 /* Until it's verified, this function is for Windows OSs only */
 
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-}
-/* *INDENT-ON* */
-#endif
 #endif	 /*_H_HPI_ */
 /*
 ///////////////////////////////////////////////////////////////////////////////

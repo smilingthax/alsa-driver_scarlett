@@ -26,23 +26,11 @@
 
 #include "hpi_internal.h"
 
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-extern "C" {
-/* *INDENT-ON* */
-#endif
-
 #define HPIMSGX_ALLADAPTERS     (0xFFFF)
 
 void hpi_send_recv_ex(struct hpi_message *phm, struct hpi_response *phr,
 	void *h_owner);
 
 #define HPI_MESSAGE_LOWER_LAYER hpi_send_recv_ex
-
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-}
-/* *INDENT-ON* */
-#endif
 
 #endif				/* _HPIMSGX_H_ */

@@ -25,12 +25,6 @@ Debug macros.
 
 #include "hpi_internal.h"
 
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-extern "C" {
-/* *INDENT-ON* */
-#endif
-
 /* Define debugging levels.  */
 enum { HPI_DEBUG_LEVEL_ERROR = 0,	/* always log errors */
 	HPI_DEBUG_LEVEL_WARNING = 1,
@@ -388,9 +382,4 @@ compile_time_assert((HPI_DESTNODE_LAST_INDEX - HPI_DESTNODE_BASE + 1) == (8),
 	"HPI_CHANNEL_MODE_RIGHT_ONLY" \
 }
 
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-}
-/* *INDENT-ON* */
-#endif
 #endif				/* _HPIDEBUG_H  */

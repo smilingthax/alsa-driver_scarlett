@@ -89,40 +89,12 @@ struct hpi_response;
 
 typedef void hpi_handler_func(struct hpi_message *, struct hpi_response *);
 
-/** init a buffer that can be sized, from a constant 'C'.
-Note that all the sizeof and conditionals are evaluated at
-compile time, so this reduces to a memcpy with constant count.
-*/
-#define HPI_STRCPY_C(dst, src) do { \
-	if (sizeof(src) <= sizeof(dst))\
-		memcpy(dst, src, sizeof(src));\
-	else {\
-		memcpy(dst, src, sizeof(dst)-1);\
-		dst[sizeof(dst)-1] = 0;\
-	} \
-} while (0)
-
-/** strncpy with null terminator 'Z' insertion */
-#define HPI_STRNCPY_Z(dst, src, dst_len) do { \
-	strncpy(dst, src, dst_len);\
-	dst[dst_len-1] = 0;\
-} while (0)
-
-/* strncpy when dst is char array that gives correct sizeof (not char*) 'SD'
-and with null terminator insertion 'Z' */
-#define HPI_STRNCPY_SDZ(dst, src) HPI_STRNCPY_Z(dst, src, sizeof(dst))
-
 /* If the assert fails, compiler complains
-     something like size of array `msg' is negative
+   something like size of array `msg' is negative.
+   Unlike linux BUILD_BUG_ON, this works outside function scope.
 */
 #define compile_time_assert(cond, msg) \
     typedef char ASSERT_##msg[(cond) ? 1 : -1]
-
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-extern "C" {
-/* *INDENT-ON* */
-#endif
 
 /*/////////////////////////////////////////////////////////////////////////// */
 /* Private HPI Entity related definitions                                     */
@@ -1666,9 +1638,4 @@ hpi_handler_func HPI_6000;
 hpi_handler_func HPI_6205;
 hpi_handler_func HPI_COMMON;
 
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-}
-/* *INDENT-ON* */
-#endif
 #endif				/* _HPI_INTERNAL_H_ */
