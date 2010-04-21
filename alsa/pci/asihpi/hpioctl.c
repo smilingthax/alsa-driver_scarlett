@@ -59,7 +59,7 @@ static struct hpi_adapter adapters[HPI_MAX_ADAPTERS];
 /* Wrapper function to HPI_Message to enable dumping of the
    message and response types.
 */
-static void hpi_send_recvF(struct hpi_message *phm, struct hpi_response *phr,
+static void hpi_send_recv_f(struct hpi_message *phm, struct hpi_response *phr,
 	struct file *file)
 {
 	int adapter = phm->adapter_index;
@@ -77,8 +77,9 @@ static void hpi_send_recvF(struct hpi_message *phm, struct hpi_response *phr,
  */
 void hpi_send_recv(struct hpi_message *phm, struct hpi_response *phr)
 {
-	hpi_send_recvF(phm, phr, HOWNER_KERNEL);
+	hpi_send_recv_f(phm, phr, HOWNER_KERNEL);
 }
+
 EXPORT_SYMBOL(hpi_send_recv);
 /* for radio-asihpi */
 
@@ -125,8 +126,8 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	/* Now read the message size and data from user space.  */
 	get_user(hm->h.size, (u16 __user *)puhm);
-	if (hm->h.size > sizeof(hm))
-		hm->h.size = sizeof(hm);
+	if (hm->h.size > sizeof(*hm))
+		hm->h.size = sizeof(*hm);
 
 	/*printk(KERN_INFO "message size %d\n", hm->h.wSize); */
 
@@ -161,8 +162,9 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			else
 				err = 0;
 			goto out;
+
 		default:
-			hpi_send_recvF(&hm->m0, &hr->r0, file);
+			hpi_send_recv_f(&hm->m0, &hr->r0, file);
 		}
 	} else {
 		u16 __user *ptr = NULL;
@@ -253,7 +255,7 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					size);
 		}
 
-		hpi_send_recvF(&hm->m0, &hr->r0, file);
+		hpi_send_recv_f(&hm->m0, &hr->r0, file);
 
 		if (size && (wrflag == 1)) {
 			uncopied_bytes =
@@ -288,9 +290,10 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	if (uncopied_bytes) {
 		HPI_DEBUG_LOG(ERROR, "uncopied bytes %d\n", uncopied_bytes);
 		err = -EFAULT;
+		goto out;
 	}
 
- out:
+out:
 	kfree(hm);
 	kfree(hr);
 	return err;
