@@ -324,14 +324,6 @@ Information about Additional Modules
 
     This module supports multiple devices.
 
-  Module snd-asihpi
-  -----------------
-
-    Module for AudioScience ASI soundcards
-
-    This module supports multiple cards.
-    The driver requires the firmware loader support on kernel.
-
 
 Trouble Shooting
 ================
