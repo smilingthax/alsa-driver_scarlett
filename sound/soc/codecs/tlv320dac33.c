@@ -62,6 +62,8 @@
 #define US_TO_SAMPLES(rate, us) \
 	(rate / (1000000 / us))
 
+static void dac33_calculate_times(struct snd_pcm_substream *substream);
+static int dac33_prepare_chip(struct snd_pcm_substream *substream);
 
 static struct snd_soc_codec *tlv320dac33_codec;
 
@@ -356,9 +358,17 @@ static inline void dac33_soft_power(struct snd_soc_codec *codec, int power)
 static int dac33_hard_power(struct snd_soc_codec *codec, int power)
 {
 	struct tlv320dac33_priv *dac33 = snd_soc_codec_get_drvdata(codec);
-	int ret;
+	int ret = 0;
 
 	mutex_lock(&dac33->mutex);
+
+	/* Safety check */
+	if (unlikely(power == dac33->chip_power)) {
+		dev_warn(codec->dev, "Trying to set the same power state: %s\n",
+			power ? "ON" : "OFF");
+		goto exit;
+	}
+
 	if (power) {
 		ret = regulator_bulk_enable(ARRAY_SIZE(dac33->supplies),
 					  dac33->supplies);
@@ -372,10 +382,6 @@ static int dac33_hard_power(struct snd_soc_codec *codec, int power)
 			gpio_set_value(dac33->power_gpio, 1);
 
 		dac33->chip_power = 1;
-
-		dac33_init_chip(codec);
-
-		dac33_soft_power(codec, 1);
 	} else {
 		dac33_soft_power(codec, 0);
 		if (dac33->power_gpio >= 0)
@@ -395,6 +401,22 @@ static int dac33_hard_power(struct snd_soc_codec *codec, int power)
 exit:
 	mutex_unlock(&dac33->mutex);
 	return ret;
+}
+
+static int playback_event(struct snd_soc_dapm_widget *w,
+		struct snd_kcontrol *kcontrol, int event)
+{
+	struct tlv320dac33_priv *dac33 = snd_soc_codec_get_drvdata(w->codec);
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		if (likely(dac33->substream)) {
+			dac33_calculate_times(dac33->substream);
+			dac33_prepare_chip(dac33->substream);
+		}
+		break;
+	}
+	return 0;
 }
 
 static int dac33_get_nsample(struct snd_kcontrol *kcontrol,
@@ -526,6 +548,8 @@ static const struct snd_soc_dapm_widget dac33_dapm_widgets[] = {
 			 DAC33_OUT_AMP_PWR_CTRL, 6, 3, 3, 0),
 	SND_SOC_DAPM_REG(snd_soc_dapm_mixer, "Output Right Amp Power",
 			 DAC33_OUT_AMP_PWR_CTRL, 4, 3, 3, 0),
+
+	SND_SOC_DAPM_PRE("Prepare Playback", playback_event),
 };
 
 static const struct snd_soc_dapm_route audio_map[] = {
@@ -568,18 +592,18 @@ static int dac33_set_bias_level(struct snd_soc_codec *codec,
 		break;
 	case SND_SOC_BIAS_STANDBY:
 		if (codec->bias_level == SND_SOC_BIAS_OFF) {
+			/* Coming from OFF, switch on the codec */
 			ret = dac33_hard_power(codec, 1);
 			if (ret != 0)
 				return ret;
-		}
 
-		dac33_soft_power(codec, 0);
+			dac33_init_chip(codec);
+		}
 		break;
 	case SND_SOC_BIAS_OFF:
 		ret = dac33_hard_power(codec, 0);
 		if (ret != 0)
 			return ret;
-
 		break;
 	}
 	codec->bias_level = level;
@@ -830,6 +854,16 @@ static int dac33_prepare_chip(struct snd_pcm_substream *substream)
 	}
 
 	mutex_lock(&dac33->mutex);
+
+	if (!dac33->chip_power) {
+		/*
+		 * Chip is not powered yet.
+		 * Do the init in the dac33_set_bias_level later.
+		 */
+		mutex_unlock(&dac33->mutex);
+		return 0;
+	}
+
 	dac33_soft_power(codec, 0);
 	dac33_soft_power(codec, 1);
 
@@ -1034,15 +1068,6 @@ static void dac33_calculate_times(struct snd_pcm_substream *substream)
 		break;
 	}
 
-}
-
-static int dac33_pcm_prepare(struct snd_pcm_substream *substream,
-			     struct snd_soc_dai *dai)
-{
-	dac33_calculate_times(substream);
-	dac33_prepare_chip(substream);
-
-	return 0;
 }
 
 static int dac33_pcm_trigger(struct snd_pcm_substream *substream, int cmd,
@@ -1337,9 +1362,6 @@ static int dac33_soc_probe(struct platform_device *pdev)
 
 	dac33_add_widgets(codec);
 
-	/* power on device */
-	dac33_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-
 	return 0;
 
 pcm_err:
@@ -1376,6 +1398,8 @@ static int dac33_soc_resume(struct platform_device *pdev)
 	struct snd_soc_codec *codec = socdev->card->codec;
 
 	dac33_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+	if (codec->suspend_bias_level == SND_SOC_BIAS_ON)
+		dac33_set_bias_level(codec, SND_SOC_BIAS_PREPARE);
 	dac33_set_bias_level(codec, codec->suspend_bias_level);
 
 	return 0;
@@ -1397,7 +1421,6 @@ static struct snd_soc_dai_ops dac33_dai_ops = {
 	.startup	= dac33_startup,
 	.shutdown	= dac33_shutdown,
 	.hw_params	= dac33_hw_params,
-	.prepare	= dac33_pcm_prepare,
 	.trigger	= dac33_pcm_trigger,
 	.delay		= dac33_dai_delay,
 	.set_sysclk	= dac33_set_dai_sysclk,
@@ -1451,6 +1474,7 @@ static int __devinit dac33_i2c_probe(struct i2c_client *client,
 	codec->hw_write = (hw_write_t) i2c_master_send;
 	codec->bias_level = SND_SOC_BIAS_OFF;
 	codec->set_bias_level = dac33_set_bias_level;
+	codec->idle_bias_off = 1;
 	codec->dai = &dac33_dai;
 	codec->num_dai = 1;
 	codec->reg_cache_size = ARRAY_SIZE(dac33_reg);
