@@ -894,19 +894,31 @@ static int soc_suspend(struct device *dev)
 	/* mute any active DAC's */
 	for (i = 0; i < card->num_links; i++) {
 		struct snd_soc_dai *dai = card->dai_link[i].codec_dai;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (dai->ops->digital_mute && dai->playback.active)
 			dai->ops->digital_mute(dai, 1);
 	}
 
 	/* suspend all pcms */
-	for (i = 0; i < card->num_links; i++)
+	for (i = 0; i < card->num_links; i++) {
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		snd_pcm_suspend_all(card->dai_link[i].pcm);
+	}
 
 	if (card->suspend_pre)
 		card->suspend_pre(pdev, PMSG_SUSPEND);
 
 	for (i = 0; i < card->num_links; i++) {
 		struct snd_soc_dai  *cpu_dai = card->dai_link[i].cpu_dai;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (cpu_dai->suspend && !cpu_dai->ac97_control)
 			cpu_dai->suspend(cpu_dai);
 		if (platform->suspend)
@@ -919,6 +931,10 @@ static int soc_suspend(struct device *dev)
 
 	for (i = 0; i < codec->num_dai; i++) {
 		char *stream = codec->dai[i].playback.stream_name;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (stream != NULL)
 			snd_soc_dapm_stream_event(codec, stream,
 				SND_SOC_DAPM_STREAM_SUSPEND);
@@ -944,6 +960,10 @@ static int soc_suspend(struct device *dev)
 
 	for (i = 0; i < card->num_links; i++) {
 		struct snd_soc_dai *cpu_dai = card->dai_link[i].cpu_dai;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (cpu_dai->suspend && cpu_dai->ac97_control)
 			cpu_dai->suspend(cpu_dai);
 	}
@@ -983,6 +1003,10 @@ static void soc_resume_deferred(struct work_struct *work)
 
 	for (i = 0; i < card->num_links; i++) {
 		struct snd_soc_dai *cpu_dai = card->dai_link[i].cpu_dai;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (cpu_dai->resume && cpu_dai->ac97_control)
 			cpu_dai->resume(cpu_dai);
 	}
@@ -1005,6 +1029,10 @@ static void soc_resume_deferred(struct work_struct *work)
 
 	for (i = 0; i < codec->num_dai; i++) {
 		char *stream = codec->dai[i].playback.stream_name;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (stream != NULL)
 			snd_soc_dapm_stream_event(codec, stream,
 				SND_SOC_DAPM_STREAM_RESUME);
@@ -1017,12 +1045,20 @@ static void soc_resume_deferred(struct work_struct *work)
 	/* unmute any active DACs */
 	for (i = 0; i < card->num_links; i++) {
 		struct snd_soc_dai *dai = card->dai_link[i].codec_dai;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (dai->ops->digital_mute && dai->playback.active)
 			dai->ops->digital_mute(dai, 0);
 	}
 
 	for (i = 0; i < card->num_links; i++) {
 		struct snd_soc_dai *cpu_dai = card->dai_link[i].cpu_dai;
+
+		if (card->dai_link[i].ignore_suspend)
+			continue;
+
 		if (cpu_dai->resume && !cpu_dai->ac97_control)
 			cpu_dai->resume(cpu_dai);
 		if (platform->resume)
