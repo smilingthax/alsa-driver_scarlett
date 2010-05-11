@@ -2825,7 +2825,9 @@ if test -n "$CONFIG_USB"; then
 #include <linux/usb/audio.h>
 ],[
   struct uac_as_header_descriptor_v1 tmp;
+  struct uac1_status_word tmp2;
   tmp.bLength = 0;
+  tmp2.bStatusType = 0;
 ],
    AC_MSG_RESULT(yes);usb_audio_valid="1",
    AC_MSG_RESULT(no);usb_audio_valid="0",
@@ -2855,7 +2857,35 @@ if test -n "$CONFIG_USB"; then
   if test "$usb_audio_valid" != "1"; then
     mkdir -p include/linux/usb
     echo "Creating <linux/usb/audio.h>..."
+    rm -f include/linux/usb/audio.h
     echo "#include \"usb_audio_compat.h\"" > include/linux/usb/audio.h
+  fi
+
+  AC_MSG_CHECKING([for valid linux/usb/audio-v2.h])
+  usb_audio_v2_valid="0"
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/usb/audio-v2.h>
+],[
+  struct uac2_interrupt_data_msg tmp;
+  tmp.bInfo = 0;
+],
+   AC_MSG_RESULT(yes);usb_audio_v2_valid="1",
+   AC_MSG_RESULT(no);usb_audio_v2_valid="0",
+   AC_MSG_RESULT(unknown);usb_audio_v2_valid="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  if test "$usb_audio_v2_valid" != "1"; then
+    mkdir -p include/linux/usb
+    echo "Creating <linux/usb/audio-v2.h>..."
+    rm -f include/linux/usb/audio-v2.h
+    echo "#include \"usb_audio_v2_compat.h\"" > include/linux/usb/audio-v2.h
   fi
 
   CHECK_KERNEL_HEADER(linux/usb/ch9.h)
