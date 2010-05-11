@@ -24,11 +24,6 @@
 
 #include "config.h"
 
-/* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
-#ifndef CONFIG_SND_JACK
-#undef CONFIG_SND_HDA_INPUT_JACK
-#endif
-
 /* number of supported soundcards */
 #ifdef CONFIG_SND_DYNAMIC_MINORS
 #define SNDRV_CARDS 32
@@ -2009,6 +2004,11 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 /* nonseekable_open() */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
 #define nonseekable_open(i,f) 0
+#endif
+
+/* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
+#ifndef CONFIG_SND_JACK
+#undef CONFIG_SND_HDA_INPUT_JACK
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
