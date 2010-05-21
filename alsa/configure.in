@@ -2889,6 +2889,38 @@ if test -n "$CONFIG_USB"; then
   fi
 
   CHECK_KERNEL_HEADER(linux/usb/ch9.h)
+
+  dnl check for new usb_alloc_coherent()
+  AC_MSG_CHECKING(usb_alloc_coherent)  
+  usb_alloc_coherent="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/usb.h>
+],[
+  void *(*foo)(struct usb_device *dev, size_t size,
+	gfp_t mem_flags, dma_addr_t *dma) = usb_alloc_coherent;
+  foo(NULL, 0, 0, NULL);
+],
+    AC_MSG_RESULT(yes);usb_alloc_coherent="1",
+    AC_MSG_RESULT(no);usb_alloc_coherent="0",
+    AC_MSG_RESULT(unknown);usb_alloc_coherent="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAVE_USB_ALLOC_COHERENT=$usb_alloc_coherent
+  if test "$CONFIG_SND_HAVE_USB_ALLOC_COHERENT" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAVE_USB_ALLOC_COHERENT)
+  fi
+
 fi
 
 dnl class_simple for old 2.6 kernels
@@ -3322,6 +3354,36 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
+dnl Check for new pm_qos_request()
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for new pm_qos_request)
+  pm_qos_request="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/pm_qos_params.h>
+],[
+  int (*foo)(int)) = pm_qos_request;
+],
+    AC_MSG_RESULT(yes);pm_qos_request="1",
+    AC_MSG_RESULT(no);pm_qos_request="0",
+    AC_MSG_RESULT(unknown);pm_qos_request="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAVE_PM_QOS_REQUEST=$pm_qos_request
+  if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAVE_PM_QOS_REQUEST)
+  fi
+fi
 
 dnl New unlocked/compat_ioctl
 if test "$kversion.$kpatchlevel" = "2.6"; then

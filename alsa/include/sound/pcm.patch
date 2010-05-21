@@ -1,6 +1,6 @@
---- ../../alsa-kernel/include/pcm.h	2010-01-26 16:50:53.000000000 +0100
-+++ pcm.h	2010-01-26 17:01:40.000000000 +0100
-@@ -272,9 +272,12 @@ struct snd_pcm_runtime {
+--- ../../alsa-kernel/include/pcm.h	2010-05-21 16:36:59.381638299 +0200
++++ pcm.h	2010-05-21 16:59:33.937768437 +0200
+@@ -273,9 +273,12 @@
  	snd_pcm_uframes_t avail_max;
  	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
  	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time */
@@ -14,7 +14,7 @@
  	/* -- HW params -- */
  	snd_pcm_access_t access;	/* access mode */
  	snd_pcm_format_t format;	/* SNDRV_PCM_FORMAT_* */
-@@ -284,6 +287,9 @@ struct snd_pcm_runtime {
+@@ -285,6 +288,9 @@
  	snd_pcm_uframes_t period_size;	/* period size */
  	unsigned int periods;		/* periods */
  	snd_pcm_uframes_t buffer_size;	/* buffer size */
@@ -24,7 +24,7 @@
  	snd_pcm_uframes_t min_align;	/* Min alignment for the format */
  	size_t byte_align;
  	unsigned int frame_bits;
-@@ -295,6 +301,10 @@ struct snd_pcm_runtime {
+@@ -296,6 +302,10 @@
  	/* -- SW params -- */
  	int tstamp_mode;		/* mmap timestamp is updated */
    	unsigned int period_step;
@@ -35,7 +35,7 @@
  	snd_pcm_uframes_t start_threshold;
  	snd_pcm_uframes_t stop_threshold;
  	snd_pcm_uframes_t silence_threshold; /* Silence filling happens when
-@@ -312,11 +322,18 @@ struct snd_pcm_runtime {
+@@ -313,11 +323,18 @@
  	struct snd_pcm_mmap_control *control;
  
  	/* -- locking / scheduling -- */
@@ -57,7 +57,7 @@
  	/* -- private section -- */
  	void *private_data;
  	void (*private_free)(struct snd_pcm_runtime *runtime);
-@@ -331,8 +348,9 @@ struct snd_pcm_runtime {
+@@ -332,8 +349,9 @@
  
  	/* -- timer -- */
  	unsigned int timer_resolution;	/* timer resolution */
@@ -68,7 +68,7 @@
  	/* -- DMA -- */           
  	unsigned char *dma_area;	/* DMA area */
  	dma_addr_t dma_addr;		/* physical bus address (not accessible from main CPU) */
-@@ -348,6 +366,21 @@ struct snd_pcm_runtime {
+@@ -349,6 +367,21 @@
  #ifdef CONFIG_SND_PCM_XRUN_DEBUG
  	struct snd_pcm_hwptr_log *hwptr_log;
  #endif
@@ -90,7 +90,19 @@
  };
  
  struct snd_pcm_group {		/* keep linked substreams */
-@@ -377,6 +410,9 @@ struct snd_pcm_substream {
+@@ -366,7 +399,11 @@
+ 	int number;
+ 	char name[32];			/* substream name */
+ 	int stream;			/* stream (direction) */
++#ifdef CONFIG_SND_HAVE_PM_QOS_REQUEST
+ 	struct pm_qos_request_list *latency_pm_qos_req; /* pm_qos request */
++#else
++	char latency_id[20];
++#endif
+ 	size_t buffer_bytes_max;	/* limit ring buffer size */
+ 	struct snd_dma_buffer dma_buffer;
+ 	unsigned int dma_buf_id;
+@@ -378,6 +415,9 @@
          /* -- timer section -- */
  	struct snd_timer *timer;		/* timer */
  	unsigned timer_running: 1;	/* time is running */
