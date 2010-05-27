@@ -31,4 +31,6 @@
 #define USB_SUBCLASS_VENDOR_SPEC	0xff
 #endif
 
+#include <linux/slab.h>
+
 // vim: ft=c
