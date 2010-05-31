@@ -3,5 +3,5 @@
 #elif LINUX_VERSION_CODE > KERNEL_VERSION(2,6,16)
 #include "pdaudiocf-2.6.34.h"
 #else
-#include "vxpocket-old.h"
+#include "pdaudiocf-old.h"
 #endif
