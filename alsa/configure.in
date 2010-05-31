@@ -2872,7 +2872,7 @@ if test -n "$CONFIG_USB"; then
 #endif
 #include <linux/usb/audio-v2.h>
 ],[
-  struct uac2_iso_endpoint_descriptor tmp;
+  struct struct uac_clock_multiplier_descriptor tmp;
   tmp.bLength = 0;
 ],
    AC_MSG_RESULT(yes);usb_audio_v2_valid="1",
