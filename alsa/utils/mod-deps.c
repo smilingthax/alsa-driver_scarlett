@@ -173,6 +173,9 @@ static char *kernel_deps[] = {
 	"%BITREVERSE",
 	/* used in core/pcm_timer.c, a wrapper present */
 	"%GCD",
+	/* others */
+	"%HAS_IOMEM",
+	"!M68K",
 	NULL
 };
 
@@ -181,10 +184,8 @@ static char *kernel_deps[] = {
 /* # -> menuconfig */
 static char *no_cards[] = {
 	"%SOUND",
-	"%HAS_IOMEM",
 	"SOUND_PRIME",
 	"%SND",
-	"!M68K",
 	/* options given as configure options */
 	"SND_DYNAMIC_MINORS",
 	"SND_DEBUG",
@@ -999,13 +1000,13 @@ static int is_toplevel(struct dep *dep)
 	return 1;
 }
 
-static int check_in_no_cards(struct dep *dep, char flag)
+static int check_in_list(struct dep *dep, char flag, char **list)
 {
 	char **p;
 
 	if (!dep)
 		return 0;
-	for (p = no_cards; *p; p++) {
+	for (p = list; *p; p++) {
 		if (**p != flag)
 			continue;
 		if (!strcmp(*p + 1, dep->name))
@@ -1013,6 +1014,13 @@ static int check_in_no_cards(struct dep *dep, char flag)
 	}
 	return 0;
 }
+
+static int check_in_no_cards(struct dep *dep, char flag)
+{
+	return check_in_list(dep, flag, no_cards) ||
+		check_in_list(dep, flag, kernel_deps);
+}
+
 // is CONFIG_ variable is always true
 static int is_always_true(struct dep *dep)
 {
@@ -1504,6 +1512,8 @@ static void output_include(void)
 	printf("/* Copyright (c) by Jaroslav Kysela <perex@perex.cz>, */\n");
 	printf("/*                  Anders Semb Hermansen <ahermans@vf.telia.no> */\n\n");
 	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
+		if (is_kernel_deps(tempdep->name))
+			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("#undef %s%s\n", text,
 		       tempdep->type == TYPE_TRISTATE ? "_MODULE" : "");
