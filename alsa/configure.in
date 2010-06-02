@@ -121,6 +121,9 @@ AC_ARG_WITH(build,
   kernelbuild="$withval",
   kernelbuild="$DEFAULT_KERNEL_BUILD"
 )
+if test -d "$kernelbuild"; then
+  kernelbuild=$(cd "$kernelbuild" && pwd)
+fi
 CONFIG_SND_KERNELBUILD="$kernelbuild"
 AC_MSG_RESULT($kernelbuild)
 
@@ -669,6 +672,7 @@ fi
 dnl define kernel directory now
 AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$CONFIG_SND_KERNELDIR")
 AC_SUBST(CONFIG_SND_KERNELDIR)
+AC_SUBST(CONFIG_SND_KERNELBUILD)
 AC_SUBST(MAKE_ADDS)
 
 dnl update include/sound/version.h
@@ -1468,23 +1472,26 @@ CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
 
 dnl Check for deprecated linux/config.h
 AC_MSG_CHECKING(for deprecated linux/config.h)
-if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
-  KERNDIR=$kernelbuild
-else
-  KERNDIR=$CONFIG_SND_KERNELDIR
-fi
-deprecated_config_h="0"
-if test -r $KERNDIR/include/linux/config.h ; then
-  if grep "Including config.h is deprecated." $KERNDIR/include/linux/config.h > /dev/null; then
-    deprecated_config_h="1"
+deprecated_config_h="1"
+for i in $kernelbuild/include/linux/config.h \
+	$kernelbuild/include2/linux/config.h \
+	$CONFIG_SND_KERNELDIR/include/linux/config.h; do
+  if test -r $i ; then
+    if ! grep -q "Including config.h is deprecated." $i; then
+      deprecated_config_h="0"
+      break
+    fi
   fi
-else
-  deprecated_config_h="1"
-fi
-if test -r $KERNDIR/include/generated/autoconf.h ; then
-  deprecated_config_h="0"
-  AC_DEFINE(CONFIG_HAVE_GENERATED_AUTOCONF_H)
-fi
+done
+for i in $kernelbuild/include/generated/autoconf.h \
+	$kernelbuild/include2/generated/autoconf.h \
+	$CONFIG_SND_KERNELDIR/include/generated/autoconf.h; do
+  if test -r $i ; then
+    deprecated_config_h="0"
+    AC_DEFINE(CONFIG_HAVE_GENERATED_AUTOCONF_H)
+    break
+  fi
+done
 CONFIG_HAVE_DEPRECATED_CONFIG_H=$deprecated_config_h
 if test "$CONFIG_HAVE_DEPRECATED_CONFIG_H" = "1"; then
   AC_DEFINE(CONFIG_HAVE_DEPRECATED_CONFIG_H)
