@@ -2011,6 +2011,20 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 #define nonseekable_open(i,f) 0
 #endif
 
+/* hex_to_bin() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
+static inline int hex_to_bin(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	return -1;
+}
+#endif
+
 /* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
 #ifndef CONFIG_SND_JACK
 #undef CONFIG_SND_HDA_INPUT_JACK
