@@ -2831,7 +2831,7 @@ if test -n "$CONFIG_USB"; then
 #endif
 #include <linux/usb/audio.h>
 ],[
-  struct uac_as_header_descriptor_v1 tmp;
+  struct uac1_as_header_descriptor tmp;
   struct uac1_status_word tmp2;
   tmp.bLength = 0;
   tmp2.bStatusType = 0;
