@@ -319,10 +319,7 @@ install_package() {
 	echo "Trying to install package '$1':"
 	case "$distrib" in
 	openSUSE)
-		if zypper install $1; then
-			echo >&2 "Cannot install package '$1'."
-			exit 1
-		fi
+		zypper install $1
 		;;
 	Fedora)
 		yum install $1
