@@ -464,6 +464,13 @@ check_compilation_environment() {
 		else
 			echo "Program diff found."
 		fi
+		local a=$(make --version | head -1 | cut -d ' ' -f 1)
+		local b=$(make --version | head -1 | cut -d ' ' -f 2)
+		if test "$a" != "make" -a test "$b" != "make"; then
+			install_package diffutils
+		else
+			echo "Program make found."
+		fi
 		if test "$protocol" = "git"; then
 			local a=$(git --version | head -1 | cut -d ' ' -f 1)
 			if test "$a" != "git"; then
