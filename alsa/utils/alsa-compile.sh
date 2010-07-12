@@ -466,8 +466,8 @@ check_compilation_environment() {
 		fi
 		local a=$(make --version | head -1 | cut -d ' ' -f 1)
 		local b=$(make --version | head -1 | cut -d ' ' -f 2)
-		if test "$a" != "make" -a test "$b" != "make"; then
-			install_package diffutils
+		if test "$a" != "make" -a "$b" != "make"; then
+			install_package make
 		else
 			echo "Program make found."
 		fi
