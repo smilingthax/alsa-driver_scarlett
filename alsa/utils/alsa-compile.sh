@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.2
+version=0.2.3
 protocol=
 distrib=unknown
 distribver=0.0
@@ -199,12 +199,10 @@ do
 		pkg=${pkg:2}
 		package="alsa-$pkg"
 		packagedefault=
-		test -z "$url" && url="$baseurl$package"
 		;;
 	--run)
 		package="alsa-lib"
 		packagedefault=
-		test -z "$url" && url="$baseurl$package"
 		shift
 		runargs="$@"
 		break
@@ -316,20 +314,31 @@ is_rpm_installed() {
 # Install package
 # $1 is package name
 install_package() {
-	echo "Trying to install package '$1':"
+	pkg="$1"
 	case "$distrib" in
 	openSUSE)
-		zypper install $1
+		test "$pkg" == "alsa-lib-devel" && pkg="alsa-devel"
 		;;
 	Fedora)
-		yum install $1
 		;;
 	*)
 		echo >&2 "Cannot install $1 for unsupported distribution $distrib."
 		exit 1
 	esac
-	if test $(is_rpm_installed $1) = "false" ; then
-		echo >&2 "Package '$1' was not installed."
+	echo "Trying to install package '$pkg':"
+	case "$distrib" in
+	openSUSE)
+		zypper install $pkg
+		;;
+	Fedora)
+		yum install $pkg
+		;;
+	*)
+		echo >&2 "Cannot install $pkg for unsupported distribution $distrib."
+		exit 1
+	esac
+	if test $(is_rpm_installed $pkg) = "false" ; then
+		echo >&2 "Package '$pkg' was not installed."
 		exit 1
 	fi
 	echo "  installed"
@@ -466,18 +475,11 @@ check_compilation_environment() {
 		fi
 		local a=$(make --version | head -1 | cut -d ' ' -f 1)
 		local b=$(make --version | head -1 | cut -d ' ' -f 2)
-		if test "$a" != "make" -a "$b" != "make"; then
+		if test "$a" != "make" -a "$b" != "make" -a \
+		   test "$a" != "Make" -a test "$b" != "Make"; then
 			install_package make
 		else
 			echo "Program make found."
-		fi
-		if test "$protocol" = "git"; then
-			local a=$(git --version | head -1 | cut -d ' ' -f 1)
-			if test "$a" != "git"; then
-				install_package git
-			else
-				echo "Program git found."
-			fi
 		fi
 		check_kernel_source
 		echo "httpdownloader=$httpdownloader" >> $env
@@ -485,6 +487,61 @@ check_compilation_environment() {
 	else
 		echo "File $env is cached."
 		. $env
+	fi
+	if test -z "$present_tool_git"; then
+		if test "$protocol" = "git"; then
+			local a=$(git --version | head -1 | cut -d ' ' -f 1)
+			if test "$a" != "git"; then
+				install_package git
+			else
+				echo "Program git found."
+				echo "present_tool_git=y" >> $env
+			fi
+		fi
+	fi
+	if test -z "$present_tool_gettext"; then
+		if test "$package" = "alsa-utils"; then
+			local a=$(gettext --version | head -1 | cut -d ' ' -f 1)
+			if test "$a" != "gettext"; then
+				install_package gettext-tools
+			else
+				echo "Program gettext found."
+				echo "present_tool_gettext=y" >> $env
+			fi
+		fi
+	fi
+	if test -z "$present_tool_xmlto"; then
+		if test "$package" = "alsa-utils"; then
+			local a=$(xmlto --version | head -1 | cut -d ' ' -f 1)
+			if test "$a" != "xmlto"; then
+				install_package xmlto
+			else
+				echo "Program xmlto found."
+				echo "present_tool_xmlto=y" >> $env
+			fi
+		fi
+	fi
+	if test -z "$present_tool_alsa_lib"; then
+		if test "$package" = "alsa-utils"; then
+			if ! test -r "/usr/include/alsa/asoundlib.h"; then
+				install_package alsa-lib-devel
+			else
+				echo "Package alsa-lib-devel found."
+				echo "present_tool_alsa_lib=y" >> $env
+			fi
+		fi
+	fi
+	if test -z "$present_tool_ncurses"; then
+		if test "$package" = "alsa-utils"; then
+			local a=$(ncurses6-config --version | head -1 | cut -d '.' -f 1)
+			local b=$(ncurses5-config --version | head -1 | cut -d '.' -f 1)
+			if test "$a" != "5" -a "$a" != "6" -a "$b" != "5" -a "$b" != "6"; then
+				install_package ncurses-devel
+			else
+				echo "Package ncurses-devel found."
+				echo "present_tool_ncurses=y" >> $env
+			fi
+		fi
 	fi
 }
 
@@ -1062,6 +1119,7 @@ if test -n "$clean"; then
 		echo " success"
 	else
 		package_switch $clean
+		package="$clean"
 		echo -n "Removing package $package:"
 		rm "$tmpdir/environment.*" 2> /dev/null
 		if test "$package" = "alsa-driver"; then
@@ -1165,6 +1223,7 @@ http|https|file)
 		echo "ALSA package $package was successfully built."
 		echo "Binaries are in $tmpdir/$tree directory."
 	fi
+	cd ..
 	;;
 git)
 	check_compilation_environment
@@ -1177,9 +1236,9 @@ git)
 			git_clone $url "alsa-kmirror"
 		fi
 		git_clone $url $package
-		echo "alsa-driver" > $packagedir
+		echo "$package" > $packagedir
 	fi
-	do_cmd cd alsa-driver
+	do_cmd cd $package
 	do_compile
 	status="compile"
 	echo $status > $packagestatus
@@ -1189,6 +1248,7 @@ git)
 		echo "ALSA package $package was successfully built."
 		echo "Binaries are in $tmpdir/$package directory."
 	fi
+	cd ..
 	;;
 *)
 	echo >&2 "Unknown protocol '$protocol'."
