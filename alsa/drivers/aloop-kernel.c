@@ -52,6 +52,7 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS - 1)] = 0};
 static int pcm_substreams[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 8};
+static int pcm_notify[SNDRV_CARDS];
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for loopback soundcard.");
@@ -61,6 +62,8 @@ module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable this loopback soundcard.");
 module_param_array(pcm_substreams, int, NULL, 0444);
 MODULE_PARM_DESC(pcm_substreams, "PCM substreams # (1-8) for loopback driver.");
+module_param_array(pcm_notify, int, NULL, 0444);
+MODULE_PARM_DESC(pcm_notify, "Break capture when PCM format/rate/channels changes.");
 
 struct loopback_pcm;
 
@@ -78,6 +81,7 @@ struct loopback {
 	struct mutex cable_lock;
 	struct loopback_cable *cables[MAX_PCM_SUBSTREAMS][2];
 	struct snd_pcm *pcm[2];
+	unsigned int notify: 1;
 };
 
 struct loopback_pcm {
@@ -125,14 +129,47 @@ static inline void loopback_timer_stop(struct loopback_pcm *dpcm)
 	del_timer(&dpcm->timer);
 }
 
+#define CABLE_VALID_PLAYBACK	(1 << SNDRV_PCM_STREAM_PLAYBACK)
+#define CABLE_VALID_CAPTURE	(1 << SNDRV_PCM_STREAM_CAPTURE)
+#define CABLE_VALID_BOTH	(CABLE_VALID_PLAYBACK|CABLE_VALID_CAPTURE)
+
+static int loopback_check_format(struct loopback_cable *cable, int stream)
+{
+	struct snd_pcm_runtime *runtime;
+	int check;
+
+	if (cable->valid != CABLE_VALID_BOTH)
+		return 0;
+	runtime = cable->streams[SNDRV_PCM_STREAM_PLAYBACK]->
+							substream->runtime;
+	check = cable->hw.formats != (1ULL << runtime->format) ||
+		cable->hw.rate_min != runtime->rate ||
+		cable->hw.rate_max != runtime->rate ||
+		cable->hw.channels_min != runtime->channels ||
+		cable->hw.channels_max != runtime->channels;
+	if (!check)
+		return 0;
+	if (stream == SNDRV_PCM_STREAM_CAPTURE) {
+		return -EIO;
+	} else {
+		snd_pcm_stop(cable->streams[SNDRV_PCM_STREAM_CAPTURE]->
+					substream, SNDRV_PCM_STATE_DRAINING);
+	}
+	return 0;
+}
+
 static int loopback_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct loopback_pcm *dpcm = runtime->private_data;
 	struct loopback_cable *cable = dpcm->cable;
+	int err;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+		err = loopback_check_format(cable, substream->stream);
+		if (err < 0)
+			return err;
 		dpcm->last_jiffies = jiffies;
 		loopback_timer_start(dpcm);
 		cable->running |= (1 << substream->stream);
@@ -431,7 +468,12 @@ static int loopback_open(struct snd_pcm_substream *substream)
 
 	runtime->private_data = dpcm;
 	runtime->private_free = loopback_runtime_free;
-	runtime->hw = cable->hw;
+	if (loopback->notify &&
+	    substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		runtime->hw = loopback_pcm_hardware;
+	} else {
+		runtime->hw = cable->hw;
+	}
  unlock:
 	mutex_unlock(&loopback->cable_lock);
 	return err;
@@ -533,6 +575,7 @@ static int __devinit loopback_probe(struct platform_device *devptr)
 		pcm_substreams[dev] = MAX_PCM_SUBSTREAMS;
 	
 	loopback->card = card;
+	loopback->notify = pcm_notify[dev] ? 1 : 0;
 	mutex_init(&loopback->cable_lock);
 
 	err = loopback_pcm_new(loopback, 0, pcm_substreams[dev]);
