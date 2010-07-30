@@ -227,31 +227,6 @@ static int loopback_prepare(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static void copy_play_buf(struct loopback_pcm *play,
-			  struct loopback_pcm *capt,
-			  unsigned int bytes)
-{
-	char *src = play->substream->runtime->dma_area;
-	char *dst = capt->substream->runtime->dma_area;
-	unsigned int src_off = play->buf_pos;
-	unsigned int dst_off = capt->buf_pos;
-
-	for (;;) {
-		unsigned int size = bytes;
-		if (src_off + size > play->pcm_buffer_size)
-			size = play->pcm_buffer_size - src_off;
-		if (dst_off + size > capt->pcm_buffer_size)
-			size = capt->pcm_buffer_size - dst_off;
-		memcpy(dst + dst_off, src + src_off, size);
-		capt->silent_size = 0;
-		bytes -= size;
-		if (!bytes)
-			break;
-		src_off = (src_off + size) % play->pcm_buffer_size;
-		dst_off = (dst_off + size) % capt->pcm_buffer_size;
-	}
-}
-
 static void clear_capture_buf(struct loopback_pcm *dpcm, unsigned int bytes)
 {
 	struct snd_pcm_runtime *runtime = dpcm->substream->runtime;
@@ -276,6 +251,53 @@ static void clear_capture_buf(struct loopback_pcm *dpcm, unsigned int bytes)
 			break;
 		dst_off = 0;
 	}
+}
+
+static void copy_play_buf(struct loopback_pcm *play,
+			  struct loopback_pcm *capt,
+			  unsigned int bytes)
+{
+	struct snd_pcm_runtime *runtime = play->substream->runtime;
+	char *src = play->substream->runtime->dma_area;
+	char *dst = capt->substream->runtime->dma_area;
+	unsigned int src_off = play->buf_pos;
+	unsigned int dst_off = capt->buf_pos;
+	unsigned int clear_bytes = 0;
+
+	/* check if playback is draining, trim the capture copy size
+	 * when our pointer is at the end of playback ring buffer */
+	if (runtime->status->state == SNDRV_PCM_STATE_DRAINING &&
+	    snd_pcm_playback_hw_avail(runtime) < runtime->buffer_size) { 
+	    	snd_pcm_uframes_t appl_ptr, appl_ptr1, diff;
+		appl_ptr = appl_ptr1 = runtime->control->appl_ptr;
+		appl_ptr1 -= appl_ptr1 % runtime->buffer_size;
+		appl_ptr1 += play->buf_pos / play->pcm_salign;
+		if (appl_ptr < appl_ptr1)
+			appl_ptr1 -= runtime->buffer_size;
+		diff = (appl_ptr - appl_ptr1) * play->pcm_salign;
+		if (diff < bytes) {
+			clear_bytes = bytes - diff;
+			bytes = diff;
+		}
+	}
+
+	for (;;) {
+		unsigned int size = bytes;
+		if (src_off + size > play->pcm_buffer_size)
+			size = play->pcm_buffer_size - src_off;
+		if (dst_off + size > capt->pcm_buffer_size)
+			size = capt->pcm_buffer_size - dst_off;
+		memcpy(dst + dst_off, src + src_off, size);
+		capt->silent_size = 0;
+		bytes -= size;
+		if (!bytes)
+			break;
+		src_off = (src_off + size) % play->pcm_buffer_size;
+		dst_off = (dst_off + size) % capt->pcm_buffer_size;
+	}
+
+	if (clear_bytes > 0)
+		clear_capture_buf(capt, clear_bytes);
 }
 
 #define BYTEPOS_UPDATE_POSONLY	0
