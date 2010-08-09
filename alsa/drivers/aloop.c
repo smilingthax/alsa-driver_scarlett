@@ -1,3 +1,3 @@
 #include "adriver.h"
-#include "aloop-kernel.c"
+#include "../alsa-kernel/drivers/aloop.c"
 EXPORT_NO_SYMBOLS;
