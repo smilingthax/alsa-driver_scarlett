@@ -3361,9 +3361,9 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
-dnl Check for new pm_qos_request()
+dnl Check for pm_qos_request()
 if test "$kversion.$kpatchlevel" = "2.6"; then
-  AC_MSG_CHECKING(for new pm_qos_request)
+  AC_MSG_CHECKING(for pm_qos_request)
   pm_qos_request="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
@@ -3389,6 +3389,38 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CONFIG_SND_HAVE_PM_QOS_REQUEST=$pm_qos_request
   if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST" = "1"; then
     AC_DEFINE(CONFIG_SND_HAVE_PM_QOS_REQUEST)
+  fi
+fi
+
+dnl Check for static pm_qos_request()
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for static pm_qos_request)
+  pm_qos_request="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/pm_qos_params.h>
+],[
+  struct pm_qos_request_list r;
+  pm_qos_request(&r, PM_QOS_CPU_DMA_LATENCY, 100);
+],
+    AC_MSG_RESULT(yes);pm_qos_request_static="1",
+    AC_MSG_RESULT(no);pm_qos_request_static="0",
+    AC_MSG_RESULT(unknown);pm_qos_request_static="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC=$pm_qos_request_static
+  if test "$CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC" = "1"; then
+    AC_DEFINE(CONFIG_SND_HAVE_PM_QOS_REQUEST_STATIC)
   fi
 fi
 
