@@ -22,7 +22,6 @@
  *  please copy pdacf.conf to /etc/pcmcia directory
  */
 
-#include "adriver.h"
 #include <sound/core.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>

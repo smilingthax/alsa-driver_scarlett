@@ -701,6 +701,7 @@ rm -f include/linux/*.h
 rm -rf include/linux/usb
 rm -rf include/linux/regulator
 rm -f include/asm/*.h
+rm -rf include/pcmcia
 
 
 dnl Directory for modules
@@ -1574,6 +1575,7 @@ CHECK_KERNEL_HEADER(linux/hrtimer.h)
 CHECK_KERNEL_HEADER(linux/gcd.h, [#include \"gcd_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/gfp.h)
+CHECK_KERNEL_HEADER(pcmcia/cs_types.h, [#define SND_HAVE_DUMMY_CS_TYPES_H])
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
