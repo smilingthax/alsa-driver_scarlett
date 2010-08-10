@@ -46,7 +46,7 @@
 +		substream->latency_pm_qos_req = NULL;
 +	}
 +	if ((usecs = period_to_usecs(runtime)) >= 0)
-+		substream->latency_pcm_qos_req = pm_qos_add_request(
++		substream->latency_pm_qos_req = pm_qos_add_request(
 +				   PM_QOS_CPU_DMA_LATENCY, usecs);
 +#endif
 +#else

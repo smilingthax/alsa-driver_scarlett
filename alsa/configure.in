@@ -3378,7 +3378,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
 #endif
 #include <linux/pm_qos_params.h>
 ],[
-  int (*foo)(int)) = pm_qos_request;
+  int (*foo)(int) = pm_qos_request;
 ],
     AC_MSG_RESULT(yes);pm_qos_request="1",
     AC_MSG_RESULT(no);pm_qos_request="0",
