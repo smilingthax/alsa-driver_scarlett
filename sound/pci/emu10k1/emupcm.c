@@ -739,7 +739,7 @@ static inline void snd_emu10k1_playback_mangle_extra(struct snd_emu10k1 *emu,
 		struct snd_pcm_substream *substream,
 		struct snd_pcm_runtime *runtime)
 {
-	unsigned int ptr, period_pos, pos;
+	unsigned int ptr, period_pos;
 
 	/* try to sychronize the current position for the interrupt
 	   source voice */
