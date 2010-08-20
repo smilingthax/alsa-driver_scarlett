@@ -35,15 +35,16 @@ elif [ -d alsa-kernel -a -f alsa-kernel/sound/last.c ]; then
 elif [ -d alsa-kmirror -a -f alsa-kmirror/last.c ]; then
   ALSAKERNELDIR="alsa-kmirror"
 else
-  test -z $ALSAKERNELDIR && ALSAKERNELDIR=../alsa-kmirror
-  if [ ! -d $ALSAKERNELDIR -o ! -f $ALSAKERNELDIR/last.c ]; then
-    if [ ! -f $ALSAKERNELDIR/sound/last.c ]; then
+  test -z "$ALSAKERNELDIR" && ALSAKERNELDIR=../alsa-kmirror
+  if [ ! -d "$ALSAKERNELDIR" -o ! -f "$ALSAKERNELDIR"/last.c ]; then
+    if [ ! -f "$ALSAKERNELDIR"/sound/last.c ]; then
       echo "No alsa-kmirror or alsa-kernel tree is found."
       echo "Please specify the correct location via ALSAKERNELDIR environment variable."
       exit 1
     fi
   fi
 fi
+ALSAKERNELDIR=$(cd "$ALSAKERNELDIR" && pwd)
 make ALSAKERNELDIR="$ALSAKERNELDIR" all-deps || exit 1
 aclocal $ACLOCAL_FLAGS || exit 1
 autoconf || exit 1
