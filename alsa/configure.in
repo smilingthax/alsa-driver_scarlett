@@ -126,6 +126,9 @@ AC_ARG_WITH(build,
 if test -d "$kernelbuild"; then
   kernelbuild=$(cd "$kernelbuild" && pwd)
 fi
+if test -z "$kernelbuild"; then
+  kernelbuild="$kerneldir"
+fi
 CONFIG_SND_KERNELBUILD="$kernelbuild"
 AC_MSG_RESULT($kernelbuild)
 
