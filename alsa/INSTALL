@@ -190,7 +190,9 @@ For compilation you can use these commands:
 	make dep
 	make
 
-The included gitcompile script does this job for you.
+The included gitcompile script does this job for you. The ALSAKERNELDIR
+can be eighter alsa-kmirror tree or whole Linux 2.6 source tree (see
+"Compilation from Linux kernel tree").
 
 Note: Some automake packages have missing aclocal program. Use newer version
       in the case.
@@ -207,6 +209,16 @@ built for the current running kernel, and not for the kernel version or
 configuration in the kernel tree.  In other words, the currently running
 kernel version and the kernel version in the kernel tree need not be
 identical.
+
+Two ways are available:
+
+Use gitcompile script directly:
+-------------------------------
+
+	ALSAKERNELDIR=<YOUR-LINUX-KERNEL-TREE-PATH> ./gitcompile
+
+Use utils/setup-alsa-kernel script:
+-----------------------------------
 
 In this case, run utils/setup-alsa-kernel script in alsa-driver directory:
 
