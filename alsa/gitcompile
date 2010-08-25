@@ -30,10 +30,15 @@ fi
 # check for kernel-mirrored tree
 if [ -f ../.alsamirror ]; then
   ALSAKERNELDIR=$(cd .. && pwd)
-elif [ -d alsa-kernel -a -f alsa-kernel/sound/last.c ]; then
-  ALSAKERNELDIR="alsa-kernel"
-elif [ -d alsa-kmirror -a -f alsa-kmirror/last.c ]; then
-  ALSAKERNELDIR="alsa-kmirror"
+# check for alsa-kmirror or 2.6 linux source tree directory
+elif [ -d alsa-kernel -a -f alsa-kernel/last.c ]; then
+   ALSAKERNELDIR="alsa-kernel"
+elif [ -d ../alsa-kernel -a -f ../alsa-kernel/sound/last.c ]; then
+  ALSAKERNELDIR="../alsa-kernel"
+elif [ -d ../sound-2.6 -a -f ../sound-2.6/sound/last.c ]; then
+  ALSAKERNELDIR="../sound-2.6"
+elif [ -d alsa-kmirror -a -f ../alsa-kmirror/last.c ]; then
+  ALSAKERNELDIR="../alsa-kmirror"
 else
   test -z "$ALSAKERNELDIR" && ALSAKERNELDIR=../alsa-kmirror
   if [ ! -d "$ALSAKERNELDIR" -o ! -f "$ALSAKERNELDIR"/last.c ]; then
