@@ -137,11 +137,11 @@ AC_MSG_RESULT($kernelbuild)
 AC_DEFUN([CHECK_REQUIRED_KERNEL_HEADER], [
   $1="$2"
   AC_MSG_CHECKING(for kernel $2 $3)
-  if ! test -r $CONFIG_SND_KERNELDIR/include/$2; then
+  if ! test -s $CONFIG_SND_KERNELDIR/include/$2; then
     if test -z "$kernelbuild" -o ! -s $kernelbuild/include/$2; then
       if test -n "$3"; then
 	$1="$3"
-	if ! test -r $CONFIG_SND_KERNELDIR/include/$3; then
+	if ! test -s $CONFIG_SND_KERNELDIR/include/$3; then
 	  if test -z "$kernelbuild" -o ! -s $kernelbuild/include/$3; then
 	    AC_MSG_RESULT(no)
 	    cat << EOF
