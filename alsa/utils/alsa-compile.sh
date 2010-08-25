@@ -286,17 +286,24 @@ question_bool() {
 
 # Set $distrib and $distribver
 check_distribution() {
-	distrib=$(lsb_release -ds 2> /dev/null | cut -d ' ' -f 1)
+	distrib=$(lsb_release -ds 2> /dev/null)
 	if test -z "$distrib"; then
 		if test -f /etc/redhat-release; then
 			distrib="Fedora"
 			install_package lsb
 			distrib=
 		fi
-		distrib=$(lsb_release -ds 2> /dev/null | cut -d ' ' -f 1)
+		distrib=$(lsb_release -ds 2> /dev/null)
+		distrib=$(echo $distrib)
 	fi
-	local first=${distrib:0:1}
-	if test "$first" = "\""; then
+	local tmp=${distrib:0:25}
+	if test "$tmp" == "\"Red Hat Enterprise Linux"; then
+		distrib="RHEL"
+	else
+		distrib=$(echo $distrib | cut -d ' ' -f 1)
+	fi
+	tmp=${distrib:0:1}
+	if test "$tmp" = "\""; then
 		distrib=${distrib:1}
 	fi
 	distribver=$(lsb_release -rs 2> /dev/null)
@@ -330,7 +337,7 @@ install_package() {
 	openSUSE)
 		test "$pkg" == "alsa-lib-devel" && pkg="alsa-devel"
 		;;
-	Fedora)
+	Fedora|RHEL)
 		test "$pkg" == "lsb" && pkg="redhat-lsb"
 		;;
 	*)
@@ -342,13 +349,31 @@ install_package() {
 	openSUSE)
 		zypper install $pkg
 		;;
-	Fedora)
+	Fedora|RHEL)
 		yum install -y $pkg
 		;;
 	*)
 		echo >&2 "Cannot install $pkg for unsupported distribution $distrib."
 		exit 1
 	esac
+	if test $(is_rpm_installed $pkg) = "false" -a "$pkg" = "git"; then
+		case "$distrib" in
+		RHEL)
+			install_package perl-DBI
+			rm -f $tmpdir/git.rpm
+			ver="1.7.2.2-1.el${distribver:0:1}.rf"
+			wget -O $tmpdir/git.rpm http://packages.sw.be/git/perl-Git-$ver.$(uname -m).rpm
+			if test -s $tmpdir/git.rpm; then
+				rpm -Uvh --nodeps $tmpdir/git.rpm
+			fi
+			wget -O $tmpdir/git.rpm http://packages.sw.be/git/git-$ver.$(uname -m).rpm
+			if test -s $tmpdir/git.rpm; then
+				rpm -Uvh $tmpdir/git.rpm
+			fi
+			rm -f $tmpdir/git.rpm
+			;;
+		esac
+	fi
 	if test $(is_rpm_installed $pkg) = "false" ; then
 		echo >&2 "Package '$pkg' was not installed."
 		exit 1
@@ -365,7 +390,7 @@ check_kernel_source() {
 			install_package kernel-source
 		fi
 		;;
-	Fedora)
+	Fedora|RHEL)
 		if uname --kernel-release | grep -q '\.PAE$'; then
 			local kernel_devel=kernel-PAE-devel
 		else
