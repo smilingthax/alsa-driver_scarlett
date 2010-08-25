@@ -37,7 +37,9 @@ elif [ -d ../alsa-kernel -a -f ../alsa-kernel/sound/last.c ]; then
   ALSAKERNELDIR="../alsa-kernel"
 elif [ -d ../sound-2.6 -a -f ../sound-2.6/sound/last.c ]; then
   ALSAKERNELDIR="../sound-2.6"
-elif [ -d alsa-kmirror -a -f ../alsa-kmirror/last.c ]; then
+elif [ -d alsa-kmirror -a -f alsa-kmirror/last.c ]; then
+  ALSAKERNELDIR="alsa-kmirror"
+elif [ -d ../alsa-kmirror -a -f ../alsa-kmirror/last.c ]; then
   ALSAKERNELDIR="../alsa-kmirror"
 else
   test -z "$ALSAKERNELDIR" && ALSAKERNELDIR=../alsa-kmirror
