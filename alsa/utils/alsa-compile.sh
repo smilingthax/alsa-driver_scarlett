@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.3
+version=0.2.4
 protocol=
 distrib=unknown
 distribver=0.0
@@ -287,6 +287,14 @@ question_bool() {
 # Set $distrib and $distribver
 check_distribution() {
 	distrib=$(lsb_release -ds 2> /dev/null | cut -d ' ' -f 1)
+	if test -z "$distrib"; then
+		if test -f /etc/redhat-release; then
+			distrib="Fedora"
+			install_package lsb
+			distrib=
+		fi
+		distrib=$(lsb_release -ds 2> /dev/null | cut -d ' ' -f 1)
+	fi
 	local first=${distrib:0:1}
 	if test "$first" = "\""; then
 		distrib=${distrib:1}
@@ -323,6 +331,7 @@ install_package() {
 		test "$pkg" == "alsa-lib-devel" && pkg="alsa-devel"
 		;;
 	Fedora)
+		test "$pkg" == "lsb" && pkg="redhat-lsb"
 		;;
 	*)
 		echo >&2 "Cannot install $1 for unsupported distribution $distrib."
@@ -334,7 +343,7 @@ install_package() {
 		zypper install $pkg
 		;;
 	Fedora)
-		yum install $pkg
+		yum install -y $pkg
 		;;
 	*)
 		echo >&2 "Cannot install $pkg for unsupported distribution $distrib."
