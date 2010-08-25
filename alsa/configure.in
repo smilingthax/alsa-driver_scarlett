@@ -70,11 +70,13 @@ AC_ARG_WITH(alsakernel,
   [alsakerneldir=".."]
 )
 ALSAKERNELDIR=""
-if test -d "$alsakerneldir"; then
+if test -d "$alsakerneldir" -o -L "$alsakerneldir"; then
   ALSAKERNELDIR=$(cd "$alsakerneldir" && pwd)
-elif test -d "mirror"; then
-  ALSAKERNELDIR=$(cd "mirror" && pwd)
-elif test -d "alsa-kernel"; then
+fi
+if test -z "$ALSAKERNELDIR" -a -d "../.alsamirror"; then
+  ALSAKERNELDIR=$(cd ".." && pwd)
+fi
+if test -z "$ALSAKERNELDIR" -a -d "alsa-kernel"; then
   ALSAKERNELDIR=$(cd "alsa-kernel" && pwd)
 fi
 if test -z "$ALSAKERNELDIR"; then
@@ -84,7 +86,7 @@ Please obtain the ALSA linux kernel tree (alsa-kmirror or alsa-kernel).
 EOF
   exit 1
 fi
-AC_MSG_RESULT($alsakerneldir)
+AC_MSG_RESULT($ALSAKERNELDIR)
 AC_SUBST(ALSAKERNELDIR)
 
 dnl Check for directory with kernel source...
@@ -104,7 +106,7 @@ AC_ARG_WITH(kernel,
    DEFAULT_KERNEL_BUILD=""],
   [kerneldir="$DEFAULT_KERNEL_DIR"]
 )
-if test -d "$kerneldir"; then
+if test -d "$kerneldir" -o -L "$kerneldir"; then
   CONFIG_SND_KERNELDIR=$(cd "$kerneldir" && pwd)
 else
   cat << EOF
