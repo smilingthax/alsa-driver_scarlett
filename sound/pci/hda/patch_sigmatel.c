@@ -4374,11 +4374,9 @@ static int stac92xx_init(struct hda_codec *codec)
 			stac_issue_unsol_event(codec, nid);
 	}
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
 	/* sync mute LED */
-	if (spec->gpio_led && codec->patch_ops.check_power_status)
-		codec->patch_ops.check_power_status(codec, 0x01);
-#endif	
+	if (spec->gpio_led)
+		hda_call_check_power_status(codec, 0x01);
 	if (spec->dac_list)
 		stac92xx_power_down(codec);
 	return 0;
@@ -4960,11 +4958,9 @@ static int stac92xx_resume(struct hda_codec *codec)
 			stac_issue_unsol_event(codec,
 					       spec->autocfg.line_out_pins[0]);
 	}
-#ifdef CONFIG_SND_HDA_POWER_SAVE
 	/* sync mute LED */
-	if (spec->gpio_led && codec->patch_ops.check_power_status)
-		codec->patch_ops.check_power_status(codec, 0x01);
-#endif	
+	if (spec->gpio_led)
+		hda_call_check_power_status(codec, 0x01);
 	return 0;
 }
 
