@@ -1566,6 +1566,10 @@ XXX_DEFINE_STRTO(ull, unsigned long long);
 #define pr_warning(fmt, arg...) \
 	printk(KERN_WARNING fmt, ##arg)
 #endif
+#ifndef pr_warn
+#define pr_warn(fmt, arg...) \
+	printk(KERN_WARNING fmt, ##arg)
+#endif
 #ifndef pr_notice
 #define pr_notice(fmt, arg...) \
 	printk(KERN_NOTICE fmt, ##arg)
