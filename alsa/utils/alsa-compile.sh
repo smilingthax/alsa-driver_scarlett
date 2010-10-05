@@ -185,7 +185,7 @@ do
 	--install)
 		install=true
 		;;
-	--patch)
+	--patch*)
 		case "$#,$1" in
 		*,*=*)
 			patch=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
@@ -541,9 +541,18 @@ check_compilation_environment() {
 			local a=$(gettext --version | head -1 | cut -d ' ' -f 1)
 			if test "$a" != "gettext"; then
 				install_package gettext-tools
+				local a=$(gettextize --version | head -1 | cut -d ' ' -f 1)
+				if test -z "$a"; then
+					install_package gettext-devel
+				fi 
 			else
-				echo "Program gettext found."
-				echo "present_tool_gettext=y" >> $env
+				local a=$(gettextize --version | head -1 | cut -d ' ' -f 1)
+				if test -z "$a"; then
+					install_package gettext-devel
+				else
+					echo "Program gettext found."
+					echo "present_tool_gettext=y" >> $env
+				fi
 			fi
 		fi
 	fi
@@ -644,15 +653,15 @@ do_compile() {
 	else
 		for patch in $patches; do
 			local pstrip=1
-			if ! test patch -s -p$pstrip -N --dry-run < $patch; then
+			if ! patch -s -p$pstrip -N --dry-run < $patch; then
 				local pstrip=0
-				if ! test patch -s -p$pstrip -N --dry-run < $patch; then
+				if ! patch -s -p$pstrip -N --dry-run < $patch; then
 					echo >&2 "Cannot apply patch $patch."
 					exit 1
 				fi
 			fi
 			echo "Applying patch $patch: "
-			if ! test patch -p$pstrip -N < $patch; then
+			if ! patch -p$pstrip -N < $patch; then
 				exit 1
 			fi
 		done
@@ -1208,7 +1217,7 @@ if test -n "$kernelmodules" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
 fi
 
 case "$protocol" in
-http|https|file)
+http|https|ftp|file)
 	check_compilation_environment
 	if test -n "$tree"; then
 		echo "$package tree $tree is present."
