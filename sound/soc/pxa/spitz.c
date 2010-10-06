@@ -336,7 +336,7 @@ static int __init spitz_init(void)
 	if (!spitz_snd_device)
 		return -ENOMEM;
 
-	platform_set_drvdata(spitz_snd_device, &spitz_snd_devdata);
+	platform_set_drvdata(spitz_snd_device, &snd_soc_spitz);
 	ret = platform_device_add(spitz_snd_device);
 
 	if (ret)

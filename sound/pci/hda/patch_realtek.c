@@ -15084,8 +15084,12 @@ static int patch_alc269(struct hda_codec *codec)
 	spec->vmaster_nid = 0x02;
 
 	codec->patch_ops = alc_patch_ops;
+#ifdef CONFIG_SND_HDA_POWER_SAVE
 	codec->patch_ops.suspend = alc269_suspend;
+#endif
+#ifdef SND_HDA_NEEDS_RESUME
 	codec->patch_ops.resume = alc269_resume;
+#endif
 	if (board_config == ALC269_AUTO)
 		spec->init_hook = alc269_auto_init;
 #ifdef CONFIG_SND_HDA_POWER_SAVE

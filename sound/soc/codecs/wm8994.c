@@ -3892,7 +3892,7 @@ static irqreturn_t wm8994_mic_irq(int irq, void *data)
 static int wm8994_codec_probe(struct snd_soc_codec *codec)
 {
 	struct wm8994_priv *wm8994;
-	int ret, i, rev;
+	int ret, i;
 
 	codec->control_data = dev_get_drvdata(codec->dev->parent);
 
@@ -3901,7 +3901,7 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
 		return -ENOMEM;
 	snd_soc_codec_set_drvdata(codec, wm8994);
 
-	wm8994->pdata = pdev->dev.parent->platform_data;
+	wm8994->pdata = dev_get_platdata(codec->dev->parent);
 	wm8994->codec = codec;
 
 	/* Fill the cache with physical values we inherited; don't reset */

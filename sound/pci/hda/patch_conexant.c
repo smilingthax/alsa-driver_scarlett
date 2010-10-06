@@ -3555,6 +3555,7 @@ static void cx_auto_parse_digital(struct hda_codec *codec)
 		spec->dig_in_nid = cx_auto_get_dig_in(codec, cfg->dig_in_pin);
 }
 
+#ifdef CONFIG_SND_HDA_INPUT_BEEP
 static void cx_auto_parse_beep(struct hda_codec *codec)
 {
 	struct conexant_spec *spec = codec->spec;
@@ -3567,6 +3568,9 @@ static void cx_auto_parse_beep(struct hda_codec *codec)
 			break;
 		}
 }
+#else
+#define cx_auto_parse_beep(codec)
+#endif
 
 static int cx_auto_parse_auto_config(struct hda_codec *codec)
 {
