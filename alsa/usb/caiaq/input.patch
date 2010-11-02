@@ -1,13 +1,13 @@
---- ../../alsa-kernel/usb/caiaq/input.c	2010-03-22 16:10:59.103773419 +0100
-+++ input.c	2010-03-22 18:06:20.773262057 +0100
+--- ../../alsa-kernel/usb/caiaq/input.c	2010-09-30 23:00:05.768410444 +0200
++++ input.c	2010-11-02 16:47:34.561332208 +0100
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
  /*
   *   Copyright (c) 2006,2007 Daniel Mack, Tim Ruetz
   *
-@@ -18,13 +20,30 @@
- 
+@@ -19,13 +21,30 @@
+ #include <linux/gfp.h>
  #include <linux/init.h>
  #include <linux/usb.h>
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 18)
@@ -37,7 +37,7 @@
  static unsigned short keycode_ak1[] =  { KEY_C, KEY_B, KEY_A };
  static unsigned short keycode_rk2[] =  { KEY_1, KEY_2, KEY_3, KEY_4,
  					 KEY_5, KEY_6, KEY_7 };
-@@ -281,7 +300,11 @@
+@@ -436,7 +455,11 @@ requeue:
  
  static int snd_usb_caiaq_input_open(struct input_dev *idev)
  {
@@ -49,7 +49,7 @@
  
  	if (!dev)
  		return -EINVAL;
-@@ -298,7 +321,11 @@
+@@ -454,7 +477,11 @@ static int snd_usb_caiaq_input_open(stru
  
  static void snd_usb_caiaq_input_close(struct input_dev *idev)
  {
@@ -61,7 +61,7 @@
  
  	if (!dev)
  		return;
-@@ -336,7 +363,11 @@
+@@ -493,7 +520,11 @@ int snd_usb_caiaq_input_init(struct snd_
  	struct input_dev *input;
  	int i, ret = 0;
  
@@ -73,7 +73,7 @@
  	if (!input)
  		return -ENOMEM;
  
-@@ -346,9 +377,17 @@
+@@ -503,9 +534,17 @@ int snd_usb_caiaq_input_init(struct snd_
  	input->name = dev->product_name;
  	input->phys = dev->phys;
  	usb_to_input_id(usb_dev, &input->id);
@@ -91,7 +91,7 @@
  
  	switch (dev->chip.usb_id) {
  	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
-@@ -467,9 +506,13 @@
+@@ -664,9 +703,13 @@ int snd_usb_caiaq_input_init(struct snd_
  	for (i = 0; i < input->keycodemax; i++)
  		__set_bit(dev->keycode[i], input->keybit);
  

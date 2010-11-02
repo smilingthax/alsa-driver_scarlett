@@ -1,12 +1,12 @@
---- ../alsa-kernel/core/init.c	2009-09-07 15:59:08.000000000 +0200
-+++ init.c	2009-09-07 16:04:43.000000000 +0200
+--- ../alsa-kernel/core/init.c	2010-11-02 16:17:52.267995721 +0100
++++ init.c	2010-11-02 16:47:32.709413929 +0100
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
  /*
   *  Initialization routines
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -296,11 +298,19 @@
+@@ -296,11 +298,19 @@ static unsigned int snd_disconnect_poll(
  	return POLLERR | POLLNVAL;
  }
  
@@ -26,7 +26,7 @@
  
  static int snd_disconnect_mmap(struct file *file, struct vm_area_struct *vma)
  {
-@@ -314,16 +324,22 @@
+@@ -314,16 +324,22 @@ static int snd_disconnect_fasync(int fd,
  
  static const struct file_operations snd_shutdown_f_ops =
  {
@@ -49,9 +49,9 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -651,9 +667,21 @@
+@@ -652,9 +668,21 @@ int snd_card_register(struct snd_card *c
  		return -EINVAL;
- #ifndef CONFIG_SYSFS_DEPRECATED
+ 
  	if (!card->card_dev) {
 +#ifdef CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA
 +		card->card_dev = device_create_drvdata(sound_class, card->dev,
@@ -71,7 +71,7 @@
  		if (IS_ERR(card->card_dev))
  			card->card_dev = NULL;
  	}
-@@ -945,3 +973,16 @@
+@@ -945,3 +973,16 @@ int snd_power_wait(struct snd_card *card
  
  EXPORT_SYMBOL(snd_power_wait);
  #endif /* CONFIG_PM */

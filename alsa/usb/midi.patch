@@ -1,12 +1,12 @@
---- ../alsa-kernel/usb/midi.c	2010-03-10 09:22:24.488022926 +0100
-+++ midi.c	2010-03-10 09:26:34.028022239 +0100
+--- ../alsa-kernel/usb/midi.c	2010-10-23 17:00:26.073707353 +0200
++++ midi.c	2010-11-02 16:47:34.469336266 +0100
 @@ -1,3 +1,5 @@
 +#include "midi.inc"
 +
  /*
   * usbmidi.c - ALSA USB MIDI driver
   *
-@@ -246,7 +248,11 @@
+@@ -246,7 +248,11 @@ static void dump_urb(const char *type, c
  /*
   * Processes the data read from the device.
   */
@@ -18,7 +18,7 @@
  {
  	struct snd_usb_midi_in_endpoint* ep = urb->context;
  
-@@ -270,7 +276,11 @@
+@@ -270,7 +276,11 @@ static void snd_usbmidi_in_urb_complete(
  	snd_usbmidi_submit_urb(urb, GFP_ATOMIC);
  }
  
@@ -30,7 +30,7 @@
  {
  	struct out_urb_context *context = urb->context;
  	struct snd_usb_midi_out_endpoint* ep = context->ep;
-@@ -380,8 +390,13 @@
+@@ -380,8 +390,13 @@ static int send_bulk_static_data(struct
  		return -ENOMEM;
  	dump_urb("sending", buf, len);
  	if (ep->urbs[0].urb)
@@ -44,7 +44,7 @@
  	kfree(buf);
  	return err;
  }
-@@ -897,7 +912,12 @@
+@@ -1003,7 +1018,12 @@ static void update_roland_altsetting(str
  	int is_light_load;
  
  	intf = umidi->iface;
@@ -57,7 +57,7 @@
  	if (umidi->roland_load_ctl->private_value == is_light_load)
  		return;
  	hostif = &intf->altsetting[umidi->roland_load_ctl->private_value];
-@@ -984,7 +1004,11 @@
+@@ -1090,7 +1110,11 @@ static void snd_usbmidi_output_drain(str
  	struct usbmidi_out_port* port = substream->runtime->private_data;
  	struct snd_usb_midi_out_endpoint *ep = port->ep;
  	unsigned int drain_urbs;
@@ -68,8 +68,8 @@
 +#endif
  	long timeout = msecs_to_jiffies(50);
  
- 	/*
-@@ -995,6 +1019,7 @@
+ 	if (ep->umidi->disconnected)
+@@ -1103,6 +1127,7 @@ static void snd_usbmidi_output_drain(str
  	drain_urbs = ep->active_urbs;
  	if (drain_urbs) {
  		ep->drain_urbs |= drain_urbs;
@@ -77,7 +77,7 @@
  		do {
  			prepare_to_wait(&ep->drain_wait, &wait,
  					TASK_UNINTERRUPTIBLE);
-@@ -1004,6 +1029,18 @@
+@@ -1112,6 +1137,18 @@ static void snd_usbmidi_output_drain(str
  			drain_urbs &= ep->drain_urbs;
  		} while (drain_urbs && timeout);
  		finish_wait(&ep->drain_wait, &wait);
@@ -96,7 +96,7 @@
  	}
  	spin_unlock_irq(&ep->buffer_lock);
  }
-@@ -1700,7 +1737,11 @@
+@@ -1823,7 +1860,11 @@ static int snd_usbmidi_detect_endpoints(
  	intf = umidi->iface;
  	if (!intf || intf->num_altsetting < 1)
  		return -ENOENT;
@@ -108,7 +108,7 @@
  	intfd = get_iface_desc(hostif);
  
  	for (i = 0; i < intfd->bNumEndpoints; ++i) {
-@@ -2067,3 +2108,5 @@
+@@ -2197,3 +2238,5 @@ EXPORT_SYMBOL(snd_usbmidi_create);
  EXPORT_SYMBOL(snd_usbmidi_input_stop);
  EXPORT_SYMBOL(snd_usbmidi_input_start);
  EXPORT_SYMBOL(snd_usbmidi_disconnect);
