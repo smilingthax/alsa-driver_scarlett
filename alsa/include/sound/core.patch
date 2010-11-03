@@ -1,6 +1,6 @@
---- ../../alsa-kernel/include/core.h	2009-09-07 15:59:08.000000000 +0200
-+++ core.h	2009-09-07 16:01:27.000000000 +0200
-@@ -104,8 +104,12 @@
+--- ../../alsa-kernel/include/core.h	2010-11-02 16:17:51.796016548 +0100
++++ core.h	2010-11-03 09:27:19.656922316 +0100
+@@ -104,8 +104,12 @@ struct snd_card {
  	char shortname[32];		/* short name of this soundcard */
  	char longname[80];		/* name of this soundcard */
  	char mixername[80];		/* mixer name */
@@ -13,7 +13,7 @@
  	struct module *module;		/* top-level module */
  
  	void *private_data;		/* private data for soundcard */
-@@ -125,7 +129,11 @@
+@@ -125,7 +129,11 @@ struct snd_card {
  	struct snd_info_entry *proc_id;	/* the card id */
  	struct proc_dir_entry *proc_root_link;	/* number link to real id */
  
@@ -25,7 +25,7 @@
  	struct snd_shutdown_f_ops *s_f_ops; /* file operations in the shutdown
  								state */
  	spinlock_t files_lock;		/* lock the files for this card */
-@@ -147,6 +155,15 @@
+@@ -145,6 +153,15 @@ struct snd_card {
  	struct snd_mixer_oss *mixer_oss;
  	int mixer_oss_change_count;
  #endif
@@ -41,7 +41,19 @@
  };
  
  #ifdef CONFIG_PM
-@@ -302,7 +319,11 @@
+@@ -194,7 +211,11 @@ struct snd_minor {
+ /* return a device pointer linked to each sound device as a parent */
+ static inline struct device *snd_card_get_device_link(struct snd_card *card)
+ {
++#ifdef CONFIG_SYSFS_DEPRECATED
++	return card ? card->dev : NULL;
++#else
+ 	return card ? card->card_dev : NULL;
++#endif
+ }
+ 
+ /* sound.c */
+@@ -296,7 +317,11 @@ int snd_component_add(struct snd_card *c
  int snd_card_file_add(struct snd_card *card, struct file *file);
  int snd_card_file_remove(struct snd_card *card, struct file *file);
  
@@ -53,7 +65,7 @@
  
  /* device.c */
  
-@@ -417,12 +438,20 @@
+@@ -411,12 +436,20 @@ static inline int __snd_bug_on(int cond)
  
  /* for easier backward-porting */
  #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
