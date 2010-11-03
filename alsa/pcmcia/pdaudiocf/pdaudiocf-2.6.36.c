@@ -142,9 +142,10 @@ static int snd_pdacf_probe(struct pcmcia_device *link)
 	link->resource[0]->flags |= IO_DATA_PATH_WIDTH_AUTO;
 	link->resource[0]->end = 16;
 
-	link->config_flags = CONF_ENABLE_IRQ | CONF_ENABLE_PULSE_IRQ;
-	link->config_index = 1;
-	link->config_regs = PRESENT_OPTION;
+	link->conf.Attributes = CONF_ENABLE_IRQ | CONF_ENABLE_PULSE_IRQ;
+	link->conf.IntType = INT_MEMORY_AND_IO;
+	link->conf.ConfigIndex = 1;
+	link->conf.Present = PRESENT_OPTION;
 
 	return pdacf_config(link);
 }
@@ -216,8 +217,7 @@ static int pdacf_config(struct pcmcia_device *link)
 	int ret;
 
 	snd_printdd(KERN_DEBUG "pdacf_config called\n");
-	link->config_index = 0x5;
-	link->config_flags |= CONF_ENABLE_IRQ | CONF_ENABLE_PULSE_IRQ;
+	link->conf.ConfigIndex = 0x5;
 
 	ret = pcmcia_request_io(link);
 	if (ret)
@@ -227,7 +227,7 @@ static int pdacf_config(struct pcmcia_device *link)
 	if (ret)
 		goto failed;
 
-	ret = pcmcia_enable_device(link);
+	ret = pcmcia_request_configuration(link, &link->conf);
 	if (ret)
 		goto failed;
 
@@ -287,7 +287,9 @@ MODULE_DEVICE_TABLE(pcmcia, snd_pdacf_ids);
 
 static struct pcmcia_driver pdacf_cs_driver = {
 	.owner		= THIS_MODULE,
-	.name		= "snd-pdaudiocf",
+	.drv		= {
+		.name	= "snd-pdaudiocf",
+	},
 	.probe		= snd_pdacf_probe,
 	.remove		= snd_pdacf_detach,
 	.id_table	= snd_pdacf_ids,
