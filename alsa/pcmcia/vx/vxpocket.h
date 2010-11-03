@@ -1,4 +1,7 @@
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 35)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 36)
+#include <pcmcia/cs.h>
+#endif
 #include "../../alsa-kernel/pcmcia/vx/vxpocket.h"
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
 #include "vxpocket-2.6.35.h"
