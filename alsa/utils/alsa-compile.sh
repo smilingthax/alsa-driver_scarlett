@@ -329,6 +329,16 @@ is_rpm_installed() {
 	fi
 }
 
+# Echo "true" if deb installed, else "false"
+is_deb_installed() {
+    dpkg -l $1 2>&1 | grep -Eq '^ii'
+       if test "$?" = "0"; then
+               echo "true"
+       else
+               echo "false"
+       fi
+}
+
 # Install package
 # $1 is package name
 install_package() {
@@ -339,6 +349,14 @@ install_package() {
 		;;
 	Fedora|RHEL)
 		test "$pkg" == "lsb" && pkg="redhat-lsb"
+		;;
+	Debian|Ubuntu)
+		test "$pkg" == "lsb" && pkg="lsb-release"
+		test "$pkg" == "git" && pkg="git-core"
+		test "$pkg" == "alsa-lib-devel" && pkg="libasound2-dev"
+		test "$pkg" == "gettext-tools" && pkg="gettext-base"
+		test "$pkg" == "gettext-devel" && pkg="gettext"
+		test "$pkg" == "ncurses-devel" && pkg="ncurses-bin"
 		;;
 	*)
 		echo >&2 "Cannot install $1 for unsupported distribution $distrib."
@@ -351,6 +369,9 @@ install_package() {
 		;;
 	Fedora|RHEL)
 		yum install -y $pkg
+		;;
+	Debian|Ubuntu)
+		apt-get install -y $pkg
 		;;
 	*)
 		echo >&2 "Cannot install $pkg for unsupported distribution $distrib."
@@ -397,6 +418,12 @@ check_kernel_source() {
 			local kernel_devel=kernel-devel
 		fi
 		if test $(is_rpm_installed $kernel_devel) = "false" ; then
+			install_package $kernel_devel
+		fi
+		;;
+	Debian|Ubuntu)
+		local kernel_devel="linux-source-$(uname --kernel-release | sed 's/-.*$//')"
+		if test $(is_deb_installed $kernel_devel) = "false" ; then
 			install_package $kernel_devel
 		fi
 		;;
