@@ -1920,6 +1920,18 @@ static inline int hex_to_bin(char c)
 }
 #endif
 
+/* vzalloc() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
+#include <linux/vmalloc.h>
+static inline void *vzalloc(unsigned long size)
+{
+	void *p = vmalloc(size);
+	if (p)
+		memset(p, 0, size);
+	return p;
+}
+#endif
+
 /* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
 #ifndef CONFIG_SND_JACK
 #undef CONFIG_SND_HDA_INPUT_JACK
