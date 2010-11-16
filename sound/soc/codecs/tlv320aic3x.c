@@ -1439,7 +1439,6 @@ err_get:
 	    !aic3x_is_shared_reset(aic3x))
 		gpio_free(aic3x->gpio_reset);
 err_gpio:
-	kfree(aic3x);
 	return ret;
 }
 
