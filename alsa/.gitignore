@@ -63,6 +63,7 @@ include/config1.h
 include/config1.h.in
 include/asm/
 include/pcmcia/
+include/trace/
 include/linux/*
 include/generated/*
 include/media/*
