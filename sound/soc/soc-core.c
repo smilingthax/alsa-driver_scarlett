@@ -3185,7 +3185,7 @@ static inline char *fmt_single_name(struct device *dev, int *id)
 	if (dev_name(dev) == NULL)
 		return NULL;
 
-	strncpy(name, dev_name(dev), NAME_SIZE);
+	strlcpy(name, dev_name(dev), NAME_SIZE);
 
 	/* are we a "%s.%d" name (platform and SPI components) */
 	found = strstr(name, dev->driver->name);
@@ -3208,7 +3208,7 @@ static inline char *fmt_single_name(struct device *dev, int *id)
 
 			/* sanitize component name for DAI link creation */
 			snprintf(tmp, NAME_SIZE, "%s.%s", dev->driver->name, name);
-			strncpy(name, tmp, NAME_SIZE);
+			strlcpy(name, tmp, NAME_SIZE);
 		} else
 			*id = 0;
 	}
