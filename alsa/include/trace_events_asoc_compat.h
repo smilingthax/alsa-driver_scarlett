@@ -9,4 +9,7 @@
 #define trace_snd_soc_dapm_start(card)
 #define	trace_snd_soc_dapm_done(card)
 #define trace_snd_soc_dapm_widget_power(w, power)
+#define trace_snd_soc_jack_report(jack, mask, status)
+#define trace_snd_soc_jack_notify(jack, status)
+#define trace_snd_soc_jack_irq(name)
 #endif /* _TRACE_ASOC_H */
