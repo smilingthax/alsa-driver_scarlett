@@ -1840,7 +1840,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	ret = snd_card_register(card->snd_card);
 	if (ret < 0) {
 		printk(KERN_ERR "asoc: failed to register soundcard for %s\n", card->name);
-		goto probe_dai_err;
+		goto probe_aux_dev_err;
 	}
 
 #ifdef CONFIG_SND_SOC_AC97_BUS
@@ -1851,7 +1851,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 			printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
 			while (--i >= 0)
 				soc_unregister_ac97_dai_link(&card->rtd[i]);
-			goto probe_dai_err;
+			goto probe_aux_dev_err;
 		}
 	}
 #endif
