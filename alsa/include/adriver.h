@@ -1932,6 +1932,30 @@ static inline void *vzalloc(unsigned long size)
 }
 #endif
 
+/* flush_delayed_work_sync() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
+#include <linux/workqueue.h>
+static inline bool flush_work_sync(struct work_struct *work)
+{
+	if (!flush_work(work))
+		return false;
+	while (flush_work(work))
+		;
+	return true;
+}
+
+static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
+{
+	bool ret;
+	ret = cancel_delayed_work(dwork);
+	if (ret) {
+		schedule_delayed_work(dwork, 0);
+		flush_scheduled_work();
+	}
+	return ret;
+}
+#endif
+
 /* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
 #ifndef CONFIG_SND_JACK
 #undef CONFIG_SND_HDA_INPUT_JACK
