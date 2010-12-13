@@ -1937,11 +1937,16 @@ static inline void *vzalloc(unsigned long size)
 #include <linux/workqueue.h>
 static inline bool flush_work_sync(struct work_struct *work)
 {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
+	/* XXX */
+	flush_scheduled_work();
+#else
 	if (!flush_work(work))
 		return false;
 	while (flush_work(work))
 		;
 	return true;
+#endif
 }
 
 static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
