@@ -1940,6 +1940,7 @@ static inline bool flush_work_sync(struct work_struct *work)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
 	/* XXX */
 	flush_scheduled_work();
+	return true;
 #else
 	if (!flush_work(work))
 		return false;
