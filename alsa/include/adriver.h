@@ -1960,6 +1960,14 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 	}
 	return ret;
 }
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 23)
+/* XXX this is a workaround; these are really different, but almost same
+ * as used in the usual free/error path
+ */
+#define cancel_delayed_work_sync flush_delayed_work_sync
+#endif
+
 #endif
 
 /* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
