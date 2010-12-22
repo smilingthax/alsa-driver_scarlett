@@ -165,6 +165,8 @@ static char *kernel_deps[] = {
 	"HAS_IOPORT",
 	"EXPERIMENTAL",
 	"BROKEN",
+	"LZO_COMPRESS",
+	"LZO_DECOMPRESS",
 	/* sound common */
 	"AC97_BUS",
 	/* workaround */
