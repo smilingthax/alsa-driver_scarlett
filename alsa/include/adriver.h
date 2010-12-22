@@ -1968,6 +1968,17 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 #define cancel_delayed_work_sync flush_delayed_work_sync
 #endif
 
+#endif /* < 2.6.37 */
+
+/* pm_wakeup_event() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
+#define pm_wakeup_event(dev, msec)
+#endif
+
+/* request_any_context_irq() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
+#define request_any_context_irq(irq, fn, flags, name, dev_id) \
+	request_irq(irq, fn, flags, name, dev_id)
 #endif
 
 /* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
