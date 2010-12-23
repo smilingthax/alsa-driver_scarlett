@@ -1347,13 +1347,17 @@ static irqreturn_t wm8350_hp_jack_handler(int irq, void *data)
 
 	switch (irq - wm8350->irq_base) {
 	case WM8350_IRQ_CODEC_JCK_DET_L:
+#ifndef CONFIG_SND_SOC_WM8350_MODULE
 		trace_snd_soc_jack_irq("WM8350 HPL");
+#endif
 		jack = &priv->hpl;
 		mask = WM8350_JACK_L_LVL;
 		break;
 
 	case WM8350_IRQ_CODEC_JCK_DET_R:
+#ifndef CONFIG_SND_SOC_WM8350_MODULE
 		trace_snd_soc_jack_irq("WM8350 HPR");
+#endif
 		jack = &priv->hpr;
 		mask = WM8350_JACK_R_LVL;
 		break;
