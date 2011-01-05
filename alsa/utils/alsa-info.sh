@@ -540,7 +540,7 @@ echo "" >> $FILE
 cat $TEMPDIR/lspci.tmp >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
-echo "!!Advanced information - PCI Vendor/Device/Susbsystem ID's" >> $FILE
+echo "!!Advanced information - PCI Vendor/Device/Subsystem ID's" >> $FILE
 echo "!!--------------------------------------------------------" >> $FILE
 echo "" >> $FILE
 lspci -vvn |grep -A1 040[1-3] >> $FILE
