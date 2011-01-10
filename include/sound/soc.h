@@ -794,7 +794,7 @@ static inline void snd_soc_initialize_card_lists(struct snd_soc_card *card)
 #include <sound/soc-dai.h>
 
 #ifdef CONFIG_DEBUG_FS
-extern struct dentry *asoc_debugfs_root;
+extern struct dentry *snd_soc_debugfs_root;
 #endif
 
 #endif
