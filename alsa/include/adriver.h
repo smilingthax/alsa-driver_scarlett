@@ -624,7 +624,9 @@ static inline void snd_INIT_WORK(struct work_struct *w, void (*f)(struct work_st
 }
 #undef INIT_WORK
 #define INIT_WORK(w,f) snd_INIT_WORK(w,f)
+#ifndef SND_WORKQUEUE_COMPAT
 #define delayed_work snd_delayed_work
+#endif
 /* delayed_work wrapper */
 struct delayed_work {
 	struct work_struct work;
@@ -690,6 +692,10 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #ifndef MODULE_ALIAS
 #define MODULE_ALIAS(x)
 #define MODULE_ALIAS_CHARDEV_MAJOR(x)
+#endif
+
+#ifndef MODULE_ALIAS_CHARDEV
+#define MODULE_ALIAS_CHARDEV(x, y)
 #endif
 
 #ifndef MODULE_FIRMWARE
