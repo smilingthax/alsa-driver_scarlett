@@ -694,10 +694,6 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #define MODULE_ALIAS_CHARDEV_MAJOR(x)
 #endif
 
-#ifndef MODULE_ALIAS_CHARDEV
-#define MODULE_ALIAS_CHARDEV(x, y)
-#endif
-
 #ifndef MODULE_FIRMWARE
 #define MODULE_FIRMWARE(x)
 #endif
