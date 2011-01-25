@@ -374,7 +374,7 @@ static int __aaci_pcm_open(struct aaci *aaci,
 			   struct aaci_runtime *aacirun)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	int ret;
+	int ret = 0;
 
 	aacirun->substream = substream;
 	runtime->private_data = aacirun;
@@ -395,14 +395,15 @@ static int __aaci_pcm_open(struct aaci *aaci,
 	 */
 	runtime->hw.fifo_size = aaci->fifosize * 2;
 
-	ret = request_irq(aaci->dev->irq[0], aaci_irq, IRQF_SHARED|IRQF_DISABLED,
-			  DRIVER_NAME, aaci);
-	if (ret)
-		goto out;
+	mutex_lock(&aaci->irq_lock);
+	if (!aaci->users++) {
+		ret = request_irq(aaci->dev->irq[0], aaci_irq,
+			   IRQF_SHARED | IRQF_DISABLED, DRIVER_NAME, aaci);
+		if (ret != 0)
+			aaci->users--;
+	}
+	mutex_unlock(&aaci->irq_lock);
 
-	return 0;
-
- out:
 	return ret;
 }
 
@@ -418,7 +419,11 @@ static int aaci_pcm_close(struct snd_pcm_substream *substream)
 	WARN_ON(aacirun->cr & CR_EN);
 
 	aacirun->substream = NULL;
-	free_irq(aaci->dev->irq[0], aaci);
+
+	mutex_lock(&aaci->irq_lock);
+	if (!--aaci->users)
+		free_irq(aaci->dev->irq[0], aaci);
+	mutex_unlock(&aaci->irq_lock);
 
 	return 0;
 }
@@ -947,6 +952,7 @@ static struct aaci * __devinit aaci_init_card(struct amba_device *dev)
 
 	aaci = card->private_data;
 	mutex_init(&aaci->ac97_sem);
+	mutex_init(&aaci->irq_lock);
 	aaci->card = card;
 	aaci->dev = dev;
 
