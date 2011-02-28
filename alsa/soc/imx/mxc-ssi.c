@@ -1,2 +1,2 @@
 #include "adriver.h"
-#include "../alsa-kernel/imx/mxc-ssi.c"
+#include "../../alsa-kernel/soc/imx/mxc-ssi.c"
