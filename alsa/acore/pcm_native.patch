@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/pcm_native.c	2010-11-24 06:14:14.945117050 +0100
-+++ pcm_native.c	2010-11-24 06:15:49.184964358 +0100
+--- ../alsa-kernel/core/pcm_native.c	2011-02-14 17:15:57.000000000 +0100
++++ pcm_native.c	2011-03-04 17:20:54.000000000 +0100
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -74,7 +74,19 @@
  	return result;
  }
  
-@@ -1554,7 +1588,11 @@
+@@ -941,7 +975,11 @@
+  *
+  * The state of each stream is then changed to the given state unconditionally.
+  */
++#if defined(__GENKSYMS__) && LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 38)
++int snd_pcm_stop(struct snd_pcm_substream *substream, int state)
++#else
+ int snd_pcm_stop(struct snd_pcm_substream *substream, snd_pcm_state_t state)
++#endif
+ {
+ 	return snd_pcm_action(&snd_pcm_action_stop, substream, state);
+ }
+@@ -1554,7 +1592,11 @@
  	file = fget(fd);
  	if (!file)
  		return NULL;
@@ -86,7 +98,7 @@
  	if (!S_ISCHR(inode->i_mode) ||
  	    imajor(inode) != snd_major) {
  		fput(file);
-@@ -1996,8 +2034,20 @@
+@@ -1996,8 +2038,20 @@
  		substream->ops->close(substream);
  		substream->hw_opened = 0;
  	}
@@ -107,7 +119,7 @@
  	if (substream->pcm_release) {
  		substream->pcm_release(substream);
  		substream->pcm_release = NULL;
-@@ -2813,25 +2863,50 @@
+@@ -2813,25 +2867,50 @@
  	struct snd_pcm_runtime *runtime;
  	snd_pcm_sframes_t result;
  
@@ -165,7 +177,7 @@
  {
  	struct snd_pcm_file *pcm_file;
  	struct snd_pcm_substream *substream;
-@@ -2841,7 +2916,11 @@
+@@ -2841,7 +2920,11 @@
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
@@ -177,7 +189,7 @@
  	substream = pcm_file->substream;
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
-@@ -2865,8 +2944,13 @@
+@@ -2865,8 +2948,13 @@
  	return result;
  }
  
@@ -191,7 +203,7 @@
  {
  	struct snd_pcm_file *pcm_file;
  	struct snd_pcm_substream *substream;
-@@ -2876,7 +2960,11 @@
+@@ -2876,7 +2964,11 @@
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
@@ -203,7 +215,7 @@
  	substream = pcm_file->substream;
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
-@@ -2898,6 +2986,7 @@
+@@ -2898,6 +2990,7 @@
  	kfree(bufs);
  	return result;
  }
@@ -211,7 +223,7 @@
  
  static unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
  {
-@@ -2985,6 +3074,22 @@
+@@ -2985,6 +3078,22 @@
   * mmap support
   */
  
@@ -234,7 +246,7 @@
  /*
   * Only on coherent architectures, we can mmap the status and the control records
   * for effcient data transfer.  On others, we have to use HWSYNC ioctl...
-@@ -2993,6 +3098,7 @@
+@@ -2993,6 +3102,7 @@
  /*
   * mmap status record
   */
@@ -242,7 +254,7 @@
  static int snd_pcm_mmap_status_fault(struct vm_area_struct *area,
  						struct vm_fault *vmf)
  {
-@@ -3006,10 +3112,49 @@
+@@ -3006,10 +3116,49 @@
  	get_page(vmf->page);
  	return 0;
  }
@@ -292,7 +304,7 @@
  };
  
  static int snd_pcm_mmap_status(struct snd_pcm_substream *substream, struct file *file,
-@@ -3024,7 +3169,11 @@
+@@ -3024,7 +3173,11 @@
  	if (size != PAGE_ALIGN(sizeof(struct snd_pcm_mmap_status)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_status;
@@ -304,7 +316,7 @@
  	area->vm_flags |= VM_RESERVED;
  	return 0;
  }
-@@ -3032,6 +3181,7 @@
+@@ -3032,6 +3185,7 @@
  /*
   * mmap control record
   */
@@ -312,7 +324,7 @@
  static int snd_pcm_mmap_control_fault(struct vm_area_struct *area,
  						struct vm_fault *vmf)
  {
-@@ -3045,10 +3195,50 @@
+@@ -3045,10 +3199,50 @@
  	get_page(vmf->page);
  	return 0;
  }
@@ -363,7 +375,7 @@
  };
  
  static int snd_pcm_mmap_control(struct snd_pcm_substream *substream, struct file *file,
-@@ -3063,7 +3253,11 @@
+@@ -3063,7 +3257,11 @@
  	if (size != PAGE_ALIGN(sizeof(struct snd_pcm_mmap_control)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_control;
@@ -375,7 +387,7 @@
  	area->vm_flags |= VM_RESERVED;
  	return 0;
  }
-@@ -3104,9 +3298,16 @@
+@@ -3104,9 +3302,16 @@
  	return virt_to_page(vaddr);
  }
  
@@ -392,7 +404,7 @@
  static int snd_pcm_mmap_data_fault(struct vm_area_struct *area,
  						struct vm_fault *vmf)
  {
-@@ -3133,6 +3334,59 @@
+@@ -3133,6 +3338,59 @@
  	vmf->page = page;
  	return 0;
  }
@@ -452,7 +464,7 @@
  
  static const struct vm_operations_struct snd_pcm_vm_ops_data = {
  	.open =		snd_pcm_mmap_data_open,
-@@ -3142,7 +3396,14 @@
+@@ -3142,7 +3400,14 @@
  static const struct vm_operations_struct snd_pcm_vm_ops_data_fault = {
  	.open =		snd_pcm_mmap_data_open,
  	.close =	snd_pcm_mmap_data_close,
@@ -467,7 +479,7 @@
  };
  
  #ifndef ARCH_HAS_DMA_MMAP_COHERENT
-@@ -3190,11 +3451,26 @@
+@@ -3190,11 +3455,26 @@
  	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
  	area->vm_flags |= VM_IO;
  	size = area->vm_end - area->vm_start;
@@ -495,7 +507,7 @@
  	return 0;
  }
  
-@@ -3238,7 +3514,7 @@
+@@ -3238,7 +3518,7 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -504,7 +516,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3246,7 +3522,11 @@
+@@ -3246,7 +3526,11 @@
  		return -EINVAL;
  
  	area->vm_ops = &snd_pcm_vm_ops_data;
@@ -516,7 +528,7 @@
  	if (substream->ops->mmap)
  		err = substream->ops->mmap(substream, area);
  	else
-@@ -3269,7 +3549,7 @@
+@@ -3269,7 +3553,7 @@
  	if (PCM_RUNTIME_CHECK(substream))
  		return -ENXIO;
  
@@ -525,7 +537,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		if (pcm_file->no_compat_mmap)
-@@ -3302,12 +3582,34 @@
+@@ -3302,12 +3586,34 @@
  /*
   * ioctl32 compat
   */
@@ -561,7 +573,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3446,31 +3748,55 @@
+@@ -3446,31 +3752,55 @@
  
  const struct file_operations snd_pcm_f_ops[2] = {
  	{
