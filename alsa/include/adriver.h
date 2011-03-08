@@ -1922,8 +1922,7 @@ static inline int hex_to_bin(char c)
 }
 #endif
 
-/* vzalloc() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 37)
+#ifndef CONFIG_HAVE_VZALLOC
 #include <linux/vmalloc.h>
 static inline void *vzalloc(unsigned long size)
 {
