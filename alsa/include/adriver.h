@@ -1982,6 +1982,12 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 	request_irq(irq, fn, flags, name, dev_id)
 #endif
 
+/* usleep_range() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36)
+/* FIXME: assuming msleep() */
+#define usleep_range(x, y)	msleep(((x) + 999) / 1000)
+#endif
+
 /* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
 #ifndef CONFIG_SND_JACK
 #undef CONFIG_SND_HDA_INPUT_JACK
