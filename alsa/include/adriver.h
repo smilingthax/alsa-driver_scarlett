@@ -1993,4 +1993,25 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 #undef CONFIG_SND_HDA_INPUT_JACK
 #endif
 
+/* krealloc() wrapper */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
+#include <linux/slab.h>
+static inline void *krealloc(const void *p, size_t new_size, gfp_t flags)
+{
+	void *n;
+	if (!p)
+		return kmalloc(new_size, flags);
+	if (!new_size) {
+		kfree(p);
+		return NULL;
+	}
+	n = kmalloc(new_size, flags);
+	if (!n)
+		return NULL;
+	memcpy(n, p, min(new_size, ksize(p)));
+	kfree(p);
+	return n;
+}
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
