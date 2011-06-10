@@ -2938,7 +2938,7 @@ MODULE_DEVICE_TABLE(pci, azx_ids);
 
 /* pci_driver definition */
 static struct pci_driver driver = {
-	.name = "HDA Intel",
+	.name = KBUILD_MODNAME,
 	.id_table = azx_ids,
 	.probe = azx_probe,
 	.remove = __devexit_p(azx_remove),
