@@ -76,7 +76,6 @@ include/sound/.includes
 include/sound/*.h
 pci/ac97/ac97_bus.c
 pci/ac97/ac97_codec.c
-pci/ad1889.c
 pci/ali5451/ali5451.c
 pci/atiixp.c
 pci/atiixp_modem.c
