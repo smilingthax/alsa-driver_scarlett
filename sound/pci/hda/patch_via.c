@@ -2355,7 +2355,7 @@ static int vt1708_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -2474,11 +2474,7 @@ static int patch_vt1708(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
-
 
 	/* disable 32bit format on VT1708 */
 	if (codec->vendor_id == 0x11061708)
@@ -2555,7 +2551,7 @@ static int vt1709_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -2616,9 +2612,6 @@ static int patch_vt1709_10ch(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration.  "
-		       "Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1709_10ch_volume_init_verbs;
@@ -2693,9 +2686,6 @@ static int patch_vt1709_6ch(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration.  "
-		       "Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1709_6ch_volume_init_verbs;
@@ -2809,7 +2799,7 @@ static int vt1708B_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -2954,9 +2944,6 @@ static int patch_vt1708B_8ch(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1708B_8ch_volume_init_verbs;
@@ -2990,9 +2977,6 @@ static int patch_vt1708B_4ch(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1708B_4ch_volume_init_verbs;
@@ -3101,7 +3085,7 @@ static int vt1708S_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -3171,9 +3155,6 @@ static int patch_vt1708S(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1708S_volume_init_verbs;
@@ -3267,7 +3248,7 @@ static int vt1702_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -3358,9 +3339,6 @@ static int patch_vt1702(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1702_volume_init_verbs;
@@ -3449,7 +3427,7 @@ static int vt1718S_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -3578,9 +3556,6 @@ static int patch_vt1718S(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++] = vt1718S_volume_init_verbs;
@@ -3735,7 +3710,7 @@ static int vt1716S_parse_auto_config(struct hda_codec *codec)
 	if (err < 0)
 		return err;
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -3888,9 +3863,6 @@ static int patch_vt1716S(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	spec->init_verbs[spec->num_iverbs++]  = vt1716S_volume_init_verbs;
@@ -4060,7 +4032,7 @@ static int vt2002P_parse_auto_config(struct hda_codec *codec)
 		return err;
 
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_pins[0])
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -4227,9 +4199,6 @@ static int patch_vt2002P(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
 
 	if (spec->codec_type == VT1802)
@@ -4341,7 +4310,7 @@ static int vt1812_parse_auto_config(struct hda_codec *codec)
 		return err;
 
 	if (!spec->autocfg.line_outs && !spec->autocfg.hp_outs)
-		return 0; /* can't find valid BIOS pin config */
+		return -EINVAL;
 
 	err = via_auto_create_multi_out_ctls(codec);
 	if (err < 0)
@@ -4489,11 +4458,7 @@ static int patch_vt1812(struct hda_codec *codec)
 	if (err < 0) {
 		via_free(codec);
 		return err;
-	} else if (!err) {
-		printk(KERN_INFO "hda_codec: Cannot set up configuration "
-		       "from BIOS.  Using genenic mode...\n");
 	}
-
 
 	spec->init_verbs[spec->num_iverbs++]  = vt1812_volume_init_verbs;
 	spec->init_verbs[spec->num_iverbs++] = vt1812_uniwill_init_verbs;
