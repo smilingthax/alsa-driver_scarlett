@@ -186,6 +186,8 @@ struct via_spec {
 
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	struct hda_loopback_check loopback;
+	int num_loopbacks;
+	struct hda_amp_list loopback_list[8];
 #endif
 };
 
@@ -1896,6 +1898,24 @@ static const struct snd_kcontrol_new via_input_src_ctl = {
 	.put = via_mux_enum_put,
 };
 
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+static void add_loopback_list(struct via_spec *spec, hda_nid_t mix, int idx)
+{
+	struct hda_amp_list *list;
+
+	if (spec->num_loopbacks >= ARRAY_SIZE(spec->loopback_list) - 1)
+		return;
+	list = spec->loopback_list + spec->num_loopbacks;
+	list->nid = mix;
+	list->dir = HDA_INPUT;
+	list->idx = idx;
+	spec->num_loopbacks++;
+	spec->loopback.amplist = spec->loopback_list;
+}
+#else
+#define add_loopback_list(spec, mix, idx) /* NOP */
+#endif
+
 /* create playback/capture controls for input pins */
 static int via_auto_create_analog_input_ctls(struct hda_codec *codec,
 					     const struct auto_pin_cfg *cfg)
@@ -1943,11 +1963,13 @@ static int via_auto_create_analog_input_ctls(struct hda_codec *codec,
 		label = hda_get_autocfg_input_label(codec, cfg, i);
 		idx2 = get_connection_index(codec, spec->aa_mix_nid,
 					    pin_idxs[idx]);
-		if (idx2 >= 0)
+		if (idx2 >= 0) {
 			err = via_new_analog_input(spec, label, type_idx,
 						   idx2, spec->aa_mix_nid);
-		if (err < 0)
-			return err;
+			if (err < 0)
+				return err;
+			add_loopback_list(spec, spec->aa_mix_nid, idx2);
+		}
 		snd_hda_add_imux_item(imux, label, idx, NULL);
 
 		/* remember the label for smart51 control */
@@ -2011,16 +2033,6 @@ static int via_auto_create_analog_input_ctls(struct hda_codec *codec,
 
 	return 0;
 }
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1708_loopbacks[] = {
-	{ 0x17, HDA_INPUT, 1 },
-	{ 0x17, HDA_INPUT, 2 },
-	{ 0x17, HDA_INPUT, 3 },
-	{ 0x17, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
 
 static void vt1708_set_pinconfig_connect(struct hda_codec *codec, hda_nid_t nid)
 {
@@ -2286,25 +2298,9 @@ static int patch_vt1708(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1708_loopbacks;
-#endif
 	INIT_DELAYED_WORK(&spec->vt1708_hp_work, vt1708_update_hp_jack_state);
 	return 0;
 }
-
-/*
- * generic initialization of ADC, input mixers and output mixers
- */
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1709_loopbacks[] = {
-	{ 0x18, HDA_INPUT, 1 },
-	{ 0x18, HDA_INPUT, 2 },
-	{ 0x18, HDA_INPUT, 3 },
-	{ 0x18, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
 
 static int patch_vt1709_10ch(struct hda_codec *codec)
 {
@@ -2325,10 +2321,6 @@ static int patch_vt1709_10ch(struct hda_codec *codec)
 	}
 
 	codec->patch_ops = via_patch_ops;
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1709_loopbacks;
-#endif
 
 	return 0;
 }
@@ -2355,24 +2347,8 @@ static int patch_vt1709_6ch(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1709_loopbacks;
-#endif
 	return 0;
 }
-
-/*
- * generic initialization of ADC, input mixers and output mixers
- */
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1708B_loopbacks[] = {
-	{ 0x16, HDA_INPUT, 1 },
-	{ 0x16, HDA_INPUT, 2 },
-	{ 0x16, HDA_INPUT, 3 },
-	{ 0x16, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
 
 static void set_widgets_power_state_vt1708B(struct hda_codec *codec)
 {
@@ -2478,10 +2454,6 @@ static int patch_vt1708B_8ch(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1708B_loopbacks;
-#endif
-
 	spec->set_widgets_power_state =  set_widgets_power_state_vt1708B;
 
 	return 0;
@@ -2505,10 +2477,6 @@ static int patch_vt1708B_4ch(struct hda_codec *codec)
 	}
 
 	codec->patch_ops = via_patch_ops;
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1708B_loopbacks;
-#endif
 
 	spec->set_widgets_power_state =  set_widgets_power_state_vt1708B;
 
@@ -2576,16 +2544,6 @@ static void fill_dig_in(struct hda_codec *codec)
 	}
 }
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1708S_loopbacks[] = {
-	{ 0x16, HDA_INPUT, 1 },
-	{ 0x16, HDA_INPUT, 2 },
-	{ 0x16, HDA_INPUT, 3 },
-	{ 0x16, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
-
 static void override_mic_boost(struct hda_codec *codec, hda_nid_t pin,
 			       int offset, int num_steps, int step_size)
 {
@@ -2621,10 +2579,6 @@ static int patch_vt1708S(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1708S_loopbacks;
-#endif
-
 	/* correct names for VT1708BCE */
 	if (get_codec_type(codec) == VT1708BCE)	{
 		kfree(codec->chip_name);
@@ -2654,16 +2608,6 @@ static const struct hda_verb vt1702_init_verbs[] = {
 	{0x1, 0xF82, 0x3F},
 	{ }
 };
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1702_loopbacks[] = {
-	{ 0x1A, HDA_INPUT, 1 },
-	{ 0x1A, HDA_INPUT, 2 },
-	{ 0x1A, HDA_INPUT, 3 },
-	{ 0x1A, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
 
 static void set_widgets_power_state_vt1702(struct hda_codec *codec)
 {
@@ -2726,10 +2670,6 @@ static int patch_vt1702(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1702_loopbacks;
-#endif
-
 	spec->set_widgets_power_state =  set_widgets_power_state_vt1702;
 	return 0;
 }
@@ -2744,16 +2684,6 @@ static const struct hda_verb vt1718S_init_verbs[] = {
 
 	{ }
 };
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1718S_loopbacks[] = {
-	{ 0x21, HDA_INPUT, 1 },
-	{ 0x21, HDA_INPUT, 2 },
-	{ 0x21, HDA_INPUT, 3 },
-	{ 0x21, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
 
 static void set_widgets_power_state_vt1718S(struct hda_codec *codec)
 {
@@ -2846,10 +2776,6 @@ static int patch_vt1718S(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1718S_loopbacks;
-#endif
-
 	spec->set_widgets_power_state =  set_widgets_power_state_vt1718S;
 
 	return 0;
@@ -2925,16 +2851,6 @@ static const struct hda_verb vt1716S_init_verbs[] = {
 	{0x1, 0xf90, 0x08},
 	{ }
 };
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1716S_loopbacks[] = {
-	{ 0x16, HDA_INPUT, 1 },
-	{ 0x16, HDA_INPUT, 2 },
-	{ 0x16, HDA_INPUT, 3 },
-	{ 0x16, HDA_INPUT, 4 },
-	{ } /* end */
-};
-#endif
 
 static void set_widgets_power_state_vt1716S(struct hda_codec *codec)
 {
@@ -3059,10 +2975,6 @@ static int patch_vt1716S(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1716S_loopbacks;
-#endif
-
 	spec->set_widgets_power_state = set_widgets_power_state_vt1716S;
 	return 0;
 }
@@ -3088,15 +3000,6 @@ static const struct hda_verb vt1802_init_verbs[] = {
 	{0x1, 0xfb8, 0x88},
 	{ }
 };
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt2002P_loopbacks[] = {
-	{ 0x21, HDA_INPUT, 0 },
-	{ 0x21, HDA_INPUT, 1 },
-	{ 0x21, HDA_INPUT, 2 },
-	{ } /* end */
-};
-#endif
 
 static void set_widgets_power_state_vt2002P(struct hda_codec *codec)
 {
@@ -3238,10 +3141,6 @@ static int patch_vt2002P(struct hda_codec *codec)
 
 	codec->patch_ops = via_patch_ops;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt2002P_loopbacks;
-#endif
-
 	spec->set_widgets_power_state =  set_widgets_power_state_vt2002P;
 	return 0;
 }
@@ -3255,15 +3154,6 @@ static const struct hda_verb vt1812_init_verbs[] = {
 	{0x1, 0xfb8, 0xa8},
 	{ }
 };
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static const struct hda_amp_list vt1812_loopbacks[] = {
-	{ 0x21, HDA_INPUT, 0 },
-	{ 0x21, HDA_INPUT, 1 },
-	{ 0x21, HDA_INPUT, 2 },
-	{ } /* end */
-};
-#endif
 
 static void set_widgets_power_state_vt1812(struct hda_codec *codec)
 {
@@ -3382,10 +3272,6 @@ static int patch_vt1812(struct hda_codec *codec)
 	spec->init_verbs[spec->num_iverbs++]  = vt1812_init_verbs;
 
 	codec->patch_ops = via_patch_ops;
-
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	spec->loopback.amplist = vt1812_loopbacks;
-#endif
 
 	spec->set_widgets_power_state =  set_widgets_power_state_vt1812;
 	return 0;
