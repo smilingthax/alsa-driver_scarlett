@@ -1168,23 +1168,22 @@ static const char *get_version_dep(const char *name)
 
 static void print_version_dep(const char *ver)
 {
-	const char *p;
-	printf("test \"$kversion.$kpatchlevel\" = \"");
-	for (p = ver; *p; p++) {
-		putchar(*p);
-		if (*p == '.') {
-			p++;
-			break;
+	int kversion, kpatchlevel, ksublevel, kvernum;
+
+	if (sscanf(ver, "%d.%d.%d", &kversion, &kpatchlevel, &ksublevel) != 3) {
+		ksublevel = 0;
+		if (sscanf(ver, "%d.%d", &kversion, &kpatchlevel) != 2) {
+			kpatchlevel = 0;
+			if (sscanf(ver, "%d", &kversion) != 1) {
+				fprintf(stderr, "Invalid version string %s\n",
+					ver);
+				return;
+			}
 		}
 	}
-	for (; *p && *p != '.'; p++)
-		putchar(*p);
-	putchar('"');
-	if (*p) {
-		printf(" -a $ksublevel -ge ");
-		for (p++; *p && *p != '.'; p++)
-			putchar(*p);
-	}
+	kvernum = kversion * 10000 + kpatchlevel * 1000 + ksublevel;
+
+	printf("test $kvernum -ge %d", kvernum);
 }
 
 static void sel_print_acinclude(struct sel *sel)
