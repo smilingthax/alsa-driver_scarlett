@@ -18793,7 +18793,7 @@ static int alc662_auto_fill_dac_nids(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 	const struct auto_pin_cfg *cfg = &spec->autocfg;
-	bool redone;
+	bool redone = false;
 	int i;
 
  again:
