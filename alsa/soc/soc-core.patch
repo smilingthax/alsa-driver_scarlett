@@ -1,15 +1,16 @@
---- ../alsa-kernel/soc/soc-core.c	2011-06-10 14:18:58.881904062 +0200
-+++ soc-core.c	2011-06-10 17:09:32.515898240 +0200
-@@ -1,3 +1,8 @@
+--- ../alsa-kernel/soc/soc-core.c	2011-07-09 14:43:39.666973616 +0200
++++ soc-core.c	2011-07-11 15:15:55.069168007 +0200
+@@ -1,3 +1,9 @@
 +#include "adriver.h"
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 27)
 +/* HACK HACK - debugfs_remove_recursive() isn't defined */
 +#undef CONFIG_DEBUG_FS
++#include "trace_events_soc_compat.h" /* hack */
 +#endif
  /*
   * soc-core.c  --  ALSA SoC Audio Layer
   *
-@@ -484,6 +489,11 @@
+@@ -484,6 +490,11 @@
  }
  #endif
  
@@ -21,7 +22,7 @@
  #ifdef CONFIG_PM_SLEEP
  /* powers down audio subsystem for suspend */
  int snd_soc_suspend(struct device *dev)
-@@ -1031,7 +1041,9 @@
+@@ -1077,7 +1088,9 @@
  	rtd->codec = codec;
  	rtd->dev.parent = card->dev;
  	rtd->dev.release = rtd_release;
@@ -31,7 +32,7 @@
  	mutex_init(&rtd->pcm_mutex);
  	ret = device_register(&rtd->dev);
  	if (ret < 0) {
-@@ -1547,22 +1559,44 @@
+@@ -1582,22 +1595,44 @@
  }
  EXPORT_SYMBOL_GPL(snd_soc_poweroff);
  

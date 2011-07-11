@@ -1,5 +1,5 @@
-#ifndef _TRACE_ASOC_H
-#define _TRACE_ASOC_H
+#ifndef _TRACE_ASOC_DUMMY_H
+#define _TRACE_ASOC_DUMMY_H
 #define	trace_snd_soc_reg_read(codec, reg, ret)
 #define	trace_snd_soc_reg_write(codec, reg, val)
 #define trace_snd_soc_bias_level_start(card, level)
@@ -13,4 +13,6 @@
 #define trace_snd_soc_jack_notify(jack, status)
 #define trace_snd_soc_jack_irq(name)
 #define trace_snd_soc_cache_sync(codec, type, status)
+#define trace_snd_soc_preg_read(platform, reg, val)
+#define trace_snd_soc_preg_write(platform, reg, val)
 #endif /* _TRACE_ASOC_H */
