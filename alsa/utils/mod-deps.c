@@ -425,9 +425,10 @@ static int read_file_1(const char *filename, struct cond **template)
 			} else if (!strncmp(buffer, "\tdef_tristate ", 14)) {
 				dep->type = TYPE_TRISTATE;
 				parse_default_value(dep, buffer + 14);
-			} else if (!strncmp(buffer, "\tint ", 5)) {
+			} else if (!strncmp(buffer, "\tint", 4)) {
 				dep->type = TYPE_INT;
-				/*dep->selectable = 1;*/ /* exception */
+				if (buffer[4] == ' ' && buffer[5])
+					dep->selectable = 1;
 			} else if (!strncmp(buffer, "\tdepends on ", 12))
 				add_dep(dep, buffer + 12);
 			else if (!strncmp(buffer, "\tdepends ", 9))
@@ -1286,13 +1287,17 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 		if (!is_menu_default_yes(tempdep)) {
 			if (tempdep->type == TYPE_BOOL)
 				printf("  if alsa_check_kconfig_option \"%s\"; then\n", text);
-			else
+			else if (tempdep->type == TYPE_INT) {
+				printf("  int_val=%d\n", tempdep->int_val);
+				printf("  if alsa_check_kconfig_int \"%s\"; then\n", text);
+			} else
 				printf("  if alsa_check_kconfig_card \"%s\"; then\n", text);
 			put_topif = 1;
 		}
 		put_define = 1;
 		free(text);
 	} else if (tempdep->type == TYPE_INT) {
+		printf("  int_val=%d\n", tempdep->int_val);
 		put_define = 1;
 	} else if (tempdep->sel) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
@@ -1362,7 +1367,7 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 	if (put_define) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		if (tempdep->type == TYPE_INT)
-			printf("      %s=\"%d\"\n", text, tempdep->int_val);
+			printf("      %s=$int_val\n", text);
 		else
 			printf("      %s=\"%c\"\n", text, tempdep->type == TYPE_BOOL ? 'y' : 'm');
 		free(text);
@@ -1413,6 +1418,9 @@ static void output_acinclude(void)
 	       "  [                        'all' enables all options; ]\n"
 	       "  [                        Possible options are: ]\n");
 	output_card_list(all_deps, 26, 50, TYPE_BOOL);
+	printf(" ]\n");
+	printf("  [                        Possible integer options are: ]\n");
+	output_card_list(all_deps, 26, 50, TYPE_INT);
 	printf(" ],\n");
 	printf("  cards=\"$withval\", cards=\"all\")\n");
 	printf("SELECTED_OPTIONS=`echo $cards | sed 's/,/ /g'`\n");
@@ -1446,6 +1454,17 @@ static void output_acinclude(void)
 	       "    esac\n"
 	       "  done\n"
 	       "  return 1\n"
+	       "}\n"
+	       "alsa_check_kconfig_int () {\n"
+	       "  local pat=${1}\n"
+	       "  for i in $SELECTED_OPTIONS; do\n"
+	       "    case \"$i\" in\n"
+	       "    $pat=*)\n"
+	       "      int_val=\"${i#*=}\"\n"
+	       "      return 0;;\n"
+	       "    esac\n"
+	       "  done\n"
+	       "  return 0\n"
 	       "}\n");
 
 	/* default SND=m */
