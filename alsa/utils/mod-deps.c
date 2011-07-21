@@ -1182,7 +1182,7 @@ static void print_version_dep(const char *ver)
 			}
 		}
 	}
-	kvernum = kversion * 10000 + kpatchlevel * 1000 + ksublevel;
+	kvernum = kversion * 100000 + kpatchlevel * 1000 + ksublevel;
 
 	printf("test $kvernum -ge %d", kvernum);
 }
