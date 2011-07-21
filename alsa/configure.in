@@ -626,10 +626,10 @@ AC_DEFUN([CHECK_EXPORTED], [
   eval $boolvar="$boolchk"
 ])
 
-kvernum=`expr $kversion \* 10000 + $kpatchlevel \* 1000 + $ksublevel`
+kvernum=`expr $kversion \* 100000 + $kpatchlevel \* 1000 + $ksublevel`
 
 NEW_KBUILD=
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   NEW_KBUILD=y
 fi
 AC_SUBST(NEW_KBUILD)
@@ -815,8 +815,8 @@ case "$debug" in
     ;;
 esac
 
-dnl Check for PCI support (for 2.4 kernel)...
-if test $kvernum -ge 23000; then
+dnl Check for ISA support (for 2.4 kernel)...
+if test $kvernum -ge 203000; then
 CHECK_KERNEL_CONFIG(CONFIG_ISA, [ISA support in kernel])
 else
 CONFIG_ISA=probe
@@ -1079,7 +1079,7 @@ EOF
     ;;
   ppc)
     ARCH=ppc
-    if test $kvernum -gt 26026; then
+    if test $kvernum -gt 206026; then
 	ARCH=powerpc
     fi
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
@@ -1094,7 +1094,7 @@ EOF
     ;;
   ppc64)
     ARCH=ppc64
-    if test $kvernum -gt 26014; then
+    if test $kvernum -gt 206014; then
 	ARCH=powerpc
     fi
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
@@ -1278,7 +1278,7 @@ case "$processor" in
 esac
 
 dnl Additional include directories
-if test $kvernum -gt 26027; then
+if test $kvernum -gt 206027; then
     case "$ARCH" in
     i386|x86_64)
 	checkarch="x86"
@@ -1400,7 +1400,7 @@ dnl ia32 and alpha
 test "$CONFIG_ISA" = "probe" && CONFIG_ISA=y
 
 dnl 2.6.12 or newer
-if test $kvernum -ge 26012; then
+if test $kvernum -ge 206012; then
   CHECK_KERNEL_CONFIG(CONFIG_ISA_DMA_API, [ISA DMA API])
 else
   if test "$CONFIG_ISA" = "y"; then
@@ -1414,7 +1414,7 @@ if test -n "$CONFIG_SPARC32" -o -n "$CONFIG_SPARC64"; then
 fi
 
 if test -n "$CONFIG_SND_BIT32_EMUL"; then
-  if test $kvernum -ge 26000; then
+  if test $kvernum -ge 206000; then
     CHECK_KERNEL_CONFIG(CONFIG_COMPAT, [32bit compat support])
     if test -z "$CONFIG_COMPAT"; then
       CONFIG_SND_BIT32_EMUL=
@@ -1597,7 +1597,7 @@ echo "Creating a dummy <trace/events/asoc.h>..."
 echo "#include \"trace_events_asoc_compat.h\"" > include/trace/events/asoc.h
 
 dnl Check for dump_stack
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
 else
   CHECK_EXPORTED(CONFIG_HAVE_DUMP_STACK, dump_stack)
@@ -1637,7 +1637,7 @@ fi
 AC_SUBST(CONFIG_FW_LOADER)
 
 dnl Check for input subsystem...
-if test $kvernum -le 22000; then
+if test $kvernum -le 202000; then
 CONFIG_INPUT="y"
 else
 CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
@@ -1663,7 +1663,7 @@ if test "$NEW_KBUILD" = "y"; then
 fi
 
 dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
-if test $kvernum -gt 22000; then
+if test $kvernum -gt 202000; then
 CHECK_KERNEL_CONFIG(CONFIG_VIDEO_DEV, [Video device support in kernel])
 AC_SUBST(CONFIG_VIDEO_DEV)
 fi
@@ -2288,7 +2288,7 @@ fi
 
 dnl Check for CONFIG_VIDEO_V4L1
 if test "$CONFIG_VIDEO_DEV" = "y"; then
-if test $kvernum -gt 26017; then
+if test $kvernum -gt 206017; then
 CHECK_KERNEL_CONFIG(CONFIG_VIDEO_V4L1, [V4L1 layer])
 else
 CONFIG_VIDEO_V4L1="y"
@@ -2297,7 +2297,7 @@ fi
 
 dnl Check for CONFIG_VIDEO_V4L2
 if test "$CONFIG_VIDEO_DEV" = "y"; then
-if test $kvernum -gt 26017; then
+if test $kvernum -gt 206017; then
 CHECK_KERNEL_CONFIG(CONFIG_VIDEO_V4L2, [V4L2 layer])
 else
 CONFIG_VIDEO_V4L2="y"
@@ -2484,7 +2484,7 @@ if test "$CONFIG_HAVE_KZALLOC" = "1"; then
 fi
 
 dnl Check for create_workqueue() with flags
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
 AC_MSG_CHECKING(for create_workqueue with flags)
 workqueue2="0"
 ac_save_CFLAGS="$CFLAGS"
@@ -2640,7 +2640,7 @@ if test "$CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE" = "1"; then
 fi
 
 dnl check only on 2.2 kernel..
-if test $kvernum -le 22000; then
+if test $kvernum -le 202000; then
 
 dnl Check for old kill_fasync...
 AC_MSG_CHECKING(for old kill_fasync)
@@ -2987,7 +2987,7 @@ if test -n "$CONFIG_USB"; then
 fi
 
 dnl class_simple for old 2.6 kernels
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for class_simple)
   class_simple="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3020,7 +3020,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl simplified suspend/resume for 2.6.14+
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for old driver suspend/resume callbacks)
   old_driver_suspend="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3053,7 +3053,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl removal of page-reservation for nopage/mmap (for 2.6.14+)
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for removal of page-reservation for nopage/mmap)
   remove_page_reserve="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3085,7 +3085,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl nested class_device for 2.6.14+
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for nested class_device)
   nested_class_device="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3118,7 +3118,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl new IRQ handler (2.6.19-rc2)
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for new IRQ handler)
   new_irq_handler="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3246,7 +3246,7 @@ if test "$CONFIG_HAVE_PAGE_TO_PFN" = "1"; then
 fi
 
 dnl Check for init_utsname...
-if test $kvernum -ge 26019; then
+if test $kvernum -ge 206019; then
   CONFIG_HAVE_INIT_UTSNAME=1
 else
 AC_MSG_CHECKING(for init_utsname)
@@ -3284,7 +3284,7 @@ if test "$CONFIG_HAVE_INIT_UTSNAME" = "1"; then
 fi
 
 dnl Check for is_power_of_2...
-if test $kvernum -ge 26021; then
+if test $kvernum -ge 206021; then
   CONFIG_HAVE_IS_POWER_OF_2=1
 else
 AC_MSG_CHECKING(for is_power_of_2)
@@ -3319,7 +3319,7 @@ if test "$CONFIG_HAVE_IS_POWER_OF_2" = "1"; then
 fi
 
 dnl __ffs support?
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   CONFIG_HAVE_FFS=1
 else
   AC_MSG_CHECKING(for __ffs)
@@ -3387,7 +3387,7 @@ if test "$CONFIG_PNP_KERNEL" = "y"; then
 fi
 
 dnl device_create_drvdata
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for device_create_drvdata)
   device_create_drvdata="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3418,7 +3418,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl Check for pm_qos_request()
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for pm_qos_request)
   pm_qos_request="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3449,7 +3449,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl Check for static pm_qos_request()
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for static pm_qos_request)
   pm_qos_request="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3481,7 +3481,7 @@ if test $kvernum -ge 26000; then
 fi
 
 dnl New unlocked/compat_ioctl
-if test $kvernum -ge 26000; then
+if test $kvernum -ge 206000; then
   AC_MSG_CHECKING(for new unlocked/compat_ioctl)
   new_ioctl="0"
   ac_save_CFLAGS="$CFLAGS"
@@ -3543,7 +3543,7 @@ test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 CHECK_KERNEL_CONFIG(CONFIG_X86_PC, [x86-compatible PC])
 AC_SUBST(CONFIG_X86_PC)
 dnl need kernel version >= 2.6.22 for the proper high-res timers support
-if test $kvernum -ge 26022; then
+if test $kvernum -ge 206022; then
     CHECK_KERNEL_CONFIG(CONFIG_HIGH_RES_TIMERS, [High-Res timers])
     AC_SUBST(CONFIG_HIGH_RES_TIMERS)
 fi
@@ -3603,7 +3603,7 @@ fi
 AC_SUBST(CONFIG_PM)
 
 dnl Check for CONFIG_HAS_DMA
-if test $kvernum -ge 26023; then
+if test $kvernum -ge 206023; then
   CHECK_KERNEL_CONFIG(CONFIG_HAS_DMA, [CONFIG_HAS_DMA])
 else
   CONFIG_HAS_DMA=y
