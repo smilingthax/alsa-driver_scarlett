@@ -1329,10 +1329,12 @@ static const char * const asihpi_src_names[] = {
 	"RF",
 	"Clock",
 	"Bitstream",
-	"Microphone",
-	"Cobranet",
+	"Mic",
+	"Net",
 	"Analog",
 	"Adapter",
+	"RTP",
+	"GPI",
 };
 
 compile_time_assert(
@@ -1347,8 +1349,10 @@ static const char * const asihpi_dst_names[] = {
 	"Digital",
 	"RF",
 	"Speaker",
-	"Cobranet Out",
-	"Analog"
+	"Net",
+	"Analog",
+	"RTP",
+	"GPO",
 };
 
 compile_time_assert(
