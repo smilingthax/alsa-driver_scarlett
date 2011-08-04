@@ -1593,6 +1593,8 @@ CHECK_KERNEL_HEADER(linux/bitrev.h, [#include \"bitdev_compat.h\"
 CHECK_KERNEL_HEADER(linux/smp_lock.h)
 CHECK_KERNEL_HEADER(linux/i8253.h, [#include <asm/i8253.h>
 ])
+CHECK_KERNEL_HEADER(linux/atomic.h, [#include <asm/atomic.h>
+])
 CHECK_KERNEL_HEADER(linux/tracepoint.h, [#include \"tracepoint_compat.h\"
 ])
 CHECK_KERNEL_HEADER(trace/define_trace.h)
