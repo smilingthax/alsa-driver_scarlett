@@ -1595,10 +1595,7 @@ CHECK_KERNEL_HEADER(linux/i8253.h, [#include <asm/i8253.h>
 ])
 CHECK_KERNEL_HEADER(linux/tracepoint.h, [#include \"tracepoint_compat.h\"
 ])
-
-mkdir -p include/trace/events
-echo "Creating a dummy <trace/events/asoc.h>..."
-echo "#include \"trace_events_asoc_compat.h\"" > include/trace/events/asoc.h
+CHECK_KERNEL_HEADER(trace/define_trace.h)
 
 dnl Check for dump_stack
 if test $kvernum -ge 206000; then
