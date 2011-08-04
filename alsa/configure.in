@@ -465,7 +465,6 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
     if test ! -f include/$1; then
       mkdir -p include/linux include/asm include/media
       mkdir -p include/linux/regulator include/linux/usb include/pcmcia
-      mkdir -p include/trace/events
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
         touch include/$1
