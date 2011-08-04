@@ -1591,6 +1591,8 @@ CHECK_KERNEL_HEADER(linux/async.h, [#include \"async_compat.h\"
 CHECK_KERNEL_HEADER(linux/bitrev.h, [#include \"bitdev_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/smp_lock.h)
+CHECK_KERNEL_HEADER(linux/i8253.h, [#include <asm/i8253.h>
+])
 
 mkdir -p include/trace/events
 echo "Creating a dummy <trace/events/asoc.h>..."
