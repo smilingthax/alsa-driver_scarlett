@@ -1599,6 +1599,10 @@ CHECK_KERNEL_HEADER(linux/tracepoint.h, [#include \"tracepoint_compat.h\"
 ])
 CHECK_KERNEL_HEADER(trace/define_trace.h)
 
+dnl link to the latest trace/events/*.h
+mkdir -p include/trace
+ln -s ../../trace_events include/trace/events
+
 dnl Check for dump_stack
 if test $kvernum -ge 206000; then
   AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
