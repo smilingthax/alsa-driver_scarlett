@@ -1601,7 +1601,8 @@ CHECK_KERNEL_HEADER(trace/define_trace.h)
 
 dnl link to the latest trace/events/*.h
 mkdir -p include/trace
-ln -s ../../trace_events include/trace/events
+rm -f include/trace/events
+ln -sf ../../alsa-kernel/trace_events include/trace/events
 
 dnl Check for dump_stack
 if test $kvernum -ge 206000; then
