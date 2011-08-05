@@ -1603,10 +1603,10 @@ rm -f include/trace/events
 ln -sf ../../alsa-kernel/trace_events include/trace/events
 
 CHECK_KERNEL_HEADER(linux/tracepoint.h, [#include \"tracepoint_compat.h\"
-])
+], HAVE_TRACEPOINT_H)
 CHECK_KERNEL_HEADER(trace/define_trace.h)
 
-if test ! -f linux/tracepoint.h; then
+if test -n "$HAVE_TRACEPOINT_H"; then
     echo "Creating a workaround <linux/tracepoint.h>..."
     mkdir -p include/linux
     echo "#include \"tracepoint_workaround.h\"" > include/linux/tracepoint.h
