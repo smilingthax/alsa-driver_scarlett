@@ -1,11 +1,37 @@
---- tea575x-tuner.c
-+++ tea575x-tuner.c
+--- ../../alsa-kernel/i2c/other/tea575x-tuner.c	2011-08-05 10:31:59.000000000 +0000
++++ tea575x-tuner.c	2011-08-05 11:06:17.131337731 +0000
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   *   ALSA driver for TEA5757/5759 Philips AM/FM radio tuner chips
   *
-@@ -255,6 +256,7 @@ static int vidioc_s_audio(struct file *file, void *priv,
+@@ -62,6 +63,25 @@
+ #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
+ #define TEA575X_BIT_FREQ_MASK	0x7fff
+ 
++#ifndef CONFIG_HAVE_VIDEO_GET_DRVDATA
++static inline void *video_get_drvdata(struct video_device *dev)
++{
++	return dev->priv;
++}
++static inline void video_set_drvdata(struct video_device *dev, void *data)
++{
++	dev->priv = data;
++}
++#endif
++
++#ifndef CONFIG_HAVE_VIDEO_DRVDATA
++static inline void *video_drvdata(struct file *file)
++{
++	struct video_device *dev = video_devdata(file);
++	return video_get_drvdata(dev);
++}
++#endif
++
+ /*
+  * lowlevel part
+  */
+@@ -255,6 +275,7 @@
  	return 0;
  }
  
@@ -13,7 +39,7 @@
  static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
  {
  	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
-@@ -269,8 +271,97 @@ static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
+@@ -269,9 +290,112 @@
  	return -EINVAL;
  }
  
@@ -86,14 +112,22 @@
 +	return 0;
 +}
 +
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
++static int snd_tea575x_exclusive_open(struct inode *inode, struct file *file)
++#else
 +static int snd_tea575x_exclusive_open(struct file *file)
++#endif
 +{
 +	struct snd_tea575x *tea = video_drvdata(file);
 +
 +	return test_and_set_bit(0, &tea->in_use) ? -EBUSY : 0;
 +}
 +
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
++static int snd_tea575x_exclusive_release(struct inode *inode, struct file *file)
++#else
 +static int snd_tea575x_exclusive_release(struct file *file)
++#endif
 +{
 +	struct snd_tea575x *tea = video_drvdata(file);
 +
@@ -102,16 +136,23 @@
 +}
 +#endif /* CONFIG_HAVE_V4L2_CTRLS */
 +
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
++#define v4l2_file_operations   file_operations
++#endif
++
  static const struct v4l2_file_operations tea575x_fops = {
  	.owner		= THIS_MODULE,
 +#ifndef CONFIG_HAVE_V4L2_CTRLS
 +	.open           = snd_tea575x_exclusive_open,
 +	.release        = snd_tea575x_exclusive_release,
-+#endif
++	.ioctl		= video_ioctl2,
++#else
  	.unlocked_ioctl	= video_ioctl2,
++#endif
  };
  
-@@ -282,18 +373,35 @@ static const struct v4l2_ioctl_ops tea575x_ioctl_ops = {
+ static const struct v4l2_ioctl_ops tea575x_ioctl_ops = {
+@@ -282,18 +406,35 @@
  	.vidioc_s_audio     = vidioc_s_audio,
  	.vidioc_g_frequency = vidioc_g_frequency,
  	.vidioc_s_frequency = vidioc_s_frequency,
@@ -147,7 +188,7 @@
  
  /*
   * initialize all the tea575x chips
-@@ -315,6 +423,7 @@ int snd_tea575x_init(struct snd_tea575x *tea)
+@@ -315,6 +456,7 @@
  	tea->vd = tea575x_radio;
  	video_set_drvdata(&tea->vd, tea);
  	mutex_init(&tea->mutex);
@@ -155,7 +196,7 @@
  	tea->vd.lock = &tea->mutex;
  
  	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
-@@ -326,6 +435,9 @@ int snd_tea575x_init(struct snd_tea575x *tea)
+@@ -326,6 +468,9 @@
  		v4l2_ctrl_handler_free(&tea->ctrl_handler);
  		return retval;
  	}
