@@ -2234,42 +2234,7 @@ if test "$CONFIG_HAVE_TTY_COUNT_ATOMIC" = "1"; then
   AC_DEFINE(CONFIG_HAVE_TTY_COUNT_ATOMIC)
 fi
 
-dnl Check for video_get_drvdata()
-if test "$CONFIG_VIDEO_DEV" = "y"; then
-AC_MSG_CHECKING(for video_get_drvdata)
-video_get_drvdata="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS -Iinclude"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <$INCLUDE_AUTOCONF_H>
-#else
-#include <linux/config.h>
-#endif
-#include <linux/videodev.h>
-#include "media/v4l2-dev.h"
-],[
-  void *(*func)(struct video_device *);
-  func = video_get_drvdata;
-],
-    AC_MSG_RESULT(yes);video_get_drvdata="1",
-    AC_MSG_RESULT(no);video_get_drvdata="0",
-    AC_MSG_RESULT(unknown);video_get_drvdata="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_VIDEO_GET_DRVDATA=$video_get_drvdata
-dnl AC_SUBST(CONFIG_HAVE_VIDEO_GET_DRVDATA)
-if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_VIDEO_GET_DRVDATA)
-fi
-fi
-
 dnl Check for video_drvdata()
-if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
 AC_MSG_CHECKING(for video_drvdata)
 video_drvdata="0"
 ac_save_CFLAGS="$CFLAGS"
@@ -2283,7 +2248,7 @@ AC_TRY_COMPILE([
 #else
 #include <linux/config.h>
 #endif
-#include <linux/videodev.h>
+#include <linux/videodev2.h>
 #include "media/v4l2-dev.h"
 ],[
   void *(*func)(struct file *);
@@ -2299,7 +2264,6 @@ CONFIG_HAVE_VIDEO_DRVDATA=$video_drvdata
 dnl AC_SUBST(CONFIG_HAVE_VIDEO_DRVDATA)
 if test "$CONFIG_HAVE_VIDEO_DRVDATA" = "1"; then
   AC_DEFINE(CONFIG_HAVE_VIDEO_DRVDATA)
-fi
 fi
 
 dnl Check for CONFIG_VIDEO_V4L1

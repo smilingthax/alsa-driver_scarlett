@@ -1,25 +1,14 @@
---- ../../alsa-kernel/i2c/other/tea575x-tuner.c	2011-08-05 10:31:59.000000000 +0000
-+++ tea575x-tuner.c	2011-08-05 11:06:17.131337731 +0000
+--- ../../alsa-kernel/i2c/other/tea575x-tuner.c	2011-08-04 17:11:26.568920489 +0200
++++ tea575x-tuner.c	2011-08-05 14:31:35.842066871 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   *   ALSA driver for TEA5757/5759 Philips AM/FM radio tuner chips
   *
-@@ -62,6 +63,25 @@
+@@ -62,6 +63,14 @@
  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
  #define TEA575X_BIT_FREQ_MASK	0x7fff
  
-+#ifndef CONFIG_HAVE_VIDEO_GET_DRVDATA
-+static inline void *video_get_drvdata(struct video_device *dev)
-+{
-+	return dev->priv;
-+}
-+static inline void video_set_drvdata(struct video_device *dev, void *data)
-+{
-+	dev->priv = data;
-+}
-+#endif
-+
 +#ifndef CONFIG_HAVE_VIDEO_DRVDATA
 +static inline void *video_drvdata(struct file *file)
 +{
@@ -31,7 +20,7 @@
  /*
   * lowlevel part
   */
-@@ -255,6 +275,7 @@
+@@ -255,6 +264,7 @@
  	return 0;
  }
  
@@ -39,7 +28,7 @@
  static int tea575x_s_ctrl(struct v4l2_ctrl *ctrl)
  {
  	struct snd_tea575x *tea = container_of(ctrl->handler, struct snd_tea575x, ctrl_handler);
-@@ -269,9 +290,112 @@
+@@ -269,9 +279,112 @@
  	return -EINVAL;
  }
  
@@ -152,7 +141,7 @@
  };
  
  static const struct v4l2_ioctl_ops tea575x_ioctl_ops = {
-@@ -282,18 +406,35 @@
+@@ -282,18 +395,35 @@
  	.vidioc_s_audio     = vidioc_s_audio,
  	.vidioc_g_frequency = vidioc_g_frequency,
  	.vidioc_s_frequency = vidioc_s_frequency,
@@ -188,7 +177,7 @@
  
  /*
   * initialize all the tea575x chips
-@@ -315,6 +456,7 @@
+@@ -315,6 +445,7 @@
  	tea->vd = tea575x_radio;
  	video_set_drvdata(&tea->vd, tea);
  	mutex_init(&tea->mutex);
@@ -196,7 +185,7 @@
  	tea->vd.lock = &tea->mutex;
  
  	v4l2_ctrl_handler_init(&tea->ctrl_handler, 1);
-@@ -326,6 +468,9 @@
+@@ -326,6 +457,9 @@
  		v4l2_ctrl_handler_free(&tea->ctrl_handler);
  		return retval;
  	}
