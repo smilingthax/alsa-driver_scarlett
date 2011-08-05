@@ -2320,6 +2320,12 @@ CONFIG_VIDEO_V4L2="y"
 fi
 fi
 
+dnl Check media/v4l2-ctrls.h
+CHECK_KERNEL_HEADER(media/v4l2-ctrls.h,,CONFIG_HAVE_V4L2_CTRLS)
+if test -n "$CONFIG_HAVE_V4L2_CTRLS"; then
+  AC_DEFINE(CONFIG_HAVE_V4L2_CTRLS)
+fi
+
 dnl Check for old io_remap_page_range()
 AC_MSG_CHECKING(for io_remap_pfn_range)
 io_remap_pfn_range="0"
