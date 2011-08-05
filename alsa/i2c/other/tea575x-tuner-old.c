@@ -29,7 +29,7 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
 #define v4l2_file_operations	file_operations
 #endif
-#include <sound/tea575x-tuner.h>
+#include "tea575x-tuner-old.h"
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
 MODULE_DESCRIPTION("Routines for control of TEA5757/5759 Philips AM/FM radio tuner chips");
