@@ -2413,6 +2413,9 @@ static irqreturn_t wm8996_irq(int irq, void *data)
 	}
 	irq_val &= ~snd_soc_read(codec, WM8996_INTERRUPT_STATUS_2_MASK);
 
+	if (!irq_val)
+		return IRQ_NONE;
+
 	snd_soc_write(codec, WM8996_INTERRUPT_STATUS_2, irq_val);
 
 	if (irq_val & (WM8996_DCS_DONE_01_EINT | WM8996_DCS_DONE_23_EINT)) {
@@ -2431,10 +2434,7 @@ static irqreturn_t wm8996_irq(int irq, void *data)
 	if (irq_val & WM8996_MICD_EINT)
 		wm8996_micd(codec);
 
-	if (irq_val)
-		return IRQ_HANDLED;
-	else
-		return IRQ_NONE;
+	return IRQ_HANDLED;
 }
 
 static irqreturn_t wm8996_edge_irq(int irq, void *data)
