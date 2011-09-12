@@ -128,6 +128,21 @@ void snd_hidden_kfree(const void *obj)
 	snd_wrapper_kfree(obj);
 }
 
+size_t snd_hidden_ksize(const void *obj)
+{
+	struct snd_alloc_track *t;
+	if (!obj)
+		return 0;
+	t = snd_alloc_track_entry(obj);
+	if (t->magic != KMALLOC_MAGIC) {
+		printk(KERN_WARNING "snd: bad ksize (called from %p)\n",
+		       __builtin_return_address(0));
+		dump_stack();
+		return 0;
+	}
+	return t->size;
+}
+
 char *snd_hidden_kstrdup(const char *s, gfp_t gfp_flags)
 {
 	int len;
