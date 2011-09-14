@@ -127,7 +127,7 @@ usb/helper.c
 usb/midi.c
 usb/mixer.c
 usb/mixer_quirks.c
-usb/urb.c
+usb/stream.c
 usb/quirks.c
 usb/caiaq/audio.c
 usb/caiaq/device.c

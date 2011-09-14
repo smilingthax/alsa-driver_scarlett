@@ -1,44 +1,72 @@
---- ../alsa-kernel/usb/endpoint.c	2010-03-10 09:22:24.488022926 +0100
-+++ endpoint.c	2010-03-10 10:07:52.316022217 +0100
+--- ../alsa-kernel/usb/endpoint.c	2011-09-14 13:57:01.622042886 +0200
++++ endpoint.c	2011-09-14 13:57:20.178761685 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "usbaudio.inc"
  /*
   *   This program is free software; you can redistribute it and/or modify
   *   it under the terms of the GNU General Public License as published by
-@@ -183,7 +185,11 @@
- 		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIOSTREAMING &&
- 		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
- 		    altsd->bNumEndpoints < 1 ||
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		    le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize) == 0)
-+#else
-+		    get_endpoint(alts, 0)->wMaxPacketSize == 0)
+@@ -70,9 +72,12 @@
+ 		if (test_bit(i, &subs->active_mask)) {
+ 			if (!test_and_set_bit(i, &subs->unlink_mask)) {
+ 				struct urb *u = subs->dataurb[i].urb;
+-				if (async)
++				if (async) {
++#ifdef URB_ASYNC_UNLINK
++					u->transfer_flags |= URB_ASYNC_UNLINK;
 +#endif
- 			continue;
- 		/* must be isochronous */
- 		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
-@@ -270,7 +276,11 @@
- 		    fp && fp->altsetting == 1 && fp->channels == 1 &&
- 		    fp->formats == SNDRV_PCM_FMTBIT_S16_LE &&
- 		    protocol == UAC_VERSION_1 &&
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		    le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize) ==
-+#else
-+		    get_endpoint(alts, 0)->wMaxPacketSize ==
+ 					usb_unlink_urb(u);
+-				else
++				} else
+ 					usb_kill_urb(u);
+ 			}
+ 		}
+@@ -82,9 +87,12 @@
+ 			if (test_bit(i+16, &subs->active_mask)) {
+ 				if (!test_and_set_bit(i+16, &subs->unlink_mask)) {
+ 					struct urb *u = subs->syncurb[i].urb;
+-					if (async)
++					if (async) {
++#ifdef URB_ASYNC_UNLINK
++						u->transfer_flags |= URB_ASYNC_UNLINK;
 +#endif
- 							fp->maxpacksize * 2)
- 			continue;
- 
-@@ -297,7 +307,11 @@
- 		fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
- 		fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
- 		fp->datainterval = snd_usb_parse_datainterval(chip, alts);
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
- 		fp->maxpacksize = le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize);
+ 						usb_unlink_urb(u);
+-					else
++					} else
+ 						usb_kill_urb(u);
+ 				}
+ 			}
+@@ -163,7 +171,11 @@
+ /*
+  * complete callback from data urb
+  */
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void snd_complete_urb(struct urb *urb, struct pt_regs *regs)
 +#else
-+		fp->maxpacksize = get_endpoint(alts, 0)->wMaxPacketSize;
+ static void snd_complete_urb(struct urb *urb)
 +#endif
- 		/* num_channels is only set for v2 interfaces */
- 		fp->channels = num_channels;
- 		if (snd_usb_get_speed(dev) == USB_SPEED_HIGH)
+ {
+ 	struct snd_urb_ctx *ctx = urb->context;
+ 	struct snd_usb_substream *subs = ctx->subs;
+@@ -186,7 +198,11 @@
+ /*
+  * complete callback from sync urb
+  */
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void snd_complete_sync_urb(struct urb *urb, struct pt_regs *regs)
++#else
+ static void snd_complete_sync_urb(struct urb *urb)
++#endif
+ {
+ 	struct snd_urb_ctx *ctx = urb->context;
+ 	struct snd_usb_substream *subs = ctx->subs;
+@@ -335,7 +351,9 @@
+ 			if (!u->urb)
+ 				goto out_of_memory;
+ 			u->urb->transfer_buffer = subs->syncbuf + i * 4;
++#ifdef HAVE_USB_BUFFERS
+ 			u->urb->transfer_dma = subs->sync_dma + i * 4;
++#endif
+ 			u->urb->transfer_buffer_length = 4;
+ 			u->urb->pipe = subs->syncpipe;
+ 			u->urb->transfer_flags = URB_ISO_ASAP |
