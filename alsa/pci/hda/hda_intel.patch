@@ -1,11 +1,49 @@
---- ../../alsa-kernel/pci/hda/hda_intel.c	2011-07-08 10:07:22.361091042 +0200
-+++ hda_intel.c	2011-07-08 10:13:45.335933232 +0200
+--- ../../alsa-kernel/pci/hda/hda_intel.c	2011-09-30 09:00:47.759880975 +0200
++++ hda_intel.c	2011-10-04 09:19:50.207766765 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   *
   *  hda_intel.c - Implementation of primary alsa driver code base
-@@ -2457,6 +2458,10 @@
+@@ -573,10 +574,16 @@
+ 		return;
+ 	if (addr && size) {
+ 		int pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)
+ 		if (on)
+ 			set_memory_wc((unsigned long)addr, pages);
+ 		else
+ 			set_memory_wb((unsigned long)addr, pages);
++#else
++		change_page_attr(virt_to_page(addr), pages,
++				 on ? PAGE_KERNEL_NOCACHE : PAGE_KERNEL);
++		global_flush_tlb();
++#endif
+ 	}
+ }
+ 
+@@ -1147,7 +1154,7 @@
+ 	if (chip->snoop && chip->driver_type == AZX_DRIVER_VIA) {
+ 		u8 snoop;
+ 		pci_read_config_byte(chip->pci, 0x42, &snoop);
+-		if (!(snoop & 0x80) && chip->pci->revision == 0x30) {
++		if (!(snoop & 0x80) && snd_pci_revision(chip->pci) == 0x30) {
+ 			chip->snoop = 0;
+ 			snd_printdd(SFX "Force to non-snoop mode\n");
+ 		}
+@@ -2170,7 +2177,11 @@
+ 	struct azx_pcm *apcm = snd_pcm_substream_chip(substream);
+ 	struct azx *chip = apcm->chip;
+ 	if (!azx_snoop(chip))
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 25)
+ 		area->vm_page_prot = pgprot_writecombine(area->vm_page_prot);
++#else
++		area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
++#endif
+ 	return snd_pcm_lib_default_mmap(substream, area);
+ }
+ #else
+@@ -2593,6 +2604,10 @@
  	}
  }
  
@@ -16,7 +54,7 @@
  /*
   * white/black-list for enable_msi
   */
-@@ -2469,6 +2474,14 @@
+@@ -2605,6 +2620,14 @@
  	{}
  };
  
@@ -31,7 +69,7 @@
  static void __devinit check_msi(struct azx *chip)
  {
  	const struct snd_pci_quirk *q;
-@@ -2477,7 +2490,11 @@
+@@ -2613,7 +2636,11 @@
  		chip->msi = !!enable_msi;
  		return;
  	}
@@ -43,7 +81,7 @@
  	q = snd_pci_quirk_lookup(chip->pci, msi_black_list);
  	if (q) {
  		printk(KERN_INFO
-@@ -2486,6 +2503,16 @@
+@@ -2622,6 +2649,16 @@
  		chip->msi = q->value;
  		return;
  	}
@@ -60,7 +98,7 @@
  
  	/* NVidia chipsets seem to cause troubles with MSI */
  	if (chip->driver_caps & AZX_DCAPS_NO_MSI) {
-@@ -2598,7 +2625,7 @@
+@@ -2735,7 +2772,7 @@
  					 PCI_DEVICE_ID_ATI_SBX00_SMBUS,
  					 NULL);
  		if (p_smbus) {
