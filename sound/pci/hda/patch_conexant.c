@@ -793,8 +793,7 @@ static void cxt5045_hp_automute(struct hda_codec *codec)
 static void cxt5045_hp_unsol_event(struct hda_codec *codec,
 				   unsigned int res)
 {
-	res >>= 26;
-	switch (res) {
+	switch (snd_hda_jack_get_action(codec, res >> 26)) {
 	case CONEXANT_HP_EVENT:
 		cxt5045_hp_automute(codec);
 		break;
@@ -3938,11 +3937,11 @@ static void mute_outputs(struct hda_codec *codec, int num_nids,
 }
 
 static void enable_unsol_pins(struct hda_codec *codec, int num_pins,
-			      hda_nid_t *pins, unsigned int tag)
+			      hda_nid_t *pins, unsigned int action)
 {
 	int i;
 	for (i = 0; i < num_pins; i++)
-		snd_hda_jack_detect_enable(codec, pins[i], tag);
+		snd_hda_jack_detect_enable(codec, pins[i], action);
 }
 
 static void cx_auto_init_output(struct hda_codec *codec)
