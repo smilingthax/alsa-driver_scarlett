@@ -1197,11 +1197,14 @@ static int cs_init(struct hda_codec *codec)
 	init_output(codec);
 	init_input(codec);
 	init_digital(codec);
+	snd_hda_jack_report_sync(codec);
+
 	return 0;
 }
 
 static int cs_build_controls(struct hda_codec *codec)
 {
+	struct cs_spec *spec = codec->spec;
 	int err;
 
 	err = build_output(codec);
@@ -1216,7 +1219,15 @@ static int cs_build_controls(struct hda_codec *codec)
 	err = build_digital_input(codec);
 	if (err < 0)
 		return err;
-	return cs_init(codec);
+	err = cs_init(codec);
+	if (err < 0)
+		return err;
+
+	err = snd_hda_jack_add_kctls(codec, &spec->autocfg);
+	if (err < 0)
+		return err;
+
+	return 0;
 }
 
 static void cs_free(struct hda_codec *codec)
@@ -1239,6 +1250,7 @@ static void cs_unsol_event(struct hda_codec *codec, unsigned int res)
 		cs_automic(codec);
 		break;
 	}
+	snd_hda_jack_report_sync(codec);
 }
 
 static const struct hda_codec_ops cs_patch_ops = {
@@ -1628,6 +1640,7 @@ static int cs421x_init(struct hda_codec *codec)
 	init_output(codec);
 	init_input(codec);
 	init_cs421x_digital(codec);
+	snd_hda_jack_report_sync(codec);
 
 	return 0;
 }
@@ -1803,6 +1816,7 @@ static int build_cs421x_output(struct hda_codec *codec)
 
 static int cs421x_build_controls(struct hda_codec *codec)
 {
+	struct cs_spec *spec = codec->spec;
 	int err;
 
 	err = build_cs421x_output(codec);
@@ -1814,7 +1828,15 @@ static int cs421x_build_controls(struct hda_codec *codec)
 	err = build_digital_output(codec);
 	if (err < 0)
 		return err;
-	return cs421x_init(codec);
+	err =  cs421x_init(codec);
+	if (err < 0)
+		return err;
+
+	err = snd_hda_jack_add_kctls(codec, &spec->autocfg);
+	if (err < 0)
+		return err;
+
+	return 0;
 }
 
 static void cs421x_unsol_event(struct hda_codec *codec, unsigned int res)
@@ -1831,6 +1853,7 @@ static void cs421x_unsol_event(struct hda_codec *codec, unsigned int res)
 		cs_automic(codec);
 		break;
 	}
+	snd_hda_jack_report_sync(codec);
 }
 
 static int parse_cs421x_input(struct hda_codec *codec)
