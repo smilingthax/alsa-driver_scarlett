@@ -2490,7 +2490,6 @@ static void alc_free(struct hda_codec *codec)
 		return;
 
 	alc_shutup(codec);
-	snd_hda_input_jack_free(codec);
 	alc_free_kctls(codec);
 	alc_free_bind_ctls(codec);
 	kfree(spec);

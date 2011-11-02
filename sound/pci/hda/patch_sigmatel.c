@@ -4534,7 +4534,6 @@ static void stac92xx_free(struct hda_codec *codec)
 		return;
 
 	stac92xx_shutup(codec);
-	snd_hda_input_jack_free(codec);
 	snd_array_free(&spec->events);
 
 	kfree(spec);
