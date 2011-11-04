@@ -3666,7 +3666,8 @@ Fatal error - aborting...
 EOF
       exit 1
   fi
-  grep -v CONFIG_SND_ $kernconf > include/$INCLUDE_AUTOCONF_H
+  echo "#undef CONFIG_SND_HDA_INPUT_BEEP_MODE" > include/$INCLUDE_AUTOCONF_H
+  grep -v CONFIG_SND_ $kernconf >> include/$INCLUDE_AUTOCONF_H
   cat include/autoconf-extra.h include/config1.h | grep CONFIG_SND \
     | sed -e's@/\* #undef \([A-Za-z0-9_]\+\) .*$@#undef \1@g' \
       >> include/$INCLUDE_AUTOCONF_H
