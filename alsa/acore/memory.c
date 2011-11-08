@@ -30,4 +30,11 @@
 #include "adriver.h"
 #endif /* KERNEL < 2.6.0 */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)
+#include <linux/compiler.h>
+#ifndef __printf
+#define __printf(a,b)   /*nop*/
+#endif
+#endif
+
 #include "../alsa-kernel/core/memory.c"
