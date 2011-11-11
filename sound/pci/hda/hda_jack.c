@@ -199,6 +199,8 @@ void snd_hda_jack_report_sync(struct hda_codec *codec)
 	for (i = 0; i < codec->jacktbl.used; i++, jack++)
 		if (jack->nid) {
 			jack_detect_update(codec, jack);
+			if (!jack->kctl)
+				continue;
 			jack_detect_report(codec, jack);
 		}
 }
@@ -379,7 +381,7 @@ void snd_hda_input_jack_report(struct hda_codec *codec, hda_nid_t nid)
 	unsigned int present;
 	int type;
 
-	if (!jack)
+	if (!jack || !jack->jack)
 		return;
 
 	present = snd_hda_jack_detect(codec, nid);
