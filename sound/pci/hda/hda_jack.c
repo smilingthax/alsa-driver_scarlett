@@ -285,38 +285,38 @@ int snd_hda_jack_add_kctls(struct hda_codec *codec,
 	int i, err;
 
 	for (i = 0, p = cfg->line_out_pins; i < cfg->line_outs; i++, p++) {
-		err = add_jack_kctl(codec, *p, i, cfg);
+		err = add_jack_kctl(codec, *p, cfg);
 		if (err < 0)
 			return err;
 	}
 	for (i = 0, p = cfg->hp_pins; i < cfg->hp_outs; i++, p++) {
 		if (*p == *cfg->line_out_pins) /* might be duplicated */
 			break;
-		err = add_jack_kctl(codec, *p, i, cfg);
+		err = add_jack_kctl(codec, *p, cfg);
 		if (err < 0)
 			return err;
 	}
 	for (i = 0, p = cfg->speaker_pins; i < cfg->speaker_outs; i++, p++) {
 		if (*p == *cfg->line_out_pins) /* might be duplicated */
 			break;
-		err = add_jack_kctl(codec, *p, i, cfg);
+		err = add_jack_kctl(codec, *p, cfg);
 		if (err < 0)
 			return err;
 	}
 	for (i = 0; i < cfg->num_inputs; i++) {
-		err = add_jack_kctl(codec, cfg->inputs[i].pin, 0, cfg);
+		err = add_jack_kctl(codec, cfg->inputs[i].pin, cfg);
 		if (err < 0)
 			return err;
 	}
 	for (i = 0, p = cfg->dig_out_pins; i < cfg->dig_outs; i++, p++) {
-		err = add_jack_kctl(codec, *p, i, cfg);
+		err = add_jack_kctl(codec, *p, cfg);
 		if (err < 0)
 			return err;
 	}
-	err = add_jack_kctl(codec, cfg->dig_in_pin, 0, cfg);
+	err = add_jack_kctl(codec, cfg->dig_in_pin, cfg);
 	if (err < 0)
 		return err;
-	err = add_jack_kctl(codec, cfg->mono_out_pin, 0, cfg);
+	err = add_jack_kctl(codec, cfg->mono_out_pin, cfg);
 	if (err < 0)
 		return err;
 	return 0;
