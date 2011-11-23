@@ -1988,6 +1988,12 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 #define cancel_work_sync(w)	flush_scheduled_work()
 #endif
 
+/* to_delayed_work() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
+#define to_delayed_work(w) \
+	((struct delayed_work *)container_of(w, struct delayed_work, work))
+#endif
+
 #endif /* < 2.6.37 */
 
 /* pm_wakeup_event() wrapper */
