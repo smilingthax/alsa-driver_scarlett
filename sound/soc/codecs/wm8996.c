@@ -3105,7 +3105,8 @@ static __devinit int wm8996_i2c_probe(struct i2c_client *i2c,
 	int ret, i;
 	unsigned int reg;
 
-	wm8996 = kzalloc(sizeof(struct wm8996_priv), GFP_KERNEL);
+	wm8996 = devm_kzalloc(&i2c->dev, sizeof(struct wm8996_priv),
+			      GFP_KERNEL);
 	if (wm8996 == NULL)
 		return -ENOMEM;
 
@@ -3217,7 +3218,6 @@ err_gpio:
 	if (wm8996->pdata.ldo_ena > 0)
 		gpio_free(wm8996->pdata.ldo_ena);
 err:
-	kfree(wm8996);
 
 	return ret;
 }
@@ -3235,7 +3235,6 @@ static __devexit int wm8996_i2c_remove(struct i2c_client *client)
 		gpio_set_value_cansleep(wm8996->pdata.ldo_ena, 0);
 		gpio_free(wm8996->pdata.ldo_ena);
 	}
-	kfree(wm8996);
 	return 0;
 }
 
