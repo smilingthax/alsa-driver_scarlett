@@ -70,15 +70,19 @@ snd_hda_jack_tbl_new(struct hda_codec *codec, hda_nid_t nid)
 }
 EXPORT_SYMBOL_HDA(snd_hda_jack_tbl_new);
 
-#ifdef CONFIG_SND_HDA_INPUT_JACK
-static void snd_hda_input_jack_free(struct hda_codec *codec);
-#else
-#define snd_hda_input_jack_free(codec)
-#endif
-
 void snd_hda_jack_tbl_clear(struct hda_codec *codec)
 {
-	snd_hda_input_jack_free(codec);
+#ifdef CONFIG_SND_HDA_INPUT_JACK
+	/* free jack instances manually when clearing/reconfiguring */
+	if (!codec->bus->shutdown && codec->jacktbl.list) {
+		struct hda_jack_tbl *jack = codec->jacktbl.list;
+		int i;
+		for (i = 0; i < codec->jacktbl.used; i++, jack++) {
+			if (jack->jack)
+				snd_device_free(codec->bus->card, jack->jack);
+		}
+	}
+#endif
 	snd_array_free(&codec->jacktbl);
 }
 
@@ -241,6 +245,7 @@ int snd_hda_jack_add_kctl(struct hda_codec *codec, hda_nid_t nid,
 {
 	struct hda_jack_tbl *jack;
 	struct snd_kcontrol *kctl;
+	int err, state;
 
 	jack = snd_hda_jack_tbl_get(codec, nid);
 	if (!jack)
@@ -322,91 +327,3 @@ int snd_hda_jack_add_kctls(struct hda_codec *codec,
 	return 0;
 }
 EXPORT_SYMBOL_HDA(snd_hda_jack_add_kctls);
-
-#ifdef CONFIG_SND_HDA_INPUT_JACK
-/*
- * Input-jack notification support
- */
-static const char *get_jack_default_name(struct hda_codec *codec, hda_nid_t nid,
-					 int type)
-{
-	switch (type) {
-	case SND_JACK_HEADPHONE:
-		return "Headphone";
-	case SND_JACK_MICROPHONE:
-		return "Mic";
-	case SND_JACK_LINEOUT:
-		return "Line-out";
-	case SND_JACK_LINEIN:
-		return "Line-in";
-	case SND_JACK_HEADSET:
-		return "Headset";
-	case SND_JACK_VIDEOOUT:
-		return "HDMI/DP";
-	default:
-		return "Misc";
-	}
-}
-
-static void hda_free_jack_priv(struct snd_jack *jack)
-{
-	struct hda_jack_tbl *jacks = jack->private_data;
-	jacks->nid = 0;
-	jacks->jack = NULL;
-}
-
-int snd_hda_input_jack_add(struct hda_codec *codec, hda_nid_t nid, int type,
-			   const char *name)
-{
-	struct hda_jack_tbl *jack = snd_hda_jack_tbl_new(codec, nid);
-	int err;
-
-	if (!jack)
-		return -ENOMEM;
-	if (!name)
-		name = get_jack_default_name(codec, nid, type);
-	err = snd_jack_new(codec->bus->card, name, type, &jack->jack);
-	if (err < 0)
-		return err;
-	jack->type = type;
-	jack->jack->private_data = jack;
-	jack->jack->private_free = hda_free_jack_priv;
-	return 0;
-}
-EXPORT_SYMBOL_HDA(snd_hda_input_jack_add);
-
-void snd_hda_input_jack_report(struct hda_codec *codec, hda_nid_t nid)
-{
-	struct hda_jack_tbl *jack = snd_hda_jack_tbl_get(codec, nid);
-	unsigned int pin_ctl;
-	unsigned int present;
-	int type;
-
-	if (!jack || !jack->jack)
-		return;
-
-	present = snd_hda_jack_detect(codec, nid);
-	type = jack->type;
-	if (type == (SND_JACK_HEADPHONE | SND_JACK_LINEOUT)) {
-		pin_ctl = snd_hda_codec_read(codec, nid, 0,
-					     AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
-		type = (pin_ctl & AC_PINCTL_HP_EN) ?
-			SND_JACK_HEADPHONE : SND_JACK_LINEOUT;
-	}
-	snd_jack_report(jack->jack, present ? type : 0);
-}
-EXPORT_SYMBOL_HDA(snd_hda_input_jack_report);
-
-/* free jack instances manually when clearing/reconfiguring */
-static void snd_hda_input_jack_free(struct hda_codec *codec)
-{
-	if (!codec->bus->shutdown && codec->jacktbl.list) {
-		struct hda_jack_tbl *jack = codec->jacktbl.list;
-		int i;
-		for (i = 0; i < codec->jacktbl.used; i++, jack++) {
-			if (jack->jack)
-				snd_device_free(codec->bus->card, jack->jack);
-		}
-	}
-}
-#endif /* CONFIG_SND_HDA_INPUT_JACK */
