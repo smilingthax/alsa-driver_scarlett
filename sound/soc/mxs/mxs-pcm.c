@@ -347,3 +347,5 @@ static struct platform_driver mxs_pcm_driver = {
 };
 
 module_platform_driver(mxs_pcm_driver);
+
+MODULE_LICENSE("GPL");
