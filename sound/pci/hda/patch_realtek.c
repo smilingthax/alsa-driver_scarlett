@@ -280,13 +280,13 @@ static bool alc_dyn_adc_pcm_resetup(struct hda_codec *codec, int cur)
 	return false;
 }
 
-static void call_update_outputs(struct hda_codec *codec);
-
 static inline hda_nid_t get_capsrc(struct alc_spec *spec, int idx)
 {
 	return spec->capsrc_nids ?
 		spec->capsrc_nids[idx] : spec->adc_nids[idx];
 }
+
+static void call_update_outputs(struct hda_codec *codec);
 
 /* select the given imux item; either unmute exclusively or select the route */
 static int alc_mux_select(struct hda_codec *codec, unsigned int adc_idx,
@@ -3002,7 +3002,6 @@ static int alc_auto_fill_multi_ios(struct hda_codec *codec,
 static hda_nid_t alc_look_for_out_vol_nid(struct hda_codec *codec,
 					  hda_nid_t pin, hda_nid_t dac);
 
-
 /* fill in the dac_nids table from the parsed pin configuration */
 static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 {
@@ -3098,21 +3097,6 @@ static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 			cfg->line_out_type = AUTO_PIN_SPEAKER_OUT;
 			redone = false;
 			goto again;
-		}
-	}
-
-	if (!spec->multi_ios &&
-	    cfg->line_out_type == AUTO_PIN_SPEAKER_OUT &&
-	    cfg->hp_outs) {
-		/* try multi-ios with HP + inputs */
-		defcfg = snd_hda_codec_get_pincfg(codec, cfg->hp_pins[0]);
-		location = get_defcfg_location(defcfg);
-
-		num_pins = alc_auto_fill_multi_ios(codec, location, 1);
-		if (num_pins > 0) {
-			spec->multi_ios = num_pins;
-			spec->ext_channel_count = 2;
-			spec->multiout.num_dacs = num_pins + 1;
 		}
 	}
 

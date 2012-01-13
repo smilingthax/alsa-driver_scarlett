@@ -793,7 +793,8 @@ static void cxt5045_hp_automute(struct hda_codec *codec)
 static void cxt5045_hp_unsol_event(struct hda_codec *codec,
 				   unsigned int res)
 {
-	switch (snd_hda_jack_get_action(codec, res >> 26)) {
+	res >>= 26;
+	switch (res) {
 	case CONEXANT_HP_EVENT:
 		cxt5045_hp_automute(codec);
 		break;
@@ -3714,7 +3715,7 @@ static void cx_auto_automic(struct hda_codec *codec)
 
 static void cx_auto_unsol_event(struct hda_codec *codec, unsigned int res)
 {
-	switch (res >> 26) {
+	switch (snd_hda_jack_get_action(codec, res >> 26)) {
 	case CONEXANT_HP_EVENT:
 		cx_auto_hp_automute(codec);
 		break;

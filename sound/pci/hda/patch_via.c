@@ -2783,6 +2783,7 @@ static int via_init(struct hda_codec *codec)
 	via_auto_init_unsol_event(codec);
 
 	via_hp_automute(codec);
+	vt1708_update_hp_work(spec);
 	snd_hda_jack_report_sync(codec);
 
 	return 0;
