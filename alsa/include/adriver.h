@@ -830,8 +830,12 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 2, 0)
 #include <linux/moduleparam.h>
+#ifndef param_get_bint
+#define bint bool
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #undef module_param
 #define SNDRV_MODULE_TYPE_int	"i"
 #define SNDRV_MODULE_TYPE_bool	"i"
@@ -860,6 +864,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 	module_param_array_named(name, name, type, boot_devs_##name, perm)
 #endif /* < 2.6.5 */
 #endif /* < 2.6.10 */
+#endif /* < 3.2.0 */
 
 /* dump_stack hack */
 #ifndef CONFIG_HAVE_DUMP_STACK
@@ -2081,5 +2086,23 @@ static void __exit __platform_driver##_exit(void) \
 module_exit(__platform_driver##_exit);
 #endif
 #endif /* < 3.2 */
+
+/* module_usb_driver() wrapper */
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 2, 0)
+#include <linux/device.h>
+#ifndef module_driver
+#define module_driver(__driver, __register, __unregister) \
+static int __init __driver##_init(void) { return __register(&(__driver)); } \
+module_init(__driver##_init); \
+static void __exit __driver##_exit(void) { __unregister(&(__driver)); } \
+module_exit(__driver##_exit);
+#endif
+#include <linux/usb.h>
+#ifndef module_usb_driver
+#define module_usb_driver(__usb_driver) \
+    module_driver(__usb_driver, usb_register, \
+			usb_deregister)
+#endif
+#endif /* <= 3.2 */
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
