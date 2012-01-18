@@ -2102,4 +2102,9 @@ module_exit(__driver##_exit);
 #endif
 #endif /* <= 3.2 */
 
+/* some old kernels define info(), and this breaks the build badly */
+#ifdef info
+#undef info
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
