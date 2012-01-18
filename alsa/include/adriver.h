@@ -2096,9 +2096,6 @@ static int __init __driver##_init(void) { return __register(&(__driver)); } \
 module_init(__driver##_init); \
 static void __exit __driver##_exit(void) { __unregister(&(__driver)); } \
 module_exit(__driver##_exit);
-#endif
-#include <linux/usb.h>
-#ifndef module_usb_driver
 #define module_usb_driver(__usb_driver) \
     module_driver(__usb_driver, usb_register, \
 			usb_deregister)
