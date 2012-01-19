@@ -830,7 +830,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #endif
 #endif
 
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 2, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
 #include <linux/moduleparam.h>
 #ifndef param_get_bint
 #define bint bool
