@@ -2038,6 +2038,7 @@ static void wm5100_micd_irq(struct wm5100_priv *wm5100)
 		if (wm5100->jack_detecting) {
 			dev_dbg(wm5100->dev, "Microphone detected\n");
 			wm5100->jack_mic = true;
+			wm5100->jack_detecting = false;
 			snd_soc_jack_report(wm5100->jack,
 					    SND_JACK_HEADSET,
 					    SND_JACK_HEADSET | SND_JACK_BTN_0);
@@ -2076,6 +2077,7 @@ static void wm5100_micd_irq(struct wm5100_priv *wm5100)
 					    SND_JACK_BTN_0);
 		} else if (wm5100->jack_detecting) {
 			dev_dbg(wm5100->dev, "Headphone detected\n");
+			wm5100->jack_detecting = false;
 			snd_soc_jack_report(wm5100->jack, SND_JACK_HEADPHONE,
 					    SND_JACK_HEADPHONE);
 
