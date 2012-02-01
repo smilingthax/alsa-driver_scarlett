@@ -1,6 +1,6 @@
---- ../../alsa-kernel/include/core.h	2010-11-02 16:17:51.000000000 +0100
-+++ core.h	2011-03-04 15:42:18.000000000 +0100
-@@ -104,8 +104,16 @@
+--- ../../alsa-kernel/include/core.h	2012-02-01 09:58:47.000000000 +0100
++++ core.h	2012-02-01 10:51:29.000000000 +0100
+@@ -105,8 +105,16 @@
  	char shortname[32];		/* short name of this soundcard */
  	char longname[80];		/* name of this soundcard */
  	char mixername[80];		/* mixer name */
@@ -17,7 +17,7 @@
  	struct module *module;		/* top-level module */
  
  	void *private_data;		/* private data for soundcard */
-@@ -125,7 +133,15 @@
+@@ -126,7 +134,15 @@
  	struct snd_info_entry *proc_id;	/* the card id */
  	struct proc_dir_entry *proc_root_link;	/* number link to real id */
  
@@ -33,7 +33,7 @@
  	struct snd_shutdown_f_ops *s_f_ops; /* file operations in the shutdown
  								state */
  	spinlock_t files_lock;		/* lock the files for this card */
-@@ -133,7 +149,9 @@
+@@ -134,7 +150,9 @@
  	int free_on_last_close;		/* free in context of file_release */
  	wait_queue_head_t shutdown_sleep;
  	struct device *dev;		/* device assigned to this card */
@@ -43,7 +43,7 @@
  
  #ifdef CONFIG_PM
  	unsigned int power_state;	/* power state */
-@@ -145,6 +163,17 @@
+@@ -146,6 +164,17 @@
  	struct snd_mixer_oss *mixer_oss;
  	int mixer_oss_change_count;
  #endif
@@ -61,7 +61,7 @@
  };
  
  #ifdef CONFIG_PM
-@@ -194,7 +223,11 @@
+@@ -195,7 +224,11 @@
  /* return a device pointer linked to each sound device as a parent */
  static inline struct device *snd_card_get_device_link(struct snd_card *card)
  {
@@ -73,7 +73,7 @@
  }
  
  /* sound.c */
-@@ -296,7 +329,11 @@
+@@ -297,7 +330,11 @@
  int snd_card_file_add(struct snd_card *card, struct file *file);
  int snd_card_file_remove(struct snd_card *card, struct file *file);
  
@@ -85,7 +85,7 @@
  
  /* device.c */
  
-@@ -411,12 +448,20 @@
+@@ -412,13 +449,21 @@
  
  /* for easier backward-porting */
  #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
@@ -96,6 +96,7 @@
  #endif
 +#endif
  
+ #ifdef CONFIG_PCI
  /* PCI quirk list helper */
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 30)
 +/* rename for ABI compatibility */
