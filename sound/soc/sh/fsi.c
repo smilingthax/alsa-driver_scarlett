@@ -386,7 +386,7 @@ static int fsi_stream_is_working(struct fsi_priv *fsi,
 	int ret;
 
 	spin_lock_irqsave(&master->lock, flags);
-	ret = !!io->substream;
+	ret = !!(io->substream && io->substream->runtime);
 	spin_unlock_irqrestore(&master->lock, flags);
 
 	return ret;
@@ -760,9 +760,7 @@ static int fsi_fifo_data_ctrl(struct fsi_priv *fsi, int stream)
 	int over_period;
 	void (*fn)(struct fsi_priv *fsi, int size);
 
-	if (!fsi			||
-	    !io->substream		||
-	    !io->substream->runtime)
+	if (!fsi_stream_is_working(fsi, io))
 		return -EINVAL;
 
 	over_period	= 0;
