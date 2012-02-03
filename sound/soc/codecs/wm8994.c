@@ -2792,8 +2792,6 @@ static int wm8994_codec_resume(struct snd_soc_codec *codec)
 		codec->cache_only = 0;
 	}
 
-	wm8994_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-
 	for (i = 0; i < ARRAY_SIZE(wm8994->fll); i++) {
 		if (!wm8994->fll_suspend[i].out)
 			continue;
@@ -3682,8 +3680,6 @@ static int wm8994_codec_probe(struct snd_soc_codec *codec)
 	} else {
 		wm8994->lrclk_shared[1] = 0;
 	}
-
-	wm8994_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 
 	/* Latch volume updates (right only; we always do left then right). */
 	snd_soc_update_bits(codec, WM8994_AIF1_DAC1_LEFT_VOLUME,
