@@ -135,6 +135,7 @@ static char *kernel_deps[] = {
 	"M68K",
 	"ALPHA*",
 	"BLACKFIN*",
+	"UML",
 	/* architecture specific */
 	"ARCH_*",
 	"X86_PC9800",
@@ -1229,12 +1230,12 @@ static int to_be_pending(struct dep *dep)
 		!is_always_false(dep));
 }
 
-static void process_dep_acinclude(struct dep *tempdep, int slave,
+static int process_dep_acinclude(struct dep *tempdep, int slave,
 				  int process_pending)
 {
 	struct cond *cond, *cond_prev;
 	int put_topif, put_define, put_if;
-	int j;
+	int j, ret;
 	char *text;
 	const char *ver;
 	struct sel *sel;
@@ -1242,11 +1243,11 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 	if (!tempdep->selectable) {
 		if (tempdep->type != TYPE_INT && !slave) {
 			if (!tempdep->cond || !tempdep->def_val)
-				return;
+				return 0;
 		}
 	}
 	if (!is_toplevel(tempdep) || tempdep->processed)
-		return;
+		return 0;
 #if 0 /* debug */
 	if (tempdep->cond) {
 		fprintf(stderr, "xxx DEP %s\n", tempdep->name);
@@ -1255,8 +1256,9 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 	}
 #endif
 	if (tempdep->processed)
-		return;
+		return 0;
 
+	ret = 0;
 	if (tempdep->cond) {
 		for (cond = tempdep->cond; cond; cond = cond->next) {
 			struct dep *dep;
@@ -1269,21 +1271,21 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 						tempdep->name, dep->name);
 #endif
 					tempdep->pending = 1;
-					return; /* pending */
+					return 1; /* pending */
 				}
-				process_dep_acinclude(dep, 1, process_pending);
+				ret |= process_dep_acinclude(dep, 1, process_pending);
 			}
 		}
 	}
 	if (tempdep->processed)
-		return;
+		return ret;
 
 	put_topif = 0;
 	put_define = 0;
 	if (tempdep->selectable && !is_always_true(tempdep)) {
 		text = get_card_name(tempdep->name);
 		if (!text)
-			return;
+			return ret;
 		if (!is_menu_default_yes(tempdep)) {
 			if (tempdep->type == TYPE_BOOL)
 				printf("  if alsa_check_kconfig_option \"%s\"; then\n", text);
@@ -1302,7 +1304,7 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 	} else if (tempdep->sel) {
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		if (!text)
-			return;
+			return ret;
 		printf("  if test \"$CONFIG_%s\" = \"m\" -o \"$CONFIG_%s\" = \"y\"; then\n", text, text);
 		free(text);
 		put_topif = 1;
@@ -1310,7 +1312,7 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 		/* "def_bool yes" and depends on ... */
 		put_define = 1;
 	} else
-		return;
+		return ret;
 	put_if = 0;
 	for (cond = tempdep->cond, cond_prev = NULL; cond;
 	     cond_prev = cond, cond = cond->next) {
@@ -1377,6 +1379,7 @@ static void process_dep_acinclude(struct dep *tempdep, int slave,
 	if (put_topif)
 		printf("  fi\n");
 	tempdep->processed = 1;
+	return ret;
 }
 
 // Output in acinlude.m4
@@ -1384,6 +1387,7 @@ static void output_acinclude(void)
 {
 	struct dep *tempdep;
 	char *text;
+	int i, ret;
 	
 	printf("dnl ALSA soundcard configuration\n");
 	printf("dnl Find out which cards to compile driver for\n");
@@ -1470,12 +1474,20 @@ static void output_acinclude(void)
 	/* default SND=m */
 	printf("  CONFIG_SND=\"m\"\n");
 
-	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		process_dep_acinclude(tempdep, 0, 0);
+	for (i = 0; i < 5; i++) {
+		/* clear pending flags */
+		for (tempdep = all_deps; tempdep; tempdep = tempdep->next)
+			tempdep->pending = 0;
+		ret = 0;
+		for (tempdep = all_deps; tempdep; tempdep = tempdep->next)
+			ret |= process_dep_acinclude(tempdep, 0, 0);
+		if (!ret)
+			break;
 	}
-	/* process pending items */
-	for (tempdep = all_deps; tempdep; tempdep = tempdep->next) {
-		process_dep_acinclude(tempdep, 0, 1);
+	if (ret) {
+		/* process pending items */
+		for (tempdep = all_deps; tempdep; tempdep = tempdep->next)
+			process_dep_acinclude(tempdep, 0, 1);
 	}
 
 	printf("])\n\n");
