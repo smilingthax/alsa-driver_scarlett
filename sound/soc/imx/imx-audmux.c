@@ -79,6 +79,9 @@ static ssize_t audmux_read_file(struct file *file, char __user *user_buf,
 	ptcr = readl(audmux_base + IMX_AUDMUX_V2_PTCR(port));
 	pdcr = readl(audmux_base + IMX_AUDMUX_V2_PDCR(port));
 
+	if (!audmux_base)
+		return -ENOSYS;
+
 	if (audmux_clk)
 		clk_disable(audmux_clk);
 
