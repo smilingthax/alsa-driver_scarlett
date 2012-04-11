@@ -1,5 +1,5 @@
---- ../../alsa-kernel/include/tea575x-tuner.h	2011-08-04 17:11:26.256908335 +0200
-+++ tea575x-tuner.h	2011-08-05 11:57:51.640509875 +0200
+--- ../../alsa-kernel/include/tea575x-tuner.h	2012-04-05 17:55:31.000000000 +0200
++++ tea575x-tuner.h	2012-04-11 14:51:22.000000000 +0200
 @@ -24,6 +24,9 @@
  
  #include <linux/videodev2.h>
@@ -8,9 +8,19 @@
 +#include <media/v4l2-ioctl.h>
 +#endif
  #include <media/v4l2-dev.h>
+ #include <media/v4l2-device.h>
  
- #define TEA575X_FMIF	10700
-@@ -54,7 +57,11 @@
+@@ -52,13 +55,21 @@
+ 	bool stereo;			/* receiving stereo */
+ 	bool tuned;			/* tuned to a station */
+ 	unsigned int val;		/* hw value */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 4, 0)
+ 	u32 freq;			/* frequency */
++#else
++	unsigned long freq;		/* frequency */
++#endif
+ 	struct mutex mutex;
+ 	struct snd_tea575x_ops *ops;
  	void *private_data;
  	u8 card[32];
  	u8 bus_info[32];
