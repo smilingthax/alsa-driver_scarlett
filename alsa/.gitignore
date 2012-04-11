@@ -56,7 +56,6 @@ drivers/portman2x4.c
 drivers/opl3/opl3_lib.c
 firewire/cmp.c
 firewire/iso-resources.c
-i2c/other/tea575x-tuner.c
 isa/sb/sb16_csp.c
 isa/wavefront/wavefront_fx.c
 isa/wavefront/wavefront_synth.c
