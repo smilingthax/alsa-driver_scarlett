@@ -1,11 +1,11 @@
---- ../alsa-kernel/pci/bt87x.c	2007-12-20 11:47:36.000000000 +0100
-+++ bt87x.c	2007-12-20 12:00:32.000000000 +0100
+--- ../alsa-kernel/pci/bt87x.c	2012-04-24 12:18:48.000000000 +0200
++++ bt87x.c	2012-04-24 12:29:53.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
   * bt87x.c - Brooktree Bt878/Bt879 driver for ALSA
   *
-@@ -845,21 +846,33 @@
+@@ -841,21 +842,33 @@
  {
  	int i;
  	const struct pci_device_id *supported;
@@ -43,9 +43,9 @@
  	snd_printk(KERN_DEBUG "please mail id, board name, and, "
  		   "if it works, the correct digital_rate option to "
  		   "<alsa-devel@alsa-project.org>\n");
-@@ -987,3 +1000,5 @@
+@@ -970,3 +983,5 @@
+ };
  
- module_init(alsa_card_bt87x_init)
- module_exit(alsa_card_bt87x_exit)
+ module_pci_driver(bt87x_driver);
 +
 +EXPORT_NO_SYMBOLS;
