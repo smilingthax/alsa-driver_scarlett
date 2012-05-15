@@ -1590,6 +1590,8 @@ CHECK_KERNEL_HEADER(linux/dmi.h, [#include \"dmi_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/bitrev.h)
 CHECK_KERNEL_HEADER(linux/hrtimer.h)
+CHECK_KERNEL_HEADER(linux/vgaarb.h)
+CHECK_KERNEL_HEADER(linux/vga_switcheroo.h)
 CHECK_KERNEL_HEADER(linux/gcd.h, [#include \"gcd_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/gfp.h)
