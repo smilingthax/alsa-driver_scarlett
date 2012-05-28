@@ -709,64 +709,12 @@ static int snd_pcm_action_group(struct action_ops *ops,
 {
 	struct snd_pcm_substream *s = NULL;
 	struct snd_pcm_substream *s1;
-	struct snd_pcm_group *g = substream->group;
-	int res = 0, idx, lcnt;
-	unsigned long locked = 0;
+	int res = 0;
 
-	if (!do_lock)
-		goto _pre;
-
-	/*
-	 * ensure the stream locking serialization here
-	 */
-	atomic_inc(&g->master_count);
- _retry:
-	if (atomic_inc_return(&g->lock_count) == 1) {
-		lcnt = 0;
- _retry_lock:
-		idx = 0;
-		snd_pcm_group_for_each_entry(s, substream) {
-			if (s != substream && !(locked & (1 << idx))) {
-				if (spin_trylock(&s->self_group.lock)) {
-					locked |= (1 << idx);
-					lcnt++;
-				}
-			}
-			idx++;
-		}
-		/*
-		 * at this point, check if another group action
-		 * owner tries to access this part of code
-		 *
-		 * another situation is that another substream lock is
-		 * active without the group action request;
-		 * wait, until this request is finished [ref1]
-		 */
-		if (g->count != lcnt + atomic_read(&g->master_count))
-			goto _retry_lock;
-	} else {
-		/*
-		 * another group owner tries to reach this code
-		 * serialize: wait for the first owners(s)
-		 */
-		while (atomic_read(&g->lock_count) != 1) {
-			/*
-			 * multiple requests - try to release
-			 * the atomic counter to avoid deadlock,
-			 * use new read operation to increase
-			 * time window for other checkers
-			 */
-			if (atomic_read(&g->lock_count) > 2) {
-				atomic_dec(&g->lock_count);
-				goto _retry;
-			}
-			/* do nothing here, wait for finish */
-		}
-		goto _retry_lock;
-	}
-
- _pre:
 	snd_pcm_group_for_each_entry(s, substream) {
+		if (do_lock && s != substream)
+			spin_lock_nested(&s->self_group.lock,
+					 SINGLE_DEPTH_NESTING);
 		res = ops->pre_action(s, state);
 		if (res < 0)
 			goto _unlock;
@@ -781,6 +729,7 @@ static int snd_pcm_action_group(struct action_ops *ops,
 					ops->undo_action(s1, state);
 				}
 			}
+			s = NULL; /* unlock all */
 			goto _unlock;
 		}
 	}
@@ -789,18 +738,13 @@ static int snd_pcm_action_group(struct action_ops *ops,
 	}
  _unlock:
 	if (do_lock) {
-		/* unlock all streams */
-		idx = 0;
+		/* unlock streams */
 		snd_pcm_group_for_each_entry(s1, substream) {
-			if (s != substream && (locked & (1 << idx)) != 0)
+			if (s1 != substream)
 				spin_unlock(&s1->self_group.lock);
+			if (s1 == s)	/* end */
+				break;
 		}
-		/*
-		 * keep decrement order reverse to avoid
-		 * a bad [ref1] condition check
-		 */
-		atomic_dec(&g->master_count);
-		atomic_dec(&g->lock_count);
 	}
 	return res;
 }
@@ -835,7 +779,13 @@ static int snd_pcm_action(struct action_ops *ops,
 	int res;
 
 	if (snd_pcm_stream_linked(substream)) {
+		if (!spin_trylock(&substream->group->lock)) {
+			spin_unlock(&substream->self_group.lock);
+			spin_lock(&substream->group->lock);
+			spin_lock(&substream->self_group.lock);
+		}
 		res = snd_pcm_action_group(ops, substream, state, 1);
+		spin_unlock(&substream->group->lock);
 	} else {
 		res = snd_pcm_action_single(ops, substream, state);
 	}
@@ -852,7 +802,17 @@ static int snd_pcm_action_lock_irq(struct action_ops *ops,
 	int res;
 
 	read_lock_irq(&snd_pcm_link_rwlock);
-	res = snd_pcm_action(ops, substream, state);
+	if (snd_pcm_stream_linked(substream)) {
+		spin_lock(&substream->group->lock);
+		spin_lock(&substream->self_group.lock);
+		res = snd_pcm_action_group(ops, substream, state, 1);
+		spin_unlock(&substream->self_group.lock);
+		spin_unlock(&substream->group->lock);
+	} else {
+		spin_lock(&substream->self_group.lock);
+		res = snd_pcm_action_single(ops, substream, state);
+		spin_unlock(&substream->self_group.lock);
+	}
 	read_unlock_irq(&snd_pcm_link_rwlock);
 	return res;
 }
@@ -1663,8 +1623,6 @@ static int snd_pcm_link(struct snd_pcm_substream *substream, int fd)
 		substream->group = group;
 		spin_lock_init(&substream->group->lock);
 		INIT_LIST_HEAD(&substream->group->substreams);
-		atomic_set(&substream->group->master_count, 0);
-		atomic_set(&substream->group->lock_count, 0);
 		list_add_tail(&substream->link_list, &substream->group->substreams);
 		substream->group->count = 1;
 	}
