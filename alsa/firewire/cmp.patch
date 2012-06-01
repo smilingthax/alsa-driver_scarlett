@@ -1,5 +1,5 @@
 --- ../alsa-kernel/firewire/cmp.c	2012-05-31 21:22:53.000000000 +0200
-+++ cmp.c	2012-06-01 08:18:08.000000000 +0200
++++ cmp.c	2012-06-01 08:39:42.000000000 +0200
 @@ -1,3 +1,11 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -26,12 +26,3 @@
  	int err;
  
  	buffer[0] = c->last_pcr_value;
-@@ -84,7 +97,7 @@
- 	return 0;
- 
- io_error:
--	cmp_error(c, "transaction failed: %s\n", fw_rcode_string(rcode));
-+	cmp_error(c, "transaction failed: %s\n", rcode_string(rcode));
- 	return -EIO;
- 
- bus_reset:
