@@ -1,11 +1,11 @@
 #include "adriver.h"
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
-static const char *fw_rcode_string(int rcode);
+const char *fw_rcode_string(int rcode);
 #endif
 #include "../alsa-kernel/firewire/lib.c"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 5, 0)
-static const char *fw_rcode_string(int rcode)
+const char *fw_rcode_string(int rcode)
 {
 	static const char *const names[] = {
 		[RCODE_COMPLETE]       = "no error",
