@@ -111,7 +111,7 @@ cleanup() {
 
 withaplay() {
         echo "!!Aplay/Arecord output" >> $FILE
-        echo "!!------------" >> $FILE
+        echo "!!--------------------" >> $FILE
         echo "" >> $FILE
        	echo "APLAY" >> $FILE
 	echo "" >> $FILE 
@@ -149,7 +149,7 @@ withamixer() {
 
 withalsactl() {
 	echo "!!Alsactl output" >> $FILE
-        echo "!!-------------" >> $FILE
+        echo "!!--------------" >> $FILE
         echo "" >> $FILE
         exe=""
         if [ -x /usr/sbin/alsactl ]; then
@@ -244,7 +244,7 @@ withsysfs() {
 
 withdmesg() {
 	echo "!!ALSA/HDA dmesg" >> $FILE
-	echo "!!------------------" >> $FILE
+	echo "!!--------------" >> $FILE
 	echo "" >> $FILE
 	dmesg | grep -C1 -E 'ALSA|HDA|HDMI|sound|hda.codec|hda.intel' >> $FILE
 	echo "" >> $FILE
@@ -547,7 +547,7 @@ cat $TEMPDIR/lspci.tmp >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Advanced information - PCI Vendor/Device/Subsystem ID's" >> $FILE
-echo "!!--------------------------------------------------------" >> $FILE
+echo "!!-------------------------------------------------------" >> $FILE
 echo "" >> $FILE
 lspci -vvn |grep -A1 040[1-3] >> $FILE
 echo "" >> $FILE
@@ -566,7 +566,7 @@ fi
 if [ -d "$SYSFS" ]
 then
 echo "!!Loaded sound module options" >> $FILE
-echo "!!--------------------------" >> $FILE
+echo "!!---------------------------" >> $FILE
 echo "" >> $FILE
 for mod in `cat /proc/asound/modules|awk {'print $2'}`;do
 echo "!!Module: $mod" >> $FILE
@@ -594,7 +594,7 @@ fi
 if [ -s "$TEMPDIR/alsa-ac97.tmp" ]
 then
         echo "!!AC97 Codec information" >> $FILE
-        echo "!!---------------------------" >> $FILE
+        echo "!!----------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
         echo "" >> $FILE
         cat $TEMPDIR/alsa-ac97.tmp >> $FILE
@@ -608,7 +608,7 @@ fi
 if [ -s "$TEMPDIR/alsa-usbmixer.tmp" ]
 then
         echo "!!USB Mixer information" >> $FILE
-        echo "!!---------------------------" >> $FILE
+        echo "!!---------------------" >> $FILE
         echo "--startcollapse--" >> $FILE
         echo "" >> $FILE
         cat $TEMPDIR/alsa-usbmixer.tmp >> $FILE
