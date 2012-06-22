@@ -815,6 +815,14 @@ case "$debug" in
     ;;
 esac
 
+dnl ksize() is almost mandatory now
+if test "$CONFIG_SND_DEBUG_MEMORY" != "y"; then
+    if test $kvernum -le 206022; then
+        CONFIG_SND_DEBUG_MEMORY=y
+        AC_DEFINE(CONFIG_SND_DEBUG_MEMORY)
+    fi
+fi
+
 dnl Check for ISA support (for 2.4 kernel)...
 if test $kvernum -ge 203000; then
 CHECK_KERNEL_CONFIG(CONFIG_ISA, [ISA support in kernel])
