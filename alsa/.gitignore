@@ -25,6 +25,7 @@ Module*.symvers
 
 alsa-kernel
 scripts
+sound
 include/sound
 
 acore/control.c
