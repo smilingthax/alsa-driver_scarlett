@@ -28,6 +28,9 @@
 #include <linux/version.h>
 #include <media/v4l2-dev.h>
 #include <media/v4l2-ioctl.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+#define v4l2_file_operations   file_operations
+#endif
 #include <sound/tea575x-tuner.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@perex.cz>");
@@ -371,10 +374,6 @@ static int snd_tea575x_exclusive_release(struct file *file)
 	return 0;
 }
 #endif /* CONFIG_HAVE_V4L2_CTRLS */
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
-#define v4l2_file_operations   file_operations
-#endif
 
 static const struct v4l2_file_operations tea575x_fops = {
 	.owner		= THIS_MODULE,
