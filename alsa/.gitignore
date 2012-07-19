@@ -44,7 +44,6 @@ acore/rawmidi.c
 acore/seq/oss/seq_oss.c
 acore/seq/seq.c
 acore/seq/seq_clientmgr.c
-acore/seq/seq_memory.c
 acore/sound.c
 acore/timer.c
 drivers/mpu401/mpu401.c
