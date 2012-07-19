@@ -5,8 +5,6 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-isapnp-files = wavefront.isapnp
-
 clean-files := wavefront_fx.c wavefront_synth.c
 
 SND_TOPDIR = $(MAINSRCDIR)

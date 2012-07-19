@@ -6,7 +6,6 @@ include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
 clean-files := ac97_codec.c
-export-objs := ac97_codec.o ac97_pcm.o
 
 include $(SND_TOPDIR)/alsa-kernel/pci/ac97/Makefile
 

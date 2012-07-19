@@ -8,10 +8,6 @@ include $(SND_TOPDIR)/Makefile.conf
 clean-files := card.c endpoint.c helper.c quirks.c midi.c \
 	mixer.c mixer_quirks.c stream.c
 
-# for compatibility
-extra-snd-usb-lib-objs := usbcompat.o
-export-objs := midi.o usbcompat.o
-
 include $(SND_TOPDIR)/alsa-kernel/usb/Makefile
 
 EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/usb
