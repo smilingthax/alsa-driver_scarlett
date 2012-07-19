@@ -1,5 +1,5 @@
---- ../../alsa-kernel/core/oss/mixer_oss.c	2010-04-13 12:01:49.080966488 +0200
-+++ mixer_oss.c	2010-04-13 13:07:14.784700677 +0200
+--- ../../alsa-kernel/core/oss/mixer_oss.c	2011-11-08 07:59:20.000000000 +0100
++++ mixer_oss.c	2012-07-19 13:58:22.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
@@ -13,7 +13,7 @@
  #include <linux/slab.h>
  #include <linux/time.h>
  #include <linux/string.h>
-@@ -385,25 +387,44 @@
+@@ -388,13 +390,26 @@
  	return snd_mixer_oss_ioctl1(&fmixer, cmd, arg);
  }
  
@@ -41,12 +41,7 @@
  /*
   *  REGISTRATION PART
   */
- 
- static const struct file_operations snd_mixer_oss_f_ops =
- {
-+#ifndef LINUX_2_2
- 	.owner =	THIS_MODULE,
-+#endif
+@@ -405,8 +420,12 @@
  	.open =		snd_mixer_oss_open,
  	.release =	snd_mixer_oss_release,
  	.llseek =	no_llseek,

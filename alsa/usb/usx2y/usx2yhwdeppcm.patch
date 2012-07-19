@@ -1,12 +1,12 @@
---- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2009-12-10 14:29:27.000000000 +0100
-+++ usx2yhwdeppcm.c	2010-01-20 11:12:58.000000000 +0100
+--- ../../alsa-kernel/usb/usx2y/usx2yhwdeppcm.c	2012-03-01 09:14:48.000000000 +0100
++++ usx2yhwdeppcm.c	2012-07-19 14:03:38.000000000 +0200
 @@ -1,3 +1,5 @@
 +#include "usx2yhwdeppcm.inc"
 +
  /*
   *   This program is free software; you can redistribute it and/or modify
   *   it under the terms of the GNU General Public License as published by
-@@ -150,7 +152,11 @@ static inline void usX2Y_usbpcm_urb_capt
+@@ -151,7 +153,11 @@
  {
  	int pack;
  	for (pack = 0; pack < nr_of_packs(); ++pack) {
@@ -18,7 +18,7 @@
  		if (NULL != subs) {
  			struct snd_usX2Y_hwdep_pcm_shm *shm = subs->usX2Y->hwdep_pcm_shm;
  			int head = shm->captured_iso_head + 1;
-@@ -226,7 +232,11 @@ static inline int usX2Y_usbpcm_usbframe_
+@@ -227,7 +233,11 @@
  }
  
  
@@ -30,7 +30,7 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -256,9 +266,15 @@ static void i_usX2Y_usbpcm_urb_complete(
+@@ -257,9 +267,15 @@
  	if (capsubs->completed_urb && atomic_read(&capsubs->state) >= state_PREPARED &&
  	    (NULL == capsubs2 || capsubs2->completed_urb) &&
  	    (playbacksubs->completed_urb || atomic_read(&playbacksubs->state) < state_PREPARED)) {
@@ -49,7 +49,7 @@
  			snd_printdd("\n");
  			usX2Y_clients_stop(usX2Y);
  		}
-@@ -290,7 +306,11 @@ static void usX2Y_usbpcm_subs_startup_fi
+@@ -291,7 +307,11 @@
  	usX2Y->prepare_subs = NULL;
  }
  
@@ -61,7 +61,7 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -307,7 +327,11 @@ static void i_usX2Y_usbpcm_subs_startup(
+@@ -308,7 +328,11 @@
  		wake_up(&usX2Y->prepare_wait_queue);
  	}
  
@@ -73,7 +73,7 @@
  }
  
  /*
-@@ -429,6 +453,9 @@ static int usX2Y_usbpcm_urbs_start(struc
+@@ -430,6 +454,9 @@
  		if (subs != NULL && atomic_read(&subs->state) >= state_PREPARED)
  			goto start;
  	}
@@ -83,7 +83,7 @@
  
   start:
  	usX2Y_usbpcm_subs_startup(subs);
-@@ -454,7 +481,11 @@ static int usX2Y_usbpcm_urbs_start(struc
+@@ -455,7 +482,11 @@
  						goto cleanup;
  					}  else {
  						snd_printdd("%i\n", urb->start_frame);
@@ -95,7 +95,7 @@
  							usX2Y->wait_iso_frame = urb->start_frame;
  					}
  					urb->transfer_flags = 0;
-@@ -683,6 +714,7 @@ static void snd_usX2Y_hwdep_pcm_vm_close
+@@ -684,6 +715,7 @@
  }
  
  
@@ -103,7 +103,7 @@
  static int snd_usX2Y_hwdep_pcm_vm_fault(struct vm_area_struct *area,
  					struct vm_fault *vmf)
  {
-@@ -695,12 +727,60 @@ static int snd_usX2Y_hwdep_pcm_vm_fault(
+@@ -696,12 +728,55 @@
  	get_page(vmf->page);
  	return 0;
  }
@@ -122,7 +122,7 @@
 +	unsigned long offset;
 +	struct page *page;
 +	void *vaddr;
- 
++
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
 +	offset = area->vm_pgoff << PAGE_SHIFT;
 +#else
@@ -143,13 +143,8 @@
 +	if (type)
 +		*type = VM_FAULT_MINOR;
 +#endif
-+
-+#ifndef LINUX_2_2
+ 
 +	return page;
-+#else
-+#undef page_address
-+	return page_address(page);
-+#endif
 +}
 +#endif /* >= 2.6.24 */
  
@@ -164,18 +159,13 @@
  };
  
  
-@@ -722,8 +802,14 @@ static int snd_usX2Y_hwdep_pcm_mmap(stru
+@@ -723,7 +798,9 @@
  		return -ENODEV;
  	}
  	area->vm_ops = &snd_usX2Y_hwdep_pcm_vm_ops;
 +#ifdef VM_RESERVED
  	area->vm_flags |= VM_RESERVED | VM_DONTEXPAND;
 +#endif
-+#ifndef LINUX_2_2
  	area->vm_private_data = hw->private_data;
-+#else
-+	area->vm_private_data = (long)hw->private_data;
-+#endif
  	return 0;
  }
- 

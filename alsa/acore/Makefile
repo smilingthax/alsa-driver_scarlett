@@ -27,7 +27,7 @@ obj-$(CONFIG_SND_BIT32_EMUL) += ioctl32/
 
 include $(SND_TOPDIR)/Rules.make
 
-info.c: info.inc info.patch $(SND_TOPDIR)/alsa-kernel/core/info.c
+info.c: info.patch $(SND_TOPDIR)/alsa-kernel/core/info.c
 pcm.c: pcm.patch $(SND_TOPDIR)/alsa-kernel/core/pcm.c
 pcm_native.c: pcm_native.patch $(SND_TOPDIR)/alsa-kernel/core/pcm_native.c
 pcm_memory.c: pcm_memory.patch $(SND_TOPDIR)/alsa-kernel/core/pcm_memory.c

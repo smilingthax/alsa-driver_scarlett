@@ -6,64 +6,6 @@
 #include <linux/platform_device.h>
 #include <sound/core.h>
 
-/*
- * pci_save/restore_config wrapper
- */
-#ifdef CONFIG_PCI
-#ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
-#ifdef CONFIG_HAVE_PCI_SAVED_CONFIG
-int snd_pci_compat_save_state(struct pci_dev *pci)
-{
-	return snd_pci_orig_save_state(pci, pci->saved_config_space);
-}
-EXPORT_SYMBOL(snd_pci_compat_save_state);
-int snd_pci_compat_restore_state(struct pci_dev *pci)
-{
-	return snd_pci_orig_restore_state(pci, pci->saved_config_space);
-}
-EXPORT_SYMBOL(snd_pci_compat_restore_state);
-#else /* !CONFIG_HAVE_PCI_SAVED_CONFIG */
-struct saved_config_tbl {
-	struct pci_dev *pci;
-	u32 config[16];
-};
-static struct saved_config_tbl saved_tbl[16];
-
-int snd_pci_compat_save_state(struct pci_dev *pci)
-{
-	int i;
-	/* FIXME: mutex needed for race? */
-	for (i = 0; i < ARRAY_SIZE(saved_tbl); i++) {
-		if (! saved_tbl[i].pci) {
-			saved_tbl[i].pci = pci;
-			snd_pci_orig_save_state(pci, saved_tbl[i].config);
-			return 0;
-		}
-	}
-	printk(KERN_DEBUG "snd: no pci config space found!\n");
-	return 1;
-}
-EXPORT_SYMBOL(snd_pci_compat_save_state);
-
-int snd_pci_compat_restore_state(struct pci_dev *pci)
-{
-	int i;
-	/* FIXME: mutex needed for race? */
-	for (i = 0; i < ARRAY_SIZE(saved_tbl); i++) {
-		if (saved_tbl[i].pci == pci) {
-			saved_tbl[i].pci = NULL;
-			snd_pci_orig_restore_state(pci, saved_tbl[i].config);
-			return 0;
-		}
-	}
-	printk(KERN_DEBUG "snd: no saved pci config!\n");
-	return 1;
-}
-EXPORT_SYMBOL(snd_pci_compat_restore_state);
-#endif /* CONFIG_HAVE_PCI_SAVED_CONFIG */
-#endif /* ! CONFIG_HAVE_NEW_PCI_SAVE_STATE */
-#endif
-
 #ifndef CONFIG_HAVE_KZALLOC
 #ifndef CONFIG_SND_DEBUG_MEMORY
 /* Don't put this to wrappers.c.  We need to call the kmalloc wrapper here. */

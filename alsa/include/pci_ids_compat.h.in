@@ -1,6 +1,4 @@
-#ifndef LINUX_2_2
 #include "@CONFIG_SND_KERNELDIR@/include/linux/pci_ids.h"
-#endif
 
 /* bt87x */
 #ifndef PCI_VENDOR_ID_BROOKTREE

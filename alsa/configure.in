@@ -2536,68 +2536,6 @@ if test "$CONFIG_HAVE_PCI_IOREMAP_BAR" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_IOREMAP_BAR)
 fi
 
-dnl Check for saved_config_space in pci_dev
-AC_MSG_CHECKING(for saved_config_space in pci_dev)
-pci_saved_config="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <$INCLUDE_AUTOCONF_H>
-#else
-#include <linux/config.h>
-#endif
-#include <linux/pci.h>
-],[
-  struct pci_dev dev;
-  dev.saved_config_space[0] = 0;
-],
-    AC_MSG_RESULT(yes);pci_saved_config="1",
-    AC_MSG_RESULT(no);pci_saved_config="0",
-    AC_MSG_RESULT(unknown);pci_saved_config="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_PCI_SAVED_CONFIG=$pci_saved_config
-dnl AC_SUBST(CONFIG_HAVE_PCI_SAVED_CONFIG)
-if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_PCI_SAVED_CONFIG)
-fi
-
-if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
-dnl Check for new pci_save_state()
-AC_MSG_CHECKING(for new pci_save_state)
-new_pci_save_state="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <$INCLUDE_AUTOCONF_H>
-#else
-#include <linux/config.h>
-#endif
-#include <linux/pci.h>
-],[
-  struct pci_dev *pci;
-  pci_save_state(pci);
-],
-    AC_MSG_RESULT(yes);new_pci_save_state="1",
-    AC_MSG_RESULT(no);new_pci_save_state="0",
-    AC_MSG_RESULT(unknown);new_pci_save_state="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-if test "$new_pci_save_state" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_NEW_PCI_SAVE_STATE)
-fi
-fi
-
 dnl Check for register_sound_special_device
 AC_MSG_CHECKING(for register_sound_special_device)
 msleep="0"

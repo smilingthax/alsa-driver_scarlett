@@ -604,26 +604,6 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #endif /* to_gameport_driver */
 #endif /* GAMEPORT || GAMEPORT_MODULE */
 
-#ifdef CONFIG_PCI
-#ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
-int snd_pci_compat_save_state(struct pci_dev *pci);
-int snd_pci_compat_restore_state(struct pci_dev *pci);
-static inline int snd_pci_orig_save_state(struct pci_dev *pci, u32 *buffer)
-{
-	return pci_save_state(pci, buffer);
-}
-static inline int snd_pci_orig_restore_state(struct pci_dev *pci, u32 *buffer)
-{
-	return pci_restore_state(pci, buffer);
-}
-
-#undef pci_save_state
-#define pci_save_state		snd_pci_compat_save_state
-#undef pci_restore_state
-#define pci_restore_state	snd_pci_compat_restore_state
-#endif /* !CONFIG_HAVE_NEW_PCI_SAVE_STATE */
-#endif /* CONFIG_PCI */
-
 /* wrapper for getnstimeofday()
  * it's needed for recent 2.6 kernels, too, due to lack of EXPORT_SYMBOL
  */
