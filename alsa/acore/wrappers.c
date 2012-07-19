@@ -3,12 +3,6 @@
 #include <linux/string.h>
 #include <linux/sched.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#include "sndversions.h"
-#endif
-#endif
-
 #include <linux/module.h>
 #include <linux/kmod.h>
 #include <linux/devfs_fs_kernel.h>
@@ -118,92 +112,6 @@ void snd_compat_request_module(const char *fmt, ...)
 	va_end(args);
 }
 EXPORT_SYMBOL(snd_compat_request_module);
-#endif
-
-#if defined(CONFIG_DEVFS_FS)
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
-
-void snd_compat_devfs_remove(const char *fmt, ...)
-{
-	char buf[64];
-	va_list args;
-	int n;
-
-	va_start(args, fmt);
-	n = vsnprintf(buf, 64, fmt, args);
-	if (n < 64 && buf[0]) {
-		devfs_handle_t de = devfs_get_handle(NULL, buf, 0, 0, 0, 0);
-		devfs_unregister(de);
-		devfs_put(de);
-	}
-	va_end(args);
-}
-EXPORT_SYMBOL(snd_compat_devfs_remove);
-
-#endif /* 2.5.29 */
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
-
-int snd_compat_devfs_mk_dir(const char *dir, ...)
-{
-	char buf[64];
-	va_list args;
-	int n;
-
-	va_start(args, dir);
-	n = vsnprintf(buf, 64, dir, args);
-	va_end(args);
-	if (n < 64 && buf[0]) {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
-		return devfs_mk_dir(NULL, buf, strlen(dir), NULL) ? -EIO : 0;
-#else
-		return devfs_mk_dir(NULL, buf, NULL) ? -EIO : 0;
-#endif
-	}
-	return 0;
-}
-EXPORT_SYMBOL(snd_compat_devfs_mk_dir);
-
-extern struct file_operations snd_fops;
-int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
-{
-	char buf[64];
-	va_list args;
-	int n;
-
-	va_start(args, fmt);
-	n = vsnprintf(buf, 64, fmt, args);
-	va_end(args);
-	if (n < 64 && buf[0]) {
-		devfs_register(NULL, buf, DEVFS_FL_DEFAULT,
-			       major(dev), minor(dev), mode,
-			       &snd_fops, NULL);
-	}
-	return 0;
-}
-EXPORT_SYMBOL(snd_compat_devfs_mk_cdev);
-
-#endif /* 2.5.67 */
-
-#endif /* CONFIG_DEVFS_FS */
-
-#ifndef CONFIG_HAVE_PCI_DEV_PRESENT
-#include <linux/pci.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-/* for pci_device_id compatibility layer */
-#include "compat_22.h"
-#endif
-int snd_pci_dev_present(const struct pci_device_id *ids)
-{
-	while (ids->vendor || ids->subvendor) {
-		if (pci_find_device(ids->vendor, ids->subvendor, NULL))
-			return 1;
-		ids++;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(snd_pci_dev_present);
 #endif
 
 /*

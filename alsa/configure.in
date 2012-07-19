@@ -292,6 +292,13 @@ AC_SUBST(ksublevel)
 AC_SUBST(kextraversion)
 AC_MSG_RESULT($kaversion)
 
+kvernum=`expr $kversion \* 100000 + $kpatchlevel \* 1000 + $ksublevel`
+
+if test $kvernum -lt 206008; then
+   echo "Unsupported kernel version $kaversion"
+   exit 1
+fi
+
 dnl Check for GCC version...
 AC_MSG_CHECKING(for GCC version)
 ac_save_CFLAGS="$CFLAGS"
@@ -626,12 +633,7 @@ AC_DEFUN([CHECK_EXPORTED], [
   eval $boolvar="$boolchk"
 ])
 
-kvernum=`expr $kversion \* 100000 + $kpatchlevel \* 1000 + $ksublevel`
-
-NEW_KBUILD=
-if test $kvernum -ge 206000; then
-  NEW_KBUILD=y
-fi
+NEW_KBUILD=y
 AC_SUBST(NEW_KBUILD)
 
 dnl Check builtin ALSA on 2.6 kernel
@@ -824,11 +826,7 @@ if test "$CONFIG_SND_DEBUG_MEMORY" != "y"; then
 fi
 
 dnl Check for ISA support (for 2.4 kernel)...
-if test $kvernum -ge 203000; then
 CHECK_KERNEL_CONFIG(CONFIG_ISA, [ISA support in kernel])
-else
-CONFIG_ISA=probe
-fi
 
 dnl Check processor type...
 AC_MSG_CHECKING(for processor type)
@@ -1426,12 +1424,10 @@ if test -n "$CONFIG_SPARC32" -o -n "$CONFIG_SPARC64"; then
 fi
 
 if test -n "$CONFIG_SND_BIT32_EMUL"; then
-  if test $kvernum -ge 206000; then
     CHECK_KERNEL_CONFIG(CONFIG_COMPAT, [32bit compat support])
     if test -z "$CONFIG_COMPAT"; then
       CONFIG_SND_BIT32_EMUL=
     fi
-  fi
 fi
 
 dnl Check for SGI/MIPS (HAL2) support...
@@ -1633,11 +1629,7 @@ if test -n "$HAVE_TRACEPOINT_H"; then
 fi
 
 dnl Check for dump_stack
-if test $kvernum -ge 206000; then
-  AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
-else
-  CHECK_EXPORTED(CONFIG_HAVE_DUMP_STACK, dump_stack)
-fi
+AC_DEFINE(CONFIG_HAVE_DUMP_STACK)
 
 dnl Check for modversions...
 CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
@@ -1673,12 +1665,8 @@ fi
 AC_SUBST(CONFIG_FW_LOADER)
 
 dnl Check for input subsystem...
-if test $kvernum -le 202000; then
-CONFIG_INPUT="y"
-else
 CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
 CHECK_KERNEL_CONFIG(CONFIG_PCSPKR_PLATFORM, [pc-speaker platform in kernel])
-fi
 AC_SUBST(CONFIG_INPUT)
 
 
@@ -1698,11 +1686,9 @@ if test "$NEW_KBUILD" = "y"; then
   KERNEL_CHECK_CFLAGS="$KERNEL_CHECK_CFLAGS -DKBUILD_STR(s)=#s -DKBUILD_BASENAME=KBUILD_STR(dummy) -DKBUILD_MODNAME=KBUILD_BASENAME"
 fi
 
-dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
-if test $kvernum -gt 202000; then
+dnl Check for video device support...
 CHECK_KERNEL_CONFIG(CONFIG_VIDEO_DEV, [Video device support in kernel])
 AC_SUBST(CONFIG_VIDEO_DEV)
-fi
 
 dnl Check for ISA PnP driver in kernel...
 AC_MSG_CHECKING(for ISA PnP driver in kernel)
@@ -2490,7 +2476,6 @@ if test "$CONFIG_HAVE_KZALLOC" = "1"; then
 fi
 
 dnl Check for create_workqueue() with flags
-if test $kvernum -ge 206000; then
 AC_MSG_CHECKING(for create_workqueue with flags)
 workqueue2="0"
 ac_save_CFLAGS="$CFLAGS"
@@ -2518,7 +2503,6 @@ CONFIG_CREATE_WORKQUEUE_FLAGS=$workqueue2
 dnl AC_SUBST(CONFIG_CREATE_WORKQUEUE_FLAGS)
 if test "$CONFIG_CREATE_WORKQUEUE_FLAGS" = "1"; then
   AC_DEFINE(CONFIG_CREATE_WORKQUEUE_FLAGS)
-fi
 fi
 
 dnl Check for pci_ioremap_bar
@@ -2644,110 +2628,6 @@ dnl AC_SUBST(CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE)
 if test "$CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE" = "1"; then
   AC_DEFINE(CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE)
 fi
-
-dnl check only on 2.2 kernel..
-if test $kvernum -le 202000; then
-
-dnl Check for old kill_fasync...
-AC_MSG_CHECKING(for old kill_fasync)
-oldkfasync="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <$INCLUDE_AUTOCONF_H>
-#else
-#include <linux/config.h>
-#endif
-#ifdef __alpha__ /* it's required (at least for 2.2.18) */
-#include <asm/current.h>
-#endif
-#include <linux/fs.h>
-],[
- struct fasync_struct *fa;
- int sig;
- kill_fasync(fa, sig);
-],
-    AC_MSG_RESULT(yes);oldkfasync="1",
-    AC_MSG_RESULT(no);oldkfasync="0",
-    AC_MSG_RESULT(unknown);oldkfasync="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_OLD_KILL_FASYNC=$oldkfasync
-dnl AC_SUBST(CONFIG_OLD_KILL_FASYNC)
-if test "$CONFIG_OLD_KILL_FASYNC" = "1"; then
-  AC_DEFINE(CONFIG_OLD_KILL_FASYNC)
-fi
-
-dnl Check for dma_addr_t
-AC_MSG_CHECKING(for dma_addr_t)
-dma_addr_t="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <$INCLUDE_AUTOCONF_H>
-#else
-#include <linux/config.h>
-#endif
-#include <asm/types.h>
-],[
- dma_addr_t addr;
-],
-    AC_MSG_RESULT(yes);dma_addr_t="1",
-    AC_MSG_RESULT(no);dma_addr_t="0",
-    AC_MSG_RESULT(unknown);dma_addr_t="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_DMA_ADDR_T=$dma_addr_t
-dnl AC_SUBST(CONFIG_HAVE_DMA_ADDR_T)
-if test "$CONFIG_HAVE_DMA_ADDR_T" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_DMA_ADDR_T)
-fi
-
-dnl Check for MUTEX macros
-AC_MSG_CHECKING(for MUTEX macros)
-have_mutex_macros="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
-#include <$INCLUDE_AUTOCONF_H>
-#else
-#include <linux/config.h>
-#endif
-#include <asm/semaphore.h>
-],[
-#ifndef init_MUTEX
-#error not defined
-#endif
-exit(0);
-],
-    AC_MSG_RESULT(yes);have_mutex_macros="1",
-    AC_MSG_RESULT(no);have_mutex_macros="0",
-    AC_MSG_RESULT(unknown);have_mutex_macros="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_MUTEX_MACROS=$have_mutex_macros
-dnl AC_SUBST(CONFIG_HAVE_MUTEX_MACROS)
-if test "$CONFIG_HAVE_MUTEX_MACROS" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_MUTEX_MACROS)
-fi
-
-fi
-dnl 2.2 kernel
 
 if test "$CONFIG_ISAPNP_KERNEL" = "y"; then
   if test -f include/linux/isapnp.h; then

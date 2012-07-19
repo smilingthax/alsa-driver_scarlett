@@ -38,23 +38,9 @@
 #include <linux/autoconf.h>
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 3)
-#error "This driver requires Linux 2.2.3 or higher."
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
+#error "This driver requires Linux 2.6.8 or higher."
 #endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 1)
-#  if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#  error "This code requires Linux 2.4.0-test1 and higher."
-#  endif
-#define LINUX_2_4__donotuse
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 0)
-#define LINUX_2_2
-#endif
-
-#if defined(ALSA_BUILD) && LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#include "sndversions.h"
-#endif
-#endif /* ALSA_BUILD && KERNEL < 2.6.0 */
 
 #ifndef RHEL_RELEASE_VERSION
 #define RHEL_RELEASE_VERSION(a, b) (((a) << 8) | (b))
@@ -109,166 +95,6 @@ typedef unsigned int fmode_t;
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-/* for compat layer */
-#include <linux/pci.h>
-#ifdef LINUX_2_2
-#include <linux/pci_ids.h>
-#endif
-
-#ifdef LINUX_2_2
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
-#include <linux/init.h>
-#endif
-#ifndef LINUX_2_4__donotuse
-#include "compat_22.h"
-#endif
-#endif /* LINUX_2_2 */
-
-#ifdef LINUX_2_4__donotuse
-#include <linux/kernel.h>
-#include <linux/init.h>
-#include <linux/pm.h>
-#include <linux/list.h>
-#include <asm/processor.h>
-#include <asm/page.h>
-#ifndef likely
-#define likely(x)	x
-#define unlikely(x)	x
-#endif
-#ifndef cpu_relax
-#define cpu_relax()
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)
-#define pci_set_dma_mask(pci, mask) (pci->dma_mask = mask, 0)
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 7)
-#define PCI_OLD_SUSPEND
-#endif
-#ifndef virt_to_page
-#define virt_to_page(x) (&mem_map[MAP_NR(x)])
-#endif
-#define snd_request_region request_region
-#ifndef rwlock_init
-#define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 9)
-#define prefetch(x)	x
-#endif
-#ifndef list_for_each_safe
-#define list_for_each_safe(pos, n, head) \
-	for (pos = (head)->next, n = pos->next; pos != (head); pos = n, n = pos->next)
-#endif
-#ifndef list_for_each_entry
-#define list_for_each_entry(pos, head, member)                          \
-	for (pos = list_entry((head)->next, typeof(*pos), member);	\
-	     prefetch(pos->member.next), &pos->member != (head);	\
-	     pos = list_entry(pos->member.next, typeof(*pos), member))
-#endif
-#ifndef list_for_each_entry_safe
-#define list_for_each_entry_safe(pos, n, head, member)			\
-	for (pos = list_entry((head)->next, typeof(*pos), member),	\
-		n = list_entry(pos->member.next, typeof(*pos), member);	\
-	     &pos->member != (head);					\
-	     pos = n, n = list_entry(n->member.next, typeof(*n), member))
-#endif
-#ifndef list_for_each_prev
-#define list_for_each_prev(pos, head) \
-	for (pos = (head)->prev; prefetch(pos->prev), pos != (head); \
-        	pos = pos->prev)
-#endif
-#ifndef might_sleep
-#define might_sleep() do { } while (0)
-#endif
-#endif /* LINUX_2_4__donotuse */
-
-#ifndef __devexit_p
-#define __devexit_p(x) x
-#endif
-#ifndef __init_or_module
-#define __init_or_module
-#define __initdata_or_module
-#endif
-
-#ifndef va_copy
-#define va_copy __va_copy
-#endif
-
-#include <linux/kdev_t.h>
-#ifndef major
-#define major(x) MAJOR(x)
-#endif
-#ifndef minor
-#define minor(x) MINOR(x)
-#endif
-#ifndef imajor
-#define imajor(x) major((x)->i_rdev)
-#endif
-#ifndef iminor
-#define iminor(x) minor((x)->i_rdev)
-#endif
-#ifndef mk_kdev
-#define mk_kdev(maj, min) MKDEV(maj, min)
-#endif
-#ifndef DECLARE_BITMAP
-#define DECLARE_BITMAP(name,bits) \
-	unsigned long name[((bits)+BITS_PER_LONG-1)/BITS_PER_LONG]
-#endif
-
-#include <linux/sched.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3) && !defined(need_resched)
-#define need_resched() (current->need_resched)
-#endif
-#ifndef CONFIG_HAVE_PDE
-#include <linux/fs.h>
-#include <linux/proc_fs.h>
-static inline struct proc_dir_entry *PDE(const struct inode *inode)
-{
-	return (struct proc_dir_entry *) inode->u.generic_ip;
-}
-#endif
-#ifndef cond_resched
-#define cond_resched() \
-	do { \
-		if (need_resched()) { \
-			set_current_state(TASK_RUNNING); \
-			schedule(); \
-		} \
-	} while (0)
-#endif
-#include <asm/io.h>
-#if !defined(isa_virt_to_bus)
-#if defined(virt_to_bus) || defined(__alpha__)
-#define isa_virt_to_bus virt_to_bus
-#endif
-#endif
-
-/* isapnp support for 2.2 kernels */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#undef CONFIG_ISAPNP
-#ifdef CONFIG_SND_ISAPNP
-#define CONFIG_ISAPNP
-#endif
-#endif
-
-/* support of pnp compatible layer for 2.2/2.4 kernels */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#undef CONFIG_PNP
-#ifdef CONFIG_SND_PNP
-#define CONFIG_PNP
-#endif
-#endif
-
-#if !defined(CONFIG_ISA) && defined(CONFIG_SND_ISA)
-#define CONFIG_ISA
-#endif
-
-#ifndef MODULE_LICENSE
-#define MODULE_LICENSE(license)
-#endif
-
-#endif /* < 2.6.0 */
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 13)
 #ifdef CONFIG_SND_ISA
 #ifndef CONFIG_ISA_DMA_API
@@ -295,7 +121,6 @@ typedef unsigned __nocast gfp_t;
 
 #include <linux/wait.h>
 #ifndef wait_event_timeout
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 #define __wait_event_timeout(wq, condition, ret)			\
 do {									\
 	DEFINE_WAIT(__wait);						\
@@ -310,25 +135,6 @@ do {									\
 	}								\
 	finish_wait(&wq, &__wait);					\
 } while (0)
-#else
-#define __wait_event_timeout(wq, condition, ret)			\
-do {									\
-	wait_queue_t __wait;						\
-	init_waitqueue_entry(&__wait, current);				\
-									\
-	add_wait_queue(&wq, &__wait);					\
-	for (;;) {							\
-		set_current_state(TASK_UNINTERRUPTIBLE);		\
-		if (condition)						\
-			break;						\
-		ret = schedule_timeout(ret);				\
-		if (!ret)						\
-			break;						\
-	}								\
-	set_current_state(TASK_RUNNING);				\
-	remove_wait_queue(&wq, &__wait);				\
-} while (0)
-#endif /* 2.6.0 */
 #define wait_event_timeout(wq, condition, timeout)			\
 ({									\
 	long __ret = timeout;						\
@@ -338,7 +144,6 @@ do {									\
 })
 #endif
 #ifndef wait_event_interruptible_timeout
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 #define __wait_event_interruptible_timeout(wq, condition, ret)		\
 do {									\
 	DEFINE_WAIT(__wait);						\
@@ -358,30 +163,6 @@ do {									\
 	}								\
 	finish_wait(&wq, &__wait);					\
 } while (0)
-#else
-#define __wait_event_interruptible_timeout(wq, condition, ret)		\
-do {									\
-	wait_queue_t __wait;						\
-	init_waitqueue_entry(&__wait, current);				\
-									\
-	add_wait_queue(&wq, &__wait);					\
-	for (;;) {							\
-		set_current_state(TASK_INTERRUPTIBLE);			\
-		if (condition)						\
-			break;						\
-		if (!signal_pending(current)) {				\
-			ret = schedule_timeout(ret);			\
-			if (!ret)					\
-				break;					\
-			continue;					\
-		}							\
-		ret = -ERESTARTSYS;					\
-		break;							\
-	}								\
-	set_current_state(TASK_RUNNING);				\
-	remove_wait_queue(&wq, &__wait);				\
-} while (0)
-#endif /* 2.6.0 */
 #define wait_event_interruptible_timeout(wq, condition, timeout)	\
 ({									\
 	long __ret = timeout;						\
@@ -420,33 +201,6 @@ int snd_compat_vsscanf(const char * buf, const char * fmt, va_list args);
 #define sscanf(buf,fmt,args...) snd_compat_sscanf(buf,fmt,##args)
 #define vsscanf(buf,fmt,args) snd_compat_vsscanf(buf,fmt,args)
 #endif
-
-#if defined(__alpha__) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 14)
-#include <asm/io.h>
-#undef writeb
-#define writeb(v, a) do { __writeb((v),(a)); mb(); } while(0)
-#undef writew
-#define writew(v, a) do { __writew((v),(a)); mb(); } while(0)
-#undef writel
-#define writel(v, a) do { __writel((v),(a)); mb(); } while(0)
-#undef writeq
-#define writeq(v, a) do { __writeq((v),(a)); mb(); } while(0)
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 28)
-#include <linux/interrupt.h>
-static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq(); }
-#undef synchronize_irq
-#define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
-#endif /* LINUX_VERSION_CODE < 2.5.28 */
-#ifndef IRQ_NONE
-typedef void irqreturn_t;
-#define IRQ_NONE
-#define IRQ_HANDLED
-#define IRQ_RETVAL(x)
-#endif
-#endif /* < 2.6.0 */
 
 #ifndef min
 /*
@@ -498,108 +252,9 @@ typedef void irqreturn_t;
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#include <linux/devfs_fs_kernel.h>
-#ifdef CONFIG_DEVFS_FS
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
-#include <linux/fs.h>
-#undef register_chrdev
-#define register_chrdev devfs_register_chrdev
-#undef unregister_chrdev
-#define unregister_chrdev devfs_unregister_chrdev
-#undef devfs_remove
-void snd_compat_devfs_remove(const char *fmt, ...);
-#define devfs_remove snd_compat_devfs_remove
-#endif /* < 2.5.29 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
-#undef devfs_mk_dir
-int snd_compat_devfs_mk_dir(const char *dir, ...);
-#define devfs_mk_dir snd_compat_devfs_mk_dir
-#undef devfs_mk_cdev
-int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...);
-#define devfs_mk_cdev snd_compat_devfs_mk_cdev
-#endif /* < 2.5.67 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
-					      unsigned int major, unsigned int minor,
-                                              char type, int traverse_symlinks)
-{
-	devfs_handle_t master;
-	master = devfs_find_handle(dir, name, strlen(name), major, minor, type, traverse_symlinks);
-	devfs_unregister(master);
-}
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-static inline void devfs_find_and_unregister (devfs_handle_t dir, const char *name,
-					      unsigned int major, unsigned int minor,
-                                              char type, int traverse_symlinks)
-{
-	devfs_handle_t master;
-	master = devfs_find_handle(dir, name, major, minor, type, traverse_symlinks);
-	devfs_unregister(master);
-}
-#endif
-#else /* !CONFIG_DEVFS_FS */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
-static inline void devfs_remove(const char *fmt, ...) { }
-#endif
-#undef devfs_mk_dir
-#define devfs_mk_dir(dir, args...) do { (void)(dir); } while (0)
-#undef devfs_mk_cdev
-#define devfs_mk_cdev(dev, mode, fmt, args...) do { (void)(dev); } while (0)
-#endif /* CONFIG_DEVFS_FS */
-#endif /* < 2.6.0 */
-
 #if defined(SND_NEED_USB_WRAPPER) && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
 #include "usb_wrapper.h"
 #endif
-
-/* workqueue-alike; 2.5.45 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#include <linux/workqueue.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45) && !defined(__WORK_INITIALIZER)
-#define SND_WORKQUEUE_COMPAT
-struct workqueue_struct;
-struct delayed_work;
-struct work_struct {
-	unsigned long pending;
-	struct list_head entry;
-	void (*func)(void *);
-	void *data;
-	void *wq_data;
-	struct timer_list timer;
-};
-#define INIT_WORK(_work, _func, _data)			\
-	do {						\
-		(_work)->func = _func;			\
-		(_work)->data = _data;			\
-		init_timer(&(_work)->timer);		\
-	} while (0)
-#define __WORK_INITIALIZER(n, f, d) {			\
-		.func = (f),				\
-		.data = (d),				\
-	}
-#define DECLARE_WORK(n, f, d)				\
-	struct work_struct n = __WORK_INITIALIZER(n, f, d)
-int snd_compat_schedule_work(struct work_struct *work);
-#define schedule_work(w) snd_compat_schedule_work(w)
-struct workqueue_struct *snd_compat_create_workqueue(const char *name);
-#define create_workqueue(name) snd_compat_create_workqueue((name))
-void snd_compat_flush_workqueue(struct workqueue_struct *wq);
-#define flush_workqueue(wq) snd_compat_flush_workqueue((wq));
-void snd_compat_destroy_workqueue(struct workqueue_struct *wq);
-#define destroy_workqueue(wq) snd_compat_destroy_workqueue((wq));
-int snd_compat_queue_work(struct workqueue_struct *wq, struct work_struct *work);
-#define queue_work(wq, work) snd_compat_queue_work((wq), (work))
-int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay);
-#define queue_delayed_work(wq, work, delay) snd_compat_queue_delayed_work((wq), (work), (delay))
-#define schedule_delayed_work(work, delay) snd_compat_queue_delayed_work(NULL, (work), (delay))
-int snd_compat_cancel_delayed_work(struct delayed_work *work);
-#define cancel_delayed_work(work) snd_compat_cancel_delayed_work(work)
-#define work_pending(work) test_bit(0, &(work)->pending)
-#define delayed_work_pending(w) work_pending(&(w)->work)
-#define flush_scheduled_work()
-#endif /* < 2.5.45 */
-#endif /* < 2.6.0 */
 
 #ifdef CONFIG_CREATE_WORKQUEUE_FLAGS
 #include <linux/workqueue.h>
@@ -648,45 +303,13 @@ struct delayed_work {
 #endif /* !SND_WORKQUEUE_COMPAT */
 #endif /* < 2.6.20 */
 
-/* 2.5 new modules */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#define try_module_get(x) try_inc_mod_count(x)
-static inline void module_put(struct module *module)
-{
-	if (module)
-		__MOD_DEC_USE_COUNT(module);
-}
-#endif /* 2.5.0 */
-
-/* gameport - 2.4 has different defines */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#ifdef CONFIG_INPUT_GAMEPORT
-#define CONFIG_GAMEPORT
-#endif
-#ifdef CONFIG_INPUT_GAMEPORT_MODULE
-#define CONFIG_GAMEPORT_MODULE
-#endif
-#endif /* 2.5.0 */
-
 /* vmalloc_to_page wrapper */
 #ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
 struct page *snd_compat_vmalloc_to_page(void *addr);
 #define vmalloc_to_page(addr) snd_compat_vmalloc_to_page(addr)
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
-#include <linux/vmalloc.h>
-static inline void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
-{
-	return vmap(pages, count);
-}
-#undef vmap
-#define vmap snd_compat_vmap
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) /* correct version? */
 #define EXPORT_NO_SYMBOLS
-#endif
 
 /* MODULE_ALIAS & co. */
 #ifndef MODULE_ALIAS
@@ -703,29 +326,9 @@ static inline void *snd_compat_vmap(struct page **pages, unsigned int count, uns
 #endif
 
 /* sysfs */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 2)
-struct class;
-struct class_device;
-struct class_device_attribute { }; /* dummy */
-#define __ATTR(cls,perm,read,write) { } /* dummy */
-static inline struct class_device* class_device_create(struct class *class, struct class_device *parent, int devnum, ...) { return NULL; }
-static inline void class_device_destroy(struct class *class, int devnum) { return; }
-static inline void *class_get_devdata(struct class_device *dev) { return NULL; }
-#else /* >= 2.6.2 */
 #ifndef CONFIG_SND_NESTED_CLASS_DEVICE
 #include <linux/device.h>
 #define class_device_create(cls,prt,devnum,args...) class_device_create(cls,devnum,##args)
-#endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
-#include <linux/sysfs.h>
-#ifndef __ATTR
-#define __ATTR(_name,_mode,_show,_store) { \
-	.attr = {.name = __stringify(_name), .mode = _mode, .owner = THIS_MODULE },	\
-	.show	= _show,					\
-	.store	= _store,					\
-}
-#endif /* __ATTR */
-#endif /* < 2.6.8 */
 #endif
 
 /* msleep */
@@ -791,19 +394,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 }
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#define snd_dma_pci_data(pci)	((struct device *)(pci))
-#define snd_dma_isa_data()	NULL
-#define snd_dma_sbus_data(sbus)	((struct device *)(sbus))
-#define snd_dma_continuous_data(x)	((struct device *)(unsigned long)(x))
-#endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
-#include <linux/mm.h>
-#include <asm/io.h>
-#include <asm/scatterlist.h>
-#endif
 #include <linux/dma-mapping.h>
 
 #ifndef DMA_32BIT_MASK
@@ -835,34 +426,12 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 #ifndef param_get_bint
 #define bint bool
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#undef module_param
-#define SNDRV_MODULE_TYPE_int	"i"
-#define SNDRV_MODULE_TYPE_bool	"i"
-#define SNDRV_MODULE_TYPE_uint	"i"
-#define SNDRV_MODULE_TYPE_charp	"s"
-#define SNDRV_MODULE_TYPE_long	"l"
-#define module_param_array(name, type, nump, perm) \
-	MODULE_PARM(name, "1-" __MODULE_STRING(SNDRV_CARDS) SNDRV_MODULE_TYPE_##type)
-#define module_param(name, type, perm) \
-	MODULE_PARM(name, SNDRV_MODULE_TYPE_##type)
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 10)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 10)
 #include <linux/moduleparam.h>
 #undef module_param_array
-/* we assumme nump is always NULL so we can use a dummy variable */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 5)
-#define module_param_array(name, type, nump, perm) \
-	static int boot_devs_##name; \
-	static struct kparam_array __param_arr_##name			\
-	= { ARRAY_SIZE(name), &boot_devs_##name, param_set_##type, param_get_##type,	\
-	    sizeof(name[0]), name };					\
-	module_param_call(name, param_array_set, param_array_get, 	\
-			  &__param_arr_##name, perm)
-#else
 #define module_param_array(name, type, nump, perm) \
 	static int boot_devs_##name; \
 	module_param_array_named(name, name, type, boot_devs_##name, perm)
-#endif /* < 2.6.5 */
 #endif /* < 2.6.10 */
 #endif /* < 3.2.0 */
 
@@ -988,20 +557,6 @@ typedef u32 __bitwise pm_message_t;
 #endif
 #endif
 
-/* __GFP_XXX */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)
-/* #incldue <linux/gfp.h> */
-#ifndef __GFP_COMP
-#define __GFP_COMP	0
-#endif
-#ifndef __GFP_NOWARN
-#define __GFP_NOWARN	0
-#endif
-#ifndef __GFP_NORETRY
-#define __GFP_NORETRY	0
-#endif
-#endif
-
 /* vprintk */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
 #include <linux/kernel.h>
@@ -1012,12 +567,6 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 	printk(tmpbuf);
 }
 #define vprintk snd_compat_vprintk
-#endif
-
-/* printk_ratelimit() */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#include <linux/kernel.h>
-#define printk_ratelimit()	1
 #endif
 
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
@@ -1055,78 +604,6 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #endif /* to_gameport_driver */
 #endif /* GAMEPORT || GAMEPORT_MODULE */
 
-/* use pci_module_init on 2.4 kernels */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#ifdef CONFIG_PCI
-#include <linux/pci.h>
-
-/* power management compatibility layer */
-#if defined(CONFIG_PM) && defined(PCI_OLD_SUSPEND)
-struct snd_compat_pci_driver {
-	struct pci_driver real_driver;
-	char *name;
-	const struct pci_device_id *id_table;
-	int (*probe)(struct pci_dev *dev, const struct pci_device_id *id);
-	void (*remove)(struct pci_dev *dev);
-	int (*suspend)(struct pci_dev *dev, u32 state);
-	int (*resume)(struct pci_dev *dev);
-};
-
-static inline void snd_pci_old_suspend(sturct pci_dev *pci)
-{
-	struct snd_compat_pci_driver *driver = (struct snd_compat_pci_driver *)pci->driver;
-	if (driver->suspend)
-		driver->suspend(pci, PMSG_SUSPEND);
-}
-static inline void snd_pci_old_resume(struct pci_dev *pci)
-{
-	struct snd_compat_pci_driver *driver = (struct snd_compat_pci_driver *)pci->driver;
-	if (driver->resume)
-		driver->resume(pci);
-}
-
-static inline int snd_pci_compat_register_driver(struct snd_compat_pci_driver *driver)
-{
-	driver->real_driver.name = driver->name;
-	driver->real_driver.id_table = driver->id_table;
-	driver->real_driver.probe = driver->probe;
-	driver->real_driver.remove = driver->remove;
-	if (driver->suspend || driver->resume) {
-		driver->real_driver.suspend = snd_pci_old_suspend;
-		driver->real_driver.resume = snd_pci_old_resume;
-	} else {
-		driver->real_driver.suspend = driver->suspend;
-		driver->real_driver.resume = driver->resume;
-	}
-	return pci_module_init(&driver->real_driver);
-}
-
-static inline void snd_pci_compat_unregister_driver(struct snd_compat_pci_driver *driver)
-{
-	pci_unregister_driver(&driver->real_driver);
-}
-
-#define pci_driver snd_compat_pci_driver
-#undef pci_register_driver
-#define pci_register_driver snd_pci_compat_register_driver
-#undef pci_unregister_driver
-#define pci_unregister_driver snd_pci_compat_unregister_driver
-
-#else
-
-static inline int snd_pci_compat_register_driver(struct pci_driver *driver)
-{
-	return pci_module_init(driver);
-}
-
-#undef pci_register_driver
-#define pci_register_driver snd_pci_compat_register_driver
-
-#endif /* CONFIG_PM && PCI_OLD_SUSPEND */
-#endif /* CONFIG_PCI */
-#endif /* 2.4 */
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #ifdef CONFIG_PCI
 #ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
 int snd_pci_compat_save_state(struct pci_dev *pci);
@@ -1146,15 +623,6 @@ static inline int snd_pci_orig_restore_state(struct pci_dev *pci, u32 *buffer)
 #define pci_restore_state	snd_pci_compat_restore_state
 #endif /* !CONFIG_HAVE_NEW_PCI_SAVE_STATE */
 #endif /* CONFIG_PCI */
-#endif /* >= 2.4.0 */
-
-/* pci_get_device() and pci_dev_put() wrappers */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#ifdef CONFIG_PCI
-#define pci_get_device	pci_find_device
-#define pci_dev_put(x)
-#endif
-#endif
 
 /* wrapper for getnstimeofday()
  * it's needed for recent 2.6 kernels, too, due to lack of EXPORT_SYMBOL
@@ -1307,15 +775,6 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 	(((node) && (node)->n_intrs > (x)) ? (node)->intrs[x].line : NO_IRQ)
 #endif /* < 2.6.18 */
 #endif /* PPC */
-
-/* MSI */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
-static inline int snd_pci_enable_msi(struct pci_dev *dev) { return -1; }
-#undef pci_enable_msi
-#define pci_enable_msi(dev) snd_pci_enable_msi(dev)
-#undef pci_disable_msi
-#define pci_disable_msi(dev)
-#endif
 
 /* SEEK_XXX */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18)
@@ -1660,32 +1119,6 @@ static inline const char *dev_name(struct device *dev)
 })
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#define dev_printk(level, dev, format, arg...)	\
-	printk(level format, ##arg)
-#define dev_emerg(dev, format, arg...)		\
-	dev_printk(KERN_EMERG , dev , format , ## arg)
-#define dev_alert(dev, format, arg...)		\
-	dev_printk(KERN_ALERT , dev , format , ## arg)
-#define dev_crit(dev, format, arg...)		\
-	dev_printk(KERN_CRIT , dev , format , ## arg)
-#define dev_err(dev, format, arg...)		\
-	dev_printk(KERN_ERR , dev , format , ## arg)
-#define dev_warn(dev, format, arg...)		\
-	dev_printk(KERN_WARNING , dev , format , ## arg)
-#define dev_notice(dev, format, arg...)		\
-	dev_printk(KERN_NOTICE , dev , format , ## arg)
-#define dev_info(dev, format, arg...)		\
-	dev_printk(KERN_INFO , dev , format , ## arg)
-#ifdef DEBUG
-#define dev_dbg(dev, format, arg...)		\
-	dev_printk(KERN_DEBUG , dev , format , ## arg)
-#else
-#define dev_dbg(dev, format, arg...)		\
-	({ if (0) dev_printk(KERN_DEBUG, dev, format, ##arg); 0; })
-#endif
-#endif /* < 2.6.0 */
-
 /*
  * wrapper for older SPARC codes with SBUS/EBUS specific bus
  */
@@ -1714,14 +1147,6 @@ static inline void *pci_ioremap_bar(struct pci_dev *pdev, int bar)
 	return ioremap_nocache(pci_resource_start(pdev, bar),
 			       pci_resource_len(pdev, bar));
 }
-#endif
-#endif
-
-/* pci_name() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 23)
-#ifdef CONFIG_PCI
-#undef pci_name
-#define pci_name(pci)	((pci)->slot_name)
 #endif
 #endif
 
@@ -1831,14 +1256,6 @@ char *compat_skip_spaces(const char *);
 #define skip_spaces	compat_skip_spaces
 #endif
 
-/* subsys_initcall() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-#include <linux/init.h>
-#ifndef subsys_initcall
-#define subsys_initcall(x) module_init(x)
-#endif
-#endif
-
 /* DEFINE_PCI_DEVICE_TABLE() */
 #ifdef CONFIG_PCI
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
@@ -1901,26 +1318,9 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 #endif /* BLOCKING_INIT_NOTIFIER_HEAD */
 #endif /* <2.6.17 */
 
-/* pgprot_noncached - 2.4 has different defines */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#ifndef pgprot_noncached
-#define pgprot_noncached(x) (x)
-#endif
-#endif
-
-/* no_llseek() */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#define no_llseek	NULL
-#endif
-
 /* noop_llseek() */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
 #define noop_llseek	NULL
-#endif
-
-/* nonseekable_open() */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
-#define nonseekable_open(i,f) 0
 #endif
 
 /* hex_to_bin() */
