@@ -1,28 +1,9 @@
 #include "alsa-autoconf.h"
 #define __NO_VERSION__
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#include "sndversions.h"
-#endif
-#endif
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#include <linux/ioport.h>
-static inline void snd_memory_wrapper_request_region(unsigned long from, unsigned long extent, const char *name)
-{
-	request_region(from, extent, name);
-}
-#endif
-
 #undef CONFIG_SND_DEBUG_MEMORY
 #include "adriver.h"
 #include <linux/mm.h>
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#include <sound/memalloc.h>
-#include "pci_compat_22.c"
-#endif
 
 /* vmalloc_to_page wrapper */
 #ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
@@ -36,20 +17,12 @@ struct page *snd_compat_vmalloc_to_page(void *pageptr)
 	struct page *page;
 
 	lpage = VMALLOC_VMADDR(pageptr);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 	spin_lock(&init_mm.page_table_lock);
-#endif
 	pgd = pgd_offset(&init_mm, lpage);
 	pmd = pmd_offset(pgd, lpage);
 	pte = pte_offset(pmd, lpage);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
-	page = virt_to_page(pte_page(*pte));
-#else
 	page = pte_page(*pte);
-#endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
 	spin_unlock(&init_mm.page_table_lock);
-#endif
 
 	return page;
 }    
