@@ -604,6 +604,98 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 #endif /* to_gameport_driver */
 #endif /* GAMEPORT || GAMEPORT_MODULE */
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+#define SND_COMPAT_DEV_PM_OPS
+#endif
+
+#ifdef SND_COMPAT_DEV_PM_OPS
+#include <linux/device.h>
+#include <linux/pm.h>
+
+/* so far only handle simple cases */
+struct snd_compat_dev_pm_ops {
+	int (*suspend)(struct device *dev);
+	int (*resume)(struct device *dev);
+};
+
+struct snd_compat_dev_pm_driver {
+	const char *name;
+	struct module *owner;
+	const struct snd_compat_dev_pm_ops *pm;
+};
+
+#define SIMPLE_DEV_PM_OPS(name, suspend_fn, resume_fn) \
+const struct snd_compat_dev_pm_ops name = { \
+	.suspend = suspend_fn, \
+	.resume = resume_fn, \
+}
+
+#ifdef CONFIG_PCI
+#include <linux/pci.h>
+
+struct snd_compat_pci_driver {
+	struct pci_driver real_driver;
+	char *name;
+	const struct pci_device_id *id_table;
+	int (*probe)(struct pci_dev *dev, const struct pci_device_id *id);
+	void (*remove)(struct pci_dev *dev);
+	void (*shutdown)(struct pci_dev *dev);
+	struct snd_compat_dev_pm_driver driver;
+};
+
+int snd_compat_pci_register_driver(struct snd_compat_pci_driver *driver);
+static inline void snd_compat_pci_unregister_driver(struct snd_compat_pci_driver *driver)
+{
+	pci_unregister_driver(&driver->real_driver);
+}
+
+static inline int snd_orig_pci_register_driver(struct pci_driver *driver)
+{
+	return pci_register_driver(driver);
+}
+
+#define pci_driver		snd_compat_pci_driver
+#undef pci_register_driver
+#define pci_register_driver	snd_compat_pci_register_driver
+#undef pci_unregister_driver
+#define pci_unregister_driver	snd_compat_pci_unregister_driver
+#endif /* CONFIG_PCI */
+
+/*
+ */
+#include <linux/platform_device.h>
+
+/* defined in platform_device_compat.h */
+#ifndef SND_COMPAT_PLATFORM_DEVICE
+
+struct snd_compat_platform_driver {
+	struct platform_driver real_driver;
+	int (*probe)(struct platform_device *);
+	int (*remove)(struct platform_device *);
+	void (*shutdown)(struct platform_device *);
+	struct snd_compat_dev_pm_driver driver;
+};
+
+int snd_compat_platform_driver_register(struct snd_compat_platform_driver *driver);
+static inline void snd_compat_platform_driver_unregister(struct snd_compat_platform_driver *driver)
+{
+	platform_driver_unregister(&driver->real_driver);
+}
+
+static inline int snd_orig_platform_driver_register(struct platform_driver *driver)
+{
+	return platform_driver_register(driver);
+}
+
+#define platform_driver		snd_compat_platform_driver
+#undef platform_driver_register
+#define platform_driver_register	snd_compat_platform_driver_register
+#undef platform_driver_unregister
+#define platform_driver_unregister	snd_compat_platform_driver_unregister
+#endif /* !SND_COMPAT_PLATFORM_DEVICE */
+
+#endif /* SND_COMPAT_DEV_PM_OPS */
+
 /* wrapper for getnstimeofday()
  * it's needed for recent 2.6 kernels, too, due to lack of EXPORT_SYMBOL
  */

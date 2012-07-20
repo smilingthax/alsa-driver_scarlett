@@ -4,6 +4,7 @@
 struct v4l2_device {
 	int dummy;
 };
+#define v4l2_file_operations	file_operations
 #define v4l2_device_register(x, y) 0
 #define v4l2_device_unregister(x)
 #endif

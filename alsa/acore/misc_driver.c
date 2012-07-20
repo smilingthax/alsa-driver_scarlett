@@ -445,3 +445,136 @@ EXPORT_SYMBOL(snd_isa_unregister_driver);
 #endif /* HAVE_DUMMY_SND_ISA_WRAPPER */
 #endif /* < 2.6.18 */
 #endif /* CONFIG_ISA */
+
+/*
+ * new pm_ops wrapper for PCI device
+ */
+#if defined(CONFIG_PCI) && defined(SND_COMPAT_DEV_PM_OPS)
+#include <linux/pci.h>
+static int snd_pci_suspend(struct pci_dev *pci, pm_message_t state)
+{
+	struct snd_compat_pci_driver *driver =
+		(struct snd_compat_pci_driver *)pci->driver;
+	return driver->driver.pm->suspend(&pci->dev);
+}
+
+static int snd_pci_resume(struct pci_dev *pci)
+{
+	struct snd_compat_pci_driver *driver =
+		(struct snd_compat_pci_driver *)pci->driver;
+	return driver->driver.pm->resume(&pci->dev);
+}
+
+int snd_compat_pci_register_driver(struct snd_compat_pci_driver *driver)
+{
+	driver->real_driver.name = driver->name;
+	driver->real_driver.id_table = driver->id_table;
+	driver->real_driver.probe = driver->probe;
+	driver->real_driver.remove = driver->remove;
+	driver->real_driver.shutdown = driver->shutdown;
+	if (driver->driver.pm) {
+		if (driver->driver.pm->suspend)
+			driver->real_driver.suspend = snd_pci_suspend;
+		if (driver->driver.pm->resume)
+			driver->real_driver.resume = snd_pci_resume;
+	}
+	return snd_orig_pci_register_driver(&driver->real_driver);
+}
+EXPORT_SYMBOL(snd_compat_pci_register_driver);
+#endif /* CONFIG_PCI && SND_COMPAT_DEV_PM_OPS */
+
+/*
+ * new pm_ops wrapper for platform_device (>= 2.6.15)
+ */
+#if !defined(SND_COMPAT_PLATFORM_DEVICE) && defined(SND_COMPAT_DEV_PM_OPS)
+static int snd_platform_suspend(struct platform_device *dev, pm_message_t state)
+{
+	struct platform_driver *drv =
+		(struct platform_driver *)dev->dev.driver;
+	return drv->driver.pm->suspend(&dev->dev);
+}
+
+static int snd_platform_resume(struct platform_device *dev)
+{
+	struct platform_driver *drv =
+		(struct platform_driver *)dev->dev.driver;
+	return drv->driver.pm->resume(&dev->dev);
+}
+
+int snd_compat_platform_driver_register(struct snd_compat_platform_driver *driver)
+{
+	driver->real_driver.driver.name = driver->driver.name;
+	driver->real_driver.driver.owner = driver->driver.owner;
+	driver->real_driver.probe = driver->probe;
+	driver->real_driver.remove = driver->remove;
+	driver->real_driver.shutdown = driver->shutdown;
+	if (driver->driver.pm) {
+		if (driver->driver.pm->suspend)
+			driver->real_driver.suspend = snd_platform_suspend;
+		if (driver->driver.pm->resume)
+			driver->real_driver.resume = snd_platform_resume;
+	}
+	return snd_orig_platform_driver_register(&driver->real_driver);
+}
+EXPORT_SYMBOL(snd_compat_platform_driver_register);
+#endif /* !SND_COMPAT_PLATFORM_DEVICE && SND_COMPAT_DEV_PM_OPS */
+
+/*
+ * platfrom_device wrapper for older (<= 2.6.14) kernels
+ */
+#ifdef SND_COMPAT_PLATFORM_DEVICE
+static int snd_platform_probe(struct device *dev)
+{
+	struct platform_driver *drv;
+	drv = (struct platform_driver *)dev->driver;
+	return drv->probe(to_platform_device(dev));
+}
+
+static int snd_platform_remove(struct device *dev)
+{
+	struct platform_driver *drv;
+	drv = (struct platform_driver *)dev->driver;
+	return drv->remove(to_platform_device(dev));
+}
+
+static int snd_platform_suspend(struct device *dev, pm_message_t state
+#ifdef CONFIG_SND_OLD_DRIVER_SUSPEND
+					, u32 level
+#endif
+					)
+{
+	struct platform_driver *drv =
+		(struct platform_driver *)dev->dev.driver;
+	return drv->driver.pm->suspend(dev);
+}
+
+static int snd_platform_resume(struct platform_device *dev)
+{
+	struct platform_driver *drv =
+		(struct platform_driver *)dev->dev.driver;
+	return drv->driver.pm->resume(dev);
+}
+
+#undef platform_driver_register
+
+int platform_driver_register(struct platform_driver *driver)
+{
+	driver->real_driver.bus = &platform_bus_type;
+	driver->real_driver.name = driver->driver.name;
+	driver->real_driver.owner = driver->driver.owner;
+	if (driver->driver.probe)
+		driver->real_driver.probe = snd_platform_probe;
+	if (driver->driver.remove)
+		driver->real_driver.remove = snd_platform_remove;
+	if (driver->driver.shutdown)
+		driver->real_driver.shutdown = snd_platform_shutdown;
+	if (driver->driver.pm) {
+		if (driver->dev.pm->suspend)
+			driver->real_driver.suspend = snd_platform_suspend;
+		if (driver->dev.pm->resume)
+			driver->real_driver.resume = snd_platform_resume;
+	}
+	return driver_register(&driver->real_driver);
+}
+EXPORT_SYMBOL(platform_driver_register);
+#endif /* SND_COMPAT_PLATFORM_DEVICE */
