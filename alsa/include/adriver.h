@@ -694,6 +694,21 @@ static inline int snd_orig_platform_driver_register(struct platform_driver *driv
 #define platform_driver_unregister	snd_compat_platform_driver_unregister
 #endif /* !SND_COMPAT_PLATFORM_DEVICE */
 
+#else /* SND_COMPAT_DEV_PM_OPS */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+#include <linux/pm.h>
+/* Fix missing const in SIMPLE_DEV_PM_OPS() */
+#undef SIMPLE_DEV_PM_OPS
+#define SIMPLE_DEV_PM_OPS(name, suspend_fn, resume_fn) \
+const struct dev_pm_ops name = { \
+	.suspend = suspend_fn, \
+	.resume = resume_fn, \
+	.freeze = suspend_fn, \
+	.thaw = resume_fn, \
+	.poweroff = suspend_fn, \
+	.restore = resume_fn, \
+}
+#endif /* < 2.6.33 */
 #endif /* SND_COMPAT_DEV_PM_OPS */
 
 /* wrapper for getnstimeofday()
