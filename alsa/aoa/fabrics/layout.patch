@@ -1,0 +1,31 @@
+--- ../../alsa-kernel/aoa/fabrics/layout.c	2011-10-19 17:32:44.000000000 +0200
++++ layout.c	2012-07-20 16:56:54.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "ppc-prom-hack.h"
+ /*
+  * Apple Onboard Audio driver -- layout/machine id fabric
+  *
+@@ -769,7 +770,11 @@
+ 				"required property %s not present\n", propname);
+ 			return -ENODEV;
+ 		}
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 34)
+ 		if (*ref != codec->node->phandle) {
++#else
++		if (*ref != codec->node->linux_phandle) {
++#endif
+ 			printk(KERN_INFO "snd-aoa-fabric-layout: "
+ 				"%s doesn't match!\n", propname);
+ 			return -ENODEV;
+@@ -992,7 +997,11 @@
+ 		return -ENODEV;
+ 
+ 	/* by breaking out we keep a reference */
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
+ 	while ((sound = of_get_next_child(sdev->ofdev.dev.of_node, sound))) {
++#else
++	while ((sound = of_get_next_child(sdev->ofdev.node, sound))) {
++#endif
+ 		if (sound->type && strcasecmp(sound->type, "soundchip") == 0)
+ 			break;
+ 	}

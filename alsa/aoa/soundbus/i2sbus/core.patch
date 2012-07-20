@@ -1,0 +1,31 @@
+--- ../../../alsa-kernel/aoa/soundbus/i2sbus/core.c	2011-10-19 17:32:44.000000000 +0200
++++ core.c	2012-07-20 16:59:28.000000000 +0200
+@@ -1,3 +1,4 @@
++#incldue "ppc-prom-hack.h"
+ /*
+  * i2sbus driver
+  *
+@@ -222,7 +223,11 @@
+ 	mutex_init(&dev->lock);
+ 	spin_lock_init(&dev->low_lock);
+ 	dev->sound.ofdev.archdata.dma_mask = macio->ofdev.archdata.dma_mask;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
+ 	dev->sound.ofdev.dev.of_node = np;
++#else
++	dev->sound.ofdev.node = np;
++#endif
+ 	dev->sound.ofdev.dev.dma_mask = &dev->sound.ofdev.archdata.dma_mask;
+ 	dev->sound.ofdev.dev.parent = &macio->ofdev.dev;
+ 	dev->sound.ofdev.dev.release = i2sbus_release_dev;
+@@ -345,7 +350,11 @@
+ 		return -ENODEV;
+ 	}
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
+ 	while ((np = of_get_next_child(dev->ofdev.dev.of_node, np))) {
++#else
++	while ((np = of_get_next_child(dev->ofdev.node, np))) {
++#endif
+ 		if (of_device_is_compatible(np, "i2sbus") ||
+ 		    of_device_is_compatible(np, "i2s-modem")) {
+ 			got += i2sbus_add_dev(dev, control, np);

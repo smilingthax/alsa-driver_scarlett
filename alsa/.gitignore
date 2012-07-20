@@ -46,6 +46,11 @@ acore/seq/seq.c
 acore/seq/seq_clientmgr.c
 acore/sound.c
 acore/timer.c
+aoa/fabrics/layout.c
+aoa/soundbus/core.c
+aoa/soundbus/sysfs.c
+aoa/soundbus/i2sbus/control.c
+aoa/soundbus/i2sbus/core.c
 drivers/mpu401/mpu401.c
 drivers/mts64.c
 drivers/pcsp/pcsp.c

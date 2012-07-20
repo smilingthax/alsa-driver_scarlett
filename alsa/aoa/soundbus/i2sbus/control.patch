@@ -1,0 +1,19 @@
+--- ../../../alsa-kernel/aoa/soundbus/i2sbus/control.c	2011-10-19 17:32:44.000000000 +0200
++++ control.c	2012-07-20 16:58:07.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  * i2sbus driver -- bus control routines
+  *
+@@ -42,7 +43,11 @@
+ {
+ 	struct device_node *np;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
+ 	np = i2sdev->sound.ofdev.dev.of_node;
++#else
++	np = i2sdev->sound.ofdev.node;
++#endif
+ 	i2sdev->enable = pmf_find_function(np, "enable");
+ 	i2sdev->cell_enable = pmf_find_function(np, "cell-enable");
+ 	i2sdev->clock_enable = pmf_find_function(np, "clock-enable");

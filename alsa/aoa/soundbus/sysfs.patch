@@ -1,0 +1,42 @@
+--- ../../alsa-kernel/aoa/soundbus/sysfs.c	2011-10-19 17:32:44.000000000 +0200
++++ sysfs.c	2012-07-20 17:01:25.000000000 +0200
+@@ -1,8 +1,10 @@
++#include "adriver.h"
+ #include <linux/kernel.h>
+ #include <linux/stat.h>
+ /* FIX UP */
+ #include "soundbus.h"
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
+ #define soundbus_config_of_attr(field, format_string)			\
+ static ssize_t								\
+ field##_show (struct device *dev, struct device_attribute *attr,	\
+@@ -11,6 +13,16 @@
+ 	struct soundbus_dev *mdev = to_soundbus_device (dev);		\
+ 	return sprintf (buf, format_string, mdev->ofdev.dev.of_node->field); \
+ }
++#else
++#define soundbus_config_of_attr(field, format_string)			\
++static ssize_t								\
++field##_show (struct device *dev, struct device_attribute *attr,	\
++              char *buf)						\
++{									\
++	struct soundbus_dev *mdev = to_soundbus_device (dev);		\
++	return sprintf (buf, format_string, mdev->ofdev.node->field);	\
++}
++#endif
+ 
+ static ssize_t modalias_show(struct device *dev, struct device_attribute *attr,
+ 			     char *buf)
+@@ -25,7 +37,11 @@
+ 		length = strlen(buf);
+ 	} else {
+ 		length = sprintf(buf, "of:N%sT%s\n",
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 35)
+ 				 of->dev.of_node->name, of->dev.of_node->type);
++#else
++				 of->node->name, of->node->type);
++#endif
+ 	}
+ 
+ 	return length;
