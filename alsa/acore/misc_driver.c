@@ -302,6 +302,9 @@ struct isa_platform_link {
 	struct isa_driver *isa;
 	unsigned int cards;
 	struct platform_device *pdevs[MAX_ISA_NUMS];
+#ifdef CONFIG_PM
+	struct snd_compat_dev_pm_ops pm;
+#endif
 	struct list_head list;
 };
 	
@@ -321,10 +324,9 @@ static struct isa_platform_link *get_pdev_link(struct platform_device *pdev)
 {
 	struct platform_driver *pdrv = container_of(pdev->dev.driver,
 						    struct platform_driver,
-						    driver);
+						    real_driver);
 	return (struct isa_platform_link *)pdrv;
 }
-
 
 static int snd_isa_platform_probe(struct platform_device *pdev)
 {
@@ -352,25 +354,26 @@ static int snd_isa_platform_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM
-static int snd_isa_platform_suspend(struct platform_device *pdev,
-				    pm_message_t state)
+static int snd_isa_platform_suspend(struct device *dev)
 {
+	struct platform_device *pdev = to_platform_device(dev);
 	struct isa_platform_link *p = get_pdev_link(pdev);
 	int n = pdev->id;
 
 	if (!p)
 		return -EINVAL;
-	return p->isa->suspend(&pdev->dev, n, state);
+	return p->isa->suspend(dev, n, PMSG_SUSPEND);
 }
 
-static int snd_isa_platform_resume(struct platform_device *pdev)
+static int snd_isa_platform_resume(struct device *dev)
 {
+	struct platform_device *pdev = to_platform_device(dev);
 	struct isa_platform_link *p = get_pdev_link(pdev);
 	int n = pdev->id;
 
 	if (!p)
 		return -EINVAL;
-	return p->isa->resume(&pdev->dev, n);
+	return p->isa->resume(dev, n);
 }
 #endif
 
@@ -392,13 +395,16 @@ int snd_isa_register_driver(struct isa_driver *driver, unsigned int nums)
 	p->isa = driver;
 	p->platform.probe = snd_isa_platform_probe;
 	p->platform.driver.name = driver->driver.name;
+	p->platform.driver.owner = driver->driver.owner;
 	if (driver->remove)
 		p->platform.remove = snd_isa_platform_remove;
 #ifdef CONFIG_PM
 	if (driver->suspend)
-		p->platform.suspend = snd_isa_platform_suspend;
+		p->pm.suspend = snd_isa_platform_suspend;
 	if (driver->resume)
-		p->platform.resume = snd_isa_platform_resume;
+		p->pm.resume = snd_isa_platform_resume;
+	if (driver->suspend || driver->resume)
+		p->platform.driver.pm = &p->pm;
 #endif
 	err = platform_driver_register(&p->platform);
 	if (err < 0) {
