@@ -1,7 +1,7 @@
 --- ../../../alsa-kernel/aoa/soundbus/i2sbus/core.c	2011-10-19 17:32:44.000000000 +0200
 +++ core.c	2012-07-20 16:59:28.000000000 +0200
 @@ -1,3 +1,4 @@
-+#incldue "ppc-prom-hack.h"
++#include "ppc-prom-hack.h"
  /*
   * i2sbus driver
   *
