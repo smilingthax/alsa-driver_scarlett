@@ -65,13 +65,15 @@ dnl Check for directory with current ALSA linux kernel sources...
 AC_MSG_CHECKING(for directory with ALSA kernel sources)
 AC_ARG_WITH(alsakernel,
   [  --with-alsakernel=dir   give the directory with ALSA kernel sources]
-  [                        [[../alsa-kmirror]]],
+  [                        [[..]]],
   [alsakerneldir="$withval"],
-  [alsakerneldir="../alsa-kmirror"]
+  [alsakerneldir=".."]
 )
 ALSAKERNELDIR=""
 if test -d "$alsakerneldir"; then
   ALSAKERNELDIR=$(cd "$alsakerneldir" && pwd)
+elif test -d "mirror"; then
+  ALSAKERNELDIR=$(cd "mirror" && pwd)
 elif test -d "alsa-kernel"; then
   ALSAKERNELDIR=$(cd "alsa-kernel" && pwd)
 fi

@@ -27,8 +27,10 @@ fi
 #  cd ..
 #fi
 
-# check for alsa-kmirror directory
-if [ -d alsa-kernel -a -f alsa-kernel/sound/last.c ]; then
+# check for kernel-mirrored tree
+if [ -f ../.alsamirror ]; then
+  ALSAKERNELDIR=$(cd .. && pwd)
+elif [ -d alsa-kernel -a -f alsa-kernel/sound/last.c ]; then
   ALSAKERNELDIR="alsa-kernel"
 elif [ -d alsa-kmirror -a -f alsa-kmirror/last.c ]; then
   ALSAKERNELDIR="alsa-kmirror"
