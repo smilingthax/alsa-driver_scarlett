@@ -1,7 +1,7 @@
 --- ../../alsa-kernel/aoa/soundbus/sysfs.c	2011-10-19 17:32:44.000000000 +0200
 +++ sysfs.c	2012-07-23 10:16:01.000000000 +0200
 @@ -1,8 +1,10 @@
-+#include "ppc-prom-hack.h"
++#include "snd-aoa-hack.h"
  #include <linux/kernel.h>
  #include <linux/stat.h>
  /* FIX UP */
