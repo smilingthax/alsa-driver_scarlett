@@ -1,2 +1,2 @@
-#include "adriver.h"
+#include "ppc-prom-hack.h"
 #include "../../alsa-kernel/aoa/codecs/toonie.c"

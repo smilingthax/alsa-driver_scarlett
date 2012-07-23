@@ -7,3 +7,6 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 21)
 #define of_get_property		get_property
 #endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 36)
+#define platform_device		of_device
+#endif
