@@ -434,6 +434,13 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 	module_param_array_named(name, name, type, boot_devs_##name, perm)
 #endif /* < 2.6.10 */
 #endif /* < 3.2.0 */
+#if defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 0)
+#include <linux/moduleparam.h>
+#undef param_check_bool
+#define param_check_bool(name, p) __param_check(name, p, bool)
+#undef bint
+#define bint int
+#endif
 
 /* dump_stack hack */
 #ifndef CONFIG_HAVE_DUMP_STACK
@@ -629,6 +636,8 @@ const struct snd_compat_dev_pm_ops name = { \
 	.suspend = suspend_fn, \
 	.resume = resume_fn, \
 }
+
+#define dev_pm_ops snd_compat_dev_pm_ops
 
 #ifdef CONFIG_PCI
 #include <linux/pci.h>
@@ -1138,17 +1147,20 @@ XXX_DEFINE_STRTO(ull, unsigned long long);
 	printk(KERN_NOTICE fmt, ##arg)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 26) && \
-    LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
+#ifndef CONFIG_HAVE_DEV_NAME
 static inline const char *dev_name(struct device *dev)
 {
 	return dev->bus_id;
 }
-
 /* FIXME: return value is invalid */
 #define dev_set_name(dev, fmt, args...) \
 	snprintf((dev)->bus_id, sizeof((dev)->bus_id), fmt, ##args) 
-#endif /* < 2.6.26 */
+#else
+#ifndef CONFIG_HAVE_DEV_SET_NAME
+#define dev_set_name(dev, fmt, args...) \
+	kobject_set_name(&(dev)->kobj, fmt, ##args)
+#endif
+#endif
 
 #ifndef WARN
 #define WARN(condition, arg...) ({ \
@@ -1282,15 +1294,14 @@ static inline void *snd_memdup_user(const void __user *src, size_t len)
 #endif
 #endif /* < 2.6.20 */
 
-/* put_pid() function was not exported before 2.6.19 */
+/* put_pid() function was not exported before 2.6.19, but distributions
+   may include code from upstream */
+#ifndef CONFIG_HAVE_PUT_PID
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
 #define CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 19)
 #define CONFIG_SND_HAS_TASK_PID
-#endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
-#define CONFIG_SND_HAS_PID_VNR
 #endif
 #ifndef CONFIG_SND_HAS_REFCOUNTED_STRUCT_PID
 /* use nr as pointer */
@@ -1306,12 +1317,14 @@ static inline struct pid *task_pid(struct task_struct *task)
 	return task->pids[PIDTYPE_PID].pid;
 }
 #endif
-#ifndef CONFIG_SND_HAS_PID_VNR
+#endif
+#endif
+
+#ifndef CONFIG_HAVE_PID_VNR
 static inline pid_t pid_vnr(struct pid *pid)
 {
 	return pid ? pid->nr : 0;
 }
-#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
@@ -1435,6 +1448,15 @@ static inline void *vzalloc(unsigned long size)
 	if (p)
 		memset(p, 0, size);
 	return p;
+}
+#endif
+
+#ifndef CONFIG_HAVE_DIV_U64
+#include <asm/div64.h>
+static inline u64 div_u64(u64 dividend, u32 divisor)
+{
+	do_div(dividend, divisor);
+	return dividend;
 }
 #endif
 

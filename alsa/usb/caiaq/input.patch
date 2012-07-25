@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/caiaq/input.c	2011-10-19 17:32:45.000000000 +0200
-+++ input.c	2011-12-20 07:39:37.000000000 +0100
+--- ../../mirror/sound/usb/caiaq/input.c	2012-07-23 20:09:18.892605450 +0200
++++ input.c	2012-07-25 16:09:06.463774908 +0200
 @@ -1,3 +1,5 @@
 +#include "adriver.h"
 +#include "../usbcompat.h"
@@ -37,7 +37,19 @@
  static unsigned short keycode_ak1[] =  { KEY_C, KEY_B, KEY_A };
  static unsigned short keycode_rk2[] =  { KEY_1, KEY_2, KEY_3, KEY_4,
  					 KEY_5, KEY_6, KEY_7 };
-@@ -540,7 +559,11 @@
+@@ -497,7 +516,11 @@ static void snd_usb_caiaq_maschine_dispa
+ 	input_sync(dev->input_dev);
+ }
+ 
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void snd_usb_caiaq_ep4_reply_dispatch(struct urb *urb, struct pt_regs *regs)
++#else
+ static void snd_usb_caiaq_ep4_reply_dispatch(struct urb *urb)
++#endif
+ {
+ 	struct snd_usb_caiaqdev *dev = urb->context;
+ 	unsigned char *buf = urb->transfer_buffer;
+@@ -540,7 +563,11 @@ requeue:
  
  static int snd_usb_caiaq_input_open(struct input_dev *idev)
  {
@@ -49,7 +61,7 @@
  
  	if (!dev)
  		return -EINVAL;
-@@ -559,7 +582,11 @@
+@@ -559,7 +586,11 @@ static int snd_usb_caiaq_input_open(stru
  
  static void snd_usb_caiaq_input_close(struct input_dev *idev)
  {
@@ -61,7 +73,7 @@
  
  	if (!dev)
  		return;
-@@ -599,7 +626,11 @@
+@@ -599,7 +630,11 @@ int snd_usb_caiaq_input_init(struct snd_
  	struct input_dev *input;
  	int i, ret = 0;
  
@@ -73,7 +85,7 @@
  	if (!input)
  		return -ENOMEM;
  
-@@ -609,9 +640,17 @@
+@@ -609,9 +644,17 @@ int snd_usb_caiaq_input_init(struct snd_
  	input->name = dev->product_name;
  	input->phys = dev->phys;
  	usb_to_input_id(usb_dev, &input->id);
@@ -91,7 +103,7 @@
  
  	switch (dev->chip.usb_id) {
  	case USB_ID(USB_VID_NATIVEINSTRUMENTS, USB_PID_RIGKONTROL2):
-@@ -816,9 +855,13 @@
+@@ -816,9 +859,13 @@ int snd_usb_caiaq_input_init(struct snd_
  
  	dev->input_dev = input;
  

@@ -44,6 +44,7 @@ acore/rawmidi.c
 acore/seq/oss/seq_oss.c
 acore/seq/seq.c
 acore/seq/seq_clientmgr.c
+acore/seq/seq_memory.c
 acore/sound.c
 acore/timer.c
 aoa/fabrics/layout.c
@@ -67,6 +68,7 @@ include/autoconf-extra.h
 include/config.h
 include/config1.h
 include/config1.h.in
+include/kconfig.h
 include/asm/
 include/pcmcia/
 include/trace/

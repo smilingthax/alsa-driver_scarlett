@@ -20,7 +20,7 @@ AC_SUBST(AS)
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h include/autoconf-extra.h)
+AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h include/autoconf-extra.h include/kconfig.h)
 dnl AC_CHECK_HEADERS(linux/fs.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -1992,6 +1992,185 @@ if test "$CONFIG_HAVE_VZALLOC" = "1"; then
   AC_DEFINE(CONFIG_HAVE_VZALLOC)
 fi
 
+dnl Check for div_u64...
+AC_MSG_CHECKING(for div_u64)
+div_u64="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/time.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/mm.h>
+#include <linux/math64.h>
+],[
+#ifndef div_u64
+  u64 * (*func)(u64, u64);
+  func = div_u64;
+#else
+  ;
+#endif
+],
+    AC_MSG_RESULT(yes);div_u64="1",
+    AC_MSG_RESULT(no);div_u64="0",
+    AC_MSG_RESULT(unknown);div_u64="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_DIV_U64=$div_u64
+dnl AC_SUBST(CONFIG_HAVE_DIV_U64)
+if test "$CONFIG_HAVE_DIV_U64" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_DIV_U64)
+fi
+
+dnl Check for dev_name...
+AC_MSG_CHECKING(for dev_name)
+dev_name="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/time.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/mm.h>
+#include <linux/device.h>
+],[
+  const char * (*func)(const struct device *);
+  func = dev_name;
+],
+    AC_MSG_RESULT(yes);dev_name="1",
+    AC_MSG_RESULT(no);dev_name="0",
+    AC_MSG_RESULT(unknown);dev_name="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_DEV_NAME=$dev_name
+dnl AC_SUBST(CONFIG_HAVE_DEV_NAME)
+if test "$CONFIG_HAVE_DEV_NAME" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_DEV_NAME)
+fi
+
+dnl Check for dev_set_name...
+AC_MSG_CHECKING(for dev_set_name)
+dev_set_name="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/time.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/mm.h>
+#include <linux/device.h>
+],[
+  int * (*func)(struct device *, const char *, ...);
+  func = dev_set_name;
+],
+    AC_MSG_RESULT(yes);dev_set_name="1",
+    AC_MSG_RESULT(no);dev_set_name="0",
+    AC_MSG_RESULT(unknown);dev_set_name="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_DEV_SET_NAME=$dev_set_name
+dnl AC_SUBST(CONFIG_HAVE_DEV_SET_NAME)
+if test "$CONFIG_HAVE_DEV_SET_NAME" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_DEV_SET_NAME)
+fi
+
+dnl Check for put_pid...
+AC_MSG_CHECKING(for put_pid)
+put_pid="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/time.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/mm.h>
+#include <linux/pid.h>
+],[
+  void * (*func)(struct pid *);
+  func = put_pid;
+],
+    AC_MSG_RESULT(yes);put_pid="1",
+    AC_MSG_RESULT(no);put_pid="0",
+    AC_MSG_RESULT(unknown);put_pid="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_PUT_PID=$put_pid
+dnl AC_SUBST(CONFIG_HAVE_PUT_PID)
+if test "$CONFIG_HAVE_PUT_PID" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PUT_PID)
+fi
+
+dnl Check for pid_vnr...
+AC_MSG_CHECKING(for pid_vnr)
+pid_vnr="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/time.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/mm.h>
+#include <linux/sched.h>
+],[
+  pid_t * (*func)(struct task_struct *);
+  func = pid_vnr;
+],
+    AC_MSG_RESULT(yes);pid_vnr="1",
+    AC_MSG_RESULT(no);pid_vnr="0",
+    AC_MSG_RESULT(unknown);pid_vnr="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_PID_VNR=$pid_vnr
+dnl AC_SUBST(CONFIG_HAVE_PID_VNR)
+if test "$CONFIG_HAVE_PID_VNR" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PID_VNR)
+fi
+
 dnl Check for old kmod...
 AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
@@ -3136,7 +3315,8 @@ AC_MSG_CHECKING(for is_power_of_2)
 #include <linux/log2.h>
 ],[
   int a = is_power_of_2(2);
-  a = 2;
+  int b = 10;
+  a += b; b += a + 2; a += b + 2;
 ],
     AC_MSG_RESULT(yes);is_power_of_2="1",
     AC_MSG_RESULT(no);is_power_of_2="0",
