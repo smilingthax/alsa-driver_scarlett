@@ -103,6 +103,13 @@ typedef unsigned int fmode_t;
 #endif
 #endif
 
+/* CONFIG_PM_SLEEP was introduced since 2.6.23 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 23)
+#if defined(CONFIG_PM) && !defined(CONFIG_PM_SLEEP)
+#define CONFIG_PM_SLEEP 1
+#endif
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
 #include <linux/interrupt.h>
 #ifndef in_atomic
