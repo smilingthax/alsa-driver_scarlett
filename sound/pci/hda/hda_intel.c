@@ -3160,6 +3160,7 @@ static void power_down_all_codecs(struct azx *chip)
 #endif
 }
 
+#ifdef CONFIG_SND_HDA_PATCH_LOADER
 /* callback from request_firmware_nowait() */
 static void azx_firmware_cb(const struct firmware *fw, void *context)
 {
@@ -3184,6 +3185,7 @@ static void azx_firmware_cb(const struct firmware *fw, void *context)
 	snd_card_free(card);
 	pci_set_drvdata(pci, NULL);
 }
+#endif
 
 static int __devinit azx_probe(struct pci_dev *pci,
 			       const struct pci_device_id *pci_id)
