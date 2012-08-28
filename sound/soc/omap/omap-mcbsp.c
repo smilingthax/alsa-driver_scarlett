@@ -34,6 +34,7 @@
 #include <sound/initval.h>
 #include <sound/soc.h>
 
+#include <plat/cpu.h>
 #include <plat/dma.h>
 #include <plat/mcbsp.h>
 #include "mcbsp.h"
