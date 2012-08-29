@@ -434,7 +434,7 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 	module_param_array_named(name, name, type, boot_devs_##name, perm)
 #endif /* < 2.6.10 */
 #endif /* < 3.2.0 */
-#if defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 0)
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 0)
 #include <linux/moduleparam.h>
 #undef param_check_bool
 #define param_check_bool(name, p) __param_check(name, p, bool)
@@ -1626,6 +1626,10 @@ module_exit(__driver##_exit);
 /* some old kernels define info(), and this breaks the build badly */
 #ifdef info
 #undef info
+#endif
+
+#if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(7, 0)
+#undef CONFIG_HAVE_V4L2_CTRLS
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
