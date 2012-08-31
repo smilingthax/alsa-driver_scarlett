@@ -644,6 +644,10 @@ const struct snd_compat_dev_pm_ops name = { \
 	.resume = resume_fn, \
 }
 
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+	.suspend = suspend_fn, \
+	.resume = resume_fn
+
 #define dev_pm_ops snd_compat_dev_pm_ops
 
 #ifdef CONFIG_PCI
@@ -689,6 +693,9 @@ static inline void pm_runtime_put_noidle(struct device *dev) {}
 static inline int pm_runtime_get_sync(struct device *dev) { return 1; }
 static inline int pm_runtime_put_sync(struct device *dev) { return -ENOSYS; }
 #endif /* < 2.6.32 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34)
+static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
+#endif
 
 /*
  */
@@ -1650,6 +1657,28 @@ module_exit(__driver##_exit);
 
 #if defined(RHEL_RELEASE_CODE) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(7, 0)
 #undef CONFIG_HAVE_V4L2_CTRLS
+#ifndef SET_SYSTEM_SLEEP_PM_OPS
+#include <linux/pm.h>
+#ifndef SET_SYSTEM_SLEEP_PM_OPS
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+	.suspend = suspend_fn, \
+	.resume = resume_fn, \
+	.freeze = suspend_fn, \
+	.thaw = resume_fn, \
+	.poweroff = suspend_fn, \
+	.restore = resume_fn 
+#define SET_RUNTIME_PM_OPS(a, b, c)
+static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }                
+#endif
+#endif
+#endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+#if !defined(RHEL_RELEASE_CODE) || RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(6, 0)
+#include <linux/firmware.h>
+#define request_firmware_nowait(a, b, c, d, e, f, g) \
+	request_firmware_nowait(a, b, c, d, f, g)
+#endif
 #endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
