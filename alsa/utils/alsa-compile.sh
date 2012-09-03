@@ -1210,9 +1210,6 @@ if test -n "$clean"; then
 			echo " success"
 		elif test -d $package; then
 			rm -rf $package
-			if test "$package" = "alsa-driver"; then
-				rm -rf alsa-kmirror 2> /dev/null
-			fi
 			echo " success"
 		else
 			echo " success"
@@ -1305,9 +1302,6 @@ git)
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
 	else
-		if test "$package" = "alsa-driver"; then
-			git_clone $url "alsa-kmirror"
-		fi
 		git_clone $url $package
 		echo "$package" > $packagedir
 	fi
