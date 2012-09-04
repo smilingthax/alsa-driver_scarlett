@@ -4,4 +4,3 @@
 #ifndef CONFIG_HAVE_INIT_UTSNAME
 #define init_utsname()	(&system_utsname)
 #endif
-#include "../alsa-kernel/core/info_oss.c"

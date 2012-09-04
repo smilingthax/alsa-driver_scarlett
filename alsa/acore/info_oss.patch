@@ -1,0 +1,16 @@
+--- ../mirror/sound/core/info_oss.c	2012-09-04 11:39:35.761858131 +0200
++++ info_oss.c	2012-09-04 17:05:16.834899426 +0200
+@@ -1,3 +1,4 @@
++#include "info_oss.inc"
+ /*
+  *  Information interface for ALSA driver
+  *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
+@@ -93,7 +94,7 @@
+ static void snd_sndstat_proc_read(struct snd_info_entry *entry,
+ 				  struct snd_info_buffer *buffer)
+ {
+-	snd_iprintf(buffer, "Sound Driver:3.8.1a-980706 (ALSA emulation code)\n");
++	snd_iprintf(buffer, "Sound Driver:3.8.1a-980706 (ALSA v" CONFIG_SND_VERSION " emulation code)\n");
+ 	snd_iprintf(buffer, "Kernel: %s %s %s %s %s\n",
+ 		    init_utsname()->sysname,
+ 		    init_utsname()->nodename,
