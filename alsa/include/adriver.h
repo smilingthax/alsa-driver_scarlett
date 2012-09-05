@@ -639,6 +639,7 @@ struct snd_compat_dev_pm_driver {
 	const struct snd_compat_dev_pm_ops *pm;
 };
 
+#ifdef CONFIG_PM_SLEEP
 #define SIMPLE_DEV_PM_OPS(name, suspend_fn, resume_fn) \
 const struct snd_compat_dev_pm_ops name = { \
 	.suspend = suspend_fn, \
@@ -648,6 +649,11 @@ const struct snd_compat_dev_pm_ops name = { \
 #define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
 	.suspend = suspend_fn, \
 	.resume = resume_fn
+#else
+#define SIMPLE_DEV_PM_OPS(name, suspend_fn, resume_fn) \
+const struct snd_compat_dev_pm_ops name
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
+#endif
 
 #define dev_pm_ops snd_compat_dev_pm_ops
 
