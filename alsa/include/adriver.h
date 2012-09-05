@@ -757,6 +757,7 @@ static inline int pm_runtime_put_sync(struct device *dev) { return -ENOSYS; }
 static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
 
 #ifndef SET_SYSTEM_SLEEP_PM_OPS
+#ifdef CONFIG_PM_SLEEP
 #define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
 	.suspend = suspend_fn, \
 	.resume = resume_fn, \
@@ -764,7 +765,12 @@ static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
 	.thaw = resume_fn, \
 	.poweroff = suspend_fn, \
 	.restore = resume_fn 
+#else
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn)
 #endif
+#endif /* SET_SYSTEM_SLEEP_PM_OPS */
+
+/* no runtime PM for old kernels */
 #ifndef SET_RUNTIME_PM_OPS
 #define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
 #endif
