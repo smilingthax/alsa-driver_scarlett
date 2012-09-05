@@ -20,15 +20,12 @@ fi
 if [ -r /usr/local/share/aclocal/alsa-lib.m4 ]; then
   rm -f /usr/local/share/aclocal/alsa-lib.m4
 fi
-#if [ -d ../alsa-lib ]; then
-#  echo "Building hard symlinks with alsa-lib sources..."
-#  cd kernel
-#  pwd
-#  cd ..
-#fi
 
+# check for explicit directory
+if [ -n "$ALSAKERNELDIR" ]; then
+  echo "Using ALSAKERNELDIR=\"$ALSAKERNELDIR\""
 # check for kernel-mirrored tree
-if [ -f ../.alsamirror ]; then
+elif [ -f ../.alsamirror ]; then
   ALSAKERNELDIR=$(cd .. && pwd)
 # check for alsa-kmirror or 2.6 linux source tree directory
 elif [ -d alsa-kernel -a -f alsa-kernel/last.c ]; then
@@ -51,6 +48,9 @@ else
     fi
   fi
 fi
+save=$(pwd)
+cd "$ALSAKERNELDIR" || exit 1
+cd "$save" || exit 1
 ALSAKERNELDIR=$(cd "$ALSAKERNELDIR" && pwd)
 make ALSAKERNELDIR="$ALSAKERNELDIR" all-deps || exit 1
 aclocal $ACLOCAL_FLAGS || exit 1
