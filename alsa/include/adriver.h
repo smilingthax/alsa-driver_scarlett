@@ -688,22 +688,6 @@ static inline int snd_orig_pci_register_driver(struct pci_driver *driver)
 #define pci_unregister_driver	snd_compat_pci_unregister_driver
 #endif /* CONFIG_PCI */
 
-/* runtime PM */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
-#define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
-#define RPM_ACTIVE	0
-#define RPM_RESUMING	1
-#define RPM_SUSPENDED	2
-#define RPM_SUSPENDING	3
-static inline void pm_runtime_get_noresume(struct device *dev) {}
-static inline void pm_runtime_put_noidle(struct device *dev) {}
-static inline int pm_runtime_get_sync(struct device *dev) { return 1; }
-static inline int pm_runtime_put_sync(struct device *dev) { return -ENOSYS; }
-#endif /* < 2.6.32 */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34)
-static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
-#endif
-
 /*
  */
 #include <linux/platform_device.h>
@@ -740,6 +724,7 @@ static inline int snd_orig_platform_driver_register(struct platform_driver *driv
 #else /* SND_COMPAT_DEV_PM_OPS */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
 #include <linux/pm.h>
+
 /* Fix missing const in SIMPLE_DEV_PM_OPS() */
 #undef SIMPLE_DEV_PM_OPS
 #define SIMPLE_DEV_PM_OPS(name, suspend_fn, resume_fn) \
@@ -753,6 +738,37 @@ const struct dev_pm_ops name = { \
 }
 #endif /* < 2.6.33 */
 #endif /* SND_COMPAT_DEV_PM_OPS */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34)
+#include <linux/pm.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 32)
+/* runtime PM */
+#define RPM_ACTIVE	0
+#define RPM_RESUMING	1
+#define RPM_SUSPENDED	2
+#define RPM_SUSPENDING	3
+static inline void pm_runtime_get_noresume(struct device *dev) {}
+static inline void pm_runtime_put_noidle(struct device *dev) {}
+static inline int pm_runtime_get_sync(struct device *dev) { return 1; }
+static inline int pm_runtime_put_sync(struct device *dev) { return -ENOSYS; }
+#endif /* < 2.6.32 */
+
+static inline int pci_dev_run_wake(struct pci_dev *dev) { return 1; }
+
+#ifndef SET_SYSTEM_SLEEP_PM_OPS
+#define SET_SYSTEM_SLEEP_PM_OPS(suspend_fn, resume_fn) \
+	.suspend = suspend_fn, \
+	.resume = resume_fn, \
+	.freeze = suspend_fn, \
+	.thaw = resume_fn, \
+	.poweroff = suspend_fn, \
+	.restore = resume_fn 
+#endif
+#ifndef SET_RUNTIME_PM_OPS
+#define SET_RUNTIME_PM_OPS(suspend_fn, resume_fn, idle_fn)
+#endif
+#endif /* < 2.6.34 */
 
 /* wrapper for getnstimeofday()
  * it's needed for recent 2.6 kernels, too, due to lack of EXPORT_SYMBOL
