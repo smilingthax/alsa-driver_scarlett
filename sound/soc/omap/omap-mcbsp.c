@@ -35,7 +35,6 @@
 #include <sound/soc.h>
 
 #include <plat/cpu.h>
-#include <plat/dma.h>
 #include <linux/platform_data/asoc-ti-mcbsp.h>
 #include "mcbsp.h"
 #include "omap-mcbsp.h"
@@ -238,11 +237,9 @@ static int omap_mcbsp_dai_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-		dma_data->data_type = OMAP_DMA_DATA_TYPE_S16;
 		wlen = 16;
 		break;
 	case SNDRV_PCM_FORMAT_S32_LE:
-		dma_data->data_type = OMAP_DMA_DATA_TYPE_S32;
 		wlen = 32;
 		break;
 	default:
