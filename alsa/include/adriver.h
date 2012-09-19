@@ -629,6 +629,11 @@ enum {
 #define URB_NO_TRANSFER_DMA_MAP 0
 #endif
 
+#ifndef CONFIG_SND_HAVE_USB_ALLOC_COHERENT
+#define usb_alloc_coherent	usb_buffer_alloc
+#define usb_free_coherent	usb_buffer_free
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 0) \
     && LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 20)
 struct usb_ctrlrequest {
