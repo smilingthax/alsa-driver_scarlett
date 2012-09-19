@@ -107,17 +107,6 @@ static int vx_check_magic(vx_core_t *chip)
 
 
 /*
- * vx_test_xilinx - check whether the xilinx is initialized
- *
- * returns zero if xilinx was already initialized, or a negative error code.
- */
-static int vxp_test_xilinx(vx_core_t *chip)
-{
-	return 0; /* always ok */
-}
-
-
-/*
  * vx_reset_dsp - reset the DSP
  */
 
@@ -156,25 +145,14 @@ static void vxp_reset_codec(vx_core_t *_chip)
  * vx_load_xilinx_binary - load the xilinx binary image
  * the binary image is the binary array converted from the bitstream file.
  */
-static int vxp_load_xilinx_binary(vx_core_t *_chip, const struct snd_vx_loader *load)
+static int vxp_load_xilinx_binary(vx_core_t *_chip, const snd_hwdep_dsp_image_t *xilinx)
 {
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
-	const struct snd_vx_image *xilinx = &load->binary;
 	unsigned int i;
-	int c, err;
+	int c;
 	int regCSUER, regRUER;
 	unsigned char *image, data;
 
-	if (verify_area(VERIFY_READ, xilinx->image, xilinx->length))
-		return -EFAULT;
-
-	if ((err = vx_check_magic(_chip)) < 0)
-		return err;
-
-	if ((err = snd_vx_load_boot_image(_chip, &load->boot)) < 0)
-		return err;
-
-	snd_printdd(KERN_DEBUG "loading xilinx: size = %d\n", xilinx->length);
 	/* Switch to programmation mode */
 	chip->regDIALOG |= VXP_DLG_XILINX_REPROG_MASK;
 	vx_outb(chip, DIALOG, chip->regDIALOG);
@@ -260,6 +238,40 @@ static int vxp_load_xilinx_binary(vx_core_t *_chip, const struct snd_vx_loader *
 
 
 /*
+ * vxp_load_dsp - load_dsp callback
+ */
+static int vxp_load_dsp(vx_core_t *vx, snd_hwdep_dsp_image_t *dsp)
+{
+	int err;
+
+	if (*dsp->name)
+		snd_printdd("loading dsp [%d] %s, size = %d\n", dsp->index, dsp->name, dsp->length);
+
+	switch (dsp->index) {
+	case 0:
+		/* xilinx boot */
+		if ((err = vx_check_magic(vx)) < 0)
+			return err;
+		if ((err = snd_vx_load_boot_image(vx, dsp)) < 0)
+			return err;
+		return 0;
+	case 1:
+		/* xilinx image */
+		return vxp_load_xilinx_binary(vx, dsp);
+	case 2:
+		/* DSP boot */
+		return snd_vx_dsp_boot(vx, dsp);
+	case 3:
+		/* DSP image */
+		return snd_vx_dsp_load(vx, dsp);
+	default:
+		snd_BUG();
+		return -EINVAL;
+	}
+}
+		
+
+/*
  * vx_test_and_ack - test and acknowledge interrupt
  *
  * called from irq hander, too
@@ -271,7 +283,7 @@ static int vxp_test_and_ack(vx_core_t *_chip)
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
 
 	/* not booted yet? */
-	if (! (_chip->chip_status & VX_STAT_XILINX_TESTED))
+	if (! (_chip->chip_status & VX_STAT_XILINX_LOADED))
 		return -ENXIO;
 
 	if (! (vx_inb(chip, DIALOG) & VXP_DLG_MEMIRQ_MASK))
@@ -592,8 +604,7 @@ struct snd_vx_ops snd_vxpocket_ops = {
 	.reset_codec = vxp_reset_codec,
 	.change_audio_source = vxp_change_audio_source,
 	.set_clock_source = vxp_set_clock_source,
-	.test_xilinx = vxp_test_xilinx,
-	.load_xilinx = vxp_load_xilinx_binary,
+	.load_dsp = vxp_load_dsp,
 	.add_controls = vxp_add_mic_controls,
 	.reset_dsp = vxp_reset_dsp,
 	.reset_board = vxp_reset_board,

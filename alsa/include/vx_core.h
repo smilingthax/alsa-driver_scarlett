@@ -24,7 +24,7 @@
 #define __VX_COMMON_H
 
 #include <sound/pcm.h>
-#include <sound/vx_load.h>
+#include <sound/hwdep.h>
 
 typedef struct snd_vx_core vx_core_t;
 typedef struct vx_pipe vx_pipe_t;
@@ -99,8 +99,7 @@ struct snd_vx_ops {
 	void (*change_audio_source)(vx_core_t *chip, int src);
 	void (*set_clock_source)(vx_core_t *chp, int src);
 	/* chip init */
-	int (*test_xilinx)(vx_core_t *chip);
-	int (*load_xilinx)(vx_core_t *chip, const struct snd_vx_loader *loader);
+	int (*load_dsp)(vx_core_t *chip, const snd_hwdep_dsp_image_t *dsp);
 	void (*reset_dsp)(vx_core_t *chip);
 	void (*reset_board)(vx_core_t *chip, int cold_reset);
 	int (*add_controls)(vx_core_t *chip);
@@ -119,6 +118,30 @@ struct snd_vx_hardware {
 	unsigned int num_codecs;
 	unsigned int num_ins;
 	unsigned int num_outs;
+};
+
+/* hwdep id string */
+#define SND_VX_HWDEP_ID		"VX Loader"
+
+/* hardware type */
+enum {
+	/* VX222 PCI */
+	VX_TYPE_BOARD,		/* old VX222 PCI */
+	VX_TYPE_V2,		/* VX222 V2 PCI */
+	VX_TYPE_MIC,		/* VX222 Mic PCI */
+	/* VX-pocket */
+	VX_TYPE_VXPOCKET,	/* VXpocket V2 */
+	VX_TYPE_VXP440,		/* VXpocket 440 */
+	VX_TYPE_NUMS
+};
+
+/* chip status */
+enum {
+	VX_STAT_XILINX_LOADED	= (1 << 0),	/* devices are registered */
+	VX_STAT_DEVICE_INIT	= (1 << 1),	/* devices are registered */
+	VX_STAT_CHIP_INIT	= (1 << 2),	/* all operational */
+	VX_STAT_IN_SUSPEND	= (1 << 10),	/* in suspend phase */
+	VX_STAT_IS_STALE	= (1 << 15)	/* device is stale */
 };
 
 struct snd_vx_core {
@@ -143,6 +166,7 @@ struct snd_vx_core {
 
 	struct semaphore hwdep_mutex;
 	int hwdep_used;
+	snd_hwdep_t *hwdep;
 
 	struct vx_rmh irq_rmh;	/* RMH used in interrupts */
 
@@ -177,8 +201,9 @@ struct snd_vx_core {
 vx_core_t *snd_vx_create(snd_card_t *card, struct snd_vx_hardware *hw,
 			 struct snd_vx_ops *ops, int extra_size);
 int snd_vx_hwdep_new(vx_core_t *chip);
-int snd_vx_load_boot_image(vx_core_t *chip, const struct snd_vx_image *boot);
-int snd_vx_dsp_init(vx_core_t *chip, const struct snd_vx_loader *dsp);
+int snd_vx_load_boot_image(vx_core_t *chip, const snd_hwdep_dsp_image_t *boot);
+int snd_vx_dsp_boot(vx_core_t *chip, const snd_hwdep_dsp_image_t *boot);
+int snd_vx_dsp_load(vx_core_t *chip, const snd_hwdep_dsp_image_t *dsp);
 
 /*
  * interrupt handler; exported for pcmcia
