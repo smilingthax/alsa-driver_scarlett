@@ -202,6 +202,7 @@ struct usbmidi_out_endpoint {
 	int nports;
 	struct usbmidi_out_port {
 		usbmidi_out_endpoint_t* ep;
+		snd_rawmidi_t *rmidi;
 		uint8_t cable;		/* cable number << 4 */
 		uint8_t sysex_len;
 		uint8_t sysex[2];
@@ -213,7 +214,6 @@ struct usbmidi_in_endpoint {
 	urb_t* urb;
 	struct usbmidi_in_port {
 		int seq_port;
-		snd_rawmidi_t *rmidi;
 		snd_midi_event_t* midi_event;
 	} ports[0x10];
 };
@@ -573,12 +573,9 @@ static void snd_usbmidi_in_endpoint_delete(usbmidi_in_endpoint_t* ep)
 		}
 		usb_free_urb(ep->urb);
 	}
-	for (i = 0; i < 0x10; ++i) {
+	for (i = 0; i < 0x10; ++i)
 		if (ep->ports[i].midi_event)
 			snd_midi_event_free(ep->ports[i].midi_event);
-		if (ep->ports[i].rmidi)
-			snd_device_free(ep->umidi->card, ep->ports[i].rmidi);
-	}
 	snd_magic_kfree(ep);
 }
 
@@ -695,6 +692,11 @@ static int snd_usbmidi_count_bits(uint16_t x)
  */
 static void snd_usbmidi_out_endpoint_delete(usbmidi_out_endpoint_t* ep)
 {
+	int i;
+
+	for (i = 0; i < ep->nports; ++i)
+		if (ep->ports[i].rmidi)
+			snd_device_free(ep->umidi->card, ep->ports[i].rmidi);
 	if (ep->tasklet.func)
 		tasklet_kill(&ep->tasklet);
 	if (ep->urb) {
@@ -789,13 +791,14 @@ static int snd_usbmidi_seq_device_delete(snd_seq_device_t* seq_device)
 
 /*
  * After input and output endpoints have been initialized, create
- * the ALSA port for each input/output port pair.
+ * the ALSA port for each input/output port pair in the endpoint.
+ * *port_idx is the port number, which must be unique over all endpoints.
  */
 static int snd_usbmidi_create_endpoint_ports(usbmidi_t* umidi, int ep,
 					     int* port_idx)
 {
 	usbmidi_endpoint_info_t* ep_info = &umidi->device_info.endpoints[ep];
-	int c, out_port;
+	int c, out_port, err;
 	int cap, type, port;
 	int out, in;
 	snd_seq_port_callback_t port_callback;
@@ -813,7 +816,6 @@ static int snd_usbmidi_create_endpoint_ports(usbmidi_t* umidi, int ep,
 		if (out) {
 			port_callback.event_input = snd_usbmidi_port_input;
 			port_callback.private_data = &umidi->out_endpoints[ep]->ports[out_port];
-			++out_port;
 			cap |= SNDRV_SEQ_PORT_CAP_WRITE |
 				SNDRV_SEQ_PORT_CAP_SUBS_WRITE;	
 		}
@@ -828,7 +830,7 @@ static int snd_usbmidi_create_endpoint_ports(usbmidi_t* umidi, int ep,
 		type = SNDRV_SEQ_PORT_TYPE_MIDI_GENERIC;
 		/* TODO: read port name from jack descriptor */
 		sprintf(port_name, "%s Port %d",
-			umidi->device_info.product, (*port_idx)++);
+			umidi->device_info.product, *port_idx);
 		port = snd_seq_event_port_attach(umidi->seq_client,
 						 &port_callback,
 						 cap, type, port_name);
@@ -837,23 +839,27 @@ static int snd_usbmidi_create_endpoint_ports(usbmidi_t* umidi, int ep,
 		if (in)
 			umidi->in_endpoints[ep]->ports[c].seq_port = port;
 
-		if (c < SNDRV_MINOR_RAWMIDIS) {
+		if (out && *port_idx < SNDRV_MINOR_RAWMIDIS) {
 			snd_rawmidi_t *rmidi;
 			snd_virmidi_dev_t *rdev;
-			if (snd_virmidi_new(umidi->card, c, &rmidi) < 0)
-				continue;
-			umidi->in_endpoints[ep]->ports[c].rmidi = rmidi;
-			rdev = snd_magic_cast(snd_virmidi_dev_t, rmidi->private_data, continue);
+			err = snd_virmidi_new(umidi->card, *port_idx, &rmidi);
+			if (err < 0)
+				return err;
+			rdev = snd_magic_cast(snd_virmidi_dev_t, rmidi->private_data, return -ENXIO);
 			strcpy(rmidi->name, port_name);
 			rdev->seq_mode = SNDRV_VIRMIDI_SEQ_ATTACH;
 			rdev->client = umidi->seq_client;
 			rdev->port = port;
-			if (snd_device_register(umidi->card, rmidi) < 0) {
+			err = snd_device_register(umidi->card, rmidi);
+			if (err < 0) {
 				snd_device_free(umidi->card, rmidi);
-				continue;
+				return err;
 			}
-			umidi->in_endpoints[ep]->ports[c].rmidi = rmidi;
+			umidi->out_endpoints[ep]->ports[out_port].rmidi = rmidi;
 		}
+		if (out)
+			++out_port;
+		++*port_idx;
 	}
 	return 0;
 }

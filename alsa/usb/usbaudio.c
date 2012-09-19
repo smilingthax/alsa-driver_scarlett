@@ -247,7 +247,6 @@ static int prepare_capture_urb(snd_usb_substream_t *subs,
 		offs += subs->curpacksize;
 	}
 	urb->interval = 1;
-	ctx->transfer = subs->curpacksize * urb->number_of_packets;
 	return 0;
 }
 
@@ -437,10 +436,6 @@ static int prepare_playback_urb(snd_usb_substream_t *subs,
 	for (i = offs = 0; i < urb->number_of_packets; i++) {
 		int cnt = counts[i] * stride;
 		urb->iso_frame_desc[i].offset = offs;
-		if (! counts[i]) {
-			urb->iso_frame_desc[i].length = 0;
-			continue;
-		}
 		urb->iso_frame_desc[i].length = cnt;
 		offs += cnt;
 	}
@@ -485,12 +480,10 @@ static void snd_complete_urb(struct urb *urb)
 	snd_pcm_substream_t *substream = ctx->subs->pcm_substream;
 	int err;
 
-	if (subs->ops.retire(subs, substream->runtime, urb)) {
-		clear_bit(ctx->index, &subs->active_mask);
-		return;
-	}
-
+	err = subs->ops.retire(subs, substream->runtime, urb);
 	clear_bit(ctx->index, &subs->active_mask);
+	if (err)
+		return;
 
 	if (subs->running) {
 		if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
@@ -514,12 +507,10 @@ static void snd_complete_sync_urb(struct urb *urb)
 	snd_pcm_substream_t *substream = ctx->subs->pcm_substream;
 	int err;
 
-	if (subs->ops.retire_sync(subs, substream->runtime, urb)) {
-		clear_bit(ctx->index + 16, &subs->active_mask);
+	err = subs->ops.retire_sync(subs, substream->runtime, urb);
+	clear_bit(ctx->index + 16, &subs->active_mask);
+	if (err)
 		return;
-	}
-
-	clear_bit(ctx->index + 16, &subs->active_mask); /* use bits from 16 */
 
 	if (subs->running) {
 		if ((err = subs->ops.prepare_sync(subs, substream->runtime, urb))  < 0 ||
@@ -535,6 +526,7 @@ static void snd_complete_sync_urb(struct urb *urb)
 
 /*
  * unlink active urbs.
+ * return the number of active urbs.
  */
 static int deactivate_urbs(snd_usb_substream_t *subs)
 {
@@ -621,6 +613,8 @@ static int wait_clear_urbs(snd_usb_substream_t *subs)
 	int timeout = HZ;
 	int i, alive;
 
+	snd_assert(! in_interrupt(), return -EINVAL);
+
 	do {
 		alive = 0;
 		for (i = 0; i < subs->nurbs; i++) {
@@ -637,8 +631,8 @@ static int wait_clear_urbs(snd_usb_substream_t *subs)
 			break;
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(1);
+		set_current_state(TASK_RUNNING);
 	} while (--timeout > 0);
-	set_current_state(TASK_RUNNING);
 	if (alive)
 		snd_printk(KERN_ERR "timeout: still %d active urbs..\n", alive);
 	return 0;
@@ -661,15 +655,20 @@ static snd_pcm_uframes_t snd_usb_pcm_pointer(snd_pcm_substream_t *substream)
 static int snd_usb_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 {
 	snd_usb_substream_t *subs = (snd_usb_substream_t *)substream->runtime->private_data;
+	int err;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		return start_urbs(subs, substream->runtime);
+		err = start_urbs(subs, substream->runtime);
+		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		return deactivate_urbs(subs);
+		err = deactivate_urbs(subs);
+		break;
 	default:
-		return -EINVAL;
+		err = -EINVAL;
+		break;
 	}
+	return err < 0 ? err : 0;
 }
 
 
@@ -696,8 +695,8 @@ static void release_substream_urbs(snd_usb_substream_t *subs)
 	int i;
 
 	/* stop urbs (to be sure) */
-	deactivate_urbs(subs);
-	wait_clear_urbs(subs);
+	if (deactivate_urbs(subs) > 0)
+		wait_clear_urbs(subs);
 
 	for (i = 0; i < MAX_URBS; i++)
 		release_urb_ctx(&subs->dataurb[i]);
@@ -736,7 +735,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 
 	/* calculate the max. size of packet */
 	maxsize = ((subs->freqmax + 0x3fff) * (runtime->frame_bits >> 3)) >> 14;
-	if (subs->maxpacksize && maxsize > subs->maxpacksize) {
+	if (subs->maxpacksize && subs->maxpacksize && maxsize > subs->maxpacksize) {
 		//snd_printd(KERN_DEBUG "maxsize %d is greater than defined size %d\n",
 		//	   maxsize, subs->maxpacksize);
 		maxsize = subs->maxpacksize;
@@ -917,6 +916,7 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 		subs->datapipe = usb_sndisocpipe(dev, ep);
 	else
 		subs->datapipe = usb_rcvisocpipe(dev, ep);
+	subs->format = fmt->altset_idx;
 	subs->syncpipe = subs->syncinterval = 0;
 	subs->maxpacksize = alts->endpoint[0].wMaxPacketSize;
 	subs->maxframesize = bytes_to_frames(runtime, subs->maxpacksize);
@@ -1531,7 +1531,7 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 			fp->rate_max = combine_triple(&fmt[11]);
 		}
 
-		list_add(&fp->list, &subs->fmt_list);
+		list_add_tail(&fp->list, &subs->fmt_list);
 		subs->num_formats++;
 	}
 }
@@ -1596,6 +1596,7 @@ static void proc_dump_substream_status(snd_usb_substream_t *subs, snd_info_buffe
 {
 	if (subs->running) {
 		snd_iprintf(buffer, "  Status: Running\n");
+		snd_iprintf(buffer, "    Altset = %d\n", subs->format);
 		snd_iprintf(buffer, "    Packets = %d\n", subs->npacks);
 		snd_iprintf(buffer, "    URBs = %d\n", subs->nurbs);
 		snd_iprintf(buffer, "    Packet Size = %d\n", subs->curpacksize);
