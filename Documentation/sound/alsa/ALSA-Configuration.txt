@@ -1002,7 +1002,7 @@ Module parameters
 	  streams can be played at the same time.  On some motherboards,
 	  these channels don't work properly due to the bug of BIOS.
 	  If you experience that the playback on this PCM is noisy,
-	  try to specify dxs_channels option to 2 or 3.  In most cases
+	  try to specify dxs_support option to 2 or 3.  In most cases
 	  dxs_support=3 would suffice, so you can keep the multi-play
 	  capability.
 

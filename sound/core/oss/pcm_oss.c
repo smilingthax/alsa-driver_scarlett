@@ -577,6 +577,12 @@ snd_pcm_sframes_t snd_pcm_oss_write3(snd_pcm_substream_t *substream, const char 
 	while (1) {
 		if (runtime->status->state == SNDRV_PCM_STATE_XRUN ||
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
+#ifdef OSS_DEBUG
+			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+				printk("pcm_oss: write: recovering from XRUN\n");
+			else
+				printk("pcm_oss: write: recovering from SUSPEND\n");
+#endif
 			ret = snd_pcm_oss_prepare(substream);
 			if (ret < 0)
 				break;
@@ -606,6 +612,12 @@ snd_pcm_sframes_t snd_pcm_oss_read3(snd_pcm_substream_t *substream, char *ptr, s
 	while (1) {
 		if (runtime->status->state == SNDRV_PCM_STATE_XRUN ||
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
+#ifdef OSS_DEBUG
+			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+				printk("pcm_oss: read: recovering from XRUN\n");
+			else
+				printk("pcm_oss: read: recovering from SUSPEND\n");
+#endif
 			ret = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DRAIN, 0);
 			if (ret < 0)
 				break;
@@ -643,6 +655,12 @@ snd_pcm_sframes_t snd_pcm_oss_writev3(snd_pcm_substream_t *substream, void **buf
 	while (1) {
 		if (runtime->status->state == SNDRV_PCM_STATE_XRUN ||
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
+#ifdef OSS_DEBUG
+			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+				printk("pcm_oss: writev: recovering from XRUN\n");
+			else
+				printk("pcm_oss: writev: recovering from SUSPEND\n");
+#endif
 			ret = snd_pcm_oss_prepare(substream);
 			if (ret < 0)
 				break;
@@ -673,6 +691,12 @@ snd_pcm_sframes_t snd_pcm_oss_readv3(snd_pcm_substream_t *substream, void **bufs
 	while (1) {
 		if (runtime->status->state == SNDRV_PCM_STATE_XRUN ||
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
+#ifdef OSS_DEBUG
+			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+				printk("pcm_oss: readv: recovering from XRUN\n");
+			else
+				printk("pcm_oss: readv: recovering from SUSPEND\n");
+#endif
 			ret = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DRAIN, 0);
 			if (ret < 0)
 				break;
@@ -855,6 +879,22 @@ static int snd_pcm_oss_reset(snd_pcm_oss_file_t *pcm_oss_file)
 		snd_pcm_kernel_capture_ioctl(substream, SNDRV_PCM_IOCTL_DROP, 0);
 		substream->runtime->oss.prepare = 1;
 	}
+	return 0;
+}
+
+static int snd_pcm_oss_post(snd_pcm_oss_file_t *pcm_oss_file)
+{
+	snd_pcm_substream_t *substream;
+	int err;
+
+	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
+	if (substream != NULL) {
+		if ((err = snd_pcm_oss_make_ready(substream)) < 0)
+			return err;
+		snd_pcm_kernel_playback_ioctl(substream, SNDRV_PCM_IOCTL_START, 0);
+	}
+	/* note: all errors from the start action are ignored */
+	/* OSS apps do not know, how to handle them */
 	return 0;
 }
 
@@ -1388,7 +1428,9 @@ static int snd_pcm_oss_get_space(snd_pcm_oss_file_t *pcm_oss_file, int stream, s
 		runtime->oss.period++;
 	runtime->oss.subdivision = 1;	/* disable SUBDIVIDE */
 #endif
-	// printk("space: bytes = %i, periods = %i, fragstotal = %i, fragsize = %i\n", info.bytes, info.periods, info.fragstotal, info.fragsize);
+#ifdef OSS_DEBUG
+	printk("pcm_oss: space: bytes = %i, fragments = %i, fragstotal = %i, fragsize = %i\n", info.bytes, info.fragments, info.fragstotal, info.fragsize);
+#endif
 	if (copy_to_user(_info, &info, sizeof(info)))
 		return -EFAULT;
 	return 0;
@@ -1792,8 +1834,8 @@ static int snd_pcm_oss_ioctl(struct inode *inode, struct file *file,
 	case SOUND_PCM_WRITE_FILTER:
 	case SOUND_PCM_READ_FILTER:
 		return -EIO;
-	case SNDCTL_DSP_POST:	/* to do */
-		return 0;
+	case SNDCTL_DSP_POST:
+		return snd_pcm_oss_post(pcm_oss_file);
 	case SNDCTL_DSP_SUBDIVIDE:
 		if (get_user(res, (int *)arg))
 			return -EFAULT;
