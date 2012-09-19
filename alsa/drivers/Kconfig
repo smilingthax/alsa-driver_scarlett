@@ -17,3 +17,15 @@ config SND_SERIALMIDI
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-serialmidi.
 
+config SND_LOOPBACK
+	tristate "Generic loopback driver (PCM)"
+	depends on SND
+	select SND_PCM
+	help
+	  Say 'Y' or 'M' to include support for the PCM loopback device.
+
+config SND_PORTMAN2X4
+	tristate "Portman 2x4 driver"
+	depends on SND
+	help
+	  Say 'Y' or 'M' to include support for Portman 2x4.
