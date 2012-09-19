@@ -19,7 +19,7 @@
  *
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/init.h>
 #include <linux/time.h>
 #include <linux/threads.h>

@@ -1,19 +1,20 @@
---- ../../alsa-kernel/core/seq/seq_clientmgr.c	2007-05-17 08:15:24.000000000 +0200
-+++ seq_clientmgr.c	2007-05-24 21:37:30.000000000 +0200
-@@ -1,3 +1,4 @@
+--- ../../alsa-kernel/core/seq/seq_clientmgr.c	2007-12-20 10:19:43.000000000 +0100
++++ seq_clientmgr.c	2007-12-20 10:51:34.000000000 +0100
+@@ -1,3 +1,5 @@
 +#define __NO_VERSION__
++#include "adriver.h"
  /*
   *  ALSA sequencer Client Manager
   *  Copyright (c) 1998-2001 by Frank van de Pol <fvdpol@coil.demon.nl>
-@@ -23,6 +24,7 @@
+@@ -22,6 +24,7 @@
+  */
  
- #include <sound/driver.h>
  #include <linux/init.h>
 +#include <linux/smp_lock.h>
  #include <linux/slab.h>
  #include <sound/core.h>
  #include <sound/minors.h>
-@@ -2204,12 +2206,25 @@
+@@ -2200,12 +2203,25 @@
  	return snd_seq_do_ioctl(client, cmd, (void __user *) arg);
  }
  
@@ -40,7 +41,7 @@
  /* -------------------------------------------------------- */
  
  
-@@ -2539,14 +2554,20 @@
+@@ -2535,14 +2551,20 @@
  
  static const struct file_operations snd_seq_f_ops =
  {

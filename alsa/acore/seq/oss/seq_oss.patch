@@ -1,14 +1,19 @@
---- ../../../alsa-kernel/core/seq/oss/seq_oss.c	2007-05-17 08:15:24.000000000 +0200
-+++ seq_oss.c	2007-05-24 21:36:31.000000000 +0200
-@@ -22,6 +22,7 @@
+--- ../../../alsa-kernel/core/seq/oss/seq_oss.c	2007-12-20 10:19:26.000000000 +0100
++++ seq_oss.c	2007-12-20 10:54:07.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  * OSS compatible sequencer driver
+  *
+@@ -21,6 +22,7 @@
+  */
  
- #include <sound/driver.h>
  #include <linux/init.h>
 +#include <linux/smp_lock.h>
  #include <linux/moduleparam.h>
  #include <linux/mutex.h>
  #include <sound/core.h>
-@@ -188,12 +189,25 @@
+@@ -187,12 +189,25 @@
  	return snd_seq_oss_ioctl(dp, cmd, arg);
  }
  
@@ -35,7 +40,7 @@
  static unsigned int
  odev_poll(struct file *file, poll_table * wait)
  {
-@@ -209,14 +223,20 @@
+@@ -208,14 +223,20 @@
  
  static const struct file_operations seq_oss_f_ops =
  {
@@ -56,7 +61,7 @@
  };
  
  static int __init
-@@ -306,3 +326,5 @@
+@@ -305,3 +326,5 @@
  	info_entry = NULL;
  }
  #endif /* CONFIG_PROC_FS */

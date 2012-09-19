@@ -1,3 +1,4 @@
+#include "adriver.h"
 /*
  *  PC Speaker beeper driver for Linux
  *

@@ -1,6 +1,11 @@
---- ../alsa-kernel/drivers/portman2x4.c	2007-11-14 16:50:54.000000000 +0100
-+++ portman2x4.c	2007-11-14 16:54:39.000000000 +0100
-@@ -611,7 +611,13 @@
+--- ../alsa-kernel/drivers/portman2x4.c	2007-12-20 10:20:18.000000000 +0100
++++ portman2x4.c	2007-12-20 11:12:14.000000000 +0100
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *   Driver for Midiman Portman2x4 parallel port midi interface
+  *
+@@ -610,7 +611,13 @@
  /*********************************************************************
   * parport stuff
   *********************************************************************/
@@ -14,7 +19,7 @@
  {
  	unsigned char midivalue = 0;
  	struct portman *pm = ((struct snd_card*)userdata)->private_data;
-@@ -874,3 +880,5 @@
+@@ -875,3 +882,5 @@
  
  module_init(snd_portman_module_init);
  module_exit(snd_portman_module_exit);

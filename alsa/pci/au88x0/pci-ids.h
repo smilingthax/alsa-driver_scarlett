@@ -1,4 +1,4 @@
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/pci.h>
 
 #ifndef PCI_VENDOR_ID_AUREAL

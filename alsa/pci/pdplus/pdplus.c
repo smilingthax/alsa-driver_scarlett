@@ -161,7 +161,7 @@
 
 #define PDPLUS_VERSION    "0.0.5"
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <asm/io.h>
 #include <linux/pci.h>
 #include <linux/delay.h>

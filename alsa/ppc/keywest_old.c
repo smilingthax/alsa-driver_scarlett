@@ -29,7 +29,6 @@
  */
 
 
-#include <sound/driver.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
 #include <linux/delay.h>

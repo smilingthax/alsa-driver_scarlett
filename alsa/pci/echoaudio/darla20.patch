@@ -1,8 +1,7 @@
---- ../../alsa-kernel/pci/echoaudio/darla20.c	2006-07-09 16:21:46.000000000 +0200
-+++ darla20.c	2006-10-07 20:05:14.000000000 +0200
-@@ -1,3 +1,10 @@
-+#include <linux/config.h>
-+#include <linux/version.h>
+--- ../../alsa-kernel/pci/echoaudio/darla20.c	2007-12-20 11:47:36.000000000 +0100
++++ darla20.c	2007-12-20 12:03:26.000000000 +0100
+@@ -1,3 +1,9 @@
++#include "adriver.h"
 +
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
 +#define pci_device(chip) pci_name(chip->pci)
@@ -11,7 +10,7 @@
  /*
   *  ALSA driver for Echoaudio soundcards.
   *  Copyright (C) 2003-2004 Giuliano Pochini <pochini@shiny.it>
-@@ -98,3 +105,5 @@
+@@ -99,3 +105,5 @@
  #include "darla20_dsp.c"
  #include "echoaudio_dsp.c"
  #include "echoaudio.c"

@@ -7,7 +7,7 @@
 // #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 #define SND_NEED_USB_WRAPPER
 // #endif
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/usb.h>
 
 #ifndef USB_DT_CS_DEVICE

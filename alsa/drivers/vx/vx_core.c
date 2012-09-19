@@ -6,4 +6,5 @@
 #define spin_unlock_bh spin_unlock
 #endif
 
+#include "adriver.h"
 #include "../../alsa-kernel/drivers/vx/vx_core.c"

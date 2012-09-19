@@ -18,7 +18,7 @@
  *
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/sched.h>
 #include <linux/smp_lock.h>
 #include <linux/init.h>

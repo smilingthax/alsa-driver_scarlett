@@ -37,7 +37,7 @@
  *
  ********************************************************************/
 #define __NO_VERSION__
-#include <sound/driver.h>
+#include "adriver.h"
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <linux/init.h>

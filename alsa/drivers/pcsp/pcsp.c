@@ -5,7 +5,7 @@
  * Copyright (C) 2001-2007  Stas Sergeev
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/init.h>
 #include <linux/moduleparam.h>
 #include <sound/core.h>

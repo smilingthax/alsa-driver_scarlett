@@ -22,7 +22,7 @@
  *
  */
 
-#include <sound/driver.h>
+#include "adriver.h"
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>
