@@ -55,10 +55,16 @@
 
 #define EP_GENERAL			0x01
 
-#define MAX_CHAN			9
-#define MAX_FREQ			16
-#define MAX_IFACE			8
+/* endpoint attributes */
+#define EP_ATTR_MASK			0x0c
+#define EP_ATTR_ASYNC			0x04
+#define EP_ATTR_ADAPTIVE		0x08
+#define EP_ATTR_SYNC			0x0c
 
+/* cs endpoint attributes */
+#define EP_CS_ATTR_SAMPLE_RATE		0x01
+#define EP_CS_ATTR_PITCH_CONTROL	0x02
+#define EP_CS_ATTR_FILL_MAX		0x80
 
 /* Audio Class specific Request Codes */
 

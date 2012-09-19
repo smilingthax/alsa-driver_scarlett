@@ -168,7 +168,7 @@ IF: PCM
 MA: Paul Barton-Davis <pbd@op.net>
 
 ID: Intel i810/i820/i830/i840/MX440
-IF: MIXER,PCM
+IF: MIXER,PCM,MIDI
 MA: Jaroslav Kysela <perex@suse.cz>
 
 ID: ESS Maestro 1/2/2E
