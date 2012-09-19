@@ -47,6 +47,6 @@ EXPORT_SYMBOL(snd_pci_compat_set_driver_data);
 EXPORT_SYMBOL(snd_pci_compat_get_pci_driver);
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 19)
+#ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
 EXPORT_SYMBOL(snd_compat_vmalloc_to_page);
 #endif

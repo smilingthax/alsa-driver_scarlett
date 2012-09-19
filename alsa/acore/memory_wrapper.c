@@ -19,7 +19,7 @@
 #endif
 
 /* vmalloc_to_page wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 19)
+#ifndef CONFIG_HAVE_VMALLOC_TO_PAGE
 struct page *snd_compat_vmalloc_to_page(void *pageptr)
 {
 	pgd_t *pgd;

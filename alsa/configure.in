@@ -4,7 +4,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
 AC_INIT(acore/sound.c)
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0rc8b"
+CONFIG_SND_VERSION="0.9.0rc8d"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -350,6 +350,10 @@ int main(void) {
 	fprintf(file, "k7");
 #elif defined(CONFIG_MCRUSOE)
 	fprintf(file, "crusoe");
+#elif defined(CONFIG_MWINCHIPC6) || defined(CONFIG_MWINCHIP2) || defined(CONFIG_MWINCHIP3D)
+	fprintf(file, "mwinchip");
+#elif defined(CONFIG_MCYRIXIII)
+	fprintf(file, "mcyrixiii");
 #elif defined(CONFIG_IA64)
 	fprintf(file, "ia64");
 #elif defined(CONFIG_ALPHA_GENERIC)
@@ -413,7 +417,7 @@ case "$processor" in
   i486*)
     c_opts="-march=i486"
     ;;
-  i586*)
+  i586* | mwinchip)
     c_opts="-march=i586"
     ;;
   i686*)
@@ -430,11 +434,23 @@ case "$processor" in
     if $CC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=athlon"
     else
-      c_opts="-march=i686 -falign-functions=4"
+      c_opts="-march=i686 -malign-functions=4"
     fi
     ;;
   crusoe)
-    c_opts="-march=i686 -falign-functions=0 -falign-jumps=0 -falign-loops=0"
+    c_opts="-march=i686 -malign-functions=0 -malign-jumps=0 -malign-loops=0"
+    ;;
+  mcyrixiii)
+    if $CC -march=c3 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      c_opts="-march=c3"
+    else
+      c_opts="-march=i486"
+    fi
+    if $CC -falign-functions=0 -falign-jumps=0 -falign-loops=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      c_opts="$c_opts -falign-functions=0 -falign-jumps=0 -falign-loops=0"
+    else
+      c_opts="$c_opts -malign-functions=0 -malign-jumps=0 -malign-loops=0"
+    fi
     ;;
   ia64)
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
@@ -723,6 +739,29 @@ fi
 
 fi
 dnl 2.2 kernel
+
+dnl Check for vmalloc_to_page...
+AC_MSG_CHECKING(for vmalloc_to_page)
+vmalloc_to_page="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#include <linux/config.h>
+#include <linux/time.h>
+#include <linux/slab.h>
+],[
+ vmalloc_to_page(NULL);
+],
+    AC_MSG_RESULT("yes");vmalloc_to_page="1",
+    AC_MSG_RESULT("no");vmalloc_to_page="0",
+    AC_MSG_RESULT("unknown");vmalloc_to_page="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_VMALLOC_TO_PAGE=$vmalloc_to_page
+dnl AC_SUBST(CONFIG_HAVE_VMALLOC_TO_PAGE)
+if test "$CONFIG_HAVE_VMALLOC_TO_PAGE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VMALLOC_TO_PAGE)
+fi
 
 dnl Check for version...
 AC_MSG_CHECKING(for driver version)
