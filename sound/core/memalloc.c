@@ -261,14 +261,16 @@ void snd_dma_free_pages(const struct snd_dma_device *dev, struct snd_dma_buffer 
 /*
  * search for the device
  */
-static struct snd_mem_list *mem_list_find(const struct snd_dma_device *dev, int allow_unused)
+static struct snd_mem_list *mem_list_find(const struct snd_dma_device *dev, int search_empty)
 {
 	struct list_head *p;
 	struct snd_mem_list *mem;
 
 	list_for_each(p, &mem_list_head) {
 		mem = list_entry(p, struct snd_mem_list, list);
-		if (compare_device(&mem->dev, dev, allow_unused))
+		if (mem->used && search_empty)
+			continue;
+		if (compare_device(&mem->dev, dev, search_empty))
 			return mem;
 	}
 	return NULL;

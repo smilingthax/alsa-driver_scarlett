@@ -208,3 +208,6 @@ snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 
 %dir linux/sound/usb
 |snd-usb-audio snd-pcm snd-seq-midi
+
+%dir linux/sound/parisc
+|snd-harmony snd-pcm

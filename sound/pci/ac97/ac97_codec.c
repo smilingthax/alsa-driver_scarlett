@@ -89,7 +89,6 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 };
 
 static const ac97_codec_id_t snd_ac97_codec_ids[] = {
-{ 0x014b0502, 0xffffffff, "NM256AV",		NULL,		NULL }, // FIXME: which real one?
 { 0x414b4d00, 0xffffffff, "AK4540",		NULL,		NULL },
 { 0x414b4d01, 0xffffffff, "AK4542",		NULL,		NULL },
 { 0x414b4d02, 0xffffffff, "AK4543",		NULL,		NULL },
@@ -2068,7 +2067,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	snd_assert(rac97 != NULL, return -EINVAL);
 	*rac97 = NULL;
 	snd_assert(card != NULL && _ac97 != NULL, return -EINVAL);
-	ac97 = snd_magic_kcalloc(ac97_t, 0, GFP_KERNEL);
+	ac97 = snd_magic_kmalloc(ac97_t, 0, GFP_KERNEL);
 	if (ac97 == NULL)
 		return -ENOMEM;
 	*ac97 = *_ac97;
@@ -2102,10 +2101,13 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	}
 	
 	/* test for AC'97 */
-	/* test if we can write to the record gain volume register */
-	snd_ac97_write_cache(ac97, AC97_REC_GAIN, 0x8a06);
-	if ((err = snd_ac97_read(ac97, AC97_REC_GAIN)) == 0x8a06) {
-		ac97->scaps |= AC97_SCAP_AUDIO;
+	if (! (ac97->scaps & AC97_SCAP_AUDIO)) {
+		/* test if we can write to the record gain volume register */
+		snd_ac97_write_cache(ac97, AC97_REC_GAIN, 0x8a06);
+		if ((err = snd_ac97_read(ac97, AC97_REC_GAIN)) == 0x8a06)
+			ac97->scaps |= AC97_SCAP_AUDIO;
+	}
+	if (ac97->scaps & AC97_SCAP_AUDIO) {
 		ac97->caps = snd_ac97_read(ac97, AC97_RESET);
 		ac97->ext_id = snd_ac97_read(ac97, AC97_EXTENDED_ID);
 		if (ac97->ext_id == 0xffff)	/* invalid combination */
