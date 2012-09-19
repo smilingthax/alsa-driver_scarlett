@@ -273,14 +273,6 @@
 #define MODULE_NAME  "pdplus"
 #define FULL_NAME    VENDOR_NAME " " DEVICE_NAME
 
-#ifndef PCI_VENDOR_ID_MARIAN
-#define PCI_VENDOR_ID_MARIAN 0x1382
-#endif
-
-#ifndef PCI_DEVICE_ID_MARIAN_PRODIF_PLUS
-#define PCI_DEVICE_ID_MARIAN_PRODIF_PLUS 0x2048
-#endif
-
 /* ********************************************************************** */
 
 /*
