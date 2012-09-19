@@ -1,0 +1,18 @@
+--- seq_oss.c	2003-05-31 13:09:58.000000000 +0200
++++ seq_oss.c.old	2003-05-31 13:10:49.000000000 +0200
+@@ -194,7 +194,9 @@
+ 
+ static struct file_operations seq_oss_f_ops =
+ {
++#ifndef LINUX_2_2
+ 	.owner =	THIS_MODULE,
++#endif
+ 	.read =		odev_read,
+ 	.write =	odev_write,
+ 	.open =		odev_open,
+@@ -301,3 +303,5 @@
+ 	info_entry = NULL;
+ #endif
+ }
++
++EXPORT_NO_SYMBOLS;
