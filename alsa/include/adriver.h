@@ -530,7 +530,8 @@ enum {
 #define URB_NO_TRANSFER_DMA_MAP 0
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 20)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 0) \
+    && LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 20)
 struct usb_ctrlrequest {
 	__u8 bRequestType;
 	__u8 bRequest;
