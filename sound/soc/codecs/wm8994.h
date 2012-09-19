@@ -10,6 +10,7 @@
 #define _WM8994_H
 
 #include <sound/soc.h>
+#include <linux/firmware.h>
 
 #include "wm_hubs.h"
 
@@ -83,6 +84,10 @@ struct wm8994_priv {
 	int lrclk_shared[2];
 
 	int mbc_ena[3];
+	int hpf1_ena[3];
+	int hpf2_ena[3];
+	int vss_ena[3];
+	int enh_eq_ena[3];
 
 	/* Platform dependant DRC configuration */
 	const char **drc_texts;
@@ -100,6 +105,21 @@ struct wm8994_priv {
 	const char **mbc_texts;
 	struct soc_enum mbc_enum;
 
+	/* Platform dependant VSS configuration */
+	int vss_cfg;
+	const char **vss_texts;
+	struct soc_enum vss_enum;
+
+	/* Platform dependant VSS HPF configuration */
+	int vss_hpf_cfg;
+	const char **vss_hpf_texts;
+	struct soc_enum vss_hpf_enum;
+
+	/* Platform dependant enhanced EQ configuration */
+	int enh_eq_cfg;
+	const char **enh_eq_texts;
+	struct soc_enum enh_eq_enum;
+
 	struct wm8994_micdet micdet[2];
 
 	wm8958_micdet_cb jack_cb;
@@ -114,6 +134,12 @@ struct wm8994_priv {
 
 	unsigned int aif1clk_disable:1;
 	unsigned int aif2clk_disable:1;
+
+	int dsp_active;
+	const struct firmware *cur_fw;
+	const struct firmware *mbc;
+	const struct firmware *mbc_vss;
+	const struct firmware *enh_eq;
 };
 
 #endif
