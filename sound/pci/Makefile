@@ -10,8 +10,8 @@ subdir-m     := $(subdir-y)
 
 list-multi   := snd-als4000.o snd-cmipci.o snd-cs4281.o snd-ens1370.o \
 		snd-ens1371.o snd-es1938.o snd-es1968.o snd-fm801.o \
-		snd-ice1712.o snd-intel8x0.o snd-maestro3.o snd-rme96.o \
-		snd-sonicvibes.o snd-via686.o snd-via8233.o
+		snd-ice1712.o snd-intel8x0.o snd-maestro3.o snd-rme32.o \
+		snd-rme96.o snd-sonicvibes.o snd-via686.o snd-via8233.o
 
 snd-als4000-objs := als4000.o
 snd-cmipci-objs := cmipci.o
@@ -24,6 +24,7 @@ snd-fm801-objs := fm801.o
 snd-ice1712-objs := ice1712.o
 snd-intel8x0-objs := intel8x0.o
 snd-maestro3-objs := maestro3.o
+snd-rme32-objs := rme32.o
 snd-rme96-objs := rme96.o
 snd-sonicvibes-objs := sonicvibes.o
 snd-via686-objs := via686.o
@@ -41,6 +42,7 @@ obj-$(CONFIG_SND_FM801) += snd-fm801.o
 obj-$(CONFIG_SND_ICE1712) += snd-ice1712.o
 obj-$(CONFIG_SND_INTEL8X0) += snd-intel8x0.o
 obj-$(CONFIG_SND_MAESTRO3) += snd-maestro3.o
+obj-$(CONFIG_SND_RME32) += snd-rme32.o
 obj-$(CONFIG_SND_RME96) += snd-rme96.o
 obj-$(CONFIG_SND_SONICVIBES) += snd-sonicvibes.o
 obj-$(CONFIG_SND_VIA686) += snd-via686.o
@@ -80,6 +82,9 @@ snd-intel8x0.o: $(snd-intel8x0-objs)
 
 snd-maestro3.o: $(snd-maestro3-objs)
 	$(LD) $(LD_RFLAG) -r -o $@ $(snd-maestro3-objs)
+
+snd-rme32.o: $(snd-rme32-objs)
+	$(LD) $(LD_RFLAG) -r -o $@ $(snd-rme32-objs)
 
 snd-rme96.o: $(snd-rme96-objs)
 	$(LD) $(LD_RFLAG) -r -o $@ $(snd-rme96-objs)

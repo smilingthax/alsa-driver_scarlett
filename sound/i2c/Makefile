@@ -3,6 +3,11 @@
 # Copyright (c) 2001 by Jaroslav Kysela <perex@suse.cz>
 #
 
+subdir-$(CONFIG_L3) := l3
+ifeq ($(CONFIG_L3),y)
+  subdir-m += $(subdir-y)
+endif
+
 O_TARGET     := _i2c.o
 
 list-multi   := snd-i2c.o snd-cs8427.o snd-tea6330t.o
