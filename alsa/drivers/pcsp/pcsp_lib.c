@@ -16,9 +16,6 @@
 #include "pcsp_defs.h"
 #include "pcsp_tabs.h"
 
-/* Compile the driver only if the kernel part is installed */
-#ifdef IRQ_DONE
-
 #define DMIX_WANTS_S16		1
 
 /* the timer-int for playing thru PC-Speaker */
@@ -279,5 +276,3 @@ int __init snd_pcsp_new_pcm(pcsp_t *chip)
 	chip->pcm = pcm;
 	return 0;
 }
-
-#endif

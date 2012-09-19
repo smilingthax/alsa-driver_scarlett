@@ -29,33 +29,21 @@ MODULE_DESCRIPTION("PC-Speaker driver");
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{PC-Speaker, pcsp}}");
 
-static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
-static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
-static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE;	/* Enable this card */
-int no_test_speed = 0, no_beeps = 0;
+static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
+static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
+static int enable = SNDRV_DEFAULT_ENABLE1;	/* Enable this card */
+static int no_test_speed = 0, no_beeps = 0;
 
-module_param_array(index, int, NULL, 0444);
-MODULE_PARM_DESC(index, "dummy");
-module_param_array(id, charp, NULL, 0444);
+module_param(id, charp, 0444);
 MODULE_PARM_DESC(id, "ID string for pcsp soundcard.");
-module_param_array(enable, bool, NULL, 0444);
+module_param(enable, bool, 0444);
 MODULE_PARM_DESC(enable, "dummy");
 module_param(no_test_speed, int, 0444);
 MODULE_PARM_DESC(no_test_speed, "dont test the CPU speed on startup");
 module_param(no_beeps, int, 0444);
 MODULE_PARM_DESC(no_beeps, "disable pc-speaker beeps");
 
-snd_card_t *snd_pcsp_card[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
-
-/* Compile the driver only if the kernel part is installed */
-
-static int cards = 0;
-
-/*
- * need this macros
- */
-#define MIN(a,b)        ( ((a) < (b)) ? (a) : (b) )
-#define MAX(a,b)        ( ((a) > (b)) ? (a) : (b) )
+snd_card_t *snd_pcsp_card = SNDRV_DEFAULT_PTR1;
 
 #ifdef CONFIG_APM_CPU_IDLE
 static void (*saved_pm_idle)(void);
@@ -214,8 +202,8 @@ static int __init pcsp_test_speed(chip_t *chip, int *rmin_div)
 	best   = pcsp_measurement(chip, 5);
 	best1  = pcsp_measurement(chip, 5);
 
-	worst = MAX(worst, worst1);
-	best  = MIN(best, best1);
+	worst = max(worst, worst1);
+	best  = min(best, best1);
 
 #if PCSP_DEBUG
 	printk(KERN_INFO "PCSP-Timerint needs %d Ticks in worst case\n", worst);
@@ -293,8 +281,8 @@ static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
 	div = MAX_DIV / min_div;
 	order = fls(div) - 1;
 
-	chip->max_treble   = MIN(order, PCSP_MAX_POSS_TREBLE);
-	chip->treble       = MIN(chip->max_treble, 1);
+	chip->max_treble   = min(order, PCSP_MAX_POSS_TREBLE);
+	chip->treble       = min(chip->max_treble, 1);
 	chip->gain         = PCSP_DEFAULT_GAIN;
 	chip->index	   = 0;
 	chip->bass         = 0;
@@ -324,7 +312,7 @@ static int __init snd_card_pcsp_probe(int dev)
 	if (dev != 0)
 		return -EINVAL;
 
-	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
+	card = snd_card_new(index, id, THIS_MODULE, 0);
 	if (card == NULL)
 		return -ENOMEM;
 
@@ -341,7 +329,7 @@ static int __init snd_card_pcsp_probe(int dev)
 		return err;
 	}
 
-	strcpy(card->driver, "speaker");
+	strcpy(card->driver, "PC-Speaker");
 	strcpy(card->shortname, chip->pcm->name);
 	sprintf(card->longname, "Internal PC-Speaker at port 0x%x, irq %d",
 	    chip->port, chip->irq);
@@ -350,7 +338,7 @@ static int __init snd_card_pcsp_probe(int dev)
 		snd_card_free(card);
 		return err;
 	}
-	snd_pcsp_card[dev] = card;
+	snd_pcsp_card = card;
 
 #if defined(CONFIG_INPUT_PCSPKR) || defined(CONFIG_INPUT_PCSPKR_MODULE)
 	use_speaker_beep = !no_beeps;
@@ -360,7 +348,7 @@ static int __init snd_card_pcsp_probe(int dev)
 
 static int __init alsa_card_pcsp_init(void)
 {
-	int dev;
+	int dev = 0, cards = 0;
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
@@ -370,7 +358,7 @@ static int __init alsa_card_pcsp_init(void)
 		"noise.\n");
 #endif
 
-	for (dev = cards = 0; dev < SNDRV_CARDS && enable[dev]; dev++) {
+	if (enable) {
 		if (snd_card_pcsp_probe(dev) >= 0)
 			cards++;
 	}
@@ -385,10 +373,8 @@ static int __init alsa_card_pcsp_init(void)
 
 static void __exit alsa_card_pcsp_exit(void)
 {
-	int idx;
 
-	for (idx = 0; idx < SNDRV_CARDS; idx++)
-		snd_card_free(snd_pcsp_card[idx]);
+	snd_card_free(snd_pcsp_card);
 }
 
 module_init(alsa_card_pcsp_init);
