@@ -23,10 +23,3 @@ config SND_HDSPM
 	  Say 'Y' or 'M' to include support for RME Hammerfall DSP MADI
 	  soundcards.
 
-config SND_ATIIXP
-	tristate "ATI IXP 150/200/250"
-	depends on SND
-	select SND_AC97_CODEC
-	help
-	  Say 'Y' or 'M' to include support for ATI IXP 150/200/250 AC97 controller.
-
