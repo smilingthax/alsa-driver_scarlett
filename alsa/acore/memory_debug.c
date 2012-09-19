@@ -116,6 +116,7 @@ void snd_hidden_kfree(const void *obj)
 	t = snd_alloc_track_entry(obj);
 	if (t->magic != KMALLOC_MAGIC) {
 		printk(KERN_WARNING "snd: bad kfree (called from %p)\n", __builtin_return_address(0));
+		dump_stack();
 		return;
 	}
 	spin_lock_irqsave(&snd_alloc_kmalloc_lock, flags);

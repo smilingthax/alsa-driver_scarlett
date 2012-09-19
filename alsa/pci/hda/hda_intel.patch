@@ -1,0 +1,16 @@
+--- ../../alsa-kernel/pci/hda/hda_intel.c	2009-07-08 08:03:43.000000000 +0200
++++ hda_intel.c	2009-07-08 08:16:14.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "adriver.h"
+ /*
+  *
+  *  hda_intel.c - Implementation of primary alsa driver code base
+@@ -2356,7 +2357,7 @@ static int __devinit azx_create(struct s
+ 					 PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+ 					 NULL);
+ 		if (p_smbus) {
+-			if (p_smbus->revision < 0x30)
++			if (snd_pci_revision(p_smbus) < 0x30)
+ 				gcap &= ~ICH6_GCAP_64OK;
+ 			pci_dev_put(p_smbus);
+ 		}
