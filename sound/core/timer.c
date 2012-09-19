@@ -272,7 +272,7 @@ int snd_timer_open(snd_timer_instance_t **ti,
 #endif
 	if (timer) {
 		if (!list_empty(&timer->open_list_head)) {
-			timeri = (snd_timer_instance_t *)timer->open_list_head.next;
+			timeri = (snd_timer_instance_t *)list_entry(timer->open_list_head.next, snd_timer_instance_t, open_list);
 			if (timeri->flags & SNDRV_TIMER_IFLG_EXCLUSIVE) {
 				up(&register_mutex);
 				return -EBUSY;
