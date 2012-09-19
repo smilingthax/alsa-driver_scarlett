@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # 20050524 Thomas Hood: Cleaned up; added --dev-dir option
 
@@ -12,15 +12,15 @@ PERM=666
 DIR_PERM=755
 WIPE_OLD=yes
 
-if [ "`grep -w -E "^audio" /etc/group`x" != x ]; then
+if [ "`grep "^audio:" /etc/group`x" != x ]; then
   OWNER=root.audio
 fi
 
-function echo_usage () {
+echo_usage () {
   echo "Usage: snddevices [-h|--help] [max] [--no-wipe] [--dev-dir=PATHNAME] [--owner=USER:GROUP]"
 }
 
-function report_error () {
+report_error () {
   echo "${0}: Error: $*" >&2
 }
 
@@ -44,74 +44,75 @@ if [ "$OWNER" = "root.audio" ] ; then
 fi
 
 # Meant to be called from assert_*_args only
-function report_args_error () {
-  report_error "Incorrect function call: ${FUNCNAME[2]}() takes $* arguments"
+report_args_error () {
+  # report_error "Incorrect call: ${FUNCNAME[2]}() takes $* arguments"
+  report_error "Incorrect call: needs $* arguments"
 }
 
-function assert_one_arg () {
+assert_one_arg () {
   { [ "$1" ] && [ -z "$2" ] ; } || { report_args_error "one" ; exit 99 ; }
 }
 
-function assert_two_args () {
+assert_two_args () {
   { [ "$2" ] && [ -z "$3" ] ; } || { report_args_error "two" ; exit 99 ; }
 }
 
-function assert_three_args () {
+assert_three_args () {
   { [ "$3" ] && [ -z "$4" ] ; } || { report_args_error "three" ; exit 99 ; }
 }
 
-function assert_three_or_four_args () {
+assert_three_or_four_args () {
   { [ "$3" ] && [ -z "$5" ] ; } || { report_args_error "three or four" ; exit 99 ; }
 }
 
 # $1 destination-relative pathname of source
 # $2 DEV_DIR-relative pathname of destination
-function link_file () {
+link_file () {
   assert_two_args "$@"
-  ln -svf "$1" "$DEV_DIR/$2"
+  ln -sf "$1" "$DEV_DIR/$2"
 }
 
 # $1 DEV_DIR-relative pathname of source
 # $2 DEV_DIR-relative pathname of destination
-function move_file () {
+move_file () {
   assert_two_args "$@"
   mv -f "$DEV_DIR/$1" "$DEV_DIR/$2"
 }
 
 # $1 DEV_DIR-relative shell glob pattern of files to delete
-function del_file_pattern () {
+del_file_pattern () {
   assert_one_arg "$@"
   eval rm -f "$DEV_DIR/$1"
 }
 
 # $1 DEV_DIR-relative pathname to make
-function make_dir () {
+make_dir () {
   assert_one_arg "$@"
   mkdir -p "$DEV_DIR/$1"
 }
 
 # $1 DEV_DIR-relative pathname to delete
-function del_dir () {
+del_dir () {
   assert_one_arg "$@"
   rmdir "$DEV_DIR/$1"
 }
 
 # $1 DEV_DIR-relative pathname to test
-function is_dir () {
+is_dir () {
   assert_one_arg "$@"
   [ -d "$DEV_DIR/$1" ]
 }
 
 # $1 owner:group
 # $2 DEV_DIR-relative pathname whose owner will be changed
-function change_owner () {
+change_owner () {
   assert_two_args "$@"
   chown "$1" "$DEV_DIR/$2"
 }
 
 # $1 perms
 # $2 DEV_DIR-relative pathname whose perms will be changed
-function change_perms () {
+change_perms () {
   assert_two_args "$@"
   chmod "$1" "$DEV_DIR/$2"
 }
@@ -119,7 +120,7 @@ function change_perms () {
 # $1 DEV_DIR-relative pathname of node to make
 # $2 major
 # $3 minor
-function make_char_node () {
+make_char_node () {
   assert_three_args "$@"
   rm -f "$DEV_DIR/$1"
   mknod "$DEV_DIR/$1" c "$2" "$3"
@@ -128,7 +129,7 @@ function make_char_node () {
 
 # $1 DEV_DIR-relative pathname of device to create
 # $2 minor number of device to create
-function create_oss_dev () {
+create_oss_dev () {
   assert_two_args "$@"
   del_file_pattern "$1"
   echo -n "Creating $1..."
@@ -140,7 +141,7 @@ function create_oss_dev () {
 
 # $1 DEV_DIR-relative base pathname of devices to create
 # $2 minor number offset of devices to create
-function create_oss_dev_range () {
+create_oss_dev_range () {
   assert_two_args "$@"
   tmp=0
   tmp1=0
@@ -148,19 +149,19 @@ function create_oss_dev_range () {
   del_file_pattern "${1}?"
   echo -n "Creating $1?..."
   while [ "$tmp1" -lt "$MAX_CARDS" ]; do
-    minor=$[ $2 + $tmp ]
+    minor=`expr $2 + $tmp`
     make_char_node "$1$tmp1" "$OSSMAJOR" "$minor"
     change_owner "$OWNER" "$1$tmp1"
     change_perms "$PERM"  "$1$tmp1"
-    tmp=$[ $tmp + 16 ]
-    tmp1=$[ $tmp1 + 1 ]
+    tmp=`expr $tmp + 16`
+    tmp1=`expr $tmp1 + 1`
   done
   echo "done."
 }
 
 # $1 DEV_DIR-relative pathname of device to create
 # $2 minor number of device to create
-function create_single_dev () {
+create_single_dev () {
   assert_two_args "$@"
   del_file_pattern "$1"
   echo -n "Creating $1..."
@@ -172,19 +173,19 @@ function create_single_dev () {
 
 # $1 DEV_DIR-relative base pathname of devices to create
 # $2 minor number offset of devices to create
-function create_card_dev_range () {
+create_card_dev_range () {
   assert_two_args "$@"
   tmp=0
   del_file_pattern "$1"
   del_file_pattern "${1}?"
   echo -n "Creating $1?..."
   while [ "$tmp" -lt "$MAX_CARDS" ]; do
-    minor=$[ $tmp * 32 ]
-    minor=$[ $2 + $minor ]
+    minor=`expr $tmp \* 32`
+    minor=`expr $2 + $minor`
     make_char_node "${1}C${tmp}" "$MAJOR" "$minor"
     change_owner "$OWNER" "${1}C${tmp}"
     change_perms "$PERM"  "${1}C${tmp}"
-    tmp=$[ $tmp + 1 ]
+    tmp=`expr $tmp + 1`
   done
   echo "done."
 }
@@ -193,7 +194,7 @@ function create_card_dev_range () {
 # $2 minor number offset of devices to create
 # $3 number of devices to create
 # [$4 device name suffix]
-function create_device_dev_range () {
+create_device_dev_range () {
   assert_three_or_four_args "$@"
   tmp=0
   del_file_pattern "$1"
@@ -202,14 +203,14 @@ function create_device_dev_range () {
   while [ "$tmp" -lt "$MAX_CARDS" ]; do
     tmp1=0
     while [ "$tmp1" -lt "$3" ]; do
-      minor=$[ $tmp * 32 ]
-      minor=$[ $2 + $minor + $tmp1 ]
+      minor=`expr $tmp \* 32`
+      minor=`expr $2 + $minor + $tmp1`
       make_char_node "${1}C${tmp}D${tmp1}${4}" "$MAJOR" "$minor"
       change_owner "$OWNER" "${1}C${tmp}D${tmp1}${4}"
       change_perms "$PERM"  "${1}C${tmp}D${tmp1}${4}"
-      tmp1=$[ $tmp1 + 1 ]
+      tmp1=`expr $tmp1 + 1`
     done
-    tmp=$[ $tmp + 1 ]
+    tmp=`expr $tmp + 1`
   done
   echo "done."
 }
