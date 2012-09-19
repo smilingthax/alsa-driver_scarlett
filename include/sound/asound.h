@@ -104,10 +104,10 @@ enum sndrv_hwdep_iface {
 	SNDRV_HWDEP_IFACE_YSS225,	/* Yamaha FX processor */
 	SNDRV_HWDEP_IFACE_ICS2115,	/* Wavetable synth */
 	SNDRV_HWDEP_IFACE_SSCAPE,	/* Ensoniq SoundScape ISA card (MC68EC000) */
-	SNDRV_HWDEP_IFACE_VX_LOADER,	/* Digigram VX cards */
+	SNDRV_HWDEP_IFACE_VX,		/* Digigram VX cards */
 
 	/* Don't forget to change the following: */
-	SNDRV_HWDEP_IFACE_LAST = SNDRV_HWDEP_IFACE_VX_LOADER,
+	SNDRV_HWDEP_IFACE_LAST = SNDRV_HWDEP_IFACE_VX,
 };
 
 struct sndrv_hwdep_info {
@@ -119,9 +119,27 @@ struct sndrv_hwdep_info {
 	unsigned char reserved[64];	/* reserved for future */
 };
 
+/* generic DSP loader */
+struct sndrv_hwdep_dsp_status {
+	unsigned int version;		/* R: driver-specific version */
+	unsigned char id[32];		/* R: driver-specific ID string */
+	unsigned int num_dsps;		/* R: number of DSP images to transfer */
+	unsigned int dsp_loaded;	/* R: bit flags indicating the loaded DSPs */
+	unsigned int chip_ready;	/* R: 1 = initialization finished */
+};
+
+struct sndrv_hwdep_dsp_image {
+	unsigned int index;		/* W: DSP index */
+	unsigned char name[64];		/* W: ID (e.g. file name) */
+	unsigned char *image;		/* W: binary image */
+	size_t length;			/* W: size of image in bytes */
+};
+
 enum {
 	SNDRV_HWDEP_IOCTL_PVERSION = _IOR ('H', 0x00, int),
 	SNDRV_HWDEP_IOCTL_INFO = _IOR ('H', 0x01, struct sndrv_hwdep_info),
+	SNDRV_HWDEP_IOCTL_DSP_STATUS = _IOR('H', 0x02, struct sndrv_hwdep_dsp_status),
+	SNDRV_HWDEP_IOCTL_DSP_LOAD   = _IOW('H', 0x03, struct sndrv_hwdep_dsp_image)
 };
 
 /*****************************************************************************
