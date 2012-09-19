@@ -1274,11 +1274,11 @@ case "$processor" in
       CONFIG_X86_32=y
     fi
     for i in include/asm-x86 include/asm-i386 include2/asm-x86 include2/asm-i386 arch/x86/include/asm; do
-      if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
+      if test -r $CONFIG_SND_KERNELDIR/$i/mach-default/mach_apic.h; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
 	break
       fi  
-      if test -n "$kernelbuild" -a -d $kernelbuild/$i/mach-default; then
+      if test -n "$kernelbuild" -a -r $kernelbuild/$i/mach-default/mach_apic.h; then
 	mach_dir="$kernelbuild/$i"
 	break
       fi  
@@ -1286,11 +1286,11 @@ case "$processor" in
     ;;
   x86_64)
     for i in include/asm-x86 include2/asm-x86 arch/x86/include/asm; do
-      if test -d $CONFIG_SND_KERNELDIR/$i/mach-default; then
+      if test -r $CONFIG_SND_KERNELDIR/$i/mach-default/mach_apic.h; then
         mach_dir="$CONFIG_SND_KERNELDIR/$i"
 	break
       fi  
-      if test -n "$kernelbuild" -a -d $kernelbuild/$i/mach-default; then
+      if test -n "$kernelbuild" -a -r $kernelbuild/$i/mach-default/mach_apic.h; then
 	mach_dir="$kernelbuild/$i"
 	break
       fi  
