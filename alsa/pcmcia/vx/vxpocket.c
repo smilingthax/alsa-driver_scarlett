@@ -77,13 +77,6 @@ MODULE_PARM_DESC(irq_list, "List of Available interrupts for VXPocket soundcard.
  */
 
 #ifdef COMPILE_VXP440
-/*
- * VXpocket 440
- */
-#include "xilinx_boot_vp4.c"
-#include "xilinx_image_vp4.c"
-#include "d563s3_boot.c"
-#include "dsp_image_vp4.c"
 static dev_info_t dev_info = "snd-vxp440";
 
 /* 1 DSP, 1 sync UER, 1 sync World Clock (NIY) */
@@ -97,13 +90,6 @@ static dev_info_t dev_info = "snd-vxp440";
 #define CARD_TYPE	VX_TYPE_VXP440
 
 #else
-/*
- * VXpocket V2
- */
-#include "xilinx_boot_vxp.c"
-#include "xilinx_image_vxp.c"
-#include "d563s3_boot.c"
-#include "dsp_image_vxp.c"
 static dev_info_t dev_info = "snd-vxpocket";
 
 /* 1 DSP, 1 sync UER */
@@ -121,18 +107,6 @@ static struct snd_vx_hardware vxp_hw = {
 	.name = CARD_NAME,
 	.type = CARD_TYPE,
 
-	/* images */
-#ifdef COMPILE_VXP440
-	.boot = { xilinx_boot_vxp440, sizeof(xilinx_boot_vxp440) },
-	.xilinx = { xilinx_image_vxp440, sizeof(xilinx_image_vxp440) },
-	.dsp_boot = { d563s3_boot, sizeof(d563s3_boot) },
-	.dsp = { dsp_image_vxp440, sizeof(dsp_image_vxp440) },
-#else
-	.boot = { xilinx_boot_vxpocket, sizeof(xilinx_boot_vxpocket) },
-	.xilinx = { xilinx_image_vxpocket, sizeof(xilinx_image_vxpocket) },
-	.dsp_boot = { d563s3_boot, sizeof(d563s3_boot) },
-	.dsp = { dsp_image_vxpocket, sizeof(dsp_image_vxpocket) },
-#endif
 	/* hardware specs */
 	.num_codecs = NUM_CODECS,
 	.num_ins = NUM_CODECS,

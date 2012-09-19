@@ -7,7 +7,7 @@ include $(TOPDIR)/Makefile.conf
 # ALSA extra code
 #
 
-extra-subdir-y	:= pdplus
+extra-subdir-y	:= pdplus vx222
 extra-subdir-m	:= $(extra-subdir-y)
 
 snd-azt3328-objs := azt3328.o

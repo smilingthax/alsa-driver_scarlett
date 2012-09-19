@@ -175,6 +175,22 @@ Additional Modules
     You need sscape_ctl tool in alsa-tools package for loading
     the microcode.
 
+  Module snd-vx222
+  ----------------
+
+    Module for Digigram VX-Pocket VX222, V222 v2 and Mic cards.
+
+    mic		- Enable Microphone on V222 Mic (NYI)
+
+    Module supports up to 8 cards.
+
+    For loading the firmware, use vxloader utility in alsa-tools
+    package.  For loading the firmware automatically, add the
+    following to /etc/modules.conf
+
+	post-install snd-vx222 "/usr/bin/vxload"
+
+
   Module snd-vxpocket
   -------------------
 
@@ -189,6 +205,8 @@ Additional Modules
 
     To activate the driver via the card manager, you'll need to copy
     vx/pcmcia/vxpocket.conf to /etc/pcmcia directory.
+    For loading the firmware, use vxloader utility in alsa-tools
+    package.
 
   Module snd-vxp440
   -----------------
@@ -204,5 +222,7 @@ Additional Modules
 
     To activate the driver via the card manager, you'll need to copy
     vx/pcmcia/vxpocket.conf to /etc/pcmcia directory.
+    For loading the firmware, use vxloader utility in alsa-tools
+    package.
 
 

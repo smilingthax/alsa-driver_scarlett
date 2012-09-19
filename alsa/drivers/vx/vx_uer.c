@@ -88,9 +88,9 @@ static int vx_read_one_cbit(vx_core_t *chip, int index)
 static void vx_write_one_cbit(vx_core_t *chip, int index, int val)
 {
 	unsigned long flags;
-	val = !!val;
+	val = !!val;	/* 0 or 1 */
 	spin_lock_irqsave(&chip->lock, flags);
-	if (chip->type >= VX_TYPE_VXPOCKET) {
+	if (vx_is_pcmcia(chip)) {
 		vx_outb(chip, CSUER, 0); /* write */
 		vx_outb(chip, RUER, (val << 7) | (index & XX_UER_CBITS_OFFSET_MASK));
 	} else {
@@ -115,7 +115,7 @@ static int vx_read_uer_status(vx_core_t *chip, int *mode)
 	freq = 0;
 
 	/* Read UER status */
-	if (chip->type >= VX_TYPE_VXPOCKET)
+	if (vx_is_pcmcia(chip))
 	    val = vx_inb(chip, CSUER);
 	else
 	    val = vx_inl(chip, CSUER);
@@ -200,7 +200,7 @@ static int vx_calc_clock_from_freq(vx_core_t *chip, int freq)
  * vx_change_clock_source - change the clock source
  * @source: the new source
  */
-static void vx_change_clock_source(vx_core_t *chip, int source)
+void vx_change_clock_source(vx_core_t *chip, int source)
 {
 	unsigned long flags;
 
@@ -226,7 +226,7 @@ void vx_set_internal_clock(vx_core_t *chip, unsigned int freq)
 	clock = vx_calc_clock_from_freq(chip, freq);
 	snd_printdd(KERN_DEBUG "set internal clock to 0x%x from freq %d\n", clock, freq);
 	spin_lock_irqsave(&chip->lock, flags);
-	if (chip->type >= VX_TYPE_VXPOCKET) {
+	if (vx_is_pcmcia(chip)) {
 		vx_outb(chip, HIFREQ, (clock >> 8) & 0x0f);
 		vx_outb(chip, LOFREQ, clock & 0xff);
 	} else {
@@ -245,7 +245,7 @@ void vx_set_iec958_status(vx_core_t *chip, unsigned int bits)
 {
 	int i;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return;
 
 	for (i = 0; i < 32; i++)
@@ -260,7 +260,7 @@ int vx_set_clock(vx_core_t *chip, unsigned int freq)
 {
 	int src_changed = 0;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return 0;
 
 	/* change the audio source if possible */
@@ -301,7 +301,7 @@ int vx_change_frequency(vx_core_t *chip)
 {
 	int freq;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return 0;
 
 	if (chip->clock_source == INTERNAL_QUARTZ)

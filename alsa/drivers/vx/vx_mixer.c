@@ -39,7 +39,9 @@ static void vx_write_codec_reg(vx_core_t *chip, int codec, unsigned int data)
 {
 	unsigned long flags;
 
-	if (chip->is_stale)
+	snd_assert(chip->ops->write_codec, return);
+
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
@@ -110,8 +112,13 @@ static void vx_set_codec_reg(vx_core_t *chip, int codec, int reg, int val)
  */
 static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int right)
 {
-	vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_LEFT_REGISTER, left);
-	vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
+	if (chip->ops->akm_write) {
+		chip->ops->akm_write(chip, XX_CODEC_LEVEL_LEFT_REGISTER, left);
+		chip->ops->akm_write(chip, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
+	} else {
+		vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_LEFT_REGISTER, left);
+		vx_set_codec_reg(chip, codec, XX_CODEC_LEVEL_RIGHT_REGISTER, right);
+	}
 }
 
 
@@ -126,30 +133,37 @@ static void vx_set_analog_output_level(vx_core_t *chip, int codec, int left, int
 void vx_toggle_dac_mute(vx_core_t *chip, int mute)
 {
 	unsigned int i;
-	for (i = 0; i < chip->hw->num_codecs; i++)
-		vx_set_codec_reg(chip, i, XX_CODEC_DAC_CONTROL_REGISTER,
-				 mute ? DAC_ATTEN_MAX : DAC_ATTEN_MIN);
+	for (i = 0; i < chip->hw->num_codecs; i++) {
+		if (chip->ops->akm_write)
+			chip->ops->akm_write(chip, XX_CODEC_DAC_CONTROL_REGISTER, mute); /* XXX */
+		else
+			vx_set_codec_reg(chip, i, XX_CODEC_DAC_CONTROL_REGISTER,
+					 mute ? DAC_ATTEN_MAX : DAC_ATTEN_MIN);
+	}
 }
 
 /*
  * vx_reset_codec - reset and initialize the codecs
  */
-void vx_reset_codec(vx_core_t *chip)
+void vx_reset_codec(vx_core_t *chip, int cold_reset)
 {
 	unsigned int i;
 	int port = chip->type >= VX_TYPE_VXPOCKET ? 0x75 : 0x65;
 
 	chip->ops->reset_codec(chip);
 
-	for (i = 0; i < chip->hw->num_codecs; i++) {
-		/* DAC control register (change level when zero crossing + mute) */
-		vx_set_codec_reg(chip, i, XX_CODEC_DAC_CONTROL_REGISTER, DAC_ATTEN_MAX);
-		/* ADC control register */
-		vx_set_codec_reg(chip, i, XX_CODEC_ADC_CONTROL_REGISTER, 0x00);
-		/* Port mode register */
-		vx_set_codec_reg(chip, i, XX_CODEC_PORT_MODE_REGISTER, port);
-		/* Clock control register */
-		vx_set_codec_reg(chip, i, XX_CODEC_CLOCK_CONTROL_REGISTER, 0x00);
+	if (! chip->ops->akm_write) {
+		/* initialize old codecs */
+		for (i = 0; i < chip->hw->num_codecs; i++) {
+			/* DAC control register (change level when zero crossing + mute) */
+			vx_set_codec_reg(chip, i, XX_CODEC_DAC_CONTROL_REGISTER, DAC_ATTEN_MAX);
+			/* ADC control register */
+			vx_set_codec_reg(chip, i, XX_CODEC_ADC_CONTROL_REGISTER, 0x00);
+			/* Port mode register */
+			vx_set_codec_reg(chip, i, XX_CODEC_PORT_MODE_REGISTER, port);
+			/* Clock control register */
+			vx_set_codec_reg(chip, i, XX_CODEC_CLOCK_CONTROL_REGISTER, 0x00);
+		}
 	}
 
 	/* mute analog output */
@@ -170,7 +184,7 @@ static void vx_change_audio_source(vx_core_t *chip, int src)
 {
 	unsigned long flags;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return;
 
 	spin_lock_irqsave(&chip->lock, flags);
@@ -213,7 +227,7 @@ static int vx_adjust_audio_level(vx_core_t *chip, int audio, int capture,
 {
 	struct vx_rmh rmh;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 
         vx_init_rmh(&rmh, CMD_AUDIO_LEVEL_ADJUST);
@@ -368,7 +382,7 @@ static int vx_get_audio_vu_meter(vx_core_t *chip, int audio, int capture, struct
 	struct vx_rmh rmh;
 	int i, err;
 
-	if (chip->is_stale)
+	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 
 	vx_init_rmh(&rmh, CMD_AUDIO_VU_PIC_METER);

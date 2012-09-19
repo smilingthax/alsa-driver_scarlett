@@ -9,8 +9,8 @@ include $(TOPDIR)/Makefile.conf
 
 TOPDIR = $(MAINSRCDIR)
 
-snd-vxpocket-objs := vxpocket.o vx_entry.o vxp_ops.o vxp_mixer.o
+snd-vx222-objs := vx222.o vx222_ops.o
 
-obj-$(CONFIG_SND_VXPOCKET) += snd-vxpocket.o
+obj-$(CONFIG_SND_VX222) += snd-vx222.o
 
 include $(TOPDIR)/Rules.make
