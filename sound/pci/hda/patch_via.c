@@ -35,6 +35,7 @@
 /* 2008-04-09  Lydia Wang  Add mute front speaker when HP plugin             */
 /* 2008-04-09  Lydia Wang  Add Independent HP feature                        */
 /* 2008-05-28  Lydia Wang  Add second S/PDIF Out support for VT1702	     */
+/* 2008-09-15  Logan Li    Add VT1708S Mic Boost workaround/backdoor	     */
 /*                                                                           */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -87,6 +88,48 @@
 #define IS_VT1708S_VENDORID(x)		((x) >= 0x11060397 && (x) <= 0x11067397)
 #define IS_VT1702_VENDORID(x)		((x) >= 0x11060398 && (x) <= 0x11067398)
 
+enum VIA_HDA_CODEC {
+	UNKNOWN = -1,
+	VT1708,
+	VT1709_10CH,
+	VT1709_6CH,
+	VT1708B_8CH,
+	VT1708B_4CH,
+	VT1708S,
+	VT1702,
+	CODEC_TYPES,
+};
+
+static enum VIA_HDA_CODEC get_codec_type(u32 vendor_id)
+{
+	u16 ven_id = vendor_id >> 16;
+	u16 dev_id = vendor_id & 0xffff;
+	enum VIA_HDA_CODEC codec_type;
+
+	/* get codec type */
+	if (ven_id != 0x1106)
+		codec_type = UNKNOWN;
+	else if (dev_id >= 0x1708 && dev_id <= 0x170b)
+		codec_type = VT1708;
+	else if (dev_id >= 0xe710 && dev_id <= 0xe713)
+		codec_type = VT1709_10CH;
+	else if (dev_id >= 0xe714 && dev_id <= 0xe717)
+		codec_type = VT1709_6CH;
+	else if (dev_id >= 0xe720 && dev_id <= 0xe723)
+		codec_type = VT1708B_8CH;
+	else if (dev_id >= 0xe724 && dev_id <= 0xe727)
+		codec_type = VT1708B_4CH;
+	else if ((dev_id & 0xfff) == 0x397
+		 && (dev_id >> 12) < 8)
+		codec_type = VT1708S;
+	else if ((dev_id & 0xfff) == 0x398
+		 && (dev_id >> 12) < 8)
+		codec_type = VT1702;
+	else
+		codec_type = UNKNOWN;
+	return codec_type;
+};
+
 #define VIA_HP_EVENT		0x01
 #define VIA_GPIO_EVENT		0x02
 
@@ -101,6 +144,48 @@ enum {
 	AUTO_SEQ_CENLFE,
 	AUTO_SEQ_SIDE
 };
+
+#define get_amp_nid(kc)	((kc)->private_value & 0xffff)
+
+/* Some VT1708S based boards gets the micboost setting wrong, so we have
+ * to apply some brute-force and re-write the TLV's by software. */
+static int mic_boost_tlv(struct snd_kcontrol *kcontrol, int op_flag,
+			 unsigned int size, unsigned int __user *_tlv)
+{
+	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+	hda_nid_t nid = get_amp_nid(kcontrol);
+
+	if (get_codec_type(codec->vendor_id) == VT1708S
+	    && (nid == 0x1a || nid == 0x1e)) {
+		if (size < 4 * sizeof(unsigned int))
+			return -ENOMEM;
+		if (put_user(1, _tlv))	/* SNDRV_CTL_TLVT_DB_SCALE */
+			return -EFAULT;
+		if (put_user(2 * sizeof(unsigned int), _tlv + 1))
+			return -EFAULT;
+		if (put_user(0, _tlv + 2)) /* offset = 0 */
+			return -EFAULT;
+		if (put_user(1000, _tlv + 3)) /* step size = 10 dB */
+			return -EFAULT;
+	}
+	return 0;
+}
+
+static int mic_boost_volume_info(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_info *uinfo)
+{
+	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+	hda_nid_t nid = get_amp_nid(kcontrol);
+
+	if (get_codec_type(codec->vendor_id) == VT1708S
+	    && (nid == 0x1a || nid == 0x1e)) {
+		uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+		uinfo->count = 2;
+		uinfo->value.integer.min = 0;
+		uinfo->value.integer.max = 3;
+	}
+	return 0;
+}
 
 static struct snd_kcontrol_new vt1708_control_templates[] = {
 	HDA_CODEC_VOLUME(NULL, 0, 0, 0),
@@ -123,7 +208,6 @@ struct via_spec {
 	char *stream_name_digital;
 	struct hda_pcm_stream *stream_digital_playback;
 	struct hda_pcm_stream *stream_digital_capture;
-	struct hda_pcm_stream *stream_extra_digital_playback;
 
 	/* playback */
 	struct hda_multi_out multiout;
@@ -656,17 +740,6 @@ static int via_dig_playback_pcm_close(struct hda_pcm_stream *hinfo,
 	return snd_hda_multi_out_dig_close(codec, &spec->multiout);
 }
 
-static int via_dig_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
-					struct hda_codec *codec,
-					unsigned int stream_tag,
-					unsigned int format,
-					struct snd_pcm_substream *substream)
-{
-	struct via_spec *spec = codec->spec;
-	return snd_hda_multi_out_dig_prepare(codec, &spec->multiout,
-					     stream_tag, format, substream);
-}
-
 /* setup SPDIF output stream */
 static void setup_dig_playback_stream(struct hda_codec *codec, hda_nid_t nid,
 				 unsigned int stream_tag, unsigned int format)
@@ -682,17 +755,25 @@ static void setup_dig_playback_stream(struct hda_codec *codec, hda_nid_t nid,
 				    codec->spdif_ctls & 0xff);
 }
 
-static int via_extra_dig_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
+static int via_dig_playback_pcm_prepare(struct hda_pcm_stream *hinfo,
 					struct hda_codec *codec,
 					unsigned int stream_tag,
 					unsigned int format,
 					struct snd_pcm_substream *substream)
 {
 	struct via_spec *spec = codec->spec;
+	hda_nid_t nid;
+
+	/* 1st or 2nd S/PDIF */
+	if (substream->number == 0)
+		nid = spec->multiout.dig_out_nid;
+	else if (substream->number == 1)
+		nid = spec->extra_dig_out_nid;
+	else
+		return -1;
 
 	mutex_lock(&codec->spdif_mutex);
-	setup_dig_playback_stream(codec, spec->extra_dig_out_nid, stream_tag,
-				  format);
+	setup_dig_playback_stream(codec, nid, stream_tag, format);
 	mutex_unlock(&codec->spdif_mutex);
 	return 0;
 }
@@ -854,17 +935,6 @@ static int via_build_pcms(struct hda_codec *codec)
 		}
 	}
 
-	if (spec->extra_dig_out_nid) {
-		codec->num_pcms++;
-		info++;
-		info->name = spec->stream_name_digital;
-		info->pcm_type = HDA_PCM_TYPE_HDMI;
-		info->stream[SNDRV_PCM_STREAM_PLAYBACK] =
-				*(spec->stream_extra_digital_playback);
-		info->stream[SNDRV_PCM_STREAM_PLAYBACK].nid =
-				spec->extra_dig_out_nid;
-	}
-
 	return 0;
 }
 
@@ -957,6 +1027,10 @@ static void via_unsol_event(struct hda_codec *codec,
 		via_gpio_control(codec);
 }
 
+static hda_nid_t slave_dig_outs[] = {
+	0,
+};
+
 static int via_init(struct hda_codec *codec)
 {
 	struct via_spec *spec = codec->spec;
@@ -990,6 +1064,9 @@ static int via_init(struct hda_codec *codec)
 	} else /* enable SPDIF-input pin */
 		snd_hda_codec_write(codec, spec->autocfg.dig_in_pin, 0,
 				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN);
+
+	/* no slave outs */
+	codec->slave_dig_outs = slave_dig_outs;
 
  	return 0;
 }
@@ -1303,7 +1380,8 @@ static int vt1708_parse_auto_config(struct hda_codec *codec)
 
 	spec->input_mux = &spec->private_imux[0];
 
-	spec->mixers[spec->num_mixers++] = via_hp_mixer;
+	if (spec->hp_mux)
+		spec->mixers[spec->num_mixers++] = via_hp_mixer;
 
 	return 1;
 }
@@ -1772,6 +1850,9 @@ static int vt1709_parse_auto_config(struct hda_codec *codec)
 		spec->mixers[spec->num_mixers++] = spec->kctl_alloc;
 
 	spec->input_mux = &spec->private_imux[0];
+
+	if (spec->hp_mux)
+		spec->mixers[spec->num_mixers++] = via_hp_mixer;
 
 	return 1;
 }
@@ -2314,7 +2395,8 @@ static int vt1708B_parse_auto_config(struct hda_codec *codec)
 
 	spec->input_mux = &spec->private_imux[0];
 
-	spec->mixers[spec->num_mixers++] = via_hp_mixer;
+	if (spec->hp_mux)
+		spec->mixers[spec->num_mixers++] = via_hp_mixer;
 
 	return 1;
 }
@@ -2433,14 +2515,29 @@ static int patch_vt1708B_4ch(struct hda_codec *codec)
 
 /* Patch for VT1708S */
 
+/* VT1708S software backdoor based override for buggy hardware micboost
+ * setting */
+#define MIC_BOOST_VOLUME(xname, nid) {				\
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,		\
+	.name = xname,					\
+	.index = 0,					\
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE |	\
+	SNDRV_CTL_ELEM_ACCESS_TLV_READ |		\
+	SNDRV_CTL_ELEM_ACCESS_TLV_CALLBACK,		\
+	.info = mic_boost_volume_info,			\
+	.get = snd_hda_mixer_amp_volume_get,		\
+	.put = snd_hda_mixer_amp_volume_put,		\
+	.tlv = { .c = mic_boost_tlv },			\
+	.private_value = HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_INPUT) }
+
 /* capture mixer elements */
 static struct snd_kcontrol_new vt1708S_capture_mixer[] = {
 	HDA_CODEC_VOLUME("Capture Volume", 0x13, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Capture Switch", 0x13, 0x0, HDA_INPUT),
 	HDA_CODEC_VOLUME_IDX("Capture Volume", 1, 0x14, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE_IDX("Capture Switch", 1, 0x14, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Mic Boost", 0x1A, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Front Mic Boost", 0x1E, 0x0, HDA_INPUT),
+	MIC_BOOST_VOLUME("Mic Boost Capture Volume", 0x1A),
+	MIC_BOOST_VOLUME("Front Mic Boost Capture Volume", 0x1E),
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		/* The multiple "Capture Source" controls confuse alsamixer
@@ -2472,8 +2569,11 @@ static struct hda_verb vt1708S_volume_init_verbs[] = {
 
 	/* Setup default input of PW4 to MW0 */
 	{0x1d, AC_VERB_SET_CONNECT_SEL, 0x0},
-	/* PW9 Output enable */
+	/* PW9, PW10  Output enable */
 	{0x20, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x40},
+	{0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, 0x40},
+	/* Enable Mic Boost Volume backdoor */
+	{0x1, 0xf98, 0x1},
 	{ }
 };
 
@@ -2506,7 +2606,7 @@ static struct hda_pcm_stream vt1708S_pcm_analog_capture = {
 };
 
 static struct hda_pcm_stream vt1708S_pcm_digital_playback = {
-	.substreams = 1,
+	.substreams = 2,
 	.channels_min = 2,
 	.channels_max = 2,
 	/* NID is set in via_build_pcms */
@@ -2514,16 +2614,6 @@ static struct hda_pcm_stream vt1708S_pcm_digital_playback = {
 		.open = via_dig_playback_pcm_open,
 		.close = via_dig_playback_pcm_close,
 		.prepare = via_dig_playback_pcm_prepare
-	},
-};
-
-static struct hda_pcm_stream vt1708S_pcm_extra_digital_playback = {
-	.substreams = 1,
-	.channels_min = 2,
-	.channels_max = 2,
-	/* NID is set in via_build_pcms */
-	.ops = {
-		.prepare = via_extra_dig_playback_pcm_prepare
 	},
 };
 
@@ -2770,7 +2860,8 @@ static int vt1708S_parse_auto_config(struct hda_codec *codec)
 
 	spec->input_mux = &spec->private_imux[0];
 
-	spec->mixers[spec->num_mixers++] = via_hp_mixer;
+	if (spec->hp_mux)
+		spec->mixers[spec->num_mixers++] = via_hp_mixer;
 
 	return 1;
 }
@@ -2816,8 +2907,6 @@ static int patch_vt1708S(struct hda_codec *codec)
 
 	spec->stream_name_digital = "VT1708S Digital";
 	spec->stream_digital_playback = &vt1708S_pcm_digital_playback;
-	spec->stream_extra_digital_playback =
-					&vt1708S_pcm_extra_digital_playback;
 
 	if (!spec->adc_nids && spec->input_mux) {
 		spec->adc_nids = vt1708S_adc_nids;
@@ -2921,7 +3010,7 @@ static struct hda_pcm_stream vt1702_pcm_analog_capture = {
 };
 
 static struct hda_pcm_stream vt1702_pcm_digital_playback = {
-	.substreams = 1,
+	.substreams = 2,
 	.channels_min = 2,
 	.channels_max = 2,
 	/* NID is set in via_build_pcms */
@@ -2929,16 +3018,6 @@ static struct hda_pcm_stream vt1702_pcm_digital_playback = {
 		.open = via_dig_playback_pcm_open,
 		.close = via_dig_playback_pcm_close,
 		.prepare = via_dig_playback_pcm_prepare
-	},
-};
-
-static struct hda_pcm_stream vt1702_pcm_extra_digital_playback = {
-	.substreams = 1,
-	.channels_min = 2,
-	.channels_max = 2,
-	/* NID is set in via_build_pcms */
-	.ops = {
-		.prepare = via_extra_dig_playback_pcm_prepare
 	},
 };
 
@@ -3100,7 +3179,8 @@ static int vt1702_parse_auto_config(struct hda_codec *codec)
 
 	spec->input_mux = &spec->private_imux[0];
 
-	spec->mixers[spec->num_mixers++] = via_hp_mixer;
+	if (spec->hp_mux)
+		spec->mixers[spec->num_mixers++] = via_hp_mixer;
 
 	return 1;
 }
@@ -3148,8 +3228,6 @@ static int patch_vt1702(struct hda_codec *codec)
 
 	spec->stream_name_digital = "VT1702 Digital";
 	spec->stream_digital_playback = &vt1702_pcm_digital_playback;
-	spec->stream_extra_digital_playback =
-					&vt1702_pcm_extra_digital_playback;
 
 	if (!spec->adc_nids && spec->input_mux) {
 		spec->adc_nids = vt1702_adc_nids;

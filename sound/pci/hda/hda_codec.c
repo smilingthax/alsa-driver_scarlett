@@ -961,15 +961,6 @@ void snd_hda_codec_resume_amp(struct hda_codec *codec)
 }
 #endif /* SND_HDA_NEEDS_RESUME */
 
-/*
- * AMP control callbacks
- */
-/* retrieve parameters from private_value */
-#define get_amp_nid(kc)		((kc)->private_value & 0xffff)
-#define get_amp_channels(kc)	(((kc)->private_value >> 16) & 0x3)
-#define get_amp_direction(kc)	(((kc)->private_value >> 18) & 0x1)
-#define get_amp_index(kc)	(((kc)->private_value >> 19) & 0xf)
-
 /* volume */
 int snd_hda_mixer_amp_volume_info(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_info *uinfo)
@@ -1462,14 +1453,15 @@ static int snd_hda_spdif_default_put(struct snd_kcontrol *kcontrol,
 					  AC_VERB_SET_DIGI_CONVERT_2,
 					  val >> 8);
 
-		for (d = codec->slave_dig_outs; *d; d++) {
-			snd_hda_codec_write_cache(codec, *d, 0,
+		if (codec->slave_dig_outs)
+			for (d = codec->slave_dig_outs; *d; d++) {
+				snd_hda_codec_write_cache(codec, *d, 0,
 					  AC_VERB_SET_DIGI_CONVERT_1,
 					  val & 0xff);
-			snd_hda_codec_write_cache(codec, *d, 0,
+				snd_hda_codec_write_cache(codec, *d, 0,
 					  AC_VERB_SET_DIGI_CONVERT_2,
 					  val >> 8);
-		}
+			}
 	}
 
 	mutex_unlock(&codec->spdif_mutex);
@@ -1507,8 +1499,9 @@ static int snd_hda_spdif_out_switch_put(struct snd_kcontrol *kcontrol,
 					  AC_VERB_SET_DIGI_CONVERT_1,
 					  val & 0xff);
 
-		for (d = codec->slave_dig_outs; *d; d++)
-			snd_hda_codec_write_cache(codec, *d, 0,
+		if (codec->slave_dig_outs)
+			for (d = codec->slave_dig_outs; *d; d++)
+				snd_hda_codec_write_cache(codec, *d, 0,
 					  AC_VERB_SET_DIGI_CONVERT_1,
 					  val & 0xff);
 		/* unmute amp switch (if any) */
@@ -1664,8 +1657,9 @@ static int snd_hda_spdif_in_switch_put(struct snd_kcontrol *kcontrol,
 		snd_hda_codec_write_cache(codec, nid, 0,
 					  AC_VERB_SET_DIGI_CONVERT_1, val);
 
-		for (d = codec->slave_dig_outs; *d; d++)
-			snd_hda_codec_write_cache(codec, *d, 0,
+		if (codec->slave_dig_outs)
+			for (d = codec->slave_dig_outs; *d; d++)
+				snd_hda_codec_write_cache(codec, *d, 0,
 					  AC_VERB_SET_DIGI_CONVERT_1, val);
 	}
 	mutex_unlock(&codec->spdif_mutex);
@@ -2617,9 +2611,10 @@ static void setup_dig_out_stream(struct hda_codec *codec, hda_nid_t nid,
 		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_DIGI_CONVERT_1,
 			    codec->spdif_ctls & ~AC_DIG1_ENABLE & 0xff);
 
-		for (d = codec->slave_dig_outs; *d; d++)
-			snd_hda_codec_write(codec, *d, 0,
-					AC_VERB_SET_DIGI_CONVERT_1,
+		if (codec->slave_dig_outs)
+			for (d = codec->slave_dig_outs; *d; d++)
+				snd_hda_codec_write(codec, *d, 0,
+				    AC_VERB_SET_DIGI_CONVERT_1,
 				    codec->spdif_ctls & ~AC_DIG1_ENABLE & 0xff);
 	}
 	snd_hda_codec_setup_stream(codec, nid, stream_tag, 0, format);
@@ -2628,9 +2623,10 @@ static void setup_dig_out_stream(struct hda_codec *codec, hda_nid_t nid,
 		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_DIGI_CONVERT_1,
 				    codec->spdif_ctls & 0xff);
 
-		for (d = codec->slave_dig_outs; *d; d++)
-			snd_hda_codec_write(codec, *d, 0,
-					AC_VERB_SET_DIGI_CONVERT_1,
+		if (codec->slave_dig_outs)
+			for (d = codec->slave_dig_outs; *d; d++)
+				snd_hda_codec_write(codec, *d, 0,
+				    AC_VERB_SET_DIGI_CONVERT_1,
 				    codec->spdif_ctls & 0xff);
 	}
 

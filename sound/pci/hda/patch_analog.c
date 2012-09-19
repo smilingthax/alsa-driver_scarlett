@@ -1826,8 +1826,13 @@ static hda_nid_t ad1988_capsrc_nids[3] = {
 	0x0c, 0x0d, 0x0e
 };
 
-#define AD1988_SPDIF_OUT	0x02
+#define AD1988_SPDIF_OUT		0x02
+#define AD1988_SPDIF_OUT_HDMI	0x0b
 #define AD1988_SPDIF_IN		0x07
+
+static hda_nid_t ad1989b_slave_dig_outs[2] = {
+	AD1988_SPDIF_OUT, AD1988_SPDIF_OUT_HDMI
+};
 
 static struct hda_input_mux ad1988_6stack_capture_source = {
 	.num_items = 5,
@@ -2143,6 +2148,7 @@ static struct snd_kcontrol_new ad1988_spdif_in_mixers[] = {
 
 static struct snd_kcontrol_new ad1989_spdif_out_mixers[] = {
 	HDA_CODEC_VOLUME("IEC958 Playback Volume", 0x1b, 0x0, HDA_OUTPUT),
+	HDA_CODEC_VOLUME("HDMI Playback Volume", 0x1d, 0x0, HDA_OUTPUT),
 	{ } /* end */
 };
 
@@ -2249,8 +2255,12 @@ static struct hda_verb ad1988_spdif_init_verbs[] = {
 
 /* AD1989 has no ADC -> SPDIF route */
 static struct hda_verb ad1989_spdif_init_verbs[] = {
-	/* SPDIF out pin */
+	/* SPDIF-1 out pin */
+	{0x1b, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT },
 	{0x1b, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE | 0x27}, /* 0dB */
+	/* SPDIF-2/HDMI out pin */
+	{0x1d, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT },
+	{0x1d, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE | 0x27}, /* 0dB */
 	{ }
 };
 
@@ -2874,6 +2884,7 @@ static struct snd_pci_quirk ad1988_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x1043, 0x81ec, "Asus P5B-DLX", AD1988_6STACK_DIG),
 	SND_PCI_QUIRK(0x1043, 0x81f6, "Asus M2N-SLI", AD1988_6STACK_DIG),
 	SND_PCI_QUIRK(0x1043, 0x8277, "Asus P5K-E/WIFI-AP", AD1988_6STACK_DIG),
+	SND_PCI_QUIRK(0x1043, 0x8311, "Asus P5Q-Premium/Pro", AD1988_6STACK_DIG),
 	{}
 };
 
@@ -2981,6 +2992,7 @@ static int patch_ad1988(struct hda_codec *codec)
 				ad1989_spdif_out_mixers;
 			spec->init_verbs[spec->num_init_verbs++] =
 				ad1989_spdif_init_verbs;
+			codec->slave_dig_outs = ad1989b_slave_dig_outs;
 		} else {
 			spec->mixers[spec->num_mixers++] =
 				ad1988_spdif_out_mixers;
