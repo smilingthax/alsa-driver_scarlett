@@ -143,4 +143,7 @@ void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver,
 		usb_driver_claim_interface(&tbl->driver, iface, ptr);
 }
 
+EXPORT_SYMBOL(snd_compat_usb_register);
+EXPORT_SYMBOL(snd_compat_usb_deregister);
+
 #endif /* LINUX_VERSION < 2.3.0 */

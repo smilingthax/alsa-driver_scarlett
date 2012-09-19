@@ -15,7 +15,7 @@ obj-$(CONFIG_SND_USB_USX2Y) += snd-usb-audio.o
 
 obj-$(CONFIG_SND) += usx2y/
 
-export-objs := usbaudio.o usbmidi.o
+export-objs := usbaudio.o usbmidi.o usbcompat.o
 
 include $(SND_TOPDIR)/alsa-kernel/usb/Makefile
 

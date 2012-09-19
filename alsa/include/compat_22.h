@@ -265,6 +265,9 @@ void snd_pci_compat_free_consistent(struct pci_dev *, long, void *, dma_addr_t);
 #define pci_request_regions(dev,name) snd_pci_compat_request_regions(dev,name)
 #define pci_release_regions(dev) snd_pci_compat_release_regions(dev)
 
+#define pci_save_state(dev,buf) snd_pci_compat_save_state(dev,buf)
+#define pci_restore_state(dev,buf) snd_pci_compat_restore_state(dev,buf)
+
 struct pci_device_id {
 	unsigned int vendor, device;		/* Vendor and device ID or PCI_ANY_ID */
 	unsigned int subvendor, subdevice;	/* Subsystem ID's or PCI_ANY_ID */
@@ -305,6 +308,8 @@ int snd_pci_compat_request_region(struct pci_dev *pdev, int bar, char *res_name)
 void snd_pci_compat_release_region(struct pci_dev *pdev, int bar);
 int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name);
 void snd_pci_compat_release_regions(struct pci_dev *pdev);
+void snd_pci_compat_save_state(struct pci_dev *pdev, u32 *buf);
+void snd_pci_compat_restore_state(struct pci_dev *pdev, u32 *buf);
 
 static inline int pci_module_init(struct pci_driver *drv)
 {
