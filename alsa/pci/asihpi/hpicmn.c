@@ -100,18 +100,17 @@ struct hpi_adapter_obj *HpiFindAdapter(
 
 	if (wAdapterIndex >= HPI_MAX_ADAPTERS) {
 		HPI_DEBUG_LOG(VERBOSE,
-			DBG_TEXT("FindAdapter invalid index %d "),
-			wAdapterIndex);
+			"FindAdapter invalid index %d ", wAdapterIndex);
 		return NULL;
 	}
 
 	pao = &adapters.adapter[wAdapterIndex];
 	if (pao->wAdapterType != 0) {
-		HPI_DEBUG_LOG(VERBOSE, DBG_TEXT("Found adapter index %d\n"),
+		HPI_DEBUG_LOG(VERBOSE, "Found adapter index %d\n",
 			wAdapterIndex);
 		return (pao);
 	} else {
-		HPI_DEBUG_LOG(VERBOSE, DBG_TEXT("No adapter index %d\n"),
+		HPI_DEBUG_LOG(VERBOSE, "No adapter index %d\n",
 			wAdapterIndex);
 		return (NULL);
 	}
@@ -154,7 +153,7 @@ static void SubSysGetAdapters(
 	short i;
 	struct hpi_adapter_obj *pao = NULL;
 
-	HPI_DEBUG_LOG(VERBOSE, DBG_TEXT("SubSysGetAdapters\n"));
+	HPI_DEBUG_LOG(VERBOSE, "SubSysGetAdapters\n");
 
 	/* for each adapter, place it's type in the position of the array */
 	/* corresponding to it's adapter number */
@@ -286,8 +285,8 @@ short HpiCheckControlCache(
 		break;
 	}
 	if (found == 0)
-		HPI_DEBUG_LOG(VERBOSE, DBG_TEXT("Adap %d, Control %d, ")
-			DBG_TEXT("Control type %d, Cached %d\n"),
+		HPI_DEBUG_LOG(VERBOSE, "Adap %d, Control %d, "
+			"Control type %d, Cached %d\n",
 			phm->wAdapterIndex, pC->ControlIndex,
 			pC->ControlType, found);
 

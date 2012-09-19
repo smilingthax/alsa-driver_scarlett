@@ -54,11 +54,7 @@
 #include <linux/pci.h>
 #include <linux/version.h>
 #include <linux/init.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
 #include <linux/jiffies.h>
-#else
-#include <linux/sched.h>
-#endif
 #include <linux/slab.h>
 #include <linux/time.h>
 #include <linux/wait.h>
@@ -177,7 +173,8 @@ static u16 HPI_StreamHostBufferAttach(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	if (!hStream) return HPI_ERROR_INVALID_OBJ;
+	if (!hStream)
+		return HPI_ERROR_INVALID_OBJ;
 	if (HPI_HandleObject(hStream) ==  HPI_OBJ_OSTREAM)
 		HPI_InitMessage(&hm,  HPI_OBJ_OSTREAM,
 				HPI_OSTREAM_HOSTBUFFER_ALLOC);
@@ -203,7 +200,8 @@ static u16 HPI_StreamHostBufferDetach(
 	struct hpi_message hm;
 	struct hpi_response hr;
 
-	if (!hStream) return HPI_ERROR_INVALID_OBJ;
+	if (!hStream)
+		return HPI_ERROR_INVALID_OBJ;
 
 	if (HPI_HandleObject(hStream) ==  HPI_OBJ_OSTREAM)
 		HPI_InitMessage(&hm,  HPI_OBJ_OSTREAM,
@@ -880,9 +878,9 @@ static int snd_card_asihpi_playback_open(struct snd_pcm_substream *substream)
 	/* struct copy so can create initializer dynamically */
 	runtime->hw = snd_card_asihpi_playback;
 	/* Strictly only necessary for HPI6205 adapters */
-	if ((err =
-	     snd_pcm_hw_constraint_pow2(runtime, 0,
-					SNDRV_PCM_HW_PARAM_BUFFER_SIZE)) < 0)
+	err = snd_pcm_hw_constraint_pow2(runtime, 0,
+					SNDRV_PCM_HW_PARAM_BUFFER_SIZE);
+	if (err < 0)
 		return err;
 
 	snd_pcm_set_sync(substream);
@@ -1094,9 +1092,9 @@ static int snd_card_asihpi_capture_open(struct snd_pcm_substream *substream)
 	runtime->hw = snd_card_asihpi_capture;
 
 	/* Strictly only necessary for HPI6205 adapters */
-	if ((err =
-	     snd_pcm_hw_constraint_pow2(runtime, 0,
-					SNDRV_PCM_HW_PARAM_BUFFER_SIZE)) < 0)
+	err = snd_pcm_hw_constraint_pow2(runtime, 0,
+					SNDRV_PCM_HW_PARAM_BUFFER_SIZE);
+	if (err < 0)
 		return err;
 
 	snd_pcm_set_sync(substream);
@@ -1164,10 +1162,10 @@ static int __devinit snd_card_asihpi_pcm_new(struct snd_card_asihpi *asihpi,
 	struct snd_pcm *pcm;
 	int err;
 
-	if ((err =
-	     snd_pcm_new(asihpi->card, "Asihpi PCM", device,
+	err = snd_pcm_new(asihpi->card, "Asihpi PCM", device,
 			 asihpi->wNumOutStreams, asihpi->wNumInStreams,
-			 &pcm)) < 0)
+			 &pcm);
+	if (err < 0)
 		return err;
 	/* pointer to ops struct is stored, dont change ops afterwards! */
 	if (asihpi->support_mmap) {
@@ -1530,7 +1528,8 @@ static int snd_asihpi_aesebu_format_get(struct snd_kcontrol *kcontrol,
 	/* default to N/A */
 	ucontrol->value.enumerated.item[0] = 0;
 	/* return success but set the control to N/A */
-	if (err) return 0;
+	if (err)
+		return 0;
 	if (source == HPI_AESEBU_FORMAT_SPDIF)
 		ucontrol->value.enumerated.item[0] = 1;
 	if (source == HPI_AESEBU_FORMAT_AESEBU)
@@ -1641,7 +1640,8 @@ static int snd_asihpi_tuner_gain_info(struct snd_kcontrol *kcontrol,
 	for (idx = 0; idx < 3; idx++) {
 	err = HPI_ControlQuery(phSubSys, hControl, HPI_TUNER_GAIN,
 				idx, 0, &gainRange[idx]);
-		if (err != 0) return err;
+		if (err != 0)
+			return err;
 	}
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -1693,7 +1693,8 @@ static int asihpi_tuner_band_query(struct snd_kcontrol *kcontrol,
 	for (idx = 0; idx < len; idx++) {
 		err = HPI_ControlQuery(phSubSys, hControl , HPI_TUNER_BAND,
 				idx, 0 , &bandList[idx]);
-		if (err != 0) break;
+		if (err != 0)
+			break;
 	}
 
 	return idx;
@@ -1792,7 +1793,8 @@ static int snd_asihpi_tuner_freq_info(struct snd_kcontrol *kcontrol,
 			err = HPI_ControlQuery(phSubSys, hControl,
 				HPI_TUNER_FREQ, idx, tunerBands[band_iter],
 				&tempFreqRange[idx]);
-			if (err != 0) return err;
+			if (err != 0)
+				return err;
 		}
 
 		/* skip band with bogus stepping */
@@ -2306,7 +2308,7 @@ static int snd_asihpi_clklocal_get(struct snd_kcontrol *kcontrol,
 	u32 hControl = kcontrol->private_value;
 	u32 dwRate;
 
-	HPI_SampleClock_GetSampleRate(phSubSys, hControl, &dwRate);
+	HPI_SampleClock_GetLocalRate(phSubSys, hControl, &dwRate);
 	ucontrol->value.integer.value[0] = dwRate;
 	return 0;
 }

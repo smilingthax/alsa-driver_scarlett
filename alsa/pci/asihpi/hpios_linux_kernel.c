@@ -26,7 +26,7 @@ HPI Operating System function implementation for Linux
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 14)
 void HpiOs_DelayMicroSeconds(
-	uint32_t dwNumMicroSec
+	u32 dwNumMicroSec
 )
 {
 	if ((usecs_to_jiffies(dwNumMicroSec) > 1) && !in_interrupt()) {
@@ -41,7 +41,7 @@ void HpiOs_DelayMicroSeconds(
 }
 #else
 void HpiOs_DelayMicroSeconds(
-	uint32_t dwNumMicroSec
+	u32 dwNumMicroSec
 )
 {
 	if ((dwNumMicroSec / 1000 >= 1000000 / HZ) && !in_interrupt()) {
@@ -91,8 +91,8 @@ u16 HpiOs_LockedMem_Alloc(
 	}
 }
 
-uint16_t HpiOs_LockedMem_Free(
-	struct consistent_dma_area * pMemArea
+u16 HpiOs_LockedMem_Free(
+	struct consistent_dma_area *pMemArea
 )
 {
 	if (pMemArea->size) {

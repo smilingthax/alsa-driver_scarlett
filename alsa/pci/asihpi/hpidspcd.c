@@ -133,7 +133,7 @@ void HpiDspCode_Rewind(
 	struct dsp_code *psDspCode
 )
 {
-	/* Go back to start of	data, after header */
+	/* Go back to start of  data, after header */
 	psDspCode->dwWordCount = sizeof(struct code_header) / sizeof(u32);
 }
 

@@ -43,64 +43,64 @@
 #define HPI_HIF_BASE (0x00000200)	/* start of C67xx internal RAM */
 #define HPI_HIF_ADDR(member) \
 	(HPI_HIF_BASE + offsetof(struct hpi_hif_6000, member))
-#define HPI_HIF_ERROR_MASK	0x4000
+#define HPI_HIF_ERROR_MASK      0x4000
 
 /* HPI6000 specific error codes */
 
-#define HPI6000_ERROR_BASE				900
-#define HPI6000_ERROR_MSG_RESP_IDLE_TIMEOUT		901
-#define HPI6000_ERROR_MSG_RESP_SEND_MSG_ACK		902
-#define HPI6000_ERROR_MSG_RESP_GET_RESP_ACK		903
-#define HPI6000_ERROR_MSG_GET_ADR			904
-#define HPI6000_ERROR_RESP_GET_ADR			905
-#define HPI6000_ERROR_MSG_RESP_BLOCKWRITE32		906
-#define HPI6000_ERROR_MSG_RESP_BLOCKREAD32		907
-#define HPI6000_ERROR_MSG_INVALID_DSP_INDEX		908
-#define HPI6000_ERROR_CONTROL_CACHE_PARAMS		909
+#define HPI6000_ERROR_BASE                              900
+#define HPI6000_ERROR_MSG_RESP_IDLE_TIMEOUT             901
+#define HPI6000_ERROR_MSG_RESP_SEND_MSG_ACK             902
+#define HPI6000_ERROR_MSG_RESP_GET_RESP_ACK             903
+#define HPI6000_ERROR_MSG_GET_ADR                       904
+#define HPI6000_ERROR_RESP_GET_ADR                      905
+#define HPI6000_ERROR_MSG_RESP_BLOCKWRITE32             906
+#define HPI6000_ERROR_MSG_RESP_BLOCKREAD32              907
+#define HPI6000_ERROR_MSG_INVALID_DSP_INDEX             908
+#define HPI6000_ERROR_CONTROL_CACHE_PARAMS              909
 
-#define HPI6000_ERROR_SEND_DATA_IDLE_TIMEOUT		911
-#define HPI6000_ERROR_SEND_DATA_ACK			912
-#define HPI6000_ERROR_SEND_DATA_ADR			913
-#define HPI6000_ERROR_SEND_DATA_TIMEOUT			914
-#define HPI6000_ERROR_SEND_DATA_CMD			915
-#define HPI6000_ERROR_SEND_DATA_WRITE			916
-#define HPI6000_ERROR_SEND_DATA_IDLECMD			917
-#define HPI6000_ERROR_SEND_DATA_VERIFY			918
+#define HPI6000_ERROR_SEND_DATA_IDLE_TIMEOUT            911
+#define HPI6000_ERROR_SEND_DATA_ACK                     912
+#define HPI6000_ERROR_SEND_DATA_ADR                     913
+#define HPI6000_ERROR_SEND_DATA_TIMEOUT                 914
+#define HPI6000_ERROR_SEND_DATA_CMD                     915
+#define HPI6000_ERROR_SEND_DATA_WRITE                   916
+#define HPI6000_ERROR_SEND_DATA_IDLECMD                 917
+#define HPI6000_ERROR_SEND_DATA_VERIFY                  918
 
-#define HPI6000_ERROR_GET_DATA_IDLE_TIMEOUT		921
-#define HPI6000_ERROR_GET_DATA_ACK			922
-#define HPI6000_ERROR_GET_DATA_CMD			923
-#define HPI6000_ERROR_GET_DATA_READ			924
-#define HPI6000_ERROR_GET_DATA_IDLECMD			925
+#define HPI6000_ERROR_GET_DATA_IDLE_TIMEOUT             921
+#define HPI6000_ERROR_GET_DATA_ACK                      922
+#define HPI6000_ERROR_GET_DATA_CMD                      923
+#define HPI6000_ERROR_GET_DATA_READ                     924
+#define HPI6000_ERROR_GET_DATA_IDLECMD                  925
 
-#define HPI6000_ERROR_CONTROL_CACHE_ADDRLEN		951
-#define HPI6000_ERROR_CONTROL_CACHE_READ		952
-#define HPI6000_ERROR_CONTROL_CACHE_FLUSH		953
+#define HPI6000_ERROR_CONTROL_CACHE_ADDRLEN             951
+#define HPI6000_ERROR_CONTROL_CACHE_READ                952
+#define HPI6000_ERROR_CONTROL_CACHE_FLUSH               953
 
-#define HPI6000_ERROR_MSG_RESP_GETRESPCMD		961
-#define HPI6000_ERROR_MSG_RESP_IDLECMD			962
-#define HPI6000_ERROR_MSG_RESP_BLOCKVERIFY32		963
+#define HPI6000_ERROR_MSG_RESP_GETRESPCMD               961
+#define HPI6000_ERROR_MSG_RESP_IDLECMD                  962
+#define HPI6000_ERROR_MSG_RESP_BLOCKVERIFY32            963
 
 /* adapter init errors */
-#define HPI6000_ERROR_UNHANDLED_SUBSYS_ID		930
+#define HPI6000_ERROR_UNHANDLED_SUBSYS_ID               930
 
 /* can't access PCI2040 */
-#define HPI6000_ERROR_INIT_PCI2040			931
+#define HPI6000_ERROR_INIT_PCI2040                      931
 /* can't access DSP HPI i/f */
-#define HPI6000_ERROR_INIT_DSPHPI			932
+#define HPI6000_ERROR_INIT_DSPHPI                       932
 /* can't access internal DSP memory */
-#define HPI6000_ERROR_INIT_DSPINTMEM			933
+#define HPI6000_ERROR_INIT_DSPINTMEM                    933
 /* can't access SDRAM - test#1 */
-#define HPI6000_ERROR_INIT_SDRAM1			934
+#define HPI6000_ERROR_INIT_SDRAM1                       934
 /* can't access SDRAM - test#2 */
-#define HPI6000_ERROR_INIT_SDRAM2			935
+#define HPI6000_ERROR_INIT_SDRAM2                       935
 
-#define HPI6000_ERROR_INIT_VERIFY			938
+#define HPI6000_ERROR_INIT_VERIFY                       938
 
-#define HPI6000_ERROR_INIT_NOACK			939
+#define HPI6000_ERROR_INIT_NOACK                        939
 
-#define HPI6000_ERROR_INIT_PLDTEST1			941
-#define HPI6000_ERROR_INIT_PLDTEST2			942
+#define HPI6000_ERROR_INIT_PLDTEST1                     941
+#define HPI6000_ERROR_INIT_PLDTEST2                     942
 
 /* local defines */
 
@@ -112,22 +112,22 @@
 /* word offsets from CSR base */
 /* use when io addresses defined as u32 * */
 
-#define INTERRUPT_EVENT_SET	0
-#define INTERRUPT_EVENT_CLEAR	1
-#define INTERRUPT_MASK_SET	2
-#define INTERRUPT_MASK_CLEAR	3
-#define HPI_ERROR_REPORT	4
-#define HPI_RESET		5
-#define HPI_DATA_WIDTH		6
+#define INTERRUPT_EVENT_SET     0
+#define INTERRUPT_EVENT_CLEAR   1
+#define INTERRUPT_MASK_SET      2
+#define INTERRUPT_MASK_CLEAR    3
+#define HPI_ERROR_REPORT        4
+#define HPI_RESET               5
+#define HPI_DATA_WIDTH          6
 
 #define MAX_DSPS 2
 /* HPI registers, spaced 8K bytes = 2K words apart */
-#define DSP_SPACING		0x800
+#define DSP_SPACING             0x800
 
-#define CONTROL			0x0000
-#define ADDRESS			0x0200
-#define DATA_AUTOINC		0x0400
-#define DATA			0x0600
+#define CONTROL                 0x0000
+#define ADDRESS                 0x0200
+#define DATA_AUTOINC            0x0400
+#define DATA                    0x0600
 
 #define TIMEOUT 500000
 
@@ -701,7 +701,7 @@ static short CreateAdapterObj(
 
 	HPI_DEBUG_LOG(DEBUG, "Get adapter info ASI%04X index %d\n",
 		pao->wAdapterType, pao->wIndex);
-	pao->wOpen = 0;		/* upon creation the adapter is closed */
+	pao->wOpen = 0;	/* upon creation the adapter is closed */
 	return 0;
 }
 
@@ -762,7 +762,7 @@ static short Hpi6000_AdapterBootLoadDsp(
 
 	switch (pao->Pci.wSubSysDeviceId) {
 	case 0x5100:
-	case 0x5110:		/* ASI5100 revB or higher with C6711D */
+	case 0x5110:	/* ASI5100 revB or higher with C6711D */
 	case 0x6100:
 	case 0x6200:
 		nBootLoadFamily = HPI_ADAPTER_FAMILY_ASI6200;
@@ -869,7 +869,7 @@ static short Hpi6000_AdapterBootLoadDsp(
 			HpiWriteWord(pdo, 0x01B7C120, 0x8002);
 			/* peri = 225/2 */
 			HpiWriteWord(pdo, 0x01B7C11C, 0x8001);
-			/* cpu	= 225/1 */
+			/* cpu  = 225/1 */
 			HpiWriteWord(pdo, 0x01B7C118, 0x8000);
 			/* ~200us delay */
 			for (i = 0; i < 2000; i++)
@@ -912,10 +912,10 @@ static short Hpi6000_AdapterBootLoadDsp(
 		}
 
 		/* memory map of ASI6200
-		   00000000-0000FFFF	16Kx32 internal program
-		   01800000-019FFFFF	Internal peripheral
-		   80000000-807FFFFF	CE0 2Mx32 SDRAM running @ 100MHz
-		   90000000-9000FFFF	CE1 Async peripherals:
+		   00000000-0000FFFF    16Kx32 internal program
+		   01800000-019FFFFF    Internal peripheral
+		   80000000-807FFFFF    CE0 2Mx32 SDRAM running @ 100MHz
+		   90000000-9000FFFF    CE1 Async peripherals:
 
 		   EMIF config
 		   ------------
@@ -928,41 +928,41 @@ static short Hpi6000_AdapterBootLoadDsp(
 		   5 EKEN = 1 <--!! C6713 specific, enables ECLKOUT
 		   6 -
 		   7 NOHOLD = 1   external HOLD disabled
-		   8 HOLDA = 0	  HOLDA output is low
-		   9 HOLD = 0		  HOLD input is low
-		   10 ARDY = 1	  ARDY input is high
+		   8 HOLDA = 0    HOLDA output is low
+		   9 HOLD = 0             HOLD input is low
+		   10 ARDY = 1    ARDY input is high
 		   11 BUSREQ = 0   BUSREQ output is low
 		   12,13 Reserved = 1
 		 */
 		HpiWriteWord(pdo, 0x01800000, 0x34A8);
 
 		/* EMIF CE0 setup - 2Mx32 Sync DRAM
-		   31..28	Wr setup
-		   27..22	Wr strobe
-		   21..20	Wr hold
-		   19..16	Rd setup
-		   15..14	-
-		   13..8	Rd strobe
-		   7..4		MTYPE	0011		Sync DRAM 32bits
-		   3		Wr hold MSB
-		   2..0		Rd hold
+		   31..28       Wr setup
+		   27..22       Wr strobe
+		   21..20       Wr hold
+		   19..16       Rd setup
+		   15..14       -
+		   13..8        Rd strobe
+		   7..4         MTYPE   0011            Sync DRAM 32bits
+		   3            Wr hold MSB
+		   2..0         Rd hold
 		 */
 		HpiWriteWord(pdo, 0x01800008, 0x00000030);
 
 		/* EMIF SDRAM Extension
-		   31-21	0
-		   20		WR2RD = 0
-		   19-18	WR2DEAC = 1
-		   17		WR2WR = 0
-		   16-15	R2WDQM = 2
-		   14-12	RD2WR = 4
-		   11-10	RD2DEAC = 1
-		   9		RD2RD = 1
-		   8-7		THZP = 10b
-		   6-5		TWR  = 2-1 = 01b (tWR = 10ns)
-		   4		TRRD = 0b = 2 ECLK (tRRD = 14ns)
-		   3-1		TRAS = 5-1 = 100b (Tras=42ns = 5 ECLK)
-		   1		CAS latency = 3 ECLK
+		   31-21        0
+		   20           WR2RD = 0
+		   19-18        WR2DEAC = 1
+		   17           WR2WR = 0
+		   16-15        R2WDQM = 2
+		   14-12        RD2WR = 4
+		   11-10        RD2DEAC = 1
+		   9            RD2RD = 1
+		   8-7          THZP = 10b
+		   6-5          TWR  = 2-1 = 01b (tWR = 10ns)
+		   4            TRRD = 0b = 2 ECLK (tRRD = 14ns)
+		   3-1          TRAS = 5-1 = 100b (Tras=42ns = 5 ECLK)
+		   1            CAS latency = 3 ECLK
 		   (for Micron 2M32-7 operating at 100Mhz)
 		 */
 
@@ -970,18 +970,18 @@ static short Hpi6000_AdapterBootLoadDsp(
 		HpiWriteWord(pdo, 0x01800020, 0x001BDF29);
 
 		/* EMIF SDRAM control - set up for a 2Mx32 SDRAM (512x32x4 bank)
-		   31		-		-
-		   30		SDBSZ	1		4 bank
-		   29..28	SDRSZ	00		11 row address pins
-		   27..26	SDCSZ	01		8 column address pins
-		   25		RFEN	1		refersh enabled
-		   24		INIT	1		init SDRAM
-		   23..20	TRCD	0001
-		   19..16	TRP		0001
-		   15..12	TRC		0110
-		   11..0	-		-
+		   31           -               -
+		   30           SDBSZ   1               4 bank
+		   29..28       SDRSZ   00              11 row address pins
+		   27..26       SDCSZ   01              8 column address pins
+		   25           RFEN    1               refersh enabled
+		   24           INIT    1               init SDRAM
+		   23..20       TRCD    0001
+		   19..16       TRP             0001
+		   15..12       TRC             0110
+		   11..0        -               -
 		 */
-		/*	need to use this else DSP code crashes */
+		/*      need to use this else DSP code crashes */
 		HpiWriteWord(pdo, 0x01800018, 0x47117000);
 
 		/* EMIF SDRAM Refresh Timing */
@@ -989,15 +989,15 @@ static short Hpi6000_AdapterBootLoadDsp(
 
 		/*MIF CE1 setup - Async peripherals
 		   @100MHz bus speed, each cycle is 10ns,
-		   31..28	Wr setup  = 1
-		   27..22	Wr strobe = 3			30ns
-		   21..20	Wr hold = 1
-		   19..16	Rd setup =1
-		   15..14	Ta = 2
-		   13..8	Rd strobe = 3			30ns
-		   7..4		MTYPE	0010		Async 32bits
-		   3		Wr hold MSB =0
-		   2..0		Rd hold = 1
+		   31..28       Wr setup  = 1
+		   27..22       Wr strobe = 3                   30ns
+		   21..20       Wr hold = 1
+		   19..16       Rd setup =1
+		   15..14       Ta = 2
+		   13..8        Rd strobe = 3                   30ns
+		   7..4         MTYPE   0010            Async 32bits
+		   3            Wr hold MSB =0
+		   2..0         Rd hold = 1
 		 */
 		{
 			u32 dwCE1 = (1L << 28) | (3L << 22) | (1L << 20) |
@@ -1243,7 +1243,7 @@ static short Hpi6000_AdapterBootLoadDsp(
 				return (HPI6000_ERROR_INIT_PLDTEST2);
 			}
 		}
-	}			/* for wNumDSP */
+	}	/* for wNumDSP */
 	return 0;
 }
 
@@ -1480,7 +1480,7 @@ static short Hpi6000_MessageResponseSequence(
 	} else
 		dwAddress = phw->dwMessageBufferAddressOnDSP;
 
-	/*	  dwLength = sizeof(struct hpi_message); */
+	/*        dwLength = sizeof(struct hpi_message); */
 	dwLength = phm->wSize;
 
 	/* send it */
@@ -1550,7 +1550,7 @@ static short Hpi6000_SendData_CheckAdr(
 	u32 dwLengthInDwords
 )
 {
-/*#define CHECKING	 // comment this line in to enable checking */
+/*#define CHECKING       // comment this line in to enable checking */
 #ifdef CHECKING
 	if (dwAddress < (u32)MSG_ADDRESS)
 		return 0;
@@ -1658,7 +1658,7 @@ static short Hpi6000_GetData(
 	u32 dwLength, dwAddress;
 	u32 *pData = (u32 *)phm->u.d.u.Data.pbData;
 
-	(void)phr;		/* this parameter not used! */
+	(void)phr;	/* this parameter not used! */
 
 	/* round dwDataSize down to nearest 4 bytes */
 	while (dwDataGot < (phm->u.d.u.Data.dwDataSize & ~3L)) {
@@ -1799,7 +1799,7 @@ static short Hpi6000_WaitDspAck(
 			!Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ))
 			break;
 		/*for (i=0;i<1000;i++) */
-		/*	dwPause=i+1; */
+		/*      dwPause=i+1; */
 	}
 	if (dwAck & HPI_HIF_ERROR_MASK)
 		/* indicates bad read from DSP -

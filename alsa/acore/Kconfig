@@ -10,7 +10,7 @@ config SND_DEBUG_MEMORY
 
 config SND_HPET
 	tristate "High Precision Event Timer support"
-	depends on SND && HPET
+	depends on SND && HPET && BROKEN
 	select SND_TIMER
 	help
 	  Say Y here to enable HPET support for ALSA.  ALSA uses the

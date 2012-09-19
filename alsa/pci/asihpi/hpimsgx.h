@@ -32,7 +32,7 @@ extern "C" {
 /* *INDENT-ON* */
 #endif
 
-#define HPIMSGX_ALLADAPTERS	(0xFFFF)
+#define HPIMSGX_ALLADAPTERS     (0xFFFF)
 
 void HPI_MessageEx(
 	struct hpi_message *phm,

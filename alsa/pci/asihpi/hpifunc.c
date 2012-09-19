@@ -3668,14 +3668,14 @@ u16 HPI_FormatCreate(
 		break;
 	case HPI_FORMAT_PCM16_SIGNED:
 	case HPI_FORMAT_PCM16_BIGENDIAN:
-		Format.dwBitRate = (u32)wChannels *dwSampleRate * 2;
+		Format.dwBitRate = wChannels * dwSampleRate * 2;
 		break;
 	case HPI_FORMAT_PCM32_SIGNED:
 	case HPI_FORMAT_PCM32_FLOAT:
-		Format.dwBitRate = (u32)wChannels *dwSampleRate * 4;
+		Format.dwBitRate = wChannels * dwSampleRate * 4;
 		break;
 	case HPI_FORMAT_PCM8_UNSIGNED:
-		Format.dwBitRate = (u32)wChannels *dwSampleRate;
+		Format.dwBitRate = wChannels * dwSampleRate;
 		break;
 	default:
 		Format.dwBitRate = 0;
