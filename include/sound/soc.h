@@ -288,6 +288,11 @@ enum snd_soc_pcm_subclass {
 	SND_SOC_PCM_CLASS_BE	= 1,
 };
 
+enum snd_soc_card_subclass {
+	SND_SOC_CARD_CLASS_INIT		= 0,
+	SND_SOC_CARD_CLASS_RUNTIME	= 1,
+};
+
 int snd_soc_codec_set_sysclk(struct snd_soc_codec *codec, int clk_id,
 			     int source, unsigned int freq, int dir);
 int snd_soc_codec_set_pll(struct snd_soc_codec *codec, int pll_id, int source,
@@ -513,6 +518,7 @@ struct snd_soc_jack_gpio {
 #endif
 
 struct snd_soc_jack {
+	struct mutex mutex;
 	struct snd_jack *jack;
 	struct snd_soc_codec *codec;
 	struct list_head pins;
@@ -800,6 +806,7 @@ struct snd_soc_card {
 
 	struct list_head list;
 	struct mutex mutex;
+	struct mutex dapm_mutex;
 
 	bool instantiated;
 
@@ -889,7 +896,6 @@ struct snd_soc_pcm_runtime {
 	enum snd_soc_pcm_subclass pcm_subclass;
 	struct snd_pcm_ops ops;
 
-	unsigned int complete:1;
 	unsigned int dev_registered:1;
 
 	long pmdown_time;

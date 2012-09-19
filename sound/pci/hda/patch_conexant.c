@@ -141,6 +141,7 @@ struct conexant_spec {
 	unsigned int hp_laptop:1;
 	unsigned int asus:1;
 	unsigned int pin_eapd_ctrls:1;
+	unsigned int fixup_stereo_dmic:1;
 
 	unsigned int adc_switching:1;
 
@@ -1601,17 +1602,13 @@ static void cxt5051_update_speaker(struct hda_codec *codec)
 	unsigned int pinctl;
 	/* headphone pin */
 	pinctl = (spec->hp_present && spec->cur_eapd) ? PIN_HP : 0;
-	snd_hda_codec_write(codec, 0x16, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
-			    pinctl);
+	snd_hda_set_pin_ctl(codec, 0x16, pinctl);
 	/* speaker pin */
 	pinctl = (!spec->hp_present && spec->cur_eapd) ? PIN_OUT : 0;
-	snd_hda_codec_write(codec, 0x1a, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
-			    pinctl);
+	snd_hda_set_pin_ctl(codec, 0x1a, pinctl);
 	/* on ideapad there is an additional speaker (subwoofer) to mute */
 	if (spec->ideapad)
-		snd_hda_codec_write(codec, 0x1b, 0,
-				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-				    pinctl);
+		snd_hda_set_pin_ctl(codec, 0x1b, pinctl);
 }
 
 /* turn on/off EAPD (+ mute HP) as a master switch */
@@ -1996,8 +1993,7 @@ static void cxt5066_update_speaker(struct hda_codec *codec)
 
 	/* Port A (HP) */
 	pinctl = (hp_port_a_present(spec) && spec->cur_eapd) ? PIN_HP : 0;
-	snd_hda_codec_write(codec, 0x19, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
-			pinctl);
+	snd_hda_set_pin_ctl(codec, 0x19, pinctl);
 
 	/* Port D (HP/LO) */
 	pinctl = spec->cur_eapd ? spec->port_d_mode : 0;
@@ -2010,13 +2006,11 @@ static void cxt5066_update_speaker(struct hda_codec *codec)
 		if (!hp_port_d_present(spec))
 			pinctl = 0;
 	}
-	snd_hda_codec_write(codec, 0x1c, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
-			pinctl);
+	snd_hda_set_pin_ctl(codec, 0x1c, pinctl);
 
 	/* CLASS_D AMP */
 	pinctl = (!spec->hp_present && spec->cur_eapd) ? PIN_OUT : 0;
-	snd_hda_codec_write(codec, 0x1f, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
-			pinctl);
+	snd_hda_set_pin_ctl(codec, 0x1f, pinctl);
 }
 
 /* turn on/off EAPD (+ mute HP) as a master switch */
@@ -2047,8 +2041,7 @@ static int cxt5066_set_olpc_dc_bias(struct hda_codec *codec)
 	/* Even though port F is the DC input, the bias is controlled on port B.
 	 * we also leave that port as an active input (but unselected) in DC mode
 	 * just in case that is necessary to make the bias setting take effect. */
-	return snd_hda_codec_write_cache(codec, 0x1a, 0,
-		AC_VERB_SET_PIN_WIDGET_CONTROL,
+	return snd_hda_set_pin_ctl_cache(codec, 0x1a,
 		cxt5066_olpc_dc_bias.items[spec->dc_input_bias].index);
 }
 
@@ -2081,14 +2074,14 @@ static void cxt5066_olpc_select_mic(struct hda_codec *codec)
 	}
 
 	/* disable DC (port F) */
-	snd_hda_codec_write(codec, 0x1e, 0, AC_VERB_SET_PIN_WIDGET_CONTROL, 0);
+	snd_hda_set_pin_ctl(codec, 0x1e, 0);
 
 	/* external mic, port B */
-	snd_hda_codec_write(codec, 0x1a, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
+	snd_hda_set_pin_ctl(codec, 0x1a,
 		spec->ext_mic_present ? CXT5066_OLPC_EXT_MIC_BIAS : 0);
 
 	/* internal mic, port C */
-	snd_hda_codec_write(codec, 0x1b, 0, AC_VERB_SET_PIN_WIDGET_CONTROL,
+	snd_hda_set_pin_ctl(codec, 0x1b,
 		spec->ext_mic_present ? 0 : PIN_VREF80);
 }
 
@@ -3357,9 +3350,7 @@ static void do_automute(struct hda_codec *codec, int num_pins,
 	struct conexant_spec *spec = codec->spec;
 	int i;
 	for (i = 0; i < num_pins; i++)
-		snd_hda_codec_write(codec, pins[i], 0,
-				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-				    on ? PIN_OUT : 0);
+		snd_hda_set_pin_ctl(codec, pins[i], on ? PIN_OUT : 0);
 	if (spec->pin_eapd_ctrls)
 		cx_auto_turn_eapd(codec, num_pins, pins, on);
 }
@@ -3976,8 +3967,7 @@ static void cx_auto_init_output(struct hda_codec *codec)
 		if (snd_hda_query_pin_caps(codec, cfg->hp_pins[i]) &
 		    AC_PINCAP_HP_DRV)
 			val |= AC_PINCTL_HP_EN;
-		snd_hda_codec_write(codec, cfg->hp_pins[i], 0,
-				    AC_VERB_SET_PIN_WIDGET_CONTROL, val);
+		snd_hda_set_pin_ctl(codec, cfg->hp_pins[i], val);
 	}
 	mute_outputs(codec, cfg->hp_outs, cfg->hp_pins);
 	mute_outputs(codec, cfg->line_outs, cfg->line_out_pins);
@@ -4030,13 +4020,11 @@ static void cx_auto_init_input(struct hda_codec *codec)
 	}
 
 	for (i = 0; i < cfg->num_inputs; i++) {
-		unsigned int type;
+		hda_nid_t pin = cfg->inputs[i].pin;
+		unsigned int type = PIN_IN;
 		if (cfg->inputs[i].type == AUTO_PIN_MIC)
-			type = PIN_VREF80;
-		else
-			type = PIN_IN;
-		snd_hda_codec_write(codec, cfg->inputs[i].pin, 0,
-				    AC_VERB_SET_PIN_WIDGET_CONTROL, type);
+			type |= snd_hda_get_default_vref(codec, pin);
+		snd_hda_set_pin_ctl(codec, pin, type);
 	}
 
 	if (spec->auto_mic) {
@@ -4063,11 +4051,9 @@ static void cx_auto_init_digital(struct hda_codec *codec)
 	struct auto_pin_cfg *cfg = &spec->autocfg;
 
 	if (spec->multiout.dig_out_nid)
-		snd_hda_codec_write(codec, cfg->dig_out_pins[0], 0,
-				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
+		snd_hda_set_pin_ctl(codec, cfg->dig_out_pins[0], PIN_OUT);
 	if (spec->dig_in_nid)
-		snd_hda_codec_write(codec, cfg->dig_in_pin, 0,
-				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN);
+		snd_hda_set_pin_ctl(codec, cfg->dig_in_pin, PIN_IN);
 }
 
 static int cx_auto_init(struct hda_codec *codec)
@@ -4084,9 +4070,9 @@ static int cx_auto_init(struct hda_codec *codec)
 
 static int cx_auto_add_volume_idx(struct hda_codec *codec, const char *basename,
 			      const char *dir, int cidx,
-			      hda_nid_t nid, int hda_dir, int amp_idx)
+			      hda_nid_t nid, int hda_dir, int amp_idx, int chs)
 {
-	static char name[32];
+	static char name[44];
 	static struct snd_kcontrol_new knew[] = {
 		HDA_CODEC_VOLUME(name, 0, 0, 0),
 		HDA_CODEC_MUTE(name, 0, 0, 0),
@@ -4096,7 +4082,7 @@ static int cx_auto_add_volume_idx(struct hda_codec *codec, const char *basename,
 
 	for (i = 0; i < 2; i++) {
 		struct snd_kcontrol *kctl;
-		knew[i].private_value = HDA_COMPOSE_AMP_VAL(nid, 3, amp_idx,
+		knew[i].private_value = HDA_COMPOSE_AMP_VAL(nid, chs, amp_idx,
 							    hda_dir);
 		knew[i].subdevice = HDA_SUBDEV_AMP_FLAG;
 		knew[i].index = cidx;
@@ -4115,7 +4101,7 @@ static int cx_auto_add_volume_idx(struct hda_codec *codec, const char *basename,
 }
 
 #define cx_auto_add_volume(codec, str, dir, cidx, nid, hda_dir)		\
-	cx_auto_add_volume_idx(codec, str, dir, cidx, nid, hda_dir, 0)
+	cx_auto_add_volume_idx(codec, str, dir, cidx, nid, hda_dir, 0, 3)
 
 #define cx_auto_add_pb_volume(codec, nid, str, idx)			\
 	cx_auto_add_volume(codec, str, " Playback", idx, nid, HDA_OUTPUT)
@@ -4185,6 +4171,36 @@ static int cx_auto_build_output_controls(struct hda_codec *codec)
 	return 0;
 }
 
+/* Returns zero if this is a normal stereo channel, and non-zero if it should
+   be split in two independent channels.
+   dest_label must be at least 44 characters. */
+static int cx_auto_get_rightch_label(struct hda_codec *codec, const char *label,
+				     char *dest_label, int nid)
+{
+	struct conexant_spec *spec = codec->spec;
+	int i;
+
+	if (!spec->fixup_stereo_dmic)
+		return 0;
+
+	for (i = 0; i < AUTO_CFG_MAX_INS; i++) {
+		int def_conf;
+		if (spec->autocfg.inputs[i].pin != nid)
+			continue;
+
+		if (spec->autocfg.inputs[i].type != AUTO_PIN_MIC)
+			return 0;
+		def_conf = snd_hda_codec_get_pincfg(codec, nid);
+		if (snd_hda_get_input_pin_attr(def_conf) != INPUT_PIN_ATTR_INT)
+			return 0;
+
+		/* Finally found the inverted internal mic! */
+		snprintf(dest_label, 44, "Inverted %s", label);
+		return 1;
+	}
+	return 0;
+}
+
 static int cx_auto_add_capture_volume(struct hda_codec *codec, hda_nid_t nid,
 				      const char *label, const char *pfx,
 				      int cidx)
@@ -4193,14 +4209,25 @@ static int cx_auto_add_capture_volume(struct hda_codec *codec, hda_nid_t nid,
 	int i;
 
 	for (i = 0; i < spec->num_adc_nids; i++) {
+		char rightch_label[44];
 		hda_nid_t adc_nid = spec->adc_nids[i];
 		int idx = get_input_connection(codec, adc_nid, nid);
 		if (idx < 0)
 			continue;
 		if (codec->single_adc_amp)
 			idx = 0;
+
+		if (cx_auto_get_rightch_label(codec, label, rightch_label, nid)) {
+			/* Make two independent kcontrols for left and right */
+			int err = cx_auto_add_volume_idx(codec, label, pfx,
+					      cidx, adc_nid, HDA_INPUT, idx, 1);
+			if (err < 0)
+				return err;
+			return cx_auto_add_volume_idx(codec, rightch_label, pfx,
+						      cidx, adc_nid, HDA_INPUT, idx, 2);
+		}
 		return cx_auto_add_volume_idx(codec, label, pfx,
-					      cidx, adc_nid, HDA_INPUT, idx);
+					      cidx, adc_nid, HDA_INPUT, idx, 3);
 	}
 	return 0;
 }
@@ -4213,9 +4240,19 @@ static int cx_auto_add_boost_volume(struct hda_codec *codec, int idx,
 	int i, con;
 
 	nid = spec->imux_info[idx].pin;
-	if (get_wcaps(codec, nid) & AC_WCAP_IN_AMP)
+	if (get_wcaps(codec, nid) & AC_WCAP_IN_AMP) {
+		char rightch_label[44];
+		if (cx_auto_get_rightch_label(codec, label, rightch_label, nid)) {
+			int err = cx_auto_add_volume_idx(codec, label, " Boost",
+							 cidx, nid, HDA_INPUT, 0, 1);
+			if (err < 0)
+				return err;
+			return cx_auto_add_volume_idx(codec, rightch_label, " Boost",
+						      cidx, nid, HDA_INPUT, 0, 2);
+		}
 		return cx_auto_add_volume(codec, label, " Boost", cidx,
 					  nid, HDA_INPUT);
+	}
 	con = __select_input_connection(codec, spec->imux_info[idx].adc, nid,
 					&mux, false, 0);
 	if (con < 0)
@@ -4382,22 +4419,34 @@ static void apply_pincfg(struct hda_codec *codec, const struct cxt_pincfg *cfg)
 
 }
 
-static void apply_pin_fixup(struct hda_codec *codec,
+enum {
+	CXT_PINCFG_LENOVO_X200,
+	CXT_PINCFG_LENOVO_TP410,
+	CXT_FIXUP_STEREO_DMIC,
+};
+
+static void apply_fixup(struct hda_codec *codec,
 			    const struct snd_pci_quirk *quirk,
 			    const struct cxt_pincfg **table)
 {
+	struct conexant_spec *spec = codec->spec;
+
 	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
-	if (quirk) {
+	if (!quirk)
+		return;
+	if (table[quirk->value]) {
 		snd_printdd(KERN_INFO "hda_codec: applying pincfg for %s\n",
 			    quirk->name);
 		apply_pincfg(codec, table[quirk->value]);
 	}
+	if (quirk->value == CXT_FIXUP_STEREO_DMIC) {
+		snd_printdd(KERN_INFO "hda_codec: applying internal mic workaround for %s\n",
+			    quirk->name);
+		spec->fixup_stereo_dmic = 1;
+	}
 }
 
-enum {
-	CXT_PINCFG_LENOVO_X200,
-};
-
+/* ThinkPad X200 & co with cxt5051 */
 static const struct cxt_pincfg cxt_pincfg_lenovo_x200[] = {
 	{ 0x16, 0x042140ff }, /* HP (seq# overridden) */
 	{ 0x17, 0x21a11000 }, /* dock-mic */
@@ -4406,12 +4455,32 @@ static const struct cxt_pincfg cxt_pincfg_lenovo_x200[] = {
 	{}
 };
 
-static const struct cxt_pincfg *cxt_pincfg_tbl[] = {
-	[CXT_PINCFG_LENOVO_X200] = cxt_pincfg_lenovo_x200,
+/* ThinkPad 410/420/510/520, X201 & co with cxt5066 */
+static const struct cxt_pincfg cxt_pincfg_lenovo_tp410[] = {
+	{ 0x19, 0x042110ff }, /* HP (seq# overridden) */
+	{ 0x1a, 0x21a190f0 }, /* dock-mic */
+	{ 0x1c, 0x212140ff }, /* dock-HP */
+	{}
 };
 
-static const struct snd_pci_quirk cxt_fixups[] = {
+static const struct cxt_pincfg *cxt_pincfg_tbl[] = {
+	[CXT_PINCFG_LENOVO_X200] = cxt_pincfg_lenovo_x200,
+	[CXT_PINCFG_LENOVO_TP410] = cxt_pincfg_lenovo_tp410,
+	[CXT_FIXUP_STEREO_DMIC] = NULL,
+};
+
+static const struct snd_pci_quirk cxt5051_fixups[] = {
 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo X200", CXT_PINCFG_LENOVO_X200),
+	{}
+};
+
+static const struct snd_pci_quirk cxt5066_fixups[] = {
+	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400", CXT_PINCFG_LENOVO_TP410),
+	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo T410", CXT_PINCFG_LENOVO_TP410),
+	SND_PCI_QUIRK(0x17aa, 0x215f, "Lenovo T510", CXT_PINCFG_LENOVO_TP410),
+	SND_PCI_QUIRK(0x17aa, 0x21ce, "Lenovo T420", CXT_PINCFG_LENOVO_TP410),
+	SND_PCI_QUIRK(0x17aa, 0x21cf, "Lenovo T520", CXT_PINCFG_LENOVO_TP410),
+	SND_PCI_QUIRK(0x17aa, 0x3975, "Lenovo U300s", CXT_FIXUP_STEREO_DMIC),
 	{}
 };
 
@@ -4451,12 +4520,12 @@ static int patch_conexant_auto(struct hda_codec *codec)
 	case 0x14f15051:
 		add_cx5051_fake_mutes(codec);
 		codec->pin_amp_workaround = 1;
+		apply_fixup(codec, cxt5051_fixups, cxt_pincfg_tbl);
 		break;
 	default:
 		codec->pin_amp_workaround = 1;
+		apply_fixup(codec, cxt5066_fixups, cxt_pincfg_tbl);
 	}
-
-	apply_pin_fixup(codec, cxt_fixups, cxt_pincfg_tbl);
 
 	/* Show mute-led control only on HP laptops
 	 * This is a sort of white-list: on HP laptops, EAPD corresponds
