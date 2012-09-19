@@ -55,13 +55,15 @@ all: compile
 alsa-kernel:
 	ln -sf $(ALSAKERNELDIR) alsa-kernel
 
-include/sound: alsa-kernel
-	ln -sf ../alsa-kernel/include include/sound
+$(CONFIG_SND_KERNELDIR)/include/linux/pm.h:
+	touch $@
 
-include/sound/version.h: include/version.h
-	if [ ! -d include/sound ]; then \
+include/sound: alsa-kernel $(CONFIG_SND_KERNELDIR)/include/linux/pm.h
+	if [ ! -d include/sound ] && [ ! -L include/sound ]; then \
 	  ln -sf ../alsa-kernel/include include/sound ; \
 	fi
+
+include/sound/version.h: include/sound include/version.h
 	cp -auv include/version.h include/sound/version.h
 
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h

@@ -26,12 +26,12 @@
 #error "This driver requires Linux 2.2.3 or higher."
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 1)
-#define LINUX_2_3__donotuse
+#  if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
+#  error "This code requires Linux 2.4.0-test1 and higher."
+#  endif
+#define LINUX_2_4__donotuse
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 0)
 #define LINUX_2_2
-#endif
-#if defined(LINUX_2_3__donotuse) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-#error "This code requires Linux 2.4.0-test1 and higher."
 #endif
 
 #ifdef ALSA_BUILD
@@ -56,12 +56,12 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 2, 18)
 #include <linux/init.h>
 #endif
-#ifndef LINUX_2_3__donotuse
+#ifndef LINUX_2_4__donotuse
 #include "compat_22.h"
 #endif
 #endif /* LINUX_2_2 */
 
-#ifdef LINUX_2_3__donotuse
+#ifdef LINUX_2_4__donotuse
 #include <linux/init.h>
 #include <linux/pm.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 3)

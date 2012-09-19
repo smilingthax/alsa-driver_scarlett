@@ -6282,8 +6282,8 @@ module_exit(alsa_card_pdplus_exit)
 
 #ifndef MODULE
 
-/* format is: snd-card-pdplus=snd_enable,snd_index,snd_id
-              snd-card-pdplus-misc=init_adat */
+/* format is: snd-pdplus=snd_enable,snd_index,snd_id
+              snd-pdplus-misc=init_adat */
 
 static int __init alsa_card_pdplus_setup(char *str)
 {
@@ -6304,8 +6304,8 @@ static int __init alsa_card_pdplus_setup_misc(char *str)
 	return 1;
 }
 
-__setup("snd-card-pdplus=", alsa_card_pdplus_setup);
-__setup("snd-card-pdplus-misc=", alsa_card_pdplus_setup_misc);
+__setup("snd-pdplus=", alsa_card_pdplus_setup);
+__setup("snd-pdplus-misc=", alsa_card_pdplus_setup_misc);
 
 #endif /* ifndef MODULE */
 

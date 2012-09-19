@@ -4,9 +4,6 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 
 #include <linux/list.h>
-#include <linux/kcomp.h>
-#undef IORESOURCE_IO /* bogus */
-#undef page_address  /* bogus */
 #include <linux/pagemap.h>
 #include <linux/ioport.h>
 
@@ -201,6 +198,14 @@ int snd_compat_release_resource(struct resource *resource);
 #undef pci_resource_end
 #define pci_resource_end(dev,bar) \
 	(pci_resource_start(dev,bar) + snd_pci_compat_get_size((dev),(bar)))
+#undef pci_resource_len
+#define pci_resource_len(dev,bar) \
+	((pci_resource_start((dev),(bar)) == 0 &&	\
+	  pci_resource_end((dev),(bar)) ==		\
+	  pci_resource_start((dev),(bar))) ? 0 :	\
+							\
+	(pci_resource_end((dev),(bar)) -		\
+	 pci_resource_start((dev),(bar)) + 1))
 #undef pci_resource_flags
 #define pci_resource_flags(dev,bar) (snd_pci_compat_get_flags((dev),(bar)))
 
