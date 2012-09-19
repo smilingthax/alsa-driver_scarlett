@@ -24,6 +24,7 @@ Linux HPI driver module
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
+#include <linux/fs.h>
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/pci.h>
