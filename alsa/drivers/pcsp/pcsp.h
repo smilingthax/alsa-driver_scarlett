@@ -3,19 +3,21 @@
  *
  * Copyright (C) 1993-1997  Michael Beck
  * Copyright (C) 1997-2001  David Woodhouse
- * Copyright (C) 2001-2004  Stas Sergeev
+ * Copyright (C) 2001-2007  Stas Sergeev
  */
 
 #ifndef __PCSP_H__
 #define __PCSP_H__
 
-#define PCSP_SOUND_VERSION	0x200	/* read 2.00 */
+#include <asm/8253pit.h>
 
-#define PCSP_DEBUG 		0
+#define PCSP_SOUND_VERSION 0x300	/* read 3.00 */
 
-#define PCSP_DEFAULT_GAIN	4
+#define PCSP_DEBUG 0
+
+#define PCSP_DEFAULT_GAIN 4
 /* PCSP internal maximum volume, it's hardcoded */
-#define PCSP_MAX_VOLUME		256
+#define PCSP_MAX_VOLUME	256
 
 #if PCSP_DEBUG
 #define assert(expr) \
@@ -27,64 +29,66 @@
 #define assert(expr)
 #endif
 
-/* the timer stuff */
-#define TIMER_IRQ 0
-
 /* default timer freq for PC-Speaker: 18643 Hz */
-#define DIV_18KHZ	64
-#define MAX_DIV 	DIV_18KHZ
-#define MIN_DIV		(MAX_DIV >> chip->treble)
-#define PIT_COUNTER	(MIN_DIV + chip->bass)
+#define DIV_18KHZ 64
+#define MAX_DIV DIV_18KHZ
+#define CUR_DIV	(MAX_DIV >> chip->treble)
+#define PCSP_MAX_TREBLE 1
 
-/* max timer freq & default sampling rate for PC-Speaker: 37286 Hz */
-#define PCSP_MAX_POSS_TREBLE 1
-#define PCSP_DEFAULT_SDIV (MAX_DIV >> PCSP_MAX_POSS_TREBLE)
-#define PCSP_DEFAULT_RATE (CLOCK_TICK_RATE / PCSP_DEFAULT_SDIV)
-#define PCSP_INDEX_INC (1 << (PCSP_MAX_POSS_TREBLE - chip->treble))
-#define PCSP_RATE (CLOCK_TICK_RATE / MIN_DIV)
+/* unfortunately, with hrtimers 37KHz does not work very well :( */
+#define PCSP_DEFAULT_TREBLE 0
+#define MIN_DIV (MAX_DIV >> PCSP_MAX_TREBLE)
+
+/* wild guess */
+#define PCSP_MIN_LPJ 1000000
+#define PCSP_DEFAULT_SDIV (DIV_18KHZ >> 1)
+#define PCSP_DEFAULT_SRATE (PIT_TICK_RATE / PCSP_DEFAULT_SDIV)
+#define PCSP_INDEX_INC (1 << (PCSP_MAX_TREBLE - chip->treble))
+#define PCSP_RATE (PIT_TICK_RATE / CUR_DIV)
+#define PCSP_MIN_RATE__1 MAX_DIV/PIT_TICK_RATE
+#define PCSP_MAX_RATE__1 MIN_DIV/PIT_TICK_RATE
+#define PCSP_MAX_PERIOD_NS (1000000000ULL * PCSP_MIN_RATE__1)
+#define PCSP_MIN_PERIOD_NS (1000000000ULL * PCSP_MAX_RATE__1)
+#if 0
+#define PCSP_RATE__1 CUR_DIV/PIT_TICK_RATE
+#define PCSP_PERIOD_NS (1000000000ULL * PCSP_RATE__1)
+#else
+/* and now - without using __udivdi3 :( */
+#define PCSP_PERIOD_NS (chip->treble ? PCSP_MIN_PERIOD_NS : PCSP_MAX_PERIOD_NS)
+#endif
 
 #define PCSP_MAX_PERIOD_SIZE	(64*1024)
 #define PCSP_MAX_PERIODS	512
 #define PCSP_BUFFER_SIZE	(128*1024)
 
-/* Macros to emulate the DMA fragmentation */
-#define PCSP_BUF(i) (runtime->dma_area + i * snd_pcm_lib_period_bytes(substream))
-#define PCSP_CUR_BUF (PCSP_BUF(chip->cur_buf))
-
 struct snd_pcsp {
-	spinlock_t lock;
 	struct snd_card *card;
 	struct input_dev *input_dev;
+	struct hrtimer timer;
 	unsigned short port, irq, dma;
-	struct snd_pcm *pcm;
+	spinlock_t substream_lock;
 	struct snd_pcm_substream *playback_substream;
-	volatile int last_clocks;
-	volatile int index;
+	volatile size_t playback_ptr;
+	volatile size_t period_ptr;
 	unsigned int volume;	/* volume for pc-speaker */
-	unsigned int gain;		/* output gain */
+	unsigned int gain;	/* output gain */
 	volatile int timer_active;
-	volatile int timer_latch;
-	volatile int clockticks;
-	volatile int reset_timer;
-	volatile unsigned int cur_buf;	/* fragment currently playing */
-	unsigned char e;
+	unsigned char val61;
+	int enable;
 	int max_treble;
 	int treble;
-	int bass;
-	int enable;
+//      int bass;
 	int pcspkr;
+	spinlock_t vl_lock;
 	unsigned char vl_tab[256];
 };
 
-extern struct snd_pcsp *snd_pcsp_chip;
+extern struct snd_pcsp pcsp_chip;
 
-extern int pcsp_set_timer_hook(struct snd_pcsp * chip, int (*func) (struct snd_pcsp * chip));
-extern void pcsp_release_timer_hook(struct snd_pcsp * chip);
+extern enum hrtimer_restart pcsp_do_timer(struct hrtimer *handle);
 
-extern int snd_pcsp_new_pcm(struct snd_pcsp * chip);
-extern int snd_pcsp_new_mixer(struct snd_pcsp * chip);
-extern void pcsp_start_timer(struct snd_pcsp * chip);
-extern void pcsp_stop_timer(struct snd_pcsp * chip);
-extern void pcsp_calc_voltab(struct snd_pcsp * chip);
+extern int snd_pcsp_new_pcm(struct snd_pcsp *chip);
+extern int snd_pcsp_new_mixer(struct snd_pcsp *chip);
+extern void pcsp_calc_voltab(struct snd_pcsp *chip);
 
 #endif

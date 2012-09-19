@@ -2,14 +2,14 @@
  * PC-Speaker driver for Linux
  *
  * Mixer implementation.
- * Copyright (C) 2001-2004  Stas Sergeev
+ * Copyright (C) 2001-2007  Stas Sergeev
  */
 
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/control.h>
-#include "pcsp.h"
 #include "pcsp_tabs.h"
+#include "pcsp.h"
 
 /*
    calculate a translation-table for PC-Speaker
@@ -18,11 +18,13 @@ void pcsp_calc_voltab(struct snd_pcsp *chip)
 {
 	int i;
 	unsigned int j;
+	spin_lock_irq(&chip->vl_lock);
 	for (i = 0; i < 256; i++) {
 		j = (((pcsp_tabs[chip->gain][i] - 128)
-			    * (signed)chip->volume) / PCSP_MAX_VOLUME) + 128;
-		chip->vl_tab[i] = j * MIN_DIV / 256;
+		      * (signed)chip->volume) / PCSP_MAX_VOLUME) + 128;
+		chip->vl_tab[i] = j * CUR_DIV / 256;
 	}
+	spin_unlock_irq(&chip->vl_lock);
 }
 
 static int pcsp_volume_info(struct snd_kcontrol *kcontrol,
@@ -47,14 +49,11 @@ static int pcsp_volume_put(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int changed = 0;
 	int vol = ucontrol->value.integer.value[0];
 	if (vol != chip->volume) {
-		spin_lock_irqsave(&chip->lock, flags);
 		chip->volume = vol;
 		pcsp_calc_voltab(chip);
-		spin_unlock_irqrestore(&chip->lock, flags);
 		changed = 1;
 	}
 	return changed;
@@ -113,14 +112,11 @@ static int pcsp_gain_put(struct snd_kcontrol *kcontrol,
 			 struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
-	unsigned long flags;
 	int changed = 0;
 	int gain = ucontrol->value.integer.value[0];
 	if (gain != chip->gain) {
-		spin_lock_irqsave(&chip->lock, flags);
 		chip->gain = gain;
 		pcsp_calc_voltab(chip);
-		spin_unlock_irqrestore(&chip->lock, flags);
 		changed = 1;
 	}
 	return changed;
@@ -150,16 +146,15 @@ static int pcsp_treble_get(struct snd_kcontrol *kcontrol,
 static int pcsp_treble_put(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
-	unsigned long flags;
 	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	int changed = 0;
 	int treble = ucontrol->value.enumerated.item[0];
 	if (treble != chip->treble) {
-		spin_lock_irqsave(&chip->lock, flags);
 		chip->treble = treble;
-		chip->reset_timer = 1;
+#if PCSP_DEBUG
+		printk(KERN_INFO "PCSP: rate set to %i\n", PCSP_RATE);
+#endif
 		pcsp_calc_voltab(chip);
-		spin_unlock_irqrestore(&chip->lock, flags);
 		changed = 1;
 	}
 	return changed;
@@ -219,8 +214,10 @@ int __init snd_pcsp_new_mixer(struct snd_pcsp *chip)
 	int i, err;
 
 	for (i = 0; i < ARRAY_SIZE(snd_pcsp_controls); i++) {
-		if ((err = snd_ctl_add(card, snd_ctl_new1(
-				snd_pcsp_controls + i, chip))) < 0)
+		err = snd_ctl_add(card,
+				 snd_ctl_new1(snd_pcsp_controls + i,
+					      chip));
+		if (err < 0)
 			return err;
 	}
 

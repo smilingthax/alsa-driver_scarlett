@@ -2,7 +2,7 @@
  * PC-Speaker driver for Linux
  *
  * Volume conversion tables, sine-based amplification.
- * Copyright (C) 2001-2004  Stas Sergeev
+ * Copyright (C) 2001-2007  Stas Sergeev
  */
 
 #ifndef __PCSP_TABS_H
