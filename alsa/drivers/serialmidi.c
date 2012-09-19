@@ -491,7 +491,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 	init_MUTEX(&serial->open_lock);
 	serial->card = card;
 	serial->dev_idx = idx;
-	serial->sdev = snd_kmalloc_strdup(sdev, GFP_KERNEL);
+	serial->sdev = kstrdup(sdev, GFP_KERNEL);
 	if (serial->sdev == NULL) {
 		snd_serialmidi_free(serial);
 		return -ENOMEM;

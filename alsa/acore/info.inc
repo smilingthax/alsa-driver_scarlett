@@ -49,7 +49,7 @@ static struct proc_dir_entry *proc_symlink(const char *name,
 					   struct proc_dir_entry *parent,
 					   const char *dest)
 {
-	char *s = snd_kmalloc_strdup(dest, GFP_KERNEL);
+	char *s = kstrdup(dest, GFP_KERNEL);
 	struct proc_dir_entry *p;
 
 	if (s == NULL)
