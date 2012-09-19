@@ -722,4 +722,16 @@ typedef u32 /*__bitwise*/ pm_message_t;
 #endif
 #endif
 
+/* vprintk */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 9)
+#include <linux/kernel.h>
+static inline void snd_compat_vprintk(const char *fmt, va_list args)
+{
+	char tmpbuf[512];
+	vsnprintf(tmpbuf, sizeof(tmpbuf), fmt, args);
+	printk(tmpbuf);
+}
+#define vprintk snd_compat_vprintk
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */

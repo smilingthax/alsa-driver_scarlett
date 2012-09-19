@@ -651,19 +651,6 @@ CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_INPUT, [input subsystem in kernel])
 fi
 AC_SUBST(CONFIG_INPUT)
 
-dnl Check for SGI/MIPS (HAL2) support...
-AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
-CONFIG_SGI=""
-if test -r "$CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h"; then
-  CONFIG_SGI="y"
-fi
-if test "$CONFIG_SGI" = "y"; then
-  AC_MSG_RESULT("yes")
-else
-  AC_MSG_RESULT("no")
-fi
-AC_SUBST(CONFIG_SGI)
-
 
 dnl Directory for modules
 AC_MSG_CHECKING(for directory to store kernel modules)
@@ -759,6 +746,7 @@ CONFIG_PPC=
 CONFIG_SPARC32=
 CONFIG_SPARC64=
 CONFIG_SBUS=
+CONFIG_MIPS=
 CONFIG_SND_BIT32_EMUL=
 processor=""
 KCC=$CROSS_COMPILE$CC
@@ -998,6 +986,7 @@ EOF
     fi
     c_opts="$c_opts -G 0 -fno-pic -mno-abicalls -mlong-calls"
     processor="mips"
+    CONFIG_MIPS=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc)
@@ -1154,6 +1143,21 @@ if test -n "$CONFIG_SND_BIT32_EMUL"; then
   fi
 fi
 
+dnl Check for SGI/MIPS (HAL2) support...
+CONFIG_SGI=""
+if test "$CONFIG_MIPS" = "y"; then
+  AC_MSG_CHECKING(for SGI/MIPS (HAL2) architecture)
+  if test -r "$CONFIG_SND_KERNELDIR/include/asm/sgi/sgihpc.h"; then
+    CONFIG_SGI="y"
+  fi
+  if test "$CONFIG_SGI" = "y"; then
+    AC_MSG_RESULT("yes")
+  else
+    AC_MSG_RESULT("no")
+  fi
+fi
+AC_SUBST(CONFIG_SGI)
+
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
 AC_SUBST(ARCH)
@@ -1168,6 +1172,7 @@ AC_SUBST(CONFIG_PPC)
 AC_SUBST(CONFIG_SPARC32)
 AC_SUBST(CONFIG_SPARC64)
 AC_SUBST(CONFIG_SBUS)
+AC_SUBST(CONFIG_MIPS)
 AC_SUBST(CONFIG_ISA)
 AC_SUBST(CONFIG_PARISC)
 test "$CONFIG_ISA" = "y" && AC_DEFINE(CONFIG_SND_ISA)

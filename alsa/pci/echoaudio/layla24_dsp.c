@@ -345,20 +345,26 @@ static int set_input_clock(echoaudio_t *chip, u16 clock)
 
 static int switch_asic(echoaudio_t *chip, const struct firmware *asic)
 {
-	s8 monitors[MONITOR_ARRAY_SIZE];
+	s8 *monitors;
 
 	/*  Check to see if this is already loaded */
 	if (asic != chip->asic_code) {
+		monitors = kmalloc(MONITOR_ARRAY_SIZE, GFP_KERNEL);
+		if (! monitors)
+			return -ENOMEM;
+
 		memcpy(monitors, chip->comm_page->monitors, MONITOR_ARRAY_SIZE);
 		memset(chip->comm_page->monitors, ECHOGAIN_MUTED, MONITOR_ARRAY_SIZE);
 
 		/* Load the desired ASIC */
 		if (load_asic_generic(chip, DSP_FNC_LOAD_LAYLA24_EXTERNAL_ASIC, asic) < 0) {
 			memcpy(chip->comm_page->monitors, monitors, MONITOR_ARRAY_SIZE);
+			kfree(monitors);
 			return -EIO;
 		}
 		chip->asic_code = asic;
 		memcpy(chip->comm_page->monitors, monitors, MONITOR_ARRAY_SIZE);
+		kfree(monitors);
 	}
 
 	return 0;

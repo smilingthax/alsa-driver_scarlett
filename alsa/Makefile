@@ -67,6 +67,9 @@ ifeq (y,$(CONFIG_SPARC64))
 SUBDIRS  += sparc
 endif
 endif
+ifeq (y,$(CONFIG_MIPS))
+SUBDIRS  += mips
+endif
 ifeq (y,$(CONFIG_SGI))
 SUBDIRS  += hal2
 endif
