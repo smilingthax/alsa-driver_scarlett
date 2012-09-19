@@ -224,7 +224,6 @@ Additional Modules
     Note: you need to load the firmware via usx2yloader utility included
           in alsa-tools and alsa-firmware packages.
 
-
   Module snd-au8810, snd-au8820, snd-au8830
   -----------------------------------------
 
@@ -251,7 +250,6 @@ Additional Modules
            control correctly. If you have problems regarding this, try
            another ALSA compliant mixer (alsamixer works).
 
-
   Module snd-hdspm
   ----------------
 
@@ -262,6 +260,17 @@ Additional Modules
     enable_monitor	- Enable Analog Out on Channel 63/64 by default.
 
     See docs/hdspm.txt for details.
+
+
+  Module snd-atiixp
+  -----------------
+
+    Module for ATI IXP 150/200/250 AC97 controllers.
+
+    ac97_clock		- AC'97 clock (defalut = 48000)
+    spdif_aclink	- S/PDIF transfer over AC-link (default = 1)
+
+    This module supports up to 8 cards and autoprobe.
 
 
 Trouble Shooting

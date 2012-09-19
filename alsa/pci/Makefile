@@ -15,9 +15,11 @@ obj-$(CONFIG_SND) += pdplus/ mixart/ au88x0/
 
 snd-intel8x0m-objs := intel8x0m.o
 snd-hdspm-objs := hdspm.o
+snd-atiixp-objs := atiixp.o
 
 obj-$(CONFIG_SND_INTEL8X0M) += snd-intel8x0m.o
 obj-$(CONFIG_SND_HDSPM) +=snd-hdspm.o
+obj-$(CONFIG_SND_ATIIXP) += snd-atiixp.o
 
 # Hack for FM801 && TEA575x
 ifeq (m,$(CONFIG_SND_FM801))
