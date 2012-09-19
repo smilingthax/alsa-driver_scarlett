@@ -60,6 +60,7 @@ include/config1.h
 include/config1.h.in
 include/asm/
 include/linux/*
+include/generated/*
 include/media/*
 include/pci_ids_compat.h
 include/i2c-id_compat.h

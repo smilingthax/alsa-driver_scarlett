@@ -422,7 +422,7 @@ case "$1" in
     insert snd-hda-codec-intelhdmi$SUFF
     insert snd-hda-intel$SUFF
     restore hda.conf
-    #echo 1 > /proc/asound/card0/pcm0p/xrun_debug
+    echo 1 > /proc/asound/card0/pcm0p/xrun_debug
     ;;
   pdplus|prodif-plus)
     basic
