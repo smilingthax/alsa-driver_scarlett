@@ -168,11 +168,11 @@ static int __init snd_card_azt2320_pnp(int dev, struct snd_card_azt2320 *acard,
 	if (irq[dev] != SNDRV_AUTO_IRQ)
 		pnp_resource_change(&cfg->irq_resource[0], irq[dev], 1);
 	if ((pnp_manual_config_dev(pdev, cfg, 0)) < 0)
-		printk(KERN_ERR PFX "AUDIO the requested resources are invalid, using auto config\n");
+		snd_printk(KERN_ERR PFX "AUDIO the requested resources are invalid, using auto config\n");
 
 	err = pnp_activate_dev(pdev);
 	if (err < 0) {
-		printk(KERN_ERR PFX "AUDIO pnp configure failure\n");
+		snd_printk(KERN_ERR PFX "AUDIO pnp configure failure\n");
 		kfree(cfg);
 		return err;
 	}
@@ -191,7 +191,7 @@ static int __init snd_card_azt2320_pnp(int dev, struct snd_card_azt2320 *acard,
 		if (mpu_irq[dev] != SNDRV_AUTO_IRQ)
 			pnp_resource_change(&cfg->irq_resource[0], mpu_irq[dev], 1);
 		if ((pnp_manual_config_dev(pdev, cfg, 0)) < 0)
-			printk(KERN_ERR PFX "MPU401 the requested resources are invalid, using auto config\n");
+			snd_printk(KERN_ERR PFX "MPU401 the requested resources are invalid, using auto config\n");
 		err = pnp_activate_dev(pdev);
 		if (err < 0)
 			goto __mpu_error;
@@ -201,7 +201,7 @@ static int __init snd_card_azt2320_pnp(int dev, struct snd_card_azt2320 *acard,
 	     __mpu_error:
 	     	if (pdev) {
 		     	pnp_release_card_device(pdev);
-	     		printk(KERN_ERR PFX "MPU401 pnp configure failure, skipping\n");
+	     		snd_printk(KERN_ERR PFX "MPU401 pnp configure failure, skipping\n");
 	     	}
 	     	acard->devmpu = NULL;
 	     	mpu_port[dev] = -1;
@@ -291,16 +291,15 @@ static int __init snd_card_azt2320_probe(int dev,
 				mpu_port[dev], 0,
 				mpu_irq[dev], SA_INTERRUPT,
 				NULL) < 0)
-			printk(KERN_ERR PFX "no MPU-401 device at 0x%lx\n",
-				mpu_port[dev]);
+			snd_printk(KERN_ERR PFX "no MPU-401 device at 0x%lx\n", mpu_port[dev]);
 	}
 
 	if (fm_port[dev] > 0) {
 		if (snd_opl3_create(card,
 				    fm_port[dev], fm_port[dev] + 2,
 				    OPL3_HW_AUTO, 0, &opl3) < 0) {
-			printk(KERN_ERR PFX "no OPL device at 0x%lx-0x%lx\n",
-				fm_port[dev], fm_port[dev] + 2);
+			snd_printk(KERN_ERR PFX "no OPL device at 0x%lx-0x%lx\n",
+				   fm_port[dev], fm_port[dev] + 2);
 		} else {
 			if ((error = snd_opl3_timer_new(opl3, 1, 2)) < 0) {
 				snd_card_free(card);
@@ -367,7 +366,7 @@ static int __init alsa_card_azt2320_init(void)
 	cards += pnp_register_card_driver(&azt2320_pnpc_driver);
 #ifdef MODULE
 	if (!cards)
-		printk(KERN_ERR "no AZT2320 based soundcards found\n");
+		snd_printk(KERN_ERR "no AZT2320 based soundcards found\n");
 #endif
 	return cards ? 0 : -ENODEV;
 }

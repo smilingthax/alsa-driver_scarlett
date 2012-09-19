@@ -1503,7 +1503,7 @@ static int __init snd_es18xx_identify(es18xx_t *chip)
 static int __init snd_es18xx_probe(es18xx_t *chip)
 {
 	if (snd_es18xx_identify(chip) < 0) {
-		printk(KERN_ERR PFX "[0x%lx] ESS chip not found\n", chip->port);
+		snd_printk(KERN_ERR PFX "[0x%lx] ESS chip not found\n", chip->port);
                 return -ENODEV;
 	}
 
@@ -1746,27 +1746,27 @@ static int __init snd_es18xx_new_device(snd_card_t * card,
 
 	if ((chip->res_port = request_region(port, 16, "ES18xx")) == NULL) {
 		snd_es18xx_free(chip);
-		printk(KERN_ERR PFX "unable to grap ports 0x%lx-0x%lx\n", port, port + 16 - 1);
+		snd_printk(KERN_ERR PFX "unable to grap ports 0x%lx-0x%lx\n", port, port + 16 - 1);
 		return -EBUSY;
 	}
 
 	if (request_irq(irq, snd_es18xx_interrupt, SA_INTERRUPT, "ES18xx", (void *) chip)) {
 		snd_es18xx_free(chip);
-		printk(KERN_ERR PFX "unable to grap IRQ %d\n", irq);
+		snd_printk(KERN_ERR PFX "unable to grap IRQ %d\n", irq);
 		return -EBUSY;
 	}
 	chip->irq = irq;
 
 	if (request_dma(dma1, "ES18xx DMA 1")) {
 		snd_es18xx_free(chip);
-		printk(KERN_ERR PFX "unable to grap DMA1 %d\n", dma1);
+		snd_printk(KERN_ERR PFX "unable to grap DMA1 %d\n", dma1);
 		return -EBUSY;
 	}
 	chip->dma1 = dma1;
 
 	if (dma2 != dma1 && request_dma(dma2, "ES18xx DMA 2")) {
 		snd_es18xx_free(chip);
-		printk(KERN_ERR PFX "unable to grap DMA2 %d\n", dma2);
+		snd_printk(KERN_ERR PFX "unable to grap DMA2 %d\n", dma2);
 		return -EBUSY;
 	}
 	chip->dma2 = dma2;
@@ -1995,7 +1995,7 @@ static int __init snd_audiodrive_isapnp(int dev, struct snd_audiodrive *acard)
 	if (acard->devc->prepare(acard->devc)<0)
 		return -EAGAIN;
 	if (acard->devc->activate(acard->devc)<0) {
-		printk(KERN_ERR PFX "isapnp control configure failure (out of resources?)\n");
+		snd_printk(KERN_ERR PFX "isapnp control configure failure (out of resources?)\n");
 		return -EAGAIN;
 	}
 	snd_printdd("isapnp: port=0x%lx\n", acard->devc->resource[0].start);
@@ -2018,7 +2018,7 @@ static int __init snd_audiodrive_isapnp(int dev, struct snd_audiodrive *acard)
 	if (irq[dev] != SNDRV_AUTO_IRQ)
 		isapnp_resource_change(&pdev->irq_resource[0], irq[dev], 1);
 	if (pdev->activate(pdev)<0) {
-		printk(KERN_ERR PFX "isapnp configure failure (out of resources?)\n");
+		snd_printk(KERN_ERR PFX "isapnp configure failure (out of resources?)\n");
 		acard->devc->deactivate(acard->devc);
 		return -EBUSY;
 	}
@@ -2135,7 +2135,7 @@ static int __init snd_audiodrive_probe(int dev)
 
 	if (fm_port[dev] > 0 && fm_port[dev] != SNDRV_AUTO_PORT) {
 		if (snd_opl3_create(card, chip->fm_port, chip->fm_port + 2, OPL3_HW_OPL3, 0, &opl3) < 0) {
-			printk(KERN_ERR PFX "opl3 not detected at 0x%lx\n", chip->fm_port);
+			snd_printk(KERN_ERR PFX "opl3 not detected at 0x%lx\n", chip->fm_port);
 		} else {
 			if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0) {
 				snd_card_free(card);
@@ -2254,7 +2254,7 @@ static int __init alsa_card_es18xx_init(void)
 #endif
 	if(!cards) {
 #ifdef MODULE
-		printk(KERN_ERR "ESS AudioDrive ES18xx soundcard not found or device busy\n");
+		snd_printk(KERN_ERR "ESS AudioDrive ES18xx soundcard not found or device busy\n");
 #endif
 		return -ENODEV;
 	}
