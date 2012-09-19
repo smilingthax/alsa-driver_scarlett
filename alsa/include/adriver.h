@@ -734,4 +734,34 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #define vprintk snd_compat_vprintk
 #endif
 
+#if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#include <linux/gameport.h>
+#ifndef to_gameport_driver
+/* old gameport interface */
+struct snd_gameport {
+	struct gameport gp;
+	void *port_data;
+};
+static inline struct gameport *gameport_allocate_port(void)
+{
+	struct snd_gameport *gp;
+	gp = kcalloc(1, sizeof(*gp), GFP_KERNEL);
+	if (gp)
+		return &gp->gp;
+	return NULL;
+}
+static inline void snd_gameport_unregister_port(struct gameport *gp)
+{
+	gameport_unregister_port(gp);
+	kfree(gp);
+}
+#define gameport_unregister_port(gp)	snd_gameport_unregister_port(gp)
+#define gameport_set_port_data(gp,r) (((struct snd_gameport *)(gp))->port_data = (r))
+#define gameport_get_port_data(gp) ((struct snd_gameport *)(gp))->port_data
+#define gameport_set_dev_parent(gp,xdev)
+#define gameport_set_name(gp,x)
+#define gameport_set_phys(gp,x)
+#endif /* to_gameport_driver */
+#endif /* GAMEPORT || GAMEPORT_MODULE */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
