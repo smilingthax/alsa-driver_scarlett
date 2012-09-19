@@ -460,6 +460,7 @@ void snd_pcm_lock(int unlock);
 int snd_pcm_new(snd_card_t * card, char *id, int device,
 		int playback_count, int capture_count,
 		snd_pcm_t **rpcm);
+int snd_pcm_new_stream(snd_pcm_t *pcm, int stream, int substream_count);
 
 int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
 
