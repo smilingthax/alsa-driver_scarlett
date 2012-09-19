@@ -118,6 +118,7 @@ static char *kernel_deps[] = {
 	"IA32_EMULATION",
 	/* architecture specific */
 	"ARCH_SA1100",
+	"ARCH_PXA",
 	"X86_PC9800",
 	/* other drivers */
 	"RTC",
@@ -157,6 +158,7 @@ static char *no_cards[] = {
 	"#SND_MPU401_UART",
 	"#SND_GUS_SYNTH",
 	"#SND_AC97_CODEC",
+	"#SND_PXA2XX_PCM",
 	"#SND_GENERIC_PM",
 	NULL
 };
