@@ -449,7 +449,7 @@ EXPORT_SYMBOL(snd_device_register);
 EXPORT_SYMBOL(snd_device_free);
 EXPORT_SYMBOL(snd_device_free_all);
   /* misc.c */
-#if defined(CONFIG_SND_ISA)
+#ifdef CONFIG_ISA
 EXPORT_SYMBOL(snd_dma_program);
 EXPORT_SYMBOL(snd_dma_disable);
 EXPORT_SYMBOL(snd_dma_residue);
@@ -469,7 +469,7 @@ EXPORT_SYMBOL(snd_info_free_device);
 EXPORT_SYMBOL(snd_info_register);
 EXPORT_SYMBOL(snd_info_unregister);
   /* info_oss.c */
-#if defined(CONFIG_SND_OSSEMUL)
+#ifdef CONFIG_SND_OSSEMUL
 EXPORT_SYMBOL(snd_oss_info_register);
 #endif
   /* control.c */

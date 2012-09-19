@@ -66,7 +66,7 @@ static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 static int snd_joystick_port[SNDRV_CARDS] =
-#ifdef CONFIG_SND_ISA
+#ifdef CONFIG_ISA
 	{0x200};	/* enable as default */
 #else
 	{0};	/* disabled */

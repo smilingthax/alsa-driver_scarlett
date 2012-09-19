@@ -35,7 +35,7 @@
 
 #if defined(CONFIG_RTC) || defined(CONFIG_RTC_MODULE)
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 12)	/* FIXME: which 2.2.x kernel? */
 #include <linux/rtc.h>
 #else
 #include <linux/mc146818rtc.h>
