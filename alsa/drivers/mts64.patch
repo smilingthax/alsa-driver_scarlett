@@ -1,18 +1,20 @@
---- ../alsa-kernel/drivers/mts64.c	2006-10-10 15:35:35.000000000 +0200
-+++ mts64.c	2006-10-10 16:26:47.000000000 +0200
-@@ -838,7 +838,11 @@
+--- ../alsa-kernel/drivers/mts64.c	2007-11-14 16:50:54.000000000 +0100
++++ mts64.c	2007-11-14 16:53:06.000000000 +0100
+@@ -830,7 +830,13 @@
  /*********************************************************************
   * parport stuff
   *********************************************************************/
-+#ifndef CONFIG_SND_NEW_IRQ_HANDLER
-+static void snd_mts64_interrupt(int irq, void *private, struct pt_regs *reg)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 24)
+ static void snd_mts64_interrupt(void *private)
++#elif defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void snd_mts64_interrupt(int irq, void *private)
 +#else
- static void snd_mts64_interrupt(int irq, void *private)
++static void snd_mts64_interrupt(int irq, void *private, struct pt_regs *reg)
 +#endif
  {
  	struct mts64 *mts = ((struct snd_card*)private)->private_data;
  	u16 ret;
-@@ -1089,3 +1093,5 @@
+@@ -1081,3 +1087,5 @@
  
  module_init(snd_mts64_module_init);
  module_exit(snd_mts64_module_exit);

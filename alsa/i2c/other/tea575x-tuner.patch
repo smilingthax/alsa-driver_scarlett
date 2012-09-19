@@ -1,5 +1,5 @@
---- ../../alsa-kernel/i2c/other/tea575x-tuner.c	2005-11-10 12:47:46.000000000 +0100
-+++ tea575x-tuner.c	2005-11-10 12:55:30.000000000 +0100
+--- ../../alsa-kernel/i2c/other/tea575x-tuner.c	2007-11-14 16:57:58.000000000 +0100
++++ tea575x-tuner.c	2007-11-14 16:57:53.000000000 +0100
 @@ -54,6 +54,19 @@
  #define TEA575X_BIT_DUMMY	(1<<15)		/* buffer */
  #define TEA575X_BIT_FREQ_MASK	0x7fff
@@ -65,10 +65,13 @@
  
  /*
   * initialize all the tea575x chips
-@@ -190,13 +225,21 @@
+@@ -189,13 +224,24 @@
+ 	tea->vd.owner = tea->card->module;
  	strcpy(tea->vd.name, tea->tea5759 ? "TEA5759 radio" : "TEA5757 radio");
  	tea->vd.type = VID_TYPE_TUNER;
- 	tea->vd.hardware = VID_HARDWARE_RTRACK;	/* FIXME: assign new number */
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 24)
++	tea->vd.hardware = VID_HARDWARE_RTRACK;	/* FIXME: assign new number */
++#endif
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 8)
  	tea->vd.release = snd_tea575x_release;
 +#endif
