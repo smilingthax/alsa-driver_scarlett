@@ -241,6 +241,40 @@ withsysfs() {
     fi
 }
 
+get_alsa_library_version() {
+	ALSA_LIB_VERSION=`grep VERSION_STR /usr/include/alsa/version.h 2>/dev/null|awk {'print $3'}|sed 's/"//g'`
+
+	if [ -z "$ALSA_LIB_VERSION" ]; then
+		if [ -f /etc/lsb-release ]; then
+			. /etc/lsb-release
+			case "$DISTRIB_ID" in
+				Ubuntu)
+					if which dpkg > /dev/null ; then
+						ALSA_LIB_VERSION=`dpkg -l libasound2 | tail -1 | awk '{print $3}' | cut -f 1 -d -`
+					fi
+
+					if [ "$ALSA_LIB_VERSION" = "<none>" ]; then
+						ALSA_LIB_VERSION=""
+					fi
+					return
+					;;
+				*)
+					return
+					;;
+			esac
+		elif [ -f /etc/debian_version ]; then
+			if which dpkg > /dev/null ; then
+				ALSA_LIB_VERSION=`dpkg -l libasound2 | tail -1 | awk '{print $3}' | cut -f 1 -d -`
+			fi
+
+			if [ "$ALSA_LIB_VERSION" = "<none>" ]; then
+				ALSA_LIB_VERSION=""
+			fi
+			return
+		fi
+	fi
+}
+
 
 #Run checks to make sure the programs we need are installed.
 LSPCI=$(which lspci 2>/dev/null| sed 's|^[^/]*||' 2>/dev/null);
@@ -276,6 +310,12 @@ case "$1" in
 		DIALOG=""
 		REPEAT=""
 		shift
+		;;
+	--stdout)
+		DIALOG=""
+		NOUPLOAD="yes"
+		QUESTION="no"
+		TOSTDOUT="yes"
 		;;
 esac
 done
@@ -350,7 +390,7 @@ KERNEL_MACHINE=`uname -m`
 KERNEL_OS=`uname -o`
 [[ `uname -v |grep SMP`  ]] && KERNEL_SMP="Yes" || KERNEL_SMP="No" 
 ALSA_DRIVER_VERSION=`cat /proc/asound/version |head -n1|awk {'print $7'} |sed 's/\.$//'`
-ALSA_LIB_VERSION=`grep VERSION_STR /usr/include/alsa/version.h 2>/dev/null|awk {'print $3'}|sed 's/"//g'`
+get_alsa_library_version
 ALSA_UTILS_VERSION=`amixer -v |awk {'print $3'}`
 VENDOR_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $3}'|awk {'print substr($0, 2);}' >$TEMPDIR/vendor_id.tmp`
 DEVICE_ID=`lspci -vn |grep 040[1-3] | awk -F':' '{print $4}'|awk {'print $1'} >$TEMPDIR/device_id.tmp`
@@ -627,6 +667,17 @@ then
 				fi
 			fi
 			;;
+		--stdout)
+			NOUPLOAD="yes"
+			withdevices
+			withconfigs
+			withaplay
+			withamixer
+			withalsactl
+			withlsmod
+			cat $FILE
+			rm $FILE
+			;;
 		--about)
 			echo "Written/Tested by the following users of #alsa on irc.freenode.net:"
 			echo ""
@@ -635,6 +686,7 @@ then
 			echo "	gnubien - Various script ideas / Testing"
 			echo "	GrueMaster - HDA Intel specific items / Testing"
 			echo "	olegfink - Script update function"
+			echo "  TheMuso - display to stdout functionality"
 			exit 0
 			;;
 		*)
@@ -652,6 +704,8 @@ then
 			echo "	--no-upload (do not upload contents to remote server)"
 			echo "	--pastebin (use http://pastebin.ca) as remote server"
 			echo "	    instead www.alsa-project.org"
+			echo "  --stdout (print alsa information to standard output"
+			echo "      instead of a file)"
 			echo "	--about (show some information about the script)"
 			echo "	--debug (will run the script as normal, but will not"
 			echo "	     delete $FILE)"
@@ -668,7 +722,9 @@ fi
 
 if [ -n "$NOUPLOAD" ]; then
 
-	mv $FILE $NFILE || exit 1
+	if [ -z "$TOSTDOUT" ]; then
+		mv $FILE $NFILE || exit 1
+	fi
 
 	if [[ -n $DIALOG ]]
 	then
@@ -686,10 +742,12 @@ if [ -n "$NOUPLOAD" ]; then
 			echo "Your ALSA information can be seen by looking in $NFILE"
 			echo ""
 		else
-			echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
-			echo ""
-			echo "Your ALSA information can be seen by looking in $NFILE"
-			echo ""
+			if [ -z "$TOSTDOUT" ]; then
+				echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
+				echo ""
+				echo "Your ALSA information can be seen by looking in $NFILE"
+				echo ""
+			fi
 		fi
 	fi
 
