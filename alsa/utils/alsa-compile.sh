@@ -320,10 +320,7 @@ install_package() {
 		fi
 		;;
 	Fedora)
-		if yum install $1; then
-			echo >&2 "Cannot install package '$1'."
-			exit 1
-		fi
+		yum install $1
 		;;
 	*)
 		echo >&2 "Cannot install $1 for unsupported distribution $distrib."
@@ -440,6 +437,12 @@ check_compilation_environment() {
 			install_package autoconf
 		else
 			echo "Program autoconf found."
+		fi
+		local a=$(aclocal --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "aclocal"; then
+			install_package automake
+		else
+			echo "Program aclocal found."
 		fi
 		local a=$(gcc --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "gcc" ; then
