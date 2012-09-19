@@ -2064,4 +2064,22 @@ request_irq_with_irqf_check(unsigned int irq, irq_handler_t handler,
 #define __printf(a,b)	/*nop*/
 #endif
 
+/* module_platform_driver() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
+#include <linux/platform_device.h>
+#ifndef module_platform_driver
+#define module_platform_driver(__platform_driver) \
+static int __init __platform_driver##_init(void) \
+{ \
+	return platform_driver_register(&(__platform_driver)); \
+} \
+module_init(__platform_driver##_init); \
+static void __exit __platform_driver##_exit(void) \
+{ \
+	platform_driver_unregister(&(__platform_driver)); \
+} \
+module_exit(__platform_driver##_exit);
+#endif
+#endif /* < 3.2 */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
