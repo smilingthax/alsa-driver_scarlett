@@ -39,7 +39,7 @@ MODULE_DESCRIPTION("Cirrus Logic CS4232");
 MODULE_DEVICES("{{Turtle Beach,TBS-2000},"
 		"{Turtle Beach,Tropez Plus},"
 		"{SIC CrystalWave 32},"
-		"{HP,Omnibook 5500},"
+		"{Hewlett Packard,Omnibook 5500},"
 		"{TerraTec,Maestro 32/96},"
 		"{Philips,PCA70PS}}");
 #else
@@ -49,26 +49,25 @@ MODULE_DEVICES("{{Crystal Semiconductors,CS4235},"
 		"{Crystal Semiconductors,CS4237},"
 		"{Crystal Semiconductors,CS4238},"
 		"{Crystal Semiconductors,CS4239},"
-		"{Genius,Sound Maker 3DJ},"
-		"{Hewlett Packard,HP6330 sound},"
-		"{Crystal Computer,TidalWave128},"
 		"{Acer,AW37},"
-		"{EliteGroup,P5TX-LA sound},"
+		"{Acer,AW35/Pro},"
 		"{Crystal,3D},"
-		"{Typhoon Soundsystem,CS4236B},"
-		"{TerraTec,AudioSystem EWS64L},"
-		"{NewClear,3D},"
+		"{Crystal Computer,TidalWave128},"
 		"{Dell,Optiplex GX1},"
 		"{Dell,Workstation 400 sound},"
-		"{Turtle Beach,Malibu},"
-		"{Crystal Semiconductors,CS4235},"
-		"{IBM,Adaptiva 2137 E24},"
-		"{Maxi Sound,16 PnP},"
+		"{EliteGroup,P5TX-LA sound},"
 		"{Gallant,SC-70P},"
-		"{Acer,AW37/Pro},"
-		"{Acer,AW35/Pro},"
-		"{Intel, Marlin Spike Mobo CS4235},"
+		"{Genius,Sound Maker 3DJ},"
+		"{Hewlett Packard,HP6330 sound},"
+		"{IBM,PC 300PL sound},"
+		"{IBM,Aptiva 2137 E24},"
 		"{IBM,IntelliStation M Pro},"
+		"{Intel,Marlin Spike Mobo CS4235},"
+		"{Guillemot,MaxiSound 16 PnP},"
+		"{NewClear,3D},"
+		"{TerraTec,AudioSystem EWS64L/XL},"
+		"{Typhoon Soundsystem,CS4236B},"
+		"{Turtle Beach,Malibu},"
 		"{Unknown,Digital PC 5000 Onboard}}");
 #endif
 
@@ -233,14 +232,16 @@ static struct isapnp_card_id snd_card_pnpids[] __devinitdata = {
 	ISAPNP_CS4232('C','S','C',0x7537,0x0000,0x0010,0x0003),
 	/* CS4235 - onboard */
 	ISAPNP_CS4232('C','S','C',0x8025,0x0100,0x0110,0x0103),
+	/* IBM PC 300PL Onboard - CS4236B */
+	ISAPNP_CS4232_WOMPU('C','S','C',0xe836,0x0000,0x0010),
 	/* IBM Aptiva 2137 E24 Onboard - CS4237B */
 	ISAPNP_CS4232('C','S','C',0x8037,0x0000,0x0010,0x0003),
-	/* Maxi Sound 16 PnP - CS4236B */
+	/* IBM IntelliStation M Pro motherboard */
+	ISAPNP_CS4232_WOMPU('C','S','C',0xc835,0x0000,0x0010),
+	/* Guillemot MaxiSound 16 PnP - CS4236B */
 	ISAPNP_CS4232('C','S','C',0x9836,0x0000,0x0010,0x0003),
 	/* Gallant SC-70P */
 	ISAPNP_CS4232('C','S','C',0x9837,0x0000,0x0010,0x0003),
-	/* IBM IntelliStation M Pro motherboard */
-	ISAPNP_CS4232_WOMPU('C','S','C',0xc835,0x0000,0x0010),
 	/* ACER AW37/Pro - CS4235 */
 	ISAPNP_CS4232('C','S','C',0xd925,0x0000,0x0010,0x0003),
 	/* ACER AW35/Pro - CS4237B */

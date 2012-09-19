@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: rme9652_mem.c,v 1.4 2002/01/04 14:30:51 perex Exp $
+    $Id: rme9652_mem.c,v 1.5 2002/01/04 17:53:12 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
@@ -36,29 +36,11 @@
 
 #include <linux/config.h>
 #include <linux/version.h>
-#if defined(ALSA_BUILD) && defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#define MODVERSIONS
-#include <linux/modversions.h>
-#include "sndversions.h"
-#endif
 #include <linux/module.h>
 #include <linux/pci.h>
 #include <linux/init.h>
 #include <linux/mm.h>
 #include <sound/initval.h>
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-#include <linux/kernel.h>
-#include <linux/sched.h>
-#include <linux/malloc.h>
-#include <linux/init.h>
-#include <asm/io.h>
-#define __init
-#define __exit
-#define virt_to_page(x) (&mem_map[MAP_NR(x)])
-#define pci_for_each_dev(dev) \
-	for(dev = pci_devices; dev; dev = dev->next)
-#endif
 
 #define RME9652_CARDS			8
 #define RME9652_CHANNEL_BUFFER_SAMPLES  (16*1024)

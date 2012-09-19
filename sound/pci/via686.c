@@ -852,7 +852,7 @@ static int snd_via686a_chip_init(via686a_t *chip)
 	udelay(100);
 
 	/* wait until codec ready */
-	max_count = 3 * (HZ >> 2);
+	max_count = ((3 * HZ) / 4) + 1;
 	do {
 		pci_read_config_byte(chip->pci, 0x40, &pval);
 		if (pval & 0x01) /* primary codec ready */
@@ -871,7 +871,7 @@ static int snd_via686a_chip_init(via686a_t *chip)
 	snd_via686a_codec_xwrite(chip, VIA_REG_AC97_READ |
 				 VIA_REG_AC97_PRIMARY_VALID |
 				 (VIA_REG_AC97_CODEC_ID_PRIMARY << VIA_REG_AC97_CODEC_ID_SHIFT));
-	max_count = 3 * (HZ >> 2);
+	max_count = ((3 * HZ) / 4) + 1;
 	do {
 		if ((val = snd_via686a_codec_xread(chip)) & VIA_REG_AC97_PRIMARY_VALID)
 			goto __ac97_ok1;
@@ -885,7 +885,7 @@ static int snd_via686a_chip_init(via686a_t *chip)
 	snd_via686a_codec_xwrite(chip, VIA_REG_AC97_READ |
 				 VIA_REG_AC97_SECONDARY_VALID |
 				 (VIA_REG_AC97_CODEC_ID_SECONDARY << VIA_REG_AC97_CODEC_ID_SHIFT));
-	max_count = 3 * (HZ >> 2);
+	max_count = ((3 * HZ) / 4) + 1;
 	snd_via686a_codec_xwrite(chip, VIA_REG_AC97_READ |
 				 VIA_REG_AC97_SECONDARY_VALID |
 				 (VIA_REG_AC97_CODEC_ID_SECONDARY << VIA_REG_AC97_CODEC_ID_SHIFT));

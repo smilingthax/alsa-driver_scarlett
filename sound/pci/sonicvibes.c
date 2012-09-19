@@ -24,6 +24,7 @@
 
 #include <sound/driver.h>
 #include <asm/io.h>
+#include <linux/delay.h>
 #include <linux/init.h>
 #include <sound/core.h>
 #include <sound/pcm.h>

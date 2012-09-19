@@ -937,7 +937,7 @@ static int __init snd_fm801_create(snd_card_t * card,
 	udelay(100);
 	outw(0, FM801_REG(chip, CODEC_CTRL));
 
-	timeout = jiffies + (4 * HZ) / 3;		/* 75ms */
+	timeout = (jiffies + (3 * HZ) / 4) + 1;		/* min 750ms */
 
 	outw((1<<7) | (0 << FM801_AC97_ADDR_SHIFT), FM801_REG(chip, AC97_CMD));
 	udelay(5);
@@ -978,7 +978,7 @@ static int __init snd_fm801_create(snd_card_t * card,
 
 	/* the recovery phase, it seems that probing for non-existing codec might */
 	/* cause timeout problems */
-	timeout = jiffies + (4 * HZ) / 3;		/* 75ms */
+	timeout = (jiffies + (3 * HZ) / 4) + 1;		/* min 750ms */
 
 	outw((1<<7) | (0 << FM801_AC97_ADDR_SHIFT), FM801_REG(chip, AC97_CMD));
 	udelay(5);
