@@ -255,7 +255,7 @@ static snd_card_t* snd_usX2Y_create_card(struct usb_device* device)
 	sprintf(card->shortname, "TASCAM "NAME_ALLCAPS"");
 	sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
 		card->shortname, 
-		snd_usX2Y_usb_id_table[0].idVendor, snd_usX2Y_usb_id_table[0].idProduct,
+		device->descriptor.idVendor, device->descriptor.idProduct,
 		0,//us428(card)->usbmidi.ifnum,
 		usX2Y(card)->chip.dev->bus->busnum, usX2Y(card)->chip.dev->devnum
 		);
