@@ -241,7 +241,7 @@ static void complete_and_exit(struct completion *comp, long code)
 	comp->done = 1;
 	wmb();
 	wake_up(&comp->wait);
-	do_exit(code);
+	/*do_exit(code);*/ /* FIXME: not exported from the kernel */
 }
 
 #endif /* kernel version < 2.3.0 */
@@ -365,6 +365,9 @@ static int xworker_thread(void *data)
 	unlock_kernel();
 #endif
 	complete_and_exit(&wq->thread_exited, 0);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+	return 0;
+#endif
 }
 
 struct workqueue_struct *snd_compat_create_workqueue(const char *name)

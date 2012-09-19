@@ -573,4 +573,10 @@ static inline int abs(int val)
 	return (val < 0) ? -val : val;
 }
 
+/* somebody forgot to export this from vsprintf.c */
+/* FIXME: this is a horrible hack, but be know it's used
+ * only once in a very simple way in ac97_codec.c */
+#undef simple_strtol
+#define simple_strtol(str, endptr, base) (*(str) - '0')
+
 #endif /* <2.3.0 */
