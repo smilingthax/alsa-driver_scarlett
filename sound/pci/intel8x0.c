@@ -59,6 +59,12 @@ MODULE_SUPPORTED_DEVICE("{{Intel,82801AA-ICH},"
 		"{SiS,SI7012},"
 		"{NVidia,nForce Audio},"
 		"{NVidia,nForce2 Audio},"
+		"{NVidia,nForce3 Audio},"
+		"{NVidia,MCP04},"
+		"{NVidia,MCP501},"
+		"{NVidia,CK804},"
+		"{NVidia,CK8},"
+		"{NVidia,CK8S},"
 		"{AMD,AMD768},"
 		"{AMD,AMD8111},"
 	        "{ALI,M5455}}");
@@ -2132,8 +2138,8 @@ static int __devinit snd_intel8x0_mixer(struct intel8x0 *chip, int ac97_clock,
 				snd_intel8x0_codec_read_test(chip, codecs);
 				chip->ac97_sdin[codecs] =
 					igetbyte(chip, ICHREG(SDM)) & ICH_LDI_MASK;
-				snd_assert(chip->ac97_sdin[codecs] < 3,
-					   chip->ac97_sdin[codecs] = 0);
+				if (snd_BUG_ON(chip->ac97_sdin[codecs] >= 3))
+					chip->ac97_sdin[codecs] = 0;
 			} else
 				chip->ac97_sdin[codecs] = i;
 			codecs++;

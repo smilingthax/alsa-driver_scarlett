@@ -2631,12 +2631,14 @@ static int alc_build_pcms(struct hda_codec *codec)
 
 	info->name = spec->stream_name_analog;
 	if (spec->stream_analog_playback) {
-		snd_assert(spec->multiout.dac_nids, return -EINVAL);
+		if (snd_BUG_ON(!spec->multiout.dac_nids))
+			return -EINVAL;
 		info->stream[SNDRV_PCM_STREAM_PLAYBACK] = *(spec->stream_analog_playback);
 		info->stream[SNDRV_PCM_STREAM_PLAYBACK].nid = spec->multiout.dac_nids[0];
 	}
 	if (spec->stream_analog_capture) {
-		snd_assert(spec->adc_nids, return -EINVAL);
+		if (snd_BUG_ON(!spec->adc_nids))
+			return -EINVAL;
 		info->stream[SNDRV_PCM_STREAM_CAPTURE] = *(spec->stream_analog_capture);
 		info->stream[SNDRV_PCM_STREAM_CAPTURE].nid = spec->adc_nids[0];
 	}
@@ -2666,6 +2668,8 @@ static int alc_build_pcms(struct hda_codec *codec)
 			info->stream[SNDRV_PCM_STREAM_CAPTURE] = *(spec->stream_digital_capture);
 			info->stream[SNDRV_PCM_STREAM_CAPTURE].nid = spec->dig_in_nid;
 		}
+		/* FIXME: do we need this for all Realtek codec models? */
+		codec->spdif_status_reset = 1;
 	}
 
 	/* If the use of more than one ADC is requested for the current
