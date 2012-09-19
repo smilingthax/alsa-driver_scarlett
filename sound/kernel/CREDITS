@@ -959,7 +959,7 @@ S: 2037 Walnut #6
 S: Boulder, Colorado 80302
 S: USA
 
-N: Heiko Eissfeldt
+N: Heiko Eißfeldt
 E: heiko@colossus.escape.de heiko@unifix.de
 D: verify_area stuff, generic SCSI fixes
 D: SCSI Programming HOWTO
@@ -1165,6 +1165,12 @@ S: 600 North Bell Avenue, Suite 160
 S: Carnegie, Pennsylvania 15106-4304
 S: USA
 
+N: Kai Germaschewski
+E: kai@germaschewski.name
+D: Major kbuild rework during the 2.5 cycle
+D: ISDN Maintainer
+S: USA
+
 N: Philip Gladstone
 E: philip@gladstonefamily.net
 D: Kernel / timekeeping stuff
@@ -1346,6 +1352,14 @@ D: MTRR emulation with Centaur MCRs
 S: Gen Stedmanstraat 212
 S: 5623 HZ Eindhoven
 S: The Netherlands
+
+N: Oliver Hartkopp
+E: oliver.hartkopp@volkswagen.de
+W: http://www.volkswagen.de
+D: Controller Area Network (network layer core)
+S: Brieffach 1776
+S: 38436 Wolfsburg
+S: Germany
 
 N: Andrew Haylett
 E: ajh@primag.co.uk
@@ -1982,8 +1996,8 @@ N: Volker Lendecke
 E: vl@kki.org
 D: Kernel smbfs (to mount WfW, NT and OS/2 network drives.)
 D: NCP filesystem support (to mount NetWare volumes)
-S: Von Ossietzky Str. 12
-S: 37085 Goettingen
+S: Von-Ossietzky-Str. 12
+S: 37085 Göttingen
 S: Germany
 
 N: Kevin Lentin
@@ -2425,11 +2439,11 @@ S: 12725 SW Millikan Way, Suite 400
 S: Beaverton, Oregon 97005
 S: USA
 
-N: Eberhard Moenkeberg
+N: Eberhard Mönkeberg
 E: emoenke@gwdg.de
 D: CDROM driver "sbpcd" (Matsushita/Panasonic/Soundblaster)
-S: Ruhstrathoehe 2 b.
-S: D-37085 Goettingen
+S: Ruhstrathöhe 2 b.
+S: D-37085 Göttingen
 S: Germany
 
 N: Thomas Molina
@@ -2702,7 +2716,7 @@ S: Canada K2P 0X8
 
 N: Mikael Pettersson
 E: mikpe@it.uu.se
-W: http://www.csd.uu.se/~mikpe/
+W: http://user.it.uu.se/~mikpe/linux/
 D: Miscellaneous fixes
 
 N: Reed H. Petty
@@ -3299,6 +3313,14 @@ S: IRISA
 S: Universit=E9 de Rennes I
 S: F-35042 Rennes Cedex
 S: France
+
+N: Urs Thuermann
+E: urs.thuermann@volkswagen.de
+W: http://www.volkswagen.de
+D: Controller Area Network (network layer core)
+S: Brieffach 1776
+S: 38436 Wolfsburg
+S: Germany
 
 N: Jon Tombs
 E: jon@gte.esi.us.es
