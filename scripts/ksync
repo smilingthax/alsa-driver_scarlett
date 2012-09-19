@@ -46,7 +46,7 @@ PROGRAM = sys.argv[0]
 
 # define working directories
 CVSROOT = '~/alsa'
-BKROOT = '~/linux/work'
+BKROOT = '~/linux/official'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']

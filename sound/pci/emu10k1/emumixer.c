@@ -354,9 +354,9 @@ static int snd_emu10k1_shared_spdif_get(snd_kcontrol_t * kcontrol,
 	emu10k1_t *emu = snd_kcontrol_chip(kcontrol);
 
 	if (emu->audigy)
-		ucontrol->value.integer.value[0] = inl(emu->port + A_IOCFG) & A_IOCFG_GPOUT0 ? 0 : 1;
+		ucontrol->value.integer.value[0] = inl(emu->port + A_IOCFG) & A_IOCFG_GPOUT0 ? 1 : 0;
 	else
-		ucontrol->value.integer.value[0] = inl(emu->port + HCFG) & HCFG_GPOUT0 ? 0 : 1;
+		ucontrol->value.integer.value[0] = inl(emu->port + HCFG) & HCFG_GPOUT0 ? 1 : 0;
         return 0;
 }
 
@@ -366,23 +366,26 @@ static int snd_emu10k1_shared_spdif_put(snd_kcontrol_t * kcontrol,
 	unsigned long flags;
 	emu10k1_t *emu = snd_kcontrol_chip(kcontrol);
 	unsigned int reg, val;
-	int change;
+	int change = 0;
 
 	spin_lock_irqsave(&emu->reg_lock, flags);
-	if (!emu->audigy) {
-		reg = inl(emu->port + HCFG);
-		val = ucontrol->value.integer.value[0] & 1 ? 0 : HCFG_GPOUT0;
-		change = (reg & HCFG_GPOUT0) != val;
+	if (emu->audigy) {
+		reg = inl(emu->port + A_IOCFG);
+		val = ucontrol->value.integer.value[0] ? A_IOCFG_GPOUT0 : 0;
+		change = (reg & A_IOCFG_GPOUT0) != val;
+		if (change) {
+			reg &= ~A_IOCFG_GPOUT0;
+			reg |= val;
+			outl(reg | val, emu->port + A_IOCFG);
+		}
+	}
+	reg = inl(emu->port + HCFG);
+	val = ucontrol->value.integer.value[0] ? HCFG_GPOUT0 : 0;
+	change |= (reg & HCFG_GPOUT0) != val;
+	if (change) {
 		reg &= ~HCFG_GPOUT0;
 		reg |= val;
 		outl(reg | val, emu->port + HCFG);
-	} else {
-		reg = inl(emu->port + A_IOCFG);
-		val = ucontrol->value.integer.value[0] & 1 ? 0 : A_IOCFG_GPOUT0;
-		change = (reg & A_IOCFG_GPOUT0) != val;
-		reg &= ~A_IOCFG_GPOUT0;
-		reg |= val;
-		outl(reg | val, emu->port + A_IOCFG);
 	}
 	spin_unlock_irqrestore(&emu->reg_lock, flags);
         return change;
