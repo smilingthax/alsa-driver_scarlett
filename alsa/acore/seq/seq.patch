@@ -1,15 +1,14 @@
---- ../../alsa-kernel/core/seq/seq.c	2004-04-07 19:33:26.442493152 +0200
-+++ seq.c	2004-04-07 19:33:56.950606109 +0200
-@@ -49,8 +49,12 @@
- MODULE_CLASSES("{sound}");
- MODULE_SUPPORTED_DEVICE("sound");
+--- ../../alsa-kernel/core/seq/seq.c	Mon Oct 25 21:51:21 2004
++++ seq.c	Mon Oct 25 22:03:58 2004
+@@ -51,7 +51,11 @@
+ MODULE_DESCRIPTION("Advanced Linux Sound Architecture sequencer.");
+ MODULE_LICENSE("GPL");
  
 +#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 +MODULE_PARM(seq_client_load, "1-64i");
 +#else
- static int boot_devs;
- module_param_array(seq_client_load, int, boot_devs, 0444);
+ module_param_array(seq_client_load, int, NULL, 0444);
 +#endif
  MODULE_PARM_DESC(seq_client_load, "The numbers of global (system) clients to load through kmod.");
- module_param(seq_default_timer_class, int, 0444);
+ module_param(seq_default_timer_class, int, 0644);
  MODULE_PARM_DESC(seq_default_timer_class, "The default timer class.");

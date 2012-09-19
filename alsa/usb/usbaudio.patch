@@ -1,11 +1,11 @@
---- usbaudio.c	2004-04-07 17:00:15.942732479 +0200
-+++ usbaudio.c	2004-04-07 18:39:37.361460360 +0200
+--- ../alsa-kernel/usb/usbaudio.c	Mon Oct 25 21:51:21 2004
++++ usbaudio.c	Mon Oct 25 22:14:28 2004
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
   *   (Tentative) USB Audio Driver for ALSA
   *
-@@ -68,7 +69,12 @@
+@@ -67,7 +68,12 @@
  static int vid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 }; /* Vendor ID for this card */
  static int pid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 }; /* Product ID for this card */
  static int nrpacks = 4;		/* max. number of packets per urb */
@@ -16,10 +16,10 @@
 +#else
 +0; /* disabled as default for buggy async-unlink handling */
 +#endif
- static int boot_devs;
  
- module_param_array(index, int, boot_devs, 0444);
-@@ -1890,9 +1896,11 @@
+ module_param_array(index, int, NULL, 0444);
+ MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
+@@ -1905,9 +1911,11 @@
   * entry point for linux usb interface
   */
  
@@ -31,7 +31,7 @@
  
  static struct usb_device_id usb_audio_ids [] = {
  #include "usbquirks.h"
-@@ -1905,10 +1913,15 @@
+@@ -1920,10 +1928,15 @@
  MODULE_DEVICE_TABLE (usb, usb_audio_ids);
  
  static struct usb_driver usb_audio_driver = {
@@ -47,7 +47,7 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -3100,6 +3113,7 @@
+@@ -3276,6 +3289,7 @@
  	}
  }
  
@@ -55,7 +55,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -3120,6 +3134,8 @@
+@@ -3296,6 +3310,8 @@
  	snd_usb_audio_disconnect(interface_to_usbdev(intf),
  				 dev_get_drvdata(&intf->dev));
  }
@@ -64,7 +64,7 @@
  
  
  static int __init snd_usb_audio_init(void)
-@@ -3140,3 +3156,5 @@
+@@ -3316,3 +3332,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);
