@@ -1,11 +1,11 @@
---- ../alsa-kernel/core/pcm_native.c	2004-07-05 13:11:26.000000000 +0200
-+++ pcm_native.c	2004-07-13 18:14:46.623070947 +0200
+--- ../alsa-kernel/core/pcm_native.c	Tue Sep  7 21:59:42 2004
++++ pcm_native.c	Tue Sep  7 22:43:13 2004
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
   *  Digital Audio (PCM) abstract layer
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
-@@ -2728,6 +2729,9 @@
+@@ -2735,6 +2736,9 @@
  	snd_pcm_runtime_t *runtime;
  	snd_pcm_sframes_t result;
  
@@ -15,7 +15,7 @@
  	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2745,9 +2749,13 @@
+@@ -2752,9 +2756,13 @@
  	if (result > 0)
  		result = frames_to_bytes(runtime, result);
   end:
@@ -29,7 +29,7 @@
  static ssize_t snd_pcm_readv(struct file *file, const struct iovec *_vector,
  			     unsigned long count, loff_t * offset)
  
-@@ -2794,6 +2802,9 @@
+@@ -2801,6 +2809,9 @@
  	void __user **bufs;
  	snd_pcm_uframes_t frames;
  
@@ -39,7 +39,7 @@
  	pcm_file = file->private_data;
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, result = -ENXIO; goto end);
-@@ -2818,8 +2829,12 @@
+@@ -2825,8 +2836,12 @@
  		result = frames_to_bytes(runtime, result);
  	kfree(bufs);
   end:
@@ -52,9 +52,9 @@
  
  unsigned int snd_pcm_playback_poll(struct file *file, poll_table * wait)
  {
-@@ -2901,7 +2916,24 @@
- 	return mask;
- }
+@@ -2912,6 +2927,17 @@
+  * mmap support
+  */
  
 +#ifndef VM_RESERVED
 +#ifndef LINUX_2_2
@@ -63,10 +63,17 @@
 +static int snd_pcm_mmap_swapout(struct vm_area_struct * area, struct page * page)
 +#endif
 +{
-+       return 0;
++	return 0;
 +}
 +#endif
 +
+ /*
+  * Only on coherent architectures, we can mmap the status and the control records
+  * for effcient data transfer.  On others, we have to use HWSYNC ioctl...
+@@ -2920,7 +2946,13 @@
+ /*
+  * mmap status record
+  */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  static struct page * snd_pcm_mmap_status_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 +#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
@@ -77,7 +84,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2913,9 +2945,15 @@
+@@ -2932,9 +2964,15 @@
  	page = virt_to_page(runtime->status);
  	if (!PageReserved(page))
  		get_page(page);
@@ -93,14 +100,14 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_status =
-@@ -2936,12 +2974,24 @@
+@@ -2955,15 +2993,27 @@
  	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_status_t)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_status;
 +#ifndef LINUX_2_2
  	area->vm_private_data = substream;
 +#else
-+	area->vm_private_data = (long)substream;	
++	area->vm_private_data = (long)substream;
 +#endif
 +#ifdef VM_RESERVED
  	area->vm_flags |= VM_RESERVED;
@@ -108,6 +115,9 @@
  	return 0;
  }
  
+ /*
+  * mmap control record
+  */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
  static struct page * snd_pcm_mmap_control_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 +#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
@@ -118,7 +128,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -2953,9 +3003,15 @@
+@@ -2975,9 +3025,15 @@
  	page = virt_to_page(runtime->control);
  	if (!PageReserved(page))
  		get_page(page);
@@ -134,27 +144,27 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_control =
-@@ -2976,8 +3032,14 @@
+@@ -2998,8 +3054,14 @@
  	if (size != PAGE_ALIGN(sizeof(snd_pcm_mmap_control_t)))
  		return -EINVAL;
  	area->vm_ops = &snd_pcm_vm_ops_control;
 +#ifndef LINUX_2_2
  	area->vm_private_data = substream;
 +#else
-+	area->vm_private_data = (long)substream;	
++	area->vm_private_data = (long)substream;
 +#endif
 +#ifdef VM_RESERVED
  	area->vm_flags |= VM_RESERVED;
 +#endif
  	return 0;
  }
- 
-@@ -2993,7 +3055,13 @@
- 	atomic_dec(&substream->runtime->mmap_count);
- }
- 
+ #else /* ! coherent mmap */
+@@ -3021,7 +3083,13 @@
+ /*
+  * nopage callback for mmapping a RAM page
+  */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- static struct page * snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int *type)
+ static struct page *snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int *type)
 +#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 +static struct page * snd_pcm_mmap_data_nopage(struct vm_area_struct *area, unsigned long address, int no_share)
 +#else
@@ -163,7 +173,7 @@
  {
  	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
  	snd_pcm_runtime_t *runtime;
-@@ -3005,7 +3073,11 @@
+@@ -3033,7 +3101,11 @@
  	if (substream == NULL)
  		return NOPAGE_OOM;
  	runtime = substream->runtime;
@@ -175,7 +185,7 @@
  	offset += address - area->vm_start;
  	snd_assert((offset % PAGE_SIZE) == 0, return NOPAGE_OOM);
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
-@@ -3021,9 +3093,15 @@
+@@ -3049,9 +3121,15 @@
  	}
  	if (!PageReserved(page))
  		get_page(page);
@@ -191,7 +201,7 @@
  }
  
  static struct vm_operations_struct snd_pcm_vm_ops_data =
-@@ -3031,6 +3109,9 @@
+@@ -3059,6 +3137,9 @@
  	.open =		snd_pcm_mmap_data_open,
  	.close =	snd_pcm_mmap_data_close,
  	.nopage =	snd_pcm_mmap_data_nopage,
@@ -200,8 +210,47 @@
 +#endif
  };
  
- static struct vm_operations_struct snd_pcm_vm_ops_data_mmio =
-@@ -3064,7 +3145,11 @@
+ /*
+@@ -3067,8 +3148,14 @@
+ static int snd_pcm_default_mmap(snd_pcm_substream_t *substream, struct vm_area_struct *area)
+ {
+ 	area->vm_ops = &snd_pcm_vm_ops_data;
++#ifndef LINUX_2_2
+ 	area->vm_private_data = substream;
++#else
++	area->vm_private_data = (long)substream;
++#endif
++#ifdef VM_RESERVED
+ 	area->vm_flags |= VM_RESERVED;
++#endif
+ 	atomic_inc(&substream->runtime->mmap_count);
+ 	return 0;
+ }
+@@ -3094,10 +3181,23 @@
+ 	area->vm_ops = &snd_pcm_vm_ops_data_mmio;
+ 	area->vm_flags |= VM_IO;
+ 	size = area->vm_end - area->vm_start;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
+ 	offset = area->vm_pgoff << PAGE_SHIFT;
++#else
++	offset = area->vm_offset;
++#endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
++#define io_remap_page_range remap_page_range
++#endif
++#ifdef CONFIG_OLD_REMAP_PAGE_RANGE
++	if (io_remap_page_range(area->vm_start,
++				substream->runtime->dma_addr + offset,
++				size, area->vm_page_prot))
++#else
+ 	if (io_remap_page_range(area, area->vm_start,
+ 				substream->runtime->dma_addr + offset,
+ 				size, area->vm_page_prot))
++#endif
+ 		return -EAGAIN;
+ 	atomic_inc(&substream->runtime->mmap_count);
+ 	return 0;
+@@ -3132,7 +3232,11 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -213,36 +262,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3072,14 +3157,28 @@
- 		return -EINVAL;
- 
- 	area->vm_ops = &snd_pcm_vm_ops_data;
-+#ifndef LINUX_2_2
- 	area->vm_private_data = substream;
-+#else
-+	area->vm_private_data = (long)substream;
-+#endif
-+#ifdef VM_RESERVED
- 	area->vm_flags |= VM_RESERVED;
-+#endif
- 	if (runtime->hw.info & SNDRV_PCM_INFO_MMAP_IOMEM) {
- 		area->vm_ops = &snd_pcm_vm_ops_data_mmio;
- 		area->vm_flags |= VM_IO;
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
-+#define io_remap_page_range remap_page_range
-+#endif
-+#ifdef CONFIG_OLD_REMAP_PAGE_RANGE
-+		if (io_remap_page_range(area->vm_start, runtime->dma_addr + offset,
-+					size, area->vm_page_prot))
-+#else
- 		if (io_remap_page_range(area, area->vm_start,
- 					runtime->dma_addr + offset,
- 					size, area->vm_page_prot))
-+#endif
- 			return -EAGAIN;
- 	}
- 	atomic_inc(&runtime->mmap_count);
-@@ -3096,7 +3195,11 @@
+@@ -3155,7 +3259,11 @@
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, return -ENXIO);
  
@@ -254,7 +274,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		return snd_pcm_mmap_status(substream, file, area);
-@@ -3241,9 +3344,13 @@
+@@ -3300,9 +3408,13 @@
   */
  
  static struct file_operations snd_pcm_f_ops_playback = {
@@ -268,7 +288,7 @@
  	.open =		snd_pcm_open,
  	.release =	snd_pcm_release,
  	.poll =		snd_pcm_playback_poll,
-@@ -3253,9 +3360,13 @@
+@@ -3312,9 +3424,13 @@
  };
  
  static struct file_operations snd_pcm_f_ops_capture = {
