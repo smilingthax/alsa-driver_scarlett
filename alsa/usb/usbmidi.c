@@ -1217,15 +1217,15 @@ static void snd_usbmidi_usb_disconnect(usb_device_t* usb_device, void* ptr)
 
 static usbmidi_device_info_t snd_usbmidi_yamaha_ux256_info = {
 	/* from NetBSD's umidi driver */
-	vendor: "Yamaha", product: "UX256",
-	ifnum: 0,
-	endpoints: {{ -1, 0xffff, 0x00ff }}
+	.vendor = "Yamaha", .product = "UX256",
+	.ifnum = 0,
+	.endpoints = {{ -1, 0xffff, 0x00ff }}
 };
 static usbmidi_device_info_t snd_usbmidi_yamaha_mu1000_info = {
 	/* from Nagano Daisuke's usb-midi driver */
-	vendor: "Yamaha", product: "MU1000",
-	ifnum: 0,
-	endpoints: {{ 1, 0x000f, 0x0001 }}
+	.vendor = "Yamaha", .product = "MU1000",
+	.ifnum = 0,
+	.endpoints = {{ 1, 0x000f, 0x0001 }}
 };
 /*
  * There ain't no such thing as a standard-compliant Roland device.
@@ -1237,74 +1237,74 @@ static usbmidi_device_info_t snd_usbmidi_yamaha_mu1000_info = {
  * USB Device Class Definition for MIDI Devices.
  */
 static usbmidi_device_info_t snd_usbmidi_roland_ua100_info = {
-	vendor: "Roland", product: "UA-100",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0007, 0x0007 }}
+	.vendor = "Roland", .product = "UA-100",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0007, 0x0007 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_um4_info = {
-	vendor: "EDIROL", product: "UM-4",
-	ifnum: 2,
-	endpoints: {{ -1, 0x000f, 0x000f }}
+	.vendor = "EDIROL", .product = "UM-4",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x000f, 0x000f }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_sc8850_info = {
-	vendor: "Roland", product: "SC-8850",
-	ifnum: 2,
-	endpoints: {{ -1, 0x003f, 0x003f }}
+	.vendor = "Roland", .product = "SC-8850",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x003f, 0x003f }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_u8_info = {
-	vendor: "Roland", product: "U-8",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0003, 0x0003 }}
+	.vendor = "Roland", .product = "U-8",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0003, 0x0003 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_um2_info = {
-	vendor: "EDIROL", product: "UM-2",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0003, 0x0003 }}
+	.vendor = "EDIROL", .product = "UM-2",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0003, 0x0003 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_sc8820_info = {
-	vendor: "Roland", product: "SC-8820",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0013, 0x0013 }}
+	.vendor = "Roland", .product = "SC-8820",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0013, 0x0013 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_pc300_info = {
-	vendor: "Roland", product: "PC-300",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0001, 0x0001 }}
+	.vendor = "Roland", .product = "PC-300",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0001, 0x0001 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_um1_info = {
-	vendor: "EDIROL", product: "UM-1",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0001, 0x0001 }}
+	.vendor = "EDIROL", .product = "UM-1",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0001, 0x0001 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_sk500_info = {
-	vendor: "Roland", product: "SK-500",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0013, 0x0013 }}
+	.vendor = "Roland", .product = "SK-500",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0013, 0x0013 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_scd70_info = {
-	vendor: "Roland", product: "SC-D70",
-	ifnum: 2,
-	endpoints: {{ -1, 0x0007, 0x0007 }}
+	.vendor = "Roland", .product = "SC-D70",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x0007, 0x0007 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_xv5050_info = {
-	vendor: "Roland", product: "XV-5050",
-	ifnum: 0,
-	endpoints: {{ -1, 0x0001, 0x0001 }}
+	.vendor = "Roland", .product = "XV-5050",
+	.ifnum = 0,
+	.endpoints = {{ -1, 0x0001, 0x0001 }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_um880_info = {
-	vendor: "EDIROL", product: "UM-880",
-	ifnum: 0,
-	endpoints: {{ -1, 0x01ff, 0x01ff }}
+	.vendor = "EDIROL", .product = "UM-880",
+	.ifnum = 0,
+	.endpoints = {{ -1, 0x01ff, 0x01ff }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_sd90_info = {
-	vendor: "EDIROL", product: "SD-90",
-	ifnum: 2,
-	endpoints: {{ -1, 0x000f, 0x000f }}
+	.vendor = "EDIROL", .product = "SD-90",
+	.ifnum = 2,
+	.endpoints = {{ -1, 0x000f, 0x000f }}
 };
 static usbmidi_device_info_t snd_usbmidi_roland_um550_info = {
-	vendor: "EDIROL", product: "UM-550",
-	ifnum: 0,
-	endpoints: {{ -1, 0x003f, 0x003f }}
+	.vendor = "EDIROL", .product = "UM-550",
+	.ifnum = 0,
+	.endpoints = {{ -1, 0x003f, 0x003f }}
 };
 
 #define USBMIDI_NONCOMPLIANT_DEVICE(vid, pid, name) \
@@ -1337,11 +1337,11 @@ static usb_device_id_t snd_usbmidi_usb_id_table[] = {
 MODULE_DEVICE_TABLE(usb, snd_usbmidi_usb_id_table);
 
 static usb_driver_t snd_usbmidi_usb_driver = {
-	name: "snd-usb-midi",
-	probe: snd_usbmidi_usb_probe,
-	disconnect: snd_usbmidi_usb_disconnect,
-	id_table: snd_usbmidi_usb_id_table,
-	driver_list: LIST_HEAD_INIT(snd_usbmidi_usb_driver.driver_list)
+	.name = "snd-usb-midi",
+	.probe = snd_usbmidi_usb_probe,
+	.disconnect = snd_usbmidi_usb_disconnect,
+	.id_table = snd_usbmidi_usb_id_table,
+	.driver_list = LIST_HEAD_INIT(snd_usbmidi_usb_driver.driver_list)
 };
 
 static int __init snd_usbmidi_module_init(void)

@@ -14,7 +14,7 @@ ossdelay: ossdelay.c
 	$(CC) $(CFLAGS) -o ossdelay ossdelay.c
 
 mmap_test: mmap_test.c
-	$(CC) $(CFLAGS) -DVERBOSE -o mmap_test mmap_test.c
+	$(CC) $(CFLAGS) -DVERBOSE -o mmap_test mmap_test.c -lm
 
 clean:
 	rm -f *.o $(TARGETS) *~

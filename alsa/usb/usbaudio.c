@@ -1025,26 +1025,26 @@ static int snd_usb_pcm_prepare(snd_pcm_substream_t *substream)
 
 static snd_pcm_hardware_t snd_usb_playback =
 {
-	info:			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
+	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	buffer_bytes_max:	(128*1024),
-	period_bytes_min:	64,
-	period_bytes_max:	(128*1024),
-	periods_min:		2,
-	periods_max:		1024,
+	.buffer_bytes_max =	(128*1024),
+	.period_bytes_min =	64,
+	.period_bytes_max =	(128*1024),
+	.periods_min =		2,
+	.periods_max =		1024,
 };
 
 static snd_pcm_hardware_t snd_usb_capture =
 {
-	info:			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
+	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	buffer_bytes_max:	(128*1024),
-	period_bytes_min:	64,
-	period_bytes_max:	(128*1024),
-	periods_min:		2,
-	periods_max:		1024,
+	.buffer_bytes_max =	(128*1024),
+	.period_bytes_min =	64,
+	.period_bytes_max =	(128*1024),
+	.periods_min =		2,
+	.periods_max =		1024,
 };
 
 /*
@@ -1133,25 +1133,25 @@ static int snd_usb_capture_close(snd_pcm_substream_t *substream)
 }
 
 static snd_pcm_ops_t snd_usb_playback_ops = {
-	open:		snd_usb_playback_open,
-	close:		snd_usb_playback_close,
-	ioctl:		snd_pcm_lib_ioctl,
-	hw_params:	snd_usb_hw_params,
-	hw_free:	snd_usb_hw_free,
-	prepare:	snd_usb_pcm_prepare,
-	trigger:	snd_usb_pcm_trigger,
-	pointer:	snd_usb_pcm_pointer,
+	.open =		snd_usb_playback_open,
+	.close =	snd_usb_playback_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_usb_hw_params,
+	.hw_free =	snd_usb_hw_free,
+	.prepare =	snd_usb_pcm_prepare,
+	.trigger =	snd_usb_pcm_trigger,
+	.pointer =	snd_usb_pcm_pointer,
 };
 
 static snd_pcm_ops_t snd_usb_capture_ops = {
-	open:		snd_usb_capture_open,
-	close:		snd_usb_capture_close,
-	ioctl:		snd_pcm_lib_ioctl,
-	hw_params:	snd_usb_hw_params,
-	hw_free:	snd_usb_hw_free,
-	prepare:	snd_usb_pcm_prepare,
-	trigger:	snd_usb_pcm_trigger,
-	pointer:	snd_usb_pcm_pointer,
+	.open =		snd_usb_capture_open,
+	.close =	snd_usb_capture_close,
+	.ioctl =	snd_pcm_lib_ioctl,
+	.hw_params =	snd_usb_hw_params,
+	.hw_free =	snd_usb_hw_free,
+	.prepare =	snd_usb_pcm_prepare,
+	.trigger =	snd_usb_pcm_trigger,
+	.pointer =	snd_usb_pcm_pointer,
 };
 
 
@@ -1235,20 +1235,20 @@ static void * usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 static void usb_audio_disconnect(struct usb_device *dev, void *ptr);
 
 static struct usb_device_id usb_audio_ids [] = {
-    { match_flags: (USB_DEVICE_ID_MATCH_INT_CLASS | USB_DEVICE_ID_MATCH_INT_SUBCLASS),
-      bInterfaceClass: USB_CLASS_AUDIO,
-      bInterfaceSubClass: USB_SUBCLASS_AUDIO_CONTROL },
+    { .match_flags = (USB_DEVICE_ID_MATCH_INT_CLASS | USB_DEVICE_ID_MATCH_INT_SUBCLASS),
+      .bInterfaceClass = USB_CLASS_AUDIO,
+      .bInterfaceSubClass = USB_SUBCLASS_AUDIO_CONTROL },
     { }						/* Terminating entry */
 };
 
 MODULE_DEVICE_TABLE (usb, usb_audio_ids);
 
 static struct usb_driver usb_audio_driver = {
-	name:		"snd-usb-audio",
-	probe:		usb_audio_probe,
-	disconnect:	usb_audio_disconnect,
-	driver_list:	LIST_HEAD_INIT(usb_audio_driver.driver_list), 
-	id_table:	usb_audio_ids,
+	.name =		"snd-usb-audio",
+	.probe =	usb_audio_probe,
+	.disconnect =	usb_audio_disconnect,
+	.driver_list =	LIST_HEAD_INIT(usb_audio_driver.driver_list), 
+	.id_table =	usb_audio_ids,
 };
 
 
