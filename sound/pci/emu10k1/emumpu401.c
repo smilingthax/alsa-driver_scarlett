@@ -27,13 +27,34 @@
 #define EMU10K1_MIDI_MODE_INPUT		(1<<0)
 #define EMU10K1_MIDI_MODE_OUTPUT	(1<<1)
 
+#define EMU_MPU401C(emu,midi) ((emu)->port + (midi)->port + 1)
+#define EMU_MPU401D(emu,midi) ((emu)->port + (midi)->port + 0)
+
+#define mpu401_input_avail(emu,mpu)	(!(inb(EMU_MPU401C(emu,mpu)) & 0x80))
+#define mpu401_output_ready(emu,mpu)	(!(inb(EMU_MPU401C(emu,mpu)) & 0x40))
+
+#define MPU401_RESET		0xff
+#define MPU401_ENTER_UART	0x3f
+#define MPU401_ACK		0xfe
+
+static void mpu401_clear_rx(emu10k1_t *emu, emu10k1_midi_t *mpu)
+{
+	int timeout = 100000;
+	for (; timeout > 0 && mpu401_input_avail(emu, mpu); timeout--)
+		inb(EMU_MPU401D(emu, mpu));
+#ifdef CONFIG_SND_DEBUG
+	if (timeout <= 0)
+		snd_printk("cmd: clear rx timeout (status = 0x%x)\n", inb(EMU_MPU401C(emu, mpu)));
+#endif
+}
+
 /*
 
  */
 
 static void do_emu10k1_midi_interrupt(emu10k1_t *emu, emu10k1_midi_t *midi, unsigned int status)
 {
-	unsigned char byte, bstatus;
+	unsigned char byte;
 
 	if (midi->rmidi == NULL) {
 		snd_emu10k1_intr_disable(emu, midi->tx_enable | midi->rx_enable);
@@ -41,22 +62,24 @@ static void do_emu10k1_midi_interrupt(emu10k1_t *emu, emu10k1_midi_t *midi, unsi
 	}
 
 	spin_lock(&midi->input_lock);
-	bstatus = inb(emu->port + midi->port_stat);
-	if ((status & midi->ipr_rx) && !(bstatus & 0x80)) {
-		byte = inb(emu->port + midi->port_data);
-		spin_unlock(&midi->input_lock);
-		if (midi->substream_input)
-			snd_rawmidi_receive(midi->substream_input, &byte, 1);
-		spin_lock(&midi->input_lock);
+	if ((status & midi->ipr_rx) && mpu401_input_avail(emu, midi)) {
+		if (!(midi->midi_mode & EMU10K1_MIDI_MODE_INPUT)) {
+			mpu401_clear_rx(emu, midi);
+		} else {
+			byte = inb(EMU_MPU401D(emu, midi));
+			spin_unlock(&midi->input_lock);
+			if (midi->substream_input)
+				snd_rawmidi_receive(midi->substream_input, &byte, 1);
+			spin_lock(&midi->input_lock);
+		}
 	}
 	spin_unlock(&midi->input_lock);
 
 	spin_lock(&midi->output_lock);
-	bstatus = inb(emu->port + midi->port_stat);
-	if ((status & midi->ipr_tx) && !(bstatus & 0x40)) {
+	if ((status & midi->ipr_tx) && mpu401_output_ready(emu, midi)) {
 		if (midi->substream_output &&
 		    snd_rawmidi_transmit(midi->substream_output, &byte, 1) == 1) {
-			outb(byte, emu->port + midi->port_data);
+			outb(byte, EMU_MPU401D(emu, midi));
 		} else {
 			snd_emu10k1_intr_disable(emu, midi->tx_enable);
 		}
@@ -74,45 +97,39 @@ static void snd_emu10k1_midi_interrupt2(emu10k1_t *emu, unsigned int status)
 	do_emu10k1_midi_interrupt(emu, &emu->midi2, status);
 }
 
-/*
-
- */
-
 static void snd_emu10k1_midi_cmd(emu10k1_t * emu, emu10k1_midi_t *midi, unsigned char cmd, int ack)
 {
 	unsigned long flags;
 	int timeout, ok;
 
 	spin_lock_irqsave(&midi->input_lock, flags);
-	outb(0x00, emu->port + midi->port_data);
-	for (timeout = 100000; timeout > 0 && !(inb(emu->port + midi->port_stat) & 0x80); timeout--)
-		inb(emu->port + midi->port_data);
-#ifdef CONFIG_SND_DEBUG
-	if (timeout <= 0)
-		snd_printk("midi_cmd: clear rx timeout (status = 0x%x)\n", inb(emu->port + midi->port_stat));
-#endif
-	outb(cmd, emu->port + midi->port_stat);
+	outb(0x00, EMU_MPU401D(emu, midi));
+	/* mpu401_clear_rx(emu, midi); */
+
+	outb(cmd, EMU_MPU401C(emu, midi));
 	if (ack) {
 		ok = 0;
 		timeout = 10000;
 		while (!ok && timeout-- > 0) {
-			if (!(inb(emu->port + midi->port_stat) & 0x80)) {
-				if (inb(emu->port + midi->port_stat) == 0xfe)
+			if (mpu401_input_avail(emu, midi)) {
+				if (inb(EMU_MPU401D(emu, midi)) == MPU401_ACK)
 					ok = 1;
 			}
 		}
+		if (!ok && inb(EMU_MPU401D(emu, midi)) == MPU401_ACK)
+			ok = 1;
 	} else {
 		ok = 1;
 	}
 	spin_unlock_irqrestore(&midi->input_lock, flags);
 	if (!ok)
-		snd_printk("midi_cmd: 0x%x failed at 0x%lx (status = 0x%x, data = 0x%x)!!!\n", cmd, emu->port, inb(emu->port + midi->port_stat), inb(emu->port + midi->port_data));
+		snd_printk("midi_cmd: 0x%x failed at 0x%lx (status = 0x%x, data = 0x%x)!!!\n", cmd, emu->port, inb(EMU_MPU401C(emu, midi)), inb(EMU_MPU401D(emu, midi)));
 }
 
 static int snd_emu10k1_midi_input_open(snd_rawmidi_substream_t * substream)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return -ENXIO);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)substream->rmidi->private_data;
 	unsigned long flags;
 
 	emu = midi->emu;
@@ -122,8 +139,8 @@ static int snd_emu10k1_midi_input_open(snd_rawmidi_substream_t * substream)
 	midi->substream_input = substream;
 	if (!(midi->midi_mode & EMU10K1_MIDI_MODE_OUTPUT)) {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
-		snd_emu10k1_midi_cmd(emu, midi, 0xff, 1);	/* reset */
-		snd_emu10k1_midi_cmd(emu, midi, 0x3f, 1);	/* enter UART mode */
+		snd_emu10k1_midi_cmd(emu, midi, MPU401_RESET, 1);
+		snd_emu10k1_midi_cmd(emu, midi, MPU401_ENTER_UART, 1);
 	} else {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
 	}
@@ -133,7 +150,7 @@ static int snd_emu10k1_midi_input_open(snd_rawmidi_substream_t * substream)
 static int snd_emu10k1_midi_output_open(snd_rawmidi_substream_t * substream)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return -ENXIO);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)substream->rmidi->private_data;
 	unsigned long flags;
 
 	emu = midi->emu;
@@ -143,8 +160,8 @@ static int snd_emu10k1_midi_output_open(snd_rawmidi_substream_t * substream)
 	midi->substream_output = substream;
 	if (!(midi->midi_mode & EMU10K1_MIDI_MODE_INPUT)) {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
-		snd_emu10k1_midi_cmd(emu, midi, 0xff, 1);	/* reset */
-		snd_emu10k1_midi_cmd(emu, midi, 0x3f, 1);	/* enter UART mode */
+		snd_emu10k1_midi_cmd(emu, midi, MPU401_RESET, 1);
+		snd_emu10k1_midi_cmd(emu, midi, MPU401_ENTER_UART, 1);
 	} else {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
 	}
@@ -154,7 +171,7 @@ static int snd_emu10k1_midi_output_open(snd_rawmidi_substream_t * substream)
 static int snd_emu10k1_midi_input_close(snd_rawmidi_substream_t * substream)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return -ENXIO);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)substream->rmidi->private_data;
 	unsigned long flags;
 
 	emu = midi->emu;
@@ -165,7 +182,7 @@ static int snd_emu10k1_midi_input_close(snd_rawmidi_substream_t * substream)
 	midi->substream_input = NULL;
 	if (!(midi->midi_mode & EMU10K1_MIDI_MODE_OUTPUT)) {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
-		snd_emu10k1_midi_cmd(emu, midi, 0xff, 0);	/* reset */
+		snd_emu10k1_midi_cmd(emu, midi, MPU401_RESET, 0);
 	} else {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
 	}
@@ -175,7 +192,7 @@ static int snd_emu10k1_midi_input_close(snd_rawmidi_substream_t * substream)
 static int snd_emu10k1_midi_output_close(snd_rawmidi_substream_t * substream)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return -ENXIO);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)substream->rmidi->private_data;
 	unsigned long flags;
 
 	emu = midi->emu;
@@ -186,7 +203,7 @@ static int snd_emu10k1_midi_output_close(snd_rawmidi_substream_t * substream)
 	midi->substream_output = NULL;
 	if (!(midi->midi_mode & EMU10K1_MIDI_MODE_INPUT)) {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
-		snd_emu10k1_midi_cmd(emu, midi, 0xff, 0);	/* reset */
+		snd_emu10k1_midi_cmd(emu, midi, MPU401_RESET, 0);
 	} else {
 		spin_unlock_irqrestore(&midi->open_lock, flags);
 	}
@@ -196,7 +213,7 @@ static int snd_emu10k1_midi_output_close(snd_rawmidi_substream_t * substream)
 static void snd_emu10k1_midi_input_trigger(snd_rawmidi_substream_t * substream, int up)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)substream->rmidi->private_data;
 	emu = midi->emu;
 	snd_assert(emu, return);
 
@@ -209,7 +226,7 @@ static void snd_emu10k1_midi_input_trigger(snd_rawmidi_substream_t * substream, 
 static void snd_emu10k1_midi_output_trigger(snd_rawmidi_substream_t * substream, int up)
 {
 	emu10k1_t *emu;
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, substream->rmidi->private_data, return);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)substream->rmidi->private_data;
 	unsigned long flags;
 
 	emu = midi->emu;
@@ -219,23 +236,23 @@ static void snd_emu10k1_midi_output_trigger(snd_rawmidi_substream_t * substream,
 		int max = 4;
 		unsigned char byte;
 	
+		/* try to send some amount of bytes here before interrupts */
+		spin_lock_irqsave(&midi->output_lock, flags);
 		while (max > 0) {
-			spin_lock_irqsave(&midi->output_lock, flags);
-			if (!(inb(emu->port + midi->port_stat) & 0x40)) {
+			if (mpu401_output_ready(emu, midi)) {
 				if (!(midi->midi_mode & EMU10K1_MIDI_MODE_OUTPUT) ||
 				    snd_rawmidi_transmit(substream, &byte, 1) != 1) {
+					/* no more data */
 					spin_unlock_irqrestore(&midi->output_lock, flags);
 					return;
 				}
-				outb(byte, emu->port + midi->port_data);
-				spin_unlock_irqrestore(&midi->output_lock, flags);
-				// snd_printk("uart: tx = 0x%x\n", byte);
+				outb(byte, EMU_MPU401D(emu, midi));
 				max--;
 			} else {
-				spin_unlock_irqrestore(&midi->output_lock, flags);
 				break;
 			}
 		}
+		spin_unlock_irqrestore(&midi->output_lock, flags);
 		snd_emu10k1_intr_enable(emu, midi->tx_enable);
 	} else {
 		snd_emu10k1_intr_disable(emu, midi->tx_enable);
@@ -262,7 +279,7 @@ static snd_rawmidi_ops_t snd_emu10k1_midi_input =
 
 static void snd_emu10k1_midi_free(snd_rawmidi_t *rmidi)
 {
-	emu10k1_midi_t *midi = snd_magic_cast(emu10k1_midi_t, rmidi->private_data, return);
+	emu10k1_midi_t *midi = (emu10k1_midi_t *)rmidi->private_data;
 	midi->interrupt = NULL;
 	midi->rmidi = NULL;
 }
@@ -300,8 +317,7 @@ int __devinit snd_emu10k1_midi(emu10k1_t *emu)
 
 	midi->tx_enable = INTE_MIDITXENABLE;
 	midi->rx_enable = INTE_MIDIRXENABLE;
-	midi->port_data = MUDATA;
-	midi->port_stat = MUSTAT;
+	midi->port = MUDATA;
 	midi->ipr_tx = IPR_MIDITRANSBUFEMPTY;
 	midi->ipr_rx = IPR_MIDIRECVBUFEMPTY;
 	midi->interrupt = snd_emu10k1_midi_interrupt;
@@ -319,8 +335,7 @@ int __devinit snd_emu10k1_audigy_midi(emu10k1_t *emu)
 
 	midi->tx_enable = INTE_MIDITXENABLE;
 	midi->rx_enable = INTE_MIDIRXENABLE;
-	midi->port_data = A_MUDATA1;
-	midi->port_stat = A_MUSTAT1;
+	midi->port = A_MUDATA1;
 	midi->ipr_tx = IPR_MIDITRANSBUFEMPTY;
 	midi->ipr_rx = IPR_MIDIRECVBUFEMPTY;
 	midi->interrupt = snd_emu10k1_midi_interrupt;
@@ -331,8 +346,7 @@ int __devinit snd_emu10k1_audigy_midi(emu10k1_t *emu)
 
 	midi->tx_enable = INTE_A_MIDITXENABLE2;
 	midi->rx_enable = INTE_A_MIDIRXENABLE2;
-	midi->port_data = A_MUDATA2;
-	midi->port_stat = A_MUSTAT2;
+	midi->port = A_MUDATA2;
 	midi->ipr_tx = IPR_A_MIDITRANSBUFEMPTY2;
 	midi->ipr_rx = IPR_A_MIDIRECVBUFEMPTY2;
 	midi->interrupt = snd_emu10k1_midi_interrupt2;

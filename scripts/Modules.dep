@@ -145,7 +145,7 @@ snd-emu8000-synth @if_sequencer snd-emux-synth
 |snd-cs4281 snd-pcm snd-ac97-codec snd-seq-midi snd-opl3-synth
 |snd-ens1370 snd-pcm snd-ak4531-codec snd-seq-midi
 |snd-ens1371 snd-pcm snd-ac97-codec snd-seq-midi
-|snd-es1938 snd-pcm snd-opl3-synth
+|snd-es1938 snd-pcm snd-opl3-synth snd-mpu401-uart
 |snd-es1968 snd-pcm snd-ac97-codec snd-mpu401-uart
 |snd-fm801 snd-pcm snd-ac97-codec snd-mpu401-uart snd-opl3-synth
 |snd-ice1712 snd-pcm snd-cs8427 snd-ac97-codec snd-mpu401-uart

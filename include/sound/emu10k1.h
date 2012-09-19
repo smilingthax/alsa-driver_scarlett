@@ -895,7 +895,7 @@ typedef struct {
 	spinlock_t output_lock;
 	spinlock_t open_lock;
 	int tx_enable, rx_enable;
-	int port_data, port_stat;
+	int port;
 	int ipr_tx, ipr_rx;
 	void (*interrupt)(emu10k1_t *emu, unsigned int status);
 } emu10k1_midi_t;

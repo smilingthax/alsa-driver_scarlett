@@ -187,7 +187,8 @@ get_voice(snd_emux_t *emu, snd_emux_port_t *port)
 
 		if (state == SNDRV_EMUX_ST_OFF)
 			bp = best + OFF;
-		else if (state == SNDRV_EMUX_ST_RELEASED) {
+		else if (state == SNDRV_EMUX_ST_RELEASED ||
+			 state == SNDRV_EMUX_ST_PENDING) {
 			bp = best + RELEASED;
 			val = (EMU8000_CVCF_READ(hw, vp->ch) >> 16) & 0xffff;
 			if (! val)

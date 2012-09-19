@@ -33,6 +33,7 @@ obj-$(CONFIG_SND_SBAWE) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_WAVEFRONT) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_ALS4000) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_CMIPCI) += snd-mpu401-uart.o
+obj-$(CONFIG_SND_ES1938) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_ES1968) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_FM801) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_ICE1712) += snd-mpu401-uart.o

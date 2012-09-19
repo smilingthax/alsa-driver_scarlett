@@ -281,6 +281,8 @@ static struct pci_device_id snd_nm256_ids[] __devinitdata = {
 	{0,},
 };
 
+MODULE_DEVICE_TABLE(pci, snd_nm256_ids);
+
 
 /*
  * lowlvel stuffs

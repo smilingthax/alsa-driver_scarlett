@@ -33,6 +33,7 @@ EXPORT_NO_SYMBOLS;
 MODULE_DESCRIPTION("PowerMac");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{Apple,PowerMac}}");
+MODULE_LICENSE("GPL");
 
 static int snd_index = SNDRV_DEFAULT_IDX1;		/* Index 0-MAX */
 static char *snd_id = SNDRV_DEFAULT_STR1;		/* ID for this card */

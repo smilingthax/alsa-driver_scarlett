@@ -48,6 +48,10 @@ int snd_emux_new(snd_emux_t **remu)
 	emu->max_voices = 0;
 	emu->use_time = 0;
 
+	emu->tlist.function = snd_emux_timer_callback;
+	emu->tlist.data = (unsigned long)emu;
+	emu->timer_active = 0;
+
 	*remu = emu;
 	return 0;
 }
@@ -99,8 +103,15 @@ int snd_emux_register(snd_emux_t *emu, snd_card_t *card, int index, char *name)
  */
 int snd_emux_free(snd_emux_t *emu)
 {
+	unsigned long flags;
+
 	if (! emu)
 		return -EINVAL;
+
+	spin_lock_irqsave(&emu->voice_lock, flags);
+	if (emu->timer_active)
+		del_timer(&emu->tlist);
+	spin_unlock_irqrestore(&emu->voice_lock, flags);
 
 #ifdef CONFIG_PROC_FS
 	snd_emux_proc_free(emu);

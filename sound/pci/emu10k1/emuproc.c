@@ -109,7 +109,9 @@ static void snd_emu10k1_proc_read(snd_info_entry_t *entry,
 	int idx;
 	
 	snd_iprintf(buffer, "EMU10K1\n\n");
-	val = snd_emu10k1_ptr_read(emu, FXRT, 0);
+	val = emu->audigy ?
+		snd_emu10k1_ptr_read(emu, A_FXRT1, 0) :
+		snd_emu10k1_ptr_read(emu, FXRT, 0);
 	snd_iprintf(buffer, "Card                  : %s\n",
 		    emu->audigy ? "Audigy" : (emu->APS ? "EMU APS" : "Creative"));
 	snd_iprintf(buffer, "Internal TRAM (words) : 0x%x\n", emu->fx8010.itram_size);

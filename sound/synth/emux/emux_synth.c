@@ -82,13 +82,17 @@ snd_emux_note_on(void *p, int note, int vel, snd_midi_channel_t *chan)
 			exclusive_note_off(emu, port, zp->v.exclusiveClass);
 	}
 
-#if 0
+#if 0 // seems not necessary
 	/* Turn off the same note on the same channel. */
 	terminate_note1(emu, key, chan, 0);
 #endif
 
 	spin_lock_irqsave(&emu->voice_lock, flags);
 	for (i = 0; i < nvoices; i++) {
+
+		/* set up each voice parameter */
+		/* at this stage, we don't trigger the voice yet. */
+
 		if (table[i] == NULL)
 			continue;
 
@@ -128,6 +132,7 @@ snd_emux_note_on(void *p, int note, int vel, snd_midi_channel_t *chan)
 		    vp->chan == chan) {
 			emu->ops.trigger(vp);
 			vp->state = SNDRV_EMUX_ST_ON;
+			vp->ontime = jiffies; /* remember the trigger timing */
 		}
 	}
 	spin_unlock_irqrestore(&emu->voice_lock, flags);
@@ -168,12 +173,58 @@ snd_emux_note_off(void *p, int note, int vel, snd_midi_channel_t *chan)
 		vp = &emu->voices[ch];
 		if (STATE_IS_PLAYING(vp->state) &&
 		    vp->chan == chan && vp->key == note) {
-			emu->ops.release(vp);
 			vp->time = emu->use_time++;
 			vp->state = SNDRV_EMUX_ST_RELEASED;
+			if (vp->ontime == jiffies) {
+				/* if note-off is sent too shortly after
+				 * note-on, emuX engine cannot produce the sound
+				 * correctly.  so we'll release this note
+				 * a bit later via timer callback.
+				 */
+				vp->state = SNDRV_EMUX_ST_PENDING;
+				if (! emu->timer_active) {
+					emu->tlist.expires = jiffies + 1;
+					add_timer(&emu->tlist);
+					emu->timer_active = 1;
+				}
+			} else
+				/* ok now release the note */
+				emu->ops.release(vp);
 		}
 	}
 	spin_unlock_irqrestore(&emu->voice_lock, flags);
+}
+
+/*
+ * timer callback
+ *
+ * release the pending note-offs
+ */
+void snd_emux_timer_callback(unsigned long data)
+{
+	snd_emux_t *emu = snd_magic_cast(snd_emux_t, (void*)data, return);
+	snd_emux_voice_t *vp;
+	int ch, do_again = 0;
+
+	spin_lock(&emu->voice_lock);
+	for (ch = 0; ch < emu->max_voices; ch++) {
+		vp = &emu->voices[ch];
+		if (vp->state == SNDRV_EMUX_ST_PENDING) {
+			if (vp->ontime == jiffies)
+				do_again++; /* release this at the next interrupt */
+			else {
+				emu->ops.release(vp);
+				vp->state = SNDRV_EMUX_ST_RELEASED;
+			}
+		}
+	}
+	if (do_again) {
+		emu->tlist.expires = jiffies + 1;
+		add_timer(&emu->tlist);
+		emu->timer_active = 1;
+	} else
+		emu->timer_active = 0;
+	spin_unlock(&emu->voice_lock);
 }
 
 /*
@@ -559,12 +610,13 @@ setup_voice(snd_emux_voice_t *vp)
 	}
 
 	/* compute volume target and correct volume parameters */
+	vp->vtarget = 0;
+#if 0 /* FIXME: this leads to some clicks.. */
 	if (LO_BYTE(parm->volatkhld) >= 0x80 && parm->voldelay >= 0x8000) {
 		parm->voldelay = 0xbfff;
 		vp->vtarget = voltarget[vp->avol % 0x10] >> (vp->avol >> 4);
-	} else {
-		vp->vtarget = 0;
 	}
+#endif
 
 	if (LO_BYTE(parm->volatkhld) >= 0x80) {
 		parm->volatkhld &= ~0xff;

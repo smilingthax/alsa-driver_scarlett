@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: rme9652_mem.c,v 1.5 2002/01/04 17:53:12 perex Exp $
+    $Id: rme9652_mem.c,v 1.6 2002/02/04 10:21:33 tiwai Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
@@ -55,6 +55,7 @@ MODULE_PARM_DESC(snd_enable, "Enable cards to allocate buffers for.");
 MODULE_AUTHOR("Winfried Ritsch, Paul Barton-Davis <pbd@op.net>");
 MODULE_DESCRIPTION("Memory allocator for RME Hammerfall");
 MODULE_CLASSES("{sound}");
+MODULE_LICENSE("GPL");
 
 /* Since we don't know at this point if we're allocating memory for a
    Hammerfall or a Hammerfall/Light, assume the worst and allocate

@@ -48,6 +48,8 @@ void snd_emux_sounds_off_all(snd_emux_port_t *port);
 void snd_emux_update_channel(snd_emux_port_t *port, snd_midi_channel_t *chan, int update);
 void snd_emux_update_port(snd_emux_port_t *port, int update);
 
+void snd_emux_timer_callback(unsigned long data);
+
 /* emux_effect.c */
 #ifdef SNDRV_EMUX_USE_RAW_EFFECT
 void snd_emux_create_effect(snd_emux_port_t *p);

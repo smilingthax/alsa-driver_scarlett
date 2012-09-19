@@ -9,7 +9,7 @@
  * Rewritted from sonicvibes.c source.
  *
  *  TODO:
- *    MPU401
+ *    Rewrite better spinlocks
  *
  *
  *   This program is free software; you can redistribute it and/or modify
@@ -54,6 +54,7 @@
 #include <sound/control.h>
 #include <sound/pcm.h>
 #include <sound/opl3.h>
+#include <sound/mpu401.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 #ifndef LINUX_2_2
@@ -133,6 +134,7 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 #define ESSSB_IREG_SPATLEVEL		0x52
 #define ESSSB_IREG_MASTER_LEFT		0x60
 #define ESSSB_IREG_MASTER_RIGHT		0x62
+#define ESSSB_IREG_MPU401CONTROL	0x64
 #define ESSSB_IREG_MICMIXRECORD		0x68
 #define ESSSB_IREG_AUDIO2RECORD		0x69
 #define ESSSB_IREG_AUXACDRECORD		0x6a
@@ -1457,16 +1459,6 @@ static int __init snd_es1938_create(snd_card_t * card,
 	return 0;
 }
 
-#if 0
-static void __init snd_es1938_midi(es1938_t *chip, mpu401_t * mpu)
-{
-	mpu->private_data = chip;
-	mpu->open_input = NULL;	/* snd_es1938_midi_input_open; */
-	mpu->close_input = NULL;	/* snd_es1938_midi_input_close; */
-	mpu->open_output = NULL;	/* snd_es1938_midi_output_open; */
-}
-#endif
-
 /* --------------------------------------------------------------------
  * Interrupt handler
  * -------------------------------------------------------------------- */
@@ -1521,6 +1513,15 @@ static void snd_es1938_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		}
 		/* ack interrupt */
 		snd_es1938_mixer_write(chip, 0x66, 0x00);
+	}
+
+	/* MPU401 */
+	if (status & 0x80) {
+		/* ack */
+		snd_es1938_mixer_bits(chip, ESSSB_IREG_MPU401CONTROL, 0x40, 0);
+		printk("midi interrupt..\n");
+		if (chip->rmidi)
+			snd_mpu401_uart_interrupt(irq, chip->rmidi->private_data, regs);
 	}
 }
 
@@ -1625,6 +1626,10 @@ static int __devinit snd_es1938_probe(struct pci_dev *pci,
 	                snd_card_free(card);
 	                return err;
 		}
+	}
+	if (snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
+				chip->mpu_port, 1, chip->irq, 0, &chip->rmidi) < 0) {
+		snd_printk("unable to initialize MPU-401\n");
 	}
 #ifndef LINUX_2_2
 	chip->gameport.io = chip->game_port;
