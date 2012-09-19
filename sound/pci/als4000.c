@@ -600,8 +600,11 @@ static int __devinit snd_card_als4k_probe(struct pci_dev *pci,
 	
 	card = snd_card_new(snd_index[dev], snd_id[dev], THIS_MODULE, 
 			    sizeof( snd_card_als4000_t ) );
-	if (card == NULL)
+	if (card == NULL) {
+		release_resource(res_gcr_port);
 		return -ENOMEM;
+	}
+
 	acard = (snd_card_als4000_t *)card->private_data;
 	acard->gcr = gcr;
 	card->private_free = snd_card_als4k_free;
@@ -655,8 +658,8 @@ static int __devinit snd_card_als4k_probe(struct pci_dev *pci,
 
 	strcpy(card->driver, "ALS4000");
 	strcpy(card->shortname, "Avance Logic ALS4000");
-	sprintf(card->longname, "%s soundcard, %s at 0x%lx, irq %i",
-		card->shortname, chip->name, chip->alt_port, chip->irq);
+	sprintf(card->longname, "%s at 0x%lx, irq %i",
+		card->shortname, chip->alt_port, chip->irq);
 
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);

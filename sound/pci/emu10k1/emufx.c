@@ -1189,53 +1189,9 @@ static void __devinit snd_emu10k1_init_stereo_onoff_control(emu10k1_fx8010_contr
 }
 
 
-/* when volume = max, then copy only to avoid volume modification */
-/* with iMAC0 (negative values) */
-static void __devinit _volume(emu10k1_fx8010_code_t *icode, u32 *ptr, u32 dst, u32 src, u32 vol)
-{
-	OP(icode, ptr, iMAC0, dst, C_00000000, src, vol);
-	OP(icode, ptr, iANDXOR, C_00000000, vol, C_ffffffff, C_7fffffff);
-	OP(icode, ptr, iSKIP, GPR_COND, GPR_COND, CC_REG_NONZERO, C_00000001);
-	OP(icode, ptr, iACC3, dst, src, C_00000000, C_00000000);
-}
-static void __devinit _volume_add(emu10k1_fx8010_code_t *icode, u32 *ptr, u32 dst, u32 src, u32 vol)
-{
-	OP(icode, ptr, iANDXOR, C_00000000, vol, C_ffffffff, C_7fffffff);
-	OP(icode, ptr, iSKIP, GPR_COND, GPR_COND, CC_REG_NONZERO, C_00000002);
-	OP(icode, ptr, iMACINT0, dst, dst, src, C_00000001);
-	OP(icode, ptr, iSKIP, C_00000000, C_7fffffff, C_7fffffff, C_00000001);
-	OP(icode, ptr, iMAC0, dst, dst, src, vol);
-}
-static void __devinit _volume_out(emu10k1_fx8010_code_t *icode, u32 *ptr, u32 dst, u32 src, u32 vol)
-{
-	OP(icode, ptr, iANDXOR, C_00000000, vol, C_ffffffff, C_7fffffff);
-	OP(icode, ptr, iSKIP, GPR_COND, GPR_COND, CC_REG_NONZERO, C_00000002);
-	OP(icode, ptr, iACC3, dst, src, C_00000000, C_00000000);
-	OP(icode, ptr, iSKIP, C_00000000, C_7fffffff, C_7fffffff, C_00000001);
-	OP(icode, ptr, iMAC0, dst, C_00000000, src, vol);
-}
-
-#define VOLUME(icode, ptr, dst, src, vol) \
-		_volume(icode, ptr, GPR(dst), GPR(src), GPR(vol))
-#define VOLUME_IN(icode, ptr, dst, src, vol) \
-		_volume(icode, ptr, GPR(dst), EXTIN(src), GPR(vol))
-#define VOLUME_ADD(icode, ptr, dst, src, vol) \
-		_volume_add(icode, ptr, GPR(dst), GPR(src), GPR(vol))
-#define VOLUME_ADDIN(icode, ptr, dst, src, vol) \
-		_volume_add(icode, ptr, GPR(dst), EXTIN(src), GPR(vol))
-#define VOLUME_OUT(icode, ptr, dst, src, vol) \
-		_volume_out(icode, ptr, EXTOUT(dst), GPR(src), GPR(vol))
-#define _SWITCH(icode, ptr, dst, src, sw) \
-	OP((icode), ptr, iMACINT0, dst, C_00000000, src, sw);
-#define SWITCH(icode, ptr, dst, src, sw) \
-		_SWITCH(icode, ptr, GPR(dst), GPR(src), GPR(sw))
-#define SWITCH_IN(icode, ptr, dst, src, sw) \
-		_SWITCH(icode, ptr, GPR(dst), EXTIN(src), GPR(sw))
-#define _SWITCH_NEG(icode, ptr, dst, src) \
-	OP((icode), ptr, iANDXOR, dst, src, C_00000001, C_00000001);
-#define SWITCH_NEG(icode, ptr, dst, src) \
-		_SWITCH_NEG(icode, ptr, GPR(dst), GPR(src))
-
+/*
+ * initial DSP configuration for Audigy
+ */
 
 static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 {
@@ -1262,10 +1218,10 @@ static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 	strcpy(icode->name, "Audigy DSP code for ALSA");
 	ptr = 0;
 	nctl = 0;
-	playback = 0;
-	capture = 6;
-	gpr = capture + 2;
-	tmp = 0x88;
+	playback = 10;
+	capture = playback + 6; /* 5+1 channels */
+	gpr = capture + 2; /* so far only a stereo capture */
+	tmp = 0x80;
 	
 	/* stop FX processor */
 	snd_emu10k1_ptr_write(emu, A_DBG, 0, (emu->fx8010.dbg = 0) | A_DBG_SINGLE_STEP_ADDR);
@@ -1327,28 +1283,30 @@ static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 	/*
 	 * inputs
 	 */
+#define A_ADD_VOLUME_IN(var,vol,input) \
+A_OP(icode, &ptr, iMAC0, A_GPR(var), A_GPR(var), A_GPR(vol), A_EXTIN(input))
 	if (emu->fx8010.extin_mask & ((1<<A_EXTIN_AC97_L)|(1<<A_EXTIN_AC97_R))) {
 		/* AC'97 Playback Volume */
-		A_OP(icode, &ptr, iMAC0, A_GPR(playback), A_GPR(playback), A_GPR(gpr), A_EXTIN(A_EXTIN_AC97_L));
-		A_OP(icode, &ptr, iMAC0, A_GPR(playback+1), A_GPR(playback+1), A_GPR(gpr+1), A_EXTIN(A_EXTIN_AC97_R));
+		A_ADD_VOLUME_IN(playback, gpr, A_EXTIN_AC97_L);
+		A_ADD_VOLUME_IN(playback+1, gpr+1, A_EXTIN_AC97_R);
 		snd_emu10k1_init_stereo_control(&controls[nctl++], "AC97 Playback Volume", gpr, 0);
 		gpr += 2;
 		/* AC'97 Capture Volume */
-		A_OP(icode, &ptr, iMAC0, A_GPR(capture), A_GPR(capture), A_GPR(gpr), A_EXTIN(A_EXTIN_AC97_L));
-		A_OP(icode, &ptr, iMAC0, A_GPR(capture+1), A_GPR(capture+1), A_GPR(gpr+1), A_EXTIN(A_EXTIN_AC97_R));
+		A_ADD_VOLUME_IN(capture, gpr, A_EXTIN_AC97_L);
+		A_ADD_VOLUME_IN(capture+1, gpr+1, A_EXTIN_AC97_R);
 		snd_emu10k1_init_stereo_control(&controls[nctl++], "AC97 Capture Volume", gpr, 100);
 		gpr += 2;
 	}
 
 	if (emu->fx8010.extin_mask & ((1<<A_EXTIN_SPDIF_CD_L)|(1<<A_EXTIN_SPDIF_CD_R))) {
 		/* Audigy CD Playback Volume */
-		A_OP(icode, &ptr, iMAC0, A_GPR(playback), A_GPR(playback), A_GPR(gpr), A_EXTIN(A_EXTIN_SPDIF_CD_L));
-		A_OP(icode, &ptr, iMAC0, A_GPR(playback+1), A_GPR(playback+1), A_GPR(gpr+1), A_EXTIN(A_EXTIN_SPDIF_CD_R));
+		A_ADD_VOLUME_IN(playback, gpr, A_EXTIN_SPDIF_CD_L);
+		A_ADD_VOLUME_IN(playback+1, gpr+1, A_EXTIN_SPDIF_CD_R);
 		snd_emu10k1_init_stereo_control(&controls[nctl++], "Audigy CD Playback Volume", gpr, 0);
 		gpr += 2;
-		/* AC'97 Capture Volume */
-		A_OP(icode, &ptr, iMAC0, A_GPR(capture), A_GPR(capture), A_GPR(gpr), A_EXTIN(A_EXTIN_SPDIF_CD_L));
-		A_OP(icode, &ptr, iMAC0, A_GPR(capture+1), A_GPR(capture+1), A_GPR(gpr+1), A_EXTIN(A_EXTIN_SPDIF_CD_R));
+		/* Audigy CD Capture Volume */
+		A_ADD_VOLUME_IN(capture, gpr, A_EXTIN_SPDIF_CD_L);
+		A_ADD_VOLUME_IN(capture+1, gpr+1, A_EXTIN_SPDIF_CD_R);
 		snd_emu10k1_init_stereo_control(&controls[nctl++], "Audigy CD Capture Volume", gpr, 100);
 		gpr += 2;
 	}
@@ -1356,35 +1314,32 @@ static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 	/*
 	 * outputs
 	 */
-	if (emu->fx8010.extout_mask & ((1<<A_EXTOUT_FRONT_L)|(1<<A_EXTOUT_FRONT_R))) {
-		/* front */
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_FRONT_L), A_C_ZERO, A_C_ZERO, A_GPR(playback));
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_FRONT_R), A_C_ZERO, A_C_ZERO, A_GPR(playback+1));
-	}
+#define A_PUT_OUTPUT(out,src) A_OP(icode, &ptr, iACC3, A_EXTOUT(out), A_C_ZERO, A_C_ZERO, A_GPR(src))
+#define A_PUT_MONO_OUTPUT(out,src) \
+	if (emu->fx8010.extout_mask & (1<<(out))) A_PUT_OUTPUT(out,src)
+#define A_PUT_STEREO_OUTPUT(out1,out2,src) \
+	if (emu->fx8010.extout_mask & ((1<<(out1))|(1<<(out2)))) {\
+		A_PUT_OUTPUT(out1,src);\
+		A_PUT_OUTPUT(out2,src+1);}
 
-	if (emu->fx8010.extout_mask & ((1<<A_EXTOUT_REAR_L)|(1<<A_EXTOUT_REAR_R))) {
-		/* rear */
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_REAR_L), A_C_ZERO, A_C_ZERO, A_GPR(playback+2));
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_REAR_R), A_C_ZERO, A_C_ZERO, A_GPR(playback+3));
-	}
+	/* digital outputs */
+	A_PUT_STEREO_OUTPUT(A_EXTOUT_FRONT_L, A_EXTOUT_FRONT_R, playback);
+	A_PUT_STEREO_OUTPUT(A_EXTOUT_REAR_L, A_EXTOUT_REAR_R, playback+2);
+	A_PUT_MONO_OUTPUT(A_EXTOUT_CENTER, playback+4);
+	A_PUT_MONO_OUTPUT(A_EXTOUT_LFE, playback+5);
 
-	if (emu->fx8010.extout_mask & (1<<A_EXTOUT_CENTER))
-		/* center */
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_CENTER), A_C_ZERO, A_C_ZERO, A_GPR(playback+4));
+	/* analog speakers */
+	A_PUT_STEREO_OUTPUT(A_EXTOUT_AFRONT_L, A_EXTOUT_AFRONT_R, playback);
+	A_PUT_STEREO_OUTPUT(A_EXTOUT_AREAR_L, A_EXTOUT_AREAR_R, playback+2);
+	A_PUT_MONO_OUTPUT(A_EXTOUT_ACENTER, playback+4);
+	A_PUT_MONO_OUTPUT(A_EXTOUT_ALFE, playback+5);
 
-	if (emu->fx8010.extout_mask & (1<<A_EXTOUT_LFE))
-		/* lfe */
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_LFE), A_C_ZERO, A_C_ZERO, A_GPR(playback+5));
-
-	if (emu->fx8010.extout_mask & ((1<<A_EXTOUT_HEADPHONE_L)|(1<<A_EXTOUT_HEADPHONE_R))) {
-		/* headphone, audigy drive */
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_HEADPHONE_L), A_C_ZERO, A_C_ZERO, A_GPR(playback));
-		A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_HEADPHONE_R), A_C_ZERO, A_C_ZERO, A_GPR(playback+1));
-	}
+	/* headphone */
+	A_PUT_STEREO_OUTPUT(A_EXTOUT_HEADPHONE_L, A_EXTOUT_HEADPHONE_R, playback);
 
 	/* ADC buffer */
-	A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_ADC_CAP_L), A_C_ZERO, A_C_ZERO, A_GPR(capture));
-	A_OP(icode, &ptr, iACC3, A_EXTOUT(A_EXTOUT_ADC_CAP_R), A_C_ZERO, A_C_ZERO, A_GPR(capture+1));
+	A_PUT_OUTPUT(A_EXTOUT_ADC_CAP_L, capture);
+	A_PUT_OUTPUT(A_EXTOUT_ADC_CAP_R, capture+1);
 
 	/*
 	 * ok, set up done..
@@ -1410,6 +1365,59 @@ static int __devinit _snd_emu10k1_audigy_init_efx(emu10k1_t *emu)
 	kfree(icode);
 	return err;
 }
+
+
+/*
+ * initial DSP configuration for Emu10k1
+ */
+
+/* when volume = max, then copy only to avoid volume modification */
+/* with iMAC0 (negative values) */
+static void __devinit _volume(emu10k1_fx8010_code_t *icode, u32 *ptr, u32 dst, u32 src, u32 vol)
+{
+	OP(icode, ptr, iMAC0, dst, C_00000000, src, vol);
+	OP(icode, ptr, iANDXOR, C_00000000, vol, C_ffffffff, C_7fffffff);
+	OP(icode, ptr, iSKIP, GPR_COND, GPR_COND, CC_REG_NONZERO, C_00000001);
+	OP(icode, ptr, iACC3, dst, src, C_00000000, C_00000000);
+}
+static void __devinit _volume_add(emu10k1_fx8010_code_t *icode, u32 *ptr, u32 dst, u32 src, u32 vol)
+{
+	OP(icode, ptr, iANDXOR, C_00000000, vol, C_ffffffff, C_7fffffff);
+	OP(icode, ptr, iSKIP, GPR_COND, GPR_COND, CC_REG_NONZERO, C_00000002);
+	OP(icode, ptr, iMACINT0, dst, dst, src, C_00000001);
+	OP(icode, ptr, iSKIP, C_00000000, C_7fffffff, C_7fffffff, C_00000001);
+	OP(icode, ptr, iMAC0, dst, dst, src, vol);
+}
+static void __devinit _volume_out(emu10k1_fx8010_code_t *icode, u32 *ptr, u32 dst, u32 src, u32 vol)
+{
+	OP(icode, ptr, iANDXOR, C_00000000, vol, C_ffffffff, C_7fffffff);
+	OP(icode, ptr, iSKIP, GPR_COND, GPR_COND, CC_REG_NONZERO, C_00000002);
+	OP(icode, ptr, iACC3, dst, src, C_00000000, C_00000000);
+	OP(icode, ptr, iSKIP, C_00000000, C_7fffffff, C_7fffffff, C_00000001);
+	OP(icode, ptr, iMAC0, dst, C_00000000, src, vol);
+}
+
+#define VOLUME(icode, ptr, dst, src, vol) \
+		_volume(icode, ptr, GPR(dst), GPR(src), GPR(vol))
+#define VOLUME_IN(icode, ptr, dst, src, vol) \
+		_volume(icode, ptr, GPR(dst), EXTIN(src), GPR(vol))
+#define VOLUME_ADD(icode, ptr, dst, src, vol) \
+		_volume_add(icode, ptr, GPR(dst), GPR(src), GPR(vol))
+#define VOLUME_ADDIN(icode, ptr, dst, src, vol) \
+		_volume_add(icode, ptr, GPR(dst), EXTIN(src), GPR(vol))
+#define VOLUME_OUT(icode, ptr, dst, src, vol) \
+		_volume_out(icode, ptr, EXTOUT(dst), GPR(src), GPR(vol))
+#define _SWITCH(icode, ptr, dst, src, sw) \
+	OP((icode), ptr, iMACINT0, dst, C_00000000, src, sw);
+#define SWITCH(icode, ptr, dst, src, sw) \
+		_SWITCH(icode, ptr, GPR(dst), GPR(src), GPR(sw))
+#define SWITCH_IN(icode, ptr, dst, src, sw) \
+		_SWITCH(icode, ptr, GPR(dst), EXTIN(src), GPR(sw))
+#define _SWITCH_NEG(icode, ptr, dst, src) \
+	OP((icode), ptr, iANDXOR, dst, src, C_00000001, C_00000001);
+#define SWITCH_NEG(icode, ptr, dst, src) \
+		_SWITCH_NEG(icode, ptr, GPR(dst), GPR(src))
+
 
 static int __devinit _snd_emu10k1_init_efx(emu10k1_t *emu)
 {

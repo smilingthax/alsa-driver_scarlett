@@ -1638,7 +1638,9 @@ static int snd_cs46xx_free(cs46xx_t *chip)
 	if (chip->pm_dev)
 		pm_unregister(chip->pm_dev);
 #endif
-
+	if (chip->amplifier_ctrl)
+		chip->amplifier_ctrl(chip, -chip->amplifier); /* force to off */
+	
 	snd_cs46xx_proc_done(chip);
 
 	if (chip->region.idx[0].resource)
@@ -1655,7 +1657,7 @@ static int snd_cs46xx_free(cs46xx_t *chip)
 		free_irq(chip->irq, (void *)chip);
 
 	if (chip->active_ctrl)
-		chip->active_ctrl(chip, -1);
+		chip->active_ctrl(chip, -chip->amplifier);
 
 	snd_magic_kfree(chip);
 	return 0;

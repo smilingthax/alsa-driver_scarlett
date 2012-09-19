@@ -88,9 +88,7 @@ struct _snd_sb {
 
 	char name[32];
 
-#ifdef CONFIG_SND_SB16_CSP
-	void *csp;
-#endif
+	void *csp; /* used only when CONFIG_SND_SB16_CSP is set */
 
 	snd_card_t *card;
 	snd_pcm_t *pcm;
