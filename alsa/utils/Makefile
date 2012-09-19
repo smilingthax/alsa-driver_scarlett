@@ -26,7 +26,7 @@ kredirect: kredirect.o
 	$(CC) $(INCLUDE) kredirect.o -o $@
 
 clean:
-	rm -f core .depend *.o
+	rm -f core .depend *.o kredirect mod-deps
 
 mrproper:
 	rm -f *.orig *.rej *~ .#*

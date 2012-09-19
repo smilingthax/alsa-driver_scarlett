@@ -194,6 +194,7 @@ mrproper: clean1
 	rm -f `find ../alsa-kernel -name "*.rej"`
 	rm -f `find ../alsa-kernel -name ".#*"`
 	rm -f `find ../alsa-kernel -name "out.txt"`
+	rm -rf autom4te.cache
 
 .PHONY: cvsclean
 cvsclean: mrproper
