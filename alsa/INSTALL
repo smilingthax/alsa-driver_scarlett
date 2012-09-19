@@ -394,6 +394,13 @@ Information about Additional Modules
     You need to install the firmware file "riptide.hex" to the standard
     firmware path (e.g. /lib/firmware).
 
+  Module snd-als300
+  -----------------
+
+    Module for  Avance Logic ALS300 and ALS300+
+
+    This module supports multiple cards.
+
 
 Trouble Shooting
 ================
