@@ -473,9 +473,9 @@ static int vx_send_irqa(vxpocket_t *chip)
 	return vx_send_msg_nolock(chip, &rmh); /* no lock needed for trigger */ 
 }
 
-#define MAX_WAIT_FOR_DSP        25
-#define CAN_START_DELAY         1200
-#define WAIT_STATE_DELAY        200
+#define MAX_WAIT_FOR_DSP        250
+#define CAN_START_DELAY         10
+#define WAIT_STATE_DELAY        10
 
 /*
  * vx_toggle_pipe - start / pause a pipe
@@ -1191,6 +1191,7 @@ static int vx_init_audio_io(vxpocket_t *chip)
 
 	chip->audio_outs = rmh.Stat[0] & MASK_FIRST_FIELD;
 	chip->audio_ins = (rmh.Stat[0] >> (FIELD_SIZE*2)) & MASK_FIRST_FIELD;
+	chip->audio_info = rmh.Stat[1];
 
 	/* allocate pipes */
 	chip->playback_pipes = kmalloc(sizeof(vx_pipe_t *) * chip->audio_outs, GFP_KERNEL);
