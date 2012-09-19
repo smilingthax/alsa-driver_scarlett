@@ -2,6 +2,10 @@
 #include <linux/pci.h>
 #include <asm/io.h>
 
+#ifndef fastcall
+#define fastcall
+#endif
+
 /*
  * the following code is stripped from linux/lib/iomap.c
  */
