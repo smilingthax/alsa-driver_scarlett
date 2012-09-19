@@ -377,6 +377,10 @@ enum {
 #define snd_usb_get_speed(dev) USB_SPEED_FULL
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
+#define usb_kill_urb(urb) usb_unlink_urb(urb)
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 24) \
