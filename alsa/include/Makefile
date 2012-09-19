@@ -9,9 +9,9 @@ all: $(TARGETS)
 	@echo "What's?" 
 
 clean:
-	rm -f .depend core *.o sndversions.h modules/*.ver modules/*.stamp \
-	      linux/* asm/* media/*
+	rm -f .depend core *.o sndversions.h modules/*.ver modules/*.stamp
 
 mrproper: clean
 	rm -f *.orig *.rej *~ .#*
+	rm -f linux/* asm/* media/*
 
