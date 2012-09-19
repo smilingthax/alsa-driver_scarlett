@@ -1906,6 +1906,33 @@ if test "$new_pci_save_state" = "1"; then
 fi
 fi
 
+dnl Check for register_sound_special_device
+AC_MSG_CHECKING(for register_sound_special_device)
+msleep="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/sound.h>
+],[
+  void (*func)(struct file_operations *, int, struct device *);
+  func = register_sound_special_device;
+],
+    AC_MSG_RESULT("yes");reg_sp="1",
+    AC_MSG_RESULT("no");reg_sp="0",
+    AC_MSG_RESULT("unknown");reg_sp="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE=$reg_sp
+dnl AC_SUBST(CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE)
+if test "$CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_REGISTER_SOUND_SPECIAL_DEVICE)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
