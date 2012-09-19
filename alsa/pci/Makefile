@@ -14,7 +14,7 @@ obj-$(CONFIG_SND_ALS300) += snd-als300.o
 
 clean-files := ad1889.c bt87x.c intel8x0.c maestro3.c
 
-obj-$(CONFIG_SND) += pdplus/ echoaudio/ riptide/ asihpi/
+obj-$(CONFIG_SND) += pdplus/ echoaudio/ asihpi/
 
 #
 #
