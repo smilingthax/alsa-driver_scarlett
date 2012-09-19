@@ -350,7 +350,7 @@ dnl compiler version check
 
 AC_DEFUN([CHECK_KERNEL_HEADER], [
   AC_MSG_CHECKING(for kernel $1)
-  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$1"; then
+  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
@@ -358,7 +358,7 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
   if test -n "$3"; then
     eval $3=""
   fi
-  if test -f "$KERNDIR/include/$1"; then
+  if test -f "$KERNDIR/include/$1" -o -f "$KERNDIR/include2/$1"; then
     AC_MSG_RESULT(yes)
     if test -f include/$1; then
       echo "Removing a dummy $1."
@@ -385,12 +385,12 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
 
 AC_DEFUN([MODIFY_KERNEL_HEADER], [
   AC_MSG_CHECKING(to modify of kernel $1)
-  if test -n "$kernelbuild" -a -f "$kernelbuild/include/$1"; then
+  if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
     KERNDIR=$kernelbuild
   else
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
-  if grep $2 "$KERNDIR/include/$1" > /dev/null 2>&1; then
+  if grep -q $2 "$KERNDIR/include/$1" "$KERNDIR/include2/$1" > /dev/null 2>&1; then
     AC_MSG_RESULT(no)
     if test -f include/$1; then
       echo "Removing a dummy $1."

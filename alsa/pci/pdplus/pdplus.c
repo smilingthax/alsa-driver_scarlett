@@ -5993,7 +5993,7 @@ static int __devinit pdplus_init(
 
         /* Try to grab an interrupt for the card. */
         DL (1, "Trying to register irq %d", pci->irq);
-	if (request_irq(pci->irq, pdplus_interrupt, SA_INTERRUPT|SA_SHIRQ, FULL_NAME, (void *)scard)) {
+	if (request_irq(pci->irq, pdplus_interrupt, IRQF_SHARED, FULL_NAME, scard)) {
 		snd_printk ("Unable to grab interrupt %d.\n", pci->irq);
 		return -EBUSY;
 	}
