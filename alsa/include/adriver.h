@@ -1812,4 +1812,15 @@ static inline void *snd_memdup_user(const void __user *src, size_t len)
 #endif
 #endif /* < 2.6.20 */
 
+/* strict_strtoull() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
+static inline int snd_strict_strtoull(const char *str, unsigned int base,
+				      unsigned long long *val)
+{
+	*val = simple_strtoull(str, NULL, base);
+	return 0;
+}
+#define strict_strtoull	snd_strict_strtoull
+#endif /* < 2.6.25 */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
