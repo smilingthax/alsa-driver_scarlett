@@ -271,6 +271,7 @@ struct snd_pcm_runtime {
 	int overrange;
 	snd_pcm_uframes_t avail_max;
 	snd_pcm_uframes_t hw_ptr_base;	/* Position at buffer restart */
+	snd_pcm_uframes_t hw_ptr_interrupt; /* Position at interrupt time */
 	unsigned long hw_ptr_jiffies;	/* Time when hw_ptr is updated */
 	snd_pcm_sframes_t delay;	/* extra delay; typically FIFO size */
 
@@ -1021,6 +1022,10 @@ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream, struct vm_area_s
 #define SNDRV_PCM_INFO_MMAP_IOMEM	0
 #define snd_pcm_lib_mmap_iomem	NULL
 #endif
+
+int snd_pcm_lib_mmap_noncached(struct snd_pcm_substream *substream,
+			       struct vm_area_struct *area);
+#define snd_pcm_lib_mmap_vmalloc	snd_pcm_lib_mmap_noncached
 
 static inline void snd_pcm_limit_isa_dma_size(int dma, size_t *max)
 {

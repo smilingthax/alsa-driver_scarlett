@@ -1252,6 +1252,8 @@ static int snd_pcm_do_reset(struct snd_pcm_substream *substream, int state)
 	if (err < 0)
 		return err;
 	runtime->hw_ptr_base = 0;
+	runtime->hw_ptr_interrupt = runtime->status->hw_ptr -
+		runtime->status->hw_ptr % runtime->period_size;
 	runtime->silence_start = runtime->status->hw_ptr;
 	runtime->silence_filled = 0;
 	return 0;
@@ -3165,9 +3167,7 @@ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream,
 	long size;
 	unsigned long offset;
 
-#ifdef pgprot_noncached
 	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
-#endif
 	area->vm_flags |= VM_IO;
 	size = area->vm_end - area->vm_start;
 	offset = area->vm_pgoff << PAGE_SHIFT;
@@ -3180,6 +3180,15 @@ int snd_pcm_lib_mmap_iomem(struct snd_pcm_substream *substream,
 
 EXPORT_SYMBOL(snd_pcm_lib_mmap_iomem);
 #endif /* SNDRV_PCM_INFO_MMAP */
+
+/* mmap callback with pgprot_noncached */
+int snd_pcm_lib_mmap_noncached(struct snd_pcm_substream *substream,
+			       struct vm_area_struct *area)
+{
+	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+	return snd_pcm_default_mmap(substream, area);
+}
+EXPORT_SYMBOL(snd_pcm_lib_mmap_noncached);
 
 /*
  * mmap DMA buffer

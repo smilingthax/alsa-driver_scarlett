@@ -841,27 +841,6 @@ static void add_verb(struct alc_spec *spec, const struct hda_verb *verb)
 	spec->init_verbs[spec->num_init_verbs++] = verb;
 }
 
-#ifdef CONFIG_PROC_FS
-/*
- * hook for proc
- */
-static void print_realtek_coef(struct snd_info_buffer *buffer,
-			       struct hda_codec *codec, hda_nid_t nid)
-{
-	int coeff;
-
-	if (nid != 0x20)
-		return;
-	coeff = snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_PROC_COEF, 0);
-	snd_iprintf(buffer, "  Processing Coefficient: 0x%02x\n", coeff);
-	coeff = snd_hda_codec_read(codec, nid, 0,
-				   AC_VERB_GET_COEF_INDEX, 0);
-	snd_iprintf(buffer, "  Coefficient Index: 0x%02x\n", coeff);
-}
-#else
-#define print_realtek_coef	NULL
-#endif
-
 /*
  * set up from the preset table
  */
@@ -1097,6 +1076,16 @@ static void alc889_coef_init(struct hda_codec *codec)
 	snd_hda_codec_write(codec, 0x20, 0, AC_VERB_SET_PROC_COEF, tmp|0x2010);
 }
 
+/* turn on/off EAPD control (only if available) */
+static void set_eapd(struct hda_codec *codec, hda_nid_t nid, int on)
+{
+	if (get_wcaps_type(get_wcaps(codec, nid)) != AC_WID_PIN)
+		return;
+	if (snd_hda_query_pin_caps(codec, nid) & AC_PINCAP_EAPD)
+		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_EAPD_BTLENABLE,
+				    on ? 2 : 0);
+}
+
 static void alc_auto_init_amp(struct hda_codec *codec, int type)
 {
 	unsigned int tmp;
@@ -1114,25 +1103,22 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
 	case ALC_INIT_DEFAULT:
 		switch (codec->vendor_id) {
 		case 0x10ec0260:
-			snd_hda_codec_write(codec, 0x0f, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
-			snd_hda_codec_write(codec, 0x10, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
+			set_eapd(codec, 0x0f, 1);
+			set_eapd(codec, 0x10, 1);
 			break;
 		case 0x10ec0262:
 		case 0x10ec0267:
 		case 0x10ec0268:
 		case 0x10ec0269:
+		case 0x10ec0270:
 		case 0x10ec0272:
 		case 0x10ec0660:
 		case 0x10ec0662:
 		case 0x10ec0663:
 		case 0x10ec0862:
 		case 0x10ec0889:
-			snd_hda_codec_write(codec, 0x14, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
-			snd_hda_codec_write(codec, 0x15, 0,
-					    AC_VERB_SET_EAPD_BTLENABLE, 2);
+			set_eapd(codec, 0x14, 1);
+			set_eapd(codec, 0x15, 1);
 			break;
 		}
 		switch (codec->vendor_id) {
@@ -1159,6 +1145,7 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
 		case 0x10ec0888:
 			alc888_coef_init(codec);
 			break;
+#if 0 /* XXX: This may cause the silent output on speaker on some machines */
 		case 0x10ec0267:
 		case 0x10ec0268:
 			snd_hda_codec_write(codec, 0x20, 0,
@@ -1171,6 +1158,7 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
 					    AC_VERB_SET_PROC_COEF,
 					    tmp | 0x3000);
 			break;
+#endif /* XXX */
 		}
 		break;
 	}
@@ -5074,7 +5062,6 @@ static int patch_alc880(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc880_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -6684,7 +6671,6 @@ static int patch_alc260(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc260_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -9580,6 +9566,7 @@ static struct alc_config_preset alc882_presets[] = {
 		.num_channel_mode = ARRAY_SIZE(alc883_3ST_6ch_modes),
 		.channel_mode = alc883_3ST_6ch_modes,
 		.need_dac_fix = 1,
+		.const_channel_count = 6,
 		.num_mux_defs =
 			ARRAY_SIZE(alc888_2_capture_sources),
 		.input_mux = alc888_2_capture_sources,
@@ -10302,7 +10289,6 @@ static int patch_alc882(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc882_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -10490,7 +10476,7 @@ static void alc262_hp_t5735_setup(struct hda_codec *codec)
 	struct alc_spec *spec = codec->spec;
 
 	spec->autocfg.hp_pins[0] = 0x15;
-	spec->autocfg.speaker_pins[0] = 0x0c; /* HACK: not actually a pin */
+	spec->autocfg.speaker_pins[0] = 0x14;
 }
 
 static struct snd_kcontrol_new alc262_hp_t5735_mixer[] = {
@@ -11919,9 +11905,9 @@ static struct alc_config_preset alc262_presets[] = {
 		.num_channel_mode = ARRAY_SIZE(alc262_modes),
 		.channel_mode = alc262_modes,
 		.input_mux = &alc262_capture_source,
-		.unsol_event = alc_automute_amp_unsol_event,
+		.unsol_event = alc_sku_unsol_event,
 		.setup = alc262_hp_t5735_setup,
-		.init_hook = alc_automute_amp,
+		.init_hook = alc_inithook,
 	},
 	[ALC262_HP_RP5700] = {
 		.mixers = { alc262_hp_rp5700_mixer },
@@ -12166,7 +12152,6 @@ static int patch_alc262(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc262_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -12675,6 +12660,7 @@ static int alc268_new_analog_output(struct alc_spec *spec, hda_nid_t nid,
 		dac = 0x02;
 		break;
 	case 0x15:
+	case 0x21:
 		dac = 0x03;
 		break;
 	default:
@@ -13231,8 +13217,6 @@ static int patch_alc268(struct hda_codec *codec)
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC268_AUTO)
 		spec->init_hook = alc268_auto_init;
-
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -13950,7 +13934,6 @@ static int patch_alc269(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc269_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -15078,7 +15061,6 @@ static int patch_alc861(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc861_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -16058,7 +16040,6 @@ static int patch_alc861vd(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc861vd_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
@@ -18193,7 +18174,6 @@ static int patch_alc662(struct hda_codec *codec)
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc662_loopbacks;
 #endif
-	codec->proc_widget_hook = print_realtek_coef;
 
 	return 0;
 }
