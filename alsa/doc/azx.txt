@@ -1,0 +1,158 @@
+Azalia ALSA Driver
+------------------
+
+Basic File Structure
+====================
+The Azalia ALSA driver distribution consists of the following source files:
+
+azx.c – contains code for registering the driver with PCI and ALSA middle layer.
+
+codec_enum.c – contains code to enumerate and initialize the codec(s) 
+and to discover their underlying topology.
+
+azx.h – contains forward declaration for functions that support the controller-
+codec communication mechanism.  
+
+azx_controller.h – contains #defines for the PCI register offsets for the Azalia
+controller.  
+
+azx_ringbuffer.h – contains #defines for the azalia codec register
+offset and commands for programming the codec.
+
+codec_enum.h – contains #defines for error codes and forward declaration of 
+functions that support the codec discovery and initialization of the codec.
+
+RELEASE-NOTES - Provides an overview of driver Features, 
+know Issues, and new features/fixes.
+
+BUILD-CONFIG - Build Instructions for the AZX alsa driver
+
+build.sh - Driver build script
+
+
+
+Basic Operation
+===============
+The Azalia driver follows the basic guidelines detailed in Takashi Iwai’s 
+“Writing an ALSA Driver.”  Please reference his document for details.
+
+
+Driver Loading/Initialization
+-----------------------------
+alsa_card_azx_init, the module init function is called Upon driver loading. 
+This function checks PCI space to see if the Azalia device exists via the 
+pci_module_init function.
+
+Once the device has been detected, the driver’s probe function (snd_azx_probe) 
+is called.  It creates a new sound card instance, allocates PCI
+resources, initializes the Azalia controller and codec, registers PCM streams and
+mixer controls.   The allocation of PCI resources is done via the 
+snd_azx_create function.  Along with allocating PCI resources, this function
+calls snd_azx_init_chip to initialize the controller and codec.  
+
+The function snd_azx_init_chip calls several functions to setup the controller.  
+It first calls snd_azx_util_reset_controller to reset the controller and to
+detect the number of codecs connected to the controller.
+Next it sets up the controller-codec communication mechanism, which is based on
+two hardware-controlled ring buffers called Command Output Ring Buffer (CORB)
+and Command Input Ring Buffer (RIRB).  The controller sends commands to the codec
+via the CORB and receives responses via the RIRB.  It creates two structures that 
+correspond to the CORB and RIRB by calling snd_azx_rb_create twice with appropriate 
+parameters.  After the creation of the ring buffers, the snd_azx_init_chip function 
+allocates memory to store PCM fragments (small portions of the playback buffer)
+for each device (DMA engine).  The memory allocated for the PCM fragments are
+then assigned to each device along with the initialization of variables.  Once
+initialization of variables are completed, several functions are called to 
+initialize the codec.
+
+The initialization of the codec is done via two main functions, set_input_path 
+and set_output_path.  The set_input_path function uses a search algorithm to 
+determine and set a path for analog input (Line In).  The set_output_path 
+function uses a search algorithm to determine and set a path for the analog 
+output (Line Out).  Information regarding the codec infrastructure is 
+determined and stored by calling the collect_codec_info function.  
+Information gathered from this function is later used by the driver to support 
+PCM playback/capture.  Once the input and output paths are set, 
+snd_azx_init_chip returns and snd_azx_create continues by the creation of PCM 
+streams and mixer controls.
+
+Creation of the PCM streams is done by calling snd_azx_new_pcm, which creates 
+a playback PCM and a capture PCM.  The mixer controls are created by 
+snd_azx_create_mixer which creates a volume slider for playback and capture 
+and a mute switch for playback.
+
+After creation of the PCM streams and mixer controls, the sound card is 
+registered with ALSA and the driver returns from snd_azx_probe.
+
+
+PCM Playback
+------------
+When an application initiates playback, the function snd_azx_playback_open is 
+called.  This function makes a call to snd_azx_pcm_open with playback device as 
+the parameter to modify the hw_param structure according to any hardware 
+constraints.  Once this is done, snd_azx_pcm_open returns.  Upon return from 
+snd_azx_pcm_open, snd_azx_playback_open returns.
+
+Once the hardware constraints has been set, snd_azx_hw_param is called to 
+allocate memory for the playback buffer.  The playback buffer’s size is 
+determined by a field in the runtime structure (see “Writing an ALSA Driver” 
+for more details).  After allocation of the buffer, snd_azx_hw_param returns.
+
+After the playback buffer has been allocated, snd_azx_pcm_prepare is called to 
+configure the DMA and the codec DAC.  The DMA setup is done via a call to 
+snd_azx_pcm_setup_controller which programs the DMA with the PCM stream 
+information.  Along with programming the PCM stream information, 
+snd_azx_pcm_setup_controller calls snd_azx_setup_periods to setup the DMA to 
+cause an interrupt after each fragment has been transferred.  Once the DMA has 
+been programmed, snd_azx_pcm_setup_codec is called to setup the DAC so it will 
+decode the correct slots on the Azalia link.  Once both DMA and DAC are 
+programmed, snd_azx_pcm_prepare returns.
+
+Now that the hardware is all set for playback, snd_azx_pcm_trigger is called to 
+start the DMA engine.  While the DMA engine is running, an interrupt will occur 
+after transferring a PCM fragment.  The ISR (Interrupt Service Routine) will 
+update the DMA engine with new fragment addresses until the application stops 
+the stream by calling snd_azx_pcm_trigger.
+
+
+PCM Capture
+-----------
+The operation of PCM Capture is very similar to PCM playback.  The difference 
+is the data is coming in instead of going out.
+
+
+Codec Enumeration
+-----------------
+
+The codec enumeration code (codec_enum.h/c) is responsible for dynamically 
+discovering a particular codec's capabilities.  The two primary functions are
+"set_output_path " and "set_input_path".  These functions initiate the creation
+of playback and capture paths through the codec.  Before these function are
+called, the "set_audio_codec_address" function must be called.
+
+Path creation is accomplished by recursively iterating through all of the widgets
+in a given codec, looking for the correct connections and enabling these
+connections.  For example, the output path looks for a pin complex first then 
+works its way back through the codec, seeking out a mixer widget and finaly
+an audio out widget. While these paths are being determined, the enumeration
+code is collecting mixer information for the creation of mixer controls 
+later on. 
+
+This enumeration code also exposes codec information by means of the /proc
+filesystem.  This codec information is accessed via /proc/codecinfo and is in 
+XML format.  To view this information, you can execute the following command,
+once the driver is loaded:
+
+  cat /proc/codecinfo > info.xml && mozilla file://'pwd`/info.xml
+
+
+
+Driver Unloading
+----------------
+Upon driver unloading, alsa_card_azx_exit is called which calls 
+codec_mem_cleanup which frees up any resource allocated by the codec_enum code.  
+Along with calling codec_mem_cleanup, pci_unregister_driver is called to 
+unregister the driver which in turn calls snd_azx_remove.  The function 
+snd_azx_remove frees PCI allocated resources and any memory that was allocated 
+during driver loading.
+

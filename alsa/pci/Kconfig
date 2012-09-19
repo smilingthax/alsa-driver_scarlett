@@ -34,4 +34,11 @@ config SND_AUDIGYLS
 	  Say 'Y' or 'M' to include support for Sound Blaster Audigy LS
 	  OEM version.
 
+config SND_AZX
+	tristate "Intel HD Audio"
+	depends on SND
+	select SND_PCM
+	help
+	  Say 'Y' or 'M' to include support for Intel HD Audio (Azalia).
+
 endmenu
