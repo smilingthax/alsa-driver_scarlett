@@ -17,6 +17,7 @@ static inline void snd_memory_wrapper_request_region(unsigned long from, unsigne
 #endif
 
 #include "config.h"
+#undef CONFIG_SND_DEBUG_MEMORY
 #include "adriver.h"
 #include <linux/mm.h>
 
