@@ -329,7 +329,7 @@ void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr)
 	void *dma_area;
 
 #ifndef CONFIG_ISA_USE_PCI_ALLOC_CONSISTENT
-	dma_area = snd_malloc_pages(size, GFP_ATOMIC|GFP_KERNEL);
+	dma_area = snd_malloc_pages(size, GFP_ATOMIC|GFP_DMA);
 	*dma_addr = dma_area ? isa_virt_to_bus(dma_area) : 0UL;
 #else
 	{
