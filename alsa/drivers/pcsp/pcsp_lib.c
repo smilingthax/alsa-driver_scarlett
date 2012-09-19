@@ -199,16 +199,6 @@ static snd_pcm_uframes_t snd_pcsp_playback_pointer(snd_pcm_substream_t * substre
 	return bytes_to_frames(substream->runtime, ptr);
 }
 
-static void snd_pcsp_pcm_free(snd_pcm_t *pcm)
-{
-	pcsp_t *chip = pcm->private_data;
-#if PCSP_DEBUG
-	printk("pcm_free called\n");
-#endif
-	chip->pcm = NULL;
-	snd_pcm_lib_preallocate_free_for_all(pcm);
-}
-
 static snd_pcm_hardware_t snd_pcsp_playback =
 {
 	.info =			(SNDRV_PCM_INFO_INTERLEAVED |
@@ -270,7 +260,6 @@ int __init snd_pcsp_new_pcm(pcsp_t *chip)
 
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &snd_pcsp_playback_ops);
 
-	pcm->private_free = snd_pcsp_pcm_free;
 	pcm->private_data = chip;
 	pcm->info_flags = SNDRV_PCM_INFO_HALF_DUPLEX;
 	strcpy(pcm->name, "pcsp");
