@@ -198,8 +198,8 @@ int main( void ) {
 }
 ],
     AC_MSG_RESULT("yes");boolchk="y",
-    AC_MSG_RESULT("no");boolchk="n",
-    AC_MSG_RESULT("unknown");boolchk="n"
+    AC_MSG_RESULT("no");boolchk="",
+    AC_MSG_RESULT("unknown");boolchk=""
   )
   CFLAGS="$ac_save_CFLAGS"
   eval $boolvar="$boolchk"
