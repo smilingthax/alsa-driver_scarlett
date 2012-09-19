@@ -174,7 +174,6 @@ struct alc_spec {
 
 	/* hooks */
 	void (*init_hook)(struct hda_codec *codec);
-	void (*unsol_event)(struct hda_codec *codec, unsigned int res);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	void (*power_hook)(struct hda_codec *codec);
 #endif
@@ -303,6 +302,38 @@ static inline hda_nid_t get_capsrc(struct alc_spec *spec, int idx)
 static void call_update_outputs(struct hda_codec *codec);
 static void alc_inv_dmic_sync(struct hda_codec *codec, bool force);
 
+/* for shared I/O, change the pin-control accordingly */
+static void update_shared_mic_hp(struct hda_codec *codec, bool set_as_mic)
+{
+	struct alc_spec *spec = codec->spec;
+	unsigned int val;
+	hda_nid_t pin = spec->autocfg.inputs[1].pin;
+	/* NOTE: this assumes that there are only two inputs, the
+	 * first is the real internal mic and the second is HP/mic jack.
+	 */
+
+	val = snd_hda_get_default_vref(codec, pin);
+
+	/* This pin does not have vref caps - let's enable vref on pin 0x18
+	   instead, as suggested by Realtek */
+	if (val == AC_PINCTL_VREF_HIZ) {
+		const hda_nid_t vref_pin = 0x18;
+		/* Sanity check pin 0x18 */
+		if (get_wcaps_type(get_wcaps(codec, vref_pin)) == AC_WID_PIN &&
+		    get_defcfg_connect(snd_hda_codec_get_pincfg(codec, vref_pin)) == AC_JACK_PORT_NONE) {
+			unsigned int vref_val = snd_hda_get_default_vref(codec, vref_pin);
+			if (vref_val != AC_PINCTL_VREF_HIZ)
+				snd_hda_set_pin_ctl(codec, vref_pin, PIN_IN | (set_as_mic ? vref_val : 0));
+		}
+	}
+
+	val = set_as_mic ? val | PIN_IN : PIN_HP;
+	snd_hda_set_pin_ctl(codec, pin, val);
+
+	spec->automute_speaker = !set_as_mic;
+	call_update_outputs(codec);
+}
+
 /* select the given imux item; either unmute exclusively or select the route */
 static int alc_mux_select(struct hda_codec *codec, unsigned int adc_idx,
 			  unsigned int idx, bool force)
@@ -329,21 +360,8 @@ static int alc_mux_select(struct hda_codec *codec, unsigned int adc_idx,
 		return 0;
 	spec->cur_mux[adc_idx] = idx;
 
-	/* for shared I/O, change the pin-control accordingly */
-	if (spec->shared_mic_hp) {
-		unsigned int val;
-		hda_nid_t pin = spec->autocfg.inputs[1].pin;
-		/* NOTE: this assumes that there are only two inputs, the
-		 * first is the real internal mic and the second is HP jack.
-		 */
-		if (spec->cur_mux[adc_idx])
-			val = snd_hda_get_default_vref(codec, pin) | PIN_IN;
-		else
-			val = PIN_HP;
-		snd_hda_set_pin_ctl(codec, pin, val);
-		spec->automute_speaker = !spec->cur_mux[adc_idx];
-		call_update_outputs(codec);
-	}
+	if (spec->shared_mic_hp)
+		update_shared_mic_hp(codec, spec->cur_mux[adc_idx]);
 
 	if (spec->dyn_adc_switch) {
 		alc_dyn_adc_pcm_resetup(codec, idx);
@@ -669,7 +687,7 @@ static void alc_update_knob_master(struct hda_codec *codec, hda_nid_t nid)
 }
 
 /* unsolicited event for HP jack sensing */
-static void alc_sku_unsol_event(struct hda_codec *codec, unsigned int res)
+static void alc_unsol_event(struct hda_codec *codec, unsigned int res)
 {
 	int action;
 
@@ -1005,11 +1023,9 @@ static void alc_init_automute(struct hda_codec *codec)
 	spec->automute_lo = spec->automute_lo_possible;
 	spec->automute_speaker = spec->automute_speaker_possible;
 
-	if (spec->automute_speaker_possible || spec->automute_lo_possible) {
+	if (spec->automute_speaker_possible || spec->automute_lo_possible)
 		/* create a control for automute mode */
 		alc_add_automute_mode_enum(codec);
-		spec->unsol_event = alc_sku_unsol_event;
-	}
 }
 
 /* return the position of NID in the list, or -1 if not found */
@@ -1172,7 +1188,6 @@ static void alc_init_auto_mic(struct hda_codec *codec)
 
 	snd_printdd("realtek: Enable auto-mic switch on NID 0x%x/0x%x/0x%x\n",
 		    ext, fixed, dock);
-	spec->unsol_event = alc_sku_unsol_event;
 }
 
 /* check the availabilities of auto-mute and auto-mic switches */
@@ -1982,13 +1997,31 @@ static int __alc_build_controls(struct hda_codec *codec)
 	return 0;
 }
 
-static int alc_build_controls(struct hda_codec *codec)
+static int alc_build_jacks(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
+
+	if (spec->shared_mic_hp) {
+		int err;
+		int nid = spec->autocfg.inputs[1].pin;
+		err = snd_hda_jack_add_kctl(codec, nid, "Headphone Mic", 0);
+		if (err < 0)
+			return err;
+		err = snd_hda_jack_detect_enable(codec, nid, 0);
+		if (err < 0)
+			return err;
+	}
+
+	return snd_hda_jack_add_kctls(codec, &spec->autocfg);
+}
+
+static int alc_build_controls(struct hda_codec *codec)
+{
 	int err = __alc_build_controls(codec);
 	if (err < 0)
 		return err;
-	err = snd_hda_jack_add_kctls(codec, &spec->autocfg);
+
+	err = alc_build_jacks(codec);
 	if (err < 0)
 		return err;
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_BUILD);
@@ -2023,14 +2056,6 @@ static int alc_init(struct hda_codec *codec)
 
 	hda_call_check_power_status(codec, 0x01);
 	return 0;
-}
-
-static void alc_unsol_event(struct hda_codec *codec, unsigned int res)
-{
-	struct alc_spec *spec = codec->spec;
-
-	if (spec->unsol_event)
-		spec->unsol_event(codec, res);
 }
 
 #ifdef CONFIG_SND_HDA_POWER_SAVE
@@ -4234,14 +4259,12 @@ static void set_capture_mixer(struct hda_codec *codec)
  */
 static void alc_auto_init_std(struct hda_codec *codec)
 {
-	struct alc_spec *spec = codec->spec;
 	alc_auto_init_multi_out(codec);
 	alc_auto_init_extra_out(codec);
 	alc_auto_init_analog_input(codec);
 	alc_auto_init_input_src(codec);
 	alc_auto_init_digital(codec);
-	if (spec->unsol_event)
-		alc_inithook(codec);
+	alc_inithook(codec);
 }
 
 /*
@@ -4842,7 +4865,6 @@ static void alc260_fixup_gpio1_toggle(struct hda_codec *codec,
 		spec->automute_speaker = 1;
 		spec->autocfg.hp_pins[0] = 0x0f; /* copy it for automute */
 		snd_hda_jack_detect_enable(codec, 0x0f, ALC_HP_EVENT);
-		spec->unsol_event = alc_sku_unsol_event;
 		snd_hda_gen_add_verbs(&spec->gen, alc_gpio1_init_verbs);
 	}
 }
