@@ -5,6 +5,9 @@
 %dir linux/sound/drivers
 |snd-serialmidi snd-seq-midi
 
+%dir linux/sound/pci
+|snd-azt3328 snd-pcm snd-mpu401-uart snd-opl3-lib snd-opl3-synth
+
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm
 
