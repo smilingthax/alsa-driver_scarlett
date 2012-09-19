@@ -745,8 +745,16 @@ Module parameters
     Module for Allegro/Maestro3 chips
 
     snd_external_amp     - enable external amp (enabled by default)
+    snd_amp_gpio         - GPIO pin number for external amp (0-15) or
+                           -1 for default pin (8 for allegro, 1 for
+                           others) 
 
     Module supports autoprobe and multiple chips (max 8).
+    Note: the binding of amplifier is dependent on hardware.
+    If there is no sound even though all channels are unmuted, try to
+    specify other gpio connection via snd_amp_gpio option. 
+    For example, a Panasonic notebook needed "snd_amp_gpio=0x0d"
+    option.
 
   Module snd-nm256.o
   ------------------
