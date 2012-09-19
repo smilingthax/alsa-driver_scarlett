@@ -20,41 +20,5 @@ config SND_ASIHPI
 	help
 	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
 
-config SND_OXYGEN_LIB
-	tristate
-	depends on SND
-	select SND_PCM
-	select SND_MPU401_UART
-
-config SND_VIRTUOSO
-	tristate "Asus Virtuoso 200 (Xonar) support"
-	depends on SND
-	select SND_OXYGEN_LIB
-	help
-	  Say Y here to include support for sound cards based on the
-	  Asus AV200 chip, i.e., Xonar D2 and Xonar D2X.
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-virtuoso.
-
-config SND_OXYGEN
-	tristate "C-Media 8788 (Oxygen) support"
-	depends on SND
-	select SND_OXYGEN_LIB
-	help
-	  Say Y here to include support for sound cards based on the
-	  C-Media CMI8788 (Oxygen HD Audio) chip:
-	   * Asound A-8788
-	   * AuzenTech X-Meridian
-	   * Bgears b-Enspirer
-	   * Club3D Theatron DTS
-	   * HT-Omega Claro
-	   * Razer Barracuda AC-1
-	   * Sondigo Inferno
-	   * TempoTec HIFIER
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-oxygen.
-
 endmenu
 
