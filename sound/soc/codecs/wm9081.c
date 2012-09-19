@@ -737,6 +737,7 @@ SND_SOC_DAPM_SUPPLY("CLK_SYS", WM9081_CLOCK_CONTROL_3, 0, 0, clk_sys_event,
 		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 SND_SOC_DAPM_SUPPLY("CLK_DSP", WM9081_CLOCK_CONTROL_3, 1, 0, NULL, 0),
 SND_SOC_DAPM_SUPPLY("TOCLK", WM9081_CLOCK_CONTROL_3, 2, 0, NULL, 0),
+SND_SOC_DAPM_SUPPLY("TSENSE", WM9081_POWER_MANAGEMENT, 7, 0, NULL, 0),
 };
 
 
@@ -759,6 +760,7 @@ static const struct snd_soc_dapm_route wm9081_audio_paths[] = {
 	{ "Speaker PGA", NULL, "CLK_SYS" },
 
 	{ "Speaker", NULL, "Speaker PGA" },
+	{ "Speaker", NULL, "TSENSE" },
 
 	{ "SPKN", NULL, "Speaker" },
 	{ "SPKP", NULL, "Speaker" },
@@ -807,7 +809,6 @@ static int wm9081_set_bias_level(struct snd_soc_codec *codec,
 			mdelay(100);
 
 			/* Normal bias enable & soft start off */
-			reg |= WM9081_BIAS_ENA;
 			reg &= ~WM9081_VMID_RAMP;
 			snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
 
@@ -818,7 +819,7 @@ static int wm9081_set_bias_level(struct snd_soc_codec *codec,
 		}
 
 		/* VMID 2*240k */
-		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
+		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
 		reg &= ~WM9081_VMID_SEL_MASK;
 		reg |= 0x04;
 		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
@@ -830,14 +831,15 @@ static int wm9081_set_bias_level(struct snd_soc_codec *codec,
 		break;
 
 	case SND_SOC_BIAS_OFF:
-		/* Startup bias source */
+		/* Startup bias source and disable bias */
 		reg = snd_soc_read(codec, WM9081_BIAS_CONTROL_1);
 		reg |= WM9081_BIAS_SRC;
+		reg &= ~WM9081_BIAS_ENA;
 		snd_soc_write(codec, WM9081_BIAS_CONTROL_1, reg);
 
-		/* Disable VMID and biases with soft ramping */
+		/* Disable VMID with soft ramping */
 		reg = snd_soc_read(codec, WM9081_VMID_CONTROL);
-		reg &= ~(WM9081_VMID_SEL_MASK | WM9081_BIAS_ENA);
+		reg &= ~WM9081_VMID_SEL_MASK;
 		reg |= WM9081_VMID_RAMP;
 		snd_soc_write(codec, WM9081_VMID_CONTROL, reg);
 
