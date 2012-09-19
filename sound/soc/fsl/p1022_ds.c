@@ -267,7 +267,7 @@ static int codec_node_dev_name(struct device_node *np, char *buf, size_t len)
 	if (bus < 0)
 		return bus;
 
-	snprintf(buf, len, "%s-codec.%u-%04x", temp, bus, addr);
+	snprintf(buf, len, "%s.%u-%04x", temp, bus, addr);
 
 	return 0;
 }
@@ -297,8 +297,10 @@ static int get_dma_channel(struct device_node *ssi_np,
 	 * dai->platform name should already point to an allocated buffer.
 	 */
 	ret = of_address_to_resource(dma_channel_np, 0, &res);
-	if (ret)
+	if (ret) {
+		of_node_put(dma_channel_np);
 		return ret;
+	}
 	snprintf((char *)dai->platform_name, DAI_NAME_SIZE, "%llx.%s",
 		 (unsigned long long) res.start, dma_channel_np->name);
 

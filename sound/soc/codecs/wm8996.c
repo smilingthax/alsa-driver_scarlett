@@ -414,13 +414,14 @@ static const DECLARE_TLV_DB_SCALE(out_digital_tlv, -1200, 150, 0);
 static const DECLARE_TLV_DB_SCALE(out_tlv, -900, 75, 0);
 static const DECLARE_TLV_DB_SCALE(spk_tlv, -900, 150, 0);
 static const DECLARE_TLV_DB_SCALE(eq_tlv, -1200, 100, 0);
+static const DECLARE_TLV_DB_SCALE(threedstereo_tlv, -1600, 183, 1);
 
 static const char *sidetone_hpf_text[] = {
 	"2.9kHz", "1.5kHz", "735Hz", "403Hz", "196Hz", "98Hz", "49Hz"
 };
 
 static const struct soc_enum sidetone_hpf =
-	SOC_ENUM_SINGLE(WM8996_SIDETONE, 7, 6, sidetone_hpf_text);
+	SOC_ENUM_SINGLE(WM8996_SIDETONE, 7, 7, sidetone_hpf_text);
 
 static const char *hpf_mode_text[] = {
 	"HiFi", "Custom", "Voice"
@@ -607,6 +608,14 @@ SOC_SINGLE("DAC High Performance Switch", WM8996_OVERSAMPLING, 0, 1, 0),
 
 SOC_SINGLE("DAC Soft Mute Switch", WM8996_DAC_SOFTMUTE, 1, 1, 0),
 SOC_SINGLE("DAC Slow Soft Mute Switch", WM8996_DAC_SOFTMUTE, 0, 1, 0),
+
+SOC_SINGLE("DSP1 3D Stereo Switch", WM8996_DSP1_RX_FILTERS_2, 8, 1, 0),
+SOC_SINGLE("DSP2 3D Stereo Switch", WM8996_DSP2_RX_FILTERS_2, 8, 1, 0),
+
+SOC_SINGLE_TLV("DSP1 3D Stereo Volume", WM8996_DSP1_RX_FILTERS_2, 10, 15,
+		0, threedstereo_tlv),
+SOC_SINGLE_TLV("DSP2 3D Stereo Volume", WM8996_DSP2_RX_FILTERS_2, 10, 15,
+		0, threedstereo_tlv),
 
 SOC_DOUBLE_TLV("Digital Output 1 Volume", WM8996_DAC1_HPOUT1_VOLUME, 0, 4,
 	       8, 0, out_digital_tlv),
@@ -982,21 +991,18 @@ SND_SOC_DAPM_SUPPLY_S("Charge Pump", 2, WM8996_CHARGE_PUMP_1, 15, 0, cp_event,
 		      SND_SOC_DAPM_POST_PMU),
 
 SND_SOC_DAPM_SUPPLY("LDO2", WM8996_POWER_MANAGEMENT_2, 1, 0, NULL, 0),
+SND_SOC_DAPM_SUPPLY("MICB1 Audio", WM8996_MICBIAS_1, 4, 1, NULL, 0),
+SND_SOC_DAPM_SUPPLY("MICB2 Audio", WM8996_MICBIAS_2, 4, 1, NULL, 0),
 SND_SOC_DAPM_MICBIAS("MICB2", WM8996_POWER_MANAGEMENT_1, 9, 0),
 SND_SOC_DAPM_MICBIAS("MICB1", WM8996_POWER_MANAGEMENT_1, 8, 0),
 
 SND_SOC_DAPM_PGA("IN1L PGA", WM8996_POWER_MANAGEMENT_2, 5, 0, NULL, 0),
 SND_SOC_DAPM_PGA("IN1R PGA", WM8996_POWER_MANAGEMENT_2, 4, 0, NULL, 0),
 
-SND_SOC_DAPM_MUX("IN1L Mux", SND_SOC_NOPM, 0, 0, &in1_mux),
-SND_SOC_DAPM_MUX("IN1R Mux", SND_SOC_NOPM, 0, 0, &in1_mux),
-SND_SOC_DAPM_MUX("IN2L Mux", SND_SOC_NOPM, 0, 0, &in2_mux),
-SND_SOC_DAPM_MUX("IN2R Mux", SND_SOC_NOPM, 0, 0, &in2_mux),
-
-SND_SOC_DAPM_PGA("IN1L", WM8996_POWER_MANAGEMENT_7, 2, 0, NULL, 0),
-SND_SOC_DAPM_PGA("IN1R", WM8996_POWER_MANAGEMENT_7, 3, 0, NULL, 0),
-SND_SOC_DAPM_PGA("IN2L", WM8996_POWER_MANAGEMENT_7, 6, 0, NULL, 0),
-SND_SOC_DAPM_PGA("IN2R", WM8996_POWER_MANAGEMENT_7, 7, 0, NULL, 0),
+SND_SOC_DAPM_MUX("IN1L Mux", WM8996_POWER_MANAGEMENT_7, 2, 0, &in1_mux),
+SND_SOC_DAPM_MUX("IN1R Mux", WM8996_POWER_MANAGEMENT_7, 3, 0, &in1_mux),
+SND_SOC_DAPM_MUX("IN2L Mux", WM8996_POWER_MANAGEMENT_7, 6, 0, &in2_mux),
+SND_SOC_DAPM_MUX("IN2R Mux", WM8996_POWER_MANAGEMENT_7, 7, 0, &in2_mux),
 
 SND_SOC_DAPM_SUPPLY("DMIC2", WM8996_POWER_MANAGEMENT_7, 9, 0, NULL, 0),
 SND_SOC_DAPM_SUPPLY("DMIC1", WM8996_POWER_MANAGEMENT_7, 8, 0, NULL, 0),
@@ -1142,7 +1148,9 @@ static const struct snd_soc_dapm_route wm8996_dapm_routes[] = {
 	{ "Charge Pump", NULL, "SYSCLK" },
 
 	{ "MICB1", NULL, "LDO2" },
+	{ "MICB1", NULL, "MICB1 Audio" },
 	{ "MICB2", NULL, "LDO2" },
+	{ "MICB2", NULL, "MICB2 Audio" },
 
 	{ "IN1L PGA", NULL, "IN2LN" },
 	{ "IN1L PGA", NULL, "IN2LP" },
@@ -1212,6 +1220,16 @@ static const struct snd_soc_dapm_route wm8996_dapm_routes[] = {
 
 	{ "AIF2RX0", NULL, "AIFCLK" },
 	{ "AIF2RX1", NULL, "AIFCLK" },
+
+	{ "AIF1TX0", NULL, "AIFCLK" },
+	{ "AIF1TX1", NULL, "AIFCLK" },
+	{ "AIF1TX2", NULL, "AIFCLK" },
+	{ "AIF1TX3", NULL, "AIFCLK" },
+	{ "AIF1TX4", NULL, "AIFCLK" },
+	{ "AIF1TX5", NULL, "AIFCLK" },
+
+	{ "AIF2TX0", NULL, "AIFCLK" },
+	{ "AIF2TX1", NULL, "AIFCLK" },
 
 	{ "DSP1RXL", NULL, "SYSDSPCLK" },
 	{ "DSP1RXR", NULL, "SYSDSPCLK" },
@@ -2036,7 +2054,7 @@ static int wm8996_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
 	struct i2c_client *i2c = to_i2c_client(codec->dev);
 	struct _fll_div fll_div;
 	unsigned long timeout;
-	int ret, reg;
+	int ret, reg, retry;
 
 	/* Any change? */
 	if (source == wm8996->fll_src && Fref == wm8996->fll_fref &&
@@ -2106,6 +2124,9 @@ static int wm8996_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
 
 	snd_soc_write(codec, WM8996_FLL_EFS_1, fll_div.lambda);
 
+	/* Clear any pending completions (eg, from failed startups) */
+	try_wait_for_completion(&wm8996->fll_lock);
+
 	snd_soc_update_bits(codec, WM8996_FLL_CONTROL_1,
 			    WM8996_FLL_ENA, WM8996_FLL_ENA);
 
@@ -2120,17 +2141,29 @@ static int wm8996_set_fll(struct snd_soc_codec *codec, int fll_id, int source,
 	else
 		timeout = msecs_to_jiffies(2);
 
-	/* Allow substantially longer if we've actually got the IRQ */
+	/* Allow substantially longer if we've actually got the IRQ, poll
+	 * at a slightly higher rate if we don't.
+	 */
 	if (i2c->irq)
-		timeout *= 1000;
+		timeout *= 10;
+	else
+		timeout /= 2;
 
-	ret = wait_for_completion_timeout(&wm8996->fll_lock, timeout);
+	for (retry = 0; retry < 10; retry++) {
+		ret = wait_for_completion_timeout(&wm8996->fll_lock,
+						  timeout);
+		if (ret != 0) {
+			WARN_ON(!i2c->irq);
+			break;
+		}
 
-	if (ret == 0 && i2c->irq) {
+		ret = snd_soc_read(codec, WM8996_INTERRUPT_RAW_STATUS_2);
+		if (ret & WM8996_FLL_LOCK_STS)
+			break;
+	}
+	if (retry == 10) {
 		dev_err(codec->dev, "Timed out waiting for FLL\n");
 		ret = -ETIMEDOUT;
-	} else {
-		ret = 0;
 	}
 
 	dev_dbg(codec->dev, "FLL configured for %dHz->%dHz\n", Fref, Fout);
@@ -2404,6 +2437,11 @@ static irqreturn_t wm8996_irq(int irq, void *data)
 	}
 	irq_val &= ~snd_soc_read(codec, WM8996_INTERRUPT_STATUS_2_MASK);
 
+	if (!irq_val)
+		return IRQ_NONE;
+
+	snd_soc_write(codec, WM8996_INTERRUPT_STATUS_2, irq_val);
+
 	if (irq_val & (WM8996_DCS_DONE_01_EINT | WM8996_DCS_DONE_23_EINT)) {
 		dev_dbg(codec->dev, "DC servo IRQ\n");
 		complete(&wm8996->dcs_done);
@@ -2420,13 +2458,7 @@ static irqreturn_t wm8996_irq(int irq, void *data)
 	if (irq_val & WM8996_MICD_EINT)
 		wm8996_micd(codec);
 
-	if (irq_val) {
-		snd_soc_write(codec, WM8996_INTERRUPT_STATUS_2, irq_val);
-
-		return IRQ_HANDLED;
-	} else {
-		return IRQ_NONE;
-	}
+	return IRQ_HANDLED;
 }
 
 static irqreturn_t wm8996_edge_irq(int irq, void *data)

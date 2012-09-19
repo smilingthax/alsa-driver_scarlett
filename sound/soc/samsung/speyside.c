@@ -125,10 +125,6 @@ static struct snd_soc_jack_pin speyside_headset_pins[] = {
 		.pin = "Headset Mic",
 		.mask = SND_JACK_MICROPHONE,
 	},
-	{
-		.pin = "Headphone",
-		.mask = SND_JACK_HEADPHONE,
-	},
 };
 
 /* Default the headphone selection to active high */
@@ -227,7 +223,7 @@ static int speyside_wm9081_init(struct snd_soc_dapm_context *dapm)
 	snd_soc_dapm_nc_pin(dapm, "LINEOUT");
 
 	/* At any time the WM9081 is active it will have this clock */
-	return snd_soc_codec_set_sysclk(dapm->codec, WM9081_SYSCLK_MCLK,
+	return snd_soc_codec_set_sysclk(dapm->codec, WM9081_SYSCLK_MCLK, 0,
 					48000 * 256, 0);
 }
 
@@ -252,6 +248,7 @@ static const struct snd_kcontrol_new controls[] = {
 	SOC_DAPM_PIN_SWITCH("Main AMIC"),
 	SOC_DAPM_PIN_SWITCH("WM1250 Input"),
 	SOC_DAPM_PIN_SWITCH("WM1250 Output"),
+	SOC_DAPM_PIN_SWITCH("Headphone"),
 };
 
 static struct snd_soc_dapm_widget widgets[] = {

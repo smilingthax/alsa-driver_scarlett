@@ -267,11 +267,14 @@ int snd_hda_ch_mode_put(struct hda_codec *codec,
 enum { HDA_FRONT, HDA_REAR, HDA_CLFE, HDA_SIDE }; /* index for dac_nidx */
 enum { HDA_DIG_NONE, HDA_DIG_EXCLUSIVE, HDA_DIG_ANALOG_DUP }; /* dig_out_used */
 
+#define HDA_MAX_OUTS	5
+
 struct hda_multi_out {
 	int num_dacs;		/* # of DACs, must be more than 1 */
 	const hda_nid_t *dac_nids;	/* DAC list */
 	hda_nid_t hp_nid;	/* optional DAC for HP, 0 when not exists */
-	hda_nid_t extra_out_nid[3];	/* optional DACs, 0 when not exists */
+	hda_nid_t hp_out_nid[HDA_MAX_OUTS];	/* DACs for multiple HPs */
+	hda_nid_t extra_out_nid[HDA_MAX_OUTS];	/* other (e.g. speaker) DACs */
 	hda_nid_t dig_out_nid;	/* digital out audio widget */
 	const hda_nid_t *slave_dig_outs;
 	int max_channels;	/* currently supported analog channels */
@@ -385,7 +388,7 @@ enum {
 	AUTO_PIN_HP_OUT
 };
 
-#define AUTO_CFG_MAX_OUTS	5
+#define AUTO_CFG_MAX_OUTS	HDA_MAX_OUTS
 #define AUTO_CFG_MAX_INS	8
 
 struct auto_pin_cfg_item {
@@ -443,9 +446,18 @@ struct auto_pin_cfg {
 #define get_defcfg_device(cfg) \
 	((cfg & AC_DEFCFG_DEVICE) >> AC_DEFCFG_DEVICE_SHIFT)
 
-int snd_hda_parse_pin_def_config(struct hda_codec *codec,
-				 struct auto_pin_cfg *cfg,
-				 const hda_nid_t *ignore_nids);
+/* bit-flags for snd_hda_parse_pin_def_config() behavior */
+#define HDA_PINCFG_NO_HP_FIXUP	(1 << 0) /* no HP-split */
+#define HDA_PINCFG_NO_LO_FIXUP	(1 << 1) /* don't take other outs as LO */
+
+int snd_hda_parse_pin_defcfg(struct hda_codec *codec,
+			     struct auto_pin_cfg *cfg,
+			     const hda_nid_t *ignore_nids,
+			     unsigned int cond_flags);
+
+/* older function */
+#define snd_hda_parse_pin_def_config(codec, cfg, ignore) \
+	snd_hda_parse_pin_defcfg(codec, cfg, ignore, 0)
 
 /* amp values */
 #define AMP_IN_MUTE(idx)	(0x7080 | ((idx)<<8))
@@ -492,6 +504,8 @@ u32 query_amp_caps(struct hda_codec *codec, hda_nid_t nid, int direction);
 int snd_hda_override_amp_caps(struct hda_codec *codec, hda_nid_t nid, int dir,
 			      unsigned int caps);
 u32 snd_hda_query_pin_caps(struct hda_codec *codec, hda_nid_t nid);
+int snd_hda_override_pin_caps(struct hda_codec *codec, hda_nid_t nid,
+			      unsigned int caps);
 u32 snd_hda_pin_sense(struct hda_codec *codec, hda_nid_t nid);
 int snd_hda_jack_detect(struct hda_codec *codec, hda_nid_t nid);
 
