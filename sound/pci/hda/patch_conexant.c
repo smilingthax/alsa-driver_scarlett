@@ -127,6 +127,7 @@ struct conexant_spec {
 	unsigned int ideapad:1;
 	unsigned int thinkpad:1;
 	unsigned int hp_laptop:1;
+	unsigned int asus:1;
 
 	unsigned int ext_mic_present;
 	unsigned int recording;
@@ -537,13 +538,13 @@ static struct snd_kcontrol_new cxt_beep_mixer[] = {
 };
 #endif
 
-static const char *slave_vols[] = {
+static const char * const slave_vols[] = {
 	"Headphone Playback Volume",
 	"Speaker Playback Volume",
 	NULL
 };
 
-static const char *slave_sws[] = {
+static const char * const slave_sws[] = {
 	"Headphone Playback Switch",
 	"Speaker Playback Switch",
 	NULL
@@ -1134,7 +1135,7 @@ enum {
 	CXT5045_MODELS
 };
 
-static const char *cxt5045_models[CXT5045_MODELS] = {
+static const char * const cxt5045_models[CXT5045_MODELS] = {
 	[CXT5045_LAPTOP_HPSENSE]	= "laptop-hpsense",
 	[CXT5045_LAPTOP_MICSENSE]	= "laptop-micsense",
 	[CXT5045_LAPTOP_HPMICSENSE]	= "laptop-hpmicsense",
@@ -1376,7 +1377,7 @@ static void cxt5047_hp_unsol_event(struct hda_codec *codec,
 static struct snd_kcontrol_new cxt5047_base_mixers[] = {
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x19, 0x02, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x19, 0x02, HDA_INPUT),
-	HDA_CODEC_VOLUME("Mic Boost", 0x1a, 0x0, HDA_OUTPUT),
+	HDA_CODEC_VOLUME("Mic Boost Volume", 0x1a, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Capture Volume", 0x12, 0x03, HDA_INPUT),
 	HDA_CODEC_MUTE("Capture Switch", 0x12, 0x03, HDA_INPUT),
 	HDA_CODEC_VOLUME("PCM Volume", 0x10, 0x00, HDA_OUTPUT),
@@ -1579,7 +1580,7 @@ enum {
 	CXT5047_MODELS
 };
 
-static const char *cxt5047_models[CXT5047_MODELS] = {
+static const char * const cxt5047_models[CXT5047_MODELS] = {
 	[CXT5047_LAPTOP]	= "laptop",
 	[CXT5047_LAPTOP_HP]	= "laptop-hp",
 	[CXT5047_LAPTOP_EAPD]	= "laptop-eapd",
@@ -1995,7 +1996,7 @@ enum {
 	CXT5051_MODELS
 };
 
-static const char *cxt5051_models[CXT5051_MODELS] = {
+static const char *const cxt5051_models[CXT5051_MODELS] = {
 	[CXT5051_LAPTOP]	= "laptop",
 	[CXT5051_HP]		= "hp",
 	[CXT5051_HP_DV6736]	= "hp-dv6736",
@@ -2312,6 +2313,19 @@ static void cxt5066_ideapad_automic(struct hda_codec *codec)
 	}
 }
 
+
+/* toggle input of built-in digital mic and mic jack appropriately */
+static void cxt5066_asus_automic(struct hda_codec *codec)
+{
+	unsigned int present;
+
+	present = snd_hda_jack_detect(codec, 0x1b);
+	snd_printdd("CXT5066: external microphone present=%d\n", present);
+	snd_hda_codec_write(codec, 0x17, 0, AC_VERB_SET_CONNECT_SEL,
+			    present ? 1 : 0);
+}
+
+
 /* toggle input of built-in digital mic and mic jack appropriately */
 static void cxt5066_hp_laptop_automic(struct hda_codec *codec)
 {
@@ -2387,6 +2401,23 @@ static void cxt5066_hp_automute(struct hda_codec *codec)
 	cxt5066_update_speaker(codec);
 }
 
+/* Dispatch the right mic autoswitch function */
+static void cxt5066_automic(struct hda_codec *codec)
+{
+	struct conexant_spec *spec = codec->spec;
+
+	if (spec->dell_vostro)
+		cxt5066_vostro_automic(codec);
+	else if (spec->ideapad)
+		cxt5066_ideapad_automic(codec);
+	else if (spec->thinkpad)
+		cxt5066_thinkpad_automic(codec);
+	else if (spec->hp_laptop)
+		cxt5066_hp_laptop_automic(codec);
+	else if (spec->asus)
+		cxt5066_asus_automic(codec);
+}
+
 /* unsolicited event for jack sensing */
 static void cxt5066_olpc_unsol_event(struct hda_codec *codec, unsigned int res)
 {
@@ -2405,60 +2436,19 @@ static void cxt5066_olpc_unsol_event(struct hda_codec *codec, unsigned int res)
 }
 
 /* unsolicited event for jack sensing */
-static void cxt5066_vostro_event(struct hda_codec *codec, unsigned int res)
+static void cxt5066_unsol_event(struct hda_codec *codec, unsigned int res)
 {
-	snd_printdd("CXT5066_vostro: unsol event %x (%x)\n", res, res >> 26);
+	snd_printdd("CXT5066: unsol event %x (%x)\n", res, res >> 26);
 	switch (res >> 26) {
 	case CONEXANT_HP_EVENT:
 		cxt5066_hp_automute(codec);
 		break;
 	case CONEXANT_MIC_EVENT:
-		cxt5066_vostro_automic(codec);
+		cxt5066_automic(codec);
 		break;
 	}
 }
 
-/* unsolicited event for jack sensing */
-static void cxt5066_ideapad_event(struct hda_codec *codec, unsigned int res)
-{
-	snd_printdd("CXT5066_ideapad: unsol event %x (%x)\n", res, res >> 26);
-	switch (res >> 26) {
-	case CONEXANT_HP_EVENT:
-		cxt5066_hp_automute(codec);
-		break;
-	case CONEXANT_MIC_EVENT:
-		cxt5066_ideapad_automic(codec);
-		break;
-	}
-}
-
-/* unsolicited event for jack sensing */
-static void cxt5066_hp_laptop_event(struct hda_codec *codec, unsigned int res)
-{
-	snd_printdd("CXT5066_hp_laptop: unsol event %x (%x)\n", res, res >> 26);
-	switch (res >> 26) {
-	case CONEXANT_HP_EVENT:
-		cxt5066_hp_automute(codec);
-		break;
-	case CONEXANT_MIC_EVENT:
-		cxt5066_hp_laptop_automic(codec);
-		break;
-	}
-}
-
-/* unsolicited event for jack sensing */
-static void cxt5066_thinkpad_event(struct hda_codec *codec, unsigned int res)
-{
-	snd_printdd("CXT5066_thinkpad: unsol event %x (%x)\n", res, res >> 26);
-	switch (res >> 26) {
-	case CONEXANT_HP_EVENT:
-		cxt5066_hp_automute(codec);
-		break;
-	case CONEXANT_MIC_EVENT:
-		cxt5066_thinkpad_automic(codec);
-		break;
-	}
-}
 
 static const struct hda_input_mux cxt5066_analog_mic_boost = {
 	.num_items = 5,
@@ -3039,20 +3029,11 @@ static struct hda_verb cxt5066_init_verbs_hp_laptop[] = {
 /* initialize jack-sensing, too */
 static int cxt5066_init(struct hda_codec *codec)
 {
-	struct conexant_spec *spec = codec->spec;
-
 	snd_printdd("CXT5066: init\n");
 	conexant_init(codec);
 	if (codec->patch_ops.unsol_event) {
 		cxt5066_hp_automute(codec);
-		if (spec->dell_vostro)
-			cxt5066_vostro_automic(codec);
-		else if (spec->ideapad)
-			cxt5066_ideapad_automic(codec);
-		else if (spec->thinkpad)
-			cxt5066_thinkpad_automic(codec);
-		else if (spec->hp_laptop)
-			cxt5066_hp_laptop_automic(codec);
+		cxt5066_automic(codec);
 	}
 	cxt5066_set_mic_boost(codec);
 	return 0;
@@ -3080,17 +3061,19 @@ enum {
 	CXT5066_DELL_VOSTRO,	/* Dell Vostro 1015i */
 	CXT5066_IDEAPAD,	/* Lenovo IdeaPad U150 */
 	CXT5066_THINKPAD,	/* Lenovo ThinkPad T410s, others? */
+	CXT5066_ASUS,		/* Asus K52JU, Lenovo G560 - Int mic at 0x1a and Ext mic at 0x1b */
 	CXT5066_HP_LAPTOP,      /* HP Laptop */
 	CXT5066_MODELS
 };
 
-static const char *cxt5066_models[CXT5066_MODELS] = {
+static const char * const cxt5066_models[CXT5066_MODELS] = {
 	[CXT5066_LAPTOP]	= "laptop",
 	[CXT5066_DELL_LAPTOP]	= "dell-laptop",
 	[CXT5066_OLPC_XO_1_5]	= "olpc-xo-1_5",
 	[CXT5066_DELL_VOSTRO]	= "dell-vostro",
 	[CXT5066_IDEAPAD]	= "ideapad",
 	[CXT5066_THINKPAD]	= "thinkpad",
+	[CXT5066_ASUS]		= "asus",
 	[CXT5066_HP_LAPTOP]	= "hp-laptop",
 };
 
@@ -3098,10 +3081,12 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
 	SND_PCI_QUIRK_MASK(0x1025, 0xff00, 0x0400, "Acer", CXT5066_IDEAPAD),
 	SND_PCI_QUIRK(0x1028, 0x02d8, "Dell Vostro", CXT5066_DELL_VOSTRO),
 	SND_PCI_QUIRK(0x1028, 0x02f5, "Dell Vostro 320", CXT5066_IDEAPAD),
+	SND_PCI_QUIRK(0x1028, 0x0401, "Dell Vostro 1014", CXT5066_DELL_VOSTRO),
 	SND_PCI_QUIRK(0x1028, 0x0402, "Dell Vostro", CXT5066_DELL_VOSTRO),
 	SND_PCI_QUIRK(0x1028, 0x0408, "Dell Inspiron One 19T", CXT5066_IDEAPAD),
 	SND_PCI_QUIRK(0x103c, 0x360b, "HP G60", CXT5066_HP_LAPTOP),
 	SND_PCI_QUIRK(0x1043, 0x13f3, "Asus A52J", CXT5066_HP_LAPTOP),
+	SND_PCI_QUIRK(0x1043, 0x1643, "Asus K52JU", CXT5066_ASUS),
 	SND_PCI_QUIRK(0x1179, 0xff1e, "Toshiba Satellite C650D", CXT5066_IDEAPAD),
 	SND_PCI_QUIRK(0x1179, 0xff50, "Toshiba Satellite P500-PSPGSC-01800T", CXT5066_OLPC_XO_1_5),
 	SND_PCI_QUIRK(0x1179, 0xffe0, "Toshiba Satellite Pro T130-15F", CXT5066_OLPC_XO_1_5),
@@ -3109,16 +3094,10 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
 		      CXT5066_LAPTOP),
 	SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400s", CXT5066_THINKPAD),
-	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
 	SND_PCI_QUIRK(0x17aa, 0x21c5, "Thinkpad Edge 13", CXT5066_THINKPAD),
-	SND_PCI_QUIRK(0x17aa, 0x21b3, "Thinkpad Edge 13 (197)", CXT5066_IDEAPAD),
-	SND_PCI_QUIRK(0x17aa, 0x21b4, "Thinkpad Edge", CXT5066_IDEAPAD),
-	SND_PCI_QUIRK(0x17aa, 0x21c8, "Thinkpad Edge 11", CXT5066_IDEAPAD),
  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo G series", CXT5066_IDEAPAD),
-	SND_PCI_QUIRK(0x17aa, 0x390a, "Lenovo S10-3t", CXT5066_IDEAPAD),
-	SND_PCI_QUIRK(0x17aa, 0x3938, "Lenovo G series (AMD)", CXT5066_IDEAPAD),
-	SND_PCI_QUIRK(0x17aa, 0x3a0d, "ideapad", CXT5066_IDEAPAD),
+	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo G560", CXT5066_ASUS),
+	SND_PCI_QUIRK_VENDOR(0x17aa, "Lenovo", CXT5066_IDEAPAD), /* Fallback for Lenovos without dock mic */
 	{}
 };
 
@@ -3173,13 +3152,15 @@ static int patch_cxt5066(struct hda_codec *codec)
 		spec->num_init_verbs++;
 		spec->dell_automute = 1;
 		break;
+	case CXT5066_ASUS:
 	case CXT5066_HP_LAPTOP:
 		codec->patch_ops.init = cxt5066_init;
-		codec->patch_ops.unsol_event = cxt5066_hp_laptop_event;
+		codec->patch_ops.unsol_event = cxt5066_unsol_event;
 		spec->init_verbs[spec->num_init_verbs] =
 			cxt5066_init_verbs_hp_laptop;
 		spec->num_init_verbs++;
-		spec->hp_laptop = 1;
+		spec->hp_laptop = board_config == CXT5066_HP_LAPTOP;
+		spec->asus = board_config == CXT5066_ASUS;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixer_master;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixers;
 		/* no S/PDIF out */
@@ -3213,7 +3194,7 @@ static int patch_cxt5066(struct hda_codec *codec)
 		break;
 	case CXT5066_DELL_VOSTRO:
 		codec->patch_ops.init = cxt5066_init;
-		codec->patch_ops.unsol_event = cxt5066_vostro_event;
+		codec->patch_ops.unsol_event = cxt5066_unsol_event;
 		spec->init_verbs[0] = cxt5066_init_verbs_vostro;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixer_master_olpc;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixers;
@@ -3230,7 +3211,7 @@ static int patch_cxt5066(struct hda_codec *codec)
 		break;
 	case CXT5066_IDEAPAD:
 		codec->patch_ops.init = cxt5066_init;
-		codec->patch_ops.unsol_event = cxt5066_ideapad_event;
+		codec->patch_ops.unsol_event = cxt5066_unsol_event;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixer_master;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixers;
 		spec->init_verbs[0] = cxt5066_init_verbs_ideapad;
@@ -3246,7 +3227,7 @@ static int patch_cxt5066(struct hda_codec *codec)
 		break;
 	case CXT5066_THINKPAD:
 		codec->patch_ops.init = cxt5066_init;
-		codec->patch_ops.unsol_event = cxt5066_thinkpad_event;
+		codec->patch_ops.unsol_event = cxt5066_unsol_event;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixer_master;
 		spec->mixers[spec->num_mixers++] = cxt5066_mixers;
 		spec->init_verbs[0] = cxt5066_init_verbs_thinkpad;
@@ -3752,7 +3733,7 @@ static int cx_auto_build_output_controls(struct hda_codec *codec)
 	struct conexant_spec *spec = codec->spec;
 	int i, err;
 	int num_line = 0, num_hp = 0, num_spk = 0;
-	static const char *texts[3] = { "Front", "Surround", "CLFE" };
+	static const char * const texts[3] = { "Front", "Surround", "CLFE" };
 
 	if (spec->dac_info_filled == 1)
 		return cx_auto_add_pb_volume(codec, spec->dac_info[0].dac,
