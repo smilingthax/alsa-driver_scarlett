@@ -2130,7 +2130,8 @@ fi
 
 dnl Check for RTC timer support...
 AC_MSG_CHECKING(for RTC callback support in kernel)
-rtcsup="0"
+rtcsup=""
+if test "$kversion.$kpatchlevel" = "2.6" -a "$kpatchlevel" -ge 15; then
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC=$CC
 CFLAGS="$KERNEL_CHECK_CFLAGS"
@@ -2154,6 +2155,9 @@ AC_TRY_COMPILE([
 )
 CFLAGS="$ac_save_CFLAGS"
 CC=$ac_save_CC
+else
+AC_MSG_RESULT([may be buggy, skipped])
+fi
 CONFIG_SND_RTCTIMER=$rtcsup
 AC_SUBST(CONFIG_SND_RTCTIMER)
 test "$CONFIG_SND_RTCTIMER" = "m" && AC_DEFINE(CONFIG_SND_RTCTIMER_MODULE)
