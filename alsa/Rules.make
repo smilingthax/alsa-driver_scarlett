@@ -35,7 +35,7 @@ endif
 
 else
 
-TOPDIR = $(SND_TOPDIR)
+TOPDIR = $(MAINSRCDIR)
 
 comma = ,
 

@@ -1,11 +1,11 @@
+ifndef SND_TOPDIR
+SND_TOPDIR=../..
+endif
+
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-EXTRA_CLEAN = vx_entry.c
-
-#
-#
-#
+clean-files := vx_entry.c
 
 export-objs = vx_entry.o
 

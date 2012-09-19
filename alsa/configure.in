@@ -941,6 +941,7 @@ if test "$CONFIG_ISAPNP" = "y"; then
   AC_DEFINE(CONFIG_ISAPNP)
   CONFIG_PNP=$CONFIG_ISAPNP
   AC_DEFINE(CONFIG_PNP)
+  AC_SUBST(CONFIG_PNP)
 fi
 
 dnl Check for strlcpy...
