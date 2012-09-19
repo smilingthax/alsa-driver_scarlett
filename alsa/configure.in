@@ -87,8 +87,9 @@ EOF
   exit 1
 fi
 KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
+HACK_KERNEL_INC=""
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
@@ -154,7 +155,7 @@ AC_MSG_RESULT($kaversion)
 dnl Check for GCC version...
 AC_MSG_CHECKING(for GCC version)
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_CACHE_VAL(kernel_gcc,
 [AC_TRY_RUN([
 #include <stdio.h>
@@ -342,7 +343,7 @@ AC_DEFUN([CHECK_KERNEL_CONFIG_BUILTIN], [
   boolvar="$1"
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS $KERNEL_INC"
+  CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
   boolchk=""
   AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -368,7 +369,7 @@ AC_DEFUN([CHECK_KERNEL_CONFIG], [
   boolvar1="$1_MODULE"
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS $KERNEL_INC"
+  CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
   boolchk=""
   AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -593,7 +594,7 @@ CONFIG_SND_BIT32_EMUL=
 processor=""
 rm -f processor.id
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_RUN([
 #include <stdio.h>
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -773,6 +774,15 @@ case "$processor" in
     c_opts="$c_opts -Wa,-mev6"
     processor="alpha"
     CONFIG_ALPHA=y
+  cat > $SRCDIR/include/asm/hack-current.h << EOF
+#ifndef _ALPHA_CURRENT_H
+#define _ALPHA_CURRENT_H
+
+extern struct task_struct *current;
+
+#endif /* !(_ALPHA_CURRENT_H) */
+EOF
+    HACK_KERNEL_INC="$HACK_KERNEL_INC --include $SRCDIR/include/asm/hack-current.h"
     ;;
   ppc)
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
@@ -1019,7 +1029,7 @@ dnl Check for strlcpy...
 AC_MSG_CHECKING(for strlcpy)
 strlcpy="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1044,7 +1054,7 @@ dnl Check for snprintf...
 AC_MSG_CHECKING(for snprintf)
 snprintf="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1068,7 +1078,7 @@ dnl Check for vmalloc_to_page...
 AC_MSG_CHECKING(for vmalloc_to_page)
 vmalloc_to_page="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1093,7 +1103,7 @@ dnl Check for old kmod...
 AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1116,7 +1126,7 @@ dnl Check for PDE...
 AC_MSG_CHECKING(for PDE)
 pde_defined="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1141,7 +1151,7 @@ dnl Check for pci_consistent_set_dma_mask()
 AC_MSG_CHECKING(for pci_set_consistent_dma_mask)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1164,7 +1174,7 @@ dnl Check for tty->count is the atomic type
 AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall $KERNEL_INC"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1188,7 +1198,7 @@ if test "$CONFIG_VIDEO_DEV" = "y"; then
 AC_MSG_CHECKING(for video_get_drvdata)
 video_get_drvdata="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1216,7 +1226,7 @@ dnl Check for old kill_fasync...
 AC_MSG_CHECKING(for old kill_fasync)
 oldkfasync="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1244,7 +1254,7 @@ dnl Check for dma_addr_t
 AC_MSG_CHECKING(for dma_addr_t)
 dma_addr_t="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1267,7 +1277,7 @@ dnl Check for MUTEX macros
 AC_MSG_CHECKING(for MUTEX macros)
 have_mutex_macros="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1371,7 +1381,7 @@ dnl Check for RTC timer support...
 AC_MSG_CHECKING(for RTC callback support in kernel)
 rtcsup="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $KERNEL_INC"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 #if defined(__alpha__) || (!defined(CONFIG_RTC) && !defined(CONFIG_RTC_MODULE))
