@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/pcm_native.c	2005-05-18 16:21:52.000000000 +0200
-+++ pcm_native.c	2005-05-18 16:22:20.000000000 +0200
+--- ../alsa-kernel/core/pcm_native.c	2005-05-18 18:43:53.000000000 +0200
++++ pcm_native.c	2005-05-18 18:56:50.000000000 +0200
 @@ -1,3 +1,4 @@
 +#define __NO_VERSION__
  /*
@@ -226,15 +226,35 @@
  	atomic_inc(&substream->runtime->mmap_count);
  	return 0;
  }
-@@ -3108,10 +3195,17 @@
+@@ -3104,14 +3191,37 @@
+ 	area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+ #endif
+ 	area->vm_ops = &snd_pcm_vm_ops_data_mmio;
++#ifndef LINUX_2_2
+ 	area->vm_private_data = substream;
++#else
++	area->vm_private_data = (long)substream;
++#endif
  	area->vm_flags |= VM_IO;
  	size = area->vm_end - area->vm_start;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
  	offset = area->vm_pgoff << PAGE_SHIFT;
++#else
++	offset = area->vm_offset;
++#endif
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
++#define io_remap_page_range remap_page_range
++#endif
 +#ifdef CONFIG_HAVE_REMAP_PFN_RANGE
  	if (io_remap_pfn_range(area, area->vm_start,
  				(substream->runtime->dma_addr + offset) >> PAGE_SHIFT,
  				size, area->vm_page_prot))
  		return -EAGAIN;
++#elif defined(CONFIG_OLD_REMAP_PAGE_RANGE)
++	if (io_remap_page_range(area->vm_start,
++				substream->runtime->dma_addr + offset,
++				size, area->vm_page_prot))
++		return -EAGAIN;
 +#else
 +	if (io_remap_page_range(area, area->vm_start,
 +				substream->runtime->dma_addr + offset,
@@ -244,7 +264,7 @@
  	atomic_inc(&substream->runtime->mmap_count);
  	return 0;
  }
-@@ -3145,7 +3239,11 @@
+@@ -3145,7 +3255,11 @@
  	    runtime->access == SNDRV_PCM_ACCESS_RW_NONINTERLEAVED)
  		return -EINVAL;
  	size = area->vm_end - area->vm_start;
@@ -256,7 +276,7 @@
  	dma_bytes = PAGE_ALIGN(runtime->dma_bytes);
  	if ((size_t)size > dma_bytes)
  		return -EINVAL;
-@@ -3168,7 +3266,11 @@
+@@ -3168,7 +3282,11 @@
  	substream = pcm_file->substream;
  	snd_assert(substream != NULL, return -ENXIO);
  
@@ -268,7 +288,7 @@
  	switch (offset) {
  	case SNDRV_PCM_MMAP_OFFSET_STATUS:
  		if (substream->no_mmap_ctrl)
-@@ -3205,12 +3307,34 @@
+@@ -3205,12 +3323,34 @@
  /*
   * ioctl32 compat
   */
@@ -304,7 +324,7 @@
  /*
   *  To be removed helpers to keep binary compatibility
   */
-@@ -3326,27 +3450,43 @@
+@@ -3326,27 +3466,43 @@
   */
  
  static struct file_operations snd_pcm_f_ops_playback = {
