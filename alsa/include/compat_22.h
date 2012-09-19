@@ -240,6 +240,7 @@ void snd_pci_compat_free_consistent(struct pci_dev *, long, void *, dma_addr_t);
 #define pci_register_driver snd_pci_compat_register_driver
 #define pci_unregister_driver snd_pci_compat_unregister_driver
 #define pci_set_power_state snd_pci_compat_set_power_state
+#define pci_match_device snd_pci_compat_match_device
 
 #define pci_dma_supported snd_pci_compat_dma_supported
 
