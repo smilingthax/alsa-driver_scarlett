@@ -134,7 +134,9 @@ int snd_pci_compat_register_driver(struct pci_driver *drv)
 		if (! map)
 			count += snd_pci_announce_device(drv, dev);
 	}
-	return count;
+	if (! count)
+		return -ENODEV;
+	return 0;
 }
 
 void snd_pci_compat_unregister_driver(struct pci_driver *drv)

@@ -45,13 +45,10 @@
  * connected.
  */
 
-#include <linux/module.h>
-#include <linux/kernel.h>
+#include <sound/driver.h>
 #include <linux/interrupt.h>
-#include <linux/slab.h>
 #include <linux/delay.h>
 
-#include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>

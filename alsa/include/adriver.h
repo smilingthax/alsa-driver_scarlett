@@ -785,6 +785,8 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 /* use pci_module_init on 2.4 kernels */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #ifdef CONFIG_PCI
+#include <linux/pci.h>
+#undef pci_register_driver
 #define pci_register_driver	pci_module_init
 #endif
 #endif
