@@ -2088,7 +2088,7 @@ module_exit(__platform_driver##_exit);
 #endif /* < 3.2 */
 
 /* module_usb_driver() wrapper */
-#if LINUX_VERSION_CODE <= KERNEL_VERSION(3, 2, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
 #include <linux/device.h>
 #ifndef module_driver
 #define module_driver(__driver, __register, __unregister) \
@@ -2099,8 +2099,14 @@ module_exit(__driver##_exit);
 #define module_usb_driver(__usb_driver) \
     module_driver(__usb_driver, usb_register, \
 			usb_deregister)
+#define module_i2c_driver(__i2c_driver) \
+	module_driver(__i2c_driver, i2c_add_driver, \
+			i2c_del_driver)
+#define module_spi_driver(__spi_driver) \
+	module_driver(__spi_driver, spi_register_driver, \
+			spi_unregister_driver)
 #endif
-#endif /* <= 3.2 */
+#endif /* < 3.3 */
 
 /* some old kernels define info(), and this breaks the build badly */
 #ifdef info
