@@ -2014,8 +2014,6 @@ static int snd_pcm_delay(snd_pcm_substream_t *substream, snd_pcm_sframes_t *res)
 			n = snd_pcm_playback_hw_avail(runtime);
 		else
 			n = snd_pcm_capture_avail(runtime);
-		if (put_user(n, res))
-			err = -EFAULT;
 		break;
 	case SNDRV_PCM_STATE_XRUN:
 		err = -EPIPE;
@@ -2026,6 +2024,9 @@ static int snd_pcm_delay(snd_pcm_substream_t *substream, snd_pcm_sframes_t *res)
 		break;
 	}
 	spin_unlock_irq(&runtime->lock);
+	if (!err)
+		if (put_user(n, res))
+			err = -EFAULT;
 	return err;
 }
 		
