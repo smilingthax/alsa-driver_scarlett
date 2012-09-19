@@ -22,6 +22,10 @@
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 
+#ifndef PCI_DEVICE_ID_VIA_8365_1
+#define PCI_DEVICE_ID_VIA_8365_1 0x8305
+#endif
+
 // module parameters (see "Module Parameters")
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
