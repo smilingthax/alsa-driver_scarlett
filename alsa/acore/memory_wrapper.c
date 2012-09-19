@@ -10,6 +10,14 @@
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
+#include <linux/ioport.h>
+static inline void snd_memory_wrapper_request_region(unsigned long from, unsigned long extent, const char *name)
+{
+	request_region(from, extent, name);
+}
+#endif
+
 #include "config.h"
 #include "adriver.h"
 #include <linux/mm.h>
