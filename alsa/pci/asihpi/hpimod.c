@@ -20,6 +20,7 @@
 Linux HPI driver module
 *******************************************************************************/
 
+#include <sound/driver.h>
 #include "hpi.h"
 #include "hpipci.h"
 #include "hpidebug.h"
