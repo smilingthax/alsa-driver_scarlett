@@ -2202,7 +2202,11 @@ static int __init alsa_card_opti9xx_init(void)
 {
 	int cards, error;
 
+#ifdef CONFIG_PNP
 	cards = pnp_register_card_driver(&opti9xx_pnpc_driver);
+#else
+	cards = 0;
+#endif
 	if (cards == 0 && (error = snd_card_opti9xx_probe(NULL, NULL)) < 0) {
 #ifdef CONFIG_PNP
 		pnp_unregister_card_driver(&opti9xx_pnpc_driver);
