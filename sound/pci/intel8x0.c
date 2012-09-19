@@ -949,6 +949,13 @@ static void snd_intel8x0_setup_multi_channels(intel8x0_t *chip, int channels)
 			cnt |= ICH_PCM_4;
 		else if (chip->multi6 && channels == 6)
 			cnt |= ICH_PCM_6;
+		if (chip->device_type == DEVICE_NFORCE) {
+			/* reset to 2ch once to keep the 6 channel data in alignment,
+			 * to start from Front Left always
+			 */
+			iputdword(chip, ICHREG(GLOB_CNT), (cnt & 0xcfffff));
+			mdelay(50); /* grrr... */
+		}
 		iputdword(chip, ICHREG(GLOB_CNT), cnt);
 		break;
 	}
@@ -1633,12 +1640,6 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 		.name = "Dell Optiplex GX260",	/* AD1981A */
 		.type = AC97_TUNE_HP_ONLY
 	},
-	{	/* FIXME: which codec? */
-		.vendor = 0x103c,
-		.device = 0x00c3,
-		.name = "Hewlett-Packard onboard",
-		.type = AC97_TUNE_HP_ONLY
-	},
  	{
 		.vendor = 0x1043,
 		.device = 0x80f3,
@@ -1658,23 +1659,10 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 		.type = AC97_TUNE_HP_ONLY
 	},
 	{
-		.vendor = 0x11d4,
-		.vendor = 0x5375,
-		.name = "ADI AD1985 (discrete)",
-		.type = AC97_TUNE_HP_ONLY
-	},
-	{
 		.vendor = 0x1734,
 		.device = 0x0088,
 		.name = "Fujitsu-Siemens D1522",	/* AD1981 */
 		.type = AC97_TUNE_HP_ONLY
-	},
-	{
-		.vendor = 0x8086,
-		.device = 0x2000,
-		.mask = 0xfff0,
-		.name = "Intel ICH5/AD1985",
-		.type = AC97_TUNE_AD_SHARING
 	},
 	{
 		.vendor = 0x8086,
@@ -1703,11 +1691,10 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 		.name = "Intel ICH5/AD1985",
 		.type = AC97_TUNE_AD_SHARING
 	},
-	{
-		.vendor = 0x8086,
-		.device = 0xa000,
-		.mask = 0xfff0,
-		.name = "Intel ICH5/AD1985",
+	{	/* FIXME: which codec? */
+		.vendor = 0x103c,
+		.device = 0x00c3,
+		.name = "Hewlett-Packard onboard",
 		.type = AC97_TUNE_HP_ONLY
 	},
 	{ } /* terminator */
