@@ -72,7 +72,7 @@
 	}
 },
 {
-	USB_DEVICE(0x0499, 0x1004),
+	USB_DEVICE_VENDOR_SPEC(0x0499, 0x1004),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "Yamaha",
 		.product_name = "UW500",
@@ -126,7 +126,7 @@
 	}
 },
 {
-	USB_DEVICE(0x0499, 0x100a),
+	USB_DEVICE_VENDOR_SPEC(0x0499, 0x100a),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "Yamaha",
 		.product_name = "EOS BX",
@@ -464,9 +464,8 @@
 		.data = (void*) 9
 	}
 },
-#if 0 // FIXME
 {
-	USB_DEVICE(0x0763, 0x2001),
+	USB_DEVICE_VENDOR_SPEC(0x0763, 0x2001),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "M-Audio",
 		.product_name = "Quattro",
@@ -475,9 +474,8 @@
 		.data = (void*) 1
 	}
 },
-#endif // FIXME
 {
-	USB_DEVICE(0x0763, 0x2003),
+	USB_DEVICE_VENDOR_SPEC(0x0763, 0x2003),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
 		.vendor_name = "M-Audio",
 		.product_name = "AudioPhile",
