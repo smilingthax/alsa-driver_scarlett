@@ -145,9 +145,6 @@ struct pnp_dev * pnp_request_card_device(struct pnp_card_link *clink, const char
 	if (parse_id(id, &vendor, &function) < 0)
 		return NULL;
 	dev = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)clink->card, vendor, function, (struct isapnp_dev *)from);
-	if (dev != NULL && dev->p.active &&
-	    (clink->driver->flags & PNP_DRIVER_RES_DO_NOT_CHANGE) == 0)
-		return NULL;
 	return dev;
 }
 
@@ -193,6 +190,15 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 					dev = ninst->devs[i] = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)card, vendor, device, NULL);
 					if (dev == NULL)
 						goto __next;
+					if (! dev->p.active) {
+						if (! (drv->flags & PNP_DRIVER_RES_DO_NOT_CHANGE)) {
+							pnp_activate_dev(dev);
+						}
+					} else {
+						if ((drv->flags & PNP_DRIVER_RES_DISABLE) == PNP_DRIVER_RES_DISABLE) {
+							pnp_disable_dev(dev);
+						}
+					}
 				}
 				ninst->link.card = card;
 				ninst->link.driver = drv;
@@ -216,16 +222,12 @@ void pnp_unregister_card_driver(struct pnp_card_driver * drv)
 {
 	struct pnp_card_driver_instance *inst;
 	struct list_head *p, *n;
-	unsigned int i;
 	
 	list_for_each_safe(p, n, &pnp_card_drivers) {
 		inst = list_entry(p, struct pnp_card_driver_instance, list);
 		if (inst->link.driver == drv) {
 			list_del(p);
 			drv->remove(&inst->link);
-			if ((drv->flags & PNP_DRIVER_RES_DO_NOT_CHANGE) == 0)
-				for (i = 0; i < PNP_MAX_DEVICES && inst->devs[i]; i++)
-					pnp_release_card_device(inst->devs[i]);
 			kfree(inst);
 		}
 	}
@@ -346,7 +348,7 @@ int pnp_activate_dev(struct pnp_dev *dev)
 	unsigned int idx;
 
 	if (dev->p.active)
-		return -EBUSY;
+		return 0; /* FIXME: should be -EBUSY but 2.6 pnp layer behaves like this */
 
 	/* reserve the manual configuration */
 	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
@@ -367,6 +369,14 @@ int pnp_activate_dev(struct pnp_dev *dev)
 	kfree(tmp);
 
 	return dev->p.activate((struct isapnp_dev *)dev);
+}
+
+int pnp_disable_dev(struct pnp_dev *dev)
+{
+	if (! dev->p.active)
+		return 0;
+	return dev->p.deactivate((struct isapnp_dev *)dev);
+	/* FIXME: do we need clean up the resources again? */
 }
 
 static int __init pnp_init(void)
@@ -390,3 +400,4 @@ EXPORT_SYMBOL(pnp_unregister_driver);
 EXPORT_SYMBOL(pnp_init_resource_table);
 EXPORT_SYMBOL(pnp_manual_config_dev);
 EXPORT_SYMBOL(pnp_activate_dev);
+EXPORT_SYMBOL(pnp_disable_dev);
