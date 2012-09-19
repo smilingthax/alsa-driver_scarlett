@@ -941,13 +941,18 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 	alts = &iface->altsetting[fmt->altset_idx];
 	snd_assert(alts->bAlternateSetting == fmt->altsetting, return -EINVAL);
 
+	/* close the old interface */
+	if (subs->interface >= 0 && subs->interface != fmt->iface) {
+		usb_set_interface(subs->dev, subs->interface, 0);
+		subs->interface = -1;
+	}
+
 	/* create a data pipe */
 	ep = alts->endpoint[0].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
 	if (is_playback)
 		subs->datapipe = usb_sndisocpipe(dev, ep);
 	else
 		subs->datapipe = usb_rcvisocpipe(dev, ep);
-	subs->interface = fmt->iface;
 	subs->format = fmt->altset_idx;
 	subs->syncpipe = subs->syncinterval = 0;
 	subs->maxpacksize = alts->endpoint[0].wMaxPacketSize;
@@ -963,14 +968,14 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 		    alts->endpoint[1].bmAttributes != 0x01 ||
 		    alts->endpoint[1].bSynchAddress != 0) {
 			snd_printk(KERN_ERR "%d:%d:%d : invalid synch pipe\n",
-				   dev->devnum, subs->interface, fmt->altsetting);
+				   dev->devnum, fmt->iface, fmt->altsetting);
 			return -EINVAL;
 		}
 		ep = alts->endpoint[1].bEndpointAddress;
 		if ((is_playback && ep != (alts->endpoint[0].bSynchAddress | USB_DIR_IN)) ||
 		    (! is_playback && ep != (alts->endpoint[0].bSynchAddress & ~USB_DIR_IN))) {
 			snd_printk(KERN_ERR "%d:%d:%d : invalid synch pipe\n",
-				   dev->devnum, subs->interface, fmt->altsetting);
+				   dev->devnum, fmt->iface, fmt->altsetting);
 			return -EINVAL;
 		}
 		ep &= USB_ENDPOINT_NUMBER_MASK;
@@ -982,13 +987,15 @@ static int set_format(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 	}
 
 	/* set interface */
-	if (usb_set_interface(dev, subs->interface, fmt->altset_idx) < 0) {
+	if (usb_set_interface(dev, fmt->iface, fmt->altset_idx) < 0) {
 		snd_printk(KERN_ERR "%d:%d:%d: usb_set_interface failed\n",
-			   dev->devnum, subs->interface, fmt->altsetting);
+			   dev->devnum, fmt->iface, fmt->altsetting);
 		return -EIO;
 	}
+	snd_printdd(KERN_INFO "setting usb interface %d:%d\n", fmt->iface, fmt->altset_idx);
+	subs->interface = fmt->iface;
 
-	ep = usb_pipeendpoint(subs->datapipe) | (subs->datapipe & USB_DIR_IN);
+	ep = alts->endpoint[0].bEndpointAddress;
 	/* if endpoint has pitch control, enable it */
 	if (fmt->attributes & EP_CS_ATTR_PITCH_CONTROL) {
 		data[0] = 1;
