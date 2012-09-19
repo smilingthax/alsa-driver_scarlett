@@ -492,4 +492,15 @@ static inline void class_simple_device_remove(int devnum) { return; }
 	MODULE_PARM(name, SNDRV_MODULE_TYPE_##type)
 #endif
 
+/* power management compatibility layer */
+#ifdef CONFIG_PM
+#ifdef PCI_OLD_SUSPEND
+void snd_card_pci_suspend(struct pci_dev *dev);
+void snd_card_pci_resume(struct pci_dev *dev);
+#define SND_PCI_PM_CALLBACKS \
+	.suspend = snd_card_pci_suspend,  .resume = snd_card_pci_resume
+#endif
+#endif
+
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
