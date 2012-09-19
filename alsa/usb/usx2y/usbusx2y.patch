@@ -151,7 +151,7 @@
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
 +		snd_card_free(ptr);
 +#else
-+		snd_card_free_in_thread(ptr);
++		snd_card_free_when_closed(ptr);
 +#endif
  	}
  }

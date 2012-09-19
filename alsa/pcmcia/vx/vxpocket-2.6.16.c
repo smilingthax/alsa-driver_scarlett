@@ -71,7 +71,7 @@ static void vxpocket_release(dev_link_t *link)
 }
 
 /*
- * destructor, called from snd_card_free_in_thread()
+ * destructor, called from snd_card_free_when_closed()
  */
 static int snd_vxpocket_dev_free(struct snd_device *device)
 {
@@ -395,7 +395,7 @@ static void vxpocket_detach(struct pcmcia_device *p_dev)
 	chip->chip_status |= VX_STAT_IS_STALE; /* to be sure */
 	snd_card_disconnect(chip->card);
 	vxpocket_release(link);
-	snd_card_free_in_thread(chip->card);
+	snd_card_free_when_closed(chip->card);
 }
 
 /*
