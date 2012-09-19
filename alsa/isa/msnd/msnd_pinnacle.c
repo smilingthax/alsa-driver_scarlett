@@ -705,12 +705,20 @@ static int upload_dsp_code(void)
 
 	outb(HPBLKSEL_0, dev.io + HP_BLKS);
 #ifndef HAVE_DSPCODEH
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
 	err = request_firmware(&init_fw, INITCODEFILE, dev.card->dev);
+#else
+	err = request_firmware(&init_fw, INITCODEFILE, "msnd");
+#endif
 	if (err < 0) {
 		printk(KERN_ERR LOGNAME ": Error loading " INITCODEFILE);
 		goto cleanup1;
 	}
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
 	err = request_firmware(&perm_fw, PERMCODEFILE, dev.card->dev);
+#else
+	err = request_firmware(&perm_fw, PERMCODEFILE, "msnd");
+#endif
 	if (err < 0) {
 		printk(KERN_ERR LOGNAME ": Error loading " PERMCODEFILE);
 		goto cleanup;

@@ -372,8 +372,8 @@ int snd_pci_compat_request_region(struct pci_dev *pdev, int bar, char *res_name)
 void snd_pci_compat_release_region(struct pci_dev *pdev, int bar);
 int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name);
 void snd_pci_compat_release_regions(struct pci_dev *pdev);
-void snd_pci_compat_save_state(struct pci_dev *pdev);
-void snd_pci_compat_restore_state(struct pci_dev *pdev);
+int snd_pci_compat_save_state(struct pci_dev *pdev);
+int snd_pci_compat_restore_state(struct pci_dev *pdev);
 
 #define pci_module_init	snd_pci_compat_register_driver
 
