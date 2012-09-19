@@ -265,7 +265,7 @@
 
 /* ********************************************************************** */
 
-#define VENDOR_NAME  "SekD/Marian"
+#define VENDOR_NAME  "SekD-Marian"
         /* Sek'd builds the card, but the vendor ID is Marian's.  So I decided
          * to use Marian as the vendor name.  Correct me if I'm wrong. */
 
@@ -6192,18 +6192,13 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_pdplus_init(void)
 {
-        ENTER;
-
         /*
          * Check that our macros work. */
         snd_assert (PDPLUS_HW_REG_WR_INITIAL_1 == 0x22, return -ENXIO);
         snd_assert (PDPLUS_HW_REG_WR_INITIAL_2 == 0x32, return -ENXIO);
 
         printk (PDPLUS_KERN_INFO "version " PDPLUS_VERSION "\n");
-        if (pci_register_driver (&driver) <= 0)
-                LEAVE (-ENODEV);
-
-        LEAVE (0);
+	return pci_register_driver (&driver);
 }
 
 static void __exit alsa_card_pdplus_exit(void)
