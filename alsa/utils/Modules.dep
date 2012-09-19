@@ -8,6 +8,9 @@
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm
 
+%dir linux/sound/isa
+|snd-sscape snd-hwdep snd-mpu401-uart snd-cs4231-lib
+
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
 
