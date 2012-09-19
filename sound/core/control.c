@@ -951,6 +951,8 @@ static int snd_ctl_elem_user_tlv(struct snd_kcontrol *kcontrol,
 		ue->tlv_data = new_data;
 		ue->tlv_data_size = size;
 	} else {
+		if (! ue->tlv_data_size || ! ue->tlv_data)
+			return -ENXIO;
 		if (size < ue->tlv_data_size)
 			return -ENOSPC;
 		if (copy_to_user(tlv, ue->tlv_data, ue->tlv_data_size))
@@ -1048,6 +1050,7 @@ static int snd_ctl_elem_add(struct snd_ctl_file *file,
 	if (ue == NULL)
 		return -ENOMEM;
 	ue->info = *info;
+	ue->info.access = 0;
 	ue->elem_data = (char *)ue + sizeof(*ue);
 	ue->elem_data_size = private_size;
 	kctl.private_free = snd_ctl_elem_user_free;
