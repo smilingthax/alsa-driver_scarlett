@@ -907,7 +907,7 @@ static int __devinit snd_fm801_create(snd_card_t * card,
 	static snd_device_ops_t ops = {
 		.dev_free =	snd_fm801_dev_free,
 	};
-	
+
 	*rchip = NULL;
 	if ((err = pci_enable_device(pci)) < 0)
 		return err;
@@ -920,13 +920,13 @@ static int __devinit snd_fm801_create(snd_card_t * card,
 	chip->irq = -1;
 	chip->port = pci_resource_start(pci, 0);
 	if ((chip->res_port = request_region(chip->port, 0x80, "FM801")) == NULL) {
-		snd_fm801_free(chip);
 		snd_printk("unable to grab region 0x%lx-0x%lx\n", chip->port, chip->port + 0x80 - 1);
+		snd_fm801_free(chip);
 		return -EBUSY;
 	}
 	if (request_irq(pci->irq, snd_fm801_interrupt, SA_INTERRUPT|SA_SHIRQ, "FM801", (void *)chip)) {
-		snd_fm801_free(chip);
 		snd_printk("unable to grab IRQ %d\n", chip->irq);
+		snd_fm801_free(chip);
 		return -EBUSY;
 	}
 	chip->irq = pci->irq;
@@ -1070,7 +1070,7 @@ static int __devinit snd_card_fm801_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
- 
+
 	strcpy(card->driver, "FM801");
 	strcpy(card->shortname, "ForteMedia FM801-");
 	strcat(card->shortname, chip->multichannel ? "AU" : "AS");
@@ -1098,7 +1098,7 @@ static struct pci_driver driver = {
 	.probe = snd_card_fm801_probe,
 	.remove = __devexit_p(snd_card_fm801_remove),
 };
-                                                                
+
 static int __init alsa_card_fm801_init(void)
 {
 	int err;
