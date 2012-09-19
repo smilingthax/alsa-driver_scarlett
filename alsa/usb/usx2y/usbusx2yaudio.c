@@ -43,6 +43,10 @@
 static void i_usX2Y_urb_complete__old_(struct urb *urb);
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 0) /* FIXME: version? */
+typedef struct usb_iso_packet_descriptor iso_packet_descriptor_t;
+#endif
+
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/pcm.h>
@@ -168,7 +172,7 @@ static int usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs)
  * a temporary buffer and urb points to that.
  */
 static int usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
-				  struct usb_iso_packet_descriptor *packet,
+				  iso_packet_descriptor_t *packet,
 				  struct urb *urb)
 {
 	int count, counts, pack;
