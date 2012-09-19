@@ -1491,4 +1491,44 @@ typedef unsigned long uintptr_t;
 /* undefine SNDRV_CARDS again - it'll be re-defined in sound/core.h */
 #undef SNDRV_CARDS
 
+/* put_unaligned_*() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 26)
+#include <asm/unaligned.h>
+static inline void put_unaligned_le16(u16 val, void *p)
+{
+	val = cpu_to_le16(val);
+	put_unaligned(val, (u16 *)p);
+}
+
+static inline void put_unaligned_le32(u32 val, void *p)
+{
+	val = cpu_to_le32(val);
+	put_unaligned(val, (u32 *)p);
+}
+
+static inline void put_unaligned_le64(u64 val, void *p)
+{
+	val = cpu_to_le64(val);
+	put_unaligned(val, (u64 *)p);
+}
+
+static inline void put_unaligned_be16(u16 val, void *p)
+{
+	val = cpu_to_be16(val);
+	put_unaligned(val, (u16 *)p);
+}
+
+static inline void put_unaligned_be32(u32 val, void *p)
+{
+	val = cpu_to_be32(val);
+	put_unaligned(val, (u32 *)p);
+}
+
+static inline void put_unaligned_be64(u64 val, void *p)
+{
+	val = cpu_to_be64(val);
+	put_unaligned(val, (u64 *)p);
+}
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */

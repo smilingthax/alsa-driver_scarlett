@@ -676,8 +676,6 @@ CHECK_KERNEL_HEADER(linux/kthread.h, [#include \"kthread_compat.h\"
 ])
 CHECK_KERNEL_HEADER(asm/irq_regs.h)
 CHECK_KERNEL_HEADER(linux/seq_file.h)
-CHECK_KERNEL_HEADER(asm/unaligned.h, [#include \"unaligned_compat.h\"
-])
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
@@ -2319,6 +2317,14 @@ else
 fi
 
 dnl Check for version...
+AC_MSG_CHECKING(for driver extra-version)
+AC_ARG_WITH(extra-version,
+  [  --with-extra-version=VERSION  specifies the extra version string],
+  extra_version="$withval", extra_version="")
+AC_MSG_RESULT($extra_version)
+if test -n "$extra_version"; then
+  CONFIG_SND_VERSION="$CONFIG_SND_VERSION"-"$extra_version"
+fi
 AC_MSG_CHECKING(for driver version)
 AC_DEFINE_UNQUOTED(CONFIG_SND_VERSION, "$CONFIG_SND_VERSION")
 AC_SUBST(CONFIG_SND_VERSION)
