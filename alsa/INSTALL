@@ -70,6 +70,20 @@ Quick install
    you pass "all".  Or, pass "all" and additionally "NAME=n".  This will
    enable all but the ones that with =n suffix.  See examples below.
 
+ * Module installation path
+   By passing --with-moddir, you can specify the path to install
+   modules.  When an absolute path is given, the modules are installed
+   to the given directory.  When a relative path is given,
+   e.g. --with-moddir=updates, the modules will be installed to
+   /lib/modules/$VERSION/updates directory.  The directory name might
+   depend on distributions, but in general, "updates" should work.
+
+   Note that when no moddir option is given, the newly built modules
+   will _replace_ the existing modules in
+   /lib/modules/$VERSION/kernel/sound. 
+   So, if you want to keep the original binaries, better to use
+   --with-moddir=updates.
+
  * Example
       ./configure --with-debug=full
           Enable debug option "full"
@@ -80,6 +94,23 @@ Quick install
 
       ./configure --with-cards=all,hda-intel=n
           Build drivers except for hda-intel.
+
+ * Tips
+  - You shouldn't try to save the build time too much.  Better to
+    avoid to pass --with-cards and especially --with-card-options
+    options unless you really know what you are doing.  Depending
+    on the combination of options, you can screw up the build pretty
+    easily!
+
+  - The --withdebug=full option is in general recommended.
+
+  - On modern distros with 2.6 kernel, you are likely using udev.
+    Don't forget to add --enable-dynamic-minors option.  Otherwise a
+    device-file mismatch might happen.
+
+  - In short, a safe combination for the recent distros is:
+	./configure --with-debug=full --enable-dynamic-minors \
+		--with-moddir=updates
 
 4) Run 'make'.
 
@@ -93,9 +124,11 @@ Quick install
    using a DEVFS or udev.
 
 7) Edit your kernel module config (either /etc/modprobe.conf or
-   /etc/modules.conf, depending on the kernel version). If you are not
-   sure, what to do, you may try the alsaconf script available in
-   the alsa-utils package.
+   /etc/modules.conf, depending on the kernel version).
+   The recent distros don't need special setups (except for some ISA
+   or static drivers), so you can skip this.
+   If you are not sure what to do, you may try the alsaconf script
+   available in the alsa-utils package.
 
 8) Run 'modprobe snd-xxxx' where xxxx is the name of your card.
    Note: All ALSA ISA drivers support ISA PnP natively, so you don't need
@@ -141,11 +174,11 @@ Driver cannot be activated?
    create a new ticket in our bug reporting system.
 
 
-Compilation from HG sources
-===========================
+Compilation from GIT sources
+============================
 
 You need GNU packages autoconf and automake installed in your system
-to compile HG (Mercurial) sources of alsa-driver package.
+to compile GIT sources of alsa-driver package.
 
 For compilation you can use these commands:
 
@@ -157,7 +190,7 @@ For compilation you can use these commands:
 	make dep
 	make
 
-The included hgcompile script does this job for you.
+The included gitcompile script does this job for you.
 
 Note: Some automake packages have missing aclocal program. Use newer version
       in the case.
@@ -180,7 +213,7 @@ to setup-alsa-kernel
 
 	utils/setup-alsa-kernel -c YOUR-LINUX-KERNEL-TREE-PATH
 
-After that, run hgcompile script.
+After that, run gitcompile script.
 
 
 Cross-compiling
