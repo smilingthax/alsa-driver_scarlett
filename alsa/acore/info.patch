@@ -1,5 +1,5 @@
---- info.c	2003-05-30 14:29:41.000000000 +0200
-+++ info.c	2003-05-30 14:28:42.000000000 +0200
+--- ../../alsa-kernel/core/info.c	Fri Jul 18 18:07:35 2003
++++ info.c	Mon Aug 11 11:16:29 2003
 @@ -1,3 +1,4 @@
 +#include "info.inc"
  /*
@@ -41,7 +41,7 @@
  	return ret;
  }
  
-@@ -489,7 +496,9 @@
+@@ -487,7 +494,9 @@
  
  static struct file_operations snd_info_entry_operations =
  {
@@ -51,7 +51,21 @@
  	.llseek =	snd_info_entry_llseek,
  	.read =		snd_info_entry_read,
  	.write =	snd_info_entry_write,
-@@ -908,9 +917,16 @@
+@@ -498,6 +507,13 @@
+ 	.release =	snd_info_entry_release,
+ };
+ 
++#ifdef LINUX_2_2
++static struct inode_operations snd_info_entry_inode_operations =
++{
++	&snd_info_entry_operations,     /* default sound info directory file-ops */
++};
++#endif
++
+ /**
+  * snd_create_proc_entry - create a procfs entry
+  * @name: the name of the proc file
+@@ -906,9 +922,16 @@
  		up(&info_mutex);
  		return -ENOMEM;
  	}
