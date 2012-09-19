@@ -12,9 +12,6 @@
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm
 
-%dir linux/sound/pci/mixart
-|snd-mixart snd-pcm
-
 %dir linux/sound/isa/msnd
 |snd-msnd-pinnacle snd-pcm snd-seq-midi
 

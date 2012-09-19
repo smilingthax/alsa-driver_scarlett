@@ -184,15 +184,6 @@ Additional Modules
 
     This module supports up to 8 cards and autoprobe.
 
-  Module snd-mixart
-  -----------------
-
-    Module for Digigram miXart8 soundcards.
-
-    Module supports multiple cards.
-    Note: One miXart8 board will be represented as 4 alsa cards.
-          See doc/MIXART.txt for details.
-
   Module snd-msnd-pinnacle
   ------------------------
 
