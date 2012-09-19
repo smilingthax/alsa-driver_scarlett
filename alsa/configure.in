@@ -2675,6 +2675,14 @@ else
 fi
 AC_SUBST(CONFIG_PM)
 
+dnl Check for CONFIG_HAS_DMA
+if test $kpatchlevel -ge 6 -a $ksublevel -ge 23; then
+  CHECK_KERNEL_CONFIG(CONFIG_HAS_DMA, [CONFIG_HAS_DMA])
+else
+  CONFIG_HAS_DMA=y
+fi
+AC_SUBST(CONFIG_HAS_DMA)
+
 dnl Check for which cards to compile driver for...
 CONFIG_SOUND=m
 ALSA_TOPLEVEL_SELECT
