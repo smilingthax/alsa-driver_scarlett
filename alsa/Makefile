@@ -6,10 +6,6 @@
 TOPDIR   = .
 ALSAKERNELDIR = ../alsa-kernel
 
-# for module installation
-TREETOPDIR := $(shell /bin/pwd)
-export TREETOPDIR
-
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
 else
