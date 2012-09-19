@@ -99,6 +99,7 @@ enum {
 	STAC_DELL_M4_3,
 	STAC_HP_M4,
 	STAC_HP_DV5,
+	STAC_HP_HDX,
 	STAC_92HD71BXX_MODELS
 };
 
@@ -152,6 +153,12 @@ enum {
 	STAC_DELL_3ST,
 	STAC_DELL_BIOS,
 	STAC_927X_MODELS
+};
+
+enum {
+	STAC_9872_AUTO,
+	STAC_9872_VAIO,
+	STAC_9872_MODELS
 };
 
 struct sigmatel_event {
@@ -1828,6 +1835,7 @@ static unsigned int *stac92hd71bxx_brd_tbl[STAC_92HD71BXX_MODELS] = {
 	[STAC_DELL_M4_3]	= dell_m4_3_pin_configs,
 	[STAC_HP_M4]		= NULL,
 	[STAC_HP_DV5]		= NULL,
+	[STAC_HP_HDX]           = NULL,
 };
 
 static const char *stac92hd71bxx_models[STAC_92HD71BXX_MODELS] = {
@@ -1838,6 +1846,7 @@ static const char *stac92hd71bxx_models[STAC_92HD71BXX_MODELS] = {
 	[STAC_DELL_M4_3] = "dell-m4-3",
 	[STAC_HP_M4] = "hp-m4",
 	[STAC_HP_DV5] = "hp-dv5",
+	[STAC_HP_HDX] = "hp-hdx",
 };
 
 static struct snd_pci_quirk stac92hd71bxx_cfg_tbl[] = {
@@ -1846,12 +1855,18 @@ static struct snd_pci_quirk stac92hd71bxx_cfg_tbl[] = {
 		      "DFI LanParty", STAC_92HD71BXX_REF),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DFI, 0x3101,
 		      "DFI LanParty", STAC_92HD71BXX_REF),
+	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xfff0, 0x3080,
+		      "HP", STAC_HP_DV5),
 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xfff0, 0x30f0,
 		      "HP dv4-7", STAC_HP_DV5),
 	SND_PCI_QUIRK_MASK(PCI_VENDOR_ID_HP, 0xfff0, 0x3600,
 		      "HP dv4-7", STAC_HP_DV5),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x3610,
+		      "HP HDX", STAC_HP_HDX),  /* HDX18 */
 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x361a,
 		      "HP mini 1000", STAC_HP_M4),
+	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x361b,
+		      "HP HDX", STAC_HP_HDX),  /* HDX16 */
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0233,
 				"unknown Dell", STAC_DELL_M4_1),
 	SND_PCI_QUIRK(PCI_VENDOR_ID_DELL, 0x0234,
@@ -4472,6 +4487,37 @@ static int stac92xx_resume(struct hda_codec *codec)
 	return 0;
 }
 
+
+/*
+ * using power check for controlling mute led of HP HDX notebooks
+ * check for mute state only on Speakers (nid = 0x10)
+ *
+ * For this feature CONFIG_SND_HDA_POWER_SAVE is needed, otherwise
+ * the LED is NOT working properly !
+ */
+
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+static int stac92xx_hp_hdx_check_power_status(struct hda_codec *codec,
+					      hda_nid_t nid)
+{
+	struct sigmatel_spec *spec = codec->spec;
+
+	if (nid == 0x10) {
+		if (snd_hda_codec_amp_read(codec, nid, 0, HDA_OUTPUT, 0) &
+		    HDA_AMP_MUTE)
+			spec->gpio_data &= ~0x08;  /* orange */
+		else
+			spec->gpio_data |= 0x08;   /* white */
+
+		stac_gpio_set(codec, spec->gpio_mask,
+			      spec->gpio_dir,
+			      spec->gpio_data);
+	}
+
+	return 0;
+}
+#endif
+
 static int stac92xx_suspend(struct hda_codec *codec, pm_message_t state)
 {
 	struct sigmatel_spec *spec = codec->spec;
@@ -5143,6 +5189,25 @@ again:
 		snd_hda_codec_set_pincfg(codec, 0x0d, 0x90170010);
 		stac92xx_auto_set_pinctl(codec, 0x0d, AC_PINCTL_OUT_EN);
 		break;
+	case STAC_HP_HDX:
+		spec->num_dmics = 1;
+		spec->num_dmuxes = 1;
+		spec->num_smuxes = 1;
+		/*
+		 * For controlling MUTE LED on HP HDX16/HDX18 notebooks,
+		 * the CONFIG_SND_HDA_POWER_SAVE is needed to be set.
+		 */
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+		/* orange/white mute led on GPIO3, orange=0, white=1 */
+		spec->gpio_mask |= 0x08;
+		spec->gpio_dir  |= 0x08;
+		spec->gpio_data |= 0x08;  /* set to white */
+
+		/* register check_power_status callback. */
+		codec->patch_ops.check_power_status =
+		    stac92xx_hp_hdx_check_power_status;
+#endif	
+		break;
 	};
 
 	spec->multiout.dac_nids = spec->dac_nids;
@@ -5531,6 +5596,25 @@ static hda_nid_t stac9872_mux_nids[] = {
 	0x15
 };
 
+static unsigned int stac9872_vaio_pin_configs[9] = {
+	0x03211020, 0x411111f0, 0x411111f0, 0x03a15030,
+	0x411111f0, 0x90170110, 0x411111f0, 0x411111f0,
+	0x90a7013e
+};
+
+static const char *stac9872_models[STAC_9872_MODELS] = {
+	[STAC_9872_AUTO] = "auto",
+	[STAC_9872_VAIO] = "vaio",
+};
+
+static unsigned int *stac9872_brd_tbl[STAC_9872_MODELS] = {
+	[STAC_9872_VAIO] = stac9872_vaio_pin_configs,
+};
+
+static struct snd_pci_quirk stac9872_cfg_tbl[] = {
+	{} /* terminator */
+};
+
 static int patch_stac9872(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec;
@@ -5541,11 +5625,15 @@ static int patch_stac9872(struct hda_codec *codec)
 		return -ENOMEM;
 	codec->spec = spec;
 
-#if 0 /* no model right now */
 	spec->board_config = snd_hda_check_board_config(codec, STAC_9872_MODELS,
 							stac9872_models,
 							stac9872_cfg_tbl);
-#endif
+	if (spec->board_config < 0)
+		snd_printdd(KERN_INFO "hda_codec: Unknown model for STAC9872, "
+			    "using BIOS defaults\n");
+	else
+		stac92xx_set_config_regs(codec,
+					 stac9872_brd_tbl[spec->board_config]);
 
 	spec->num_pins = ARRAY_SIZE(stac9872_pin_nids);
 	spec->pin_nids = stac9872_pin_nids;

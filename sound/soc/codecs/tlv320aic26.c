@@ -270,6 +270,13 @@ static int aic26_set_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 #define AIC26_FORMATS	(SNDRV_PCM_FMTBIT_S8     | SNDRV_PCM_FMTBIT_S16_BE |\
 			 SNDRV_PCM_FMTBIT_S24_BE | SNDRV_PCM_FMTBIT_S32_BE)
 
+static struct snd_soc_dai_ops aic26_dai_ops = {
+	.hw_params	= aic26_hw_params,
+	.digital_mute	= aic26_mute,
+	.set_sysclk	= aic26_set_sysclk,
+	.set_fmt	= aic26_set_fmt,
+};
+
 struct snd_soc_dai aic26_dai = {
 	.name = "tlv320aic26",
 	.playback = {
@@ -286,12 +293,7 @@ struct snd_soc_dai aic26_dai = {
 		.rates = AIC26_RATES,
 		.formats = AIC26_FORMATS,
 	},
-	.ops = {
-		.hw_params = aic26_hw_params,
-		.digital_mute = aic26_mute,
-		.set_sysclk = aic26_set_sysclk,
-		.set_fmt = aic26_set_fmt,
-	},
+	.ops = &aic26_dai_ops,
 };
 EXPORT_SYMBOL_GPL(aic26_dai);
 
@@ -322,9 +324,8 @@ static int aic26_probe(struct platform_device *pdev)
 {
 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
 	struct snd_soc_codec *codec;
-	struct snd_kcontrol *kcontrol;
 	struct aic26 *aic26;
-	int i, ret, err;
+	int ret, err;
 
 	dev_info(&pdev->dev, "Probing AIC26 SoC CODEC driver\n");
 	dev_dbg(&pdev->dev, "socdev=%p\n", socdev);
@@ -351,11 +352,9 @@ static int aic26_probe(struct platform_device *pdev)
 
 	/* register controls */
 	dev_dbg(&pdev->dev, "Registering controls\n");
-	for (i = 0; i < ARRAY_SIZE(aic26_snd_controls); i++) {
-		kcontrol = snd_soc_cnew(&aic26_snd_controls[i], codec, NULL);
-		err = snd_ctl_add(codec->card, kcontrol);
-		WARN_ON(err < 0);
-	}
+	err = snd_soc_add_controls(codec, aic26_snd_controls,
+			ARRAY_SIZE(aic26_snd_controls));
+	WARN_ON(err < 0);
 
 	/* CODEC is setup, we can register the card now */
 	dev_dbg(&pdev->dev, "Registering card\n");

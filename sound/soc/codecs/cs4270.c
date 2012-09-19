@@ -502,6 +502,13 @@ static const struct snd_kcontrol_new cs4270_snd_controls[] = {
  */
 static struct snd_soc_codec *cs4270_codec;
 
+static struct snd_soc_dai_ops cs4270_dai_ops = {
+	.hw_params	= cs4270_hw_params,
+	.set_sysclk	= cs4270_set_dai_sysclk,
+	.set_fmt	= cs4270_set_dai_fmt,
+	.digital_mute	= cs4270_mute,
+};
+
 struct snd_soc_dai cs4270_dai = {
 	.name = "cs4270",
 	.playback = {
@@ -518,12 +525,7 @@ struct snd_soc_dai cs4270_dai = {
 		.rates = 0,
 		.formats = CS4270_FORMATS,
 	},
-	.ops = {
-		.hw_params = cs4270_hw_params,
-		.set_sysclk = cs4270_set_dai_sysclk,
-		.set_fmt = cs4270_set_dai_fmt,
-		.digital_mute = cs4270_mute,
-	},
+	.ops = &cs4270_dai_ops,
 };
 EXPORT_SYMBOL_GPL(cs4270_dai);
 
@@ -538,7 +540,6 @@ static int cs4270_probe(struct platform_device *pdev)
 {
 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
 	struct snd_soc_codec *codec = cs4270_codec;
-	unsigned int i;
 	int ret;
 
 	/* Connect the codec to the socdev.  snd_soc_new_pcms() needs this. */
@@ -552,23 +553,11 @@ static int cs4270_probe(struct platform_device *pdev)
 	}
 
 	/* Add the non-DAPM controls */
-	for (i = 0; i < ARRAY_SIZE(cs4270_snd_controls); i++) {
-		struct snd_kcontrol *kctrl;
-
-		kctrl = snd_soc_cnew(&cs4270_snd_controls[i], codec, NULL);
-		if (!kctrl) {
-			dev_err(codec->dev, "error creating control '%s'\n",
-			       cs4270_snd_controls[i].name);
-			ret = -ENOMEM;
-			goto error_free_pcms;
-		}
-
-		ret = snd_ctl_add(codec->card, kctrl);
-		if (ret < 0) {
-			dev_err(codec->dev, "error adding control '%s'\n",
-			       cs4270_snd_controls[i].name);
-			goto error_free_pcms;
-		}
+	ret = snd_soc_add_controls(codec, cs4270_snd_controls,
+				ARRAY_SIZE(cs4270_snd_controls));
+	if (ret < 0) {
+		dev_err(codec->dev, "failed to add controls\n");
+		goto error_free_pcms;
 	}
 
 	/* And finally, register the socdev */
