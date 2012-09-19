@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.56
+SCRIPT_VERSION=0.4.57
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -36,10 +36,12 @@ PASTEBINKEY="C9cRIO8m/9y8Cs0nVs0FraRx7U0pHsuc"
 #Define some simple functions
 
 pbcheck(){
+	[[ $UPLOAD = "no" ]] && return
+
 	if [[ -z $PASTEBIN ]]; then
-		[[ $(ping -c1 www.alsa-project.org) ]] || KEEP_FILES="yes" NOUPLOAD="yes" PBERROR="yes"
+		[[ $(ping -c1 www.alsa-project.org) ]] || KEEP_FILES="yes" UPLOAD="no" PBERROR="yes"
 	else
-		[[ $(ping -c1 www.pastebin.ca) ]] || KEEP_FILES="yes" NOUPLOAD="yes" PBERROR="yes"
+		[[ $(ping -c1 www.pastebin.ca) ]] || KEEP_FILES="yes" UPLOAD="no" PBERROR="yes"
 	fi
 }
 
@@ -72,7 +74,7 @@ update() {
 					echo "Please re-run the script"
 					rm $SHFILE 2>/dev/null
 				else
-					mv $SHFILE /tmp/alsa-info.sh || exit 1
+					mv -f $SHFILE /tmp/alsa-info.sh || exit 1
 					echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
 					echo "Please re-run the script from new location."
 				fi
@@ -90,7 +92,7 @@ update() {
 				echo "ALSA-Info script has been updated. Please re-run it."
 				rm $SHFILE 2>/dev/null
 			else
-				mv $SHFILE /tmp/alsa-info.sh || exit 1
+				mv -f $SHFILE /tmp/alsa-info.sh || exit 1
 				echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
 				echo "Please, re-run it from new location."
 			fi
@@ -241,6 +243,26 @@ withsysfs() {
     fi
 }
 
+withdmesg() {
+	echo "!!ALSA/HDA dmesg" >> $FILE
+	echo "!!------------------" >> $FILE
+	echo "" >> $FILE
+	dmesg | grep -E 'ALSA|HDA|HDMI|sound|hda.codec|hda.intel' >> $FILE
+	echo "" >> $FILE
+	echo "" >> $FILE
+}
+
+withall() {
+	withdevices
+	withconfigs
+	withaplay
+	withamixer
+	withalsactl
+	withlsmod
+	withsysfs
+	withdmesg
+}
+
 get_alsa_library_version() {
 	ALSA_LIB_VERSION=`grep VERSION_STR /usr/include/alsa/version.h 2>/dev/null|awk {'print $3'}|sed 's/"//g'`
 
@@ -289,18 +311,24 @@ SNDOPTIONS=$(modprobe -c|sed -n 's/^options \(snd[-_][^ ]*\)/\1:/p')
 
 PASTEBIN=""
 WWWSERVICE="www.alsa-project.org"
-QUESTION="yes"
+WELCOME="yes"
 PROCEED="yes"
+UPLOAD="ask"
 REPEAT=""
 while [ -z "$REPEAT" ]; do
 REPEAT="no"
 case "$1" in
 	--update|--help|--about)
-		QUESTION="no"
+		WELCOME="no"
 		PROCEED="no"
 		;;
+	--upload)
+		UPLOAD="yes"
+		WELCOME="no"
+		;;
 	--no-upload)
-		NOUPLOAD="yes"
+		UPLOAD="no"
+		WELCOME="no"
 		;;
 	--pastebin)
 		PASTEBIN="yes"
@@ -313,56 +341,43 @@ case "$1" in
 		;;
 	--stdout)
 		DIALOG=""
-		NOUPLOAD="yes"
-		QUESTION="no"
+		UPLOAD="no"
+		WELCOME="no"
 		TOSTDOUT="yes"
 		;;
 esac
 done
-		
+
 
 #Script header output.
-if [ "$QUESTION" = "yes" ]; then
-if [[ -n "$DIALOG" ]]
-then
-if [ -z "$NOUPLOAD" ]; then
-	dialog --backtitle "$BGTITLE" --title "ALSA-Info script v $SCRIPT_VERSION" --yesno "\nThis script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem\n\nBy default, this script will AUTOMATICALLY UPLOAD your information to a $WWWSERVICE site.\n\nSee $0 --help for options\n\nDo you want to run this script?" 0 0
-else
-	dialog --backtitle "$BGTITLE" --title "ALSA-Info script v $SCRIPT_VERSION" --yesno "\nThis script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem\n\nSee $0 --help for options\n\nDo you want to run this script?" 0 0
-fi
-DIALOG_EXIT_CODE=$?
-if [ $DIALOG_EXIT_CODE != 0 ]; then
-echo "Thank you for using the ALSA-Info Script"
-exit 0;
-fi
-else
+if [ "$WELCOME" = "yes" ]; then
+greeting_message="\
 
-echo "ALSA Information Script v $SCRIPT_VERSION"
-echo "--------------------------------"
-echo ""
-echo "This script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem."
-echo ""
-if [ -z "$NOUPLOAD" ]; then
-if [[ -n "$TPUT" ]]; then
-tput bold
-echo "By default, the collected information will be AUTOMATICALLY uploaded to a $WWWSERVICE site."
-echo "If you do not wish for this to occur, run the script with the --no-upload argument"
-tput sgr0
+This script visits the following commands/files to collect diagnostic
+information about your ALSA installation and sound related hardware.
+
+  dmesg
+  lspci
+  lsmod
+  aplay
+  amixer
+  alsactl
+  /proc/asound/
+  /sys/class/sound/
+  ~/.asoundrc (etc.)
+
+See '$0 --help' for command line options.
+"
+if [[ -n "$DIALOG" ]]; then
+	dialog  --backtitle "$BGTITLE" \
+		--title "ALSA-Info script v $SCRIPT_VERSION" \
+		--msgbox "$greeting_message" 20 80
 else
-echo "By default, the collected information will be AUTOMATICALLY uploaded to a $WWWSERVICE site."
-echo "If you do not wish for this to occur, run the script with the --no-upload argument"
-fi
-echo ""
-fi # NOUPLOAD
-echo -n "Do you want to run this script? [y/n] : "
-read -e CONFIRM
-if [ "$CONFIRM" != "y" ]; then
-echo ""
-echo "Thank you for using the ALSA-Info Script"
-exit 0;
-fi
-fi
-fi # question
+	echo "ALSA Information Script v $SCRIPT_VERSION"
+	echo "--------------------------------"
+	echo "$greeting_message"
+fi # dialog
+fi # WELCOME
 
 #Set the output file
 TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX`
@@ -540,7 +555,10 @@ echo "!!--------------------------" >> $FILE
 echo "" >> $FILE
 for mod in `cat /proc/asound/modules|awk {'print $2'}`;do
 echo "!!Module: $mod" >> $FILE
-for params in `ls $SYSFS/module/$mod/parameters/*`; do /bin/echo -ne "\t";/bin/echo "$params : `cat $params`"|sed 's:.*/::' >> $FILE;done
+for params in `echo $SYSFS/module/$mod/parameters/*`; do
+	echo -ne "\t";
+	echo "$params : `cat $params`" | sed 's:.*/::';
+done >> $FILE
 echo "" >> $FILE
 done
 echo "" >> $FILE
@@ -577,12 +595,7 @@ fi
 if [[ -z "$1" ]]
 then
 	update
-	withdevices
-	withconfigs
-	withaplay
-	withamixer
-	withalsactl
-	withlsmod
+	withall
 	pbcheck	
 fi
 
@@ -596,49 +609,29 @@ then
 	case "$1" in
 		--pastebin)
 		        update
-        		withdevices
-        		withconfigs
-        		withaplay
-        		withamixer
-        		withalsactl
-        		withlsmod
-			withsysfs
+			withall
         		pbcheck
 			;;
 		--update)
 			update
 			exit
 			;;
+		--upload)
+			UPLOAD="yes"
+			withall
+			;;
 		--no-upload)
-			NOUPLOAD="yes"
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			UPLOAD="no"
+			withall
 			;;
 		--debug)
 			echo "Debugging enabled. $FILE and $TEMPDIR will not be deleted"
 			KEEP_FILES="yes"
 			echo ""
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			withall
 			;;
 		--with-all)
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
-			withsysfs
+			withall
 			;;
 		--with-aplay)
 			withaplay
@@ -651,6 +644,9 @@ then
 			;;
 		--with-devices)
 			withdevices
+			;;
+		--with-dmesg)
+			withdmesg
 			;;
 		--with-configs)
 			if [[ -e $HOME/.asoundrc ]] || [[ -e /etc/asound.conf ]]
@@ -681,13 +677,8 @@ then
 			fi
 			;;
 		--stdout)
-			NOUPLOAD="yes"
-			withdevices
-			withconfigs
-			withaplay
-			withamixer
-			withalsactl
-			withlsmod
+			UPLOAD="no"
+			withall
 			cat $FILE
 			rm $FILE
 			;;
@@ -712,8 +703,10 @@ then
 			echo "	--with-configs (includes the output of ~/.asoundrc and"
 			echo "	    /etc/asound.conf if they exist)" 
 			echo "	--with-devices (shows the device nodes in /dev/snd/)"
+			echo "	--with-dmesg (shows the ALSA/HDA kernel messages)"
 			echo ""
 			echo "	--update (check server for script updates)"
+			echo "	--upload (upload contents to remote server)"
 			echo "	--no-upload (do not upload contents to remote server)"
 			echo "	--pastebin (use http://pastebin.ca) as remote server"
 			echo "	    instead www.alsa-project.org"
@@ -733,32 +726,53 @@ if [ "$PROCEED" = "no" ]; then
 	exit 1
 fi
 
-if [ -n "$NOUPLOAD" ]; then
+if [ "$UPLOAD" = "ask" ]; then
+	if [[ -n "$DIALOG" ]]; then
+		dialog --backtitle "$BGTITLE" --title "Information collected" --yes-label " UPLOAD / SHARE " --no-label " SAVE LOCALLY " --defaultno --yesno "\n\nAutomatically upload ALSA information to $WWWSERVICE?" 10 80
+		DIALOG_EXIT_CODE=$?
+		if [ $DIALOG_EXIT_CODE != 0 ]; then
+			UPLOAD="no"
+		else
+			UPLOAD="yes"
+		fi
+	else
+		echo -n "Automatically upload ALSA information to $WWWSERVICE? [y/N] : "
+		read -e CONFIRM
+		if [ "$CONFIRM" != "y" ]; then
+			UPLOAD="no"
+		else
+			UPLOAD="yes"
+		fi
+	fi
+
+fi
+
+if [ "$UPLOAD" = "no" ]; then
 
 	if [ -z "$TOSTDOUT" ]; then
-		mv $FILE $NFILE || exit 1
+		mv -f $FILE $NFILE || exit 1
 	fi
 
 	if [[ -n $DIALOG ]]
 	then
 		if [[ -n $PBERROR ]]; then
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occurred while contacting the $WWWSERVICE.\n Your information was NOT automatically uploaded.\n\nYour ALSA information is in $NFILE" 10 100
 		else
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the $WWWSERVICE\n\nYour ALSA information can be seen by looking in $NFILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "\n\nYour ALSA information is in $NFILE" 10 60
 		fi
 	else
 		echo
 
 		if [[ -n $PBERROR ]]; then
-			echo "An error occurred while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
+			echo "An error occurred while contacting the $WWWSERVICE."
+			echo "Your information was NOT automatically uploaded."
 			echo ""
-			echo "Your ALSA information can be seen by looking in $NFILE"
+			echo "Your ALSA information is in $NFILE"
 			echo ""
 		else
 			if [ -z "$TOSTDOUT" ]; then
-				echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
 				echo ""
-				echo "Your ALSA information can be seen by looking in $NFILE"
+				echo "Your ALSA information is in $NFILE"
 				echo ""
 			fi
 		fi
@@ -766,7 +780,7 @@ if [ -n "$NOUPLOAD" ]; then
 
 	exit
 
-fi # noupload
+fi # UPLOAD
 
 #Test that wget is installed, and supports --post-file. Upload $FILE if it does, and prompt user to upload file if it doesnt. 
 if
@@ -849,7 +863,7 @@ echo ""
 
 #We couldnt find a suitable wget, so tell the user to upload manually.
 else
-	mv $FILE $NFILE || exit 1
+	mv -f $FILE $NFILE || exit 1
 	if [[ -z $DIALOG ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
