@@ -15,7 +15,7 @@
  }
  
 -#ifdef __i386__
-+#if defined(__i386__) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,0)
++#if defined(__i386__) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,4,20)
  /*
   * Intel 82443MX running a 100MHz processor system bus has a hardware bug,
   * which aborts PCI busmaster for audio transfer.  A workaround is to set
