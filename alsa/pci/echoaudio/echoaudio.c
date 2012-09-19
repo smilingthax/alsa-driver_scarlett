@@ -1878,7 +1878,7 @@ static int __devinit snd_echo_probe(struct pci_dev *pci, const struct pci_device
 		return err;
 	}
 
-	strcpy(card->driver, "Echoaudio " ECHOCARD_NAME);
+	strcpy(card->driver, "Echo_" ECHOCARD_NAME);
 	strcpy(card->shortname, chip->card_name);
 
 	dsp = "56301";
