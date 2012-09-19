@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: hammerfall_mem.c,v 1.7 2003/01/06 14:21:28 perex Exp $
+    $Id: hammerfall_mem.c,v 1.8 2003/02/25 13:35:44 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
@@ -150,8 +150,6 @@ void *snd_hammerfall_get_buffer (struct pci_dev *pcidev, dma_addr_t *dmaaddr)
 	for (i = 0; i < NBUFS; i++) {
 		rbuf = &hammerfall_buffers[i];
 		if (rbuf->flags == HAMMERFALL_BUF_ALLOCATED) {
-			if (! try_module_get(THIS_MODULE))
-				return NULL;
 			rbuf->flags |= HAMMERFALL_BUF_USED;
 			rbuf->pci = pcidev;
 			*dmaaddr = rbuf->addr;
@@ -171,7 +169,6 @@ void snd_hammerfall_free_buffer (struct pci_dev *pcidev, void *addr)
 		rbuf = &hammerfall_buffers[i];
 		if (rbuf->buf == addr && rbuf->pci == pcidev) {
 			rbuf->flags &= ~HAMMERFALL_BUF_USED;
-			module_put(THIS_MODULE);
 			return;
 		}
 	}

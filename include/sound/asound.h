@@ -93,7 +93,7 @@ struct sndrv_aes_iec958 {
  *                                                                          *
  ****************************************************************************/
 
-#define SNDRV_HWDEP_VERSION		SNDRV_PROTOCOL_VERSION(1, 0, 0)
+#define SNDRV_HWDEP_VERSION		SNDRV_PROTOCOL_VERSION(1, 0, 1)
 
 enum sndrv_hwdep_iface {
 	SNDRV_HWDEP_IFACE_OPL2 = 0,
@@ -150,7 +150,7 @@ enum {
  *                                                                           *
  *****************************************************************************/
 
-#define SNDRV_PCM_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 3)
+#define SNDRV_PCM_VERSION		SNDRV_PROTOCOL_VERSION(2, 0, 4)
 
 typedef unsigned long sndrv_pcm_uframes_t;
 typedef long sndrv_pcm_sframes_t;
@@ -455,6 +455,7 @@ enum {
 	SNDRV_PCM_IOCTL_REWIND = _IOW('A', 0x46, sndrv_pcm_uframes_t),
 	SNDRV_PCM_IOCTL_RESUME = _IO('A', 0x47),
 	SNDRV_PCM_IOCTL_XRUN = _IO('A', 0x48),
+	SNDRV_PCM_IOCTL_FORWARD = _IOW('A', 0x49, sndrv_pcm_uframes_t),
 	SNDRV_PCM_IOCTL_WRITEI_FRAMES = _IOW('A', 0x50, struct sndrv_xferi),
 	SNDRV_PCM_IOCTL_READI_FRAMES = _IOR('A', 0x51, struct sndrv_xferi),
 	SNDRV_PCM_IOCTL_WRITEN_FRAMES = _IOW('A', 0x52, struct sndrv_xfern),
