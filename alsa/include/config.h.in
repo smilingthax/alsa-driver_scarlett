@@ -20,6 +20,9 @@
 #undef CONFIG_SND_RTCTIMER_MODULE
 #undef CONFIG_SND_SEQ_DUMMY_MODULE
 
+/* card-dependent section */
+#undef CONFIG_SND_GENERIC_PM
+
 /* build section */
 #undef CONFIG_SND_KERNELDIR
 #undef CONFIG_ISAPNP_KERNEL
