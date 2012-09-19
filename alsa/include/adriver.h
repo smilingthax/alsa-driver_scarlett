@@ -80,6 +80,14 @@ void snd_compat_request_module(const char *name, ...);
 #endif
 #endif /* LINUX_2_2 */
 
+#ifndef PCI_D0
+#define PCI_D0     0
+#define PCI_D1     1
+#define PCI_D2     2
+#define PCI_D3hot  3
+#define PCI_D3cold 4
+#endif
+
 #ifdef LINUX_2_4__donotuse
 #include <linux/init.h>
 #include <linux/pm.h>
