@@ -432,7 +432,8 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	snd_cmipci_write_w(chip, 0x0000, PCI_IntMask);
 	snd_cmipci_write_w(chip, 0x0000, PCI_DMA_SetStatus);
 
-	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, card->driver, chip)) {
+	if (request_irq(pci->irq, snd_cmi8788_interrupt,
+			IRQF_SHARED, card->driver, chip)) {
 		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
 		snd_card_free(card);
 		return -EBUSY;
@@ -514,7 +515,7 @@ static struct pci_driver driver = {
 
 static int __init alsa_card_cmi8788_init(void)
 {
-	return pci_module_init(&driver);
+	return pci_register_driver(&driver);
 }
 
 static void __exit alsa_card_cmi8788_exit(void)
