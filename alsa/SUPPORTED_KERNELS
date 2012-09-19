@@ -1,6 +1,6 @@
 The alsa-drivers in this package are designed for the following kernels:
 
- - Vanilla 2.6.16 or earlier
+ - Vanilla 2.6.18 or earlier
  - Vanilla 2.4.31 or earlier
  - Vanilla 2.2.26 or earlier
 
