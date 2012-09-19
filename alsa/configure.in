@@ -806,12 +806,34 @@ if test "$CONFIG_USB" != "y"; then
 fi
 AC_SUBST(CONFIG_USB)
 
-dnl Check for PCMCIA
-CHECK_KERNEL_CONFIG(CONFIG_PCMCIA, [PCMCIA support])
-if test "$CONFIG_PCMCIA" != "y"; then
-  CHECK_KERNEL_CONFIG(CONFIG_PCMCIA_MODULE, [PCMCIA module support])
-  CONFIG_PCMCIA=$CONFIG_PCMCIA_MODULE
+dnl PCMCIA stuff
+AC_ARG_WITH(pcmcia,
+  [  --with-pcmcai=kernel,external   support kernel PCMCIA driver or external PCMCIA driver],
+  pcmcia="$withval", pcmcia="kernel")
+AC_ARG_WITH(pcmcia_root,
+  [  --with-pcmcai-root=dir  specify the root directory of external PCMCIA source-tree],
+  pcmciaroot="$withval", pcmciaroot="")
+EXTRA_INCLUDES=""
+if test "$pcmcia" = "kernel"; then
+  echo "checking for kernel PCMCIA"
+  CHECK_KERNEL_CONFIG(CONFIG_PCMCIA, [PCMCIA support])
+  if test "$CONFIG_PCMCIA" != "y"; then
+    CHECK_KERNEL_CONFIG(CONFIG_PCMCIA_MODULE, [PCMCIA module support])
+    CONFIG_PCMCIA=$CONFIG_PCMCIA_MODULE
+  fi
+else
+  echo "checking for external PCMCIA"
+  if test "$pcmciaroot" = ""; then
+    AC_MSG_ERROR(Please set the PCMCIA root directory via --with-pcmcia-root option)
+  fi
+  if test ! -d "$pcmciaroot"; then
+    AC_MSG_ERROR(PCMCIA root $pcmciaroot is not a directory)
+  fi
+  echo "PCMCIA root directory is $pcmciaroot"
+  EXTRA_INCLUDES="-I$pcmciaroot/include"
+  CONFIG_PCMCIA=y
 fi
+  
 AC_SUBST(CONFIG_PCMCIA)
 
 dnl Check for PC98 architecture support...
@@ -831,6 +853,7 @@ fi
 AC_SUBST(c_opts)
 AC_SUBST(m_opts)
 AC_SUBST(GENKSYMS)
+AC_SUBST(EXTRA_INCLUDES)
 
 dnl Output files...
 AC_OUTPUT(version Makefile.conf snddevices utils/alsa-driver.spec utils/buildrpm toplevel.config)
