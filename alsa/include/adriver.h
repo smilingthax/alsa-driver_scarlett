@@ -129,6 +129,7 @@ void snd_compat_request_module(const char *name, ...);
 #endif
 #ifndef CONFIG_HAVE_PDE
 #include <linux/fs.h>
+#include <linux/proc_fs.h>
 static inline struct proc_dir_entry *PDE(const struct inode *inode)
 {
 	return (struct proc_dir_entry *) inode->u.generic_ip;
