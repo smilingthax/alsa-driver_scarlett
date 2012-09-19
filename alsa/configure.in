@@ -634,6 +634,14 @@ AC_ARG_WITH(moddir,
     fi
   fi
 )
+case "$moddir" in
+/*)
+  ;;
+*)
+  modsubdir="$moddir"
+  moddir="/lib/modules/$kaversion/$modsubdir"
+  ;;
+esac
 AC_SUBST(moddir)
 AC_SUBST(modsubdir)
 AC_SUBST(moddir_tree)
