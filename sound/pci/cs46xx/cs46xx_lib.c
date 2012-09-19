@@ -952,7 +952,9 @@ static int snd_cs46xx_playback_trigger(snd_pcm_substream_t * substream,
 			snd_cs46xx_playback_transfer(substream, 0);
 
 		/* raise playback volume */
-		snd_cs46xx_poke(chip, (cpcm->pcm_channel->pcm_reader_scb->address + 0xE) << 2, 0x80008000);
+		cs46xx_dsp_scb_set_volume (chip,cpcm->pcm_channel->pcm_reader_scb,
+					   chip->dsp_spos_instance->dac_volume_right,
+					   chip->dsp_spos_instance->dac_volume_left);
 #else
 		if (substream->runtime->periods != CS46XX_FRAGS)
 			snd_cs46xx_playback_transfer(substream, 0);
@@ -966,8 +968,9 @@ static int snd_cs46xx_playback_trigger(snd_pcm_substream_t * substream,
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
-        /* mute channel */
-		snd_cs46xx_poke(chip, (cpcm->pcm_channel->pcm_reader_scb->address + 0xE) << 2, 0xffffffff);
+		/* mute channel */
+		cs46xx_dsp_scb_set_volume (chip,cpcm->pcm_channel->pcm_reader_scb,0,0);
+
 		if (!cpcm->pcm_channel->unlinked)
 			cs46xx_dsp_pcm_unlink(chip,cpcm->pcm_channel);
 #else
@@ -1020,6 +1023,46 @@ static int snd_cs46xx_capture_trigger(snd_pcm_substream_t * substream,
 	return result;
 }
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+static int _cs46xx_adjust_sample_rate (cs46xx_t *chip, cs46xx_pcm_t *cpcm,
+				       int sample_rate) 
+{
+	/* if this is the only PCMReaderSCB child under current
+	   SrcTask then there no need to re-create pcm-channel */
+	if ( cpcm->pcm_channel->src_scb->ref_count == 1 &&
+	     cpcm->pcm_channel->sample_rate != sample_rate &&
+	     /* never set a 0 khz sample rate */
+	     sample_rate) {
+		/* sample rate not set or we can reuse
+		   the same SRC*/
+		cs46xx_dsp_set_src_sample_rate (chip,cpcm->pcm_channel->src_scb,sample_rate);
+		cpcm->pcm_channel->sample_rate = sample_rate;
+	} 
+
+	/* if there is more then 1 PCMReaderSCB child's under current
+	   SrcTask then we must recreate channel */
+	if (cpcm->pcm_channel->sample_rate != sample_rate &&
+	    cpcm->pcm_channel->src_scb->ref_count != 1 &&
+	    /* never set a 0 khz sample rate */
+	    sample_rate) {
+		int unlinked = cpcm->pcm_channel->unlinked;
+		cs46xx_dsp_destroy_pcm_channel (chip,cpcm->pcm_channel);
+
+		if ( (cpcm->pcm_channel = cs46xx_dsp_create_pcm_channel (chip, sample_rate, cpcm, 
+									 cpcm->hw_addr,
+									 cpcm->pcm_channel->pcm_channel_id)) == NULL) {
+			snd_printk(KERN_ERR "cs46xx: failed to re-create virtual PCM channel\n");
+			return -ENXIO;
+		}
+
+		if (!unlinked) cs46xx_dsp_pcm_link (chip,cpcm->pcm_channel);
+		cpcm->pcm_channel->sample_rate = sample_rate;
+	}
+
+	return 0;
+}
+#endif
+
 static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 					 snd_pcm_hw_params_t * hw_params)
 {
@@ -1037,32 +1080,14 @@ static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 
 	snd_assert (cpcm->pcm_channel != NULL);
 
-	if ( cpcm->pcm_channel->src_scb->ref_count == 1 &&
-	     cpcm->pcm_channel->sample_rate != sample_rate &&
-	     /* never set a 0 khz sample rate */
-	     sample_rate) {
-		/* sample rate not set or we can reuse
-		   the same SRC*/
-
-		cs46xx_dsp_set_src_sample_rate (chip,cpcm->pcm_channel->src_scb,sample_rate);
-		cpcm->pcm_channel->sample_rate = sample_rate;
-	} 
-
-	if (cpcm->pcm_channel->sample_rate != runtime->rate &&
-	    cpcm->pcm_channel->src_scb->ref_count != 1) {
-		int unlinked = cpcm->pcm_channel->unlinked;
-		cs46xx_dsp_destroy_pcm_channel (chip,cpcm->pcm_channel);
-
-		if ( (cpcm->pcm_channel = cs46xx_dsp_create_pcm_channel (chip, sample_rate, cpcm, 
-									 cpcm->hw_addr,
-									 cpcm->pcm_channel->pcm_channel_id)) == NULL) {
-			snd_printk(KERN_ERR "cs46xx: failed to re-create virtual PCM channel\n");
+	/* if IEC958 is opened in AC3 mode dont adjust SRCTask is not
+	   used so dont adjust sample rate */
+	if (cpcm->pcm_channel->pcm_channel_id != DSP_IEC958_CHANNEL ||
+	    !(chip->dsp_spos_instance->spdif_status_out & DSP_SPDIF_STATUS_AC3_MODE)) {
+		if (_cs46xx_adjust_sample_rate (chip,cpcm,sample_rate)) {
 			up (&chip->spos_mutex);
 			return -ENXIO;
 		}
-
-		if (!unlinked) cs46xx_dsp_pcm_link (chip,cpcm->pcm_channel);
-		cpcm->pcm_channel->sample_rate = sample_rate;
 	}
 
 	if (cs46xx_dsp_pcm_channel_set_period (chip,cpcm->pcm_channel,period_size * 4)) {
@@ -1825,7 +1850,7 @@ static int snd_cs46xx_vol_info(snd_kcontrol_t *kcontrol,
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 2;
 	uinfo->value.integer.min = 0;
-	uinfo->value.integer.max = 32767;
+	uinfo->value.integer.max = 0x7fff;
 	return 0;
 }
 
@@ -1847,32 +1872,66 @@ static int snd_cs46xx_vol_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * 
 			    (0xffff - ucontrol->value.integer.value[1]));
 	unsigned int old = snd_cs46xx_peek(chip, reg);
 	int change = (old != val);
+
 	if (change) {
 		snd_cs46xx_poke(chip, reg, val);
-#ifdef CONFIG_SND_CS46XX_NEW_DSP
-		/* NOTE: this updates the current left and right volume
-		   that should be automatically updated by the DSP and
-		   not touched by the host. But for some strange reason
-		   the DSP only updates the right channel volume, so with
-		   this dirty hack we force updating the right and left
-		   channel volume. 
-		*/
-		snd_cs46xx_poke(chip, reg + 4, val);
-
-		/* shadow the SPDIF input volume */
-		if (reg == (ASYNCRX_SCB_ADDR + 0xE) << 2) {
-			/* FIXME: I known this is uggly ...
-			   any other suggestion ? 
-			*/
-			chip->dsp_spos_instance->spdif_input_volume = val;
-		}
-#endif
 	}
 
 	return change;
 }
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
+
+static int snd_cs46xx_vol_dac_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
+
+	ucontrol->value.integer.value[0] = chip->dsp_spos_instance->dac_volume_right;
+	ucontrol->value.integer.value[1] = chip->dsp_spos_instance->dac_volume_left;
+
+	return 0;
+}
+
+static int snd_cs46xx_vol_dac_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
+	int change = 0;
+
+	if (chip->dsp_spos_instance->dac_volume_right != ucontrol->value.integer.value[0] ||
+	    chip->dsp_spos_instance->dac_volume_left != ucontrol->value.integer.value[1]) {
+		cs46xx_dsp_set_dac_volume(chip,
+					  ucontrol->value.integer.value[0],
+					  ucontrol->value.integer.value[1]);
+		change = 1;
+	}
+
+	return change;
+}
+
+static int snd_cs46xx_vol_iec958_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
+
+	ucontrol->value.integer.value[0] = chip->dsp_spos_instance->spdif_input_volume_right;
+	ucontrol->value.integer.value[1] = chip->dsp_spos_instance->spdif_input_volume_left;
+	return 0;
+}
+
+static int snd_cs46xx_vol_iec958_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
+	int change = 0;
+
+	if (chip->dsp_spos_instance->spdif_input_volume_right != ucontrol->value.integer.value[0] ||
+	    chip->dsp_spos_instance->spdif_input_volume_left != ucontrol->value.integer.value[1]) {
+		cs46xx_dsp_set_iec958_volume (chip,
+					      ucontrol->value.integer.value[0],
+					      ucontrol->value.integer.value[1]);
+		change = 1;
+	}
+
+	return change;
+}
 
 static int snd_mixer_boolean_info(snd_kcontrol_t *kcontrol, 
 				  snd_ctl_elem_info_t *uinfo)
@@ -1891,7 +1950,7 @@ static int snd_cs46xx_iec958_get(snd_kcontrol_t *kcontrol,
 	int reg = kcontrol->private_value;
 
 	if (reg == CS46XX_MIXER_SPDIF_OUTPUT_ELEMENT)
-		ucontrol->value.integer.value[0] = (chip->dsp_spos_instance->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED);
+		ucontrol->value.integer.value[0] = (chip->dsp_spos_instance->spdif_status_out & DSP_SPDIF_STATUS_OUTPUT_ENABLED);
 	else
 		ucontrol->value.integer.value[0] = chip->dsp_spos_instance->spdif_status_in;
 
@@ -1907,13 +1966,13 @@ static int snd_cs46xx_iec958_put(snd_kcontrol_t *kcontrol,
 	switch (kcontrol->private_value) {
 	case CS46XX_MIXER_SPDIF_OUTPUT_ELEMENT:
 		down (&chip->spos_mutex);
-		change = (chip->dsp_spos_instance->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED);
+		change = (chip->dsp_spos_instance->spdif_status_out & DSP_SPDIF_STATUS_OUTPUT_ENABLED);
 		if (ucontrol->value.integer.value[0] && !change) 
 			cs46xx_dsp_enable_spdif_out(chip);
 		else if (change && !ucontrol->value.integer.value[0])
 			cs46xx_dsp_disable_spdif_out(chip);
 
-		res = (change != (chip->dsp_spos_instance->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED));
+		res = (change != (chip->dsp_spos_instance->spdif_status_out & DSP_SPDIF_STATUS_OUTPUT_ENABLED));
 		up (&chip->spos_mutex);
 		break;
 	case CS46XX_MIXER_SPDIF_INPUT_ELEMENT:
@@ -1979,6 +2038,35 @@ static int snd_cs46xx_pcm_capture_get(snd_kcontrol_t *kcontrol,
 	return 0;
 }
 
+static int snd_cs46xx_iec958_ac3_mode_get(snd_kcontrol_t *kcontrol, 
+					  snd_ctl_elem_value_t *ucontrol) 
+{
+	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	if (!ins->spdif_status_out & DSP_SPDIF_STATUS_AC3_MODE) 
+		ucontrol->value.integer.value[0] = 1;
+	else
+		ucontrol->value.integer.value[0] = 0;
+
+	return 0;
+}
+
+static int snd_cs46xx_iec958_ac3_mode_put(snd_kcontrol_t *kcontrol, 
+                                      snd_ctl_elem_value_t *ucontrol) 
+{
+	cs46xx_t *chip = snd_kcontrol_chip(kcontrol);
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+	int old = ins->spdif_status_out;
+
+	if (ucontrol->value.integer.value[0]) 
+		ins->spdif_status_out |= DSP_SPDIF_STATUS_AC3_MODE;
+	else
+		ins->spdif_status_out &= ~DSP_SPDIF_STATUS_AC3_MODE;
+
+	return (old != ins->spdif_status_out);
+}
+
 static int snd_cs46xx_pcm_capture_put(snd_kcontrol_t *kcontrol, 
                                       snd_ctl_elem_value_t *ucontrol)
 {
@@ -2013,7 +2101,7 @@ static int snd_herc_spdif_select_get(snd_kcontrol_t *kcontrol,
 }
 
 /*
- *	Game Theatre XP card - EGPIO[0] is used to select SDPIF input optical or coaxial.
+ *	Game Theatre XP card - EGPIO[0] is used to select SPDIF input optical or coaxial.
  */ 
 static int snd_herc_spdif_select_put(snd_kcontrol_t *kcontrol, 
                                        snd_ctl_elem_value_t *ucontrol)
@@ -2111,13 +2199,13 @@ static snd_kcontrol_new_t snd_cs46xx_controls[] __devinitdata = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "DAC Volume",
 	.info = snd_cs46xx_vol_info,
+#ifndef CONFIG_SND_CS46XX_NEW_DSP
 	.get = snd_cs46xx_vol_get,
 	.put = snd_cs46xx_vol_put,
-
-#ifndef CONFIG_SND_CS46XX_NEW_DSP
 	.private_value = BA1_PVOL,
 #else
-	.private_value = (MASTERMIX_SCB_ADDR + 0xE) << 2,
+	.get = snd_cs46xx_vol_dac_get,
+	.put = snd_cs46xx_vol_dac_put,
 #endif
 },
 
@@ -2158,6 +2246,13 @@ static snd_kcontrol_new_t snd_cs46xx_controls[] __devinitdata = {
 },
 {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name = "IEC 958 AC3 Mode Switch",
+	.info = snd_mixer_boolean_info,
+	.get = snd_cs46xx_iec958_ac3_mode_get,
+	.put = snd_cs46xx_iec958_ac3_mode_put,
+},
+{
+	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "IEC 958 Input Switch",
 	.info = snd_mixer_boolean_info,
 	.get = snd_cs46xx_iec958_get,
@@ -2168,8 +2263,8 @@ static snd_kcontrol_new_t snd_cs46xx_controls[] __devinitdata = {
 	.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 	.name = "IEC 958 Input Volume",
 	.info = snd_cs46xx_vol_info,
-	.get = snd_cs46xx_vol_get,
-	.put = snd_cs46xx_vol_put,
+	.get = snd_cs46xx_vol_iec958_get,
+	.put = snd_cs46xx_vol_iec958_put,
 	.private_value = (ASYNCRX_SCB_ADDR + 0xE) << 2,
 },
 #endif

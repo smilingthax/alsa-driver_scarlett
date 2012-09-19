@@ -257,7 +257,10 @@ dsp_spos_instance_t *  cs46xx_dsp_spos_create (cs46xx_t * chip)
 	ins->spdif_in_sample_rate = 48000;
 
 	/* maximize volume */
-	ins->spdif_input_volume = 0x80008000;
+	ins->dac_volume_right = 0x8000;
+	ins->dac_volume_left = 0x8000;
+	ins->spdif_input_volume_right = 0x8000;
+	ins->spdif_input_volume_left = 0x8000;
 
 	return ins;
 }
@@ -1549,7 +1552,7 @@ int cs46xx_dsp_enable_spdif_hw (cs46xx_t *chip)
 	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12));
 
 	/* monitor state */
-	ins->spdif_status_out |= DSP_SDPIF_STATUS_HW_ENABLED;
+	ins->spdif_status_out |= DSP_SPDIF_STATUS_HW_ENABLED;
 
 	return 0;
 }
@@ -1585,8 +1588,10 @@ int cs46xx_dsp_enable_spdif_in (cs46xx_t *chip)
 	cs46xx_src_link(chip,ins->spdif_in_src);
 
 	/* restore SPDIF input volume */
-	snd_cs46xx_poke(chip, (ASYNCRX_SCB_ADDR + 0xE) << 2, ins->spdif_input_volume);
-	snd_cs46xx_poke(chip, (ASYNCRX_SCB_ADDR + 0xF) << 2, ins->spdif_input_volume);
+	cs46xx_dsp_scb_set_volume (chip,ins->spdif_in_src,
+				   ins->spdif_input_volume_right,
+				   ins->spdif_input_volume_left);
+
 	spin_unlock_irq(&chip->reg_lock);
 
 	/* set SPDIF input sample rate and unmute
@@ -1716,6 +1721,44 @@ int cs46xx_poke_via_dsp (cs46xx_t *chip,u32 address,u32 data)
 		snd_printk(KERN_ERR "dsp_spos: SPIOWriteTask not responding\n");
 		return -EBUSY;
 	}
+
+	return 0;
+}
+
+int cs46xx_dsp_set_dac_volume (cs46xx_t * chip,u16 right,u16 left)
+{
+	int i;
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	down(&chip->spos_mutex);
+
+	ins->dac_volume_right = right;
+	ins->dac_volume_left = left;
+
+	for (i = 0; i < DSP_MAX_PCM_CHANNELS; ++i) {
+		if (ins->pcm_channels[i].active &&
+		    !ins->pcm_channels[i].unlinked) {
+			cs46xx_dsp_scb_set_volume (chip,ins->pcm_channels[i].pcm_reader_scb,
+						   right,left);
+			
+		}
+	}
+
+	up(&chip->spos_mutex);
+
+	return 0;
+}
+
+int cs46xx_dsp_set_iec958_volume (cs46xx_t * chip,u16 right,u16 left) {
+	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
+
+	down(&chip->spos_mutex);
+	cs46xx_dsp_scb_set_volume (chip,ins->spdif_in_src,
+				   right,left);
+
+	ins->spdif_input_volume_right = right;
+	ins->spdif_input_volume_left = left;
+	up(&chip->spos_mutex);
 
 	return 0;
 }

@@ -81,11 +81,13 @@ void snd_ice1712_ak4524_write(ice1712_t *ice, int chip,
 		udelay(1);
 	}
 
-	if ((addr != 0x04 && addr != 0x05) || (data & 0x80) == 0)
-		ak->images[chip][addr] = data;
-	else
-		ak->ipga_gain[chip][addr-4] = data;
-
+	if (ak->type == SND_AK4524) {
+		if ((addr != 0x04 && addr != 0x05) || (data & 0x80) == 0)
+			ak->images[chip][addr] = data;
+		else
+			ak->ipga_gain[chip][addr-4] = data;
+	}
+	
 	if (ak->cs_mask == ak->cs_addr) {
 		if (ak->cif) {
 			/* assert a cs pulse to trigger */
@@ -168,8 +170,8 @@ void __devinit snd_ice1712_ak4524_init(ice1712_t *ice)
 	static unsigned char inits_ak4529[] = {
 		0x09, 0x01, /* 9: ATS=0, RSTN=1 */
 		0x0a, 0x3f, /* A: all power up, no zero/overflow detection */
-		0x00, 0x0c, /* 0: TDM=0, 24bit I2S, SMUTE=0 */
-		0x01, 0x02, /* 1: ACKS=1, ADC, loop off */
+		0x00, 0x08, /* 0: TDM=0, 24bit I2S, SMUTE=0 */
+		0x01, 0x00, /* 1: ACKS=0, ADC, loop off */
 		0x02, 0xff, /* 2: LOUT1 muted */
 		0x03, 0xff, /* 3: ROUT1 muted */
 		0x04, 0xff, /* 4: LOUT2 muted */
@@ -311,9 +313,9 @@ static int snd_ice1712_ak4524_deemphasis_put(snd_kcontrol_t *kcontrol, snd_ctl_e
 	int change;
 	
 	nval = (nval << shift) | (ice->ak4524.images[chip][addr] & ~(3 << shift));
-	change = ice->ak4524.images[chip][3] != nval;
+	change = ice->ak4524.images[chip][addr] != nval;
 	if (change)
-		snd_ice1712_ak4524_write(ice, chip, 3, nval);
+		snd_ice1712_ak4524_write(ice, chip, addr, nval);
 	return change;
 }
 

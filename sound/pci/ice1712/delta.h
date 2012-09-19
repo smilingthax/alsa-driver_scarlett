@@ -107,7 +107,8 @@ extern struct snd_ice1712_card_info snd_ice1712_delta_cards[];
 /* 0x40 = CODEC_CHIP_A */
 /* 0x80 = CODEC_CHIP_B */
 
-/* MidiMan M-Audio Audiophile definitions */
+/* MidiMan M-Audio Audiophile/Delta410 definitions */
+/* thanks to Kristof Pelckmans <Kristof.Pelckmans@antwerpen.be> for Delta410 info */
 /* 0x01 = DFS */
 #define ICE1712_DELTA_AP_CCLK	0x02	/* SPI clock */
 					/* (clocking on rising edge - 0->1) */
@@ -115,7 +116,7 @@ extern struct snd_ice1712_card_info snd_ice1712_delta_cards[];
 #define ICE1712_DELTA_AP_DOUT	0x08	/* data output */
 #define ICE1712_DELTA_AP_CS_DIGITAL 0x10 /* CS8427 chip select */
 					/* low signal = select */
-#define ICE1712_DELTA_AP_CS_CODEC 0x20	/* AK4528 chip select */
+#define ICE1712_DELTA_AP_CS_CODEC 0x20	/* AK4528 (audiophile), AK4529 (Delta410) chip select */
 					/* low signal = select */
 
 /* MidiMan M-Audio Delta1010LT definitions */

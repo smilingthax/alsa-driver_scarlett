@@ -603,7 +603,7 @@ cs46xx_dsp_create_src_task_scb(cs46xx_t * chip,char * scb_name,
 		src_buffer_addr << 0x10,
 		0x04000000,
 		{ 
-			0xffff,0xffff,
+			0x8000,0x8000,
 			0xffff,0xffff
 		}
 	};
@@ -658,7 +658,7 @@ cs46xx_dsp_create_mix_only_scb(cs46xx_t * chip,char * scb_name,
 		/* D */ 0,
 		{
 			/* E */ 0x8000,0x8000,
-			/* F */ 0x8000,0x8000
+			/* F */ 0xffff,0xffff
 		}
 	};
 
@@ -825,7 +825,7 @@ cs46xx_dsp_create_asynch_fg_tx_scb(cs46xx_t * chip,char * scb_name,u32 dest,
 		0x0058,0x0028,      /* Min Delta 7 dwords == 28 bytes */
 		/* : Max delta 25 dwords == 100 bytes */
 		0,hfg_scb_address,  /* Point to HFG task SCB */
-		0,0,				/* Initialize current Delta and Consumer ptr adjustment count */
+		0,0,		    /* Initialize current Delta and Consumer ptr adjustment count */
 		0,                  /* Initialize accumulated Phi to 0 */
 		0,0x2aab,           /* Const 1/3 */
     
@@ -840,13 +840,13 @@ cs46xx_dsp_create_asynch_fg_tx_scb(cs46xx_t * chip,char * scb_name,u32 dest,
     
 		RSCONFIG_SAMPLE_16STEREO + RSCONFIG_MODULO_256, /* Stereo, 256 dword */
 		(asynch_buffer_address) << 0x10,  /* This should be automagically synchronized
-                                             to the producer pointer */
+                                                     to the producer pointer */
     
 		/* There is no correct initial value, it will depend upon the detected
 		   rate etc  */
 		0x18000000,                     /* Phi increment for approx 32k operation */
 		0x8000,0x8000,                  /* Volume controls are unused at this time */
-		0x8000,0x8000
+		0xffff,0xffff
 	};
   
 	scb = cs46xx_dsp_create_generic_scb(chip,scb_name,(u32 *)&asynch_fg_tx_scb,
@@ -1114,7 +1114,13 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,
 		snd_assert(0);
 		break;
 	case DSP_IEC958_CHANNEL:
+		snd_assert (ins->asynch_tx_scb != NULL, return NULL);
 		mixer_scb = ins->asynch_tx_scb;
+		if (ins->spdif_status_out & DSP_SPDIF_STATUS_AC3_MODE) {
+			snd_printdd ("IEC958 opened in AC3 mode\n");
+			/*src_scb = ins->asynch_tx_scb;
+			  ins->asynch_tx_scb->ref_count ++;*/
+		}
 		break;
 	default:
 		snd_assert (0);
@@ -1192,7 +1198,9 @@ pcm_channel_descriptor_t * cs46xx_dsp_create_pcm_channel (cs46xx_t * chip,
 			return NULL;
 		}
 
-		cs46xx_dsp_set_src_sample_rate(chip,src_scb,sample_rate);
+		if (pcm_channel_id != DSP_IEC958_CHANNEL ||
+		    !(ins->spdif_status_out & DSP_SPDIF_STATUS_AC3_MODE))
+			cs46xx_dsp_set_src_sample_rate(chip,src_scb,sample_rate);
 
 		ins->nsrc_scb ++;
 	} 
@@ -1454,14 +1462,16 @@ void cs46xx_dsp_set_src_sample_rate(cs46xx_t *chip,dsp_scb_descriptor_t * src, u
 	spin_lock_irqsave(&chip->reg_lock, flags);
 
 	/* mute SCB */
-	snd_cs46xx_poke(chip, (src->address + 0xE) << 2, 0xffffffff);
+	/* cs46xx_dsp_scb_set_volume (chip,src,0,0); */
+
 	snd_cs46xx_poke(chip, (src->address + SRCCorPerGof) << 2,
 	  ((correctionPerSec << 16) & 0xFFFF0000) | (correctionPerGOF & 0xFFFF));
 
 	snd_cs46xx_poke(chip, (src->address + SRCPhiIncr6Int26Frac) << 2, phiIncr);
 
 	/* raise volume */
-	snd_cs46xx_poke(chip, (src->address + 0xE) << 2, 0x80008000);
+	/* cs46xx_dsp_scb_set_volume (chip,src,0x7fff,0x7fff); */
+	
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 }
 
@@ -1495,7 +1505,7 @@ int cs46xx_src_unlink(cs46xx_t *chip,dsp_scb_descriptor_t * src)
 	snd_assert (src->parent_scb_ptr != NULL,  return -EINVAL );
 
 	/* mute SCB */
-	snd_cs46xx_poke(chip, (src->address + 0xE) << 2, 0xffffffff);
+	cs46xx_dsp_scb_set_volume (chip,src,0,0);
 
 	_dsp_unlink_scb (chip,src);
 
@@ -1530,16 +1540,16 @@ int cs46xx_dsp_enable_spdif_out (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
-	if ( ! (ins->spdif_status_out & DSP_SDPIF_STATUS_PLAYBACK_OPEN) ) {
+	if ( ! (ins->spdif_status_out & DSP_SPDIF_STATUS_HW_ENABLED) ) {
 		cs46xx_dsp_enable_spdif_hw (chip);
 	}
 
 	/* dont touch anything if SPDIF is open */
-	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_PLAYBACK_OPEN) {
+	if ( ins->spdif_status_out & DSP_SPDIF_STATUS_PLAYBACK_OPEN) {
 		/* when cs46xx_iec958_post_close(...) is called it
 		   will call this function if necesary depending on
 		   this bit */
-		ins->spdif_status_out |= DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+		ins->spdif_status_out |= DSP_SPDIF_STATUS_OUTPUT_ENABLED;
 
 		return -EBUSY;
 	}
@@ -1569,7 +1579,7 @@ int cs46xx_dsp_enable_spdif_out (cs46xx_t *chip)
 	if (!ins->spdif_pcm_input_scb) return -ENOMEM;
 
 	/* monitor state */
-	ins->spdif_status_out |= DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+	ins->spdif_status_out |= DSP_SPDIF_STATUS_OUTPUT_ENABLED;
 
 	return 0;
 }
@@ -1579,8 +1589,8 @@ int  cs46xx_dsp_disable_spdif_out (cs46xx_t *chip)
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
 	/* dont touch anything if SPDIF is open */
-	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_PLAYBACK_OPEN) {
-		ins->spdif_status_out &= ~DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+	if ( ins->spdif_status_out & DSP_SPDIF_STATUS_PLAYBACK_OPEN) {
+		ins->spdif_status_out &= ~DSP_SPDIF_STATUS_OUTPUT_ENABLED;
 		return -EBUSY;
 	}
 
@@ -1600,7 +1610,7 @@ int  cs46xx_dsp_disable_spdif_out (cs46xx_t *chip)
 	_dsp_clear_sample_buffer(chip,SPDIFO_IP_OUTPUT_BUFFER1,256);
 
 	/* monitor state */
-	ins->spdif_status_out  &= ~DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+	ins->spdif_status_out  &= ~DSP_SPDIF_STATUS_OUTPUT_ENABLED;
 
 
 	return 0;
@@ -1610,12 +1620,17 @@ int cs46xx_iec958_pre_open (cs46xx_t *chip)
 {
 	dsp_spos_instance_t * ins = chip->dsp_spos_instance;
 
-	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED ) {
+	if ( ins->spdif_status_out & DSP_SPDIF_STATUS_OUTPUT_ENABLED ) {
 		/* remove AsynchFGTxSCB and and PCMSerialInput_II */
 		cs46xx_dsp_disable_spdif_out (chip);
 
 		/* save state */
-		ins->spdif_status_out |= DSP_SDPIF_STATUS_OUTPUT_ENABLED;
+		ins->spdif_status_out |= DSP_SPDIF_STATUS_OUTPUT_ENABLED;
+	}
+	
+	/* if not enabled already */
+	if (ins->spdif_status_out & DSP_SPDIF_STATUS_HW_ENABLED) {
+		cs46xx_dsp_enable_spdif_hw (chip);
 	}
 
 	/* Create the asynch. transfer task  for playback */
@@ -1625,10 +1640,12 @@ int cs46xx_iec958_pre_open (cs46xx_t *chip)
 								ins->master_mix_scb,
 								SCB_ON_PARENT_NEXT_SCB);
 
-	/* cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 15) | 
-	   (1 << 14) | (1 << 2) | (1 << 3)); */
 
-	ins->spdif_status_out  |= DSP_SDPIF_STATUS_PLAYBACK_OPEN;
+	if (ins->spdif_status_out & DSP_SPDIF_STATUS_AC3_MODE) 
+		/* set left (13), right validity bit (12) , and non-audio(1) and profsional bit (0) */
+		cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12) | (1 << 1) | 1);
+
+	ins->spdif_status_out  |= DSP_SPDIF_STATUS_PLAYBACK_OPEN;
 
 	return 0;
 }
@@ -1639,16 +1656,17 @@ int cs46xx_iec958_post_close (cs46xx_t *chip)
 
 	snd_assert (ins->asynch_tx_scb != NULL, return -EINVAL);
 
-	ins->spdif_status_out  &= ~DSP_SDPIF_STATUS_PLAYBACK_OPEN;
+	ins->spdif_status_out  &= ~DSP_SPDIF_STATUS_PLAYBACK_OPEN;
 
-	/*cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12));*/
+	/* restore settings */
+	cs46xx_poke_via_dsp (chip,SP_SPDOUT_CSUV, 0x00000000 | (1 << 13) | (1 << 12));
 	
 	/* deallocate stuff */
 	cs46xx_dsp_remove_scb (chip,ins->asynch_tx_scb);
 	ins->asynch_tx_scb = NULL;
 
 	/* restore state */
-	if ( ins->spdif_status_out & DSP_SDPIF_STATUS_OUTPUT_ENABLED ) {
+	if ( ins->spdif_status_out & DSP_SPDIF_STATUS_OUTPUT_ENABLED ) {
 		cs46xx_dsp_enable_spdif_out (chip);
 	}
 	
