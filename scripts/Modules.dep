@@ -200,3 +200,7 @@ snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
 
 %dir linux/sound/arm
 |snd-sa11xx-uda1341 snd-uda1341 snd-pcm
+
+%dir linux/sound/usb
+|snd-usb-audio snd-pcm
+|snd-usb-midi @if_sequencer snd-seq-device snd-seq-midi-event
