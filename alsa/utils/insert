@@ -381,6 +381,10 @@ case "$1" in
     insert snd-seq-virmidi.o
     insert snd-virmidi.o
     ;;
+  serialmidi)
+    basic
+    insert snd-serialmidi.o
+    ;;
   t1)
     basic; isapnp
     insert snd-mpu401-uart.o 

@@ -178,3 +178,7 @@ uninstall:
 	rm -f $(DESTDIR)/sbin/init.d/alsasound
 	rm -f $(DESTDIR)/etc/rc.d/init.d/alsasound
 	rm -f $(DESTDIR)/etc/init.d/alsasound
+
+.PHONY: TAGS
+TAGS:
+	find . ../alsa-kernel -name *.h -o -name *.c | xargs etags
