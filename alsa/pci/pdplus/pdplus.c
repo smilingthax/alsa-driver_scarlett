@@ -5224,20 +5224,20 @@ static snd_kcontrol_new_t pdplus_control[] __devinitdata = {
 
 	{
 		.access = SNDRV_CTL_ELEM_ACCESS_READ,
-		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
 		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,CON_MASK),
 		.info = pdplus_spdif_mask_info,
 		.get = pdplus_spdif_cmask_get,
 	},
 	{
 		.access = SNDRV_CTL_ELEM_ACCESS_READ,
-		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
 		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,PRO_MASK),
 		.info = pdplus_spdif_mask_info,
 		.get = pdplus_spdif_pmask_get,
 	},
 	{
-		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
 		.name = SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
 		.info = pdplus_spdif_mask_info,
 		.get = pdplus_spdif_default_get,
@@ -5262,6 +5262,8 @@ static int __devinit pdplus_mixer_new (pdplus_t *scard)
 
         for (i = 0; i < PDPLUS_CONTROL_CNT; i++) {
                 k= snd_ctl_new1(&pdplus_control[i], scard);
+		if (k && k->id.iface == SNDRV_CTL_ELEM_IFACE_PCM)
+			k->id.device = scard->digital->device;
                 if ((err = snd_ctl_add (card, k)) < 0)
                         return err;
         }

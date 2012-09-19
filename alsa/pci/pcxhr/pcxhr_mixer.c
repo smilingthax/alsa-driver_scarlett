@@ -771,13 +771,13 @@ static int pcxhr_iec958_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucon
 
 static snd_kcontrol_new_t pcxhr_control_playback_iec958_mask = {
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
-	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
 	.name =		SNDRV_CTL_NAME_IEC958("",PLAYBACK,MASK),
 	.info =		pcxhr_iec958_info,
 	.get =		pcxhr_iec958_mask_get
 };
 static snd_kcontrol_new_t pcxhr_control_playback_iec958 = {
-	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
 	.name =         SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
 	.info =         pcxhr_iec958_info,
 	.get =          pcxhr_iec958_get,
@@ -787,14 +787,14 @@ static snd_kcontrol_new_t pcxhr_control_playback_iec958 = {
 
 static snd_kcontrol_new_t pcxhr_control_capture_iec958_mask = {
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
-	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
 	.name =		SNDRV_CTL_NAME_IEC958("",CAPTURE,MASK),
 	.info =		pcxhr_iec958_info,
 	.get =		pcxhr_iec958_mask_get
 };
 static snd_kcontrol_new_t pcxhr_control_capture_iec958 = {
 	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
-	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.iface =	SNDRV_CTL_ELEM_IFACE_PCM,
 	.name =         SNDRV_CTL_NAME_IEC958("",CAPTURE,DEFAULT),
 	.info =         pcxhr_iec958_info,
 	.get =          pcxhr_iec958_get,
