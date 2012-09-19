@@ -52,12 +52,12 @@ MODULE_AUTHOR("Chris Rankin");
 MODULE_DESCRIPTION("ENSONIQ SoundScape PnP driver");
 MODULE_LICENSE("GPL");
 
-static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
-static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
-static long port[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_PORT };
-static int irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;
-static int mpu_irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;
-static int dma[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;
+static int __initdata index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
+static char* __initdata id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
+static long __initdata port[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = SNDRV_AUTO_PORT };
+static int __initdata irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;
+static int __initdata mpu_irq[SNDRV_CARDS] = SNDRV_DEFAULT_IRQ;
+static int __initdata dma[SNDRV_CARDS] = SNDRV_DEFAULT_DMA;
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index number for SoundScape soundcard");
@@ -1418,7 +1418,7 @@ static int __init sscape_isapnp_card(struct isapnp_card *card, const struct isap
 			 */
 			if ( !is_port_known(this->port, data->params, data->cards) ) {
 				++(data->cards);
-			  ++(data->idx);
+				++(data->idx);
 				ret = 0;
 			}
 		}
