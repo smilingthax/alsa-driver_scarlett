@@ -104,10 +104,13 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
 	case snd_soc_dapm_switch:
 	case snd_soc_dapm_mixer: {
 		int val;
-		int reg = w->kcontrols[i].private_value & 0xff;
-		int shift = (w->kcontrols[i].private_value >> 8) & 0x0f;
-		int mask = (w->kcontrols[i].private_value >> 16) & 0xff;
-		int invert = (w->kcontrols[i].private_value >> 24) & 0x01;
+		struct soc_mixer_control *mc = (struct soc_mixer_control *)
+			w->kcontrols[i].private_value;
+		unsigned int reg = mc->reg;
+		unsigned int shift = mc->shift;
+		int max = mc->max;
+		unsigned int mask = (1 << fls(max)) - 1;
+		unsigned int invert = mc->invert;
 
 		val = snd_soc_read(w->codec, reg);
 		val = (val >> shift) & mask;
@@ -122,13 +125,13 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
 		struct soc_enum *e = (struct soc_enum *)w->kcontrols[i].private_value;
 		int val, item, bitmask;
 
-		for (bitmask = 1; bitmask < e->mask; bitmask <<= 1)
+		for (bitmask = 1; bitmask < e->max; bitmask <<= 1)
 		;
 		val = snd_soc_read(w->codec, e->reg);
 		item = (val >> e->shift_l) & (bitmask - 1);
 
 		p->connect = 0;
-		for (i = 0; i < e->mask; i++) {
+		for (i = 0; i < e->max; i++) {
 			if (!(strcmp(p->name, e->texts[i])) && item == i)
 				p->connect = 1;
 		}
@@ -165,7 +168,7 @@ static int dapm_connect_mux(struct snd_soc_codec *codec,
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	int i;
 
-	for (i = 0; i < e->mask; i++) {
+	for (i = 0; i < e->max; i++) {
 		if (!(strcmp(control_name, e->texts[i]))) {
 			list_add(&path->list, &codec->dapm_paths);
 			list_add(&path->list_sink, &dest->sources);
@@ -247,16 +250,19 @@ static int dapm_set_pga(struct snd_soc_dapm_widget *widget, int power)
 		return 0;
 
 	if (widget->num_kcontrols && k) {
-		int reg = k->private_value & 0xff;
-		int shift = (k->private_value >> 8) & 0x0f;
-		int mask = (k->private_value >> 16) & 0xff;
-		int invert = (k->private_value >> 24) & 0x01;
+		struct soc_mixer_control *mc =
+			(struct soc_mixer_control *)k->private_value;
+		unsigned int reg = mc->reg;
+		unsigned int shift = mc->shift;
+		int max = mc->max;
+		unsigned int mask = (1 << fls(max)) - 1;
+		unsigned int invert = mc->invert;
 
 		if (power) {
 			int i;
 			/* power up has happended, increase volume to last level */
 			if (invert) {
-				for (i = mask; i > widget->saved_value; i--)
+				for (i = max; i > widget->saved_value; i--)
 					snd_soc_update_bits(widget->codec, reg, mask, i);
 			} else {
 				for (i = 0; i < widget->saved_value; i++)
@@ -470,6 +476,7 @@ int dapm_reg_event(struct snd_soc_dapm_widget *w,
 
 	return 0;
 }
+EXPORT_SYMBOL_GPL(dapm_reg_event);
 
 /*
  * Scan each dapm widget for complete audio path.
@@ -1132,12 +1139,14 @@ int snd_soc_dapm_get_volsw(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_dapm_widget *widget = snd_kcontrol_chip(kcontrol);
-	int reg = kcontrol->private_value & 0xff;
-	int shift = (kcontrol->private_value >> 8) & 0x0f;
-	int rshift = (kcontrol->private_value >> 12) & 0x0f;
-	int max = (kcontrol->private_value >> 16) & 0xff;
-	int invert = (kcontrol->private_value >> 24) & 0x01;
-	int mask = (1 << fls(max)) - 1;
+	struct soc_mixer_control *mc =
+		(struct soc_mixer_control *)kcontrol->private_value;
+	unsigned int reg = mc->reg;
+	unsigned int shift = mc->shift;
+	unsigned int rshift = mc->rshift;
+	int max = mc->max;
+	unsigned int invert = mc->invert;
+	unsigned int mask = (1 << fls(max)) - 1;
 
 	/* return the saved value if we are powered down */
 	if (widget->id == snd_soc_dapm_pga && !widget->power) {
@@ -1175,12 +1184,14 @@ int snd_soc_dapm_put_volsw(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_dapm_widget *widget = snd_kcontrol_chip(kcontrol);
-	int reg = kcontrol->private_value & 0xff;
-	int shift = (kcontrol->private_value >> 8) & 0x0f;
-	int rshift = (kcontrol->private_value >> 12) & 0x0f;
-	int max = (kcontrol->private_value >> 16) & 0xff;
-	int mask = (1 << fls(max)) - 1;
-	int invert = (kcontrol->private_value >> 24) & 0x01;
+	struct soc_mixer_control *mc =
+		(struct soc_mixer_control *)kcontrol->private_value;
+	unsigned int reg = mc->reg;
+	unsigned int shift = mc->shift;
+	unsigned int rshift = mc->rshift;
+	int max = mc->max;
+	unsigned int mask = (1 << fls(max)) - 1;
+	unsigned int invert = mc->invert;
 	unsigned short val, val2, val_mask;
 	int ret;
 
@@ -1247,7 +1258,7 @@ int snd_soc_dapm_get_enum_double(struct snd_kcontrol *kcontrol,
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	unsigned short val, bitmask;
 
-	for (bitmask = 1; bitmask < e->mask; bitmask <<= 1)
+	for (bitmask = 1; bitmask < e->max; bitmask <<= 1)
 		;
 	val = snd_soc_read(widget->codec, e->reg);
 	ucontrol->value.enumerated.item[0] = (val >> e->shift_l) & (bitmask - 1);
@@ -1277,15 +1288,15 @@ int snd_soc_dapm_put_enum_double(struct snd_kcontrol *kcontrol,
 	unsigned short mask, bitmask;
 	int ret = 0;
 
-	for (bitmask = 1; bitmask < e->mask; bitmask <<= 1)
+	for (bitmask = 1; bitmask < e->max; bitmask <<= 1)
 		;
-	if (ucontrol->value.enumerated.item[0] > e->mask - 1)
+	if (ucontrol->value.enumerated.item[0] > e->max - 1)
 		return -EINVAL;
 	mux = ucontrol->value.enumerated.item[0];
 	val = mux << e->shift_l;
 	mask = (bitmask - 1) << e->shift_l;
 	if (e->shift_l != e->shift_r) {
-		if (ucontrol->value.enumerated.item[1] > e->mask - 1)
+		if (ucontrol->value.enumerated.item[1] > e->max - 1)
 			return -EINVAL;
 		val |= ucontrol->value.enumerated.item[1] << e->shift_r;
 		mask |= (bitmask - 1) << e->shift_r;
