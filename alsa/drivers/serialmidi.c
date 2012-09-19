@@ -249,7 +249,7 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
       __end:
       	if (retval < 0) {
       		if (serial->file) {
-      			filp_close(serial->file, 0);
+      			filp_close(serial->file, NULL);
       			serial->file = NULL;
       		}
       	}
@@ -278,7 +278,7 @@ static int close_tty(serialmidi_t *serial, unsigned int mode)
 		else
 			clear_bit(TTY_EXCLUSIVE, &tty->flags);
 	}
-	filp_close(serial->file, 0);
+	filp_close(serial->file, NULL);
 	serial->tty = NULL;
 	serial->file = NULL;
       __end:

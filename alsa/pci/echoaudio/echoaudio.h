@@ -412,7 +412,7 @@ struct echoaudio_chip {
 	const struct firmware *dsp_code_to_load;/* DSP code to load */
 	const struct firmware *asic_code;	/* Current ASIC code */
 	u32 comm_page_phys;			/* Physical address of the memory seen by DSP */
-	volatile u32 *dsp_registers;		/* DSP's register base */
+	volatile u32 __iomem *dsp_registers;	/* DSP's register base */
 	u32 active_mask;			/* Chs. active mask or punks out */
 
 #ifdef ECHOCARD_HAS_MIDI

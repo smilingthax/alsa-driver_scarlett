@@ -295,10 +295,10 @@ static int pcm_analog_in_open(snd_pcm_substream_t *substream)
 	if ((err = pcm_open(substream, NUM_ANALOG_BUSSES_IN - substream->number, 0)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
-					hw_rule_capture_channels_by_format, 0, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
+					hw_rule_capture_channels_by_format, NULL, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
-					hw_rule_capture_format_by_channels, 0, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
+					hw_rule_capture_format_by_channels, NULL, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
 		return err;
 	atomic_inc(&chip->opencount);
 	if (atomic_read(&chip->opencount) > 1 && chip->rate_set)
@@ -323,10 +323,10 @@ static int pcm_analog_out_open(snd_pcm_substream_t *substream)
 	if ((err = pcm_open(substream, max_channels - substream->number, 0)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
-					hw_rule_playback_channels_by_format, 0, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
+					hw_rule_playback_channels_by_format, NULL, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
 		return err;
 	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
-					hw_rule_playback_format_by_channels, 0, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
+					hw_rule_playback_format_by_channels, NULL, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
 		return err;
 	atomic_inc(&chip->opencount);
 	if (atomic_read(&chip->opencount) > 1 && chip->rate_set)
@@ -450,7 +450,7 @@ static int init_engine(snd_pcm_substream_t *substream, snd_pcm_hw_params_t *hw_p
 		DE_HWP(("hwp_ie free(%d)\n", ssdata->pipe_index));
 		err = free_pipes(chip, ssdata);
 		snd_assert(!err);
-		chip->substream[ssdata->pipe_index] = 0;
+		chip->substream[ssdata->pipe_index] = NULL;
 	}
 
 	err = allocate_pipes(chip, ssdata, pipe_index, Interleave);
@@ -567,7 +567,7 @@ static int pcm_hw_free(snd_pcm_substream_t *substream)
 	if (ssdata->pipe_index >= 0) {
 		DE_HWP(("pcm_hw_free(%d)\n", ssdata->pipe_index));
 		free_pipes(chip, ssdata);
-		chip->substream[ssdata->pipe_index] = 0;
+		chip->substream[ssdata->pipe_index] = NULL;
 		ssdata->pipe_index = -1;
 	}
 	spin_unlock_irq(&chip->lock);
@@ -1685,7 +1685,7 @@ static int snd_echo_free(echoaudio_t *chip)
 		free_irq(chip->irq, (void *)chip);
 
 	if (chip->dsp_registers)
-		iounmap((void *)chip->dsp_registers);
+		iounmap(chip->dsp_registers);
 
 	if (chip->iores) {
 		release_resource(chip->iores);
@@ -1751,7 +1751,7 @@ static __devinit int snd_echo_create(snd_card_t *card, struct pci_dev *pci, echo
 		snd_printk(KERN_ERR "cannot get memory region\n");
 		return -EBUSY;
 	}
-	chip->dsp_registers = (u32 *)ioremap_nocache(chip->dsp_registers_phys, sz);
+	chip->dsp_registers = (volatile u32 __iomem *)ioremap_nocache(chip->dsp_registers_phys, sz);
 
 	if (request_irq(pci->irq, snd_echo_interrupt, SA_INTERRUPT | SA_SHIRQ, ECHOCARD_NAME, (void *)chip)) {
 		snd_echo_free(chip);
