@@ -19,9 +19,9 @@
 
 /*
  * SPI 0 -> 1st PCM1796 (front)
- * SPI 1 -> 2nd PCM1796 (side)
+ * SPI 1 -> 2nd PCM1796 (surround)
  * SPI 2 -> 3rd PCM1796 (center/LFE)
- * SPI 4 -> 4th PCM1796 (rear)
+ * SPI 4 -> 4th PCM1796 (back)
  *
  * GPIO 2 -> M0 of CS5381
  * GPIO 3 -> M1 of CS5381
@@ -32,6 +32,8 @@
 
 #include <linux/pci.h>
 #include <linux/delay.h>
+#include <linux/mutex.h>
+#include <sound/ac97_codec.h>
 #include <sound/control.h>
 #include <sound/core.h>
 #include <sound/initval.h>
@@ -76,7 +78,7 @@ static void pcm1796_write(struct oxygen *chip, unsigned int codec,
 {
 	/* maps ALSA channel pair number to SPI output */
 	static const u8 codec_map[4] = {
-		0, 4, 2, 1
+		0, 1, 2, 4
 	};
 	oxygen_write_spi(chip, OXYGEN_SPI_TRIGGER_WRITE |
 			 OXYGEN_SPI_DATA_LENGTH_2 |
@@ -167,6 +169,16 @@ static void set_cs5381_params(struct oxygen *chip,
 	oxygen_write16_masked(chip, OXYGEN_GPIO_DATA, value, 0x000c);
 }
 
+static int pcm1796_volume_info(struct snd_kcontrol *ctl,
+			       struct snd_ctl_elem_info *info)
+{
+	info->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	info->count = 8;
+	info->value.integer.min = 0x0f;
+	info->value.integer.max = 0xff;
+	return 0;
+}
+
 static int alt_switch_get(struct snd_kcontrol *ctl,
 			  struct snd_ctl_elem_value *value)
 {
@@ -207,6 +219,18 @@ static const struct snd_kcontrol_new alt_switch = {
 
 static const DECLARE_TLV_DB_SCALE(pcm1796_db_scale, -12000, 50, 0);
 
+static int xonar_control_filter(struct snd_kcontrol_new *template)
+{
+	if (!strcmp(template->name, "Master Playback Volume")) {
+		template->access |= SNDRV_CTL_ELEM_ACCESS_TLV_READ;
+		template->info = pcm1796_volume_info,
+		template->tlv.p = pcm1796_db_scale;
+	} else if (!strncmp(template->name, "CD Capture ", 11)) {
+		template->private_value ^= AC97_CD ^ AC97_VIDEO;
+	}
+	return 0;
+}
+
 static int xonar_mixer_init(struct oxygen *chip)
 {
 	return snd_ctl_add(chip->card, snd_ctl_new1(&alt_switch, chip));
@@ -217,16 +241,18 @@ static const struct oxygen_model model_xonar = {
 	.longname = "Asus Virtuoso 200",
 	.chip = "AV200",
 	.init = xonar_init,
+	.control_filter = xonar_control_filter,
 	.mixer_init = xonar_mixer_init,
 	.cleanup = xonar_cleanup,
 	.set_dac_params = set_pcm1796_params,
 	.set_adc_params = set_cs5381_params,
 	.update_dac_volume = update_pcm1796_volume,
 	.update_dac_mute = update_pcm1796_mute,
-	.dac_tlv = pcm1796_db_scale,
-	.record_from_dma_b = 1,
-	.cd_in_from_video_in = 1,
-	.dac_minimum_volume = 15,
+	.used_channels = OXYGEN_CHANNEL_B |
+			 OXYGEN_CHANNEL_C |
+			 OXYGEN_CHANNEL_SPDIF |
+			 OXYGEN_CHANNEL_MULTICH,
+	.function_flags = OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 };
 
 static int __devinit xonar_probe(struct pci_dev *pci,

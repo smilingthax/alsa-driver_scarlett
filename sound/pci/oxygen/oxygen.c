@@ -19,16 +19,17 @@
 
 /*
  * SPI 0 -> 1st AK4396 (front)
- * SPI 1 -> 2nd AK4396 (side)
+ * SPI 1 -> 2nd AK4396 (surround)
  * SPI 2 -> 3rd AK4396 (center/LFE)
  * SPI 3 -> WM8785
- * SPI 4 -> 4th AK4396 (rear)
+ * SPI 4 -> 4th AK4396 (back)
  *
  * GPIO 0 -> DFS0 of AK5385
  * GPIO 1 -> DFS1 of AK5385
  */
 
 #include <linux/pci.h>
+#include <sound/control.h>
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/pcm.h>
@@ -99,7 +100,7 @@ static void ak4396_write(struct oxygen *chip, unsigned int codec,
 {
 	/* maps ALSA channel pair number to SPI output */
 	static const u8 codec_spi_map[4] = {
-		0, 4, 2, 1
+		0, 1, 2, 4
 	};
 	oxygen_write_spi(chip, OXYGEN_SPI_TRIGGER_WRITE |
 			 OXYGEN_SPI_DATA_LENGTH_2 |
@@ -160,6 +161,18 @@ static void meridian_init(struct oxygen *chip)
 
 static void generic_cleanup(struct oxygen *chip)
 {
+}
+
+static void generic_pcm_hardware_filter(unsigned int channel,
+					struct snd_pcm_hardware *hardware)
+{
+	if (channel == PCM_A) {
+		hardware->rates = SNDRV_PCM_RATE_44100 |
+				  SNDRV_PCM_RATE_48000 |
+				  SNDRV_PCM_RATE_96000 |
+				  SNDRV_PCM_RATE_192000;
+		hardware->rate_min = 44100;
+	}
 }
 
 static void set_ak4396_params(struct oxygen *chip,
@@ -244,18 +257,34 @@ static void set_ak5385_params(struct oxygen *chip,
 
 static const DECLARE_TLV_DB_LINEAR(ak4396_db_scale, TLV_DB_GAIN_MUTE, 0);
 
+static int ak4396_control_filter(struct snd_kcontrol_new *template)
+{
+	if (!strcmp(template->name, "Master Playback Volume")) {
+		template->access |= SNDRV_CTL_ELEM_ACCESS_TLV_READ;
+		template->tlv.p = ak4396_db_scale;
+	}
+	return 0;
+}
+
 static const struct oxygen_model model_generic = {
 	.shortname = "C-Media CMI8788",
 	.longname = "C-Media Oxygen HD Audio",
 	.chip = "CMI8788",
 	.owner = THIS_MODULE,
 	.init = generic_init,
+	.control_filter = ak4396_control_filter,
 	.cleanup = generic_cleanup,
+	.pcm_hardware_filter = generic_pcm_hardware_filter,
 	.set_dac_params = set_ak4396_params,
 	.set_adc_params = set_wm8785_params,
 	.update_dac_volume = update_ak4396_volume,
 	.update_dac_mute = update_ak4396_mute,
-	.dac_tlv = ak4396_db_scale,
+	.used_channels = OXYGEN_CHANNEL_A |
+			 OXYGEN_CHANNEL_C |
+			 OXYGEN_CHANNEL_SPDIF |
+			 OXYGEN_CHANNEL_MULTICH |
+			 OXYGEN_CHANNEL_AC97,
+	.function_flags = OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 };
 static const struct oxygen_model model_meridian = {
 	.shortname = "C-Media CMI8788",
@@ -263,13 +292,18 @@ static const struct oxygen_model model_meridian = {
 	.chip = "CMI8788",
 	.owner = THIS_MODULE,
 	.init = meridian_init,
+	.control_filter = ak4396_control_filter,
 	.cleanup = generic_cleanup,
 	.set_dac_params = set_ak4396_params,
 	.set_adc_params = set_ak5385_params,
 	.update_dac_volume = update_ak4396_volume,
 	.update_dac_mute = update_ak4396_mute,
-	.dac_tlv = ak4396_db_scale,
-	.record_from_dma_b = 1,
+	.used_channels = OXYGEN_CHANNEL_B |
+			 OXYGEN_CHANNEL_C |
+			 OXYGEN_CHANNEL_SPDIF |
+			 OXYGEN_CHANNEL_MULTICH |
+			 OXYGEN_CHANNEL_AC97,
+	.function_flags = OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 };
 
 static int __devinit generic_oxygen_probe(struct pci_dev *pci,

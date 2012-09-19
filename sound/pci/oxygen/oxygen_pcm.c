@@ -33,11 +33,15 @@ static struct snd_pcm_hardware oxygen_hardware[PCM_COUNT] = {
 			SNDRV_PCM_INFO_SYNC_START,
 		.formats = SNDRV_PCM_FMTBIT_S16_LE |
 			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_44100 |
+		.rates = SNDRV_PCM_RATE_32000 |
+			 SNDRV_PCM_RATE_44100 |
 			 SNDRV_PCM_RATE_48000 |
+			 SNDRV_PCM_RATE_64000 |
+			 SNDRV_PCM_RATE_88200 |
 			 SNDRV_PCM_RATE_96000 |
+			 SNDRV_PCM_RATE_176400 |
 			 SNDRV_PCM_RATE_192000,
-		.rate_min = 44100,
+		.rate_min = 32000,
 		.rate_max = 192000,
 		.channels_min = 2,
 		.channels_max = 2,
@@ -182,6 +186,8 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 
 	runtime->private_data = (void *)(uintptr_t)channel;
 	runtime->hw = oxygen_hardware[channel];
+	if (chip->model->pcm_hardware_filter)
+		chip->model->pcm_hardware_filter(channel, &runtime->hw);
 	err = snd_pcm_hw_constraint_step(runtime, 0,
 					 SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 32);
 	if (err < 0)
@@ -209,11 +215,11 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 	chip->pcm_active |= 1 << channel;
 	if (channel == PCM_SPDIF) {
 		chip->spdif_pcm_bits = chip->spdif_bits;
-		chip->spdif_pcm_ctl->vd[0].access &=
+		chip->controls[CONTROL_SPDIF_PCM]->vd[0].access &=
 			~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE |
 			       SNDRV_CTL_EVENT_MASK_INFO,
-			       &chip->spdif_pcm_ctl->id);
+			       &chip->controls[CONTROL_SPDIF_PCM]->id);
 	}
 	mutex_unlock(&chip->mutex);
 
@@ -258,11 +264,11 @@ static int oxygen_close(struct snd_pcm_substream *substream)
 	mutex_lock(&chip->mutex);
 	chip->pcm_active &= ~(1 << channel);
 	if (channel == PCM_SPDIF) {
-		chip->spdif_pcm_ctl->vd[0].access |=
+		chip->controls[CONTROL_SPDIF_PCM]->vd[0].access |=
 			SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE |
 			       SNDRV_CTL_EVENT_MASK_INFO,
-			       &chip->spdif_pcm_ctl->id);
+			       &chip->controls[CONTROL_SPDIF_PCM]->id);
 	}
 	if (channel == PCM_SPDIF || channel == PCM_MULTICH)
 		oxygen_update_spdif_source(chip);
@@ -681,15 +687,22 @@ static void oxygen_pcm_free(struct snd_pcm *pcm)
 int __devinit oxygen_pcm_init(struct oxygen *chip)
 {
 	struct snd_pcm *pcm;
+	int outs, ins;
 	int err;
 
-	err = snd_pcm_new(chip->card, "Analog", 0, 1, 1, &pcm);
+	outs = 1; /* OXYGEN_CHANNEL_MULTICH is always used */
+	ins = !!(chip->model->used_channels & (OXYGEN_CHANNEL_A |
+					       OXYGEN_CHANNEL_B));
+	err = snd_pcm_new(chip->card, "Analog", 0, outs, ins, &pcm);
 	if (err < 0)
 		return err;
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &oxygen_multich_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
-			chip->model->record_from_dma_b ?
-			&oxygen_rec_b_ops : &oxygen_rec_a_ops);
+	if (chip->model->used_channels & OXYGEN_CHANNEL_A)
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+				&oxygen_rec_a_ops);
+	else if (chip->model->used_channels & OXYGEN_CHANNEL_B)
+		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+				&oxygen_rec_b_ops);
 	pcm->private_data = chip;
 	pcm->private_free = oxygen_pcm_free;
 	strcpy(pcm->name, "Analog");
@@ -697,32 +710,51 @@ int __devinit oxygen_pcm_init(struct oxygen *chip)
 				      SNDRV_DMA_TYPE_DEV,
 				      snd_dma_pci_data(chip->pci),
 				      512 * 1024, 2048 * 1024);
-	snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream,
-				      SNDRV_DMA_TYPE_DEV,
-				      snd_dma_pci_data(chip->pci),
-				      128 * 1024, 256 * 1024);
-
-	err = snd_pcm_new(chip->card, "Digital", 1, 1, 1, &pcm);
-	if (err < 0)
-		return err;
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &oxygen_spdif_ops);
-	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &oxygen_rec_c_ops);
-	pcm->private_data = chip;
-	pcm->private_free = oxygen_pcm_free;
-	strcpy(pcm->name, "Digital");
-	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+	if (ins)
+		snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream,
+					      SNDRV_DMA_TYPE_DEV,
 					      snd_dma_pci_data(chip->pci),
 					      128 * 1024, 256 * 1024);
 
-	if (chip->has_2nd_ac97_codec) {
-		err = snd_pcm_new(chip->card, "AC97", 2, 1, 0, &pcm);
+	outs = !!(chip->model->used_channels & OXYGEN_CHANNEL_SPDIF);
+	ins = !!(chip->model->used_channels & OXYGEN_CHANNEL_C);
+	if (outs | ins) {
+		err = snd_pcm_new(chip->card, "Digital", 1, outs, ins, &pcm);
 		if (err < 0)
 			return err;
-		snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK,
-				&oxygen_ac97_ops);
+		if (outs)
+			snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK,
+					&oxygen_spdif_ops);
+		if (ins)
+			snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+					&oxygen_rec_c_ops);
 		pcm->private_data = chip;
 		pcm->private_free = oxygen_pcm_free;
-		strcpy(pcm->name, "Front Panel");
+		strcpy(pcm->name, "Digital");
+		snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
+						      snd_dma_pci_data(chip->pci),
+						      128 * 1024, 256 * 1024);
+	}
+
+	outs = chip->has_ac97_1 &&
+		(chip->model->used_channels & OXYGEN_CHANNEL_AC97);
+	ins = (chip->model->used_channels & (OXYGEN_CHANNEL_A |
+					     OXYGEN_CHANNEL_B))
+		== (OXYGEN_CHANNEL_A | OXYGEN_CHANNEL_B);
+	if (outs | ins) {
+		err = snd_pcm_new(chip->card, ins ? "Analog2" : "AC97",
+				  2, outs, ins, &pcm);
+		if (err < 0)
+			return err;
+		if (outs)
+			snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK,
+					&oxygen_ac97_ops);
+		if (ins)
+			snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE,
+					&oxygen_rec_b_ops);
+		pcm->private_data = chip;
+		pcm->private_free = oxygen_pcm_free;
+		strcpy(pcm->name, ins ? "Analog 2" : "Front Panel");
 		snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
 						      snd_dma_pci_data(chip->pci),
 						      128 * 1024, 256 * 1024);

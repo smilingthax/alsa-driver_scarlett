@@ -15,6 +15,16 @@
 #define PCM_AC97	5
 #define PCM_COUNT	6
 
+enum {
+	CONTROL_SPDIF_PCM,
+	CONTROL_SPDIF_INPUT_BITS,
+	CONTROL_MIC_CAPTURE_SWITCH,
+	CONTROL_LINE_CAPTURE_SWITCH,
+	CONTROL_CD_CAPTURE_SWITCH,
+	CONTROL_AUX_CAPTURE_SWITCH,
+	CONTROL_COUNT
+};
+
 #define OXYGEN_PCI_SUBID(sv, sd) \
 	.vendor = PCI_VENDOR_ID_CMEDIA, \
 	.device = 0x8788, \
@@ -24,7 +34,9 @@
 struct pci_dev;
 struct snd_card;
 struct snd_pcm_substream;
+struct snd_pcm_hardware;
 struct snd_pcm_hw_params;
+struct snd_kcontrol_new;
 struct snd_rawmidi;
 struct oxygen_model;
 
@@ -46,12 +58,12 @@ struct oxygen {
 	u8 spdif_playback_enable;
 	u8 ak4396_reg1;
 	u8 revision;
-	u8 has_2nd_ac97_codec;
+	u8 has_ac97_0;
+	u8 has_ac97_1;
 	u32 spdif_bits;
 	u32 spdif_pcm_bits;
 	struct snd_pcm_substream *streams[PCM_COUNT];
-	struct snd_kcontrol *spdif_pcm_ctl;
-	struct snd_kcontrol *spdif_input_bits_ctl;
+	struct snd_kcontrol *controls[CONTROL_COUNT];
 	struct work_struct spdif_input_bits_work;
 };
 
@@ -61,18 +73,19 @@ struct oxygen_model {
 	const char *chip;
 	struct module *owner;
 	void (*init)(struct oxygen *chip);
+	int (*control_filter)(struct snd_kcontrol_new *template);
 	int (*mixer_init)(struct oxygen *chip);
 	void (*cleanup)(struct oxygen *chip);
+	void (*pcm_hardware_filter)(unsigned int channel,
+				    struct snd_pcm_hardware *hardware);
 	void (*set_dac_params)(struct oxygen *chip,
 			       struct snd_pcm_hw_params *params);
 	void (*set_adc_params)(struct oxygen *chip,
 			       struct snd_pcm_hw_params *params);
 	void (*update_dac_volume)(struct oxygen *chip);
 	void (*update_dac_mute)(struct oxygen *chip);
-	const unsigned int *dac_tlv;
-	u8 record_from_dma_b;
-	u8 cd_in_from_video_in;
-	u8 dac_minimum_volume;
+	u8 used_channels;
+	u8 function_flags;
 };
 
 /* oxygen_lib.c */

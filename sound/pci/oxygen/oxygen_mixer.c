@@ -27,11 +27,9 @@
 static int dac_volume_info(struct snd_kcontrol *ctl,
 			   struct snd_ctl_elem_info *info)
 {
-	struct oxygen *chip = ctl->private_data;
-
 	info->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	info->count = 8;
-	info->value.integer.min = chip->model->dac_minimum_volume;
+	info->value.integer.min = 0;
 	info->value.integer.max = 0xff;
 	return 0;
 }
@@ -99,7 +97,7 @@ static int dac_mute_put(struct snd_kcontrol *ctl,
 static int upmix_info(struct snd_kcontrol *ctl, struct snd_ctl_elem_info *info)
 {
 	static const char *const names[3] = {
-		"Front", "Front+Rear", "Front+Rear+Side"
+		"Front", "Front+Surround", "Front+Surround+Back"
 	};
 	info->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	info->count = 1;
@@ -122,20 +120,22 @@ static int upmix_get(struct snd_kcontrol *ctl, struct snd_ctl_elem_value *value)
 
 void oxygen_update_dac_routing(struct oxygen *chip)
 {
-	/*
-	 * hardware channel order: front, side, center/lfe, rear
-	 * ALSA channel order:     front, rear, center/lfe, side
-	 */
 	static const unsigned int reg_values[3] = {
-		0x6c00, 0x2c00, 0x2000
+		0xe100, /* front <- 0, surround <- 1, center <- 2, back <- 3 */
+		0xe000, /* front <- 0, surround <- 0, center <- 2, back <- 3 */
+		0x2000  /* front <- 0, surround <- 0, center <- 2, back <- 0 */
 	};
+	u8 channels;
 	unsigned int reg_value;
 
-	if ((oxygen_read8(chip, OXYGEN_PLAY_CHANNELS) &
-	     OXYGEN_PLAY_CHANNELS_MASK) == OXYGEN_PLAY_CHANNELS_2)
+	channels = oxygen_read8(chip, OXYGEN_PLAY_CHANNELS) &
+		OXYGEN_PLAY_CHANNELS_MASK;
+	if (channels == OXYGEN_PLAY_CHANNELS_2)
 		reg_value = reg_values[chip->dac_routing];
+	else if (channels == OXYGEN_PLAY_CHANNELS_8)
+		reg_value = 0x6c00; /* surround <- 3, back <- 1 */
 	else
-		reg_value = 0x6c00;
+		reg_value = 0xe100;
 	oxygen_write16_masked(chip, OXYGEN_PLAY_ROUTING, reg_value, 0xff00);
 }
 
@@ -400,6 +400,19 @@ static int ac97_switch_get(struct snd_kcontrol *ctl,
 	return 0;
 }
 
+static void ac97_mute_ctl(struct oxygen *chip, unsigned int control)
+{
+	unsigned int index = chip->controls[control]->private_value & 0xff;
+	u16 value;
+
+	value = oxygen_read_ac97(chip, 0, index);
+	if (!(value & 0x8000)) {
+		oxygen_write_ac97(chip, 0, index, value | 0x8000);
+		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
+			       &chip->controls[control]->id);
+	}
+}
+
 static int ac97_switch_put(struct snd_kcontrol *ctl,
 			   struct snd_ctl_elem_value *value)
 {
@@ -420,9 +433,20 @@ static int ac97_switch_put(struct snd_kcontrol *ctl,
 	change = newreg != oldreg;
 	if (change) {
 		oxygen_write_ac97(chip, 0, index, newreg);
-		if (index == AC97_LINE)
+		if (index == AC97_LINE) {
 			oxygen_write_ac97_masked(chip, 0, 0x72,
 						 !!(newreg & 0x8000), 0x0001);
+			if (!(newreg & 0x8000)) {
+				ac97_mute_ctl(chip, CONTROL_MIC_CAPTURE_SWITCH);
+				ac97_mute_ctl(chip, CONTROL_CD_CAPTURE_SWITCH);
+				ac97_mute_ctl(chip, CONTROL_AUX_CAPTURE_SWITCH);
+			}
+		} else if ((index == AC97_MIC || index == AC97_CD ||
+			    index == AC97_VIDEO || index == AC97_AUX) &&
+			   bitnr == 15 && !(newreg & 0x8000)) {
+			ac97_mute_ctl(chip, CONTROL_LINE_CAPTURE_SWITCH);
+			oxygen_write_ac97_masked(chip, 0, 0x72, 0x0001, 0x0001);
+		}
 	}
 	mutex_unlock(&chip->mutex);
 	return change;
@@ -498,19 +522,15 @@ static DECLARE_TLV_DB_SCALE(ac97_db_scale, -3450, 150, 0);
 static const struct snd_kcontrol_new controls[] = {
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name = "PCM Playback Volume",
-		.access = SNDRV_CTL_ELEM_ACCESS_READWRITE |
-			  SNDRV_CTL_ELEM_ACCESS_TLV_READ,
+		.name = "Master Playback Volume",
+		.access = SNDRV_CTL_ELEM_ACCESS_READWRITE,
 		.info = dac_volume_info,
 		.get = dac_volume_get,
 		.put = dac_volume_put,
-		.tlv = {
-			.p = NULL, /* set later */
-		},
 	},
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
-		.name = "PCM Playback Switch",
+		.name = "Master Playback Switch",
 		.info = snd_ctl_boolean_mono_info,
 		.get = dac_mute_get,
 		.put = dac_mute_put,
@@ -571,6 +591,9 @@ static const struct snd_kcontrol_new controls[] = {
 		.info = spdif_info,
 		.get = spdif_input_default_get,
 	},
+};
+
+static const struct snd_kcontrol_new ac97_controls[] = {
 	AC97_VOLUME("Mic Capture Volume", AC97_MIC),
 	AC97_SWITCH("Mic Capture Switch", AC97_MIC, 15, 1),
 	AC97_SWITCH("Mic Boost (+20dB)", AC97_MIC, 6, 0),
@@ -584,39 +607,64 @@ static const struct snd_kcontrol_new controls[] = {
 static void oxygen_any_ctl_free(struct snd_kcontrol *ctl)
 {
 	struct oxygen *chip = ctl->private_data;
+	unsigned int i;
 
 	/* I'm too lazy to write a function for each control :-) */
-	chip->spdif_pcm_ctl = NULL;
-	chip->spdif_input_bits_ctl = NULL;
+	for (i = 0; i < ARRAY_SIZE(chip->controls); ++i)
+		chip->controls[i] = NULL;
+}
+
+static int add_controls(struct oxygen *chip,
+			const struct snd_kcontrol_new controls[],
+			unsigned int count)
+{
+	static const char *const known_ctl_names[CONTROL_COUNT] = {
+		[CONTROL_SPDIF_PCM] =
+			SNDRV_CTL_NAME_IEC958("", PLAYBACK, PCM_STREAM),
+		[CONTROL_SPDIF_INPUT_BITS] =
+			SNDRV_CTL_NAME_IEC958("", CAPTURE, DEFAULT),
+		[CONTROL_MIC_CAPTURE_SWITCH] = "Mic Capture Switch",
+		[CONTROL_LINE_CAPTURE_SWITCH] = "Line Capture Switch",
+		[CONTROL_CD_CAPTURE_SWITCH] = "CD Capture Switch",
+		[CONTROL_AUX_CAPTURE_SWITCH] = "Aux Capture Switch",
+	};
+	unsigned int i, j;
+	struct snd_kcontrol_new template;
+	struct snd_kcontrol *ctl;
+	int err;
+
+	for (i = 0; i < count; ++i) {
+		template = controls[i];
+		err = chip->model->control_filter(&template);
+		if (err < 0)
+			return err;
+		ctl = snd_ctl_new1(&controls[i], chip);
+		if (!ctl)
+			return -ENOMEM;
+		err = snd_ctl_add(chip->card, ctl);
+		if (err < 0)
+			return err;
+		for (j = 0; j < CONTROL_COUNT; ++j)
+			if (!strcmp(ctl->id.name, known_ctl_names[j])) {
+				chip->controls[j] = ctl;
+				ctl->private_free = oxygen_any_ctl_free;
+			}
+	}
+	return 0;
 }
 
 int oxygen_mixer_init(struct oxygen *chip)
 {
-	unsigned int i;
-	struct snd_kcontrol *ctl;
 	int err;
 
-	for (i = 0; i < ARRAY_SIZE(controls); ++i) {
-		ctl = snd_ctl_new1(&controls[i], chip);
-		if (!ctl)
-			return -ENOMEM;
-		if (!strcmp(ctl->id.name, "PCM Playback Volume"))
-			ctl->tlv.p = chip->model->dac_tlv;
-		else if (chip->model->cd_in_from_video_in &&
-			 !strncmp(ctl->id.name, "CD Capture ", 11))
-			ctl->private_value ^= AC97_CD ^ AC97_VIDEO;
-		err = snd_ctl_add(chip->card, ctl);
+	err = add_controls(chip, controls, ARRAY_SIZE(controls));
+	if (err < 0)
+		return err;
+	if (chip->has_ac97_0) {
+		err = add_controls(chip, ac97_controls,
+				   ARRAY_SIZE(ac97_controls));
 		if (err < 0)
 			return err;
-		if (!strcmp(ctl->id.name,
-			    SNDRV_CTL_NAME_IEC958("", PLAYBACK, PCM_STREAM))) {
-			chip->spdif_pcm_ctl = ctl;
-			ctl->private_free = oxygen_any_ctl_free;
-		} else if (!strcmp(ctl->id.name,
-				 SNDRV_CTL_NAME_IEC958("", CAPTURE, DEFAULT))) {
-			chip->spdif_input_bits_ctl = ctl;
-			ctl->private_free = oxygen_any_ctl_free;
-		}
 	}
 	return chip->model->mixer_init ? chip->model->mixer_init(chip) : 0;
 }

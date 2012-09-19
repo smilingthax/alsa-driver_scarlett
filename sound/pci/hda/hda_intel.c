@@ -559,8 +559,12 @@ static unsigned int azx_rirb_get_response(struct hda_codec *codec)
 		}
 		if (!chip->rirb.cmds)
 			return chip->rirb.res; /* the last value */
-		udelay(10);
-		cond_resched();
+		if (codec->bus->needs_damn_long_delay)
+			msleep(2); /* temporary workaround */
+		else {
+			udelay(10);
+			cond_resched();
+		}
 	} while (time_after_eq(timeout, jiffies));
 
 	if (chip->msi) {
@@ -1708,12 +1712,13 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 {
 	struct azx *chip;
 	int err;
+	unsigned short gcap;
 	static struct snd_device_ops ops = {
 		.dev_free = azx_dev_free,
 	};
 
 	*rchip = NULL;
-	
+
 	err = pci_enable_device(pci);
 	if (err < 0)
 		return err;
@@ -1775,25 +1780,40 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 	pci_set_master(pci);
 	synchronize_irq(chip->irq);
 
-	switch (chip->driver_type) {
-	case AZX_DRIVER_ULI:
-		chip->playback_streams = ULI_NUM_PLAYBACK;
-		chip->capture_streams = ULI_NUM_CAPTURE;
-		chip->playback_index_offset = ULI_PLAYBACK_INDEX;
-		chip->capture_index_offset = ULI_CAPTURE_INDEX;
-		break;
-	case AZX_DRIVER_ATIHDMI:
-		chip->playback_streams = ATIHDMI_NUM_PLAYBACK;
-		chip->capture_streams = ATIHDMI_NUM_CAPTURE;
-		chip->playback_index_offset = ATIHDMI_PLAYBACK_INDEX;
-		chip->capture_index_offset = ATIHDMI_CAPTURE_INDEX;
-		break;
-	default:
-		chip->playback_streams = ICH6_NUM_PLAYBACK;
-		chip->capture_streams = ICH6_NUM_CAPTURE;
-		chip->playback_index_offset = ICH6_PLAYBACK_INDEX;
-		chip->capture_index_offset = ICH6_CAPTURE_INDEX;
-		break;
+	gcap = azx_readw(chip, GCAP);
+	snd_printdd("chipset global capabilities = 0x%x\n", gcap);
+
+	if (gcap) {
+		/* read number of streams from GCAP register instead of using
+		 * hardcoded value
+		 */
+		chip->playback_streams = (gcap & (0xF << 12)) >> 12;
+		chip->capture_streams = (gcap & (0xF << 8)) >> 8;
+		chip->playback_index_offset = (gcap & (0xF << 12)) >> 12;
+		chip->capture_index_offset = 0;
+	} else {
+		/* gcap didn't give any info, switching to old method */
+
+		switch (chip->driver_type) {
+		case AZX_DRIVER_ULI:
+			chip->playback_streams = ULI_NUM_PLAYBACK;
+			chip->capture_streams = ULI_NUM_CAPTURE;
+			chip->playback_index_offset = ULI_PLAYBACK_INDEX;
+			chip->capture_index_offset = ULI_CAPTURE_INDEX;
+			break;
+		case AZX_DRIVER_ATIHDMI:
+			chip->playback_streams = ATIHDMI_NUM_PLAYBACK;
+			chip->capture_streams = ATIHDMI_NUM_CAPTURE;
+			chip->playback_index_offset = ATIHDMI_PLAYBACK_INDEX;
+			chip->capture_index_offset = ATIHDMI_CAPTURE_INDEX;
+			break;
+		default:
+			chip->playback_streams = ICH6_NUM_PLAYBACK;
+			chip->capture_streams = ICH6_NUM_CAPTURE;
+			chip->playback_index_offset = ICH6_PLAYBACK_INDEX;
+			chip->capture_index_offset = ICH6_CAPTURE_INDEX;
+			break;
+		}
 	}
 	chip->num_streams = chip->playback_streams + chip->capture_streams;
 	chip->azx_dev = kcalloc(chip->num_streams, sizeof(*chip->azx_dev),
@@ -1933,6 +1953,7 @@ static int __devinit azx_probe(struct pci_dev *pci,
 	chip->running = 1;
 	power_down_all_codecs(chip);
 
+	dev++;
 	return err;
 }
 

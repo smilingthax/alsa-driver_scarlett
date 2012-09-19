@@ -306,7 +306,6 @@ static struct snd_kcontrol_new vt1708_capture_mixer[] = {
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		/* The multiple "Capture Source" controls confuse alsamixer
 		 * So call somewhat different..
-		 * FIXME: the controls appear in the "playback" view!
 		 */
 		/* .name = "Capture Source", */
 		.name = "Input Source",
@@ -567,25 +566,27 @@ static int via_init(struct hda_codec *codec)
 		if (IS_VT1708_VENDORID(codec->vendor_id)) {
 			snd_hda_codec_write(codec, VT1708_DIGIN_PIN, 0,
 					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-					    0x40);
+					    PIN_OUT);
 			snd_hda_codec_write(codec, VT1708_DIGIN_PIN, 0,
 					    AC_VERB_SET_EAPD_BTLENABLE, 0x02);
 		} else if (IS_VT1709_10CH_VENDORID(codec->vendor_id) ||
 			   IS_VT1709_6CH_VENDORID(codec->vendor_id)) {
 			snd_hda_codec_write(codec, VT1709_DIGIN_PIN, 0,
 					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-					    0x40);
+					    PIN_OUT);
 			snd_hda_codec_write(codec, VT1709_DIGIN_PIN, 0,
 					    AC_VERB_SET_EAPD_BTLENABLE, 0x02);
 		} else if (IS_VT1708B_8CH_VENDORID(codec->vendor_id) ||
 			   IS_VT1708B_4CH_VENDORID(codec->vendor_id)) {
 			snd_hda_codec_write(codec, VT1708B_DIGIN_PIN, 0,
 					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-					    0x40);
+					    PIN_OUT);
 			snd_hda_codec_write(codec, VT1708B_DIGIN_PIN, 0,
 					    AC_VERB_SET_EAPD_BTLENABLE, 0x02);
 		}
-	}
+	} else /* enable SPDIF-input pin */
+		snd_hda_codec_write(codec, spec->autocfg.dig_in_pin, 0,
+				    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN);
 
  	return 0;
 }
@@ -928,7 +929,6 @@ static struct snd_kcontrol_new vt1709_capture_mixer[] = {
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		/* The multiple "Capture Source" controls confuse alsamixer
 		 * So call somewhat different..
-		 * FIXME: the controls appear in the "playback" view!
 		 */
 		/* .name = "Capture Source", */
 		.name = "Input Source",
@@ -1477,7 +1477,6 @@ static struct snd_kcontrol_new vt1708B_capture_mixer[] = {
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
 		/* The multiple "Capture Source" controls confuse alsamixer
 		 * So call somewhat different..
-		 * FIXME: the controls appear in the "playback" view!
 		 */
 		/* .name = "Capture Source", */
 		.name = "Input Source",
