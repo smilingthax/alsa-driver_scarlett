@@ -86,6 +86,8 @@ ppc/tumbler.c
 usb/usbaudio.c
 usb/usbmidi.c
 usb/usbmixer.c
+usb/caiaq/caiaq-audio.c
+usb/caiaq/caiaq-device.c
 usb/usx2y/usX2Yhwdep.c
 usb/usx2y/usbusx2y.c
 usb/usx2y/usbusx2yaudio.c
