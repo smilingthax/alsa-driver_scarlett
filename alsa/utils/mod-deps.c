@@ -119,11 +119,14 @@ static char *kernel_deps[] = {
 	"X86",
 	"MIPS",
 	"MIPS64",
+	"SUPERH",
+	"SUPERH64",
 	"IA32_EMULATION",
 	/* architecture specific */
 	"ARCH_SA1100",
 	"ARCH_PXA",
 	"X86_PC9800",
+	"SH_DREAMCAST",
 	/* other drivers */
 	"RTC",
 	"GAMEPORT",
