@@ -624,10 +624,12 @@ static inline void snd_INIT_WORK(struct work_struct *w, void (*f)(struct work_st
 }
 #undef INIT_WORK
 #define INIT_WORK(w,f) snd_INIT_WORK(w,f)
+#define delayed_work snd_delayed_work
 /* delayed_work wrapper */
 struct delayed_work {
 	struct work_struct work;
 };
+#undef INIT_DELAYED_WORK
 #define INIT_DELAYED_WORK(_work, _func)	INIT_WORK(&(_work)->work, _func)
 #ifndef SND_WORKQUEUE_COMPAT
 /* redefine *_delayed_work() */
