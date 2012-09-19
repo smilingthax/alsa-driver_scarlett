@@ -1,5 +1,5 @@
 --- ../alsa-kernel/core/misc.c	2009-08-27 17:44:33.000000000 +0200
-+++ misc.c	2009-08-27 17:45:27.000000000 +0200
++++ misc.c	2009-09-01 08:28:18.000000000 +0200
 @@ -1,3 +1,9 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -10,7 +10,7 @@
  /*
   *  Misc and compatibility things
   *  Copyright (c) by Jaroslav Kysela <perex@perex.cz>
-@@ -42,7 +48,7 @@ void release_and_free_resource(struct re
+@@ -42,7 +48,7 @@
  {
  	if (res) {
  		release_resource(res);
@@ -19,7 +19,7 @@
  	}
  }
  
-@@ -115,12 +121,20 @@ const struct snd_pci_quirk *
+@@ -115,15 +121,47 @@
  snd_pci_quirk_lookup(struct pci_dev *pci, const struct snd_pci_quirk *list)
  {
  	const struct snd_pci_quirk *q;
@@ -42,3 +42,30 @@
  			return q;
  	}
  	return NULL;
+ }
+ EXPORT_SYMBOL(snd_pci_quirk_lookup);
+ #endif
++
++/* just for compatibility reason */
++void snd_verbose_printk(const char *file, int line, const char *format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	if (print_snd_pfx(0, file, line, format))
++		format += 3; /* skip the printk level-prefix */
++	vprintk(format, args);
++	va_end(args);
++}
++EXPORT_SYMBOL(snd_verbose_printk);
++
++void snd_verbose_printd(const char *file, int line, const char *format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	if (print_snd_pfx(1, file, line, format))
++		format += 3; /* skip the printk level-prefix */
++	vprintk(format, args);
++	va_end(args);
++
++}
++EXPORT_SYMBOL(snd_verbose_printd);
