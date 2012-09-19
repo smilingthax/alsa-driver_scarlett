@@ -460,6 +460,23 @@ void *snd_compat_kcalloc(size_t n, size_t size, int flags)
 #endif
 #endif
 
+#ifndef CONFIG_HAVE_KSTRDUP
+#ifndef CONFIG_SND_DEBUG_MEMORY
+char *snd_compat_kstrdup(const char *s, int gfp_flags)
+{
+	int len;
+	char *buf;
+
+	if (!s) return NULL;
+
+	len = strlen(s) + 1;
+	buf = kmalloc(len, gfp_flags);
+	if (buf)
+		memcpy(buf, s, len);
+	return buf;
+}
+#endif
+#endif
 
 #ifdef CONFIG_CREATE_WORKQUEUE_FLAGS
 
