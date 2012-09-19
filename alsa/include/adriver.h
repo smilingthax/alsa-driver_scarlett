@@ -157,6 +157,13 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define writeq(v, a) do { __writeq((v),(a)); mb(); } while(0)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 28)
+#include <linux/interrupt.h>
+static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq(); }
+#undef synchronize_irq
+#define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
+#endif /* LINUX_VERSION_CODE < 2.5.28 */
+
 #include "amagic.h"
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

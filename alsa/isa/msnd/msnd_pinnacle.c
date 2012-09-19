@@ -1830,3 +1830,5 @@ static void __exit snd_msnd_cleanup(void)
 
 module_init(snd_msnd_init);
 module_exit(snd_msnd_cleanup);
+
+EXPORT_NO_SYMBOLS;
