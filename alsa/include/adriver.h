@@ -1552,4 +1552,41 @@ static inline void put_unaligned_be64(u64 val, void *p)
 #define page_to_pfn(page)       (page_to_phys(page) >> PAGE_SHIFT)
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 25)
+/* lazy wrapper - always returns 0 */
+static inline int __strict_strtoul(const char *cp, unsigned int base,
+				 unsigned long *valp)
+{
+	*valp = simple_strtoul(cp, NULL, base);
+	return 0;
+}
+#define strict_strtoul __strict_strtoul
+#endif /* < 2.6.25 */
+
+/* pr_xxx() macros */
+#ifndef pr_emerg
+#define pr_emerg(fmt, arg...) \
+	printk(KERN_EMERG fmt, ##arg)
+#endif
+#ifndef pr_alert
+#define pr_alert(fmt, arg...) \
+	printk(KERN_ALERT fmt, ##arg)
+#endif
+#ifndef pr_crit
+#define pr_crit(fmt, arg...) \
+	printk(KERN_CRIT fmt, ##arg)
+#endif
+#ifndef pr_err
+#define pr_err(fmt, arg...) \
+	printk(KERN_ERR fmt, ##arg)
+#endif
+#ifndef pr_warning
+#define pr_warning(fmt, arg...) \
+	printk(KERN_WARNING fmt, ##arg)
+#endif
+#ifndef pr_notice
+#define pr_notice(fmt, arg...) \
+	printk(KERN_NOTICE fmt, ##arg)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
