@@ -712,7 +712,8 @@ void *snd_compat_kcalloc(size_t n, size_t size, int gfp_flags);
 #endif
 
 /* pm_message_t type */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 11)
+/* #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 11) */
+#ifndef PMSG_FREEZE
 typedef u32 /*__bitwise*/ pm_message_t;
 #define PMSG_FREEZE	3
 #define PMSG_SUSPEND	3
