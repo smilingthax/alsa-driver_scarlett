@@ -310,8 +310,8 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 {
 	struct cmi8788 *chip = dev_id;
 	int i;
-	u16 status, int_mask;
-	u16 enable_ints = 0, disable_ints = 0;
+	u16 status;
+	u16 enable_ints;
 
 	status = snd_cmipci_read_w(chip, PCI_IntStatus);
 
@@ -323,27 +323,21 @@ static irqreturn_t snd_cmi8788_interrupt(int irq, void *dev_id)
 
 		/* playback */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_PLAYBACK];
-		if (cmi_subs->running && (status & cmi_subs->int_mask)) {
+		if (cmi_subs->running && (status & cmi_subs->int_mask))
 			snd_pcm_period_elapsed(cmi_subs->substream);
-			disable_ints |= cmi_subs->int_mask;
-			if (cmi_subs->running)
-				enable_ints |= cmi_subs->int_mask;
-		}
 
 		/* capture */
 		cmi_subs = &chip->cmi_pcm[i].cmi_subs[CMI_CAPTURE];
-		if (cmi_subs->running && (status & cmi_subs->int_mask)) {
+		if (cmi_subs->running && (status & cmi_subs->int_mask))
 			snd_pcm_period_elapsed(cmi_subs->substream);
-			disable_ints |= cmi_subs->int_mask;
-			if (cmi_subs->running)
-				enable_ints |= cmi_subs->int_mask;
-		}
 	}
 
 	/* ack interrupts by disabling and enabling them */
-	int_mask = snd_cmipci_read_w(chip, PCI_IntMask);
-	snd_cmipci_write_w(chip, int_mask & ~disable_ints, PCI_IntMask);
-	snd_cmipci_write_w(chip, int_mask | enable_ints, PCI_IntMask);
+	enable_ints = status & chip->int_mask_reg;
+	chip->int_mask_reg &= ~status;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
+	chip->int_mask_reg |= enable_ints;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 
 	return IRQ_HANDLED;
 }
@@ -438,6 +432,9 @@ static int __devinit snd_cmi8788_probe(struct pci_dev *pci, const struct pci_dev
 	card->private_free = snd_cmi8788_card_free;
 
 	chip->addr = pci_resource_start(pci, 0);
+
+	snd_cmipci_write_w(chip, 0x0000, PCI_IntMask);
+	snd_cmipci_write_w(chip, 0x0000, PCI_DMA_SetStatus);
 
 	if (request_irq(pci->irq, snd_cmi8788_interrupt, SA_INTERRUPT | SA_SHIRQ, card->driver, chip)) {
 		snd_printk(KERN_ERR "cmi8788: unable to grab IRQ %d\n", pci->irq);
