@@ -19,7 +19,6 @@ obj-$(CONFIG_SND_AD1816A) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_CS4231) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_CS4232) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_CS4236) += snd-mpu401-uart.o
-obj-$(CONFIG_SND_PC98_CS4232) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_ES1688) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_GUSEXTREME) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_OPTI92X_AD1848) += snd-mpu401-uart.o

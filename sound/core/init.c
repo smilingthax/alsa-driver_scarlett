@@ -152,13 +152,13 @@ int snd_card_disconnect(snd_card_t * card)
 	struct file_operations *f_ops, *old_f_ops;
 	int err;
 
-	write_lock(&card->files_lock);
+	spin_lock(&card->files_lock);
 	if (card->shutdown) {
-		write_unlock(&card->files_lock);
+		spin_unlock(&card->files_lock);
 		return 0;
 	}
 	card->shutdown = 1;
-	write_unlock(&card->files_lock);
+	spin_unlock(&card->files_lock);
 
 	/* phase 1: disable fops (user space) operations for ALSA API */
 	write_lock(&snd_card_rwlock);
