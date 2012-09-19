@@ -475,25 +475,44 @@ static int retire_playback_sync_urb_hs(struct snd_usb_substream *subs,
 	return 0;
 }
 
+/* determine the number of frames in the next packet */
+static int snd_usb_audio_next_packet_size(struct snd_usb_substream *subs)
+{
+	if (subs->fill_max)
+		return subs->maxframesize;
+	else {
+		subs->phase = (subs->phase & 0xffff)
+			+ (subs->freqm << subs->datainterval);
+		return min(subs->phase >> 16, subs->maxframesize);
+	}
+}
+
 /*
  * Prepare urb for streaming before playback starts.
  *
- * We don't care about (or have) any data, so we just send a transfer delimiter.
+ * We don't yet have data, so we send a frame of silence.
  */
 static int prepare_startup_playback_urb(struct snd_usb_substream *subs,
 					struct snd_pcm_runtime *runtime,
 					struct urb *urb)
 {
-	unsigned int i;
+	unsigned int i, offs, counts;
 	struct snd_urb_ctx *ctx = urb->context;
+	int stride = runtime->frame_bits >> 3;
 
+	offs = 0;
 	urb->dev = ctx->subs->dev;
 	urb->number_of_packets = subs->packs_per_ms;
 	for (i = 0; i < subs->packs_per_ms; ++i) {
-		urb->iso_frame_desc[i].offset = 0;
-		urb->iso_frame_desc[i].length = 0;
+		counts = snd_usb_audio_next_packet_size(subs);
+		urb->iso_frame_desc[i].offset = offs * stride;
+		urb->iso_frame_desc[i].length = counts * stride;
+		offs += counts;
 	}
-	urb->transfer_buffer_length = 0;
+	urb->transfer_buffer_length = offs * stride;
+	memset(urb->transfer_buffer,
+	       subs->cur_audiofmt->format == SNDRV_PCM_FORMAT_U8 ? 0x80 : 0,
+	       offs * stride);
 	return 0;
 }
 
@@ -522,16 +541,7 @@ static int prepare_playback_urb(struct snd_usb_substream *subs,
 	urb->number_of_packets = 0;
 	spin_lock_irqsave(&subs->lock, flags);
 	for (i = 0; i < ctx->packets; i++) {
-		/* calculate the size of a packet */
-		if (subs->fill_max)
-			counts = subs->maxframesize; /* fixed */
-		else {
-			subs->phase = (subs->phase & 0xffff)
-				+ (subs->freqm << subs->datainterval);
-			counts = subs->phase >> 16;
-			if (counts > subs->maxframesize)
-				counts = subs->maxframesize;
-		}
+		counts = snd_usb_audio_next_packet_size(subs);
 		/* set up descriptor */
 		urb->iso_frame_desc[i].offset = offs * stride;
 		urb->iso_frame_desc[i].length = counts * stride;
