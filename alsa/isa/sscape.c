@@ -1431,7 +1431,7 @@ static void __devexit sscape_pnp_remove(struct pnp_card_link * pcard)
 }
 
 static struct pnp_card_driver sscape_pnpc_driver = {
-	.flags = PNP_DRIVER_RES_DISABLE,
+	.flags = PNP_DRIVER_RES_DO_NOT_CHANGE,
 	.name = "sscape",
 	.id_table = sscape_pnpids,
 	.probe = sscape_pnp_detect,

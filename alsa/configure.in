@@ -196,9 +196,10 @@ kernel_compiler_version=`echo $kernel_compiler | cut -d ' ' -f 2`
 my_compiler=`$CC --version | head -1`
 my_compiler_type=`echo $my_compiler | cut -d ' ' -f 1`
 my_compiler_version=`echo $my_compiler | cut -d ' ' -f 3`
-if test -z "$my_compiler_version" ; then
+if test -z "$my_compiler_version" -o "$my_compiler_type" = "$my_compiler_version" ; then
   my_compiler_version="$my_compiler_type"
   my_compiler_type="gcc"
+  my_compiler="gcc $my_compiler"
 fi
 AC_MSG_RESULT(Kernel compiler: $kernel_compiler Used compiler: $my_compiler);
 if test "$my_compiler_type" != "$kernel_compiler_type"; then

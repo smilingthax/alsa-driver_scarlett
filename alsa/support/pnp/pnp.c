@@ -111,7 +111,7 @@ static unsigned int from_hex(unsigned char c)
 	if (c >= 'A' && c <= 'F')
 		return (c - 'A') + 10;
 	if (c >= 'a' && c <= 'f')
-		return (c = 'a') + 10;
+		return (c - 'a') + 10;
 	return 0x0f;
 }
 
@@ -145,7 +145,8 @@ struct pnp_dev * pnp_request_card_device(struct pnp_card_link *clink, const char
 	if (parse_id(id, &vendor, &function) < 0)
 		return NULL;
 	dev = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)clink->card, vendor, function, (struct isapnp_dev *)from);
-	if (dev->p.active)
+	if (dev != NULL && dev->p.active &&
+	    (clink->driver->flags & PNP_DRIVER_RES_DO_NOT_CHANGE) == 0)
 		return NULL;
 	return dev;
 }
@@ -204,6 +205,10 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 			}
 		} while (card != NULL);
 	}
+
+	if (ninst != NULL)
+		kfree(ninst);
+ 
 	return res;
 }
 
@@ -218,8 +223,9 @@ void pnp_unregister_card_driver(struct pnp_card_driver * drv)
 		if (inst->link.driver == drv) {
 			list_del(p);
 			drv->remove(&inst->link);
-			for (i = 0; i < PNP_MAX_DEVICES && inst->devs[i]; i++)
-				pnp_release_card_device(inst->devs[i]);
+			if ((drv->flags & PNP_DRIVER_RES_DO_NOT_CHANGE) == 0)
+				for (i = 0; i < PNP_MAX_DEVICES && inst->devs[i]; i++)
+					pnp_release_card_device(inst->devs[i]);
 			kfree(inst);
 		}
 	}
