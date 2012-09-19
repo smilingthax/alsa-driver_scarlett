@@ -1786,6 +1786,8 @@ typedef int _Bool;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
 #ifndef bool	/* just to be sure */
 typedef _Bool bool;
+#define true	1
+#define false	0
 #endif
 #endif
 
