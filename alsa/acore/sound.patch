@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2010-01-14 21:24:42.000000000 +0100
-+++ sound.c	2010-01-14 21:26:59.000000000 +0100
+--- ../alsa-kernel/core/sound.c	2010-11-02 16:17:52.267995721 +0100
++++ sound.c	2010-11-02 16:41:56.188267664 +0100
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
@@ -26,17 +26,17 @@
  MODULE_ALIAS_CHARDEV_MAJOR(CONFIG_SND_MAJOR);
  
  /* this one holds the actual max. card number currently available.
-@@ -180,7 +188,9 @@
+@@ -183,7 +191,9 @@
  
  static const struct file_operations snd_fops =
  {
 +#ifndef LINUX_2_2
  	.owner =	THIS_MODULE,
 +#endif
- 	.open =		snd_open
+ 	.open =		snd_open,
+ 	.llseek =	noop_llseek,
  };
- 
-@@ -256,7 +266,11 @@
+@@ -260,7 +270,11 @@
  
  	if (snd_BUG_ON(!name))
  		return -EINVAL;
@@ -48,7 +48,7 @@
  	if (preg == NULL)
  		return -ENOMEM;
  	preg->type = type;
-@@ -264,6 +278,9 @@
+@@ -268,6 +282,9 @@
  	preg->device = dev;
  	preg->f_ops = f_ops;
  	preg->private_data = private_data;
@@ -58,7 +58,7 @@
  	mutex_lock(&sound_mutex);
  #ifdef CONFIG_SND_DYNAMIC_MINORS
  	minor = snd_find_free_minor();
-@@ -278,8 +295,23 @@
+@@ -282,8 +299,23 @@
  		return minor;
  	}
  	snd_minors[minor] = preg;
@@ -82,7 +82,7 @@
  	if (IS_ERR(preg->dev)) {
  		snd_minors[minor] = NULL;
  		mutex_unlock(&sound_mutex);
-@@ -287,6 +319,22 @@
+@@ -291,6 +323,22 @@
  		kfree(preg);
  		return minor;
  	}
@@ -105,7 +105,7 @@
  
  	mutex_unlock(&sound_mutex);
  	return 0;
-@@ -326,6 +374,9 @@
+@@ -330,6 +378,9 @@
  int snd_unregister_device(int type, struct snd_card *card, int dev)
  {
  	int minor;
@@ -115,7 +115,7 @@
  
  	mutex_lock(&sound_mutex);
  	minor = find_snd_minor(type, card, dev);
-@@ -334,7 +385,20 @@
+@@ -338,7 +389,20 @@
  		return -EINVAL;
  	}
  
@@ -136,7 +136,7 @@
  
  	kfree(snd_minors[minor]);
  	snd_minors[minor] = NULL;
-@@ -347,16 +411,28 @@
+@@ -351,16 +415,28 @@
  int snd_add_device_sysfs_file(int type, struct snd_card *card, int dev,
  			      struct device_attribute *attr)
  {
@@ -166,7 +166,7 @@
  }
  
  EXPORT_SYMBOL(snd_add_device_sysfs_file);
-@@ -442,31 +518,80 @@
+@@ -446,31 +522,80 @@
   *  INIT PART
   */
  

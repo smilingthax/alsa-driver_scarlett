@@ -1896,6 +1896,11 @@ blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
 #define no_llseek	NULL
 #endif
 
+/* noop_llseek() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
+#define noop_llseek	NULL
+#endif
+
 /* nonseekable_open() */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
 #define nonseekable_open(i,f) 0
