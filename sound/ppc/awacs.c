@@ -716,7 +716,7 @@ snd_pmac_awacs_init(pmac_t *chip)
 	chip->awacs_reg[4] = vol;
 	if (chip->model == PMAC_SCREAMER) {
 		chip->awacs_reg[5] = vol; /* FIXME: screamer has loopthru vol control */
-		chip->awacs_reg[6] = 0; /* FIXME: maybe should be vol << 3 for PCMCIA speaker */
+		chip->awacs_reg[6] = MASK_MIC_BOOST; /* FIXME: maybe should be vol << 3 for PCMCIA speaker */
 		chip->awacs_reg[7] = 0;
 	}
 

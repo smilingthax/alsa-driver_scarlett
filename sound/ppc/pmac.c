@@ -555,8 +555,11 @@ static int snd_pmac_pcm_open(pmac_t *chip, pmac_stream_t *rec, snd_pcm_substream
 		}
 	}
 	runtime->hw.formats = chip->formats_ok;
-	if (chip->can_duplex)
+	if (chip->can_capture) {
+		if (! chip->can_duplex)
+			runtime->hw.info |= SNDRV_PCM_INFO_HALF_DUPLEX;
 		runtime->hw.info |= SNDRV_PCM_INFO_JOINT_DUPLEX;
+	}
 	runtime->private_data = rec;
 	rec->substream = subs;
 

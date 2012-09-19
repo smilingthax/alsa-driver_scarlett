@@ -177,6 +177,11 @@ int snd_card_register(snd_card_t * card)
 	if ((err = snd_device_register_all(card)) < 0)
 		return err;
 	write_lock(&snd_card_rwlock);
+	if (snd_cards[card->number]) {
+		/* already registered */
+		write_unlock(&snd_card_rwlock);
+		return 0;
+	}
 	snd_cards[card->number] = card;
 	snd_cards_count++;
 	write_unlock(&snd_card_rwlock);

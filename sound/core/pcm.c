@@ -968,6 +968,8 @@ EXPORT_SYMBOL(snd_pcm_new);
 EXPORT_SYMBOL(snd_pcm_notify);
 EXPORT_SYMBOL(snd_pcm_open_substream);
 EXPORT_SYMBOL(snd_pcm_release_substream);
+EXPORT_SYMBOL(snd_pcm_format_name);
+EXPORT_SYMBOL(snd_pcm_subformat_name);
   /* pcm_native.c */
 EXPORT_SYMBOL(snd_pcm_start);
 #ifdef CONFIG_PM

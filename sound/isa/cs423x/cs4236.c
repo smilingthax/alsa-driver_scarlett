@@ -229,6 +229,8 @@ static struct isapnp_card_id snd_card_pnpids[] __devinitdata = {
 	ISAPNP_CS4232('C','S','C',0x4536,0x0000,0x0010,0x0003),
 	/* TerraTec AudioSystem EWS64XL - CS4236B */
 	ISAPNP_CS4232('C','S','C',0xa836,0xa800,0xa810,0xa803),
+	/* TerraTec AudioSystem EWS64XL - CS4236B */
+	ISAPNP_CS4232_WOMPU('C','S','C',0xa836,0xa800,0xa810),
 	/* Crystal Semiconductors CS4237B */
 	ISAPNP_CS4232('C','S','C',0x4637,0x0000,0x0010,0x0003),
 	/* NewClear 3D - CX4237B-XQ3 */

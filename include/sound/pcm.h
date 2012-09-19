@@ -776,7 +776,9 @@ u_int64_t snd_pcm_format_silence_64(snd_pcm_format_t format);
 int snd_pcm_format_set_silence(snd_pcm_format_t format, void *buf, unsigned int frames);
 snd_pcm_format_t snd_pcm_build_linear_format(int width, int unsignd, int big_endian);
 ssize_t snd_pcm_format_size(snd_pcm_format_t format, size_t samples);
- 
+const char *snd_pcm_format_name(snd_pcm_format_t format);
+const char *snd_pcm_subformat_name(snd_pcm_subformat_t subformat);
+
 void snd_pcm_set_ops(snd_pcm_t * pcm, int direction, snd_pcm_ops_t *ops);
 void snd_pcm_set_sync(snd_pcm_substream_t * substream);
 int snd_pcm_lib_interleave_len(snd_pcm_substream_t *substream);
