@@ -1066,6 +1066,29 @@ if test "$CONFIG_HAVE_PDE" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PDE)
 fi
 
+dnl Check for pci_consistent_set_dma_mask()
+AC_MSG_CHECKING(for pci_set_consistent_dma_mask)
+pci_consistent_defined="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/pci.h"
+],[
+	int (*func)();
+	func = pci_set_consistent_dma_mask;
+],
+    AC_MSG_RESULT("yes");pci_consistent_defined="1",
+    AC_MSG_RESULT("no");pci_consistent_defined="0",
+    AC_MSG_RESULT("unknown");pci_consistent_defined="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK=$pci_consistent_defined
+if test "$CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
