@@ -131,6 +131,8 @@ endif
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
 	-/sbin/depmod -a $(kaversion) $(SYSTEM_MAP_OPT)
+else
+	-/sbin/depmod -a -b $(DESTDIR)/ $(SYSTEM_MAP_OPT) $(kaversion)
 endif
 
 .PHONY: install-scripts
