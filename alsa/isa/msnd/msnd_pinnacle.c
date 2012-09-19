@@ -239,10 +239,8 @@ static void dsp_write_flush(void)
 		&dev.writeflush,
 		get_play_delay_jiffies(dev.DAPF.len));*/
 	clear_bit(F_WRITEFLUSH, &dev.flags);
-	if (!signal_pending(current)) {
-		current->state = TASK_INTERRUPTIBLE;
-		schedule_timeout(get_play_delay_jiffies( dev.play_period_bytes));
-	}
+	if (!signal_pending(current)) 
+		schedule_timeout_interruptible(get_play_delay_jiffies(dev.play_period_bytes));
 	clear_bit(F_WRITING, &dev.flags);
 }
 
@@ -691,8 +689,7 @@ static int __init snd_msnd_calibrate_adc( WORD srate)
 		       & ~0x0001, dev.SMA + SMA_wCurrHostStatusFlags);
 	if (snd_msnd_send_word(&dev, 0, 0, HDEXAR_CAL_A_TO_D) == 0 &&
 	    snd_msnd_send_dsp_cmd_chk(&dev, HDEX_AUX_REQ) == 0) {
-		current->state = TASK_INTERRUPTIBLE;
-		schedule_timeout(HZ / 3);
+		schedule_timeout_interruptible(msecs_to_jiffies(333));
 		return 0;
 	}
 	printk(KERN_WARNING LOGNAME ": ADC calibration failed\n");
