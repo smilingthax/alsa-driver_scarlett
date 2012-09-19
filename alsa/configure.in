@@ -208,7 +208,7 @@ if test ! -f include/linux/workqueue.h; then
   if test "$kversion.$kpatchlevel.$ksublevel" = "2.4.20"; then
     CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [redhat kernel])
     if test $RED_HAT_LINUX_KERNEL = y; then
-      echo "It looks like you're using a RedHat 9.0 kernel."
+      echo "It looks like you're using a RedHat 9 kernel."
       echo "Disabling their incomplete workqueue.h modification."
       mkdir -p include/linux
       touch include/linux/workqueue.h
@@ -660,27 +660,38 @@ fi
 AC_SUBST(CONFIG_PNP_KERNEL)
 
 dnl Check for ISA PnP support...
-AC_MSG_CHECKING(for ISA PnP support)
-AC_ARG_WITH(isapnp,
-  [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
-  pnp="$withval", pnp="yes")
-CONFIG_ISAPNP=
-if test "$pnp" = "auto"; then
-  if test -f /proc/isapnp; then
-    CONFIG_ISAPNP=y
+if test "$CONFIG_ISAPNP_KERNEL" = y; then
+  CHECK_KERNEL_CONFIG(CONFIG_ISAPNP, [Kernel ISA-PnP support])
+  if test "$CONFIG_ISAPNP" != "y"; then
+    CHECK_KERNEL_CONFIG(CONFIG_ISAPNP_MODULE, [Kernel ISA-PnP module support])
+    if test "$CONFIG_ISAPNP_MODULE" = "y"; then
+      CONFIG_ISAPNP=y
+    fi
   fi
 else
+  AC_MSG_CHECKING(for ISA PnP support)
+  AC_ARG_WITH(isapnp,
+    [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
+    pnp="$withval", pnp="yes")
+  if test "$pnp" = "auto"; then
+    if test -f /proc/isapnp; then
+      pnp=yes
+    fi
+  fi
   if test "$pnp" = "yes"; then
     CONFIG_ISAPNP=y
+    AC_MSG_RESULT(yes)
+  else
+    CONFIG_ISAPNP=
+    AC_MSG_RESULT(no)
   fi
 fi
+
 AC_SUBST(CONFIG_ISAPNP)
 if test "$CONFIG_ISAPNP" = "y"; then
   AC_DEFINE(CONFIG_ISAPNP)
+  CONFIG_PNP=$CONFIG_ISAPNP
   AC_DEFINE(CONFIG_PNP)
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
 fi
 
 dnl check only on 2.2 kernel..
