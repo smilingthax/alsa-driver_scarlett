@@ -133,8 +133,7 @@ pdacf_t *snd_pdacf_create(snd_card_t *card)
 	if (chip == NULL)
 		return NULL;
 	chip->card = card;
-	spin_lock_init(&chip->lock);
-	spin_lock_init(&chip->irq_lock);
+	spin_lock_init(&chip->reg_lock);
 	spin_lock_init(&chip->ak4117_lock);
 	tasklet_init(&chip->tq, pdacf_tasklet, (unsigned long)chip);
 	card->private_data = chip;

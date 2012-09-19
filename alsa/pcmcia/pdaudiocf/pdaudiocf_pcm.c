@@ -126,7 +126,7 @@ static int pdacf_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 	tmp |= val;
 	pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, tmp);
       __end:
-	spin_unlock(&chip_reg_lock);
+	spin_unlock(&chip->reg_lock);
 	if (cmd == SNDRV_PCM_TRIGGER_STOP)
 		pdacf_reinit(chip, 0);
 	snd_ak4117_check_rate_and_errors(chip->ak4117, AK4117_CHECK_NO_RATE);
