@@ -164,6 +164,10 @@ typedef __u32 __be32;
 #define __initdata_or_module
 #endif
 
+#ifndef va_copy
+#define va_copy __va_copy
+#endif
+
 #include <linux/kdev_t.h>
 #ifndef major
 #define major(x) MAJOR(x)
