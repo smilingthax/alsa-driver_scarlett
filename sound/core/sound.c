@@ -53,6 +53,7 @@ MODULE_PARM_SYNTAX(major, "default:116,skill:devel");
 MODULE_PARM(cards_limit, "i");
 MODULE_PARM_DESC(cards_limit, "Count of auto-loadable soundcards.");
 MODULE_PARM_SYNTAX(cards_limit, "default:8,skill:advanced");
+MODULE_ALIAS_CHARDEV_MAJOR(CONFIG_SND_MAJOR);
 #ifdef CONFIG_DEVFS_FS
 MODULE_PARM(device_mode, "i");
 MODULE_PARM_DESC(device_mode, "Device file permission mask for devfs.");

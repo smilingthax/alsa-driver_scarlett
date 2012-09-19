@@ -208,6 +208,7 @@ COMMENT_MAP = [
 		('/core/init.*'		,'ALSA Core'),
 		('/core/sound.*'	,'ALSA Core'),
 		('/core/memory.*'	,'ALSA Core'),
+		('/core/misc.*'		,'ALSA Core'),
 		('/core'		,'ERROR'),
 		('/Documentation'	,'Documentation'),
 		('/include'		,'ERROR'),
