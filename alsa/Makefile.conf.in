@@ -18,6 +18,7 @@ prefix		= @prefix@
 sysconfdir	= @sysconfdir@
 sbindir		= @sbindir@
 moddir		= @moddir@
+moddir_tree	= @moddir_tree@
 c_opts		= @c_opts@
 m_opts		= @m_opts@
 processor	= @processor@
