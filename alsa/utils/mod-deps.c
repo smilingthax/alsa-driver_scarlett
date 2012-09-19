@@ -1487,8 +1487,8 @@ static void output_acinclude(void)
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
 		printf("if test -n \"$%s\"; then\n", text);
 		if (tempdep->type == TYPE_INT) {
-			printf("  AC_DEFINE_UNQUOTED([%s], [%d])\n",
-			       text, tempdep->int_val);
+			printf("  AC_DEFINE_UNQUOTED([%s], [$%s])\n",
+			       text, text);
 		} else if (tempdep->type == TYPE_BOOL)
 			printf("  AC_DEFINE(%s)\n", text);
 		else
