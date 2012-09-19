@@ -2014,7 +2014,7 @@ static inline void *krealloc(const void *p, size_t new_size, gfp_t flags)
 	n = kmalloc(new_size, flags);
 	if (!n)
 		return NULL;
-	memcpy(n, p, min(new_size, ksize(p)));
+	memcpy(n, p, min(new_size, (size_t)ksize(p)));
 	kfree(p);
 	return n;
 }

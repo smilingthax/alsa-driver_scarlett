@@ -129,6 +129,8 @@ $(ALSAKERNELFILE):
 			done ; \
 			ln -sf $(ALSAKERNELDIR)/include/sound \
 						alsa-kernel/include ; \
+			ln -sf $(ALSAKERNELDIR)/include/trace/events \
+						alsa-kernel/trace_events ; \
 			ln -sf $(ALSAKERNELDIR)/Documentation/sound/alsa \
 						alsa-kernel/Documentation ; \
 		else \
