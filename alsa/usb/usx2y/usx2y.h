@@ -40,6 +40,10 @@ enum {
 	USX2Y_TYPE_NUMS
 };
 
+#define USB_ID_US122 0x8007
+#define USB_ID_US224 0x8005
+#define USB_ID_US428 0x8001
+
 /* chip status */
 enum {
 	USX2Y_STAT_CHIP_INIT	= (1 << 0),	/* all operational */
