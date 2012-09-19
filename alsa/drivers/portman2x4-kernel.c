@@ -66,7 +66,7 @@ MODULE_PARM_DESC(enable, "Enable Portman2x4 midi interface.");
 
 typedef struct _snd_portman portman_t;
 
-portman_t *portman = NULL;
+static portman_t *portman;
 
 struct _snd_portman {
 	spinlock_t reg_lock;
@@ -160,70 +160,59 @@ struct _snd_portman {
 
 
 /* Pointer to parallel port which we actually use */
-struct parport *myPort = NULL;
+static struct parport *myPort = NULL;
 
 /* Pointer to pardevice after registration */
-struct pardevice *myParDevice = NULL;
+static struct pardevice *myParDevice = NULL;
 
-struct parport_operations *myParPortOps = NULL;
-int portowned = 0;
-int portman_found = 0;
+/* static struct parport_operations *myParPortOps = NULL; */
+static int portowned = 0;
+static int portman_found = 0;
 
 /* Delay settings */
-int gwAddressDelay = 0;
-int gwDataDelay = 0;
+static int gwAddressDelay = 0;
+static int gwDataDelay = 0;
 
 /* Useful information */
-char *sDeviceName = "portman2x4";
-char *sVersion = "0.1";
-
-
-/* Midi in Queue */
-
-int *midi_in_queue = NULL;
-int midi_in_queue_producer = 0;
-int midi_in_queue_consumer = 0;
-
-/* Midi Queue Waits */
-static DECLARE_WAIT_QUEUE_HEAD(midi_in_queue_wait);
-static DECLARE_WAIT_QUEUE_HEAD(midi_out_queue_wait);
+static char *sDeviceName = "portman2x4";
+static char *sVersion = "0.1";
 
 /* State+Cleanup variables */
-unsigned char SAVE_PORTCOMMAND = 0;
-unsigned char SAVE_PORTDATA = 0;
-unsigned char SAVE_PORTVALID = 0;
+static unsigned char SAVE_PORTCOMMAND = 0;
+static unsigned char SAVE_PORTDATA = 0;
+static unsigned char SAVE_PORTVALID = 0;
 
 /* parallel port access mappers */
 
-void portman_writeCommand(unsigned char value)
+static inline void portman_writeCommand(unsigned char value)
 {
 	parport_write_control(myPort, value);
 }
 
-unsigned char portman_readCommand(void)
+static inline unsigned char portman_readCommand(void)
 {
 	return parport_read_control(myPort);
 }
 
-unsigned char portman_readStatus(void)
+static inline unsigned char portman_readStatus(void)
 {
 	return parport_read_status(myPort);
 }
 
-unsigned char portman_readData(void)
+static inline unsigned char portman_readData(void)
 {
 	return parport_read_data(myPort);
 }
 
-void portman_writeData(unsigned char value)
+static inline void portman_writeData(unsigned char value)
 {
 	parport_write_data(myPort, value);
 }
 
-void portman_putmidi(int port, unsigned char mididata)
+static void portman_putmidi(int port, unsigned char mididata)
 {
 	int command = ((port + 4) << 1);
-	unsigned long flags = 0;
+	unsigned long flags;
 
 	/* Get entering data byte and port number in BL and BH respectively.
 	 * Set up Tx Channel address field for use with PP Cmd Register.
@@ -297,7 +286,7 @@ void portman_putmidi(int port, unsigned char mididata)
 }
 
 
-unsigned char portman_readmidi(int port)
+static unsigned char portman_readmidi(int port)
 {
   /***************************************************************************
    * Attempt to read input byte from specified hardware input port (0..).
@@ -403,7 +392,7 @@ unsigned char portman_readmidi(int port)
  *  Checks RxAvail 
  */
 
-int portman_dataavail(int channel)
+static int portman_dataavail(int channel)
 {
 	int command = INT_EN;
 	switch (channel) {
@@ -431,7 +420,7 @@ int portman_dataavail(int channel)
  *  Flushes any input
  */
 
-void portman_flushInput(unsigned char port)
+static void portman_flushInput(unsigned char port)
 {
 	/* Local variable for counting things */
 	unsigned int iCounter = 0;
@@ -484,51 +473,12 @@ void portman_flushInput(unsigned char port)
 }
 
 
-/*
- *  Puts midi data into internal queue
- */
-
-void midi_putInQueue(unsigned char mididata)
-{
-	midi_in_queue[midi_in_queue_producer] = mididata;
-	midi_in_queue_producer++;
-}
-
-
-/*
- *  Reads
- *
- *  NOT REENTRANT!!! INTERRUPTS MUST _NOT_ BE ENABLED!
- */
-
-unsigned char midi_getFromInQueue(void)
-{
-	unsigned char midiValue = midi_in_queue[midi_in_queue_consumer];
-	midi_in_queue_consumer++;
-	if (midi_in_queue_producer == midi_in_queue_consumer) {
-		midi_in_queue_producer = 0;
-		midi_in_queue_consumer = 0;
-	}
-	return midiValue;
-}
-
-/*
- *  Checks
- *
- *  NOT REENTRANT!!! INTERRUPTS MUST _NOT_ BE ENABLED!
- */
-
-int midi_countInQueue(void)
-{
-	return (midi_in_queue_producer - midi_in_queue_consumer);
-}
-
 /* clean up code */
 
-void cleanup(void)
+static void cleanup(void)
 {
 	/* local data */
-	unsigned long flags = 0;
+	unsigned long flags;
 
 	/* ====================
 	 * CLEANUP PARALLELPORT
@@ -566,12 +516,8 @@ void cleanup(void)
 	 * ===========================================
 	 */
 
-	if (midi_in_queue != NULL) {
-		snd_free_pages(portman, sizeof(portman_t));
-		portman = NULL;
-		snd_free_pages(midi_in_queue, 128);
-		midi_in_queue = NULL;
-	}
+	kfree(portman);
+	portman = NULL;
 }
 
 /* irq handler */
@@ -585,14 +531,11 @@ void cleanup(void)
  * @param  struct pt_regs*  Pointer to pt_regs
  */
 
-/* Allocate data on heap for irq handler */
-unsigned char midivalue = 0;
-unsigned long flags = 0;
-unsigned char wakeupqueues = 0;
-
-void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
+static void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
 {
+	unsigned long flags;
 	/* Test if output gets written if interrupts are disabled! */
+	unsigned char midivalue = 0;
 
 	/* Disable interrupts (we must not be disturbed while processing here...) */
 	local_irq_save(flags);
@@ -609,8 +552,6 @@ void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
 			    PORTMAN2X4_MODE_INPUT_TRIGGERED)
 				snd_rawmidi_receive(portman->midi_input[0],
 						    &midivalue, 1);
-			/* wake up sleeping read-queues... */
-			wakeupqueues = 1;
 
 		}
 		/* If data available on channel 1, read it and stuff it into the queue. */
@@ -623,17 +564,12 @@ void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
 			    PORTMAN2X4_MODE_INPUT_TRIGGERED)
 				snd_rawmidi_receive(portman->midi_input[1],
 						    &midivalue, 1);
-			/* wake up sleeping read-queues... */
-			wakeupqueues = 1;
 		}
 
 	}
 
 	/* Reenable interrupts */
 	local_irq_restore(flags);
-
-	if (wakeupqueues == 1)
-		wake_up_interruptible(&midi_in_queue_wait);
 }
 
 /* portman detection function */
@@ -649,7 +585,7 @@ void portman_handler_irq(int irq, void *userdata, struct pt_regs *regs)
  *	       2     Transmitter stuck.
  ****************************************************************************/
 
-int hwOpen(void)
+static int hwOpen(void)
 {
 	int delay = gwAddressDelay;
 
@@ -713,7 +649,7 @@ int hwOpen(void)
 }
 
 /* test */
-void portman_testInterrupts(void)
+static void portman_testInterrupts(void)
 {
 	int i;
 
@@ -740,6 +676,7 @@ void portman_testInterrupts(void)
 
 static void portman_attach(struct parport *port)
 {
+	unsigned long flags;
 	/* local data */
 	int result = 0;
 
@@ -984,23 +921,14 @@ static int __init alsa_card_portman2x4_init(void)
 	/* Display copyright notice and driver version */
 	snd_printk("Driverversion is: %s\n", sVersion);
 
-	/* Reserve some kernel memory for midi queue processing */
-	midi_in_queue = snd_malloc_pages(128, GFP_KERNEL);
-
-	if (midi_in_queue == NULL) {
-		snd_printk
-		    ("Error allocating memory for midi_in_queue. Exiting.\n");
-		return 1;
-	}
-
-	portman = snd_malloc_pages(sizeof(portman_t), GFP_KERNEL);
+	portman = kzalloc(sizeof(portman_t), GFP_KERNEL);
 	if (portman == NULL) {
 		snd_printk
 		    ("Error allocating memory for portman. Exiting.\n");
-		snd_free_pages(midi_in_queue, 128);
-		midi_in_queue = NULL;
 		return 1;
 	}
+
+	spin_lock_init(&portman->reg_lock);
 
 	portman->midi_input_mode[0] = 0;
 	portman->midi_input_mode[1] = 0;

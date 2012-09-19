@@ -24,9 +24,6 @@ HPI PCI interface function definitions
 #ifndef _HPIPCI_H_
 #define _HPIPCI_H_
 
-#include "hpi.h"
-#include "hpidebug.h"
-
 // PCI config reg defines
 #define HPIPCI_CDID 0x0		// Vendor/Device Id
 #define HPIPCI_CSTR 0x0004
@@ -46,90 +43,7 @@ HPI PCI interface function definitions
 #define HPIPCI_CCMR_BM                  0x00000004
 #define HPIPCI_CCMR_PERR                0x0000040
 
-//#if defined HPI_OS_LINUX
-//#include <linux/pci.h>
-
-#define HPIPCI_MATCH_RESOURCE( idx, iterMax, wAdapterIndex, adapterObjectsArray, hpiResource ) \
-(wAdapterIndex) = -1;\
-for( idx = 0; idx < (iterMax); idx++ ) {\
-HPI_PRINT_VERBOSE("adapter (%d)->(%04x,%04x:%04x,%04x:%04x,%04x) \
-matches with (%04x,%04x:%04x,%04x:%04x,%04x)?",\
-idx,\
-adapterObjectsArray[(idx)].Pci.wBusNumber,\
-adapterObjectsArray[(idx)].Pci.wVendorId,\
-adapterObjectsArray[(idx)].Pci.wDeviceId,\
-adapterObjectsArray[(idx)].Pci.wSubSysVendorId,\
-adapterObjectsArray[(idx)].Pci.wSubSysDeviceId,\
-adapterObjectsArray[(idx)].Pci.wDeviceNumber,\
-(hpiResource).r.Pci.wBusNumber,\
-(hpiResource).r.Pci.wVendorId,\
-(hpiResource).r.Pci.wDeviceId,\
-(hpiResource).r.Pci.wSubSysVendorId,\
-(hpiResource).r.Pci.wSubSysDeviceId,\
-(hpiResource).r.Pci.wDeviceNumber\
-);\
-if ( adapterObjectsArray[(idx)].Pci.wVendorId == (hpiResource).r.Pci.wVendorId &&\
-adapterObjectsArray[(idx)].Pci.wDeviceId == (hpiResource).r.Pci.wDeviceId &&\
-adapterObjectsArray[(idx)].Pci.wSubSysVendorId == (hpiResource).r.Pci.wSubSysVendorId &&\
-adapterObjectsArray[(idx)].Pci.wSubSysDeviceId == (hpiResource).r.Pci.wSubSysDeviceId &&\
-adapterObjectsArray[(idx)].Pci.wBusNumber == (hpiResource).r.Pci.wBusNumber &&\
-adapterObjectsArray[(idx)].Pci.wDeviceNumber == (hpiResource).r.Pci.wDeviceNumber ) {\
-HPI_PRINT_VERBOSE(" yes\n");\
-(wAdapterIndex) = idx;\
-break;\
-}\
-HPI_PRINT_VERBOSE(" no\n");\
-}
-
-//#endif
-
-#if ( 0 )
-// structure for HPI PCI bus object
-typedef struct {
-	u16 wVendorId;
-	u16 wDeviceId;
-	u16 wSubSysVendorId;
-	u16 wSubSysDeviceId;
-	u16 wBusNumber;
-	u16 wDeviceNumber;
-	u32 dwMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
-	u32 dwPortBase;
-	u32 wInterrupt;
-	struct pci_dev *pOsData;
-} HPI_PCI;
-#endif
-
-//DWORD MapPhysicalToLinear(DWORD dwPhysical,DWORD dwLength);
-
-// these functions are called by a PnP type driver to register
-// PCI resources that can later be "found" by HpiPci_FindDevice
-void HpiPci_Init(void);
-void HpiPci_CreateDevice(u32 dwMemAddr, u16 wInterrupt);
-
-// given the device index (Nth occurance), vendor and device id, returns the bus
-// ,device number and resources (port,memory,irq) if present
-short HpiPci_FindDevice
-    (HPI_PCI * pHpiPci, u16 wDevIndex, u16 wPciVendorId, u16 wPciDevId);
-
-// given the device index (Nth occurance), vendor, device id and sub-vendor,
-// returns the bus, device number and resources (port,memory,irq) if present
-short HpiPci_FindDeviceEx
-    (HPI_PCI * pHpiPci,
-     u16 wDevIndex, u16 wPciVendorId, u16 wPciDevId, u16 wPciSubVendorId);
-
-short HpiPci_GetMemoryBase(HPI_PCI * pHpiPci, u32 * pdwMemoryBase);
-
-short HpiPci_WriteConfig(HPI_PCI * pHpiPci, u16 wPciConfigReg, u32 dwData);
-
-short HpiPci_WriteConfigFast(HPI_PCI * pHpiPci, u16 wPciConfigReg, u32 dwData);
-
-short HpiPci_ReadConfig(HPI_PCI * pHpiPci, u16 wPciConfigReg, u32 * dwData);
-
-void HpiPci_TranslateAddressRange
-    (HPI_PCI * Pci, int nBar, u16 * wSelectors, u16 wNumberOf64kSelectors);
-
-void HpiPci_FreeSelectors(u16 * wSelectors, u16 wNumberOf64kSelectors);
-
+/* NOTE : HpiPci function defintions moved to hpios.h */
 #endif				/* _HPIPCI_H_ */
 
 ///////////////////////////////////////////////////////////////////////////

@@ -24,20 +24,18 @@ Public declarations for DSP Proramming Interface to PCI-based 56301 DSP
 #define _HPI56301_H_
 
 typedef struct {
-	HPI_PCI Pci;		// PCI info - bus#,dev#,address etc
-	u16 wAdapterType;	// A4501 etc
-	u16 wIndex;		// 0..3
-	u16 wOpen;		// =1 when adapter open
-	u16 wMixerOpen;
-} H400_ADAPTER_OBJ;
+	u32 dwMemBase;
+	u32 dwHCTR;
+	u32 dwHCVR;
+} HPI_56301_INFO_OBJ;
 
-short Hpi56301_CheckAdapterPresent(u32 dwMemBase);
-short Hpi56301_BootLoadDsp(H400_ADAPTER_OBJ * pao);
-short Hpi56301_SelfTest(u32 dwMemBase);
+short Hpi56301_CheckAdapterPresent(HPI_56301_INFO_OBJ * pio);
+short Hpi56301_BootLoadDsp(HPI_ADAPTER_OBJ * pao, HPI_56301_INFO_OBJ * pio,
+			   u32 * pdwOsErrorCode);
+//short Hpi56301_SelfTest( HPI_56301_INFO_OBJ * pio );
 
-void Hpi56301_Message(u32 dwMemBase, HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-short Hpi56301_SendMessage(u32 dwMemBase, HPI_MESSAGE * phm);
-short Hpi56301_GetResponse(u32 dwMemBase, HPI_RESPONSE * phr);
+void Hpi56301_Message(HPI_56301_INFO_OBJ * pio, HPI_MESSAGE * phm,
+		      HPI_RESPONSE * phr);
 
 #define DPI_ERROR           900	/* non-specific error */
 #define DPI_ERROR_SEND      910

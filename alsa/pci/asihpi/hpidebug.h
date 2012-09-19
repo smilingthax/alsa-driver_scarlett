@@ -26,84 +26,199 @@ Debug macros.
 #include "hpi.h"
 #include "hpios.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef TEXT
 #define TEXT(s) s
 #endif
 
-/* Define debugging levels.  */
-enum { HPI_DEBUG_LEVEL_OFF,
-	HPI_DEBUG_LEVEL_INFO,
-	HPI_DEBUG_LEVEL_DEBUG,
-	HPI_DEBUG_LEVEL_VERBOSE
-};
+//#define HPI_DEBUG_VERBOSE
 
-extern int hpiDebugLevel;
-
-extern int HPI_DebugLevelSet(int level);
-
-extern void hpi_debug_message(HPI_MESSAGE * phm);
-
-extern void hpi_debug_response(HPI_RESPONSE * phr);
-
-extern void hpi_debug_string(char *fmt, ...);
-
-extern void hpi_debug_data(u16 * pdata, u32 len);
-
-#ifndef HPI_DEBUG_STRING
-#define HPI_DEBUG_STRING hpi_debug_string
-#define HPI_DEBUG_STRING_REQD
+#ifdef HPI_DEBUG_VERBOSE
+#  ifndef HPI_DEBUG		/* DEBUG_VERBOSE implies DEBUG */
+#   define HPI_DEBUG
+#  endif
 #endif
 
-/* Be careful with these macros.  Ensure that they are used within a block.  */
+/* Define debugging levels.  */
+	enum { HPI_DEBUG_LEVEL_ERROR,	/* Always log errors */
+		HPI_DEBUG_LEVEL_WARNING,
+		HPI_DEBUG_LEVEL_NOTICE,
+		HPI_DEBUG_LEVEL_INFO,
+		HPI_DEBUG_LEVEL_DEBUG,
+		HPI_DEBUG_LEVEL_VERBOSE	/* Same printk level as DEBUG */
+	};
+
+#ifndef HPI_DEBUG_LEVEL_DEFAULT
+#define HPI_DEBUG_LEVEL_DEFAULT HPI_DEBUG_LEVEL_NOTICE
+#endif
+
+/* an OS can define an extra flag string that is appended to 
+the start of each message, eg see hpios_linux.h */
+#ifndef HPI_DEBUG_FLAG_ERROR
+#define HPI_DEBUG_FLAG_ERROR
+#define HPI_DEBUG_FLAG_WARNING
+#define HPI_DEBUG_FLAG_NOTICE
+#define HPI_DEBUG_FLAG_INFO
+#define HPI_DEBUG_FLAG_DEBUG
+#define HPI_DEBUG_FLAG_VERBOSE
+#endif
+
+/* OSes without printf-like function must provide plain string output
+and define HPIOS_DEBUG_PRINT to the name of this function.
+The printf functionality then provided by hpidebug.c::hpi_debug_printf
+*/
+#if defined ( HPIOS_DEBUG_PRINT ) && ! defined ( HPIOS_DEBUG_PRINTF )
+#define HPIOS_DEBUG_PRINTF hpi_debug_printf
+	void hpi_debug_printf(char *fmt, ...);
+#endif
+
+#if ! defined ( HPIOS_DEBUG_PRINT ) && ! defined ( HPIOS_DEBUG_PRINTF ) && defined ( HPI_DEBUG )
+#undef HPI_DEBUG
+#undef HPI_DEBUG_VERBOSE
+#warning "Can't debug with this build because no debug print functions defined"
+#endif
+
+/* HPI_DEBUG_VERBOSE causes file and line to be printed with each message */
+#ifdef HPI_DEBUG_VERBOSE
+# define FILE_LINE __FILE__ ":" __stringify(__LINE__) " "
+#else
+# define FILE_LINE "HPI: "
+#endif
+
+#ifdef HPI_DEBUG
+
+/* Note VERBOSE and DEBUG messages don't get all the baggage of file and line etc
+We don't expect users to use or understand verbose, it will generate huge outputs
+*/
+#define HPI_DEBUG_LOG0(level,fmt)                                                                               \
+do {                                                                                                                            \
+if ( hpiDebugLevel >= HPI_DEBUG_LEVEL_##level ) {                                       \
+if ( HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG )                \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt);                 \
+else                                                                                                            \
+HPIOS_DEBUG_PRINTF( HPI_DEBUG_FLAG_##level  FILE_LINE  __stringify(level)  " " fmt); \
+}                                                                                                                               \
+} while (0)
+
+#define HPI_DEBUG_LOG1(level,fmt,p1)                                                                    \
+do {                                                                                                                            \
+if (hpiDebugLevel >= HPI_DEBUG_LEVEL_##level) {                                 \
+if ( HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG )                \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1);              \
+else                                                                                                            \
+HPIOS_DEBUG_PRINTF( HPI_DEBUG_FLAG_##level  FILE_LINE  __stringify(level)  " " fmt,p1); \
+}                                                                                                                               \
+} while (0)
+
+#define HPI_DEBUG_LOG2(level,fmt,p1,p2)                                                                 \
+do {                                                                                                                            \
+if (hpiDebugLevel>=HPI_DEBUG_LEVEL_##level) {                                   \
+if (HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG)          \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1,p2);   \
+else                                                                                                            \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p1,p2); \
+}                                                                                                                               \
+} while (0)
+
+#define HPI_DEBUG_LOG3(level,fmt,p1,p2,p3)                                                      \
+do {                                                                                                                            \
+if (hpiDebugLevel>=HPI_DEBUG_LEVEL_##level) {                                   \
+if (HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_DEBUG)          \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1,p2,p3); \
+else                                                                                                            \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p1,p2,p3); \
+}                                                                                                                               \
+} while (0)
+
+#define HPI_DEBUG_LOG4(level,fmt,p1,p2,p3,p4)                                                   \
+do {                                                                                                                            \
+if (hpiDebugLevel>=HPI_DEBUG_LEVEL_##level) {                                   \
+if (HPI_DEBUG_LEVEL_##level >=  HPI_DEBUG_LEVEL_INFO)           \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level fmt,p1,p2,p3,p4); \
+else                                                                                                            \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_##level FILE_LINE __stringify(level) " " fmt,p1,p2,p3,p4); \
+}                                                                                                                               \
+} while (0)
+
+#define HPIOS_DEBUG_STRING(s) HPI_DEBUG_LOG0(VERBOSE,s "\n")
+
+#else
+#define HPI_DEBUG_LOG0(level,fmt)
+#define HPI_DEBUG_LOG1(level,fmt,p1)
+#define HPI_DEBUG_LOG2(level,fmt,p1,p2)
+#define HPI_DEBUG_LOG3(level,fmt,p1,p2,p3)
+#define HPI_DEBUG_LOG4(level,fmt,p1,p2,p3,p4)
+#define HPIOS_DEBUG_STRING(s)
+#endif
+
+	extern int hpiDebugLevel;
+
+	int HPI_DebugLevelSet(int level);
+	void hpi_debug_message(HPI_MESSAGE * phm);
+	void hpi_debug_response(HPI_RESPONSE * phr);
+
+	extern void
+	 hpi_debug_data(u16 * pdata, u32 len);
 
 #ifndef HPI_DEBUG_DATA
-#define HPI_DEBUG_DATA \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) hpi_debug_data
+#define HPI_DEBUG_DATA(pdata,len)                                                                               \
+do {                                                                                                                            \
+if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) hpi_debug_data(pdata,len); \
+} while (0)
 #endif
 
 #ifndef HPI_DEBUG_MESSAGE
-#define HPI_DEBUG_MESSAGE \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-hpi_debug_message
+#define HPI_DEBUG_MESSAGE(phm)                                                                  \
+do {                                                                                                            \
+if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) {                   \
+HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_DEBUG FILE_LINE);     \
+hpi_debug_message(phm);                                                         \
+}                                                                                                               \
+} while (0)
 #endif
 
 #ifndef HPI_DEBUG_RESPONSE
-#define HPI_DEBUG_RESPONSE \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
-if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-hpi_debug_response
+#define HPI_DEBUG_RESPONSE(phr)                                                                 \
+do {                                                                                                            \
+if ((hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) && (phr->wError))  \
+HPI_DEBUG_LOG1(ERROR,"HPI %d\n", phr->wError); \
+else if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
+HPI_DEBUG_LOG0(VERBOSE,"OK\n"); \
+} while (0)
 #endif
 
+/* Be careful with these macros.  Ensure that they are used within a block.  
+Otherwise the second if might have an else after it... */
 #define HPI_PRINT_ERROR \
-HPI_DEBUG_STRING("%s,%d: ERROR ",__FILE__,__LINE__); \
-HPI_DEBUG_STRING
+HPIOS_DEBUG_PRINTF("%s,%d ",__FILE__,__LINE__); \
+HPIOS_DEBUG_PRINTF
 
 #define HPI_PRINT_INFO \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_INFO) \
-HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
+HPIOS_DEBUG_PRINTF("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_INFO) \
-HPI_DEBUG_STRING
+HPIOS_DEBUG_PRINTF
 
 #define HPI_PRINT_DEBUG \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
+HPIOS_DEBUG_PRINTF( "%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_DEBUG) \
-HPI_DEBUG_STRING
+HPIOS_DEBUG_PRINTF
 
 #define HPI_PRINT_VERBOSE \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
-HPI_DEBUG_STRING("%s,%d: ",__FILE__,__LINE__); \
+HPIOS_DEBUG_PRINTF("%s,%d: ",__FILE__,__LINE__); \
 if (hpiDebugLevel >= HPI_DEBUG_LEVEL_VERBOSE) \
-HPI_DEBUG_STRING
+HPIOS_DEBUG_PRINTF
 
-#if ! defined ( HPI_DEBUG ) || defined ( HPI_OS_WDM )
+#if ! defined ( HPI_DEBUG )
 #undef HPI_DEBUG_DATA
 #undef HPI_DEBUG_MESSAGE
 #undef HPI_DEBUG_RESPONSE
-#undef HPI_DEBUG_STRING
+#undef HPIOS_DEBUG_PRINTF
 #undef HPI_PRINT_ERROR
 #undef HPI_PRINT_INFO
 #undef HPI_PRINT_DEBUG
@@ -112,16 +227,12 @@ HPI_DEBUG_STRING
 #define HPI_DEBUG_DATA
 #define HPI_DEBUG_MESSAGE
 #define HPI_DEBUG_RESPONSE
-#define HPI_DEBUG_STRING
+#define HPIOS_DEBUG_PRINTF
 #define HPI_PRINT_ERROR
 #define HPI_PRINT_INFO
 #define HPI_PRINT_DEBUG
 #define HPI_PRINT_VERBOSE
 
-#endif
-
-#ifndef HPI_DEBUG_LEVEL_DEFAULT
-#define HPI_DEBUG_LEVEL_DEFAULT HPI_DEBUG_LEVEL_INFO
 #endif
 
 /* These strings should be generated using a macro which defines
@@ -152,8 +263,8 @@ TEXT("HPI_SUBSYS_FIND_ADAPTERS"),     \
 TEXT("HPI_SUBSYS_CREATE_ADAPTER"),    \
 TEXT("HPI_SUBSYS_CLOSE"),             \
 TEXT("HPI_SUBSYS_DELETE_ADAPTER"), \
-TEXT("invalid 8"), \
-TEXT("invalid 9"), \
+TEXT("HPI_SUBSYS_DRIVER_LOAD"), \
+TEXT("HPI_SUBSYS_DRIVER_UNLOAD"), \
 TEXT("HPI_SUBSYS_READ_PORT_8"),       \
 TEXT("HPI_SUBSYS_WRITE_PORT_8")       \
 };
@@ -172,7 +283,10 @@ TEXT("HPI_ADAPTER_SELFTEST"),        \
 TEXT("HPI_ADAPTER_FIND_OBJECT"),     \
 TEXT("HPI_ADAPTER_QUERY_FLASH"),     \
 TEXT("HPI_ADAPTER_START_FLASH"),     \
-TEXT("HPI_ADAPTER_PROGRAM_FLASH")    \
+TEXT("HPI_ADAPTER_PROGRAM_FLASH"),   \
+TEXT("HPI_ADAPTER_SET_PROPERTY"),    \
+TEXT("HPI_ADAPTER_GET_PROPERTY"),    \
+TEXT("HPI_ADAPTER_ENUM_PROPERTY")    \
 };
 
 #define HPI_OSTREAM_STRINGS     \
@@ -271,7 +385,8 @@ TEXT("HPI_PROFILE_START_ALL"),        \
 TEXT("HPI_PROFILE_STOP_ALL"), \
 TEXT("HPI_PROFILE_GET"),              \
 TEXT("HPI_PROFILE_GET_IDLECOUNT"),  \
-TEXT("HPI_PROFILE_GET_NAME")        \
+TEXT("HPI_PROFILE_GET_NAME"),       \
+TEXT("HPI_PROFILE_GET_UTILIZATION") \
 };
 
 #define HPI_CONTROL_TYPE_STRINGS \
@@ -297,9 +412,11 @@ TEXT("HPI_CONTROL_SAMPLECLOCK"), \
 TEXT("HPI_CONTROL_MICROPHONE"), \
 TEXT("HPI_CONTROL_PARAMETRIC_EQ"), \
 TEXT("HPI_CONTROL_COMPANDER"), \
-TEXT("HPI_CONTROL_COBRANET") \
+TEXT("HPI_CONTROL_COBRANET"), \
+TEXT("HPI_CONTROL_TONE_DETECT") \
+TEXT("HPI_CONTROL_SILENCE_DETECT") \
 }
-#define NUM_CONTROL_STRINGS 22
+#define NUM_CONTROL_STRINGS 24
 #if ( NUM_CONTROL_STRINGS != ( HPI_CONTROL_LAST_INDEX + 1 ) )
 #error TEXT("Control type strings don't match #defines")
 #endif
@@ -346,4 +463,7 @@ TEXT("HPI_CHANNEL_MODE_LEFT_ONLY"), \
 TEXT("HPI_CHANNEL_MODE_RIGHT_ONLY") \
 }
 
+#ifdef __cplusplus
+}
+#endif
 #endif				/* _HPIDEBUG_H  */

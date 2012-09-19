@@ -20,11 +20,8 @@
 \file
 Functions for reading DSP code to load into DSP
 
-(Linux only:) If HPI_OS_LINUX is defined, code is read using
-hotplug firmware loader from individual dsp code files otherwise
-one of the following two applies:
-
-if DSPCODE_FILE is defined, code is read from a file
+(Linux only:) If DSPCODE_FIRMWARE_LOADER is defined, code is read using
+hotplug firmware loader from individual dsp code files
 
 If neither of the above is defined, code is read from linked arrays.
 DSPCODE_ARRAY is defined.
@@ -43,6 +40,11 @@ If USE_ZLIB is defined, hpizlib.c must also be linked
 Header structure for binary dsp code file (see asidsp.doc)
 This structure must match that used in s2bin.c for generation of asidsp.bin
 */
+
+#ifndef DISABLE_PRAGMA_PACK1
+#pragma pack(push,1)
+#endif
+
 typedef struct {
 	u32 size;
 	u8 type[4];
@@ -51,18 +53,22 @@ typedef struct {
 	u32 crc;
 } header_t;
 
+#ifndef DISABLE_PRAGMA_PACK1
+#pragma pack(pop)
+#endif
+
 /***********************************************************************/
 #include "linux/pci.h"
 /*-------------------------------------------------------------------*/
-short HpiDspCode_Open(u32 nAdapter, DSP_CODE * psDspCode)
+short HpiDspCode_Open(u32 nAdapter, DSP_CODE * psDspCode, u32 * pdwOsErrorCode)
 {
 	const struct firmware *psFirmware = psDspCode->psFirmware;
 	header_t header;
-	char fw_name[13];
+	char fw_name[20];
 	int err;
 
-	sprintf(fw_name, "dsp%04x.bin", nAdapter);
-	HPI_PRINT_INFO("Requesting firmware for %s\n", fw_name);
+	sprintf(fw_name, "asihpi/dsp%04x.bin", nAdapter);
+	HPI_DEBUG_LOG1(INFO, "Requesting firmware for %s\n", fw_name);
 
 #if ( LINUX_VERSION_CODE < KERNEL_VERSION ( 2 , 5 , 0 ) )
 	if (0 !=
@@ -75,37 +81,38 @@ short HpiDspCode_Open(u32 nAdapter, DSP_CODE * psDspCode)
 	     request_firmware(&psFirmware, fw_name, &psDspCode->psDev->dev)))
 #endif
 	{
-		HPI_PRINT_ERROR("%d, request_firmware failed for  %s\n", err,
-				fw_name);
+		HPI_DEBUG_LOG2(ERROR, "%d, request_firmware failed for  %s\n",
+			       err, fw_name);
 		goto error1;
 	}
 	if (psFirmware->size < sizeof(header)) {
-		HPI_PRINT_ERROR("Header size too small %s\n", fw_name);
+		HPI_DEBUG_LOG1(ERROR, "Header size too small %s\n", fw_name);
 		goto error2;
 	}
 	memcpy(&header, psFirmware->data, sizeof(header));
 	if (header.adapter != nAdapter) {
-		HPI_PRINT_ERROR("Adapter type incorrect %4x != %4x\n",
-				header.adapter, nAdapter);
+		HPI_DEBUG_LOG2(ERROR, "Adapter type incorrect %4x != %4x\n",
+			       header.adapter, nAdapter);
 		goto error2;
 	}
 	if (header.size != psFirmware->size) {
-		HPI_PRINT_ERROR("Code size wrong  %d != %d\n", header.size,
-				psFirmware->size);
+		HPI_DEBUG_LOG2(ERROR, "Code size wrong  %d != %d\n",
+			       header.size, psFirmware->size);
 		goto error2;
 	}
 
-	HPI_PRINT_DEBUG("Dsp code %s opened\n", fw_name);
+	HPI_DEBUG_LOG1(INFO, "Dsp code %s opened\n", fw_name);
 	psDspCode->psFirmware = psFirmware;
 	psDspCode->dwBlockLength = header.size / sizeof(u32);
 	psDspCode->dwWordCount = sizeof(header) / sizeof(u32);	// start pointing to data
 	psDspCode->dwVersion = header.version;
+	psDspCode->dwCrc = header.crc;
 	return 0;
 
       error2:
 	release_firmware(psFirmware);
       error1:
-// HPI_PRINT_ERROR("Firmware %s not available\n",fw_name);
+// HPI_DEBUG_LOG1(ERROR,"Firmware %s not available\n",fw_name);
 	psDspCode->psFirmware = NULL;
 	psDspCode->dwBlockLength = 0;
 	return (HPI_ERROR_DSP_FILE_NOT_FOUND);
@@ -115,7 +122,7 @@ short HpiDspCode_Open(u32 nAdapter, DSP_CODE * psDspCode)
 void HpiDspCode_Close(DSP_CODE * psDspCode)
 {
 	if (psDspCode->psFirmware != NULL) {
-		HPI_PRINT_DEBUG("Dsp code closed\n");
+		HPI_DEBUG_LOG0(DEBUG, "Dsp code closed\n");
 		release_firmware(psDspCode->psFirmware);
 		psDspCode->psFirmware = NULL;
 	}

@@ -31,11 +31,10 @@ PROFILE_DSP2 get profile data from DSP2 if present (instead of DSP 1)
 *******************************************************************************/
 
 #include "hpi.h"
-#include "hpios.h"		// for debug
-#include "hpipci.h"
+#include "hpidebug.h"
 #include "hpi6000.h"
-
 #include "hpidspcd.h"
+#include "hpicmn.h"
 
 ////////////////////////////////////////////////////////////////////////////
 // local defines
@@ -63,7 +62,7 @@ PROFILE_DSP2 get profile data from DSP2 if present (instead of DSP 1)
 #define DATA_AUTOINC            0x1000
 #define DATA                            0x1800
 
-#define TIMEOUT 500000L
+#define TIMEOUT 500000
 
 typedef struct {
 	u32 dwHPIControl;
@@ -71,20 +70,18 @@ typedef struct {
 	u32 dwHPIData;
 	u32 dwHPIDataAutoInc;
 	char cDspRev;		//A, B
-} H600_DSP_OBJ;
+	u32 dwControlCacheAddressOnDSP;
+	u32 dwControlCacheLengthOnDSP;
+	HPI_ADAPTER_OBJ *paParentAdapter;
+} DSP_OBJ;
 
 typedef struct {
-	HPI_PCI Pci;		// PCI info - bus#,dev#,address etc
-	u16 wAdapterType;	// ASI6701 etc
-	u16 wIndex;		//
-	u16 wOpen;		// =1 when adapter open
-	u16 wMixerOpen;
 
 	u32 dw2040_HPICSR;
 	u32 dw2040_HPIDSP;
 
 	u16 wNumDsp;
-	H600_DSP_OBJ ado[4];
+	DSP_OBJ ado[4];
 
 	u32 dwMessageBufferAddressOnDSP;
 	u32 dwResponseBufferAddressOnDSP;
@@ -95,41 +92,175 @@ typedef struct {
 
 	u16 wHasControlCache;
 	tHPIControlCacheSingle aControlCache[HPI_NMIXER_CONTROLS];
-} H600_ADAPTER_OBJ;
+
+#ifdef EVENTUM_ISSUE_275_DEBUG
+#define EVENTUM_ISSUE_275_HPIQLEN       25
+
+	HPI_MESSAGE EV275_hmq[EVENTUM_ISSUE_275_HPIQLEN];
+	HPI_RESPONSE EV275_hrq[EVENTUM_ISSUE_275_HPIQLEN];
+	u32 EV275_2040errq[EVENTUM_ISSUE_275_HPIQLEN];
+	u32 EV275_LoopCount[EVENTUM_ISSUE_275_HPIQLEN];
+	u32 EV275_2040errcnt;
+	u32 EV275_qidx;
+	u32 EV275_deferdump;
+#endif
+} HPI_HW_OBJ;
+
+#ifdef EVENTUM_ISSUE_275_DEBUG
+
+void Ev275Debug_QueueMessageResponse(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+				     HPI_RESPONSE * phr)
+{
+	HPI_HW_OBJ *pObj = (HPI_HW_OBJ *) pao->priv;
+
+	memcpy(pObj->EV275_hmq + pObj->EV275_qidx, phm, sizeof(HPI_MESSAGE));
+	memcpy(pObj->EV275_hrq + pObj->EV275_qidx, phr, sizeof(HPI_RESPONSE));
+	pObj->EV275_2040errq[pObj->EV275_qidx] = pObj->EV275_2040errcnt;
+
+	pObj->EV275_qidx++;
+	if (pObj->EV275_qidx == EVENTUM_ISSUE_275_HPIQLEN)
+		pObj->EV275_qidx = 0;
+
+	pObj->EV275_2040errcnt = 0;
+	pObj->EV275_LoopCount[pObj->EV275_qidx] = 0;
+}
+
+static char Ev275_buff[128];
+
+void Ev275Debug_DumpMessageResponseQueue(HPI_ADAPTER_OBJ * pao, int deferred)
+{
+	HPI_HW_OBJ *pObj = (HPI_HW_OBJ *) pao->priv;
+	u32 idx = pObj->EV275_qidx, n;
+
+	if (deferred && !pObj->EV275_deferdump)
+		return;
+
+	if (KeGetCurrentIrql() > PASSIVE_LEVEL) {
+		pObj->EV275_deferdump = 1;
+		return;
+	}
+
+	pObj->EV275_deferdump = 0;
+	ASIWDM_LogMessage("Starting HPI6000 debug log dump.\r\n");
+	ASIWDM_WriteLogEntry("     size type obj  fctn err  serr\r\n");
+	for (n = 0; n < EVENTUM_ISSUE_275_HPIQLEN; n++) {
+		sprintf(Ev275_buff,
+			"Msg: %04.4X %04.4X %04.4X %04.4X %04.4X %04.4X\r\n",
+			pObj->EV275_hmq[idx].wSize, pObj->EV275_hmq[idx].wType,
+			pObj->EV275_hmq[idx].wObject,
+			pObj->EV275_hmq[idx].wFunction,
+			pObj->EV275_hmq[idx].wAdapterIndex,
+			pObj->EV275_hmq[idx].wDspIndex);
+		ASIWDM_WriteLogEntry(Ev275_buff);
+		sprintf(Ev275_buff,
+			"Rsp: %04.4X %04.4X %04.4X %04.4X %d %04.4X\r\n",
+			pObj->EV275_hrq[idx].wSize, pObj->EV275_hrq[idx].wType,
+			pObj->EV275_hrq[idx].wObject,
+			pObj->EV275_hrq[idx].wFunction,
+			pObj->EV275_hrq[idx].wError,
+			pObj->EV275_hrq[idx].wSpecificError);
+		ASIWDM_WriteLogEntry(Ev275_buff);
+		sprintf(Ev275_buff,
+			"PCI2040 error count: %d\tLoop Count: %d\r\n",
+			pObj->EV275_2040errq[idx], pObj->EV275_LoopCount[idx]);
+		ASIWDM_WriteLogEntry(Ev275_buff);
+
+		idx++;
+		if (idx == EVENTUM_ISSUE_275_HPIQLEN)
+			idx = 0;
+	}
+}
+
+void Ev275Debug_CountPCI2040Error(HPI_ADAPTER_OBJ * pao)
+{
+	HPI_HW_OBJ *pObj = (HPI_HW_OBJ *) pao->priv;
+
+	pObj->EV275_2040errcnt++;
+}
+
+void Ev275Debug_SetLoopCount(HPI_ADAPTER_OBJ * pao, u32 dwLoopCount)
+{
+	HPI_HW_OBJ *pObj = (HPI_HW_OBJ *) pao->priv;
+
+	pObj->EV275_LoopCount[pObj->EV275_qidx] = dwLoopCount;
+}
+
+void CHECK_LENGTH(HPI_ADAPTER_OBJ * pao, u32 * pdwLength, u32 dwMax)
+{
+	HPI_MESSAGE hm;
+	HPI_RESPONSE hr;
+
+	if (*pdwLength > dwMax) {
+		hm.wSize = (u16) ((*pdwLength) >> 16);
+		hm.wType = (u16) (*pdwLength);
+		hm.wObject = 0xFFFF;
+		hm.wFunction = 0xFFFF;
+		hm.wAdapterIndex = 0xFFFF;
+		hm.wDspIndex = 0xFFFF;
+		hr.wSize = (u16) (dwMax >> 16);
+		hr.wType = (u16) (dwMax);
+		hr.wObject = 0xFFFF;
+		hr.wFunction = 0xFFFF;
+		hr.wError = 0;
+		hr.wSpecificError = 0xFFFF;
+
+		Ev275Debug_QueueMessageResponse(pao, &hm, &hr);
+		Ev275Debug_DumpMessageResponseQueue(pao, 0);
+
+		*pdwLength = dwMax;
+	}
+}
+
+#else				// #ifdef EVENTUM_ISSUE_275_DEBUG
+
+#define Ev275Debug_QueueMessageResponse(a,b,c)
+#define Ev275Debug_DumpMessageResponseQueue(a,b)
+#define Ev275Debug_CountPCI2040Error(a)
+#define Ev275Debug_SetLoopCount(a,b)
+#define CHECK_LENGTH(a,b,c)
+
+#endif				// #ifdef EVENTUM_ISSUE_275_DEBUG
+
+#if defined ( HPI_OS_WDM ) && ! defined ( HPI_WDM_MONOLITHIC ) && defined ( DEBUG )
+NTSTATUS ASIHPIW_LogBootError(char *pMsg);
+#endif
 
 ////////////////////////////////////////////////////////////////////////////
-static u16 Hpi6000_DspBlockWrite32(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static u16 Hpi6000_DspBlockWrite32(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				   u32 dwHpiAddress, u32 dwSource, u32 dwCount);
-static u16 Hpi6000_DspBlockRead32(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static u16 Hpi6000_DspBlockRead32(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				  u32 dwHpiAddress, u32 dwDest, u32 dwCount);
 
-static short Hpi6000_AdapterBootLoadDsp(H600_ADAPTER_OBJ * pao);
-static short Hpi6000_Check_PCI2040_ErrorFlag(H600_ADAPTER_OBJ * pao,
+static short Hpi6000_AdapterBootLoadDsp(HPI_ADAPTER_OBJ * pao,
+					u32 * pdwOsErrorCode);
+static short Hpi6000_Check_PCI2040_ErrorFlag(HPI_ADAPTER_OBJ * pao,
 					     u16 nReadOrWrite);
 #define H6READ 1
 #define H6WRITE 0
 
-static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
-					     u16 wDspIndex, HPI_MESSAGE * phm,
+static short Hpi6000_UpdateControlCache(HPI_ADAPTER_OBJ * pao,
+					HPI_MESSAGE * phm);
+static short Hpi6000_MessageResponseSequence(HPI_ADAPTER_OBJ * pao,
+					     HPI_MESSAGE * phm,
 					     HPI_RESPONSE * phr);
 
-static void Hpi6000_Message(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-			    HPI_RESPONSE * phr);
-static short Hpi6000_WaitDspAck(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static void HW_Message(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+		       HPI_RESPONSE * phr);
+static short Hpi6000_WaitDspAck(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				u32 dwAckValue);
-static short Hpi6000_SendHostCommand(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static short Hpi6000_SendHostCommand(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				     u32 dwHostCmd);
-static void Hpi6000_SendDspInterrupt(H600_DSP_OBJ * pdo);
-static short Hpi6000_SendData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
-			      HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-static short Hpi6000_GetData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
-			     HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+static void Hpi6000_SendDspInterrupt(DSP_OBJ * pdo);
+static short Hpi6000_SendData(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			      HPI_RESPONSE * phr);
+static short Hpi6000_GetData(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			     HPI_RESPONSE * phr);
 
-static void HpiWriteWord(H600_DSP_OBJ * pdo, u32 dwAddress, u32 dwData);
-static u32 HpiReadWord(H600_DSP_OBJ * pdo, u32 dwAddress);
-static void HpiWriteBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
+static void HpiWriteWord(DSP_OBJ * pdo, u32 dwAddress, u32 dwData);
+static u32 HpiReadWord(DSP_OBJ * pdo, u32 dwAddress);
+static void HpiWriteBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 			  u32 dwLength);
-static void HpiReadBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
+static void HpiReadBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 			 u32 dwLength);
 
 #define DPI_ERROR           900	/* non-specific error */
@@ -139,39 +270,157 @@ static void HpiReadBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 
 ////////////////////////////////////////////////////////////////////////////
 // local prototypes
-static void H600_SubSysOpen(void);
-static void H600_SubSysClose(void);
-static void H600_SubSysGetAdapters(HPI_RESPONSE * phr);
-static void H600_SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-static void H600_SubSysDeleteAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr);
-static void H600_SubSysFindAdapters(HPI_RESPONSE * phr);
+static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
+				HPI_MESSAGE * phm, HPI_RESPONSE * phr);
+static void SubSysDeleteAdapter(HPI_ADAPTERS_LIST * adaptersList,
+				HPI_MESSAGE * phm, HPI_RESPONSE * phr);
 
-static void H600_AdapterOpen(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-			     HPI_RESPONSE * phr);
-static void H600_AdapterClose(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+static void AdapterGetAsserts(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 			      HPI_RESPONSE * phr);
-static void H600_AdapterGetInfo(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-				HPI_RESPONSE * phr);
-static void H600_AdapterGetAsserts(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-				   HPI_RESPONSE * phr);
 
-static H600_ADAPTER_OBJ *H600_FindAdapter(u16 wAdapterIndex);
-static short H600_CreateAdapterObj(H600_ADAPTER_OBJ * pao);
+static short CreateAdapterObj(HPI_ADAPTER_OBJ * pao, u32 * pdwOsErrorCode);
 
 ////////////////////////////////////////////////////////////////////////////
 // external globals
 // extern u16 gwHpiLastError;
-extern u32 gadwHpiSpecificError[8];
 
 ////////////////////////////////////////////////////////////////////////////
 // local globals
-#define H600_MAX_ADAPTERS HPI_MAX_ADAPTERS
-static H600_ADAPTER_OBJ gao60[H600_MAX_ADAPTERS];
+static u32 gadwHpiSpecificError[4];
 
-static u16 gwNum60Adapters;	// total number of adapters created in this HPI
-static u16 gwTotalOStreams;	// total number of devices created in this HPI
+static HPI_ADAPTERS_LIST adapters;
 static u16 gwPciReadAsserts = 0;	// used to count PCI2040 errors
 static u16 gwPciWriteAsserts = 0;	// used to count PCI2040 errors
+
+static void SubSysMessage(HPI_ADAPTERS_LIST * adaptersList, HPI_MESSAGE * phm,
+			  HPI_RESPONSE * phr)
+{
+
+	switch (phm->wFunction) {
+	case HPI_SUBSYS_OPEN:
+	case HPI_SUBSYS_CLOSE:
+	case HPI_SUBSYS_DRIVER_UNLOAD:
+		phr->wError = 0;
+		break;
+	case HPI_SUBSYS_DRIVER_LOAD:
+		WipeAdapterList(adaptersList);
+		phr->wError = 0;
+		break;
+	case HPI_SUBSYS_GET_INFO:
+		SubSysGetAdapters(adaptersList, phr);
+		break;
+	case HPI_SUBSYS_FIND_ADAPTERS:
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	case HPI_SUBSYS_CREATE_ADAPTER:
+		SubSysCreateAdapter(adaptersList, phm, phr);
+		break;
+	case HPI_SUBSYS_DELETE_ADAPTER:
+		SubSysDeleteAdapter(adaptersList, phm, phr);
+		break;
+	default:
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	}
+}
+
+static void ControlMessage(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			   HPI_RESPONSE * phr)
+{
+
+	switch (phm->wFunction) {
+	case HPI_CONTROL_GET_STATE:
+		if (pao->wHasControlCache) {
+			u16 err;
+			err = Hpi6000_UpdateControlCache(pao, phm);
+
+			if (err) {
+				phr->wError = err;
+				Ev275Debug_QueueMessageResponse(pao, phm, phr);
+				break;
+			}
+
+			if (CheckControlCache
+			    (&((HPI_HW_OBJ *) pao->priv)->
+			     aControlCache[phm->u.c.wControlIndex], phm, phr))
+				break;
+		}
+		HW_Message(pao, phm, phr);
+		break;
+	case HPI_CONTROL_GET_INFO:
+	case HPI_CONTROL_SET_STATE:
+		HW_Message(pao, phm, phr);
+		break;
+	default:
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	}
+}
+
+static void AdapterMessage(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			   HPI_RESPONSE * phr)
+{
+
+	switch (phm->wFunction) {
+	case HPI_ADAPTER_GET_INFO:
+		HW_Message(pao, phm, phr);
+		break;
+	case HPI_ADAPTER_GET_ASSERT:
+		AdapterGetAsserts(pao, phm, phr);
+		break;
+	case HPI_ADAPTER_OPEN:
+	case HPI_ADAPTER_CLOSE:
+	case HPI_ADAPTER_TEST_ASSERT:
+	case HPI_ADAPTER_SELFTEST:
+	case HPI_ADAPTER_GET_MODE:
+	case HPI_ADAPTER_SET_MODE:
+	case HPI_ADAPTER_FIND_OBJECT:
+	case HPI_ADAPTER_GET_PROPERTY:
+	case HPI_ADAPTER_SET_PROPERTY:
+	case HPI_ADAPTER_ENUM_PROPERTY:
+		HW_Message(pao, phm, phr);
+		break;
+	default:
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	}
+}
+
+static void OStreamMessage(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			   HPI_RESPONSE * phr)
+{
+
+	switch (phm->wFunction) {
+	case HPI_OSTREAM_HOSTBUFFER_ALLOC:
+	case HPI_OSTREAM_HOSTBUFFER_FREE:
+// Don't let these messages go to the HW function because they're called
+// without allocating the spinlock.  For the HPI6000 adapters the HW would
+// return HPI_ERROR_INVALID_FUNC anyway.
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	default:
+		HW_Message(pao, phm, phr);
+		return;
+	}
+}
+
+static void IStreamMessage(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			   HPI_RESPONSE * phr)
+{
+
+	switch (phm->wFunction) {
+	case HPI_ISTREAM_HOSTBUFFER_ALLOC:
+	case HPI_ISTREAM_HOSTBUFFER_FREE:
+// Don't let these messages go to the HW function because they're called
+// without allocating the spinlock.  For the HPI6000 adapters the HW would
+// return HPI_ERROR_INVALID_FUNC anyway.
+		phr->wError = HPI_ERROR_INVALID_FUNC;
+		break;
+	default:
+		HW_Message(pao, phm, phr);
+		return;
+	}
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // HPI_6000()
@@ -180,97 +429,70 @@ static u16 gwPciWriteAsserts = 0;	// used to count PCI2040 errors
 
 void HPI_6000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
-	H600_ADAPTER_OBJ *pao;
+	HPI_ADAPTER_OBJ *pao = NULL;
 
 // subsytem messages get executed by every HPI.
 // All other messages are ignored unless the adapter index matches
 // an adapter in the HPI
-	if (phm->wObject == HPI_OBJ_SUBSYSTEM) {
-		HPI_PRINT_VERBOSE("subsys message\n");
-		pao = NULL;
-	} else {
-		pao = H600_FindAdapter(phm->wAdapterIndex);
-		if (!pao) {
-			return;	// message probably meant for another HPI module
-		}
-	}
+	HPI_DEBUG_LOG2(DEBUG, "O %d,F %d\n", phm->wObject, phm->wFunction);
 
 //phr->wError=0;      // SGT JUN-15-01 - so that modules can't overwrite errors from FindAdapter
 
 // if Dsp has crashed then do not try and communicated with it any more
-	if (phm->wObject != HPI_OBJ_SUBSYSTEM)
+	if (phm->wObject != HPI_OBJ_SUBSYSTEM) {
+		pao = FindAdapter(&adapters, phm->wAdapterIndex);
+		if (!pao) {
+			HPI_DEBUG_LOG2(DEBUG,
+				       " %d,%d refused, for another HPI?\n",
+				       phm->wObject, phm->wFunction);
+			return;	// message probably meant for another HPI module
+		}
+
 		if (pao->wDspCrashed) {
+			Ev275Debug_DumpMessageResponseQueue(pao, 1);
 			HPI_InitResponse(phr, phm->wObject, phm->wFunction,
 					 HPI_ERROR_DSP_HARDWARE);
+			HPI_DEBUG_LOG2(DEBUG, " %d,%d dsp crashed.\n",
+				       phm->wObject, phm->wFunction);
 			return;
 		}
+	}
+//Init default response ( sets the size field in the response structure )
+	if (phm->wFunction != HPI_SUBSYS_CREATE_ADAPTER)
+		HPI_InitResponse(phr, phm->wObject, phm->wFunction,
+				 HPI_ERROR_PROCESSING_MESSAGE);
+
 	switch (phm->wType) {
 	case HPI_TYPE_MESSAGE:
 		switch (phm->wObject) {
 		case HPI_OBJ_SUBSYSTEM:
-			switch (phm->wFunction) {
-			case HPI_SUBSYS_OPEN:
-				H600_SubSysOpen();
-				phr->wError = 0;
-				return;	// note that error is cleared
-			case HPI_SUBSYS_CLOSE:
-				H600_SubSysClose();
-				phr->wError = 0;
-				return;	// note that error is cleared
-			case HPI_SUBSYS_GET_INFO:
-				H600_SubSysGetAdapters(phr);
-				return;
-			case HPI_SUBSYS_FIND_ADAPTERS:
-				H600_SubSysFindAdapters(phr);
-				return;
-			case HPI_SUBSYS_CREATE_ADAPTER:
-				H600_SubSysCreateAdapter(phm, phr);
-				return;
-			case HPI_SUBSYS_DELETE_ADAPTER:
-				H600_SubSysDeleteAdapter(phm, phr);
-				return;
-			default:
-				break;
-			}
-			phr->wError = HPI_ERROR_INVALID_FUNC;
+			SubSysMessage(&adapters, phm, phr);
 			break;
 
 		case HPI_OBJ_ADAPTER:
 			phr->wSize =
 			    HPI_RESPONSE_FIXED_SIZE + sizeof(HPI_ADAPTER_RES);
-			switch (phm->wFunction) {
-			case HPI_ADAPTER_OPEN:
-				H600_AdapterOpen(pao, phm, phr);
-				return;
-			case HPI_ADAPTER_CLOSE:
-				H600_AdapterClose(pao, phm, phr);
-				return;
-			case HPI_ADAPTER_GET_INFO:
-				H600_AdapterGetInfo(pao, phm, phr);
-				return;
-			case HPI_ADAPTER_GET_ASSERT:
-				H600_AdapterGetAsserts(pao, phm, phr);
-				return;
-			case HPI_ADAPTER_TEST_ASSERT:
-			case HPI_ADAPTER_SELFTEST:
-			case HPI_ADAPTER_GET_MODE:
-			case HPI_ADAPTER_SET_MODE:
-			case HPI_ADAPTER_FIND_OBJECT:
-			case HPI_ADAPTER_SET_PROPERTY:
-			case HPI_ADAPTER_GET_PROPERTY:
-			case HPI_ADAPTER_ENUM_PROPERTY:
-				Hpi6000_Message(pao, phm, phr);
-				return;
-			default:
-				break;
-			}
-			phr->wError = HPI_ERROR_INVALID_FUNC;
+			AdapterMessage(pao, phm, phr);
 			break;
+
+		case HPI_OBJ_CONTROL:
+			ControlMessage(pao, phm, phr);
+			break;
+
+		case HPI_OBJ_OSTREAM:
+			OStreamMessage(pao, phm, phr);
+			break;
+
+		case HPI_OBJ_ISTREAM:
+			IStreamMessage(pao, phm, phr);
+			break;
+
 		default:
-			Hpi6000_Message(pao, phm, phr);
+			HW_Message(pao, phm, phr);
 			break;
 		}
 		break;
+
 	default:
 		phr->wError = HPI_ERROR_INVALID_TYPE;
 		break;
@@ -280,169 +502,22 @@ void HPI_6000(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 ////////////////////////////////////////////////////////////////////////////
 // SUBSYSTEM
 
-// This message gets processed by all HPIs
-// and is used to initialise the objects within each HPI
-void H600_SubSysOpen()
-{
-	HPI_PRINT_VERBOSE("HPI6000_SubSysOpen\n");
-
-	gwNum60Adapters = 0;
-	gwTotalOStreams = 0;
-	memset(gao60, 0, sizeof(H600_ADAPTER_OBJ) * H600_MAX_ADAPTERS);
-}
-
-void H600_SubSysClose()
-{
-	HPI_PRINT_VERBOSE(" HPI6000_SubSysClose\n");
-
-	gwNum60Adapters = 0;
-	gwTotalOStreams = 0;
-	memset(gao60, 0, sizeof(H600_ADAPTER_OBJ) * H600_MAX_ADAPTERS);
-}
-
-void H600_SubSysGetAdapters(HPI_RESPONSE * phr)
-{
-// fill in the response adapter array with the position
-// identified by the adapter number/index of the adapters in
-// this HPI
-// i.e. if we have an A120 with it's jumper set to
-// Adapter Number 2 then put an Adapter type A120 in the
-// array in position 1
-// NOTE: AdapterNumber is 1..N, Index is 0..N-1
-
-// input:  NONE
-// output: wNumAdapters
-//         awAdapter[]
-//
-
-	short i;
-	H600_ADAPTER_OBJ *pao = 0;
-
-	HPI_PRINT_VERBOSE(" HPI6000_SubSysGetAdapters\n");
-
-// for each adapter, place it's type in the position of the array
-// corresponding to it's adapter number
-	for (i = 0; i < gwNum60Adapters; i++) {
-		pao = &gao60[i];
-		if (phr->u.s.awAdapterList[pao->wIndex] != 0) {
-			phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
-			return;
-		}
-		phr->u.s.awAdapterList[pao->wIndex] = pao->wAdapterType;
-	}
-
-// add the number of adapters recognised by this HPI to the system total
-	phr->u.s.wNumAdapters += gwNum60Adapters;
-	phr->wError = 0;	// the function completed OK;
-}
-
-void H600_SubSysFindAdapters(HPI_RESPONSE * phr)
-{
-// Go out and try to find all adapters that belong to this
-// HPI, and initialise them
-//
-// For PCI bus adapters, use the PCI BIOS (or other OS functionality)
-// to find all the adapters that this HPI knows about.
-//
-// When an adapter is found, put it in the response adapter array
-// with the position identified by the adapter number/index of the
-// adapters in this HPI
-// i.e. if we have an ASI6101 with it's jumper set to
-// Adapter Number 2 then put an Adapter type ASI6101 in the
-// array in position 1
-// NOTE: AdapterNumber is 1..N, Index is 0..N-1
-//
-//-----------------------------------------------------------------
-// ASI6100/6200 specific error codes - SGT 6/4/02
-//
-// 920 - invalid PCI subsys device ID
-// 930 - could not find DSP code to match subsys device ID
-// 931 - could not r/w to PCI2040 registers
-// 932 - could not r/w DSP HPI registers
-// 933 - could not r/w DSP internal SRAM
-// 934 - could not r/w external SDRAM (bit test)
-// 935 - could not r/w external SDRAM (address test)
-// 938 - error during write of DSP code to SDRAM
-// 939 - timeout while waiting for DSP code to init
-// 940 - could not r/w FPGA
-// 95X - could not find/open DSP code
-//
-
-	short nIndex = 0;
-	short nError = 0;
-
-	HPI_PRINT_VERBOSE(" HPI6000_SubSysFindAdapters\n");
-
-// Cycle through all the PCI bus slots looking for this adapters
-// vendor and device ID
-//
-	gwNum60Adapters = 0;
-	for (nIndex = 0; nIndex < H600_MAX_ADAPTERS; nIndex++) {
-		H600_ADAPTER_OBJ Adap;
-// AGE 10/3/98
-// Need to use temporary adapter object because we don't
-// know what index to assign it yet. Fixes bug in NT kernel driver.
-
-		memset(&Adap, 0, sizeof(H600_ADAPTER_OBJ));
-		if (HpiPci_FindDeviceEx(&Adap.Pci, nIndex, HPI_PCI_VENDOR_ID_TI, HPI_ADAPTER_PCI2040, 0))	// prototype sub-vendor ID=0
-			if (HpiPci_FindDeviceEx
-			    (&Adap.Pci, nIndex, HPI_PCI_VENDOR_ID_TI,
-			     HPI_ADAPTER_PCI2040,
-			     HPI_PCI_VENDOR_ID_AUDIOSCIENCE))
-				break;	// no adapter found!
-
-// under WIN16, get the subsys device ID, if present
-// find out if we have a 8801 present
-// because it uses different DSP code than the 6200 series
-/*  Note NT kernel implementation of HpiPci_FindDeviceEx() fills in
-Adap.Pci.wVendorId
-Adap.Pci.wDeviceId;
-Adap.Pci.wSubSysVendorId
-Adap.Pci.wSubSysDeviceId
-*/
-
-// create the adapter object based on the resource information inside Adap.PCI
-		nError = H600_CreateAdapterObj(&Adap);	// adapter obj
-		if (nError) {
-			phr->wError = nError;
-			HPI_PRINT_ERROR("%d from CreateAdapterObj\n", nError);
-			continue;
-//return;
-		}
-// add to adapter list - but don't allow two adapters of same number!
-		if (phr->u.s.awAdapterList[Adap.wIndex] != 0) {
-			phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
-			HPI_PRINT_ERROR
-			    ("Existing ASI%4x index %d, can't add this ASI%4x\n",
-			     phr->u.s.awAdapterList[Adap.wIndex], Adap.wIndex,
-			     Adap.wAdapterType);
-			continue;
-		}
-
-		phr->u.s.awAdapterList[Adap.wIndex] = Adap.wAdapterType;
-
-		gao60[Adap.wIndex] = Adap;
-		memcpy(&gao60[Adap.wIndex], &Adap, sizeof(H600_ADAPTER_OBJ));
-		gwNum60Adapters++;	// inc the number of adapters known by this HPI
-	}
-
-// add the number of adapters recognised by this HPI to the system total
-
-	phr->u.s.wNumAdapters += gwNum60Adapters;
-//phr->wError = 0;   // SGT remove so that an error on one adapter is not overwritten
-}
-
 // create an adapter object and initialise it based on resource information
 // passed in in the message
 // **** NOTE - you cannot use this function AND the FindAdapters function at the
 // same time, the application must use only one of them to get the adapters ******
 
-void H600_SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static void SubSysCreateAdapter(HPI_ADAPTERS_LIST * adaptersList,
+				HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
-	H600_ADAPTER_OBJ ao;	// create temp adapter obj, because we don't know what index yet
+	HPI_ADAPTER_OBJ ao;	// create temp adapter obj, because we don't know what index yet
+	u32 dwOsErrorCode;
 	short nError = 0;
+	u32 dwDspIndex = 0;
 
-	HPI_PRINT_VERBOSE(" HPI6000_SubSysCreateAdapter\n");
+	HPI_DEBUG_LOG0(VERBOSE, "SubSysCreateAdapter\n");
+
+	memset(&ao, 0, sizeof(HPI_ADAPTER_OBJ));
 
 // this HPI only creates adapters for TI/PCI2040 based devices
 	if ((phm->u.s.Resource.wBusType != HPI_BUS_PCI)
@@ -450,22 +525,34 @@ void H600_SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 	    || (phm->u.s.Resource.r.Pci.wDeviceId != HPI_ADAPTER_PCI2040))
 		return;
 
+	ao.priv = HpiOs_MemAlloc(sizeof(HPI_HW_OBJ));
+	memset(ao.priv, 0, sizeof(HPI_HW_OBJ));
 // create the adapter object based on the resource information
 	memcpy(&ao.Pci, &phm->u.s.Resource.r.Pci, sizeof(ao.Pci));
 
-	nError = H600_CreateAdapterObj(&ao);
+	nError = CreateAdapterObj(&ao, &dwOsErrorCode);
 	if (nError) {
+		phr->u.s.dwData = dwOsErrorCode;	// OS error, if any, is in dwOsErrorCode
+		HpiOs_MemFree(ao.priv);
 		phr->wError = nError;
 		return;
 	}
 // add to adapter list - but don't allow two adapters of same number!
 	if (phr->u.s.awAdapterList[ao.wIndex] != 0) {
+		HpiOs_MemFree(ao.priv);
 		phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
 		return;
 	}
-	memcpy(&gao60[ao.wIndex], &ao, sizeof(H600_ADAPTER_OBJ));
+	memcpy(&adaptersList->adapter[ao.wIndex], &ao, sizeof(HPI_ADAPTER_OBJ));
+// need to update paParentAdapter
+	for (dwDspIndex = 0; dwDspIndex < 4; dwDspIndex++) {
+		(*(HPI_HW_OBJ *) adaptersList->adapter[ao.wIndex].priv).
+		    ado[dwDspIndex].paParentAdapter =
+		    &adaptersList->adapter[ao.wIndex];
+	}
+	HpiOs_Dsplock_Init(&adaptersList->adapter[ao.wIndex]);
 
-	gwNum60Adapters++;	// inc the number of adapters known by this HPI
+	adaptersList->gwNumAdapters++;	// inc the number of adapters known by this HPI
 	phr->u.s.awAdapterList[ao.wIndex] = ao.wAdapterType;
 	phr->u.s.wAdapterIndex = ao.wIndex;
 	phr->u.s.wNumAdapters++;	// add the number of adapters recognised by this HPI to the system total
@@ -474,63 +561,76 @@ void H600_SubSysCreateAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 
 // delete an adapter - required by WDM driver
 
-void H600_SubSysDeleteAdapter(HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static void SubSysDeleteAdapter(HPI_ADAPTERS_LIST * adaptersList,
+				HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
-	H600_ADAPTER_OBJ *pao = NULL;
+	HPI_ADAPTER_OBJ *pao = NULL;
 
-	pao = H600_FindAdapter(phm->wAdapterIndex);
+	pao = FindAdapter(adaptersList, phm->wAdapterIndex);
 	if (!pao)
 		return;		// message probably meant for another HPI module
 
-	gwNum60Adapters--;
-	memset(pao, 0, sizeof(H600_ADAPTER_OBJ));
+	adaptersList->gwNumAdapters--;
+	HpiOs_MemFree(pao->priv);
+	memset(pao, 0, sizeof(HPI_ADAPTER_OBJ));
+
+	phr->wError = 0;
 }
 
 // this routine is called from SubSysFindAdapter and SubSysCreateAdapter
-short H600_CreateAdapterObj(H600_ADAPTER_OBJ * pao)
+static short CreateAdapterObj(HPI_ADAPTER_OBJ * pao, u32 * pdwOsErrorCode)
 {
 	short nBootError = 0;
 	u32 dwHpiSpacing = 0x2000;	//8K
 	u32 dwDspIndex = 0;
 
 // init error reporting
-	pao->wNumErrors = 0;
+	(*(HPI_HW_OBJ *) pao->priv).wNumErrors = 0;
 	pao->wDspCrashed = 0;
+
+// under WIN16, get the subsys device ID, if present
+// find out if we have a 8801 present
+// because it uses different DSP code than the 6200 series
 
 // The PCI2040 has the following address map
 // BAR0 - 4K = HPI control and status registers on PCI2040  (HPI CSR)
 // BAR1 - 32K = HPI registers on DSP
 // convert the physical address in a 16bit protected mode address (Selector:Offset)
-	pao->dw2040_HPICSR = pao->Pci.dwMemBase[0];
-	pao->dw2040_HPIDSP = pao->Pci.dwMemBase[1];
+	(*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR = pao->Pci.dwMemBase[0];
+	(*(HPI_HW_OBJ *) pao->priv).dw2040_HPIDSP = pao->Pci.dwMemBase[1];
 
 // set addresses for the 4 possible DSP HPI interfaces
 	for (dwDspIndex = 0; dwDspIndex < 4; dwDspIndex++) {
-		pao->ado[dwDspIndex].dwHPIControl =
-		    pao->dw2040_HPIDSP + CONTROL + dwHpiSpacing * dwDspIndex;
-		pao->ado[dwDspIndex].dwHPIAddress =
-		    pao->dw2040_HPIDSP + ADDRESS + dwHpiSpacing * dwDspIndex;
-		pao->ado[dwDspIndex].dwHPIData =
-		    pao->dw2040_HPIDSP + DATA + dwHpiSpacing * dwDspIndex;
-		pao->ado[dwDspIndex].dwHPIDataAutoInc =
-		    pao->dw2040_HPIDSP + DATA_AUTOINC +
+		(*(HPI_HW_OBJ *) pao->priv).ado[dwDspIndex].dwHPIControl =
+		    (*(HPI_HW_OBJ *) pao->priv).dw2040_HPIDSP + CONTROL +
 		    dwHpiSpacing * dwDspIndex;
+		(*(HPI_HW_OBJ *) pao->priv).ado[dwDspIndex].dwHPIAddress =
+		    (*(HPI_HW_OBJ *) pao->priv).dw2040_HPIDSP + ADDRESS +
+		    dwHpiSpacing * dwDspIndex;
+		(*(HPI_HW_OBJ *) pao->priv).ado[dwDspIndex].dwHPIData =
+		    (*(HPI_HW_OBJ *) pao->priv).dw2040_HPIDSP + DATA +
+		    dwHpiSpacing * dwDspIndex;
+		(*(HPI_HW_OBJ *) pao->priv).ado[dwDspIndex].dwHPIDataAutoInc =
+		    (*(HPI_HW_OBJ *) pao->priv).dw2040_HPIDSP + DATA_AUTOINC +
+		    dwHpiSpacing * dwDspIndex;
+		(*(HPI_HW_OBJ *) pao->priv).ado[dwDspIndex].paParentAdapter =
+		    pao;
 	}
 
-	pao->dwPCI2040HPIErrorCount = 0;	// set error count to 0
+	(*(HPI_HW_OBJ *) pao->priv).dwPCI2040HPIErrorCount = 0;	// set error count to 0
 	pao->wHasControlCache = 0;
 
 // Set the default number of DSPs on this card
 // This is (conditionally) adjusted after bootloading of the first DSP in the bootload section.
-	pao->wNumDsp = 1;
+	(*(HPI_HW_OBJ *) pao->priv).wNumDsp = 1;
 
-	if (0 != (nBootError = Hpi6000_AdapterBootLoadDsp(pao))) {
+	if (0 != (nBootError = Hpi6000_AdapterBootLoadDsp(pao, pdwOsErrorCode))) {
 		return (nBootError);	//error
 	}
-	HPI_PRINT_INFO("Bootload DSP OK\n");
+	HPI_DEBUG_LOG0(INFO, "Bootload DSP OK\n");
 
-	pao->dwMessageBufferAddressOnDSP = 0L;
-	pao->dwResponseBufferAddressOnDSP = 0L;
+	(*(HPI_HW_OBJ *) pao->priv).dwMessageBufferAddressOnDSP = 0L;
+	(*(HPI_HW_OBJ *) pao->priv).dwResponseBufferAddressOnDSP = 0L;
 
 // get info about the adapter by asking the adapter
 // send a HPI_ADAPTER_GET_INFO message
@@ -541,26 +641,28 @@ short H600_CreateAdapterObj(H600_ADAPTER_OBJ * pao)
 		u16 wError = 0;
 
 //HpiOs_Printf("GetInfo-"); //*************** debug
-		HPI_PRINT_VERBOSE("HPI6000.C - send ADAPTER_GET_INFO\n");
+		HPI_DEBUG_LOG0(VERBOSE, "send ADAPTER_GET_INFO\n");
 		memset(&hM, 0, sizeof(HPI_MESSAGE));
 		hM.wType = HPI_TYPE_MESSAGE;
 		hM.wSize = sizeof(HPI_MESSAGE);
 		hM.wObject = HPI_OBJ_ADAPTER;
 		hM.wFunction = HPI_ADAPTER_GET_INFO;
 		hM.wAdapterIndex = 0;
+		hM.wDspIndex = 0;
 		memset(&hR0, 0, sizeof(HPI_RESPONSE));
 		memset(&hR1, 0, sizeof(HPI_RESPONSE));
 		hR0.wSize = sizeof(HPI_RESPONSE);
 		hR1.wSize = sizeof(HPI_RESPONSE);
 
-		wError = Hpi6000_MessageResponseSequence(pao, 0, &hM, &hR0);
+		wError = Hpi6000_MessageResponseSequence(pao, &hM, &hR0);
 		if (hR0.wError) {
-			HPI_PRINT_DEBUG("HPI6000.C - message error\n");
+			HPI_DEBUG_LOG1(DEBUG, "message error %d\n", hR0.wError);
 			return (hR0.wError);	//error
 		}
-		if (pao->wNumDsp == 2) {
+		if ((*(HPI_HW_OBJ *) pao->priv).wNumDsp == 2) {
+			hM.wDspIndex = 1;
 			wError =
-			    Hpi6000_MessageResponseSequence(pao, 1, &hM, &hR1);
+			    Hpi6000_MessageResponseSequence(pao, &hM, &hR1);
 			if (wError)
 				return wError;
 		}
@@ -568,17 +670,17 @@ short H600_CreateAdapterObj(H600_ADAPTER_OBJ * pao)
 		pao->wIndex = hR0.u.a.wAdapterIndex;
 	}
 
-	memset(&pao->aControlCache[0], 0,
+	memset(&(*(HPI_HW_OBJ *) pao->priv).aControlCache[0], 0,
 	       sizeof(tHPIControlCacheSingle) * HPI_NMIXER_CONTROLS);
 // Read the control cache length to figure out if it is turned on.....
 	if (HpiReadWord
-	    (&pao->ado[0],
+	    (&(*(HPI_HW_OBJ *) pao->priv).ado[0],
 	     HPI_HIF_BASE + HPI_HIF_OFS_CONTROL_CACHE_SIZE_IN_BYTES))
 		pao->wHasControlCache = 1;
 	else
 		pao->wHasControlCache = 0;
 
-	HPI_PRINT_VERBOSE("HPI6000.C- Get adapter info OK\n");
+	HPI_DEBUG_LOG0(VERBOSE, "Get adapter info OK\n");
 	pao->wOpen = 0;		// upon creation the adapter is closed
 	return (0);		//sucess!
 }
@@ -586,42 +688,8 @@ short H600_CreateAdapterObj(H600_ADAPTER_OBJ * pao)
 ////////////////////////////////////////////////////////////////////////////
 // ADAPTER
 
-void H600_AdapterOpen(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-		      HPI_RESPONSE * phr)
-{
-// input:  wAdapterIndex
-// output: none
-	HPI_PRINT_VERBOSE("HPI6000_AdapterOpen\n");
-
-// can't open adapter if already open
-	if (pao->wOpen) {
-		phr->wError = HPI_ERROR_OBJ_ALREADY_OPEN;
-		return;
-	}
-	pao->wOpen = 1;		// adapter is now open
-	Hpi6000_Message(pao, phm, phr);
-}
-
-void H600_AdapterClose(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-		       HPI_RESPONSE * phr)
-{
-// input:  wAdapterIndex
-// output: none
-	HPI_PRINT_VERBOSE(" HPI6000_AdapterClose\n");
-
-	Hpi6000_Message(pao, phm, phr);
-
-	pao->wOpen = 0;		// adapter is now closed
-}
-
-void H600_AdapterGetInfo(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-			 HPI_RESPONSE * phr)
-{
-	Hpi6000_Message(pao, phm, phr);
-}
-
-void H600_AdapterGetAsserts(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-			    HPI_RESPONSE * phr)
+static void AdapterGetAsserts(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			      HPI_RESPONSE * phr)
 {
 #ifndef HIDE_PCI_ASSERTS
 // if we have PCI2040 asserts then collect them
@@ -637,7 +705,7 @@ void H600_AdapterGetAsserts(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 	} else
 #endif
 
-		Hpi6000_Message(pao, phm, phr);	//get DSP asserts
+		HW_Message(pao, phm, phr);	//get DSP asserts
 	return;
 }
 
@@ -645,40 +713,17 @@ void H600_AdapterGetAsserts(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 // LOW-LEVEL
 ///////////////////////////////////////////////////////////////////////////
 
-void H600_AdapterIndex(HPI_RESOURCE * res, short *wAdapterIndex)
-{
-	short idx;
-
-	HPIPCI_MATCH_RESOURCE(idx, H600_MAX_ADAPTERS, *wAdapterIndex, gao60,
-			      *res);
-	HPI_PRINT_VERBOSE("H600_AdapterIndex %d\n", *wAdapterIndex);
-}
-
-H600_ADAPTER_OBJ *H600_FindAdapter(u16 wAdapterIndex)
-{
-	H600_ADAPTER_OBJ *pao = NULL;
-//  HPI_PRINT_VERBOSE("H600_FindAdapter %d ",wAdapterIndex);
-	pao = &gao60[wAdapterIndex];
-	if (pao->wAdapterType != 0) {
-//          HPI_PRINT_VERBOSE("found\n");
-		return (pao);
-	} else {
-//          HPI_PRINT_VERBOSE("not found\n");
-		return (NULL);
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////
 // code that may end up in hpi6701.c
 
 #ifdef WANT_UNUSED_FUNTION_DEFINED
-static short Hpi6000_AdapterCheckPresent(H600_ADAPTER_OBJ * pao)
+static short Hpi6000_AdapterCheckPresent(HPI_ADAPTER_OBJ * pao)
 {
 	return 0;
 }
 #endif
 
-static short Hpi6000_AdapterBootLoadDsp(H600_ADAPTER_OBJ * pao)
+static short Hpi6000_AdapterBootLoadDsp(HPI_ADAPTER_OBJ * pao,
+					u32 * pdwOsErrorCode)
 {
 	short nError;
 	u32 dwTimeout;
@@ -701,7 +746,7 @@ static short Hpi6000_AdapterBootLoadDsp(H600_ADAPTER_OBJ * pao)
 
 	switch (pao->Pci.wSubSysDeviceId) {
 	case 0x5100:
-	case 0x5110:		//revB or higer with C6711D
+	case 0x5110:		// ASI5100 revB or higher with C6711D
 	case 0x6100:
 	case 0x6200:
 		nBootLoadFamily = Load6200;
@@ -731,12 +776,13 @@ static short Hpi6000_AdapterBootLoadDsp(H600_ADAPTER_OBJ * pao)
 #endif
 
 		dw2040Reset = 0x0003000F;
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_RESET, dw2040Reset);
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR +
+				 HPI_RESET, dw2040Reset);
 
 // read back register to make sure PCI2040 chip is functioning
 // note that bits 4..15 are read-only and so should always return zero, even though we wrote 1 to them
 		for (i = 0; i < 1000; i++)
-			dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_RESET);	//delay
+			dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_RESET);	//delay
 		if (dwDelay != dw2040Reset) {
 			gadwHpiSpecificError[0] = 0;
 			gadwHpiSpecificError[1] = dw2040Reset;
@@ -744,57 +790,64 @@ static short Hpi6000_AdapterBootLoadDsp(H600_ADAPTER_OBJ * pao)
 			return (931);
 		}
 
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_DATA_WIDTH, 0x00000003);	// Indicate that DSP#0,1 is a C6X
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + INTERRUPT_MASK_SET, 0x60000000);	// set Bit30 and 29 - which will prevent Target aborts from being issued upon HPI or GP error
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_DATA_WIDTH, 0x00000003);	// Indicate that DSP#0,1 is a C6X
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + INTERRUPT_MASK_SET, 0x60000000);	// set Bit30 and 29 - which will prevent Target aborts from being issued upon HPI or GP error
 
 ////////////////////////////////////////////////////////////////////////////
 // determine what rev DSP we have by reading back HAD8.  Its pulled high for a revA DSP
 		dw2040Reset = dw2040Reset & (~(dwEndian << 3));	// isolate DSP HAD8 line from PCI2040 so that Little endian can be set by pullup
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_RESET, dw2040Reset);
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR +
+				 HPI_RESET, dw2040Reset);
 
 //*************************************************************** sgt test  ** must delete
 /*
 dw2040Reset = dw2040Reset & (~0x00000008);      // set HAD8 back to PCI2040, now that DSP has been set to little endian mode
-HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_RESET, dw2040Reset );
+HPIOS_MEMWRITE32((*(HPI_HW_OBJ*)pao->priv).dw2040_HPICSR + HPI_RESET, dw2040Reset );
 //delay to allow DSP to get going
 for(i=0; i<100; i++)
-dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR+HPI_RESET );  // *********** delay
+dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ*)pao->priv).dw2040_HPICSR+HPI_RESET );  // *********** delay
 
-dwData = HPIOS_MEMREAD32(pao->ado[0].dwHPIAddress);
+dwData = HPIOS_MEMREAD32((*(HPI_HW_OBJ*)pao->priv).ado[0].dwHPIAddress);
 if(dwData & 0x0100)
 */
 //{
-//      pao->ado[0].cDspRev = 'A';      // revA      // **** SGT - remove revA DSP support jan-28-2002
-//      pao->ado[1].cDspRev = 'A';      // revA
+//      (*(HPI_HW_OBJ*)pao->priv).ado[0].cDspRev = 'A'; // revA      // **** SGT - remove revA DSP support jan-28-2002
+//      (*(HPI_HW_OBJ*)pao->priv).ado[1].cDspRev = 'A'; // revA
 //}
 //else
 		{
-			pao->ado[0].cDspRev = 'B';	// revB
-			pao->ado[1].cDspRev = 'B';	// revB
+			(*(HPI_HW_OBJ *) pao->priv).ado[0].cDspRev = 'B';	// revB
+			(*(HPI_HW_OBJ *) pao->priv).ado[1].cDspRev = 'B';	// revB
 		}
 #ifdef USE_REVA
 
-		pao->ado[0].cDspRev = 'A';	// revA
-		pao->ado[1].cDspRev = 'A';	// revA
+		(*(HPI_HW_OBJ *) pao->priv).ado[0].cDspRev = 'A';	// revA
+		(*(HPI_HW_OBJ *) pao->priv).ado[1].cDspRev = 'A';	// revA
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Take both DSPs out of reset while setting HAD8 to set the correct Endian
 		dw2040Reset = dw2040Reset & (~0x00000001);	// start DSP 0
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_RESET, dw2040Reset);
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR +
+				 HPI_RESET, dw2040Reset);
 		dw2040Reset = dw2040Reset & (~0x00000002);	// start DSP 1
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_RESET, dw2040Reset);
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR +
+				 HPI_RESET, dw2040Reset);
 
 		dw2040Reset = dw2040Reset & (~0x00000008);	// set HAD8 back to PCI2040, now that DSP has been set to little endian mode
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_RESET, dw2040Reset);
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR +
+				 HPI_RESET, dw2040Reset);
 //delay to allow DSP to get going
 		for (i = 0; i < 100; i++)
-			dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_RESET);	//*********** delay
+			dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_RESET);	//*********** delay
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // loop through all DSPs, downloading DSP code
-		for (dwDspIndex = 0; dwDspIndex < pao->wNumDsp; dwDspIndex++) {
-			H600_DSP_OBJ *pdo = &pao->ado[dwDspIndex];
+		for (dwDspIndex = 0;
+		     dwDspIndex < (*(HPI_HW_OBJ *) pao->priv).wNumDsp;
+		     dwDspIndex++) {
+			DSP_OBJ *pdo =
+			    &(*(HPI_HW_OBJ *) pao->priv).ado[dwDspIndex];
 
 ///////////////////////////////////////////////////////////
 // configure DSP so that we download code into the SRAM
@@ -825,7 +878,7 @@ if(dwData & 0x0100)
 // multiply of x 7
 				HpiWriteWord(pdo, 0x01B7C100, 0x0000);	// bypass PLL
 				for (i = 0; i < 100; i++)
-					dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_RESET);	//*********** delay
+					dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_RESET);	//*********** delay
 
 //HpiWriteWord( pdo, 0x01B7C110, 0x1001 );  // PLL multiply=x9, 25x9=225MHz
 //** use default of  x7 **
@@ -834,11 +887,10 @@ if(dwData & 0x0100)
 				HpiWriteWord(pdo, 0x01B7C118, 0x8000);	// cpu  = 225/1
 
 				for (i = 0; i < 2000; i++)
-					dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_RESET);	//*********** ~200us delay
+					dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_RESET);	//*********** ~200us delay
 				HpiWriteWord(pdo, 0x01B7C100, 0x0001);	// PLL not bypassed
-
 				for (i = 0; i < 2000; i++)
-					dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_RESET);	//*********** ~200us delay
+					dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_RESET);	//*********** ~200us delay
 			}
 #endif
 
@@ -974,8 +1026,8 @@ if(dwData & 0x0100)
 
 			for (i = 0; i < 1000; i++)
 				dwDelay =
-				    HPIOS_MEMREAD32(pao->dw2040_HPICSR +
-						    HPI_RESET);
+				    HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).
+						    dw2040_HPICSR + HPI_RESET);
 
 #if 1
 // test access to SDRAM
@@ -1037,12 +1089,16 @@ if(dwData & 0x0100)
 
 ///////////////////////////////////////////////////////////
 // write the DSP code down into the DSPs memory
-//HpiDspCode_Open(nBootLoadFamily,&DspCode);
+//HpiDspCode_Open(nBootLoadFamily,&DspCode,pdwOsErrorCode);
+#if defined DSPCODE_FIRMWARE
 			DspCode.psDev = pao->Pci.pOsData;
+#endif
 
 			if ((nError =
-			     HpiDspCode_Open(nBootLoadFamily, &DspCode)) != 0)
+			     HpiDspCode_Open(nBootLoadFamily, &DspCode,
+					     pdwOsErrorCode)) != 0)
 				return (nError);
+
 			while (1) {
 				u32 dwLength;
 				u32 dwAddress;
@@ -1198,7 +1254,7 @@ dwAddress += 4;
 // step 3. Start code by sending interrupt
 			HPIOS_MEMWRITE32(pdo->dwHPIControl, 0x00030003);
 			for (i = 0; i < 10000; i++)
-				dwDelay = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_RESET);	// delay
+				dwDelay = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_RESET);	// delay
 
 // wait for a non-zero value in hostcmd - indicating initialization is complete
 //
@@ -1240,7 +1296,7 @@ dwAddress += 4;
 				     (dwAdapterInfo) & HPI_ADAPTER_FAMILY_MASK)
 				    == HPI_ADAPTER_ASI6200) {
 // we have a 2 DSP adapter
-					pao->wNumDsp = 2;	//?????????????????? do all 6200 cards have this many DSPs? - YES - SGT
+					(*(HPI_HW_OBJ *) pao->priv).wNumDsp = 2;	//?????????????????? do all 6200 cards have this many DSPs? - YES - SGT
 				}
 // test that the PLD is programmed and we can read/write 24bits
 #define PLD_BASE_ADDRESS 0x90000000L	//for ASI6100/6200/8800
@@ -1248,7 +1304,9 @@ dwAddress += 4;
 				switch (nBootLoadFamily) {
 				case Load6200:
 					dwMask = 0xFFFFFF00L;	// ASI6100/6200 has 24bit path to FPGA
-					if ((pao->Pci.wSubSysDeviceId & 0xFF00) == 0x5100)	// allow for 0x5100 and 0x5110 (revB )
+					if ((pao->Pci.
+					     wSubSysDeviceId & 0xFF00) ==
+					    0x5100)
 						dwMask = 0x00000000L;	// ASI5100 uses AX6 code, but has no PLD r/w register to test
 					break;
 				case Load8800:
@@ -1267,7 +1325,7 @@ dwAddress += 4;
 					gadwHpiSpecificError[0] = 0;
 					gadwHpiSpecificError[1] = dwTestData;
 					gadwHpiSpecificError[2] = dwRead;
-					return (940);
+					return (941);
 				}
 				dwTestData = 0x55555500L & dwMask;
 				HpiWriteWord(pdo, PLD_BASE_ADDRESS + 4L, dwTestData);	// write to Debug register which is 24bits wide (D31-D8)
@@ -1278,7 +1336,7 @@ dwAddress += 4;
 					gadwHpiSpecificError[0] = 0;
 					gadwHpiSpecificError[1] = dwTestData;
 					gadwHpiSpecificError[2] = dwRead;
-					return (940);
+					return (942);
 				}
 			}
 		}		// for wNumDSP
@@ -1298,19 +1356,38 @@ static void EndianSwap(u32 * pData, u32 nBytes)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
+#define PCI_TIMEOUT 100
+
+static int HpiSetAddress(DSP_OBJ * pdo, u32 dwAddress)
+{
+	u32 dwTimeout = PCI_TIMEOUT;
+
+	do {
+		HPIOS_MEMWRITE32(pdo->dwHPIAddress, dwAddress);
+	}
+	while (Hpi6000_Check_PCI2040_ErrorFlag(pdo->paParentAdapter, H6WRITE)
+	       && --dwTimeout);
+
+	if (dwTimeout)
+		return 0;
+	return 1;
+}
 
 // write one word to the HPI port
-static void HpiWriteWord(H600_DSP_OBJ * pdo, u32 dwAddress, u32 dwData)
+static void HpiWriteWord(DSP_OBJ * pdo, u32 dwAddress, u32 dwData)
 {
-	HPIOS_MEMWRITE32(pdo->dwHPIAddress, dwAddress);
+	if (HpiSetAddress(pdo, dwAddress))
+		return;
 	HPIOS_MEMWRITE32(pdo->dwHPIData, dwData);
 }
 
 // read one word from the HPI port
-static u32 HpiReadWord(H600_DSP_OBJ * pdo, u32 dwAddress)
+static u32 HpiReadWord(DSP_OBJ * pdo, u32 dwAddress)
 {
 	u32 dwData = 0;
-	HPIOS_MEMWRITE32(pdo->dwHPIAddress, dwAddress);
+
+	if (HpiSetAddress(pdo, dwAddress))
+		return 0;	//? No way to return error
 
 // take care of errata in revB DSP (2.0.1)
 	dwData = HPIOS_MEMREAD32(pdo->dwHPIData);
@@ -1318,13 +1395,16 @@ static u32 HpiReadWord(H600_DSP_OBJ * pdo, u32 dwAddress)
 }
 
 // write a block of 32bit words to the DSP HPI port using auto-inc mode
-static void HpiWriteBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
+static void HpiWriteBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 			  u32 dwLength)
 {
 	u32 i = 0;
 	if (dwLength == 0)
 		return;
-	HPIOS_MEMWRITE32(pdo->dwHPIAddress, dwAddress);
+
+	if (HpiSetAddress(pdo, dwAddress))
+		return;
+
 	for (i = 0; i < dwLength - 1; i++)
 		HPIOS_MEMWRITE32(pdo->dwHPIDataAutoInc, *pdwData++);
 // take care of errata in revB DSP (2.0.1)
@@ -1333,12 +1413,14 @@ static void HpiWriteBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 
 /** read a block of 32bit words from the DSP HPI port using auto-inc mode
 */
-static void HpiReadBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
+static void HpiReadBlock(DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 			 u32 dwLength)
 {
 	if (dwLength == 0)
 		return;
-	HPIOS_MEMWRITE32(pdo->dwHPIAddress, dwAddress);
+
+	if (HpiSetAddress(pdo, dwAddress))
+		return;
 
 #if ( ( defined HPIOS_MEMWRITEBLK32 ) && ( defined HPI_OS_LINUX ) )
 	{
@@ -1362,37 +1444,37 @@ static void HpiReadBlock(H600_DSP_OBJ * pdo, u32 dwAddress, u32 * pdwData,
 #endif
 }
 
-#define PCI_TIMEOUT 100
-
-static u16 Hpi6000_DspBlockWrite32(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static u16 Hpi6000_DspBlockWrite32(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				   u32 dwHpiAddress, u32 dwSource, u32 dwCount)
 {
 //#define USE_BLOCKS - can't use this at the moment because of revB bug 3.0.1
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwTimeOut = PCI_TIMEOUT;
 	int nC6711BurstSize = 128;
+	u32 dwLocalHpiAddress = dwHpiAddress;
+	int wLocalCount = dwCount;
+	int wXferSize;
+	u32 *pdwData = (u32 *) dwSource;
 
-// write data as blocks of N words so that DSP-HPI is used most efficiently - also seems to prevents crashes??????????
-	do {
-		u32 dwLocalHpiAddress = dwHpiAddress;
-		int wLocalCount = dwCount;
-		int wXferSize;
-		u32 *pdwData = (u32 *) dwSource;
+	while (wLocalCount) {
+		if (wLocalCount > nC6711BurstSize)
+			wXferSize = nC6711BurstSize;
+		else
+			wXferSize = wLocalCount;
 
-		while (wLocalCount) {
-			if (wLocalCount > nC6711BurstSize)
-				wXferSize = nC6711BurstSize;
-			else
-				wXferSize = wLocalCount;
-
+		dwTimeOut = PCI_TIMEOUT;
+		do {
 			HpiWriteBlock(pdo, dwLocalHpiAddress, pdwData,
 				      wXferSize);
-			pdwData += wXferSize;
-			dwLocalHpiAddress += sizeof(u32) * wXferSize;
-			wLocalCount -= wXferSize;
 		}
+		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6WRITE)
+		       && --dwTimeOut);
+		if (!dwTimeOut)
+			break;
+		pdwData += wXferSize;
+		dwLocalHpiAddress += sizeof(u32) * wXferSize;
+		wLocalCount -= wXferSize;
 	}
-	while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6WRITE) && --dwTimeOut);
 
 	if (dwTimeOut)
 		return 0;	// no error
@@ -1400,33 +1482,41 @@ static u16 Hpi6000_DspBlockWrite32(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 		return 1;	// error
 }
 
-static u16 Hpi6000_DspBlockRead32(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static u16 Hpi6000_DspBlockRead32(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				  u32 dwHpiAddress, u32 dwDest, u32 dwCount)
 {
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwTimeOut = PCI_TIMEOUT;
-	int nC6711BurstSize = 128;
+	int nC6711BurstSize = 16;
+	u32 dwLocalHpiAddress = dwHpiAddress;
+	int wLocalCount = dwCount;
+	int wXferSize;
+	u32 *pdwData = (u32 *) dwDest;
+	u32 dwLoopCount = 0;
 
-	do {
-		u32 dwLocalHpiAddress = dwHpiAddress;
-		int wLocalCount = dwCount;
-		int wXferSize;
-		u32 *pdwData = (u32 *) dwDest;
+	while (wLocalCount) {
+		if (wLocalCount > nC6711BurstSize)
+			wXferSize = nC6711BurstSize;
+		else
+			wXferSize = wLocalCount;
 
-		while (wLocalCount) {
-			if (wLocalCount > nC6711BurstSize)
-				wXferSize = nC6711BurstSize;
-			else
-				wXferSize = wLocalCount;
-
+		dwTimeOut = PCI_TIMEOUT;
+		do {
 			HpiReadBlock(pdo, dwLocalHpiAddress, pdwData,
 				     wXferSize);
-			pdwData += wXferSize;
-			dwLocalHpiAddress += sizeof(u32) * wXferSize;
-			wLocalCount -= wXferSize;
 		}
+		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ)
+		       && --dwTimeOut);
+		if (!dwTimeOut) {
+			Ev275Debug_SetLoopCount(pao, dwLoopCount);
+			break;
+		}
+
+		pdwData += wXferSize;
+		dwLocalHpiAddress += sizeof(u32) * wXferSize;
+		wLocalCount -= wXferSize;
+		dwLoopCount++;
 	}
-	while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ) && --dwTimeOut);
 
 	if (dwTimeOut)
 		return 0;	// no error
@@ -1436,12 +1526,12 @@ static u16 Hpi6000_DspBlockRead32(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 
 /////////////////////////////////////////////////////////////////////////////////
 
-static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
-					     u16 wDspIndex,
+static short Hpi6000_MessageResponseSequence(HPI_ADAPTER_OBJ * pao,
 					     HPI_MESSAGE * phm,
 					     HPI_RESPONSE * phr)
 {
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	u16 wDspIndex = phm->wDspIndex;
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwTimeout;
 	u16 wAck;
 	u32 dwAddress;
@@ -1449,36 +1539,40 @@ static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
 	u32 *pData;
 
 // does the DSP we are referencing exist?
-	if (wDspIndex >= pao->wNumDsp)
+	if (wDspIndex >= (*(HPI_HW_OBJ *) pao->priv).wNumDsp)
 		return HPI6000_ERROR_MSG_INVALID_DSP_INDEX;
 
 	wAck = Hpi6000_WaitDspAck(pao, wDspIndex, HPI_HIF_IDLE);
 	if (wAck & HPI_HIF_ERROR_MASK) {
-		pao->wNumErrors++;
-		if (pao->wNumErrors == 10)
+		(*(HPI_HW_OBJ *) pao->priv).wNumErrors++;
+		if ((*(HPI_HW_OBJ *) pao->priv).wNumErrors == 10) {
 			pao->wDspCrashed = 1;
+			Ev275Debug_DumpMessageResponseQueue(pao, 0);
+		}
 		return HPI6000_ERROR_MSG_RESP_IDLE_TIMEOUT;
 	}
-	pao->wNumErrors = 0;
+	(*(HPI_HW_OBJ *) pao->priv).wNumErrors = 0;
 
 // send the message
 
 // get the address and size
-	if (pao->dwMessageBufferAddressOnDSP == 0) {
+	if ((*(HPI_HW_OBJ *) pao->priv).dwMessageBufferAddressOnDSP == 0) {
 		dwTimeout = TIMEOUT;
 		do {
 			dwAddress =
 			    HpiReadWord(pdo,
 					HPI_HIF_BASE +
 					HPI_HIF_OFS_MSG_BUFFER_ADR);
-			pao->dwMessageBufferAddressOnDSP = dwAddress;
+			(*(HPI_HW_OBJ *) pao->priv).
+			    dwMessageBufferAddressOnDSP = dwAddress;
 		}
 		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ)
 		       && --dwTimeout);
 		if (!dwTimeout)
 			return HPI6000_ERROR_MSG_GET_ADR;
 	} else
-		dwAddress = pao->dwMessageBufferAddressOnDSP;
+		dwAddress =
+		    (*(HPI_HW_OBJ *) pao->priv).dwMessageBufferAddressOnDSP;
 
 //    dwLength = sizeof(HPI_MESSAGE);
 	dwLength = phm->wSize;
@@ -1491,7 +1585,8 @@ static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
 	    (pao, wDspIndex, dwAddress, (u32) pData, (u16) dwLength / 4))
 		return HPI6000_ERROR_MSG_RESP_BLOCKWRITE32;
 
-	Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_GET_RESP);
+	if (Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_GET_RESP))
+		return HPI6000_ERROR_MSG_RESP_GETRESPCMD;
 	Hpi6000_SendDspInterrupt(pdo);	// ***** FOR DSP/BIOS version only
 
 // swap the message back again - why??
@@ -1502,7 +1597,7 @@ static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
 		return HPI6000_ERROR_MSG_RESP_GET_RESP_ACK;
 
 // get the address and size
-	if (pao->dwResponseBufferAddressOnDSP == 0) {
+	if ((*(HPI_HW_OBJ *) pao->priv).dwResponseBufferAddressOnDSP == 0) {
 		dwTimeout = TIMEOUT;
 		do {
 			dwAddress =
@@ -1512,11 +1607,13 @@ static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
 		}
 		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ)
 		       && --dwTimeout);
-		pao->dwResponseBufferAddressOnDSP = dwAddress;
+		(*(HPI_HW_OBJ *) pao->priv).dwResponseBufferAddressOnDSP =
+		    dwAddress;
 		if (!dwTimeout)
 			return HPI6000_ERROR_RESP_GET_ADR;
 	} else
-		dwAddress = pao->dwResponseBufferAddressOnDSP;
+		dwAddress =
+		    (*(HPI_HW_OBJ *) pao->priv).dwResponseBufferAddressOnDSP;
 
 // read the length of the response back from the DSP
 	dwTimeout = TIMEOUT;
@@ -1527,6 +1624,8 @@ static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
 	if (!dwTimeout)
 		dwLength = sizeof(HPI_RESPONSE);
 
+	CHECK_LENGTH(pao, &dwLength, sizeof(HPI_RESPONSE));
+
 // get it
 	pData = (u32 *) phr;
 	if (Hpi6000_DspBlockRead32
@@ -1536,7 +1635,8 @@ static short Hpi6000_MessageResponseSequence(H600_ADAPTER_OBJ * pao,
 	EndianSwap((u32 *) phr, dwLength);
 
 // set i/f back to idle
-	Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_IDLE);
+	if (Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_IDLE))
+		return HPI6000_ERROR_MSG_RESP_IDLECMD;
 	Hpi6000_SendDspInterrupt(pdo);
 
 	return 0;		// no error
@@ -1581,11 +1681,11 @@ static short Hpi6000_SendDataDone_CheckAdr(u32 dwAddress)
 
 #define READONLY_not
 
-static short Hpi6000_SendData(H600_ADAPTER_OBJ * pao,
-			      u16 wDspIndex,
+static short Hpi6000_SendData(HPI_ADAPTER_OBJ * pao,
 			      HPI_MESSAGE * phm, HPI_RESPONSE * phr)
 {
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	u16 wDspIndex = phm->wDspIndex;
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwDataSent = 0;
 	u16 wAck;
 	u32 dwLength, dwAddress;
@@ -1598,7 +1698,9 @@ static short Hpi6000_SendData(H600_ADAPTER_OBJ * pao,
 		if (wAck & HPI_HIF_ERROR_MASK)
 			return HPI6000_ERROR_SEND_DATA_IDLE_TIMEOUT;
 
-		Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_SEND_DATA);
+		if (Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_SEND_DATA))
+			return HPI6000_ERROR_SEND_DATA_CMD;
+
 		Hpi6000_SendDspInterrupt(pdo);
 
 		wAck = Hpi6000_WaitDspAck(pao, wDspIndex, HPI_HIF_SEND_DATA);
@@ -1615,6 +1717,7 @@ static short Hpi6000_SendData(H600_ADAPTER_OBJ * pao,
 		}
 		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ));
 
+		CHECK_LENGTH(pao, &dwLength, phm->u.d.u.Data.dwDataSize);
 		if (!Hpi6000_SendData_CheckAdr(dwAddress, dwLength))
 			return HPI6000_ERROR_SEND_DATA_ADR;
 
@@ -1628,16 +1731,19 @@ static short Hpi6000_SendData(H600_ADAPTER_OBJ * pao,
 			while (dwLen) {
 				if (dwLen < dwBlkLen)
 					dwBlkLen = dwLen;
-				Hpi6000_DspBlockWrite32(pao, wDspIndex,
-							dwAddress, (u32) pData,
-							dwBlkLen);
+				if (Hpi6000_DspBlockWrite32
+				    (pao, wDspIndex, dwAddress, (u32) pData,
+				     dwBlkLen))
+					return HPI6000_ERROR_SEND_DATA_WRITE;
 				dwAddress += dwBlkLen * 4;
 				pData += dwBlkLen;
 				dwLen -= dwBlkLen;
 			}
 		}
 
-		Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_IDLE);
+		if (Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_IDLE))
+			return HPI6000_ERROR_SEND_DATA_IDLECMD;
+
 		Hpi6000_SendDspInterrupt(pdo);
 
 		dwDataSent += dwLength * 4;
@@ -1647,10 +1753,11 @@ static short Hpi6000_SendData(H600_ADAPTER_OBJ * pao,
 	return 0;
 }
 
-static short Hpi6000_GetData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
-			     HPI_MESSAGE * phm, HPI_RESPONSE * phr)
+static short Hpi6000_GetData(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+			     HPI_RESPONSE * phr)
 {
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	u16 wDspIndex = phm->wDspIndex;
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwDataGot = 0;
 	u16 wAck;
 	u32 dwLength, dwAddress;
@@ -1662,7 +1769,8 @@ static short Hpi6000_GetData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 		if (wAck & HPI_HIF_ERROR_MASK)
 			return HPI6000_ERROR_GET_DATA_IDLE_TIMEOUT;
 
-		Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_GET_DATA);
+		if (Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_GET_DATA))
+			return HPI6000_ERROR_GET_DATA_CMD;
 		Hpi6000_SendDspInterrupt(pdo);
 
 		wAck = Hpi6000_WaitDspAck(pao, wDspIndex, HPI_HIF_GET_DATA);
@@ -1680,6 +1788,8 @@ static short Hpi6000_GetData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 		}
 		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ));
 
+		CHECK_LENGTH(pao, &dwLength, phm->u.d.u.Data.dwDataSize);
+
 // read the data
 		{
 			u32 dwLen = dwLength;
@@ -1687,16 +1797,18 @@ static short Hpi6000_GetData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 			while (dwLen) {
 				if (dwLen < dwBlkLen)
 					dwBlkLen = dwLen;
-				Hpi6000_DspBlockRead32(pao, wDspIndex,
-						       dwAddress, (u32) pData,
-						       dwBlkLen);
+				if (Hpi6000_DspBlockRead32
+				    (pao, wDspIndex, dwAddress, (u32) pData,
+				     dwBlkLen))
+					return HPI6000_ERROR_GET_DATA_READ;
 				dwAddress += dwBlkLen * 4;
 				pData += dwBlkLen;
 				dwLen -= dwBlkLen;
 			}
 		}
 
-		Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_IDLE);
+		if (Hpi6000_SendHostCommand(pao, wDspIndex, HPI_HIF_IDLE))
+			return HPI6000_ERROR_GET_DATA_IDLECMD;
 		Hpi6000_SendDspInterrupt(pdo);
 
 		dwDataGot += dwLength * 4;
@@ -1704,15 +1816,15 @@ static short Hpi6000_GetData(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 	return 0;
 }
 
-static void Hpi6000_SendDspInterrupt(H600_DSP_OBJ * pdo)
+static void Hpi6000_SendDspInterrupt(DSP_OBJ * pdo)
 {
 	HPIOS_MEMWRITE32(pdo->dwHPIControl, 0x00030003);	// DSPINT
 }
 
-static short Hpi6000_SendHostCommand(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static short Hpi6000_SendHostCommand(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				     u32 dwHostCmd)
 {
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwTimeout = TIMEOUT;
 //volatile u32 dwAddr;     // SGT commented out because not used???
 //volatile u32 dwControl;
@@ -1721,7 +1833,7 @@ static short Hpi6000_SendHostCommand(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 	do {
 		HpiWriteWord(pdo, HPI_HIF_BASE + HPI_HIF_OFS_HOSTCMD,
 			     dwHostCmd);
-		HPIOS_MEMWRITE32(pdo->dwHPIAddress, HPI_HIF_BASE + HPI_HIF_OFS_HOSTCMD);	// flush the FIFO
+		HpiSetAddress(pdo, HPI_HIF_BASE + HPI_HIF_OFS_HOSTCMD);	// flush the FIFO
 	}
 	while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6WRITE) && --dwTimeout);
 //dwAddr = HPIOS_MEMREAD32(pdo->dwHPIAddress);
@@ -1743,7 +1855,7 @@ static short Hpi6000_SendHostCommand(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 // It is a backdoor into this module and should only be used for test purposes.
 long Hpi6000_BackDoor_Read_PCI2040_ErrorFlagCount(u16 wAdapter)
 {
-	if (wAdapter < H600_MAX_ADAPTERS)
+	if (wAdapter < MAX_ADAPTERS)
 		return gao60[wAdapter].dwPCI2040HPIErrorCount;
 	else
 		return 0;
@@ -1751,15 +1863,16 @@ long Hpi6000_BackDoor_Read_PCI2040_ErrorFlagCount(u16 wAdapter)
 #endif
 
 // if the PCI2040 has recorded an HPI timeout, reset the error and return 1
-static short Hpi6000_Check_PCI2040_ErrorFlag(H600_ADAPTER_OBJ * pao,
+static short Hpi6000_Check_PCI2040_ErrorFlag(HPI_ADAPTER_OBJ * pao,
 					     u16 nReadOrWrite)
 {
 	u32 dwHPIError;
 
-	dwHPIError = HPIOS_MEMREAD32(pao->dw2040_HPICSR + HPI_ERROR_REPORT);	// read the error bits from the PCI2040
+	dwHPIError = HPIOS_MEMREAD32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_ERROR_REPORT);	// read the error bits from the PCI2040
 	if (dwHPIError) {
-		HPIOS_MEMWRITE32(pao->dw2040_HPICSR + HPI_ERROR_REPORT, 0L);	// reset the error flag
-		pao->dwPCI2040HPIErrorCount++;
+		Ev275Debug_CountPCI2040Error(pao);
+		HPIOS_MEMWRITE32((*(HPI_HW_OBJ *) pao->priv).dw2040_HPICSR + HPI_ERROR_REPORT, 0L);	// reset the error flag
+		(*(HPI_HW_OBJ *) pao->priv).dwPCI2040HPIErrorCount++;
 		if (nReadOrWrite == 1)
 			gwPciReadAsserts++;	// *********************************************************************** inc global
 		else
@@ -1769,10 +1882,10 @@ static short Hpi6000_Check_PCI2040_ErrorFlag(H600_ADAPTER_OBJ * pao,
 		return 0;
 }
 
-static short Hpi6000_WaitDspAck(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
+static short Hpi6000_WaitDspAck(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,
 				u32 dwAckValue)
 {
-	H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwAck = 0L;
 	u32 dwTimeout;
 	u32 dwHPIC = 0L;
@@ -1808,25 +1921,29 @@ static short Hpi6000_WaitDspAck(H600_ADAPTER_OBJ * pao, u16 wDspIndex,
 	return (short)dwAck;
 }
 
-static short Hpi6000_ControlMessage(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-				    HPI_RESPONSE * phr)
+static short Hpi6000_UpdateControlCache(HPI_ADAPTER_OBJ * pao,
+					HPI_MESSAGE * phm)
 {
-	u16 nError = 0;
-	u32 dwControlType;
 	const u16 wDspIndex = phm->wDspIndex;	// ###### have to think about this
-	const H600_DSP_OBJ *pdo = &pao->ado[wDspIndex];
+	DSP_OBJ *pdo = &(*(HPI_HW_OBJ *) pao->priv).ado[wDspIndex];
 	u32 dwTimeout;
 	u32 dwCacheDirtyFlag;
+	u16 err;
+	HPIOS_LOCK_FLAGS(flags);
+
+	HpiOs_Dsplock_Lock(pao, &flags);
 
 	dwTimeout = TIMEOUT;
 	do {
-		dwCacheDirtyFlag = HpiReadWord((H600_DSP_OBJ *) pdo,
+		dwCacheDirtyFlag = HpiReadWord((DSP_OBJ *) pdo,
 					       HPI_HIF_BASE +
 					       HPI_HIF_OFS_CONTROL_CACHE_IS_DIRTY);
 	}
 	while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ) && --dwTimeout);
-	if (!dwTimeout)
-		return HPI6000_ERROR_CONTROL_CACHE_PARAMS;
+	if (!dwTimeout) {
+		err = HPI6000_ERROR_CONTROL_CACHE_PARAMS;
+		goto unlock;
+	}
 
 	if (dwCacheDirtyFlag) {
 // read the cached controls
@@ -1834,175 +1951,109 @@ static short Hpi6000_ControlMessage(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
 		u32 dwLength;
 
 		dwTimeout = TIMEOUT;
-		do {
-			dwAddress = HpiReadWord((H600_DSP_OBJ *) pdo,
+		if (pdo->dwControlCacheAddressOnDSP == 0) {
+			do {
+				dwAddress = HpiReadWord((DSP_OBJ *) pdo,
+							HPI_HIF_BASE +
+							HPI_HIF_OFS_CONTROL_CACHE_ADDRESS);
+				dwLength =
+				    HpiReadWord((DSP_OBJ *) pdo,
 						HPI_HIF_BASE +
-						HPI_HIF_OFS_CONTROL_CACHE_ADDRESS);
-			dwLength =
-			    HpiReadWord((H600_DSP_OBJ *) pdo,
-					HPI_HIF_BASE +
-					HPI_HIF_OFS_CONTROL_CACHE_SIZE_IN_BYTES);
+						HPI_HIF_OFS_CONTROL_CACHE_SIZE_IN_BYTES);
+			}
+			while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ)
+			       && --dwTimeout);
+			if (!dwTimeout) {
+				err = HPI6000_ERROR_CONTROL_CACHE_ADDRLEN;
+				goto unlock;
+			}
+			pdo->dwControlCacheAddressOnDSP = dwAddress;
+			pdo->dwControlCacheLengthOnDSP = dwLength;
+		} else {
+			dwAddress = pdo->dwControlCacheAddressOnDSP;
+			dwLength = pdo->dwControlCacheLengthOnDSP;
 		}
-		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6READ)
-		       && --dwTimeout);
-		if (!dwTimeout)
-			return HPI6000_ERROR_CONTROL_CACHE_PARAMS;
 
-		Hpi6000_DspBlockRead32(pao, wDspIndex, dwAddress,
-				       (u32) & pao->aControlCache[0],
-				       dwLength / sizeof(u32));
+		CHECK_LENGTH(pao, &dwLength,
+			     sizeof(tHPIControlCacheSingle) *
+			     HPI_NMIXER_CONTROLS);
+
+		if (Hpi6000_DspBlockRead32
+		    (pao, wDspIndex, dwAddress,
+		     (u32) & (*(HPI_HW_OBJ *) pao->priv).aControlCache[0],
+		     dwLength / sizeof(u32))) {
+			err = HPI6000_ERROR_CONTROL_CACHE_READ;
+			goto unlock;
+		}
 		do {
-			HpiWriteWord((H600_DSP_OBJ *) pdo,
+			HpiWriteWord((DSP_OBJ *) pdo,
 				     HPI_HIF_BASE +
 				     HPI_HIF_OFS_CONTROL_CACHE_IS_DIRTY, 0);
-			HPIOS_MEMWRITE32(pdo->dwHPIAddress, HPI_HIF_BASE + HPI_HIF_OFS_HOSTCMD);	// flush the FIFO by writing a new address
+			HpiSetAddress(pdo, HPI_HIF_BASE + HPI_HIF_OFS_HOSTCMD);	// flush the FIFO
 		}
 		while (Hpi6000_Check_PCI2040_ErrorFlag(pao, H6WRITE)
 		       && --dwTimeout);
-		if (!dwTimeout)
-			return HPI6000_ERROR_CONTROL_CACHE_PARAMS;
+		if (!dwTimeout) {
+			err = HPI6000_ERROR_CONTROL_CACHE_FLUSH;
+			goto unlock;
+		}
 
 	}
-// if the control type in the cache is non-zero then we have cached control information to process
-	dwControlType = pao->aControlCache[phm->u.c.wControlIndex].ControlType;
-	phr->wSize = HPI_RESPONSE_FIXED_SIZE + sizeof(HPI_CONTROL_RES);
-	phr->wError = 0;
-	switch (dwControlType) {
-	case HPI_CONTROL_METER:
-		if (phm->u.c.wAttribute == HPI_METER_RMS) {
-			phr->u.c.anLogValue[0] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.p.
-			    anLogRMS[0];
-			phr->u.c.anLogValue[1] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.p.
-			    anLogRMS[1];
-		} else if (phm->u.c.wAttribute == HPI_METER_PEAK) {
-			phr->u.c.anLogValue[0] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.p.
-			    anLogPeak[0];
-			phr->u.c.anLogValue[1] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.p.
-			    anLogPeak[1];
-		} else
-			dwControlType = 0;	// signal that message was not cached
-		break;
-	case HPI_CONTROL_VOLUME:
-		if (phm->u.c.wAttribute == HPI_VOLUME_GAIN) {
-			phr->u.c.anLogValue[0] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.v.
-			    anLog[0];
-			phr->u.c.anLogValue[1] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.v.
-			    anLog[1];
-		} else
-			dwControlType = 0;	// signal that message was not cached
-		break;
-	case HPI_CONTROL_MULTIPLEXER:
-		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
-			phr->u.c.dwParam1 =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.x.
-			    wSourceNodeType;
-			phr->u.c.dwParam2 =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.x.
-			    wSourceNodeIndex;
-		} else
-			dwControlType = 0;	// signal that message was not cached
-		break;
-	case HPI_CONTROL_LEVEL:
-		if (phm->u.c.wAttribute == HPI_CONTROL_LEVEL) {
-			phr->u.c.anLogValue[0] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.l.
-			    anLog[0];
-			phr->u.c.anLogValue[1] =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.l.
-			    anLog[1];
-		} else
-			dwControlType = 0;	// signal that message was not cached
-		break;
-	case HPI_CONTROL_TUNER:
-		if (phm->u.c.wAttribute == HPI_TUNER_FREQ)
-			phr->u.c.dwParam1 =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.t.
-			    dwFreqInkHz;
-		else if (phm->u.c.wAttribute == HPI_TUNER_BAND)
-			phr->u.c.dwParam1 =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.t.
-			    wBand;
-		else if (phm->u.c.wAttribute == HPI_TUNER_LEVEL)
-			phr->u.c.dwParam1 =
-			    pao->aControlCache[phm->u.c.wControlIndex].u.t.
-			    wLevel;
-		else
-			dwControlType = 0;	// signal that message was not cached
-		break;
-	default:
-		dwControlType = 0;	// signal that message was not cached
-		break;
-	}
-	if (dwControlType == 0)	// value of 0 indicates that control is not cached.
-		nError =
-		    Hpi6000_MessageResponseSequence(pao, wDspIndex, phm, phr);
+	err = 0;
 
-	return nError;
+      unlock:
+	HpiOs_Dsplock_UnLock(pao, &flags);
+	return err;
 }
 
-static void Hpi6000_Message(H600_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
-			    HPI_RESPONSE * phr)
+static void HW_Message(HPI_ADAPTER_OBJ * pao, HPI_MESSAGE * phm,
+		       HPI_RESPONSE * phr)
 {
-	u16 nError;
-	u16 wDspIndex = phm->wDspIndex;
+	u16 nError = 0;
+	HPIOS_LOCK_FLAGS(flags);
 
-	if (pao->wHasControlCache && (phm->wFunction == HPI_CONTROL_GET_STATE))
-		nError = Hpi6000_ControlMessage(pao, phm, phr);
-	else
-		nError =
-		    Hpi6000_MessageResponseSequence(pao, wDspIndex, phm, phr);
+	HpiOs_Dsplock_Lock(pao, &flags);
+
+	nError = Hpi6000_MessageResponseSequence(pao, phm, phr);
 
 /* maybe an error response */
 	if (nError) {
 		phr->wError = nError;	// something failed in the HPI/DSP interface
 		phr->wSize = HPI_RESPONSE_FIXED_SIZE;	// just the header of the response is valid
-		return;
+		goto err;
 	}
-	if (phr->wError != 0)	// something failed in the DSP
-		return;
 
-	if ((phm->wFunction == HPI_OSTREAM_WRITE)
-	    || (phm->wFunction == HPI_ISTREAM_ANC_WRITE)
-	    ) {
-		nError = Hpi6000_SendData(pao, wDspIndex, phm, phr);
-		if (nError) {
-			phr->wError = nError;
-			return;
-		}
-	} else if ((phm->wFunction == HPI_ISTREAM_READ)
-		   || (phm->wFunction == HPI_OSTREAM_ANC_READ)
-	    ) {
-		nError = Hpi6000_GetData(pao, wDspIndex, phm, phr);
-		if (nError) {
-			phr->wError = nError;
-			return;
-		}
-	} else if (phm->wFunction == HPI_ADAPTER_GET_ASSERT) {
+	if (phr->wError != 0)	// something failed in the DSP
+		goto err;
+
+	switch (phm->wFunction) {
+	case HPI_OSTREAM_WRITE:
+	case HPI_ISTREAM_ANC_WRITE:
+		nError = Hpi6000_SendData(pao, phm, phr);
+		break;
+	case HPI_ISTREAM_READ:
+	case HPI_OSTREAM_ANC_READ:
+		nError = Hpi6000_GetData(pao, phm, phr);
+		break;
+	case HPI_ADAPTER_GET_ASSERT:
 		phr->u.a.wAdapterIndex = 0;	// dsp 0 default
-		if (pao->wNumDsp == 2) {
-			if (!phr->u.a.wAdapterType)	// no assert from dsp 0, check dsp 1
-			{
+		if (((HPI_HW_OBJ *) pao->priv)->wNumDsp == 2) {
+			if (!phr->u.a.wAdapterType) {	// no assert from dsp 0, check dsp 1
+				phm->wDspIndex = 1;
 				nError =
-				    Hpi6000_MessageResponseSequence(pao, 1, phm,
+				    Hpi6000_MessageResponseSequence(pao, phm,
 								    phr);
 				phr->u.a.wAdapterIndex = 1;
-				if (nError) {
-					phr->wError = nError;
-					return;
-				}
-// dsp number returned in wAdapterIndex
-//                                       if (phr->u.a.wAdapterType)
-//                                                phr->u.a.dwSerialNumber += 10000; // differentiate messages from DSP2
 			}
 		}
 	}
 
+	if (nError)
+		phr->wError = nError;
+
+      err:
+	Ev275Debug_QueueMessageResponse(pao, phm, phr);
+	HpiOs_Dsplock_UnLock(pao, &flags);
 	return;
 }
 
