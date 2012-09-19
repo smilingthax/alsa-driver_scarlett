@@ -129,7 +129,7 @@ static void _snd_msndmidi_interrupt(msndmidi_t *mpu)
 
 void snd_msndmidi_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	msndmidi_t *mpu = snd_magic_cast(msndmidi_t, dev_id, return);
+	msndmidi_t *mpu = dev_id;
 	
 	if (mpu == NULL)
 		return;
@@ -139,7 +139,7 @@ void snd_msndmidi_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 static void snd_msndmidi_timer(unsigned long data)
 {
 	unsigned long flags;
-	msndmidi_t *mpu = snd_magic_cast(msndmidi_t, (void *)data, return);
+	msndmidi_t *mpu = (void *)data;
 
 	spin_lock_irqsave(&mpu->timer_lock, flags);
 	/ * mpu->mode |= MPU401_MODE_TIMER;* /
@@ -234,7 +234,7 @@ static int snd_msndmidi_input_open(snd_rawmidi_substream_t * substream)
 	printk( "snd_msndmidi_input_open(snd_rawmidi_substream_t * substream)\n");
 #endif
 
-	mpu = snd_magic_cast(msndmidi_t, substream->rmidi->private_data, return -ENXIO);
+	mpu = substream->rmidi->private_data;
 /*	if (mpu->open_input && (err = mpu->open_input(mpu)) < 0)
 		return err;
 	if (! test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode)) {
@@ -258,7 +258,7 @@ static int snd_msndmidi_output_open(snd_rawmidi_substream_t * substream)
 	msndmidi_t *mpu;
 	int err;
 
-	mpu = snd_magic_cast(msndmidi_t, substream->rmidi->private_data, return -ENXIO);
+	mpu = substream->rmidi->private_data;
 /*	if (mpu->open_output && (err = mpu->open_output(mpu)) < 0)
 		return err;
 	if (! test_bit(MPU401_MODE_BIT_INPUT, &mpu->mode)) {
@@ -279,7 +279,7 @@ static int snd_msndmidi_input_close(snd_rawmidi_substream_t * substream)
 	printk( "snd_msndmidi_input_close(snd_rawmidi_substream_t * substream)\n");
 #endif
 
-	mpu = snd_magic_cast(msndmidi_t, substream->rmidi->private_data, return -ENXIO);
+	mpu = substream->rmidi->private_data;
 	snd_msnd_send_dsp_cmd( mpu->dev, HDEX_MIDI_IN_STOP);
 	clear_bit(MSNDMIDI_MODE_BIT_INPUT, &mpu->mode);
 	mpu->substream_input = NULL;
@@ -296,7 +296,7 @@ static int snd_msndmidi_output_close(snd_rawmidi_substream_t * substream)
 {
 	msndmidi_t *mpu;
 
-	mpu = snd_magic_cast(msndmidi_t, substream->rmidi->private_data, return -ENXIO);
+	mpu = substream->rmidi->private_data;
 	clear_bit(MSNDMIDI_MODE_BIT_OUTPUT, &mpu->mode);
 	mpu->substream_output = NULL;
 /*	if (! test_bit(MPU401_MODE_BIT_INPUT, &mpu->mode))
@@ -319,7 +319,7 @@ static void snd_msndmidi_input_trigger(snd_rawmidi_substream_t * substream, int 
 	printk( "snd_msndmidi_input_trigger(, %i)\n", up);
 #endif
 
-	mpu = snd_magic_cast(msndmidi_t, substream->rmidi->private_data, return);
+	mpu = substream->rmidi->private_data;
 	spin_lock_irqsave(&mpu->input_lock, flags);
 	if (up) {
 		if (! test_bit(MSNDMIDI_MODE_BIT_INPUT_TRIGGER, &mpu->mode))
@@ -404,7 +404,7 @@ static void snd_msndmidi_output_trigger(snd_rawmidi_substream_t * substream, int
 	unsigned long flags;
 	msndmidi_t *mpu;
 
-	mpu = snd_magic_cast(msndmidi_t, substream->rmidi->private_data, return);
+	mpu = substream->rmidi->private_data;
 	spin_lock_irqsave(&mpu->output_lock, flags);
 	if (up) {
 		set_bit(MSNDMIDI_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode);
@@ -439,14 +439,14 @@ static snd_rawmidi_ops_t snd_msndmidi_input =
 
 static void snd_msndmidi_free(snd_rawmidi_t *rmidi)
 {
-	msndmidi_t *mpu = snd_magic_cast(msndmidi_t, rmidi->private_data, return);
+	msndmidi_t *mpu = rmidi->private_data;
 /*	if (mpu->irq_flags && mpu->irq >= 0)
 		free_irq(mpu->irq, (void *) mpu);
 	if (mpu->res) {
 		release_resource(mpu->res);
 		kfree_nocheck(mpu->res);
 	}*/
-	snd_magic_kfree(mpu);
+	kfree(mpu);
 }
 
 int snd_msndmidi_new(snd_card_t * card, int device, multisound_dev_t *dev)
@@ -457,7 +457,7 @@ int snd_msndmidi_new(snd_card_t * card, int device, multisound_dev_t *dev)
 
 	if ((err = snd_rawmidi_new(card, "MSND-MIDI", device, 1, 1, &rmidi)) < 0)
 		return err;
-	mpu = snd_magic_kcalloc(msndmidi_t, 0, GFP_KERNEL);
+	mpu = kcalloc(1, sizeof(*mpu), GFP_KERNEL);
 	if (mpu == NULL) {
 		snd_device_free(card, rmidi);
 		return -ENOMEM;

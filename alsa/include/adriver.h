@@ -474,8 +474,6 @@ static inline void class_simple_device_remove(int devnum) { return; }
 	} while (0)
 #endif
 
-#include "amagic.h"
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #define snd_card_set_dev(card,dev) /* no struct device */
 #endif

@@ -73,7 +73,7 @@ static int snd_msndmix_info_mux(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * 
 
 static int snd_msndmix_get_mux(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	multisound_dev_t *	msnd =	_snd_kcontrol_chip(kcontrol);
+	multisound_dev_t *	msnd =	snd_kcontrol_chip(kcontrol);
 	ucontrol->value.enumerated.item[0] = 0;
 
 /*	if (msnd->recsrc & MSND_MASK_IMIX) {             this is the default
@@ -124,7 +124,7 @@ static int snd_msndmix_set_mux( multisound_dev_t * msnd, int val)
 
 static int snd_msndmix_put_mux(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	multisound_dev_t *	msnd =	_snd_kcontrol_chip( kcontrol);
+	multisound_dev_t *	msnd =	snd_kcontrol_chip( kcontrol);
 	return snd_msndmix_set_mux( msnd, ucontrol->value.enumerated.item[ 0]);
 }
 
@@ -140,7 +140,7 @@ static int snd_msndmix_volume_info(snd_kcontrol_t * kcontrol, snd_ctl_elem_info_
 
 static int snd_msndmix_volume_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	multisound_dev_t *	msnd =	_snd_kcontrol_chip(kcontrol);
+	multisound_dev_t *	msnd =	snd_kcontrol_chip(kcontrol);
 	int			addr =	kcontrol->private_value;
 
 	ucontrol->value.integer.value[0] = ( msnd->left_levels[ addr] * 100) / 0xFFFF;
@@ -252,7 +252,7 @@ static int snd_msndmix_set( multisound_dev_t * dev, int d, int left, int right)
 
 static int snd_msndmix_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
-	multisound_dev_t *msnd = _snd_kcontrol_chip(kcontrol);
+	multisound_dev_t *msnd = snd_kcontrol_chip(kcontrol);
 	int change, addr = kcontrol->private_value;
 	int left, right;
 	// unsigned long flags;
