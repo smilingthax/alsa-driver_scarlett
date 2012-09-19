@@ -1464,8 +1464,10 @@ static void __exit pdplus_unmap_pci_mem (snd_iomem_t *mem)
         if (mem) {
         	if (mem->vaddr)
 	                iounmap((void *) (mem->vaddr & PAGE_MASK));
-		if (mem->resource)
+		if (mem->resource) {
 			release_resource(mem->resource);
+			kfree_nocheck(mem->resource);
+		}
 	}
 }
 
@@ -5957,6 +5959,7 @@ static int __devinit pdplus_init(
 
         scard->pci = pci;
         scard->card = card;
+	scard->irq = -1;
 
         /* Set up variables which are possibly non-null at start-up. */
         /* *INIT* */
@@ -6012,6 +6015,7 @@ static int __devinit pdplus_init(
 		snd_printk ("Unable to grab interrupt %d.\n", pci->irq);
 		return -EBUSY;
 	}
+	scard->irq = pci->irq;
 
         /* Register io memory */
         if ((err = pdplus_register_iomem (card, pci, 2, 0x20000, &scard->MEM_iomem, FULL_NAME " - MEM")) < 0)
@@ -6084,7 +6088,7 @@ static int __devinit pdplus_probe(
         pci_dev_t *pci,
         pci_device_id_t const *pci_id)
 {
-        static int __initdata dev = 0;
+	static int dev = 0;
         int err;
         snd_card_t *card;
         ENTER;
@@ -6154,8 +6158,10 @@ static void pdplus_sweep(snd_card_t *card)
         pdplus_unregister_iomem (&scard->FPGA_iomem);
         pdplus_unregister_iomem (&scard->HW_iomem);
 
-	if (scard->res_PLX_io)
+	if (scard->res_PLX_io) {
 		release_resource(scard->res_PLX_io);
+		kfree_nocheck(scard->res_PLX_io);
+	}
 	if (scard->irq >= 0)
 		free_irq(scard->irq, (void *)scard);
 
