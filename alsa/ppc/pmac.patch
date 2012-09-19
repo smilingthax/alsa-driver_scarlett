@@ -1,0 +1,31 @@
+--- pmac.c	2003-05-31 13:39:53.000000000 +0200
++++ pmac.c.old	2003-05-31 13:40:22.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "pmac.inc"
+ /*
+  * PMac DBDMA lowlevel functions
+  *
+@@ -36,6 +37,17 @@
+ #include <asm/feature.h>
+ #endif
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
++#define pmu_suspend()	/**/
++#define pmu_resume()	/**/
++#endif
++
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,18)
++#define request_OF_resource(io,num,str)  1
++#define release_OF_resource(io,num) /**/
++#endif
++
++
+ #define chip_t pmac_t
+ 
+ 
+@@ -1317,3 +1329,5 @@
+ }
+ 
+ #endif /* CONFIG_PM && CONFIG_PMAC_PBOOK */
++
++#include "pmac.inc1"
