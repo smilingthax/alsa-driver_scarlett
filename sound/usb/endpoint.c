@@ -31,6 +31,7 @@
 #include "card.h"
 #include "endpoint.h"
 #include "pcm.h"
+#include "quirks.h"
 
 #define EP_FLAG_ACTIVATED	0
 #define EP_FLAG_RUNNING		1
@@ -141,7 +142,7 @@ int snd_usb_endpoint_implict_feedback_sink(struct snd_usb_endpoint *ep)
  *
  * For implicit feedback, next_packet_size() is unused.
  */
-static int next_packet_size(struct snd_usb_endpoint *ep)
+int snd_usb_endpoint_next_packet_size(struct snd_usb_endpoint *ep)
 {
 	unsigned long flags;
 	int ret;
@@ -170,20 +171,16 @@ static void retire_inbound_urb(struct snd_usb_endpoint *ep,
 {
 	struct urb *urb = urb_ctx->urb;
 
+	if (unlikely(ep->skip_packets > 0)) {
+		ep->skip_packets--;
+		return;
+	}
+
 	if (ep->sync_slave)
 		snd_usb_handle_sync_urb(ep->sync_slave, ep, urb);
 
 	if (ep->retire_data_urb)
 		ep->retire_data_urb(ep->data_subs, urb);
-}
-
-static void prepare_outbound_urb_sizes(struct snd_usb_endpoint *ep,
-				       struct snd_urb_ctx *ctx)
-{
-	int i;
-
-	for (i = 0; i < ctx->packets; ++i)
-		ctx->packet_size[i] = next_packet_size(ep);
 }
 
 /*
@@ -370,7 +367,6 @@ static void snd_complete_urb(struct urb *urb)
 			goto exit_clear;
 		}
 
-		prepare_outbound_urb_sizes(ep, ctx);
 		prepare_outbound_urb(ep, ctx);
 	} else {
 		retire_inbound_urb(ep, ctx);
@@ -832,6 +828,8 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
 	ep->unlink_mask = 0;
 	ep->phase = 0;
 
+	snd_usb_endpoint_start_quirk(ep);
+
 	/*
 	 * If this endpoint has a data endpoint as implicit feedback source,
 	 * don't start the urbs here. Instead, mark them all as available,
@@ -857,7 +855,6 @@ int snd_usb_endpoint_start(struct snd_usb_endpoint *ep, int can_sleep)
 			goto __error;
 
 		if (usb_pipeout(ep->pipe)) {
-			prepare_outbound_urb_sizes(ep, urb->context);
 			prepare_outbound_urb(ep, urb->context);
 		} else {
 			prepare_inbound_urb(ep, urb->context);

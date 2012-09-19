@@ -614,9 +614,9 @@ struct hda_bus_ops {
 			  struct hda_pcm *pcm);
 	/* reset bus for retry verb */
 	void (*bus_reset)(struct hda_bus *bus);
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 	/* notify power-up/down from codec to controller */
-	void (*pm_notify)(struct hda_bus *bus, struct hda_codec *codec);
+	void (*pm_notify)(struct hda_bus *bus, bool power_up);
 #endif
 };
 
@@ -712,8 +712,6 @@ struct hda_codec_ops {
 #ifdef CONFIG_PM
 	int (*suspend)(struct hda_codec *codec);
 	int (*resume)(struct hda_codec *codec);
-#endif
-#ifdef CONFIG_SND_HDA_POWER_SAVE
 	int (*check_power_status)(struct hda_codec *codec, hda_nid_t nid);
 #endif
 	void (*reboot_notify)(struct hda_codec *codec);
@@ -778,6 +776,7 @@ struct hda_pcm {
 	unsigned int pcm_type;	/* HDA_PCM_TYPE_XXX */
 	int device;		/* device number to assign */
 	struct snd_pcm *pcm;	/* assigned PCM instance */
+	bool own_chmap;		/* codec driver provides own channel maps */
 };
 
 /* codec information */
@@ -863,12 +862,13 @@ struct hda_codec {
 	unsigned int no_sticky_stream:1; /* no sticky-PCM stream assignment */
 	unsigned int pins_shutup:1;	/* pins are shut up */
 	unsigned int no_trigger_sense:1; /* don't trigger at pin-sensing */
-	unsigned int ignore_misc_bit:1; /* ignore MISC_NO_PRESENCE bit */
 	unsigned int no_jack_detect:1;	/* Machine has no jack-detection */
 	unsigned int pcm_format_first:1; /* PCM format must be set first */
 	unsigned int epss:1;		/* supporting EPSS? */
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 	unsigned int power_on :1;	/* current (global) power-state */
+	unsigned int d3_stop_clk:1;	/* support D3 operation without BCLK */
+	unsigned int pm_down_notified:1; /* PM notified to controller */
 	int power_transition;	/* power-state in transition */
 	int power_count;	/* current (global) power refcount */
 	struct delayed_work power_work; /* delayed task for powerdown */
@@ -876,9 +876,6 @@ struct hda_codec {
 	unsigned long power_off_acct;
 	unsigned long power_jiffies;
 	spinlock_t power_lock;
-
-	unsigned int d3_stop_clk:1;	/* support D3 operation without BCLK */
-	unsigned int d3_stop_clk_ok:1; /* BCLK can stop */
 #endif
 
 	/* codec-specific additional proc output */
@@ -1049,7 +1046,7 @@ int snd_hda_resume(struct hda_bus *bus);
 static inline
 int hda_call_check_power_status(struct hda_codec *codec, hda_nid_t nid)
 {
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 	if (codec->patch_ops.check_power_status)
 		return codec->patch_ops.check_power_status(codec, nid);
 #endif
@@ -1066,7 +1063,7 @@ const char *snd_hda_get_jack_location(u32 cfg);
 /*
  * power saving
  */
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 void snd_hda_power_save(struct hda_codec *codec, int delta, bool d3wait);
 void snd_hda_update_power_acct(struct hda_codec *codec);
 #else

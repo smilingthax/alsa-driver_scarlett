@@ -64,7 +64,7 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;
 static bool enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
 static char *model[SNDRV_CARDS];
-static int position_fix[SNDRV_CARDS];
+static int position_fix[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = -1};
 static int bdl_pos_adj[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = -1};
 static int probe_mask[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = -1};
 static int probe_only[SNDRV_CARDS];
@@ -88,7 +88,7 @@ module_param_array(model, charp, NULL, 0444);
 MODULE_PARM_DESC(model, "Use the given board model.");
 module_param_array(position_fix, int, NULL, 0444);
 MODULE_PARM_DESC(position_fix, "DMA pointer read method."
-		 "(0 = auto, 1 = LPIB, 2 = POSBUF, 3 = VIACOMBO, 4 = COMBO).");
+		 "(-1 = system default, 0 = auto, 1 = LPIB, 2 = POSBUF, 3 = VIACOMBO, 4 = COMBO).");
 module_param_array(bdl_pos_adj, int, NULL, 0644);
 MODULE_PARM_DESC(bdl_pos_adj, "BDL position adjustment offset.");
 module_param_array(probe_mask, int, NULL, 0444);
@@ -110,7 +110,7 @@ MODULE_PARM_DESC(beep_mode, "Select HDA Beep registration mode "
 			    "(0=off, 1=on) (default=1).");
 #endif
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 static int param_set_xint(const char *val, const struct kernel_param *kp);
 static struct kernel_param_ops param_ops_xint = {
 	.set = param_set_xint,
@@ -130,7 +130,7 @@ MODULE_PARM_DESC(power_save, "Automatic power-saving timeout "
 static bool power_save_controller = 1;
 module_param(power_save_controller, bool, 0644);
 MODULE_PARM_DESC(power_save_controller, "Reset controller in power save mode.");
-#endif
+#endif /* CONFIG_PM */
 
 static int align_buffer_size = -1;
 module_param(align_buffer_size, bint, 0644);
@@ -415,6 +415,7 @@ struct azx_dev {
 	 */
 	unsigned int insufficient :1;
 	unsigned int wc_marked:1;
+	unsigned int no_period_wakeup:1;
 };
 
 /* CORB/RIRB */
@@ -1032,8 +1033,8 @@ static unsigned int azx_get_response(struct hda_bus *bus,
 		return azx_rirb_get_response(bus, addr);
 }
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static void azx_power_notify(struct hda_bus *bus, struct hda_codec *codec);
+#ifdef CONFIG_PM
+static void azx_power_notify(struct hda_bus *bus, bool power_up);
 #endif
 
 /* reset codec link */
@@ -1419,7 +1420,7 @@ static int azx_setup_periods(struct azx *chip,
 	ofs = 0;
 	azx_dev->frags = 0;
 	pos_adj = bdl_pos_adj[chip->dev_index];
-	if (pos_adj > 0) {
+	if (!azx_dev->no_period_wakeup && pos_adj > 0) {
 		struct snd_pcm_runtime *runtime = substream->runtime;
 		int pos_align = pos_adj;
 		pos_adj = (pos_adj * runtime->rate + 47999) / 48000;
@@ -1435,8 +1436,7 @@ static int azx_setup_periods(struct azx *chip,
 			pos_adj = 0;
 		} else {
 			ofs = setup_bdle(chip, substream, azx_dev,
-					 &bdl, ofs, pos_adj,
-					 !substream->runtime->no_period_wakeup);
+					 &bdl, ofs, pos_adj, true);
 			if (ofs < 0)
 				goto error;
 		}
@@ -1449,7 +1449,7 @@ static int azx_setup_periods(struct azx *chip,
 		else
 			ofs = setup_bdle(chip, substream, azx_dev, &bdl, ofs,
 					 period_bytes,
-					 !substream->runtime->no_period_wakeup);
+					 !azx_dev->no_period_wakeup);
 		if (ofs < 0)
 			goto error;
 	}
@@ -1605,7 +1605,7 @@ static int DELAYED_INIT_MARK azx_codec_create(struct azx *chip, const char *mode
 	bus_temp.ops.get_response = azx_get_response;
 	bus_temp.ops.attach_pcm = azx_attach_pcm_stream;
 	bus_temp.ops.bus_reset = azx_bus_reset;
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 	bus_temp.power_save = &power_save;
 	bus_temp.ops.pm_notify = azx_power_notify;
 #endif
@@ -1922,10 +1922,12 @@ static int azx_pcm_prepare(struct snd_pcm_substream *substream)
 
 	if (bufsize != azx_dev->bufsize ||
 	    period_bytes != azx_dev->period_bytes ||
-	    format_val != azx_dev->format_val) {
+	    format_val != azx_dev->format_val ||
+	    runtime->no_period_wakeup != azx_dev->no_period_wakeup) {
 		azx_dev->bufsize = bufsize;
 		azx_dev->period_bytes = period_bytes;
 		azx_dev->format_val = format_val;
+		azx_dev->no_period_wakeup = runtime->no_period_wakeup;
 		err = azx_setup_periods(chip, substream, azx_dev);
 		if (err < 0)
 			return err;
@@ -2404,16 +2406,13 @@ static void azx_stop_chip(struct azx *chip)
 	chip->initialized = 0;
 }
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 /* power-up/down the controller */
-static void azx_power_notify(struct hda_bus *bus, struct hda_codec *codec)
+static void azx_power_notify(struct hda_bus *bus, bool power_up)
 {
 	struct azx *chip = bus->private_data;
 
-	if (bus->power_keep_link_on || !codec->d3_stop_clk_ok)
-		return;
-
-	if (codec->power_on)
+	if (power_up)
 		pm_runtime_get_sync(&chip->pci->dev);
 	else
 		pm_runtime_put_sync(&chip->pci->dev);
@@ -2460,7 +2459,7 @@ static int param_set_xint(const char *val, const struct kernel_param *kp)
 #else
 #define azx_add_card_list(chip) /* NOP */
 #define azx_del_card_list(chip) /* NOP */
-#endif /* CONFIG_SND_HDA_POWER_SAVE */
+#endif /* CONFIG_PM */
 
 #if defined(CONFIG_PM_SLEEP) || defined(SUPPORT_VGA_SWITCHEROO)
 /*
@@ -2528,10 +2527,8 @@ static int azx_runtime_suspend(struct device *dev)
 	struct snd_card *card = dev_get_drvdata(dev);
 	struct azx *chip = card->private_data;
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!power_save_controller)
 		return -EAGAIN;
-#endif
 
 	azx_stop_chip(chip);
 	azx_clear_irq_pending(chip);
@@ -2799,6 +2796,8 @@ static struct snd_pci_quirk position_fix_list[] __devinitdata = {
 	SND_PCI_QUIRK(0x1043, 0x813d, "ASUS P5AD2", POS_FIX_LPIB),
 	SND_PCI_QUIRK(0x1043, 0x81b3, "ASUS", POS_FIX_LPIB),
 	SND_PCI_QUIRK(0x1043, 0x81e7, "ASUS M2V", POS_FIX_LPIB),
+	SND_PCI_QUIRK(0x1043, 0x1ac3, "ASUS X53S", POS_FIX_POSBUF),
+	SND_PCI_QUIRK(0x1043, 0x1b43, "ASUS K53E", POS_FIX_POSBUF),
 	SND_PCI_QUIRK(0x104d, 0x9069, "Sony VPCS11V9E", POS_FIX_LPIB),
 	SND_PCI_QUIRK(0x10de, 0xcb89, "Macbook Pro 7,1", POS_FIX_LPIB),
 	SND_PCI_QUIRK(0x1297, 0x3166, "Shuttle", POS_FIX_LPIB),
@@ -2815,6 +2814,7 @@ static int __devinit check_position_fix(struct azx *chip, int fix)
 	const struct snd_pci_quirk *q;
 
 	switch (fix) {
+	case POS_FIX_AUTO:
 	case POS_FIX_LPIB:
 	case POS_FIX_POSBUF:
 	case POS_FIX_VIACOMBO:
@@ -3235,7 +3235,7 @@ static int DELAYED_INIT_MARK azx_first_init(struct azx *chip)
 
 static void power_down_all_codecs(struct azx *chip)
 {
-#ifdef CONFIG_SND_HDA_POWER_SAVE
+#ifdef CONFIG_PM
 	/* The codecs were powered up in snd_hda_codec_new().
 	 * Now all initialization done, so turn them down if possible
 	 */
@@ -3272,15 +3272,6 @@ static void azx_firmware_cb(const struct firmware *fw, void *context)
 	pci_set_drvdata(pci, NULL);
 }
 #endif
-
-static void rpm_get_all_codecs(struct azx *chip)
-{
-	struct hda_codec *codec;
-
-	list_for_each_entry(codec, &chip->bus->codec_list, list) {
-		pm_runtime_get_noresume(&chip->pci->dev);
-	}
-}
 
 static int __devinit azx_probe(struct pci_dev *pci,
 			       const struct pci_device_id *pci_id)
@@ -3388,7 +3379,6 @@ static int DELAYED_INIT_MARK azx_probe_continue(struct azx *chip)
 		goto out_free;
 
 	chip->running = 1;
-	rpm_get_all_codecs(chip); /* all codecs are active */
 	power_down_all_codecs(chip);
 	azx_notifier_register(chip);
 	azx_add_card_list(chip);
@@ -3440,6 +3430,9 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
 	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
 	/* Haswell */
 	{ PCI_DEVICE(0x8086, 0x0c0c),
+	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
+	{ PCI_DEVICE(0x8086, 0x0d0c),
 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
 	  AZX_DCAPS_BUFSIZE | AZX_DCAPS_POSFIX_COMBO },
 	/* SCH */
