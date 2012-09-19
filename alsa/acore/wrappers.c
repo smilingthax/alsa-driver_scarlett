@@ -246,6 +246,7 @@ EXPORT_SYMBOL(snd_compat_msleep_interruptible);
 #include <linux/interrupt.h>
 #include <linux/mutex.h>
 #include <linux/list.h>
+#include <linux/slab.h>
 typedef int (*snd_irq_handler_t)(int, void *);
 struct irq_list {
 	snd_irq_handler_t handler;
