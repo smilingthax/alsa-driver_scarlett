@@ -1244,7 +1244,7 @@ else
 fi
 AC_SUBST(msmp)
 
-KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include -DKBUILD_BASENAME=\"dummy\""
 
 dnl Check for video device support... (2.2 kernels excluded due to API incompatibility)
 if test $kpatchlevel -gt 2; then
