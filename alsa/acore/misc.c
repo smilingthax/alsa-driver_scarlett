@@ -1,3 +1,4 @@
+#define SND_NEED_USB_WRAPPER
 #define __NO_VERSION__
 #include "../alsa-kernel/core/misc.c"
 
@@ -500,3 +501,76 @@ int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 }
 
 #endif /* kernel version < 2.3.0 && CONFIG_APM */
+
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
+#if defined(CONFIG_SND_USB_AUDIO) || defined(CONFIG_SND_USB_AUDIO_MODULE) ||\
+    defined(CONFIG_SND_USB_MIDI) || defined(CONFIG_SND_USB_MIDI_MODULE)
+/* M-Audio Quattro has weird alternate settings.  the altsetting jumps
+ * from 0 to 4 or 3 insuccessively, and this screws up
+ * usb_set_interface() (at least on 2.4.18/19 and 2.4.21).
+ */
+
+/*
+ * the following is a stripped version of usb_set_interface() with the fix
+ * for insuccessive altsetting numbers.
+ */
+
+/* stripped version for isochronos only */
+static void hack_usb_set_maxpacket(struct usb_device *dev)
+{
+	int i, b;
+
+	for (i=0; i<dev->actconfig->bNumInterfaces; i++) {
+		struct usb_interface *ifp = dev->actconfig->interface + i;
+		struct usb_interface_descriptor *as = ifp->altsetting + ifp->act_altsetting;
+		struct usb_endpoint_descriptor *ep = as->endpoint;
+		int e;
+
+		for (e=0; e<as->bNumEndpoints; e++) {
+			b = ep[e].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
+			if (usb_endpoint_out(ep[e].bEndpointAddress)) {
+				if (ep[e].wMaxPacketSize > dev->epmaxpacketout[b])
+					dev->epmaxpacketout[b] = ep[e].wMaxPacketSize;
+			}
+			else {
+				if (ep[e].wMaxPacketSize > dev->epmaxpacketin [b])
+					dev->epmaxpacketin [b] = ep[e].wMaxPacketSize;
+			}
+		}
+	}
+}
+
+/* stripped version */
+int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int alternate)
+{
+	struct usb_interface *iface;
+	struct usb_interface_descriptor *iface_as;
+	int i, ret;
+
+	iface = usb_ifnum_to_if(dev, interface);
+	if (!iface)
+		return -EINVAL;
+	if (iface->num_altsetting == 1)
+		return 0;
+	if (alternate < 0 || alternate >= iface->num_altsetting)
+		return -EINVAL;
+
+	if ((ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+				   USB_REQ_SET_INTERFACE, USB_RECIP_INTERFACE,
+				   iface->altsetting[alternate].bAlternateSetting,
+				   interface, NULL, 0, HZ * 5)) < 0)
+		return ret;
+
+	iface->act_altsetting = alternate;
+	iface_as = &iface->altsetting[alternate];
+	for (i = 0; i < iface_as->bNumEndpoints; i++) {
+		u8 ep = iface_as->endpoint[i].bEndpointAddress;
+		usb_settoggle(dev, ep&USB_ENDPOINT_NUMBER_MASK, usb_endpoint_out(ep), 0);
+	}
+	hack_usb_set_maxpacket(dev);
+	return 0;
+}
+
+#endif /* CONFIG_SND_USB_* */
+#endif /* LINUX_VERSION < 2.5.24 */

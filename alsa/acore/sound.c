@@ -1,3 +1,4 @@
+#define SND_NEED_USB_WRAPPER
 #include "../alsa-kernel/core/sound.c"
 
 /* misc.c */
@@ -31,4 +32,12 @@ EXPORT_SYMBOL(pm_send);
   /* wrappers */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
 EXPORT_SYMBOL(snd_wrapper_kill_fasync);
+#endif
+
+/* USB workaround */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
+#if defined(CONFIG_SND_USB_AUDIO) || defined(CONFIG_SND_USB_AUDIO_MODULE) ||\
+    defined(CONFIG_SND_USB_MIDI) || defined(CONFIG_SND_USB_MIDI_MODULE)
+EXPORT_SYMBOL(snd_hack_usb_set_interface);
+#endif
 #endif
