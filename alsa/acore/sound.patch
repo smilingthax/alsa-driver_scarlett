@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/sound.c	2007-07-20 11:47:27.000000000 +0200
-+++ sound.c	2007-07-20 11:50:23.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2007-10-09 10:32:55.000000000 +0200
++++ sound.c	2007-10-09 10:35:33.000000000 +0200
 @@ -41,6 +41,9 @@
  EXPORT_SYMBOL(snd_major);
  
@@ -53,7 +53,7 @@
  	mutex_lock(&sound_mutex);
  #ifdef CONFIG_SND_DYNAMIC_MINORS
  	minor = snd_find_free_minor();
-@@ -264,10 +280,26 @@
+@@ -264,6 +280,12 @@
  		return minor;
  	}
  	snd_minors[minor] = preg;
@@ -65,6 +65,9 @@
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
  	preg->dev = device_create(sound_class, device, MKDEV(major, minor),
  				  "%s", name);
+ 	if (IS_ERR(preg->dev)) {
+@@ -276,6 +298,16 @@
+ 
  	if (preg->dev)
  		dev_set_drvdata(preg->dev, private_data);
 +#elif defined(CONFIG_SND_HAVE_CLASS_SIMPLE)
@@ -80,7 +83,7 @@
  
  	mutex_unlock(&sound_mutex);
  	return 0;
-@@ -307,6 +339,9 @@
+@@ -315,6 +347,9 @@
  int snd_unregister_device(int type, struct snd_card *card, int dev)
  {
  	int minor;
@@ -90,7 +93,7 @@
  
  	mutex_lock(&sound_mutex);
  	minor = find_snd_minor(type, card, dev);
-@@ -315,7 +350,20 @@
+@@ -323,7 +358,20 @@
  		return -EINVAL;
  	}
  
@@ -111,7 +114,7 @@
  
  	kfree(snd_minors[minor]);
  	snd_minors[minor] = NULL;
-@@ -328,16 +376,28 @@
+@@ -336,16 +384,28 @@
  int snd_add_device_sysfs_file(int type, struct snd_card *card, int dev,
  			      struct device_attribute *attr)
  {
@@ -141,7 +144,7 @@
  }
  
  EXPORT_SYMBOL(snd_add_device_sysfs_file);
-@@ -423,31 +483,80 @@
+@@ -431,31 +491,80 @@
   *  INIT PART
   */
  
