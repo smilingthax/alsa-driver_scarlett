@@ -637,6 +637,21 @@ static unsigned short snd_intel8x0_codec_read(ac97_t *ac97,
 	return res;
 }
 
+static void snd_intel8x0_codec_read_test(intel8x0_t *chip, unsigned int codec)
+{
+	unsigned int tmp;
+
+	spin_lock(&chip->ac97_lock);
+	if (snd_intel8x0_codec_semaphore(chip, codec) >= 0) {
+		iagetword(chip, codec * 0x80);
+		if ((tmp = igetdword(chip, ICHREG(GLOB_STA))) & ICH_RCS) {
+			/* reset RCS and preserve other R/WC bits */
+			iputdword(chip, ICHREG(GLOB_STA), tmp & ~(ICH_SRI|ICH_PRI|ICH_TRI|ICH_GSCI));
+		}
+	}
+	spin_unlock(&chip->ac97_lock);
+}
+
 /*
  * access to AC97 for Ali5455
  */
@@ -1831,12 +1846,21 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 
 static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac97_quirk)
 {
-	ac97_bus_t bus, *pbus;
-	ac97_t ac97, *x97;
+	ac97_bus_t *pbus;
+	ac97_template_t ac97;
 	int err;
 	unsigned int i, codecs;
 	unsigned int glob_sta = 0;
 	int spdif_idx = -1; /* disabled */
+	ac97_bus_ops_t *ops;
+	static ac97_bus_ops_t standard_bus_ops = {
+		.write = snd_intel8x0_codec_write,
+		.read = snd_intel8x0_codec_read,
+	};
+	static ac97_bus_ops_t ali_bus_ops = {
+		.write = snd_intel8x0_ali_codec_write,
+		.read = snd_intel8x0_ali_codec_read,
+	};
 
 	switch (chip->device_type) {
 	case DEVICE_NFORCE:
@@ -1852,13 +1876,6 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac
 	};
 
 	chip->in_ac97_init = 1;
-	memset(&bus, 0, sizeof(bus));
-	bus.private_data = chip;
-	bus.private_free = snd_intel8x0_mixer_free_ac97_bus;
-	if (ac97_clock >= 8000 && ac97_clock <= 48000)
-		bus.clock = ac97_clock;
-	else
-		bus.clock = 48000;
 	
 	memset(&ac97, 0, sizeof(ac97));
 	ac97.private_data = chip;
@@ -1866,8 +1883,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac
 	ac97.scaps = AC97_SCAP_SKIP_MODEM;
 	if (chip->device_type != DEVICE_ALI) {
 		glob_sta = igetdword(chip, ICHREG(GLOB_STA));
-		bus.write = snd_intel8x0_codec_write;
-		bus.read = snd_intel8x0_codec_read;
+		ops = &standard_bus_ops;
 		if (chip->device_type == DEVICE_INTEL_ICH4) {
 			codecs = 0;
 			if (glob_sta & ICH_PCR)
@@ -1878,19 +1894,15 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac
 				codecs++;
 			chip->in_sdin_init = 1;
 			for (i = 0; i < codecs; i++) {
-				ac97.num = i;
-				snd_intel8x0_codec_read(&ac97, 0);
+				snd_intel8x0_codec_read_test(chip, i);
 				chip->ac97_sdin[i] = igetbyte(chip, ICHREG(SDM)) & ICH_LDI_MASK;
 			}
-			ac97.num = 0;
 			chip->in_sdin_init = 0;
 		} else {
 			codecs = glob_sta & ICH_SCR ? 2 : 1;
 		}
-		bus.vra = 1;
 	} else {
-		bus.write = snd_intel8x0_ali_codec_write;
-		bus.read = snd_intel8x0_ali_codec_read;
+		ops = &ali_bus_ops;
 		codecs = 1;
 		/* detect the secondary codec */
 		for (i = 0; i < 100; i++) {
@@ -1902,23 +1914,27 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac
 			iputdword(chip, ICHREG(ALI_RTSR), reg | 0x40);
 			udelay(1);
 		}
-		/* FIXME: my test board doens't work well with VRA... */
-		bus.vra = 0;
 	}
-	if ((err = snd_ac97_bus(chip->card, &bus, &pbus)) < 0)
+	if ((err = snd_ac97_bus(chip->card, 0, ops, chip, &pbus)) < 0)
 		goto __err;
+	pbus->private_free = snd_intel8x0_mixer_free_ac97_bus;
+	if (ac97_clock >= 8000 && ac97_clock <= 48000)
+		pbus->clock = ac97_clock;
+	/* FIXME: my test board doesn't work well with VRA... */
+	if (chip->device_type != DEVICE_ALI)
+		pbus->vra = 1;
 	chip->ac97_bus = pbus;
+
 	ac97.pci = chip->pci;
 	for (i = 0; i < codecs; i++) {
 		ac97.num = i;
-		if ((err = snd_ac97_mixer(pbus, &ac97, &x97)) < 0) {
+		if ((err = snd_ac97_mixer(pbus, &ac97, &chip->ac97[i])) < 0) {
 			if (err != -EACCES)
 				snd_printk(KERN_ERR "Unable to initialize codec #%d\n", i);
 			if (i == 0)
 				goto __err;
 			continue;
 		}
-		chip->ac97[i] = x97;
 	}
 	/* tune up the primary codec */
 	snd_ac97_tune_hardware(chip->ac97[0], ac97_quirks, ac97_quirk);
