@@ -2566,6 +2566,32 @@ if test "$CONFIG_HAVE_GFP_T" = "1"; then
   AC_DEFINE(CONFIG_HAVE_GFP_T)
 fi
 
+dnl Check for init_utsname...
+AC_MSG_CHECKING(for init_utsname)
+gfp_t="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/utsname.h>
+],[
+  void *x = init_utsname();
+],
+    AC_MSG_RESULT(yes);init_utsname="1",
+    AC_MSG_RESULT(no);init_utsname="0",
+    AC_MSG_RESULT(unknown);init_utsname="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_INIT_UTSNAME=$init_utsname
+dnl AC_SUBST(CONFIG_HAVE_INIT_UTSNAME)
+if test "$CONFIG_HAVE_INIT_UTSNAME" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_INIT_UTSNAME)
+fi
+
 dnl PnP supports suspend/resume?
 if test "$CONFIG_PNP_KERNEL" = "y"; then
   AC_MSG_CHECKING(for PnP suspend/resume)
