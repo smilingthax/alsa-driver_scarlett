@@ -65,6 +65,7 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 
 #ifdef CONFIG_SND_DEBUG_MEMORY
 #include <linux/slab.h>
+#include <linux/vmalloc.h>
 void *snd_wrapper_kmalloc(size_t, int);
 #undef kmalloc
 void snd_wrapper_kfree(const void *);

@@ -79,7 +79,6 @@ struct _snd_mpu401 {
 	snd_rawmidi_substream_t *substream_input;
 	snd_rawmidi_substream_t *substream_output;
 
-	spinlock_t open_lock;
 	spinlock_t input_lock;
 	spinlock_t output_lock;
 	spinlock_t timer_lock;

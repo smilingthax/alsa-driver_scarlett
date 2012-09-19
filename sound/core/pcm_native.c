@@ -944,13 +944,15 @@ static void snd_pcm_change_state(snd_pcm_substream_t *substream, int state)
 	spin_unlock(&pcm_link_lock);
 }
 
+static int snd_pcm_playback_drop(snd_pcm_substream_t *substream);
+
 static int snd_pcm_playback_drain(snd_pcm_substream_t * substream)
 {
 	snd_card_t *card;
 	snd_pcm_runtime_t *runtime;
 	int err, result = 0;
 	wait_queue_t wait;
-	enum { READY, EXPIRED, SUSPENDED, SIGNALED } state;
+	enum { READY, EXPIRED, SUSPENDED, SIGNALED } state = READY;
 
 	snd_assert(substream != NULL, return -ENXIO);
 	snd_assert(substream->stream == SNDRV_PCM_STREAM_PLAYBACK, return -EINVAL);
@@ -1052,6 +1054,9 @@ static int snd_pcm_playback_drain(snd_pcm_substream_t * substream)
       _end:
 	spin_unlock_irq(&runtime->lock);
 	snd_power_unlock(card);
+	if (state == EXPIRED)
+		snd_pcm_playback_drop(substream);
+
 	return result;
 }
 

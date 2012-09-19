@@ -24,7 +24,7 @@
 #include "emux_synth.h"
 
 /* sequencer device id */
-#define SNDRV_SEQ_DEV_ID_EMU10K1_SYNTH	"synth-emu10k1"
+#define SNDRV_SEQ_DEV_ID_EMU10K1_SYNTH	"emu10k1-synth"
 
 /* argument for snd_seq_device_new */
 typedef struct snd_emu10k1_synth_arg {

@@ -173,8 +173,6 @@ static int snd_mpu401_uart_input_open(snd_rawmidi_substream_t * substream)
 	mpu401_t *mpu;
 
 	mpu = snd_magic_cast(mpu401_t, substream->rmidi->private_data, return -ENXIO);
-	// snd_printk("[0x%x] MPU-401 command port - 0x%x\n", MPU401C(mpu), inb(MPU401C(mpu)));
-	// snd_printk("[0x%x] MPU-401 data port - 0x%x\n", MPU401D(mpu), inb(MPU401D(mpu)));
 	if (mpu->open_input)
 		mpu->open_input(mpu);
 	if (! test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode)) {
@@ -262,23 +260,22 @@ static void snd_mpu401_uart_input_trigger(snd_rawmidi_substream_t * substream, i
 static void snd_mpu401_uart_input_read(mpu401_t * mpu)
 {
 	int max = 128;
-	unsigned char byte, status;
+	unsigned char byte;
 
 	/* prevent double enter via event callback */
 	if (test_and_set_bit(MPU401_MODE_BIT_RX_LOOP, &mpu->mode))
 		return;
 	spin_lock(&mpu->input_lock);
 	while (max-- > 0) {
-		status = inb(MPU401C(mpu));
-		if (status & 0x80)
-			break; /* input not available */
-		else {
+		if (snd_mpu401_input_avail(mpu)) {
 			byte = inb(MPU401D(mpu));
 			if (test_bit(MPU401_MODE_BIT_INPUT_TRIGGER, &mpu->mode)) {
 				spin_unlock(&mpu->input_lock);
 				snd_rawmidi_receive(mpu->substream_input, &byte, 1);
 				spin_lock(&mpu->input_lock);
 			}
+		} else {
+			break; /* input not available */
 		}
 	}
 	spin_unlock(&mpu->input_lock);
@@ -390,7 +387,6 @@ int snd_mpu401_uart_new(snd_card_t * card, int device,
 	}
 	rmidi->private_data = mpu;
 	rmidi->private_free = snd_mpu401_uart_free;
-	spin_lock_init(&mpu->open_lock);
 	spin_lock_init(&mpu->input_lock);
 	spin_lock_init(&mpu->output_lock);
 	spin_lock_init(&mpu->timer_lock);

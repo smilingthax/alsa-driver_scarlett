@@ -99,6 +99,7 @@ MODULE_PARM_SYNTAX(snd_omni, SNDRV_ENABLE_DESC);
 #define ICE1712_SUBDEVICE_EWX2496	0x3b153011
 #define ICE1712_SUBDEVICE_EWS88MT	0x3b151511
 #define ICE1712_SUBDEVICE_EWS88D	0x3b152b11
+#define ICE1712_SUBDEVICE_DMX6FIRE	0x3b153811
 
 /*
  *  Direct registers
@@ -2864,7 +2865,7 @@ static int snd_ice1712_pro_route_analog_get(snd_kcontrol_t * kcontrol, snd_ctl_e
 	val = inw(ICEMT(ice, ROUTE_PSDOUT03));
 	val >>= ((idx % 2) * 8) + ((idx / 2) * 2);
 	val &= 3;
-	cval = inw(ICEMT(ice, ROUTE_CAPTURE));
+	cval = inl(ICEMT(ice, ROUTE_CAPTURE));
 	cval >>= ((idx / 2) * 8) + ((idx % 2) * 4);
 	if (val == 1 && idx < 2)
 		ucontrol->value.enumerated.item[0] = 11;
@@ -2886,13 +2887,13 @@ static int snd_ice1712_pro_route_analog_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 	
 	/* update PSDOUT */
 	if (ucontrol->value.enumerated.item[0] >= 11)
-		nval = idx < 2 ? 1 : 0;
+		nval = idx < 2 ? 1 : 0; /* dig mixer (or pcm) */
 	else if (ucontrol->value.enumerated.item[0] >= 9)
-		nval = 3;
+		nval = 3; /* spdif in */
 	else if (ucontrol->value.enumerated.item[0] >= 1)
-		nval = 2;
+		nval = 2; /* analog in */
 	else
-		nval = 0;
+		nval = 0; /* pcm */
 	shift = ((idx % 2) * 8) + ((idx / 2) * 2);
 	val = old_val = inw(ICEMT(ice, ROUTE_PSDOUT03));
 	val &= ~(0x03 << shift);
@@ -2900,24 +2901,24 @@ static int snd_ice1712_pro_route_analog_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 	change = val != old_val;
 	if (change)
 		outw(val, ICEMT(ice, ROUTE_PSDOUT03));
-	if (nval < 2)
+	if (nval < 2) /* dig mixer of pcm */
 		return change;
 
 	/* update CAPTURE */
-	val = old_val = inw(ICEMT(ice, ROUTE_CAPTURE));
+	val = old_val = inl(ICEMT(ice, ROUTE_CAPTURE));
 	shift = ((idx / 2) * 8) + ((idx % 2) * 4);
-	if (nval == 2) {
+	if (nval == 2) { /* analog in */
 		nval = ucontrol->value.enumerated.item[0] - 1;
 		val &= ~(0x07 << shift);
 		val |= nval << shift;
-	} else {
+	} else { /* spdif in */
 		nval = (ucontrol->value.enumerated.item[0] - 9) << 3;
 		val &= ~(0x08 << shift);
 		val |= nval << shift;
 	}
 	if (val != old_val) {
 		change = 1;
-		outw(val, ICEMT(ice, ROUTE_CAPTURE));
+		outl(val, ICEMT(ice, ROUTE_CAPTURE));
 	}
 	return change;
 }
@@ -4122,6 +4123,9 @@ static int __devinit snd_ice1712_probe(struct pci_dev *pci,
 		break;
 	case ICE1712_SUBDEVICE_EWS88D:
 		strcpy(card->shortname, "TerraTec EWS 88D");
+		break;
+	case ICE1712_SUBDEVICE_DMX6FIRE:
+		strcpy(card->shortname, "TerraTec DMX 6Fire");
 		break;
 	}
 

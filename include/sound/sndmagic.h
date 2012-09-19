@@ -24,6 +24,7 @@
 
 
 #ifdef CONFIG_SND_DEBUG_MEMORY
+
 void *_snd_magic_kcalloc(unsigned long magic, size_t size, int flags);
 void *_snd_magic_kmalloc(unsigned long magic, size_t size, int flags);
 void snd_magic_kfree(void *ptr);

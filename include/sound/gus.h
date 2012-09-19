@@ -32,7 +32,7 @@
 #include "ainstr_simple.h"
 #include <asm/io.h>
 
-#define SNDRV_SEQ_DEV_ID_GUS			"synth-gus"
+#define SNDRV_SEQ_DEV_ID_GUS			"gus-synth"
 
 /* IO ports */
 

@@ -39,6 +39,7 @@ obj-$(CONFIG_SND_CS4281) += snd-opl3-lib.o
 obj-$(CONFIG_SND_ES1938) += snd-opl3-lib.o
 obj-$(CONFIG_SND_FM801) += snd-opl3-lib.o
 obj-$(CONFIG_SND_SONICVIBES) += snd-opl3-lib.o
+obj-$(CONFIG_SND_YMFPCI) += snd-opl3-lib.o
 ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
   obj-$(CONFIG_SND_ALS100) += snd-opl3-synth.o
   obj-$(CONFIG_SND_AZT2320) += snd-opl3-synth.o
@@ -63,6 +64,7 @@ ifeq ($(subst m,y,$(CONFIG_SND_SEQUENCER)),y)
   obj-$(CONFIG_SND_ES1938) += snd-opl3-synth.o
   obj-$(CONFIG_SND_FM801) += snd-opl3-synth.o
   obj-$(CONFIG_SND_SONICVIBES) += snd-opl3-synth.o
+  obj-$(CONFIG_SND_YMFPCI) += snd-opl3-synth.o
 endif
 
 include $(TOPDIR)/Rules.make

@@ -1414,6 +1414,10 @@ static int snd_cmipci_playback_spdif_open(snd_pcm_substream_t *substream)
 	if ((err = open_device_check(cm, CM_OPEN_SPDIF_PLAYBACK, substream)) < 0) /* use channel A */
 		return err;
 	runtime->hw = snd_cmipci_playback_spdif;
+#if 1 /* FIXME: workaround */
+	if (cm->max_channels == 6)
+		runtime->hw.formats = SNDRV_PCM_FMTBIT_U16_LE;
+#endif
 	if (cm->can_ac3_hw) {
 		runtime->hw.info |= SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID;
 		//runtime->hw.formats |= SNDRV_PCM_FMTBIT_S24_LE;
@@ -1432,6 +1436,10 @@ static int snd_cmipci_capture_spdif_open(snd_pcm_substream_t * substream)
 	if ((err = open_device_check(cm, CM_OPEN_SPDIF_CAPTURE, substream)) < 0) /* use channel B */
 		return err;
 	runtime->hw = snd_cmipci_capture_spdif;
+#if 1 /* FIXME: workaround */
+	if (cm->max_channels == 6)
+		runtime->hw.formats = SNDRV_PCM_FMTBIT_U16_LE;
+#endif
 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x40000);
 	return 0;
 }
@@ -2279,6 +2287,7 @@ static struct pci_device_id snd_cmipci_ids[] __devinitdata = {
 	{PCI_VENDOR_ID_CMEDIA, PCI_DEVICE_ID_CMEDIA_CM8338B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 	{PCI_VENDOR_ID_CMEDIA, PCI_DEVICE_ID_CMEDIA_CM8738, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 	{PCI_VENDOR_ID_CMEDIA, PCI_DEVICE_ID_CMEDIA_CM8738B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{PCI_VENDOR_ID_AL, PCI_DEVICE_ID_CMEDIA_CM8738, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 	{0,},
 };
 
