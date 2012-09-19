@@ -376,17 +376,20 @@ static int snd_ali_codec_ready(	ali_t *codec,
 				int sched )
 {
 	unsigned long end_time;
+	unsigned int res;
 	
 	end_time = jiffies + 10 * (HZ >> 2);
 	do {
-		if (!(snd_ali_5451_peek(codec,port) & 0x8000))
+		res = snd_ali_5451_peek(codec,port);
+		if (! (res & 0x8000))
 			return 0;
 		if (sched) {
 			set_current_state(TASK_UNINTERRUPTIBLE);
 			schedule_timeout(1);
 		}
 	} while (time_after_eq(end_time, jiffies));
-	snd_printk("ali_codec_ready: codec is not ready.\n ");
+	snd_ali_5451_poke(codec, port, res & ~0x8000);
+	snd_printdd("ali_codec_ready: codec is not ready.\n ");
 	return -EIO;
 }
 

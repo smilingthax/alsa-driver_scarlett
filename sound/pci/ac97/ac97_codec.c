@@ -113,7 +113,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x414c4740, 0xfffffff0, "ALC202",		NULL,		NULL },
 { 0x414c4750, 0xfffffff0, "ALC250",		NULL,		NULL },
 { 0x434d4941, 0xffffffff, "CMI9738",		NULL,		NULL },
-{ 0x434d4961, 0xffffffff, "CMI9739",		NULL,		NULL },
+{ 0x434d4961, 0xffffffff, "CMI9739",		patch_cm9739,	NULL },
 { 0x43525900, 0xfffffff8, "CS4297",		NULL,		NULL },
 { 0x43525910, 0xfffffff8, "CS4297A",		patch_cirrus_spdif,	NULL },
 { 0x43525920, 0xfffffff8, "CS4294/4298",	NULL,		NULL },
@@ -1243,6 +1243,70 @@ static const snd_kcontrol_new_t snd_ac97_ymf753_controls_spdif[3] = {
 	AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",NONE,NONE) "Mute", AC97_YMF753_DIT_CTRL2, 2, 1, 1)
 };
 
+
+/*
+ * C-Media codecs
+ */
+
+static int snd_ac97_cmedia_spdif_playback_source_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+{
+	static char *texts[] = { "Analog", "Digital" };
+
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 2;
+	if (uinfo->value.enumerated.item > 1)
+		uinfo->value.enumerated.item = 1;
+	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int snd_ac97_cmedia_spdif_playback_source_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ac97_t *ac97 = snd_kcontrol_chip(kcontrol);
+	unsigned short val;
+
+	val = ac97->regs[AC97_CM9739_SPDIF_CTRL];
+	ucontrol->value.enumerated.item[0] = (val >> 1) & 0x01;
+	return 0;
+}
+
+static int snd_ac97_cmedia_spdif_playback_source_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
+{
+	ac97_t *ac97 = snd_kcontrol_chip(kcontrol);
+
+	return snd_ac97_update_bits(ac97, AC97_CM9739_SPDIF_CTRL,
+				    0x01 << 1, 
+				    (ucontrol->value.enumerated.item[0] & 0x01) << 1);
+}
+
+static const snd_kcontrol_new_t snd_ac97_cm9739_controls_spdif[] = {
+	/* BIT 0: SPDI_EN - always true */
+	{ /* BIT 1: SPDIFS */
+		.iface	= SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name	= SNDRV_CTL_NAME_IEC958("",PLAYBACK,NONE) "Source",
+		.info	= snd_ac97_cmedia_spdif_playback_source_info,
+		.get	= snd_ac97_cmedia_spdif_playback_source_get,
+		.put	= snd_ac97_cmedia_spdif_playback_source_put,
+	},
+	/* BIT 2: IG_SPIV */
+	AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",CAPTURE,NONE) "Valid Switch", AC97_CM9739_SPDIF_CTRL, 2, 1, 0),
+	/* BIT 3: SPI2F */
+	AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",CAPTURE,NONE) "Monitor", AC97_CM9739_SPDIF_CTRL, 3, 1, 0), 
+	/* BIT 4: SPI2SDI */
+	AC97_SINGLE(SNDRV_CTL_NAME_IEC958("",CAPTURE,SWITCH), AC97_CM9739_SPDIF_CTRL, 4, 1, 0),
+	/* BIT 8: SPD32 - 32bit SPDIF - not supported yet */
+};
+
+static const snd_kcontrol_new_t snd_ac97_cm9739_controls[] = {
+	AC97_SINGLE("Line-In As Surround", AC97_CM9739_MULTI_CHAN, 10, 1, 0),
+};
+
+static const snd_kcontrol_new_t snd_ac97_cm9738_controls[] = {
+	AC97_SINGLE("Line-In As Surround", AC97_CM9738_VENDOR_CTRL, 10, 1, 0),
+	AC97_SINGLE("Duplicate Front", AC97_CM9738_VENDOR_CTRL, 13, 1, 0),
+};
+
 /*
  *
  */
@@ -1572,12 +1636,18 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 			ac97->spec.ad18xx.pcmreg[2] = 0x9f1f;
 		}
 	} else {
+		/* FIXME: C-Media chips have no PCM volume!! */
+		if (/*ac97->id == 0x434d4941 ||*/
+		    ac97->id == 0x434d4942 ||
+		    ac97->id == 0x434d4961)
+			goto no_pcm;
 		for (idx = 0; idx < 2; idx++)
 			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_pcm[idx], ac97))) < 0)
 				return err;
 	}
 	snd_ac97_write_cache(ac97, AC97_PCM, 0x9f1f);
 
+ no_pcm:
 	/* build Capture controls */
 	for (idx = 0; idx < 3; idx++)
 		if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_capture[idx], ac97))) < 0)
@@ -1721,13 +1791,21 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 			for (idx = 0; idx < 5; idx++)
 				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_spdif[idx], ac97))) < 0)
 					return err;
-			if (ac97->id == AC97_ID_YMF753) {
+			switch (ac97->id) {
+			case AC97_ID_YMF753:
 				for (idx = 0; idx < 3; idx++)
 					if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_ymf753_controls_spdif[idx], ac97))) < 0)
 						return err;
-			} else if (ac97->id == AC97_ID_AD1980) {
+				break;
+			case AC97_ID_AD1980:
 				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_ad1980_spdif_source, ac97))) < 0)
 					return err;
+				break;
+			case AC97_ID_CM9739:
+				for (idx = 0; idx < ARRAY_SIZE(snd_ac97_cm9739_controls_spdif); idx++)
+					if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cm9739_controls_spdif[idx], ac97))) < 0)
+						return err;
+				break;
 			}
 			/* set default PCM S/PDIF params */
 			/* consumer,PCM audio,no copyright,no preemphasis,PCM coder,original,48000Hz */
@@ -1768,6 +1846,16 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 				return err;
 		for (idx = 1; idx < ARRAY_SIZE(snd_ac97_controls_vt1616); idx++)
 			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_controls_vt1616[idx], ac97))) < 0)
+				return err;
+		break;
+	case AC97_ID_CM9739:
+		for (idx = 1; idx < ARRAY_SIZE(snd_ac97_cm9739_controls); idx++)
+			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cm9739_controls[idx], ac97))) < 0)
+				return err;
+		break;
+	case AC97_ID_CM9738:
+		for (idx = 1; idx < ARRAY_SIZE(snd_ac97_cm9738_controls); idx++)
+			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cm9738_controls[idx], ac97))) < 0)
 				return err;
 		break;
 	default:
@@ -2029,7 +2117,12 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 	}
 	if (ac97->ext_id & AC97_EI_SPDIF) {
 		/* codec specific code (patch) should override these values */
-		ac97->rates[AC97_RATES_SPDIF] = SNDRV_PCM_RATE_48000 |
+		if (ac97->flags & AC97_CS_SPDIF)
+			ac97->rates[AC97_RATES_SPDIF] = SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_44100;
+		else if (ac97->id == AC97_ID_CM9739)
+			ac97->rates[AC97_RATES_SPDIF] = SNDRV_PCM_RATE_48000;
+		else
+			ac97->rates[AC97_RATES_SPDIF] = SNDRV_PCM_RATE_48000 |
 						SNDRV_PCM_RATE_44100 |
 						SNDRV_PCM_RATE_32000;
 	}
@@ -2559,6 +2652,10 @@ static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
 		reg = AC97_CSR_SPDIF;
 		mask = 1 << AC97_SC_SPSR_SHIFT;
 	} else {
+		if (ac97->id == AC97_ID_CM9739 && rate != 48000) {
+			snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
+			return -EINVAL;
+		}
 		switch (rate) {
 		case 44100: bits = AC97_SC_SPSR_44K; break;
 		case 48000: bits = AC97_SC_SPSR_48K; break;

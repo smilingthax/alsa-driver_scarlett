@@ -223,6 +223,13 @@
 #define AC97_YMF753_DIT_CTRL2	0x66	/* DIT Control 2 */
 #define AC97_YMF753_3D_MODE_SEL	0x68	/* 3D Mode Select */
 
+/* specific - C-Media */
+#define AC97_CM9738_VENDOR_CTRL	0x5a
+#define AC97_CM9739_MULTI_CHAN	0x64
+#define AC97_CM9739_SPDIF_IN_STATUS	0x68 /* 32bit */
+#define AC97_CM9739_SPDIF_CTRL	0x6c
+
+
 /* ac97->scaps */
 #define AC97_SCAP_AUDIO		(1<<0)	/* audio AC'97 codec */
 #define AC97_SCAP_MODEM		(1<<1)	/* modem AC'97 codec */
