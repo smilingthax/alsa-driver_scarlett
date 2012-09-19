@@ -29,7 +29,6 @@
 #include <sound/minors.h>
 #include <sound/hwdep.h>
 #include <sound/info.h>
-#include "ioctl32.h"
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Hardware dependent layer");
@@ -397,39 +396,6 @@ static void snd_hwdep_proc_read(snd_info_entry_t *entry,
 	up(&register_mutex);
 }
 
-
-#ifdef HAVE_IOCTL32
-/*
- * ioctl32 wrapper
- */
-
-#define AP(x) snd_ioctl32_##x
-
-static struct ioctl32_mapper hwdep_mappers[] = {
-	{ SNDRV_HWDEP_IOCTL_PVERSION, NULL },
-	{ SNDRV_HWDEP_IOCTL_INFO, NULL },
-	{ SNDRV_CTL_IOCTL_HWDEP_NEXT_DEVICE, NULL },
-	{ SNDRV_CTL_IOCTL_HWDEP_INFO, NULL },
-	{ 0 },
-};
-
-static int __init snd_hwdep_ioctl32_init(void)
-{
-	return snd_ioctl32_register(hwdep_mappers);
-}
-
-void __exit snd_hwdep_ioctl32_done(void)
-{
-	snd_ioctl32_unregister(hwdep_mappers);
-}
-
-#else /* !HAVE_IOCTL32 */
-
-#define snd_hwdep_ioctl32_init()
-#define snd_hwdep_ioctl32_done()
-
-#endif /* HAVE_IOCTL32 */
-
 /*
  *  ENTRY functions
  */
@@ -452,13 +418,11 @@ static int __init alsa_hwdep_init(void)
 	}
 	snd_hwdep_proc_entry = entry;
 	snd_ctl_register_ioctl(snd_hwdep_control_ioctl);
-	snd_hwdep_ioctl32_init();
 	return 0;
 }
 
 static void __exit alsa_hwdep_exit(void)
 {
-	snd_hwdep_ioctl32_done();
 	snd_ctl_unregister_ioctl(snd_hwdep_control_ioctl);
 	if (snd_hwdep_proc_entry) {
 		snd_info_unregister(snd_hwdep_proc_entry);

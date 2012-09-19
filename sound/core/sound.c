@@ -33,7 +33,6 @@
 #ifdef CONFIG_DEVFS_FS
 #include <linux/devfs_fs_kernel.h>
 #endif
-#include "ioctl32.h"
 
 #define SNDRV_OS_MINORS 256
 
@@ -355,9 +354,6 @@ static int __init alsa_sound_init(void)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_APM)
 	pm_init();
 #endif
-
-	snd_ioctl32_init();
-
 	return 0;
 }
 
@@ -384,9 +380,6 @@ static void __exit alsa_sound_exit(void)
 	snd_oss_cleanup_module();
 #endif
 	snd_info_done();
-
-	snd_ioctl32_done();
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0) && defined(CONFIG_APM)
 	pm_done();
 #endif
@@ -512,9 +505,3 @@ EXPORT_SYMBOL(snd_wrapper_kfree);
 #ifdef HACK_PCI_ALLOC_CONSISTENT
 EXPORT_SYMBOL(snd_pci_hack_alloc_consistent);
 #endif 
-/* ioctl32.c */
-#ifdef HAVE_IOCTL32
-EXPORT_SYMBOL(snd_ioctl32_register);
-EXPORT_SYMBOL(snd_ioctl32_unregister);
-#endif
- 

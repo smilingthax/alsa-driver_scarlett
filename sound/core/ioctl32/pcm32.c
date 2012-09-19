@@ -26,8 +26,6 @@
 #include "ioctl32.h"
 
 
-#ifdef HAVE_IOCTL32
-
 /* wrapper for sndrv_pcm_[us]frames */
 struct sndrv_pcm_sframes_str {
 	sndrv_pcm_sframes_t val;
@@ -264,7 +262,7 @@ static int snd_ioctl32_xfern(unsigned int fd, unsigned int cmd, unsigned long ar
 
 #define AP(x) snd_ioctl32_##x
 
-static struct ioctl32_mapper pcm_mappers[] = {
+struct ioctl32_mapper pcm_mappers[] = {
 	{ SNDRV_PCM_IOCTL_PVERSION, NULL },
 	{ SNDRV_PCM_IOCTL_INFO, NULL },
 	{ SNDRV_PCM_IOCTL_HW_REFINE, AP(pcm_hw_params) },
@@ -296,18 +294,3 @@ static struct ioctl32_mapper pcm_mappers[] = {
 
 	{ 0 },
 };
-
-/*
- */
-
-int __init snd_pcm_ioctl32_init(void)
-{
-	return snd_ioctl32_register(pcm_mappers);
-}
-
-void __exit snd_pcm_ioctl32_done(void)
-{
-	snd_ioctl32_unregister(pcm_mappers);
-}
-
-#endif /* HAVE_IOCTL32 */

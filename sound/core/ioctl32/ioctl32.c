@@ -27,9 +27,6 @@
 #include <asm/uaccess.h>
 #include "ioctl32.h"
 
-
-#ifdef HAVE_IOCTL32
-
 /*
  * register/unregister mappers
  * exported for other modules
@@ -313,15 +310,48 @@ static struct ioctl32_mapper control_mappers[] = {
 /*
  */
 
-int __init snd_ioctl32_init(void)
-{
-	return snd_ioctl32_register(control_mappers);
-}
+extern struct ioctl32_mapper pcm_mappers[];
+extern struct ioctl32_mapper rawmidi_mappers[];
+extern struct ioctl32_mapper timer_mappers[];
+extern struct ioctl32_mapper hwdep_mappers[];
 
-void __exit snd_ioctl32_done(void)
+static void snd_ioctl32_done(void)
 {
+	snd_ioctl32_unregister(hwdep_mappers);
+	snd_ioctl32_unregister(timer_mappers);
+	snd_ioctl32_unregister(rawmidi_mappers);
+	snd_ioctl32_unregister(pcm_mappers);
 	snd_ioctl32_unregister(control_mappers);
 }
 
+static int __init snd_ioctl32_init(void)
+{
+	int err;
+	
+	err = snd_ioctl32_register(control_mappers);
+	if (err < 0)
+		return err;
+	err = snd_ioctl32_register(pcm_mappers);
+	if (err < 0) {
+		snd_ioctl32_done();
+		return err;
+	}
+	err = snd_ioctl32_register(rawmidi_mappers);
+	if (err < 0) {
+		snd_ioctl32_done();
+		return err;
+	}
+	err = snd_ioctl32_register(timer_mappers);
+	if (err < 0) {
+		snd_ioctl32_done();
+		return err;
+	}
+	err = snd_ioctl32_register(hwdep_mappers);
+	if (err < 0) {
+		snd_ioctl32_done();
+		return err;
+	}
+}
 
-#endif /* HAVE_IOCTL32 */
+module_init(snd_ioctl32_init)
+module_exit(snd_ioctl32_done)

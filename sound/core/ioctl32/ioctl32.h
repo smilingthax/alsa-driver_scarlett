@@ -26,38 +26,6 @@
 #ifndef __ALSA_IOCTL32_H
 #define __ALSA_IOCTL32_H
 
-#if defined(CONFIG_X86_64)
-#ifdef CONFIG_IA32_EMULATION
-#define A(__x) ((unsigned long)(__x))
-#define HAVE_IOCTL32
-#endif
-
-#elif defined(CONFIG_PPC64)
-#include <asm/ppc32.h>
-#define HAVE_IOCTL32
-
-#elif defined(CONFIG_SPARC64)
-#define A(__x) ((unsigned long)(__x))
-#define HAVE_IOCTL32
-
-/* mip64 has still no register/unreigster interface */
-//#elif defined(CONFIG_MIPS32_COMPAT)
-//#define A(__x) ((unsigned long)(__x))
-//#define HAVE_IOCTL32
-
-#else
-// for test
-#define A(__x) ((unsigned long)(__x))
-#define HAVE_IOCTL32
-
-#endif
-
-
-/*
- */
-
-#ifdef HAVE_IOCTL32
-
 #define TO_PTR(x)  A(x)
 
 #define COPY(x)  (dst->x = src->x)
@@ -107,32 +75,5 @@ struct ioctl32_mapper {
 
 int snd_ioctl32_register(struct ioctl32_mapper *mappers);
 void snd_ioctl32_unregister(struct ioctl32_mapper *mappers);
-int snd_ioctl32_init(void);
-void snd_ioctl32_done(void);
-
-int snd_pcm_ioctl32_init(void);
-void snd_pcm_ioctl32_done(void);
-
-int snd_rawmidi_ioctl32_init(void);
-void snd_rawmidi_ioctl32_done(void);
-
-int snd_timer_ioctl32_init(void);
-void snd_timer_ioctl32_done(void);
-
-#else /* !HAVE_IOCTL32 */
-
-#define snd_ioctl32_init()
-#define snd_ioctl32_done()
-
-#define snd_pcm_ioctl32_init()
-#define snd_pcm_ioctl32_done()
-
-#define snd_rawmidi_ioctl32_init()
-#define snd_rawmidi_ioctl32_done()
-
-#define snd_timer_ioctl32_init()
-#define snd_timer_ioctl32_done()
-
-#endif /* HAVE_IOCTL32 */
 
 #endif /* __ALSA_IOCTL32_H */

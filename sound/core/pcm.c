@@ -28,7 +28,6 @@
 #include <sound/pcm.h>
 #include <sound/control.h>
 #include <sound/info.h>
-#include "ioctl32.h"
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>, Abramo Bagnara <abramo@alsa-project.org>");
 MODULE_DESCRIPTION("Midlevel PCM code for ALSA.");
@@ -946,13 +945,11 @@ static int __init alsa_pcm_init(void)
 		}
 	}
 	snd_pcm_proc_entry = entry;
-	snd_pcm_ioctl32_init();
 	return 0;
 }
 
 static void __exit alsa_pcm_exit(void)
 {
-	snd_pcm_ioctl32_done();
 	snd_ctl_unregister_ioctl(snd_pcm_control_ioctl);
 	if (snd_pcm_proc_entry) {
 		snd_info_unregister(snd_pcm_proc_entry);
