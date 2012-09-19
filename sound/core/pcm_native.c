@@ -648,7 +648,7 @@ static int snd_pcm_action_group(struct action_ops *ops,
 		snd_pcm_group_for_each(pos, substream) {
 			s1 = snd_pcm_group_substream_entry(pos);
 			if (s1 != substream)
-				spin_unlock(&s->self_group.lock);
+				spin_unlock(&s1->self_group.lock);
 			if (s1 == s)	/* end */
 				break;
 		}
