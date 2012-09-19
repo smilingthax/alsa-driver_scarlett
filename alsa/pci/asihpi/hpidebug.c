@@ -27,12 +27,16 @@ Debug macro translation.
 /* Debug level; 0 quiet; 1 informative, 2 debug, 3 verbose debug.  */
 int hpiDebugLevel = HPI_DEBUG_LEVEL_DEFAULT;
 
-void HPI_DebugInit(void)
+void HPI_DebugInit(
+	void
+)
 {
-	HPIOS_DEBUG_PRINTF(DBG_TEXT("Debug Start\n"));
+	printk(DBG_TEXT("Debug Start\n"));
 }
 
-int HPI_DebugLevelSet(int level)
+int HPI_DebugLevelSet(
+	int level
+)
 {
 	int old_level;
 
@@ -41,7 +45,9 @@ int HPI_DebugLevelSet(int level)
 	return old_level;
 }
 
-int HPI_DebugLevelGet(void)
+int HPI_DebugLevelGet(
+	void
+)
 {
 	return (hpiDebugLevel);
 }
@@ -50,7 +56,10 @@ int HPI_DebugLevelGet(void)
 /* implies OS has no printf-like function */
 #include <stdarg.h>
 
-void hpi_debug_printf(DBG_CHAR * fmt, ...)
+void hpi_debug_printf(
+	DBG_CHAR * fmt,
+	...
+)
 {
 	va_list arglist;
 	DBG_CHAR buffer[128];
@@ -63,35 +72,37 @@ void hpi_debug_printf(DBG_CHAR * fmt, ...)
 }
 #endif
 
-typedef struct {
+struct treenode {
 	void *array;
 	unsigned int numElements;
-} treenode_t;
+};
 
-#define make_treenode_from_array( nodename, array ) \
+#define make_treenode_from_array(nodename, array) \
 static void *tmp_strarray_##nodename[] = array; \
-static treenode_t nodename = { \
+static struct treenode nodename = { \
 &tmp_strarray_##nodename, \
 ARRAY_SIZE(tmp_strarray_##nodename) \
 };
 
-#define get_treenode_elem( node_ptr, idx, type )  ( &( *( (type *)(node_ptr)->array )[idx] ) )
+#define get_treenode_elem(node_ptr, idx, type)  \
+(&(*((type *)(node_ptr)->array)[idx]))
 
 make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
-    make_treenode_from_array(hpi_adapter_strings, HPI_ADAPTER_STRINGS)
-    make_treenode_from_array(hpi_istream_strings, HPI_ISTREAM_STRINGS)
-    make_treenode_from_array(hpi_ostream_strings, HPI_OSTREAM_STRINGS)
-    make_treenode_from_array(hpi_mixer_strings, HPI_MIXER_STRINGS)
-    make_treenode_from_array(hpi_node_strings,
-			     {
-			     DBG_TEXT("NODE is invalid object")})
+	make_treenode_from_array(hpi_adapter_strings, HPI_ADAPTER_STRINGS)
+	make_treenode_from_array(hpi_istream_strings, HPI_ISTREAM_STRINGS)
+	make_treenode_from_array(hpi_ostream_strings, HPI_OSTREAM_STRINGS)
+	make_treenode_from_array(hpi_mixer_strings, HPI_MIXER_STRINGS)
+	make_treenode_from_array(hpi_node_strings,
+	{
+	DBG_TEXT("NODE is invalid object")})
 
-    make_treenode_from_array(hpi_control_strings, HPI_CONTROL_STRINGS)
-    make_treenode_from_array(hpi_nvmemory_strings, HPI_OBJ_STRINGS)
-    make_treenode_from_array(hpi_digitalio_strings, HPI_DIGITALIO_STRINGS)
-    make_treenode_from_array(hpi_watchdog_strings, HPI_WATCHDOG_STRINGS)
-    make_treenode_from_array(hpi_clock_strings, HPI_CLOCK_STRINGS)
-    make_treenode_from_array(hpi_profile_strings, HPI_PROFILE_STRINGS)
+	make_treenode_from_array(hpi_control_strings, HPI_CONTROL_STRINGS)
+	make_treenode_from_array(hpi_nvmemory_strings, HPI_OBJ_STRINGS)
+	make_treenode_from_array(hpi_digitalio_strings, HPI_DIGITALIO_STRINGS)
+	make_treenode_from_array(hpi_watchdog_strings, HPI_WATCHDOG_STRINGS)
+	make_treenode_from_array(hpi_clock_strings, HPI_CLOCK_STRINGS)
+	make_treenode_from_array(hpi_profile_strings, HPI_PROFILE_STRINGS)
+	make_treenode_from_array(hpi_asyncevent_strings, HPI_ASYNCEVENT_STRINGS)
 #define HPI_FUNCTION_STRINGS \
 { \
 &hpi_subsys_strings,\
@@ -106,37 +117,29 @@ make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
 &hpi_watchdog_strings,\
 &hpi_clock_strings,\
 &hpi_profile_strings,\
-&hpi_control_strings \
+&hpi_control_strings, \
+&hpi_asyncevent_strings \
 };
-    make_treenode_from_array(hpi_function_strings, HPI_FUNCTION_STRINGS)
-#if 0
-//Not used anywhere???
-    make_treenode_from_array(hpi_obj_strings, HPI_OBJ_STRINGS)
+	make_treenode_from_array(hpi_function_strings, HPI_FUNCTION_STRINGS)
 
-static DBG_CHAR *hpi_object_string(unsigned int object)
-{
-	if (object == 0 || object == HPI_OBJ_NODE
-	    || object > hpi_obj_strings.numElements)
-		return DBG_TEXT("Invalid object");
+	compile_time_assert(HPI_OBJ_MAXINDEX == 14, obj_list_doesnt_match);
 
-	return get_treenode_elem(&hpi_obj_strings, object - 1, DBG_CHAR *);
-}
-#endif
-
-static DBG_CHAR *hpi_function_string(unsigned int function)
+static DBG_CHAR *hpi_function_string(
+	unsigned int function
+)
 {
 	unsigned int object;
-	treenode_t *tmp;
+	struct treenode *tmp;
 
 	object = function / HPI_OBJ_FUNCTION_SPACING;
 	function = function - object * HPI_OBJ_FUNCTION_SPACING;
 
 	if (object == 0 || object == HPI_OBJ_NODE
-	    || object > hpi_function_strings.numElements)
+		|| object > hpi_function_strings.numElements)
 		return DBG_TEXT("Invalid object");
 
-	tmp =
-	    get_treenode_elem(&hpi_function_strings, object - 1, treenode_t *);
+	tmp = get_treenode_elem(&hpi_function_strings, object - 1,
+		struct treenode *);
 
 	if (function == 0 || function > tmp->numElements)
 		return DBG_TEXT("Invalid function");
@@ -144,19 +147,33 @@ static DBG_CHAR *hpi_function_string(unsigned int function)
 	return get_treenode_elem(tmp, function - 1, DBG_CHAR *);
 }
 
-void hpi_debug_message(HPI_MESSAGE * phm, DBG_CHAR * szFileline)
+void hpi_debug_message(
+	struct hpi_message *phm,
+	DBG_CHAR * szFileline
+)
 {
 	if (phm) {
 		if ((phm->wObject <= HPI_OBJ_MAXINDEX) && phm->wObject) {
 			u16 wIndex = 0;
 
 			switch (phm->wObject) {
+			case HPI_OBJ_ADAPTER:
+			case HPI_OBJ_PROFILE:
+				break;
+			case HPI_OBJ_MIXER:
+				if (phm->wFunction ==
+					HPI_MIXER_GET_CONTROL_BY_INDEX)
+					wIndex = phm->u.m.wControlIndex;
+				break;
 			case HPI_OBJ_OSTREAM:
 			case HPI_OBJ_ISTREAM:
 				wIndex = phm->u.d.wStreamIndex;
 				break;
 			case HPI_OBJ_CONTROLEX:
-				wIndex = phm->u.cx.wControlIndex;
+				if (phm->wFunction == HPI_CONTROL_GET_INFO)
+					wIndex = phm->u.c.wControlIndex;
+				else
+					wIndex = phm->u.cx.wControlIndex;
 				break;
 			case HPI_OBJ_CONTROL:
 				wIndex = phm->u.c.wControlIndex;
@@ -164,35 +181,26 @@ void hpi_debug_message(HPI_MESSAGE * phm, DBG_CHAR * szFileline)
 			default:
 				break;
 			}
-			HPIOS_DEBUG_PRINTF(DBG_TEXT
-					   ("%s Adapter #%d Fn 0x%03X %s Index #%d \n"),
-					   szFileline, phm->wAdapterIndex,
-					   phm->wFunction,
-					   hpi_function_string(phm->wFunction),
-					   wIndex);
+			printk(DBG_TEXT
+				("%s Adapter #%d Fn 0x%03X %s Index #%d \n"),
+				szFileline, phm->wAdapterIndex,
+				phm->wFunction,
+				hpi_function_string(phm->wFunction), wIndex);
 		} else {
-			HPIOS_DEBUG_PRINTF(DBG_TEXT
-					   ("Adap=%d, Invalid Obj=%d, Func=%d\n"),
-					   phm->wAdapterIndex, phm->wObject,
-					   phm->wFunction);
+			printk(DBG_TEXT
+				("Adap=%d, Invalid Obj=%d, Func=%d\n"),
+				phm->wAdapterIndex, phm->wObject,
+				phm->wFunction);
 		}
 	} else
-		HPIOS_DEBUG_PRINTF(DBG_TEXT
-				   ("NULL message pointer to hpi_debug_message!\n"));
+		printk(DBG_TEXT
+			("NULL message pointer to hpi_debug_message!\n"));
 }
 
-#if 0
-void hpi_debug_response(HPI_RESPONSE * phr)
-{
-	if (phr->wError)
-		HPIOS_DEBUG_PRINTF(DBG_TEXT("Error %d\n"), phr->wError);
-	else {
-		HPIOS_DEBUG_PRINTF(DBG_TEXT("OK\n"));
-	}
-}
-#endif
-
-void hpi_debug_data(u16 * pdata, u32 len)
+void hpi_debug_data(
+	u16 *pdata,
+	u32 len
+)
 {
 	u32 i;
 	int j;
@@ -205,13 +213,12 @@ void hpi_debug_data(u16 * pdata, u32 len)
 		lines = 8;
 
 	for (i = 0, j = 0; j < lines; j++) {
-//HPIOS_DEBUG_PRINTF(DBG_TEXT(HPI_DEBUG_FLAG_VERBOSE "%p:"), (pdata + i)); // doesn't work for WIN32_USER
-		HPIOS_DEBUG_PRINTF(DBG_TEXT("%p:"), (pdata + i));
+		printk(DBG_TEXT("%p:"), (pdata + i));
 
-		for (k = 0; k < cols && i < len; i++, k++) {
-			HPIOS_DEBUG_PRINTF(DBG_TEXT("%s%04x"),
-					   k == 0 ? "" : " ", pdata[i]);
-		}
-		HPIOS_DEBUG_PRINTF(DBG_TEXT("\n"));
+		for (k = 0; k < cols && i < len; i++, k++)
+			printk(DBG_TEXT("%s%04x"),
+				k == 0 ? "" : " ", pdata[i]);
+
+		printk(DBG_TEXT("\n"));
 	}
 }

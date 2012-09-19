@@ -34,8 +34,9 @@ HPI Operating System Specific macros for Linux
 #include <linux/version.h>
 #include <linux/firmware.h>
 #include <linux/interrupt.h>
+#include <linux/pci.h>
 
-#if ( LINUX_VERSION_CODE >= KERNEL_VERSION ( 2 , 5 , 0 ) )
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 5 , 0))
 #    include <linux/device.h>
 #endif
 
@@ -54,13 +55,21 @@ HPI Operating System Specific macros for Linux
 #define __iomem
 #endif
 
-#define NO_HPIOS_FILE_OPS
+#define HPI_NO_OS_FILE_OPS
 
 #ifdef CONFIG_64BIT
 #define HPI64BIT
 #endif
 
-/* //////////////////////////////////////////////////////////////////////// */
+/** Details of a memory area allocated with  pci_alloc_consistent
+Need all info for parameters to pci_free_consistent
+*/
+struct consistent_dma_area {
+	struct pci_dev *pdev;
+	dma_addr_t dma_addr;
+	void *cpu_addr;
+	size_t size;
+};
 
 struct hpi_ioctl_linux {
 	void __user *phm;
@@ -69,11 +78,6 @@ struct hpi_ioctl_linux {
 
 #define HPI_IOCTL_LINUX _IOWR('H', 1, struct hpi_ioctl_linux)
 
-// Cast to *HpiOs_LockedMem_Area in hpios_linux.c
-typedef void *HpiOs_LockedMem_Handle;
-
-#define HPIOS_DEBUG_PRINTF printk
-
 #define HPI_DEBUG_FLAG_ERROR   KERN_ERR
 #define HPI_DEBUG_FLAG_WARNING KERN_WARNING
 #define HPI_DEBUG_FLAG_NOTICE  KERN_NOTICE
@@ -81,46 +85,28 @@ typedef void *HpiOs_LockedMem_Handle;
 #define HPI_DEBUG_FLAG_DEBUG   KERN_DEBUG
 #define HPI_DEBUG_FLAG_VERBOSE KERN_DEBUG	/* kernel has no verbose */
 
-/* I/O read/write.  */
-#define HOUT8(a,d)       outb(a,d)
-#define HINP8(a)         inb(a)
-#define HOUTBUF8(p,a,l)  outsb(p,a,l)
-
-/* Memory read/write */
-#if ( LINUX_VERSION_CODE > KERNEL_VERSION ( 2 , 6 , 8 ) )
-
-#define HPIOS_MEMWRITE32(a,d) iowrite32((d),(a))
-#define HPIOS_MEMREAD32(a) ioread32((a))
-#define HPIOS_MEMWRITEBLK32(from,to,nwords) iowrite32_rep(to,from,nwords)
-#define HPIOS_MEMREADBLK32(from,to,nwords)  ioread32_rep(from,to,nwords)
-
-#else
-
-#define HPIOS_MEMWRITE32(a,d) writel((d),(a))
-#define HPIOS_MEMREAD32(a) readl((a))
-/* BLK versions replaced by loops in the code */
-#endif
-
 #include <linux/spinlock.h>
 
 #define HPI_LOCKING
 
-typedef struct {
-	spinlock_t lock;
+struct hpios_spinlock {
+	spinlock_t lock;	/* SEE hpios_spinlock */
 	int lock_context;
-} HPIOS_SPINLOCK;
+};
 
 /* The reason for all this evilness is that ALSA calls some of a drivers
-operators in atomic context, and some not.  But all our functions channel through
-the HPI_Message conduit, so we can't handle the different context per function
+* operators in atomic context, and some not.  But all our functions channel
+* through the HPI_Message conduit, so we can't handle the different context
+* per function
 */
-
 #define IN_LOCK_BH 1
 #define IN_LOCK_IRQ 0
-static inline void cond_lock(HPIOS_SPINLOCK * l)
+static inline void cond_lock(
+	struct hpios_spinlock *l
+)
 {
 	if (irqs_disabled()) {
-// NO bh or isr can execute on this processor, so ordinary lock will do
+/* NO bh or isr can execute on this processor, so ordinary lock will do */
 		spin_lock(&((l)->lock));
 		l->lock_context = IN_LOCK_IRQ;
 	} else {
@@ -129,7 +115,9 @@ static inline void cond_lock(HPIOS_SPINLOCK * l)
 	}
 }
 
-static inline void cond_unlock(HPIOS_SPINLOCK * l)
+static inline void cond_unlock(
+	struct hpios_spinlock *l
+)
 {
 	if (l->lock_context == IN_LOCK_BH) {
 		spin_unlock_bh(&((l)->lock));
@@ -138,41 +126,26 @@ static inline void cond_unlock(HPIOS_SPINLOCK * l)
 	}
 }
 
-#define HpiOs_Msgxlock_Init( obj )      spin_lock_init( &(obj)->lock )
-#define HpiOs_Msgxlock_Lock( obj, f )   cond_lock( obj )
-#define HpiOs_Msgxlock_UnLock( obj, f ) cond_unlock( obj )
+#define HpiOs_Msgxlock_Init(obj)      spin_lock_init(&(obj)->lock)
+#define HpiOs_Msgxlock_Lock(obj)   cond_lock(obj)
+#define HpiOs_Msgxlock_UnLock(obj) cond_unlock(obj)
 
-#define HpiOs_Dsplock_Init( obj )       spin_lock_init( &(obj)->dspLock.lock )
-#define HpiOs_Dsplock_Lock( obj, f )    cond_lock( &(obj)->dspLock )
-#define HpiOs_Dsplock_UnLock( obj, f )  cond_unlock( &(obj)->dspLock )
-
-#define HPIOS_LOCK_FLAGS(name)
+#define HpiOs_Dsplock_Init(obj)       spin_lock_init(&(obj)->dspLock.lock)
+#define HpiOs_Dsplock_Lock(obj)    cond_lock(&(obj)->dspLock)
+#define HpiOs_Dsplock_UnLock(obj)  cond_unlock(&(obj)->dspLock)
 
 #ifdef CONFIG_SND_DEBUG
 #define HPI_DEBUG
 #endif
 
 #define HPI_ALIST_LOCKING
-#define HpiOs_Alistlock_Init( obj )     spin_lock_init( &((obj)->aListLock.lock) )
-#define HpiOs_Alistlock_Lock(obj, f )   spin_lock( &((obj)->aListLock.lock) )
-#define HpiOs_Alistlock_UnLock(obj, f ) spin_unlock( &((obj)->aListLock.lock) )
+#define HpiOs_Alistlock_Init(obj)    spin_lock_init(&((obj)->aListLock.lock))
+#define HpiOs_Alistlock_Lock(obj) spin_lock(&((obj)->aListLock.lock))
+#define HpiOs_Alistlock_UnLock(obj) spin_unlock(&((obj)->aListLock.lock))
 
-static inline void *HpiOs_MemAlloc(u32 dwSize)
-{
-	return kmalloc(dwSize, GFP_KERNEL);
-}
-
-static inline void HpiOs_MemFree(void *ptr)
-{
-	kfree(ptr);
-}
-
-typedef struct {
-/* Spinlock prevents contention for one card between user prog and alsa driver */
-	spinlock_t spinlock;
-	unsigned long flags;
-
-/* Semaphores prevent contention for one card between multiple user programs (via ioctl) */
+struct hpi_adapter {
+/* Semaphores prevent contention for one card
+between multiple user programs (via ioctl) */
 	struct semaphore sem;
 	u16 wAdapterIndex;
 	u16 type;
@@ -183,7 +156,4 @@ typedef struct {
 	char *pBuffer;
 	struct pci_dev *pci;
 	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
-
-} adapter_t;
-
-///////////////////////////////////////////////////////////////////////////
+};

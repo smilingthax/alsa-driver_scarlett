@@ -16,36 +16,19 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-HPI Extended Message Handler Functions
+Hardware Programming Interface (HPI) Utility functions
 
-(C) Copyright AudioScience Inc. 1997-2003
-******************************************************************************/
+(C) Copyright AudioScience Inc. 2007
+*******************************************************************************/
 
-#ifndef _HPIMSGX_H_
-#define _HPIMSGX_H_
-
-#include "hpi.h"
-
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-extern "C" {
-/* *INDENT-ON* */
-#endif
-
-#define HPIMSGX_ALLADAPTERS     (0xFFFF)
-
-void HPI_MessageEx(
+void HPI_InitMessage(
 	struct hpi_message *phm,
-	struct hpi_response *phr,
-	void *hOwner
+	u16 wObject,
+	u16 wFunction
 );
-
-#define HPI_MESSAGE_LOWER_LAYER HPI_MessageEx
-
-#ifdef __cplusplus
-/* *INDENT-OFF* */
-}
-/* *INDENT-ON* */
-#endif
-
-#endif				/* _HPIMSGX_H_ */
+void HPI_InitResponse(
+	struct hpi_response *phr,
+	u16 wObject,
+	u16 wFunction,
+	u16 wError
+);

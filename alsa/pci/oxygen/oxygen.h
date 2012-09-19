@@ -3,6 +3,7 @@
 
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
+#include <linux/workqueue.h>
 #include "oxygen_regs.h"
 
 /* 1 << PCM_x == OXYGEN_CHANNEL_x */
@@ -50,6 +51,8 @@ struct oxygen {
 	u32 spdif_pcm_bits;
 	struct snd_pcm_substream *streams[PCM_COUNT];
 	struct snd_kcontrol *spdif_pcm_ctl;
+	struct snd_kcontrol *spdif_input_bits_ctl;
+	struct work_struct spdif_input_bits_work;
 };
 
 struct oxygen_model {

@@ -39,30 +39,6 @@ Defines used for basic messaging
 #define H620_HIF_GET_DATA       0x15
 #define H620_HIF_UNKNOWN                0xffff
 
-///////////////////////////////////////////////////////////////////////////////
-// HIF errors get listed here
-
-#define HPI6205_ERROR_BASE                                      1000
-
-#define HPI6205_ERROR_MEM_ALLOC                         1
-#define HPI6205_ERROR_6205_NO_IRQ                       2
-#define HPI6205_ERROR_6205_INIT_FAILED          3
-//#define HPI6205_ERROR_MISSING_DSPCODE         4
-#define HPI6205_ERROR_UNKNOWN_PCI_DEVICE        5
-#define HPI6205_ERROR_6205_REG                          6
-#define HPI6205_ERROR_6205_DSPPAGE                      7
-#define HPI6205_ERROR_BAD_DSPINDEX                      8
-#define HPI6205_ERROR_C6713_HPIC                        9
-#define HPI6205_ERROR_C6713_HPIA                        10
-#define HPI6205_ERROR_C6713_PLL                         11
-#define HPI6205_ERROR_DSP_INTMEM            12
-#define HPI6205_ERROR_DSP_EXTMEM                        13
-#define HPI6205_ERROR_DSP_PLD               14
-#define HPI6205_ERROR_MSG_RESP_IDLE_TIMEOUT 15
-#define HPI6205_ERROR_MSG_RESP_TIMEOUT          16
-#define HPI6205_ERROR_6205_EEPROM                       17
-#define HPI6205_ERROR_DSP_EMIF                          18
-
 /***********************************************************
 Types used for mixer control caching
 ************************************************************/
@@ -74,53 +50,55 @@ Types used for mixer control caching
 /*********************************************************************
 This is used for background buffer bus mastering stream buffers.
 **********************************************************************/
-typedef volatile struct {
+struct hostbuffer_status_6205 {
 	u32 dwSamplesProcessed;
 	u32 dwAuxiliaryDataAvailable;
 	u32 dwStreamState;
-	u32 dwDSPIndex;		// DSP index in to the host bus master buffer.
-	u32 dwHostIndex;	// Host index in to the host bus master buffer.
+/* DSP index in to the host bus master buffer. */
+	u32 dwDSPIndex;
+/* Host index in to the host bus master buffer. */
+	u32 dwHostIndex;
 	u32 dwSizeInBytes;
-} H620_HOSTBUFFER_STATUS;
+};
 
 /*********************************************************************
 This is used for dynamic control cache allocation
 **********************************************************************/
-typedef volatile struct {
+struct controlcache_6205 {
 	u32 dwNumberOfControls;
 	u32 dwPhysicalPCI32address;
 	u32 dwSpare;
-} H620_CONTROLCACHE;
+};
 
 /*********************************************************************
 This is used for dynamic allocation of async event array
 **********************************************************************/
-typedef volatile struct {
+struct async_event_buffer_6205 {
 	u32 dwPhysicalPCI32address;
 	u32 dwSpare;
-	tHPIFIFOBuffer b;
-} H620_ASYNC_EVENT_BUFFER;
+	struct hpi_fifo_buffer b;
+};
 
 /***********************************************************
 The Host located memory buffer that the 6205 will bus master
 in and out of.
 ************************************************************/
 #define HPI6205_SIZEOF_DATA (16*1024)
-typedef volatile struct {
+struct bus_master_interface {
 	u32 dwHostCmd;
 	u32 dwDspAck;
 	u32 dwTransferSizeInBytes;
 	union {
-		HPI_MESSAGE MessageBuffer;
-		HPI_RESPONSE ResponseBuffer;
+		struct hpi_message MessageBuffer;
+		struct hpi_response ResponseBuffer;
 		u8 bData[HPI6205_SIZEOF_DATA];
 	} u;
-	H620_CONTROLCACHE aControlCache;
-	H620_ASYNC_EVENT_BUFFER aAsyncBuffer;
-	H620_HOSTBUFFER_STATUS aInStreamHostBufferStatus[H620_MAX_ISTREAMS];
-	H620_HOSTBUFFER_STATUS aOutStreamHostBufferStatus[H620_MAX_OSTREAMS];
-} tBusMasteringInterfaceBuffer;
+	struct controlcache_6205 aControlCache;
+	struct async_event_buffer_6205 aAsyncBuffer;
+	struct hostbuffer_status_6205
+	 aInStreamHostBufferStatus[H620_MAX_ISTREAMS];
+	struct hostbuffer_status_6205
+	 aOutStreamHostBufferStatus[H620_MAX_OSTREAMS];
+};
 
 #endif
-
-///////////////////////////////////////////////////////
