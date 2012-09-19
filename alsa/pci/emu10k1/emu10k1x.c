@@ -33,6 +33,7 @@
 #include <sound/initval.h>
 #include <sound/pcm.h>
 #include <sound/ac97_codec.h>
+#include <sound/info.h>
 
 MODULE_AUTHOR("Francisco Moraes <fmoraes@nc.rr.com>");
 MODULE_DESCRIPTION("EMU10K1X");
@@ -744,10 +745,11 @@ static void snd_emu10k1x_proc_reg_read(snd_info_entry_t *entry,
 				       snd_info_buffer_t * buffer)
 {
 	emu10k1x_t *emu = snd_magic_cast(emu10k1x_t, entry->private_data, return);
-	snd_iprintf(buffer, "Registers:\n\n");
 	unsigned long value,value1,value2;
 	unsigned long flags;
 	int i;
+
+	snd_iprintf(buffer, "Registers:\n\n");
 	for(i = 0; i < 0x40; i+=4) {
 		spin_lock_irqsave(&emu->emu_lock, flags);
 		value = inl(emu->port + i);
@@ -759,11 +761,11 @@ static void snd_emu10k1x_proc_reg_read(snd_info_entry_t *entry,
 		value = snd_emu10k1x_ptr_read(emu, i, 0);
 		value1 = snd_emu10k1x_ptr_read(emu, i, 1);
 		value2 = snd_emu10k1x_ptr_read(emu, i, 2);
-		snd_iprintf(buffer, "%02X: %08lX %08lX %08lX\n", i, value, value, value2);
+		snd_iprintf(buffer, "%02X: %08lX %08lX %08lX\n", i, value, value1, value2);
 	}
 }
 
-int __devinit snd_emu10k1x_proc_init(emu10k1x_t * emu)
+static int __devinit snd_emu10k1x_proc_init(emu10k1x_t * emu)
 {
 	snd_info_entry_t *entry;
 	
