@@ -1253,4 +1253,10 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 #endif /* < 2.6.18 */
 #endif /* PPC */
 
+/* MSI */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 8)
+static inline int pci_enable_msi(struct pci_dev *dev) { return -1; }
+static inline voidt pci_disable_msi(struct pci_dev *dev) {}
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
