@@ -150,7 +150,14 @@ make_codec_cmd(struct hda_codec *codec, hda_nid_t nid, int direct,
 {
 	u32 val;
 
-	val = (u32)(codec->addr & 0x0f) << 28;
+	if ((codec->addr & ~0xf) || (direct & ~1) || (nid & ~0x7f) ||
+	    (verb & ~0xfff) || (parm & ~0xffff)) {
+		printk(KERN_ERR "hda-codec: out of range cmd %x:%x:%x:%x:%x\n",
+		       codec->addr, direct, nid, verb, parm);
+		return ~0;
+	}
+
+	val = (u32)codec->addr << 28;
 	val |= (u32)direct << 27;
 	val |= (u32)nid << 20;
 	val |= verb << 8;
@@ -166,6 +173,9 @@ static int codec_exec_verb(struct hda_codec *codec, unsigned int cmd,
 {
 	struct hda_bus *bus = codec->bus;
 	int err;
+
+	if (cmd == ~0)
+		return -1;
 
 	if (res)
 		*res = -1;
@@ -316,6 +326,8 @@ int snd_hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 		/* single connection */
 		parm = snd_hda_codec_read(codec, nid, 0,
 					  AC_VERB_GET_CONNECT_LIST, 0);
+		if (parm == -1 && codec->bus->rirb_error)
+			return -EIO;
 		conn_list[0] = parm & mask;
 		return 1;
 	}
@@ -327,11 +339,20 @@ int snd_hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 		int range_val;
 		hda_nid_t val, n;
 
-		if (i % num_elems == 0)
+		if (i % num_elems == 0) {
 			parm = snd_hda_codec_read(codec, nid, 0,
 						  AC_VERB_GET_CONNECT_LIST, i);
+			if (parm == -1 && codec->bus->rirb_error)
+				return -EIO;
+		}
 		range_val = !!(parm & (1 << (shift-1))); /* ranges */
 		val = parm & mask;
+		if (val == 0) {
+			snd_printk(KERN_WARNING "hda_codec: "
+				   "invalid CONNECT_LIST verb %x[%i]:%x\n",
+				    nid, i, parm);
+			return 0;
+		}
 		parm >>= shift;
 		if (range_val) {
 			/* ranges between the previous and this one */
