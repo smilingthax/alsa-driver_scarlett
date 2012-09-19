@@ -12,4 +12,5 @@
 #define trace_snd_soc_jack_report(jack, mask, status)
 #define trace_snd_soc_jack_notify(jack, status)
 #define trace_snd_soc_jack_irq(name)
+#define trace_snd_soc_cache_sync(codec, type, status)
 #endif /* _TRACE_ASOC_H */
