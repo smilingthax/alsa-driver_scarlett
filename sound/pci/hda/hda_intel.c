@@ -1242,7 +1242,12 @@ static int __devinit create_codec_pcm(struct azx *chip, struct hda_codec *codec,
 	struct snd_pcm *pcm;
 	struct azx_pcm *apcm;
 
-	snd_assert(cpcm->stream[0].substreams || cpcm->stream[1].substreams, return -EINVAL);
+	/* if no substreams are defined for both playback and capture,
+	 * it's just a placeholder.  ignore it.
+	 */
+	if (!cpcm->stream[0].substreams && !cpcm->stream[1].substreams)
+		return 0;
+
 	snd_assert(cpcm->name, return -EINVAL);
 
 	err = snd_pcm_new(chip->card, cpcm->name, pcm_dev,
@@ -1268,7 +1273,8 @@ static int __devinit create_codec_pcm(struct azx *chip, struct hda_codec *codec,
 					      snd_dma_pci_data(chip->pci),
 					      1024 * 64, 1024 * 128);
 	chip->pcm[pcm_dev] = pcm;
-	chip->pcm_devs = pcm_dev + 1;
+	if (chip->pcm_devs < pcm_dev + 1)
+		chip->pcm_devs = pcm_dev + 1;
 
 	return 0;
 }
@@ -1375,6 +1381,10 @@ static int azx_suspend(struct pci_dev *pci, pm_message_t state)
 		snd_pcm_suspend_all(chip->pcm[i]);
 	snd_hda_suspend(chip->bus, state);
 	azx_free_cmd_io(chip);
+	if (chip->irq >= 0)
+		free_irq(chip->irq, chip);
+	if (!disable_msi)
+		pci_disable_msi(chip->pci);
 	pci_disable_device(pci);
 	pci_save_state(pci);
 	return 0;
@@ -1387,6 +1397,12 @@ static int azx_resume(struct pci_dev *pci)
 
 	pci_restore_state(pci);
 	pci_enable_device(pci);
+	if (!disable_msi)
+		pci_enable_msi(pci);
+	/* FIXME: need proper error handling */
+	request_irq(pci->irq, azx_interrupt, IRQF_DISABLED|IRQF_SHARED,
+		    "HDA Intel", chip);
+	chip->irq = pci->irq;
 	pci_set_master(pci);
 	azx_init_chip(chip);
 	snd_hda_resume(chip->bus);
@@ -1422,8 +1438,9 @@ static int azx_free(struct azx *chip)
 	}
 
 	if (chip->irq >= 0) {
-		pci_disable_msi(chip->pci);
 		free_irq(chip->irq, (void*)chip);
+		if (!disable_msi)
+			pci_disable_msi(chip->pci);
 	}
 	if (chip->remap_addr)
 		iounmap(chip->remap_addr);
