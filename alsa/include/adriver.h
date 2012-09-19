@@ -793,14 +793,21 @@ void snd_card_pci_resume(struct pci_dev *dev);
  */
 #ifdef CONFIG_SND_DEBUG_MEMORY
 
-void *snd_hidden_kmalloc(size_t size, unsigned int __nocast flags);
-void *snd_hidden_kzalloc(size_t size, unsigned int __nocast flags);
-void *snd_hidden_kcalloc(size_t n, size_t size, unsigned int __nocast flags);
-char *snd_hidden_kstrdup(const char *s, unsigned int __nocast flags);
+#include <linux/slab.h>
+void *snd_hidden_kmalloc(size_t size, gfp_t flags);
+void *snd_hidden_kzalloc(size_t size, gfp_t flags);
+void *snd_hidden_kcalloc(size_t n, size_t size, gfp_t flags);
+char *snd_hidden_kstrdup(const char *s, gfp_t flags);
 void snd_hidden_kfree(const void *obj);
 
-void *snd_wrapper_kmalloc(size_t size, unsigned int flags);
-void snd_wrapper_kfree(const void *obj);
+static inline void *snd_wrapper_kmalloc(size_t size, gfp_t flags)
+{
+	return kmalloc(size, flags);
+}
+static inline void snd_wrapper_kfree(const void *obj)
+{
+	kfree(obj);
+}
 
 #define kmalloc(size, flags) snd_hidden_kmalloc(size, flags)
 #define kzalloc(size, flags) snd_hidden_kzalloc(size, flags)
@@ -817,17 +824,17 @@ void snd_wrapper_kfree(const void *obj);
 #define kfree_nocheck(obj) kfree(obj)
 
 #ifndef CONFIG_HAVE_KCALLOC
-void *snd_compat_kcalloc(size_t n, size_t size, unsigned int __nocast gfp_flags);
+void *snd_compat_kcalloc(size_t n, size_t size, gfp_t gfp_flags);
 #define kcalloc(n,s,f) snd_compat_kcalloc(n,s,f)
 #endif
 
 #ifndef CONFIG_HAVE_KSTRDUP
-char *snd_compat_kstrdup(const char *s, unsigned int __nocast gfp_flags);
+char *snd_compat_kstrdup(const char *s, gfp_t gfp_flags);
 #define kstrdup(s,f) snd_compat_kstrdup(s,f)
 #endif
 
 #ifndef CONFIG_HAVE_KZALLOC
-void *snd_compat_kzalloc(size_t n, unsigned int __nocast gfp_flags);
+void *snd_compat_kzalloc(size_t n, gfp_t gfp_flags);
 #define kzalloc(s,f) snd_compat_kzalloc(s,f)
 #endif
 
@@ -897,26 +904,17 @@ struct snd_gameport {
 };
 static inline struct gameport *gameport_allocate_port(void)
 {
-	extern void *snd_hidden_kzalloc(size_t size, unsigned int flags);
 	struct snd_gameport *gp;
-#ifdef CONFIG_SND_DEBUG_MEMORY
-	gp = snd_hidden_kzalloc(sizeof(*gp), GFP_KERNEL);
-#else
-	gp = kcalloc(1, sizeof(*gp), GFP_KERNEL);
-#endif
+	gp = kzalloc(sizeof(*gp), GFP_KERNEL);
 	if (gp)
 		return &gp->gp;
 	return NULL;
 }
+#define gameport_free_port(gp)	kfree(gp)
 static inline void snd_gameport_unregister_port(struct gameport *gp)
 {
-	extern void snd_hidden_kfree(const void *obj);
 	gameport_unregister_port(gp);
-#ifdef CONFIG_SND_DEBUG_MEMORY
-	snd_hidden_kfree(gp);
-#else
 	kfree(gp);
-#endif
 }
 #undef gameport_unregister_port
 #define gameport_unregister_port(gp)	snd_gameport_unregister_port(gp)

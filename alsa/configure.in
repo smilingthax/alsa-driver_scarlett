@@ -852,6 +852,8 @@ int main(void) {
 	fprintf(file, "sa1100");
 #elif defined(CONFIG_ARCH_PXA)
 	fprintf(file, "pxa");
+#elif defined(CONFIG_ARM_AMBA)
+	fprintf(file, "amba");
 #elif defined(CONFIG_PARISC)
 	fprintf(file, "parisc");
 #else
@@ -986,6 +988,9 @@ EOF
   ppc)
     ARCH=ppc
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
+    if test -d $CONFIG_SND_KERNELDIR/arch/ppc/include; then
+      KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/ppc/include"
+    fi
     CONFIG_PPC=y
     dnl FIXME: it should be checked?
     CONFIG_PPC_PMAC=y
@@ -1077,8 +1082,16 @@ EOF
     ARCH=arm
     c_opts="-O2 -mapcs-32 -march=armv4 -Wa,-mxscale -mtune=strongarm -mshort-load-bytes -msoft-float"
     CONFIG_ARM=y
-    CONFIG_L3=y
+    # CONFIG_L3=y
     CONFIG_ARCH_PXA=y
+    test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
+    ;;
+  amba)
+    ARCH=arm
+    c_opts="-O2 -mapcs-32 -march=armv4 -Wa,-mxscale -mshort-load-bytes -msoft-float"
+    CONFIG_ARM=y
+    # CONFIG_L3=y
+    CONFIG_ARM_AMBA=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   parisc)

@@ -64,20 +64,20 @@ void snd_memory_done(void)
 	}
 }
 
-static void *__snd_kmalloc(size_t size, unsigned int __nocast flags, void *caller)
+static void *__snd_kmalloc(size_t size, gfp_t gfp_flags, void *caller)
 {
-	unsigned long cpu_flags;
+	unsigned long flags;
 	struct snd_alloc_track *t;
 	void *ptr;
 	
-	ptr = snd_wrapper_kmalloc(size + sizeof(struct snd_alloc_track), flags);
+	ptr = snd_wrapper_kmalloc(size + sizeof(struct snd_alloc_track), gfp_flags);
 	if (ptr != NULL) {
 		t = (struct snd_alloc_track *)ptr;
 		t->magic = KMALLOC_MAGIC;
 		t->caller = caller;
-		spin_lock_irqsave(&snd_alloc_kmalloc_lock, cpu_flags);
+		spin_lock_irqsave(&snd_alloc_kmalloc_lock, flags);
 		list_add_tail(&t->list, &snd_alloc_kmalloc_list);
-		spin_unlock_irqrestore(&snd_alloc_kmalloc_lock, cpu_flags);
+		spin_unlock_irqrestore(&snd_alloc_kmalloc_lock, flags);
 		t->size = size;
 		snd_alloc_kmalloc += size;
 		ptr = t->data;
@@ -86,25 +86,25 @@ static void *__snd_kmalloc(size_t size, unsigned int __nocast flags, void *calle
 }
 
 #define _snd_kmalloc(size, flags) __snd_kmalloc((size), (flags), __builtin_return_address(0));
-void *snd_hidden_kmalloc(size_t size, unsigned int __nocast flags)
+void *snd_hidden_kmalloc(size_t size, gfp_t gfp_flags)
 {
-	return _snd_kmalloc(size, flags);
+	return _snd_kmalloc(size, gfp_flags);
 }
 
-void *snd_hidden_kzalloc(size_t size, unsigned int __nocast flags)
+void *snd_hidden_kzalloc(size_t size, gfp_t gfp_flags)
 {
-	void *ret = _snd_kmalloc(size, flags);
+	void *ret = _snd_kmalloc(size, gfp_flags);
 	if (ret)
 		memset(ret, 0, size);
 	return ret;
 }
 
-void *snd_hidden_kcalloc(size_t n, size_t size, unsigned int __nocast flags)
+void *snd_hidden_kcalloc(size_t n, size_t size, gfp_t gfp_flags)
 {
 	void *ret = NULL;
 	if (n != 0 && size > INT_MAX / n)
 		return ret;
-	return snd_hidden_kzalloc(n * size, flags);
+	return snd_hidden_kzalloc(n * size, gfp_flags);
 }
 
 void snd_hidden_kfree(const void *obj)
@@ -127,7 +127,7 @@ void snd_hidden_kfree(const void *obj)
 	snd_wrapper_kfree(obj);
 }
 
-char *snd_hidden_kstrdup(const char *s, unsigned int __nocast flags)
+char *snd_hidden_kstrdup(const char *s, gfp_t gfp_flags)
 {
 	int len;
 	char *buf;
@@ -135,7 +135,7 @@ char *snd_hidden_kstrdup(const char *s, unsigned int __nocast flags)
 	if (!s) return NULL;
 
 	len = strlen(s) + 1;
-	buf = _snd_kmalloc(len, flags);
+	buf = _snd_kmalloc(len, gfp_flags);
 	if (buf)
 		memcpy(buf, s, len);
 	return buf;
