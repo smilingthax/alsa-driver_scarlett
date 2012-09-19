@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: hammerfall_mem.c,v 1.9 2003/05/31 11:33:57 perex Exp $
+    $Id: hammerfall_mem.c,v 1.10 2003/06/06 11:54:28 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
@@ -185,7 +185,7 @@ static void hammerfall_free_buffers (void)
 static int __init alsa_hammerfall_mem_init(void)
 {
 	int i;
-	struct pci_dev *pci;
+	struct pci_dev *pci = NULL;
 	hammerfall_buf_t *rbuf;
 
 	/* make sure our buffer records are clean */
@@ -205,12 +205,12 @@ static int __init alsa_hammerfall_mem_init(void)
 	
 	i = 0;	/* card number */
 	rbuf = hammerfall_buffers;
-	pci_for_each_dev(pci) {
+	while ((pci = pci_find_device(PCI_VENDOR_ID_XILINX, PCI_ANY_ID, pci)) != NULL) {
 		int k;
 		
 		/* check for Hammerfall and Hammerfall DSP cards */
 
-		if (pci->vendor != 0x10ee || (pci->device != 0x3fc4 && pci->device != 0x3fc5)) 
+		if (pci->device != 0x3fc4 && pci->device != 0x3fc5)
 			continue;
 
 		if (!enable[i])
