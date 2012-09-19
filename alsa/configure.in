@@ -3412,7 +3412,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
 #include <linux/pm_qos_params.h>
 ],[
   struct pm_qos_request_list r;
-  pm_qos_request(&r, PM_QOS_CPU_DMA_LATENCY, 100);
+  pm_qos_add_request(&r, PM_QOS_CPU_DMA_LATENCY, 100);
 ],
     AC_MSG_RESULT(yes);pm_qos_request_static="1",
     AC_MSG_RESULT(no);pm_qos_request_static="0",
