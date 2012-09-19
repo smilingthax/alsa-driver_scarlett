@@ -369,7 +369,7 @@ static int snd_emu10k1_shared_spdif_put(snd_kcontrol_t * kcontrol,
 	int change;
 
 	spin_lock_irqsave(&emu->reg_lock, flags);
-	if (emu->audigy) {
+	if (!emu->audigy) {
 		reg = inl(emu->port + HCFG);
 		val = ucontrol->value.integer.value[0] & 1 ? 0 : HCFG_GPOUT0;
 		change = (reg & HCFG_GPOUT0) != val;
