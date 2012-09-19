@@ -39,6 +39,18 @@
 
 #include "usbaudio.h"
 
+#if 0
+#include <linux/lirc.h>
+#else
+/* only those symbols from lirc.h we actually need: */
+#include <linux/ioctl.h>
+#define LIRC_MODE2REC(x)	((x) << 16)
+#define LIRC_MODE_CODE		0x00000008
+#define LIRC_CAN_REC_CODE	LIRC_MODE2REC(LIRC_MODE_CODE)
+#define LIRC_GET_FEATURES	_IOR('i', 0x00000000, __u32)
+#define LIRC_GET_REC_MODE	_IOR('i', 0x00000002, __u32)
+#define LIRC_SET_REC_MODE	_IOW('i', 0x00000012, __u32)
+#endif
 
 /*
  */
@@ -89,8 +101,6 @@ struct usb_mixer_build {
 	struct usb_mixer_interface *mixer;
 	unsigned char *buffer;
 	unsigned int buflen;
-	unsigned short vendor;
-	unsigned short product;
 	DECLARE_BITMAP(unitbitmap, 256);
 	usb_audio_term_t oterm;
 	const struct usbmix_name_map *map;
@@ -906,11 +916,16 @@ static void build_feature_ctl(mixer_build_t *state, unsigned char *desc,
 	/* note that detection between firmware 2.1.1.7 (N101) and later 2.1.1.21 */
 	/* is not very clear from datasheets */
 	/* I hope that the min value is -15360 for newer firmware --jk */
-	if (((state->vendor == 0x471 && (state->product == 0x104 || state->product == 0x105 || state->product == 0x101)) ||
-	     (state->vendor == 0x672 && state->product == 0x1041)) && !strcmp(kctl->id.name, "PCM Playback Volume") &&
-	     cval->min == -15616) {
-		snd_printk("USB Audio: using volume control quirk for the UDA1321/N101 chip\n");
-		cval->max = -256;
+	switch (state->chip->usb_id) {
+	case USB_ID(0x0471, 0x0101):
+	case USB_ID(0x0471, 0x0104):
+	case USB_ID(0x0471, 0x0105):
+	case USB_ID(0x0672, 0x1041):
+		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
+		    cval->min == -15616) {
+			snd_printk("using volume control quirk for the UDA1321/N101 chip\n");
+			cval->max = -256;
+		}
 	}
 
 	snd_printdd(KERN_INFO "[%d] FU [%s] ch = %d, val = %d/%d/%d\n",
@@ -1229,9 +1244,6 @@ static int build_audio_procunit(mixer_build_t *state, int unitid, unsigned char 
 	}
 
 	type = combine_word(&dsc[4]);
-	if (! type)
-		return 0; /* undefined? */
-
 	for (info = list; info && info->type; info++)
 		if (info->type == type)
 			break;
@@ -1574,7 +1586,6 @@ static int snd_usb_mixer_controls(struct usb_mixer_interface *mixer)
 	mixer_build_t state;
 	int err;
 	const struct usbmix_ctl_map *map;
-	struct usb_device_descriptor *dev = &mixer->chip->dev->descriptor;
 	struct usb_host_interface *hostif;
 
 	hostif = &usb_ifnum_to_if(mixer->chip->dev, mixer->ctrlif)->altsetting[0];
@@ -1583,12 +1594,10 @@ static int snd_usb_mixer_controls(struct usb_mixer_interface *mixer)
 	state.mixer = mixer;
 	state.buffer = hostif->extra;
 	state.buflen = hostif->extralen;
-	state.vendor = le16_to_cpu(dev->idVendor);
-	state.product = le16_to_cpu(dev->idProduct);
 
 	/* check the mapping table */
-	for (map = usbmix_ctl_maps; map->vendor; map++) {
-		if (map->vendor == state.vendor && map->product == state.product) {
+	for (map = usbmix_ctl_maps; map->id; map++) {
+		if (map->id == state.chip->usb_id) {
 			state.map = map->map;
 			state.selector_map = map->selector_map;
 			mixer->ignore_ctl_error = map->ignore_ctl_error;
@@ -1742,12 +1751,15 @@ static long snd_usb_sbrc_hwdep_read(snd_hwdep_t *hw, char __user *buf,
 	int err;
 	u32 rc_code;
 
-	if (count != 1)
+	if (count != 1 && count != 4)
 		return -EINVAL;
 	err = wait_event_interruptible(mixer->rc_waitq,
 				       (rc_code = xchg(&mixer->rc_code, 0)) != 0);
 	if (err == 0) {
-		err = put_user(rc_code, buf);
+		if (count == 1)
+			err = put_user(rc_code, buf);
+		else
+			err = put_user(rc_code, (u32 __user *)buf);
 	}
 	return err < 0 ? err : count;
 }
@@ -1761,17 +1773,36 @@ static unsigned int snd_usb_sbrc_hwdep_poll(snd_hwdep_t *hw, struct file *file,
 	return mixer->rc_code ? POLLIN | POLLRDNORM : 0;
 }
 
+static int snd_usb_sbrc_hwdep_ioctl(snd_hwdep_t *hw, struct file *file,
+				    unsigned int cmd, unsigned long arg)
+{
+	u32 __user *argp = (u32 __user *)arg;
+	u32 mode;
+
+	switch (cmd) {
+	case LIRC_GET_FEATURES:
+		return put_user(LIRC_CAN_REC_CODE, argp);
+	case LIRC_GET_REC_MODE:
+		return put_user(LIRC_MODE_CODE, argp);
+	case LIRC_SET_REC_MODE:
+		if (get_user(mode, argp))
+			return -EFAULT;
+		return mode == LIRC_MODE_CODE ? 0 : -ENOSYS;
+	}
+	return -ENOTTY;
+}
+
 static int snd_usb_soundblaster_remote_init(struct usb_mixer_interface *mixer)
 {
 	snd_hwdep_t *hwdep;
 	int err, len;
 
-	switch (le16_to_cpu(mixer->chip->dev->descriptor.idProduct)) {
-	case 0x3000:
+	switch (mixer->chip->usb_id) {
+	case USB_ID(0x041e, 0x3000):
 		mixer->rc_type = RC_EXTIGY;
 		len = 2;
 		break;
-	case 0x3020:
+	case USB_ID(0x041e, 0x3020):
 		mixer->rc_type = RC_AUDIGY2NX;
 		len = 6;
 		break;
@@ -1791,6 +1822,7 @@ static int snd_usb_soundblaster_remote_init(struct usb_mixer_interface *mixer)
 	hwdep->ops.open = snd_usb_sbrc_hwdep_open;
 	hwdep->ops.release = snd_usb_sbrc_hwdep_release;
 	hwdep->ops.poll = snd_usb_sbrc_hwdep_poll;
+	hwdep->ops.ioctl = snd_usb_sbrc_hwdep_ioctl; 
 
 	mixer->rc_urb = usb_alloc_urb(0, GFP_KERNEL);
 	if (!mixer->rc_urb)
@@ -1844,11 +1876,9 @@ int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif)
 		return err;
 	}
 
-	if (le16_to_cpu(chip->dev->descriptor.idVendor) == 0x041e) {
-		if ((err = snd_usb_soundblaster_remote_init(mixer)) < 0) {
-			snd_usb_mixer_free(mixer);
-			return err;
-		}
+	if ((err = snd_usb_soundblaster_remote_init(mixer)) < 0) {
+		snd_usb_mixer_free(mixer);
+		return err;
 	}
 
 	err = snd_device_new(chip->card, SNDRV_DEV_LOWLEVEL, mixer, &dev_ops);
