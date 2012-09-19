@@ -1366,7 +1366,7 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 					return err;
 			if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cirrus_controls_spdif[0], ac97))) < 0)
 				return err;
-			switch (ac97->id) {
+			switch (ac97->id & AC97_ID_CS_MASK) {
 			case AC97_ID_CS4205:
 				if ((err = snd_ctl_add(card, snd_ac97_cnew(&snd_ac97_cirrus_controls_spdif[1], ac97))) < 0)
 					return err;
