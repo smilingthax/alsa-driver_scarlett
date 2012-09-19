@@ -13,6 +13,7 @@
 static LIST_HEAD(snd_driver_list);
 
 struct bus_type snd_platform_bus_type;
+EXPORT_SYMBOL(snd_platform_bus_type);
 
 /* for platform_device only! */
 int snd_compat_driver_register(struct device_driver *driver)
@@ -21,6 +22,7 @@ int snd_compat_driver_register(struct device_driver *driver)
 	INIT_LIST_HEAD(&driver->device_list);
 	return 0;
 }
+EXPORT_SYMBOL(snd_compat_driver_register);
 
 void snd_compat_driver_unregister(struct device_driver *driver)
 {
@@ -35,6 +37,7 @@ void snd_compat_driver_unregister(struct device_driver *driver)
 		kfree(dev);
 	}
 }
+EXPORT_SYMBOL(snd_compat_driver_unregister);
 
 static int snd_device_pm_callback(struct pm_dev *pm_dev, pm_request_t rqst, void *data)
 {
@@ -63,6 +66,7 @@ snd_platform_device_register_simple(const char *name, int id,
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (! dev)
 		return ERR_PTR(-ENOMEM);
+	snprintf(dev->dev.bus_id, sizeof(dev->dev.bus_id), "%s.%d", name, id);
 
 	list_for_each(p, &snd_driver_list) {
 		struct device_driver *driver = list_entry(p, struct device_driver, list);
@@ -88,6 +92,7 @@ snd_platform_device_register_simple(const char *name, int id,
 	kfree(dev);
 	return ERR_PTR(-ENODEV);
 }
+EXPORT_SYMBOL(snd_platform_device_register_simple);
 #endif /* < 2.6.0 */
 
 
@@ -126,6 +131,7 @@ void snd_pci_compat_save_state(struct pci_dev *pci)
 	}
 	printk(KERN_DEBUG "snd: no pci config space found!\n");
 }
+EXPORT_SYMBOL(snd_pci_compat_save_state);
 
 void snd_pci_compat_restore_state(struct pci_dev *pci)
 {
@@ -140,6 +146,7 @@ void snd_pci_compat_restore_state(struct pci_dev *pci)
 	}
 	printk(KERN_DEBUG "snd: no saved pci config!\n");
 }
+EXPORT_SYMBOL(snd_pci_compat_restore_state);
 #endif /* CONFIG_HAVE_PCI_SAVED_CONFIG */
 #endif /* ! CONFIG_HAVE_NEW_PCI_SAVE_STATE */
 #endif
@@ -156,6 +163,7 @@ int try_inc_mod_count(struct module *module)
 	__MOD_INC_USE_COUNT(module);
 	return 1;
 }
+EXPORT_SYMBOL(try_inc_mod_count);
 
 struct resource *snd_compat_request_region(unsigned long start, unsigned long size, const char *name, int is_memory)
 {
@@ -185,6 +193,7 @@ struct resource *snd_compat_request_region(unsigned long start, unsigned long si
 	resource->flags = is_memory ? IORESOURCE_MEM : IORESOURCE_IO;
 	return resource;
 }
+EXPORT_SYMBOL(snd_compat_request_region);
 
 int snd_compat_release_resource(struct resource *resource)
 {
@@ -195,7 +204,7 @@ int snd_compat_release_resource(struct resource *resource)
 	release_region(resource->start, (resource->end - resource->start) + 1);
 	return 0;
 }
-
+EXPORT_SYMBOL(snd_compat_release_resource);
 #endif
 
 
@@ -321,6 +330,7 @@ struct pm_dev *pm_register(pm_dev_t type,
 	}
 	return dev;
 }
+EXPORT_SYMBOL(pm_register);
 
 void pm_unregister(struct pm_dev *dev)
 {
@@ -334,6 +344,7 @@ void pm_unregister(struct pm_dev *dev)
 		kfree(dev);
 	}
 }
+EXPORT_SYMBOL(pm_unregister);
 
 int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 {
@@ -363,6 +374,7 @@ int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 	}
 	return status;
 }
+EXPORT_SYMBOL(pm_send);
 
 #endif /* kernel version < 2.3.0 && CONFIG_APM */
 
@@ -441,6 +453,7 @@ int snd_compat_schedule_work(struct work_struct *works)
 {
 	return kernel_thread(work_caller, works, 0) >= 0;
 }
+EXPORT_SYMBOL(snd_compat_schedule_work);
 
 struct workqueue_struct {
 	spinlock_t lock;
@@ -495,6 +508,7 @@ void snd_compat_flush_workqueue(struct workqueue_struct *wq)
 		spin_unlock_irq(&wq->lock);
 	}
 }
+EXPORT_SYMBOL(snd_compat_flush_workqueue);
 
 void snd_compat_destroy_workqueue(struct workqueue_struct *wq)
 {
@@ -504,6 +518,7 @@ void snd_compat_destroy_workqueue(struct workqueue_struct *wq)
 		wait_for_completion(&wq->thread_exited);
 	kfree(wq);
 }
+EXPORT_SYMBOL(snd_compat_destroy_workqueue);
 
 static int xworker_thread(void *data)
 {
@@ -560,6 +575,7 @@ struct workqueue_struct *snd_compat_create_workqueue(const char *name)
 	wq->task = find_task_by_pid(wq->task_pid);
 	return wq;
 }
+EXPORT_SYMBOL(snd_compat_create_workqueue);
 
 static void __x_queue_work(struct workqueue_struct *wq, struct work_struct *work)
 {
@@ -580,6 +596,7 @@ int snd_compat_queue_work(struct workqueue_struct *wq, struct work_struct *work)
 	}
 	return 0;
 }
+EXPORT_SYMBOL(snd_compat_queue_work);
 
 static void delayed_work_timer_fn(unsigned long __data)
 {
@@ -607,6 +624,7 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct delayed_wo
 	}
 	return 0;
 }
+EXPORT_SYMBOL(snd_compat_queue_delayed_work);
 
 int snd_compat_cancel_delayed_work(struct delayed_work *dwork)
 {
@@ -618,6 +636,7 @@ int snd_compat_cancel_delayed_work(struct delayed_work *dwork)
 		clear_bit(0, &work->pending);
 	return ret;
 }
+EXPORT_SYMBOL(snd_compat_cancel_delayed_work);
 
 #endif
 
@@ -632,6 +651,7 @@ void *snd_compat_kzalloc(size_t size, unsigned int __nocast flags)
 		memset(ret, 0, size);
 	return ret;
 }
+EXPORT_SYMBOL(snd_compat_kzalloc);
 #endif
 #endif
 
@@ -644,6 +664,7 @@ void *snd_compat_kcalloc(size_t n, size_t size, unsigned int __nocast flags)
 		return NULL;
 	return snd_compat_kzalloc(n * size, flags);
 }
+EXPORT_SYMBOL(snd_compat_kcalloc);
 #endif
 #endif
 
@@ -662,6 +683,7 @@ char *snd_compat_kstrdup(const char *s, unsigned int __nocast gfp_flags)
 		memcpy(buf, s, len);
 	return buf;
 }
+EXPORT_SYMBOL(snd_compat_kstrdup);
 #endif
 #endif
 
@@ -673,6 +695,7 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name)
 {
 	return create_workqueue(name, 0);
 }
+EXPORT_SYMBOL(snd_compat_create_workqueue2);
 
 #endif
 
@@ -789,6 +812,7 @@ int snd_pnp_register_driver(struct snd_pnp_driver *driver)
 	}
 	return pnp_register_driver(&driver->real_driver);
 }
+EXPORT_SYMBOL(snd_pnp_register_driver);
 
 #ifdef SUPPORT_PM
 /*
@@ -847,6 +871,7 @@ int snd_pnp_register_card_driver(struct snd_pnp_card_driver *driver)
 	}
 	return pnp_register_card_driver(&driver->real_driver);
 }
+EXPORT_SYMBOL(snd_pnp_register_card_driver);
 
 #endif /* ! CONFIG_HAVE_PNP_SUSPEND */
 #endif /* 2.6 */
@@ -887,6 +912,7 @@ int snd_compat_request_firmware(const struct firmware **fw, const char *name)
 	*fw = firmware;
 	return 0;
 }
+EXPORT_SYMBOL(snd_compat_request_firmware);
 
 void snd_compat_release_firmware(const struct firmware *fw)
 {
@@ -895,6 +921,168 @@ void snd_compat_release_firmware(const struct firmware *fw)
 		kfree(fw);
 	}
 }
+EXPORT_SYMBOL(snd_compat_release_firmware);
 
 #endif /* NEEDS_COMPAT_FW_LOADER */
 #endif /* !2.6 */
+
+/* ISA drivers */
+#ifdef CONFIG_ISA
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18)
+#include <linux/device.h>
+#include <linux/isa.h>
+#ifdef HAVE_DUMMY_SND_ISA_WRAPPER
+#include <linux/list.h>
+#include <linux/err.h>
+
+#define MAX_ISA_NUMS	8
+
+struct isa_platform_link {
+	struct platform_driver platform;
+	struct isa_driver *isa;
+	unsigned int cards;
+	struct platform_device *pdevs[MAX_ISA_NUMS];
+	struct list_head list;
+};
+	
+static LIST_HEAD(snd_isa_link_list);
+
+static struct isa_platform_link *get_isa_link(struct isa_driver *driver)
+{
+	struct isa_platform_link *p;
+	list_for_each_entry(p, &snd_isa_link_list, list) {
+		if (p->isa == driver)
+			return p;
+	}
+	return NULL;
+}
+
+static struct isa_platform_link *get_pdev_link(struct platform_device *pdev)
+{
+	struct platform_driver *pdrv = container_of(pdev->dev.driver,
+						    struct platform_driver,
+						    driver);
+	return (struct isa_platform_link *)pdrv;
+}
+
+
+static int snd_isa_platform_probe(struct platform_device *pdev)
+{
+	struct isa_platform_link *p = get_pdev_link(pdev);
+	int n = pdev->id;
+
+	if (!p)
+		return -EINVAL;
+	p = get_pdev_link(pdev);
+	if (p->isa->match)
+		if (!p->isa->match(&pdev->dev, n))
+			return -EINVAL;
+	return p->isa->probe(&pdev->dev, n);
+}
+
+static int snd_isa_platform_remove(struct platform_device *pdev)
+{
+	struct isa_platform_link *p = get_pdev_link(pdev);
+	int n = pdev->id;
+
+	if (!p)
+		return 0;
+	p->isa->remove(&pdev->dev, n);
+	platform_set_drvdata(pdev, NULL);
+	return 0;
+}
+
+static int snd_isa_platform_suspend(struct platform_device *pdev,
+				    pm_message_t state)
+{
+	struct isa_platform_link *p = get_pdev_link(pdev);
+	int n = pdev->id;
+
+	if (!p)
+		return -EINVAL;
+	return p->isa->suspend(&pdev->dev, n, state);
+}
+
+static int snd_isa_platform_resume(struct platform_device *pdev)
+{
+	struct isa_platform_link *p = get_pdev_link(pdev);
+	int n = pdev->id;
+
+	if (!p)
+		return -EINVAL;
+	return p->isa->resume(&pdev->dev, n);
+}
+
+int snd_isa_register_driver(struct isa_driver *driver, unsigned int nums)
+{
+	int i, cards, err;
+	struct isa_platform_link *p;
+
+	if (nums >= MAX_ISA_NUMS)
+		return -EINVAL;
+
+	if (get_isa_link(driver))
+		return -EBUSY;
+
+	p = kzalloc(sizeof(*p), GFP_KERNEL);
+	if (!p)
+		return -ENOMEM;
+	INIT_LIST_HEAD(&p->list);
+	p->isa = driver;
+	p->platform.probe = snd_isa_platform_probe;
+	p->platform.driver.name = driver->driver.name;
+	if (driver->remove)
+		p->platform.remove = snd_isa_platform_remove;
+	if (driver->suspend)
+		p->platform.suspend = snd_isa_platform_suspend;
+	if (driver->resume)
+		p->platform.resume = snd_isa_platform_resume;
+	err = platform_driver_register(&p->platform);
+	if (err < 0) {
+		kfree(p);
+		return err;
+	}
+	list_add(&p->list, &snd_isa_link_list);
+
+	cards = 0;
+	for (i = 0; i < nums; i++) {
+		struct platform_device *device;
+		device = platform_device_register_simple((char *)
+							 driver->driver.name,
+							 i, NULL, 0);
+		if (IS_ERR(device))
+			continue;
+		if (!platform_get_drvdata(device)) {
+			platform_device_unregister(device);
+			continue;
+		}
+		p->pdevs[i] = device;
+		cards++;
+	}
+	if (!cards) {
+		snd_isa_unregister_driver(driver);
+		return -ENODEV;
+       }
+       return 0;
+}
+EXPORT_SYMBOL(snd_isa_register_driver);
+
+void snd_isa_unregister_driver(struct isa_driver *driver)
+{
+	struct isa_platform_link *p = get_isa_link(driver);
+	int i;
+
+	if (!p)
+		return;
+	for (i = 0; i < MAX_ISA_NUMS; i++)
+		if (p->pdevs[i])
+			platform_device_unregister(p->pdevs[i]);
+	platform_driver_unregister(&p->platform);
+	list_del(&p->list);
+	kfree(p);
+}
+EXPORT_SYMBOL(snd_isa_unregister_driver);
+
+#endif /* HAVE_DUMMY_SND_ISA_WRAPPER */
+#endif /* < 2.6.18 */
+#endif /* CONFIG_ISA */

@@ -9,7 +9,7 @@ clean-files := info.c pcm.c pcm_native.c control.c hwdep.c init.c rawmidi.c \
 	       sound.c timer.c memalloc.c misc.c
 
 export-objs := control.o device.o info.o info_oss.o init.o isadma.o memory.o \
-	misc.o sound.o sound_oss.o \
+	misc.o misc_driver.o sound.o sound_oss.o \
 	pcm.o pcm_lib.o pcm_memory.o pcm_misc.o pcm_native.o \
 	rawmidi.o timer.o hwdep.o memalloc.o
 

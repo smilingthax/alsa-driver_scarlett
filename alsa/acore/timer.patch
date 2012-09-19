@@ -33,7 +33,7 @@
 +}
 +#endif
 +
- static struct file_operations snd_timer_f_ops =
+ static const struct file_operations snd_timer_f_ops =
  {
 +#ifndef LINUX_2_2
  	.owner =	THIS_MODULE,
