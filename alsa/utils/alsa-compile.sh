@@ -33,6 +33,15 @@ patches=
 kmodmesg=
 withdebug=
 
+fuser_prg=fuser
+insmod_prg=insmod
+rmmod_prg=rmmod
+lsmod_prg=lsmod
+test -x /sbin/fuser && fuser_prg=/sbin/fuser
+test -x /sbin/insmod && insmod_prg=/sbin/insmod
+test -x /sbin/rmmod && rmmod_prg=/sbin/rmmod
+test -x /sbin/lsmod && lsmod_prg=/sbin/lsmod
+
 usage() {
 	echo "Usage: $0 [OPTION]..."
 	cat <<EOF
@@ -577,9 +586,9 @@ EOF
 
 # Kill processes currently accessing the audio devices
 kill_audio_apps() {
-	local pids0=$(fuser /dev/snd/* 2> /dev/null)
-	local pids1=$(fuser /dev/mixer* 2> /dev/null)
-	local pids2=$(fuser /dev/sequencer* 2> /dev/null)
+	local pids0=$($fuser_prg /dev/snd/* 2> /dev/null)
+	local pids1=$($fuser_prg /dev/mixer* 2> /dev/null)
+	local pids2=$($fuser_prg /dev/sequencer* 2> /dev/null)
 	local pids=
 	for pid in $pids0 $pids1 $pids2; do
 		local pids="$pids $pid"
@@ -675,7 +684,7 @@ parse_modules() {
 
 # Echo the list of loaded sound modules
 current_modules() {
-	lsmod | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$|ac97_bus$)"
+	$lsmod_prg | cut -d ' ' -f 1 | grep -E "^(snd[_-]|snd$|ac97_bus$)"
 }
 
 # Remove kernel modules, using two phases
@@ -683,7 +692,7 @@ current_modules() {
 my_rmmod() {
 	local phase2=
 	while test -n "$1"; do
-		if ! rmmod $1 2> /dev/null > /dev/null; then
+		if ! $rmmod_prg $1 2> /dev/null > /dev/null; then
 			local phase2="$phase2 $1"
 		else
 			echo "> rmmod $1"
@@ -692,7 +701,7 @@ my_rmmod() {
 	done
 	for mod in $phase2; do
 		echo "> rmmod $mod"
-		if ! rmmod $mod ; then
+		if ! $rmmod_prg $mod ; then
 			echo >&2 "Unable to remove kernel module $mod."
 			exit 1
 		fi
@@ -726,8 +735,8 @@ my_insmod() {
 			local mod=modules/$xmod.ko
 			echo "> insmod $mod $args"
 			if test -n "$nofail"; then
-				insmod $mod $args 2> /dev/null
-			elif ! insmod $mod $args; then
+				$insmod_prg $mod $args 2> /dev/null
+			elif ! $insmod_prg $mod $args; then
 				echo >&2 "Unable to insert kernel module $xmod.ko."
 				exit 1
 			fi
@@ -736,8 +745,8 @@ my_insmod() {
 				local mod=modules/$xmod.o
 				echo "> insmod $mod $args"
 				if test -n "$nofail"; then
-					insmod $mod.o $args
-				elif ! insmod $mod.o $args; then
+					$insmod_prg $mod.o $args
+				elif ! $insmod_prg $mod.o $args; then
 					echo >&2 "Unable to insert kernel module $xmod.o."
 					exit 1
 				fi
