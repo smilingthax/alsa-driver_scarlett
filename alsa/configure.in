@@ -352,13 +352,13 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
   if test -f "$KERNDIR/include/$1"; then
-    AC_MSG_RESULT("yes")
+    AC_MSG_RESULT(yes)
     if test -f include/$1; then
       echo "Removing a dummy $1."
       rm -f include/$1
     fi
   else
-    AC_MSG_RESULT("no")
+    AC_MSG_RESULT(no)
     if test ! -f include/$1; then
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
@@ -383,13 +383,13 @@ AC_DEFUN([MODIFY_KERNEL_HEADER], [
     KERNDIR=$CONFIG_SND_KERNELDIR
   fi
   if grep $2 "$KERNDIR/include/$1" > /dev/null 2>&1; then
-    AC_MSG_RESULT("no")
+    AC_MSG_RESULT(no)
     if test -f include/$1; then
       echo "Removing a dummy $1."
       rm -f include/$1
     fi
   else
-    AC_MSG_RESULT("yes")
+    AC_MSG_RESULT(yes)
     mkdir -p include/linux
     mkdir -p include/asm
     echo "#ifndef $2" > include/$1
@@ -421,9 +421,9 @@ int main( void ) {
 #endif
 }
 ],
-    AC_MSG_RESULT("yes");boolchk="y",
-    AC_MSG_RESULT("no");boolchk="",
-    AC_MSG_RESULT("unknown");boolchk=""
+    AC_MSG_RESULT(yes);boolchk="y",
+    AC_MSG_RESULT(no);boolchk="",
+    AC_MSG_RESULT(unknown);boolchk=""
   )
   CFLAGS="$ac_save_CFLAGS"
   eval $boolvar="$boolchk"
@@ -452,9 +452,9 @@ int main( void ) {
 #endif
 }
 ],
-    AC_MSG_RESULT("yes");boolchk="y",
-    AC_MSG_RESULT("no");boolchk="",
-    AC_MSG_RESULT("unknown");boolchk=""
+    AC_MSG_RESULT(yes);boolchk="y",
+    AC_MSG_RESULT(no);boolchk="",
+    AC_MSG_RESULT(unknown);boolchk=""
   )
   CFLAGS="$ac_save_CFLAGS"
   eval $boolvar="$boolchk"
@@ -517,10 +517,10 @@ AC_DEFUN([CHECK_EXPORTED], [
   ac_save_CFLAGS="$CFLAGS"
   boolchk=""
   if grep EXPORT_SYMBOL "$CONFIG_SND_KERNELDIR/kernel/ksyms.c" | grep "$2" > /dev/null; then
-    AC_MSG_RESULT("yes");boolchk="y"
+    AC_MSG_RESULT(yes);boolchk="y"
     AC_DEFINE($1)
   else
-    AC_MSG_RESULT("no");boolchk="",
+    AC_MSG_RESULT(no);boolchk="",
   fi
   eval $boolvar="$boolchk"
 ])
@@ -546,13 +546,13 @@ AC_ARG_WITH(redhat,
 RED_HAT_LINUX_KERNEL="auto"
 if test "$redhat_kernel" = "yes"; then
   RED_HAT_LINUX_KERNEL="y"
-  AC_MSG_RESULT("yes")
+  AC_MSG_RESULT(yes)
 else
   if test "$redhat_kernel" = "no"; then
     RED_HAT_LINUX_KERNEL="n"
-    AC_MSG_RESULT("no")
+    AC_MSG_RESULT(no)
   else
-    AC_MSG_RESULT("auto")
+    AC_MSG_RESULT(auto)
     CHECK_KERNEL_CONFIG(RED_HAT_LINUX_KERNEL, [Red Hat kernel])
   fi
 fi
@@ -565,13 +565,13 @@ AC_ARG_WITH(suse,
 CONFIG_SUSE_KERNEL="auto"
 if test "$suse_kernel" = "yes"; then
   CONFIG_SUSE_KERNEL="y"
-  AC_MSG_RESULT("yes")
+  AC_MSG_RESULT(yes)
 else
   if test "$suse_kernel" = "no"; then
     CONFIG_SUSE_KERNEL=""
-    AC_MSG_RESULT("no")
+    AC_MSG_RESULT(no)
   else
-    AC_MSG_RESULT("auto")
+    AC_MSG_RESULT(auto)
     CHECK_KERNEL_CONFIG(CONFIG_SUSE_KERNEL, [SUSE kernel])
   fi
 fi
@@ -879,8 +879,8 @@ int main(void) {
 }
 ],
   processor=`cat processor.id`;AC_MSG_RESULT($processor),
-  AC_MSG_RESULT("unknown");processor="",
-  AC_MSG_RESULT("unknown");processor=""
+  AC_MSG_RESULT(unknown);processor="",
+  AC_MSG_RESULT(unknown);processor=""
 )
 CFLAGS="$ac_save_CFLAGS"
 rm -f processor.id
@@ -1213,9 +1213,9 @@ if test "$CONFIG_MIPS" = "y"; then
     CONFIG_SGI="y"
   fi
   if test "$CONFIG_SGI" = "y"; then
-    AC_MSG_RESULT("yes")
+    AC_MSG_RESULT(yes)
   else
-    AC_MSG_RESULT("no")
+    AC_MSG_RESULT(no)
   fi
 fi
 AC_SUBST(CONFIG_SGI)
@@ -1354,9 +1354,9 @@ AC_TRY_COMPILE([
   char buf[128];
   strlcpy(buf, "abcd", sizeof(buf));
 ],
-    AC_MSG_RESULT("yes");strlcpy="1",
-    AC_MSG_RESULT("no");strlcpy="0",
-    AC_MSG_RESULT("unknown");strlcpy="0"
+    AC_MSG_RESULT(yes);strlcpy="1",
+    AC_MSG_RESULT(no);strlcpy="0",
+    AC_MSG_RESULT(unknown);strlcpy="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1381,9 +1381,9 @@ AC_TRY_COMPILE([
   char buf[128];
   snprintf(buf, sizeof(buf), "abcd");
 ],
-    AC_MSG_RESULT("yes");snprintf="1",
-    AC_MSG_RESULT("no");snprintf="0",
-    AC_MSG_RESULT("unknown");snprintf="0"
+    AC_MSG_RESULT(yes);snprintf="1",
+    AC_MSG_RESULT(no);snprintf="0",
+    AC_MSG_RESULT(unknown);snprintf="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1415,9 +1415,9 @@ void f(const char *fmt, ...)
 ],[
   f("abcd");
 ],
-    AC_MSG_RESULT("yes");vsnprintf="1",
-    AC_MSG_RESULT("no");vsnprintf="0",
-    AC_MSG_RESULT("unknown");vsnprintf="0"
+    AC_MSG_RESULT(yes);vsnprintf="1",
+    AC_MSG_RESULT(no);vsnprintf="0",
+    AC_MSG_RESULT(unknown);vsnprintf="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1442,9 +1442,9 @@ AC_TRY_COMPILE([
   char buf[128];
   scnprintf(buf, sizeof(buf), "abcd");
 ],
-    AC_MSG_RESULT("yes");scnprintf="1",
-    AC_MSG_RESULT("no");scnprintf="0",
-    AC_MSG_RESULT("unknown");scnprintf="0"
+    AC_MSG_RESULT(yes);scnprintf="1",
+    AC_MSG_RESULT(no);scnprintf="0",
+    AC_MSG_RESULT(unknown);scnprintf="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1469,9 +1469,9 @@ AC_TRY_COMPILE([
   unsigned int i;
   sscanf("2a", "%x", &i);
 ],
-    AC_MSG_RESULT("yes");sscanf="1",
-    AC_MSG_RESULT("no");sscanf="0",
-    AC_MSG_RESULT("unknown");sscanf="0"
+    AC_MSG_RESULT(yes);sscanf="1",
+    AC_MSG_RESULT(no);sscanf="0",
+    AC_MSG_RESULT(unknown);sscanf="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1497,9 +1497,9 @@ AC_TRY_COMPILE([
   struct page * (*func)(void*);
   func = vmalloc_to_page;
 ],
-    AC_MSG_RESULT("yes");vmalloc_to_page="1",
-    AC_MSG_RESULT("no");vmalloc_to_page="0",
-    AC_MSG_RESULT("unknown");vmalloc_to_page="0"
+    AC_MSG_RESULT(yes);vmalloc_to_page="1",
+    AC_MSG_RESULT(no);vmalloc_to_page="0",
+    AC_MSG_RESULT(unknown);vmalloc_to_page="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1523,9 +1523,9 @@ AC_TRY_COMPILE([
 ],[
 	request_module("abcd", "def", "ixj");
 ],
-    AC_MSG_RESULT("no");old_kmod="0",
-    AC_MSG_RESULT("yes");old_kmod="1",
-    AC_MSG_RESULT("unknown");old_kmod="1"
+    AC_MSG_RESULT(no);old_kmod="0",
+    AC_MSG_RESULT(yes);old_kmod="1",
+    AC_MSG_RESULT(unknown);old_kmod="1"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1551,9 +1551,9 @@ AC_TRY_COMPILE([
 	struct proc_dir_entry * (*func)();
 	func = PDE;
 ],
-    AC_MSG_RESULT("yes");pde_defined="1",
-    AC_MSG_RESULT("no");pde_defined="0",
-    AC_MSG_RESULT("unknown");pde_defined="0"
+    AC_MSG_RESULT(yes);pde_defined="1",
+    AC_MSG_RESULT(no);pde_defined="0",
+    AC_MSG_RESULT(unknown);pde_defined="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1578,9 +1578,9 @@ AC_TRY_COMPILE([
 	int (*func)();
 	func = pci_set_consistent_dma_mask;
 ],
-    AC_MSG_RESULT("yes");pci_consistent_defined="1",
-    AC_MSG_RESULT("no");pci_consistent_defined="0",
-    AC_MSG_RESULT("unknown");pci_consistent_defined="0"
+    AC_MSG_RESULT(yes);pci_consistent_defined="1",
+    AC_MSG_RESULT(no);pci_consistent_defined="0",
+    AC_MSG_RESULT(unknown);pci_consistent_defined="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1604,9 +1604,9 @@ AC_TRY_COMPILE([
 	int (*func)();
 	func = pci_dev_present;
 ],
-    AC_MSG_RESULT("yes");pci_dev_present_defined="1",
-    AC_MSG_RESULT("no");pci_dev_present_defined="0",
-    AC_MSG_RESULT("unknown");pci_dev_present_defined="0"
+    AC_MSG_RESULT(yes);pci_dev_present_defined="1",
+    AC_MSG_RESULT(no);pci_dev_present_defined="0",
+    AC_MSG_RESULT(unknown);pci_dev_present_defined="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1630,9 +1630,9 @@ AC_TRY_COMPILE([
   void (*func)(unsigned int);
   func = msleep;
 ],
-    AC_MSG_RESULT("yes");msleep="1",
-    AC_MSG_RESULT("no");msleep="0",
-    AC_MSG_RESULT("unknown");msleep="0"
+    AC_MSG_RESULT(yes);msleep="1",
+    AC_MSG_RESULT(no);msleep="0",
+    AC_MSG_RESULT(unknown);msleep="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1658,9 +1658,9 @@ AC_TRY_COMPILE([
   unsigned long (*func)(unsigned int);
   func = msleep_interruptible;
 ],
-    AC_MSG_RESULT("yes");msleep_interruptible="1",
-    AC_MSG_RESULT("no");msleep_interruptible="0",
-    AC_MSG_RESULT("unknown");msleep_interruptible="0"
+    AC_MSG_RESULT(yes);msleep_interruptible="1",
+    AC_MSG_RESULT(no);msleep_interruptible="0",
+    AC_MSG_RESULT(unknown);msleep_interruptible="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1687,9 +1687,9 @@ AC_TRY_COMPILE([
   unsigned int (*func)(const unsigned long);
   func = msecs_to_jiffies;
 ],
-    AC_MSG_RESULT("yes");msecs_to_jiffies="1",
-    AC_MSG_RESULT("no");msecs_to_jiffies="0",
-    AC_MSG_RESULT("unknown");msecs_to_jiffies="0"
+    AC_MSG_RESULT(yes);msecs_to_jiffies="1",
+    AC_MSG_RESULT(no);msecs_to_jiffies="0",
+    AC_MSG_RESULT(unknown);msecs_to_jiffies="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1714,9 +1714,9 @@ AC_TRY_COMPILE([
 	struct tty_struct tty;
 	atomic_read(&tty.count);
 ],
-    AC_MSG_RESULT("yes");tty_count_atomic="1",
-    AC_MSG_RESULT("no");tty_count_atomic="0",
-    AC_MSG_RESULT("unknown");tty_count_atomic="0"
+    AC_MSG_RESULT(yes);tty_count_atomic="1",
+    AC_MSG_RESULT(no);tty_count_atomic="0",
+    AC_MSG_RESULT(unknown);tty_count_atomic="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1741,9 +1741,9 @@ AC_TRY_COMPILE([
   void *(*func)(struct video_device *);
   func = video_get_drvdata;
 ],
-    AC_MSG_RESULT("yes");video_get_drvdata="1",
-    AC_MSG_RESULT("no");video_get_drvdata="0",
-    AC_MSG_RESULT("unknown");video_get_drvdata="0"
+    AC_MSG_RESULT(yes);video_get_drvdata="1",
+    AC_MSG_RESULT(no);video_get_drvdata="0",
+    AC_MSG_RESULT(unknown);video_get_drvdata="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1769,9 +1769,9 @@ AC_TRY_COMPILE([
   static pgprot_t p;
   io_remap_pfn_range(NULL, 0, 0, 0, p);
 ],
-    AC_MSG_RESULT("yes");io_remap_pfn_range="1",
-    AC_MSG_RESULT("no");io_remap_pfn_range="0",
-    AC_MSG_RESULT("unknown");io_remap_pfn_range="0"
+    AC_MSG_RESULT(yes);io_remap_pfn_range="1",
+    AC_MSG_RESULT(no);io_remap_pfn_range="0",
+    AC_MSG_RESULT(unknown);io_remap_pfn_range="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1794,9 +1794,9 @@ AC_TRY_COMPILE([
   static pgprot_t p;
   io_remap_page_range(NULL, 0, 0, 0, p);
 ],
-    AC_MSG_RESULT("yes");new_io_remap="1",
-    AC_MSG_RESULT("no");new_io_remap="0",
-    AC_MSG_RESULT("unknown");new_io_remap="0"
+    AC_MSG_RESULT(yes);new_io_remap="1",
+    AC_MSG_RESULT(no);new_io_remap="0",
+    AC_MSG_RESULT(unknown);new_io_remap="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1820,9 +1820,9 @@ AC_TRY_COMPILE([
   void * (*func)(size_t, size_t, int);
   func = kcalloc;
 ],
-    AC_MSG_RESULT("yes");kcalloc="1",
-    AC_MSG_RESULT("no");kcalloc="0",
-    AC_MSG_RESULT("unknown");kcalloc="0"
+    AC_MSG_RESULT(yes);kcalloc="1",
+    AC_MSG_RESULT(no);kcalloc="0",
+    AC_MSG_RESULT(unknown);kcalloc="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1847,9 +1847,9 @@ AC_TRY_COMPILE([
   char * (*func)(const char *, int);
   func = kstrdup;
 ],
-    AC_MSG_RESULT("yes");kstrdup="1",
-    AC_MSG_RESULT("no");kstrdup="0",
-    AC_MSG_RESULT("unknown");kstrdup="0"
+    AC_MSG_RESULT(yes);kstrdup="1",
+    AC_MSG_RESULT(no);kstrdup="0",
+    AC_MSG_RESULT(unknown);kstrdup="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1874,9 +1874,9 @@ AC_TRY_COMPILE([
   void * (*func)(size_t, int);
   func = kzalloc;
 ],
-    AC_MSG_RESULT("yes");kzalloc="1",
-    AC_MSG_RESULT("no");kzalloc="0",
-    AC_MSG_RESULT("unknown");kzalloc="0"
+    AC_MSG_RESULT(yes);kzalloc="1",
+    AC_MSG_RESULT(no);kzalloc="0",
+    AC_MSG_RESULT(unknown);kzalloc="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1900,9 +1900,9 @@ AC_TRY_COMPILE([
 ],[
     create_workqueue("abcd", 0);
 ],
-    AC_MSG_RESULT("yes");workqueue2="1",
-    AC_MSG_RESULT("no");workqueue2="0",
-    AC_MSG_RESULT("unknown");workqueue2="0"
+    AC_MSG_RESULT(yes);workqueue2="1",
+    AC_MSG_RESULT(no);workqueue2="0",
+    AC_MSG_RESULT(unknown);workqueue2="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1927,9 +1927,9 @@ AC_TRY_COMPILE([
   struct pci_dev dev;
   dev.saved_config_space[0] = 0;
 ],
-    AC_MSG_RESULT("yes");pci_saved_config="1",
-    AC_MSG_RESULT("no");pci_saved_config="0",
-    AC_MSG_RESULT("unknown");pci_saved_config="0"
+    AC_MSG_RESULT(yes);pci_saved_config="1",
+    AC_MSG_RESULT(no);pci_saved_config="0",
+    AC_MSG_RESULT(unknown);pci_saved_config="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1955,9 +1955,9 @@ AC_TRY_COMPILE([
   struct pci_dev *pci;
   pci_save_state(pci);
 ],
-    AC_MSG_RESULT("yes");new_pci_save_state="1",
-    AC_MSG_RESULT("no");new_pci_save_state="0",
-    AC_MSG_RESULT("unknown");new_pci_save_state="0"
+    AC_MSG_RESULT(yes);new_pci_save_state="1",
+    AC_MSG_RESULT(no);new_pci_save_state="0",
+    AC_MSG_RESULT(unknown);new_pci_save_state="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -1981,9 +1981,9 @@ AC_TRY_COMPILE([
   void (*func)(struct file_operations *, int, struct device *);
   func = register_sound_special_device;
 ],
-    AC_MSG_RESULT("yes");reg_sp="1",
-    AC_MSG_RESULT("no");reg_sp="0",
-    AC_MSG_RESULT("unknown");reg_sp="0"
+    AC_MSG_RESULT(yes);reg_sp="1",
+    AC_MSG_RESULT(no);reg_sp="0",
+    AC_MSG_RESULT(unknown);reg_sp="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -2015,9 +2015,9 @@ AC_TRY_COMPILE([
  int sig;
  kill_fasync(fa, sig);
 ],
-    AC_MSG_RESULT("yes");oldkfasync="1",
-    AC_MSG_RESULT("no");oldkfasync="0",
-    AC_MSG_RESULT("unknown");oldkfasync="0"
+    AC_MSG_RESULT(yes);oldkfasync="1",
+    AC_MSG_RESULT(no);oldkfasync="0",
+    AC_MSG_RESULT(unknown);oldkfasync="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -2041,9 +2041,9 @@ AC_TRY_COMPILE([
 ],[
  dma_addr_t addr;
 ],
-    AC_MSG_RESULT("yes");dma_addr_t="1",
-    AC_MSG_RESULT("no");dma_addr_t="0",
-    AC_MSG_RESULT("unknown");dma_addr_t="0"
+    AC_MSG_RESULT(yes);dma_addr_t="1",
+    AC_MSG_RESULT(no);dma_addr_t="0",
+    AC_MSG_RESULT(unknown);dma_addr_t="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -2070,9 +2070,9 @@ AC_TRY_COMPILE([
 #endif
 exit(0);
 ],
-    AC_MSG_RESULT("yes");have_mutex_macros="1",
-    AC_MSG_RESULT("no");have_mutex_macros="0",
-    AC_MSG_RESULT("unknown");have_mutex_macros="0"
+    AC_MSG_RESULT(yes);have_mutex_macros="1",
+    AC_MSG_RESULT(no);have_mutex_macros="0",
+    AC_MSG_RESULT(unknown);have_mutex_macros="0"
 )
 CFLAGS=$ac_save_CFLAGS
 CC=$ac_save_CC
@@ -2200,9 +2200,9 @@ AC_TRY_COMPILE([
 #error
 #endif
 ],
-  AC_MSG_RESULT("yes");rtcsup="m",
-  AC_MSG_RESULT("no");rtcsup="",
-  AC_MSG_RESULT("unknown");rtcsup=""
+  AC_MSG_RESULT(yes);rtcsup="m",
+  AC_MSG_RESULT(no);rtcsup="",
+  AC_MSG_RESULT(unknown);rtcsup=""
 )
 CFLAGS="$ac_save_CFLAGS"
 CC=$ac_save_CC
@@ -2275,9 +2275,9 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   struct class_simple *(*foo)(struct module *, char *) = class_simple_create;
   foo(NULL,NULL);
 ],
-    AC_MSG_RESULT("yes");class_simple="1",
-    AC_MSG_RESULT("no");class_simple="0",
-    AC_MSG_RESULT("unknown");class_simple="0"
+    AC_MSG_RESULT(yes);class_simple="1",
+    AC_MSG_RESULT(no);class_simple="0",
+    AC_MSG_RESULT(unknown);class_simple="0"
 )
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
@@ -2303,9 +2303,9 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   static struct device_driver driver;
   driver.resume(NULL, 0);
 ],
-    AC_MSG_RESULT("yes");old_driver_suspend="1",
-    AC_MSG_RESULT("no");old_driver_suspend="0",
-    AC_MSG_RESULT("unknown");old_driver_suspend="0"
+    AC_MSG_RESULT(yes);old_driver_suspend="1",
+    AC_MSG_RESULT(no);old_driver_suspend="0",
+    AC_MSG_RESULT(unknown);old_driver_suspend="0"
 )
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
@@ -2330,9 +2330,9 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
 ],[
   void (*func)(struct vm_area_struct *, pte_t, unsigned long) = print_bad_pte;
 ],
-    AC_MSG_RESULT("yes");remove_page_reserve="1",
-    AC_MSG_RESULT("no");remove_page_reserve="0",
-    AC_MSG_RESULT("unknown");remove_page_reserve="0"
+    AC_MSG_RESULT(yes);remove_page_reserve="1",
+    AC_MSG_RESULT(no);remove_page_reserve="0",
+    AC_MSG_RESULT(unknown);remove_page_reserve="0"
 )
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
@@ -2358,9 +2358,9 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   struct class_device dev;
   dev.parent = 0;
 ],
-    AC_MSG_RESULT("yes");nested_class_device="1",
-    AC_MSG_RESULT("no");nested_class_device="0",
-    AC_MSG_RESULT("unknown");nested_class_device="0"
+    AC_MSG_RESULT(yes);nested_class_device="1",
+    AC_MSG_RESULT(no);nested_class_device="0",
+    AC_MSG_RESULT(unknown);nested_class_device="0"
 )
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
@@ -2387,9 +2387,9 @@ if test "$CONFIG_PNP_KERNEL" = "y"; then
   struct pnp_driver pnp;
   pnp.suspend = 0;
 ],
-    AC_MSG_RESULT("yes");pnp_suspend="1",
-    AC_MSG_RESULT("no");pnp_suspend="0",
-    AC_MSG_RESULT("unknown");pnp_suspend="0"
+    AC_MSG_RESULT(yes);pnp_suspend="1",
+    AC_MSG_RESULT(no);pnp_suspend="0",
+    AC_MSG_RESULT(unknown);pnp_suspend="0"
 )
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
@@ -2418,9 +2418,9 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   ops.unlocked_ioctl = NULL;
   ops.compat_ioctl = NULL;
 ],
-    AC_MSG_RESULT("yes");new_ioctl="1",
-    AC_MSG_RESULT("no");new_ioctl="0",
-    AC_MSG_RESULT("unknown");new_ioctl="0"
+    AC_MSG_RESULT(yes);new_ioctl="1",
+    AC_MSG_RESULT(no);new_ioctl="0",
+    AC_MSG_RESULT(unknown);new_ioctl="0"
 )
   CFLAGS=$ac_save_CFLAGS
   CC=$ac_save_CC
