@@ -48,6 +48,8 @@ typedef struct subdepStruct {
 	dep *dep;
 } subdep;
 
+#define OPT_PNP_ONLY	(1 << 0)
+
 struct depStruct {
 	Type type;
 	char *dir;
@@ -60,6 +62,7 @@ struct depStruct {
 	char **macronames;
 	int hitflag;
 	int printflag;
+	int options;
 	char *printed;
 };
 
@@ -205,6 +208,10 @@ static void add_dep(char *line, const char *dir, short type)
 
 	while (get_word(line, word)) {
 		if (word[0] == '@') {	/* macro */
+			if (strcmp(word, "@pnponly") == 0) {
+				new_dep->options |= OPT_PNP_ONLY;
+				continue;
+			}
 			new_dep->macronames = realloc(new_dep->macronames, sizeof(char *) * (new_dep->nummacros + 1));
 			if (new_dep->macronames == NULL) {
 				fprintf(stderr, "No enough memory\n");
@@ -942,7 +949,9 @@ static void output_acinclude(void)
 		int put_if = 1;
 		if (tempdep->type != TYPE_TOPLEVEL)
 			continue;
-		if (strstr(tempdep->name, "pc98")) /* exception... */
+		if (tempdep->options & OPT_PNP_ONLY)
+			printf("\tif test \"$CONFIG_ISAPNP\" = \"y\"; then\n");
+		else if (strstr(tempdep->name, "pc98")) /* exception... */
 			printf("\tif test \"$CONFIG_X86_PC9800\" = \"y\"; then\n");
 		else if (strstr(tempdep->dir, "/isa"))
 			printf("\tif test \"$CONFIG_ISA\" = \"y\"; then\n");
