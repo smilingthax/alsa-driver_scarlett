@@ -1969,9 +1969,10 @@ static inline bool flush_delayed_work_sync(struct delayed_work *dwork)
 #define cancel_delayed_work_sync flush_delayed_work_sync
 #endif
 
-/* flush_work was renamed to cancel_work_sync in 2.6.22 */
+/* cancel_work_sync wrapper */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
-#define cancel_work_sync	flush_work
+/* XXX */
+#define cancel_work_sync(w)	flush_scheduled_work()
 #endif
 
 #endif /* < 2.6.37 */
