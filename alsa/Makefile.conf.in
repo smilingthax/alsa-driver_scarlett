@@ -57,7 +57,5 @@ MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
 
-# CC=@CC@ $(CFLAGS) $(CPPFLAGS) -DALSA_BUILD -D__KERNEL__
-# CPP=@CPP@ $(CPPFLAGS) -M -D__DEPEND__ -DALSA_BUILD -D__KERNEL__
-# COPTS=$(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
-# LINKER=@LD@ -r
+# Hack for SB16 CSP module
+CONFIG_SND_SB16_CSP=y
