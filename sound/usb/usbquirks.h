@@ -34,8 +34,6 @@
 	.idProduct = prod, \
 	.bInterfaceClass = USB_CLASS_VENDOR_SPEC
 
-#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
-
 /* Yamaha devices */
 {
 	USB_DEVICE(0x0499, 0x1000),
@@ -466,6 +464,7 @@
 		.data = (void*) 9
 	}
 },
+#if 0 // FIXME
 {
 	USB_DEVICE(0x0763, 0x2001),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
@@ -476,6 +475,7 @@
 		.data = (void*) 1
 	}
 },
+#endif // FIXME
 {
 	USB_DEVICE(0x0763, 0x2003),
 	.driver_info = (unsigned long) & (const snd_usb_audio_quirk_t) {
@@ -486,7 +486,5 @@
 		.data = (void*) 1
 	}
 },
-
-#endif /* CONFIG_SND_SEQUENCER(_MODULE) */
 
 #undef USB_DEVICE_VENDOR_SPEC
