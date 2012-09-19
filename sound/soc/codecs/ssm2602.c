@@ -60,8 +60,8 @@ struct ssm2602_priv {
  * There is no point in caching the reset register
  */
 static const u16 ssm2602_reg[SSM2602_CACHEREGNUM] = {
-	0x0017, 0x0017, 0x0079, 0x0079,
-	0x0000, 0x0000, 0x0000, 0x000a,
+	0x0097, 0x0097, 0x0079, 0x0079,
+	0x000a, 0x0008, 0x009f, 0x000a,
 	0x0000, 0x0000
 };
 
@@ -91,15 +91,13 @@ SOC_DOUBLE_R("Capture Volume", SSM2602_LINVOL, SSM2602_RINVOL, 0, 31, 0),
 SOC_DOUBLE_R("Capture Switch", SSM2602_LINVOL, SSM2602_RINVOL, 7, 1, 1),
 
 SOC_SINGLE("Mic Boost (+20dB)", SSM2602_APANA, 0, 1, 0),
-SOC_SINGLE("Mic Boost2 (+20dB)", SSM2602_APANA, 7, 1, 0),
+SOC_SINGLE("Mic Boost2 (+20dB)", SSM2602_APANA, 8, 1, 0),
 SOC_SINGLE("Mic Switch", SSM2602_APANA, 1, 1, 1),
 
 SOC_SINGLE("Sidetone Playback Volume", SSM2602_APANA, 6, 3, 1),
 
 SOC_SINGLE("ADC High Pass Filter Switch", SSM2602_APDIGI, 0, 1, 1),
 SOC_SINGLE("Store DC Offset Switch", SSM2602_APDIGI, 4, 1, 0),
-
-SOC_ENUM("Capture Source", ssm2602_enum[0]),
 
 SOC_ENUM("Playback De-emphasis", ssm2602_enum[1]),
 };
@@ -167,83 +165,78 @@ static int ssm2602_add_widgets(struct snd_soc_codec *codec)
 	return 0;
 }
 
-struct _coeff_div {
+struct ssm2602_coeff {
 	u32 mclk;
 	u32 rate;
-	u16 fs;
-	u8 sr:4;
-	u8 bosr:1;
-	u8 usb:1;
+	u8 srate;
 };
 
-/* codec mclk clock divider coefficients */
-static const struct _coeff_div coeff_div[] = {
+#define SSM2602_COEFF_SRATE(sr, bosr, usb) (((sr) << 2) | ((bosr) << 1) | (usb))
+
+/* codec mclk clock coefficients */
+static const struct ssm2602_coeff ssm2602_coeff_table[] = {
 	/* 48k */
-	{12288000, 48000, 256, 0x0, 0x0, 0x0},
-	{18432000, 48000, 384, 0x0, 0x1, 0x0},
-	{12000000, 48000, 250, 0x0, 0x0, 0x1},
+	{12288000, 48000, SSM2602_COEFF_SRATE(0x0, 0x0, 0x0)},
+	{18432000, 48000, SSM2602_COEFF_SRATE(0x0, 0x1, 0x0)},
+	{12000000, 48000, SSM2602_COEFF_SRATE(0x0, 0x0, 0x1)},
 
 	/* 32k */
-	{12288000, 32000, 384, 0x6, 0x0, 0x0},
-	{18432000, 32000, 576, 0x6, 0x1, 0x0},
-	{12000000, 32000, 375, 0x6, 0x0, 0x1},
+	{12288000, 32000, SSM2602_COEFF_SRATE(0x6, 0x0, 0x0)},
+	{18432000, 32000, SSM2602_COEFF_SRATE(0x6, 0x1, 0x0)},
+	{12000000, 32000, SSM2602_COEFF_SRATE(0x6, 0x0, 0x1)},
 
 	/* 8k */
-	{12288000, 8000, 1536, 0x3, 0x0, 0x0},
-	{18432000, 8000, 2304, 0x3, 0x1, 0x0},
-	{11289600, 8000, 1408, 0xb, 0x0, 0x0},
-	{16934400, 8000, 2112, 0xb, 0x1, 0x0},
-	{12000000, 8000, 1500, 0x3, 0x0, 0x1},
+	{12288000, 8000, SSM2602_COEFF_SRATE(0x3, 0x0, 0x0)},
+	{18432000, 8000, SSM2602_COEFF_SRATE(0x3, 0x1, 0x0)},
+	{11289600, 8000, SSM2602_COEFF_SRATE(0xb, 0x0, 0x0)},
+	{16934400, 8000, SSM2602_COEFF_SRATE(0xb, 0x1, 0x0)},
+	{12000000, 8000, SSM2602_COEFF_SRATE(0x3, 0x0, 0x1)},
 
 	/* 96k */
-	{12288000, 96000, 128, 0x7, 0x0, 0x0},
-	{18432000, 96000, 192, 0x7, 0x1, 0x0},
-	{12000000, 96000, 125, 0x7, 0x0, 0x1},
+	{12288000, 96000, SSM2602_COEFF_SRATE(0x7, 0x0, 0x0)},
+	{18432000, 96000, SSM2602_COEFF_SRATE(0x7, 0x1, 0x0)},
+	{12000000, 96000, SSM2602_COEFF_SRATE(0x7, 0x0, 0x1)},
 
 	/* 44.1k */
-	{11289600, 44100, 256, 0x8, 0x0, 0x0},
-	{16934400, 44100, 384, 0x8, 0x1, 0x0},
-	{12000000, 44100, 272, 0x8, 0x1, 0x1},
+	{11289600, 44100, SSM2602_COEFF_SRATE(0x8, 0x0, 0x0)},
+	{16934400, 44100, SSM2602_COEFF_SRATE(0x8, 0x1, 0x0)},
+	{12000000, 44100, SSM2602_COEFF_SRATE(0x8, 0x1, 0x1)},
 
 	/* 88.2k */
-	{11289600, 88200, 128, 0xf, 0x0, 0x0},
-	{16934400, 88200, 192, 0xf, 0x1, 0x0},
-	{12000000, 88200, 136, 0xf, 0x1, 0x1},
+	{11289600, 88200, SSM2602_COEFF_SRATE(0xf, 0x0, 0x0)},
+	{16934400, 88200, SSM2602_COEFF_SRATE(0xf, 0x1, 0x0)},
+	{12000000, 88200, SSM2602_COEFF_SRATE(0xf, 0x1, 0x1)},
 };
 
-static inline int get_coeff(int mclk, int rate)
+static inline int ssm2602_get_coeff(int mclk, int rate)
 {
 	int i;
 
-	for (i = 0; i < ARRAY_SIZE(coeff_div); i++) {
-		if (coeff_div[i].rate == rate && coeff_div[i].mclk == mclk)
-			return i;
+	for (i = 0; i < ARRAY_SIZE(ssm2602_coeff_table); i++) {
+		if (ssm2602_coeff_table[i].rate == rate &&
+			ssm2602_coeff_table[i].mclk == mclk)
+			return ssm2602_coeff_table[i].srate;
 	}
-	return i;
+	return -EINVAL;
 }
 
 static int ssm2602_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params,
 	struct snd_soc_dai *dai)
 {
-	u16 srate;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_codec *codec = rtd->codec;
 	struct ssm2602_priv *ssm2602 = snd_soc_codec_get_drvdata(codec);
 	u16 iface = snd_soc_read(codec, SSM2602_IFACE) & 0xfff3;
-	int i = get_coeff(ssm2602->sysclk, params_rate(params));
+	int srate = ssm2602_get_coeff(ssm2602->sysclk, params_rate(params));
 
 	if (substream == ssm2602->slave_substream) {
 		dev_dbg(codec->dev, "Ignoring hw_params for slave substream\n");
 		return 0;
 	}
 
-	/*no match is found*/
-	if (i == ARRAY_SIZE(coeff_div))
-		return -EINVAL;
-
-	srate = (coeff_div[i].sr << 2) |
-		(coeff_div[i].bosr << 1) | coeff_div[i].usb;
+	if (srate < 0)
+		return srate;
 
 	snd_soc_write(codec, SSM2602_ACTIVE, 0);
 	snd_soc_write(codec, SSM2602_SRATE, srate);
@@ -516,8 +509,6 @@ static int ssm2602_probe(struct snd_soc_codec *codec)
 		return ret;
 	}
 
-	/*power on device*/
-	snd_soc_write(codec, SSM2602_ACTIVE, 0);
 	/* set the update bits */
 	reg = snd_soc_read(codec, SSM2602_LINVOL);
 	snd_soc_write(codec, SSM2602_LINVOL, reg | LINVOL_LRIN_BOTH);
@@ -530,7 +521,6 @@ static int ssm2602_probe(struct snd_soc_codec *codec)
 	/*select Line in as default input*/
 	snd_soc_write(codec, SSM2602_APANA, APANA_SELECT_DAC |
 			APANA_ENABLE_MIC_BOOST);
-	snd_soc_write(codec, SSM2602_PWR, 0);
 
 	snd_soc_add_controls(codec, ssm2602_snd_controls,
 				ARRAY_SIZE(ssm2602_snd_controls));
@@ -601,7 +591,7 @@ static struct spi_driver ssm2602_spi_driver = {
  *    low  = 0x1a
  *    high = 0x1b
  */
-static int ssm2602_i2c_probe(struct i2c_client *i2c,
+static int __devinit ssm2602_i2c_probe(struct i2c_client *i2c,
 			     const struct i2c_device_id *id)
 {
 	struct ssm2602_priv *ssm2602;
@@ -621,7 +611,7 @@ static int ssm2602_i2c_probe(struct i2c_client *i2c,
 	return ret;
 }
 
-static int ssm2602_i2c_remove(struct i2c_client *client)
+static int __devexit ssm2602_i2c_remove(struct i2c_client *client)
 {
 	snd_soc_unregister_codec(&client->dev);
 	kfree(i2c_get_clientdata(client));
@@ -641,7 +631,7 @@ static struct i2c_driver ssm2602_i2c_driver = {
 		.owner = THIS_MODULE,
 	},
 	.probe = ssm2602_i2c_probe,
-	.remove = ssm2602_i2c_remove,
+	.remove = __devexit_p(ssm2602_i2c_remove),
 	.id_table = ssm2602_i2c_id,
 };
 #endif
