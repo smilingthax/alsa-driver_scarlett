@@ -746,6 +746,7 @@ CONFIG_SPARC64=
 CONFIG_SBUS=
 CONFIG_SND_BIT32_EMUL=
 processor=""
+KCC=$CROSS_COMPILE$CC
 rm -f processor.id
 ac_save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
@@ -843,31 +844,38 @@ CFLAGS="$ac_save_CFLAGS"
 rm -f processor.id
 c_opts=""
 LD=ld
+ARCH=
 case "$processor" in
   i386*)
+    ARCH=i386
     c_opts="-march=i386"
     ;;
   i486*)
+    ARCH=i386
     c_opts="-march=i486"
     ;;
   i586* | mwinchip)
+    ARCH=i386
     c_opts="-march=i586"
     ;;
   i686*)
+    ARCH=i386
     c_opts="-march=i686"
     ;;
   k6)
-    if $CC -march=k6  -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    ARCH=i386
+    if $KCC -march=k6  -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=k6"
     else
       c_opts="-march=i586"
     fi
     ;;
   k7|k8)
-    if $CC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    ARCH=i386
+    if $KCC -march=athlon -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=athlon"
     else
-      if $CC -falign-functions=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+      if $KCC -falign-functions=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
         c_opts="-march=i686 -falign-functions=4"
       else
 	c_opts="-march=i686 -malign-functions=4"
@@ -875,35 +883,39 @@ case "$processor" in
     fi
     ;;
   crusoe)
-    if $CC -falign-functions=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    ARCH=i386
+    if $KCC -falign-functions=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=i686 -falign-functions=0 -falign-jumps=0 -falign-loops=0"
     else
       c_opts="-march=i686 -malign-functions=0 -malign-jumps=0 -malign-loops=0"
     fi
     ;;
   mcyrixiii)
-    if $CC -march=c3 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    ARCH=i386
+    if $KCC -march=c3 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-march=c3"
     else
       c_opts="-march=i486"
     fi
-    if $CC -falign-functions=0 -falign-jumps=0 -falign-loops=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    if $KCC -falign-functions=0 -falign-jumps=0 -falign-loops=0 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="$c_opts -falign-functions=0 -falign-jumps=0 -falign-loops=0"
     else
       c_opts="$c_opts -malign-functions=0 -malign-jumps=0 -malign-loops=0"
     fi
     ;;
   ia64)
+    ARCH=ia64
     c_opts="-Wa,-x -ffixed-r13 -mfixed-range=f10-f15,f32-f127 -funwind-tables -falign-functions=32"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     CONFIG_IA64=y
     ;;
   alpha*)
+    ARCH=alpha
     c_opts="-mno-fp-regs -ffixed-8"
-    if $CC -mcpu=pca56 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+    if $KCC -mcpu=pca56 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
       have_pca56=yes
     fi
-    if $CC -mcpu=ev5 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+    if $KCC -mcpu=ev5 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
       case "$processor" in
       alpha_generic)
         c_opts="$c_opts -mcpu=ev5"
@@ -922,7 +934,7 @@ case "$processor" in
         c_opts="$c_opts -mcpu=ev4"
         ;;
       alpha_ev6)
-        if $CC -mcpu=ev6 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+        if $KCC -mcpu=ev6 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
 	  c_opts="$c_opts -mcpu=ev6"
 	elif test x$have_pca56 = xyes; then
 	  c_opts="$c_opts -mcpu=pca56"
@@ -946,22 +958,25 @@ EOF
     HACK_KERNEL_INC="$HACK_KERNEL_INC --include $SRCDIR/include/asm/hack-current.h"
     ;;
   ppc)
+    ARCH=ppc
     c_opts="-D__powerpc__ -fsigned-char -fno-builtin -msoft-float -ffixed-r2 -Wno-uninitialized -mmultiple -mstring"
     CONFIG_PPC=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   ppc64)
+    ARCH=ppc64
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -Wno-uninitialized -mminimal-toc -fno-builtin"
     CONFIG_SND_BIT32_EMUL=m
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   mips*)
-    if $CC -mtune=mips32 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+    ARCH=mips
+    if $KCC -mtune=mips32 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
       c_opts="-mtune=mips32"
     else
       c_opts="-mcpu=r4600"
     fi
-    if $CC -mips32 -mabi=32 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
+    if $KCC -mips32 -mabi=32 -S -o /dev/null -xc /dev/null > /dev/null 2>&1; then
       c_opts="$c_opts -mips32 -mabi=32"
     else
       c_opts="$_opts -mips2"
@@ -971,11 +986,12 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc)
+    ARCH=sparc
     CONFIG_SPARC32=y
     IS_EGCS=n
     NEW_GAS=n
-    test $CC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && IS_EGCS=y
-    test $LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    test $KCC -m32 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && IS_EGCS=y
+    test $CROSS_COMPILE$LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
     if test $NEW_GAS = y; then
       LD="$LD -m elf32_sparc"
     fi
@@ -988,19 +1004,19 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sparc64)
+    ARCH=sparc64
     CONFIG_SPARC64=y
-    CC=gcc
-    test gcc -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || CC=sparc64-linux-gcc
+    # test $KCC -m64 -S -o /dev/null -xc /dev/null >/dev/null 2>&1 || KCC=sparc64-linux-gcc
     NEW_GCC=n
     NEW_GAS=n
     CC_UNDECL=""
-    $CC -m64 -mcmodel=medlow -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && NEW_GCC=y
-    $LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
-    $CC -c -x assembler /dev/null -Wa,--help | grep undeclared-regs > /dev/null || CC_UNDECL="-Wa,--undeclared-regs"
+    $KCC -m64 -mcmodel=medlow -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && NEW_GCC=y
+    $CROSS_COMPILE$LD --version 2>&1 | grep 'elf64_sparc' > /dev/null && NEW_GAS=y
+    $KCC -c -x assembler /dev/null -Wa,--help | grep undeclared-regs > /dev/null || CC_UNDECL="-Wa,--undeclared-regs"
     if test $NEW_GAS != y; then
       LD=sparc64-linux-ld
     else
-      LD="$LD -m elf64_sparc"
+      LD="$KLD -m elf64_sparc"
     fi
     if test $NEW_GCC=y; then
       c_opts="-m64 -mno-fpu -mcpu=ultrasparc -mcmodel=medlow -ffixed-g4 -fcall-used-g5 -fcall-used-g7 -Wno-sign-compare $CC_UNDECL"
@@ -1012,24 +1028,28 @@ EOF
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   x86_64)
+    ARCH=x86_64
     LD="ld -m elf_x86_64 -e stext"
     c_opts="-mno-red-zone -mcmodel=kernel -fno-reorder-blocks -fno-strength-reduce -finline-limit=2000"
     CONFIG_SND_BIT32_EMUL=m
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   sa1100)
+    ARCH=arm
     c_opts="-march=armv4 -mtune=strongarm1100 -msoft-float"
     CONFIG_ARM=y
     CONFIG_L3=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   pxa)
+    ARCH=arm
     c_opts="-O2 -mapcs-32 -march=armv4 -Wa,-mxscale -mtune=strongarm -mshort-load-bytes -msoft-float"
     CONFIG_ARM=y
     CONFIG_L3=y
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
   parisc)
+    ARCH=parisc
     c_opts="-mno-space-regs -mfast-indirect-calls -mschedule=7200 -mdisable-fpregs"
     test "$CONFIG_ISA" = "probe" && CONFIG_ISA=
     ;;
@@ -1042,7 +1062,7 @@ esac
 dnl set ia32 (X86)
 case "$processor" in
   i?86*|k?|crusoe|mcyrixiii|mwinchip)
-    if $CC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
+    if $KCC -mpreferred-stack-boundary=2 -S -o /dev/null -xc /dev/null >/dev/null 2>&1; then
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
     fi
@@ -1099,8 +1119,18 @@ if test -n "$CONFIG_SPARC32" -o -n "$CONFIG_SPARC64"; then
   CHECK_KERNEL_CONFIG(CONFIG_SBUS, [SBUS support in kernel])
 fi
 
+if test -n "$CONFIG_SND_BIT32_EMUL"; then
+  if test "$kversion.$kpatchlevel" = "2.6"; then
+    CHECK_KERNEL_CONFIG(CONFIG_COMPAT, [32bit compat support])
+    if test -z "$CONFIG_COMPAT"; then
+      CONFIG_SND_BIT32_EMUL=
+    fi
+  fi
+fi
+
 c_opts="-O2 $c_opts"
 AC_SUBST(processor)
+AC_SUBST(ARCH)
 AC_SUBST(LD)
 AC_SUBST(CONFIG_X86)
 AC_SUBST(CONFIG_ALPHA)
@@ -1207,7 +1237,9 @@ dnl Check for strlcpy...
 AC_MSG_CHECKING(for strlcpy)
 strlcpy="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1222,6 +1254,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");strlcpy="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_STRLCPY=$strlcpy
 dnl AC_SUBST(CONFIG_HAVE_STRLCPY)
 if test "$CONFIG_HAVE_STRLCPY" = "1"; then
@@ -1232,7 +1265,9 @@ dnl Check for snprintf...
 AC_MSG_CHECKING(for snprintf)
 snprintf="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1246,6 +1281,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");snprintf="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_SNPRINTF=$snprintf
 dnl AC_SUBST(CONFIG_HAVE_SNPRINTF)
 if test "$CONFIG_HAVE_SNPRINTF" = "1"; then
@@ -1256,7 +1292,9 @@ dnl Check for scnprintf...
 AC_MSG_CHECKING(for scnprintf)
 scnprintf="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1270,6 +1308,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");scnprintf="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_SCNPRINTF=$scnprintf
 dnl AC_SUBST(CONFIG_HAVE_SCNPRINTF)
 if test "$CONFIG_HAVE_SCNPRINTF" = "1"; then
@@ -1280,7 +1319,9 @@ dnl Check for sscanf...
 AC_MSG_CHECKING(for sscanf)
 sscanf="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1294,6 +1335,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");sscanf="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_SSCANF=$sscanf
 dnl AC_SUBST(CONFIG_HAVE_SSCANF)
 if test "$CONFIG_HAVE_SSCANF" = "1"; then
@@ -1304,7 +1346,9 @@ dnl Check for vmalloc_to_page...
 AC_MSG_CHECKING(for vmalloc_to_page)
 vmalloc_to_page="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1319,6 +1363,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");vmalloc_to_page="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_VMALLOC_TO_PAGE=$vmalloc_to_page
 dnl AC_SUBST(CONFIG_HAVE_VMALLOC_TO_PAGE)
 if test "$CONFIG_HAVE_VMALLOC_TO_PAGE" = "1"; then
@@ -1329,7 +1374,9 @@ dnl Check for old kmod...
 AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1342,6 +1389,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");old_kmod="1"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_OLD_REQUEST_MODULE=$old_kmod
 dnl AC_SUBST(CONFIG_HAVE_OLD_REQUEST_MODULE)
 if test "$CONFIG_HAVE_OLD_REQUEST_MODULE" = "1"; then
@@ -1352,7 +1400,9 @@ dnl Check for PDE...
 AC_MSG_CHECKING(for PDE)
 pde_defined="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1367,6 +1417,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");pde_defined="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_PDE=$pde_defined
 dnl AC_SUBST(CONFIG_HAVE_PDE)
 if test "$CONFIG_HAVE_PDE" = "1"; then
@@ -1377,7 +1428,9 @@ dnl Check for pci_consistent_set_dma_mask()
 AC_MSG_CHECKING(for pci_set_consistent_dma_mask)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1391,6 +1444,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");pci_consistent_defined="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK=$pci_consistent_defined
 if test "$CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK" = "1"; then
   AC_DEFINE(CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK)
@@ -1400,7 +1454,9 @@ dnl Check for tty->count is the atomic type
 AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS -Wall $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1414,6 +1470,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");tty_count_atomic="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_TTY_COUNT_ATOMIC=$tty_count_atomic
 if test "$CONFIG_HAVE_TTY_COUNT_ATOMIC" = "1"; then
   AC_DEFINE(CONFIG_HAVE_TTY_COUNT_ATOMIC)
@@ -1424,7 +1481,9 @@ if test "$CONFIG_VIDEO_DEV" = "y"; then
 AC_MSG_CHECKING(for video_get_drvdata)
 video_get_drvdata="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1438,6 +1497,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");video_get_drvdata="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_VIDEO_GET_DRVDATA=$video_get_drvdata
 dnl AC_SUBST(CONFIG_HAVE_VIDEO_GET_DRVDATA)
 if test "$CONFIG_HAVE_VIDEO_GET_DRVDATA" = "1"; then
@@ -1449,7 +1509,9 @@ dnl Check for old remap_page_range()
 AC_MSG_CHECKING(for remap_pfn_range)
 remap_pfn_range="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1465,6 +1527,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");remap_pfn_range="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 if test "$remap_pfn_range" = "1"; then
   AC_DEFINE(CONFIG_HAVE_REMAP_PFN_RANGE)
 fi
@@ -1473,7 +1536,9 @@ if test "$remap_pfn_range" != "1"; then
 AC_MSG_CHECKING(for new remap_page_range)
 new_remap="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1489,6 +1554,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");new_remap="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 if test "$new_remap" != "1"; then
   AC_DEFINE(CONFIG_OLD_REMAP_PAGE_RANGE)
 fi
@@ -1498,7 +1564,9 @@ dnl Check for kcalloc()
 AC_MSG_CHECKING(for kcalloc)
 kcalloc="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1512,6 +1580,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");kcalloc="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_KCALLOC=$kcalloc
 dnl AC_SUBST(CONFIG_HAVE_KCALLOC)
 if test "$CONFIG_HAVE_KCALLOC" = "1"; then
@@ -1522,7 +1591,9 @@ dnl Check for saved_config_space in pci_dev
 AC_MSG_CHECKING(for saved_config_space in pci_dev)
 pci_saved_config="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1536,6 +1607,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");pci_saved_config="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_PCI_SAVED_CONFIG=$pci_saved_config
 dnl AC_SUBST(CONFIG_HAVE_PCI_SAVED_CONFIG)
 if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
@@ -1547,7 +1619,9 @@ dnl Check for new pci_save_state()
 AC_MSG_CHECKING(for new pci_save_state)
 new_pci_save_state="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1561,6 +1635,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");new_pci_save_state="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 if test "$new_pci_save_state" = "1"; then
   AC_DEFINE(CONFIG_HAVE_NEW_PCI_SAVE_STATE)
 fi
@@ -1570,7 +1645,9 @@ dnl Check for acpi_register_gsi
 AC_MSG_CHECKING(for acpi_register_gsi)
 acpi_register_gsi="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include <linux/config.h>
@@ -1584,6 +1661,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");acpi_register_gsi="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_ACPI_REGISTER_GSI=$acpi_register_gsi
 dnl AC_SUBST(CONFIG_HAVE_ACPI_REGISTER_GSI)
 if test "$CONFIG_HAVE_ACPI_REGISTER_GSI" = "1"; then
@@ -1597,7 +1675,9 @@ dnl Check for old kill_fasync...
 AC_MSG_CHECKING(for old kill_fasync)
 oldkfasync="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1615,6 +1695,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");oldkfasync="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_OLD_KILL_FASYNC=$oldkfasync
 dnl AC_SUBST(CONFIG_OLD_KILL_FASYNC)
 if test "$CONFIG_OLD_KILL_FASYNC" = "1"; then
@@ -1625,7 +1706,9 @@ dnl Check for dma_addr_t
 AC_MSG_CHECKING(for dma_addr_t)
 dma_addr_t="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1638,6 +1721,7 @@ AC_TRY_COMPILE([
     AC_MSG_RESULT("unknown");dma_addr_t="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_DMA_ADDR_T=$dma_addr_t
 dnl AC_SUBST(CONFIG_HAVE_DMA_ADDR_T)
 if test "$CONFIG_HAVE_DMA_ADDR_T" = "1"; then
@@ -1648,7 +1732,9 @@ dnl Check for MUTEX macros
 AC_MSG_CHECKING(for MUTEX macros)
 have_mutex_macros="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1664,6 +1750,7 @@ exit(0);
     AC_MSG_RESULT("unknown");have_mutex_macros="0"
 )
 CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
 CONFIG_HAVE_MUTEX_MACROS=$have_mutex_macros
 dnl AC_SUBST(CONFIG_HAVE_MUTEX_MACROS)
 if test "$CONFIG_HAVE_MUTEX_MACROS" = "1"; then
@@ -1751,7 +1838,9 @@ dnl Check for RTC timer support...
 AC_MSG_CHECKING(for RTC callback support in kernel)
 rtcsup="0"
 ac_save_CFLAGS="$CFLAGS"
+ac_save_CC=$CC
 CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
 AC_TRY_RUN([
 #include <linux/autoconf.h>
 #if defined(__alpha__) || (!defined(CONFIG_RTC) && !defined(CONFIG_RTC_MODULE))
@@ -1777,6 +1866,7 @@ int main(void)
   AC_MSG_RESULT("unknown");rtcsup=""
 )
 CFLAGS="$ac_save_CFLAGS"
+CC=$ac_save_CC
 CONFIG_SND_RTCTIMER=$rtcsup
 AC_SUBST(CONFIG_SND_RTCTIMER)
 test "$CONFIG_SND_RTCTIMER" = "m" && AC_DEFINE(CONFIG_SND_RTCTIMER_MODULE)

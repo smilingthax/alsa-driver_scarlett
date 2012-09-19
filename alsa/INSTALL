@@ -124,6 +124,8 @@ Use '--with-cross=prefix' parameter for the configure script.
 Example:
   './configure --with-cross=arm-linux- --with-kernel=/home/ipaq/kernel/linux'.
 
+For 2.6 kernels, pass the same kernel path to --with-build option, too. 
+
 
 Autoloading on Older Kernels
 ============================
