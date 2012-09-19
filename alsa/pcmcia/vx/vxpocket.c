@@ -1,5 +1,5 @@
 /*
- * Driver for Digigram VXpocket soundcard
+ * Driver for Digigram VXpocket V2/440 soundcards
  *
  * Copyright (c) 2002 by Takashi Iwai <tiwai@suse.de>
  *
@@ -19,9 +19,8 @@
  */
 
 /*
- * please add the following as /etc/pcmcia/vxpocket.conf:
- *
-
+ please add the following as /etc/pcmcia/vxpocket.conf:
+ 
   device "snd-vxpocket"
      class "audio" module "snd-vxpocket"
 
@@ -41,11 +40,17 @@
 /*
  */
 
+#ifdef COMPILE_VXP440
+#define CARD_NAME	"VXPocket440"
+#else
+#define CARD_NAME	"VXPocket"
+#endif
+
 MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
-MODULE_DESCRIPTION("Digigram VXpocket");
+MODULE_DESCRIPTION("Digigram " CARD_NAME);
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{Digigram,VXpocket}}");
+MODULE_DEVICES("{{Digigram," CARD_NAME "}}");
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
@@ -54,16 +59,16 @@ static unsigned int irq_mask = 0xffff;
 static int irq_list[4] = { -1 };
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(index, "Index value for VXPocket soundcard.");
+MODULE_PARM_DESC(index, "Index value for " CARD_NAME " soundcard.");
 MODULE_PARM_SYNTAX(index, SNDRV_INDEX_DESC);
 MODULE_PARM(id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
-MODULE_PARM_DESC(id, "ID string for VXPocket soundcard.");
+MODULE_PARM_DESC(id, "ID string for " CARD_NAME " soundcard.");
 MODULE_PARM_SYNTAX(id, SNDRV_ID_DESC);
 MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(enable, "Enable VXPocket soundcard.");
+MODULE_PARM_DESC(enable, "Enable " CARD_NAME " soundcard.");
 MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(irq_mask, "i");
-MODULE_PARM_DESC(irq_mask, "IRQ bitmask for VXPocket soundcard.");
+MODULE_PARM_DESC(irq_mask, "IRQ bitmask for " CARD_NAME " soundcard.");
 MODULE_PARM(irq_list, "1-4i");
 MODULE_PARM_DESC(irq_list, "List of Available interrupts for VXPocket soundcard.");
  
@@ -71,16 +76,70 @@ MODULE_PARM_DESC(irq_list, "List of Available interrupts for VXPocket soundcard.
 /*
  */
 
+#ifdef COMPILE_VXP440
+/*
+ * VXpocket 440
+ */
+#include "xilinx_boot_vp4.c"
+#include "xilinx_image_vp4.c"
+#include "d563s3_boot.c"
+#include "dsp_image_vp4.c"
+static dev_info_t dev_info = "snd-vxp440";
+
+/* 1 DSP, 1 sync UER, 1 sync World Clock (NIY) */
+/* SMPTE (NIY) */
+/* 2 stereo analog input (line/micro) */
+/* 2 stereo analog output */
+/* Only output levels can be modified */
+/* UER, but only for the first two inputs and outputs. */
+
+#define NUM_CODECS	2
+#define CARD_TYPE	VX_TYPE_VXP440
+
+#else
+/*
+ * VXpocket V2
+ */
 #include "xilinx_boot_vxp.c"
 #include "xilinx_image_vxp.c"
 #include "d563s3_boot.c"
 #include "dsp_image_vxp.c"
-
 static dev_info_t dev_info = "snd-vxpocket";
 
+/* 1 DSP, 1 sync UER */
+/* 1 programmable clock (NIY) */
+/* 1 stereo analog input (line/micro) */
+/* 1 stereo analog output */
+/* Only output levels can be modified */
+
+#define NUM_CODECS	1
+#define CARD_TYPE	VX_TYPE_VXPOCKET
+#endif
+
+
+static struct snd_vx_hardware vxp_hw = {
+	.name = CARD_NAME,
+	.type = CARD_TYPE,
+
+	/* images */
+#ifdef COMPILE_VXP440
+	.boot = { xilinx_boot_vxp440, sizeof(xilinx_boot_vxp440) },
+	.xilinx = { xilinx_image_vxp440, sizeof(xilinx_image_vxp440) },
+	.dsp_boot = { d563s3_boot, sizeof(d563s3_boot) },
+	.dsp = { dsp_image_vxp440, sizeof(dsp_image_vxp440) },
+#else
+	.boot = { xilinx_boot_vxpocket, sizeof(xilinx_boot_vxpocket) },
+	.xilinx = { xilinx_image_vxpocket, sizeof(xilinx_image_vxpocket) },
+	.dsp_boot = { d563s3_boot, sizeof(d563s3_boot) },
+	.dsp = { dsp_image_vxpocket, sizeof(dsp_image_vxpocket) },
+#endif
+	/* hardware specs */
+	.num_codecs = NUM_CODECS,
+	.num_ins = NUM_CODECS,
+	.num_outs = NUM_CODECS,
+};	
+
 static struct snd_vxp_entry hw_entry = {
-	.name = "VXPocket",
-	.type = VXP_TYPE_VXPOCKET,
 	.dev_info = &dev_info,
 
 	/* module parameters */
@@ -90,22 +149,9 @@ static struct snd_vxp_entry hw_entry = {
 	.irq_mask_p = &irq_mask,
 	.irq_list = irq_list,
 
-	/* images */
-	.boot = { xilinx_boot_vxpocket, sizeof(xilinx_boot_vxpocket) },
-	.xilinx = { xilinx_image_vxpocket, sizeof(xilinx_image_vxpocket) },
-	.dsp_boot = { d563s3_boot, sizeof(d563s3_boot) },
-	.dsp = { dsp_image_vxpocket, sizeof(dsp_image_vxpocket) },
-
-	/* hardware specs */
-	/* 1 DSP, 1 sync UER */
-	/* 1 programmable clock (NIY) */
-	/* 1 stereo analog input (line/micro) */
-	/* 1 stereo analog output */
-	/* Only output levels can be modified */
-	.num_codecs = 1,
-	.num_ins = 1,
-	.num_outs = 1,
-	
+	/* h/w config */
+	.hardware = &vxp_hw,
+	.ops = &snd_vxpocket_ops,
 };
 
 /*

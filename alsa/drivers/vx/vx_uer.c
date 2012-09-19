@@ -1,5 +1,8 @@
+/* to be in alsa-driver-specfici code */
+#define __NO_VERSION__
+
 /*
- * Driver for Digigram VXpocket soundcards
+ * Driver for Digigram VX soundcards
  *
  * IEC958 stuff
  *
@@ -23,49 +26,15 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <sound/core.h>
-#include "vxpocket.h"
+#include "vx_core.h"
 #include "vx_cmd.h"
 
-
-/*
- * vx_write_one_cbit - write one bit to UER config
- * @index: the bit index
- * @val: bit value, 0 or 1
- */
-static void vx_write_one_cbit(vxpocket_t *chip, int index, int val)
-{
-	unsigned long flags;
-
-	val = !!val;
-	spin_lock_irqsave(&chip->lock, flags);
-	vx_outb(chip, CSUER, 0); /* write */
-	vx_outb(chip, RUER, (val << 7) | (index & XX_UER_CBITS_OFFSET_MASK));
-	spin_unlock_irqrestore(&chip->lock, flags);
-}
-
-/*
- * vx_read_one_cbit - read one bit from UER config
- * @index: the bit index
- * returns 0 or 1.
- */
-static int vx_read_one_cbit(vxpocket_t *chip, int index)
-{
-	unsigned long flags;
-	int data;
-
-	spin_lock_irqsave(&chip->lock, flags);
-	vx_outb(chip, CSUER, 1); /* read */
-	vx_outb(chip, RUER, index & XX_UER_CBITS_OFFSET_MASK);
-	data = (vx_inb(chip, RUER) >> 7) & 0x01;
-	spin_unlock_irqrestore(&chip->lock, flags);
-	return data;
-}
 
 /*
  * vx_modify_board_clock - tell the board that its clock has been modified
  * @sync: DSP needs to resynchronize its FIFO
  */
-static int vx_modify_board_clock(vxpocket_t *chip, int sync)
+static int vx_modify_board_clock(vx_core_t *chip, int sync)
 {
 	struct vx_rmh rmh;
 
@@ -79,7 +48,7 @@ static int vx_modify_board_clock(vxpocket_t *chip, int sync)
 /*
  * vx_modify_board_inputs - resync audio inputs
  */
-static int vx_modify_board_inputs(vxpocket_t *chip)
+static int vx_modify_board_inputs(vx_core_t *chip)
 {
 	struct vx_rmh rmh;
 
@@ -89,13 +58,56 @@ static int vx_modify_board_inputs(vxpocket_t *chip)
 }
 
 /*
+ * vx_read_one_cbit - read one bit from UER config
+ * @index: the bit index
+ * returns 0 or 1.
+ */
+static int vx_read_one_cbit(vx_core_t *chip, int index)
+{
+	unsigned long flags;
+	int val;
+	spin_lock_irqsave(&chip->lock, flags);
+	if (chip->type >= VX_TYPE_VXPOCKET) {
+		vx_outb(chip, CSUER, 1); /* read */
+		vx_outb(chip, RUER, index & XX_UER_CBITS_OFFSET_MASK);
+		val = (vx_inb(chip, RUER) >> 7) & 0x01;
+	} else {
+		vx_outl(chip, CSUER, 1); /* read */
+		vx_outl(chip, RUER, index & XX_UER_CBITS_OFFSET_MASK);
+		val = (vx_inl(chip, RUER) >> 7) & 0x01;
+	}
+	spin_unlock_irqrestore(&chip->lock, flags);
+	return val;
+}
+
+/*
+ * vx_write_one_cbit - write one bit to UER config
+ * @index: the bit index
+ * @val: bit value, 0 or 1
+ */
+static void vx_write_one_cbit(vx_core_t *chip, int index, int val)
+{
+	unsigned long flags;
+	val = !!val;
+	spin_lock_irqsave(&chip->lock, flags);
+	if (chip->type >= VX_TYPE_VXPOCKET) {
+		vx_outb(chip, CSUER, 0); /* write */
+		vx_outb(chip, RUER, (val << 7) | (index & XX_UER_CBITS_OFFSET_MASK));
+	} else {
+		vx_outl(chip, CSUER, 0); /* write */
+		vx_outl(chip, RUER, (val << 7) | (index & XX_UER_CBITS_OFFSET_MASK));
+	}
+	spin_unlock_irqrestore(&chip->lock, flags);
+}
+
+/*
  * vx_read_uer_status - read the current UER status
- * @mode: pointer to store the UER mode, VXP_UER_MODE_XXX
+ * @mode: pointer to store the UER mode, VX_UER_MODE_XXX
  *
  * returns the frequency of UER, or 0 if not sync,
  * or a negative error code.
  */
-static int vx_read_uer_status(vxpocket_t *chip, int *mode)
+static int vx_read_uer_status(vx_core_t *chip, int *mode)
 {
 	int val, freq;
 
@@ -103,29 +115,32 @@ static int vx_read_uer_status(vxpocket_t *chip, int *mode)
 	freq = 0;
 
 	/* Read UER status */
-	val = vx_inb(chip, CSUER);
+	if (chip->type >= VX_TYPE_VXPOCKET)
+	    val = vx_inb(chip, CSUER);
+	else
+	    val = vx_inl(chip, CSUER);
 	if (val < 0)
 		return val;
 	/* If clock is present, read frequency */
-	if (val & VXP_SUER_CLOCK_PRESENT_MASK) {
-		switch (val & VXP_SUER_FREQ_MASK) {
-		case VXP_SUER_FREQ_32KHz_MASK:
+	if (val & VX_SUER_CLOCK_PRESENT_MASK) {
+		switch (val & VX_SUER_FREQ_MASK) {
+		case VX_SUER_FREQ_32KHz_MASK:
 			freq = 32000;
 			break;
-		case VXP_SUER_FREQ_44KHz_MASK:
+		case VX_SUER_FREQ_44KHz_MASK:
 			freq = 44100;
 			break;
-		case VXP_SUER_FREQ_48KHz_MASK:
+		case VX_SUER_FREQ_48KHz_MASK:
 			freq = 48000;
 			break;
 		}
         }
-	if (val & VXP_SUER_DATA_PRESENT_MASK)
+	if (val & VX_SUER_DATA_PRESENT_MASK)
 		/* bit 0 corresponds to consumer/professional bit */
 		*mode = vx_read_one_cbit(chip, 0) ?
-			VXP_UER_MODE_PROFESSIONAL : VXP_UER_MODE_CONSUMER;
+			VX_UER_MODE_PROFESSIONAL : VX_UER_MODE_CONSUMER;
 	else
-		*mode = VXP_UER_MODE_NOT_PRESENT;
+		*mode = VX_UER_MODE_NOT_PRESENT;
 
 	return freq;
 }
@@ -148,7 +163,7 @@ static int vx_read_uer_status(vxpocket_t *chip, int *mode)
  *    default        : HexFreq = (dword) ((double) 28224000 / (double) (Frequency*4)) - 0x000001FF
  */
 
-static int vx_calc_clock_from_freq(vxpocket_t *chip, int freq)
+static int vx_calc_clock_from_freq(vx_core_t *chip, int freq)
 {
 #define XX_FECH48000                    0x0000004B
 #define XX_FECH32000                    0x00000171
@@ -185,41 +200,40 @@ static int vx_calc_clock_from_freq(vxpocket_t *chip, int freq)
  * vx_change_clock_source - change the clock source
  * @source: the new source
  */
-static void vx_change_clock_source(vxpocket_t *chip, int source)
+static void vx_change_clock_source(vx_core_t *chip, int source)
 {
+	unsigned long flags;
+
 	/* we mute DAC to prevent clicks */
 	vx_toggle_dac_mute(chip, 1);
-
-	switch (source) {
-	case INTERNAL_QUARTZ:
-		chip->regCDSP &= ~VXP_CDSP_CLOCKIN_SEL_MASK;
-		vx_outb(chip, CDSP, chip->regCDSP);
-		break                                               ;
-
-	case UER_SYNC:
-		chip->regCDSP |= VXP_CDSP_CLOCKIN_SEL_MASK;
-		vx_outb(chip, CDSP, chip->regCDSP);
-		break                                               ;
-	}
-
+	spin_lock_irqsave(&chip->lock, flags);
+	chip->ops->set_clock_source(chip, source);
+	chip->clock_source = source;
+	spin_unlock_irqrestore(&chip->lock, flags);
 	/* unmute */
 	vx_toggle_dac_mute(chip, 0);
-	chip->clock_source = source;
 }
 
 
 /*
  * set the internal clock
  */
-void vx_set_internal_clock(vxpocket_t *chip, int freq)
+void vx_set_internal_clock(vx_core_t *chip, int freq)
 {
 	int clock;
+	unsigned long flags;
 	/* Get real clock value */
 	clock = vx_calc_clock_from_freq(chip, freq);
 	snd_printdd(KERN_DEBUG "set internal clock to 0x%x from freq %d\n", clock, freq);
-	/* Set the frequency on the board. */
-	vx_outb(chip, HIFREQ, (clock >> 8) & 0xff);
-	vx_outb(chip, LOFREQ, clock & 0xff);
+	spin_lock_irqsave(&chip->lock, flags);
+	if (chip->type >= VX_TYPE_VXPOCKET) {
+		vx_outb(chip, HIFREQ, (clock >> 8) & 0x0f);
+		vx_outb(chip, LOFREQ, clock & 0xff);
+	} else {
+		vx_outl(chip, HIFREQ, (clock >> 8) & 0x0f);
+		vx_outl(chip, LOFREQ, clock & 0xff);
+	}
+	spin_unlock_irqrestore(&chip->lock, flags);
 }
 
 
@@ -227,7 +241,7 @@ void vx_set_internal_clock(vxpocket_t *chip, int freq)
  * set the iec958 status bits
  * @bits: 32-bit status bits
  */
-void vx_set_iec958_status(vxpocket_t *chip, unsigned int bits)
+void vx_set_iec958_status(vx_core_t *chip, unsigned int bits)
 {
 	int i;
 
@@ -242,7 +256,7 @@ void vx_set_iec958_status(vxpocket_t *chip, unsigned int bits)
 /*
  * vx_set_clock - change the clock and audio source if necessary
  */
-int vx_set_clock(vxpocket_t *chip, int freq)
+int vx_set_clock(vx_core_t *chip, int freq)
 {
 	int src_changed = 0;
 
@@ -253,7 +267,7 @@ int vx_set_clock(vxpocket_t *chip, int freq)
 	vx_sync_audio_source(chip);
 
 	switch (chip->audio_source) {
-	case VXP_AUDIO_SRC_DIGITAL:
+	case VX_AUDIO_SRC_DIGITAL:
 		if (chip->clock_source != UER_SYNC) {
 			vx_change_clock_source(chip, UER_SYNC);
 			mdelay(6);
@@ -283,7 +297,7 @@ int vx_set_clock(vxpocket_t *chip, int freq)
 /*
  * vx_change_frequency - called from interrupt handler
  */
-int vx_change_frequency(vxpocket_t *chip)
+int vx_change_frequency(vx_core_t *chip)
 {
 	int freq;
 

@@ -63,6 +63,9 @@ endif
 ifeq (y,$(CONFIG_PCMCIA))
 SUBDIRS  += pcmcia
 endif
+ifeq (y,$(CONFIG_PARISC))
+SUBDIRS  += parisc
+endif
 CSUBDIRS += include test utils
 
 .PHONY: all

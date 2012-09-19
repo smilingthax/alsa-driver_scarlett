@@ -1,7 +1,7 @@
 /*
  * Driver for Digigram VXpocket soundcards
  *
- * Xilinx boot image for VXpocket 440.
+ * Xilinx boot image for VXpocket V2 and 440.
  *
  * Copyright (c) 2002 by Digigram S.A.
  *

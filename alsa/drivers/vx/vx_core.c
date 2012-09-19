@@ -1,5 +1,14 @@
+/* to be in alsa-driver-specfici code */
+#include <linux/config.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0)
+#define spin_lock_bh spin_lock
+#define spin_unlock_bh spin_unlock
+#endif
+#define __NO_VERSION__
+
 /*
- * Driver for Digigram VXpocket soundcards
+ * Driver for Digigram VX soundcards
  *
  * Hardware core part
  *
@@ -27,43 +36,20 @@
 #include <sound/pcm.h>
 #include <sound/asoundef.h>
 #include <sound/info.h>
-#include "vxpocket.h"
 #include <asm/io.h>
+#include "vx_core.h"
+#include "vx_cmd.h"
 
 MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>");
-MODULE_DESCRIPTION("Common routines for VXPocket drivers");
+MODULE_DESCRIPTION("Common routines for Digigram VX drivers");
 MODULE_LICENSE("GPL");
 
 
 /*
- * low-level functions
- */
-
-/*
- * snd_vx_inb - read a byte from the register
- * @offset: register offset
- */
-int snd_vx_inb(vxpocket_t *chip, int offset)
-{
-	return inb(chip->port + offset);
-}
-
-/*
- * snd_vx_outb - write a byte on the register
- * @offset: the register offset
- * @val: the value to write
- */
-void snd_vx_outb(vxpocket_t *chip, int offset, int val)
-{
-	outb(val, chip->port + offset);
-}
-
-
-/*
- * vx_delay - delay for the specified time
+ * snd_vx_delay - delay for the specified time
  * @xmsec: the time to delay in msec
  */
-void vx_delay(vxpocket_t *chip, int xmsec)
+void snd_vx_delay(vx_core_t *chip, int xmsec)
 {
 	if (! chip->in_suspend && ! in_interrupt() &&
 	    xmsec >= 1000 / HZ) {
@@ -83,81 +69,24 @@ void vx_delay(vxpocket_t *chip, int xmsec)
  *
  * returns zero if a bit matches, or a negative error code.
  */
-int vx_check_reg_bit(vxpocket_t *chip, int reg, int mask, int bit, int time)
+int snd_vx_check_reg_bit(vx_core_t *chip, int reg, int mask, int bit, int time)
 {
-#if 1 // debug only
-	static char *reg_names[16] = { "ICR", "CVR", "ISR", "IVR", "DMA",
-				       "R/TXH", "R/TXM", "R/TXL", "CDSP",
-				       "LOFREQ", "HIFREQ", "DATA", "MICRO",
-				       "DIALOG", "CSUER", "RUER" };
-#endif
 	long end_time = jiffies + (time * HZ + 999) / 1000;
+	static char *reg_names[VX_REG_MAX] = {
+		"ICR", "CVR", "ISR", "IVR", "RXH", "RXM", "RXL",
+		"DMA", "CDSP", "RFREQ", "RUER/V2", "DATA", "MEMIRQ",
+		"ACQ", "BIT0", "BIT1", "MIC0", "MIC1", "MIC2",
+		"MIC3", "INTCSR", "CNTRL", "GPIOC",
+		"LOFREQ", "HIFREQ", "CSUER", "RUER"
+	};
 	do {
 		if ((snd_vx_inb(chip, reg) & mask) == bit)
 			return 0;
-		//vx_delay(chip, 10);
+		//snd_vx_delay(chip, 10);
 	} while (time_after_eq(end_time, jiffies));
-	printk(KERN_DEBUG "vx_check_reg_bit: timeout, reg=%s, mask=0x%x, val=0x%x\n", reg_names[reg], mask, snd_vx_inb(chip, reg));
+	snd_printd(KERN_DEBUG "vx_check_reg_bit: timeout, reg=%s, mask=0x%x, val=0x%x\n", reg_names[reg], mask, snd_vx_inb(chip, reg));
 	return -EIO;
 }
-
-/*
- * vx_check_isr - check the ISR bit
- *
- * returns zero if a bit matches, or a negative error code.
- */
-#define vx_check_isr(chip,mask,bit,time) vx_check_reg_bit(chip, VXP_ISR, mask, bit, time)
-
-
-/*
- * vx_check_magic - check the magic word on xilinx
- *
- * returns zero if a magic word is detected, or a negative error code.
- */
-static int vx_check_magic(vxpocket_t *chip)
-{
-	long end_time = jiffies + HZ / 5;
-	int c;
-	do {
-		c = vx_inb(chip, CDSP);
-		if (c == CDSP_MAGIC)
-			return 0;
-		vx_delay(chip, 10);
-	} while (time_after_eq(end_time, jiffies));
-	printk(KERN_ERR "cannot find xilinx magic word (%x)\n", c);
-	return -EIO;
-}
-
-
-/*
- * vx_test_xilinx - check whether the xilinx is initialized
- *
- * returns zero if xilinx was already initialized, or a negative error code.
- */
-static int vx_test_xilinx(vxpocket_t *chip)
-{
-	chip->xilinx_tested = 1; /* always ok */
-	return 0;
-}
-
-
-/*
- * vx_reset_dsp - reset the DSP
- */
-
-#define END_OF_RESET_WAIT_TIME		200	/* ms */
-#define XX_DSP_RESET_WAIT_TIME		2	/* ms */
-
-static void vx_reset_dsp(vxpocket_t *chip)
-{
-	/* set the reset dsp bit to 1 */
-	vx_outb(chip, CDSP, chip->regCDSP | VXP_CDSP_DSP_RESET_MASK);
-	mdelay(XX_DSP_RESET_WAIT_TIME);
-	/* reset the bit */
-	vx_outb(chip, CDSP, chip->regCDSP & ~VXP_CDSP_DSP_RESET_MASK);
-	mdelay(XX_DSP_RESET_WAIT_TIME);
-}
-
 
 /*
  * vx_send_irq_dsp - set command irq bit
@@ -167,15 +96,17 @@ static void vx_reset_dsp(vxpocket_t *chip)
  * returns 0 if successful, or a negative error code.
  * 
  */
-static int vx_send_irq_dsp(vxpocket_t *chip, int num)
+static int vx_send_irq_dsp(vx_core_t *chip, int num)
 {
 	int nirq;
 
 	/* wait for Hc = 0 */
-	if (vx_check_reg_bit(chip, VXP_CVR, CVR_HC, 0, 200) < 0)
+	if (snd_vx_check_reg_bit(chip, VX_CVR, CVR_HC, 0, 200) < 0)
 		return -EIO;
 
-	nirq = num + VXP_IRQ_OFFSET;
+	nirq = num;
+	if (chip->type >= VX_TYPE_VXPOCKET)
+		nirq += VXP_IRQ_OFFSET;
 	vx_outb(chip, CVR, (nirq >> 1) | CVR_HC);
 	return 0;
 }
@@ -186,7 +117,7 @@ static int vx_send_irq_dsp(vxpocket_t *chip, int num)
  *
  * returns 0 if successful, or a negative error code.
  */
-static int vx_reset_chk(vxpocket_t *chip)
+static int vx_reset_chk(vx_core_t *chip)
 {
 	/* Reset irq CHK */
 	if (vx_send_irq_dsp(chip, IRQ_RESET_CHK) < 0)
@@ -197,9 +128,6 @@ static int vx_reset_chk(vxpocket_t *chip)
 	return 0;
 }
 
-#define vx_wait_isr_bit(chip,bit) vx_check_isr(chip, bit, bit, 200)
-#define vx_wait_for_rx_full(chip) vx_wait_isr_bit(chip, ISR_RX_FULL)
-
 /*
  * vx_transfer_end - terminate message transfer
  * @cmd: IRQ message to send (IRQ_MESS_XXX_END)
@@ -208,7 +136,7 @@ static int vx_reset_chk(vxpocket_t *chip)
  * the error code can be VX-specific, retrieved via vx_get_error().
  * NB: call with spinlock held!
  */
-static int vx_transfer_end(vxpocket_t *chip, int cmd)
+static int vx_transfer_end(vx_core_t *chip, int cmd)
 {
 	int err;
 
@@ -233,7 +161,7 @@ static int vx_transfer_end(vxpocket_t *chip, int cmd)
 		err |= vx_inb(chip, RXM) << 8;
 		err |= vx_inb(chip, RXL);
 		snd_printd(KERN_DEBUG "transfer_end: error = 0x%x\n", err);
-		return -(VXP_ERR_MASK | err);
+		return -(VX_ERR_MASK | err);
 	}
 	return 0;
 }
@@ -246,7 +174,7 @@ static int vx_transfer_end(vxpocket_t *chip, int cmd)
  * the error code can be VX-specific, retrieved via vx_get_error().
  * NB: call with spinlock held!
  */
-static int vx_read_status(vxpocket_t *chip, struct vx_rmh *rmh)
+static int vx_read_status(vx_core_t *chip, struct vx_rmh *rmh)
 {
 	int i, err, val, size;
 
@@ -326,7 +254,7 @@ static int vx_read_status(vxpocket_t *chip, struct vx_rmh *rmh)
  * 
  * this function doesn't call spinlock at all.
  */
-int vx_send_msg_nolock(vxpocket_t *chip, struct vx_rmh *rmh)
+int vx_send_msg_nolock(vx_core_t *chip, struct vx_rmh *rmh)
 {
 	int i, err;
 	
@@ -385,7 +313,7 @@ int vx_send_msg_nolock(vxpocket_t *chip, struct vx_rmh *rmh)
 		err |= vx_inb(chip, RXM) << 8;
 		err |= vx_inb(chip, RXL);
 		snd_printd(KERN_DEBUG "msg got error = 0x%x at cmd[0]\n", err);
-		err = -(VXP_ERR_MASK | err);
+		err = -(VX_ERR_MASK | err);
 		return err;
 	}
 
@@ -431,7 +359,7 @@ int vx_send_msg_nolock(vxpocket_t *chip, struct vx_rmh *rmh)
  * returns 0 if successful, or a negative error code.
  * see vx_send_msg_nolock().
  */
-int vx_send_msg(vxpocket_t *chip, struct vx_rmh *rmh)
+int vx_send_msg(vx_core_t *chip, struct vx_rmh *rmh)
 {
 	int err;
 
@@ -453,7 +381,7 @@ int vx_send_msg(vxpocket_t *chip, struct vx_rmh *rmh)
  *
  * unlike RMH, no command is sent to DSP.
  */
-int vx_send_rih_nolock(vxpocket_t *chip, int cmd)
+int vx_send_rih_nolock(vx_core_t *chip, int cmd)
 {
 	int err;
 
@@ -478,7 +406,7 @@ int vx_send_rih_nolock(vxpocket_t *chip, int cmd)
 		err = vx_inb(chip, RXH) << 16;
 		err |= vx_inb(chip, RXM) << 8;
 		err |= vx_inb(chip, RXL);
-		return -(VXP_ERR_MASK | err);
+		return -(VX_ERR_MASK | err);
 	}
 	return 0;
 }
@@ -490,7 +418,7 @@ int vx_send_rih_nolock(vxpocket_t *chip, int cmd)
  *
  * see vx_send_rih_nolock().
  */
-int vx_send_rih(vxpocket_t *chip, int cmd)
+int vx_send_rih(vx_core_t *chip, int cmd)
 {
 	int err;
 
@@ -500,14 +428,16 @@ int vx_send_rih(vxpocket_t *chip, int cmd)
 	return err;
 }
 
+#define END_OF_RESET_WAIT_TIME		200	/* ms */
 
-/*
- * vx_boot_xilinx - boot up the xilinx interface
+/**
+ * snd_vx_boot_xilinx - boot up the xilinx interface
  * @boot: the boot record to load
  */
-static int vx_load_boot_image(vxpocket_t *chip, const struct snd_vxp_image *boot)
+int snd_vx_load_boot_image(vx_core_t *chip, const struct snd_vx_image *boot)
 {
 	int c, i;
+	int no_fillup = chip->type != VX_TYPE_BOARD;
 
 	snd_printdd(KERN_DEBUG "loading boot: size = %d\n", boot->length);
 
@@ -519,127 +449,35 @@ static int vx_load_boot_image(vxpocket_t *chip, const struct snd_vxp_image *boot
 	/* reset dsp */
 	vx_reset_dsp(chip);
 	
-	vx_delay(chip, END_OF_RESET_WAIT_TIME); /* another wait? */
+	snd_vx_delay(chip, END_OF_RESET_WAIT_TIME); /* another wait? */
 
 	/* download boot strap */
-	for (i = 0; i < boot->length; i += 3) {
-		if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0)
-			return -EIO;
-		vx_outb(chip, TXH, boot->image[i]);
-		vx_outb(chip, TXM, boot->image[i+1]);
-		vx_outb(chip, TXL, boot->image[i+2]);
+	for (i = 0; i < 0x600; i += 3) {
+		if (i >= boot->length) {
+			if (no_fillup)
+				break;
+			if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0)
+				return -EIO;
+			vx_outb(chip, TXH, 0);
+			vx_outb(chip, TXM, 0);
+			vx_outb(chip, TXL, 0);
+		} else {
+			if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0)
+				return -EIO;
+			vx_outb(chip, TXH, boot->image[i]);
+			vx_outb(chip, TXM, boot->image[i+1]);
+			vx_outb(chip, TXL, boot->image[i+2]);
+		}
 	}
 	return 0;
 }
 
-
-/*
- * vx_load_xilinx_binary - load the xilinx binary image
- * the binary image is the binary array converted from the bitstream file.
- */
-static int vx_load_xilinx_binary(vxpocket_t *chip)
-{
-	const struct snd_vxp_image *xilinx = &chip->hw->xilinx;
-	int i, c, err;
-	int regCSUER, regRUER;
-
-	if ((err = vx_check_magic(chip)) < 0)
-		return err;
-
-	if ((err = vx_load_boot_image(chip, &chip->hw->boot)) < 0)
-		return err;
-
-	snd_printd(KERN_DEBUG "loading xilinx: size = %d\n", xilinx->length);
-	/* Switch to programmation mode */
-	chip->regDIALOG |= VXP_DLG_XILINX_REPROG_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-
-	/* Save register CSUER and RUER */
-	regCSUER = vx_inb(chip, CSUER);
-	regRUER = vx_inb(chip, RUER);
-
-	/* reset HF0 and HF1 */
-	vx_outb(chip, ICR, 0);
-
-	/* Wait for answer HF2 equal to 1 */
-	if (vx_check_isr(chip, ISR_HF2, ISR_HF2, 20) < 0)
-		goto _error;
-
-	/* set HF1 for loading xilinx binary */
-	vx_outb(chip, ICR, ICR_HF1);
-	for (i = 0; i < xilinx->length; i++) {
-		if (vx_wait_isr_bit(chip, ISR_TX_EMPTY) < 0)
-			goto _error;
-		if (i == 0)
-			printk("first outb: jiffies = %li\n", jiffies);
-		vx_outb(chip, TXL, xilinx->image[i]);
-
-		/* wait for reading */
-		if (vx_wait_for_rx_full(chip) < 0)
-			goto _error;
-		c = vx_inb(chip, RXL);
-		if (c != xilinx->image[i])
-			printk(KERN_ERR "vxpocket: load xilinx mismatch at %d: 0x%x != 0x%x\n", i, c, xilinx->image[i]);
-        }
-
-	/* reset HF1 */
-	vx_outb(chip, ICR, 0);
-
-	/* wait for HF3 */
-	if (vx_check_isr(chip, ISR_HF3, ISR_HF3, 20) < 0)
-		goto _error;
-
-	/* read the number of bytes received */
-	if (vx_wait_for_rx_full(chip) < 0)
-		goto _error;
-
-	c = (int)vx_inb(chip, RXH) << 16;
-	c |= (int)vx_inb(chip, RXM) << 8;
-	c |= vx_inb(chip, RXL);
-
-	snd_printd(KERN_DEBUG "xilinx: dsp size received 0x%x, orig 0x%x\n", c, xilinx->length);
-
-	vx_outb(chip, ICR, ICR_HF0);
-
-	/* TEMPO 250ms : wait until Xilinx is downloaded */
-	vx_delay(chip, 300);
-
-	/* test magical word */
-	if (vx_check_magic(chip) < 0)
-		goto _error;
-
-	/* Restore register 0x0E and 0x0F (thus replacing COR and FCSR) */
-	vx_outb(chip, CSUER, regCSUER);
-	vx_outb(chip, RUER, regRUER);
-
-	/* Reset the Xilinx's signal enabling IO access */
-	chip->regDIALOG |= VXP_DLG_XILINX_REPROG_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-	vx_delay(chip, 10);
-	chip->regDIALOG &= ~VXP_DLG_XILINX_REPROG_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-
-	/* Reset of the Codec */
-	vx_reset_codec(chip);
-	vx_reset_dsp(chip);
-
-	return 0;
-
- _error:
-	vx_outb(chip, CSUER, regCSUER);
-	vx_outb(chip, RUER, regRUER);
-	chip->regDIALOG &= ~VXP_DLG_XILINX_REPROG_MASK;
-	vx_outb(chip, DIALOG, chip->regDIALOG);
-	return -EIO;
-}
-
-
 /*
  * vx_load_dsp - load the DSP image
  */
-static int vx_load_dsp(vxpocket_t *chip)
+static int vx_load_dsp(vx_core_t *chip)
 {
-	const struct snd_vxp_image *dsp = &chip->hw->dsp;
+	const struct snd_vx_image *dsp = &chip->hw->dsp;
 	int i, err;
 	unsigned int csum = 0;
 	unsigned char *cptr;
@@ -648,11 +486,11 @@ static int vx_load_dsp(vxpocket_t *chip)
 
 	vx_toggle_dac_mute(chip, 1);
 
-	if ((err = vx_load_boot_image(chip, &chip->hw->dsp_boot)) < 0)
+	if ((err = snd_vx_load_boot_image(chip, &chip->hw->dsp_boot)) < 0)
 		return err;
-	vx_delay(chip, 10);
+	snd_vx_delay(chip, 10);
 
-	snd_printd(KERN_DEBUG "loading dsp: size = %d\n", dsp->length);
+	snd_printdd(KERN_DEBUG "loading dsp: size = %d\n", dsp->length);
 	/* Transfert data buffer from PC to DSP */
 	cptr = dsp->image;
 	for (i = 0; i < dsp->length; i += 3) {
@@ -669,9 +507,9 @@ static int vx_load_dsp(vxpocket_t *chip)
 		csum = (csum >> 24) | (csum << 8);
 		vx_outb(chip, TXL, *cptr++);
 	}
-	snd_printd(KERN_DEBUG "checksum = 0x%08x\n", csum);
+	snd_printdd(KERN_DEBUG "checksum = 0x%08x\n", csum);
 
-	vx_delay(chip, 200);
+	snd_vx_delay(chip, 200);
 
 	err = vx_wait_isr_bit(chip, ISR_CHK);
 
@@ -681,37 +519,109 @@ static int vx_load_dsp(vxpocket_t *chip)
 }
 
 
-#if 0
-/* call CMD_VERSION */
-static int vx_call_cmd_version(vxpocket_t *chip)
+/*
+ * vx_test_irq_src - query the source of interrupts
+ *
+ * called from irq handler only
+ */
+static int vx_test_irq_src(vx_core_t *chip, int *ret)
 {
-	struct vx_rmh rmh;
+	int err;
 
-	rmh.LgStat = 1;
-	rmh.DspStat = 0;
-	rmh.LgCmd = 2;
-	rmh.Cmd[0] = 0x010000;		/* CMD_VERSION */
-	rmh.Cmd[0] |= chip->hw->type == VXP_TYPE_VXP440 ? 104 : 102;
-	rmh.Cmd[1] = 2016;		/* DEFAULT_IBL */
-	return vx_send_msg(chip, &rmh);
+	vx_init_rmh(&chip->irq_rmh, CMD_TEST_IT);
+	spin_lock(&chip->lock);
+	err = vx_send_msg_nolock(chip, &chip->irq_rmh);
+	if (err < 0)
+		*ret = 0;
+	else
+		*ret = chip->irq_rmh.Stat[0];
+	spin_unlock(&chip->lock);
+	return err;
 }
-#endif
 
 
 /*
- * vx_reset_board - perform reset
+ * vx_interrupt - soft irq handler
  */
-void vx_reset_board(vxpocket_t *chip)
+static void vx_interrupt(unsigned long private_data)
 {
-	chip->regCDSP = 0;
-	chip->regDIALOG = 0;
-	chip->audio_source = VXP_AUDIO_SRC_LINE;
+	vx_core_t *chip = snd_magic_cast(vx_core_t, (void*)private_data, return);
+	int i, events;
+	vx_pipe_t *pipe;
+		
+	if (chip->is_stale)
+		return;
+
+	if (vx_test_irq_src(chip, &events) < 0)
+		return;
+    
+	// printk(KERN_DEBUG "IRQ events = 0x%x\n", events);
+
+	/* We must prevent any application using this DSP
+	 * and block any further request until the application
+	 * either unregisters or reloads the DSP
+	 */
+	if (events & FATAL_DSP_ERROR) {
+		snd_printk(KERN_ERR "vx_core: fatal DSP error!!\n");
+		return;
+	}
+
+	/* The start on time code conditions are filled (ie the time code
+	 * received by the board is equal to one of those given to it).
+	 */
+	if (events & TIME_CODE_EVENT_PENDING)
+		;
+
+	/* The frequency has changed on the board (UER mode). */
+	if (events & FREQUENCY_CHANGE_EVENT_PENDING)
+		vx_change_frequency(chip);
+
+	/* update the pcm pointers as frequently as possible */
+	for (i = 0; i < chip->audio_outs; i++) {
+		pipe = chip->playback_pipes[i];
+		if (pipe && pipe->substream) {
+			vx_pcm_playback_update_buffer(chip, pipe->substream, pipe);
+			vx_pcm_playback_update(chip, pipe->substream, pipe);
+		}
+	}
+	for (i = 0; i < chip->audio_ins; i++) {
+		pipe = chip->capture_pipes[i];
+		if (pipe && pipe->substream)
+			vx_pcm_capture_update(chip, pipe->substream, pipe);
+	}
+}
+
+
+/**
+ * snd_vx_irq_handler - interrupt handler
+ */
+void snd_vx_irq_handler(int irq, void *dev, struct pt_regs *regs)
+{
+	vx_core_t *chip = snd_magic_cast(vx_core_t, dev, return);
+
+	if (! chip->initialized || chip->is_stale)
+		return;
+	if (! vx_test_and_ack(chip))
+		tasklet_hi_schedule(&chip->tq);
+}
+
+
+/*
+ */
+static void vx_reset_board(vx_core_t *chip)
+{
+	snd_assert(chip->ops->reset_board, return);
+
+	chip->audio_source = VX_AUDIO_SRC_LINE;
 	chip->audio_source_target = chip->audio_source;
 	chip->clock_source = INTERNAL_QUARTZ;
 	chip->freq = 48000;
-	chip->uer_detected = VXP_UER_MODE_NOT_PRESENT;
+	chip->uer_detected = VX_UER_MODE_NOT_PRESENT;
+
+	chip->ops->reset_board(chip);
 
 	vx_reset_codec(chip);
+
 	vx_set_internal_clock(chip, 48000);
 
 	/* Reset the DSP */
@@ -733,8 +643,9 @@ void vx_reset_board(vxpocket_t *chip)
 
 static void vx_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 {
-	vxpocket_t *chip = snd_magic_cast(vxpocket_t, entry->private_data, return);
-	static char *audio_src[] = { "Line", "Mic", "Digital" };
+	vx_core_t *chip = snd_magic_cast(vx_core_t, entry->private_data, return);
+	static char *audio_src_vxp[] = { "Line", "Mic", "Digital" };
+	static char *audio_src_vx2[] = { "Analog", "Analog", "Digital" };
 	static char *clock_src[] = { "Internal", "External" };
 	static char *uer_type[] = { "Consumer", "Professional", "Not Present" };
 	
@@ -755,61 +666,52 @@ static void vx_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 	if (chip->audio_info & VX_AUDIO_INFO_LINEAR_24)
 		snd_iprintf(buffer, " linear24");
 	snd_iprintf(buffer, "\n");
-	snd_iprintf(buffer, "Input Source: %s\n", audio_src[chip->audio_source]);
+	snd_iprintf(buffer, "Input Source: %s\n", chip->type >= VX_TYPE_VXPOCKET ?
+		    audio_src_vxp[chip->audio_source] :
+		    audio_src_vx2[chip->audio_source]);
 	snd_iprintf(buffer, "Clock Source: %s\n", clock_src[chip->clock_source]);
 	snd_iprintf(buffer, "Frequency: %d\n", chip->freq);
 	snd_iprintf(buffer, "Detected Frequency: %d\n", chip->freq_detected);
 	snd_iprintf(buffer, "Detected UER type: %s\n", uer_type[chip->uer_detected]);
 }
 
-static void vxpocket_proc_done(vxpocket_t *chip)
-{
-	if (chip->proc_entry) {
-		snd_info_unregister(chip->proc_entry);
-		chip->proc_entry = NULL;
-	}
-}
-
-static void vxpocket_proc_init(vxpocket_t *chip)
+static void vx_proc_init(vx_core_t *chip)
 {
 	snd_info_entry_t *entry;
 
-	if ((entry = snd_info_create_card_entry(chip->card, "vxpocket", chip->card->proc_root)) != NULL) {
-		entry->content = SNDRV_INFO_CONTENT_TEXT;
-		entry->private_data = chip;
-		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-		entry->c.text.read_size = 256;
-		entry->c.text.read = vx_proc_read;
-		if (snd_info_register(entry) < 0) {
-			snd_info_free_entry(entry);
-			entry = NULL;
-		}
-	}
-	chip->proc_entry = entry;
+	if (! snd_card_proc_new(chip->card, "vx-status", &entry))
+		snd_info_set_text_ops(entry, chip, vx_proc_read);
 }
 
 
 /*
  * snd_vxpocket_init - initialize VXpocket hardware
  */
-static int snd_vxpocket_init(vxpocket_t *chip)
+int snd_vx_init(vx_core_t *chip)
 {
 	int err;
 
-	if ((err = vx_load_xilinx_binary(chip)) < 0)
+	snd_assert(chip->ops->load_xilinx &&
+		   chip->ops->test_xilinx, return -ENXIO);
+
+	if ((err = chip->ops->load_xilinx(chip)) < 0)
 		return err;
-	if ((err = vx_test_xilinx(chip)) < 0)
+	if ((err = chip->ops->test_xilinx(chip)) < 0)
 		return err;
 
 	vx_reset_board(chip);
 	vx_validate_irq(chip, 0);
 	if ((err = vx_load_dsp(chip)) < 0)
 		return err;
+
+	vx_test_and_ack(chip);
+	vx_validate_irq(chip, 1);
+
 	return 0;
 }
 
 /**
- * snd_vxpocket_create_chip - constructor for vxpocket_t
+ * snd_vx_create - constructor for vx_core_t
  * @hw: hardware specific record
  *
  * this function allocates the instance and prepare for the hardware
@@ -817,12 +719,15 @@ static int snd_vxpocket_init(vxpocket_t *chip)
  *
  * return the instance pointer if successful, NULL in error.
  */
-vxpocket_t *snd_vxpocket_create_chip(struct snd_vxp_entry *hw)
+vx_core_t *snd_vx_create(snd_card_t *card, struct snd_vx_hardware *hw,
+			 struct snd_vx_ops *ops,
+			 int extra_size)
 {
-	vxpocket_t *chip;
-	int i;
+	vx_core_t *chip;
 
-	chip = snd_magic_kcalloc(vxpocket_t, 0, GFP_KERNEL);
+	snd_assert(card && hw && ops, return NULL);
+
+	chip = snd_magic_kcalloc(vx_core_t, extra_size, GFP_KERNEL);
 	if (! chip) {
 		snd_printk(KERN_ERR "vxpocket: no memory\n");
 		return NULL;
@@ -831,97 +736,72 @@ vxpocket_t *snd_vxpocket_create_chip(struct snd_vxp_entry *hw)
 	spin_lock_init(&chip->irq_lock);
 	chip->irq = -1;
 	chip->hw = hw;
+	chip->type = hw->type;
+	chip->ops = ops;
 	tasklet_init(&chip->tq, vx_interrupt, (unsigned long)chip);
 
-	/* find an empty slot from the card list */
-	for (i = 0; i < SNDRV_CARDS; i++) {
-		if (! hw->card_list[i])
-			break;
-	}
-	if (i >= SNDRV_CARDS) {
-		snd_printk(KERN_ERR "vxpocket: too many cards found\n");
-		snd_magic_kfree(chip);
-		return NULL;
-	}
-	if (! hw->enable_table[i])
-		return NULL; /* disabled explicitly */
+	chip->card = card;
+	card->private_data = chip;
+	strcpy(card->driver, hw->name);
+	sprintf(card->shortname, "Digigram %s", hw->name);
 
-	/* ok, create a card instance */
-	chip->index = i;
-	chip->card = snd_card_new(hw->index_table[i], hw->id_table[i], THIS_MODULE, 0);
-	if (chip->card == NULL) {
-		snd_printk(KERN_ERR "vxpocket: cannot create a card instance\n");
-		snd_magic_kfree(chip);
-		return NULL;
-	}
-	chip->card->private_data = chip;
-	strcpy(chip->card->driver, hw->name);
-	hw->card_list[i] = chip;
+	vx_proc_init(chip);
 
 	return chip;
 }
 
-/**
- * snd_vxpocket_free_chip - destructor for vxpocket_t
+#ifdef CONFIG_PM
+/*
+ * suspend
  */
-void snd_vxpocket_free_chip(vxpocket_t *chip)
+void snd_vx_suspend(vx_core_t *chip)
 {
-	snd_assert(chip, return);
-	chip->initialized = 0;
-	vxpocket_proc_done(chip);
-	chip->hw->card_list[chip->index] = NULL;
-	chip->card = NULL;
+	int i;
+
+	chip->in_suspend = 1;
+	for (i = 0; i < chip->hw->num_codecs; i++)
+		snd_pcm_suspend_all(chip->pcm[i]);
 }
 
-/**
- * snd_vxpocket_assign_resources - initialize the hardware and card instance.
- * @port: i/o port for the card
- * @irq: irq number for the card
- *
- * this function assigns the specified port and irq, boot the card,
- * create pcm and control instances, and initialize the rest hardware.
- *
- * returns 0 if successful, or a negative error code.
+/*
+ * resume
  */
-int snd_vxpocket_assign_resources(vxpocket_t *chip, int port, int irq)
+void snd_vx_resume(vx_core_t *chip)
 {
-	int err;
-	snd_card_t *card = chip->card;
+	snd_vx_init(chip);
+	/* FIXME: resume mixer config */
+	chip->in_suspend = 0;
+}
 
-	snd_printd(KERN_DEBUG "vxpocket assign resources: port = 0x%x, irq = %d\n", port, irq);
-	chip->port = port;
+#endif
 
-	sprintf(card->shortname, "Digigram %s", chip->card->driver);
-	sprintf(card->longname, "%s at 0x%x, irq %i",
-		card->shortname, port, irq);
-
-	if ((err = snd_vxpocket_init(chip)) < 0)
-		return err;
-
-	chip->irq = irq;
-
-	vx_test_and_ack(chip);
-	vx_validate_irq(chip, 1);
-
-	//vx_call_cmd_version(chip);
-
-	if ((err = snd_vxpocket_pcm_new(chip)) < 0)
-		return err;
-
-	vx_reset_audio_levels(chip);
-	if ((err = snd_vxpocket_mixer_new(chip)) < 0)
-		return err;
-
-	vxpocket_proc_init(chip);
-	chip->initialized = 1;
-
-	if ((err = snd_card_register(chip->card)) < 0)
-		return err;
-
+/*
+ * module entries
+ */
+static int __init alsa_vx_core_init(void)
+{
 	return 0;
 }
 
-EXPORT_SYMBOL(snd_vxpocket_create_chip);
-EXPORT_SYMBOL(snd_vxpocket_free_chip);
-EXPORT_SYMBOL(snd_vxpocket_assign_resources);
+static void __exit alsa_vx_core_exit(void)
+{
+}
+
+module_init(alsa_vx_core_init)
+module_exit(alsa_vx_core_exit)
+
+/*
+ * exports
+ */
+EXPORT_SYMBOL(snd_vx_check_reg_bit);
+EXPORT_SYMBOL(snd_vx_create);
+EXPORT_SYMBOL(snd_vx_init);
 EXPORT_SYMBOL(snd_vx_irq_handler);
+EXPORT_SYMBOL(snd_vx_pcm_new);
+EXPORT_SYMBOL(snd_vx_mixer_new);
+EXPORT_SYMBOL(snd_vx_delay);
+EXPORT_SYMBOL(snd_vx_load_boot_image);
+#ifdef CONFIG_PM
+EXPORT_SYMBOL(snd_vx_suspend);
+EXPORT_SYMBOL(snd_vx_resume);
+#endif
