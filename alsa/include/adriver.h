@@ -24,6 +24,11 @@
 
 #include "config.h"
 
+/* hack - CONFIG_SND_HDA_INPUT_JACK can be wrongly set for older kernels */
+#ifndef CONFIG_SND_JACK
+#undef CONFIG_SND_HDA_INPUT_JACK
+#endif
+
 /* number of supported soundcards */
 #ifdef CONFIG_SND_DYNAMIC_MINORS
 #define SNDRV_CARDS 32
