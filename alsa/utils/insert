@@ -398,6 +398,11 @@ case "$1" in
     insert snd-vx-cs.o
     insert snd-vxpocket.o
     ;;
+  pdaudiocf)
+    basic
+    insert snd-ak4117.o
+    insert snd-pdaudiocf.o
+    ;;
   t1)
     basic; isapnp
     insert snd-mpu401-uart.o 
@@ -431,6 +436,17 @@ case "$1" in
     insert snd-cs8427.o
     insert snd-ice1712.o
     restore t3.conf
+    ;;
+  t4)
+    basic
+    insert snd-ak4117.o
+    insert snd-pdaudiocf.o
+    insert snd-mpu401-uart.o 
+    insert snd-ac97-codec.o
+    insert snd-util-mem.o
+    insert snd-trident.o
+    #insert snd-trident-synth.o
+    restore trident.conf
     ;;
   *)
     echo "Unknown soundcard $1..."
