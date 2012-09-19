@@ -2614,15 +2614,12 @@ fi
 AC_SUBST(CONFIG_SND_BIT32_EMUL)
 test "$CONFIG_SND_BIT32_EMUL" = "m" && AC_DEFINE(CONFIG_SND_BIT32_EMUL_MODULE)
 
-dnl Check for PC-Speaker hooks
 CHECK_KERNEL_CONFIG(CONFIG_X86_PC, [x86-compatible PC])
 AC_SUBST(CONFIG_X86_PC)
-CHECK_KERNEL_CONFIG(CONFIG_HIGH_RES_TIMERS, [High-Res timers])
-AC_SUBST(CONFIG_HIGH_RES_TIMERS)
-dnl need kernel version >= 2.6.21
-if test "$kversion" -ge 2 -a "$kpatchlevel" -ge 6 -a "$ksublevel" -ge 21; then
-  CHECK_KERNEL_CONFIG(CONFIG_HAVE_PCSP_HOOK, [PC-Speaker hook])
-  AC_SUBST(CONFIG_HAVE_PCSP_HOOK)
+dnl need kernel version >= 2.6.22 for the proper high-res timers support
+if test "$kversion" -ge 2 -a "$kpatchlevel" -ge 6 -a "$ksublevel" -ge 22; then
+    CHECK_KERNEL_CONFIG(CONFIG_HIGH_RES_TIMERS, [High-Res timers])
+    AC_SUBST(CONFIG_HIGH_RES_TIMERS)
 fi
 
 dnl PCMCIA stuff
