@@ -583,6 +583,9 @@ static int deactivate_urbs(snd_usb_substream_t *subs)
 
 	subs->running = 0;
 
+	if (subs->stream->chip->shutdown) /* to be sure... */
+		return 0;
+
 #ifndef SND_USB_ASYNC_UNLINK
 	if (in_interrupt())
 		return 0;
@@ -870,7 +873,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 		u->urb->transfer_flags = URB_ISO_ASAP | UNLINK_FLAGS;
 		u->urb->number_of_packets = u->packets;
 		u->urb->context = u;
-		u->urb->complete = snd_complete_urb;
+		u->urb->complete = (usb_complete_t)snd_complete_urb;
 	}
 
 	if (subs->syncpipe) {
@@ -892,7 +895,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 			u->urb->transfer_flags = URB_ISO_ASAP | UNLINK_FLAGS;
 			u->urb->number_of_packets = u->packets;
 			u->urb->context = u;
-			u->urb->complete = snd_complete_sync_urb;
+			u->urb->complete = (usb_complete_t)snd_complete_sync_urb;
 		}
 	}
 	return 0;
@@ -2253,9 +2256,6 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 	snd_usb_audio_t *chip;
 	snd_card_t *card;
 	struct list_head *p;
-	snd_usb_stream_t *as;
-	snd_usb_substream_t *subs;
-	int idx;
 
 	if (ptr == (void *)-1)
 		return;
@@ -2265,22 +2265,21 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 	down(&register_mutex);
 	chip->shutdown = 1;
 	chip->num_interfaces--;
-	if (chip->num_interfaces <= 0)
+	if (chip->num_interfaces <= 0) {
 		snd_card_disconnect(card);
-	list_for_each(p, &chip->pcm_list) {
-		as = list_entry(p, snd_usb_stream_t, list);
-		for (idx = 0; idx < 2; idx++) {
-			subs = &as->substream[idx];
-			if (!subs->num_formats)
-				continue;
-			release_substream_urbs(subs);
-			if (subs->interface >= 0) {
-				usb_set_interface(subs->dev, subs->interface, 0);
-				subs->interface = -1;
+		/* release the pcm resources */
+		list_for_each(p, &chip->pcm_list) {
+			snd_usb_stream_t *as;
+			int idx;
+			as = list_entry(p, snd_usb_stream_t, list);
+			for (idx = 0; idx < 2; idx++) {
+				snd_usb_substream_t *subs;
+				subs = &as->substream[idx];
+				if (!subs->num_formats)
+					continue;
+				release_substream_urbs(subs);
 			}
 		}
-	}
-	if (chip->num_interfaces <= 0) {
 		up(&register_mutex);
 		snd_card_free_in_thread(card);
 	} else {

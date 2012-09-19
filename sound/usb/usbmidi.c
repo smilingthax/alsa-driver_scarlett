@@ -223,7 +223,7 @@ static void snd_usbmidi_in_midiman_complete(struct urb* urb, struct pt_regs *reg
 			}
 		}
 	}
-	snd_usbmidi_in_urb_complete(urb, regs);
+	snd_usbmidi_in_urb_complete(urb, 0); /* regs is not used */
 }
 
 static void snd_usbmidi_out_urb_complete(struct urb* urb, struct pt_regs *regs)
@@ -451,8 +451,10 @@ static void snd_usbmidi_output_trigger(snd_rawmidi_substream_t* substream, int u
 	usbmidi_out_port_t* port = (usbmidi_out_port_t*)substream->runtime->private_data;
 
 	port->active = up;
-	if (up)
-		tasklet_hi_schedule(&port->ep->tasklet);
+	if (up) {
+		if (! port->ep->umidi->chip->shutdown) /* to be sure... */
+			tasklet_hi_schedule(&port->ep->tasklet);
+	}
 }
 
 static int snd_usbmidi_input_open(snd_rawmidi_substream_t* substream)
@@ -489,7 +491,8 @@ static void snd_usbmidi_in_endpoint_delete(snd_usb_midi_in_endpoint_t* ep)
 {
 	if (ep->urb) {
 		if (ep->urb->transfer_buffer) {
-			usb_unlink_urb(ep->urb);
+			if (! ep->umidi->chip->shutdown) /* to be sure */
+				usb_unlink_urb(ep->urb);
 			kfree(ep->urb->transfer_buffer);
 		}
 		usb_free_urb(ep->urb);
@@ -587,10 +590,12 @@ static int snd_usbmidi_in_endpoint_create(snd_usb_midi_t* umidi,
 	}
 	if (int_epd)
 		usb_fill_int_urb(ep->urb, umidi->chip->dev, pipe, buffer, length,
-			     snd_usbmidi_in_urb_complete, ep, int_epd->bInterval);
+				 (usb_complete_t)snd_usbmidi_in_urb_complete,
+				 ep, int_epd->bInterval);
 	else
 		usb_fill_bulk_urb(ep->urb, umidi->chip->dev, pipe, buffer, length,
-			      snd_usbmidi_in_urb_complete, ep);
+				  (usb_complete_t)snd_usbmidi_in_urb_complete,
+				  ep);
 
 	rep->in = ep;
 	return 0;
@@ -615,7 +620,8 @@ static void snd_usbmidi_out_endpoint_delete(snd_usb_midi_out_endpoint_t* ep)
 		tasklet_kill(&ep->tasklet);
 	if (ep->urb) {
 		if (ep->urb->transfer_buffer) {
-			usb_unlink_urb(ep->urb);
+			if (! ep->umidi->chip->shutdown) /* to be sure */
+				usb_unlink_urb(ep->urb);
 			kfree(ep->urb->transfer_buffer);
 		}
 		usb_free_urb(ep->urb);
@@ -654,7 +660,8 @@ static int snd_usbmidi_out_endpoint_create(snd_usb_midi_t* umidi,
 		return -ENOMEM;
 	}
 	usb_fill_bulk_urb(ep->urb, umidi->chip->dev, pipe, buffer,
-		      ep->max_transfer, snd_usbmidi_out_urb_complete, ep);
+			  ep->max_transfer,
+			  (usb_complete_t)snd_usbmidi_out_urb_complete, ep);
 
 	spin_lock_init(&ep->buffer_lock);
 	tasklet_init(&ep->tasklet, snd_usbmidi_out_tasklet, (unsigned long)ep);
@@ -944,7 +951,7 @@ static int snd_usbmidi_create_endpoints_midiman(snd_usb_midi_t* umidi,
 	err = snd_usbmidi_in_endpoint_create(umidi, &ep_info, &umidi->endpoints[0]);
 	if (err < 0)
 		return err;
-	umidi->endpoints[0].in->urb->complete = snd_usbmidi_in_midiman_complete;
+	umidi->endpoints[0].in->urb->complete = (usb_complete_t)snd_usbmidi_in_midiman_complete;
 
 	if (endpoint->out_cables > 0x0001) {
 		ep_info.epnum = get_endpoint(hostif, 4)->bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
