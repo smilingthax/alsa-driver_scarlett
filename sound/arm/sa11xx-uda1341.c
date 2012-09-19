@@ -15,7 +15,7 @@
  * 2002-04-04   Tomas Kasparek  better rates handling (allow non-standard rates)
  */
 
-/* $Id: sa11xx-uda1341.c,v 1.2 2002/04/18 05:59:41 perex Exp $ */
+/* $Id: sa11xx-uda1341.c,v 1.3 2002/05/25 10:26:06 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -39,8 +39,6 @@
 #include <sound/uda1341.h>
 
 /* {{{ Type definitions */
-
-EXPORT_NO_SYMBOLS;
 
 MODULE_AUTHOR("Tomas Kasparek <tomas.kasparek@seznam.cz>");
 MODULE_LICENSE("GPL");
