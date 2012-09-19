@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/memalloc.c	2006-01-28 23:14:55.000000000 +0100
-+++ memalloc.c	2006-01-28 23:16:09.000000000 +0100
+--- ../alsa-kernel/core/memalloc.c	2007-09-17 17:49:40.000000000 +0200
++++ memalloc.c	2007-09-17 17:50:01.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "memalloc.inc"
  /*
@@ -165,7 +165,7 @@
  	free_pages((unsigned long) ptr, pg);
  }
  
-@@ -221,8 +312,10 @@
+@@ -222,8 +313,10 @@
  		| __GFP_NORETRY /* don't trigger OOM-killer */
  		| __GFP_NOWARN; /* no stack trace print - this call is non-critical */
  	res = dma_alloc_coherent(dev, PAGE_SIZE << pg, dma, gfp_flags);
@@ -177,42 +177,44 @@
  
  	return res;
  }
-@@ -237,6 +330,7 @@
+@@ -238,6 +331,7 @@
  		return;
  	pg = get_order(size);
  	dec_snd_pages(pg);
 +	unmark_pages(virt_to_page(ptr), pg);
  	dma_free_coherent(dev, PAGE_SIZE << pg, ptr, dma);
  }
+ #endif /* CONFIG_HAS_DMA */
+@@ -482,6 +576,7 @@
  
-@@ -515,6 +609,7 @@
  
- /* FIXME: for pci only - other bus? */
- #ifdef CONFIG_PCI
+ #ifdef CONFIG_PROC_FS
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
- #define gettoken(bufp) strsep(bufp, " \t\n")
+ /*
+  * proc file interface
+  */
+@@ -620,6 +715,7 @@
+ 	.release	= single_release,
+ };
  
- static int snd_mem_proc_write(struct file *file, const char __user *buffer,
-@@ -603,6 +698,7 @@
- 		printk(KERN_ERR "snd-page-alloc: invalid proc cmd\n");
- 	return (int)count;
- }
 +#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0) */
- #endif /* CONFIG_PCI */
  #endif /* CONFIG_PROC_FS */
  
-@@ -617,8 +713,10 @@
- 	if (snd_mem_proc) {
- 		snd_mem_proc->read_proc = snd_mem_proc_read;
- #ifdef CONFIG_PCI
+ /*
+@@ -629,10 +725,12 @@
+ static int __init snd_mem_init(void)
+ {
+ #ifdef CONFIG_PROC_FS
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
- 		snd_mem_proc->write_proc = snd_mem_proc_write;
+ 	snd_mem_proc = create_proc_entry(SND_MEM_PROC_FILE, 0644, NULL);
+ 	if (snd_mem_proc)
+ 		snd_mem_proc->proc_fops = &snd_mem_proc_fops;
  #endif
 +#endif
- 	}
- #endif
  	return 0;
-@@ -649,3 +747,5 @@
+ }
+ 
+@@ -661,3 +759,5 @@
  
  EXPORT_SYMBOL(snd_malloc_pages);
  EXPORT_SYMBOL(snd_free_pages);
