@@ -49,8 +49,8 @@
 #define NUM_G           64              /* use all channels */
 #define NUM_FXSENDS     4
 
-#define EMU10K1_DMA_MASK	0x1fffffffUL
-#define AUDIGY_DMA_MASK		0xffffffffUL
+#define EMU10K1_DMA_MASK	0x7fffffffUL	/* 31bit */
+#define AUDIGY_DMA_MASK		0xffffffffUL	/* 32bit */
 
 #define TMEMSIZE        256*1024
 #define TMEMSIZEREG     4
