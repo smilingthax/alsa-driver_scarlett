@@ -37,6 +37,8 @@
 #include <asm/irq.h>
 #ifdef CONFIG_PPC_HAS_FEATURE_CALLS
 #include <asm/pmac_feature.h>
+#else
+#error old crap
 #endif
 #include "pmac.h"
 #include "tumbler_volume.h"
@@ -92,12 +94,17 @@ typedef struct pmac_tumbler_t {
 	pmac_gpio_t hp_detect;
 	int headphone_irq;
 	unsigned int master_vol[2];
+	unsigned int save_master_switch[2];
 	unsigned int master_switch[2];
 	unsigned int mono_vol[VOL_IDX_LAST_MONO];
 	unsigned int mix_vol[VOL_IDX_LAST_MIX][2]; /* stereo volumes for tas3004 */
 	int drc_range;
 	int drc_enable;
 	int capture_source;
+	int anded_reset;
+	int auto_mute_notify;
+	int reset_on_sleep;
+	u8  acs;
 } pmac_tumbler_t;
 
 
@@ -652,7 +659,8 @@ static int snapper_put_mix(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 
 
 /*
- * mute switches
+ * mute switches. FIXME: Turn that into software mute when both outputs are muted
+ * to avoid codec reset on ibook M7
  */
 
 enum { TUMBLER_MUTE_HP, TUMBLER_MUTE_AMP };
@@ -694,8 +702,11 @@ static int snapper_set_capture_source(pmac_tumbler_t *mix)
 {
 	if (! mix->i2c.client)
 		return -ENODEV;
-	return i2c_smbus_write_byte_data(mix->i2c.client, TAS_REG_ACS,
-					 mix->capture_source ? 2 : 0);
+	if (mix->capture_source)
+		mix->acs = mix->acs |= 2;
+	else
+		mix->acs &= ~2;
+	return i2c_smbus_write_byte_data(mix->i2c.client, TAS_REG_ACS, mix->acs);
 }
 
 static int snapper_info_capture_source(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
@@ -853,8 +864,7 @@ static void check_mute(pmac_t *chip, pmac_gpio_t *gp, int val, int do_notify, sn
 
 static struct work_struct device_change;
 
-static void
-device_change_handler(void *self)
+static void device_change_handler(void *self)
 {
 	pmac_t *chip = (pmac_t*) self;
 	pmac_tumbler_t *mix;
@@ -863,6 +873,33 @@ device_change_handler(void *self)
 		return;
 
 	mix = chip->mixer_data;
+	snd_assert(mix, return);
+
+	if (tumbler_detect_headphone(chip)) {
+		/* mute speaker */
+		check_mute(chip, &mix->hp_mute, 0, mix->auto_mute_notify,
+			   chip->master_sw_ctl);
+		if (mix->anded_reset)
+			big_mdelay(10);
+		check_mute(chip, &mix->amp_mute, 1, mix->auto_mute_notify,
+			   chip->speaker_sw_ctl);
+		mix->drc_enable = 0;
+	} else {
+		/* unmute speaker */
+		check_mute(chip, &mix->amp_mute, 0, mix->auto_mute_notify,
+			   chip->speaker_sw_ctl);
+		if (mix->anded_reset)
+			big_mdelay(10);
+		check_mute(chip, &mix->hp_mute, 1, mix->auto_mute_notify,
+			   chip->master_sw_ctl);
+		mix->drc_enable = 1;
+	}
+	if (mix->auto_mute_notify) {
+		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
+				       &chip->hp_detect_ctl->id);
+		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
+			       &chip->drc_sw_ctl->id);
+	}
 
 	/* first set the DRC so the speaker do not explode -ReneR */
 	if (chip->model == PMAC_TUMBLER)
@@ -877,31 +914,11 @@ device_change_handler(void *self)
 static void tumbler_update_automute(pmac_t *chip, int do_notify)
 {
 	if (chip->auto_mute) {
-		pmac_tumbler_t *mix = chip->mixer_data;
+		pmac_tumbler_t *mix;
+		mix = chip->mixer_data;
 		snd_assert(mix, return);
-		if (tumbler_detect_headphone(chip)) {
-			/* mute speaker */
-			check_mute(chip, &mix->amp_mute, 1, do_notify, chip->speaker_sw_ctl);
-			check_mute(chip, &mix->hp_mute, 0, do_notify, chip->master_sw_ctl);
-			mix->drc_enable = 0;
-
-		} else {
-			/* unmute speaker */
-			check_mute(chip, &mix->amp_mute, 0, do_notify, chip->speaker_sw_ctl);
-			check_mute(chip, &mix->hp_mute, 1, do_notify, chip->master_sw_ctl);
-			mix->drc_enable = 1;
-		}
-		if (do_notify) {
-			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
-				       &chip->hp_detect_ctl->id);
-			snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
-			               &chip->drc_sw_ctl->id);
-		}
-
-		/* finally we need to schedule an update of the mixer values
-		   (master and DRC are enough for now) -ReneR */
+		mix->auto_mute_notify = do_notify;
 		schedule_work(&device_change);
-
 	}
 }
 #endif /* PMAC_SUPPORT_AUTOMUTE */
@@ -950,10 +967,10 @@ static struct device_node *find_compatible_audio_device(const char *name)
 }
 
 /* find an audio device and get its address */
-static unsigned long tumbler_find_device(const char *device, pmac_gpio_t *gp, int is_compatible)
+static long tumbler_find_device(const char *device, pmac_gpio_t *gp, int is_compatible)
 {
 	struct device_node *node;
-	u32 *base;
+	u32 *base, addr;
 
 	if (is_compatible)
 		node = find_compatible_audio_device(device);
@@ -966,21 +983,31 @@ static unsigned long tumbler_find_device(const char *device, pmac_gpio_t *gp, in
 
 	base = (u32 *)get_property(node, "AAPL,address", NULL);
 	if (! base) {
-		snd_printd("cannot find address for device %s\n", device);
-		return -ENODEV;
-	}
+		base = (u32 *)get_property(node, "reg", NULL);
+		if (!base) {
+			snd_printd("cannot find address for device %s\n", device);
+			return -ENODEV;
+		}
+		/* this only work if PPC_HAS_FEATURE_CALLS is set as we
+		 * are only getting the low part of the address
+		 */
+		addr = *base;
+		if (addr < 0x50)
+			addr += 0x50;
+	} else
+		addr = *base;
 
 #ifdef CONFIG_PPC_HAS_FEATURE_CALLS
-	gp->addr = (*base) & 0x0000ffff;
+	gp->addr = addr & 0x0000ffff;
 #else
-	gp->addr = ioremap((unsigned long)(*base), 1);
+	gp->addr = ioremap((unsigned long)addr, 1);
 #endif
+	/* Try to find the active state, default to 0 ! */
 	base = (u32 *)get_property(node, "audio-gpio-active-state", NULL);
 	if (base)
 		gp->active_state = *base;
 	else
-		gp->active_state = 1;
-
+		gp->active_state = 0;
 
 	return (node->n_intrs > 0) ? node->intrs[0].line : 0;
 }
@@ -990,15 +1017,53 @@ static void tumbler_reset_audio(pmac_t *chip)
 {
 	pmac_tumbler_t *mix = chip->mixer_data;
 
-	write_audio_gpio(&mix->audio_reset, 0);
-	big_mdelay(200);
-	write_audio_gpio(&mix->audio_reset, 1);
-	big_mdelay(100);
-	write_audio_gpio(&mix->audio_reset, 0);
-	big_mdelay(100);
+	if (mix->anded_reset) {
+		write_audio_gpio(&mix->hp_mute, 0);
+		write_audio_gpio(&mix->amp_mute, 0);
+		big_mdelay(200);
+		write_audio_gpio(&mix->hp_mute, 1);
+		write_audio_gpio(&mix->amp_mute, 1);
+		big_mdelay(100);
+		write_audio_gpio(&mix->hp_mute, 0);
+		write_audio_gpio(&mix->amp_mute, 0);
+		big_mdelay(100);
+	} else {
+		write_audio_gpio(&mix->audio_reset, 0);
+		big_mdelay(200);
+		write_audio_gpio(&mix->audio_reset, 1);
+		big_mdelay(100);
+		write_audio_gpio(&mix->audio_reset, 0);
+		big_mdelay(100);
+	}
 }
 
 #ifdef CONFIG_PMAC_PBOOK
+/* suspend mixer */
+static void tumbler_suspend(pmac_t *chip)
+{
+	pmac_tumbler_t *mix = chip->mixer_data;
+
+	if (mix->headphone_irq >= 0)
+		disable_irq(mix->headphone_irq);
+	mix->save_master_switch[0] = mix->master_switch[0];
+	mix->save_master_switch[1] = mix->master_switch[1];
+	mix->master_switch[0] = mix->master_switch[1] = 0;
+	tumbler_set_master_volume(mix);
+	if (!mix->anded_reset) {
+		write_audio_gpio(&mix->amp_mute, 1);
+		write_audio_gpio(&mix->hp_mute, 1);
+	}
+	if (chip->model == PMAC_SNAPPER) {
+		mix->acs |= 1;
+		i2c_smbus_write_byte_data(mix->i2c.client, TAS_REG_ACS, mix->acs);
+	}
+	if (mix->anded_reset) {
+		write_audio_gpio(&mix->amp_mute, 1);
+		write_audio_gpio(&mix->hp_mute, 1);
+	} else
+		write_audio_gpio(&mix->audio_reset, 1);
+}
+
 /* resume mixer */
 static void tumbler_resume(pmac_t *chip)
 {
@@ -1006,6 +1071,9 @@ static void tumbler_resume(pmac_t *chip)
 
 	snd_assert(mix, return);
 
+	mix->acs &= ~1;
+	mix->master_switch[0] = mix->save_master_switch[0];
+	mix->master_switch[1] = mix->save_master_switch[1];
 	tumbler_reset_audio(chip);
 	if (mix->i2c.client && mix->i2c.init_client) {
 		if (mix->i2c.init_client(&mix->i2c) < 0)
@@ -1029,6 +1097,8 @@ static void tumbler_resume(pmac_t *chip)
 	tumbler_set_master_volume(mix);
 	if (chip->update_automute)
 		chip->update_automute(chip, 0);
+	if (mix->headphone_irq >= 0)
+		enable_irq(mix->headphone_irq);
 }
 #endif
 
@@ -1039,10 +1109,15 @@ static int __init tumbler_init(pmac_t *chip)
 	pmac_tumbler_t *mix = chip->mixer_data;
 	snd_assert(mix, return -EINVAL);
 
-	tumbler_find_device("audio-hw-reset", &mix->audio_reset, 0);
-	tumbler_find_device("amp-mute", &mix->amp_mute, 0);
-	tumbler_find_device("headphone-mute", &mix->hp_mute, 0);
+	if (tumbler_find_device("audio-hw-reset", &mix->audio_reset, 0) < 0)
+		tumbler_find_device("hw-reset", &mix->audio_reset, 1);
+	if (tumbler_find_device("amp-mute", &mix->amp_mute, 0) < 0)
+		tumbler_find_device("amp-mute", &mix->amp_mute, 1);
+	if (tumbler_find_device("headphone-mute", &mix->hp_mute, 0) < 0)
+		tumbler_find_device("headphone-mute", &mix->hp_mute, 1);
 	irq = tumbler_find_device("headphone-detect", &mix->hp_detect, 0);
+	if (irq < 0)
+		irq = tumbler_find_device("headphone-detect", &mix->hp_detect, 1);
 	if (irq < 0)
 		irq = tumbler_find_device("keywest-gpio15", &mix->hp_detect, 1);
 
@@ -1086,9 +1161,9 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 	int i, err;
 	pmac_tumbler_t *mix;
 	u32 *paddr;
-	struct device_node *tas_node;
+	struct device_node *tas_node, *np;
 	char *chipname;
-
+	
 #ifdef CONFIG_KMOD
 	if (current->fs->root)
 		request_module("i2c-keywest");
@@ -1102,16 +1177,31 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 
 	chip->mixer_data = mix;
 	chip->mixer_free = tumbler_cleanup;
+	mix->anded_reset = 0;
+	mix->reset_on_sleep = 1;
 
+	for (np = chip->node->child; np; np = np->sibling) {
+		if (!strcmp(np->name, "sound")) {
+			if (get_property(np, "has-anded-reset", NULL))
+				mix->anded_reset = 1;
+			if (get_property(np, "layout-id", NULL))
+				mix->reset_on_sleep = 0;
+			break;
+		}
+	}  
 	if ((err = tumbler_init(chip)) < 0)
 		return err;
 
 	/* set up TAS */
 	tas_node = find_devices("deq");
 	if (tas_node == NULL)
+		tas_node = find_devices("codec");
+	if (tas_node == NULL)
 		return -ENODEV;
 
 	paddr = (u32 *)get_property(tas_node, "i2c-address", NULL);
+	if (paddr == NULL)
+		paddr = (u32 *)get_property(tas_node, "reg", NULL);
 	if (paddr)
 		mix->i2c.addr = (*paddr) >> 1;
 	else
@@ -1129,7 +1219,7 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 
 	if ((err = snd_pmac_keywest_init(&mix->i2c)) < 0)
 		return err;
-
+	
 	/*
 	 * build mixers
 	 */
@@ -1156,8 +1246,8 @@ int __init snd_pmac_tumbler_init(pmac_t *chip)
 	if ((err = snd_ctl_add(chip->card, chip->drc_sw_ctl)) < 0)
 		return err;
 
-
 #ifdef CONFIG_PMAC_PBOOK
+	chip->suspend = tumbler_suspend;
 	chip->resume = tumbler_resume;
 #endif
 

@@ -119,14 +119,14 @@ static snd_pcm_hardware_t snd_p16v_playback_hw = {
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
 				 SNDRV_PCM_INFO_MMAP_VALID),
 	.formats =		SNDRV_PCM_FMTBIT_S32_LE, /* Only supports 24-bit samples padded to 32 bits. */
-	.rates =		SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_48000 ,
-	.rate_min =		48000,
+	.rates =		SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_44100, 
+	.rate_min =		44100,
 	.rate_max =		192000,
 	.channels_min =		8, 
 	.channels_max =		8,
-	.buffer_bytes_max =	(32*1024),
+	.buffer_bytes_max =	((65536 - 64) * 8),
 	.period_bytes_min =	64,
-	.period_bytes_max =	(16*1024),
+	.period_bytes_max =	(65536 - 64),
 	.periods_min =		2,
 	.periods_max =		8,
 	.fifo_size =		0,
@@ -324,19 +324,17 @@ static int snd_p16v_pcm_prepare_playback(snd_pcm_substream_t *substream)
 	tmp = snd_emu10k1_ptr_read(emu, A_SPDIF_SAMPLERATE, channel);
         switch (runtime->rate) {
 	case 44100:
-	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe000) | 0x8000); /* FIXME: This will change the capture rate as well! */
-	  break;
-	case 48000:
-	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe000) | 0x0000); /* FIXME: This will change the capture rate as well! */
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe0e0) | 0x8080);
 	  break;
 	case 96000:
-	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe000) | 0x4000); /* FIXME: This will change the capture rate as well! */
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe0e0) | 0x4040);
 	  break;
 	case 192000:
-	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe000) | 0x2000); /* FIXME: This will change the capture rate as well! */
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe0e0) | 0x2020);
 	  break;
+	case 48000:
 	default:
-	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, 0x0000); /* FIXME: This will change the capture rate as well! */
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0xe0e0) | 0x0000);
 	  break;
 	}
 	/* FIXME: Check emu->buffer.size before actually writing to it. */
@@ -349,7 +347,8 @@ static int snd_p16v_pcm_prepare_playback(snd_pcm_substream_t *substream)
 	snd_emu10k1_ptr20_write(emu, PLAYBACK_LIST_SIZE, channel, (runtime->periods - 1) << 19);
 	snd_emu10k1_ptr20_write(emu, PLAYBACK_LIST_PTR, channel, 0);
 	snd_emu10k1_ptr20_write(emu, PLAYBACK_DMA_ADDR, channel, runtime->dma_addr);
-	snd_emu10k1_ptr20_write(emu, PLAYBACK_PERIOD_SIZE, channel, frames_to_bytes(runtime, runtime->period_size)<<16); // buffer size in bytes
+	//snd_emu10k1_ptr20_write(emu, PLAYBACK_PERIOD_SIZE, channel, frames_to_bytes(runtime, runtime->period_size)<<16); // buffer size in bytes
+	snd_emu10k1_ptr20_write(emu, PLAYBACK_PERIOD_SIZE, channel, 0); // buffer size in bytes
 	snd_emu10k1_ptr20_write(emu, PLAYBACK_POINTER, channel, 0);
 	snd_emu10k1_ptr20_write(emu, 0x07, channel, 0x0);
 	snd_emu10k1_ptr20_write(emu, 0x08, channel, 0);
@@ -604,7 +603,7 @@ int snd_p16v_pcm(emu10k1_t *emu, int device, snd_pcm_t **rpcm)
 		if ((err = snd_pcm_lib_preallocate_pages(substream, 
 							 SNDRV_DMA_TYPE_DEV, 
 							 snd_dma_pci_data(emu->pci), 
-							 64*1024, 64*1024)) < 0) /* FIXME: 32*1024 for sound buffer, between 32and64 for Periods table. */
+							 ((65536 - 64) * 8), ((65536 - 64) * 8))) < 0) 
 			return err;
 		//snd_printk("preallocate playback substream: err=%d\n", err);
 	}
