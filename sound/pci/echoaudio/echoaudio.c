@@ -705,11 +705,9 @@ static int pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	struct audiopipe *pipe = runtime->private_data;
 	int i, err;
 	u32 channelmask = 0;
-	struct list_head *pos;
 	struct snd_pcm_substream *s;
 
-	snd_pcm_group_for_each(pos, substream) {
-		s = snd_pcm_group_substream_entry(pos);
+	snd_pcm_group_for_each_entry(s, substream) {
 		for (i = 0; i < DSP_MAXPIPES; i++) {
 			if (s == chip->substream[i]) {
 				channelmask |= 1 << i;
@@ -2032,6 +2030,8 @@ static int __devinit snd_echo_probe(struct pci_dev *pci,
 	card = snd_card_new(index[dev], id[dev], THIS_MODULE, 0);
 	if (card == NULL)
 		return -ENOMEM;
+
+	snd_card_set_dev(card, &pci->dev);
 
 	if ((err = snd_echo_create(card, pci, &chip)) < 0) {
 		snd_card_free(card);
