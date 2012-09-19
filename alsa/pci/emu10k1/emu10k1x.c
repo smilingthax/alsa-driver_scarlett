@@ -772,6 +772,8 @@ static int snd_emu10k1x_free(emu10k1x_t *chip)
 		snd_dma_free_pages(&chip->dma_buffer);
 	}
 
+	pci_disable_device(chip->pci);
+
 	// release the data
 	kfree(chip);
 	return 0;
@@ -928,12 +930,15 @@ static int __devinit snd_emu10k1x_create(snd_card_t *card,
 	if (pci_set_dma_mask(pci, 0x0fffffff) < 0 ||
 	    pci_set_consistent_dma_mask(pci, 0x0fffffff) < 0) {
 		snd_printk(KERN_ERR "error to set 28bit mask DMA\n");
+		pci_disable_device(pci);
 		return -ENXIO;
 	}
   
 	chip = kcalloc(1, sizeof(*chip), GFP_KERNEL);
-	if (chip == NULL)
+	if (chip == NULL) {
+		pci_disable_device(pci);
 		return -ENOMEM;
+	}
   
 	chip->card = card;
 	chip->pci = pci;
