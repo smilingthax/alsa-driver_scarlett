@@ -24,7 +24,7 @@
 #include <linux/device.h>
 #include <linux/delay.h>
 #include <linux/clk.h>
-#include <sound/driver.h>
+#include <linux/jiffies.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -185,7 +185,7 @@ static int s3c24xx_snd_lrsync(void)
 		if (iiscon & S3C2410_IISCON_LRINDEX)
 			break;
 
-		if (timeout < jiffies)
+		if (time_after(jiffies, timeout))
 			return -ETIMEDOUT;
 	}
 

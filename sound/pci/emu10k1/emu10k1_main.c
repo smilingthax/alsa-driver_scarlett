@@ -33,7 +33,6 @@
 
 #include <linux/sched.h>
 #include <linux/kthread.h>
-#include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
@@ -1419,6 +1418,14 @@ static struct snd_emu_chip_details emu_chip_details[] = {
 	 .ca0102_chip = 1,
 	 .spk71 = 1,
 	 .emu_model = EMU_MODEL_EMU1010}, /* Emu 1010 */
+	/* EMU0404b */
+	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x40021102,
+	 .driver = "Audigy2", .name = "E-mu 0404b [4002]",
+	 .id = "EMU0404",
+	 .emu10k2_chip = 1,
+	 .ca0108_chip = 1,
+	 .spk71 = 1,
+	 .emu_model = EMU_MODEL_EMU0404}, /* EMU 0404 */
 	/* Tested by James@superbug.co.uk 20-3-2007. */
 	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x40021102,
 	 .driver = "Audigy2", .name = "E-mu 0404 [4002]",
