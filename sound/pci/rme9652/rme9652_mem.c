@@ -25,7 +25,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-    $Id: rme9652_mem.c,v 1.2 2001/12/30 09:26:47 perex Exp $
+    $Id: rme9652_mem.c,v 1.4 2002/01/04 14:30:51 perex Exp $
 
 
     Tue Oct 17 2000  Jaroslav Kysela <perex@suse.cz>
@@ -34,9 +34,6 @@
     
 */
 
-#ifdef ALSA_BUILD
-#define MODULE
-#endif
 #include <linux/config.h>
 #include <linux/version.h>
 #if defined(ALSA_BUILD) && defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
@@ -54,6 +51,7 @@
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/malloc.h>
+#include <linux/init.h>
 #include <asm/io.h>
 #define __init
 #define __exit

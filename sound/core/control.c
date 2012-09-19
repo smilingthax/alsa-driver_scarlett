@@ -21,6 +21,7 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/interrupt.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
@@ -36,6 +37,12 @@ typedef struct _snd_kctl_ioctl {
 static rwlock_t snd_ioctl_rwlock = RW_LOCK_UNLOCKED;
 static LIST_HEAD(snd_control_ioctls);
 
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
+
 static int snd_ctl_open(struct inode *inode, struct file *file)
 {
 	int cardnum = SNDRV_MINOR_CARD(minor(inode->i_rdev));
@@ -44,7 +51,7 @@ static int snd_ctl_open(struct inode *inode, struct file *file)
 	snd_ctl_file_t *ctl;
 	int err;
 
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 	card = snd_cards[cardnum];
@@ -75,7 +82,7 @@ static int snd_ctl_open(struct inode *inode, struct file *file)
       __error:
       	dec_mod_count(card->module);
       __error1:
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
       	MOD_DEC_USE_COUNT;
 #endif
       	return err;
@@ -119,7 +126,7 @@ static int snd_ctl_release(struct inode *inode, struct file *file)
 	snd_ctl_empty_read_queue(ctl);
 	snd_magic_kfree(ctl);
 	dec_mod_count(card->module);
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return 0;
@@ -160,7 +167,7 @@ void snd_ctl_notify(snd_card_t *card, unsigned int mask, snd_ctl_elem_id_t *id)
 		}
 	_found:
 		wake_up(&ctl->change_sleep);
-		snd_kill_fasync(&ctl->fasync, SIGIO, POLL_IN);
+		kill_fasync(&ctl->fasync, SIGIO, POLL_IN);
 		spin_unlock(&ctl->read_lock);
 	}
 	read_unlock_irqrestore(&card->control_rwlock, flags);
@@ -740,7 +747,7 @@ static int snd_ctl_fasync(int fd, struct file * file, int on)
 
 static struct file_operations snd_ctl_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	read:		snd_ctl_read,

@@ -80,8 +80,12 @@
  */
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/cs4231.h>
+#include <sound/asoundef.h>
 
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("Routines for control of CS4235/4236B/4237B/4238B/4239 chips");

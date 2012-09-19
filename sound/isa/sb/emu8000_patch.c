@@ -21,6 +21,7 @@
 
 #define __NO_VERSION__
 #include "emu8000_local.h"
+#include <asm/uaccess.h>
 
 MODULE_PARM(emu8000_reset_addr, "i");
 MODULE_PARM_DESC(emu8000_reset_addr, "reset write address at each time (makes slowdown)");

@@ -23,6 +23,9 @@
  *
  */
 
+#include <sound/asound.h>
+#include <linux/poll.h>
+
 typedef sndrv_pcm_uframes_t snd_pcm_uframes_t;
 typedef sndrv_pcm_sframes_t snd_pcm_sframes_t;
 typedef enum sndrv_pcm_class snd_pcm_class_t;

@@ -24,6 +24,7 @@
 #endif
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/pcm.h>
@@ -56,6 +57,24 @@ static int snd_pcm_oss_get_channels(snd_pcm_oss_file_t *pcm_oss_file);
 static int snd_pcm_oss_get_format(snd_pcm_oss_file_t *pcm_oss_file);
 
 EXPORT_NO_SYMBOLS;
+
+static inline mm_segment_t snd_enter_user(void)
+{
+	mm_segment_t fs = get_fs();
+	set_fs(get_ds());
+	return fs;
+}
+
+static inline void snd_leave_user(mm_segment_t fs)
+{
+	set_fs(fs);
+}
+
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 int snd_pcm_oss_plugin_clear(snd_pcm_substream_t *substream)
 {
@@ -1504,7 +1523,7 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 	device = SNDRV_MINOR_OSS_DEVICE(minor) == SNDRV_MINOR_OSS_PCM1 ?
 		snd_adsp_map[cardnum] : snd_dsp_map[cardnum];
 
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 	pcm = snd_pcm_devices[(cardnum * SNDRV_PCM_DEVICES) + device];
@@ -1575,7 +1594,7 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
       __error:
       	dec_mod_count(pcm->card->module);
       __error1:
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return err;
@@ -1599,7 +1618,7 @@ static int snd_pcm_oss_release(struct inode *inode, struct file *file)
 	up(&pcm->open_mutex);
 	wake_up(&pcm->open_wait);
 	dec_mod_count(pcm->card->module);
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return 0;
@@ -2045,7 +2064,7 @@ static void snd_pcm_oss_proc_done(snd_pcm_t *pcm)
 
 static struct file_operations snd_pcm_oss_f_reg =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	read:		snd_pcm_oss_read,

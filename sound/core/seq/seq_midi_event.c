@@ -23,6 +23,7 @@
 #include <sound/core.h>
 #include <sound/seq_kernel.h>
 #include <sound/seq_midi_event.h>
+#include <sound/asoundef.h>
 
 MODULE_AUTHOR("Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("MIDI byte <-> sequencer event coder");

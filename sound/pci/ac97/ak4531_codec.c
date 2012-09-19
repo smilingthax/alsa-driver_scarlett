@@ -20,6 +20,8 @@
  */
 
 #include <sound/driver.h>
+#include <linux/delay.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/ak4531_codec.h>
 

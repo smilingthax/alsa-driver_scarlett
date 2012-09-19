@@ -22,6 +22,8 @@
  */
 
 #include <sound/driver.h>
+#include <asm/dma.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/sb.h>
 #include <sound/ad1848.h>

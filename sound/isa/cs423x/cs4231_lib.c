@@ -25,6 +25,13 @@
  */
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <asm/dma.h>
+#include <asm/irq.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/pm.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/cs4231.h>
 

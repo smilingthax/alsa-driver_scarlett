@@ -20,6 +20,8 @@
  */
 
 #include <sound/driver.h>
+#include <linux/reboot.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/ymfpci.h>
 #include <sound/mpu401.h>
@@ -259,34 +261,34 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, chip);
+	pci_set_drvdata(pci, chip);
 	dev++;
 	return 0;
 }
 
 #ifdef CONFIG_PM
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_card_ymfpci_suspend(struct pci_dev *pci, u32 state)
 {
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, PCI_GET_DRIVER_DATA(pci), return -ENXIO);
+	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return -ENXIO);
 	snd_ymfpci_suspend(chip, 0);
 	return 0;
 }
 static int snd_card_ymfpci_resume(struct pci_dev *pci)
 {
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, PCI_GET_DRIVER_DATA(pci), return -ENXIO);
+	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return -ENXIO);
 	snd_ymfpci_resume(chip, 0);
 	return 0;
 }
 #else
 static void snd_card_ymfpci_suspend(struct pci_dev *pci)
 {
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, PCI_GET_DRIVER_DATA(pci), return);
+	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return);
 	snd_ymfpci_suspend(chip, 0);
 }
 static void snd_card_ymfpci_resume(struct pci_dev *pci)
 {
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, PCI_GET_DRIVER_DATA(pci), return);
+	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return);
 	snd_ymfpci_resume(chip, 0);
 }
 #endif
@@ -294,10 +296,10 @@ static void snd_card_ymfpci_resume(struct pci_dev *pci)
 
 static void __devexit snd_card_ymfpci_remove(struct pci_dev *pci)
 {
-	ymfpci_t *chip = snd_magic_cast(ymfpci_t, PCI_GET_DRIVER_DATA(pci), return);
+	ymfpci_t *chip = snd_magic_cast(ymfpci_t, pci_get_drvdata(pci), return);
 	if (chip)
 		snd_card_free(chip->card);
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

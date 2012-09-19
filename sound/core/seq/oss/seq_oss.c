@@ -21,6 +21,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/initval.h>
@@ -52,12 +53,12 @@ static void unregister_device(void);
 static int register_proc(void);
 static void unregister_proc(void);
 
-static int dev_open(struct inode *inode, struct file *file);
-static int dev_release(struct inode *inode, struct file *file);
-static ssize_t dev_read(struct file *file, char *buf, size_t count, loff_t *offset);
-static ssize_t dev_write(struct file *file, const char *buf, size_t count, loff_t *offset);
-static int dev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
-static unsigned int dev_poll(struct file *file, poll_table * wait);
+static int odev_open(struct inode *inode, struct file *file);
+static int odev_release(struct inode *inode, struct file *file);
+static ssize_t odev_read(struct file *file, char *buf, size_t count, loff_t *offset);
+static ssize_t odev_write(struct file *file, const char *buf, size_t count, loff_t *offset);
+static int odev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
+static unsigned int odev_poll(struct file *file, poll_table * wait);
 #ifdef CONFIG_PROC_FS
 static void info_read(snd_info_entry_t *entry, snd_info_buffer_t *buf);
 #endif
@@ -118,7 +119,7 @@ module_exit(alsa_seq_oss_exit)
 static DECLARE_MUTEX(register_mutex);
 
 static int
-dev_open(struct inode *inode, struct file *file)
+odev_open(struct inode *inode, struct file *file)
 {
 	int level, rc;
 
@@ -135,7 +136,7 @@ dev_open(struct inode *inode, struct file *file)
 }
 
 static int
-dev_release(struct inode *inode, struct file *file)
+odev_release(struct inode *inode, struct file *file)
 {
 	seq_oss_devinfo_t *dp;
 
@@ -152,7 +153,7 @@ dev_release(struct inode *inode, struct file *file)
 }
 
 static ssize_t
-dev_read(struct file *file, char *buf, size_t count, loff_t *offset)
+odev_read(struct file *file, char *buf, size_t count, loff_t *offset)
 {
 	seq_oss_devinfo_t *dp;
 	dp = file->private_data;
@@ -162,7 +163,7 @@ dev_read(struct file *file, char *buf, size_t count, loff_t *offset)
 
 
 static ssize_t
-dev_write(struct file *file, const char *buf, size_t count, loff_t *offset)
+odev_write(struct file *file, const char *buf, size_t count, loff_t *offset)
 {
 	seq_oss_devinfo_t *dp;
 	dp = file->private_data;
@@ -171,7 +172,7 @@ dev_write(struct file *file, const char *buf, size_t count, loff_t *offset)
 }
 
 static int
-dev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
+odev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	seq_oss_devinfo_t *dp;
 	dp = file->private_data;
@@ -181,7 +182,7 @@ dev_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned lon
 
 
 static unsigned int
-dev_poll(struct file *file, poll_table * wait)
+odev_poll(struct file *file, poll_table * wait)
 {
 	seq_oss_devinfo_t *dp;
 	dp = file->private_data;
@@ -195,15 +196,15 @@ dev_poll(struct file *file, poll_table * wait)
 
 static struct file_operations seq_oss_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
-	read:		dev_read,
-	write:		dev_write,
-	open:		dev_open,
-	release:	dev_release,
-	poll:		dev_poll,
-	ioctl:		dev_ioctl,
+	read:		odev_read,
+	write:		odev_write,
+	open:		odev_open,
+	release:	odev_release,
+	poll:		odev_poll,
+	ioctl:		odev_ioctl,
 };
 
 static snd_minor_t seq_oss_reg = {

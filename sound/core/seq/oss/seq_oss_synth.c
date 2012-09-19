@@ -24,6 +24,7 @@
 #include "seq_oss_synth.h"
 #include "seq_oss_midi.h"
 #include "../seq_lock.h"
+#include <linux/init.h>
 
 /*
  * constants
@@ -83,6 +84,11 @@ static spinlock_t register_lock = SPIN_LOCK_UNLOCKED;
 static seq_oss_synth_t *get_synthdev(seq_oss_devinfo_t *dp, int dev);
 static void reset_channels(seq_oss_synthinfo_t *info);
 
+static inline void dec_mod_count(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
 
 /*
  * global initialization

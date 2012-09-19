@@ -23,6 +23,9 @@
 #define __NO_VERSION__
 #include <sound/emu8000.h>
 #include <sound/emu8000_reg.h>
+#include <asm/io.h>
+#include <asm/uaccess.h>
+#include <linux/init.h>
 #include <sound/control.h>
 #include <sound/initval.h>
 

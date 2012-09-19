@@ -32,6 +32,11 @@
 #define DRIVER_NAME "Maestro3"
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/reboot.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/control.h>
@@ -2390,28 +2395,28 @@ static void m3_resume(m3_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_m3_suspend(struct pci_dev *pci, u32 state)
 {
-	m3_t *chip = snd_magic_cast(m3_t, PCI_GET_DRIVER_DATA(pci), return -ENXIO);
+	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return -ENXIO);
 	m3_suspend(chip, 0);
 	return 0;
 }
 static int snd_m3_resume(struct pci_dev *pci)
 {
-	m3_t *chip = snd_magic_cast(m3_t, PCI_GET_DRIVER_DATA(pci), return -ENXIO);
+	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return -ENXIO);
 	m3_resume(chip, 0);
 	return 0;
 }
 #else
 static void snd_m3_suspend(struct pci_dev *pci)
 {
-	m3_t *chip = snd_magic_cast(m3_t, PCI_GET_DRIVER_DATA(pci), return);
+	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
 	m3_suspend(chip, 0);
 }
 static void snd_m3_resume(struct pci_dev *pci)
 {
-	m3_t *chip = snd_magic_cast(m3_t, PCI_GET_DRIVER_DATA(pci), return);
+	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
 	m3_resume(chip, 0);
 }
 #endif
@@ -2505,7 +2510,7 @@ snd_m3_create(snd_card_t *card, struct pci_dev *pci,
 		return -EBUSY;
 	}
 	
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	chip->subsystem_vendor = pci->subsystem_vendor;
 	chip->subsystem_device = pci->subsystem_device;
 #else
@@ -2626,17 +2631,17 @@ snd_m3_probe(struct pci_dev *pci, const struct pci_device_id *id)
 		return err;
 	}
 
-	PCI_SET_DRIVER_DATA(pci, chip);
+	pci_set_drvdata(pci, chip);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_m3_remove(struct pci_dev *pci)
 {
-	m3_t *chip = snd_magic_cast(m3_t, PCI_GET_DRIVER_DATA(pci), return);
+	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
 	if (chip)
 		snd_card_free(chip->card);
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

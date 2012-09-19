@@ -23,6 +23,7 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <linux/kmod.h>
@@ -62,6 +63,20 @@ static usage_t client_usage = {0, 0};
 static int bounce_error_event(client_t *client, snd_seq_event_t *event, int err, int atomic, int hop);
 static int snd_seq_deliver_single_event(client_t *client, snd_seq_event_t *event, int filter, int atomic, int hop);
 
+/*
+ */
+ 
+static inline mm_segment_t snd_enter_user(void)
+{
+	mm_segment_t fs = get_fs();
+	set_fs(get_ds());
+	return fs;
+}
+
+static inline void snd_leave_user(mm_segment_t fs)
+{
+	set_fs(fs);
+}
 
 /*
  */
@@ -319,7 +334,7 @@ static int snd_seq_open(struct inode *inode, struct file *file)
 	/* make others aware this new client */
 	snd_seq_system_client_ev_client_start(c);
 
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_INC_USE_COUNT;
 #endif
 
@@ -338,7 +353,7 @@ static int snd_seq_release(struct inode *inode, struct file *file)
 		kfree(client);
 	}
 
-#ifndef LINUX_2_3
+#ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
 	return 0;
@@ -2405,7 +2420,7 @@ void snd_seq_info_clients_read(snd_info_entry_t *entry,
 
 static struct file_operations snd_seq_f_ops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	read:		snd_seq_read,

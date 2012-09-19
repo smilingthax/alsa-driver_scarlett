@@ -48,13 +48,15 @@
 
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
 #include <sound/opl3.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 #include <linux/gameport.h>
 #endif
 
@@ -240,7 +242,7 @@ struct _snd_es1938 {
 	spinlock_t mixer_lock;
         snd_info_entry_t *proc_entry;
 
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	struct gameport gameport;
 #endif
 };
@@ -1320,7 +1322,7 @@ ES1938_SINGLE("Mic Boost (+26dB)", 0, 0x7d, 3, 1, 0)
 
 static int snd_es1938_free(es1938_t *chip)
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	if (chip->gameport.io)
 		gameport_unregister_port(&chip->gameport);
 #endif
@@ -1624,7 +1626,7 @@ static int __devinit snd_es1938_probe(struct pci_dev *pci,
 	                return err;
 		}
 	}
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	chip->gameport.io = chip->game_port;
 	gameport_register_port(&chip->gameport);
 #endif
@@ -1641,15 +1643,15 @@ static int __devinit snd_es1938_probe(struct pci_dev *pci,
 		return err;
 	}
 
-	PCI_SET_DRIVER_DATA(pci, card);
+	pci_set_drvdata(pci, card);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_es1938_remove(struct pci_dev *pci)
 {
-	snd_card_free(PCI_GET_DRIVER_DATA(pci));
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	snd_card_free(pci_get_drvdata(pci));
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

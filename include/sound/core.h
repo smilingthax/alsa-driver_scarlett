@@ -22,6 +22,14 @@
  *
  */
 
+/* Typedef's */
+typedef struct timeval snd_timestamp_t;
+typedef struct sndrv_interval snd_interval_t;
+typedef enum sndrv_card_type snd_card_type;
+typedef struct sndrv_xferi snd_xferi_t;
+typedef struct sndrv_xfern snd_xfern_t;
+typedef struct sndrv_xferv snd_xferv_t;
+
 /* device allocation stuff */
 
 #define SNDRV_DEV_TYPE_RANGE_SIZE		0x1000
@@ -291,16 +299,18 @@ int snd_task_name(struct task_struct *task, char *name, size_t size);
 
 #ifdef CONFIG_SND_DEBUG
 
+#define __ASTRING__(x) #x
+
 #define snd_printd(format, args...) snd_printk(format, ##args)
 #define snd_assert(expr, args...) do {\
 	if (!(expr)) {\
-		snd_printk("BUG? (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
+		snd_printk("BUG? (%s) (called from %p)\n", __ASTRING__(expr), __builtin_return_address(0));\
 		args;\
 	}\
 } while (0)
 #define snd_runtime_check(expr, args...) do {\
 	if (!(expr)) {\
-		snd_printk("ERROR (%s) (called from %p)\n", __STRING(expr), __builtin_return_address(0));\
+		snd_printk("ERROR (%s) (called from %p)\n", __ASTRING__(expr), __builtin_return_address(0));\
 		args;\
 	}\
 } while (0)

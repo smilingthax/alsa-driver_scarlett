@@ -22,6 +22,7 @@
 #define __SND_SEQ_MEMORYMGR_H
 
 #include <sound/seq_kernel.h>
+#include <linux/poll.h>
 
 typedef struct pool pool_t;
 

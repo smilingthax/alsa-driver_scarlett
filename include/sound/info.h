@@ -22,8 +22,9 @@
  *
  */
 
-/* buffer for information */
+#include <linux/poll.h>
 
+/* buffer for information */
 struct snd_info_buffer {
 	char *buffer;		/* pointer to begin of buffer */
 	char *curr;		/* current position in buffer */
@@ -171,7 +172,7 @@ static inline void snd_remove_proc_entry(struct proc_dir_entry *parent,
 
 #define SNDRV_OSS_INFO_DEV_AUDIO	0
 #define SNDRV_OSS_INFO_DEV_SYNTH	1
-#define SNDRV_OSS_INFO_DEV_MIDI	2
+#define SNDRV_OSS_INFO_DEV_MIDI		2
 #define SNDRV_OSS_INFO_DEV_TIMERS	4
 #define SNDRV_OSS_INFO_DEV_MIXERS	5
 

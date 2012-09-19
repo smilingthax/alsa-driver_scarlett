@@ -21,6 +21,7 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 
 int snd_task_name(struct task_struct *task, char *name, size_t size)
@@ -35,6 +36,8 @@ int snd_task_name(struct task_struct *task, char *name, size_t size)
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+
+#include <asm/io.h>
 
 int try_inc_mod_count(struct module *module)
 {

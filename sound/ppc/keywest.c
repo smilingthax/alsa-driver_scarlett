@@ -25,6 +25,7 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include "pmac.h"
 

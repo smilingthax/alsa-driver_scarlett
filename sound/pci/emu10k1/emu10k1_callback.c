@@ -20,6 +20,7 @@
 
 #define __NO_VERSION__
 #include "emu10k1_synth_local.h"
+#include <sound/asoundef.h>
 
 /* voice status */
 enum {

@@ -26,10 +26,14 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/info.h>
 #include <sound/ymfpci.h>
+#include <sound/asoundef.h>
 
 #if 0
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");

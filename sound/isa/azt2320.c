@@ -31,6 +31,9 @@
 */
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>

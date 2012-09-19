@@ -27,6 +27,7 @@
 #ifdef SNDRV_SEQ_SYNC_SUPPORT
 #include "seq_sync.h"
 #endif
+#include <linux/interrupt.h>
 #include <linux/list.h>
 
 #define SEQ_QUEUE_NO_OWNER (-1)

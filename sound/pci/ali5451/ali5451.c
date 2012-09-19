@@ -28,6 +28,10 @@
 #define __SNDRV_OSS_COMPAT__
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/info.h>
@@ -1844,16 +1848,16 @@ int snd_ali_mixer(ali_t * codec)
 }
 
 #ifdef CONFIG_PM
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_ali_suspend(struct pci_dev *dev, u32 state)
 #else
 static void snd_ali_suspend(struct pci_dev *dev)
 #endif
 {
-#ifdef PCI_NEW_SUSPEND
-	ali_t *chip = snd_magic_cast(ali_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+#ifndef PCI_OLD_SUSPEND
+	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return -ENXIO);
 #else
-	ali_t *chip = snd_magic_cast(ali_t, PCI_GET_DRIVER_DATA(dev), return);
+	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return);
 #endif
 	ali_image_t *im;
 	unsigned long flags;
@@ -1861,7 +1865,7 @@ static void snd_ali_suspend(struct pci_dev *dev)
 
 	im = chip->image;
 	if (! im)
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 		return -ENXIO;
 #else
 		return;
@@ -1893,21 +1897,21 @@ static void snd_ali_suspend(struct pci_dev *dev)
 	outl(0xffffffff, ALI_REG(chip, ALI_STOP));
 
 	restore_flags(flags);
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 	return 0;
 #endif
 }
 
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_ali_resume(struct pci_dev *dev)
 #else
 static void snd_ali_resume(struct pci_dev *dev)
 #endif
 {
-#ifdef PCI_NEW_SUSPEND
-	ali_t *chip = snd_magic_cast(ali_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+#ifndef PCI_OLD_SUSPEND
+	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return -ENXIO);
 #else
-	ali_t *chip = snd_magic_cast(ali_t, PCI_GET_DRIVER_DATA(dev), return);
+	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return);
 #endif
 	ali_image_t *im;
 	unsigned long flags;
@@ -1915,7 +1919,7 @@ static void snd_ali_resume(struct pci_dev *dev)
 
 	im = chip->image;
 	if (! im)
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 		return -ENXIO;
 #else
 		return;
@@ -1944,7 +1948,7 @@ static void snd_ali_resume(struct pci_dev *dev)
 	outl(im->regs[ALI_MISCINT >> 2], ALI_REG(chip, ALI_MISCINT));
 	
 	restore_flags(flags);
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 	return 0;
 #endif
 }
@@ -2209,17 +2213,17 @@ static int __devinit snd_ali_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, codec);
+	pci_set_drvdata(pci, codec);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_ali_remove(struct pci_dev *pci)
 {
-	ali_t *chip = snd_magic_cast(ali_t, PCI_GET_DRIVER_DATA(pci), return);
+	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(pci), return);
 	if (chip)
 		snd_card_free(chip->card);
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

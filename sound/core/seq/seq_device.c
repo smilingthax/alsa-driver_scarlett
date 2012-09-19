@@ -37,6 +37,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/seq_device.h>

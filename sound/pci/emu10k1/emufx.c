@@ -27,6 +27,7 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <linux/delay.h>
 #include <sound/core.h>
 #include <sound/emu10k1.h>
 
@@ -233,6 +234,21 @@ static const u32 db_table[101] = {
 static const u32 onoff_table[2] = {
 	0x00000000, 0x00000001
 };
+
+/*
+ */
+ 
+static inline mm_segment_t snd_enter_user(void)
+{
+	mm_segment_t fs = get_fs();
+	set_fs(get_ds());
+	return fs;
+}
+
+static inline void snd_leave_user(mm_segment_t fs)
+{
+	set_fs(fs);
+}
 
 /*
  *   controls

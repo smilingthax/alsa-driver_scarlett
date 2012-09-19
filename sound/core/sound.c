@@ -20,6 +20,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/minors.h>
 #include <sound/info.h>
@@ -150,7 +151,7 @@ static int snd_open(struct inode *inode, struct file *file)
 
 struct file_operations snd_fops =
 {
-#ifdef LINUX_2_3
+#ifndef LINUX_2_2
 	owner:		THIS_MODULE,
 #endif
 	open:		snd_open
@@ -516,6 +517,9 @@ EXPORT_SYMBOL(pm_unregister);
 EXPORT_SYMBOL(pm_send);
 #endif
   /* wrappers */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+EXPORT_SYMBOL(snd_wrapper_kill_fasync);
+#endif
 #ifdef CONFIG_SND_DEBUG_MEMORY
 EXPORT_SYMBOL(snd_wrapper_kmalloc);
 EXPORT_SYMBOL(snd_wrapper_kfree);

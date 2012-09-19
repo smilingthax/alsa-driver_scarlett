@@ -30,6 +30,7 @@
 #include "hwdep.h"
 #include "ac97_codec.h"
 #include "util_mem.h"
+#include <asm/io.h>
 
 #ifndef PCI_VENDOR_ID_CREATIVE
 #define PCI_VENDOR_ID_CREATIVE		0x1102

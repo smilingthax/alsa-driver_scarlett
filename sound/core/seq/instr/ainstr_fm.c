@@ -19,9 +19,11 @@
  */
  
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/ainstr_fm.h>
 #include <sound/initval.h>
+#include <asm/uaccess.h>
 
 MODULE_AUTHOR("Uros Bizjak <uros@kss-loka.si>");
 MODULE_DESCRIPTION("Advanced Linux Sound Architecture FM Instrument support.");

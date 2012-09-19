@@ -26,6 +26,10 @@
  */      
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/ac97_codec.h>
@@ -1095,28 +1099,28 @@ static void intel8x0_resume(intel8x0_t *chip, int can_schedule)
       	snd_power_unlock(card);
 }
 
-#ifdef PCI_NEW_SUSPEND
+#ifndef PCI_OLD_SUSPEND
 static int snd_intel8x0_suspend(struct pci_dev *dev, u32 state)
 {
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
 	intel8x0_suspend(chip, 0);
 	return 0;
 }
 static int snd_intel8x0_resume(struct pci_dev *dev)
 {
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, PCI_GET_DRIVER_DATA(dev), return -ENXIO);
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return -ENXIO);
 	intel8x0_resume(chip, 0);
 	return 0;
 }
 #else
 static void snd_intel8x0_suspend(struct pci_dev *dev)
 {
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, PCI_GET_DRIVER_DATA(dev), return);
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
 	intel8x0_suspend(chip, 0);
 }
 static void snd_intel8x0_resume(struct pci_dev *dev)
 {
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, PCI_GET_DRIVER_DATA(dev), return);
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(dev), return);
 	intel8x0_resume(chip, 0);
 }
 #endif
@@ -1379,17 +1383,17 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, chip);
+	pci_set_drvdata(pci, chip);
 	dev++;
 	return 0;
 }
 
 static void __devexit snd_intel8x0_remove(struct pci_dev *pci)
 {
-	intel8x0_t *chip = snd_magic_cast(intel8x0_t, PCI_GET_DRIVER_DATA(pci), return);
+	intel8x0_t *chip = snd_magic_cast(intel8x0_t, pci_get_drvdata(pci), return);
 	if (chip)
 		snd_card_free(chip->card);
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	pci_set_drvdata(pci, NULL);
 }
 
 static struct pci_driver driver = {

@@ -21,6 +21,9 @@
 
 #define __NO_VERSION__
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <asm/uaccess.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/info.h>
 
@@ -462,7 +465,7 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 
 	ret = (void *)__get_free_pages(gfp, get_order(size));
 	if (ret) {
-		if (hwdev && (virt_to_bus(ret) & ~hwdev->dma_mask)) {
+		if (hwdev && ((virt_to_bus(ret) + size - 1) & ~hwdev->dma_mask)) {
 			free_pages((unsigned long)ret, get_order(size));
 			ret = (void *)__get_free_pages(gfp | GFP_DMA, get_order(size));
 		}

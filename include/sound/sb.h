@@ -24,6 +24,7 @@
 
 #include "pcm.h"
 #include "rawmidi.h"
+#include <asm/io.h>
 
 enum sb_hw_type {
 	SB_HW_AUTO,

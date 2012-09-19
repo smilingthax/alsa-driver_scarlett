@@ -22,6 +22,8 @@
  *
  */
 
+#include <sound/asound.h>
+
 typedef enum sndrv_timer_class snd_timer_class_t;
 typedef enum sndrv_timer_slave_class snd_timer_slave_class_t;
 typedef enum sndrv_timer_global snd_timer_global_t;

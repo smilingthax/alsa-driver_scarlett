@@ -20,6 +20,9 @@
  */
 
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/init.h>
+#include <linux/pm.h>
 #include <sound/core.h>
 #include <sound/cs4231.h>
 #include <sound/mpu401.h>
@@ -905,7 +908,7 @@ module_exit(alsa_card_opl3sa2_exit)
 /* format is: snd-card-opl3sa2=snd_enable,snd_index,snd_id,snd_isapnp,
 			       snd_port,snd_sb_port,snd_wss_port,snd_fm_port,
 			       snd_midi_port,snd_irq,snd_dma1,snd_dma2,
-			       snd_opl3sa23_ymode */
+			       snd_opl3sa3_ymode */
 
 static int __init alsa_card_opl3sa2_setup(char *str)
 {
@@ -926,7 +929,7 @@ static int __init alsa_card_opl3sa2_setup(char *str)
 	       get_option(&str,&snd_irq[nr_dev]) == 2 &&
 	       get_option(&str,&snd_dma1[nr_dev]) == 2 &&
 	       get_option(&str,&snd_dma2[nr_dev]) == 2 &&
-	       get_option(&str,&snd_opl3sa23_ymode[nr_dev]) == 2);
+	       get_option(&str,&snd_opl3sa3_ymode[nr_dev]) == 2);
 #ifdef __ISAPNP__
 	if (pnp != INT_MAX)
 		snd_isapnp[nr_dev] = pnp;

@@ -18,6 +18,9 @@
  */
  
 #include <sound/driver.h>
+#include <asm/io.h>
+#include <linux/interrupt.h>
+#include <linux/init.h>
 #include <sound/core.h>
 #include <sound/info.h>
 #include <sound/control.h>
@@ -26,6 +29,7 @@
 #include <sound/mpu401.h>
 #include <sound/opl3.h>
 #include <sound/sb.h>
+#include <sound/asoundef.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
 
@@ -2580,7 +2584,7 @@ static int __devinit snd_cmipci_probe(struct pci_dev *pci,
 		snd_card_free(card);
 		return err;
 	}
-	PCI_SET_DRIVER_DATA(pci, card);
+	pci_set_drvdata(pci, card);
 	dev++;
 	return 0;
 
@@ -2588,8 +2592,8 @@ static int __devinit snd_cmipci_probe(struct pci_dev *pci,
 
 static void __devexit snd_cmipci_remove(struct pci_dev *pci)
 {
-	snd_card_free(PCI_GET_DRIVER_DATA(pci));
-	PCI_SET_DRIVER_DATA(pci, NULL);
+	snd_card_free(pci_get_drvdata(pci));
+	pci_set_drvdata(pci, NULL);
 }
 
 
