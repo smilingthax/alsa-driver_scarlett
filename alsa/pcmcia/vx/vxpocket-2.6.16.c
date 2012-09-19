@@ -27,6 +27,7 @@
 #include <pcmcia/ciscode.h>
 #include <pcmcia/cisreg.h>
 #include <sound/initval.h>
+#include <sound/tlv.h>
 
 /*
  */
@@ -96,6 +97,8 @@ static int snd_vxpocket_dev_free(struct snd_device *device)
  * Only output levels can be modified
  */
 
+static DECLARE_TLV_DB_SCALE(db_scale_old_vol, -11350, 50, 0);
+
 static struct snd_vx_hardware vxpocket_hw = {
 	.name = "VXPocket",
 	.type = VX_TYPE_VXPOCKET,
@@ -105,6 +108,7 @@ static struct snd_vx_hardware vxpocket_hw = {
 	.num_ins = 1,
 	.num_outs = 1,
 	.output_level_max = VX_ANALOG_OUT_LEVEL_MAX,
+	.output_level_db_scale = db_scale_old_vol,
 };	
 
 /* VX-pocket 440
@@ -126,6 +130,7 @@ static struct snd_vx_hardware vxp440_hw = {
 	.num_ins = 2,
 	.num_outs = 2,
 	.output_level_max = VX_ANALOG_OUT_LEVEL_MAX,
+	.output_level_db_scale = db_scale_old_vol,
 };	
 
 
