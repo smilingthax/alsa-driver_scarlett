@@ -344,7 +344,7 @@ struct page *snd_compat_vmalloc_to_page(void *addr);
 #define vmalloc_to_page(addr) snd_compat_vmalloc_to_page(addr)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
 #include <linux/vmalloc.h>
 #undef vmap
 void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot);
