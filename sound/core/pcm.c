@@ -570,7 +570,7 @@ static int snd_pcm_new_stream(snd_pcm_t *pcm,
 			return err;
 		}
 		substream->dma_type = SNDRV_PCM_DMA_TYPE_ISA;
-		substream->dma_private = (void *)(unsigned long)GFP_KERNEL;
+		substream->dma_private = NULL;
 		spin_lock_init(&substream->timer_lock);
 		prev = substream;
 	}

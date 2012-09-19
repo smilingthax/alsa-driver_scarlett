@@ -166,9 +166,9 @@ static inline void snd_power_change_state(snd_card_t *card, unsigned int state)
 	wake_up(&card->power_sleep);
 }
 #else
-#define snd_power_lock(card, can_schedule) do { ; } while (0)
+#define snd_power_lock(card) do { ; } while (0)
 #define snd_power_unlock(card) do { ; } while (0)
-#define snd_power_wait(card, can_schedule) do { ; } while (0)
+#define snd_power_wait(card) do { ; } while (0)
 #define snd_power_get_state(card) SNDRV_CTL_POWER_D0
 #define snd_power_change_state(card, state) do { ; } while (0)
 #endif
@@ -243,8 +243,8 @@ void *snd_malloc_pages(unsigned long size, unsigned int dma_flags);
 void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsigned long *res_size);
 void snd_free_pages(void *ptr, unsigned long size);
 #ifdef CONFIG_ISA
-void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr, unsigned int dma_flags);
-void *snd_malloc_isa_pages_fallback(unsigned long size, dma_addr_t *dma_addr, unsigned int dma_flags, unsigned long *res_size);
+void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr);
+void *snd_malloc_isa_pages_fallback(unsigned long size, dma_addr_t *dma_addr, unsigned long *res_size);
 #define snd_free_isa_pages(size, ptr, dma_addr) snd_free_pages(ptr, size)
 #endif
 #ifdef CONFIG_PCI

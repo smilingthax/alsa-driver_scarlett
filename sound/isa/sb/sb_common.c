@@ -52,7 +52,7 @@ int snd_sbdsp_command(sb_t *chip, unsigned char val)
 			outb(val, SBP(chip, COMMAND));
 			return 1;
 		}
-	snd_printd(__FUNCTION__ " [0x%lx]: timeout (0x%x)\n", chip->port, val);
+	snd_printd("%s [0x%lx]: timeout (0x%x)\n", __FUNCTION__, chip->port, val);
 	return 0;
 }
 
@@ -69,7 +69,7 @@ int snd_sbdsp_get_byte(sb_t *chip)
 			return val;
 		}
 	}
-	snd_printd(__FUNCTION__ " [0x%lx]: timeout\n", chip->port);
+	snd_printd("%s [0x%lx]: timeout\n", __FUNCTION__, chip->port);
 	return -ENODEV;
 }
 
@@ -88,7 +88,7 @@ int snd_sbdsp_reset(sb_t *chip)
 			else
 				break;
 		}
-	snd_printdd(__FUNCTION__ " [0x%lx] failed...\n", chip->port);
+	snd_printdd("%s [0x%lx] failed...\n", __FUNCTION__, chip->port);
 	return -ENODEV;
 }
 

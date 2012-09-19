@@ -121,7 +121,7 @@ static void snd_pcm_lib_preallocate_proc_write(snd_info_entry_t *entry,
 				break;
 #ifdef CONFIG_ISA
 			case SNDRV_PCM_DMA_TYPE_ISA:
-				dma_area = snd_malloc_isa_pages(size, &dma_addr, (unsigned int)((unsigned long)substream->dma_private & 0xffffffff));
+				dma_area = snd_malloc_isa_pages(size, &dma_addr);
 				break;
 #endif
 #ifdef CONFIG_PCI
@@ -169,7 +169,7 @@ static int snd_pcm_lib_preallocate_pages1(snd_pcm_substream_t *substream,
 			break;
 #ifdef CONFIG_ISA
 		case SNDRV_PCM_DMA_TYPE_ISA:
-			dma_area = snd_malloc_isa_pages_fallback(size, &dma_addr, (unsigned int)((unsigned long)substream->dma_private & 0xffffffff), &rsize);
+			dma_area = snd_malloc_isa_pages_fallback(size, &dma_addr, &rsize);
 			break;
 #endif
 #ifdef CONFIG_PCI
@@ -231,24 +231,22 @@ int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
 
 #ifdef CONFIG_ISA
 int snd_pcm_lib_preallocate_isa_pages(snd_pcm_substream_t *substream,
-				      size_t size, size_t max,
-				      unsigned int flags)
+				      size_t size, size_t max)
 {
 	substream->dma_type = SNDRV_PCM_DMA_TYPE_ISA;
-	substream->dma_private = (void *)(unsigned long)flags;
+	substream->dma_private = NULL;
 	return snd_pcm_lib_preallocate_pages1(substream, size, max);
 }
 
 int snd_pcm_lib_preallocate_isa_pages_for_all(snd_pcm_t *pcm,
-					      size_t size, size_t max,
-					      unsigned int flags)
+					      size_t size, size_t max)
 {
 	snd_pcm_substream_t *substream;
 	int stream, err;
 
 	for (stream = 0; stream < 2; stream++)
 		for (substream = pcm->streams[stream].substream; substream; substream = substream->next)
-			if ((err = snd_pcm_lib_preallocate_isa_pages(substream, size, max, flags)) < 0)
+			if ((err = snd_pcm_lib_preallocate_isa_pages(substream, size, max)) < 0)
 				return err;
 	return 0;
 }
@@ -276,9 +274,13 @@ int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size)
 		dma_addr = substream->dma_addr;
 	} else {
 		switch (substream->dma_type) {
+		case SNDRV_PCM_DMA_TYPE_CONTINUOUS:
+			dma_area = snd_malloc_pages(size, (unsigned int)((unsigned long)substream->dma_private & 0xffffffff));
+			dma_addr = 0UL;		/* not valid */
+			break;
 #ifdef CONFIG_ISA
 		case SNDRV_PCM_DMA_TYPE_ISA:
-			dma_area = snd_malloc_isa_pages(size, &dma_addr, (unsigned int)((unsigned long)substream->dma_private & 0xffffffff)); 
+			dma_area = snd_malloc_isa_pages(size, &dma_addr); 
 			break;
 #endif
 #ifdef CONFIG_PCI
