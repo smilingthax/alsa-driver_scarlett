@@ -357,6 +357,24 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 24) \
+    && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 5) \
+    && defined(SND_NEED_USB_SET_INTERFACE) \
+    && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
+
+#include <linux/usb.h>
+
+inline static int real_usb_set_interface(struct usb_device *dev, int interface, int alternate)
+{
+	return usb_set_interface(dev, interface, alternate);
+}
+
+int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int alternate);
+#undef usb_set_interface
+#define usb_set_interface(dev,iface,alt) snd_hack_usb_set_interface(dev,iface,alt)
+
+#endif
+
 /* workqueue-alike; 2.5.45 */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #include <linux/workqueue.h>
