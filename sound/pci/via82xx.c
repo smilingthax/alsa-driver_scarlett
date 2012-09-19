@@ -668,7 +668,7 @@ static int snd_via82xx_hw_params(snd_pcm_substream_t * substream,
 	viadev_t *viadev = (viadev_t *)substream->runtime->private_data;
 	int err;
 
-	err = snd_pcm_sgbuf_alloc(substream, params_buffer_bytes(hw_params));
+	err = snd_pcm_lib_malloc_pages(substream, params_buffer_bytes(hw_params));
 	if (err < 0)
 		return err;
 	err = build_via_table(viadev, substream, chip->pci,
@@ -690,7 +690,7 @@ static int snd_via82xx_hw_free(snd_pcm_substream_t * substream)
 	viadev_t *viadev = (viadev_t *)substream->runtime->private_data;
 
 	clean_via_table(viadev, substream, chip->pci);
-	snd_pcm_sgbuf_free(substream);
+	snd_pcm_lib_free_pages(substream);
 	return 0;
 }
 
@@ -894,8 +894,6 @@ static int snd_via82xx_pcm_open(via82xx_t *chip, viadev_t *viadev, snd_pcm_subst
 	}
 	spin_unlock_irqrestore(&ratep->lock, flags);
 
-	if ((err = snd_pcm_sgbuf_init(substream, chip->pci, 32)) < 0)
-		return err;
 	/* we may remove following constaint when we modify table entries
 	   in interrupt */
 	if ((err = snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS)) < 0)
@@ -977,7 +975,6 @@ static int snd_via82xx_pcm_close(snd_pcm_substream_t * substream)
 	spin_unlock_irqrestore(&ratep->lock, flags);
 
 	viadev->substream = NULL;
-	snd_pcm_sgbuf_delete(substream);
 	return 0;
 }
 
@@ -992,8 +989,6 @@ static snd_pcm_ops_t snd_via686_playback_ops = {
 	.prepare =	snd_via686_playback_prepare,
 	.trigger =	snd_via82xx_pcm_trigger,
 	.pointer =	snd_via686_pcm_pointer,
-	.copy =		snd_pcm_sgbuf_ops_copy_playback,
-	.silence =	snd_pcm_sgbuf_ops_silence,
 	.page =		snd_pcm_sgbuf_ops_page,
 };
 
@@ -1007,8 +1002,6 @@ static snd_pcm_ops_t snd_via686_capture_ops = {
 	.prepare =	snd_via686_capture_prepare,
 	.trigger =	snd_via82xx_pcm_trigger,
 	.pointer =	snd_via686_pcm_pointer,
-	.copy =		snd_pcm_sgbuf_ops_copy_capture,
-	.silence =	snd_pcm_sgbuf_ops_silence,
 	.page =		snd_pcm_sgbuf_ops_page,
 };
 
@@ -1022,8 +1015,6 @@ static snd_pcm_ops_t snd_via8233_playback_ops = {
 	.prepare =	snd_via8233_playback_prepare,
 	.trigger =	snd_via82xx_pcm_trigger,
 	.pointer =	snd_via8233_pcm_pointer,
-	.copy =		snd_pcm_sgbuf_ops_copy_playback,
-	.silence =	snd_pcm_sgbuf_ops_silence,
 	.page =		snd_pcm_sgbuf_ops_page,
 };
 
@@ -1037,8 +1028,6 @@ static snd_pcm_ops_t snd_via8233_multi_ops = {
 	.prepare =	snd_via8233_multi_prepare,
 	.trigger =	snd_via82xx_pcm_trigger,
 	.pointer =	snd_via8233_pcm_pointer,
-	.copy =		snd_pcm_sgbuf_ops_copy_playback,
-	.silence =	snd_pcm_sgbuf_ops_silence,
 	.page =		snd_pcm_sgbuf_ops_page,
 };
 
@@ -1052,8 +1041,6 @@ static snd_pcm_ops_t snd_via8233_capture_ops = {
 	.prepare =	snd_via8233_capture_prepare,
 	.trigger =	snd_via82xx_pcm_trigger,
 	.pointer =	snd_via8233_pcm_pointer,
-	.copy =		snd_pcm_sgbuf_ops_copy_capture,
-	.silence =	snd_pcm_sgbuf_ops_silence,
 	.page =		snd_pcm_sgbuf_ops_page,
 };
 
@@ -1088,6 +1075,9 @@ static int __devinit snd_via8233_pcm_new(via82xx_t *chip)
 	chip->devs[chip->capture_devno].reg_offset = VIA_REG_CAPTURE_8233_STATUS;
 	chip->devs[chip->capture_devno].direction = 1;
 
+	if ((err = snd_pcm_lib_preallocate_sg_pages_for_all(chip->pci, pcm)) < 0)
+		return err;
+
 	/* PCM #1:  multi-channel playback and 2nd capture */
 	err = snd_pcm_new(chip->card, chip->card->shortname, 1, 1, 1, &pcm);
 	if (err < 0)
@@ -1102,6 +1092,10 @@ static int __devinit snd_via8233_pcm_new(via82xx_t *chip)
 	/* set up capture */
 	chip->devs[chip->capture_devno + 1].reg_offset = VIA_REG_CAPTURE_8233_STATUS + 0x10;
 	chip->devs[chip->capture_devno + 1].direction = 1;
+
+	if ((err = snd_pcm_lib_preallocate_sg_pages_for_all(chip->pci, pcm)) < 0)
+		return err;
+
 	return 0;
 }
 
@@ -1143,6 +1137,10 @@ static int __devinit snd_via8233a_pcm_new(via82xx_t *chip)
 	/* set up playback */
 	chip->devs[chip->playback_devno].reg_offset = 0x30;
 	chip->devs[chip->playback_devno].direction = 0;
+
+	if ((err = snd_pcm_lib_preallocate_sg_pages_for_all(chip->pci, pcm)) < 0)
+		return err;
+
 	return 0;
 }
 
@@ -1169,6 +1167,10 @@ static int __devinit snd_via686_pcm_new(via82xx_t *chip)
 	chip->devs[0].direction = 0;
 	chip->devs[1].reg_offset = VIA_REG_CAPTURE_STATUS;
 	chip->devs[1].direction = 1;
+
+	if ((err = snd_pcm_lib_preallocate_sg_pages_for_all(chip->pci, pcm)) < 0)
+		return err;
+
 	return 0;
 }
 
