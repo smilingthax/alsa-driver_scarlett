@@ -25,6 +25,7 @@
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/pci.h>
+#include <linux/delay.h>
 #include <linux/moduleparam.h>
 #include <sound/core.h>
 #include <sound/initval.h>
@@ -63,9 +64,7 @@ enum {
 	PCI_ID_PCX882HR,
 	PCI_ID_VX881HR,
 	PCI_ID_PCX881HR,
-	PCI_ID_VX1222HR,
 	PCI_ID_PCX1222HR,
-	PCI_ID_VX1221HR,
 	PCI_ID_PCX1221HR,
 	PCI_ID_LAST
 };
@@ -75,9 +74,7 @@ static struct pci_device_id pcxhr_ids[] = {
 	{ 0x10b5, 0x9656, 0x1369, 0xb101, 0, 0, PCI_ID_PCX882HR, },  /* PCX882HR */
 	{ 0x10b5, 0x9656, 0x1369, 0xb201, 0, 0, PCI_ID_VX881HR, },   /* VX881HR */
 	{ 0x10b5, 0x9656, 0x1369, 0xb301, 0, 0, PCI_ID_PCX881HR, },  /* PCX881HR */
-	{ 0x10b5, 0x9656, 0x1369, 0xb401, 0, 0, PCI_ID_VX1222HR, },  /* VX1222HR */
 	{ 0x10b5, 0x9656, 0x1369, 0xb501, 0, 0, PCI_ID_PCX1222HR, }, /* PCX1222HR */
-	{ 0x10b5, 0x9656, 0x1369, 0xb601, 0, 0, PCI_ID_VX1221HR, },  /* VX1221HR */
 	{ 0x10b5, 0x9656, 0x1369, 0xb701, 0, 0, PCI_ID_PCX1221HR, }, /* PCX1221HR */
 	{ 0, }
 };
@@ -95,9 +92,7 @@ static struct board_parameters pcxhr_board_params[] = {
 [PCI_ID_PCX882HR] =	{ "PCX882HR",  4, 4, 41, },
 [PCI_ID_VX881HR] =	{ "VX881HR",   4, 4, 41, },
 [PCI_ID_PCX881HR] =	{ "PCX881HR",  4, 4, 41, },
-[PCI_ID_VX1222HR] =	{ "VX1222HR",  6, 1, 42, },
 [PCI_ID_PCX1222HR] =	{ "PCX1222HR", 6, 1, 42, },
-[PCI_ID_VX1221HR] =	{ "VX1221HR",  6, 1, 42, },
 [PCI_ID_PCX1221HR] =	{ "PCX1221HR", 6, 1, 42, },
 };
 
@@ -125,6 +120,7 @@ static int pcxhr_pll_freq_register(unsigned int freq, unsigned int* pllreg, unsi
 	return 0;
 }
 
+
 #define PCXHR_FREQ_REG_MASK		0x1f
 #define PCXHR_FREQ_QUARTZ_48000		0x00
 #define PCXHR_FREQ_QUARTZ_24000		0x01
@@ -143,54 +139,87 @@ static int pcxhr_pll_freq_register(unsigned int freq, unsigned int* pllreg, unsi
 #define PCXHR_FREQ_QUARTZ_128000	0x12
 #define PCXHR_FREQ_QUARTZ_64000		0x1a
 
+#define PCXHR_FREQ_WORD_CLOCK		0x0f
+#define PCXHR_FREQ_SYNC_AES		0x0e
+#define PCXHR_FREQ_AES_1		0x07
+#define PCXHR_FREQ_AES_2		0x0b
+#define PCXHR_FREQ_AES_3		0x03
+#define PCXHR_FREQ_AES_4		0x0d
+
 #define PCXHR_MODIFY_CLOCK_S_BIT	0x04
 
 #define PCXHR_IRQ_TIMER_FREQ		92000
 #define PCXHR_IRQ_TIMER_PERIOD		48
 
-static int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate)
+static int pcxhr_get_clock_reg(pcxhr_mgr_t *mgr, unsigned int rate, unsigned int *reg, unsigned int *freq)
 {
-	unsigned int val, pllreg, realfreq, speed;
+	unsigned int val, realfreq, pllreg;
+	pcxhr_rmh_t rmh;
+	int err;
+	realfreq = rate;
+	switch(mgr->use_clock_type) {
+	case PCXHR_CLOCK_TYPE_INTERNAL :	/* clock by quartz or pll */
+		switch(rate) {
+		case 48000 :	val = PCXHR_FREQ_QUARTZ_48000;	break;
+		case 24000 :	val = PCXHR_FREQ_QUARTZ_24000;	break;
+		case 12000 :	val = PCXHR_FREQ_QUARTZ_12000;	break;
+		case 32000 :	val = PCXHR_FREQ_QUARTZ_32000;	break;
+		case 16000 :	val = PCXHR_FREQ_QUARTZ_16000;	break;
+		case 8000 :	val = PCXHR_FREQ_QUARTZ_8000;	break;
+		case 44100 :	val = PCXHR_FREQ_QUARTZ_44100;	break;
+		case 22050 :	val = PCXHR_FREQ_QUARTZ_22050;	break;
+		case 11025 :	val = PCXHR_FREQ_QUARTZ_11025;	break;
+		case 192000 :	val = PCXHR_FREQ_QUARTZ_192000;	break;
+		case 96000 :	val = PCXHR_FREQ_QUARTZ_96000;	break;
+		case 176400 :	val = PCXHR_FREQ_QUARTZ_176400;	break;
+		case 88200 :	val = PCXHR_FREQ_QUARTZ_88200;	break;
+		case 128000 :	val = PCXHR_FREQ_QUARTZ_128000;	break;
+		case 64000 :	val = PCXHR_FREQ_QUARTZ_64000;	break;
+		default :
+			val = PCXHR_FREQ_PLL;
+			/* get the value for the pll register */
+			err = pcxhr_pll_freq_register(rate, &pllreg, &realfreq);
+			if(err) return err;
+			pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);
+			rmh.cmd[0] |= IO_NUM_REG_GENCLK;
+			rmh.cmd[1]  = pllreg & MASK_DSP_WORD;
+			rmh.cmd[2]  = pllreg >> 24;
+			rmh.cmd_len = 3;
+			err = pcxhr_send_msg(mgr, &rmh);
+			if( err < 0) {
+				snd_printk(KERN_ERR "error CMD_ACCESS_IO_WRITE for PLL register : %x!\n", err );
+				return err;
+			}
+		}
+		break;
+	case PCXHR_CLOCK_TYPE_WORD_CLOCK :	val = PCXHR_FREQ_WORD_CLOCK;	break;
+	case PCXHR_CLOCK_TYPE_AES_SYNC :	val = PCXHR_FREQ_SYNC_AES;	break;
+	case PCXHR_CLOCK_TYPE_AES_1 :		val = PCXHR_FREQ_AES_1;		break;
+	case PCXHR_CLOCK_TYPE_AES_2 :		val = PCXHR_FREQ_AES_2;		break;
+	case PCXHR_CLOCK_TYPE_AES_3 :		val = PCXHR_FREQ_AES_3;		break;
+	case PCXHR_CLOCK_TYPE_AES_4 :		val = PCXHR_FREQ_AES_4;		break;
+	default : return -EINVAL;
+	}
+	*reg = val;
+	*freq = realfreq;
+	return 0;
+}
+
+
+int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate)
+{
+	unsigned int val, realfreq, speed;
 	pcxhr_rmh_t rmh;
 	int err, changed;
 	if(rate == 0)	return 0; /* nothing to do */
-	realfreq = rate;
-	switch(rate) {
-	case 48000 :	val = PCXHR_FREQ_QUARTZ_48000;	break;
-	case 24000 :	val = PCXHR_FREQ_QUARTZ_24000;	break;
-	case 12000 :	val = PCXHR_FREQ_QUARTZ_12000;	break;
-	case 32000 :	val = PCXHR_FREQ_QUARTZ_32000;	break;
-	case 16000 :	val = PCXHR_FREQ_QUARTZ_16000;	break;
-	case 8000 :	val = PCXHR_FREQ_QUARTZ_8000;	break;
-	case 44100 :	val = PCXHR_FREQ_QUARTZ_44100;	break;
-	case 22050 :	val = PCXHR_FREQ_QUARTZ_22050;	break;
-	case 11025 :	val = PCXHR_FREQ_QUARTZ_11025;	break;
-	case 192000 :	val = PCXHR_FREQ_QUARTZ_192000;	break;
-	case 96000 :	val = PCXHR_FREQ_QUARTZ_96000;	break;
-	case 176400 :	val = PCXHR_FREQ_QUARTZ_176400;	break;
-	case 88200 :	val = PCXHR_FREQ_QUARTZ_88200;	break;
-	case 128000 :	val = PCXHR_FREQ_QUARTZ_128000;	break;
-	case 64000 :	val = PCXHR_FREQ_QUARTZ_64000;	break;
-	default :
-		val = PCXHR_FREQ_PLL;
-		/* get the value for the pll register */
-		err = pcxhr_pll_freq_register(rate, &pllreg, &realfreq);
-		if(err) return err;
-		pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);
-		rmh.cmd[0] |= IO_NUM_REG_GENCLK;
-		rmh.cmd[1]  = pllreg & MASK_DSP_WORD;
-		rmh.cmd[2]  = pllreg >> 24;
-		rmh.cmd_len = 3;
-		err = pcxhr_send_msg(mgr, &rmh);
-		if( err < 0) {
-			snd_printk(KERN_ERR "error pipe allocation (CMD_ACCESS_IO_WRITE) err=%x!\n", err );
-			return err;
-		}
-	}
+
+	err = pcxhr_get_clock_reg(mgr, rate, &val, &realfreq);
+	if(err) return err;
+
 	/* codec speed modes */
-	if(rate<55000)		speed = 0x00;	/* single speed */
-	else if(rate<100000)	speed = 0x80;	/* dual speed */
-	else			speed = 0xe0;	/* quad speed */
+	if(rate<55000)		speed = 0;	/* single speed */
+	else if(rate<100000)	speed = 1;	/* dual speed */
+	else			speed = 2;	/* quad speed */
 	if(mgr->codec_speed != speed) {
 		pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);	/* mute outputs */
 		rmh.cmd[0] |= IO_NUM_REG_MUTE_OUT;
@@ -199,14 +228,17 @@ static int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate)
 
 		pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);	/* set speed ratio */
 		rmh.cmd[0] |= IO_NUM_SPEED_RATIO;
-		rmh.cmd[1] = (CS4271_MODE_CTL_1 & CHIP_SIG_AND_MAP_SPI) | speed;
+		rmh.cmd[1] = speed;
 		rmh.cmd_len = 2;
 		err = pcxhr_send_msg(mgr, &rmh);
 		if(err) return err;
 	}
 	/* set the new frequency */
+	snd_printdd("clock register : set %x\n", val);
 	err = pcxhr_write_io_num_reg_cont(mgr, PCXHR_FREQ_REG_MASK, val, &changed);
 	if(err) return err;
+	mgr->sample_rate_real = realfreq;
+	mgr->cur_clock_type = mgr->use_clock_type;
 
 	/* unmute after codec speed modes */
 	if(mgr->codec_speed != speed) {
@@ -222,7 +254,8 @@ static int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate)
 		rmh.cmd[0] |= PCXHR_MODIFY_CLOCK_S_BIT;		/* resync fifos  */
 		if(rate < PCXHR_IRQ_TIMER_FREQ)	rmh.cmd[1] = PCXHR_IRQ_TIMER_PERIOD;
 		else				rmh.cmd[1] = PCXHR_IRQ_TIMER_PERIOD * 2;
-		rmh.cmd_len = 2;
+		rmh.cmd[2] = rate;
+		rmh.cmd_len = 3;
 		err = pcxhr_send_msg(mgr, &rmh);
 		if(err) return err;
 	}
@@ -230,16 +263,68 @@ static int pcxhr_set_clock(pcxhr_mgr_t *mgr, unsigned int rate)
 	return 0;
 }
 
+
+int pcxhr_get_external_clock(pcxhr_mgr_t *mgr, enum pcxhr_clock_type clock_type, int *sample_rate)
+{
+	pcxhr_rmh_t rmh;
+	unsigned char reg;
+	int err, rate;
+	switch(clock_type) {
+	case PCXHR_CLOCK_TYPE_WORD_CLOCK :	reg = REG_STATUS_WORD_CLOCK;	break;
+	case PCXHR_CLOCK_TYPE_AES_SYNC :	reg = REG_STATUS_AES_SYNC;	break;
+	case PCXHR_CLOCK_TYPE_AES_1 :		reg = REG_STATUS_AES_1;		break;
+	case PCXHR_CLOCK_TYPE_AES_2 :		reg = REG_STATUS_AES_2;		break;
+	case PCXHR_CLOCK_TYPE_AES_3 :		reg = REG_STATUS_AES_3;		break;
+	case PCXHR_CLOCK_TYPE_AES_4 :		reg = REG_STATUS_AES_4;		break;
+	default : return -EINVAL;
+	}
+	pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_READ);
+	rmh.cmd_len = 2;
+	rmh.cmd[0] |= IO_NUM_REG_STATUS;
+	if(mgr->last_reg_stat != reg) {
+		rmh.cmd[1]  = reg;
+		err = pcxhr_send_msg(mgr, &rmh);
+		if(err) return err;
+		udelay(100);		/* wait minimum 2 sample_frames at 32kHz ! */
+		mgr->last_reg_stat = reg;
+	}
+	rmh.cmd[1]  = REG_STATUS_CURRENT;
+	err = pcxhr_send_msg(mgr, &rmh);
+	if(err) return err;
+	switch (rmh.stat[1] & 0x0f) {
+	case REG_STATUS_SYNC_32000 :	rate = 32000; break;
+	case REG_STATUS_SYNC_44100 :	rate = 44100; break;
+	case REG_STATUS_SYNC_48000 :	rate = 48000; break;
+	case REG_STATUS_SYNC_64000 :	rate = 64000; break;
+	case REG_STATUS_SYNC_88200 :	rate = 88200; break;
+	case REG_STATUS_SYNC_96000 :	rate = 96000; break;
+	case REG_STATUS_SYNC_128000 :	rate = 128000; break;
+	case REG_STATUS_SYNC_176400 :	rate = 176400; break;
+	case REG_STATUS_SYNC_192000 :	rate = 192000; break;
+	default: rate = 0;
+	}
+	snd_printdd("External clock is at %d Hz\n", rate);
+	*sample_rate = rate;
+	return 0;
+}
+
+
 /*
  *  start or stop playback/capture substream
  */
-static int pcxhr_set_stream_state(pcxhr_stream_t *stream, int start)
+static int pcxhr_set_stream_state(pcxhr_stream_t *stream)
 {
 	int err;
 	pcxhr_t *chip;
 	pcxhr_rmh_t rmh;
-	int stream_mask;
+	int stream_mask, start;
 
+	if(stream->status == PCXHR_STREAM_STATUS_SCHEDULE_RUN) {
+		start = 1;
+	} else {
+		if(stream->status != PCXHR_STREAM_STATUS_SCHEDULE_STOP) return -EINVAL;
+		start = 0;
+	}
 	if(!stream->substream)
 		return -EINVAL;
 
@@ -258,6 +343,7 @@ static int pcxhr_set_stream_state(pcxhr_stream_t *stream, int start)
 	if(err) {
 		snd_printk(KERN_ERR "ERROR pcxhr_set_stream_state err=%x;\n", err);
 	}
+	stream->status = start ? PCXHR_STREAM_STATUS_RUNNING : PCXHR_STREAM_STATUS_STOPPED;
 	return err;
 }
 
@@ -343,46 +429,172 @@ static int pcxhr_update_r_buffer(pcxhr_stream_t *stream)
 	return err;
 }
 
+
+#if 0
+static int pcxhr_pipe_sample_count(pcxhr_stream_t *stream, snd_pcm_uframes_t *sample_count)
+{
+	pcxhr_rmh_t rmh;
+	int err;
+	pcxhr_t *chip = snd_pcm_substream_chip(stream->substream);
+	pcxhr_init_rmh(&rmh, CMD_PIPE_SAMPLE_COUNT);
+	pcxhr_set_pipe_cmd_params(&rmh, stream->pipe->is_capture, 0, 0, 1<<stream->pipe->first_audio);
+	err = pcxhr_send_msg(chip->mgr, &rmh);
+	if(err == 0) {
+		*sample_count = ((snd_pcm_uframes_t)rmh.stat[0]) << 24;
+		*sample_count += (snd_pcm_uframes_t)rmh.stat[1];
+	}
+	snd_printdd("PIPE_SAMPLE_COUNT = %lx\n", *sample_count);
+	return err;
+}
+#endif
+
+inline int pcxhr_stream_scheduled_get_pipe(pcxhr_stream_t *stream,  pcxhr_pipe_t** pipe)
+{
+	if(stream->status == PCXHR_STREAM_STATUS_SCHEDULE_RUN) {
+		*pipe = stream->pipe;
+		return 1;
+	}
+	return 0;
+}
+
+void pcxhr_trigger_tasklet(unsigned long arg)
+{
+	int i, j, err;
+	pcxhr_pipe_t *pipe;
+	pcxhr_pipe_t *pipe_array[PCXHR_MAX_CARDS*3]; /* max 3 pipes per card */
+	pcxhr_t *chip;
+	pcxhr_mgr_t *mgr = ( pcxhr_mgr_t*)(arg);
+	int size = 0;
+
+#ifdef CONFIG_SND_DEBUG_DETECT
+	struct timeval my_tv1, my_tv2;
+	do_gettimeofday(&my_tv1);
+#endif
+	down(&mgr->setup_mutex);
+
+	/* check the pipes concerned and build pipe_array */
+	for(i=0; i<mgr->num_cards; i++) {
+		chip = mgr->chip[i];
+		for(j=0; j<chip->nb_streams_capt; j++) {
+			if(pcxhr_stream_scheduled_get_pipe(&chip->capture_stream[j], &pipe)) {
+				pipe_array[size++] = pipe;
+			}
+		}
+		for(j=0; j<chip->nb_streams_play; j++) {
+			if(pcxhr_stream_scheduled_get_pipe(&chip->playback_stream[j], &pipe)) {
+				pipe_array[size++] = pipe;
+				break;	/* add only once, as the playback streams use all the same pipe */
+			}
+		}
+	}
+	if(size == 0) {
+		up(&mgr->setup_mutex);
+		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : no pipes\n");
+		return;
+	}
+
+	snd_printdd("pcxhr_trigger_tasklet : %d pipes\n", size);
+
+	/* synchronous stop of all the pipes concerned */
+	err = pcxhr_set_pipe_state(mgr, pipe_array, size, 0);
+	if(err) {
+		up(&mgr->setup_mutex);
+		snd_printk(KERN_ERR "pcxhr_trigger_tasklet : error stop %d pipes\n", size);
+		return;
+	}
+
+	/* unfortunately the dsp lost format and buffer info with the stop pipe */
+	for(i=0; i<mgr->num_cards; i++) {
+		pcxhr_stream_t *stream;
+		chip = mgr->chip[i];
+		for(j=0; j<chip->nb_streams_capt; j++) {
+			stream = &chip->capture_stream[j];
+			if(pcxhr_stream_scheduled_get_pipe(stream, &pipe)) {
+				err = pcxhr_set_format(stream);
+				err = pcxhr_update_r_buffer(stream);
+			}
+		}
+		for(j=0; j<chip->nb_streams_play; j++) {
+			stream = &chip->playback_stream[j];
+			if(pcxhr_stream_scheduled_get_pipe(stream, &pipe)) {
+				err = pcxhr_set_format(stream);
+				err = pcxhr_update_r_buffer(stream);
+			}
+		}
+	}
+	/* start all the streams */
+	for(i=0; i<mgr->num_cards; i++) {
+		pcxhr_stream_t *stream;
+		chip = mgr->chip[i];
+		for(j=0; j<chip->nb_streams_capt; j++) {
+			stream = &chip->capture_stream[j];
+			if(pcxhr_stream_scheduled_get_pipe(stream, &pipe)) {
+				err = pcxhr_set_stream_state(stream);
+			}
+		}
+		for(j=0; j<chip->nb_streams_play; j++) {
+			stream = &chip->playback_stream[j];
+			if(pcxhr_stream_scheduled_get_pipe(stream, &pipe)) {
+				err = pcxhr_set_stream_state(stream);
+			}
+		}
+	}
+
+	/* synchronous start of all the pipes concerned */
+	err = pcxhr_set_pipe_state(mgr, pipe_array, size, 1);
+
+	up(&mgr->setup_mutex);
+
+#ifdef CONFIG_SND_DEBUG_DETECT
+	do_gettimeofday(&my_tv2);
+	snd_printdd("***TRIGGER*** TIME = %ld (err = %x)\n", my_tv2.tv_usec - my_tv1.tv_usec, err);
+#endif
+}
+
+
 /*
  *  trigger callback
  */
 static int pcxhr_trigger(snd_pcm_substream_t *subs, int cmd)
 {
-	pcxhr_stream_t *stream = (pcxhr_stream_t*)subs->runtime->private_data;
-	int err;
+	pcxhr_stream_t *stream;
+	struct list_head *pos;
+	snd_pcm_substream_t *s;
+	int i=0;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		snd_printdd("SNDRV_PCM_TRIGGER_START\n");
-		/* if the stream was stopped before, format and buffer were reset */
-		if(stream->status == PCXHR_STREAM_STATUS_STOPPED) {
-			err = pcxhr_set_format(stream);
-			if(err) return err;
-			err = pcxhr_update_r_buffer(stream);
-			if(err) return err;
+		snd_pcm_group_for_each(pos, subs) {
+			s = snd_pcm_group_substream_entry(pos);
+			stream = (pcxhr_stream_t*)s->runtime->private_data;
+			stream->status = PCXHR_STREAM_STATUS_SCHEDULE_RUN;
+			snd_pcm_trigger_done(s, subs);
+			i++;
 		}
-		/* START_STREAM */
-		if( pcxhr_set_stream_state(stream, 1) )
-			return -EINVAL;
-		stream->status = PCXHR_STREAM_STATUS_RUNNING;
+		if(i==1) {
+			snd_printdd("Only one Substream %c %d\n", stream->pipe->is_capture?'C':'P', stream->pipe->first_audio);
+			if( pcxhr_set_stream_state(stream) )
+				return -EINVAL;
+		}else {
+			pcxhr_t *chip = snd_pcm_substream_chip(subs);
+			tasklet_hi_schedule(&chip->mgr->trigger_taskq);
+		}
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		/* STOP_STREAM */
-		if( pcxhr_set_stream_state(stream, 0) )
-			return -EINVAL;
-		stream->status = PCXHR_STREAM_STATUS_STOPPED;
 		snd_printdd("SNDRV_PCM_TRIGGER_STOP\n");
+		snd_pcm_group_for_each(pos, subs) {
+			s = snd_pcm_group_substream_entry(pos);
+			stream = (pcxhr_stream_t*)s->runtime->private_data;
+			stream->status = PCXHR_STREAM_STATUS_SCHEDULE_STOP;
+			if( pcxhr_set_stream_state(stream) )
+				return -EINVAL;
+			snd_pcm_trigger_done(s, subs);
+		}
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		/* TODO */
-		stream->status = PCXHR_STREAM_STATUS_PAUSED;
-		snd_printdd("SNDRV_PCM_PAUSE_PUSH\n");
-		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		/* TODO */
-		stream->status = PCXHR_STREAM_STATUS_RUNNING;
-		snd_printdd("SNDRV_PCM_PAUSE_RELEASE\n");
-		break;
 	default:
 		return -EINVAL;
 	}
@@ -390,13 +602,16 @@ static int pcxhr_trigger(snd_pcm_substream_t *subs, int cmd)
 }
 
 
-static int pcxhr_hardware_timer(pcxhr_t *chip, int start)
+static int pcxhr_hardware_timer(pcxhr_mgr_t *mgr, int start)
 {
 	pcxhr_rmh_t rmh;
 	int err;
 	pcxhr_init_rmh(&rmh, CMD_SET_TIMER_INTERRUPT);
-	if(start) rmh.cmd[0] |= PCXHR_GRANULARITY;
-	err = pcxhr_send_msg(chip->mgr, &rmh);
+	if(start) {
+		mgr->timer_toggle = 0;	/* reset the toggle value */
+		rmh.cmd[0] |= PCXHR_GRANULARITY;
+	}
+	err = pcxhr_send_msg(mgr, &rmh);
 	if( err < 0 ) {
 		snd_printk(KERN_ERR "error pcxhr_hardware_timer err(%x)\n", err);
 	}
@@ -409,23 +624,39 @@ static int pcxhr_hardware_timer(pcxhr_t *chip, int start)
 static int pcxhr_prepare(snd_pcm_substream_t *subs)
 {
 	pcxhr_t *chip = snd_pcm_substream_chip(subs);
-	// TODO pcxhr_stream_t *stream = (pcxhr_stream_t*)subs->runtime->private_data;
+	pcxhr_mgr_t *mgr = chip->mgr;
+	pcxhr_stream_t *stream = (pcxhr_stream_t*)subs->runtime->private_data;
+	int err = 0;
 
 	snd_printdd("pcxhr_prepare : period_size(%lx) periods(%x) buffer_size(%lx)\n",
 		    subs->runtime->period_size, subs->runtime->periods, subs->runtime->buffer_size);
 
-	/* only the first stream can choose the sample rate */
-	/* the further opened streams will be limited to its frequency (see open) */
-	/* set the clock only once (first stream) */
-	if(chip->mgr->ref_count_rate == 1) {
-		if( pcxhr_set_clock(chip->mgr, subs->runtime->rate) )
-			return -EINVAL;
-		chip->mgr->sample_rate = subs->runtime->rate;
+	down(&mgr->setup_mutex);
 
-		pcxhr_hardware_timer(chip, 1);	/* start the DSP-timer */
-	}
+	do {
+		/* if the stream was stopped before, format and buffer were reset */
+		if(stream->status == PCXHR_STREAM_STATUS_STOPPED) {
+			err = pcxhr_set_format(stream);
+			if(err) break;
+			err = pcxhr_update_r_buffer(stream);
+			if(err) break;
+		}
 
-	return 0;
+		/* only the first stream can choose the sample rate */
+		/* the further opened streams will be limited to its frequency (see open) */
+		/* set the clock only once (first stream) */
+		if(mgr->sample_rate == 0) {
+			err = pcxhr_set_clock(mgr, subs->runtime->rate);
+			if(err) break;
+			mgr->sample_rate = subs->runtime->rate;
+
+			err = pcxhr_hardware_timer(mgr, 1);	/* start the DSP-timer */
+		}
+	} while(0);	/* do only once (so we can use break instead of goto) */
+
+	up(&mgr->setup_mutex);
+
+	return err;
 }
 
 
@@ -485,7 +716,7 @@ static snd_pcm_hardware_t pcxhr_caps =
 {
 	.info             = ( SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 			      SNDRV_PCM_INFO_MMAP_VALID | SNDRV_PCM_INFO_SYNC_START |
-			      SNDRV_PCM_INFO_PAUSE),
+			      0 /*SNDRV_PCM_INFO_PAUSE*/),
 	.formats	  = ( SNDRV_PCM_FMTBIT_U8 |
 			      SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S16_BE |
 			      SNDRV_PCM_FMTBIT_S24_3LE | SNDRV_PCM_FMTBIT_S24_3BE |
@@ -509,7 +740,7 @@ static int pcxhr_open(snd_pcm_substream_t *subs)
 	pcxhr_mgr_t         *mgr = chip->mgr;
 	snd_pcm_runtime_t   *runtime = subs->runtime;
 	pcxhr_stream_t      *stream;
-	int err, is_capture;
+	int                 is_capture;
 
 	down(&mgr->setup_mutex);
 
@@ -527,12 +758,27 @@ static int pcxhr_open(snd_pcm_substream_t *subs)
 		else			runtime->hw.channels_min = 2;
 		stream = &(chip->capture_stream[subs->number]);
 	}
-	err = 0;
 	if (stream->status != PCXHR_STREAM_STATUS_FREE){
 		/* streams in use */
 		snd_printk(KERN_ERR "pcxhr_open chip%d subs%d in use\n", chip->chip_idx, subs->number);
-		err = -EBUSY;
-		goto _exit_open;
+		up(&mgr->setup_mutex);
+		return -EBUSY;
+	}
+
+	/* if a sample rate is already used or fixed by external clock, the stream cannot change */
+	if(mgr->sample_rate) {
+		runtime->hw.rate_min = runtime->hw.rate_max = mgr->sample_rate;
+	} else {
+		if(mgr->use_clock_type != PCXHR_CLOCK_TYPE_INTERNAL) {
+			int external_rate;
+			if(pcxhr_get_external_clock(mgr, mgr->use_clock_type, &external_rate) ||
+			   (external_rate == 0)) {
+				/* cannot detect the external clock rate */
+				up(&mgr->setup_mutex);
+				return -EBUSY;
+			}
+			runtime->hw.rate_min = runtime->hw.rate_max = external_rate;
+		}
 	}
 
 	stream->status      = PCXHR_STREAM_STATUS_OPEN;
@@ -544,16 +790,10 @@ static int pcxhr_open(snd_pcm_substream_t *subs)
 	snd_pcm_hw_constraint_step(runtime, 0, SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 4);
 	snd_pcm_hw_constraint_step(runtime, 0, SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 4);
 
-	/* if a sample rate is already used, another stream cannot change */
-	if(mgr->ref_count_rate++) {
-		if(mgr->sample_rate) {
-			runtime->hw.rate_min = runtime->hw.rate_max = mgr->sample_rate;
-		}
-	}
+	mgr->ref_count_rate++;
 
- _exit_open:
 	up(&mgr->setup_mutex);
-	return err;
+	return 0;
 }
 
 
@@ -569,9 +809,8 @@ static int pcxhr_close(snd_pcm_substream_t *subs)
 
 	/* sample rate released */
 	if(--mgr->ref_count_rate == 0) {
-		mgr->sample_rate = 0;
-
-		pcxhr_hardware_timer(chip, 0);	/* stop the DSP-timer */
+		mgr->sample_rate = 0;		/* the sample rate is no more locked */
+		pcxhr_hardware_timer(mgr, 0);	/* stop the DSP-timer */
 	}
 
 	stream->status    = PCXHR_STREAM_STATUS_FREE;
@@ -599,7 +838,6 @@ static snd_pcm_uframes_t pcxhr_stream_pointer(snd_pcm_substream_t * subs)
 	return sample_count % runtime->buffer_size;
 }
 
-
 static snd_pcm_ops_t pcxhr_ops = {
 	.open      = pcxhr_open,
 	.close     = pcxhr_close,
@@ -610,7 +848,6 @@ static snd_pcm_ops_t pcxhr_ops = {
 	.trigger   = pcxhr_trigger,
 	.pointer   = pcxhr_stream_pointer,
 };
-
 
 /*
  */
@@ -693,7 +930,7 @@ static int __devinit pcxhr_create(pcxhr_mgr_t *mgr, snd_card_t *card, int idx)
 }
 
 /* proc interface */
-static void pcxhr_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+static void pcxhr_proc_info(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 {
 	pcxhr_t *chip = entry->private_data;
 	pcxhr_mgr_t *mgr = chip->mgr;
@@ -718,13 +955,51 @@ static void pcxhr_proc_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
 			int cur = rmh.stat[0];
 			int ref = rmh.stat[1];
 			if(ref > 0) {
-				if((mgr->sample_rate != 0) && (mgr->sample_rate != 48000)) {
-					ref = (ref*48000)/mgr->sample_rate;
-					if(mgr->sample_rate >= PCXHR_IRQ_TIMER_FREQ) ref*=2;
+				if((mgr->sample_rate_real != 0) && (mgr->sample_rate_real != 48000)) {
+					ref = (ref*48000)/mgr->sample_rate_real;
+					if(mgr->sample_rate_real >= PCXHR_IRQ_TIMER_FREQ) ref*=2;
 				}
 				cur = 100 - (100 * cur)/ref;
 				snd_iprintf(buffer, "cpu load    %d%%\n", cur);
+				snd_iprintf(buffer, "buffer pool %d/%d kWords\n", rmh.stat[2], rmh.stat[3]);
 			}
+		}
+		snd_iprintf(buffer, "dma granularity : %d\n", PCXHR_GRANULARITY);
+		snd_iprintf(buffer, "timer interrupt errors : %d\n", mgr->timer_err);
+		/* debug zone dsp */
+		rmh.cmd[0] = 0x4200 + PCXHR_SIZE_MAX_STATUS;
+		rmh.cmd_len = 1;
+		rmh.stat_len = PCXHR_SIZE_MAX_STATUS;
+		rmh.dsp_stat = 0;
+		rmh.cmd_idx = CMD_LAST_INDEX;
+		if( ! pcxhr_send_msg(mgr, &rmh) ) {
+			int i;
+			for(i=0; i<rmh.stat_len; i++) {
+				snd_iprintf(buffer, "debug[%02d] = %06x\n", i,  rmh.stat[0]);
+			}
+		}
+	} else {
+		snd_iprintf(buffer, "no firmware loaded\n");
+	}
+	snd_iprintf(buffer, "\n");
+}
+static void pcxhr_proc_sync(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+{
+	pcxhr_t *chip = entry->private_data;
+	pcxhr_mgr_t *mgr = chip->mgr;
+	static char *texts[7] = {"Internal", "Word", "AES Sync", "AES 1", "AES 2", "AES 3", "AES 4"};
+
+	snd_iprintf(buffer, "\n%s\n", mgr->longname);
+	snd_iprintf(buffer, "Current Sample Clock\t: %s\n", texts[mgr->cur_clock_type]);
+	snd_iprintf(buffer, "Current Sample Rate\t= %d\n", mgr->sample_rate_real);
+
+	/* commands available when embedded DSP is running */
+	if( mgr->dsp_loaded & ( 1 << PCXHR_FIRMWARE_DSP_MAIN_INDEX) ) {
+		int i, err, sample_rate;
+		for(i=PCXHR_CLOCK_TYPE_WORD_CLOCK; i<(3 + mgr->capture_chips); i++) {
+			err = pcxhr_get_external_clock(mgr, i, &sample_rate);
+			if(err) break;
+			snd_iprintf(buffer, "%s Clock\t\t= %d\n", texts[i], sample_rate);
 		}
 	} else {
 		snd_iprintf(buffer, "no firmware loaded\n");
@@ -737,7 +1012,10 @@ static void __devinit pcxhr_proc_init(pcxhr_t *chip)
 	snd_info_entry_t *entry;
 
 	if (! snd_card_proc_new(chip->card, "info", &entry)) {
-		snd_info_set_text_ops(entry, chip, 1024, pcxhr_proc_read);
+		snd_info_set_text_ops(entry, chip, 1024, pcxhr_proc_info);
+	}
+	if (! snd_card_proc_new(chip->card, "sync", &entry)) {
+		snd_info_set_text_ops(entry, chip, 1024, pcxhr_proc_sync);
 	}
 }
 /* end of proc interface */
@@ -848,7 +1126,6 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 
 	/* ISR spinlock  */
 	spin_lock_init(&mgr->lock);
-
 	spin_lock_init(&mgr->msg_lock);
 
 	/* init setup mutex*/
@@ -856,6 +1133,7 @@ static int __devinit pcxhr_probe(struct pci_dev *pci, const struct pci_device_id
 
 	/* init taslket */
 	tasklet_init( &mgr->msg_taskq, pcxhr_msg_tasklet, (unsigned long) mgr);
+	tasklet_init( &mgr->trigger_taskq, pcxhr_trigger_tasklet, (unsigned long) mgr);
 
 	for (i=0; i<PCXHR_MAX_CARDS; i++) {
 		snd_card_t *card;

@@ -30,6 +30,7 @@
 #include "pcxhr_hwdep.h"
 #include "pcxhr_core.h"
 #include <sound/control.h>
+#include <sound/asoundef.h>
 #include "pcxhr_mixer.h"
 
 
@@ -186,7 +187,7 @@ static snd_kcontrol_new_t pcxhr_control_output_switch = {
 #define VALID_STREAM_LEVEL_1_MASK	0x200000
 #define VALID_STREAM_LEVEL_2_MASK	0x100000
 
-int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx)
+static int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx)
 {
 	int err;
 	pcxhr_rmh_t rmh;
@@ -227,7 +228,7 @@ int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx)
 #define VALID_AUDIO_IO_MUTE_LEVEL	0x000004
 #define VALID_AUDIO_IO_MUTE_MONITOR_1	0x000008
 
-int pcxhr_update_audio_pipe_level(pcxhr_t* chip, int capture, int channel)
+static int pcxhr_update_audio_pipe_level(pcxhr_t* chip, int capture, int channel)
 {
 	int err;
 	pcxhr_rmh_t rmh;
@@ -366,7 +367,7 @@ static int pcxhr_pcm_sw_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucon
 
 static snd_kcontrol_new_t pcxhr_control_pcm_switch = {
 	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
-	/* name will be filled later */
+	.name =		"PCM Playback Switch",
 	.count =	PCXHR_PLAYBACK_STREAMS,
 	.info =		pcxhr_sw_info,		/* shared */
 	.get =		pcxhr_pcm_sw_get,
@@ -456,44 +457,382 @@ static snd_kcontrol_new_t pcxhr_control_monitor_sw = {
 };
 
 
-static void pcxhr_reset_audio_levels(pcxhr_t *chip)
+
+/*
+ * audio source select
+ */
+#define PCXHR_SOURCE_AUDIO01_UER	0x000100
+#define PCXHR_SOURCE_AUDIO01_SYNC	0x000200
+#define PCXHR_SOURCE_AUDIO23_UER	0x000400
+#define PCXHR_SOURCE_AUDIO45_UER	0x001000
+#define PCXHR_SOURCE_AUDIO67_UER	0x004000
+
+static int pcxhr_set_audio_source(pcxhr_t* chip)
+{
+	pcxhr_rmh_t rmh;
+	unsigned int mask, reg;
+	unsigned int codec;
+	int err, use_src;
+
+	switch(chip->chip_idx) {
+	case 0 : mask = PCXHR_SOURCE_AUDIO01_UER; codec = CS8420_01_CS; break;
+	case 1 : mask = PCXHR_SOURCE_AUDIO23_UER; codec = CS8420_23_CS; break;
+	case 2 : mask = PCXHR_SOURCE_AUDIO45_UER; codec = CS8420_45_CS; break;
+	case 3 : mask = PCXHR_SOURCE_AUDIO67_UER; codec = CS8420_67_CS; break;
+	default: return -EINVAL;
+	}
+	reg = 0;	/* audio source from analog plug */
+	use_src = 0;	/* do not activate codec SRC */
+
+	if(chip->audio_capture_source != 0) {
+		reg = mask;	/* audio source from digital plug */
+		if(chip->audio_capture_source == 2) use_src = 1;
+	}
+	pcxhr_write_io_num_reg_cont(chip->mgr, mask, reg, NULL);
+
+	pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);	/* set codec SRC on off */
+	rmh.cmd_len = 3;
+	rmh.cmd[0] |= IO_NUM_UER_CHIP_REG;
+	rmh.cmd[1] = codec;
+	rmh.cmd[2] = (CS8420_DATA_FLOW_CTL & CHIP_SIG_AND_MAP_SPI) | (use_src ? 0x41 : 0x54);
+	err = pcxhr_send_msg(chip->mgr, &rmh);
+	if(err) return err;
+	rmh.cmd[2] = (CS8420_CLOCK_SRC_CTL & CHIP_SIG_AND_MAP_SPI) | (use_src ? 0x41 : 0x49);
+	err = pcxhr_send_msg(chip->mgr, &rmh);
+	return err;
+}
+
+static int pcxhr_audio_src_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	static char *texts[3] = {"Analog", "Digital", "Digi+SRC"};
+
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 3;
+	if (uinfo->value.enumerated.item > 2)
+		uinfo->value.enumerated.item = 2;
+	strcpy(uinfo->value.enumerated.name,
+		texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int pcxhr_audio_src_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_t *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.enumerated.item[0] = chip->audio_capture_source;
+	return 0;
+}
+
+static int pcxhr_audio_src_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_t *chip = snd_kcontrol_chip(kcontrol);
+	int ret = 0;
+	down(&chip->mgr->mixer_mutex);
+	if (chip->audio_capture_source != ucontrol->value.enumerated.item[0]) {
+		chip->audio_capture_source = ucontrol->value.enumerated.item[0];
+		pcxhr_set_audio_source(chip);
+		ret = 1;
+	}
+	up(&chip->mgr->mixer_mutex);
+	return ret;
+}
+
+static snd_kcontrol_new_t pcxhr_control_audio_src = {
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =		"Capture Source",
+	.info =		pcxhr_audio_src_info,
+	.get =		pcxhr_audio_src_get,
+	.put =		pcxhr_audio_src_put,
+};
+
+
+/*
+ * clock type selection
+ * enum pcxhr_clock_type {
+ *		PCXHR_CLOCK_TYPE_INTERNAL = 0,
+ *		PCXHR_CLOCK_TYPE_WORD_CLOCK,
+ *		PCXHR_CLOCK_TYPE_AES_SYNC,
+ *		PCXHR_CLOCK_TYPE_AES_1,
+ *		PCXHR_CLOCK_TYPE_AES_2,
+ *		PCXHR_CLOCK_TYPE_AES_3,
+ *		PCXHR_CLOCK_TYPE_AES_4,
+ *	};
+ */
+
+static int pcxhr_clock_type_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	static char *texts[7] = {"Internal", "WordClock", "AES Sync", "AES 1", "AES 2", "AES 3", "AES 4"};
+	pcxhr_mgr_t *mgr = snd_kcontrol_chip(kcontrol);
+	int clock_items = 3 + mgr->capture_chips;
+
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = clock_items;
+	if (uinfo->value.enumerated.item >= clock_items)
+		uinfo->value.enumerated.item = clock_items-1;
+	strcpy(uinfo->value.enumerated.name,
+		texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int pcxhr_clock_type_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_mgr_t *mgr = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.enumerated.item[0] = mgr->use_clock_type;
+	return 0;
+}
+
+static int pcxhr_clock_type_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_mgr_t *mgr = snd_kcontrol_chip(kcontrol);
+	int rate, ret = 0;
+	down(&mgr->mixer_mutex);
+	if (mgr->use_clock_type != ucontrol->value.enumerated.item[0]) {
+		down(&mgr->setup_mutex);
+		mgr->use_clock_type = ucontrol->value.enumerated.item[0];
+		if(mgr->use_clock_type)	pcxhr_get_external_clock(mgr, mgr->use_clock_type, &rate);
+		else			rate = mgr->sample_rate;
+		if(rate) {
+			pcxhr_set_clock(mgr, rate);
+			if(mgr->sample_rate) mgr->sample_rate = rate;
+		}
+		up(&mgr->setup_mutex);
+		ret = 1;	/* return 1 even if the set was not done. ok ? */
+	}
+	up(&mgr->mixer_mutex);
+	return ret;
+}
+
+static snd_kcontrol_new_t pcxhr_control_clock_type = {
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =		"Clock Mode",
+	.info =		pcxhr_clock_type_info,
+	.get =		pcxhr_clock_type_get,
+	.put =		pcxhr_clock_type_put,
+};
+
+/*
+ * clock rate control
+ * specific control that scans the sample rates on the external plugs
+ */
+static int pcxhr_clock_rate_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	pcxhr_mgr_t *mgr = snd_kcontrol_chip(kcontrol);
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = 3 + mgr->capture_chips;
+	uinfo->value.integer.min = 0;		/* clock not present */
+	uinfo->value.integer.max = 192000;	/* max sample rate 192 kHz */
+	return 0;
+}
+
+static int pcxhr_clock_rate_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_mgr_t *mgr = snd_kcontrol_chip(kcontrol);
+	int i, err, rate;
+	down(&mgr->mixer_mutex);
+	for(i=0; i<(3+mgr->capture_chips); i++) {
+		if(i == PCXHR_CLOCK_TYPE_INTERNAL) {
+			rate = mgr->sample_rate_real;
+		} else {
+			err = pcxhr_get_external_clock(mgr, i, &rate);
+			if(err) break;
+		}
+		ucontrol->value.integer.value[i] = rate;
+	}
+	up(&mgr->mixer_mutex);
+	return 0;
+}
+
+static snd_kcontrol_new_t pcxhr_control_clock_rate = {
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
+	.iface =	SNDRV_CTL_ELEM_IFACE_CARD,
+	.name =		"Clock Rates",
+	.info =		pcxhr_clock_rate_info,
+	.get =		pcxhr_clock_rate_get,
+};
+
+/*
+ * IEC958 status bits
+ */
+static int pcxhr_iec958_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_IEC958;
+	uinfo->count = 1;
+	return 0;
+}
+
+static int pcxhr_iec958_capture_byte(pcxhr_t *chip, int aes_idx, unsigned char* aes_bits)
+{
+	int i, err;
+	unsigned char temp;
+	pcxhr_rmh_t rmh;
+	pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_READ);
+	rmh.cmd[0] |= IO_NUM_UER_CHIP_REG;
+	switch(chip->chip_idx) {
+	case 0:	rmh.cmd[1] = CS8420_01_CS; break;	/* use CS8416_01_CS for AES SYNC plug */
+	case 1:	rmh.cmd[1] = CS8420_23_CS; break;
+	case 2:	rmh.cmd[1] = CS8420_45_CS; break;
+	case 3:	rmh.cmd[1] = CS8420_67_CS; break;
+	default: return -EINVAL;
+	}
+	switch(aes_idx) {
+	case 0:	rmh.cmd[2] = CS8420_CSB0; break;	/* use CS8416_CSBx for AES SYNC plug */
+	case 1:	rmh.cmd[2] = CS8420_CSB1; break;
+	case 2:	rmh.cmd[2] = CS8420_CSB2; break;
+	case 3:	rmh.cmd[2] = CS8420_CSB3; break;
+	case 4:	rmh.cmd[2] = CS8420_CSB4; break;
+	default: return -EINVAL;
+	}
+	rmh.cmd[1] &= 0x0fffff;			/* size and code the chip id for the fpga */
+	rmh.cmd[2] &= CHIP_SIG_AND_MAP_SPI;	/* chip signature + map for spi read */
+	rmh.cmd_len = 3;
+	err = pcxhr_send_msg(chip->mgr, &rmh);
+	if(err) return err;
+	temp = 0;
+	for(i=0; i<8; i++) {	/* attention : reversed bit order (not with CS8416_01_CS) */
+		temp <<= 1;
+		if(rmh.stat[1] & (1<<i)) temp |= 1;
+	}
+	snd_printdd("read iec958 AES %d byte %d = 0x%x\n", chip->chip_idx, aes_idx, temp);
+	*aes_bits = temp;
+	return 0;
+}
+
+static int pcxhr_iec958_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_t *chip = snd_kcontrol_chip(kcontrol);
+	unsigned char aes_bits;
+	int i, err;
+	down(&chip->mgr->mixer_mutex);
+	for(i=0; i<5; i++) {
+		if(kcontrol->private_value == 0) {	/* playback */
+			aes_bits = chip->aes_bits[i];
+		} else {				/* capture */
+			err = pcxhr_iec958_capture_byte(chip, i, &aes_bits);
+			if(err) break;
+		}
+		ucontrol->value.iec958.status[i] = aes_bits;
+	}
+	up(&chip->mgr->mixer_mutex);
+        return 0;
+}
+
+static int pcxhr_iec958_mask_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	int i;
-/* only for test purpose, remove later */
-#ifdef CONFIG_SND_DEBUG
-	for(i=0; i<2; i++) {
-		int j;
-		chip->analog_capture_volume[i]  = PCXHR_ANALOG_CAPTURE_ZERO_LEVEL;
-		chip->analog_playback_active[i] = 1;
-		chip->analog_playback_volume[i] = PCXHR_ANALOG_PLAYBACK_ZERO_LEVEL;
-		for(j=0; j<PCXHR_PLAYBACK_STREAMS; j++) {
-			chip->digital_playback_active[j][i] = 1;
-			chip->digital_playback_volume[j][i] = PCXHR_DIGITAL_ZERO_LEVEL;
+	for(i=0; i<5; i++) {
+		ucontrol->value.iec958.status[i] = 0xff;
+	}
+        return 0;
+}
+
+static int pcxhr_iec958_update_byte(pcxhr_t *chip, int aes_idx, unsigned char aes_bits)
+{
+	int i, err;
+	unsigned char new_bits = aes_bits;
+	unsigned char old_bits = chip->aes_bits[aes_idx];
+	for(i=0; i<8; i++) {
+		if((old_bits & 0x01) != (new_bits & 0x01)) {
+			pcxhr_rmh_t rmh;
+			unsigned int cmd = chip->chip_idx & 0x03;	/* chip index 0..3 */
+			if(chip->chip_idx > 3)	cmd |= 1 << 22;		/* new bit used if chip_idx>3 (PCX1222HR) */
+			cmd |= ((aes_idx << 3) + i) << 2;		/* add bit offset */
+			cmd |= (new_bits & 0x01) << 23;			/* add bit value */
+			pcxhr_init_rmh(&rmh, CMD_ACCESS_IO_WRITE);
+			rmh.cmd[0] |= IO_NUM_REG_CUER;
+			rmh.cmd[1] = cmd;
+			rmh.cmd_len = 2;
+			snd_printdd("write iec958 AES %d byte %d bit %d (cmd %x)\n", chip->chip_idx, aes_idx, i, cmd);
+			err = pcxhr_send_msg(chip->mgr, &rmh);
+			if(err) return err;
 		}
-		chip->digital_capture_volume[i] = PCXHR_DIGITAL_ZERO_LEVEL;
-		chip->monitoring_active[i] = 0;
-		chip->monitoring_volume[i] = PCXHR_DIGITAL_ZERO_LEVEL;
+		old_bits >>= 1;
+		new_bits >>= 1;
 	}
-#endif
-/* test end */
+	chip->aes_bits[aes_idx] = aes_bits;
+	return 0;
+}
+
+static int pcxhr_iec958_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcxhr_t *chip = snd_kcontrol_chip(kcontrol);
+	int i, changed = 0;
+	/* playback */
+	down(&chip->mgr->mixer_mutex);
+	for(i=0; i<5; i++) {
+		if(ucontrol->value.iec958.status[i] != chip->aes_bits[i]) {
+			pcxhr_iec958_update_byte(chip, i, ucontrol->value.iec958.status[i]);
+			changed = 1;
+		}
+	}
+	up(&chip->mgr->mixer_mutex);
+	return changed;
+}
+
+static snd_kcontrol_new_t pcxhr_control_playback_iec958_mask = {
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =		SNDRV_CTL_NAME_IEC958("",PLAYBACK,MASK),
+	.info =		pcxhr_iec958_info,
+	.get =		pcxhr_iec958_mask_get
+};
+static snd_kcontrol_new_t pcxhr_control_playback_iec958 = {
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =         SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
+	.info =         pcxhr_iec958_info,
+	.get =          pcxhr_iec958_get,
+	.put =          pcxhr_iec958_put,
+	.private_value = 0 /* playback */
+};
+
+static snd_kcontrol_new_t pcxhr_control_capture_iec958_mask = {
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =		SNDRV_CTL_NAME_IEC958("",CAPTURE,MASK),
+	.info =		pcxhr_iec958_info,
+	.get =		pcxhr_iec958_mask_get
+};
+static snd_kcontrol_new_t pcxhr_control_capture_iec958 = {
+	.access =	SNDRV_CTL_ELEM_ACCESS_READ,
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =         SNDRV_CTL_NAME_IEC958("",CAPTURE,DEFAULT),
+	.info =         pcxhr_iec958_info,
+	.get =          pcxhr_iec958_get,
+	.private_value = 1 /* capture */
+};
+
+static void pcxhr_init_audio_levels(pcxhr_t *chip)
+{
+	int i;
 	for(i=0; i<2; i++) {
+		if(chip->nb_streams_play) {
+			int j;
+			/* at boot time the digital volumes are unmuted 0dB */
+			for(j=0; j<PCXHR_PLAYBACK_STREAMS; j++) {
+				chip->digital_playback_active[j][i] = 1;
+				chip->digital_playback_volume[j][i] = PCXHR_DIGITAL_ZERO_LEVEL;
+			}
+			/* after boot, only two bits are set on the uer interface */
+			chip->aes_bits[0] = IEC958_AES0_PROFESSIONAL | IEC958_AES0_PRO_FS_48000;
 /* only for test purpose, remove later */
 #ifdef CONFIG_SND_DEBUG
-		/* analog volumes for playback (already is LEVEL_MIN after boot) */
-		if(chip->nb_streams_play)	pcxhr_update_analog_audio_level(chip, 0, i);
-		/* analog levels for capture (already is LEVEL_MIN after boot) */
-		if(chip->nb_streams_capt)	pcxhr_update_analog_audio_level(chip, 1, i);
+			/* analog volumes for playback (is LEVEL_MIN after boot) */
+			chip->analog_playback_active[i] = 1;
+			chip->analog_playback_volume[i] = PCXHR_ANALOG_PLAYBACK_ZERO_LEVEL;
+			pcxhr_update_analog_audio_level(chip, 0, i);
 #endif
 /* test end */
-		/* digital capture level (default is 0dB unmuted after capture pipe allocation) */
-		if(chip->nb_streams_capt)	pcxhr_update_audio_pipe_level(chip, 1, i);
-		/* digital monitoring level (default is 0dB after playback pipe allocation, but muted!) */
-		/* pcxhr_update_audio_pipe_level(chip, 0, i); */ /* no need to update */
-	}
-	if(chip->nb_streams_play) {
-		for(i=0; i<PCXHR_PLAYBACK_STREAMS; i++) {
-			/* digital playback stream levels (default is 0dB unmuted after pipe allocation) */
-			pcxhr_update_playback_stream_level(chip, i);
+		}
+		if(chip->nb_streams_capt) {
+			/* at boot time the digital volumes are unmuted 0dB */
+			chip->digital_capture_volume[i] = PCXHR_DIGITAL_ZERO_LEVEL;
+/* only for test purpose, remove later */
+#ifdef CONFIG_SND_DEBUG
+			/* analog volumes for playback (is LEVEL_MIN after boot) */
+			chip->analog_capture_volume[i]  = PCXHR_ANALOG_CAPTURE_ZERO_LEVEL;
+			pcxhr_update_analog_audio_level(chip, 1, i);
+#endif
+/* test end */
 		}
 	}
 
@@ -530,10 +869,13 @@ int pcxhr_create_mixer(pcxhr_mgr_t *mgr)
 			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
 				return err;
 
-			temp = pcxhr_control_pcm_switch;
-			temp.name = "PCM Playback Switch";
-			temp.private_value = 0; /* playback */
-			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_pcm_switch, chip))) < 0)
+				return err;
+
+			/* IEC958 controls */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_playback_iec958_mask, chip))) < 0)
+				return err;
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_playback_iec958, chip))) < 0)
 				return err;
 		}
 		if(chip->nb_streams_capt) {
@@ -550,6 +892,14 @@ int pcxhr_create_mixer(pcxhr_mgr_t *mgr)
 			temp.private_value = 1; /* capture */
 			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&temp, chip))) < 0)
 				return err;
+			/* Audio source */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_audio_src, chip))) < 0)
+				return err;
+			/* IEC958 controls */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_capture_iec958_mask, chip))) < 0)
+				return err;
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_capture_iec958, chip))) < 0)
+				return err;
 		}
 		/* monitoring only if playback and capture device available */
 		if((chip->nb_streams_capt>0) && (chip->nb_streams_play>0)) {
@@ -560,8 +910,18 @@ int pcxhr_create_mixer(pcxhr_mgr_t *mgr)
 				return err;
 		}
 
-		/* init all mixer data and program the master volumes/switches */
-		pcxhr_reset_audio_levels(chip);
+		if(i==0) {
+			/* clock mode only one control per pcxhr */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_clock_type, mgr))) < 0)
+				return err;
+			/* non standard control used to scan the external clock presence/frequencies */
+			if ((err = snd_ctl_add(chip->card, snd_ctl_new1(&pcxhr_control_clock_rate, mgr))) < 0)
+				return err;
+		}
+
+		/* init values for the mixer data */
+		pcxhr_init_audio_levels(chip);
 	}
+
 	return 0;
 }

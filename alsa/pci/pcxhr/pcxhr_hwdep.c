@@ -133,7 +133,7 @@ void pcxhr_reset_board(pcxhr_mgr_t *mgr)
 
 #define MAX_WAIT_FOR_DSP	20
 
-static int pcxhr_set_pipe_state(pcxhr_mgr_t *mgr, pcxhr_pipe_t* pipe_array[], int nb_pipes, int start_pipe)
+int pcxhr_set_pipe_state(pcxhr_mgr_t *mgr, pcxhr_pipe_t* pipe_array[], int nb_pipes, int start_pipe)
 {
 	int err, i, j;
 	int current_state, change;
@@ -245,9 +245,9 @@ static int pcxhr_dsp_allocate_pipe( pcxhr_mgr_t *mgr, pcxhr_pipe_t *pipe, int is
 	snd_assert(stream_count <= MASK_FIRST_FIELD);
 	pipe->is_capture = is_capture;
 	pipe->first_audio = pin;
-	/* define pipe with flag P_PCM_ONLY_MASK (0x020000) */
+	/* define pipe (P_PCM_ONLY_MASK (0x020000) is not necessary) */
 	pcxhr_init_rmh(&rmh, CMD_RES_PIPE);
-	pcxhr_set_pipe_cmd_params(&rmh, is_capture, pin, audio_count, stream_count | 0x020000);
+	pcxhr_set_pipe_cmd_params(&rmh, is_capture, pin, audio_count, stream_count); 
 	err = pcxhr_send_msg(mgr, &rmh);
 	if( err < 0) {
 		snd_printk(KERN_ERR "error pipe allocation (CMD_RES_PIPE) err=%x!\n", err );
