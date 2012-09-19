@@ -2051,15 +2051,15 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 		ac97->init(ac97);
 	snd_ac97_get_name(ac97, ac97->id, name, 0);
 	snd_ac97_get_name(NULL, ac97->id, name, 0);  // ac97->id might be changed in the special setup code
-	if (card->mixername[0] == '\0') {
-		strcpy(card->mixername, name);
-	} else {
-		if (strlen(card->mixername) + 1 + strlen(name) + 1 <= sizeof(card->mixername)) {
-			strcat(card->mixername, ",");
-			strcat(card->mixername, name);
-		}
-	}
 	if (ac97_is_audio(ac97)) {
+		if (card->mixername[0] == '\0') {
+			strcpy(card->mixername, name);
+		} else {
+			if (strlen(card->mixername) + 1 + strlen(name) + 1 <= sizeof(card->mixername)) {
+				strcat(card->mixername, ",");
+				strcat(card->mixername, name);
+			}
+		}
 		if ((err = snd_component_add(card, "AC97a")) < 0) {
 			snd_ac97_free(ac97);
 			return err;
@@ -2240,15 +2240,15 @@ int snd_ac97_modem(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 		ac97->init(ac97);
 	snd_ac97_get_name(ac97, ac97->id, name, 1);
 	snd_ac97_get_name(NULL, ac97->id, name, 1);  // ac97->id might be changed in the special setup code
-	if (card->mixername[0] == '\0') {
-		strcpy(card->mixername, name);
-	} else {
-		if (strlen(card->mixername) + 1 + strlen(name) + 1 <= sizeof(card->mixername)) {
-			strcat(card->mixername, ",");
-			strcat(card->mixername, name);
-		}
-	}
 	if (ac97_is_modem(ac97)) {
+		if (card->mixername[0] == '\0') {
+			strcpy(card->mixername, name);
+		} else {
+			if (strlen(card->mixername) + 1 + strlen(name) + 1 <= sizeof(card->mixername)) {
+				strcat(card->mixername, ",");
+				strcat(card->mixername, name);
+			}
+		}
 		if ((err = snd_component_add(card, "AC97m")) < 0) {
 			snd_ac97_free(ac97);
 			return err;
