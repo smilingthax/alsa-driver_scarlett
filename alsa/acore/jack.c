@@ -10,4 +10,8 @@
 #ifndef SW_VIDEOOUT_INSERT
 #define SW_VIDEOOUT_INSERT	0x08  /* set = inserted */
 #endif
+#ifndef SW_LINEIN_INSERT
+#define SW_LINEIN_INSERT	0x0d  /* set = inserted */
+#endif
+
 #include "../alsa-kernel/core/jack.c"
