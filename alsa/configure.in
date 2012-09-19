@@ -36,6 +36,8 @@ SRCDIR=`/bin/pwd`
 AC_SUBST(SRCDIR)
 AC_MSG_RESULT($SRCDIR)
 
+ALSA_TOPLEVEL_INIT
+
 dnl Check for cross compile...
 AC_MSG_CHECKING(cross compile)
 AC_ARG_WITH(cross,
@@ -459,6 +461,7 @@ if test ! -f include/linux/workqueue.h; then
     touch include/linux/workqueue.h
   fi
 fi
+CHECK_KERNEL_HEADER(linux/dma-mapping.h)
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
 CHECK_KERNEL_HEADER(linux/device.h)
 CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
@@ -1487,7 +1490,6 @@ CHECK_KERNEL_CONFIG(CONFIG_X86_PC9800, [PC9800 support in kernel])
 AC_SUBST(CONFIG_X86_PC9800)
 
 dnl Check for which cards to compile driver for...
-ALSA_TOPLEVEL_INIT
 ALSA_TOPLEVEL_SELECT
 
 dnl Some late substitutes...
