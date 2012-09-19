@@ -110,7 +110,7 @@ function start() {
   #
   # run card-dependent scripts
   for i in $drivers; do
-    t=`echo $i | sed -e 's/snd-card-\(.*\)/\1/'`
+    t=${i##snd-}
     if [ -x $alsascrdir/$t ]; then
       $alsascrdir/$t
     fi

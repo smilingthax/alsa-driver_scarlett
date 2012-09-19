@@ -56,6 +56,3 @@ CFLAGS		= $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -p
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
-
-# Hack for SB16 CSP module
-CONFIG_SND_SB16_CSP=y
