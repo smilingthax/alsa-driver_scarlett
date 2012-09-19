@@ -6971,6 +6971,7 @@ static struct snd_pci_quirk alc883_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x1462, 0xa422, "MSI", ALC883_TARGA_2ch_DIG),
 	SND_PCI_QUIRK(0x1025, 0x006c, "Acer Aspire 9810", ALC883_ACER_ASPIRE),
 	SND_PCI_QUIRK(0x1025, 0x0110, "Acer Aspire", ALC883_ACER_ASPIRE),
+	SND_PCI_QUIRK(0x1025, 0x0112, "Acer Aspire 9303", ALC883_ACER_ASPIRE),
 	SND_PCI_QUIRK(0x1025, 0, "Acer laptop", ALC883_ACER),
 	SND_PCI_QUIRK(0x15d9, 0x8780, "Supermicro PDSBA", ALC883_3ST_6ch),
 	SND_PCI_QUIRK(0x161f, 0x2054, "Medion laptop", ALC883_MEDION),
@@ -7746,10 +7747,20 @@ static struct hda_input_mux alc262_HP_capture_source = {
 	.num_items = 5,
 	.items = {
 		{ "Mic", 0x0 },
-		{ "Front Mic", 0x3 },
+		{ "Front Mic", 0x1 },
 		{ "Line", 0x2 },
 		{ "CD", 0x4 },
 		{ "AUX IN", 0x6 },
+	},
+};
+
+static struct hda_input_mux alc262_HP_D7000_capture_source = {
+	.num_items = 4,
+	.items = {
+		{ "Mic", 0x0 },
+		{ "Front Mic", 0x2 },
+		{ "Line", 0x1 },
+		{ "CD", 0x4 },
 	},
 };
 
@@ -8357,7 +8368,7 @@ static struct alc_config_preset alc262_presets[] = {
 		.hp_nid = 0x03,
 		.num_channel_mode = ARRAY_SIZE(alc262_modes),
 		.channel_mode = alc262_modes,
-		.input_mux = &alc262_HP_capture_source,
+		.input_mux = &alc262_HP_D7000_capture_source,
 	},
 	[ALC262_HP_BPC_D7000_WL] = {
 		.mixers = { alc262_HP_BPC_WildWest_mixer,
@@ -8368,7 +8379,7 @@ static struct alc_config_preset alc262_presets[] = {
 		.hp_nid = 0x03,
 		.num_channel_mode = ARRAY_SIZE(alc262_modes),
 		.channel_mode = alc262_modes,
-		.input_mux = &alc262_HP_capture_source,
+		.input_mux = &alc262_HP_D7000_capture_source,
 	},
 	[ALC262_BENQ_ED8] = {
 		.mixers = { alc262_base_mixer },

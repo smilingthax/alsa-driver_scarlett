@@ -135,11 +135,14 @@ MODULE_PARM_DESC(joystick_port, "Joystick port address.");
 #define CM_ADCDACLEN_280	0x00003000
 
 #define CM_CH1_SRATE_176K	0x00000800
+#define CM_CH1_SRATE_96K	0x00000800	/* model 055? */
 #define CM_CH1_SRATE_88K	0x00000400
 #define CM_CH0_SRATE_176K	0x00000200
+#define CM_CH0_SRATE_96K	0x00000200	/* model 055? */
 #define CM_CH0_SRATE_88K	0x00000100
 
 #define CM_SPDIF_INVERSE2	0x00000080	/* model 055? */
+#define CM_DBLSPDS		0x00000040
 
 #define CM_CH1FMT_MASK		0x0000000C
 #define CM_CH1FMT_SHIFT		2
@@ -812,6 +815,16 @@ static int snd_cmipci_pcm_prepare(struct cmipci *cm, struct cmipci_pcm *rec,
 		val &= ~CM_CH0FMT_MASK;
 		val |= rec->fmt << CM_CH0FMT_SHIFT;
 	}
+	if (cm->chip_version == 68) {
+		if (runtime->rate == 88200)
+			val |= CM_CH0_SRATE_88K << (rec->ch * 2);
+		else
+			val &= ~(CM_CH0_SRATE_88K << (rec->ch * 2));
+		if (runtime->rate == 96000)
+			val |= CM_CH0_SRATE_96K << (rec->ch * 2);
+		else
+			val &= ~(CM_CH0_SRATE_96K << (rec->ch * 2));
+	}
 	snd_cmipci_write(cm, CM_REG_CHFORMAT, val);
 	//snd_printd("cmipci: chformat = %08x\n", val);
 
@@ -1198,15 +1211,19 @@ static int setup_spdif_playback(struct cmipci *cm, struct snd_pcm_substream *sub
 			snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_PLAYBACK_SPDF);
 		setup_ac3(cm, subs, do_ac3, rate);
 
-		if (rate == 48000)
+		if (rate == 48000 || rate == 96000)
 			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_SPDIF48K | CM_SPDF_AC97);
 		else
 			snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_SPDIF48K | CM_SPDF_AC97);
-
+		if (rate > 48000)
+			snd_cmipci_set_bit(cm, CM_REG_CHFORMAT, CM_DBLSPDS);
+		else
+			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_DBLSPDS);
 	} else {
 		/* they are controlled via "IEC958 Output Switch" */
 		/* snd_cmipci_clear_bit(cm, CM_REG_LEGACY_CTRL, CM_ENSPDOUT); */
 		/* snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_SPDO2DAC); */
+		snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_DBLSPDS);
 		snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1, CM_PLAYBACK_SPDF);
 		setup_ac3(cm, subs, 0, 0);
 	}
@@ -1226,7 +1243,7 @@ static int snd_cmipci_playback_prepare(struct snd_pcm_substream *substream)
 	int rate = substream->runtime->rate;
 	int err, do_spdif, do_ac3 = 0;
 
-	do_spdif = ((rate == 44100 || rate == 48000) &&
+	do_spdif = (rate >= 44100 &&
 		    substream->runtime->format == SNDRV_PCM_FORMAT_S16_LE &&
 		    substream->runtime->channels == 2);
 	if (do_spdif && cm->can_ac3_hw) 
@@ -1514,7 +1531,11 @@ static int snd_cmipci_playback_open(struct snd_pcm_substream *substream)
 	if ((err = open_device_check(cm, CM_OPEN_PLAYBACK, substream)) < 0)
 		return err;
 	runtime->hw = snd_cmipci_playback;
-	runtime->hw.channels_max = cm->max_channels;
+	if (cm->chip_version == 68) {
+		runtime->hw.rates |= SNDRV_PCM_RATE_88200 |
+				     SNDRV_PCM_RATE_96000;
+		runtime->hw.rate_max = 96000;
+	}
 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x10000);
 	cm->dig_pcm_status = cm->dig_status;
 	return 0;
@@ -1557,6 +1578,11 @@ static int snd_cmipci_playback2_open(struct snd_pcm_substream *substream)
 			else if (cm->max_channels == 8)
 				snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS, &hw_constraints_channels_8);
 		}
+		if (cm->chip_version == 68) {
+			runtime->hw.rates |= SNDRV_PCM_RATE_88200 |
+					     SNDRV_PCM_RATE_96000;
+			runtime->hw.rate_max = 96000;
+		}
 		snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x10000);
 	}
 	mutex_unlock(&cm->open_mutex);
@@ -1575,6 +1601,11 @@ static int snd_cmipci_playback_spdif_open(struct snd_pcm_substream *substream)
 		runtime->hw = snd_cmipci_playback_spdif;
 		if (cm->chip_version >= 37)
 			runtime->hw.formats |= SNDRV_PCM_FMTBIT_S32_LE;
+		if (cm->chip_version == 68) {
+			runtime->hw.rates |= SNDRV_PCM_RATE_88200 |
+					     SNDRV_PCM_RATE_96000;
+			runtime->hw.rate_max = 96000;
+		}
 	} else {
 		runtime->hw = snd_cmipci_playback_iec958_subframe;
 	}
@@ -2767,7 +2798,7 @@ static int __devinit snd_cmipci_create_fm(struct cmipci *cm, long fm_port)
 	if (!fm_port)
 		goto disable_fm;
 
-	if (cm->chip_version > 33) {
+	if (cm->chip_version >= 39) {
 		/* first try FM regs in PCI port range */
 		iosynth = cm->iobase + CM_REG_FM_PCI;
 		err = snd_opl3_create(cm->card, iosynth, iosynth + 2,
@@ -2821,6 +2852,7 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 	unsigned int val;
 	long iomidi;
 	int integrated_midi = 0;
+	char modelstr[16];
 	int pcm_index, pcm_spdif_index;
 	static struct pci_device_id intel_82437vx[] = {
 		{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82437VX) },
@@ -2920,12 +2952,8 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 		break;
 	}
 
-	sprintf(card->shortname, "C-Media %s", card->driver);
 	if (cm->chip_version < 68) {
 		val = pci->device < 0x110 ? 8338 : 8738;
-		sprintf(card->longname,
-			"C-Media CMI%d (model %d) at 0x%lx, irq %i",
-			val, cm->chip_version, cm->iobase, cm->irq);
 	} else {
 		switch (snd_cmipci_read_b(cm, CM_REG_INT_HLDCLR + 3) & 0x03) {
 		case 0:
@@ -2950,17 +2978,21 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 				break;
 			}
 		}
-		sprintf(card->longname, "C-Media CMI%d at 0x%lx, irq %i",
-			val, cm->iobase, cm->irq);
 	}
+	sprintf(card->shortname, "C-Media CMI%d", val);
+	if (cm->chip_version < 68)
+		sprintf(modelstr, " (model %d)", cm->chip_version);
+	else
+		modelstr[0] = '\0';
+	sprintf(card->longname, "%s%s at %#lx, irq %i",
+		card->shortname, modelstr, cm->iobase, cm->irq);
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, cm, &ops)) < 0) {
 		snd_cmipci_free(cm);
 		return err;
 	}
 
-	val = 0;
-	if (cm->chip_version > 33 && mpu_port[dev] == 1) {
+	if (cm->chip_version >= 39) {
 		val = snd_cmipci_read_b(cm, CM_REG_MPU_PCI + 1);
 		if (val != 0x00 && val != 0xff) {
 			iomidi = cm->iobase + CM_REG_MPU_PCI;
@@ -2968,6 +3000,7 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 		}
 	}
 	if (!integrated_midi) {
+		val = 0;
 		iomidi = mpu_port[dev];
 		switch (iomidi) {
 		case 0x320: val = CM_VMPU_320; break;
@@ -2981,6 +3014,13 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 			snd_cmipci_write(cm, CM_REG_LEGACY_CTRL, val);
 			/* enable UART */
 			snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_UART_EN);
+			if (inb(iomidi + 1) == 0xff) {
+				snd_printk(KERN_ERR "cannot enable MPU-401 port"
+					   " at %#lx\n", iomidi);
+				snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1,
+						     CM_UART_EN);
+				iomidi = 0;
+			}
 		}
 	}
 
