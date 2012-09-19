@@ -275,32 +275,6 @@ void snd_hidden_vfree(void *obj);
 #endif
 void *snd_kcalloc(size_t size, int flags);
 char *snd_kmalloc_strdup(const char *string, int flags);
-void *snd_malloc_pages(unsigned long size, unsigned int dma_flags);
-void *snd_malloc_pages_fallback(unsigned long size, unsigned int dma_flags, unsigned long *res_size);
-void snd_free_pages(void *ptr, unsigned long size);
-#ifdef CONFIG_PCI
-void *snd_malloc_pci_pages(struct pci_dev *pci, unsigned long size, dma_addr_t *dma_addr);
-void *snd_malloc_pci_pages_fallback(struct pci_dev *pci, unsigned long size, dma_addr_t *dma_addr, unsigned long *res_size);
-void snd_free_pci_pages(struct pci_dev *pci, unsigned long size, void *ptr, dma_addr_t dma_addr);
-void *snd_malloc_pci_page(struct pci_dev *pci, dma_addr_t *dma_addr);
-#define snd_free_pci_page(pci,ptr,addr) snd_free_pci_pages(pci,PAGE_SIZE,ptr,addr)
-#endif
-#ifdef CONFIG_SBUS
-void *snd_malloc_sbus_pages(struct sbus_dev *sdev, unsigned long size, dma_addr_t *dma_addr);
-void *snd_malloc_sbus_pages_fallback(struct sbus_dev *sdev, unsigned long size, dma_addr_t *dma_addr, unsigned long *res_size);
-void snd_free_sbus_pages(struct sbus_dev *sdev, unsigned long size, void *ptr, dma_addr_t dma_addr);
-#endif
-#ifdef CONFIG_ISA
-#ifdef CONFIG_PCI
-#define snd_malloc_isa_pages(size, dma_addr) snd_malloc_pci_pages(NULL, size, dma_addr)
-#define snd_malloc_isa_pages_fallback(size, dma_addr, res_size) snd_malloc_pci_pages_fallback(NULL, size, dma_addr, res_size)
-#define snd_free_isa_pages(size, ptr, dma_addr) snd_free_pci_pages(NULL, size, ptr, dma_addr)
-#else /* !CONFIG_PCI */
-void *snd_malloc_isa_pages(unsigned long size, dma_addr_t *dma_addr);
-void *snd_malloc_isa_pages_fallback(unsigned long size, dma_addr_t *dma_addr, unsigned long *res_size);
-#define snd_free_isa_pages(size, ptr, dma_addr) snd_free_pages(ptr, size)
-#endif /* CONFIG_PCI */
-#endif /* CONFIG_ISA */
 int copy_to_user_fromio(void *dst, unsigned long src, size_t count);
 int copy_from_user_toio(unsigned long dst, const void *src, size_t count);
 

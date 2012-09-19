@@ -595,8 +595,6 @@ int snd_pcm_new_stream(snd_pcm_t *pcm, int stream, int substream_count)
 			snd_magic_kfree(substream);
 			return err;
 		}
-		substream->dma_type = SNDRV_PCM_DMA_TYPE_UNKNOWN;
-		substream->dma_private = NULL;
 		spin_lock_init(&substream->timer_lock);
 		prev = substream;
 	}

@@ -52,7 +52,6 @@
 #include <linux/slab.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_sgbuf.h>
 #include <sound/pcm_params.h>
 #include <sound/info.h>
 #include <sound/ac97_codec.h>
