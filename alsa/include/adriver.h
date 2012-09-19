@@ -1221,4 +1221,18 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 #define up_read_non_owner(sem)			up_read(sem)
 #endif
 
+/*
+ * PPC-specfic
+ */
+#ifdef CONFIG_PPC
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,18)
+#include <linux/interrupt.h>
+#ifndef NO_IRQ
+#define NO_IRQ	(-1)
+#endif
+#define irq_of_parse_and_map(node, x) \
+	(((node) && (node)->n_intrs > (x)) ? (node)->intrs[x].line : NO_IRQ)
+#endif /* < 2.6.18 */
+#endif /* PPC */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
