@@ -117,8 +117,9 @@ typedef struct _snd_pcm_ops {
 #define SNDRV_PCM_TRIGGER_SUSPEND	5
 #define SNDRV_PCM_TRIGGER_RESUME	6
 
-#define SNDRV_PCM_DMA_TYPE_CONTINUOUS	0
-#define SNDRV_PCM_DMA_TYPE_PCI		1	/* PCI continuous */
+#define SNDRV_PCM_DMA_TYPE_CONTINUOUS	0	/* continuous no-DMA memory */
+#define SNDRV_PCM_DMA_TYPE_ISA		1	/* ISA continuous */
+#define SNDRV_PCM_DMA_TYPE_PCI		2	/* PCI continuous */
 
 /* If you change this don't forget to changed snd_pcm_rates table in pcm_lib.c */
 #define SNDRV_PCM_RATE_5512		(1<<0)		/* 5512Hz */
@@ -820,15 +821,23 @@ void snd_pcm_timer_done(snd_pcm_substream_t * substream);
 
 int snd_pcm_lib_preallocate_free(snd_pcm_substream_t *substream);
 int snd_pcm_lib_preallocate_free_for_all(snd_pcm_t *pcm);
-int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size);
-int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
-
 int snd_pcm_lib_preallocate_pages(snd_pcm_substream_t *substream,
 				  size_t size, size_t max,
 				  unsigned int flags);
 int snd_pcm_lib_preallocate_pages_for_all(snd_pcm_t *pcm,
 					  size_t size, size_t max,
 					  unsigned int flags);
+int snd_pcm_lib_malloc_pages(snd_pcm_substream_t *substream, size_t size);
+int snd_pcm_lib_free_pages(snd_pcm_substream_t *substream);
+
+#ifdef CONFIG_ISA
+int snd_pcm_lib_preallocate_isa_pages(snd_pcm_substream_t *substream,
+				      size_t size, size_t max,
+				      unsigned int flags);
+int snd_pcm_lib_preallocate_isa_pages_for_all(snd_pcm_t *pcm,
+					      size_t size, size_t max,
+					      unsigned int flags);
+#endif
 #ifdef CONFIG_PCI
 int snd_pcm_lib_preallocate_pci_pages(struct pci_dev *pci,
 				      snd_pcm_substream_t *substream,

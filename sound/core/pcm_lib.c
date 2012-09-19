@@ -2358,12 +2358,16 @@ EXPORT_SYMBOL(snd_pcm_lib_readv);
 EXPORT_SYMBOL(snd_pcm_lib_buffer_bytes);
 EXPORT_SYMBOL(snd_pcm_lib_period_bytes);
 /* pcm_memory.c */
-EXPORT_SYMBOL(snd_pcm_lib_preallocate_pages);
-EXPORT_SYMBOL(snd_pcm_lib_preallocate_pages_for_all);
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_free);
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_free_for_all);
+EXPORT_SYMBOL(snd_pcm_lib_preallocate_pages);
+EXPORT_SYMBOL(snd_pcm_lib_preallocate_pages_for_all);
 EXPORT_SYMBOL(snd_pcm_lib_malloc_pages);
 EXPORT_SYMBOL(snd_pcm_lib_free_pages);
+#ifdef CONFIG_ISA
+EXPORT_SYMBOL(snd_pcm_lib_preallocate_isa_pages);
+EXPORT_SYMBOL(snd_pcm_lib_preallocate_isa_pages_for_all);
+#endif
 #ifdef CONFIG_PCI
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_pci_pages);
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_pci_pages_for_all);

@@ -62,10 +62,10 @@ MODULE_PARM_DESC(snd_enable, "Enable CS46xx soundcard.");
 MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(snd_external_amp, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_external_amp, "Force to enable external amplifer.");
-MODULE_PARM_SYNTAX(snd_external_amp, SNDRV_BOOLEAN_FALSE_DESC);
+MODULE_PARM_SYNTAX(snd_external_amp, SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
 MODULE_PARM(snd_thinkpad, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_thinkpad, "Force to enable Thinkpad's CLKRUN control.");
-MODULE_PARM_SYNTAX(snd_thinkpad, SNDRV_BOOLEAN_FALSE_DESC);
+MODULE_PARM_SYNTAX(snd_thinkpad, SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
 
 static struct pci_device_id snd_cs46xx_ids[] __devinitdata = {
         { 0x1013, 0x6001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0, },   /* CS4280 */

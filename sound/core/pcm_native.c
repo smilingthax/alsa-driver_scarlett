@@ -1880,24 +1880,25 @@ static int snd_pcm_playback_delay(snd_pcm_substream_t *substream, snd_pcm_sframe
 	spin_lock_irq(&runtime->lock);
 	switch (runtime->status->state) {
 	case SNDRV_PCM_STATE_RUNNING:
-		if (snd_pcm_update_hw_ptr(substream) >= 0) {
-			n = snd_pcm_playback_hw_avail(runtime);
-			if (put_user(n, res))
-				err = -EFAULT;
-			break;
-		}
-		/* Fall through */
-	case SNDRV_PCM_STATE_XRUN:
-		err = -EPIPE;
-		break;
 	case SNDRV_PCM_STATE_DRAINING:
 		if (snd_pcm_update_hw_ptr(substream) >= 0) {
 			n = snd_pcm_playback_hw_avail(runtime);
 			if (put_user(n, res))
 				err = -EFAULT;
 			break;
+		} else {
+			err = SNDRV_PCM_STATE_RUNNING ? -EPIPE : -EBADFD;
 		}
-		/* Fall through */
+		break;
+	case SNDRV_PCM_STATE_SUSPENDED:
+		if (runtime->status->suspended_state == SNDRV_PCM_STATE_RUNNING) {
+			n = snd_pcm_playback_hw_avail(runtime);
+			if (put_user(n, res))
+				err = -EFAULT;
+		} else {
+			err = -EBADFD;
+		}
+		break;
 	default:
 		err = -EBADFD;
 		break;
@@ -1923,6 +1924,15 @@ static int snd_pcm_capture_delay(snd_pcm_substream_t *substream, snd_pcm_sframes
 		/* Fall through */
 	case SNDRV_PCM_STATE_XRUN:
 		err = -EPIPE;
+		break;
+	case SNDRV_PCM_STATE_SUSPENDED:
+		if (runtime->status->suspended_state == SNDRV_PCM_STATE_RUNNING) {
+			n = snd_pcm_capture_avail(runtime);
+			if (put_user(n, res))
+				err = -EFAULT;
+		} else {
+			err = -EBADFD;
+		}
 		break;
 	default:
 		err = -EBADFD;

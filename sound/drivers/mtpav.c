@@ -89,13 +89,13 @@ MODULE_PARM_DESC(snd_id, "ID string for MotuMTPAV MIDI.");
 MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
 MODULE_PARM(snd_port, "l");
 MODULE_PARM_DESC(snd_port, "Parallel port # for MotuMTPAV MIDI.");
-MODULE_PARM_SYNTAX(snd_port, "allows:{{0x378},{0x278}},dialog:list");
+MODULE_PARM_SYNTAX(snd_port, SNDRV_ENABLED ",allows:{{0x378},{0x278}},dialog:list");
 MODULE_PARM(snd_irq, "i");
 MODULE_PARM_DESC(snd_irq, "Parallel IRQ # for MotuMTPAV MIDI.");
-MODULE_PARM_SYNTAX(snd_irq,  "allows:{{7},{5}},dialog:list");
+MODULE_PARM_SYNTAX(snd_irq,  SNDRV_ENABLED ",allows:{{7},{5}},dialog:list");
 MODULE_PARM(snd_hwports, "i");
 MODULE_PARM_DESC(snd_hwports, "Hardware ports # for MotuMTPAV MIDI.");
-MODULE_PARM_SYNTAX(snd_hwports, "allows:{{1,8}},dialog:list");
+MODULE_PARM_SYNTAX(snd_hwports, SNDRV_ENABLED ",allows:{{1,8}},dialog:list");
 
 /*
  *      defines

@@ -870,7 +870,7 @@ int snd_sb16dsp_pcm(sb_t * chip, int device, snd_pcm_t ** rpcm)
 
 	snd_ctl_add(card, snd_ctl_new1(&snd_sb16_dma_control, chip));
 
-	snd_pcm_lib_preallocate_pages_for_all(pcm, 64*1024, 128*1024, GFP_KERNEL|GFP_DMA);
+	snd_pcm_lib_preallocate_isa_pages_for_all(pcm, 64*1024, 128*1024, GFP_KERNEL|GFP_DMA);
 
 	if (rpcm)
 		*rpcm = pcm;
