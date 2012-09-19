@@ -300,6 +300,16 @@ static inline void module_put(struct module *module)
 }
 #endif /* 2.5.0 */
 
+/* gameport - 2.4 has different defines */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#ifdef CONFIG_INPUT_GAMEPORT
+#define CONFIG_GAMEPORT
+#endif
+#ifdef CONFIG_INPUT_GAMEPORT_MODULE
+#define CONFIG_GAMEPORT_MODULE
+#endif
+#endif /* 2.5.0 */
+
 
 #include "amagic.h"
 
