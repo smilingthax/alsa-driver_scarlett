@@ -389,6 +389,14 @@ static struct snd_ak4xxx_private akm_6fire_priv __devinitdata = {
  * initialize the chip
  */
 
+/* 6fire specific */
+#define PCF9554_REG_INPUT      0
+#define PCF9554_REG_OUTPUT     1
+#define PCF9554_REG_POLARITY   2
+#define PCF9554_REG_CONFIG     3
+
+static int snd_ice1712_6fire_write_pca(ice1712_t *ice, unsigned char reg, unsigned char data);
+
 static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 {
 	int err;
@@ -425,6 +433,7 @@ static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 			snd_printk("PCF9554 initialization failed\n");
 			return err;
 		}
+		snd_ice1712_6fire_write_pca(ice, PCF9554_REG_CONFIG, 0x80);
 		break;
 	case ICE1712_SUBDEVICE_EWS88MT:
 	case ICE1712_SUBDEVICE_EWS88MT_NEW:
@@ -749,11 +758,6 @@ static snd_kcontrol_new_t snd_ice1712_ews88d_controls[] __devinitdata = {
 /*
  * DMX 6Fire specific controls
  */
-
-#define PCF9554_REG_INPUT	0
-#define PCF9554_REG_OUTPUT	1
-#define PCF9554_REG_POLARITY	2
-#define PCF9554_REG_CONFIG	3
 
 static int snd_ice1712_6fire_read_pca(ice1712_t *ice, unsigned char reg)
 {
