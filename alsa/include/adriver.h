@@ -1862,4 +1862,8 @@ static inline pid_t pid_vnr(struct pid *pid)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29)
+#define pci_clear_master(x)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
