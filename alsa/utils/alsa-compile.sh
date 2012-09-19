@@ -10,6 +10,7 @@ fi
 tmpdir=$tmpdir/alsa-compile-script
 baseurl="http://www.alsa-project.org/snapshot/?package="
 package="alsa-driver"
+packagedefault=true
 url=
 urldefault=
 gittree="git://git.alsa-project.org/"
@@ -20,6 +21,9 @@ install=
 quiet=
 yes=
 kernelmodules=
+kmodlist=
+depmodbin=
+modinfobin=
 
 usage() {
 	echo "Usage: $0 [OPTION]..."
@@ -38,10 +42,15 @@ Operation modes:
   --install		install binaries and headers
   --tmpdir=dir		set temporary directory
   --kmodules[=mods]	reinstall kernel modules or install specified modules
+  --kmodlist		list ALSA toplevel kernel modules
 
 Package selection:
   --driver		compile alsa-driver package (default)
   --lib			compile alsa-lib package
+  --utils		compile alsa-utils package
+  --plugins		compile alsa-plugins package
+  --firmware		compile alsa-firmware package
+  --oss			compile alsa-oss package
 EOF
 }
 
@@ -129,18 +138,17 @@ do
 		esac
 		;;
 	--compile)
-		compile="true"
+		compile=true
 		;;
 	--install)
-		install="true"
+		install=true
 		;;
-	--driver)
-		package="alsa-driver"
-		test -z "$url" || url="$basedir$package"
-		;;
-	--lib)
-		package="alsa-lib"
-		test -z "$url" || url="$basedir$package"
+	--driver|--lib|--utils|--plugins|--firmware|--oss)
+		pkg="$1"
+		pkg=${pkg:2}
+		package="alsa-$pkg"
+		packagedefault=
+		test -z "$url" && url="$baseurl$package"
 		;;
 	--tmpdir*)
 		case "$#,$1" in
@@ -165,6 +173,9 @@ do
 			shift ;;
 		esac
 		;;
+	--kmodlist)
+		kmodlist=true
+		;;
 	*)
 		test -n "$1" && echo "Unknown parameter '$1'"
 		break
@@ -173,7 +184,6 @@ do
 	shift
 done
 if test -z "$url"; then
-	package="alsa-driver"
 	url="$baseurl$package"
 	urldefault=true
 fi
@@ -272,11 +282,25 @@ check_environment() {
 		fi
 		echo "Using temporary tree $tmpdir"
 		check_distribution
+		test -x /bin/depmod && depmodbin=/bin/depmod
+		test -x /sbin/depmod && depmodbin=/sbin/depmod
+		if test -z "$depmodbin"; then
+			echo >&2 "Unable to find depmod utility"
+			exit 1
+		fi	
+		test -x /bin/modinfo && modinfobin=/bin/modinfo
+		test -x /sbin/modinfo && modinfobin=/sbin/modinfo
+		if test -z "$modinfobin"; then
+			echo >&2 "Unable to find modinfo utility"
+			exit 1
+		fi	
 		echo "protocol=$protocol" >> $env
 		echo "distrib=\"$distrib\"" >> $env
 		echo "distribver=\"$distribver\"" >> $env
 		echo "url=\"$url\"" >> $env
 		echo "package=\"$package\"" >> $env
+		echo "depmodbin=\"$depmodbin\"" >> $env
+		echo "modinfobin=\"$modinfobin\"" >> $env
 		b=$(basename $env)
 		echo "File $b has been created."
 	else
@@ -285,8 +309,10 @@ check_environment() {
 		opackage="$package"
 		ourl="$url"
 		. $env
-		package="$opackage"
-		if test "$urldefault" = "true"; then
+		if test "$packagedefault" != "true"; then
+			package="$opackage"
+		fi
+		if test "$urldefault" != "true"; then
 			url="$ourl"
 		fi
 	fi
@@ -358,7 +384,13 @@ download_http_file() {
 		;;
 	esac
 	size=$(stat -c%s $2)
-	echo "  success ($size bytes)"
+	if test -z "$size" -o $size -le 0; then
+		echo "  failed ($size)"
+		echo >&2 "Unable to download file '$1'."
+		exit 1
+	else
+		echo "  success ($size bytes)"
+	fi
 }
 
 do_compile() {
@@ -467,7 +499,7 @@ parse_modules() {
 			ln -sf ../../../../../$i $dst/$i || exit 1
 		done
 		p=$(pwd)
-		if ! depmod -b $p/xxxx ; then
+		if ! $depmodbin -b $p/xxxx ; then
 			echo >&2 "depmod failed."
 			exit 1
 		fi
@@ -484,10 +516,15 @@ parse_modules() {
 
 	if ! test -s ../modules.top ; then
 		for i in modules/*.*o; do
-			a=$(modinfo $i | grep "parm:" | grep "enable:")
-			if ! test -z "$a"; then
-				a=$(basename $i | cut -d . -f 1)
-				echo $a >> ../modules.top
+			if test -r $i; then
+				a=$($modinfobin $i | grep "parm:" | grep "enable:")
+				if ! test -z "$a"; then
+					a=$(basename $i | cut -d . -f 1)
+					echo $a >> ../modules.top
+				fi
+			else
+				echo >&2 "permissions $tmpdir/$i problem"
+				exit 1
 			fi
 		done
 		echo "File modules.top has been created."
@@ -737,6 +774,19 @@ kernel_modules() {
 	fi
 }
 
+kernel_modules_list() {
+	if test "$package" != "alsa-driver"; then
+		echo >&2 "--kmodlist works only for alsa-driver package."
+		exit 1
+	fi
+	parse_modules
+	topmods=$(cat ../modules.top)
+	for mod in $topmods; do
+		desc=$($modinfobin -F description modules/$mod.*o)
+		echo "$mod: $desc"
+	done
+}
+
 git_clone() {
 	do_cmd git clone "$1$2.git" "$2"
 }
@@ -745,6 +795,15 @@ export LANG=C
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment $protocol
 do_cmd cd $tmpdir
+if test "$kmodlist" = "true" -a -z "$compile"; then
+	packagedir="$package.dir"
+	if test -r $packagedir; then
+		tree=$(cat $package.dir)
+	fi
+	do_cmd cd $tree
+	kernel_modules_list
+	exit 0
+fi
 if test -n "$kernelmodules" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
@@ -786,8 +845,9 @@ http|https)
 	fi
 	;;
 git)
+	packagedir="$package.dir"
 	check_compilation_environment $protocol
-	if test -d $package ; then
+	if test -r $packagedir ; then
 		echo "$package tree $package is present."
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
@@ -796,6 +856,7 @@ git)
 			git_clone $url "alsa-kmirror"
 		fi
 		git_clone $url $package
+		echo "alsa-driver" > $packagedir
 	fi
 	do_cmd cd alsa-driver
 	do_compile
@@ -811,6 +872,14 @@ git)
 	exit 1
 esac
 
+if test "$kmodlist" = "true"; then
+	packagedir="$package.dir"
+	if test -r $packagedir; then
+		tree=$(cat $package.dir)
+	fi
+	do_cmd cd $tree
+	kernel_modules_list
+fi
 if test -n "$kernelmodules"; then
 	do_cmd cd $tmpdir
 	packagedir="$package.dir"
