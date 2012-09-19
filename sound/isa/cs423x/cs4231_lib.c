@@ -448,6 +448,7 @@ static int snd_cs4231_trigger(snd_pcm_substream_t *substream,
 	cs4231_t *chip = snd_pcm_substream_chip(substream);
 	int result = 0;
 	unsigned int what;
+	struct list_head *pos;
 	snd_pcm_substream_t *s;
 	int do_start;
 
@@ -467,8 +468,8 @@ static int snd_cs4231_trigger(snd_pcm_substream_t *substream,
 	}
 
 	what = 0;
-	s = substream;
-	do {
+	snd_pcm_for_each_streams(pos, substream) {
+		s = snd_pcm_for_each_streams_entry(pos);
 		if (s == chip->playback_substream) {
 			what |= CS4231_PLAYBACK_ENABLE;
 			snd_pcm_trigger_done(s, substream);
@@ -476,8 +477,7 @@ static int snd_cs4231_trigger(snd_pcm_substream_t *substream,
 			what |= CS4231_RECORD_ENABLE;
 			snd_pcm_trigger_done(s, substream);
 		}
-		s = s->link_next;
-	} while (s != substream);
+	}
 	spin_lock(&chip->reg_lock);
 	if (do_start) {
 		chip->image[CS4231_IFACE_CTRL] |= what;
@@ -967,9 +967,9 @@ static void snd_cs4231_overrange(cs4231_t *chip)
 		chip->capture_substream->runtime->overrange++;
 }
 
-void snd_cs4231_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+irqreturn_t snd_cs4231_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	cs4231_t *chip = snd_magic_cast(cs4231_t, dev_id, return);
+	cs4231_t *chip = snd_magic_cast(cs4231_t, dev_id, return IRQ_NONE);
 	unsigned char status;
 
 	status = snd_cs4231_in(chip, CS4231_IRQ_STATUS);
@@ -998,6 +998,7 @@ void snd_cs4231_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	spin_lock(&chip->reg_lock);
 	snd_cs4231_outm(chip, CS4231_IRQ_STATUS, ~CS4231_ALL_IRQS | ~status, 0);
 	spin_unlock(&chip->reg_lock);
+	return IRQ_HANDLED;
 }
 
 #ifdef LEGACY_SUPPORT

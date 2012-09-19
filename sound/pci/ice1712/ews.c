@@ -602,7 +602,7 @@ static int snd_ice1712_ews88mt_output_sense_put(snd_kcontrol_t *kcontrol, snd_ct
 static int snd_ice1712_ews88mt_input_sense_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int channel = kcontrol->id.index;
+	int channel = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
 	unsigned char data;
 
 	snd_assert(channel >= 0 && channel <= 7, return 0);
@@ -621,7 +621,7 @@ static int snd_ice1712_ews88mt_input_sense_get(snd_kcontrol_t *kcontrol, snd_ctl
 static int snd_ice1712_ews88mt_input_sense_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int channel = kcontrol->id.index;
+	int channel = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
 	unsigned char data, ndata;
 
 	snd_assert(channel >= 0 && channel <= 7, return 0);
@@ -645,6 +645,7 @@ static snd_kcontrol_new_t snd_ice1712_ews88mt_input_sense __devinitdata = {
 	.info = snd_ice1712_ewx_io_sense_info,
 	.get = snd_ice1712_ews88mt_input_sense_get,
 	.put = snd_ice1712_ews88mt_input_sense_put,
+	.count = 8,
 };
 
 static snd_kcontrol_new_t snd_ice1712_ews88mt_output_sense __devinitdata = {
@@ -894,7 +895,6 @@ static int __devinit snd_ice1712_ews_add_controls(ice1712_t *ice)
 {
 	unsigned int idx;
 	int err;
-	snd_kcontrol_t *kctl;
 	
 	/* all terratec cards have spdif */
 	err = snd_ice1712_spdif_build_controls(ice);
@@ -924,13 +924,9 @@ static int __devinit snd_ice1712_ews_add_controls(ice1712_t *ice)
 		break;
 	case ICE1712_SUBDEVICE_EWS88MT:
 	case ICE1712_SUBDEVICE_EWS88MT_NEW:
-		for (idx = 0; idx < 8; idx++) {
-			kctl = snd_ctl_new1(&snd_ice1712_ews88mt_input_sense, ice);
-			kctl->id.index = idx;
-			err = snd_ctl_add(ice->card, kctl);
-			if (err < 0)
-				return err;
-		}
+		err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_ews88mt_input_sense, ice));
+		if (err < 0)
+			return err;
 		err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_ews88mt_output_sense, ice));
 		if (err < 0)
 			return err;

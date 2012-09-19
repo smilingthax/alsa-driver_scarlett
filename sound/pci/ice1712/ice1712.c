@@ -398,15 +398,17 @@ int __devinit snd_ice1712_init_cs8427(ice1712_t *ice, int addr)
  *  Interrupt handler
  */
 
-static void snd_ice1712_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t snd_ice1712_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	ice1712_t *ice = snd_magic_cast(ice1712_t, dev_id, return);
+	ice1712_t *ice = snd_magic_cast(ice1712_t, dev_id, return IRQ_NONE);
 	unsigned char status;
+	int handled = 0;
 
 	while (1) {
 		status = inb(ICEREG(ice, IRQSTAT));
 		if (status == 0)
 			break;
+		handled = 1;
 		if (status & ICE1712_IRQ_MPU1) {
 			if (ice->rmidi[0])
 				snd_mpu401_uart_interrupt(irq, ice->rmidi[0]->private_data, regs);
@@ -462,6 +464,7 @@ static void snd_ice1712_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			outb(ICE1712_IRQ_CONPBK, ICEREG(ice, IRQSTAT));
 		}
 	}
+	return IRQ_RETVAL(handled);
 }
 
 
@@ -962,9 +965,11 @@ static int snd_ice1712_pro_trigger(snd_pcm_substream_t *substream,
 	{
 		unsigned int what = 0;
 		unsigned int old;
-		snd_pcm_substream_t *s = substream;
+		struct list_head *pos;
+		snd_pcm_substream_t *s;
 
-		do {
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == ice->playback_pro_substream) {
 				what |= ICE1712_PLAYBACK_START;
 				snd_pcm_trigger_done(s, substream);
@@ -972,8 +977,7 @@ static int snd_ice1712_pro_trigger(snd_pcm_substream_t *substream,
 				what |= ICE1712_CAPTURE_START_SHADOW;
 				snd_pcm_trigger_done(s, substream);
 			}
-			s = s->link_next;
-		} while (s != substream);
+		}
 		spin_lock(&ice->reg_lock);
 		old = inl(ICEMT(ice, PLAYBACK_CONTROL));
 		if (cmd == SNDRV_PCM_TRIGGER_START)
@@ -1296,7 +1300,7 @@ static int snd_ice1712_pro_mixer_switch_info(snd_kcontrol_t *kcontrol, snd_ctl_e
 static int snd_ice1712_pro_mixer_switch_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int index = kcontrol->private_value;
+	int index = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id) + kcontrol->private_value;
 	
 	spin_lock_irq(&ice->reg_lock);
 	ucontrol->value.integer.value[0] = !((ice->pro_volumes[index] >> 15) & 1);
@@ -1308,7 +1312,7 @@ static int snd_ice1712_pro_mixer_switch_get(snd_kcontrol_t * kcontrol, snd_ctl_e
 static int snd_ice1712_pro_mixer_switch_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int index = kcontrol->private_value;
+	int index = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id) + kcontrol->private_value;
 	unsigned int nval, change;
 
 	nval = (ucontrol->value.integer.value[0] ? 0 : 0x00008000) |
@@ -1334,7 +1338,7 @@ static int snd_ice1712_pro_mixer_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_e
 static int snd_ice1712_pro_mixer_volume_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int index = kcontrol->private_value;
+	int index = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id) + kcontrol->private_value;
 	
 	spin_lock_irq(&ice->reg_lock);
 	ucontrol->value.integer.value[0] = (ice->pro_volumes[index] >> 0) & 127;
@@ -1346,7 +1350,7 @@ static int snd_ice1712_pro_mixer_volume_get(snd_kcontrol_t * kcontrol, snd_ctl_e
 static int snd_ice1712_pro_mixer_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int index = kcontrol->private_value;
+	int index = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id) + kcontrol->private_value;
 	unsigned int nval, change;
 
 	nval = (ucontrol->value.integer.value[0] & 127) |
@@ -1361,65 +1365,55 @@ static int snd_ice1712_pro_mixer_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 }
 
 
+static snd_kcontrol_new_t snd_ice1712_multi_ctrls[] __devinitdata = {
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "Multi Playback Switch",
+		.info = snd_ice1712_pro_mixer_switch_info,
+		.get = snd_ice1712_pro_mixer_switch_get,
+		.put = snd_ice1712_pro_mixer_switch_put,
+		.private_value = 0,
+		.count = 10,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "Multi Playback Volume",
+		.info = snd_ice1712_pro_mixer_volume_info,
+		.get = snd_ice1712_pro_mixer_volume_get,
+		.put = snd_ice1712_pro_mixer_volume_put,
+		.private_value = 0,
+		.count = 10,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "Multi Capture Switch",
+		.info = snd_ice1712_pro_mixer_switch_info,
+		.get = snd_ice1712_pro_mixer_switch_get,
+		.put = snd_ice1712_pro_mixer_switch_put,
+		.private_value = 10,
+		.count = 10,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "Multi Capture Volume",
+		.info = snd_ice1712_pro_mixer_volume_info,
+		.get = snd_ice1712_pro_mixer_volume_get,
+		.put = snd_ice1712_pro_mixer_volume_put,
+		.private_value = 10,
+		.count = 10,
+	},
+};
+
 static int __devinit snd_ice1712_build_pro_mixer(ice1712_t *ice)
 {
 	snd_card_t * card = ice->card;
-	snd_kcontrol_t ctl;
-	int idx, err;
+	unsigned int idx;
+	int err;
 
-	/* PCM playback */
-	for (idx = 0; idx < 10; idx++) {
-		memset(&ctl, 0, sizeof(ctl));
-		strcpy(ctl.id.name, "Multi Playback Switch");
-		ctl.id.index = idx;
-		ctl.id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-		ctl.count = 1;
-		ctl.info = snd_ice1712_pro_mixer_switch_info;
-		ctl.get = snd_ice1712_pro_mixer_switch_get;
-		ctl.put = snd_ice1712_pro_mixer_switch_put;
-		ctl.private_value = idx;
-		ctl.private_data = ice;
-		if ((err = snd_ctl_add(card, snd_ctl_new(&ctl, SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE))) < 0)
-			return err;
-		memset(&ctl, 0, sizeof(ctl));
-		strcpy(ctl.id.name, "Multi Playback Volume");
-		ctl.id.index = idx;
-		ctl.id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-		ctl.count = 1;
-		ctl.info = snd_ice1712_pro_mixer_volume_info;
-		ctl.get = snd_ice1712_pro_mixer_volume_get;
-		ctl.put = snd_ice1712_pro_mixer_volume_put;
-		ctl.private_value = idx;
-		ctl.private_data = ice;
-		if ((err = snd_ctl_add(card, snd_ctl_new(&ctl, SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE))) < 0)
-			return err;
-	}
-
-	/* PCM capture */
-	for (idx = 0; idx < 10; idx++) {
-		memset(&ctl, 0, sizeof(ctl));
-		strcpy(ctl.id.name, "Multi Capture Switch");
-		ctl.id.index = idx;
-		ctl.id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-		ctl.count = 1;
-		ctl.info = snd_ice1712_pro_mixer_switch_info;
-		ctl.get = snd_ice1712_pro_mixer_switch_get;
-		ctl.put = snd_ice1712_pro_mixer_switch_put;
-		ctl.private_value = idx + 10;
-		ctl.private_data = ice;
-		if ((err = snd_ctl_add(card, snd_ctl_new(&ctl, SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE))) < 0)
-			return err;
-		memset(&ctl, 0, sizeof(ctl));
-		strcpy(ctl.id.name, "Multi Capture Volume");
-		ctl.id.index = idx;
-		ctl.id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
-		ctl.count = 1;
-		ctl.info = snd_ice1712_pro_mixer_volume_info;
-		ctl.get = snd_ice1712_pro_mixer_volume_get;
-		ctl.put = snd_ice1712_pro_mixer_volume_put;
-		ctl.private_value = idx + 10;
-		ctl.private_data = ice;
-		if ((err = snd_ctl_add(card, snd_ctl_new(&ctl, SNDRV_CTL_ELEM_ACCESS_READ|SNDRV_CTL_ELEM_ACCESS_WRITE))) < 0)
+	/* multi-channel mixer */
+	for (idx = 0; idx < ARRAY_SIZE(snd_ice1712_multi_ctrls); idx++) {
+		err = snd_ctl_add(card, snd_ctl_new1(&snd_ice1712_multi_ctrls[idx], ice));
+		if (err < 0)
 			return err;
 	}
 	
@@ -1908,7 +1902,7 @@ static int snd_ice1712_pro_route_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_inf
 	
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
-	uinfo->value.enumerated.items = kcontrol->id.index < 2 ? 12 : 11;
+	uinfo->value.enumerated.items = snd_ctl_get_ioffidx(kcontrol, &uinfo->id) < 2 ? 12 : 11;
 	if (uinfo->value.enumerated.item >= uinfo->value.enumerated.items)
 		uinfo->value.enumerated.item = uinfo->value.enumerated.items - 1;
 	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
@@ -1918,7 +1912,7 @@ static int snd_ice1712_pro_route_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_inf
 static int snd_ice1712_pro_route_analog_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int idx = kcontrol->id.index;
+	int idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
 	unsigned int val, cval;
 
 	spin_lock_irq(&ice->reg_lock);
@@ -1944,7 +1938,7 @@ static int snd_ice1712_pro_route_analog_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
 	int change, shift;
-	int idx = kcontrol->id.index;
+	int idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
 	unsigned int val, old_val, nval;
 	
 	/* update PSDOUT */
@@ -1992,7 +1986,7 @@ static int snd_ice1712_pro_route_analog_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 static int snd_ice1712_pro_route_spdif_get(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
-	int idx = kcontrol->id.index;
+	int idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
 	unsigned int val, cval;
 	val = inw(ICEMT(ice, ROUTE_SPDOUT));
 	cval = (val >> (idx * 4 + 8)) & 0x0f;
@@ -2012,7 +2006,7 @@ static int snd_ice1712_pro_route_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_el
 {
 	ice1712_t *ice = snd_kcontrol_chip(kcontrol);
 	int change, shift;
-	int idx = kcontrol->id.index;
+	int idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
 	unsigned int val, old_val, nval;
 	
 	/* update SPDOUT */
@@ -2060,6 +2054,7 @@ static snd_kcontrol_new_t snd_ice1712_mixer_pro_spdif_route __devinitdata = {
 	.info = snd_ice1712_pro_route_info,
 	.get = snd_ice1712_pro_route_spdif_get,
 	.put = snd_ice1712_pro_route_spdif_put,
+	.count = 2,
 };
 
 
@@ -2246,8 +2241,6 @@ int __devinit snd_ice1712_spdif_build_controls(ice1712_t *ice)
 
 static int __devinit snd_ice1712_build_controls(ice1712_t *ice)
 {
-	unsigned int idx;
-	snd_kcontrol_t *kctl;
 	int err;
 
 	err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_eeprom, ice));
@@ -2264,25 +2257,17 @@ static int __devinit snd_ice1712_build_controls(ice1712_t *ice)
 	if (err < 0)
 		return err;
 
-	for (idx = 0; idx < ice->num_total_dacs; idx++) {
-		kctl = snd_ctl_new1(&snd_ice1712_mixer_pro_analog_route, ice);
-		if (kctl == NULL)
-			return -ENOMEM;
-		kctl->id.index = idx;
-		err = snd_ctl_add(ice->card, kctl);
+	if (ice->num_total_dacs > 0) {
+		snd_kcontrol_new_t tmp = snd_ice1712_mixer_pro_analog_route;
+		tmp.count = ice->num_total_dacs;
+		err = snd_ctl_add(ice->card, snd_ctl_new1(&tmp, ice));
 		if (err < 0)
 			return err;
 	}
 
-	for (idx = 0; idx < 2; idx++) {
-		kctl = snd_ctl_new1(&snd_ice1712_mixer_pro_spdif_route, ice);
-		if (kctl == NULL)
-			return -ENOMEM;
-		kctl->id.index = idx;
-		err = snd_ctl_add(ice->card, kctl);
-		if (err < 0)
-			return err;
-	}
+	err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_mixer_pro_spdif_route, ice));
+	if (err < 0)
+		return err;
 
 	err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_mixer_pro_volume_rate, ice));
 	if (err < 0)

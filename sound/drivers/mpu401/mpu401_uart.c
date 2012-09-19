@@ -118,13 +118,14 @@ static void _snd_mpu401_uart_interrupt(mpu401_t *mpu)
  *
  * Processes the interrupt for MPU401-UART i/o.
  */
-void snd_mpu401_uart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+irqreturn_t snd_mpu401_uart_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	mpu401_t *mpu = snd_magic_cast(mpu401_t, dev_id, return);
+	mpu401_t *mpu = snd_magic_cast(mpu401_t, dev_id, return IRQ_NONE);
 	
 	if (mpu == NULL)
-		return;
+		return IRQ_NONE;
 	_snd_mpu401_uart_interrupt(mpu);
+	return IRQ_HANDLED;
 }
 
 /*

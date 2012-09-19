@@ -48,7 +48,7 @@
 
 static int snd_trident_pcm_mixer_build(trident_t *trident, snd_trident_voice_t * voice, snd_pcm_substream_t *substream);
 static int snd_trident_pcm_mixer_free(trident_t *trident, snd_trident_voice_t * voice, snd_pcm_substream_t *substream);
-static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+static irqreturn_t snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 #ifdef CONFIG_PM
 static int snd_trident_set_power_state(snd_card_t *card, unsigned int power_state);
 #endif
@@ -1502,6 +1502,7 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 				    
 {
 	trident_t *trident = snd_pcm_substream_chip(substream);
+	struct list_head *pos;
 	snd_pcm_substream_t *s;
 	unsigned int what, whati, capture_flag, spdif_flag;
 	snd_trident_voice_t *voice, *evoice;
@@ -1522,10 +1523,10 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 		return -EINVAL;
 	}
 	what = whati = capture_flag = spdif_flag = 0;
-	s = substream;
 	spin_lock(&trident->reg_lock);
 	val = inl(TRID_REG(trident, T4D_STIMER)) & 0x00ffffff;
-	do {
+	snd_pcm_for_each_streams(pos, substream) {
+		s = snd_pcm_for_each_streams_entry(pos);
 		if ((trident_t *) _snd_pcm_chip(s->pcm) == trident) {
 			voice = (snd_trident_voice_t *) s->runtime->private_data;
 			evoice = voice->extra;
@@ -1550,8 +1551,7 @@ static int snd_trident_trigger(snd_pcm_substream_t *substream,
 			if (voice->spdif)
 				spdif_flag = 1;
 		}
-		s = s->link_next;
-	} while (s != substream);
+	}
 	if (spdif_flag) {
 		if (trident->device != TRIDENT_DEVICE_ID_SI7018) {
 			outl(trident->spdif_pcm_bits, TRID_REG(trident, NX_SPCSTATUS));
@@ -3687,16 +3687,16 @@ int snd_trident_free(trident_t *trident)
   
   ---------------------------------------------------------------------------*/
 
-static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	trident_t *trident = snd_magic_cast(trident_t, dev_id, return);
+	trident_t *trident = snd_magic_cast(trident_t, dev_id, return IRQ_NONE);
 	unsigned int audio_int, chn_int, stimer, channel, mask, tmp;
 	int delta;
 	snd_trident_voice_t *voice;
 
 	audio_int = inl(TRID_REG(trident, T4D_MISCINT));
 	if ((audio_int & (ADDRESS_IRQ|MPU401_IRQ)) == 0)
-		return;
+		return IRQ_NONE;
 	if (audio_int & ADDRESS_IRQ) {
 		// get interrupt status for all channels
 		spin_lock(&trident->reg_lock);
@@ -3781,6 +3781,7 @@ static void snd_trident_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		}
 	}
 	// outl((ST_TARGET_REACHED | MIXER_OVERFLOW | MIXER_UNDERFLOW), TRID_REG(trident, T4D_MISCINT));
+	return IRQ_HANDLED;
 }
 
 /*---------------------------------------------------------------------------

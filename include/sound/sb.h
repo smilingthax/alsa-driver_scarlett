@@ -24,6 +24,7 @@
 
 #include "pcm.h"
 #include "rawmidi.h"
+#include <linux/interrupt.h>
 #include <asm/io.h>
 
 enum sb_hw_type {
@@ -99,7 +100,7 @@ struct _snd_sb {
 	snd_rawmidi_t *rmidi;
 	snd_rawmidi_substream_t *midi_substream_input;
 	snd_rawmidi_substream_t *midi_substream_output;
-	void (*rmidi_callback)(int irq, void *dev_id, struct pt_regs *regs);
+	irqreturn_t (*rmidi_callback)(int irq, void *dev_id, struct pt_regs *regs);
 
 	spinlock_t reg_lock;
 	spinlock_t open_lock;
@@ -282,7 +283,7 @@ int snd_sbdsp_reset(sb_t *chip);
 int snd_sbdsp_create(snd_card_t *card,
 		     unsigned long port,
 		     int irq,
-		     void (*irq_handler)(int, void *, struct pt_regs *),
+		     irqreturn_t (*irq_handler)(int, void *, struct pt_regs *),
 		     int dma8, int dma16,
 		     unsigned short hardware,
 		     sb_t **r_chip);
@@ -294,13 +295,13 @@ int snd_sbmixer_new(sb_t *chip);
 /* sb8_init.c */
 int snd_sb8dsp_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm);
 /* sb8.c */
-void snd_sb8dsp_interrupt(sb_t *chip);
+irqreturn_t snd_sb8dsp_interrupt(sb_t *chip);
 int snd_sb8_playback_open(snd_pcm_substream_t *substream);
 int snd_sb8_capture_open(snd_pcm_substream_t *substream);
 int snd_sb8_playback_close(snd_pcm_substream_t *substream);
 int snd_sb8_capture_close(snd_pcm_substream_t *substream);
 /* midi8.c */
-void snd_sb8dsp_midi_interrupt(sb_t *chip);
+irqreturn_t snd_sb8dsp_midi_interrupt(sb_t *chip);
 int snd_sb8dsp_midi(sb_t *chip, int device, snd_rawmidi_t ** rrawmidi);
 
 /* sb16_init.c */
@@ -308,7 +309,7 @@ int snd_sb16dsp_pcm(sb_t *chip, int device, snd_pcm_t ** rpcm);
 const snd_pcm_ops_t *snd_sb16dsp_get_pcm_ops(int direction);
 int snd_sb16dsp_configure(sb_t *chip);
 /* sb16.c */
-void snd_sb16dsp_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+irqreturn_t snd_sb16dsp_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 int snd_sb16_playback_open(snd_pcm_substream_t *substream);
 int snd_sb16_capture_open(snd_pcm_substream_t *substream);
 int snd_sb16_playback_close(snd_pcm_substream_t *substream);

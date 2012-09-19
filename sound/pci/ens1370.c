@@ -412,7 +412,7 @@ struct _snd_ensoniq {
 #endif
 };
 
-static void snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs);
+static irqreturn_t snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs);
 
 static struct pci_device_id snd_audiopci_ids[] __devinitdata = {
 #ifdef CHIP1370
@@ -739,8 +739,10 @@ static int snd_ensoniq_trigger(snd_pcm_substream_t *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 	{
 		unsigned int what = 0;
-		snd_pcm_substream_t *s = substream;
-		do {
+		struct list_head *pos;
+		snd_pcm_substream_t *s;
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == ensoniq->playback1_substream) {
 				what |= ES_P1_PAUSE;
 				snd_pcm_trigger_done(s, substream);
@@ -749,8 +751,7 @@ static int snd_ensoniq_trigger(snd_pcm_substream_t *substream, int cmd)
 				snd_pcm_trigger_done(s, substream);
 			} else if (s == ensoniq->capture_substream)
 				return -EINVAL;
-			s = s->link_next;
-		} while (s != substream);
+		}
 		spin_lock(&ensoniq->reg_lock);
 		if (cmd == SNDRV_PCM_TRIGGER_PAUSE_PUSH)
 			ensoniq->sctrl |= what;
@@ -764,8 +765,10 @@ static int snd_ensoniq_trigger(snd_pcm_substream_t *substream, int cmd)
 	case SNDRV_PCM_TRIGGER_STOP:
 	{
 		unsigned int what = 0;
-		snd_pcm_substream_t *s = substream;
-		do {
+		struct list_head *pos;
+		snd_pcm_substream_t *s;
+		snd_pcm_for_each_streams(pos, substream) {
+			s = snd_pcm_for_each_streams_entry(pos);
 			if (s == ensoniq->playback1_substream) {
 				what |= ES_DAC1_EN;
 				snd_pcm_trigger_done(s, substream);
@@ -776,8 +779,7 @@ static int snd_ensoniq_trigger(snd_pcm_substream_t *substream, int cmd)
 				what |= ES_ADC_EN;
 				snd_pcm_trigger_done(s, substream);
 			}
-			s = s->link_next;
-		} while (s != substream);
+		}
 		spin_lock(&ensoniq->reg_lock);
 		if (cmd == SNDRV_PCM_TRIGGER_START)
 			ensoniq->ctrl |= what;
@@ -2231,17 +2233,17 @@ static int __devinit snd_ensoniq_midi(ensoniq_t * ensoniq, int device, snd_rawmi
  *  Interrupt handler
  */
 
-static void snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+static irqreturn_t snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
-	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, dev_id, return);
+	ensoniq_t *ensoniq = snd_magic_cast(ensoniq_t, dev_id, return IRQ_NONE);
 	unsigned int status, sctrl;
 
 	if (ensoniq == NULL)
-		return;
+		return IRQ_NONE;
 
 	status = inl(ES_REG(ensoniq, STATUS));
 	if (!(status & ES_INTR))
-		return;
+		return IRQ_NONE;
 
 	spin_lock(&ensoniq->reg_lock);
 	sctrl = ensoniq->sctrl;
@@ -2263,6 +2265,7 @@ static void snd_audiopci_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		snd_pcm_period_elapsed(ensoniq->capture_substream);
 	if ((status & ES_DAC1) && ensoniq->playback1_substream)
 		snd_pcm_period_elapsed(ensoniq->playback1_substream);
+	return IRQ_HANDLED;
 }
 
 static int __devinit snd_audiopci_probe(struct pci_dev *pci,
