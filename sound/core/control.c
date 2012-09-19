@@ -194,7 +194,6 @@ snd_kcontrol_t *snd_ctl_new(snd_kcontrol_t * control, unsigned int access)
 	if (kctl == NULL)
 		return NULL;
 	*kctl = *control;
-	kctl->vd = (snd_kcontrol_volatile_t *)(kctl + 1);
 	for (idx = 0; idx < kctl->count; idx++)
 		kctl->vd[idx].access = access;
 	return kctl;
