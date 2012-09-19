@@ -1,6 +1,6 @@
 /*
  *  Driver for Philips UDA1341TS on Compaq iPAQ H3600 soundcard
- *  Copyright (c) by Tomas Kasparek <tomas.kasparek@seznam.cz>
+ *  Copyright (C) 2002 Tomas Kasparek <tomas.kasparek@seznam.cz>
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License.
@@ -12,9 +12,10 @@
  * 2002-03-28   Tomas Kasparek  playback over OSS emulation is working
  * 2002-03-29   Tomas Kasparek  basic capture is working (native ALSA)
  * 2002-03-29   Tomas Kasparek  capture is working (OSS emulation)
+ * 2002-04-04   Tomas Kasparek  better rates handling (allow non-standard rates)
  */
 
-/* $Id: h3600-uda1341.c,v 1.5 2002/04/04 07:31:54 perex Exp $ */
+/* $Id: h3600-uda1341.c,v 1.6 2002/04/08 07:57:24 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -67,7 +68,6 @@ typedef struct audio_stream {
 
 	int active:1;		/* we are using this stream for transfer now */
 
-        int pending_periods;    /* # of periods in progress (0 - 2) */
         int sent_periods;       /* # of sent periods from actual DMA buffer (0 - runtime->periods */
         int sent_total;         /* # of sent periods total (just for info & debug) */
 
@@ -253,6 +253,9 @@ static void h3600_audio_init(h3600_t *h3600)
 	set_h3600_egpio(IPAQ_EGPIO_AUDIO_ON);
 	set_h3600_egpio(IPAQ_EGPIO_QMUTE);
 	local_irq_restore(flags);
+        
+        /* Initialize the UDA1341 internal state */
+        l3_open(h3600->uda1341);
 
 	/* external clock configuration */
 	h3600_set_samplerate(h3600, 44100); /* default sample rate */                
@@ -337,7 +340,6 @@ static void audio_stop_dma(audio_stream_t *s)
 
         local_irq_save(flags);
 	s->active = 0;
-        s->pending_periods = 0;
         s->sent_periods = 0;
         s->sent_total = 0;        
 
@@ -404,12 +406,11 @@ static void audio_process_dma(audio_stream_t *s)
 
 #ifdef DEBUG_MODE
                 printk(KERN_DEBUG "  dma_area:");
-                for (i=0; i < 6; i++) {
-                        printk(" %02x", *(char *)(runtime->dma_addr+i));
+                for (i=0; i < 32; i++) {
+                        printk(" %02x", *(char *)(runtime->dma_addr+offset+i));
                 }
                 printk("\n");
 #endif                
-                s->pending_periods++;
                 s->sent_total++;
                 s->sent_periods++;
                 s->sent_periods %= runtime->periods;
@@ -420,13 +421,24 @@ static void audio_process_dma(audio_stream_t *s)
 static void audio_dma_callback(void *data)
 {
 	audio_stream_t *s = data;
-
+        char *buf;
+        int i;
+        
         DEBUG_NAME(KERN_DEBUG "dma_callback\n");
 
         /* when syncing we do not have any real stream from ALSA! */
         if (!s->sync) {
                 snd_pcm_period_elapsed(s->stream);
-                DEBUG(KERN_DEBUG "----> period done <----\n"); 
+                DEBUG(KERN_DEBUG "----> period done <----\n");
+#ifdef DEBUG_MODE
+                printk(KERN_DEBUG "  dma_area:");
+                buf = s->stream->runtime->dma_addr +
+                        ((s->sent_periods - 1 ) * (s->stream->runtime->period_size << SHIFT_16_STEREO));
+                for (i=0; i < 32; i++) {
+                        printk(" %02x", *(char *)(buf + i));
+                }
+                printk("\n");
+#endif                      
         }
         
 	if (s->active)
@@ -455,7 +467,7 @@ static int snd_card_h3600_pcm_trigger(stream_id_t stream_id, snd_pcm_substream_t
 
 #ifdef DEBUG_MODE
         printk(KERN_DEBUG "  dma_area:");
-        for (i=0; i < 12; i++) {
+        for (i=0; i < 32; i++) {
                 printk(" %02x", *(char *)(runtime->dma_addr+i));
         }
         printk("\n");
@@ -523,7 +535,10 @@ static snd_pcm_hardware_t snd_h3600_capture =
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
                                  SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID),
 	formats:		SNDRV_PCM_FMTBIT_S16_LE,
-	rates:			SNDRV_PCM_RATE_8000_48000,
+	rates:			(SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
+                                 SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_32000 |\
+                                 SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 |\
+                                 SNDRV_PCM_RATE_KNOT),
 	rate_min:		8000,
 	rate_max:		48000,
 	channels_min:		2,
@@ -542,7 +557,10 @@ static snd_pcm_hardware_t snd_h3600_playback =
 				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
                                  SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID),
 	formats:		SNDRV_PCM_FMTBIT_S16_LE,
-	rates:			SNDRV_PCM_RATE_8000_48000,
+	rates:			(SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
+                                 SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_32000 |\
+                                 SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000 |\
+                                 SNDRV_PCM_RATE_KNOT),
 	rate_min:		8000,
 	rate_max:		48000,
 	channels_min:		2,
@@ -564,9 +582,8 @@ static int snd_card_h3600_playback_open(snd_pcm_substream_t * substream)
 	int err;
         
         DEBUG_NAME(KERN_DEBUG "playback_open\n");
-
+        
         chip->s[PLAYBACK]->stream = substream;
-        chip->s[PLAYBACK]->pending_periods = 0;
         chip->s[PLAYBACK]->sent_periods = 0;
         chip->s[PLAYBACK]->sent_total = 0;
         
@@ -639,7 +656,6 @@ static int snd_card_h3600_capture_open(snd_pcm_substream_t * substream)
         DEBUG_NAME(KERN_DEBUG "record_open\n");
 
 	chip->s[CAPTURE]->stream = substream;
-        chip->s[CAPTURE]->pending_periods = 0;
         chip->s[CAPTURE]->sent_periods = 0;
         chip->s[CAPTURE]->sent_total = 0;
         
@@ -650,6 +666,7 @@ static int snd_card_h3600_capture_open(snd_pcm_substream_t * substream)
         	return err;
 	if ((err = snd_pcm_hw_constraint_list(runtime, 0, SNDRV_PCM_HW_PARAM_RATE, &hw_constraints_rates)) < 0)
 		return err;
+        
 	return 0;
 }
 
@@ -743,7 +760,9 @@ static int __init snd_card_h3600_pcm(h3600_t *h3600, int device, int substreams)
 {
   	snd_pcm_t *pcm;
 	int err;
-      
+
+        DEBUG_NAME(KERN_DEBUG "h3600_pcm\n");
+
         if ((err = snd_pcm_new(h3600->card, "UDA1341 PCM", device,
                                substreams, substreams, &pcm)) < 0)
 		return err;
@@ -756,13 +775,13 @@ static int __init snd_card_h3600_pcm(h3600_t *h3600, int device, int substreams)
 
         h3600->s[PLAYBACK] = snd_kcalloc(sizeof(audio_stream_t), GFP_KERNEL);
         h3600->s[CAPTURE] = snd_kcalloc(sizeof(audio_stream_t), GFP_KERNEL);
-        
+
         h3600_audio_init(h3600);
 
         /* setup DMA controller */
         audio_dma_request(h3600->s[PLAYBACK], audio_dma_callback);
         audio_dma_request(h3600->s[CAPTURE], audio_dma_callback);
-        
+
         return 0;
 }
 
@@ -777,6 +796,8 @@ static int h3600_pm_callback(struct pm_dev *pm_dev, pm_request_t req, void *data
 	h3600_t *h3600 = pm_dev->data;
         audio_stream_t *is, *os;
 	int stopstate;
+
+        DEBUG_NAME(KERN_DEBUG "pm_callback\n");
 
         is = h3600->s[PLAYBACK];
         os = h3600->s[CAPTURE];
@@ -840,6 +861,8 @@ static int __init h3600_uda1341_init(void)
 	int err;
         snd_card_t *card;
 
+        DEBUG_NAME(KERN_DEBUG "h3600_uda1341_init\n");
+        
 	if (!machine_is_h3xxx())
 		return -ENODEV;
 

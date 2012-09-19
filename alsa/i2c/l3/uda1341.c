@@ -1,6 +1,5 @@
 /*
  * Philips UDA1341 mixer device driver
- *
  * Copyright (c) 2002 Tomas Kasparek <tomas.kasparek@seznam.cz>
  *
  * Portions are Copyright (C) 2000 Lernout & Hauspie Speech Products, N.V.
@@ -16,7 +15,7 @@
  *                              features support
  */
 
-/* $Id: uda1341.c,v 1.4 2002/04/04 07:27:09 perex Exp $ */
+/* $Id: uda1341.c,v 1.5 2002/04/08 07:57:24 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -217,27 +216,8 @@ static int snd_uda1341_valid_reg(struct l3_client *clnt, unsigned short reg)
         return reg < uda1341_reg_last;
 }
 
-int snd_uda1341_update(struct l3_client *clnt, unsigned short reg, unsigned short value)
-{
-	int change;
-        struct uda1341 *uda = clnt->driver_data;
-
-        DEBUG_NAME(KERN_DEBUG "update\n");
-
-	if (!snd_uda1341_valid_reg(clnt, reg))
-		return -EINVAL;
-	spin_lock(&uda->reg_lock);
-	change = uda->regs[reg] != value;
-	if (change) {
-		uda->write(clnt, reg, value);
-		uda->regs[reg] = value;
-	}
-	spin_unlock(&uda->reg_lock);
-	return change;
-}
-
-int snd_uda1341_update_bits(struct l3_client *clnt, unsigned short reg,
-                            unsigned short mask, unsigned short shift, unsigned short value)
+int snd_uda1341_update_bits(struct l3_client *clnt, unsigned short reg, unsigned short mask,
+                            unsigned short shift, unsigned short value, int flush)
 {
 	int change;
 	unsigned short old, new;
@@ -253,14 +233,15 @@ int snd_uda1341_update_bits(struct l3_client *clnt, unsigned short reg,
 	new = (old & ~(mask << shift)) | (value << shift);
 	change = old != new;
 	if (change) {
-		uda->write(clnt, reg, new);
+		if (flush) uda->write(clnt, reg, new);
 		uda->regs[reg] = new;
 	}
 	spin_unlock(&uda->reg_lock);
 	return change;
 }
 
-int snd_uda1341_cfg_write(struct l3_client *clnt, unsigned short what, unsigned short value)
+int snd_uda1341_cfg_write(struct l3_client *clnt, unsigned short what,
+                          unsigned short value, int flush)
 {
 	struct uda1341 *uda = clnt->driver_data;
 	int ret = 0;
@@ -270,34 +251,34 @@ int snd_uda1341_cfg_write(struct l3_client *clnt, unsigned short what, unsigned 
         uda->cfg[what] = value;
         
         switch(what) {
-        case CMD_RESET: ret = snd_uda1341_update_bits(clnt, data0_2, 1, 2, 1);//MUTE
-                ret = snd_uda1341_update_bits(clnt, stat0, 1, 6, 1);//RESET
-                ret = snd_uda1341_update_bits(clnt, stat0, 1, 6, 0);// RESTORE
+        case CMD_RESET: ret = snd_uda1341_update_bits(clnt, data0_2, 1, 2, 1, flush);//MUTE
+                ret = snd_uda1341_update_bits(clnt, stat0, 1, 6, 1, flush);//RESET
+                ret = snd_uda1341_update_bits(clnt, stat0, 1, 6, 0, flush);// RESTORE
                  uda->cfg[CMD_RESET]=0;
                 break;
-        case CMD_FS: ret = snd_uda1341_update_bits(clnt, stat0, 3, 4, value); break;
-        case CMD_FORMAT: ret = snd_uda1341_update_bits(clnt, stat0, 7, 1, value); break;
-        case CMD_OGAIN: ret = snd_uda1341_update_bits(clnt, stat1, 1, 6, value); break;
-        case CMD_IGAIN: ret = snd_uda1341_update_bits(clnt, stat1, 1, 5, value); break;
-        case CMD_DAC: ret = snd_uda1341_update_bits(clnt, stat1, 1, 0, value); break;
-        case CMD_ADC: ret = snd_uda1341_update_bits(clnt, stat1, 1, 1, value); break;
-        case CMD_VOLUME: ret = snd_uda1341_update_bits(clnt, data0_0, 63, 0, value); break;
-        case CMD_BASS: ret = snd_uda1341_update_bits(clnt, data0_1, 15, 2, value); break;
-        case CMD_TREBBLE: ret = snd_uda1341_update_bits(clnt, data0_1, 3, 0, value); break;
-        case CMD_PEAK: ret = snd_uda1341_update_bits(clnt, data0_2, 1, 5, value); break;
-        case CMD_DEEMP: ret = snd_uda1341_update_bits(clnt, data0_2, 3, 3, value); break;
-        case CMD_MUTE: ret = snd_uda1341_update_bits(clnt, data0_2, 1, 2, value); break;
-        case CMD_FILTER: ret = snd_uda1341_update_bits(clnt, data0_2, 3, 0, value); break;
-        case CMD_CH1: ret = snd_uda1341_update_bits(clnt, ext0, 31, 0, value); break;
-        case CMD_CH2: ret = snd_uda1341_update_bits(clnt, ext1, 31, 0, value);  break;
-        case CMD_MIC: ret = snd_uda1341_update_bits(clnt, ext2, 7, 2, value); break;
-        case CMD_MIXER: ret = snd_uda1341_update_bits(clnt, ext2, 3, 0, value); break;
-        case CMD_AGC: ret = snd_uda1341_update_bits(clnt, ext4, 1, 4, value); break;
-        case CMD_IG: ret = snd_uda1341_update_bits(clnt, ext4, 3, 0, value & 0x3);
-                ret = snd_uda1341_update_bits(clnt, ext5, 31, 0, value >> 2);
+        case CMD_FS: ret = snd_uda1341_update_bits(clnt, stat0, 3, 4, value, flush); break;
+        case CMD_FORMAT: ret = snd_uda1341_update_bits(clnt, stat0, 7, 1, value, flush); break;
+        case CMD_OGAIN: ret = snd_uda1341_update_bits(clnt, stat1, 1, 6, value, flush); break;
+        case CMD_IGAIN: ret = snd_uda1341_update_bits(clnt, stat1, 1, 5, value, flush); break;
+        case CMD_DAC: ret = snd_uda1341_update_bits(clnt, stat1, 1, 0, value, flush); break;
+        case CMD_ADC: ret = snd_uda1341_update_bits(clnt, stat1, 1, 1, value, flush); break;
+        case CMD_VOLUME: ret = snd_uda1341_update_bits(clnt, data0_0, 63, 0, value, flush); break;
+        case CMD_BASS: ret = snd_uda1341_update_bits(clnt, data0_1, 15, 2, value, flush); break;
+        case CMD_TREBBLE: ret = snd_uda1341_update_bits(clnt, data0_1, 3, 0, value, flush); break;
+        case CMD_PEAK: ret = snd_uda1341_update_bits(clnt, data0_2, 1, 5, value, flush); break;
+        case CMD_DEEMP: ret = snd_uda1341_update_bits(clnt, data0_2, 3, 3, value, flush); break;
+        case CMD_MUTE: ret = snd_uda1341_update_bits(clnt, data0_2, 1, 2, value, flush); break;
+        case CMD_FILTER: ret = snd_uda1341_update_bits(clnt, data0_2, 3, 0, value, flush); break;
+        case CMD_CH1: ret = snd_uda1341_update_bits(clnt, ext0, 31, 0, value, flush); break;
+        case CMD_CH2: ret = snd_uda1341_update_bits(clnt, ext1, 31, 0, value, flush);  break;
+        case CMD_MIC: ret = snd_uda1341_update_bits(clnt, ext2, 7, 2, value, flush); break;
+        case CMD_MIXER: ret = snd_uda1341_update_bits(clnt, ext2, 3, 0, value, flush); break;
+        case CMD_AGC: ret = snd_uda1341_update_bits(clnt, ext4, 1, 4, value, flush); break;
+        case CMD_IG: ret = snd_uda1341_update_bits(clnt, ext4, 3, 0, value & 0x3, flush);
+                ret = snd_uda1341_update_bits(clnt, ext5, 31, 0, value >> 2, flush);
                 break;
-        case CMD_AGC_TIME: ret = snd_uda1341_update_bits(clnt, ext6, 7, 2, value); break;
-        case CMD_AGC_LEVEL: ret = snd_uda1341_update_bits(clnt, ext6, 3, 0, value); break;
+        case CMD_AGC_TIME: ret = snd_uda1341_update_bits(clnt, ext6, 7, 2, value, flush); break;
+        case CMD_AGC_LEVEL: ret = snd_uda1341_update_bits(clnt, ext6, 3, 0, value, flush); break;
         default: ret = -EINVAL;	break;                                
         }
                 
@@ -478,7 +459,7 @@ static int snd_uda1341_put_single(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_
               where, reg, mask, shift, invert, val);
         
         uda->cfg[where] = val;
-        return snd_uda1341_update_bits(clnt, reg, mask, shift, val);
+        return snd_uda1341_update_bits(clnt, reg, mask, shift, val, FLUSH);
 }
 
 /* }}} */
@@ -546,14 +527,14 @@ static int snd_uda1341_put_2regs(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t
 
         val = ucontrol->value.integer.value[0];
          
-        DEBUG_NAME(KERN_DEBUG "put_double where: %d reg1: %d reg2: %d mask1: %d mask2: %d "
+        DEBUG_NAME(KERN_DEBUG "put_2regs where: %d reg1: %d reg2: %d mask1: %d mask2: %d "
                    "shift1: %d shift2: %d inv: %d val: %d\n", where, reg_1, reg_2, mask_1, mask_2,
                    shift_1, shift_2, invert, val);       
 
         mask = (mask_2 + 1) * (mask_1 + 1) - 1;
 
 	val1 = val & mask_1;
-	val2 = (val >> shift_1) & mask_2;        
+	val2 = (val / (mask_1 + 1)) & mask_2;        
 
 	if (invert) {
 		val1 = mask_1 - val1;
@@ -563,8 +544,8 @@ static int snd_uda1341_put_2regs(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t
         uda->cfg[where] = invert ? mask - val : val;
         
         //FIXME - return value
-	snd_uda1341_update_bits(clnt, reg_1, mask_1, shift_1, val1);
-        return snd_uda1341_update_bits(clnt, reg_2, mask_2, shift_2, val2);
+	snd_uda1341_update_bits(clnt, reg_1, mask_1, shift_1, val1, FLUSH);
+        return snd_uda1341_update_bits(clnt, reg_2, mask_2, shift_2, val2, FLUSH);
 }
 
 /* }}} */
@@ -672,8 +653,7 @@ static int uda1341_attach(struct l3_client *clnt)
         
 	clnt->driver_data = uda;
 
-        l3_open(clnt);
-
+        //l3_open(clnt);
 	return 0;
 }
 
@@ -688,7 +668,7 @@ uda1341_command(struct l3_client *clnt, int cmd, void *arg)
 {
         DEBUG_NAME(KERN_DEBUG "l3_command\n");
                 
-        return snd_uda1341_cfg_write(clnt, cmd, (int) arg);
+        return snd_uda1341_cfg_write(clnt, cmd, (int) arg, FLUSH);
 }
 
 static int uda1341_open(struct l3_client *clnt)
@@ -700,28 +680,29 @@ static int uda1341_open(struct l3_client *clnt)
 	uda->active = 1;
 
         /* init default configuration */
-        //snd_uda1341_cfg_write(clnt, CMD_RESET, 0); /* do not need to reset on "open" */
-        snd_uda1341_cfg_write(clnt, CMD_FS, F256);
-        snd_uda1341_cfg_write(clnt, CMD_FORMAT, LSB16);
-        snd_uda1341_cfg_write(clnt, CMD_OGAIN, ON);
-        snd_uda1341_cfg_write(clnt, CMD_IGAIN, ON);
-        snd_uda1341_cfg_write(clnt, CMD_DAC, ON);
-        snd_uda1341_cfg_write(clnt, CMD_ADC, ON);
-        snd_uda1341_cfg_write(clnt, CMD_VOLUME, 40);
-        snd_uda1341_cfg_write(clnt, CMD_BASS, 0);
-        snd_uda1341_cfg_write(clnt, CMD_TREBBLE, 0);
-        snd_uda1341_cfg_write(clnt, CMD_PEAK, AFTER);
-        snd_uda1341_cfg_write(clnt, CMD_DEEMP, NONE);
-        snd_uda1341_cfg_write(clnt, CMD_MUTE, OFF); 
-        snd_uda1341_cfg_write(clnt, CMD_FILTER, MAX);
-        snd_uda1341_cfg_write(clnt, CMD_CH1, 4);
-        snd_uda1341_cfg_write(clnt, CMD_CH2, 4);
-        snd_uda1341_cfg_write(clnt, CMD_MIC, 4);
-        snd_uda1341_cfg_write(clnt, CMD_MIXER, MIXER);
-        snd_uda1341_cfg_write(clnt, CMD_AGC, ON);
-        snd_uda1341_cfg_write(clnt, CMD_IG, 0);
-        snd_uda1341_cfg_write(clnt, CMD_AGC_TIME, 3);
-        snd_uda1341_cfg_write(clnt, CMD_AGC_LEVEL, 0);
+        snd_uda1341_cfg_write(clnt, CMD_RESET, 0, REGS_ONLY);
+        snd_uda1341_cfg_write(clnt, CMD_FS, F256, FLUSH);       // unknown state after reset
+        snd_uda1341_cfg_write(clnt, CMD_FORMAT, LSB16, FLUSH);  // unknown state after reset
+        snd_uda1341_cfg_write(clnt, CMD_OGAIN, ON, FLUSH);      // default off after reset
+        snd_uda1341_cfg_write(clnt, CMD_IGAIN, ON, FLUSH);      // default off after reset
+        snd_uda1341_cfg_write(clnt, CMD_DAC, ON, FLUSH);    // ??? default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_ADC, ON, FLUSH);    // ??? default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_VOLUME, 20, FLUSH);     // default 0dB after reset
+        snd_uda1341_cfg_write(clnt, CMD_BASS, 0, REGS_ONLY);    // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_TREBBLE, 0, REGS_ONLY); // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_PEAK, AFTER, REGS_ONLY);// default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_DEEMP, NONE, REGS_ONLY);// default value after reset
+        //at this moment should be QMUTED by h3600_audio_init
+        snd_uda1341_cfg_write(clnt, CMD_MUTE, OFF, REGS_ONLY);  // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_FILTER, MAX, FLUSH);    // defaul flat after reset
+        snd_uda1341_cfg_write(clnt, CMD_CH1, 31, FLUSH);        // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_CH2, 4, FLUSH);         // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_MIC, 4, FLUSH);         // default 0dB after reset
+        snd_uda1341_cfg_write(clnt, CMD_MIXER, MIXER, FLUSH);   // default doub.dif.mode          
+        snd_uda1341_cfg_write(clnt, CMD_AGC, OFF, FLUSH);       // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_IG, 0, FLUSH);          // unknown state after reset
+        snd_uda1341_cfg_write(clnt, CMD_AGC_TIME, 0, FLUSH);    // default value after reset
+        snd_uda1341_cfg_write(clnt, CMD_AGC_LEVEL, 0, FLUSH);   // default value after reset
 
 	return 0;
 }

@@ -15,7 +15,7 @@
  *                           features support
  */
 
-/* $Id: uda1341.h,v 1.4 2002/04/04 07:27:09 perex Exp $ */
+/* $Id: uda1341.h,v 1.5 2002/04/08 07:57:24 perex Exp $ */
 
 #define UDA1341_ALSA_NAME "snd-uda1341"
 
@@ -144,6 +144,13 @@ enum uda1341_config {
         CMD_AGC_TIME,
         CMD_AGC_LEVEL,
         CMD_LAST,
+};
+
+enum write_through {
+         //used in update_bits (write_cfg) to avoid l3_write - just upadte local copy of regs.
+        REGS_ONLY=0,
+        //update local regs and write value to uda1341 - do l3_write
+        FLUSH,
 };
 
 #include <sound/core.h>
