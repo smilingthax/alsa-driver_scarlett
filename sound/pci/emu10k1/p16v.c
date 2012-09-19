@@ -1,7 +1,7 @@
 /*
  *  Copyright (c) by James Courtier-Dutton <James@superbug.demon.co.uk>
  *  Driver p16v chips
- *  Version: 0.22
+ *  Version: 0.25
  *
  *  FEATURES currently supported:
  *    Output fixed at S32_LE, 2 channel to hw:0,0
@@ -41,7 +41,15 @@
  *    Integrated with snd-emu10k1 driver.
  *  0.22
  *    Removed #if 0 ... #endif
- *
+ *  0.23
+ *    Implement different capture rates.
+ *  0.24
+ *    Implement different capture source channels.
+ *    e.g. When HD Capture source is set to SPDIF,
+ *    setting HD Capture channel to 0 captures from CDROM digital input.
+ *    setting HD Capture channel to 1 captures from SPDIF in.
+ *  0.25
+ *    Include capture buffer sizes.
  *
  *  BUGS:
  *    Some stability problems when unloading the snd-p16v kernel module.
@@ -133,24 +141,23 @@ static snd_pcm_hardware_t snd_p16v_playback_hw = {
 };
 
 static snd_pcm_hardware_t snd_p16v_capture_hw = {
-       .info =                 (SNDRV_PCM_INFO_MMAP |
-                                SNDRV_PCM_INFO_INTERLEAVED |
-                                SNDRV_PCM_INFO_BLOCK_TRANSFER |
-                                SNDRV_PCM_INFO_MMAP_VALID),
-       .formats =              SNDRV_PCM_FMTBIT_S32_LE,
-       .rates =                SNDRV_PCM_RATE_48000,
-       .rate_min =             48000,
-       .rate_max =             48000,
-       .channels_min =         2,
-       .channels_max =         2,
-       .buffer_bytes_max =     (32*1024),
-       .period_bytes_min =     64,
-       .period_bytes_max =     (16*1024),
-       .periods_min =          2,
-       .periods_max =          2,
-       .fifo_size =            0,
+	.info =			(SNDRV_PCM_INFO_MMAP |
+				 SNDRV_PCM_INFO_INTERLEAVED |
+				 SNDRV_PCM_INFO_BLOCK_TRANSFER |
+				 SNDRV_PCM_INFO_MMAP_VALID),
+	.formats =		SNDRV_PCM_FMTBIT_S32_LE,
+	.rates =		SNDRV_PCM_RATE_192000 | SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_48000 | SNDRV_PCM_RATE_44100, 
+	.rate_min =		44100,
+	.rate_max =		192000,
+	.channels_min =		2,
+	.channels_max =		2,
+	.buffer_bytes_max =	(65536 - 64),
+	.period_bytes_min =	64,
+	.period_bytes_max =	(65536 - 128) >> 1,  /* size has to be N*64 bytes */
+	.periods_min =		2,
+	.periods_max =		2,
+	.fifo_size =		0,
 };
-
 
 static void snd_p16v_pcm_free_substream(snd_pcm_runtime_t *runtime)
 {
@@ -362,7 +369,25 @@ static int snd_p16v_pcm_prepare_capture(snd_pcm_substream_t *substream)
 	emu10k1_t *emu = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int channel = substream->pcm->device - emu->p16v_device_offset;
-	//printk("prepare:channel_number=%d, rate=%d, format=0x%x, channels=%d, buffer_size=%ld, period_size=%ld, frames_to_bytes=%d\n",channel, runtime->rate, runtime->format, runtime->channels, runtime->buffer_size, runtime->period_size,  frames_to_bytes(runtime, 1));
+	u32 tmp;
+	//printk("prepare capture:channel_number=%d, rate=%d, format=0x%x, channels=%d, buffer_size=%ld, period_size=%ld, frames_to_bytes=%d\n",channel, runtime->rate, runtime->format, runtime->channels, runtime->buffer_size, runtime->period_size,  frames_to_bytes(runtime, 1));
+	tmp = snd_emu10k1_ptr_read(emu, A_SPDIF_SAMPLERATE, channel);
+        switch (runtime->rate) {
+	case 44100:
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0x0e00) | 0x0800);
+	  break;
+	case 96000:
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0x0e00) | 0x0400);
+	  break;
+	case 192000:
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0x0e00) | 0x0200);
+	  break;
+	case 48000:
+	default:
+	  snd_emu10k1_ptr_write(emu, A_SPDIF_SAMPLERATE, channel, (tmp & ~0x0e00) | 0x0000);
+	  break;
+	}
+	/* FIXME: Check emu->buffer.size before actually writing to it. */
 	snd_emu10k1_ptr20_write(emu, 0x13, channel, 0);
 	snd_emu10k1_ptr20_write(emu, CAPTURE_DMA_ADDR, channel, runtime->dma_addr);
 	snd_emu10k1_ptr20_write(emu, CAPTURE_BUFFER_SIZE, channel, frames_to_bytes(runtime, runtime->buffer_size)<<16); // buffer size in bytes
@@ -614,7 +639,7 @@ int snd_p16v_pcm(emu10k1_t *emu, int device, snd_pcm_t **rpcm)
  		if ((err = snd_pcm_lib_preallocate_pages(substream, 
 	                                           SNDRV_DMA_TYPE_DEV, 
 	                                           snd_dma_pci_data(emu->pci), 
-	                                           64*1024, 64*1024)) < 0)
+	                                           65536 - 64, 65536 - 64)) < 0)
 			return err;
 		//snd_printk("preallocate capture substream: err=%d\n", err);
 	}
@@ -916,6 +941,56 @@ static snd_kcontrol_new_t snd_p16v_capture_source __devinitdata =
 	.get =		snd_p16v_capture_source_get,
 	.put =		snd_p16v_capture_source_put
 };
+
+static int snd_p16v_capture_channel_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
+{
+	static char *texts[4] = { "0", "1", "2", "3",  };
+
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+	uinfo->count = 1;
+	uinfo->value.enumerated.items = 4;
+	if (uinfo->value.enumerated.item > 3)
+                uinfo->value.enumerated.item = 3;
+	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
+	return 0;
+}
+
+static int snd_p16v_capture_channel_get(snd_kcontrol_t * kcontrol,
+					snd_ctl_elem_value_t * ucontrol)
+{
+	emu10k1_t *emu = snd_kcontrol_chip(kcontrol);
+
+	ucontrol->value.enumerated.item[0] = emu->p16v_capture_channel;
+	return 0;
+}
+
+static int snd_p16v_capture_channel_put(snd_kcontrol_t * kcontrol,
+					snd_ctl_elem_value_t * ucontrol)
+{
+	emu10k1_t *emu = snd_kcontrol_chip(kcontrol);
+	unsigned int val;
+	int change = 0;
+	u32 tmp;
+
+	val = ucontrol->value.enumerated.item[0] ;
+	change = (emu->p16v_capture_channel != val);
+	if (change) {
+		emu->p16v_capture_channel = val;
+		tmp = snd_emu10k1_ptr20_read(emu, CAPTURE_P16V_SOURCE, 0) & 0xfffc;
+		snd_emu10k1_ptr20_write(emu, CAPTURE_P16V_SOURCE, 0, tmp | val);
+	}
+        return change;
+}
+
+static snd_kcontrol_new_t snd_p16v_capture_channel __devinitdata =
+{
+	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER,
+	.name =		"HD Capture channel",
+	.info =		snd_p16v_capture_channel_info,
+	.get =		snd_p16v_capture_channel_get,
+	.put =		snd_p16v_capture_channel_put
+};
+
 int snd_p16v_mixer(emu10k1_t *emu)
 {
         int err;
@@ -954,6 +1029,10 @@ int snd_p16v_mixer(emu10k1_t *emu)
         if ((err = snd_ctl_add(card, kctl)))
                 return err;
         if ((kctl = snd_ctl_new1(&snd_p16v_capture_source, emu)) == NULL)
+                return -ENOMEM;
+        if ((err = snd_ctl_add(card, kctl)))
+                return err;
+        if ((kctl = snd_ctl_new1(&snd_p16v_capture_channel, emu)) == NULL)
                 return -ENOMEM;
         if ((err = snd_ctl_add(card, kctl)))
                 return err;

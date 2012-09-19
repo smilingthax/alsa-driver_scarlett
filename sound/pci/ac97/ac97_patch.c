@@ -1507,7 +1507,7 @@ static void ad1888_update_jacks(ac97_t *ac97)
 			     is_shared_linein(ac97) ? 0 : 1 << 12);
 	/* shared Mic */
 	snd_ac97_update_bits(ac97, AC97_AD_MISC, 1 << 11,
-			     is_shared_micin(ac97) ? 0 : 1 << 13);
+			     is_shared_micin(ac97) ? 0 : 1 << 11);
 }
 
 static const snd_kcontrol_new_t snd_ac97_ad1888_controls[] = {
@@ -1585,8 +1585,9 @@ static struct snd_ac97_build_ops patch_ad1980_build_ops = {
 	.build_post_spdif = patch_ad198x_post_spdif,
 	.build_specific = patch_ad1980_specific,
 #ifdef CONFIG_PM
-	.resume = ad18xx_resume
+	.resume = ad18xx_resume,
 #endif
+	.update_jacks = ad1888_update_jacks,
 };
 
 int patch_ad1980(ac97_t * ac97)
@@ -1614,8 +1615,9 @@ static struct snd_ac97_build_ops patch_ad1985_build_ops = {
 	.build_post_spdif = patch_ad198x_post_spdif,
 	.build_specific = patch_ad1985_specific,
 #ifdef CONFIG_PM
-	.resume = ad18xx_resume
+	.resume = ad18xx_resume,
 #endif
+	.update_jacks = ad1888_update_jacks,
 };
 
 int patch_ad1985(ac97_t * ac97)

@@ -36,21 +36,9 @@
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/hwdep.h>
+#include <sound/info.h>
 
 #include "usbaudio.h"
-
-#if 0
-#include <linux/lirc.h>
-#else
-/* only those symbols from lirc.h we actually need: */
-#include <linux/ioctl.h>
-#define LIRC_MODE2REC(x)	((x) << 16)
-#define LIRC_MODE_CODE		0x00000008
-#define LIRC_CAN_REC_CODE	LIRC_MODE2REC(LIRC_MODE_CODE)
-#define LIRC_GET_FEATURES	_IOR('i', 0x00000000, __u32)
-#define LIRC_GET_REC_MODE	_IOR('i', 0x00000002, __u32)
-#define LIRC_SET_REC_MODE	_IOW('i', 0x00000012, __u32)
-#endif
 
 /*
  */
@@ -83,6 +71,8 @@ struct usb_mixer_interface {
 	struct urb *rc_urb;
 	struct usb_ctrlrequest *rc_setup_packet;
 	u8 rc_buffer[6];
+
+	u8 audigy2nx_leds[3];
 };
 
 
@@ -1633,11 +1623,22 @@ static void snd_usb_mixer_notify_id(struct usb_mixer_interface *mixer,
 static void snd_usb_mixer_memory_change(struct usb_mixer_interface *mixer,
 					int unitid)
 {
-	/* SB remote control */
-	if (mixer->rc_type != RC_NONE && unitid == 0) {
-		/* read control code from device memory */
+	if (mixer->rc_type == RC_NONE)
+		return;
+	/* unit ids specific to Extigy/Audigy 2 NX: */
+	switch (unitid) {
+	case 0: /* remote control */
 		mixer->rc_urb->dev = mixer->chip->dev;
 		usb_submit_urb(mixer->rc_urb, GFP_ATOMIC);
+		break;
+	case 4: /* digital in jack */
+	case 7: /* line in jacks */
+	case 19: /* speaker out jacks */
+	case 20: /* headphones out jack */
+		break;
+	default:
+		snd_printd(KERN_DEBUG "memory change in unknown unit %d\n", unitid);
+		break;
 	}
 }
 
@@ -1773,25 +1774,6 @@ static unsigned int snd_usb_sbrc_hwdep_poll(snd_hwdep_t *hw, struct file *file,
 	return mixer->rc_code ? POLLIN | POLLRDNORM : 0;
 }
 
-static int snd_usb_sbrc_hwdep_ioctl(snd_hwdep_t *hw, struct file *file,
-				    unsigned int cmd, unsigned long arg)
-{
-	u32 __user *argp = (u32 __user *)arg;
-	u32 mode;
-
-	switch (cmd) {
-	case LIRC_GET_FEATURES:
-		return put_user(LIRC_CAN_REC_CODE, argp);
-	case LIRC_GET_REC_MODE:
-		return put_user(LIRC_MODE_CODE, argp);
-	case LIRC_SET_REC_MODE:
-		if (get_user(mode, argp))
-			return -EFAULT;
-		return mode == LIRC_MODE_CODE ? 0 : -ENOSYS;
-	}
-	return -ENOTTY;
-}
-
 static int snd_usb_soundblaster_remote_init(struct usb_mixer_interface *mixer)
 {
 	snd_hwdep_t *hwdep;
@@ -1822,7 +1804,6 @@ static int snd_usb_soundblaster_remote_init(struct usb_mixer_interface *mixer)
 	hwdep->ops.open = snd_usb_sbrc_hwdep_open;
 	hwdep->ops.release = snd_usb_sbrc_hwdep_release;
 	hwdep->ops.poll = snd_usb_sbrc_hwdep_poll;
-	hwdep->ops.ioctl = snd_usb_sbrc_hwdep_ioctl; 
 
 	mixer->rc_urb = usb_alloc_urb(0, GFP_KERNEL);
 	if (!mixer->rc_urb)
@@ -1844,6 +1825,116 @@ static int snd_usb_soundblaster_remote_init(struct usb_mixer_interface *mixer)
 			     (u8*)mixer->rc_setup_packet, mixer->rc_buffer, len,
 			     snd_usb_soundblaster_remote_complete, mixer);
 	return 0;
+}
+
+static int snd_audigy2nx_led_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int snd_audigy2nx_led_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	struct usb_mixer_interface *mixer = snd_kcontrol_chip(kcontrol);
+	int index = kcontrol->private_value;
+
+	ucontrol->value.integer.value[0] = mixer->audigy2nx_leds[index];
+	return 0;
+}
+
+static int snd_audigy2nx_led_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	struct usb_mixer_interface *mixer = snd_kcontrol_chip(kcontrol);
+	int index = kcontrol->private_value;
+	int value = ucontrol->value.integer.value[0];
+	int err, changed;
+
+	if (value > 1)
+		return -EINVAL;
+	changed = value != mixer->audigy2nx_leds[index];
+	err = snd_usb_ctl_msg(mixer->chip->dev,
+			      usb_sndctrlpipe(mixer->chip->dev, 0), 0x24,
+			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+			      value, index + 2, NULL, 0, 100);
+	if (err < 0)
+		return err;
+	mixer->audigy2nx_leds[index] = value;
+	return changed;
+}
+
+static snd_kcontrol_new_t snd_audigy2nx_controls[] = {
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "CMSS LED Switch",
+		.info = snd_audigy2nx_led_info,
+		.get = snd_audigy2nx_led_get,
+		.put = snd_audigy2nx_led_put,
+		.private_value = 0,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "Power LED Switch",
+		.info = snd_audigy2nx_led_info,
+		.get = snd_audigy2nx_led_get,
+		.put = snd_audigy2nx_led_put,
+		.private_value = 1,
+	},
+	{
+		.iface = SNDRV_CTL_ELEM_IFACE_MIXER,
+		.name = "Dolby Digital LED Switch",
+		.info = snd_audigy2nx_led_info,
+		.get = snd_audigy2nx_led_get,
+		.put = snd_audigy2nx_led_put,
+		.private_value = 2,
+	},
+};
+
+static int snd_audigy2nx_controls_create(struct usb_mixer_interface *mixer)
+{
+	int i, err;
+
+	for (i = 0; i < ARRAY_SIZE(snd_audigy2nx_controls); ++i) {
+		err = snd_ctl_add(mixer->chip->card,
+				  snd_ctl_new1(&snd_audigy2nx_controls[i], mixer));
+		if (err < 0)
+			return err;
+	}
+	mixer->audigy2nx_leds[1] = 1; /* Power LED is on by default */
+	return 0;
+}
+
+static void snd_audigy2nx_proc_read(snd_info_entry_t *entry,
+				    snd_info_buffer_t *buffer)
+{
+	static const struct {
+		int unitid;
+		const char *name;
+	} jacks[] = {
+		{4,  "dig in "},
+		{7,  "line in"},
+		{19, "spk out"},
+		{20, "hph out"},
+	};
+	struct usb_mixer_interface *mixer = entry->private_data;
+	int i, err;
+	u8 buf[3];
+
+	snd_iprintf(buffer, "%s jacks\n\n", mixer->chip->card->shortname);
+	for (i = 0; i < ARRAY_SIZE(jacks); ++i) {
+		snd_iprintf(buffer, "%s: ", jacks[i].name);
+		err = snd_usb_ctl_msg(mixer->chip->dev,
+				      usb_rcvctrlpipe(mixer->chip->dev, 0),
+				      GET_MEM, USB_DIR_IN | USB_TYPE_CLASS |
+				      USB_RECIP_INTERFACE, 0,
+				      jacks[i].unitid << 8, buf, 3, 100);
+		if (err == 3 && buf[0] == 3)
+			snd_iprintf(buffer, "%02x %02x\n", buf[1], buf[2]);
+		else
+			snd_iprintf(buffer, "?\n");
+	}
 }
 
 int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif)
@@ -1871,23 +1962,31 @@ int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif)
 	}
 
 	if ((err = snd_usb_mixer_controls(mixer)) < 0 ||
-	    (err = snd_usb_mixer_status_create(mixer)) < 0) {
-		snd_usb_mixer_free(mixer);
-		return err;
-	}
+	    (err = snd_usb_mixer_status_create(mixer)) < 0)
+		goto _error;
 
-	if ((err = snd_usb_soundblaster_remote_init(mixer)) < 0) {
-		snd_usb_mixer_free(mixer);
-		return err;
+	if ((err = snd_usb_soundblaster_remote_init(mixer)) < 0)
+		goto _error;
+
+	if (mixer->chip->usb_id == USB_ID(0x041e, 0x3020)) {
+		snd_info_entry_t *entry;
+
+		if ((err = snd_audigy2nx_controls_create(mixer)) < 0)
+			goto _error;
+		if (!snd_card_proc_new(chip->card, "audigy2nx", &entry))
+			snd_info_set_text_ops(entry, mixer, 1024,
+					      snd_audigy2nx_proc_read);
 	}
 
 	err = snd_device_new(chip->card, SNDRV_DEV_LOWLEVEL, mixer, &dev_ops);
-	if (err < 0) {
-		snd_usb_mixer_free(mixer);
-		return err;
-	}
+	if (err < 0)
+		goto _error;
 	list_add(&mixer->list, &chip->mixer_list);
 	return 0;
+
+_error:
+	snd_usb_mixer_free(mixer);
+	return err;
 }
 
 void snd_usb_mixer_disconnect(struct list_head *p)

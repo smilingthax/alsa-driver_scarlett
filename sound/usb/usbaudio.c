@@ -2499,32 +2499,31 @@ static int parse_audio_endpoints(snd_usb_audio_t *chip, int iface_no)
 
 		/* some quirks for attributes here */
 
-		/* workaround for AudioTrak Optoplay */
-		if (chip->usb_id == USB_ID(0x0a92, 0x0053)) {
+		switch (chip->usb_id) {
+		case USB_ID(0x0a92, 0x0053): /* AudioTrak Optoplay */
 			/* Optoplay sets the sample rate attribute although
 			 * it seems not supporting it in fact.
 			 */
 			fp->attributes &= ~EP_CS_ATTR_SAMPLE_RATE;
-		}
-
-		/* workaround for M-Audio Audiophile USB */
-		if (chip->usb_id == USB_ID(0x0763, 0x2003)) {
+			break;
+		case USB_ID(0x041e, 0x3020): /* Creative SB Audigy 2 NX */
+		case USB_ID(0x0763, 0x2003): /* M-Audio Audiophile USB */
 			/* doesn't set the sample rate attribute, but supports it */
 			fp->attributes |= EP_CS_ATTR_SAMPLE_RATE;
-		}
-
+			break;
+		case USB_ID(0x047f, 0x0ca1): /* plantronics headset */
+		case USB_ID(0x077d, 0x07af): /* Griffin iMic (note that there is
+						an older model 77d:223) */
 		/*
 		 * plantronics headset and Griffin iMic have set adaptive-in
 		 * although it's really not...
 		 */
-		if (chip->usb_id == USB_ID(0x047f, 0x0ca1) ||
-		    /* Griffin iMic (note that there is an older model 77d:223) */
-		    chip->usb_id == USB_ID(0x077d, 0x07af)) {
 			fp->ep_attr &= ~EP_ATTR_MASK;
 			if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 				fp->ep_attr |= EP_ATTR_ADAPTIVE;
 			else
 				fp->ep_attr |= EP_ATTR_SYNC;
+			break;
 		}
 
 		/* ok, let's parse further... */
@@ -2926,6 +2925,25 @@ static int snd_usb_extigy_boot_quirk(struct usb_device *dev, struct usb_interfac
 	return 0;
 }
 
+static int snd_usb_audigy2nx_boot_quirk(struct usb_device *dev)
+{
+#if 0
+	/* TODO: enable this when high speed synchronization actually works */
+	u8 buf = 1;
+
+	snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), 0x2a,
+			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+			0, 0, &buf, 1, 1000);
+	if (buf == 0) {
+		snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), 0x29,
+				USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_OTHER,
+				1, 2000, NULL, 0, 1000);
+		return -ENODEV;
+	}
+#endif
+	return 0;
+}
+
 
 /*
  * audio-interface quirks
@@ -3111,8 +3129,6 @@ static int snd_usb_audio_create(struct usb_device *dev, int idx,
 
 	snd_usb_audio_create_proc(chip);
 
-	snd_card_set_dev(card, &dev->dev);
-
 	*rchip = chip;
 	return 0;
 }
@@ -3155,6 +3171,11 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
 			goto __err_val;
 		config = dev->actconfig;
 	}
+	/* SB Audigy 2 NX needs its own boot-up magic, too */
+	if (id == USB_ID(0x041e, 0x3020)) {
+		if (snd_usb_audigy2nx_boot_quirk(dev) < 0)
+			goto __err_val;
+	}
 
 	/*
 	 * found a config.  now register to ALSA
@@ -3189,6 +3210,7 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
 				if (snd_usb_audio_create(dev, i, quirk, &chip) < 0) {
 					goto __error;
 				}
+				snd_card_set_dev(chip->card, &intf->dev);
 				break;
 			}
 		if (! chip) {
