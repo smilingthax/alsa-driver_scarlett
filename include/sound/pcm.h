@@ -474,7 +474,7 @@ int snd_pcm_notify(snd_pcm_notify_t *notify, int nfree);
  *  Native I/O
  */
 
-extern rwlock_t snd_pcm_link_lock;
+extern rwlock_t snd_pcm_link_rwlock;
 
 int snd_pcm_info(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
 int snd_pcm_info_user(snd_pcm_substream_t * substream, snd_pcm_info_t *info);
@@ -576,50 +576,40 @@ static inline void div64_32(u_int64_t *n, u_int32_t div, u_int32_t *rem)
  *  PCM library
  */
 
-static inline void snd_pcm_stream_lock_common(snd_pcm_substream_t *substream)
-{
-	spin_lock(&substream->link->lock);
-}
-
-static inline void snd_pcm_stream_unlock_common(snd_pcm_substream_t *substream)
-{
-	spin_unlock(&substream->link->lock);
-}
-
 static inline void snd_pcm_stream_lock(snd_pcm_substream_t *substream)
 {
-	read_lock(&snd_pcm_link_lock);
-	snd_pcm_stream_lock_common(substream);
+	read_lock(&snd_pcm_link_rwlock);
+	spin_lock(&substream->local_link.lock);
 }
 
 static inline void snd_pcm_stream_unlock(snd_pcm_substream_t *substream)
 {
-	snd_pcm_stream_unlock_common(substream);
-	read_unlock(&snd_pcm_link_lock);
+	spin_unlock(&substream->local_link.lock);
+	read_unlock(&snd_pcm_link_rwlock);
 }
 
 static inline void snd_pcm_stream_lock_irq(snd_pcm_substream_t *substream)
 {
-	read_lock_irq(&snd_pcm_link_lock);
-	snd_pcm_stream_lock_common(substream);
+	read_lock_irq(&snd_pcm_link_rwlock);
+	spin_lock(&substream->local_link.lock);
 }
 
 static inline void snd_pcm_stream_unlock_irq(snd_pcm_substream_t *substream)
 {
-	snd_pcm_stream_unlock_common(substream);
-	read_unlock_irq(&snd_pcm_link_lock);
+	spin_unlock(&substream->local_link.lock);
+	read_unlock_irq(&snd_pcm_link_rwlock);
 }
 
 #define snd_pcm_stream_lock_irqsave(substream, flags) \
 do { \
-	read_lock_irqsave(&snd_pcm_link_lock, (flags)); \
-	snd_pcm_stream_lock_common(substream); \
+	read_lock_irqsave(&snd_pcm_link_rwlock, (flags)); \
+	spin_lock(&substream->local_link.lock); \
 } while (0)
 
 #define snd_pcm_stream_unlock_irqrestore(substream, flags) \
 do { \
-	snd_pcm_stream_unlock_common(substream); \
-	read_unlock_irqrestore(&snd_pcm_link_lock, (flags)); \
+	spin_unlock(&substream->local_link.lock); \
+	read_unlock_irqrestore(&snd_pcm_link_rwlock, (flags)); \
 } while (0)
 
 #define snd_pcm_for_each_streams(pos, substream) \

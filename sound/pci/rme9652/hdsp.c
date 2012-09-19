@@ -3528,7 +3528,7 @@ static int snd_hdsp_hw_rule_channels_rate(snd_pcm_hw_params_t *params,
 		snd_interval_t t = {
 			.min = hdsp->ds_channels,
 			.max = hdsp->ds_channels,
-			integer: 1,
+			.integer = 1,
 		};
 		return snd_interval_refine(c, &t);
 	} else if (r->max < 64000) {
@@ -3552,7 +3552,7 @@ static int snd_hdsp_hw_rule_rate_channels(snd_pcm_hw_params_t *params,
 		snd_interval_t t = {
 			.min = 32000,
 			.max = 48000,
-			integer: 1,
+			.integer = 1,
 		};
 		return snd_interval_refine(r, &t);
 	} else if (c->max <= hdsp->ds_channels) {

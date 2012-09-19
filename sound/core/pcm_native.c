@@ -64,7 +64,7 @@ static int snd_pcm_hw_params_old_user(snd_pcm_substream_t * substream, struct sn
  *
  */
 
-rwlock_t snd_pcm_link_lock = RW_LOCK_UNLOCKED;
+rwlock_t snd_pcm_link_rwlock = RW_LOCK_UNLOCKED;
 
 
 static inline mm_segment_t snd_enter_user(void)
@@ -607,8 +607,14 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 	snd_pcm_substream_t *s; \
 	int err; \
 	res = 0; \
+	if (substream->link != &substream->local_link) { \
+		spin_lock(&substream->link->lock); \
+		spin_unlock(&substream->local_link.lock); \
+	} \
 	list_for_each(pos, &substream->link->substreams) { \
 		s = list_entry(pos, snd_pcm_substream_t, link_list); \
+		if (substream->link != &substream->local_link) \
+			spin_lock(&s->local_link.lock); \
 		res = snd_pcm_pre_##aname(s, state); \
 		if (res < 0) \
 			break; \
@@ -626,7 +632,13 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 			       _action_done: \
 				snd_pcm_post_##aname(s, state); \
 			} \
+			if (substream->link != &substream->local_link) \
+				spin_unlock(&s->local_link.lock); \
 		} \
+	} \
+	if (substream->link != &substream->local_link) { \
+		spin_lock(&substream->local_link.lock); \
+		spin_unlock(&substream->link->lock); \
 	} \
 }
 
@@ -859,7 +871,9 @@ static int snd_pcm_resume(snd_pcm_substream_t *substream)
 
 	snd_power_lock(card);
 	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0) {
+		snd_pcm_stream_lock(substream);
 		_SND_PCM_ACTION(resume, substream, 0, res, 1);
+		snd_pcm_stream_unlock(substream);
 	}
 	snd_power_unlock(card);
 	return res;
@@ -1303,7 +1317,7 @@ static int snd_pcm_link(snd_pcm_substream_t *substream, int fd)
 		return -EBADFD;
 	pcm_file = snd_magic_cast(snd_pcm_file_t, file->private_data, return -ENXIO);
 	substream1 = pcm_file->substream;
-	write_lock_irq(&snd_pcm_link_lock);
+	write_lock_irq(&snd_pcm_link_rwlock);
 	if (substream->runtime->status->state != substream1->runtime->status->state) {
 		res = -EBADFD;
 		goto _end;
@@ -1325,7 +1339,7 @@ static int snd_pcm_link(snd_pcm_substream_t *substream, int fd)
 	list_add_tail(&substream1->link_list, &substream->link->substreams);
 	substream1->link = substream->link;
  _end:
-	write_unlock_irq(&snd_pcm_link_lock);
+	write_unlock_irq(&snd_pcm_link_rwlock);
 	fput(file);
 	return res;
 }
@@ -1342,7 +1356,7 @@ static int snd_pcm_unlink(snd_pcm_substream_t *substream)
 	struct list_head *pos;
 	int res = 0, count = 0;
 
-	write_lock_irq(&snd_pcm_link_lock);
+	write_lock_irq(&snd_pcm_link_rwlock);
 	if (substream->link == &substream->local_link) {
 		res = -EINVAL;
 		goto _end;
@@ -1361,7 +1375,7 @@ static int snd_pcm_unlink(snd_pcm_substream_t *substream)
 	}
 	relink_to_local(substream);
        _end:
-	write_unlock_irq(&snd_pcm_link_lock);
+	write_unlock_irq(&snd_pcm_link_rwlock);
 	return 0;
 }
 
