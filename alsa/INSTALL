@@ -258,6 +258,13 @@ Additional Modules
           configure option to build this driver.  HPK module must be
           installed beforehand for compilation of ALSA snd-asihpi module.
 
+  Module snd-pcxhr
+  ----------------
+
+    Module for Digigram PCXHR boards
+
+    Module supports up to 8 cards.
+
 
 Trouble Shooting
 ================
