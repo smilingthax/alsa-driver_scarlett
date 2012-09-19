@@ -7,6 +7,7 @@
 
 %dir linux/sound/pci
 |snd-bt87x snd-pcm
+|snd-intel8x0m snd-pcm
 
 %dir linux/sound/pci/pdplus
 |snd-pdplus snd-pcm

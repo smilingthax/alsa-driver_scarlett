@@ -14,8 +14,10 @@ clean-files := cs4281.c es1968.c intel8x0.c maestro3.c
 obj-$(CONFIG_SND) += pdplus/ mixart/ au88x0/
 
 snd-bt87x-objs := bt87x.o
+snd-intel8x0m-objs := intel8x0m.o
 
 obj-$(CONFIG_SND_BT87X) += snd-bt87x.o
+obj-$(CONFIG_SND_INTEL8X0M) += snd-intel8x0m.o
 
 #
 #
