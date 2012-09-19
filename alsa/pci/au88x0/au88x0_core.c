@@ -1777,7 +1777,7 @@ int  vortex_adb_allocroute(vortex_t *vortex, int dma, int nr_ch, int dir, int ty
 	if ((nr_ch == 3) || ((dir == SNDRV_PCM_STREAM_CAPTURE)&&(nr_ch > 2)))
 		return -EBUSY;
 	
-	spin_lock(vortex->lock);
+	spin_lock(&vortex->lock);
 	if (dma >= 0) {
    		en = 0;
 		vortex_adb_checkinout(vortex, vortex->dma_adb[dma].resources, en, VORTEX_RESOURCE_DMA);
@@ -1884,7 +1884,7 @@ int  vortex_adb_allocroute(vortex_t *vortex, int dma, int nr_ch, int dir, int ty
 		}
 	}
 	vortex->dma_adb[dma].nr_ch = nr_ch;
-	spin_unlock(vortex->lock);
+	spin_unlock(&vortex->lock);
 	
 #if 0
 	/* AC97 Codec channel setup. FIXME: this has no effect !! */
