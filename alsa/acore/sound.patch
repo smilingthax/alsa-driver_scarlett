@@ -26,18 +26,20 @@
  	.open =		snd_open
  };
  
-@@ -231,7 +241,11 @@
- 		devfs_mk_cdev(MKDEV(major, minor), S_IFCHR | device_mode, "snd/%s", name);
- 	if (card)
+@@ -231,9 +241,13 @@
  		device = card->dev;
+ 		class_device = card->parent_device;
+ 	}
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
 +	class_simple_device_add(sound_class, MKDEV(major, minor), device, name);
 +#else
- 	class_device_create(sound_class, NULL, MKDEV(major, minor), device, "%s", name);
+ 	class_device = class_device_create(sound_class, class_device,
+ 					   MKDEV(major, minor), device,
+ 					   "%s", name);
 +#endif
+ 	if (type == SNDRV_DEVICE_TYPE_CONTROL)
+ 		card->parent_device = class_device;
  
- 	up(&sound_mutex);
- 	return 0;
 @@ -263,7 +281,11 @@
  
  	if (strncmp(mptr->name, "controlC", 8) || card->number >= cards_limit) /* created in sound.c */
