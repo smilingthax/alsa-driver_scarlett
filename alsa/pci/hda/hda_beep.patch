@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pci/hda/hda_beep.c	2009-01-12 10:34:23.000000000 +0100
-+++ hda_beep.c	2009-01-12 12:15:10.000000000 +0100
+--- ../../alsa-kernel/pci/hda/hda_beep.c	2009-02-06 17:32:51.000000000 +0100
++++ hda_beep.c	2009-02-06 17:36:25.000000000 +0100
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -71,6 +71,6 @@
 +#else
  		kfree(beep);
 +#endif
+ 		codec->beep = NULL;
  	}
  }
- EXPORT_SYMBOL_HDA(snd_hda_detach_beep_device);

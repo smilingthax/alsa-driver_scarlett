@@ -125,3 +125,8 @@ utils/alsasound.posix
 utils/buildrpm
 utils/docproc
 utils/mod-deps
+doc/DocBook/*.xml
+doc/DocBook/*.sgml
+doc/DocBook/*.pdf
+doc/DocBook/alsa-driver-api
+doc/DocBook/writing-an-alsa-driver
