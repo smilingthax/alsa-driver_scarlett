@@ -96,4 +96,15 @@ static inline int usb_endpoint_xfer_control(
 #endif /* < 2.6.21 */
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#define PM_EVENT_AUTO	0
+static inline int usb_autopm_get_interface(struct usb_interface *intf)
+{
+	return 0;
+}
+static inline void usb_autopm_put_interface(struct usb_interface *intf)
+{
+}
+#endif /* < 2.6.20 */
+
 #endif /* __ALSA_USBCOMPAT_H */
