@@ -1,66 +1,108 @@
---- memalloc.c	2004-03-06 17:00:36.556407787 +0100
-+++ memalloc.c	2004-03-06 17:00:32.107418149 +0100
+--- memalloc.c	2004-04-16 10:55:50.373199180 +0200
++++ memalloc.c	2004-04-16 10:57:22.365350732 +0200
 @@ -1,3 +1,4 @@
 +#include "memalloc.inc"
  /*
   *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
   *                   Takashi Iwai <tiwai@suse.de>
-@@ -89,6 +90,7 @@
+@@ -91,7 +92,43 @@
   *  Hacks
   */
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- static void *snd_dma_alloc_coherent1(struct device *dev, size_t size,
- 				     dma_addr_t *dma_handle, int flags)
- {
-@@ -112,7 +114,15 @@
- #undef dma_free_coherent
- #define dma_free_coherent snd_dma_free_coherent1
- 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 5)
++static void *snd_dma_alloc_coherent1(struct device *dev, size_t size,
++				     dma_addr_t *dma_handle, int flags)
++{
++	if (dev)
++		return dma_alloc_coherent(dev, size, dma_handle, flags);
++	else /* FIXME: dma_alloc_coherent does't always accept dev=NULL */
++		return pci_alloc_consistent(NULL, size, dma_handle);
++}
++
++static void snd_dma_free_coherent1(struct device *dev, size_t size, void *dma_addr,
++				   dma_addr_t dma_handle)
++{
++	if (dev)
++		return dma_free_coherent(dev, size, dma_addr, dma_handle);
++	else
++		return pci_free_consistent(NULL, size, dma_addr, dma_handle);
++}
++
++#undef dma_alloc_coherent
++#define dma_alloc_coherent snd_dma_alloc_coherent1
++#undef dma_free_coherent
++#define dma_free_coherent snd_dma_free_coherent1
++#endif /* < 2.6.5 */
++
 +#else
 +
 +/* for 2.2/2.4 kernels */
 +#define dma_alloc_coherent(dev,size,addr,flags) pci_alloc_consistent((struct pci_dev *)(dev),size,addr)
 +#define dma_free_coherent(dev,size,ptr,addr) pci_free_consistent((struct pci_dev *)(dev),size,ptr,addr)
- 
++
 +#endif /* >= 2.6.0 */
 +
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
  #if defined(__i386__) || defined(__ppc__) || defined(__x86_64__)
- 
++
  /*
-@@ -136,13 +146,29 @@
+  * A hack to allocate large buffers via dma_alloc_coherent()
+  *
+@@ -108,21 +145,45 @@
+  * so dma_mask doesn't have to be messed with.
+  */
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
++#define VALID_DMA_MASK(dev)	(dev)->dma_mask
++#define GET_DMA_MASK(dev)	*(dev)->dma_mask
++#define SET_DMA_MASK(dev,val)	(*(dev)->dma_mask = (val))
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 5)
++#define GET_COHERENT_DMA_MASK(dev)	(dev)->coherent_dma_mask
++#define SET_COHERENT_DMA_MASK(dev,val)	((dev)->coherent_dma_mask = (val))
++#else
++#define GET_COHERENT_DMA_MASK(dev)	0 /* dummy */
++#define SET_COHERENT_DMA_MASK(dev,val)
++#endif
++#else /* 2.4.x */
++#define VALID_DMA_MASK(dev)	0
++#define GET_DMA_MASK(dev)	((struct pci_dev *)(dev))->dma_mask
++#define SET_DMA_MASK(dev,val)	(((struct pci_dev *)(dev))->dma_mask = (val))
++#ifdef CONFIG_HAVE_PCI_CONSISTENT_DMA_MASK
++#define GET_COHERENT_DMA_MASK(dev)	((struct pci_dev *)(dev))->consistent_dma_mask
++#define SET_COHERENT_DMA_MASK(dev,val)	(((struct pci_dev *)(dev))->consistent_dma_mask = (val))
++#else
++#define GET_COHERENT_DMA_MASK(dev)	0 /* dummy */
++#define SET_COHERENT_DMA_MASK(dev,val)
++#endif
++#endif
++
+ static void *snd_dma_hack_alloc_coherent(struct device *dev, size_t size,
+ 					 dma_addr_t *dma_handle, int flags)
  {
  	void *ret;
- 	u64 dma_mask;
-+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
-+	struct pci_dev *pci = (struct pci_dev *)dev;
-+#endif
+ 	u64 dma_mask, coherent_dma_mask;
  
 -	if (dev == NULL || !dev->dma_mask)
-+	if (dev == NULL
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
-+	    || !dev->dma_mask
-+#endif
-+	    )
++	if (dev == NULL || VALID_DMA_MASK(dev))
  		return dma_alloc_coherent(dev, size, dma_handle, flags);
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	dma_mask = *dev->dma_mask;
- 	*dev->dma_mask = 0xffffffff; 	/* do without masking */
-+#else
-+	dma_mask = pci->dma_mask;
-+	pci->dma_mask = 0xffffffff; 	/* do without masking */
-+#endif
+-	dma_mask = *dev->dma_mask;
+-	coherent_dma_mask = dev->coherent_dma_mask;
+-	*dev->dma_mask = 0xffffffff; 	/* do without masking */
+-	dev->coherent_dma_mask = 0xffffffff; 	/* do without masking */
++	dma_mask = GET_DMA_MASK(dev);
++	coherent_dma_mask = GET_COHERENT_DMA_MASK(dev);
++	SET_DMA_MASK(dev, 0xffffffff); 	/* do without masking */
++	SET_COHERENT_DMA_MASK(dev, 0xffffffff); 	/* do without masking */
  	ret = dma_alloc_coherent(dev, size, dma_handle, flags);
-+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0)
- 	*dev->dma_mask = dma_mask;	/* restore */
-+#else
-+	pci->dma_mask = dma_mask;	/* restore */
-+#endif
+-	*dev->dma_mask = dma_mask;	/* restore */
+-	dev->coherent_dma_mask = coherent_dma_mask;	/* restore */
++	SET_DMA_MASK(dev, dma_mask);	/* restore */
++	SET_COHERENT_DMA_MASK(dev, coherent_dma_mask)	/* restore */;
  	if (ret) {
  		/* obtained address is out of range? */
  		if (((unsigned long)*dma_handle + size - 1) & ~dma_mask) {
-@@ -163,6 +189,8 @@
+@@ -147,6 +208,8 @@
  #define dma_alloc_coherent snd_dma_hack_alloc_coherent
  
  #endif /* arch */
@@ -69,7 +111,7 @@
  
  /*
   *
-@@ -797,9 +825,24 @@
+@@ -781,9 +844,24 @@
  		case SNDRV_DMA_TYPE_DEV:
  		case SNDRV_DMA_TYPE_DEV_SG:
  			if (mem->dev.dev) {
@@ -94,7 +136,7 @@
  			} else
  				len += sprintf(page + len, "ISA");
  			break;
-@@ -875,3 +918,5 @@
+@@ -840,3 +918,5 @@
  EXPORT_SYMBOL(snd_malloc_pages);
  EXPORT_SYMBOL(snd_malloc_pages_fallback);
  EXPORT_SYMBOL(snd_free_pages);
