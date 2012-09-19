@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.2.1
+version=0.2.2
 protocol=
 distrib=unknown
 distribver=0.0
@@ -286,7 +286,10 @@ question_bool() {
 # Set $distrib and $distribver
 check_distribution() {
 	distrib=$(lsb_release -ds 2> /dev/null | cut -d ' ' -f 1)
-	distrib=${distrib:1}
+	local first=${distrib:0:1}
+	if test "$first" = "\""; then
+		distrib=${distrib:1}
+	fi
 	distribver=$(lsb_release -rs 2> /dev/null)
 	if test -z "$distrib"; then
 		echo >&2 "Unable to determine Linux distribution."
