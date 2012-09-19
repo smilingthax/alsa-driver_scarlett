@@ -322,45 +322,6 @@ static int dapm_connect_mixer(struct snd_soc_dapm_context *dapm,
 	return -ENODEV;
 }
 
-/* update dapm codec register bits */
-static int dapm_update_bits(struct snd_soc_dapm_widget *widget)
-{
-	int change, power;
-	unsigned int old, new;
-	struct snd_soc_codec *codec = widget->codec;
-	struct snd_soc_dapm_context *dapm = widget->dapm;
-	struct snd_soc_card *card = dapm->card;
-
-	/* check for valid widgets */
-	if (widget->reg < 0 || widget->id == snd_soc_dapm_input ||
-		widget->id == snd_soc_dapm_output ||
-		widget->id == snd_soc_dapm_hp ||
-		widget->id == snd_soc_dapm_mic ||
-		widget->id == snd_soc_dapm_line ||
-		widget->id == snd_soc_dapm_spk)
-		return 0;
-
-	power = widget->power;
-	if (widget->invert)
-		power = (power ? 0:1);
-
-	old = snd_soc_read(codec, widget->reg);
-	new = (old & ~(0x1 << widget->shift)) | (power << widget->shift);
-
-	change = old != new;
-	if (change) {
-		pop_dbg(dapm->dev, card->pop_time,
-			"pop test %s : %s in %d ms\n",
-			widget->name, widget->power ? "on" : "off",
-			card->pop_time);
-		pop_wait(card->pop_time);
-		snd_soc_write(codec, widget->reg, new);
-	}
-	dev_dbg(dapm->dev, "reg %x old %x new %x change %d\n", widget->reg,
-		old, new, change);
-	return change;
-}
-
 /* create new dapm mixer control */
 static int dapm_new_mixer(struct snd_soc_dapm_context *dapm,
 	struct snd_soc_dapm_widget *w)
@@ -643,57 +604,6 @@ int dapm_reg_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(dapm_reg_event);
-
-/* Standard power change method, used to apply power changes to most
- * widgets.
- */
-static int dapm_generic_apply_power(struct snd_soc_dapm_widget *w)
-{
-	int ret;
-
-	/* call any power change event handlers */
-	if (w->event)
-		dev_dbg(w->dapm->dev, "power %s event for %s flags %x\n",
-			 w->power ? "on" : "off",
-			 w->name, w->event_flags);
-
-	/* power up pre event */
-	if (w->power && w->event &&
-	    (w->event_flags & SND_SOC_DAPM_PRE_PMU)) {
-		ret = w->event(w, NULL, SND_SOC_DAPM_PRE_PMU);
-		if (ret < 0)
-			return ret;
-	}
-
-	/* power down pre event */
-	if (!w->power && w->event &&
-	    (w->event_flags & SND_SOC_DAPM_PRE_PMD)) {
-		ret = w->event(w, NULL, SND_SOC_DAPM_PRE_PMD);
-		if (ret < 0)
-			return ret;
-	}
-
-	dapm_update_bits(w);
-
-	/* power up post event */
-	if (w->power && w->event &&
-	    (w->event_flags & SND_SOC_DAPM_POST_PMU)) {
-		ret = w->event(w,
-			       NULL, SND_SOC_DAPM_POST_PMU);
-		if (ret < 0)
-			return ret;
-	}
-
-	/* power down post event */
-	if (!w->power && w->event &&
-	    (w->event_flags & SND_SOC_DAPM_POST_PMD)) {
-		ret = w->event(w, NULL, SND_SOC_DAPM_POST_PMD);
-		if (ret < 0)
-			return ret;
-	}
-
-	return 0;
-}
 
 /* Generic check to see if a widget should be powered.
  */
@@ -981,16 +891,6 @@ static void dapm_seq_run(struct snd_soc_dapm_context *dapm,
 					       NULL, SND_SOC_DAPM_POST_PMD);
 			break;
 
-		case snd_soc_dapm_input:
-		case snd_soc_dapm_output:
-		case snd_soc_dapm_hp:
-		case snd_soc_dapm_mic:
-		case snd_soc_dapm_line:
-		case snd_soc_dapm_spk:
-			/* No register support currently */
-			ret = dapm_generic_apply_power(w);
-			break;
-
 		default:
 			/* Queue it up for application */
 			cur_sort = sort[w->id];
@@ -1201,6 +1101,15 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 		}
 	}
 
+	/* Force all contexts in the card to the same bias state */
+	power = 0;
+	list_for_each_entry(d, &card->dapm_list, list)
+		if (d->dev_power)
+			power = 1;
+	list_for_each_entry(d, &card->dapm_list, list)
+		d->dev_power = power;
+
+
 	/* Run all the bias changes in parallel */
 	list_for_each_entry(d, &dapm->card->dapm_list, list)
 		async_schedule_domain(dapm_pre_sequence_async, d,
@@ -1304,6 +1213,47 @@ static const struct file_operations dapm_widget_power_fops = {
 	.llseek = default_llseek,
 };
 
+static int dapm_bias_open_file(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
+
+static ssize_t dapm_bias_read_file(struct file *file, char __user *user_buf,
+				   size_t count, loff_t *ppos)
+{
+	struct snd_soc_dapm_context *dapm = file->private_data;
+	char *level;
+
+	switch (dapm->bias_level) {
+	case SND_SOC_BIAS_ON:
+		level = "On\n";
+		break;
+	case SND_SOC_BIAS_PREPARE:
+		level = "Prepare\n";
+		break;
+	case SND_SOC_BIAS_STANDBY:
+		level = "Standby\n";
+		break;
+	case SND_SOC_BIAS_OFF:
+		level = "Off\n";
+		break;
+	default:
+		BUG();
+		level = "Unknown\n";
+		break;
+	}
+
+	return simple_read_from_buffer(user_buf, count, ppos, level,
+				       strlen(level));
+}
+
+static const struct file_operations dapm_bias_fops = {
+	.open = dapm_bias_open_file,
+	.read = dapm_bias_read_file,
+	.llseek = default_llseek,
+};
+
 void snd_soc_dapm_debugfs_init(struct snd_soc_dapm_context *dapm)
 {
 	struct snd_soc_dapm_widget *w;
@@ -1311,6 +1261,13 @@ void snd_soc_dapm_debugfs_init(struct snd_soc_dapm_context *dapm)
 
 	if (!dapm->debugfs_dapm)
 		return;
+
+	d = debugfs_create_file("bias_level", 0444,
+				dapm->debugfs_dapm, dapm,
+				&dapm_bias_fops);
+	if (!d)
+		dev_warn(dapm->dev,
+			 "ASoC: Failed to create bias level debugfs file\n");
 
 	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (!w->name || w->dapm != dapm)
@@ -1509,6 +1466,19 @@ static int snd_soc_dapm_set_pin(struct snd_soc_dapm_context *dapm,
 	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (w->dapm != dapm)
 			continue;
+		if (!strcmp(w->name, pin)) {
+			dev_dbg(w->dapm->dev, "dapm: pin %s = %d\n",
+				pin, status);
+			w->connected = status;
+			/* Allow disabling of forced pins */
+			if (status == 0)
+				w->force = 0;
+			return 0;
+		}
+	}
+
+	/* Try again in other contexts */
+	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (!strcmp(w->name, pin)) {
 			dev_dbg(w->dapm->dev, "dapm: pin %s = %d\n",
 				pin, status);
@@ -2351,6 +2321,17 @@ int snd_soc_dapm_force_enable_pin(struct snd_soc_dapm_context *dapm,
 	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (w->dapm != dapm)
 			continue;
+		if (!strcmp(w->name, pin)) {
+			dev_dbg(w->dapm->dev,
+				"dapm: force enable pin %s\n", pin);
+			w->connected = 1;
+			w->force = 1;
+			return 0;
+		}
+	}
+
+	/* Try again with other contexts */
+	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (!strcmp(w->name, pin)) {
 			dev_dbg(w->dapm->dev,
 				"dapm: force enable pin %s\n", pin);

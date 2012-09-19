@@ -93,13 +93,13 @@ static unsigned int do_hw_read(struct snd_soc_codec *codec, unsigned int reg)
 }
 
 static unsigned int snd_soc_4_12_read(struct snd_soc_codec *codec,
-				     unsigned int reg)
+				      unsigned int reg)
 {
 	return do_hw_read(codec, reg);
 }
 
 static int snd_soc_4_12_write(struct snd_soc_codec *codec, unsigned int reg,
-			     unsigned int value)
+			      unsigned int value)
 {
 	u8 data[2];
 
@@ -111,7 +111,7 @@ static int snd_soc_4_12_write(struct snd_soc_codec *codec, unsigned int reg,
 
 #if defined(CONFIG_SPI_MASTER)
 static int snd_soc_4_12_spi_write(void *control_data, const char *data,
-				 int len)
+				  int len)
 {
 	u8 msg[2];
 
@@ -209,7 +209,7 @@ static unsigned int snd_soc_8_16_read(struct snd_soc_codec *codec,
 
 #if defined(CONFIG_SPI_MASTER)
 static int snd_soc_8_16_spi_write(void *control_data, const char *data,
-				 int len)
+				  int len)
 {
 	u8 msg[3];
 
@@ -245,7 +245,6 @@ static unsigned int do_i2c_read(struct snd_soc_codec *codec,
 	xfer[1].buf = data;
 
 	ret = i2c_transfer(client->adapter, xfer, 2);
-	dev_err(&client->dev, "i2c_transfer() returned %d\n", ret);
 	if (ret == 2)
 		return 0;
 	else if (ret < 0)
@@ -257,7 +256,7 @@ static unsigned int do_i2c_read(struct snd_soc_codec *codec,
 
 #if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
 static unsigned int snd_soc_8_8_read_i2c(struct snd_soc_codec *codec,
-					  unsigned int r)
+					 unsigned int r)
 {
 	u8 reg = r;
 	u8 data;
@@ -307,13 +306,13 @@ static unsigned int snd_soc_16_8_read_i2c(struct snd_soc_codec *codec,
 #endif
 
 static unsigned int snd_soc_16_8_read(struct snd_soc_codec *codec,
-				     unsigned int reg)
+				      unsigned int reg)
 {
 	return do_hw_read(codec, reg);
 }
 
 static int snd_soc_16_8_write(struct snd_soc_codec *codec, unsigned int reg,
-			     unsigned int value)
+			      unsigned int value)
 {
 	u8 data[3];
 
@@ -327,7 +326,7 @@ static int snd_soc_16_8_write(struct snd_soc_codec *codec, unsigned int reg,
 
 #if defined(CONFIG_SPI_MASTER)
 static int snd_soc_16_8_spi_write(void *control_data, const char *data,
-				 int len)
+				  int len)
 {
 	u8 msg[3];
 
@@ -379,7 +378,7 @@ static int snd_soc_16_16_write(struct snd_soc_codec *codec, unsigned int reg,
 
 #if defined(CONFIG_SPI_MASTER)
 static int snd_soc_16_16_spi_write(void *control_data, const char *data,
-				 int len)
+				   int len)
 {
 	u8 msg[4];
 
@@ -394,10 +393,11 @@ static int snd_soc_16_16_spi_write(void *control_data, const char *data,
 #define snd_soc_16_16_spi_write NULL
 #endif
 
-/* Primitive bulk write support for soc-cache.  The data pointed to by `data' needs
- * to already be in the form the hardware expects including any leading register specific
- * data.  Any data written through this function will not go through the cache as it
- * only handles writing to volatile or out of bounds registers.
+/* Primitive bulk write support for soc-cache.  The data pointed to by
+ * `data' needs to already be in the form the hardware expects
+ * including any leading register specific data.  Any data written
+ * through this function will not go through the cache as it only
+ * handles writing to volatile or out of bounds registers.
  */
 static int snd_soc_hw_bulk_write_raw(struct snd_soc_codec *codec, unsigned int reg,
 				     const void *data, size_t len)
@@ -414,12 +414,16 @@ static int snd_soc_hw_bulk_write_raw(struct snd_soc_codec *codec, unsigned int r
 		return -EINVAL;
 
 	switch (codec->control_type) {
+#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
 	case SND_SOC_I2C:
 		ret = i2c_master_send(codec->control_data, data, len);
 		break;
+#endif
+#if defined(CONFIG_SPI_MASTER)
 	case SND_SOC_SPI:
 		ret = do_spi_write(codec->control_data, data, len);
 		break;
+#endif
 	default:
 		BUG();
 	}
@@ -661,6 +665,8 @@ static int snd_soc_rbtree_cache_sync(struct snd_soc_codec *codec)
 		rbnode = rb_entry(node, struct snd_soc_rbtree_node, node);
 		if (rbnode->value == rbnode->defval)
 			continue;
+		WARN_ON(codec->writable_register &&
+			codec->writable_register(codec, rbnode->reg));
 		ret = snd_soc_cache_read(codec, rbnode->reg, &val);
 		if (ret)
 			return ret;
@@ -921,6 +927,8 @@ static int snd_soc_lzo_cache_sync(struct snd_soc_codec *codec)
 
 	lzo_blocks = codec->reg_cache;
 	for_each_set_bit(i, lzo_blocks[0]->sync_bmp, lzo_blocks[0]->sync_bmp_nbits) {
+		WARN_ON(codec->writable_register &&
+			codec->writable_register(codec, i));
 		ret = snd_soc_cache_read(codec, i, &val);
 		if (ret)
 			return ret;
@@ -1179,6 +1187,8 @@ static int snd_soc_flat_cache_sync(struct snd_soc_codec *codec)
 
 	codec_drv = codec->driver;
 	for (i = 0; i < codec_drv->reg_cache_size; ++i) {
+		WARN_ON(codec->writable_register &&
+			codec->writable_register(codec, i));
 		ret = snd_soc_cache_read(codec, i, &val);
 		if (ret)
 			return ret;

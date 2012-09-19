@@ -375,6 +375,7 @@ struct alc_spec {
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	void (*power_hook)(struct hda_codec *codec);
 #endif
+	void (*shutup)(struct hda_codec *codec);
 
 	/* for pin sensing */
 	unsigned int sense_updated: 1;
@@ -1236,6 +1237,43 @@ static void set_eapd(struct hda_codec *codec, hda_nid_t nid, int on)
 				    on ? 2 : 0);
 }
 
+/* turn on/off EAPD controls of the codec */
+static void alc_auto_setup_eapd(struct hda_codec *codec, bool on)
+{
+	/* We currently only handle front, HP */
+	switch (codec->vendor_id) {
+	case 0x10ec0260:
+		set_eapd(codec, 0x0f, on);
+		set_eapd(codec, 0x10, on);
+		break;
+	case 0x10ec0262:
+	case 0x10ec0267:
+	case 0x10ec0268:
+	case 0x10ec0269:
+	case 0x10ec0270:
+	case 0x10ec0272:
+	case 0x10ec0660:
+	case 0x10ec0662:
+	case 0x10ec0663:
+	case 0x10ec0665:
+	case 0x10ec0862:
+	case 0x10ec0889:
+	case 0x10ec0892:
+		set_eapd(codec, 0x14, on);
+		set_eapd(codec, 0x15, on);
+		break;
+	}
+}
+
+/* generic shutup callback;
+ * just turning off EPAD and a little pause for avoiding pop-noise
+ */
+static void alc_eapd_shutup(struct hda_codec *codec)
+{
+	alc_auto_setup_eapd(codec, false);
+	msleep(200);
+}
+
 static void alc_auto_init_amp(struct hda_codec *codec, int type)
 {
 	unsigned int tmp;
@@ -1251,27 +1289,7 @@ static void alc_auto_init_amp(struct hda_codec *codec, int type)
 		snd_hda_sequence_write(codec, alc_gpio3_init_verbs);
 		break;
 	case ALC_INIT_DEFAULT:
-		switch (codec->vendor_id) {
-		case 0x10ec0260:
-			set_eapd(codec, 0x0f, 1);
-			set_eapd(codec, 0x10, 1);
-			break;
-		case 0x10ec0262:
-		case 0x10ec0267:
-		case 0x10ec0268:
-		case 0x10ec0269:
-		case 0x10ec0270:
-		case 0x10ec0272:
-		case 0x10ec0660:
-		case 0x10ec0662:
-		case 0x10ec0663:
-		case 0x10ec0665:
-		case 0x10ec0862:
-		case 0x10ec0889:
-			set_eapd(codec, 0x14, 1);
-			set_eapd(codec, 0x15, 1);
-			break;
-		}
+		alc_auto_setup_eapd(codec, true);
 		switch (codec->vendor_id) {
 		case 0x10ec0260:
 			snd_hda_codec_write(codec, 0x1a, 0,
@@ -4193,6 +4211,10 @@ static int alc_build_pcms(struct hda_codec *codec)
 
 static inline void alc_shutup(struct hda_codec *codec)
 {
+	struct alc_spec *spec = codec->spec;
+
+	if (spec && spec->shutup)
+		spec->shutup(codec);
 	snd_hda_shutup_pins(codec);
 }
 
@@ -4226,28 +4248,7 @@ static void alc_free(struct hda_codec *codec)
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 static void alc_power_eapd(struct hda_codec *codec)
 {
-	/* We currently only handle front, HP */
-	switch (codec->vendor_id) {
-	case 0x10ec0260:
-		set_eapd(codec, 0x0f, 0);
-		set_eapd(codec, 0x10, 0);
-		break;
-	case 0x10ec0262:
-	case 0x10ec0267:
-	case 0x10ec0268:
-	case 0x10ec0269:
-	case 0x10ec0270:
-	case 0x10ec0272:
-	case 0x10ec0660:
-	case 0x10ec0662:
-	case 0x10ec0663:
-	case 0x10ec0665:
-	case 0x10ec0862:
-	case 0x10ec0889:
-		set_eapd(codec, 0x14, 0);
-		set_eapd(codec, 0x15, 0);
-		break;
-	}
+	alc_auto_setup_eapd(codec, false);
 }
 
 static int alc_suspend(struct hda_codec *codec, pm_message_t state)
@@ -4263,6 +4264,7 @@ static int alc_suspend(struct hda_codec *codec, pm_message_t state)
 #ifdef SND_HDA_NEEDS_RESUME
 static int alc_resume(struct hda_codec *codec)
 {
+	msleep(150); /* to avoid pop noise */
 	codec->patch_ops.init(codec);
 	snd_hda_codec_resume_amp(codec);
 	snd_hda_codec_resume_cache(codec);
@@ -7383,6 +7385,7 @@ static int patch_alc260(struct hda_codec *codec)
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC260_AUTO)
 		spec->init_hook = alc260_auto_init;
+	spec->shutup = alc_eapd_shutup;
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc260_loopbacks;
@@ -10849,6 +10852,11 @@ static void alc882_auto_init_input_src(struct hda_codec *codec)
 		const struct hda_input_mux *imux;
 		int conns, mute, idx, item;
 
+		/* mute ADC */
+		snd_hda_codec_write(codec, spec->adc_nids[c], 0,
+				    AC_VERB_SET_AMP_GAIN_MUTE,
+				    AMP_IN_MUTE(0));
+
 		conns = snd_hda_get_connections(codec, nid, conn_list,
 						ARRAY_SIZE(conn_list));
 		if (conns < 0)
@@ -13018,6 +13026,7 @@ static int patch_alc262(struct hda_codec *codec)
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC262_AUTO)
 		spec->init_hook = alc262_auto_init;
+	spec->shutup = alc_eapd_shutup;
 
 	alc_init_jacks(codec);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
@@ -14092,6 +14101,7 @@ static int patch_alc268(struct hda_codec *codec)
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC268_AUTO)
 		spec->init_hook = alc268_auto_init;
+	spec->shutup = alc_eapd_shutup;
 
 	alc_init_jacks(codec);
 
@@ -14124,7 +14134,7 @@ static hda_nid_t alc269vb_capsrc_nids[1] = {
 };
 
 static hda_nid_t alc269_adc_candidates[] = {
-	0x08, 0x09, 0x07,
+	0x08, 0x09, 0x07, 0x11,
 };
 
 #define alc269_modes		alc260_modes
@@ -14803,7 +14813,6 @@ static void alc269_auto_init(struct hda_codec *codec)
 		alc_inithook(codec);
 }
 
-#ifdef SND_HDA_NEEDS_RESUME
 static void alc269_toggle_power_output(struct hda_codec *codec, int power_up)
 {
 	int val = alc_read_coef_idx(codec, 0x04);
@@ -14814,25 +14823,17 @@ static void alc269_toggle_power_output(struct hda_codec *codec, int power_up)
 	alc_write_coef_idx(codec, 0x04, val);
 }
 
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-static int alc269_suspend(struct hda_codec *codec, pm_message_t state)
+static void alc269_shutup(struct hda_codec *codec)
 {
-	struct alc_spec *spec = codec->spec;
-
 	if ((alc_read_coef_idx(codec, 0) & 0x00ff) == 0x017)
 		alc269_toggle_power_output(codec, 0);
 	if ((alc_read_coef_idx(codec, 0) & 0x00ff) == 0x018) {
 		alc269_toggle_power_output(codec, 0);
 		msleep(150);
 	}
-
-	alc_shutup(codec);
-	if (spec && spec->power_hook)
-		spec->power_hook(codec);
-	return 0;
 }
-#endif /* CONFIG_SND_HDA_POWER_SAVE */
 
+#ifdef SND_HDA_NEEDS_RESUME
 static int alc269_resume(struct hda_codec *codec)
 {
 	if ((alc_read_coef_idx(codec, 0) & 0x00ff) == 0x018) {
@@ -15297,14 +15298,12 @@ static int patch_alc269(struct hda_codec *codec)
 	spec->vmaster_nid = 0x02;
 
 	codec->patch_ops = alc_patch_ops;
-#ifdef CONFIG_SND_HDA_POWER_SAVE
-	codec->patch_ops.suspend = alc269_suspend;
-#endif
 #ifdef SND_HDA_NEEDS_RESUME
 	codec->patch_ops.resume = alc269_resume;
 #endif
 	if (board_config == ALC269_AUTO)
 		spec->init_hook = alc269_auto_init;
+	spec->shutup = alc269_shutup;
 
 	alc_init_jacks(codec);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
@@ -17410,6 +17409,7 @@ static int patch_alc861vd(struct hda_codec *codec)
 
 	if (board_config == ALC861VD_AUTO)
 		spec->init_hook = alc861vd_auto_init;
+	spec->shutup = alc_eapd_shutup;
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc861vd_loopbacks;
@@ -17432,8 +17432,8 @@ static int patch_alc861vd(struct hda_codec *codec)
 #define ALC662_DIGOUT_NID	0x06
 #define ALC662_DIGIN_NID	0x0a
 
-static hda_nid_t alc662_dac_nids[4] = {
-	/* front, rear, clfe, rear_surr */
+static hda_nid_t alc662_dac_nids[3] = {
+	/* front, rear, clfe */
 	0x02, 0x03, 0x04
 };
 
@@ -17922,32 +17922,13 @@ static struct hda_verb alc662_init_verbs[] = {
 	{0x22, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
 	{0x23, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
 
+	{ }
+};
+
+static struct hda_verb alc662_eapd_init_verbs[] = {
 	/* always trun on EAPD */
 	{0x14, AC_VERB_SET_EAPD_BTLENABLE, 2},
 	{0x15, AC_VERB_SET_EAPD_BTLENABLE, 2},
-
-	{ }
-};
-
-static struct hda_verb alc663_init_verbs[] = {
-	{0x17, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
-	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE},
-	{0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
-	{0x21, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE},
-	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
-	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(1)},
-	{ }
-};
-
-static struct hda_verb alc272_init_verbs[] = {
-	{0x16, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_IN},
-	{0x16, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_MUTE},
-	{0x17, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
-	{0x17, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE},
-	{0x21, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT},
-	{0x21, AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE},
-	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(0)},
-	{0x0f, AC_VERB_SET_AMP_GAIN_MUTE, AMP_IN_UNMUTE(1)},
 	{ }
 };
 
@@ -18691,7 +18672,7 @@ static const char * const alc662_models[ALC662_MODEL_LAST] = {
 	[ALC662_3ST_2ch_DIG]	= "3stack-dig",
 	[ALC662_3ST_6ch_DIG]	= "3stack-6ch-dig",
 	[ALC662_3ST_6ch]	= "3stack-6ch",
-	[ALC662_5ST_DIG]	= "6stack-dig",
+	[ALC662_5ST_DIG]	= "5stack-dig",
 	[ALC662_LENOVO_101E]	= "lenovo-101e",
 	[ALC662_ASUS_EEEPC_P701] = "eeepc-p701",
 	[ALC662_ASUS_EEEPC_EP20] = "eeepc-ep20",
@@ -18797,7 +18778,7 @@ static struct snd_pci_quirk alc662_cfg_tbl[] = {
 static struct alc_config_preset alc662_presets[] = {
 	[ALC662_3ST_2ch_DIG] = {
 		.mixers = { alc662_3ST_2ch_mixer },
-		.init_verbs = { alc662_init_verbs },
+		.init_verbs = { alc662_init_verbs, alc662_eapd_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.dig_out_nid = ALC662_DIGOUT_NID,
@@ -18808,7 +18789,7 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC662_3ST_6ch_DIG] = {
 		.mixers = { alc662_3ST_6ch_mixer, alc662_chmode_mixer },
-		.init_verbs = { alc662_init_verbs },
+		.init_verbs = { alc662_init_verbs, alc662_eapd_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.dig_out_nid = ALC662_DIGOUT_NID,
@@ -18820,7 +18801,7 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC662_3ST_6ch] = {
 		.mixers = { alc662_3ST_6ch_mixer, alc662_chmode_mixer },
-		.init_verbs = { alc662_init_verbs },
+		.init_verbs = { alc662_init_verbs, alc662_eapd_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.num_channel_mode = ARRAY_SIZE(alc662_3ST_6ch_modes),
@@ -18830,7 +18811,7 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC662_5ST_DIG] = {
 		.mixers = { alc662_base_mixer, alc662_chmode_mixer },
-		.init_verbs = { alc662_init_verbs },
+		.init_verbs = { alc662_init_verbs, alc662_eapd_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.dig_out_nid = ALC662_DIGOUT_NID,
@@ -18841,7 +18822,9 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC662_LENOVO_101E] = {
 		.mixers = { alc662_lenovo_101e_mixer },
-		.init_verbs = { alc662_init_verbs, alc662_sue_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc662_sue_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.num_channel_mode = ARRAY_SIZE(alc662_3ST_2ch_modes),
@@ -18853,6 +18836,7 @@ static struct alc_config_preset alc662_presets[] = {
 	[ALC662_ASUS_EEEPC_P701] = {
 		.mixers = { alc662_eeepc_p701_mixer },
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc662_eeepc_sue_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
@@ -18866,6 +18850,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc662_eeepc_ep20_mixer,
 			    alc662_chmode_mixer },
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc662_eeepc_ep20_sue_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
@@ -18879,6 +18864,7 @@ static struct alc_config_preset alc662_presets[] = {
 	[ALC662_ECS] = {
 		.mixers = { alc662_ecs_mixer },
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc662_ecs_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
@@ -18890,7 +18876,9 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC663_ASUS_M51VA] = {
 		.mixers = { alc663_m51va_mixer },
-		.init_verbs = { alc662_init_verbs, alc663_m51va_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc663_m51va_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.dig_out_nid = ALC662_DIGOUT_NID,
@@ -18902,7 +18890,9 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC663_ASUS_G71V] = {
 		.mixers = { alc663_g71v_mixer },
-		.init_verbs = { alc662_init_verbs, alc663_g71v_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc663_g71v_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.dig_out_nid = ALC662_DIGOUT_NID,
@@ -18914,7 +18904,9 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC663_ASUS_H13] = {
 		.mixers = { alc663_m51va_mixer },
-		.init_verbs = { alc662_init_verbs, alc663_m51va_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc663_m51va_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.num_channel_mode = ARRAY_SIZE(alc662_3ST_2ch_modes),
@@ -18924,7 +18916,9 @@ static struct alc_config_preset alc662_presets[] = {
 	},
 	[ALC663_ASUS_G50V] = {
 		.mixers = { alc663_g50v_mixer },
-		.init_verbs = { alc662_init_verbs, alc663_g50v_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc663_g50v_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
 		.dig_out_nid = ALC662_DIGOUT_NID,
@@ -18939,6 +18933,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_m51va_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_21jd_amic_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -18954,6 +18949,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc662_1bjd_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc662_1bjd_amic_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.dac_nids = alc662_dac_nids,
@@ -18968,6 +18964,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_two_hp_m1_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_two_hp_amic_m1_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -18983,6 +18980,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_asus_21jd_clfe_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_21jd_amic_init_verbs},
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -18998,6 +18996,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_asus_15jd_clfe_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_15jd_amic_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -19013,6 +19012,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_two_hp_m2_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_two_hp_amic_m2_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -19028,6 +19028,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_mode7_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_mode7_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -19043,6 +19044,7 @@ static struct alc_config_preset alc662_presets[] = {
 		.mixers = { alc663_mode8_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_mode8_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc662_dac_nids),
 		.hp_nid = 0x03,
@@ -19057,9 +19059,11 @@ static struct alc_config_preset alc662_presets[] = {
 	[ALC272_DELL] = {
 		.mixers = { alc663_m51va_mixer },
 		.cap_mixer = alc272_auto_capture_mixer,
-		.init_verbs = { alc662_init_verbs, alc272_dell_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc272_dell_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc272_dac_nids),
-		.dac_nids = alc662_dac_nids,
+		.dac_nids = alc272_dac_nids,
 		.num_channel_mode = ARRAY_SIZE(alc662_3ST_2ch_modes),
 		.adc_nids = alc272_adc_nids,
 		.num_adc_nids = ARRAY_SIZE(alc272_adc_nids),
@@ -19072,9 +19076,11 @@ static struct alc_config_preset alc662_presets[] = {
 	[ALC272_DELL_ZM1] = {
 		.mixers = { alc663_m51va_mixer },
 		.cap_mixer = alc662_auto_capture_mixer,
-		.init_verbs = { alc662_init_verbs, alc272_dell_zm1_init_verbs },
+		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
+				alc272_dell_zm1_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc272_dac_nids),
-		.dac_nids = alc662_dac_nids,
+		.dac_nids = alc272_dac_nids,
 		.num_channel_mode = ARRAY_SIZE(alc662_3ST_2ch_modes),
 		.adc_nids = alc662_adc_nids,
 		.num_adc_nids = 1,
@@ -19087,6 +19093,7 @@ static struct alc_config_preset alc662_presets[] = {
 	[ALC272_SAMSUNG_NC10] = {
 		.mixers = { alc272_nc10_mixer },
 		.init_verbs = { alc662_init_verbs,
+				alc662_eapd_init_verbs,
 				alc663_21jd_amic_init_verbs },
 		.num_dacs = ARRAY_SIZE(alc272_dac_nids),
 		.dac_nids = alc272_dac_nids,
@@ -19105,16 +19112,17 @@ static struct alc_config_preset alc662_presets[] = {
  */
 
 /* convert from MIX nid to DAC */
-static inline hda_nid_t alc662_mix_to_dac(hda_nid_t nid)
+static hda_nid_t alc662_mix_to_dac(struct hda_codec *codec, hda_nid_t nid)
 {
-	if (nid == 0x0f)
-		return 0x02;
-	else if (nid >= 0x0c && nid <= 0x0e)
-		return nid - 0x0c + 0x02;
-	else if (nid == 0x26) /* ALC887-VD has this DAC too */
-		return 0x25;
-	else
-		return 0;
+	hda_nid_t list[4];
+	int i, num;
+
+	num = snd_hda_get_connections(codec, nid, list, ARRAY_SIZE(list));
+	for (i = 0; i < num; i++) {
+		if (get_wcaps_type(get_wcaps(codec, list[i])) == AC_WID_AUD_OUT)
+			return list[i];
+	}
+	return 0;
 }
 
 /* get MIX nid connected to the given pin targeted to DAC */
@@ -19126,7 +19134,7 @@ static hda_nid_t alc662_dac_to_mix(struct hda_codec *codec, hda_nid_t pin,
 
 	num = snd_hda_get_connections(codec, pin, mix, ARRAY_SIZE(mix));
 	for (i = 0; i < num; i++) {
-		if (alc662_mix_to_dac(mix[i]) == dac)
+		if (alc662_mix_to_dac(codec, mix[i]) == dac)
 			return mix[i];
 	}
 	return 0;
@@ -19143,7 +19151,7 @@ static hda_nid_t alc662_look_for_dac(struct hda_codec *codec, hda_nid_t pin)
 	if (num < 0)
 		return 0;
 	for (i = 0; i < num; i++) {
-		hda_nid_t nid = alc662_mix_to_dac(srcs[i]);
+		hda_nid_t nid = alc662_mix_to_dac(codec, srcs[i]);
 		if (!nid)
 			continue;
 		for (j = 0; j < spec->multiout.num_dacs; j++)
@@ -19292,14 +19300,21 @@ static void alc662_auto_set_output_and_unmute(struct hda_codec *codec,
 	hda_nid_t srcs[HDA_MAX_CONNECTIONS];
 
 	alc_set_pin_output(codec, nid, pin_type);
-	/* need the manual connection? */
 	num = snd_hda_get_connections(codec, nid, srcs, ARRAY_SIZE(srcs));
-	if (num <= 1)
-		return;
 	for (i = 0; i < num; i++) {
-		if (alc662_mix_to_dac(srcs[i]) != dac)
+		if (alc662_mix_to_dac(codec, srcs[i]) != dac)
 			continue;
-		snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_CONNECT_SEL, i);
+		/* need the manual connection? */
+		if (num > 1)
+			snd_hda_codec_write(codec, nid, 0,
+					    AC_VERB_SET_CONNECT_SEL, i);
+		/* unmute mixer widget inputs */
+		snd_hda_codec_write(codec, srcs[i], 0,
+				    AC_VERB_SET_AMP_GAIN_MUTE,
+				    AMP_IN_UNMUTE(0));
+		snd_hda_codec_write(codec, srcs[i], 0,
+				    AC_VERB_SET_AMP_GAIN_MUTE,
+				    AMP_IN_UNMUTE(1));
 		return;
 	}
 }
@@ -19401,14 +19416,6 @@ static int alc662_parse_auto_config(struct hda_codec *codec)
 
 	spec->num_mux_defs = 1;
 	spec->input_mux = &spec->private_imux[0];
-
-	add_verb(spec, alc662_init_verbs);
-	if (codec->vendor_id == 0x10ec0272 || codec->vendor_id == 0x10ec0663 ||
-	    codec->vendor_id == 0x10ec0665 || codec->vendor_id == 0x10ec0670)
-		add_verb(spec, alc663_init_verbs);
-
-	if (codec->vendor_id == 0x10ec0272)
-		add_verb(spec, alc272_init_verbs);
 
 	err = alc_auto_add_mic_boost(codec);
 	if (err < 0)
@@ -19611,6 +19618,7 @@ static int patch_alc662(struct hda_codec *codec)
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC662_AUTO)
 		spec->init_hook = alc662_auto_init;
+	spec->shutup = alc_eapd_shutup;
 
 	alc_init_jacks(codec);
 
