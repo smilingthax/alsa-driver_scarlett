@@ -837,6 +837,9 @@ static irqreturn_t snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs 
 	unsigned int i;
 
 	status = igetdword(chip, chip->int_sta_reg);
+	if (status == 0xffffffff)	/* we are not yet resumed */
+		return IRQ_NONE;
+
 	if ((status & chip->int_sta_mask) == 0) {
 		if (status) {
 			/* ack */
@@ -1024,8 +1027,10 @@ static void snd_intel8x0_setup_pcm_out(intel8x0_t *chip,
 			/* reset to 2ch once to keep the 6 channel data in alignment,
 			 * to start from Front Left always
 			 */
-			iputdword(chip, ICHREG(GLOB_CNT), (cnt & 0xcfffff));
-			mdelay(50); /* grrr... */
+			if (cnt & ICH_PCM_246_MASK) {
+				iputdword(chip, ICHREG(GLOB_CNT), cnt & ~ICH_PCM_246_MASK);
+				msleep(50); /* grrr... */
+			}
 		} else if (chip->device_type == DEVICE_INTEL_ICH4) {
 			if (sample_bits > 16)
 				cnt |= ICH_PCM_20BIT;
