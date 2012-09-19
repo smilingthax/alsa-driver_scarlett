@@ -1947,7 +1947,6 @@ static int __devinit snd_riptide_mixer(riptide_t * chip)
 
 	if ((err = snd_ac97_bus(chip->card, 0, &ops, chip, &pbus)) < 0)
 		return err;
-	pbus->shared_type = AC97_SHARED_TYPE_NONE;	/* shared with modem driver ? */
 
 	chip->ac97_bus = pbus;
 	ac97.pci = chip->pci;
