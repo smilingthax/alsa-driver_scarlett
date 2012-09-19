@@ -259,7 +259,6 @@ static int atc_pcm_playback_prepare(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	int n_amixer = apcm->substream->runtime->channels, i = 0;
 	int device = apcm->substream->pcm->device;
 	unsigned int pitch;
-	unsigned long flags;
 
 	if (NULL != apcm->src) {
 		/* Prepared pcm playback */
@@ -311,10 +310,10 @@ static int atc_pcm_playback_prepare(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	src = apcm->src;
 	for (i = 0; i < n_amixer; i++) {
 		amixer = apcm->amixers[i];
-		spin_lock_irqsave(&atc->atc_lock, flags);
+		mutex_lock(&atc->atc_mutex);
 		amixer->ops->setup(amixer, &src->rsc,
 					INIT_VOL, atc->pcm[i+device*2]);
-		spin_unlock_irqrestore(&atc->atc_lock, flags);
+		mutex_unlock(&atc->atc_mutex);
 		src = src->ops->next_interleave(src);
 		if (NULL == src)
 			src = apcm->src;
@@ -392,6 +391,10 @@ static int atc_pcm_playback_start(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	unsigned int max_cisz;
 	struct src *src = apcm->src;
 
+	if (apcm->started)
+		return 0;
+	apcm->started = 1;
+
 	max_cisz = src->multi * src->rsc.msr;
 	max_cisz = 0x80 * (max_cisz < 8 ? max_cisz : 8);
 
@@ -441,6 +444,8 @@ atc_pcm_playback_position(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	u32 size, max_cisz;
 	int position;
 
+	if (!src)
+		return 0;
 	position = src->ops->get_ca(src);
 
 	size = apcm->vm_block->size;
@@ -517,7 +522,7 @@ atc_pcm_capture_get_resources(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	struct src_node_conf_t src_node_conf[2] = {{0} };
 
 	/* first release old resources */
-	atc->pcm_release_resources(atc, apcm);
+	atc_pcm_release_resources(atc, apcm);
 
 	/* The numbers of converting SRCs and SRCIMPs should be determined
 	 * by pitch value. */
@@ -778,6 +783,8 @@ atc_pcm_capture_position(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 {
 	struct src *src = apcm->src;
 
+	if (!src)
+		return 0;
 	return src->ops->get_ca(src) - apcm->vm_block->addr;
 }
 
@@ -794,7 +801,7 @@ static int spdif_passthru_playback_get_resources(struct ct_atc *atc,
 	unsigned int pitch, rsr = atc->pll_rate;
 
 	/* first release old resources */
-	atc->pcm_release_resources(atc, apcm);
+	atc_pcm_release_resources(atc, apcm);
 
 	/* Get SRC resource */
 	desc.multi = apcm->substream->runtime->channels;
@@ -857,7 +864,6 @@ static int
 spdif_passthru_playback_setup(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 {
 	struct dao *dao = container_of(atc->daios[SPDIFOO], struct dao, daio);
-	unsigned long flags;
 	unsigned int rate = apcm->substream->runtime->rate;
 	unsigned int status;
 	int err;
@@ -877,7 +883,7 @@ spdif_passthru_playback_setup(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 		return -ENOENT;
 	}
 
-	spin_lock_irqsave(&atc->atc_lock, flags);
+	mutex_lock(&atc->atc_mutex);
 	dao->ops->get_spos(dao, &status);
 	if (((status >> 24) & IEC958_AES3_CON_FS) != iec958_con_fs) {
 		status &= ((~IEC958_AES3_CON_FS) << 24);
@@ -887,7 +893,7 @@ spdif_passthru_playback_setup(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	}
 	if ((rate != atc->pll_rate) && (32000 != rate))
 		err = atc_pll_init(atc, rate);
-	spin_unlock_irqrestore(&atc->atc_lock, flags);
+	mutex_unlock(&atc->atc_mutex);
 
 	return err;
 }
@@ -900,7 +906,6 @@ spdif_passthru_playback_prepare(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 	struct dao *dao;
 	int err;
 	int i;
-	unsigned long flags;
 
 	if (NULL != apcm->src)
 		return 0;
@@ -926,13 +931,13 @@ spdif_passthru_playback_prepare(struct ct_atc *atc, struct ct_atc_pcm *apcm)
 			src = apcm->src;
 	}
 	/* Connect to SPDIFOO */
-	spin_lock_irqsave(&atc->atc_lock, flags);
+	mutex_lock(&atc->atc_mutex);
 	dao = container_of(atc->daios[SPDIFOO], struct dao, daio);
 	amixer = apcm->amixers[0];
 	dao->ops->set_left_input(dao, &amixer->rsc);
 	amixer = apcm->amixers[1];
 	dao->ops->set_right_input(dao, &amixer->rsc);
-	spin_unlock_irqrestore(&atc->atc_lock, flags);
+	mutex_unlock(&atc->atc_mutex);
 
 	ct_timer_prepare(apcm->timer);
 
@@ -1080,7 +1085,6 @@ static int atc_spdif_out_set_status(struct ct_atc *atc, unsigned int status)
 
 static int atc_spdif_out_passthru(struct ct_atc *atc, unsigned char state)
 {
-	unsigned long flags;
 	struct dao_desc da_dsc = {0};
 	struct dao *dao;
 	int err;
@@ -1088,7 +1092,7 @@ static int atc_spdif_out_passthru(struct ct_atc *atc, unsigned char state)
 	struct rsc *rscs[2] = {NULL};
 	unsigned int spos = 0;
 
-	spin_lock_irqsave(&atc->atc_lock, flags);
+	mutex_lock(&atc->atc_mutex);
 	dao = container_of(atc->daios[SPDIFOO], struct dao, daio);
 	da_dsc.msr = state ? 1 : atc->msr;
 	da_dsc.passthru = state ? 1 : 0;
@@ -1106,7 +1110,7 @@ static int atc_spdif_out_passthru(struct ct_atc *atc, unsigned char state)
 	}
 	dao->ops->set_spos(dao, spos);
 	dao->ops->commit_write(dao);
-	spin_unlock_irqrestore(&atc->atc_lock, flags);
+	mutex_unlock(&atc->atc_mutex);
 
 	return err;
 }
@@ -1564,7 +1568,7 @@ int __devinit ct_atc_create(struct snd_card *card, struct pci_dev *pci,
 	atc->msr = msr;
 	atc->chip_type = chip_type;
 
-	spin_lock_init(&atc->atc_lock);
+	mutex_init(&atc->atc_mutex);
 
 	/* Find card model */
 	err = atc_identify_card(atc);
