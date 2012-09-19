@@ -1501,7 +1501,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 				goto __access_ok;
 			set_current_state(TASK_UNINTERRUPTIBLE);
 			schedule_timeout(HZ/100);
-		} while (time_after_eq(end_time, jiffies) >= 0);
+		} while (time_after_eq(end_time, jiffies));
 		snd_printd("AC'97 %d:%d does not respond - RESET [REC_GAIN = 0x%x]\n", ac97->num, ac97->addr, err);
 		snd_ac97_free(ac97);
 		return -ENXIO;
@@ -1536,7 +1536,7 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 			goto __ready_ok;
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(HZ/10);
-	} while (time_after_eq(end_time, jiffies) >= 0);
+	} while (time_after_eq(end_time, jiffies));
 	snd_printk("AC'97 %d:%d analog subsections not ready\n", ac97->num, ac97->addr);
       __ready_ok:
 	if (ac97->clock == 0)
@@ -1856,7 +1856,6 @@ int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate)
 {
 	unsigned short mask;
 	unsigned int tmp;
-	signed long end_time;
 	
 	switch (reg) {
 	case AC97_PCM_MIC_ADC_RATE:
@@ -1878,51 +1877,14 @@ int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate)
 				return -EINVAL;
 		break;
 	case AC97_SPDIF:
-		/* FIXME: disable & preserve S/PDIF enable bit? */
-		if ((ac97->flags & AC97_CS_SPDIF) == 0) {
-			switch (rate) {
-			case 48000: tmp = AC97_SC_SPSR_48K; break;
-			case 44100: tmp = AC97_SC_SPSR_44K; break;
-			case 32000: tmp = AC97_SC_SPSR_32K; break;
-			default: return -EINVAL;
-			}
-			snd_ac97_update_bits(ac97, reg, 0x3000, tmp);
-		} else {
-			switch (rate) {
-			case 48000: tmp = 0x0000; break;
-			case 44100: tmp = 0x1000; break;
-			default: return -EINVAL;
-			}
-			snd_ac97_update_bits(ac97, reg, 0x3000, tmp);
-		}
 		return 0;
 	default: return -EINVAL;
 	}
 	tmp = ((unsigned int)rate * ac97->clock) / 48000;
 	if (tmp > 65535)
 		return -EINVAL;
-	snd_ac97_update_bits(ac97, AC97_POWERDOWN, mask, mask);
-	end_time = jiffies + (HZ / 50);
-	do {
-		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout(1);
-	} while (time_after_eq(end_time, jiffies) >= 0);
 	snd_ac97_update(ac97, reg, tmp & 0xffff);
-	udelay(10);
-	// XXXX update spdif rate here too?
-	snd_ac97_update_bits(ac97, AC97_POWERDOWN, mask, 0);
-	end_time = jiffies + (HZ / 50);
-	do {
-		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout(1);
-	} while (time_after_eq(end_time, jiffies) >= 0);
-	end_time = jiffies + (HZ / 10);
-	do {
-		if ((snd_ac97_read(ac97, AC97_POWERDOWN) & 0x0003) == 0x0003)
-			break;
-		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout(1);
-	} while (time_after_eq(end_time, jiffies) >= 0);
+	snd_ac97_read(ac97, reg);
 	return 0;
 }
 

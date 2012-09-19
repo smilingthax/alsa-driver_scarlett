@@ -90,6 +90,12 @@
 #define AC97_EA_DRA		0x0002	/* Double-rate audio enable bit */
 #define AC97_EA_SPDIF		0x0004	/* S/PDIF out enable bit */
 #define AC97_EA_VRM		0x0008	/* Variable bit rate for MIC enable bit */
+#define AC97_EA_SPSA_SLOT_MASK	0x0030	/* Mask for slot assignment bits */
+#define AC97_EA_SPSA_SLOT_SHIFT 4
+#define AC97_EA_SPSA_3_4	0x0000	/* Slot assigned to 3 & 4 */
+#define AC97_EA_SPSA_7_8	0x0010	/* Slot assigned to 7 & 8 */
+#define AC97_EA_SPSA_6_9	0x0020	/* Slot assigned to 6 & 9 */
+#define AC97_EA_SPSA_10_11	0x0030	/* Slot assigned to 10 & 11 */
 #define AC97_EA_CDAC		0x0040	/* PCM Center DAC is ready (Read only) */
 #define AC97_EA_SDAC		0x0080	/* PCM Surround DACs are ready (Read only) */
 #define AC97_EA_LDAC		0x0100	/* PCM LFE DAC is ready (Read only) */
@@ -99,12 +105,6 @@
 #define AC97_EA_PRJ		0x1000	/* Turns the PCM Surround DACs off */
 #define AC97_EA_PRK		0x2000	/* Turns the PCM LFE DAC off */
 #define AC97_EA_PRL		0x4000	/* Turns the MIC ADC off */
-#define AC97_EA_SPSA_SLOT_MASK	0x0030	/* Mask for slot assignment bits */
-#define AC97_EA_SPSA_SLOT_SHIFT 4
-#define AC97_EA_SPSA_3_4	0x0000	/* Slot assigned to 3 & 4 */
-#define AC97_EA_SPSA_7_8	0x0010	/* Slot assigned to 7 & 8 */
-#define AC97_EA_SPSA_6_9	0x0020	/* Slot assigned to 6 & 9 */
-#define AC97_EA_SPSA_10_11	0x0030	/* Slot assigned to 10 & 11 */
 
 /* S/PDIF control bit defines */
 #define AC97_SC_PRO		0x0001	/* Professional status */
