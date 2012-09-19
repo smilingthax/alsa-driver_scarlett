@@ -81,7 +81,7 @@ ifndef NEW_KBUILD
 INCLUDE		= -I$(TOPDIR)/include @EXTRA_INCLUDES@ -I$(CONFIG_SND_KERNELDIR)/include
 CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes \
 	-fomit-frame-pointer -Wno-trigraphs -O2 -fno-strict-aliasing -fno-common \
-	-pipe -DALSA_BUILD
+	-pipe -DALSA_BUILD -nostdinc -iwithprefix include
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules

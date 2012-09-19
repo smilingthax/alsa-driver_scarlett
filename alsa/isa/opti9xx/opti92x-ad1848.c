@@ -1,7 +1,7 @@
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2, 2, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #define isapnp_dev pci_dev
 #endif
 #define snd_opti9xx_fixup_dma2(pdev) \
