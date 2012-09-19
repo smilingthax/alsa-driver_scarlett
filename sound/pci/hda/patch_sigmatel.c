@@ -183,8 +183,9 @@ static hda_nid_t stac925x_dac_nids[1] = {
         0x02,
 };
 
-static hda_nid_t stac925x_dmic_nids[1] = {
-	0x15, 
+#define STAC925X_NUM_DMICS	1
+static hda_nid_t stac925x_dmic_nids[STAC925X_NUM_DMICS + 1] = {
+	0x15, 0
 };
 
 static hda_nid_t stac922x_adc_nids[2] = {
@@ -211,8 +212,9 @@ static hda_nid_t stac9205_mux_nids[2] = {
         0x19, 0x1a
 };
 
-static hda_nid_t stac9205_dmic_nids[2] = {
-        0x17, 0x18,
+#define STAC9205_NUM_DMICS	2
+static hda_nid_t stac9205_dmic_nids[STAC9205_NUM_DMICS + 1] = {
+        0x17, 0x18, 0
 };
 
 static hda_nid_t stac9200_pin_nids[8] = {
@@ -352,7 +354,7 @@ static int stac92xx_volknob_info(struct snd_kcontrol *kcontrol,
 static int stac92xx_volknob_get(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
-	ucontrol->value.integer.value[0] = kcontrol->private_value;
+	ucontrol->value.integer.value[0] = kcontrol->private_value & 0xff;
 	return 0;
 }
 
@@ -360,15 +362,17 @@ static int stac92xx_volknob_put(struct snd_kcontrol *kcontrol,
 		struct snd_ctl_elem_value *ucontrol)
 {
 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
+	unsigned int val = kcontrol->private_value & 0xff;
 
-	if (kcontrol->private_value == ucontrol->value.integer.value[0])
+	if (val == ucontrol->value.integer.value[0])
 		return 0;
 
-	kcontrol->private_value = ucontrol->value.integer.value[0];
+	val = ucontrol->value.integer.value[0];
+	kcontrol->private_value &= ~0xff;
+	kcontrol->private_value |= val;
 
-	snd_hda_codec_write_cache(codec, 0x24, 0,
-		AC_VERB_SET_VOLUME_KNOB_CONTROL,
-			kcontrol->private_value | 0x80);
+	snd_hda_codec_write_cache(codec, kcontrol->private_value >> 16, 0,
+		AC_VERB_SET_VOLUME_KNOB_CONTROL, val | 0x80);
 	return 1;
 }
 
@@ -441,7 +445,7 @@ static struct hda_verb stac9205_core_init[] = {
 		.private_value = verb_read | (verb_write << 16), \
 	}
 
-#define STAC_VOLKNOB \
+#define STAC_VOLKNOB(knob_nid)	\
 	{ \
 		.iface = SNDRV_CTL_ELEM_IFACE_MIXER, \
 		.name  = "Master Playback Volume", \
@@ -449,7 +453,7 @@ static struct hda_verb stac9205_core_init[] = {
 		.info  = stac92xx_volknob_info, \
 		.get   = stac92xx_volknob_get, \
 		.put   = stac92xx_volknob_put, \
-		.private_value = 127, \
+			.private_value = 127 | (knob_nid << 16), \
 	}
 
 
@@ -482,7 +486,7 @@ static struct snd_kcontrol_new stac9205_mixer[] = {
 	},
 	STAC_INPUT_SOURCE(2),
 	STAC_ANALOG_LOOPBACK(0xFE0, 0x7E0),
-	STAC_VOLKNOB,
+	STAC_VOLKNOB(0x24),
 
 	HDA_CODEC_VOLUME_IDX("Capture Volume", 0x0, 0x1b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE_IDX("Capture Switch", 0x0, 0x1d, 0x0, HDA_OUTPUT),
@@ -498,7 +502,7 @@ static struct snd_kcontrol_new stac9205_mixer[] = {
 /* This needs to be generated dynamically based on sequence */
 static struct snd_kcontrol_new stac922x_mixer[] = {
 	STAC_INPUT_SOURCE(2),
-	STAC_VOLKNOB,
+	STAC_VOLKNOB(0x16),
 	HDA_CODEC_VOLUME_IDX("Capture Volume", 0x0, 0x17, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE_IDX("Capture Switch", 0x0, 0x17, 0x0, HDA_INPUT),
 	HDA_CODEC_VOLUME_IDX("Mux Capture Volume", 0x0, 0x12, 0x0, HDA_OUTPUT),
@@ -512,7 +516,7 @@ static struct snd_kcontrol_new stac922x_mixer[] = {
 
 static struct snd_kcontrol_new stac927x_mixer[] = {
 	STAC_INPUT_SOURCE(3),
-	STAC_VOLKNOB,
+	STAC_VOLKNOB(0x24),
 	STAC_ANALOG_LOOPBACK(0xFEB, 0x7EB),
 
 	HDA_CODEC_VOLUME_IDX("Capture Volume", 0x0, 0x18, 0x0, HDA_INPUT),
@@ -2567,7 +2571,7 @@ static int patch_stac925x(struct hda_codec *codec)
 	case 0x83847633: /* STAC9202D */
 	case 0x83847636: /* STAC9251  */
 	case 0x83847637: /* STAC9251D */
-		spec->num_dmics = 1;
+		spec->num_dmics = STAC925X_NUM_DMICS;
 		spec->dmic_nids = stac925x_dmic_nids;
 		break;
 	default:
@@ -2817,7 +2821,7 @@ static int patch_stac9205(struct hda_codec *codec)
 	spec->mux_nids = stac9205_mux_nids;
 	spec->num_muxes = ARRAY_SIZE(stac9205_mux_nids);
 	spec->dmic_nids = stac9205_dmic_nids;
-	spec->num_dmics = ARRAY_SIZE(stac9205_dmic_nids);
+	spec->num_dmics = STAC9205_NUM_DMICS;
 	spec->dmux_nid = 0x1d;
 
 	spec->init = stac9205_core_init;
