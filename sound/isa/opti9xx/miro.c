@@ -110,15 +110,12 @@ struct snd_miro {
 	unsigned long pwd_reg;
 
 	spinlock_t lock;
-	struct snd_card *card;
 	struct snd_pcm *pcm;
 
 	long wss_base;
 	int irq;
 	int dma1;
 	int dma2;
-
-	long fm_port;
 
 	long mpu_port;
 	int mpu_irq;
@@ -133,8 +130,6 @@ struct snd_miro {
 
 	struct mutex aci_mutex;
 };
-
-static void snd_miro_proc_init(struct snd_miro * miro);
 
 static char * snd_opti9xx_names[] = {
 	"unkown",
@@ -459,11 +454,9 @@ static int snd_miro_put_double(struct snd_kcontrol *kcontrol,
 	right = ucontrol->value.integer.value[1];
 
 	setreg_right = (kcontrol->private_value >> 8) & 0xff;
-	if (setreg_right == ACI_SET_MASTER) {
-		setreg_left = setreg_right + 1;
-	} else {
-		setreg_left = setreg_right + 8;
-	}
+	setreg_left = setreg_right + 8;
+	if (setreg_right == ACI_SET_MASTER)
+		setreg_left -= 7;
 
 	getreg_right = kcontrol->private_value & 0xff;
 	getreg_left = getreg_right + 1;
@@ -669,16 +662,14 @@ static int __devinit snd_set_aci_init_values(struct snd_miro *miro)
 	return 0;
 }
 
-static int __devinit snd_miro_mixer(struct snd_miro *miro)
+static int __devinit snd_miro_mixer(struct snd_card *card,
+				    struct snd_miro *miro)
 {
-	struct snd_card *card;
 	unsigned int idx;
 	int err;
 
-	if (snd_BUG_ON(!miro || !miro->card))
+	if (snd_BUG_ON(!miro || !card))
 		return -EINVAL;
-
-	card = miro->card;
 
 	switch (miro->hardware) {
 	case OPTi9XX_HW_82C924:
@@ -757,7 +748,6 @@ static int __devinit snd_miro_init(struct snd_miro *chip,
 	chip->irq = -1;
 	chip->dma1 = -1;
 	chip->dma2 = -1;
-	chip->fm_port = -1;
 	chip->mpu_port = -1;
 	chip->mpu_irq = -1;
 
@@ -953,11 +943,12 @@ static void snd_miro_proc_read(struct snd_info_entry * entry,
 	snd_iprintf(buffer, "  preamp  : 0x%x\n", miro->aci_preamp);
 }
 
-static void __devinit snd_miro_proc_init(struct snd_miro * miro)
+static void __devinit snd_miro_proc_init(struct snd_card *card,
+					 struct snd_miro *miro)
 {
 	struct snd_info_entry *entry;
 
-	if (! snd_card_proc_new(miro->card, "miro", &entry))
+	if (!snd_card_proc_new(card, "miro", &entry))
 		snd_info_set_text_ops(entry, miro, snd_miro_proc_read);
 }
 
@@ -974,20 +965,18 @@ static int __devinit snd_miro_configure(struct snd_miro *chip)
 	unsigned char mpu_irq_bits;
 	unsigned long flags;
 
+	snd_miro_write_mask(chip, OPTi9XX_MC_REG(1), 0x80, 0x80);
+	snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x20, 0x20); /* OPL4 */
+	snd_miro_write_mask(chip, OPTi9XX_MC_REG(5), 0x02, 0x02);
+
 	switch (chip->hardware) {
 	case OPTi9XX_HW_82C924:
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(6), 0x02, 0x02);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(1), 0x80, 0x80);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x20, 0x20); /* OPL4 */
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(3), 0xf0, 0xff);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(5), 0x02, 0x02);
 		break;
 	case OPTi9XX_HW_82C929:
 		/* untested init commands for OPTi929 */
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(1), 0x80, 0x80);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(2), 0x20, 0x20); /* OPL4 */
 		snd_miro_write_mask(chip, OPTi9XX_MC_REG(4), 0x00, 0x0c);
-		snd_miro_write_mask(chip, OPTi9XX_MC_REG(5), 0x02, 0x02);
 		break;
 	default:
 		snd_printk(KERN_ERR "chip %d not supported\n", chip->hardware);
@@ -1159,7 +1148,6 @@ static int __devinit snd_card_miro_aci_detect(struct snd_card *card,
 
 	/* get ACI port from OPTi9xx MC 4 */
 
-	miro->mc_base = 0xf8c;
 	regval=inb(miro->mc_base + 4);
 	miro->aci_port = (regval & 0x10) ? 0x344: 0x354;
 
@@ -1235,7 +1223,13 @@ static int __devinit snd_miro_probe(struct device *devptr, unsigned int n)
 
 	card->private_free = snd_card_miro_free;
 	miro = card->private_data;
-	miro->card = card;
+
+	error = snd_card_miro_detect(card, miro);
+	if (error < 0) {
+		snd_card_free(card);
+		snd_printk(KERN_ERR "unable to detect OPTi9xx chip\n");
+		return -ENODEV;
+	}
 
 	if ((error = snd_card_miro_aci_detect(card, miro)) < 0) {
 		snd_card_free(card);
@@ -1244,13 +1238,8 @@ static int __devinit snd_miro_probe(struct device *devptr, unsigned int n)
 	}
 
 	/* init proc interface */
-	snd_miro_proc_init(miro);
+	snd_miro_proc_init(card, miro);
 
-	if ((error = snd_card_miro_detect(card, miro)) < 0) {
-		snd_card_free(card);
-		snd_printk(KERN_ERR "unable to detect OPTi9xx chip\n");
-		return -ENODEV;
-	}
 
 	if (! miro->res_mc_base &&
 	    (miro->res_mc_base = request_region(miro->mc_base, miro->mc_base_size,
@@ -1261,7 +1250,6 @@ static int __devinit snd_miro_probe(struct device *devptr, unsigned int n)
 	}
 
 	miro->wss_base = port;
-	miro->fm_port = fm_port;
 	miro->mpu_port = mpu_port;
 	miro->irq = irq;
 	miro->mpu_irq = mpu_irq;
@@ -1276,8 +1264,9 @@ static int __devinit snd_miro_probe(struct device *devptr, unsigned int n)
 		}
 	}
 
-	if (miro->mpu_port == SNDRV_AUTO_PORT) {
-		if ((miro->mpu_port = snd_legacy_find_free_ioport(possible_mpu_ports, 2)) < 0) {
+	if (mpu_port == SNDRV_AUTO_PORT) {
+		mpu_port = snd_legacy_find_free_ioport(possible_mpu_ports, 2);
+		if (mpu_port < 0) {
 			snd_card_free(card);
 			snd_printk(KERN_ERR "unable to find a free MPU401 port\n");
 			return -EBUSY;
@@ -1344,7 +1333,8 @@ static int __devinit snd_miro_probe(struct device *devptr, unsigned int n)
 
 	miro->pcm = pcm;
 
-	if ((error = snd_miro_mixer(miro)) < 0) {
+	error = snd_miro_mixer(card, miro);
+	if (error < 0) {
 		snd_card_free(card);
 		return error;
 	}
@@ -1380,20 +1370,24 @@ static int __devinit snd_miro_probe(struct device *devptr, unsigned int n)
 		card->shortname, miro->name, pcm->name, miro->wss_base + 4,
 		miro->irq, miro->dma1, miro->dma2);
 
-	if (miro->mpu_port <= 0 || miro->mpu_port == SNDRV_AUTO_PORT)
+	if (mpu_port <= 0 || mpu_port == SNDRV_AUTO_PORT)
 		rmidi = NULL;
-	else
-		if ((error = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
-				miro->mpu_port, 0, miro->mpu_irq, IRQF_DISABLED,
-				&rmidi)))
-			snd_printk(KERN_WARNING "no MPU-401 device at 0x%lx?\n", miro->mpu_port);
+	else {
+		error = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401,
+				mpu_port, 0, miro->mpu_irq, IRQF_DISABLED,
+				&rmidi);
+		if (error < 0)
+			snd_printk(KERN_WARNING "no MPU-401 device at 0x%lx?\n",
+				   mpu_port);
+	}
 
-	if (miro->fm_port > 0 && miro->fm_port != SNDRV_AUTO_PORT) {
+	if (fm_port > 0 && fm_port != SNDRV_AUTO_PORT) {
 		struct snd_opl3 *opl3 = NULL;
 		struct snd_opl4 *opl4;
-		if (snd_opl4_create(card, miro->fm_port, miro->fm_port - 8, 
+		if (snd_opl4_create(card, fm_port, fm_port - 8,
 				    2, &opl3, &opl4) < 0)
-			snd_printk(KERN_WARNING "no OPL4 device at 0x%lx\n", miro->fm_port);
+			snd_printk(KERN_WARNING "no OPL4 device at 0x%lx\n",
+				   fm_port);
 	}
 
 	if ((error = snd_set_aci_init_values(miro)) < 0) {
