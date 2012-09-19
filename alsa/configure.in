@@ -581,6 +581,20 @@ AC_DEFINE_UNQUOTED(CONFIG_SND_KERNELDIR, "$CONFIG_SND_KERNELDIR")
 AC_SUBST(CONFIG_SND_KERNELDIR)
 AC_SUBST(MAKE_ADDS)
 
+dnl Check experimental drivers...
+AC_MSG_CHECKING(for CONFIG_EXPERIMENTAL)
+AC_ARG_ENABLE(experimental,
+  AS_HELP_STRING([--disable-experimental], [disable CONFIG_EXPERIMENTAL]),
+  config_experimental="$enableval", config_experimental="yes")
+if test "$config_experimental" = "yes"; then
+  CONFIG_EXPERIMENTAL=y 
+  AC_MSG_RESULT(yes)
+else
+  CONFIG_EXPERIMENTAL=
+  AC_MSG_RESULT(no)
+fi
+AC_SUBST(CONFIG_EXPERIMENTAL)
+
 dnl Remove header hacks
 rm -f include/linux/*.h
 rm -f include/asm/*.h
@@ -652,11 +666,6 @@ GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 dnl Check for PCI support...
 CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
 AC_SUBST(CONFIG_PCI)
-
-dnl Check experimental drivers...
-# CHECK_KERNEL_CONFIG(CONFIG_EXPERIMENTAL, [Experimental drivers in kernel])
-CONFIG_EXPERIMENTAL=y
-AC_SUBST(CONFIG_EXPERIMENTAL)
 
 dnl Check for I2C drivers...
 CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C, [I2C driver in kernel])

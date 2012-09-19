@@ -174,6 +174,7 @@ static char *no_cards[] = {
 static const char *kernel26_opts[] = {
 	"SND_AC97_BUS",
 	"SND_PXA2XX_PCM",
+	"SND_AOA",
 	NULL,
 };
 
@@ -313,17 +314,22 @@ static int read_file_1(const char *filename, struct cond **template)
 				dep->is_bool = 1;
 			else if (!strncmp(buffer, "\tdepends on ", 12))
 				add_dep(dep, buffer + 12, *template);
+			else if (!strncmp(buffer, "\tdepends ", 9))
+				add_dep(dep, buffer + 9, *template);
 			else if (!strncmp(buffer, "\tselect ", 8))
 				add_select(dep, buffer + 8, *template);
 			continue;
 		case READ_STATE_MENU:
-			if (!strncmp(buffer, "\tdepends on ", 12)) {
+			if (!strncmp(buffer, "\tdepends ", 9)) {
 				struct cond *ntemplate;
 				if (strcmp((*template)->name, "EMPTY")) {
 					fprintf(stderr, "Menu consistency error\n");
 					exit(EXIT_FAILURE);
 				}
-				ntemplate = create_cond(buffer + 12);
+				if (! strncmp(buffer + 9, "on ", 3))
+					ntemplate = create_cond(buffer + 12);
+				else
+					ntemplate = create_cond(buffer + 9);
 				free((*template)->name);
 				(*template)->name = ntemplate->name;
 				(*template)->dep = ntemplate->dep;
