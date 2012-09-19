@@ -294,6 +294,8 @@ static int alc_mux_select(struct hda_codec *codec, unsigned int adc_idx,
 	imux = &spec->input_mux[mux_idx];
 	if (!imux->num_items && mux_idx > 0)
 		imux = &spec->input_mux[0];
+	if (!imux->num_items)
+		return 0;
 
 	if (idx >= imux->num_items)
 		idx = imux->num_items - 1;
@@ -2661,6 +2663,8 @@ static const char *alc_get_line_out_pfx(struct alc_spec *spec, int ch,
 	case AUTO_PIN_SPEAKER_OUT:
 		if (cfg->line_outs == 1)
 			return "Speaker";
+		if (cfg->line_outs == 2)
+			return ch ? "Bass Speaker" : "Speaker";
 		break;
 	case AUTO_PIN_HP_OUT:
 		/* for multi-io case, only the primary out */
@@ -3286,7 +3290,8 @@ static int alc_auto_create_multi_out_ctls(struct hda_codec *codec,
 }
 
 static int alc_auto_create_extra_out(struct hda_codec *codec, hda_nid_t pin,
-				     hda_nid_t dac, const char *pfx)
+				     hda_nid_t dac, const char *pfx,
+				     int cidx)
 {
 	struct alc_spec *spec = codec->spec;
 	hda_nid_t sw, vol;
@@ -3302,15 +3307,15 @@ static int alc_auto_create_extra_out(struct hda_codec *codec, hda_nid_t pin,
 		if (is_ctl_used(spec->sw_ctls, val))
 			return 0; /* already created */
 		mark_ctl_usage(spec->sw_ctls, val);
-		return add_pb_sw_ctrl(spec, ALC_CTL_WIDGET_MUTE, pfx, val);
+		return __add_pb_sw_ctrl(spec, ALC_CTL_WIDGET_MUTE, pfx, cidx, val);
 	}
 
 	sw = alc_look_for_out_mute_nid(codec, pin, dac);
 	vol = alc_look_for_out_vol_nid(codec, pin, dac);
-	err = alc_auto_add_stereo_vol(codec, pfx, 0, vol);
+	err = alc_auto_add_stereo_vol(codec, pfx, cidx, vol);
 	if (err < 0)
 		return err;
-	err = alc_auto_add_stereo_sw(codec, pfx, 0, sw);
+	err = alc_auto_add_stereo_sw(codec, pfx, cidx, sw);
 	if (err < 0)
 		return err;
 	return 0;
@@ -3351,16 +3356,21 @@ static int alc_auto_create_extra_outs(struct hda_codec *codec, int num_pins,
 		hda_nid_t dac = *dacs;
 		if (!dac)
 			dac = spec->multiout.dac_nids[0];
-		return alc_auto_create_extra_out(codec, *pins, dac, pfx);
+		return alc_auto_create_extra_out(codec, *pins, dac, pfx, 0);
 	}
 
 	if (dacs[num_pins - 1]) {
 		/* OK, we have a multi-output system with individual volumes */
 		for (i = 0; i < num_pins; i++) {
-			snprintf(name, sizeof(name), "%s %s",
-				 pfx, channel_name[i]);
-			err = alc_auto_create_extra_out(codec, pins[i], dacs[i],
-							name);
+			if (num_pins >= 3) {
+				snprintf(name, sizeof(name), "%s %s",
+					 pfx, channel_name[i]);
+				err = alc_auto_create_extra_out(codec, pins[i], dacs[i],
+								name, 0);
+			} else {
+				err = alc_auto_create_extra_out(codec, pins[i], dacs[i],
+								pfx, i);
+			}
 			if (err < 0)
 				return err;
 		}
