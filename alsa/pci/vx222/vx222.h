@@ -33,10 +33,16 @@ struct snd_vx222 {
 
 	unsigned int regCDSP;	/* current CDSP register */
 	unsigned int regCFG;	/* current CFG register */
+	unsigned int regSELMIC;	/* current SELMIC reg. (for VX222 Mic) */
 
+	int input_level[2];	/* input level for vx222 mic */
+	int mic_level;		/* mic level for vx222 mic */
 };
 
+#define VX2_AKM_LEVEL_MAX	0xff
+
 extern struct snd_vx_ops vx222_ops;
+extern struct snd_vx_ops vx222_old_ops;
 
 /* Offset of registers with base equal to portDSP. */
 #define VX_RESET_DMA_REGISTER_OFFSET    0x00000008
@@ -80,6 +86,28 @@ extern struct snd_vx_ops vx222_ops;
 
 #define VX_STATUS_GPIO_IN_MASK          0x0000000C
 #define VX_GPIO_IN_BIT_OFFSET           0             // leave input as bit 2 and 3
+
+/* Constants used to access the MICRO INPUT SELECT register (0x40). */
+#define MICRO_SELECT_INPUT_NORM        0x00
+#define MICRO_SELECT_INPUT_MUTE        0x01
+#define MICRO_SELECT_INPUT_LIMIT       0x02
+#define MICRO_SELECT_INPUT_MASK        0x03
+
+#define MICRO_SELECT_PREAMPLI_G_0      0x00
+#define MICRO_SELECT_PREAMPLI_G_1      0x04
+#define MICRO_SELECT_PREAMPLI_G_2      0x08
+#define MICRO_SELECT_PREAMPLI_G_3      0x0C
+#define MICRO_SELECT_PREAMPLI_MASK     0x0C
+#define MICRO_SELECT_PREAMPLI_OFFSET   2
+
+#define MICRO_SELECT_RAISE_COMPR       0x10
+
+#define MICRO_SELECT_NOISE_T_52DB      0x00
+#define MICRO_SELECT_NOISE_T_42DB      0x20
+#define MICRO_SELECT_NOISE_T_32DB      0x40
+#define MICRO_SELECT_NOISE_T_MASK      0x60
+
+#define MICRO_SELECT_PHANTOM_ALIM      0x80
 
 
 #endif /* __VX222_H */

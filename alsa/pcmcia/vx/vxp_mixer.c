@@ -57,11 +57,14 @@ static int vx_mic_level_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucon
 {
 	vx_core_t *_chip = snd_kcontrol_chip(kcontrol);
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
+	down(&_chip->mixer_mutex);
 	if (chip->mic_level != ucontrol->value.integer.value[0]) {
 		vx_set_mic_level(_chip, ucontrol->value.integer.value[0]);
 		chip->mic_level = ucontrol->value.integer.value[0];
+		up(&_chip->mixer_mutex);
 		return 1;
 	}
+	up(&_chip->mixer_mutex);
 	return 0;
 }
 
@@ -97,11 +100,14 @@ static int vx_mic_boost_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucon
 {
 	vx_core_t *_chip = snd_kcontrol_chip(kcontrol);
 	struct snd_vxpocket *chip = (struct snd_vxpocket *)_chip;
+	down(&_chip->mixer_mutex);
 	if (chip->mic_level != ucontrol->value.integer.value[0]) {
 		vx_set_mic_boost(_chip, ucontrol->value.integer.value[0]);
 		chip->mic_level = ucontrol->value.integer.value[0];
+		up(&_chip->mixer_mutex);
 		return 1;
 	}
+	up(&_chip->mixer_mutex);
 	return 0;
 }
 
