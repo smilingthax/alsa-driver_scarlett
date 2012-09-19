@@ -355,6 +355,15 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #define usb_pipe_needs_resubmit(pipe) (!usb_pipeint(pipe))
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+enum {
+	USB_SPEED_UNKNOWN = 0,
+	USB_SPEED_LOW, USB_SPEED_FULL,
+	USB_SPEED_HIGH
+};
+#define snd_usb_get_speed(dev) USB_SPEED_FULL
+#endif
+
 #endif /* SND_NEED_USB_WRAPPER && CONFIG_USB */
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 24) \
