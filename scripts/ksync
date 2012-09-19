@@ -40,6 +40,7 @@ import string
 import time
 import dircache
 import getopt
+import re
 
 # define for documentation
 PROGRAM = sys.argv[0]
@@ -75,6 +76,118 @@ ALSA_MAP = {'/':'/sound',
 	    '/Documentation':'/Documentation/sound/alsa',
 	    '/include':'/include/sound'}
 KERNEL_MAP = {}		# Initialized from ALSA_MAP
+
+# Comment mapping
+COMMENT_MAP = [
+		('/drivers/mpu401'	,'MPU401 UART'),
+		('/drivers/opl3'	,'OPL3'),
+		('/drivers/opl4'	,'OPL4'),
+		('/drivers/vx'		,'Digigram VX core'),
+		('/drivers'		,'Generic drivers'),
+		('/arm'			,'ERROR'),
+		('/isa/ad1816a'		,'AD1816A driver'),
+		('/isa/ad1848'		,'AD1848 driver'),
+		('/isa/cs423x/cs4231.*'	,'CS4231 driver'),
+		('/isa/cs423x/cs4236.*'	,'CS4236+ driver'),
+		('/isa/cs423x/.*pc98.*'	,'PC98(CS423x) driver'),
+		('/isa/cs423x'		,'CS423x drivers'),
+		('/isa/es1688'		,'ES1688 driver'),
+		('/isa/gus/gus_.*'	,'GUS Library'),
+		('/isa/gus/gusclassic.c','GUS Classic driver'),
+		('/isa/gus/gusextreme.c','GUS Extreme driver'),
+		('/isa/gus/gusmax.c'	,'GUS MAX driver'),
+		('/isa/gus/interwave.*'	,'AMD InterWave driver'),
+		('/isa/gus'		,'GUS drivers'),
+		('/isa/sb/es968.c'	,'ES968 driver'),
+		('/isa/sb/emu8000.*'	,'EMU8000 driver'),
+		('/isa/sb/sb16.*'	,'SB16/AWE driver'),
+		('/isa/sb/sb8.*'	,'SB8 driver'),
+		('/isa/sb'		,'SB drivers'),
+		('/isa/wavefront'	,'Wavefront drivers'),
+		('/isa/als100.c' 	,'ALS100 driver'),
+		('/isa/azt2320.c'	,'AZT2320 driver'),
+		('/isa/cmi8330.c'	,'CMI8330 driver'),
+		('/isa/dt019x.c' 	,'DT019x driver'),
+		('/isa/es18xx.c' 	,'ES18xx driver'),
+		('/isa/opl3sa2.c'	,'OPL3SA2 driver'),
+		('/isa/sgalaxy.c'	,'Sound Galaxy driver'),
+		('/isa/sscape.c'	,'Sound Scape driver'),
+		('/isa'			,'ERROR'),
+		('/pci/ac97/ak4531_codec.c','AK4531 codec'),
+		('/include/ac97_codec.h','AC97 Codec Core'),
+		('/pci/ac97'		,'AC97 Codec Core'),
+		('/pci/ali5451'		,'ALI5451 driver'),
+		('/include/emu10k1.h'	,'EMU10K1/EMU10K2 driver'),
+		('/pci/emu10k1'		,'EMU10K1/EMU10K2 driver'),
+		('/pci/ice1712/envy24ht.h','ICE1724 driver'),
+		('/pci/ice1712/revo.(c|h)','ICE1724 driver'),
+		('/pci/ice1712/amp.(c|h)','ICE1724 driver'),
+		('/pci/ice1712/ice1724.c','ICE1724 driver'),
+		('/pci/ice1712'		,'ICE1712 driver'),
+		('/pci/korg1212'	,'KORG1212 driver'),
+		('/pci/nm256'		,'NM256 driver'),
+		('/pci/rme9652/hdsp.c'	,'RME HDSP driver'),
+		('/pci/rme9652'		,'RME9652 driver'),
+		('/pci/trident'		,'Trident driver'),
+		('/pci/vx222'		,'Digigram VX222 driver'),
+		('/pci/cs46xx'		,'CS46xx driver'),
+		('/pci/als4000.c'	,'ALS4000 driver'),
+		('/pci/azt3328.c'	,'AZT3328 driver'),
+		('/pci/cmipci.c' 	,'CMIPCI driver'),
+		('/pci/cs4281.c' 	,'CS4281 driver'),
+		('/pci/ens1370.c'	,'ENS1370/1+ driver'),
+		('/pci/ens1371.c'	,'ENS371+ driver'),
+		('/pci/es1938.c' 	,'ES1938 driver'),
+		('/pci/es1968.c' 	,'ES1968 driver'),
+		('/pci/fm801.c'  	,'FM801 driver'),
+		('/pci/intel8x0.c'	,'Intel8x0 driver'),
+		('/pci/maestro3.c'	,'Maestro3 driver'),
+		('/pci/rme32.c'		,'RME32 driver'),
+		('/pci/rme96.c'		,'RME96 driver'),
+		('/pci/sonicvibes.c'	,'SonicVibes driver'),
+		('/pci/via82xx.c'	,'VIA82xx driver'),
+		('/pci/Kconfig'		,'PCI drivers'),
+		('/pci'			,'ERROR'),
+		('/ppc/awacs.(ch)'	,'PPC AWACS driver'),
+		('/ppc/burgundy.(ch)'	,'PPC Burgundy driver'),
+		('/ppc/daca.c'		,'PPC DACA driver'),
+		('/ppc/keywest.c'	,'PPC Keywest driver'),
+		('/ppc/pmac.(c|h)'	,'PPC PMAC driver'),
+		('/ppc/powermac.c'	,'PPC PowerMac driver'),
+		('/ppc/tumbler.(c|h)'	,'PPC Tumbler driver'),
+		('/ppc'			,'ERROR'),
+		('/i2c/l3'		,'L3 drivers'),
+		('/i2c/other'		,'Serial BUS drivers'),
+		('/i2c'			,'ERROR'),
+		('/parisc'		,'ERROR'),
+		('/sparc'		,'ERROR'),
+		('/usb/usbaudio.(c|h)' ,'USB generic driver'),
+		('/usb/usbquirks.(c|h)' ,'USB generic driver'),
+		('/usb'			,'ERROR'),
+		('/core/ioctl32'	,'IOCTL32 emulation'),
+		('/include/pcm_oss.h'	,'ALSA<-OSS emulation'),
+		('/core/oss'		,'ALSA<-OSS emulation'),
+		('/core/seq/oss'	,'ALSA<-OSS sequencer'),
+		('/core/seq/instr'	,'Instrument layer'),
+		('/core/seq'		,'ALSA sequencer'),
+		('/core/memalloc.*'	,'Memalloc module'),
+		('/core/sgbuf.*'	,'Memalloc module'),
+		('/core/rtctimer.*'	,'RTC timer driver'),
+		('/core/timer.*'	,'Timer Midlevel'),
+		('/core/rawmidi.*'	,'RawMidi Midlevel'),
+		('/core/pcm.*'		,'PCM Midlevel'),
+		('/core/hwdep.*'	,'HWDEP Midlevel'),
+		('/core/control.*'	,'Control Midlevel'),
+		('/include/asound.h'	,'ALSA Core'),
+		('/core/info.*'		,'ALSA Core'),
+		('/core/control.*'	,'ALSA Core'),
+		('/core/init.*'		,'ALSA Core'),
+		('/core/sound.*'	,'ALSA Core'),
+		('/core'		,'ERROR'),
+		('/Documentation'	,'Documentation'),
+		('/include'		,'ERROR'),
+		('/'			,'ERROR')
+	       ]
 
 # Global variables
 LAST_CVS_TIME = 0
@@ -742,7 +855,7 @@ def parse_time(str):
 
 def cvsps(changeset):
 	os.chdir(get_cvs_root())
-	lines = my_popen("cvsps | grep PatchSet | tail -n 1")
+	lines = my_popen("cvsps -u | grep PatchSet | tail -n 1")
 	dummy, endchangeset = string.split(lines[0][0:-2], ' ')
 	changeset = int(changeset)
 	endchangeset = int(endchangeset)
@@ -769,8 +882,59 @@ def cvsps(changeset):
 		fp.close()
 		changeset += 1				
 
-def cvsps_merge1(f):
-	print 'Trying merge patch ' + f
+def cvsps_merge_members1(file):
+	global COMMENT_MAP
+	for i in COMMENT_MAP:
+		if re.compile("^" + i[0]).search(file):
+			return i[1]
+	return ''
+
+def cvsps_merge_members(members):
+	changes = []
+	result = []
+	for member in members:
+		file, other = string.split(member, ':')
+		file = "/" + file
+		while file != '':
+			result1 = cvsps_merge_members1(file)
+			if result1 == 'ERROR':
+				print 'Cannot identify file "%s"' % file
+				sys.exit(1)
+			if result1 != '':
+				file = ''
+				changes.append(result1)
+			else:
+				i = string.rfind(file, '/')
+				if i < 0:
+					file = ''
+				else:
+					file = file[0:i]
+	i = 0
+	while i < len(changes):
+		j = 0
+		while j < len(changes):
+			if i != j and changes[i] == changes[j]:
+				del changes[j]
+				i = -1
+				break
+			j += 1
+		i += 1
+	xresult = ''
+	for i in changes:
+		if len(i) + len(xresult) > 70:
+			result.append(xresult)
+			xresult = ''
+		if xresult == '':
+			xresult = i
+		else :
+			xresult = xresult + ',' + i
+	if xresult != '':
+		result.append(xresult)
+	return result
+
+def cvsps_merge1(f,t=0):
+	if not t:
+		print 'Trying merge patch ' + f
 	ff = get_cvs_root() + '/scripts/changesets/' + f
 	fp = open(ff, 'r')
 	lines = fp.readlines()
@@ -804,12 +968,18 @@ def cvsps_merge1(f):
 	lines = 'ALSA CVS update\n'
 	if date != '':
 		lines = lines + 'D:' + date + '\n'
+	changes = cvsps_merge_members(members)
+	for i in changes:
+		lines = lines + 'C:' + i + '\n'
 	if author != '':
 		lines = lines + 'A:' + author + '\n'
 	for i in members:
 		lines = lines + 'F:' + i
 	for i in log:
 		lines = lines + 'L:' + i
+	if t:
+		print lines
+		return
 	while os.system('bk import -tpatch -C -y"' + lines + '" ' + ff + ' .'):
 		print 'BK patch import error, xterm? (any key to continue or Control-C to abort)'
 		sys.stdin.readline()
@@ -825,7 +995,14 @@ def cvsps_merge():
 		if string.find(f, '.') > 0:
 			file, suff = string.split(f, '.')
 			if suff == 'patch':
-				cvsps_merge1(f)
+				cvsps_merge1(f, t=1)
+	print 'Is this ok? Press Ctrl-C to abort...'
+	sys.stdin.readline()
+	for f in l:
+		if string.find(f, '.') > 0:
+			file, suff = string.split(f, '.')
+			if suff == 'patch':
+				cvsps_merge1(f, t=0)
 	del l
 
 
