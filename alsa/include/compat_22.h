@@ -471,6 +471,14 @@ extern inline int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 
 #include <linux/usb.h>
 
+struct usb_ctrlrequest {
+	__u8 bRequestType;
+	__u8 bRequest;
+	__u16 wValue;
+	__u16 wIndex;
+	__u16 wLength;
+} __attribute__ ((packed));
+
 struct snd_compat_usb_device_id {
 	__u16		match_flags;
 	__u16		idVendor;
