@@ -27,7 +27,7 @@ AC_PROG_GCC_TRADITIONAL
 
 dnl Check for current directory
 AC_MSG_CHECKING(for current directory)
-SRCDIR=`pwd`
+SRCDIR=`/bin/pwd`
 AC_SUBST(SRCDIR)
 AC_MSG_RESULT($SRCDIR)
 
