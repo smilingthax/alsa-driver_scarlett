@@ -609,6 +609,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 {
 	int maxsize, n, i;
 	int is_playback = subs->pcm_substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
+	int packs_per_urb = NRPACKS;
 
 	release_substream_urbs(subs);
 
@@ -641,6 +642,9 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 	if (subs->nurbs > MAX_URBS) {
 		subs->nurbs = MAX_URBS;
 		subs->npacks = MAX_URBS * NRPACKS;
+	} else if (subs->nurbs <= 1) {
+		subs->nurbs = subs->npacks;
+		packs_per_urb = 1;
 	}
 
 #if 0
@@ -655,7 +659,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 		u->index = i;
 		u->subs = subs;
 		u->transfer = 0;
-		u->packets = n > NRPACKS ? NRPACKS : n;
+		u->packets = n > packs_per_urb ? packs_per_urb : n;
 		if (! is_playback) {
 			u->buf = kmalloc(maxsize * u->packets, GFP_KERNEL);
 			if (! u->buf) {
@@ -674,7 +678,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 		u->urb->number_of_packets = u->packets;
 		u->urb->context = u;
 		u->urb->complete = snd_complete_urb;
-		n -= NRPACKS;
+		n -= packs_per_urb;
 	}
 
 	if (subs->syncpipe) {
@@ -863,7 +867,7 @@ static snd_pcm_hardware_t snd_usb_playback =
 	buffer_bytes_max:	(128*1024),
 	period_bytes_min:	64,
 	period_bytes_max:	(128*1024),
-	periods_min:		1,
+	periods_min:		2,
 	periods_max:		1024,
 };
 
@@ -875,7 +879,7 @@ static snd_pcm_hardware_t snd_usb_capture =
 	buffer_bytes_max:	(128*1024),
 	period_bytes_min:	64,
 	period_bytes_max:	(128*1024),
-	periods_min:		1,
+	periods_min:		2,
 	periods_max:		1024,
 };
 
