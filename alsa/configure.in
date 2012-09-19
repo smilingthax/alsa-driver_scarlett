@@ -5,7 +5,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 AC_INIT(acore/sound.c)
 AM_CONDITIONAL(INSTALL_M4, test "x${ACLOCAL}" = "xaclocal")
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="0.9.0beta10"
+CONFIG_SND_VERSION="0.9.0beta11"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -615,6 +615,9 @@ dnl Check for version...
 AC_MSG_CHECKING(for driver version)
 AC_DEFINE_UNQUOTED(CONFIG_SND_VERSION, "$CONFIG_SND_VERSION")
 AC_SUBST(CONFIG_SND_VERSION)
+CONFIG_SND_DATE=""
+AC_DEFINE_UNQUOTED(CONFIG_SND_DATE, "$CONFIG_SND_DATE")
+AC_SUBST(CONFIG_SND_DATE)
 AC_MSG_RESULT($CONFIG_SND_VERSION)
 
 dnl Check for sequencer support...
