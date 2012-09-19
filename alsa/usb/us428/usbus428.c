@@ -75,7 +75,7 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.1");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.2");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001) }}");
@@ -131,22 +131,29 @@ void snd_us428_In04Int(urb_t* urb)
 	
 	us428->In04IntCalls++;
 
-	if (urb->status){
+	if (urb->status) {
 		snd_printk( "Interrupt Pipe 4 came back with status=%i\n", urb->status);
 		return;
 	}
 
-        {
-		int diff = -1, i;
 	//	printk("%i:0x%02X ", 8, (int)((unsigned char*)us428->In04Buf)[8]); Master volume shows 0 here if fader is at max during boot ?!?
-		for (i = 0; i < 21; i++) {
-			if (us428->In04Last[i] != ((char*)us428->In04Buf)[i]) {
-				if (diff < 0)
-					diff = i;
-				us428->In04Last[i] = ((char*)us428->In04Buf)[i];
+	if (us428ctls) {
+		int diff = -1;
+		if (-2 == us428ctls->CtlSnapShotLast) {
+			diff = 0;
+			memcpy(us428->In04Last, us428->In04Buf, sizeof(us428->In04Last));
+			us428ctls->CtlSnapShotLast = -1;
+		} else {
+			int i;
+			for (i = 0; i < 21; i++) {
+				if (us428->In04Last[i] != ((char*)us428->In04Buf)[i]) {
+					if (diff < 0)
+						diff = i;
+					us428->In04Last[i] = ((char*)us428->In04Buf)[i];
+				}
 			}
 		}
-		if (diff >= 0  &&  us428ctls) {
+		if (0 <= diff) {
 			int n = us428ctls->CtlSnapShotLast + 1;
 			if (n >= N_us428_ctl_BUFS  ||  n < 0)
 				n = 0;
@@ -186,7 +193,7 @@ void snd_us428_In04Int(urb_t* urb)
 			}
 		}
 
-	if (err){
+	if (err) {
 		snd_printk("In04Int() usb_submit_urb err=%i\n", err);
 	}
 }

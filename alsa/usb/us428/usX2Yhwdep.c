@@ -93,7 +93,7 @@ static int us428ctls_mmap(snd_hwdep_t * hw, struct file *filp, struct vm_area_st
 		return -EBUSY;
 
 	/* if userspace tries to mmap beyond end of our buffer, fail */ 
-        if (size > ((PAGE_SIZE - 1 + sizeof(us428ctls_sharedmem_t)) / PAGE_SIZE) * PAGE_SIZE){
+        if (size > ((PAGE_SIZE - 1 + sizeof(us428ctls_sharedmem_t)) / PAGE_SIZE) * PAGE_SIZE) {
 		snd_printd( "%i > %i\n", size,sizeof(us428ctls_sharedmem_t)); 
                 return -EINVAL;
 	}
@@ -103,6 +103,7 @@ static int us428ctls_mmap(snd_hwdep_t * hw, struct file *filp, struct vm_area_st
 		if(!(us428->us428ctls_sharedmem = snd_malloc_pages(sizeof(us428ctls_sharedmem_t), GFP_KERNEL)))
 			return -ENOMEM;
 		memset(us428->us428ctls_sharedmem, -1, sizeof(us428ctls_sharedmem_t));
+		us428->us428ctls_sharedmem->CtlSnapShotLast = -2;
 	}
 	area->vm_ops = &us428ctls_vm_ops;
 #ifdef VM_RESERVED
@@ -174,11 +175,11 @@ static int snd_us428_AsyncSeq04_init(us428dev_t* us428)
 		i;
 	us428->Seq04 = 0;
 
-	if (NULL == (us428->AS04.buffer = kmalloc(URB_DataLen_AsyncSeq*URBS_AsyncSeq, GFP_KERNEL))){
+	if (NULL == (us428->AS04.buffer = kmalloc(URB_DataLen_AsyncSeq*URBS_AsyncSeq, GFP_KERNEL))) {
 		err = -ENOMEM;
 	}else
-		for (i = 0; i < URBS_AsyncSeq; ++i){
-			if (NULL == (us428->AS04.urb[i] = usb_alloc_urb(0, GFP_KERNEL))){
+		for (i = 0; i < URBS_AsyncSeq; ++i) {
+			if (NULL == (us428->AS04.urb[i] = usb_alloc_urb(0, GFP_KERNEL))) {
 				err = -ENOMEM;
 				break;
 			}
@@ -219,7 +220,7 @@ static int snd_us428_create_alsa_devices(snd_card_t* card)
 	int err;
 
 	do {
-		if ((err = snd_us428_create_usbmidi(card)) < 0){
+		if ((err = snd_us428_create_usbmidi(card)) < 0) {
 			snd_printk("snd_us428_create_alsa_devices: snd_us428_create_usbmidi error %i \n", err);
 			break;
 		}
@@ -238,7 +239,7 @@ static int snd_us428_In04_init(us428dev_t* us428)
 	if (! (us428->In04urb = usb_alloc_urb(0, GFP_KERNEL)))
 		return -ENOMEM;
 
-	if (! (us428->In04Buf = kmalloc(21, GFP_KERNEL))){
+	if (! (us428->In04Buf = kmalloc(21, GFP_KERNEL))) {
 		usb_free_urb(us428->In04urb);
 		return -ENOMEM;
 	}
@@ -276,15 +277,15 @@ static int usX2Y_hwdep_dsp_load(snd_hwdep_t *hw, snd_hwdep_dsp_image_t *dsp)
 	}
 	if (!err  &&  1 == dsp->index)
 		do {
-			if ((err = snd_us428_AsyncSeq04_init((us428dev_t*)hw->private_data))){
+			if ((err = snd_us428_AsyncSeq04_init((us428dev_t*)hw->private_data))) {
 				snd_printk("snd_us428_AsyncSeq04_init error \n");
 				break;
 			}
-			if ((err = snd_us428_In04_init((us428dev_t*)hw->private_data))){
+			if ((err = snd_us428_In04_init((us428dev_t*)hw->private_data))) {
 				snd_printk("snd_us428_In04_init error \n");
 				break;
 			}
-			if ((err = snd_us428_create_alsa_devices(hw->card))){
+			if ((err = snd_us428_create_alsa_devices(hw->card))) {
 				snd_printk("snd_us428_create_alsa_devices error %i \n", err);
 				snd_card_free(hw->card);
 				break;

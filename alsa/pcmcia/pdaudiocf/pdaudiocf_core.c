@@ -147,7 +147,7 @@ static void pdacf_proc_init(pdacf_t *chip)
 	snd_info_entry_t *entry;
 
 	if (! snd_card_proc_new(chip->card, "pdaudiocf", &entry))
-		snd_info_set_text_ops(entry, chip, pdacf_proc_read);
+		snd_info_set_text_ops(entry, chip, 1024, pdacf_proc_read);
 }
 
 pdacf_t *snd_pdacf_create(snd_card_t *card)
