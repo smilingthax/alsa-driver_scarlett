@@ -23,18 +23,9 @@
  */
 
 #include <sound/driver.h>
-#include <asm/io.h>
-#include <linux/delay.h>
-#include <linux/interrupt.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/init.h>
-#include <linux/slab.h>
 #include <linux/pci.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
-#include <sound/pcm_params.h>
-#include <sound/control.h>
 #include "cmi8788.h"
 
 
@@ -124,9 +115,8 @@ static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_PLAYBACK);
 	chip->playback_volume_init = 1;
 	cmi_subs = runtime->private_data;
-	cmi_subs->DMA_sta_mask   = 0x0010;
-	cmi_subs->DMA_chan_reset = 0x0010;
-	cmi_subs->int_mask       = 0x0010;
+	cmi_subs->dma_mask = 0x0010;
+	cmi_subs->int_mask = 0x0010;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -140,9 +130,8 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_CAPTURE);
 	chip->capture_volume_init = 1;
 	cmi_subs = runtime->private_data;
-	cmi_subs->DMA_sta_mask   = 0x0001;
-	cmi_subs->DMA_chan_reset = 0x0001;
-	cmi_subs->int_mask       = 0x0001;
+	cmi_subs->dma_mask = 0x0001;
+	cmi_subs->int_mask = 0x0001;
 	runtime->hw = snd_cmi_pcm_capture_hw;
 	return 0;
 }
@@ -154,9 +143,8 @@ static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 
 	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
 	cmi_subs = runtime->private_data;
-	cmi_subs->DMA_sta_mask   = 0x0020;
-	cmi_subs->DMA_chan_reset = 0x0020;
-	cmi_subs->int_mask       = 0x4020;
+	cmi_subs->dma_mask = 0x0020;
+	cmi_subs->int_mask = 0x4020;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -165,10 +153,9 @@ static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 {
 	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 
-	cmi_subs->substream    = NULL;
-	cmi_subs->DMA_sta_mask   = 0x0000;
-	cmi_subs->DMA_chan_reset = 0x00;
-	cmi_subs->int_mask       = 0x0000;
+	cmi_subs->substream = NULL;
+	cmi_subs->dma_mask = 0x0000;
+	cmi_subs->int_mask = 0x0000;
 	return 0;
 }
 
@@ -395,9 +382,9 @@ static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
 
 	/* Reset DMA Channel*/
 	reset = snd_cmipci_read_b(chip, DMARestRegister);
-	reset |= cmi_subs->DMA_chan_reset; /* set bit */
+	reset |= cmi_subs->dma_mask; /* set bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
-	reset &= ~cmi_subs->DMA_chan_reset; /* clear bit */
+	reset &= ~cmi_subs->dma_mask; /* clear bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
 	return 0;
 }
@@ -423,7 +410,7 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 		snd_cmipci_write_w(chip, int_val, PCI_IntMask);
 
 		/* Set PCI DMA Channel state -- Start */
-		int_stat |= cmi_subs->DMA_sta_mask;
+		int_stat |= cmi_subs->dma_mask;
 		snd_cmipci_write_w(chip, int_stat, PCI_DMA_SetStatus);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
@@ -431,7 +418,7 @@ static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 		cmi_subs->running = 0;
 
 		/* Set PCI DMA Channel state -- Stop */
-		int_stat &= ~cmi_subs->DMA_sta_mask;
+		int_stat &= ~cmi_subs->dma_mask;
 		snd_cmipci_write_w(chip, int_stat, PCI_DMA_SetStatus);
 
 		/* disable interrupt */
