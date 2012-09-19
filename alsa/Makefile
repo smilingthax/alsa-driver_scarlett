@@ -152,7 +152,7 @@ install-scripts:
 	elif [ -d /etc/rc.d/init.d ]; then \
 	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
 	elif [ -d /etc/init.d ]; then \
-	  install -m 755 -g $(UGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
+	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
 	fi
 
 .PHONY: check-snd-prefix
