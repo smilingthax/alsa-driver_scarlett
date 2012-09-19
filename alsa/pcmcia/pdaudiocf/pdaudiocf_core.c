@@ -204,7 +204,7 @@ int snd_pdacf_ak4117_create(pdacf_t *chip)
 	val = pdacf_reg_read(chip, PDAUDIOCF_REG_SCR);
 	val &= ~(PDAUDIOCF_CLKDIV0 | PDAUDIOCF_CLKDIV1);		/* use 24.576Mhz clock */
 	val &= ~(PDAUDIOCF_RED_LED_OFF|PDAUDIOCF_BLUE_LED_OFF);
-	val |= PDAUDIOCF_DATAFMT0 | PDAUDIOCF_DATAFMT1;		/* 24-bit data */
+	val |= PDAUDIOCF_DATAFMT0 | PDAUDIOCF_DATAFMT1;			/* 24-bit data */
 	pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, val);
 
 	/* setup LEDs and IRQ */
