@@ -2504,6 +2504,14 @@ else
 fi
 AC_SUBST(CONFIG_PARPORT)
 
+dnl Check for PM
+if test "$kversion.$kpatchlevel" = "2.2"; then
+  CONFIG_PM="y"
+else
+  CHECK_KERNEL_CONFIG(CONFIG_PM, [power management])
+fi
+AC_SUBST(CONFIG_PM)
+
 dnl Check for which cards to compile driver for...
 CONFIG_SOUND=m
 ALSA_TOPLEVEL_SELECT

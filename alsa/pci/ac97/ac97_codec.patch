@@ -27,7 +27,7 @@
  }
 +#else /* <= 2.6.0 */
 +#define snd_ac97_dev_register	NULL
-+#define snd_ac97_dev_unregister	NULL
++#define snd_ac97_dev_disconnect	NULL
 +#endif
  
  /* build_ops to do nothing */

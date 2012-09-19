@@ -55,6 +55,17 @@ HPI Operating System Specific macros for Linux
 #define __iomem
 #endif
 
+#ifdef ALSA_BUILD
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#define irqs_disabled()							\
+({									\
+	unsigned long flags;						\
+	__asm__ __volatile__("pushfl ; popl %0" : "=g"(flags) : );	\
+	!(flags & (1 << 9));						\
+})
+#endif
+#endif
+
 //Use the kernel firmware loader
 #define DSPCODE_FIRMWARE 1
 

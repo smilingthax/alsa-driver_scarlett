@@ -945,6 +945,10 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #define printk_ratelimit()	1
 #endif
 
+#ifndef might_sleep
+#define might_sleep() do { } while (0)
+#endif
+
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
 #define wait_ms gameport_wait_ms
 #include <linux/gameport.h>
@@ -1187,7 +1191,7 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
  */
 #define OPL3_HW_OPL3_PC98	0x0305	/* PC9800 */
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 17)
 #include <linux/interrupt.h>
 #ifndef IRQF_SHARED
 #include <linux/signal.h>
@@ -1195,8 +1199,12 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 #define IRQF_DISABLED			SA_INTERRUPT
 #define IRQF_SAMPLE_RANDOM		SA_SAMPLE_RANDOM
 #define IRQF_PERCPU			SA_PERCPU
+#ifdef SA_PROBEIRQ
+#define IRQF_PROBE_SHARED		SA_PROBEIRQ
+#else
 #define IRQF_PROBE_SHARED		0 /* dummy */
 #endif
-#endif
+#endif /* IRQ_SHARED */
+#endif /* <= 2.6.17 */
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
