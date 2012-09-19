@@ -14,6 +14,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/device.h>
+#include <linux/clk.h>
 #include <linux/i2c.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -25,6 +26,17 @@
 #include "pxa2xx-pcm.h"
 #include "pxa2xx-ac97.h"
 #include "pxa-ssp.h"
+
+/*
+ * There is a physical switch SW15 on the board which changes the MCLK
+ * for the WM9713 between the standard AC97 master clock and the
+ * output of the CLK_POUT signal from the PXA.
+ */
+static int clk_pout;
+module_param(clk_pout, int, 0);
+MODULE_PARM_DESC(clk_pout, "Use CLK_POUT as WM9713 MCLK (SW15 on board).");
+
+static struct clk *pout;
 
 static struct snd_soc_card zylonite;
 
@@ -61,10 +73,8 @@ static const struct snd_soc_dapm_route audio_map[] = {
 
 static int zylonite_wm9713_init(struct snd_soc_codec *codec)
 {
-	/* Currently we only support use of the AC97 clock here.  If
-	 * CLK_POUT is selected by SW15 then the clock API will need
-	 * to be used to request and enable it here.
-	 */
+	if (clk_pout)
+		snd_soc_dai_set_pll(&codec->dai[0], 0, clk_get_rate(pout), 0);
 
 	snd_soc_dapm_new_controls(codec, zylonite_dapm_widgets,
 				  ARRAY_SIZE(zylonite_dapm_widgets));
@@ -135,11 +145,12 @@ static int zylonite_voice_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		return ret;
 
-	/* Note that if the PLL is in use the WM9713_PCMCLK_PLL_DIV needs
-	 * to be set instead.
-	 */
-	ret = snd_soc_dai_set_clkdiv(codec_dai, WM9713_PCMCLK_DIV,
-				     WM9713_PCMDIV(wm9713_div));
+	if (clk_pout)
+		ret = snd_soc_dai_set_clkdiv(codec_dai, WM9713_PCMCLK_PLL_DIV,
+					     WM9713_PCMDIV(wm9713_div));
+	else
+		ret = snd_soc_dai_set_clkdiv(codec_dai, WM9713_PCMCLK_DIV,
+					     WM9713_PCMDIV(wm9713_div));
 	if (ret < 0)
 		return ret;
 
@@ -173,8 +184,72 @@ static struct snd_soc_dai_link zylonite_dai[] = {
 },
 };
 
+static int zylonite_probe(struct platform_device *pdev)
+{
+	int ret;
+
+	if (clk_pout) {
+		pout = clk_get(NULL, "CLK_POUT");
+		if (IS_ERR(pout)) {
+			dev_err(&pdev->dev, "Unable to obtain CLK_POUT: %ld\n",
+				PTR_ERR(pout));
+			return PTR_ERR(pout);
+		}
+
+		ret = clk_enable(pout);
+		if (ret != 0) {
+			dev_err(&pdev->dev, "Unable to enable CLK_POUT: %d\n",
+				ret);
+			clk_put(pout);
+			return ret;
+		}
+
+		dev_dbg(&pdev->dev, "MCLK enabled at %luHz\n",
+			clk_get_rate(pout));
+	}
+
+	return 0;
+}
+
+static int zylonite_remove(struct platform_device *pdev)
+{
+	if (clk_pout) {
+		clk_disable(pout);
+		clk_put(pout);
+	}
+
+	return 0;
+}
+
+static int zylonite_suspend_post(struct platform_device *pdev,
+				 pm_message_t state)
+{
+	if (clk_pout)
+		clk_disable(pout);
+
+	return 0;
+}
+
+static int zylonite_resume_pre(struct platform_device *pdev)
+{
+	int ret = 0;
+
+	if (clk_pout) {
+		ret = clk_enable(pout);
+		if (ret != 0)
+			dev_err(&pdev->dev, "Unable to enable CLK_POUT: %d\n",
+				ret);
+	}
+
+	return ret;
+}
+
 static struct snd_soc_card zylonite = {
 	.name = "Zylonite",
+	.probe = &zylonite_probe,
+	.remove = &zylonite_remove,
+	.suspend_post = &zylonite_suspend_post,
+	.resume_pre = &zylonite_resume_pre,
 	.platform = &pxa2xx_soc_platform,
 	.dai_link = zylonite_dai,
 	.num_links = ARRAY_SIZE(zylonite_dai),

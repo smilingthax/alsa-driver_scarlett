@@ -32,7 +32,6 @@
 
 struct wm9713_priv {
 	u32 pll_in; /* PLL input frequency */
-	u32 pll_out; /* PLL output frequency */
 };
 
 static unsigned int ac97_read(struct snd_soc_codec *codec,
@@ -621,7 +620,7 @@ static unsigned int ac97_read(struct snd_soc_codec *codec,
 	else {
 		reg = reg >> 1;
 
-		if (reg > (ARRAY_SIZE(wm9713_reg)))
+		if (reg >= (ARRAY_SIZE(wm9713_reg)))
 			return -EIO;
 
 		return cache[reg];
@@ -635,7 +634,7 @@ static int ac97_write(struct snd_soc_codec *codec, unsigned int reg,
 	if (reg < 0x7c)
 		soc_ac97_ops.write(codec->ac97, reg, val);
 	reg = reg >> 1;
-	if (reg <= (ARRAY_SIZE(wm9713_reg)))
+	if (reg < (ARRAY_SIZE(wm9713_reg)))
 		cache[reg] = val;
 
 	return 0;
@@ -723,13 +722,13 @@ static int wm9713_set_pll(struct snd_soc_codec *codec,
 	struct _pll_div pll_div;
 
 	/* turn PLL off ? */
-	if (freq_in == 0 || freq_out == 0) {
+	if (freq_in == 0) {
 		/* disable PLL power and select ext source */
 		reg = ac97_read(codec, AC97_HANDSET_RATE);
 		ac97_write(codec, AC97_HANDSET_RATE, reg | 0x0080);
 		reg = ac97_read(codec, AC97_EXTENDED_MID);
 		ac97_write(codec, AC97_EXTENDED_MID, reg | 0x0200);
-		wm9713->pll_out = 0;
+		wm9713->pll_in = 0;
 		return 0;
 	}
 
@@ -773,7 +772,6 @@ static int wm9713_set_pll(struct snd_soc_codec *codec,
 	ac97_write(codec, AC97_EXTENDED_MID, reg & 0xfdff);
 	reg = ac97_read(codec, AC97_HANDSET_RATE);
 	ac97_write(codec, AC97_HANDSET_RATE, reg & 0xff7f);
-	wm9713->pll_out = freq_out;
 	wm9713->pll_in = freq_in;
 
 	/* wait 10ms AC97 link frames for the link to stabilise */
@@ -1117,7 +1115,7 @@ static int wm9713_soc_suspend(struct platform_device *pdev,
 	pm_message_t state)
 {
 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	struct snd_soc_codec *codec = socdev->codec;
+	struct snd_soc_codec *codec = socdev->card->codec;
 	u16 reg;
 
 	/* Disable everything except touchpanel - that will be handled
@@ -1135,7 +1133,7 @@ static int wm9713_soc_suspend(struct platform_device *pdev,
 static int wm9713_soc_resume(struct platform_device *pdev)
 {
 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	struct snd_soc_codec *codec = socdev->codec;
+	struct snd_soc_codec *codec = socdev->card->codec;
 	struct wm9713_priv *wm9713 = codec->private_data;
 	int i, ret;
 	u16 *cache = codec->reg_cache;
@@ -1149,8 +1147,8 @@ static int wm9713_soc_resume(struct platform_device *pdev)
 	wm9713_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 
 	/* do we need to re-start the PLL ? */
-	if (wm9713->pll_out)
-		wm9713_set_pll(codec, 0, wm9713->pll_in, wm9713->pll_out);
+	if (wm9713->pll_in)
+		wm9713_set_pll(codec, 0, wm9713->pll_in, 0);
 
 	/* only synchronise the codec if warm reset failed */
 	if (ret == 0) {
@@ -1176,10 +1174,11 @@ static int wm9713_soc_probe(struct platform_device *pdev)
 
 	printk(KERN_INFO "WM9713/WM9714 SoC Audio Codec %s\n", WM9713_VERSION);
 
-	socdev->codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL);
-	if (socdev->codec == NULL)
+	socdev->card->codec = kzalloc(sizeof(struct snd_soc_codec),
+				      GFP_KERNEL);
+	if (socdev->card->codec == NULL)
 		return -ENOMEM;
-	codec = socdev->codec;
+	codec = socdev->card->codec;
 	mutex_init(&codec->mutex);
 
 	codec->reg_cache = kmemdup(wm9713_reg, sizeof(wm9713_reg), GFP_KERNEL);
@@ -1251,15 +1250,15 @@ priv_err:
 	kfree(codec->reg_cache);
 
 cache_err:
-	kfree(socdev->codec);
-	socdev->codec = NULL;
+	kfree(socdev->card->codec);
+	socdev->card->codec = NULL;
 	return ret;
 }
 
 static int wm9713_soc_remove(struct platform_device *pdev)
 {
 	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
-	struct snd_soc_codec *codec = socdev->codec;
+	struct snd_soc_codec *codec = socdev->card->codec;
 
 	if (codec == NULL)
 		return 0;

@@ -285,6 +285,7 @@ STAC9205/9254
   dell-m42	Dell (unknown)
   dell-m43	Dell Precision
   dell-m44	Dell Inspiron
+  eapd		Keep EAPD on (e.g. Gateway T1616)
 
 STAC9220/9221
 =============
@@ -353,5 +354,4 @@ STAC92HD83*
 
 STAC9872
 ========
-  vaio		Setup for VAIO FE550G/SZ110
-  vaio-ar Setup for VAIO AR
+  N/A
