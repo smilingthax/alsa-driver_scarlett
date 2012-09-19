@@ -35,14 +35,14 @@ Quick install
    (for example from distributor makers) can be unuseable for this action.
 2) You must turn on sound support (soundcore module).
 3) Run './configure' script.
-   If you have ISA Plug & Play soundcard, use --with-isapnp=yes switch.
+   If you do not want ISA PnP support, use --with-isapnp=no switch.
    If you want sequencer support, use --with-sequencer=yes switch.
    If you do not want OSS/Free emulation, use --with-oss=no switch.
    If you want turn on debug mode use --with-debug=full switch.
    If you want debug soundcard detection try --with-debug=detect switch.
    If you have kernel source code in another directory than /usr/src/linux,
    use --with-kernel=<kernel_directory>.
-   Example: ./configure --with-isapnp=yes --with-debug=full
+   Example: ./configure --with-debug=full
 4) Run 'make'.
 5) Run 'make install'.
 6) Run the './snddevices' script to create new sound devices in /dev directory.

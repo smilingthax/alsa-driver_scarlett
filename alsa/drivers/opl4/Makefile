@@ -2,14 +2,11 @@
 # Makefile for ALSA
 #
 
-TOPDIR = ../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 export-objs := opl4_lib.o
 
-TOPDIR = $(MAINSRCDIR)
-include $(TOPDIR)/alsa-kernel/drivers/opl4/Makefile
+include $(SND_TOPDIR)/alsa-kernel/drivers/opl4/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

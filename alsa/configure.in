@@ -19,7 +19,7 @@ AC_SUBST(AS)
 
 dnl Checks for header files.
 AC_HEADER_STDC
-AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h)
+AC_CONFIG_HEADER(include/config.h include/config1.h include/version.h include/autoconf-extra.h)
 dnl AC_CHECK_HEADERS(linux/fs.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -360,6 +360,19 @@ int main( void ) {
   CFLAGS="$ac_save_CFLAGS"
   eval $boolvar="$boolchk"
 ])
+
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  NEW_KBUILD=y
+  AC_SUBST(NEW_KBUILD)
+fi
+
+dnl Check builtin ALSA on 2.6 kernel
+CHECK_KERNEL_CONFIG(CONFIG_SND, [built-in ALSA])
+if test "$CONFIG_SND" = "y"; then
+  AC_MSG_ERROR(You have built-in ALSA in your kernel.)
+fi
+CHECK_KERNEL_CONFIG(CONFIG_SND_MODULE, [existing ALSA module])
+test "$CONFIG_SND_MODULE" = "y" && AC_DEFINE(CONFIG_SND_MODULE)
 
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
@@ -892,18 +905,26 @@ if test "$CONFIG_ISAPNP_KERNEL" = y; then
   CHECK_KERNEL_CONFIG(CONFIG_ISAPNP, [Kernel ISA-PnP support])
   if test "$CONFIG_ISAPNP" != "y"; then
     CHECK_KERNEL_CONFIG(CONFIG_ISAPNP_MODULE, [Kernel ISA-PnP module support])
-    if test "$CONFIG_ISAPNP_MODULE" = "y"; then
-      CONFIG_ISAPNP=y
-    fi
   fi
-else
-  AC_MSG_CHECKING(for ISA PnP support)
-  AC_ARG_WITH(isapnp,
-    [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
-    pnp="$withval", pnp="yes")
-  if test "$pnp" = "auto"; then
-    if test -f /proc/isapnp; then
-      pnp=yes
+fi
+
+dnl Check for ALSA's own isapnp support
+dnl available only when pnp is not built in the kernel
+if test "$CONFIG_PNP_KERNEL" != y; then
+  if test "$CONFIG_ISAPNP_KERNEL" != y; then
+    isapnp_choose=y
+  elif test "$CONFIG_ISAPNP" = y -o "$CONFIG_ISAPNP_MODULE" = y; then
+    isapnp_choose=y
+  fi
+  if test "$isapnp_choose" = y; then
+    AC_MSG_CHECKING(for ISA PnP support)
+    AC_ARG_WITH(isapnp,
+      [  --with-isapnp=yes,no,auto  driver will (not) be compiled with ISA PnP support],
+      pnp="$withval", pnp="yes")
+    if test "$pnp" = "auto"; then
+      if test -f /proc/isapnp; then
+        pnp=yes
+      fi
     fi
   fi
   if test "$pnp" = "yes"; then
@@ -1173,7 +1194,7 @@ if test "$sequencer" = "yes"; then
 fi
 AC_SUBST(CONFIG_SND_SEQUENCER)
 if test "$CONFIG_SND_SEQUENCER" = "m"; then
-  AC_DEFINE(CONFIG_SND_SEQUENCER)
+  AC_DEFINE(CONFIG_SND_SEQUENCER_MODULE)
   AC_DEFINE(CONFIG_SND_SEQ_DUMMY_MODULE)
   AC_MSG_RESULT(yes)
 else
@@ -1192,8 +1213,8 @@ fi
 AC_SUBST(CONFIG_SND_OSSEMUL)
 if test "$CONFIG_SND_OSSEMUL" = "y"; then
   AC_DEFINE(CONFIG_SND_OSSEMUL)
-  AC_DEFINE(CONFIG_SND_MIXER_OSS)
-  AC_DEFINE(CONFIG_SND_PCM_OSS)
+  AC_DEFINE(CONFIG_SND_MIXER_OSS_MODULE)
+  AC_DEFINE(CONFIG_SND_PCM_OSS_MODULE)
   if test "$CONFIG_SND_SEQUENCER" = "m"; then
     AC_DEFINE(CONFIG_SND_SEQUENCER_OSS)
   fi
@@ -1300,3 +1321,14 @@ AC_OUTPUT(version Makefile.conf snddevices utils/alsa-driver.spec utils/buildrpm
 
 dnl Make right rights for scripts
 chmod 755 $srcdir/snddevices
+
+dnl Hack autoconf.h if necessary
+if test "$CONFIG_SND_MODULE" = y; then
+  echo "Hacking autoconf.h..."
+  rm -f include/linux/autoconf.h
+  grep -v CONFIG_SND_ $CONFIG_SND_KERNELDIR/include/linux/autoconf.h > include/linux/autoconf.h
+  cat include/autoconf-extra.h >> include/linux/autoconf.h
+  cat include/config1.h >> include/linux/autoconf.h
+else
+  rm -f include/linux/autoconf.h
+fi

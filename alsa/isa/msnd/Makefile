@@ -3,12 +3,8 @@
 # Copyright (c) 2001 by Jaroslav Kysela <perex@suse.cz>
 #
 
-TOPDIR = ../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
-
-TOPDIR = $(MAINSRCDIR)
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 #
 #
@@ -21,4 +17,4 @@ snd-msnd-pinnacle-objs := msnd.o msnd_pinnacle.o msnd_pinnacle_mixer.o msnd_midi
 obj-$(CONFIG_SND_MSND_PINNACLE) += snd-msnd-pinnacle.o
 # obj-$(CONFIG_SND_MSND_CLASSIC) += snd-msnd-classic.o
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make

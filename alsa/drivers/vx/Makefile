@@ -1,17 +1,13 @@
-TOPDIR = ../..
-
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
 #
 #
 #
-
-TOPDIR = $(MAINSRCDIR)
 
 export-objs := vx_core.o
 
-include $(TOPDIR)/alsa-kernel/drivers/vx/Makefile
+include $(SND_TOPDIR)/alsa-kernel/drivers/vx/Makefile
 
-include $(TOPDIR)/Rules.make
+include $(SND_TOPDIR)/Rules.make
 

@@ -1,24 +1,19 @@
-TOPDIR = ..
+include $(SND_TOPDIR)/toplevel.config
+include $(SND_TOPDIR)/Makefile.conf
 
-include $(TOPDIR)/toplevel.config
-include $(TOPDIR)/Makefile.conf
-
-EXTRA_CLEAN = usbaudio.c
+clean-files := usbaudio.c
 
 # for compatibility
 extra-snd-usb-audio-objs := usbcompat.o
 
-extra-subdir-y := us428
-extra-subdir-m	:= $(extra-subdir-y)
+obj-$(CONFIG_SND) += us428/
 
 export-objs := usbaudio.o usbmidi.o
 
-TOPDIR = $(MAINSRCDIR)
+include $(SND_TOPDIR)/alsa-kernel/usb/Makefile
 
-include $(TOPDIR)/alsa-kernel/usb/Makefile
+EXTRA_CFLAGS += -I$(SND_TOPDIR)/alsa-kernel/usb
 
-EXTRA_CFLAGS = -I$(TOPDIR)/alsa-kernel/usb
+include $(SND_TOPDIR)/Rules.make
 
-include $(TOPDIR)/Rules.make
-
-usbaudio.c: usbaudio.patch usbaudio.inc usbaudio.inc1 $(TOPDIR)/alsa-kernel/usb/usbaudio.c
+usbaudio.c: usbaudio.patch usbaudio.inc usbaudio.inc1 $(SND_TOPDIR)/alsa-kernel/usb/usbaudio.c
