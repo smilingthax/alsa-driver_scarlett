@@ -1826,6 +1826,33 @@ if test "$CONFIG_HAVE_KSTRDUP" = "1"; then
   AC_DEFINE(CONFIG_HAVE_KSTRDUP)
 fi
 
+dnl Check for kzalloc()
+AC_MSG_CHECKING(for kzalloc)
+kzalloc="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/slab.h>
+],[
+  void * (*func)(size_t, int);
+  func = kzalloc;
+],
+    AC_MSG_RESULT("yes");kzalloc="1",
+    AC_MSG_RESULT("no");kzalloc="0",
+    AC_MSG_RESULT("unknown");kzalloc="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_KZALLOC=$kzalloc
+dnl AC_SUBST(CONFIG_HAVE_KZALLOC)
+if test "$CONFIG_HAVE_KZALLOC" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_KZALLOC)
+fi
+
 dnl Check for create_workqueue() with flags
 AC_MSG_CHECKING(for create_workqueue with flags)
 workqueue2="0"

@@ -442,20 +442,27 @@ int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struc
 
 #endif
 
+#ifndef CONFIG_HAVE_KZALLOC
+#ifndef CONFIG_SND_DEBUG_MEMORY
+/* Don't put this to wrappers.c.  We need to call the kmalloc wrapper here. */
+void *snd_compat_kzalloc(size_t size, unsigned int __nocast flags)
+{
+	ret = kmalloc(size, flags);
+	if (ret)
+		memset(ret, 0, size);
+	return ret;
+}
+#endif
+#endif
+
 #ifndef CONFIG_HAVE_KCALLOC
 #ifndef CONFIG_SND_DEBUG_MEMORY
 /* Don't put this to wrappers.c.  We need to call the kmalloc wrapper here. */
 void *snd_compat_kcalloc(size_t n, size_t size, unsigned int __nocast flags)
 {
-	void *ret = NULL;
-
 	if (n != 0 && size > INT_MAX / n)
-		return ret;
-
-	ret = kmalloc(n * size, flags);
-	if (ret)
-		memset(ret, 0, n * size);
-	return ret;
+		return NULL;
+	return snd_compat_kzalloc(n * size, flags);
 }
 #endif
 #endif

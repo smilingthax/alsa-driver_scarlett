@@ -40,6 +40,11 @@ EXPORT_SYMBOL(snd_compat_kcalloc);
 EXPORT_SYMBOL(snd_compat_kstrdup);
 #endif
 #endif
+#ifndef CONFIG_HAVE_KCALLOC
+#ifndef CONFIG_SND_DEBUG_MEMORY
+EXPORT_SYMBOL(snd_compat_kzalloc);
+#endif
+#endif
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 EXPORT_SYMBOL(snd_pci_dev_present);
 #endif
