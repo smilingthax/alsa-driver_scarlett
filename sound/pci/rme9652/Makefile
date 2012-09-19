@@ -3,8 +3,6 @@
 # Copyright (c) 2001 by Jaroslav Kysela <perex@suse.cz>
 #
 
-O_TARGET     := _rmeh.o
-
 export-objs  := hammerfall_mem.o
 
 snd-hammerfall-mem-objs := hammerfall_mem.o

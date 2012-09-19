@@ -2578,10 +2578,8 @@ static int snd_pcm_mmap_control(snd_pcm_substream_t *substream, struct file *fil
 
 static void snd_pcm_mmap_data_open(struct vm_area_struct *area)
 {
-#if 0
 	snd_pcm_substream_t *substream = (snd_pcm_substream_t *)area->vm_private_data;
 	atomic_inc(&substream->runtime->mmap_count);
-#endif
 }
 
 static void snd_pcm_mmap_data_close(struct vm_area_struct *area)
