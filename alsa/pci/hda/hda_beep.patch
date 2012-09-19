@@ -1,12 +1,12 @@
---- ../../alsa-kernel/pci/hda/hda_beep.c	2008-07-29 12:07:35.000000000 +0200
-+++ hda_beep.c	2008-07-29 15:22:57.000000000 +0200
+--- ../../alsa-kernel/pci/hda/hda_beep.c	2008-11-13 14:38:50.000000000 +0100
++++ hda_beep.c	2008-11-13 14:46:35.000000000 +0100
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
  /*
   * Digital Beep Input Interface for HD-audio codec
   *
-@@ -45,7 +47,11 @@
+@@ -48,7 +50,11 @@
  static int snd_hda_beep_event(struct input_dev *dev, unsigned int type,
  				unsigned int code, int hz)
  {
@@ -18,7 +18,7 @@
  
  	switch (code) {
  	case SND_BELL:
-@@ -84,7 +90,11 @@
+@@ -87,7 +93,11 @@
  		return -ENOMEM;
  	snprintf(beep->phys, sizeof(beep->phys),
  		"card%d/codec#%d/beep0", codec->bus->card->number, codec->addr);
@@ -27,10 +27,10 @@
 +#else
 +	input_dev = kzalloc(sizeof(*input_dev), GFP_KERNEL);
 +#endif
- 
- 	/* setup digital beep device */
- 	input_dev->name = "HDA Digital PCBeep";
-@@ -98,15 +108,26 @@
+ 	if (!input_dev) {
+ 		kfree(beep);
+ 		return -ENOMEM;
+@@ -105,15 +115,26 @@
  	input_dev->evbit[0] = BIT_MASK(EV_SND);
  	input_dev->sndbit[0] = BIT_MASK(SND_BELL) | BIT_MASK(SND_TONE);
  	input_dev->event = snd_hda_beep_event;
@@ -57,7 +57,7 @@
  
  	/* enable linear scale */
  	snd_hda_codec_write(codec, nid, 0,
-@@ -125,10 +146,16 @@
+@@ -133,10 +154,16 @@
  {
  	struct hda_beep *beep = codec->beep;
  	if (beep) {
