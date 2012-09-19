@@ -3,6 +3,13 @@
 # Copyright (c) 1994-98 by Jaroslav Kysela <perex@suse.cz>
 #
 
+ifneq ($(KERNELRELEASE),)
+# call from 2.6 kernel build system
+
+obj-m += acore/ i2c/ drivers/ isa/ pci/ ppc/ arm/ synth/ usb/ sparc/ parisc/ pcmcia/
+
+else
+
 ALSAKERNELDIR = ../alsa-kernel
 
 ifndef IGROUP
@@ -110,7 +117,7 @@ include/sndversions.h:
 .PHONY: compile
 compile: include/sound/version.h include/sndversions.h
 ifdef NEW_KBUILD
-	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/kbuild $(MAKE_ADDS) modules
+	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) modules
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 endif
@@ -205,7 +212,7 @@ clean1:
 .PHONY: clean
 clean: clean1
 ifdef NEW_KBUILD
-	rm -rf kbuild/.tmp_versions
+	rm -rf .tmp_versions
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d cleanup; then exit 1; fi; done
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
@@ -270,3 +277,5 @@ endif
 .PHONY: TAGS
 TAGS:
 	find . ../alsa-kernel -name *.h -o -name *.c | xargs etags
+
+endif
