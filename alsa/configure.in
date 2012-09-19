@@ -1290,6 +1290,9 @@ if test $kvernum -gt 206027; then
     if test -d $CONFIG_SND_KERNELDIR/arch/$checkarch/include; then
 	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$checkarch/include"
     fi
+    if test -d $CONFIG_SND_KERNELDIR/arch/$checkarch/include/generated; then
+	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$checkarch/include/generated"
+    fi
 fi
 
 if test -n "$mach_dir"; then

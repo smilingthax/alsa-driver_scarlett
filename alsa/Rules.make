@@ -40,7 +40,7 @@ prepare: $(clean-files)
 
 modules:
 	$(MAKE) prepare
-	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) SND_TOPDIR=$(MAINSRCDIR) modules
+	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(shell /bin/pwd) $(MAKE_ADDS) SND_TOPDIR=$(MAINSRCDIR) modules
 	$(SND_TOPDIR)/utils/link-modules $(MODCURDIR)
 
 ALL_MOBJS := $(filter-out $(obj-y), $(obj-m))

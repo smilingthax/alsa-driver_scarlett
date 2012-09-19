@@ -121,7 +121,7 @@ $(ALSAKERNELFILE):
 	{ \
 	rm -rf alsa-kernel ; \
 	if [ ! -z "$(ALSAKERNELDIR)" ]; then \
-		if [ -f $(ALSAKERNELDIR)/kernel/sched.c -o -f $(ALSAKERNELDIR)/.alsamirror ]; then \
+		if [ -f $(ALSAKERNELDIR)/kernel/sched.c -o -f $(ALSAKERNELDIR)/kernel/sched/sched.h -o -f $(ALSAKERNELDIR)/.alsamirror ]; then \
 			# whole linux kernel source tree \
 			mkdir alsa-kernel; \
 			for i in $(ALSAKERNELDIR)/sound/* ; do \
@@ -168,7 +168,7 @@ include/sndversions.h:
 .PHONY: compile
 compile: include/sndversions.h
 ifdef NEW_KBUILD
-	$(MAKE) -C $(CONFIG_SND_KERNELBUILD) SUBDIRS=$(MAINSRCDIR) $(MAKE_ADDS) CPP="$(CPP)" CC="$(CC)" modules
+	$(MAKE) -C $(CONFIG_SND_KERNELBUILD) SUBDIRS=$(shell /bin/pwd) $(MAKE_ADDS) CPP="$(CPP)" CC="$(CC)" modules
 	utils/link-modules $(SND_TOPDIR)
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
