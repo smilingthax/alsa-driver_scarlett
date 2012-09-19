@@ -39,7 +39,6 @@
 #include <sound/tlv.h>
 #include "oxygen.h"
 #include "ak4396.h"
-#include "cm9780.h"
 #include "wm8785.h"
 
 MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
@@ -78,8 +77,6 @@ MODULE_DEVICE_TABLE(pci, oxygen_ids);
 #define GPIO_AK5385_DFS_NORMAL	0x0000
 #define GPIO_AK5385_DFS_DOUBLE	0x0001
 #define GPIO_AK5385_DFS_QUAD	0x0002
-
-#define GPIO_LINE_MUTE		CM9780_GPO0
 
 struct generic_data {
 	u8 ak4396_ctl2;
@@ -145,23 +142,16 @@ static void wm8785_init(struct oxygen *chip)
 	snd_component_add(chip->card, "WM8785");
 }
 
-static void cmi9780_init(struct oxygen *chip)
-{
-	oxygen_ac97_clear_bits(chip, 0, CM9780_GPIO_STATUS, GPIO_LINE_MUTE);
-}
-
 static void generic_init(struct oxygen *chip)
 {
 	ak4396_init(chip);
 	wm8785_init(chip);
-	cmi9780_init(chip);
 }
 
 static void meridian_init(struct oxygen *chip)
 {
 	ak4396_init(chip);
 	ak5385_init(chip);
-	cmi9780_init(chip);
 }
 
 static void generic_cleanup(struct oxygen *chip)
@@ -257,27 +247,6 @@ static void set_ak5385_params(struct oxygen *chip,
 			      value, GPIO_AK5385_DFS_MASK);
 }
 
-static void cmi9780_switch_hook(struct oxygen *chip, unsigned int codec,
-				unsigned int reg, int mute)
-{
-	if (codec != 0)
-		return;
-	switch (reg) {
-	case AC97_LINE:
-		oxygen_write_ac97_masked(chip, 0, CM9780_GPIO_STATUS,
-					 mute ? GPIO_LINE_MUTE : 0,
-					 GPIO_LINE_MUTE);
-		break;
-	case AC97_MIC:
-	case AC97_CD:
-	case AC97_AUX:
-		if (!mute)
-			oxygen_ac97_set_bits(chip, 0, CM9780_GPIO_STATUS,
-					     GPIO_LINE_MUTE);
-		break;
-	}
-}
-
 static const DECLARE_TLV_DB_LINEAR(ak4396_db_scale, TLV_DB_GAIN_MUTE, 0);
 
 static int ak4396_control_filter(struct snd_kcontrol_new *template)
@@ -301,15 +270,16 @@ static const struct oxygen_model model_generic = {
 	.set_adc_params = set_wm8785_params,
 	.update_dac_volume = update_ak4396_volume,
 	.update_dac_mute = update_ak4396_mute,
-	.ac97_switch_hook = cmi9780_switch_hook,
 	.model_data_size = sizeof(struct generic_data),
+	.pcm_dev_cfg = PLAYBACK_0_TO_I2S |
+		       PLAYBACK_1_TO_SPDIF |
+		       PLAYBACK_2_TO_AC97_1 |
+		       CAPTURE_0_FROM_I2S_1 |
+		       CAPTURE_1_FROM_SPDIF |
+		       CAPTURE_2_FROM_AC97_1,
 	.dac_channels = 8,
-	.used_channels = OXYGEN_CHANNEL_A |
-			 OXYGEN_CHANNEL_C |
-			 OXYGEN_CHANNEL_SPDIF |
-			 OXYGEN_CHANNEL_MULTICH |
-			 OXYGEN_CHANNEL_AC97,
-	.function_flags = OXYGEN_FUNCTION_ENABLE_SPI_4_5,
+	.function_flags = OXYGEN_FUNCTION_SPI |
+			  OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 	.dac_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
 	.adc_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
 };
@@ -325,15 +295,17 @@ static const struct oxygen_model model_meridian = {
 	.set_adc_params = set_ak5385_params,
 	.update_dac_volume = update_ak4396_volume,
 	.update_dac_mute = update_ak4396_mute,
-	.ac97_switch_hook = cmi9780_switch_hook,
 	.model_data_size = sizeof(struct generic_data),
+	.pcm_dev_cfg = PLAYBACK_0_TO_I2S |
+		       PLAYBACK_1_TO_SPDIF |
+		       PLAYBACK_2_TO_AC97_1 |
+		       CAPTURE_0_FROM_I2S_2 |
+		       CAPTURE_1_FROM_SPDIF |
+		       CAPTURE_2_FROM_AC97_1,
 	.dac_channels = 8,
-	.used_channels = OXYGEN_CHANNEL_B |
-			 OXYGEN_CHANNEL_C |
-			 OXYGEN_CHANNEL_SPDIF |
-			 OXYGEN_CHANNEL_MULTICH |
-			 OXYGEN_CHANNEL_AC97,
-	.function_flags = OXYGEN_FUNCTION_ENABLE_SPI_4_5,
+	.misc_flags = OXYGEN_MISC_MIDI,
+	.function_flags = OXYGEN_FUNCTION_SPI |
+			  OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 	.dac_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
 	.adc_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
 };
@@ -352,7 +324,7 @@ static int __devinit generic_oxygen_probe(struct pci_dev *pci,
 		return -ENOENT;
 	}
 	is_meridian = pci_id->driver_data;
-	err = oxygen_pci_probe(pci, index[dev], id[dev], is_meridian,
+	err = oxygen_pci_probe(pci, index[dev], id[dev],
 			       is_meridian ? &model_meridian : &model_generic);
 	if (err >= 0)
 		++dev;

@@ -30,10 +30,6 @@
  * GPIO 5 <- external power present (D2X only)
  * GPIO 7 -> ALT
  * GPIO 8 -> enable output to speakers
- *
- * CM9780:
- *
- * GPIO 0 -> enable AC'97 bypass (line in -> ADC)
  */
 
 #include <linux/pci.h>
@@ -47,6 +43,7 @@
 #include <sound/tlv.h>
 #include "oxygen.h"
 #include "cm9780.h"
+#include "pcm1796.h"
 
 MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
 MODULE_DESCRIPTION("Asus AV200 driver");
@@ -79,62 +76,6 @@ MODULE_DEVICE_TABLE(pci, xonar_ids);
 #define GPIO_EXT_POWER		0x0020
 #define GPIO_ALT		0x0080
 #define GPIO_OUTPUT_ENABLE	0x0100
-
-#define GPIO_LINE_MUTE		CM9780_GPO0
-
-/* register 16 */
-#define PCM1796_ATL_MASK	0xff
-/* register 17 */
-#define PCM1796_ATR_MASK	0xff
-/* register 18 */
-#define PCM1796_MUTE		0x01
-#define PCM1796_DME		0x02
-#define PCM1796_DMF_MASK	0x0c
-#define PCM1796_DMF_DISABLED	0x00
-#define PCM1796_DMF_48		0x04
-#define PCM1796_DMF_441		0x08
-#define PCM1796_DMF_32		0x0c
-#define PCM1796_FMT_MASK	0x70
-#define PCM1796_FMT_16_RJUST	0x00
-#define PCM1796_FMT_20_RJUST	0x10
-#define PCM1796_FMT_24_RJUST	0x20
-#define PCM1796_FMT_24_LJUST	0x30
-#define PCM1796_FMT_16_I2S	0x40
-#define PCM1796_FMT_24_I2S	0x50
-#define PCM1796_ATLD		0x80
-/* register 19 */
-#define PCM1796_INZD		0x01
-#define PCM1796_FLT_MASK	0x02
-#define PCM1796_FLT_SHARP	0x00
-#define PCM1796_FLT_SLOW	0x02
-#define PCM1796_DFMS		0x04
-#define PCM1796_OPE		0x10
-#define PCM1796_ATS_MASK	0x60
-#define PCM1796_ATS_1		0x00
-#define PCM1796_ATS_2		0x20
-#define PCM1796_ATS_4		0x40
-#define PCM1796_ATS_8		0x60
-#define PCM1796_REV		0x80
-/* register 20 */
-#define PCM1796_OS_MASK		0x03
-#define PCM1796_OS_64		0x00
-#define PCM1796_OS_32		0x01
-#define PCM1796_OS_128		0x02
-#define PCM1796_CHSL_MASK	0x04
-#define PCM1796_CHSL_LEFT	0x00
-#define PCM1796_CHSL_RIGHT	0x04
-#define PCM1796_MONO		0x08
-#define PCM1796_DFTH		0x10
-#define PCM1796_DSD		0x20
-#define PCM1796_SRST		0x40
-/* register 21 */
-#define PCM1796_PCMZ		0x01
-#define PCM1796_DZ_MASK		0x06
-/* register 22 */
-#define PCM1796_ZFGL		0x01
-#define PCM1796_ZFGR		0x02
-/* register 23 */
-#define PCM1796_ID_MASK		0x1f
 
 struct xonar_data {
 	u8 is_d2x;
@@ -187,7 +128,6 @@ static void xonar_init(struct oxygen *chip)
 				     & GPIO_EXT_POWER);
 	}
 	oxygen_ac97_set_bits(chip, 0, CM9780_JACK, CM9780_FMIC2MIC);
-	oxygen_ac97_clear_bits(chip, 0, CM9780_GPIO_STATUS, GPIO_LINE_MUTE);
 	msleep(300);
 	oxygen_set_bits16(chip, OXYGEN_GPIO_CONTROL, GPIO_OUTPUT_ENABLE);
 	oxygen_set_bits16(chip, OXYGEN_GPIO_DATA, GPIO_OUTPUT_ENABLE);
@@ -272,49 +212,6 @@ static void xonar_gpio_changed(struct oxygen *chip)
 	}
 }
 
-static void mute_ac97_ctl(struct oxygen *chip, unsigned int control)
-{
-	unsigned int priv_idx = chip->controls[control]->private_value & 0xff;
-	u16 value;
-
-	value = oxygen_read_ac97(chip, 0, priv_idx);
-	if (!(value & 0x8000)) {
-		oxygen_write_ac97(chip, 0, priv_idx, value | 0x8000);
-		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
-			       &chip->controls[control]->id);
-	}
-}
-
-static void xonar_ac97_switch_hook(struct oxygen *chip, unsigned int codec,
-				   unsigned int reg, int mute)
-{
-	if (codec != 0)
-		return;
-	/* line-in is exclusive */
-	switch (reg) {
-	case AC97_LINE:
-		oxygen_write_ac97_masked(chip, 0, CM9780_GPIO_STATUS,
-					 mute ? GPIO_LINE_MUTE : 0,
-					 GPIO_LINE_MUTE);
-		if (!mute) {
-			mute_ac97_ctl(chip, CONTROL_MIC_CAPTURE_SWITCH);
-			mute_ac97_ctl(chip, CONTROL_CD_CAPTURE_SWITCH);
-			mute_ac97_ctl(chip, CONTROL_AUX_CAPTURE_SWITCH);
-		}
-		break;
-	case AC97_MIC:
-	case AC97_CD:
-	case AC97_VIDEO:
-	case AC97_AUX:
-		if (!mute) {
-			oxygen_ac97_set_bits(chip, 0, CM9780_GPIO_STATUS,
-					     GPIO_LINE_MUTE);
-			mute_ac97_ctl(chip, CONTROL_LINE_CAPTURE_SWITCH);
-		}
-		break;
-	}
-}
-
 static int pcm1796_volume_info(struct snd_kcontrol *ctl,
 			       struct snd_ctl_elem_info *info)
 {
@@ -374,8 +271,6 @@ static int xonar_control_filter(struct snd_kcontrol_new *template)
 	} else if (!strncmp(template->name, "CD Capture ", 11)) {
 		/* CD in is actually connected to the video in pin */
 		template->private_value ^= AC97_CD ^ AC97_VIDEO;
-	} else if (!strcmp(template->name, "Line Capture Volume")) {
-		return 1; /* line-in bypasses the AC'97 mixer */
 	}
 	return 0;
 }
@@ -398,15 +293,16 @@ static const struct oxygen_model model_xonar = {
 	.set_adc_params = set_cs5381_params,
 	.update_dac_volume = update_pcm1796_volume,
 	.update_dac_mute = update_pcm1796_mute,
-	.ac97_switch_hook = xonar_ac97_switch_hook,
 	.gpio_changed = xonar_gpio_changed,
 	.model_data_size = sizeof(struct xonar_data),
+	.pcm_dev_cfg = PLAYBACK_0_TO_I2S |
+		       PLAYBACK_1_TO_SPDIF |
+		       CAPTURE_0_FROM_I2S_2 |
+		       CAPTURE_1_FROM_SPDIF,
 	.dac_channels = 8,
-	.used_channels = OXYGEN_CHANNEL_B |
-			 OXYGEN_CHANNEL_C |
-			 OXYGEN_CHANNEL_SPDIF |
-			 OXYGEN_CHANNEL_MULTICH,
-	.function_flags = OXYGEN_FUNCTION_ENABLE_SPI_4_5,
+	.misc_flags = OXYGEN_MISC_MIDI,
+	.function_flags = OXYGEN_FUNCTION_SPI |
+			  OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 	.dac_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
 	.adc_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
 };
@@ -423,7 +319,7 @@ static int __devinit xonar_probe(struct pci_dev *pci,
 		++dev;
 		return -ENOENT;
 	}
-	err = oxygen_pci_probe(pci, index[dev], id[dev], 1, &model_xonar);
+	err = oxygen_pci_probe(pci, index[dev], id[dev], &model_xonar);
 	if (err >= 0)
 		++dev;
 	return err;
