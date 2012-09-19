@@ -180,7 +180,7 @@ static inline struct soundscape *get_hwdep_soundscape(snd_hwdep_t * hw)
 
 
 struct dmabuf {
-	unsigned long size;
+	size_t size;
 	unsigned char *data;
 	dma_addr_t addr;
 };
@@ -463,8 +463,8 @@ static int host_startup_ack(struct soundscape *s, unsigned timeout)
  * Upload a byte-stream into the SoundScape using DMA channel A.
  */
 static int upload_dma_data(struct soundscape *s,
-                           const unsigned char *data, unsigned long size,
-                           unsigned long dmasize)
+                           const unsigned char *data, size_t size,
+                           size_t dmasize)
 {
 	unsigned long flags;
 	struct dmabuf dma;
