@@ -144,6 +144,7 @@ Module parameters
     Module for ALi M5451 PCI chip.
 
     pcm_channels    - Number of hardware channels assigned for PCM
+    spdif           - Support SPDIF I/O (disabled by default)
 
     Module supports autoprobe and multiple chips (max 8).
 
