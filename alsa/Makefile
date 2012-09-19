@@ -255,12 +255,13 @@ mrproper: clean1
 	rm -f `find ../alsa-kernel -name "out.txt"`
 	rm -rf autom4te.cache
 
-.PHONY: cvsclean
+.PHONY: cvsclean hgclean
 cvsclean: mrproper
 	rm -f configure snddevices aclocal.m4 acinclude.m4 include/config.h include/config1.h \
 	  include/config1.h.in toplevel.config toplevel.config.in \
 	  alsa-kernel sound scripts include/sound
 	rm -rf include/linux
+hgclean: cvsclean
 
 .PHONY: pack
 pack: mrproper
@@ -273,6 +274,7 @@ pack: mrproper
 		mv alsa-kernel alsa-driver ; \
 		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
 		tar --exclude=CVS --exclude=kchanges --exclude=.cvsignore \
+                    --exclude='.hg*' \
                     --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 -p \
                     -f alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION) ; \
 		mv alsa-driver-$(CONFIG_SND_VERSION) alsa-driver ; \
