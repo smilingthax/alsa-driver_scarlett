@@ -101,7 +101,7 @@ map:
 	mv -f snd.map1 snd.map
 
 .PHONY: install
-install: install-modules install-headers install-scripts
+install: install-modules install-headers install-scripts check-snd-prefix
 	cat WARNING
 
 .PHONY: install-headers
@@ -144,6 +144,20 @@ install-scripts:
 	elif [ -d /etc/init.d ]; then \
 	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
 	fi
+
+.PHONY: check-snd-prefix
+check-snd-prefix:
+	@ if [ x"$(DESTDIR)" = x ]; then \
+	  if modprobe -c | grep -s -q snd_; then \
+	    echo;\
+	    echo "             ===== WARNING =====";\
+	    echo;\
+	    echo "The options for ALSA modules on your system still include snd_ prefix,";\
+	    echo "which is obsoleted now.  Please fix /etc/modules.conf.";\
+	    echo "For convenience, you can use utils/module-options script to convert";\
+	    echo "the snd_ prefix automatically.";\
+	    echo;\
+	fi; fi
 
 .PHONY: clean
 clean:
