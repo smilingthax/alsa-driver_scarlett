@@ -581,22 +581,17 @@ int __devinit snd_emu10k1_create(snd_card_t * card,
 	/* enable PCI device */
 	if ((err = pci_enable_device(pci)) < 0)
 		return err;
-	/* set the DMA transfer mask */
-	if (is_audigy) {
-		if (pci_set_dma_mask(pci, 0xffffffff) < 0) {
-			snd_printk(KERN_ERR "architecture does not support 32bit PCI busmaster DMA\n");
-			return -ENXIO;
-		}
-	} else {
-		if (pci_set_dma_mask(pci, 0x1fffffff) < 0) {
-			snd_printk(KERN_ERR "architecture does not support 29bit PCI busmaster DMA\n");
-			return -ENXIO;
-		}
-	}
 
 	emu = snd_magic_kcalloc(emu10k1_t, 0, GFP_KERNEL);
 	if (emu == NULL)
 		return -ENOMEM;
+	/* set the DMA transfer mask */
+	emu->dma_mask = is_audigy ? AUDIGY_DMA_MASK : EMU10K1_DMA_MASK;
+	if (pci_set_dma_mask(pci, emu->dma_mask) < 0) {
+		snd_printk(KERN_ERR "architecture does not support PCI busmaster DMA with mask 0x%lx\n", emu->dma_mask);
+		snd_magic_kfree(emu);
+		return -ENXIO;
+	}
 	emu->card = card;
 	spin_lock_init(&emu->reg_lock);
 	spin_lock_init(&emu->emu_lock);

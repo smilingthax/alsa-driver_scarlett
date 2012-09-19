@@ -50,6 +50,7 @@ MODULE_DEVICES("{{Intel,82801AA-ICH},"
 		"{Intel,82801BA-ICH2},"
 		"{Intel,82801CA-ICH3},"
 		"{Intel,82801DB-ICH4},"
+		"{Intel,ICH5},"
 		"{Intel,MX440},"
 		"{SiS,SI7012},"
 		"{NVidia,NForce Audio},"
@@ -121,6 +122,9 @@ MODULE_PARM_SYNTAX(mpu_port, SNDRV_ENABLED ",allows:{{0},{0x330},{0x300}},dialog
 #endif
 #ifndef PCI_DEVICE_ID_INTEL_ICH4
 #define PCI_DEVICE_ID_INTEL_ICH4	0x24c5
+#endif
+#ifndef PCI_DEVICE_ID_INTEL_ICH5
+#define PCI_DEVICE_ID_INTEL_ICH5	0x24d5
 #endif
 #ifndef PCI_DEVICE_ID_SI_7012
 #define PCI_DEVICE_ID_SI_7012		0x7012
@@ -389,6 +393,7 @@ static struct pci_device_id snd_intel8x0_ids[] __devinitdata = {
 	{ 0x8086, 0x2445, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 82801BA */
 	{ 0x8086, 0x2485, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* ICH3 */
 	{ 0x8086, 0x24c5, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL_ICH4 }, /* ICH4 */
+	{ 0x8086, 0x24d5, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL_ICH4 }, /* ICH5 */
 	{ 0x8086, 0x7195, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 440MX */
 	{ 0x1039, 0x7012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_SIS },	/* SI7012 */
 	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* NFORCE */
@@ -2334,6 +2339,7 @@ static struct shortname_table {
 	{ PCI_DEVICE_ID_INTEL_440MX, "Intel 440MX" },
 	{ PCI_DEVICE_ID_INTEL_ICH3, "Intel 82801CA-ICH3" },
 	{ PCI_DEVICE_ID_INTEL_ICH4, "Intel 82801DB-ICH4" },
+	{ PCI_DEVICE_ID_INTEL_ICH5, "Intel ICH5" },
 	{ PCI_DEVICE_ID_SI_7012, "SiS SI7012" },
 	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce" },
 	{ PCI_DEVICE_ID_NVIDIA_MCP2_AUDIO, "NVidia NForce2" },

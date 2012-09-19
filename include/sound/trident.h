@@ -365,10 +365,16 @@ struct _snd_trident_voice {
 	int running: 1,
             capture: 1,
             spdif: 1,
-            foldback: 1;
+            foldback: 1,
+            isync: 1,
+            isync2: 1,
+            isync3: 1;
 	int foldback_chan;		/* foldback subdevice number */
 	unsigned int stimer;		/* global sample timer (to detect spurious interrupts) */
 	unsigned int spurious_threshold; /* spurious threshold */
+	unsigned int isync_mark;
+	unsigned int isync_max;
+	unsigned int isync_ESO;
 
 	/* --- */
 

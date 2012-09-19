@@ -49,6 +49,8 @@
 #define NUM_G           64              /* use all channels */
 #define NUM_FXSENDS     4
 
+#define EMU10K1_DMA_MASK	0x1fffffffUL
+#define AUDIGY_DMA_MASK		0xffffffffUL
 
 #define TMEMSIZE        256*1024
 #define TMEMSIZEREG     4
@@ -936,6 +938,7 @@ struct _snd_emu10k1 {
 	unsigned short model;			/* subsystem id */
 	unsigned int card_type;			/* EMU10K1_CARD_* */
 	unsigned int ecard_ctrl;		/* ecard control bits */
+	unsigned long dma_mask;			/* PCI DMA mask */
 	int max_cache_pages;			/* max memory size / PAGE_SIZE */
 	void *silent_page;			/* silent page */
 	dma_addr_t silent_page_dmaaddr;
