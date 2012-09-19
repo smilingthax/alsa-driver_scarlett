@@ -46,6 +46,7 @@
 #define RHEL_RELEASE_VERSION(a, b) (((a) << 8) | (b))
 #endif
 
+#include "version.h"
 #include <linux/module.h>
 
 #ifdef CONFIG_HAVE_OLD_REQUEST_MODULE

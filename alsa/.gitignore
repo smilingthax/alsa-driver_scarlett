@@ -32,6 +32,7 @@ acore/control.c
 acore/hrtimer.c
 acore/hwdep.c
 acore/info.c
+acore/info_oss.c
 acore/init.c
 acore/memalloc.c
 acore/misc.c
