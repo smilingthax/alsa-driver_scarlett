@@ -103,7 +103,7 @@ include/sndversions.h:
 .PHONY: compile
 compile: include/sound/version.h include/sndversions.h
 ifdef NEW_KBUILD
-	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/kbuild modules
+	$(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/kbuild $(MAKE_ADDS) modules
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d; then exit 1; fi; done
 endif
