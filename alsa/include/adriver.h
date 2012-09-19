@@ -319,11 +319,18 @@ static inline void module_put(struct module *module)
 #endif
 #endif /* 2.5.0 */
 
+/* vmap/vunmap wrappers */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+/* 2.4 kernels with xfs patch have the following, but we don't use them anyway... */
 #define vmap(array,pages) remap_page_array(array,pages,0)
 #define vunmap(ptr) vfree_nocheck(ptr)
 #endif /* 2.5.0 */
 
+/* vmalloc_to_page wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 19)
+struct page *snd_compat_vmalloc_to_page(void *addr);
+#define vmalloc_to_page(addr) snd_compat_vmalloc_to_page(addr)
+#endif
 
 #include "amagic.h"
 

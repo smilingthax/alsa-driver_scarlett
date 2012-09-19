@@ -4,6 +4,10 @@
 #include "../alsa-kernel/core/pcm_sgbuf.c"
 #else
 
+/*
+ * we don't have vmap/vunmap, so use vmalloc_32 and vmalloc_dma instead
+ */
+
 #include <sound/driver.h>
 #include <linux/slab.h>
 #include <sound/core.h>
@@ -36,6 +40,7 @@ void snd_pcm_sgbuf_delete(struct snd_sg_buf *sgbuf)
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 0)
+/* get the virtual address of the given vmalloc'ed pointer */
 static void *get_vmalloc_addr(void *pageptr)
 {
 	pgd_t *pgd;
@@ -51,6 +56,9 @@ static void *get_vmalloc_addr(void *pageptr)
 }    
 #endif
 
+/* set up the page table from the given vmalloc'ed buffer pointer.
+ * return a negative error if the page is out of the pci address mask.
+ */
 static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned int pages)
 {
 	unsigned int i;
@@ -87,9 +95,10 @@ static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned in
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 2, 18)
-#define vmalloc_32(x) vmalloc(x)
+#define vmalloc_32(x) vmalloc_nocheck(x) /* don't use wrapper */
 #endif
 
+/* remove all vmalloced pages */
 static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
 {
 	int i;
@@ -100,7 +109,7 @@ static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
 			sgbuf->page_table[i] = NULL;
 		}
 	sgbuf->pages = 0;
-	vfree_nocheck(vmaddr);
+	vfree_nocheck(vmaddr); /* don't use wrapper */
 }
 
 void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
@@ -125,11 +134,14 @@ void *snd_pcm_sgbuf_alloc_pages(struct snd_sg_buf *sgbuf, size_t size)
 
 	if (store_page_tables(sgbuf, vmaddr, pages) < 0) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+		/* reallocate with DMA flag */
 		release_vm_buffer(sgbuf, vmaddr);
 		vmaddr = vmalloc_dma(pages << PAGE_SHIFT);
 		if (! vmaddr)
 			goto _failed;
 		store_page_tables(sgbuf, vmaddr, pages);
+#else
+		goto _failed;
 #endif
 	}
 
@@ -197,4 +209,4 @@ int snd_pcm_lib_preallocate_sg_pages_for_all(struct pci_dev *pci,
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages);
 EXPORT_SYMBOL(snd_pcm_lib_preallocate_sg_pages_for_all);
 EXPORT_SYMBOL(snd_pcm_sgbuf_ops_page);
-#endif /* < 2.4.0 */
+#endif /* < 2.5.0 */

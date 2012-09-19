@@ -220,13 +220,4 @@ void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *driver,
 /*
  * symbols
  */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 24)
-EXPORT_SYMBOL(snd_hack_usb_set_interface);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
-EXPORT_SYMBOL(snd_compat_usb_register);
-EXPORT_SYMBOL(snd_compat_usb_deregister);
-EXPORT_SYMBOL(snd_compat_usb_driver_claim_interface);
-#endif
-#else
 EXPORT_NO_SYMBOLS;
-#endif
