@@ -1201,13 +1201,13 @@ static int riptide_reset(cmdif_t * cif, riptide_t * chip)
 						    "riptide"
 #endif
 						    )) != 0) {
-				snd_printk("Riptide: Firmware not available %d\n", err);
+				snd_printk(KERN_ERR "Riptide: Firmware not available %d\n", err);
 				return -EIO;
 			}
 		}
 		err = loadfirmware(cif, chip->fw_entry->data, chip->fw_entry->size);
 		if (err)
-			snd_printk("Riptide: Could not load firmware %d\n", err);
+			snd_printk(KERN_ERR "Riptide: Could not load firmware %d\n", err);
 	}
 
 	for (timeout = 100000; --timeout; udelay(10)) {
@@ -1387,7 +1387,7 @@ static int snd_riptide_trigger(snd_pcm_substream_t * substream, int cmd)
 			udelay(1);
 		} while (i != rptr.retlongs[1] && j++ < MAX_WRITE_RETRY);
 		if (j >= MAX_WRITE_RETRY)
-			snd_printk("Riptide: Could not stop stream!");
+			snd_printk(KERN_ERR "Riptide: Could not stop stream!");
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		if (!(data->state & ST_PAUSE)) {
