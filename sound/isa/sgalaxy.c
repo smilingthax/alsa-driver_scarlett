@@ -111,6 +111,10 @@ static int __init snd_sgalaxy_sbdsp_command(unsigned long port, unsigned char va
 	return 0;
 }
 
+static void snd_sgalaxy_dummy_interrupt(int irq, void *dev_id, struct pt_regs *regs)
+{
+}
+
 static int __init snd_sgalaxy_setup_wss(unsigned long port, int irq, int dma)
 {
 	static int interrupt_bits[] = {-1, -1, -1, -1, -1, -1, -1, 0x08, -1, 
@@ -139,17 +143,19 @@ static int __init snd_sgalaxy_setup_wss(unsigned long port, int irq, int dma)
 	snd_printdd("sgalaxy - setting up IRQ/DMA for WSS\n");
 #endif
 
-	/* FIXME: this is really bogus --jk */
-	/* the irq line is not allocated (thus locked) for this device at the moment */
-	disable_irq(irq);
-
         /* initialize IRQ for WSS codec */
         tmp = interrupt_bits[irq % 16];
         if (tmp < 0)
                 return -EINVAL;
+
+	if (request_irq(irq, snd_sgalaxy_dummy_interrupt, SA_INTERRUPT, "sgalaxy", NULL))
+		return -EIO;
+
         outb(tmp | 0x40, port);
         tmp1 = dma_bits[dma % 4];
         outb(tmp | tmp1, port);
+
+	free_irq(irq, NULL);
 
 	return 0;
 }
