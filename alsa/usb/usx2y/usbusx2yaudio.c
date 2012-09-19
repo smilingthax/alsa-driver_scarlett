@@ -474,7 +474,7 @@ static int snd_usX2Y_urb_start(snd_usX2Y_substream_t *subs)
 				subs->dataurb[ep][i]->transfer_flags = 0;
 				subs->dataurb[ep][i]->start_frame = subs->dataurb[0][i]->start_frame;
 			}
-			if ((err = usb_submit_urb(subs->dataurb[ep][i], GFP_KERNEL)) < 0) {
+			if ((err = usb_submit_urb(subs->dataurb[ep][i], GFP_ATOMIC)) < 0) {
 				snd_printk (KERN_ERR "cannot submit datapipe for urb %d %d, err = %d\n", ep, i, err);
 				return -EPIPE;
 			}
@@ -1220,12 +1220,13 @@ static int snd_usX2Y_audio_stream_new(snd_card_t* card)
 
 	pcm->private_data = usX2Y_stream;
 	pcm->private_free = snd_usX2Y_audio_pcm_free;
-	pcm->info_flags = 0;
+	pcm->info_flags = SNDRV_PCM_INFO_NONATOMIC_OPS;
 
 	sprintf(pcm->name, NAME_ALLCAPS" Audio #%d", usX2Y(card)->chip.pcm_devs);
 
-	if (0 > (err = snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream,  64*1024, 128*1024, GFP_ATOMIC))
-	    || 0 > (err = snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream ,  usX2Y_capt_substream->endpoints * 64*1024, usX2Y_capt_substream->endpoints * 128*1024, GFP_ATOMIC))) {
+	if (0 > (err = snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream,  64*1024, 128*1024, GFP_KERNEL))
+	    || 0 > (err = snd_pcm_lib_preallocate_pages(pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream ,  usX2Y_capt_substream->endpoints * 64*1024, usX2Y_capt_substream->endpoints * 128*1024, GFP_KERNEL))
+	    || 0 > (err = usX2Y_rate_set(usX2Y_stream, 44100))) {  // needed to make us428 recognize output-volume settings for direct-monitoring and master-pcm. shouldn't disturb other usx2y.
 		snd_usX2Y_audio_stream_free(usX2Y_stream);
 		return err;
 	}

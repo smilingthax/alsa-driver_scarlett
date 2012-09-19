@@ -1,6 +1,11 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2003-11-27 Karsten Wiese, Martin Langer
+	Version 0.4:
+	us122 support.
+	us224 could be tested by uncommenting the sections containing USB_ID_US224
+
 2003-11-03 Karsten Wiese
 	Version 0.3:
 	24Bit support. 
@@ -173,7 +178,7 @@ void snd_usX2Y_In04Int(urb_t* urb)
 	if (usX2Y->US04) {
 		if (0 == usX2Y->US04->submitted)
 			do
-				err = usb_submit_urb(usX2Y->US04->urb[usX2Y->US04->submitted++], GFP_KERNEL);
+				err = usb_submit_urb(usX2Y->US04->urb[usX2Y->US04->submitted++], GFP_ATOMIC);
 			while (!err && usX2Y->US04->submitted < usX2Y->US04->len);
 	} else
 		if (us428ctls && us428ctls->p4outLast >= 0 && us428ctls->p4outLast < N_us428_p4out_BUFS) {
@@ -191,7 +196,7 @@ void snd_usX2Y_In04Int(urb_t* urb)
 #ifdef OLD_USB
 						usX2Y->AS04.urb[j]->transfer_flags = USB_QUEUE_BULK;
 #endif
-						usb_submit_urb(usX2Y->AS04.urb[j], GFP_KERNEL);
+						usb_submit_urb(usX2Y->AS04.urb[j], GFP_ATOMIC);
 						us428ctls->p4outSent = send;
 						break;
 					}
@@ -229,6 +234,11 @@ static struct usb_device_id snd_usX2Y_usb_id_table[] = {
 		.idVendor =	0x1604,
 		.idProduct =	USB_ID_US122 
 	},
+/* 	{ FIXME: uncomment  to test us224 support*/
+/* 		.match_flags =	USB_DEVICE_ID_MATCH_DEVICE, */
+/* 		.idVendor =	0x1604, */
+/* 		.idProduct =	USB_ID_US224  */
+/* 	}, */
 	{ /* terminator */ }
 };
 
@@ -268,7 +278,7 @@ static void* snd_usX2Y_usb_probe(struct usb_device* device, struct usb_interface
 	int		err;
 	snd_card_t*	card;
 	if (device->descriptor.idVendor != 0x1604 ||
-	    (device->descriptor.idProduct != USB_ID_US122 && device->descriptor.idProduct != USB_ID_US428) ||
+	    (device->descriptor.idProduct != USB_ID_US122 && /* device->descriptor.idProduct != USB_ID_US224 && */ device->descriptor.idProduct != USB_ID_US428) ||
 	    !(card = snd_usX2Y_create_card(device)))
 		return 0;
 	if ((err = snd_usX2Y_hwdep_new(card, device)) < 0  ||
