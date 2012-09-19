@@ -69,7 +69,19 @@ AC_ARG_WITH(alsakernel,
   [alsakerneldir="$withval"],
   [alsakerneldir="../alsa-kmirror"]
 )
-ALSAKERNELDIR=$(cd "$alsakerneldir" && pwd)
+ALSAKERNELDIR=""
+if test -d "$alsakerneldir"; then
+  ALSAKERNELDIR=$(cd "$alsakerneldir" && pwd)
+elif test -d "alsa-kernel"; then
+  ALSAKERNELDIR=$(cd "alsa-kernel" && pwd)
+fi
+if test -z "$ALSAKERNELDIR"; then
+  cat << EOF
+The directory $alsakerneldir does not exist.
+Please obtain the ALSA linux kernel tree (alsa-kmirror or alsa-kernel).
+EOF
+  exit 1
+fi
 AC_MSG_RESULT($alsakerneldir)
 AC_SUBST(ALSAKERNELDIR)
 
@@ -90,7 +102,16 @@ AC_ARG_WITH(kernel,
    DEFAULT_KERNEL_BUILD=""],
   [kerneldir="$DEFAULT_KERNEL_DIR"]
 )
-CONFIG_SND_KERNELDIR=$(cd "$kerneldir" && pwd)
+if test -d "$kerneldir"; then
+  CONFIG_SND_KERNELDIR=$(cd "$kerneldir" && pwd)
+else
+  cat << EOF
+Please install the package with full kernel sources for your distribution
+or use --with-kernel=dir option to specify another directory with kernel
+sources (default is $DEFAULT_KERNEL_DIR).
+EOF  
+  exit 1
+fi
 AC_MSG_RESULT($kerneldir)
 
 dnl Check for directory with kernel build tree...

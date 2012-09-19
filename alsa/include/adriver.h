@@ -1944,4 +1944,53 @@ char *compat_skip_spaces(const char *);
 #endif /* < 2.6.25 */
 #endif /* CONFIG_PCI */
 
+/* blocking_notifier */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
+#include <linux/notifier.h>
+#ifndef BLOCKING_INIT_NOTIFIER_HEAD
+struct blocking_notifier_head {
+	struct rw_semaphore rwsem;
+	struct notifier_block *head;
+};
+
+#define BLOCKING_INIT_NOTIFIER_HEAD(name) do {	\
+		init_rwsem(&(name)->rwsem);	\
+		(name)->head = NULL;		\
+	} while (0)
+
+static inline int
+blocking_notifier_call_chain(struct blocking_notifier_head *nh,
+			     unsigned long val, void *v)
+{
+	int ret;
+	down_read(&nh->rwsem);
+	ret = notifier_call_chain(&nh->head, val, v);
+	up_read(&nh->rwsem);
+	return ret;
+}
+
+static inline int
+blocking_notifier_chain_register(struct blocking_notifier_head *nh,
+				 struct notifier_block *nb)
+{
+	int ret;
+	down_write(&nh->rwsem);
+	ret = notifier_chain_register(&nh->head, nb);
+	up_write(&nh->rwsem);
+	return ret;
+}
+
+static inline int
+blocking_notifier_chain_unregister(struct blocking_notifier_head *nh,
+				   struct notifier_block *nb)
+{
+	int ret;
+	down_write(&nh->rwsem);
+	ret = notifier_chain_unregister(&nh->head, nb);
+	up_write(&nh->rwsem);
+	return ret;
+}
+#endif /* BLOCKING_INIT_NOTIFIER_HEAD */
+#endif /* <2.6.17 */
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
