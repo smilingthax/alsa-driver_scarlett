@@ -363,8 +363,9 @@ case "$1" in
     basic
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o 
-    insert snd-i2c.o
-    insert snd-cs8427.o
+    #insert snd-i2c.o
+    #insert snd-cs8427.o
+    insert snd-ak4114.o
     insert snd-ak4xxx-adda.o
     insert snd-ice17xx-ak4xxx.o
     insert snd-ice1724.o enable=1,1
