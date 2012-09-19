@@ -318,6 +318,8 @@ static snd_pcm_sframes_t rate_transfer(snd_pcm_plugin_t *plugin,
 #endif
 
 	dst_frames = rate_dst_frames(plugin, frames);
+	if (dst_frames > dst_channels[0].frames)
+		dst_frames = dst_channels[0].frames;
 	data = (rate_t *)plugin->extra_data;
 	data->func(plugin, src_channels, dst_channels, frames, dst_frames);
 	return dst_frames;

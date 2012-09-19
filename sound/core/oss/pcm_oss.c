@@ -2372,3 +2372,24 @@ static void __exit alsa_pcm_oss_exit(void)
 
 module_init(alsa_pcm_oss_init)
 module_exit(alsa_pcm_oss_exit)
+
+#ifndef MODULE
+
+/* format is: snd-pcm-oss=dsp_map,adsp_map[,nonblock_open] */
+
+static int __init alsa_pcm_oss_setup(char *str)
+{
+	static unsigned __initdata nr_dev = 0;
+
+	if (nr_dev >= SNDRV_CARDS)
+		return 0;
+	(void)(get_option(&str,&dsp_map[nr_dev]) == 2 &&
+	       get_option(&str,&adsp_map[nr_dev]) == 2);
+	(void)(get_option(&str,&nonblock_open) == 2);
+	nr_dev++;
+	return 1;
+}
+
+__setup("snd-pcm-oss=", alsa_pcm_oss_setup);
+
+#endif /* !MODULE */

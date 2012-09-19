@@ -926,7 +926,9 @@ static int snd_mem_proc_read(char *page, char **start, off_t off,
 
 static int __init snd_mem_init(void)
 {
+#ifdef CONFIG_PROC_FS
 	create_proc_read_entry("driver/snd-page-alloc", 0, 0, snd_mem_proc_read, NULL);
+#endif
 	preallocate_cards();
 	return 0;
 }
@@ -943,6 +945,25 @@ static void __exit snd_mem_exit(void)
 module_init(snd_mem_init)
 module_exit(snd_mem_exit)
 
+
+#ifndef MODULE
+
+/* format is: snd-page-alloc=enable */
+
+static int __init snd_mem_setup(char *str)
+{
+	static unsigned __initdata nr_dev = 0;
+
+	if (nr_dev >= SNDRV_CARDS)
+		return 0;
+	(void)(get_option(&str,&enable[nr_dev]) == 2);
+	nr_dev++;
+	return 1;
+}
+
+__setup("snd-page-alloc=", snd_mem_setup);
+
+#endif
 
 /*
  * exports

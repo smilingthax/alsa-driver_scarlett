@@ -76,8 +76,8 @@ MODULE_DEVICES("{{RME Hammerfall-DSP},"
 #define DIGIFACE_DS_CHANNELS     14
 #define MULTIFACE_SS_CHANNELS    18
 #define MULTIFACE_DS_CHANNELS    14
-#define H9652_DS_CHANNELS        26
-#define H9652_SS_CHANNELS        14
+#define H9652_SS_CHANNELS        26
+#define H9652_DS_CHANNELS        14
 
 /* Write registers. These are defined as byte-offsets from the iobase value.
  */
@@ -643,6 +643,7 @@ static inline int hdsp_get_iobox_version (hdsp_t *hdsp)
 
 static inline int hdsp_check_for_firmware (hdsp_t *hdsp)
 {
+	if (hdsp->io_type == H9652) return 0;
 	if ((hdsp_read (hdsp, HDSP_statusRegister) & HDSP_DllError) != 0) {
 		snd_printk("firmware not present.\n");
 		hdsp->state &= ~HDSP_FirmwareLoaded;
@@ -3798,6 +3799,10 @@ static int snd_hdsp_hwdep_ioctl(snd_hwdep_t *hw, struct file *file, unsigned int
 	
 	switch (cmd) {
 	case SNDRV_HDSP_IOCTL_GET_PEAK_RMS:
+		if (hdsp->io_type == H9652) {
+		    snd_printk("hardware metering isn't supported yet for hdsp9652 cards\n");
+		    return -EINVAL;
+		}
 		if (!(hdsp->state & HDSP_FirmwareLoaded)) {
 			snd_printk("firmware needs to be uploaded to the card.\n");	
 			return -EINVAL;
