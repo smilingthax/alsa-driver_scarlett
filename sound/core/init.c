@@ -355,6 +355,10 @@ static void choose_default_id(snd_card_t * card)
 		id++;
 	}
 	id = card->id;
+	while (*spos != '\0' && !isalnum(*spos))
+		spos++;
+	if (isdigit(*spos))
+		*id++ = isalpha(card->shortname[0]) ? card->shortname[0] : 'D';
 	while (*spos != '\0' && (size_t)(id - card->id) < sizeof(card->id) - 1) {
 		if (isalnum(*spos))
 			*id++ = *spos;
@@ -363,6 +367,9 @@ static void choose_default_id(snd_card_t * card)
 	*id = '\0';
 
 	id = card->id;
+	
+	if (*id == '\0')
+		strcpy(id, "default");
 
 	while (1) {
 	      	if (loops-- == 0) {
@@ -422,7 +429,7 @@ int snd_card_register(snd_card_t * card)
 		write_unlock(&snd_card_rwlock);
 		return 0;
 	}
-	if (!card->id[0])
+	if (card->id[0] == '\0')
 		choose_default_id(card);
 	snd_cards[card->number] = card;
 	snd_cards_count++;
