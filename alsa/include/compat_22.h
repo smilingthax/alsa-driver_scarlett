@@ -7,6 +7,14 @@
 #include <linux/pagemap.h>
 #include <linux/ioport.h>
 
+#if defined(SND_NEED_USB_WRAPPER) && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
+/* include linux/usb.h at first since it defines another compatibility layers, which
+ * conflicts with ours...
+ */
+#include <linux/usb.h>
+#undef IORESOURCE_IO
+#endif
+
 #ifndef CONFIG_HAVE_DMA_ADDR_T
 typedef unsigned long dma_addr_t;
 #endif
@@ -82,17 +90,28 @@ static __inline__ void list_del_init(struct list_head *entry)
 #define kill_fasync(fp, sig, band) snd_wrapper_kill_fasync(fp, sig, band)
 void snd_wrapper_kill_fasync(struct fasync_struct **, int, int);
 
-#define tasklet_hi_schedule(t)	queue_task((t), &tq_immediate); \
-				mark_bh(IMMEDIATE_BH)
+/* this is identical with tq_struct but the "routine" field is renamed to "func" */
+struct tasklet_struct {
+	struct tasklet_struct *next;	/* linked list of active bh's */
+	unsigned long sync;		/* must be initialized to zero */
+	void (*func)(void *);		/* function to call */
+	void *data;			/* argument to function */
+};
 
-#define tasklet_init(t,f,d)	(t)->next = NULL; \
-				(t)->sync = 0; \
-				(t)->routine = (void (*)(void *))(f); \
-				(t)->data = (void *)(d)
+#define tasklet_hi_schedule(t)	do { \
+	queue_task((struct tq_struct *)(t), &tq_immediate);\
+	mark_bh(IMMEDIATE_BH); \
+} while (0)
 
-#define tasklet_struct		tq_struct 
+#define tasklet_init(t,f,d)	do { \
+	(t)->next = NULL; \
+	(t)->sync = 0; \
+	(t)->func = (void (*)(void *))(f); \
+	(t)->data = (void *)(d); \
+} while (0)
 
 #define tasklet_unlock_wait(t)	while (test_bit(0, &(t)->sync)) { }
+#define tasklet_kill(t)		tasklet_unlock_wait(t) /* FIXME: world is not perfect... */
 
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 
@@ -417,5 +436,76 @@ extern inline int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 #define isa_memset_io(a,b,c)		memset_io(phys_to_virt(a),(b),(c))
 #define isa_memcpy_fromio(a,b,c)	memcpy_fromio((a),phys_to_virt(b),(c))
 #define isa_memcpy_toio(a,b,c)		memcpy_toio(phys_to_virt(a),(b),(c))
+
+/* USB wrapper */
+#if defined(SND_NEED_USB_WRAPPER) && (defined(CONFIG_USB) || defined(CONFIG_USB_MODULE))
+
+#include <linux/usb.h>
+
+struct snd_compat_usb_device_id {
+	__u16		match_flags;
+	__u16		idVendor;
+	__u16		idProduct;
+	__u16		bcdDevice_lo, bcdDevice_hi;
+	__u8		bDeviceClass;
+	__u8		bDeviceSubClass;
+	__u8		bDeviceProtocol;
+	__u8		bInterfaceClass;
+	__u8		bInterfaceSubClass;
+	__u8		bInterfaceProtocol;
+	unsigned long	driver_info;
+};
+
+struct usb_device;
+struct usb_interface;
+
+struct snd_compat_usb_driver {
+	const char *name;
+	void *(*probe)(struct usb_device *dev, unsigned intf, const struct snd_compat_usb_device_id *id);
+	void (*disconnect)(struct usb_device *, void *);
+	struct list_head driver_list;
+	const struct snd_compat_usb_device_id *id_table;
+};
+
+int snd_compat_usb_register(struct snd_compat_usb_driver *);
+void snd_compat_usb_deregister(struct snd_compat_usb_driver *);
+void snd_compat_usb_driver_claim_interface(struct snd_compat_usb_driver *, struct usb_interface *iface, void *ptr);
+
+#define usb_driver snd_compat_usb_driver
+#define usb_device_id snd_compat_usb_device_id
+#define usb_register(drv) snd_compat_usb_register(drv)
+#define usb_deregister(drv) snd_compat_usb_deregister(drv)
+#define usb_driver_claim_interface(drv,if,ptr) snd_compat_usb_driver_claim_interface(drv,if,ptr)
+
+#define USB_DEVICE_ID_MATCH_VENDOR		0x0001
+#define USB_DEVICE_ID_MATCH_PRODUCT		0x0002
+#define USB_DEVICE_ID_MATCH_DEV_LO		0x0004
+#define USB_DEVICE_ID_MATCH_DEV_HI		0x0008
+#define USB_DEVICE_ID_MATCH_DEV_CLASS		0x0010
+#define USB_DEVICE_ID_MATCH_DEV_SUBCLASS	0x0020
+#define USB_DEVICE_ID_MATCH_DEV_PROTOCOL	0x0040
+#define USB_DEVICE_ID_MATCH_INT_CLASS		0x0080
+#define USB_DEVICE_ID_MATCH_INT_SUBCLASS	0x0100
+#define USB_DEVICE_ID_MATCH_INT_PROTOCOL	0x0200
+
+#define USB_DEVICE_ID_MATCH_DEVICE		(USB_DEVICE_ID_MATCH_VENDOR | USB_DEVICE_ID_MATCH_PRODUCT)
+#define USB_DEVICE_ID_MATCH_DEV_RANGE		(USB_DEVICE_ID_MATCH_DEV_LO | USB_DEVICE_ID_MATCH_DEV_HI)
+#define USB_DEVICE_ID_MATCH_DEVICE_AND_VERSION	(USB_DEVICE_ID_MATCH_DEVICE | USB_DEVICE_ID_MATCH_DEV_RANGE)
+#define USB_DEVICE_ID_MATCH_DEV_INFO \
+	(USB_DEVICE_ID_MATCH_DEV_CLASS | USB_DEVICE_ID_MATCH_DEV_SUBCLASS | USB_DEVICE_ID_MATCH_DEV_PROTOCOL)
+#define USB_DEVICE_ID_MATCH_INT_INFO \
+	(USB_DEVICE_ID_MATCH_INT_CLASS | USB_DEVICE_ID_MATCH_INT_SUBCLASS | USB_DEVICE_ID_MATCH_INT_PROTOCOL)
+
+/* Some useful macros */
+#define USB_DEVICE(vend,prod) \
+	match_flags: USB_DEVICE_ID_MATCH_DEVICE, idVendor: (vend), idProduct: (prod)
+#define USB_DEVICE_VER(vend,prod,lo,hi) \
+	match_flags: USB_DEVICE_ID_MATCH_DEVICE_AND_VERSION, idVendor: (vend), idProduct: (prod), bcdDevice_lo: (lo), bcdDevice_hi: (hi)
+#define USB_DEVICE_INFO(cl,sc,pr) \
+	match_flags: USB_DEVICE_ID_MATCH_DEV_INFO, bDeviceClass: (cl), bDeviceSubClass: (sc), bDeviceProtocol: (pr)
+#define USB_INTERFACE_INFO(cl,sc,pr) \
+	match_flags: USB_DEVICE_ID_MATCH_INT_INFO, bInterfaceClass: (cl), bInterfaceSubClass: (sc), bInterfaceProtocol: (pr)
+
+#endif /* USB */
 
 #endif /* <2.3.0 */
