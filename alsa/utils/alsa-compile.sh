@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version=0.1.2
+version=0.1.3
 protocol=
 distrib=unknown
 distribver=0.0
@@ -17,6 +17,7 @@ urldefault=
 gittree="git://git.alsa-project.org/"
 usegit=false
 httpdownloader=
+clean=
 compile=
 install=
 quiet=
@@ -119,54 +120,16 @@ do
 	-y|--yes)
 		yes=true ;;
 	-c*|--clean*)
-		rmpkg=
+		clean=
 		case "$#,$1" in
 		*,*=*)
-			rmpkg=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+			clean=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
 		1,*)
 			;;
 		*)
-			rmpkg="$2"
+			clean="$2"
 			shift ;;
 		esac
-		if test -z $rmpkg; then
-			echo -n "Removing tree $tmpdir:"
-			if test -d $tmpdir; then
-				if ! rm -rf $tmpdir; then
-					echo " failed"
-					exit 1
-				fi
-			fi
-			echo " success"
-		else
-			echo -n "Removing package $package:"
-			rm $tmpdir/environment.* 2> /dev/null
-			packagedir="$tmpdir/$package.dir"
-			if test "$package" = "alsa-driver"; then
-				rm -rf $tmpdir/modules.*
-				rm -rf $tmpdir/run.awk
-			fi
-			if test -r $packagedir; then
-				tree=$(cat $packagedir)
-				if test -d $tmpdir/$tree; then
-					if ! rm -rf $tmpdir/$tree; then
-						echo " failed"
-						exit 1
-					fi
-				fi
-				rm -f $packagedir
-				echo " success"
-			elif test -d $package; then
-				rm -rf $package
-				if test "$package" = "alsa-driver"; then
-					rm -rf alsa-kmirror 2> /dev/null
-				fi
-				echo " success"
-			else
-				echo " success"
-			fi
-		fi
-		exit 0
 		;;
 	--url*)
 		case "$#,$1" in
@@ -298,7 +261,7 @@ question_bool() {
 	else
 		echo >&2 -n "$1 (Y/ ) "
 		read i
-		i=${i:0:1}
+		local i=${i:0:1}
 		if test "$i" = "Y" -o "$i" = "y"; then
 			echo "true"
 		else
@@ -326,7 +289,7 @@ check_distribution() {
 # Echo "true" if rpm installed, else "false"
 # $1 is rpm name
 is_rpm_installed() {
-	a=$(rpm -qi $1 | head -1 | cut -d ' ' -f 1)
+	local a=$(rpm -qi $1 | head -1 | cut -d ' ' -f 1)
 	if test "$a" = "Name"; then
 		echo "true"
 	else
@@ -373,9 +336,9 @@ check_kernel_source() {
 		;;
 	Fedora)
 		if uname --kernel-release | grep -q '\.PAE$'; then
-			kernel_devel=kernel-PAE-devel
+			local kernel_devel=kernel-PAE-devel
 		else
-			kernel_devel=kernel-devel
+			local kernel_devel=kernel-devel
 		fi
 		if test $(is_rpm_installed $kernel_devel) = "false" ; then
 			install_package $kernel_devel
@@ -391,7 +354,7 @@ check_kernel_source() {
 
 # Cache or restore $protocol and $url and $package in $tmpdir
 check_environment() {
-	env="$tmpdir/environment.base"
+	local env="$tmpdir/environment.base"
 	if ! test -s $env; then
 		if ! test -d $tmpdir ; then
 			mkdir -p $tmpdir
@@ -421,13 +384,13 @@ check_environment() {
 		echo "package=\"$package\"" >> $env
 		echo "depmodbin=\"$depmodbin\"" >> $env
 		echo "modinfobin=\"$modinfobin\"" >> $env
-		b=$(basename $env)
+		local b=$(basename $env)
 		echo "File $b has been created."
 	else
-		b=$(basename $env)
+		local b=$(basename $env)
 		echo "File $b is cached."
-		opackage="$package"
-		ourl="$url"
+		local opackage="$package"
+		local ourl="$url"
 		. $env
 		if test "$packagedefault" != "true"; then
 			package="$opackage"
@@ -440,13 +403,13 @@ check_environment() {
 
 # Read/set $httpdownloader from CWD(!) and ensure tools available
 check_compilation_environment() {
-	env="environment.compile"
+	local env="environment.compile"
 	if ! test -s $env; then
-		a=$(wget --version | head -1 | cut -d ' ' -f 2)
+		local a=$(wget --version | head -1 | cut -d ' ' -f 2)
 		if test "$a" = "Wget"; then
 			httpdownloader="wget"
 		else
-			a=$(curl --version | head -1 | cut -d ' ' -f 1 )
+			local a=$(curl --version | head -1 | cut -d ' ' -f 1 )
 			if test "$a" = "curl"; then
 				httpdownloader="curl"
 			fi
@@ -455,38 +418,38 @@ check_compilation_environment() {
 			echo >&2 "Unable to determine HTTP downloader."
 			exit 1
 		fi
-		a=$(git --version | head -1 | cut -d ' ' -f 1)
+		local a=$(git --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "git"; then
 			install_package git
 		else
 			echo "Program git found."
 		fi
-		a=$(autoconf --version | head -1 | cut -d ' ' -f 1)
+		local a=$(autoconf --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "autoconf"; then
 			install_package autoconf
 		else
 			echo "Program autoconf found."
 		fi
-		a=$(gcc --version | head -1 | cut -d ' ' -f 1)
+		local a=$(gcc --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "gcc" ; then
 			install_package gcc
 		else
 			echo "Program gcc found."
 		fi
-		a=$(patch --version | head -1 | cut -d ' ' -f 1)
+		local a=$(patch --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "patch" ; then
 			install_package patch
 		else
 			echo "Program patch found."
 		fi
-		a=$(diff --version | head -1 | cut -d ' ' -f 1)
+		local a=$(diff --version | head -1 | cut -d ' ' -f 1)
 		if test "$a" != "diff" ; then
 			install_package diffutils
 		else
 			echo "Program diff found."
 		fi
 		if test "$protocol" = "git"; then
-			a=$(git --version | head -1 | cut -d ' ' -f 1)
+			local a=$(git --version | head -1 | cut -d ' ' -f 1)
 			if test "$a" != "git"; then
 				install_package git
 			else
@@ -525,7 +488,7 @@ download_http_file() {
 		exit 1
 		;;
 	esac
-	size=$(stat -c%s $2)
+	local size=$(stat -c%s $2)
 	if test -z "$size" -o $size -le 0; then
 		echo "  failed ($size)"
 		echo >&2 "Unable to download file '$1'."
@@ -544,28 +507,28 @@ git_clone() {
 
 # Compile $package, applying $patches
 do_compile() {
-	cmd="./gitcompile"
+	local cmd="./gitcompile"
 	case "$package"  in
 	alsa-driver)
-		dbgopt="$withdebug"
-		test -z "$dbgopt" && dbgopt="full"
-		cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
+		local dbgopt="$withdebug"
+		test -z "$dbgopt" && local dbgopt="full"
+		local cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
 		;;
 	esac
 	if test -z "$patches"; then
 		case "$package" in
 		alsa-driver)
-			test -r acore/hwdep.o && cmd="make"
+			test -r acore/hwdep.o && local cmd="make"
 			;;
 		alsa-lib)
-			test -r src/.libs/libasound.so.2.0.0 && cmd="make"
+			test -r src/.libs/libasound.so.2.0.0 && local cmd="make"
 			;;
 		esac
 	else
 		for patch in $patches; do
-			pstrip=1
+			local pstrip=1
 			if ! test patch -s -p$pstrip -N --dry-run < $patch; then
-				pstrip=0
+				local pstrip=0
 				if ! test patch -s -p$pstrip -N --dry-run < $patch; then
 					echo >&2 "Cannot apply patch $patch."
 					exit 1
@@ -579,7 +542,7 @@ do_compile() {
 	fi
 	echo "Running $cmd:"
 	if ! $cmd; then
-		a=$(pwd)
+		local a=$(pwd)
 		echo >&2 "Working directory $a."
 		echo >&2 "Compilation of $package failed."
 		echo >&2 "Report this problem to the <alsa-devel@alsa-project.org> mailing list."
@@ -594,7 +557,7 @@ do_install() {
 		echo >&2 "Login as root to continue."
 		exit 1
 	fi
-	cmd="make install"
+	local cmd="make install"
 	case "$package" in
 	alsa-driver)
 		cat <<EOF
@@ -603,7 +566,7 @@ kernel modules provided by the kernel package, invoke command:
   $0 --kmodclean
 EOF
 		if test $(question_bool "Really continue (Ctrl-C to abort)?") = "true"; then
-			cmd="make install-modules"
+			local cmd="make install-modules"
 		fi
 		;;
 	esac
@@ -612,12 +575,12 @@ EOF
 
 # Kill processes currently accessing the audio devices
 kill_audio_apps() {
-	pids0=$(fuser /dev/snd/* 2> /dev/null)
-	pids1=$(fuser /dev/mixer* 2> /dev/null)
-	pids2=$(fuser /dev/sequencer* 2> /dev/null)
-	pids=
+	local pids0=$(fuser /dev/snd/* 2> /dev/null)
+	local pids1=$(fuser /dev/mixer* 2> /dev/null)
+	local pids2=$(fuser /dev/sequencer* 2> /dev/null)
+	local pids=
 	for pid in $pids0 $pids1 $pids2; do
-		pids="$pids $pid"
+		local pids="$pids $pid"
 	done
 	if ! test -z "$pids"; then
 		echo
@@ -632,18 +595,18 @@ kill_audio_apps() {
 				do_cmd kill $pid
 			done
 			sleep 2
-			killed=
+			local killed=
 			for pid in $pids; do
-				a=$(ps --no-headers -p $pids)
+				local a=$(ps --no-headers -p $pids)
 				if test -n "$a"; then
 					do_cmd kill -9 $pid
-					killed="true"
+					local killed="true"
 				fi
 			done
 			if test "$killed" = "true"; then
 				sleep 2
 				for pid in $pids; do
-					a=$(ps --no-headers -p $pids)
+					local a=$(ps --no-headers -p $pids)
 					if test -n "$a"; then
 						echo >&2 "Unable to kill application:"
 						echo >&2 "  $a"
@@ -662,19 +625,19 @@ kill_audio_apps() {
 # $CWD(!) (= $tmpdir?) with ./modules/ and caching in ../modules.dep
 parse_modules() {	
 	if ! test -s ../modules.dep; then
-		rel=$(uname -r)
+		local rel=$(uname -r)
 		cd modules
 		for i in snd-dummy.*; do
-			i1=$(echo $i | sed -e 's/dummy/dummy1/g')
+			local i1=$(echo $i | sed -e 's/dummy/dummy1/g')
 			ln -sf $i $i1 || exit 1
 		done
 		cd ..
-		pdst="xxxx/lib/modules/$rel"
+		local pdst="xxxx/lib/modules/$rel"
 		mkdir -p $pdst/modules || exit 1
 		for i in modules/*.*o; do
 			ln -sf ../../../../../$i $pdst/$i || exit 1
 		done
-		p=$(pwd)
+		local p=$(pwd)
 		if ! $depmodbin -b $p/xxxx ; then
 			echo >&2 "depmod failed."
 			exit 1
@@ -693,9 +656,9 @@ parse_modules() {
 	if ! test -s ../modules.top ; then
 		for i in modules/*.*o; do
 			if test -r $i; then
-				a=$($modinfobin $i | grep "parm:" | grep "enable:")
+				local a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
-					a=$(basename $i | cut -d . -f 1)
+					local a=$(basename $i | cut -d . -f 1)
 					echo $a >> ../modules.top
 				fi
 			else
@@ -717,9 +680,10 @@ current_modules() {
 # Remove kernel modules, using two phases
 # $@ is module names
 my_rmmod() {
+	local phase2=
 	while test -n "$1"; do
 		if ! rmmod $1 2> /dev/null > /dev/null; then
-			phase2="$phase2 $1"
+			local phase2="$phase2 $1"
 		else
 			echo "> rmmod $1"
 		fi
@@ -737,22 +701,22 @@ my_rmmod() {
 # Insert kernel modules with arguments
 my_insmod() {
 	while test -n "$1"; do
-		xmod=
-		args=
-		nofail=
+		local xmod=
+		local args=
+		local nofail=
 		for x in $1; do
 			if test -z "$xmod"; then
-				xmod=$x
+				local xmod=$x
 			else
-				args="$args $x"
+				local args="$args $x"
 			fi
 		done
 		if test "$xmod" = "snd-dummy1"; then
-			args="index=999"
-			nofail=true
+			local args="index=999"
+			local nofail=true
 		fi
 		if test -r modules/$xmod.ko; then
-			mod=modules/$xmod.ko
+			local mod=modules/$xmod.ko
 			echo "> insmod $mod $args"
 			if test -n "$nofail"; then
 				insmod $mod $args 2> /dev/null
@@ -762,7 +726,7 @@ my_insmod() {
 			fi
 		else
 			if test -r modules/$xmod.o; then
-				mod=modules/$xmod.o
+				local mod=modules/$xmod.o
 				echo "> insmod $mod $args"
 				if test -n "$nofail"; then
 					insmod $mod.o $args
@@ -797,23 +761,23 @@ EOF
 # Reload kernel modules
 # $@ is list of kernel modules, default is current modules
 do_kernel_modules() {
-	usermods="$@"
-	curmods=$(current_modules)
+	local usermods="$@"
+	local curmods=$(current_modules)
 	if test -z "$curmods" -a -z "$usermods"; then
 		echo >&2 "Unable to determine current ALSA kernel modules."
 		exit 1
 	fi
 	if test -n "$usermods"; then
-		loadmods="$usermods"
-		dst="../modules.user"
+		local loadmods="$usermods"
+		local dst="../modules.user"
 		rm -f $dst || exit 1
 	else
-		loadmods="$curmods"
-		dst="../modules.insmod"
+		local loadmods="$curmods"
+		local dst="../modules.insmod"
 	fi
 	parse_modules
 	if ! test -s $dst; then
-		topmods=$(cat ../modules.top)
+		local topmods=$(cat ../modules.top)
 		cat > run.awk <<EOF
 function basename(name) {
 	split(name, y, "[/.]")
@@ -989,7 +953,7 @@ kernel_modules() {
 	if test "$kernelmodules" = "reinstall"; then
 		do_kernel_modules
 	else
-		a=$(echo $kernelmodules | sed -e 's/,/ /g')
+		local a=$(echo $kernelmodules | sed -e 's/,/ /g')
 		do_kernel_modules $a
 	fi
 }
@@ -1001,9 +965,9 @@ kernel_modules_list() {
 		exit 1
 	fi
 	parse_modules
-	topmods=$(cat ../modules.top)
+	local topmods=$(cat ../modules.top)
 	for mod in $topmods; do
-		desc=$($modinfobin -F description modules/$mod.*o)
+		local desc=$($modinfobin -F description modules/$mod.*o)
 		echo "$mod: $desc"
 	done
 }
@@ -1014,7 +978,7 @@ kernel_modules_remove() {
 		echo >&2 "--kmodremove works only for alsa-driver package."
 		exit 1
 	fi
-	curmods=$(current_modules)
+	local curmods=$(current_modules)
 	if test -z "$curmods"; then
 		echo "No ALSA kernel modules to remove."
 		exit 0
@@ -1024,44 +988,94 @@ kernel_modules_remove() {
 	echo "ALSA kernel modules removed."
 }
 
+package_switch() {
+	packagedir="$tmpdir/$package.dir"
+	packagestatus="$tmpdir/$package.status"
+	tree=
+	status=
+	if test -r $packagedir; then
+		tree=$(cat $packagedir)
+	fi
+	if test -r $packagestatus; then
+		status=$(cat $packagestatus)
+	fi
+}
+
 rundir=$(pwd)
 export LC_ALL=C
 export LANGUAGE=C
+
 if test "$kmodmesg" = "true"; then
 	show_kernel_messages
 	exit 0
 fi
+
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment
 do_cmd cd $tmpdir
+package_switch $package
+
+if test -n "$clean"; then
+	if test -z $clean; then
+		echo -n "Removing tree $tmpdir:"
+		if test -d $tmpdir; then
+			if ! rm -rf $tmpdir; then
+				echo " failed"
+				exit 1
+			fi
+		fi
+		echo " success"
+	else
+		package_switch $clean
+		echo -n "Removing package $package:"
+		rm $tmpdir/environment.* 2> /dev/null
+		if test "$package" = "alsa-driver"; then
+			rm -rf $tmpdir/modules.*
+			rm -rf $tmpdir/run.awk
+		fi
+		if test -n "$tree"; then
+			if test -d $tmpdir/$tree; then
+				if ! rm -rf $tmpdir/$tree; then
+					echo " failed"
+					exit 1
+				fi
+			fi
+			rm -f $packagedir
+			echo " success"
+		elif test -d $package; then
+			rm -rf $package
+			if test "$package" = "alsa-driver"; then
+				rm -rf alsa-kmirror 2> /dev/null
+			fi
+			echo " success"
+		else
+			echo " success"
+		fi
+	fi
+	exit 0
+fi
+
 if test "$kmodremove" = "true"; then
 	kernel_modules_remove
 	exit 0
 fi
-if test "$kmodlist" = "true" -a -z "$compile"; then
-	packagedir="$package.dir"
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
-		do_cmd cd $tree
-		kernel_modules_list
-		exit 0
-	fi
+
+if test "$kmodlist" = "true" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
+	do_cmd cd $tree
+	kernel_modules_list
+	exit 0
 fi
-if test -n "$kernelmodules" -a -z "$compile"; then
-	packagedir="$package.dir"
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
-		do_cmd cd $tree
-		kernel_modules
-		exit 0
-	fi
+
+if test -n "$kernelmodules" -a -z "$compile" -a -n "$tree" -a -n "$status"; then
+	do_cmd cd $tree
+	kernel_modules
+	exit 0
 fi
+
 case "$protocol" in
 http|https|file)
-	packagedir="$package.dir"
 	check_compilation_environment
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test -n "$tree"; then
 		echo "$package tree $tree is present."
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
@@ -1103,6 +1117,8 @@ http|https|file)
 	echo $tree > $packagedir
 	do_cmd cd $tree
 	do_compile
+	status="compile"
+	echo $status > $packagestatus
 	if test "$install" = "true"; then
 		do_install
 	else
@@ -1111,9 +1127,8 @@ http|https|file)
 	fi
 	;;
 git)
-	packagedir="$package.dir"
 	check_compilation_environment
-	if test -r $packagedir ; then
+	if test -n "$tree" ; then
 		echo "$package tree $package is present."
 		echo "Reusing it."
 		echo "Use '$0 --clean=$package' command to refetch and rebuild."
@@ -1126,6 +1141,8 @@ git)
 	fi
 	do_cmd cd alsa-driver
 	do_compile
+	status="compile"
+	echo $status > $packagestatus
 	if test "$install" = "true"; then
 		do_install
 	else
@@ -1139,32 +1156,50 @@ git)
 esac
 
 if test "$kmodlist" = "true"; then
-	packagedir="$package.dir"
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test -z "$tree" -o -z "$status"; then
+		echo >&2 "Package $package is not compiled."
+		echo >&2 "Cannot list kernel modules."
+		exit 1
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
+	exit 0
 fi
+
 if test -n "$kernelmodules"; then
-	do_cmd cd $tmpdir
-	packagedir="$package.dir"
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test -z "$tree" -o -z "$status"; then
+		echo >&2 "Package $package is not compiled."
+		echo >&2 "Cannot insert kernel modules."
+		exit 1
 	fi
 	do_cmd cd $tree
 	kernel_modules
 	exit 0
 fi
+
 if test -n "$runargs"; then
-	packagedir="alsa-lib.dir"
-	if test -r $packagedir; then
-		tree=$(cat $packagedir)
+	if test "$package" != "alsa-lib"; then
+		libtree=
+		libstatus=
+		if test -r "$tmpdir/alsa-lib.dir"; then
+			libtree=$(cat $tmpdir/alsa-lib.dir)
+		fi
+		if test -r "$tmpdir/alsa-lib.status"; then
+			libstatus=$(cat $tmpdir/alsa-lib.status)
+		fi
+	else
+		libtree=$tree
+		libstatus=$status
 	fi
-	f="$tmpdir/$tree/src/.libs/libasound.so.2.0.0"
+	if test -z "$libtree" -o -z "$libstatus"; then
+		echo >&2 "Package $package is not compiled."
+		echo >&2 "Cannot use alsa-lib."
+		exit 1
+	fi
+	f="$tmpdir/$libtree/src/.libs/libasound.so.2.0.0"
 	if test -r $f; then
 		do_cmd "export LD_PRELOAD=$f"
-		do_cmd "export ALSA_CONFIG_PATH=\"$tmpdir/$tree/src/conf/alsa.conf\""
+		do_cmd "export ALSA_CONFIG_PATH=\"$tmpdir/$libtree/src/conf/alsa.conf\""
 		do_cmd $runargs
 	else
 		echo >&2 "Unable to find alsa-lib.so."
