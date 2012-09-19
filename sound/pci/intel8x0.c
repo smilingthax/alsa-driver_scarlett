@@ -69,7 +69,7 @@ static int snd_joystick_port[SNDRV_CARDS] =
 #endif
 #endif
 #ifdef SUPPORT_MIDI
-static int snd_mpu_port[SNDRV_CARDS];
+static int snd_mpu_port[SNDRV_CARDS]; /* disabled */
 #endif
 
 MODULE_PARM(snd_index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
@@ -285,6 +285,7 @@ static struct pci_device_id snd_intel8x0_ids[] __devinitdata = {
 	{ 0x8086, 0x7195, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 440MX */
 	{ 0x1039, 0x7012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_SIS },	/* SI7012 */
 	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* NFORCE */
+	{ 0x764d, 0x1022, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* AMD8111 */
 	{ 0, }
 };
 
@@ -1391,6 +1392,7 @@ static struct shortname_table {
 	{ PCI_DEVICE_ID_INTEL_ICH3, "Intel ICH3" },
 	{ PCI_DEVICE_ID_SI_7012, "SiS SI7012" },
 	{ PCI_DEVICE_ID_NVIDIA_MCP_AUDIO, "NVidia NForce" },
+	{ 0x1022, "AMD-8111" },
 	{ 0, 0 },
 };
 

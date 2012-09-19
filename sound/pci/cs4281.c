@@ -268,7 +268,7 @@ MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
 #define BA0_SERC1_SO1EN		(1<<0)	/* Primary Output Port Enable */
 
 #define BA0_SERC2		0x042c	/* Serial Port Configuration 2 */
-#define BA0_SERC2_SI1F(x)	(((x)&7)>>1) */ Primary Input Port Format */
+#define BA0_SERC2_SI1F(x)	(((x)&7)>>1) /* Primary Input Port Format */
 #define BA0_SERC2_AC97		(1<<1)
 #define BA0_SERC2_SI1EN		(1<<0)	/* Primary Input Port Enable */
 
