@@ -1,6 +1,11 @@
 /*
  * usbus428.c - ALSA USB US-428 Driver
  *
+2003-11-03 Karsten Wiese
+	Version 0.3:
+	24Bit support. 
+	"arecord -D hw:1 -c 2 -r 48000 -M -f S24_3LE|aplay -D hw:1 -c 2 -r 48000 -M -f S24_3LE" works.
+
 2003-08-22 Karsten Wiese
 	Version 0.0.8:
 	Removed EZUSB Firmware. First Stage Firmwaredownload is now done by tascam-firmware downloader.
@@ -75,7 +80,7 @@
 
 
 MODULE_AUTHOR("Karsten Wiese <annabellesgarden@yahoo.de>");
-MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.2");
+MODULE_DESCRIPTION("TASCAM "NAME_ALLCAPS" Version 0.3");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{TASCAM(0x1604), "NAME_ALLCAPS"(0x8001) }}");
@@ -226,18 +231,14 @@ static snd_card_t* snd_us428_create_card(struct usb_device* device)
 {
 	int		dev;
 	snd_card_t*	card;
-
 	for (dev = 0; dev < SNDRV_CARDS; ++dev)
 		if (enable[dev] && !snd_us428_card_used[dev])
 			break;
-
 	if (dev >= SNDRV_CARDS)
 		return NULL;
-
 	card = snd_card_new(index[dev], id[dev], THIS_MODULE, sizeof(us428dev_t));
 	if (!card)
 		return NULL;
-
 	snd_us428_card_used[us428(card)->chip.index = dev] = 1;
 	card->private_free = snd_us428_card_private_free;
 	us428(card)->chip.dev = device;
@@ -245,7 +246,6 @@ static snd_card_t* snd_us428_create_card(struct usb_device* device)
 	init_MUTEX (&us428(card)->open_mutex);
 	INIT_LIST_HEAD(&us428(card)->chip.midi_list);
 	us428(card)->Seq04Complete = 1;
-	us428(card)->stride = 4;		// 16 Bit 
 	strcpy(card->driver, "USB "NAME_ALLCAPS"");
 	sprintf(card->shortname, "TASCAM "NAME_ALLCAPS"");
 	sprintf(card->longname, "%s (%x:%x if %d at %03d/%03d)",
@@ -258,25 +258,15 @@ static snd_card_t* snd_us428_create_card(struct usb_device* device)
 }
 
 
-static void* snd_us428_usb_probe(struct usb_device* device,
-				 struct usb_interface *intf,
-				 const struct usb_device_id* device_id)
+static void* snd_us428_usb_probe(struct usb_device* device, struct usb_interface *intf, const struct usb_device_id* device_id)
 {
 	int		err;
 	snd_card_t*	card;
-	
-			/* See if the device offered us matches what we can accept */
-	if (device->descriptor.idVendor != 0x1604 || device->descriptor.idProduct != 0x8001)
+	if (device->descriptor.idVendor != 0x1604 || device->descriptor.idProduct != 0x8001 ||
+	    !(card = snd_us428_create_card(device)))
 		return 0;
-
-	if (!(card = snd_us428_create_card(device)))
-		return 0;
-
-	if ((err = snd_usX2Y_hwdep_new(card, device)) < 0) {
-		snd_card_free(card);
-		return 0;
-	}
-	if ((err = snd_card_register(card)) < 0) {
+	if ((err = snd_usX2Y_hwdep_new(card, device)) < 0  ||
+	    (err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
 		return 0;
 	}
@@ -287,8 +277,7 @@ static void* snd_us428_usb_probe(struct usb_device* device,
 /*
  * new 2.5 USB kernel API
  */
-static int snd_us428_probe(struct usb_interface *intf,
-			   const struct usb_device_id *id)
+static int snd_us428_probe(struct usb_interface *intf, const struct usb_device_id *id)
 {
 	void *chip;
 	chip = snd_us428_usb_probe(interface_to_usbdev(intf), intf, id);
@@ -308,8 +297,7 @@ static void snd_us428_disconnect(struct usb_interface *intf)
 /*
  * 2.4 USB kernel API
  */
-static void *snd_us428_probe(struct usb_device *dev, unsigned int ifnum,
-			     const struct usb_device_id *id)
+static void *snd_us428_probe(struct usb_device *dev, unsigned int ifnum, const struct usb_device_id *id)
 {
 	return snd_us428_usb_probe(dev, usb_ifnum_to_if(dev, ifnum), id);
 }

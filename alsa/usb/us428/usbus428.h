@@ -14,12 +14,12 @@ typedef struct urb* purb_t;
 
 #define URBS_AsyncSeq 10
 #define URB_DataLen_AsyncSeq 32
-typedef struct{
+typedef struct {
 	urb_t*	urb[URBS_AsyncSeq];
 	char*   buffer;
 } snd_us428_AsyncSeq_t;
 
-typedef struct{
+typedef struct {
 	int	submitted;
 	int	len;
 	urb_t*	urb[0];
@@ -38,7 +38,8 @@ typedef struct {
 	int 			Seq04Complete;
 	wait_queue_head_t	In04WaitQueue;
 	snd_us428_AsyncSeq_t	AS04;
-	int			rate;
+	unsigned int		rate,
+				format;
 	int			refframes;
 	purb_t			play_urb_waiting[2];
 	int			pipe0Aframes[NRURBS][NRPACKS];
