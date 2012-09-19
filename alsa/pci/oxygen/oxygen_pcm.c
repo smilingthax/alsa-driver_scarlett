@@ -56,11 +56,15 @@ static struct snd_pcm_hardware oxygen_hardware[PCM_COUNT] = {
 			SNDRV_PCM_INFO_SYNC_START,
 		.formats = SNDRV_PCM_FMTBIT_S16_LE |
 			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_44100 |
+		.rates = SNDRV_PCM_RATE_32000 |
+			 SNDRV_PCM_RATE_44100 |
 			 SNDRV_PCM_RATE_48000 |
+			 SNDRV_PCM_RATE_64000 |
+			 SNDRV_PCM_RATE_88200 |
 			 SNDRV_PCM_RATE_96000 |
+			 SNDRV_PCM_RATE_176400 |
 			 SNDRV_PCM_RATE_192000,
-		.rate_min = 44100,
+		.rate_min = 32000,
 		.rate_max = 192000,
 		.channels_min = 2,
 		.channels_max = 2,
@@ -80,10 +84,10 @@ static struct snd_pcm_hardware oxygen_hardware[PCM_COUNT] = {
 			   SNDRV_PCM_FMTBIT_S32_LE,
 		.rates = SNDRV_PCM_RATE_44100 |
 			 SNDRV_PCM_RATE_48000 |
-			 SNDRV_PCM_RATE_96000 |
-			 SNDRV_PCM_RATE_192000,
+			 SNDRV_PCM_RATE_88200 |
+			 SNDRV_PCM_RATE_96000,
 		.rate_min = 44100,
-		.rate_max = 192000,
+		.rate_max = 96000,
 		.channels_min = 2,
 		.channels_max = 2,
 		.buffer_bytes_max = 256 * 1024,
@@ -195,6 +199,11 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 	}
 	snd_pcm_set_sync(substream);
 	chip->streams[channel] = substream;
+
+	mutex_lock(&chip->mutex);
+	chip->pcm_active |= 1 << channel;
+	mutex_unlock(&chip->mutex);
+
 	return 0;
 }
 
@@ -232,6 +241,12 @@ static int oxygen_close(struct snd_pcm_substream *substream)
 {
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
 	unsigned int channel = (unsigned int)substream->runtime->private_data;
+
+	mutex_lock(&chip->mutex);
+	chip->pcm_active &= ~(1 << channel);
+	if (channel == PCM_SPDIF || channel == PCM_MULTICH)
+		oxygen_update_spdif_source(chip);
+	mutex_unlock(&chip->mutex);
 
 	chip->streams[channel] = NULL;
 	return 0;
@@ -291,28 +306,6 @@ static unsigned int oxygen_play_channels(struct snd_pcm_hw_params *hw_params)
 		return OXYGEN_PLAY_CHANNELS_6;
 	case 8:
 		return OXYGEN_PLAY_CHANNELS_8;
-	}
-}
-
-static unsigned int oxygen_spdif_rate(struct snd_pcm_hw_params *hw_params)
-{
-	switch (params_rate(hw_params)) {
-	case 32000:
-		return 0x00003000;
-	case 44100:
-		return 0x00000000;
-	default: /* 48000 */
-		return 0x00002000;
-	case 64000:
-		return 0x0000b000;
-	case 88200:
-		return 0x00008000;
-	case 96000:
-		return 0x0000a000;
-	case 176400:
-		return 0x0000c000;
-	case 192000:
-		return 0x0000e000;
 	}
 }
 
@@ -377,7 +370,9 @@ static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x08);
 	spin_unlock_irq(&chip->reg_lock);
 
+	mutex_lock(&chip->mutex);
 	chip->model->set_adc_params(chip, hw_params);
+	mutex_unlock(&chip->mutex);
 	return 0;
 }
 
@@ -405,7 +400,9 @@ static int oxygen_rec_b_hw_params(struct snd_pcm_substream *substream,
 	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x10);
 	spin_unlock_irq(&chip->reg_lock);
 
+	mutex_lock(&chip->mutex);
 	chip->model->set_adc_params(chip, hw_params);
+	mutex_unlock(&chip->mutex);
 	return 0;
 }
 
@@ -447,11 +444,7 @@ static int oxygen_spdif_hw_params(struct snd_pcm_substream *substream,
 	oxygen_write32_masked(chip, OXYGEN_SPDIF_CONTROL,
 			      oxygen_rate(hw_params) << OXYGEN_SPDIF_OUT_RATE_SHIFT,
 			      OXYGEN_SPDIF_OUT_RATE_MASK);
-	oxygen_write32_masked(chip, OXYGEN_SPDIF_OUTPUT_BITS,
-			      oxygen_spdif_rate(hw_params),
-			      OXYGEN_SPDIF_OUTPUT_RATE_MASK);
-	oxygen_clear_bits16(chip, OXYGEN_PLAY_ROUTING, 0x00e0);
-	oxygen_set_bits32(chip, OXYGEN_SPDIF_CONTROL, OXYGEN_SPDIF_OUT_ENABLE);
+	oxygen_update_spdif_source(chip);
 	spin_unlock_irq(&chip->reg_lock);
 	return 0;
 }
@@ -478,9 +471,12 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 			      OXYGEN_I2S_RATE_MASK | OXYGEN_I2S_FORMAT_MASK);
 	oxygen_clear_bits16(chip, OXYGEN_PLAY_ROUTING, 0x001f);
 	oxygen_update_dac_routing(chip);
+	oxygen_update_spdif_source(chip);
 	spin_unlock_irq(&chip->reg_lock);
 
+	mutex_lock(&chip->mutex);
 	chip->model->set_dac_params(chip, hw_params);
+	mutex_unlock(&chip->mutex);
 	return 0;
 }
 

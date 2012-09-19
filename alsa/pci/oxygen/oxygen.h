@@ -1,6 +1,7 @@
 #ifndef OXYGEN_H_INCLUDED
 #define OXYGEN_H_INCLUDED
 
+#include <linux/mutex.h>
 #include <linux/spinlock.h>
 #include "oxygen_regs.h"
 
@@ -29,6 +30,7 @@ struct oxygen_model;
 struct oxygen {
 	unsigned long addr;
 	spinlock_t reg_lock;
+	struct mutex mutex;
 	struct snd_card *card;
 	struct pci_dev *pci;
 	struct snd_rawmidi *midi;
@@ -37,8 +39,10 @@ struct oxygen {
 	unsigned int interrupt_mask;
 	u8 dac_volume[8];
 	u8 dac_mute;
+	u8 pcm_active;
 	u8 pcm_running;
 	u8 dac_routing;
+	u8 spdif_playback_enable;
 	u8 ak4396_reg1;
 	u8 revision;
 	u8 has_2nd_ac97_codec;
@@ -74,6 +78,7 @@ void oxygen_pci_remove(struct pci_dev *pci);
 
 int oxygen_mixer_init(struct oxygen *chip);
 void oxygen_update_dac_routing(struct oxygen *chip);
+void oxygen_update_spdif_source(struct oxygen *chip);
 
 /* oxygen_pcm.c */
 
