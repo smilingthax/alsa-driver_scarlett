@@ -1535,17 +1535,11 @@ static void snd_via82xx_mixer_free_ac97(ac97_t *ac97)
 }
 
 static struct ac97_quirk ac97_quirks[] = {
-	{
+	{	/* FIXME: which codec? */
 		.vendor = 0x1106,
 		.device = 0x4161,
 		.name = "ASRock K7VT2",
 		.type = AC97_TUNE_HP_ONLY
-	},
-	{
-		.vendor = 0x1043,
-		.device = 0x80a1,
-		.name = "ASUS A7V8-X",
-		.type = AC97_TUNE_SWAP_SURROUND
 	},
 	{ } /* terminator */
 };
@@ -1970,6 +1964,7 @@ static int __devinit check_dxs_list(struct pci_dev *pci)
 		{ .vendor = 0x1043, .device = 0x80a1, .action = VIA_DXS_NO_VRA }, /* ASUS A7V8-X */
 		{ .vendor = 0x1297, .device = 0xc160, .action = VIA_DXS_ENABLE }, /* Shuttle SK41G */
 		{ .vendor = 0x1458, .device = 0xa002, .action = VIA_DXS_ENABLE }, /* Gigabyte GA-7VAXP */
+		{ .vendor = 0x14ff, .device = 0x0403, .action = VIA_DXS_ENABLE }, /* Twinhead mobo */
 		{ .vendor = 0x1462, .device = 0x7120, .action = VIA_DXS_ENABLE }, /* MSI KT4V */
 		{ } /* terminator */
 	};
