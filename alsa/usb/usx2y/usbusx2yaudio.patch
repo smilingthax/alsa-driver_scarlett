@@ -1,6 +1,16 @@
---- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2005-11-13 15:20:50.000000000 +0100
-+++ usbusx2yaudio.c	2005-11-13 19:07:00.000000000 +0100
-@@ -306,7 +306,11 @@
+--- ../../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2006-10-03 15:25:55.000000000 +0200
++++ usbusx2yaudio.c	2006-10-03 15:40:49.000000000 +0200
+@@ -67,6 +67,9 @@
+ #endif
+ 
+ 
++#define USB_2_6_18 (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 18))
++
++
+ static int usX2Y_urb_capt_retire(struct snd_usX2Y_substream *subs)
+ {
+ 	struct urb	*urb = subs->completed_urb;
+@@ -306,7 +309,11 @@
  	usX2Y_clients_stop(usX2Y);
  }
  
@@ -12,7 +22,39 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -349,8 +353,12 @@
+@@ -322,7 +329,11 @@
+ 		usX2Y_error_urb_status(usX2Y, subs, urb);
+ 		return;
+ 	}
+-	if (likely(urb->start_frame == usX2Y->wait_iso_frame))
++	if (likely((
++#if !USB_2_6_18
++			   0xFFFF &
++#endif
++			   urb->start_frame) == usX2Y->wait_iso_frame))
+ 		subs->completed_urb = urb;
+ 	else {
+ 		usX2Y_error_sequence(usX2Y, subs, urb);
+@@ -335,9 +346,15 @@
+ 		    atomic_read(&capsubs->state) >= state_PREPARED &&
+ 		    (playbacksubs->completed_urb ||
+ 		     atomic_read(&playbacksubs->state) < state_PREPARED)) {
+-			if (!usX2Y_usbframe_complete(capsubs, playbacksubs, urb->start_frame))
+-				usX2Y->wait_iso_frame += nr_of_packs();
+-			else {
++			if (!usX2Y_usbframe_complete(capsubs, playbacksubs, urb->start_frame)) {
++#if !USB_2_6_18
++				if (nr_of_packs() <= urb->start_frame &&
++				    urb->start_frame <= (2 * nr_of_packs() - 1))	// uhci and ohci
++					usX2Y->wait_iso_frame = urb->start_frame - nr_of_packs();
++				else
++#endif
++					usX2Y->wait_iso_frame +=  nr_of_packs();
++			} else {
+ 				snd_printdd("\n");
+ 				usX2Y_clients_stop(usX2Y);
+ 			}
+@@ -345,8 +362,12 @@
  	}
  }
  
@@ -25,7 +67,7 @@
  {
  	int s, u;
  	for (s = 0; s < 4; s++) {
-@@ -370,7 +378,11 @@
+@@ -366,7 +387,11 @@
  	usX2Y->prepare_subs = NULL;
  }
  
@@ -37,7 +79,7 @@
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -382,7 +394,11 @@
+@@ -378,7 +403,11 @@
  			wake_up(&usX2Y->prepare_wait_queue);
  		}
  
@@ -49,7 +91,30 @@
  }
  
  static void usX2Y_subs_prepare(struct snd_usX2Y_substream *subs)
-@@ -663,7 +679,11 @@
+@@ -491,7 +520,9 @@
+ 		if (subs != NULL && atomic_read(&subs->state) >= state_PREPARED)
+ 			goto start;
+ 	}
+-
++#if !USB_2_6_18
++	usX2Y->wait_iso_frame = -1;
++#endif
+  start:
+ 	usX2Y_subs_startup(subs);
+ 	for (i = 0; i < NRURBS; i++) {
+@@ -512,7 +543,11 @@
+ 				err = -EPIPE;
+ 				goto cleanup;
+ 			} else
++#if USB_2_6_18
+ 				if (i == 0)
++#else
++				if (0 > usX2Y->wait_iso_frame)
++#endif
+ 					usX2Y->wait_iso_frame = urb->start_frame;
+ 			urb->transfer_flags = 0;
+ 		} else {
+@@ -657,7 +692,11 @@
  };
  #define NOOF_SETRATE_URBS ARRAY_SIZE(SetRate48000)
  
@@ -61,7 +126,7 @@
  {
  	struct usX2Ydev *usX2Y = urb->context;
  	
-@@ -1023,10 +1043,18 @@
+@@ -1017,10 +1056,18 @@
  
  	if (0 > (err = usX2Y_audio_stream_new(card, 0xA, 0x8)))
  		return err;
