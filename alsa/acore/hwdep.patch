@@ -1,0 +1,12 @@
+--- hwdep.c	2003-05-30 15:19:39.000000000 +0200
++++ hwdep.c	2003-05-30 15:19:30.000000000 +0200
+@@ -292,7 +292,9 @@
+ 
+ static struct file_operations snd_hwdep_f_ops =
+ {
++#ifndef LINUX_2_2
+ 	.owner = 	THIS_MODULE,
++#endif
+ 	.llseek =	snd_hwdep_llseek,
+ 	.read = 	snd_hwdep_read,
+ 	.write =	snd_hwdep_write,
