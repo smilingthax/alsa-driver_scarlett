@@ -19,7 +19,17 @@
  
  module_param_array(index, int, NULL, 0444);
  MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
-@@ -1883,8 +1889,13 @@
+@@ -1012,7 +1018,9 @@
+ 			if (! u->urb)
+ 				goto out_of_memory;
+ 			u->urb->transfer_buffer = subs->syncbuf + i * 4;
++#ifdef HAVE_USB_BUFFERS
+ 			u->urb->transfer_dma = subs->sync_dma + i * 4;
++#endif
+ 			u->urb->transfer_buffer_length = 4;
+ 			u->urb->pipe = subs->syncpipe;
+ 			u->urb->transfer_flags = URB_ISO_ASAP |
+@@ -1884,8 +1892,13 @@
  			return -ENOMEM;
  		memcpy(buf, data, size);
  	}
@@ -61,7 +71,19 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -2440,7 +2458,11 @@
+@@ -2032,7 +2052,11 @@
+ 		subs->ops = audio_urb_ops_high_speed[stream];
+ 	snd_pcm_lib_preallocate_pages(as->pcm->streams[stream].substream,
+ 				      SNDRV_DMA_TYPE_CONTINUOUS,
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+ 				      snd_dma_continuous_data(GFP_NOIO),
++#else
++				      snd_dma_continuous_data(__GFP_WAIT),
++#endif
+ 				      64 * 1024, 128 * 1024);
+ 	snd_pcm_set_ops(as->pcm, stream,
+ 			stream == SNDRV_PCM_STREAM_PLAYBACK ?
+@@ -2441,7 +2465,11 @@
  		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING &&
  		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
  		    altsd->bNumEndpoints < 1 ||
