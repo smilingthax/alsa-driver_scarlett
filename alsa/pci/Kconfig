@@ -29,3 +29,9 @@ config SND_AU8830
         help
           Say 'Y' or 'M' to include support for Aureal Vortex 2 soundcards.
  
+config SND_BT87X
+	tristate "Bt87x Audio Capture"
+	depends on SND
+	help
+	  Say 'Y' or 'M' to include support for recording audio from TV cards
+	  based on Brooktree Bt878/Bt879 chips.
