@@ -1472,6 +1472,8 @@ CHECK_KERNEL_HEADER(linux/math64.h, [#include \"math64_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/regulator/consumer.h, [#include \"regulator_consumer_compat.h\"
 ])
+CHECK_KERNEL_HEADER(linux/dmi.h, [#include \"dmi_compat.h\"
+])
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
