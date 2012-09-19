@@ -686,6 +686,8 @@ CHECK_KERNEL_HEADER(linux/cuda.h, [#include <asm/cuda.h>
 ])
 CHECK_KERNEL_HEADER(linux/pmu.h, [#include <asm/pmu.h>
 ])
+CHECK_KERNEL_HEADER(linux/io.h, [#include <asm/io.h>
+])
 CHECK_KERNEL_HEADER(linux/moduleparam.h)
 CHECK_KERNEL_HEADER(linux/syscalls.h, [#include \"syscalls_26.h\"
 ])
