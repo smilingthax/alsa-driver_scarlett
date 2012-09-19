@@ -13,10 +13,8 @@ clean-files := cs4281.c es1968.c intel8x0.c maestro3.c
 
 obj-$(CONFIG_SND) += pdplus/
 
-snd-intel8x0m-objs := intel8x0m.o
 snd-hdspm-objs := hdspm.o
 
-obj-$(CONFIG_SND_INTEL8X0M) += snd-intel8x0m.o
 obj-$(CONFIG_SND_HDSPM) +=snd-hdspm.o
 
 #

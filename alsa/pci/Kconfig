@@ -6,14 +6,6 @@ config SND_PDPLUS
 	  Say 'Y' or 'M' to include support for Sek'D/Marian Prodif Plus
           soundcard.
 
-config SND_INTEL8X0M
-	tristate "Intel i8x0/MX440; AMD768/8111 modems (EXPERIMENTAL)"
-	depends on SND && EXPERIMENTAL
-	select SND_AC97_CODEC
-	help
-	  Say 'Y' or 'M' to include support for Intel8x0 and AMD768/8111 based
-	  modems.
-
 config SND_HDSPM
 	tristate "RME Hammerfall DSP MADI"
 	depends on SND
