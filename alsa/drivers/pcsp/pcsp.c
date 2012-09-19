@@ -27,6 +27,8 @@ static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
 static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
 static int enable = SNDRV_DEFAULT_ENABLE1;	/* Enable this card */
 
+module_param(index, int, 0444);
+MODULE_PARM_DESC(index, "Index value for pcsp soundcard.");
 module_param(id, charp, 0444);
 MODULE_PARM_DESC(id, "ID string for pcsp soundcard.");
 module_param(enable, bool, 0444);
