@@ -938,4 +938,16 @@ static inline void snd_pci_compat_unregister_driver(struct snd_compat_pci_driver
 #define pci_dev_put(x)
 #endif
 
+/* wrapper for getnstimeofday()
+ * it's needed for recent 2.6 kernels, too, due to lack of EXPORT_SYMBOL
+ */
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 14) && !defined(CONFIG_TIME_INTERPOLATION)
+#define getnstimeofday(x) do { \
+	struct timeval __x; \
+	do_gettimeofday(&__x); \
+	(x)->tv_sec = __x.tv_sec;	\
+	(x)->tv_nsec = __x.tv_usec * 1000; \
+} while (0)
+#endif
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
