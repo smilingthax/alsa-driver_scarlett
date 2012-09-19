@@ -290,6 +290,17 @@ int snd_compat_schedule_work(struct work_struct *work);
 #define schedule_work(w) snd_compat_schedule_work(w)
 #endif /* 2.5.45 */
 
+/* 2.5 new modules */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
+#define try_module_get(x) try_inc_mod_count(x)
+static inline void module_put(struct module *module)
+{
+	if (module)
+		__MOD_DEC_USE_COUNT(module);
+}
+#endif /* 2.5.0 */
+
+
 #include "amagic.h"
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
