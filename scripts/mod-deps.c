@@ -764,8 +764,8 @@ static void output_makefile1(const char *dir, int all)
 			}
 			add_printed(tempdep, ldep->dep->name);
 			printf(" %s.o", ldep->dep->name);
-		      __out1:
 		}
+	__out1:
 		free_subdep_list(list, num);
 		if (!first)
 			printf("\n");
@@ -775,8 +775,8 @@ static void output_makefile1(const char *dir, int all)
 			free(text);
 			tempdep->printflag = 1;
 		}
-	      __out1_1:
 	}
+ __out1_1:
 	if (nummacros == 0)
 		macroloop = 0;
 	else {
@@ -852,13 +852,13 @@ static void output_makefile1(const char *dir, int all)
 				}
 				add_printed(tempdep, ldep->dep->name);
 				printf(" %s.o", ldep->dep->name);
-			      __out2:
 			}
+		__out2:
 			free_subdep_list(list, num);
 			if (!first)
 				printf("\n");
-		      __out2_2:
 		}
+	__out2_2:
 		if (!mfirst) {
 			for (vidx = 0; vidx < nummacros; vidx++) {
 				makefileMacro *macro;

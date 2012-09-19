@@ -2049,6 +2049,7 @@ static int patch_ad1886(ac97_t * ac97)
 	/* Presario700 workaround */
 	/* for Jack Sense/SPDIF Register misetting causing */
 	snd_ac97_write_cache(ac97, AC97_AD_JACK_SPDIF, 0x0010);
+	return 0;
 }
 
 /*
