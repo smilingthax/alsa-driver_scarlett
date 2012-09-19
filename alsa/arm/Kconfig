@@ -10,4 +10,8 @@ config SND_S3C2410
 	  Say Y here if you want to use the inbuilt audio controller
 	  on the S3C2410 or S3C2440
 
+config SND_PXA2xx_I2SOUND
+	tristate
+	select SND_PCM
+
 endmenu
