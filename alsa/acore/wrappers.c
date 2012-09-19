@@ -4,6 +4,14 @@
 #include <linux/version.h>
 #include <linux/config.h>
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
+#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
+#define MODVERSIONS
+#include <linux/modversions.h>
+#include "sndversions.h"
+#endif
+#endif
+
 #ifndef CONFIG_HAVE_PCI_DEV_PRESENT
 #include <linux/pci.h>
 int snd_pci_dev_present(const struct pci_device_id *ids)
@@ -17,13 +25,6 @@ int snd_pci_dev_present(const struct pci_device_id *ids)
 }
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
-#if defined(CONFIG_MODVERSIONS) && !defined(__GENKSYMS__) && !defined(__DEPEND__)
-#define MODVERSIONS
-#include <linux/modversions.h>
-#include "sndversions.h"
-#endif
-#endif
 
 #include <linux/kmod.h>
 #include <linux/devfs_fs_kernel.h>
