@@ -744,9 +744,9 @@ static void snd_emu10k1_pcm_mixer_notify1(snd_card_t *card, snd_kcontrol_t *kctl
 {
 	snd_runtime_check(kctl != NULL, return);
 	if (activate)
-		kctl->access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+		kctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 	else
-		kctl->access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+		kctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 	snd_ctl_notify(card, SNDRV_CTL_EVENT_MASK_VALUE |
 		       SNDRV_CTL_EVENT_MASK_INFO, &kctl->id);
 }

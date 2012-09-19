@@ -930,7 +930,7 @@ static int snd_ymfpci_playback_spdif_open(snd_pcm_substream_t * substream)
 	chip->spdif_opened++;
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 
-	chip->spdif_pcm_ctl->access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+	chip->spdif_pcm_ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 	snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE |
 		       SNDRV_CTL_EVENT_MASK_INFO, &chip->spdif_pcm_ctl->id);
 	return 0;
@@ -1022,7 +1022,7 @@ static int snd_ymfpci_playback_spdif_close(snd_pcm_substream_t * substream)
 			  snd_ymfpci_readw(chip, YDSXGR_SPDIFOUTCTRL) & ~2);
 	snd_ymfpci_writew(chip, YDSXGR_SPDIFOUTSTATUS, chip->spdif_bits);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
-	chip->spdif_pcm_ctl->access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+	chip->spdif_pcm_ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
 	snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE |
 		       SNDRV_CTL_EVENT_MASK_INFO, &chip->spdif_pcm_ctl->id);
 	return snd_ymfpci_playback_close_1(substream);
