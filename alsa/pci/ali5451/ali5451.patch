@@ -1,0 +1,34 @@
+--- ali5451.c	2003-06-10 15:18:52.000000000 +0200
++++ ali5451.c.old	2003-06-10 15:18:39.000000000 +0200
+@@ -1963,6 +1963,7 @@
+ 	return;
+ }
+ 
++#ifndef PCI_OLD_SUSPEND
+ static int snd_ali_suspend(struct pci_dev *dev, u32 state)
+ {
+ 	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return -ENXIO);
+@@ -1975,6 +1976,18 @@
+ 	ali_resume(chip);
+ 	return 0;
+ }
++#else
++static void snd_ali_suspend(struct pci_dev *dev)
++{
++	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return);
++	ali_suspend(chip);
++}
++static void snd_ali_resume(struct pci_dev *dev)
++{
++	ali_t *chip = snd_magic_cast(ali_t, pci_get_drvdata(dev), return);
++	ali_resume(chip);
++}
++#endif
+ #endif /* CONFIG_PM */
+ 
+ static int snd_ali_free(ali_t * codec)
+@@ -2314,3 +2327,4 @@
+ __setup("snd-ali5451=", alsa_card_ali_setup);
+ 
+ #endif /* ifndef */
++EXPORT_NO_SYMBOLS;

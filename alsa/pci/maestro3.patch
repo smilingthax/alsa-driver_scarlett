@@ -1,0 +1,34 @@
+--- maestro3.c	2003-06-10 15:23:49.000000000 +0200
++++ maestro3.c.old	2003-06-10 15:23:56.000000000 +0200
+@@ -2458,6 +2458,7 @@
+ 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
+ }
+ 
++#ifndef PCI_OLD_SUSPEND
+ static int snd_m3_suspend(struct pci_dev *pci, u32 state)
+ {
+ 	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return -ENXIO);
+@@ -2470,6 +2471,18 @@
+ 	m3_resume(chip);
+ 	return 0;
+ }
++#else
++static void snd_m3_suspend(struct pci_dev *pci)
++{
++	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
++	m3_suspend(chip);
++}
++static void snd_m3_resume(struct pci_dev *pci)
++{
++	m3_t *chip = snd_magic_cast(m3_t, pci_get_drvdata(pci), return);
++	m3_resume(chip);
++}
++#endif
+ 
+ /* callback */
+ static int snd_m3_set_power_state(snd_card_t *card, unsigned int power_state)
+@@ -2769,3 +2782,4 @@
+ __setup("snd-maestro3=", alsa_card_maestro3_setup);
+ 
+ #endif /* ifndef MODULE */
++EXPORT_NO_SYMBOLS;
