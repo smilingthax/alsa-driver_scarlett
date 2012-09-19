@@ -17,6 +17,7 @@ config SND_PC98_CS4232
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
 	depends on SND && X86
+	select FW_LOADER
 	select SND_RAWMIDI
 	select SND_PCM
 	help

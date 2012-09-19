@@ -169,12 +169,10 @@
 #  define INITCODESIZE		sizeof(msndinit)
 #else
 #  ifndef CONFIG_MSNDCLAS_INIT_FILE
-#    define CONFIG_MSNDCLAS_INIT_FILE				\
-				"/etc/sound/msndinit.bin"
+#    define CONFIG_MSNDCLAS_INIT_FILE "turtlebeach/msndinit.bin"
 #  endif
 #  ifndef CONFIG_MSNDCLAS_PERM_FILE
-#    define CONFIG_MSNDCLAS_PERM_FILE				\
-				"/etc/sound/msndperm.bin"
+#    define CONFIG_MSNDCLAS_PERM_FILE "turtlebeach/msndperm.bin"
 #  endif
 #  define PERMCODEFILE		CONFIG_MSNDCLAS_PERM_FILE
 #  define INITCODEFILE		CONFIG_MSNDCLAS_INIT_FILE

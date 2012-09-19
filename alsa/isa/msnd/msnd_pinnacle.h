@@ -230,12 +230,10 @@
 #  define INITCODESIZE		sizeof(pndspini)
 #else
 #  ifndef CONFIG_MSNDPIN_INIT_FILE
-#    define CONFIG_MSNDPIN_INIT_FILE				\
-				"/etc/sound/pndspini.bin"
+#    define CONFIG_MSNDPIN_INIT_FILE "turtlebeach/pndspini.bin"
 #  endif
 #  ifndef CONFIG_MSNDPIN_PERM_FILE
-#    define CONFIG_MSNDPIN_PERM_FILE				\
-				"/etc/sound/pndsperm.bin"
+#    define CONFIG_MSNDPIN_PERM_FILE "turtlebeach/pndsperm.bin"
 #  endif
 #  define PERMCODEFILE		CONFIG_MSNDPIN_PERM_FILE
 #  define INITCODEFILE		CONFIG_MSNDPIN_INIT_FILE
