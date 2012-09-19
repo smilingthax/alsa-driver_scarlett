@@ -1445,6 +1445,24 @@ static inline unsigned char snd_pci_revision(struct pci_dev *pci)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 3)
+#if defined(__i386__)
+static inline unsigned long __ffs(unsigned long word)
+{
+	__asm__("bsfl %1,%0"
+		:"=r" (word)
+		:"rm" (word));
+	return word;
+}
+#else
+static inline unsigned long __ffs(unsigned long word)
+{
+	__asm__("need_asm_for_your_arch_in_adriver.h");
+	return word;
+}
+#endif
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
 #ifndef uninitialized_var
 #define uninitialized_var(x) x = x
