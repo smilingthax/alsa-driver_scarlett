@@ -24,6 +24,7 @@ kernelmodules=
 kmodlist=
 depmodbin=
 modinfobin=
+runargs=
 
 usage() {
 	echo "Usage: $0 [OPTION]..."
@@ -43,6 +44,7 @@ Operation modes:
   --tmpdir=dir		set temporary directory
   --kmodules[=mods]	reinstall kernel modules or install specified modules
   --kmodlist		list ALSA toplevel kernel modules
+  --run			run a program using fresh alsa-lib
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -149,6 +151,14 @@ do
 		package="alsa-$pkg"
 		packagedefault=
 		test -z "$url" && url="$baseurl$package"
+		;;
+	--run)
+		package="alsa-lib"
+		packagedefault=
+		test -z "$url" && url="$baseurl$package"
+		shift
+		runargs="$@"
+		break
 		;;
 	--tmpdir*)
 		case "$#,$1" in
@@ -397,9 +407,10 @@ do_compile() {
 	cmd="./gitcompile"
 	case "$package" in
 	alsa-driver)
-		if test -r acore/hwdep.o; then
-			cmd="make"
-		fi
+		test -r acore/hwdep.o && cmd="make"
+		;;
+	alsa-lib)
+		test -r src/.libs/libasound.so.2.0.0 && cmd="make"
 		;;
 	esac
 	echo "Running $cmd:"
@@ -889,6 +900,21 @@ if test -n "$kernelmodules"; then
 	do_cmd cd $tree
 	kernel_modules
 	exit 0
+fi
+if test -n "$runargs"; then
+	packagedir="alsa-lib.dir"
+	if test -r $packagedir; then
+		tree=$(cat $package.dir)
+	fi
+	f="$tmpdir/$tree/src/.libs/libasound.so.2.0.0"
+	if test -r $f; then
+		do_cmd "export LD_PRELOAD=$f"
+		do_cmd "export ALSA_CONFIG_PATH=\"$tmpdir/$tree/src/conf/alsa.conf\""
+		do_cmd $runargs
+	else
+		echo >&2 "Unable to find alsa-lib.so"
+		exit 1
+	fi
 fi
 
 exit 0
