@@ -1,0 +1,76 @@
+--- ../../alsa-kernel/pci/hda/hda_beep.c	2008-07-29 12:07:35.000000000 +0200
++++ hda_beep.c	2008-07-29 15:22:57.000000000 +0200
+@@ -1,3 +1,5 @@
++#define __NO_VERSION__
++#include "adriver.h"
+ /*
+  * Digital Beep Input Interface for HD-audio codec
+  *
+@@ -45,7 +47,11 @@
+ static int snd_hda_beep_event(struct input_dev *dev, unsigned int type,
+ 				unsigned int code, int hz)
+ {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
++	struct hda_beep *beep = dev->private;
++#else
+ 	struct hda_beep *beep = input_get_drvdata(dev);
++#endif
+ 
+ 	switch (code) {
+ 	case SND_BELL:
+@@ -84,7 +90,11 @@
+ 		return -ENOMEM;
+ 	snprintf(beep->phys, sizeof(beep->phys),
+ 		"card%d/codec#%d/beep0", codec->bus->card->number, codec->addr);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 15)
+ 	input_dev = input_allocate_device();
++#else
++	input_dev = kzalloc(sizeof(*input_dev), GFP_KERNEL);
++#endif
+ 
+ 	/* setup digital beep device */
+ 	input_dev->name = "HDA Digital PCBeep";
+@@ -98,15 +108,26 @@
+ 	input_dev->evbit[0] = BIT_MASK(EV_SND);
+ 	input_dev->sndbit[0] = BIT_MASK(SND_BELL) | BIT_MASK(SND_TONE);
+ 	input_dev->event = snd_hda_beep_event;
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
+ 	input_dev->dev.parent = &codec->bus->pci->dev;
+ 	input_set_drvdata(input_dev, beep);
++#else
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 15)
++	input_dev->cdev.dev = &codec->bus->pci->dev;
++#endif
++ 	input_dev->private = beep;
++#endif /* 2.6.22 */
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 15)
+ 	err = input_register_device(input_dev);
+ 	if (err < 0) {
+ 		input_free_device(input_dev);
+ 		kfree(beep);
+ 		return err;
+ 	}
++#else
++	input_register_device(input_dev);
++#endif
+ 
+ 	/* enable linear scale */
+ 	snd_hda_codec_write(codec, nid, 0,
+@@ -125,10 +146,16 @@
+ {
+ 	struct hda_beep *beep = codec->beep;
+ 	if (beep) {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 22)
+ 		cancel_work_sync(&beep->beep_work);
++#endif
+ 		flush_scheduled_work();
+ 
+ 		input_unregister_device(beep->dev);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 15)
++		kfree(beep->dev);
++#else
+ 		kfree(beep);
++#endif
+ 	}
+ }

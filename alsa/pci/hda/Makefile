@@ -5,7 +5,7 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := hda_codec.c
+clean-files := hda_codec.c hda_beep.c
 
 export-objs  := hda_codec.o
 
@@ -16,3 +16,4 @@ include $(SND_TOPDIR)/alsa-kernel/pci/hda/Makefile
 include $(SND_TOPDIR)/Rules.make
 
 hda_codec.c: hda_codec.patch $(SND_TOPDIR)/alsa-kernel/pci/hda/hda_codec.c
+hda_beep.c: hda_beep.patch $(SND_TOPDIR)/alsa-kernel/pci/hda/hda_beep.c
