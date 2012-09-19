@@ -66,8 +66,8 @@ static char *fxbuses[16] = {
 };
 
 static char *creative_ins[16] = {
-	/* 0x00 */ "AC'97 Left",
-	/* 0x01 */ "AC'97 Right",
+	/* 0x00 */ "AC97 Left",
+	/* 0x01 */ "AC97 Right",
 	/* 0x02 */ "TTL IEC958 Left",
 	/* 0x03 */ "TTL IEC958 Right",
 	/* 0x04 */ "Zoom Video Left",
@@ -85,8 +85,8 @@ static char *creative_ins[16] = {
 };
 
 static char *creative_outs[32] = {
-	/* 0x00 */ "AC'97 Left",
-	/* 0x01 */ "AC'97 Right",
+	/* 0x00 */ "AC97 Left",
+	/* 0x01 */ "AC97 Right",
 	/* 0x02 */ "Optical IEC958 Left",
 	/* 0x03 */ "Optical IEC958 Right",
 	/* 0x04 */ "Center",
@@ -1348,11 +1348,11 @@ int snd_emu10k1_init_efx(emu10k1_t *emu)
 		/* AC'97 Playback Volume */
 		VOLUME_ADDIN(icode, &ptr, playback + 0, EXTIN_AC97_L, gpr); gpr++;
 		VOLUME_ADDIN(icode, &ptr, playback + 1, EXTIN_AC97_R, gpr); gpr++;
-		snd_emu10k1_init_stereo_control(controls + i++, "AC'97 Playback Volume", gpr-2, 0);
+		snd_emu10k1_init_stereo_control(controls + i++, "AC97 Playback Volume", gpr-2, 0);
 		/* AC'97 Capture Volume */
 		VOLUME_ADDIN(icode, &ptr, capture + 0, EXTIN_AC97_L, gpr); gpr++;
 		VOLUME_ADDIN(icode, &ptr, capture + 1, EXTIN_AC97_R, gpr); gpr++;
-		snd_emu10k1_init_stereo_control(controls + i++, "AC'97 Capture Volume", gpr-2, 100);
+		snd_emu10k1_init_stereo_control(controls + i++, "AC97 Capture Volume", gpr-2, 100);
 	}
 	
 	if (emu->fx8010.extin_mask & (EXTIN_SPDIF_CD_L|EXTIN_SPDIF_CD_R)) {
