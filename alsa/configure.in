@@ -363,7 +363,7 @@ AC_DEFUN([CHECK_COMPILER], [
       ;;
     [[0-9]].[[0-9]]*)
       if test -z "$ac_compiler_version"; then
-        ac_compiler_version="$i"
+        ac_compiler_version=`echo $i | sed -e 's|[[^0-9]]*\([[0-9.]]\+\).*$|\1|'`
       fi
       ;;
     esac
