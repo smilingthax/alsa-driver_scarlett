@@ -735,7 +735,9 @@ static inline void snd_compat_vprintk(const char *fmt, va_list args)
 #endif
 
 #if defined(CONFIG_GAMEPORT) || defined(CONFIG_GAMEPORT_MODULE)
+#define wait_ms gameport_wait_ms
 #include <linux/gameport.h>
+#undef wait_ms
 #ifndef to_gameport_driver
 /* old gameport interface */
 struct snd_gameport {
@@ -755,6 +757,7 @@ static inline void snd_gameport_unregister_port(struct gameport *gp)
 	gameport_unregister_port(gp);
 	kfree(gp);
 }
+#undef gameport_unregister_port
 #define gameport_unregister_port(gp)	snd_gameport_unregister_port(gp)
 #define gameport_set_port_data(gp,r) (((struct snd_gameport *)(gp))->port_data = (r))
 #define gameport_get_port_data(gp) ((struct snd_gameport *)(gp))->port_data
