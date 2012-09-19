@@ -406,7 +406,7 @@ static int snd_pcm_info_ioctl32(unsigned int fd, unsigned int cmd, unsigned long
 	substream = pcm_file->substream;
 	if (! substream)
 		return -ENOTTY;
-	substream->no_mmap_ctrl = 1;
+	substream->no_compat_mmap = 1;
 	return filp->f_op->ioctl(filp->f_dentry->d_inode, filp, cmd, arg);
 }
 
