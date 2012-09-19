@@ -81,6 +81,7 @@ KERNEL_MAP = {}		# Initialized from ALSA_MAP
 COMMENT_MAP = [
 		('/drivers/mpu401'	,'MPU401 UART'),
 	 	('/include/asound_fm.h' ,'Raw OPL FM'),
+		('/include/opl3.h'	,'OPL3'),
 		('/drivers/opl3'	,'OPL3'),
 		('/drivers/opl4'	,'OPL4'),
 		('/include/vx_core.h'	,'Digigram VX core'),
