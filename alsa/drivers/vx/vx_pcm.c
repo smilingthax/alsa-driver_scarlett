@@ -1,7 +1,7 @@
 /* to be in alsa-driver-specfici code */
 #include <linux/config.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,18)
 static struct page *vmalloc_to_page(void *pageptr);
 #endif
 #define __NO_VERSION__
@@ -31,7 +31,6 @@ static struct page *vmalloc_to_page(void *pageptr);
 #include <sound/driver.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include <linux/pagemap.h>
 #include <sound/core.h>
 #include <sound/asoundef.h>
 #include <sound/pcm.h>
@@ -86,6 +85,7 @@ static int snd_pcm_free_vmalloc_buffer(snd_pcm_substream_t *subs)
 }
 
 
+#if 0 /* NOT USED */
 /*
  * vx_flush_read - read rest of bytes via normal transfer mode
  * @count: frames to read
@@ -122,6 +122,7 @@ static void vx_flush_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 		count -= 3;
 	}
 }
+#endif /* NOT USED */
 
 /*
  * vx_set_pcx_time - convert from the PC time to the RMH status time.
@@ -1143,7 +1144,7 @@ int snd_vx_pcm_new(vx_core_t *chip)
 }
 
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,4,18)
 
 static struct page *vmalloc_to_page(void *pageptr)
 {
