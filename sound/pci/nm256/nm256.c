@@ -1177,7 +1177,9 @@ snd_nm256_ac97_reset(ac97_t *ac97)
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	/* Reset the mixer.  'Tis magic!  */
 	snd_nm256_writeb(chip, 0x6c0, 1);
+#if 0 /* Dell latitude LS will lock up by this */
 	snd_nm256_writeb(chip, 0x6cc, 0x87);
+#endif
 	snd_nm256_writeb(chip, 0x6cc, 0x80);
 	snd_nm256_writeb(chip, 0x6cc, 0x0);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);

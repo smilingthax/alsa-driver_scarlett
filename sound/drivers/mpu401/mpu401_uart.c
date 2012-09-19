@@ -171,10 +171,11 @@ static void snd_mpu401_uart_cmd(mpu401_t * mpu, unsigned char cmd, int ack)
 static int snd_mpu401_uart_input_open(snd_rawmidi_substream_t * substream)
 {
 	mpu401_t *mpu;
+	int err;
 
 	mpu = snd_magic_cast(mpu401_t, substream->rmidi->private_data, return -ENXIO);
-	if (mpu->open_input)
-		mpu->open_input(mpu);
+	if (mpu->open_input && (err = mpu->open_input(mpu)) < 0)
+		return err;
 	if (! test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode)) {
 		snd_mpu401_uart_cmd(mpu, MPU401_RESET, 1);
 		snd_mpu401_uart_cmd(mpu, MPU401_ENTER_UART, 1);
@@ -187,10 +188,11 @@ static int snd_mpu401_uart_input_open(snd_rawmidi_substream_t * substream)
 static int snd_mpu401_uart_output_open(snd_rawmidi_substream_t * substream)
 {
 	mpu401_t *mpu;
+	int err;
 
 	mpu = snd_magic_cast(mpu401_t, substream->rmidi->private_data, return -ENXIO);
-	if (mpu->open_output)
-		mpu->open_output(mpu);
+	if (mpu->open_output && (err = mpu->open_output(mpu)) < 0)
+		return err;
 	if (! test_bit(MPU401_MODE_BIT_INPUT, &mpu->mode)) {
 		snd_mpu401_uart_cmd(mpu, MPU401_RESET, 1);
 		snd_mpu401_uart_cmd(mpu, MPU401_ENTER_UART, 1);
@@ -207,10 +209,10 @@ static int snd_mpu401_uart_input_close(snd_rawmidi_substream_t * substream)
 	mpu = snd_magic_cast(mpu401_t, substream->rmidi->private_data, return -ENXIO);
 	clear_bit(MPU401_MODE_BIT_INPUT, &mpu->mode);
 	mpu->substream_input = NULL;
-	if (mpu->close_input)
-		mpu->close_input(mpu);
 	if (! test_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode))
 		snd_mpu401_uart_cmd(mpu, MPU401_RESET, 0);
+	if (mpu->close_input)
+		mpu->close_input(mpu);
 	return 0;
 }
 
@@ -221,10 +223,10 @@ static int snd_mpu401_uart_output_close(snd_rawmidi_substream_t * substream)
 	mpu = snd_magic_cast(mpu401_t, substream->rmidi->private_data, return -ENXIO);
 	clear_bit(MPU401_MODE_BIT_OUTPUT, &mpu->mode);
 	mpu->substream_output = NULL;
-	if (mpu->close_output)
-		mpu->close_output(mpu);
 	if (! test_bit(MPU401_MODE_BIT_INPUT, &mpu->mode))
 		snd_mpu401_uart_cmd(mpu, MPU401_RESET, 0);
+	if (mpu->close_output)
+		mpu->close_output(mpu);
 	return 0;
 }
 

@@ -34,11 +34,12 @@ unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned in
 {
 	unsigned long flags;
 	unsigned int regptr, val;
+	unsigned int mask;
 
-	regptr = ((reg << 16) & PTR_ADDRESS_MASK) | (chn & PTR_CHANNELNUM_MASK);
+	mask = emu->audigy ? A_PTR_ADDRESS_MASK : PTR_ADDRESS_MASK;
+	regptr = ((reg << 16) & mask) | (chn & PTR_CHANNELNUM_MASK);
 
 	if (reg & 0xff000000) {
-		unsigned int mask;
 		unsigned char size, offset;
 		
 		size = (reg >> 24) & 0x3f;
@@ -64,11 +65,12 @@ void snd_emu10k1_ptr_write(emu10k1_t *emu, unsigned int reg, unsigned int chn, u
 {
 	unsigned int regptr;
 	unsigned long flags;
+	unsigned int mask;
 
-	regptr = ((reg << 16) & PTR_ADDRESS_MASK) | (chn & PTR_CHANNELNUM_MASK);
+	mask = emu->audigy ? A_PTR_ADDRESS_MASK : PTR_ADDRESS_MASK;
+	regptr = ((reg << 16) & mask) | (chn & PTR_CHANNELNUM_MASK);
 
 	if (reg & 0xff000000) {
-		unsigned int mask;
 		unsigned char size, offset;
 
 		size = (reg >> 24) & 0x3f;

@@ -55,6 +55,8 @@
 
 #define IP_TO_CP(ip) ((ip == 0) ? 0 : (((0x00001000uL | (ip & 0x00000FFFL)) << (((ip >> 12) & 0x000FL) + 4)) & 0xFFFF0000uL))
 
+// Audigy specify registers are prefixed with 'A_'
+
 /************************************************************************************************/
 /* PCI function 0 registers, address = <val> + PCIBASE0						*/
 /************************************************************************************************/
@@ -67,12 +69,18 @@
 						/* accessed.  For non per-channel registers the	*/
 						/* value should be set to zero.			*/
 #define PTR_ADDRESS_MASK	0x07ff0000	/* Register index				*/
+#define A_PTR_ADDRESS_MASK	0x0fff0000
 
 #define DATA			0x04		/* Indexed register set data register		*/
 
 #define IPR			0x08		/* Global interrupt pending register		*/
 						/* Clear pending interrupts by writing a 1 to	*/
 						/* the relevant bits and zero to the other bits	*/
+
+/* The next two interrupts are for the midi port on the Audigy Drive (A_MPU1)			*/
+#define IPR_A_MIDITRANSBUFEMPTY2 0x10000000	/* MIDI UART transmit buffer empty		*/
+#define IPR_A_MIDIRECVBUFEMPTY2	0x08000000	/* MIDI UART receive buffer empty		*/
+
 #define IPR_SAMPLERATETRACKER	0x01000000	/* Sample rate tracker lock status change	*/
 #define IPR_FXDSP		0x00800000	/* Enable FX DSP interrupts			*/
 #define IPR_FORCEINT		0x00400000	/* Force Sound Blaster interrupt		*/
@@ -123,6 +131,11 @@
 						/* Linux, and it will cause odd hardware 	*/
 						/* behavior and possibly random segfaults and	*/
 						/* lockups if enabled.				*/
+
+/* The next two interrupts are for the midi port on the Audigy Drive (A_MPU1)			*/
+#define INTE_A_MIDITXENABLE2	0x00020000	/* Enable MIDI transmit-buffer-empty interrupts	*/
+#define INTE_A_MIDIRXENABLE2	0x00010000	/* Enable MIDI receive-buffer-empty interrupts	*/
+
 
 #define INTE_SAMPLERATETRACKER	0x00002000	/* Enable sample rate tracker interrupts	*/
 						/* NOTE: This bit must always be enabled       	*/
@@ -202,6 +215,8 @@
 						/* Should be set to 1 when the EMU10K1 is	*/
 						/* completely initialized.			*/
 
+//For Audigy, MPU port move to 0x70-0x74 ptr register
+
 #define MUDATA			0x18		/* MPU401 data register (8 bits)       		*/
 
 #define MUCMD			0x19		/* MPU401 command register (8 bits)    		*/
@@ -212,6 +227,10 @@
 #define MUSTAT			MUCMD		/* MPU401 status register (8 bits)     		*/
 #define MUSTAT_IRDYN		0x80		/* 0 = MIDI data or command ACK			*/
 #define MUSTAT_ORDYN		0x40		/* 0 = MUDATA can accept a command or data	*/
+
+#define A_IOCFG			0x18		/* GPIO on Audigy card (16bits)			*/
+#define A_GPINPUT_MASK		0xff00
+#define A_GPOUTPUT_MASK		0x00ff
 
 #define TIMER			0x1a		/* Timer terminal count register		*/
 						/* NOTE: After the rate is changed, a maximum	*/
@@ -424,6 +443,8 @@
 #define TREMFRQ_DEPTH		0x0000ff00	/* Tremolo depth					*/
 						/* Signed 2's complement, with +/- 12dB extremes	*/
 
+#define TREMFRQ_FREQUENCY	0x000000ff	/* Tremolo LFO frequency				*/
+						/* ??Hz steps, maximum of ?? Hz.			*/
 #define FM2FRQ2 		0x1d		/* Vibrato amount and vibrato LFO frequency register	*/
 #define FM2FRQ2_DEPTH		0x0000ff00	/* Vibrato LFO vibrato depth				*/
 						/* Signed 2's complement, +/- one octave extremes	*/
@@ -463,6 +484,10 @@
 #define ADCCR_LCHANENABLE	0x00000008	/* Enables left channel for writing to the host		*/
 						/* NOTE: To guarantee phase coherency, both channels	*/
 						/* must be disabled prior to enabling both channels.	*/
+#define A_ADCCR_RCHANENABLE	0x00000020
+#define A_ADCCR_LCHANENABLE	0x00000010
+
+#define A_ADCCR_SAMPLERATE_MASK 0x0000000F      /* Audigy sample rate convertor output rate		*/
 #define ADCCR_SAMPLERATE_MASK	0x00000007	/* Sample rate convertor output rate			*/
 #define ADCCR_SAMPLERATE_48	0x00000000	/* 48kHz sample rate					*/
 #define ADCCR_SAMPLERATE_44	0x00000001	/* 44.1kHz sample rate					*/
@@ -472,6 +497,9 @@
 #define ADCCR_SAMPLERATE_16	0x00000005	/* 16kHz sample rate					*/
 #define ADCCR_SAMPLERATE_11	0x00000006	/* 11.025kHz sample rate				*/
 #define ADCCR_SAMPLERATE_8	0x00000007	/* 8kHz sample rate					*/
+#define A_ADCCR_SAMPLERATE_12	0x00000006	/* 12kHz sample rate					*/
+#define A_ADCCR_SAMPLERATE_11	0x00000007	/* 11.025kHz sample rate				*/
+#define A_ADCCR_SAMPLERATE_8	0x00000008	/* 8kHz sample rate					*/
 
 #define FXWC			0x43		/* FX output write channels register			*/
 						/* When set, each bit enables the writing of the	*/
@@ -559,6 +587,13 @@
 
 #define REG53			0x53		/* DO NOT PROGRAM THIS REGISTER!!! MAY DESTROY CHIP */
 
+#define A_DBG			 0x53
+#define A_DBG_SINGLE_STEP_ADDR	 0x00020000	/* Set to zero to start dsp */
+#define A_DBG_ZC		 0x40000000	/* zero tram counter */
+#define A_DBG_STEP_ADDR		 0x000003ff
+#define A_DBG_SATURATION_OCCURED 0x20000000
+#define A_DBG_SATURATION_ADDR	 0x0ffc0000
+
 #define SPCS0			0x54		/* SPDIF output Channel Status 0 register	*/
 
 #define SPCS1			0x55		/* SPDIF output Channel Status 1 register	*/
@@ -630,12 +665,51 @@
 #define ADCIDX_MASK		0x0000ffff	/* 16 bit index field				*/
 #define ADCIDX_IDX		0x10000064
 
+#define A_ADCIDX		0x63
+#define A_ADCIDX_IDX		0x10000063
+
 #define FXIDX			0x65		/* FX recording buffer index register		*/
 #define FXIDX_MASK		0x0000ffff	/* 16-bit value					*/
 #define FXIDX_IDX		0x10000065
 
+/* This is the MPU port on the card (via the game port)						*/
+#define A_MUDATA1		0x70
+#define A_MUCMD1		0x71
+#define A_MUSTAT1		A_MUCMD1
+
+/* This is the MPU port on the Audigy Drive 							*/
+#define A_MUDATA2		0x72
+#define A_MUCMD2		0x73
+#define A_MUSTAT2		A_MUCMD2	
+
+#define A_SPDIF_SAMPLERATE	0x76		/* Set the sample rate of SPDIF output		*/
+#define A_SPDIF_48000		0x00000000
+#define A_SPDIF_44100		0x00000040
+#define A_SPDIF_96000		0x00000080
+
+#define A_FXRT2			0x7c
+#define A_FXRT_CHANNELE		0x0000003f	/* Effects send bus number for channel's effects send A	*/
+#define A_FXRT_CHANNELF		0x00003f00	/* Effects send bus number for channel's effects send B	*/
+#define A_FXRT_CHANNELG		0x003f0000	/* Effects send bus number for channel's effects send C	*/
+#define A_FXRT_CHANNELH		0x3f000000	/* Effects send bus number for channel's effects send D	*/
+
+#define A_SENDAMOUNTS		0x7d
+#define A_FXSENDAMOUNT_E_MASK	0xFF000000
+#define A_FXSENDAMOUNT_F_MASK	0x00FF0000
+#define A_FXSENDAMOUNT_G_MASK	0x0000FF00
+#define A_FXSENDAMOUNT_H_MASK	0x000000FF
+
+/* The send amounts for this one are the same as used with the emu10k1 */
+#define A_FXRT1			0x7e
+#define A_FXRT_CHANNELA		0x0000003f
+#define A_FXRT_CHANNELB		0x00003f00
+#define A_FXRT_CHANNELC		0x003f0000
+#define A_FXRT_CHANNELD		0x3f000000
+
+
 /* Each FX general purpose register is 32 bits in length, all bits are used			*/
 #define FXGPREGBASE		0x100		/* FX general purpose registers base       	*/
+#define A_FXGPREGBASE		0x400		/* Audigy GPRs, 0x400 to 0x5ff			*/
 
 /* Tank audio data is logarithmically compressed down to 16 bits before writing to TRAM and is	*/
 /* decompressed back to 20 bits on a read.  There are a total of 160 locations, the last 32	*/
@@ -660,6 +734,16 @@
 #define HIWORD_OPCODE_MASK	0x00f00000	/* Instruction opcode				*/
 #define HIWORD_RESULT_MASK	0x000ffc00	/* Instruction result				*/
 #define HIWORD_OPA_MASK		0x000003ff	/* Instruction operand A			*/
+
+
+/* Audigy Soundcard have a different instruction format */
+#define A_MICROCODEBASE		0x600
+#define A_LOWORD_OPY_MASK	0x000007ff
+#define A_LOWORD_OPX_MASK	0x007ff000
+#define A_HIWORD_OPCODE_MASK	0x0f000000
+#define A_HIWORD_RESULT_MASK	0x007ff000
+#define A_HIWORD_OPA_MASK	0x000007ff
+
 
 /* ------------------- STRUCTURES -------------------- */
 
@@ -713,7 +797,7 @@ struct _snd_emu10k1_pcm {
 };
 
 typedef struct {
-	unsigned short send_routing[3];
+	unsigned long send_routing[3];
 	unsigned char send_volume[3][4];
 	unsigned short attn[3];
 	snd_kcontrol_t *ctl_send_routing;
@@ -801,6 +885,21 @@ typedef struct {
 
 #define emu10k1_gpr_ctl(n) list_entry(n, snd_emu10k1_fx8010_ctl_t, list)
 
+typedef struct {
+	struct _snd_emu10k1 *emu;
+	snd_rawmidi_t *rmidi;
+	snd_rawmidi_substream_t *substream_input;
+	snd_rawmidi_substream_t *substream_output;
+	unsigned int midi_mode;
+	spinlock_t input_lock;
+	spinlock_t output_lock;
+	spinlock_t open_lock;
+	int tx_enable, rx_enable;
+	int port_data, port_stat;
+	int ipr_tx, ipr_rx;
+	void (*interrupt)(emu10k1_t *emu, unsigned int status);
+} emu10k1_midi_t;
+
 struct _snd_emu10k1 {
 	int irq;
 
@@ -808,6 +907,7 @@ struct _snd_emu10k1 {
 	struct resource *res_port;
 	int APS: 1,				/* APS flag */
 	    tos_link: 1;			/* tos link detected */
+	unsigned int audigy;			/* is Audigy? */
 	unsigned int revision;			/* chip revision */
 	unsigned int serial;			/* serial number */
 	unsigned short model;			/* subsystem id */
@@ -830,6 +930,7 @@ struct _snd_emu10k1 {
 	unsigned int spdif_bits[3];		/* s/pdif out setup */
 
 	snd_emu10k1_fx8010_t fx8010;		/* FX8010 info */
+	int gpr_base;
 	
 	ac97_t *ac97;
 
@@ -856,7 +957,6 @@ struct _snd_emu10k1 {
 	void (*capture_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*capture_mic_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*capture_efx_interrupt)(emu10k1_t *emu, unsigned int status);
-	void (*mpu401_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*timer_interrupt)(emu10k1_t *emu);
 	void (*spdif_interrupt)(emu10k1_t *emu, unsigned int status);
 	void (*dsp_interrupt)(emu10k1_t *emu);
@@ -865,13 +965,8 @@ struct _snd_emu10k1 {
 	snd_pcm_substream_t *pcm_capture_mic_substream;
 	snd_pcm_substream_t *pcm_capture_efx_substream;
 
-	snd_rawmidi_t *rmidi;
-	snd_rawmidi_substream_t *midi_substream_input;
-	snd_rawmidi_substream_t *midi_substream_output;
-	unsigned int midi_mode;
-	spinlock_t midi_input_lock;
-	spinlock_t midi_output_lock;
-	spinlock_t midi_open_lock;
+	emu10k1_midi_t midi;
+	emu10k1_midi_t midi2; /* for audigy */
 
 	unsigned int efx_voices_mask;
 
@@ -909,8 +1004,8 @@ int snd_emu10k1_fx8010_tram_setup(emu10k1_t *emu, u32 size);
 /* I/O functions */
 unsigned int snd_emu10k1_ptr_read(emu10k1_t * emu, unsigned int reg, unsigned int chn);
 void snd_emu10k1_ptr_write(emu10k1_t *emu, unsigned int reg, unsigned int chn, unsigned int data);
-static inline void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data) { snd_emu10k1_ptr_write(emu, MICROCODEBASE + pc, 0, data); }
-static inline unsigned int snd_emu10k1_efx_read(emu10k1_t *emu, unsigned int pc) { return snd_emu10k1_ptr_read(emu, MICROCODEBASE + pc, 0); }
+void snd_emu10k1_efx_write(emu10k1_t *emu, unsigned int pc, unsigned int data);
+unsigned int snd_emu10k1_efx_read(emu10k1_t *emu, unsigned int pc);
 void snd_emu10k1_intr_enable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_intr_disable(emu10k1_t *emu, unsigned int intrenb);
 void snd_emu10k1_voice_intr_enable(emu10k1_t *emu, unsigned int voicenum);
@@ -939,7 +1034,8 @@ int snd_emu10k1_voice_alloc(emu10k1_t *emu, emu10k1_voice_type_t type, int pair,
 int snd_emu10k1_voice_free(emu10k1_t *emu, emu10k1_voice_t *pvoice);
 
 /* MIDI uart */
-int snd_emu10k1_midi(emu10k1_t * emu, int device, snd_rawmidi_t ** rrawmidi);
+int snd_emu10k1_midi(emu10k1_t * emu);
+int snd_emu10k1_audigy_midi(emu10k1_t * emu);
 
 /* proc interface */
 int snd_emu10k1_proc_init(emu10k1_t * emu);
@@ -1006,11 +1102,16 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define GPR_NOISE1	0x59		/* noise source */
 #define GPR_IRQ		0x5a		/* IRQ register */
 #define GPR_DBAC	0x5b		/* TRAM Delay Base Address Counter */
-#define GPR(x)		(0x100 + (x))	/* free GPRs: x = 0x00 - 0xff */
-#define ITRAM_DATA(x)	(0x200 + (x))	/* x = 0x00 - 0x7f */
-#define ETRAM_DATA(x)	(0x280 + (x))	/* x = 0x00 - 0x1f */
-#define ITRAM_ADDR(x)	(0x300 + (x))	/* x = 0x00 - 0x7f */
-#define ETRAM_ADDR(x)	(0x380 + (x))	/* x = 0x00 - 0x1f */
+#define GPR(x)		(FXGPREGBASE + (x))	/* free GPRs: x = 0x00 - 0xff */
+#define ITRAM_DATA(x)	(TANKMEMDATAREGBASE + (x))	/* x = 0x00 - 0x7f */
+#define ETRAM_DATA(x)	(TANKMEMDATAREGBASE + 80 + (x))	/* x = 0x00 - 0x1f */
+#define ITRAM_ADDR(x)	(TANKMEMADDRREGBASE + (x))	/* x = 0x00 - 0x7f */
+#define ETRAM_ADDR(x)	(TANKMEMADDRREGBASE + 80 + (x))	/* x = 0x00 - 0x1f */
+
+#define A_FXBUS(x)	(0x00 + (x))	/* x = 0x00 - 0x3f? */
+#define A_EXTIN(x)	(0x40 + (x))	/* x = 0x00 - 0x1f? */
+#define A_EXTOUT(x)	(0x60 + (x))	/* x = 0x00 - 0x1f? */
+#define A_GPR(x)	(A_FXGPREGBASE + (x))
 
 /* cc_reg constants */
 #define CC_REG_NORMALIZED C_00000001
@@ -1064,6 +1165,24 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define EXTOUT_MIC_CAP	   0x0c	/* MIC Capture buffer */
 #define EXTOUT_ACENTER	   0x11 /* Analog Center */
 #define EXTOUT_ALFE	   0x12 /* Analog LFE */
+
+/* Audigy Inputs */
+#define A_EXTIN_AC97_L		0x00	/* AC'97 capture channel - left */
+#define A_EXTIN_AC97_R		0x01	/* AC'97 capture channel - right */
+#define A_EXTIN_SPDIF_CD_L	0x02	/* digital CD left */
+#define A_EXTIN_SPDIF_CD_R	0x03	/* digital CD left */
+
+/* Audigiy Outputs */
+#define A_EXTOUT_HEADPHONE_L	0x04	/* headphone audigy drive */
+#define A_EXTOUT_HEADPHONE_R	0x05
+#define A_EXTOUT_FRONT_L	0x08	/* front left */
+#define A_EXTOUT_FRONT_R	0x09	/* front right */
+#define A_EXTOUT_CENTER		0x0a	/* center */
+#define A_EXTOUT_LFE		0x0b	/* LFE */
+#define A_EXTOUT_REAR_L		0x0e	/* rear left */
+#define A_EXTOUT_REAR_R		0x0f	/* rear right */
+#define A_EXTOUT_ADC_CAP_L	0x16	/* ADC capture buffer left */
+#define A_EXTOUT_ADC_CAP_R	0x17	/* ADC capture buffer right */
 
 /* definitions for debug register */
 #define EMU10K1_DBG_ZC			0x80000000	/* zero tram counter */

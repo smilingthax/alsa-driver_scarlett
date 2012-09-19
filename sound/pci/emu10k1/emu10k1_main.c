@@ -74,9 +74,20 @@ void snd_emu10k1_voice_init(emu10k1_t * emu, int ch)
 	snd_emu10k1_ptr_write(emu, ATKHLDV, ch, 0);
 	snd_emu10k1_ptr_write(emu, ENVVOL, ch, 0);
 	snd_emu10k1_ptr_write(emu, ENVVAL, ch, 0);
+
+	/* Audigy extra stuffs */
+	if (emu->audigy) {
+		snd_emu10k1_ptr_write(emu, 0x4c, ch, 0); /* ?? */
+		snd_emu10k1_ptr_write(emu, 0x4d, ch, 0); /* ?? */
+		snd_emu10k1_ptr_write(emu, 0x4e, ch, 0); /* ?? */
+		snd_emu10k1_ptr_write(emu, 0x4f, ch, 0); /* ?? */
+		snd_emu10k1_ptr_write(emu, A_FXRT1, ch, 0x03020100);
+		snd_emu10k1_ptr_write(emu, A_FXRT2, ch, 0x3f3f3f3f);
+		snd_emu10k1_ptr_write(emu, A_SENDAMOUNTS, ch, 0);
+	}
 }
 
-static int snd_emu10k1_init(emu10k1_t * emu, int enable_ir)
+static int __devinit snd_emu10k1_init(emu10k1_t * emu, int enable_ir)
 {
 	int ch, idx, err;
 	unsigned int silent_page;
@@ -101,6 +112,11 @@ static int snd_emu10k1_init(emu10k1_t * emu, int enable_ir)
 	snd_emu10k1_ptr_write(emu, CLIEH, 0, 0);
 	snd_emu10k1_ptr_write(emu, SOLEL, 0, 0);
 	snd_emu10k1_ptr_write(emu, SOLEH, 0, 0);
+
+	if (emu->audigy){
+		snd_emu10k1_ptr_write(emu, 0x5e, 0, 0xf00); /* ?? */
+		snd_emu10k1_ptr_write(emu, 0x5f, 0, 0x3); /* ?? */
+	}
 
 	/* init envelope engine */
 	for (ch = 0; ch < NUM_G; ch++) {
@@ -165,7 +181,9 @@ static int snd_emu10k1_init(emu10k1_t * emu, int enable_ir)
 	 *   Lock Sound Memory = 0
 	 *   Auto Mute = 1
 	 */
-	if (emu->model == 0x20 ||
+	if (emu->audigy)
+		outl(HCFG_AUTOMUTE | HCFG_JOYENABLE, emu->port + HCFG);
+	else if (emu->model == 0x20 ||
 	    emu->model == 0xc400 ||
 	    (emu->model == 0x21 && emu->revision < 6))
 		outl(HCFG_LOCKTANKCACHE_MASK | HCFG_AUTOMUTE, emu->port + HCFG);
@@ -253,7 +271,10 @@ static int snd_emu10k1_done(emu10k1_t * emu)
 	snd_emu10k1_ptr_write(emu, ADCBA, 0, 0);
 	snd_emu10k1_ptr_write(emu, TCBS, 0, TCBS_BUFFSIZE_16K);
 	snd_emu10k1_ptr_write(emu, TCB, 0, 0);
-	snd_emu10k1_ptr_write(emu, DBG, 0, 0x8000);
+	if (emu->audigy)
+		snd_emu10k1_ptr_write(emu, A_DBG, 0, A_DBG_SINGLE_STEP_ADDR);
+	else
+		snd_emu10k1_ptr_write(emu, DBG, 0, 0x8000);
 
 	/* disable channel interrupt */
 	snd_emu10k1_ptr_write(emu, CLIEL, 0, 0);
@@ -419,7 +440,7 @@ static void snd_emu10k1_ecard_setadcgain(emu10k1_t * emu,
 	snd_emu10k1_ecard_write(emu, emu->ecard_ctrl);
 }
 
-static int snd_emu10k1_ecard_init(emu10k1_t * emu)
+static int __devinit snd_emu10k1_ecard_init(emu10k1_t * emu)
 {
 	unsigned int hc_value;
 
@@ -494,7 +515,7 @@ static int snd_emu10k1_dev_free(snd_device_t *device)
 	return snd_emu10k1_free(emu);
 }
 
-int snd_emu10k1_create(snd_card_t * card,
+int __devinit snd_emu10k1_create(snd_card_t * card,
 		       struct pci_dev * pci,
 		       unsigned short extin_mask,
 		       unsigned short extout_mask,
@@ -518,7 +539,10 @@ int snd_emu10k1_create(snd_card_t * card,
 		snd_printk("architecture does not support 31bit PCI busmaster DMA\n");
 		return -ENXIO;
 	}
-	pci_set_dma_mask(pci, 0x7fffffff);
+	if (pci->driver_data)
+		pci_set_dma_mask(pci, 0xffffffff); /* audigy */
+	else
+		pci_set_dma_mask(pci, 0x7fffffff);
 
 	emu = snd_magic_kcalloc(emu10k1_t, 0, GFP_KERNEL);
 	if (emu == NULL)
@@ -538,6 +562,12 @@ int snd_emu10k1_create(snd_card_t * card,
 	emu->synth = NULL;
 	emu->get_synth_voice = NULL;
 	emu->port = pci_resource_start(pci, 0);
+
+	emu->audigy = (int)pci->driver_data;
+	if (emu->audigy)
+		emu->gpr_base = A_FXGPREGBASE;
+	else
+		emu->gpr_base = FXGPREGBASE;
 
 	if ((emu->res_port = request_region(emu->port, 0x20, "EMU10K1")) == NULL) {
 		snd_emu10k1_free(emu);
@@ -588,10 +618,18 @@ int snd_emu10k1_create(snd_card_t * card,
 	}
 	
 	emu->fx8010.fxbus_mask = 0x303f;
-	if (extin_mask == 0)
-		extin_mask = 0x1fcf;
-	if (extout_mask == 0)
-		extout_mask = 0x3fff;
+	if (extin_mask == 0) {
+		if (emu->audigy)
+			extin_mask = 0x000f;
+		else
+			extin_mask = 0x1fcf;
+	}
+	if (extout_mask == 0) {
+		if (emu->audigy)
+			extout_mask = 0x3fff;
+		else
+			extout_mask = 0x3fff;
+	}
 	emu->fx8010.extin_mask = extin_mask;
 	emu->fx8010.extout_mask = extout_mask;
 
@@ -634,35 +672,3 @@ EXPORT_SYMBOL(snd_emu10k1_voice_free);
 /* io.c */
 EXPORT_SYMBOL(snd_emu10k1_ptr_read);
 EXPORT_SYMBOL(snd_emu10k1_ptr_write);
-
-#if 0
-
-/*
- *  INIT part
- */
-
-static int __init alsa_emu10k1_init(void)
-{
-	return 0;
-}
-
-static void __exit alsa_emu10k1_exit(void)
-{
-}
-
-module_init(alsa_emu10k1_init)
-module_exit(alsa_emu10k1_exit)
-
-EXPORT_SYMBOL(snd_emu10k1_create);
-EXPORT_SYMBOL(snd_emu10k1_mixer);
-/* emufx.c */
-EXPORT_SYMBOL(snd_emu10k1_fx8010_new);
-EXPORT_SYMBOL(snd_emu10k1_fx8010_pcm);
-/* emumpu401.c */
-EXPORT_SYMBOL(snd_emu10k1_midi);
-/* emupcm.c */
-EXPORT_SYMBOL(snd_emu10k1_pcm);
-EXPORT_SYMBOL(snd_emu10k1_pcm_mic);
-EXPORT_SYMBOL(snd_emu10k1_pcm_efx);
-
-#endif /* ALSA_BUILD */

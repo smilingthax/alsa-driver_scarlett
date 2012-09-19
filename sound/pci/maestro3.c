@@ -840,7 +840,6 @@ struct snd_m3 {
 	/* for storing reset state..*/
 	u8 reset_state;
 
-	int global_dsp_speed;
 	int external_amp;
 	int amp_gpio;
 
@@ -2216,7 +2215,6 @@ snd_m3_amp_enable(m3_t *chip, int enable)
 	polarity = polarity << chip->amp_gpio;
 	gpo = 1 << chip->amp_gpio;
 
-	printk("gpo = 0x%x, polarity = 0x%x\n", gpo, polarity);
 	outw(~gpo, io + GPIO_MASK);
 
 	outw(inw(io + GPIO_DIRECTION) | gpo,
@@ -2701,7 +2699,7 @@ module_exit(alsa_card_m3_exit)
 
 #ifndef MODULE
 
-/* format is: snd-maestro3=snd_enable,snd_index,snd_id,snd_external_amp */
+/* format is: snd-maestro3=snd_enable,snd_index,snd_id,snd_external_amp,snd_amp_gpio */
 
 static int __init alsa_card_maestro3_setup(char *str)
 {
@@ -2712,7 +2710,8 @@ static int __init alsa_card_maestro3_setup(char *str)
 	(void)(get_option(&str,&snd_enable[nr_dev]) == 2 &&
 	       get_option(&str,&snd_index[nr_dev]) == 2 &&
 	       get_id(&str,&snd_id[nr_dev]) == 2 &&
-	       get_option(&str,&snd_external_amp[nr_dev]) == 2);
+	       get_option(&str,&snd_external_amp[nr_dev]) == 2 &&
+	       get_option(&str,&snd_amp_gpio[nr_dev]) == 2);
 	nr_dev++;
 	return 1;
 }

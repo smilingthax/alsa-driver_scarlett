@@ -110,15 +110,24 @@ static void snd_emu10k1_proc_read(snd_info_entry_t *entry,
 	
 	snd_iprintf(buffer, "EMU10K1\n\n");
 	val = snd_emu10k1_ptr_read(emu, FXRT, 0);
-	snd_iprintf(buffer, "Card                  : %s\n", emu->APS ? "EMU APS" : "Creative");
+	snd_iprintf(buffer, "Card                  : %s\n",
+		    emu->audigy ? "Audigy" : (emu->APS ? "EMU APS" : "Creative"));
 	snd_iprintf(buffer, "Internal TRAM (words) : 0x%x\n", emu->fx8010.itram_size);
 	snd_iprintf(buffer, "External TRAM (words) : 0x%x\n", emu->fx8010.etram_size);
 	snd_iprintf(buffer, "\n");
-	snd_iprintf(buffer, "Effect Send Routing   : A=%i, B=%i, C=%i, D=%i\n",
-				(val & FXRT_CHANNELA) >> 16,
-				(val & FXRT_CHANNELB) >> 20,
-				(val & FXRT_CHANNELC) >> 24,
-				(val & FXRT_CHANNELD) >> 28);
+	if (emu->audigy) {
+		snd_iprintf(buffer, "Effect Send Routing   : A=%i, B=%i, C=%i, D=%i\n",
+			    val & 0x3f,
+			    (val >> 8) & 0x3f,
+			    (val >> 16) & 0x3f,
+			    (val >> 24) & 0x3f);
+	} else {
+		snd_iprintf(buffer, "Effect Send Routing   : A=%i, B=%i, C=%i, D=%i\n",
+			    (val >> 16) & 0x0f,
+			    (val >> 20) & 0x0f,
+			    (val >> 24) & 0x0f,
+			    (val >> 28) & 0x0f);
+	}
 	snd_iprintf(buffer, "\nCaptured FX Outputs   :\n");
 	for (idx = 0; idx < 32; idx++) {
 		if (emu->efx_voices_mask & (1 << idx))
@@ -151,14 +160,24 @@ static void snd_emu10k1_proc_acode_read(snd_info_entry_t *entry,
 			
 		low = snd_emu10k1_efx_read(emu, pc * 2);
 		high = snd_emu10k1_efx_read(emu, pc * 2 + 1);
-		snd_iprintf(buffer, "    OP(0x%02x, 0x%03x, 0x%03x, 0x%03x, 0x%03x) /* 0x%04x: 0x%08x%08x */\n",
-					(high >> 20) & 0x0f,
-					(high >> 10) & 0x3ff,
-					(high >> 0) & 0x3ff,
-					(low >> 10) & 0x3ff,
-					(low >> 0) & 0x3ff,
-					pc,
-					high, low);
+		if (emu->audigy)
+			snd_iprintf(buffer, "    OP(0x%02x, 0x%03x, 0x%03x, 0x%03x, 0x%03x) /* 0x%04x: 0x%08x%08x */\n",
+				    (high >> 24) & 0x0f,
+				    (high >> 12) & 0x7ff,
+				    (high >> 0) & 0x7ff,
+				    (low >> 12) & 0x7ff,
+				    (low >> 0) & 0x7ff,
+				    pc,
+				    high, low);
+		else
+			snd_iprintf(buffer, "    OP(0x%02x, 0x%03x, 0x%03x, 0x%03x, 0x%03x) /* 0x%04x: 0x%08x%08x */\n",
+				    (high >> 20) & 0x0f,
+				    (high >> 10) & 0x3ff,
+				    (high >> 0) & 0x3ff,
+				    (low >> 10) & 0x3ff,
+				    (low >> 0) & 0x3ff,
+				    pc,
+				    high, low);
 	}
 }
 
@@ -175,13 +194,15 @@ static long snd_emu10k1_fx8010_read(snd_info_entry_t *entry, void *file_private_
 	unsigned int offset;
 	
 	if (!strcmp(entry->name, "fx8010_tram_addr")) {
+		if (emu->audigy) return -EINVAL;
 		offset = TANKMEMADDRREGBASE;
 	} else if (!strcmp(entry->name, "fx8010_tram_data")) {
+		if (emu->audigy) return -EINVAL;
 		offset = TANKMEMDATAREGBASE;
 	} else if (!strcmp(entry->name, "fx8010_code")) {
-		offset = MICROCODEBASE;
+		offset = emu->audigy ? A_MICROCODEBASE : MICROCODEBASE;
 	} else {
-		offset = FXGPREGBASE;
+		offset = emu->audigy ? A_FXGPREGBASE : FXGPREGBASE;
 	}
 	size = count;
 	if (file->f_pos + size > entry->size)
@@ -210,7 +231,7 @@ static struct snd_info_entry_ops snd_emu10k1_proc_ops_fx8010 = {
 	read: snd_emu10k1_fx8010_read,
 };
 
-int snd_emu10k1_proc_init(emu10k1_t * emu)
+int __devinit snd_emu10k1_proc_init(emu10k1_t * emu)
 {
 	snd_info_entry_t *entry;
 	
@@ -238,7 +259,7 @@ int snd_emu10k1_proc_init(emu10k1_t * emu)
 		}
 	}
 	emu->proc_entry_fx8010_gpr = entry;
-	if ((entry = snd_info_create_card_entry(emu->card, "fx8010_tram_data", emu->card->proc_root)) != NULL) {
+	if (!emu->audigy && (entry = snd_info_create_card_entry(emu->card, "fx8010_tram_data", emu->card->proc_root)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_DATA;
 		entry->private_data = emu;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
@@ -250,7 +271,7 @@ int snd_emu10k1_proc_init(emu10k1_t * emu)
 		}
 	}
 	emu->proc_entry_fx8010_tram_data = entry;
-	if ((entry = snd_info_create_card_entry(emu->card, "fx8010_tram_addr", emu->card->proc_root)) != NULL) {
+	if (!emu->audigy && (entry = snd_info_create_card_entry(emu->card, "fx8010_tram_addr", emu->card->proc_root)) != NULL) {
 		entry->content = SNDRV_INFO_CONTENT_DATA;
 		entry->private_data = emu;
 		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;

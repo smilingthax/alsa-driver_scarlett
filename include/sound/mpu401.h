@@ -70,9 +70,9 @@ struct _snd_mpu401 {
 	unsigned int mode;		/* MPU401_MODE_XXXX */
 	int timer_invoked;
 
-	void (*open_input) (mpu401_t * mpu);
+	int (*open_input) (mpu401_t * mpu);
 	void (*close_input) (mpu401_t * mpu);
-	void (*open_output) (mpu401_t * mpu);
+	int (*open_output) (mpu401_t * mpu);
 	void (*close_output) (mpu401_t * mpu);
 	void *private_data;
 

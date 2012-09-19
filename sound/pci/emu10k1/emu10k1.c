@@ -30,7 +30,8 @@ MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_DESCRIPTION("EMU10K1");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
-MODULE_DEVICES("{{Creative Labs,SB Live!/PCI512/E-mu APS}}");
+MODULE_DEVICES("{{Creative Labs,SB Live!/PCI512/E-mu APS},"
+	       "{Creative Labs,SB Audigy}}");
 
 #ifdef CONFIG_SND_SEQUENCER
 #define ENABLE_SYNTH
@@ -77,6 +78,7 @@ MODULE_PARM_SYNTAX(snd_enable_ir, SNDRV_ENABLE_DESC);
 
 static struct pci_device_id snd_emu10k1_ids[] __devinitdata = {
 	{ 0x1102, 0x0002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },	/* EMU10K1 */
+	{ 0x1102, 0x0004, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 1 },	/* Audigy */
 	{ 0, }
 };
 
@@ -136,9 +138,16 @@ static int __devinit snd_card_emu10k1_probe(struct pci_dev *pci,
 			return err;
 		}		
 	}
-	if ((err = snd_emu10k1_midi(emu, 0, NULL)) < 0) {
-		snd_card_free(card);
-		return err;
+	if (emu->audigy) {
+		if ((err = snd_emu10k1_audigy_midi(emu)) < 0) {
+			snd_card_free(card);
+			return err;
+		}
+	} else {
+		if ((err = snd_emu10k1_midi(emu)) < 0) {
+			snd_card_free(card);
+			return err;
+		}
 	}
 	if ((err = snd_emu10k1_fx8010_new(emu, 0, NULL)) < 0) {
 		snd_card_free(card);
@@ -160,7 +169,10 @@ static int __devinit snd_card_emu10k1_probe(struct pci_dev *pci,
 	}
 #endif
  
-	if (emu->APS) {
+	if (emu->audigy) {
+		strcpy(card->driver, "Audigy");
+		strcpy(card->shortname, "Sound Blaster Audigy");
+	} else if (emu->APS) {
 		strcpy(card->driver, "E-mu APS");
 		strcpy(card->shortname, "E-mu APS");
 	} else {
@@ -185,7 +197,7 @@ static void __devexit snd_card_emu10k1_remove(struct pci_dev *pci)
 }
 
 static struct pci_driver driver = {
-	name: "EMU10K1",
+	name: "EMU10K1/Audigy",
 	id_table: snd_emu10k1_ids,
 	probe: snd_card_emu10k1_probe,
 	remove: __devexit_p(snd_card_emu10k1_remove),
@@ -197,7 +209,7 @@ static int __init alsa_card_emu10k1_init(void)
 
 	if ((err = pci_module_init(&driver)) < 0) {
 #ifdef MODULE
-		snd_printk("EMU10K1 soundcard not found or device busy\n");
+		snd_printk("EMU10K1/Audigy soundcard not found or device busy\n");
 #endif
 		return err;
 	}

@@ -195,7 +195,8 @@ int snd_pcm_plugin_build(snd_pcm_plug_t *plug,
 
 int snd_pcm_plugin_free(snd_pcm_plugin_t *plugin)
 {
-	snd_assert(plugin != NULL, return -ENXIO);
+	if (! plugin)
+		return 0;
 	if (plugin->private_free)
 		plugin->private_free(plugin);
 	if (plugin->buf_channels)
@@ -447,6 +448,8 @@ int snd_pcm_plug_format_plugins(snd_pcm_plug_t *plug,
 		int sv = srcformat.channels;
 		int dv = dstformat.channels;
 		route_ttable_entry_t *ttable = snd_kcalloc(dv*sv*sizeof(*ttable), GFP_KERNEL);
+		if (ttable == NULL)
+			return -ENOMEM;
 #if 1
 		if (sv == 2 && dv == 1) {
 			ttable[0] = HALF;
@@ -508,6 +511,8 @@ int snd_pcm_plug_format_plugins(snd_pcm_plug_t *plug,
 		int sv = srcformat.channels;
 		int dv = dstformat.channels;
 		route_ttable_entry_t *ttable = snd_kcalloc(dv * sv * sizeof(*ttable), GFP_KERNEL);
+		if (ttable == NULL)
+			return -ENOMEM;
 #if 0
 		{
 			int v;

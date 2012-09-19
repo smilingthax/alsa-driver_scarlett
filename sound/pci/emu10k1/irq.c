@@ -110,11 +110,18 @@ void snd_emu10k1_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 			outl(status & (IPR_EFXBUFFULL|IPR_EFXBUFHALFFULL), emu->port + IPR);
 		}
 		if (status & (IPR_MIDITRANSBUFEMPTY|IPR_MIDIRECVBUFEMPTY)) {
-			if (emu->mpu401_interrupt)
-				emu->mpu401_interrupt(emu, status);
+			if (emu->midi.interrupt)
+				emu->midi.interrupt(emu, status);
 			else
 				snd_emu10k1_intr_disable(emu, INTE_MIDITXENABLE|INTE_MIDIRXENABLE);
 			outl(status & (IPR_MIDITRANSBUFEMPTY|IPR_MIDIRECVBUFEMPTY), emu->port + IPR);
+		}
+		if (status & (IPR_A_MIDITRANSBUFEMPTY2|IPR_A_MIDIRECVBUFEMPTY2)) {
+			if (emu->midi2.interrupt)
+				emu->midi2.interrupt(emu, status);
+			else
+				snd_emu10k1_intr_disable(emu, INTE_A_MIDITXENABLE2|INTE_A_MIDIRXENABLE2);
+			outl(status & (IPR_A_MIDITRANSBUFEMPTY2|IPR_A_MIDIRECVBUFEMPTY2), emu->port + IPR);
 		}
 		if (status & IPR_INTERVALTIMER) {
 			if (emu->timer_interrupt)

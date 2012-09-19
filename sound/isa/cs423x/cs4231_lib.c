@@ -744,11 +744,9 @@ static void snd_cs4231_close(cs4231_t *chip, unsigned int mode)
 	outb(0, CS4231P(chip, STATUS));	/* clear IRQ */
 	chip->image[CS4231_PIN_CTRL] &= ~CS4231_IRQ_ENABLE;
 	snd_cs4231_out(chip, CS4231_PIN_CTRL, chip->image[CS4231_PIN_CTRL]);
-	spin_unlock_irqrestore(&chip->reg_lock, flags);
 
 	/* now disable record & playback */
 
-	spin_lock_irqsave(&chip->reg_lock, flags);
 	if (chip->image[CS4231_IFACE_CTRL] & (CS4231_PLAYBACK_ENABLE | CS4231_PLAYBACK_PIO |
 					       CS4231_RECORD_ENABLE | CS4231_RECORD_PIO)) {
 		spin_unlock_irqrestore(&chip->reg_lock, flags);

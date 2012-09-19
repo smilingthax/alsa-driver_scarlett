@@ -407,16 +407,17 @@ static int subscribe_port(client_t *client, client_port_t *port, port_subs_info_
 {
 	int err = 0;
 
-	//snd_assert(port->owner, return -EFAULT);
 	if (!try_inc_mod_count(port->owner))
 		return -EFAULT;
 	grp->count++;
 	if (grp->open && (port->callback_all || grp->count == 1)) {
 		err = grp->open(port->private_data, info);
-		if (err < 0)
+		if (err < 0) {
 			dec_mod_count(port->owner);
+			grp->count--;
+		}
 	}
-	if (send_ack && client->type == USER_CLIENT)
+	if (err >= 0 && send_ack && client->type == USER_CLIENT)
 		snd_seq_client_notify_subscription(port->addr.client, port->addr.port,
 						   info, SNDRV_SEQ_EVENT_PORT_SUBSCRIBED);
 

@@ -113,9 +113,9 @@ void snd_ad1848_out(ad1848_t *chip,
 #endif
 }
 
-static void snd_ad1848_dout(ad1848_t *chip,
-			    unsigned char reg,
-			    unsigned char value)
+void snd_ad1848_dout(ad1848_t *chip,
+		     unsigned char reg,
+		     unsigned char value)
 {
 	int timeout;
 
@@ -126,7 +126,7 @@ static void snd_ad1848_dout(ad1848_t *chip,
 	mb();
 }
 
-static unsigned char snd_ad1848_in(ad1848_t *chip, unsigned char reg)
+unsigned char snd_ad1848_in(ad1848_t *chip, unsigned char reg)
 {
 	int timeout;
 
@@ -171,7 +171,7 @@ void snd_ad1848_debug(ad1848_t *chip)
  *  AD1848 detection / MCE routines
  */
 
-static void snd_ad1848_mce_up(ad1848_t *chip)
+void snd_ad1848_mce_up(ad1848_t *chip)
 {
 	unsigned long flags;
 	int timeout;
@@ -192,7 +192,7 @@ static void snd_ad1848_mce_up(ad1848_t *chip)
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 }
 
-static void snd_ad1848_mce_down(ad1848_t *chip)
+void snd_ad1848_mce_down(ad1848_t *chip)
 {
 	unsigned long flags;
 	int timeout;
@@ -928,7 +928,7 @@ int snd_ad1848_pcm(ad1848_t *chip, int device, snd_pcm_t **rpcm)
 static int snd_ad1848_info_mux(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
 	static char *texts[4] = {
-		"Line", "Aux0", "Mic", "Mix"
+		"Line", "Aux", "Mic", "Mix"
 	};
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
@@ -1137,7 +1137,11 @@ int snd_ad1848_mixer(ad1848_t *chip)
 	return 0;
 }
 
+EXPORT_SYMBOL(snd_ad1848_in);
 EXPORT_SYMBOL(snd_ad1848_out);
+EXPORT_SYMBOL(snd_ad1848_dout);
+EXPORT_SYMBOL(snd_ad1848_mce_up);
+EXPORT_SYMBOL(snd_ad1848_mce_down);
 EXPORT_SYMBOL(snd_ad1848_interrupt);
 EXPORT_SYMBOL(snd_ad1848_create);
 EXPORT_SYMBOL(snd_ad1848_pcm);
