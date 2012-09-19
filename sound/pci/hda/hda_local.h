@@ -98,7 +98,7 @@ struct snd_kcontrol *snd_hda_find_mixer_ctl(struct hda_codec *codec,
 					    const char *name);
 int snd_hda_add_vmaster(struct hda_codec *codec, char *name,
 			unsigned int *tlv, const char **slaves);
-void snd_hda_codec_reset(struct hda_codec *codec);
+int snd_hda_codec_reset(struct hda_codec *codec);
 int snd_hda_codec_configure(struct hda_codec *codec);
 
 /* amp value bits */
@@ -136,7 +136,7 @@ extern struct hda_ctl_ops snd_hda_bind_sw;	/* for bind-switch */
 
 struct hda_bind_ctls {
 	struct hda_ctl_ops *ops;
-	long values[];
+	unsigned long values[];
 };
 
 int snd_hda_mixer_bind_ctls_info(struct snd_kcontrol *kcontrol,
@@ -430,6 +430,23 @@ int snd_hda_hwdep_add_sysfs(struct hda_codec *codec);
 static inline int snd_hda_hwdep_add_sysfs(struct hda_codec *codec)
 {
 	return 0;
+}
+#endif
+
+#ifdef CONFIG_SND_HDA_RECONFIG
+const char *snd_hda_get_hint(struct hda_codec *codec, const char *key);
+int snd_hda_get_bool_hint(struct hda_codec *codec, const char *key);
+#else
+static inline
+const char *snd_hda_get_hint(struct hda_codec *codec, const char *key)
+{
+	return NULL;
+}
+
+static inline
+int snd_hda_get_bool_hint(struct hda_codec *codec, const char *key)
+{
+	return -ENOENT;
 }
 #endif
 

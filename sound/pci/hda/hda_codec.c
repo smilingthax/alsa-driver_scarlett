@@ -682,10 +682,139 @@ static int read_widget_caps(struct hda_codec *codec, hda_nid_t fg_node)
 	return 0;
 }
 
+/* read all pin default configurations and save codec->init_pins */
+static int read_pin_defaults(struct hda_codec *codec)
+{
+	int i;
+	hda_nid_t nid = codec->start_nid;
+
+	for (i = 0; i < codec->num_nodes; i++, nid++) {
+		struct hda_pincfg *pin;
+		unsigned int wcaps = get_wcaps(codec, nid);
+		unsigned int wid_type = (wcaps & AC_WCAP_TYPE) >>
+				AC_WCAP_TYPE_SHIFT;
+		if (wid_type != AC_WID_PIN)
+			continue;
+		pin = snd_array_new(&codec->init_pins);
+		if (!pin)
+			return -ENOMEM;
+		pin->nid = nid;
+		pin->cfg = snd_hda_codec_read(codec, nid, 0,
+					      AC_VERB_GET_CONFIG_DEFAULT, 0);
+	}
+	return 0;
+}
+
+/* look up the given pin config list and return the item matching with NID */
+static struct hda_pincfg *look_up_pincfg(struct hda_codec *codec,
+					 struct snd_array *array,
+					 hda_nid_t nid)
+{
+	int i;
+	for (i = 0; i < array->used; i++) {
+		struct hda_pincfg *pin = snd_array_elem(array, i);
+		if (pin->nid == nid)
+			return pin;
+	}
+	return NULL;
+}
+
+/* write a config value for the given NID */
+static void set_pincfg(struct hda_codec *codec, hda_nid_t nid,
+		       unsigned int cfg)
+{
+	int i;
+	for (i = 0; i < 4; i++) {
+		snd_hda_codec_write(codec, nid, 0,
+				    AC_VERB_SET_CONFIG_DEFAULT_BYTES_0 + i,
+				    cfg & 0xff);
+		cfg >>= 8;
+	}
+}
+
+/* set the current pin config value for the given NID.
+ * the value is cached, and read via snd_hda_codec_get_pincfg()
+ */
+int snd_hda_add_pincfg(struct hda_codec *codec, struct snd_array *list,
+		       hda_nid_t nid, unsigned int cfg)
+{
+	struct hda_pincfg *pin;
+	unsigned int oldcfg;
+
+	oldcfg = snd_hda_codec_get_pincfg(codec, nid);
+	pin = look_up_pincfg(codec, list, nid);
+	if (!pin) {
+		pin = snd_array_new(list);
+		if (!pin)
+			return -ENOMEM;
+		pin->nid = nid;
+	}
+	pin->cfg = cfg;
+
+	/* change only when needed; e.g. if the pincfg is already present
+	 * in user_pins[], don't write it
+	 */
+	cfg = snd_hda_codec_get_pincfg(codec, nid);
+	if (oldcfg != cfg)
+		set_pincfg(codec, nid, cfg);
+	return 0;
+}
+
+int snd_hda_codec_set_pincfg(struct hda_codec *codec,
+			     hda_nid_t nid, unsigned int cfg)
+{
+	return snd_hda_add_pincfg(codec, &codec->driver_pins, nid, cfg);
+}
+EXPORT_SYMBOL_HDA(snd_hda_codec_set_pincfg);
+
+/* get the current pin config value of the given pin NID */
+unsigned int snd_hda_codec_get_pincfg(struct hda_codec *codec, hda_nid_t nid)
+{
+	struct hda_pincfg *pin;
+
+#ifdef CONFIG_SND_HDA_HWDEP
+	pin = look_up_pincfg(codec, &codec->user_pins, nid);
+	if (pin)
+		return pin->cfg;
+#endif
+	pin = look_up_pincfg(codec, &codec->driver_pins, nid);
+	if (pin)
+		return pin->cfg;
+	pin = look_up_pincfg(codec, &codec->init_pins, nid);
+	if (pin)
+		return pin->cfg;
+	return 0;
+}
+EXPORT_SYMBOL_HDA(snd_hda_codec_get_pincfg);
+
+/* restore all current pin configs */
+static void restore_pincfgs(struct hda_codec *codec)
+{
+	int i;
+	for (i = 0; i < codec->init_pins.used; i++) {
+		struct hda_pincfg *pin = snd_array_elem(&codec->init_pins, i);
+		set_pincfg(codec, pin->nid,
+			   snd_hda_codec_get_pincfg(codec, pin->nid));
+	}
+}
 
 static void init_hda_cache(struct hda_cache_rec *cache,
 			   unsigned int record_size);
 static void free_hda_cache(struct hda_cache_rec *cache);
+
+/* restore the initial pin cfgs and release all pincfg lists */
+static void restore_init_pincfgs(struct hda_codec *codec)
+{
+	/* first free driver_pins and user_pins, then call restore_pincfg
+	 * so that only the values in init_pins are restored
+	 */
+	snd_array_free(&codec->driver_pins);
+#ifdef CONFIG_SND_HDA_HWDEP
+	snd_array_free(&codec->user_pins);
+#endif
+	restore_pincfgs(codec);
+	snd_array_free(&codec->init_pins);
+}
 
 /*
  * codec destructor
@@ -694,6 +823,7 @@ static void snd_hda_codec_free(struct hda_codec *codec)
 {
 	if (!codec)
 		return;
+	restore_init_pincfgs(codec);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	cancel_delayed_work(&codec->power_work);
 	flush_workqueue(codec->bus->workq);
@@ -751,6 +881,8 @@ int /*__devinit*/ snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr
 	init_hda_cache(&codec->amp_cache, sizeof(struct hda_amp_info));
 	init_hda_cache(&codec->cmd_cache, sizeof(struct hda_cache_head));
 	snd_array_init(&codec->mixers, sizeof(struct snd_kcontrol *), 32);
+	snd_array_init(&codec->init_pins, sizeof(struct hda_pincfg), 16);
+	snd_array_init(&codec->driver_pins, sizeof(struct hda_pincfg), 16);
 	if (codec->bus->modelname) {
 		codec->modelname = kstrdup(codec->bus->modelname, GFP_KERNEL);
 		if (!codec->modelname) {
@@ -787,15 +919,18 @@ int /*__devinit*/ snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr
 	setup_fg_nodes(codec);
 	if (!codec->afg && !codec->mfg) {
 		snd_printdd("hda_codec: no AFG or MFG node found\n");
-		snd_hda_codec_free(codec);
-		return -ENODEV;
+		err = -ENODEV;
+		goto error;
 	}
 
-	if (read_widget_caps(codec, codec->afg ? codec->afg : codec->mfg) < 0) {
+	err = read_widget_caps(codec, codec->afg ? codec->afg : codec->mfg);
+	if (err < 0) {
 		snd_printk(KERN_ERR "hda_codec: cannot malloc\n");
-		snd_hda_codec_free(codec);
-		return -ENOMEM;
+		goto error;
 	}
+	err = read_pin_defaults(codec);
+	if (err < 0)
+		goto error;
 
 	if (!codec->subsystem_id) {
 		hda_nid_t nid = codec->afg ? codec->afg : codec->mfg;
@@ -808,10 +943,8 @@ int /*__devinit*/ snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr
 
 	if (do_init) {
 		err = snd_hda_codec_configure(codec);
-		if (err < 0) {
-			snd_hda_codec_free(codec);
-			return err;
-		}
+		if (err < 0)
+			goto error;
 	}
 	snd_hda_codec_proc_new(codec);
 
@@ -824,6 +957,10 @@ int /*__devinit*/ snd_hda_codec_new(struct hda_bus *bus, unsigned int codec_addr
 	if (codecp)
 		*codecp = codec;
 	return 0;
+
+ error:
+	snd_hda_codec_free(codec);
+	return err;
 }
 EXPORT_SYMBOL_HDA(snd_hda_codec_new);
 
@@ -1297,7 +1434,6 @@ int snd_hda_ctl_add(struct hda_codec *codec, struct snd_kcontrol *kctl)
 }
 EXPORT_SYMBOL_HDA(snd_hda_ctl_add);
 
-#ifdef CONFIG_SND_HDA_RECONFIG
 /* Clear all controls assigned to the given codec */
 void snd_hda_ctls_clear(struct hda_codec *codec)
 {
@@ -1308,9 +1444,52 @@ void snd_hda_ctls_clear(struct hda_codec *codec)
 	snd_array_free(&codec->mixers);
 }
 
-void snd_hda_codec_reset(struct hda_codec *codec)
+/* pseudo device locking
+ * toggle card->shutdown to allow/disallow the device access (as a hack)
+ */
+static int hda_lock_devices(struct snd_card *card)
 {
-	int i;
+	spin_lock(&card->files_lock);
+	if (card->shutdown) {
+		spin_unlock(&card->files_lock);
+		return -EINVAL;
+	}
+	card->shutdown = 1;
+	spin_unlock(&card->files_lock);
+	return 0;
+}
+
+static void hda_unlock_devices(struct snd_card *card)
+{
+	spin_lock(&card->files_lock);
+	card->shutdown = 0;
+	spin_unlock(&card->files_lock);
+}
+
+int snd_hda_codec_reset(struct hda_codec *codec)
+{
+	struct snd_card *card = codec->bus->card;
+	int i, pcm;
+
+	if (hda_lock_devices(card) < 0)
+		return -EBUSY;
+	/* check whether the codec isn't used by any mixer or PCM streams */
+	if (!list_empty(&card->ctl_files)) {
+		hda_unlock_devices(card);
+		return -EBUSY;
+	}
+	for (pcm = 0; pcm < codec->num_pcms; pcm++) {
+		struct hda_pcm *cpcm = &codec->pcm_info[pcm];
+		if (!cpcm->pcm)
+			continue;
+		if (cpcm->pcm->streams[0].substream_opened ||
+		    cpcm->pcm->streams[1].substream_opened) {
+			hda_unlock_devices(card);
+			return -EBUSY;
+		}
+	}
+
+	/* OK, let it free */
 
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	cancel_delayed_work(&codec->power_work);
@@ -1320,8 +1499,7 @@ void snd_hda_codec_reset(struct hda_codec *codec)
 	/* relase PCMs */
 	for (i = 0; i < codec->num_pcms; i++) {
 		if (codec->pcm_info[i].pcm) {
-			snd_device_free(codec->bus->card,
-					codec->pcm_info[i].pcm);
+			snd_device_free(card, codec->pcm_info[i].pcm);
 			clear_bit(codec->pcm_info[i].device,
 				  codec->bus->pcm_dev_bits);
 		}
@@ -1334,13 +1512,22 @@ void snd_hda_codec_reset(struct hda_codec *codec)
 	free_hda_cache(&codec->cmd_cache);
 	init_hda_cache(&codec->amp_cache, sizeof(struct hda_amp_info));
 	init_hda_cache(&codec->cmd_cache, sizeof(struct hda_cache_head));
+	/* free only driver_pins so that init_pins + user_pins are restored */
+	snd_array_free(&codec->driver_pins);
+	restore_pincfgs(codec);
 	codec->num_pcms = 0;
 	codec->pcm_info = NULL;
 	codec->preset = NULL;
+	memset(&codec->patch_ops, 0, sizeof(codec->patch_ops));
+	codec->slave_dig_outs = NULL;
+	codec->spdif_status_reset = 0;
 	module_put(codec->owner);
 	codec->owner = NULL;
+
+	/* allow device access again */
+	hda_unlock_devices(card);
+	return 0;
 }
-#endif /* CONFIG_SND_HDA_RECONFIG */
 
 /* create a virtual master control and add slaves */
 int snd_hda_add_vmaster(struct hda_codec *codec, char *name,
@@ -2175,6 +2362,7 @@ static void hda_call_codec_resume(struct hda_codec *codec)
 	hda_set_power_state(codec,
 			    codec->afg ? codec->afg : codec->mfg,
 			    AC_PWRST_D0);
+	restore_pincfgs(codec); /* restore all current pin configs */
 	hda_exec_init_verbs(codec);
 	if (codec->patch_ops.resume)
 		codec->patch_ops.resume(codec);
@@ -2202,8 +2390,16 @@ int /*__devinit*/ snd_hda_build_controls(struct hda_bus *bus)
 
 	list_for_each_entry(codec, &bus->codec_list, list) {
 		int err = snd_hda_codec_build_controls(codec);
-		if (err < 0)
-			return err;
+		if (err < 0) {
+			printk(KERN_ERR "hda_codec: cannot build controls"
+			       "for #%d (error %d)\n", codec->addr, err); 
+			err = snd_hda_codec_reset(codec);
+			if (err < 0) {
+				printk(KERN_ERR
+				       "hda_codec: cannot revert codec\n");
+				return err;
+			}
+		}
 	}
 	return 0;
 }
@@ -2580,13 +2776,10 @@ static int get_empty_pcm_device(struct hda_bus *bus, int type)
 		for (i = 0; i < ARRAY_SIZE(audio_idx); i++) {
 			dev = audio_idx[i];
 			if (!test_bit(dev, bus->pcm_dev_bits))
-				break;
+				goto ok;
 		}
-		if (i >= ARRAY_SIZE(audio_idx)) {
-			snd_printk(KERN_WARNING "Too many audio devices\n");
-			return -EAGAIN;
-		}
-		break;
+		snd_printk(KERN_WARNING "Too many audio devices\n");
+		return -EAGAIN;
 	case HDA_PCM_TYPE_SPDIF:
 	case HDA_PCM_TYPE_HDMI:
 	case HDA_PCM_TYPE_MODEM:
@@ -2601,6 +2794,7 @@ static int get_empty_pcm_device(struct hda_bus *bus, int type)
 		snd_printk(KERN_WARNING "Invalid PCM type %d\n", type);
 		return -EINVAL;
 	}
+ ok:
 	set_bit(dev, bus->pcm_dev_bits);
 	return dev;
 }
@@ -2637,8 +2831,16 @@ int snd_hda_codec_build_pcms(struct hda_codec *codec)
 		if (!codec->patch_ops.build_pcms)
 			return 0;
 		err = codec->patch_ops.build_pcms(codec);
-		if (err < 0)
-			return err;
+		if (err < 0) {
+			printk(KERN_ERR "hda_codec: cannot build PCMs"
+			       "for #%d (error %d)\n", codec->addr, err); 
+			err = snd_hda_codec_reset(codec);
+			if (err < 0) {
+				printk(KERN_ERR
+				       "hda_codec: cannot revert codec\n");
+				return err;
+			}
+		}
 	}
 	for (pcm = 0; pcm < codec->num_pcms; pcm++) {
 		struct hda_pcm *cpcm = &codec->pcm_info[pcm];
@@ -2650,11 +2852,15 @@ int snd_hda_codec_build_pcms(struct hda_codec *codec)
 		if (!cpcm->pcm) {
 			dev = get_empty_pcm_device(codec->bus, cpcm->pcm_type);
 			if (dev < 0)
-				return 0;
+				continue; /* no fatal error */
 			cpcm->device = dev;
 			err = snd_hda_attach_pcm(codec, cpcm);
-			if (err < 0)
-				return err;
+			if (err < 0) {
+				printk(KERN_ERR "hda_codec: cannot attach "
+				       "PCM stream %d for codec #%d\n",
+				       dev, codec->addr);
+				continue; /* no fatal error */
+			}
 		}
 	}
 	return 0;
@@ -3355,8 +3561,7 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec,
 		if (ignore_nids && is_in_nid_list(nid, ignore_nids))
 			continue;
 
-		def_conf = snd_hda_codec_read(codec, nid, 0,
-					      AC_VERB_GET_CONFIG_DEFAULT, 0);
+		def_conf = snd_hda_codec_get_pincfg(codec, nid);
 		if (get_defcfg_connect(def_conf) == AC_JACK_PORT_NONE)
 			continue;
 		loc = get_defcfg_location(def_conf);

@@ -109,6 +109,7 @@ struct cs4270_private {
 	u8 reg_cache[CS4270_NUMREGS];
 	unsigned int mclk; /* Input frequency of the MCLK pin */
 	unsigned int mode; /* The mode (I2S or left-justified) */
+	unsigned int slave_mode;
 };
 
 /**
@@ -247,6 +248,7 @@ static int cs4270_set_dai_fmt(struct snd_soc_dai *codec_dai,
 	struct cs4270_private *cs4270 = codec->private_data;
 	int ret = 0;
 
+	/* set DAI format */
 	switch (format & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
 	case SND_SOC_DAIFMT_LEFT_J:
@@ -254,6 +256,19 @@ static int cs4270_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		break;
 	default:
 		dev_err(codec->dev, "invalid dai format\n");
+		ret = -EINVAL;
+	}
+
+	/* set master/slave audio interface */
+	switch (format & SND_SOC_DAIFMT_MASTER_MASK) {
+	case SND_SOC_DAIFMT_CBS_CFS:
+		cs4270->slave_mode = 1;
+		break;
+	case SND_SOC_DAIFMT_CBM_CFM:
+		cs4270->slave_mode = 0;
+		break;
+	default:
+		/* all other modes are unsupported by the hardware */
 		ret = -EINVAL;
 	}
 
@@ -395,21 +410,16 @@ static int cs4270_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	/* Freeze and power-down the codec */
-
-	ret = snd_soc_write(codec, CS4270_PWRCTL, CS4270_PWRCTL_FREEZE |
-			    CS4270_PWRCTL_PDN_ADC | CS4270_PWRCTL_PDN_DAC |
-			    CS4270_PWRCTL_PDN);
-	if (ret < 0) {
-		dev_err(codec->dev, "i2c write failed\n");
-		return ret;
-	}
-
-	/* Program the mode control register */
+	/* Set the sample rate */
 
 	reg = snd_soc_read(codec, CS4270_MODE);
 	reg &= ~(CS4270_MODE_SPEED_MASK | CS4270_MODE_DIV_MASK);
-	reg |= cs4270_mode_ratios[i].speed_mode | cs4270_mode_ratios[i].mclk;
+	reg |= cs4270_mode_ratios[i].mclk;
+
+	if (cs4270->slave_mode)
+		reg |= CS4270_MODE_SLAVE;
+	else
+		reg |= cs4270_mode_ratios[i].speed_mode;
 
 	ret = snd_soc_write(codec, CS4270_MODE, reg);
 	if (ret < 0) {
@@ -417,7 +427,7 @@ static int cs4270_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
-	/* Program the format register */
+	/* Set the DAI format */
 
 	reg = snd_soc_read(codec, CS4270_FORMAT);
 	reg &= ~(CS4270_FORMAT_DAC_MASK | CS4270_FORMAT_ADC_MASK);
@@ -440,42 +450,9 @@ static int cs4270_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
-	/* Disable auto-mute.  This feature appears to be buggy, because in
-	   some situations, auto-mute will not deactivate when it should. */
-
-	reg = snd_soc_read(codec, CS4270_MUTE);
-	reg &= ~CS4270_MUTE_AUTO;
-	ret = snd_soc_write(codec, CS4270_MUTE, reg);
-	if (ret < 0) {
-		dev_err(codec->dev, "i2c write failed\n");
-		return ret;
-	}
-
-	/* Disable automatic volume control.  It's enabled by default, and
-	 * it causes volume change commands to be delayed, sometimes until
-	 * after playback has started.
-	 */
-
-	reg = cs4270_read_reg_cache(codec, CS4270_TRANS);
-	reg &= ~(CS4270_TRANS_SOFT | CS4270_TRANS_ZERO);
-	ret = cs4270_i2c_write(codec, CS4270_TRANS, reg);
-	if (ret < 0) {
-		dev_err(codec->dev, "i2c write failed\n");
-		return ret;
-	}
-
-	/* Thaw and power-up the codec */
-
-	ret = snd_soc_write(codec, CS4270_PWRCTL, 0);
-	if (ret < 0) {
-		dev_err(codec->dev, "i2c write failed\n");
-		return ret;
-	}
-
 	return ret;
 }
 
-#ifdef CONFIG_SND_SOC_CS4270_HWMUTE
 /**
  * cs4270_mute - enable/disable the CS4270 external mute
  * @dai: the SOC DAI
@@ -494,22 +471,23 @@ static int cs4270_mute(struct snd_soc_dai *dai, int mute)
 	reg6 = snd_soc_read(codec, CS4270_MUTE);
 
 	if (mute)
-		reg6 |= CS4270_MUTE_ADC_A | CS4270_MUTE_ADC_B |
-			CS4270_MUTE_DAC_A | CS4270_MUTE_DAC_B;
+		reg6 |= CS4270_MUTE_DAC_A | CS4270_MUTE_DAC_B;
 	else
-		reg6 &= ~(CS4270_MUTE_ADC_A | CS4270_MUTE_ADC_B |
-			  CS4270_MUTE_DAC_A | CS4270_MUTE_DAC_B);
+		reg6 &= ~(CS4270_MUTE_DAC_A | CS4270_MUTE_DAC_B);
 
 	return snd_soc_write(codec, CS4270_MUTE, reg6);
 }
-#else
-#define cs4270_mute NULL
-#endif
 
 /* A list of non-DAPM controls that the CS4270 supports */
 static const struct snd_kcontrol_new cs4270_snd_controls[] = {
 	SOC_DOUBLE_R("Master Playback Volume",
-		CS4270_VOLA, CS4270_VOLB, 0, 0xFF, 1)
+		CS4270_VOLA, CS4270_VOLB, 0, 0xFF, 1),
+	SOC_SINGLE("Digital Sidetone Switch", CS4270_FORMAT, 5, 1, 0),
+	SOC_SINGLE("Soft Ramp Switch", CS4270_TRANS, 6, 1, 0),
+	SOC_SINGLE("Zero Cross Switch", CS4270_TRANS, 5, 1, 0),
+	SOC_SINGLE("Popguard Switch", CS4270_MODE, 0, 1, 1),
+	SOC_SINGLE("Auto-Mute Switch", CS4270_MUTE, 5, 1, 0),
+	SOC_DOUBLE("Master Capture Switch", CS4270_MUTE, 3, 4, 1, 0)
 };
 
 /*
@@ -637,6 +615,7 @@ static int cs4270_i2c_probe(struct i2c_client *i2c_client,
 {
 	struct snd_soc_codec *codec;
 	struct cs4270_private *cs4270;
+	unsigned int reg;
 	int ret;
 
 	/* For now, we only support one cs4270 device in the system.  See the
@@ -700,6 +679,34 @@ static int cs4270_i2c_probe(struct i2c_client *i2c_client,
 	if (ret < 0) {
 		dev_err(&i2c_client->dev, "failed to fill register cache\n");
 		goto error_free_codec;
+	}
+
+	/* Disable auto-mute.  This feature appears to be buggy.  In some
+	 * situations, auto-mute will not deactivate when it should, so we want
+	 * this feature disabled by default.  An application (e.g. alsactl) can
+	 * re-enabled it by using the controls.
+	 */
+
+	reg = cs4270_read_reg_cache(codec, CS4270_MUTE);
+	reg &= ~CS4270_MUTE_AUTO;
+	ret = cs4270_i2c_write(codec, CS4270_MUTE, reg);
+	if (ret < 0) {
+		dev_err(&i2c_client->dev, "i2c write failed\n");
+		return ret;
+	}
+
+	/* Disable automatic volume control.  The hardware enables, and it
+	 * causes volume change commands to be delayed, sometimes until after
+	 * playback has started.  An application (e.g. alsactl) can
+	 * re-enabled it by using the controls.
+	 */
+
+	reg = cs4270_read_reg_cache(codec, CS4270_TRANS);
+	reg &= ~(CS4270_TRANS_SOFT | CS4270_TRANS_ZERO);
+	ret = cs4270_i2c_write(codec, CS4270_TRANS, reg);
+	if (ret < 0) {
+		dev_err(&i2c_client->dev, "i2c write failed\n");
+		return ret;
 	}
 
 	/* Initialize the DAI. Normally, we'd prefer to have a kmalloc'd DAI

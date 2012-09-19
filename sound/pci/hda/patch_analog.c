@@ -1047,8 +1047,7 @@ static struct hda_amp_list ad1986a_loopbacks[] = {
 
 static int is_jack_available(struct hda_codec *codec, hda_nid_t nid)
 {
-	unsigned int conf = snd_hda_codec_read(codec, nid, 0,
-					       AC_VERB_GET_CONFIG_DEFAULT, 0);
+	unsigned int conf = snd_hda_codec_get_pincfg(codec, nid);
 	return get_defcfg_connect(conf) != AC_JACK_PORT_NONE;
 }
 
@@ -3923,11 +3922,9 @@ static struct snd_pci_quirk ad1884a_cfg_tbl[] = {
 	SND_PCI_QUIRK(0x103c, 0x3030, "HP", AD1884A_MOBILE),
 	SND_PCI_QUIRK(0x103c, 0x3037, "HP 2230s", AD1884A_LAPTOP),
 	SND_PCI_QUIRK(0x103c, 0x3056, "HP", AD1884A_MOBILE),
-	SND_PCI_QUIRK(0x103c, 0x3072, "HP", AD1884A_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x3077, "HP", AD1884A_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30e6, "HP 6730b", AD1884A_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x30e7, "HP EliteBook 8530p", AD1884A_LAPTOP),
-	SND_PCI_QUIRK(0x103c, 0x3614, "HP 6730s", AD1884A_LAPTOP),
+	SND_PCI_QUIRK_MASK(0x103c, 0xfff0, 0x3070, "HP", AD1884A_MOBILE),
+	SND_PCI_QUIRK_MASK(0x103c, 0xfff0, 0x30e0, "HP laptop", AD1884A_LAPTOP),
+	SND_PCI_QUIRK_MASK(0x103c, 0xff00, 0x3600, "HP laptop", AD1884A_LAPTOP),
 	SND_PCI_QUIRK(0x17aa, 0x20ac, "Thinkpad X300", AD1884A_THINKPAD),
 	{}
 };
@@ -3987,6 +3984,14 @@ static int patch_ad1884a(struct hda_codec *codec)
 		spec->multiout.dig_out_nid = 0;
 		codec->patch_ops.unsol_event = ad1884a_hp_unsol_event;
 		codec->patch_ops.init = ad1884a_hp_init;
+		/* set the upper-limit for mixer amp to 0dB for avoiding the
+		 * possible damage by overloading
+		 */
+		snd_hda_override_amp_caps(codec, 0x20, HDA_INPUT,
+					  (0x17 << AC_AMPCAP_OFFSET_SHIFT) |
+					  (0x17 << AC_AMPCAP_NUM_STEPS_SHIFT) |
+					  (0x05 << AC_AMPCAP_STEP_SIZE_SHIFT) |
+					  (1 << AC_AMPCAP_MUTE_SHIFT));
 		break;
 	case AD1884A_THINKPAD:
 		spec->mixers[0] = ad1984a_thinkpad_mixers;
