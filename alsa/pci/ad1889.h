@@ -172,16 +172,18 @@
 #define AD_ADC_STATE	1
 #define AD_MAX_STATES	2
 
-/* "<ggg> T-Bone: parisc IOMMU can start DMA at any address.
-   But the IOMMU can only map at page size granularity."
-   This affects in particular .period_bytes_min */
-#define BUF_SIZE        PAGE_SIZE
-#define MAX_BUFS        32
-#define DMA_SIZE	(MAX_BUFS*BUF_SIZE)
-
 #define AD_CHAN_WAV	0x0001
 #define AD_CHAN_ADC	0x0002
 #define AD_CHAN_RES	0x0004
 #define AD_CHAN_SYN	0x0008
+
+
+/* The chip would support 4 GB buffers and 16 MB periods,
+ * but let's not overdo it ... */
+#define BUFFER_BYTES_MAX	(256 * 1024)
+#define PERIOD_BYTES_MIN	32
+#define PERIOD_BYTES_MAX	(BUFFER_BYTES_MAX / 2)
+#define PERIODS_MIN		2
+#define PERIODS_MAX		(BUFFER_BYTES_MAX / PERIOD_BYTES_MIN)
 
 #endif /* __AD1889_H__ */

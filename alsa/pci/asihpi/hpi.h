@@ -36,6 +36,8 @@ AudioScience, Inc. <support@audioscience.com>
 
 #if __GNUC__ >= 3
 #define DEPRECATED __attribute__((deprecated))
+#else
+#define DEPRECATED
 #endif
 
 #define HPI_KERNEL_MODE
