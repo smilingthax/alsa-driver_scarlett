@@ -137,6 +137,8 @@ void snd_akm4xxx_reset(struct snd_akm4xxx *ak, int state)
 	case SND_AK4381:
 		ak4381_reset(ak, state);
 		break;
+	default:
+		break;
 	}
 }
 
@@ -472,6 +474,57 @@ static int snd_akm4xxx_deemphasis_put(struct snd_kcontrol *kcontrol,
 	return change;
 }
 
+static int ak4xxx_switch_info(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int ak4xxx_switch_get(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_akm4xxx *ak = snd_kcontrol_chip(kcontrol);
+	int chip = AK_GET_CHIP(kcontrol->private_value);
+	int addr = AK_GET_ADDR(kcontrol->private_value);
+	int shift = AK_GET_SHIFT(kcontrol->private_value);
+	int invert = AK_GET_INVERT(kcontrol->private_value);
+	unsigned char val = snd_akm4xxx_get(ak, chip, addr);
+
+	if (invert)
+		val = ! val;
+	ucontrol->value.integer.value[0] = (val & (1<<shift)) != 0;
+	return 0;
+}
+
+static int ak4xxx_switch_put(struct snd_kcontrol *kcontrol,
+			     struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_akm4xxx *ak = snd_kcontrol_chip(kcontrol);
+	int chip = AK_GET_CHIP(kcontrol->private_value);
+	int addr = AK_GET_ADDR(kcontrol->private_value);
+	int shift = AK_GET_SHIFT(kcontrol->private_value);
+	int invert = AK_GET_INVERT(kcontrol->private_value);
+	long flag = ucontrol->value.integer.value[0];
+	unsigned char val, oval;
+	int change;
+
+	if (invert)
+		flag = ! flag;
+	oval = snd_akm4xxx_get(ak, chip, addr);
+	if (flag)
+		val = oval | (1<<shift);
+	else
+		val = oval & ~(1<<shift);
+	change = (oval != val);
+	if (change)
+		snd_akm4xxx_write(ak, chip, addr, val);
+	return change;
+}
+
 /*
  * build AK4xxx controls
  */
@@ -621,6 +674,27 @@ int snd_akm4xxx_build_controls(struct snd_akm4xxx *ak)
 					      SNDRV_CTL_ELEM_ACCESS_WRITE));
 		if (err < 0)
 			goto __error;
+
+		memset(ctl, 0, sizeof(*ctl));
+		if (ak->channel_names == NULL)
+			strcpy(ctl->id.name, "Capture Switch");
+		else
+			strcpy(ctl->id.name, ak->channel_names[1]);
+		ctl->id.index = ak->idx_offset * 2;
+		ctl->id.iface = SNDRV_CTL_ELEM_IFACE_MIXER;
+		ctl->count = 1;
+		ctl->info = ak4xxx_switch_info;
+		ctl->get = ak4xxx_switch_get;
+		ctl->put = ak4xxx_switch_put;
+		/* register 2, bit 0 (SMUTE): 0 = normal operation, 1 = mute */
+		ctl->private_value =
+			AK_COMPOSE(0, 2, 0, 0) | AK_INVERT;
+		ctl->private_data = ak;
+		err = snd_ctl_add(ak->card,
+				  snd_ctl_new(ctl, SNDRV_CTL_ELEM_ACCESS_READ|
+					      SNDRV_CTL_ELEM_ACCESS_WRITE));
+		if (err < 0)
+			goto __error;
 	}
 
 	if (ak->type == SND_AK4355 || ak->type == SND_AK4358)
@@ -655,6 +729,9 @@ int snd_akm4xxx_build_controls(struct snd_akm4xxx *ak)
 		case SND_AK4381:
 			ctl->private_value = AK_COMPOSE(idx, 1, 1, 0);
 			break;
+		default:
+			err = -EINVAL;
+			goto __error;
 		}
 		ctl->private_data = ak;
 		err = snd_ctl_add(ak->card,
