@@ -47,6 +47,7 @@ struct cond {
 
 struct sel {
 	char *name;		/* dependency name */
+	int hitflag;
 	struct dep *dep;	/* dependency pointer */
 	struct sel *next;
 };
@@ -61,6 +62,8 @@ struct dep {
 	struct dep *next;
 	// bool?
 	int is_bool;
+	// hitflag?
+	int hitflag;
 };
 
 // Prototypes
@@ -831,6 +834,42 @@ static void output_card_list(struct dep *firstdep, int space, int size)
 	}
 }
 
+// acinclude.m4 helpers
+static void sel_remove_hitflags(void)
+{
+	struct dep * dep;
+	struct sel * nsel;
+	
+	for (dep = all_deps; dep; dep = dep->next) {
+		dep->hitflag = 0;
+		for (nsel = dep->sel; nsel; nsel = nsel->next)
+			nsel->hitflag = 0;
+	}
+}
+
+static void sel_print_acinclude(struct sel *sel)
+{
+	struct dep * dep;
+	struct sel * nsel;
+
+	dep = sel->dep;
+	if (dep == NULL)
+		return;
+	if (dep->hitflag)
+		return;
+	dep->hitflag = 1;
+	for (nsel = dep->sel; nsel; nsel = nsel->next) {
+		if (nsel->hitflag)
+			continue;
+		nsel->hitflag = 1;
+		sel_print_acinclude(nsel);
+		printf("\t\tCONFIG_%s=\"%c\"\n", nsel->name,
+			(nsel->dep && nsel->dep->is_bool) ? 'y' : 'm');
+		printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", nsel->name,
+			(nsel->dep && nsel->dep->is_bool) ? "" : "_MODULE");
+	}
+}
+
 // Output in acinlude.m4
 static void output_acinclude(void)
 {
@@ -930,6 +969,22 @@ static void output_acinclude(void)
 		if (text) {
 			printf("\t%s)\n", text);
 			free(text);
+			printf("\t\tCONFIG_SND=\"m\"\n");
+			printf("\t\tAC_DEFINE(CONFIG_SND_MODULE)\n");
+			sel_remove_hitflags();
+			for (sel = tempdep->sel; sel; sel = sel->next)
+				sel_print_acinclude(sel);			
+#if 0
+			for (cond = tempdep->cond; cond; cond = cond->next) {
+				if (is_always_true(cond->dep) &&
+				    strcmp(cond->name, "SND"))
+					continue;
+				printf("\t\tCONFIG_%s=\"%c\"\n", cond->name,
+				       (cond->dep && cond->dep->is_bool) ? 'y' : 'm');
+				printf("\t\tAC_DEFINE(CONFIG_%s%s)\n", cond->name,
+				       (cond->dep && cond->dep->is_bool) ? "" : "_MODULE");
+			}
+#endif
 			for (sel = tempdep->sel; sel; sel = sel->next) {
 				if (is_always_true(sel->dep))
 					continue;
