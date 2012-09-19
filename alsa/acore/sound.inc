@@ -100,3 +100,8 @@ EXPORT_SYMBOL(snd_compat_request_firmware);
 EXPORT_SYMBOL(snd_compat_release_firmware);
 #endif
 #endif
+#ifndef CONFIG_SND_NEW_IRQ_HANDLER
+EXPORT_SYMBOL(snd_request_irq);
+EXPORT_SYMBOL(snd_free_irq);
+EXPORT_SYMBOL(snd_irq_regs);
+#endif

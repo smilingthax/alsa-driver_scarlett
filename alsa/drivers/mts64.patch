@@ -1,0 +1,20 @@
+--- ../alsa-kernel/drivers/mts64.c	2006-10-10 15:35:35.000000000 +0200
++++ mts64.c	2006-10-10 16:26:47.000000000 +0200
+@@ -838,7 +838,11 @@
+ /*********************************************************************
+  * parport stuff
+  *********************************************************************/
++#ifndef CONFIG_SND_NEW_IRQ_HANDLER
++static void snd_mts64_interrupt(int irq, void *private, struct pt_regs *reg)
++#else
+ static void snd_mts64_interrupt(int irq, void *private)
++#endif
+ {
+ 	struct mts64 *mts = ((struct snd_card*)private)->private_data;
+ 	u16 ret;
+@@ -1089,3 +1093,5 @@
+ 
+ module_init(snd_mts64_module_init);
+ module_exit(snd_mts64_module_exit);
++
++EXPORT_NO_SYMBOLS;

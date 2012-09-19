@@ -1,5 +1,5 @@
---- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2006-10-05 21:38:13.000000000 +0200
-+++ usbusx2yaudio.c	2006-10-07 22:56:26.000000000 +0200
+--- ../../alsa-kernel/usb/usx2y/usbusx2yaudio.c	2006-10-10 15:35:36.000000000 +0200
++++ usbusx2yaudio.c	2006-10-10 15:53:50.000000000 +0200
 @@ -67,6 +67,14 @@
  #endif
  
@@ -19,10 +19,10 @@
  	usX2Y_clients_stop(usX2Y);
  }
  
-+#ifndef OLD_USB
- static void i_usX2Y_urb_complete(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_urb_complete(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_urb_complete(struct urb *urb)
+ static void i_usX2Y_urb_complete(struct urb *urb)
 +#endif
  {
  	struct snd_usX2Y_substream *subs = urb->context;
@@ -55,44 +55,45 @@
  				snd_printdd("\n");
  				usX2Y_clients_stop(usX2Y);
  			}
-@@ -345,8 +363,12 @@
+@@ -345,8 +363,13 @@
  	}
  }
  
-+#ifndef OLD_USB
- static void usX2Y_urbs_set_complete(struct usX2Ydev * usX2Y,
- 				    void (*complete)(struct urb *, struct pt_regs *))
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void usX2Y_urbs_set_complete(struct usX2Ydev * usX2Y,
++  				    void (*complete)(struct urb *, struct pt_regs *))
 +#else
-+static void usX2Y_urbs_set_complete(struct usX2Ydev * usX2Y, void (*complete)(struct urb *))
+ static void usX2Y_urbs_set_complete(struct usX2Ydev * usX2Y,
+ 				    void (*complete)(struct urb *))
 +#endif
  {
  	int s, u;
  	for (s = 0; s < 4; s++) {
-@@ -366,7 +388,11 @@
+@@ -366,7 +389,11 @@
  	usX2Y->prepare_subs = NULL;
  }
  
-+#ifndef OLD_USB
- static void i_usX2Y_subs_startup(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_subs_startup(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_subs_startup(struct urb *urb)
+ static void i_usX2Y_subs_startup(struct urb *urb)
 +#endif
  {
  	struct snd_usX2Y_substream *subs = urb->context;
  	struct usX2Ydev *usX2Y = subs->usX2Y;
-@@ -378,7 +404,11 @@
+@@ -378,7 +405,11 @@
  			wake_up(&usX2Y->prepare_wait_queue);
  		}
  
-+#ifndef OLD_USB
- 	i_usX2Y_urb_complete(urb, regs);
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++	i_usX2Y_urb_complete(urb, regs);
 +#else
-+	i_usX2Y_urb_complete(urb);
+ 	i_usX2Y_urb_complete(urb);
 +#endif
  }
  
  static void usX2Y_subs_prepare(struct snd_usX2Y_substream *subs)
-@@ -491,7 +521,9 @@
+@@ -491,7 +522,9 @@
  		if (subs != NULL && atomic_read(&subs->state) >= state_PREPARED)
  			goto start;
  	}
@@ -103,7 +104,7 @@
   start:
  	usX2Y_subs_startup(subs);
  	for (i = 0; i < NRURBS; i++) {
-@@ -512,7 +544,11 @@
+@@ -512,7 +545,11 @@
  				err = -EPIPE;
  				goto cleanup;
  			} else
@@ -115,19 +116,19 @@
  					usX2Y->wait_iso_frame = urb->start_frame;
  			urb->transfer_flags = 0;
  		} else {
-@@ -657,7 +693,11 @@
+@@ -657,7 +694,11 @@
  };
  #define NOOF_SETRATE_URBS ARRAY_SIZE(SetRate48000)
  
-+#ifndef OLD_USB
- static void i_usX2Y_04Int(struct urb *urb, struct pt_regs *regs)
++#if !defined(OLD_USB) && !defined(CONFIG_SND_NEW_IRQ_HANDLER)
++static void i_usX2Y_04Int(struct urb *urb, struct pt_regs *regs)
 +#else
-+static void i_usX2Y_04Int(struct urb *urb)
+ static void i_usX2Y_04Int(struct urb *urb)
 +#endif
  {
  	struct usX2Ydev *usX2Y = urb->context;
  	
-@@ -1017,10 +1057,18 @@
+@@ -1017,10 +1058,18 @@
  
  	if (0 > (err = usX2Y_audio_stream_new(card, 0xA, 0x8)))
  		return err;

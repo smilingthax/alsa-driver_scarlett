@@ -406,10 +406,10 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #define synchronize_irq(irq)	synchronize_irq_wrapper(irq)
 #endif /* LINUX_VERSION_CODE < 2.5.28 */
 #ifndef IRQ_NONE
-#define IRQ_NONE	/*void*/
-#define IRQ_HANDLED	/*void*/
-#define IRQ_RETVAL(x)	/*void*/
-typedef void irqreturn_t;
+typedef int irqreturn_t;
+#define IRQ_NONE	(0)
+#define IRQ_HANDLED	(1)
+#define IRQ_RETVAL(x)	((x) != 0)
 #endif
 #endif /* < 2.6.0 */
 
@@ -1314,5 +1314,22 @@ static inline void *snd_kmemdup(const void *src, size_t len, gfp_t gfp)
 }
 #define kmemdup	snd_kmemdup
 #endif
+
+/* wrapper for new irq handler type */
+#ifndef CONFIG_SND_NEW_IRQ_HANDLER
+#include <linux/interrupt.h>
+typedef irqreturn_t (*snd_irq_handler_t)(int, void *);
+#undef irq_handler_t
+#define irq_handler_t snd_irq_handler_t
+int snd_request_irq(unsigned int, irq_handler_t handler,
+		    unsigned long, const char *, void *);
+void snd_free_irq(unsigned int, void *);
+#undef request_irq
+#define request_irq	snd_request_irq
+#undef free_irq
+#define free_irq	snd_free_irq
+extern struct pt_regs *snd_irq_regs;
+#define get_irq_regs()	snd_irq_regs
+#endif /* !CONFIG_SND_NEW_IRQ_HANDLER */
 
 #endif /* __SOUND_LOCAL_DRIVER_H */

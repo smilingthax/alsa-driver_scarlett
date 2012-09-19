@@ -606,6 +606,13 @@ dnl Remove header hacks
 rm -f include/linux/*.h
 rm -f include/asm/*.h
 
+dnl Check linux/config.h
+CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
+#define _LINUX_CONFIG_H
+#include <linux/autoconf.h>
+#endif
+])
+
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
 CHECK_KERNEL_HEADER(linux/utsrelease.h)
@@ -660,6 +667,7 @@ CHECK_KERNEL_HEADER(linux/mutex.h, [#include \"mutex_compat.h\"
 ])
 CHECK_KERNEL_HEADER(linux/latency.h, [#include \"latency_compat.h\"
 ])
+CHECK_KERNEL_HEADER(asm/irq_regs.h)
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
@@ -1307,7 +1315,7 @@ else
 fi
 AC_SUBST(msmp)
 
-KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+KERNEL_CHECK_CFLAGS="-Wall -fno-strict-aliasing $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -Iinclude -nostdinc -iwithprefix include"
 if test "$NEW_KBUILD" = "y"; then
   KERNEL_CHECK_CFLAGS="$KERNEL_CHECK_CFLAGS -DKBUILD_STR(s)=#s -DKBUILD_BASENAME=KBUILD_STR(dummy)"
 fi
@@ -2390,6 +2398,7 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#include <linux/config.h>
 #include <linux/mm.h>
 ],[
   void (*func)(struct vm_area_struct *, pte_t, unsigned long) = print_bad_pte;
@@ -2433,6 +2442,35 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   dnl AC_SUBST(CONFIG_SND_NESTED_CLASS_DEVICE)
   if test "$CONFIG_SND_NESTED_CLASS_DEVICE" = "1"; then
     AC_DEFINE(CONFIG_SND_NESTED_CLASS_DEVICE)
+  fi
+fi
+
+dnl new IRQ handler (2.6.19-rc2)
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for new IRQ handler)
+  new_irq_handler="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/interrupt.h>
+],[
+  irq_handler_t handle = 0;
+  handle(0, 0);
+],
+    AC_MSG_RESULT(yes);new_irq_handler="1",
+    AC_MSG_RESULT(no);new_irq_handler="0",
+    AC_MSG_RESULT(unknown);new_irq_handler="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_NEW_IRQ_HANDLER=$new_irq_handler
+  dnl AC_SUBST(CONFIG_SND_NEW_IRQ_HANDLER)
+  if test "$CONFIG_SND_NEW_IRQ_HANDLER" = "1"; then
+    AC_DEFINE(CONFIG_SND_NEW_IRQ_HANDLER)
   fi
 fi
 

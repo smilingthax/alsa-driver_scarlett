@@ -229,3 +229,80 @@ unsigned long snd_compat_msleep_interruptible(unsigned int msecs)
 	return (timeout * 1000) / HZ;
 }
 #endif /* < 2.6.6 */
+
+/* wrapper for new irq handler type */
+#ifndef CONFIG_SND_NEW_IRQ_HANDLER
+#include <linux/interrupt.h>
+#include <linux/mutex.h>
+#include <linux/list.h>
+typedef int (*snd_irq_handler_t)(int, void *);
+struct irq_list {
+	snd_irq_handler_t handler;
+	void *data;
+	struct list_head list;
+};
+	
+struct pt_regs *snd_irq_regs;
+
+#ifdef IRQ_NONE
+static irqreturn_t irq_redirect(int irq, void *data, struct pt_regs *reg)
+{
+	struct irq_list *list = data;
+	irqreturn_t val;
+	snd_irq_regs = reg;
+	val = list->handler(irq, list->data);
+	snd_irq_regs = NULL;
+	return val;
+}
+#else
+static void irq_redirect(int irq, void *data, struct pt_regs *reg)
+{
+	struct irq_list *list = data;
+	snd_irq_regs = reg;
+	list->handler(irq, list->data);
+	snd_irq_regs = NULL;
+}
+#endif
+
+static LIST_HEAD(irq_list_head);
+static DEFINE_MUTEX(irq_list_mutex);
+
+int snd_request_irq(unsigned int irq, snd_irq_handler_t handler,
+		    unsigned long irq_flags, const char *str, void *data)
+{
+	struct irq_list *list = kmalloc(sizeof(*list), GFP_KERNEL);
+	int err;
+
+	if (!list)
+		return -ENOMEM;
+	list->handler = handler;
+	list->data = data;
+	err = request_irq(irq, irq_redirect, irq_flags, str, list);
+	if (err) {
+		kfree(list);
+		return err;
+	}
+	mutex_lock(&irq_list_mutex);
+	list_add(&list->list, &irq_list_head);
+	mutex_unlock(&irq_list_mutex);
+	return 0;
+}
+
+void snd_free_irq(unsigned int irq, void *data)
+{
+	struct list_head *p;
+
+	mutex_lock(&irq_list_mutex);
+	list_for_each(p, &irq_list_head) {
+		struct irq_list *list = list_entry(p, struct irq_list, list);
+		if (list->data == data) {
+			free_irq(irq, list);
+			list_del(p);
+			kfree(p);
+			break;
+		}
+	}
+	mutex_unlock(&irq_list_mutex);
+}
+#endif /* !CONFIG_SND_NEW_IRQ_HANDLER */
+
