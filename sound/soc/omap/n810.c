@@ -50,11 +50,22 @@ static int n810_dmic_func;
 
 static void n810_ext_control(struct snd_soc_codec *codec)
 {
-	snd_soc_dapm_set_endpoint(codec, "Ext Spk", n810_spk_func);
-	snd_soc_dapm_set_endpoint(codec, "Headphone Jack", n810_jack_func);
-	snd_soc_dapm_set_endpoint(codec, "DMic", n810_dmic_func);
+	if (n810_spk_func)
+		snd_soc_dapm_enable_pin(codec, "Ext Spk");
+	else
+		snd_soc_dapm_disable_pin(codec, "Ext Spk");
 
-	snd_soc_dapm_sync_endpoints(codec);
+	if (n810_jack_func)
+		snd_soc_dapm_enable_pin(codec, "Headphone Jack");
+	else
+		snd_soc_dapm_disable_pin(codec, "Headphone Jack");
+
+	if (n810_dmic_func)
+		snd_soc_dapm_enable_pin(codec, "DMic");
+	else
+		snd_soc_dapm_disable_pin(codec, "DMic");
+
+	snd_soc_dapm_sync(codec);
 }
 
 static int n810_startup(struct snd_pcm_substream *substream)
@@ -75,12 +86,12 @@ static int n810_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec_dai *codec_dai = rtd->dai->codec_dai;
-	struct snd_soc_cpu_dai *cpu_dai = rtd->dai->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
+	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
 	int err;
 
 	/* Set codec DAI configuration */
-	err = codec_dai->dai_ops.set_fmt(codec_dai,
+	err = snd_soc_dai_set_fmt(codec_dai,
 					 SND_SOC_DAIFMT_I2S |
 					 SND_SOC_DAIFMT_NB_NF |
 					 SND_SOC_DAIFMT_CBM_CFM);
@@ -88,7 +99,7 @@ static int n810_hw_params(struct snd_pcm_substream *substream,
 		return err;
 
 	/* Set cpu DAI configuration */
-	err = cpu_dai->dai_ops.set_fmt(cpu_dai,
+	err = snd_soc_dai_set_fmt(cpu_dai,
 				       SND_SOC_DAIFMT_I2S |
 				       SND_SOC_DAIFMT_NB_NF |
 				       SND_SOC_DAIFMT_CBM_CFM);
@@ -96,7 +107,7 @@ static int n810_hw_params(struct snd_pcm_substream *substream,
 		return err;
 
 	/* Set the codec system clock for DAC and ADC */
-	err = codec_dai->dai_ops.set_sysclk(codec_dai, 0, 12000000,
+	err = snd_soc_dai_set_sysclk(codec_dai, 0, 12000000,
 					    SND_SOC_CLOCK_IN);
 
 	return err;
@@ -236,9 +247,9 @@ static int n810_aic33_init(struct snd_soc_codec *codec)
 	int i, err;
 
 	/* Not connected */
-	snd_soc_dapm_set_endpoint(codec, "MONO_LOUT", 0);
-	snd_soc_dapm_set_endpoint(codec, "HPLCOM", 0);
-	snd_soc_dapm_set_endpoint(codec, "HPRCOM", 0);
+	snd_soc_dapm_disable_pin(codec, "MONO_LOUT");
+	snd_soc_dapm_disable_pin(codec, "HPLCOM");
+	snd_soc_dapm_disable_pin(codec, "HPRCOM");
 
 	/* Add N810 specific controls */
 	for (i = 0; i < ARRAY_SIZE(aic33_n810_controls); i++) {
@@ -255,7 +266,7 @@ static int n810_aic33_init(struct snd_soc_codec *codec)
 	/* Set up N810 specific audio path audio_map */
 	snd_soc_dapm_add_routes(codec, audio_map, ARRAY_SIZE(audio_map));
 
-	snd_soc_dapm_sync_endpoints(codec);
+	snd_soc_dapm_sync(codec);
 
 	return 0;
 }

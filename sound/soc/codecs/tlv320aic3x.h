@@ -37,6 +37,8 @@
 #define AIC3X_ASD_INTF_CTRLB		9
 /* Audio overflow status and PLL R value programming register */
 #define AIC3X_OVRF_STATUS_AND_PLLR_REG	11
+/* Audio codec digital filter control register */
+#define AIC3X_CODEC_DFILT_CTRL		12
 
 /* ADC PGA Gain control registers */
 #define LADC_VOL			15
@@ -226,7 +228,7 @@ struct aic3x_setup_data {
 	unsigned int gpio_func[2];
 };
 
-extern struct snd_soc_codec_dai aic3x_dai;
+extern struct snd_soc_dai aic3x_dai;
 extern struct snd_soc_codec_device soc_codec_dev_aic3x;
 
 #endif /* _AIC3X_H */

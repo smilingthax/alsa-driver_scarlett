@@ -134,8 +134,8 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct snd_soc_dai_link *machine = rtd->dai;
 	struct snd_soc_platform *platform = socdev->platform;
-	struct snd_soc_cpu_dai *cpu_dai = machine->cpu_dai;
-	struct snd_soc_codec_dai *codec_dai = machine->codec_dai;
+	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+	struct snd_soc_dai *codec_dai = machine->codec_dai;
 	int ret = 0;
 
 	mutex_lock(&pcm_mutex);
@@ -272,7 +272,7 @@ static void close_delayed_work(struct work_struct *work)
 	struct snd_soc_device *socdev =
 		container_of(work, struct snd_soc_device, delayed_work.work);
 	struct snd_soc_codec *codec = socdev->codec;
-	struct snd_soc_codec_dai *codec_dai;
+	struct snd_soc_dai *codec_dai;
 	int i;
 
 	mutex_lock(&pcm_mutex);
@@ -323,8 +323,8 @@ static int soc_codec_close(struct snd_pcm_substream *substream)
 	struct snd_soc_device *socdev = rtd->socdev;
 	struct snd_soc_dai_link *machine = rtd->dai;
 	struct snd_soc_platform *platform = socdev->platform;
-	struct snd_soc_cpu_dai *cpu_dai = machine->cpu_dai;
-	struct snd_soc_codec_dai *codec_dai = machine->codec_dai;
+	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+	struct snd_soc_dai *codec_dai = machine->codec_dai;
 	struct snd_soc_codec *codec = socdev->codec;
 
 	mutex_lock(&pcm_mutex);
@@ -384,8 +384,8 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 	struct snd_soc_device *socdev = rtd->socdev;
 	struct snd_soc_dai_link *machine = rtd->dai;
 	struct snd_soc_platform *platform = socdev->platform;
-	struct snd_soc_cpu_dai *cpu_dai = machine->cpu_dai;
-	struct snd_soc_codec_dai *codec_dai = machine->codec_dai;
+	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+	struct snd_soc_dai *codec_dai = machine->codec_dai;
 	struct snd_soc_codec *codec = socdev->codec;
 	int ret = 0;
 
@@ -434,8 +434,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 		else {
 			codec_dai->pop_wait = 0;
 			cancel_delayed_work(&socdev->delayed_work);
-			if (codec_dai->dai_ops.digital_mute)
-				codec_dai->dai_ops.digital_mute(codec_dai, 0);
+			snd_soc_dai_digital_mute(codec_dai, 0);
 		}
 	} else {
 		/* no delayed work - do we need to power up codec */
@@ -454,8 +453,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 					SND_SOC_DAPM_STREAM_START);
 
 			snd_soc_dapm_set_bias_level(socdev, SND_SOC_BIAS_ON);
-			if (codec_dai->dai_ops.digital_mute)
-				codec_dai->dai_ops.digital_mute(codec_dai, 0);
+			snd_soc_dai_digital_mute(codec_dai, 0);
 
 		} else {
 			/* codec already powered - power on widgets */
@@ -467,8 +465,8 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 				snd_soc_dapm_stream_event(codec,
 					codec_dai->capture.stream_name,
 					SND_SOC_DAPM_STREAM_START);
-			if (codec_dai->dai_ops.digital_mute)
-				codec_dai->dai_ops.digital_mute(codec_dai, 0);
+
+			snd_soc_dai_digital_mute(codec_dai, 0);
 		}
 	}
 
@@ -489,8 +487,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_device *socdev = rtd->socdev;
 	struct snd_soc_dai_link *machine = rtd->dai;
 	struct snd_soc_platform *platform = socdev->platform;
-	struct snd_soc_cpu_dai *cpu_dai = machine->cpu_dai;
-	struct snd_soc_codec_dai *codec_dai = machine->codec_dai;
+	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+	struct snd_soc_dai *codec_dai = machine->codec_dai;
 	int ret = 0;
 
 	mutex_lock(&pcm_mutex);
@@ -559,15 +557,15 @@ static int soc_pcm_hw_free(struct snd_pcm_substream *substream)
 	struct snd_soc_device *socdev = rtd->socdev;
 	struct snd_soc_dai_link *machine = rtd->dai;
 	struct snd_soc_platform *platform = socdev->platform;
-	struct snd_soc_cpu_dai *cpu_dai = machine->cpu_dai;
-	struct snd_soc_codec_dai *codec_dai = machine->codec_dai;
+	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+	struct snd_soc_dai *codec_dai = machine->codec_dai;
 	struct snd_soc_codec *codec = socdev->codec;
 
 	mutex_lock(&pcm_mutex);
 
 	/* apply codec digital mute */
-	if (!codec->active && codec_dai->dai_ops.digital_mute)
-		codec_dai->dai_ops.digital_mute(codec_dai, 1);
+	if (!codec->active)
+		snd_soc_dai_digital_mute(codec_dai, 1);
 
 	/* free any machine hw params */
 	if (machine->ops && machine->ops->hw_free)
@@ -594,8 +592,8 @@ static int soc_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 	struct snd_soc_device *socdev = rtd->socdev;
 	struct snd_soc_dai_link *machine = rtd->dai;
 	struct snd_soc_platform *platform = socdev->platform;
-	struct snd_soc_cpu_dai *cpu_dai = machine->cpu_dai;
-	struct snd_soc_codec_dai *codec_dai = machine->codec_dai;
+	struct snd_soc_dai *cpu_dai = machine->cpu_dai;
+	struct snd_soc_dai *codec_dai = machine->codec_dai;
 	int ret;
 
 	if (codec_dai->ops.trigger) {
@@ -651,7 +649,7 @@ static int soc_suspend(struct platform_device *pdev, pm_message_t state)
 
 	/* mute any active DAC's */
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_codec_dai *dai = machine->dai_link[i].codec_dai;
+		struct snd_soc_dai *dai = machine->dai_link[i].codec_dai;
 		if (dai->dai_ops.digital_mute && dai->playback.active)
 			dai->dai_ops.digital_mute(dai, 1);
 	}
@@ -664,7 +662,7 @@ static int soc_suspend(struct platform_device *pdev, pm_message_t state)
 		machine->suspend_pre(pdev, state);
 
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_cpu_dai  *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai  *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->suspend && cpu_dai->type != SND_SOC_DAI_AC97)
 			cpu_dai->suspend(pdev, cpu_dai);
 		if (platform->suspend)
@@ -690,7 +688,7 @@ static int soc_suspend(struct platform_device *pdev, pm_message_t state)
 		codec_dev->suspend(pdev, state);
 
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_cpu_dai *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->suspend && cpu_dai->type == SND_SOC_DAI_AC97)
 			cpu_dai->suspend(pdev, cpu_dai);
 	}
@@ -726,7 +724,7 @@ static void soc_resume_deferred(struct work_struct *work)
 		machine->resume_pre(pdev);
 
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_cpu_dai *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->resume && cpu_dai->type == SND_SOC_DAI_AC97)
 			cpu_dai->resume(pdev, cpu_dai);
 	}
@@ -747,13 +745,13 @@ static void soc_resume_deferred(struct work_struct *work)
 
 	/* unmute any active DACs */
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_codec_dai *dai = machine->dai_link[i].codec_dai;
+		struct snd_soc_dai *dai = machine->dai_link[i].codec_dai;
 		if (dai->dai_ops.digital_mute && dai->playback.active)
 			dai->dai_ops.digital_mute(dai, 0);
 	}
 
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_cpu_dai *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->resume && cpu_dai->type != SND_SOC_DAI_AC97)
 			cpu_dai->resume(pdev, cpu_dai);
 		if (platform->resume)
@@ -803,7 +801,7 @@ static int soc_probe(struct platform_device *pdev)
 	}
 
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_cpu_dai *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->probe) {
 			ret = cpu_dai->probe(pdev, cpu_dai);
 			if (ret < 0)
@@ -838,7 +836,7 @@ platform_err:
 
 cpu_dai_err:
 	for (i--; i >= 0; i--) {
-		struct snd_soc_cpu_dai *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->remove)
 			cpu_dai->remove(pdev, cpu_dai);
 	}
@@ -867,7 +865,7 @@ static int soc_remove(struct platform_device *pdev)
 		codec_dev->remove(pdev);
 
 	for (i = 0; i < machine->num_links; i++) {
-		struct snd_soc_cpu_dai *cpu_dai = machine->dai_link[i].cpu_dai;
+		struct snd_soc_dai *cpu_dai = machine->dai_link[i].cpu_dai;
 		if (cpu_dai->remove)
 			cpu_dai->remove(pdev, cpu_dai);
 	}
@@ -895,8 +893,8 @@ static int soc_new_pcm(struct snd_soc_device *socdev,
 	struct snd_soc_dai_link *dai_link, int num)
 {
 	struct snd_soc_codec *codec = socdev->codec;
-	struct snd_soc_codec_dai *codec_dai = dai_link->codec_dai;
-	struct snd_soc_cpu_dai *cpu_dai = dai_link->cpu_dai;
+	struct snd_soc_dai *codec_dai = dai_link->codec_dai;
+	struct snd_soc_dai *cpu_dai = dai_link->cpu_dai;
 	struct snd_soc_pcm_runtime *rtd;
 	struct snd_pcm *pcm;
 	char new_name[64];
@@ -1211,7 +1209,7 @@ void snd_soc_free_pcms(struct snd_soc_device *socdev)
 {
 	struct snd_soc_codec *codec = socdev->codec;
 #ifdef CONFIG_SND_SOC_AC97_BUS
-	struct snd_soc_codec_dai *codec_dai;
+	struct snd_soc_dai *codec_dai;
 	int i;
 #endif
 
@@ -1702,6 +1700,132 @@ int snd_soc_put_volsw_s8(struct snd_kcontrol *kcontrol,
 	return snd_soc_update_bits(codec, reg, 0xffff, val);
 }
 EXPORT_SYMBOL_GPL(snd_soc_put_volsw_s8);
+
+/**
+ * snd_soc_dai_set_sysclk - configure DAI system or master clock.
+ * @dai: DAI
+ * @clk_id: DAI specific clock ID
+ * @freq: new clock frequency in Hz
+ * @dir: new clock direction - input/output.
+ *
+ * Configures the DAI master (MCLK) or system (SYSCLK) clocking.
+ */
+int snd_soc_dai_set_sysclk(struct snd_soc_dai *dai, int clk_id,
+	unsigned int freq, int dir)
+{
+	if (dai->dai_ops.set_sysclk)
+		return dai->dai_ops.set_sysclk(dai, clk_id, freq, dir);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_sysclk);
+
+/**
+ * snd_soc_dai_set_clkdiv - configure DAI clock dividers.
+ * @dai: DAI
+ * @clk_id: DAI specific clock divider ID
+ * @div: new clock divisor.
+ *
+ * Configures the clock dividers. This is used to derive the best DAI bit and
+ * frame clocks from the system or master clock. It's best to set the DAI bit
+ * and frame clocks as low as possible to save system power.
+ */
+int snd_soc_dai_set_clkdiv(struct snd_soc_dai *dai,
+	int div_id, int div)
+{
+	if (dai->dai_ops.set_clkdiv)
+		return dai->dai_ops.set_clkdiv(dai, div_id, div);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_clkdiv);
+
+/**
+ * snd_soc_dai_set_pll - configure DAI PLL.
+ * @dai: DAI
+ * @pll_id: DAI specific PLL ID
+ * @freq_in: PLL input clock frequency in Hz
+ * @freq_out: requested PLL output clock frequency in Hz
+ *
+ * Configures and enables PLL to generate output clock based on input clock.
+ */
+int snd_soc_dai_set_pll(struct snd_soc_dai *dai,
+	int pll_id, unsigned int freq_in, unsigned int freq_out)
+{
+	if (dai->dai_ops.set_pll)
+		return dai->dai_ops.set_pll(dai, pll_id, freq_in, freq_out);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_pll);
+
+/**
+ * snd_soc_dai_set_fmt - configure DAI hardware audio format.
+ * @dai: DAI
+ * @clk_id: DAI specific clock ID
+ * @fmt: SND_SOC_DAIFMT_ format value.
+ *
+ * Configures the DAI hardware format and clocking.
+ */
+int snd_soc_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+{
+	if (dai->dai_ops.set_fmt)
+		return dai->dai_ops.set_fmt(dai, fmt);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_fmt);
+
+/**
+ * snd_soc_dai_set_tdm_slot - configure DAI TDM.
+ * @dai: DAI
+ * @mask: DAI specific mask representing used slots.
+ * @slots: Number of slots in use.
+ *
+ * Configures a DAI for TDM operation. Both mask and slots are codec and DAI
+ * specific.
+ */
+int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
+	unsigned int mask, int slots)
+{
+	if (dai->dai_ops.set_sysclk)
+		return dai->dai_ops.set_tdm_slot(dai, mask, slots);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_tdm_slot);
+
+/**
+ * snd_soc_dai_set_tristate - configure DAI system or master clock.
+ * @dai: DAI
+ * @tristate: tristate enable
+ *
+ * Tristates the DAI so that others can use it.
+ */
+int snd_soc_dai_set_tristate(struct snd_soc_dai *dai, int tristate)
+{
+	if (dai->dai_ops.set_sysclk)
+		return dai->dai_ops.set_tristate(dai, tristate);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_tristate);
+
+/**
+ * snd_soc_dai_digital_mute - configure DAI system or master clock.
+ * @dai: DAI
+ * @mute: mute enable
+ *
+ * Mutes the DAI DAC.
+ */
+int snd_soc_dai_digital_mute(struct snd_soc_dai *dai, int mute)
+{
+	if (dai->dai_ops.digital_mute)
+		return dai->dai_ops.digital_mute(dai, mute);
+	else
+		return -EINVAL;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_digital_mute);
 
 static int __devinit snd_soc_init(void)
 {

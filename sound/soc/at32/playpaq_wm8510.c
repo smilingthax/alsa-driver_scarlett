@@ -82,7 +82,7 @@ static struct clk *_pll0;
 #if defined CONFIG_SND_AT32_SOC_PLAYPAQ_SLAVE
 static struct ssc_clock_data playpaq_wm8510_calc_ssc_clock(
 	struct snd_pcm_hw_params *params,
-	struct snd_soc_cpu_dai *cpu_dai)
+	struct snd_soc_dai *cpu_dai)
 {
 	struct at32_ssc_info *ssc_p = cpu_dai->private_data;
 	struct ssc_device *ssc = ssc_p->ssc;
@@ -132,8 +132,8 @@ static int playpaq_wm8510_hw_params(struct snd_pcm_substream *substream,
 				    struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec_dai *codec_dai = rtd->dai->codec_dai;
-	struct snd_soc_cpu_dai *cpu_dai = rtd->dai->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
+	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
 	struct at32_ssc_info *ssc_p = cpu_dai->private_data;
 	struct ssc_device *ssc = ssc_p->ssc;
 	unsigned int pll_out = 0, bclk = 0, mclk_div = 0;
@@ -210,14 +210,14 @@ static int playpaq_wm8510_hw_params(struct snd_pcm_substream *substream,
 	/*
 	 * set CPU and CODEC DAI configuration
 	 */
-	ret = codec_dai->dai_ops.set_fmt(codec_dai, fmt);
+	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
 	if (ret < 0) {
 		pr_warning("playpaq_wm8510: "
 			   "Failed to set CODEC DAI format (%d)\n",
 			   ret);
 		return ret;
 	}
-	ret = cpu_dai->dai_ops.set_fmt(cpu_dai, fmt);
+	ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
 	if (ret < 0) {
 		pr_warning("playpaq_wm8510: "
 			   "Failed to set CPU DAI format (%d)\n",
@@ -233,14 +233,13 @@ static int playpaq_wm8510_hw_params(struct snd_pcm_substream *substream,
 	cd = playpaq_wm8510_calc_ssc_clock(params, cpu_dai);
 	pr_debug("playpaq_wm8510: cmr_div = %d, period = %d\n",
 		 cd.cmr_div, cd.period);
-	ret = cpu_dai->dai_ops.set_clkdiv(cpu_dai,
-					  AT32_SSC_CMR_DIV, cd.cmr_div);
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, AT32_SSC_CMR_DIV, cd.cmr_div);
 	if (ret < 0) {
 		pr_warning("playpaq_wm8510: Failed to set CPU CMR_DIV (%d)\n",
 			   ret);
 		return ret;
 	}
-	ret = cpu_dai->dai_ops.set_clkdiv(cpu_dai, AT32_SSC_TCMR_PERIOD,
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, AT32_SSC_TCMR_PERIOD,
 					  cd.period);
 	if (ret < 0) {
 		pr_warning("playpaq_wm8510: "
@@ -260,7 +259,7 @@ static int playpaq_wm8510_hw_params(struct snd_pcm_substream *substream,
 
 
 #if !defined CONFIG_SND_AT32_SOC_PLAYPAQ_SLAVE
-	ret = codec_dai->dai_ops.set_clkdiv(codec_dai, WM8510_BCLKDIV, bclk);
+	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8510_BCLKDIV, bclk);
 	if (ret < 0) {
 		pr_warning
 		    ("playpaq_wm8510: Failed to set CODEC DAI BCLKDIV (%d)\n",
@@ -270,7 +269,7 @@ static int playpaq_wm8510_hw_params(struct snd_pcm_substream *substream,
 #endif /* CONFIG_SND_AT32_SOC_PLAYPAQ_SLAVE */
 
 
-	ret = codec_dai->dai_ops.set_pll(codec_dai, 0,
+	ret = snd_soc_dai_set_pll(codec_dai, 0,
 					 clk_get_rate(CODEC_CLK), pll_out);
 	if (ret < 0) {
 		pr_warning("playpaq_wm8510: Failed to set CODEC DAI PLL (%d)\n",
@@ -279,8 +278,7 @@ static int playpaq_wm8510_hw_params(struct snd_pcm_substream *substream,
 	}
 
 
-	ret = codec_dai->dai_ops.set_clkdiv(codec_dai,
-					    WM8510_MCLKDIV, mclk_div);
+	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8510_MCLKDIV, mclk_div);
 	if (ret < 0) {
 		pr_warning("playpaq_wm8510: Failed to set CODEC MCLKDIV (%d)\n",
 			   ret);
@@ -343,15 +341,15 @@ static int playpaq_wm8510_init(struct snd_soc_codec *codec)
 	}
 
 
-	/* always connected endpoints */
-	snd_soc_dapm_set_endpoint(codec, "Int Mic", 1);
-	snd_soc_dapm_set_endpoint(codec, "Ext Spk", 1);
-	snd_soc_dapm_sync_endpoints(codec);
+	/* always connected pins */
+	snd_soc_dapm_enable_pin(codec, "Int Mic");
+	snd_soc_dapm_enable_pin(codec, "Ext Spk");
+	snd_soc_dapm_sync(codec);
 
 
 
 	/* Make CSB show PLL rate */
-	codec->dai->dai_ops.set_clkdiv(codec->dai, WM8510_OPCLKDIV,
+	snd_soc_dai_set_clkdiv(codec->dai, WM8510_OPCLKDIV,
 				       WM8510_OPCLKDIV_1 | 4);
 
 	return 0;

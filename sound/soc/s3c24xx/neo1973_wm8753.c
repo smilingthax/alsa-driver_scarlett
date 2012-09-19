@@ -66,8 +66,8 @@ static int neo1973_hifi_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec_dai *codec_dai = rtd->dai->codec_dai;
-	struct snd_soc_cpu_dai *cpu_dai = rtd->dai->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
+	struct snd_soc_dai *cpu_dai = rtd->dai->cpu_dai;
 	unsigned int pll_out = 0, bclk = 0;
 	int ret = 0;
 	unsigned long iis_clkrate;
@@ -108,44 +108,44 @@ static int neo1973_hifi_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* set codec DAI configuration */
-	ret = codec_dai->dai_ops.set_fmt(codec_dai,
+	ret = snd_soc_dai_set_fmt(codec_dai,
 		SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 		SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0)
 		return ret;
 
 	/* set cpu DAI configuration */
-	ret = cpu_dai->dai_ops.set_fmt(cpu_dai,
+	ret = snd_soc_dai_set_fmt(cpu_dai,
 		SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 		SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0)
 		return ret;
 
 	/* set the codec system clock for DAC and ADC */
-	ret = codec_dai->dai_ops.set_sysclk(codec_dai, WM8753_MCLK, pll_out,
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8753_MCLK, pll_out,
 		SND_SOC_CLOCK_IN);
 	if (ret < 0)
 		return ret;
 
 	/* set MCLK division for sample rate */
-	ret = cpu_dai->dai_ops.set_clkdiv(cpu_dai, S3C24XX_DIV_MCLK,
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, S3C24XX_DIV_MCLK,
 		S3C2410_IISMOD_32FS);
 	if (ret < 0)
 		return ret;
 
 	/* set codec BCLK division for sample rate */
-	ret = codec_dai->dai_ops.set_clkdiv(codec_dai, WM8753_BCLKDIV, bclk);
+	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8753_BCLKDIV, bclk);
 	if (ret < 0)
 		return ret;
 
 	/* set prescaler division for sample rate */
-	ret = cpu_dai->dai_ops.set_clkdiv(cpu_dai, S3C24XX_DIV_PRESCALER,
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, S3C24XX_DIV_PRESCALER,
 		S3C24XX_PRESCALE(4, 4));
 	if (ret < 0)
 		return ret;
 
 	/* codec PLL input is PCLK/4 */
-	ret = codec_dai->dai_ops.set_pll(codec_dai, WM8753_PLL1,
+	ret = snd_soc_dai_set_pll(codec_dai, WM8753_PLL1,
 		iis_clkrate / 4, pll_out);
 	if (ret < 0)
 		return ret;
@@ -156,12 +156,12 @@ static int neo1973_hifi_hw_params(struct snd_pcm_substream *substream,
 static int neo1973_hifi_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec_dai *codec_dai = rtd->dai->codec_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
 
 	DBG("Entered %s\n", __func__);
 
 	/* disable the PLL */
-	return codec_dai->dai_ops.set_pll(codec_dai, WM8753_PLL1, 0, 0);
+	return snd_soc_dai_set_pll(codec_dai, WM8753_PLL1, 0, 0);
 }
 
 /*
@@ -176,7 +176,7 @@ static int neo1973_voice_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec_dai *codec_dai = rtd->dai->codec_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
 	unsigned int pcmdiv = 0;
 	int ret = 0;
 	unsigned long iis_clkrate;
@@ -194,24 +194,24 @@ static int neo1973_voice_hw_params(struct snd_pcm_substream *substream,
 
 	/* todo: gg check mode (DSP_B) against CSR datasheet */
 	/* set codec DAI configuration */
-	ret = codec_dai->dai_ops.set_fmt(codec_dai, SND_SOC_DAIFMT_DSP_B |
+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_DSP_B |
 		SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
 	if (ret < 0)
 		return ret;
 
 	/* set the codec system clock for DAC and ADC */
-	ret = codec_dai->dai_ops.set_sysclk(codec_dai, WM8753_PCMCLK, 12288000,
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8753_PCMCLK, 12288000,
 		SND_SOC_CLOCK_IN);
 	if (ret < 0)
 		return ret;
 
 	/* set codec PCM division for sample rate */
-	ret = codec_dai->dai_ops.set_clkdiv(codec_dai, WM8753_PCMDIV, pcmdiv);
+	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8753_PCMDIV, pcmdiv);
 	if (ret < 0)
 		return ret;
 
 	/* configue and enable PLL for 12.288MHz output */
-	ret = codec_dai->dai_ops.set_pll(codec_dai, WM8753_PLL2,
+	ret = snd_soc_dai_set_pll(codec_dai, WM8753_PLL2,
 		iis_clkrate / 4, 12288000);
 	if (ret < 0)
 		return ret;
@@ -222,12 +222,12 @@ static int neo1973_voice_hw_params(struct snd_pcm_substream *substream,
 static int neo1973_voice_hw_free(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-	struct snd_soc_codec_dai *codec_dai = rtd->dai->codec_dai;
+	struct snd_soc_dai *codec_dai = rtd->dai->codec_dai;
 
 	DBG("Entered %s\n", __func__);
 
 	/* disable the PLL */
-	return codec_dai->dai_ops.set_pll(codec_dai, WM8753_PLL2, 0, 0);
+	return snd_soc_dai_set_pll(codec_dai, WM8753_PLL2, 0, 0);
 }
 
 static struct snd_soc_ops neo1973_voice_ops = {
@@ -250,77 +250,77 @@ static int set_scenario_endpoints(struct snd_soc_codec *codec, int scenario)
 
 	switch (neo1973_scenario) {
 	case NEO_AUDIO_OFF:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_disable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	case NEO_GSM_CALL_AUDIO_HANDSET:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  1);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     1);
+		snd_soc_dapm_enable_pin(codec, "Audio Out");
+		snd_soc_dapm_enable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_enable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_enable_pin(codec, "Call Mic");
 		break;
 	case NEO_GSM_CALL_AUDIO_HEADSET:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  1);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  1);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_enable_pin(codec, "Audio Out");
+		snd_soc_dapm_enable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_enable_pin(codec, "GSM Line In");
+		snd_soc_dapm_enable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	case NEO_GSM_CALL_AUDIO_BLUETOOTH:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  1);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_disable_pin(codec, "Audio Out");
+		snd_soc_dapm_enable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_enable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	case NEO_STEREO_TO_SPEAKERS:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_enable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	case NEO_STEREO_TO_HEADPHONES:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    1);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_enable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	case NEO_CAPTURE_HANDSET:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     1);
+		snd_soc_dapm_disable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_enable_pin(codec, "Call Mic");
 		break;
 	case NEO_CAPTURE_HEADSET:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  1);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_disable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_enable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	case NEO_CAPTURE_BLUETOOTH:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_disable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 		break;
 	default:
-		snd_soc_dapm_set_endpoint(codec, "Audio Out",    0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line Out", 0);
-		snd_soc_dapm_set_endpoint(codec, "GSM Line In",  0);
-		snd_soc_dapm_set_endpoint(codec, "Headset Mic",  0);
-		snd_soc_dapm_set_endpoint(codec, "Call Mic",     0);
+		snd_soc_dapm_disable_pin(codec, "Audio Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line Out");
+		snd_soc_dapm_disable_pin(codec, "GSM Line In");
+		snd_soc_dapm_disable_pin(codec, "Headset Mic");
+		snd_soc_dapm_disable_pin(codec, "Call Mic");
 	}
 
-	snd_soc_dapm_sync_endpoints(codec);
+	snd_soc_dapm_sync(codec);
 
 	return 0;
 }
@@ -511,12 +511,12 @@ static int neo1973_wm8753_init(struct snd_soc_codec *codec)
 	DBG("Entered %s\n", __func__);
 
 	/* set up NC codec pins */
-	snd_soc_dapm_set_endpoint(codec, "LOUT2", 0);
-	snd_soc_dapm_set_endpoint(codec, "ROUT2", 0);
-	snd_soc_dapm_set_endpoint(codec, "OUT3",  0);
-	snd_soc_dapm_set_endpoint(codec, "OUT4",  0);
-	snd_soc_dapm_set_endpoint(codec, "LINE1", 0);
-	snd_soc_dapm_set_endpoint(codec, "LINE2", 0);
+	snd_soc_dapm_disable_pin(codec, "LOUT2");
+	snd_soc_dapm_disable_pin(codec, "ROUT2");
+	snd_soc_dapm_disable_pin(codec, "OUT3");
+	snd_soc_dapm_disable_pin(codec, "OUT4");
+	snd_soc_dapm_disable_pin(codec, "LINE1");
+	snd_soc_dapm_disable_pin(codec, "LINE2");
 
 
 	/* set endpoints to default mode */
@@ -539,14 +539,14 @@ static int neo1973_wm8753_init(struct snd_soc_codec *codec)
 	err = snd_soc_dapm_add_routes(codec, dapm_routes,
 				      ARRAY_SIZE(dapm_routes));
 
-	snd_soc_dapm_sync_endpoints(codec);
+	snd_soc_dapm_sync(codec);
 	return 0;
 }
 
 /*
  * BT Codec DAI
  */
-static struct snd_soc_cpu_dai bt_dai = {
+static struct snd_soc_dai bt_dai = {
 	.name = "Bluetooth",
 	.id = 0,
 	.type = SND_SOC_DAI_PCM,

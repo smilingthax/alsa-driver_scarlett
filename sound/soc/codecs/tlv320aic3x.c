@@ -29,7 +29,7 @@
  *  ---------------------------------------
  *
  *  Hence the machine layer should disable unsupported inputs/outputs by
- *  snd_soc_dapm_set_endpoint(codec, "MONO_LOUT", 0), etc.
+ *  snd_soc_dapm_disable_pin(codec, "MONO_LOUT"), etc.
  */
 
 #include <linux/module.h>
@@ -206,7 +206,7 @@ static int snd_soc_dapm_put_volsw_aic3x(struct snd_kcontrol *kcontrol,
 		}
 
 		if (found)
-			snd_soc_dapm_sync_endpoints(widget->codec);
+			snd_soc_dapm_sync(widget->codec);
 	}
 
 	ret = snd_soc_update_bits(widget->codec, reg, val_mask, val);
@@ -223,6 +223,8 @@ static const char *aic3x_right_hpcom_mux[] =
     { "differential of HPROUT", "constant VCM", "single-ended",
       "differential of HPLCOM", "external feedback" };
 static const char *aic3x_linein_mode_mux[] = { "single-ended", "differential" };
+static const char *aic3x_adc_hpf[] =
+    { "Disabled", "0.0045xFs", "0.0125xFs", "0.025xFs" };
 
 #define LDAC_ENUM	0
 #define RDAC_ENUM	1
@@ -232,6 +234,7 @@ static const char *aic3x_linein_mode_mux[] = { "single-ended", "differential" };
 #define LINE1R_ENUM	5
 #define LINE2L_ENUM	6
 #define LINE2R_ENUM	7
+#define ADC_HPF_ENUM	8
 
 static const struct soc_enum aic3x_enum[] = {
 	SOC_ENUM_SINGLE(DAC_LINE_MUX, 6, 3, aic3x_left_dac_mux),
@@ -242,6 +245,7 @@ static const struct soc_enum aic3x_enum[] = {
 	SOC_ENUM_SINGLE(LINE1R_2_RADC_CTRL, 7, 2, aic3x_linein_mode_mux),
 	SOC_ENUM_SINGLE(LINE2L_2_LADC_CTRL, 7, 2, aic3x_linein_mode_mux),
 	SOC_ENUM_SINGLE(LINE2R_2_RADC_CTRL, 7, 2, aic3x_linein_mode_mux),
+	SOC_ENUM_DOUBLE(AIC3X_CODEC_DFILT_CTRL, 6, 4, 4, aic3x_adc_hpf),
 };
 
 static const struct snd_kcontrol_new aic3x_snd_controls[] = {
@@ -292,6 +296,8 @@ static const struct snd_kcontrol_new aic3x_snd_controls[] = {
 	/* Input */
 	SOC_DOUBLE_R("PGA Capture Volume", LADC_VOL, RADC_VOL, 0, 0x7f, 0),
 	SOC_DOUBLE_R("PGA Capture Switch", LADC_VOL, RADC_VOL, 7, 0x01, 1),
+
+	SOC_ENUM("ADC HPF Cut-off", aic3x_enum[ADC_HPF_ENUM]),
 };
 
 /* add non dapm controls */
@@ -808,7 +814,7 @@ static int aic3x_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int aic3x_mute(struct snd_soc_codec_dai *dai, int mute)
+static int aic3x_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	u8 ldac_reg = aic3x_read_reg_cache(codec, LDAC_VOL) & ~MUTE_ON;
@@ -825,7 +831,7 @@ static int aic3x_mute(struct snd_soc_codec_dai *dai, int mute)
 	return 0;
 }
 
-static int aic3x_set_dai_sysclk(struct snd_soc_codec_dai *codec_dai,
+static int aic3x_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 				int clk_id, unsigned int freq, int dir)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -835,7 +841,7 @@ static int aic3x_set_dai_sysclk(struct snd_soc_codec_dai *codec_dai,
 	return 0;
 }
 
-static int aic3x_set_dai_fmt(struct snd_soc_codec_dai *codec_dai,
+static int aic3x_set_dai_fmt(struct snd_soc_dai *codec_dai,
 			     unsigned int fmt)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -984,7 +990,7 @@ EXPORT_SYMBOL_GPL(aic3x_headset_detected);
 #define AIC3X_FORMATS	(SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE | \
 			 SNDRV_PCM_FMTBIT_S24_3LE | SNDRV_PCM_FMTBIT_S32_LE)
 
-struct snd_soc_codec_dai aic3x_dai = {
+struct snd_soc_dai aic3x_dai = {
 	.name = "aic3x",
 	.playback = {
 		.stream_name = "Playback",

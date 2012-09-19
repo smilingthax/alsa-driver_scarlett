@@ -789,7 +789,7 @@ static int wm9713_set_pll(struct snd_soc_codec *codec,
 	return 0;
 }
 
-static int wm9713_set_dai_pll(struct snd_soc_codec_dai *codec_dai,
+static int wm9713_set_dai_pll(struct snd_soc_dai *codec_dai,
 		int pll_id, unsigned int freq_in, unsigned int freq_out)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -800,7 +800,7 @@ static int wm9713_set_dai_pll(struct snd_soc_codec_dai *codec_dai,
  * Tristate the PCM DAI lines, tristate can be disabled by calling
  * wm9713_set_dai_fmt()
  */
-static int wm9713_set_dai_tristate(struct snd_soc_codec_dai *codec_dai,
+static int wm9713_set_dai_tristate(struct snd_soc_dai *codec_dai,
 	int tristate)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -816,7 +816,7 @@ static int wm9713_set_dai_tristate(struct snd_soc_codec_dai *codec_dai,
  * Configure WM9713 clock dividers.
  * Voice DAC needs 256 FS
  */
-static int wm9713_set_dai_clkdiv(struct snd_soc_codec_dai *codec_dai,
+static int wm9713_set_dai_clkdiv(struct snd_soc_dai *codec_dai,
 		int div_id, int div)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -858,7 +858,7 @@ static int wm9713_set_dai_clkdiv(struct snd_soc_codec_dai *codec_dai,
 	return 0;
 }
 
-static int wm9713_set_dai_fmt(struct snd_soc_codec_dai *codec_dai,
+static int wm9713_set_dai_fmt(struct snd_soc_dai *codec_dai,
 		unsigned int fmt)
 {
 	struct snd_soc_codec *codec = codec_dai->codec;
@@ -1001,15 +1001,24 @@ static int ac97_aux_prepare(struct snd_pcm_substream *substream)
 	return ac97_write(codec, AC97_PCM_SURR_DAC_RATE, runtime->rate);
 }
 
-#define WM9713_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_11025 |\
-		SNDRV_PCM_RATE_22050 | SNDRV_PCM_RATE_44100 |\
-		SNDRV_PCM_RATE_48000)
+#define WM9713_RATES (SNDRV_PCM_RATE_8000  |	\
+		      SNDRV_PCM_RATE_11025 |	\
+		      SNDRV_PCM_RATE_22050 |	\
+		      SNDRV_PCM_RATE_44100 |	\
+		      SNDRV_PCM_RATE_48000)
+
+#define WM9713_PCM_RATES (SNDRV_PCM_RATE_8000  |	\
+			  SNDRV_PCM_RATE_11025 |	\
+			  SNDRV_PCM_RATE_16000 |	\
+			  SNDRV_PCM_RATE_22050 |	\
+			  SNDRV_PCM_RATE_44100 |	\
+			  SNDRV_PCM_RATE_48000)
 
 #define WM9713_PCM_FORMATS \
 	(SNDRV_PCM_FORMAT_S16_LE | SNDRV_PCM_FORMAT_S20_3LE | \
 	 SNDRV_PCM_FORMAT_S24_LE)
 
-struct snd_soc_codec_dai wm9713_dai[] = {
+struct snd_soc_dai wm9713_dai[] = {
 {
 	.name = "AC97 HiFi",
 	.type = SND_SOC_DAI_AC97_BUS,
@@ -1051,13 +1060,13 @@ struct snd_soc_codec_dai wm9713_dai[] = {
 		.stream_name = "Voice Playback",
 		.channels_min = 1,
 		.channels_max = 1,
-		.rates = WM9713_RATES,
+		.rates = WM9713_PCM_RATES,
 		.formats = WM9713_PCM_FORMATS,},
 	.capture = {
 		.stream_name = "Voice Capture",
 		.channels_min = 1,
 		.channels_max = 2,
-		.rates = WM9713_RATES,
+		.rates = WM9713_PCM_RATES,
 		.formats = WM9713_PCM_FORMATS,},
 	.ops = {
 		.hw_params = wm9713_pcm_hw_params,
