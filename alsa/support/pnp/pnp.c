@@ -158,46 +158,51 @@ void pnp_release_card_device(struct pnp_dev * dev)
 int pnp_register_card_driver(struct pnp_card_driver * drv)
 {
 	unsigned short vendor, device;
+	unsigned short subvendor, subdevice;
 	unsigned int i, res = 0;
 	const struct pnp_card_device_id *cid;
 	struct pnp_card *card;
 	struct pnp_dev *dev;
 	struct pnp_card_driver_instance *ninst = NULL;
 	
+	if (! drv->probe) {
+		printk(KERN_ERR "pnp: no probe function!\n");
+		return -EINVAL;
+	}
+
 	for (cid = drv->id_table; cid->id[0] != '\0'; cid++) {
-	      __next_card:
-		card = NULL;
-		do {
-		      __next:
-			if (parse_id(cid->id, &vendor, &device) < 0)
-				break;
-			card = (struct pnp_card *)isapnp_find_card(vendor, device, (struct isapnp_card *)card);
-			if (card) {
-				if (ninst == NULL) {
-					ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
-					if (ninst == NULL)
-						return res > 0 ? (int)res : -ENOMEM;
-					memset(ninst, 0, sizeof(*ninst));
-					INIT_LIST_HEAD(&ninst->list);
-				}
-				for (i = 0; i < PNP_MAX_DEVICES; i++)
-					ninst->devs[i] = NULL;
-				for (i = 0; i < PNP_MAX_DEVICES && cid->devs[i].id[0] != '\0'; i++) {
-					if (parse_id(cid->devs[i].id, &vendor, &device) < 0) {
-						cid++;
-						goto __next_card;
-					}
-					dev = ninst->devs[i] = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)card, vendor, device, NULL);
-					if (dev == NULL)
-						goto __next;
-					if (! dev->p.active) {
-						if (! (drv->flags & PNP_DRIVER_RES_DO_NOT_CHANGE)) {
-							pnp_activate_dev(dev);
-						}
-					} else {
-						if ((drv->flags & PNP_DRIVER_RES_DISABLE) == PNP_DRIVER_RES_DISABLE) {
-							pnp_disable_dev(dev);
-						}
+		if (parse_id(cid->id, &vendor, &device) < 0)
+			continue;
+		card = NULL; 
+		while ((card = (struct pnp_card *)isapnp_find_card(vendor, device, (struct isapnp_card *)card)) != NULL) {
+			if (ninst == NULL) {
+				ninst = kmalloc(sizeof(*ninst), GFP_KERNEL);
+				if (ninst == NULL)
+					return res > 0 ? (int)res : -ENOMEM;
+				memset(ninst, 0, sizeof(*ninst));
+				INIT_LIST_HEAD(&ninst->list);
+			}
+			for (i = 0; i < PNP_MAX_DEVICES; i++)
+				ninst->devs[i] = NULL;
+			for (i = 0; i < PNP_MAX_DEVICES && cid->devs[i].id[0] != '\0'; i++) {
+				if (parse_id(cid->devs[i].id, &subvendor, &subdevice) < 0)
+					goto __next_card;
+				dev = ninst->devs[i] = (struct pnp_dev *)isapnp_find_dev((struct isapnp_card *)card, subvendor, subdevice, NULL);
+				if (dev == NULL)
+					break;
+			}
+			if (i == PNP_MAX_DEVICES || !cid->devs[i].id[0]) {
+				/* all parsed successfully */
+				/* activate or deactivate devices before probing */
+				for (i = 0; i < PNP_MAX_DEVICES; i++) {
+					dev = ninst->devs[i];
+					if (! dev)
+						break;
+					if ((drv->flags & PNP_DRIVER_RES_DISABLE) != PNP_DRIVER_RES_DISABLE)
+						dev->p.activate((struct isapnp_dev *)dev);
+					else {
+						dev->p.deactivate((struct isapnp_dev *)dev);
+						dev->p.prepare((struct isapnp_dev *)dev);
 					}
 				}
 				ninst->link.card = card;
@@ -209,7 +214,9 @@ int pnp_register_card_driver(struct pnp_card_driver * drv)
 					res++;
 				}
 			}
-		} while (card != NULL);
+		}
+	__next_card:
+		;
 	}
 
 	if (ninst != NULL)
@@ -227,7 +234,8 @@ void pnp_unregister_card_driver(struct pnp_card_driver * drv)
 		inst = list_entry(p, struct pnp_card_driver_instance, list);
 		if (inst->link.driver == drv) {
 			list_del(p);
-			drv->remove(&inst->link);
+			if (drv->remove)
+				drv->remove(&inst->link);
 			kfree(inst);
 		}
 	}
@@ -284,11 +292,14 @@ void pnp_unregister_driver(struct pnp_driver *drv)
 
 static void copy_resource(struct resource *dst, const struct resource *src)
 {
-	dst->name = src->name;
-	dst->start = src->start;
-	dst->end = src->end;
-	dst->flags = (dst->flags & ~IORESOURCE_AUTO) |
-		(dst->flags & src->flags & IORESOURCE_AUTO);
+	/* copy if set manually */
+	if (src->name)
+		dst->name = src->name;
+	if (! (src->flags & IORESOURCE_AUTO)) {
+		dst->start = src->start;
+		dst->end = src->end;
+		dst->flags &= ~IORESOURCE_AUTO;
+	}
 }
 
 void pnp_init_resource_table(struct pnp_resource_table *table)
@@ -321,14 +332,9 @@ void pnp_init_resource_table(struct pnp_resource_table *table)
 	}
 }
 
-/* FIXME: this function cannot be called many times.  the setting is cleared at each time */
 int pnp_manual_config_dev(struct pnp_dev *dev, struct pnp_resource_table *res, int mode)
 {
 	unsigned int idx;
-	int err;
-
-	/* prepare the isapnp */
-	err = dev->p.prepare((struct isapnp_dev *)dev);
 
 	for (idx = 0; idx < PNP_MAX_IRQ; idx++)
 		copy_resource(&dev->p.irq_resource[idx], &res->irq_resource[idx]);
@@ -344,30 +350,8 @@ int pnp_manual_config_dev(struct pnp_dev *dev, struct pnp_resource_table *res, i
 
 int pnp_activate_dev(struct pnp_dev *dev)
 {
-	struct pnp_resource_table *tmp;
-	unsigned int idx;
-
 	if (dev->p.active)
-		return 0; /* FIXME: should be -EBUSY but 2.6 pnp layer behaves like this */
-
-	/* reserve the manual configuration */
-	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
-	if (! tmp)
-		return -ENOMEM;
-	pnp_init_resource_table(tmp);
-	for (idx = 0; idx < PNP_MAX_IRQ; idx++)
-		copy_resource(&tmp->irq_resource[idx], &dev->p.irq_resource[idx]);
-	for (idx = 0; idx < PNP_MAX_DMA; idx++)
-		copy_resource(&tmp->dma_resource[idx], &dev->p.dma_resource[idx]);
-	for (idx = 0; idx < PNP_MAX_PORT; idx++)
-		copy_resource(&tmp->port_resource[idx], &dev->p.resource[idx]);
-	for (idx = 0; idx < PNP_MAX_MEM; idx++)
-		copy_resource(&tmp->mem_resource[idx], &dev->p.resource[idx+8]);
-
-	/* restore the manual configuration again */
-	pnp_manual_config_dev(dev, tmp, 0);
-	kfree(tmp);
-
+		return 0; /* 2.6 pnp layer behaves like this */
 	return dev->p.activate((struct isapnp_dev *)dev);
 }
 
@@ -376,7 +360,6 @@ int pnp_disable_dev(struct pnp_dev *dev)
 	if (! dev->p.active)
 		return 0;
 	return dev->p.deactivate((struct isapnp_dev *)dev);
-	/* FIXME: do we need clean up the resources again? */
 }
 
 static int __init pnp_init(void)

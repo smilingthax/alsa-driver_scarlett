@@ -41,20 +41,26 @@
 
 #define VORTEX_GAME_DWAIT	20	/* 20 ms */
 
-static struct gameport gameport;
+struct au88x0_gameport {
+	struct gameport info;
+	vortex_t *chip;
+};
 
 static unsigned char vortex_game_read(struct gameport *gameport) {
-	vortex_t *vortex = gameport->driver;
+	struct au88x0_gameport *gp = (struct au88x0_gameport *)gameport;
+	vortex_t *vortex = gp->chip;
 	return hwread(vortex->mmio, VORTEX_GAME_LEGACY);
 }
 
 static void vortex_game_trigger(struct gameport *gameport) {
-	vortex_t *vortex = gameport->driver;
+	struct au88x0_gameport *gp = (struct au88x0_gameport *)gameport;
+	vortex_t *vortex = gp->chip;
 	hwwrite(vortex->mmio, VORTEX_GAME_LEGACY, 0xff);
 }
 
 static int vortex_game_cooked_read(struct gameport *gameport, int *axes, int *buttons) {
-	vortex_t *vortex = gameport->driver;
+	struct au88x0_gameport *gp = (struct au88x0_gameport *)gameport;
+	vortex_t *vortex = gp->chip;
 	int i;
 
 	*buttons = (~hwread(vortex->mmio, VORTEX_GAME_LEGACY) >> 4) & 0xf;
@@ -67,7 +73,8 @@ static int vortex_game_cooked_read(struct gameport *gameport, int *axes, int *bu
 }
 
 static int vortex_game_open(struct gameport *gameport, int mode) {
-	vortex_t *vortex = gameport->driver;
+	struct au88x0_gameport *gp = (struct au88x0_gameport *)gameport;
+	vortex_t *vortex = gp->chip;
 
 	switch (mode) {
 		case GAMEPORT_MODE_COOKED:
@@ -85,9 +92,15 @@ static int vortex_game_open(struct gameport *gameport, int mode) {
 }
 
 int vortex_gameport_register(vortex_t *vortex) {
-	vortex->gameport = &gameport;
 
-	vortex->gameport->driver = vortex;
+	struct au88x0_gameport *gp;
+	gp = kmalloc(sizeof(*gp), GFP_KERNEL);
+	if (! gp)
+		return -ENOMEM;
+	memset(gp, 0, sizeof(*gp));
+	gp->chip = vortex;
+
+	vortex->gameport = &gp->info;
 	vortex->gameport->fuzz = 64;
 
 	vortex->gameport->read = vortex_game_read;
@@ -95,7 +108,7 @@ int vortex_gameport_register(vortex_t *vortex) {
 	vortex->gameport->cooked_read = vortex_game_cooked_read;
 	vortex->gameport->open = vortex_game_open;
 
-	gameport_register_port((struct gameport *)vortex->gameport);
+	gameport_register_port(vortex->gameport);
 
 /*	printk(KERN_INFO "gameport%d: %s at speed %d kHz\n",
 		vortex->gameport->number, vortex->pci_dev->name, vortex->gameport->speed);
@@ -104,8 +117,11 @@ int vortex_gameport_register(vortex_t *vortex) {
 }
 
 int vortex_gameport_unregister(vortex_t *vortex) {
-	if (vortex->gameport != NULL)
+	if (vortex->gameport != NULL) {
 		gameport_unregister_port(vortex->gameport);
+		kfree(vortex->gameport);
+		vortex->gameport = NULL;
+	}
 	return 0;
 }
 
