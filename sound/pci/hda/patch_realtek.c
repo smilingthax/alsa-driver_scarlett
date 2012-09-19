@@ -847,9 +847,13 @@ static void alc_set_input_pin(struct hda_codec *codec, hda_nid_t nid,
 
 	if (auto_pin_type <= AUTO_PIN_FRONT_MIC) {
 		unsigned int pincap;
+		unsigned int oldval;
+		oldval = snd_hda_codec_read(codec, nid, 0,
+					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
 		pincap = snd_hda_query_pin_caps(codec, nid);
 		pincap = (pincap & AC_PINCAP_VREF) >> AC_PINCAP_VREF_SHIFT;
-		if (pincap & AC_PINCAP_VREF_80)
+		/* if the default pin setup is vref50, we give it priority */
+		if ((pincap & AC_PINCAP_VREF_80) && oldval != PIN_VREF50)
 			val = PIN_VREF80;
 		else if (pincap & AC_PINCAP_VREF_50)
 			val = PIN_VREF50;
@@ -1309,11 +1313,11 @@ static int alc_auto_parse_customize_define(struct hda_codec *codec)
 	unsigned nid = 0;
 	struct alc_spec *spec = codec->spec;
 
+	spec->cdefine.enable_pcbeep = 1; /* assume always enabled */
+
 	ass = codec->subsystem_id & 0xffff;
-	if (ass != codec->bus->pci->subsystem_device && (ass & 1)) {
-		spec->cdefine.enable_pcbeep = 1; /* assume always enabled */
+	if (ass != codec->bus->pci->subsystem_device && (ass & 1))
 		goto do_sku;
-	}
 
 	nid = 0x1d;
 	if (codec->vendor_id == 0x10ec0260)
@@ -1539,6 +1543,63 @@ static int alc_read_coef_idx(struct hda_codec *codec,
 	val = snd_hda_codec_read(codec, 0x20, 0,
 			 	AC_VERB_GET_PROC_COEF, 0);
 	return val;
+}
+
+/* set right pin controls for digital I/O */
+static void alc_auto_init_digital(struct hda_codec *codec)
+{
+	struct alc_spec *spec = codec->spec;
+	int i;
+	hda_nid_t pin;
+
+	for (i = 0; i < spec->autocfg.dig_outs; i++) {
+		pin = spec->autocfg.dig_out_pins[i];
+		if (pin) {
+			snd_hda_codec_write(codec, pin, 0,
+					    AC_VERB_SET_PIN_WIDGET_CONTROL,
+					    PIN_OUT);
+		}
+	}
+	pin = spec->autocfg.dig_in_pin;
+	if (pin)
+		snd_hda_codec_write(codec, pin, 0,
+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
+				    PIN_IN);
+}
+
+/* parse digital I/Os and set up NIDs in BIOS auto-parse mode */
+static void alc_auto_parse_digital(struct hda_codec *codec)
+{
+	struct alc_spec *spec = codec->spec;
+	int i, err;
+	hda_nid_t dig_nid;
+
+	/* support multiple SPDIFs; the secondary is set up as a slave */
+	for (i = 0; i < spec->autocfg.dig_outs; i++) {
+		err = snd_hda_get_connections(codec,
+					      spec->autocfg.dig_out_pins[i],
+					      &dig_nid, 1);
+		if (err < 0)
+			continue;
+		if (!i) {
+			spec->multiout.dig_out_nid = dig_nid;
+			spec->dig_out_type = spec->autocfg.dig_out_type[0];
+		} else {
+			spec->multiout.slave_dig_outs = spec->slave_dig_outs;
+			if (i >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
+				break;
+			spec->slave_dig_outs[i - 1] = dig_nid;
+		}
+	}
+
+	if (spec->autocfg.dig_in_pin) {
+		hda_nid_t dig_nid;
+		err = snd_hda_get_connections(codec,
+					      spec->autocfg.dig_in_pin,
+					      &dig_nid, 1);
+		if (err > 0)
+			spec->dig_in_nid = dig_nid;
+	}
 }
 
 /*
@@ -5013,7 +5074,7 @@ static void alc880_auto_init_input_src(struct hda_codec *codec)
 static int alc880_parse_auto_config(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
-	int i, err;
+	int err;
 	static hda_nid_t alc880_ignore[] = { 0x1d, 0 };
 
 	err = snd_hda_parse_pin_def_config(codec, &spec->autocfg,
@@ -5044,25 +5105,7 @@ static int alc880_parse_auto_config(struct hda_codec *codec)
 
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
-	/* check multiple SPDIF-out (for recent codecs) */
-	for (i = 0; i < spec->autocfg.dig_outs; i++) {
-		hda_nid_t dig_nid;
-		err = snd_hda_get_connections(codec,
-					      spec->autocfg.dig_out_pins[i],
-					      &dig_nid, 1);
-		if (err < 0)
-			continue;
-		if (!i)
-			spec->multiout.dig_out_nid = dig_nid;
-		else {
-			spec->multiout.slave_dig_outs = spec->slave_dig_outs;
-			if (i >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
-				break;
-			spec->slave_dig_outs[i - 1] = dig_nid;
-		}
-	}
-	if (spec->autocfg.dig_in_pin)
-		spec->dig_in_nid = ALC880_DIGIN_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -5085,6 +5128,7 @@ static void alc880_auto_init(struct hda_codec *codec)
 	alc880_auto_init_extra_out(codec);
 	alc880_auto_init_analog_input(codec);
 	alc880_auto_init_input_src(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -5122,6 +5166,19 @@ static void fixup_automic_adc(struct hda_codec *codec)
 	spec->auto_mic = 0; /* disable auto-mic to be sure */
 }
 
+/* select or unmute the given capsrc route */
+static void select_or_unmute_capsrc(struct hda_codec *codec, hda_nid_t cap,
+				    int idx)
+{
+	if (get_wcaps_type(get_wcaps(codec, cap)) == AC_WID_AUD_MIX) {
+		snd_hda_codec_amp_stereo(codec, cap, HDA_INPUT, idx,
+					 HDA_AMP_MUTE, 0);
+	} else {
+		snd_hda_codec_write_cache(codec, cap, 0,
+					  AC_VERB_SET_CONNECT_SEL, idx);
+	}
+}
+
 /* set the default connection to that pin */
 static int init_capsrc_for_pin(struct hda_codec *codec, hda_nid_t pin)
 {
@@ -5136,14 +5193,7 @@ static int init_capsrc_for_pin(struct hda_codec *codec, hda_nid_t pin)
 		idx = get_connection_index(codec, cap, pin);
 		if (idx < 0)
 			continue;
-		/* select or unmute this route */
-		if (get_wcaps_type(get_wcaps(codec, cap)) == AC_WID_AUD_MIX) {
-			snd_hda_codec_amp_stereo(codec, cap, HDA_INPUT, idx,
-						 HDA_AMP_MUTE, 0);
-		} else {
-			snd_hda_codec_write_cache(codec, cap, 0,
-					  AC_VERB_SET_CONNECT_SEL, idx);
-		}
+		select_or_unmute_capsrc(codec, cap, idx);
 		return i; /* return the found index */
 	}
 	return -1; /* not found */
@@ -5280,8 +5330,25 @@ static void fillup_priv_adc_nids(struct hda_codec *codec, hda_nid_t *nids,
 #ifdef CONFIG_SND_HDA_INPUT_BEEP
 #define set_beep_amp(spec, nid, idx, dir) \
 	((spec)->beep_amp = HDA_COMPOSE_AMP_VAL(nid, 3, idx, dir))
+
+static struct snd_pci_quirk beep_white_list[] = {
+	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
+	SND_PCI_QUIRK(0x8086, 0xd613, "Intel", 1),
+	{}
+};
+
+static inline int has_cdefine_beep(struct hda_codec *codec)
+{
+	struct alc_spec *spec = codec->spec;
+	const struct snd_pci_quirk *q;
+	q = snd_pci_quirk_lookup(codec->bus->pci, beep_white_list);
+	if (q)
+		return q->value;
+	return spec->cdefine.enable_pcbeep;
+}
 #else
 #define set_beep_amp(spec, nid, idx, dir) /* NOP */
+#define has_cdefine_beep(codec)		0
 #endif
 
 /*
@@ -6708,6 +6775,7 @@ static void alc260_auto_init(struct hda_codec *codec)
 	alc260_auto_init_multi_out(codec);
 	alc260_auto_init_analog_input(codec);
 	alc260_auto_init_input_src(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -7087,7 +7155,7 @@ static struct hda_input_mux alc883_lenovo_nb0763_capture_source = {
 	.num_items = 4,
 	.items = {
 		{ "Mic", 0x0 },
-		{ "iMic", 0x1 },
+		{ "Int Mic", 0x1 },
 		{ "Line", 0x2 },
 		{ "CD", 0x4 },
 	},
@@ -8657,8 +8725,8 @@ static struct snd_kcontrol_new alc883_lenovo_nb0763_mixer[] = {
 	HDA_CODEC_MUTE("CD Playback Switch", 0x0b, 0x04, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("iMic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("iMic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -10349,7 +10417,8 @@ static struct alc_config_preset alc882_presets[] = {
  * Pin config fixes
  */
 enum {
-	PINFIX_ABIT_AW9D_MAX
+	PINFIX_ABIT_AW9D_MAX,
+	PINFIX_PB_M5210,
 };
 
 static struct alc_pincfg alc882_abit_aw9d_pinfix[] = {
@@ -10359,13 +10428,22 @@ static struct alc_pincfg alc882_abit_aw9d_pinfix[] = {
 	{ }
 };
 
+static const struct hda_verb pb_m5210_verbs[] = {
+	{ 0x19, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_VREF50 },
+	{}
+};
+
 static const struct alc_fixup alc882_fixups[] = {
 	[PINFIX_ABIT_AW9D_MAX] = {
 		.pins = alc882_abit_aw9d_pinfix
 	},
+	[PINFIX_PB_M5210] = {
+		.verbs = pb_m5210_verbs
+	},
 };
 
 static struct snd_pci_quirk alc882_fixup_tbl[] = {
+	SND_PCI_QUIRK(0x1025, 0x0155, "Packard-Bell M5120", PINFIX_PB_M5210),
 	SND_PCI_QUIRK(0x147b, 0x107a, "Abit AW9D-MAX", PINFIX_ABIT_AW9D_MAX),
 	{}
 };
@@ -10530,7 +10608,7 @@ static int alc882_parse_auto_config(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 	static hda_nid_t alc882_ignore[] = { 0x1d, 0 };
-	int i, err;
+	int err;
 
 	err = snd_hda_parse_pin_def_config(codec, &spec->autocfg,
 					   alc882_ignore);
@@ -10560,25 +10638,7 @@ static int alc882_parse_auto_config(struct hda_codec *codec)
 
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
-	/* check multiple SPDIF-out (for recent codecs) */
-	for (i = 0; i < spec->autocfg.dig_outs; i++) {
-		hda_nid_t dig_nid;
-		err = snd_hda_get_connections(codec,
-					      spec->autocfg.dig_out_pins[i],
-					      &dig_nid, 1);
-		if (err < 0)
-			continue;
-		if (!i)
-			spec->multiout.dig_out_nid = dig_nid;
-		else {
-			spec->multiout.slave_dig_outs = spec->slave_dig_outs;
-			if (i >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
-				break;
-			spec->slave_dig_outs[i - 1] = dig_nid;
-		}
-	}
-	if (spec->autocfg.dig_in_pin)
-		spec->dig_in_nid = ALC880_DIGIN_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -10608,6 +10668,7 @@ static void alc882_auto_init(struct hda_codec *codec)
 	alc882_auto_init_hp_out(codec);
 	alc882_auto_init_analog_input(codec);
 	alc882_auto_init_input_src(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -10666,10 +10727,12 @@ static int patch_alc882(struct hda_codec *codec)
 		}
 	}
 
-	err = snd_hda_attach_beep_device(codec, 0x1);
-	if (err < 0) {
-		alc_free(codec);
-		return err;
+	if (has_cdefine_beep(codec)) {
+		err = snd_hda_attach_beep_device(codec, 0x1);
+		if (err < 0) {
+			alc_free(codec);
+			return err;
+		}
 	}
 
 	if (board_config != ALC882_AUTO)
@@ -10719,7 +10782,7 @@ static int patch_alc882(struct hda_codec *codec)
 
 	set_capture_mixer(codec);
 
-	if (spec->cdefine.enable_pcbeep)
+	if (has_cdefine_beep(codec))
 		set_beep_amp(spec, 0x0b, 0x05, HDA_INPUT);
 
 	if (board_config == ALC882_AUTO)
@@ -12136,12 +12199,7 @@ static int alc262_parse_auto_config(struct hda_codec *codec)
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
  dig_only:
-	if (spec->autocfg.dig_outs) {
-		spec->multiout.dig_out_nid = ALC262_DIGOUT_NID;
-		spec->dig_out_type = spec->autocfg.dig_out_type[0];
-	}
-	if (spec->autocfg.dig_in_pin)
-		spec->dig_in_nid = ALC262_DIGIN_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -12173,6 +12231,7 @@ static void alc262_auto_init(struct hda_codec *codec)
 	alc262_auto_init_hp_out(codec);
 	alc262_auto_init_analog_input(codec);
 	alc262_auto_init_input_src(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -12535,7 +12594,7 @@ static int patch_alc262(struct hda_codec *codec)
 		}
 	}
 
-	if (!spec->no_analog) {
+	if (!spec->no_analog && has_cdefine_beep(codec)) {
 		err = snd_hda_attach_beep_device(codec, 0x1);
 		if (err < 0) {
 			alc_free(codec);
@@ -12586,7 +12645,7 @@ static int patch_alc262(struct hda_codec *codec)
 	}
 	if (!spec->cap_mixer && !spec->no_analog)
 		set_capture_mixer(codec);
-	if (!spec->no_analog && spec->cdefine.enable_pcbeep)
+	if (!spec->no_analog && has_cdefine_beep(codec))
 		set_beep_amp(spec, 0x0b, 0x05, HDA_INPUT);
 
 	spec->vmaster_nid = 0x0c;
@@ -13106,10 +13165,14 @@ static int alc268_new_analog_output(struct alc_spec *spec, hda_nid_t nid,
 		dac = 0x02;
 		break;
 	case 0x15:
+	case 0x1a: /* ALC259/269 only */
+	case 0x1b: /* ALC259/269 only */
 	case 0x21: /* ALC269vb has this pin, too */
 		dac = 0x03;
 		break;
 	default:
+		snd_printd(KERN_WARNING "hda_codec: "
+			   "ignoring pin 0x%x as unknown\n", nid);
 		return 0;
 	}
 	if (spec->multiout.dac_nids[0] != dac &&
@@ -13160,7 +13223,7 @@ static int alc268_auto_create_multi_out_ctls(struct alc_spec *spec,
 				  HDA_COMPOSE_AMP_VAL(nid, 3, 0, HDA_INPUT));
 		if (err < 0)
 			return err;
-	} else {
+	} else if (nid) {
 		err = alc268_new_analog_output(spec, nid, "Speaker", 0);
 		if (err < 0)
 			return err;
@@ -13309,10 +13372,7 @@ static int alc268_parse_auto_config(struct hda_codec *codec)
 
  dig_only:
 	/* digital only support output */
-	if (spec->autocfg.dig_outs) {
-		spec->multiout.dig_out_nid = ALC268_DIGOUT_NID;
-		spec->dig_out_type = spec->autocfg.dig_out_type[0];
-	}
+	alc_auto_parse_digital(codec);
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
 
@@ -13342,6 +13402,7 @@ static void alc268_auto_init(struct hda_codec *codec)
 	alc268_auto_init_hp_out(codec);
 	alc268_auto_init_mono_speaker_out(codec);
 	alc268_auto_init_analog_input(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -14287,8 +14348,7 @@ static int alc269_parse_auto_config(struct hda_codec *codec)
 
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
-	if (spec->autocfg.dig_outs)
-		spec->multiout.dig_out_nid = ALC269_DIGOUT_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -14310,9 +14370,8 @@ static int alc269_parse_auto_config(struct hda_codec *codec)
 
 	/* set default input source */
 	if (!spec->dual_adc_switch)
-		snd_hda_codec_write_cache(codec, spec->capsrc_nids[0],
-				  0, AC_VERB_SET_CONNECT_SEL,
-				  spec->input_mux->items[0].index);
+		select_or_unmute_capsrc(codec, spec->capsrc_nids[0],
+					spec->input_mux->items[0].index);
 
 	err = alc_auto_add_mic_boost(codec);
 	if (err < 0)
@@ -14336,6 +14395,7 @@ static void alc269_auto_init(struct hda_codec *codec)
 	alc269_auto_init_multi_out(codec);
 	alc269_auto_init_hp_out(codec);
 	alc269_auto_init_analog_input(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -14591,10 +14651,12 @@ static int patch_alc269(struct hda_codec *codec)
 		}
 	}
 
-	err = snd_hda_attach_beep_device(codec, 0x1);
-	if (err < 0) {
-		alc_free(codec);
-		return err;
+	if (has_cdefine_beep(codec)) {
+		err = snd_hda_attach_beep_device(codec, 0x1);
+		if (err < 0) {
+			alc_free(codec);
+			return err;
+		}
 	}
 
 	if (board_config != ALC269_AUTO)
@@ -14631,7 +14693,7 @@ static int patch_alc269(struct hda_codec *codec)
 
 	if (!spec->cap_mixer)
 		set_capture_mixer(codec);
-	if (spec->cdefine.enable_pcbeep)
+	if (has_cdefine_beep(codec))
 		set_beep_amp(spec, 0x0b, 0x04, HDA_INPUT);
 
 	if (board_config == ALC269_AUTO)
@@ -15495,8 +15557,7 @@ static int alc861_parse_auto_config(struct hda_codec *codec)
 
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
-	if (spec->autocfg.dig_outs)
-		spec->multiout.dig_out_nid = ALC861_DIGOUT_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -15522,6 +15583,7 @@ static void alc861_auto_init(struct hda_codec *codec)
 	alc861_auto_init_multi_out(codec);
 	alc861_auto_init_hp_out(codec);
 	alc861_auto_init_analog_input(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -16626,8 +16688,7 @@ static int alc861vd_parse_auto_config(struct hda_codec *codec)
 
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
-	if (spec->autocfg.dig_outs)
-		spec->multiout.dig_out_nid = ALC861VD_DIGOUT_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -16654,6 +16715,7 @@ static void alc861vd_auto_init(struct hda_codec *codec)
 	alc861vd_auto_init_hp_out(codec);
 	alc861vd_auto_init_analog_input(codec);
 	alc861vd_auto_init_input_src(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -18637,7 +18699,7 @@ static void alc662_auto_set_output_and_unmute(struct hda_codec *codec,
 					      hda_nid_t dac)
 {
 	int i, num;
-	hda_nid_t srcs[4];
+	hda_nid_t srcs[HDA_MAX_CONNECTIONS];
 
 	alc_set_pin_output(codec, nid, pin_type);
 	/* need the manual connection? */
@@ -18741,8 +18803,7 @@ static int alc662_parse_auto_config(struct hda_codec *codec)
 
 	spec->multiout.max_channels = spec->multiout.num_dacs * 2;
 
-	if (spec->autocfg.dig_outs)
-		spec->multiout.dig_out_nid = ALC880_DIGOUT_NID;
+	alc_auto_parse_digital(codec);
 
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
@@ -18779,6 +18840,7 @@ static void alc662_auto_init(struct hda_codec *codec)
 	alc662_auto_init_hp_out(codec);
 	alc662_auto_init_analog_input(codec);
 	alc662_auto_init_input_src(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }
@@ -18828,10 +18890,12 @@ static int patch_alc662(struct hda_codec *codec)
 		}
 	}
 
-	err = snd_hda_attach_beep_device(codec, 0x1);
-	if (err < 0) {
-		alc_free(codec);
-		return err;
+	if (has_cdefine_beep(codec)) {
+		err = snd_hda_attach_beep_device(codec, 0x1);
+		if (err < 0) {
+			alc_free(codec);
+			return err;
+		}
 	}
 
 	if (board_config != ALC662_AUTO)
@@ -18853,7 +18917,7 @@ static int patch_alc662(struct hda_codec *codec)
 	if (!spec->cap_mixer)
 		set_capture_mixer(codec);
 
-	if (spec->cdefine.enable_pcbeep) {
+	if (has_cdefine_beep(codec)) {
 		switch (codec->vendor_id) {
 		case 0x10ec0662:
 			set_beep_amp(spec, 0x0b, 0x05, HDA_INPUT);
@@ -19102,10 +19166,7 @@ static int alc680_parse_auto_config(struct hda_codec *codec)
 
  dig_only:
 	/* digital only support output */
-	if (spec->autocfg.dig_outs) {
-		spec->multiout.dig_out_nid = ALC680_DIGOUT_NID;
-		spec->dig_out_type = spec->autocfg.dig_out_type[0];
-	}
+	alc_auto_parse_digital(codec);
 	if (spec->kctls.list)
 		add_mixer(spec, spec->kctls.list);
 
@@ -19129,6 +19190,7 @@ static void alc680_auto_init(struct hda_codec *codec)
 	alc680_auto_init_multi_out(codec);
 	alc680_auto_init_hp_out(codec);
 	alc680_auto_init_analog_input(codec);
+	alc_auto_init_digital(codec);
 	if (spec->unsol_event)
 		alc_inithook(codec);
 }

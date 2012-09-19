@@ -611,11 +611,23 @@ static int conexant_build_controls(struct hda_codec *codec)
 	return 0;
 }
 
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+static int conexant_suspend(struct hda_codec *codec, pm_message_t state)
+{
+	snd_hda_shutup_pins(codec);
+	return 0;
+}
+#endif
+
 static struct hda_codec_ops conexant_patch_ops = {
 	.build_controls = conexant_build_controls,
 	.build_pcms = conexant_build_pcms,
 	.init = conexant_init,
 	.free = conexant_free,
+#ifdef CONFIG_SND_HDA_POWER_SAVE
+	.suspend = conexant_suspend,
+#endif
+	.reboot_notify = snd_hda_shutup_pins,
 };
 
 #ifdef CONFIG_SND_HDA_INPUT_BEEP
@@ -2045,6 +2057,10 @@ static int patch_cxt5051(struct hda_codec *codec)
 		break;
 	case CXT5051_LENOVO_X200:
 		spec->init_verbs[0] = cxt5051_lenovo_x200_init_verbs;
+		/* Thinkpad X301 does not have S/PDIF wired and no ability
+		   to use a docking station. */
+		if (codec->subsystem_id == 0x17aa211f)
+			spec->multiout.dig_out_nid = 0;
 		break;
 	case CXT5051_F700:
 		spec->init_verbs[0] = cxt5051_f700_init_verbs;
