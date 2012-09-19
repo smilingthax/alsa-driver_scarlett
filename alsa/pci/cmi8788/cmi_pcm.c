@@ -33,7 +33,6 @@
 /*
  * TODO:
  * - second ac97
- * - sync start
  * - suspend/resume
  */
 
@@ -41,7 +40,8 @@ static struct snd_pcm_hardware snd_cmi_pcm_playback_hw = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
 		SNDRV_PCM_INFO_INTERLEAVED |
-		SNDRV_PCM_INFO_PAUSE,
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
 	.formats = SNDRV_PCM_FMTBIT_S16_LE |
 		   SNDRV_PCM_FMTBIT_S32_LE,
 	.rates = SNDRV_PCM_RATE_32000 |
@@ -72,7 +72,8 @@ static struct snd_pcm_hardware snd_cmi_stereo_hw = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_MMAP_VALID |
 		SNDRV_PCM_INFO_INTERLEAVED |
-		SNDRV_PCM_INFO_PAUSE,
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
 	.formats = SNDRV_PCM_FMTBIT_S16_LE |
 		   SNDRV_PCM_FMTBIT_S32_LE,
 	.rates = SNDRV_PCM_RATE_32000 |
@@ -115,13 +116,9 @@ static int snd_cmi_pcm_playback_open(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_PLAYBACK);
 	chip->playback_volume_init = 1;
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0010;
-	cmi_subs->int_mask = 0x0010;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -130,13 +127,9 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, NORMAL_PCMS, CMI_CAPTURE);
 	chip->capture_volume_init = 1;
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0001;
-	cmi_subs->int_mask = 0x0001;
 	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
@@ -144,12 +137,8 @@ static int snd_cmi_pcm_capture_open(struct snd_pcm_substream *substream)
 static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, AC97_PCMS, CMI_PLAYBACK);
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0020;
-	cmi_subs->int_mask = 0x4020;
 	runtime->hw = snd_cmi_pcm_playback_hw;
 	return 0;
 }
@@ -157,12 +146,8 @@ static int snd_cmi_pcm_ac97_playback_open(struct snd_pcm_substream *substream)
 static int snd_cmi_spdif_playback_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, SPDIF_PCMS, CMI_PLAYBACK);
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0008;
-	cmi_subs->int_mask = 0x0008;
 	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
@@ -170,12 +155,8 @@ static int snd_cmi_spdif_playback_open(struct snd_pcm_substream *substream)
 static int snd_cmi_spdif_capture_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct cmi_substream *cmi_subs;
 
 	cmi_pcm_open(substream, SPDIF_PCMS, CMI_CAPTURE);
-	cmi_subs = runtime->private_data;
-	cmi_subs->dma_mask = 0x0004;
-	cmi_subs->int_mask = 0x0004;
 	runtime->hw = snd_cmi_stereo_hw;
 	return 0;
 }
@@ -185,8 +166,6 @@ static int snd_cmi_pcm_close(struct snd_pcm_substream *substream)
 	struct cmi_substream *cmi_subs = substream->runtime->private_data;
 
 	cmi_subs->substream = NULL;
-	cmi_subs->dma_mask = 0x0000;
-	cmi_subs->int_mask = 0x0000;
 	return 0;
 }
 
@@ -463,6 +442,13 @@ static int snd_cmi_spdif_capture_hw_params(struct snd_pcm_substream *substream,
 
 static int snd_cmi_pcm_hw_free(struct snd_pcm_substream *substream)
 {
+	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
+	struct cmi_substream *cmi_subs = substream->runtime->private_data;
+
+	/* disable interrupt */
+	chip->int_mask_reg &= ~cmi_subs->mask;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
+
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -480,48 +466,56 @@ static int snd_cmi_pcm_prepare(struct snd_pcm_substream *substream)
 
 	/* Reset DMA Channel*/
 	reset = snd_cmipci_read_b(chip, DMARestRegister);
-	reset |= cmi_subs->dma_mask; /* set bit */
+	reset |= cmi_subs->mask; /* set bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
-	reset &= ~cmi_subs->dma_mask; /* clear bit */
+	reset &= ~cmi_subs->mask; /* clear bit */
 	snd_cmipci_write_b(chip, reset, DMARestRegister);
+
+	/* enable Interrupt */
+	chip->int_mask_reg |= cmi_subs->mask;
+	snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
 	return 0;
 }
 
 static int snd_cmi_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	struct cmi8788 *chip = snd_pcm_substream_chip(substream);
-	struct cmi_substream *cmi_subs = substream->runtime->private_data;
-	int err = 0;
+	struct snd_pcm_substream *s;
+	u32 dma_mask = 0;
+	int running;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		cmi_subs->running = 1;
-
-		/* enable Interrupt */
-		chip->int_mask_reg |= cmi_subs->int_mask;
-		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
-
-		/* Set PCI DMA Channel state -- Start */
-		chip->dma_status_reg |= cmi_subs->dma_mask;
-		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
+		running = 1;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		cmi_subs->running = 0;
-
-		/* Set PCI DMA Channel state -- Stop */
-		chip->dma_status_reg &= ~cmi_subs->dma_mask;
-		snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
-
-		/* disable interrupt */
-		chip->int_mask_reg &= ~cmi_subs->int_mask;
-		snd_cmipci_write_w(chip, chip->int_mask_reg, PCI_IntMask);
+		running = 0;
 		break;
 	default:
-		err = -EINVAL;
+		return -EINVAL;
 	}
-	return err;
+
+	snd_pcm_group_for_each_entry(s, substream) {
+		if (snd_pcm_substream_chip(s) == chip) {
+			struct cmi_substream *cmi_subs;
+
+			cmi_subs = s->runtime->private_data;
+			dma_mask |= cmi_subs->mask;
+			cmi_subs->running = running;
+			snd_pcm_trigger_done(s, substream);
+		}
+	}
+
+	if (running)
+		/* Set PCI DMA Channel state -- Start */
+		chip->dma_status_reg |= dma_mask;
+	else
+		/* Set PCI DMA Channel state -- Stop */
+		chip->dma_status_reg &= ~dma_mask;
+	snd_cmipci_write_w(chip, chip->dma_status_reg, PCI_DMA_SetStatus);
+	return 0;
 }
 
 static snd_pcm_uframes_t cmi_pcm_pointer(struct snd_pcm_substream *substream,

@@ -191,8 +191,9 @@ struct cmi_substream {
 	struct snd_pcm_substream *substream;
 	int running;      /* dac/adc running? */
 
-	int dma_mask;      /* PCI 40,42: PCI DMA Channel Run/Reset  2/1Byte */
-	int int_mask;      /* PCI 44,46: Interrupt Status/Mask      2Byte */
+	/* PCI 40,42: PCI DMA Channel Run/Reset  2/1Byte */
+	/* PCI 44,46: Interrupt Status/Mask      2Byte */
+	int mask;
 };
 
 struct cmipci_pcm {
