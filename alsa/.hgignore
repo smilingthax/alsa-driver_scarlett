@@ -8,6 +8,8 @@ syntax: glob
 *.mod.c
 .*.d
 .*.cmd
+modules.order
+Module.markers
 
 acinclude.m4
 aclocal.m4
