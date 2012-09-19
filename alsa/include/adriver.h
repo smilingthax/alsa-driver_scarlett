@@ -750,6 +750,12 @@ static inline unsigned long msecs_to_jiffies(const unsigned int m)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 17)
 #include <linux/dma-mapping.h>
+#ifndef DMA_31BIT_MASK
+#define DMA_31BIT_MASK	0x000000007fffffffULL
+#endif
+#ifndef DMA_30BIT_MASK
+#define DMA_30BIT_MASK	0x000000003fffffffULL
+#endif
 #ifndef DMA_28BIT_MASK
 #define DMA_28BIT_MASK	0x000000000fffffffULL
 #endif
