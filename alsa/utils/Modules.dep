@@ -16,3 +16,6 @@
 
 %dir linux/sound/pcmcia/pdaudiocf
 |snd-pdaudiocf snd-pcm
+
+%dir linux/sound/usb/us428
+|snd-usb-us428 snd-usb-audio snd-hwdep

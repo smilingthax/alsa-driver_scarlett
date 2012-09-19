@@ -5,10 +5,15 @@ include $(TOPDIR)/Makefile.conf
 
 EXTRA_CLEAN = usbaudio.c
 
-TOPDIR = $(MAINSRCDIR)
-
 # for compatibility
 extra-snd-usb-audio-objs := usbcompat.o
+
+extra-subdir-y := us428
+extra-subdir-m	:= $(extra-subdir-y)
+
+export-objs := usbmidi.o
+
+TOPDIR = $(MAINSRCDIR)
 
 include $(TOPDIR)/alsa-kernel/usb/Makefile
 

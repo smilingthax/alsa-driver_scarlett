@@ -109,4 +109,4 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 /*
  * symbols
  */
-EXPORT_NO_SYMBOLS;
+// EXPORT_NO_SYMBOLS;
