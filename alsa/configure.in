@@ -160,6 +160,7 @@ AC_CACHE_VAL(kernel_gcc,
 [AC_TRY_RUN([
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 #include "$CONFIG_SND_KERNELDIR/include/linux/compile.h"
 int main()
 {
@@ -182,6 +183,8 @@ int main()
      *dptr = *ptr;
    *dptr = '\t';
    *dptr = '\0';
+   if (!strcmp(compiler, " "))
+	compiler[0] = '\0';
    fprintf(f,"%s\n",compiler);
    fclose(f);
    }
