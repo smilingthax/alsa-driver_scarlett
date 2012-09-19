@@ -1,3 +1,6 @@
+menu "ISA devices"
+	depends on SND!=n && ISA
+
 config SND_MSND_PINNACLE
 	tristate "Turtle Beach MultiSound Pinnacle/Fiji driver"
 	depends on SND
@@ -7,3 +10,4 @@ config SND_MSND_PINNACLE
 	  Say 'Y' or 'M' to include support for Turtle Beach MultiSound
 	  Pinnacle/Fiji soundcards.
 
+endmenu

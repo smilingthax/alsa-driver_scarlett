@@ -1,3 +1,6 @@
+menu "PCI devices"
+	depends on SND!=n && PCI
+
 config SND_PDPLUS
 	tristate "Sek'D/Marian Prodif Plus"
 	depends on SND
@@ -15,3 +18,4 @@ config SND_HDSPM
 	  Say 'Y' or 'M' to include support for RME Hammerfall DSP MADI
 	  soundcards.
 
+endmenu
