@@ -319,6 +319,7 @@ COMMENT_MAP_DRIVER = [
 		('/include/old/gf1.h',  'OLD GF1 header'),
 		('/include/device_compat.h','ALSA Core'),
 		('/include/bitmap_compat.h','ALSA Core'),
+		('/include/mutex_compat.h','ALSA Core'),
 		('/core/info.*'		,'ALSA Core'),
 		('/core/control.*'	,'ALSA Core'),
 		('/core/init.*'		,'ALSA Core'),
@@ -488,6 +489,7 @@ COMMENT_MAP = {
 LAST_CVS_TIME = 0
 FATAL_LSYNC_ERROR = 0
 GERRORS = 0
+IGNORE_ASAP = False
 
 # Translation tables for CVS user IDs
 CVS_USER = {'perex':'Jaroslav Kysela <perex@suse.cz>',
@@ -1360,40 +1362,12 @@ def cvsps_merge1(f,t=0):
 				print 'BK comment change failed'
 				sys.exit(1)
 	#sys.exit(1)
-	
-def cvsps_merge(start, end):
-	os.chdir(get_git_root())
-	l = dircache.listdir(get_cvs_root() + '/scripts/changesets')
-	for f in l:
-		if string.find(f, '.') > 0:
-			file, suff = string.split(f, '.')
-			if suff != 'patch':
-				continue
-			y = int(file)
-			if y < start:
-				continue
-                        if y > end:
-                                continue
-			cvsps_merge1(f, t=1)
-	print 'Is this ok? Press Ctrl-C to abort...'
-	sys.stdin.readline()
-	for f in l:
-		if string.find(f, '.') > 0:
-			file, suff = string.split(f, '.')
-			if suff != 'patch':
-				continue
-			y = int(file)
-			if y < start:
-				continue
-                        if y > end:
-                                continue
-			cvsps_merge1(f, t=0)
-		print 'Is this ok? Press Ctrl-C to abort...'
-		sys.stdin.readline()
-	del l
 
-def cvsps_merges(start, end):
-	fp = open(get_cvs_root() + '/scripts/changesets/asap.txt')
+def get_asap(start = 0, end = 9999999999):
+	filename = get_cvs_root() + '/scripts/changesets/asap.txt'	
+        if not os.path.exists(filename):
+                return []
+	fp = open(filename) 
 	csl = fp.readlines()
 	fp.close()
 	
@@ -1409,6 +1383,47 @@ def cvsps_merges(start, end):
 	cs.sort()
 	del csl
 	
+	return cs
+
+def cvsps_merge(start, end):
+        if IGNORE_ASAP:
+                cs = get_asap()
+	os.chdir(get_git_root())
+	l = dircache.listdir(get_cvs_root() + '/scripts/changesets')
+	for f in l:
+		if string.find(f, '.') > 0:
+			file, suff = string.split(f, '.')
+			if suff != 'patch':
+				continue
+			y = int(file)
+			if y < start:
+				continue
+                        if y > end:
+                                continue
+                        if IGNORE_ASAP and int(y) in cs:
+                                continue
+			cvsps_merge1(f, t=1)
+	print 'Is this ok? Press Ctrl-C to abort...'
+	sys.stdin.readline()
+	for f in l:
+		if string.find(f, '.') > 0:
+			file, suff = string.split(f, '.')
+			if suff != 'patch':
+				continue
+			y = int(file)
+			if y < start:
+				continue
+                        if y > end:
+                                continue
+                        if IGNORE_ASAP and int(y) in cs:
+                                continue
+			cvsps_merge1(f, t=0)
+		print 'Is this ok? Press Ctrl-C to abort...'
+		sys.stdin.readline()
+	del l
+
+def cvsps_merges(start, end):
+        cs = get_asap(start, end)
 	os.chdir(get_git_root())
 	for l in cs:
 		f = str(l) + '.patch'
@@ -1707,10 +1722,10 @@ def tocvsps_patch(filename, author):
                         print line[:-1]
 
 def main():
-	global CVSROOT, GITROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
+	global CVSROOT, GITROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP, IGNORE_ASAP
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:b:',
-					   ['cvsroot=', 'bkroot=', 'branch=', 'help']);
+		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:b:i',
+					   ['help', 'bkroot=', 'cvsroot=', 'bkroot=', 'branch=', 'ignore']);
 	except getopt.error, msg:
 		usage(1, msg)
 
@@ -1718,14 +1733,17 @@ def main():
 
 	# parse the options
 	for opt, arg in opts:
+	        print opt
 		if opt in ('-h', '--help'):
 			usage(0)
-		elif opt == '--cvsroot':
+		elif opt in ('-B', '--cvsroot'):
 			CVSROOT = arg
-		elif opt == '--gitroot':
+		elif opt in ('-C', '--gitroot'):
 			GITROOT = arg
-		elif opt == '--branch':
+		elif opt in ('-b', '--branch'):
 			BRANCH = arg
+                elif opt in ('-g', '--ignore'):
+                        IGNORE_ASAP = True
 
 	for k in ALSA_MAP.keys():
 		KERNEL_MAP[ALSA_MAP[k]] = k
