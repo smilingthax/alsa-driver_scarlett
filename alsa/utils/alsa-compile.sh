@@ -37,10 +37,12 @@ fuser_prg=fuser
 insmod_prg=insmod
 rmmod_prg=rmmod
 lsmod_prg=lsmod
+modprobe_prg=modprobe
 test -x /sbin/fuser && fuser_prg=/sbin/fuser
 test -x /sbin/insmod && insmod_prg=/sbin/insmod
 test -x /sbin/rmmod && rmmod_prg=/sbin/rmmod
 test -x /sbin/lsmod && lsmod_prg=/sbin/lsmod
+test -x /sbin/modprobe && modprobe_prg=/sbin/modprobe
 
 usage() {
 	echo "Usage: $0 [OPTION]..."
@@ -962,6 +964,7 @@ EOF
 	kill_audio_apps
 	my_rmmod $curmods
 	dmesg > ../dmesg.txt.1
+	$modprobe_prg soundcore
 	my_insmod $(cat $dst)
 	echo "Kernel modules ready:"
 	cat /proc/asound/cards
