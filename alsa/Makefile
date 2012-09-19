@@ -44,6 +44,26 @@ dummy2:
 	@echo
 endif
 
+ifdef NEW_KBUILD
+ifdef V
+  ifeq ("$(origin V)", "command line")
+    KBUILD_VERBOSE = $(V)
+  endif
+endif
+ifndef KBUILD_VERBOSE
+  KBUILD_VERBOSE = 0
+endif
+ifdef C
+  ifeq ("$(origin C)", "command line")
+    KBUILD_CHECKSRC = $(C)
+  endif
+endif
+ifndef KBUILD_CHECKSRC
+  KBUILD_CHECKSRC = 0
+endif
+export KBUILD_VERBOSE KBUILD_CHECKSRC
+endif
+
 SUBDIRS  = acore i2c drivers isa synth
 CSUBDIRS =
 

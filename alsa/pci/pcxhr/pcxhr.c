@@ -457,7 +457,7 @@ inline int pcxhr_stream_scheduled_get_pipe(pcxhr_stream_t *stream,  pcxhr_pipe_t
 	return 0;
 }
 
-void pcxhr_trigger_tasklet(unsigned long arg)
+static void pcxhr_trigger_tasklet(unsigned long arg)
 {
 	int i, j, err;
 	pcxhr_pipe_t *pipe;
