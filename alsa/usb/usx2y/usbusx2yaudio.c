@@ -141,13 +141,22 @@ static int snd_usX2Y_urb_capt_prepare(snd_usX2Y_substream_t *subs,
  * copy the data from each desctiptor to the pcm buffer, and
  * update the current position.
  */
-static void framecpy_4c(int* p_dma_area, int* cp, int cnt)
+static void framecpy_4c_16(unsigned char *p_dma_area, unsigned char *cp, int cnt)
 {
 	do{
-		*p_dma_area = *cp;
-		p_dma_area += 2;
-		cp++;
-	}while (--cnt);
+		*(int *)p_dma_area = *(int *)cp;
+		p_dma_area += 8;
+		cp += 4;
+	} while (--cnt);
+}
+
+static void framecpy_4c_24(unsigned char *p_dma_area, unsigned char *cp, int cnt)
+{
+	do{
+		memcpy(p_dma_area, cp, 6);
+		p_dma_area +=  12;
+		cp += 6;
+	} while (--cnt);
 }
 
 static int snd_usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
@@ -158,6 +167,10 @@ static int snd_usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
 	unsigned char	*cp;
 	int 		i, len, lens = 0, hwptr_done = subs->hwptr_done;
 	usX2Ydev_t	*usX2Y = subs->stream->usX2Y;
+	void (*fourc_cpy)(unsigned char* p_dma_area, unsigned char* cp, int cnt) = 0;
+
+	if (runtime->channels == 4)
+		fourc_cpy = usX2Y->stride == 4 ? framecpy_4c_16 : framecpy_4c_24;
 
 	for (i = 0; i < NRPACKS; i++) {
 		cp = (unsigned char*)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
@@ -200,21 +213,21 @@ static int snd_usX2Y_urb_capt_retire(snd_usX2Y_substream_t *subs,
 		/* copy a data chunk */
 		if ((hwptr_done + len) > runtime->buffer_size) {
 			int cnt = runtime->buffer_size - hwptr_done;
-			if (runtime->channels != 4) {
+			if (fourc_cpy) {
+				unsigned char *p_dma_area = runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : usX2Y->stride);
+				fourc_cpy(p_dma_area + hwptr_done * usX2Y->stride * 2, cp, cnt);
+				fourc_cpy(p_dma_area, cp + cnt * usX2Y->stride, len - cnt);
+			} else {
 				int blen = cnt * usX2Y->stride;
 				memcpy(runtime->dma_area + hwptr_done * usX2Y->stride, cp, blen);
 				memcpy(runtime->dma_area, cp + blen, len * usX2Y->stride - blen);
-			} else {
-				int* p_dma_area = (int*)runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : 1);
-				framecpy_4c(p_dma_area + hwptr_done * 2, (int*)cp, cnt);
-				framecpy_4c(p_dma_area, (int*)cp + cnt, len - cnt);
 			}
 		} else {
-			if (runtime->channels != 4) {
-				memcpy(runtime->dma_area + hwptr_done * usX2Y->stride, cp, len * usX2Y->stride);
+			if (fourc_cpy) {
+				unsigned char *p_dma_area = runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : usX2Y->stride);
+				fourc_cpy(p_dma_area + hwptr_done * usX2Y->stride * 2, cp, len);
 			} else {
-				int* p_dma_area = (int*)runtime->dma_area + (urb->pipe == subs->datapipe[0] ? 0 : 1);
-				framecpy_4c(p_dma_area + hwptr_done * 2, (int*)cp, len);
+				memcpy(runtime->dma_area + hwptr_done * usX2Y->stride, cp, len * usX2Y->stride);
 			}
 		}
 		lens += len;
@@ -290,7 +303,8 @@ static int snd_usX2Y_urb_play_prepare(snd_usX2Y_substream_t *subs,
 	} else {
 		/* set the buffer pointer */
 		urb->transfer_buffer = runtime->dma_area + subs->hwptr * usX2Y->stride;
-		subs->hwptr += count;
+		if ((subs->hwptr += count) >= runtime->buffer_size)
+			subs->hwptr -= runtime->buffer_size;			
 	}
 	spin_unlock_irqrestore(&subs->lock, flags);
 	urb->transfer_buffer_length = count * usX2Y->stride;
