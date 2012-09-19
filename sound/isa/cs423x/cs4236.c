@@ -611,12 +611,10 @@ module_exit(alsa_card_cs423x_exit)
 
 /* format is: snd-cs4232=enable,index,id,isapnp,port,
 			 cport,mpu_port,fm_port,sb_port,
-			 irq,mpu_irq,dma1,dma1_size,
-			 dma2,dma2_size */
+			 irq,mpu_irq,dma1,dma2 */
 /* format is: snd-cs4236=enable,index,id,isapnp,port,
 			 cport,mpu_port,fm_port,sb_port,
-			 irq,mpu_irq,dma1,dma1_size,
-			 dma2,dma2_size */
+			 irq,mpu_irq,dma1,dma2 */
 
 static int __init alsa_card_cs423x_setup(char *str)
 {

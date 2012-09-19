@@ -1946,6 +1946,45 @@ static void snd_ac97_proc_done(ac97_t * ac97)
  *  PCM support
  */
 
+static int set_spdif_rate(ac97_t *ac97, unsigned short rate)
+{
+	unsigned short old, bits, reg;
+
+	if (! (ac97->ext_id & AC97_EI_SPDIF))
+		return -ENODEV;
+
+	if (ac97->flags & AC97_CS_SPDIF) {
+		switch (rate) {
+		case 48000: bits = 0; break;
+		case 44100: bits = 1 << AC97_SC_SPSR_SHIFT; break;
+		default: /* invalid - disable output */
+			snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
+			return -EINVAL;
+		}
+		reg = AC97_CSR_SPDIF;
+	} else {
+		switch (rate) {
+		case 44100: bits = AC97_SC_SPSR_44K; break;
+		case 48000: bits = AC97_SC_SPSR_48K; break;
+		case 32000: bits = AC97_SC_SPSR_32K; break;
+		default: /* invalid - disable output */
+			snd_ac97_update_bits(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
+			return -EINVAL;
+		}
+		reg = AC97_SPDIF;
+	}
+
+	spin_lock(&ac97->reg_lock);
+	old = ac97->regs[reg] & ~AC97_SC_SPSR_MASK;
+	if (old != bits) {
+		snd_ac97_update_bits_nolock(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, 0);
+		snd_ac97_update_bits_nolock(ac97, reg, AC97_SC_SPSR_MASK, bits);
+	}
+	snd_ac97_update_bits_nolock(ac97, AC97_EXTENDED_STATUS, AC97_EA_SPDIF, AC97_EA_SPDIF);
+	spin_unlock(&ac97->reg_lock);
+	return 0;
+}
+
 int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate)
 {
 	unsigned short mask;
@@ -1971,8 +2010,9 @@ int snd_ac97_set_rate(ac97_t *ac97, int reg, unsigned short rate)
 				return -EINVAL;
 		break;
 	case AC97_SPDIF:
-		return 0;
-	default: return -EINVAL;
+		return set_spdif_rate(ac97, rate);
+	default:
+		return -EINVAL;
 	}
 	tmp = ((unsigned int)rate * ac97->clock) / 48000;
 	if (tmp > 65535)
