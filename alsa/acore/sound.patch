@@ -1,14 +1,14 @@
---- ../alsa-kernel/core/sound.c	2005-05-23 16:19:30.000000000 +0200
-+++ sound.c	2005-05-30 20:39:22.000000000 +0200
+--- ../alsa-kernel/core/sound.c	2005-06-30 14:10:46.000000000 +0200
++++ sound.c	2005-06-30 12:46:16.000000000 +0200
 @@ -64,7 +64,15 @@
  
  static DECLARE_MUTEX(sound_mutex);
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 2)
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
- extern struct class_simple *sound_class;
++extern struct class_simple *sound_class;
 +#else
-+extern struct class *sound_class;
+ extern struct class *sound_class;
 +#endif
 +#else
 +#define sound_class NULL
@@ -31,9 +31,9 @@
  	if (card)
  		device = card->dev;
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
- 	class_simple_device_add(sound_class, MKDEV(major, minor), device, name);
++	class_simple_device_add(sound_class, MKDEV(major, minor), device, name);
 +#else
-+	class_device_create(sound_class, MKDEV(major, minor), device, "%s", name);
+ 	class_device_create(sound_class, MKDEV(major, minor), device, "%s", name);
 +#endif
  
  	up(&sound_mutex);
@@ -43,9 +43,9 @@
  	if (strncmp(mptr->name, "controlC", 8) || card->number >= cards_limit) /* created in sound.c */
  		devfs_remove("snd/%s", mptr->name);
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
- 	class_simple_device_remove(MKDEV(major, minor));
++	class_simple_device_remove(MKDEV(major, minor));
 +#else
-+	class_device_destroy(sound_class, MKDEV(major, minor));
+ 	class_device_destroy(sound_class, MKDEV(major, minor));
 +#endif
  
  	list_del(&mptr->list);
