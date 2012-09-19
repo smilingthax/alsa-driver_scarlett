@@ -40,10 +40,13 @@ struct snd_shutdown_f_ops {
 
 unsigned int snd_cards_lock = 0;	/* locked for registering/using */
 struct snd_card *snd_cards[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS-1)] = NULL};
+EXPORT_SYMBOL(snd_cards);
+
 DEFINE_RWLOCK(snd_card_rwlock);
 
 #if defined(CONFIG_SND_MIXER_OSS) || defined(CONFIG_SND_MIXER_OSS_MODULE)
 int (*snd_mixer_oss_notify_callback)(struct snd_card *card, int free_flag);
+EXPORT_SYMBOL(snd_mixer_oss_notify_callback);
 #endif
 
 #ifdef CONFIG_PROC_FS
@@ -66,7 +69,6 @@ static inline int init_info_for_card(struct snd_card *card)
 		snd_printd("unable to create card entry\n");
 		return err;
 	}
-	entry->c.text.read_size = PAGE_SIZE;
 	entry->c.text.read = snd_card_id_read;
 	if (snd_info_register(entry) < 0) {
 		snd_info_free_entry(entry);
@@ -168,6 +170,8 @@ struct snd_card *snd_card_new(int idx, const char *xid,
 	kfree(card);
       	return NULL;
 }
+
+EXPORT_SYMBOL(snd_card_new);
 
 static loff_t snd_disconnect_llseek(struct file *file, loff_t offset, int orig)
 {
@@ -298,6 +302,8 @@ int snd_card_disconnect(struct snd_card *card)
 	return 0;	
 }
 
+EXPORT_SYMBOL(snd_card_disconnect);
+
 /**
  *  snd_card_free - frees given soundcard structure
  *  @card: soundcard structure
@@ -360,6 +366,8 @@ int snd_card_free(struct snd_card *card)
 	return 0;
 }
 
+EXPORT_SYMBOL(snd_card_free);
+
 static void snd_card_free_thread(void * __card)
 {
 	struct snd_card *card = __card;
@@ -404,6 +412,8 @@ int snd_card_free_in_thread(struct snd_card *card)
 	snd_card_free(card);
 	return -EFAULT;
 }
+
+EXPORT_SYMBOL(snd_card_free_in_thread);
 
 static void choose_default_id(struct snd_card *card)
 {
@@ -505,6 +515,8 @@ int snd_card_register(struct snd_card *card)
 	return 0;
 }
 
+EXPORT_SYMBOL(snd_card_register);
+
 #ifdef CONFIG_PROC_FS
 static struct snd_info_entry *snd_card_info_entry = NULL;
 
@@ -579,7 +591,6 @@ int __init snd_card_info_init(void)
 	entry = snd_info_create_module_entry(THIS_MODULE, "cards", NULL);
 	if (! entry)
 		return -ENOMEM;
-	entry->c.text.read_size = PAGE_SIZE;
 	entry->c.text.read = snd_card_info_read;
 	if (snd_info_register(entry) < 0) {
 		snd_info_free_entry(entry);
@@ -590,7 +601,6 @@ int __init snd_card_info_init(void)
 #ifdef MODULE
 	entry = snd_info_create_module_entry(THIS_MODULE, "modules", NULL);
 	if (entry) {
-		entry->c.text.read_size = PAGE_SIZE;
 		entry->c.text.read = snd_card_module_info_read;
 		if (snd_info_register(entry) < 0)
 			snd_info_free_entry(entry);
@@ -644,6 +654,8 @@ int snd_component_add(struct snd_card *card, const char *component)
 	return 0;
 }
 
+EXPORT_SYMBOL(snd_component_add);
+
 /**
  *  snd_card_file_add - add the file to the file list of the card
  *  @card: soundcard structure
@@ -675,6 +687,8 @@ int snd_card_file_add(struct snd_card *card, struct file *file)
 	spin_unlock(&card->files_lock);
 	return 0;
 }
+
+EXPORT_SYMBOL(snd_card_file_add);
 
 /**
  *  snd_card_file_remove - remove the file from the file list
@@ -717,6 +731,8 @@ int snd_card_file_remove(struct snd_card *card, struct file *file)
 	return 0;
 }
 
+EXPORT_SYMBOL(snd_card_file_remove);
+
 #ifdef CONFIG_PM
 /**
  *  snd_power_wait - wait until the power-state is changed.
@@ -753,4 +769,5 @@ int snd_power_wait(struct snd_card *card, unsigned int power_state)
 	return result;
 }
 
+EXPORT_SYMBOL(snd_power_wait);
 #endif /* CONFIG_PM */
