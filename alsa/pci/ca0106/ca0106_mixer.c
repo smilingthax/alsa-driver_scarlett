@@ -134,13 +134,13 @@ static snd_kcontrol_new_t snd_ca0106_shared_spdif __devinitdata =
 
 static int snd_ca0106_capture_source_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t * uinfo)
 {
-	static char *texts[4] = { "SPDIF", "What U Hear", "Unknown", "AC97" };
+	static char *texts[6] = { "SPDIF out", "i2s mixer out", "SPDIF in", "i2s in", "AC97 in", "SRC out" };
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
-	uinfo->value.enumerated.items = 4;
-	if (uinfo->value.enumerated.item > 3)
-                uinfo->value.enumerated.item = 3;
+	uinfo->value.enumerated.items = 6;
+	if (uinfo->value.enumerated.item > 5)
+                uinfo->value.enumerated.item = 5;
 	strcpy(uinfo->value.enumerated.name, texts[uinfo->value.enumerated.item]);
 	return 0;
 }

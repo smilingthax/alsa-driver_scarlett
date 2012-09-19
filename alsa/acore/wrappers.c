@@ -12,20 +12,6 @@
 #endif
 #endif
 
-#ifndef CONFIG_HAVE_PCI_DEV_PRESENT
-#include <linux/pci.h>
-int snd_pci_dev_present(const struct pci_device_id *ids)
-{
-	while (ids->vendor || ids->subvendor) {
-		if (pci_find_device(ids->vendor, ids->subvendor, NULL))
-			return 1;
-		ids++;
-	}
-	return 0;
-}
-#endif
-
-
 #include <linux/kmod.h>
 #include <linux/devfs_fs_kernel.h>
 
@@ -208,3 +194,20 @@ int snd_compat_devfs_mk_cdev(dev_t dev, umode_t mode, const char *fmt, ...)
 #endif /* 2.5.67 */
 
 #endif /* CONFIG_DEVFS_FS */
+
+#ifndef CONFIG_HAVE_PCI_DEV_PRESENT
+#include <linux/pci.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+/* for pci_device_id compatibility layer */
+#include "compat_22.h"
+#endif
+int snd_pci_dev_present(const struct pci_device_id *ids)
+{
+	while (ids->vendor || ids->subvendor) {
+		if (pci_find_device(ids->vendor, ids->subvendor, NULL))
+			return 1;
+		ids++;
+	}
+	return 0;
+}
+#endif
