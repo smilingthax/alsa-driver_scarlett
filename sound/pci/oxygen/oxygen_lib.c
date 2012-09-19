@@ -28,6 +28,7 @@
 #include <sound/mpu401.h>
 #include <sound/pcm.h>
 #include "oxygen.h"
+#include "cm9780.h"
 
 MODULE_AUTHOR("Clemens Ladisch <clemens@ladisch.de>");
 MODULE_DESCRIPTION("C-Media CMI8788 helper library");
@@ -51,11 +52,11 @@ static irqreturn_t oxygen_interrupt(int dummy, void *dev_id)
 			  OXYGEN_CHANNEL_SPDIF |
 			  OXYGEN_CHANNEL_MULTICH |
 			  OXYGEN_CHANNEL_AC97 |
-			  OXYGEN_INT_SPDIF_IN_CHANGE |
+			  OXYGEN_INT_SPDIF_IN_DETECT |
 			  OXYGEN_INT_GPIO);
 	if (clear) {
-		if (clear & OXYGEN_INT_SPDIF_IN_CHANGE)
-			chip->interrupt_mask &= ~OXYGEN_INT_SPDIF_IN_CHANGE;
+		if (clear & OXYGEN_INT_SPDIF_IN_DETECT)
+			chip->interrupt_mask &= ~OXYGEN_INT_SPDIF_IN_DETECT;
 		oxygen_write16(chip, OXYGEN_INTERRUPT_MASK,
 			       chip->interrupt_mask & ~clear);
 		oxygen_write16(chip, OXYGEN_INTERRUPT_MASK,
@@ -70,10 +71,12 @@ static irqreturn_t oxygen_interrupt(int dummy, void *dev_id)
 		if ((elapsed_streams & (1 << i)) && chip->streams[i])
 			snd_pcm_period_elapsed(chip->streams[i]);
 
-	if (status & OXYGEN_INT_SPDIF_IN_CHANGE) {
+	if (status & OXYGEN_INT_SPDIF_IN_DETECT) {
 		spin_lock(&chip->reg_lock);
 		i = oxygen_read32(chip, OXYGEN_SPDIF_CONTROL);
-		if (i & OXYGEN_SPDIF_IN_CHANGE) {
+		if (i & (OXYGEN_SPDIF_SENSE_INT | OXYGEN_SPDIF_LOCK_INT |
+			 OXYGEN_SPDIF_RATE_INT)) {
+			/* write the interrupt bit(s) to clear */
 			oxygen_write32(chip, OXYGEN_SPDIF_CONTROL, i);
 			schedule_work(&chip->spdif_input_bits_work);
 		}
@@ -93,34 +96,58 @@ static void oxygen_spdif_input_bits_changed(struct work_struct *work)
 {
 	struct oxygen *chip = container_of(work, struct oxygen,
 					   spdif_input_bits_work);
+	u32 reg;
 
-	spin_lock_irq(&chip->reg_lock);
-	oxygen_clear_bits32(chip, OXYGEN_SPDIF_CONTROL, OXYGEN_SPDIF_IN_INVERT);
-	spin_unlock_irq(&chip->reg_lock);
+	/*
+	 * This function gets called when there is new activity on the SPDIF
+	 * input, or when we lose lock on the input signal, or when the rate
+	 * changes.
+	 */
 	msleep(1);
-	if (!(oxygen_read32(chip, OXYGEN_SPDIF_CONTROL)
-	      & OXYGEN_SPDIF_IN_VALID)) {
-		spin_lock_irq(&chip->reg_lock);
-		oxygen_set_bits32(chip, OXYGEN_SPDIF_CONTROL,
-				  OXYGEN_SPDIF_IN_INVERT);
+	spin_lock_irq(&chip->reg_lock);
+	reg = oxygen_read32(chip, OXYGEN_SPDIF_CONTROL);
+	if ((reg & (OXYGEN_SPDIF_SENSE_STATUS |
+		    OXYGEN_SPDIF_LOCK_STATUS))
+	    == OXYGEN_SPDIF_SENSE_STATUS) {
+		/*
+		 * If we detect activity on the SPDIF input but cannot lock to
+		 * a signal, the clock bit is likely to be wrong.
+		 */
+		reg ^= OXYGEN_SPDIF_IN_CLOCK_MASK;
+		oxygen_write32(chip, OXYGEN_SPDIF_CONTROL, reg);
 		spin_unlock_irq(&chip->reg_lock);
 		msleep(1);
-		if (!(oxygen_read32(chip, OXYGEN_SPDIF_CONTROL)
-		      & OXYGEN_SPDIF_IN_VALID)) {
-			spin_lock_irq(&chip->reg_lock);
-			oxygen_clear_bits32(chip, OXYGEN_SPDIF_CONTROL,
-					    OXYGEN_SPDIF_IN_INVERT);
-			spin_unlock_irq(&chip->reg_lock);
+		spin_lock_irq(&chip->reg_lock);
+		reg = oxygen_read32(chip, OXYGEN_SPDIF_CONTROL);
+		if ((reg & (OXYGEN_SPDIF_SENSE_STATUS |
+			    OXYGEN_SPDIF_LOCK_STATUS))
+		    == OXYGEN_SPDIF_SENSE_STATUS) {
+			/* nothing detected with either clock; give up */
+			if ((reg & OXYGEN_SPDIF_IN_CLOCK_MASK)
+			    == OXYGEN_SPDIF_IN_CLOCK_192) {
+				/*
+				 * Reset clock to <= 96 kHz because this is
+				 * more likely to be received next time.
+				 */
+				reg &= ~OXYGEN_SPDIF_IN_CLOCK_MASK;
+				reg |= OXYGEN_SPDIF_IN_CLOCK_96;
+				oxygen_write32(chip, OXYGEN_SPDIF_CONTROL, reg);
+			}
 		}
 	}
+	spin_unlock_irq(&chip->reg_lock);
 
 	if (chip->controls[CONTROL_SPDIF_INPUT_BITS]) {
 		spin_lock_irq(&chip->reg_lock);
-		chip->interrupt_mask |= OXYGEN_INT_SPDIF_IN_CHANGE;
+		chip->interrupt_mask |= OXYGEN_INT_SPDIF_IN_DETECT;
 		oxygen_write16(chip, OXYGEN_INTERRUPT_MASK,
 			       chip->interrupt_mask);
 		spin_unlock_irq(&chip->reg_lock);
 
+		/*
+		 * We don't actually know that any channel status bits have
+		 * changed, but let's send a notification just to be sure.
+		 */
 		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
 			       &chip->controls[CONTROL_SPDIF_INPUT_BITS]->id);
 	}
@@ -194,7 +221,8 @@ static void __devinit oxygen_init(struct oxygen *chip)
 		chip->revision = 1;
 
 	if (chip->revision == 1)
-		oxygen_set_bits8(chip, OXYGEN_MISC, OXYGEN_MISC_MAGIC);
+		oxygen_set_bits8(chip, OXYGEN_MISC,
+				 OXYGEN_MISC_PCI_MEM_W_1_CLOCK);
 
 	i = oxygen_read16(chip, OXYGEN_AC97_CONTROL);
 	chip->has_ac97_0 = (i & OXYGEN_AC97_CODEC_0) != 0;
@@ -203,31 +231,82 @@ static void __devinit oxygen_init(struct oxygen *chip)
 	oxygen_set_bits8(chip, OXYGEN_FUNCTION,
 			 OXYGEN_FUNCTION_RESET_CODEC |
 			 chip->model->function_flags);
-	oxygen_write16(chip, OXYGEN_I2S_MULTICH_FORMAT, 0x010a);
-	oxygen_write16(chip, OXYGEN_I2S_A_FORMAT, 0x010a);
-	oxygen_write16(chip, OXYGEN_I2S_B_FORMAT, 0x010a);
-	oxygen_write16(chip, OXYGEN_I2S_C_FORMAT, 0x010a);
-	oxygen_set_bits32(chip, OXYGEN_SPDIF_CONTROL, OXYGEN_SPDIF_MAGIC2);
+	oxygen_write16(chip, OXYGEN_I2S_MULTICH_FORMAT,
+		       OXYGEN_RATE_48000 | OXYGEN_I2S_FORMAT_LJUST |
+		       OXYGEN_I2S_MCLK_128 | OXYGEN_I2S_BITS_16 |
+		       OXYGEN_I2S_MASTER | OXYGEN_I2S_BCLK_64);
+	oxygen_write16(chip, OXYGEN_I2S_A_FORMAT,
+		       OXYGEN_RATE_48000 | OXYGEN_I2S_FORMAT_LJUST |
+		       OXYGEN_I2S_MCLK_128 | OXYGEN_I2S_BITS_16 |
+		       OXYGEN_I2S_MASTER | OXYGEN_I2S_BCLK_64);
+	oxygen_write16(chip, OXYGEN_I2S_B_FORMAT,
+		       OXYGEN_RATE_48000 | OXYGEN_I2S_FORMAT_LJUST |
+		       OXYGEN_I2S_MCLK_128 | OXYGEN_I2S_BITS_16 |
+		       OXYGEN_I2S_MASTER | OXYGEN_I2S_BCLK_64);
+	oxygen_write16(chip, OXYGEN_I2S_C_FORMAT,
+		       OXYGEN_RATE_48000 | OXYGEN_I2S_FORMAT_LJUST |
+		       OXYGEN_I2S_MCLK_128 | OXYGEN_I2S_BITS_16 |
+		       OXYGEN_I2S_MASTER | OXYGEN_I2S_BCLK_64);
+	oxygen_write32_masked(chip, OXYGEN_SPDIF_CONTROL,
+			      OXYGEN_SPDIF_SENSE_MASK |
+			      OXYGEN_SPDIF_LOCK_MASK |
+			      OXYGEN_SPDIF_RATE_MASK |
+			      OXYGEN_SPDIF_LOCK_PAR |
+			      OXYGEN_SPDIF_IN_CLOCK_96,
+			      OXYGEN_SPDIF_OUT_ENABLE |
+			      OXYGEN_SPDIF_LOOPBACK |
+			      OXYGEN_SPDIF_SENSE_MASK |
+			      OXYGEN_SPDIF_LOCK_MASK |
+			      OXYGEN_SPDIF_RATE_MASK |
+			      OXYGEN_SPDIF_SENSE_PAR |
+			      OXYGEN_SPDIF_LOCK_PAR |
+			      OXYGEN_SPDIF_IN_CLOCK_MASK);
 	oxygen_write32(chip, OXYGEN_SPDIF_OUTPUT_BITS, chip->spdif_bits);
-	oxygen_write16(chip, OXYGEN_PLAY_ROUTING, 0xe100);
-	oxygen_write8(chip, OXYGEN_REC_ROUTING, 0x10);
-	oxygen_write8(chip, OXYGEN_ADC_MONITOR, 0x00);
-	oxygen_write8(chip, OXYGEN_A_MONITOR_ROUTING, 0xe4);
+	oxygen_write16(chip, OXYGEN_PLAY_ROUTING,
+		       OXYGEN_PLAY_MULTICH_I2S_DAC | OXYGEN_PLAY_SPDIF_SPDIF |
+		       (0 << OXYGEN_PLAY_DAC0_SOURCE_SHIFT) |
+		       (1 << OXYGEN_PLAY_DAC1_SOURCE_SHIFT) |
+		       (2 << OXYGEN_PLAY_DAC2_SOURCE_SHIFT) |
+		       (3 << OXYGEN_PLAY_DAC3_SOURCE_SHIFT));
+	oxygen_write8(chip, OXYGEN_REC_ROUTING,
+		      OXYGEN_REC_A_ROUTE_I2S_ADC_1 |
+		      OXYGEN_REC_B_ROUTE_AC97_1 |
+		      OXYGEN_REC_C_ROUTE_SPDIF);
+	oxygen_write8(chip, OXYGEN_ADC_MONITOR, 0);
+	oxygen_write8(chip, OXYGEN_A_MONITOR_ROUTING,
+		      (0 << OXYGEN_A_MONITOR_ROUTE_0_SHIFT) |
+		      (1 << OXYGEN_A_MONITOR_ROUTE_1_SHIFT) |
+		      (2 << OXYGEN_A_MONITOR_ROUTE_2_SHIFT) |
+		      (3 << OXYGEN_A_MONITOR_ROUTE_3_SHIFT));
 
 	oxygen_write16(chip, OXYGEN_INTERRUPT_MASK, 0);
 	oxygen_write16(chip, OXYGEN_DMA_STATUS, 0);
 
-	oxygen_write8(chip, OXYGEN_AC97_INTERRUPT_MASK, 0x00);
+	oxygen_write8(chip, OXYGEN_AC97_INTERRUPT_MASK, 0);
 	if (chip->has_ac97_0) {
 		oxygen_clear_bits16(chip, OXYGEN_AC97_OUT_CONFIG,
-				    OXYGEN_AC97_OUT_MAGIC3);
+				    OXYGEN_AC97_CODEC0_FRONTL |
+				    OXYGEN_AC97_CODEC0_FRONTR |
+				    OXYGEN_AC97_CODEC0_SIDEL |
+				    OXYGEN_AC97_CODEC0_SIDER |
+				    OXYGEN_AC97_CODEC0_CENTER |
+				    OXYGEN_AC97_CODEC0_BASE |
+				    OXYGEN_AC97_CODEC0_REARL |
+				    OXYGEN_AC97_CODEC0_REARR);
 		oxygen_set_bits16(chip, OXYGEN_AC97_IN_CONFIG,
-				  OXYGEN_AC97_IN_MAGIC3);
+				  OXYGEN_AC97_CODEC0_LINEL |
+				  OXYGEN_AC97_CODEC0_LINER);
 		oxygen_write_ac97(chip, 0, AC97_RESET, 0);
 		msleep(1);
-		oxygen_ac97_set_bits(chip, 0, 0x70, 0x0300);
-		oxygen_ac97_set_bits(chip, 0, 0x64, 0x8043);
-		oxygen_ac97_set_bits(chip, 0, 0x62, 0x180f);
+		oxygen_ac97_set_bits(chip, 0, CM9780_GPIO_SETUP,
+				     CM9780_GPIO0IO | CM9780_GPIO1IO);
+		oxygen_ac97_set_bits(chip, 0, CM9780_MIXER,
+				     CM9780_BSTSEL | CM9780_STRO_MIC |
+				     CM9780_MIX2FR | CM9780_PCBSW);
+		oxygen_ac97_set_bits(chip, 0, CM9780_JACK,
+				     CM9780_RSOE | CM9780_CBOE |
+				     CM9780_SSOE | CM9780_FROE |
+				     CM9780_MIC2MIC | CM9780_LI2LI);
 		oxygen_write_ac97(chip, 0, AC97_MASTER, 0x0000);
 		oxygen_write_ac97(chip, 0, AC97_PC_BEEP, 0x8000);
 		oxygen_write_ac97(chip, 0, AC97_MIC, 0x8808);
@@ -238,7 +317,8 @@ static void __devinit oxygen_init(struct oxygen *chip)
 		oxygen_write_ac97(chip, 0, AC97_REC_GAIN, 0x8000);
 		oxygen_write_ac97(chip, 0, AC97_CENTER_LFE_MASTER, 0x8080);
 		oxygen_write_ac97(chip, 0, AC97_SURROUND_MASTER, 0x8080);
-		oxygen_ac97_clear_bits(chip, 0, 0x72, 0x0001);
+		oxygen_ac97_clear_bits(chip, 0,
+				       CM9780_GPIO_STATUS, CM9780_GPO0);
 		/* power down unused ADCs and DACs */
 		oxygen_ac97_set_bits(chip, 0, AC97_POWERDOWN,
 				     AC97_PD_PR0 | AC97_PD_PR1);
@@ -269,13 +349,14 @@ static void oxygen_card_free(struct snd_card *card)
 }
 
 int __devinit oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
-			       const struct oxygen_model *model)
+			       int midi, const struct oxygen_model *model)
 {
 	struct snd_card *card;
 	struct oxygen *chip;
 	int err;
 
-	card = snd_card_new(index, id, model->owner, sizeof *chip);
+	card = snd_card_new(index, id, model->owner,
+			    sizeof *chip + model->model_data_size);
 	if (!card)
 		return -ENOMEM;
 
@@ -284,6 +365,7 @@ int __devinit oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
 	chip->pci = pci;
 	chip->irq = -1;
 	chip->model = model;
+	chip->model_data = chip + 1;
 	spin_lock_init(&chip->reg_lock);
 	mutex_init(&chip->mutex);
 	INIT_WORK(&chip->spdif_input_bits_work,
@@ -337,7 +419,9 @@ int __devinit oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
 	if (err < 0)
 		goto err_card;
 
-	if (oxygen_read8(chip, OXYGEN_MISC) & OXYGEN_MISC_MIDI) {
+	oxygen_write8_masked(chip, OXYGEN_MISC,
+			     midi ? OXYGEN_MISC_MIDI : 0, OXYGEN_MISC_MIDI);
+	if (midi) {
 		err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
 					  chip->addr + OXYGEN_MPU401,
 					  MPU401_INFO_INTEGRATED, 0, 0,
@@ -349,7 +433,7 @@ int __devinit oxygen_pci_probe(struct pci_dev *pci, int index, char *id,
 	oxygen_proc_init(chip);
 
 	spin_lock_irq(&chip->reg_lock);
-	chip->interrupt_mask |= OXYGEN_INT_SPDIF_IN_CHANGE;
+	chip->interrupt_mask |= OXYGEN_INT_SPDIF_IN_DETECT;
 	oxygen_write16(chip, OXYGEN_INTERRUPT_MASK, chip->interrupt_mask);
 	spin_unlock_irq(&chip->reg_lock);
 

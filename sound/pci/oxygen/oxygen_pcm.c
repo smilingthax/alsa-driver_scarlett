@@ -24,151 +24,84 @@
 #include <sound/pcm_params.h>
 #include "oxygen.h"
 
-static struct snd_pcm_hardware oxygen_hardware[PCM_COUNT] = {
-	[PCM_A] = {
-		.info = SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_MMAP_VALID |
-			SNDRV_PCM_INFO_INTERLEAVED |
-			SNDRV_PCM_INFO_PAUSE |
-			SNDRV_PCM_INFO_SYNC_START,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE |
-			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_32000 |
-			 SNDRV_PCM_RATE_44100 |
-			 SNDRV_PCM_RATE_48000 |
-			 SNDRV_PCM_RATE_64000 |
-			 SNDRV_PCM_RATE_88200 |
-			 SNDRV_PCM_RATE_96000 |
-			 SNDRV_PCM_RATE_176400 |
-			 SNDRV_PCM_RATE_192000,
-		.rate_min = 32000,
-		.rate_max = 192000,
-		.channels_min = 2,
-		.channels_max = 2,
-		.buffer_bytes_max = 256 * 1024,
-		.period_bytes_min = 128,
-		.period_bytes_max = 128 * 1024,
-		.periods_min = 2,
-		.periods_max = 2048,
-	},
-	[PCM_B] = {
-		.info = SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_MMAP_VALID |
-			SNDRV_PCM_INFO_INTERLEAVED |
-			SNDRV_PCM_INFO_PAUSE |
-			SNDRV_PCM_INFO_SYNC_START,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE |
-			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_32000 |
-			 SNDRV_PCM_RATE_44100 |
-			 SNDRV_PCM_RATE_48000 |
-			 SNDRV_PCM_RATE_64000 |
-			 SNDRV_PCM_RATE_88200 |
-			 SNDRV_PCM_RATE_96000 |
-			 SNDRV_PCM_RATE_176400 |
-			 SNDRV_PCM_RATE_192000,
-		.rate_min = 32000,
-		.rate_max = 192000,
-		.channels_min = 2,
-		.channels_max = 2,
-		.buffer_bytes_max = 256 * 1024,
-		.period_bytes_min = 128,
-		.period_bytes_max = 128 * 1024,
-		.periods_min = 2,
-		.periods_max = 2048,
-	},
-	[PCM_C] = {
-		.info = SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_MMAP_VALID |
-			SNDRV_PCM_INFO_INTERLEAVED |
-			SNDRV_PCM_INFO_PAUSE |
-			SNDRV_PCM_INFO_SYNC_START,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE |
-			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_44100 |
-			 SNDRV_PCM_RATE_48000 |
-			 SNDRV_PCM_RATE_88200 |
-			 SNDRV_PCM_RATE_96000,
-		.rate_min = 44100,
-		.rate_max = 96000,
-		.channels_min = 2,
-		.channels_max = 2,
-		.buffer_bytes_max = 256 * 1024,
-		.period_bytes_min = 128,
-		.period_bytes_max = 128 * 1024,
-		.periods_min = 2,
-		.periods_max = 2048,
-	},
-	[PCM_SPDIF] = {
-		.info = SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_MMAP_VALID |
-			SNDRV_PCM_INFO_INTERLEAVED |
-			SNDRV_PCM_INFO_PAUSE |
-			SNDRV_PCM_INFO_SYNC_START,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE |
-			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_32000 |
-			 SNDRV_PCM_RATE_44100 |
-			 SNDRV_PCM_RATE_48000 |
-			 SNDRV_PCM_RATE_64000 |
-			 SNDRV_PCM_RATE_88200 |
-			 SNDRV_PCM_RATE_96000 |
-			 SNDRV_PCM_RATE_176400 |
-			 SNDRV_PCM_RATE_192000,
-		.rate_min = 32000,
-		.rate_max = 192000,
-		.channels_min = 2,
-		.channels_max = 2,
-		.buffer_bytes_max = 256 * 1024,
-		.period_bytes_min = 128,
-		.period_bytes_max = 128 * 1024,
-		.periods_min = 2,
-		.periods_max = 2048,
-	},
-	[PCM_MULTICH] = {
-		.info = SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_MMAP_VALID |
-			SNDRV_PCM_INFO_INTERLEAVED |
-			SNDRV_PCM_INFO_PAUSE |
-			SNDRV_PCM_INFO_SYNC_START,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE |
-			   SNDRV_PCM_FMTBIT_S32_LE,
-		.rates = SNDRV_PCM_RATE_32000 |
-			 SNDRV_PCM_RATE_44100 |
-			 SNDRV_PCM_RATE_48000 |
-			 SNDRV_PCM_RATE_64000 |
-			 SNDRV_PCM_RATE_88200 |
-			 SNDRV_PCM_RATE_96000 |
-			 SNDRV_PCM_RATE_176400 |
-			 SNDRV_PCM_RATE_192000,
-		.rate_min = 32000,
-		.rate_max = 192000,
-		.channels_min = 2,
-		.channels_max = 8,
-		.buffer_bytes_max = 2048 * 1024,
-		.period_bytes_min = 128,
-		.period_bytes_max = 256 * 1024,
-		.periods_min = 2,
-		.periods_max = 16384,
-	},
-	[PCM_AC97] = {
-		.info = SNDRV_PCM_INFO_MMAP |
-			SNDRV_PCM_INFO_MMAP_VALID |
-			SNDRV_PCM_INFO_INTERLEAVED |
-			SNDRV_PCM_INFO_PAUSE |
-			SNDRV_PCM_INFO_SYNC_START,
-		.formats = SNDRV_PCM_FMTBIT_S16_LE,
-		.rates = SNDRV_PCM_RATE_48000,
-		.rate_min = 48000,
-		.rate_max = 48000,
-		.channels_min = 2,
-		.channels_max = 2,
-		.buffer_bytes_max = 256 * 1024,
-		.period_bytes_min = 128,
-		.period_bytes_max = 128 * 1024,
-		.periods_min = 2,
-		.periods_max = 2048,
-	},
+static const struct snd_pcm_hardware oxygen_stereo_hardware = {
+	.info = SNDRV_PCM_INFO_MMAP |
+		SNDRV_PCM_INFO_MMAP_VALID |
+		SNDRV_PCM_INFO_INTERLEAVED |
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		   SNDRV_PCM_FMTBIT_S32_LE,
+	.rates = SNDRV_PCM_RATE_32000 |
+		 SNDRV_PCM_RATE_44100 |
+		 SNDRV_PCM_RATE_48000 |
+		 SNDRV_PCM_RATE_64000 |
+		 SNDRV_PCM_RATE_88200 |
+		 SNDRV_PCM_RATE_96000 |
+		 SNDRV_PCM_RATE_176400 |
+		 SNDRV_PCM_RATE_192000,
+	.rate_min = 32000,
+	.rate_max = 192000,
+	.channels_min = 2,
+	.channels_max = 2,
+	.buffer_bytes_max = 256 * 1024,
+	.period_bytes_min = 128,
+	.period_bytes_max = 128 * 1024,
+	.periods_min = 2,
+	.periods_max = 2048,
+};
+static const struct snd_pcm_hardware oxygen_multichannel_hardware = {
+	.info = SNDRV_PCM_INFO_MMAP |
+		SNDRV_PCM_INFO_MMAP_VALID |
+		SNDRV_PCM_INFO_INTERLEAVED |
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE |
+		   SNDRV_PCM_FMTBIT_S32_LE,
+	.rates = SNDRV_PCM_RATE_32000 |
+		 SNDRV_PCM_RATE_44100 |
+		 SNDRV_PCM_RATE_48000 |
+		 SNDRV_PCM_RATE_64000 |
+		 SNDRV_PCM_RATE_88200 |
+		 SNDRV_PCM_RATE_96000 |
+		 SNDRV_PCM_RATE_176400 |
+		 SNDRV_PCM_RATE_192000,
+	.rate_min = 32000,
+	.rate_max = 192000,
+	.channels_min = 2,
+	.channels_max = 8,
+	.buffer_bytes_max = 2048 * 1024,
+	.period_bytes_min = 128,
+	.period_bytes_max = 256 * 1024,
+	.periods_min = 2,
+	.periods_max = 16384,
+};
+static const struct snd_pcm_hardware oxygen_ac97_hardware = {
+	.info = SNDRV_PCM_INFO_MMAP |
+		SNDRV_PCM_INFO_MMAP_VALID |
+		SNDRV_PCM_INFO_INTERLEAVED |
+		SNDRV_PCM_INFO_PAUSE |
+		SNDRV_PCM_INFO_SYNC_START,
+	.formats = SNDRV_PCM_FMTBIT_S16_LE,
+	.rates = SNDRV_PCM_RATE_48000,
+	.rate_min = 48000,
+	.rate_max = 48000,
+	.channels_min = 2,
+	.channels_max = 2,
+	.buffer_bytes_max = 256 * 1024,
+	.period_bytes_min = 128,
+	.period_bytes_max = 128 * 1024,
+	.periods_min = 2,
+	.periods_max = 2048,
+};
+
+static const struct snd_pcm_hardware *const oxygen_hardware[PCM_COUNT] = {
+	[PCM_A] = &oxygen_stereo_hardware,
+	[PCM_B] = &oxygen_stereo_hardware,
+	[PCM_C] = &oxygen_stereo_hardware,
+	[PCM_SPDIF] = &oxygen_stereo_hardware,
+	[PCM_MULTICH] = &oxygen_multichannel_hardware,
+	[PCM_AC97] = &oxygen_ac97_hardware,
 };
 
 static inline unsigned int
@@ -185,7 +118,7 @@ static int oxygen_open(struct snd_pcm_substream *substream,
 	int err;
 
 	runtime->private_data = (void *)(uintptr_t)channel;
-	runtime->hw = oxygen_hardware[channel];
+	runtime->hw = *oxygen_hardware[channel];
 	if (chip->model->pcm_hardware_filter)
 		chip->model->pcm_hardware_filter(channel, &runtime->hw);
 	err = snd_pcm_hw_constraint_step(runtime, 0,
@@ -308,17 +241,18 @@ static unsigned int oxygen_rate(struct snd_pcm_hw_params *hw_params)
 	}
 }
 
-static unsigned int oxygen_i2s_magic2(struct snd_pcm_hw_params *hw_params)
+static unsigned int oxygen_i2s_mclk(struct snd_pcm_hw_params *hw_params)
 {
-	return params_rate(hw_params) <= 96000 ? 0x10 : 0x00;
+	return params_rate(hw_params) <= 96000
+		? OXYGEN_I2S_MCLK_256 : OXYGEN_I2S_MCLK_128;
 }
 
-static unsigned int oxygen_i2s_format(struct snd_pcm_hw_params *hw_params)
+static unsigned int oxygen_i2s_bits(struct snd_pcm_hw_params *hw_params)
 {
 	if (params_format(hw_params) == SNDRV_PCM_FORMAT_S32_LE)
-		return OXYGEN_I2S_FORMAT_24;
+		return OXYGEN_I2S_BITS_24;
 	else
-		return OXYGEN_I2S_FORMAT_16;
+		return OXYGEN_I2S_BITS_16;
 }
 
 static unsigned int oxygen_play_channels(struct snd_pcm_hw_params *hw_params)
@@ -386,14 +320,18 @@ static int oxygen_rec_a_hw_params(struct snd_pcm_substream *substream,
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_A_SHIFT,
 			     OXYGEN_REC_FORMAT_A_MASK);
-	oxygen_write8_masked(chip, OXYGEN_I2S_A_FORMAT,
-			     oxygen_rate(hw_params) |
-			     oxygen_i2s_magic2(hw_params) |
-			     oxygen_i2s_format(hw_params),
-			     OXYGEN_I2S_RATE_MASK |
-			     OXYGEN_I2S_MAGIC2_MASK |
-			     OXYGEN_I2S_FORMAT_MASK);
-	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x08);
+	oxygen_write16_masked(chip, OXYGEN_I2S_A_FORMAT,
+			      oxygen_rate(hw_params) |
+			      oxygen_i2s_mclk(hw_params) |
+			      chip->model->adc_i2s_format |
+			      oxygen_i2s_bits(hw_params),
+			      OXYGEN_I2S_RATE_MASK |
+			      OXYGEN_I2S_FORMAT_MASK |
+			      OXYGEN_I2S_MCLK_MASK |
+			      OXYGEN_I2S_BITS_MASK);
+	oxygen_write8_masked(chip, OXYGEN_REC_ROUTING,
+			     OXYGEN_REC_A_ROUTE_I2S_ADC_1,
+			     OXYGEN_REC_A_ROUTE_MASK);
 	spin_unlock_irq(&chip->reg_lock);
 
 	mutex_lock(&chip->mutex);
@@ -416,14 +354,18 @@ static int oxygen_rec_b_hw_params(struct snd_pcm_substream *substream,
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_B_SHIFT,
 			     OXYGEN_REC_FORMAT_B_MASK);
-	oxygen_write8_masked(chip, OXYGEN_I2S_B_FORMAT,
-			     oxygen_rate(hw_params) |
-			     oxygen_i2s_magic2(hw_params) |
-			     oxygen_i2s_format(hw_params),
-			     OXYGEN_I2S_RATE_MASK |
-			     OXYGEN_I2S_MAGIC2_MASK |
-			     OXYGEN_I2S_FORMAT_MASK);
-	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x10);
+	oxygen_write16_masked(chip, OXYGEN_I2S_B_FORMAT,
+			      oxygen_rate(hw_params) |
+			      oxygen_i2s_mclk(hw_params) |
+			      chip->model->adc_i2s_format |
+			      oxygen_i2s_bits(hw_params),
+			      OXYGEN_I2S_RATE_MASK |
+			      OXYGEN_I2S_FORMAT_MASK |
+			      OXYGEN_I2S_MCLK_MASK |
+			      OXYGEN_I2S_BITS_MASK);
+	oxygen_write8_masked(chip, OXYGEN_REC_ROUTING,
+			     OXYGEN_REC_B_ROUTE_I2S_ADC_2,
+			     OXYGEN_REC_B_ROUTE_MASK);
 	spin_unlock_irq(&chip->reg_lock);
 
 	mutex_lock(&chip->mutex);
@@ -446,7 +388,9 @@ static int oxygen_rec_c_hw_params(struct snd_pcm_substream *substream,
 	oxygen_write8_masked(chip, OXYGEN_REC_FORMAT,
 			     oxygen_format(hw_params) << OXYGEN_REC_FORMAT_C_SHIFT,
 			     OXYGEN_REC_FORMAT_C_MASK);
-	oxygen_clear_bits8(chip, OXYGEN_REC_ROUTING, 0x20);
+	oxygen_write8_masked(chip, OXYGEN_REC_ROUTING,
+			     OXYGEN_REC_C_ROUTE_SPDIF,
+			     OXYGEN_REC_C_ROUTE_MASK);
 	spin_unlock_irq(&chip->reg_lock);
 	return 0;
 }
@@ -493,9 +437,17 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 			     oxygen_format(hw_params) << OXYGEN_MULTICH_FORMAT_SHIFT,
 			     OXYGEN_MULTICH_FORMAT_MASK);
 	oxygen_write16_masked(chip, OXYGEN_I2S_MULTICH_FORMAT,
-			      oxygen_rate(hw_params) | oxygen_i2s_format(hw_params),
-			      OXYGEN_I2S_RATE_MASK | OXYGEN_I2S_FORMAT_MASK);
-	oxygen_clear_bits16(chip, OXYGEN_PLAY_ROUTING, 0x001f);
+			      oxygen_rate(hw_params) |
+			      chip->model->dac_i2s_format |
+			      oxygen_i2s_bits(hw_params),
+			      OXYGEN_I2S_RATE_MASK |
+			      OXYGEN_I2S_FORMAT_MASK |
+			      OXYGEN_I2S_BITS_MASK);
+	oxygen_write16_masked(chip, OXYGEN_PLAY_ROUTING,
+			      OXYGEN_PLAY_MULTICH_I2S_DAC,
+			      OXYGEN_PLAY_MUTE01 | OXYGEN_PLAY_MUTE23 |
+			      OXYGEN_PLAY_MUTE45 | OXYGEN_PLAY_MUTE67 |
+			      OXYGEN_PLAY_MULTICH_MASK);
 	oxygen_update_dac_routing(chip);
 	oxygen_update_spdif_source(chip);
 	spin_unlock_irq(&chip->reg_lock);
@@ -503,24 +455,6 @@ static int oxygen_multich_hw_params(struct snd_pcm_substream *substream,
 	mutex_lock(&chip->mutex);
 	chip->model->set_dac_params(chip, hw_params);
 	mutex_unlock(&chip->mutex);
-	return 0;
-}
-
-static int oxygen_ac97_hw_params(struct snd_pcm_substream *substream,
-				 struct snd_pcm_hw_params *hw_params)
-{
-	struct oxygen *chip = snd_pcm_substream_chip(substream);
-	int err;
-
-	err = oxygen_hw_params(substream, hw_params);
-	if (err < 0)
-		return err;
-
-	spin_lock_irq(&chip->reg_lock);
-	oxygen_write8_masked(chip, OXYGEN_PLAY_FORMAT,
-			     oxygen_format(hw_params) << OXYGEN_AC97_FORMAT_SHIFT,
-			     OXYGEN_AC97_FORMAT_MASK);
-	spin_unlock_irq(&chip->reg_lock);
 	return 0;
 }
 
@@ -569,16 +503,16 @@ static int oxygen_trigger(struct snd_pcm_substream *substream, int cmd)
 	struct oxygen *chip = snd_pcm_substream_chip(substream);
 	struct snd_pcm_substream *s;
 	unsigned int mask = 0;
-	int running;
+	int pausing;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_STOP:
-	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
-		running = 0;
-		break;
 	case SNDRV_PCM_TRIGGER_START:
+		pausing = 0;
+		break;
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		running = 1;
+		pausing = 1;
 		break;
 	default:
 		return -EINVAL;
@@ -592,11 +526,18 @@ static int oxygen_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 
 	spin_lock(&chip->reg_lock);
-	if (running)
-		chip->pcm_running |= mask;
-	else
-		chip->pcm_running &= ~mask;
-	oxygen_write8(chip, OXYGEN_DMA_STATUS, chip->pcm_running);
+	if (!pausing) {
+		if (cmd == SNDRV_PCM_TRIGGER_START)
+			chip->pcm_running |= mask;
+		else
+			chip->pcm_running &= ~mask;
+		oxygen_write8(chip, OXYGEN_DMA_STATUS, chip->pcm_running);
+	} else {
+		if (cmd == SNDRV_PCM_TRIGGER_PAUSE_PUSH)
+			oxygen_set_bits8(chip, OXYGEN_DMA_PAUSE, mask);
+		else
+			oxygen_clear_bits8(chip, OXYGEN_DMA_PAUSE, mask);
+	}
 	spin_unlock(&chip->reg_lock);
 	return 0;
 }
@@ -672,7 +613,7 @@ static struct snd_pcm_ops oxygen_ac97_ops = {
 	.open      = oxygen_ac97_open,
 	.close     = oxygen_close,
 	.ioctl     = snd_pcm_lib_ioctl,
-	.hw_params = oxygen_ac97_hw_params,
+	.hw_params = oxygen_hw_params,
 	.hw_free   = oxygen_hw_free,
 	.prepare   = oxygen_prepare,
 	.trigger   = oxygen_trigger,
