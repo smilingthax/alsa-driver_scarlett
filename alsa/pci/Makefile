@@ -14,10 +14,8 @@ clean-files := intel8x0.c
 obj-$(CONFIG_SND) += pdplus/
 
 snd-hdspm-objs := hdspm.o
-snd-atiixp-modem-objs := atiixp_modem.o
 
 obj-$(CONFIG_SND_HDSPM) +=snd-hdspm.o
-obj-$(CONFIG_SND_ATIIXP_MODEM) += snd-atiixp-modem.o
 
 #
 #
