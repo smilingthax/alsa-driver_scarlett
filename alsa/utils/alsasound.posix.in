@@ -37,6 +37,7 @@ if [ -x /sbin/lsmod ]; then
 else
   lsmod=lsmod
 fi
+failedfile=/var/run/alsactl.init.failed
 
 if [ ! -r $config ]; then
   if [ -r /etc/conf.modules ]; then
@@ -47,6 +48,7 @@ fi
 # See how we were called.
 case "$1" in
   start)
+	rm -f $failedfile
         # Start driver.
 	if [ ! -d /proc/asound ]; then
 	  #
@@ -69,7 +71,11 @@ case "$1" in
             if [ -r $asoundcfg ]; then
               $alsactl -F -f $asoundcfg restore
             else
-              echo "ERROR: alsactl can't start, $asoundcfg is not readable"
+              $alsactl init
+              if [ $? -ne 0 ]; then
+                echo "ERROR: alsactl can't start, $asoundcfg is not readable"
+                touch $failedfile
+              fi
             fi
           else
             echo "ERROR: alsactl not found"
@@ -107,6 +113,7 @@ case "$1" in
 	  if [ -d /var/lock/subsys ]; then
 	    rm -f /var/lock/subsys/alsasound
 	  fi
+	  rm -f $failedfile
  	  echo "done"
 	else
 	  echo "ALSA driver isn't running."

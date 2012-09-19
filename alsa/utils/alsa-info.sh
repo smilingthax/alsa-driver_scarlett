@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.48
+SCRIPT_VERSION=0.4.49
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -33,7 +33,11 @@ PASTEBINKEY="C9cRIO8m/9y8Cs0nVs0FraRx7U0pHsuc"
 #Define some simple functions
 
 pbcheck(){
-	[[ $(ping -c1 www.pastebin.ca) ]] || KEEP_FILES="yes" NOUPLOAD="yes" PBERROR="yes"
+	if [[ -z $PASTEBIN ]]; then
+		[[ $(ping -c1 www.alsa-project.org) ]] || KEEP_FILES="yes" NOUPLOAD="yes" PBERROR="yes"
+	else
+		[[ $(ping -c1 www.pastebin.ca) ]] || KEEP_FILES="yes" NOUPLOAD="yes" PBERROR="yes"
+	fi
 }
 
 update() {
@@ -68,12 +72,6 @@ cleanup() {
 	rm -r $TEMPDIR 2>/dev/null
 }
 
-
-#### FIX ME
-withsecure() {
-	POST_URL="http://alsa-info.pastebin.ca"
-}
-###########
 
 withaplay() {
         echo "!!Aplay/Arecord output" >> $FILE
@@ -192,6 +190,8 @@ SYSFS=$(mount |grep sysfs|awk {'print $3'});
 #Check modprobe config files for sound related options
 SNDOPTIONS=$(modprobe -c|sed -n 's/^options \(snd[-_][^ ]*\)/\1:/p')
 
+PASTEBIN=""
+WWWSERVICE="www.alsa-project.org"
 QUESTION="yes"
 PROCEED="yes"
 REPEAT=""
@@ -204,6 +204,10 @@ case "$1" in
 		;;
 	--no-upload)
 		NOUPLOAD="yes"
+		;;
+	--pastebin)
+		PASTEBIN="yes"
+		WWWSERVICE="pastebin"
 		;;
 	--no-dialog)
 		DIALOG=""
@@ -219,7 +223,7 @@ if [ "$QUESTION" = "yes" ]; then
 if [[ -n "$DIALOG" ]]
 then
 if [ -z "$NOUPLOAD" ]; then
-	dialog --backtitle "$BGTITLE" --title "ALSA-Info script v $SCRIPT_VERSION" --yesno "\nThis script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem\n\nBy default, this script will AUTOMATICALLY UPLOAD your information to a pastebin site.\n\nSee $0 --help for options\n\nDo you want to run this script?" 0 0
+	dialog --backtitle "$BGTITLE" --title "ALSA-Info script v $SCRIPT_VERSION" --yesno "\nThis script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem\n\nBy default, this script will AUTOMATICALLY UPLOAD your information to a $WWWSERVICE site.\n\nSee $0 --help for options\n\nDo you want to run this script?" 0 0
 else
 	dialog --backtitle "$BGTITLE" --title "ALSA-Info script v $SCRIPT_VERSION" --yesno "\nThis script will collect information about your ALSA installation and sound related hardware, to help diagnose your problem\n\nSee $0 --help for options\n\nDo you want to run this script?" 0 0
 fi
@@ -238,11 +242,11 @@ echo ""
 if [ -z "$NOUPLOAD" ]; then
 if [[ -n "$TPUT" ]]; then
 tput bold
-echo "By default, the collected information will be AUTOMATICALLY uploaded to a pastebin site."
+echo "By default, the collected information will be AUTOMATICALLY uploaded to a $WWWSERVICE site."
 echo "If you do not wish for this to occur, run the script with the --no-upload argument"
 tput sgr0
 else
-echo "By default, the collected information will be AUTOMATICALLY uploaded to a pastebin site."
+echo "By default, the collected information will be AUTOMATICALLY uploaded to a $WWWSERVICE site."
 echo "If you do not wish for this to occur, run the script with the --no-upload argument"
 fi
 echo ""
@@ -297,7 +301,11 @@ cat /proc/asound/card*/codec97\#0/ac97\#0-0 > /tmp/alsainfo/alsa-ac97.tmp 2> /de
 cat /proc/asound/card*/codec97\#0/ac97\#0-0+regs > /tmp/alsainfo/alsa-ac97-regs.tmp 2> /dev/null
 
 #Fetch the info, and put it in $FILE in a nice readable format.
+if [[ -z $PASTEBIN ]]; then
+echo "upload=true&script=true&cardinfo=" > $FILE
+else
 echo "name=$USER&type=33&description=/tmp/alsa-info.txt&expiry=&s=Submit+Post&content=" > $FILE
+fi
 echo "!!################################" >> $FILE
 echo "!!ALSA Information Script v $SCRIPT_VERSION" >> $FILE
 echo "!!################################" >> $FILE
@@ -425,6 +433,8 @@ then
 	until [ -z "$1" ]
 	do
 	case "$1" in
+		--pastebin)
+			;;
 		--update)
 			update
 			exit
@@ -510,18 +520,23 @@ then
 			exit 0
 			;;
 		*)
+			echo "alsa-info.sh version $SCRIPT_VERSION"
 			echo ""
 			echo "Available options:"
 			echo "	--with-aplay (includes the output of aplay -l)"
 			echo "	--with-amixer (includes the output of amixer)"
 			echo "	--with-alsactl (includes the output of alsactl)"
-			echo "	--with-configs (includes the output of ~/.asoundrc and /etc/asound.conf if they exist)" 
+			echo "	--with-configs (includes the output of ~/.asoundrc and"
+			echo "	    /etc/asound.conf if they exist)" 
 			echo "	--with-devices (shows the device nodes in /dev/snd/)"
 			echo ""
 			echo "	--update (check server for script updates)"
 			echo "	--no-upload (do not upload contents to remote server)"
+			echo "	--pastebin (use http://pastebin.ca) as remote server"
+			echo "	    instead www.alsa-project.org"
 			echo "	--about (show some information about the script)"
-			echo "	--debug (will run the script as normal, but will not delete $FILE)"
+			echo "	--debug (will run the script as normal, but will not"
+			echo "	     delete $FILE)"
 			cleanup
 			exit 0
 			;;
@@ -539,6 +554,14 @@ then
 if [[ -n "$DIALOG" ]]
 then
 	if [[ -z $NOUPLOAD ]]; then
+	if [[ -z $PASTEBIN ]]; then
+	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt "http://www.alsa-project.org/cardinfo-db/" &>/tmp/alsainfo/wget.tmp || echo "Upload failed; exit"
+	{ for i in 10 20 30 40 50 60 70 80 90; do
+		echo $i
+		sleep 0.2
+	done
+	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.alsa-project.org ..." 6 70 0
+	else
 	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt "http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY&encrypt=t&encryptpw=blahblah" &>/tmp/alsainfo/wget.tmp || echo "Upload failed; exit"
 	{ for i in 10 20 30 40 50 60 70 80 90; do
 		echo $i
@@ -546,11 +569,17 @@ then
 	done
 	echo; } |dialog --backtitle "$BGTITLE" --guage "Uploading information to www.pastebin.ca ..." 6 70 0
 	fi
+	fi
 else
 
 	if [[ -z $NOUPLOAD ]]; then
+	if [[ -z $PASTEBIN ]]; then
+	echo -n "Uploading information to www.alsa-project.org ... " 
+	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt http://www.alsa-project.org/cardinfo-db/ &>/tmp/alsainfo/wget.tmp &
+	else
 	echo -n "Uploading information to www.pastebin.ca ... " 
 	wget -O - --tries=5 --timeout=60 --post-file=/tmp/alsa-info.txt http://pastebin.ca/quiet-paste.php?api=$PASTEBINKEY &>/tmp/alsainfo/wget.tmp &
+	fi
 	fi
 fi
 #Progess spinner for wget transfer.
@@ -569,9 +598,17 @@ fi
 if [[ -z $NOUPLOAD ]]; then
 	if [[ -n "$TPUT" ]]
 	then
-		FINAL_URL=`tput setaf 1; grep "SUCCESS:" /tmp/alsainfo/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
+		if [[ -z $PASTEBIN ]]; then
+			FINAL_URL=`tput setaf 1; grep "SUCCESS:" /tmp/alsainfo/wget.tmp | cut -d ' ' -f 2 ; tput sgr0`
+		else
+			FINAL_URL=`tput setaf 1; grep "SUCCESS:" /tmp/alsainfo/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p';tput sgr0`
+		fi
 	else
-		FINAL_URL=`grep "SUCCESS:" /tmp/alsainfo/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
+		if [[ -z $PASTEBIN ]]; then
+			FINAL_URL=`grep "SUCCESS:" /tmp/alsainfo/wget.tmp | cut -d ' ' -f 2`
+		else
+			FINAL_URL=`grep "SUCCESS:" /tmp/alsainfo/wget.tmp |sed -n 's/.*\:\([0-9]\+\).*/http:\/\/pastebin.ca\/\1/p'`
+		fi
 	fi
 fi
 #Output the URL of the uploaded file.	
@@ -589,9 +626,9 @@ if [[ -n $DIALOG ]]
 then
 	if [[ -n $NOUPLOAD ]]; then
 		if [[ -n $PBERROR ]]; then
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occured while contacting the pastebin. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $FILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded.\n\nYour ALSA information can be seen by looking in $FILE" 10 100
 		else
-			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the pastebin\n\nYour ALSA information can be seen by looking in $FILE" 10 100
+			dialog --backtitle "$BGTITLE" --title "Information collected" --msgbox "You requested that your information was NOT automatically uploaded to the $WWWSERVICE\n\nYour ALSA information can be seen by looking in $FILE" 10 100
 		fi
 	else
 		dialog --backtitle "$BGTITLE" --title "Information uploaded" --yesno "Would you like to see the uploaded information?" 5 100 
@@ -605,12 +642,12 @@ fi
 clear
 if [[ -n $NOUPLOAD ]]; then
 	if [[ -n $PBERROR ]]; then
-		echo "An error occured while contacting the pastebin. Your information was NOT automatically uploaded."
+		echo "An error occured while contacting the $WWWSERVICE. Your information was NOT automatically uploaded."
 		echo ""
 		echo "Your ALSA information can be seen by looking in $FILE"
 		echo ""
 	else
-		echo "You requested that your information was NOT automatically uploaded to the pastebin"
+		echo "You requested that your information was NOT automatically uploaded to the $WWWSERVICE"
 		echo ""
 		echo "Your ALSA information can be seen by looking in $FILE"
 		echo ""
@@ -621,7 +658,7 @@ echo "Your ALSA information is located at $FINAL_URL"
 echo "Please inform the person helping you."
 echo ""
 fi
-	#We posted the file to pastebin.ca , so we dont need it anymore. delete it.
+	#We posted the file , so we dont need it anymore. delete it.
 	if [ -z $KEEP_FILES ]
 	then
 		rm $FILE 
@@ -631,6 +668,16 @@ fi
 else
 	if [[ -z $DIALOG ]]
 	then
+		if [[ -z $PASTEBIN ]]; then
+		echo ""
+		echo "Could not automatically upload output to http://www.alsa-project.org"
+		echo "Possible reasons are:"
+		echo "    1. Couldnt find 'wget' in your PATH"
+		echo "    2. Your version of wget is less than 1.8.2"
+		echo ""
+		echo "Please manually upload $FILE to http://www.alsa-project.org/cardinfo-db/ and submit your post."
+		echo ""
+		else
 		echo ""
 		echo "Could not automatically upload output to http://www.pastebin.ca"
 		echo "Possible reasons are:"
@@ -639,10 +686,15 @@ else
 		echo ""
 		echo "Please manually upload $FILE to http://www.pastebin.ca/upload.php and submit your post."
 		echo ""
+		fi
 	fi
 	if [[ -n $DIALOG ]]
 	then
-		dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.pastebin.ca.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $FILE to http://www.pastebin.ca/upload.php and submit your post." 25 100
+		if [[ -z $PASTEBIN ]]; then
+			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.alsa-project.org.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $FILE to http://www.alsa-project,org/cardinfo-db/ and submit your post." 25 100
+		else
+			dialog --backtitle "$BGTITLE" --msgbox "Could not automatically upload output to http://www.pastebin.ca.\nPossible reasons are:\n\n    1. Couldn't find 'wget' in your PATH\n    2. Your version of wget is less than 1.8.2\n\nPlease manually upload $FILE to http://www.pastebin.ca/upload.php and submit your post." 25 100
+		fi
 	fi
 fi
 #Clean up the temp files

@@ -1601,6 +1601,12 @@ static inline int __strict_strtoul(const char *cp, unsigned int base,
 	unlikely(__ret_warn_on);					\
 })
 #endif
+
+/* force to redefine WARN_ON() */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19)
+#undef WARN_ON
+#endif
+
 #ifndef WARN_ON
 #define WARN_ON(condition) ({						\
 	int __ret_warn_on = !!(condition);				\
@@ -1612,5 +1618,31 @@ static inline int __strict_strtoul(const char *cp, unsigned int base,
 	unlikely(__ret_warn_on);					\
 })
 #endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#define dev_printk(level, dev, format, arg...)	\
+	printk(level format, ##arg)
+#define dev_emerg(dev, format, arg...)		\
+	dev_printk(KERN_EMERG , dev , format , ## arg)
+#define dev_alert(dev, format, arg...)		\
+	dev_printk(KERN_ALERT , dev , format , ## arg)
+#define dev_crit(dev, format, arg...)		\
+	dev_printk(KERN_CRIT , dev , format , ## arg)
+#define dev_err(dev, format, arg...)		\
+	dev_printk(KERN_ERR , dev , format , ## arg)
+#define dev_warn(dev, format, arg...)		\
+	dev_printk(KERN_WARNING , dev , format , ## arg)
+#define dev_notice(dev, format, arg...)		\
+	dev_printk(KERN_NOTICE , dev , format , ## arg)
+#define dev_info(dev, format, arg...)		\
+	dev_printk(KERN_INFO , dev , format , ## arg)
+#ifdef DEBUG
+#define dev_dbg(dev, format, arg...)		\
+	dev_printk(KERN_DEBUG , dev , format , ## arg)
+#else
+#define dev_dbg(dev, format, arg...)		\
+	({ if (0) dev_printk(KERN_DEBUG, dev, format, ##arg); 0; })
+#endif
+#endif /* < 2.6.0 */
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
