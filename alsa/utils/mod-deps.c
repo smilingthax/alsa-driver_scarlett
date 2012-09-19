@@ -171,6 +171,8 @@ static char *kernel_deps[] = {
 	"SND_SOC_ALL_CODECS",
 	/* this is used only in i2c/cs8427.c, and we have a wrapper there */
 	"%BITREVERSE",
+	/* used in core/pcm_timer.c, a wrapper present */
+	"%GCD",
 	NULL
 };
 
