@@ -195,7 +195,7 @@ static struct dmabuf *get_dmabuf(struct dmabuf *buf, unsigned long s)
 	if (buf) {
 		buf->data = snd_malloc_isa_pages_fallback(s, &buf->addr, &buf->size);
 		if (!buf->data) {
-			printk(KERN_ERR "sscape: Failed to allocate %lu bytes for DMA\n", s);
+			snd_printk(KERN_ERR "sscape: Failed to allocate %lu bytes for DMA\n", s);
 			return NULL;
 		}
 	}
@@ -530,7 +530,7 @@ static int upload_dma_data(struct soundscape *s,
 			 */
 			spin_unlock_irqrestore(&s->lock, flags);
 
-			printk(KERN_ERR "sscape: DMA upload has timed out\n");
+			snd_printk(KERN_ERR "sscape: DMA upload has timed out\n");
 			ret = -EAGAIN;
 			goto _release_dma;
 		}
@@ -551,10 +551,10 @@ static int upload_dma_data(struct soundscape *s,
 	 */
 	ret = 0;
 	if (!obp_startup_ack(s, 5)) {
-		printk(KERN_ERR "sscape: No response from on-board processor after upload\n");
+		snd_printk(KERN_ERR "sscape: No response from on-board processor after upload\n");
 		ret = -EAGAIN;
 	} else if (!host_startup_ack(s, 5)) {
-		printk(KERN_ERR "sscape: SoundScape failed to initialise\n");
+		snd_printk(KERN_ERR "sscape: SoundScape failed to initialise\n");
 		ret = -EAGAIN;
 	}
 
@@ -594,7 +594,7 @@ static int sscape_upload_bootblock(struct soundscape *sscape, struct sscape_boot
 
 	if (ret == 0) {
 		if (data < 0) {
-			printk(KERN_ERR "sscape: timeout reading firmware version\n");
+			snd_printk(KERN_ERR "sscape: timeout reading firmware version\n");
 			ret = -EAGAIN;
 		} else {
 			__copy_to_user(&bb->version, &data, sizeof(bb->version));
@@ -621,7 +621,7 @@ static int sscape_upload_microcode(struct soundscape *sscape,
 	int ret;
 
 	if ((ret = upload_dma_data(sscape, mc->code, sizeof(mc->code), PAGE_SIZE * 16)) == 0) {
-		printk(KERN_INFO "sscape: MIDI firmware loaded\n");
+		snd_printk(KERN_INFO "sscape: MIDI firmware loaded\n");
 	}
 
 	spin_lock_irqsave(&sscape->lock, flags);
@@ -893,7 +893,7 @@ static int mpu401_open(mpu401_t * mpu)
 	int err;
 
 	if (!verify_mpu401(mpu)) {
-		printk(KERN_ERR "sscape: MIDI disabled, please load firmware\n");
+		snd_printk(KERN_ERR "sscape: MIDI disabled, please load firmware\n");
 		err = -ENODEV;
 	} else {
 		register struct soundscape *sscape = get_mpu401_soundscape(mpu);
@@ -1090,17 +1090,17 @@ static int __init create_ad1845(snd_card_t * card, unsigned port, int irq, int d
 		spin_unlock_irqrestore(&chip->reg_lock, flags);
 
 		if ((err = snd_cs4231_pcm(chip, 0, &pcm)) < 0) {
-			printk(KERN_ERR "sscape: No PCM device for AD1845 chip\n");
+			snd_printk(KERN_ERR "sscape: No PCM device for AD1845 chip\n");
 			goto _error;
 		}
 
 		if ((err = snd_cs4231_mixer(chip)) < 0) {
-			printk(KERN_ERR "sscape: No mixer device for AD1845 chip\n");
+			snd_printk(KERN_ERR "sscape: No mixer device for AD1845 chip\n");
 			goto _error;
 		}
 
 		if ((err = snd_ctl_add(card, snd_ctl_new1(&midi_mixer_ctl, chip))) < 0) {
-			printk(KERN_ERR "sscape: Could not create MIDI mixer control\n");
+			snd_printk(KERN_ERR "sscape: Could not create MIDI mixer control\n");
 			goto _error;
 		}
 
@@ -1179,7 +1179,7 @@ static int __init create_sscape(const struct params *params)
 	 */
 	irq_cfg = get_irq_config(params->irq);
 	if (irq_cfg == INVALID_IRQ) {
-		printk(KERN_ERR "sscape: Invalid IRQ %d\n", params->irq);
+		snd_printk(KERN_ERR "sscape: Invalid IRQ %d\n", params->irq);
 		return -ENXIO;
 	}
 
