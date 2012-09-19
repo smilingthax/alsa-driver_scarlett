@@ -73,9 +73,7 @@ static int snd_vortex_dev_free(snd_device_t *device) {
     // Take down PCI interface.
     synchronize_irq(vortex->irq);
     free_irq(vortex->irq, vortex);
-    iounmap((void*)vortex->mmio);
-    release_resource(vortex->mmio_res);
-    kfree_nocheck(vortex->mmio_res);
+    pci_release_regions(vortex->pci_dev);
     pci_disable_device(vortex->pci_dev);
     snd_magic_kfree(vortex);
 
@@ -116,16 +114,15 @@ snd_vortex_create(snd_card_t *card, struct pci_dev *pci, vortex_t **rchip) {
     chip->device = pci->device;
     chip->card = card;
     chip->irq = -1;
+    spin_lock_init(&chip->lock);
 
     // (1) PCI resource allocation
     // Get MMIO area
     //
-    chip->mmio_res = request_mem_region(pci_resource_start(pci, 0), pci_resource_len(pci, 0), CARD_NAME_SHORT);
-    if (! chip->mmio_res) {
-	err = -EBUSY;
+    if ((err = pci_request_regions(pci, CARD_NAME_SHORT)) != 0) 
         goto regions_out;
-    }
-    chip->mmio = (unsigned long) ioremap_nocache(pci_resource_start(pci,0), pci_resource_len(pci,0));
+	
+    chip->mmio = ioremap_nocache(pci_resource_start(pci,0), pci_resource_len(pci,0));
     if (!chip->mmio) {
         printk(KERN_ERR "MMIO area remap failed.\n");
         err = -ENOMEM;

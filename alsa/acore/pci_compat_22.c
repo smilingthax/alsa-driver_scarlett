@@ -199,10 +199,11 @@ int snd_pci_compat_get_flags (struct pci_dev *dev, int n_base)
 		    dev->device == broken_addr[foo].device)
 		    	return broken_addr[foo].flags;
 	
-	if (foo == 0)
-		flags |= IORESOURCE_MEM;
-	if (foo == 1)
+	foo = dev->base_address[n_base] & PCI_BASE_ADDRESS_SPACE;
+	if (foo & 1)
 		flags |= IORESOURCE_IO;
+	else
+		flags |= IORESOURCE_MEM;
 
 	return flags;
 }
@@ -340,3 +341,63 @@ int snd_pci_compat_dma_supported(struct pci_dev *dev, dma_addr_t mask)
 	return 1;
 }
 
+/*
+ */
+int snd_pci_compat_pci_request_region(struct pci_dev *pdev, int bar, char *res_name)
+{
+	int flags;
+
+	if (pci_resource_len(pdev, bar) == 0)
+		return 0;
+	flags = snd_pci_compat_get_flags(pdev, bar);
+	if (flags & IORESOURCE_IO) {
+		if (!request_region(pci_resource_start(pdev, bar),
+				    pci_resource_len(pdev, bar), res_name))
+			goto err_out;
+	} else if (flags & IORESOURCE_MEM) {
+		if (!request_mem_region(pci_resource_start(pdev, bar),
+				        pci_resource_len(pdev, bar), res_name))
+			goto err_out;
+	}
+	
+	return 0;
+
+err_out:
+	printk(KERN_WARNING "PCI: Unable to reserve %s region #%d:%lx@%lx for device %s\n",
+		flags & IORESOURCE_IO ? "I/O" : "mem",
+		bar + 1, /* PCI BAR # */
+		pci_resource_len(pdev, bar), pci_resource_start(pdev, bar),
+		pci_name(pdev));
+	return -EBUSY;
+}
+
+void snd_pci_compat_release_region(struct pci_dev *pci, int bar)
+{
+	int flags;
+	if (pci_resource_len(pdev, bar) == 0)
+		return;
+	flags = snd_pci_compat_get_flags(pdev, bar);
+	if (flags & IORESOURCE_IO)
+		release_region(pci_resource_start(pdev, bar),
+				pci_resource_len(pdev, bar));
+	else if (flags & IORESOURCE_MEM)
+		release_mem_region(pci_resource_start(pdev, bar),
+				   pci_resource_len(pdev, bar));
+}
+
+int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name)
+{
+	int i;
+	
+	for (i = 0; i < 6; i++)
+		if (pci_request_region(pdev, i, res_name))
+			return -EBUSY;
+	return 0;
+}
+
+void snd_pci_compat_release_regions(struct pci_dev *pdev)
+{
+	int i;
+	for (i = 0; i < 6; i++)
+		snd_pci_compat_release_region(pdev, i);
+}

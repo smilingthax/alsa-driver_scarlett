@@ -246,6 +246,11 @@ int snd_compat_release_resource(struct resource *resource);
 #undef pci_resource_flags
 #define pci_resource_flags(dev,bar) (snd_pci_compat_get_flags((dev),(bar)))
 
+#define pci_request_region(dev,bar,name) snd_pci_compat_request_region(dev,bar,name)
+#define pci_release_region(dev,bar) snd_pci_compat_release_region(dev,bar)
+#define pci_request_regions(dev,name) snd_pci_compat_request_regions(dev,name)
+#define pci_release_regions(dev) snd_pci_compat_release_regions(dev)
+
 struct pci_device_id {
 	unsigned int vendor, device;		/* Vendor and device ID or PCI_ANY_ID */
 	unsigned int subvendor, subdevice;	/* Subsystem ID's or PCI_ANY_ID */
@@ -284,6 +289,10 @@ unsigned long snd_pci_compat_get_dma_mask(struct pci_dev *);
 int snd_pci_compat_set_dma_mask(struct pci_dev *, unsigned long mask);
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev);
 void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data);
+int snd_pci_compat_pci_request_region(struct pci_dev *pdev, int bar, char *res_name);
+void snd_pci_compat_release_region(struct pci_dev *pci, int bar);
+int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name);
+void snd_pci_compat_release_regions(struct pci_dev *pdev);
 
 static inline int pci_module_init(struct pci_driver *drv)
 {

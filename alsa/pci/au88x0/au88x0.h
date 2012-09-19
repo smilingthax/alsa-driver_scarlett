@@ -141,10 +141,9 @@ struct snd_vortex {
 
 	/* PCI hardware resources */
 	unsigned long io;
-	unsigned long mmio;
-	struct resource *mmio_res;
+	unsigned long *mmio;
 	unsigned int irq;
-	spinlock_t lock;
+    spinlock_t lock;
 
 	/* PCI device */
 	struct pci_dev * pci_dev;
