@@ -12,7 +12,12 @@ snd-ak4117-objs := ak4117.o
 # Toplevel Module Dependency
 obj-$(CONFIG_SND_PDAUDIOCF) += snd-ak4117.o
 # hack for tea575x support
+ifeq (y,$(CONFIG_VIDEO_DEV))
 obj-$(CONFIG_SND_FM801) += snd-tea575x-tuner.o
+ifeq (m,$(CONFIG_SND_FM801))
+export-objs += tea575x-tuner.o
+endif
+endif
 
 include $(SND_TOPDIR)/alsa-kernel/i2c/other/Makefile
 

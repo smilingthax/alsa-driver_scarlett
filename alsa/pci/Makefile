@@ -21,7 +21,9 @@ obj-$(CONFIG_SND_HDSPM) +=snd-hdspm.o
 
 # Hack for FM801 && TEA575x
 ifeq (m,$(CONFIG_SND_FM801))
+ifeq (y,$(CONFIG_VIDEO_DEV))
 EXTRA_CFLAGS += -DCONFIG_SND_FM801_TEA575X
+endif
 endif
 
 #
