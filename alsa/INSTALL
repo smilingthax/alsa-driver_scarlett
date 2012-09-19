@@ -61,9 +61,13 @@ Quick install
    multiple drivers, list names with comma (,).
    Passing "all" will compile all possible drivers (and this is the
    default choice).
+
    Some drivers have compile options.  They can be passed via
    --with-card-options option.  Multiple options can be passed with comma,
    too.  The default is "all".
+
+   The integer options can be also passesd in a form of X=Y like
+   "hda-prealloc-size=1024".
    For available cards and options, see ./configure --help.
 
    Note that you have to specify all items you want to enable unless
