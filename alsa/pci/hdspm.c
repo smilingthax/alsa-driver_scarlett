@@ -2971,11 +2971,12 @@ static int snd_hdspm_ioctl(snd_pcm_substream_t * substream,
 
 static int snd_hdspm_trigger(snd_pcm_substream_t * substream, int cmd)
 {
+	unsigned long flags;
 	hdspm_t *hdspm = snd_pcm_substream_chip(substream);
 	snd_pcm_substream_t *other;
 	int running;
 
-	spin_lock(&hdspm->lock);
+	spin_lock_irqsave(&hdspm->lock, flags);
 	running = hdspm->running;
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -2986,7 +2987,7 @@ static int snd_hdspm_trigger(snd_pcm_substream_t * substream, int cmd)
 		break;
 	default:
 		snd_BUG();
-		spin_unlock(&hdspm->lock);
+		spin_unlock_irqrestore(&hdspm->lock, flags);
 		return -EINVAL;
 	}
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
@@ -3029,7 +3030,7 @@ static int snd_hdspm_trigger(snd_pcm_substream_t * substream, int cmd)
 	else if (hdspm->running && !running)
 		hdspm_stop_audio(hdspm);
 	hdspm->running = running;
-	spin_unlock(&hdspm->lock);
+	spin_unlock_irqrestore(&hdspm->lock, flags);
 
 	return 0;
 }

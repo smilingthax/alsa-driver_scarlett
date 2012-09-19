@@ -620,6 +620,7 @@ static int pcm_prepare(snd_pcm_substream_t *substream)
 
 static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 {
+	unsigned long flags;
 	echoaudio_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	struct subsdata *ssdata = runtime->private_data;
@@ -638,7 +639,7 @@ static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 		}
 	}
 
-	spin_lock(&chip->lock);
+	spin_lock_irqsave(&chip->lock, flags);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
@@ -685,7 +686,7 @@ static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 	default:
 		err = -EINVAL;
 	}
-	spin_unlock(&chip->lock);
+	spin_unlock_irqrestore(&chip->lock, flags);
 	return err;
 }
 
@@ -1631,14 +1632,15 @@ static snd_kcontrol_new_t snd_echo_channels_info __devinitdata = {
 
 static irqreturn_t snd_echo_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 {
+	unsigned long flags;
 	echoaudio_t *chip = dev_id;
 	snd_pcm_substream_t *substream;
 	int period, ss, st;
 
-	spin_lock(&chip->lock);
+	spin_lock_irqsave(&chip->lock, flags);
 	st = service_irq(chip);
 	if (st < 0) {
-		spin_unlock(&chip->lock);
+		spin_unlock_irqrestore(&chip->lock, flags);
 		return IRQ_NONE;
 	}
 	/* The hardware doesn't tell us which substream caused the irq,
@@ -1648,13 +1650,13 @@ static irqreturn_t snd_echo_interrupt(int irq, void *dev_id, struct pt_regs *reg
 			period = pcm_pointer(substream) / substream->runtime->period_size;
 			if (period != chip->last_period[ss]) {
 				chip->last_period[ss] = period;
-				spin_unlock(&chip->lock);
+				spin_unlock_irqrestore(&chip->lock, flags);
 				snd_pcm_period_elapsed(substream);
-				spin_lock(&chip->lock);
+				spin_lock_irqsave(&chip->lock, flags);
 			}
 		}
 	}
-	spin_unlock(&chip->lock);
+	spin_unlock_irqrestore(&chip->lock, flags);
 
 #ifdef ECHOCARD_HAS_MIDI
 	if (st > 0 && chip->midi_in) {

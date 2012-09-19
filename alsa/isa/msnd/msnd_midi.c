@@ -55,8 +55,6 @@
 #define MSNDMIDI_MODE_BIT_OUTPUT		1
 #define MSNDMIDI_MODE_BIT_INPUT_TRIGGER	2
 #define MSNDMIDI_MODE_BIT_OUTPUT_TRIGGER	3
-#define MSNDMIDI_MODE_BIT_RX_LOOP		4
-#define MSNDMIDI_MODE_BIT_TX_LOOP		5
 
 #define MSNDMIDI_MODE_INPUT		(1<<MSNDMIDI_MODE_BIT_INPUT)
 #define MSNDMIDI_MODE_OUTPUT		(1<<MSNDMIDI_MODE_BIT_OUTPUT)
@@ -307,6 +305,14 @@ static int snd_msndmidi_output_close(snd_rawmidi_substream_t * substream)
 }
 #endif
 
+static void inline snd_msndmidi_input_drop(msndmidi_t * mpu)
+{
+	WORD tail;
+
+	tail = isa_readw(mpu->dev->MIDQ + JQS_wTail);
+	isa_writew(tail, mpu->dev->MIDQ + JQS_wHead);
+}
+
 /*
  * trigger input
  */
@@ -322,9 +328,8 @@ static void snd_msndmidi_input_trigger(snd_rawmidi_substream_t * substream, int 
 	mpu = substream->rmidi->private_data;
 	spin_lock_irqsave(&mpu->input_lock, flags);
 	if (up) {
-		if (! test_bit(MSNDMIDI_MODE_BIT_INPUT_TRIGGER, &mpu->mode))
-			snd_msndmidi_input_read(mpu);
-		set_bit(MSNDMIDI_MODE_BIT_INPUT_TRIGGER, &mpu->mode);
+		if (! test_and_set_bit(MSNDMIDI_MODE_BIT_INPUT_TRIGGER, &mpu->mode))
+			snd_msndmidi_input_drop(mpu);
 	} else {
 		clear_bit(MSNDMIDI_MODE_BIT_INPUT_TRIGGER, &mpu->mode);
 	}
@@ -336,21 +341,17 @@ static void snd_msndmidi_input_trigger(snd_rawmidi_substream_t * substream, int 
 void snd_msndmidi_input_read( void* mpuv)
 {
 //unsigned char byte;
+	unsigned long flags;
 msndmidi_t * mpu = mpuv;
 
-	/* prevent double enter via event callback */
-	if (test_and_set_bit(MSNDMIDI_MODE_BIT_RX_LOOP, &mpu->mode))
-		return;
-	spin_lock(&mpu->input_lock);
+	spin_lock_irqsave(&mpu->input_lock, flags);
 	while (isa_readw( mpu->dev->MIDQ + JQS_wTail) != isa_readw( mpu->dev->MIDQ + JQS_wHead)) {
 	WORD wTmp, val;
 		val = isa_readw( mpu->dev->pwMIDQData + 2*isa_readw( mpu->dev->MIDQ + JQS_wHead));
 
 			if (test_bit( MSNDMIDI_MODE_BIT_INPUT_TRIGGER, &mpu->mode)) {
-				spin_unlock(&mpu->input_lock);
 //		printk( "MID: 0x%04X\n", (unsigned)val);
 				snd_rawmidi_receive(mpu->substream_input, (unsigned char*)&val, 1);
-				spin_lock(&mpu->input_lock);
 			}
 
 		if ((wTmp = isa_readw( mpu->dev->MIDQ + JQS_wHead) + 1) > isa_readw( mpu->dev->MIDQ + JQS_wSize))
@@ -358,8 +359,7 @@ msndmidi_t * mpu = mpuv;
 		else
 			isa_writew(wTmp,  mpu->dev->MIDQ + JQS_wHead);
 	}
-	spin_unlock(&mpu->input_lock);
-	clear_bit(MSNDMIDI_MODE_BIT_RX_LOOP, &mpu->mode);
+	spin_unlock_irqrestore(&mpu->input_lock, flags);
 }
 
 /*
@@ -372,16 +372,14 @@ msndmidi_t * mpu = mpuv;
 #ifdef SND_MSNDMIDI_OUTPUT
 static void snd_msndmidi_output_write(msndmidi_t * mpu)
 {
+	unsigned long flags;
 	unsigned char byte;
 	int max = 256, timeout;
 
 	if (!test_bit(MSNDMIDI_MODE_BIT_OUTPUT_TRIGGER, &mpu->mode))
 		return;
-	/* prevent double enter */
-	if (test_and_set_bit(MSNDMIDI_MODE_BIT_TX_LOOP, &mpu->mode))
-		return;
 	do {
-		spin_lock(&mpu->output_lock);
+		spin_lock_irqsave(&mpu->output_lock, flags);
 		if (snd_rawmidi_transmit_peek(mpu->substream_output, &byte, 1) == 1) {
 			for (timeout = 100; timeout > 0; timeout--) {
 				if (snd_msndmidi_output_ready(mpu)) {
@@ -394,9 +392,8 @@ static void snd_msndmidi_output_write(msndmidi_t * mpu)
 			snd_msndmidi_remove_timer (mpu, 0);
 			max = 1; /* no other data - leave the tx loop */
 		}
-		spin_unlock(&mpu->output_lock);
+		spin_unlock_irqrestore(&mpu->output_lock, flags);
 	} while (--max > 0);
-	clear_bit(MSNDMIDI_MODE_BIT_TX_LOOP, &mpu->mode);
 }
 
 static void snd_msndmidi_output_trigger(snd_rawmidi_substream_t * substream, int up)
