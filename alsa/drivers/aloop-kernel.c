@@ -198,10 +198,10 @@ static void snd_card_loopback_timer_function(unsigned long data)
 	spin_lock_irq(&dpcm->lock);
 
 	dpcm->pcm_irq_pos += dpcm->pcm_bps;
+	dpcm->pcm_buf_pos += dpcm->pcm_bps;
+	dpcm->pcm_buf_pos %= dpcm->pcm_buffer_size * dpcm->pcm_hz;
 	if (dpcm->pcm_irq_pos >= dpcm->pcm_period_size * dpcm->pcm_hz) {
 		dpcm->pcm_irq_pos %= dpcm->pcm_period_size * dpcm->pcm_hz;
-		dpcm->pcm_buf_pos += dpcm->pcm_period_size;
-		dpcm->pcm_buf_pos %= dpcm->pcm_buffer_size;
 		spin_unlock_irq(&dpcm->lock);	
 		snd_pcm_period_elapsed(dpcm->substream);
 	} else {
@@ -213,7 +213,7 @@ static snd_pcm_uframes_t snd_card_loopback_pointer(struct snd_pcm_substream *sub
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_card_loopback_pcm_t *dpcm = runtime->private_data;
-	return bytes_to_frames(runtime, dpcm->pcm_buf_pos);
+	return bytes_to_frames(runtime, dpcm->pcm_buf_pos / dpcm->pcm_hz);
 }
 
 static struct snd_pcm_hardware snd_card_loopback_info =
