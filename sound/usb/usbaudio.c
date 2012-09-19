@@ -545,7 +545,7 @@ static void snd_complete_urb(struct urb *urb, struct pt_regs *regs)
 		return;
 	if (! subs->running) /* can be stopped during retire callback */
 		return;
-	if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
+	if ((err = subs->ops.prepare(subs, substream->runtime, urb)) < 0 ||
 	    (err = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
 		snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
@@ -2216,12 +2216,12 @@ static int create_composite_quirk(snd_usb_audio_t *chip,
 				  struct usb_interface *iface,
 				  const snd_usb_audio_quirk_t *quirk)
 {
-	struct usb_config_descriptor *config = chip->dev->actconfig;
+	struct usb_host_config *config = chip->dev->actconfig;
 	int probed_ifnum = get_iface_desc(iface->altsetting)->bInterfaceNumber;
 	int err;
 
 	for (quirk = quirk->data; quirk->ifnum >= 0; ++quirk) {
-		if (quirk->ifnum >= config->bNumInterfaces)
+		if (quirk->ifnum >= get_cfg_desc(config)->bNumInterfaces)
 			continue;
 		iface = &config->interface[quirk->ifnum];
 		if (quirk->ifnum != probed_ifnum &&

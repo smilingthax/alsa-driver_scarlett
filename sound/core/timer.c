@@ -60,6 +60,7 @@ typedef struct {
 	snd_timer_read_t *queue;
 	spinlock_t qlock;
 	wait_queue_head_t qchange_sleep;
+	struct fasync_struct *fasync;
 } snd_timer_user_t;
 
 /* list of timers */
@@ -951,8 +952,10 @@ static void snd_timer_user_interrupt(snd_timer_instance_t *timeri,
 		_wake++;
 	}
 	spin_unlock(&tu->qlock);
-	if (_wake)
+	if (_wake) {
+		kill_fasync(&tu->fasync, SIGIO, POLL_IN);
 		wake_up(&tu->qchange_sleep);
+	}
 }
 
 static int snd_timer_user_open(struct inode *inode, struct file *file)
@@ -982,6 +985,7 @@ static int snd_timer_user_release(struct inode *inode, struct file *file)
 	if (file->private_data) {
 		tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
 		file->private_data = NULL;
+		fasync_helper(-1, file, 0, &tu->fasync);
 		if (tu->timeri)
 			snd_timer_close(tu->timeri);
 		if (tu->queue)
@@ -1278,6 +1282,18 @@ static int snd_timer_user_ioctl(struct inode *inode, struct file *file,
 	return -ENOTTY;
 }
 
+static int snd_timer_user_fasync(int fd, struct file * file, int on)
+{
+	snd_timer_user_t *tu;
+	int err;
+	
+	tu = snd_magic_cast(snd_timer_user_t, file->private_data, return -ENXIO);
+	err = fasync_helper(fd, file, on, &tu->fasync);
+        if (err < 0)
+		return err;
+	return 0;
+}
+
 static ssize_t snd_timer_user_read(struct file *file, char *buffer, size_t count, loff_t *offset)
 {
 	snd_timer_user_t *tu;
@@ -1358,6 +1374,7 @@ static struct file_operations snd_timer_f_ops =
 	.release =	snd_timer_user_release,
 	.poll =		snd_timer_user_poll,
 	.ioctl =	snd_timer_user_ioctl,
+	.fasync = 	snd_timer_user_fasync,
 };
 
 static snd_minor_t snd_timer_reg =

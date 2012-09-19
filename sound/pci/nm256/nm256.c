@@ -1533,7 +1533,7 @@ snd_nm256_create(snd_card_t *card, struct pci_dev *pci,
 	if ((err = snd_nm256_pcm(chip, 0)) < 0)
 		goto __error;
 	
-	if ((err = snd_nm256_mixer(chip) < 0))
+	if ((err = snd_nm256_mixer(chip)) < 0)
 		goto __error;
 
 	// pci_set_master(pci); /* needed? */

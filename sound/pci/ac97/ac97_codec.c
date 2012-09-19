@@ -1797,6 +1797,39 @@ static void snd_ac97_get_name(ac97_t *ac97, unsigned int id, char *name)
 }
 
 
+/* wait for a while until registers are accessible after RESET
+ * return 0 if ok, negative not ready
+ */
+static int ac97_reset_wait(ac97_t *ac97, int timeout, int with_modem)
+{
+	signed long end_time;
+	end_time = jiffies + timeout;
+	do {
+		unsigned short ext_mid;
+		
+		/* use preliminary reads to settle the communication */
+		snd_ac97_read(ac97, AC97_RESET);
+		snd_ac97_read(ac97, AC97_VENDOR_ID1);
+		snd_ac97_read(ac97, AC97_VENDOR_ID2);
+		/* modem? */
+		if (with_modem) {
+			ext_mid = snd_ac97_read(ac97, AC97_EXTENDED_MID);
+			if (ext_mid != 0xffff && (ext_mid & 1) != 0)
+				return 0;
+		}
+		/* because the PCM or MASTER volume registers can be modified,
+		 * the REC_GAIN register is used for tests
+		 */
+		/* test if we can write to the record gain volume register */
+		snd_ac97_write_cache(ac97, AC97_REC_GAIN, 0x8a05);
+		if (snd_ac97_read(ac97, AC97_REC_GAIN) == 0x8a05)
+			return 0;
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(HZ/100);
+	} while (time_after_eq(end_time, jiffies));
+	return -ENODEV;
+}
+
 /**
  * snd_ac97_mixer - create an AC97 codec component
  * @card: the card instance
@@ -1852,32 +1885,12 @@ int snd_ac97_mixer(snd_card_t * card, ac97_t * _ac97, ac97_t ** rac97)
 		ac97->wait(ac97);
 	else {
 		udelay(50);
-
-		/* it's necessary to wait awhile until registers are accessible after RESET */
-		/* because the PCM or MASTER volume registers can be modified, */
-		/* the REC_GAIN register is used for tests */
-		end_time = jiffies + HZ;
-		do {
-			unsigned short ext_mid;
-		
-			/* use preliminary reads to settle the communication */
-			snd_ac97_read(ac97, AC97_RESET);
-			snd_ac97_read(ac97, AC97_VENDOR_ID1);
-			snd_ac97_read(ac97, AC97_VENDOR_ID2);
-			/* modem? */
-			ext_mid = snd_ac97_read(ac97, AC97_EXTENDED_MID);
-			if (ext_mid != 0xffff && (ext_mid & 1) != 0)
-				goto __access_ok;
-			/* test if we can write to the record gain volume register */
-			snd_ac97_write_cache(ac97, AC97_REC_GAIN, 0x8a05);
-			if ((err = snd_ac97_read(ac97, AC97_REC_GAIN)) == 0x8a05)
-				goto __access_ok;
-			set_current_state(TASK_UNINTERRUPTIBLE);
-			schedule_timeout(HZ/100);
-		} while (time_after_eq(end_time, jiffies));
-		snd_printk("AC'97 %d:%d does not respond - RESET [REC_GAIN = 0x%x]\n", ac97->num, ac97->addr, err);
-		snd_ac97_free(ac97);
-		return -ENXIO;
+		if (ac97_reset_wait(ac97, HZ/2, 0) < 0 &&
+		    ac97_reset_wait(ac97, HZ/2, 1) < 0) {
+			snd_printk("AC'97 %d:%d does not respond - RESET [REC_GAIN = 0x%x]\n", ac97->num, ac97->addr, err);
+			snd_ac97_free(ac97);
+			return -ENXIO;
+		}
 	}
       __access_ok:
 	ac97->id = snd_ac97_read(ac97, AC97_VENDOR_ID1) << 16;

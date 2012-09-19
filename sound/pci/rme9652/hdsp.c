@@ -1577,7 +1577,8 @@ static int snd_hdsp_put_mixer(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * 
 	gain = ucontrol->value.integer.value[2];
 
 	spin_lock_irqsave(&hdsp->lock, flags);
-	if ((change = gain != hdsp_read_gain(hdsp, addr)))
+	change = gain != hdsp_read_gain(hdsp, addr);
+	if (change)
 		hdsp_write_gain(hdsp, addr, gain);
 	spin_unlock_irqrestore(&hdsp->lock, flags);
 	return change;
@@ -1655,7 +1656,8 @@ static int snd_hdsp_put_playback_mixer(snd_kcontrol_t * kcontrol, snd_ctl_elem_v
 
 
 	spin_lock_irqsave(&hdsp->lock, flags);
-	if ((change = gain != hdsp_read_gain(hdsp, addr)))
+	change = gain != hdsp_read_gain(hdsp, addr);
+	if (change)
 		hdsp_write_gain(hdsp, addr, gain);
 	spin_unlock_irqrestore(&hdsp->lock, flags);
 	return change;

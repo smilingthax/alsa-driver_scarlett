@@ -585,7 +585,7 @@ static void cs46xx_dsp_proc_parameter_dump_read (snd_info_entry_t *entry, snd_in
 		}
 
 		if (col == 0) {
-			snd_iprintf(buffer, "%04X ",i / sizeof(u32));
+			snd_iprintf(buffer, "%04X ", i / (unsigned int)sizeof(u32));
 		}
 
 		snd_iprintf(buffer,"%08X ",readl(dst + i));

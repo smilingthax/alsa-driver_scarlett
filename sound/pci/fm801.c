@@ -130,7 +130,7 @@ struct _snd_fm801 {
 	struct resource *res_port;
 	unsigned int multichannel: 1,	/* multichannel support */
 		     secondary: 1;	/* secondary codec */
-	unsigned char secondary_addr;	/* addres of the secondary codec */
+	unsigned char secondary_addr;	/* address of the secondary codec */
 
 	unsigned short ply_ctrl; /* playback control */
 	unsigned short cap_ctrl; /* capture control */
