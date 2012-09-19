@@ -207,16 +207,45 @@ S:	Supported
 ACPI
 P:	Len Brown
 M:	len.brown@intel.com
+M:	lenb@kernel.org
 L:	linux-acpi@vger.kernel.org
 W:	http://acpi.sourceforge.net/
 T:	git kernel.org:/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git
-S:	Maintained
+S:	Supported
+
+ACPI BATTERY DRIVERS
+P:	Vladimir P. Lebedev
+M:	vladimir.p.lebedev@intel.com
+L:	linux-acpi@vger.kernel.org
+W:	http://acpi.sourceforge.net/
+S:	Supported
+
+ACPI EC DRIVER
+P:	Alexey Starikovskiy
+M:	alexey.y.starikovskiy@linux.intel.com
+L:	linux-acpi@vger.kernel.org
+W:	http://acpi.sourceforge.net/
+S:	Supported
+
+ACPI FAN DRIVER
+P:	Konstantin A. Karasyov
+M:	konstantin.a.karasyov@intel.com
+L:	linux-acpi@vger.kernel.org
+W:	http://acpi.sourceforge.net/
+S:	Supported
 
 ACPI PCI HOTPLUG DRIVER
 P:	Kristen Carlson Accardi
 M:	kristen.c.accardi@intel.com
 L:	pcihpd-discuss@lists.sourceforge.net
-S:	Maintained
+S:	Supported
+
+ACPI THERMAL DRIVER
+P:	Konstantin A. Karasyov
+M:	konstantin.a.karasyov@intel.com
+L:	linux-acpi@vger.kernel.org
+W:	http://acpi.sourceforge.net/
+S:	Supported
 
 AD1816 SOUND DRIVER
 P:	Thorsten Knabe
@@ -277,7 +306,7 @@ S:	Maintained
 
 ALI1563 I2C DRIVER
 P:	Rudolf Marek
-M:	r.marek@sh.cvut.cz
+M:	r.marek@assembler.cz
 L:	i2c@lm-sensors.org
 S:	Maintained
 
@@ -294,6 +323,13 @@ P:	Jordan Crouse
 M:	info-linux@geode.amd.com
 L:	info-linux@geode.amd.com
 W:	http://www.amd.com/us-en/ConnectivitySolutions/TechnicalResources/0,,50_2334_2452_11363,00.html
+S:	Supported
+
+AMS (Apple Motion Sensor) DRIVER
+P:	Stelian Pop
+M:	stelian@popies.net
+P:	Michael Hanselmann
+M:	linux-kernel@hansmi.ch
 S:	Supported
 
 AMSO1100 RNIC DRIVER
@@ -348,6 +384,24 @@ P:	Ian Molton
 M:	spyro@f2s.com
 S:	Maintained
 
+ARM/ADI ROADRUNNER MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/ADS SPHERE MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/AJECO 1ARM MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
 ARM/ATMEL AT91RM9200 ARM ARCHITECTURE
 P:      Andrew Victor
 M:      andrew@sanpeople.com
@@ -355,9 +409,27 @@ L:      linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
 W:      http://maxim.org.za/at91_26.html
 S:      Maintained
 
+ARM/CIRRUS LOGIC EP93XX ARM ARCHITECTURE
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/CIRRUS LOGIC EDB9315A MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
 ARM/CORGI MACHINE SUPPORT
 P:	Richard Purdie
 M:	rpurdie@rpsys.net
+S:	Maintained
+
+ARM/GLOMATION GESBC9312SX MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
 S:	Maintained
 
 ARM/HP JORNADA 7XX MACHINE SUPPORT
@@ -365,6 +437,74 @@ P:      Kristoffer Ericson
 M:      kristoffer_e1@hotmail.com
 W:      www.jlime.com
 S:      Maintained
+
+ARM/INTEL IOP32X ARM ARCHITECTURE
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+P:	Dan Williams
+M:	dan.j.williams@intel.com
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Supported
+
+ARM/INTEL IOP33X ARM ARCHITECTURE
+P:	Dan Williams
+M:	dan.j.williams@intel.com
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Supported
+
+ARM/INTEL IOP13XX ARM ARCHITECTURE
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+P:	Dan Williams
+M:	dan.j.williams@intel.com
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Supported
+
+ARM/INTEL IQ81342EX MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+P:	Dan Williams
+M:	dan.j.williams@intel.com
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Supported
+
+ARM/INTEL IXP2000 ARM ARCHITECTURE
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/INTEL IXDP2850 MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/INTEL IXP23XX ARM ARCHITECTURE
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/INTEL XSC3 (MANZANO) ARM CORE
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+P:	Dan Williams
+M:	dan.j.williams@intel.com
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Supported
+
+ARM/IP FABRICS DOUBLE ESPRESSO MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/LOGICPD PXA270 MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
 
 ARM/TOSA MACHINE SUPPORT
 P:	Dirk Opfer
@@ -384,6 +524,12 @@ L:	linux-arm-kernel@lists.arm.linux.org.uk	(subscribers-only)
 W:	http://www.arm.linux.org.uk/
 S:	Maintained
 
+ARM/RADISYS ENP2611 MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
 ARM/SHARK MACHINE SUPPORT
 P:	Alexander Schulz
 M:	alex@shark-linux.de
@@ -399,16 +545,28 @@ S:	Maintained
 
 ARM/S3C2410 ARM ARCHITECTURE
 P:	Ben Dooks
-M:	ben-s3c2410@fluff.org
+M:	ben-linux@fluff.org
 L:	linux-arm-kernel@lists.arm.linux.org.uk	(subscribers-only)
 W:	http://www.fluff.org/ben/linux/
 S:	Maintained
 
 ARM/S3C2440 ARM ARCHITECTURE
 P:	Ben Dooks
-M:	ben-s3c2440@fluff.org
+M:	ben-linux@fluff.org
 L:	linux-arm-kernel@lists.arm.linux.org.uk	(subscribers-only)
 W:	http://www.fluff.org/ben/linux/
+S:	Maintained
+
+ARM/TECHNOLOGIC SYSTEMS TS7250 MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
+S:	Maintained
+
+ARM/THECUS N2100 MACHINE SUPPORT
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-arm-kernel@lists.arm.linux.org.uk (subscribers-only)
 S:	Maintained
 
 ARPD SUPPORT
@@ -417,13 +575,13 @@ L:	netdev@vger.kernel.org
 S:	Maintained
 
 ASUS ACPI EXTRAS DRIVER
+P:	Corentin Chary
+M:	corentincj@iksaif.net
 P:	Karol Kozimor
 M:	sziwan@users.sourceforge.net
-P:	Julien Lerouge
-M:	julien.lerouge@free.fr
 L:	acpi4asus-user@lists.sourceforge.net
 W:	http://sourceforge.net/projects/acpi4asus
-W:	http://julien.lerouge.free.fr
+W:	http://xf.iksaif.net/acpi4asus
 S:	Maintained
 
 ATA OVER ETHERNET DRIVER
@@ -681,11 +839,23 @@ M:	joel.becker@oracle.com
 L:	linux-kernel@vger.kernel.org
 S:	Supported
 
+CIRRUS LOGIC EP93XX ETHERNET DRIVER
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	netdev@vger.kernel.org
+S:	Maintained
+
 CIRRUS LOGIC GENERIC FBDEV DRIVER
 P:	Jeff Garzik
 M:	jgarzik@pobox.com
 L:	linux-fbdev-devel@lists.sourceforge.net (subscribers-only)
 S:	Odd Fixes
+
+CIRRUS LOGIC EP93XX OHCI USB HOST DRIVER
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	linux-usb-devel@lists.sourceforge.net
+S:	Maintained
 
 CIRRUS LOGIC CS4280/CS461x SOUNDDRIVER
 P:	Cirrus Logic Corporation (kernel 2.2 driver)
@@ -740,7 +910,7 @@ P:	Dave Jones
 M:	davej@codemonkey.org.uk
 L:	cpufreq@lists.linux.org.uk
 W:	http://www.codemonkey.org.uk/projects/cpufreq/
-T:	git kernel.org/pub/scm/linux/kernel/davej/cpufreq.git
+T:	git kernel.org/pub/scm/linux/kernel/git/davej/cpufreq.git
 S:	Maintained
 
 CPUID/MSR DRIVER
@@ -936,18 +1106,15 @@ L:	linux-kernel@vger.kernel.org
 S:	Maintained
 
 DOCBOOK FOR DOCUMENTATION
-P:	Martin Waitz
-M:	tali@admingilde.org
 P:	Randy Dunlap
 M:	rdunlap@xenotime.net
-T:	git http://tali.admingilde.org/git/linux-docbook.git
 S:	Maintained
 
 DOCKING STATION DRIVER
 P:	Kristen Carlson Accardi
 M:	kristen.c.accardi@intel.com
 L:	linux-acpi@vger.kernel.org
-S:	Maintained
+S:	Supported
 
 DOUBLETALK DRIVER
 P:	James R. Van Zandt
@@ -1270,6 +1437,12 @@ L:	linux-nvidia@lists.surfsouth.com
 W:	http://drama.obuda.kando.hu/~fero/cgi-bin/hgafb.shtml
 S:	Maintained
 
+HID CORE LAYER
+P:	Jiri Kosina
+M:	jkosina@suse.cz
+L:	linux-input@atrey.karlin.mff.cuni.cz
+S:	Maintained
+
 HIGH-SPEED SCC DRIVER FOR AX.25
 P:	Klaus Kudielka
 M:	klaus.kudielka@ieee.org
@@ -1390,6 +1563,15 @@ W:	http://www.ia64-linux.org/
 T:	git kernel.org:/pub/scm/linux/kernel/git/aegl/linux-2.6.git
 S:	Maintained
 
+IBM ACPI EXTRAS DRIVER
+P:	Henrique de Moraes Holschuh
+M:	ibm-acpi@hmh.eng.br
+L:	ibm-acpi-devel@lists.sourceforge.net
+W:	http://ibm-acpi.sourceforge.net
+W:	http://thinkwiki.org/wiki/Ibm-acpi
+T:	git repo.or.cz/linux-2.6/linux-acpi-2.6/ibm-acpi-2.6.git
+S:	Maintained
+
 SN-IA64 (Itanium) SUB-PLATFORM
 P:	Jes Sorensen
 M:	jes@sgi.com
@@ -1425,10 +1607,9 @@ T:	git kernel.org:/pub/scm/linux/kernel/git/bart/ide-2.6.git
 S:	Maintained
 
 IDE/ATAPI CDROM DRIVER
-P:	Jens Axboe
-M:	axboe@kernel.dk
-L:	linux-kernel@vger.kernel.org
-W:	http://www.kernel.dk
+P:	Alan Cox
+M:	alan@lxorguk.ukuu.org.uk
+L:	linux-ide@vger.kernel.org
 S:	Maintained
 
 IDE/ATAPI FLOPPY DRIVERS
@@ -1504,8 +1685,10 @@ T:	git kernel.org:/pub/scm/linux/kernel/git/dtor/input.git
 S:	Maintained
 
 INOTIFY
-P:	John McCutchan and Robert Love
-M:	ttb@tentacle.dhs.org and rml@novell.com
+P:	John McCutchan
+M:	ttb@tentacle.dhs.org
+P:	Robert Love
+M:	rml@novell.com
 L:	linux-kernel@vger.kernel.org
 S:	Maintained
 
@@ -1540,6 +1723,12 @@ S:	Maintained
 INTEL IXP4XX RANDOM NUMBER GENERATOR SUPPORT
 P:	Deepak Saxena
 M:	dsaxena@plexity.net
+S:	Maintained
+
+INTEL IXP2000 ETHERNET DRIVER
+P:	Lennert Buytenhek
+M:	kernel@wantstofly.org
+L:	netdev@vger.kernel.org
 S:	Maintained
 
 INTEL PRO/100 ETHERNET SUPPORT
@@ -1745,6 +1934,13 @@ W:	http://nfs.sourceforge.net/
 W:	http://www.cse.unsw.edu.au/~neilb/patches/linux-devel/
 S:	Maintained
 
+KERNEL VIRTUAL MACHINE (KVM)
+P:	Avi Kivity
+M:	avi@qumranet.com
+L:	kvm-devel@lists.sourceforge.net
+W:	kvm.sourceforge.net
+S:	Supported
+
 KEXEC
 P:	Eric Biederman
 M:	ebiederm@xmission.com
@@ -1903,9 +2099,9 @@ S:	Maintained
 
 LSILOGIC MPT FUSION DRIVERS (FC/SAS/SPI)
 P:	Eric Moore
-M:	Eric.Moore@lsil.com
-M:	support@lsil.com
-L:	mpt_linux_developer@lsil.com
+M:	Eric.Moore@lsi.com
+M:	support@lsi.com
+L:	mpt_linux_developer@lsi.com
 L:	linux-scsi@vger.kernel.org
 W:	http://www.lsilogic.com/support
 S:	Supported
@@ -2368,7 +2564,7 @@ PCIE HOTPLUG DRIVER
 P:	Kristen Carlson Accardi
 M:	kristen.c.accardi@intel.com
 L:	pcihpd-discuss@lists.sourceforge.net
-S:	Maintained
+S:	Supported
 
 PCMCIA SUBSYSTEM
 P:	Linux PCMCIA Team
@@ -2426,6 +2622,12 @@ P:	Adam Belay
 M:	ambx1@neo.rr.com
 S:	Maintained
 
+PNXxxxx I2C DRIVER
+P:	Vitaly Wool
+M:	vitalywool@gmail.com
+L:	i2c@lm-sensors.org
+S:	Maintained
+
 PPP PROTOCOL DRIVERS AND COMPRESSORS
 P:	Paul Mackerras
 M:	paulus@samba.org
@@ -2461,6 +2663,12 @@ PROMISE DC4030 CACHING DISK CONTROLLER DRIVER
 P:	Peter Denison
 M:	promise@pnd-pc.demon.co.uk
 W:	http://www.pnd-pc.demon.co.uk/promise/
+S:	Maintained
+
+PROMISE SATA TX2/TX4 CONTROLLER LIBATA DRIVER
+P:	Mikael Pettersson
+M:	mikpe@it.uu.se
+L:	linux-ide@vger.kernel.org
 S:	Maintained
 
 PS3 PLATFORM SUPPORT
@@ -2868,7 +3076,7 @@ SHPC HOTPLUG DRIVER
 P:	Kristen Carlson Accardi
 M:	kristen.c.accardi@intel.com
 L:	pcihpd-discuss@lists.sourceforge.net
-S:	Maintained
+S:	Supported
 
 SECURE DIGITAL HOST CONTROLLER INTERFACE DRIVER
 P:	Pierre Ossman
@@ -3114,7 +3322,7 @@ USB EHCI DRIVER
 P:	David Brownell
 M:	dbrownell@users.sourceforge.net
 L:	linux-usb-devel@lists.sourceforge.net
-S:	Maintained
+S:	Odd Fixes
 
 USB ET61X[12]51 DRIVER
 P:	Luca Risolia
@@ -3167,11 +3375,11 @@ S:	Maintained
 W:	http://www.one-eyed-alien.net/~mdharm/linux-usb/
 
 USB OHCI DRIVER
-P:	Roman Weissgaerber
-M:	weissg@vienna.at
+P:	David Brownell
+M:	dbrownell@users.sourceforge.net
 L:	linux-usb-users@lists.sourceforge.net
 L:	linux-usb-devel@lists.sourceforge.net
-S:	Maintained
+S:	Odd Fixes
 
 USB OPTION-CARD DRIVER
 P:	Matthias Urlichs
@@ -3430,6 +3638,12 @@ S:	Maintained
 W83791D HARDWARE MONITORING DRIVER
 P:	Charles Spirakis
 M:	bezaur@gmail.com
+L:	lm-sensors@lm-sensors.org
+S:	Maintained
+
+W83793 HARDWARE MONITORING DRIVER
+P:	Rudolf Marek
+M:	r.marek@assembler.cz
 L:	lm-sensors@lm-sensors.org
 S:	Maintained
 
