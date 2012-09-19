@@ -15,7 +15,7 @@ config SND_AU8810
         tristate "Aureal Advantage"
         depends on SND
         help
-          Say 'Y' or 'M' to include support for Aureal Advatage soundcards.
+          Say 'Y' or 'M' to include support for Aureal Advantage soundcards.
  
 config SND_AU8820
         tristate "Aureal Vortex"
