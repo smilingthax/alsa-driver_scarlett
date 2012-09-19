@@ -354,6 +354,7 @@
 #define AC97_SCAP_SKIP_AUDIO	(1<<4)	/* skip audio part of codec */
 #define AC97_SCAP_SKIP_MODEM	(1<<5)	/* skip modem part of codec */
 #define AC97_SCAP_INDEP_SDIN	(1<<6)	/* independent SDIN */
+#define AC97_SCAP_INV_EAPD	(1<<7)	/* inverted EAPD */
 
 /* ac97->flags */
 #define AC97_HAS_PC_BEEP	(1<<0)	/* force PC Speaker usage */
@@ -547,12 +548,14 @@ enum {
 	AC97_TUNE_SWAP_SURROUND, /* swap master and surround controls */
 	AC97_TUNE_AD_SHARING,	/* for AD1985, turn on OMS bit and use headphone */
 	AC97_TUNE_ALC_JACK,	/* for Realtek, enable JACK detection */
+	AC97_TUNE_INV_EAPD,	/* inverted EAPD implementation */
 };
 
 struct ac97_quirk {
 	unsigned short vendor;	/* PCI vendor id */
 	unsigned short device;	/* PCI device id */
 	unsigned short mask;	/* device id bit mask, 0 = accept all */
+	unsigned int codec_id;	/* codec id (if any), 0 = accept all */
 	const char *name;	/* name shown as info */
 	int type;		/* quirk type above */
 };
