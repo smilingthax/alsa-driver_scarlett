@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-version=0.1.0
+version=0.1.1
 protocol=
 distrib=unknown
 distribver=0.0
@@ -24,9 +24,13 @@ yes=
 kernelmodules=
 kmodlist=
 kmodremove=
+kmodclean=
 depmodbin=
 modinfobin=
 runargs=
+patches=
+kmodmesg=
+withdebug=
 
 usage() {
 	echo "Usage: $0 [OPTION]..."
@@ -45,11 +49,16 @@ Operation modes:
   --git=giturl		work with git tree
   --compile		force compilation
   --install		install binaries and headers
+  --patch=patch		apply code patch (can be used multiple times)
   --tmpdir=dir		set temporary directory (overrides TMPDIR envval)
-  --kmodules[=mods]	reinstall kernel modules or install specified modules
+  --kmodules[=mods]	reinsert kernel modules or insert specified modules
+  			to current kernel
   --kmodlist		list ALSA toplevel kernel modules
-  --kmodremove		remove ALSA kernel modules
+  --kmodremove		remove ALSA kernel modules from kernel
+  --kmodclean		remove installed ALSA kernel modules from /lib/modules
+  --kmodmesg		show ALSA kernel related messages
   --run program [args]  run a program using fresh alsa-lib
+  --with-debug=dbgopt	set debug options to dbgopt (for alsa-driver)
 
 Package selection:
   --driver		compile alsa-driver package (default)
@@ -181,11 +190,34 @@ do
 			shift ;;
 		esac
 		;;
+	--with-debug*)
+		case "$#,$1" in
+		*,*=*)
+			withdebug=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			withdebug="$2"
+			shift ;;
+		esac
+		;;
 	--compile)
 		compile=true
 		;;
 	--install)
 		install=true
+		;;
+	--patch)
+		case "$#,$1" in
+		*,*=*)
+			patch=`expr "z$1" : 'z-[^=]*=\(.*\)'` ;;
+		1,*)
+			usage ;;
+		*)
+			patch="$2"
+			shift ;;
+		esac
+		patches="$patches $patch"
 		;;
 	--driver|--lib|--utils|--plugins|--firmware|--oss)
 		pkg="$1"
@@ -230,6 +262,21 @@ do
 		;;
 	--kmodremove)
 		kmodremove=true
+		;;
+	--kmodclean)
+		dir="/lib/modules/`uname -r`/alsa/updates"
+		echo "Removing kernel modules in $dir:"
+		if test -d $dir; then
+			if ! rm -rf $dir; then
+				echo >&2 "Cannot remove tree $dir"
+				exit 1
+			fi
+		fi
+		echo "  success"
+		exit 0
+		;;
+	--kmodmesg)
+		kmodmesg=true
 		;;
 	*)
 		test -n "$1" && echo "Unknown parameter '$1'"
@@ -301,6 +348,10 @@ install_package() {
 		echo >&2 "install_package: Unsupported distribution $distrib"
 		exit 1
 	esac
+	if test $(is_rpm_installed $1) = "false" ; then
+		echo "Package '$1' was not installed."
+		exit 1
+	fi
 	echo "  installed"
 }
 
@@ -313,8 +364,13 @@ check_kernel_source() {
 		fi
 		;;
 	Fedora)
-		if test $(is_rpm_installed kernel-devel) = "false" ; then
-			install_package kernel-devel
+		if test $(uname --kernel-release | grep -q '\.PAE$'); then
+			kernel_devel=kernel-PAE-devel
+		else
+			kernel_devel=kernel-devel
+		fi
+		if test $(is_rpm_installed $kernel_devel) = "false" ; then
+			install_package $kernel_devel
 		fi
 		;;
 	*)
@@ -407,6 +463,18 @@ check_compilation_environment() {
 		else
 			echo "Program gcc found."
 		fi
+		a=$(patch --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "patch" ; then
+			install_package patch
+		else
+			echo "Program patch found."
+		fi
+		a=$(diff --version | head -1 | cut -d ' ' -f 1)
+		if test "$a" != "diff" ; then
+			install_package diffutils
+		else
+			echo "Program diff found."
+		fi
 		if test "$protocol" = "git"; then
 			a=$(git --version | head -1 | cut -d ' ' -f 1)
 			if test "$a" != "git"; then
@@ -450,14 +518,38 @@ download_http_file() {
 
 do_compile() {
 	cmd="./gitcompile"
-	case "$package" in
+	case "$package"  in
 	alsa-driver)
-		test -r acore/hwdep.o && cmd="make"
-		;;
-	alsa-lib)
-		test -r src/.libs/libasound.so.2.0.0 && cmd="make"
+		dbgopt="$withdebug"
+		test -z "$dbgopt" && dbgopt="full"
+		cmd="./gitcompile --with-debug=$dbgopt --with-isapnp=yes --with-sequencer=yes --with-moddir=updates/alsa"
 		;;
 	esac
+	if test -z "$patches"; then
+		case "$package" in
+		alsa-driver)
+			test -r acore/hwdep.o && cmd="make"
+			;;
+		alsa-lib)
+			test -r src/.libs/libasound.so.2.0.0 && cmd="make"
+			;;
+		esac
+	else
+		for patch in $patches; do
+			pstrip=1
+			if ! test patch -s -p$pstrip -N --dry-run < $patch; then
+				pstrip=0
+				if ! test patch -s -p$pstrip -N --dry-run < $patch; then
+					echo >&2 "Cannot apply patch $patch"
+					exit 1
+				fi
+			fi
+			echo "Applying patch $patch: "
+			if ! test patch -p$pstrip -N < $patch; then
+				exit 1
+			fi
+		done
+	fi
 	echo "Running $cmd:"
 	if ! $cmd; then
 		a=$(pwd)
@@ -478,9 +570,9 @@ do_install() {
 	case "$package" in
 	alsa-driver)
 		cat <<EOF
-WARNING! You chose to install new ALSA kernel modules. The current ALSA
-kernel modules will be removed from your system pernamently. In case of
-problems, reinstall your kernel package.
+WARNING! You chose to install new ALSA kernel modules. To reuse the ALSA
+kernel modules provided by the kernel package, invoke command:
+  $0 --kmodclean
 EOF
 		if test $(question_bool "Really continue (Ctrl-C to abort)?") = "true"; then
 			cmd="make install-modules"
@@ -549,6 +641,12 @@ kill_audio_apps() {
 parse_modules() {	
 	if ! test -s ../modules.dep; then
 		rel=$(uname -r)
+		cd modules
+		for i in snd-dummy.*; do
+			i1=$(echo $i | sed -e 's/dummy/dummy1/g')
+			ln -sf $i $i1 || exit 1
+		done
+		cd ..
 		pdst="xxxx/lib/modules/$rel"
 		mkdir -p $pdst/modules || exit 1
 		for i in modules/*.*o; do
@@ -572,6 +670,8 @@ parse_modules() {
 
 	if ! test -s ../modules.top ; then
 		for i in modules/*.*o; do
+			pwd
+			echo "$i"
 			if test -r $i; then
 				a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
@@ -613,28 +713,59 @@ my_rmmod() {
 
 my_insmod() {
 	while test -n "$1"; do
-		if test -r modules/$1.ko; then
-			mod=modules/$1.ko
-			echo "> insmod $1.ko"
-			if ! insmod modules/$1.ko ; then
-				echo >&2 "Unable to insert kernel module $1.ko"
+		xmod=
+		args=
+		nofail=
+		for x in $1; do
+			if test -z "$xmod"; then
+				xmod=$x
+			else
+				args="$args $x"
+			fi
+		done
+		if test "$xmod" = "snd-dummy1"; then
+			args="index=999"
+			nofail=true
+		fi
+		if test -r modules/$xmod.ko; then
+			mod=modules/$xmod.ko
+			echo "> insmod $mod.ko $args"
+			if test -n "$nofail"; then
+				insmod $mod $args 2> /dev/null
+			elif ! insmod $mod $args; then
+				echo >&2 "Unable to insert kernel module $xmod.ko"
 				exit 1
 			fi
 		else
-			if test -r modules/$1.o; then
-				mod=modules/$1.o
-				echo "> insmod $1.o"
-				if ! insmod modules/$1.o ; then
-					echo >&2 "Unable to insert kernel module $1.o"
+			if test -r modules/$xmod.o; then
+				mod=modules/$xmod.o
+				echo "> insmod $mod.o $args"
+				if test -n "$nofail"; then
+					insmod $mod.o $args
+				elif ! insmod $mod.o $args; then
+					echo >&2 "Unable to insert kernel module $xmod.o"
 					exit 1
 				fi
 			else
-				echo >&2 "Unable to find kernel module $1"
+				echo >&2 "Unable to find kernel module $xmod"
 				exit 1
 			fi
 		fi
 		shift
 	done
+}
+
+show_kernel_messages() {
+	cat > $tmpdir/run.awk <<EOF
+/Dummy soundcard not found or device busy/ { delete lines }
+	{ lines[length(lines)+1] = \$0 }
+END	{
+		for (x = 3; x <= length(lines); x++)
+			print prefix lines[x]
+	}
+EOF
+	dmesg | awk -f $tmpdir/run.awk -v prefix="$1"
+	rm $tmpdir/run.awk || exit 1
 }
 
 do_kernel_modules() {
@@ -751,6 +882,7 @@ BEGIN   {
 	}
 END     {
 		addmodule("snd-page-alloc")
+		addmodule("snd-dummy1")
 
 		# all direct toplevel modules dependencies
 		for (mod in deps) {
@@ -807,6 +939,7 @@ EOF
 	fi
 	kill_audio_apps
 	my_rmmod $curmods
+	dmesg > ../dmesg.txt.1
 	my_insmod $(cat $dst)
 	echo "Kernel modules ready:"
 	cat /proc/asound/cards
@@ -815,6 +948,8 @@ EOF
 	else
 		echo "Use a mixer application (like alsamixer) to set reasonable volume levels."
 	fi
+	dmesg > ../dmesg.txt.2
+	show_kernel_messages " [kmsg] "
 }
 
 kernel_modules() {
@@ -864,6 +999,10 @@ git_clone() {
 
 rundir=$(pwd)
 export LANG=C
+if test "$kmodmesg" = "true"; then
+	show_kernel_messages
+	exit 0
+fi
 protocol=$(echo $url | cut -d ':' -f 1)
 check_environment $protocol
 do_cmd cd $tmpdir
@@ -874,7 +1013,7 @@ fi
 if test "$kmodlist" = "true" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
@@ -883,7 +1022,7 @@ fi
 if test -n "$kernelmodules" -a -z "$compile"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules
@@ -974,7 +1113,7 @@ esac
 if test "$kmodlist" = "true"; then
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules_list
@@ -983,7 +1122,7 @@ if test -n "$kernelmodules"; then
 	do_cmd cd $tmpdir
 	packagedir="$package.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	do_cmd cd $tree
 	kernel_modules
@@ -992,7 +1131,7 @@ fi
 if test -n "$runargs"; then
 	packagedir="alsa-lib.dir"
 	if test -r $packagedir; then
-		tree=$(cat $package.dir)
+		tree=$(cat $packagedir)
 	fi
 	f="$tmpdir/$tree/src/.libs/libasound.so.2.0.0"
 	if test -r $f; then
