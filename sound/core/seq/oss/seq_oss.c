@@ -122,7 +122,7 @@ dev_open(struct inode *inode, struct file *file)
 {
 	int level, rc;
 
-	if (MINOR(inode->i_rdev) == SNDRV_MINOR_OSS_MUSIC)
+	if (minor(inode->i_rdev) == SNDRV_MINOR_OSS_MUSIC)
 		level = SNDRV_SEQ_OSS_MODE_MUSIC;
 	else
 		level = SNDRV_SEQ_OSS_MODE_SYNTH;

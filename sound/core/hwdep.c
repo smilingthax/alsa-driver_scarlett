@@ -70,7 +70,7 @@ static ssize_t snd_hwdep_write(struct file * file, const char *buf, size_t count
 
 static int snd_hwdep_open(struct inode *inode, struct file * file)
 {
-	int major = MAJOR(inode->i_rdev);
+	int major = major(inode->i_rdev);
 	int cardnum;
 	int device;
 	snd_hwdep_t *hw;
@@ -79,12 +79,12 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
 
 	switch (major) {
 	case CONFIG_SND_MAJOR:
-		cardnum = SNDRV_MINOR_CARD(MINOR(inode->i_rdev));
-		device = SNDRV_MINOR_DEVICE(MINOR(inode->i_rdev)) - SNDRV_MINOR_HWDEP;
+		cardnum = SNDRV_MINOR_CARD(minor(inode->i_rdev));
+		device = SNDRV_MINOR_DEVICE(minor(inode->i_rdev)) - SNDRV_MINOR_HWDEP;
 		break;
 #ifdef CONFIG_SND_OSSEMUL
 	case SOUND_MAJOR:
-		cardnum = SNDRV_MINOR_OSS_CARD(MINOR(inode->i_rdev));
+		cardnum = SNDRV_MINOR_OSS_CARD(minor(inode->i_rdev));
 		device = 0;
 		break;
 #endif

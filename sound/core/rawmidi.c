@@ -339,7 +339,7 @@ int snd_rawmidi_kernel_open(int cardnum, int device, int subdevice,
 
 static int snd_rawmidi_open(struct inode *inode, struct file *file)
 {
-	int major = MAJOR(inode->i_rdev);
+	int maj = major(inode->i_rdev);
 	int cardnum;
 	snd_card_t *card;
 	int device, subdevice;
@@ -351,16 +351,16 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 	struct list_head *list;
 	snd_ctl_file_t *kctl;
 
-	switch (major) {
+	switch (maj) {
 	case CONFIG_SND_MAJOR:
-		cardnum = SNDRV_MINOR_CARD(MINOR(inode->i_rdev));
+		cardnum = SNDRV_MINOR_CARD(minor(inode->i_rdev));
 		cardnum %= SNDRV_CARDS;
-		device = SNDRV_MINOR_DEVICE(MINOR(inode->i_rdev)) - SNDRV_MINOR_RAWMIDI;
+		device = SNDRV_MINOR_DEVICE(minor(inode->i_rdev)) - SNDRV_MINOR_RAWMIDI;
 		device %= SNDRV_MINOR_RAWMIDIS;
 		break;
 #ifdef CONFIG_SND_OSSEMUL
 	case SOUND_MAJOR:
-		cardnum = SNDRV_MINOR_OSS_CARD(MINOR(inode->i_rdev));
+		cardnum = SNDRV_MINOR_OSS_CARD(minor(inode->i_rdev));
 		cardnum %= SNDRV_CARDS;
 		device = SNDRV_MINOR_OSS_DEVICE(inode->i_rdev) == SNDRV_MINOR_OSS_MIDI ?
 			snd_midi_map[cardnum] : snd_amidi_map[cardnum];
@@ -375,13 +375,13 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 		return -ENODEV;
 	card = rmidi->card;
 #ifdef CONFIG_SND_OSSEMUL
-	if (major == SOUND_MAJOR && !rmidi->ossreg)
+	if (maj == SOUND_MAJOR && !rmidi->ossreg)
 		return -ENXIO;
 #endif
 	fflags = snd_rawmidi_file_flags(file);
 	if ((file->f_flags & O_APPEND) && !(file->f_flags & O_NONBLOCK))
 		return -EINVAL;		/* invalid combination */
-	if ((file->f_flags & O_APPEND) || major != CONFIG_SND_MAJOR) /* OSS emul? */
+	if ((file->f_flags & O_APPEND) || maj != CONFIG_SND_MAJOR) /* OSS emul? */
 		fflags |= SNDRV_RAWMIDI_LFLG_APPEND;
 	rawmidi_file = snd_magic_kmalloc(snd_rawmidi_file_t, 0, GFP_KERNEL);
 	if (rawmidi_file == NULL)
@@ -418,9 +418,9 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 	}
 #ifdef CONFIG_SND_OSSEMUL
 	if (rawmidi_file->input && rawmidi_file->input->runtime)
-		rawmidi_file->input->runtime->oss = (major == SOUND_MAJOR);
+		rawmidi_file->input->runtime->oss = (maj == SOUND_MAJOR);
 	if (rawmidi_file->output && rawmidi_file->output->runtime)
-		rawmidi_file->output->runtime->oss = (major == SOUND_MAJOR);
+		rawmidi_file->output->runtime->oss = (maj == SOUND_MAJOR);
 #endif
 	set_current_state(TASK_RUNNING);
 	remove_wait_queue(&rmidi->open_wait, &wait);
