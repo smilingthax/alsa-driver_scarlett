@@ -2232,6 +2232,33 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   fi
 fi
 
+dnl removal of page-reservation for nopage/mmap (for 2.6.14+)
+if test "$kversion.$kpatchlevel" = "2.6"; then
+  AC_MSG_CHECKING(for removal of page-reservation for nopage/mmap)
+  remove_page_reserve="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/mm.h>
+],[
+  void (*func)(struct vm_area_struct *, pte_t, unsigned long) = print_bad_pte;
+],
+    AC_MSG_RESULT("yes");remove_page_reserve="1",
+    AC_MSG_RESULT("no");remove_page_reserve="0",
+    AC_MSG_RESULT("unknown");remove_page_reserve="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_SND_REMOVE_PAGE_RESERVE=$remove_page_reserve
+  dnl AC_SUBST(CONFIG_SND_REMOVE_PAGE_RESERVE)
+  if test "$CONFIG_SND_REMOVE_PAGE_RESERVE" = "1"; then
+    AC_DEFINE(CONFIG_SND_REMOVE_PAGE_RESERVE)
+  fi
+fi
+
 dnl nested class_device for 2.6.14+
 if test "$kversion.$kpatchlevel" = "2.6"; then
   AC_MSG_CHECKING(for nested class_device)
