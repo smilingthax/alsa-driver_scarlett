@@ -335,6 +335,11 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #define get_endpoint(alt,ep)	(&(alt)->endpoint[ep])
 #define get_ep_desc(ep)		(ep)
 #define get_cfg_desc(cfg)	(cfg)
+#define USB_DT_CS_DEVICE	0x21
+#define USB_DT_CS_CONFIG	0x22
+#define USB_DT_CS_STRING	0x23
+#define USB_DT_CS_INTERFACE	0x24
+#define USB_DT_CS_ENDPOINT	0x25
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45)
