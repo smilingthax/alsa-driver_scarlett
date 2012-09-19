@@ -143,7 +143,7 @@ static int pcxhr_check_reg_bit(pcxhr_mgr_t *mgr, unsigned int reg, unsigned char
 	do {
 		*read = PCXHR_INPB(mgr, reg);
 		if ((*read & mask) == bit) {
-			if(i>50) snd_printdd("ATTENTION! check_reg(%x) loopcount=%d\n", reg, i);
+			if(i>100) snd_printdd("ATTENTION! check_reg(%x) loopcount=%d\n", reg, i);
 			return 0;
 		}
 		i ++;
@@ -445,7 +445,7 @@ static struct pcxhr_cmd_info pcxhr_dsp_cmds[] = {
 [CMD_UPDATE_R_BUFFERS] =		{ 0x840000, 0, RMH_SSIZE_FIXED },
 [CMD_FORMAT_STREAM_OUT] =		{ 0x860000, 0, RMH_SSIZE_FIXED },
 [CMD_FORMAT_STREAM_IN] =		{ 0x870000, 0, RMH_SSIZE_FIXED },
-[CMD_STREAM_SAMPLE_COUNT] =		{ 0x902000, 0, RMH_SSIZE_FIXED },
+[CMD_STREAM_SAMPLE_COUNT] =		{ 0x902000, 2, RMH_SSIZE_FIXED },	/* stat_len = nb_streams * 2 */
 [CMD_AUDIO_LEVEL_ADJUST] =		{ 0xc22000, 0, RMH_SSIZE_FIXED },
 };
 #ifdef CONFIG_SND_DEBUG
@@ -475,7 +475,7 @@ static struct pcxhr_cmd_debug cmd_dbg[] = {
 [CMD_UPDATE_R_BUFFERS] =		{ 1, "CMD_UPDATE_R_BUFFERS" },
 [CMD_FORMAT_STREAM_OUT] =		{ 1, "CMD_FORMAT_STREAM_OUT" },
 [CMD_FORMAT_STREAM_IN] =		{ 1, "CMD_FORMAT_STREAM_IN" },
-[CMD_STREAM_SAMPLE_COUNT] =		{ 0, "CMD_STREAM_SAMPLE_COUNT" },
+[CMD_STREAM_SAMPLE_COUNT] =		{ 1, "CMD_STREAM_SAMPLE_COUNT" },
 [CMD_AUDIO_LEVEL_ADJUST] =		{ 1, "CMD_AUDIO_LEVEL_ADJUST" },
 };
 #endif
@@ -698,10 +698,6 @@ int pcxhr_write_io_num_reg_cont(pcxhr_mgr_t *mgr, unsigned int mask, unsigned in
 	return err;
 }
 
-
-
-
-
 #define PCXHR_IRQ_TIMER		0x000200
 #define PCXHR_IRQ_FREQ_CHANGE	0x000800
 #define PCXHR_IRQ_TIME_CODE	0x001000
@@ -714,8 +710,10 @@ void pcxhr_msg_tasklet( unsigned long arg)
 {
 	pcxhr_mgr_t *mgr = ( pcxhr_mgr_t*)(arg);
 	pcxhr_rmh_t rmh;
-	int err, i, j;
-
+	int err;
+#ifdef CONFIG_SND_DEBUG
+	int i, j;
+#endif
 	if(mgr->src_it_dsp & PCXHR_IRQ_FREQ_CHANGE)
 		snd_printdd("TASKLET : PCXHR_IRQ_FREQ_CHANGE event occured\n");
 	if(mgr->src_it_dsp & PCXHR_IRQ_TIME_CODE)
@@ -729,14 +727,17 @@ void pcxhr_msg_tasklet( unsigned long arg)
 		rmh.cmd[0] |= 1;	/* add SEL_ASYNC_EVENTS */
 		err = pcxhr_send_msg(mgr, &rmh);
 		if(err) {
-			snd_printk(KERN_ERR "ERROR pcxhr_set_format err=%x;\n", err);
+			snd_printk(KERN_ERR "ERROR pcxhr_msg_tasklet=%x;\n", err);
 		}
+#ifdef CONFIG_SND_DEBUG
 		i=1;
 		while(i<rmh.stat_len) {
-			/* int pipe = rmh.stat[i] & MASK_FIRST_FIELD; */
 			int nb_audio = (rmh.stat[i] >> FIELD_SIZE) & MASK_FIRST_FIELD;
 			int nb_stream = (rmh.stat[i] >> (2*FIELD_SIZE)) & MASK_FIRST_FIELD;
-			/* int is_capture = rmh.stat[i] & 0x400000; */
+#ifdef CONFIG_SND_DEBUG_DETECT
+			int pipe = rmh.stat[i] & MASK_FIRST_FIELD;
+			int is_capture = rmh.stat[i] & 0x400000;
+#endif
 			if(rmh.stat[i] & 0x800000) {	/* if BIT_END */
 				snd_printdd("TASKLET : End%sPipe %d\n", is_capture ? "Record" : "Play", pipe);
 			}
@@ -760,29 +761,67 @@ void pcxhr_msg_tasklet( unsigned long arg)
 				i+=2;
 			}
 		}
+#endif
 	}
 }
 
+static int pcxhr_stream_read_position(pcxhr_mgr_t *mgr, pcxhr_stream_t *stream)
+{
+	snd_pcm_uframes_t sample_count;
+	pcxhr_rmh_t rmh;
+	int err, stream_mask;
+
+	stream_mask = stream->pipe->is_capture ? 1 : 1<<stream->substream->number;
+
+	/* get sample count for one stream */
+	pcxhr_init_rmh(&rmh, CMD_STREAM_SAMPLE_COUNT);
+	pcxhr_set_pipe_cmd_params(&rmh, stream->pipe->is_capture, stream->pipe->first_audio, 0, stream_mask);
+	/* rmh.stat_len = 2; */		/* 2 resp data for each stream of the pipe */
+
+	err = pcxhr_send_msg(mgr, &rmh);
+	if( err ) return err;
+
+	sample_count = ((snd_pcm_uframes_t)rmh.stat[0]) << 24;
+	sample_count += (snd_pcm_uframes_t)rmh.stat[1];
+
+	snd_printdd("stream abs samples real(%lx) timer(%lx)\n", sample_count, stream->timer_abs_samples);
+
+	/* adjust the absolute timer position */
+	stream->timer_abs_samples = sample_count;
+	if( sample_count != 0 )  stream->timer_abs_adjusted = 1;
+	return 0;
+}
 
 static void pcxhr_update_timer_pos(pcxhr_mgr_t *mgr, pcxhr_stream_t*stream)
 {
-	static int lastjiffies = 0;
+	/*static int lastjiffies = 0;*/
+	int updated = 0;
 	if(stream->substream && (stream->status == PCXHR_STREAM_STATUS_RUNNING)) {
-		stream->timer_in_update = 1;
 		stream->timer_elapsed += PCXHR_GRANULARITY;
 		stream->timer_abs_samples += PCXHR_GRANULARITY;
 		if(stream->timer_elapsed >= stream->substream->runtime->period_size ) {
+			/* first time, lets adjust stream->timer_abs_samples to its real value */
+			if(!stream->timer_abs_adjusted) {
+				if(pcxhr_stream_read_position(mgr, stream) == 0)
+					updated = 1;
+			}
 			/* adjust the timer position */
 			stream->timer_elapsed = stream->timer_abs_samples % stream->substream->runtime->period_size;
+
+			if(updated) {
+				if(stream->timer_abs_samples < stream->substream->runtime->period_size) {
+					/* it is too early to call snd_pcm_period_elapsed ! */
+					return;
+				}
+			}
 			/*snd_printdd("call snd_pcm_period_elapsed (%ld ms) samples=%lx\n",
 					((jiffies-lastjiffies)*1000)/HZ, stream->timer_abs_samples);
-			*/
 			lastjiffies = jiffies;
+			*/
 			spin_unlock(&mgr->lock);
 			snd_pcm_period_elapsed(stream->substream);
 			spin_lock(&mgr->lock);
 		}
-		stream->timer_in_update = 0;
 	}
 }
 
@@ -791,6 +830,7 @@ irqreturn_t pcxhr_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	pcxhr_mgr_t *mgr = dev_id;
 	unsigned int reg;
 	int i, j;
+	pcxhr_t *chip;
 
 	spin_lock(&mgr->lock);
 
@@ -804,11 +844,14 @@ irqreturn_t pcxhr_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 		/* timer irq occured */
 		if(reg & PCXHR_IRQ_TIMER) {
 			reg &= ~PCXHR_IRQ_TIMER;
-			for(i=0; i<PCXHR_MAX_CARDS; i++) {
-				for(j=0; j<PCXHR_PLAYBACK_STREAMS; j++) {
+			for(i=0; i<mgr->num_cards; i++) {
+				chip = mgr->chip[i];
+				for(j=0; j<chip->nb_streams_play; j++) {
 					pcxhr_update_timer_pos(mgr, &mgr->chip[i]->playback_stream[j]);
 				}
-				pcxhr_update_timer_pos(mgr, &mgr->chip[i]->capture_stream);
+				for(j=0; j<chip->nb_streams_capt; j++) {
+					pcxhr_update_timer_pos(mgr, &mgr->chip[i]->capture_stream[j]);
+				}
 			}
 		}
 		/* other irq's handled in the tasklet */

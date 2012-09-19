@@ -24,8 +24,6 @@
 #define __SOUND_PCXHR_MIXER_H
 
 /* exported */
-int pcxhr_update_playback_stream_level(pcxhr_t* chip, int idx, int put_switch_only);
-int pcxhr_update_audio_pipe_level(pcxhr_t* chip, int capture, int channel);
 int pcxhr_create_mixer(pcxhr_mgr_t* mgr);
 
 #endif /* __SOUND_PCXHR_MIXER_H */

@@ -28,13 +28,10 @@
 
 #define PCXHR_DRIVER_VERSION		0x000100	/* 0.1.0 */
 
-#define PCXHR_MAX_CARDS			4
-
+#define PCXHR_MAX_CARDS			6
 #define PCXHR_PLAYBACK_STREAMS		4
-#define PCXHR_CAPTURE_STREAMS		1
-#define PCXHR_MAX_STREAM_PER_CARD	(PCXHR_PLAYBACK_STREAMS + PCXHR_CAPTURE_STREAMS)
 
-#define PCXHR_GRANULARITY		192	/* transfer granularity (should be min 96 and multiple of 48) */
+#define PCXHR_GRANULARITY		96	/* transfer granularity (should be min 96 and multiple of 48) */
 
 
 typedef struct snd_pcxhr pcxhr_t;
@@ -72,7 +69,10 @@ struct snd_pcxhr_mgr {
 	unsigned int dsp_loaded;	/* bit flags of loaded dsp indices */
 	unsigned int dsp_version;	/* read from embedded once firmware is loaded */
 	int board_has_analog;		/* if 0 the board is digital only */
-	int mono_capture;		/* if 0 the board does only mono capture */
+	int mono_capture;		/* if 1 the board does mono capture */
+	int playback_chips;		/* 4 or 6 */
+	int capture_chips;		/* 4 or 1 */
+	int firmware_num;		/* 41 or 42 */
 
 	struct snd_dma_buffer hostport;
 
@@ -100,9 +100,9 @@ struct snd_pcxhr_stream {
 
 	enum pcxhr_stream_status status;	/* free, open, running, draining, pause */
 
-	int timer_in_update;
 	int timer_elapsed;			/* timer: samples elapsed since last call to snd_pcm_period_elapsed() */
 	snd_pcm_uframes_t timer_abs_samples;	/* timer: samples elapsed since TRIGGER_START */
+	int timer_abs_adjusted;
 
 	int channels;
 };
@@ -111,14 +111,12 @@ struct snd_pcxhr_stream {
 enum pcxhr_pipe_status {
 	PCXHR_PIPE_UNDEFINED,
 	PCXHR_PIPE_STOPPED,
+	PCXHR_PIPE_TOGGLE,
 	PCXHR_PIPE_RUNNING
 };
 
 struct snd_pcxhr_pipe {
 	enum pcxhr_pipe_status status;
-	int stream_count;
-	int references;		/* number of subs openned */
-	int monitoring;		/* pipe used for monitoring issue */
 	int is_capture;		/* this is a capture pipe */
 	int first_audio;	/* first audio num */
 };
@@ -131,12 +129,13 @@ struct snd_pcxhr {
 
 	snd_pcm_t *pcm;		/* PCM */
 
-	/* allocate stereo pipe for instance */
-	pcxhr_pipe_t playback_pipe;
-	pcxhr_pipe_t capture_pipe;
+	pcxhr_pipe_t playback_pipe;		/* 1 stereo pipe only */
+	pcxhr_pipe_t capture_pipe[2];		/* 1 stereo pipe or 2 mono pipes */
 
 	pcxhr_stream_t playback_stream[PCXHR_PLAYBACK_STREAMS];
-	pcxhr_stream_t capture_stream;
+	pcxhr_stream_t capture_stream[2];	/* 1 stereo stream or 2 mono streams */
+	int nb_streams_play;
+	int nb_streams_capt;
 
 	int analog_playback_active[2];		/* Mixer : Master Playback active (!mute) */
 	int analog_playback_volume[2];		/* Mixer : Master Playback Volume */
@@ -156,7 +155,5 @@ struct pcxhr_hostport
 
 /* exported */
 int pcxhr_create_pcm(pcxhr_t* chip);
-pcxhr_pipe_t* pcxhr_add_ref_pipe( pcxhr_t *chip, int capture, int monitoring);
-int pcxhr_kill_ref_pipe( pcxhr_mgr_t *mgr, pcxhr_pipe_t *pipe, int monitoring);
 
 #endif /* __SOUND_PCXHR_H */
