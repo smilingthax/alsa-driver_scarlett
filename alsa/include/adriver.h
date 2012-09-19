@@ -1191,6 +1191,9 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
  */
 #define OPL3_HW_OPL3_PC98	0x0305	/* PC9800 */
 
+/*
+ * IRQF_* flags
+ */
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 17)
 #include <linux/interrupt.h>
 #ifndef IRQF_SHARED
@@ -1206,5 +1209,16 @@ static inline int snd_pnp_register_card_driver(struct pnp_card_driver *drv)
 #endif
 #endif /* IRQ_SHARED */
 #endif /* <= 2.6.17 */
+
+/*
+ * lockdep macros
+ */
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 17)
+#define lockdep_set_class(lock, key)		do { (void)(key); } while (0)
+#define down_read_nested(sem, subclass)		down_read(sem)
+#define down_write_nested(sem, subclass)	down_write(sem)
+#define down_read_non_owner(sem)		down_read(sem)
+#define up_read_non_owner(sem)			up_read(sem)
+#endif
 
 #endif /* __SOUND_LOCAL_DRIVER_H */
