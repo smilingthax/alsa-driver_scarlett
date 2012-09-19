@@ -639,6 +639,10 @@ dnl Check for I2C drivers...
 CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_I2C, [I2C driver in kernel])
 AC_SUBST(CONFIG_I2C)
 
+dnl Check for firmware loader...
+CHECK_KERNEL_TRISTATE_CONFIG(CONFIG_FW_LOADER, [firmware loader])
+AC_SUBST(CONFIG_FW_LOADER)
+
 dnl Check for input subsystem...
 if test $kpatchlevel -le 2; then
 CONFIG_INPUT="y"
