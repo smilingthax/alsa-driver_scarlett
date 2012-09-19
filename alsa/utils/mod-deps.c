@@ -137,7 +137,7 @@ static char *kernel_deps[] = {
 /* % -> always true */
 /* # -> define */
 static char *no_cards[] = {
-	"%SOUND",
+	"%#SOUND",
 	"SOUND_PRIME",
 	"%SND",
 	"#SND_TIMER",
