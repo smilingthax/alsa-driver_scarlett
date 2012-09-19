@@ -186,6 +186,7 @@ COMMENT_MAP = [
 		('/i2c/other'		,'Serial BUS drivers'),
 		('/include/i2c.h'	,'I2C lib core'),
 		('/i2c/i2c.c'		,'I2C lib core'),
+		('/include/cs8427.h'	,'I2C cs8427'),
 		('/i2c/cs8427.c'	,'I2C cs8427'),
 		('/i2c'			,'ERROR'),
 		('/parisc/harmony.c'	,'PARISC Harmony driver'),
