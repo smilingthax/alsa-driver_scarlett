@@ -992,7 +992,6 @@ static int snd_isa_platform_remove(struct platform_device *pdev)
 	if (!p)
 		return 0;
 	p->isa->remove(&pdev->dev, n);
-	platform_set_drvdata(pdev, NULL);
 	return 0;
 }
 
@@ -1060,10 +1059,6 @@ int snd_isa_register_driver(struct isa_driver *driver, unsigned int nums)
 							 i, NULL, 0);
 		if (IS_ERR(device))
 			continue;
-		if (!platform_get_drvdata(device)) {
-			platform_device_unregister(device);
-			continue;
-		}
 		p->pdevs[i] = device;
 		cards++;
 	}
