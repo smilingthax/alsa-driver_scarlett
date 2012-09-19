@@ -125,6 +125,15 @@ alsa-kernel/Documentation/ALSA-Configuration.txt
 Additional Modules
 ==================
 
+  Module snd-mixart
+  -----------------
+
+    Module for Digigram miXart8 soundcards.
+
+    Module supports multiple cards.
+    Note: One miXart8 board will be represented as 4 alsa cards.
+          See doc/MIXART.txt for details.
+
   Module snd-msnd-pinnacle
   ------------------------
 
@@ -138,6 +147,16 @@ Additional Modules
     calibrate_signal - calibrate signal (?)
 
     Module supports only one card.
+
+  Module snd-pdplus
+  -----------------
+
+    Module for Sek'D/Marian Prodif Plus soundcards.
+
+    silent_exit	- Do not reset when driver is unloaded.
+    init_adat	- Initialise the card in ADAT mode (instead of in digital stereo).
+
+    Module supports up to 8 cards.
 
   Module snd-serialmidi
   ---------------------
