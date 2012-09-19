@@ -331,6 +331,7 @@ static int put_xilinx_data(vx_core_t *chip, unsigned int port, unsigned int coun
 		/* set the clock bit to 0. */
 		val = VX_CNTRL_REGISTER_VALUE & ~VX_USERBIT0_MASK;
 		vx2_outl(chip, port, val);
+		vx2_inl(chip, port);
 		udelay(1);
 
 		if (data & (1 << i))
@@ -338,10 +339,12 @@ static int put_xilinx_data(vx_core_t *chip, unsigned int port, unsigned int coun
 		else
 			val &= ~VX_USERBIT1_MASK;
 		vx2_outl(chip, port, val);
+		vx2_inl(chip, port);
 
 		/* set the clock bit to 1. */
 		val |= VX_USERBIT0_MASK;
 		vx2_outl(chip, port, val);
+		vx2_inl(chip, port);
 		udelay(1);
 	}
 	return 0;
@@ -358,8 +361,10 @@ static int vx2_load_xilinx_binary(vx_core_t *chip, const snd_hwdep_dsp_image_t *
 
 	/* XILINX reset (wait at least 1 milisecond between reset on and off). */
 	vx_outl(chip, CNTRL, VX_CNTRL_REGISTER_VALUE | VX_XILINX_RESET_MASK);
+	vx_inl(chip, CNTRL);
 	snd_vx_delay(chip, 10);
 	vx_outl(chip, CNTRL, VX_CNTRL_REGISTER_VALUE);
+	vx_inl(chip, CNTRL);
 	snd_vx_delay(chip, 10);
 
 	if (chip->type == VX_TYPE_BOARD)
@@ -721,10 +726,12 @@ static void vx2_reset_codec(vx_core_t *_chip)
 
 	/* Set the reset CODEC bit to 0. */
 	vx_outl(chip, CDSP, chip->regCDSP &~ VX_CDSP_CODEC_RESET_MASK);
+	vx_inl(chip, CDSP);
 	snd_vx_delay(_chip, 10);
 	/* Set the reset CODEC bit to 1. */
 	chip->regCDSP |= VX_CDSP_CODEC_RESET_MASK;
 	vx_outl(chip, CDSP, chip->regCDSP);
+	vx_inl(chip, CDSP);
 	if (_chip->type == VX_TYPE_BOARD) {
 		snd_vx_delay(_chip, 1);
 		return;

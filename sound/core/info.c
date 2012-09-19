@@ -508,13 +508,6 @@ static struct file_operations snd_info_entry_operations =
 	.release =	snd_info_entry_release,
 };
 
-#ifdef LINUX_2_2
-static struct inode_operations snd_info_entry_inode_operations =
-{
-	&snd_info_entry_operations,	/* default sound info directory file-ops */
-};
-#endif	/* LINUX_2_2 */
-
 /**
  * snd_create_proc_entry - create a procfs entry
  * @name: the name of the proc file
