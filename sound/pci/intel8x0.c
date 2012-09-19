@@ -451,6 +451,7 @@ static struct pci_device_id snd_intel8x0_ids[] = {
 	{ 0x8086, 0x7195, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_INTEL },	/* 440MX */
 	{ 0x1039, 0x7012, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_SIS },	/* SI7012 */
 	{ 0x10de, 0x01b1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_NFORCE },	/* NFORCE */
+	{ 0x10de, 0x003a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_NFORCE },	/* MCP04 */
 	{ 0x10de, 0x006a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_NFORCE },	/* NFORCE2 */
 	{ 0x10de, 0x0059, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_NFORCE },	/* CK804 */
 	{ 0x10de, 0x008a, PCI_ANY_ID, PCI_ANY_ID, 0, 0, DEVICE_NFORCE },	/* CK8 */
@@ -1909,6 +1910,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac
 	if ((err = snd_ac97_bus(chip->card, 0, ops, chip, &pbus)) < 0)
 		goto __err;
 	pbus->private_free = snd_intel8x0_mixer_free_ac97_bus;
+	pbus->shared_type = AC97_SHARED_TYPE_ICH;	/* shared with modem driver */
 	if (ac97_clock >= 8000 && ac97_clock <= 48000)
 		pbus->clock = ac97_clock;
 	/* FIXME: my test board doesn't work well with VRA... */
@@ -2597,6 +2599,7 @@ static struct shortname_table {
 	{ PCI_DEVICE_ID_NVIDIA_CK8S_AUDIO, "NVidia CK8S" },
 	{ PCI_DEVICE_ID_NVIDIA_CK804_AUDIO, "NVidia CK804" },
 	{ PCI_DEVICE_ID_NVIDIA_CK8_AUDIO, "NVidia CK8" },
+	{ 0x003a, "NVidia MCP04" },
 	{ 0x746d, "AMD AMD8111" },
 	{ 0x7445, "AMD AMD768" },
 	{ 0x5455, "ALi M5455" },
