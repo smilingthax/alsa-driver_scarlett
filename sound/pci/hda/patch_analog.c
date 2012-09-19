@@ -2960,7 +2960,7 @@ static int patch_ad1988(struct hda_codec *codec)
 	spec->mixers[spec->num_mixers++] = ad1988_capture_mixers;
 	spec->init_verbs[spec->num_init_verbs++] = ad1988_capture_init_verbs;
 	if (spec->multiout.dig_out_nid) {
-		if (codec->vendor_id >= 0x11d4199a) {
+		if (codec->vendor_id >= 0x11d4989a) {
 			spec->mixers[spec->num_mixers++] =
 				ad1989_spdif_out_mixers;
 			spec->init_verbs[spec->num_init_verbs++] =
@@ -2972,7 +2972,7 @@ static int patch_ad1988(struct hda_codec *codec)
 				ad1988_spdif_init_verbs;
 		}
 	}
-	if (spec->dig_in_nid && codec->vendor_id < 0x11d4199a)
+	if (spec->dig_in_nid && codec->vendor_id < 0x11d4989a)
 		spec->mixers[spec->num_mixers++] = ad1988_spdif_in_mixers;
 
 	codec->patch_ops = ad198x_patch_ops;
@@ -4204,7 +4204,7 @@ struct hda_codec_preset snd_hda_preset_analog[] = {
 	{ .id = 0x11d41986, .name = "AD1986A", .patch = patch_ad1986a },
 	{ .id = 0x11d41988, .name = "AD1988", .patch = patch_ad1988 },
 	{ .id = 0x11d4198b, .name = "AD1988B", .patch = patch_ad1988 },
-	{ .id = 0x11d4199a, .name = "AD1989A", .patch = patch_ad1988 },
-	{ .id = 0x11d4199b, .name = "AD1989B", .patch = patch_ad1988 },
+	{ .id = 0x11d4989a, .name = "AD1989A", .patch = patch_ad1988 },
+	{ .id = 0x11d4989b, .name = "AD1989B", .patch = patch_ad1988 },
 	{} /* terminator */
 };

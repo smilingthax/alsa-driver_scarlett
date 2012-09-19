@@ -112,7 +112,7 @@ static void ak4396_init(struct oxygen *chip)
 	struct generic_data *data = chip->model_data;
 	unsigned int i;
 
-	data->ak4396_ctl2 = AK4396_DEM_OFF | AK4396_DFS_NORMAL;
+	data->ak4396_ctl2 = AK4396_SMUTE | AK4396_DEM_OFF | AK4396_DFS_NORMAL;
 	for (i = 0; i < 4; ++i) {
 		ak4396_write(chip, i,
 			     AK4396_CONTROL_1, AK4396_DIF_24_MSB | AK4396_RSTN);
@@ -120,8 +120,8 @@ static void ak4396_init(struct oxygen *chip)
 			     AK4396_CONTROL_2, data->ak4396_ctl2);
 		ak4396_write(chip, i,
 			     AK4396_CONTROL_3, AK4396_PCM);
-		ak4396_write(chip, i, AK4396_LCH_ATT, 0xff);
-		ak4396_write(chip, i, AK4396_RCH_ATT, 0xff);
+		ak4396_write(chip, i, AK4396_LCH_ATT, 0);
+		ak4396_write(chip, i, AK4396_RCH_ATT, 0);
 	}
 	snd_component_add(chip->card, "AK4396");
 }
@@ -249,27 +249,18 @@ static void set_ak5385_params(struct oxygen *chip,
 
 static const DECLARE_TLV_DB_LINEAR(ak4396_db_scale, TLV_DB_GAIN_MUTE, 0);
 
-static int ak4396_control_filter(struct snd_kcontrol_new *template)
-{
-	if (!strcmp(template->name, "Master Playback Volume")) {
-		template->access |= SNDRV_CTL_ELEM_ACCESS_TLV_READ;
-		template->tlv.p = ak4396_db_scale;
-	}
-	return 0;
-}
-
 static const struct oxygen_model model_generic = {
 	.shortname = "C-Media CMI8788",
 	.longname = "C-Media Oxygen HD Audio",
 	.chip = "CMI8788",
 	.owner = THIS_MODULE,
 	.init = generic_init,
-	.control_filter = ak4396_control_filter,
 	.cleanup = generic_cleanup,
 	.set_dac_params = set_ak4396_params,
 	.set_adc_params = set_wm8785_params,
 	.update_dac_volume = update_ak4396_volume,
 	.update_dac_mute = update_ak4396_mute,
+	.dac_tlv = ak4396_db_scale,
 	.model_data_size = sizeof(struct generic_data),
 	.pcm_dev_cfg = PLAYBACK_0_TO_I2S |
 		       PLAYBACK_1_TO_SPDIF |
@@ -278,6 +269,8 @@ static const struct oxygen_model model_generic = {
 		       CAPTURE_1_FROM_SPDIF |
 		       CAPTURE_2_FROM_AC97_1,
 	.dac_channels = 8,
+	.dac_volume_min = 0,
+	.dac_volume_max = 255,
 	.function_flags = OXYGEN_FUNCTION_SPI |
 			  OXYGEN_FUNCTION_ENABLE_SPI_4_5,
 	.dac_i2s_format = OXYGEN_I2S_FORMAT_LJUST,
@@ -289,12 +282,12 @@ static const struct oxygen_model model_meridian = {
 	.chip = "CMI8788",
 	.owner = THIS_MODULE,
 	.init = meridian_init,
-	.control_filter = ak4396_control_filter,
 	.cleanup = generic_cleanup,
 	.set_dac_params = set_ak4396_params,
 	.set_adc_params = set_ak5385_params,
 	.update_dac_volume = update_ak4396_volume,
 	.update_dac_mute = update_ak4396_mute,
+	.dac_tlv = ak4396_db_scale,
 	.model_data_size = sizeof(struct generic_data),
 	.pcm_dev_cfg = PLAYBACK_0_TO_I2S |
 		       PLAYBACK_1_TO_SPDIF |
@@ -303,6 +296,8 @@ static const struct oxygen_model model_meridian = {
 		       CAPTURE_1_FROM_SPDIF |
 		       CAPTURE_2_FROM_AC97_1,
 	.dac_channels = 8,
+	.dac_volume_min = 0,
+	.dac_volume_max = 255,
 	.misc_flags = OXYGEN_MISC_MIDI,
 	.function_flags = OXYGEN_FUNCTION_SPI |
 			  OXYGEN_FUNCTION_ENABLE_SPI_4_5,

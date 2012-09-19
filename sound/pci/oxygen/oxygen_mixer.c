@@ -32,8 +32,8 @@ static int dac_volume_info(struct snd_kcontrol *ctl,
 
 	info->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	info->count = chip->model->dac_channels;
-	info->value.integer.min = 0;
-	info->value.integer.max = 0xff;
+	info->value.integer.min = chip->model->dac_volume_min;
+	info->value.integer.max = chip->model->dac_volume_max;
 	return 0;
 }
 
@@ -518,6 +518,8 @@ static void mute_ac97_ctl(struct oxygen *chip, unsigned int control)
 	value = oxygen_read_ac97(chip, 0, priv_idx);
 	if (!(value & 0x8000)) {
 		oxygen_write_ac97(chip, 0, priv_idx, value | 0x8000);
+		if (chip->model->ac97_switch)
+			chip->model->ac97_switch(chip, priv_idx, 0x8000);
 		snd_ctl_notify(chip->card, SNDRV_CTL_EVENT_MASK_VALUE,
 			       &chip->controls[control]->id);
 	}
@@ -544,6 +546,8 @@ static int ac97_switch_put(struct snd_kcontrol *ctl,
 	change = newreg != oldreg;
 	if (change) {
 		oxygen_write_ac97(chip, codec, index, newreg);
+		if (codec == 0 && chip->model->ac97_switch)
+			chip->model->ac97_switch(chip, index, newreg & 0x8000);
 		if (index == AC97_LINE) {
 			oxygen_write_ac97_masked(chip, 0, CM9780_GPIO_STATUS,
 						 newreg & 0x8000 ?
@@ -738,6 +742,9 @@ static const struct snd_kcontrol_new controls[] = {
 		.get = spdif_pcm_get,
 		.put = spdif_pcm_put,
 	},
+};
+
+static const struct snd_kcontrol_new spdif_input_controls[] = {
 	{
 		.iface = SNDRV_CTL_ELEM_IFACE_PCM,
 		.device = 1,
@@ -934,6 +941,11 @@ static int add_controls(struct oxygen *chip,
 			return err;
 		if (err == 1)
 			continue;
+		if (!strcmp(template.name, "Master Playback Volume") &&
+		    chip->model->dac_tlv) {
+			template.tlv.p = chip->model->dac_tlv;
+			template.access |= SNDRV_CTL_ELEM_ACCESS_TLV_READ;
+		}
 		ctl = snd_ctl_new1(&template, chip);
 		if (!ctl)
 			return -ENOMEM;
@@ -957,6 +969,12 @@ int oxygen_mixer_init(struct oxygen *chip)
 	err = add_controls(chip, controls, ARRAY_SIZE(controls));
 	if (err < 0)
 		return err;
+	if (chip->model->pcm_dev_cfg & CAPTURE_1_FROM_SPDIF) {
+		err = add_controls(chip, spdif_input_controls,
+				   ARRAY_SIZE(spdif_input_controls));
+		if (err < 0)
+			return err;
+	}
 	for (i = 0; i < ARRAY_SIZE(monitor_controls); ++i) {
 		if (!(chip->model->pcm_dev_cfg & monitor_controls[i].pcm_dev))
 			continue;

@@ -98,9 +98,14 @@ struct oxygen_model {
 	void (*update_dac_volume)(struct oxygen *chip);
 	void (*update_dac_mute)(struct oxygen *chip);
 	void (*gpio_changed)(struct oxygen *chip);
+	void (*ac97_switch)(struct oxygen *chip,
+			    unsigned int reg, unsigned int mute);
+	const unsigned int *dac_tlv;
 	size_t model_data_size;
 	unsigned int pcm_dev_cfg;
 	u8 dac_channels;
+	u8 dac_volume_min;
+	u8 dac_volume_max;
 	u8 misc_flags;
 	u8 function_flags;
 	u16 dac_i2s_format;

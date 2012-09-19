@@ -617,6 +617,18 @@ static int snd_es1968_ac97_wait(struct es1968 *chip)
 	return 1; /* timeout */
 }
 
+static int snd_es1968_ac97_wait_poll(struct es1968 *chip)
+{
+	int timeout = 100000;
+
+	while (timeout-- > 0) {
+		if (!(inb(chip->io_port + ESM_AC97_INDEX) & 1))
+			return 0;
+	}
+	snd_printd("es1968: ac97 timeout\n");
+	return 1; /* timeout */
+}
+
 static void snd_es1968_ac97_write(struct snd_ac97 *ac97, unsigned short reg, unsigned short val)
 {
 	struct es1968 *chip = ac97->private_data;
@@ -645,7 +657,7 @@ static unsigned short snd_es1968_ac97_read(struct snd_ac97 *ac97, unsigned short
 	outb(reg | 0x80, chip->io_port + ESM_AC97_INDEX);
 	/*msleep(1);*/
 
-	if (! snd_es1968_ac97_wait(chip)) {
+	if (!snd_es1968_ac97_wait_poll(chip)) {
 		data = inw(chip->io_port + ESM_AC97_DATA);
 		/*msleep(1);*/
 	}
@@ -1815,6 +1827,22 @@ snd_es1968_pcm(struct es1968 *chip, int device)
 
 	return 0;
 }
+/*
+ * suppress jitter on some maestros when playing stereo
+ */
+static void snd_es1968_suppress_jitter(struct es1968 *chip, struct esschan *es)
+{
+	unsigned int cp1;
+	unsigned int cp2;
+	unsigned int diff;
+
+	cp1 = __apu_get_register(chip, 0, 5);
+	cp2 = __apu_get_register(chip, 1, 5);
+	diff = (cp1 > cp2 ? cp1 - cp2 : cp2 - cp1);
+
+	if (diff > 1)
+		__maestro_write(chip, IDR0_DATA_PORT, cp1);
+}
 
 /*
  * update pointer
@@ -1936,8 +1964,11 @@ static irqreturn_t snd_es1968_interrupt(int irq, void *dev_id)
 		struct esschan *es;
 		spin_lock(&chip->substream_lock);
 		list_for_each_entry(es, &chip->substream_list, list) {
-			if (es->running)
+			if (es->running) {
 				snd_es1968_update_pcm(chip, es);
+				if (es->fmt & ESS_FMT_STEREO)
+					snd_es1968_suppress_jitter(chip, es);
+			}
 		}
 		spin_unlock(&chip->substream_lock);
 		if (chip->in_measurement) {
