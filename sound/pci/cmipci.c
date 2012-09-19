@@ -47,8 +47,6 @@ MODULE_DEVICES("{{C-Media,CMI8738},"
 static int snd_index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *snd_id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int snd_enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable switches */
-static int snd_enable_midi[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS-1)] = 0};
-static int snd_enable_fm[SNDRV_CARDS] = {1, [1 ... (SNDRV_CARDS-1)] = 0};
 static long snd_mpu_port[SNDRV_CARDS] = {0x330, [1 ... (SNDRV_CARDS-1)]=-1};
 static long snd_fm_port[SNDRV_CARDS] = {0x388, [1 ... (SNDRV_CARDS-1)]=-1};
 
@@ -61,18 +59,12 @@ MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
 MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_enable, "Enable C-Media PCI soundcard.");
 MODULE_PARM_SYNTAX(snd_enable, SNDRV_ENABLE_DESC);
-MODULE_PARM(snd_enable_midi, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_enable_midi, "Enable MPU-401 port.");
-MODULE_PARM_SYNTAX(snd_enable_midi, SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
 MODULE_PARM(snd_mpu_port, "1-" __MODULE_STRING(SNDRV_CARDS) "l");
 MODULE_PARM_DESC(snd_mpu_port, "MPU-401 port.");
-MODULE_PARM_SYNTAX(snd_mpu_port, "enable:(snd_enable_midi),allows:{{0x330},{0x320},{0x310},{0x300}},dialog:list");
-MODULE_PARM(snd_enable_fm, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_enable_fm, "Enable FM OPL-3 synth.");
-MODULE_PARM_SYNTAX(snd_enable_fm, SNDRV_ENABLED "," SNDRV_BOOLEAN_FALSE_DESC);
+MODULE_PARM_SYNTAX(snd_mpu_port, "allows:{{-1},{0x330},{0x320},{0x310},{0x300}},dialog:list");
 MODULE_PARM(snd_fm_port, "1-" __MODULE_STRING(SNDRV_CARDS) "l");
 MODULE_PARM_DESC(snd_fm_port, "FM port.");
-MODULE_PARM_SYNTAX(snd_fm_port, "enable:(snd_enable_fm),allows:{{0x388},{0x3c8},{0x3e0},{0x3e8}},dialog:list");
+MODULE_PARM_SYNTAX(snd_fm_port, "allows:{{-1},{0x388},{0x3c8},{0x3e0},{0x3e8}},dialog:list");
 
 #ifndef PCI_DEVICE_ID_CMEDIA_CM8738
 #define PCI_DEVICE_ID_CMEDIA_CM8738	0x0111
@@ -88,10 +80,10 @@ MODULE_PARM_SYNTAX(snd_fm_port, "enable:(snd_enable_fm),allows:{{0x388},{0x3c8},
 #define CM_REG_FUNCTRL0		0x00
 #define CM_RST_CH1		0x00080000
 #define CM_RST_CH0		0x00040000
-#define CM_CHEN1		0x00020000
-#define CM_CHEN0		0x00010000
-#define CM_PAUSE1		0x00000008
-#define CM_PAUSE0		0x00000004
+#define CM_CHEN1		0x00020000	/* ch1: enable */
+#define CM_CHEN0		0x00010000	/* ch0: enable */
+#define CM_PAUSE1		0x00000008	/* ch1: pause */
+#define CM_PAUSE0		0x00000004	/* ch0: pause */
 #define CM_CHADC1		0x00000002	/* ch1, 0:playback, 1:record */
 #define CM_CHADC0		0x00000001	/* ch0, 0:playback, 1:record */
 
@@ -192,7 +184,7 @@ MODULE_PARM_SYNTAX(snd_fm_port, "enable:(snd_enable_fm),allows:{{0x388},{0x3c8},
 #define CM_RESET		0x40000000
 #define CM_SFIL_MASK		0x30000000
 #define CM_TXVX			0x08000000
-#define CM_N4SPK3D		0x04000000	/* analog 4ch output (duplicate) */
+#define CM_N4SPK3D		0x04000000	/* 4ch output */
 #define CM_SPDO5V		0x02000000	/* 5V spdif output */
 #define CM_SPDIF48K		0x01000000	/* write */
 #define CM_SPATUS48K		0x01000000	/* read */
@@ -546,6 +538,7 @@ static int set_dac_channels(cmipci_t *cm, cmipci_pcm_t *rec, int channels)
 	} else {
 		if (cm->can_multi_ch) {
 			spin_lock_irqsave(&cm->reg_lock, flags);
+			snd_cmipci_clear_bit(cm, CM_REG_LEGACY_CTRL, CM_NXCHG);
 			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CHB3D);
 			snd_cmipci_clear_bit(cm, CM_REG_CHFORMAT, CM_CHB3D5C);
 			snd_cmipci_clear_bit(cm, CM_REG_LEGACY_CTRL, CM_CHB3D6C);
@@ -698,7 +691,7 @@ static snd_pcm_uframes_t snd_cmipci_pcm_pointer(cmipci_t *cm, cmipci_pcm_t *rec,
 	unsigned int reg;
 	if (!rec->running)
 		return 0;
-#if 1
+#if 1 // this seems better..
 	reg = rec->ch ? CM_REG_CH1_FRAME2 : CM_REG_CH0_FRAME2;
 	ptr = rec->dma_size - (snd_cmipci_read_w(cm, reg) + 1);
 	ptr >>= rec->shift;
@@ -1372,13 +1365,15 @@ static int open_device_check(cmipci_t *cm, int mode, snd_pcm_substream_t *subs)
 	if (mode & CM_OPEN_DAC) {
 		if (! cm->channel[ch].is_dac) {
 			cm->channel[ch].is_dac = 1;
-			spin_lock_irqsave(&cm->reg_lock, flags);
-			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
-			spin_unlock_irqrestore(&cm->reg_lock, flags);
+			if (cm->channel[1-ch].is_dac) {
+				spin_lock_irqsave(&cm->reg_lock, flags);
+				snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
+				spin_unlock_irqrestore(&cm->reg_lock, flags);
+			}
 		}
 	} else {
 		if (cm->channel[ch].is_dac) {
-			cm->channel[ch].is_dac = 1;
+			cm->channel[ch].is_dac = 0;
 			spin_lock_irqsave(&cm->reg_lock, flags);
 			snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
 			spin_unlock_irqrestore(&cm->reg_lock, flags);
@@ -2043,13 +2038,11 @@ static int snd_cmipci_uswitch_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t
 	return 0;
 }
 
-static int snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int _snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol, snd_cmipci_switch_args_t *args)
 {
 	unsigned long flags;
 	unsigned int val;
 	cmipci_t *cm = snd_kcontrol_chip(kcontrol);
-	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
-	snd_assert(args != NULL, return -EINVAL);
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
 	if (args->always_accessible && cm->mixer_insensitive) {
@@ -2066,14 +2059,20 @@ static int snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t
 	return 0;
 }
 
-static int snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int snd_cmipci_uswitch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
+	snd_assert(args != NULL, return -EINVAL);
+	return _snd_cmipci_uswitch_get(kcontrol, ucontrol, args);
+}
+
+
+static int _snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol, snd_cmipci_switch_args_t *args)
 {
 	unsigned long flags;
 	unsigned int val;
 	int change;
 	cmipci_t *cm = snd_kcontrol_chip(kcontrol);
-	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
-	snd_assert(args != NULL, return -EINVAL);
 
 	spin_lock_irqsave(&cm->reg_lock, flags);
 	if (args->always_accessible && cm->mixer_insensitive) {
@@ -2100,6 +2099,14 @@ static int snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t
 	spin_unlock_irqrestore(&cm->reg_lock, flags);
 	return change;
 }
+
+static int snd_cmipci_uswitch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	snd_cmipci_switch_args_t *args = (snd_cmipci_switch_args_t*)kcontrol->private_value;
+	snd_assert(args != NULL, return -EINVAL);
+	return _snd_cmipci_uswitch_put(kcontrol, ucontrol, args);
+}
+
 
 #define DEFINE_SWITCH_ARG(sname, xreg, xmask, xmask_on, xis_byte, xaccessible) \
 static snd_cmipci_switch_args_t cmipci_switch_arg_##sname = { \
@@ -2147,10 +2154,31 @@ DEFINE_SWITCH_ARG(modem, CM_REG_MISC_CTRL, CM_FLINKON|CM_FLINKOFF, CM_FLINKON, 0
 #define DEFINE_CARD_SWITCH(sname, sarg) DEFINE_SWITCH(sname, SNDRV_CTL_ELEM_IFACE_CARD, sarg)
 #define DEFINE_MIXER_SWITCH(sname, sarg) DEFINE_SWITCH(sname, SNDRV_CTL_ELEM_IFACE_MIXER, sarg)
 
+/*
+ * callbacks for spdif output switch
+ * needs toggle two registers..
+ */
+static int snd_cmipci_spdout_enable_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	int changed;
+	changed = _snd_cmipci_uswitch_get(kcontrol, ucontrol, &cmipci_switch_arg_spdif_enable);
+	changed |= _snd_cmipci_uswitch_get(kcontrol, ucontrol, &cmipci_switch_arg_spdo2dac);
+	return changed;
+}
+
+static int snd_cmipci_spdout_enable_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	int changed;
+	changed = _snd_cmipci_uswitch_put(kcontrol, ucontrol, &cmipci_switch_arg_spdif_enable);
+	changed |= _snd_cmipci_uswitch_put(kcontrol, ucontrol, &cmipci_switch_arg_spdo2dac);
+	return changed;
+}
+
+
 /* both for CM8338/8738 */
 static snd_kcontrol_new_t snd_cmipci_mixer_switches[] = {
 	DEFINE_MIXER_SWITCH("Exchange DAC", exchange_dac),
-	DEFINE_MIXER_SWITCH("Analog Four Channel", fourch),
+	DEFINE_MIXER_SWITCH("Four Channel Mode", fourch),
 	DEFINE_MIXER_SWITCH("Line-In As Rear", line_rear),
 };
 
@@ -2161,11 +2189,17 @@ static snd_kcontrol_new_t snd_cmipci_8738_mixer_switches[] = {
 	DEFINE_MIXER_SWITCH("IEC958 Out", spdif_0),
 	DEFINE_MIXER_SWITCH("IEC958 Out 48KHz", spdo_48k),
 #endif
-	DEFINE_MIXER_SWITCH("IEC958 Output Switch", spdif_enable),
+	// DEFINE_MIXER_SWITCH("IEC958 Output Switch", spdif_enable),
+	// DEFINE_MIXER_SWITCH("IEC958 Out To DAC", spdo2dac),
+	{ name: "IEC958 Output Switch",
+	  iface: SNDRV_CTL_ELEM_IFACE_MIXER,
+	  info: snd_cmipci_uswitch_info,
+	  get: snd_cmipci_spdout_enable_get,
+	  put: snd_cmipci_spdout_enable_put,
+	},
 	DEFINE_MIXER_SWITCH("IEC958 In Valid", spdi_valid),
 	DEFINE_MIXER_SWITCH("IEC958 Copyright", spdif_copyright),
-	DEFINE_MIXER_SWITCH("IEC958 DAC To Out", spdif_dac_out),
-	DEFINE_MIXER_SWITCH("IEC958 Out To DAC", spdo2dac),
+	DEFINE_MIXER_SWITCH("IEC958 Mix Analog", spdif_dac_out),
 	DEFINE_MIXER_SWITCH("IEC958 5V", spdo_5v),
 	DEFINE_MIXER_SWITCH("IEC958 Loop", spdif_loop),
 	DEFINE_MIXER_SWITCH("IEC958 In Monitor", spdi_monitor),
@@ -2404,9 +2438,7 @@ static int snd_cmipci_dev_free(snd_device_t *device)
 
 static int __init snd_cmipci_create(snd_card_t *card,
 				    struct pci_dev *pci,
-				    int enable_midi,
 				    unsigned long iomidi,
-				    int enable_synth,
 				    unsigned long iosynth,
 				    cmipci_t **rcmipci)
 {
@@ -2436,7 +2468,7 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	cm->iobase = pci_resource_start(pci, 0);
 	cm->channel[0].ch = 0;
 	cm->channel[1].ch = 1;
-	cm->channel[CM_CH_PLAY].is_dac = 1;
+	cm->channel[0].is_dac = cm->channel[1].is_dac = 1;
 
 	if ((cm->res_iobase = request_region(cm->iobase, CM_EXTENT_CODEC, card->driver)) == NULL) {
 		snd_printk("unable to grab ports 0x%lx-0x%lx\n", cm->iobase, cm->iobase + CM_EXTENT_CODEC - 1);
@@ -2477,48 +2509,44 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	snd_cmipci_write(cm, CM_REG_FUNCTRL1, 0);
 
 	snd_cmipci_write(cm, CM_REG_CHFORMAT, 0x00200000);
-	snd_cmipci_clear_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC);
+	snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_ENDBDAC|CM_N4SPK3D);
 
 	/* set MPU address */
-	if (enable_midi) {
-		switch (iomidi) {
-		case 0x320: val = CM_VMPU_320; break;
-		case 0x310: val = CM_VMPU_310; break;
-		case 0x300: val = CM_VMPU_300; break;
-		case 0x330: val = CM_VMPU_330; break;
-		default:
-			enable_midi = 0; break;
-		}
-		if (enable_midi) {
-			snd_cmipci_write(cm, CM_REG_LEGACY_CTRL, val);
-			/* enable UART */
-			snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_UART_EN);
-		}
+	switch (iomidi) {
+	case 0x320: val = CM_VMPU_320; break;
+	case 0x310: val = CM_VMPU_310; break;
+	case 0x300: val = CM_VMPU_300; break;
+	case 0x330: val = CM_VMPU_330; break;
+	default:
+		iomidi = 0; break;
+	}
+	if (iomidi > 0) {
+		snd_cmipci_write(cm, CM_REG_LEGACY_CTRL, val);
+		/* enable UART */
+		snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_UART_EN);
 	}
 
 	/* set FM address */
-	if (enable_synth) {
-		val = snd_cmipci_read(cm, CM_REG_LEGACY_CTRL) & ~CM_FMSEL_MASK;
-		switch (iosynth) {
-		case 0x3E8: val |= CM_FMSEL_3E8; break;
-		case 0x3E0: val |= CM_FMSEL_3E0; break;
-		case 0x3C8: val |= CM_FMSEL_3C8; break;
-		case 0x388: val |= CM_FMSEL_388; break;
-		default:
-			enable_synth = 0; break;
-		}
-		if (enable_synth) {
-			snd_cmipci_write(cm, CM_REG_LEGACY_CTRL, val);
-			/* enable FM */
-			snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_FM_EN);
+	val = snd_cmipci_read(cm, CM_REG_LEGACY_CTRL) & ~CM_FMSEL_MASK;
+	switch (iosynth) {
+	case 0x3E8: val |= CM_FMSEL_3E8; break;
+	case 0x3E0: val |= CM_FMSEL_3E0; break;
+	case 0x3C8: val |= CM_FMSEL_3C8; break;
+	case 0x388: val |= CM_FMSEL_388; break;
+	default:
+		iosynth = 0; break;
+	}
+	if (iosynth > 0) {
+		snd_cmipci_write(cm, CM_REG_LEGACY_CTRL, val);
+		/* enable FM */
+		snd_cmipci_set_bit(cm, CM_REG_MISC_CTRL, CM_FM_EN);
 
-			if (snd_opl3_create(card, iosynth, iosynth + 2,
-					    OPL3_HW_OPL3, 0, &cm->opl3) < 0) {
-				snd_printk("no OPL device at 0x%lx\n", iosynth);
-			} else {
-				if ((err = snd_opl3_hwdep_new(cm->opl3, 0, 1, &cm->opl3hwdep)) < 0)
-					snd_printk("cannot create OPL3 hwdep\n");
-			}
+		if (snd_opl3_create(card, iosynth, iosynth + 2,
+				    OPL3_HW_OPL3, 0, &cm->opl3) < 0) {
+			snd_printk("no OPL device at 0x%lx\n", iosynth);
+		} else {
+			if ((err = snd_opl3_hwdep_new(cm->opl3, 0, 1, &cm->opl3hwdep)) < 0)
+				snd_printk("cannot create OPL3 hwdep\n");
 		}
 	}
 
@@ -2547,7 +2575,7 @@ static int __init snd_cmipci_create(snd_card_t *card,
 	if ((err = snd_cmipci_mixer_new(cm, pcm_spdif_index)) < 0)
 		goto __error;
 
-	if (enable_midi) {
+	if (iomidi > 0) {
 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
 					       iomidi, 0,
 					       cm->irq, 0, &cm->rmidi)) < 0) {
@@ -2607,9 +2635,7 @@ static int __devinit snd_cmipci_probe(struct pci_dev *pci,
 	}
 
 	if ((err = snd_cmipci_create(card, pci,
-				     snd_enable_midi[dev],
 				     snd_mpu_port[dev],
-				     snd_enable_fm[dev],
 				     snd_fm_port[dev],
 				     &cm)) < 0) {
 		snd_card_free(card);
@@ -2673,7 +2699,6 @@ module_exit(alsa_card_cmipci_exit)
 #ifndef MODULE
 
 /* format is: snd-cmipci=snd_enable,snd_index,snd_id,
-			 snd_enable_midi,snd_enable_fm,
 			 snd_mpu_port,snd_fm_port */
 
 static int __init alsa_card_cmipci_setup(char *str)
@@ -2685,8 +2710,6 @@ static int __init alsa_card_cmipci_setup(char *str)
 	(void)(get_option(&str,&snd_enable[nr_dev]) == 2 &&
 	       get_option(&str,&snd_index[nr_dev]) == 2 &&
 	       get_id(&str,&snd_id[nr_dev]) == 2 &&
-	       get_option(&str,&snd_enable_midi[nr_dev]) == 2 &&
-	       get_option(&str,&snd_enable_fm[nr_dev]) == 2 &&
 	       get_option(&str,(int *)&snd_mpu_port[nr_dev]) == 2 &&
 	       get_option(&str,(int *)&snd_fm_port[nr_dev]) == 2);
 	nr_dev++;
