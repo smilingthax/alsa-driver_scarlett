@@ -48,7 +48,7 @@
 #define CS8427_REG_UDATABUF	0x13
 #define CS8427_REG_QSUBCODE	0x14	/* 0x14-0x1d (10 bytes) */
 #define CS8427_REG_OMCKRMCKRATIO 0x1e
-#define CS8427_REG_CORU_DATABUF	0x20
+#define CS8427_REG_CORU_DATABUF	0x20	/* 24 byte buffer area */
 #define CS8427_REG_ID_AND_VER	0x7f
 
 /* CS8427_REG_CONTROL1 bits */

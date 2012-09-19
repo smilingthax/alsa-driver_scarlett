@@ -602,53 +602,101 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 	runtime->trigger_master = NULL;
 }
 
-#define _SND_PCM_ACTION(aname, substream, state, res, check_master) { \
-	struct list_head *pos; \
-	snd_pcm_substream_t *s; \
-	int err; \
-	res = 0; \
-	if (substream->link != &substream->local_link) { \
-		spin_unlock(&substream->local_link.lock); \
-		spin_lock(&substream->link->lock); \
-	} \
-	list_for_each(pos, &substream->link->substreams) { \
-		s = list_entry(pos, snd_pcm_substream_t, link_list); \
-		if (substream->link != &substream->local_link) \
-			spin_lock(&s->local_link.lock); \
-		res = snd_pcm_pre_##aname(s, state); \
-		if (res < 0) \
-			break; \
-	} \
-	if (res >= 0) { \
-		list_for_each(pos, &substream->link->substreams) { \
-			s = list_entry(pos, snd_pcm_substream_t, link_list); \
-			if (check_master && s->runtime->trigger_master != s) \
-				goto _action_done; \
-			err = snd_pcm_do_##aname(s, state); \
-			if (err < 0) { \
-				if (res == 0) \
-					res = err; \
-			} else { \
-			       _action_done: \
-				snd_pcm_post_##aname(s, state); \
-			} \
-			if (substream->link != &substream->local_link) \
-				spin_unlock(&s->local_link.lock); \
-		} \
-	} \
-	if (substream->link != &substream->local_link) { \
-		spin_unlock(&substream->link->lock); \
-		spin_lock(&substream->local_link.lock); \
-	} \
+#define ACTION_CHECK_MASTER	 (1<<0)
+
+struct action_ops {
+	int (*pre_action)(snd_pcm_substream_t *substream, int state);
+	int (*do_action)(snd_pcm_substream_t *substream, int state);
+	void (*post_action)(snd_pcm_substream_t *substream, int state);
+};
+
+static int snd_pcm_action_main(struct action_ops *ops,
+			       snd_pcm_substream_t *substream,
+			       int state,
+			       unsigned int flags)
+{
+	struct list_head *pos;
+	snd_pcm_substream_t *s = NULL;
+	int err, res = 0;
+
+	list_for_each(pos, &substream->link->substreams) {
+		s = list_entry(pos, snd_pcm_substream_t, link_list);
+		if (substream->link != &substream->local_link && s != substream)
+			spin_lock(&s->local_link.lock);
+		res = ops->pre_action(s, state);
+		if (res < 0)
+			break;
+	}
+	if (res >= 0) {
+		list_for_each(pos, &substream->link->substreams) {
+			s = list_entry(pos, snd_pcm_substream_t, link_list);
+			if ((flags & ACTION_CHECK_MASTER) && s->runtime->trigger_master != s)
+				goto _action_done;
+			err = ops->do_action(s, state);
+			if (err < 0) {
+				if (res == 0)
+					res = err;
+			} else {
+			       _action_done:
+				ops->post_action(s, state);
+			}
+			if (substream->link != &substream->local_link && s != substream)
+				spin_unlock(&s->local_link.lock);
+		}
+	} else if (res < 0 && substream->link != &substream->local_link) {
+		snd_pcm_substream_t *s1;
+		/* unlock all streams */
+		list_for_each(pos, &substream->link->substreams) {
+			s1 = list_entry(pos, snd_pcm_substream_t, link_list);
+			if (s1 != substream)
+				spin_unlock(&s->local_link.lock);
+			if (s1 == s)	/* end */
+				break;
+		}
+	}
+	return res;
 }
 
-#define SND_PCM_ACTION(aname, substream, state) { \
-	int res; \
-	_SND_PCM_ACTION(aname, substream, state, res, 1); \
-	return res; \
+static int snd_pcm_action(struct action_ops *ops,
+			  snd_pcm_substream_t *substream,
+			  int state,
+			  unsigned int flags)
+{
+	int res;
+
+	if (substream->link != &substream->local_link) {
+		if (!spin_trylock(&substream->link->lock)) {
+			spin_unlock(&substream->local_link.lock);
+			spin_lock(&substream->link->lock);
+			spin_lock(&substream->local_link.lock);
+		}
+	}
+	res = snd_pcm_action_main(ops, substream, state, flags);
+	if (substream->link != &substream->local_link)
+		spin_unlock(&substream->link->lock);
+	return res;
 }
 
-static inline int snd_pcm_pre_start(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_action_lock_irq(struct action_ops *ops,
+				   snd_pcm_substream_t *substream,
+				   int state,
+				   unsigned int flags)
+{
+	int res;
+
+	read_lock_irq(&snd_pcm_link_rwlock);
+	if (substream->link != &substream->local_link)
+		spin_lock(&substream->link->lock);
+	spin_lock(&substream->local_link.lock);
+	res = snd_pcm_action_main(ops, substream, state, flags);
+	spin_unlock(&substream->local_link.lock);
+	if (substream->link != &substream->local_link)
+		spin_unlock(&substream->link->lock);
+	read_unlock_irq(&snd_pcm_link_rwlock);
+	return res;
+}
+
+static int snd_pcm_pre_start(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (runtime->status->state != SNDRV_PCM_STATE_PREPARED)
@@ -660,12 +708,12 @@ static inline int snd_pcm_pre_start(snd_pcm_substream_t *substream, int state)
 	return 0;
 }
 
-static inline int snd_pcm_do_start(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_do_start(snd_pcm_substream_t *substream, int state)
 {
         return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_START);
 }
 
-static inline void snd_pcm_post_start(snd_pcm_substream_t *substream, int state)
+static void snd_pcm_post_start(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_trigger_tstamp(substream);
@@ -679,15 +727,21 @@ static inline void snd_pcm_post_start(snd_pcm_substream_t *substream, int state)
 		snd_timer_notify(substream->timer, SNDRV_TIMER_EVENT_MSTART, &runtime->trigger_tstamp);
 }
 
+static struct action_ops snd_pcm_action_start = {
+	.pre_action = snd_pcm_pre_start,
+	.do_action = snd_pcm_do_start,
+	.post_action = snd_pcm_post_start
+};
+
 /**
- * snd_pcm_sart
+ * snd_pcm_start
  */
 int snd_pcm_start(snd_pcm_substream_t *substream)
 {
-	SND_PCM_ACTION(start, substream, 0);
+	return snd_pcm_action(&snd_pcm_action_start, substream, 0, ACTION_CHECK_MASTER);
 }
 
-static inline int snd_pcm_pre_stop(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_pre_stop(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (substream->runtime->status->state != SNDRV_PCM_STATE_RUNNING &&
@@ -697,12 +751,12 @@ static inline int snd_pcm_pre_stop(snd_pcm_substream_t *substream, int state)
 	return 0;
 }
 
-static inline int snd_pcm_do_stop(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_do_stop(snd_pcm_substream_t *substream, int state)
 {
 	return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_STOP);
 }
 
-static inline void snd_pcm_post_stop(snd_pcm_substream_t *substream, int state)
+static void snd_pcm_post_stop(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_trigger_tstamp(substream);
@@ -713,15 +767,21 @@ static inline void snd_pcm_post_stop(snd_pcm_substream_t *substream, int state)
 	wake_up(&runtime->sleep);
 }
 
+static struct action_ops snd_pcm_action_stop = {
+	.pre_action = snd_pcm_pre_stop,
+	.do_action = snd_pcm_do_stop,
+	.post_action = snd_pcm_post_stop
+};
+
 /**
  * snd_pcm_stop
  */
 int snd_pcm_stop(snd_pcm_substream_t *substream, int state)
 {
-	SND_PCM_ACTION(stop, substream, state);
+	return snd_pcm_action(&snd_pcm_action_stop, substream, 0, ACTION_CHECK_MASTER);
 }
 
-static inline int snd_pcm_pre_pause(snd_pcm_substream_t *substream, int push)
+static int snd_pcm_pre_pause(snd_pcm_substream_t *substream, int push)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (!(runtime->info & SNDRV_PCM_INFO_PAUSE))
@@ -735,14 +795,14 @@ static inline int snd_pcm_pre_pause(snd_pcm_substream_t *substream, int push)
 	return 0;
 }
 
-static inline int snd_pcm_do_pause(snd_pcm_substream_t *substream, int push)
+static int snd_pcm_do_pause(snd_pcm_substream_t *substream, int push)
 {
 	return substream->ops->trigger(substream,
 				       push ? SNDRV_PCM_TRIGGER_PAUSE_PUSH :
 					      SNDRV_PCM_TRIGGER_PAUSE_RELEASE);
 }
 
-static inline void snd_pcm_post_pause(snd_pcm_substream_t *substream, int push)
+static void snd_pcm_post_pause(snd_pcm_substream_t *substream, int push)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_trigger_tstamp(substream);
@@ -761,15 +821,21 @@ static inline void snd_pcm_post_pause(snd_pcm_substream_t *substream, int push)
 	}
 }
 
+static struct action_ops snd_pcm_action_pause = {
+	.pre_action = snd_pcm_pre_pause,
+	.do_action = snd_pcm_do_pause,
+	.post_action = snd_pcm_post_pause
+};
+
 static int snd_pcm_pause(snd_pcm_substream_t *substream, int push)
 {
-	SND_PCM_ACTION(pause, substream, push);
+	return snd_pcm_action(&snd_pcm_action_pause, substream, 0, ACTION_CHECK_MASTER);
 }
 
 #ifdef CONFIG_PM
 /* suspend */
 
-static inline int snd_pcm_pre_suspend(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_pre_suspend(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (runtime->status->state == SNDRV_PCM_STATE_SUSPENDED)
@@ -779,7 +845,7 @@ static inline int snd_pcm_pre_suspend(snd_pcm_substream_t *substream, int state)
 	return 0;
 }
 
-static inline int snd_pcm_do_suspend(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_do_suspend(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (runtime->status->suspended_state != SNDRV_PCM_STATE_RUNNING)
@@ -787,7 +853,7 @@ static inline int snd_pcm_do_suspend(snd_pcm_substream_t *substream, int state)
 	return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_SUSPEND);
 }
 
-static inline void snd_pcm_post_suspend(snd_pcm_substream_t *substream, int state)
+static void snd_pcm_post_suspend(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_trigger_tstamp(substream);
@@ -798,12 +864,18 @@ static inline void snd_pcm_post_suspend(snd_pcm_substream_t *substream, int stat
 	wake_up(&runtime->sleep);
 }
 
+static struct action_ops snd_pcm_action_suspend = {
+	.pre_action = snd_pcm_pre_suspend,
+	.do_action = snd_pcm_do_suspend,
+	.post_action = snd_pcm_post_suspend
+};
+
 /**
  * snd_pcm_suspend
  */
 int snd_pcm_suspend(snd_pcm_substream_t *substream)
 {
-	SND_PCM_ACTION(suspend, substream, 0);
+	return snd_pcm_action(&snd_pcm_action_suspend, substream, 0, ACTION_CHECK_MASTER);
 }
 
 /**
@@ -836,7 +908,7 @@ int snd_pcm_suspend_all(snd_pcm_t *pcm)
 
 /* resume */
 
-static inline int snd_pcm_pre_resume(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_pre_resume(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (!(runtime->info & SNDRV_PCM_INFO_RESUME))
@@ -845,7 +917,7 @@ static inline int snd_pcm_pre_resume(snd_pcm_substream_t *substream, int state)
 	return 0;
 }
 
-static inline int snd_pcm_do_resume(snd_pcm_substream_t *substream, int state)
+static int snd_pcm_do_resume(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	if (runtime->status->suspended_state != SNDRV_PCM_STATE_RUNNING)
@@ -853,7 +925,7 @@ static inline int snd_pcm_do_resume(snd_pcm_substream_t *substream, int state)
 	return substream->ops->trigger(substream, SNDRV_PCM_TRIGGER_RESUME);
 }
 
-static inline void snd_pcm_post_resume(snd_pcm_substream_t *substream, int state)
+static void snd_pcm_post_resume(snd_pcm_substream_t *substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_trigger_tstamp(substream);
@@ -864,17 +936,20 @@ static inline void snd_pcm_post_resume(snd_pcm_substream_t *substream, int state
 		snd_pcm_tick_prepare(substream);
 }
 
+static struct action_ops snd_pcm_action_resume = {
+	.pre_action = snd_pcm_pre_resume,
+	.do_action = snd_pcm_do_resume,
+	.post_action = snd_pcm_post_resume
+};
+
 static int snd_pcm_resume(snd_pcm_substream_t *substream)
 {
 	snd_card_t *card = substream->pcm->card;
 	int res;
 
 	snd_power_lock(card);
-	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0) {
-		snd_pcm_stream_lock(substream);
-		_SND_PCM_ACTION(resume, substream, 0, res, 1);
-		snd_pcm_stream_unlock(substream);
-	}
+	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0)
+		return snd_pcm_action_lock_irq(&snd_pcm_action_resume, substream, 0, ACTION_CHECK_MASTER);
 	snd_power_unlock(card);
 	return res;
 }
@@ -918,7 +993,7 @@ static int snd_pcm_xrun(snd_pcm_substream_t *substream)
 	return result;
 }
 
-static inline int snd_pcm_pre_reset(snd_pcm_substream_t * substream, int state)
+static int snd_pcm_pre_reset(snd_pcm_substream_t * substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	switch (runtime->status->state) {
@@ -932,7 +1007,7 @@ static inline int snd_pcm_pre_reset(snd_pcm_substream_t * substream, int state)
 	}
 }
 
-static inline int snd_pcm_do_reset(snd_pcm_substream_t * substream, int state)
+static int snd_pcm_do_reset(snd_pcm_substream_t * substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int err = substream->ops->ioctl(substream, SNDRV_PCM_IOCTL1_RESET, 0);
@@ -946,7 +1021,7 @@ static inline int snd_pcm_do_reset(snd_pcm_substream_t * substream, int state)
 	return 0;
 }
 
-static inline void snd_pcm_post_reset(snd_pcm_substream_t * substream, int state)
+static void snd_pcm_post_reset(snd_pcm_substream_t * substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	runtime->control->appl_ptr = runtime->status->hw_ptr;
@@ -955,17 +1030,18 @@ static inline void snd_pcm_post_reset(snd_pcm_substream_t * substream, int state
 		snd_pcm_playback_silence(substream, ULONG_MAX);
 }
 
+static struct action_ops snd_pcm_action_reset = {
+	.pre_action = snd_pcm_pre_reset,
+	.do_action = snd_pcm_do_reset,
+	.post_action = snd_pcm_post_reset
+};
+
 static int snd_pcm_reset(snd_pcm_substream_t *substream)
 {
-	int res;
-
-	snd_pcm_stream_lock_irq(substream);
-	_SND_PCM_ACTION(reset, substream, 0, res, 0);
-	snd_pcm_stream_unlock_irq(substream);
-	return res;
+	return snd_pcm_action_lock_irq(&snd_pcm_action_reset, substream, 0, 0);
 }
 
-static inline int snd_pcm_pre_prepare(snd_pcm_substream_t * substream, int state)
+static int snd_pcm_pre_prepare(snd_pcm_substream_t * substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	switch (runtime->status->state) {
@@ -978,7 +1054,7 @@ static inline int snd_pcm_pre_prepare(snd_pcm_substream_t * substream, int state
 	}
 }
 
-static inline int snd_pcm_do_prepare(snd_pcm_substream_t * substream, int state)
+static int snd_pcm_do_prepare(snd_pcm_substream_t * substream, int state)
 {
 	int err;
 	err = substream->ops->prepare(substream);
@@ -987,12 +1063,18 @@ static inline int snd_pcm_do_prepare(snd_pcm_substream_t * substream, int state)
 	return snd_pcm_do_reset(substream, 0);
 }
 
-static inline void snd_pcm_post_prepare(snd_pcm_substream_t * substream, int state)
+static void snd_pcm_post_prepare(snd_pcm_substream_t * substream, int state)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	runtime->control->appl_ptr = runtime->status->hw_ptr;
 	runtime->status->state = SNDRV_PCM_STATE_PREPARED;
 }
+
+static struct action_ops snd_pcm_action_prepare = {
+	.pre_action = snd_pcm_pre_prepare,
+	.do_action = snd_pcm_do_prepare,
+	.post_action = snd_pcm_post_prepare
+};
 
 /**
  * snd_pcm_prepare
@@ -1003,11 +1085,8 @@ int snd_pcm_prepare(snd_pcm_substream_t *substream)
 	snd_card_t *card = substream->pcm->card;
 
 	snd_power_lock(card);
-	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0) {
-		snd_pcm_stream_lock_irq(substream);
-		_SND_PCM_ACTION(prepare, substream, 0, res, 0);
-		snd_pcm_stream_unlock_irq(substream);
-	}
+	if ((res = snd_power_wait(card, SNDRV_CTL_POWER_D0, substream->ffile)) >= 0)
+		res = snd_pcm_action_lock_irq(&snd_pcm_action_prepare, substream, 0, 0);
 	snd_power_unlock(card);
 	return res;
 }
@@ -2185,13 +2264,7 @@ static int snd_pcm_common_ioctl1(snd_pcm_substream_t *substream,
 	case SNDRV_PCM_IOCTL_RESET:
 		return snd_pcm_reset(substream);
 	case SNDRV_PCM_IOCTL_START:
-	{
-		int res;
-		snd_pcm_stream_lock_irq(substream);
-		res = snd_pcm_start(substream);
-		snd_pcm_stream_unlock_irq(substream);
-		return res;
-	}
+		return snd_pcm_action(&snd_pcm_action_start, substream, 0, ACTION_CHECK_MASTER);
 	case SNDRV_PCM_IOCTL_LINK:
 		return snd_pcm_link(substream, (long) arg);
 	case SNDRV_PCM_IOCTL_UNLINK:

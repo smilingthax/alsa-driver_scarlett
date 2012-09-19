@@ -56,8 +56,8 @@ static unsigned char swapbits(unsigned char val)
 	int bit;
 	unsigned char res = 0;
 	for (bit = 0; bit < 8; bit++) {
-		res |= val & 1;
 		res <<= 1;
+		res |= val & 1;
 		val >>= 1;
 	}
 	return res;
@@ -133,10 +133,10 @@ static int snd_cs8427_send_corudata(snd_i2c_device_t *device,
 		return 0;
 	if ((err = snd_cs8427_select_corudata(device, udata)) < 0)
 		return err;
-	memcpy(hw_data, data, count);
+	memcpy(hw_data, ndata, count);
 	if (udata) {
 		memset(data, 0, sizeof(data));
-		if (memcmp(hw_data, data, 32) == 0) {
+		if (memcmp(hw_data, data, count) == 0) {
 			chip->regmap[CS8427_REG_UDATABUF] &= ~CS8427_UBMMASK;
 			chip->regmap[CS8427_REG_UDATABUF] |= CS8427_UBMZEROS | CS8427_EFTUI;
 			if ((err = snd_cs8427_reg_write(device, CS8427_REG_UDATABUF, chip->regmap[CS8427_REG_UDATABUF])) < 0)
@@ -203,7 +203,7 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 	int err;
 	cs8427_t *chip;
 	snd_i2c_device_t *device;
-	unsigned char buf[32 + 1];
+	unsigned char buf[24];
 
 	if ((err = snd_i2c_device_create(bus, "CS8427", CS8427_ADDR | (addr & 7), &device)) < 0)
 		return err;
@@ -242,16 +242,15 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 		goto __fail;
 	}
 	/* write default channel status bytes */
-	buf[0] = CS8427_REG_AUTOINC | CS8427_REG_CORU_DATABUF;
-	buf[1] = swapbits((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 0));
-	buf[2] = swapbits((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 8));
-	buf[3] = swapbits((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 16));
-	buf[4] = swapbits((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 24));
-	memset(buf + 5, 0, sizeof(buf)-5);
-	memcpy(chip->playback.def_status, buf + 1, 24);
-	memcpy(chip->playback.pcm_status, buf + 1, 24);
-	if ((err = snd_i2c_sendbytes(device, buf, 33)) != 33)
+	buf[0] = ((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 0));
+	buf[1] = ((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 8));
+	buf[2] = ((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 16));
+	buf[3] = ((unsigned char)(SNDRV_PCM_DEFAULT_CON_SPDIF >> 24));
+	memset(buf + 4, 0, 24 - 4);
+	if (snd_cs8427_send_corudata(device, 0, buf, 24) < 0)
 		goto __fail;
+	memcpy(chip->playback.def_status, buf, 24);
+	memcpy(chip->playback.pcm_status, buf, 24);
 	/* turn on run bit and rock'n'roll */
 	chip->regmap[CS8427_REG_CLOCKSOURCE] = initvals1[4] | CS8427_RUN;
 	if ((err = snd_cs8427_reg_write(device, CS8427_REG_CLOCKSOURCE, chip->regmap[CS8427_REG_CLOCKSOURCE])) < 0)
@@ -260,9 +259,12 @@ int snd_cs8427_create(snd_i2c_bus_t *bus,
 #if 0	// it's nice for read tests
 	{
 	char buf[128];
+	int xx;
 	buf[0] = 0x81;
 	snd_i2c_sendbytes(device, buf, 1);
 	snd_i2c_readbytes(device, buf, 127);
+	for (xx = 0; xx < 127; xx++)
+		printk("reg[0x%x] = 0x%x\n", xx+1, buf[xx]);
 	}
 #endif
 	
@@ -316,7 +318,7 @@ static int snd_cs8427_spdif_get(snd_kcontrol_t * kcontrol,
 	cs8427_t *chip = snd_magic_cast(cs8427_t, device->private_data, return -ENXIO);
 	
 	snd_i2c_lock(device->bus);
-	memcpy(ucontrol->value.iec958.status, chip->playback.def_status, 23);
+	memcpy(ucontrol->value.iec958.status, chip->playback.def_status, 24);
 	snd_i2c_unlock(device->bus);
 	return 0;
 }
@@ -327,13 +329,14 @@ static int snd_cs8427_spdif_put(snd_kcontrol_t * kcontrol,
 	snd_i2c_device_t *device = snd_kcontrol_chip(kcontrol);
 	cs8427_t *chip = snd_magic_cast(cs8427_t, device->private_data, return -ENXIO);
 	unsigned char *status = kcontrol->private_value ? chip->playback.pcm_status : chip->playback.def_status;
+	snd_pcm_runtime_t *runtime = chip->playback.substream ? chip->playback.substream->runtime : NULL;
 	int err, change;
 
 	snd_i2c_lock(device->bus);
-	change = memcmp(ucontrol->value.iec958.status, status, 23) != 0;
-	memcpy(status, ucontrol->value.iec958.status, 23);
-	if (change && (kcontrol->private_value ? chip->playback.substream != NULL : chip->playback.substream == NULL)) {
-		err = snd_cs8427_send_corudata(device, 0, status, 23);
+	change = memcmp(ucontrol->value.iec958.status, status, 24) != 0;
+	memcpy(status, ucontrol->value.iec958.status, 24);
+	if (change && (kcontrol->private_value ? runtime != NULL : runtime == NULL)) {
+		err = snd_cs8427_send_corudata(device, 0, status, 24);
 		if (err < 0)
 			change = err;
 	}
@@ -351,7 +354,7 @@ static int snd_cs8427_spdif_mask_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_inf
 static int snd_cs8427_spdif_mask_get(snd_kcontrol_t * kcontrol,
 				      snd_ctl_elem_value_t * ucontrol)
 {
-	memset(ucontrol->value.iec958.status, 0xff, 23);
+	memset(ucontrol->value.iec958.status, 0xff, 24);
 	return 0;
 }
 
@@ -413,6 +416,8 @@ int snd_cs8427_iec958_build(snd_i2c_device_t *cs8427,
 			chip->playback.pcm_ctl = kctl;
 	}
 
+	chip->playback.substream = play_substream;
+	chip->capture.substream = cap_substream;
 	snd_assert(chip->playback.pcm_ctl, return -EIO);
 	return 0;
 }
@@ -457,7 +462,7 @@ int snd_cs8427_iec958_pcm(snd_i2c_device_t *cs8427, unsigned int rate)
 		case 48000: status[3] |= IEC958_AES3_CON_FS_48000; break;
 		}
 	}
-	err = snd_cs8427_send_corudata(cs8427, 0, status, 23);
+	err = snd_cs8427_send_corudata(cs8427, 0, status, 24);
 	if (err > 0)
 		snd_ctl_notify(cs8427->bus->card,
 			       SNDRV_CTL_EVENT_MASK_VALUE,

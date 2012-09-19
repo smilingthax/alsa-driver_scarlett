@@ -55,7 +55,7 @@ struct snd_akm4xxx {
 
 void snd_akm4xxx_write(akm4xxx_t *ak, int chip, unsigned char reg, unsigned char val);
 void snd_akm4xxx_reset(akm4xxx_t *ak, int state);
-void snd_akm4xxx_init(akm4xxx_t *ak, const akm4xxx_t *tmpl, snd_card_t *card);
+void snd_akm4xxx_init(akm4xxx_t *ak);
 int snd_akm4xxx_build_controls(akm4xxx_t *ak);
 
 #endif /* __SOUND_AK4XXX_ADDA_H */
