@@ -595,7 +595,7 @@ def filename(ver = 1):
 
 def kdiffs(cs = '1.403.56.48'):
 	os.chdir(get_bk_root())
-	cmd = 'sh -c \'bk rset -hr%s.. | grep -E "^(sound/|include/sound/)" | grep -E -v "^(sound/oss)" | bk gnupatch -du\'' % cs
+	cmd = 'sh -c \'bk rset -hr%s.. | grep -E "^(sound/|include/sound/)" | grep -E -v "^sound/oss/" | bk gnupatch -du\'' % cs
 	fp = os.popen(cmd)
 	lines = fp.readlines()
 	fp.close()
@@ -651,6 +651,11 @@ def main():
 		to_cvs_time = 0
 		patch = ''
 		if len(args) > 1:
+			if args[1] == "last":
+				BKROOT = '~/bk/linux-sound/linux-sound'
+				xtime = get_last_lsync_time()
+				print time.strftime('%Y/%m/%d %H:%M:%S', time.gmtime(xtime))
+				return
 			to_cvs_time = parse_time(args[1])
 		if len(args) > 2:
 			patch = os.path.abspath(os.path.expanduser(args[2]))
