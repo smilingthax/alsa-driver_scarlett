@@ -241,7 +241,7 @@ static int snd_usX2Y_create_usbmidi(snd_card_t* card )
 		.data = &quirk_data_2
 	};
 	struct usb_device *dev = usX2Y(card)->chip.dev;
-	struct usb_interface *iface = get_iface(dev->actconfig, 0);
+	struct usb_interface *iface = usb_ifnum_to_if(dev, 0);
 	snd_usb_audio_quirk_t *quirk = dev->descriptor.idProduct == USB_ID_US428 ? &quirk_2 : &quirk_1;
 
 	snd_printd("snd_usX2Y_create_usbmidi \n");
