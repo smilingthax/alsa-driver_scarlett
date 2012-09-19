@@ -1,0 +1,30 @@
+--- pcm_oss.c	2003-05-31 13:17:10.000000000 +0200
++++ pcm_oss.c.old	2003-05-31 13:15:28.000000000 +0200
+@@ -1981,7 +1981,11 @@
+ 	if (runtime->oss.plugin_first != NULL)
+ 		return -EIO;
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 25)
+ 	if (area->vm_pgoff != 0)
++#else
++	if (area->vm_offset != 0)
++#endif
+ 		return -EINVAL;
+ 
+ 	err = snd_pcm_mmap_data(substream, file, area);
+@@ -2144,7 +2148,9 @@
+ 
+ static struct file_operations snd_pcm_oss_f_reg =
+ {
++#ifndef LINUX_2_2
+ 	.owner =	THIS_MODULE,
++#endif
+ 	.read =		snd_pcm_oss_read,
+ 	.write =	snd_pcm_oss_write,
+ 	.open =		snd_pcm_oss_open,
+@@ -2269,3 +2275,5 @@
+ 
+ module_init(alsa_pcm_oss_init)
+ module_exit(alsa_pcm_oss_exit)
++
++EXPORT_NO_SYMBOLS;
