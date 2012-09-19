@@ -41,3 +41,11 @@ EXPORT_SYMBOL(snd_pci_dev_present);
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 6)) || (LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 29))
 EXPORT_SYMBOL(snd_compat_msleep);
 #endif
+#ifdef SND_WORKQUEUE_COMPAT
+EXPORT_SYMBOL(snd_compat_schedule_work);
+EXPORT_SYMBOL(snd_compat_create_workqueue);
+EXPORT_SYMBOL(snd_compat_flush_workqueue);
+EXPORT_SYMBOL(snd_compat_destroy_workqueue);
+EXPORT_SYMBOL(snd_compat_queue_work);
+EXPORT_SYMBOL(snd_compat_queue_delayed_work);
+#endif
