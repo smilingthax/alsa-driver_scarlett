@@ -303,7 +303,6 @@ case "$debug" in
     AC_MSG_RESULT(none)
     ;;
 esac
-AC_SUBST(moddir)
 
 dnl Check for PCI support (for 2.4 kernel)...
 if test $kpatchlevel -ge 3; then
