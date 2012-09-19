@@ -1131,7 +1131,7 @@ def cvsps_merge1(f,t=0):
 	author = ''
 	date = ''
 	level = 'Devel'
-	from = ''
+	xfrom = ''
 	for line in diffs:
 		if line[:-1] == 'Log:':
 			ok = 1
@@ -1165,7 +1165,7 @@ def cvsps_merge1(f,t=0):
 			elif line[:13] == "Patch-Level: ":
 				level = line[13:-1]
 			elif line[:6] == "From: ":
-				from = line[6:-1]
+				xfrom = line[6:-1]
 			else:
 				log.append(line)
 		elif ok == 2:
@@ -1201,13 +1201,13 @@ def cvsps_merge1(f,t=0):
 		lines = lines + 'L:' + i
 		nlines = nlines + i
 	signed_flag = 0
-	if from != '':
-		real_author = from
+	if xfrom != '':
+		real_author = xfrom
 	else:
 		real_author = author
 	for i in signed:
 		if not signed_flag:
-			if from == '':
+			if xfrom == '':
 				real_author = i[15:]
 			nlines = nlines + '\n'
 			signed_flag = 1
@@ -1532,6 +1532,10 @@ def cvsps_changes(rev1, rev2, update=False):
 					log = a['log']
 					first = "-"
 					for l in log:
+						if l[:13] == "Patch-level: ":
+							continue
+						if l[:13] == "Patch-Level: ":
+							continue
 						print '    %s %s' % (first, l)
 						first = " "
 
@@ -1588,7 +1592,10 @@ def main():
 			print 'Please, give a start and end revision'
 			print 'Example: ksync cvsps-changes v1-0-7 v1-0-8'
 			return
-		cvsps_changes(args[1], args[2])
+		update = False
+		if len(args) > 3:
+			update = True
+		cvsps_changes(args[1], args[2], update)
 	elif args[0] == 'lsync':
 		to_cvs_time = 0
 		patch = ''
