@@ -1,5 +1,5 @@
 --- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2005-08-23 20:19:39.000000000 +0200
-+++ vxpocket.c	2005-08-23 20:25:29.000000000 +0200
++++ vxpocket.c	2005-08-25 14:04:41.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "vx_entry.inc"
  /*
@@ -38,7 +38,7 @@
 +		return NULL;
 +	}
 +	device_initialize(chip->dev);
-+	sprintf(chip->dev->bus_id, "vxpocket%d", i);
++	sprintf(chip->dev->bus_id, "vxpocket%d", chip->card->number);
 +#endif
 +#endif
 +

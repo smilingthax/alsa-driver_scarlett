@@ -2236,25 +2236,6 @@ else
 fi
 AC_SUBST(CONFIG_PARPORT)
 
-dnl Check for HPK tree (for ASIHPI driver)
-CONFIG_ASIHPK=""
-AC_ARG_WITH(asihpk,
-  [  --with-asihpk=dir       specify the AudioScience HPK source code tree],
-  asihpk="$withval", asihpk="")
-if test -n "$asihpk"; then
-  if test ! -d "$asihpk"; then
-    AC_MSG_ERROR(ASI HPK root $asihpk is not a directory)
-  fi
-  if test ! -f "$asihpk"/hpi/hpi.h; then
-    AC_MSG_ERROR(Invalid ASI HPK root $asihpk)
-  fi
-  echo "Symlinking $asihpk/hpi/hpi.h..."
-  rm -f pci/hpi.h
-  ln -sf "$asihpk"/hpi/hpi.h pci/hpi.h
-  CONFIG_ASIHPK=m
-fi
-AC_SUBST(CONFIG_ASIHPK)
-
 dnl Check for which cards to compile driver for...
 ALSA_TOPLEVEL_SELECT
 
