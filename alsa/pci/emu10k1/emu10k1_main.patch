@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pci/emu10k1/emu10k1_main.c	2008-10-22 09:22:44.000000000 +0200
-+++ emu10k1_main.c	2008-10-22 09:25:14.000000000 +0200
+--- ../../alsa-kernel/pci/emu10k1/emu10k1_main.c	2008-10-23 19:44:35.000000000 +0200
++++ emu10k1_main.c	2008-10-23 19:46:15.000000000 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -23,14 +23,14 @@
  	const struct firmware *fw_entry;
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
- 	if ((err = request_firmware(&fw_entry, filename, &emu->pci->dev)) != 0) {
+ 	err = request_firmware(&fw_entry, filename, &emu->pci->dev);
 +#else
-+	if ((err = request_firmware(&fw_entry, filename, pci_name(emu->pci))) != 0) {
++	err = request_firmware(&fw_entry, filename, pci_name(emu->pci));
 +#endif
- 		snd_printk(KERN_ERR "firmware: %s not found. Err=%d\n",filename, err);
+ 	if (err != 0) {
+ 		snd_printk(KERN_ERR "firmware: %s not found. Err = %d\n", filename, err);
  		return err;
- 	}
-@@ -1397,6 +1408,7 @@
+@@ -1399,6 +1410,7 @@
  	 .i2c_adc = 1,
  	 .spk71 = 1} ,
  	/* Tested by James@superbug.co.uk 4th Nov 2007. */
@@ -38,7 +38,7 @@
  	{.vendor = 0x1102, .device = 0x0008, .subsystem = 0x42011102,
  	 .driver = "Audigy2", .name = "E-mu 1010 Notebook [MAEM8950]",
  	 .id = "EMU1010",
-@@ -1439,6 +1451,7 @@
+@@ -1441,6 +1453,7 @@
  	 .ca0102_chip = 1,
  	 .spk71 = 1,
  	 .emu_model = EMU_MODEL_EMU0404}, /* EMU 0404 */
@@ -46,7 +46,7 @@
  	/* Note that all E-mu cards require kernel 2.6 or newer. */
  	{.vendor = 0x1102, .device = 0x0008,
  	 .driver = "Audigy2", .name = "SB Audigy 2 Value [Unknown]",
-@@ -1748,7 +1761,7 @@
+@@ -1751,7 +1764,7 @@
  	emu->synth = NULL;
  	emu->get_synth_voice = NULL;
  	/* read revision & serial */
@@ -54,4 +54,4 @@
 +	emu->revision = snd_pci_revision(pci);
  	pci_read_config_dword(pci, PCI_SUBSYSTEM_VENDOR_ID, &emu->serial);
  	pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &emu->model);
- 	snd_printdd("vendor=0x%x, device=0x%x, subsystem_vendor_id=0x%x, subsystem_id=0x%x\n",pci->vendor, pci->device, emu->serial, emu->model);
+ 	snd_printdd("vendor = 0x%x, device = 0x%x, subsystem_vendor_id = 0x%x, subsystem_id = 0x%x\n", pci->vendor, pci->device, emu->serial, emu->model);

@@ -94,6 +94,11 @@ typedef __u32 __be32;
 #endif
 #endif /* < 2.6.9 */
 
+/* other missing types */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 28)
+typedef unsigned int fmode_t;
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
 /* for compat layer */
 #include <linux/pci.h>
