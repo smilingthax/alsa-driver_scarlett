@@ -752,6 +752,12 @@ int emu1010_firmware_thread(void *data) {
 			snd_emu1010_fpga_read(emu, EMU_DOCK_MAJOR_REV, &tmp );
 			snd_emu1010_fpga_read(emu, EMU_DOCK_MINOR_REV, &tmp2 );
 			snd_printk("Audio Dock ver:%d.%d\n",tmp ,tmp2);
+			/* Sync clocking between 1010 and Dock */
+			/* Allow DLL to settle */
+			msleep(10);
+			/* Unmute all. Default is muted after a firmware load */
+			snd_emu1010_fpga_write(emu, EMU_HANA_UNMUTE, EMU_UNMUTE );
+			break;
 		}
 	}
 	return 0;
@@ -873,7 +879,15 @@ static int snd_emu10k1_emu1010_init(struct snd_emu10k1 * emu)
 	snd_printk(KERN_INFO "emu1010: Card options=0x%x\n",reg);
 	snd_emu1010_fpga_read(emu, EMU_HANA_OPTICAL_TYPE, &tmp ); 
 	/* Optical -> ADAT I/O  */
-	snd_emu1010_fpga_write(emu, EMU_HANA_OPTICAL_TYPE, EMU_HANA_OPTICAL_IN_ADAT | EMU_HANA_OPTICAL_OUT_ADAT );
+	/* 0 : SPDIF
+	 * 1 : ADAT
+	 */
+	emu->emu1010.optical_in = 1; /* IN_ADAT */
+	emu->emu1010.optical_out = 1; /* IN_ADAT */
+	tmp = 0;
+	tmp = (emu->emu1010.optical_in ? EMU_HANA_OPTICAL_IN_ADAT : 0) |
+		(emu->emu1010.optical_out ? EMU_HANA_OPTICAL_OUT_ADAT : 0);
+	snd_emu1010_fpga_write(emu, EMU_HANA_OPTICAL_TYPE, tmp );
 	snd_emu1010_fpga_read(emu, EMU_HANA_ADC_PADS, &tmp );
 	/* Set no attenuation on Audio Dock pads. */
 	snd_emu1010_fpga_write(emu, EMU_HANA_ADC_PADS, 0x00 );
