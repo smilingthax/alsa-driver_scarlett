@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/usbaudio.c	2005-04-29 23:54:04.000000000 +0200
-+++ usbaudio.c	2005-04-29 23:56:20.000000000 +0200
+--- ../alsa-kernel/usb/usbaudio.c	2005-06-25 14:53:44.000000000 +0200
++++ usbaudio.c	2005-06-25 14:53:52.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
@@ -19,7 +19,7 @@
  
  module_param_array(index, int, NULL, 0444);
  MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
-@@ -1902,8 +1908,13 @@
+@@ -1883,8 +1889,13 @@
  			return -ENOMEM;
  		memcpy(buf, data, size);
  	}
@@ -33,7 +33,7 @@
  	if (size > 0) {
  		memcpy(data, buf, size);
  		kfree(buf);
-@@ -1916,9 +1927,11 @@
+@@ -1897,9 +1908,11 @@
   * entry point for linux usb interface
   */
  
@@ -45,7 +45,7 @@
  
  static struct usb_device_id usb_audio_ids [] = {
  #include "usbquirks.h"
-@@ -1931,10 +1944,15 @@
+@@ -1912,10 +1925,15 @@
  MODULE_DEVICE_TABLE (usb, usb_audio_ids);
  
  static struct usb_driver usb_audio_driver = {
@@ -61,7 +61,7 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -2460,7 +2478,11 @@
+@@ -2441,7 +2459,11 @@
  		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING &&
  		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
  		    altsd->bNumEndpoints < 1 ||
@@ -73,19 +73,19 @@
  			continue;
  		/* must be isochronous */
  		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
-@@ -2523,7 +2545,11 @@
+@@ -2503,7 +2525,11 @@
+ 		fp->altset_idx = i;
  		fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  		fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
- 		/* FIXME: decode wMaxPacketSize of high bandwith endpoints */
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 11)
  		fp->maxpacksize = le16_to_cpu(get_endpoint(alts, 0)->wMaxPacketSize);
 +#else
 +		fp->maxpacksize = get_endpoint(alts, 0)->wMaxPacketSize;
 +#endif
- 		fp->attributes = csep[3];
- 
- 		/* some quirks for attributes here */
-@@ -2811,7 +2837,11 @@
+ 		if (snd_usb_get_speed(dev) == USB_SPEED_HIGH)
+ 			fp->maxpacksize = (((fp->maxpacksize >> 11) & 3) + 1)
+ 					* (fp->maxpacksize & 0x7ff);
+@@ -2793,7 +2819,11 @@
  	fp->iface = altsd->bInterfaceNumber;
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -97,7 +97,7 @@
  
  	switch (fp->maxpacksize) {
  	case 0x120:
-@@ -2877,7 +2907,11 @@
+@@ -2859,7 +2889,11 @@
  	fp->iface = altsd->bInterfaceNumber;
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -109,7 +109,7 @@
  	fp->rate_max = fp->rate_min = combine_triple(&alts->extra[8]);
  
  	stream = (fp->endpoint & USB_DIR_IN)
-@@ -2935,8 +2969,13 @@
+@@ -2917,8 +2951,13 @@
  	struct usb_host_config *config = dev->actconfig;
  	int err;
  
@@ -123,7 +123,7 @@
  		snd_printdd("sending Extigy boot sequence...\n");
  		/* Send message to force it to reconnect with full interface. */
  		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
-@@ -2948,8 +2987,13 @@
+@@ -2930,8 +2969,13 @@
  		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
  		err = usb_reset_configuration(dev);
  		if (err < 0) snd_printdd("error usb_reset_configuration: %d\n", err);
@@ -137,7 +137,7 @@
  		return -ENODEV; /* quit this anyway */
  	}
  	return 0;
-@@ -3082,8 +3126,13 @@
+@@ -3080,8 +3124,13 @@
  	chip->index = idx;
  	chip->dev = dev;
  	chip->card = card;
@@ -151,7 +151,7 @@
  	INIT_LIST_HEAD(&chip->pcm_list);
  	INIT_LIST_HEAD(&chip->midi_list);
  	INIT_LIST_HEAD(&chip->mixer_list);
-@@ -3171,8 +3220,12 @@
+@@ -3167,8 +3216,12 @@
  
  	alts = &intf->altsetting[0];
  	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -164,7 +164,7 @@
  
  	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
  		goto __err_val;
-@@ -3293,12 +3346,17 @@
+@@ -3295,12 +3348,17 @@
  		}
  		usb_chip[chip->index] = NULL;
  		up(&register_mutex);
@@ -182,7 +182,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -3319,6 +3377,8 @@
+@@ -3321,6 +3379,8 @@
  	snd_usb_audio_disconnect(interface_to_usbdev(intf),
  				 dev_get_drvdata(&intf->dev));
  }
@@ -191,7 +191,7 @@
  
  
  static int __init snd_usb_audio_init(void)
-@@ -3339,3 +3399,5 @@
+@@ -3341,3 +3401,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);
