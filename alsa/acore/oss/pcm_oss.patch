@@ -1,6 +1,6 @@
---- ../../alsa-kernel/core/oss/pcm_oss.c	2005-01-20 16:21:56.079218949 +0100
-+++ pcm_oss.c	2005-01-20 17:03:57.470478179 +0100
-@@ -2072,13 +2072,26 @@
+--- ../../alsa-kernel/core/oss/pcm_oss.c	2006-01-09 18:17:32.000000000 +0100
++++ pcm_oss.c	2006-01-09 18:21:07.000000000 +0100
+@@ -2098,13 +2098,26 @@
  	return -EINVAL;
  }
  
@@ -28,7 +28,21 @@
  static ssize_t snd_pcm_oss_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
  {
  	struct snd_pcm_oss_file *pcm_oss_file;
-@@ -2225,7 +2238,11 @@
+@@ -2135,7 +2148,13 @@
+ 	substream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
+ 	if (substream == NULL)
+ 		return -ENXIO;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
++	up(&file->f_dentry->d_inode->i_sem);
++#endif
+ 	result = snd_pcm_oss_write1(substream, buf, count);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
++	down(&file->f_dentry->d_inode->i_sem);
++#endif
+ #ifdef OSS_DEBUG
+ 	printk("pcm_oss: write %li bytes (wrote %li bytes)\n", (long)count, (long)result);
+ #endif
+@@ -2249,7 +2268,11 @@
  	if (runtime->oss.plugin_first != NULL)
  		return -EIO;
  
@@ -40,7 +54,7 @@
  		return -EINVAL;
  
  	err = snd_pcm_mmap_data(substream, file, area);
-@@ -2399,14 +2416,20 @@
+@@ -2430,14 +2453,20 @@
  
  static struct file_operations snd_pcm_oss_f_reg =
  {
@@ -61,7 +75,7 @@
  	.mmap =		snd_pcm_oss_mmap,
  };
  
-@@ -2525,3 +2548,5 @@
+@@ -2553,3 +2582,5 @@
  
  module_init(alsa_pcm_oss_init)
  module_exit(alsa_pcm_oss_exit)
