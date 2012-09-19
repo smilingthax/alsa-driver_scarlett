@@ -36,11 +36,12 @@ else
   distribution="unknown"
 fi
 
-if [ -x /sbin/lsmod ]; then
-  lsmod=/sbin/lsmod
-else
-  lsmod=/bin/lsmod
-fi
+for prog in lspci lsmod; do
+	for path in /sbin /usr/sbin /bin /usr/bin;do
+		[[ -x $path/$prog ]] && eval $prog=$path/$prog
+	done
+done
+unset prog path
 
 usage() {
     echo "ALSA configurator version $version"
@@ -119,7 +120,7 @@ else
 fi
 
 alsa_device_opts=""
-if modinfo -p snd | grep uid ; then
+if modinfo -p snd | grep -q uid ; then
   if [ x"$alsa_uid" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_uid=$alsa_uid"
   fi
@@ -127,7 +128,7 @@ if modinfo -p snd | grep uid ; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_gid=$alsa_gid"
   fi
 fi
-if modinfo -p snd | grep device_mode ; then
+if modinfo -p snd | grep -q device_mode ; then
   if [ x"$alsa_mode" != x0 ]; then
     alsa_device_opts="$alsa_device_opts ${mpfx}device_mode=$alsa_mode"
   fi
@@ -343,6 +344,10 @@ trap cleanup 0
 
 # convert ISA PnP id number to string 'ABC'
 convert_isapnp_id () {
+    if [ -z "$1" ]; then
+	echo "XXXX"
+	return
+    fi
     let a='('$1'>>2) & 0x3f'
     let b='(('$1' & 0x03) << 3) | (('$1' >> 13) & 0x07)'
     let c='('$1'>> 8) & 0x1f'
@@ -352,6 +357,10 @@ convert_isapnp_id () {
 
 # swap high & low bytes
 swap_number () {
+    if [ -z "$1" ]; then
+	echo "0000"
+	return
+    fi
     let v='(('$1'>>8)&0xff)|(('$1'&0xff)<<8)'
     printf "%04x" $v
 }
@@ -438,7 +447,7 @@ BEGIN {
 /^[<literal space><literal tab>]*PCI: /{
 	gsub(/0x/, "");
 	gsub(/=/, ":");
-	x = sprintf ("/sbin/lspci -n | grep '"'Class 0401'"' | grep %s", $2);
+	x = sprintf ("'$lspci' -n | grep '"'Class 0401'"' | grep %s", $2);
 	if (system (x) == 0)
 		printf "%s %s\n", $2, driver >>"'"$FOUND"'"
 }
@@ -468,7 +477,7 @@ BEGIN {
 #
 find_device_name () {
     if expr "$1" : '[0-9a-f][0-9a-f][0-9a-f][0-9a-f]:[0-9a-f][0-9a-f][0-9a-f][0-9a-f]' >/dev/null; then
-	/sbin/lspci -d $1 | sed -e 's/^..:..\.. Multimedia audio controller: //g'
+	$lspci -d $1 | sed -e 's/^..:..\.. Multimedia audio controller: //g'
 	return
     elif expr "$1" : '[A-Z@][A-Z@][A-Z@][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' >/dev/null; then
 	cardname=`grep '^Card [0-9]\+ '\'$1':' $DUMP | head -n 1 | sed -e 's/^Card [0-9]\+ '\''.*:\(.*\)'\'' .*$/\1/'`
@@ -1026,7 +1035,7 @@ if [ x$devs_found != x ]; then
     # check for TP600E
     #
     if [ ${devs_found[0]} = cs46xx ]; then
-	if /sbin/lspci -nv | grep -q "Subsystem: 1014:1010"; then
+	if $lspci -nv | grep -q "Subsystem: 1014:1010"; then
 	    if $DIALOG --yesno "
  Looks like you having a Thinkpad 600E notebook.
  On this notebook, CS4236 driver should be used
