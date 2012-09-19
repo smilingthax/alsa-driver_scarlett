@@ -26,6 +26,7 @@
 #include "pcm.h"
 #include "rawmidi.h"
 #include "ac97_codec.h"
+#include "cs46xx_dsp_spos.h"
 
 #ifndef PCI_VENDOR_ID_CIRRUS
 #define PCI_VENDOR_ID_CIRRUS            0x1013
@@ -1626,6 +1627,12 @@
 #define SAVE_REG_MAX             0x10
 #define POWER_DOWN_ALL         0x7f0f
 
+/* maxinum number of AC97 codecs connected, AC97 2.0 defined 4 */
+#define MAX_NR_AC97				4
+#define CS46XX_PRIMARY_CODEC_INDEX		0
+#define CS46XX_SECONDARY_CODEC_INDEX		1
+#define CS46XX_SECONDARY_CODEC_OFFSET		0x80
+
 /*
  *
  */
@@ -1677,7 +1684,8 @@ struct _snd_cs46xx {
 	} play, capt;
 
 
-	ac97_t *ac97;
+	int nr_ac97_codecs;
+	ac97_t *ac97[MAX_NR_AC97];
 
 	struct pci_dev *pci;
 	snd_card_t *card;
@@ -1704,6 +1712,8 @@ struct _snd_cs46xx {
 #ifdef CONFIG_PM
 	struct pm_dev *pm_dev;
 #endif
+
+	dsp_spos_instance_t * dsp_spos_instance;
 };
 
 int snd_cs46xx_create(snd_card_t *card,
