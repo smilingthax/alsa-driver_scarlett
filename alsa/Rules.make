@@ -6,6 +6,8 @@
 
 MODCURDIR = $(subst $(MAINSRCDIR)/,,$(shell /bin/pwd))
 
+comma = ,
+
 #
 # False targets.
 #
@@ -28,8 +30,6 @@ obj-y		+= $(extra-obj-y)
 obj-m		+= $(extra-obj-m)
 obj-n		+= $(extra-obj-n)
 
-list-multi	+= $(extra-list-multi)
-
 #
 #
 #
@@ -45,13 +45,13 @@ ALL_SUB_DIRS	:= $(sort $(subdir-y) $(subdir-m) $(subdir-n) $(subdir-))
 #
 
 %.s: %.c
-	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$@) -S $< -o $@
+	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) -S $< -o $@
 
 %.i: %.c
-	$(CPP) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$@) $< > $@
+	$(CPP) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) $< > $@
 
 %.o: %.c
-	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) $(CFLAGS_$@) -c -o $@ $<
+	$(CC) -D__KERNEL__ $(CFLAGS) $(EXTRA_CFLAGS) -DKBUILD_BASENAME=$(subst $(comma),_,$(subst -,_,$(*F))) $(CFLAGS_$@) $(CFLAGS_$@) -c -o $@ $<
 
 %.o: %.s
 	$(AS) -D__KERNEL__ $(AFLAGS) $(EXTRA_CFLAGS) -o $@ $<
@@ -91,6 +91,17 @@ $(L_TARGET): $(obj-y)
 	touch $@
 endif
 
+#
+# Rule to link composite objects
+#
+
+__obj-m = $(filter-out export.o,$(obj-m))
+ld-multi-used-m := $(sort $(foreach m,$(__obj-m),$(patsubst %,$(m),$($(basename $(m))-objs))))
+ld-multi-objs-m := $(foreach m, $(ld-multi-used-m), $($(basename $(m))-objs))
+
+$(ld-multi-used-m) : %.o: $(ld-multi-objs-m)
+	rm -f $@
+	$(LD) $(EXTRA_LDFLAGS) -r -o $@ $(filter $($(basename $@)-objs), $^)
 
 #
 # This make dependencies quickly
@@ -169,11 +180,6 @@ script:
 #
 ifdef CONFIG_MODULES
 
-multi-used	:= $(filter $(list-multi), $(obj-y) $(obj-m))
-multi-objs	:= $(foreach m, $(multi-used), $($(basename $(m))-objs))
-active-objs	:= $(sort $(multi-objs) $(obj-y) $(obj-m))
-
-
 ifeq (y,$(CONFIG_SND_MVERSION))
 ifneq "$(strip $(export-objs))" ""
 
@@ -234,7 +240,7 @@ $(SNDVERSIONS):
 
 $(active-objs): $(SNDVERSIONS)
 
-$(multi-used): $(addprefix $(TOPDIR)/modules/,$(multi-used))
+$(ld-multi-used-m): $(addprefix $(TOPDIR)/modules/,$(ld-multi-used-m))
 
 $(TOPDIR)/modules/%.o: dummy
 	@if ! test -L $@; then \
