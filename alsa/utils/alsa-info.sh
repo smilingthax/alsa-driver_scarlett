@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.59
+SCRIPT_VERSION=0.4.60
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -423,9 +423,11 @@ if [ -d /sys/class/dmi/id ]; then
     # No root privileges are required when using sysfs method
     DMI_SYSTEM_MANUFACTURER=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null)
     DMI_SYSTEM_PRODUCT_NAME=$(cat /sys/class/dmi/id/product_name 2>/dev/null)
+    DMI_SYSTEM_PRODUCT_VERSION=$(cat /sys/class/dmi/id/product_version 2>/dev/null)
 elif [ -x $DMIDECODE ]; then
     DMI_SYSTEM_MANUFACTURER=$($DMIDECODE -s system-manufacturer 2>/dev/null)
     DMI_SYSTEM_PRODUCT_NAME=$($DMIDECODE -s system-product-name 2>/dev/null)
+    DMI_SYSTEM_PRODUCT_VERSION=$($DMIDECODE -s system-version 2>/dev/null)
 fi
 
 cat /proc/asound/modules 2>/dev/null|awk {'print $2'}>$TEMPDIR/alsamodules.tmp
@@ -466,6 +468,7 @@ echo "!!---------------" >> $FILE
 echo "" >> $FILE
 echo "Manufacturer:      $DMI_SYSTEM_MANUFACTURER" >> $FILE
 echo "Product Name:      $DMI_SYSTEM_PRODUCT_NAME" >> $FILE
+echo "Product Version:   $DMI_SYSTEM_PRODUCT_VERSION" >> $FILE
 echo "" >> $FILE
 echo "" >> $FILE
 echo "!!Kernel Information" >> $FILE
