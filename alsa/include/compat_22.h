@@ -124,6 +124,8 @@ struct tasklet_struct {
 #define tasklet_unlock_wait(t)	while (test_bit(0, &(t)->sync)) { }
 #define tasklet_kill(t)		tasklet_unlock_wait(t) /* FIXME: world is not perfect... */
 
+#define del_timer_sync(t) del_timer(t) /* FIXME: not quite correct on SMP */
+
 #define rwlock_init(x) do { *(x) = RW_LOCK_UNLOCKED; } while(0)
 
 #ifndef __init
