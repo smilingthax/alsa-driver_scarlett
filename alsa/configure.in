@@ -4,7 +4,7 @@ dnl Copyright (c) by Jaroslav Kysela <perex@suse.cz>
 
 AC_INIT(acore/sound.patch)
 AC_PREFIX_DEFAULT(/usr)
-CONFIG_SND_VERSION="1.0.1"
+CONFIG_SND_VERSION="1.0.2"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -958,6 +958,8 @@ if test "$CONFIG_ISAPNP" = "y"; then
   AC_DEFINE(CONFIG_SND_ISAPNP)
   CONFIG_PNP=$CONFIG_ISAPNP
   AC_DEFINE(CONFIG_SND_PNP)
+else
+  CONFIG_PNP=""
 fi
 AC_SUBST(CONFIG_PNP)
 
