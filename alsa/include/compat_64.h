@@ -1,3 +1,6 @@
+#ifndef __ALSA_COMPAT_64_H
+#define __ALSA_COMPAT_64_H
+
 #include <linux/types.h>
 
 /* FIXME: it is valid for x86_64, check other archs */
@@ -13,3 +16,5 @@ struct compat_timeval {
 	compat_time_t   tv_sec;
 	s32             tv_usec;
 };
+
+#endif /* __ALSA_COMPAT_64_H */
