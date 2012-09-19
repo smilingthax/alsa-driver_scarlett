@@ -6,6 +6,13 @@
 TOPDIR   = .
 ALSAKERNELDIR = ../alsa-kernel
 
+ifndef IGROUP
+IGROUP = root
+endif
+ifndef IUSER
+IUSER = root
+endif
+
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
 else
@@ -114,9 +121,9 @@ install-headers:
 		ln -sf $(MAINSRCDIR)/include/sound $(DESTDIR)$(prefix)/include/sound; \
 	else \
 		rm -rf $(DESTDIR)$(prefix)/include/sound; \
-		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
+		install -d -m 755 -g $(IGROUP) -o $(IUSER) $(DESTDIR)$(prefix)/include/sound; \
 		for f in include/sound/*.h; do \
-			install -m 644 -g root -o root $$f $(DESTDIR)$(prefix)/include/sound; \
+			install -m 644 -g $(IGROUP) -o $(IUSER) $$f $(DESTDIR)$(prefix)/include/sound; \
 		done \
 	fi
 
@@ -141,11 +148,11 @@ endif
 .PHONY: install-scripts
 install-scripts:
 	if [ -d /sbin/init.d ]; then \
-	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
+	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/sbin/init.d/alsasound; \
 	elif [ -d /etc/rc.d/init.d ]; then \
-	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
+	  install -m 755 -g $(IGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/rc.d/init.d/alsasound; \
 	elif [ -d /etc/init.d ]; then \
-	  install -m 755 -g root -o root utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
+	  install -m 755 -g $(UGROUP) -o $(IUSER) utils/alsasound $(DESTDIR)/etc/init.d/alsasound; \
 	fi
 
 .PHONY: check-snd-prefix
@@ -189,7 +196,7 @@ cvsclean: mrproper
 pack: mrproper
 	chmod 755 utils/alsasound
 	mv ../alsa-driver ../alsa-driver-$(CONFIG_SND_VERSION)
-	tar --exclude=CVS --owner=root --group=root -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
+	tar --exclude=CVS --owner=$(IGROUP) --group=$(IUSER) -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
 	mv ../alsa-driver-$(CONFIG_SND_VERSION) ../alsa-driver
 
 .PHONY: uninstall
