@@ -86,8 +86,9 @@ sources (default is /usr/src/linux).
 EOF
   exit 1
 fi
+KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_CACHE_VAL(kaversion,
 [AC_TRY_RUN([
 #include <stdio.h>
@@ -153,7 +154,7 @@ AC_MSG_RESULT($kaversion)
 dnl Check for GCC version...
 AC_MSG_CHECKING(for GCC version)
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_CACHE_VAL(kernel_gcc,
 [AC_TRY_RUN([
 #include <stdio.h>
@@ -341,7 +342,7 @@ AC_DEFUN([CHECK_KERNEL_CONFIG_BUILTIN], [
   boolvar="$1"
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+  CFLAGS="$CFLAGS $KERNEL_INC"
   boolchk=""
   AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -367,7 +368,7 @@ AC_DEFUN([CHECK_KERNEL_CONFIG], [
   boolvar1="$1_MODULE"
   AC_MSG_CHECKING(for $2)
   ac_save_CFLAGS="$CFLAGS"
-  CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+  CFLAGS="$CFLAGS $KERNEL_INC"
   boolchk=""
   AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -571,7 +572,7 @@ CONFIG_SND_BIT32_EMUL=
 processor=""
 rm -f processor.id
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_TRY_RUN([
 #include <stdio.h>
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
@@ -886,7 +887,7 @@ int main(void) {
 	machine=`cat machine.id`;AC_MSG_RESULT($machine))
 	CFLAGS="$ac_save_CFLAGS"
 	rm -f machine.id
-	c_opts="$c_opts -I\$(CONFIG_SND_KERNELDIR)/include/asm-i386/mach-$machine"
+	KERNEL_INC="$KERNEL_INC -I\$(CONFIG_SND_KERNELDIR)/include/asm-i386/mach-$machine"
     fi
     ;;
 esac
@@ -997,7 +998,7 @@ dnl Check for strlcpy...
 AC_MSG_CHECKING(for strlcpy)
 strlcpy="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1022,7 +1023,7 @@ dnl Check for snprintf...
 AC_MSG_CHECKING(for snprintf)
 snprintf="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="-Wall -Werror $CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1046,7 +1047,7 @@ dnl Check for vmalloc_to_page...
 AC_MSG_CHECKING(for vmalloc_to_page)
 vmalloc_to_page="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1071,7 +1072,7 @@ dnl Check for old kmod...
 AC_MSG_CHECKING(for old kmod)
 old_kmod="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1094,7 +1095,7 @@ dnl Check for PDE...
 AC_MSG_CHECKING(for PDE)
 pde_defined="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1119,7 +1120,7 @@ dnl Check for pci_consistent_set_dma_mask()
 AC_MSG_CHECKING(for pci_set_consistent_dma_mask)
 pci_consistent_defined="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1142,7 +1143,7 @@ dnl Check for tty->count is the atomic type
 AC_MSG_CHECKING(for tty->count is the atomic type)
 tty_count_atomic="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -Wall -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS -Wall $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1168,7 +1169,7 @@ dnl Check for old kill_fasync...
 AC_MSG_CHECKING(for old kill_fasync)
 oldkfasync="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1196,7 +1197,7 @@ dnl Check for dma_addr_t
 AC_MSG_CHECKING(for dma_addr_t)
 dma_addr_t="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1219,7 +1220,7 @@ dnl Check for MUTEX macros
 AC_MSG_CHECKING(for MUTEX macros)
 have_mutex_macros="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_TRY_COMPILE([
 #define __KERNEL__
 #include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
@@ -1323,7 +1324,7 @@ dnl Check for RTC timer support...
 AC_MSG_CHECKING(for RTC callback support in kernel)
 rtcsup="0"
 ac_save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+CFLAGS="$CFLAGS $KERNEL_INC"
 AC_TRY_RUN([
 #include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
 #if defined(__alpha__) || (!defined(CONFIG_RTC) && !defined(CONFIG_RTC_MODULE))
@@ -1411,6 +1412,7 @@ AC_SUBST(c_opts)
 AC_SUBST(m_opts)
 AC_SUBST(GENKSYMS)
 AC_SUBST(EXTRA_INCLUDES)
+AC_SUBST(KERNEL_INC)
 
 dnl Output files...
 AC_OUTPUT(version Makefile.conf snddevices \
@@ -1424,6 +1426,7 @@ dnl Hack autoconf.h if necessary
 if test "$CONFIG_SND_MODULE" = y; then
   echo "Hacking autoconf.h..."
   rm -f include/linux/autoconf.h
+  mkdir -p include/linux
   grep -v CONFIG_SND_ $CONFIG_SND_KERNELDIR/include/linux/autoconf.h > include/linux/autoconf.h
   cat include/autoconf-extra.h >> include/linux/autoconf.h
   cat include/config1.h >> include/linux/autoconf.h
