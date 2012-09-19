@@ -1458,6 +1458,8 @@ CHECK_KERNEL_HEADER(linux/seq_file.h)
 CHECK_KERNEL_HEADER(linux/debugfs.h)
 CHECK_KERNEL_HEADER(linux/gpio.h)
 CHECK_KERNEL_HEADER(linux/bug.h)
+CHECK_KERNEL_HEADER(linux/math64.h, [#include \"math64_compat.h\"
+])
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
