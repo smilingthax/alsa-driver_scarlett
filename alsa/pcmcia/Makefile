@@ -8,8 +8,7 @@ include $(TOPDIR)/Makefile.conf
 #
 
 TOPDIR = $(MAINSRCDIR)
-
-obj-$(CONFIG_SND) += vx/
+include $(TOPDIR)/alsa-kernel/pcmcia/Makefile
 
 include $(TOPDIR)/Rules.make
 

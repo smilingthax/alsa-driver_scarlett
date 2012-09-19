@@ -3,10 +3,3 @@ config SND_AZT3328
 	depends on SND
 	help
 	  Say 'Y' or 'M' to include support for Aztech AZF3328 (PCI168) soundcards
-
-config SND_VX222
-	tristate "Digigram VX222"
-	depends on SND
-	help
-	  Say 'Y' or 'M' to include support for Digigram VX222 soundcards
-
