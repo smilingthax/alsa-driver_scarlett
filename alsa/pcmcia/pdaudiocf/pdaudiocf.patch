@@ -1,0 +1,76 @@
+--- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2004-02-23 20:06:42.000000000 +0100
++++ pdaudiocf.c	2004-02-23 20:07:37.000000000 +0100
+@@ -18,12 +18,17 @@
+  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+  */
+ 
++/*
++ *  please copy pdacf.conf to /etc/pcmcia directory
++ */
++
+ #include <sound/driver.h>
+ #include <sound/core.h>
+ #include <linux/slab.h>
+ #include <pcmcia/version.h>
+ #include <pcmcia/ciscode.h>
+ #include <pcmcia/cisreg.h>
++#include "compat_cs.h"	/* remove from 2.5 tree */
+ #include "pdaudiocf.h"
+ #define SNDRV_GET_ID
+ #include <sound/initval.h>
+@@ -74,6 +79,17 @@
+ static int pdacf_event(event_t event, int priority, event_callback_args_t *args);
+ static void snd_pdacf_detach(dev_link_t *link);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
++/*
++ * print the error message related with cs
++ */
++static void cs_error(client_handle_t handle, int func, int ret)
++{
++	error_info_t err = { func, ret };
++	CardServices(ReportError, handle, &err);
++}
++#endif
++
+ static void pdacf_release(dev_link_t *link)
+ {
+ 	if (link->state & DEV_CONFIG) {
+@@ -175,6 +191,10 @@
+ 			link->irq.IRQInfo2 |= 1 << irq_list[i];
+ 	link->irq.Handler = pdacf_interrupt;
+ 	link->irq.Instance = pdacf;
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
++	link->release.function = (void (*)(unsigned long))pdacf_release;
++	link->release.data = (u_long)link;
++#endif
+ 	link->conf.Attributes = CONF_ENABLE_IRQ;
+ 	link->conf.IntType = INT_MEMORY_AND_IO;
+ 	link->conf.ConfigIndex = 1;
+@@ -261,6 +281,9 @@
+ {
+ 	pdacf_t *chip = snd_magic_cast(pdacf_t, link->priv, return);
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
++	del_timer(&link->release);
++#endif
+ 	snd_printdd(KERN_DEBUG "pdacf_detach called\n");
+ 	/* Remove the interface data from the linked list */
+ 	{
+@@ -356,6 +379,9 @@
+ 		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
+ 		link->state &= ~DEV_PRESENT;
+ 		if (link->state & DEV_CONFIG) {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
++			mod_timer(&link->release, jiffies + HZ/20);
++#endif
+ 			chip->chip_status |= PDAUDIOCF_STAT_IS_STALE;
+ 		}
+ 		break;
+@@ -424,3 +450,6 @@
+ 
+ module_init(init_pdacf);
+ module_exit(exit_pdacf);
++
++
++EXPORT_NO_SYMBOLS; /* FIXME: for old kernels */

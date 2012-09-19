@@ -166,15 +166,6 @@ You may also want to extend the soundcard list to follow your requirements.
 Additional Modules
 ==================
 
-  Module snd-bt87x
-  ----------------
-
-    Module for the audio part of Bt878/Bt879 TV cards.
-
-    digital_rate - Sample rate of digital data from TV tuner chip
-
-    This module supports up to 8 cards and autoprobe.
-
   Module snd-intel8x0m
   --------------------
 
