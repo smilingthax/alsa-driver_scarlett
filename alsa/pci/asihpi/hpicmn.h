@@ -44,12 +44,12 @@ void HpiDeleteAdapter(
 );
 
 short HpiCheckControlCache(
-	volatile struct hpi_control_cache_single *pC,
+	struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );
 void HpiSyncControlCache(
-	volatile struct hpi_control_cache_single *pC,
+	struct hpi_control_cache_single *pC,
 	struct hpi_message *phm,
 	struct hpi_response *phr
 );

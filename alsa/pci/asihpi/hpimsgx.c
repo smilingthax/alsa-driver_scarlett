@@ -476,8 +476,6 @@ void HPI_MessageEx(
 			ep_name = "HPI_6000";
 		else if (ep == HPI_6205)
 			ep_name = "HPI_6205";
-		else if (ep == HPI_4000)
-			ep_name = "HPI_4000";
 		else
 			ep_name = "unknown";
 
@@ -598,7 +596,8 @@ static void InStreamClose(
 	if (hOwner ==
 		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		hOwner) {
-		/* HPI_DEBUG_LOG(INFO,"closing adapter %d instream %d owned by %p\n",
+		/* HPI_DEBUG_LOG(INFO,"closing adapter %d "
+		   "instream %d owned by %p\n",
 		   phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
 		aIStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 			hOwner = NULL;
@@ -701,7 +700,8 @@ static void OutStreamClose(
 	if (hOwner ==
 		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 		hOwner) {
-		/* HPI_DEBUG_LOG(INFO,"closing adapter %d outstream %d owned by %p\n",
+		/* HPI_DEBUG_LOG(INFO,"closing adapter %d "
+		   "outstream %d owned by %p\n",
 		   phm->wAdapterIndex, phm->u.d.wStreamIndex, hOwner); */
 		aOStreamUserOpen[phm->wAdapterIndex][phm->u.d.wStreamIndex].
 			hOwner = NULL;
@@ -904,8 +904,9 @@ static u16 HPIMSGX_Init(
 		phr->wError = HPI_ERROR_PROCESSING_MESSAGE;
 		return phr->wError;
 	}
-	/* if the adapter was created succesfully save the mapping for future use */
 	if (hr.wError == 0) {
+		/* the adapter was created succesfully
+		   save the mapping for future use */
 		hpi_entry_points[hr.u.s.wAdapterIndex] = entry_point_func;
 		/* prepare adapter (pre-open streams etc.) */
 		HPI_DEBUG_LOG(DEBUG,
@@ -936,7 +937,7 @@ static void HPIMSGX_Cleanup(
 	}
 
 	for (; wAdapter < wAdapterLimit; wAdapter++) {
-		/*	printk(KERN_INFO "Cleanup adapter #%d\n",wAdapter); */
+		/*      printk(KERN_INFO "Cleanup adapter #%d\n",wAdapter); */
 		for (i = 0; i < HPI_MAX_STREAMS; i++) {
 			if (hOwner == aOStreamUserOpen[wAdapter][i].hOwner) {
 				struct hpi_message hm;

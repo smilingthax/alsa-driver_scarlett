@@ -24,14 +24,10 @@ Linux HPI driver module
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
+
 #include <linux/fs.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>
-#include <linux/pci.h>
-#include <linux/device.h>
-#include <linux/interrupt.h>
-#include <linux/mutex.h>
-#include <linux/version.h>
 #include <asm/uaccess.h>
 #include <linux/stringify.h>
 
@@ -167,13 +163,13 @@ static int hpi_release(
 }
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 11)
-static long hpi_ioctl(
+long asihpi_hpi_ioctl(
 	struct file *file,
 	unsigned int cmd,
 	unsigned long arg
 )
 #else
-static int hpi_ioctl(
+static int asihpi_hpi_ioctl(
 	struct inode *inode,
 	struct file *file,
 	unsigned int cmd,
@@ -225,8 +221,18 @@ static int hpi_ioctl(
 
 		/* -1=no data 0=read from user mem, 1=write to user mem */
 		int wrflag = -1;
-		int nAdapter = hm.wAdapterIndex;
+		u32 nAdapter = hm.wAdapterIndex;
 		switch (hm.wFunction) {
+		case HPI_SUBSYS_CREATE_ADAPTER:
+		case HPI_SUBSYS_DELETE_ADAPTER:
+			/* Application must not use these functions! */
+			hr.wSize = sizeof(struct hpi_response_header);
+			hr.wError = HPI_ERROR_INVALID_OPERATION;
+			hr.wFunction = hm.wFunction;
+			uncopied_bytes = copy_to_user(phr, &hr, hr.wSize);
+			if (uncopied_bytes)
+				return -EFAULT;
+			return 0;
 		case HPI_OSTREAM_WRITE:
 		case HPI_ISTREAM_READ:
 			/* Yes, sparse, this is correct. */
@@ -252,60 +258,49 @@ static int hpi_ioctl(
 			break;
 		}
 
-		if ((nAdapter >= HPI_MAX_ADAPTERS || nAdapter < 0) &&
-			(hm.wObject != HPI_OBJ_SUBSYSTEM))
-			hr.wError = HPI_ERROR_INVALID_OBJ_INDEX;
-		else {
-			if (mutex_lock_interruptible(&adapters[nAdapter].
-					mutex))
-				return -EINTR;
+		if (mutex_lock_interruptible(&adapters[nAdapter].mutex))
+			return -EINTR;
 
-			if (wrflag == 0) {
-				if (size > bufsize) {
-					mutex_unlock(&adapters[nAdapter].
-						mutex);
-					HPI_DEBUG_LOG(ERROR,
-						"Requested transfer of %d "
-						"bytes, max buffer size "
-						"is %d bytes.\n", size,
-						bufsize);
-					return -EINVAL;
-				}
-
-				uncopied_bytes =
-					copy_from_user(pa->pBuffer, ptr,
-					size);
-				if (uncopied_bytes)
-					HPI_DEBUG_LOG(WARNING,
-						"Missed %d of %d "
-						"bytes from user\n",
-						uncopied_bytes, size);
+		if (wrflag == 0) {
+			if (size > bufsize) {
+				mutex_unlock(&adapters[nAdapter].mutex);
+				HPI_DEBUG_LOG(ERROR,
+					"Requested transfer of %d "
+					"bytes, max buffer size "
+					"is %d bytes.\n", size, bufsize);
+				return -EINVAL;
 			}
 
-			HPI_MessageF(&hm, &hr, file);
-
-			if (wrflag == 1) {
-				if (size > bufsize) {
-					mutex_unlock(&adapters[nAdapter].
-						mutex);
-					HPI_DEBUG_LOG(ERROR,
-						"Requested transfer of %d "
-						"bytes, max buffer size is "
-						"%d bytes.\n", size, bufsize);
-					return -EINVAL;
-				}
-
-				uncopied_bytes =
-					copy_to_user(ptr, pa->pBuffer, size);
-				if (uncopied_bytes)
-					HPI_DEBUG_LOG(WARNING,
-						"Missed %d of %d "
-						"bytes to user\n",
-						uncopied_bytes, size);
-			}
-
-			mutex_unlock(&adapters[nAdapter].mutex);
+			uncopied_bytes =
+				copy_from_user(pa->pBuffer, ptr, size);
+			if (uncopied_bytes)
+				HPI_DEBUG_LOG(WARNING,
+					"Missed %d of %d "
+					"bytes from user\n",
+					uncopied_bytes, size);
 		}
+
+		HPI_MessageF(&hm, &hr, file);
+
+		if (wrflag == 1) {
+			if (size > bufsize) {
+				mutex_unlock(&adapters[nAdapter].mutex);
+				HPI_DEBUG_LOG(ERROR,
+					"Requested transfer of %d "
+					"bytes, max buffer size is "
+					"%d bytes.\n", size, bufsize);
+				return -EINVAL;
+			}
+
+			uncopied_bytes = copy_to_user(ptr, pa->pBuffer, size);
+			if (uncopied_bytes)
+				HPI_DEBUG_LOG(WARNING,
+					"Missed %d of %d "
+					"bytes to user\n",
+					uncopied_bytes, size);
+		}
+
+		mutex_unlock(&adapters[nAdapter].mutex);
 	}
 
 	/* on return response size must be set */
@@ -322,9 +317,9 @@ static int hpi_ioctl(
 static struct file_operations hpi_fops = {
 	.owner = THIS_MODULE,
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 11)
-	.unlocked_ioctl = hpi_ioctl,
+	.unlocked_ioctl = asihpi_hpi_ioctl,
 #else
-	.ioctl = hpi_ioctl,
+	.ioctl = asihpi_hpi_ioctl,
 #endif
 	.open = hpi_open,
 	.release = hpi_release
@@ -399,6 +394,9 @@ static int __devinit adapter_probe(
 
 	/* call CreateAdapterObject on the relevant hpi module */
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
+	if (hr.wError)
+		goto err;
+
 	adapter.pBuffer = vmalloc(bufsize);
 	if (adapter.pBuffer == NULL) {
 		HPI_DEBUG_LOG(ERROR,
@@ -407,39 +405,37 @@ static int __devinit adapter_probe(
 		goto err;
 	}
 
-	if (hr.wError == 0) {
-		adapter.index = hr.u.s.wAdapterIndex;
-		adapter.type = hr.u.s.awAdapterList[adapter.index];
-		hm.wAdapterIndex = adapter.index;
+	adapter.index = hr.u.s.wAdapterIndex;
+	adapter.type = hr.u.s.awAdapterList[adapter.index];
+	hm.wAdapterIndex = adapter.index;
 
-		err = HPI_AdapterOpen(NULL, adapter.index);
-		if (err)
-			goto err;
+	err = HPI_AdapterOpen(NULL, adapter.index);
+	if (err)
+		goto err;
 
-		adapter.snd_card_asihpi = NULL;
-		/* WARNING can't init sem in 'adapter'
-		 * and then copy it to adapters[] ?!?!
-		 */
-		adapters[hr.u.s.wAdapterIndex] = adapter;
-		mutex_init(&adapters[adapter.index].mutex);
+	adapter.snd_card_asihpi = NULL;
+	/* WARNING can't init sem in 'adapter'
+	 * and then copy it to adapters[] ?!?!
+	 */
+	adapters[hr.u.s.wAdapterIndex] = adapter;
+	mutex_init(&adapters[adapter.index].mutex);
 #ifdef ALSA_BUILD
-		if (snd_asihpi_bind(&adapters[adapter.index])) {
-			HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
-				HPI_SUBSYS_DELETE_ADAPTER);
-			hm.wAdapterIndex = adapter.index;
-			HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
-			goto err;
-		}
+	if (snd_asihpi_bind(&adapters[adapter.index])) {
+		HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
+			HPI_SUBSYS_DELETE_ADAPTER);
+		hm.wAdapterIndex = adapter.index;
+		HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
+		goto err;
+	}
 #endif
 
-		pci_set_drvdata(pci_dev, &adapters[adapter.index]);
-		adapter_count++;
+	pci_set_drvdata(pci_dev, &adapters[adapter.index]);
+	adapter_count++;
 
-		printk(KERN_INFO
-			"Probe found adapter ASI%04X HPI index #%d.\n",
-			adapter.type, adapter.index);
-		return 0;
-	}
+	printk(KERN_INFO
+		"Probe found adapter ASI%04X HPI index #%d.\n",
+		adapter.type, adapter.index);
+	return 0;
 
 err:
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {

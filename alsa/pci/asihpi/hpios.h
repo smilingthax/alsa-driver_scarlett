@@ -29,13 +29,6 @@ HPI Operating System function declarations
 #define STR_SIZE(a) (a)
 #endif
 
-#ifndef __user
-#define __user
-#endif
-#ifndef __iomem
-#define __iomem
-#endif
-
 /* physical memory allocation */
 void HpiOs_LockedMem_Init(
 	void

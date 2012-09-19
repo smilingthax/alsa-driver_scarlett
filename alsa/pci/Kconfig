@@ -17,6 +17,7 @@ config SND_ASIHPI
 	depends on SND && X86
 	select FW_LOADER
 	select SND_PCM
+	select SND_HWDEP
 	help
 	  Say 'Y' or 'M' to include support for AudioScience ASIxxxx soundcards.
 

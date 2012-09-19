@@ -28,6 +28,7 @@ HPI Operating System Specific macros for Linux
 #endif
 
 #include <asm/io.h>
+#include <asm/system.h>
 #include <linux/ioctl.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
@@ -35,10 +36,7 @@ HPI Operating System Specific macros for Linux
 #include <linux/firmware.h>
 #include <linux/interrupt.h>
 #include <linux/pci.h>
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 5 , 0))
-#    include <linux/device.h>
-#endif
+#include <linux/device.h>
 
 #define INLINE inline
 
@@ -104,9 +102,8 @@ struct hpi_ioctl_linux {
 
 /* Conflict?: H is already used by a number of drivers hid, bluetooth hci,
    and some sound drivers sb16, hdsp, emu10k. AFAIK 0xFC is ununsed command
-#define HPI_IOCTL_LINUX _IOWR('H', 0xFC, struct hpi_ioctl_linux)
 */
-#define HPI_IOCTL_LINUX _IOWR('H', 1, struct hpi_ioctl_linux)
+#define HPI_IOCTL_LINUX _IOWR('H', 0xFC, struct hpi_ioctl_linux)
 
 #define HPI_DEBUG_FLAG_ERROR   KERN_ERR
 #define HPI_DEBUG_FLAG_WARNING KERN_WARNING
