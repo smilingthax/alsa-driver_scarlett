@@ -111,8 +111,11 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 #define ES_REG_CONTROL	0x00	/* R/W: Interrupt/Chip select control register */
 #define   ES_1370_ADC_STOP	(1<<31)		/* disable capture buffer transfers */
 #define   ES_1370_XCTL1 	(1<<30)		/* general purpose output bit */
-#define   ES_1373_TEST_BIT	(1<<29)		/* should be set to 0 for normal operation */
-#define   ES_1373_RECEN_B	(1<<28)		/* mix record with playback for I2S/SPDIF out */
+#define   ES_1373_BYPASS_P1	(1<<31)		/* bypass SRC for PB1 */
+#define   ES_1373_BYPASS_P2	(1<<30)		/* bypass SRC for PB2 */
+#define   ES_1373_BYPASS_R	(1<<29)		/* bypass SRC for REC */
+#define   ES_1373_TEST_BIT	(1<<28)		/* should be set to 0 for normal operation */
+#define   ES_1373_RECEN_B	(1<<27)		/* mix record with playback for I2S/SPDIF out */
 #define   ES_1373_SPDIF_THRU	(1<<26)		/* 0 = SPDIF thru mode, 1 = SPDIF == dig out */
 #define   ES_1371_JOY_ASEL(o)	(((o)&0x03)<<24)/* joystick port mapping */
 #define   ES_1371_JOY_ASELM	(0x03<<24)	/* mask for above */

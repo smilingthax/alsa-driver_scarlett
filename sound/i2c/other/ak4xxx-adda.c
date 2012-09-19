@@ -30,6 +30,10 @@
 #include <sound/control.h>
 #include <sound/ak4xxx-adda.h>
 
+MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>, Takashi Iwai <tiwai@suse.de>");
+MODULE_DESCRIPTION("Routines for control of AK452x / AK43xx  AD/DA converters");
+MODULE_LICENSE("GPL");
+
 void snd_akm4xxx_write(akm4xxx_t *ak, int chip, unsigned char reg, unsigned char val)
 {
 	ak->ops.lock(ak, chip);
