@@ -472,7 +472,7 @@ static int s3c24xx_snd_close(struct snd_pcm_substream *substream)
 		
 	down(&chip->sem); 
 
-	snd_assert(or->state != 0, chip = chip);
+	snd_BUG_ON(!or->state);
 
 	/* mark stream as closed */
 	or->state &= ~ST_OPENED;

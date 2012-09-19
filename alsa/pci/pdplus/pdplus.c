@@ -1561,8 +1561,10 @@ static void pdplus_adda_write_ll (pdplus_t *scard, u_int reg, u_int value)
         u_int regval;
         PDPLUS_LOCAL_VADDR (scard);
 
-        snd_assert (reg >= 1 && reg <= 6, return);
-        snd_assert (value <= 255, return);
+        if (snd_BUG_ON(reg < 1 || reg > 6))
+		return;
+        if (snd_BUG_ON(value > 255))
+		return;
 
         regval = 0x200000 | (reg << 8) | value;
         PDPLUS_WRITE_HW (scard, FPGA, CS4222, regval);
@@ -1590,7 +1592,8 @@ static void pdplus_dco_programme_rate_ll (pdplus_t *scard, int rate)
 {
         int dco_rate;
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (scard != NULL, return);
+	if (snd_BUG_ON(!scard))
+		return;
 
         if (rate < PDPLUS_DCO_MIN_RATE)
                 rate = PDPLUS_DCO_MIN_RATE;
@@ -1695,7 +1698,8 @@ static void pdplus_clear_iomem_ll (snd_iomem_t *iomem)
 {
         u_long lauf;
         u_long end;
-        snd_assert (iomem != NULL, return);
+        if (snd_BUG_ON(!iomem))
+		return;
 
         lauf = iomem->vaddr;
         end =  iomem->vaddr + iomem->size);
@@ -1949,7 +1953,8 @@ void pdplus_copy_from_user_ll (
                  * without special cases. */
                 switch (int_count % PDPLUS_WRITE_CYCLES) {
                         default:
-                                snd_assert (0, return);
+				snd_BUG();
+				return;
                         do {
                                 cycle_count--;
 
@@ -1993,7 +1998,8 @@ static void pdplus_write_silence_ll (
          * without special cases. */
         switch (int_count % PDPLUS_WRITE_CYCLES) {
                 default:
-                        snd_assert (0, return);
+                        snd_BUG();
+			return;
                 do {
                         cycle_count--;
 
@@ -2028,8 +2034,10 @@ static int pdplus_a_play_copy_ll (
         u_int  bpos =     PDPLUS_BYTES_FROM_FRAMES (upos,   is_adat);
         size_t bcount =   PDPLUS_BYTES_FROM_FRAMES (ucount, is_adat);
 
-        snd_assert (bpos < PDPLUS_BUFFER_SIZE, return -EINVAL);
-        snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
+        if (snd_BUG_ON(bpos >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
+        if (snd_BUG_ON(bpos + bcount - 1 >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
 
         /* pdplus doc: After after four writes at lastest, a read must be done.
          *             So we cannot memcpy_toio. */
@@ -2054,8 +2062,10 @@ static int pdplus_a_play_silence_ll (
         u_int  bpos =     PDPLUS_BYTES_FROM_FRAMES (upos,   is_adat);
         size_t bcount =   PDPLUS_BYTES_FROM_FRAMES (ucount, is_adat);
 
-        snd_assert (bpos < PDPLUS_BUFFER_SIZE, return -EINVAL);
-        snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
+        if (snd_BUG_ON(bpos >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
+        if (snd_BUG_ON(bpos + bcount - 1 >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
 
         /* pdplus doc: After after four writes at lastest, a read must be done.
          *             So we cannot memcpy_toio. */
@@ -2080,8 +2090,10 @@ static int pdplus_a_capt_copy_ll (
         u_int  bpos =     PDPLUS_BYTES_FROM_FRAMES (upos,   is_adat);
         size_t bcount =   PDPLUS_BYTES_FROM_FRAMES (ucount, is_adat);
 
-        snd_assert (bpos < PDPLUS_BUFFER_SIZE, return -EINVAL);
-        snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
+        if (snd_BUG_ON(bpos >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
+        if (snd_BUG_ON(bpos + bcount - 1 >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
 
         /* No constraints about access here.  So we can use memcpy */
         copy_to_user_fromio (
@@ -2106,8 +2118,10 @@ static int pdplus_d_play_copy_ll (
         u_int  bpos =     PDPLUS_BYTES_FROM_FRAMES (upos,   is_adat);
         size_t bcount =   PDPLUS_BYTES_FROM_FRAMES (ucount, is_adat);
 
-        snd_assert (bpos < PDPLUS_BUFFER_SIZE, return -EINVAL);
-        snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
+        if (snd_BUG_ON(bpos >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
+        if (snd_BUG_ON(bpos + bcount - 1 >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
 
         pdplus_copy_from_user_ll (
                 scard->MEM_iomem.vaddr + PDPLUS_D_PLAY_OFFSET + bpos,
@@ -2130,8 +2144,10 @@ static int pdplus_d_play_silence_ll (
         u_int  bpos =     PDPLUS_BYTES_FROM_FRAMES (upos,   is_adat);
         size_t bcount =   PDPLUS_BYTES_FROM_FRAMES (ucount, is_adat);
 
-        snd_assert (bpos < PDPLUS_BUFFER_SIZE, return -EINVAL);
-        snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
+        if (snd_BUG_ON(bpos >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
+        if (snd_BUG_ON(bpos + bcount - 1 >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
 
         pdplus_write_silence_ll (
                 scard->MEM_iomem.vaddr + PDPLUS_D_PLAY_OFFSET + bpos,
@@ -2158,8 +2174,10 @@ static unsigned int pdplus_d_capt_rate_llr (pdplus_t *scard)
         if (PDPLUS_CUT_BITS (PDPLUS_HW_REG_RD_F1, reg_value) != 0) rate_code|= 2;
         if (PDPLUS_CUT_BITS (PDPLUS_HW_REG_RD_F2, reg_value) != 0) rate_code|= 4;
 
-        snd_assert (rate_code >= 0, return 0);
-        snd_assert (rate_code < 8, return 0);
+        if (snd_BUG_ON(rate_code < 0))
+		return 0;
+        if (snd_BUG_ON(rate_code >= 8))
+		return 0;
 
         return code2rate[rate_code];
 }
@@ -2178,8 +2196,10 @@ static int pdplus_d_capt_copy_ll (
         u_int  bpos =     PDPLUS_BYTES_FROM_FRAMES (upos,   is_adat);
         size_t bcount =   PDPLUS_BYTES_FROM_FRAMES (ucount, is_adat);
 
-        snd_assert (bpos < PDPLUS_BUFFER_SIZE, return -EINVAL);
-        snd_assert (bpos + bcount - 1 < PDPLUS_BUFFER_SIZE, return -EINVAL);
+        if (snd_BUG_ON(bpos >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
+        if (snd_BUG_ON(bpos + bcount - 1 >= PDPLUS_BUFFER_SIZE))
+		return -EINVAL;
 
         /* Check input frequency and possibly generate an error. */
         if (substream->runtime->rate != pdplus_d_capt_rate_llr (scard))
@@ -2823,7 +2843,8 @@ static int pdplus_a_route_set_ll (pdplus_t *scard, int route)
                         if (PDPLUS_CACHE_EQL (scard, FPGA, CTRL, D_ROUTE, A_CAPT))
                                 break;
 
-                        snd_assert (scard->a_capt_prepared == 0, break);
+                        if (scard->a_capt_prepared)
+				break;
 
                         rate = pdplus_d_clock_rate_llr (scard);
                         if (rate > 0 && rate == pdplus_a_adjust_rate (rate)) {
@@ -3333,17 +3354,18 @@ static int pdplus_analog_find_and_programme_clock_ll (
         BOOL d_prepared = FALSE;
         int  d_rate = -1;
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         /* Get the fixed frequency code of that rate. */
         fixclock = pdplus_get_fix_freq_code (rate);
 
         /* Is digital playback prepared?  Get the rate they are using. */
         if (scard->d_play_prepared) {
-                snd_assert (scard != NULL, return -ENXIO);
-                snd_assert (scard->d_play != NULL, return -ENXIO);
-                snd_assert (scard->d_play->runtime != NULL, return -ENXIO);
+                if (snd_BUG_ON(!scard))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->d_play))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->d_play->runtime))
+			return -ENXIO;
 
                 d_prepared = TRUE;
                 d_rate = scard->d_play->runtime->rate;
@@ -3416,28 +3438,33 @@ static int pdplus_digital_find_and_programme_clock_ll (
         BOOL a_prepared = FALSE;
         int  a_rate = -1;
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         /* Get the fixed frequency code of that rate. */
         fixclock = pdplus_get_fix_freq_code (rate);
 
         /* Is analog playback or capture prepared?  Get the rate they are using. */
         if (scard->a_play_prepared) {
-                snd_assert (scard != NULL, return -ENXIO);
-                snd_assert (scard->a_play != NULL, return -ENXIO);
-                snd_assert (scard->a_play->runtime != NULL, return -ENXIO);
+                if (snd_BUG_ON(!scard))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_play))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_play->runtime))
+			return -ENXIO;
 
                 a_prepared = TRUE;
                 a_rate = scard->a_play->runtime->rate;
         }
 
         if (scard->a_capt_prepared) {
-                snd_assert (scard != NULL, return -ENXIO);
-                snd_assert (scard->a_capt != NULL, return -ENXIO);
-                snd_assert (scard->a_capt->runtime != NULL, return -ENXIO);
-                snd_assert (a_rate == -1 || a_rate == (int)scard->a_capt->runtime->rate,
-			    return -ENXIO);
+                if (snd_BUG_ON(!scard))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_capt))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_capt->runtime))
+			return -ENXIO;
+                if (snd_BUG_ON(a_rate != -1 &&
+			      a_rate != scard->a_capt->runtime->rate))
+			return -ENXIO;
 
                 a_prepared = TRUE;
                 a_rate = scard->a_capt->runtime->rate;
@@ -3538,13 +3565,12 @@ static int pdplus_a_play_prepare (struct snd_pcm_substream *substream)
         int rate;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
         ENTER;
 
         /* Get & check the sample rate */
         rate = substream->runtime->rate;
-        snd_assert (rate == pdplus_a_adjust_rate (rate), return -ENXIO);
+	if (rate != pdplus_a_adjust_rate(rate))
+		return -ENXIO;
 
         /* Lock */
         write_lock_irqsave (&scard->lock, flags);
@@ -3564,9 +3590,12 @@ static int pdplus_a_play_prepare (struct snd_pcm_substream *substream)
          * which might be needed for something else later. */
         if (scard->a_capt_prepared) {
                 /* We have to use the same clock as analog rec */
-                snd_assert (scard != NULL, return -ENXIO);
-                snd_assert (scard->a_capt != NULL, return -ENXIO);
-                snd_assert (scard->a_capt->runtime != NULL, return -ENXIO);
+                if (snd_BUG_ON(!scard))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_capt))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_capt->runtime))
+			return -ENXIO;
 
                 if ((int)scard->a_capt->runtime->rate != rate) {
                         err = -EBUSY;
@@ -3602,13 +3631,12 @@ static int pdplus_a_capt_prepare (struct snd_pcm_substream *substream)
         int rate;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
         ENTER;
 
         /* Get & check the sample rate if necessary */
         rate = substream->runtime->rate;
-        snd_assert (rate == pdplus_a_adjust_rate (rate), return -ENXIO);
+        if (rate != pdplus_a_adjust_rate(rate))
+		return -ENXIO;
 
         /* Lock */
         write_lock_irqsave (&scard->lock, flags);
@@ -3628,9 +3656,12 @@ static int pdplus_a_capt_prepare (struct snd_pcm_substream *substream)
          * which might be needed for something else later. */
         if (scard->a_play_prepared) {
                 /* We have to use the same clock as analog play */
-                snd_assert (scard != NULL, return -ENXIO);
-                snd_assert (scard->a_play != NULL, return -ENXIO);
-                snd_assert (scard->a_play->runtime != NULL, return -ENXIO);
+                if (snd_BUG_ON(!scard))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_play))
+			return -ENXIO;
+                if (snd_BUG_ON(!scard->a_play->runtime))
+			return -ENXIO;
 
                 if ((int)scard->a_play->runtime->rate != rate) {
                         err = -EBUSY;
@@ -3666,15 +3697,14 @@ static int pdplus_d_play_prepare (struct snd_pcm_substream *substream)
         int rate;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         /* Lock */
         write_lock_irqsave (&scard->lock, flags);
 
         /* Check the sample rate if necessary */
         rate = substream->runtime->rate;
-        snd_assert (rate == pdplus_d_adjust_rate_llr (scard, rate, FALSE), return -ENXIO);
+	if (rate != pdplus_d_adjust_rate_llr(scard, rate, FALSE))
+		return -ENXIO;
 
         /* Stop the card if it is playing (for whatever reason). */
         pdplus_d_play_stop_ll (scard);
@@ -3712,8 +3742,6 @@ static int pdplus_d_capt_prepare (struct snd_pcm_substream *substream)
         int rate;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         PDPLUS_LOCAL_VADDR (scard);
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         /* Lock */
         write_lock_irqsave (&scard->lock, flags);
@@ -3896,8 +3924,6 @@ static int pdplus_a_play_open (struct snd_pcm_substream *substream)
 	int err;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         ENTER;
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         substream->runtime->hw = pdplus_a_play_info;
 	err = snd_pcm_hw_rule_add(substream->runtime, 0,
@@ -3952,8 +3978,6 @@ static int pdplus_a_capt_open (struct snd_pcm_substream *substream)
 	int err;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         ENTER;
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         substream->runtime->hw = pdplus_a_capt_info;
 	err = snd_pcm_hw_rule_add(substream->runtime, 0,
@@ -4029,8 +4053,6 @@ static int pdplus_d_play_open (struct snd_pcm_substream *substream)
         int err;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         ENTER;
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         if ((err = pdplus_set_mode (scard, PDPLUS_MODE_DIGITAL)))
                 LEAVE (err);
@@ -4090,8 +4112,6 @@ static int pdplus_d_capt_open (struct snd_pcm_substream *substream)
         int err;
         pdplus_t *scard = snd_pcm_substream_chip(substream);
         ENTER;
-        snd_assert (substream != NULL, return -ENXIO);
-        snd_assert (substream->runtime != NULL, return -ENXIO);
 
         if ((err = pdplus_set_mode (scard, PDPLUS_MODE_DIGITAL)))
                 LEAVE (err);
@@ -4215,17 +4235,13 @@ static __devinit int pdplus_a_pcm_new (
         if ((err = snd_pcm_new (card, "CS4222", device, 1, 1, &pcm)) < 0)
                 LEAVE (err);
 
-        snd_assert (pcm != NULL, return -ENOMEM);
-
         pcm->private_data = scard;
         pcm->private_free = pdplus_a_pcm_free;
 
         pcm->info_flags = SNDRV_PCM_INFO_JOINT_DUPLEX;
 
-        snd_assert (pcm->name != NULL, return -ENXIO);
         strcpy (pcm->name, "CS4222 DAC/ADC");
 
-        snd_assert (pcm->streams != NULL, return -ENXIO);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &pdplus_a_play_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &pdplus_a_capt_ops);
 
@@ -4247,17 +4263,14 @@ static __devinit int pdplus_d_pcm_new (
 
         if ((err = snd_pcm_new (card, "CS84x4", device, 1, 1, &pcm)) < 0)
                 LEAVE (err);
-        snd_assert (pcm != NULL, return -ENOMEM);
 
         pcm->private_data = scard;
         pcm->private_free = pdplus_d_pcm_free;
 
         pcm->info_flags = 0;
 
-        snd_assert (pcm->name != NULL, return -ENXIO);
         strcpy (pcm->name, "CS8404/CS8414 Digital Transceiver");
 
-        snd_assert (pcm->streams != NULL, return -ENXIO);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_PLAYBACK, &pdplus_d_play_ops);
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &pdplus_d_capt_ops);
 
@@ -5232,7 +5245,8 @@ static int __devinit pdplus_mixer_new (pdplus_t *scard)
         unsigned int i;
         int err= 0;
 
-        snd_assert (scard != NULL, return -ENXIO);
+	if (snd_BUG_ON(!scard))
+		return -ENXIO;
 
         card= scard->card;
         strcpy (card->mixername, DEVICE_NAME);
@@ -5270,7 +5284,8 @@ static BOOL pdplus_upload_circuit (
         PDPLUS_LOCAL_VADDR (scard);
         ENTER;
 
-        snd_assert (scard != NULL, return FALSE);
+        if (snd_BUG_ON(!scard))
+		return FALSE;
 
 #if DEBUG
         Vprintk ("jiffies=%ld\n", jiffies);
@@ -5421,7 +5436,8 @@ static void pdplus_print_iomem_ll (
         void __iomem *end;
         int i = 0;
 
-        snd_assert (iomem != NULL, return);
+        if (snd_BUG_ON(!iomem))
+		return;
         lauf = iomem->vaddr;
         end =  iomem->vaddr + iomem->size;
 
@@ -5498,9 +5514,12 @@ static void pdplus_proc_read (
         pdplus_t *lcard; /* only _llr function may be called with &lcard!! */
         PDPLUS_LOCAL_VADDR (scard);
 
-        snd_assert (scard != NULL, return);
-        snd_assert (scard->card != NULL, return);
-        snd_assert (scard->card->longname != NULL, return);
+        if (snd_BUG_ON(!scard))
+		return;
+        if (snd_BUG_ON(!scard->card))
+		return;
+        if (snd_BUG_ON(!scard->card->longname))
+		return;
 
 	lcard = kmalloc(sizeof(*lcard), GFP_KERNEL);
 	if (! lcard)
@@ -5763,8 +5782,10 @@ static void __devinit pdplus_register_proc (pdplus_t *scard)
 {
         struct snd_info_entry *entry;
 
-        snd_assert (scard != NULL, return);
-        snd_assert (scard->card != NULL, return);
+        if (snd_BUG_ON(!scard))
+		return;
+        if (snd_BUG_ON(!scard->card))
+		return;
 
         if (! snd_card_proc_new (scard->card, "prodif_plus", &entry))
 		snd_info_set_text_ops(entry, scard, pdplus_proc_read);
@@ -5846,7 +5867,8 @@ static int __devinit pdplus_register_iomem (
 
         DL (1, "Trying to grab MMIO region at 0x%lx, size=0x%lx", start, size);
 
-        snd_assert (piomem != NULL, return -ENXIO);
+        if (snd_BUG_ON(!piomem))
+		return -ENXIO;
         
         if ((piomem->resource = request_mem_region(start, size, name)) == NULL) {
 		snd_printk(KERN_ERR "unable to grab memory region 0x%lx-0x%lx\n",
@@ -5877,8 +5899,10 @@ static int __devinit pdplus_check_consistency_ll (pdplus_t *scard)
         u32 x, y;
         PDPLUS_LOCAL_VADDR (scard);
 
-        snd_assert (scard != NULL, return -ENXIO);
-        snd_assert (scard->PLX_ioport != 0, return -ENXIO);
+        if (snd_BUG_ON(!scard))
+		return -ENXIO;
+        if (snd_BUG_ON(!scard->PLX_ioport))
+		return -ENXIO;
 
         /*
          * Some consistency checks to detect really weird errors
@@ -5923,7 +5947,8 @@ static int __devinit pdplus_init(
         u_long start;
         pdplus_t *scard;
 
-        snd_assert (card != NULL, return -ENXIO);
+        if (snd_BUG_ON(!card))
+		return -ENXIO;
 
         scard = (pdplus_t *)card->private_data;
         if (scard == NULL)
@@ -5940,12 +5965,6 @@ static int __devinit pdplus_init(
         rwlock_init(&scard->lock);
         scard->auto_cd_mode =    1;
         scard->auto_profi_mode = 1;
-
-        /* ALSA should have kcallocked our private_data.  Check this. */
-        snd_assert (scard->PLX_iomem.vaddr == NULL,  scard->PLX_iomem.vaddr = NULL);
-        snd_assert (scard->MEM_iomem.vaddr == NULL,  scard->MEM_iomem.vaddr = NULL);
-        snd_assert (scard->FPGA_iomem.vaddr == NULL, scard->FPGA_iomem.vaddr = NULL);
-        snd_assert (scard->HW_iomem.vaddr == NULL,   scard->HW_iomem.vaddr = NULL);
 
 #if MANY_CHECKS
         DL (1, "Checking PCI resources");
@@ -6113,10 +6132,12 @@ static void pdplus_sweep(struct snd_card *card)
         u_long flags;
         ENTER;
 
-        snd_assert (card != NULL, return);
+        if (snd_BUG_ON(!card))
+		return;
 
         scard = (pdplus_t *)card->private_data;
-        snd_assert (scard != NULL, return);
+        if (snd_BUG_ON(!scard))
+		return;
 
         write_lock_irqsave (&scard->lock, flags);
 
@@ -6183,8 +6204,10 @@ static int __init alsa_card_pdplus_init(void)
 {
         /*
          * Check that our macros work. */
-        snd_assert (PDPLUS_HW_REG_WR_INITIAL_1 == 0x22, return -ENXIO);
-        snd_assert (PDPLUS_HW_REG_WR_INITIAL_2 == 0x32, return -ENXIO);
+        if (snd_BUG_ON(PDPLUS_HW_REG_WR_INITIAL_1 != 0x22))
+		return -ENXIO;
+        if (snd_BUG_ON(PDPLUS_HW_REG_WR_INITIAL_2 != 0x32))
+		return -ENXIO;
 
         printk (PDPLUS_KERN_INFO "version " PDPLUS_VERSION "\n");
 	return pci_register_driver (&driver);

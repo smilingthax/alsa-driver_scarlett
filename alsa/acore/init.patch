@@ -1,5 +1,5 @@
---- ../alsa-kernel/core/init.c	2008-07-28 14:49:05.000000000 +0200
-+++ init.c	2008-07-30 11:49:01.000000000 +0200
+--- ../alsa-kernel/core/init.c	2008-08-08 15:23:46.000000000 +0200
++++ init.c	2008-08-08 15:25:21.000000000 +0200
 @@ -1,3 +1,5 @@
 +#define __NO_VERSION__
 +#include "adriver.h"
@@ -49,8 +49,8 @@
  	.mmap =		snd_disconnect_mmap,
  	.fasync =	snd_disconnect_fasync
  };
-@@ -548,9 +564,19 @@
- 	snd_assert(card != NULL, return -EINVAL);
+@@ -549,9 +565,19 @@
+ 		return -EINVAL;
  #ifndef CONFIG_SYSFS_DEPRECATED
  	if (!card->card_dev) {
 +#ifdef CONFIG_SND_HAS_DEVICE_CREATE_DRVDATA

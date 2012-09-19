@@ -2538,7 +2538,8 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 	int err;
 	struct hpi_control asihpi_control;
 
-	snd_assert(asihpi != NULL, return -EINVAL);
+	if (snd_BUG_ON(!asihpi))
+		return -EINVAL;
 	strcpy(card->mixername, "Asihpi Mixer");
 
 	err =

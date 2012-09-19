@@ -295,7 +295,8 @@ static inline int _snd_ioctl32_xfern(unsigned int fd, unsigned int cmd, unsigned
 
 	pcm_file = file->private_data;
 	substream = pcm_file->substream;
-	snd_assert(substream != NULL && substream->runtime, return -ENXIO);
+	if (PCM_RUNTIME_CHECK(substream))
+		return -ENXIO;
 
 	/* check validty of the command */
 	switch (native_ctl) {

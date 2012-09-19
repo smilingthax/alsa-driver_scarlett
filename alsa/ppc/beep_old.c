@@ -182,7 +182,8 @@ static int snd_pmac_info_beep(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uin
 static int snd_pmac_get_beep(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
 {
 	pmac_t *chip = snd_kcontrol_chip(kcontrol);
-	snd_assert(chip->beep, return -ENXIO);
+	if (snd_BUG_ON(!chip->beep))
+		return -ENXIO;
 	ucontrol->value.integer.value[0] = chip->beep->volume;
 	return 0;
 }
