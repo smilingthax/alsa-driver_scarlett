@@ -285,7 +285,7 @@ int snd_device_free_all(snd_card_t *card, snd_device_cmd_t cmd);
 
 #define DMA_MODE_NO_ENABLE	0x0100
 
-void snd_dma_program(unsigned long dma, const void *buf, unsigned int size, unsigned short mode);
+void snd_dma_program(unsigned long dma, unsigned long addr, unsigned int size, unsigned short mode);
 void snd_dma_disable(unsigned long dma);
 unsigned int snd_dma_residue(unsigned long dma);
 

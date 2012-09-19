@@ -94,6 +94,7 @@ static int snd_gf1_pcm_block_change(snd_pcm_substream_t * substream,
 		block.cmd |= SNDRV_GF1_DMA_16BIT;
 	block.addr = addr & ~31;
 	block.buffer = runtime->dma_area + offset;
+	block.buf_addr = runtime->dma_addr + offset;
 	block.count = count;
 	block.private_data = pcmp;
 	block.ack = snd_gf1_pcm_block_change_ack;
@@ -571,7 +572,7 @@ static int snd_gf1_pcm_capture_prepare(snd_pcm_substream_t * substream)
 	snd_gf1_i_write8(gus, SNDRV_GF1_GB_RECORD_RATE, runtime->rate_den - 2);
 	snd_gf1_i_write8(gus, SNDRV_GF1_GB_REC_DMA_CONTROL, 0);	/* disable sampling */
 	snd_gf1_i_look8(gus, SNDRV_GF1_GB_REC_DMA_CONTROL);	/* Sampling Control Register */
-	snd_dma_program(gus->gf1.dma2, &runtime->dma_area, gus->c_period_size, DMA_MODE_READ);
+	snd_dma_program(gus->gf1.dma2, runtime->dma_addr, gus->c_period_size, DMA_MODE_READ);
 	return 0;
 }
 

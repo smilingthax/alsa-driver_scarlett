@@ -278,7 +278,7 @@ static int snd_info_entry_open(struct inode *inode, struct file *file)
 	int mode, err;
 
 	down(&info_mutex);
-	p = (struct proc_dir_entry *) inode->u.generic_ip;
+	p = PDE(inode);
 	entry = p == NULL ? NULL : (snd_info_entry_t *)p->data;
 	if (entry == NULL) {
 		up(&info_mutex);
@@ -541,7 +541,7 @@ static struct inode_operations snd_info_device_inode_operations =
 static int snd_info_card_readlink(struct dentry *dentry,
 				  char *buffer, int buflen)
 {
-        char *s = ((struct proc_dir_entry *) dentry->d_inode->u.generic_ip)->data;
+        char *s = PDE(dentry->d_inode)->data;
 #ifndef LINUX_2_2
 	return vfs_readlink(dentry, buffer, buflen, s);
 #else
@@ -562,7 +562,7 @@ static int snd_info_card_readlink(struct dentry *dentry,
 static int snd_info_card_followlink(struct dentry *dentry,
 				    struct nameidata *nd)
 {
-        char *s = ((struct proc_dir_entry *) dentry->d_inode->u.generic_ip)->data;
+        char *s = PDE(dentry->d_inode)->data;
         return vfs_follow_link(nd, s);
 }
 #else
@@ -570,7 +570,7 @@ static struct dentry *snd_info_card_followlink(struct dentry *dentry,
 					       struct dentry *base,
 					       unsigned int follow)
 {
-	char *s = ((struct proc_dir_entry *) dentry->d_inode->u.generic_ip)->data;
+	char *s = PDE(dentry->d_inode)->data;
 	return lookup_dentry(s, base, follow);
 }
 #endif
@@ -845,7 +845,7 @@ static void snd_info_device_fill_inode(struct inode *inode, int fill)
 		return;
 	}
 	MOD_INC_USE_COUNT;
-	de = (struct proc_dir_entry *) inode->u.generic_ip;
+	de = PDE(inode);
 	if (de == NULL)
 		return;
 	entry = (snd_info_entry_t *) de->data;

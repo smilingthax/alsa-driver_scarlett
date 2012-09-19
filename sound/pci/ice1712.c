@@ -4050,8 +4050,8 @@ static int __init snd_ice1712_build_controls(ice1712_t *ice)
 		err = snd_ctl_add(ice->card, snd_ctl_new1(&snd_ice1712_6fire_led, ice));
 		if (err < 0)
 			return err;
-		break;
 #endif
+		break;
 	}
 
 	return 0;

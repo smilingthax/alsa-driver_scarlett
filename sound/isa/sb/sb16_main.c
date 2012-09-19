@@ -270,7 +270,7 @@ static int snd_sb16_playback_prepare(snd_pcm_substream_t * substream)
 	snd_sb16_setup_rate(chip, runtime->rate, SNDRV_PCM_STREAM_PLAYBACK);
 	size = chip->p_dma_size = snd_pcm_lib_buffer_bytes(substream);
 	dma = (chip->mode & SB_MODE_PLAYBACK_8) ? chip->dma8 : chip->dma16;
-	snd_dma_program(dma, runtime->dma_area, size, DMA_MODE_WRITE | DMA_AUTOINIT);
+	snd_dma_program(dma, runtime->dma_addr, size, DMA_MODE_WRITE | DMA_AUTOINIT);
 
 	count = snd_pcm_lib_period_bytes(substream);
 	spin_lock_irqsave(&chip->reg_lock, flags);
@@ -337,7 +337,7 @@ static int snd_sb16_capture_prepare(snd_pcm_substream_t * substream)
 	snd_sb16_setup_rate(chip, runtime->rate, SNDRV_PCM_STREAM_CAPTURE);
 	size = chip->c_dma_size = snd_pcm_lib_buffer_bytes(substream);
 	dma = (chip->mode & SB_MODE_CAPTURE_8) ? chip->dma8 : chip->dma16;
-	snd_dma_program(dma, runtime->dma_area, size, DMA_MODE_READ | DMA_AUTOINIT);
+	snd_dma_program(dma, runtime->dma_addr, size, DMA_MODE_READ | DMA_AUTOINIT);
 
 	count = snd_pcm_lib_period_bytes(substream);
 	spin_lock_irqsave(&chip->reg_lock, flags);

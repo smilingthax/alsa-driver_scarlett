@@ -1831,8 +1831,16 @@ static void __devinit es1968_measure_clock(es1968_t *chip)
 	snd_es1968_trigger_apu(chip, apu, 0x10); /* 16bit mono */
 	do_gettimeofday(&start_time);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
+#if 0
 	set_current_state(TASK_UNINTERRUPTIBLE);
 	schedule_timeout(HZ / 20); /* 50 msec */
+#else
+	/* FIXME:
+	 * schedule() above may be too inaccurate and the pointer can
+	 * overlap the boundary..
+	 */
+	mdelay(50);
+#endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	offset = __apu_get_register(chip, apu, 5);
 	do_gettimeofday(&stop_time);
@@ -1854,8 +1862,10 @@ static void __devinit es1968_measure_clock(es1968_t *chip)
 	} else {
 		offset *= 1000;
 		offset = (offset / t) * 1000 + ((offset % t) * 1000) / t;
-		if (offset < 47500 || offset > 48500)
-			chip->clock = (chip->clock * offset) / 48000;
+		if (offset < 47500 || offset > 48500) {
+			if (offset >= 40000 && offset <= 50000)
+				chip->clock = (chip->clock * offset) / 48000;
+		}
 		printk(KERN_INFO "es1968: clocking to %d\n", chip->clock);
 	}
 	snd_es1968_free_memory(chip, memory);

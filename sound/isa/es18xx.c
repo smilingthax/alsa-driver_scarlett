@@ -464,7 +464,7 @@ static int snd_es18xx_playback1_prepare(es18xx_t *chip,
 			      (snd_pcm_format_unsigned(runtime->format) ? 0x00 : 0x04));
 
         /* Set DMA controller */
-        snd_dma_program(chip->dma2, runtime->dma_area, size, DMA_MODE_WRITE | DMA_AUTOINIT);
+        snd_dma_program(chip->dma2, runtime->dma_addr, size, DMA_MODE_WRITE | DMA_AUTOINIT);
 
 	return 0;
 }
@@ -576,7 +576,7 @@ static int snd_es18xx_capture_prepare(snd_pcm_substream_t *substream)
                          (snd_pcm_format_unsigned(runtime->format) ? 0x00 : 0x20));
 
         /* Set DMA controler */
-        snd_dma_program(chip->dma1, runtime->dma_area, size, DMA_MODE_READ | DMA_AUTOINIT);
+        snd_dma_program(chip->dma1, runtime->dma_addr, size, DMA_MODE_READ | DMA_AUTOINIT);
 
 	return 0;
 }
@@ -639,7 +639,7 @@ static int snd_es18xx_playback2_prepare(es18xx_t *chip,
                          (snd_pcm_format_unsigned(runtime->format) ? 0x00 : 0x20));
 
         /* Set DMA controler */
-        snd_dma_program(chip->dma1, runtime->dma_area, size, DMA_MODE_WRITE | DMA_AUTOINIT);
+        snd_dma_program(chip->dma1, runtime->dma_addr, size, DMA_MODE_WRITE | DMA_AUTOINIT);
 
 	return 0;
 }

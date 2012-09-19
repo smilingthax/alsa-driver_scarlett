@@ -1188,8 +1188,13 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	outb(ICH_IOCE | ICH_STARTBM, port + ICH_REG_PI_CR); /* trigger */
 	do_gettimeofday(&start_time);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
+#if 0
 	set_current_state(TASK_UNINTERRUPTIBLE);
 	schedule_timeout(HZ / 20);
+#else
+	/* FIXME: schedule() can take too long time and overlap the boundary.. */
+	mdelay(50);
+#endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	/* check the position */
 	pos = chip->playback.fragsize1;
@@ -1218,7 +1223,8 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	}
 	pos = (pos / 4) * 1000;
 	pos = (pos / t) * 1000 + ((pos % t) * 1000) / t;
-	if (pos && (pos > 48500 || pos < 47500)) {
+	if ((pos > 40000 && pos < 47500) ||
+	    (pos > 48500 && pos < 50000)) {
 		chip->ac97->clock = (chip->ac97->clock * 48000) / pos;
 		printk(KERN_INFO "intel8x0: clocking to %d\n", chip->ac97->clock);
 	}

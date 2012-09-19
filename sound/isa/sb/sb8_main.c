@@ -148,7 +148,7 @@ static int snd_sb8_playback_prepare(snd_pcm_substream_t * substream)
 		/* Soundblaster hardware programming reference guide, 3-23 */
 		snd_sbdsp_command(chip, SB_DSP_DMA8_EXIT);
 		runtime->dma_area[0] = 0x80;
-		snd_dma_program(chip->dma8, runtime->dma_area, 1, DMA_MODE_WRITE);
+		snd_dma_program(chip->dma8, runtime->dma_addr, 1, DMA_MODE_WRITE);
 		/* force interrupt */
 		chip->mode = SB_MODE_HALT;
 		snd_sbdsp_command(chip, SB_DSP_OUTPUT);
@@ -175,7 +175,7 @@ static int snd_sb8_playback_prepare(snd_pcm_substream_t * substream)
 		snd_sbdsp_command(chip, count >> 8);
 	}
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
-	snd_dma_program(chip->dma8, runtime->dma_area,
+	snd_dma_program(chip->dma8, runtime->dma_addr,
 			size, DMA_MODE_WRITE | DMA_AUTOINIT);
 	return 0;
 }
@@ -287,7 +287,7 @@ static int snd_sb8_capture_prepare(snd_pcm_substream_t * substream)
 		snd_sbdsp_command(chip, count >> 8);
 	}
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
-	snd_dma_program(chip->dma8, runtime->dma_area,
+	snd_dma_program(chip->dma8, runtime->dma_addr,
 			size, DMA_MODE_READ | DMA_AUTOINIT);
 	return 0;
 }
