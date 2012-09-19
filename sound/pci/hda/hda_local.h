@@ -201,6 +201,7 @@ struct hda_bus_unsolicited {
 	/* workqueue */
 	struct workqueue_struct *workq;
 	struct work_struct work;
+	struct hda_bus *bus;
 };
 
 /*
