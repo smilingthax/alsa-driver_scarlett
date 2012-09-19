@@ -5,6 +5,6 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-include $(SND_TOPDIR)/alsa-kernel/soc/Makefile
+obj-$(CONFIG_AC97_BUS) += ac97_bus.o
 
 include $(SND_TOPDIR)/Rules.make

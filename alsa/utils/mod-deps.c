@@ -133,7 +133,7 @@ static char *kernel_deps[] = {
 	/* some flags */
 	"EXPERIMENTAL",
 	/* sound common */
-	"SND_AC97_BUS",
+	"AC97_BUS",
 	NULL
 };
 
@@ -167,7 +167,7 @@ static char *no_cards[] = {
 	"#SND_VX_LIB",
 	"#SND_MPU401_UART",
 	"#SND_GUS_SYNTH",
-	"#SND_AC97_BUS",
+	"#AC97_BUS",
 	"#SND_AC97_CODEC",
 	"#SND_AT91_SOC_I2S",
 	"#SND_SOC_AC97_CODEC",
@@ -183,7 +183,7 @@ static char *no_cards[] = {
 };
 
 static const char *kernel26_opts[] = {
-	"SND_AC97_BUS",
+	"AC97_BUS",
 	"SND_PXA2XX_PCM",
 	"SND_AOA",
 	"SND_SOC",
@@ -555,6 +555,23 @@ static void add_dep(struct dep * dep, char *line, struct cond *template)
 	dep->cond = join_cond(template, create_cond(line));
 }
 
+/* Is the selected item ALSA-specific? */
+static int is_alsa_item(const char *word)
+{
+	static const char *known_items[] = {
+		"AC97_BUS",
+		NULL
+	};
+	const char **p;
+
+	if (!strncmp(word, "SND_", 4))
+		return 1;
+	for (p = known_items; *p; p++)
+		if (!strcmp(word, *p))
+			return 1;
+	return 0;
+}
+
 // Add a new forced (selected) dependency to the current one
 static void add_select(struct dep * dep, char *line, struct cond *template)
 {
@@ -565,7 +582,7 @@ static void add_select(struct dep * dep, char *line, struct cond *template)
 	if (word == NULL)
 		nomem();
 	get_word(line, word);
-	if (strncmp(word, "SND_", 4)) {
+	if (!is_alsa_item(word)) {
 		add_dep(dep, word, template);
 		free(word);
 		return;

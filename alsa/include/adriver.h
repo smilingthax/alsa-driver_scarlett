@@ -630,6 +630,7 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 45) && !defined(__WORK_INITIALIZER)
 #define SND_WORKQUEUE_COMPAT
 struct workqueue_struct;
+struct delayed_work;
 struct work_struct {
 	unsigned long pending;
 	struct list_head entry;
@@ -660,10 +661,10 @@ void snd_compat_destroy_workqueue(struct workqueue_struct *wq);
 #define destroy_workqueue(wq) snd_compat_destroy_workqueue((wq));
 int snd_compat_queue_work(struct workqueue_struct *wq, struct work_struct *work);
 #define queue_work(wq, work) snd_compat_queue_work((wq), (work))
-int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct work_struct *work, unsigned long delay);
+int snd_compat_queue_delayed_work(struct workqueue_struct *wq, struct delayed_work *work, unsigned long delay);
 #define queue_delayed_work(wq, work, delay) snd_compat_queue_delayed_work((wq), (work), (delay))
 #define schedule_delayed_work(work, delay) snd_compat_queue_delayed_work(NULL, (work), (delay))
-int snd_compat_cancel_delayed_work(struct work_struct *work);
+int snd_compat_cancel_delayed_work(struct delayed_work *work);
 #define cancel_delayed_work(work) snd_compat_cancel_delayed_work(work)
 #endif /* < 2.5.45 */
 #endif /* < 2.6.0 */
@@ -676,9 +677,29 @@ struct workqueue_struct *snd_compat_create_workqueue2(const char *name);
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
-#define delayed_work work_struct
-#define INIT_DELAYED_WORK(_work, _func)	INIT_WORK(_work, _func, _work)
-#endif
+#include <linux/workqueue.h>
+/* redefine INIT_WORK() */
+static inline void snd_INIT_WORK(struct work_struct *w, void (*f)(struct work_struct *))
+{
+	INIT_WORK(w, (void(*)(void*))(f), w);
+}
+#undef INIT_WORK
+#define INIT_WORK(w,f) snd_INIT_WORK(w,f)
+/* delayed_work wrapper */
+struct delayed_work {
+	struct work_struct work;
+};
+#define INIT_DELAYED_WORK(_work, _func)	INIT_WORK(&(_work)->work, _func)
+#ifndef SND_WORKQUEUE_COMPAT
+/* redefine *_delayed_work() */
+#define queue_delayed_work(wq,_work,delay) \
+	queue_delayed_work(wq, &(_work)->work, delay)
+#define schedule_delayed_work(_work,delay) \
+	schedule_delayed_work(&(_work)->work, delay)
+#define cancel_delayed_work(_work) \
+	cancel_delayed_work(&(_work)->work)
+#endif /* !SND_WORKQUEUE_COMPAT */
+#endif /* < 2.6.20 */
 
 /* 2.5 new modules */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)

@@ -5,8 +5,6 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := ak4114.c
-
 export-objs += ak4xxx-adda.o ak4114.o ak4117.o pt2258.o
 
 # Toplevel Module Dependency
@@ -22,5 +20,3 @@ endif
 include $(SND_TOPDIR)/alsa-kernel/i2c/other/Makefile
 
 include $(SND_TOPDIR)/Rules.make
-
-ak4114.c: ak4114.patch $(SND_TOPDIR)/alsa-kernel/i2c/other/ak4114.c
