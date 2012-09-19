@@ -24,18 +24,6 @@ config SND_HDSPM
 	  To compile this driver as a module, choose M here: the module
 	  will be called snd-hdspm.
 
-config SND_EMU10K1X
-	tristate "Emu10k1X (Dell OEM Version)"
-	depends on SND
-	select SND_AC97_CODEC
-	select SND_RAWMIDI
-	help
-	  Say Y here to include support for the Dell OEM version of the
-	  Sound Blaster Live!.
-
-	  To compile this driver as a module, choose M here: the module
-	  will be called snd-emu10k1x.
-
 config SND_CA0106
 	tristate "SB Audigy LS / Live 24bit"
 	depends on SND
