@@ -804,7 +804,7 @@ struct sndrv_ctl_elem_value {
 		} bytes;
 		struct sndrv_aes_iec958 iec958;
         } value;                /* RO */
-	struct timespec timestamp;
+	struct timespec tstamp;
         unsigned char reserved[128-sizeof(struct timespec)];
 };
 
