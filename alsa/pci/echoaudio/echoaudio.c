@@ -620,7 +620,6 @@ static int pcm_prepare(snd_pcm_substream_t *substream)
 
 static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 {
-	unsigned long flags;
 	echoaudio_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	struct subsdata *ssdata = runtime->private_data;
@@ -639,7 +638,7 @@ static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 		}
 	}
 
-	spin_lock_irqsave(&chip->lock, flags);
+	spin_lock(&chip->lock);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
@@ -686,7 +685,7 @@ static int pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 	default:
 		err = -EINVAL;
 	}
-	spin_unlock_irqrestore(&chip->lock, flags);
+	spin_unlock(&chip->lock);
 	return err;
 }
 
