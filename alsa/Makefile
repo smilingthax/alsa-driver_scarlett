@@ -110,7 +110,7 @@ install: install-modules install-headers install-scripts
 install-headers:
 	if [ -L $(DESTDIR)$(prefix)/include/sound ]; then \
 		rm -f $(DESTDIR)$(prefix)/include/sound; \
-		ln -sf $(SRCDIR)/include/sound $(DESTDIR)$(prefix)/include/sound; \
+		ln -sf $(MAINSRCDIR)/include/sound $(DESTDIR)$(prefix)/include/sound; \
 	else \
 		rm -rf $(DESTDIR)$(prefix)/include/sound; \
 		install -d -m 755 -g root -o root $(DESTDIR)$(prefix)/include/sound; \
@@ -124,9 +124,9 @@ install-modules: compile
 	rm -f $(DESTDIR)$(moddir)/snd*.o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d modules_install; then exit 1; fi; done
 ifeq ($(DESTDIR),)
-	/sbin/depmod -a
+	/sbin/depmod -a -F $(CONFIG_SND_KERNELDIR)/System.map $(kaversion)
 else
-	/sbin/depmod -a -b $(DESTDIR)/
+	/sbin/depmod -a -b $(DESTDIR)/ -F $(CONFIG_SND_KERNELDIR)/System.map $(kaversion)
 endif
 
 .PHONY: install-scripts
