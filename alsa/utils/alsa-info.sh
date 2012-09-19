@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION=0.4.57
+SCRIPT_VERSION=0.4.58
 CHANGELOG="http://www.alsa-project.org/alsa-info.sh.changelog"
 
 #################################################################################
@@ -46,7 +46,7 @@ pbcheck(){
 }
 
 update() {
-	SHFILE=`mktemp -p /tmp alsa-info.XXXXXXXXXX`
+	SHFILE=`mktemp -t alsa-info.XXXXXXXXXX` || exit 1
 	wget -O $SHFILE "http://www.alsa-project.org/alsa-info.sh" >/dev/null 2>&1
 	REMOTE_VERSION=`grep SCRIPT_VERSION $SHFILE |head -n1 |sed 's/.*=//'`
 	if [ "$REMOTE_VERSION" != "$SCRIPT_VERSION" ]; then
@@ -74,8 +74,7 @@ update() {
 					echo "Please re-run the script"
 					rm $SHFILE 2>/dev/null
 				else
-					mv -f $SHFILE /tmp/alsa-info.sh || exit 1
-					echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
+					echo "ALSA-Info script has been downloaded as $SHFILE."
 					echo "Please re-run the script from new location."
 				fi
 				exit
@@ -92,8 +91,7 @@ update() {
 				echo "ALSA-Info script has been updated. Please re-run it."
 				rm $SHFILE 2>/dev/null
 			else
-				mv -f $SHFILE /tmp/alsa-info.sh || exit 1
-				echo "ALSA-Info script has been downloaded as /tmp/alsa-info.sh."
+				echo "ALSA-Info script has been downloaded $SHFILE."
 				echo "Please, re-run it from new location."
 			fi
 			exit
@@ -105,8 +103,9 @@ update() {
 
 cleanup() {
 	if [ -n "$TEMPDIR" -a "$KEEP_FILES" != "yes" ]; then
-		rm -r "$TEMPDIR" 2>/dev/null
+		rm -rf "$TEMPDIR" 2>/dev/null
 	fi
+	test -n "$KEEP_OUTPUT" || rm -f "$NFILE"
 }
 
 
@@ -309,6 +308,9 @@ SYSFS=$(mount |grep sysfs|awk {'print $3'});
 #Check modprobe config files for sound related options
 SNDOPTIONS=$(modprobe -c|sed -n 's/^options \(snd[-_][^ ]*\)/\1:/p')
 
+KEEP_OUTPUT=
+NFILE=""
+
 PASTEBIN=""
 WWWSERVICE="www.alsa-project.org"
 WELCOME="yes"
@@ -380,9 +382,11 @@ fi # dialog
 fi # WELCOME
 
 #Set the output file
-TEMPDIR=`mktemp -p /tmp -d alsa-info.XXXXXXXXXX`
+TEMPDIR=`mktemp -t -d alsa-info.XXXXXXXXXX` || exit 1
 FILE="$TEMPDIR/alsa-info.txt"
-NFILE="/tmp/alsa-info.txt"
+if [ -z "$NFILE" ]; then
+	NFILE=`mktemp -t alsa-info.txt.XXXXXXXXXX` || exit 1
+fi
 
 trap cleanup 0
 
@@ -393,9 +397,6 @@ then
 	echo "This script requires lspci. Please install it, and re-run this script."
 	exit 0
 fi
-
-#Create the temporary work dir.
-mkdir $TEMPDIR 2>/dev/null
 
 #Fetch the info and store in temp files/variables
 DISTRO=`grep -ihs "buntu\|SUSE\|Fedora\|PCLinuxOS\|MEPIS\|Mandriva\|Debian\|Damn\|Sabayon\|Slackware\|KNOPPIX\|Gentoo\|Zenwalk\|Mint\|Kubuntu\|FreeBSD\|Puppy\|Freespire\|Vector\|Dreamlinux\|CentOS\|Arch\|Xandros\|Elive\|SLAX\|Red\|BSD\|KANOTIX\|Nexenta\|Foresight\|GeeXboX\|Frugalware\|64\|SystemRescue\|Novell\|Solaris\|BackTrack\|KateOS\|Pardus" /etc/{issue,*release,*version}`
@@ -629,6 +630,11 @@ then
 			UPLOAD="no"
 			withall
 			;;
+		--output)
+			shift
+			NFILE="$1"
+			KEEP_OUTPUT="yes"
+			;;
 		--debug)
 			echo "Debugging enabled. $FILE and $TEMPDIR will not be deleted"
 			KEEP_FILES="yes"
@@ -710,13 +716,14 @@ then
 			echo "	--with-devices (shows the device nodes in /dev/snd/)"
 			echo "	--with-dmesg (shows the ALSA/HDA kernel messages)"
 			echo ""
+			echo "	--output FILE (specify the file to output for no-upload mode)"
 			echo "	--update (check server for script updates)"
 			echo "	--upload (upload contents to remote server)"
 			echo "	--no-upload (do not upload contents to remote server)"
 			echo "	--pastebin (use http://pastebin.ca) as remote server"
 			echo "	    instead www.alsa-project.org"
-			echo "  --stdout (print alsa information to standard output"
-			echo "      instead of a file)"
+			echo "	--stdout (print alsa information to standard output"
+			echo "	    instead of a file)"
 			echo "	--about (show some information about the script)"
 			echo "	--debug (will run the script as normal, but will not"
 			echo "	     delete $FILE)"
@@ -756,6 +763,7 @@ if [ "$UPLOAD" = "no" ]; then
 
 	if [ -z "$TOSTDOUT" ]; then
 		mv -f $FILE $NFILE || exit 1
+		KEEP_OUTPUT="yes"
 	fi
 
 	if [[ -n $DIALOG ]]
@@ -869,6 +877,7 @@ echo ""
 #We couldnt find a suitable wget, so tell the user to upload manually.
 else
 	mv -f $FILE $NFILE || exit 1
+	KEEP_OUTPUT="yes"
 	if [[ -z $DIALOG ]]
 	then
 		if [[ -z $PASTEBIN ]]; then
