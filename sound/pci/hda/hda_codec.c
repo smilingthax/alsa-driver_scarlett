@@ -769,7 +769,7 @@ get_alloc_amp_hash(struct hda_codec *codec, u32 key)
 /*
  * query AMP capabilities for the given widget and direction
  */
-static u32 query_amp_caps(struct hda_codec *codec, hda_nid_t nid, int direction)
+u32 query_amp_caps(struct hda_codec *codec, hda_nid_t nid, int direction)
 {
 	struct hda_amp_info *info;
 
@@ -2708,6 +2708,10 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec,
 		case AC_JACK_LINE_OUT:
 			seq = get_defcfg_sequence(def_conf);
 			assoc = get_defcfg_association(def_conf);
+
+			if (!(wid_caps & AC_WCAP_STEREO))
+				if (!cfg->mono_out_pin)
+					cfg->mono_out_pin = nid;
 			if (!assoc)
 				continue;
 			if (!assoc_line_out)
@@ -2856,6 +2860,7 @@ int snd_hda_parse_pin_def_config(struct hda_codec *codec,
 		   cfg->hp_outs, cfg->hp_pins[0],
 		   cfg->hp_pins[1], cfg->hp_pins[2],
 		   cfg->hp_pins[3], cfg->hp_pins[4]);
+	snd_printd("   mono: mono_out=0x%x\n", cfg->mono_out_pin);
 	snd_printd("   inputs: mic=0x%x, fmic=0x%x, line=0x%x, fline=0x%x,"
 		   " cd=0x%x, aux=0x%x\n",
 		   cfg->input_pins[AUTO_PIN_MIC],
