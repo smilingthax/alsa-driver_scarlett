@@ -16,7 +16,7 @@
  * 2002-04-12	Tomas Kasparek	Proc interface update, code cleanup
  */
 
-/* $Id: uda1341.c,v 1.1 2002/04/17 07:48:53 perex Exp $ */
+/* $Id: uda1341.c,v 1.2 2002/04/18 07:47:59 perex Exp $ */
 
 #include <sound/driver.h>
 #include <linux/module.h>
@@ -38,7 +38,7 @@
 
 #undef DEBUG_MODE
 #undef DEBUG_FUNCTION_NAMES
-#include <uda1341.h>
+#include <sound/uda1341.h>
 
 /* {{{ HW regs definition */
 

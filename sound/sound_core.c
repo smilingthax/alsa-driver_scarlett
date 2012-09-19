@@ -243,6 +243,7 @@ int register_sound_special(struct file_operations *fops, int unit)
 		if (unit >= SOUND_STEP)
 			goto __unknown;
 		max_unit = unit + 1;
+		break;
 	    case 2:
 		name = "midi";
 		break;

@@ -475,9 +475,16 @@ static void snd_intel8x0_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 	intel8x0_t *chip = snd_magic_cast(intel8x0_t, dev_id, return);
 	unsigned int status;
 
+	spin_lock(&chip->reg_lock);
 	status = inl(ICHREG(chip, GLOB_STA));
-	if ((status & (ICH_MCINT | ICH_POINT | ICH_PIINT)) == 0)
+	if ((status & (ICH_MCINT | ICH_POINT | ICH_PIINT)) == 0) {
+		spin_unlock(&chip->reg_lock);
 		return;
+	}
+	/* ack first */
+	outl(status & (ICH_MCINT | ICH_POINT | ICH_PIINT), ICHREG(chip, GLOB_STA));
+	spin_unlock(&chip->reg_lock);
+
 	if (status & ICH_POINT)
 		snd_intel8x0_update(chip, &chip->playback);
 	if (status & ICH_PIINT)
@@ -1223,11 +1230,11 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 	chip->playback.size = chip->playback.fragsize = INTEL8X0_TESTBUF_SIZE;
 	chip->playback.substream = NULL; /* don't process interrupts */
 
-	spin_lock_irqsave(&chip->reg_lock, flags);
 	/* set rate */
 	snd_ac97_set_rate(chip->ac97, AC97_PCM_FRONT_DAC_RATE, 48000);
 	snd_intel8x0_setup_periods(chip, &chip->playback);
 	port = chip->bmport + chip->playback.reg_offset;
+	spin_lock_irqsave(&chip->reg_lock, flags);
 	outb(ICH_IOCE | ICH_STARTBM, port + ICH_REG_PI_CR); /* trigger */
 	do_gettimeofday(&start_time);
 	spin_unlock_irqrestore(&chip->reg_lock, flags);

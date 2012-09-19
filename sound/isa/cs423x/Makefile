@@ -28,6 +28,8 @@ obj-$(CONFIG_SND_INTERWAVE_STB) += snd-cs4231-lib.o
 obj-$(CONFIG_SND_OPTI92X_CS4231) += snd-cs4231-lib.o
 obj-$(CONFIG_SND_WAVEFRONT) += snd-cs4231-lib.o
 
+obj-m := $(sort $(obj-m))
+
 include $(TOPDIR)/Rules.make
 
 snd-cs4231-lib.o: $(snd-cs4231-lib-objs)

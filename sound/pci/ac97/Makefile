@@ -30,6 +30,8 @@ obj-$(CONFIG_SND_NM256) += snd-ac97-codec.o
 obj-$(CONFIG_SND_TRIDENT) += snd-ac97-codec.o
 obj-$(CONFIG_SND_YMFPCI) += snd-ac97-codec.o
 
+obj-m := $(sort $(obj-m))
+
 include $(TOPDIR)/Rules.make
 
 snd-ac97-codec.o: $(snd-ac97-codec-objs)

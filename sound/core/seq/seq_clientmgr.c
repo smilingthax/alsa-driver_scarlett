@@ -129,31 +129,31 @@ client_t *snd_seq_client_use_ptr(int clientid)
 	}
 	spin_unlock_irqrestore(&clients_lock, flags);
 #ifdef CONFIG_KMOD
-	if (!in_interrupt()) {
+	if (!in_interrupt() && current->fs->root) {
+		static char client_requested[64];
+		static char card_requested[SNDRV_CARDS];
 		if (clientid < 64) {
 			int idx;
 			char name[32];
 			
-			for (idx = 0; idx < 64; idx++) {
-				if (snd_seq_client_load[idx] < 0)
-					break;
-				if (snd_seq_client_load[idx] == clientid) {
-					sprintf(name, "snd-seq-client-%i", clientid);
-					request_module(name);
-					break;
+			if (! client_requested[clientid]) {
+				client_requested[clientid] = 1;
+				for (idx = 0; idx < 64; idx++) {
+					if (snd_seq_client_load[idx] < 0)
+						break;
+					if (snd_seq_client_load[idx] == clientid) {
+						sprintf(name, "snd-seq-client-%i", clientid);
+						request_module(name);
+						break;
+					}
 				}
 			}
 		} else if (clientid >= 64 && clientid < 128) {
 			int card = (clientid - 64) / 8;
-			if (card < snd_ecards_limit) {
-#ifndef MODULE
-				if (current->fs->root) {
-#endif
-					snd_request_card(card);
-					snd_seq_device_load_drivers();
-#ifndef MODULE
-				}
-#endif
+			if (card < snd_ecards_limit && ! card_requested[card]) {
+				card_requested[card] = 1;
+				snd_request_card(card);
+				snd_seq_device_load_drivers();
 			}
 		}
 		spin_lock_irqsave(&clients_lock, flags);
@@ -2386,8 +2386,10 @@ void snd_seq_info_clients_read(snd_info_entry_t *entry,
 		client = snd_seq_client_use_ptr(c);
 		if (client == NULL)
 			continue;
-		if (client->type == NO_CLIENT)
+		if (client->type == NO_CLIENT) {
+			snd_seq_client_unlock(client);
 			continue;
+		}
 
 		snd_iprintf(buffer, "Client %3d : \"%s\" [%s]\n",
 			    c, client->name,

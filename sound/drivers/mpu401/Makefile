@@ -44,6 +44,8 @@ obj-$(CONFIG_SND_ALI5451) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_TRIDENT) += snd-mpu401-uart.o
 obj-$(CONFIG_SND_YMFPCI) += snd-mpu401-uart.o
 
+obj-m := $(sort $(obj-m))
+
 include $(TOPDIR)/Rules.make
 
 snd-mpu401.o: $(snd-mpu401-objs)
