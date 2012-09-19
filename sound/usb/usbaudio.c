@@ -1308,14 +1308,16 @@ void *snd_usb_find_csint_desc(void *buffer, int buflen, void *after, u8 dsubtype
  * entry point for linux usb interface
  */
 
-#ifndef OLD_USB
+static void * _usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
+			      const struct usb_device_id *id);
+static void _usb_audio_disconnect(struct usb_device *dev, void *ptr);
+#ifdef OLD_USB
+#define usb_audio_probe		_usb_audio_probe
+#define usb_audio_disconnect	_usb_audio_disconnect
+#else
 static int usb_audio_probe(struct usb_interface *intf,
 			   const struct usb_device_id *id);
 static void usb_audio_disconnect(struct usb_interface *intf);
-#else
-static void * usb_audio_probe(usb_device *dev, unsigned int ifnum,
-			      const struct usb_device_id *id);
-static void usb_audio_disconnect(struct usb_device *dev, void *ptr);
 #endif
 
 static struct usb_device_id usb_audio_ids [] = {
@@ -2066,18 +2068,9 @@ static int alloc_desc_buffer(struct usb_device *dev, int index, unsigned char **
  * only at the first time.  the successive calls of this function will
  * append the pcm interface to the corresponding card.
  */
-#ifndef OLD_USB
-static int usb_audio_probe(struct usb_interface *intf,
-			   const struct usb_device_id *id)
-#else
-static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
+static void *_usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 			     const struct usb_device_id *id)
-#endif
 {
-#ifndef OLD_USB
-	struct usb_device *dev = interface_to_usbdev(intf);
-	int ifnum = intf->altsetting->bInterfaceNumber;
-#endif
 	struct usb_config_descriptor *config = dev->actconfig;	
 	const snd_usb_audio_quirk_t *quirk = (const snd_usb_audio_quirk_t *)id->driver_info;
 	unsigned char *buffer;
@@ -2159,37 +2152,21 @@ static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 	chip->num_interfaces++;
 	up(&register_mutex);
 	kfree(buffer);
-#ifndef OLD_USB
-	return 0;
-#else
 	return chip;
-#endif
 
  __error:
 	up(&register_mutex);
 	kfree(buffer);
  __err_val:
-#ifndef OLD_USB
-	return -EIO;
-#else
 	return NULL;
-#endif
 }
-
 
 /*
  * we need to take care of counter, since disconnection can be called also
  * many times as well as usb_audio_probe(). 
  */
-#ifndef OLD_USB
-static void usb_audio_disconnect(struct usb_interface *intf)
-#else
-static void usb_audio_disconnect(struct usb_device *dev, void *ptr)
-#endif
+static void _usb_audio_disconnect(struct usb_device *dev, void *ptr)
 {
-#ifndef OLD_USB
-	void *ptr = dev_get_drvdata(&intf->dev);
-#endif
 	snd_usb_audio_t *chip;
 
 	if (ptr == (void *)-1)
@@ -2200,6 +2177,34 @@ static void usb_audio_disconnect(struct usb_device *dev, void *ptr)
 	if (chip->num_interfaces <= 0)
 		snd_card_free(chip->card);
 }
+
+
+#ifndef OLD_USB
+/*
+ * new 2.5 USB kernel API
+ */
+
+static int usb_audio_probe(struct usb_interface *intf,
+			   const struct usb_device_id *id)
+{
+	void *chip;
+	chip = _usb_audio_probe(interface_to_usbdev(intf),
+				intf->altsetting->bInterfaceNumber, id);
+	if (chip) {
+		dev_set_drvdata(&intf->dev, chip);
+		return 0;
+	} else
+		return -EIO;
+}
+
+static void usb_audio_disconnect(struct usb_interface *intf)
+{
+	_usb_audio_disconnect(interface_to_usbdev(intf),
+			      dev_get_drvdata(&intf->dev));
+}
+#endif
+
+
 
 static int __init snd_usb_audio_init(void)
 {
