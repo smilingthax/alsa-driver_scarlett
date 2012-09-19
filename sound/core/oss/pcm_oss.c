@@ -125,9 +125,10 @@ static long snd_pcm_oss_bytes(snd_pcm_substream_t *substream, long frames)
 {
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	snd_pcm_uframes_t buffer_size = snd_pcm_lib_buffer_bytes(substream);
+	frames = frames_to_bytes(runtime, frames);
 	if (buffer_size == runtime->oss.buffer_bytes)
 		return frames;
-	return (runtime->oss.buffer_bytes * frames_to_bytes(runtime, frames)) / buffer_size;
+	return (runtime->oss.buffer_bytes * frames) / buffer_size;
 }
 
 static int snd_pcm_oss_format_from(int format)
@@ -2172,6 +2173,8 @@ static int snd_pcm_oss_mmap(struct file *file, struct vm_area_struct *area)
 	if (err < 0)
 		return err;
 	runtime->oss.mmap_bytes = area->vm_end - area->vm_start;
+	runtime->silence_threshold = 0;
+	runtime->silence_size = 0;
 #ifdef OSS_DEBUG
 	printk("pcm_oss: mmap ok, bytes = 0x%x\n", runtime->oss.mmap_bytes);
 #endif
