@@ -385,6 +385,10 @@ case "$1" in
     basic
     insert snd-serialmidi.o
     ;;
+  usb)
+    basic
+    insert snd-usb-audio.o
+    ;;
   t1)
     basic; isapnp
     insert snd-mpu401-uart.o 
