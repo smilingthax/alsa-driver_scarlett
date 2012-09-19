@@ -198,9 +198,8 @@ clean1:
 .PHONY: clean
 clean: clean1
 ifdef NEW_KBUILD
-	find . \( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' -o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \) -type f -print | xargs rm -f
 	rm -rf kbuild/.tmp_versions
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $(CONFIG_SND_KERNELDIR) SUBDIRS=$(MAINSRCDIR)/$$d clean; then exit 1; fi; done
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d cleanup; then exit 1; fi; done
 else
 	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 endif
