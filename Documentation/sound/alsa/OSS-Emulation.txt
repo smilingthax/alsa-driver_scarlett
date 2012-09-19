@@ -158,7 +158,6 @@ capture) is not handled correctly by the application although the
 hardware itself does support both directions.
 The direct option is used, as mentioned above, to bypass the automatic
 conversion and useful for MMAP-applications.
-
 For example, to playback the first PCM device without plugins for
 quake, send a command via echo like the following:
 
@@ -168,7 +167,6 @@ The permission of proc files depend on the module options of snd.
 As default it's set as root, so you'll likely need to be superuser for
 sending the command above.
 
-The meaning of the command sequence above is like this:
 The block and non-block options are used to change the behavior of
 opening the device file.
 As default, ALSA behaves as defined in POSIX, i.e. blocks the file
