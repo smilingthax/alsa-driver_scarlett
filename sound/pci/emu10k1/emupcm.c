@@ -2,6 +2,7 @@
  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
  *                   Creative Labs, Inc.
  *  Routines for control of EMU10K1 chips / PCM routines
+ *  Multichannel PCM support Copyright (c) Lee Revell <rlrevell@joe-job.com>
  *
  *  BUGS:
  *    --
@@ -109,14 +110,17 @@ static int snd_emu10k1_pcm_channel_alloc(emu10k1_pcm_t * epcm, int voices)
 		snd_emu10k1_voice_free(epcm->emu, epcm->voices[1]);
 		epcm->voices[1] = NULL;
 	}
-	if (voices == 1 && epcm->voices[0] != NULL)
-		return 0;		/* already allocated */
-	if (voices == 2 && epcm->voices[0] != NULL && epcm->voices[1] != NULL)
-		return 0;
-	if (voices > 1) {
-		if (epcm->voices[0] != NULL && epcm->voices[1] == NULL) {
-			snd_emu10k1_voice_free(epcm->emu, epcm->voices[0]);
-			epcm->voices[0] = NULL;
+	for (i = 0; i < voices; i++) {
+		if (epcm->voices[i] == NULL)
+			break;
+	}
+	if (i == voices)
+		return 0; /* already allocated */
+
+	for (i = 0; i < ARRAY_SIZE(epcm->voices); i++) {
+		if (epcm->voices[i]) {
+			snd_emu10k1_voice_free(epcm->emu, epcm->voices[i]);
+			epcm->voices[i] = NULL;
 		}
 	}
 	err = snd_emu10k1_voice_alloc(epcm->emu,
@@ -250,6 +254,22 @@ static unsigned int emu10k1_select_interprom(unsigned int pitch_target)
 		return CCCA_INTERPROM_2;
 }
 
+/*
+ * calculate cache invalidate size 
+ *
+ * stereo: channel is stereo
+ * w_16: using 16bit samples
+ *
+ * returns: cache invalidate size in samples
+ */
+static int inline emu10k1_ccis(int stereo, int w_16)
+{
+	if (w_16) {
+		return stereo ? 24 : 26;
+	} else {
+		return stereo ? 24*2 : 26*2;
+	}
+}
 
 static void snd_emu10k1_pcm_init_voice(emu10k1_t *emu,
 				       int master, int extra,
@@ -304,9 +324,7 @@ static void snd_emu10k1_pcm_init_voice(emu10k1_t *emu,
 		memcpy(send_amount, &mix->send_volume[tmp][0], 8);
 	}
 
-	ccis = stereo ? 28 : 30;
-	if (w_16)
-		ccis *= 2;
+	ccis = emu10k1_ccis(stereo, w_16);
 	
 	if (master) {
 		evoice->epcm->ccca_start_addr = start_addr + ccis;
@@ -473,11 +491,14 @@ static int snd_emu10k1_playback_prepare(snd_pcm_substream_t * substream)
 
 	start_addr = epcm->start_addr;
 	end_addr = snd_pcm_lib_period_bytes(substream);
-	if (runtime->channels == 2)
+	if (runtime->channels == 2) {
+		start_addr >>= 1;
 		end_addr >>= 1;
+	}
 	end_addr += start_addr;
 	snd_emu10k1_pcm_init_voice(emu, 1, 1, epcm->extra,
 				   start_addr, end_addr);
+	start_addr = epcm->start_addr;
 	end_addr = epcm->start_addr + snd_pcm_lib_buffer_bytes(substream);
 	snd_emu10k1_pcm_init_voice(emu, 1, 0, epcm->voices[0],
 				   start_addr, end_addr);
@@ -598,37 +619,39 @@ static int snd_emu10k1_capture_prepare(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static void snd_emu10k1_playback_invalidate_cache(emu10k1_t *emu, emu10k1_voice_t *evoice)
+static void snd_emu10k1_playback_invalidate_cache(emu10k1_t *emu, int extra, emu10k1_voice_t *evoice)
 {
 	snd_pcm_runtime_t *runtime;
-	unsigned int voice, i, ccis, cra = 64, cs, sample;
+	unsigned int voice, stereo, i, ccis, cra = 64, cs, sample;
 
 	if (evoice == NULL)
 		return;
 	runtime = evoice->epcm->substream->runtime;
 	voice = evoice->number;
+	stereo = (!extra && runtime->channels == 2);
 	sample = snd_pcm_format_width(runtime->format) == 16 ? 0 : 0x80808080;
-	if (runtime->channels == 2) {
-		ccis = 28;
-		cs = 4;
-	} else {
-		ccis = 30;
-		cs = 2;
-	}
-	if (sample == 0)	/* 16-bit */
-		ccis *= 2;
-	for (i = 0; i < cs; i++)
+	ccis = emu10k1_ccis(stereo, sample == 0);
+	// set cs to 2 * number of cache registers beside the invalidated
+	cs = (sample == 0) ? (32-ccis) : (64-ccis+1) >> 1;
+	if (cs > 16) cs = 16;
+	for (i = 0; i < cs; i++) {
 		snd_emu10k1_ptr_write(emu, CD0 + i, voice, sample);
-		
+		if (stereo) {
+			snd_emu10k1_ptr_write(emu, CD0 + i, voice + 1, sample);
+		}
+	}
 	// reset cache
 	snd_emu10k1_ptr_write(emu, CCR_CACHEINVALIDSIZE, voice, 0);
 	snd_emu10k1_ptr_write(emu, CCR_READADDRESS, voice, cra);
-	if (runtime->channels == 2) {
+	if (stereo) {
 		snd_emu10k1_ptr_write(emu, CCR_CACHEINVALIDSIZE, voice + 1, 0);
 		snd_emu10k1_ptr_write(emu, CCR_READADDRESS, voice + 1, cra);
 	}
 	// fill cache
 	snd_emu10k1_ptr_write(emu, CCR_CACHEINVALIDSIZE, voice, ccis);
+	if (stereo) {
+		snd_emu10k1_ptr_write(emu, CCR_CACHEINVALIDSIZE, voice+1, ccis);
+	}
 }
 
 static void snd_emu10k1_playback_prepare_voice(emu10k1_t *emu, emu10k1_voice_t *evoice, int master, int extra)
@@ -707,8 +730,8 @@ static int snd_emu10k1_playback_trigger(snd_pcm_substream_t * substream,
 	spin_lock(&emu->reg_lock);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		snd_emu10k1_playback_invalidate_cache(emu, epcm->extra);	/* do we need this? */
-		snd_emu10k1_playback_invalidate_cache(emu, epcm->voices[0]);
+		snd_emu10k1_playback_invalidate_cache(emu, 1, epcm->extra);	/* do we need this? */
+		snd_emu10k1_playback_invalidate_cache(emu, 0, epcm->voices[0]);
 		/* follow thru */
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		snd_emu10k1_playback_prepare_voice(emu, epcm->voices[0], 1, 0);
@@ -836,9 +859,9 @@ static int snd_emu10k1_efx_playback_trigger(snd_pcm_substream_t * substream,
 	case SNDRV_PCM_TRIGGER_START:
 		// prepare voices
 		for (i = 0; i < NUM_EFX_PLAYBACK; i++) {	
-			snd_emu10k1_playback_invalidate_cache(emu, epcm->voices[i]);
+			snd_emu10k1_playback_invalidate_cache(emu, 0, epcm->voices[i]);
 		}
-		snd_emu10k1_playback_invalidate_cache(emu, epcm->extra);
+		snd_emu10k1_playback_invalidate_cache(emu, 1, epcm->extra);
 
 		/* follow thru */
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
@@ -1254,7 +1277,7 @@ int __devinit snd_emu10k1_pcm(emu10k1_t * emu, int device, snd_pcm_t ** rpcm)
 
 	pcm->info_flags = 0;
 	pcm->dev_subclass = SNDRV_PCM_SUBCLASS_GENERIC_MIX;
-	strcpy(pcm->name, "EMU10K1");
+	strcpy(pcm->name, "ADC Capture/Standard PCM Playback");
 	emu->pcm = pcm;
 
 	for (substream = pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream; substream; substream = substream->next)
@@ -1289,7 +1312,7 @@ int __devinit snd_emu10k1_pcm_multi(emu10k1_t * emu, int device, snd_pcm_t ** rp
 
 	pcm->info_flags = 0;
 	pcm->dev_subclass = SNDRV_PCM_SUBCLASS_GENERIC_MIX;
-	strcpy(pcm->name, "EMU10K1 multichannel EFX");
+	strcpy(pcm->name, "Multichannel Playback");
 	emu->pcm = pcm;
 
 	for (substream = pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream; substream; substream = substream->next)
@@ -1338,7 +1361,7 @@ int __devinit snd_emu10k1_pcm_mic(emu10k1_t * emu, int device, snd_pcm_t ** rpcm
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_emu10k1_capture_mic_ops);
 
 	pcm->info_flags = 0;
-	strcpy(pcm->name, "EMU10K1 MIC");
+	strcpy(pcm->name, "Mic Capture");
 	emu->pcm_mic = pcm;
 
 	snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(emu->pci), 64*1024, 64*1024);
@@ -1676,7 +1699,7 @@ int __devinit snd_emu10k1_pcm_efx(emu10k1_t * emu, int device, snd_pcm_t ** rpcm
 	snd_pcm_set_ops(pcm, SNDRV_PCM_STREAM_CAPTURE, &snd_emu10k1_capture_efx_ops);
 
 	pcm->info_flags = 0;
-	strcpy(pcm->name, "EMU10K1 EFX");
+	strcpy(pcm->name, "Multichannel Capture/PT Playback");
 	emu->pcm_efx = pcm;
 	if (rpcm)
 		*rpcm = pcm;
