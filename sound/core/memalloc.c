@@ -36,6 +36,20 @@ MODULE_DESCRIPTION("Memory allocator for ALSA system.");
 MODULE_LICENSE("GPL");
 
 
+/* so far, pre-defined allocation is only for hammerfall cards... */
+/* #define ENABLE_PREALLOC */
+
+
+#ifdef ENABLE_PREALLOC
+#ifndef SNDRV_CARDS
+#define SNDRV_CARDS	8
+#endif
+static int enable[8] = {[0 ... (SNDRV_CARDS-1)] = 1};
+MODULE_PARM(enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(enable, "Enable cards to allocate buffers.");
+#endif
+
+
 /*
  */
 
@@ -50,6 +64,8 @@ struct snd_mem_list {
 	struct list_head list;
 };
 
+/* id for pre-allocated buffers */
+#define SNDRV_DMA_DEVICE_UNUSED (unsigned int)-1
 
 #ifdef CONFIG_SND_DEBUG
 #define __ASTRING__(x) #x
@@ -74,12 +90,14 @@ struct snd_mem_list {
  * compare the two devices
  * returns non-zero if matched.
  */
-static int compare_device(const struct snd_dma_device *a, const struct snd_dma_device *b)
+static int compare_device(const struct snd_dma_device *a, const struct snd_dma_device *b, int allow_unused)
 {
 	if (a->type != b->type)
 		return 0;
-	if (a->id != b->id)
-		return 0;
+	if (a->id != b->id) {
+		if (! allow_unused || (a->id != SNDRV_DMA_DEVICE_UNUSED && b->id != SNDRV_DMA_DEVICE_UNUSED))
+			return 0;
+	}
 	switch (a->type) {
 	case SNDRV_DMA_TYPE_CONTINUOUS:
 #ifdef CONFIG_ISA
@@ -193,14 +211,14 @@ void snd_dma_free_pages(const struct snd_dma_device *dev, struct snd_dma_buffer 
 /*
  * search for the device
  */
-static struct snd_mem_list *mem_list_find(const struct snd_dma_device *dev)
+static struct snd_mem_list *mem_list_find(const struct snd_dma_device *dev, int allow_unused)
 {
 	struct list_head *p;
 	struct snd_mem_list *mem;
 
 	list_for_each(p, &mem_list_head) {
 		mem = list_entry(p, struct snd_mem_list, list);
-		if (compare_device(&mem->dev, dev))
+		if (compare_device(&mem->dev, dev, allow_unused))
 			return mem;
 	}
 	return NULL;
@@ -224,9 +242,10 @@ size_t snd_dma_get_reserved(const struct snd_dma_device *dev, struct snd_dma_buf
 	snd_assert(dev && dmab, return 0);
 
 	down(&list_mutex);
-	mem = mem_list_find(dev);
+	mem = mem_list_find(dev, 1);
 	if (mem) {
 		mem->used = 1;
+		mem->dev = *dev;
 		*dmab = mem->buffer;
 		up(&list_mutex);
 		return dmab->bytes;
@@ -250,7 +269,7 @@ int snd_dma_free_reserved(const struct snd_dma_device *dev)
 
 	snd_assert(dev, return -EINVAL);
 	down(&list_mutex);
-	mem = mem_list_find(dev);
+	mem = mem_list_find(dev, 0);
 	if (mem)
 		mem->used = 0;
 	up(&list_mutex);
@@ -277,7 +296,7 @@ int snd_dma_set_reserved(const struct snd_dma_device *dev, struct snd_dma_buffer
 
 	snd_assert(dev, return -EINVAL);
 	down(&list_mutex);
-	mem = mem_list_find(dev);
+	mem = mem_list_find(dev, 0);
 	if (mem) {
 		snd_dma_free_pages(dev, &mem->buffer);
 		if (! dmab || ! dmab->bytes) {
@@ -293,6 +312,10 @@ int snd_dma_set_reserved(const struct snd_dma_device *dev, struct snd_dma_buffer
 			return 0;
 		}
 		mem = kmalloc(sizeof(*mem), GFP_KERNEL);
+		if (! mem) {
+			up(&list_mutex);
+			return -ENOMEM;
+		}
 		mem->dev = *dev;
 		list_add(&mem->list, &mem_list_head);
 	}
@@ -712,6 +735,85 @@ void snd_free_sbus_pages(struct sbus_dev *sdev,
 #endif /* CONFIG_SBUS */
 
 
+#ifdef ENABLE_PREALLOC
+/*
+ * allocation of buffers for pre-defined devices
+ */
+
+/* FIXME: for pci only - other bus? */
+struct prealloc_dev {
+	unsigned short vendor;
+	unsigned short device;
+	unsigned long dma_mask;
+	unsigned int size;
+	unsigned int buffers;
+};
+
+#define HAMMERFALL_BUFFER_SIZE    (16*1024*4*(26+1))
+
+static struct prealloc_dev prealloc_devices[] __initdata = {
+	{
+		/* hammerfall */
+		.vendor = 0x10ee,
+		.device = 0x3fc4,
+		.dma_mask = 0xffffffff,
+		.size = HAMMERFALL_BUFFER_SIZE,
+		.buffers = 2
+	},
+	{
+		/* HDSP */
+		.vendor = 0x10ee,
+		.device = 0x3fc5,
+		.dma_mask = 0xffffffff,
+		.size = HAMMERFALL_BUFFER_SIZE,
+		.buffers = 2
+	},
+	{ }, /* terminator */
+};
+
+static void __init preallocate_cards(void)
+{
+	struct pci_dev *pci;
+	int card;
+
+	card = 0;
+
+	pci_for_each_dev(pci) {
+		struct prealloc_dev *dev;
+		if (card >= SNDRV_CARDS)
+			break;
+		for (dev = prealloc_devices; dev->vendor; dev++) {
+			unsigned int i;
+			if (dev->vendor != pci->vendor || dev->device != pci->device)
+				continue;
+			if (! enable[card++])
+				continue;
+			
+			if (pci_set_dma_mask(pci, dev->dma_mask) < 0) {
+				printk(KERN_ERR "snd-page-alloc: cannot set DMA mask %lx for pci %04x:%04x\n", dev->dma_mask, dev->vendor, dev->device);
+				continue;
+			}
+
+			for (i = 0; i < dev->buffers; i++) {
+				struct snd_dma_device dma;
+				struct snd_dma_buffer buf;
+				snd_dma_device_pci(&dma, pci, SNDRV_DMA_DEVICE_UNUSED);
+				memset(&buf, 0, sizeof(buf));
+				snd_dma_alloc_pages(&dma, dev->size, &buf);
+				if (buf.bytes) {
+					if (snd_dma_set_reserved(&dma, &buf) < 0) {
+						printk(KERN_WARNING "snd-page-alloc: cannot reserve buffer\n");
+						snd_dma_free_pages(&dma, &buf);
+					}
+				} else
+					printk(KERN_WARNING "snd-page-alloc: cannot allocate buffer pages (size = %d)\n", dev->size);
+			}
+		}
+	}
+}
+#endif
+
+
 #ifdef CONFIG_PROC_FS
 /*
  * proc file interface
@@ -735,6 +837,9 @@ static int snd_mem_proc_read(char *page, char **start, off_t off,
 static int __init snd_mem_init(void)
 {
 	create_proc_read_entry("driver/snd-page-alloc", 0, 0, snd_mem_proc_read, NULL);
+#ifdef ENABLE_PREALLOC
+	preallocate_cards();
+#endif
 	return 0;
 }
 

@@ -47,6 +47,11 @@
 #endif	/* CS4231 */
 #include <sound/mpu401.h>
 #include <sound/opl3.h>
+#ifdef USE_OPL4
+#ifndef OPTi93X
+#include "opl4.h" /* <sound/opl4.h> */
+#endif
+#endif
 #define SNDRV_LEGACY_FIND_FREE_IRQ
 #define SNDRV_LEGACY_FIND_FREE_DMA
 #define SNDRV_GET_ID
@@ -267,14 +272,6 @@ struct _snd_opti9xx {
 	long mpu_port;
 	int mpu_irq;
 
-#if defined(OPTi93X)
-	opti93x_t *opti93x;
-#elif defined(CS4231)
-	cs4231_t *cs4231;
-#else
-	ad1848_t *ad1848;
-#endif	/* AD1848 */
-	snd_rawmidi_t *rmidi;
 #ifdef __ISAPNP__
 	struct isapnp_dev *dev;
 	struct isapnp_dev *devmpu;
@@ -2127,14 +2124,35 @@ static int __init snd_card_opti9xx_probe(void)
 			snd_printk("no MPU-401 device at 0x%lx?\n", chip->mpu_port);
 
 	if (chip->fm_port > 0) {
-		opl3_t *opl3;
-		if (snd_opl3_create(card,
-				    chip->fm_port,
-				    chip->fm_port + 2,
-				    OPL3_HW_AUTO, 0, &opl3) < 0) {
+		opl3_t *opl3 = NULL;
+#ifdef USE_OPL4
+#ifndef OPTi93X
+		if (chip->hardware == OPTi9XX_HW_82C928 ||
+		    chip->hardware == OPTi9XX_HW_82C929 ||
+		    chip->hardware == OPTi9XX_HW_82C924) {
+			opl4_t *opl4;
+			/* assume we have an OPL4 */
+			snd_opti9xx_write_mask(chip, OPTi9XX_MC_REG(2),
+					       0x20, 0x20);
+			if (snd_opl4_create(card,
+					    chip->fm_port,
+					    chip->fm_port - 8,
+					    2, &opl3, &opl4) < 0) {
+				/* no luck, use OPL3 instead */
+				snd_opti9xx_write_mask(chip, OPTi9XX_MC_REG(2),
+						       0x00, 0x20);
+			}
+		}
+#endif	/* !OPTi93X */
+#endif
+		if (!opl3 && snd_opl3_create(card,
+					     chip->fm_port,
+					     chip->fm_port + 2,
+					     OPL3_HW_AUTO, 0, &opl3) < 0) {
 			snd_printk("no OPL device at 0x%lx-0x%lx\n",
-				chip->fm_port, chip->fm_port + 4 - 1);
-		} else {
+				   chip->fm_port, chip->fm_port + 4 - 1);
+		}
+		if (opl3) {
 			if ((error = snd_opl3_timer_new(opl3,
 #ifdef CS4231
 							1, 2)) < 0) {

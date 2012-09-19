@@ -3187,7 +3187,7 @@ inline static void do_delay(trident_t *chip)
 
 static int snd_trident_sis_reset(trident_t *trident)
 {
-	signed long end_time;
+	unsigned long end_time;
 	unsigned int i;
 	int r;
 
@@ -3364,7 +3364,7 @@ static void snd_trident_stop_all_voices(trident_t *trident)
 static int snd_trident_4d_dx_init(trident_t *trident)
 {
 	struct pci_dev *pci = trident->pci;
-	signed long end_time;
+	unsigned long end_time;
 
 	/* reset the legacy configuration and whole audio/wavetable block */
 	pci_write_config_dword(pci, 0x40, 0);	/* DDMA */
@@ -3404,7 +3404,7 @@ static int snd_trident_4d_dx_init(trident_t *trident)
 static int snd_trident_4d_nx_init(trident_t *trident)
 {
 	struct pci_dev *pci = trident->pci;
-	signed long end_time;
+	unsigned long end_time;
 
 	/* reset the legacy configuration and whole audio/wavetable block */
 	pci_write_config_dword(pci, 0x40, 0);	/* DDMA */
