@@ -808,6 +808,8 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	  .config = AD1986A_3STACK }, /* ASUS A8N-VM CSM */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x81b3,
 	  .config = AD1986A_3STACK }, /* ASUS P5RD2-VM / P5GPL-X SE */
+	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x81cb,
+	  .config = AD1986A_3STACK }, /* ASUS M2NPV-VM */
 	{ .modelname = "laptop",	.config = AD1986A_LAPTOP },
 	{ .pci_subvendor = 0x144d, .pci_subdevice = 0xc01e,
 	  .config = AD1986A_LAPTOP }, /* FSC V2060 */
@@ -820,6 +822,8 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	  .config = AD1986A_LAPTOP_EAPD }, /* Samsung X60 Chane */
 	{ .pci_subvendor = 0x144d, .pci_subdevice = 0xc024,
 	  .config = AD1986A_LAPTOP_EAPD }, /* Samsung R65-T2300 Charis */
+	{ .pci_subvendor = 0x144d, .pci_subdevice = 0xc026,
+	  .config = AD1986A_LAPTOP_EAPD }, /* Samsung X10-T2300 Culesa */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1153,
 	  .config = AD1986A_LAPTOP_EAPD }, /* ASUS M9 */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1213,
@@ -1656,6 +1660,7 @@ static struct snd_kcontrol_new ad1988_6stack_mixers1[] = {
 	HDA_CODEC_VOLUME_MONO("Center Playback Volume", 0x05, 1, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME_MONO("LFE Playback Volume", 0x05, 2, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Side Playback Volume", 0x0a, 0x0, HDA_OUTPUT),
+	{ } /* end */
 };
 
 static struct snd_kcontrol_new ad1988_6stack_mixers1_rev2[] = {
@@ -1664,6 +1669,7 @@ static struct snd_kcontrol_new ad1988_6stack_mixers1_rev2[] = {
 	HDA_CODEC_VOLUME_MONO("Center Playback Volume", 0x0a, 1, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME_MONO("LFE Playback Volume", 0x0a, 2, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Side Playback Volume", 0x06, 0x0, HDA_OUTPUT),
+	{ } /* end */
 };
 
 static struct snd_kcontrol_new ad1988_6stack_mixers2[] = {
@@ -1702,6 +1708,7 @@ static struct snd_kcontrol_new ad1988_3stack_mixers1[] = {
 	HDA_CODEC_VOLUME("Surround Playback Volume", 0x0a, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME_MONO("Center Playback Volume", 0x05, 1, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME_MONO("LFE Playback Volume", 0x05, 2, 0x0, HDA_OUTPUT),
+	{ } /* end */
 };
 
 static struct snd_kcontrol_new ad1988_3stack_mixers1_rev2[] = {
@@ -1709,6 +1716,7 @@ static struct snd_kcontrol_new ad1988_3stack_mixers1_rev2[] = {
 	HDA_CODEC_VOLUME("Surround Playback Volume", 0x0a, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME_MONO("Center Playback Volume", 0x06, 1, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME_MONO("LFE Playback Volume", 0x06, 2, 0x0, HDA_OUTPUT),
+	{ } /* end */
 };
 
 static struct snd_kcontrol_new ad1988_3stack_mixers2[] = {

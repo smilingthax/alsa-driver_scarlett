@@ -718,7 +718,7 @@ void snd_timer_interrupt(struct snd_timer * timer, unsigned long ticks_left)
 		}
 	}
 	if (timer->flags & SNDRV_TIMER_FLG_RESCHED)
-		snd_timer_reschedule(timer, ticks_left);
+		snd_timer_reschedule(timer, timer->sticks);
 	if (timer->running) {
 		if (timer->hw.flags & SNDRV_TIMER_HW_STOP) {
 			timer->hw.stop(timer);
@@ -959,7 +959,6 @@ int snd_timer_global_register(struct snd_timer *timer)
 
 struct snd_timer_system_private {
 	struct timer_list tlist;
-	struct timer * timer;
 	unsigned long last_expires;
 	unsigned long last_jiffies;
 	unsigned long correction;
@@ -971,7 +970,7 @@ static void snd_timer_s_function(unsigned long data)
 	struct snd_timer_system_private *priv = timer->private_data;
 	unsigned long jiff = jiffies;
 	if (time_after(jiff, priv->last_expires))
-		priv->correction = (long)jiff - (long)priv->last_expires;
+		priv->correction += (long)jiff - (long)priv->last_expires;
 	snd_timer_interrupt(timer, (long)jiff - (long)priv->last_jiffies);
 }
 
@@ -987,7 +986,7 @@ static int snd_timer_s_start(struct snd_timer * timer)
 		njiff++;
 	} else {
 		njiff += timer->sticks - priv->correction;
-		priv->correction -= timer->sticks;
+		priv->correction = 0;
 	}
 	priv->last_expires = priv->tlist.expires = njiff;
 	add_timer(&priv->tlist);
@@ -1006,6 +1005,7 @@ static int snd_timer_s_stop(struct snd_timer * timer)
 		timer->sticks = priv->last_expires - jiff;
 	else
 		timer->sticks = 1;
+	priv->correction = 0;
 	return 0;
 }
 
