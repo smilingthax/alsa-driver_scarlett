@@ -145,7 +145,7 @@ of the AC97 codec. The result is forwarded to the ADC capture FIFO (thus to
 the standard capture PCM device).
 ********************************************************************************
 *** Note: This control should be 100 (maximal value), otherwise no analog    ***
-*** inputs of the AC97 codec can be captured (recorded).                    ***
+*** inputs of the AC97 codec can be captured (recorded).                     ***
 ********************************************************************************
 
 name='IEC958 TTL Playback Volume',index=0
