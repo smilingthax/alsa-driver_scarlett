@@ -1,14 +1,100 @@
---- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2005-06-30 12:13:27.000000000 +0200
-+++ vxpocket.c	2005-06-30 12:13:26.000000000 +0200
-@@ -24,6 +24,7 @@
+--- ../../alsa-kernel/pcmcia/vx/vxpocket.c	2005-06-30 12:41:22.000000000 +0200
++++ vxpocket.c	2005-06-30 12:43:55.000000000 +0200
+@@ -1,3 +1,4 @@
++#include "vx_entry.inc"
+ /*
+  * Driver for Digigram VXpocket V2/440 soundcards
+  *
+@@ -24,6 +25,7 @@
  #include <linux/moduleparam.h>
  #include <sound/core.h>
  #include <pcmcia/version.h>
 +#include "compat_cs.h"
  #include "vxpocket.h"
- #include <sound/initval.h>
+ #include <pcmcia/ciscode.h>
+ #include <pcmcia/cisreg.h>
+@@ -89,6 +91,9 @@
+ 	vx_core_t *chip = device->device_data;
  
-@@ -129,11 +130,13 @@
+ 	snd_vx_free_firmware(chip);
++#ifndef handle_to_dev
++	kfree(chip->dev);
++#endif
+ 	kfree(chip);
+ 	return 0;
+ }
+@@ -159,6 +164,21 @@
+ 	if (! chip)
+ 		return NULL;
+ 
++#ifdef SND_VX_FW_LOADER
++#ifndef handle_to_dev
++	/* fake a device here since pcmcia doesn't give a valid device... */
++	chip->dev = kcalloc(1, sizeof(*chip->dev), GFP_KERNEL);
++	if (! chip->dev) {
++		snd_printk(KERN_ERR "vxp: can't malloc chip->dev\n");
++		kfree(chip);
++		snd_card_free(card);
++		return NULL;
++	}
++	device_initialize(chip->dev);
++	sprintf(chip->dev->bus_id, "vxpocket%d", i);
++#endif
++#endif
++
+ 	if (snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops) < 0) {
+ 		kfree(chip);
+ 		return NULL;
+@@ -179,6 +199,11 @@
+ 	link->irq.Handler = &snd_vx_irq_handler;
+ 	link->irq.Instance = chip;
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
++	link->release.function = (void (*)(unsigned long))vxpocket_release;
++	link->release.data = (u_long)link;
++#endif
++
+ 	link->conf.Attributes = CONF_ENABLE_IRQ;
+ 	link->conf.Vcc = 50;
+ 	link->conf.IntType = INT_MEMORY_AND_IO;
+@@ -297,7 +322,11 @@
+ 	CS_CHECK(RequestIRQ, pcmcia_request_irq(link->handle, &link->irq));
+ 	CS_CHECK(RequestConfiguration, pcmcia_request_configuration(link->handle, &link->conf));
+ 
++#ifdef SND_VX_FW_LOADER
++#ifdef handle_to_dev
+ 	chip->dev = &handle_to_dev(link->handle);
++#endif
++#endif
+ 
+ 	if (snd_vxpocket_assign_resources(chip, link->io.BasePort1, link->irq.AssignedIRQ) < 0)
+ 		goto failed;
+@@ -330,8 +359,12 @@
+ 	case CS_EVENT_CARD_REMOVAL:
+ 		snd_printdd(KERN_DEBUG "CARD_REMOVAL..\n");
+ 		link->state &= ~DEV_PRESENT;
+-		if (link->state & DEV_CONFIG)
++		if (link->state & DEV_CONFIG) {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
++			mod_timer(&link->release, jiffies + HZ/20);
++#endif
+ 			chip->chip_status |= VX_STAT_IS_STALE;
++		}
+ 		break;
+ 	case CS_EVENT_CARD_INSERTION:
+ 		snd_printdd(KERN_DEBUG "CARD_INSERTION..\n");
+@@ -438,6 +471,10 @@
+ 			break;
+ 		}
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* correct version? */
++	del_timer(&link->release);
++#endif
++
+ 	chip->chip_status |= VX_STAT_IS_STALE; /* to be sure */
+ 	snd_card_disconnect(chip->card);
+ 	vxpocket_release(link);
+@@ -448,11 +485,13 @@
   * Module entry points
   */
  
@@ -22,7 +108,7 @@
  
  static struct pcmcia_driver vxp_cs_driver = {
  	.owner		= THIS_MODULE,
-@@ -142,7 +145,9 @@
+@@ -461,7 +500,9 @@
  	},
  	.attach		= vxp_attach,
  	.detach		= vxp_detach,
@@ -32,9 +118,11 @@
  };
  
  static int __init init_vxpocket(void)
-@@ -158,3 +163,5 @@
+@@ -477,3 +518,7 @@
  
  module_init(init_vxpocket);
  module_exit(exit_vxpocket);
 +
 +EXPORT_NO_SYMBOLS;
++
++#include "vx_entry.inc1"
