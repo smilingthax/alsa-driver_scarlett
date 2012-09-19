@@ -274,7 +274,7 @@ void snd_hal2_interrupt(snd_hal2_card_t *hal2)
 	}
 }
 
-static int snd_hal2_playback_ioctl(void *private_data, snd_pcm_substream_t *substream,
+static int snd_hal2_playback_ioctl(void *private_data, struct snd_pcm_substream *substream,
 				   unsigned int cmd, void *arg)
 {
 	snd_hal2_card_t *hal2 = (snd_hal2_card_t *) private_data;
@@ -288,7 +288,7 @@ static int snd_hal2_playback_ioctl(void *private_data, snd_pcm_substream_t *subs
 	return -ENXIO;
 }
 
-static int snd_hal2_capture_ioctl(void *private_data, snd_pcm_substream_t *substream,
+static int snd_hal2_capture_ioctl(void *private_data, struct snd_pcm_substream *substream,
 				  unsigned int cmd, void *arg)
 {
 	snd_hal2_card_t *hal2 = (snd_hal2_card_t *) private_data;
@@ -302,7 +302,7 @@ static int snd_hal2_capture_ioctl(void *private_data, snd_pcm_substream_t *subst
 	return -ENXIO;
 }
 
-static int snd_hal2_playback_open(void *private_data, snd_pcm_substream_t *substream)
+static int snd_hal2_playback_open(void *private_data, struct snd_pcm_substream *substream)
 {
 	int err;
 	snd_hal2_card_t *hal2;
@@ -332,7 +332,7 @@ static int snd_hal2_playback_open(void *private_data, snd_pcm_substream_t *subst
 	return 0;
 }
 
-static int snd_hal2_capture_open(void *private_data, snd_pcm_substream_t *substream)
+static int snd_hal2_capture_open(void *private_data, struct snd_pcm_substream *substream)
 {
 	int err;
 	snd_hal2_card_t *hal2;
@@ -359,7 +359,7 @@ static int snd_hal2_capture_open(void *private_data, snd_pcm_substream_t *substr
 	return 0;
 }
 
-static void snd_hal2_playback_close(void *private_data, snd_pcm_substream_t *substream)
+static void snd_hal2_playback_close(void *private_data, struct snd_pcm_substream *substream)
 {
 	snd_hal2_card_t *hal2 = (snd_hal2_card_t *) private_data;
 
@@ -377,7 +377,7 @@ static void snd_hal2_playback_close(void *private_data, snd_pcm_substream_t *sub
 	hal2->usecount--;
 }
 
-static void snd_hal2_capture_close(void *private_data, snd_pcm_substream_t *substream)
+static void snd_hal2_capture_close(void *private_data, struct snd_pcm_substream *substream)
 {
 	snd_hal2_card_t *hal2 = (snd_hal2_card_t *) private_data;
 
@@ -408,7 +408,7 @@ static void snd_hal2_pio_memset(void *s, int c, size_t n)
 #endif
 
 static void snd_hal2_playback_prepare(void *private_data,
-				      snd_pcm_substream_t *substream,
+				      struct snd_pcm_substream *substream,
 				      unsigned char *buffer, unsigned int size,
 				      unsigned int offset, unsigned int count)
 {
@@ -529,7 +529,7 @@ static void snd_hal2_playback_prepare(void *private_data,
 }
 
 static void snd_hal2_capture_prepare(void *private_data,
-				     snd_pcm_substream_t *substream,
+				     struct snd_pcm_substream *substream,
 				     unsigned char *buffer, unsigned int size,
 				     unsigned int offset, unsigned int count)
 {
@@ -644,7 +644,7 @@ static void snd_hal2_capture_prepare(void *private_data,
 }
 
 static void snd_hal2_playback_trigger(void *private_data,
-				      snd_pcm_substream_t *substream, int up)
+				      struct snd_pcm_substream *substream, int up)
 {
 	snd_hal2_card_t *hal2;
 	snd_hal2_pbus_t *pbus;
@@ -703,7 +703,7 @@ static void snd_hal2_playback_trigger(void *private_data,
 }
 
 static void snd_hal2_capture_trigger(void *private_data,
-				     snd_pcm_substream_t *substream, int up)
+				     struct snd_pcm_substream *substream, int up)
 {
 	snd_hal2_card_t *hal2;
 	snd_hal2_pbus_t *pbus;
@@ -751,7 +751,7 @@ static void snd_hal2_capture_trigger(void *private_data,
 }
 
 static snd_pcm_uframes_t snd_hal2_playback_pointer(void *private_data,
-					      snd_pcm_substream_t *substream,
+					      struct snd_pcm_substream *substream,
 					      unsigned int used_size)
 {
 	snd_hal2_card_t *hal2 = (snd_hal2_card_t *) private_data;
@@ -760,7 +760,7 @@ static snd_pcm_uframes_t snd_hal2_playback_pointer(void *private_data,
 }
 
 static snd_pcm_uframes_t snd_hal2_capture_pointer(void *private_data,
-					     snd_pcm_substream_t *substream,
+					     struct snd_pcm_substream *substream,
 					     unsigned int used_size)
 {
 	snd_hal2_card_t *hal2 = (snd_hal2_card_t *) private_data;
@@ -768,7 +768,7 @@ static snd_pcm_uframes_t snd_hal2_capture_pointer(void *private_data,
 	return hal2->hal2.adc.pbus.pbus->pbdma_bptr;
 }
 
-static int snd_hal2_playback_dma(void *private_data, snd_pcm_substream_t *substream,
+static int snd_hal2_playback_dma(void *private_data, struct snd_pcm_substream *substream,
 				 unsigned char *buffer, unsigned int offset,
 				 unsigned char *user, unsigned int count)
 {
@@ -779,7 +779,7 @@ static int snd_hal2_playback_dma(void *private_data, snd_pcm_substream_t *substr
 	return ret;
 }
 
-static int snd_hal2_capture_dma(void *private_data, snd_pcm_substream_t *substream,
+static int snd_hal2_capture_dma(void *private_data, struct snd_pcm_substream *substream,
 				unsigned char *buffer, unsigned int offset,
 				unsigned char *user, unsigned int count)
 {
@@ -791,7 +791,7 @@ static int snd_hal2_capture_dma(void *private_data, snd_pcm_substream_t *substre
 }
 
 static int snd_hal2_dma_move(void *private_data,
-			    snd_pcm_substream_t *substream,
+			    struct snd_pcm_substream *substream,
 			     unsigned char *dbuffer,
 			     unsigned int dest_offset,
 			     unsigned char *sbuffer,
@@ -806,7 +806,7 @@ static int snd_hal2_dma_move(void *private_data,
 }
 
 static int snd_hal2_playback_dma_neutral(void *private_data,
-					 snd_pcm_substream_t *substream,
+					 struct snd_pcm_substream *substream,
 					 unsigned char *buffer,
 					 unsigned int offset,
 					 unsigned int count,
@@ -869,7 +869,7 @@ static void snd_hal2_free_device(void *ptr)
 	snd_kfree(hal2);
 }
 
-snd_pcm_t *snd_hal2_new_device(snd_card_t *card,
+struct snd_pcm *snd_hal2_new_device(struct snd_card *card,
 			       snd_irq_t *irqptr,
 			       snd_dma_t *dma1ptr,
 			       snd_dma_t *dma2ptr,
@@ -878,7 +878,7 @@ snd_pcm_t *snd_hal2_new_device(snd_card_t *card,
 			       snd_hal2_vol_regs_t *vol_regs,
 			       snd_hal2_syn_regs_t *syn_regs)
 {
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 	snd_pcm1_channel_t *pchn1;
 	snd_hal2_card_t *hal2;
 

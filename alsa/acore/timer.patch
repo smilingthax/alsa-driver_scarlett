@@ -53,7 +53,7 @@
  
 @@ -1826,6 +1845,7 @@
  	int err;
- 	snd_info_entry_t *entry;
+ 	struct snd_info_entry *entry;
  
 +	snd_timer_system.resolution = 1000000000L / HZ;
  #ifdef SNDRV_OSS_INFO_DEV_TIMERS

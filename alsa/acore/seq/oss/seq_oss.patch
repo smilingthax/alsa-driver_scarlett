@@ -47,7 +47,7 @@
 +#endif
  };
  
- static snd_minor_t seq_oss_reg = {
+ static struct snd_minor seq_oss_reg = {
 @@ -315,3 +334,5 @@
  	info_entry = NULL;
  #endif

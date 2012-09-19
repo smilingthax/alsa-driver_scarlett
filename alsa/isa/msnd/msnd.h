@@ -201,9 +201,9 @@ typedef struct multisound_dev {
 	int			capturePeriodBytes;
 	int			captureLimit;
 	int			capturePeriods;
-	snd_pcm_substream_t*	captureSubstream;
-	snd_card_t*		card;
-	snd_pcm_t*		pcm;
+	struct snd_pcm_substream *	captureSubstream;
+	struct snd_card *		card;
+	struct snd_pcm *	pcm;
 	void*			msndmidi_mpu;
 
 	/* Linux device info */
@@ -277,7 +277,7 @@ int			snd_msnd_enable_irq(multisound_dev_t *dev);
 int			snd_msnd_disable_irq(multisound_dev_t *dev);
 
 
-int snd_msndmidi_new(snd_card_t * card, int device, multisound_dev_t *dev);
+int snd_msndmidi_new(struct snd_card *card, int device, multisound_dev_t *dev);
 void snd_msndmidi_input_read( void * mpu);
 
 #endif /* __MSND_H */

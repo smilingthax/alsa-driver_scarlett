@@ -24,15 +24,16 @@
 #define __SOUND_PCXHR_CORE_H
 
 struct firmware;
+struct pcxhr_mgr;
 
 /* init and firmware download commands */
-void pcxhr_reset_xilinx_com(pcxhr_mgr_t *mgr);
-void pcxhr_reset_dsp(pcxhr_mgr_t *mgr);
-void pcxhr_enable_dsp(pcxhr_mgr_t *mgr);
-int pcxhr_load_xilinx_binary(pcxhr_mgr_t *mgr, const struct firmware *xilinx, int second);
-int pcxhr_load_eeprom_binary(pcxhr_mgr_t *mgr, const struct firmware *eeprom);
-int pcxhr_load_boot_binary(pcxhr_mgr_t *mgr, const struct firmware *boot);
-int pcxhr_load_dsp_binary(pcxhr_mgr_t *mgr, const struct firmware *dsp);
+void pcxhr_reset_xilinx_com(struct pcxhr_mgr *mgr);
+void pcxhr_reset_dsp(struct pcxhr_mgr *mgr);
+void pcxhr_enable_dsp(struct pcxhr_mgr *mgr);
+int pcxhr_load_xilinx_binary(struct pcxhr_mgr *mgr, const struct firmware *xilinx, int second);
+int pcxhr_load_eeprom_binary(struct pcxhr_mgr *mgr, const struct firmware *eeprom);
+int pcxhr_load_boot_binary(struct pcxhr_mgr *mgr, const struct firmware *boot);
+int pcxhr_load_dsp_binary(struct pcxhr_mgr *mgr, const struct firmware *dsp);
 
 /* DSP time available on MailBox4 register : 24 bit time samples() */
 #define PCXHR_DSP_TIME_MASK		0x00ffffff
@@ -51,7 +52,6 @@ struct pcxhr_rmh {
 	u32	cmd[PCXHR_SIZE_MAX_CMD];
 	u32	stat[PCXHR_SIZE_MAX_STATUS];
 };
-typedef struct pcxhr_rmh pcxhr_rmh_t;
 
 enum {
 	CMD_VERSION,			/* cmd_len = 2	stat_len = 1 */
@@ -91,14 +91,15 @@ enum {
 /*
  init the rmh struct; by default cmd_len is set to 1
  */
-void pcxhr_init_rmh(pcxhr_rmh_t *rmh, int cmd);
+void pcxhr_init_rmh(struct pcxhr_rmh *rmh, int cmd);
 
-void pcxhr_set_pipe_cmd_params(pcxhr_rmh_t* rmh, int capture, unsigned int param1, unsigned int param2, unsigned int param3);
+void pcxhr_set_pipe_cmd_params(struct pcxhr_rmh* rmh, int capture, unsigned int param1,
+			       unsigned int param2, unsigned int param3);
 
 /*
  send the rmh
  */
-int pcxhr_send_msg(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh);
+int pcxhr_send_msg(struct pcxhr_mgr *mgr, struct pcxhr_rmh *rmh);
 
 
 /* values used for CMD_ACCESS_IO_WRITE and CMD_ACCESS_IO_READ */
@@ -142,9 +143,10 @@ int pcxhr_send_msg(pcxhr_mgr_t *mgr, pcxhr_rmh_t *rmh);
 #define REG_STATUS_SYNC_176400		0x07
 #define REG_STATUS_SYNC_192000		0x08
 
-int pcxhr_set_pipe_state(pcxhr_mgr_t *mgr, int playback_mask, int capture_mask, int start);
+int pcxhr_set_pipe_state(struct pcxhr_mgr *mgr, int playback_mask, int capture_mask, int start);
 
-int pcxhr_write_io_num_reg_cont(pcxhr_mgr_t *mgr, unsigned int mask, unsigned int value, int *changed);
+int pcxhr_write_io_num_reg_cont(struct pcxhr_mgr *mgr, unsigned int mask,
+				unsigned int value, int *changed);
 
 /* codec parameters */
 #define CS8416_RUN		0x200401
@@ -193,6 +195,6 @@ int pcxhr_write_io_num_reg_cont(pcxhr_mgr_t *mgr, unsigned int mask, unsigned in
 
 /* interrupt handling */
 irqreturn_t pcxhr_interrupt(int irq, void *dev_id, struct pt_regs *regs);
-void pcxhr_msg_tasklet( unsigned long arg);
+void pcxhr_msg_tasklet(unsigned long arg);
 
 #endif /* __SOUND_PCXHR_CORE_H */

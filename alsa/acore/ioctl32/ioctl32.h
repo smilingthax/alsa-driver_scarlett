@@ -50,24 +50,24 @@
 
 #define convert_from_32(type, dstp, srcp)\
 {\
-	struct sndrv_##type __user *dst = dstp;\
-	struct sndrv_##type##32 __user *src = srcp;\
-	CVT_##sndrv_##type();\
+	struct snd_##type __user *dst = dstp;\
+	struct snd_##type##32 __user *src = srcp;\
+	CVT_##snd_##type();\
 }
 
 #define convert_to_32(type, dstp, srcp)\
 {\
-	struct sndrv_##type __user *src = srcp;\
-	struct sndrv_##type##32 __user *dst = dstp;\
-	CVT_##sndrv_##type();\
+	struct snd_##type __user *src = srcp;\
+	struct snd_##type##32 __user *dst = dstp;\
+	CVT_##snd_##type();\
 }
 
 
 #define DEFINE_ALSA_IOCTL(type) \
 static inline int _snd_ioctl32_##type(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)\
 {\
-	struct sndrv_##type##32 __user *data32;\
-	struct sndrv_##type __user *data;\
+	struct snd_##type##32 __user *data32;\
+	struct snd_##type __user *data;\
 	int err;\
 	data32 = compat_ptr(arg);\
 	data = compat_alloc_user_space(sizeof(*data));\

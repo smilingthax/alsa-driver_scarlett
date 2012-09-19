@@ -14,7 +14,7 @@
 /*
    calculate a translation-table for PC-Speaker
 */
-void pcsp_calc_voltab(pcsp_t *chip)
+void pcsp_calc_voltab(struct snd_pcsp *chip)
 {
 	int i;
 	unsigned int j;
@@ -25,7 +25,8 @@ void pcsp_calc_voltab(pcsp_t *chip)
 	}
 }
 
-static int pcsp_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int pcsp_volume_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 1;
@@ -34,16 +35,18 @@ static int pcsp_volume_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo
 	return 0;
 }
 
-static int pcsp_volume_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_volume_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->volume;
 	return 0;
 }
 
-static int pcsp_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_volume_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
 	int changed = 0;
 	int vol = ucontrol->value.integer.value[0];
@@ -57,7 +60,8 @@ static int pcsp_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 	return changed;
 }
 
-static int pcsp_enable_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int pcsp_enable_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
 	uinfo->count = 1;
@@ -66,16 +70,18 @@ static int pcsp_enable_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo
 	return 0;
 }
 
-static int pcsp_enable_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_enable_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->enable;
 	return 0;
 }
 
-static int pcsp_enable_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_enable_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	int changed = 0;
 	int enab = ucontrol->value.integer.value[0];
 	if (enab != chip->enable) {
@@ -85,7 +91,8 @@ static int pcsp_enable_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 	return changed;
 }
 
-static int pcsp_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int pcsp_gain_info(struct snd_kcontrol *kcontrol,
+			  struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
 	uinfo->count = 1;
@@ -94,16 +101,18 @@ static int pcsp_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 	return 0;
 }
 
-static int pcsp_gain_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_gain_get(struct snd_kcontrol *kcontrol,
+			 struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.integer.value[0] = chip->gain;
 	return 0;
 }
 
-static int pcsp_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_gain_put(struct snd_kcontrol *kcontrol,
+			 struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	unsigned long flags;
 	int changed = 0;
 	int gain = ucontrol->value.integer.value[0];
@@ -117,9 +126,10 @@ static int pcsp_gain_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontro
 	return changed;
 }
 
-static int pcsp_treble_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+static int pcsp_treble_info(struct snd_kcontrol *kcontrol,
+			    struct snd_ctl_elem_info *uinfo)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
 	uinfo->value.enumerated.items = chip->max_treble + 1;
@@ -129,17 +139,19 @@ static int pcsp_treble_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo
 	return 0;
 }
 
-static int pcsp_treble_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_treble_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
 {
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	ucontrol->value.enumerated.item[0] = chip->treble;
 	return 0;
 }
 
-static int pcsp_treble_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+static int pcsp_treble_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned long flags;
-	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	struct snd_pcsp *chip = snd_kcontrol_chip(kcontrol);
 	int changed = 0;
 	int treble = ucontrol->value.enumerated.item[0];
 	if (treble != chip->treble) {
@@ -162,16 +174,16 @@ static int pcsp_treble_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 	.put =		pcsp_##ctl_type##_put, \
 }
 
-static snd_kcontrol_new_t __initdata snd_pcsp_controls[] = {
+static struct snd_kcontrol_new __initdata snd_pcsp_controls[] = {
 	PCSP_MIXER_CONTROL(volume, "Master Playback Volume"),
 	PCSP_MIXER_CONTROL(enable, "Master Playback Switch"),
 	PCSP_MIXER_CONTROL(gain, "PCM Playback Volume"),
 	PCSP_MIXER_CONTROL(treble, "BaseFRQ Playback Volume"),
 };
 
-int __init snd_pcsp_new_mixer(pcsp_t *chip)
+int __init snd_pcsp_new_mixer(struct snd_pcsp *chip)
 {
-	snd_card_t *card = chip->card;
+	struct snd_card *card = chip->card;
 	int i, err;
 
 	for (i = 0; i < ARRAY_SIZE(snd_pcsp_controls); i++) {

@@ -83,7 +83,7 @@ static void snd_msndmidi_output_write(msndmidi_t * mpu);
 typedef struct _snd_msndmidi msndmidi_t;
 
 struct _snd_msndmidi {
-	snd_rawmidi_t *rmidi;
+	struct snd_rawmidi *rmidi;
 	multisound_dev_t *dev;
 
 	unsigned long mode;		/* MSNDMIDI_MODE_XXXX */
@@ -91,8 +91,8 @@ struct _snd_msndmidi {
 
 	void *private_data;
 
-	snd_rawmidi_substream_t *substream_input;
-	snd_rawmidi_substream_t *substream_output;
+	struct snd_rawmidi_substream *substream_input;
+	struct snd_rawmidi_substream *substream_output;
 
 	spinlock_t input_lock;
 	spinlock_t output_lock;
@@ -224,12 +224,12 @@ static void snd_msndmidi_cmd(msndmidi_t * mpu, unsigned char cmd, int ack)
 /*
  * input/output open/close - protected by open_mutex in rawmidi.c
  */
-static int snd_msndmidi_input_open(snd_rawmidi_substream_t * substream)
+static int snd_msndmidi_input_open(struct snd_rawmidi_substream *substream)
 {
 	msndmidi_t *mpu;
 //	int err;
 #ifdef CONFIG_SND_DEBUG0
-	printk( "snd_msndmidi_input_open(snd_rawmidi_substream_t * substream)\n");
+	printk( "snd_msndmidi_input_open(struct snd_rawmidi_substream *substream)\n");
 #endif
 
 	mpu = substream->rmidi->private_data;
@@ -251,7 +251,7 @@ static int snd_msndmidi_input_open(snd_rawmidi_substream_t * substream)
 }
 
 #ifdef SND_MSNDMIDI_OUTPUT
-static int snd_msndmidi_output_open(snd_rawmidi_substream_t * substream)
+static int snd_msndmidi_output_open(struct snd_rawmidi_substream *substream)
 {
 	msndmidi_t *mpu;
 	int err;
@@ -269,12 +269,12 @@ static int snd_msndmidi_output_open(snd_rawmidi_substream_t * substream)
 }
 #endif
 
-static int snd_msndmidi_input_close(snd_rawmidi_substream_t * substream)
+static int snd_msndmidi_input_close(struct snd_rawmidi_substream *substream)
 {
 	msndmidi_t *mpu;
 
 #ifdef CONFIG_SND_DEBUG0
-	printk( "snd_msndmidi_input_close(snd_rawmidi_substream_t * substream)\n");
+	printk( "snd_msndmidi_input_close(struct snd_rawmidi_substream *substream)\n");
 #endif
 
 	mpu = substream->rmidi->private_data;
@@ -290,7 +290,7 @@ static int snd_msndmidi_input_close(snd_rawmidi_substream_t * substream)
 }
 
 #ifdef SND_MSNDMIDI_OUTPUT
-static int snd_msndmidi_output_close(snd_rawmidi_substream_t * substream)
+static int snd_msndmidi_output_close(struct snd_rawmidi_substream *substream)
 {
 	msndmidi_t *mpu;
 
@@ -316,7 +316,7 @@ static void inline snd_msndmidi_input_drop(msndmidi_t * mpu)
 /*
  * trigger input
  */
-static void snd_msndmidi_input_trigger(snd_rawmidi_substream_t * substream, int up)
+static void snd_msndmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
 {
 	unsigned long flags;
 	msndmidi_t *mpu;
@@ -396,7 +396,7 @@ static void snd_msndmidi_output_write(msndmidi_t * mpu)
 	} while (--max > 0);
 }
 
-static void snd_msndmidi_output_trigger(snd_rawmidi_substream_t * substream, int up)
+static void snd_msndmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
 {
 	unsigned long flags;
 	msndmidi_t *mpu;
@@ -419,7 +419,7 @@ static void snd_msndmidi_output_trigger(snd_rawmidi_substream_t * substream, int
 
  */
 
-static snd_rawmidi_ops_t snd_msndmidi_output =
+static struct snd_rawmidi_ops snd_msndmidi_output =
 {
 	.open =		snd_msndmidi_output_open,
 	.close =	snd_msndmidi_output_close,
@@ -427,14 +427,14 @@ static snd_rawmidi_ops_t snd_msndmidi_output =
 };
 #endif
 
-static snd_rawmidi_ops_t snd_msndmidi_input =
+static struct snd_rawmidi_ops snd_msndmidi_input =
 {
 	.open =		snd_msndmidi_input_open,
 	.close =	snd_msndmidi_input_close,
 	.trigger =	snd_msndmidi_input_trigger,
 };
 
-static void snd_msndmidi_free(snd_rawmidi_t *rmidi)
+static void snd_msndmidi_free(struct snd_rawmidi *rmidi)
 {
 	msndmidi_t *mpu = rmidi->private_data;
 /*	if (mpu->irq_flags && mpu->irq >= 0)
@@ -446,10 +446,10 @@ static void snd_msndmidi_free(snd_rawmidi_t *rmidi)
 	kfree(mpu);
 }
 
-int snd_msndmidi_new(snd_card_t * card, int device, multisound_dev_t *dev)
+int snd_msndmidi_new(struct snd_card *card, int device, multisound_dev_t *dev)
 {
 	msndmidi_t *mpu;
-	snd_rawmidi_t *rmidi;
+	struct snd_rawmidi *rmidi;
 	int err;
 
 	if ((err = snd_rawmidi_new(card, "MSND-MIDI", device, 1, 1, &rmidi)) < 0)

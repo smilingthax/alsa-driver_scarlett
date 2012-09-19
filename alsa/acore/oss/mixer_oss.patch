@@ -44,4 +44,4 @@
 +#endif	
  };
  
- static snd_minor_t snd_mixer_oss_reg =
+ static struct snd_minor snd_mixer_oss_reg =

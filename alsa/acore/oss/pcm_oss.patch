@@ -27,7 +27,7 @@
 +
  static ssize_t snd_pcm_oss_read(struct file *file, char __user *buf, size_t count, loff_t *offset)
  {
- 	snd_pcm_oss_file_t *pcm_oss_file;
+ 	struct snd_pcm_oss_file *pcm_oss_file;
 @@ -2225,7 +2238,11 @@
  	if (runtime->oss.plugin_first != NULL)
  		return -EIO;

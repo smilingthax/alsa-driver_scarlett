@@ -85,7 +85,7 @@ MODULE_PARM_DESC(handshake, "Do handshaking.");
 #define SERIAL_MODE_BIT_OUTPUT_TRIGGERED (3)
 
 typedef struct _snd_serialmidi {
-	snd_card_t *card;
+	struct snd_card *card;
 	char *sdev;			/* serial device name (e.g. /dev/ttyS0) */
 	int dev_idx;
 	unsigned int speed;		/* speed in bauds */
@@ -93,9 +93,9 @@ typedef struct _snd_serialmidi {
 	unsigned long mode;		/* see SERIAL_MODE_* */
 	unsigned int outs;		/* count of outputs */
 	unsigned char prev_status[SNDRV_SERIAL_MAX_OUTS];
-	snd_rawmidi_t *rmidi;		/* rawmidi device */
-	snd_rawmidi_substream_t *substream_input;
-	snd_rawmidi_substream_t *substream_output;
+	struct snd_rawmidi *rmidi;		/* rawmidi device */
+	struct snd_rawmidi_substream *substream_input;
+	struct snd_rawmidi_substream *substream_output;
 	struct file *file;
 	struct tty_struct *tty;
 	struct semaphore open_lock;
@@ -107,7 +107,7 @@ typedef struct _snd_serialmidi {
 	unsigned char tx_buf[TX_BUF_SIZE];
 } serialmidi_t;
 
-static snd_card_t *snd_serialmidi_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
+static struct snd_card *snd_serialmidi_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
 
 static void ldisc_receive_buf(struct tty_struct *, const unsigned char *cp, char *fp, int count);
 static void ldisc_write_wakeup(struct tty_struct *);
@@ -345,7 +345,7 @@ static void ldisc_write_wakeup(struct tty_struct *tty)
 	tx_loop(serial);
 }
 
-static void snd_serialmidi_output_trigger(snd_rawmidi_substream_t * substream, int up)
+static void snd_serialmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
 {
 	serialmidi_t *serial = substream->rmidi->private_data;
 	
@@ -359,7 +359,7 @@ static void snd_serialmidi_output_trigger(snd_rawmidi_substream_t * substream, i
 	}
 }
 
-static void snd_serialmidi_input_trigger(snd_rawmidi_substream_t * substream, int up)
+static void snd_serialmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
 {
 	serialmidi_t *serial = substream->rmidi->private_data;
 
@@ -370,7 +370,7 @@ static void snd_serialmidi_input_trigger(snd_rawmidi_substream_t * substream, in
 	}
 }
 
-static int snd_serialmidi_output_open(snd_rawmidi_substream_t * substream)
+static int snd_serialmidi_output_open(struct snd_rawmidi_substream *substream)
 {
 	serialmidi_t *serial = substream->rmidi->private_data;
 	int err;
@@ -381,7 +381,7 @@ static int snd_serialmidi_output_open(snd_rawmidi_substream_t * substream)
 	return 0;
 }
 
-static int snd_serialmidi_output_close(snd_rawmidi_substream_t * substream)
+static int snd_serialmidi_output_close(struct snd_rawmidi_substream *substream)
 {
 	serialmidi_t *serial = substream->rmidi->private_data;
 
@@ -389,7 +389,7 @@ static int snd_serialmidi_output_close(snd_rawmidi_substream_t * substream)
 	return close_tty(serial, SERIAL_MODE_BIT_OUTPUT);
 }
 
-static int snd_serialmidi_input_open(snd_rawmidi_substream_t * substream)
+static int snd_serialmidi_input_open(struct snd_rawmidi_substream *substream)
 {
 	serialmidi_t *serial = substream->rmidi->private_data;
 	int err;
@@ -400,7 +400,7 @@ static int snd_serialmidi_input_open(snd_rawmidi_substream_t * substream)
 	return 0;
 }
 
-static int snd_serialmidi_input_close(snd_rawmidi_substream_t * substream)
+static int snd_serialmidi_input_close(struct snd_rawmidi_substream *substream)
 {
 	serialmidi_t *serial = substream->rmidi->private_data;
 
@@ -408,14 +408,14 @@ static int snd_serialmidi_input_close(snd_rawmidi_substream_t * substream)
 	return close_tty(serial, SERIAL_MODE_BIT_INPUT);
 }
 
-static snd_rawmidi_ops_t snd_serialmidi_output =
+static struct snd_rawmidi_ops snd_serialmidi_output =
 {
 	.open =		snd_serialmidi_output_open,
 	.close =	snd_serialmidi_output_close,
 	.trigger =	snd_serialmidi_output_trigger,
 };
 
-static snd_rawmidi_ops_t snd_serialmidi_input =
+static struct snd_rawmidi_ops snd_serialmidi_input =
 {
 	.open =		snd_serialmidi_input_open,
 	.close =	snd_serialmidi_input_close,
@@ -430,7 +430,7 @@ static int snd_serialmidi_free(serialmidi_t *serial)
 	return 0;
 }
 
-static int snd_serialmidi_dev_free(snd_device_t *device)
+static int snd_serialmidi_dev_free(struct snd_device *device)
 {
 	serialmidi_t *serial = device->device_data;
 	return snd_serialmidi_free(serial);
@@ -438,7 +438,7 @@ static int snd_serialmidi_dev_free(snd_device_t *device)
 
 static int __init snd_serialmidi_rmidi(serialmidi_t *serial)
 {
-        snd_rawmidi_t *rrawmidi;
+        struct snd_rawmidi *rrawmidi;
         int err;
 
         if ((err = snd_rawmidi_new(serial->card, "UART Serial MIDI", serial->dev_idx, serial->outs, 1, &rrawmidi)) < 0)
@@ -454,12 +454,12 @@ static int __init snd_serialmidi_rmidi(serialmidi_t *serial)
         return 0;
 }
 
-static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
+static int __init snd_serialmidi_create(struct snd_card *card, const char *sdev,
 					unsigned int speed, unsigned int adaptor,
 					unsigned int outs, int idx, int hshake,
 					serialmidi_t **rserial)
 {
-	static snd_device_ops_t ops = {
+	static struct snd_device_ops ops = {
 		.dev_free =	snd_serialmidi_dev_free,
 	};
 	serialmidi_t *serial;
@@ -520,7 +520,7 @@ static int __init snd_serialmidi_create(snd_card_t *card, const char *sdev,
 
 static int __init snd_card_serialmidi_probe(int dev)
 {
-	snd_card_t *card;
+	struct snd_card *card;
 	serialmidi_t *serial;
 	int err;
 

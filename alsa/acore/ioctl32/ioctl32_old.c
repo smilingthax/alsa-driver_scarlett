@@ -84,7 +84,7 @@ int snd_ioctl32_compat(unsigned int fd, unsigned int cmd, unsigned long arg, str
  * Controls
  */
 
-struct sndrv_ctl_elem_list32 {
+struct snd_ctl_elem_list32 {
 	u32 offset;
 	u32 space;
 	u32 used;
@@ -93,7 +93,7 @@ struct sndrv_ctl_elem_list32 {
 	unsigned char reserved[50];
 } /* don't set packed attribute here */;
 
-#define CVT_sndrv_ctl_elem_list()\
+#define CVT_snd_ctl_elem_list()\
 {\
 	COPY(offset);\
 	COPY(space);\
@@ -104,8 +104,8 @@ struct sndrv_ctl_elem_list32 {
 
 static inline int _snd_ioctl32_ctl_elem_list(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)
 {
-	struct sndrv_ctl_elem_list32 data32;
-	struct sndrv_ctl_elem_list data;
+	struct snd_ctl_elem_list32 data32;
+	struct snd_ctl_elem_list data;
 	mm_segment_t oldseg;
 	int err;
 
@@ -141,8 +141,8 @@ DEFINE_ALSA_IOCTL_ENTRY(ctl_elem_list, ctl_elem_list, SNDRV_CTL_IOCTL_ELEM_LIST)
  * it uses union, so the things are not easy..
  */
 
-struct sndrv_ctl_elem_info32 {
-	struct sndrv_ctl_elem_id id; // the size of struct is same
+struct snd_ctl_elem_info32 {
+	struct snd_ctl_elem_id id; // the size of struct is same
 	s32 type;
 	u32 access;
 	u32 count;
@@ -170,8 +170,8 @@ struct sndrv_ctl_elem_info32 {
 
 static inline int _snd_ioctl32_ctl_elem_info(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)
 {
-	struct sndrv_ctl_elem_info data;
-	struct sndrv_ctl_elem_info32 data32;
+	struct snd_ctl_elem_info data;
+	struct snd_ctl_elem_info32 data32;
 	int err;
 	mm_segment_t oldseg;
 
@@ -223,8 +223,8 @@ static inline int _snd_ioctl32_ctl_elem_info(unsigned int fd, unsigned int cmd, 
 
 DEFINE_ALSA_IOCTL_ENTRY(ctl_elem_info, ctl_elem_info, SNDRV_CTL_IOCTL_ELEM_INFO);
 
-struct sndrv_ctl_elem_value32 {
-	struct sndrv_ctl_elem_id id;
+struct snd_ctl_elem_value32 {
+	struct snd_ctl_elem_id id;
 	unsigned int indirect;	/* bit-field causes misalignment */
         union {
 		union {
@@ -243,18 +243,18 @@ struct sndrv_ctl_elem_value32 {
 			unsigned char data[512];
 			u32 data_ptr;
 		} bytes;
-		struct sndrv_aes_iec958 iec958;
+		struct snd_aes_iec958 iec958;
         } value;
         unsigned char reserved[128];
 };
 
 
 /* hmm, it's so hard to retrieve the value type from the control id.. */
-static int get_ctl_type(struct file *file, snd_ctl_elem_id_t *id)
+static int get_ctl_type(struct file *file, struct snd_ctl_elem_id *id)
 {
-	snd_ctl_file_t *ctl;
-	snd_kcontrol_t *kctl;
-	snd_ctl_elem_info_t info;
+	struct snd_ctl_file *ctl;
+	struct snd_kcontrol *kctl;
+	struct snd_ctl_elem_info info;
 	int err;
 
 	ctl = file->private_data;
@@ -276,8 +276,8 @@ static int get_ctl_type(struct file *file, snd_ctl_elem_id_t *id)
 
 static inline int _snd_ioctl32_ctl_elem_value(unsigned int fd, unsigned int cmd, unsigned long arg, struct file *file, unsigned int native_ctl)
 {
-	struct sndrv_ctl_elem_value *data;
-	struct sndrv_ctl_elem_value32 *data32;
+	struct snd_ctl_elem_value *data;
+	struct snd_ctl_elem_value32 *data32;
 	int err, i;
 	int type;
 	mm_segment_t oldseg;
@@ -386,10 +386,10 @@ DEFINE_ALSA_IOCTL_ENTRY(ctl_elem_write, ctl_elem_value, SNDRV_CTL_IOCTL_ELEM_WRI
 #define AP(x) snd_ioctl32_##x
 
 enum {
-	SNDRV_CTL_IOCTL_ELEM_LIST32 = _IOWR('U', 0x10, struct sndrv_ctl_elem_list32),
-	SNDRV_CTL_IOCTL_ELEM_INFO32 = _IOWR('U', 0x11, struct sndrv_ctl_elem_info32),
-	SNDRV_CTL_IOCTL_ELEM_READ32 = _IOWR('U', 0x12, struct sndrv_ctl_elem_value32),
-	SNDRV_CTL_IOCTL_ELEM_WRITE32 = _IOWR('U', 0x13, struct sndrv_ctl_elem_value32),
+	SNDRV_CTL_IOCTL_ELEM_LIST32 = _IOWR('U', 0x10, struct snd_ctl_elem_list32),
+	SNDRV_CTL_IOCTL_ELEM_INFO32 = _IOWR('U', 0x11, struct snd_ctl_elem_info32),
+	SNDRV_CTL_IOCTL_ELEM_READ32 = _IOWR('U', 0x12, struct snd_ctl_elem_value32),
+	SNDRV_CTL_IOCTL_ELEM_WRITE32 = _IOWR('U', 0x13, struct snd_ctl_elem_value32),
 };
 
 static struct ioctl32_mapper control_mappers[] = {

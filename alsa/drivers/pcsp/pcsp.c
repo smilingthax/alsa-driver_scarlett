@@ -42,8 +42,8 @@ MODULE_PARM_DESC(enable, "dummy");
 module_param(no_test_speed, int, 0444);
 MODULE_PARM_DESC(no_test_speed, "dont test the CPU speed on startup");
 
-static snd_card_t *snd_pcsp_card = SNDRV_DEFAULT_PTR1;
-static pcsp_t *snd_pcsp_chip = NULL;
+static struct snd_card *snd_pcsp_card = SNDRV_DEFAULT_PTR1;
+static struct snd_pcsp *snd_pcsp_chip = NULL;
 
 #ifdef CONFIG_APM_CPU_IDLE
 static void (*saved_pm_idle)(void);
@@ -51,7 +51,7 @@ static void (*saved_pm_idle)(void);
 
 static char *pcsp_input_name = "pcsp-input";
 
-static int (*pcsp_timer_func)(chip_t *chip) = NULL;
+static int (*pcsp_timer_func)(struct snd_pcsp *chip) = NULL;
 void *pcsp_timer_hook;
 
 static void pcsp_input_event(struct input_handle *handle, unsigned int event_type, 
@@ -123,7 +123,7 @@ static int pcsp_timer(struct pt_regs *regs)
 	return 0;
 }
 
-int pcsp_set_timer_hook(chip_t *chip, int (*func)(chip_t *chip))
+int pcsp_set_timer_hook(struct snd_pcsp *chip, int (*func)(struct snd_pcsp *chip))
 {
 	unsigned long flags;
 	int err;
@@ -144,7 +144,7 @@ int pcsp_set_timer_hook(chip_t *chip, int (*func)(chip_t *chip))
 	return 0;
 }
 
-void pcsp_release_timer_hook(chip_t *chip)
+void pcsp_release_timer_hook(struct snd_pcsp *chip)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&chip->lock, flags);
@@ -163,7 +163,7 @@ volatile static int pcsp_test_running;
    the timer-int for testing cpu-speed, mostly the same as
    for PC-Speaker
  */
-static int __init pcsp_test_intspeed(chip_t *chip)
+static int __init pcsp_test_intspeed(struct snd_pcsp *chip)
 {
 	unsigned char test_buffer[256];
 	if (chip->index < tst_len[chip->cur_buf]) {
@@ -190,7 +190,7 @@ static int __init pcsp_test_intspeed(chip_t *chip)
    we play thru PC-Speaker. This is kind of ugly but does the
    trick.
  */
-static int __init pcsp_measurement(chip_t *chip, int addon, int *rticks)
+static int __init pcsp_measurement(struct snd_pcsp *chip, int addon, int *rticks)
 {
 	int count, err;
 	unsigned long flags;
@@ -222,7 +222,7 @@ static int __init pcsp_measurement(chip_t *chip, int addon, int *rticks)
 	return 0;
 }
 
-static int __init pcsp_test_speed(chip_t *chip, int *rmin_div)
+static int __init pcsp_test_speed(struct snd_pcsp *chip, int *rmin_div)
 {
 	int worst, worst1, best, best1, min_div;
 
@@ -254,30 +254,30 @@ static int __init pcsp_test_speed(chip_t *chip, int *rmin_div)
 	return 1;
 }
 
-static int snd_pcsp_free(pcsp_t *chip)
+static int snd_pcsp_free(struct snd_pcsp *chip)
 {
 	unregister_timer_hook(pcsp_timer_hook);
 	kfree(chip);
 	return 0;
 }
 
-static int snd_pcsp_dev_free(snd_device_t *device)
+static int snd_pcsp_dev_free(struct snd_device *device)
 {
-	pcsp_t *chip = device->device_data;
+	struct snd_pcsp *chip = device->device_data;
 	return snd_pcsp_free(chip);
 }
 
-static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
+static int __init snd_pcsp_create(struct snd_card *card, struct snd_pcsp **rchip)
 {
-	static snd_device_ops_t ops = {
+	static struct snd_device_ops ops = {
 		.dev_free = snd_pcsp_dev_free,
 	};
-	pcsp_t *chip;
+	struct snd_pcsp *chip;
 	int err;
 	int div, min_div, order;
 	int pcsp_enabled = 1;
 
-	chip = kcalloc(1, sizeof(pcsp_t), GFP_KERNEL);
+	chip = kcalloc(1, sizeof(struct snd_pcsp), GFP_KERNEL);
 	if (chip == NULL)
 		return -ENOMEM;
 	spin_lock_init(&chip->lock);
@@ -332,8 +332,8 @@ static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
 
 static int __init snd_card_pcsp_probe(int dev)
 {
-	snd_card_t *card;
-	pcsp_t *chip;
+	struct snd_card *card;
+	struct snd_pcsp *chip;
 	int err;
 
 	if (dev != 0)

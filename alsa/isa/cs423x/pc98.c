@@ -97,7 +97,7 @@ MODULE_PARM_DESC(pc98ii, "Roland MPU-PC98II support.");
 MODULE_PARM_SYNTAX(pc98ii, SNDRV_BOOLEAN_FALSE_DESC);
 
 
-static snd_card_t *snd_pc98_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
+static struct snd_card *snd_pc98_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
 
 /*
  * initialize MPU401-UART
@@ -313,10 +313,10 @@ static int __init pc98_cs4231_chip_init(int dev)
 
 static int __init snd_card_pc98_probe(int dev)
 {
-	snd_card_t *card;
-	snd_pcm_t *pcm = NULL;
+	struct snd_card *card;
+	struct snd_pcm *pcm = NULL;
 	cs4231_t *chip;
-	opl3_t *opl3;
+	struct snd_opl3 *opl3;
 	int err;
 
 	if (port[dev] == SNDRV_AUTO_PORT) {

@@ -97,7 +97,7 @@ extern int mod_firmware_load(const char *fn, char **fp);
 #define chip_t snd_msndpinnacle_pcm_t
 
 typedef struct snd_msndpinnacle_pcm {
-	snd_card_t*		card;
+	struct snd_card *		card;
 	spinlock_t lock;
 	struct timer_list timer;
 	unsigned int pcm_size;
@@ -107,7 +107,7 @@ typedef struct snd_msndpinnacle_pcm {
 	unsigned int pcm_jiffie;	/* bytes per one jiffie */
 	unsigned int pcm_irq_pos;	/* IRQ position */
 	unsigned int pcm_buf_pos;	/* position in buffer */
-	snd_pcm_substream_t *substream;
+	struct snd_pcm_substream *substream;
 } snd_msndpinnacle_pcm_t;
 
 
@@ -801,12 +801,12 @@ static int snd_msnd_dsp_full_reset(void)
 	return rv;
 }
 
-static int snd_msnd_dev_free( snd_device_t *device){
+static int snd_msnd_dev_free( struct snd_device *device){
 	snd_printd( "snd_msnd_dev_free()\n");
 	return 0;
 }
 
-static snd_pcm_hardware_t snd_msnd_playback =
+static struct snd_pcm_hardware snd_msnd_playback =
 {
 	.info =			( SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED | SNDRV_PCM_INFO_MMAP_VALID),
 	.formats =		( SNDRV_PCM_FMTBIT_U8 | SNDRV_PCM_FMTBIT_S16_LE),
@@ -823,7 +823,7 @@ static snd_pcm_hardware_t snd_msnd_playback =
 	.fifo_size =		0,
 };
 
-static snd_pcm_hardware_t snd_msnd_capture =
+static struct snd_pcm_hardware snd_msnd_capture =
 {
 	.info =			(SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 				 SNDRV_PCM_INFO_MMAP_VALID),
@@ -847,7 +847,7 @@ static unsigned int rates[7] = {
 	32000, 44100, 48000
 };
 
-static snd_pcm_hw_constraint_list_t hw_constraints_rates = {
+static struct snd_pcm_hw_constraint_list hw_constraints_rates = {
 	.count = 7,
 	.list = rates,
 	.mask = 0,
@@ -875,7 +875,7 @@ static void snd_msnd_pcm_timer_function(unsigned long data)
 	spin_unlock_irq( &dpcm->lock);	*/
 }
 
-static void snd_msnd_runtime_free( snd_pcm_runtime_t *runtime)
+static void snd_msnd_runtime_free( struct snd_pcm_runtime *runtime)
 {
 	snd_msndpinnacle_pcm_t* dpcm = runtime->private_data;
 	kfree( dpcm);
@@ -921,9 +921,9 @@ static void snd_msnd_generate_sine(signed short *samples, int channels,
 #endif
 
 
-static int snd_msnd_playback_open( snd_pcm_substream_t *substream)
+static int snd_msnd_playback_open( struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t*	runtime = substream->runtime;
+	struct snd_pcm_runtime *	runtime = substream->runtime;
 	snd_msndpinnacle_pcm_t*	dpcm;
 
 	//snd_printd( "snd_msnd_playback_open()\n");
@@ -953,7 +953,7 @@ static int snd_msnd_playback_open( snd_pcm_substream_t *substream)
 	return 0;
 }
 
-static int snd_msnd_playback_close( snd_pcm_substream_t *substream)
+static int snd_msnd_playback_close( struct snd_pcm_substream *substream)
 {
 	//snd_printd( "snd_msnd_playback_close()\n");
 	snd_msnd_disable_irq( &dev);
@@ -962,7 +962,7 @@ static int snd_msnd_playback_close( snd_pcm_substream_t *substream)
 }
 
 
-static int snd_msnd_playback_hw_params( snd_pcm_substream_t * substream, snd_pcm_hw_params_t * params)
+static int snd_msnd_playback_hw_params( struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
 {
 	/*	snd_printd( " dpcm = %X M=%X\n", (unsigned)substream->runtime->private_data,
 			*((unsigned*)substream->runtime->private_data-1));
@@ -1006,15 +1006,15 @@ static int snd_msnd_playback_hw_params( snd_pcm_substream_t * substream, snd_pcm
 
 
 
-/*static int snd_msnd_playback_hw_free( snd_pcm_substream_t *substream)
+/*static int snd_msnd_playback_hw_free( struct snd_pcm_substream *substream)
 {
 	snd_printd( "snd_msnd_playback_hw_free()\n");
 	return 0;
 } */
 
-static int snd_msnd_playback_prepare( snd_pcm_substream_t * substream)
+static int snd_msnd_playback_prepare( struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_msndpinnacle_pcm_t*	dpcm = runtime->private_data;
 	//snd_printd( "snd_msnd_playback_prepare()\n");
 
@@ -1028,7 +1028,7 @@ static int snd_msnd_playback_prepare( snd_pcm_substream_t * substream)
 }
 
 //static int played_bytes;
-static int snd_msnd_playback_trigger( snd_pcm_substream_t * substream, int cmd)
+static int snd_msnd_playback_trigger( struct snd_pcm_substream *substream, int cmd)
 {
 	int	result = 0;
 	//spin_lock(&chip->reg_lock);
@@ -1058,9 +1058,9 @@ static int snd_msnd_playback_trigger( snd_pcm_substream_t * substream, int cmd)
 	return result;
 }
 
-static snd_pcm_uframes_t snd_msnd_playback_pointer( snd_pcm_substream_t * substream)
+static snd_pcm_uframes_t snd_msnd_playback_pointer( struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t*	runtime =	substream->runtime;
+	struct snd_pcm_runtime *	runtime =	substream->runtime;
 	//snd_printd( "snd_msnd_playback_pointer()\n");
 	//snd_msndpinnacle_pcm_t*	dpcm =		runtime->private_data;
 
@@ -1115,7 +1115,7 @@ static snd_pcm_uframes_t snd_msnd_playback_pointer( snd_pcm_substream_t * substr
 }
 
 
-static snd_pcm_ops_t snd_msnd_playback_ops = {
+static struct snd_pcm_ops snd_msnd_playback_ops = {
 	.open =		snd_msnd_playback_open,
 	.close =	snd_msnd_playback_close,
 	.ioctl =	snd_pcm_lib_ioctl,
@@ -1126,9 +1126,9 @@ static snd_pcm_ops_t snd_msnd_playback_ops = {
 	.pointer =	snd_msnd_playback_pointer,
 };
 
-static int snd_msnd_capture_open(snd_pcm_substream_t * substream)
+static int snd_msnd_capture_open(struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t*	runtime = substream->runtime;
+	struct snd_pcm_runtime *	runtime = substream->runtime;
 	snd_msndpinnacle_pcm_t*	dpcm;
 	//snd_printd( "snd_msnd_capture_open()\n");
 
@@ -1153,7 +1153,7 @@ static int snd_msnd_capture_open(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_msnd_capture_close( snd_pcm_substream_t * substream)
+static int snd_msnd_capture_close( struct snd_pcm_substream *substream)
 {
 	//snd_printd( "snd_msnd_capture_close()\n");
 	snd_msnd_disable_irq( &dev);
@@ -1161,9 +1161,9 @@ static int snd_msnd_capture_close( snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_msnd_capture_prepare( snd_pcm_substream_t * substream)
+static int snd_msnd_capture_prepare( struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	snd_msndpinnacle_pcm_t*	dpcm = runtime->private_data;
 	//snd_printd( "snd_msnd_capture_prepare()\n");
 
@@ -1176,7 +1176,7 @@ static int snd_msnd_capture_prepare( snd_pcm_substream_t * substream)
 	return 0;
 }
 
-static int snd_msnd_capture_trigger( snd_pcm_substream_t * substream, int cmd)
+static int snd_msnd_capture_trigger( struct snd_pcm_substream *substream, int cmd)
 {
 	if( cmd == SNDRV_PCM_TRIGGER_START){
 		//snd_card_dummy_pcm_timer_start(substream);
@@ -1196,16 +1196,16 @@ static int snd_msnd_capture_trigger( snd_pcm_substream_t * substream, int cmd)
 }
 
 
-static snd_pcm_uframes_t snd_msnd_capture_pointer( snd_pcm_substream_t * substream)
+static snd_pcm_uframes_t snd_msnd_capture_pointer( struct snd_pcm_substream *substream)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 //	snd_card_dummy_pcm_t *dpcm = runtime->private_data;
 
 	return bytes_to_frames( runtime, dev.captureDMAPos);
 }
 
 
-static int snd_msnd_capture_hw_params( snd_pcm_substream_t * substream, snd_pcm_hw_params_t * params)
+static int snd_msnd_capture_hw_params( struct snd_pcm_substream *substream, struct snd_pcm_hw_params *params)
 {
 	int		i;
 	LPDAQD		lpDAQ =		dev.base + DARQ_DATA_BUFF;
@@ -1229,7 +1229,7 @@ static int snd_msnd_capture_hw_params( snd_pcm_substream_t * substream, snd_pcm_
 }
 
 
-static snd_pcm_ops_t snd_msnd_capture_ops = {
+static struct snd_pcm_ops snd_msnd_capture_ops = {
 	.open =		snd_msnd_capture_open,
 	.close =	snd_msnd_capture_close,
 	.ioctl =	snd_pcm_lib_ioctl,
@@ -1241,9 +1241,9 @@ static snd_pcm_ops_t snd_msnd_capture_ops = {
 };
 
 
-int snd_msnd_pcm( multisound_dev_t *chip, int device, snd_pcm_t **rpcm)
+int snd_msnd_pcm( multisound_dev_t *chip, int device, struct snd_pcm **rpcm)
 {
-	snd_pcm_t*	pcm;
+	struct snd_pcm *	pcm;
 	int		err;
 
 	if( ( err = snd_pcm_new( chip->card, "MSNDPINNACLE", 0/*device*/, 1, 1, &pcm)) < 0)
@@ -1267,8 +1267,8 @@ int snd_msnd_pcm( multisound_dev_t *chip, int device, snd_pcm_t **rpcm)
 static int __init snd_msnd_attach(void)
 {
 	int err;
-	snd_card_t *card;
-	static snd_device_ops_t ops = {
+	struct snd_card *card;
+	static struct snd_device_ops ops = {
 		.dev_free =      snd_msnd_dev_free,
 		};
 

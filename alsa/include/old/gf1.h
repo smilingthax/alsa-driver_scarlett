@@ -80,40 +80,40 @@ typedef struct SNDRV_STRU_CHANNEL snd_channel_t;
 
 struct SNDRV_STRU_INSTRUMENT_VOICE_COMMANDS {
   /* voice specific handlers */
-  void (*voice_interrupt_wave)( snd_card_t *card, snd_voice_t *voice );
-  void (*voice_interrupt_volume)( snd_card_t *card, snd_voice_t *voice );
-  void (*voice_interrupt_effect)( snd_card_t *card, snd_voice_t *voice );
+  void (*voice_interrupt_wave)( struct snd_card *card, snd_voice_t *voice );
+  void (*voice_interrupt_volume)( struct snd_card *card, snd_voice_t *voice );
+  void (*voice_interrupt_effect)( struct snd_card *card, snd_voice_t *voice );
   /* voice specific commands */
-  void (*voice_start)( snd_card_t *card, snd_voice_t *voice );
-  void (*voice_go)( snd_card_t *card, snd_voice_t *voice );
-  void (*voice_stop)( snd_card_t *card, snd_voice_t *voice, unsigned char mode );
-  void (*voice_control)( snd_card_t *card, snd_voice_t *voice, unsigned char control );
-  void (*voice_freq)( snd_card_t *card, snd_voice_t *voice, unsigned int freq );
-  void (*voice_volume)( snd_card_t *card, snd_voice_t *voice, unsigned short volume );
-  void (*voice_loop)( snd_card_t *card, snd_voice_t *voice, unsigned int start, unsigned int end );
-  void (*voice_ramp)( snd_card_t *card, snd_voice_t *voice, unsigned char start, unsigned char end, unsigned char rate, unsigned char control );
-  void (*voice_pos)( snd_card_t *card, snd_voice_t *voice, unsigned int position );
-  void (*voice_pan)( snd_card_t *card, snd_voice_t *voice, unsigned short pan );
-  void (*voice_lfo)( snd_card_t *card, snd_voice_t *voice, unsigned char *data );
-  void (*voice_private1)( snd_card_t *card, snd_voice_t *voice, unsigned char *data );
+  void (*voice_start)( struct snd_card *card, snd_voice_t *voice );
+  void (*voice_go)( struct snd_card *card, snd_voice_t *voice );
+  void (*voice_stop)( struct snd_card *card, snd_voice_t *voice, unsigned char mode );
+  void (*voice_control)( struct snd_card *card, snd_voice_t *voice, unsigned char control );
+  void (*voice_freq)( struct snd_card *card, snd_voice_t *voice, unsigned int freq );
+  void (*voice_volume)( struct snd_card *card, snd_voice_t *voice, unsigned short volume );
+  void (*voice_loop)( struct snd_card *card, snd_voice_t *voice, unsigned int start, unsigned int end );
+  void (*voice_ramp)( struct snd_card *card, snd_voice_t *voice, unsigned char start, unsigned char end, unsigned char rate, unsigned char control );
+  void (*voice_pos)( struct snd_card *card, snd_voice_t *voice, unsigned int position );
+  void (*voice_pan)( struct snd_card *card, snd_voice_t *voice, unsigned short pan );
+  void (*voice_lfo)( struct snd_card *card, snd_voice_t *voice, unsigned char *data );
+  void (*voice_private1)( struct snd_card *card, snd_voice_t *voice, unsigned char *data );
 };
 
 struct SNDRV_STRU_INSTRUMENT_NOTE_COMMANDS {
   /* note specific commands */
-  void (*note_stop)( snd_card_t *card, snd_voice_t *voice, int wait );
-  void (*note_wait)( snd_card_t *card, snd_voice_t *voice );
-  void (*note_off)( snd_card_t *card, snd_voice_t *voice );
-  void (*note_volume)( snd_card_t *card, snd_voice_t *voice );
-  void (*note_pitchbend)( snd_card_t *card, snd_voice_t *voice );
-  void (*note_vibrato)( snd_card_t *card, snd_voice_t *voice );
-  void (*note_tremolo)( snd_card_t *card, snd_voice_t *voice );
+  void (*note_stop)( struct snd_card *card, snd_voice_t *voice, int wait );
+  void (*note_wait)( struct snd_card *card, snd_voice_t *voice );
+  void (*note_off)( struct snd_card *card, snd_voice_t *voice );
+  void (*note_volume)( struct snd_card *card, snd_voice_t *voice );
+  void (*note_pitchbend)( struct snd_card *card, snd_voice_t *voice );
+  void (*note_vibrato)( struct snd_card *card, snd_voice_t *voice );
+  void (*note_tremolo)( struct snd_card *card, snd_voice_t *voice );
 };
 
 struct SNDRV_STRU_INSTRUMENT_CHANNEL_COMMANDS {
   /* channel specific commands */
-  void (*chn_trigger_down)( snd_card_t *card, snd_channel_t *channel, snd_instrument_t *instrument, unsigned char note, unsigned char velocity, unsigned char priority );
-  void (*chn_trigger_up)( snd_card_t *card, snd_note_t *note );
-  void (*chn_control)( snd_card_t *card, snd_channel_t *channel, unsigned short p1, unsigned short p2 );
+  void (*chn_trigger_down)( struct snd_card *card, snd_channel_t *channel, snd_instrument_t *instrument, unsigned char note, unsigned char velocity, unsigned char priority );
+  void (*chn_trigger_up)( struct snd_card *card, snd_note_t *note );
+  void (*chn_control)( struct snd_card *card, snd_channel_t *channel, unsigned short p1, unsigned short p2 );
 };
 
 #define VFLG_USED		0x00000001	/* used voice */
@@ -178,7 +178,7 @@ struct SNDRV_STRU_VOICE {
 
   unsigned char priority;	/* voice priority */
 
-  void (*steal_notify)( snd_card_t *card, snd_voice_t *voice );
+  void (*steal_notify)( struct snd_card *card, snd_voice_t *voice );
 
   unsigned int sloop;
 
@@ -396,13 +396,13 @@ struct SNDRV_STRU_GF1 {
 
   /* interrupt handlers */
   
-  void (*interrupt_handler_midi_out)( snd_card_t *card );
-  void (*interrupt_handler_midi_in)( snd_card_t *card );
-  void (*interrupt_handler_timer1)( snd_card_t *card );
-  void (*interrupt_handler_timer2)( snd_card_t *card );
-  void (*interrupt_handler_synth_dma_write)( snd_card_t *card );
-  void (*interrupt_handler_pcm_dma_write)( snd_card_t *card );
-  void (*interrupt_handler_pcm_dma_read)( snd_card_t *card );
+  void (*interrupt_handler_midi_out)( struct snd_card *card );
+  void (*interrupt_handler_midi_in)( struct snd_card *card );
+  void (*interrupt_handler_timer1)( struct snd_card *card );
+  void (*interrupt_handler_timer2)( struct snd_card *card );
+  void (*interrupt_handler_synth_dma_write)( struct snd_card *card );
+  void (*interrupt_handler_pcm_dma_write)( struct snd_card *card );
+  void (*interrupt_handler_pcm_dma_read)( struct snd_card *card );
 
   /* special interrupt handlers */
   
@@ -414,11 +414,11 @@ struct SNDRV_STRU_GF1 {
     unsigned int interrupt_stat_wave;
     unsigned int interrupt_stat_volume;
 #endif
-    void (*interrupt_handler_wave)( snd_card_t *card, int voice );
-    void (*interrupt_handler_volume)( snd_card_t *card, int voice );
-    void (*voices_change_start)( snd_card_t *card );
-    void (*voices_change_stop)( snd_card_t *card );
-    void (*volume_change)( snd_card_t *card );
+    void (*interrupt_handler_wave)( struct snd_card *card, int voice );
+    void (*interrupt_handler_volume)( struct snd_card *card, int voice );
+    void (*voices_change_start)( struct snd_card *card );
+    void (*voices_change_stop)( struct snd_card *card );
+    void (*volume_change)( struct snd_card *card );
   } voice_ranges[ GF1_VOICE_RANGES ];
 
 #ifdef ULTRACFG_INTERRUPTS_PROFILE
@@ -473,8 +473,8 @@ struct SNDRV_STRU_GF1 {
   char *timer_owner;
   unsigned short timer_old_count1;
   unsigned short timer_old_count2;
-  snd_card_t *timer_master_card;
-  snd_card_t *timer_slave_cards[ SNDRV_CARDS ];
+  struct snd_card *timer_master_card;
+  struct snd_card *timer_slave_cards[ SNDRV_CARDS ];
   unsigned int timer_wait_ticks;
   unsigned int timer_base;
   unsigned int timer_tempo;
@@ -663,7 +663,7 @@ struct SNDRV_STRU_GF1 {
 
 /* I/O functions for GF1/InterWave chip */
 
-static inline void gf1_select_voice( snd_card_t *card, int voice )
+static inline void gf1_select_voice( struct snd_card *card, int voice )
 {
   unsigned long flags;
   
@@ -678,63 +678,63 @@ static inline void gf1_select_voice( snd_card_t *card, int voice )
 
 #ifdef ULTRACFG_MIDI_DEVICES
 
-static inline void gf1_uart_cmd( snd_card_t *card, unsigned char b )
+static inline void gf1_uart_cmd( struct snd_card *card, unsigned char b )
 {
   OUTB( card -> gf1.uart_cmd = b, GUSP( card, MIDICTRL ) );
 }
 
-static inline unsigned char gf1_uart_stat( snd_card_t *card )
+static inline unsigned char gf1_uart_stat( struct snd_card *card )
 {
   return INB( GUSP( card, MIDISTAT ) );
 }
 
-static inline void gf1_uart_put( snd_card_t *card, unsigned char b )
+static inline void gf1_uart_put( struct snd_card *card, unsigned char b )
 { 
   OUTB( b, GUSP( card, MIDIDATA ) );
 }
 
-static inline unsigned char gf1_uart_get( snd_card_t *card )
+static inline unsigned char gf1_uart_get( struct snd_card *card )
 {
   return INB( GUSP( card, MIDIDATA ) );
 }
 
 #endif
 
-extern void snd_delay( snd_card_t *card );
+extern void snd_delay( struct snd_card *card );
 extern void snd_delay1( int loops );
 extern void snd_delay2( int loops );
 
-extern void snd_ctrl_stop( snd_card_t *card, unsigned char reg );
+extern void snd_ctrl_stop( struct snd_card *card, unsigned char reg );
 
-extern void snd_write8( snd_card_t *card, unsigned char reg, unsigned char data );
-extern unsigned char snd_look8( snd_card_t *card, unsigned char reg );
-extern inline unsigned char snd_read8( snd_card_t *card, unsigned char reg ) { return snd_look8( card, reg | 0x80 ); }
-extern void snd_write16( snd_card_t *card, unsigned char reg, unsigned int data );
-extern unsigned short snd_look16( snd_card_t *card, unsigned char reg );
-extern inline unsigned short snd_read16( snd_card_t *card, unsigned char reg ) { return snd_look16( card, reg | 0x80 ); }
-extern void snd_adlib_write( snd_card_t *card, unsigned char reg, unsigned char data );
-extern void snd_dram_addr( snd_card_t *card, unsigned int addr );
-extern void snd_poke( snd_card_t *card, unsigned int addr, unsigned char data );
-extern unsigned char snd_peek( snd_card_t *card, unsigned int addr );
+extern void snd_write8( struct snd_card *card, unsigned char reg, unsigned char data );
+extern unsigned char snd_look8( struct snd_card *card, unsigned char reg );
+extern inline unsigned char snd_read8( struct snd_card *card, unsigned char reg ) { return snd_look8( card, reg | 0x80 ); }
+extern void snd_write16( struct snd_card *card, unsigned char reg, unsigned int data );
+extern unsigned short snd_look16( struct snd_card *card, unsigned char reg );
+extern inline unsigned short snd_read16( struct snd_card *card, unsigned char reg ) { return snd_look16( card, reg | 0x80 ); }
+extern void snd_adlib_write( struct snd_card *card, unsigned char reg, unsigned char data );
+extern void snd_dram_addr( struct snd_card *card, unsigned int addr );
+extern void snd_poke( struct snd_card *card, unsigned int addr, unsigned char data );
+extern unsigned char snd_peek( struct snd_card *card, unsigned int addr );
 #ifdef ULTRACFG_PNP
-extern void snd_pokew( snd_card_t *card, unsigned int addr, unsigned short data );
-extern unsigned short snd_peekw( snd_card_t *card, unsigned int addr );
-extern void snd_dram_setmem( snd_card_t *card, unsigned int addr, unsigned short value, unsigned int count );
+extern void snd_pokew( struct snd_card *card, unsigned int addr, unsigned short data );
+extern unsigned short snd_peekw( struct snd_card *card, unsigned int addr );
+extern void snd_dram_setmem( struct snd_card *card, unsigned int addr, unsigned short value, unsigned int count );
 #endif
-extern void snd_write_addr( snd_card_t *card, unsigned char reg, unsigned int addr, short w_16bit );
-extern unsigned int snd_read_addr( snd_card_t *card, unsigned char reg, short w_16bit );
-extern void snd_i_ctrl_stop( snd_card_t *card, unsigned char reg );
-extern void snd_i_write8( snd_card_t *card, unsigned char reg, unsigned char data );
-extern unsigned char snd_i_look8( snd_card_t *card, unsigned char reg );
-extern void snd_i_write16( snd_card_t *card, unsigned char reg, unsigned int data );
-extern inline unsigned char snd_i_read8( snd_card_t *card, unsigned char reg ) { return snd_i_look8( card, reg | 0x80 ); }
-extern unsigned short snd_i_look16( snd_card_t *card, unsigned char reg );
-extern inline unsigned short snd_i_read16( snd_card_t *card, unsigned char reg ) { return snd_i_look16( card, reg | 0x80 ); }
-extern void snd_i_adlib_write( snd_card_t *card, unsigned char reg, unsigned char data );
-extern void snd_i_write_addr( snd_card_t *card, unsigned char reg, unsigned int addr, short w_16bit );
-extern unsigned int snd_i_read_addr( snd_card_t *card, unsigned char reg, short w_16bit );
+extern void snd_write_addr( struct snd_card *card, unsigned char reg, unsigned int addr, short w_16bit );
+extern unsigned int snd_read_addr( struct snd_card *card, unsigned char reg, short w_16bit );
+extern void snd_i_ctrl_stop( struct snd_card *card, unsigned char reg );
+extern void snd_i_write8( struct snd_card *card, unsigned char reg, unsigned char data );
+extern unsigned char snd_i_look8( struct snd_card *card, unsigned char reg );
+extern void snd_i_write16( struct snd_card *card, unsigned char reg, unsigned int data );
+extern inline unsigned char snd_i_read8( struct snd_card *card, unsigned char reg ) { return snd_i_look8( card, reg | 0x80 ); }
+extern unsigned short snd_i_look16( struct snd_card *card, unsigned char reg );
+extern inline unsigned short snd_i_read16( struct snd_card *card, unsigned char reg ) { return snd_i_look16( card, reg | 0x80 ); }
+extern void snd_i_adlib_write( struct snd_card *card, unsigned char reg, unsigned char data );
+extern void snd_i_write_addr( struct snd_card *card, unsigned char reg, unsigned int addr, short w_16bit );
+extern unsigned int snd_i_read_addr( struct snd_card *card, unsigned char reg, short w_16bit );
 
-extern void snd_reselect_active_voices( snd_card_t *card );
+extern void snd_reselect_active_voices( struct snd_card *card );
 
 extern void snd_engine_instrument_register(
 		unsigned short mode,
@@ -744,8 +744,8 @@ extern void snd_engine_instrument_register(
 extern int snd_engine_instrument_register_ask( unsigned short mode );
 
 #ifdef ULTRACFG_DEBUG
-extern void snd_print_voice_registers( snd_card_t *card );
-extern void snd_print_global_registers( snd_card_t *card );
-extern void snd_print_setup_registers( snd_card_t *card );
-extern void snd_peek_print_block( snd_card_t *card, unsigned int addr, int count, int w_16bit );
+extern void snd_print_voice_registers( struct snd_card *card );
+extern void snd_print_global_registers( struct snd_card *card );
+extern void snd_print_setup_registers( struct snd_card *card );
+extern void snd_peek_print_block( struct snd_card *card, unsigned int addr, int count, int w_16bit );
 #endif

@@ -42,11 +42,11 @@ struct snd_card_hal2 {
 	snd_irq_t *irqptr;
 	snd_dma_t *dma1ptr;
 	snd_dma_t *dma2ptr;
-	snd_card_t *card;
+	struct snd_card *card;
 	snd_hal2_card_t *hal2;
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 	snd_kmixer_t *mixer;
-	snd_rawmidi_t *midi_uart;
+	struct snd_rawmidi *midi_uart;
 	snd_hal2_ctl_regs_t *ctl_regs;
 	snd_hal2_aes_regs_t *aes_regs;
 	snd_hal2_vol_regs_t *vol_regs;
@@ -55,12 +55,12 @@ struct snd_card_hal2 {
 
 static struct snd_card_hal2 *snd_hal2_cards[SNDRV_CARDS] = SNDRV_DEFAULT_PTR;
 
-static void snd_card_hal2_use_inc(snd_card_t * card)
+static void snd_card_hal2_use_inc(struct snd_card *card)
 {
 	MOD_INC_USE_COUNT;
 }
 
-static void snd_card_hal2_use_dec(snd_card_t * card)
+static void snd_card_hal2_use_dec(struct snd_card *card)
 {
 	MOD_DEC_USE_COUNT;
 }
@@ -116,7 +116,7 @@ static void snd_card_hal2_interrupt(int irq, void *dev_id, struct pt_regs *regs)
 }
 
 static int snd_card_hal2_resources(int dev, struct snd_card_hal2 *hal2card,
-				   snd_card_t * card)
+				   struct snd_card *card)
 {
 	int err;
 
@@ -152,9 +152,9 @@ static int snd_card_hal2_resources(int dev, struct snd_card_hal2 *hal2card,
 
 static int snd_card_hal2_probe(int dev, struct snd_card_hal2 *hal2card)
 {
-	snd_card_t *card;
+	struct snd_card *card;
 	snd_hal2_card_t *hal2 = NULL;
-	snd_pcm_t *pcm = NULL;
+	struct snd_pcm *pcm = NULL;
 
 	card = snd_card_new(index[dev], id[dev],
 			    snd_card_hal2_use_inc, snd_card_hal2_use_dec);
@@ -241,7 +241,7 @@ static void __exit alsa_card_hal2_exit(void)
 {
 	int dev = 0;
 	struct snd_card_hal2 *hal2card;
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 
 	/* We don't have to check all the indexes since we don't have suppor for
 	 * more than one card, but let's do it anyway

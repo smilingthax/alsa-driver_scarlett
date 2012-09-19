@@ -77,7 +77,7 @@ static s3c24xx_card_t *our_card;
  * not to be altered
 */
 
-static snd_pcm_hardware_t s3c24xx_snd_hw = {
+static struct snd_pcm_hardware s3c24xx_snd_hw = {
 	.info			= ( SNDRV_PCM_INFO_INTERLEAVED |
 				    SNDRV_PCM_INFO_MMAP | 
 				    SNDRV_PCM_INFO_MMAP_VALID |
@@ -342,7 +342,7 @@ static int call_startup(struct s3c24xx_iis_ops *ops)
 }
 
 static int call_open(struct s3c24xx_iis_ops *ops,
-		     snd_pcm_substream_t *substream)
+		     struct snd_pcm_substream *substream)
 {
 	if (ops && ops->open)
 		return (ops->open)(ops, substream);
@@ -350,11 +350,11 @@ static int call_open(struct s3c24xx_iis_ops *ops,
 	return 0;
 }
 
-static int s3c24xx_snd_open(snd_pcm_substream_t *substream)
+static int s3c24xx_snd_open(struct snd_pcm_substream *substream)
 {
 	s3c24xx_card_t *chip = snd_pcm_substream_chip(substream);
 	s3c24xx_runtime_t *or;
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
 	DBG("%s: substream=%p, chip=%p\n", __FUNCTION__, substream, chip);
@@ -455,7 +455,7 @@ static void call_shutdown(struct s3c24xx_iis_ops *ops)
 }
 
 static int call_close(struct s3c24xx_iis_ops *ops, 
-		      snd_pcm_substream_t *substream)
+		      struct snd_pcm_substream *substream)
 {
 	if (ops && ops->close)
 		return (ops->close)(ops, substream);
@@ -464,10 +464,10 @@ static int call_close(struct s3c24xx_iis_ops *ops,
 }
 
 /* close callback */
-static int s3c24xx_snd_close(snd_pcm_substream_t *substream)
+static int s3c24xx_snd_close(struct snd_pcm_substream *substream)
 {
 	s3c24xx_card_t *chip = snd_pcm_substream_chip(substream);
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	s3c24xx_runtime_t *or = runtime->private_data;
 
 	DBG("%s: substream=%p, chip=%p\n", __FUNCTION__, substream, chip);
@@ -520,8 +520,8 @@ static int s3c24xx_snd_close(snd_pcm_substream_t *substream)
 
 
 /* hw_params callback */
-static int s3c24xx_snd_pcm_hw_params(snd_pcm_substream_t *substream,
-				     snd_pcm_hw_params_t *hw_params)
+static int s3c24xx_snd_pcm_hw_params(struct snd_pcm_substream *substream,
+				     struct snd_pcm_hw_params *hw_params)
 {
 	DBG("%s: sub=%p, hwp=%p\n", __FUNCTION__, substream, hw_params);
 
@@ -530,7 +530,7 @@ static int s3c24xx_snd_pcm_hw_params(snd_pcm_substream_t *substream,
 }
 
 /* hw_free callback */
-static int s3c24xx_snd_pcm_hw_free(snd_pcm_substream_t *substream)
+static int s3c24xx_snd_pcm_hw_free(struct snd_pcm_substream *substream)
 {
 	DBG("%s: substream %p\n", __FUNCTION__, substream);
 
@@ -580,7 +580,7 @@ static long s3c24xx_snd_getdiv(s3c24xx_card_t *card, unsigned int rate,
  * mode.
 */
 
-int s3c24xx_snd_setrate(s3c24xx_card_t *chip, snd_pcm_runtime_t *run)
+int s3c24xx_snd_setrate(s3c24xx_card_t *chip, struct snd_pcm_runtime *run)
 {
 	unsigned long iismod = readl(chip->regs + S3C2410_IISMOD);
 	unsigned long rate;
@@ -655,7 +655,7 @@ void s3c24xx_iismod_cfg(s3c24xx_card_t *chip,
 EXPORT_SYMBOL(s3c24xx_iismod_cfg);
 
 static int call_prepare(struct s3c24xx_iis_ops *ops,
-			snd_pcm_substream_t *substream, snd_pcm_runtime_t *rt)
+			struct snd_pcm_substream *substream, struct snd_pcm_runtime *rt)
 {
 	if (ops && ops->prepare)
 		return (ops->prepare)(ops, substream, rt);
@@ -665,11 +665,11 @@ static int call_prepare(struct s3c24xx_iis_ops *ops,
 
 /* prepare callback */
 
-static int s3c24xx_snd_pcm_prepare(snd_pcm_substream_t *substream)
+static int s3c24xx_snd_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	s3c24xx_card_t *chip = snd_pcm_substream_chip(substream);
 	s3c24xx_runtime_t *or = substream->runtime->private_data;
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 	unsigned long flags;
 	int ret = 0;
 
@@ -734,7 +734,7 @@ static int s3c24xx_snd_lrsync(s3c24xx_card_t *chip)
 }
 
 /* trigger callback */
-static int s3c24xx_snd_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
+static int s3c24xx_snd_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	s3c24xx_runtime_t *or = substream->runtime->private_data;
 	s3c24xx_card_t *chip = snd_pcm_substream_chip(substream);
@@ -795,7 +795,7 @@ static int s3c24xx_snd_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 
 
 /* pointer callback */
-static snd_pcm_uframes_t s3c24xx_snd_pcm_pointer(snd_pcm_substream_t *substream)
+static snd_pcm_uframes_t s3c24xx_snd_pcm_pointer(struct snd_pcm_substream *substream)
 {
 	s3c24xx_runtime_t *or = substream->runtime->private_data;
 	unsigned long flags;
@@ -835,10 +835,10 @@ static snd_pcm_uframes_t s3c24xx_snd_pcm_pointer(snd_pcm_substream_t *substream)
 	return bytes_to_frames(substream->runtime, res);
 }
 
-static int s3c24xx_snd_pcm_mmap(snd_pcm_substream_t *substream,
+static int s3c24xx_snd_pcm_mmap(struct snd_pcm_substream *substream,
 				struct vm_area_struct *vma)
 {
-	snd_pcm_runtime_t *runtime = substream->runtime;
+	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	return dma_mmap_writecombine(substream->pcm->card->dev, vma,
 				     runtime->dma_area,
@@ -846,9 +846,9 @@ static int s3c24xx_snd_pcm_mmap(snd_pcm_substream_t *substream,
 				     runtime->dma_bytes);
 }
 
-static int sc24xx_snd_dma_prealloc(snd_pcm_t *pcm, int stream)
+static int sc24xx_snd_dma_prealloc(struct snd_pcm *pcm, int stream)
 {
-	snd_pcm_substream_t *substream = pcm->streams[stream].substream;
+	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
 	struct snd_dma_buffer *buf = &substream->dma_buffer;
 	size_t size = s3c24xx_snd_hw.buffer_bytes_max;
 
@@ -870,9 +870,9 @@ static int sc24xx_snd_dma_prealloc(snd_pcm_t *pcm, int stream)
 	return 0;
 }
 
-static void sc24xx_snd_dma_free(snd_pcm_t *pcm, int stream)
+static void sc24xx_snd_dma_free(struct snd_pcm *pcm, int stream)
 {
-	snd_pcm_substream_t *substream = pcm->streams[stream].substream;
+	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
 	struct snd_dma_buffer *buf = &substream->dma_buffer;
 	size_t size = s3c24xx_snd_hw.buffer_bytes_max;
 
@@ -883,7 +883,7 @@ static void sc24xx_snd_dma_free(snd_pcm_t *pcm, int stream)
 }
 
 /* operators */
-static snd_pcm_ops_t s3c24xx_snd_pcm_ops = {
+static struct snd_pcm_ops s3c24xx_snd_pcm_ops = {
 	.open		= s3c24xx_snd_open,
 	.close		= s3c24xx_snd_close,
 	.ioctl		= snd_pcm_lib_ioctl,
@@ -897,7 +897,7 @@ static snd_pcm_ops_t s3c24xx_snd_pcm_ops = {
 
 static int snd_card_s3c24xx_pcm(s3c24xx_card_t *card)
 {
-	snd_pcm_t *pcm;
+	struct snd_pcm *pcm;
 	int err;
 
 	DBG("snd_card_s3c24xx_pcm: card=%p\n", card);
@@ -1036,7 +1036,7 @@ static DEVICE_ATTR(regs, S_IRUGO, s3c24xx_iis_show_regs, NULL);
 s3c24xx_card_t *s3c24xx_iis_probe(struct device *dev)
 {
 	struct s3c24xx_platdata_iis *pdata = dev->platform_data;
-	snd_card_t *card;
+	struct snd_card *card;
 	int err;
 
 	dev_info(dev, "probe called\n");

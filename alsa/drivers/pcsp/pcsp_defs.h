@@ -51,15 +51,12 @@
 #define PCSP_BUF(i) (runtime->dma_area + i * snd_pcm_lib_period_bytes(substream))
 #define PCSP_CUR_BUF (PCSP_BUF(chip->cur_buf))
 
-#define chip_t pcsp_t
-#define pcsp_t_magic 0xBA1DA
-
-typedef struct pcsp_struct {
+struct snd_pcsp {
 	spinlock_t lock;
-	snd_card_t *card;
+	struct snd_card *card;
 	unsigned short port, irq, dma;
-	snd_pcm_t *pcm;
-	snd_pcm_substream_t *playback_substream;
+	struct snd_pcm *pcm;
+	struct snd_pcm_substream *playback_substream;
 	volatile int last_clocks;
 	volatile int index;
 	unsigned int volume;	/* volume for pc-speaker */
@@ -75,16 +72,16 @@ typedef struct pcsp_struct {
 	int bass;
 	int enable;
 	unsigned char vl_tab[256];
-} pcsp_t;
+};
 
-extern int pcsp_set_timer_hook(chip_t * chip, int (*func) (chip_t * chip));
-extern void pcsp_release_timer_hook(chip_t * chip);
+extern int pcsp_set_timer_hook(struct snd_pcsp * chip, int (*func) (struct snd_pcsp * chip));
+extern void pcsp_release_timer_hook(struct snd_pcsp * chip);
 extern void pcsp_lock_input(int lock);
 
-extern int snd_pcsp_new_pcm(pcsp_t * chip);
-extern int snd_pcsp_new_mixer(pcsp_t * chip);
-extern void pcsp_start_timer(pcsp_t * chip);
-extern void pcsp_stop_timer(pcsp_t * chip);
-extern void pcsp_calc_voltab(pcsp_t * chip);
+extern int snd_pcsp_new_pcm(struct snd_pcsp * chip);
+extern int snd_pcsp_new_mixer(struct snd_pcsp * chip);
+extern void pcsp_start_timer(struct snd_pcsp * chip);
+extern void pcsp_stop_timer(struct snd_pcsp * chip);
+extern void pcsp_calc_voltab(struct snd_pcsp * chip);
 
 #endif

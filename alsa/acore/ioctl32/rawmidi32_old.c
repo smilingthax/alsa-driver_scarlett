@@ -27,7 +27,7 @@
 #include <asm/uaccess.h>
 #include "ioctl32_old.h"
 
-struct sndrv_rawmidi_params32 {
+struct snd_rawmidi_params32 {
 	s32 stream;
 	u32 buffer_size;
 	u32 avail_min;
@@ -35,7 +35,7 @@ struct sndrv_rawmidi_params32 {
 	unsigned char reserved[16];
 } __attribute__((packed));
 
-#define CVT_sndrv_rawmidi_params()\
+#define CVT_snd_rawmidi_params()\
 {\
 	COPY(stream);\
 	COPY(buffer_size);\
@@ -43,7 +43,7 @@ struct sndrv_rawmidi_params32 {
 	COPY(no_active_sensing);\
 }
 
-struct sndrv_rawmidi_status32 {
+struct snd_rawmidi_status32 {
 	s32 stream;
 	struct compat_timespec tstamp;
 	u32 avail;
@@ -51,7 +51,7 @@ struct sndrv_rawmidi_status32 {
 	unsigned char reserved[16];
 } __attribute__((packed));
 
-#define CVT_sndrv_rawmidi_status()\
+#define CVT_snd_rawmidi_status()\
 {\
 	COPY(stream);\
 	COPY(tstamp.tv_sec);\
@@ -69,8 +69,8 @@ DEFINE_ALSA_IOCTL_ENTRY(rawmidi_status, rawmidi_status, SNDRV_RAWMIDI_IOCTL_STAT
 #define AP(x) snd_ioctl32_##x
 
 enum {
-	SNDRV_RAWMIDI_IOCTL_PARAMS32 = _IOWR('W', 0x10, struct sndrv_rawmidi_params32),
-	SNDRV_RAWMIDI_IOCTL_STATUS32 = _IOWR('W', 0x20, struct sndrv_rawmidi_status32),
+	SNDRV_RAWMIDI_IOCTL_PARAMS32 = _IOWR('W', 0x10, struct snd_rawmidi_params32),
+	SNDRV_RAWMIDI_IOCTL_STATUS32 = _IOWR('W', 0x20, struct snd_rawmidi_status32),
 };
 
 struct ioctl32_mapper rawmidi_mappers[] = {
