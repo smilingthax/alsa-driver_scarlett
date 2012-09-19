@@ -663,7 +663,9 @@ static int snd_pcm_action_single(struct action_ops *ops,
 				 snd_pcm_substream_t *substream,
 				 int state)
 {
-	int res = ops->pre_action(substream, state);
+	int res;
+	
+	res = ops->pre_action(substream, state);
 	if (res < 0)
 		return res;
 	res = ops->do_action(substream, state);
@@ -807,7 +809,7 @@ static struct action_ops snd_pcm_action_stop = {
  */
 int snd_pcm_stop(snd_pcm_substream_t *substream, int state)
 {
-	return snd_pcm_action(&snd_pcm_action_stop, substream, 0);
+	return snd_pcm_action(&snd_pcm_action_stop, substream, state);
 }
 
 static int snd_pcm_pre_pause(snd_pcm_substream_t *substream, int push)
