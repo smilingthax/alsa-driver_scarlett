@@ -395,6 +395,7 @@ case "$1" in
   vxpocket2)
     basic
     insert snd-vx-lib.o
+    insert snd-vx-cs.o
     insert snd-vxpocket.o
     ;;
   t1)
