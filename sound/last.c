@@ -21,6 +21,7 @@
 
 #define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 
 #ifndef MODULE
 

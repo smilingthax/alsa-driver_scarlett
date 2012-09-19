@@ -853,7 +853,7 @@ static inline void snd_info_device_entry_prepare(struct proc_dir_entry *de, snd_
 #else
 static inline void snd_info_device_entry_prepare(struct proc_dir_entry *de, snd_info_entry_t *entry)
 {
-	de->rdev = MKDEV(entry->c.device.major, entry->c.device.minor);
+	de->rdev = mk_kdev(entry->c.device.major, entry->c.device.minor);
 	de->owner = THIS_MODULE;
 }
 #endif /* LINUX_2_3 */

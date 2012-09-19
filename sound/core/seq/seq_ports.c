@@ -402,7 +402,7 @@ static int subscribe_port(client_t *client, client_port_t *port, port_subs_info_
 {
 	int err = 0;
 
-	snd_assert(port->owner, return -EFAULT);
+	//snd_assert(port->owner, return -EFAULT);
 	if (!try_inc_mod_count(port->owner))
 		return -EFAULT;
 	grp->count++;

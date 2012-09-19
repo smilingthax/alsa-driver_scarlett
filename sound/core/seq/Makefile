@@ -17,7 +17,7 @@ list-multi   := snd-seq-device.o snd-seq.o snd-seq-midi.o snd-seq-midi-emul.o \
 		snd-seq-midi-event.o snd-seq-instr.o snd-seq-dummy.o \
 		snd-seq-virmidi.o
 
-export-objs  := seq_device.o seq.o seq_instr.o seq_midi_emul.o \
+export-objs  := seq_device.o seq.o seq_ports.o seq_instr.o seq_midi_emul.o \
 		seq_midi_event.o seq_virmidi.o
 
 snd-seq-device-objs := seq_device.o
@@ -75,7 +75,7 @@ obj-$(CONFIG_SND_VIA686) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-mi
 obj-$(CONFIG_SND_ALI5451) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o
 obj-$(CONFIG_SND_CS46XX) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o
 obj-$(CONFIG_SND_EMU10K1) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-virmidi.o
-obj-$(CONFIG_SND_TRIDENT) += snd-seq-midi-emul.o snd-seq.o snd-seq-device.o snd-seq-instr.o
+obj-$(CONFIG_SND_TRIDENT) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o snd-seq-midi-emul.o snd-seq-instr.o
 obj-$(CONFIG_SND_YMFPCI) += snd-seq-midi.o snd-seq.o snd-seq-device.o snd-seq-midi-event.o
 
 include $(TOPDIR)/Rules.make

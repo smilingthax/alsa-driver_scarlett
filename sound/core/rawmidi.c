@@ -362,7 +362,7 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 	case SOUND_MAJOR:
 		cardnum = SNDRV_MINOR_OSS_CARD(minor(inode->i_rdev));
 		cardnum %= SNDRV_CARDS;
-		device = SNDRV_MINOR_OSS_DEVICE(inode->i_rdev) == SNDRV_MINOR_OSS_MIDI ?
+		device = SNDRV_MINOR_OSS_DEVICE(minor(inode->i_rdev)) == SNDRV_MINOR_OSS_MIDI ?
 			snd_midi_map[cardnum] : snd_amidi_map[cardnum];
 		break;
 #endif

@@ -122,7 +122,7 @@ snd-gus-synth @if_sequencer snd-gus-lib snd-seq-midi-emul \
 %dir linux/sound/isa/sb
 snd-sb-common
 snd-sb8-dsp snd-sb-common snd-pcm snd-seq-midi
-|snd-sb snd-sb8-dsp snd-opl3-synth
+|snd-sb8 snd-sb8-dsp snd-opl3-synth
 snd-sb16-dsp snd-sb-common snd-pcm
 snd-sb16-csp @if_sb16_csp snd-sb-common snd-hwdep
 |snd-sb16 snd-sb16-dsp snd-sb16-csp snd-mpu401-uart snd-opl3-synth
@@ -183,7 +183,7 @@ snd-rme9652-mem
 
 %dir linux/sound/pci/trident
 snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple
-|snd-trident snd-pcm snd-ac97-codec snd-util-mem snd-trident-synth
+|snd-trident snd-pcm snd-ac97-codec snd-mpu401-uart snd-util-mem snd-trident-synth
 
 %dir linux/sound/pci/ymfpci
 |snd-ymfpci snd-pcm snd-ac97-codec snd-mpu401-uart

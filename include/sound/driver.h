@@ -156,6 +156,9 @@ void *snd_pci_hack_alloc_consistent(struct pci_dev *hwdev, size_t size,
 #ifndef minor
 #define minor(x) MINOR(x)
 #endif
+#ifndef mk_kdev
+#define mk_kdev(x) MKDEV(x)
+#endif
 
 #if defined(CONFIG_ISAPNP) || (defined(CONFIG_ISAPNP_MODULE) && defined(MODULE))
 #if (defined(CONFIG_ISAPNP_KERNEL) && defined(ALSA_BUILD)) || (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 3, 30) && !defined(ALSA_BUILD))

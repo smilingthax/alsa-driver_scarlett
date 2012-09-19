@@ -244,7 +244,6 @@ register_client(void)
 	return 0;
 }
 
-#ifdef MODULE
 /*
  * delete client if exists
  */
@@ -254,8 +253,6 @@ delete_client(void)
 	if (my_client >= 0)
 		snd_seq_delete_kernel_client(my_client);
 }
-#endif
-
 
 /*
  *  Init part
@@ -273,4 +270,3 @@ static void __exit alsa_seq_dummy_exit(void)
 
 module_init(alsa_seq_dummy_init)
 module_exit(alsa_seq_dummy_exit)
-
