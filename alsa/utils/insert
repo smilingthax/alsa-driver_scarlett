@@ -23,7 +23,7 @@ function isapnp() {
 function basic() {
   $MODPROBE -q soundcore 2> /dev/null
   banner "snd"
-  if ! $INSMOD -m $MODDIR/snd.o snd_cards_limit=$CARDS_LIMIT >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd.o cards_limit=$CARDS_LIMIT >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-mixer-oss.o ]; then
     banner "snd-mixer-oss"
     if ! $INSMOD -m $MODDIR/snd-mixer-oss.o >> $MAP; then exit 1; fi  
@@ -31,7 +31,7 @@ function basic() {
   banner "snd-timer"
   if ! $INSMOD -m $MODDIR/snd-timer.o >> $MAP; then exit 1; fi
   banner "snd-pcm"
-  if ! $INSMOD -m $MODDIR/snd-pcm.o snd_preallocate_dma=1 >> $MAP; then exit 1; fi
+  if ! $INSMOD -m $MODDIR/snd-pcm.o preallocate_dma=1 >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-pcm-oss.o ]; then
     banner "snd-pcm-oss"
     if ! $INSMOD -m $MODDIR/snd-pcm-oss.o >> $MAP; then exit 1; fi  
@@ -50,7 +50,7 @@ function basic() {
   fi
   if [ -r $MODDIR/snd-seq.o ]; then
     banner "snd-seq"
-    if ! $INSMOD -m $MODDIR/snd-seq.o snd_seq_default_timer_class=2 snd_seq_default_timer_card=0 snd_seq_default_timer_device=0 snd_seq_default_timer_subdevice=0 >> $MAP; then exit 1; fi
+    if ! $INSMOD -m $MODDIR/snd-seq.o seq_default_timer_class=2 seq_default_timer_card=0 seq_default_timer_device=0 seq_default_timer_subdevice=0 >> $MAP; then exit 1; fi
     if [ -r $MODDIR/snd-seq-midi-event.o ]; then
       banner "snd-seq-midi-event"
       if ! $INSMOD -m $MODDIR/snd-seq-midi-event.o >> $MAP; then exit 1; fi
@@ -119,7 +119,7 @@ case "$1" in
     insert snd-gus-synth.o
     insert snd-i2c.o
     insert snd-tea6330t.o
-    insert snd-interwave-stb.o snd_port=0x240 snd_irq=7 snd_dma1=5 snd_dma2=6 snd_midi=1 snd_pcm_channels=8
+    insert snd-interwave-stb.o port=0x240 irq=7 dma1=5 dma2=6 midi=1 pcm_channels=8
     restore interwave-stb.conf
     ;;
   interwave|iw)
@@ -127,7 +127,7 @@ case "$1" in
     insert snd-cs4231-lib.o
     insert snd-gus.o
     insert snd-gus-synth.o
-    insert snd-interwave.o snd_irq=7 snd_dma1=5 snd_dma2=6 snd_midi=1
+    insert snd-interwave.o irq=7 dma1=5 dma2=6 midi=1
     restore interwave.conf
     ;;
   es1688)
@@ -135,14 +135,14 @@ case "$1" in
     insert snd-es1688-lib.o
     insert snd-mpu401-uart.o 
     insert snd-opl3-lib.o
-    insert snd-es1688.o snd_mpu_port=0x330
+    insert snd-es1688.o mpu_port=0x330
     restore es1688.conf
     ;;
   es18xx)
     basic; isapnp
     insert snd-mpu401-uart.o 
     insert snd-opl3-lib.o
-    insert snd-es18xx.o snd_irq=7 snd_dma1=0 snd_dma2=1
+    insert snd-es18xx.o irq=7 dma1=0 dma2=1
     restore es18xx.conf
     ;;
   sb16)
@@ -152,7 +152,7 @@ case "$1" in
     insert snd-sb16-dsp.o
     insert snd-sb16-csp.o
     insert snd-opl3-lib.o
-    insert snd-sb16.o snd_irq=7 snd_dma8=1 snd_dma16=5
+    insert snd-sb16.o irq=7 dma8=1 dma16=5
     restore sb16.conf
     ;;
   sb)
@@ -160,7 +160,7 @@ case "$1" in
     insert snd-sb-common.o
     insert snd-sb8-dsp.o
     insert snd-opl3-lib.o
-    insert snd-sb8.o snd_port=0x220 snd_irq=7 snd_dma8=1
+    insert snd-sb8.o port=0x220 irq=7 dma8=1
     restore sb.conf
     ;;
   sbawe)
@@ -173,7 +173,7 @@ case "$1" in
     if [ -r $MODDIR/snd-emu8000.o ]; then
       insert snd-emu8000.o
     fi
-    insert snd-sbawe.o snd_irq=7 snd_dma8=1 snd_dma16=5
+    insert snd-sbawe.o irq=7 dma8=1 dma16=5
     restore sbawe.conf
     ;;
   emu10k1|live)
@@ -191,7 +191,7 @@ case "$1" in
     insert snd-sb-common.o
     insert snd-sb8-dsp.o
     insert snd-opl3-lib.o
-    insert snd-sb8.o snd_irq=5 snd_dma8=1
+    insert snd-sb8.o irq=5 dma8=1
     restore sb8.conf
     ;;
   gusm*|max)
@@ -199,14 +199,14 @@ case "$1" in
     insert snd-cs4231-lib.o
     insert snd-gus.o
     insert snd-gus-synth.o
-    insert snd-gusmax.o snd_irq=7 snd_pcm_channels=8 snd_dma1=6 snd_dma2=7
+    insert snd-gusmax.o irq=7 pcm_channels=8 dma1=6 dma2=7
     restore gusmax.conf
     ;;
   gusc*|clas*)
     basic
     insert snd-gus.o
     insert snd-gus-synth.o
-    insert snd-gusclassic.o snd_irq=7 snd_dma1=6 snd_dma2=7
+    insert snd-gusclassic.o irq=7 dma1=6 dma2=7
     restore gusclassic.conf
     ;;
   guse*|ext*)
@@ -217,7 +217,7 @@ case "$1" in
     insert snd-gus.o
     insert snd-gus-synth.o
     insert snd-opl3-synth.o
-    insert snd-gusextreme.o snd_irq=5 snd_gf1_irq=11 snd_mpu_port=0x300
+    insert snd-gusextreme.o irq=5 gf1_irq=11 mpu_port=0x300
     restore gusextreme.conf
     ;;
   opl3sa2)
@@ -225,9 +225,9 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-mpu401-uart.o
     insert snd-opl3-lib.o
-    insert snd-opl3sa2.o snd_port=0x100 snd_wss_port=0xe80 \
-                        snd_fm_port=0x388 snd_midi_port=0x300 \
-                        snd_irq=5 snd_dma1=0 snd_dma2=1
+    insert snd-opl3sa2.o port=0x100 wss_port=0xe80 \
+                        fm_port=0x388 midi_port=0x300 \
+                        irq=5 dma1=0 dma2=1
     restore opl3sa2.conf
     ;;
   mozart)
@@ -240,9 +240,9 @@ case "$1" in
     basic; isapnp
     insert snd-sb16-dsp.o
     insert snd-mpu401-uart.o 
-    insert snd-sb16.o snd_irq=5 snd_dma8=1 snd_dma16=5 snd_mpu_port=0x330
+    insert snd-sb16.o irq=5 dma8=1 dma16=5 mpu_port=0x330
     insert snd-gus.o
-    insert snd-gusclassic.o snd_dma2=-1
+    insert snd-gusclassic.o dma2=-1
     restore p1.conf
     ;;
   p2)
@@ -252,14 +252,14 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-gus.o
     insert snd-gusmax.o
-    insert snd-gusextreme.o snd_irq1=11 snd_mpu_port=0x300
+    insert snd-gusextreme.o irq1=11 mpu_port=0x300
     restore p2.conf
     ;;
   s3)
     basic
     insert snd-mpu401-uart.o 
     insert snd-opl3-lib.o
-    insert snd-sonicvibes.o snd_reverb=1
+    insert snd-sonicvibes.o reverb=1
     restore sonicvibes.conf
     ;;
   ens1370)
@@ -317,10 +317,10 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-cs4231-lib.o
     insert snd-opl3-lib.o
-    insert snd-cs4232.o snd_port=0x534 \
-		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
-		snd_dma1=1 snd_dma2=0 \
-		snd_irq=5 snd_mpu_irq=7
+    insert snd-cs4232.o port=0x534 \
+		fm_port=0x388 mpu_port=0x330 jport=0x208 \
+		dma1=1 dma2=0 \
+		irq=5 mpu_irq=7
     restore cs4232.conf
     ;;
   cs4236)
@@ -329,11 +329,11 @@ case "$1" in
     insert snd-cs4231.o
     insert snd-cs4236.o
     insert snd-opl3-lib.o
-#    insert snd-cs4236.o snd_port=0x534 snd_cport=0x120 \
-#		snd_fm_port=0x388 snd_mpu_port=0x330 snd_jport=0x208 \
-#		snd_dma1=1 snd_dma2=0 \
-#		snd_irq=5 snd_mpu_irq=7
-    insert snd-cs4236.o snd_irq=7
+#    insert snd-cs4236.o port=0x534 cport=0x120 \
+#		fm_port=0x388 mpu_port=0x330 jport=0x208 \
+#		dma1=1 dma2=0 \
+#		irq=5 mpu_irq=7
+    insert snd-cs4236.o irq=7
     restore cs4236.conf
     ;;
   ice1712|envy24)
@@ -342,14 +342,14 @@ case "$1" in
     insert snd-mpu401-uart.o 
     insert snd-i2c.o
     insert snd-cs8427.o
-    insert snd-ice1712.o snd_enable=1,1
+    insert snd-ice1712.o enable=1,1
     restore ice1712.conf
     ;;
   i8x0|ich)
     basic
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o 
-    insert snd-intel8x0.o snd_ac97_clock=48000
+    insert snd-intel8x0.o ac97_clock=48000
     restore intel8x0.conf
     ;;
   pdplus|prodif-plus)
@@ -361,7 +361,7 @@ case "$1" in
     basic
     insert snd-ac97-codec.o
     insert snd-mpu401-uart.o
-    insert snd-via82xx.o snd_mpu_port=0x330
+    insert snd-via82xx.o mpu_port=0x330
     restore via82xx.conf
     ;;
   ymfpci|yamaha)
@@ -374,13 +374,13 @@ case "$1" in
     ;;
   dummy)
     basic
-    insert snd-dummy.o snd_enable=1,1 snd_pcm_devs=4,4
+    insert snd-dummy.o enable=1,1 pcm_devs=4,4
     #restore dummy.conf
     ;;
   virmidi)
     basic
     insert snd-seq-virmidi.o
-    insert snd-virmidi.o snd_enable=1,1 snd_midi_devs=8,8
+    insert snd-virmidi.o enable=1,1 midi_devs=8,8
     ;;
   serialmidi)
     basic
@@ -390,6 +390,11 @@ case "$1" in
     basic
     insert snd-usb-audio.o
     ;;
+  vxpocket2)
+    basic
+    insert snd-vxp-lib.o
+    insert snd-vxpocket.o
+    ;;
   t1)
     basic; isapnp
     insert snd-mpu401-uart.o 
@@ -398,7 +403,7 @@ case "$1" in
     insert snd-opl3-lib.o
     insert snd-sb16-dsp.o
     insert snd-sb16-csp.o
-    insert snd-sb16.o snd_irq=10 snd_dma8=1 snd_dma16=5
+    insert snd-sb16.o irq=10 dma8=1 dma16=5
     insert snd-cs4236.o
     ;;
   t2)

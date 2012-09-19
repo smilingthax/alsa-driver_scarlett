@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+  file=/etc/modules.conf
+else
+  file=$1
+fi
+
+sed -e 's/snd_//g' < $file > $file.new
+diff -u $file $file.new | less
+echo "Please, check and copy $file.new to $file"
