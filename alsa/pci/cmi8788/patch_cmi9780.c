@@ -51,71 +51,30 @@ static u8 volume_reg_addr[MAX_VOL_SLIDER] = {
  */
 static int get_info(struct cmi_codec *codec, int *min_vol, int *max_vol)
 {
-	*min_vol = 0;  /* mute */
-	*max_vol = 32; /* 1-32 */
+	*min_vol = 0;
+	*max_vol = 31;
 	return 0;
 }
 
 static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
-	int l_volume = 0, r_volume = 0;
-	u32 val32 = 0;
-	u8 reg_addr = 0x0E; /* Mic volume */
-	u16 reg_data = 0x0808;
-	int opera_source = MIC_VOL_SLIDER;
-
-	/* bit4-0  0-1f */
-	l_volume = l_vol;
-	if (l_vol >= 32)
-		l_volume = 32;
-	if (l_vol <= 0)
-		l_volume = 0;
-	r_volume = r_vol;
-	if (r_vol >= 32)
-		r_volume = 32;
-	if (r_vol <= 0)
-		r_volume = 0;
+	u8 reg_addr;
+	u16 reg_data;
+	int opera_source;
 
 	opera_source = codec->volume_opera_source;
-	codec->volume[opera_source].left_vol = (s16)l_volume;
-	codec->volume[opera_source].right_vol = (s16)r_volume;
+	codec->volume[opera_source].left_vol = (s16)l_vol;
+	codec->volume[opera_source].right_vol = (s16)r_vol;
 	reg_addr = volume_reg_addr[opera_source];
-
-	l_volume = 32 - l_volume;
-	r_volume = 32 - r_volume;
-
-	/* set Mic Volume Register 0x0Eh */
-	val32 = 0; /* Bit 31-24 */
-	val32 &= 0xff000000; /* Bit-23: 0 write */
-	val32 |= reg_addr << 16; /* Register 0x0E */
-	if (codec->left_vol == 0 || codec->right_vol == 0) {
-		val32 |= 0x8000; /* 0x0808 : mute */
-	}
-	if (l_volume > 0)
-		l_volume -= 1;
-	if (r_volume > 0)
-		r_volume -= 1;
-	val32 |= r_volume;
-	val32 |= l_volume << 8;
-
-	reg_data = 0;
-	reg_data |= r_volume;
-	reg_data |= l_volume << 8;
-
+	reg_data =(((31 - l_vol) & 0x1f) << 8) | ((31 - r_vol) & 0x1f);
 	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
-
 	return 0;
 }
 
 static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
 {
-	int opera_source = MIC_VOL_SLIDER;
-
-	opera_source = codec->volume_opera_source;
-
-	*l_vol = (int)(codec->volume[opera_source].left_vol);
-	*r_vol = (int)(codec->volume[opera_source].right_vol);
-
+	*l_vol = codec->volume[codec->volume_opera_source].left_vol;
+	*r_vol = codec->volume[codec->volume_opera_source].right_vol;
 	return 0;
 }
 
@@ -137,27 +96,20 @@ static int cmi9780_build_controls(struct cmi_codec *codec)
 
 static int cmi9780_init(struct cmi_codec *codec)
 {
-	int i = 0;
-
-	codec->addr = 0;
-	codec->reg_len_flag = 0;
+	int i;
 
 #if 0
-	u8 reg_addr = 2; /* master volume */
-	u16 reg_data = 0x1f1f; /* left right channel 46.5dB Attenuation */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
+	/* master volume: left right channel 46.5dB Attenuation */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x02, 0x1f1f);
 
-	reg_addr = 0xe; /* Mic volume */
-	reg_data = 0x0000; /* left right channel +12dB Attenuation */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
+	/* Mic volume: left right channel +12dB Attenuation */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x0e, 0x0000);
 
-	reg_addr = 0x1a; /* record select */
-	reg_data = 0x00; /* default Mic in */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
+	/* record select: default Mic in */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x1a, 0x0000);
 
-	reg_addr = 0x1c; /* Record Gain Registers */
-	reg_data = 0x0f0f; /* left right channel 22.5 dB gain */
-	snd_cmi_send_ac97_cmd(codec->chip, reg_addr, reg_data);
+	/* Record Gain Registers: left right channel 22.5 dB gain */
+	snd_cmi_send_ac97_cmd(codec->chip, 0x1c, 0x0f0f);
 #endif
 	codec->left_vol  = 8;
 	codec->right_vol = 8;

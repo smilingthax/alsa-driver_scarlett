@@ -58,37 +58,21 @@ static int get_info(struct cmi_codec *codec, int *min_vol, int *max_vol)
  */
 static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
 {
-	struct cmi8788 *chip;
 	u8 data[2];
-	int l_volume = 0, r_volume = 0;
 
-	chip = codec->chip;
-
-	l_volume = l_vol;
-	if (l_vol >= 255)
-		l_volume = 255;
-	if (l_vol <= 0)
-		l_volume = 0;
-	r_volume = r_vol;
-	if (r_vol >= 255)
-		r_volume = 255;
-	if (r_vol <= 0)
-		r_volume = 0;
-
-	data[0] = (u8)l_volume;
+	data[0] = (u8)l_vol;
 	/* 001xxxxx Binary */
 	data[1] = AK4396_LchATTCtl | 0x20;
 	snd_cmi_send_spi_cmd(codec, data);
 	/* udelay(10); */
 
-	data[0] = (u8)r_volume;
+	data[0] = (u8)r_vol;
 	data[1] = AK4396_RchATTCtl | 0x20;
 	snd_cmi_send_spi_cmd(codec, data);
 	/* udelay(10); */
 
-	codec->left_vol  = l_volume;
-	codec->right_vol = r_volume;
-
+	codec->left_vol  = l_vol;
+	codec->right_vol = r_vol;
 	return 0;
 }
 

@@ -41,37 +41,6 @@
 #define WM8785_R7        0x07
 
 
-/*
- * mixer
- */
-static int put_volume(struct cmi_codec *codec, int l_vol, int r_vol)
-{
-	return 0;
-}
-
-/*
- * The ak4396 does not support read command.
- */
-static int get_volume(struct cmi_codec *codec, int *l_vol, int *r_vol)
-{
-	return -1;
-}
-
-static struct cmi8788_mixer_ops wm8785_mixer_ops =
-{
-	.get_volume = NULL, /* get_volume, */
-	.set_volume = NULL, /* put_volume, */
-};
-
-/*
- * create mixer
- */
-static int wm8785_build_controls(struct cmi_codec *codec)
-{
-	codec->mixer_ops = wm8785_mixer_ops;
-	return 0;
-}
-
 /* use SPI */
 static int wm8785_init(struct cmi_codec *codec)
 {
@@ -84,31 +53,27 @@ static int wm8785_init(struct cmi_codec *codec)
 
 	/* R7 reset */
 	data[0] = 0x01;
-	data[1] = (WM8785_R7 < 1) | 0x00; /* Data Bit-8: 0 */
-	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
-	data[0] = 0x01;
-	data[1] = 0x0E;
+	data[1] = (WM8785_R7 << 1) | 0x00; /* Data Bit-8: 0 */
+	data[2] = (0x1A << 1) & 0xfe; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x03;
-	data[1] = (WM8785_R0 < 1) | 0x00; /* Data Bit-8: 0 */
-	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x20;
-	data[1] = 0x00;
+	data[1] = (WM8785_R0 << 1) | 0x00; /* Data Bit-8: 0 */
+	data[2] = (0x1A << 1) & 0xfe; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x0A;
-	data[1] = (WM8785_R1 < 1) | 0x00; /* Data Bit-8: 0 */
-	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x00;
-	data[1] = 0x02;
+	data[1] = (WM8785_R1 << 1) | 0x00; /* Data Bit-8: 0 */
+	data[2] = (0x1A << 1) & 0xfe; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	snd_cmi_send_spi_cmd(codec, data);
 
 	data[0] = 0x03;
-	data[1] = (WM8785_R2 < 1) | 0x00; /* Data Bit-8: 0 */
-	data[2] = (0x1A < 1) & 0xFE; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	data[0] = 0x04;
+	data[1] = (WM8785_R2 << 1) | 0x00; /* Data Bit-8: 0 */
 	data[1] = 0x03;
+	data[2] = (0x1A << 1) & 0xfe; /* WM8785 device addr 0011010, ; Bit-0 0: write */
 	snd_cmi_send_spi_cmd(codec, data);
 
 	return 0;
