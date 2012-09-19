@@ -687,6 +687,10 @@ CONFIG_SND_MVERSION=$CONFIG_MODVERSIONS
 AC_SUBST(CONFIG_SND_MVERSION)
 GENKSYMS="/sbin/genksyms -k $kversion.$kpatchlevel.$ksublevel"
 
+dnl Check for ioport support...
+CHECK_KERNEL_CONFIG(CONFIG_HAS_IOPORT, [has ioport support])
+test "$CONFIG_HAS_IOPORT" = "y" && AC_DEFINE(CONFIG_HAS_IOPORT)
+
 dnl Check for PCI support...
 CHECK_KERNEL_CONFIG(CONFIG_PCI, [PCI support in kernel])
 AC_SUBST(CONFIG_PCI)

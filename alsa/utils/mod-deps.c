@@ -136,7 +136,8 @@ static char *kernel_deps[] = {
 	"VIDEO_DEV",
 	"VIDEO_V4L1",
 	"FW_LOADER",
-	/* some flags */
+	/* some flags/capabilities */
+	"HAS_IOPORT",
 	"EXPERIMENTAL",
 	/* sound common */
 	"AC97_BUS",
