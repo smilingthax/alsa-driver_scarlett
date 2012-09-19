@@ -431,6 +431,10 @@ typedef void irqreturn_t;
 #define ALIGN(x,a) (((x)+(a)-1)&~((a)-1))
 #endif
 
+#ifndef roundup
+#define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
+#endif
+
 #ifndef BUG_ON
 #define BUG_ON(x) /* nothing */
 #endif
