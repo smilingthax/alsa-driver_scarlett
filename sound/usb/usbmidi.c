@@ -172,7 +172,11 @@ static void snd_usbmidi_input_packet(snd_usb_midi_in_endpoint_t* ep,
 /*
  * Processes the data read from the device.
  */
+#ifndef OLD_USB
 static void snd_usbmidi_in_urb_complete(struct urb* urb, struct pt_regs *regs)
+#else
+static void snd_usbmidi_in_urb_complete(struct urb* urb)
+#endif
 {
 	snd_usb_midi_in_endpoint_t* ep = snd_magic_cast(snd_usb_midi_in_endpoint_t, urb->context, return);
 
@@ -197,7 +201,11 @@ static void snd_usbmidi_in_urb_complete(struct urb* urb, struct pt_regs *regs)
 /*
  * Converts the data read from a Midiman device to standard USB MIDI packets.
  */
+#ifndef OLD_USB
 static void snd_usbmidi_in_midiman_complete(struct urb* urb, struct pt_regs *regs)
+#else
+static void snd_usbmidi_in_midiman_complete(struct urb* urb)
+#endif
 {
 	if (urb->status == 0) {
 		uint8_t* buffer = (uint8_t*)urb->transfer_buffer;
@@ -223,10 +231,18 @@ static void snd_usbmidi_in_midiman_complete(struct urb* urb, struct pt_regs *reg
 			}
 		}
 	}
-	snd_usbmidi_in_urb_complete(urb, 0); /* regs is not used */
+#ifndef OLD_USB
+	snd_usbmidi_in_urb_complete(urb, regs);
+#else
+	snd_usbmidi_in_urb_complete(urb);
+#endif
 }
 
+#ifndef OLD_USB
 static void snd_usbmidi_out_urb_complete(struct urb* urb, struct pt_regs *regs)
+#else
+static void snd_usbmidi_out_urb_complete(struct urb* urb)
+#endif
 {
 	snd_usb_midi_out_endpoint_t* ep = snd_magic_cast(snd_usb_midi_out_endpoint_t, urb->context, return);
 
