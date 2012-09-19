@@ -4159,34 +4159,52 @@ static void stac92xx_power_down(struct hda_codec *codec)
 static void stac_toggle_power_map(struct hda_codec *codec, hda_nid_t nid,
 				  int enable);
 
+static inline int get_int_hint(struct hda_codec *codec, const char *key,
+			       int *valp)
+{
+	const char *p;
+	p = snd_hda_get_hint(codec, key);
+	if (p) {
+		unsigned long val;
+		if (!strict_strtoul(p, 0, &val)) {
+			*valp = val;
+			return 1;
+		}
+	}
+	return 0;
+}
+
 /* override some hints from the hwdep entry */
 static void stac_store_hints(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
-	const char *p;
 	int val;
 
 	val = snd_hda_get_bool_hint(codec, "hp_detect");
 	if (val >= 0)
 		spec->hp_detect = val;
-	p = snd_hda_get_hint(codec, "gpio_mask");
-	if (p) {
-		spec->gpio_mask = simple_strtoul(p, NULL, 0);
+	if (get_int_hint(codec, "gpio_mask", &spec->gpio_mask)) {
 		spec->eapd_mask = spec->gpio_dir = spec->gpio_data =
 			spec->gpio_mask;
 	}
-	p = snd_hda_get_hint(codec, "gpio_dir");
-	if (p)
-		spec->gpio_dir = simple_strtoul(p, NULL, 0) & spec->gpio_mask;
-	p = snd_hda_get_hint(codec, "gpio_data");
-	if (p)
-		spec->gpio_data = simple_strtoul(p, NULL, 0) & spec->gpio_mask;
-	p = snd_hda_get_hint(codec, "eapd_mask");
-	if (p)
-		spec->eapd_mask = simple_strtoul(p, NULL, 0) & spec->gpio_mask;
+	if (get_int_hint(codec, "gpio_dir", &spec->gpio_dir))
+		spec->gpio_mask &= spec->gpio_mask;
+	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
+		spec->gpio_dir &= spec->gpio_mask;
+	if (get_int_hint(codec, "eapd_mask", &spec->eapd_mask))
+		spec->eapd_mask &= spec->gpio_mask;
+	if (get_int_hint(codec, "gpio_mute", &spec->gpio_mute))
+		spec->gpio_mute &= spec->gpio_mask;
 	val = snd_hda_get_bool_hint(codec, "eapd_switch");
 	if (val >= 0)
 		spec->eapd_switch = val;
+	get_int_hint(codec, "gpio_led_polarity", &spec->gpio_led_polarity);
+	if (get_int_hint(codec, "gpio_led", &spec->gpio_led)) {
+		spec->gpio_mask |= spec->gpio_led;
+		spec->gpio_dir |= spec->gpio_led;
+		if (spec->gpio_led_polarity)
+			spec->gpio_data |= spec->gpio_led;
+	}
 }
 
 static int stac92xx_init(struct hda_codec *codec)
@@ -4371,18 +4389,8 @@ static void stac92xx_free_kctls(struct hda_codec *codec)
 static void stac92xx_shutup(struct hda_codec *codec)
 {
 	struct sigmatel_spec *spec = codec->spec;
-	int i;
-	hda_nid_t nid;
 
-	/* reset each pin before powering down DAC/ADC to avoid click noise */
-	nid = codec->start_nid;
-	for (i = 0; i < codec->num_nodes; i++, nid++) {
-		unsigned int wcaps = get_wcaps(codec, nid);
-		unsigned int wid_type = get_wcaps_type(wcaps);
-		if (wid_type == AC_WID_PIN)
-			snd_hda_codec_read(codec, nid, 0,
-				AC_VERB_SET_PIN_WIDGET_CONTROL, 0);
-	}
+	snd_hda_shutup_pins(codec);
 
 	if (spec->eapd_mask)
 		stac_gpio_set(codec, spec->gpio_mask,
@@ -4452,14 +4460,7 @@ static inline int get_pin_presence(struct hda_codec *codec, hda_nid_t nid)
 {
 	if (!nid)
 		return 0;
-	/* NOTE: we can't use snd_hda_jack_detect() here because STAC/IDT
-	 * codecs behave wrongly when SET_PIN_SENSE is triggered, although
-	 * the pincap gives TRIG_REQ bit.
-	 */
-	if (snd_hda_codec_read(codec, nid, 0, AC_VERB_GET_PIN_SENSE, 0) &
-	    AC_PINSENSE_PRESENCE)
-		return 1;
-	return 0;
+	return snd_hda_jack_detect(codec, nid);
 }
 
 static void stac92xx_line_out_detect(struct hda_codec *codec,
@@ -4961,6 +4962,7 @@ static int patch_stac9200(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	spec->num_pins = ARRAY_SIZE(stac9200_pin_nids);
 	spec->pin_nids = stac9200_pin_nids;
@@ -5023,6 +5025,7 @@ static int patch_stac925x(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	spec->num_pins = ARRAY_SIZE(stac925x_pin_nids);
 	spec->pin_nids = stac925x_pin_nids;
@@ -5107,6 +5110,7 @@ static int patch_stac92hd73xx(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	codec->slave_dig_outs = stac92hd73xx_slave_dig_outs;
 	spec->num_pins = ARRAY_SIZE(stac92hd73xx_pin_nids);
@@ -5254,6 +5258,7 @@ static int patch_stac92hd83xxx(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	codec->slave_dig_outs = stac92hd83xxx_slave_dig_outs;
 	spec->digbeep_nid = 0x21;
@@ -5465,6 +5470,7 @@ static int patch_stac92hd71bxx(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	codec->patch_ops = stac92xx_patch_ops;
 	spec->num_pins = STAC92HD71BXX_NUM_PINS;
@@ -5717,6 +5723,7 @@ static int patch_stac922x(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	spec->num_pins = ARRAY_SIZE(stac922x_pin_nids);
 	spec->pin_nids = stac922x_pin_nids;
@@ -5820,6 +5827,7 @@ static int patch_stac927x(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	codec->slave_dig_outs = stac927x_slave_dig_outs;
 	spec->num_pins = ARRAY_SIZE(stac927x_pin_nids);
@@ -5954,6 +5962,7 @@ static int patch_stac9205(struct hda_codec *codec)
 	if (spec == NULL)
 		return -ENOMEM;
 
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	spec->num_pins = ARRAY_SIZE(stac9205_pin_nids);
 	spec->pin_nids = stac9205_pin_nids;
@@ -6109,6 +6118,7 @@ static int patch_stac9872(struct hda_codec *codec)
 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
 	if (spec == NULL)
 		return -ENOMEM;
+	codec->no_trigger_sense = 1;
 	codec->spec = spec;
 	spec->num_pins = ARRAY_SIZE(stac9872_pin_nids);
 	spec->pin_nids = stac9872_pin_nids;
