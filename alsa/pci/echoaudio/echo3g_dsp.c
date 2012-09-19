@@ -47,7 +47,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Echo3G\n"));
 	snd_assert((subdevice_id & 0xfff0) == ECHO3G, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -98,14 +97,9 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->non_audio_spdif = FALSE;
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	err = init_line_levels(chip);
-
-	/* Set the digital mode to S/PDIF RCA */
 	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
 	set_phantom_power(chip, 0);
-
-	/* Set the S/PDIF output format to "professional" */
 	set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));

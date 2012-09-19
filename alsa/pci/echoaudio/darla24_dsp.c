@@ -35,7 +35,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Darla24\n"));
 	snd_assert((subdevice_id & 0xfff0) == DARLA24, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -49,13 +48,10 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->asic_loaded = TRUE;
 	chip->input_clock_types = ECHO_CLOCK_BIT_INTERNAL | ECHO_CLOCK_BIT_ESYNC;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
@@ -64,19 +60,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 }
 
 
-
-//===========================================================================
-//
-// detect_input_clocks returns a bitmask consisting of all the input
-// clocks currently connected to the hardware; this changes as the user
-// connects and disconnects clock inputs.
-//
-// You should use this information to determine which clocks the user is
-// allowed to select.
-//
-// Darla24 only supports Esync input clock.
-//
-//===========================================================================
 
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
@@ -103,20 +86,10 @@ static int load_asic(struct echoaudio *chip)
 
 
 
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for Darla24; this is fairly simple.  You
-// just pick the right magic number.
-//
-//===========================================================================
-
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u8 clock;
 
-	/* Pick the magic number */
 	switch (rate) {
 	case 96000:
 		clock = GD24_96000;
@@ -167,14 +140,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 }
 
 
-
-//===========================================================================
-//
-// Set input clock
-//
-// Darla24 supports internal and Esync clock.
-//
-//===========================================================================
 
 static int set_input_clock(struct echoaudio *chip, u16 clock)
 {

@@ -39,7 +39,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Indigo IO\n"));
 	snd_assert((subdevice_id & 0xfff0) == INDIGO_IO, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -53,13 +52,10 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->asic_loaded = TRUE;
 	chip->input_clock_types = ECHO_CLOCK_BIT_INTERNAL;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
@@ -95,20 +91,6 @@ static int load_asic(struct echoaudio *chip)
 }
 
 
-
-/****************************************************************************
-
-	Hardware setup and config
-
- ****************************************************************************/
-
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for IndigoIO
-//
-//===========================================================================
 
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {

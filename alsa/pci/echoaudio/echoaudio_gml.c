@@ -31,14 +31,11 @@
 /* These functions are common for Gina24, Layla24 and Mona cards */
 
 
-/*
-ASIC status check - some cards have one or two ASICs that need to be
+/* ASIC status check - some cards have one or two ASICs that need to be
 loaded.  Once that load is complete, this function is called to see if
 the load was successful.
-
 If this load fails, it does not necessarily mean that the hardware is
-defective - the external box may be disconnected or turned off.
-*/
+defective - the external box may be disconnected or turned off. */
 static int check_asic_status(struct echoaudio *chip)
 {
 	u32 asic_status;
@@ -58,12 +55,9 @@ static int check_asic_status(struct echoaudio *chip)
 
 
 
-/* write_control_reg
-
-Most configuration of Gina24, Layla24, or Mona is
-accomplished by writing the control register.  write_control_reg
-sends the new control register value to the DSP.
-*/
+/* Most configuration of Gina24, Layla24, or Mona is accomplished by writing
+the control register.  write_control_reg sends the new control register
+value to the DSP. */
 static int write_control_reg(struct echoaudio *chip, u32 value, char force)
 {
 	/* Handle the digital input auto-mute */
@@ -88,14 +82,11 @@ static int write_control_reg(struct echoaudio *chip, u32 value, char force)
 
 
 
-/* Digital input auto-mute
-
-Gina24, Layla24, and Mona support digital input auto-mute.  If the digital
+/* Gina24, Layla24, and Mona support digital input auto-mute.  If the digital
 input auto-mute is enabled, the DSP will only enable the digital inputs if
 the card is syncing to a valid clock on the ADAT or S/PDIF inputs.
 If the auto-mute is disabled, the digital inputs are enabled regardless of
-what the input clock is set or what is connected.
-*/
+what the input clock is set or what is connected. */
 static int set_input_auto_mute(struct echoaudio *chip, int automute)
 {
 	DE_ACT(("set_input_auto_mute %d\n", automute));

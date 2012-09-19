@@ -42,7 +42,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Layla20\n"));
 	snd_assert((subdevice_id & 0xfff0) == LAYLA20, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -57,17 +56,13 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 					ECHO_CLOCK_BIT_WORD | ECHO_CLOCK_BIT_SUPER;
 	chip->output_clock_types =	ECHO_CLOCK_BIT_WORD | ECHO_CLOCK_BIT_SUPER;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
-	/* Set the S/PDIF output format to "professional" */
 	err = set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));
@@ -75,19 +70,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 }
 
 
-
-//===========================================================================
-//
-// detect_input_clocks returns a bitmask consisting of all the input
-// clocks currently connected to the hardware; this changes as the user
-// connects and disconnects clock inputs.
-//
-// You should use this information to determine which clocks the user is
-// allowed to select.
-//
-// Layla20 supports S/PDIF clock, word clock, and super clock.
-//
-//===========================================================================
 
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
@@ -113,26 +95,13 @@ static u32 detect_input_clocks(const struct echoaudio *chip)
 
 
 
-/****************************************************************************
-
-  Hardware setup and config
-
- ****************************************************************************/
-
-//===========================================================================
-//
-// ASIC status check - some cards have one or two ASICs that need to be
-// loaded.  Once that load is complete, this function is called to see if
-// the load was successful.
-//
-// If this load fails, it does not necessarily mean that the hardware is
-// defective - the external box may be disconnected or turned off.
-//
-// This routine sometimes fails for Layla20; for Layla20, the loop runs 5 times
-// and succeeds if it wins on three of the loops.
-//
-//===========================================================================
-
+/* ASIC status check - some cards have one or two ASICs that need to be
+loaded.  Once that load is complete, this function is called to see if
+the load was successful.
+If this load fails, it does not necessarily mean that the hardware is
+defective - the external box may be disconnected or turned off.
+This routine sometimes fails for Layla20; for Layla20, the loop runs
+5 times and succeeds if it wins on three of the loops. */
 static int check_asic_status(struct echoaudio *chip)
 {
 	u32 asic_status;
@@ -160,12 +129,7 @@ static int check_asic_status(struct echoaudio *chip)
 
 
 
-//===========================================================================
-//
-// Layla20 has an ASIC in the external box
-//
-//===========================================================================
-
+/* Layla20 has an ASIC in the external box */
 static int load_asic(struct echoaudio *chip)
 {
 	int err;
@@ -182,16 +146,6 @@ static int load_asic(struct echoaudio *chip)
 }
 
 
-
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for Layla20
-//
-// Layla is simple; just send it the sampling rate (assuming that the clock mode is correct).
-//
-//===========================================================================
 
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
@@ -216,12 +170,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 }
 
 
-
-//===========================================================================
-//
-// Set the input clock to internal, S/PDIF, ADAT
-//
-//===========================================================================
 
 static int set_input_clock(struct echoaudio *chip, u16 clock_source)
 {
@@ -254,7 +202,6 @@ static int set_input_clock(struct echoaudio *chip, u16 clock_source)
 	}
 	chip->input_clock = clock_source;
 
-	/* Send the new clock to the DSP */
 	chip->comm_page->input_clock = cpu_to_le16(clock);
 	clear_handshake(chip);
 	send_vector(chip, DSP_VC_UPDATE_CLOCKS);
@@ -266,12 +213,6 @@ static int set_input_clock(struct echoaudio *chip, u16 clock_source)
 }
 
 
-
-//===========================================================================
-//
-// Set new output clock
-//
-//===========================================================================
 
 static int set_output_clock(struct echoaudio *chip, u16 clock)
 {
@@ -299,17 +240,14 @@ static int set_output_clock(struct echoaudio *chip, u16 clock)
 
 
 
-/* Set input bus gain (one unit is 0.5dB !)
-   where ECHOGAIN_MININP <= gain <= ECHOGAIN_MAXINP) */
+/* Set input bus gain (one unit is 0.5dB !) */
 static int set_input_gain(struct echoaudio *chip, u16 input, int gain)
 {
 	snd_assert(input < num_busses_in(chip), return -EINVAL);
 
-	/* Wait for the handshake (OK even if ASIC is not loaded) */
 	if (wait_handshake(chip))
 		return -EIO;
 
-	/* Save the new value */
 	chip->input_gain[input] = gain;
 	gain += GL20_INPUT_GAIN_MAGIC_NUMBER;
 	chip->comm_page->line_in_level[input] = gain;

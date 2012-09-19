@@ -43,7 +43,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	DE_INIT(("init_hw() - Mona\n"));
 	snd_assert((subdevice_id & 0xfff0) == MONA, return -ENODEV);
 
-	/* This part is common to all the cards */
 	if ((err = init_dsp_comm_page(chip))) {
 		DE_INIT(("init_hw - could not initialize DSP comm page\n"));
 		return err;
@@ -68,20 +67,14 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 	chip->professional_spdif = FALSE;
 	chip->digital_in_automute = TRUE;
 
-	/* Load the DSP and the ASIC on the PCI card */
 	if ((err = load_firmware(chip)) < 0)
 		return err;
-
 	chip->bad_board = FALSE;
 
-	/* Must call this here after DSP is init to init gains and mutes */
 	if ((err = init_line_levels(chip)) < 0)
 		return err;
 
-	/* Set the digital mode to S/PDIF RCA */
 	set_digital_mode(chip, DIGITAL_MODE_SPDIF_RCA);
-
-	/* Set the S/PDIF output format to "professional" */
 	err = set_professional_spdif(chip, TRUE);
 
 	DE_INIT(("init_hw done\n"));
@@ -89,19 +82,6 @@ static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 }
 
 
-
-//===========================================================================
-//
-// detect_input_clocks returns a bitmask consisting of all the input
-// clocks currently connected to the hardware; this changes as the user
-// connects and disconnects clock inputs.
-//
-// You should use this information to determine which clocks the user is
-// allowed to select.
-//
-// Mona supports S/PDIF, word, and ADAT input clocks.
-//
-//===========================================================================
 
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
@@ -126,19 +106,8 @@ static u32 detect_input_clocks(const struct echoaudio *chip)
 
 
 
-/****************************************************************************
-
-  Hardware setup and config
-
- ****************************************************************************/
-
-//===========================================================================
-//
-// Mona has an ASIC on the PCI card and another ASIC in the external box; 
-// both need to be loaded.
-//
-//===========================================================================
-
+/* Mona has an ASIC on the PCI card and another ASIC in the external box; 
+both need to be loaded. */
 static int load_asic(struct echoaudio *chip)
 {
 	u32 control_reg;
@@ -181,14 +150,9 @@ static int load_asic(struct echoaudio *chip)
 
 
 
-//===========================================================================
-//
-// Depending on what digital mode you want, Mona needs different ASICs
-// loaded.  This function checks the ASIC needed for the new mode and sees
-// if it matches the one already loaded.
-//
-//===========================================================================
-
+/* Depending on what digital mode you want, Mona needs different ASICs
+loaded.  This function checks the ASIC needed for the new mode and sees
+if it matches the one already loaded. */
 static int switch_asic(struct echoaudio *chip, char double_speed)
 {
 	const struct firmware *asic;
@@ -221,14 +185,6 @@ static int switch_asic(struct echoaudio *chip, char double_speed)
 }
 
 
-
-//===========================================================================
-//
-// set_sample_rate
-//
-// Set the audio sample rate for Mona
-//
-//===========================================================================
 
 static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
@@ -327,12 +283,6 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 
 
 
-//===========================================================================
-//
-// set_input_clock
-//
-//===========================================================================
-
 static int set_input_clock(struct echoaudio *chip, u16 clock)
 {
 	u32 control_reg, clocks_from_dsp;
@@ -398,12 +348,6 @@ static int set_input_clock(struct echoaudio *chip, u16 clock)
 }
 
 
-
-//===========================================================================
-//
-//      Set digital mode
-//
-//===========================================================================
 
 static int dsp_set_digital_mode(struct echoaudio *chip, u8 mode)
 {

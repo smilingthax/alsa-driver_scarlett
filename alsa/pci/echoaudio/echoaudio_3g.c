@@ -44,7 +44,6 @@ static int check_asic_status(struct echoaudio *chip)
 	clear_handshake(chip);
 	send_vector(chip, DSP_VC_TEST_ASIC);
 
-	/* Wait for return from DSP */
 	if (wait_handshake(chip)) {
 		chip->dsp_code = NULL;
 		return -EIO;
@@ -68,12 +67,8 @@ static inline u32 get_frq_reg(struct echoaudio *chip)
 
 
 
-/* write_control_reg
-
-Most configuration of 3G cards is
-accomplished by writing the control register.  write_control_reg
-sends the new control register value to the DSP.
-*/
+/* Most configuration of 3G cards is accomplished by writing the control
+register. write_control_reg sends the new control register value to the DSP. */
 static int write_control_reg(struct echoaudio *chip, u32 ctl, u32 frq, char force)
 {
 	if (wait_handshake(chip))
@@ -84,7 +79,6 @@ static int write_control_reg(struct echoaudio *chip, u32 ctl, u32 frq, char forc
 	ctl = cpu_to_le32(ctl);
 	frq = cpu_to_le32(frq);
 
-	// Write the control register
 	if (ctl != chip->comm_page->control_register ||
 	    frq != chip->comm_page->e3g_frq_register || force) {
 		chip->comm_page->e3g_frq_register = frq;
@@ -162,7 +156,6 @@ static u32 set_spdif_bits(struct echoaudio *chip, u32 control_reg, u32 rate)
 	if (chip->non_audio_spdif)
 		control_reg |= E3G_SPDIF_NOT_AUDIO;
 
-	/* Always stereo, 24 bit, copy permit */
 	control_reg |= E3G_SPDIF_24_BIT | E3G_SPDIF_TWO_CHANNEL | E3G_SPDIF_COPY_PERMIT;
 
 	return control_reg;
@@ -183,14 +176,10 @@ static int set_professional_spdif(struct echoaudio *chip, char prof)
 
 
 
-/*
-detect_input_clocks returns a bitmask consisting of all the input
-clocks currently connected to the hardware; this changes as the user
-connects and disconnects clock inputs.
-
-You should use this information to determine which clocks the user is
-allowed to select.
-*/
+/* detect_input_clocks() returns a bitmask consisting of all the input clocks
+currently connected to the hardware; this changes as the user connects and
+disconnects clock inputs. You should use this information to determine which
+clocks the user is allowed to select. */
 static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	u32 clocks_from_dsp, clock_bits;
@@ -219,12 +208,6 @@ static u32 detect_input_clocks(const struct echoaudio *chip)
 }
 
 
-
-/****************************************************************************
-
-  Hardware setup and config
-
- ****************************************************************************/
 
 static int load_asic(struct echoaudio *chip)
 {
@@ -275,9 +258,7 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 
 	snd_assert(rate < 50000 || chip->digital_mode != DIGITAL_MODE_ADAT, return -EINVAL);
 
-	/* Set the sample rate */
 	clock = 0;
-
 	control_reg = le32_to_cpu(chip->comm_page->control_register);
 	control_reg &= E3G_CLOCK_CLEAR_MASK;
 
@@ -307,12 +288,9 @@ static int set_sample_rate(struct echoaudio *chip, u32 rate)
 	control_reg |= clock;
 	control_reg = set_spdif_bits(chip, control_reg, rate);
 
-
-	/* Set up the frequency reg */
 	base_rate = rate;
 	if (base_rate > 50000)
 		base_rate /= 2;
-
 	if (base_rate < 32000)
 		base_rate = 32000;
 
@@ -382,7 +360,6 @@ static int set_input_clock(struct echoaudio *chip, u16 clock)
 
 
 
-/* S/PDIF coax / S/PDIF optical / ADAT - switch */
 static int dsp_set_digital_mode(struct echoaudio *chip, u8 mode)
 {
 	u32 control_reg;
@@ -407,7 +384,7 @@ static int dsp_set_digital_mode(struct echoaudio *chip, u8 mode)
 
 	spin_lock_irq(&chip->lock);
 
-	if (incompatible_clock) {	/* Switch to 48KHz, internal */
+	if (incompatible_clock) {
 		chip->sample_rate = 48000;
 		set_input_clock(chip, ECHO_CLOCK_INTERNAL);
 	}
