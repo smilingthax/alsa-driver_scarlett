@@ -34,6 +34,7 @@
 #include <linux/string.h>
 #include <linux/usb.h>
 #include <sound/core.h>
+#include <sound/info.h>
 #include <sound/pcm.h>
 #define SNDRV_GET_ID
 #include <sound/initval.h>
@@ -408,6 +409,7 @@ static void snd_complete_urb(struct urb *urb)
 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
 	snd_usb_substream_t *subs = ctx->subs;
 	snd_pcm_substream_t *substream = ctx->subs->pcm_substream;
+	int err;
 
 	if (subs->ops.retire(subs, substream->runtime, urb)) {
 		clear_bit(ctx->index, &subs->transmask);
@@ -417,9 +419,9 @@ static void snd_complete_urb(struct urb *urb)
 	clear_bit(ctx->index, &subs->transmask);
 
 	if (snd_pcm_running(substream)) {
-		if (subs->ops.prepare(subs, substream->runtime, urb) < 0||
-		    do_usb_submit_urb(urb, GFP_KERNEL) < 0) {
-			snd_printd(KERN_ERR "cannot submit urb\n");
+		if ((err = subs->ops.prepare(subs, substream->runtime, urb) < 0) ||
+		    (err = do_usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+			snd_printd(KERN_ERR "cannot submit urb (err = %d)\n", err);
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 			return;
 		} else
@@ -435,6 +437,7 @@ static void snd_complete_sync_urb(struct urb *urb)
 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
 	snd_usb_substream_t *subs = ctx->subs;
 	snd_pcm_substream_t *substream = ctx->subs->pcm_substream;
+	int err;
 
 	if (subs->ops.retire_sync(subs, substream->runtime, urb)) {
 		clear_bit(ctx->index + 16, &subs->transmask);
@@ -444,9 +447,9 @@ static void snd_complete_sync_urb(struct urb *urb)
 	clear_bit(ctx->index + 16, &subs->transmask);
 
 	if (snd_pcm_running(substream)) {
-		if (subs->ops.prepare_sync(subs, substream->runtime, urb) < 0||
-		    do_usb_submit_urb(urb, GFP_KERNEL) < 0) {
-			snd_printd(KERN_ERR "cannot submit urb\n");
+		if ((err = subs->ops.prepare_sync(subs, substream->runtime, urb))  < 0 ||
+		    (err = do_usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
+			snd_printd(KERN_ERR "cannot submit sync urb (err = %d)\n", err);
 			snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
 			return;
 		} else
@@ -1028,12 +1031,12 @@ void *snd_usb_find_desc(void *descstart, unsigned int desclen, void *after,
 	return NULL;
 }
 
-void *snd_usb_find_csint_desc(void *descstart, unsigned int desclen, void *after, u8 dsubtype, int iface, int altsetting)
+void *snd_usb_find_csint_desc(snd_usb_audio_t *chip, void *after, u8 dsubtype, int iface, int altsetting)
 {
 	unsigned char *p = after;
 
-	while ((p = snd_usb_find_desc(descstart, desclen, p, USB_DT_CS_INTERFACE,
-				      iface, altsetting)) != NULL) {
+	while ((p = snd_usb_find_desc(chip->desc_buffer, chip->desc_buflen, p,
+				      USB_DT_CS_INTERFACE, iface, altsetting)) != NULL) {
 		if (p[0] >= 3 && p[2] == dsubtype)
 			return p;
 	}
@@ -1057,7 +1060,7 @@ static struct usb_device_id usb_audio_ids [] = {
 MODULE_DEVICE_TABLE (usb, usb_audio_ids);
 
 static struct usb_driver usb_audio_driver = {
-	name:		"audio",
+	name:		"snd-usb-audio",
 	probe:		usb_audio_probe,
 	disconnect:	usb_audio_disconnect,
 	driver_list:	LIST_HEAD_INIT(usb_audio_driver.driver_list), 
@@ -1069,8 +1072,7 @@ static struct usb_driver usb_audio_driver = {
  */
 
 static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
-			   int iface_no, int is_input,
-			   unsigned char *buffer, unsigned int buflen)
+			   int iface_no, int is_input)
 {
 	struct usb_device *dev;
 	struct usb_config_descriptor *config;
@@ -1127,8 +1129,7 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 		}
 
 		/* get audio formats */
-		fmt = snd_usb_find_csint_desc(buffer, buflen, NULL, AS_GENERAL,
-					      iface_no, i);
+		fmt = snd_usb_find_csint_desc(stream->chip, NULL, AS_GENERAL, iface_no, i);
 		if (!fmt) {
 			snd_printk(KERN_ERR "%d:%u:%d : AS_GENERAL descriptor not found\n",
 				   dev->devnum, iface_no, i);
@@ -1144,7 +1145,7 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 		format = (fmt[6] << 8) | fmt[5]; /* remember the format value */
 			
 		/* get format type */
-		fmt = snd_usb_find_csint_desc(buffer, buflen, NULL, FORMAT_TYPE, iface_no, i);
+		fmt = snd_usb_find_csint_desc(stream->chip, NULL, FORMAT_TYPE, iface_no, i);
 		if (!fmt) {
 			snd_printk(KERN_ERR "%d:%u:%d : no FORMAT_TYPE desc\n", 
 				   dev->devnum, iface_no, i);
@@ -1185,14 +1186,39 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 				subs->formats |= SNDRV_PCM_FMTBIT_S16_LE;
 				pcm_format = SNDRV_PCM_FORMAT_S16_LE;
 				break;
-			case 24:
-				if (fmt[5] != 4) {
-					snd_printk(KERN_ERR "%d:%u:%d : frame size %d doesn't match ALSA 24bit sample format\n",
-						   dev->devnum, iface_no, i, fmt[5]);
-					break;
+#if 0 // XXX test
+			case 18:
+				if (fmt[5] == 3) {
+					subs->formats |= (1 << SNDRV_PCM_FORMAT_S18_24_LE);
+					pcm_format = SNDRV_PCM_FORMAT_S18_24_LE;
+				} else {
+					snd_printk(KERN_ERR "%d:%u:%d : non-supported sample bit %d in %d bytes\n",
+						   dev->devnum, iface_no, i, format, fmt[5]);
 				}
-				subs->formats |= SNDRV_PCM_FMTBIT_S24_LE;
-				pcm_format = SNDRV_PCM_FORMAT_S24_LE;
+				break;
+			case 20:
+				if (fmt[5] == 3) {
+					subs->formats |= (1 << SNDRV_PCM_FORMAT_S20_24_LE);
+					pcm_format = SNDRV_PCM_FORMAT_S20_24_LE;
+				} else {
+					snd_printk(KERN_ERR "%d:%u:%d : non-supported sample bit %d in %d bytes\n",
+						   dev->devnum, iface_no, i, format, fmt[5]);
+				}
+				break;
+#endif
+			case 24:
+				if (fmt[5] == 4) {
+					subs->formats |= SNDRV_PCM_FMTBIT_S24_LE;
+					pcm_format = SNDRV_PCM_FORMAT_S24_LE;
+#if 0 // XXX test
+				} else if (fmt[5] == 3) {
+					subs->formats |= (1 <<  SNDRV_PCM_FORMAT_S24_24_LE);
+					pcm_format = SNDRV_PCM_FORMAT_S24_24_LE;
+#endif
+				} else {
+					snd_printk(KERN_ERR "%d:%u:%d : non-supported sample bit %d in %d bytes\n",
+						   dev->devnum, iface_no, i, format, fmt[5]);
+				}
 				break;
 			case 32:
 				subs->formats |= SNDRV_PCM_FMTBIT_S32_LE;
@@ -1238,8 +1264,9 @@ static void init_substream(snd_usb_stream_t *stream, snd_usb_substream_t *subs,
 			continue;
 		}
 
-		csep = snd_usb_find_desc(buffer, buflen, NULL, USB_DT_CS_ENDPOINT,
-					 iface_no, i);
+		csep = snd_usb_find_desc(stream->chip->desc_buffer,
+					 stream->chip->desc_buflen,
+					 NULL, USB_DT_CS_ENDPOINT, iface_no, i);
 		if (!csep || csep[0] < 7 || csep[2] != EP_GENERAL) {
 			snd_printk(KERN_ERR "%d:%u:%d : no or invalid class specific endpoint descriptor\n", 
 				   dev->devnum, iface_no, i);
@@ -1340,8 +1367,7 @@ static void snd_usb_audio_pcm_free(snd_pcm_t *pcm)
 	}
 }
 
-static int snd_usb_audio_stream_new(snd_usb_audio_t *chip, unsigned char *buffer,
-				    unsigned int buflen, int asifin, int asifout)
+static int snd_usb_audio_stream_new(snd_usb_audio_t *chip, int asifin, int asifout)
 {
 	snd_usb_stream_t *as;
 	snd_pcm_t *pcm;
@@ -1356,8 +1382,8 @@ static int snd_usb_audio_stream_new(snd_usb_audio_t *chip, unsigned char *buffer
 	memset(as, 0, sizeof(*as));
 	as->chip = chip;
 
-	init_substream(as, &as->substream[0], asifout, 0, buffer, buflen);
-	init_substream(as, &as->substream[1], asifin, 1, buffer, buflen);
+	init_substream(as, &as->substream[0], asifout, 0);
+	init_substream(as, &as->substream[1], asifin, 1);
 
 	if (as->substream[0].formats == 0 && as->substream[1].formats == 0) {
 		snd_usb_audio_stream_free(as);
@@ -1398,10 +1424,64 @@ static int snd_usb_audio_stream_new(snd_usb_audio_t *chip, unsigned char *buffer
 
 
 /*
+ * proc interface for descriptor dump
+ */
+static void proc_desc_dump_read(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+{
+	snd_usb_audio_t *chip = snd_magic_cast(snd_usb_audio_t, entry->private_data, return);
+	unsigned char *p;
+	int i;
+	
+	snd_iprintf(buffer, "%s\n\n", chip->card->longname);
+	if (! chip->desc_buffer)
+		return;
+
+	for (i = 0, p = chip->desc_buffer; i < chip->desc_buflen; i++, p++) {
+		if (i % 16 == 0)
+			snd_iprintf(buffer, "%02x: ", i);
+		snd_iprintf(buffer, "%02x", *p);
+		if (i % 16 == 15)
+			snd_iprintf(buffer, "\n");
+		else
+			snd_iprintf(buffer, " ");
+	}
+	if (i % 16)
+		snd_iprintf(buffer, "\n");
+}
+
+static void snd_usb_add_proc(snd_usb_audio_t *chip)
+{
+	snd_info_entry_t *entry;
+	
+	if ((entry = snd_info_create_card_entry(chip->card, "descriptor", chip->card->proc_root)) != NULL) {
+		entry->content = SNDRV_INFO_CONTENT_TEXT;
+		entry->private_data = chip;
+		entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
+		entry->c.text.read_size = 4096;
+		entry->c.text.read = proc_desc_dump_read;
+		if (snd_info_register(entry) < 0) {
+			snd_info_free_entry(entry);
+			entry = NULL;
+		}
+	}
+	chip->proc_entry = entry;
+}
+
+
+static void snd_usb_proc_done(snd_usb_audio_t *chip)
+{
+	if (chip->proc_entry) {
+		snd_info_unregister(chip->proc_entry);
+		chip->proc_entry = NULL;
+	}
+}
+
+
+/*
  * parse audio control descriptor and create pcm streams
  */
 
-static int snd_usb_create_pcm(snd_usb_audio_t *chip, unsigned char *buffer, unsigned int buflen, unsigned int ctrlif)
+static int snd_usb_create_pcm(snd_usb_audio_t *chip)
 {
 	struct usb_device *dev = chip->dev;
 	struct usb_config_descriptor *config;
@@ -1409,10 +1489,11 @@ static int snd_usb_create_pcm(snd_usb_audio_t *chip, unsigned char *buffer, unsi
 	unsigned char *p1;
 	unsigned char ifin[USB_MAXINTERFACES], ifout[USB_MAXINTERFACES];
 	int numifin = 0, numifout = 0;
+	int ctrlif = chip->ctrlif;
 	int i, j, k;
 
 	/* find audiocontrol interface */
-	if (!(p1 = snd_usb_find_csint_desc(buffer, buflen, NULL, HEADER, ctrlif, -1))) {
+	if (!(p1 = snd_usb_find_csint_desc(chip, NULL, HEADER, chip->ctrlif, -1))) {
 		snd_printk(KERN_ERR "cannot find HEADER\n");
 		return -EINVAL;
 	}
@@ -1476,11 +1557,11 @@ static int snd_usb_create_pcm(snd_usb_audio_t *chip, unsigned char *buffer, unsi
 	}
 
 	for (i = 0; i < numifin && i < numifout; i++)
-		snd_usb_audio_stream_new(chip, buffer, buflen, ifin[i], ifout[i]);
+		snd_usb_audio_stream_new(chip, ifin[i], ifout[i]);
 	for (j = i; j < numifin; j++)
-		snd_usb_audio_stream_new(chip, buffer, buflen, ifin[i], -1);
+		snd_usb_audio_stream_new(chip, ifin[i], -1);
 	for (j = i; j < numifout; j++)
-		snd_usb_audio_stream_new(chip, buffer, buflen, -1, ifout[i]);
+		snd_usb_audio_stream_new(chip, -1, ifout[i]);
 
 	return 0;
 }
@@ -1495,6 +1576,9 @@ static int snd_usb_create_pcm(snd_usb_audio_t *chip, unsigned char *buffer, unsi
 
 static int snd_usb_audio_free(snd_usb_audio_t *chip)
 {
+	snd_usb_proc_done(chip);
+	if (chip->desc_buffer)
+		kfree(chip->desc_buffer);
 	snd_magic_kfree(chip);
 	return 0;
 }
@@ -1525,24 +1609,23 @@ static int snd_usb_audio_create(snd_card_t *card, struct usb_device *dev,
 		return -ENOMEM;
 
 	chip->dev = dev;
+	chip->ctrlif = ctrlif;
 	chip->card = card;
-
-	/* parse audio stream descriptors */
-	if ((err = snd_usb_create_pcm(chip, buffer, buflen, ctrlif)) < 0) {
-		snd_magic_kfree(chip);
-		return err;
-	}
-
-	/* parse mixer descriptors */
-	if ((err = snd_usb_create_mixer(chip, buffer, buflen, ctrlif)) < 0) {
-		snd_magic_kfree(chip);
-		return err;
-	}
+	chip->desc_buffer = buffer;
+	chip->desc_buflen = buflen;
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
-		snd_magic_kfree(chip);
+		snd_usb_audio_free(chip);
 		return err;
 	}
+
+	/* parse audio stream descriptors */
+	if ((err = snd_usb_create_pcm(chip)) < 0)
+		return err;
+
+	/* parse mixer descriptors */
+	if ((err = snd_usb_create_mixer(chip)) < 0)
+		return err;
 
 	strcpy(card->driver, "USB-Audio");
 	strcpy(card->shortname, "USB Audio Driver");
@@ -1553,8 +1636,45 @@ static int snd_usb_audio_create(snd_card_t *card, struct usb_device *dev,
 	card->longname[len] = ' ';
 	usb_string(dev, 2, card->longname + len + 1, sizeof(card->longname) - len - 1);
 
+	snd_usb_add_proc(chip);
+
 	*rchip = chip;
 	return 0;
+}
+
+
+/*
+ * allocate and get description buffer
+ */
+static int alloc_desc_buffer(struct usb_device *dev, int index, unsigned char **bufptr)
+{
+	int err, buflen;
+	unsigned char buf[8];
+	unsigned char *buffer;
+
+	*bufptr = 0;
+	err = usb_get_descriptor(dev, USB_DT_CONFIG, index, buf, 8);
+	if (err < 0) {
+		snd_printk(KERN_ERR "%d:%d: cannot get first 8 bytes\n", index, dev->devnum);
+		return err;
+	}
+	if (buf[1] != USB_DT_CONFIG || buf[0] < 9) {
+		snd_printk(KERN_ERR "%d:%d: invalid config desc\n", index, dev->devnum);
+		return -EINVAL;
+	}
+	buflen = combine_word(&buf[2]);
+	if (!(buffer = kmalloc(buflen, GFP_KERNEL))) {
+		snd_printk(KERN_ERR "cannot malloc descriptor (size = %d)\n", buflen);
+		return -ENOMEM;
+	}
+	err = usb_get_descriptor(dev, USB_DT_CONFIG, index, buffer, buflen);
+	if (err < 0) {
+		snd_printk(KERN_ERR "%d:%d: cannot get DT_CONFIG: error %d\n", index, dev->devnum, err);
+		kfree(buffer);
+		return err;
+	}
+	*bufptr = buffer;
+	return buflen;
 }
 
 
@@ -1566,55 +1686,36 @@ static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 {
 	struct usb_config_descriptor *config = dev->actconfig;	
 	unsigned char *buffer;
-	unsigned char buf[8];
-	unsigned int i, buflen;
-	int err;
-	int idx;
+	unsigned int index;
+	int i, buflen;
 	snd_card_t *card;
 	snd_usb_audio_t *chip;
-
-	i = dev->actconfig - config;
 
 	if (usb_set_configuration(dev, config->bConfigurationValue) < 0) {
 		snd_printk(KERN_ERR "cannot set configuration (value 0x%x)\n", config->bConfigurationValue);
 		return NULL;
 	}
-	err = usb_get_descriptor(dev, USB_DT_CONFIG, i, buf, 8);
-	if (err < 0) {
-		snd_printk(KERN_ERR "%d:%d: cannot get first 8 bytes\n", i, dev->devnum);
+
+	index = dev->actconfig - config;
+	buflen = alloc_desc_buffer(dev, index, &buffer);
+	if (buflen <= 0)
 		return NULL;
-	}
-	if (buf[1] != USB_DT_CONFIG || buf[0] < 9) {
-		snd_printk(KERN_ERR "%d:%d: invalid config desc\n", i, dev->devnum);
-		return NULL;
-	}
-	buflen = combine_word(&buf[2]);
-	if (!(buffer = kmalloc(buflen, GFP_KERNEL))) {
-		snd_printk(KERN_ERR "cannot malloc descriptor (size = %d)\n", buflen);
-		return NULL;
-	}
-	err = usb_get_descriptor(dev, USB_DT_CONFIG, i, buffer, buflen);
-	if (err < 0) {
-		snd_printk(KERN_ERR "%d:%d: cannot get DT_CONFIG: error %d\n", i, dev->devnum, err);
-		kfree(buffer);
-		return NULL;
-	}
 
 	/*
 	 * found a config.  now register to ALSA
 	 */
-	for (idx = 0; idx < SNDRV_CARDS; idx++)
-		if (! test_and_set_bit(idx, &snd_index_bitmap))
+	for (i = 0; i < SNDRV_CARDS; i++)
+		if (! test_and_set_bit(i, &snd_index_bitmap))
 			break;
-	if (idx >= SNDRV_CARDS || ! snd_enable[idx]) {
-		snd_printk(KERN_INFO "card %d is out of range or disabled\n", idx);
+	if (i >= SNDRV_CARDS || ! snd_enable[i]) {
+		snd_printk(KERN_INFO "card %d is out of range or disabled\n", i);
 		kfree(buffer);
 		return NULL;
 	}
 
-	card = snd_card_new(snd_index[idx], snd_id[idx], THIS_MODULE, 0);
+	card = snd_card_new(snd_index[i], snd_id[i], THIS_MODULE, 0);
 	if (card == NULL) {
-		snd_printk(KERN_ERR "cannot create a card instance %d\n", idx);
+		snd_printk(KERN_ERR "cannot create a card instance %d\n", i);
 		goto __error;
 	}
 
@@ -1623,16 +1724,15 @@ static void *usb_audio_probe(struct usb_device *dev, unsigned int ifnum,
 		goto __error;
 	}
 
-	if ((err = snd_card_register(card)) < 0) {
+	if (snd_card_register(card) < 0) {
 		snd_card_free(card);
 		goto __error;
 	}
 
-	kfree(buffer);
 	return chip;
 
  __error:
-	clear_bit(idx, &snd_index_bitmap);
+	clear_bit(i, &snd_index_bitmap);
 	kfree(buffer);
 	return NULL;
 }
