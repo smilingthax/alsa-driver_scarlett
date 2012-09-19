@@ -1287,12 +1287,13 @@ if test $kvernum -gt 206027; then
 	checkarch="$ARCH"
 	;;
     esac
-    if test -d $CONFIG_SND_KERNELDIR/arch/$checkarch/include; then
-	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$checkarch/include"
-    fi
-    if test -d $CONFIG_SND_KERNELDIR/arch/$checkarch/include/generated; then
-	KERNEL_INC="$KERNEL_INC -I$CONFIG_SND_KERNELDIR/arch/$checkarch/include/generated"
-    fi
+    for d in $CONFIG_SND_KERNELDIR $CONFIG_SND_KERNELBUILD; do
+    	for i in arch/$checkarch/include arch/$checkarch/include/generated; do
+	    if test -d $d/$i; then
+	        KERNEL_INC="$KERNEL_INC -I$d/$i"
+	    fi
+	done
+    done
 fi
 
 if test -n "$mach_dir"; then
