@@ -448,22 +448,23 @@ snd_korg1212rc rc;
 
 MODULE_DEVICE_TABLE(pci, snd_korg1212_ids);
 
+typedef union swap_u32 { unsigned char c[4]; u32 i; } swap_u32;
+
 #ifdef SNDRV_BIG_ENDIAN
 static u32 LowerWordSwap(u32 swappee)
 #else
 static u32 UpperWordSwap(u32 swappee)
 #endif
 {
-   unsigned char retVal[4];
-   unsigned char swapper[4];
+   swap_u32 retVal, swapper;
 
-   *(u32*)swapper = swappee;
-   retVal[2] = swapper[3];
-   retVal[3] = swapper[2];
-   retVal[1] = swapper[1];
-   retVal[0] = swapper[0];
+   swapper.i = swappee;
+   retVal.c[2] = swapper.c[3];
+   retVal.c[3] = swapper.c[2];
+   retVal.c[1] = swapper.c[1];
+   retVal.c[0] = swapper.c[0];
 
-   return *(u32*)retVal;
+   return retVal.i;
 }
 
 #ifdef SNDRV_BIG_ENDIAN
@@ -472,32 +473,30 @@ static u32 UpperWordSwap(u32 swappee)
 static u32 LowerWordSwap(u32 swappee)
 #endif
 {
-   unsigned char retVal[4];
-   unsigned char swapper[4];
+   swap_u32 retVal, swapper;
 
-   *(u32*)swapper = swappee;
-   retVal[2] = swapper[2];
-   retVal[3] = swapper[3];
-   retVal[1] = swapper[0];
-   retVal[0] = swapper[1];
+   swapper.i = swappee;
+   retVal.c[2] = swapper.c[2];
+   retVal.c[3] = swapper.c[3];
+   retVal.c[1] = swapper.c[0];
+   retVal.c[0] = swapper.c[1];
 
-   return *(u32*)retVal;
+   return retVal.i;
 }
 
 #if 0 /* not used */
 
 static u32 EndianSwap(u32 swappee)
 {
-   unsigned char retVal[4];
-   unsigned char swapper[4];
+   swap_u32 retVal, swapper;
 
-   *(u32*)swapper = swappee;
-   retVal[0] = swapper[3];
-   retVal[1] = swapper[2];
-   retVal[2] = swapper[1];
-   retVal[3] = swapper[0];
+   swapper.i = swappee;
+   retVal.c[0] = swapper.c[3];
+   retVal.c[1] = swapper.c[2];
+   retVal.c[2] = swapper.c[1];
+   retVal.c[3] = swapper.c[0];
 
-   return *(u32*)retVal;
+   return retVal.i;
 }
 
 #endif /* not used */

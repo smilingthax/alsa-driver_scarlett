@@ -130,7 +130,7 @@ static int __devinit snd_trident_probe(struct pci_dev *pci,
 		return err;
 	}
 
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	if ((err = snd_trident_attach_synthesizer(trident)) < 0) {
 		snd_card_free(card);
 		return err;

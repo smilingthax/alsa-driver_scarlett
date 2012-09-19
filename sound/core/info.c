@@ -611,7 +611,7 @@ int __init snd_info_init(void)
 	if (p == NULL)
 		return -ENOMEM;
 	snd_proc_dev = p;
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 	{
 		snd_info_entry_t *entry;
 		if ((entry = snd_info_create_module_entry(THIS_MODULE, "seq", NULL)) == NULL)
@@ -648,7 +648,7 @@ int __exit snd_info_done(void)
 #endif
 	snd_info_version_done();
 	if (snd_proc_root) {
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 		if (snd_seq_root)
 			snd_info_unregister(snd_seq_root);
 #endif

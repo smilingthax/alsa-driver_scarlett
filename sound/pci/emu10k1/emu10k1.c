@@ -33,7 +33,7 @@ MODULE_CLASSES("{sound}");
 MODULE_DEVICES("{{Creative Labs,SB Live!/PCI512/E-mu APS},"
 	       "{Creative Labs,SB Audigy}}");
 
-#ifdef CONFIG_SND_SEQUENCER
+#if defined(CONFIG_SND_SEQUENCER) || defined(CONFIG_SND_SEQUENCER_MODULE)
 #define ENABLE_SYNTH
 #include <sound/emu10k1_synth.h>
 #endif
