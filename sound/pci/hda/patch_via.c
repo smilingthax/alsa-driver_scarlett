@@ -442,6 +442,8 @@ static int via_add_control(struct via_spec *spec, int type, const char *name,
 	knew->name = kstrdup(name, GFP_KERNEL);
 	if (!knew->name)
 		return -ENOMEM;
+	if (get_amp_nid_(val))
+		knew->subdevice = HDA_SUBDEV_NID_FLAG | get_amp_nid_(val);
 	knew->private_value = val;
 	return 0;
 }
@@ -2043,7 +2045,10 @@ static void via_speaker_automute(struct hda_codec *codec)
 /* mute line-out and internal speaker if HP is plugged */
 static void via_hp_bind_automute(struct hda_codec *codec)
 {
-	unsigned int hp_present, present = 0;
+	/* use long instead of int below just to avoid an internal compiler
+	 * error with gcc 4.0.x
+	 */
+	unsigned long hp_present, present = 0;
 	struct via_spec *spec = codec->spec;
 	int i;
 

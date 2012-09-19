@@ -202,7 +202,9 @@ static int ad198x_build_controls(struct hda_codec *codec)
 			if (!kctl)
 				return -ENOMEM;
 			kctl->private_value = spec->beep_amp;
-			err = snd_hda_ctl_add(codec, kctl);
+			err = snd_hda_ctl_add(codec,
+						get_amp_nid_(spec->beep_amp),
+						kctl);
 			if (err < 0)
 				return err;
 		}
@@ -2569,6 +2571,8 @@ static int add_control(struct ad198x_spec *spec, int type, const char *name,
 	knew->name = kstrdup(name, GFP_KERNEL);
 	if (! knew->name)
 		return -ENOMEM;
+	if (get_amp_nid_(val))
+		knew->subdevice = HDA_SUBDEV_NID_FLAG | get_amp_nid_(val);
 	knew->private_value = val;
 	return 0;
 }
