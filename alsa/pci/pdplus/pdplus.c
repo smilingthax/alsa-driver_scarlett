@@ -150,8 +150,8 @@
 
 #define PDPLUS_VERSION    "0.0.4"
 
-#define SNDRV_MAIN_OBJECT_FILE
 #include <sound/driver.h>
+#include <sound/core.h>
 #include <sound/control.h>
 #include <sound/pcm.h>
 #define SNDRV_GET_ID
