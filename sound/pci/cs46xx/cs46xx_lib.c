@@ -964,13 +964,14 @@ static int _cs46xx_adjust_sample_rate (cs46xx_t *chip, cs46xx_pcm_t *cpcm,
 static int snd_cs46xx_playback_hw_params(snd_pcm_substream_t * substream,
 					 snd_pcm_hw_params_t * hw_params)
 {
-	/*cs46xx_t *chip = snd_pcm_substream_chip(substream);*/
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	cs46xx_pcm_t *cpcm;
 	int err;
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 	int sample_rate = params_rate(hw_params);
 	int period_size = params_period_bytes(hw_params);
+#endif
 	cpcm = snd_magic_cast(cs46xx_pcm_t, runtime->private_data, return -ENXIO);
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
@@ -1157,10 +1158,9 @@ static int snd_cs46xx_capture_hw_params(snd_pcm_substream_t * substream,
 	cs46xx_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	int err;
-	int period_size = params_period_bytes(hw_params);
 
 #ifdef CONFIG_SND_CS46XX_NEW_DSP
-	cs46xx_dsp_pcm_ostream_set_period (chip,period_size);
+	cs46xx_dsp_pcm_ostream_set_period (chip, params_period_bytes(hw_params));
 #endif
 	if (runtime->periods == CS46XX_FRAGS) {
 		if (runtime->dma_area != chip->capt.hw_area)
@@ -1345,6 +1345,8 @@ static snd_pcm_hardware_t snd_cs46xx_capture =
 	.fifo_size =		0,
 };
 
+#ifdef CONFIG_SND_CS46XX_NEW_DSP
+
 static unsigned int period_sizes[] = { 32, 64, 128, 256, 512, 1024, 2048 };
 
 #define PERIOD_SIZES sizeof(period_sizes) / sizeof(period_sizes[0])
@@ -1354,6 +1356,8 @@ static snd_pcm_hw_constraint_list_t hw_constraints_period_sizes = {
 	.list = period_sizes,
 	.mask = 0
 };
+
+#endif
 
 static void snd_cs46xx_pcm_free_substream(snd_pcm_runtime_t *runtime)
 {
