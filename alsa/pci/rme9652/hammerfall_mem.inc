@@ -58,5 +58,3 @@ static inline void module_put(struct module *module)
 		__MOD_DEC_USE_COUNT(module);
 }
 #endif /* < 2.5.0 */
-
-#include "../../alsa-kernel/pci/rme9652/hammerfall_mem.c"
