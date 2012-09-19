@@ -1342,6 +1342,30 @@ if test "$CONFIG_HAVE_KCALLOC" = "1"; then
   AC_DEFINE(CONFIG_HAVE_KCALLOC)
 fi
 
+dnl Check for saved_config_space in pci_dev
+AC_MSG_CHECKING(for saved_config_space in pci_dev)
+kcalloc="0"
+ac_save_CFLAGS="$CFLAGS"
+CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC"
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include "$CONFIG_SND_KERNELDIR/include/linux/config.h"
+#include "$CONFIG_SND_KERNELDIR/include/linux/pci.h"
+],[
+  struct pci_dev dev;
+  dev.saved_config_space[0] = 0;
+],
+    AC_MSG_RESULT("yes");pci_saved_config="1",
+    AC_MSG_RESULT("no");pci_saved_config="0",
+    AC_MSG_RESULT("unknown");pci_saved_config="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CONFIG_HAVE_PCI_SAVED_CONFIG=$pci_saved_config
+dnl AC_SUBST(CONFIG_HAVE_PCI_SAVED_CONFIG)
+if test "$CONFIG_HAVE_PCI_SAVED_CONFIG" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_PCI_SAVED_CONFIG)
+fi
+
 dnl check only on 2.2 kernel..
 if test $kpatchlevel -le 2; then
 
