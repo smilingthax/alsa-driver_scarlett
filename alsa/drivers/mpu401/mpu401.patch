@@ -32,20 +32,20 @@
  
  static struct platform_device *platform_devices[SNDRV_CARDS];
  static int pnp_registered;
-@@ -83,7 +94,11 @@
+@@ -86,7 +97,11 @@
  		strcat(card->longname, "polled");
  	}
  
--	err = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401, port[dev],
+-	err = snd_mpu401_uart_new(card, 0, MPU401_HW_MPU401, port[dev], 0,
 +	err = snd_mpu401_uart_new(card, 0,
 +#ifdef CONFIG_X86_PC9800
 +				  pc98ii[dev] ? MPU401_HW_PC98II :
 +#endif
-+				  MPU401_HW_MPU401, port[dev],
- 				  uart_enter[dev] ? 0 : MPU401_INFO_UART_ONLY,
++				  MPU401_HW_MPU401, port[dev], 0,
  				  irq[dev], irq[dev] >= 0 ? IRQF_DISABLED : 0,
  				  NULL);
-@@ -286,3 +301,5 @@
+ 	if (err < 0) {
+@@ -288,3 +303,5 @@
  
  module_init(alsa_card_mpu401_init)
  module_exit(alsa_card_mpu401_exit)
