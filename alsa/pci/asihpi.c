@@ -134,8 +134,8 @@ static int snd_card_asihpi_pcm_hw_params(snd_pcm_substream_t * substream,
 	dpcm->pcm_size = params_buffer_bytes(params);
 	dpcm->pcm_count = params_period_bytes(params);
 	dpcm->pcm_jiffie_per_period = (dpcm->pcm_count * HZ / bps);
-	snd_printd("Jiffies per period %ld\n",
-		   (long)dpcm->pcm_jiffie_per_period);
+	snd_printd("Jiffies per period %ld, pcm_size %d, pcm_count %d\n",
+			   (long)dpcm->pcm_jiffie_per_period,dpcm->pcm_size,    dpcm->pcm_count);
 	dpcm->pcm_irq_pos = 0;
 	dpcm->pcm_buf_pos = 0;
 	return 0;
@@ -370,17 +370,17 @@ static snd_pcm_hardware_t snd_card_asihpi_playback = {
 	.channels_min = 1,
 	.channels_max = 2,
 	.buffer_bytes_max = MAX_BUFFER_SIZE,
-	.period_bytes_min = MAX_BUFFER_SIZE / 8,
+	.period_bytes_min = MAX_BUFFER_SIZE / 64,
 	.period_bytes_max = MAX_BUFFER_SIZE / 2,
 	.periods_min = 2,
-	.periods_max = 8,
+	.periods_max = 64,
 	.fifo_size = 0,
 };
 
 static void snd_card_asihpi_playback_format(HPI_HOSTREAM hStream,
 					    u64 * formats)
 {
-	HPI_FORMAT hpi_format = { 44100, 128000, 0, 0, 0, 2, 0 };
+	HPI_FORMAT hpi_format = { 48000, 128000, 0, 0, 0, 2, 0 };
 	HW16 wFormat;
 	HW16 err;
 
@@ -639,17 +639,17 @@ static snd_pcm_hardware_t snd_card_asihpi_capture = {
 	.channels_min = 1,
 	.channels_max = 2,
 	.buffer_bytes_max = MAX_BUFFER_SIZE,
-	.period_bytes_min = MAX_BUFFER_SIZE / 16,
+	.period_bytes_min = MAX_BUFFER_SIZE / 64,
 	.period_bytes_max = MAX_BUFFER_SIZE,
 	.periods_min = 1,
-	.periods_max = 16,
+	.periods_max = 64,
 	.fifo_size = 0,
 };
 
 static void snd_card_asihpi_capture_format(HPI_HOSTREAM hStream,
 					   u64 * formats)
 {
-	HPI_FORMAT hpi_format = { 44100, 128000, 0, 0, 0, 2, 0 };
+	HPI_FORMAT hpi_format = { 48000, 128000, 0, 0, 0, 2, 0 };
 	HW16 wFormat;
 	HW16 err;
 
@@ -791,7 +791,7 @@ typedef struct {
 #ifdef ASI_STYLE_NAMES
 #define ASIHPI_SOURCENODE_STRINGS \
 { \
-	TEXT("none!"), \
+	TEXT("no source"), \
 	TEXT("OutStr"), \
 	TEXT("LineIn"), \
 	TEXT("AesIn"), \
@@ -800,6 +800,7 @@ typedef struct {
 	TEXT("Clock"), \
 	TEXT("Bitstr"), \
 	TEXT("Mic"), \
+	TEXT("Cobranet"), \
 }
 #else
 #define ASIHPI_SOURCENODE_STRINGS \
@@ -813,13 +814,11 @@ typedef struct {
 	TEXT("Clock"), \
 	TEXT("Bitstream"), \
 	TEXT("Mic"), \
+	TEXT("Cobranet"), \
 }
 #endif
 
-#define NUM_SOURCENODE_STRINGS 9
-#if (NUM_SOURCENODE_STRINGS != (HPI_SOURCENODE_LAST_INDEX-HPI_SOURCENODE_BASE+1))
-#error TEXT("Sourcenode strings don't match #defines")
-#endif
+#define NUM_SOURCENODE_STRINGS 10
 
 #ifdef ASI_STYLE_NAMES
 #define ASIHPI_DESTNODE_STRINGS \
@@ -830,6 +829,7 @@ typedef struct {
 	TEXT("AesOut"), \
 	TEXT("RF"), \
 	TEXT("Speak") \
+	TEXT("Cobranet"), \
 }
 #else
 #define ASIHPI_DESTNODE_STRINGS \
@@ -840,11 +840,18 @@ typedef struct {
 	TEXT("Digital"), \
 	TEXT("RF"), \
 	TEXT("Speaker") \
+	TEXT("Cobranet"), \
 }
 #endif
-#define NUM_DESTNODE_STRINGS 6
-#if (NUM_DESTNODE_STRINGS != (HPI_DESTNODE_LAST_INDEX-HPI_DESTNODE_BASE+1))
-#error "Destnode strings don't match #defines"
+#define NUM_DESTNODE_STRINGS 7
+
+#if ( (NUM_SOURCENODE_STRINGS < (HPI_SOURCENODE_LAST_INDEX-HPI_SOURCENODE_BASE+1)) ||
+(NUM_DESTNODE_STRINGS < (HPI_DESTNODE_LAST_INDEX-HPI_DESTNODE_BASE+1)))
+#error "Fewer node strings than #defines - new HPI?"
+#endif
+#if ( (NUM_SOURCENODE_STRINGS > (HPI_SOURCENODE_LAST_INDEX-HPI_SOURCENODE_BASE+1)) ||
+(NUM_DESTNODE_STRINGS < (HPI_DESTNODE_LAST_INDEX-HPI_DESTNODE_BASE+1)))
+#warning "More Node strings than HPI defines - old HPI?"
 #endif
 
 static char *asihpi_src_names[] = ASIHPI_SOURCENODE_STRINGS;
