@@ -8,6 +8,9 @@
 #include "sndversions.h"
 #endif
 
+#include "config.h"
+#include "adriver.h"
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #include "../alsa-kernel/core/memory_wrapper.c"
 #else
