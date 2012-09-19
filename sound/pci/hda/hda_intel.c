@@ -677,6 +677,14 @@ static unsigned int azx_rirb_get_response(struct hda_bus *bus,
 		}
 	}
 
+	if (!chip->polling_mode) {
+		snd_printk(KERN_WARNING SFX "azx_get_response timeout, "
+			   "switching to polling mode: last cmd=0x%08x\n",
+			   chip->last_cmd[addr]);
+		chip->polling_mode = 1;
+		goto again;
+	}
+
 	if (chip->msi) {
 		snd_printk(KERN_WARNING SFX "No response from codec, "
 			   "disabling MSI: last cmd=0x%08x\n",
@@ -689,14 +697,6 @@ static unsigned int azx_rirb_get_response(struct hda_bus *bus,
 			bus->rirb_error = 1;
 			return -1;
 		}
-		goto again;
-	}
-
-	if (!chip->polling_mode) {
-		snd_printk(KERN_WARNING SFX "azx_get_response timeout, "
-			   "switching to polling mode: last cmd=0x%08x\n",
-			   chip->last_cmd[addr]);
-		chip->polling_mode = 1;
 		goto again;
 	}
 
@@ -2674,6 +2674,7 @@ static struct pci_device_id azx_ids[] = {
 	{ PCI_DEVICE(0x10de, 0x044b), .driver_data = AZX_DRIVER_NVIDIA },
 	{ PCI_DEVICE(0x10de, 0x055c), .driver_data = AZX_DRIVER_NVIDIA },
 	{ PCI_DEVICE(0x10de, 0x055d), .driver_data = AZX_DRIVER_NVIDIA },
+	{ PCI_DEVICE(0x10de, 0x0590), .driver_data = AZX_DRIVER_NVIDIA },
 	{ PCI_DEVICE(0x10de, 0x0774), .driver_data = AZX_DRIVER_NVIDIA },
 	{ PCI_DEVICE(0x10de, 0x0775), .driver_data = AZX_DRIVER_NVIDIA },
 	{ PCI_DEVICE(0x10de, 0x0776), .driver_data = AZX_DRIVER_NVIDIA },
