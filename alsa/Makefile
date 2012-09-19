@@ -36,7 +36,7 @@ endif
 SUBDIRS  =
 CSUBDIRS =
 
-ifeq (n,$(CONFIG_ISAPNP_KERNEL))
+ifndef CONFIG_ISAPNP_KERNEL
 ifeq (y,$(CONFIG_ISAPNP))
 ifeq (y,$(CONFIG_ISA))
 SUBDIRS  += support
