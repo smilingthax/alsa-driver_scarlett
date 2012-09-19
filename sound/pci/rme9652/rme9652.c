@@ -303,7 +303,7 @@ static char channel_map_9636_ds[26] = {
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
 };
 
-#define RME9652_PREALLOCATE_MEMORY	/* via module snd-rme9652_mem */
+#define RME9652_PREALLOCATE_MEMORY	/* via module snd-hammerfall-mem */
 
 #ifdef RME9652_PREALLOCATE_MEMORY
 extern void *snd_hammerfall_get_buffer(struct pci_dev *, dma_addr_t *dmaaddr);
