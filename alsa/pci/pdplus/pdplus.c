@@ -3747,8 +3747,7 @@ static struct snd_pcm_hardware pdplus_a_play_info =
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
-		SNDRV_PCM_INFO_BLOCK_TRANSFER |
-		SNDRV_PCM_INFO_SYNC_START,
+		SNDRV_PCM_INFO_BLOCK_TRANSFER,
 
         .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
@@ -3785,8 +3784,7 @@ static struct snd_pcm_hardware pdplus_a_capt_info =
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
-		SNDRV_PCM_INFO_BLOCK_TRANSFER |
-		SNDRV_PCM_INFO_SYNC_START,
+		SNDRV_PCM_INFO_BLOCK_TRANSFER,
 
         .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
@@ -3823,8 +3821,7 @@ static struct snd_pcm_hardware pdplus_d_play_info =
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
-		SNDRV_PCM_INFO_BLOCK_TRANSFER |
-		SNDRV_PCM_INFO_SYNC_START,
+		SNDRV_PCM_INFO_BLOCK_TRANSFER,
 
         .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
@@ -3859,8 +3856,7 @@ static struct snd_pcm_hardware pdplus_d_capt_info =
         .info =
                 SNDRV_PCM_INFO_INTERLEAVED |
                 SNDRV_PCM_INFO_PAUSE |
-		SNDRV_PCM_INFO_BLOCK_TRANSFER |
-		SNDRV_PCM_INFO_SYNC_START,
+		SNDRV_PCM_INFO_BLOCK_TRANSFER,
 
         .formats =
                 SNDRV_PCM_FMTBIT_S24_LE,
@@ -3914,7 +3910,6 @@ static int pdplus_a_play_open (struct snd_pcm_substream *substream)
 					    SNDRV_PCM_HW_PARAM_PERIODS);
 	if (err < 0)
 		return err;
-        snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
@@ -3971,7 +3966,6 @@ static int pdplus_a_capt_open (struct snd_pcm_substream *substream)
 					    SNDRV_PCM_HW_PARAM_PERIODS);
 	if (err < 0)
 		return err;
-        snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
@@ -4059,8 +4053,6 @@ static int pdplus_d_play_open (struct snd_pcm_substream *substream)
 	if (err < 0)
 		return err;
 
-        snd_pcm_set_sync (substream);
-
         write_lock_irqsave (&scard->lock, flags);
 
         scard->d_play = substream;
@@ -4121,8 +4113,6 @@ static int pdplus_d_capt_open (struct snd_pcm_substream *substream)
 					    SNDRV_PCM_HW_PARAM_PERIODS);
 	if (err < 0)
 		return err;
-
-        snd_pcm_set_sync (substream);
 
         write_lock_irqsave (&scard->lock, flags);
 
