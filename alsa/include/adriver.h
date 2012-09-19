@@ -1463,7 +1463,7 @@ static inline unsigned long __ffs(unsigned long word)
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
 #ifndef uninitialized_var
 #define uninitialized_var(x) x = x
 #endif
