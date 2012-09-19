@@ -99,7 +99,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 		chip->has_phantom_power = 1;
 
 		/* Re-load the DSP and the ASIC codes */
-		chip->dsp_code = 0;
+		chip->dsp_code = NULL;
 		if ((err = load_firmware(chip)) < 0)
 			return err;             /* Something went wrong */
 	} else if (err > 0) {

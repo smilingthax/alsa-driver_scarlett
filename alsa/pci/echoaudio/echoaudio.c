@@ -355,11 +355,17 @@ static int pcm_digital_in_open(snd_pcm_substream_t *substream)
 	if (err < 0)
 		goto din_exit;
 
-	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
-					hw_rule_capture_channels_by_format, 0, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
+	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				       SNDRV_PCM_HW_PARAM_CHANNELS,
+				       hw_rule_capture_channels_by_format,
+				       NULL, SNDRV_PCM_HW_PARAM_FORMAT,
+				       -1)) < 0)
 		goto din_exit;
-	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
-					hw_rule_capture_format_by_channels, 0, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
+	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				       SNDRV_PCM_HW_PARAM_FORMAT,
+				       hw_rule_capture_format_by_channels,
+				       NULL, SNDRV_PCM_HW_PARAM_CHANNELS,
+				       -1)) < 0)
 		goto din_exit;
 
 	atomic_inc(&chip->opencount);
@@ -391,11 +397,17 @@ static int pcm_digital_out_open(snd_pcm_substream_t *substream)
 	if (err < 0)
 		goto dout_exit;
 
-	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_CHANNELS,
-					hw_rule_playback_channels_by_format, 0, SNDRV_PCM_HW_PARAM_FORMAT, -1)) < 0)
+	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				       SNDRV_PCM_HW_PARAM_CHANNELS,
+				       hw_rule_playback_channels_by_format,
+				       NULL, SNDRV_PCM_HW_PARAM_FORMAT,
+				       -1)) < 0)
 		goto dout_exit;
-	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0, SNDRV_PCM_HW_PARAM_FORMAT,
-					hw_rule_playback_format_by_channels, 0, SNDRV_PCM_HW_PARAM_CHANNELS, -1)) < 0)
+	if ((err = snd_pcm_hw_rule_add(substream->runtime, 0,
+				       SNDRV_PCM_HW_PARAM_FORMAT,
+				       hw_rule_playback_format_by_channels,
+				       NULL, SNDRV_PCM_HW_PARAM_CHANNELS,
+				       -1)) < 0)
 		goto dout_exit;
 	atomic_inc(&chip->opencount);
 	if (atomic_read(&chip->opencount) > 1 && chip->rate_set)
