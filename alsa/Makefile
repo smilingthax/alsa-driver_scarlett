@@ -62,7 +62,7 @@ include/sound/version.h: include/version.h
 	cp -auv include/version.h include/sound/version.h
 
 utils/mod-deps: alsa-kernel/scripts/mod-deps.c alsa-kernel/scripts/mod-deps.h
-	$(CC) -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
+	gcc -Ialsa-kernel/scripts alsa-kernel/scripts/mod-deps.c -o utils/mod-deps
 
 toplevel.config.in: alsa-kernel/Config.in utils/mod-deps alsa-kernel/scripts/Modules.dep utils/Modules.dep
 	cat alsa-kernel/scripts/Modules.dep utils/Modules.dep | utils/mod-deps --makeconf > toplevel.config.in

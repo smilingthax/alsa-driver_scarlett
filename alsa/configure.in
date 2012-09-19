@@ -406,7 +406,6 @@ case "$processor" in
     ;;
   ppc64)
     c_opts="-D__powerpc__ -fsigned-char -msoft-float -pipe -Wno-uninitialized -mminimal-toc -fno-builtin"
-    CONFIG_SND_PPC=y
     # CONFIG_SND_ISA=n
     ;;
   mips)
