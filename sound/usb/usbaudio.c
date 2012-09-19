@@ -23,6 +23,19 @@
  *   You should have received a copy of the GNU General Public License
  *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+ *
+ *
+ *  NOTES:
+ *
+ *   - async unlink should be used for avoiding the sleep inside lock.
+ *     however, it causes oops by unknown reason on usb-uhci, and
+ *     disabled as default.  the feature is enabled by async_unlink=1
+ *     option (especially when preempt is used).
+ *   - the linked URBs would be preferred but not used so far because of
+ *     the instability of unlinking.
+ *   - type II is not supported properly.  there is no device which supports
+ *     this type *correctly*.  SB extigy looks as if it supports, but it's
+ *     indeed an AC3 stream packed in SPDIF frames (i.e. no real AC3 stream).
  */
 
 
@@ -56,6 +69,7 @@ static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card *
 static int vid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 }; /* Vendor ID for this card */
 static int pid[SNDRV_CARDS] = { [0 ... (SNDRV_CARDS-1)] = -1 }; /* Product ID for this card */
 static int nrpacks = 4;		/* max. number of packets per urb */
+static int async_unlink = 0;
 
 MODULE_PARM(index, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
@@ -75,21 +89,9 @@ MODULE_PARM_SYNTAX(pid, SNDRV_ENABLED ",allows:{{-1,0xffff}},base:16");
 MODULE_PARM(nrpacks, "i");
 MODULE_PARM_DESC(nrpacks, "Max. number of packets per URB.");
 MODULE_PARM_SYNTAX(nrpacks, SNDRV_ENABLED ",allows:{{2,10}}");
-
-
-/*
- * for using ASYNC unlink mode, define the following.
- * this will make the driver quicker response for request to STOP-trigger,
- * but it may cause oops by some unknown reason (bug of usb driver?),
- * so turning off might be sure.
- */
-/* #define SND_USE_ASYNC_UNLINK */
-
-#ifdef SND_USB_ASYNC_UNLINK
-#define UNLINK_FLAGS	URB_ASYNC_UNLINK
-#else
-#define UNLINK_FLAGS	0
-#endif
+MODULE_PARM(async_unlink, "i");
+MODULE_PARM_DESC(async_unlink, "Use async unlink mode.");
+MODULE_PARM_SYNTAX(async_unlink, SNDRV_BOOLEAN_TRUE_DESC);
 
 
 /*
@@ -617,42 +619,51 @@ static void snd_complete_sync_urb(struct urb *urb, struct pt_regs *regs)
  * unlink active urbs.
  * return the number of active urbs.
  */
-static int deactivate_urbs(snd_usb_substream_t *subs, int force)
+static int deactivate_urbs(snd_usb_substream_t *subs, int force, int can_sleep)
 {
 	unsigned int i;
-	int alive;
+	int alive, async;
 
 	subs->running = 0;
 
 	if (!force && subs->stream->chip->shutdown) /* to be sure... */
 		return 0;
 
-#ifndef SND_USB_ASYNC_UNLINK
-	if (in_interrupt())
+	async = !can_sleep && async_unlink;
+
+	if (! async && in_interrupt())
 		return 0;
-#endif
+
 	alive = 0;
 	for (i = 0; i < subs->nurbs; i++) {
 		if (test_bit(i, &subs->active_mask)) {
 			alive++;
-			if (! test_and_set_bit(i, &subs->unlink_mask))
-				usb_unlink_urb(subs->dataurb[i].urb);
+			if (! test_and_set_bit(i, &subs->unlink_mask)) {
+				struct urb *u = subs->dataurb[i].urb;
+				if (async)
+					u->transfer_flags |= URB_ASYNC_UNLINK;
+				else
+					u->transfer_flags &= ~URB_ASYNC_UNLINK;
+				usb_unlink_urb(u);
+			}
 		}
 	}
 	if (subs->syncpipe) {
 		for (i = 0; i < SYNC_URBS; i++) {
 			if (test_bit(i+16, &subs->active_mask)) {
 				alive++;
- 				if (! test_and_set_bit(i+16, &subs->unlink_mask))
-					usb_unlink_urb(subs->syncurb[i].urb);
+ 				if (! test_and_set_bit(i+16, &subs->unlink_mask)) {
+					struct urb *u = subs->syncurb[i].urb;
+					if (async)
+						u->transfer_flags |= URB_ASYNC_UNLINK;
+					else
+						u->transfer_flags &= ~URB_ASYNC_UNLINK;
+					usb_unlink_urb(u);
+				}
 			}
 		}
 	}
-#ifdef SND_USB_ASYNC_UNLINK
-	return alive;
-#else
-	return 0;
-#endif
+	return async ? alive : 0;
 }
 
 
@@ -702,7 +713,7 @@ static int start_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 
  __error:
 	// snd_pcm_stop(subs->pcm_substream, SNDRV_PCM_STATE_XRUN);
-	deactivate_urbs(subs, 0);
+	deactivate_urbs(subs, 0, 0);
 	return -EPIPE;
 }
 
@@ -762,7 +773,7 @@ static int snd_usb_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 		err = start_urbs(subs, substream->runtime);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		err = deactivate_urbs(subs, 0);
+		err = deactivate_urbs(subs, 0, 0);
 		break;
 	default:
 		err = -EINVAL;
@@ -795,7 +806,8 @@ static void release_substream_urbs(snd_usb_substream_t *subs, int force)
 	int i;
 
 	/* stop urbs (to be sure) */
-	if (deactivate_urbs(subs, force) > 0)
+	deactivate_urbs(subs, force, 1);
+	if (async_unlink)
 		wait_clear_urbs(subs);
 
 	for (i = 0; i < MAX_URBS; i++)
@@ -914,7 +926,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 		}
 		u->urb->dev = subs->dev;
 		u->urb->pipe = subs->datapipe;
-		u->urb->transfer_flags = URB_ISO_ASAP | UNLINK_FLAGS;
+		u->urb->transfer_flags = URB_ISO_ASAP;
 		u->urb->number_of_packets = u->packets;
 		u->urb->context = u;
 		u->urb->complete = snd_usb_complete_callback(snd_complete_urb);
@@ -936,7 +948,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 			u->urb->transfer_buffer_length = nrpacks * 3;
 			u->urb->dev = subs->dev;
 			u->urb->pipe = subs->syncpipe;
-			u->urb->transfer_flags = URB_ISO_ASAP | UNLINK_FLAGS;
+			u->urb->transfer_flags = URB_ISO_ASAP;
 			u->urb->number_of_packets = u->packets;
 			u->urb->context = u;
 			u->urb->complete = snd_usb_complete_callback(snd_complete_sync_urb);
@@ -954,6 +966,7 @@ static struct audioformat *find_format(snd_usb_substream_t *subs, unsigned int f
 {
 	struct list_head *p;
 	struct audioformat *found = NULL;
+	int cur_attr = 0, attr;
 
 	list_for_each(p, &subs->fmt_list) {
 		struct audioformat *fp;
@@ -970,9 +983,37 @@ static struct audioformat *find_format(snd_usb_substream_t *subs, unsigned int f
 			if (i >= fp->nr_rates)
 				continue;
 		}
-		/* find the format with the largest max. packet size */
-		if (! found || fp->maxpacksize > found->maxpacksize)
+		attr = fp->ep_attr & EP_ATTR_MASK;
+		if (! found) {
 			found = fp;
+			cur_attr = attr;
+			continue;
+		}
+		/* avoid async out and adaptive in if the other method
+		 * supports the same format.
+		 * this is a workaround for the case like
+		 * M-audio audiophile USB.
+		 */
+		if (attr != cur_attr) {
+			if ((attr == EP_ATTR_ASYNC &&
+			     subs->direction == SNDRV_PCM_STREAM_PLAYBACK) ||
+			    (attr == EP_ATTR_ADAPTIVE &&
+			     subs->direction == SNDRV_PCM_STREAM_CAPTURE))
+				continue;
+			if ((cur_attr == EP_ATTR_ASYNC &&
+			     subs->direction == SNDRV_PCM_STREAM_PLAYBACK) ||
+			    (cur_attr == EP_ATTR_ADAPTIVE &&
+			     subs->direction == SNDRV_PCM_STREAM_CAPTURE)) {
+				found = fp;
+				cur_attr = attr;
+				continue;
+			}
+		}
+		/* find the format with the largest max. packet size */
+		if (fp->maxpacksize > found->maxpacksize) {
+			found = fp;
+			cur_attr = attr;
+		}
 	}
 	return found;
 }
@@ -1429,7 +1470,7 @@ static int hw_rule_format(snd_pcm_hw_params_t *params,
 		fp = list_entry(p, struct audioformat, list);
 		if (! hw_check_valid_format(params, fp))
 			continue;
-		fbits |= (1UL << fp->format);
+		fbits |= (1ULL << fp->format);
 	}
 
 	oldbits[0] = fmt->bits[0];
@@ -1454,6 +1495,7 @@ static int check_hw_params_convention(snd_usb_substream_t *subs)
 	u32 channels[64];
 	u32 rates[64];
 	u32 cmaster, rmaster;
+	u32 rate_min = 0, rate_max = 0;
 	struct list_head *p;
 
 	memset(channels, 0, sizeof(channels));
@@ -1465,6 +1507,15 @@ static int check_hw_params_convention(snd_usb_substream_t *subs)
 		/* unconventional channels? */
 		if (f->channels > 32)
 			return 1;
+		/* continuous rate min/max matches? */
+		if (f->rates & SNDRV_PCM_RATE_CONTINUOUS) {
+			if (rate_min && f->rate_min != rate_min)
+				return 1;
+			if (rate_max && f->rate_max != rate_max)
+				return 1;
+			rate_min = f->rate_min;
+			rate_max = f->rate_max;
+		}
 		/* combination of continuous rates and fixed rates? */
 		if (rates[f->format] & SNDRV_PCM_RATE_CONTINUOUS) {
 			if (f->rates != rates[f->format])
@@ -2008,10 +2059,20 @@ static int parse_audio_format_i_type(struct usb_device *dev, struct audioformat 
 			pcm_format = SNDRV_PCM_FORMAT_S8;
 			break;
 		case 2:
-			pcm_format = SNDRV_PCM_FORMAT_S16_LE;
+			/* M-Audio audiophile USB workaround */
+			if (dev->descriptor.idVendor == 0x0763 &&
+			    dev->descriptor.idProduct == 0x2003)
+				pcm_format = SNDRV_PCM_FORMAT_S16_BE; /* grrr, big endian!! */
+			else
+				pcm_format = SNDRV_PCM_FORMAT_S16_LE;
 			break;
 		case 3:
-			pcm_format = SNDRV_PCM_FORMAT_S24_3LE;
+			/* M-Audio audiophile USB workaround */
+			if (dev->descriptor.idVendor == 0x0763 &&
+			    dev->descriptor.idProduct == 0x2003)
+				pcm_format = SNDRV_PCM_FORMAT_S24_3BE; /* grrr, big endian!! */
+			else
+				pcm_format = SNDRV_PCM_FORMAT_S24_3LE;
 			break;
 		case 4:
 			pcm_format = SNDRV_PCM_FORMAT_S32_LE;
