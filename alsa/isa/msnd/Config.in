@@ -1,1 +1,4 @@
-dep_tristate 'Turtle Beach Fiji,Pinnacle' CONFIG_SND_MSND_PINNACLE $CONFIG_SND
+if [ "$CONFIG_X86" = "y" ]; then
+  dep_tristate 'Turtle Beach Fiji,Pinnacle' CONFIG_SND_MSND_PINNACLE $CONFIG_SND
+fi
+
