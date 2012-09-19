@@ -161,7 +161,11 @@ static int open_tty(serialmidi_t *serial, unsigned int mode)
 		retval = -EIO;
 		goto __end;
 	}
+#ifdef CONFIG_HAVE_TTY_COUNT_ATOMIC
+	if (atomic_read(&tty->count) > 1) {
+#else
 	if (tty->count > 1) {
+#endif
 		snd_printk(KERN_ERR "tty %s is already used", serial->sdev);
 		retval = -EBUSY;
 		goto __end;
