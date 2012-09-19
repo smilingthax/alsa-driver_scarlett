@@ -42,7 +42,7 @@ static int snd_pcm_dev_free(struct snd_device *device);
 static int snd_pcm_dev_register(struct snd_device *device);
 static int snd_pcm_dev_disconnect(struct snd_device *device);
 
-static inline struct snd_pcm *snd_pcm_get(struct snd_card *card, int device)
+static struct snd_pcm *snd_pcm_get(struct snd_card *card, int device)
 {
 	struct snd_pcm *pcm;
 
@@ -53,7 +53,7 @@ static inline struct snd_pcm *snd_pcm_get(struct snd_card *card, int device)
 	return NULL;
 }
 
-static inline int snd_pcm_next(struct snd_card *card, int device)
+static int snd_pcm_next(struct snd_card *card, int device)
 {
 	struct snd_pcm *pcm;
 
@@ -66,7 +66,7 @@ static inline int snd_pcm_next(struct snd_card *card, int device)
 	return -1;
 }
 
-static inline int snd_pcm_add(struct snd_pcm *newpcm)
+static int snd_pcm_add(struct snd_pcm *newpcm)
 {
 	struct snd_pcm *pcm;
 

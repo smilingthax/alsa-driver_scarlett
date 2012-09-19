@@ -25,6 +25,7 @@
 
 #include <sound/asound.h>
 #include <sound/memalloc.h>
+#include <sound/minors.h>
 #include <linux/poll.h>
 #include <linux/mm.h>
 #include <linux/bitops.h>
@@ -83,6 +84,12 @@ struct snd_pcm_ops {
 /*
  *
  */
+
+#if defined(CONFIG_SND_DYNAMIC_MINORS)
+#define SNDRV_PCM_DEVICES	(SNDRV_OS_MINORS-2)
+#else
+#define SNDRV_PCM_DEVICES	8
+#endif
 
 #define SNDRV_PCM_IOCTL1_FALSE		((void *)0)
 #define SNDRV_PCM_IOCTL1_TRUE		((void *)1)
