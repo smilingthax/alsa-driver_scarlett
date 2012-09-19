@@ -29,6 +29,7 @@
 #include <sound/driver.h>
 #include <linux/delay.h>
 #include <linux/init.h>
+#include <linux/pci.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <sound/core.h>
@@ -165,7 +166,7 @@ static int __devinit snd_emu10k1_init(emu10k1_t * emu, int enable_ir)
 	memset(emu->silent_page, 0, PAGE_SIZE);
 	silent_page = emu->silent_page_dmaaddr << 1;
 	for (idx = 0; idx < MAXPAGES; idx++)
-		emu->ptb_pages[idx] = silent_page | idx;
+		emu->ptb_pages[idx] = cpu_to_le32(silent_page | idx);
 	snd_emu10k1_ptr_write(emu, PTB, 0, emu->ptb_pages_dmaaddr);
 	snd_emu10k1_ptr_write(emu, TCB, 0, 0);	/* taken from original driver */
 	snd_emu10k1_ptr_write(emu, TCBS, 0, 4);	/* taken from original driver */

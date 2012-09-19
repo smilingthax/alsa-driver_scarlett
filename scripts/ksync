@@ -302,9 +302,18 @@ def do_kernel_alsa_diff(kernel, alsa):
 	lines = change_diff_lines(lines, alsa)
 	print_file(sys.stdout, lines)
 
+def show_last_changeset():
+	os.chdir(get_bk_root())
+	cmd = 'bk prs -r+ ChangeSet'
+	fp = os.popen(cmd)
+	lines = fp.readlines()
+	fp.close()
+	print_file(sys.stdout, lines)
+
 def diffall(reverse):
 	cdirs, cfiles = get_cvs_files(get_cvs_root(), '/')
 	bdirs, bfiles = get_bk_files(get_bk_root(), '/')
+	show_last_changeset()
 	for d in ALSA_FORCE_DIR:
 		if len(d) == 0:
 			continue
