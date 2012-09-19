@@ -1,8 +1,8 @@
---- ../alsa-kernel/core/sound.c	2006-01-03 20:49:01.000000000 +0100
-+++ sound.c	2006-01-03 20:49:49.000000000 +0100
-@@ -63,7 +63,15 @@
+--- ../alsa-kernel/core/sound.c	2006-04-19 23:56:03.000000000 +0200
++++ sound.c	2006-04-20 00:00:10.000000000 +0200
+@@ -67,7 +67,15 @@
  static struct snd_minor *snd_minors[SNDRV_OS_MINORS];
- static DECLARE_MUTEX(sound_mutex);
+ static DEFINE_MUTEX(sound_mutex);
  
 +#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 2)
 +#ifdef CONFIG_SND_HAVE_CLASS_SIMPLE
@@ -16,7 +16,7 @@
  
  
  #ifdef CONFIG_KMOD
-@@ -176,7 +184,9 @@
+@@ -184,7 +192,9 @@
  
  static struct file_operations snd_fops =
  {
@@ -26,7 +26,7 @@
  	.open =		snd_open
  };
  
-@@ -274,7 +284,11 @@
+@@ -282,7 +292,11 @@
  		devfs_mk_cdev(MKDEV(major, minor), S_IFCHR | device_mode, "snd/%s", name);
  	if (card)
  		device = card->dev;
@@ -36,9 +36,9 @@
  	class_device_create(sound_class, NULL, MKDEV(major, minor), device, "%s", name);
 +#endif
  
- 	up(&sound_mutex);
+ 	mutex_unlock(&sound_mutex);
  	return 0;
-@@ -312,7 +326,11 @@
+@@ -322,7 +336,11 @@
  	if (mptr->type != SNDRV_DEVICE_TYPE_CONTROL ||
  	    mptr->card >= cards_limit)			/* created in sound.c */
  		devfs_remove("snd/%s", mptr->name);
@@ -49,8 +49,8 @@
 +#endif
  
  	snd_minors[minor] = NULL;
- 	up(&sound_mutex);
-@@ -403,6 +421,19 @@
+ 	mutex_unlock(&sound_mutex);
+@@ -415,6 +433,19 @@
   *  INIT PART
   */
  
@@ -70,7 +70,7 @@
  static int __init alsa_sound_init(void)
  {
  	short controlnum;
-@@ -418,14 +449,19 @@
+@@ -430,14 +461,19 @@
  	if (snd_info_init() < 0) {
  		unregister_chrdev(major, "alsa");
  		devfs_remove("snd");
@@ -90,7 +90,7 @@
  	return 0;
  }
  
-@@ -437,10 +473,15 @@
+@@ -449,11 +485,18 @@
  		devfs_remove("snd/controlC%d", controlnum);
  
  	snd_info_minor_unregister();
@@ -106,9 +106,6 @@
  }
  
  module_init(alsa_sound_init)
-@@ -533,3 +574,5 @@
- #if defined(CONFIG_SND_DEBUG) && defined(CONFIG_SND_VERBOSE_PRINTK)
- EXPORT_SYMBOL(snd_verbose_printd);
- #endif
+ module_exit(alsa_sound_exit)
 +
 +#include "sound.inc"
