@@ -366,7 +366,7 @@ int pm_send(struct pm_dev *dev, pm_request_t rqst, void *data)
 
 #endif /* kernel version < 2.3.0 && CONFIG_APM */
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 7)
 /* wait-for-completion handler emulation */
 
 /* we know this is used below exactly once for at most one waiter */
@@ -406,6 +406,8 @@ static void complete_and_exit(struct completion *comp, long code)
 	/*do_exit(code);*/ /* FIXME: not exported from the kernel */
 }
 
+#else
+#include <linux/completion.h>
 #endif /* kernel version < 2.3.0 */
 
 /* workqueue-alike; 2.5.45 */
