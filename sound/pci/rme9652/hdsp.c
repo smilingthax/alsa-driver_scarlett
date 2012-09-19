@@ -844,7 +844,6 @@ static int snd_hdsp_midi_output_write (hdsp_midi_t *hmidi)
 {
 	unsigned long flags;
 	int n_pending;
-	int clear_timer = 0;
 	int to_write;
 	int i;
 	unsigned char buf[128];
@@ -862,17 +861,9 @@ static int snd_hdsp_midi_output_write (hdsp_midi_t *hmidi)
 				if ((to_write = snd_rawmidi_transmit (hmidi->output, buf, n_pending)) > 0) {
 					for (i = 0; i < to_write; ++i) 
 						snd_hdsp_midi_write_byte (hmidi->hdsp, hmidi->id, buf[i]);
-				} else {
-					clear_timer = 1;
 				}
 			}
-		} else {
-			clear_timer = 1;
 		}
-
-		if (clear_timer && hmidi->istimer && --hmidi->istimer <= 0) {
-			del_timer(&hmidi->timer);
-		} 
 	}
 
 	spin_unlock_irqrestore (&hmidi->lock, flags);
@@ -980,6 +971,8 @@ static void snd_hdsp_midi_output_trigger(snd_rawmidi_substream_t * substream, in
 		}
 	}
 	spin_unlock_irqrestore (&hmidi->lock, flags);
+	if (up)
+		snd_hdsp_midi_output_write(hmidi);
 }
 
 static int snd_hdsp_midi_input_open(snd_rawmidi_substream_t * substream)
