@@ -5,8 +5,8 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := info.c pcm.c pcm_native.c control.c hwdep.c init.c rawmidi.c \
-	       sound.c timer.c memalloc.c misc.c hrtimer.c
+clean-files := info.c pcm.c pcm_native.c pcm_memory.c control.c hwdep.c \
+	       init.c rawmidi.c sound.c timer.c memalloc.c misc.c hrtimer.c
 
 export-objs := control.o device.o info.o info_oss.o init.o isadma.o memory.o \
 	misc.o misc_driver.o sound.o sound_oss.o \
@@ -30,6 +30,7 @@ include $(SND_TOPDIR)/Rules.make
 info.c: info.inc info.patch $(SND_TOPDIR)/alsa-kernel/core/info.c
 pcm.c: pcm.patch $(SND_TOPDIR)/alsa-kernel/core/pcm.c
 pcm_native.c: pcm_native.patch $(SND_TOPDIR)/alsa-kernel/core/pcm_native.c
+pcm_memory.c: pcm_memory.patch $(SND_TOPDIR)/alsa-kernel/core/pcm_memory.c
 control.c: control.patch $(SND_TOPDIR)/alsa-kernel/core/control.c
 hwdep.c: hwdep.patch $(SND_TOPDIR)/alsa-kernel/core/hwdep.c
 init.c: init.patch $(SND_TOPDIR)/alsa-kernel/core/init.c
