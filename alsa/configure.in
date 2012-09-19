@@ -1567,7 +1567,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/kernel.h>
 #include <linux/string.h>
 ],[
@@ -1595,7 +1599,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/kernel.h>
 ],[
   char buf[128];
@@ -1622,7 +1630,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/kernel.h>
 void f(const char *fmt, ...)
 {
@@ -1656,7 +1668,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/kernel.h>
 ],[
   char buf[128];
@@ -1683,7 +1699,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/kernel.h>
 ],[
   unsigned int i;
@@ -1710,7 +1730,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/time.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -1740,7 +1764,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/kmod.h>
 ],[
 	request_module("abcd", "def", "ixj");
@@ -1766,7 +1794,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 ],[
@@ -1794,7 +1826,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/pci.h>
 ],[
 	int (*func)();
@@ -1820,7 +1856,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/pci.h>
 ],[
 	int (*func)();
@@ -1846,7 +1886,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/delay.h>
 ],[
   void (*func)(unsigned int);
@@ -1874,7 +1918,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/delay.h>
 ],[
   unsigned long (*func)(unsigned int);
@@ -1902,7 +1950,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Iinclude"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/jiffies.h>
 #include <linux/time.h>
 ],[
@@ -1930,7 +1982,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/tty.h>
 ],[
 	struct tty_struct tty;
@@ -1957,7 +2013,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Iinclude"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/videodev.h>
 #include "media/v4l2-dev.h"
 ],[
@@ -1995,7 +2055,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror-implicit-function-declaration"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/mm.h>
 ],[
   static pgprot_t p;
@@ -2020,7 +2084,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS -Werror-implicit-function-declaration"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/mm.h>
 ],[
   static pgprot_t p;
@@ -2046,7 +2114,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/slab.h>
 ],[
   void * (*func)(size_t, size_t, int);
@@ -2073,7 +2145,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/string.h>
 ],[
   char * (*func)(const char *, int);
@@ -2100,7 +2176,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/slab.h>
 ],[
   void * (*func)(size_t, int);
@@ -2128,7 +2208,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/workqueue.h>
 ],[
     create_workqueue("abcd", 0);
@@ -2155,7 +2239,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/pci.h>
 ],[
   struct pci_dev dev;
@@ -2183,7 +2271,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/pci.h>
 ],[
   struct pci_dev *pci;
@@ -2209,7 +2301,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/sound.h>
 ],[
   void (*func)(struct file_operations *, int, struct device *);
@@ -2453,7 +2549,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/device.h>
 ],[
   struct class_simple *(*foo)(struct module *, char *) = class_simple_create;
@@ -2482,7 +2582,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/device.h>
 ],[
   static struct device_driver driver;
@@ -2511,7 +2615,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/mm.h>
 ],[
   void (*func)(struct vm_area_struct *, pte_t, unsigned long) = print_bad_pte;
@@ -2539,7 +2647,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/device.h>
 ],[
   struct class_device dev;
@@ -2568,7 +2680,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/interrupt.h>
 ],[
   irq_handler_t handle = 0;
@@ -2596,7 +2712,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/types.h>
 #include <linux/gfp.h>
 ],[
@@ -2623,7 +2743,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/types.h>
 #include <linux/gfp.h>
 ],[
@@ -2650,7 +2774,11 @@ CFLAGS="$KERNEL_CHECK_CFLAGS"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/types.h>
 #include <linux/mm.h>
 ],[
@@ -2716,14 +2844,19 @@ AC_MSG_CHECKING(for is_power_of_2)
   is_power_of_2="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
-  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/log2.h>
 ],[
   int a = is_power_of_2(2);
+  a = 2;
 ],
     AC_MSG_RESULT(yes);is_power_of_2="1",
     AC_MSG_RESULT(no);is_power_of_2="0",
@@ -2750,7 +2883,11 @@ else
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/bitops.h>
 ],[
   unsigned long (*x)(unsigned long);
@@ -2779,7 +2916,11 @@ if test "$CONFIG_PNP_KERNEL" = "y"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/pnp.h>
 ],[
   struct pnp_driver pnp;
@@ -2808,7 +2949,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/device.h>
 ],[
   struct device *(*foo)() = device_create_drvdata;
@@ -2836,7 +2981,11 @@ if test "$kversion.$kpatchlevel" = "2.6"; then
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/fs.h>
 ],[
   struct file_operations ops;
