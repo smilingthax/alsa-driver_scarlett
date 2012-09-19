@@ -608,8 +608,8 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 	int err; \
 	res = 0; \
 	if (substream->link != &substream->local_link) { \
-		spin_lock(&substream->link->lock); \
 		spin_unlock(&substream->local_link.lock); \
+		spin_lock(&substream->link->lock); \
 	} \
 	list_for_each(pos, &substream->link->substreams) { \
 		s = list_entry(pos, snd_pcm_substream_t, link_list); \
@@ -637,8 +637,8 @@ static void snd_pcm_trigger_tstamp(snd_pcm_substream_t *substream)
 		} \
 	} \
 	if (substream->link != &substream->local_link) { \
-		spin_lock(&substream->local_link.lock); \
 		spin_unlock(&substream->link->lock); \
+		spin_lock(&substream->local_link.lock); \
 	} \
 }
 
