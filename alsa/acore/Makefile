@@ -15,3 +15,6 @@ include $(TOPDIR)/alsa-kernel/core/Makefile
 snd-page-alloc-objs += memory_wrapper.o
 
 include $(TOPDIR)/Rules.make
+
+info.c: info.inc info.patch $(TOPDIR)/alsa-kernel/core/info.c
+pcm_native.c: pcm_native.patch $(TOPDIR)/alsa-kernel/core/pcm_native.c
