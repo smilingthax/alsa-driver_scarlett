@@ -21,6 +21,7 @@ fi
 if grep -E "^alias snd-card" /etc/modprobe.d/sound > /dev/null 2> /dev/null ; then
   echo "*********************************************"
   echo "Warning: disabling system sound configuration"
+  echo "File /etc/modprobe.d/sound has been modified"
   echo "Please, revert it manually"
   echo "*********************************************"
   sed -e 's/^alias snd-card/#alias snd-card/g' /etc/modprobe.d/sound > /dev/shm/alsa.sound.x1
