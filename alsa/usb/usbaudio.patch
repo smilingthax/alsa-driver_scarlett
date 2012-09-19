@@ -1,5 +1,5 @@
---- ../alsa-kernel/usb/usbaudio.c	2005-09-09 15:23:41.000000000 +0200
-+++ usbaudio.c	2005-09-09 15:24:55.000000000 +0200
+--- ../alsa-kernel/usb/usbaudio.c	2005-09-25 18:45:59.000000000 +0200
++++ usbaudio.c	2005-09-25 18:48:12.000000000 +0200
 @@ -1,3 +1,4 @@
 +#include "usbaudio.inc"
  /*
@@ -19,7 +19,31 @@
  
  module_param_array(index, int, NULL, 0444);
  MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
-@@ -735,9 +741,12 @@
+@@ -634,7 +640,11 @@
+ /*
+  * complete callback from data urb
+  */
++#ifndef OLD_USB
+ static void snd_complete_urb(struct urb *urb, struct pt_regs *regs)
++#else
++static void snd_complete_urb(struct urb *urb)
++#endif
+ {
+ 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
+ 	snd_usb_substream_t *subs = ctx->subs;
+@@ -657,7 +667,11 @@
+ /*
+  * complete callback from sync urb
+  */
++#ifndef OLD_USB
+ static void snd_complete_sync_urb(struct urb *urb, struct pt_regs *regs)
++#else
++static void snd_complete_sync_urb(struct urb *urb)
++#endif
+ {
+ 	snd_urb_ctx_t *ctx = (snd_urb_ctx_t *)urb->context;
+ 	snd_usb_substream_t *subs = ctx->subs;
+@@ -735,9 +749,12 @@
  		if (test_bit(i, &subs->active_mask)) {
  			if (! test_and_set_bit(i, &subs->unlink_mask)) {
  				struct urb *u = subs->dataurb[i].urb;
@@ -34,7 +58,7 @@
  					usb_kill_urb(u);
  			}
  		}
-@@ -747,9 +756,12 @@
+@@ -747,9 +764,12 @@
  			if (test_bit(i+16, &subs->active_mask)) {
   				if (! test_and_set_bit(i+16, &subs->unlink_mask)) {
  					struct urb *u = subs->syncurb[i].urb;
@@ -49,7 +73,7 @@
  						usb_kill_urb(u);
  				}
  			}
-@@ -1062,7 +1074,9 @@
+@@ -1062,7 +1082,9 @@
  			if (! u->urb)
  				goto out_of_memory;
  			u->urb->transfer_buffer = subs->syncbuf + i * 4;
@@ -59,7 +83,7 @@
  			u->urb->transfer_buffer_length = 4;
  			u->urb->pipe = subs->syncpipe;
  			u->urb->transfer_flags = URB_ISO_ASAP |
-@@ -1941,8 +1955,13 @@
+@@ -1941,8 +1963,13 @@
  			return -ENOMEM;
  		memcpy(buf, data, size);
  	}
@@ -73,7 +97,7 @@
  	if (size > 0) {
  		memcpy(data, buf, size);
  		kfree(buf);
-@@ -1955,9 +1974,11 @@
+@@ -1955,9 +1982,11 @@
   * entry point for linux usb interface
   */
  
@@ -85,7 +109,7 @@
  
  static struct usb_device_id usb_audio_ids [] = {
  #include "usbquirks.h"
-@@ -1970,10 +1991,15 @@
+@@ -1970,10 +1999,15 @@
  MODULE_DEVICE_TABLE (usb, usb_audio_ids);
  
  static struct usb_driver usb_audio_driver = {
@@ -101,7 +125,7 @@
  	.id_table =	usb_audio_ids,
  };
  
-@@ -2496,7 +2522,11 @@
+@@ -2496,7 +2530,11 @@
  		    (altsd->bInterfaceSubClass != USB_SUBCLASS_AUDIO_STREAMING &&
  		     altsd->bInterfaceSubClass != USB_SUBCLASS_VENDOR_SPEC) ||
  		    altsd->bNumEndpoints < 1 ||
@@ -113,7 +137,7 @@
  			continue;
  		/* must be isochronous */
  		if ((get_endpoint(alts, 0)->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) !=
-@@ -2558,7 +2588,11 @@
+@@ -2558,7 +2596,11 @@
  		fp->altset_idx = i;
  		fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  		fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -125,7 +149,7 @@
  		if (snd_usb_get_speed(dev) == USB_SPEED_HIGH)
  			fp->maxpacksize = (((fp->maxpacksize >> 11) & 3) + 1)
  					* (fp->maxpacksize & 0x7ff);
-@@ -2849,7 +2883,11 @@
+@@ -2839,7 +2881,11 @@
  	fp->iface = altsd->bInterfaceNumber;
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -137,7 +161,7 @@
  
  	switch (fp->maxpacksize) {
  	case 0x120:
-@@ -2917,7 +2955,11 @@
+@@ -2907,7 +2953,11 @@
  	fp->iface = altsd->bInterfaceNumber;
  	fp->endpoint = get_endpoint(alts, 0)->bEndpointAddress;
  	fp->ep_attr = get_endpoint(alts, 0)->bmAttributes;
@@ -149,7 +173,7 @@
  	fp->rate_max = fp->rate_min = combine_triple(&alts->extra[8]);
  
  	stream = (fp->endpoint & USB_DIR_IN)
-@@ -2982,8 +3024,13 @@
+@@ -2972,8 +3022,13 @@
  	struct usb_host_config *config = dev->actconfig;
  	int err;
  
@@ -163,7 +187,7 @@
  		snd_printdd("sending Extigy boot sequence...\n");
  		/* Send message to force it to reconnect with full interface. */
  		err = snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev,0),
-@@ -2995,8 +3042,13 @@
+@@ -2985,8 +3040,13 @@
  		if (err < 0) snd_printdd("error usb_get_descriptor: %d\n", err);
  		err = usb_reset_configuration(dev);
  		if (err < 0) snd_printdd("error usb_reset_configuration: %d\n", err);
@@ -177,7 +201,7 @@
  		return -ENODEV; /* quit this anyway */
  	}
  	return 0;
-@@ -3004,6 +3056,8 @@
+@@ -2994,6 +3054,8 @@
  
  static int snd_usb_audigy2nx_boot_quirk(struct usb_device *dev)
  {
@@ -186,7 +210,7 @@
  	u8 buf = 1;
  
  	snd_usb_ctl_msg(dev, usb_rcvctrlpipe(dev, 0), 0x2a,
-@@ -3015,6 +3069,7 @@
+@@ -3005,6 +3067,7 @@
  				1, 2000, NULL, 0, 1000);
  		return -ENODEV;
  	}
@@ -194,7 +218,7 @@
  	return 0;
  }
  
-@@ -3145,8 +3200,13 @@
+@@ -3135,8 +3198,13 @@
  	chip->index = idx;
  	chip->dev = dev;
  	chip->card = card;
@@ -208,7 +232,7 @@
  	INIT_LIST_HEAD(&chip->pcm_list);
  	INIT_LIST_HEAD(&chip->midi_list);
  	INIT_LIST_HEAD(&chip->mixer_list);
-@@ -3232,8 +3292,12 @@
+@@ -3222,8 +3290,12 @@
  
  	alts = &intf->altsetting[0];
  	ifnum = get_iface_desc(alts)->bInterfaceNumber;
@@ -221,7 +245,7 @@
  
  	if (quirk && quirk->ifnum >= 0 && ifnum != quirk->ifnum)
  		goto __err_val;
-@@ -3360,12 +3424,17 @@
+@@ -3350,12 +3422,17 @@
  		}
  		usb_chip[chip->index] = NULL;
  		up(&register_mutex);
@@ -239,7 +263,7 @@
  /*
   * new 2.5 USB kernel API
   */
-@@ -3386,6 +3455,8 @@
+@@ -3376,6 +3453,8 @@
  	snd_usb_audio_disconnect(interface_to_usbdev(intf),
  				 dev_get_drvdata(&intf->dev));
  }
@@ -248,7 +272,7 @@
  
  
  static int __init snd_usb_audio_init(void)
-@@ -3406,3 +3477,5 @@
+@@ -3396,3 +3475,5 @@
  
  module_init(snd_usb_audio_init);
  module_exit(snd_usb_audio_cleanup);

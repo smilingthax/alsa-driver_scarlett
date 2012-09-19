@@ -1,12 +1,24 @@
---- ../alsa-kernel/usb/usbmidi.c	2005-09-25 18:22:18.000000000 +0200
-+++ usbmidi.c	2005-09-25 18:24:57.000000000 +0200
+--- ../alsa-kernel/usb/usbmidi.c	2005-09-25 18:45:59.000000000 +0200
++++ usbmidi.c	2005-09-25 18:51:20.000000000 +0200
 @@ -1,3 +1,5 @@
 +#include "usbmidi.inc"
 +
  /*
   * usbmidi.c - ALSA USB MIDI driver
   *
-@@ -246,8 +248,13 @@
+@@ -226,7 +228,11 @@
+ /*
+  * Processes the data read from the device.
+  */
++#ifndef OLD_USB
+ static void snd_usbmidi_in_urb_complete(struct urb* urb, struct pt_regs *regs)
++#else
++static void snd_usbmidi_in_urb_complete(struct urb* urb)
++#endif
+ {
+ 	snd_usb_midi_in_endpoint_t* ep = urb->context;
+ 
+@@ -246,11 +252,20 @@
  		}
  	}
  
@@ -19,8 +31,15 @@
 +	}
  }
  
++#ifndef OLD_USB
  static void snd_usbmidi_out_urb_complete(struct urb* urb, struct pt_regs *regs)
-@@ -331,8 +338,13 @@
++#else
++static void snd_usbmidi_out_urb_complete(struct urb* urb)
++#endif
+ {
+ 	snd_usb_midi_out_endpoint_t* ep = urb->context;
+ 
+@@ -331,8 +346,13 @@
  		return -ENOMEM;
  	memcpy(buf, data, len);
  	dump_urb("sending", buf, len);
@@ -34,7 +53,7 @@
  	kfree(buf);
  	return err;
  }
-@@ -1292,7 +1304,11 @@
+@@ -1290,7 +1310,11 @@
  	intf = umidi->iface;
  	if (!intf || intf->num_altsetting < 1)
  		return -ENOENT;
@@ -46,7 +65,7 @@
  	intfd = get_iface_desc(hostif);
  
  	for (i = 0; i < intfd->bNumEndpoints; ++i) {
-@@ -1627,3 +1643,5 @@
+@@ -1625,3 +1649,5 @@
  EXPORT_SYMBOL(snd_usbmidi_input_stop);
  EXPORT_SYMBOL(snd_usbmidi_input_start);
  EXPORT_SYMBOL(snd_usbmidi_disconnect);

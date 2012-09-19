@@ -13,16 +13,6 @@ static void usb_audio_disconnect(struct usb_device *dev, void *ptr)
 	snd_usb_audio_disconnect(dev, ptr);
 }
 
-static void __old_snd_complete_urb(struct urb *urb)
-{
-	snd_complete_urb(urb, NULL);
-}
-
-static void __old_snd_complete_sync_urb(struct urb *urb)
-{
-	snd_complete_sync_urb(urb, NULL);
-}
-
 static int usb_reset_configuration(struct usb_device *dev)
 {
 	struct usb_host_config *config = dev->actconfig;
@@ -33,3 +23,4 @@ static int usb_reset_configuration(struct usb_device *dev)
 #endif
 
 EXPORT_NO_SYMBOLS;
+// vim: ft=c
