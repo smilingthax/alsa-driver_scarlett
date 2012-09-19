@@ -1137,7 +1137,7 @@ static int allocate_pipes(struct echoaudio *chip, struct audiopipe *pipe, int pi
 	chip->pipe_alloc_mask |= channel_mask;
 	if (is_cyclic)
 		chip->pipe_cyclic_mask |= channel_mask;
-	pipe->pipe_index = pipe_index;
+	pipe->index = pipe_index;
 	pipe->interleave = interleave;
 	pipe->state = PIPE_STATE_STOPPED;
 
@@ -1163,12 +1163,12 @@ static int free_pipes(struct echoaudio *chip, struct audiopipe *pipe)
 	u32 channel_mask;
 	int i;
 
-	DE_ACT(("free_pipes: Pipe %d\n", pipe->pipe_index));
-	snd_assert(is_pipe_allocated(chip, pipe->pipe_index), return -EINVAL);
+	DE_ACT(("free_pipes: Pipe %d\n", pipe->index));
+	snd_assert(is_pipe_allocated(chip, pipe->index), return -EINVAL);
 
 	/* Compute channel mask for this substream */
 	for (channel_mask = i = 0; i < pipe->interleave; i++)
-		channel_mask |= 1 << (pipe->pipe_index + i);
+		channel_mask |= 1 << (pipe->index + i);
 
 	/* Audio should be already stopped here */
 	snd_assert(pipe->state == PIPE_STATE_STOPPED, return -EINVAL);
@@ -1190,7 +1190,7 @@ static int sglist_init(struct echoaudio *chip, struct audiopipe *pipe)
 {
 	pipe->sglist_head = 0;
 	memset(pipe->sgpage.area, 0, PAGE_SIZE);
-	chip->comm_page->sglist_addr[pipe->pipe_index].addr = cpu_to_le32(pipe->sgpage.addr);
+	chip->comm_page->sglist_addr[pipe->index].addr = cpu_to_le32(pipe->sgpage.addr);
 	return 0;
 }
 

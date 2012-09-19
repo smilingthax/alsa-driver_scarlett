@@ -323,7 +323,7 @@ struct audiopipe {
 	volatile u32 *dma_counter;	/* Commpage register that contains the current dma position (lower 32 bits only) */
 	u32 last_counter;		/* The last position, which is used to compute... */
 	u32 position;			/* ...the number of bytes tranferred by the DMA engine, modulo the buffer size */
-	short pipe_index;		/* Index of the first channel or <0 if hw is not configured yet */
+	short index;			/* Index of the first channel or <0 if hw is not configured yet */
 	short interleave;
 	struct snd_dma_buffer sgpage;	/* Room for the scatter-gather list */
 	struct snd_pcm_hardware hw;
