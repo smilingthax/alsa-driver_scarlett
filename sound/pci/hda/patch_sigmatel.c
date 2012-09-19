@@ -5291,7 +5291,6 @@ static int patch_stac92hd83xxx(struct hda_codec *codec)
 	hda_nid_t conn[STAC92HD83_DAC_COUNT + 1];
 	int err;
 	int num_dacs;
-	hda_nid_t nid;
 
 	spec  = kzalloc(sizeof(*spec), GFP_KERNEL);
 	if (spec == NULL)
@@ -5341,6 +5340,7 @@ again:
 		spec->num_pwrs = 0;
 		break;
 	case 0x111d7604:
+	case 0x111d76d4:
 	case 0x111d7605:
 	case 0x111d76d5:
 		if (spec->board_config == STAC_92HD83XXX_PWR_REF)
@@ -5386,24 +5386,21 @@ again:
 		return err;
 	}
 
-	switch (spec->board_config) {
-	case STAC_DELL_S14:
-		nid = 0xf;
-		break;
-	default:
-		nid = 0xe;
-		break;
-	}
-
-	num_dacs = snd_hda_get_connections(codec, nid,
+	/* docking output support */
+	num_dacs = snd_hda_get_connections(codec, 0xF,
 				conn, STAC92HD83_DAC_COUNT + 1) - 1;
-	if (num_dacs < 0)
-		num_dacs = STAC92HD83_DAC_COUNT;
-
-	/* set port X to select the last DAC
-	 */
-	snd_hda_codec_write_cache(codec, nid, 0,
+	/* skip non-DAC connections */
+	while (num_dacs >= 0 &&
+			(get_wcaps_type(get_wcaps(codec, conn[num_dacs]))
+					!= AC_WID_AUD_OUT))
+		num_dacs--;
+	/* set port E and F to select the last DAC */
+	if (num_dacs >= 0) {
+		snd_hda_codec_write_cache(codec, 0xE, 0,
 			AC_VERB_SET_CONNECT_SEL, num_dacs);
+		snd_hda_codec_write_cache(codec, 0xF, 0,
+			AC_VERB_SET_CONNECT_SEL, num_dacs);
+	}
 
 	codec->proc_widget_hook = stac92hd_proc_hook;
 
@@ -6263,6 +6260,7 @@ static struct hda_codec_preset snd_hda_preset_sigmatel[] = {
  	{ .id = 0x838476a7, .name = "STAC9254D", .patch = patch_stac9205 },
 	{ .id = 0x111d7603, .name = "92HD75B3X5", .patch = patch_stac92hd71bxx},
 	{ .id = 0x111d7604, .name = "92HD83C1X5", .patch = patch_stac92hd83xxx},
+	{ .id = 0x111d76d4, .name = "92HD83C1C5", .patch = patch_stac92hd83xxx},
 	{ .id = 0x111d7605, .name = "92HD81B1X5", .patch = patch_stac92hd83xxx},
 	{ .id = 0x111d76d5, .name = "92HD81B1C5", .patch = patch_stac92hd83xxx},
 	{ .id = 0x111d7666, .name = "92HD88B3", .patch = patch_stac92hd83xxx},
