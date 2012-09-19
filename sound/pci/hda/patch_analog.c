@@ -798,6 +798,8 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	  .config = AD1986A_3STACK }, /* ASUS P5RD2-VM / P5GPL-X SE */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x81cb,
 	  .config = AD1986A_3STACK }, /* ASUS M2NPV-VM */
+	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x8234,
+	  .config = AD1986A_3STACK }, /* ASUS M2N-MX */
 	{ .pci_subvendor = 0x17aa, .pci_subdevice = 0x1017,
 	  .config = AD1986A_3STACK }, /* Lenovo A60 desktop */
 	{ .modelname = "laptop",	.config = AD1986A_LAPTOP },
@@ -813,7 +815,7 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	{ .pci_subvendor = 0x144d, .pci_subdevice = 0xc024,
 	  .config = AD1986A_LAPTOP_EAPD }, /* Samsung R65-T2300 Charis */
 	{ .pci_subvendor = 0x144d, .pci_subdevice = 0xc026,
-	  .config = AD1986A_LAPTOP_EAPD }, /* Samsung X10-T2300 Culesa */
+	  .config = AD1986A_LAPTOP_EAPD }, /* Samsung X11-T2300 Culesa */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1153,
 	  .config = AD1986A_LAPTOP_EAPD }, /* ASUS M9 */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1213,
@@ -824,6 +826,8 @@ static struct hda_board_config ad1986a_cfg_tbl[] = {
 	  .config = AD1986A_LAPTOP_EAPD }, /* ASUS U5F */
 	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x1297,
 	  .config = AD1986A_LAPTOP_EAPD }, /* ASUS Z62F */
+	{ .pci_subvendor = 0x1043, .pci_subdevice = 0x12b3,
+	  .config = AD1986A_LAPTOP_EAPD }, /* ASUS V1j */
 	{ .pci_subvendor = 0x103c, .pci_subdevice = 0x30af,
 	  .config = AD1986A_LAPTOP_EAPD }, /* HP Compaq Presario B2800 */
 	{ .pci_subvendor = 0x17aa, .pci_subdevice = 0x2066,
