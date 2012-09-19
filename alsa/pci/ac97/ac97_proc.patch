@@ -1,0 +1,48 @@
+--- ac97_proc.c	2004-04-16 20:16:21.000000000 +0200
++++ ac97_proc.c	2004-04-20 12:09:36.014644842 +0200
+@@ -1,3 +1,4 @@
++#define __NO_VERSION__
+ /*
+  *  Copyright (c) by Jaroslav Kysela <perex@suse.cz>
+  *  Universal interface for Audio Codec '97
+@@ -27,8 +28,8 @@
+ #include <sound/core.h>
+ #include <sound/ac97_codec.h>
+ #include <sound/asoundef.h>
+-#include "ac97_local.h"
+-#include "ac97_id.h"
++#include "../../alsa-kernel/pci/ac97/ac97_local.h"
++#include "../../alsa-kernel/pci/ac97/ac97_id.h"
+ 
+ /*
+  * proc interface
+@@ -321,6 +322,7 @@
+ 	}
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+ #ifdef CONFIG_SND_DEBUG
+ /* direct register write for debugging */
+ static void snd_ac97_proc_regs_write(snd_info_entry_t *entry, snd_info_buffer_t *buffer)
+@@ -337,6 +339,7 @@
+ 	}
+ }
+ #endif
++#endif
+ 
+ static void snd_ac97_proc_regs_read_main(ac97_t *ac97, snd_info_buffer_t * buffer, int subidx)
+ {
+@@ -393,11 +396,13 @@
+ 	sprintf(name, "%s#%d-%d+regs", prefix, ac97->addr, ac97->num);
+ 	if ((entry = snd_info_create_card_entry(ac97->bus->card, name, ac97->bus->proc)) != NULL) {
+ 		snd_info_set_text_ops(entry, ac97, 1024, snd_ac97_proc_regs_read);
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
+ #ifdef CONFIG_SND_DEBUG
+ 		entry->mode |= S_IWUSR;
+ 		entry->c.text.write_size = 1024;
+ 		entry->c.text.write = snd_ac97_proc_regs_write;
+ #endif
++#endif
+ 		if (snd_info_register(entry) < 0) {
+ 			snd_info_free_entry(entry);
+ 			entry = NULL;
