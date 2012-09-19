@@ -449,6 +449,7 @@ static int snd_emu10k1x_pcm_prepare(snd_pcm_substream_t *substream)
 	snd_pcm_runtime_t *runtime = substream->runtime;
 	emu10k1x_pcm_t *epcm = runtime->private_data;
 	int voice = epcm->voice->number;
+	unsigned int value;
 
 	snd_emu10k1x_ptr_write(emu, 0x00, voice, 0);
 	snd_emu10k1x_ptr_write(emu, 0x01, voice, 0);
@@ -458,7 +459,7 @@ static int snd_emu10k1x_pcm_prepare(snd_pcm_substream_t *substream)
 	snd_emu10k1x_ptr_write(emu, PLAYBACK_POINTER, voice, 0);
 	snd_emu10k1x_ptr_write(emu, 0x07, voice, 0);
 	snd_emu10k1x_ptr_write(emu, 0x08, voice, 0);
-	unsigned int value = snd_emu10k1x_ptr_read(emu, ROUTING, 0);
+	value = snd_emu10k1x_ptr_read(emu, ROUTING, 0);
 	value |= 3 << (2*voice);
 	if(voice == 2)
 	  value |= 0x10000; // enable center/lfe channel this way
@@ -742,6 +743,7 @@ static irqreturn_t snd_emu10k1x_interrupt(int irq, void *dev_id,
 	unsigned int status;
 
 	emu10k1x_t *chip = dev_id;
+	emu10k1x_voice_t *pvoice = chip->voices;
 	int i;
 	int mask;
 
@@ -756,7 +758,6 @@ static irqreturn_t snd_emu10k1x_interrupt(int irq, void *dev_id,
 		return IRQ_NONE;
 
 	mask = IPR_CH_0_LOOP|IPR_CH_0_HALF_LOOP;
-	emu10k1x_voice_t *pvoice = chip->voices;
 	for(i = 0; i < 3; i++) {
 		if(status & mask) {
 			if(pvoice->use && pvoice->interrupt)
