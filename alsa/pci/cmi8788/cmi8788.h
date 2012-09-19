@@ -186,8 +186,7 @@ struct cmi_substream {
 
 	int DMA_sta_mask;  /* PCI 40: PCI DMA Channel Start/Pause/Stop 2Byte*/
 	int DMA_chan_reset;/* PCI 42: PCI DMA Channel Reset            1Byte*/
-	int int_mask;      /* PCI 44: Interrupt Mask Register          2Byte*/
-	int int_sta_mask;  /* PCI 46: interrupt status mask            2Byte*/
+	int int_mask;      /* PCI 44,46: Interrupt Status/Mask         2Byte */
 };
 
 struct cmipci_pcm {
@@ -220,7 +219,6 @@ struct cmi8788 {
 
 	/* PCM */
 	int PCM_Count;
-	struct snd_pcm *pcm[CMI8788_MAX_PCMS];
 	struct cmipci_pcm cmi_pcm[CMI8788_MAX_PCMS];
 
 	int num_codecs;		/* Eµ¼EÉI CODEC µÄ,öEy */
@@ -248,7 +246,6 @@ int snd_cmi_send_spi_cmd(struct cmi_codec *codec, u8 *data);
 void snd_cmi_send_ac97_cmd(struct cmi8788 *chip, u8 reg, u16 value);
 
 int snd_cmi8788_pcm_create(struct cmi8788 *chip);
-void snd_cmi_pcm_interrupt(struct cmi8788 *chip, struct cmi_substream *cmi_subs);
 
 int snd_cmi8788_mixer_create(struct cmi8788 *chip);
 
