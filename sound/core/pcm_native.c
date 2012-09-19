@@ -1053,8 +1053,8 @@ static int snd_pcm_do_reset(snd_pcm_substream_t * substream, int state)
 	// snd_assert(runtime->status->hw_ptr < runtime->buffer_size, );
 	runtime->hw_ptr_base = 0;
 	runtime->hw_ptr_interrupt = runtime->status->hw_ptr - runtime->status->hw_ptr % runtime->period_size;
-	runtime->silenced_start = runtime->status->hw_ptr;
-	runtime->silenced_size = 0;
+	runtime->silence_start = runtime->status->hw_ptr;
+	runtime->silence_filled = 0;
 	return 0;
 }
 
