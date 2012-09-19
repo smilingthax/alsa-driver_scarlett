@@ -941,7 +941,7 @@ int snd_pci_dev_present(const struct pci_device_id *ids);
 /*
  * memory allocator wrappers
  */
-#ifdef CONFIG_SND_DEBUG_MEMORY
+#if defined(CONFIG_SND_DEBUG_MEMORY) && !defined(SKIP_HIDDEN_MALLOCS)
 
 #include <linux/slab.h>
 void *snd_hidden_kmalloc(size_t size, gfp_t flags);
