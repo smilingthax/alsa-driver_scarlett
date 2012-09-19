@@ -33,6 +33,7 @@
 #include "hda_codec.h"
 #include "hda_local.h"
 #include "hda_beep.h"
+#include "hda_jack.h"
 
 /* unsol event tags */
 #define ALC_FRONT_EVENT		0x01
@@ -184,6 +185,7 @@ struct alc_spec {
 	unsigned int vol_in_capsrc:1; /* use capsrc volume (ADC has no vol) */
 	unsigned int parse_flags; /* passed to snd_hda_parse_pin_defcfg() */
 	unsigned int shared_mic_hp:1; /* HP/Mic-in sharing */
+	unsigned int use_jack_tbl:1; /* 1 for model=auto */
 
 	/* auto-mute control */
 	int automute_mode;
@@ -278,6 +280,12 @@ static bool alc_dyn_adc_pcm_resetup(struct hda_codec *codec, int cur)
 	return false;
 }
 
+static inline hda_nid_t get_capsrc(struct alc_spec *spec, int idx)
+{
+	return spec->capsrc_nids ?
+		spec->capsrc_nids[idx] : spec->adc_nids[idx];
+}
+
 static void call_update_outputs(struct hda_codec *codec);
 
 /* select the given imux item; either unmute exclusively or select the route */
@@ -321,8 +329,7 @@ static int alc_mux_select(struct hda_codec *codec, unsigned int adc_idx,
 		adc_idx = spec->dyn_adc_idx[idx];
 	}
 
-	nid = spec->capsrc_nids ?
-		spec->capsrc_nids[adc_idx] : spec->adc_nids[adc_idx];
+	nid = get_capsrc(spec, adc_idx);
 
 	/* no selection? */
 	num_conns = snd_hda_get_conn_list(codec, nid, NULL);
@@ -461,46 +468,6 @@ static void alc_fix_pll_init(struct hda_codec *codec, hda_nid_t nid,
 }
 
 /*
- * Jack-reporting via input-jack layer
- */
-
-/* initialization of jacks; currently checks only a few known pins */
-static int alc_init_jacks(struct hda_codec *codec)
-{
-#ifdef CONFIG_SND_HDA_INPUT_JACK
-	struct alc_spec *spec = codec->spec;
-	int err;
-	unsigned int hp_nid = spec->autocfg.hp_pins[0];
-	unsigned int mic_nid = spec->ext_mic_pin;
-	unsigned int dock_nid = spec->dock_mic_pin;
-
-	if (hp_nid) {
-		err = snd_hda_input_jack_add(codec, hp_nid,
-					     SND_JACK_HEADPHONE, NULL);
-		if (err < 0)
-			return err;
-		snd_hda_input_jack_report(codec, hp_nid);
-	}
-
-	if (mic_nid) {
-		err = snd_hda_input_jack_add(codec, mic_nid,
-					     SND_JACK_MICROPHONE, NULL);
-		if (err < 0)
-			return err;
-		snd_hda_input_jack_report(codec, mic_nid);
-	}
-	if (dock_nid) {
-		err = snd_hda_input_jack_add(codec, dock_nid,
-					     SND_JACK_MICROPHONE, NULL);
-		if (err < 0)
-			return err;
-		snd_hda_input_jack_report(codec, dock_nid);
-	}
-#endif /* CONFIG_SND_HDA_INPUT_JACK */
-	return 0;
-}
-
-/*
  * Jack detections for HP auto-mute and mic-switch
  */
 
@@ -513,7 +480,6 @@ static bool detect_jacks(struct hda_codec *codec, int num_pins, hda_nid_t *pins)
 		hda_nid_t nid = pins[i];
 		if (!nid)
 			break;
-		snd_hda_input_jack_report(codec, nid);
 		present |= snd_hda_jack_detect(codec, nid);
 	}
 	return present;
@@ -653,19 +619,18 @@ static void alc_mic_automute(struct hda_codec *codec)
 		alc_mux_select(codec, 0, spec->dock_mic_idx, false);
 	else
 		alc_mux_select(codec, 0, spec->int_mic_idx, false);
-
-	snd_hda_input_jack_report(codec, pins[spec->ext_mic_idx]);
-	if (spec->dock_mic_idx >= 0)
-		snd_hda_input_jack_report(codec, pins[spec->dock_mic_idx]);
 }
 
 /* unsolicited event for HP jack sensing */
 static void alc_sku_unsol_event(struct hda_codec *codec, unsigned int res)
 {
+	struct alc_spec *spec = codec->spec;
 	if (codec->vendor_id == 0x10ec0880)
 		res >>= 28;
 	else
 		res >>= 26;
+	if (spec->use_jack_tbl)
+		res = snd_hda_jack_get_action(codec, res);
 	switch (res) {
 	case ALC_HP_EVENT:
 		alc_hp_automute(codec);
@@ -677,6 +642,7 @@ static void alc_sku_unsol_event(struct hda_codec *codec, unsigned int res)
 		alc_mic_automute(codec);
 		break;
 	}
+	snd_hda_jack_report_sync(codec);
 }
 
 /* call init functions of standard auto-mute helpers */
@@ -966,9 +932,7 @@ static void alc_init_automute(struct hda_codec *codec)
 			continue;
 		snd_printdd("realtek: Enable HP auto-muting on NID 0x%x\n",
 			    nid);
-		snd_hda_codec_write_cache(codec, nid, 0,
-				  AC_VERB_SET_UNSOLICITED_ENABLE,
-				  AC_USRSP_EN | ALC_HP_EVENT);
+		snd_hda_jack_detect_enable(codec, nid, ALC_HP_EVENT);
 		spec->detect_hp = 1;
 	}
 
@@ -980,9 +944,8 @@ static void alc_init_automute(struct hda_codec *codec)
 					continue;
 				snd_printdd("realtek: Enable Line-Out "
 					    "auto-muting on NID 0x%x\n", nid);
-				snd_hda_codec_write_cache(codec, nid, 0,
-						AC_VERB_SET_UNSOLICITED_ENABLE,
-						AC_USRSP_EN | ALC_FRONT_EVENT);
+				snd_hda_jack_detect_enable(codec, nid,
+							   ALC_FRONT_EVENT);
 				spec->detect_lo = 1;
 		}
 		spec->automute_lo_possible = spec->detect_hp;
@@ -1077,8 +1040,7 @@ static bool alc_rebuild_imux_for_auto_mic(struct hda_codec *codec)
 			hda_nid_t pin = spec->imux_pins[i];
 			int c;
 			for (c = 0; c < spec->num_adc_nids; c++) {
-				hda_nid_t cap = spec->capsrc_nids ?
-				spec->capsrc_nids[c] : spec->adc_nids[c];
+				hda_nid_t cap = get_capsrc(spec, c);
 				int idx = get_connection_index(codec, cap, pin);
 				if (idx >= 0) {
 					imux->items[i].index = idx;
@@ -1122,13 +1084,10 @@ static bool alc_auto_mic_check_imux(struct hda_codec *codec)
 		return false; /* no corresponding imux */
 	}
 
-	snd_hda_codec_write_cache(codec, spec->ext_mic_pin, 0,
-				  AC_VERB_SET_UNSOLICITED_ENABLE,
-				  AC_USRSP_EN | ALC_MIC_EVENT);
+	snd_hda_jack_detect_enable(codec, spec->ext_mic_pin, ALC_MIC_EVENT);
 	if (spec->dock_mic_pin)
-		snd_hda_codec_write_cache(codec, spec->dock_mic_pin, 0,
-				  AC_VERB_SET_UNSOLICITED_ENABLE,
-				  AC_USRSP_EN | ALC_MIC_EVENT);
+		snd_hda_jack_detect_enable(codec, spec->dock_mic_pin,
+					   ALC_MIC_EVENT);
 
 	spec->auto_mic_valid_imux = 1;
 	spec->auto_mic = 1;
@@ -2005,10 +1964,8 @@ static int alc_build_controls(struct hda_codec *codec)
 		if (!kctl)
 			kctl = snd_hda_find_mixer_ctl(codec, "Input Source");
 		for (i = 0; kctl && i < kctl->count; i++) {
-			const hda_nid_t *nids = spec->capsrc_nids;
-			if (!nids)
-				nids = spec->adc_nids;
-			err = snd_hda_add_nid(codec, kctl, i, nids[i]);
+			err = snd_hda_add_nid(codec, kctl, i,
+					      get_capsrc(spec, i));
 			if (err < 0)
 				return err;
 		}
@@ -2072,6 +2029,10 @@ static int alc_build_controls(struct hda_codec *codec)
 
 	alc_free_kctls(codec); /* no longer needed */
 
+	err = snd_hda_jack_add_kctls(codec, &spec->autocfg);
+	if (err < 0)
+		return err;
+
 	return 0;
 }
 
@@ -2098,6 +2059,8 @@ static int alc_init(struct hda_codec *codec)
 		spec->init_hook(codec);
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_INIT);
+
+	snd_hda_jack_report_sync(codec);
 
 	hda_call_check_power_status(codec, 0x01);
 	return 0;
@@ -2482,7 +2445,6 @@ static void alc_free(struct hda_codec *codec)
 		return;
 
 	alc_shutup(codec);
-	snd_hda_input_jack_free(codec);
 	alc_free_kctls(codec);
 	alc_free_bind_ctls(codec);
 	kfree(spec);
@@ -2802,8 +2764,7 @@ static int alc_auto_create_input_ctls(struct hda_codec *codec)
 		}
 
 		for (c = 0; c < num_adcs; c++) {
-			hda_nid_t cap = spec->capsrc_nids ?
-				spec->capsrc_nids[c] : spec->adc_nids[c];
+			hda_nid_t cap = get_capsrc(spec, c);
 			idx = get_connection_index(codec, cap, pin);
 			if (idx >= 0) {
 				spec->imux_pins[imux->num_items] = pin;
@@ -2977,7 +2938,7 @@ static hda_nid_t alc_auto_look_for_dac(struct hda_codec *codec, hda_nid_t pin)
 		if (!nid)
 			continue;
 		if (found_in_nid_list(nid, spec->multiout.dac_nids,
-				      spec->multiout.num_dacs))
+				      ARRAY_SIZE(spec->private_dac_nids)))
 			continue;
 		if (found_in_nid_list(nid, spec->multiout.hp_out_nid,
 				      ARRAY_SIZE(spec->multiout.hp_out_nid)))
@@ -3015,6 +2976,7 @@ static hda_nid_t get_dac_if_single(struct hda_codec *codec, hda_nid_t pin)
 	return 0;
 }
 
+/* return 0 if no possible DAC is found, 1 if one or more found */
 static int alc_auto_fill_extra_dacs(struct hda_codec *codec, int num_outs,
 				    const hda_nid_t *pins, hda_nid_t *dacs)
 {
@@ -3032,17 +2994,19 @@ static int alc_auto_fill_extra_dacs(struct hda_codec *codec, int num_outs,
 		if (!dacs[i])
 			dacs[i] = alc_auto_look_for_dac(codec, pins[i]);
 	}
-	return 0;
+	return 1;
 }
 
 static int alc_auto_fill_multi_ios(struct hda_codec *codec,
 				   unsigned int location, int offset);
+static hda_nid_t alc_look_for_out_vol_nid(struct hda_codec *codec,
+					  hda_nid_t pin, hda_nid_t dac);
 
 /* fill in the dac_nids table from the parsed pin configuration */
 static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
-	const struct auto_pin_cfg *cfg = &spec->autocfg;
+	struct auto_pin_cfg *cfg = &spec->autocfg;
 	unsigned int location, defcfg;
 	int num_pins;
 	bool redone = false;
@@ -3055,6 +3019,7 @@ static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 	spec->multiout.extra_out_nid[0] = 0;
 	memset(spec->private_dac_nids, 0, sizeof(spec->private_dac_nids));
 	spec->multiout.dac_nids = spec->private_dac_nids;
+	spec->multi_ios = 0;
 
 	/* fill hard-wired DACs first */
 	if (!redone) {
@@ -3088,10 +3053,12 @@ static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 	for (i = 0; i < cfg->line_outs; i++) {
 		if (spec->private_dac_nids[i])
 			spec->multiout.num_dacs++;
-		else
+		else {
 			memmove(spec->private_dac_nids + i,
 				spec->private_dac_nids + i + 1,
 				sizeof(hda_nid_t) * (cfg->line_outs - i - 1));
+			spec->private_dac_nids[cfg->line_outs - 1] = 0;
+		}
 	}
 
 	if (cfg->line_outs == 1 && cfg->line_out_type != AUTO_PIN_SPEAKER_OUT) {
@@ -3110,9 +3077,28 @@ static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 	if (cfg->line_out_type != AUTO_PIN_HP_OUT)
 		alc_auto_fill_extra_dacs(codec, cfg->hp_outs, cfg->hp_pins,
 				 spec->multiout.hp_out_nid);
-	if (cfg->line_out_type != AUTO_PIN_SPEAKER_OUT)
-		alc_auto_fill_extra_dacs(codec, cfg->speaker_outs, cfg->speaker_pins,
-				 spec->multiout.extra_out_nid);
+	if (cfg->line_out_type != AUTO_PIN_SPEAKER_OUT) {
+		int err = alc_auto_fill_extra_dacs(codec, cfg->speaker_outs,
+					cfg->speaker_pins,
+					spec->multiout.extra_out_nid);
+		/* if no speaker volume is assigned, try again as the primary
+		 * output
+		 */
+		if (!err && cfg->speaker_outs > 0 &&
+		    cfg->line_out_type == AUTO_PIN_HP_OUT) {
+			cfg->hp_outs = cfg->line_outs;
+			memcpy(cfg->hp_pins, cfg->line_out_pins,
+			       sizeof(cfg->hp_pins));
+			cfg->line_outs = cfg->speaker_outs;
+			memcpy(cfg->line_out_pins, cfg->speaker_pins,
+			       sizeof(cfg->speaker_pins));
+			cfg->speaker_outs = 0;
+			memset(cfg->speaker_pins, 0, sizeof(cfg->speaker_pins));
+			cfg->line_out_type = AUTO_PIN_SPEAKER_OUT;
+			redone = false;
+			goto again;
+		}
+	}
 
 	if (!spec->multi_ios &&
 	    cfg->line_out_type == AUTO_PIN_SPEAKER_OUT &&
@@ -3129,6 +3115,10 @@ static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 		}
 	}
 
+	if (cfg->line_out_pins[0])
+		spec->vmaster_nid =
+			alc_look_for_out_vol_nid(codec, cfg->line_out_pins[0],
+						 spec->multiout.dac_nids[0]);
 	return 0;
 }
 
@@ -3842,8 +3832,7 @@ static int init_capsrc_for_pin(struct hda_codec *codec, hda_nid_t pin)
 	if (!pin)
 		return 0;
 	for (i = 0; i < spec->num_adc_nids; i++) {
-		hda_nid_t cap = spec->capsrc_nids ?
-			spec->capsrc_nids[i] : spec->adc_nids[i];
+		hda_nid_t cap = get_capsrc(spec, i);
 		int idx;
 
 		idx = get_connection_index(codec, cap, pin);
@@ -3915,6 +3904,7 @@ static void set_capture_mixer(struct hda_codec *codec)
 static void alc_auto_init_std(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
+	spec->use_jack_tbl = 1;
 	alc_auto_init_multi_out(codec);
 	alc_auto_init_extra_out(codec);
 	alc_auto_init_analog_input(codec);
@@ -4152,8 +4142,10 @@ static int patch_alc880(struct hda_codec *codec)
 #endif
 	}
 
-	if (board_config != ALC_MODEL_AUTO)
+	if (board_config != ALC_MODEL_AUTO) {
+		spec->vmaster_nid = 0x0c;
 		setup_preset(codec, &alc880_presets[board_config]);
+	}
 
 	if (!spec->no_analog && !spec->adc_nids) {
 		alc_auto_fill_adc_caps(codec);
@@ -4172,8 +4164,6 @@ static int patch_alc880(struct hda_codec *codec)
 	}
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
-
-	spec->vmaster_nid = 0x0c;
 
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC_MODEL_AUTO)
@@ -4281,8 +4271,10 @@ static int patch_alc260(struct hda_codec *codec)
 #endif
 	}
 
-	if (board_config != ALC_MODEL_AUTO)
+	if (board_config != ALC_MODEL_AUTO) {
 		setup_preset(codec, &alc260_presets[board_config]);
+		spec->vmaster_nid = 0x08;
+	}
 
 	if (!spec->no_analog && !spec->adc_nids) {
 		alc_auto_fill_adc_caps(codec);
@@ -4301,8 +4293,6 @@ static int patch_alc260(struct hda_codec *codec)
 	}
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
-
-	spec->vmaster_nid = 0x08;
 
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC_MODEL_AUTO)
@@ -4675,8 +4665,10 @@ static int patch_alc882(struct hda_codec *codec)
 			goto error;
 	}
 
-	if (board_config != ALC_MODEL_AUTO)
+	if (board_config != ALC_MODEL_AUTO) {
 		setup_preset(codec, &alc882_presets[board_config]);
+		spec->vmaster_nid = 0x0c;
+	}
 
 	if (!spec->no_analog && !spec->adc_nids) {
 		alc_auto_fill_adc_caps(codec);
@@ -4696,13 +4688,10 @@ static int patch_alc882(struct hda_codec *codec)
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
 
-	spec->vmaster_nid = 0x0c;
-
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC_MODEL_AUTO)
 		spec->init_hook = alc_auto_init_std;
 
-	alc_init_jacks(codec);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc882_loopbacks;
@@ -4876,13 +4865,10 @@ static int patch_alc262(struct hda_codec *codec)
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
 
-	spec->vmaster_nid = 0x0c;
-
 	codec->patch_ops = alc_patch_ops;
 	spec->init_hook = alc_auto_init_std;
 	spec->shutup = alc_eapd_shutup;
 
-	alc_init_jacks(codec);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc262_loopbacks;
@@ -4989,13 +4975,9 @@ static int patch_alc268(struct hda_codec *codec)
 	if (!spec->no_analog && !spec->cap_mixer)
 		set_capture_mixer(codec);
 
-	spec->vmaster_nid = 0x02;
-
 	codec->patch_ops = alc_patch_ops;
 	spec->init_hook = alc_auto_init_std;
 	spec->shutup = alc_eapd_shutup;
-
-	alc_init_jacks(codec);
 
 	return 0;
 
@@ -5338,7 +5320,7 @@ static const struct alc_fixup alc269_fixups[] = {
 			{ }
 		},
 	},
-	[ALC269_FIXUP_DMIC] = {
+	[ALC269VB_FIXUP_DMIC] = {
 		.type = ALC_FIXUP_PINS,
 		.v.pins = (const struct alc_pincfg[]) {
 			{ 0x12, 0x99a3092f }, /* int-mic */
@@ -5545,8 +5527,6 @@ static int patch_alc269(struct hda_codec *codec)
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
 
-	spec->vmaster_nid = 0x02;
-
 	codec->patch_ops = alc_patch_ops;
 #ifdef CONFIG_PM
 	codec->patch_ops.resume = alc269_resume;
@@ -5554,7 +5534,6 @@ static int patch_alc269(struct hda_codec *codec)
 	spec->init_hook = alc_auto_init_std;
 	spec->shutup = alc269_shutup;
 
-	alc_init_jacks(codec);
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!spec->loopback.amplist)
 		spec->loopback.amplist = alc269_loopbacks;
@@ -5650,8 +5629,6 @@ static int patch_alc861(struct hda_codec *codec)
 			goto error;
 		set_beep_amp(spec, 0x23, 0, HDA_OUTPUT);
 	}
-
-	spec->vmaster_nid = 0x03;
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
 
@@ -5776,8 +5753,6 @@ static int patch_alc861vd(struct hda_codec *codec)
 			goto error;
 		set_beep_amp(spec, 0x0b, 0x05, HDA_INPUT);
 	}
-
-	spec->vmaster_nid = 0x02;
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
 
@@ -6161,15 +6136,12 @@ static int patch_alc662(struct hda_codec *codec)
 			break;
 		}
 	}
-	spec->vmaster_nid = 0x02;
 
 	alc_apply_fixup(codec, ALC_FIXUP_ACT_PROBE);
 
 	codec->patch_ops = alc_patch_ops;
 	spec->init_hook = alc_auto_init_std;
 	spec->shutup = alc_eapd_shutup;
-
-	alc_init_jacks(codec);
 
 #ifdef CONFIG_SND_HDA_POWER_SAVE
 	if (!spec->loopback.amplist)
@@ -6216,8 +6188,6 @@ static int patch_alc680(struct hda_codec *codec)
 
 	if (!spec->no_analog && !spec->cap_mixer)
 		set_capture_mixer(codec);
-
-	spec->vmaster_nid = 0x02;
 
 	codec->patch_ops = alc_patch_ops;
 	spec->init_hook = alc_auto_init_std;
