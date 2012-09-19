@@ -12,6 +12,8 @@ prepare:
 
 fastdep: prepare
 
+modules_install:
+
 clean:
 	rm -f .depend core *.o sndversions.h modules/*.ver modules/*.stamp
 	$(MAKE) -C sound clean
