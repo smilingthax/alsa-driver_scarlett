@@ -72,6 +72,7 @@ static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;	/* Enable this card */
 static int ac97_clock[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = 0};
+static int ac97_quirk[SNDRV_CARDS] = {[0 ... (SNDRV_CARDS - 1)] = AC97_TUNE_DEFAULT};
 #ifdef SUPPORT_JOYSTICK
 static int joystick[SNDRV_CARDS];
 #endif
@@ -91,6 +92,9 @@ MODULE_PARM_SYNTAX(enable, SNDRV_ENABLE_DESC);
 MODULE_PARM(ac97_clock, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(ac97_clock, "AC'97 codec clock (0 = auto-detect).");
 MODULE_PARM_SYNTAX(ac97_clock, SNDRV_ENABLED ",default:0");
+MODULE_PARM(ac97_quirk, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
+MODULE_PARM_DESC(ac97_quirk, "AC'97 workaround for strange hardware.");
+MODULE_PARM_SYNTAX(ac97_quirk, SNDRV_ENABLED ",allows:{{-1,3}},dialog:list,default:-1");
 #ifdef SUPPORT_JOYSTICK
 MODULE_PARM(joystick, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(joystick, "Enable joystick for Intel i8x0 soundcard.");
@@ -1737,6 +1741,12 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 	},
 	{
 		.vendor = 0x8086,
+		.device = 0x4856,
+		.name = "Intel D845WN (82801BA)",
+		.type = AC97_TUNE_SWAP_HP
+	},
+	{
+		.vendor = 0x8086,
 		.device = 0x4d44,
 		.name = "Intel D850EMV2",	/* AD1885 */
 		.type = AC97_TUNE_HP_ONLY
@@ -1765,7 +1775,7 @@ static struct ac97_quirk ac97_quirks[] __devinitdata = {
 	{ } /* terminator */
 };
 
-static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
+static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock, int ac97_quirk)
 {
 	ac97_bus_t bus, *pbus;
 	ac97_t ac97, *x97;
@@ -1855,7 +1865,7 @@ static int __devinit snd_intel8x0_mixer(intel8x0_t *chip, int ac97_clock)
 		chip->ac97[i] = x97;
 	}
 	/* tune up the primary codec */
-	snd_ac97_tune_hardware(chip->ac97[0], ac97_quirks);
+	snd_ac97_tune_hardware(chip->ac97[0], ac97_quirks, ac97_quirk);
 	/* enable separate SDINs for ICH4 */
 	if (chip->device_type == DEVICE_INTEL_ICH4)
 		pbus->isdin = 1;
@@ -2279,10 +2289,8 @@ static void __devinit intel8x0_measure_ac97_clock(intel8x0_t *chip)
 
 	t = stop_time.tv_sec - start_time.tv_sec;
 	t *= 1000000;
-	if (stop_time.tv_usec < start_time.tv_usec)
-		t -= start_time.tv_usec - stop_time.tv_usec;
-	else
-		t += stop_time.tv_usec - start_time.tv_usec;
+	t += stop_time.tv_usec - start_time.tv_usec;
+	printk(KERN_INFO "%s: measured %lu usecs\n", __FUNCTION__, t);
 	if (t == 0) {
 		snd_printk(KERN_ERR "?? calculation error..\n");
 		return;
@@ -2613,7 +2621,7 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 		return err;
 	}
 
-	if ((err = snd_intel8x0_mixer(chip, ac97_clock[dev])) < 0) {
+	if ((err = snd_intel8x0_mixer(chip, ac97_clock[dev], ac97_quirk[dev])) < 0) {
 		snd_card_free(card);
 		return err;
 	}
@@ -2798,7 +2806,7 @@ module_exit(alsa_card_intel8x0_exit)
 
 #ifndef MODULE
 
-/* format is: snd-intel8x0=enable,index,id,ac97_clock,mpu_port,joystick */
+/* format is: snd-intel8x0=enable,index,id,ac97_clock,ac97_quirk,mpu_port,joystick */
 
 static int __init alsa_card_intel8x0_setup(char *str)
 {
@@ -2809,7 +2817,8 @@ static int __init alsa_card_intel8x0_setup(char *str)
 	(void)(get_option(&str,&enable[nr_dev]) == 2 &&
 	       get_option(&str,&index[nr_dev]) == 2 &&
 	       get_id(&str,&id[nr_dev]) == 2 &&
-	       get_option(&str,&ac97_clock[nr_dev]) == 2
+	       get_option(&str,&ac97_clock[nr_dev]) == 2 &&
+	       get_option(&str,&ac97_quirk[nr_dev]) == 2
 #ifdef SUPPORT_MIDI
 	       && get_option(&str,&mpu_port[nr_dev]) == 2
 #endif

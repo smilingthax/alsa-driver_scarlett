@@ -53,7 +53,7 @@ PATCH_UPDATE = '~/alsa/alsa-kernel/scripts/kchanges/update'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']
-ALSA_EXCLUDE_DIR = ['/scripts', '/oss']
+ALSA_EXCLUDE_DIR = ['/scripts', '/oss', '/kbuild']
 KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
 		  '/MAINTAINERS','/Makefile',
 		  '/README','/REPORTING-BUGS',
@@ -158,7 +158,9 @@ COMMENT_MAP = [
 		('/pci/rme96.c'		,'RME96 driver'),
 		('/pci/sonicvibes.c'	,'SonicVibes driver'),
 		('/pci/via82xx.c'	,'VIA82xx driver'),
+		('/pci/bt87x.c'		,'BT87x driver'),
 		('/pci/Kconfig'		,'PCI drivers'),
+		('/pci/Makefile'	,'PCI drivers'),
 		('/pci'			,'ERROR'),
 		('/ppc/awacs.(ch)'	,'PPC AWACS driver'),
 		('/ppc/burgundy.(ch)'	,'PPC Burgundy driver'),
@@ -169,6 +171,8 @@ COMMENT_MAP = [
 		('/ppc/tumbler.(c|h)'	,'PPC Tumbler driver'),
 		('/ppc'			,'ERROR'),
 		('/i2c/l3'		,'L3 drivers'),
+		('/include/tea575x-tuner.h','TEA575x tuner'),
+		('/i2c/other/tea575x-tuner.c','TEA575x tuner'),
 		('/i2c/other'		,'Serial BUS drivers'),
 		('/include/i2c.h'	,'I2C lib core'),
 		('/i2c/i2c.c'		,'I2C lib core'),

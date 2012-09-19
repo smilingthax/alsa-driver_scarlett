@@ -1526,38 +1526,40 @@ static int snd_ac97_modem_build(snd_card_t * card, ac97_t * ac97)
 	return 0;
 }
 
-static int snd_ac97_test_rate(ac97_t *ac97, int reg, int rate)
+static int snd_ac97_test_rate(ac97_t *ac97, int reg, int shadow_reg, int rate)
 {
 	unsigned short val;
 	unsigned int tmp;
 
 	tmp = ((unsigned int)rate * ac97->bus->clock) / 48000;
 	snd_ac97_write_cache(ac97, reg, tmp & 0xffff);
+	if (shadow_reg)
+		snd_ac97_write_cache(ac97, shadow_reg, tmp & 0xffff);
 	val = snd_ac97_read(ac97, reg);
 	return val == (tmp & 0xffff);
 }
 
-static void snd_ac97_determine_rates(ac97_t *ac97, int reg, unsigned int *r_result)
+static void snd_ac97_determine_rates(ac97_t *ac97, int reg, int shadow_reg, unsigned int *r_result)
 {
 	unsigned int result = 0;
 
 	/* test a non-standard rate */
-	if (snd_ac97_test_rate(ac97, reg, 11000))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 11000))
 		result |= SNDRV_PCM_RATE_CONTINUOUS;
 	/* let's try to obtain standard rates */
-	if (snd_ac97_test_rate(ac97, reg, 8000))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 8000))
 		result |= SNDRV_PCM_RATE_8000;
-	if (snd_ac97_test_rate(ac97, reg, 11025))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 11025))
 		result |= SNDRV_PCM_RATE_11025;
-	if (snd_ac97_test_rate(ac97, reg, 16000))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 16000))
 		result |= SNDRV_PCM_RATE_16000;
-	if (snd_ac97_test_rate(ac97, reg, 22050))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 22050))
 		result |= SNDRV_PCM_RATE_22050;
-	if (snd_ac97_test_rate(ac97, reg, 32000))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 32000))
 		result |= SNDRV_PCM_RATE_32000;
-	if (snd_ac97_test_rate(ac97, reg, 44100))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 44100))
 		result |= SNDRV_PCM_RATE_44100;
-	if (snd_ac97_test_rate(ac97, reg, 48000))
+	if (snd_ac97_test_rate(ac97, reg, shadow_reg, 48000))
 		result |= SNDRV_PCM_RATE_48000;
 	*r_result = result;
 }
@@ -1866,8 +1868,8 @@ int snd_ac97_mixer(ac97_bus_t * bus, ac97_t * _ac97, ac97_t ** rac97)
 	if (ac97->ext_id & 0x0189)	/* L/R, MIC, SDAC, LDAC VRA support */
 		snd_ac97_write_cache(ac97, AC97_EXTENDED_STATUS, ac97->ext_id & 0x0189);
 	if (ac97->ext_id & AC97_EI_VRA) {	/* VRA support */
-		snd_ac97_determine_rates(ac97, AC97_PCM_FRONT_DAC_RATE, &ac97->rates[AC97_RATES_FRONT_DAC]);
-		snd_ac97_determine_rates(ac97, AC97_PCM_LR_ADC_RATE, &ac97->rates[AC97_RATES_ADC]);
+		snd_ac97_determine_rates(ac97, AC97_PCM_FRONT_DAC_RATE, 0, &ac97->rates[AC97_RATES_FRONT_DAC]);
+		snd_ac97_determine_rates(ac97, AC97_PCM_LR_ADC_RATE, 0, &ac97->rates[AC97_RATES_ADC]);
 	} else {
 		ac97->rates[AC97_RATES_FRONT_DAC] = SNDRV_PCM_RATE_48000;
 		ac97->rates[AC97_RATES_ADC] = SNDRV_PCM_RATE_48000;
@@ -1884,16 +1886,16 @@ int snd_ac97_mixer(ac97_bus_t * bus, ac97_t * _ac97, ac97_t ** rac97)
 						SNDRV_PCM_RATE_32000;
 	}
 	if (ac97->ext_id & AC97_EI_VRM) {	/* MIC VRA support */
-		snd_ac97_determine_rates(ac97, AC97_PCM_MIC_ADC_RATE, &ac97->rates[AC97_RATES_MIC_ADC]);
+		snd_ac97_determine_rates(ac97, AC97_PCM_MIC_ADC_RATE, 0, &ac97->rates[AC97_RATES_MIC_ADC]);
 	} else {
 		ac97->rates[AC97_RATES_MIC_ADC] = SNDRV_PCM_RATE_48000;
 	}
 	if (ac97->ext_id & AC97_EI_SDAC) {	/* SDAC support */
-		snd_ac97_determine_rates(ac97, AC97_PCM_SURR_DAC_RATE, &ac97->rates[AC97_RATES_SURR_DAC]);
+		snd_ac97_determine_rates(ac97, AC97_PCM_SURR_DAC_RATE, AC97_PCM_FRONT_DAC_RATE, &ac97->rates[AC97_RATES_SURR_DAC]);
 		ac97->scaps |= AC97_SCAP_SURROUND_DAC;
 	}
 	if (ac97->ext_id & AC97_EI_LDAC) {	/* LDAC support */
-		snd_ac97_determine_rates(ac97, AC97_PCM_LFE_DAC_RATE, &ac97->rates[AC97_RATES_LFE_DAC]);
+		snd_ac97_determine_rates(ac97, AC97_PCM_LFE_DAC_RATE, AC97_PCM_FRONT_DAC_RATE, &ac97->rates[AC97_RATES_LFE_DAC]);
 		ac97->scaps |= AC97_SCAP_CENTER_LFE_DAC;
 	}
 	/* additional initializations */
@@ -2140,10 +2142,28 @@ static int tune_ad_sharing(ac97_t *ac97)
 	return 0;
 }
 
+static int apply_quirk(ac97_t *ac97, int quirk)
+{
+	switch (quirk) {
+	case AC97_TUNE_NONE:
+		return 0;
+	case AC97_TUNE_HP_ONLY:
+		return swap_headphone(ac97, 1);
+	case AC97_TUNE_SWAP_HP:
+		return swap_headphone(ac97, 0);
+	case AC97_TUNE_SWAP_SURROUND:
+		return swap_surround(ac97);
+	case AC97_TUNE_AD_SHARING:
+		return tune_ad_sharing(ac97);
+	}
+	return -EINVAL;
+}
+
 /**
  * snd_ac97_tune_hardware - tune up the hardware
  * @ac97: the ac97 instance
  * @quirk: quirk list
+ * @override: explicit quirk value (overrides the list if not AC97_TUNE_DEFAULT)
  *
  * Do some workaround for each pci device, such as renaming of the
  * headphone (true line-out) control as "Master".
@@ -2152,9 +2172,18 @@ static int tune_ad_sharing(ac97_t *ac97)
  * Returns zero if successful, or a negative error code on failure.
  */
 
-int snd_ac97_tune_hardware(ac97_t *ac97, struct ac97_quirk *quirk)
+int snd_ac97_tune_hardware(ac97_t *ac97, struct ac97_quirk *quirk, int override)
 {
+	int result;
+
 	snd_assert(quirk, return -EINVAL);
+
+	if (override != AC97_TUNE_DEFAULT) {
+		result = apply_quirk(ac97, override);
+		if (result < 0)
+			snd_printk(KERN_ERR "applying quirk type %d failed (%d)\n", override, result);
+		return result;
+	}
 
 	for (; quirk->vendor; quirk++) {
 		if (quirk->vendor != ac97->subsystem_vendor)
@@ -2162,18 +2191,10 @@ int snd_ac97_tune_hardware(ac97_t *ac97, struct ac97_quirk *quirk)
 		if ((! quirk->mask && quirk->device == ac97->subsystem_device) ||
 		    quirk->device == (quirk->mask & ac97->subsystem_device)) {
 			snd_printdd("ac97 quirk for %s (%04x:%04x)\n", quirk->name, ac97->subsystem_vendor, ac97->subsystem_device);
-			switch (quirk->type) {
-			case AC97_TUNE_HP_ONLY:
-				return swap_headphone(ac97, 1);
-			case AC97_TUNE_SWAP_HP:
-				return swap_headphone(ac97, 0);
-			case AC97_TUNE_SWAP_SURROUND:
-				return swap_surround(ac97);
-			case AC97_TUNE_AD_SHARING:
-				return tune_ad_sharing(ac97);
-			}
-			snd_printk(KERN_ERR "invalid quirk type %d for %s\n", quirk->type, quirk->name);
-			return -EINVAL;
+			result = apply_quirk(ac97, quirk->type);
+			if (result < 0)
+				snd_printk(KERN_ERR "applying quirk type %d for %s failed (%d)\n", quirk->type, quirk->name, result);
+			return result;
 		}
 	}
 	return 0;
