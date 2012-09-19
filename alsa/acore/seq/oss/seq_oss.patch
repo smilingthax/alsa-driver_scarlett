@@ -50,7 +50,7 @@
  static struct snd_minor seq_oss_reg = {
 @@ -315,3 +334,5 @@
  	info_entry = NULL;
- #endif
  }
+ #endif /* CONFIG_PROC_FS */
 +
 +EXPORT_NO_SYMBOLS;
