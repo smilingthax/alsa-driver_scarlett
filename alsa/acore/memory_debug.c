@@ -141,6 +141,24 @@ char *snd_hidden_kstrdup(const char *s, gfp_t gfp_flags)
 	return buf;
 }
 
+char *snd_hidden_kstrndup(const char *s, size_t maxlen, gfp_t gfp_flags)
+{
+	int len;
+	char *buf;
+
+	if (!s) return NULL;
+
+	len = strlen(s);
+	if (len > maxlen)
+		len = maxlen;
+	buf = _snd_kmalloc(len + 1, gfp_flags);
+	if (buf) {
+		memcpy(buf, s, len);
+		buf[len] = 0;
+	}
+	return buf;
+}
+
 #ifdef CONFIG_PROC_FS
 static struct snd_info_entry *snd_memory_info_entry;
 

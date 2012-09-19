@@ -2187,6 +2187,33 @@ if test "$CONFIG_HAVE_KSTRDUP" = "1"; then
   AC_DEFINE(CONFIG_HAVE_KSTRDUP)
 fi
 
+dnl Check for kstrdup()
+AC_MSG_CHECKING(for kstrndup)
+kstrdup="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="$KERNEL_CHECK_CFLAGS"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/string.h>
+],[
+  char * (*func)(const char *, int);
+  func = kstrndup;
+],
+    AC_MSG_RESULT(yes);kstrndup="1",
+    AC_MSG_RESULT(no);kstrndup="0",
+    AC_MSG_RESULT(unknown);kstrndup="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_KSTRNDUP=$kstrndup
+dnl AC_SUBST(CONFIG_HAVE_KSTNRDUP)
+if test "$CONFIG_HAVE_KSTRNDUP" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_KSTRNDUP)
+fi
+
 dnl Check for kzalloc()
 AC_MSG_CHECKING(for kzalloc)
 kzalloc="0"
