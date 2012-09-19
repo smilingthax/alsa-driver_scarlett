@@ -41,7 +41,7 @@ size_t snd_compat_strlcat(char *dest, const char *src, size_t count)
 }
 #endif
 
-#ifndef CONFIG_HAVE_SNPRINTF
+#ifndef CONFIG_HAVE_VSNPRINTF
 #define vsnprintf snd_compat_vsnprintf
 int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #endif

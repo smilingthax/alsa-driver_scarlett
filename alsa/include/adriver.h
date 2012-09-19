@@ -296,10 +296,12 @@ size_t snd_compat_strlcat(char *dest, const char *src, size_t size);
 #endif
 
 #ifndef CONFIG_HAVE_SNPRINTF
-#include <stdarg.h>
 int snd_compat_snprintf(char * buf, size_t size, const char * fmt, ...);
-int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #define snprintf(buf,size,fmt,args...) snd_compat_snprintf(buf,size,fmt,##args)
+#endif
+#ifndef CONFIG_HAVE_VSNPRINTF
+#include <stdarg.h>
+int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
 #define vsnprintf(buf,size,fmt,args) snd_compat_vsnprintf(buf,size,fmt,args)
 #endif
 

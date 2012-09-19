@@ -1313,6 +1313,40 @@ if test "$CONFIG_HAVE_SNPRINTF" = "1"; then
   AC_DEFINE(CONFIG_HAVE_SNPRINTF)
 fi
 
+dnl Check for vsnprintf...
+AC_MSG_CHECKING(for vsnprintf)
+vsnprintf="0"
+ac_save_CFLAGS="$CFLAGS"
+ac_save_CC="$CC"
+CFLAGS="-Wall -Werror $CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
+CC=$KCC
+AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/kernel.h>
+void f(const char *fmt, ...)
+{
+  char buf[128];
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+}
+],[
+  f("abcd");
+],
+    AC_MSG_RESULT("yes");vsnprintf="1",
+    AC_MSG_RESULT("no");vsnprintf="0",
+    AC_MSG_RESULT("unknown");vsnprintf="0"
+)
+CFLAGS=$ac_save_CFLAGS
+CC=$ac_save_CC
+CONFIG_HAVE_VSNPRINTF=$vsnprintf
+dnl AC_SUBST(CONFIG_HAVE_VSNPRINTF)
+if test "$CONFIG_HAVE_VSNPRINTF" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_VSNPRINTF)
+fi
+
 dnl Check for scnprintf...
 AC_MSG_CHECKING(for scnprintf)
 scnprintf="0"
@@ -1746,33 +1780,6 @@ CC=$ac_save_CC
 if test "$new_pci_save_state" = "1"; then
   AC_DEFINE(CONFIG_HAVE_NEW_PCI_SAVE_STATE)
 fi
-fi
-
-dnl Check for acpi_register_gsi
-AC_MSG_CHECKING(for acpi_register_gsi)
-acpi_register_gsi="0"
-ac_save_CFLAGS="$CFLAGS"
-ac_save_CC="$CC"
-CFLAGS="$CFLAGS $KERNEL_INC $HACK_KERNEL_INC -nostdinc -iwithprefix include"
-CC=$KCC
-AC_TRY_COMPILE([
-#define __KERNEL__
-#include <linux/config.h>
-#include <linux/acpi.h>
-],[
-  unsigned int (*func)(u32, int, int);
-  func = acpi_register_gsi;
-],
-    AC_MSG_RESULT("yes");acpi_register_gsi="1",
-    AC_MSG_RESULT("no");acpi_register_gsi="0",
-    AC_MSG_RESULT("unknown");acpi_register_gsi="0"
-)
-CFLAGS=$ac_save_CFLAGS
-CC=$ac_save_CC
-CONFIG_HAVE_ACPI_REGISTER_GSI=$acpi_register_gsi
-dnl AC_SUBST(CONFIG_HAVE_ACPI_REGISTER_GSI)
-if test "$CONFIG_HAVE_ACPI_REGISTER_GSI" = "1"; then
-  AC_DEFINE(CONFIG_HAVE_ACPI_REGISTER_GSI)
 fi
 
 dnl check only on 2.2 kernel..

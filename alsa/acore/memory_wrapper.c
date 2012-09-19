@@ -72,7 +72,7 @@ size_t snd_compat_strlcpy(char *dest, const char *src, size_t size)
 }
 #endif
 
-#ifndef CONFIG_HAVE_SNPRINTF
+#ifndef CONFIG_HAVE_VSNPRINTF
 int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 {
 	char *ptr = (void *) __get_free_pages(GFP_KERNEL, 0);
@@ -86,14 +86,16 @@ int snd_compat_vsnprintf(char *buf, size_t size, const char *fmt, va_list args)
 	free_pages((unsigned long) ptr, 0);
 	return strlen(buf);
 }
+#endif
 
+#ifndef CONFIG_HAVE_SNPRINTF
 int snd_compat_snprintf(char *buf, size_t size, const char * fmt, ...)
 {
 	int res;
 	va_list args;
 
 	va_start(args, fmt);
-	res = snd_compat_vsnprintf(buf, size, fmt, args);
+	res = vsnprintf(buf, size, fmt, args);
 	va_end(args);
 	return res;
 }

@@ -32,6 +32,8 @@ EXPORT_SYMBOL(snd_compat_strlcpy);
 #endif
 #ifndef CONFIG_HAVE_SNPRINTF
 EXPORT_SYMBOL(snd_compat_snprintf);
+#endif
+#ifndef CONFIG_HAVE_VSNPRINTF
 EXPORT_SYMBOL(snd_compat_vsnprintf);
 #endif
 
