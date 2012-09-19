@@ -52,7 +52,7 @@ CONFIG_SND_SEQUENCER_OSS = n
 endif
 CONFIG_SND_RTC		= @CONFIG_SND_RTC@
 
-INCLUDE		= -I$(CONFIG_SND_KERNELDIR)/include -I$(TOPDIR)/include
+INCLUDE		= -I$(TOPDIR)/include -I$(CONFIG_SND_KERNELDIR)/include
 CFLAGS		= $(MODFLAGS) $(INCLUDE) $(c_opts) -Wall -Wstrict-prototypes -fomit-frame-pointer -pipe
 MAKE		+= $(m_opts)
 SNDVERSIONS	= $(TOPDIR)/include/sndversions.h

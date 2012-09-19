@@ -330,6 +330,8 @@ int main(void) {
 	fprintf(file, "sparc");
 #elif defined(CONFIG_SPARC64)
 	fprintf(file, "sparc64");
+#elif defined(CONFIG_X86_64)
+	fprintf(file, "x86_64");
 #else
 	fclose(file);
 	exit(1);
@@ -466,6 +468,11 @@ case "$processor" in
     processor="sparc64"
     CONFIG_SND_ISA=n
     ;;
+  x86_64)
+   LD="ld -m elf_x86_64 -e stext"
+   c_opts="-mcmodel=kernel -pipe -fno-reorder-blocks -fno-strength-reduce -finline-limit=3000"
+   $CC -mno-red-zone -S -o /dev/null -xc /dev/null >/dev/null 2>&1 && c_opts="$c_opts -mno-red-zone"
+   ;;
   *)
     processor="unknown"
     CONFIG_SND_ISA=n
