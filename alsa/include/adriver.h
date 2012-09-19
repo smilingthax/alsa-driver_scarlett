@@ -2069,25 +2069,7 @@ request_irq_with_irqf_check(unsigned int irq, irq_handler_t handler,
 #define __printf(a,b)	/*nop*/
 #endif
 
-/* module_platform_driver() wrapper */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
-#include <linux/platform_device.h>
-#ifndef module_platform_driver
-#define module_platform_driver(__platform_driver) \
-static int __init __platform_driver##_init(void) \
-{ \
-	return platform_driver_register(&(__platform_driver)); \
-} \
-module_init(__platform_driver##_init); \
-static void __exit __platform_driver##_exit(void) \
-{ \
-	platform_driver_unregister(&(__platform_driver)); \
-} \
-module_exit(__platform_driver##_exit);
-#endif
-#endif /* < 3.2 */
-
-/* module_usb_driver() wrapper */
+/* module_driver() wrapper */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
 #include <linux/device.h>
 #ifndef module_driver
@@ -2096,6 +2078,21 @@ static int __init __driver##_init(void) { return __register(&(__driver)); } \
 module_init(__driver##_init); \
 static void __exit __driver##_exit(void) { __unregister(&(__driver)); } \
 module_exit(__driver##_exit);
+#endif
+#endif /* < 3.4 */
+
+/* module_platform_driver() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
+#include <linux/platform_device.h>
+#ifndef module_platform_driver
+#define module_platform_driver(__platform_driver) \
+	module_driver(__platform_driver, platform_driver_register, \
+			platform_driver_unregister)
+#endif
+#endif /* < 3.2 */
+
+/* module_usb_driver() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
 #define module_usb_driver(__usb_driver) \
     module_driver(__usb_driver, usb_register, \
 			usb_deregister)
@@ -2105,8 +2102,17 @@ module_exit(__driver##_exit);
 #define module_spi_driver(__spi_driver) \
 	module_driver(__spi_driver, spi_register_driver, \
 			spi_unregister_driver)
-#endif
 #endif /* < 3.3 */
+
+/* module_pci_driver() wrapper */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
+#include <linux/pci.h>
+#ifndef module_pci_driver
+#define module_pci_driver(__pci_driver) \
+	module_driver(__pci_driver, pci_register_driver, \
+		       pci_unregister_driver)
+#endif
+#endif /* < 3.4 */
 
 /* some old kernels define info(), and this breaks the build badly */
 #ifdef info
