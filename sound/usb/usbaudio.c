@@ -1673,6 +1673,7 @@ static struct usb_device_id usb_audio_ids [] = {
 MODULE_DEVICE_TABLE (usb, usb_audio_ids);
 
 static struct usb_driver usb_audio_driver = {
+	.owner =	THIS_MODULE,
 	.name =		"snd-usb-audio",
 	.probe =	usb_audio_probe,
 	.disconnect =	usb_audio_disconnect,
@@ -2565,7 +2566,7 @@ static int snd_usb_audio_create(snd_card_t *card, struct usb_device *dev,
 		}
 	}
 	if (len > 0)
-		strlcat(card->longname, ' ', sizeof(card->longname));
+		strlcat(card->longname, " ", sizeof(card->longname));
 
 	len = strlen(card->longname);
 

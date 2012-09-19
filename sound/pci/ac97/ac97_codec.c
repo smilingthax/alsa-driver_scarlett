@@ -103,6 +103,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x41445363, 0xffffffff, "AD1886A",		patch_ad1881,	NULL },
 { 0x41445370, 0xffffffff, "AD1980",		patch_ad1980,	NULL },
 { 0x41445372, 0xffffffff, "AD1981A",		patch_ad1881,	NULL },
+{ 0x41445374, 0xffffffff, "AD1981B",		patch_ad1881,	NULL },
 { 0x41445375, 0xffffffff, "AD1985",		patch_ad1980,	NULL },
 { 0x414c4300, 0xfffffff0, "RL5306",	 	NULL,		NULL },
 { 0x414c4310, 0xfffffff0, "RL5382", 		NULL,		NULL },
@@ -112,6 +113,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x414c4730, 0xffffffff, "ALC101",		NULL,		NULL },
 { 0x414c4740, 0xfffffff0, "ALC202",		NULL,		NULL },
 { 0x414c4750, 0xfffffff0, "ALC250",		NULL,		NULL },
+{ 0x414c4770, 0xfffffff0, "ALC203",		NULL,		NULL },
 { 0x434d4941, 0xffffffff, "CMI9738",		NULL,		NULL },
 { 0x434d4961, 0xffffffff, "CMI9739",		patch_cm9739,	NULL },
 { 0x43525900, 0xfffffff8, "CS4297",		NULL,		NULL },
@@ -122,6 +124,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x43525948, 0xfffffff8, "CS4201",		NULL,		NULL },
 { 0x43525958, 0xfffffff8, "CS4205",		patch_cirrus_spdif,	NULL },
 { 0x43525960, 0xfffffff8, "CS4291",		NULL,		NULL },
+{ 0x43525970, 0xfffffff8, "CS4202",		NULL,		NULL },
 { 0x43585421, 0xffffffff, "HSD11246",		NULL,		NULL },	// SmartMC II
 { 0x43585428, 0xfffffff8, "Cx20468",		patch_conexant,	NULL }, // SmartAMC fixme: the mask might be different
 { 0x44543031, 0xfffffff0, "DT0398",		NULL,		NULL },
@@ -130,10 +133,13 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x48525300, 0xffffff00, "HMP9701",		NULL,		NULL },
 { 0x49434501, 0xffffffff, "ICE1230",		NULL,		NULL },
 { 0x49434511, 0xffffffff, "ICE1232",		NULL,		NULL }, // alias VIA VT1611A?
+{ 0x49434514, 0xffffffff, "ICE1232A",		NULL,		NULL },
 { 0x49434551, 0xffffffff, "VT1616", 		NULL,		NULL }, 
+{ 0x49434552, 0xffffffff, "VT1616i",		NULL,		NULL }, // VT1616 compatible (chipset integrated)
 { 0x49544520, 0xffffffff, "IT2226E",		NULL,		NULL },
 { 0x4e534300, 0xffffffff, "LM4540/43/45/46/48",	NULL,		NULL }, // only guess --jk
 { 0x4e534331, 0xffffffff, "LM4549",		NULL,		NULL },
+{ 0x4e534350, 0xffffffff, "LM4550",		NULL,		NULL },
 { 0x50534304, 0xffffffff, "UCB1400",		NULL,		NULL },
 { 0x53494c20, 0xffffffe0, "Si3036/8",		NULL,		NULL },
 { 0x54524102, 0xffffffff, "TR28022",		NULL,		NULL },
@@ -159,6 +165,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x83847609, 0xffffffff, "STAC9721/23",	patch_sigmatel_stac9721,	NULL },
 { 0x83847644, 0xffffffff, "STAC9744",		patch_sigmatel_stac9744,	NULL },
 { 0x83847650, 0xffffffff, "STAC9750/51",	NULL,		NULL },	// patch?
+{ 0x83847652, 0xffffffff, "STAC9752/53",	NULL,		NULL }, // patch?
 { 0x83847656, 0xffffffff, "STAC9756/57",	patch_sigmatel_stac9756,	NULL },
 { 0x83847666, 0xffffffff, "STAC9766/67",	NULL,		NULL }, // patch?
 { 0, 	      0,	  NULL,			NULL,		NULL }
@@ -183,7 +190,7 @@ static const char *snd_ac97_stereo_enhancements[] =
   /*  14 */ "Binaura 3D Audio Enhancement",
   /*  15 */ "ESS Technology Stereo Enhancement",
   /*  16 */ "Harman International VMAx",
-  /*  17 */ "Nvidea 3D Stereo Enhancement",
+  /*  17 */ "Nvidea/IC Ensemble/KS Waves 3D Stereo Enhancement",
   /*  18 */ "Philips Incredible Sound",
   /*  19 */ "Texas Instruments 3D Stereo Enhancement",
   /*  20 */ "VLSI Technology 3D Stereo Enhancement",
