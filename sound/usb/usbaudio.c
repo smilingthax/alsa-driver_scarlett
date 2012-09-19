@@ -1829,6 +1829,10 @@ static int snd_usb_create_streams(snd_usb_audio_t *chip, int ctrlif,
 			continue;
 		}
 		iface = &config->interface[j];
+		if (usb_interface_claimed(iface)) {
+			snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n", dev->devnum, ctrlif, j);
+			continue;
+		}
 		if (iface->altsetting[0].bInterfaceClass == USB_CLASS_AUDIO &&
 		    iface->altsetting[0].bInterfaceSubClass == USB_SUBCLASS_MIDI_STREAMING) {
 			if (snd_usb_create_midi_interface(chip, j, NULL) < 0) {
