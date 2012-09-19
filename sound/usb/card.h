@@ -107,6 +107,8 @@ struct snd_usb_substream {
 	int interface;	/* current interface */
 	int endpoint;	/* assigned endpoint */
 	struct audioformat *cur_audiofmt;	/* current audioformat pointer (for hw_params callback) */
+	snd_pcm_format_t pcm_format;	/* current audio format (for hw_params callback) */
+	unsigned int channels;		/* current number of channels (for hw_params callback) */
 	unsigned int cur_rate;		/* current rate (for hw_params callback) */
 	unsigned int period_bytes;	/* current period bytes (for hw_params callback) */
 	unsigned int altset_idx;     /* USB data format: index of alternate setting */
@@ -123,6 +125,7 @@ struct snd_usb_substream {
 	struct snd_usb_endpoint *data_endpoint;
 	struct snd_usb_endpoint *sync_endpoint;
 	unsigned long flags;
+	bool need_setup_ep;		/* (re)configure EP at prepare? */
 
 	u64 formats;			/* format bitmasks (all or'ed) */
 	unsigned int num_formats;		/* number of supported audio formats (list) */
