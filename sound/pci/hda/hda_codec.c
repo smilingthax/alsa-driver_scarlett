@@ -1447,7 +1447,7 @@ void snd_hda_codec_setup_stream(struct hda_codec *codec, hda_nid_t nid,
 		for (i = 0; i < c->cvt_setups.used; i++) {
 			p = snd_array_elem(&c->cvt_setups, i);
 			if (!p->active && p->stream_tag == stream_tag &&
-			    get_wcaps_type(get_wcaps(codec, p->nid)) == type)
+			    get_wcaps_type(get_wcaps(c, p->nid)) == type)
 				p->dirty = 1;
 		}
 	}
@@ -1759,7 +1759,11 @@ static void put_vol_mute(struct hda_codec *codec, struct hda_amp_info *info,
 	parm = ch ? AC_AMP_SET_RIGHT : AC_AMP_SET_LEFT;
 	parm |= direction == HDA_OUTPUT ? AC_AMP_SET_OUTPUT : AC_AMP_SET_INPUT;
 	parm |= index << AC_AMP_SET_INDEX_SHIFT;
-	parm |= val;
+	if ((val & HDA_AMP_MUTE) && !(info->amp_caps & AC_AMPCAP_MUTE) &&
+	    (info->amp_caps & AC_AMPCAP_MIN_MUTE))
+		; /* set the zero value as a fake mute */
+	else
+		parm |= val;
 	snd_hda_codec_write(codec, nid, 0, AC_VERB_SET_AMP_GAIN_MUTE, parm);
 	info->vol[ch] = val;
 }
@@ -2026,7 +2030,7 @@ int snd_hda_mixer_amp_tlv(struct snd_kcontrol *kcontrol, int op_flag,
 	val1 = -((caps & AC_AMPCAP_OFFSET) >> AC_AMPCAP_OFFSET_SHIFT);
 	val1 += ofs;
 	val1 = ((int)val1) * ((int)val2);
-	if (min_mute)
+	if (min_mute || (caps & AC_AMPCAP_MIN_MUTE))
 		val2 |= TLV_DB_SCALE_MUTE;
 	if (put_user(SNDRV_CTL_TLVT_DB_SCALE, _tlv))
 		return -EFAULT;
@@ -2300,7 +2304,7 @@ typedef int (*map_slave_func_t)(void *, struct snd_kcontrol *);
 
 /* apply the function to all matching slave ctls in the mixer list */
 static int map_slaves(struct hda_codec *codec, const char * const *slaves,
-		      map_slave_func_t func, void *data) 
+		      const char *suffix, map_slave_func_t func, void *data) 
 {
 	struct hda_nid_item *items;
 	const char * const *s;
@@ -2313,7 +2317,14 @@ static int map_slaves(struct hda_codec *codec, const char * const *slaves,
 		    sctl->id.iface != SNDRV_CTL_ELEM_IFACE_MIXER)
 			continue;
 		for (s = slaves; *s; s++) {
-			if (!strcmp(sctl->id.name, *s)) {
+			char tmpname[sizeof(sctl->id.name)];
+			const char *name = *s;
+			if (suffix) {
+				snprintf(tmpname, sizeof(tmpname), "%s %s",
+					 name, suffix);
+				name = tmpname;
+			}
+			if (!strcmp(sctl->id.name, name)) {
 				err = func(data, sctl);
 				if (err)
 					return err;
@@ -2335,6 +2346,7 @@ static int check_slave_present(void *data, struct snd_kcontrol *sctl)
  * @name: vmaster control name
  * @tlv: TLV data (optional)
  * @slaves: slave control names (optional)
+ * @suffix: suffix string to each slave name (optional)
  *
  * Create a virtual master control with the given name.  The TLV data
  * must be either NULL or a valid data.
@@ -2346,12 +2358,13 @@ static int check_slave_present(void *data, struct snd_kcontrol *sctl)
  * This function returns zero if successful or a negative error code.
  */
 int snd_hda_add_vmaster(struct hda_codec *codec, char *name,
-			unsigned int *tlv, const char * const *slaves)
+			unsigned int *tlv, const char * const *slaves,
+			const char *suffix)
 {
 	struct snd_kcontrol *kctl;
 	int err;
 
-	err = map_slaves(codec, slaves, check_slave_present, NULL);
+	err = map_slaves(codec, slaves, suffix, check_slave_present, NULL);
 	if (err != 1) {
 		snd_printdd("No slave found for %s\n", name);
 		return 0;
@@ -2363,8 +2376,8 @@ int snd_hda_add_vmaster(struct hda_codec *codec, char *name,
 	if (err < 0)
 		return err;
 
-	err = map_slaves(codec, slaves, (map_slave_func_t)snd_ctl_add_slave,
-			 kctl);
+	err = map_slaves(codec, slaves, suffix,
+			 (map_slave_func_t)snd_ctl_add_slave, kctl);
 	if (err < 0)
 		return err;
 	return 0;

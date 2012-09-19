@@ -80,6 +80,8 @@ enum {
 	ALC_AUTOMUTE_MIXER,	/* mute/unmute mixer widget AMP */
 };
 
+#define MAX_VOL_NIDS	0x40
+
 struct alc_spec {
 	/* codec parameterization */
 	const struct snd_kcontrol_new *mixers[5];	/* mixer arrays */
@@ -118,8 +120,8 @@ struct alc_spec {
 	const hda_nid_t *capsrc_nids;
 	hda_nid_t dig_in_nid;		/* digital-in NID; optional */
 	hda_nid_t mixer_nid;		/* analog-mixer NID */
-	DECLARE_BITMAP(vol_ctls, 0x20 << 1);
-	DECLARE_BITMAP(sw_ctls, 0x20 << 1);
+	DECLARE_BITMAP(vol_ctls, MAX_VOL_NIDS << 1);
+	DECLARE_BITMAP(sw_ctls, MAX_VOL_NIDS << 1);
 
 	/* capture setup for dynamic dual-adc switch */
 	hda_nid_t cur_adc;
@@ -177,6 +179,7 @@ struct alc_spec {
 	unsigned int detect_lo:1;	/* Line-out detection enabled */
 	unsigned int automute_speaker_possible:1; /* there are speakers and either LO or HP */
 	unsigned int automute_lo_possible:1;	  /* there are line outs and HP */
+	unsigned int keep_vref_in_automute:1; /* Don't clear VREF in automute */
 
 	/* other flags */
 	unsigned int no_analog :1; /* digital I/O only */
@@ -495,13 +498,24 @@ static void do_automute(struct hda_codec *codec, int num_pins, hda_nid_t *pins,
 
 	for (i = 0; i < num_pins; i++) {
 		hda_nid_t nid = pins[i];
+		unsigned int val;
 		if (!nid)
 			break;
 		switch (spec->automute_mode) {
 		case ALC_AUTOMUTE_PIN:
+			/* don't reset VREF value in case it's controlling
+			 * the amp (see alc861_fixup_asus_amp_vref_0f())
+			 */
+			if (spec->keep_vref_in_automute) {
+				val = snd_hda_codec_read(codec, nid, 0,
+					AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+				val &= ~PIN_HP;
+			} else
+				val = 0;
+			val |= pin_bits;
 			snd_hda_codec_write(codec, nid, 0,
 					    AC_VERB_SET_PIN_WIDGET_CONTROL,
-					    pin_bits);
+					    val);
 			break;
 		case ALC_AUTOMUTE_AMP:
 			snd_hda_codec_amp_stereo(codec, nid, HDA_OUTPUT, 0,
@@ -1833,32 +1847,10 @@ DEFINE_CAPMIX_NOSRC(3);
 /*
  * slave controls for virtual master
  */
-static const char * const alc_slave_vols[] = {
-	"Front Playback Volume",
-	"Surround Playback Volume",
-	"Center Playback Volume",
-	"LFE Playback Volume",
-	"Side Playback Volume",
-	"Headphone Playback Volume",
-	"Speaker Playback Volume",
-	"Mono Playback Volume",
-	"Line-Out Playback Volume",
-	"PCM Playback Volume",
-	NULL,
-};
-
-static const char * const alc_slave_sws[] = {
-	"Front Playback Switch",
-	"Surround Playback Switch",
-	"Center Playback Switch",
-	"LFE Playback Switch",
-	"Side Playback Switch",
-	"Headphone Playback Switch",
-	"Speaker Playback Switch",
-	"Mono Playback Switch",
-	"IEC958 Playback Switch",
-	"Line-Out Playback Switch",
-	"PCM Playback Switch",
+static const char * const alc_slave_pfxs[] = {
+	"Front", "Surround", "Center", "LFE", "Side",
+	"Headphone", "Speaker", "Mono", "Line-Out",
+	"CLFE", "Bass Speaker", "PCM",
 	NULL,
 };
 
@@ -1949,14 +1941,16 @@ static int __alc_build_controls(struct hda_codec *codec)
 		snd_hda_set_vmaster_tlv(codec, spec->vmaster_nid,
 					HDA_OUTPUT, vmaster_tlv);
 		err = snd_hda_add_vmaster(codec, "Master Playback Volume",
-					  vmaster_tlv, alc_slave_vols);
+					  vmaster_tlv, alc_slave_pfxs,
+					  "Playback Volume");
 		if (err < 0)
 			return err;
 	}
 	if (!spec->no_analog &&
 	    !snd_hda_find_mixer_ctl(codec, "Master Playback Switch")) {
 		err = snd_hda_add_vmaster(codec, "Master Playback Switch",
-					  NULL, alc_slave_sws);
+					  NULL, alc_slave_pfxs,
+					  "Playback Switch");
 		if (err < 0)
 			return err;
 	}
@@ -2306,7 +2300,7 @@ static int alc_build_pcms(struct hda_codec *codec)
 		 "%s Analog", codec->chip_name);
 	info->name = spec->stream_name_analog;
 
-	if (spec->multiout.dac_nids > 0) {
+	if (spec->multiout.num_dacs > 0) {
 		p = spec->stream_analog_playback;
 		if (!p)
 			p = &alc_pcm_analog_playback;
@@ -3133,7 +3127,10 @@ static int alc_auto_fill_dac_nids(struct hda_codec *codec)
 static inline unsigned int get_ctl_pos(unsigned int data)
 {
 	hda_nid_t nid = get_amp_nid_(data);
-	unsigned int dir = get_amp_direction_(data);
+	unsigned int dir;
+	if (snd_BUG_ON(nid >= MAX_VOL_NIDS))
+		return 0;
+	dir = get_amp_direction_(data);
 	return (nid << 1) | dir;
 }
 
@@ -3776,7 +3773,7 @@ static void alc_auto_init_input_src(struct hda_codec *codec)
 	else
 		nums = spec->num_adc_nids;
 	for (c = 0; c < nums; c++)
-		alc_mux_select(codec, 0, spec->cur_mux[c], true);
+		alc_mux_select(codec, c, spec->cur_mux[c], true);
 }
 
 /* add mic boosts if needed */
@@ -4735,7 +4732,6 @@ enum {
 	ALC262_FIXUP_FSC_H270,
 	ALC262_FIXUP_HP_Z200,
 	ALC262_FIXUP_TYAN,
-	ALC262_FIXUP_TOSHIBA_RX1,
 	ALC262_FIXUP_LENOVO_3000,
 	ALC262_FIXUP_BENQ,
 	ALC262_FIXUP_BENQ_T31,
@@ -4763,16 +4759,6 @@ static const struct alc_fixup alc262_fixups[] = {
 		.v.pins = (const struct alc_pincfg[]) {
 			{ 0x14, 0x1993e1f0 }, /* int AUX */
 			{ }
-		}
-	},
-	[ALC262_FIXUP_TOSHIBA_RX1] = {
-		.type = ALC_FIXUP_PINS,
-		.v.pins = (const struct alc_pincfg[]) {
-			{ 0x14, 0x90170110 }, /* speaker */
-			{ 0x15, 0x0421101f }, /* HP */
-			{ 0x1a, 0x40f000f0 }, /* N/A */
-			{ 0x1b, 0x40f000f0 }, /* N/A */
-			{ 0x1e, 0x40f000f0 }, /* N/A */
 		}
 	},
 	[ALC262_FIXUP_LENOVO_3000] = {
@@ -4807,8 +4793,6 @@ static const struct snd_pci_quirk alc262_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x10cf, 0x1397, "Fujitsu", ALC262_FIXUP_BENQ),
 	SND_PCI_QUIRK(0x10cf, 0x142d, "Fujitsu Lifebook E8410", ALC262_FIXUP_BENQ),
 	SND_PCI_QUIRK(0x10f1, 0x2915, "Tyan Thunder n6650W", ALC262_FIXUP_TYAN),
-	SND_PCI_QUIRK(0x1179, 0x0001, "Toshiba dynabook SS RX1",
-		      ALC262_FIXUP_TOSHIBA_RX1),
 	SND_PCI_QUIRK(0x1734, 0x1147, "FSC Celsius H270", ALC262_FIXUP_FSC_H270),
 	SND_PCI_QUIRK(0x17aa, 0x384e, "Lenovo 3000", ALC262_FIXUP_LENOVO_3000),
 	SND_PCI_QUIRK(0x17ff, 0x0560, "Benq ED8", ALC262_FIXUP_BENQ),
@@ -5313,7 +5297,7 @@ static const struct alc_fixup alc269_fixups[] = {
 			{ }
 		},
 	},
-	[ALC269VB_FIXUP_DMIC] = {
+	[ALC269_FIXUP_DMIC] = {
 		.type = ALC_FIXUP_PINS,
 		.v.pins = (const struct alc_pincfg[]) {
 			{ 0x12, 0x99a3092f }, /* int-mic */
@@ -5377,7 +5361,6 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
 	SND_PCI_QUIRK(0x1043, 0x8330, "ASUS Eeepc P703 P900A",
 		      ALC269_FIXUP_AMIC),
 	SND_PCI_QUIRK(0x1043, 0x1013, "ASUS N61Da", ALC269_FIXUP_AMIC),
-	SND_PCI_QUIRK(0x1043, 0x1113, "ASUS N63Jn", ALC269_FIXUP_AMIC),
 	SND_PCI_QUIRK(0x1043, 0x1143, "ASUS B53f", ALC269_FIXUP_AMIC),
 	SND_PCI_QUIRK(0x1043, 0x1133, "ASUS UJ20ft", ALC269_FIXUP_AMIC),
 	SND_PCI_QUIRK(0x1043, 0x1183, "ASUS K72DR", ALC269_FIXUP_AMIC),
@@ -5589,6 +5572,25 @@ enum {
 	PINFIX_ASUS_A6RP,
 };
 
+/* On some laptops, VREF of pin 0x0f is abused for controlling the main amp */
+static void alc861_fixup_asus_amp_vref_0f(struct hda_codec *codec,
+			const struct alc_fixup *fix, int action)
+{
+	struct alc_spec *spec = codec->spec;
+	unsigned int val;
+
+	if (action != ALC_FIXUP_ACT_INIT)
+		return;
+	val = snd_hda_codec_read(codec, 0x0f, 0,
+				 AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+	if (!(val & (AC_PINCTL_IN_EN | AC_PINCTL_OUT_EN)))
+		val |= AC_PINCTL_IN_EN;
+	val |= AC_PINCTL_VREF_50;
+	snd_hda_codec_write(codec, 0x0f, 0,
+			    AC_VERB_SET_PIN_WIDGET_CONTROL, val);
+	spec->keep_vref_in_automute = 1;
+}
+
 static const struct alc_fixup alc861_fixups[] = {
 	[PINFIX_FSC_AMILO_PI1505] = {
 		.type = ALC_FIXUP_PINS,
@@ -5599,17 +5601,14 @@ static const struct alc_fixup alc861_fixups[] = {
 		}
 	},
 	[PINFIX_ASUS_A6RP] = {
-		.type = ALC_FIXUP_VERBS,
-		.v.verbs = (const struct hda_verb[]) {
-			/* node 0x0f VREF seems controlling the master output */
-			{ 0x0f, AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_VREF50 },
-			{ }
-		},
+		.type = ALC_FIXUP_FUNC,
+		.v.func = alc861_fixup_asus_amp_vref_0f,
 	},
 };
 
 static const struct snd_pci_quirk alc861_fixup_tbl[] = {
-	SND_PCI_QUIRK(0x1043, 0x1393, "ASUS A6Rp", PINFIX_ASUS_A6RP),
+	SND_PCI_QUIRK_VENDOR(0x1043, "ASUS laptop", PINFIX_ASUS_A6RP),
+	SND_PCI_QUIRK(0x1584, 0x0000, "Uniwill ECS M31EI", PINFIX_ASUS_A6RP),	
 	SND_PCI_QUIRK(0x1584, 0x2b01, "Haier W18", PINFIX_ASUS_A6RP),
 	SND_PCI_QUIRK(0x1734, 0x10c7, "FSC Amilo Pi1505", PINFIX_FSC_AMILO_PI1505),
 	{}

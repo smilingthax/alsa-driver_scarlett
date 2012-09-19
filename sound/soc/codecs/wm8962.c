@@ -96,7 +96,7 @@ static int wm8962_regulator_event_##n(struct notifier_block *nb, \
 	struct wm8962_priv *wm8962 = container_of(nb, struct wm8962_priv, \
 						  disable_nb[n]); \
 	if (event & REGULATOR_EVENT_DISABLE) { \
-		regcache_cache_only(wm8962->regmap, true);	\
+		regcache_mark_dirty(wm8962->regmap);	\
 	} \
 	return 0; \
 }
@@ -2059,7 +2059,7 @@ static int dsp2_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
-static const char *st_text[] = { "None", "Right", "Left" };
+static const char *st_text[] = { "None", "Left", "Right" };
 
 static const struct soc_enum str_enum =
 	SOC_ENUM_SINGLE(WM8962_DAC_DSP_MIXING_1, 2, 3, st_text);
@@ -2654,13 +2654,13 @@ static int wm8962_hw_params(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_FORMAT_S16_LE:
 		break;
 	case SNDRV_PCM_FORMAT_S20_3LE:
-		aif0 |= 0x40;
+		aif0 |= 0x4;
 		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
-		aif0 |= 0x80;
+		aif0 |= 0x8;
 		break;
 	case SNDRV_PCM_FORMAT_S32_LE:
-		aif0 |= 0xc0;
+		aif0 |= 0xc;
 		break;
 	default:
 		return -EINVAL;
@@ -3636,6 +3636,14 @@ static struct snd_soc_codec_driver soc_codec_dev_wm8962 = {
 	.set_pll = wm8962_set_fll,
 	.reg_cache_size	= WM8962_MAX_REGISTER,
 	.volatile_register = wm8962_soc_volatile,
+	.idle_bias_off = true,
+};
+
+/* Improve power consumption for IN4 DC measurement mode */
+static const struct reg_default wm8962_dc_measure[] = {
+	{ 0xfd, 0x1 },
+	{ 0xcc, 0x40 },
+	{ 0xfd, 0 },
 };
 
 static const struct regmap_config wm8962_regmap = {
@@ -3653,6 +3661,7 @@ static const struct regmap_config wm8962_regmap = {
 static __devinit int wm8962_i2c_probe(struct i2c_client *i2c,
 				      const struct i2c_device_id *id)
 {
+	struct wm8962_pdata *pdata = dev_get_platdata(&i2c->dev);
 	struct wm8962_priv *wm8962;
 	unsigned int reg;
 	int ret, i;
@@ -3729,6 +3738,16 @@ static __devinit int wm8962_i2c_probe(struct i2c_client *i2c,
 	if (ret < 0) {
 		dev_err(&i2c->dev, "Failed to issue reset\n");
 		goto err_regmap;
+	}
+
+	if (pdata && pdata->in4_dc_measure) {
+		ret = regmap_register_patch(wm8962->regmap,
+					    wm8962_dc_measure,
+					    ARRAY_SIZE(wm8962_dc_measure));
+		if (ret != 0)
+			dev_err(&i2c->dev,
+				"Failed to configure for DC mesurement: %d\n",
+				ret);
 	}
 
 	regcache_cache_only(wm8962->regmap, true);

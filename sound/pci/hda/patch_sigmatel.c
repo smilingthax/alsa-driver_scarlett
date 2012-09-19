@@ -1060,26 +1060,9 @@ static struct snd_kcontrol_new stac_smux_mixer = {
 	.put = stac92xx_smux_enum_put,
 };
 
-static const char * const slave_vols[] = {
-	"Front Playback Volume",
-	"Surround Playback Volume",
-	"Center Playback Volume",
-	"LFE Playback Volume",
-	"Side Playback Volume",
-	"Headphone Playback Volume",
-	"Speaker Playback Volume",
-	NULL
-};
-
-static const char * const slave_sws[] = {
-	"Front Playback Switch",
-	"Surround Playback Switch",
-	"Center Playback Switch",
-	"LFE Playback Switch",
-	"Side Playback Switch",
-	"Headphone Playback Switch",
-	"Speaker Playback Switch",
-	"IEC958 Playback Switch",
+static const char * const slave_pfxs[] = {
+	"Front", "Surround", "Center", "LFE", "Side",
+	"Headphone", "Speaker", "IEC958",
 	NULL
 };
 
@@ -1153,13 +1136,15 @@ static int stac92xx_build_controls(struct hda_codec *codec)
 		/* minimum value is actually mute */
 		vmaster_tlv[3] |= TLV_DB_SCALE_MUTE;
 		err = snd_hda_add_vmaster(codec, "Master Playback Volume",
-					  vmaster_tlv, slave_vols);
+					  vmaster_tlv, slave_pfxs,
+					  "Playback Volume");
 		if (err < 0)
 			return err;
 	}
 	if (!snd_hda_find_mixer_ctl(codec, "Master Playback Switch")) {
 		err = snd_hda_add_vmaster(codec, "Master Playback Switch",
-					  NULL, slave_sws);
+					  NULL, slave_pfxs,
+					  "Playback Switch");
 		if (err < 0)
 			return err;
 	}
@@ -4629,7 +4614,7 @@ static void stac92xx_hp_detect(struct hda_codec *codec)
 		unsigned int val = AC_PINCTL_OUT_EN | AC_PINCTL_HP_EN;
 		if (no_hp_sensing(spec, i))
 			continue;
-		if (presence)
+		if (1 /*presence*/)
 			stac92xx_set_pinctl(codec, cfg->hp_pins[i], val);
 #if 0 /* FIXME */
 /* Resetting the pinctl like below may lead to (a sort of) regressions
@@ -5078,9 +5063,9 @@ static int stac92xx_update_led_status(struct hda_codec *codec)
 				spec->gpio_dir, spec->gpio_data);
 	} else {
 		notmtd_lvl = spec->gpio_led_polarity ?
-				AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_GRD;
+				AC_PINCTL_VREF_50 : AC_PINCTL_VREF_GRD;
 		muted_lvl = spec->gpio_led_polarity ?
-				AC_PINCTL_VREF_GRD : AC_PINCTL_VREF_HIZ;
+				AC_PINCTL_VREF_GRD : AC_PINCTL_VREF_50;
 		spec->vref_led = muted ? muted_lvl : notmtd_lvl;
 		stac_vrefout_set(codec,	spec->vref_mute_led_nid,
 				 spec->vref_led);
