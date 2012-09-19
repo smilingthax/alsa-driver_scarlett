@@ -8,7 +8,7 @@ O_TARGET     := _gus.o
 list-multi   := snd-gus-lib.o snd-gusclassic.o snd-gusextreme.o \
 		snd-gusmax.o snd-interwave.o snd-interwave-stb.o
 
-export-objs  := gus_main.o
+export-objs  := gus_main.o gus_volume.o
 
 snd-gus-lib-objs := gus_main.o \
 		    gus_io.o gus_irq.o gus_timer.o \

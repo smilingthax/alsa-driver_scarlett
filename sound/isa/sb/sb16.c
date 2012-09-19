@@ -35,7 +35,10 @@
 
 #define chip_t sb_t
 
+#ifndef SNDRV_SBAWE
 EXPORT_NO_SYMBOLS;
+#endif
+
 MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
 MODULE_LICENSE("GPL");
 MODULE_CLASSES("{sound}");
