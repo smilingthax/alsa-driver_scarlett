@@ -4,6 +4,7 @@
 #
 
 TOPDIR   = .
+ALSAKERNELDIR = ../alsa-kernel
 
 ifeq (Makefile.conf,$(wildcard Makefile.conf))
 include Makefile.conf
@@ -51,9 +52,8 @@ CSUBDIRS += include test utils
 .PHONY: all
 all: compile
 
-# FIXME: the alsa-kernel might be at another position
 alsa-kernel:
-	ln -sf ../alsa-kernel alsa-kernel
+	ln -sf $(ALSAKERNELDIR) alsa-kernel
 
 include/sound: alsa-kernel
 	ln -sf ../alsa-kernel/include include/sound

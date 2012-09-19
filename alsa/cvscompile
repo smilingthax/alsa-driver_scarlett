@@ -20,7 +20,19 @@ fi
 #  pwd
 #  cd ..
 #fi
-make all-deps
+
+# check for alsa-kernel directory
+if [ -d alsa-kernel -a -f alsa-kernel/last.c ]; then
+  ALSAKERNELDIR="alsa-kernel"
+else
+  test -z $ALSAKERNELDIR && ALSAKERNELDIR=../alsa-kernel
+  if [ ! -d $ALSAKERNELDIR -o ! -f $ALSAKERNELDIR/last.c ]; then
+    echo "No alsa-kernel is found."
+    echo "Please specify the correct location via ALSAKERNELDIR environment variable."
+    exit 1
+  fi
+fi
+make ALSAKERNELDIR="$ALSAKERNELDIR" all-deps
 aclocal $ACLOCAL_FLAGS
 autoconf
 echo "./configure $args"
