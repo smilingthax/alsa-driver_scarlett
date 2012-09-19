@@ -359,6 +359,17 @@ case "$1" in
     insert snd-ice1712.o enable=1,1 cs8427_timeout=5
     restore ice1712.conf
     ;;
+  ice1724|envy24ht)
+    basic
+    insert snd-ac97-codec.o
+    insert snd-mpu401-uart.o 
+    insert snd-i2c.o
+    insert snd-cs8427.o
+    insert snd-ak4xxx-adda.o
+    insert snd-ice17xx-ak4xxx.o
+    insert snd-ice1724.o enable=1,1
+    restore ice1724.conf
+    ;;
   i8x0|ich)
     basic
     insert snd-ac97-codec.o
