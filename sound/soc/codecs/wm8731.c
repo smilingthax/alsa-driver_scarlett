@@ -435,6 +435,7 @@ static const struct _coeff_div coeff_div[] = {
 	/* 32k */
 	{12288000, 32000, 384, 0x6, 0x0, 0x0},
 	{18432000, 32000, 576, 0x6, 0x1, 0x0},
+	{12000000, 32000, 375, 0x6, 0x0, 0x1},
 
 	/* 8k */
 	{12288000, 8000, 1536, 0x3, 0x0, 0x0},
@@ -696,8 +697,8 @@ static int wm8731_init(struct snd_soc_device *socdev)
 	/* register pcms */
 	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
 	if (ret < 0) {
-		kfree(codec->reg_cache);
-		return ret;
+		printk(KERN_ERR "wm8731: failed to create pcms\n");
+		goto pcm_err;
 	}
 
 	/* power on device */
@@ -717,10 +718,17 @@ static int wm8731_init(struct snd_soc_device *socdev)
 	wm8731_add_widgets(codec);
 	ret = snd_soc_register_card(socdev);
 	if (ret < 0) {
-		snd_soc_free_pcms(socdev);
-		snd_soc_dapm_free(socdev);
+		printk(KERN_ERR "wm8731: failed to register card\n");
+		goto card_err;
 	}
 
+	return ret;
+
+card_err:
+	snd_soc_free_pcms(socdev);
+	snd_soc_dapm_free(socdev);
+pcm_err:
+	kfree(codec->reg_cache);
 	return ret;
 }
 
