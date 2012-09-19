@@ -48,6 +48,8 @@
 
 #include <trace/events/asoc.h>
 
+#define DAPM_UPDATE_STAT(widget, val) widget->dapm->card->dapm_stats.val++;
+
 /* dapm power sequences - make this per codec in the future */
 static int dapm_up_seq[] = {
 	[snd_soc_dapm_pre] = 0,
@@ -584,8 +586,8 @@ static int dapm_new_mux(struct snd_soc_dapm_widget *w)
 					name + prefix_len, prefix);
 		ret = snd_ctl_add(card, kcontrol);
 		if (ret < 0) {
-			dev_err(dapm->dev,
-				"asoc: failed to add kcontrol %s\n", w->name);
+			dev_err(dapm->dev, "failed to add kcontrol %s: %d\n",
+				w->name, ret);
 			kfree(wlist);
 			return ret;
 		}
@@ -649,6 +651,8 @@ static int is_connected_output_ep(struct snd_soc_dapm_widget *widget)
 	struct snd_soc_dapm_path *path;
 	int con = 0;
 
+	DAPM_UPDATE_STAT(widget, path_checks);
+
 	if (widget->id == snd_soc_dapm_supply)
 		return 0;
 
@@ -696,6 +700,8 @@ static int is_connected_input_ep(struct snd_soc_dapm_widget *widget)
 {
 	struct snd_soc_dapm_path *path;
 	int con = 0;
+
+	DAPM_UPDATE_STAT(widget, path_checks);
 
 	if (widget->id == snd_soc_dapm_supply)
 		return 0;
@@ -767,6 +773,8 @@ static int dapm_generic_check_power(struct snd_soc_dapm_widget *w)
 {
 	int in, out;
 
+	DAPM_UPDATE_STAT(w, power_checks);
+
 	in = is_connected_input_ep(w);
 	dapm_clear_walk(w->dapm);
 	out = is_connected_output_ep(w);
@@ -778,6 +786,8 @@ static int dapm_generic_check_power(struct snd_soc_dapm_widget *w)
 static int dapm_adc_check_power(struct snd_soc_dapm_widget *w)
 {
 	int in;
+
+	DAPM_UPDATE_STAT(w, power_checks);
 
 	if (w->active) {
 		in = is_connected_input_ep(w);
@@ -793,6 +803,8 @@ static int dapm_dac_check_power(struct snd_soc_dapm_widget *w)
 {
 	int out;
 
+	DAPM_UPDATE_STAT(w, power_checks);
+
 	if (w->active) {
 		out = is_connected_output_ep(w);
 		dapm_clear_walk(w->dapm);
@@ -807,6 +819,8 @@ static int dapm_supply_check_power(struct snd_soc_dapm_widget *w)
 {
 	struct snd_soc_dapm_path *path;
 	int power = 0;
+
+	DAPM_UPDATE_STAT(w, power_checks);
 
 	/* Check if one of our outputs is connected */
 	list_for_each_entry(path, &w->sinks, list_source) {
@@ -1177,6 +1191,65 @@ static void dapm_post_sequence_async(void *data, async_cookie_t cookie)
 	}
 }
 
+static void dapm_power_one_widget(struct snd_soc_dapm_widget *w,
+				  struct list_head *up_list,
+				  struct list_head *down_list)
+{
+	struct snd_soc_dapm_context *d;
+	int power;
+
+	switch (w->id) {
+	case snd_soc_dapm_pre:
+		dapm_seq_insert(w, down_list, false);
+		break;
+	case snd_soc_dapm_post:
+		dapm_seq_insert(w, up_list, true);
+		break;
+
+	default:
+		if (!w->power_check)
+			break;
+
+		if (!w->force)
+			power = w->power_check(w);
+		else
+			power = 1;
+
+		if (power) {
+			d = w->dapm;
+
+			/* Supplies and micbiases only bring the
+			 * context up to STANDBY as unless something
+			 * else is active and passing audio they
+			 * generally don't require full power.
+			 */
+			switch (w->id) {
+			case snd_soc_dapm_supply:
+			case snd_soc_dapm_micbias:
+				if (d->target_bias_level < SND_SOC_BIAS_STANDBY)
+					d->target_bias_level = SND_SOC_BIAS_STANDBY;
+				break;
+			default:
+				d->target_bias_level = SND_SOC_BIAS_ON;
+				break;
+			}
+		}
+
+		if (w->power == power)
+			break;
+
+		trace_snd_soc_dapm_widget_power(w, power);
+
+		if (power)
+			dapm_seq_insert(w, up_list, true);
+		else
+			dapm_seq_insert(w, down_list, false);
+
+		w->power = power;
+		break;
+	}
+}
+
 /*
  * Scan each dapm widget for complete audio path.
  * A complete path is a route that has valid endpoints i.e.:-
@@ -1195,7 +1268,6 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 	LIST_HEAD(down_list);
 	LIST_HEAD(async_domain);
 	enum snd_soc_bias_level bias;
-	int power;
 
 	trace_snd_soc_dapm_start(card);
 
@@ -1208,61 +1280,13 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 		}
 	}
 
+	memset(&card->dapm_stats, 0, sizeof(card->dapm_stats));
+
 	/* Check which widgets we need to power and store them in
 	 * lists indicating if they should be powered up or down.
 	 */
 	list_for_each_entry(w, &card->widgets, list) {
-		switch (w->id) {
-		case snd_soc_dapm_pre:
-			dapm_seq_insert(w, &down_list, false);
-			break;
-		case snd_soc_dapm_post:
-			dapm_seq_insert(w, &up_list, true);
-			break;
-
-		default:
-			if (!w->power_check)
-				continue;
-
-			if (!w->force)
-				power = w->power_check(w);
-			else
-				power = 1;
-
-			if (power) {
-				d = w->dapm;
-
-				/* Supplies and micbiases only bring
-				 * the context up to STANDBY as unless
-				 * something else is active and
-				 * passing audio they generally don't
-				 * require full power.
-				 */
-				switch (w->id) {
-				case snd_soc_dapm_supply:
-				case snd_soc_dapm_micbias:
-					if (d->target_bias_level < SND_SOC_BIAS_STANDBY)
-						d->target_bias_level = SND_SOC_BIAS_STANDBY;
-					break;
-				default:
-					d->target_bias_level = SND_SOC_BIAS_ON;
-					break;
-				}
-			}
-
-			if (w->power == power)
-				continue;
-
-			trace_snd_soc_dapm_widget_power(w, power);
-
-			if (power)
-				dapm_seq_insert(w, &up_list, true);
-			else
-				dapm_seq_insert(w, &down_list, false);
-
-			w->power = power;
-			break;
-		}
+		dapm_power_one_widget(w, &up_list, &down_list);
 	}
 
 	/* If there are no DAPM widgets then try to figure out power from the
@@ -1299,6 +1323,7 @@ static int dapm_power_widgets(struct snd_soc_dapm_context *dapm, int event)
 	list_for_each_entry(d, &card->dapm_list, list)
 		d->target_bias_level = bias;
 
+	trace_snd_soc_dapm_walk_done(card);
 
 	/* Run all the bias changes in parallel */
 	list_for_each_entry(d, &dapm->card->dapm_list, list)
