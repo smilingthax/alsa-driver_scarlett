@@ -23,7 +23,6 @@ Exported functions:
 void HPI_6000( HPI_MESSAGE *phm, HPI_RESPONSE *phr )
 
 #defines
-USE_ZLIB       enable use of Z compressed DSP code files
 HIDE_PCI_ASSERTS to show the PCI asserts
 PROFILE_DSP2 get profile data from DSP2 if present (instead of DSP 1)
 
@@ -78,7 +77,6 @@ typedef struct {
 } DSP_OBJ;
 
 typedef struct {
-
 	__iomem u32 *dw2040_HPICSR;
 	__iomem u32 *dw2040_HPIDSP;
 
@@ -92,13 +90,8 @@ typedef struct {
 	u16 wNumErrors;		//counts number of consecutive communications errors reported from DSP
 	u16 wDspCrashed;	// when '1' DSP has crashed/died/OTL
 
-	u16 wHasControlCache;
 	tHPIControlCacheSingle aControlCache[HPI_NMIXER_CONTROLS];
 } HPI_HW_OBJ;
-
-#if defined ( HPI_OS_WDM ) && ! defined ( HPI_WDM_MONOLITHIC ) && defined ( DEBUG )
-NTSTATUS ASIHPIW_LogBootError(char *pMsg);
-#endif
 
 ////////////////////////////////////////////////////////////////////////////
 static u16 Hpi6000_DspBlockWrite32(HPI_ADAPTER_OBJ * pao, u16 wDspIndex,

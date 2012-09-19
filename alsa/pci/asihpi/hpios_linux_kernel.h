@@ -21,7 +21,6 @@ HPI Operating System Specific macros for Linux
 (C) Copyright AudioScience Inc. 1997-2003
 ******************************************************************************/
 #define HPI_OS_DEFINED
-#define HPI_DEBUG_VERBOSE
 #define HPI_KERNEL_MODE
 
 #ifdef MODVERSIONS
@@ -158,9 +157,18 @@ static inline void cond_unlock(HPIOS_SPINLOCK * l)
 #define HpiOs_Alistlock_Lock(obj, f )   spin_lock( &((obj)->aListLock.lock) )
 #define HpiOs_Alistlock_UnLock(obj, f ) spin_unlock( &((obj)->aListLock.lock) )
 
-typedef struct {
+static inline void *HpiOs_MemAlloc(u32 dwSize)
+{
+	return kmalloc(dwSize, GFP_KERNEL);
+}
 
-/* Spinlock prevent contention for one card between user prog and alsa driver */
+static inline void HpiOs_MemFree(void *ptr)
+{
+	kfree(ptr);
+}
+
+typedef struct {
+/* Spinlock prevents contention for one card between user prog and alsa driver */
 	spinlock_t spinlock;
 	unsigned long flags;
 
@@ -173,6 +181,7 @@ typedef struct {
 	void *snd_card_asihpi;
 
 	char *pBuffer;
+	struct pci_dev *pci;
 	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
 
 } adapter_t;

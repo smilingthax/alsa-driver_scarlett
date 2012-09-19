@@ -29,7 +29,7 @@ int hpiDebugLevel = HPI_DEBUG_LEVEL_DEFAULT;
 
 void HPI_DebugInit(void)
 {
-	HPIOS_DEBUG_PRINTF("Debug Start\n");
+	HPIOS_DEBUG_PRINTF(DBG_TEXT("Debug Start\n"));
 }
 
 int HPI_DebugLevelSet(int level)
@@ -50,13 +50,12 @@ int HPI_DebugLevelGet(void)
 /* implies OS has no printf-like function */
 #include <stdarg.h>
 
-void hpi_debug_printf(char *fmt, ...)
+void hpi_debug_printf(DBG_CHAR * fmt, ...)
 {
 	va_list arglist;
-	char buffer[256];
-	va_start(arglist, fmt);
+	DBG_CHAR buffer[128];
 
-// the following may work only for Windows kernel?
+	va_start(arglist, fmt);
 
 	if (buffer[0])
 		HPIOS_DEBUG_PRINT(buffer);
@@ -85,7 +84,7 @@ make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
     make_treenode_from_array(hpi_mixer_strings, HPI_MIXER_STRINGS)
     make_treenode_from_array(hpi_node_strings,
 			     {
-			     "NODE is invalid object"})
+			     DBG_TEXT("NODE is invalid object")})
 
     make_treenode_from_array(hpi_control_strings, HPI_CONTROL_STRINGS)
     make_treenode_from_array(hpi_nvmemory_strings, HPI_OBJ_STRINGS)
@@ -114,17 +113,17 @@ make_treenode_from_array(hpi_subsys_strings, HPI_SUBSYS_STRINGS)
 //Not used anywhere???
     make_treenode_from_array(hpi_obj_strings, HPI_OBJ_STRINGS)
 
-static char *hpi_object_string(unsigned int object)
+static DBG_CHAR *hpi_object_string(unsigned int object)
 {
 	if (object == 0 || object == HPI_OBJ_NODE
 	    || object > hpi_obj_strings.numElements)
-		return "Invalid object";
+		return DBG_TEXT("Invalid object");
 
-	return get_treenode_elem(&hpi_obj_strings, object - 1, char *);
+	return get_treenode_elem(&hpi_obj_strings, object - 1, DBG_CHAR *);
 }
 #endif
 
-static char *hpi_function_string(unsigned int function)
+static DBG_CHAR *hpi_function_string(unsigned int function)
 {
 	unsigned int object;
 	treenode_t *tmp;
@@ -134,18 +133,18 @@ static char *hpi_function_string(unsigned int function)
 
 	if (object == 0 || object == HPI_OBJ_NODE
 	    || object > hpi_function_strings.numElements)
-		return "Invalid object";
+		return DBG_TEXT("Invalid object");
 
 	tmp =
 	    get_treenode_elem(&hpi_function_strings, object - 1, treenode_t *);
 
 	if (function == 0 || function > tmp->numElements)
-		return "Invalid function";
+		return DBG_TEXT("Invalid function");
 
-	return get_treenode_elem(tmp, function - 1, char *);
+	return get_treenode_elem(tmp, function - 1, DBG_CHAR *);
 }
 
-void hpi_debug_message(HPI_MESSAGE * phm)
+void hpi_debug_message(HPI_MESSAGE * phm, DBG_CHAR * szFileline)
 {
 	if (phm) {
 		if ((phm->wObject <= HPI_OBJ_MAXINDEX) && phm->wObject) {
@@ -165,27 +164,30 @@ void hpi_debug_message(HPI_MESSAGE * phm)
 			default:
 				break;
 			}
-			HPIOS_DEBUG_PRINTF("Adapter #%d %s #%d \n",
-					   phm->wAdapterIndex,
+			HPIOS_DEBUG_PRINTF(DBG_TEXT
+					   ("%s Adapter #%d Fn 0x%03X %s Index #%d \n"),
+					   szFileline, phm->wAdapterIndex,
+					   phm->wFunction,
 					   hpi_function_string(phm->wFunction),
 					   wIndex);
 		} else {
-			HPIOS_DEBUG_PRINTF("Adap=%d, Invalid Obj=%d, Func=%d\n",
+			HPIOS_DEBUG_PRINTF(DBG_TEXT
+					   ("Adap=%d, Invalid Obj=%d, Func=%d\n"),
 					   phm->wAdapterIndex, phm->wObject,
 					   phm->wFunction);
 		}
 	} else
-		HPIOS_DEBUG_PRINTF
-		    ("NULL message pointer to hpi_debug_message!\n");
+		HPIOS_DEBUG_PRINTF(DBG_TEXT
+				   ("NULL message pointer to hpi_debug_message!\n"));
 }
 
 #if 0
 void hpi_debug_response(HPI_RESPONSE * phr)
 {
 	if (phr->wError)
-		HPIOS_DEBUG_PRINTF("Error %d\n", phr->wError);
+		HPIOS_DEBUG_PRINTF(DBG_TEXT("Error %d\n"), phr->wError);
 	else {
-		HPIOS_DEBUG_PRINTF("OK\n");
+		HPIOS_DEBUG_PRINTF(DBG_TEXT("OK\n"));
 	}
 }
 #endif
@@ -203,12 +205,13 @@ void hpi_debug_data(u16 * pdata, u32 len)
 		lines = 8;
 
 	for (i = 0, j = 0; j < lines; j++) {
-		HPIOS_DEBUG_PRINTF(HPI_DEBUG_FLAG_VERBOSE "%p:", (pdata + i));
+//HPIOS_DEBUG_PRINTF(DBG_TEXT(HPI_DEBUG_FLAG_VERBOSE "%p:"), (pdata + i)); // doesn't work for WIN32_USER
+		HPIOS_DEBUG_PRINTF(DBG_TEXT("%p:"), (pdata + i));
 
 		for (k = 0; k < cols && i < len; i++, k++) {
-			HPIOS_DEBUG_PRINTF("%s%04x", k == 0 ? "" : " ",
-					   pdata[i]);
+			HPIOS_DEBUG_PRINTF(DBG_TEXT("%s%04x"),
+					   k == 0 ? "" : " ", pdata[i]);
 		}
-		HPIOS_DEBUG_PRINTF("\n");
+		HPIOS_DEBUG_PRINTF(DBG_TEXT("\n"));
 	}
 }

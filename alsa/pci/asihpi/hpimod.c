@@ -20,15 +20,14 @@
 Linux HPI driver module
 *******************************************************************************/
 #define SOURCEFILE_NAME "hpimod.c"
-#define HPIMOD_PCI_ENABLE_DEV 0
 
 #include "hpi.h"
 #include "hpidebug.h"
 #include "hpimsgx.h"
 #include <linux/slab.h>
-#include <linux/module.h>	// MODULE_
-#include <linux/pci.h>		// pci_find_device
-#include <linux/interrupt.h>	// local_bh_*
+#include <linux/module.h>
+#include <linux/pci.h>
+#include <linux/interrupt.h>
 #include <linux/version.h>
 #include <asm/uaccess.h>
 #include <linux/stringify.h>
@@ -36,56 +35,11 @@ Linux HPI driver module
 int snd_asihpi_bind(adapter_t * hpi_card);
 void snd_asihpi_unbind(adapter_t * hpi_card);
 
-/* If this driver is only going to be accessed via the ioctl (i.e. not from ALSA driver)
-   then spinlocks are not needed.
-*/
-#ifndef USE_SPINLOCK
-#   define USE_SPINLOCK 1
-#endif
-
-/*  copy_to_user and friends can be used inside semaphore, but not inside spinlock
-    in which case, data must be copied to a local buffer outside the spinlock
-*/
-#ifdef HPI_LOCKING
-#define HPIMOD_COPY_TO_LOCAL 1
-#endif
-
-#if (USE_SPINLOCK) && ! defined (HPI_LOCKING)
-/* HPI_LOCKING causes spinlocks in this file to be defined to noops,
- because locking is down inside hpi
-*/
-#   define HPIMOD_COPY_TO_LOCAL 1
-#    define SPIN_LOCK_INIT spin_lock_init
-#    define SPIN_LOCK_IRQSAVE spin_lock_irqsave
-#   define SPIN_UNLOCK_IRQRESTORE spin_unlock_irqrestore
-#else
-#    define SPIN_LOCK_INIT(a)
-#   define SPIN_LOCK_IRQSAVE(a,b)
-#   define SPIN_UNLOCK_IRQRESTORE(a,b)
-#   ifndef HPIMOD_COPY_TO_LOCAL
-#      define HPIMOD_COPY_TO_LOCAL 0
-#   endif
-#endif
-
 #ifndef HPIMOD_DEFAULT_BUF_SIZE
 #   define HPIMOD_DEFAULT_BUF_SIZE 192000
 #endif
 
-#ifndef KERNEL_VERSION
-#  define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
-#endif
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0))
-# if (USE_SPINLOCK)
-#  error "ALSA (requiring spinlocks) not currently supported on Linux version < 2.4.0 - please recompile without ALSA support"
-# endif
-#endif
-
-#ifdef MODULE_LICENSE
-// See the ``GPL LICENSED MODULES AND SYMBOLS'' section in the ``insmod'' manpage.
 MODULE_LICENSE("GPL");
-#endif
-
 MODULE_AUTHOR("AudioScience <support@audioscience.com>");
 MODULE_DESCRIPTION("AudioScience HPI");
 
@@ -103,24 +57,17 @@ MODULE_FIRMWARE("asihpi/dsp8900.bin");
 #endif
 
 static int major = 0;
-#if HPIMOD_COPY_TO_LOCAL
 static int bufsize = HPIMOD_DEFAULT_BUF_SIZE;
-#endif
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0))
 /* old style parameters */
 MODULE_PARM(major, "i");
 MODULE_PARM(hpiDebugLevel, "0-6i");
-
-#if HPIMOD_COPY_TO_LOCAL
 MODULE_PARM(bufsize, "i");
-#endif
 
 #else				/* new style params */
 module_param(major, int, S_IRUGO);
-#if HPIMOD_COPY_TO_LOCAL
 module_param(bufsize, int, S_IRUGO);
-#endif
 /* Allow the debug level to be changed after module load.
  E.g.   echo 2 > /sys/module/asihpi/parameters/hpiDebugLevel
 */
@@ -129,24 +76,13 @@ module_param(hpiDebugLevel, int, S_IRUGO | S_IWUSR);
 
 MODULE_PARM_DESC(major, "Device major number");
 MODULE_PARM_DESC(hpiDebugLevel,
-		 "Debug level for Audioscience HPI 0=none 7=verbose");
+		 "Debug level for Audioscience HPI 0=none 6=verbose");
 MODULE_PARM_DESC(bufsize,
 		 "Buffer size to allocate for data transfer from HPI ioctl ");
-
-static int hpi_init(void);
-/* Spinlocks (interrupt disabling on uniprocessor) supposed to prevent contention within and between ALSA
-   or other kernel interrupt contexts and single userspace HPI program that made it past the semaphore.
-   These are also needed when multiple ALSA streams are running
-*/
 
 /* List of adapters found */
 static int adapter_count = 0;
 static adapter_t adapters[HPI_MAX_ADAPTERS];
-
-#define HOWNER_KERNEL ((void *)-1)
-
-/* Ludwig Schwardt suggests using current->tgid instead of *file as the owner
-identifier in issue #340 */
 
 /* Wrapper function to HPI_Message to enable dumping of the
    message and response types.
@@ -156,20 +92,6 @@ static void HPI_MessageF(HPI_MESSAGE * phm,
 {
 	int nAdapter = phm->wAdapterIndex;
 
-#if 0
-	printk(KERN_INFO "HPI_MessageF ");
-	if (in_interrupt())
-		printk("in interrupt ");
-	if (in_softirq())
-		printk("in softirq ");
-	if (in_irq())
-		printk("in irq ");
-	if (in_atomic())
-		printk("in atomic ");
-	if (irqs_disabled())
-		printk("interrupts disabled ");
-	printk("\n");
-#endif
 	if ((nAdapter >= HPI_MAX_ADAPTERS || nAdapter < 0) &&
 	    (phm->wObject != HPI_OBJ_SUBSYSTEM)) {
 		phr->wError = HPI_ERROR_INVALID_OBJ_INDEX;
@@ -178,6 +100,7 @@ static void HPI_MessageF(HPI_MESSAGE * phm,
 	}
 }
 
+#define HOWNER_KERNEL ((void *)-1)
 /* This is called from hpifunc.c functions, called by ALSA (or other kernel process)
    In this case there is no file descriptor available for the message cache code
 */
@@ -193,8 +116,7 @@ static int hpi_open(struct inode *inode, struct file *file)
 	if (minor > 0)
 		return -ENODEV;
 
-//      HPI_DEBUG_LOG2(INFO,"hpi_open file %p, pid %d\n", file, current->pid);
-
+/*	HPI_DEBUG_LOG2(INFO,"hpi_open file %p, pid %d\n", file, current->pid); */
 	return 0;
 }
 
@@ -203,8 +125,8 @@ static int hpi_release(struct inode *inode, struct file *file)
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 
-//      HPI_DEBUG_LOG2(INFO,"hpi_release file %p, pid %d\n", file, current->pid);
-	//close the subsystem just in case the application forgot to..
+/*	HPI_DEBUG_LOG2(INFO,"hpi_release file %p, pid %d\n", file, current->pid); */
+	/* close the subsystem just in case the application forgot to. */
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CLOSE);
 	HPI_MessageEx(&hm, &hr, file);
 	return 0;
@@ -225,9 +147,6 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 	u32 uncopied_bytes;
 	adapter_t *pa;
 
-#if  (HPIMOD_COPY_TO_LOCAL!=1)
-	mm_segment_t fs;
-#endif
 	if (cmd != HPI_IOCTL_LINUX)
 		return -EINVAL;
 
@@ -255,7 +174,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 
 	pa = &adapters[hm.wAdapterIndex];
 	hr.wSize = 0;
-	// Response gets filled in either by copy from cache, or by HPI_Message()
+	/* Response gets filled in either by copy from cache, or by HPI_Message() */
 	{
 		/* Dig out any pointers embedded in the message.  */
 		u16 __user *ptr = NULL;
@@ -269,9 +188,7 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			/* Yes, sparse, this is correct. */
 			ptr = (u16 __user *) hm.u.d.u.Data.pbData;
 			size = hm.u.d.u.Data.dwDataSize;
-			//printk("HPI data size %ld\n",size);
 
-#if (HPIMOD_COPY_TO_LOCAL)
 			hm.u.d.u.Data.pbData = pa->pBuffer;
 			/*
 			   if (size > bufsize) {
@@ -279,9 +196,8 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			   hm.u.d.u.Data.dwDataSize = size;
 			   }
 			 */
-#endif
 
-			if (hm.wFunction == HPI_ISTREAM_READ)	// from card, WRITE to user mem
+			if (hm.wFunction == HPI_ISTREAM_READ)	/* from card, WRITE to user mem */
 				wrflag = 1;
 			else
 				wrflag = 0;
@@ -298,20 +214,6 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			if (down_interruptible(&adapters[nAdapter].sem))
 				return (-EINTR);
 
-#if  (HPIMOD_COPY_TO_LOCAL!=1)
-			fs = get_fs();
-			set_fs(get_ds());
-			if (!access_ok
-			    (wrflag ? VERIFY_WRITE : VERIFY_READ, ptr, size)) {
-				set_fs(fs);
-				up(&adapters[nAdapter].sem);
-				return -EFAULT;
-			}
-
-			HPI_MessageF(&hm, &hr, file);
-
-			set_fs(fs);
-#else				//  HPIMOD_COPY_TO_LOCAL==1
 			if (wrflag == 0) {
 
 				if (size > bufsize) {
@@ -334,8 +236,6 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 			HPI_MessageF(&hm, &hr, file);
 
 			if (wrflag == 1) {
-				//u32 uncopied_bytes;
-
 				if (size > bufsize) {
 					up(&adapters[nAdapter].sem);
 					HPI_DEBUG_LOG2(WARNING,
@@ -352,13 +252,12 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 						       uncopied_bytes, size);
 				}
 			}
-#endif				// else HPIMOD_COPY_TO_LOCAL==1
 
 			up(&adapters[nAdapter].sem);
 		}
 	}
 
-	//on return response size must be set
+	/* on return response size must be set */
 	if (!hr.wSize)
 		return -EFAULT;
 
@@ -369,25 +268,6 @@ static int hpi_ioctl(struct inode *inode, struct file *file,
 	return 0;
 }
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,4,0))
-static struct file_operations hpi_fops = {
-	NULL,			/* llseek */
-	NULL,			/* read */
-	NULL,			/* write */
-	NULL,			/* readdir */
-	NULL,			/* poll */
-	hpi_ioctl,		/* ioctl */
-	NULL,			/* mmap */
-	hpi_open,		/* open */
-	NULL,			/* flush */
-	hpi_release,		/* release */
-	NULL,			/* fsync */
-	NULL,			/* fasync */
-	NULL,			/* check_media_change */
-	NULL,			/* revalidate */
-	NULL			/* lock */
-};
-#else
 static struct file_operations hpi_fops = {
 	.owner = THIS_MODULE,
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,11)
@@ -398,27 +278,6 @@ static struct file_operations hpi_fops = {
 	.open = hpi_open,
 	.release = hpi_release
 };
-#endif
-
-void HpiOs_LockedMem_FreeAll(void);
-
-static int hpi_init(void)
-{
-	int i;
-	/*  30 APRIL 2001: [AGE and REN]: This compiles cleanly on all
-	   of 2.2.14-5.0, 2.2.17 and 2.4.4 versions of the kernel. In
-	   pre-2.4 versions, init_MUTEX is a macro. In 2.4, it is an
-	   inline function. In either case, it portably initializes
-	   the mutex.
-	 */
-
-	for (i = 0; i < HPI_MAX_ADAPTERS; i++) {
-		SPIN_LOCK_INIT(&adapters[i].spinlock);
-		init_MUTEX(&adapters[i].sem);
-	}
-
-	return 0;
-}
 
 static int __devinit adapter_probe(struct pci_dev *pci_dev,
 				   const struct pci_device_id *pci_id)
@@ -432,14 +291,6 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 
 	memset(&adapter, 0, sizeof(adapter));
 
-#if HPIMOD_PCI_ENABLE_DEV
-	if ((err = pci_enable_device(pci_dev)) < 0)
-		return err;
-	pci_set_master(pci_dev);
-	if ((err = pci_request_regions(pci_dev, "asihpi")) < 0)
-		return err;
-#endif
-
 	printk(KERN_DEBUG "Probe PCI device (%04x:%04x,%04x:%04x,%04x)\n",
 	       pci_dev->vendor, pci_dev->device, pci_dev->subsystem_vendor,
 	       pci_dev->subsystem_device, pci_dev->devfn);
@@ -452,15 +303,19 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER);
 	HPI_InitResponse(&hr, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_CREATE_ADAPTER,
 			 HPI_ERROR_PROCESSING_MESSAGE);
-	// set the adapter index to an invalid value
-	hm.wAdapterIndex = -1;
 
-	// fill in HPI_PCI information from kernel provided information
+	hm.wAdapterIndex = -1;	/* an invalid index */
+
+	/* fill in HPI_PCI information from kernel provided information */
+	adapter.pci = pci_dev;
+
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
 		HPI_DEBUG_LOG4(DEBUG, "Resource %d %s %llx-%llx\n", idx,
 			       pci_dev->resource[idx].name,
-			       (unsigned long long)pci_resource_start(pci_dev, idx),
-			       (unsigned long long)pci_resource_end(pci_dev, idx));
+			       (unsigned long long)pci_resource_start(pci_dev,
+								      idx),
+			       (unsigned long long)pci_resource_end(pci_dev,
+								    idx));
 
 		memlen = pci_resource_len(pci_dev, idx);
 		if (memlen) {
@@ -469,7 +324,7 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 			if (!adapter.apRemappedMemBase[idx]) {
 				HPI_DEBUG_LOG0(ERROR,
 					       "ioremap failed, aborting\n");
-				//unmap previously mapped pci mem space
+				/* unmap previously mapped pci mem space */
 				goto err;
 			}
 		} else
@@ -490,17 +345,15 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 	hm.u.s.Resource.wBusType = HPI_BUS_PCI;
 	hm.u.s.Resource.r.Pci = &Pci;
 
-	//call CreateAdapterObject on the relevant hpi module
+	/* call CreateAdapterObject on the relevant hpi module */
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
-#if (HPIMOD_COPY_TO_LOCAL)
 	if ((adapter.pBuffer = vmalloc(bufsize)) == NULL) {
 		HPI_DEBUG_LOG1(ERROR,
 			       "HPI could not allocate kernel buffer size %d\n",
 			       bufsize);
 		goto err;
 	}
-#endif
 
 	if (hr.wError == 0) {
 		adapter.wAdapterIndex = hr.u.s.wAdapterIndex;
@@ -510,28 +363,31 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 		if (err)
 			goto err;
 
-		printk(KERN_INFO "Probe found adapter ASI%04X HPI index #%d.\n",
-		       hr.u.s.awAdapterList[hr.u.s.wAdapterIndex],
-		       hr.u.s.wAdapterIndex);
-
+		adapter.snd_card_asihpi = NULL;
+		/* WARNING can't init sem in 'adapter' and then copy it to adapters[] ?!?! */
 		adapters[hr.u.s.wAdapterIndex] = adapter;
-		SPIN_LOCK_INIT(&adapters[hr.u.s.wAdapterIndex].spinlock);
 		init_MUTEX(&adapters[hr.u.s.wAdapterIndex].sem);
-
-		adapters[hr.u.s.wAdapterIndex].snd_card_asihpi = NULL;
 #ifdef ALSA_BUILD
-		if (snd_asihpi_bind(&adapters[hr.u.s.wAdapterIndex]))
+		if (snd_asihpi_bind(&adapters[hr.u.s.wAdapterIndex])) {
+			HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM,
+					HPI_SUBSYS_DELETE_ADAPTER);
+			hm.wAdapterIndex = adapter.wAdapterIndex;
+			HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 			goto err;
+		}
 #endif
 
 		pci_set_drvdata(pci_dev, &adapters[hr.u.s.wAdapterIndex]);
 		adapter_count++;
 
+		printk(KERN_INFO "Probe found adapter ASI%04X HPI index #%d.\n",
+		       hr.u.s.awAdapterList[hr.u.s.wAdapterIndex],
+		       hr.u.s.wAdapterIndex);
+
 		return 0;
 	}
 
       err:
-	// missing code to delete adapter if error happens after creation (unlikely)
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
 		if (adapter.apRemappedMemBase[idx]) {
 			iounmap(adapter.apRemappedMemBase[idx]);
@@ -539,15 +395,10 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 		}
 	}
 
-#if (HPIMOD_COPY_TO_LOCAL)
 	if (adapter.pBuffer)
 		vfree(adapter.pBuffer);
-#endif
 
 	HPI_DEBUG_LOG0(ERROR, "adapter_probe failed\n");
-#if HPIMOD_PCI_ENABLE_DEV
-	pci_disable_device(pci_dev);
-#endif
 	return -ENODEV;
 }
 
@@ -568,7 +419,7 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 	hm.wAdapterIndex = pa->wAdapterIndex;
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
-	// unmap PCI memory space, mapped during device init.
+	/* unmap PCI memory space, mapped during device init. */
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
 		if (pa->apRemappedMemBase[idx]) {
 			iounmap(pa->apRemappedMemBase[idx]);
@@ -576,24 +427,19 @@ static void __devexit adapter_remove(struct pci_dev *pci_dev)
 		}
 	}
 
-#if (HPIMOD_COPY_TO_LOCAL)
 	if (pa->pBuffer)
 		vfree(pa->pBuffer);
-#endif
 
 	pci_set_drvdata(pci_dev, NULL);
 	printk(KERN_INFO
 	       "PCI device (%04x:%04x,%04x:%04x,%04x), HPI index # %d, removed.\n",
 	       pci_dev->vendor, pci_dev->device, pci_dev->subsystem_vendor,
 	       pci_dev->subsystem_device, pci_dev->devfn, pa->wAdapterIndex);
-#if HPIMOD_PCI_ENABLE_DEV
-	pci_release_regions(pci_dev);
-	pci_disable_device(pci_dev);
-#endif
 }
 
-// Module device table expects ints not pointers
-// Avoid having to cast the function pointers to long int
+/* Module device table expects ints not pointers
+ * Avoid having to cast the function pointers to long int
+ */
 #define HPI_4000 0x4000
 #define HPI_6000 0x6000
 #define HPI_6205 0x6205
@@ -611,6 +457,8 @@ static struct pci_driver asihpi_pci_driver = {
 	.remove = __devexit_p(adapter_remove),
 };
 
+static struct class *asihpi_class;
+
 static void hpimod_cleanup(int stage)
 {
 
@@ -620,6 +468,9 @@ static void hpimod_cleanup(int stage)
 	HPI_DEBUG_LOG0(DEBUG, "cleanup_module\n");
 
 	switch (stage) {
+	case 3:
+		class_device_destroy(asihpi_class, MKDEV(major, 0));
+		class_destroy(asihpi_class);
 	case 2:
 		unregister_chrdev(major, "asihpi");
 	case 1:
@@ -633,23 +484,23 @@ static void hpimod_cleanup(int stage)
 
 static void __exit hpimod_exit(void)
 {
-	hpimod_cleanup(2);
+	hpimod_cleanup(3);
 }
 
 static int __init hpimod_init(void)
 {
-	int status;
+	int status, i;
 	HPI_MESSAGE hm;
 	HPI_RESPONSE hr;
 	u32 dwVersion = 0;
 
-	hpi_init();
+	for (i = 0; i < HPI_MAX_ADAPTERS; i++) {
+		init_MUTEX(&adapters[i].sem);
+	}
 
 	/* HPI_DebugLevelSet(debug); now set directly as module param */
-	printk(KERN_INFO "ASIHPI driver %s debug=%d ",
+	printk(KERN_INFO "ASIHPI driver %s debug=%d \n",
 	       __stringify(DRIVER_VERSION), hpiDebugLevel);
-	printk("Spinlock on=%d Local copy=%d\n", USE_SPINLOCK,
-	       HPIMOD_COPY_TO_LOCAL);
 	HPI_SubSysGetVersionEx(NULL, &dwVersion);
 	printk(KERN_INFO "SubSys Version=%d.%02d.%02d\n",
 	       HPI_VER_MAJOR(dwVersion),
@@ -658,7 +509,7 @@ static int __init hpimod_init(void)
 	HPI_InitMessage(&hm, HPI_OBJ_SUBSYSTEM, HPI_SUBSYS_DRIVER_LOAD);
 	HPI_MessageEx(&hm, &hr, HOWNER_KERNEL);
 
-	// old version of below fn returned +ve number of devices, -ve error
+	/* old version of below fn returned +ve number of devices, -ve error */
 	if ((status = pci_register_driver(&asihpi_pci_driver)) < 0) {
 		HPI_DEBUG_LOG1(ERROR, "HPI: pci_register_driver returned %d\n",
 			       status);
@@ -683,9 +534,19 @@ static int __init hpimod_init(void)
 		return -EIO;
 	}
 
-	if (!major)		// Use dynamically allocated major number.
+	if (!major)		/* Use dynamically allocated major number. */
 		major = status;
 
+	/* would like to create device in "sound" class (usually created by alsa)
+	   but don't know how */
+	asihpi_class = class_create(THIS_MODULE, "asihpi");
+	if (IS_ERR(asihpi_class)) {
+		printk(KERN_ERR "Error creating asihpi class.\n");
+		hpimod_cleanup(2);
+	} else {
+		class_device_create(asihpi_class, NULL, MKDEV(major, 0), NULL,
+				    "asihpi");
+	}
 	return 0;
 
 }
@@ -693,7 +554,7 @@ static int __init hpimod_init(void)
 module_init(hpimod_init)
     module_exit(hpimod_exit)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0))
-// exported symbols for radio-asihpi
+/* exported symbols for radio-asihpi */
     EXPORT_SYMBOL(HPI_Message);
 #endif
 
