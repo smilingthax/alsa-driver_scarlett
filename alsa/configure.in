@@ -91,19 +91,27 @@ AC_ARG_WITH(build,
 CONFIG_SND_KERNELBUILD="$kernelbuild"
 AC_MSG_RESULT($kernelbuild)
 
-dnl Check for kernel version...
-AC_MSG_CHECKING(for kernel version)
-if ! test -r $CONFIG_SND_KERNELDIR/include/linux/version.h; then
-  if test -z "$kernelbuild" -o ! -f $kernelbuild/include/linux/version.h; then
-  cat << EOF
-The file $CONFIG_SND_KERNELDIR/include/linux/version.h does not exist.
-Please, install the package with full kernel sources for your distribution
+AC_DEFUN([CHECK_REQUIRED_KERNEL_HEADER], [
+  AC_MSG_CHECKING(for kernel $1)
+  if ! test -r $CONFIG_SND_KERNELDIR/include/$1; then
+    if test -z "$kernelbuild" -o ! -f $kernelbuild/include/$1; then
+      AC_MSG_RESULT(no)
+      cat << EOF
+The file $CONFIG_SND_KERNELDIR/include/$1 does not exist.
+Please install the package with full kernel sources for your distribution
 or use --with-kernel=dir option to specify another directory with kernel
 sources (default is $DEFAULT_KERNEL_DIR).
 EOF
-  exit 1
+      exit 1
+    fi
   fi
-fi
+  AC_MSG_RESULT(yes)
+])
+CHECK_REQUIRED_KERNEL_HEADER([linux/version.h])
+CHECK_REQUIRED_KERNEL_HEADER([linux/autoconf.h])
+
+dnl Check for kernel version...
+AC_MSG_CHECKING(for kernel version)
 KERNEL_INC="-I$CONFIG_SND_KERNELDIR/include"
 MAKE_ADDS=""
 if test -n "$kernelbuild"; then
@@ -598,6 +606,7 @@ CHECK_KERNEL_HEADER(linux/dma-mapping.h)
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
 CHECK_KERNEL_HEADER(linux/device.h)
 CHECK_KERNEL_HEADER(linux/jiffies.h, [#include <linux/sched.h>
+#include <linux/delay.h>
 ])
 CHECK_KERNEL_HEADER(linux/compat.h, [#include \"compat_64.h\"
 ])
@@ -1613,10 +1622,10 @@ fi
 
 dnl Check for msecs_to_jiffies
 AC_MSG_CHECKING(for msecs_to_jiffies)
-msleep="0"
+msecs_to_jiffies="0"
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC="$CC"
-CFLAGS="$KERNEL_CHECK_CFLAGS"
+CFLAGS="$KERNEL_CHECK_CFLAGS -Iinclude"
 CC=$KCC
 AC_TRY_COMPILE([
 #define __KERNEL__
@@ -1624,7 +1633,7 @@ AC_TRY_COMPILE([
 #include <linux/jiffies.h>
 ],[
   unsigned int (*func)(const unsigned long);
-  func = msec_to_jiffies;
+  func = msecs_to_jiffies;
 ],
     AC_MSG_RESULT("yes");msecs_to_jiffies="1",
     AC_MSG_RESULT("no");msecs_to_jiffies="0",

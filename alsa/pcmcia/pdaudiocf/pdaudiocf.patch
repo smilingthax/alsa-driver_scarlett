@@ -1,5 +1,5 @@
---- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2005-07-08 14:28:50.000000000 +0200
-+++ pdaudiocf.c	2005-07-08 14:41:11.000000000 +0200
+--- ../../alsa-kernel/pcmcia/pdaudiocf/pdaudiocf.c	2005-07-08 13:27:46.000000000 +0100
++++ pdaudiocf.c	2005-07-11 21:39:06.000000000 +0100
 @@ -18,12 +18,18 @@
   *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
   */
@@ -85,7 +85,7 @@
  			chip->chip_status |= PDAUDIOCF_STAT_IS_STALE;
  		}
  		break;
-@@ -371,21 +408,27 @@
+@@ -371,21 +408,25 @@
  /*
   * Module entry points
   */
@@ -107,15 +107,13 @@
 +#ifdef PCMCIA_DEVICE_MANF_CARD
  	.event		= pdacf_event,
 -	.detach		= snd_pdacf_detach,
-+#endif
-+	.detach         = snd_pdacf_detach
-+#ifdef PCMCIA_DEVICE_MANF_CARD
  	.id_table	= snd_pdacf_ids,
 +#endif
++	.detach         = snd_pdacf_detach
  };
  
  static int __init init_pdacf(void)
-@@ -401,3 +444,6 @@
+@@ -401,3 +442,6 @@
  
  module_init(init_pdacf);
  module_exit(exit_pdacf);
