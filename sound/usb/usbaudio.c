@@ -584,14 +584,14 @@ static void snd_complete_sync_urb(struct urb *urb, struct pt_regs *regs)
  * unlink active urbs.
  * return the number of active urbs.
  */
-static int deactivate_urbs(snd_usb_substream_t *subs)
+static int deactivate_urbs(snd_usb_substream_t *subs, int force)
 {
 	unsigned int i;
 	int alive;
 
 	subs->running = 0;
 
-	if (subs->stream->chip->shutdown) /* to be sure... */
+	if (!force && subs->stream->chip->shutdown) /* to be sure... */
 		return 0;
 
 #ifndef SND_USB_ASYNC_UNLINK
@@ -669,7 +669,7 @@ static int start_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *runtime)
 
  __error:
 	// snd_pcm_stop(subs->pcm_substream, SNDRV_PCM_STATE_XRUN);
-	deactivate_urbs(subs);
+	deactivate_urbs(subs, 0);
 	return -EPIPE;
 }
 
@@ -730,7 +730,7 @@ static int snd_usb_pcm_trigger(snd_pcm_substream_t *substream, int cmd)
 		err = start_urbs(subs, substream->runtime);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		err = deactivate_urbs(subs);
+		err = deactivate_urbs(subs, 0);
 		break;
 	default:
 		err = -EINVAL;
@@ -758,12 +758,12 @@ static void release_urb_ctx(snd_urb_ctx_t *u)
 /*
  * release a substream
  */
-static void release_substream_urbs(snd_usb_substream_t *subs)
+static void release_substream_urbs(snd_usb_substream_t *subs, int force)
 {
 	int i;
 
 	/* stop urbs (to be sure) */
-	if (deactivate_urbs(subs) > 0)
+	if (deactivate_urbs(subs, force) > 0)
 		wait_clear_urbs(subs);
 
 	for (i = 0; i < MAX_URBS; i++)
@@ -869,13 +869,13 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 			/* allocate a capture buffer per urb */
 			u->buf = kmalloc(maxsize * u->packets, GFP_KERNEL);
 			if (! u->buf) {
-				release_substream_urbs(subs);
+				release_substream_urbs(subs, 0);
 				return -ENOMEM;
 			}
 		}
 		u->urb = usb_alloc_urb(u->packets, GFP_KERNEL);
 		if (! u->urb) {
-			release_substream_urbs(subs);
+			release_substream_urbs(subs, 0);
 			return -ENOMEM;
 		}
 		u->urb->dev = subs->dev;
@@ -895,7 +895,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, snd_pcm_runtime_t *run
 			u->packets = NRPACKS;
 			u->urb = usb_alloc_urb(u->packets, GFP_KERNEL);
 			if (! u->urb) {
-				release_substream_urbs(subs);
+				release_substream_urbs(subs, 0);
 				return -ENOMEM;
 			}
 			u->urb->transfer_buffer = subs->syncbuf + i * NRPACKS * 3;
@@ -1148,7 +1148,7 @@ static int snd_usb_pcm_prepare(snd_pcm_substream_t *substream)
 	snd_usb_substream_t *subs = (snd_usb_substream_t *)runtime->private_data;
 	int err;
 
-	release_substream_urbs(subs);
+	release_substream_urbs(subs, 0);
 	if ((err = set_format(subs, runtime)) < 0)
 		return err;
 
@@ -1485,7 +1485,7 @@ static int snd_usb_pcm_close(snd_pcm_substream_t *substream, int direction)
 	snd_usb_stream_t *as = snd_pcm_substream_chip(substream);
 	snd_usb_substream_t *subs = &as->substream[direction];
 
-	release_substream_urbs(subs);
+	release_substream_urbs(subs, 0);
 	if (subs->interface >= 0)
 		usb_set_interface(subs->dev, subs->interface, 0);
 	subs->pcm_substream = NULL;
@@ -2585,7 +2585,8 @@ static void snd_usb_audio_disconnect(struct usb_device *dev, void *ptr)
 				subs = &as->substream[idx];
 				if (!subs->num_formats)
 					continue;
-				release_substream_urbs(subs);
+				release_substream_urbs(subs, 1);
+				subs->interface = -1;
 			}
 		}
 		/* release the midi resources */
