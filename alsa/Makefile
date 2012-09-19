@@ -149,7 +149,7 @@ endif
 .PHONY: install-modules
 install-modules:
 ifeq ($(moddir_tree),y)
-	rm -rf $(DESTDIR)$(moddir)
+	find $(DESTDIR)$(moddir) -name 'snd*.*o' | xargs rm -f
 else
 	rm -f $(DESTDIR)$(moddir)/snd*.*o $(DESTDIR)$(moddir)/persist.o $(DESTDIR)$(moddir)/isapnp.o
 endif

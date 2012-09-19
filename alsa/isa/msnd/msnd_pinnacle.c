@@ -463,7 +463,7 @@ static __inline__ void snd_msnd_eval_dsp_msg(register WORD wMessage)
 		case HIDSP_PLAY_UNDER:
 #endif
 		case HIDSP_INT_PLAY_UNDER:
-			printk(KERN_DEBUG LOGNAME ": Play underflow %i %lX\n", banksPlayed, xtime.tv_usec);
+			printk(KERN_DEBUG LOGNAME ": Play underflow %i\n", banksPlayed);
 			if( banksPlayed > 2)
 				clear_bit(F_WRITING, &dev.flags);
 			break;

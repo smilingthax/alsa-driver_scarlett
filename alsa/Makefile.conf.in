@@ -87,7 +87,7 @@ SNDVERSIONS	= $(TOPDIR)/include/sndversions.h
 DEXPORT		= $(TOPDIR)/include/modules
 else
 EXTRA_CFLAGS += -I$(MAINSRCDIR)/include -Iinclude -DALSA_BUILD
-CPPFLAGS := $(subst -Iinclude,,$(CPPFLAGS))
-CFLAGS := $(subst -Iinclude,,$(CFLAGS))
+CPPFLAGS := $(subst -Iinclude ,,$(CPPFLAGS))
+CFLAGS := $(subst -Iinclude ,,$(CFLAGS))
 endif
 
