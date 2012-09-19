@@ -604,6 +604,41 @@ case "$processor" in
       c_opts="-mpreferred-stack-boundary=2 $c_opts"
       CONFIG_X86=y
     fi
+    if test -d $CONFIG_SND_KERNELDIR/include/asm-i386/mach-default; then
+	AC_MSG_CHECKING(for i386 machine type)
+	machine="default"
+	ac_save_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -I$CONFIG_SND_KERNELDIR/include"
+	AC_TRY_RUN([
+#include <stdio.h>
+#include "$CONFIG_SND_KERNELDIR/include/linux/autoconf.h"
+int main(void) {
+	FILE *file = fopen("machine.id", "w+");
+	if (file == NULL)
+		exit(1);
+#if defined(CONFIG_X86_VOYAGER)
+	fprintf(file, "voyager");
+#elif defined(CONFIG_X86_VISWS)
+	fprintf(file, "visws");
+#elif defined(CONFIG_X86_NUMAQ)
+	fprintf(file, "numaq");
+#elif defined(CONFIG_X86_BIGSMP)
+	fprintf(file, "bigsmp");
+#elif defined(CONFIG_X86_SUMMIT)
+	fprintf(file, "summit");
+#elif defined(CONFIG_X86_PC9800)
+	fprintf(file, "pc9800");
+#else
+	fprintf(file, "default");
+#endif
+	fclose(file);
+	exit(0);
+}
+],      
+	machine=`cat machine.id`;AC_MSG_RESULT($machine))
+	CFLAGS="$ac_save_CFLAGS"
+	c_opts="$c_opts -I\$(CONFIG_SND_KERNELDIR)/include/asm-i386/mach-$machine"
+    fi
     ;;
 esac
 

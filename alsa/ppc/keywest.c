@@ -4,7 +4,7 @@
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0) /* FIXME: which version exactly? */
 #define i2c_device_name(x)	((x)->name)
-#define i2c_set_device_data(x,p)	((x)->data = (p))
+#define i2c_set_clientdata(x,p)	((x)->data = (p))
 #endif
 
 #include "../alsa-kernel/ppc/keywest.c"
