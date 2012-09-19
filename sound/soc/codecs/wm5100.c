@@ -26,6 +26,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
+#include <sound/jack.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
 #include <sound/wm5100.h>
@@ -54,6 +55,8 @@ struct wm5100_priv {
 
 	struct regulator_bulk_data core_supplies[WM5100_NUM_CORE_SUPPLIES];
 	struct regulator *cpvdd;
+	struct regulator *dbvdd2;
+	struct regulator *dbvdd3;
 
 	int rev;
 
@@ -65,6 +68,11 @@ struct wm5100_priv {
 	int sr_ref[WM5100_SYNC_SRS];
 
 	bool out_ena[2];
+
+	struct snd_soc_jack *jack;
+	bool jack_detecting;
+	bool jack_mic;
+	int jack_mode;
 
 	struct wm5100_fll fll[2];
 
@@ -803,6 +811,52 @@ static int wm5100_cp_ev(struct snd_soc_dapm_widget *w,
 	}
 }
 
+static int wm5100_dbvdd_ev(struct snd_soc_dapm_widget *w,
+			   struct snd_kcontrol *kcontrol,
+			   int event)
+{
+	struct snd_soc_codec *codec = w->codec;
+	struct wm5100_priv *wm5100 = snd_soc_codec_get_drvdata(codec);
+	struct regulator *regulator;
+	int ret;
+
+	switch (w->shift) {
+	case 2:
+		regulator = wm5100->dbvdd2;
+		break;
+	case 3:
+		regulator = wm5100->dbvdd3;
+		break;
+	default:
+		BUG();
+		return 0;
+	}
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		ret = regulator_enable(regulator);
+		if (ret != 0) {
+			dev_err(codec->dev, "Failed to enable DBVDD%d: %d\n",
+				w->shift, ret);
+			return ret;
+		}
+		return ret;
+
+	case SND_SOC_DAPM_POST_PMD:
+		ret = regulator_disable(regulator);
+		if (ret != 0) {
+			dev_err(codec->dev, "Failed to enable DBVDD%d: %d\n",
+				w->shift, ret);
+			return ret;
+		}
+		return ret;
+
+	default:
+		BUG();
+		return 0;
+	}
+}
+
 static void wm5100_log_status3(struct snd_soc_codec *codec, int val)
 {
 	if (val & WM5100_SPK_SHUTDOWN_WARN_EINT)
@@ -879,6 +933,10 @@ SND_SOC_DAPM_SUPPLY("CP2", WM5100_MIC_CHARGE_PUMP_1, WM5100_CP2_ENA_SHIFT, 0,
 		    NULL, 0),
 SND_SOC_DAPM_SUPPLY("CP2 Active", WM5100_MIC_CHARGE_PUMP_1,
 		    WM5100_CP2_BYPASS_SHIFT, 1, wm5100_cp_ev,
+		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+SND_SOC_DAPM_SUPPLY("DBVDD2", SND_SOC_NOPM, 2, 0, wm5100_dbvdd_ev,
+		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
+SND_SOC_DAPM_SUPPLY("DBVDD3", SND_SOC_NOPM, 3, 0, wm5100_dbvdd_ev,
 		    SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 
 SND_SOC_DAPM_SUPPLY("MICBIAS1", WM5100_MIC_BIAS_CTRL_1, WM5100_MICB1_ENA_SHIFT,
@@ -1122,10 +1180,14 @@ static const struct snd_soc_dapm_route wm5100_dapm_routes[] = {
 	{ "AIF1RX8", NULL, "SYSCLK" },
 
 	{ "AIF2RX1", NULL, "SYSCLK" },
+	{ "AIF2RX1", NULL, "DBVDD2" },
 	{ "AIF2RX2", NULL, "SYSCLK" },
+	{ "AIF2RX2", NULL, "DBVDD2" },
 
 	{ "AIF3RX1", NULL, "SYSCLK" },
+	{ "AIF3RX1", NULL, "DBVDD3" },
 	{ "AIF3RX2", NULL, "SYSCLK" },
+	{ "AIF3RX2", NULL, "DBVDD3" },
 
 	{ "AIF1TX1", NULL, "SYSCLK" },
 	{ "AIF1TX2", NULL, "SYSCLK" },
@@ -1137,10 +1199,14 @@ static const struct snd_soc_dapm_route wm5100_dapm_routes[] = {
 	{ "AIF1TX8", NULL, "SYSCLK" },
 
 	{ "AIF2TX1", NULL, "SYSCLK" },
+	{ "AIF2TX1", NULL, "DBVDD2" },
 	{ "AIF2TX2", NULL, "SYSCLK" },
+	{ "AIF2TX2", NULL, "DBVDD2" },
 
 	{ "AIF3TX1", NULL, "SYSCLK" },
+	{ "AIF3TX1", NULL, "DBVDD3" },
 	{ "AIF3TX2", NULL, "SYSCLK" },
+	{ "AIF3TX2", NULL, "DBVDD3" },
 
 	{ "MICBIAS1", NULL, "CP2" },
 	{ "MICBIAS2", NULL, "CP2" },
@@ -1451,6 +1517,7 @@ static int wm5100_bclk_rates_dat[WM5100_NUM_BCLK_RATES] = {
 	96000,
 	128000,
 	192000,
+	256000,
 	384000,
 	512000,
 	768000,
@@ -1694,7 +1761,7 @@ static int wm5100_set_sysclk(struct snd_soc_codec *codec, int clk_id,
 		fval = 1;
 		break;
 	case 22579200:
-	case 2457600:
+	case 24576000:
 		fval = 2;
 		break;
 	default:
@@ -1711,7 +1778,7 @@ static int wm5100_set_sysclk(struct snd_soc_codec *codec, int clk_id,
 
 	case 6144000:
 	case 12288000:
-	case 2457600:
+	case 24576000:
 		audio_rate = 48000;
 		break;
 
@@ -2052,6 +2119,162 @@ static int wm5100_dig_vu[] = {
 	WM5100_DAC_DIGITAL_VOLUME_6R,
 };
 
+static void wm5100_set_detect_mode(struct snd_soc_codec *codec, int the_mode)
+{
+	struct wm5100_priv *wm5100 = snd_soc_codec_get_drvdata(codec);
+	struct wm5100_jack_mode *mode = &wm5100->pdata.jack_modes[the_mode];
+
+	BUG_ON(the_mode >= ARRAY_SIZE(wm5100->pdata.jack_modes));
+
+	gpio_set_value_cansleep(wm5100->pdata.hp_pol, mode->hp_pol);
+	snd_soc_update_bits(codec, WM5100_ACCESSORY_DETECT_MODE_1,
+			    WM5100_ACCDET_BIAS_SRC_MASK |
+			    WM5100_ACCDET_SRC,
+			    (mode->bias << WM5100_ACCDET_BIAS_SRC_SHIFT) |
+			    mode->micd_src << WM5100_ACCDET_SRC_SHIFT);
+	snd_soc_update_bits(codec, WM5100_MISC_CONTROL,
+			    WM5100_HPCOM_SRC,
+			    mode->micd_src << WM5100_HPCOM_SRC_SHIFT);
+
+	wm5100->jack_mode = the_mode;
+
+	dev_dbg(codec->dev, "Set microphone polarity to %d\n",
+		wm5100->jack_mode);
+}
+
+static void wm5100_micd_irq(struct snd_soc_codec *codec)
+{
+	struct wm5100_priv *wm5100 = snd_soc_codec_get_drvdata(codec);
+	int val;
+
+	val = snd_soc_read(codec, WM5100_MIC_DETECT_3);
+
+	dev_dbg(codec->dev, "Microphone event: %x\n", val);
+
+	if (!(val & WM5100_ACCDET_VALID)) {
+		dev_warn(codec->dev, "Microphone detection state invalid\n");
+		return;
+	}
+
+	/* No accessory, reset everything and report removal */
+	if (!(val & WM5100_ACCDET_STS)) {
+		dev_dbg(codec->dev, "Jack removal detected\n");
+		wm5100->jack_mic = false;
+		wm5100->jack_detecting = true;
+		snd_soc_jack_report(wm5100->jack, 0,
+				    SND_JACK_LINEOUT | SND_JACK_HEADSET |
+				    SND_JACK_BTN_0);
+
+		snd_soc_update_bits(codec, WM5100_MIC_DETECT_1,
+				    WM5100_ACCDET_RATE_MASK,
+				    WM5100_ACCDET_RATE_MASK);
+		return;
+	}
+
+	/* If the measurement is very high we've got a microphone,
+	 * either we just detected one or if we already reported then
+	 * we've got a button release event.
+	 */
+	if (val & 0x400) {
+		if (wm5100->jack_detecting) {
+			dev_dbg(codec->dev, "Microphone detected\n");
+			wm5100->jack_mic = true;
+			snd_soc_jack_report(wm5100->jack,
+					    SND_JACK_HEADSET,
+					    SND_JACK_HEADSET | SND_JACK_BTN_0);
+
+			/* Increase poll rate to give better responsiveness
+			 * for buttons */
+			snd_soc_update_bits(codec, WM5100_MIC_DETECT_1,
+					    WM5100_ACCDET_RATE_MASK,
+					    5 << WM5100_ACCDET_RATE_SHIFT);
+		} else {
+			dev_dbg(codec->dev, "Mic button up\n");
+			snd_soc_jack_report(wm5100->jack, 0, SND_JACK_BTN_0);
+		}
+
+		return;
+	}
+
+	/* If we detected a lower impedence during initial startup
+	 * then we probably have the wrong polarity, flip it.  Don't
+	 * do this for the lowest impedences to speed up detection of
+	 * plain headphones.
+	 */
+	if (wm5100->jack_detecting && (val & 0x3f8)) {
+		wm5100_set_detect_mode(codec, !wm5100->jack_mode);
+
+		return;
+	}
+
+	/* Don't distinguish between buttons, just report any low
+	 * impedence as BTN_0.
+	 */
+	if (val & 0x3fc) {
+		if (wm5100->jack_mic) {
+			dev_dbg(codec->dev, "Mic button detected\n");
+			snd_soc_jack_report(wm5100->jack, SND_JACK_BTN_0,
+					    SND_JACK_BTN_0);
+		} else if (wm5100->jack_detecting) {
+			dev_dbg(codec->dev, "Headphone detected\n");
+			snd_soc_jack_report(wm5100->jack, SND_JACK_HEADPHONE,
+					    SND_JACK_HEADPHONE);
+
+			/* Increase the detection rate a bit for
+			 * responsiveness.
+			 */
+			snd_soc_update_bits(codec, WM5100_MIC_DETECT_1,
+					    WM5100_ACCDET_RATE_MASK,
+					    7 << WM5100_ACCDET_RATE_SHIFT);
+		}
+	}
+}
+
+int wm5100_detect(struct snd_soc_codec *codec, struct snd_soc_jack *jack)
+{
+	struct wm5100_priv *wm5100 = snd_soc_codec_get_drvdata(codec);
+
+	if (jack) {
+		wm5100->jack = jack;
+		wm5100->jack_detecting = true;
+
+		wm5100_set_detect_mode(codec, 0);
+
+		/* Slowest detection rate, gives debounce for initial
+		 * detection */
+		snd_soc_update_bits(codec, WM5100_MIC_DETECT_1,
+				    WM5100_ACCDET_BIAS_STARTTIME_MASK |
+				    WM5100_ACCDET_RATE_MASK,
+				    (7 << WM5100_ACCDET_BIAS_STARTTIME_SHIFT) |
+				    WM5100_ACCDET_RATE_MASK);
+
+		/* We need the charge pump to power MICBIAS */
+		snd_soc_dapm_force_enable_pin(&codec->dapm, "CP2");
+		snd_soc_dapm_force_enable_pin(&codec->dapm, "SYSCLK");
+		snd_soc_dapm_sync(&codec->dapm);
+
+		/* We start off just enabling microphone detection - even a
+		 * plain headphone will trigger detection.
+		 */
+		snd_soc_update_bits(codec, WM5100_MIC_DETECT_1,
+				    WM5100_ACCDET_ENA, WM5100_ACCDET_ENA);
+
+		snd_soc_update_bits(codec, WM5100_INTERRUPT_STATUS_3_MASK,
+				    WM5100_IM_ACCDET_EINT, 0);
+	} else {
+		snd_soc_update_bits(codec, WM5100_INTERRUPT_STATUS_3_MASK,
+				    WM5100_IM_HPDET_EINT |
+				    WM5100_IM_ACCDET_EINT,
+				    WM5100_IM_HPDET_EINT |
+				    WM5100_IM_ACCDET_EINT);
+		snd_soc_update_bits(codec, WM5100_MIC_DETECT_1,
+				    WM5100_ACCDET_ENA, 0);
+		wm5100->jack = NULL;
+	}
+
+	return 0;
+}
+
 static irqreturn_t wm5100_irq(int irq, void *data)
 {
 	struct snd_soc_codec *codec = data;
@@ -2082,6 +2305,9 @@ static irqreturn_t wm5100_irq(int irq, void *data)
 		dev_dbg(codec->dev, "FLL2 locked\n");
 		complete(&wm5100->fll[1].lock);
 	}
+
+	if (irq_val & WM5100_ACCDET_EINT)
+		wm5100_micd_irq(codec);
 
 	irq_val = snd_soc_read(codec, WM5100_INTERRUPT_STATUS_4);
 	if (irq_val < 0) {
@@ -2135,13 +2361,17 @@ static int wm5100_gpio_direction_out(struct gpio_chip *chip,
 {
 	struct wm5100_priv *wm5100 = gpio_to_wm5100(chip);
 	struct snd_soc_codec *codec = wm5100->codec;
-	int val;
+	int val, ret;
 
 	val = (1 << WM5100_GP1_FN_SHIFT) | (!!value << WM5100_GP1_LVL_SHIFT);
 
-	return snd_soc_update_bits(codec, WM5100_GPIO_CTRL_1 + offset,
-				   WM5100_GP1_FN_MASK | WM5100_GP1_DIR |
-				   WM5100_GP1_LVL, val);
+	ret = snd_soc_update_bits(codec, WM5100_GPIO_CTRL_1 + offset,
+				  WM5100_GP1_FN_MASK | WM5100_GP1_DIR |
+				  WM5100_GP1_LVL, val);
+	if (ret < 0)
+		return ret;
+	else
+		return 0;
 }
 
 static int wm5100_gpio_get(struct gpio_chip *chip, unsigned offset)
@@ -2248,12 +2478,26 @@ static int wm5100_probe(struct snd_soc_codec *codec)
 		goto err_core;
 	}
 
+	wm5100->dbvdd2 = regulator_get(&i2c->dev, "DBVDD2");
+	if (IS_ERR(wm5100->dbvdd2)) {
+		ret = PTR_ERR(wm5100->dbvdd2);
+		dev_err(&i2c->dev, "Failed to get DBVDD2: %d\n", ret);
+		goto err_cpvdd;
+	}
+
+	wm5100->dbvdd3 = regulator_get(&i2c->dev, "DBVDD3");
+	if (IS_ERR(wm5100->dbvdd3)) {
+		ret = PTR_ERR(wm5100->dbvdd3);
+		dev_err(&i2c->dev, "Failed to get DBVDD2: %d\n", ret);
+		goto err_dbvdd2;
+	}
+
 	ret = regulator_bulk_enable(ARRAY_SIZE(wm5100->core_supplies),
 				    wm5100->core_supplies);
 	if (ret != 0) {
 		dev_err(codec->dev, "Failed to enable core supplies: %d\n",
 			ret);
-		goto err_cpvdd;
+		goto err_dbvdd3;
 	}
 
 	if (wm5100->pdata.ldo_ena) {
@@ -2416,6 +2660,8 @@ static int wm5100_probe(struct snd_soc_codec *codec)
 	return 0;
 
 err_gpio:
+	if (i2c->irq)
+		free_irq(i2c->irq, codec);
 	wm5100_free_gpio(codec);
 err_reset:
 	if (wm5100->pdata.reset) {
@@ -2430,6 +2676,10 @@ err_ldo:
 err_enable:
 	regulator_bulk_disable(ARRAY_SIZE(wm5100->core_supplies),
 			       wm5100->core_supplies);
+err_dbvdd3:
+	regulator_put(wm5100->dbvdd3);
+err_dbvdd2:
+	regulator_put(wm5100->dbvdd2);
 err_cpvdd:
 	regulator_put(wm5100->cpvdd);
 err_core:
@@ -2442,11 +2692,14 @@ err_core:
 static int wm5100_remove(struct snd_soc_codec *codec)
 {
 	struct wm5100_priv *wm5100 = snd_soc_codec_get_drvdata(codec);
+	struct i2c_client *i2c = to_i2c_client(codec->dev);
 
 	wm5100_set_bias_level(codec, SND_SOC_BIAS_OFF);
 	if (wm5100->pdata.hp_pol) {
 		gpio_free(wm5100->pdata.hp_pol);
 	}
+	if (i2c->irq)
+		free_irq(i2c->irq, codec);
 	wm5100_free_gpio(codec);
 	if (wm5100->pdata.reset) {
 		gpio_set_value_cansleep(wm5100->pdata.reset, 1);
@@ -2456,6 +2709,8 @@ static int wm5100_remove(struct snd_soc_codec *codec)
 		gpio_set_value_cansleep(wm5100->pdata.ldo_ena, 0);
 		gpio_free(wm5100->pdata.ldo_ena);
 	}
+	regulator_put(wm5100->dbvdd3);
+	regulator_put(wm5100->dbvdd2);
 	regulator_put(wm5100->cpvdd);
 	regulator_bulk_free(ARRAY_SIZE(wm5100->core_supplies),
 			    wm5100->core_supplies);

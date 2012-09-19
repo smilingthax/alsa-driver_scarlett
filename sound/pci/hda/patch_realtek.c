@@ -27,6 +27,7 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/pci.h>
+#include <linux/module.h>
 #include <sound/core.h>
 #include <sound/jack.h>
 #include "hda_codec.h"
@@ -164,15 +165,17 @@ struct alc_spec {
 	void (*automute_hook)(struct hda_codec *codec);
 
 	/* for pin sensing */
-	unsigned int jack_present: 1;
+	unsigned int hp_jack_present:1;
 	unsigned int line_jack_present:1;
 	unsigned int master_mute:1;
 	unsigned int auto_mic:1;
 	unsigned int auto_mic_valid_imux:1;	/* valid imux for auto-mic */
-	unsigned int automute:1;	/* HP automute enabled */
-	unsigned int detect_line:1;	/* Line-out detection enabled */
-	unsigned int automute_lines:1;	/* automute line-out as well; NOP when automute_hp_lo isn't set */
-	unsigned int automute_hp_lo:1;	/* both HP and LO available */
+	unsigned int automute_speaker:1; /* automute speaker outputs */
+	unsigned int automute_lo:1; /* automute LO outputs */
+	unsigned int detect_hp:1;	/* Headphone detection enabled */
+	unsigned int detect_lo:1;	/* Line-out detection enabled */
+	unsigned int automute_speaker_possible:1; /* there are speakers and either LO or HP */
+	unsigned int automute_lo_possible:1;	  /* there are line outs and HP */
 
 	/* other flags */
 	unsigned int no_analog :1; /* digital I/O only */
@@ -533,8 +536,8 @@ static void do_automute(struct hda_codec *codec, int num_pins, hda_nid_t *pins,
 	}
 }
 
-/* Toggle internal speakers muting */
-static void update_speakers(struct hda_codec *codec)
+/* Toggle outputs muting */
+static void update_outputs(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 	int on;
@@ -546,10 +549,10 @@ static void update_speakers(struct hda_codec *codec)
 	do_automute(codec, ARRAY_SIZE(spec->autocfg.hp_pins),
 		    spec->autocfg.hp_pins, spec->master_mute, true);
 
-	if (!spec->automute)
+	if (!spec->automute_speaker)
 		on = 0;
 	else
-		on = spec->jack_present | spec->line_jack_present;
+		on = spec->hp_jack_present | spec->line_jack_present;
 	on |= spec->master_mute;
 	do_automute(codec, ARRAY_SIZE(spec->autocfg.speaker_pins),
 		    spec->autocfg.speaker_pins, on, false);
@@ -559,22 +562,22 @@ static void update_speakers(struct hda_codec *codec)
 	if (spec->autocfg.line_out_pins[0] == spec->autocfg.hp_pins[0] ||
 	    spec->autocfg.line_out_pins[0] == spec->autocfg.speaker_pins[0])
 		return;
-	if (!spec->automute || (spec->automute_hp_lo && !spec->automute_lines))
+	if (!spec->automute_lo)
 		on = 0;
 	else
-		on = spec->jack_present;
+		on = spec->hp_jack_present;
 	on |= spec->master_mute;
 	do_automute(codec, ARRAY_SIZE(spec->autocfg.line_out_pins),
 		    spec->autocfg.line_out_pins, on, false);
 }
 
-static void call_update_speakers(struct hda_codec *codec)
+static void call_update_outputs(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 	if (spec->automute_hook)
 		spec->automute_hook(codec);
 	else
-		update_speakers(codec);
+		update_outputs(codec);
 }
 
 /* standard HP-automute helper */
@@ -582,12 +585,12 @@ static void alc_hp_automute(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 
-	if (!spec->automute)
-		return;
-	spec->jack_present =
+	spec->hp_jack_present =
 		detect_jacks(codec, ARRAY_SIZE(spec->autocfg.hp_pins),
 			     spec->autocfg.hp_pins);
-	call_update_speakers(codec);
+	if (!spec->detect_hp || (!spec->automute_speaker && !spec->automute_lo))
+		return;
+	call_update_outputs(codec);
 }
 
 /* standard line-out-automute helper */
@@ -595,12 +598,16 @@ static void alc_line_automute(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 
-	if (!spec->automute || !spec->detect_line)
+	/* check LO jack only when it's different from HP */
+	if (spec->autocfg.line_out_pins[0] == spec->autocfg.hp_pins[0])
 		return;
+
 	spec->line_jack_present =
 		detect_jacks(codec, ARRAY_SIZE(spec->autocfg.line_out_pins),
 			     spec->autocfg.line_out_pins);
-	call_update_speakers(codec);
+	if (!spec->automute_speaker || !spec->detect_lo)
+		return;
+	call_update_outputs(codec);
 }
 
 #define get_connection_index(codec, mux, nid) \
@@ -798,7 +805,7 @@ static int alc_automute_mode_info(struct snd_kcontrol *kcontrol,
 
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
 	uinfo->count = 1;
-	if (spec->automute_hp_lo) {
+	if (spec->automute_speaker_possible && spec->automute_lo_possible) {
 		uinfo->value.enumerated.items = 3;
 		texts = texts3;
 	} else {
@@ -817,13 +824,12 @@ static int alc_automute_mode_get(struct snd_kcontrol *kcontrol,
 {
 	struct hda_codec *codec = snd_kcontrol_chip(kcontrol);
 	struct alc_spec *spec = codec->spec;
-	unsigned int val;
-	if (!spec->automute)
-		val = 0;
-	else if (!spec->automute_hp_lo || !spec->automute_lines)
-		val = 1;
-	else
-		val = 2;
+	unsigned int val = 0;
+	if (spec->automute_speaker)
+		val++;
+	if (spec->automute_lo)
+		val++;
+
 	ucontrol->value.enumerated.item[0] = val;
 	return 0;
 }
@@ -836,29 +842,36 @@ static int alc_automute_mode_put(struct snd_kcontrol *kcontrol,
 
 	switch (ucontrol->value.enumerated.item[0]) {
 	case 0:
-		if (!spec->automute)
+		if (!spec->automute_speaker && !spec->automute_lo)
 			return 0;
-		spec->automute = 0;
+		spec->automute_speaker = 0;
+		spec->automute_lo = 0;
 		break;
 	case 1:
-		if (spec->automute &&
-		    (!spec->automute_hp_lo || !spec->automute_lines))
-			return 0;
-		spec->automute = 1;
-		spec->automute_lines = 0;
+		if (spec->automute_speaker_possible) {
+			if (!spec->automute_lo && spec->automute_speaker)
+				return 0;
+			spec->automute_speaker = 1;
+			spec->automute_lo = 0;
+		} else if (spec->automute_lo_possible) {
+			if (spec->automute_lo)
+				return 0;
+			spec->automute_lo = 1;
+		} else
+			return -EINVAL;
 		break;
 	case 2:
-		if (!spec->automute_hp_lo)
+		if (!spec->automute_lo_possible || !spec->automute_speaker_possible)
 			return -EINVAL;
-		if (spec->automute && spec->automute_lines)
+		if (spec->automute_speaker && spec->automute_lo)
 			return 0;
-		spec->automute = 1;
-		spec->automute_lines = 1;
+		spec->automute_speaker = 1;
+		spec->automute_lo = 1;
 		break;
 	default:
 		return -EINVAL;
 	}
-	call_update_speakers(codec);
+	call_update_outputs(codec);
 	return 1;
 }
 
@@ -895,7 +908,7 @@ static int alc_add_automute_mode_enum(struct hda_codec *codec)
  * Check the availability of HP/line-out auto-mute;
  * Set up appropriately if really supported
  */
-static void alc_init_auto_hp(struct hda_codec *codec)
+static void alc_init_automute(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
 	struct auto_pin_cfg *cfg = &spec->autocfg;
@@ -910,8 +923,6 @@ static void alc_init_auto_hp(struct hda_codec *codec)
 		present++;
 	if (present < 2) /* need two different output types */
 		return;
-	if (present == 3)
-		spec->automute_hp_lo = 1; /* both HP and LO automute */
 
 	if (!cfg->speaker_pins[0] &&
 	    cfg->line_out_type == AUTO_PIN_SPEAKER_OUT) {
@@ -927,6 +938,8 @@ static void alc_init_auto_hp(struct hda_codec *codec)
 		cfg->hp_outs = cfg->line_outs;
 	}
 
+	spec->automute_mode = ALC_AUTOMUTE_PIN;
+
 	for (i = 0; i < cfg->hp_outs; i++) {
 		hda_nid_t nid = cfg->hp_pins[i];
 		if (!is_jack_detectable(codec, nid))
@@ -936,28 +949,32 @@ static void alc_init_auto_hp(struct hda_codec *codec)
 		snd_hda_codec_write_cache(codec, nid, 0,
 				  AC_VERB_SET_UNSOLICITED_ENABLE,
 				  AC_USRSP_EN | ALC_HP_EVENT);
-		spec->automute = 1;
-		spec->automute_mode = ALC_AUTOMUTE_PIN;
-	}
-	if (spec->automute && cfg->line_out_pins[0] &&
-	    cfg->speaker_pins[0] &&
-	    cfg->line_out_pins[0] != cfg->hp_pins[0] &&
-	    cfg->line_out_pins[0] != cfg->speaker_pins[0]) {
-		for (i = 0; i < cfg->line_outs; i++) {
-			hda_nid_t nid = cfg->line_out_pins[i];
-			if (!is_jack_detectable(codec, nid))
-				continue;
-			snd_printdd("realtek: Enable Line-Out auto-muting "
-				    "on NID 0x%x\n", nid);
-			snd_hda_codec_write_cache(codec, nid, 0,
-					AC_VERB_SET_UNSOLICITED_ENABLE,
-					AC_USRSP_EN | ALC_FRONT_EVENT);
-			spec->detect_line = 1;
-		}
-		spec->automute_lines = spec->detect_line;
+		spec->detect_hp = 1;
 	}
 
-	if (spec->automute) {
+	if (cfg->line_out_type == AUTO_PIN_LINE_OUT && cfg->line_outs) {
+		if (cfg->speaker_outs)
+			for (i = 0; i < cfg->line_outs; i++) {
+				hda_nid_t nid = cfg->line_out_pins[i];
+				if (!is_jack_detectable(codec, nid))
+					continue;
+				snd_printdd("realtek: Enable Line-Out "
+					    "auto-muting on NID 0x%x\n", nid);
+				snd_hda_codec_write_cache(codec, nid, 0,
+						AC_VERB_SET_UNSOLICITED_ENABLE,
+						AC_USRSP_EN | ALC_FRONT_EVENT);
+				spec->detect_lo = 1;
+		}
+		spec->automute_lo_possible = spec->detect_hp;
+	}
+
+	spec->automute_speaker_possible = cfg->speaker_outs &&
+		(spec->detect_hp || spec->detect_lo);
+
+	spec->automute_lo = spec->automute_lo_possible;
+	spec->automute_speaker = spec->automute_speaker_possible;
+
+	if (spec->automute_speaker_possible || spec->automute_lo_possible) {
 		/* create a control for automute mode */
 		alc_add_automute_mode_enum(codec);
 		spec->unsol_event = alc_sku_unsol_event;
@@ -1158,7 +1175,7 @@ static void alc_init_auto_mic(struct hda_codec *codec)
 /* check the availabilities of auto-mute and auto-mic switches */
 static void alc_auto_check_switches(struct hda_codec *codec)
 {
-	alc_init_auto_hp(codec);
+	alc_init_automute(codec);
 	alc_init_auto_mic(codec);
 }
 
@@ -1588,27 +1605,29 @@ static void alc_auto_init_digital(struct hda_codec *codec)
 static void alc_auto_parse_digital(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
-	int i, err;
+	int i, err, nums;
 	hda_nid_t dig_nid;
 
 	/* support multiple SPDIFs; the secondary is set up as a slave */
+	nums = 0;
 	for (i = 0; i < spec->autocfg.dig_outs; i++) {
 		hda_nid_t conn[4];
 		err = snd_hda_get_connections(codec,
 					      spec->autocfg.dig_out_pins[i],
 					      conn, ARRAY_SIZE(conn));
-		if (err < 0)
+		if (err <= 0)
 			continue;
 		dig_nid = conn[0]; /* assume the first element is audio-out */
-		if (!i) {
+		if (!nums) {
 			spec->multiout.dig_out_nid = dig_nid;
 			spec->dig_out_type = spec->autocfg.dig_out_type[0];
 		} else {
 			spec->multiout.slave_dig_outs = spec->slave_dig_outs;
-			if (i >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
+			if (nums >= ARRAY_SIZE(spec->slave_dig_outs) - 1)
 				break;
-			spec->slave_dig_outs[i - 1] = dig_nid;
+			spec->slave_dig_outs[nums - 1] = dig_nid;
 		}
+		nums++;
 	}
 
 	if (spec->autocfg.dig_in_pin) {
@@ -2254,6 +2273,7 @@ static int alc_build_pcms(struct hda_codec *codec)
 	struct alc_spec *spec = codec->spec;
 	struct hda_pcm *info = spec->pcm_rec;
 	const struct hda_pcm_stream *p;
+	bool have_multi_adcs;
 	int i;
 
 	codec->num_pcms = 1;
@@ -2332,8 +2352,11 @@ static int alc_build_pcms(struct hda_codec *codec)
 	/* If the use of more than one ADC is requested for the current
 	 * model, configure a second analog capture-only PCM.
 	 */
+	have_multi_adcs = (spec->num_adc_nids > 1) &&
+		!spec->dyn_adc_switch && !spec->auto_mic &&
+		(!spec->input_mux || spec->input_mux->num_items > 1);
 	/* Additional Analaog capture for index #2 */
-	if (spec->alt_dac_nid || spec->num_adc_nids > 1) {
+	if (spec->alt_dac_nid || have_multi_adcs) {
 		codec->num_pcms = 3;
 		info = spec->pcm_rec + 2;
 		info->name = spec->stream_name_analog;
@@ -2349,7 +2372,7 @@ static int alc_build_pcms(struct hda_codec *codec)
 				alc_pcm_null_stream;
 			info->stream[SNDRV_PCM_STREAM_PLAYBACK].nid = 0;
 		}
-		if (spec->num_adc_nids > 1) {
+		if (have_multi_adcs) {
 			p = spec->stream_analog_alt_capture;
 			if (!p)
 				p = &alc_pcm_analog_alt_capture;
@@ -2641,7 +2664,6 @@ static int alc_auto_fill_adc_caps(struct hda_codec *codec)
 	hda_nid_t *adc_nids = spec->private_adc_nids;
 	hda_nid_t *cap_nids = spec->private_capsrc_nids;
 	int max_nums = ARRAY_SIZE(spec->private_adc_nids);
-	bool indep_capsrc = false;
 	int i, nums = 0;
 
 	nid = codec->start_nid;
@@ -2663,13 +2685,11 @@ static int alc_auto_fill_adc_caps(struct hda_codec *codec)
 				break;
 			if (type == AC_WID_AUD_SEL) {
 				cap_nids[nums] = src;
-				indep_capsrc = true;
 				break;
 			}
 			n = snd_hda_get_conn_list(codec, src, &list);
 			if (n > 1) {
 				cap_nids[nums] = src;
-				indep_capsrc = true;
 				break;
 			} else if (n != 1)
 				break;
@@ -4746,7 +4766,7 @@ static void alc269_fixup_stereo_dmic(struct hda_codec *codec,
 
 static void alc269_quanta_automute(struct hda_codec *codec)
 {
-	update_speakers(codec);
+	update_outputs(codec);
 
 	snd_hda_codec_write(codec, 0x20, 0,
 			AC_VERB_SET_COEF_INDEX, 0x0c);
