@@ -50,7 +50,7 @@ ifeq ($(CONFIG_SND),y)
 	   emu10k1/_emu10k1.o \
 	   korg1212/_korg1212.o \
 	   nm256/_nm256.o \
-	   rme9652/_rme9652.o \
+	   rme9652/_rmeh.o \
 	   trident/_trident.o \
 	   ymfpci/_ymfpci.o
 endif

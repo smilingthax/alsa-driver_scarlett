@@ -5,7 +5,7 @@ O_TARGET := sound.o
 
 export-objs     := sound_core.o
 
-mod-subdirs	:= oss core i2c drivers isa pci ppc synth
+mod-subdirs	:= oss core i2c drivers isa pci ppc arm synth
 
 obj-$(CONFIG_SOUND) += soundcore.o
 
