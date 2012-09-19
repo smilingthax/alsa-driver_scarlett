@@ -1,3 +1,4 @@
+#define __NO_VERSION__
 #include "../alsa-kernel/core/wrappers.c"
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 3, 0)
