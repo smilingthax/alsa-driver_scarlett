@@ -33,7 +33,6 @@
 #include <linux/pci.h>
 #include <linux/slab.h>
 #include <linux/moduleparam.h>
-#include <linux/reboot.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/ac97_codec.h>
@@ -418,9 +417,6 @@ struct intel8x0 {
 	struct snd_dma_buffer bdbars;
 	u32 int_sta_reg;		/* interrupt status register */
 	u32 int_sta_mask;		/* interrupt status mask */
-
-	/* reboot notifier (for mysterious hangup problem at power-down) */
-	struct notifier_block reboot_notifier;
 };
 
 static struct pci_device_id snd_intel8x0_ids[] = {
@@ -2464,10 +2460,12 @@ static int snd_intel8x0_chip_init(struct intel8x0 *chip, int probing)
 	return 0;
 }
 
-static void snd_intel8x0_stop_chip(struct intel8x0 *chip)
+static int snd_intel8x0_free(struct intel8x0 *chip)
 {
 	unsigned int i;
 
+	if (chip->irq < 0)
+		goto __hw_end;
 	/* disable interrupts */
 	for (i = 0; i < chip->bdbars_count; i++)
 		iputbyte(chip, ICH_REG_OFF_CR + chip->ichd[i].reg_offset, 0x00);
@@ -2481,39 +2479,11 @@ static void snd_intel8x0_stop_chip(struct intel8x0 *chip)
 		val &= ~0x1000000;
 		pci_write_config_dword(chip->pci, 0x4c, val);
 	}
-}
+	/* --- */
 
-/*
- * reboot notifier for hang-up problem at power-down
- */
-static int intel8x0_halt(struct notifier_block *nb, unsigned long event, void *buf)
-{
-	struct intel8x0 *chip = container_of(nb, struct intel8x0, reboot_notifier);
-	snd_intel8x0_stop_chip(chip);
-	return NOTIFY_OK;
-}
-
-static void intel8x0_notifier_register(struct intel8x0 *chip)
-{
-	chip->reboot_notifier.notifier_call = intel8x0_halt;
-	register_reboot_notifier(&chip->reboot_notifier);
-}
-
-static void intel8x0_notifier_unregister(struct intel8x0 *chip)
-{
-	if (chip->reboot_notifier.notifier_call)
-		unregister_reboot_notifier(&chip->reboot_notifier);
-}
-
-static int snd_intel8x0_free(struct intel8x0 *chip)
-{
-	intel8x0_notifier_unregister(chip);
-
-	if (chip->irq >= 0) {
-		snd_intel8x0_stop_chip(chip);
+      __hw_end:
+	if (chip->irq >= 0)
 		free_irq(chip->irq, chip);
-		chip->irq = -1;
-	}
 	if (chip->bdbars.area) {
 		if (chip->fix_nocache)
 			fill_nocache(chip->bdbars.area, chip->bdbars.bytes, 0);
@@ -3023,7 +2993,6 @@ static int __devinit snd_intel8x0_create(struct snd_card *card,
 	}
 
 	snd_card_set_dev(card, &pci->dev);
-	intel8x0_notifier_register(chip);
 
 	*r_intel8x0 = chip;
 	return 0;
