@@ -14,8 +14,10 @@ clean-files := bt87x.c intel8x0.c maestro3.c
 obj-$(CONFIG_SND) += pdplus/ pcxhr/ echoaudio/ riptide/
 
 snd-asihpi-objs := asihpi.o
+snd-ad1889-objs := ad1889.o
 
 obj-$(CONFIG_SND_ASIHPI) += snd-asihpi.o
+obj-$(CONFIG_SND_AD1889) += snd-ad1889.o
 
 #
 #
