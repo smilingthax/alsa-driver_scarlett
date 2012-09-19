@@ -10,8 +10,7 @@ include $(SND_TOPDIR)/Makefile.conf
 #
 
 isapnp-files := als100.isapnp azt2320.isapnp opl3sa2.isapnp \
-		cmi8330.isapnp es18xx.isapnp sscape.isapnp \
-		dt019x.isapnp
+		cmi8330.isapnp es18xx.isapnp sscape.isapnp
 
 #
 #
