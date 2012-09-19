@@ -22,6 +22,7 @@
  */
 
 #include <sound/driver.h>
+#include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
@@ -437,8 +438,39 @@ static char channel_map_ds[HDSP_MAX_CHANNELS] = {
 #define HDSP_PREALLOCATE_MEMORY	/* via module snd-hdsp_mem */
 
 #ifdef HDSP_PREALLOCATE_MEMORY
-extern void *snd_hammerfall_get_buffer(struct pci_dev *, dma_addr_t *dmaaddr);
-extern void snd_hammerfall_free_buffer(struct pci_dev *, void *ptr);
+static void *snd_hammerfall_get_buffer(struct pci_dev *pci, size_t size, dma_addr_t *addrp, int capture)
+{
+	struct snd_dma_device pdev;
+	struct snd_dma_buffer dmbuf;
+
+	snd_dma_device_pci(&pdev, pci, capture);
+	dmbuf.bytes = 0;
+	if (! snd_dma_get_reserved(&pdev, &dmbuf)) {
+		if (snd_dma_alloc_pages(&pdev, size, &dmbuf) < 0)
+			return NULL;
+		snd_dma_set_reserved(&pdev, &dmbuf);
+	}
+	*addrp = dmbuf.addr;
+	return dmbuf.area;
+}
+
+static void snd_hammerfall_free_buffer(struct pci_dev *pci, size_t size, void *ptr, dma_addr_t addr, int capture)
+{
+	struct snd_dma_device dev;
+	snd_dma_device_pci(&dev, pci, capture);
+	snd_dma_free_reserved(&dev);
+}
+
+#else
+static void *snd_hammerfall_get_buffer(struct pci_dev *pci, size_t size, dma_addr_t *addrp, int capture)
+{
+	return snd_malloc_pci_pages(pci, size, addrp);
+}
+
+static void snd_hammerfall_free_buffer(struct pci_dev *pci, size_t size, void *ptr, dma_addr_t addr, int capture)
+{
+	snd_free_pci_pages(pci, size, ptr, addr);
+}
 #endif
 
 static struct pci_device_id snd_hdsp_ids[] __devinitdata = {
@@ -2967,25 +2999,15 @@ static void __devinit snd_hdsp_proc_init(hdsp_t *hdsp)
 static void snd_hdsp_free_buffers(hdsp_t *hdsp)
 {
 	if (hdsp->capture_buffer_unaligned) {
-#ifndef HDSP_PREALLOCATE_MEMORY
-		snd_free_pci_pages(hdsp->pci,
-				   HDSP_DMA_AREA_BYTES,
-				   hdsp->capture_buffer_unaligned,
-				   hdsp->capture_buffer_addr);
-#else
-		snd_hammerfall_free_buffer(hdsp->pci, hdsp->capture_buffer_unaligned);
-#endif
+		snd_hammerfall_free_buffer(hdsp->pci, HDSP_DMA_AREA_BYTES,
+					   hdsp->capture_buffer_unaligned,
+					   hdsp->capture_buffer_addr, 1);
 	}
 
 	if (hdsp->playback_buffer_unaligned) {
-#ifndef HDSP_PREALLOCATE_MEMORY
-		snd_free_pci_pages(hdsp->pci,
-				   HDSP_DMA_AREA_BYTES,
-				   hdsp->playback_buffer_unaligned,
-				   hdsp->playback_buffer_addr);
-#else
-		snd_hammerfall_free_buffer(hdsp->pci, hdsp->playback_buffer_unaligned);
-#endif
+		snd_hammerfall_free_buffer(hdsp->pci, HDSP_DMA_AREA_BYTES,
+					   hdsp->playback_buffer_unaligned,
+					   hdsp->playback_buffer_addr, 0);
 	}
 }
 
@@ -2995,28 +3017,15 @@ static int __devinit snd_hdsp_initialize_memory(hdsp_t *hdsp)
 	dma_addr_t pb_addr, cb_addr;
 	unsigned long pb_bus, cb_bus;
 
-#ifndef HDSP_PREALLOCATE_MEMORY
-	cb = snd_malloc_pci_pages(hdsp->pci, HDSP_DMA_AREA_BYTES, &cb_addr);
-	pb = snd_malloc_pci_pages(hdsp->pci, HDSP_DMA_AREA_BYTES, &pb_addr);
-#else
-	cb = snd_hammerfall_get_buffer(hdsp->pci, &cb_addr);
-	pb = snd_hammerfall_get_buffer(hdsp->pci, &pb_addr);
-#endif
+	cb = snd_hammerfall_get_buffer(hdsp->pci, HDSP_DMA_AREA_BYTES, &cb_addr, 1);
+	pb = snd_hammerfall_get_buffer(hdsp->pci, HDSP_DMA_AREA_BYTES, &pb_addr, 0);
 
 	if (cb == 0 || pb == 0) {
 		if (cb) {
-#ifdef HDSP_PREALLOCATE_MEMORY
-			snd_hammerfall_free_buffer(hdsp->pci, cb);
-#else
-			snd_free_pci_pages(hdsp->pci, HDSP_DMA_AREA_BYTES, cb, cb_addr);
-#endif
+			snd_hammerfall_free_buffer(hdsp->pci, HDSP_DMA_AREA_BYTES, cb, cb_addr, 1);
 		}
 		if (pb) {
-#ifdef HDSP_PREALLOCATE_MEMORY
-			snd_hammerfall_free_buffer(hdsp->pci, pb);
-#else
-			snd_free_pci_pages(hdsp->pci, HDSP_DMA_AREA_BYTES, pb, pb_addr);
-#endif
+			snd_hammerfall_free_buffer(hdsp->pci, HDSP_DMA_AREA_BYTES, pb, pb_addr, 0);
 		}
 
 		printk(KERN_ERR "%s: no buffers available\n", hdsp->card_name);

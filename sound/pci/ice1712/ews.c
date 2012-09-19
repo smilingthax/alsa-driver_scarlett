@@ -458,10 +458,12 @@ static int __devinit snd_ice1712_ews_init(ice1712_t *ice)
 	case ICE1712_SUBDEVICE_EWX2496:
 		if ((err = snd_ice1712_init_cs8427(ice, CS8427_BASE_ADDR)) < 0)
 			return err;
+		snd_cs8427_reg_write(ice->cs8427, CS8427_REG_RECVERRMASK, CS8427_UNLOCK | CS8427_CONF | CS8427_BIP | CS8427_PAR);
 		break;
 	case ICE1712_SUBDEVICE_DMX6FIRE:
 		if ((err = snd_ice1712_init_cs8427(ice, ICE1712_6FIRE_CS8427_ADDR)) < 0)
 			return err;
+		snd_cs8427_reg_write(ice->cs8427, CS8427_REG_RECVERRMASK, CS8427_UNLOCK | CS8427_CONF | CS8427_BIP | CS8427_PAR);
 		break;
 	case ICE1712_SUBDEVICE_EWS88MT:
 	case ICE1712_SUBDEVICE_EWS88MT_NEW:

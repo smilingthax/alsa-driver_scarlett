@@ -197,9 +197,8 @@ snd-emu10k1-synth @if_sequencer snd-emux-synth
 |snd-nm256 snd-pcm snd-ac97-codec
 
 %dir linux/sound/pci/rme9652
-snd-hammerfall-mem
-|snd-rme9652 snd-pcm snd-hammerfall-mem
-|snd-hdsp snd-pcm snd-hammerfall-mem
+|snd-rme9652 snd-pcm
+|snd-hdsp snd-pcm snd-mpu401-uart
 
 %dir linux/sound/pci/trident
 snd-trident-synth @if_sequencer snd-seq-midi-emul snd-ainstr-simple

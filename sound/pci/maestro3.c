@@ -2305,7 +2305,7 @@ snd_m3_chip_init(m3_t *chip)
 	w &= ~(SOUND_BLASTER_ENABLE|FM_SYNTHESIS_ENABLE|
 	       MPU401_IO_ENABLE|MPU401_IRQ_ENABLE|ALIAS_10BIT_IO|
 	       DISABLE_LEGACY);
-	pci_write_config_word(pcidev, PCI_LEGACY_AUDIO_CTRL, &w);
+	pci_write_config_word(pcidev, PCI_LEGACY_AUDIO_CTRL, w);
 
 	pci_read_config_dword(pcidev, PCI_ALLEGRO_CONFIG, &n);
 	n &= REDUCED_DEBOUNCE;
