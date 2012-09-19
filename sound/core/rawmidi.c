@@ -278,6 +278,7 @@ static int open_substream(struct snd_rawmidi *rmidi,
 		substream->active_sensing = 0;
 		if (mode & SNDRV_RAWMIDI_LFLG_APPEND)
 			substream->append = 1;
+		substream->pid = get_pid(task_pid(current));
 		rmidi->streams[substream->stream].substream_opened++;
 	}
 	substream->use_count++;
@@ -411,7 +412,7 @@ static int snd_rawmidi_open(struct inode *inode, struct file *file)
 		subdevice = -1;
 		read_lock(&card->ctl_files_rwlock);
 		list_for_each_entry(kctl, &card->ctl_files, list) {
-			if (kctl->pid == current->pid) {
+			if (kctl->pid == task_pid(current)) {
 				subdevice = kctl->prefer_rawmidi_subdevice;
 				if (subdevice != -1)
 					break;
@@ -488,6 +489,8 @@ static void close_substream(struct snd_rawmidi *rmidi,
 	snd_rawmidi_runtime_free(substream);
 	substream->opened = 0;
 	substream->append = 0;
+	put_pid(substream->pid);
+	substream->pid = NULL;
 	rmidi->streams[substream->stream].substream_opened--;
 }
 
@@ -1336,6 +1339,9 @@ static void snd_rawmidi_proc_info_read(struct snd_info_entry *entry,
 				    substream->number,
 				    (unsigned long) substream->bytes);
 			if (substream->opened) {
+				snd_iprintf(buffer,
+				    "  Owner PID    : %d\n",
+				    pid_vnr(substream->pid));
 				runtime = substream->runtime;
 				snd_iprintf(buffer,
 				    "  Mode         : %s\n"
@@ -1357,6 +1363,9 @@ static void snd_rawmidi_proc_info_read(struct snd_info_entry *entry,
 				    substream->number,
 				    (unsigned long) substream->bytes);
 			if (substream->opened) {
+				snd_iprintf(buffer,
+					    "  Owner PID    : %d\n",
+					    pid_vnr(substream->pid));
 				runtime = substream->runtime;
 				snd_iprintf(buffer,
 					    "  Buffer size  : %lu\n"
