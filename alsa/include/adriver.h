@@ -139,7 +139,9 @@ typedef __u32 __be32;
              pos = list_entry(pos->member.next, typeof(*pos), member),  \
                      prefetch(pos->member.next))
 #endif
+#ifndef might_sleep
 static inline int might_sleep(void)	{ return 0; }
+#endif
 #endif /* LINUX_2_4__donotuse */
 
 #ifndef __devexit_p
