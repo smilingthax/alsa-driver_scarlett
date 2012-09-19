@@ -41,4 +41,11 @@ config SND_AZX
 	help
 	  Say 'Y' or 'M' to include support for Intel HD Audio (Azalia).
 
+config SND_VIA82XX_MODEM
+	tristate "VIA 82C686A/B, 8233 based Modems"
+	depends on SND
+	select SND_AC97_CODEC
+	help
+	  Say 'Y' or 'M' to include support for VIA VT82C686A/B, VT8233 based modems..
+
 endmenu
