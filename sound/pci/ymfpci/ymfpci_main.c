@@ -1672,8 +1672,8 @@ static int snd_ymfpci_memalloc(ymfpci_t *chip)
 			ptr_addr += chip->bank_size_playback;
 		}
 	}
-	ptr += (chip->bank_size_playback + 0x00ff) & ~0x00ff;
-	ptr_addr += (chip->bank_size_playback + 0x00ff) & ~0x00ff;
+	ptr += (char *)(((unsigned long)ptr + 0x00ff) & ~0x00ff);
+	ptr_addr += (ptr_addr + 0x00ff) & ~0x00ff;
 	chip->bank_base_capture = ptr;
 	chip->bank_base_capture_addr = ptr_addr;
 	for (voice = 0; voice < YDSXG_CAPTURE_VOICES; voice++)
@@ -1682,8 +1682,8 @@ static int snd_ymfpci_memalloc(ymfpci_t *chip)
 			ptr += chip->bank_size_capture;
 			ptr_addr += chip->bank_size_capture;
 		}
-	ptr += (chip->bank_size_capture + 0x00ff) & ~0x00ff;
-	ptr_addr += (chip->bank_size_capture + 0x00ff) & ~0x00ff;
+	ptr += (char *)(((unsigned long)ptr + 0x00ff) & ~0x00ff);
+	ptr_addr += (ptr_addr + 0x00ff) & ~0x00ff;
 	chip->bank_base_effect = ptr;
 	chip->bank_base_effect_addr = ptr_addr;
 	for (voice = 0; voice < YDSXG_EFFECT_VOICES; voice++)
@@ -1692,10 +1692,12 @@ static int snd_ymfpci_memalloc(ymfpci_t *chip)
 			ptr += chip->bank_size_effect;
 			ptr_addr += chip->bank_size_effect;
 		}
-	ptr += (chip->bank_size_effect + 0x00ff) & ~0x00ff;
-	ptr_addr += (chip->bank_size_effect + 0x00ff) & ~0x00ff;
+	ptr += (char *)(((unsigned long)ptr + 0x00ff) & ~0x00ff);
+	ptr_addr += (ptr_addr + 0x00ff) & ~0x00ff;
 	chip->work_base = ptr;
 	chip->work_base_addr = ptr_addr;
+	
+	snd_assert(ptr + chip->work_size == chip->work_ptr + chip->work_ptr_size, );
 
 	snd_ymfpci_writel(chip, YDSXGR_PLAYCTRLBASE, chip->bank_base_playback_addr);
 	snd_ymfpci_writel(chip, YDSXGR_RECCTRLBASE, chip->bank_base_capture_addr);
