@@ -5,7 +5,7 @@ endif
 include $(SND_TOPDIR)/toplevel.config
 include $(SND_TOPDIR)/Makefile.conf
 
-clean-files := info.c pcm_native.c control.c hwdep.c init.c rawmidi.c sound.c timer.c memalloc.c
+clean-files := info.c pcm_native.c pcm_lib.c control.c hwdep.c init.c rawmidi.c sound.c timer.c memalloc.c
 
 obj-$(CONFIG_SND_PDPLUS) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o
 obj-$(CONFIG_SND_MIXART) += snd-pcm.o snd-timer.o snd-page-alloc.o snd.o snd-hwdep.o
