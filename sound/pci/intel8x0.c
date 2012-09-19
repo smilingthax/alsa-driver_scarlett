@@ -87,12 +87,12 @@ MODULE_PARM_SYNTAX(snd_ac97_clock, SNDRV_ENABLED ",default:0");
 #ifdef SUPPORT_JOYSTICK
 MODULE_PARM(snd_joystick_port, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_joystick_port, "Joystick port address for Intel i8x0 soundcard. (0 = disabled)");
-MODULE_PARM_SYNTAX(snd_joystick_port, SNDRV_ENABLED);
+MODULE_PARM_SYNTAX(snd_joystick_port, SNDRV_ENABLED ",allows:{{0},{0x200}},dialog:list");
 #endif
 #ifdef SUPPORT_MIDI
 MODULE_PARM(snd_mpu_port, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_mpu_port, "MPU401 port # for Intel i8x0 driver.");
-MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED);
+MODULE_PARM_SYNTAX(snd_mpu_port, SNDRV_ENABLED ",allows:{{0},{0x330},{0x300}},dialog:list");
 #endif
 
 /*
@@ -1447,7 +1447,7 @@ static int __devinit snd_intel8x0_probe(struct pci_dev *pci,
 		if ((err = snd_mpu401_uart_new(card, 0, MPU401_HW_CMIPCI,
 					       snd_mpu_port[dev], 0,
 					       -1, 0, &chip->rmidi)) < 0) {
-			snd_printk("intel8x0: no UART401 device at 0x%x\n", snd_mpu_port[dev]);
+			printk(KERN_ERR "intel8x0: no UART401 device at 0x%x, skipping.\n", snd_mpu_port[dev]);
 			snd_mpu_port[dev] = 0;
 		}
 	} else
@@ -1551,7 +1551,7 @@ static int __init alsa_card_intel8x0_init(void)
 
         if ((err = pci_module_init(&driver)) < 0) {
 #ifdef MODULE
-                snd_printk("Intel ICH soundcard not found or device busy\n");
+		printk(KERN_ERR "Intel ICH soundcard not found or device busy\n");
 #endif
                 return err;
         }

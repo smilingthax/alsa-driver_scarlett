@@ -1910,7 +1910,7 @@ static int __init alsa_card_cs4281_init(void)
 
 	if ((err = pci_module_init(&driver)) < 0) {
 #ifdef MODULE
-		snd_printk("CS4281 soundcard not found or device busy\n");
+		printk(KERN_ERR "CS4281 soundcard not found or device busy\n");
 #endif
 		return err;
 	}

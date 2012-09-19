@@ -392,7 +392,7 @@ static snd_pcm_uframes_t rme9652_hw_pointer(rme9652_t *rme9652)
 	if (offset < period_size) {
 		if (offset > rme9652->max_jitter) {
 			if (frag)
-				printk("Unexpected hw_pointer position (bufid == 0): status: %x offset: %d\n", status, offset);
+				printk(KERN_ERR "Unexpected hw_pointer position (bufid == 0): status: %x offset: %d\n", status, offset);
 		} else if (!frag)
 			return 0;
 		offset -= rme9652->max_jitter;
@@ -401,7 +401,7 @@ static snd_pcm_uframes_t rme9652_hw_pointer(rme9652_t *rme9652)
 	} else {
 		if (offset > period_size + rme9652->max_jitter) {
 			if (!frag)
-				printk("Unexpected hw_pointer position (bufid == 1): status: %x offset: %d\n", status, offset);
+				printk(KERN_ERR "Unexpected hw_pointer position (bufid == 1): status: %x offset: %d\n", status, offset);
 		} else if (frag)
 			return period_size;
 		offset -= rme9652->max_jitter;
@@ -1887,8 +1887,7 @@ static int __init snd_rme9652_initialize_memory(rme9652_t *rme9652)
 #endif
 		}
 
-		snd_printk("%s: no buffers available\n",
-			   rme9652->card_name);
+		printk(KERN_ERR "%s: no buffers available\n", rme9652->card_name);
 		return -ENOMEM;
 	}
 
@@ -2724,7 +2723,7 @@ static int __init alsa_card_hammerfall_init(void)
 {
 	if (pci_module_init(&driver) < 0) {
 #ifdef MODULE
-		snd_printk("RME Digi9652/Digi9636: no cards found\n");
+		printk(KERN_ERR "RME Digi9652/Digi9636: no cards found\n");
 #endif
 		return -ENODEV;
 	}

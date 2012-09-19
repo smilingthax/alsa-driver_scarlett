@@ -1116,11 +1116,11 @@ int snd_emu10k1_proc_done(emu10k1_t * emu);
 #define GPR_NOISE1	0x59		/* noise source */
 #define GPR_IRQ		0x5a		/* IRQ register */
 #define GPR_DBAC	0x5b		/* TRAM Delay Base Address Counter */
-#define GPR(x)		(FXGPREGBASE + (x))	/* free GPRs: x = 0x00 - 0xff */
-#define ITRAM_DATA(x)	(TANKMEMDATAREGBASE + (x))	/* x = 0x00 - 0x7f */
-#define ETRAM_DATA(x)	(TANKMEMDATAREGBASE + 80 + (x))	/* x = 0x00 - 0x1f */
-#define ITRAM_ADDR(x)	(TANKMEMADDRREGBASE + (x))	/* x = 0x00 - 0x7f */
-#define ETRAM_ADDR(x)	(TANKMEMADDRREGBASE + 80 + (x))	/* x = 0x00 - 0x1f */
+#define GPR(x)		(FXGPREGBASE + (x)) /* free GPRs: x = 0x00 - 0xff */
+#define ITRAM_DATA(x)	(TANKMEMDATAREGBASE + 0x00 + (x)) /* x = 0x00 - 0x7f */
+#define ETRAM_DATA(x)	(TANKMEMDATAREGBASE + 0x80 + (x)) /* x = 0x00 - 0x1f */
+#define ITRAM_ADDR(x)	(TANKMEMADDRREGBASE + 0x00 + (x)) /* x = 0x00 - 0x7f */
+#define ETRAM_ADDR(x)	(TANKMEMADDRREGBASE + 0x80 + (x)) /* x = 0x00 - 0x1f */
 
 #define A_FXBUS(x)	(0x00 + (x))	/* x = 0x00 - 0x3f? */
 #define A_EXTIN(x)	(0x40 + (x))	/* x = 0x00 - 0x1f? */

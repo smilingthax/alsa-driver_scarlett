@@ -1189,7 +1189,7 @@ static int __devinit snd_via686a_probe(struct pci_dev *pci,
 	pci_write_config_byte(pci, 0x43, legacy_cfg);
 	if (legacy & 0x02) {
 		if (check_region(snd_mpu_port[dev], 2)) {
-			snd_printk("unable to get MPU-401 port at 0x%lx, skipping\n", snd_mpu_port[dev]);
+			printk(KERN_WARNING "unable to get MPU-401 port at 0x%lx, skipping\n", snd_mpu_port[dev]);
 			legacy &= ~0x02;
 			pci_write_config_byte(pci, 0x42, legacy);
 			goto __skip_mpu;
@@ -1198,7 +1198,7 @@ static int __devinit snd_via686a_probe(struct pci_dev *pci,
 					snd_mpu_port[dev], 0,
 					pci->irq, 0,
 					&chip->rmidi) < 0) {
-			snd_printk("unable to initialize MPU-401 at 0x%lx, skipping\n", snd_mpu_port[dev]);
+			printk(KERN_WARNING "unable to initialize MPU-401 at 0x%lx, skipping\n", snd_mpu_port[dev]);
 			legacy &= ~0x02;
 			pci_write_config_byte(pci, 0x42, legacy);
 			goto __skip_mpu;
@@ -1250,7 +1250,7 @@ static int __init alsa_card_via686a_init(void)
 
 	if ((err = pci_module_init(&driver)) < 0) {
 #ifdef MODULE
-		snd_printk("VIA 82C686A soundcard not found or device busy\n");
+		printk(KERN_ERR "VIA 82C686A soundcard not found or device busy\n");
 #endif
 		return err;
 	}
