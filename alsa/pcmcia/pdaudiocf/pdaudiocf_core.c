@@ -105,7 +105,12 @@ static int pdacf_reset(pdacf_t *chip, int powerdown)
 	val &= ~PDAUDIOCF_RECORD;		/* for sure */
 	pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, val);
 	udelay(200);
-	val &= ~(PDAUDIOCF_RST | (powerdown ? 0 : PDAUDIOCF_PDN));
+	if (powerdown) {
+		val &= ~PDAUDIOCF_PDN;
+		pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, val);
+		udelay(200);
+	}
+	val &= ~PDAUDIOCF_RST;
 	pdacf_reg_write(chip, PDAUDIOCF_REG_SCR, val);
 	udelay(200);
 	return 0;
