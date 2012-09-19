@@ -1414,7 +1414,7 @@ extern struct pt_regs *snd_irq_regs;
 #define CONFIG_SYSFS_DEPRECATED	1
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 21)
+#ifndef CONFIG_HAVE_IS_POWER_OF_2
 static inline __attribute__((const))
 int is_power_of_2(unsigned long n)
 {

@@ -1,6 +1,10 @@
 #define __NO_VERSION__
 #include "adriver.h"
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/version.h>
 #include <linux/utsrelease.h>
 

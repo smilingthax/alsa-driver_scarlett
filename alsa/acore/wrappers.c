@@ -2,7 +2,11 @@
 #include "config.h"
 
 #include <linux/version.h>
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/string.h>
 #include <linux/sched.h>
 

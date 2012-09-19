@@ -615,6 +615,26 @@ CHECK_KERNEL_HEADER(linux/config.h, [#ifndef _LINUX_CONFIG_H
 #endif
 ])
 
+dnl Check for deprecated linux/config.h
+AC_MSG_CHECKING(for deprecated linux/config.h)
+if test -n "$kernelbuild" -a \( -f "$kernelbuild/include/$1" -o -f "$kernelbuild/include2/$1" \) ; then
+  KERNDIR=$kernelbuild
+else
+  KERNDIR=$CONFIG_SND_KERNELDIR
+fi
+deprecated_config_h="0"
+if test -r $KERNDIR/include/linux/config.h ; then
+  if grep "Including config.h is deprecated." $KERNDIR/include/linux/config.h > /dev/null; then
+    deprecated_config_h="1"
+  fi
+else
+  deprecated_config_h="1"
+fi
+CONFIG_HAVE_DEPRECATED_CONFIG_H=$deprecated_config_h
+if test "$CONFIG_HAVE_DEPRECATED_CONFIG_H" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_DEPRECATED_CONFIG_H)
+fi
+
 dnl Check kernel headers for 2.2
 MODIFY_KERNEL_HEADER(linux/kmod.h, __LINUX_KMOD_H__)
 CHECK_KERNEL_HEADER(linux/utsrelease.h)
@@ -2594,10 +2614,17 @@ AC_MSG_CHECKING(for init_utsname)
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
   CFLAGS="$KERNEL_CHECK_CFLAGS -Werror"
+  if test "$CONFIG_HAVE_DEPRECATED_CONFIG_H" = "1"; then
+    CFLAGS="$CFLAGS -DCONFIG_HAVE_DEPRECATED_CONFIG_H=1"
+  fi
   CC=$KCC
   AC_TRY_COMPILE([
 #define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/utsname.h>
 ],[
   int *x = (int *)init_utsname();
@@ -2616,12 +2643,42 @@ if test "$CONFIG_HAVE_INIT_UTSNAME" = "1"; then
   AC_DEFINE(CONFIG_HAVE_INIT_UTSNAME)
 fi
 
+dnl Check for is_power_of_2...
+if test "$kversion.$kpatchlevel" = "2.6" -a $ksublevel -ge 21; then
+  CONFIG_HAVE_IS_POWER_OF_2=1
+else
+AC_MSG_CHECKING(for is_power_of_2)
+  is_power_of_2="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#include <linux/config.h>
+#include <linux/log2.h>
+],[
+  int a = is_power_of_2(2);
+],
+    AC_MSG_RESULT(yes);is_power_of_2="1",
+    AC_MSG_RESULT(no);is_power_of_2="0",
+    AC_MSG_RESULT(unknown);is_power_of_2="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  CONFIG_HAVE_IS_POWER_OF_2=$is_power_of_2
+fi
+dnl AC_SUBST(CONFIG_HAVE_IS_POWER_OF_2)
+if test "$CONFIG_HAVE_IS_POWER_OF_2" = "1"; then
+  AC_DEFINE(CONFIG_HAVE_IS_POWER_OF_2)
+fi
+
 dnl __ffs support?
 if test "$kversion.$kpatchlevel" = "2.6"; then
   CONFIG_HAVE_FFS=1
 else
   AC_MSG_CHECKING(for __ffs)
-  init_utsname="0"
+  have_ffs="0"
   ac_save_CFLAGS="$CFLAGS"
   ac_save_CC="$CC"
   CFLAGS="$KERNEL_CHECK_CFLAGS"

@@ -1,5 +1,10 @@
+#include "config.h"
 #define __NO_VERSION__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <linux/autoconf.h>
+#else
 #include <linux/config.h>
+#endif
 #include <linux/version.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0)
@@ -16,7 +21,6 @@ static inline void snd_memory_wrapper_request_region(unsigned long from, unsigne
 }
 #endif
 
-#include "config.h"
 #undef CONFIG_SND_DEBUG_MEMORY
 #include "adriver.h"
 #include <linux/mm.h>
