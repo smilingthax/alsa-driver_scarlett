@@ -247,6 +247,24 @@ AC_DEFUN(CHECK_KERNEL_HEADER, [
   fi
 ])
 
+AC_DEFUN(CHECK_AND_REPLACE_KERNEL_HEADER, [
+  AC_MSG_CHECKING(for kernel $1)
+  if test -f "$CONFIG_SND_KERNELDIR/include/$1"; then
+    AC_MSG_RESULT("yes")
+    if test -f include/$1; then
+      echo "Removing a dummy $1."
+      rm -f include/$1
+    fi
+  else
+    AC_MSG_RESULT("no")
+    if test ! -f include/$1; then
+      echo "Creating a dummy <$1> which points to <$2>..."
+      mkdir -p include/linux
+      echo "#include <$2>" > include/$1
+    fi
+  fi
+])
+
 dnl Check kernel configurations
 AC_DEFUN(CHECK_KERNEL_CONFIG, [
   boolvar=$1
@@ -294,6 +312,7 @@ if test ! -f include/linux/workqueue.h; then
   fi
 fi
 CHECK_KERNEL_HEADER(asm/hw_irq.h)
+CHECK_AND_REPLACE_KERNEL_HEADER(linux/jiffies.h, linux/sched.h)
 
 dnl Check for modversions...
 CHECK_KERNEL_CONFIG(CONFIG_MODVERSIONS, [kernel module symbol versions])
