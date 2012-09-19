@@ -14,13 +14,13 @@ BOOKS := $(DOCBOOKS)
 sgmldocs: $(BOOKS)
 
 PS := $(patsubst %.sgml, %.ps, $(BOOKS))
-psdocs: $(PS)
+psdocs: $(PS) $(DOCPROC)
 
 PDF := $(patsubst %.sgml, %.pdf, $(BOOKS))
-pdfdocs: $(PDF)
+pdfdocs: $(PDF) $(DOCPROC)
 
 HTML := $(patsubst %.sgml, %, $(BOOKS))
-htmldocs: $(HTML)
+htmldocs: $(HTML) $(DOCPROC)
 
 ###
 # non-standard rules below to simplify...

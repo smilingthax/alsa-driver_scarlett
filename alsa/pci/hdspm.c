@@ -3556,7 +3556,6 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	spin_lock_init(&hdspm->midi[0].lock);
 	spin_lock_init(&hdspm->midi[1].lock);
 	hdspm->iobase = 0;
-	hdspm->res_port = 0;
 	hdspm->control_register = 0;
 	hdspm->control2_register = 0;
 
@@ -3587,18 +3586,12 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 	}
 
 	pci_set_master(hdspm->pci);
+
+	if ((err = pci_request_regions(pci, "hdspm")) < 0)
+		return err;
+
 	hdspm->port = pci_resource_start(pci, 0);
-
 	io_extent = pci_resource_len(pci, 0);
-
-	if ((hdspm->res_port
-	     =
-	     request_mem_region(hdspm->port, io_extent,
-				"hdspm")) == NULL) {
-		snd_printk(KERN_ERR "HDSPM: unable to grab memory region 0x%lx-0x%lx\n",
-			   hdspm->port, hdspm->port + io_extent - 1);
-		return -EBUSY;
-	}
 
 	snd_printdd("grabbed memory region (%p) 0x%lx-0x%lx\n",
 		   hdspm->res_port, hdspm->port,
@@ -3658,7 +3651,7 @@ static int __devinit snd_hdspm_create(snd_card_t * card, hdspm_t * hdspm,
 static int snd_hdspm_free(hdspm_t * hdspm)
 {
 
-	if (hdspm->res_port) {
+	if (hdspm->port) {
 
 		/* stop th audio, and cancel all interrupts */
 		hdspm->control_register &=
@@ -3681,10 +3674,8 @@ static int snd_hdspm_free(hdspm_t * hdspm)
 
 	snd_hdspm_memory_free(hdspm);
 
-	if (hdspm->res_port) {
-		release_resource(hdspm->res_port);
-		kfree_nocheck(hdspm->res_port);
-	}
+	if (hdspm->port)
+		pci_release_regions(hdspm->pci);
 
 	return 0;
 }
