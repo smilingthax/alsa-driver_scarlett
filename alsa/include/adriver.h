@@ -538,10 +538,17 @@ static inline void class_simple_device_remove(int devnum) { return; }
 #define SNDRV_MODULE_TYPE_uint	"i"
 #define SNDRV_MODULE_TYPE_charp	"s"
 #define SNDRV_MODULE_TYPE_long	"l"
-#define module_param_array(name, type, num, perm) \
+#define module_param_array(name, type, nump, perm) \
 	MODULE_PARM(name, "1-" __MODULE_STRING(SNDRV_CARDS) SNDRV_MODULE_TYPE_##type)
 #define module_param(name, type, perm) \
 	MODULE_PARM(name, SNDRV_MODULE_TYPE_##type)
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 10)
+#include <linux/moduleparam.h>
+#undef module_param_array
+/* we assumme nump is always NULL so we can use a dummy variable */
+#define module_param_array(name, type, nump, perm) \
+	static int boot_devs_##name; \
+	module_param_array_named(name, name, type, boot_devs_##name, perm)
 #endif
 
 /* dump_stack hack */
