@@ -222,10 +222,8 @@ enum snd_soc_bias_level {
 
 struct snd_jack;
 struct snd_soc_card;
-struct snd_soc_device;
 struct snd_soc_pcm_stream;
 struct snd_soc_ops;
-struct snd_soc_dai_mode;
 struct snd_soc_pcm_runtime;
 struct snd_soc_dai;
 struct snd_soc_dai_driver;
@@ -235,7 +233,6 @@ struct snd_soc_platform_driver;
 struct snd_soc_codec;
 struct snd_soc_codec_driver;
 struct soc_enum;
-struct snd_soc_ac97_ops;
 struct snd_soc_jack;
 struct snd_soc_jack_pin;
 struct snd_soc_cache_ops;
@@ -256,7 +253,7 @@ enum snd_soc_control_type {
 };
 
 enum snd_soc_compress_type {
-	SND_SOC_FLAT_COMPRESSION,
+	SND_SOC_FLAT_COMPRESSION = 1,
 	SND_SOC_LZO_COMPRESSION,
 	SND_SOC_RBTREE_COMPRESSION
 };
@@ -265,7 +262,7 @@ int snd_soc_register_platform(struct device *dev,
 		struct snd_soc_platform_driver *platform_drv);
 void snd_soc_unregister_platform(struct device *dev);
 int snd_soc_register_codec(struct device *dev,
-		struct snd_soc_codec_driver *codec_drv,
+		const struct snd_soc_codec_driver *codec_drv,
 		struct snd_soc_dai_driver *dai_drv, int num_dai);
 void snd_soc_unregister_codec(struct device *dev);
 int snd_soc_codec_volatile_register(struct snd_soc_codec *codec, int reg);
@@ -437,6 +434,7 @@ struct snd_soc_ops {
 
 /* SoC cache ops */
 struct snd_soc_cache_ops {
+	const char *name;
 	enum snd_soc_compress_type id;
 	int (*init)(struct snd_soc_codec *codec);
 	int (*exit)(struct snd_soc_codec *codec);
@@ -453,13 +451,14 @@ struct snd_soc_codec {
 	const char *name_prefix;
 	int id;
 	struct device *dev;
-	struct snd_soc_codec_driver *driver;
+	const struct snd_soc_codec_driver *driver;
 
 	struct mutex mutex;
 	struct snd_soc_card *card;
 	struct list_head list;
 	struct list_head card_list;
 	int num_dai;
+	enum snd_soc_compress_type compress_type;
 
 	/* runtime */
 	struct snd_ac97 *ac97;  /* for ad-hoc ac97 devices */
@@ -471,12 +470,16 @@ struct snd_soc_codec {
 	unsigned int ac97_registered:1; /* Codec has been AC97 registered */
 	unsigned int ac97_created:1; /* Codec has been created by SoC */
 	unsigned int sysfs_registered:1; /* codec has been sysfs registered */
+	unsigned int cache_init:1; /* codec cache has been initialized */
 
 	/* codec IO */
 	void *control_data; /* codec control (i2c/3wire) data */
 	hw_write_t hw_write;
 	unsigned int (*hw_read)(struct snd_soc_codec *, unsigned int);
+	unsigned int (*read)(struct snd_soc_codec *, unsigned int);
+	int (*write)(struct snd_soc_codec *, unsigned int, unsigned int);
 	void *reg_cache;
+	const void *reg_def_copy;
 	const struct snd_soc_cache_ops *cache_ops;
 	struct mutex cache_rw_mutex;
 
@@ -578,9 +581,28 @@ struct snd_soc_dai_link {
 	struct snd_soc_ops *ops;
 };
 
-struct snd_soc_prefix_map {
+struct snd_soc_codec_conf {
 	const char *dev_name;
+
+	/*
+	 * optional map of kcontrol, widget and path name prefixes that are
+	 * associated per device
+	 */
 	const char *name_prefix;
+
+	/*
+	 * set this to the desired compression type if you want to
+	 * override the one supplied in codec->driver->compress_type
+	 */
+	enum snd_soc_compress_type compress_type;
+};
+
+struct snd_soc_aux_dev {
+	const char *name;		/* Codec name */
+	const char *codec_name;		/* for multi-codec */
+
+	/* codec/machine specific init - e.g. add machine controls */
+	int (*init)(struct snd_soc_dapm_context *dapm);
 };
 
 /* SoC card */
@@ -608,6 +630,8 @@ struct snd_soc_card {
 	/* callbacks */
 	int (*set_bias_level)(struct snd_soc_card *,
 			      enum snd_soc_bias_level level);
+	int (*set_bias_level_post)(struct snd_soc_card *,
+				   enum snd_soc_bias_level level);
 
 	long pmdown_time;
 
@@ -617,12 +641,18 @@ struct snd_soc_card {
 	struct snd_soc_pcm_runtime *rtd;
 	int num_rtd;
 
+	/* optional codec specific configuration */
+	struct snd_soc_codec_conf *codec_conf;
+	int num_configs;
+
 	/*
-	 * optional map of kcontrol, widget and path name prefixes that are
-	 * associated per device
+	 * optional auxiliary devices such as amplifiers or codecs with DAI
+	 * link unused
 	 */
-	struct snd_soc_prefix_map *prefix_map;
-	int num_prefixes;
+	struct snd_soc_aux_dev *aux_dev;
+	int num_aux_devs;
+	struct snd_soc_pcm_runtime *rtd_aux;
+	int num_aux_rtd;
 
 	struct work_struct deferred_resume_work;
 
@@ -630,6 +660,10 @@ struct snd_soc_card {
 	struct list_head codec_dev_list;
 	struct list_head platform_dev_list;
 	struct list_head dai_dev_list;
+
+	struct list_head widgets;
+	struct list_head paths;
+	struct list_head dapm_list;
 
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs_card_root;

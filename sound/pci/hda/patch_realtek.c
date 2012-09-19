@@ -1677,6 +1677,11 @@ struct alc_pincfg {
 	u32 val;
 };
 
+struct alc_model_fixup {
+	const int id;
+	const char *name;
+};
+
 struct alc_fixup {
 	unsigned int sku;
 	const struct alc_pincfg *pins;
@@ -1685,23 +1690,19 @@ struct alc_fixup {
 		     int pre_init);
 };
 
-static void alc_pick_fixup(struct hda_codec *codec,
-			   const struct snd_pci_quirk *quirk,
-			   const struct alc_fixup *fix,
-			   int pre_init)
+static void __alc_pick_fixup(struct hda_codec *codec,
+			     const struct alc_fixup *fix,
+			     const char *modelname,
+			     int pre_init)
 {
 	const struct alc_pincfg *cfg;
 	struct alc_spec *spec;
 
-	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
-	if (!quirk)
-		return;
-	fix += quirk->value;
 	cfg = fix->pins;
 	if (pre_init && fix->sku) {
 #ifdef CONFIG_SND_DEBUG_VERBOSE
 		snd_printdd(KERN_INFO "hda_codec: %s: Apply sku override for %s\n",
-			    codec->chip_name, quirk->name);
+			    codec->chip_name, modelname);
 #endif
 		spec = codec->spec;
 		spec->cdefine.sku_cfg = fix->sku;
@@ -1710,7 +1711,7 @@ static void alc_pick_fixup(struct hda_codec *codec,
 	if (pre_init && cfg) {
 #ifdef CONFIG_SND_DEBUG_VERBOSE
 		snd_printdd(KERN_INFO "hda_codec: %s: Apply pincfg for %s\n",
-			    codec->chip_name, quirk->name);
+			    codec->chip_name, modelname);
 #endif
 		for (; cfg->nid; cfg++)
 			snd_hda_codec_set_pincfg(codec, cfg->nid, cfg->val);
@@ -1718,16 +1719,52 @@ static void alc_pick_fixup(struct hda_codec *codec,
 	if (!pre_init && fix->verbs) {
 #ifdef CONFIG_SND_DEBUG_VERBOSE
 		snd_printdd(KERN_INFO "hda_codec: %s: Apply fix-verbs for %s\n",
-			    codec->chip_name, quirk->name);
+			    codec->chip_name, modelname);
 #endif
 		add_verb(codec->spec, fix->verbs);
 	}
 	if (fix->func) {
 #ifdef CONFIG_SND_DEBUG_VERBOSE
 		snd_printdd(KERN_INFO "hda_codec: %s: Apply fix-func for %s\n",
-			    codec->chip_name, quirk->name);
+			    codec->chip_name, modelname);
 #endif
 		fix->func(codec, fix, pre_init);
+	}
+}
+
+static void alc_pick_fixup(struct hda_codec *codec,
+				 const struct snd_pci_quirk *quirk,
+				 const struct alc_fixup *fix,
+				 int pre_init)
+{
+	quirk = snd_pci_quirk_lookup(codec->bus->pci, quirk);
+	if (quirk) {
+		fix += quirk->value;
+#ifdef CONFIG_SND_DEBUG_VERBOSE
+		__alc_pick_fixup(codec, fix, quirk->name, pre_init);
+#else
+		__alc_pick_fixup(codec, fix, NULL, pre_init);
+#endif
+	}
+}
+
+static void alc_pick_fixup_model(struct hda_codec *codec,
+				 const struct alc_model_fixup *models,
+				 const struct snd_pci_quirk *quirk,
+				 const struct alc_fixup *fix,
+				 int pre_init)
+{
+	if (codec->modelname && models) {
+		while (models->name) {
+			if (!strcmp(codec->modelname, models->name)) {
+				fix += models->id;
+				break;
+			}
+			models++;
+		}
+		__alc_pick_fixup(codec, fix, codec->modelname, pre_init);
+	} else {
+		alc_pick_fixup(codec, quirk, fix, pre_init);
 	}
 }
 
@@ -2128,17 +2165,17 @@ static struct hda_input_mux alc888_acer_aspire_6530_sources[2] = {
 	{
 		.num_items = 5,
 		.items = {
-			{ "Ext Mic", 0x0 },
+			{ "Mic", 0x0 },
 			{ "Line In", 0x2 },
 			{ "CD", 0x4 },
 			{ "Input Mix", 0xa },
-			{ "Int Mic", 0xb },
+			{ "Internal Mic", 0xb },
 		},
 	},
 	{
 		.num_items = 4,
 		.items = {
-			{ "Ext Mic", 0x0 },
+			{ "Mic", 0x0 },
 			{ "Line In", 0x2 },
 			{ "CD", 0x4 },
 			{ "Input Mix", 0xa },
@@ -2804,10 +2841,10 @@ static struct snd_kcontrol_new alc880_fujitsu_mixer[] = {
 	HDA_BIND_MUTE("Speaker Playback Switch", 0x0d, 2, HDA_INPUT),
 	HDA_CODEC_VOLUME("CD Playback Volume", 0x0b, 0x04, HDA_INPUT),
 	HDA_CODEC_MUTE("CD Playback Switch", 0x0b, 0x04, HDA_INPUT),
-	HDA_CODEC_VOLUME("Ext Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_MUTE("Ext Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -3315,7 +3352,7 @@ static struct hda_verb alc880_beep_init_verbs[] = {
 };
 
 /* auto-toggle front mic */
-static void alc880_uniwill_mic_automute(struct hda_codec *codec)
+static void alc88x_simple_mic_automute(struct hda_codec *codec)
 {
  	unsigned int present;
 	unsigned char bits;
@@ -3337,7 +3374,7 @@ static void alc880_uniwill_setup(struct hda_codec *codec)
 static void alc880_uniwill_init_hook(struct hda_codec *codec)
 {
 	alc_automute_amp(codec);
-	alc880_uniwill_mic_automute(codec);
+	alc88x_simple_mic_automute(codec);
 }
 
 static void alc880_uniwill_unsol_event(struct hda_codec *codec,
@@ -3348,7 +3385,7 @@ static void alc880_uniwill_unsol_event(struct hda_codec *codec,
 	 */
 	switch (res >> 28) {
 	case ALC880_MIC_EVENT:
-		alc880_uniwill_mic_automute(codec);
+		alc88x_simple_mic_automute(codec);
 		break;
 	default:
 		alc_automute_amp_unsol_event(codec, res);
@@ -7414,7 +7451,7 @@ static struct hda_input_mux alc883_lenovo_nb0763_capture_source = {
 	.num_items = 4,
 	.items = {
 		{ "Mic", 0x0 },
-		{ "Int Mic", 0x1 },
+		{ "Internal Mic", 0x1 },
 		{ "Line", 0x2 },
 		{ "CD", 0x4 },
 	},
@@ -7424,7 +7461,7 @@ static struct hda_input_mux alc883_fujitsu_pi2515_capture_source = {
 	.num_items = 2,
 	.items = {
 		{ "Mic", 0x0 },
-		{ "Int Mic", 0x1 },
+		{ "Internal Mic", 0x1 },
 	},
 };
 
@@ -8787,9 +8824,9 @@ static struct snd_kcontrol_new alc883_clevo_m720_mixer[] = {
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -8801,9 +8838,9 @@ static struct snd_kcontrol_new alc883_2ch_fujitsu_pi2515_mixer[] = {
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -8949,18 +8986,18 @@ static struct snd_kcontrol_new alc883_targa_2ch_mixer[] = {
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
 static struct snd_kcontrol_new alc883_targa_8ch_mixer[] = {
 	HDA_CODEC_VOLUME("Side Playback Volume", 0x0f, 0x0, HDA_OUTPUT),
 	HDA_BIND_MUTE("Side Playback Switch", 0x0f, 2, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -8984,8 +9021,8 @@ static struct snd_kcontrol_new alc883_lenovo_nb0763_mixer[] = {
 	HDA_CODEC_MUTE("CD Playback Switch", 0x0b, 0x04, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -9176,16 +9213,6 @@ static void alc883_mitac_setup(struct hda_codec *codec)
 	spec->autocfg.speaker_pins[0] = 0x14;
 	spec->autocfg.speaker_pins[1] = 0x17;
 }
-
-/* auto-toggle front mic */
-/*
-static void alc883_mitac_mic_automute(struct hda_codec *codec)
-{
-	unsigned char bits = snd_hda_jack_detect(codec, 0x18) ? HDA_AMP_MUTE : 0;
-
-	snd_hda_codec_amp_stereo(codec, 0x0b, HDA_INPUT, 1, HDA_AMP_MUTE, bits);
-}
-*/
 
 static struct hda_verb alc883_mitac_verbs[] = {
 	/* HP */
@@ -9443,15 +9470,6 @@ static void alc883_lenovo_nb0763_setup(struct hda_codec *codec)
 #define alc883_targa_init_hook		alc882_targa_init_hook
 #define alc883_targa_unsol_event	alc882_targa_unsol_event
 
-static void alc883_clevo_m720_mic_automute(struct hda_codec *codec)
-{
-	unsigned int present;
-
-	present = snd_hda_jack_detect(codec, 0x18);
-	snd_hda_codec_amp_stereo(codec, 0x0b, HDA_INPUT, 1,
-				 HDA_AMP_MUTE, present ? HDA_AMP_MUTE : 0);
-}
-
 static void alc883_clevo_m720_setup(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
@@ -9463,7 +9481,7 @@ static void alc883_clevo_m720_setup(struct hda_codec *codec)
 static void alc883_clevo_m720_init_hook(struct hda_codec *codec)
 {
 	alc_automute_amp(codec);
-	alc883_clevo_m720_mic_automute(codec);
+	alc88x_simple_mic_automute(codec);
 }
 
 static void alc883_clevo_m720_unsol_event(struct hda_codec *codec,
@@ -9471,7 +9489,7 @@ static void alc883_clevo_m720_unsol_event(struct hda_codec *codec,
 {
 	switch (res >> 26) {
 	case ALC880_MIC_EVENT:
-		alc883_clevo_m720_mic_automute(codec);
+		alc88x_simple_mic_automute(codec);
 		break;
 	default:
 		alc_automute_amp_unsol_event(codec, res);
@@ -11658,7 +11676,7 @@ static struct hda_input_mux alc262_fujitsu_capture_source = {
 	.num_items = 3,
 	.items = {
 		{ "Mic", 0x0 },
-		{ "Int Mic", 0x1 },
+		{ "Internal Mic", 0x1 },
 		{ "CD", 0x4 },
 	},
 };
@@ -11813,9 +11831,9 @@ static struct snd_kcontrol_new alc262_fujitsu_mixer[] = {
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -11849,9 +11867,9 @@ static struct snd_kcontrol_new alc262_lenovo_3000_mixer[] = {
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -13229,8 +13247,8 @@ static struct snd_kcontrol_new alc267_quanta_il1_mixer[] = {
 	HDA_CODEC_MUTE("Headphone Playback Switch", 0x15, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Mic Capture Volume", 0x23, 0x0, HDA_OUTPUT),
 	HDA_BIND_MUTE("Mic Capture Switch", 0x23, 2, HDA_OUTPUT),
-	HDA_CODEC_VOLUME("Ext Mic Boost", 0x18, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
 	{ }
 };
 
@@ -14818,10 +14836,10 @@ static const struct alc_fixup alc269_fixups[] = {
 };
 
 static struct snd_pci_quirk alc269_fixup_tbl[] = {
-	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
 	SND_PCI_QUIRK(0x104d, 0x9073, "Sony VAIO", ALC275_FIX_SONY_VAIO_GPIO2),
 	SND_PCI_QUIRK(0x104d, 0x907b, "Sony VAIO", ALC275_FIX_SONY_VAIO_GPIO2),
 	SND_PCI_QUIRK(0x104d, 0x9084, "Sony VAIO", ALC275_FIX_SONY_VAIO_GPIO2),
+	SND_PCI_QUIRK_VENDOR(0x104d, "Sony VAIO", ALC269_FIXUP_SONY_VAIO),
 	SND_PCI_QUIRK(0x1028, 0x0470, "Dell M101z", ALC269_FIXUP_DELL_M101Z),
 	SND_PCI_QUIRK(0x17aa, 0x21b8, "Thinkpad Edge 14", ALC269_FIXUP_SKU_IGNORE),
 	SND_PCI_QUIRK(0x17aa, 0x20f2, "Thinkpad SL410/510", ALC269_FIXUP_SKU_IGNORE),
@@ -16375,8 +16393,8 @@ static struct hda_input_mux alc861vd_capture_source = {
 static struct hda_input_mux alc861vd_dallas_capture_source = {
 	.num_items = 2,
 	.items = {
-		{ "Ext Mic", 0x0 },
-		{ "Int Mic", 0x1 },
+		{ "Mic", 0x0 },
+		{ "Internal Mic", 0x1 },
 	},
 };
 
@@ -16517,19 +16535,19 @@ static struct snd_kcontrol_new alc861vd_lenovo_mixer[] = {
 };
 
 /* Pin assignment: Speaker=0x14, HP = 0x15,
- *                 Ext Mic=0x18, Int Mic = 0x19, CD = 0x1c, PC Beep = 0x1d
+ *                 Mic=0x18, Internal Mic = 0x19, CD = 0x1c, PC Beep = 0x1d
  */
 static struct snd_kcontrol_new alc861vd_dallas_mixer[] = {
 	HDA_CODEC_VOLUME("Speaker Playback Volume", 0x02, 0x0, HDA_OUTPUT),
 	HDA_BIND_MUTE("Speaker Playback Switch", 0x0c, 2, HDA_INPUT),
 	HDA_CODEC_VOLUME("Headphone Playback Volume", 0x03, 0x0, HDA_OUTPUT),
 	HDA_BIND_MUTE("Headphone Playback Switch", 0x0d, 2, HDA_INPUT),
-	HDA_CODEC_VOLUME("Ext Mic Boost", 0x18, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Ext Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_MUTE("Ext Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -16694,18 +16712,6 @@ static struct hda_verb alc861vd_lenovo_unsol_verbs[] = {
 	{}
 };
 
-static void alc861vd_lenovo_mic_automute(struct hda_codec *codec)
-{
-	unsigned int present;
-	unsigned char bits;
-
-	present = snd_hda_jack_detect(codec, 0x18);
-	bits = present ? HDA_AMP_MUTE : 0;
-
-	snd_hda_codec_amp_stereo(codec, 0x0b, HDA_INPUT, 1,
-				 HDA_AMP_MUTE, bits);
-}
-
 static void alc861vd_lenovo_setup(struct hda_codec *codec)
 {
 	struct alc_spec *spec = codec->spec;
@@ -16716,7 +16722,7 @@ static void alc861vd_lenovo_setup(struct hda_codec *codec)
 static void alc861vd_lenovo_init_hook(struct hda_codec *codec)
 {
 	alc_automute_amp(codec);
-	alc861vd_lenovo_mic_automute(codec);
+	alc88x_simple_mic_automute(codec);
 }
 
 static void alc861vd_lenovo_unsol_event(struct hda_codec *codec,
@@ -16724,7 +16730,7 @@ static void alc861vd_lenovo_unsol_event(struct hda_codec *codec,
 {
 	switch (res >> 26) {
 	case ALC880_MIC_EVENT:
-		alc861vd_lenovo_mic_automute(codec);
+		alc88x_simple_mic_automute(codec);
 		break;
 	default:
 		alc_automute_amp_unsol_event(codec, res);
@@ -17541,13 +17547,13 @@ static struct snd_kcontrol_new alc662_eeepc_p701_mixer[] = {
 	HDA_CODEC_VOLUME("Master Playback Volume", 0x02, 0x0, HDA_OUTPUT),
 	ALC262_HIPPO_MASTER_SWITCH,
 
-	HDA_CODEC_VOLUME("e-Mic Boost", 0x18, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("e-Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_MUTE("e-Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
 
-	HDA_CODEC_VOLUME("i-Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("i-Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("i-Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -17691,8 +17697,8 @@ static struct snd_kcontrol_new alc663_g71v_mixer[] = {
 
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("i-Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("i-Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -17703,8 +17709,8 @@ static struct snd_kcontrol_new alc663_g50v_mixer[] = {
 
 	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
 	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("i-Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("i-Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	HDA_CODEC_VOLUME("Line Playback Volume", 0x0b, 0x02, HDA_INPUT),
 	HDA_CODEC_MUTE("Line Playback Switch", 0x0b, 0x02, HDA_INPUT),
 	{ } /* end */
@@ -18537,13 +18543,13 @@ static struct snd_kcontrol_new alc662_ecs_mixer[] = {
 	HDA_CODEC_VOLUME("Master Playback Volume", 0x02, 0x0, HDA_OUTPUT),
 	ALC262_HIPPO_MASTER_SWITCH,
 
-	HDA_CODEC_VOLUME("e-Mic/LineIn Boost", 0x18, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("e-Mic/LineIn Playback Volume", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_MUTE("e-Mic/LineIn Playback Switch", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic/LineIn Boost", 0x18, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic/LineIn Playback Volume", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("Mic/LineIn Playback Switch", 0x0b, 0x0, HDA_INPUT),
 
-	HDA_CODEC_VOLUME("i-Mic Boost", 0x19, 0, HDA_INPUT),
-	HDA_CODEC_VOLUME("i-Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("i-Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -18554,13 +18560,13 @@ static struct snd_kcontrol_new alc272_nc10_mixer[] = {
 	HDA_CODEC_VOLUME("Headphone Playback Volume", 0x03, 0x0, HDA_OUTPUT),
 	HDA_CODEC_MUTE("Headphone Playback Switch", 0x21, 0x0, HDA_OUTPUT),
 
-	HDA_CODEC_VOLUME("Ext Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_MUTE("Ext Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
-	HDA_CODEC_VOLUME("Ext Mic Boost", 0x18, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Playback Volume", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_MUTE("Mic Playback Switch", 0x0b, 0x0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 
-	HDA_CODEC_VOLUME("Int Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_MUTE("Int Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x19, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Playback Volume", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_MUTE("Internal Mic Playback Switch", 0x0b, 0x1, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x19, 0, HDA_INPUT),
 	{ } /* end */
 };
 
@@ -19329,9 +19335,21 @@ static void alc662_auto_init(struct hda_codec *codec)
 		alc_inithook(codec);
 }
 
+static void alc272_fixup_mario(struct hda_codec *codec,
+			       const struct alc_fixup *fix, int pre_init) {
+	if (snd_hda_override_amp_caps(codec, 0x2, HDA_OUTPUT,
+				      (0x3b << AC_AMPCAP_OFFSET_SHIFT) |
+				      (0x3b << AC_AMPCAP_NUM_STEPS_SHIFT) |
+				      (0x03 << AC_AMPCAP_STEP_SIZE_SHIFT) |
+				      (0 << AC_AMPCAP_MUTE_SHIFT)))
+		printk(KERN_WARNING
+		       "hda_codec: failed to override amp caps for NID 0x2\n");
+}
+
 enum {
 	ALC662_FIXUP_ASPIRE,
 	ALC662_FIXUP_IDEAPAD,
+	ALC272_FIXUP_MARIO,
 };
 
 static const struct alc_fixup alc662_fixups[] = {
@@ -19347,6 +19365,9 @@ static const struct alc_fixup alc662_fixups[] = {
 			{ }
 		}
 	},
+	[ALC272_FIXUP_MARIO] = {
+		.func = alc272_fixup_mario,
+	}
 };
 
 static struct snd_pci_quirk alc662_fixup_tbl[] = {
@@ -19357,6 +19378,10 @@ static struct snd_pci_quirk alc662_fixup_tbl[] = {
 	{}
 };
 
+static const struct alc_model_fixup alc662_fixup_models[] = {
+	{.id = ALC272_FIXUP_MARIO, .name = "mario"},
+	{}
+};
 
 
 static int patch_alc662(struct hda_codec *codec)
@@ -19456,7 +19481,8 @@ static int patch_alc662(struct hda_codec *codec)
 	codec->patch_ops = alc_patch_ops;
 	if (board_config == ALC662_AUTO) {
 		spec->init_hook = alc662_auto_init;
-		alc_pick_fixup(codec, alc662_fixup_tbl, alc662_fixups, 0);
+		alc_pick_fixup_model(codec, alc662_fixup_models,
+				     alc662_fixup_tbl, alc662_fixups, 0);
 	}
 
 	alc_init_jacks(codec);
@@ -19583,7 +19609,7 @@ static struct snd_kcontrol_new alc680_base_mixer[] = {
 	HDA_CODEC_MUTE("Front Playback Switch", 0x14, 0x0, HDA_OUTPUT),
 	HDA_CODEC_VOLUME("Headphone Playback Volume", 0x4, 0x0, HDA_OUTPUT),
 	HDA_CODEC_MUTE("Headphone Playback Switch", 0x16, 0x0, HDA_OUTPUT),
-	HDA_CODEC_VOLUME("Int Mic Boost", 0x12, 0, HDA_INPUT),
+	HDA_CODEC_VOLUME("Internal Mic Boost", 0x12, 0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Mic Boost", 0x18, 0, HDA_INPUT),
 	HDA_CODEC_VOLUME("Line In Boost", 0x19, 0, HDA_INPUT),
 	{ }

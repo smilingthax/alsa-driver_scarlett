@@ -3481,6 +3481,8 @@ static int stac92xx_auto_create_dmic_input_ctls(struct hda_codec *codec,
 
 		label = hda_get_input_pin_label(codec, nid, 1);
 		snd_hda_add_imux_item(dimux, label, index, &type_idx);
+		if (snd_hda_get_bool_hint(codec, "separate_dmux") != 1)
+			snd_hda_add_imux_item(imux, label, index, &type_idx);
 
 		err = create_elem_capture_vol(codec, nid, label, type_idx,
 					      HDA_INPUT);
@@ -3492,9 +3494,6 @@ static int stac92xx_auto_create_dmic_input_ctls(struct hda_codec *codec,
 			if (err < 0)
 				return err;
 		}
-
-		if (snd_hda_get_bool_hint(codec, "separate_dmux") != 1)
-			snd_hda_add_imux_item(imux, label, index, NULL);
 	}
 
 	return 0;
@@ -5423,7 +5422,7 @@ static int patch_stac92hd83xxx(struct hda_codec *codec)
 	snd_hda_codec_write_cache(codec, codec->afg, 0, 0x7ED, 0);
 	codec->no_trigger_sense = 1;
 	codec->spec = spec;
-	spec->linear_tone_beep = 1;
+	spec->linear_tone_beep = 0;
 	codec->slave_dig_outs = stac92hd83xxx_slave_dig_outs;
 	spec->digbeep_nid = 0x21;
 	spec->dmic_nids = stac92hd83xxx_dmic_nids;
@@ -5471,7 +5470,6 @@ again:
 		spec->num_pins = ARRAY_SIZE(stac92hd88xxx_pin_nids);
 		spec->pin_nids = stac92hd88xxx_pin_nids;
 		spec->mono_nid = 0;
-		spec->digbeep_nid = 0;
 		spec->num_pwrs = 0;
 		break;
 	case 0x111d7604:

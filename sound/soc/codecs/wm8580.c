@@ -190,7 +190,6 @@ static const char *wm8580_supply_names[WM8580_NUM_SUPPLIES] = {
 struct wm8580_priv {
 	enum snd_soc_control_type control_type;
 	struct regulator_bulk_data supplies[WM8580_NUM_SUPPLIES];
-	u16 reg_cache[WM8580_MAX_REGISTER + 1];
 	struct pll_state a;
 	struct pll_state b;
 	int sysclk[2];
@@ -507,13 +506,13 @@ static int wm8580_paif_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/* Look up the SYSCLK ratio; accept only exact matches */
-	ratio = wm8580->sysclk[dai->id] / params_rate(params);
+	ratio = wm8580->sysclk[dai->driver->id] / params_rate(params);
 	for (i = 0; i < ARRAY_SIZE(wm8580_sysclk_ratios); i++)
 		if (ratio == wm8580_sysclk_ratios[i])
 			break;
 	if (i == ARRAY_SIZE(wm8580_sysclk_ratios)) {
 		dev_err(codec->dev, "Invalid clock ratio %d/%d\n",
-			wm8580->sysclk[dai->id], params_rate(params));
+			wm8580->sysclk[dai->driver->id], params_rate(params));
 		return -EINVAL;
 	}
 	paifa |= i;
@@ -716,7 +715,7 @@ static int wm8580_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 
 	switch (clk_id) {
 	case WM8580_CLKSRC_ADCMCLK:
-		if (dai->id != WM8580_DAI_PAIFTX)
+		if (dai->driver->id != WM8580_DAI_PAIFTX)
 			return -EINVAL;
 		sel = 0 << sel_shift;
 		break;
@@ -735,7 +734,7 @@ static int wm8580_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 	}
 
 	/* We really should validate PLL settings but not yet */
-	wm8580->sysclk[dai->id] = freq;
+	wm8580->sysclk[dai->driver->id] = freq;
 
 	return snd_soc_update_bits(codec, WM8580_CLKSEL, sel_mask, sel);
 }

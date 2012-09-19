@@ -26,6 +26,7 @@
 #include <sound/soc.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <trace/events/asoc.h>
 
 #include "wm8350.h"
 
@@ -53,6 +54,7 @@ struct wm8350_output {
 
 struct wm8350_jack_data {
 	struct snd_soc_jack *jack;
+	struct delayed_work work;
 	int report;
 	int short_report;
 };
@@ -1335,37 +1337,13 @@ static int wm8350_resume(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static irqreturn_t wm8350_hp_jack_handler(int irq, void *data)
+static void wm8350_hp_work(struct wm8350_data *priv,
+			   struct wm8350_jack_data *jack,
+			   u16 mask)
 {
-	struct wm8350_data *priv = data;
 	struct wm8350 *wm8350 = priv->codec.control_data;
 	u16 reg;
 	int report;
-	int mask;
-	struct wm8350_jack_data *jack = NULL;
-
-	switch (irq - wm8350->irq_base) {
-	case WM8350_IRQ_CODEC_JCK_DET_L:
-		jack = &priv->hpl;
-		mask = WM8350_JACK_L_LVL;
-		break;
-
-	case WM8350_IRQ_CODEC_JCK_DET_R:
-		jack = &priv->hpr;
-		mask = WM8350_JACK_R_LVL;
-		break;
-
-	default:
-		BUG();
-	}
-
-	if (!jack->jack) {
-		dev_warn(wm8350->dev, "Jack interrupt called with no jack\n");
-		return IRQ_NONE;
-	}
-
-	/* Debounce */
-	msleep(200);
 
 	reg = wm8350_reg_read(wm8350, WM8350_JACK_PIN_STATUS);
 	if (reg & mask)
@@ -1374,6 +1352,54 @@ static irqreturn_t wm8350_hp_jack_handler(int irq, void *data)
 		report = 0;
 
 	snd_soc_jack_report(jack->jack, report, jack->report);
+
+}
+
+static void wm8350_hpl_work(struct work_struct *work)
+{
+	struct wm8350_data *priv =
+	    container_of(work, struct wm8350_data, hpl.work.work);
+
+	wm8350_hp_work(priv, &priv->hpl, WM8350_JACK_L_LVL);
+}
+
+static void wm8350_hpr_work(struct work_struct *work)
+{
+	struct wm8350_data *priv =
+	    container_of(work, struct wm8350_data, hpr.work.work);
+	
+	wm8350_hp_work(priv, &priv->hpr, WM8350_JACK_R_LVL);
+}
+
+static irqreturn_t wm8350_hp_jack_handler(int irq, void *data)
+{
+	struct wm8350_data *priv = data;
+	struct wm8350 *wm8350 = priv->codec.control_data;
+	struct wm8350_jack_data *jack = NULL;
+
+	switch (irq - wm8350->irq_base) {
+	case WM8350_IRQ_CODEC_JCK_DET_L:
+#ifndef CONFIG_SND_SOC_WM8350_MODULE
+		trace_snd_soc_jack_irq("WM8350 HPL");
+#endif
+		jack = &priv->hpl;
+		break;
+
+	case WM8350_IRQ_CODEC_JCK_DET_R:
+#ifndef CONFIG_SND_SOC_WM8350_MODULE
+		trace_snd_soc_jack_irq("WM8350 HPR");
+#endif
+		jack = &priv->hpr;
+		break;
+
+	default:
+		BUG();
+	}
+
+	if (device_may_wakeup(wm8350->dev))
+		pm_wakeup_event(wm8350->dev, 250);
+
+	schedule_delayed_work(&jack->work, 200);
 
 	return IRQ_HANDLED;
 }
@@ -1436,6 +1462,10 @@ static irqreturn_t wm8350_mic_handler(int irq, void *data)
 	struct wm8350 *wm8350 = priv->codec.control_data;
 	u16 reg;
 	int report = 0;
+
+#ifndef CONFIG_SND_SOC_WM8350_MODULE
+	trace_snd_soc_jack_irq("WM8350 mic");
+#endif
 
 	reg = wm8350_reg_read(wm8350, WM8350_JACK_PIN_STATUS);
 	if (reg & WM8350_JACK_MICSCD_LVL)
@@ -1552,6 +1582,8 @@ static  int wm8350_codec_probe(struct snd_soc_codec *codec)
 	wm8350_clear_bits(wm8350, WM8350_POWER_MGMT_5, WM8350_CODEC_ENA);
 
 	INIT_DELAYED_WORK(&codec->dapm.delayed_work, wm8350_pga_work);
+	INIT_DELAYED_WORK(&priv->hpl.work, wm8350_hpl_work);
+	INIT_DELAYED_WORK(&priv->hpr.work, wm8350_hpr_work);
 
 	/* Enable the codec */
 	wm8350_set_bits(wm8350, WM8350_POWER_MGMT_5, WM8350_CODEC_ENA);
@@ -1627,7 +1659,6 @@ static int  wm8350_codec_remove(struct snd_soc_codec *codec)
 {
 	struct wm8350_data *priv = snd_soc_codec_get_drvdata(codec);
 	struct wm8350 *wm8350 = dev_get_platdata(codec->dev);
-	int ret;
 
 	wm8350_clear_bits(wm8350, WM8350_JACK_DETECT,
 			  WM8350_JDL_ENA | WM8350_JDR_ENA);
@@ -1642,15 +1673,12 @@ static int  wm8350_codec_remove(struct snd_soc_codec *codec)
 	priv->hpr.jack = NULL;
 	priv->mic.jack = NULL;
 
-	/* cancel any work waiting to be queued. */
-	ret = cancel_delayed_work(&codec->dapm.delayed_work);
+	cancel_delayed_work_sync(&priv->hpl.work);
+	cancel_delayed_work_sync(&priv->hpr.work);
 
 	/* if there was any work waiting then we run it now and
 	 * wait for its completion */
-	if (ret) {
-		schedule_delayed_work(&codec->dapm.delayed_work, 0);
-		flush_scheduled_work();
-	}
+	flush_delayed_work_sync(&codec->dapm.delayed_work);
 
 	wm8350_set_bias_level(codec, SND_SOC_BIAS_OFF);
 

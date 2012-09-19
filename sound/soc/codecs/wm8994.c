@@ -28,6 +28,7 @@
 #include <sound/soc.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <trace/events/asoc.h>
 
 #include <linux/mfd/wm8994/core.h>
 #include <linux/mfd/wm8994/registers.h>
@@ -91,6 +92,11 @@ struct wm8994_priv {
 	const char **retune_mobile_texts;
 	int retune_mobile_cfg[WM8994_NUM_EQ];
 	struct soc_enum retune_mobile_enum;
+
+	/* Platform dependant MBC configuration */
+	int mbc_cfg;
+	const char **mbc_texts;
+	struct soc_enum mbc_enum;
 
 	struct wm8994_micdet micdet[2];
 
@@ -304,6 +310,19 @@ static const char *sidetone_hpf_text[] = {
 
 static const struct soc_enum sidetone_hpf =
 	SOC_ENUM_SINGLE(WM8994_SIDETONE, 7, 7, sidetone_hpf_text);
+
+static const char *adc_hpf_text[] = {
+	"HiFi", "Voice 1", "Voice 2", "Voice 3"
+};
+
+static const struct soc_enum aif1adc1_hpf =
+	SOC_ENUM_SINGLE(WM8994_AIF1_ADC1_FILTERS, 13, 4, adc_hpf_text);
+
+static const struct soc_enum aif1adc2_hpf =
+	SOC_ENUM_SINGLE(WM8994_AIF1_ADC2_FILTERS, 13, 4, adc_hpf_text);
+
+static const struct soc_enum aif2adc_hpf =
+	SOC_ENUM_SINGLE(WM8994_AIF2_ADC_FILTERS, 13, 4, adc_hpf_text);
 
 static const DECLARE_TLV_DB_SCALE(aif_tlv, 0, 600, 0);
 static const DECLARE_TLV_DB_SCALE(digital_tlv, -7200, 75, 1);
@@ -540,11 +559,22 @@ static const struct soc_enum aif2dacl_src =
 static const struct soc_enum aif2dacr_src =
 	SOC_ENUM_SINGLE(WM8994_AIF2_CONTROL_2, 14, 2, aif_chan_src_text);
 
+static const char *osr_text[] = {
+	"Low Power", "High Performance",
+};
+
+static const struct soc_enum dac_osr =
+	SOC_ENUM_SINGLE(WM8994_OVERSAMPLING, 0, 2, osr_text);
+
+static const struct soc_enum adc_osr =
+	SOC_ENUM_SINGLE(WM8994_OVERSAMPLING, 1, 2, osr_text);
+
 static void wm8958_mbc_apply(struct snd_soc_codec *codec, int mbc, int start)
 {
 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+	struct wm8994_pdata *pdata = wm8994->pdata;
 	int pwr_reg = snd_soc_read(codec, WM8994_POWER_MANAGEMENT_5);
-	int ena, reg, aif;
+	int ena, reg, aif, i;
 
 	switch (mbc) {
 	case 0:
@@ -587,7 +617,20 @@ static void wm8958_mbc_apply(struct snd_soc_codec *codec, int mbc, int start)
 		snd_soc_update_bits(codec, WM8958_DSP2_PROGRAM,
 				    WM8958_DSP2_ENA, WM8958_DSP2_ENA);
 
-		/* TODO: Apply any user specified MBC settings */
+		/* If we've got user supplied MBC settings use them */
+		if (pdata && pdata->num_mbc_cfgs) {
+			struct wm8958_mbc_cfg *cfg
+				= &pdata->mbc_cfgs[wm8994->mbc_cfg];
+
+			for (i = 0; i < ARRAY_SIZE(cfg->coeff_regs); i++)
+				snd_soc_write(codec, i + WM8958_MBC_BAND_1_K_1,
+					      cfg->coeff_regs[i]);
+
+			for (i = 0; i < ARRAY_SIZE(cfg->cutoff_regs); i++)
+				snd_soc_write(codec,
+					      i + WM8958_MBC_BAND_2_LOWER_CUTOFF_C1_1,
+					      cfg->cutoff_regs[i]);
+		}
 
 		/* Run the DSP */
 		snd_soc_write(codec, WM8958_DSP2_EXECCONTROL,
@@ -644,6 +687,39 @@ static int wm8958_aif_ev(struct snd_soc_dapm_widget *w,
 		wm8958_mbc_apply(codec, mbc, 0);
 		break;
 	}
+
+	return 0;
+}
+
+static int wm8958_put_mbc_enum(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+	struct wm8994_pdata *pdata = wm8994->pdata;
+	int value = ucontrol->value.integer.value[0];
+	int reg;
+
+	/* Don't allow on the fly reconfiguration */
+	reg = snd_soc_read(codec, WM8994_CLOCKING_1);
+	if (reg < 0 || reg & WM8958_DSP2CLK_ENA)
+		return -EBUSY;
+
+	if (value >= pdata->num_mbc_cfgs)
+		return -EINVAL;
+
+	wm8994->mbc_cfg = value;
+
+	return 0;
+}
+
+static int wm8958_get_mbc_enum(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
+
+	ucontrol->value.enumerated.item[0] = wm8994->mbc_cfg;
 
 	return 0;
 }
@@ -715,13 +791,13 @@ SOC_DOUBLE_R_TLV("AIF2ADC Volume", WM8994_AIF2_ADC_LEFT_VOLUME,
 
 SOC_ENUM("AIF1ADCL Source", aif1adcl_src),
 SOC_ENUM("AIF1ADCR Source", aif1adcr_src),
-SOC_ENUM("AIF2ADCL Source", aif1adcl_src),
-SOC_ENUM("AIF2ADCR Source", aif1adcr_src),
+SOC_ENUM("AIF2ADCL Source", aif2adcl_src),
+SOC_ENUM("AIF2ADCR Source", aif2adcr_src),
 
 SOC_ENUM("AIF1DACL Source", aif1dacl_src),
 SOC_ENUM("AIF1DACR Source", aif1dacr_src),
-SOC_ENUM("AIF2DACL Source", aif1dacl_src),
-SOC_ENUM("AIF2DACR Source", aif1dacr_src),
+SOC_ENUM("AIF2DACL Source", aif2dacl_src),
+SOC_ENUM("AIF2DACR Source", aif2dacr_src),
 
 SOC_DOUBLE_R_TLV("AIF1DAC1 Volume", WM8994_AIF1_DAC1_LEFT_VOLUME,
 		 WM8994_AIF1_DAC1_RIGHT_VOLUME, 1, 96, 0, digital_tlv),
@@ -760,6 +836,18 @@ SOC_SINGLE_TLV("DAC2 Left Sidetone Volume", WM8994_DAC2_MIXER_VOLUMES,
 SOC_ENUM("Sidetone HPF Mux", sidetone_hpf),
 SOC_SINGLE("Sidetone HPF Switch", WM8994_SIDETONE, 6, 1, 0),
 
+SOC_ENUM("AIF1ADC1 HPF Mode", aif1adc1_hpf),
+SOC_DOUBLE("AIF1ADC1 HPF Switch", WM8994_AIF1_ADC1_FILTERS, 12, 11, 1, 0),
+
+SOC_ENUM("AIF1ADC2 HPF Mode", aif1adc2_hpf),
+SOC_DOUBLE("AIF1ADC2 HPF Switch", WM8994_AIF1_ADC2_FILTERS, 12, 11, 1, 0),
+
+SOC_ENUM("AIF2ADC HPF Mode", aif2adc_hpf),
+SOC_DOUBLE("AIF2ADC HPF Switch", WM8994_AIF2_ADC_FILTERS, 12, 11, 1, 0),
+
+SOC_ENUM("ADC OSR", adc_osr),
+SOC_ENUM("DAC OSR", dac_osr),
+
 SOC_DOUBLE_R_TLV("DAC1 Volume", WM8994_DAC1_LEFT_VOLUME,
 		 WM8994_DAC1_RIGHT_VOLUME, 1, 96, 0, digital_tlv),
 SOC_DOUBLE_R("DAC1 Switch", WM8994_DAC1_LEFT_VOLUME,
@@ -782,15 +870,15 @@ SOC_SINGLE_TLV("SPKR DAC1 Volume", WM8994_SPKMIXR_ATTENUATION,
 
 SOC_SINGLE_TLV("AIF1DAC1 3D Stereo Volume", WM8994_AIF1_DAC1_FILTERS_2,
 	       10, 15, 0, wm8994_3d_tlv),
-SOC_SINGLE("AIF1DAC1 3D Stereo Switch", WM8994_AIF1_DAC2_FILTERS_2,
+SOC_SINGLE("AIF1DAC1 3D Stereo Switch", WM8994_AIF1_DAC1_FILTERS_2,
 	   8, 1, 0),
 SOC_SINGLE_TLV("AIF1DAC2 3D Stereo Volume", WM8994_AIF1_DAC2_FILTERS_2,
 	       10, 15, 0, wm8994_3d_tlv),
 SOC_SINGLE("AIF1DAC2 3D Stereo Switch", WM8994_AIF1_DAC2_FILTERS_2,
 	   8, 1, 0),
-SOC_SINGLE_TLV("AIF2DAC 3D Stereo Volume", WM8994_AIF1_DAC1_FILTERS_2,
+SOC_SINGLE_TLV("AIF2DAC 3D Stereo Volume", WM8994_AIF2_DAC_FILTERS_2,
 	       10, 15, 0, wm8994_3d_tlv),
-SOC_SINGLE("AIF2DAC 3D Stereo Switch", WM8994_AIF1_DAC2_FILTERS_2,
+SOC_SINGLE("AIF2DAC 3D Stereo Switch", WM8994_AIF2_DAC_FILTERS_2,
 	   8, 1, 0),
 };
 
@@ -1205,10 +1293,10 @@ SND_SOC_DAPM_AIF_OUT("AIF1ADC1R", "AIF1 Capture",
 		     0, WM8994_POWER_MANAGEMENT_4, 8, 0),
 SND_SOC_DAPM_AIF_IN_E("AIF1DAC1L", NULL, 0,
 		      WM8994_POWER_MANAGEMENT_5, 9, 0, wm8958_aif_ev,
-		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 SND_SOC_DAPM_AIF_IN_E("AIF1DAC1R", NULL, 0,
 		      WM8994_POWER_MANAGEMENT_5, 8, 0, wm8958_aif_ev,
-		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 
 SND_SOC_DAPM_AIF_OUT("AIF1ADC2L", "AIF1 Capture",
 		     0, WM8994_POWER_MANAGEMENT_4, 11, 0),
@@ -1216,10 +1304,10 @@ SND_SOC_DAPM_AIF_OUT("AIF1ADC2R", "AIF1 Capture",
 		     0, WM8994_POWER_MANAGEMENT_4, 10, 0),
 SND_SOC_DAPM_AIF_IN_E("AIF1DAC2L", NULL, 0,
 		      WM8994_POWER_MANAGEMENT_5, 11, 0, wm8958_aif_ev,
-		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 SND_SOC_DAPM_AIF_IN_E("AIF1DAC2R", NULL, 0,
 		      WM8994_POWER_MANAGEMENT_5, 10, 0, wm8958_aif_ev,
-		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_PRE_PMD),
+		      SND_SOC_DAPM_POST_PMU | SND_SOC_DAPM_POST_PMD),
 
 SND_SOC_DAPM_MIXER("AIF1ADC1L Mixer", SND_SOC_NOPM, 0, 0,
 		   aif1adc1l_mix, ARRAY_SIZE(aif1adc1l_mix)),
@@ -1625,6 +1713,7 @@ static int _wm8994_set_fll(struct snd_soc_codec *codec, int id, int src,
 		/* Allow no source specification when stopping */
 		if (freq_out)
 			return -EINVAL;
+		src = wm8994->fll[id].src;
 		break;
 	case WM8994_FLL_SRC_MCLK1:
 	case WM8994_FLL_SRC_MCLK2:
@@ -1806,15 +1895,33 @@ static int wm8994_set_bias_level(struct snd_soc_codec *codec,
 		if (codec->dapm.bias_level == SND_SOC_BIAS_OFF) {
 			pm_runtime_get_sync(codec->dev);
 
-			/* Tweak DC servo and DSP configuration for
-			 * improved performance. */
-			if (control->type == WM8994 && wm8994->revision < 4) {
-				/* Tweak DC servo and DSP configuration for
-				 * improved performance. */
-				snd_soc_write(codec, 0x102, 0x3);
-				snd_soc_write(codec, 0x56, 0x3);
-				snd_soc_write(codec, 0x817, 0);
-				snd_soc_write(codec, 0x102, 0);
+			switch (control->type) {
+			case WM8994:
+				if (wm8994->revision < 4) {
+					/* Tweak DC servo and DSP
+					 * configuration for improved
+					 * performance. */
+					snd_soc_write(codec, 0x102, 0x3);
+					snd_soc_write(codec, 0x56, 0x3);
+					snd_soc_write(codec, 0x817, 0);
+					snd_soc_write(codec, 0x102, 0);
+				}
+				break;
+
+			case WM8958:
+				if (wm8994->revision == 0) {
+					/* Optimise performance for rev A */
+					snd_soc_write(codec, 0x102, 0x3);
+					snd_soc_write(codec, 0xcb, 0x81);
+					snd_soc_write(codec, 0x817, 0);
+					snd_soc_write(codec, 0x102, 0);
+
+					snd_soc_update_bits(codec,
+							    WM8958_CHARGE_PUMP_2,
+							    WM8958_CP_DISCH,
+							    WM8958_CP_DISCH);
+				}
+				break;
 			}
 
 			/* Discharge LINEOUT1 & 2 */
@@ -2028,10 +2135,12 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
 	struct wm8994 *control = codec->control_data;
 	struct wm8994_priv *wm8994 = snd_soc_codec_get_drvdata(codec);
 	int aif1_reg;
+	int aif2_reg;
 	int bclk_reg;
 	int lrclk_reg;
 	int rate_reg;
 	int aif1 = 0;
+	int aif2 = 0;
 	int bclk = 0;
 	int lrclk = 0;
 	int rate_val = 0;
@@ -2042,6 +2151,7 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
 	switch (dai->id) {
 	case 1:
 		aif1_reg = WM8994_AIF1_CONTROL_1;
+		aif2_reg = WM8994_AIF1_CONTROL_2;
 		bclk_reg = WM8994_AIF1_BCLK;
 		rate_reg = WM8994_AIF1_RATE;
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ||
@@ -2054,6 +2164,7 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
 		break;
 	case 2:
 		aif1_reg = WM8994_AIF2_CONTROL_1;
+		aif2_reg = WM8994_AIF2_CONTROL_2;
 		bclk_reg = WM8994_AIF2_BCLK;
 		rate_reg = WM8994_AIF2_RATE;
 		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK ||
@@ -2109,6 +2220,10 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
 	dev_dbg(dai->dev, "AIF%dCLK is %dHz, target BCLK %dHz\n",
 		dai->id, wm8994->aifclk[id], bclk_rate);
 
+	if (params_channels(params) == 1 &&
+	    (snd_soc_read(codec, aif1_reg) & 0x18) == 0x18)
+		aif2 |= WM8994_AIF1_MONO;
+
 	if (wm8994->aifclk[id] == 0) {
 		dev_err(dai->dev, "AIF%dCLK not configured\n", dai->id);
 		return -EINVAL;
@@ -2152,6 +2267,7 @@ static int wm8994_hw_params(struct snd_pcm_substream *substream,
 		lrclk, bclk_rate / lrclk);
 
 	snd_soc_update_bits(codec, aif1_reg, WM8994_AIF1_WL_MASK, aif1);
+	snd_soc_update_bits(codec, aif2_reg, WM8994_AIF1_MONO, aif2);
 	snd_soc_update_bits(codec, bclk_reg, WM8994_AIF1_BCLK_DIV_MASK, bclk);
 	snd_soc_update_bits(codec, lrclk_reg, WM8994_AIF1DAC_RATE_MASK,
 			    lrclk);
@@ -2307,14 +2423,14 @@ static struct snd_soc_dai_driver wm8994_dai[] = {
 		.id = 1,
 		.playback = {
 			.stream_name = "AIF1 Playback",
-			.channels_min = 2,
+			.channels_min = 1,
 			.channels_max = 2,
 			.rates = WM8994_RATES,
 			.formats = WM8994_FORMATS,
 		},
 		.capture = {
 			.stream_name = "AIF1 Capture",
-			.channels_min = 2,
+			.channels_min = 1,
 			.channels_max = 2,
 			.rates = WM8994_RATES,
 			.formats = WM8994_FORMATS,
@@ -2326,14 +2442,14 @@ static struct snd_soc_dai_driver wm8994_dai[] = {
 		.id = 2,
 		.playback = {
 			.stream_name = "AIF2 Playback",
-			.channels_min = 2,
+			.channels_min = 1,
 			.channels_max = 2,
 			.rates = WM8994_RATES,
 			.formats = WM8994_FORMATS,
 		},
 		.capture = {
 			.stream_name = "AIF2 Capture",
-			.channels_min = 2,
+			.channels_min = 1,
 			.channels_max = 2,
 			.rates = WM8994_RATES,
 			.formats = WM8994_FORMATS,
@@ -2345,14 +2461,14 @@ static struct snd_soc_dai_driver wm8994_dai[] = {
 		.id = 3,
 		.playback = {
 			.stream_name = "AIF3 Playback",
-			.channels_min = 2,
+			.channels_min = 1,
 			.channels_max = 2,
 			.rates = WM8994_RATES,
 			.formats = WM8994_FORMATS,
 		},
 		.capture = {
 			.stream_name = "AIF3 Capture",
-			.channels_min = 2,
+			.channels_min = 1,
 			.channels_max = 2,
 			.rates = WM8994_RATES,
 			.formats = WM8994_FORMATS,
@@ -2539,6 +2655,34 @@ static void wm8994_handle_pdata(struct wm8994_priv *wm8994)
 	dev_dbg(codec->dev, "%d ReTune Mobile configurations\n",
 		pdata->num_retune_mobile_cfgs);
 
+	if (pdata->num_mbc_cfgs) {
+		struct snd_kcontrol_new control[] = {
+			SOC_ENUM_EXT("MBC Mode", wm8994->mbc_enum,
+				     wm8958_get_mbc_enum, wm8958_put_mbc_enum),
+		};
+
+		/* We need an array of texts for the enum API */
+		wm8994->mbc_texts = kmalloc(sizeof(char *)
+					    * pdata->num_mbc_cfgs, GFP_KERNEL);
+		if (!wm8994->mbc_texts) {
+			dev_err(wm8994->codec->dev,
+				"Failed to allocate %d MBC config texts\n",
+				pdata->num_mbc_cfgs);
+			return;
+		}
+
+		for (i = 0; i < pdata->num_mbc_cfgs; i++)
+			wm8994->mbc_texts[i] = pdata->mbc_cfgs[i].name;
+
+		wm8994->mbc_enum.max = pdata->num_mbc_cfgs;
+		wm8994->mbc_enum.texts = wm8994->mbc_texts;
+
+		ret = snd_soc_add_controls(wm8994->codec, control, 1);
+		if (ret != 0)
+			dev_err(wm8994->codec->dev,
+				"Failed to add MBC mode controls: %d\n", ret);
+	}
+
 	if (pdata->num_retune_mobile_cfgs)
 		wm8994_handle_retune_mobile_pdata(wm8994);
 	else
@@ -2611,6 +2755,10 @@ static irqreturn_t wm8994_mic_irq(int irq, void *data)
 	struct snd_soc_codec *codec = priv->codec;
 	int reg;
 	int report;
+
+#ifndef CONFIG_SND_SOC_WM8994_MODULE
+	trace_snd_soc_jack_irq(dev_name(codec->dev));
+#endif
 
 	reg = snd_soc_read(codec, WM8994_INTERRUPT_RAW_STATUS_2);
 	if (reg < 0) {
@@ -2757,6 +2905,10 @@ static irqreturn_t wm8958_mic_irq(int irq, void *data)
 		dev_dbg(codec->dev, "Mic detect data not valid\n");
 		goto out;
 	}
+
+#ifndef CONFIG_SND_SOC_WM8994_MODULE
+	trace_snd_soc_jack_irq(dev_name(codec->dev));
+#endif
 
 	if (wm8994->jack_cb)
 		wm8994->jack_cb(reg, wm8994->jack_cb_data);
