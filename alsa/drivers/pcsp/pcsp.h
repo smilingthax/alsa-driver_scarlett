@@ -6,8 +6,8 @@
  * Copyright (C) 2001-2004  Stas Sergeev
  */
 
-#ifndef __PCSP_DEFS_H
-#define __PCSP_DEFS_H
+#ifndef __PCSP_H__
+#define __PCSP_H__
 
 #define PCSP_SOUND_VERSION	0x200	/* read 2.00 */
 
@@ -54,6 +54,7 @@
 struct snd_pcsp {
 	spinlock_t lock;
 	struct snd_card *card;
+	struct input_dev *input_dev;
 	unsigned short port, irq, dma;
 	struct snd_pcm *pcm;
 	struct snd_pcm_substream *playback_substream;
@@ -71,12 +72,14 @@ struct snd_pcsp {
 	int treble;
 	int bass;
 	int enable;
+	int pcspkr;
 	unsigned char vl_tab[256];
 };
 
+extern struct snd_pcsp *snd_pcsp_chip;
+
 extern int pcsp_set_timer_hook(struct snd_pcsp * chip, int (*func) (struct snd_pcsp * chip));
 extern void pcsp_release_timer_hook(struct snd_pcsp * chip);
-extern void pcsp_lock_input(int lock);
 
 extern int snd_pcsp_new_pcm(struct snd_pcsp * chip);
 extern int snd_pcsp_new_mixer(struct snd_pcsp * chip);

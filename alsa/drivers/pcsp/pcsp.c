@@ -12,7 +12,6 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/pcm.h>
-#include <linux/input.h>
 
 #include <linux/interrupt.h>
 #include <linux/timex.h>
@@ -23,7 +22,8 @@
 #ifdef CONFIG_APM_CPU_IDLE
 #include <linux/pm.h>
 #endif
-#include "pcsp_defs.h"
+#include "pcsp.h"
+#include "pcsp_input.h"
 
 MODULE_AUTHOR("Stas Sergeev <stsp@users.sourceforge.net>");
 MODULE_DESCRIPTION("PC-Speaker driver");
@@ -42,76 +42,15 @@ MODULE_PARM_DESC(enable, "dummy");
 module_param(no_test_speed, int, 0444);
 MODULE_PARM_DESC(no_test_speed, "dont test the CPU speed on startup");
 
-static struct snd_card *snd_pcsp_card = SNDRV_DEFAULT_PTR1;
-static struct snd_pcsp *snd_pcsp_chip = NULL;
+struct snd_pcsp *snd_pcsp_chip = NULL;
 
 #ifdef CONFIG_APM_CPU_IDLE
 static void (*saved_pm_idle)(void);
 #endif
 
-static char *pcsp_input_name = "pcsp-input";
-
 static int (*pcsp_timer_func)(struct snd_pcsp *chip) = NULL;
 void *pcsp_timer_hook;
 
-static void pcsp_input_event(struct input_handle *handle, unsigned int event_type, 
-		      unsigned int event_code, int value)
-{
-}
-
-static struct input_handle *pcsp_input_connect(struct input_handler *handler, 
-					struct input_dev *dev,
-					struct input_device_id *id)
-{
-	struct input_handle *handle;
-
-	if (!(handle = kmalloc(sizeof(struct input_handle), GFP_KERNEL))) 
-		return NULL;
-	memset(handle, 0, sizeof(struct input_handle));
-
-	handle->dev = dev;
-	handle->handler = handler;
-	handle->name = pcsp_input_name;
-
-	input_open_device(handle);
-
-	if (pcsp_timer_func)
-		input_event(dev, EV_SND, SND_SILENT, 1);
-
-	return handle;
-}
-
-static void pcsp_input_disconnect(struct input_handle *handle)
-{
-	input_close_device(handle);
-	kfree(handle);
-}
-
-static struct input_device_id pcsp_input_ids[] = {
-	{
-                .flags = INPUT_DEVICE_ID_MATCH_EVBIT | INPUT_DEVICE_ID_MATCH_SNDBIT,
-                .evbit = { BIT(EV_SND) },
-                .sndbit = { BIT(SND_SILENT) },
-        },	
-
-	{ },    /* Terminating entry */
-};
-
-static struct input_handler pcsp_input_handler = {
-	.event		= pcsp_input_event,
-	.connect	= pcsp_input_connect,
-	.disconnect	= pcsp_input_disconnect,
-	.name		= "pcsp-input",
-	.id_table	= pcsp_input_ids,
-};
-
-void pcsp_lock_input(int lock)
-{
-	struct list_head * node;
-	list_for_each(node, &pcsp_input_handler.h_list) {
-		input_event(to_handle_h(node)->dev, EV_SND, SND_SILENT, lock);
-	}
-}
 
 /*
  * this is the PCSP IRQ handler
@@ -163,7 +102,7 @@ volatile static int pcsp_test_running;
    the timer-int for testing cpu-speed, mostly the same as
    for PC-Speaker
  */
-static int __init pcsp_test_intspeed(struct snd_pcsp *chip)
+static int pcsp_test_intspeed(struct snd_pcsp *chip)
 {
 	unsigned char test_buffer[256];
 	if (chip->index < tst_len[chip->cur_buf]) {
@@ -190,7 +129,7 @@ static int __init pcsp_test_intspeed(struct snd_pcsp *chip)
    we play thru PC-Speaker. This is kind of ugly but does the
    trick.
  */
-static int __init pcsp_measurement(struct snd_pcsp *chip, int addon, int *rticks)
+static int pcsp_measurement(struct snd_pcsp *chip, int addon, int *rticks)
 {
 	int count, err;
 	unsigned long flags;
@@ -267,105 +206,103 @@ static int snd_pcsp_dev_free(struct snd_device *device)
 	return snd_pcsp_free(chip);
 }
 
-static int __init snd_pcsp_create(struct snd_card *card, struct snd_pcsp **rchip)
+static int __init snd_pcsp_create(struct snd_card *card)
 {
 	static struct snd_device_ops ops = {
 		.dev_free = snd_pcsp_dev_free,
 	};
-	struct snd_pcsp *chip;
 	int err;
 	int div, min_div, order;
 	int pcsp_enabled = 1;
 
-	chip = kcalloc(1, sizeof(struct snd_pcsp), GFP_KERNEL);
-	if (chip == NULL)
+	snd_pcsp_chip = kcalloc(1, sizeof(struct snd_pcsp), GFP_KERNEL);
+	if (!snd_pcsp_chip)
 		return -ENOMEM;
-	spin_lock_init(&chip->lock);
+	spin_lock_init(&snd_pcsp_chip->lock);
 
-	chip->card = card;
-	chip->port = 0x61;
-	chip->irq = TIMER_IRQ;
-	chip->dma = -1;
+	snd_pcsp_chip->card = card;
+	snd_pcsp_chip->port = 0x61;
+	snd_pcsp_chip->irq = TIMER_IRQ;
+	snd_pcsp_chip->dma = -1;
 
-	snd_pcsp_chip = chip;
 	if (!(pcsp_timer_hook = register_timer_hook(pcsp_timer))) {
 		printk(KERN_WARNING "PCSP could not register timer hook!");
-		snd_pcsp_free(chip);
+		snd_pcsp_free(snd_pcsp_chip);
 		return -EBUSY;
 	}
 
 	if (!no_test_speed) {
-		pcsp_enabled = pcsp_test_speed(chip, &min_div);
+		pcsp_enabled = pcsp_test_speed(snd_pcsp_chip, &min_div);
 	} else {
 		min_div = MAX_DIV;
 	}
 	if (!pcsp_enabled) {
-		snd_pcsp_free(chip);
+		snd_pcsp_free(snd_pcsp_chip);
 		return -EIO;
 	}
 
 	div = MAX_DIV / min_div;
 	order = fls(div) - 1;
 
-	chip->max_treble   = min(order, PCSP_MAX_POSS_TREBLE);
-	chip->treble       = min(chip->max_treble, 1);
-	chip->gain         = PCSP_DEFAULT_GAIN;
-	chip->index	   = 0;
-	chip->bass         = 0;
-	chip->cur_buf	   = 0;
-	chip->timer_active = 0;
-	chip->last_clocks  =
-	chip->timer_latch  =
-	chip->clockticks   = LATCH;
-	chip->volume       = PCSP_MAX_VOLUME;
-	chip->enable       = 1;
+	snd_pcsp_chip->max_treble   = min(order, PCSP_MAX_POSS_TREBLE);
+	snd_pcsp_chip->treble       = min(snd_pcsp_chip->max_treble, 1);
+	snd_pcsp_chip->gain         = PCSP_DEFAULT_GAIN;
+	snd_pcsp_chip->index	    = 0;
+	snd_pcsp_chip->bass         = 0;
+	snd_pcsp_chip->cur_buf	    = 0;
+	snd_pcsp_chip->timer_active = 0;
+	snd_pcsp_chip->last_clocks  =
+	snd_pcsp_chip->timer_latch  =
+	snd_pcsp_chip->clockticks   = LATCH;
+	snd_pcsp_chip->volume       = PCSP_MAX_VOLUME;
+	snd_pcsp_chip->enable       = 1;
+	snd_pcsp_chip->pcspkr       = 1;
 
 	/* Register device */
-	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
-		snd_pcsp_free(chip);
+	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, snd_pcsp_chip, &ops)) < 0) {
+		snd_pcsp_free(snd_pcsp_chip);
 		return err;
 	}
 
-	*rchip = chip;
 	return 0;
 }
 
 static int __init snd_card_pcsp_probe(int dev)
 {
 	struct snd_card *card;
-	struct snd_pcsp *chip;
 	int err;
 
 	if (dev != 0)
 		return -EINVAL;
 
 	card = snd_card_new(index, id, THIS_MODULE, 0);
-	if (card == NULL)
+	if (!card)
 		return -ENOMEM;
 
-	if ((err = snd_pcsp_create(card, &chip)) < 0) {
+	if ((err = snd_pcsp_create(card)) < 0) {
 		snd_card_free(card);
 		return err;
 	}
-	if ((err = snd_pcsp_new_pcm(chip)) < 0) {
+	if ((err = snd_pcsp_new_pcm(snd_pcsp_chip)) < 0) {
 		snd_card_free(card);
 		return err;
 	}
-	if ((err = snd_pcsp_new_mixer(chip)) < 0) {
+	if ((err = snd_pcsp_new_mixer(snd_pcsp_chip)) < 0) {
 		snd_card_free(card);
 		return err;
 	}
 
 	strcpy(card->driver, "PC-Speaker");
-	strcpy(card->shortname, chip->pcm->name);
+	strcpy(card->shortname, snd_pcsp_chip->pcm->name);
 	sprintf(card->longname, "Internal PC-Speaker at port 0x%x, irq %d",
-	    chip->port, chip->irq);
+	    snd_pcsp_chip->port, snd_pcsp_chip->irq);
 
 	if ((err = snd_card_register(card)) < 0) {
 		snd_card_free(card);
 		return err;
 	}
-	snd_pcsp_card = card;
+
+	pcspkr_input_init(snd_pcsp_chip);
 
 	return 0;
 }
@@ -393,15 +330,13 @@ static int __init alsa_card_pcsp_init(void)
 		return -ENODEV;
 	}
 
-	input_register_handler(&pcsp_input_handler);
-
 	return 0;
 }
 
 static void __exit alsa_card_pcsp_exit(void)
 {
-	input_unregister_handler(&pcsp_input_handler);
-	snd_card_free(snd_pcsp_card);
+	pcspkr_input_remove(snd_pcsp_chip);
+	snd_card_free(snd_pcsp_chip->card);
 }
 
 module_init(alsa_card_pcsp_init);

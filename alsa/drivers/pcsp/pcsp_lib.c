@@ -14,7 +14,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <asm/i8253.h>
-#include "pcsp_defs.h"
+#include "pcsp.h"
 #include "pcsp_tabs.h"
 
 #define DMIX_WANTS_S16		1
@@ -52,7 +52,9 @@ static int pcsp_do_timer(struct snd_pcsp *chip)
 	if (chip->index >= snd_pcm_lib_period_bytes(substream)) {
 		chip->cur_buf = ((chip->cur_buf + 1) % runtime->periods);
 		chip->index -= snd_pcm_lib_period_bytes(substream);
+		write_sequnlock(&xtime_lock);	// avoid recursive locking
 		snd_pcm_period_elapsed(substream);
+		write_seqlock(&xtime_lock);
 	}
 
 	chip->clockticks -= chip->timer_latch;
@@ -88,8 +90,6 @@ void pcsp_start_timer(struct snd_pcsp *chip)
 	chip->clockticks = chip->last_clocks;
 	chip->reset_timer = 0;
 
-	pcsp_lock_input(1);
-
 	chip->timer_active = 1;
 	spin_unlock_irqrestore(&i8253_lock, flags);
 }
@@ -115,7 +115,6 @@ void pcsp_stop_timer(struct snd_pcsp *chip)
 	pit_counter0_offset = 0;
 
 	pcsp_release_timer_hook(chip);
-	pcsp_lock_input(0);
 
 	chip->timer_active = 0;
 	spin_unlock_irqrestore(&i8253_lock, flags);
@@ -205,12 +204,12 @@ static struct snd_pcm_hardware snd_pcsp_playback =
 				 SNDRV_PCM_INFO_HALF_DUPLEX |
 				 SNDRV_PCM_INFO_MMAP |
 				 SNDRV_PCM_INFO_MMAP_VALID),
-	.rates =		SNDRV_PCM_RATE_CONTINUOUS,
 	.formats =		(SNDRV_PCM_FMTBIT_U8
 #if DMIX_WANTS_S16
 				| SNDRV_PCM_FMTBIT_S16_LE
 #endif
 				),
+	.rates =		SNDRV_PCM_RATE_KNOT,
 	.rate_min =		PCSP_DEFAULT_RATE,
 	.rate_max =		PCSP_DEFAULT_RATE,
 	.channels_min =		1,
