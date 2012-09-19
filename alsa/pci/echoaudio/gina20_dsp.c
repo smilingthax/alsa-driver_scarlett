@@ -28,11 +28,11 @@
 // ****************************************************************************
 
 
-static int set_professional_spdif(echoaudio_t *chip, char prof);
-static int update_flags(echoaudio_t *chip);
+static int set_professional_spdif(struct echoaudio *chip, char prof);
+static int update_flags(struct echoaudio *chip);
 
 
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
@@ -87,7 +87,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 //
 //===========================================================================
 
-static u32 detect_input_clocks(const echoaudio_t *chip)
+static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	u32 clocks_from_dsp, clock_bits;
 
@@ -105,7 +105,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 
 
 /* The Gina20 has no ASIC. Just do nothing */
-static int load_asic(echoaudio_t *chip)
+static int load_asic(struct echoaudio *chip)
 {
 	return 0;
 }
@@ -126,7 +126,7 @@ static int load_asic(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int set_sample_rate(echoaudio_t *chip, u32 rate)
+static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u8 clock_state, spdif_status;
 
@@ -179,7 +179,7 @@ static int set_sample_rate(echoaudio_t *chip, u32 rate)
 //
 //===========================================================================
 
-static int set_input_clock(echoaudio_t *chip, u16 clock)
+static int set_input_clock(struct echoaudio *chip, u16 clock)
 {
 	DE_ACT(("set_input_clock:\n"));
 
@@ -212,7 +212,7 @@ static int set_input_clock(echoaudio_t *chip, u16 clock)
 
 /* Set input bus gain (one unit is 0.5dB !)
    where ECHOGAIN_MININP <= gain <= ECHOGAIN_MAXINP) */
-static int set_input_gain(echoaudio_t *chip, u16 input, int gain)
+static int set_input_gain(struct echoaudio *chip, u16 input, int gain)
 {
 	snd_assert(input < num_busses_in(chip), return -EINVAL);
 
@@ -229,7 +229,7 @@ static int set_input_gain(echoaudio_t *chip, u16 input, int gain)
 
 
 /* Tell the DSP to reread the flags from the comm page */
-static int update_flags(echoaudio_t *chip)
+static int update_flags(struct echoaudio *chip)
 {
 	if (wait_handshake(chip))
 		return -EIO;
@@ -239,7 +239,7 @@ static int update_flags(echoaudio_t *chip)
 
 
 
-static int set_professional_spdif(echoaudio_t *chip, char prof)
+static int set_professional_spdif(struct echoaudio *chip, char prof)
 {
 	DE_ACT(("set_professional_spdif %d\n", prof));
 	if (prof)

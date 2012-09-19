@@ -27,22 +27,23 @@
 //
 // ****************************************************************************
 
-static int load_asic(echoaudio_t *chip);
-static int dsp_set_digital_mode(echoaudio_t *chip, u8 mode);
-static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer);
-static int set_digital_mode(echoaudio_t *chip, u8 mode);
-static int check_asic_status(echoaudio_t *chip);
-static int set_sample_rate(echoaudio_t *chip, u32 rate);
-static int set_input_clock(echoaudio_t *chip, u16 clock);
-static int set_professional_spdif(echoaudio_t *chip, char prof);
-static int set_phantom_power(echoaudio_t *chip, char on);
-static int write_control_reg(echoaudio_t *chip, u32 ctl, u32 frq, char force);
+static int load_asic(struct echoaudio *chip);
+static int dsp_set_digital_mode(struct echoaudio *chip, u8 mode);
+static int set_digital_mode(struct echoaudio *chip, u8 mode);
+static int check_asic_status(struct echoaudio *chip);
+static int set_sample_rate(struct echoaudio *chip, u32 rate);
+static int set_input_clock(struct echoaudio *chip, u16 clock);
+static int set_professional_spdif(struct echoaudio *chip, char prof);
+static int set_phantom_power(struct echoaudio *chip, char on);
+static int write_control_reg(struct echoaudio *chip, u32 ctl, u32 frq, char force);
 
+#include <linux/irq.h>
 
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
+	local_irq_enable();
 	DE_INIT(("init_hw() - Echo3G\n"));
 	snd_assert((subdevice_id & 0xfff0) == ECHO3G, return -ENODEV);
 
@@ -113,7 +114,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 
 
 
-static int set_phantom_power(echoaudio_t *chip, char on)
+static int set_phantom_power(struct echoaudio *chip, char on)
 {
 	u32 control_reg = le32_to_cpu(chip->comm_page->control_register);
 

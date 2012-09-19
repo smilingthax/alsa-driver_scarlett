@@ -28,16 +28,15 @@
 // ****************************************************************************
 
 
-static int write_control_reg(echoaudio_t *chip, u32 value, char force);
-static int set_input_clock(echoaudio_t *chip, u16 clock);
-static int set_professional_spdif(echoaudio_t *chip, char prof);
-static int set_nominal_level(echoaudio_t *chip, u16 index, char consumer);
-static int set_digital_mode(echoaudio_t *chip, u8 mode);
-static int load_asic_generic(echoaudio_t *chip, u32 cmd, const struct firmware *asic);
-static int check_asic_status(echoaudio_t *chip);
+static int write_control_reg(struct echoaudio *chip, u32 value, char force);
+static int set_input_clock(struct echoaudio *chip, u16 clock);
+static int set_professional_spdif(struct echoaudio *chip, char prof);
+static int set_digital_mode(struct echoaudio *chip, u8 mode);
+static int load_asic_generic(struct echoaudio *chip, u32 cmd, const struct firmware *asic);
+static int check_asic_status(struct echoaudio *chip);
 
 
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
@@ -108,7 +107,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 //
 //===========================================================================
 
-static u32 detect_input_clocks(const echoaudio_t *chip)
+static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	u32 clocks_from_dsp, clock_bits;
 
@@ -144,7 +143,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 //
 //===========================================================================
 
-static int load_asic(echoaudio_t *chip)
+static int load_asic(struct echoaudio *chip)
 {
 	u32 control_reg;
 	int err;
@@ -189,7 +188,7 @@ static int load_asic(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int set_sample_rate(echoaudio_t *chip, u32 rate)
+static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u32 control_reg, clock;
 
@@ -263,7 +262,7 @@ static int set_sample_rate(echoaudio_t *chip, u32 rate)
 //
 //===========================================================================
 
-static int set_input_clock(echoaudio_t *chip, u16 clock)
+static int set_input_clock(struct echoaudio *chip, u16 clock)
 {
 	u32 control_reg, clocks_from_dsp;
 
@@ -321,7 +320,7 @@ static int set_input_clock(echoaudio_t *chip, u16 clock)
 //
 //===========================================================================
 
-static int dsp_set_digital_mode(echoaudio_t *chip, u8 mode)
+static int dsp_set_digital_mode(struct echoaudio *chip, u8 mode)
 {
 	u32 control_reg;
 	int err, incompatible_clock;

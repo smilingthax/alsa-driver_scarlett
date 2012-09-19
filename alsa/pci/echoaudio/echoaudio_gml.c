@@ -39,7 +39,7 @@ the load was successful.
 If this load fails, it does not necessarily mean that the hardware is
 defective - the external box may be disconnected or turned off.
 */
-static int check_asic_status(echoaudio_t *chip)
+static int check_asic_status(struct echoaudio *chip)
 {
 	u32 asic_status;
 
@@ -64,7 +64,7 @@ Most configuration of Gina24, Layla24, or Mona is
 accomplished by writing the control register.  write_control_reg
 sends the new control register value to the DSP.
 */
-static int write_control_reg(echoaudio_t *chip, u32 value, char force)
+static int write_control_reg(struct echoaudio *chip, u32 value, char force)
 {
 	/* Handle the digital input auto-mute */
 	if (chip->digital_in_automute)
@@ -96,7 +96,7 @@ the card is syncing to a valid clock on the ADAT or S/PDIF inputs.
 If the auto-mute is disabled, the digital inputs are enabled regardless of
 what the input clock is set or what is connected.
 */
-static int set_input_auto_mute(echoaudio_t *chip, int automute)
+static int set_input_auto_mute(struct echoaudio *chip, int automute)
 {
 	DE_ACT(("set_input_auto_mute %d\n", automute));
 
@@ -110,7 +110,7 @@ static int set_input_auto_mute(echoaudio_t *chip, int automute)
 
 
 /* S/PDIF coax / S/PDIF optical / ADAT - switch */
-static int set_digital_mode(echoaudio_t *chip, u8 mode)
+static int set_digital_mode(struct echoaudio *chip, u8 mode)
 {
 	u8 previous_mode;
 	int err, i, o;
@@ -153,7 +153,7 @@ static int set_digital_mode(echoaudio_t *chip, u8 mode)
 
 
 /* Set the S/PDIF output format */
-static int set_professional_spdif(echoaudio_t *chip, char prof)
+static int set_professional_spdif(struct echoaudio *chip, char prof)
 {
 	u32 control_reg;
 	int err;

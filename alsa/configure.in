@@ -2146,7 +2146,7 @@ fi
 dnl Check for RTC timer support...
 AC_MSG_CHECKING(for RTC callback support in kernel)
 rtcsup=""
-if test "$kversion.$kpatchlevel" = "2.6" -a "$kpatchlevel" -ge 15; then
+if test "$kversion.$kpatchlevel" = "2.6" -a "$ksublevel" -ge 15; then
 ac_save_CFLAGS="$CFLAGS"
 ac_save_CC=$CC
 CFLAGS="$KERNEL_CHECK_CFLAGS"

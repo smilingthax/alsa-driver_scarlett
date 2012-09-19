@@ -28,7 +28,7 @@
 // ****************************************************************************
 
 
-static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
+static int init_hw(struct echoaudio *chip, u16 device_id, u16 subdevice_id)
 {
 	int err;
 
@@ -68,7 +68,7 @@ static int init_hw(echoaudio_t *chip, u16 device_id, u16 subdevice_id)
 
 
 /* The Darla20 has no external clock sources */
-static u32 detect_input_clocks(const echoaudio_t *chip)
+static u32 detect_input_clocks(const struct echoaudio *chip)
 {
 	return ECHO_CLOCK_BIT_INTERNAL;
 }
@@ -76,7 +76,7 @@ static u32 detect_input_clocks(const echoaudio_t *chip)
 
 
 /* The Darla20 has no ASIC. Just do nothing */
-static int load_asic(echoaudio_t *chip)
+static int load_asic(struct echoaudio *chip)
 {
 	return 0;
 }
@@ -97,7 +97,7 @@ static int load_asic(echoaudio_t *chip)
 //
 //===========================================================================
 
-static int set_sample_rate(echoaudio_t *chip, u32 rate)
+static int set_sample_rate(struct echoaudio *chip, u32 rate)
 {
 	u8 clock_state, spdif_status;
 

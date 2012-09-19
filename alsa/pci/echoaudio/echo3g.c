@@ -82,7 +82,7 @@ static struct pci_device_id snd_echo_ids[] = {
 	{0,}
 };
 
-static snd_pcm_hardware_t pcm_hardware_skel = {
+static struct snd_pcm_hardware pcm_hardware_skel = {
 	.info = SNDRV_PCM_INFO_MMAP |
 		SNDRV_PCM_INFO_INTERLEAVED |
 		SNDRV_PCM_INFO_BLOCK_TRANSFER |
