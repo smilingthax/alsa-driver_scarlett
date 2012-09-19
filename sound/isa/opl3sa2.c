@@ -506,7 +506,8 @@ static int __init snd_opl3sa2_mixer(opl3sa2_t *chip)
 	snd_card_t *card = chip->card;
 	snd_ctl_elem_id_t id1, id2;
 	snd_kcontrol_t *kctl;
-	int idx, err;
+	unsigned int idx;
+	int err;
 
 	memset(&id1, 0, sizeof(id1));
 	memset(&id2, 0, sizeof(id2));

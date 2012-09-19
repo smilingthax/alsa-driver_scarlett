@@ -228,7 +228,7 @@ static int snd_opl3_load_patch_seq_oss(snd_seq_oss_arg_t *arg, int format,
 
 		mm_segment_t fs;
 
-		if (count < sizeof(sbi)) {
+		if (count < (int)sizeof(sbi)) {
 			snd_printk("FM Error: Patch record too short\n");
 			return -EINVAL;
 		}

@@ -67,6 +67,7 @@ static const ac97_codec_id_t snd_ac97_codec_id_vendors[] = {
 { 0x434d4900, 0xffffff00, "C-Media Electronics", NULL },
 { 0x43525900, 0xffffff00, "Cirrus Logic",	NULL },
 { 0x43585400, 0xffffff00, "Conexant",           NULL },
+{ 0x44543000, 0xffffff00, "Diamond Technology", NULL },
 { 0x454d4300, 0xffffff00, "eMicro",		NULL },
 { 0x45838300, 0xffffff00, "ESS Technology",	NULL },
 { 0x48525300, 0xffffff00, "Intersil",		NULL },
@@ -120,6 +121,7 @@ static const ac97_codec_id_t snd_ac97_codec_ids[] = {
 { 0x43525960, 0xfffffff8, "CS4291",		NULL },
 { 0x43585421, 0xffffffff, "HSD11246",		NULL },	// SmartMC II
 { 0x43585428, 0xfffffff8, "Cx20468",		patch_conexant }, // SmartAMC fixme: the mask might be different
+{ 0x44543031, 0xfffffff0, "DT0398",		NULL },
 { 0x454d4328, 0xffffffff, "28028",		NULL },  // same as TR28028?
 { 0x45838308, 0xffffffff, "ESS1988",		NULL },
 { 0x48525300, 0xffffff00, "HMP9701",		NULL },
@@ -1344,7 +1346,8 @@ static int snd_ac97_mixer_build(snd_card_t * card, ac97_t * ac97)
 {
 	snd_kcontrol_t *kctl;
 	const snd_kcontrol_new_t *knew;
-	int err, idx;
+	int err;
+	unsigned int idx;
 	unsigned char max;
 
 	/* build master controls */

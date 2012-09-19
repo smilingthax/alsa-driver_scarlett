@@ -1145,7 +1145,7 @@ static int snd_timer_user_params(struct file *file, snd_timer_params_t *_params)
 		tu->timeri->flags &= ~SNDRV_TIMER_IFLG_AUTO;
 	}
 	spin_unlock_irqrestore(&t->lock, flags);
-	if (params.queue_size > 0 && tu->queue_size != params.queue_size) {
+	if (params.queue_size > 0 && (unsigned int)tu->queue_size != params.queue_size) {
 		tr = (snd_timer_read_t *)kmalloc(params.queue_size * sizeof(snd_timer_read_t), GFP_KERNEL);
 		if (tr) {
 			kfree(tu->queue);

@@ -180,7 +180,7 @@ int snd_seq_timer_set_tempo(seq_timer_t * tmr, int tempo)
 	if (tempo <= 0)
 		return -EINVAL;
 	spin_lock_irqsave(&tmr->lock, flags);
-	if (tempo != tmr->tempo) {
+	if ((unsigned int)tempo != tmr->tempo) {
 		tmr->tempo = tempo;
 		snd_seq_timer_set_tick_resolution(&tmr->tick, tmr->tempo, tmr->ppq, 1);
 	}

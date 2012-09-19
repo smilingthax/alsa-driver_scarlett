@@ -932,7 +932,7 @@ static void output_acinclude(void)
 		if (tempdep->type != TYPE_TOPLEVEL)
 			continue;
 		text = convert_to_config_uppercase("CONFIG_", tempdep->name);
-		printf("\t%s=\"n\"\n", text);
+		printf("\t%s=\"\"\n", text);
 		free(text);
 	}
 	printf("])\n\n");
