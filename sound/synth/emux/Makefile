@@ -9,7 +9,7 @@ export-objs  := emux.o
 
 snd-emux-synth-objs := emux.o emux_synth.o emux_seq.o emux_nrpn.o \
 		       emux_effect.o emux_proc.o soundfont.o
-if ($(CONFIG_SND_SEQUENCER_OSS),y)
+ifeq ($(CONFIG_SND_SEQUENCER_OSS),y)
   snd-emux-synth-objs += emux_oss.o
 endif
 
