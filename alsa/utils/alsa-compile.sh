@@ -670,8 +670,6 @@ parse_modules() {
 
 	if ! test -s ../modules.top ; then
 		for i in modules/*.*o; do
-			pwd
-			echo "$i"
 			if test -r $i; then
 				a=$($modinfobin $i | grep "parm:" | grep "enable:")
 				if ! test -z "$a"; then
