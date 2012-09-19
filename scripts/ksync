@@ -55,7 +55,7 @@ ALSA_EXCLUDE_DIR = ['/scripts', '/oss']
 KERNEL_EXCLUDE = ['/COPYING', '/CREDITS',
 		  '/MAINTAINERS','/Makefile',
 		  '/README','/REPORTING-BUGS',
-		  '/Rules.make','/include/sound/version.h']
+		  '/include/sound/version.h']
 KERNEL_EXCLUDE_DIR = ['/BitKeeper',
 		      '/Documentation',
 		      '/arch', '/drivers', '/crypto', '/fs',
