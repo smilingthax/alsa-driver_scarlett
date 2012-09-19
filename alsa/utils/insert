@@ -22,6 +22,8 @@ function isapnp() {
 
 function basic() {
   $MODPROBE -q soundcore 2> /dev/null
+  banner "snd-page-alloc"
+  if ! $INSMOD -m $MODDIR/snd-page-alloc.o >> $MAP; then exit 1; fi
   banner "snd"
   if ! $INSMOD -m $MODDIR/snd.o cards_limit=$CARDS_LIMIT >> $MAP; then exit 1; fi
   if [ -r $MODDIR/snd-mixer-oss.o ]; then
