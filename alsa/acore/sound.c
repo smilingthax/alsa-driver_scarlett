@@ -18,3 +18,9 @@ EXPORT_SYMBOL(snd_wrapper_kill_fasync);
 #if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 EXPORT_SYMBOL(snd_compat_devfs_remove);
 #endif
+#if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
+EXPORT_SYMBOL(snd_compat_devfs_mk_dir);
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+EXPORT_SYMBOL(snd_compat_vmap);
+#endif

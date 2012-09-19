@@ -30,11 +30,13 @@ void snd_wrapper_kill_fasync(struct fasync_struct **fp, int sig, int band)
 #endif
 }
 
-#if defined(CONFIG_DEVFS_FS) && LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
+#if defined(CONFIG_DEVFS_FS)
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 4, 10)
 #define vsnprintf(buf,size,fmt,args) vsprintf(buf,fmt,args)
 #endif
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 29)
 
 void snd_compat_devfs_remove(const char *fmt, ...)
 {
@@ -49,6 +51,31 @@ void snd_compat_devfs_remove(const char *fmt, ...)
 		devfs_unregister(de);
 		devfs_put(de);
 	}
+}
+
+#endif /* 2.5.29 */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 67)
+
+devfs_handle_t snd_compat_devfs_mk_dir(const char *dir)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,3,0)
+	return devfs_mk_dir(NULL, dir, strlen(dir), NULL);
+#else
+	return devfs_mk_dir(NULL, dir, NULL);
+#endif
+}
+
+#endif /* 2.5.67 */
+
+#endif /* CONFIG_DEVFS_FS */
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 69)
+#include <linux/vmalloc.h>
+
+void *snd_compat_vmap(struct page **pages, unsigned int count, unsigned long flags, pgprot_t prot)
+{
+	return vmap(pages, count);
 }
 
 #endif
