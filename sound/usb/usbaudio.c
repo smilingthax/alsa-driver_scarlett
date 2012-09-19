@@ -79,7 +79,7 @@ module_param_array(vid, int, NULL, 0444);
 MODULE_PARM_DESC(vid, "Vendor ID for the USB audio device.");
 module_param_array(pid, int, NULL, 0444);
 MODULE_PARM_DESC(pid, "Product ID for the USB audio device.");
-module_param(nrpacks, int, 0444);
+module_param(nrpacks, int, 0644);
 MODULE_PARM_DESC(nrpacks, "Max. number of packets per URB.");
 module_param(async_unlink, bool, 0444);
 MODULE_PARM_DESC(async_unlink, "Use async unlink mode.");
@@ -97,7 +97,7 @@ MODULE_PARM_DESC(async_unlink, "Use async unlink mode.");
 
 #define MAX_PACKS	10
 #define MAX_PACKS_HS	(MAX_PACKS * 8)	/* in high speed mode */
-#define MAX_URBS	5	/* max. 20ms long packets */
+#define MAX_URBS	8
 #define SYNC_URBS	4	/* always four urbs for sync */
 #define MIN_PACKS_URB	1	/* minimum 1 packet per urb */
 
@@ -893,7 +893,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 {
 	unsigned int maxsize, n, i;
 	int is_playback = subs->direction == SNDRV_PCM_STREAM_PLAYBACK;
-	unsigned int npacks[MAX_URBS], urb_packs, total_packs;
+	unsigned int npacks[MAX_URBS], urb_packs, total_packs, packs_per_ms;
 
 	/* calculate the frequency in 16.16 format */
 	if (snd_usb_get_speed(subs->dev) == USB_SPEED_FULL)
@@ -920,10 +920,18 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 	else
 		subs->curpacksize = maxsize;
 
-	if (snd_usb_get_speed(subs->dev) == USB_SPEED_FULL)
-		urb_packs = nrpacks;
+	if (snd_usb_get_speed(subs->dev) == USB_SPEED_HIGH)
+		packs_per_ms = 8 >> subs->datainterval;
 	else
-		urb_packs = (nrpacks * 8) >> subs->datainterval;
+		packs_per_ms = 1;
+
+	if (is_playback) {
+		urb_packs = nrpacks;
+		urb_packs = max(urb_packs, (unsigned int)MIN_PACKS_URB);
+		urb_packs = min(urb_packs, (unsigned int)MAX_PACKS);
+	} else
+		urb_packs = 1;
+	urb_packs *= packs_per_ms;
 
 	/* allocate a temporary buffer for playback */
 	if (is_playback) {
@@ -935,9 +943,25 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 	}
 
 	/* decide how many packets to be used */
-	total_packs = (period_bytes + maxsize - 1) / maxsize;
-	if (total_packs < 2 * MIN_PACKS_URB)
-		total_packs = 2 * MIN_PACKS_URB;
+	if (is_playback) {
+		unsigned int minsize;
+		/* determine how small a packet can be */
+		minsize = (subs->freqn >> (16 - subs->datainterval))
+			  * (frame_bits >> 3);
+		/* with sync from device, assume it can be 25% lower */
+		if (subs->syncpipe)
+			minsize -= minsize >> 2;
+		minsize = max(minsize, 1u);
+		total_packs = (period_bytes + minsize - 1) / minsize;
+		/* round up to multiple of packs_per_ms */
+		total_packs = (total_packs + packs_per_ms - 1)
+				& ~(packs_per_ms - 1);
+		/* we need at least two URBs for queueing */
+		if (total_packs < 2 * MIN_PACKS_URB * packs_per_ms)
+			total_packs = 2 * MIN_PACKS_URB * packs_per_ms;
+	} else {
+		total_packs = MAX_URBS * urb_packs;
+	}
 	subs->nurbs = (total_packs + urb_packs - 1) / urb_packs;
 	if (subs->nurbs > MAX_URBS) {
 		/* too much... */
@@ -956,7 +980,7 @@ static int init_substream_urbs(snd_usb_substream_t *subs, unsigned int period_by
 		subs->nurbs = 2;
 		npacks[0] = (total_packs + 1) / 2;
 		npacks[1] = total_packs - npacks[0];
-	} else if (npacks[subs->nurbs-1] < MIN_PACKS_URB) {
+	} else if (npacks[subs->nurbs-1] < MIN_PACKS_URB * packs_per_ms) {
 		/* the last packet is too small.. */
 		if (subs->nurbs > 2) {
 			/* merge to the first one */
