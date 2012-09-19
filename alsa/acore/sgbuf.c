@@ -57,8 +57,8 @@ static int store_page_tables(struct snd_sg_buf *sgbuf, void *vmaddr, unsigned in
 	unsigned int i;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 	unsigned long rmask;
-	if (sgbuf->pci)
-		rmask = ~((unsigned long)sgbuf->pci->dma_mask);
+	if (sgbuf->dev->dev.dev->dma_mask)
+		rmask = ~((unsigned long)(*sgbuf->dev->dev.dev->dma_mask));
 	else
 		rmask = ~0xffffffUL;
 #endif
@@ -107,7 +107,28 @@ static void release_vm_buffer(struct snd_sg_buf *sgbuf, void *vmaddr)
 		vfree(vmaddr); /* don't use wrapper */
 }
 
-void *snd_malloc_sgbuf_pages(struct pci_dev *pci, size_t size, struct snd_dma_buffer *dmab)
+int snd_free_sgbuf_pages(const struct snd_dma_device *dev,
+			 struct snd_dma_buffer *dmab)
+{
+	struct snd_sg_buf *sgbuf = dmab->private_data;
+
+	if (dmab->area)
+		release_vm_buffer(sgbuf, dmab->area);
+	dmab->area = NULL;
+	if (sgbuf->table)
+		kfree(sgbuf->table);
+	sgbuf->table = NULL;
+	if (sgbuf->page_table)
+		kfree(sgbuf->page_table);
+	kfree(sgbuf);
+	dmab->private_data = NULL;
+	
+	return 0;
+}
+
+void *snd_malloc_sgbuf_pages(const struct snd_dma_device *dev,
+			     size_t size, struct snd_dma_buffer *dmab,
+			     size_t *res_size)
 {
 	struct snd_sg_buf *sgbuf;
 	unsigned int pages;
@@ -118,7 +139,7 @@ void *snd_malloc_sgbuf_pages(struct pci_dev *pci, size_t size, struct snd_dma_bu
 	if (! sgbuf)
 		return NULL;
 	memset(sgbuf, 0, sizeof(*sgbuf));
-	sgbuf->pci = pci;
+	sgbuf->dev = dev;
 	pages = snd_sgbuf_aligned_pages(size);
 	sgbuf->tblsize = sgbuf_align_table(pages);
 	sgbuf->table = kmalloc(sizeof(*sgbuf->table) * sgbuf->tblsize, GFP_KERNEL);
@@ -149,26 +170,8 @@ void *snd_malloc_sgbuf_pages(struct pci_dev *pci, size_t size, struct snd_dma_bu
 	return dmab->area;
 
  _failed:
-	snd_free_sgbuf_pages(dmab); /* free the table */
+	snd_free_sgbuf_pages(dev, dmab); /* free the table */
 	return NULL;
-}
-
-int snd_free_sgbuf_pages(struct snd_dma_buffer *dmab)
-{
-	struct snd_sg_buf *sgbuf = dmab->private_data;
-
-	if (dmab->area)
-		release_vm_buffer(sgbuf, dmab->area);
-	dmab->area = NULL;
-	if (sgbuf->table)
-		kfree(sgbuf->table);
-	sgbuf->table = NULL;
-	if (sgbuf->page_table)
-		kfree(sgbuf->page_table);
-	kfree(sgbuf);
-	dmab->private_data = NULL;
-	
-	return 0;
 }
 
 #endif /* < 2.5.0 */
