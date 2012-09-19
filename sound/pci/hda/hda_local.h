@@ -36,7 +36,7 @@
 #define HDA_CODEC_VOLUME_IDX(xname, xcidx, nid, xindex, direction) \
 	HDA_CODEC_VOLUME_MONO_IDX(xname, xcidx, nid, 3, xindex, direction)
 #define HDA_CODEC_VOLUME_MONO(xname, nid, channel, xindex, direction) \
-	HDA_CODEC_VOLUME_MONO_IDX(xname, 0, nid, 3, xindex, direction)
+	HDA_CODEC_VOLUME_MONO_IDX(xname, 0, nid, channel, xindex, direction)
 #define HDA_CODEC_VOLUME(xname, nid, xindex, direction) \
 	HDA_CODEC_VOLUME_MONO(xname, nid, 3, xindex, direction)
 #define HDA_CODEC_MUTE_MONO_IDX(xname, xcidx, nid, channel, xindex, direction) \
@@ -48,7 +48,7 @@
 #define HDA_CODEC_MUTE_IDX(xname, xcidx, nid, xindex, direction) \
 	HDA_CODEC_MUTE_MONO_IDX(xname, xcidx, nid, 3, xindex, direction)
 #define HDA_CODEC_MUTE_MONO(xname, nid, channel, xindex, direction) \
-	HDA_CODEC_MUTE_MONO_IDX(xname, 0, nid, 3, xindex, direction)
+	HDA_CODEC_MUTE_MONO_IDX(xname, 0, nid, channel, xindex, direction)
 #define HDA_CODEC_MUTE(xname, nid, xindex, direction) \
 	HDA_CODEC_MUTE_MONO(xname, nid, 3, xindex, direction)
 
@@ -60,6 +60,7 @@ int snd_hda_mixer_amp_switch_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t 
 int snd_hda_mixer_amp_switch_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol);
 
 int snd_hda_create_spdif_out_ctls(struct hda_codec *codec, hda_nid_t nid);
+int snd_hda_create_spdif_in_ctls(struct hda_codec *codec, hda_nid_t nid);
 
 /*
  * input MUX helper
@@ -138,6 +139,7 @@ int snd_hda_add_new_ctls(struct hda_codec *codec, snd_kcontrol_new_t *knew);
 #ifdef CONFIG_PM
 int snd_hda_resume_ctls(struct hda_codec *codec, snd_kcontrol_new_t *knew);
 int snd_hda_resume_spdif_out(struct hda_codec *codec);
+int snd_hda_resume_spdif_in(struct hda_codec *codec);
 #endif
 
 /*
