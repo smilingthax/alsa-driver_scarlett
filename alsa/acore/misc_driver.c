@@ -105,14 +105,14 @@ EXPORT_SYMBOL(snd_platform_device_register_simple);
 #ifdef CONFIG_PCI
 #ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
 #ifdef CONFIG_HAVE_PCI_SAVED_CONFIG
-void snd_pci_compat_save_state(struct pci_dev *pci)
+int snd_pci_compat_save_state(struct pci_dev *pci)
 {
-	snd_pci_orig_save_state(pci, pci->saved_config_space);
+	return snd_pci_orig_save_state(pci, pci->saved_config_space);
 }
 EXPORT_SYMBOL(snd_pci_compat_save_state);
-void snd_pci_compat_restore_state(struct pci_dev *pci)
+int snd_pci_compat_restore_state(struct pci_dev *pci)
 {
-	snd_pci_orig_restore_state(pci, pci->saved_config_space);
+	return snd_pci_orig_restore_state(pci, pci->saved_config_space);
 }
 EXPORT_SYMBOL(snd_pci_compat_restore_state);
 #else /* !CONFIG_HAVE_PCI_SAVED_CONFIG */
@@ -122,7 +122,7 @@ struct saved_config_tbl {
 };
 static struct saved_config_tbl saved_tbl[16];
 
-void snd_pci_compat_save_state(struct pci_dev *pci)
+int snd_pci_compat_save_state(struct pci_dev *pci)
 {
 	int i;
 	/* FIXME: mutex needed for race? */
@@ -130,14 +130,15 @@ void snd_pci_compat_save_state(struct pci_dev *pci)
 		if (! saved_tbl[i].pci) {
 			saved_tbl[i].pci = pci;
 			snd_pci_orig_save_state(pci, saved_tbl[i].config);
-			return;
+			return 0;
 		}
 	}
 	printk(KERN_DEBUG "snd: no pci config space found!\n");
+	return 1;
 }
 EXPORT_SYMBOL(snd_pci_compat_save_state);
 
-void snd_pci_compat_restore_state(struct pci_dev *pci)
+int snd_pci_compat_restore_state(struct pci_dev *pci)
 {
 	int i;
 	/* FIXME: mutex needed for race? */
@@ -145,10 +146,11 @@ void snd_pci_compat_restore_state(struct pci_dev *pci)
 		if (saved_tbl[i].pci == pci) {
 			saved_tbl[i].pci = NULL;
 			snd_pci_orig_restore_state(pci, saved_tbl[i].config);
-			return;
+			return 0;
 		}
 	}
 	printk(KERN_DEBUG "snd: no saved pci config!\n");
+	return 1;
 }
 EXPORT_SYMBOL(snd_pci_compat_restore_state);
 #endif /* CONFIG_HAVE_PCI_SAVED_CONFIG */

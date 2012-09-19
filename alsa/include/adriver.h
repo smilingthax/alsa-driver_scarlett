@@ -1175,15 +1175,15 @@ static inline int snd_pci_compat_register_driver(struct pci_driver *driver)
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 4, 0)
 #ifdef CONFIG_PCI
 #ifndef CONFIG_HAVE_NEW_PCI_SAVE_STATE
-void snd_pci_compat_save_state(struct pci_dev *pci);
-void snd_pci_compat_restore_state(struct pci_dev *pci);
-static inline void snd_pci_orig_save_state(struct pci_dev *pci, u32 *buffer)
+int snd_pci_compat_save_state(struct pci_dev *pci);
+int snd_pci_compat_restore_state(struct pci_dev *pci);
+static inline int snd_pci_orig_save_state(struct pci_dev *pci, u32 *buffer)
 {
-	pci_save_state(pci, buffer);
+	return pci_save_state(pci, buffer);
 }
-static inline void snd_pci_orig_restore_state(struct pci_dev *pci, u32 *buffer)
+static inline int snd_pci_orig_restore_state(struct pci_dev *pci, u32 *buffer)
 {
-	pci_restore_state(pci, buffer);
+	return pci_restore_state(pci, buffer);
 }
 
 #undef pci_save_state
