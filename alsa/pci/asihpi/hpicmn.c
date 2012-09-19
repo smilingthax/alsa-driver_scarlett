@@ -29,9 +29,9 @@
 #include "hpicmn.h"
 
 struct hpi_adapters_list {
-	struct hpios_spinlock aListLock;
+	struct hpios_spinlock list_lock;
 	struct hpi_adapter_obj adapter[HPI_MAX_ADAPTERS];
-	u16 gwNumAdapters;
+	u16 gw_num_adapters;
 };
 
 static struct hpi_adapters_list adapters;
@@ -41,59 +41,52 @@ static struct hpi_adapters_list adapters;
 * validate that the response has the correct fields filled in,
 * i.e ObjectType, Function etc
 **/
-u16 HpiValidateResponse(
-	struct hpi_message *phm,
-	struct hpi_response *phr
-)
+u16 hpi_validate_response(struct hpi_message *phm, struct hpi_response *phr)
 {
-	u16 wError = 0;
+	u16 error = 0;
 
-	if ((phr->wType != HPI_TYPE_RESPONSE)
-		|| (phr->wObject != phm->wObject)
-		|| (phr->wFunction != phm->wFunction))
-		wError = HPI_ERROR_INVALID_RESPONSE;
+	if ((phr->type != HPI_TYPE_RESPONSE)
+		|| (phr->object != phm->object)
+		|| (phr->function != phm->function))
+		error = HPI_ERROR_INVALID_RESPONSE;
 
-	return wError;
+	return error;
 }
 
-u16 HpiAddAdapter(
-	struct hpi_adapter_obj *pao
-)
+u16 hpi_add_adapter(struct hpi_adapter_obj *pao)
 {
 	u16 retval = 0;
 	/*HPI_ASSERT(pao->wAdapterType); */
 
-	HpiOs_Alistlock_Lock(&adapters);
+	hpios_alistlock_lock(&adapters);
 
-	if (pao->wIndex >= HPI_MAX_ADAPTERS) {
+	if (pao->index >= HPI_MAX_ADAPTERS) {
 		retval = HPI_ERROR_BAD_ADAPTER_NUMBER;
 		goto unlock;
 	}
 
-	if (adapters.adapter[pao->wIndex].wAdapterType) {
+	if (adapters.adapter[pao->index].adapter_type) {
 		{
 			retval = HPI_DUPLICATE_ADAPTER_NUMBER;
 			goto unlock;
 		}
 	}
-	adapters.adapter[pao->wIndex] = *pao;
-	HpiOs_Dsplock_Init(&adapters.adapter[pao->wIndex]);
-	adapters.gwNumAdapters++;
+	adapters.adapter[pao->index] = *pao;
+	hpios_dsplock_init(&adapters.adapter[pao->index]);
+	adapters.gw_num_adapters++;
 
 unlock:
-	HpiOs_Alistlock_UnLock(&adapters);
+	hpios_alistlock_un_lock(&adapters);
 	return retval;
 }
 
-void HpiDeleteAdapter(
-	struct hpi_adapter_obj *pao
-)
+void hpi_delete_adapter(struct hpi_adapter_obj *pao)
 {
 	memset(pao, 0, sizeof(struct hpi_adapter_obj));
 
-	HpiOs_Alistlock_Lock(&adapters);
-	adapters.gwNumAdapters--;	/* dec the number of adapters */
-	HpiOs_Alistlock_UnLock(&adapters);
+	hpios_alistlock_lock(&adapters);
+	adapters.gw_num_adapters--;	/* dec the number of adapters */
+	hpios_alistlock_un_lock(&adapters);
 }
 
 /**
@@ -101,20 +94,18 @@ void HpiDeleteAdapter(
 * index wAdapterIndex in an HPI_ADAPTERS_LIST structure.
 *
 */
-struct hpi_adapter_obj *HpiFindAdapter(
-	u16 wAdapterIndex
-)
+struct hpi_adapter_obj *hpi_find_adapter(u16 adapter_index)
 {
 	struct hpi_adapter_obj *pao = NULL;
 
-	if (wAdapterIndex >= HPI_MAX_ADAPTERS) {
-		HPI_DEBUG_LOG(VERBOSE,
-			"FindAdapter invalid index %d ", wAdapterIndex);
+	if (adapter_index >= HPI_MAX_ADAPTERS) {
+		HPI_DEBUG_LOG(VERBOSE, "find_adapter invalid index %d ",
+			adapter_index);
 		return NULL;
 	}
 
-	pao = &adapters.adapter[wAdapterIndex];
-	if (pao->wAdapterType != 0) {
+	pao = &adapters.adapter[adapter_index];
+	if (pao->adapter_type != 0) {
 		/*
 		   HPI_DEBUG_LOG(VERBOSE, "Found adapter index %d\n",
 		   wAdapterIndex);
@@ -134,9 +125,8 @@ struct hpi_adapter_obj *HpiFindAdapter(
 * wipe an HPI_ADAPTERS_LIST structure.
 *
 **/
-static void WipeAdapterList(
-	void
-)
+static void wipe_adapter_list(void
+	)
 {
 	memset(&adapters, 0, sizeof(adapters));
 }
@@ -146,9 +136,7 @@ static void WipeAdapterList(
 * with all adapters in the given HPI_ADAPTERS_LIST.
 *
 */
-static void SubSysGetAdapters(
-	struct hpi_response *phr
-)
+static void subsys_get_adapters(struct hpi_response *phr)
 {
 	/* fill in the response adapter array with the position */
 	/* identified by the adapter number/index of the adapters in */
@@ -166,123 +154,113 @@ static void SubSysGetAdapters(
 	short i;
 	struct hpi_adapter_obj *pao = NULL;
 
-	HPI_DEBUG_LOG(VERBOSE, "SubSysGetAdapters\n");
+	HPI_DEBUG_LOG(VERBOSE, "subsys_get_adapters\n");
 
 	/* for each adapter, place it's type in the position of the array */
 	/* corresponding to it's adapter number */
-	for (i = 0; i < adapters.gwNumAdapters; i++) {
+	for (i = 0; i < adapters.gw_num_adapters; i++) {
 		pao = &adapters.adapter[i];
-		if (phr->u.s.awAdapterList[pao->wIndex] != 0) {
-			phr->wError = HPI_DUPLICATE_ADAPTER_NUMBER;
-			phr->wSpecificError = pao->wIndex;
+		if (phr->u.s.aw_adapter_list[pao->index] != 0) {
+			phr->error = HPI_DUPLICATE_ADAPTER_NUMBER;
+			phr->specific_error = pao->index;
 			return;
 		}
-		phr->u.s.awAdapterList[pao->wIndex] = pao->wAdapterType;
+		phr->u.s.aw_adapter_list[pao->index] = pao->adapter_type;
 	}
 
-	phr->u.s.wNumAdapters = adapters.gwNumAdapters;
-	phr->wError = 0;	/* the function completed OK; */
+	phr->u.s.num_adapters = adapters.gw_num_adapters;
+	phr->error = 0;	/* the function completed OK; */
 }
 
-static unsigned int ControlCacheAllocCheck(
-	struct hpi_control_cache *pC
-)
+static unsigned int control_cache_alloc_check(struct hpi_control_cache *pC)
 {
 	unsigned int i;
-	int nCached = 0;
+	int cached = 0;
 	if (!pC)
 		return 0;
-	if ((!pC->dwInit) &&
-		(pC->pCache != NULL) &&
-		(pC->dwControlCount) && (pC->dwCacheSizeInBytes)
+	if ((!pC->init) && (pC->p_cache != NULL) && (pC->control_count)
+		&& (pC->cache_size_in_bytes)
 		) {
-		u32 *pMasterCache;
-		pC->dwInit = 1;
+		u32 *p_master_cache;
+		pC->init = 1;
 
-		pMasterCache = (u32 *)pC->pCache;
+		p_master_cache = (u32 *)pC->p_cache;
 		HPI_DEBUG_LOG(VERBOSE, "check %d controls\n",
-			pC->dwControlCount);
-		for (i = 0; i < pC->dwControlCount; i++) {
+			pC->control_count);
+		for (i = 0; i < pC->control_count; i++) {
 			struct hpi_control_cache_info *info =
-				(struct hpi_control_cache_info *)pMasterCache;
+				(struct hpi_control_cache_info *)
+				p_master_cache;
 
-			if (info->ControlType) {
-				pC->pInfo[i] = info;
-				nCached++;
+			if (info->control_type) {
+				pC->p_info[i] = info;
+				cached++;
 			} else
-				pC->pInfo[i] = NULL;
+				pC->p_info[i] = NULL;
 
-			if (info->nSizeIn32bitWords)
-				pMasterCache += info->nSizeIn32bitWords;
+			if (info->size_in32bit_words)
+				p_master_cache += info->size_in32bit_words;
 			else
-				pMasterCache +=
+				p_master_cache +=
 					sizeof(struct
 					hpi_control_cache_single) /
 					sizeof(u32);
 
 			HPI_DEBUG_LOG(VERBOSE,
-				"nCached %d, pinfo %p index %d type %d\n",
-				nCached, pC->pInfo[i], info->ControlIndex,
-				info->ControlType);
+				"cached %d, pinfo %p index %d type %d\n",
+				cached, pC->p_info[i], info->control_index,
+				info->control_type);
 		}
 		/*
 		   We didn't find anything to cache, so try again later !
 		 */
-		if (!nCached)
-			pC->dwInit = 0;
+		if (!cached)
+			pC->init = 0;
 	}
-	return pC->dwInit;
+	return pC->init;
 }
 
 /** Find a control.
 */
-static short FindControl(
-	struct hpi_message *phm,
-	struct hpi_control_cache *pCache,
-	struct hpi_control_cache_info **pI,
-	u16 *pwControlIndex
-)
+static short find_control(struct hpi_message *phm,
+	struct hpi_control_cache *p_cache, struct hpi_control_cache_info **pI,
+	u16 *pw_control_index)
 {
-	*pwControlIndex = phm->wObjIndex;
+	*pw_control_index = phm->obj_index;
 
-	if (!ControlCacheAllocCheck(pCache)) {
+	if (!control_cache_alloc_check(p_cache)) {
 		HPI_DEBUG_LOG(VERBOSE,
-			"ControlCacheAllocCheck() failed. adap%d ci%d\n",
-			phm->wAdapterIndex, *pwControlIndex);
+			"control_cache_alloc_check() failed. adap%d ci%d\n",
+			phm->adapter_index, *pw_control_index);
 		return 0;
 	}
 
-	*pI = pCache->pInfo[*pwControlIndex];
+	*pI = p_cache->p_info[*pw_control_index];
 	if (!*pI) {
-		HPI_DEBUG_LOG(VERBOSE,
-			"Uncached Adap %d, Control %d\n",
-			phm->wAdapterIndex, *pwControlIndex);
+		HPI_DEBUG_LOG(VERBOSE, "uncached adap %d, control %d\n",
+			phm->adapter_index, *pw_control_index);
 		return 0;
 	} else {
-		HPI_DEBUG_LOG(VERBOSE,
-			"FindControl() Type %d\n", (*pI)->ControlType);
+		HPI_DEBUG_LOG(VERBOSE, "find_control() type %d\n",
+			(*pI)->control_type);
 	}
 	return 1;
 }
 
 /** Used by the kernel driver to figure out if a buffer needs mapping.
  */
-short HpiCheckBufferMapping(
-	struct hpi_control_cache *pCache,
-	struct hpi_message *phm,
-	void **p,
-	unsigned int *pN
-)
+short hpi_check_buffer_mapping(struct hpi_control_cache *p_cache,
+	struct hpi_message *phm, void **p, unsigned int *pN)
 {
 	*pN = 0;
 	*p = NULL;
-	if ((phm->wFunction == HPI_CONTROL_GET_STATE) &&
-		(phm->wObject == HPI_OBJ_CONTROLEX)
+	if ((phm->function == HPI_CONTROL_GET_STATE)
+		&& (phm->object == HPI_OBJ_CONTROLEX)
 		) {
-		u16 wControlIndex;
+		u16 control_index;
 		struct hpi_control_cache_info *pI;
 
-		if (!FindControl(phm, pCache, &pI, &wControlIndex))
+		if (!find_control(phm, p_cache, &pI, &control_index))
 			return 0;
 	}
 	return 0;
@@ -298,76 +276,73 @@ struct pad_ofs_size {
 	unsigned int field_size;
 };
 
-static struct pad_ofs_size aPadDesc[] = {
-	HPICMN_PAD_OFS_AND_SIZE(cChannel),	/* HPI_PAD_CHANNEL_NAME */
-	HPICMN_PAD_OFS_AND_SIZE(cArtist),	/* HPI_PAD_ARTIST */
-	HPICMN_PAD_OFS_AND_SIZE(cTitle),	/* HPI_PAD_TITLE */
-	HPICMN_PAD_OFS_AND_SIZE(cComment),	/* HPI_PAD_COMMENT */
+static struct pad_ofs_size pad_desc[] = {
+	HPICMN_PAD_OFS_AND_SIZE(c_channel),	/* HPI_PAD_CHANNEL_NAME */
+	HPICMN_PAD_OFS_AND_SIZE(c_artist),	/* HPI_PAD_ARTIST */
+	HPICMN_PAD_OFS_AND_SIZE(c_title),	/* HPI_PAD_TITLE */
+	HPICMN_PAD_OFS_AND_SIZE(c_comment),	/* HPI_PAD_COMMENT */
 };
 
 /** CheckControlCache checks the cache and fills the struct hpi_response
  * accordingly. It returns one if a cache hit occurred, zero otherwise.
  */
-short HpiCheckControlCache(
-	struct hpi_control_cache *pCache,
-	struct hpi_message *phm,
-	struct hpi_response *phr
-)
+short hpi_check_control_cache(struct hpi_control_cache *p_cache,
+	struct hpi_message *phm, struct hpi_response *phr)
 {
 	short found = 1;
-	u16 wControlIndex;
+	u16 control_index;
 	struct hpi_control_cache_info *pI;
 	struct hpi_control_cache_single *pC;
-	struct hpi_control_cache_pad *pPad;
+	struct hpi_control_cache_pad *p_pad;
 
-	if (!FindControl(phm, pCache, &pI, &wControlIndex))
+	if (!find_control(phm, p_cache, &pI, &control_index))
 		return 0;
 
-	phr->wError = 0;
+	phr->error = 0;
 
 	/* pC is the default cached control strucure. May be cast to
 	   something else in the following switch statement.
 	 */
 	pC = (struct hpi_control_cache_single *)pI;
-	pPad = (struct hpi_control_cache_pad *)pI;
+	p_pad = (struct hpi_control_cache_pad *)pI;
 
-	switch (pI->ControlType) {
+	switch (pI->control_type) {
 
 	case HPI_CONTROL_METER:
-		if (phm->u.c.wAttribute == HPI_METER_PEAK) {
-			phr->u.c.anLogValue[0] = pC->u.p.anLogPeak[0];
-			phr->u.c.anLogValue[1] = pC->u.p.anLogPeak[1];
-		} else if (phm->u.c.wAttribute == HPI_METER_RMS) {
-			phr->u.c.anLogValue[0] = pC->u.p.anLogRMS[0];
-			phr->u.c.anLogValue[1] = pC->u.p.anLogRMS[1];
+		if (phm->u.c.attribute == HPI_METER_PEAK) {
+			phr->u.c.an_log_value[0] = pC->u.p.an_log_peak[0];
+			phr->u.c.an_log_value[1] = pC->u.p.an_log_peak[1];
+		} else if (phm->u.c.attribute == HPI_METER_RMS) {
+			phr->u.c.an_log_value[0] = pC->u.p.an_logRMS[0];
+			phr->u.c.an_log_value[1] = pC->u.p.an_logRMS[1];
 		} else
 			found = 0;
 		break;
 	case HPI_CONTROL_VOLUME:
-		if (phm->u.c.wAttribute == HPI_VOLUME_GAIN) {
-			phr->u.c.anLogValue[0] = pC->u.v.anLog[0];
-			phr->u.c.anLogValue[1] = pC->u.v.anLog[1];
+		if (phm->u.c.attribute == HPI_VOLUME_GAIN) {
+			phr->u.c.an_log_value[0] = pC->u.v.an_log[0];
+			phr->u.c.an_log_value[1] = pC->u.v.an_log[1];
 		} else
 			found = 0;
 		break;
 	case HPI_CONTROL_MULTIPLEXER:
-		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
-			phr->u.c.dwParam1 = pC->u.x.wSourceNodeType;
-			phr->u.c.dwParam2 = pC->u.x.wSourceNodeIndex;
+		if (phm->u.c.attribute == HPI_MULTIPLEXER_SOURCE) {
+			phr->u.c.param1 = pC->u.x.source_node_type;
+			phr->u.c.param2 = pC->u.x.source_node_index;
 		} else {
 			found = 0;
 		}
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
-		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
-			phr->u.c.dwParam1 = pC->u.m.wMode;
+		if (phm->u.c.attribute == HPI_CHANNEL_MODE_MODE)
+			phr->u.c.param1 = pC->u.m.mode;
 		else
 			found = 0;
 		break;
 	case HPI_CONTROL_LEVEL:
-		if (phm->u.c.wAttribute == HPI_LEVEL_GAIN) {
-			phr->u.c.anLogValue[0] = pC->u.l.anLog[0];
-			phr->u.c.anLogValue[1] = pC->u.l.anLog[1];
+		if (phm->u.c.attribute == HPI_LEVEL_GAIN) {
+			phr->u.c.an_log_value[0] = pC->u.l.an_log[0];
+			phr->u.c.an_log_value[1] = pC->u.l.an_log[1];
 		} else
 			found = 0;
 		break;
@@ -375,119 +350,119 @@ short HpiCheckControlCache(
 		{
 			struct hpi_control_cache_single *pCT =
 				(struct hpi_control_cache_single *)pI;
-			if (phm->u.c.wAttribute == HPI_TUNER_FREQ)
-				phr->u.c.dwParam1 = pCT->u.t.dwFreqInkHz;
-			else if (phm->u.c.wAttribute == HPI_TUNER_BAND)
-				phr->u.c.dwParam1 = pCT->u.t.wBand;
-			else if ((phm->u.c.wAttribute == HPI_TUNER_LEVEL) &&
-				(phm->u.c.dwParam1 ==
+			if (phm->u.c.attribute == HPI_TUNER_FREQ)
+				phr->u.c.param1 = pCT->u.t.freq_ink_hz;
+			else if (phm->u.c.attribute == HPI_TUNER_BAND)
+				phr->u.c.param1 = pCT->u.t.band;
+			else if ((phm->u.c.attribute == HPI_TUNER_LEVEL)
+				&& (phm->u.c.param1 ==
 					HPI_TUNER_LEVEL_AVERAGE))
-				phr->u.c.dwParam1 = pCT->u.t.wLevel;
+				phr->u.c.param1 = pCT->u.t.level;
 			else
 				found = 0;
 		}
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
-		if (phm->u.c.wAttribute == HPI_AESEBURX_ERRORSTATUS)
-			phr->u.c.dwParam1 = pC->u.aes3rx.dwErrorStatus;
-		else if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
-			phr->u.c.dwParam1 = pC->u.aes3rx.dwSource;
+		if (phm->u.c.attribute == HPI_AESEBURX_ERRORSTATUS)
+			phr->u.c.param1 = pC->u.aes3rx.error_status;
+		else if (phm->u.c.attribute == HPI_AESEBURX_FORMAT)
+			phr->u.c.param1 = pC->u.aes3rx.source;
 		else
 			found = 0;
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
-		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
-			phr->u.c.dwParam1 = pC->u.aes3tx.dwFormat;
+		if (phm->u.c.attribute == HPI_AESEBUTX_FORMAT)
+			phr->u.c.param1 = pC->u.aes3tx.format;
 		else
 			found = 0;
 		break;
 	case HPI_CONTROL_TONEDETECTOR:
-		if (phm->u.c.wAttribute == HPI_TONEDETECTOR_STATE)
-			phr->u.c.dwParam1 = pC->u.tone.wState;
+		if (phm->u.c.attribute == HPI_TONEDETECTOR_STATE)
+			phr->u.c.param1 = pC->u.tone.state;
 		else
 			found = 0;
 		break;
 	case HPI_CONTROL_SILENCEDETECTOR:
-		if (phm->u.c.wAttribute == HPI_SILENCEDETECTOR_STATE) {
-			phr->u.c.dwParam1 = pC->u.silence.dwState;
-			phr->u.c.dwParam2 = pC->u.silence.dwCount;
+		if (phm->u.c.attribute == HPI_SILENCEDETECTOR_STATE) {
+			phr->u.c.param1 = pC->u.silence.state;
+			phr->u.c.param2 = pC->u.silence.count;
 		} else
 			found = 0;
 		break;
 	case HPI_CONTROL_MICROPHONE:
-		if (phm->u.c.wAttribute == HPI_MICROPHONE_PHANTOM_POWER) {
-			phr->u.c.dwParam1 = pC->u.phantom_power.wState;
-		} else
+		if (phm->u.c.attribute == HPI_MICROPHONE_PHANTOM_POWER)
+			phr->u.c.param1 = pC->u.phantom_power.state;
+		else
 			found = 0;
 		break;
 	case HPI_CONTROL_SAMPLECLOCK:
-		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
-			phr->u.c.dwParam1 = pC->u.clk.wSource;
-		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
-			if (pC->u.clk.wSourceIndex ==
+		if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE)
+			phr->u.c.param1 = pC->u.clk.source;
+		else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
+			if (pC->u.clk.source_index ==
 				HPI_ERROR_ILLEGAL_CACHE_VALUE) {
-				phr->u.c.dwParam1 = 0;
-				phr->wError = HPI_ERROR_INVALID_OPERATION;
+				phr->u.c.param1 = 0;
+				phr->error = HPI_ERROR_INVALID_OPERATION;
 			} else
-				phr->u.c.dwParam1 = pC->u.clk.wSourceIndex;
-		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
-			phr->u.c.dwParam1 = pC->u.clk.dwSampleRate;
+				phr->u.c.param1 = pC->u.clk.source_index;
+		} else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SAMPLERATE)
+			phr->u.c.param1 = pC->u.clk.sample_rate;
 		else
 			found = 0;
 		break;
 	case HPI_CONTROL_PAD:
 
-		if (!(pPad->dwFieldValidFlags &
-				(1 << HPI_CTL_ATTR_INDEX(phm->u.c.
-						wAttribute)))) {
-			phr->wError = HPI_ERROR_INVALID_CONTROL_ATTRIBUTE;
+		if (!(p_pad->field_valid_flags & (1 <<
+					HPI_CTL_ATTR_INDEX(phm->u.c.
+						attribute)))) {
+			phr->error = HPI_ERROR_INVALID_CONTROL_ATTRIBUTE;
 			break;
 		}
 
-		if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_ID)
-			phr->u.c.dwParam1 = pPad->dwPI;
-		else if (phm->u.c.wAttribute == HPI_PAD_PROGRAM_TYPE)
-			phr->u.c.dwParam1 = pPad->dwPTY;
+		if (phm->u.c.attribute == HPI_PAD_PROGRAM_ID)
+			phr->u.c.param1 = p_pad->pI;
+		else if (phm->u.c.attribute == HPI_PAD_PROGRAM_TYPE)
+			phr->u.c.param1 = p_pad->pTY;
 		else {
 			unsigned int index =
-				HPI_CTL_ATTR_INDEX(phm->u.c.wAttribute) - 1;
-			unsigned int offset = phm->u.c.dwParam1;
+				HPI_CTL_ATTR_INDEX(phm->u.c.attribute) - 1;
+			unsigned int offset = phm->u.c.param1;
 			unsigned int pad_string_len, field_size;
 			char *pad_string;
 			unsigned int tocopy;
 
-			HPI_DEBUG_LOG(VERBOSE,
-				"PADS HPI_PADS_ %d\n", phm->u.c.wAttribute);
+			HPI_DEBUG_LOG(VERBOSE, "PADS HPI_PADS_ %d\n",
+				phm->u.c.attribute);
 
-			if (index > ARRAY_SIZE(aPadDesc) - 1) {
-				phr->wError =
+			if (index > ARRAY_SIZE(pad_desc) - 1) {
+				phr->error =
 					HPI_ERROR_INVALID_CONTROL_ATTRIBUTE;
 				break;
 			}
 
-			pad_string = ((char *)pPad) + aPadDesc[index].offset;
-			field_size = aPadDesc[index].field_size;
+			pad_string = ((char *)p_pad) + pad_desc[index].offset;
+			field_size = pad_desc[index].field_size;
 			/* Ensure null terminator */
 			pad_string[field_size - 1] = 0;
 
 			pad_string_len = strlen(pad_string) + 1;
 
 			if (offset > pad_string_len) {
-				phr->wError = HPI_ERROR_INVALID_CONTROL_VALUE;
+				phr->error = HPI_ERROR_INVALID_CONTROL_VALUE;
 				break;
 			}
 
 			tocopy = pad_string_len - offset;
-			if (tocopy > sizeof(phr->u.cu.chars8.szData))
-				tocopy = sizeof(phr->u.cu.chars8.szData);
+			if (tocopy > sizeof(phr->u.cu.chars8.sz_data))
+				tocopy = sizeof(phr->u.cu.chars8.sz_data);
 
 			HPI_DEBUG_LOG(VERBOSE,
 				"PADS memcpy(%d), offset %d \n", tocopy,
 				offset);
-			memcpy(phr->u.cu.chars8.szData, &pad_string[offset],
+			memcpy(phr->u.cu.chars8.sz_data, &pad_string[offset],
 				tocopy);
 
-			phr->u.cu.chars8.dwRemainingChars =
+			phr->u.cu.chars8.remaining_chars =
 				pad_string_len - offset - tocopy;
 		}
 		break;
@@ -498,17 +473,17 @@ short HpiCheckControlCache(
 
 	if (found)
 		HPI_DEBUG_LOG(VERBOSE,
-			"Cached Adap %d, Ctl %d, Type %d, Attr %d\n",
-			phm->wAdapterIndex, pI->ControlIndex,
-			pI->ControlType, phm->u.c.wAttribute);
+			"cached adap %d, ctl %d, type %d, attr %d\n",
+			phm->adapter_index, pI->control_index,
+			pI->control_type, phm->u.c.attribute);
 	else
 		HPI_DEBUG_LOG(VERBOSE,
-			"Uncached Adap %d, Ctl %d, Ctl type %d\n",
-			phm->wAdapterIndex, pI->ControlIndex,
-			pI->ControlType);
+			"uncached adap %d, ctl %d, ctl type %d\n",
+			phm->adapter_index, pI->control_index,
+			pI->control_type);
 
 	if (found)
-		phr->wSize =
+		phr->size =
 			sizeof(struct hpi_response_header) +
 			sizeof(struct hpi_control_res);
 
@@ -521,17 +496,14 @@ Only update if no error.
 Volume and Level return the limited values in the response, so use these
 Multiplexer does so use sent values
 */
-void HpiSyncControlCache(
-	struct hpi_control_cache *pCache,
-	struct hpi_message *phm,
-	struct hpi_response *phr
-)
+void hpi_sync_control_cache(struct hpi_control_cache *p_cache,
+	struct hpi_message *phm, struct hpi_response *phr)
 {
-	u16 wControlIndex;
+	u16 control_index;
 	struct hpi_control_cache_single *pC;
 	struct hpi_control_cache_info *pI;
 
-	if (!FindControl(phm, pCache, &pI, &wControlIndex))
+	if (!find_control(phm, p_cache, &pI, &control_index))
 		return;
 
 	/* pC is the default cached control strucure.
@@ -539,142 +511,133 @@ void HpiSyncControlCache(
 	 */
 	pC = (struct hpi_control_cache_single *)pI;
 
-	switch (pI->ControlType) {
+	switch (pI->control_type) {
 	case HPI_CONTROL_VOLUME:
-		if (phm->u.c.wAttribute == HPI_VOLUME_GAIN) {
-			pC->u.v.anLog[0] = phr->u.c.anLogValue[0];
-			pC->u.v.anLog[1] = phr->u.c.anLogValue[1];
+		if (phm->u.c.attribute == HPI_VOLUME_GAIN) {
+			pC->u.v.an_log[0] = phr->u.c.an_log_value[0];
+			pC->u.v.an_log[1] = phr->u.c.an_log_value[1];
 		}
 		break;
 	case HPI_CONTROL_MULTIPLEXER:
 		/* mux does not return its setting on Set command. */
-		if (phr->wError)
+		if (phr->error)
 			return;
-		if (phm->u.c.wAttribute == HPI_MULTIPLEXER_SOURCE) {
-			pC->u.x.wSourceNodeType = (u16)phm->u.c.dwParam1;
-			pC->u.x.wSourceNodeIndex = (u16)phm->u.c.dwParam2;
+		if (phm->u.c.attribute == HPI_MULTIPLEXER_SOURCE) {
+			pC->u.x.source_node_type = (u16)phm->u.c.param1;
+			pC->u.x.source_node_index = (u16)phm->u.c.param2;
 		}
 		break;
 	case HPI_CONTROL_CHANNEL_MODE:
 		/* mode does not return its setting on Set command. */
-		if (phr->wError)
+		if (phr->error)
 			return;
-		if (phm->u.c.wAttribute == HPI_CHANNEL_MODE_MODE)
-			pC->u.m.wMode = (u16)phm->u.c.dwParam1;
+		if (phm->u.c.attribute == HPI_CHANNEL_MODE_MODE)
+			pC->u.m.mode = (u16)phm->u.c.param1;
 		break;
 	case HPI_CONTROL_LEVEL:
-		if (phm->u.c.wAttribute == HPI_LEVEL_GAIN) {
-			pC->u.v.anLog[0] = phr->u.c.anLogValue[0];
-			pC->u.v.anLog[1] = phr->u.c.anLogValue[1];
+		if (phm->u.c.attribute == HPI_LEVEL_GAIN) {
+			pC->u.v.an_log[0] = phr->u.c.an_log_value[0];
+			pC->u.v.an_log[1] = phr->u.c.an_log_value[1];
 		}
 		break;
 	case HPI_CONTROL_MICROPHONE:
-		if (phm->u.c.wAttribute == HPI_MICROPHONE_PHANTOM_POWER)
-			pC->u.phantom_power.wState = (u16)phm->u.c.dwParam1;
+		if (phm->u.c.attribute == HPI_MICROPHONE_PHANTOM_POWER)
+			pC->u.phantom_power.state = (u16)phm->u.c.param1;
 		break;
 	case HPI_CONTROL_AESEBU_TRANSMITTER:
-		if (phr->wError)
+		if (phr->error)
 			return;
-		if (phm->u.c.wAttribute == HPI_AESEBUTX_FORMAT)
-			pC->u.aes3tx.dwFormat = phm->u.c.dwParam1;
+		if (phm->u.c.attribute == HPI_AESEBUTX_FORMAT)
+			pC->u.aes3tx.format = phm->u.c.param1;
 		break;
 	case HPI_CONTROL_AESEBU_RECEIVER:
-		if (phr->wError)
+		if (phr->error)
 			return;
-		if (phm->u.c.wAttribute == HPI_AESEBURX_FORMAT)
-			pC->u.aes3rx.dwSource = phm->u.c.dwParam1;
+		if (phm->u.c.attribute == HPI_AESEBURX_FORMAT)
+			pC->u.aes3rx.source = phm->u.c.param1;
 		break;
 	case HPI_CONTROL_SAMPLECLOCK:
-		if (phr->wError)
+		if (phr->error)
 			return;
-		if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE)
-			pC->u.clk.wSource = (u16)phm->u.c.dwParam1;
-		else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
-			pC->u.clk.wSourceIndex = (u16)phm->u.c.dwParam1;
-		} else if (phm->u.c.wAttribute == HPI_SAMPLECLOCK_SAMPLERATE)
-			pC->u.clk.dwSampleRate = phm->u.c.dwParam1;
+		if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE)
+			pC->u.clk.source = (u16)phm->u.c.param1;
+		else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SOURCE_INDEX) {
+			pC->u.clk.source_index = (u16)phm->u.c.param1;
+		} else if (phm->u.c.attribute == HPI_SAMPLECLOCK_SAMPLERATE)
+			pC->u.clk.sample_rate = phm->u.c.param1;
 		break;
 	default:
 		break;
 	}
 }
 
-struct hpi_control_cache *HpiAllocControlCache(
-	const u32 dwNumberOfControls,
-	const u32 dwSizeInBytes,
-	struct hpi_control_cache_info *pDSPControlBuffer
-)
+struct hpi_control_cache *hpi_alloc_control_cache(const u32
+	number_of_controls, const u32 size_in_bytes,
+	struct hpi_control_cache_info *pDSP_control_buffer)
 {
-	struct hpi_control_cache *pCache =
-		kmalloc(sizeof(*pCache), GFP_KERNEL);
-	pCache->dwCacheSizeInBytes = dwSizeInBytes;
-	pCache->dwControlCount = dwNumberOfControls;
-	pCache->pCache = (struct hpi_control_cache_single *)pDSPControlBuffer;
-	pCache->dwInit = 0;
-	pCache->pInfo =
-		kmalloc(sizeof(*pCache->pInfo) * pCache->dwControlCount,
+	struct hpi_control_cache *p_cache =
+		kmalloc(sizeof(*p_cache), GFP_KERNEL);
+	p_cache->cache_size_in_bytes = size_in_bytes;
+	p_cache->control_count = number_of_controls;
+	p_cache->p_cache =
+		(struct hpi_control_cache_single *)pDSP_control_buffer;
+	p_cache->init = 0;
+	p_cache->p_info =
+		kmalloc(sizeof(*p_cache->p_info) * p_cache->control_count,
 		GFP_KERNEL);
-	return pCache;
+	return p_cache;
 }
 
-void HpiFreeControlCache(
-	struct hpi_control_cache *pCache
-)
+void hpi_free_control_cache(struct hpi_control_cache *p_cache)
 {
-	if ((pCache->dwInit) && (pCache->pInfo)) {
-		kfree(pCache->pInfo);
-		pCache->pInfo = NULL;
-		pCache->dwInit = 0;
-		kfree(pCache);
+	if ((p_cache->init) && (p_cache->p_info)) {
+		kfree(p_cache->p_info);
+		p_cache->p_info = NULL;
+		p_cache->init = 0;
+		kfree(p_cache);
 	}
 }
 
-static void SubSysMessage(
-	struct hpi_message *phm,
-	struct hpi_response *phr
-)
+static void subsys_message(struct hpi_message *phm, struct hpi_response *phr)
 {
 
-	switch (phm->wFunction) {
+	switch (phm->function) {
 	case HPI_SUBSYS_OPEN:
 	case HPI_SUBSYS_CLOSE:
 	case HPI_SUBSYS_DRIVER_UNLOAD:
-		phr->wError = 0;
+		phr->error = 0;
 		break;
 	case HPI_SUBSYS_DRIVER_LOAD:
-		WipeAdapterList();
-		HpiOs_Alistlock_Init(&adapters);
-		phr->wError = 0;
+		wipe_adapter_list();
+		hpios_alistlock_init(&adapters);
+		phr->error = 0;
 		break;
 	case HPI_SUBSYS_GET_INFO:
-		SubSysGetAdapters(phr);
+		subsys_get_adapters(phr);
 		break;
 	case HPI_SUBSYS_CREATE_ADAPTER:
 	case HPI_SUBSYS_DELETE_ADAPTER:
-		phr->wError = 0;
+		phr->error = 0;
 		break;
 	default:
-		phr->wError = HPI_ERROR_INVALID_FUNC;
+		phr->error = HPI_ERROR_INVALID_FUNC;
 		break;
 	}
 }
 
-void HPI_COMMON(
-	struct hpi_message *phm,
-	struct hpi_response *phr
-)
+void HPI_COMMON(struct hpi_message *phm, struct hpi_response *phr)
 {
-	switch (phm->wType) {
+	switch (phm->type) {
 	case HPI_TYPE_MESSAGE:
-		switch (phm->wObject) {
+		switch (phm->object) {
 		case HPI_OBJ_SUBSYSTEM:
-			SubSysMessage(phm, phr);
+			subsys_message(phm, phr);
 			break;
 		}
 		break;
 
 	default:
-		phr->wError = HPI_ERROR_INVALID_TYPE;
+		phr->error = HPI_ERROR_INVALID_TYPE;
 		break;
 	}
 }

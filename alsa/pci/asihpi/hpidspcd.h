@@ -47,16 +47,16 @@ DSP code is read using the hotplug firmware loader module.
 /** Descriptor for dspcode from firmware loader */
 struct dsp_code {
 	/**  Firmware descriptor */
-	const struct firmware *psFirmware;
-	struct pci_dev *psDev;
+	const struct firmware *ps_firmware;
+	struct pci_dev *ps_dev;
 	/** Expected number of words in the whole dsp code,INCL header */
-	long int dwBlockLength;
+	long int block_length;
 	/** Number of words read so far */
-	long int dwWordCount;
+	long int word_count;
 	/** Version read from dsp code file */
-	u32 dwVersion;
+	u32 version;
 	/** CRC read from dsp code file */
-	u32 dwCrc;
+	u32 crc;
 };
 
 #ifndef DISABLE_PRAGMA_PACK1
@@ -68,32 +68,27 @@ struct dsp_code {
 
 \return 0 for success, or error code if requested code is not available
 */
-short HpiDspCode_Open(
+short hpi_dsp_code_open(
 	/** Code identifier, usually adapter family */
-	u32 nAdapter,
+	u32 adapter,
 	/** Pointer to DSP code control structure */
-	struct dsp_code *psDspCode,
+	struct dsp_code *ps_dsp_code,
 	/** Pointer to dword to receive OS specific error code */
-	u32 *pdwOsErrorCode
-);
+	u32 *pos_error_code);
 
 /** Close the DSP code file */
-void HpiDspCode_Close(
-	struct dsp_code *psDspCode
-);
+void hpi_dsp_code_close(struct dsp_code *ps_dsp_code);
 
 /** Rewind to the beginning of the DSP code file (for verify) */
-void HpiDspCode_Rewind(
-	struct dsp_code *psDspCode
-);
+void hpi_dsp_code_rewind(struct dsp_code *ps_dsp_code);
 
 /** Read one word from the dsp code file
 	\return 0 for success, or error code if eof, or block length exceeded
 */
-short HpiDspCode_ReadWord(
-	struct dsp_code *psDspCode, /**< DSP code descriptor */
-	u32 *pdwWord /**< Where to store the read word */
-);
+short hpi_dsp_code_read_word(struct dsp_code *ps_dsp_code,
+				      /**< DSP code descriptor */
+	u32 *pword /**< where to store the read word */
+	);
 
 /** Get a block of dsp code into an internal buffer, and provide a pointer to
 that buffer. (If dsp code is already an array in memory, it is referenced,
@@ -101,11 +96,9 @@ not copied.)
 
 \return Error if requested number of words are not available
 */
-short HpiDspCode_ReadBlock(
-	size_t nWordsRequested,
-	struct dsp_code *psDspCode,
+short hpi_dsp_code_read_block(size_t words_requested,
+	struct dsp_code *ps_dsp_code,
 	/* Pointer to store (Pointer to code buffer) */
-	u32 **ppdwBlock
-);
+	u32 **ppblock);
 
 #endif

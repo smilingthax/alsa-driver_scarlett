@@ -34,22 +34,22 @@ Shared between hpi6000.c and DSP code
  * during boot to make it in-active.
  */
 struct hpi_hif_6000 {
-	u32 dwHostCmd;
-	u32 dwDspAck;
-	u32 dwAddress;
-	u32 dwLength;
-	u32 dwMessageBufferAddress;
-	u32 dwResponseBufferAddress;
-	u32 dwDspNumber;
-	u32 dwAdapterInfo;
-	u32 dwControlCacheIsDirty;
-	u32 dwControlCacheAddress;
-	u32 dwControlCacheSizeInBytes;
-	u32 dwControlCacheCount;
+	u32 host_cmd;
+	u32 dsp_ack;
+	u32 address;
+	u32 length;
+	u32 message_buffer_address;
+	u32 response_buffer_address;
+	u32 dsp_number;
+	u32 adapter_info;
+	u32 control_cache_is_dirty;
+	u32 control_cache_address;
+	u32 control_cache_size_in_bytes;
+	u32 control_cache_count;
 };
 
-#define HPI_HIF_PACK_ADAPTER_INFO(adapter, versionMajor, versionMinor) \
-		((adapter << 16) | (versionMajor << 8) | versionMinor)
+#define HPI_HIF_PACK_ADAPTER_INFO(adapter, version_major, version_minor) \
+		((adapter << 16) | (version_major << 8) | version_minor)
 #define HPI_HIF_ADAPTER_INFO_EXTRACT_ADAPTER(adapterinfo) \
 		((adapterinfo >> 16) & 0xffff)
 #define HPI_HIF_ADAPTER_INFO_EXTRACT_HWVERSION_MAJOR(adapterinfo) \

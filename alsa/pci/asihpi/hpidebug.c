@@ -24,41 +24,32 @@ Debug macro translation.
 #include "hpidebug.h"
 
 /* Debug level; 0 quiet; 1 informative, 2 debug, 3 verbose debug.  */
-int hpiDebugLevel = HPI_DEBUG_LEVEL_DEFAULT;
+int hpi_debug_level = HPI_DEBUG_LEVEL_DEFAULT;
 
-void HPI_DebugInit(
-	void
-)
+void hpi_debug_init(void)
 {
-	printk(KERN_INFO "Debug Start\n");
+	printk(KERN_INFO "debug start\n");
 }
 
-int HPI_DebugLevelSet(
-	int level
-)
+int hpi_debug_level_set(int level)
 {
 	int old_level;
 
-	old_level = hpiDebugLevel;
-	hpiDebugLevel = level;
+	old_level = hpi_debug_level;
+	hpi_debug_level = level;
 	return old_level;
 }
 
-int HPI_DebugLevelGet(
-	void
-)
+int hpi_debug_level_get(void)
 {
-	return (hpiDebugLevel);
+	return (hpi_debug_level);
 }
 
 #ifdef HPIOS_DEBUG_PRINT
 /* implies OS has no printf-like function */
 #include <stdarg.h>
 
-void hpi_debug_printf(
-	char *fmt,
-	...
-)
+void hpi_debug_printf(char *fmt, ...)
 {
 	va_list arglist;
 	char buffer[128];
@@ -73,7 +64,7 @@ void hpi_debug_printf(
 
 struct treenode {
 	void *array;
-	unsigned int numElements;
+	unsigned int num_elements;
 };
 
 #define make_treenode_from_array(nodename, array) \
@@ -125,9 +116,7 @@ make_treenode_from_array(hpi_control_type_strings, HPI_CONTROL_TYPE_STRINGS)
 
 	compile_time_assert(HPI_OBJ_MAXINDEX == 14, obj_list_doesnt_match);
 
-static char *hpi_function_string(
-	unsigned int function
-)
+static char *hpi_function_string(unsigned int function)
 {
 	unsigned int object;
 	struct treenode *tmp;
@@ -136,38 +125,35 @@ static char *hpi_function_string(
 	function = function - object * HPI_OBJ_FUNCTION_SPACING;
 
 	if (object == 0 || object == HPI_OBJ_NODE
-		|| object > hpi_function_strings.numElements)
-		return "Invalid object";
+		|| object > hpi_function_strings.num_elements)
+		return "invalid object";
 
 	tmp = get_treenode_elem(&hpi_function_strings, object - 1,
 		struct treenode *);
 
-	if (function == 0 || function > tmp->numElements)
-		return "Invalid function";
+	if (function == 0 || function > tmp->num_elements)
+		return "invalid function";
 
 	return get_treenode_elem(tmp, function - 1, char *);
 }
 
-void hpi_debug_message(
-	struct hpi_message *phm,
-	char *szFileline
-)
+void hpi_debug_message(struct hpi_message *phm, char *sz_fileline)
 {
 	if (phm) {
-		if ((phm->wObject <= HPI_OBJ_MAXINDEX) && phm->wObject) {
-			u16 wIndex = 0;
-			u16 wAttrib = 0;
-			int isControl = 0;
+		if ((phm->object <= HPI_OBJ_MAXINDEX) && phm->object) {
+			u16 index = 0;
+			u16 attrib = 0;
+			int is_control = 0;
 
-			wIndex = phm->wObjIndex;
-			switch (phm->wObject) {
+			index = phm->obj_index;
+			switch (phm->object) {
 			case HPI_OBJ_ADAPTER:
 			case HPI_OBJ_PROFILE:
 				break;
 			case HPI_OBJ_MIXER:
-				if (phm->wFunction ==
+				if (phm->function ==
 					HPI_MIXER_GET_CONTROL_BY_INDEX)
-					wIndex = phm->u.m.wControlIndex;
+					index = phm->u.m.control_index;
 				break;
 			case HPI_OBJ_OSTREAM:
 			case HPI_OBJ_ISTREAM:
@@ -176,39 +162,34 @@ void hpi_debug_message(
 			case HPI_OBJ_CONTROLEX:
 			case HPI_OBJ_CONTROL:
 				if (phm->version == 1)
-					wAttrib = HPI_CTL_ATTR(UNIVERSAL, 1);
+					attrib = HPI_CTL_ATTR(UNIVERSAL, 1);
 				else
-					wAttrib = phm->u.c.wAttribute;
-				isControl = 1;
+					attrib = phm->u.c.attribute;
+				is_control = 1;
 				break;
 			default:
 				break;
 			}
 
-			if (isControl && (wAttrib & 0xFF00)) {
-				int controlType = (wAttrib & 0xFF00) >> 8;
-				int attrIndex = HPI_CTL_ATTR_INDEX(wAttrib);
+			if (is_control && (attrib & 0xFF00)) {
+				int control_type = (attrib & 0xFF00) >> 8;
+				int attr_index = HPI_CTL_ATTR_INDEX(attrib);
 				/* note the KERN facility level
 				   is in szFileline already */
-				printk("%s Adapter %d %s ctrl_index x%04x %s %d\n", szFileline, phm->wAdapterIndex, hpi_function_string(phm->wFunction), wIndex, get_treenode_elem(&hpi_control_type_strings, controlType, char *),
-					attrIndex
-				);
+				printk("%s adapter %d %s ctrl_index x%04x %s %d\n", sz_fileline, phm->adapter_index, hpi_function_string(phm->function), index, get_treenode_elem(&hpi_control_type_strings, control_type, char *), attr_index);
 
 			} else
-				printk("%s Adapter %d %s idx x%04x attr x%04x \n", szFileline, phm->wAdapterIndex, hpi_function_string(phm->wFunction), wIndex, wAttrib);
+				printk("%s adapter %d %s idx x%04x attr x%04x \n", sz_fileline, phm->adapter_index, hpi_function_string(phm->function), index, attrib);
 		} else {
-			printk("Adap=%d, Invalid Obj=%d, Func=0x%x\n",
-				phm->wAdapterIndex, phm->wObject,
-				phm->wFunction);
+			printk("adap=%d, invalid obj=%d, func=0x%x\n",
+				phm->adapter_index, phm->object,
+				phm->function);
 		}
 	} else
 		printk("NULL message pointer to hpi_debug_message!\n");
 }
 
-void hpi_debug_data(
-	u16 *pdata,
-	u32 len
-)
+void hpi_debug_data(u16 *pdata, u32 len)
 {
 	u32 i;
 	int j;

@@ -1,5 +1,5 @@
---- ../../alsa-kernel/core/oss/mixer_oss.c	2007-12-20 10:19:01.000000000 +0100
-+++ mixer_oss.c	2007-12-20 10:45:48.000000000 +0100
+--- ../../alsa-kernel/core/oss/mixer_oss.c	2010-04-13 12:01:49.080966488 +0200
++++ mixer_oss.c	2010-04-13 13:07:14.784700677 +0200
 @@ -1,3 +1,4 @@
 +#include "adriver.h"
  /*
@@ -13,7 +13,7 @@
  #include <linux/slab.h>
  #include <linux/time.h>
  #include <linux/string.h>
-@@ -377,24 +379,43 @@
+@@ -385,25 +387,44 @@
  	return snd_mixer_oss_ioctl1(&fmixer, cmd, arg);
  }
  
@@ -49,6 +49,7 @@
 +#endif
  	.open =		snd_mixer_oss_open,
  	.release =	snd_mixer_oss_release,
+ 	.llseek =	no_llseek,
 +#ifdef CONFIG_SND_HAVE_NEW_IOCTL
  	.unlocked_ioctl =	snd_mixer_oss_ioctl,
  	.compat_ioctl =	snd_mixer_oss_ioctl_compat,

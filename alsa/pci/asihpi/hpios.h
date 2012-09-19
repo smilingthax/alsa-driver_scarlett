@@ -78,29 +78,24 @@ struct consistent_dma_area {
 	dma_addr_t dma_handle;
 };
 
-static inline u16 HpiOs_LockedMem_GetPhysAddr(
-	struct consistent_dma_area *LockedMemHandle,
-	u32 *pPhysicalAddr
-)
+static inline u16 hpios_locked_mem_get_phys_addr(struct consistent_dma_area
+	*locked_mem_handle, u32 *p_physical_addr)
 {
-	*pPhysicalAddr = LockedMemHandle->dma_handle;
+	*p_physical_addr = locked_mem_handle->dma_handle;
 	return 0;
 }
 
-static inline u16 HpiOs_LockedMem_GetVirtAddr(
-	struct consistent_dma_area *LockedMemHandle,
-	void **ppVirtualAddr
-)
+static inline u16 hpios_locked_mem_get_virt_addr(struct consistent_dma_area
+	*locked_mem_handle, void **pp_virtual_addr)
 {
-	*ppVirtualAddr = LockedMemHandle->vaddr;
+	*pp_virtual_addr = locked_mem_handle->vaddr;
 	return 0;
 }
 
-static inline u16 HpiOs_LockedMem_Valid(
-	struct consistent_dma_area *LockedMemHandle
-)
+static inline u16 hpios_locked_mem_valid(struct consistent_dma_area
+	*locked_mem_handle)
 {
-	return LockedMemHandle->size != 0;
+	return locked_mem_handle->size != 0;
 }
 
 struct hpi_ioctl_linux {
@@ -136,9 +131,7 @@ struct hpios_spinlock {
  */
 #define IN_LOCK_BH 1
 #define IN_LOCK_IRQ 0
-static inline void cond_lock(
-	struct hpios_spinlock *l
-)
+static inline void cond_lock(struct hpios_spinlock *l)
 {
 	if (irqs_disabled()) {
 		/* NO bh or isr can execute on this processor,
@@ -152,9 +145,7 @@ static inline void cond_lock(
 	}
 }
 
-static inline void cond_unlock(
-	struct hpios_spinlock *l
-)
+static inline void cond_unlock(struct hpios_spinlock *l)
 {
 	if (l->lock_context == IN_LOCK_BH)
 		spin_unlock_bh(&((l)->lock));
@@ -162,22 +153,22 @@ static inline void cond_unlock(
 		spin_unlock(&((l)->lock));
 }
 
-#define HpiOs_Msgxlock_Init(obj)      spin_lock_init(&(obj)->lock)
-#define HpiOs_Msgxlock_Lock(obj)   cond_lock(obj)
-#define HpiOs_Msgxlock_UnLock(obj) cond_unlock(obj)
+#define hpios_msgxlock_init(obj)      spin_lock_init(&(obj)->lock)
+#define hpios_msgxlock_lock(obj)   cond_lock(obj)
+#define hpios_msgxlock_un_lock(obj) cond_unlock(obj)
 
-#define HpiOs_Dsplock_Init(obj)       spin_lock_init(&(obj)->dspLock.lock)
-#define HpiOs_Dsplock_Lock(obj)    cond_lock(&(obj)->dspLock)
-#define HpiOs_Dsplock_UnLock(obj)  cond_unlock(&(obj)->dspLock)
+#define hpios_dsplock_init(obj)       spin_lock_init(&(obj)->dsp_lock.lock)
+#define hpios_dsplock_lock(obj)    cond_lock(&(obj)->dsp_lock)
+#define hpios_dsplock_unlock(obj)  cond_unlock(&(obj)->dsp_lock)
 
 #ifdef CONFIG_SND_DEBUG
 #define HPI_DEBUG
 #endif
 
 #define HPI_ALIST_LOCKING
-#define HpiOs_Alistlock_Init(obj)    spin_lock_init(&((obj)->aListLock.lock))
-#define HpiOs_Alistlock_Lock(obj) spin_lock(&((obj)->aListLock.lock))
-#define HpiOs_Alistlock_UnLock(obj) spin_unlock(&((obj)->aListLock.lock))
+#define hpios_alistlock_init(obj)    spin_lock_init(&((obj)->list_lock.lock))
+#define hpios_alistlock_lock(obj) spin_lock(&((obj)->list_lock.lock))
+#define hpios_alistlock_un_lock(obj) spin_unlock(&((obj)->list_lock.lock))
 
 struct hpi_adapter {
 	/* mutex prevents contention for one card
@@ -189,24 +180,19 @@ struct hpi_adapter {
 	/* ALSA card structure */
 	void *snd_card_asihpi;
 
-	char *pBuffer;
+	char *p_buffer;
 	size_t buffer_size;
 	struct pci_dev *pci;
-	void __iomem *apRemappedMemBase[HPI_MAX_ADAPTER_MEM_SPACES];
+	void __iomem *ap_remapped_mem_base[HPI_MAX_ADAPTER_MEM_SPACES];
 };
 
-static inline void HpiOs_UnmapIo(
-	volatile void __iomem * addr,
-	unsigned long size
-)
+static inline void hpios_unmap_io(volatile void __iomem * addr,
+	unsigned long size)
 {
 	iounmap(addr);
 }
 
-void __iomem *HpiOs_MapIo(
-	struct pci_dev *pci_dev,
-	int idx,
-	unsigned int length
-);
+void __iomem *hpios_map_io(struct pci_dev *pci_dev, int idx,
+	unsigned int length);
 
 #endif

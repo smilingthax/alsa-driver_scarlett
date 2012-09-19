@@ -62,128 +62,115 @@ struct code_header {
 /***********************************************************************/
 #include "linux/pci.h"
 /*-------------------------------------------------------------------*/
-short HpiDspCode_Open(
-	u32 nAdapter,
-	struct dsp_code *psDspCode,
-	u32 *pdwOsErrorCode
-)
+short hpi_dsp_code_open(u32 adapter, struct dsp_code *ps_dsp_code,
+	u32 *pos_error_code)
 {
-	const struct firmware *psFirmware = psDspCode->psFirmware;
+	const struct firmware *ps_firmware = ps_dsp_code->ps_firmware;
 	struct code_header header;
 	char fw_name[20];
 	int err;
 
-	sprintf(fw_name, "asihpi/dsp%04x.bin", nAdapter);
-	HPI_DEBUG_LOG(INFO, "Requesting firmware for %s\n", fw_name);
+	sprintf(fw_name, "asihpi/dsp%04x.bin", adapter);
+	HPI_DEBUG_LOG(INFO, "requesting firmware for %s\n", fw_name);
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2 , 5 , 0))
-	err = request_firmware(&psFirmware, fw_name,
-		psDspCode->psDev->slot_name);
+	err = request_firmware(&ps_firmware, fw_name,
+		ps_dsp_code->ps_dev->slot_name);
 #else
-	err = request_firmware(&psFirmware, fw_name, &psDspCode->psDev->dev);
+	err = request_firmware(&ps_firmware, fw_name,
+		&ps_dsp_code->ps_dev->dev);
 #endif
 	if (err != 0) {
 		HPI_DEBUG_LOG(ERROR, "%d, request_firmware failed for  %s\n",
 			err, fw_name);
 		goto error1;
 	}
-	if (psFirmware->size < sizeof(header)) {
-		HPI_DEBUG_LOG(ERROR, "Header size too small %s\n", fw_name);
+	if (ps_firmware->size < sizeof(header)) {
+		HPI_DEBUG_LOG(ERROR, "header size too small %s\n", fw_name);
 		goto error2;
 	}
-	memcpy(&header, psFirmware->data, sizeof(header));
-	if (header.adapter != nAdapter) {
-		HPI_DEBUG_LOG(ERROR, "Adapter type incorrect %4x != %4x\n",
-			header.adapter, nAdapter);
+	memcpy(&header, ps_firmware->data, sizeof(header));
+	if (header.adapter != adapter) {
+		HPI_DEBUG_LOG(ERROR, "adapter type incorrect %4x != %4x\n",
+			header.adapter, adapter);
 		goto error2;
 	}
-	if (header.size != psFirmware->size) {
-		HPI_DEBUG_LOG(ERROR, "Code size wrong  %d != %ld\n",
-			header.size, (unsigned long)psFirmware->size);
+	if (header.size != ps_firmware->size) {
+		HPI_DEBUG_LOG(ERROR, "code size wrong  %d != %ld\n",
+			header.size, (unsigned long)ps_firmware->size);
 		goto error2;
 	}
 
 	if (header.version / 10000 != HPI_VER_DECIMAL / 10000) {
 		HPI_DEBUG_LOG(ERROR,
-			"Firmware Major Version mismatch  DSP image %d != Driver %d\n",
+			"firmware major version mismatch  DSP image %d != driver %d\n",
 			header.version, HPI_VER_DECIMAL);
 		goto error2;
 	}
 
 	if (header.version != HPI_VER_DECIMAL) {
 		HPI_DEBUG_LOG(WARNING,
-			"Version mismatch  DSP image %d != Driver %d\n",
+			"version mismatch  DSP image %d != driver %d\n",
 			header.version, HPI_VER_DECIMAL);
 		/* goto error2;  still allow driver to load */
 	}
 
-	HPI_DEBUG_LOG(INFO, "Dsp code %s opened\n", fw_name);
-	psDspCode->psFirmware = psFirmware;
-	psDspCode->dwBlockLength = header.size / sizeof(u32);
-	psDspCode->dwWordCount = sizeof(header) / sizeof(u32);
-	psDspCode->dwVersion = header.version;
-	psDspCode->dwCrc = header.crc;
+	HPI_DEBUG_LOG(INFO, "dsp code %s opened\n", fw_name);
+	ps_dsp_code->ps_firmware = ps_firmware;
+	ps_dsp_code->block_length = header.size / sizeof(u32);
+	ps_dsp_code->word_count = sizeof(header) / sizeof(u32);
+	ps_dsp_code->version = header.version;
+	ps_dsp_code->crc = header.crc;
 	return 0;
 
 error2:
-	release_firmware(psFirmware);
+	release_firmware(ps_firmware);
 error1:
-	psDspCode->psFirmware = NULL;
-	psDspCode->dwBlockLength = 0;
+	ps_dsp_code->ps_firmware = NULL;
+	ps_dsp_code->block_length = 0;
 	return (HPI_ERROR_DSP_FILE_NOT_FOUND);
 }
 
 /*-------------------------------------------------------------------*/
-void HpiDspCode_Close(
-	struct dsp_code *psDspCode
-)
+void hpi_dsp_code_close(struct dsp_code *ps_dsp_code)
 {
-	if (psDspCode->psFirmware != NULL) {
-		HPI_DEBUG_LOG(DEBUG, "Dsp code closed\n");
-		release_firmware(psDspCode->psFirmware);
-		psDspCode->psFirmware = NULL;
+	if (ps_dsp_code->ps_firmware != NULL) {
+		HPI_DEBUG_LOG(DEBUG, "dsp code closed\n");
+		release_firmware(ps_dsp_code->ps_firmware);
+		ps_dsp_code->ps_firmware = NULL;
 	}
 }
 
 /*-------------------------------------------------------------------*/
-void HpiDspCode_Rewind(
-	struct dsp_code *psDspCode
-)
+void hpi_dsp_code_rewind(struct dsp_code *ps_dsp_code)
 {
 	/* Go back to start of  data, after header */
-	psDspCode->dwWordCount = sizeof(struct code_header) / sizeof(u32);
+	ps_dsp_code->word_count = sizeof(struct code_header) / sizeof(u32);
 }
 
 /*-------------------------------------------------------------------*/
-short HpiDspCode_ReadWord(
-	struct dsp_code *psDspCode,
-	u32 *pdwWord
-)
+short hpi_dsp_code_read_word(struct dsp_code *ps_dsp_code, u32 *pword)
 {
-	if (psDspCode->dwWordCount + 1 > psDspCode->dwBlockLength)
+	if (ps_dsp_code->word_count + 1 > ps_dsp_code->block_length)
 		return (HPI_ERROR_DSP_FILE_FORMAT);
 
-	*pdwWord =
-		((u32 *)(psDspCode->psFirmware->data))[psDspCode->
-		dwWordCount];
-	psDspCode->dwWordCount++;
+	*pword = ((u32 *)(ps_dsp_code->ps_firmware->data))[ps_dsp_code->
+		word_count];
+	ps_dsp_code->word_count++;
 	return 0;
 }
 
 /*-------------------------------------------------------------------*/
-short HpiDspCode_ReadBlock(
-	size_t nWordsRequested,
-	struct dsp_code *psDspCode,
-	u32 **ppdwBlock
-)
+short hpi_dsp_code_read_block(size_t words_requested,
+	struct dsp_code *ps_dsp_code, u32 **ppblock)
 {
-	if (psDspCode->dwWordCount + nWordsRequested >
-		psDspCode->dwBlockLength)
+	if (ps_dsp_code->word_count + words_requested >
+		ps_dsp_code->block_length)
 		return (HPI_ERROR_DSP_FILE_FORMAT);
 
-	*ppdwBlock =
-		((u32 *)(psDspCode->psFirmware->data)) +
-		psDspCode->dwWordCount;
-	psDspCode->dwWordCount += nWordsRequested;
+	*ppblock =
+		((u32 *)(ps_dsp_code->ps_firmware->data)) +
+		ps_dsp_code->word_count;
+	ps_dsp_code->word_count += words_requested;
 	return (0);
 }

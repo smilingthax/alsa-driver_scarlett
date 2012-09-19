@@ -54,17 +54,17 @@ Copyright AudioScience, Inc., 2003
 This is used for dynamic control cache allocation
 **********************************************************************/
 struct controlcache_6205 {
-	u32 dwNumberOfControls;
-	u32 dwPhysicalPCI32address;
-	u32 dwSizeInBytes;
+	u32 number_of_controls;
+	u32 physical_address32;
+	u32 size_in_bytes;
 };
 
 /*********************************************************************
 This is used for dynamic allocation of async event array
 **********************************************************************/
 struct async_event_buffer_6205 {
-	u32 dwPhysicalPCI32address;
-	u32 dwSpare;
+	u32 physical_address32;
+	u32 spare;
 	struct hpi_fifo_buffer b;
 };
 
@@ -74,20 +74,20 @@ in and out of.
 ************************************************************/
 #define HPI6205_SIZEOF_DATA (16*1024)
 struct bus_master_interface {
-	u32 dwHostCmd;
-	u32 dwDspAck;
-	u32 dwTransferSizeInBytes;
+	u32 host_cmd;
+	u32 dsp_ack;
+	u32 transfer_size_in_bytes;
 	union {
-		struct hpi_message MessageBuffer;
-		struct hpi_response ResponseBuffer;
-		u8 bData[HPI6205_SIZEOF_DATA];
+		struct hpi_message message_buffer;
+		struct hpi_response response_buffer;
+		u8 b_data[HPI6205_SIZEOF_DATA];
 	} u;
-	struct controlcache_6205 aControlCache;
-	struct async_event_buffer_6205 aAsyncBuffer;
+	struct controlcache_6205 control_cache;
+	struct async_event_buffer_6205 async_buffer;
 	struct hpi_hostbuffer_status
-	 aInStreamHostBufferStatus[H620_MAX_ISTREAMS];
+	 instream_host_buffer_status[H620_MAX_ISTREAMS];
 	struct hpi_hostbuffer_status
-	 aOutStreamHostBufferStatus[H620_MAX_OSTREAMS];
+	 outstream_host_buffer_status[H620_MAX_OSTREAMS];
 };
 
 #endif

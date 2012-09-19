@@ -27,43 +27,37 @@ HPI Operating System function implementation for Linux
 #include <linux/sched.h>
 
 #ifndef __KERNEL__
-#error Using kernel source for userspace build
+#error using kernel source for userspace build
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2 , 6 , 14)
-void HpiOs_DelayMicroSeconds(
-	u32 dwNumMicroSec
-)
+void hpios_delay_micro_seconds(u32 num_micro_sec)
 {
-	if ((usecs_to_jiffies(dwNumMicroSec) > 1) && !in_interrupt()) {
+	if ((usecs_to_jiffies(num_micro_sec) > 1) && !in_interrupt()) {
 		/* MUST NOT SCHEDULE IN INTERRUPT CONTEXT! */
 		schedule_timeout_uninterruptible(usecs_to_jiffies
-			(dwNumMicroSec));
-	} else if (dwNumMicroSec <= 2000)
-		udelay(dwNumMicroSec);
+			(num_micro_sec));
+	} else if (num_micro_sec <= 2000)
+		udelay(num_micro_sec);
 	else
-		mdelay(dwNumMicroSec / 1000);
+		mdelay(num_micro_sec / 1000);
 
 }
 #else
-void HpiOs_DelayMicroSeconds(
-	u32 dwNumMicroSec
-)
+void hpios_delay_micro_seconds(u32 num_micro_sec)
 {
-	if ((dwNumMicroSec / 1000 >= 1000000 / HZ) && !in_interrupt()) {
+	if ((num_micro_sec / 1000 >= 1000000 / HZ) && !in_interrupt()) {
 		set_current_state(TASK_UNINTERRUPTIBLE);
-		schedule_timeout((HZ * dwNumMicroSec + (HZ - 1)) / 1000000);
-	} else if (dwNumMicroSec <= 2000)
-		udelay(dwNumMicroSec);
+		schedule_timeout((HZ * num_micro_sec + (HZ - 1)) / 1000000);
+	} else if (num_micro_sec <= 2000)
+		udelay(num_micro_sec);
 	else
-		mdelay(dwNumMicroSec / 1000);
+		mdelay(num_micro_sec / 1000);
 
 }
 #endif
 
-void HpiOs_LockedMem_Init(
-	void
-)
+void hpios_locked_mem_init(void)
 {
 }
 
@@ -71,62 +65,53 @@ void HpiOs_LockedMem_Init(
 
 On error, return -ENOMEM, and *pMemArea.size = 0
 */
-u16 HpiOs_LockedMem_Alloc(
-	struct consistent_dma_area *pMemArea,
-	u32 size,
-	struct pci_dev *pdev
-)
+u16 hpios_locked_mem_alloc(struct consistent_dma_area *p_mem_area, u32 size,
+	struct pci_dev *pdev)
 {
 	/*?? any benefit in using managed dmam_alloc_coherent? */
-	pMemArea->vaddr =
-		dma_alloc_coherent(&pdev->dev, size,
-		&pMemArea->dma_handle, GFP_DMA32 | GFP_KERNEL);
+	p_mem_area->vaddr =
+		dma_alloc_coherent(&pdev->dev, size, &p_mem_area->dma_handle,
+		GFP_DMA32 | GFP_KERNEL);
 
-	if (pMemArea->vaddr) {
-		HPI_DEBUG_LOG(DEBUG, "Allocated %d bytes, dma 0x%x vma %p\n",
-			size,
-			(unsigned int)pMemArea->dma_handle, pMemArea->vaddr);
-		pMemArea->pdev = &pdev->dev;
-		pMemArea->size = size;
+	if (p_mem_area->vaddr) {
+		HPI_DEBUG_LOG(DEBUG, "allocated %d bytes, dma 0x%x vma %p\n",
+			size, (unsigned int)p_mem_area->dma_handle,
+			p_mem_area->vaddr);
+		p_mem_area->pdev = &pdev->dev;
+		p_mem_area->size = size;
 		return 0;
 	} else {
 		HPI_DEBUG_LOG(WARNING,
-			"Failed to allocate %d bytes locked memory\n", size);
-		pMemArea->size = 0;
+			"failed to allocate %d bytes locked memory\n", size);
+		p_mem_area->size = 0;
 		return -ENOMEM;
 	}
 }
 
-u16 HpiOs_LockedMem_Free(
-	struct consistent_dma_area *pMemArea
-)
+u16 hpios_locked_mem_free(struct consistent_dma_area *p_mem_area)
 {
-	if (pMemArea->size) {
-		dma_free_coherent(pMemArea->pdev, pMemArea->size,
-			pMemArea->vaddr, pMemArea->dma_handle);
-		HPI_DEBUG_LOG(DEBUG, "Freed %lu bytes, dma 0x%x vma %p\n",
-			(unsigned long)pMemArea->size,
-			(unsigned int)pMemArea->dma_handle, pMemArea->vaddr);
-		pMemArea->size = 0;
+	if (p_mem_area->size) {
+		dma_free_coherent(p_mem_area->pdev, p_mem_area->size,
+			p_mem_area->vaddr, p_mem_area->dma_handle);
+		HPI_DEBUG_LOG(DEBUG, "freed %lu bytes, dma 0x%x vma %p\n",
+			(unsigned long)p_mem_area->size,
+			(unsigned int)p_mem_area->dma_handle,
+			p_mem_area->vaddr);
+		p_mem_area->size = 0;
 		return 0;
 	} else {
 		return 1;
 	}
 }
 
-void HpiOs_LockedMem_FreeAll(
-	void
-)
+void hpios_locked_mem_free_all(void)
 {
 }
 
-void __iomem *HpiOs_MapIo(
-	struct pci_dev *pci_dev,
-	int idx,
-	unsigned int length
-)
+void __iomem *hpios_map_io(struct pci_dev *pci_dev, int idx,
+	unsigned int length)
 {
-	HPI_DEBUG_LOG(DEBUG, "Mapping %d %s %08llx-%08llx %04llx len 0x%x\n",
+	HPI_DEBUG_LOG(DEBUG, "mapping %d %s %08llx-%08llx %04llx len 0x%x\n",
 		idx, pci_dev->resource[idx].name,
 		(unsigned long long)pci_resource_start(pci_dev, idx),
 		(unsigned long long)pci_resource_end(pci_dev, idx),

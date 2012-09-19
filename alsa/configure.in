@@ -1566,6 +1566,7 @@ CHECK_KERNEL_HEADER(linux/bitrev.h)
 CHECK_KERNEL_HEADER(linux/hrtimer.h)
 CHECK_KERNEL_HEADER(linux/gcd.h, [#include \"gcd_compat.h\"
 ])
+CHECK_KERNEL_HEADER(linux/gfp.h)
 
 dnl Check for dump_stack
 if test "$kversion.$kpatchlevel" = "2.6"; then
