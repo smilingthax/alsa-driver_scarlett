@@ -345,7 +345,7 @@ inline static int snd_usX2Y_urb_submit(snd_usX2Y_substream_t *subs, struct urb *
 /*
  * complete callback from data urb
  */
-static void _snd_usX2Y_urb_play_complete(purb_t urb)
+static void _snd_usX2Y_urb_play_complete(struct urb* urb)
 {
 	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t*)urb->context;
 	snd_pcm_substream_t *substream = subs->pcm_substream;
@@ -369,7 +369,7 @@ static void _snd_usX2Y_urb_play_complete(purb_t urb)
 	}
 }
 
-static void snd_usX2Y_urb_play_complete(purb_t urb, struct pt_regs *regs)
+static void snd_usX2Y_urb_play_complete(struct urb* urb, struct pt_regs *regs)
 {
 	snd_usX2Y_substream_t *subs = (snd_usX2Y_substream_t*)urb->context;
 	if (! subs->stream->usX2Y->pipe0Aframes[0][0]) {
@@ -383,7 +383,7 @@ static void snd_usX2Y_urb_play_complete(purb_t urb, struct pt_regs *regs)
 /*
  * complete callback from data urb
  */
-static void snd_usX2Y_urb_capt_complete(purb_t urb, struct pt_regs *regs)
+static void snd_usX2Y_urb_capt_complete(struct urb* urb, struct pt_regs *regs)
 {
 	snd_usX2Y_substream_t *captsubs = (snd_usX2Y_substream_t*)urb->context;
 	snd_pcm_substream_t *pcm_captsubs = captsubs->pcm_substream;
@@ -663,7 +663,7 @@ static int snd_usX2Y_pcm_play_trigger(snd_pcm_substream_t *substream, int cmd)
 /*
  * release a urb data
  */
-static void release_urb_ctx(purb_t* urb, int free_tb)
+static void release_urb_ctx(struct urb** urb, int free_tb)
 {
 	if (*urb) {
 		if (free_tb)
@@ -774,9 +774,9 @@ static int snd_usX2Y_set_format(snd_usX2Y_substream_t *subs, snd_pcm_runtime_t *
 }
 
 #ifndef OLD_USB
-static void snd_usX2Y_04Int(urb_t* urb, struct pt_regs *regs)
+static void snd_usX2Y_04Int(struct urb* urb, struct pt_regs *regs)
 #else
-static void snd_usX2Y_04Int(urb_t* urb)
+static void snd_usX2Y_04Int(struct urb* urb)
 #endif
 {
 	usX2Ydev_t*	usX2Y = urb->context;
@@ -884,12 +884,12 @@ static int usX2Y_rate_set(snd_usX2Y_stream_t *usX2Y_stream, int rate)
 
 	if (usX2Y_stream->usX2Y->rate != rate) {
 		do {
-			us = kmalloc(sizeof(*us) + sizeof(urb_t*) * NOOF_SETRATE_URBS, GFP_KERNEL);
+			us = kmalloc(sizeof(*us) + sizeof(struct urb*) * NOOF_SETRATE_URBS, GFP_KERNEL);
 			if (NULL == us) {
 				err = -ENOMEM;
 				break;
 			}
-			memset(us, 0, sizeof(*us) + sizeof(urb_t*) * NOOF_SETRATE_URBS); 
+			memset(us, 0, sizeof(*us) + sizeof(struct urb*) * NOOF_SETRATE_URBS); 
 			usbdata = kmalloc(sizeof(int)*NOOF_SETRATE_URBS, GFP_KERNEL);
 			if (NULL == usbdata) {
 				err = -ENOMEM;

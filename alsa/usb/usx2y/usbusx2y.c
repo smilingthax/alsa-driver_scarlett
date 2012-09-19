@@ -115,9 +115,9 @@ static void snd_usX2Y_card_private_free(snd_card_t *card);
  * pipe 4 is used for switching the lamps, setting samplerate, volumes ....   
  */
 #ifndef OLD_USB
-void snd_usX2Y_Out04Int(urb_t* urb, struct pt_regs *regs)
+void snd_usX2Y_Out04Int(struct urb* urb, struct pt_regs *regs)
 #else
-void snd_usX2Y_Out04Int(urb_t* urb)
+void snd_usX2Y_Out04Int(struct urb* urb)
 #endif
 {
 	if (urb->status) {
@@ -130,9 +130,9 @@ void snd_usX2Y_Out04Int(urb_t* urb)
 #endif
 
 #ifndef OLD_USB
-void snd_usX2Y_In04Int(urb_t* urb, struct pt_regs *regs)
+void snd_usX2Y_In04Int(struct urb* urb, struct pt_regs *regs)
 #else
-void snd_usX2Y_In04Int(urb_t* urb)
+void snd_usX2Y_In04Int(struct urb* urb)
 #endif
 {
 	int			err = 0;
