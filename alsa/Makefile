@@ -165,22 +165,30 @@ check-snd-prefix:
 	    echo;\
 	fi; fi
 
-.PHONY: clean
-clean:
-	rm -f `find . -name ".depend"`
-	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
-	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
-	rm -f .depend *.o snd.map* *~
-	rm -f `find . -name "out.txt"`
-	rm -f `find . -name "*.orig"`
+.PHONY: clean1
+clean1:
+	rm -f .depend *.o snd.map*
 	rm -f $(DEXPORT)/*.ver
 	rm -f modules/*.o
-	rm -f doc/*~
+
+.PHONY: clean
+clean: clean1
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
+	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d clean; then exit 1; fi; done
 
 .PHONY: mrproper
-mrproper: clean
+mrproper: clean1
+	@for d in $(SUBDIRS); do if ! $(MAKE) -C $$d mrproper; then exit 1; fi; done
+	@for d in $(CSUBDIRS); do if ! $(MAKE) -C $$d mrproper; then exit 1; fi; done
+	rm -f *~ out.txt *.orig *.rej .#* .gdb_history
+	rm -f doc/*~
 	rm -f config.cache config.log config.status Makefile.conf
 	rm -f utils/alsa-driver.spec
+	rm -f `find ../alsa-kernel -name "*~"`
+	rm -f `find ../alsa-kernel -name "*.orig"`
+	rm -f `find ../alsa-kernel -name "*.rej"`
+	rm -f `find ../alsa-kernel -name ".#*"`
+	rm -f `find ../alsa-kernel -name "out.txt"`
 
 .PHONY: cvsclean
 cvsclean: mrproper
@@ -192,9 +200,17 @@ cvsclean: mrproper
 .PHONY: pack
 pack: mrproper
 	chmod 755 utils/alsasound
-	mv ../alsa-driver ../alsa-driver-$(CONFIG_SND_VERSION)
-	tar --exclude=CVS --owner=$(IGROUP) --group=$(IUSER) -cvI -C .. -f ../alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION)
-	mv ../alsa-driver-$(CONFIG_SND_VERSION) ../alsa-driver
+	{ \
+		cd .. ; \
+		rm -f alsa-driver/alsa-kernel ; \
+		mv alsa-kernel alsa-driver ; \
+		mv alsa-driver alsa-driver-$(CONFIG_SND_VERSION) ; \
+		tar --exclude=CVS --exclude=kchanges \
+                    --owner=$(IGROUP) --group=$(IUSER) -cv --bzip2 -C . \
+                    -f alsa-driver-$(CONFIG_SND_VERSION).tar.bz2 alsa-driver-$(CONFIG_SND_VERSION) ; \
+		mv alsa-driver-$(CONFIG_SND_VERSION) alsa-driver ; \
+		mv alsa-driver/alsa-kernel . ; \
+	}
 
 .PHONY: uninstall
 uninstall:

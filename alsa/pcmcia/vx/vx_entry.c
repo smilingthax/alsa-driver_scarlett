@@ -282,6 +282,7 @@ static void vxpocket_config(dev_link_t *link)
 	struct snd_vxpocket *vxp = (struct snd_vxpocket *)chip;
 	tuple_t tuple;
 	cisparse_t parse;
+	config_info_t conf;
 	u_short buf[32];
 	int last_fn, last_ret;
 
@@ -297,7 +298,9 @@ static void vxpocket_config(dev_link_t *link)
 	CS_CHECK(ParseTuple, handle, &tuple, &parse);
 	link->conf.ConfigBase = parse.config.base;
 	link->conf.ConfigIndex = 1;
-	//link->conf.Present = parse.config.rmask[0];
+
+	CS_CHECK(GetConfigurationInfo, handle, &conf);
+	link->conf.Vcc = conf.Vcc;
 
 	/* Configure card */
 	link->state |= DEV_CONFIG;

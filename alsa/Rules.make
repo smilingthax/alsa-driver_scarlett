@@ -25,7 +25,7 @@ first_rule: modules
 __subdir-y      := $(patsubst %/,%,$(filter %/, $(obj-y)))
 subdir-y        += $(__subdir-y)
 __subdir-m      := $(patsubst %/,%,$(filter %/, $(obj-m)))
-subdir-m        += $(__subdir-m)
+subdir-m        += $(__subdir-m) $(__subdir-y)
 __subdir-n      := $(patsubst %/,%,$(filter %/, $(obj-n)))
 subdir-n        += $(__subdir-n)
 __subdir-       := $(patsubst %/,%,$(filter %/, $(obj-)))
@@ -299,13 +299,25 @@ endif
 
 endif # CONFIG_MODULES
 
+.PHONY: clean1
+clean1:
+	rm -f .depend *.o *.isapnp
+
 .PHONY: clean
-clean: $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS))
-	rm -f *.o *~ *.isapnp
+clean: $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)) clean1
+
+.PHONY: mrproper
+mrproper: $(patsubst %,_sfmrproper_%,$(ALL_SUB_DIRS)) clean1
+	rm -f *~ out.txt *.orig *.rej .#* .gdb_history
 
 ifneq "$(strip $(ALL_SUB_DIRS))" ""
 $(patsubst %,_sfclean_%,$(ALL_SUB_DIRS)):
 	$(MAKE) -C $(patsubst _sfclean_%,%,$@) clean
+endif
+
+ifneq "$(strip $(ALL_SUB_DIRS))" ""
+$(patsubst %,_sfmrproper_%,$(ALL_SUB_DIRS)):
+	$(MAKE) -C $(patsubst _sfmrproper_%,%,$@) mrproper
 endif
 
 #
