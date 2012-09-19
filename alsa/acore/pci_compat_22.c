@@ -343,7 +343,7 @@ int snd_pci_compat_dma_supported(struct pci_dev *dev, dma_addr_t mask)
 
 /*
  */
-int snd_pci_compat_pci_request_region(struct pci_dev *pdev, int bar, char *res_name)
+int snd_pci_compat_request_region(struct pci_dev *pdev, int bar, char *res_name)
 {
 	int flags;
 
@@ -371,7 +371,7 @@ err_out:
 	return -EBUSY;
 }
 
-void snd_pci_compat_release_region(struct pci_dev *pci, int bar)
+void snd_pci_compat_release_region(struct pci_dev *pdev, int bar)
 {
 	int flags;
 	if (pci_resource_len(pdev, bar) == 0)

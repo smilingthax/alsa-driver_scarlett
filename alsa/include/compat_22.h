@@ -289,8 +289,8 @@ unsigned long snd_pci_compat_get_dma_mask(struct pci_dev *);
 int snd_pci_compat_set_dma_mask(struct pci_dev *, unsigned long mask);
 void * snd_pci_compat_get_driver_data (struct pci_dev *dev);
 void snd_pci_compat_set_driver_data (struct pci_dev *dev, void *driver_data);
-int snd_pci_compat_pci_request_region(struct pci_dev *pdev, int bar, char *res_name);
-void snd_pci_compat_release_region(struct pci_dev *pci, int bar);
+int snd_pci_compat_request_region(struct pci_dev *pdev, int bar, char *res_name);
+void snd_pci_compat_release_region(struct pci_dev *pdev, int bar);
 int snd_pci_compat_request_regions(struct pci_dev *pdev, char *res_name);
 void snd_pci_compat_release_regions(struct pci_dev *pdev);
 
