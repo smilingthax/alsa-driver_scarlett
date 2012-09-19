@@ -11,7 +11,9 @@ export-objs := sound.o pcm.o pcm_lib.o rawmidi.o timer.o hwdep.o memalloc.o
 include $(SND_TOPDIR)/alsa-kernel/core/Makefile
 
 snd-page-alloc-objs += memory_wrapper.o
+snd-hpet-objs := hpetimer.o
 
+obj-$(CONFIG_SND_HPET) += snd-hpet.o
 obj-$(CONFIG_SND_BIT32_EMUL) += ioctl32/
 
 include $(SND_TOPDIR)/Rules.make
