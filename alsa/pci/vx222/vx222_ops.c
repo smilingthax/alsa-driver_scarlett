@@ -251,10 +251,10 @@ static void vx2_dma_write(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 			  vx_pipe_t *pipe, int count)
 {
 	unsigned long port = vx2_reg_addr(chip, VX_DMA);
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
+	int offset = pipe->hw_ptr;
 	u32 *addr = (u32 *)(runtime->dma_area + offset);
 
-	snd_assert(count % 12 == 0, return);
+	snd_assert(count % 4 == 0, return);
 
 	vx2_setup_pseudo_dma(chip, 1);
 
@@ -272,7 +272,7 @@ static void vx2_dma_write(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 		addr = (u32 *)runtime->dma_area;
 		pipe->hw_ptr = 0;
 	}
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
+	pipe->hw_ptr += count;
 	count >>= 2; /* in 32bit words */
 	/* Transfer using pseudo-dma. */
 	while (count-- > 0) {
@@ -288,11 +288,11 @@ static void vx2_dma_write(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 static void vx2_dma_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 			 vx_pipe_t *pipe, int count)
 {
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
+	int offset = pipe->hw_ptr;
 	u32 *addr = (u32 *)(runtime->dma_area + offset);
 	unsigned long port = vx2_reg_addr(chip, VX_DMA);
 
-	snd_assert(count % 12 == 0, return);
+	snd_assert(count % 4 == 0, return);
 
 	vx2_setup_pseudo_dma(chip, 0);
 	/* Transfer using pseudo-dma.
@@ -307,7 +307,7 @@ static void vx2_dma_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
 		addr = (u32 *)runtime->dma_area;
 		pipe->hw_ptr = 0;
 	}
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
+	pipe->hw_ptr += count;
 	count >>= 2; /* in 32bit words */
 	/* Transfer using pseudo-dma. */
 	while (count-- > 0)

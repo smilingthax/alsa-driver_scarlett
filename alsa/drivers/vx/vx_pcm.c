@@ -22,6 +22,26 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  *
  *
+ * STRATEGY
+ *  for playback, we send series of "chunks", which size is equal with the
+ *  IBL size, typically 126 samples.  at each end of chunk, the end-of-buffer
+ *  interrupt is notified, and the interrupt handler will feed the next chunk.
+ *
+ *  the current position is calculated from the sample count RMH.
+ *  pipe->transferred is the counter of data which has been already transferred.
+ *  if this counter reaches to the period size, snd_pcm_period_elapsed() will
+ *  be issued.
+ *
+ *  for capture, the situation is much easier.
+ *  to get a low latency response, we'll check the capture streams at each
+ *  interrupt (capture stream has no EOB notification).  if the pending
+ *  data is accumulated to the period size, snd_pcm_period_elapsed() is
+ *  called and the pointer is updated.
+ *
+ *  the current point of read buffer is kept in pipe->hw_ptr.  note that
+ *  this is in bytes.
+ *
+ *
  * TODO
  *  - linked trigger for full-duplex mode.
  *  - scheduled action on the stream.
@@ -71,6 +91,7 @@ static int snd_pcm_alloc_vmalloc_buffer(snd_pcm_substream_t *subs, size_t size)
 	runtime->dma_area = vmalloc_32(size);
 	if (! runtime->dma_area)
 		return -ENOMEM;
+	memset(runtime->dma_area, 0, size);
 	runtime->dma_bytes = size;
 	return 1; /* changed */
 }
@@ -92,39 +113,28 @@ static int snd_pcm_free_vmalloc_buffer(snd_pcm_substream_t *subs)
 
 
 /*
- * vx_flush_read - read rest of bytes via normal transfer mode
- * @count: bytes to read
- *
- * the data size must be aligned to 3 bytes, though.
- * NB: call with a certain lock!
+ * read three pending pcm bytes via inb()
  */
-static void vx_flush_read(vx_core_t *chip, snd_pcm_runtime_t *runtime,
-			  vx_pipe_t *pipe, int count)
+static void vx_pcm_read_per_bytes(vx_core_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe)
 {
-	int offset = frames_to_bytes(runtime, pipe->hw_ptr);
+	int offset = pipe->hw_ptr;
 	unsigned char *buf = (unsigned char *)(runtime->dma_area + offset);
-
-	pipe->hw_ptr += bytes_to_frames(runtime, count);
-	if (pipe->hw_ptr >= runtime->buffer_size)
-		pipe->hw_ptr -= runtime->buffer_size;
-	while (count > 0) {
-		*buf++ = vx_inb(chip, RXH);
-		if (++offset >= pipe->buffer_bytes) {
-			offset = 0;
-			buf = (unsigned char *)runtime->dma_area;
-		}
-		*buf++ = vx_inb(chip, RXM);
-		if (++offset >= pipe->buffer_bytes) {
-			offset = 0;
-			buf = (unsigned char *)runtime->dma_area;
-		}
-		*buf++ = vx_inb(chip, RXL);
-		if (++offset >= pipe->buffer_bytes) {
-			offset = 0;
-			buf = (unsigned char *)runtime->dma_area;
-		}
-		count -= 3;
+	*buf++ = vx_inb(chip, RXH);
+	if (++offset >= pipe->buffer_bytes) {
+		offset = 0;
+		buf = (unsigned char *)runtime->dma_area;
 	}
+	*buf++ = vx_inb(chip, RXM);
+	if (++offset >= pipe->buffer_bytes) {
+		offset = 0;
+		buf = (unsigned char *)runtime->dma_area;
+	}
+	*buf++ = vx_inb(chip, RXL);
+	if (++offset >= pipe->buffer_bytes) {
+		offset = 0;
+		buf = (unsigned char *)runtime->dma_area;
+	}
+	pipe->hw_ptr = offset;
 }
 
 /*
@@ -636,48 +646,39 @@ static int vx_notify_end_of_buffer(vx_core_t *chip, vx_pipe_t *pipe)
 }
 
 /*
- * vx_update_playback_buffer - update the playback buffer
+ * vx_pcm_playback_transfer_chunk - transfer a single chunk
  * @subs: substream
  * @pipe: the pipe to transfer
+ * @size: chunk size in bytes
  *
- * transfer as much data as possible.
+ * transfer a single buffer chunk.  EOB notificaton is added after that.
  * called from the interrupt handler, too.
  *
  * return 0 if ok.
  */
-static int vx_update_playback_buffer(vx_core_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe)
+static int vx_pcm_playback_transfer_chunk(vx_core_t *chip, snd_pcm_runtime_t *runtime, vx_pipe_t *pipe, int size)
 {
-	int size, space, err = 0;
+	int space, err = 0;
 
-	size = (int)runtime->control->appl_ptr - pipe->hw_ptr;
-	if (size < 0)
-		size += runtime->buffer_size;
-	size = frames_to_bytes(runtime, size);
-	if (! size) /* nothing to copy */
-		return 0;
 	space = vx_query_hbuffer_size(chip, pipe);
 	if (space < 0) {
 		/* disconnect the host, SIZE_HBUF command always switches to the stream mode */
 		vx_send_rih(chip, IRQ_CONNECT_STREAM_NEXT);
+		snd_printd("error hbuffer\n");
 		return space;
 	}
+	if (space < size) {
+		vx_send_rih(chip, IRQ_CONNECT_STREAM_NEXT);
+		snd_printd("no enough hbuffer space %d\n", space);
+		return -EIO; /* XRUN */
+	}
+		
 	/* we don't need irqsave here, because this function
 	 * is called from either trigger callback or irq handler
 	 */
 	spin_lock(&chip->lock); 
-	if (space > size)
-		space = size;
-	space = (space / pipe->align) * pipe->align;
-	if (! space)
-		goto _finish;
-	size = bytes_to_frames(runtime, space);
-	vx_pseudo_dma_write(chip, runtime, pipe, space);
-	pipe->chunk_transferred += size;
-	if (pipe->chunk_transferred >= chip->ibl.min_size) {
-		pipe->chunk_transferred = 0;
-		err = vx_notify_end_of_buffer(chip, pipe);
-	}
- _finish:
+	vx_pseudo_dma_write(chip, runtime, pipe, size);
+	err = vx_notify_end_of_buffer(chip, pipe);
 	/* disconnect the host, SIZE_HBUF command always switches to the stream mode */
 	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
 	spin_unlock(&chip->lock);
@@ -717,22 +718,25 @@ static int vx_update_pipe_position(vx_core_t *chip, snd_pcm_runtime_t *runtime, 
  * transfer the pending playback buffer data to DSP
  * called from interrupt handler
  */
-void vx_pcm_playback_update_buffer(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
+static void vx_pcm_playback_transfer(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe, int nchunks)
 {
-	int err;
+	int i, err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
 	if (! pipe->prepared || (chip->chip_status & VX_STAT_IS_STALE))
 		return;
-	if ((err = vx_update_playback_buffer(chip, runtime, pipe)) < 0)
-		return;
+	for (i = 0; i < nchunks; i++) {
+		if ((err = vx_pcm_playback_transfer_chunk(chip, runtime, pipe,
+							  chip->ibl.size)) < 0)
+			return;
+	}
 }
 
 /*
  * update the playback position and call snd_pcm_period_elapsed() if necessary
  * called from interrupt handler
  */
-void vx_pcm_playback_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
+static void vx_pcm_playback_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
 {
 	int err;
 	snd_pcm_runtime_t *runtime = subs->runtime;
@@ -781,14 +785,10 @@ static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 	if (chip->chip_status & VX_STAT_IS_STALE)
 		return -EBUSY;
 		
-	/* FIXME: dmix plugin requires no-xrun mode */
-	if (subs->runtime->stop_threshold >= subs->runtime->boundary)
-		return -EIO;
-
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		if (! pipe->is_capture)
-			vx_update_playback_buffer(chip, subs->runtime, pipe);
+			vx_pcm_playback_transfer(chip, subs, pipe, 2);
 		/* FIXME:
 		 * we trigger the pipe using tasklet, so that the interrupts are
 		 * issued surely after the trigger is completed.
@@ -809,8 +809,6 @@ static int vx_pcm_trigger(snd_pcm_substream_t *subs, int cmd)
 			return err;
 		break;
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
-		if (! pipe->is_capture)
-			vx_update_playback_buffer(chip, subs->runtime, pipe);
 		if ((err = vx_toggle_pipe(chip, pipe, 1)) < 0)
 			return err;
 		break;
@@ -890,19 +888,14 @@ static int vx_pcm_prepare(snd_pcm_substream_t *subs)
 		return err;
 
 	if (vx_is_pcmcia(chip)) {
-		/* minimal DMA alignment = 6 */
-		if (snd_pcm_format_physical_width(runtime->format) == 16)
-			pipe->align = runtime->channels * 6;
-		else
-			pipe->align = 6;
+		pipe->align = 2; /* 16bit word */
 	} else {
-		/* minimal DMA alignment = 12 */
-		pipe->align = 12;
+		pipe->align = 4; /* 32bit word */
 	}
 
 	pipe->buffer_bytes = frames_to_bytes(runtime, runtime->buffer_size);
+	pipe->period_bytes = frames_to_bytes(runtime, runtime->period_size);
 	pipe->hw_ptr = 0;
-	pipe->chunk_transferred = 0;
 
 	/* set the timestamp */
 	vx_update_pipe_position(chip, runtime, pipe);
@@ -1001,12 +994,15 @@ static int vx_pcm_capture_close(snd_pcm_substream_t *subs)
 }
 
 
+
+#define DMA_READ_ALIGN	6	/* hardware alignment for read */
+
 /*
  * vx_pcm_capture_update - update the capture buffer
  */
-void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
+static void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t *pipe)
 {
-	int size, space;
+	int size, space, count;
 	snd_pcm_runtime_t *runtime = subs->runtime;
 
 	if (! pipe->prepared || (chip->chip_status & VX_STAT_IS_STALE))
@@ -1017,33 +1013,61 @@ void vx_pcm_capture_update(vx_core_t *chip, snd_pcm_substream_t *subs, vx_pipe_t
 		return;
 	size = frames_to_bytes(runtime, size);
 	space = vx_query_hbuffer_size(chip, pipe);
-	if (space < 0) {
-		/* disconnect the host, SIZE_HBUF command always switches to the stream mode */
-		vx_send_rih(chip, IRQ_CONNECT_STREAM_NEXT);
-		return;
-	}
+	if (space < 0)
+		goto _error;
 	if (size > space)
 		size = space;
-	size = (size / pipe->align) * pipe->align;
-	if (! size)
-		goto _finish;
-#if 1 /* read the last aligned frames by vx_flush_read */
-	if (size > pipe->align)
-		vx_pseudo_dma_read(chip, runtime, pipe, size - pipe->align);
- _finish:
+	size = (size / 3) * 3; /* align to 3 bytes */
+	if (size < DMA_READ_ALIGN)
+		goto _error;
+
+	/* keep the last 6 bytes, they will be read after disconnection */
+	count = size - DMA_READ_ALIGN;
+	/* read bytes until the current pointer reaches to the aligned position
+	 * for word-transfer
+	 */
+	while (count > 0) {
+		if ((pipe->hw_ptr % pipe->align) == 0)
+			break;
+		if (vx_wait_for_rx_full(chip) < 0)
+			goto _error;
+		vx_pcm_read_per_bytes(chip, runtime, pipe);
+		count -= 3;
+	}
+	if (count > 0) {
+		/* ok, let's accelerate! */
+		int align = pipe->align * 3;
+		space = (count / align) * align;
+		vx_pseudo_dma_read(chip, runtime, pipe, space);
+		count -= space;
+	}
+	/* read the rest of bytes */
+	while (count > 0) {
+		if (vx_wait_for_rx_full(chip) < 0)
+			goto _error;
+		vx_pcm_read_per_bytes(chip, runtime, pipe);
+		count -= 3;
+	}
 	/* disconnect the host, SIZE_HBUF command always switches to the stream mode */
 	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
-	vx_flush_read(chip, runtime, pipe, pipe->align);
-#else
-	vx_pseudo_dma_read(chip, runtime, pipe, size);
- _finish:
-	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
-#endif
-	pipe->transferred += bytes_to_frames(runtime, size);
-	if (pipe->transferred >= (int)runtime->period_size) {
-		pipe->transferred %= runtime->period_size;
+	/* read the last pending 6 bytes */
+	count = DMA_READ_ALIGN;
+	while (count > 0) {
+		vx_pcm_read_per_bytes(chip, runtime, pipe);
+		count -= 3;
+	}
+	/* update the position */
+	pipe->transferred += size;
+	if (pipe->transferred >= pipe->period_bytes) {
+		pipe->transferred %= pipe->period_bytes;
 		snd_pcm_period_elapsed(subs);
 	}
+	return;
+
+ _error:
+	/* disconnect the host, SIZE_HBUF command always switches to the stream mode */
+	vx_send_rih_nolock(chip, IRQ_CONNECT_STREAM_NEXT);
+	return;
 }
 
 /*
@@ -1053,7 +1077,7 @@ static snd_pcm_uframes_t vx_pcm_capture_pointer(snd_pcm_substream_t *subs)
 {
 	snd_pcm_runtime_t *runtime = subs->runtime;
 	vx_pipe_t *pipe = snd_magic_cast(vx_pipe_t, runtime->private_data, return -EINVAL);
-	return pipe->hw_ptr;
+	return bytes_to_frames(runtime, pipe->hw_ptr);
 }
 
 /*
@@ -1070,6 +1094,63 @@ static snd_pcm_ops_t vx_pcm_capture_ops = {
 	.pointer =	vx_pcm_capture_pointer,
 	.page =		snd_pcm_get_vmalloc_page,
 };
+
+
+/*
+ * interrupt handler for pcm streams
+ */
+void vx_pcm_update_intr(vx_core_t *chip, unsigned int events)
+{
+	unsigned int i;
+	vx_pipe_t *pipe;
+
+#define EVENT_MASK	(END_OF_BUFFER_EVENTS_PENDING|ASYNC_EVENTS_PENDING)
+
+	if (events & EVENT_MASK) {
+		vx_init_rmh(&chip->irq_rmh, CMD_ASYNC);
+		if (events & ASYNC_EVENTS_PENDING)
+			chip->irq_rmh.Cmd[0] |= 0x00000001;	/* SEL_ASYNC_EVENTS */
+		if (events & END_OF_BUFFER_EVENTS_PENDING)
+			chip->irq_rmh.Cmd[0] |= 0x00000002;	/* SEL_END_OF_BUF_EVENTS */
+
+		if (vx_send_msg(chip, &chip->irq_rmh) < 0) {
+			snd_printdd(KERN_ERR "msg send error!!\n");
+			return;
+		}
+
+		i = 1;
+		while (i < chip->irq_rmh.LgStat) {
+			int p, buf, capture, eob;
+			p = chip->irq_rmh.Stat[i] & MASK_FIRST_FIELD;
+			capture = (chip->irq_rmh.Stat[i] & 0x400000) ? 1 : 0;
+			eob = (chip->irq_rmh.Stat[i] & 0x800000) ? 1 : 0;
+			i++;
+			if (events & ASYNC_EVENTS_PENDING)
+				i++;
+			buf = 1; /* force to transfer */
+			if (events & END_OF_BUFFER_EVENTS_PENDING) {
+				if (eob)
+					buf = chip->irq_rmh.Stat[i];
+				i++;
+			}
+			if (capture)
+				continue;
+			snd_assert(p >= 0 && (unsigned int)p < chip->audio_outs,);
+			pipe = chip->playback_pipes[p];
+			if (pipe && pipe->substream) {
+				vx_pcm_playback_update(chip, pipe->substream, pipe);
+				vx_pcm_playback_transfer(chip, pipe->substream, pipe, buf);
+			}
+		}
+	}
+
+	/* update the capture pcm pointers as frequently as possible */
+	for (i = 0; i < chip->audio_ins; i++) {
+		pipe = chip->capture_pipes[i];
+		if (pipe && pipe->substream)
+			vx_pcm_capture_update(chip, pipe->substream, pipe);
+	}
+}
 
 
 /*
@@ -1102,9 +1183,11 @@ static int vx_init_audio_io(vx_core_t *chip)
 	preferred = chip->ibl.size;
 	chip->ibl.size = 0;
 	vx_set_ibl(chip, &chip->ibl); /* query the info */
-	if (preferred > 0)
+	if (preferred > 0) {
 		chip->ibl.size = ((preferred + chip->ibl.granularity - 1) / chip->ibl.granularity) * chip->ibl.granularity;
-	else
+		if (chip->ibl.size > chip->ibl.max_size)
+			chip->ibl.size = chip->ibl.max_size;
+	} else
 		chip->ibl.size = chip->ibl.min_size; /* set to the minimum */
 	vx_set_ibl(chip, &chip->ibl);
 
