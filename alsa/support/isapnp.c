@@ -2091,6 +2091,14 @@ static void isapnp_free_device(struct isapnp_dev *dev)
 
 #endif /* MODULE */
 
+static void isapnp_release_resource(struct resource *res)
+{
+	if (res) {
+		release_resource(res);
+		kfree(res);
+	}
+}
+
 static void isapnp_free_all_resources(void)
 {
 #ifdef MODULE
@@ -2102,19 +2110,19 @@ static void isapnp_free_all_resources(void)
 #endif
 #ifdef ISAPNP_REGION_OK
 #ifdef NEW_RESOURCE
-	release_resource(pidxr_res);
+	isapnp_release_resource(pidxr_res);
 #else
 	release_region(_PIDXR, 1);
 #endif
 #endif
 #ifdef NEW_RESOURCE
-	release_resource(pnpwrp_res);
+	isapnp_release_resource(pnpwrp_res);
 #else
 	release_region(_PNPWRP, 1);
 #endif
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff)
 #ifdef NEW_RESOURCE
-		release_resource(isapnp_rdp_res);
+		isapnp_release_resource(isapnp_rdp_res);
 #else
 		release_region(isapnp_rdp, 1);
 #endif
@@ -2216,7 +2224,7 @@ __initfunc(int isapnp_init(void))
 		printk("isapnp: Index Register 0x%x already used\n", _PIDXR);
 		return -EBUSY;
 	}
-#endif
+#endif /* ISAPNP_REGION_OK */
 #ifdef NEW_RESOURCE
 	pnpwrp_res=request_region(_PNPWRP, 1, "isapnp write");
 	if(pnpwrp_res == NULL) {
@@ -2224,6 +2232,9 @@ __initfunc(int isapnp_init(void))
 	if (check_region(_PNPWRP, 1)) {
 #endif
 		printk("isapnp: Write Data Register 0x%x already used\n", _PNPWRP);
+#if defined(ISAPNP_REGION_OK) && defined(NEW_RESOURCE)
+		release_region(_PIDXR, 1);
+#endif
 		return -EBUSY;
 	}
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff) {
@@ -2234,6 +2245,12 @@ __initfunc(int isapnp_init(void))
 		if (check_region(isapnp_rdp, 1)) {
 #endif
 			printk("isapnp: Read Data Register 0x%x already used\n", isapnp_rdp);
+#ifdef NEW_RESOURCE
+			release_region(_PNPWRP, 1);
+#ifdef ISAPNP_REGION_OK
+			release_region(_PIDXR, 1);
+#endif
+#endif
 			return -EBUSY;
 		}
 #ifndef NEW_RESOURCE
