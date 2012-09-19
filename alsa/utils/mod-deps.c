@@ -111,9 +111,11 @@ static char *kernel_deps[] = {
 	"PPC",
 	"PPC64",
 	"X86_64",
+	"X86",
 	"IA32_EMULATION",
 	/* architecture specific */
 	"ARCH_SA1100",
+	"X86_PC9800",
 	/* other drivers */
 	"RTC",
 	"GAMEPORT",
@@ -168,16 +170,21 @@ static int read_file(const char *filename, struct cond **template)
 	
 	fullfile = malloc(strlen(basedir) + strlen(hiddendir) + 1 + strlen(filename) + 1);
 	sprintf(fullfile, "%s/%s", basedir, filename);
-	if ((err = read_file_1(fullfile, template)) < 0)
+	if ((err = read_file_1(fullfile, template)) < 0) {
+		free(fullfile);
 		return err;
+	}
 	if (!strncmp(filename, "core/", 5))
 		sprintf(fullfile, "%s/acore/%s", hiddendir, filename + 5);
 	else
 		sprintf(fullfile, "%s/%s", hiddendir, filename);
 	if (access(fullfile, R_OK) == 0) {
-		if ((err = read_file_1(fullfile, template)) < 0)
+		if ((err = read_file_1(fullfile, template)) < 0) {
+			free(fullfile);
 			return err;
+		}
 	}
+	free(fullfile);
 	return 0;
 }
 
