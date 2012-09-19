@@ -21,9 +21,9 @@ Where options is:
 	--cvsroot=<path>
 		Set root of ALSA CVS repository
 
-	-B <path>
-	--bkroot=<path>
-		Set root of Linux kernel BitKeeper repository
+	-G <path>
+	--gitroot=<path>
+		Set root of Linux kernel GIT repository
 
 Where command is:
 
@@ -47,9 +47,10 @@ PROGRAM = sys.argv[0]
 
 # define working directories
 CVSROOT = '~/alsa'
-BKROOT = '~/linux/official'
-BKROOT1 = ''
+GITROOT = '~/git/repos/linux-2.6'
 PATCH_UPDATE = '~/alsa/alsa-kernel/scripts/kchanges/update'
+GIT_COMMITER_NAME = 'Jaroslav Kysela'
+GIT_COMMITER_EMAIL = 'perex@suse.cz'
 
 # exclude some files or directories
 ALSA_EXCLUDE = ['/include/version.h']
@@ -88,8 +89,10 @@ COMMENT_MAP_DRIVER = [
 		('/include/vx_core.h'	,'Digigram VX core'),
 		('/drivers/vx'		,'Digigram VX core'),
 		('/drivers'		,'Generic drivers'),
-		('/arm/Kconfig'		,'ARM'),
 		('/include/uda1341.h'	,'UDA1341'),
+		('/arm/Kconfig'		,'ARM'),
+		('/arm/devdma.[ch]'	,'ARM DMA routines'),
+		('/arm/aaci.[ch]'	,'ARM AACI PL041 driver'),
 		('/arm/sa11xx-uda1341.c','SA11xx UDA1341 driver'),
 		('/arm'			,'ERROR'),
 		('/isa/Kconfig'		,'ISA'),
@@ -199,6 +202,7 @@ COMMENT_MAP_DRIVER = [
 		('/ppc/powermac.c'	,'PPC PowerMac driver'),
 		('/ppc/tumbler.(c|h)'	,'PPC Tumbler driver'),
 		('/ppc/beep.c'		,'PPC Beep'),
+		('/ppc/toonie.c'	,'PPC Toonie'),
 		('/ppc'			,'ERROR'),
 		('/i2c/l3'		,'L3 drivers'),
 		('/include/tea575x-tuner.h','TEA575x tuner'),
@@ -251,6 +255,7 @@ COMMENT_MAP_DRIVER = [
 		('/core/seq/instr'	,'Instrument layer'),
 		('/include/seq_kernel.h','ALSA sequencer'),
 		('/include/seq_midi_emul.h','ALSA sequencer'),
+		('/include/seq_midi_event.h','ALSA sequencer'),
 		('/include/asequencer.h','ALSA sequencer'),
 		('/include/seq_virmidi.h','Virtual Midi'),
 		('/core/seq'		,'ALSA sequencer'),
@@ -386,7 +391,8 @@ CVS_USER = {'perex':'Jaroslav Kysela <perex@suse.cz>',
 	    'uid53661':'Jaroslav Kysela <perex@suse.cz>',	# seems SF CVS malfunction
 	    'tiwai':'Takashi Iwai <tiwai@suse.de>',
 	    'abramo':'Abramo Bagnara <abramo@alsa-project.org>',
-	    'cladisch':'Clemens Ladisch <clemens@ladisch.de>'}
+	    'cladisch':'Clemens Ladisch <clemens@ladisch.de>',
+	    'jcdutton':'James Courtier-Dutton <James@superbug.co.uk>'}
 
 def usage(code, msg=''):
 	print __doc__ % globals()
@@ -400,9 +406,9 @@ def get_cvs_root():
 def get_cvs_root_top():
 	return os.path.expanduser(CVSROOT)
 
-def get_bk_root(root=''):
+def get_git_root(root=''):
 	if root == '':
-		root = BKROOT
+		root = GITROOT
 	return os.path.expanduser(root)
 
 def my_popen(cmd):
@@ -410,6 +416,14 @@ def my_popen(cmd):
 	lines = fp.readlines()
 	fp.close()
 	return lines
+
+def my_popen2(cmd):
+	fp = os.popen('{ ' + cmd + '; } 2>&1', 'r')
+	lines = fp.readlines()
+	sts = fp.close()
+	if sts == None:
+		sts = 0
+	return sts, lines
 
 def print_file(fp, lines):
 	for line in lines:
@@ -419,6 +433,14 @@ def print_file_comment(fp, lines, space=''):
 	for line in lines:
 		fp.write('# %s' % space)
 		fp.write(line)
+
+def extract_name(full):
+	x, y = string.split(full, '<')
+	return x[:-1]
+
+def extract_email(full):
+	x, y = string.split(full, '<')
+	return y[1:-1]
 
 def modify_version_file():
 	filename = get_cvs_root() + '/include/version.h'
@@ -459,25 +481,9 @@ def update_cvs_file(file, destfile = '', params = ''):
 		print_file(fp, lines)
 		fp.close()
 
-def update_bk_file(file, root=''):
-	path, file = os.path.split(file)
-	if os.path.isdir(path):
-		os.chdir(path)
-	else:
-		xpath, xfile = os.path.split(path)
-		os.chdir(xpath)
-		cmd = 'bk mkdir %s' % xfile
-		print cmd
-		fp = os.popen(cmd)
-		lines = fp.readlines()
-		fp.close()
-		print_file(sys.stderr, lines)
-		os.chdir(path)
-	cmd = 'bk get %s' % file
-	fp = os.popen(cmd)
-	lines = fp.readlines()
-	fp.close()
-	print_file(sys.stderr, lines)
+def update_git_file(file, root=''):
+	# empty
+	root =''
 
 def change_diff_line(line, file):
 	if line[:6] == 'Index:':
@@ -540,37 +546,25 @@ def get_cvs_files(base, dir):
 
 	return dlist, flist
 
-def get_bk_files(base, dir):
+def get_git_files(base, dir):
 	dlist = []
 	flist = []
 
-	# merge files
-	sccs_dir = base + dir + 'SCCS/'
-	l = dircache.listdir(sccs_dir)
+	# merge files and directories
+	dir1 = base + dir
+	l = dircache.listdir(dir1)
 	for f in l:
-		if f == 's.ChangeSet':
-			dummy = 1
-		elif f[0:2] == 's.':
-			if not os.path.isdir(sccs_dir + f):
-				flist.append(dir + f[2:])
-	del l
-
-	# merge directories
-	l = dircache.listdir(base + dir)
-	for f in l:
-		if f == 'SCCS':
-			dummy = 1	# Nothing
-		elif os.path.isdir(base + dir + f):
-			if os.path.isdir(base + dir + f + '/SCCS/') and not KERNEL_EXCLUDE_DIR.count(dir + f):
-				dlist1, flist1 = get_bk_files(base, dir + f + '/')
+		if f[:-1] == '~' or f == '.git':
+			continue
+		if os.path.isdir(dir1 + f):
+			if not KERNEL_EXCLUDE_DIR.count(dir + f):
+				dlist1, flist1 = get_git_files(base, dir + f + '/')
 				dlist.append(dir + f)
 				dlist = dlist + dlist1
 				flist = flist + flist1
-			else:
-				if not KERNEL_EXCLUDE_DIR.count(dir + f):
-					print 'Ignoring BK directory %s' % base + dir + f
+		else:
+			flist.append(dir + f)
 	del l
-
 	return dlist, flist
 
 def remap_engine(dir, dict):
@@ -685,7 +679,7 @@ def write_to_patch_update_file(lines):
 def do_alsa_kernel_diff(alsa, kernel, from_cvs_time, to_cvs_time, ofile=sys.stdout):
 	global FATAL_LSYNC_ERROR
 	ncvsflag = 0
-	nbkflag = 0
+	ngitflag = 0
 	lsyncflag = 0
 	if from_cvs_time or to_cvs_time:
 		lsyncflag = 1
@@ -700,11 +694,11 @@ def do_alsa_kernel_diff(alsa, kernel, from_cvs_time, to_cvs_time, ofile=sys.stdo
 		if not os.path.exists(afile):
 			ncvsflag = 1
 			os.system('touch %s' % afile)
-	kfile = get_bk_root() + kernel;
+	kfile = get_git_root() + kernel;
 	if not os.path.exists(kfile):
-		update_bk_file(kfile)
+		update_git_file(kfile)
 		if not os.path.exists(kfile):
-			nbkflag = 1
+			ngitflag = 1
 			os.system('touch %s' % kfile)
 	if lsyncflag > 0:
 		cmd = 'diff -uN %s %s' % (afile, kfile)
@@ -717,24 +711,22 @@ def do_alsa_kernel_diff(alsa, kernel, from_cvs_time, to_cvs_time, ofile=sys.stdo
 	if len(lines) > 1:
 		if lsyncflag > 0:
 			collected_logs, dead = collect_cvs_logs(alsa, from_cvs_time, to_cvs_time)
-			os.chdir(get_bk_root())
+			os.chdir(get_git_root())
 			print 'Updating file %s' % kfile
-			if not nbkflag and not dead:
-				if os.system('bk edit %s' % kfile):
+			if not ngitflag and not dead:
+				if os.system('git edit %s' % kfile):
 					sys.exit(1)
-			if nbkflag:
+			if ngitflag:
 				if os.system('cp -avf %s %s' % (afile, kfile)):
 					sys.exit(1)
-				if os.system('bk new %s' % kfile):
+				if os.system('cg-add %s' % kfile):
 					sys.exit(1)
-				nbkflag = 0
+				ngitflag = 0
 			elif dead:
-				if os.system('bk rm %s' % kfile):
+				if os.system('cg-rm %s' % kfile):
 					sys.exit(1)
 			else:
 				if os.system('cp -avf %s %s' % (afile, kfile)):
-					sys.exit(1)
-				if os.system('bk ci -y"ksync" %s' % kfile):
 					sys.exit(1)
 			tmpfile = '/tmp/ksyncABCD1234'
 			fp = open(tmpfile, 'w+')
@@ -742,24 +734,21 @@ def do_alsa_kernel_diff(alsa, kernel, from_cvs_time, to_cvs_time, ofile=sys.stdo
 				collected_logs = 'Updated date/time/version from the ALSA CVS tree'
 			fp.write(collected_logs)
 			fp.close()
-			if os.system('bk comments -Y%s %s' % (tmpfile, kfile)):
-				write_to_patch_update_file(lines)
-				FATAL_LSYNC_ERROR = 1
 			os.remove(tmpfile)
 		else:
 			print_file(ofile, lines)
 	if ncvsflag:
 		os.remove(afile)
-	if nbkflag:
+	if ngitflag:
 		os.remove(kfile)
 
 def do_kernel_alsa_diff(kernel, alsa):
 	afile = get_cvs_root() + alsa;
-	kfile = get_bk_root() + kernel;
+	kfile = get_git_root() + kernel;
 	if not os.path.exists(afile):
 		update_cvs_file(alsa)
 	if not os.path.exists(kfile):
-		update_bk_file(kfile)
+		update_git_file(kfile)
 	cmd = 'diff -uN %s %s' % (afile, kfile)
 	fp = os.popen(cmd)
 	lines = fp.readlines()
@@ -767,29 +756,13 @@ def do_kernel_alsa_diff(kernel, alsa):
 	lines = change_diff_lines(lines, alsa)
 	print_file(sys.stdout, lines)
 
-def show_last_changeset():
-	os.chdir(get_bk_root())
-	cmd = 'bk prs -r+ ChangeSet'
-	fp = os.popen(cmd)
-	lines = fp.readlines()
-	fp.close()
-        print '# This is an automatically generated patch'
-        print '# Project: Advanced Linux Sound Architecture (ALSA)'
-        print '# Tool: ksync (path in CVS repository: alsa-kernel/scripts/ksync)'
-        print '# Generated: %s' % time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime(time.time()))
-        print '# Source: ALSA CVS (cvs.alsa-project.org:/cvsroot/alsa)'
-        print '# Kernel ChangeSet:'
-	print_file_comment(sys.stdout, lines, '  ')
-	print '#'
-
 def diffall(reverse, from_cvs_time = 0, to_cvs_time = 0):
 	lsyncflag = 0
 	if from_cvs_time or to_cvs_time:
 		lsyncflag = 1
 	cdirs, cfiles = get_cvs_files(get_cvs_root(), '/')
-	bdirs, bfiles = get_bk_files(get_bk_root(), '/')
-	print 'BKROOT = %s' % BKROOT
-	show_last_changeset()
+	bdirs, bfiles = get_git_files(get_git_root(), '/')
+	print 'GITROOT = %s' % GITROOT
 	for d in ALSA_FORCE_DIR:
 		if len(d) == 0:
 			continue
@@ -809,7 +782,7 @@ def diffall(reverse, from_cvs_time = 0, to_cvs_time = 0):
 			if d[-1] != '/':
 				d = d + '/'
 			if d != '/':
-				bdirs1, bfiles1 = get_bk_files(get_bk_root(), d)
+				bdirs1, bfiles1 = get_git_files(get_git_root(), d)
 				bdirs = bdirs + bdirs1
 				bfiles = bfiles + bfiles1
 	cfiles = cfiles + ALSA_FORCE
@@ -882,106 +855,14 @@ def diffall(reverse, from_cvs_time = 0, to_cvs_time = 0):
 	os.remove(get_cvs_root() + '/include/version.h')
 	update_cvs_file('include/version.h')
 
-def do_bktree_diff(oldroot, newroot, file):
-	ofile = get_bk_root(oldroot) + file;
-	nfile = get_bk_root(newroot) + file;
-	if not os.path.exists(ofile):
-		update_bk_file(ofile, root=oldroot)
-	if not os.path.exists(nfile):
-		update_bk_file(nfile, root=newroot)
-	cmd = 'diff -uN %s %s' % (ofile, nfile)
-	fp = os.popen(cmd)
-	lines = fp.readlines()
-	fp.close()
-	lines = change_diff_lines(lines, file)
-	print_file(sys.stdout, lines)
-
-def bkdiffall(reverse):
-	lsyncflag = 0
-	bdirs, bfiles = get_bk_files(get_bk_root(BKROOT), '/')
-	cdirs, cfiles = get_bk_files(get_bk_root(BKROOT1), '/')
-	print 'BKROOT = %s' % BKROOT
-	print 'BKROOT1 = %s' % BKROOT1
-	for d in KERNEL_FORCE_DIR:
-		if len(d) == 0:
-			continue
-		if bdirs.count(d) == 0:
-			bdirs.append(d)
-			if d[-1] != '/':
-				d = d + '/'
-			if d != '/':
-				bdirs1, bfiles1 = get_bk_files(get_bk_root(BKROOT), d)
-				bdirs = bdirs + bdirs1
-				bfiles = bfiles + bfiles1
-	for d in KERNEL_FORCE_DIR:
-		if len(d) == 0:
-			continue
-		if cdirs.count(d) == 0:
-			cdirs.append(d)
-			if d[-1] != '/':
-				d = d + '/'
-			if d != '/':
-				bdirs1, bfiles1 = get_bk_files(get_bk_root(BKROOT1), d)
-				cdirs = cdirs + bdirs1
-				cfiles = cfiles + bfiles1
-	bfiles = bfiles + KERNEL_FORCE
-	cfiles = cfiles + KERNEL_FORCE
-	for f in KERNEL_EXCLUDE:
-		bfiles.remove(f)
-	for f in KERNEL_EXCLUDE:
-		cfiles.remove(f)
-	first = 1
-	for d in cdirs:
-		if not bdirs.count(d):
-			if first:
-				print '# Removed directories to Kernel Tree:'
-				first = 0
-			print '#   %s' % d
-	first = 1
-	for d in bdirs:
-		if not cdirs.count(d):
-			if first:
-				print '# Added directories from Kernel Tree:'
-				first = 0
-			print '#   %s' % d
-	first = 1
-	for f in cfiles:
-		if not bfiles.count(f):
-			if first:
-				print '# Removed files to Kernel Tree:'
-				first = 0
-			print '#   %s' % f
-	first = 1
-	for f in bfiles:
-		if not cfiles.count(f):
-			if first:
-				print '# Added files from Kernel Tree:'
-				first = 0
-			print '#   %s' % f
-	print '\n'
-	for f in cfiles:
-		if not reverse:
-			do_bktree_diff(BKROOT1, BKROOT, f)
-		else:
-			do_bktree_diff(BKROOT, BKROOT1, f)
-		if bfiles.count(f):
-			bfiles.remove(f)
-	for f in bfiles:
-		if not reverse:
-			do_bktree_diff(BKROOT1, BKROOT, f)
-		else:
-			do_bktree_diff(BKROOT, BKROOT1, f)
-		if cfiles.count(f):
-			cfiles.remove(f)
-
 def get_last_lsync_time():
-	os.chdir(get_bk_root())
+	os.chdir(get_git_root())
 	os.system('bk get -q include/sound/version.h')
 	fp = open('include/sound/version.h', 'r')
 	lines = fp.readlines()
 	fp.close()
 	if lines[2][0:24] != '#define CONFIG_SND_DATE ':
-		print 'Error, unexpected include/sound/version.h in BK directory'
+		print 'Error, unexpected include/sound/version.h in git directory'
 		print lines[2]
 		sys.exit(1)
 	str = lines[2][27:-7]
@@ -989,7 +870,7 @@ def get_last_lsync_time():
 	return t + time.timezone
 
 def get_last_changeset():
-	os.chdir(get_bk_root())
+	os.chdir(get_git_root())
 	os.system('bk get -q Makefile')
 	fp = open('Makefile', 'r')
 	lines = fp.readlines()
@@ -1025,14 +906,6 @@ def get_last_changeset():
 def filename(ver = 1):
 	cs, kernel = get_last_changeset()
         print 'alsa-%s-%s-linux-%s-cs%s.patch' % (time.strftime("%Y-%m-%d", time.gmtime(time.time())), ver, kernel, cs)	
-
-def kdiffs(cs = '1.403.57.48'):
-	os.chdir(get_bk_root())
-	cmd = 'sh -c \'bk rset -hr%s.. | grep -E "^(sound/|include/sound/)" | grep -E -v "^sound/oss/" | bk gnupatch -du\'' % cs
-	fp = os.popen(cmd)
-	lines = fp.readlines()
-	fp.close()
-	print_file(sys.stdout, lines)
 
 def parse_time(str):
 	args = string.split(str, '/')
@@ -1182,6 +1055,7 @@ def cvsps_merge1(f,t=0):
 	idx = 0
 	author = ''
 	date = ''
+	level = 'Devel'
 	for line in diffs:
 		if line[:-1] == 'Log:':
 			ok = 1
@@ -1210,6 +1084,10 @@ def cvsps_merge1(f,t=0):
 				summary = line[9:]
 			elif line[:8] == "Subject:":
 				summary = line[8:]
+			elif line[:13] == "Patch-level: ":
+				level = line[13:-1]
+			elif line[:13] == "Patch-Level: ":
+				level = line[13:-1]
 			else:
 				log.append(line)
 		elif ok == 2:
@@ -1217,6 +1095,12 @@ def cvsps_merge1(f,t=0):
 				members.append(line[1:])
 	while len(log) > 1 and log[0] == '\n':
 		del log[0]
+	if level == 'Low':
+		level = 'Devel'
+	elif level == 'High':
+		level = 'ASAP'
+	if level == 'merged':
+		level = 'Merged'
 	while len(log) > 1 and log[len(log)-1] == '\n':
 		del log[len(log)-1]
 	if summary != '':
@@ -1252,45 +1136,82 @@ def cvsps_merge1(f,t=0):
 	nlines = nlines + 'Signed-off-by: %s\n' % author
 	if t:
 		print lines
+		if level == 'Merged':
+			print '^^^^^^ Already merged to mainstream...'
+			print
 		return
+
+	if level == 'Merged':
+		print 'Already merged to mainstream...'
+		return
+
 	nlines = string.replace(nlines, '"', "'")
 	nlines = string.replace(nlines, '`', "'")
 	lines = string.replace(lines, '"', "'")
 	lines = string.replace(lines, '`', "'")
-	while os.system('bk import -tpatch -C -y"' + nlines + '" ' + ff + ' .'):
-		print 'BK patch import of %s error, xterm? (any key to continue or Control-C to abort)' % ff
-		sys.stdin.readline()
-		os.system("xterm")
+
+	nfiles = []
+	for file in files:
+		if not os.path.exists(file):
+			nfiles.append(file)
+	print 'New files: %s' % nfiles
+
+	while 1:
+		sts, out = my_popen2('cat ' + ff + ' | cg-patch')
+		for o in out:
+			print o[:-1]
+			if string.find(o, 'FAILED') > 0:
+				sts = 1
+		if sts == 0:
+			break
+		print 'Patch failed...'
+		os.system('cg-cancel')
+		sys.exit(1)
+	for file in nfiles:
+		print 'Adding file %s...' % file
+		os.system('cg-add %s' % file)
 	pline = ''
 	for line in diffs:
 		if line[:14] == "+++ /dev/null\t" and pline != '':
 			file = pline[4:string.find(pline, '\t')]
 			file1 = remap_alsa_file(file[11:])[1:]
 			print 'Removing file %s...' % file1
-			os.system('bk rm %s' % file1)
+			os.system('cg-rm %s' % file1)
 		pline = line
 
 	print 'Commiting...'
-	if os.system('bk commit -y"' + nlines + '"'):
-		print 'BK commit failed'
+	os.environ['AUTHOR_NAME'] = extract_name(author)
+	os.environ['AUTHOR_EMAIL'] = extract_email(author)
+	os.environ['AUTHOR_DATE'] = date
+	os.environ['COMMIT_AUTHOR_NAME'] = GIT_COMMITER_NAME
+	os.environ['COMMIT_AUTHOR_EMAIL'] = GIT_COMMITER_EMAIL
+	cmd = 'echo "' + nlines + '" | cg-commit'
+	while os.system(cmd):
+		print 'cg-commit failed'
+		os.system('cg-cancel')
 		sys.exit(1)
-	for file in files:
-		os.system('bk get %s' % file)
-		if not os.path.exists(file):
-			continue
-		if os.system('bk comment -y"' + lines + '" %s' % file):
-			print 'BK comment change failed'
-			sys.exit(1)
+	if False:
+		for file in files:
+			os.system('bk get %s' % file)
+			if not os.path.exists(file):
+				continue
+			if os.system('bk comment -y"' + lines + '" %s' % file):
+				print 'BK comment change failed'
+				sys.exit(1)
 	#sys.exit(1)
 	
-def cvsps_merge():
-	os.chdir(get_bk_root())
+def cvsps_merge(start):
+	os.chdir(get_git_root())
 	l = dircache.listdir(get_cvs_root() + '/scripts/changesets')
 	for f in l:
 		if string.find(f, '.') > 0:
 			file, suff = string.split(f, '.')
-			if suff == 'patch':
-				cvsps_merge1(f, t=1)
+			if suff != 'patch':
+				continue
+			y = int(file)
+			if y < start:
+				continue
+			cvsps_merge1(f, t=1)
 	print 'Is this ok? Press Ctrl-C to abort...'
 	sys.stdin.readline()
 	get_cvs_files(get_cvs_root(), '/')
@@ -1299,14 +1220,18 @@ def cvsps_merge():
 	do_alsa_kernel_diff('/include/version.h', '/include/sound/version.h', 0, 0)
 	os.remove(get_cvs_root() + '/include/version.h')
 	update_cvs_file('include/version.h')
-	os.chdir(get_bk_root())
+	os.chdir(get_git_root())
 	print 'Is this ok? Press Ctrl-C to abort...'
 	sys.stdin.readline()
 	for f in l:
 		if string.find(f, '.') > 0:
 			file, suff = string.split(f, '.')
-			if suff == 'patch':
-				cvsps_merge1(f, t=0)
+			if suff != 'patch':
+				continue
+			y = int(file)
+			if y < start:
+				continue
+			cvsps_merge1(f, t=0)
 	del l
 
 def cvsps_changes1(changes, lines, module):
@@ -1461,6 +1386,8 @@ def cvsps_changes(rev1, rev2):
 					log = a['log'][0]
 					if log[:9] == 'Summary: ':
 						log = log[9:]
+					elif log[:8] == 'Summary:':
+						log = log[8:]
 					print '    - %s' % log
 	print
 	print
@@ -1483,7 +1410,7 @@ def cvsps_changes(rev1, rev2):
 						first = " "
 
 def main():
-	global CVSROOT, BKROOT, BKROOT1, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
+	global CVSROOT, GITROOT, PATCH_UPDATE, ALSA_MAP, KERNEL_MAP
 	try:
 		opts, args = getopt.getopt(sys.argv[1:], 'hB:C:',
 					   ['cvsroot=', 'bkroot=', 'help']);
@@ -1498,8 +1425,8 @@ def main():
 			usage(0)
 		elif opt == '--cvsroot':
 			CVSROOT = arg
-		elif opt == '--bkroot':
-			BKROOT = arg
+		elif opt == '--gitroot':
+			GITROOT = arg
 
 	for k in ALSA_MAP.keys():
 		KERNEL_MAP[ALSA_MAP[k]] = k
@@ -1507,28 +1434,16 @@ def main():
 	if not args:
 		print 'Command not specified'
 		sys.exit(1)
-	if args[0] == 'diffall' or args[0] == 'linux-sound' or args[0] == 'work':
+	if args[0] == 'diffall' or args[0] == 'work':
 		reverse=0
-		if args[0] == 'linux-sound':
-			BKROOT = '~/bk/linux-sound/linux-sound'
-		elif args[0] == 'work':
-			BKROOT = '~/bk/linux-sound/work'
+		if args[0] == 'work':
+			GITROOT = '~/git/repos/work'
 		if len(args) > 1:
 			if args[1] == '-r':
 				reverse=1
 			else:
 				print 'Ignoring extra arguments %s' % args[1:]
 		diffall(reverse)
-	elif args[0] == 'bkdiff':
-		reverse=0
-		BKROOT = '~/bk/linux-sound/linux-sound'
-		BKROOT1 = '~/bk/linux-sound/work'
-		if len(args) > 1:
-			if args[1] == '-r':
-				reverse=1
-			else:
-				print 'Ignoring extra arguments %s' % args[1:]
-		bkdiffall(reverse)
 	elif args[0] == 'cvsps':
 		reverse=0
 		if len(args) < 2:
@@ -1536,8 +1451,12 @@ def main():
 			return
 		cvsps(args[1])
 	elif args[0] == 'cvsps-merge':
-		BKROOT = '~/bk/linux-sound/work'
-		cvsps_merge()
+		GITROOT = '~/git/repos/work'
+		if len(args) < 2:
+			x = 0
+		else:
+			x = int(args[1])
+		cvsps_merge(x)
 	elif args[0] == 'cvsps-changes':
 		if len(args) < 3:
 			print 'Please, give a start and end revision'
@@ -1606,11 +1525,6 @@ def main():
 		if len(args) > 1:
 			ver = args[1]
 		filename(ver)
-	elif args[0] == 'kdiffs':
-		if len(args) > 1:
-			kdiffs(args[1])
-		else:
-			kdiffs()
 	else:
 		print 'Unknown command %s' % args[0]
 		sys.exit(1)
