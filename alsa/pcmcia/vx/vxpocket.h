@@ -139,6 +139,7 @@ struct snd_vxpocket {
 	unsigned int initialized: 1;
 	unsigned int in_suspend: 1;
 	unsigned int xilinx_tested: 1;
+	unsigned int is_stale: 1;
 
 	unsigned int pcm_running;
 

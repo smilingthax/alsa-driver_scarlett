@@ -18,6 +18,19 @@
  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 
+/*
+ * please add the following as /etc/pcmcia/vxpocket.conf:
+ *
+
+  device "snd-vxpocket"
+     class "audio" module "snd-vxpocket"
+
+  card "Digigram VX-POCKET440"
+    manfid 0x01f1, 0x0100
+    bind "snd-vxp440"
+
+ */
+
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <pcmcia/version.h>

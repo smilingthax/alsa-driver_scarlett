@@ -230,6 +230,10 @@ void vx_set_internal_clock(vxpocket_t *chip, int freq)
 void vx_set_iec958_status(vxpocket_t *chip, unsigned int bits)
 {
 	int i;
+
+	if (chip->is_stale)
+		return;
+
 	for (i = 0; i < 32; i++)
 		vx_write_one_cbit(chip, i, bits & (1 << i));
 }
@@ -241,6 +245,9 @@ void vx_set_iec958_status(vxpocket_t *chip, unsigned int bits)
 int vx_set_clock(vxpocket_t *chip, int freq)
 {
 	int src_changed = 0;
+
+	if (chip->is_stale)
+		return 0;
 
 	/* change the audio source if possible */
 	vx_sync_audio_source(chip);
@@ -279,6 +286,9 @@ int vx_set_clock(vxpocket_t *chip, int freq)
 int vx_change_frequency(vxpocket_t *chip)
 {
 	int freq;
+
+	if (chip->is_stale)
+		return 0;
 
 	if (chip->clock_source == INTERNAL_QUARTZ)
 		return 0;

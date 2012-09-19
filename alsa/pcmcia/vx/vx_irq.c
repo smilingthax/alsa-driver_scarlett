@@ -101,6 +101,9 @@ void vx_interrupt(unsigned long private_data)
 	int i, events;
 	vx_pipe_t *pipe;
 		
+	if (chip->is_stale)
+		return;
+
 	if (vx_test_irq_src(chip, &events) < 0)
 		return;
     
@@ -148,7 +151,7 @@ void snd_vx_irq_handler(int irq, void *dev, struct pt_regs *regs)
 {
 	vxpocket_t *chip = snd_magic_cast(vxpocket_t, dev, return);
 
-	if (! chip->initialized)
+	if (! chip->initialized || chip->is_stale)
 		return;
 	if (! vx_test_and_ack(chip))
 		tasklet_hi_schedule(&chip->tq);
