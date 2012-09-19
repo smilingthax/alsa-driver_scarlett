@@ -691,18 +691,18 @@ static emu_chip_details_t emu_chip_details[] = {
 	 .ca0151_chip = 1,
 	 .spdif_bug = 1,
 	 .ac97_chip = 1} ,
-	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x10020052,
-	 .driver = "Audigy", .name = "Audigy 1 ES [SB0160]", 
-	 .id = "Audigy",
-	 .emu10k2_chip = 1,
-	 .ca0102_chip = 1,
-	 .spdif_bug = 1,
-	 .ac97_chip = 1} ,
 	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x00531102,
 	 .driver = "Audigy", .name = "Audigy 1 [SB0090]", 
 	 .id = "Audigy",
 	 .emu10k2_chip = 1,
 	 .ca0102_chip = 1,
+	 .ac97_chip = 1} ,
+	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x00521102,
+	 .driver = "Audigy", .name = "Audigy 1 ES [SB0160]", 
+	 .id = "Audigy",
+	 .emu10k2_chip = 1,
+	 .ca0102_chip = 1,
+	 .spdif_bug = 1,
 	 .ac97_chip = 1} ,
 	{.vendor = 0x1102, .device = 0x0004, .subsystem = 0x00511102,
 	 .driver = "Audigy", .name = "Audigy 1 [SB0090]", 
@@ -832,6 +832,7 @@ int __devinit snd_emu10k1_create(snd_card_t * card,
 		       unsigned short extout_mask,
 		       long max_cache_bytes,
 		       int enable_ir,
+		       uint subsystem,
 		       emu10k1_t ** remu)
 {
 	emu10k1_t *emu;
@@ -877,10 +878,16 @@ int __devinit snd_emu10k1_create(snd_card_t * card,
 
 	for (c = emu_chip_details; c->vendor; c++) {
 		if (c->vendor == pci->vendor && c->device == pci->device) {
-			if (c->subsystem && c->subsystem != emu->serial)
-				continue;
-			if (c->revision && c->revision != emu->revision)
-				continue;
+			if (subsystem) {
+				if (c->subsystem && (c->subsystem == subsystem) ) {
+					break;
+				} else continue;
+			} else {
+				if (c->subsystem && (c->subsystem != emu->serial) )
+					continue;
+				if (c->revision && c->revision != emu->revision)
+					continue;
+			}
 			break;
 		}
 	}
@@ -891,10 +898,14 @@ int __devinit snd_emu10k1_create(snd_card_t * card,
 		return -ENOENT;
 	}
 	emu->card_capabilities = c;
-	if (c->subsystem != 0)
+	if (c->subsystem && !subsystem)
 		snd_printdd("Sound card name=%s\n", c->name);
-	else
-		snd_printdd("Sound card name=%s, vendor=0x%x, device=0x%x, subsystem=0x%x\n", c->name, pci->vendor, pci->device, emu->serial);
+	else if (subsystem) 
+		snd_printdd("Sound card name=%s, vendor=0x%x, device=0x%x, subsystem=0x%x. Forced to subsytem=0x%x\n",
+		       	c->name, pci->vendor, pci->device, emu->serial, c->subsystem);
+	else 
+		snd_printdd("Sound card name=%s, vendor=0x%x, device=0x%x, subsystem=0x%x.\n",
+		      	c->name, pci->vendor, pci->device, emu->serial);
 	
 	if (!*card->id && c->id) {
 		int i, n = 0;
