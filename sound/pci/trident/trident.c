@@ -138,6 +138,8 @@ static int __devinit snd_trident_probe(struct pci_dev *pci,
 	}
 #endif
 
+	snd_trident_gameport(trident);
+
 	switch (trident->device) {
 	case TRIDENT_DEVICE_ID_DX:
 		str = "TRID4DWAVEDX";

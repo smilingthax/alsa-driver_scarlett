@@ -1485,9 +1485,10 @@ static int snd_cmipci_playback_spdif_open(snd_pcm_substream_t *substream)
 	if ((err = open_device_check(cm, CM_OPEN_SPDIF_PLAYBACK, substream)) < 0) /* use channel A */
 		return err;
 	runtime->hw = snd_cmipci_playback_spdif;
-	if (cm->can_ac3_hw) {
+#ifdef DO_SOFT_AC3
+	if (cm->can_ac3_hw)
+#endif
 		runtime->hw.info |= SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_MMAP_VALID;
-	}
 	snd_pcm_hw_constraint_minmax(runtime, SNDRV_PCM_HW_PARAM_BUFFER_SIZE, 0, 0x40000);
 	cm->dig_pcm_status = cm->dig_status;
 	return 0;
