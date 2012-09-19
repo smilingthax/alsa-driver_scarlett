@@ -399,13 +399,6 @@ Information about Additional Modules
     You need to install the firmware file "riptide.hex" to the standard
     firmware path (e.g. /lib/firmware).
 
-  Module snd-ad1889
-  -----------------
-
-    Module for Analog Devices AD1889
-
-    Module supports up to 8 cards.
-
 
 Trouble Shooting
 ================
