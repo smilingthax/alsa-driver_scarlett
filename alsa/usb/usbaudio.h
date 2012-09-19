@@ -22,8 +22,6 @@
  */
 
 
-#include <sound/driver.h>
-
 /*
  */
 
@@ -122,9 +120,6 @@
 
 typedef struct snd_usb_audio snd_usb_audio_t;
 
-#define snd_usb_audio_t_magic	0xa15a401	/* FIXME: should be in sndmagic.h later */
-
-
 struct snd_usb_audio {
 	
 	int index;
@@ -151,14 +146,5 @@ void *snd_usb_find_desc(void *descstart, int desclen, void *after, u8 dtype, int
 void *snd_usb_find_csint_desc(void *descstart, int desclen, void *after, u8 dsubtype, int iface, int altsetting);
 
 int snd_usb_create_mixer(snd_usb_audio_t *chip, int ctrlif, unsigned char *buffer, int buflen);
-
-/* for compatibility... */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-#define do_usb_alloc_urb(n,flags) usb_alloc_urb(n)
-#define do_usb_submit_urb(p,flags) usb_submit_urb(p)
-#else
-#define do_usb_alloc_urb(n,flags) usb_alloc_urb(n,flags)
-#define do_usb_submit_urb(p,flags) usb_submit_urb(p,flags)
-#endif
 
 #endif /* __USBAUDIO_H */

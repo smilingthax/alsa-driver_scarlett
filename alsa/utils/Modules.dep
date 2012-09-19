@@ -10,3 +10,5 @@
 
 %dir linux/sound/usb
 |snd-usb-audio snd-pcm
+|snd-usb-midi @if_sequencer snd-seq-device snd-seq-midi-event
+

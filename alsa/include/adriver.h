@@ -157,4 +157,6 @@ static inline struct proc_dir_entry *PDE(const struct inode *inode)
 #define writeq(v, a) do { __writeq((v),(a)); mb(); } while(0)
 #endif
 
+#include "amagic.h"
+
 #endif /* __SOUND_LOCAL_DRIVER_H */
