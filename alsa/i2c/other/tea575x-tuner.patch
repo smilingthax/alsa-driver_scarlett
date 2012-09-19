@@ -1,0 +1,62 @@
+--- tea575x-tuner.c.old	2004-01-29 13:36:27.000000000 +0100
++++ tea575x-tuner.c	2004-01-29 13:35:29.000000000 +0100
+@@ -85,10 +85,27 @@
+  * Linux Video interface
+  */
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
++static int snd_tea575x_open(struct video_device *dev, int flags)
++{
++	return 0;
++}
++
++static void snd_tea575x_close(struct video_device *dev)
++{
++}
++#endif
++
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+ static int snd_tea575x_do_ioctl(struct inode *inode, struct file *file,
+ 			        unsigned int cmd, void *arg)
++#else
++static int snd_tea575x_ioctl(struct video_device *dev, unsigned int cmd, void *arg)
++#endif
+ {
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+ 	struct video_device *dev = video_devdata(file);
++#endif
+ 	tea575x_t *tea = video_get_drvdata(dev);
+ 	
+ 	switch(cmd) {
+@@ -167,11 +184,13 @@
+ 	}
+ }
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 5, 0)
+ static int snd_tea575x_ioctl(struct inode *inode, struct file *file,
+ 			     unsigned int cmd, unsigned long arg)
+ {
+ 	return video_usercopy(inode, file, cmd, arg, snd_tea575x_do_ioctl);
+ }
++#endif
+ 
+ /*
+  * initialize all the tea575x chips
+@@ -192,11 +211,17 @@
+ 	tea->vd.type = VID_TYPE_TUNER;
+ 	tea->vd.hardware = VID_HARDWARE_RTRACK;	/* FIXME: assign new number */
+ 	video_set_drvdata(&tea->vd, tea);
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
++	tea->vd.open = snd_tea575x_open;
++	tea->vd.close = snd_tea575x_close;
++	tea->vd.ioctl = snd_tea575x_ioctl;
++#else
+ 	tea->vd.fops = &tea->fops;
+ 	tea->fops.owner = tea->card->module;
+ 	tea->fops.open = video_exclusive_open;
+ 	tea->fops.release = video_exclusive_release;
+ 	tea->fops.ioctl = snd_tea575x_ioctl;
++#endif
+ 	if (video_register_device(&tea->vd, VFL_TYPE_RADIO, tea->dev_nr - 1) < 0) {
+ 		snd_printk(KERN_ERR "unable to register tea575x tuner\n");
+ 		return;
