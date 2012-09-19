@@ -1336,7 +1336,7 @@ static int snd_ice1712_pro_mixer_volume_put(snd_kcontrol_t * kcontrol, snd_ctl_e
 }
 
 
-static int __init snd_ice1712_build_pro_mixer(ice1712_t *ice)
+static int __devinit snd_ice1712_build_pro_mixer(ice1712_t *ice)
 {
 	snd_card_t * card = ice->card;
 	snd_kcontrol_t ctl;

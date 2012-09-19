@@ -1554,13 +1554,16 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 		err = -ENODEV;
 		goto __error1;
 	}
+	err = snd_card_file_add(pcm->card, file);
+	if (err < 0)
+		goto __error1;
 	if (!try_inc_mod_count(pcm->card->module)) {
 		err = -EFAULT;
-		goto __error1;
+		goto __error2;
 	}
 	if (snd_task_name(current, task_name, sizeof(task_name)) < 0) {
 		err = -EFAULT;
-		goto __error1;
+		goto __error;
 	}
 	if (file->f_mode & FMODE_WRITE)
 		psetup = snd_pcm_oss_look_for_setup(pcm, SNDRV_PCM_STREAM_PLAYBACK, task_name);
@@ -1584,13 +1587,12 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 
 	init_waitqueue_entry(&wait, current);
 	add_wait_queue(&pcm->open_wait, &wait);
+	down(&pcm->open_mutex);
 	while (1) {
-		down(&pcm->open_mutex);
 		err = snd_pcm_oss_open_file(file, pcm, &pcm_oss_file,
 					    minor, psetup, csetup);
 		if (err >= 0)
 			break;
-		up(&pcm->open_mutex);
 		if (err == -EAGAIN) {
 			if (nonblock) {
 				err = -EBUSY;
@@ -1599,7 +1601,9 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 		} else
 			break;
 		set_current_state(TASK_INTERRUPTIBLE);
+		up(&pcm->open_mutex);
 		schedule();
+		down(&pcm->open_mutex);
 		if (signal_pending(current)) {
 			err = -ERESTARTSYS;
 			break;
@@ -1607,13 +1611,15 @@ static int snd_pcm_oss_open(struct inode *inode, struct file *file)
 	}
 	set_current_state(TASK_RUNNING);
 	remove_wait_queue(&pcm->open_wait, &wait);
+	up(&pcm->open_mutex);
 	if (err < 0)
 		goto __error;
-	up(&pcm->open_mutex);
 	return err;
 
       __error:
       	dec_mod_count(pcm->card->module);
+      __error2:
+      	snd_card_file_remove(pcm->card, file);
       __error1:
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
@@ -1639,6 +1645,7 @@ static int snd_pcm_oss_release(struct inode *inode, struct file *file)
 	up(&pcm->open_mutex);
 	wake_up(&pcm->open_wait);
 	dec_mod_count(pcm->card->module);
+	snd_card_file_remove(pcm->card, file);
 #ifdef LINUX_2_2
 	MOD_DEC_USE_COUNT;
 #endif
