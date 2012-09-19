@@ -55,6 +55,7 @@ static char *model;
 static int position_fix;
 static int probe_mask = -1;
 static int single_cmd;
+static int disable_msi;
 
 module_param(index, int, 0444);
 MODULE_PARM_DESC(index, "Index value for Intel HD audio interface.");
@@ -68,6 +69,8 @@ module_param(probe_mask, int, 0444);
 MODULE_PARM_DESC(probe_mask, "Bitmask to probe codecs (default = -1).");
 module_param(single_cmd, bool, 0444);
 MODULE_PARM_DESC(single_cmd, "Use single command to communicate with codecs (for debugging only).");
+module_param(disable_msi, int, 0);
+MODULE_PARM_DESC(disable_msi, "Disable Message Signaled Interrupt (MSI)");
 
 
 /* just for backward compatibility */
@@ -332,6 +335,7 @@ struct azx {
 	int position_fix;
 	unsigned int initialized: 1;
 	unsigned int single_cmd: 1;
+	unsigned int polling_mode: 1;
 };
 
 /* driver types */
@@ -518,8 +522,23 @@ static unsigned int azx_rirb_get_response(struct hda_codec *codec)
 	struct azx *chip = codec->bus->private_data;
 	int timeout = 50;
 
-	while (chip->rirb.cmds) {
+	for (;;) {
+		if (chip->polling_mode) {
+			spin_lock_irq(&chip->reg_lock);
+			azx_update_rirb(chip);
+			spin_unlock_irq(&chip->reg_lock);
+		}
+		if (! chip->rirb.cmds)
+			break;
 		if (! --timeout) {
+			if (! chip->polling_mode) {
+				snd_printk(KERN_WARNING "hda_intel: "
+					   "azx_get_response timeout, "
+					   "switching to polling mode...\n");
+				chip->polling_mode = 1;
+				timeout = 50;
+				continue;
+			}
 			snd_printk(KERN_ERR
 				   "hda_intel: azx_get_response timeout, "
 				   "switching to single_cmd mode...\n");
@@ -1402,8 +1421,10 @@ static int azx_free(struct azx *chip)
 		msleep(1);
 	}
 
-	if (chip->irq >= 0)
+	if (chip->irq >= 0) {
+		pci_disable_msi(chip->pci);
 		free_irq(chip->irq, (void*)chip);
+	}
 	if (chip->remap_addr)
 		iounmap(chip->remap_addr);
 
@@ -1485,6 +1506,9 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 		err = -ENXIO;
 		goto errout;
 	}
+
+	if (!disable_msi)
+		pci_enable_msi(pci);
 
 	if (request_irq(pci->irq, azx_interrupt, IRQF_DISABLED|IRQF_SHARED,
 			"HDA Intel", (void*)chip)) {
