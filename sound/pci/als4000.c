@@ -81,7 +81,7 @@ MODULE_PARM(snd_id, "1-" __MODULE_STRING(SNDRV_CARDS) "s");
 MODULE_PARM_DESC(snd_id, "ID string for ALS4000 soundcard.");
 MODULE_PARM_SYNTAX(snd_id, SNDRV_ID_DESC);
 MODULE_PARM(snd_enable, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
-MODULE_PARM_DESC(snd_enable, "Index value for ALS4000 soundcard.");
+MODULE_PARM_DESC(snd_enable, "Enable ALS4000 soundcard.");
 MODULE_PARM_SYNTAX(snd_enable, SNDRV_INDEX_DESC);
 MODULE_PARM(snd_joystick_port, "1-" __MODULE_STRING(SNDRV_CARDS) "i");
 MODULE_PARM_DESC(snd_joystick_port, "Joystick port address for ALS4000 soundcard. (0 = disabled)");
@@ -410,7 +410,7 @@ static snd_pcm_hardware_t snd_als4000_capture =
 
 /*****************************************************************/
 
-int snd_als4000_playback_open(snd_pcm_substream_t * substream)
+static int snd_als4000_playback_open(snd_pcm_substream_t * substream)
 {
 	sb_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
@@ -420,7 +420,7 @@ int snd_als4000_playback_open(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-int snd_als4000_playback_close(snd_pcm_substream_t * substream)
+static int snd_als4000_playback_close(snd_pcm_substream_t * substream)
 {
 	sb_t *chip = snd_pcm_substream_chip(substream);
 
@@ -429,7 +429,7 @@ int snd_als4000_playback_close(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-int snd_als4000_capture_open(snd_pcm_substream_t * substream)
+static int snd_als4000_capture_open(snd_pcm_substream_t * substream)
 {
 	sb_t *chip = snd_pcm_substream_chip(substream);
 	snd_pcm_runtime_t *runtime = substream->runtime;
@@ -439,7 +439,7 @@ int snd_als4000_capture_open(snd_pcm_substream_t * substream)
 	return 0;
 }
 
-int snd_als4000_capture_close(snd_pcm_substream_t * substream)
+static int snd_als4000_capture_close(snd_pcm_substream_t * substream)
 {
 	sb_t *chip = snd_pcm_substream_chip(substream);
 
@@ -479,13 +479,11 @@ static void snd_als4000_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_als4000_pcm(sb_t *chip, int device, snd_pcm_t **rpcm)
+static int __devinit snd_als4000_pcm(sb_t *chip, int device)
 {
 	snd_pcm_t *pcm;
 	int err;
 
-	if (rpcm)
-		*rpcm = NULL;
 	if ((err = snd_pcm_new(chip->card, "ALS4000 DSP", device, 1, 1, &pcm)) < 0)
 		return err;
 	pcm->private_free = snd_als4000_pcm_free;
@@ -496,14 +494,14 @@ int snd_als4000_pcm(sb_t *chip, int device, snd_pcm_t **rpcm)
 
 	snd_pcm_lib_preallocate_pci_pages_for_all(chip->pci, pcm, 64*1024, 64*1024);
 
-	if (rpcm)
-		*rpcm = pcm;
+	chip->pcm = pcm;
+
 	return 0;
 }
 
 /******************************************************************/
 
-static void __init snd_als4000_set_addr(unsigned long gcr,
+static void __devinit snd_als4000_set_addr(unsigned long gcr,
 					unsigned int sb,
 					unsigned int mpu,
 					unsigned int opl,
@@ -524,7 +522,7 @@ static void __init snd_als4000_set_addr(unsigned long gcr,
 	snd_als4000_gcr_write_addr(gcr, 0xa9, confB);
 }
 
-static void __init snd_als4000_configure(sb_t *chip)
+static void __devinit snd_als4000_configure(sb_t *chip)
 {
 	unsigned long flags;
 	unsigned tmp;
@@ -635,7 +633,7 @@ static int __devinit snd_card_als4k_probe(struct pci_dev *pci,
 		return err;
 	}
 
-	if ((err = snd_als4000_pcm(chip, 0, &chip->pcm)) < 0) {
+	if ((err = snd_als4000_pcm(chip, 0)) < 0) {
 		snd_card_free(card);
 		return err;
 	}

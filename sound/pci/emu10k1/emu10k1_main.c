@@ -563,7 +563,10 @@ int __devinit snd_emu10k1_create(snd_card_t * card,
 	emu->get_synth_voice = NULL;
 	emu->port = pci_resource_start(pci, 0);
 
-	emu->audigy = (int)pci->driver_data;
+	// emu->audigy = (int)pci->driver_data;
+	if (pci->device == 0x0004)
+		emu->audigy = 1;
+
 	if (emu->audigy)
 		emu->gpr_base = A_FXGPREGBASE;
 	else

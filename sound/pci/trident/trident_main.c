@@ -2116,7 +2116,7 @@ static void snd_trident_spdif_pcm_free(snd_pcm_t *pcm)
   
   ---------------------------------------------------------------------------*/
 
-int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
+int __devinit snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -2158,7 +2158,7 @@ int snd_trident_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
   
   ---------------------------------------------------------------------------*/
 
-int snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
+int __devinit snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *foldback;
 	int err;
@@ -2207,7 +2207,7 @@ int snd_trident_foldback_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
   
   ---------------------------------------------------------------------------*/
 
-int snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
+int __devinit snd_trident_spdif_pcm(trident_t * trident, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *spdif;
 	int err;
@@ -2286,7 +2286,7 @@ static int snd_trident_spdif_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_spdif_control =
+static snd_kcontrol_new_t snd_trident_spdif_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           SNDRV_CTL_NAME_IEC958("",PLAYBACK,SWITCH),
@@ -2345,7 +2345,7 @@ static int snd_trident_spdif_default_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_spdif_default =
+static snd_kcontrol_new_t snd_trident_spdif_default __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
 	name:           SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
@@ -2377,7 +2377,7 @@ static int snd_trident_spdif_mask_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_trident_spdif_mask =
+static snd_kcontrol_new_t snd_trident_spdif_mask __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READ,
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
@@ -2435,7 +2435,7 @@ static int snd_trident_spdif_stream_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_spdif_stream =
+static snd_kcontrol_new_t snd_trident_spdif_stream __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READWRITE | SNDRV_CTL_ELEM_ACCESS_INACTIVE,
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
@@ -2494,7 +2494,7 @@ static int snd_trident_ac97_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_ac97_rear_control =
+static snd_kcontrol_new_t snd_trident_ac97_rear_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "Rear Path",
@@ -2550,7 +2550,7 @@ static int snd_trident_vol_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_vol_music_control =
+static snd_kcontrol_new_t snd_trident_vol_music_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "Music Playback Volume",
@@ -2560,7 +2560,7 @@ static snd_kcontrol_new_t snd_trident_vol_music_control =
 	private_value:  16,
 };
 
-static snd_kcontrol_new_t snd_trident_vol_wave_control =
+static snd_kcontrol_new_t snd_trident_vol_wave_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "Wave Playback Volume",
@@ -2626,7 +2626,7 @@ static int snd_trident_pcm_vol_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_pcm_vol_control =
+static snd_kcontrol_new_t snd_trident_pcm_vol_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "PCM Front Playback Volume",
@@ -2687,7 +2687,7 @@ static int snd_trident_pcm_pan_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_pcm_pan_control =
+static snd_kcontrol_new_t snd_trident_pcm_pan_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "PCM Pan Playback Control",
@@ -2740,7 +2740,7 @@ static int snd_trident_pcm_rvol_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_pcm_rvol_control =
+static snd_kcontrol_new_t snd_trident_pcm_rvol_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "PCM Reverb Playback Volume",
@@ -2793,7 +2793,7 @@ static int snd_trident_pcm_cvol_control_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_trident_pcm_cvol_control =
+static snd_kcontrol_new_t snd_trident_pcm_cvol_control __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_MIXER,
 	name:           "PCM Chorus Playback Volume",
@@ -2859,7 +2859,7 @@ static int snd_trident_pcm_mixer_free(trident_t *trident, snd_trident_voice_t *v
   
   ---------------------------------------------------------------------------*/
 
-static int snd_trident_mixer(trident_t * trident, int pcm_spdif_device)
+static int __devinit snd_trident_mixer(trident_t * trident, int pcm_spdif_device)
 {
 	ac97_t _ac97, *ac97;
 	snd_card_t * card = trident->card;
@@ -2988,7 +2988,7 @@ static void snd_trident_proc_read(snd_info_entry_t *entry,
 #endif
 }
 
-static void snd_trident_proc_init(trident_t * trident)
+static void __devinit snd_trident_proc_init(trident_t * trident)
 {
 	snd_info_entry_t *entry;
 	char *s = "trident";
@@ -3039,7 +3039,7 @@ static int snd_trident_dev_free(snd_device_t *device)
   
   ---------------------------------------------------------------------------*/
 
-int snd_trident_create(snd_card_t * card,
+int __devinit snd_trident_create(snd_card_t * card,
 		       struct pci_dev *pci,
 		       int pcm_streams,
 		       int pcm_spdif_device,
@@ -3630,38 +3630,3 @@ EXPORT_SYMBOL(snd_trident_synth_alloc);
 EXPORT_SYMBOL(snd_trident_synth_free);
 EXPORT_SYMBOL(snd_trident_synth_bzero);
 EXPORT_SYMBOL(snd_trident_synth_copy_from_user);
-
-#if 0
-
-EXPORT_SYMBOL(snd_trident_create);
-EXPORT_SYMBOL(snd_trident_interrupt);
-EXPORT_SYMBOL(snd_trident_pcm);
-EXPORT_SYMBOL(snd_trident_foldback_pcm);
-EXPORT_SYMBOL(snd_trident_spdif_pcm);
-EXPORT_SYMBOL(snd_trident_mixer);
-EXPORT_SYMBOL(snd_trident_attach_synthesizer);
-EXPORT_SYMBOL(snd_trident_detach_synthesizer);
-#ifdef CONFIG_PM
-EXPORT_SYMBOL(snd_trident_suspend);
-EXPORT_SYMBOL(snd_trident_resume);
-#endif
-
-MODULE_LICENSE("GPL");
-
-/*
- *  INIT part
- */
-
-static int __init alsa_trident_init(void)
-{
-	return 0;
-}
-
-static void __exit alsa_trident_exit(void)
-{
-}
-
-module_init(alsa_trident_init)
-module_exit(alsa_trident_exit)
-
-#endif /* ALSA_BUILD */

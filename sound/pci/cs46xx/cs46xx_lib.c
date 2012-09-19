@@ -41,12 +41,6 @@
 #include <sound/info.h>
 #include <sound/cs46xx.h>
 
-#if 0
-MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
-MODULE_DESCRIPTION("Routines for control of Cirrus Logic CS461x chips");
-MODULE_LICENSE("GPL");
-#endif
-
 #define chip_t cs46xx_t
 
 /*
@@ -1202,7 +1196,7 @@ static void snd_cs46xx_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_cs46xx_pcm(cs46xx_t *chip, int device, snd_pcm_t ** rpcm)
+int __devinit snd_cs46xx_pcm(cs46xx_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1273,7 +1267,7 @@ static int snd_cs46xx_vol_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t * 
 	return change;
 }
 
-static snd_kcontrol_new_t snd_cs46xx_controls[] = {
+static snd_kcontrol_new_t snd_cs46xx_controls[] __devinitdata = {
 {
 	iface: SNDRV_CTL_ELEM_IFACE_MIXER,
 	name: "DAC Volume",
@@ -1291,7 +1285,7 @@ static snd_kcontrol_new_t snd_cs46xx_controls[] = {
 	private_value: BA1_CVOL,
 }};
 
-int snd_cs46xx_mixer(cs46xx_t *chip)
+int __devinit snd_cs46xx_mixer(cs46xx_t *chip)
 {
 	snd_card_t *card = chip->card;
 	ac97_t ac97;
@@ -1486,7 +1480,7 @@ static snd_rawmidi_ops_t snd_cs46xx_midi_input =
 	trigger:        snd_cs46xx_midi_input_trigger,
 };
 
-int snd_cs46xx_midi(cs46xx_t *chip, int device, snd_rawmidi_t **rrawmidi)
+int __devinit snd_cs46xx_midi(cs46xx_t *chip, int device, snd_rawmidi_t **rrawmidi)
 {
 	snd_rawmidi_t *rmidi;
 	int err;
@@ -1543,7 +1537,7 @@ static struct snd_info_entry_ops snd_cs46xx_proc_io_ops = {
 	read: snd_cs46xx_io_read,
 };
 
-static int snd_cs46xx_proc_init(snd_card_t * card, cs46xx_t *chip)
+static int __devinit snd_cs46xx_proc_init(snd_card_t * card, cs46xx_t *chip)
 {
 	snd_info_entry_t *entry;
 	int idx;
@@ -2058,7 +2052,7 @@ struct cs_card_type
 	void (*active)(cs46xx_t *, int);
 };
 
-static struct cs_card_type __initdata cards[]={
+static struct cs_card_type __initdata cards[] = {
 	{0x1489, 0x7001, "Genius Soundmaker 128 value", NULL, amp_none, NULL},
 	{0x5053, 0x3357, "Voyetra", NULL, amp_voyetra, NULL},
 	{0x1071, 0x6003, "Mitac MI6020/21", NULL, amp_voyetra, NULL},
@@ -2161,7 +2155,7 @@ static int snd_cs46xx_set_power_state(snd_card_t *card, unsigned int power_state
 /*
  */
 
-int snd_cs46xx_create(snd_card_t * card,
+int __devinit snd_cs46xx_create(snd_card_t * card,
 		      struct pci_dev * pci,
 		      int external_amp, int thinkpad,
 		      cs46xx_t ** rchip)
@@ -2303,33 +2297,3 @@ int snd_cs46xx_create(snd_card_t * card,
 	*rchip = chip;
 	return 0;
 }
-
-#if 0
-
-EXPORT_SYMBOL(snd_cs46xx_create);
-EXPORT_SYMBOL(snd_cs46xx_interrupt);
-EXPORT_SYMBOL(snd_cs46xx_pcm);
-EXPORT_SYMBOL(snd_cs46xx_mixer);
-EXPORT_SYMBOL(snd_cs46xx_midi);
-#ifdef CONFIG_PM
-EXPORT_SYMBOL(snd_cs46xx_suspend);
-EXPORT_SYMBOL(snd_cs46xx_resume);
-#endif
-
-/*
- *  INIT part
- */
-
-static int __init alsa_cs46xx_init(void)
-{
-	return 0;
-}
-
-static void __exit alsa_cs46xx_exit(void)
-{
-}
-
-module_init(alsa_cs46xx_init)
-module_exit(alsa_cs46xx_exit)
-
-#endif /* ALSA_BUILD */

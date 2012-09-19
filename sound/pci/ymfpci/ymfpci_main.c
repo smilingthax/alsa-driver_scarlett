@@ -35,12 +35,6 @@
 #include <sound/ymfpci.h>
 #include <sound/asoundef.h>
 
-#if 0
-MODULE_AUTHOR("Jaroslav Kysela <perex@suse.cz>");
-MODULE_DESCRIPTION("Routines for control of YMF724/740/744/754 chips");
-MODULE_LICENSE("GPL");
-#endif
-
 #define chip_t ymfpci_t
 
 /*
@@ -1029,7 +1023,7 @@ static void snd_ymfpci_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_ymfpci_pcm(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
+int __devinit snd_ymfpci_pcm(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1074,7 +1068,7 @@ static void snd_ymfpci_pcm2_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-int snd_ymfpci_pcm2(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
+int __devinit snd_ymfpci_pcm2(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1117,7 +1111,7 @@ static void snd_ymfpci_pcm_spdif_free(snd_pcm_t *pcm)
 	chip->pcm_spdif = NULL;
 }
 
-int snd_ymfpci_pcm_spdif(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
+int __devinit snd_ymfpci_pcm_spdif(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1157,7 +1151,7 @@ static void snd_ymfpci_pcm_4ch_free(snd_pcm_t *pcm)
 	chip->pcm_4ch = NULL;
 }
 
-int snd_ymfpci_pcm_4ch(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
+int __devinit snd_ymfpci_pcm_4ch(ymfpci_t *chip, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1219,7 +1213,7 @@ static int snd_ymfpci_spdif_default_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ymfpci_spdif_default =
+static snd_kcontrol_new_t snd_ymfpci_spdif_default __devinitdata =
 {
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
 	name:           SNDRV_CTL_NAME_IEC958("",PLAYBACK,DEFAULT),
@@ -1248,7 +1242,7 @@ static int snd_ymfpci_spdif_mask_get(snd_kcontrol_t * kcontrol,
 	return 0;
 }
 
-static snd_kcontrol_new_t snd_ymfpci_spdif_mask =
+static snd_kcontrol_new_t snd_ymfpci_spdif_mask __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READ,
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
@@ -1296,7 +1290,7 @@ static int snd_ymfpci_spdif_stream_put(snd_kcontrol_t * kcontrol,
 	return change;
 }
 
-static snd_kcontrol_new_t snd_ymfpci_spdif_stream =
+static snd_kcontrol_new_t snd_ymfpci_spdif_stream __devinitdata =
 {
 	access:		SNDRV_CTL_ELEM_ACCESS_READWRITE | SNDRV_CTL_ELEM_ACCESS_INACTIVE,
 	iface:		SNDRV_CTL_ELEM_IFACE_PCM,
@@ -1448,7 +1442,7 @@ static int snd_ymfpci_put_double(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t
 
 #define YMFPCI_CONTROLS (sizeof(snd_ymfpci_controls)/sizeof(snd_kcontrol_new_t))
 
-static snd_kcontrol_new_t snd_ymfpci_controls[] = {
+static snd_kcontrol_new_t snd_ymfpci_controls[] __devinitdata = {
 YMFPCI_DOUBLE("Wave Playback Volume", 0, YDSXGR_NATIVEDACOUTVOL),
 YMFPCI_DOUBLE("Wave Capture Volume", 0, YDSXGR_NATIVEDACLOOPVOL),
 YMFPCI_DOUBLE("Digital Capture Volume", 0, YDSXGR_NATIVEDACINVOL),
@@ -1475,7 +1469,7 @@ static void snd_ymfpci_mixer_free_ac97(ac97_t *ac97)
 	chip->ac97 = NULL;
 }
 
-int snd_ymfpci_mixer(ymfpci_t *chip)
+int __devinit snd_ymfpci_mixer(ymfpci_t *chip)
 {
 	ac97_t ac97;
 	snd_kcontrol_t *kctl;
@@ -1522,7 +1516,7 @@ static void snd_ymfpci_proc_read(snd_info_entry_t *entry,
 	snd_iprintf(buffer, "YMFPCI\n\n");
 }
 
-static int snd_ymfpci_proc_init(snd_card_t * card, ymfpci_t *chip)
+static int __devinit snd_ymfpci_proc_init(snd_card_t * card, ymfpci_t *chip)
 {
 	snd_info_entry_t *entry;
 	
@@ -1633,7 +1627,7 @@ static void snd_ymfpci_download_image(ymfpci_t *chip)
 	snd_ymfpci_enable_dsp(chip);
 }
 
-static int snd_ymfpci_memalloc(ymfpci_t *chip)
+static int __devinit snd_ymfpci_memalloc(ymfpci_t *chip)
 {
 	long size, playback_ctrl_size;
 	int voice, bank, reg;
@@ -1883,12 +1877,12 @@ static int snd_ymfpci_set_power_state(snd_card_t *card, unsigned int power_state
 	}
 	return 0;
 }
-#endif
+#endif /* CONFIG_PM */
 
-int snd_ymfpci_create(snd_card_t * card,
-		      struct pci_dev * pci,
-		      unsigned short old_legacy_ctrl,
-		      ymfpci_t ** rchip)
+int __devinit snd_ymfpci_create(snd_card_t * card,
+				struct pci_dev * pci,
+				unsigned short old_legacy_ctrl,
+				ymfpci_t ** rchip)
 {
 	ymfpci_t *chip;
 	int err;
@@ -1966,35 +1960,3 @@ int snd_ymfpci_create(snd_card_t * card,
 	*rchip = chip;
 	return 0;
 }
-
-#if 0
-
-EXPORT_SYMBOL(snd_ymfpci_create);
-EXPORT_SYMBOL(snd_ymfpci_interrupt);
-EXPORT_SYMBOL(snd_ymfpci_pcm);
-EXPORT_SYMBOL(snd_ymfpci_pcm2);
-EXPORT_SYMBOL(snd_ymfpci_pcm_spdif);
-EXPORT_SYMBOL(snd_ymfpci_pcm_4ch);
-EXPORT_SYMBOL(snd_ymfpci_mixer);
-#ifdef CONFIG_PM
-EXPORT_SYMBOL(snd_ymfpci_suspend);
-EXPORT_SYMBOL(snd_ymfpci_resume);
-#endif
-
-/*
- *  INIT part
- */
-
-static int __init alsa_ymfpci_init(void)
-{
-	return 0;
-}
-
-static void __exit alsa_ymfpci_exit(void)
-{
-}
-
-module_init(alsa_ymfpci_init)
-module_exit(alsa_ymfpci_exit)
-
-#endif /* ALSA_BUILD */

@@ -1153,7 +1153,7 @@ static void snd_ensoniq_pcm_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_ensoniq_pcm(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_ensoniq_pcm(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1195,7 +1195,7 @@ static void snd_ensoniq_pcm_free2(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
-static int __init snd_ensoniq_pcm2(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm)
+static int __devinit snd_ensoniq_pcm2(ensoniq_t * ensoniq, int device, snd_pcm_t ** rpcm)
 {
 	snd_pcm_t *pcm;
 	int err;
@@ -1280,7 +1280,7 @@ static int snd_es1371_spdif_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value_t 
 	return change;
 }
 
-static snd_kcontrol_new_t snd_es1371_mixer_spdif =
+static snd_kcontrol_new_t snd_es1371_mixer_spdif __devinitdata =
 ES1371_SPDIF("IEC958 Playback Switch");
 
 static void snd_ensoniq_mixer_free_ac97(ac97_t *ac97)
@@ -1357,7 +1357,7 @@ static int snd_ensoniq_control_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_value
 
 #define ES1370_CONTROLS 2
 
-static snd_kcontrol_new_t snd_es1370_controls[2] = {
+static snd_kcontrol_new_t snd_es1370_controls[2] __devinitdata = {
 ENSONIQ_CONTROL("PCM 0 Output also on Line-In Jack", ES_1370_XCTL0),
 ENSONIQ_CONTROL("Mic +5V bias", ES_1370_XCTL1)
 };
@@ -1368,7 +1368,7 @@ static void snd_ensoniq_mixer_free_ak4531(ak4531_t *ak4531)
 	ensoniq->u.es1370.ak4531 = NULL;
 }
 
-static int __init snd_ensoniq_1370_mixer(ensoniq_t * ensoniq)
+static int __devinit snd_ensoniq_1370_mixer(ensoniq_t * ensoniq)
 {
 	snd_card_t *card = ensoniq->card;
 	ak4531_t ak4531;
@@ -1397,7 +1397,7 @@ static int __init snd_ensoniq_1370_mixer(ensoniq_t * ensoniq)
  *  General Switches...
  */
 
-static snd_kcontrol_new_t snd_ensoniq_control_joystick =
+static snd_kcontrol_new_t snd_ensoniq_control_joystick __devinitdata =
 ENSONIQ_CONTROL("Joystick Enable", ES_JYSTK_EN);
 
 #ifdef CHIP1371
@@ -1445,7 +1445,7 @@ static int snd_es1371_joystick_addr_put(snd_kcontrol_t * kcontrol, snd_ctl_elem_
 	return change;
 }
 
-static snd_kcontrol_new_t snd_es1371_joystick_addr =
+static snd_kcontrol_new_t snd_es1371_joystick_addr __devinitdata =
 ES1371_JOYSTICK_ADDR("Joystick Address");
 
 #endif /* CHIP1371 */
@@ -1473,7 +1473,7 @@ static void snd_ensoniq_proc_read(snd_info_entry_t *entry,
 #endif
 }
 
-static void __init snd_ensoniq_proc_init(ensoniq_t * ensoniq)
+static void __devinit snd_ensoniq_proc_init(ensoniq_t * ensoniq)
 {
 	snd_info_entry_t *entry;
 
@@ -1561,7 +1561,7 @@ static struct {
 };
 #endif
 
-static int __init snd_ensoniq_create(snd_card_t * card,
+static int __devinit snd_ensoniq_create(snd_card_t * card,
 				     struct pci_dev *pci,
 				     ensoniq_t ** rensoniq)
 {
@@ -1893,7 +1893,7 @@ static snd_rawmidi_ops_t snd_ensoniq_midi_input =
 	trigger:        snd_ensoniq_midi_input_trigger,
 };
 
-static int __init snd_ensoniq_midi(ensoniq_t * ensoniq, int device, snd_rawmidi_t **rrawmidi)
+static int __devinit snd_ensoniq_midi(ensoniq_t * ensoniq, int device, snd_rawmidi_t **rrawmidi)
 {
 	snd_rawmidi_t *rmidi;
 	int err;

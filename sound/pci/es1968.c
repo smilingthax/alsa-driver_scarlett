@@ -1506,7 +1506,7 @@ static void snd_es1968_free_dmabuf(es1968_t *chip)
 	}
 }
 
-static int __init
+static int __devinit
 snd_es1968_init_dmabuf(es1968_t *chip)
 {
 	esm_memory_t *chunk;
@@ -1783,7 +1783,7 @@ static snd_pcm_ops_t snd_es1968_capture_ops = {
  */
 #define CLOCK_MEASURE_BUFSIZE	16768	/* enough large for a single shot */
 
-static void __init es1968_measure_clock(es1968_t *chip)
+static void __devinit es1968_measure_clock(es1968_t *chip)
 {
 	int i, apu;
 	unsigned int pa, offset, t;
@@ -1878,7 +1878,7 @@ static void snd_es1968_pcm_free(snd_pcm_t *pcm)
 	esm->pcm = NULL;
 }
 
-static int __init
+static int __devinit
 snd_es1968_pcm(es1968_t *chip, int device)
 {
 	snd_pcm_t *pcm;
@@ -2031,7 +2031,7 @@ static void snd_es1968_interrupt(int irq, void *dev_id, struct pt_regs *regs)
  *  Mixer stuff
  */
 
-static int __init
+static int __devinit
 snd_es1968_mixer(es1968_t *chip)
 {
 	ac97_t ac97;
@@ -2514,7 +2514,7 @@ static int snd_es1968_dev_free(snd_device_t *device)
 	return snd_es1968_free(chip);
 }
 
-static int __init snd_es1968_create(snd_card_t * card,
+static int __devinit snd_es1968_create(snd_card_t * card,
 				    struct pci_dev *pci,
 				    int midi_enabled,
 				    int total_bufsize,
@@ -2608,7 +2608,7 @@ static int __init snd_es1968_create(snd_card_t * card,
 /* *************
    * Midi Part *
    *************/
-static int __init
+static int __devinit
 snd_es1968_midi(es1968_t *chip, int device, snd_rawmidi_t ** rawmidi)
 {
 	unsigned long mpu_port;
@@ -2672,7 +2672,7 @@ static int snd_es1968_joystick_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_
 
 #define num_controls(ary) (sizeof(ary) / sizeof(snd_kcontrol_new_t))
 
-static snd_kcontrol_new_t snd_es1968_control_switches[] = {
+static snd_kcontrol_new_t snd_es1968_control_switches[] __devinitdata = {
 	{
 		name: "Joystick",
 		iface: SNDRV_CTL_ELEM_IFACE_CARD,
@@ -2792,6 +2792,7 @@ static struct pci_driver driver = {
 #endif
 };
 
+#if 0 // do we really need this?
 static int snd_es1968_notifier(struct notifier_block *nb, unsigned long event, void *buf)
 {
 	pci_unregister_driver(&driver);
@@ -2799,6 +2800,7 @@ static int snd_es1968_notifier(struct notifier_block *nb, unsigned long event, v
 }
 
 static struct notifier_block snd_es1968_nb = {snd_es1968_notifier, NULL, 0};
+#endif
 
 static int __init alsa_card_es1968_init(void)
 {
@@ -2810,18 +2812,22 @@ static int __init alsa_card_es1968_init(void)
 #endif
 		return err;
 	}
+#if 0 // do we really need this?
 	/* If this driver is not shutdown cleanly at reboot, it can
 	   leave the speaking emitting an annoying noise, so we catch
 	   shutdown events. */ 
 	if (register_reboot_notifier(&snd_es1968_nb)) {
 		snd_printk("reboot notifier registration failed; may make noise at shutdown.\n");
 	}
+#endif
 	return 0;
 }
 
 static void __exit alsa_card_es1968_exit(void)
 {
+#if 0 // do we really need this?
 	unregister_reboot_notifier(&snd_es1968_nb);
+#endif
 	pci_unregister_driver(&driver);
 }
 
