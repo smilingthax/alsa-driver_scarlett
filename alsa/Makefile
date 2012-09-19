@@ -278,6 +278,6 @@ endif
 
 .PHONY: TAGS
 TAGS:
-	find . ../alsa-kernel -name *.h -o -name *.c | xargs etags
+	find . -name '*.[ch]' | etags -
 
 endif
