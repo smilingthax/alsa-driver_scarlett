@@ -12,13 +12,14 @@
 #include <sound/core.h>
 #include <sound/initval.h>
 #include <sound/pcm.h>
+#include <linux/input.h>
 
 #include <linux/interrupt.h>
 #include <linux/timex.h>
-#include <linux/kd.h>
 #include <linux/ioport.h>
 #include <asm/io.h>
 #include <asm/bitops.h>
+#include <asm/i8253.h>
 #ifdef CONFIG_APM_CPU_IDLE
 #include <linux/pm.h>
 #endif
@@ -32,7 +33,7 @@ MODULE_SUPPORTED_DEVICE("{{PC-Speaker, pcsp}}");
 static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
 static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
 static int enable = SNDRV_DEFAULT_ENABLE1;	/* Enable this card */
-static int no_test_speed = 0, no_beeps = 0;
+static int no_test_speed = 0;
 
 module_param(id, charp, 0444);
 MODULE_PARM_DESC(id, "ID string for pcsp soundcard.");
@@ -40,95 +41,123 @@ module_param(enable, bool, 0444);
 MODULE_PARM_DESC(enable, "dummy");
 module_param(no_test_speed, int, 0444);
 MODULE_PARM_DESC(no_test_speed, "dont test the CPU speed on startup");
-module_param(no_beeps, int, 0444);
-MODULE_PARM_DESC(no_beeps, "disable pc-speaker beeps");
 
-snd_card_t *snd_pcsp_card = SNDRV_DEFAULT_PTR1;
+static snd_card_t *snd_pcsp_card = SNDRV_DEFAULT_PTR1;
+static pcsp_t *snd_pcsp_chip = NULL;
 
 #ifdef CONFIG_APM_CPU_IDLE
 static void (*saved_pm_idle)(void);
 #endif
 
-static int (*pcsp_IRQ)(chip_t *chip) = NULL;
+static char *pcsp_input_name = "pcsp-input";
+
+static int (*pcsp_timer_func)(chip_t *chip) = NULL;
+void *pcsp_timer_hook;
+
+static void pcsp_input_event(struct input_handle *handle, unsigned int event_type, 
+		      unsigned int event_code, int value)
+{
+}
+
+static struct input_handle *pcsp_input_connect(struct input_handler *handler, 
+					struct input_dev *dev,
+					struct input_device_id *id)
+{
+	struct input_handle *handle;
+
+	if (!(handle = kmalloc(sizeof(struct input_handle), GFP_KERNEL))) 
+		return NULL;
+	memset(handle, 0, sizeof(struct input_handle));
+
+	handle->dev = dev;
+	handle->handler = handler;
+	handle->name = pcsp_input_name;
+
+	input_open_device(handle);
+
+	if (pcsp_timer_func)
+		input_event(dev, EV_SND, SND_SILENT, 1);
+
+	return handle;
+}
+
+static void pcsp_input_disconnect(struct input_handle *handle)
+{
+	input_close_device(handle);
+	kfree(handle);
+}
+
+static struct input_device_id pcsp_input_ids[] = {
+	{
+                .flags = INPUT_DEVICE_ID_MATCH_EVBIT | INPUT_DEVICE_ID_MATCH_SNDBIT,
+                .evbit = { BIT(EV_SND) },
+                .sndbit = { BIT(SND_SILENT) },
+        },	
+
+	{ },    /* Terminating entry */
+};
+
+static struct input_handler pcsp_input_handler = {
+	.event		= pcsp_input_event,
+	.connect	= pcsp_input_connect,
+	.disconnect	= pcsp_input_disconnect,
+	.name		= "pcsp-input",
+	.id_table	= pcsp_input_ids,
+};
+
+void pcsp_lock_input(int lock)
+{
+	struct list_head * node;
+	list_for_each(node, &pcsp_input_handler.h_list) {
+		input_event(to_handle_h(node)->dev, EV_SND, SND_SILENT, lock);
+	}
+}
 
 /*
  * this is the PCSP IRQ handler
  */
-static irqreturn_t pcsp_run_IRQ(int irq, void *dev_id, struct pt_regs *regs)
+static int pcsp_timer(struct pt_regs *regs)
 {
-	pcsp_t *chip = dev_id;
-	int ret = IRQ_NONE;
-	if (pcsp_IRQ) {
-		ret = IRQ_HANDLED;
-		if (!pcsp_IRQ(chip))
-			ret |= IRQ_DONE;
-	}
-	return ret;
+	if (pcsp_timer_func)
+		return pcsp_timer_func(snd_pcsp_chip);
+	return 0;
 }
 
-/*
- * Set the function func to be executed as the timer int.
- * if func returns a 0, the old IRQ0-handler(s) is called
- */
-void pcsp_set_irq(chip_t *chip, int (*func)(chip_t *chip))
+int pcsp_set_timer_hook(chip_t *chip, int (*func)(chip_t *chip))
 {
 	unsigned long flags;
+	int err;
 	if (!func)
-		return;
+		return -1;
 	spin_lock_irqsave(&chip->lock, flags);
-	pcsp_IRQ = func;
-#if defined(CONFIG_INPUT_PCSPKR) || defined(CONFIG_INPUT_PCSPKR_MODULE)
-	use_speaker_beep = 0;
-#endif
+	if ((err = grab_timer_hook(pcsp_timer_hook))) {
+		spin_unlock_irqrestore(&chip->lock, flags);
+		printk(KERN_WARNING "PCSP: unable to grab timer!\n");
+		return err;
+	}
+	pcsp_timer_func = func;
 #ifdef CONFIG_APM_CPU_IDLE
 	saved_pm_idle = pm_idle;
 	pm_idle = NULL;
 #endif
 	spin_unlock_irqrestore(&chip->lock, flags);
+	return 0;
 }
 
-/*
- * reset the IRQ0 to the old handling
- */
-void pcsp_release_irq(chip_t *chip)
+void pcsp_release_timer_hook(chip_t *chip)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&chip->lock, flags);
-	pcsp_IRQ = NULL;
-#if defined(CONFIG_INPUT_PCSPKR) || defined(CONFIG_INPUT_PCSPKR_MODULE)
-	use_speaker_beep = !no_beeps;
-#endif
+	pcsp_timer_func = NULL;
 #ifdef CONFIG_APM_CPU_IDLE
 	pm_idle = saved_pm_idle;
 #endif
+	ungrab_timer_hook(pcsp_timer_hook);
 	spin_unlock_irqrestore(&chip->lock, flags);
 }
 
 static int tst_len[2];
 volatile static int pcsp_test_running;
-/*
-   this is a stupid beep which occurs if PCSP is disabled;
-   it's not needed because we have the message, but who reads it...
-   and this is the PC-Speaker driver :-)
-*/
-void __init pcsp_beep(int count, int cycles)
-{
-	unsigned long flags;
-	spin_lock_irqsave(&i8253_lock, flags);
-	/* enable counter 2 */
-	outb_p(inb_p(0x61)|3, 0x61);
-	/* set command for counter 2, 2 byte write */
-	outb_p(0xB6, 0x43);
-	/* select desired HZ */
-	outb_p(count & 0xff, 0x42);
-	outb((count >> 8) & 0xff, 0x42);
-
-	while (cycles--);
-		 
-	/* disable counter 2 */
-	outb(inb_p(0x61)&0xFC, 0x61);
-	spin_unlock_irqrestore(&i8253_lock, flags);
-}
 
 /*
    the timer-int for testing cpu-speed, mostly the same as
@@ -138,11 +167,9 @@ static int __init pcsp_test_intspeed(chip_t *chip)
 {
 	unsigned char test_buffer[256];
 	if (chip->index < tst_len[chip->cur_buf]) {
-		spin_lock(&i8253_lock);
 		outb(chip->e,     0x61);
 		outb(test_buffer[chip->index], 0x42);
 		outb(chip->e ^ 1, 0x61);
-		spin_unlock(&i8253_lock);
 
 		chip->index += 2;
 	}
@@ -163,9 +190,9 @@ static int __init pcsp_test_intspeed(chip_t *chip)
    we play thru PC-Speaker. This is kind of ugly but does the
    trick.
  */
-static int __init pcsp_measurement(chip_t *chip, int addon)
+static int __init pcsp_measurement(chip_t *chip, int addon, int *rticks)
 {
-	int count;
+	int count, err;
 	unsigned long flags;
 
 	chip->index	  = 0;
@@ -176,13 +203,14 @@ static int __init pcsp_measurement(chip_t *chip, int addon)
 
 	pcsp_test_running = 0;
 
-	pcsp_set_irq(chip, pcsp_test_intspeed);
+	if ((err = pcsp_set_timer_hook(chip, pcsp_test_intspeed)))
+		return err;
 	/*
 	  Perhaps we need some sort of timeout here, but if IRQ0
 	  isn't working the system hangs later ...
 	*/
 	while (pcsp_test_running < 5);
-	pcsp_release_irq(chip);
+	pcsp_release_timer_hook(chip);
 
 	spin_lock_irqsave(&i8253_lock, flags);
 	outb_p(0x00, 0x43);		/* latch the count ASAP */
@@ -190,17 +218,22 @@ static int __init pcsp_measurement(chip_t *chip, int addon)
 	count |= inb(0x40) << 8;
 	spin_unlock_irqrestore(&i8253_lock, flags);
 
-	return (LATCH - count);
+	*rticks = LATCH - count;
+	return 0;
 }
 
 static int __init pcsp_test_speed(chip_t *chip, int *rmin_div)
 {
 	int worst, worst1, best, best1, min_div;
 
-	worst  = pcsp_measurement(chip, 0);
-	worst1 = pcsp_measurement(chip, 0);
-	best   = pcsp_measurement(chip, 5);
-	best1  = pcsp_measurement(chip, 5);
+	if (pcsp_measurement(chip, 0, &worst))
+		return 0;
+	if (pcsp_measurement(chip, 0, &worst1))
+		return 0;
+	if (pcsp_measurement(chip, 5, &best))
+		return 0;
+	if (pcsp_measurement(chip, 5, &best1))
+		return 0;
 
 	worst = max(worst, worst1);
 	best  = min(best, best1);
@@ -216,9 +249,6 @@ static int __init pcsp_test_speed(chip_t *chip, int *rmin_div)
 
 	if (min_div > MAX_DIV) {
 		printk(KERN_WARNING "This is too SLOW! PCSP-driver DISABLED\n");
-		/* very ugly beep, but you hopefully never hear it */
-		pcsp_beep(12000,800000);
-		pcsp_beep(10000,800000);
 		return 0;
 	}
 	return 1;
@@ -226,11 +256,8 @@ static int __init pcsp_test_speed(chip_t *chip, int *rmin_div)
 
 static int snd_pcsp_free(pcsp_t *chip)
 {
-	free_irq(chip->irq, chip);
+	unregister_timer_hook(pcsp_timer_hook);
 	kfree(chip);
-#if defined(CONFIG_INPUT_PCSPKR) || defined(CONFIG_INPUT_PCSPKR_MODULE)
-	use_speaker_beep = 1;
-#endif
 	return 0;
 }
 
@@ -243,14 +270,14 @@ static int snd_pcsp_dev_free(snd_device_t *device)
 static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
 {
 	static snd_device_ops_t ops = {
-		.dev_free =	snd_pcsp_dev_free,
+		.dev_free = snd_pcsp_dev_free,
 	};
 	pcsp_t *chip;
 	int err;
 	int div, min_div, order;
 	int pcsp_enabled = 1;
 
-	chip = kzalloc(sizeof(pcsp_t), GFP_KERNEL);
+	chip = kcalloc(1, sizeof(pcsp_t), GFP_KERNEL);
 	if (chip == NULL)
 		return -ENOMEM;
 	spin_lock_init(&chip->lock);
@@ -260,10 +287,9 @@ static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
 	chip->irq = TIMER_IRQ;
 	chip->dma = -1;
 
-	if (request_irq(chip->irq, pcsp_run_IRQ,
-			SA_INTERRUPT | SA_SHIRQ | SA_FIRST,
-			"pcsp", chip)) {
-		printk(KERN_WARNING "PCSP could not modify timer IRQ!");
+	snd_pcsp_chip = chip;
+	if (!(pcsp_timer_hook = register_timer_hook(pcsp_timer))) {
+		printk(KERN_WARNING "PCSP could not register timer hook!");
 		snd_pcsp_free(chip);
 		return -EBUSY;
 	}
@@ -292,6 +318,7 @@ static int __init snd_pcsp_create(snd_card_t *card, pcsp_t **rchip)
 	chip->timer_latch  =
 	chip->clockticks   = LATCH;
 	chip->volume       = PCSP_MAX_VOLUME;
+	chip->enable       = 1;
 
 	/* Register device */
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
@@ -340,9 +367,6 @@ static int __init snd_card_pcsp_probe(int dev)
 	}
 	snd_pcsp_card = card;
 
-#if defined(CONFIG_INPUT_PCSPKR) || defined(CONFIG_INPUT_PCSPKR_MODULE)
-	use_speaker_beep = !no_beeps;
-#endif
 	return 0;
 }
 
@@ -368,12 +392,15 @@ static int __init alsa_card_pcsp_init(void)
 #endif
 		return -ENODEV;
 	}
+
+	input_register_handler(&pcsp_input_handler);
+
 	return 0;
 }
 
 static void __exit alsa_card_pcsp_exit(void)
 {
-
+	input_unregister_handler(&pcsp_input_handler);
 	snd_card_free(snd_pcsp_card);
 }
 

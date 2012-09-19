@@ -13,6 +13,7 @@
 #include <sound/initval.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
+#include <asm/i8253.h>
 #include "pcsp_defs.h"
 #include "pcsp_tabs.h"
 
@@ -41,9 +42,9 @@ static int pcsp_do_timer(pcsp_t *chip)
 		if (snd_pcm_format_signed(runtime->format))
 			val ^= 0x80;
 		timer_cnt = chip->vl_tab[val];
-		if (timer_cnt) {
-			outb(chip->e, 0x61);
-			outb(timer_cnt, 0x42);
+		if (timer_cnt && chip->enable) {
+			outb_p(chip->e, 0x61);
+			outb_p(timer_cnt, 0x42);
 			outb(chip->e ^ 1, 0x61);
 		}
 		chip->index += PCSP_INDEX_INC * fmt_size;
@@ -59,9 +60,9 @@ static int pcsp_do_timer(pcsp_t *chip)
 	if (chip->clockticks < 0) {
 		chip->clockticks += LATCH;
 		pit_counter0_offset += LATCH;
-		return 1;
+		return 0;
 	}
-	return 0;
+	return 1;
 }
 
 void pcsp_start_timer(pcsp_t *chip)
@@ -74,6 +75,10 @@ void pcsp_start_timer(pcsp_t *chip)
 	}
 
 	spin_lock_irqsave(&i8253_lock, flags);
+	if (pcsp_set_timer_hook(chip, pcsp_do_timer)) {
+		spin_unlock_irqrestore(&i8253_lock, flags);
+		return;
+	}
 	chip->e = inb(0x61) | 0x03;
 	outb_p(0x92, 0x43);	/* binary, mode 1, LSB only, ch 2 */
 	outb_p(0x34, 0x43);	/* binary, mode 2, LSB/MSB, ch 0 */
@@ -83,7 +88,7 @@ void pcsp_start_timer(pcsp_t *chip)
 	chip->clockticks = chip->last_clocks;
 	chip->reset_timer = 0;
 
-	pcsp_set_irq(chip, pcsp_do_timer);
+	pcsp_lock_input(1);
 
 	chip->timer_active = 1;
 	spin_unlock_irqrestore(&i8253_lock, flags);
@@ -109,7 +114,8 @@ void pcsp_stop_timer(pcsp_t *chip)
 	chip->timer_latch = chip->clockticks = LATCH;
 	pit_counter0_offset = 0;
 
-	pcsp_release_irq(chip);
+	pcsp_release_timer_hook(chip);
+	pcsp_lock_input(0);
 
 	chip->timer_active = 0;
 	spin_unlock_irqrestore(&i8253_lock, flags);

@@ -57,6 +57,34 @@ static int pcsp_volume_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 	return changed;
 }
 
+static int pcsp_enable_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
+{
+	uinfo->type = SNDRV_CTL_ELEM_TYPE_BOOLEAN;
+	uinfo->count = 1;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 1;
+	return 0;
+}
+
+static int pcsp_enable_get(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	ucontrol->value.integer.value[0] = chip->enable;
+	return 0;
+}
+
+static int pcsp_enable_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucontrol)
+{
+	pcsp_t *chip = snd_kcontrol_chip(kcontrol);
+	int changed = 0;
+	int enab = ucontrol->value.integer.value[0];
+	if (enab != chip->enable) {
+		chip->enable = enab;
+		changed = 1;
+	}
+	return changed;
+}
+
 static int pcsp_gain_info(snd_kcontrol_t *kcontrol, snd_ctl_elem_info_t *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
@@ -128,16 +156,17 @@ static int pcsp_treble_put(snd_kcontrol_t *kcontrol, snd_ctl_elem_value_t *ucont
 #define PCSP_MIXER_CONTROL(ctl_type, ctl_name) \
 { \
 	.iface =	SNDRV_CTL_ELEM_IFACE_MIXER, \
-	.name =		ctl_name " Playback Volume", \
+	.name =		ctl_name, \
 	.info =		pcsp_##ctl_type##_info, \
 	.get =		pcsp_##ctl_type##_get, \
 	.put =		pcsp_##ctl_type##_put, \
 }
 
 static snd_kcontrol_new_t __initdata snd_pcsp_controls[] = {
-	PCSP_MIXER_CONTROL(volume, "Master"),
-	PCSP_MIXER_CONTROL(gain, "PCM"),
-	PCSP_MIXER_CONTROL(treble, "BaseFRQ"),
+	PCSP_MIXER_CONTROL(volume, "Master Playback Volume"),
+	PCSP_MIXER_CONTROL(enable, "Master Playback Switch"),
+	PCSP_MIXER_CONTROL(gain, "PCM Playback Volume"),
+	PCSP_MIXER_CONTROL(treble, "BaseFRQ Playback Volume"),
 };
 
 int __init snd_pcsp_new_mixer(pcsp_t *chip)
