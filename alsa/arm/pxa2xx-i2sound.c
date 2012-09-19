@@ -730,9 +730,7 @@ static int snd_pxa2xx_i2sound_card_create_pcm(void)
 			continue;
 		s = &card.engine.streams[s_id];
 		s->id = s_id;
-		s->ahw.info		= SNDRV_PCM_INFO_MMAP |
-					  SNDRV_PCM_INFO_INTERLEAVED |
-					  SNDRV_PCM_INFO_MMAP_VALID |
+		s->ahw.info		= SNDRV_PCM_INFO_INTERLEAVED |
 					  SNDRV_PCM_INFO_BLOCK_TRANSFER;
 		s->ahw.formats		= SNDRV_PCM_FMTBIT_S16_LE;
 		s->ahw.channels_min		= 2;

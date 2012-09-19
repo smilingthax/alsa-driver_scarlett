@@ -441,8 +441,8 @@ static int __devinit adapter_probe(struct pci_dev *pci_dev,
 	for (idx = 0; idx < HPI_MAX_ADAPTER_MEM_SPACES; idx++) {
 		HPI_DEBUG_LOG4(DEBUG, "Resource %d %s %lx-%lx\n", idx,
 			       pci_dev->resource[idx].name,
-			       pci_dev->resource[idx].start,
-			       pci_dev->resource[idx].end);
+			       (unsigned long)pci_dev->resource[idx].start,
+			       (unsigned long)pci_dev->resource[idx].end);
 
 		memlen = pci_resource_len(pci_dev, idx);
 		if (memlen) {
