@@ -36,6 +36,7 @@
  * $Id: msnd.c,v 1.17 1999/03/21 16:50:09 andrewtv Exp $
  *
  ********************************************************************/
+#define __NO_VERSION__
 #include <sound/driver.h>
 #include <sound/core.h>
 #include <sound/initval.h>
@@ -264,7 +265,8 @@ int snd_msnd_disable_irq(multisound_dev_t *dev)
 	return -EIO;
 }
 
-/* uncomment this to make this a module again
+#if 0
+
 EXPORT_SYMBOL(snd_msnd_register);
 EXPORT_SYMBOL(snd_msnd_unregister);
 EXPORT_SYMBOL(snd_msnd_get_num_devs);
@@ -287,9 +289,7 @@ EXPORT_SYMBOL(snd_msnd_upload_host);
 
 EXPORT_SYMBOL(snd_msnd_enable_irq);
 EXPORT_SYMBOL(snd_msnd_disable_irq);
-#endif*/
 
-/*#ifdef MODULE uncomment this to make this a module again
 MODULE_AUTHOR				("Andrew Veliath <andrewtv@usa.net>");
 MODULE_DESCRIPTION			("Turtle Beach MultiSound Driver Base");
 MODULE_LICENSE("GPL");
@@ -303,5 +303,5 @@ int init_module(void)
 void cleanup_module(void)
 {
 }
+
 #endif
-*/

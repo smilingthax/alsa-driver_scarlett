@@ -178,11 +178,11 @@ static inline void synchronize_irq_wrapper(unsigned int irq) { synchronize_irq()
 #include <linux/usb.h>
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 5, 0)
-inline static urb_t *usb_alloc_urb_wrapper(int iso_packets, int flags)
+inline static struct urb *usb_alloc_urb_wrapper(int iso_packets, int flags)
 {
 	return usb_alloc_urb(iso_packets);
 }
-inline static int usb_submit_urb_wrapper(urb_t* urb, int flags)
+inline static int usb_submit_urb_wrapper(struct urb *urb, int flags)
 {
 	return usb_submit_urb(urb);
 }
