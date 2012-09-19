@@ -432,15 +432,13 @@ AC_DEFUN([CHECK_KERNEL_HEADER], [
   else
     AC_MSG_RESULT(no)
     if test ! -f include/$1; then
+      mkdir -p include/linux include/asm include/media
+      mkdir -p include/linux/regulator include/linux/usb
       if test -z "$2" ; then
         echo "Creating a dummy <$1>..."
-        mkdir -p include/linux include/asm include/media
-	mkdir -p include/linux/regulator
         touch include/$1
       else
         echo "Creating <$1>..."
-        mkdir -p include/linux include/asm include/media
-	mkdir -p include/linux/regulator
         echo "$2" > include/$1
       fi
     fi
@@ -675,6 +673,8 @@ AC_SUBST(CONFIG_EXPERIMENTAL)
 
 dnl Remove header hacks
 rm -f include/linux/*.h
+rm -rf include/linux/usb
+rm -rf include/linux/regulator
 rm -f include/asm/*.h
 
 
@@ -2777,6 +2777,42 @@ if test "$CONFIG_USB" != "y"; then
   CONFIG_USB=$CONFIG_USB_MODULE
 fi
 AC_SUBST(CONFIG_USB)
+
+if test -n "$CONFIG_USB"; then
+  CHECK_KERNEL_HEADER(linux/usb/audio.h, [#include \"usb_audio_compat.h\"
+  ])
+  AC_MSG_CHECKING([for valid linux/usb/audio.h])
+  usb_audio_valid="0"
+  ac_save_CFLAGS="$CFLAGS"
+  ac_save_CC="$CC"
+  CFLAGS="$KERNEL_CHECK_CFLAGS"
+  CC=$KCC
+  AC_TRY_COMPILE([
+#define __KERNEL__
+#ifdef CONFIG_HAVE_DEPRECATED_CONFIG_H
+#include <$INCLUDE_AUTOCONF_H>
+#else
+#include <linux/config.h>
+#endif
+#include <linux/usb/audio.h>
+],[
+  struct uac_as_header_descriptor_v2 tmp;
+  tmp.bLength = 0;
+],
+   AC_MSG_RESULT(yes);usb_audio_valid="1",
+   AC_MSG_RESULT(no);usb_audio_valid="0",
+   AC_MSG_RESULT(unknown);usb_audio_valid="0"
+)
+  CFLAGS=$ac_save_CFLAGS
+  CC=$ac_save_CC
+  if test "$usb_audio_valid" != "1"; then
+    mkdir -p include/linux/usb
+    echo "Creating <linux/usb/audio.h>..."
+    echo "#include \"usb_audio_compat.h\"" > include/linux/usb/audio.h
+  fi
+
+  CHECK_KERNEL_HEADER(linux/usb/ch9.h)
+fi
 
 dnl class_simple for old 2.6 kernels
 if test "$kversion.$kpatchlevel" = "2.6"; then
