@@ -1280,6 +1280,7 @@ static void nm256_resume(nm256_t *chip, int can_schedule)
 		goto __skip;
 
 	/* Perform a full reset on the hardware */
+	pci_enable_device(chip->pci);
 	snd_nm256_init_chip(chip);
 
 	/* restore ac97 */

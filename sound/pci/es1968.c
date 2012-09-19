@@ -2428,6 +2428,7 @@ static void es1968_resume(es1968_t *chip, int can_schedule)
 		goto __skip;
 
 	/* restore all our config */
+	pci_enable_device(chip->pci);
 	snd_es1968_chip_init(chip);
 
 	/* need to restore the base pointers.. */ 

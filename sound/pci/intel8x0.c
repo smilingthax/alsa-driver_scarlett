@@ -1095,6 +1095,7 @@ static void intel8x0_resume(intel8x0_t *chip, int can_schedule)
 	if (card->power_state == SNDRV_CTL_POWER_D0)
 		goto __skip;
 
+	pci_enable_device(chip->pci);
 	snd_intel8x0_chip_init(chip);
 	snd_ac97_resume(chip->ac97);
 
