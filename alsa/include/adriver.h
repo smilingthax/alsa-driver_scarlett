@@ -340,7 +340,6 @@ int snd_hack_usb_set_interface(struct usb_device *dev, int interface, int altern
 #define usb_host_config		usb_config_descriptor
 #define usb_host_interface	usb_interface_descriptor
 #define usb_host_endpoint	usb_endpoint_descriptor
-#define get_iface(cfg, num)	(&(cfg)->interface[num])
 #define get_iface_desc(iface)	(iface)
 #define get_endpoint(alt,ep)	(&(alt)->endpoint[ep])
 #define get_ep_desc(ep)		(ep)

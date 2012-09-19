@@ -80,9 +80,8 @@ static struct snd_usb_reg_table my_usb_drivers[MAX_USB_DRIVERS];
 
 static void *snd_usb_compat_probe(struct usb_device *dev, unsigned int ifnum)
 {
-	struct usb_config_descriptor *config = dev->actconfig;	
 	struct snd_compat_usb_driver *p;
-	struct usb_interface_descriptor *alts = config->interface[ifnum].altsetting;
+	struct usb_interface_descriptor *alts = usb_ifnum_to_if(dev, ifnum)->altsetting;
 	const struct snd_compat_usb_device_id *tbl;
 	struct snd_compat_usb_device_id id;
 	int i;
