@@ -1597,7 +1597,7 @@ static int snd_soc_dapm_add_route(struct snd_soc_dapm_context *dapm,
 	}
 
 	/* connect dynamic paths */
-	switch(wsink->id) {
+	switch (wsink->id) {
 	case snd_soc_dapm_adc:
 	case snd_soc_dapm_dac:
 	case snd_soc_dapm_pga:
@@ -2399,6 +2399,12 @@ int snd_soc_dapm_get_pin_status(struct snd_soc_dapm_context *dapm,
 	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (w->dapm != dapm)
 			continue;
+		if (!strcmp(w->name, pin))
+			return w->connected;
+	}
+
+	/* Try again in other contexts */
+	list_for_each_entry(w, &dapm->card->widgets, list) {
 		if (!strcmp(w->name, pin))
 			return w->connected;
 	}
